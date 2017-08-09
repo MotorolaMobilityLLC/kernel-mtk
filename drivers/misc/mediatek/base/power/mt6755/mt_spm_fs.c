@@ -35,6 +35,7 @@ static struct kobj_attribute _name##_attr = {	\
 /*
  * xxx_pcm_show Function
  */
+#if 0				/* FIXME */
 static ssize_t show_pcm_desc(const struct pcm_desc *pcmdesc, char *buf)
 {
 	char *p = buf;
@@ -53,6 +54,14 @@ static ssize_t show_pcm_desc(const struct pcm_desc *pcmdesc, char *buf)
 	p += sprintf(p, "vec5 = 0x%x\n", pcmdesc->vec5);
 	p += sprintf(p, "vec6 = 0x%x\n", pcmdesc->vec6);
 	p += sprintf(p, "vec7 = 0x%x\n", pcmdesc->vec7);
+	p += sprintf(p, "vec8 = 0x%x\n", pcmdesc->vec8);
+	p += sprintf(p, "vec9 = 0x%x\n", pcmdesc->vec9);
+	p += sprintf(p, "vec10 = 0x%x\n", pcmdesc->vec10);
+	p += sprintf(p, "vec11 = 0x%x\n", pcmdesc->vec11);
+	p += sprintf(p, "vec12 = 0x%x\n", pcmdesc->vec12);
+	p += sprintf(p, "vec13 = 0x%x\n", pcmdesc->vec13);
+	p += sprintf(p, "vec14 = 0x%x\n", pcmdesc->vec14);
+	p += sprintf(p, "vec15 = 0x%x\n", pcmdesc->vec15);
 
 	BUG_ON(p - buf >= PAGE_SIZE);
 	return p - buf;
@@ -68,14 +77,23 @@ static ssize_t dpidle_pcm_show(struct kobject *kobj, struct kobj_attribute *attr
 	return show_pcm_desc(__spm_dpidle.pcmdesc, buf);
 }
 
+static ssize_t sodi3_pcm_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	return show_pcm_desc(__spm_sodi3.pcmdesc, buf);
+}
+
 static ssize_t sodi_pcm_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	return show_pcm_desc(__spm_sodi.pcmdesc, buf);
 }
 
+static ssize_t mcdi_pcm_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	return show_pcm_desc(__spm_mcdi.pcmdesc, buf);
+}
+
 static ssize_t talking_pcm_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-/* For bring up */
 #if 0
 	return show_pcm_desc(__spm_talking.pcmdesc, buf);
 #else
@@ -85,18 +103,14 @@ static ssize_t talking_pcm_show(struct kobject *kobj, struct kobj_attribute *att
 
 static ssize_t ddrdfs_pcm_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-/* For bring up */
 #if 0
 	return show_pcm_desc(__spm_ddrdfs.pcmdesc, buf);
 #else
 	return 0;
 #endif
 }
+#endif
 
-static ssize_t vcorefs_pcm_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	return show_pcm_desc(__spm_vcore_dvfs.pcmdesc, buf);
-}
 
 /*
  * xxx_ctrl_show Function
@@ -110,58 +124,84 @@ static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 	p += sprintf(p, "pcm_reserve = 0x%x\n", pwrctrl->pcm_reserve);
 	p += sprintf(p, "timer_val = 0x%x\n", pwrctrl->timer_val);
 	p += sprintf(p, "timer_val_cust = 0x%x\n", pwrctrl->timer_val_cust);
+	p += sprintf(p, "timer_val_ramp_en = %d\n", pwrctrl->timer_val_ramp_en);
 	p += sprintf(p, "wake_src = 0x%x\n", pwrctrl->wake_src);
 	p += sprintf(p, "wake_src_cust = 0x%x\n", pwrctrl->wake_src_cust);
 	p += sprintf(p, "wake_src_md32 = 0x%x\n", pwrctrl->wake_src_md32);
 	p += sprintf(p, "r0_ctrl_en = %u\n", pwrctrl->r0_ctrl_en);
 	p += sprintf(p, "r7_ctrl_en = %u\n", pwrctrl->r7_ctrl_en);
 	p += sprintf(p, "infra_dcm_lock = %u\n", pwrctrl->infra_dcm_lock);
-	p += sprintf(p, "pcm_apsrc_req = %u\n", pwrctrl->pcm_apsrc_req);
-	p += sprintf(p, "pcm_f26m_req = %u\n", pwrctrl->pcm_f26m_req);
+	p += sprintf(p, "spm_apsrc_req = %u\n", pwrctrl->spm_apsrc_req);
+	p += sprintf(p, "spm_f26m_req = %u\n", pwrctrl->spm_f26m_req);
 
 	p += sprintf(p, "mcusys_idle_mask = %u\n", pwrctrl->mcusys_idle_mask);
-	p += sprintf(p, "ca15top_idle_mask = %u\n", pwrctrl->ca15top_idle_mask);
-	p += sprintf(p, "ca7top_idle_mask = %u\n", pwrctrl->ca7top_idle_mask);
+	p += sprintf(p, "mp1top_idle_mask = %u\n", pwrctrl->mp1top_idle_mask);
+	p += sprintf(p, "mp0top_idle_mask = %u\n", pwrctrl->mp0top_idle_mask);
 	p += sprintf(p, "wfi_op = %u\n", pwrctrl->wfi_op);
-	p += sprintf(p, "ca15_wfi0_en = %u\n", pwrctrl->ca15_wfi0_en);
-	p += sprintf(p, "ca15_wfi1_en = %u\n", pwrctrl->ca15_wfi1_en);
-	p += sprintf(p, "ca15_wfi2_en = %u\n", pwrctrl->ca15_wfi2_en);
-	p += sprintf(p, "ca15_wfi3_en = %u\n", pwrctrl->ca15_wfi3_en);
-	p += sprintf(p, "ca7_wfi0_en = %u\n", pwrctrl->ca7_wfi0_en);
-	p += sprintf(p, "ca7_wfi1_en = %u\n", pwrctrl->ca7_wfi1_en);
-	p += sprintf(p, "ca7_wfi2_en = %u\n", pwrctrl->ca7_wfi2_en);
-	p += sprintf(p, "ca7_wfi3_en = %u\n", pwrctrl->ca7_wfi3_en);
+	p += sprintf(p, "mp1_cpu0_wfi_en = %u\n", pwrctrl->mp1_cpu0_wfi_en);
+	p += sprintf(p, "mp1_cpu1_wfi_en = %u\n", pwrctrl->mp1_cpu1_wfi_en);
+	p += sprintf(p, "mp1_cpu2_wfi_en = %u\n", pwrctrl->mp1_cpu2_wfi_en);
+	p += sprintf(p, "mp1_cpu3_wfi_en = %u\n", pwrctrl->mp1_cpu3_wfi_en);
+	p += sprintf(p, "mp0_cpu0_wfi_en = %u\n", pwrctrl->mp0_cpu0_wfi_en);
+	p += sprintf(p, "mp0_cpu1_wfi_en = %u\n", pwrctrl->mp0_cpu1_wfi_en);
+	p += sprintf(p, "mp0_cpu2_wfi_en = %u\n", pwrctrl->mp0_cpu2_wfi_en);
+	p += sprintf(p, "mp0_cpu3_wfi_en = %u\n", pwrctrl->mp0_cpu3_wfi_en);
 
-	p += sprintf(p, "md1_req_mask = %u\n", pwrctrl->md1_req_mask);
-	p += sprintf(p, "md2_req_mask = %u\n", pwrctrl->md2_req_mask);
-	p += sprintf(p, "md_apsrc_sel = %u\n", pwrctrl->md_apsrc_sel);
-	p += sprintf(p, "md2_apsrc_sel = %u\n", pwrctrl->md2_apsrc_sel);
-	p += sprintf(p, "gce_req_mask = %u\n", pwrctrl->gce_req_mask);
-	p += sprintf(p, "ccif0_to_ap_mask = %u\n", pwrctrl->ccif0_to_ap_mask);
-	p += sprintf(p, "ccif0_to_md_mask = %u\n", pwrctrl->ccif0_to_md_mask);
-	p += sprintf(p, "ccif1_to_ap_mask = %u\n", pwrctrl->ccif1_to_ap_mask);
-	p += sprintf(p, "ccif1_to_md_mask = %u\n", pwrctrl->ccif1_to_md_mask);
-	p += sprintf(p, "lte_mask = %u\n", pwrctrl->lte_mask);
-	p += sprintf(p, "ccifmd_md1_event_mask = %u\n", pwrctrl->ccifmd_md1_event_mask);
-	p += sprintf(p, "ccifmd_md2_event_mask = %u\n", pwrctrl->ccifmd_md2_event_mask);
+	p += sprintf(p, "md1_req_mask_b = %u\n", pwrctrl->md1_req_mask_b);
+	p += sprintf(p, "md2_req_mask_b = %u\n", pwrctrl->md2_req_mask_b);
+	p += sprintf(p, "md_apsrc0_sel = %u\n", pwrctrl->md_apsrc0_sel);
+	p += sprintf(p, "md_apsrc1_sel = %u\n", pwrctrl->md_apsrc1_sel);
+	p += sprintf(p, "conn_apsrc_sel = %u\n", pwrctrl->conn_apsrc_sel);
+	p += sprintf(p, "md_ddr_dbc_en = %u\n", pwrctrl->md_ddr_dbc_en);
+	p += sprintf(p, "ccif0_to_ap_mask_b = %u\n", pwrctrl->ccif0_to_ap_mask_b);
+	p += sprintf(p, "ccif0_to_md_mask_b = %u\n", pwrctrl->ccif0_to_md_mask_b);
+	p += sprintf(p, "ccif1_to_ap_mask_b = %u\n", pwrctrl->ccif1_to_ap_mask_b);
+	p += sprintf(p, "ccif1_to_md_mask_b = %u\n", pwrctrl->ccif1_to_md_mask_b);
+	p += sprintf(p, "lte_mask_b = %u\n", pwrctrl->lte_mask_b);
+	p += sprintf(p, "ccifmd_md1_event_mask_b = %u\n", pwrctrl->ccifmd_md1_event_mask_b);
+	p += sprintf(p, "ccifmd_md2_event_mask_b = %u\n", pwrctrl->ccifmd_md2_event_mask_b);
 
-	p += sprintf(p, "conn_mask = %u\n", pwrctrl->conn_mask);
+	p += sprintf(p, "conn_mask_b = %u\n", pwrctrl->conn_mask_b);
 
-	p += sprintf(p, "disp_req_mask = %u\n", pwrctrl->disp_req_mask);
-	p += sprintf(p, "mfg_req_mask = %u\n", pwrctrl->mfg_req_mask);
-	p += sprintf(p, "dsi0_ddr_en_mask = %u\n", pwrctrl->dsi0_ddr_en_mask);
-	p += sprintf(p, "dsi1_ddr_en_mask = %u\n", pwrctrl->dsi1_ddr_en_mask);
-	p += sprintf(p, "dpi_ddr_en_mask = %u\n", pwrctrl->dpi_ddr_en_mask);
-	p += sprintf(p, "isp0_ddr_en_mask = %u\n", pwrctrl->isp0_ddr_en_mask);
-	p += sprintf(p, "isp1_ddr_en_mask = %u\n", pwrctrl->isp1_ddr_en_mask);
+	p += sprintf(p, "dsi0_ddr_en_mask_b = %u\n", pwrctrl->dsi0_ddr_en_mask_b);
+	p += sprintf(p, "dsi1_ddr_en_mask_b = %u\n", pwrctrl->dsi1_ddr_en_mask_b);
+	p += sprintf(p, "dpi_ddr_en_mask_b = %u\n", pwrctrl->dpi_ddr_en_mask_b);
+	p += sprintf(p, "isp0_ddr_en_mask_b = %u\n", pwrctrl->isp0_ddr_en_mask_b);
+	p += sprintf(p, "isp1_ddr_en_mask_b = %u\n", pwrctrl->isp1_ddr_en_mask_b);
 
-	p += sprintf(p, "md32_req_mask = %u\n", pwrctrl->md32_req_mask);
+	p += sprintf(p, "scp_req_mask_b = %u\n", pwrctrl->scp_req_mask_b);
 	p += sprintf(p, "syspwreq_mask = %u\n", pwrctrl->syspwreq_mask);
 	p += sprintf(p, "srclkenai_mask = %u\n", pwrctrl->srclkenai_mask);
 
 	p += sprintf(p, "param1 = 0x%x\n", pwrctrl->param1);
 	p += sprintf(p, "param2 = 0x%x\n", pwrctrl->param2);
 	p += sprintf(p, "param3 = 0x%x\n", pwrctrl->param3);
+
+	p += sprintf(p, "dvfs_halt_mask_b = 0x%x\n", pwrctrl->dvfs_halt_mask_b);
+	p += sprintf(p, "sdio_on_dvfs_req_mask_b = %u\n", pwrctrl->sdio_on_dvfs_req_mask_b);
+
+	p += sprintf(p, "cpu_md_dvfs_erq_merge_mask_b = %u\n",
+		     pwrctrl->cpu_md_dvfs_erq_merge_mask_b);
+	p += sprintf(p, "md1_ddr_en_dvfs_halt_mask_b = %u\n", pwrctrl->md1_ddr_en_dvfs_halt_mask_b);
+	p += sprintf(p, "md2_ddr_en_dvfs_halt_mask_b = %u\n", pwrctrl->md2_ddr_en_dvfs_halt_mask_b);
+
+
+	p += sprintf(p, "md_srcclkena_0_dvfs_req_mask_b = %u\n",
+		     pwrctrl->md_srcclkena_0_dvfs_req_mask_b);
+	p += sprintf(p, "md_srcclkena_1_dvfs_req_mask_b = %u\n",
+		     pwrctrl->md_srcclkena_1_dvfs_req_mask_b);
+	p += sprintf(p, "conn_srcclkena_dvfs_req_mask_b = %u\n",
+		     pwrctrl->conn_srcclkena_dvfs_req_mask_b);
+
+	p += sprintf(p, "vsync_dvfs_halt_mask_b = 0x%x\n", pwrctrl->vsync_dvfs_halt_mask_b);
+	p += sprintf(p, "emi_boost_dvfs_req_mask_b = %u\n", pwrctrl->emi_boost_dvfs_req_mask_b);
+	p += sprintf(p, "cpu_md_emi_dvfs_req_prot_dis = %u\n",
+		     pwrctrl->cpu_md_emi_dvfs_req_prot_dis);
+	p += sprintf(p, "emi_bw_dvfs_req_mask = %u\n", pwrctrl->emi_bw_dvfs_req_mask);
+
+	p += sprintf(p, "spm_dvfs_req = %u\n", pwrctrl->spm_dvfs_req);
+	p += sprintf(p, "spm_dvfs_force_down = %u\n", pwrctrl->spm_dvfs_force_down);
+	p += sprintf(p, "cpu_md_dvfs_sop_force_on = %u\n", pwrctrl->cpu_md_dvfs_sop_force_on);
 
 	BUG_ON(p - buf >= PAGE_SIZE);
 	return p - buf;
@@ -172,19 +212,45 @@ static ssize_t suspend_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	return show_pwr_ctrl(__spm_suspend.pwrctrl, buf);
 }
 
+#ifndef CONFIG_MTK_FPGA
 static ssize_t dpidle_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
+#if 0
 	return show_pwr_ctrl(__spm_dpidle.pwrctrl, buf);
+#else
+	return 0;
+#endif
+}
+
+static ssize_t sodi3_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+#if 0
+	return show_pwr_ctrl(__spm_sodi3.pwrctrl, buf);
+#else
+	return 0;
+#endif
 }
 
 static ssize_t sodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
+#if 0
 	return show_pwr_ctrl(__spm_sodi.pwrctrl, buf);
+#else
+	return 0;
+#endif
 }
 
+static ssize_t mcdi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+#if 0
+	return show_pwr_ctrl(__spm_mcdi.pwrctrl, buf);
+#else
+	return 0;
+#endif
+}
+#endif
 static ssize_t talking_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-/* for bring up */
 #if 0
 	return show_pwr_ctrl(__spm_talking.pwrctrl, buf);
 #else
@@ -192,19 +258,13 @@ static ssize_t talking_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 #endif
 }
 
-static ssize_t ddrdfs_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-/* for bring up */
 #if 0
-	return show_pwr_ctrl(__spm_ddrdfs.pwrctrl, buf);
+	return show_pwr_ctrl(__spm_vcore_dvfs.pwrctrl, buf);
 #else
 	return 0;
 #endif
-}
-
-static ssize_t vcorefs_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	return show_pwr_ctrl(__spm_vcore_dvfs.pwrctrl, buf);
 }
 
 
@@ -231,6 +291,8 @@ static ssize_t store_pwr_ctrl(struct pwr_ctrl *pwrctrl, const char *buf, size_t 
 		pwrctrl->timer_val = val;
 	else if (!strcmp(cmd, "timer_val_cust"))
 		pwrctrl->timer_val_cust = val;
+	else if (!strcmp(cmd, "timer_val_ramp_en"))
+		pwrctrl->timer_val_ramp_en = val;
 	else if (!strcmp(cmd, "wake_src"))
 		pwrctrl->wake_src = val;
 	else if (!strcmp(cmd, "wake_src_cust"))
@@ -243,81 +305,173 @@ static ssize_t store_pwr_ctrl(struct pwr_ctrl *pwrctrl, const char *buf, size_t 
 		pwrctrl->r7_ctrl_en = val;
 	else if (!strcmp(cmd, "infra_dcm_lock"))
 		pwrctrl->infra_dcm_lock = val;
-	else if (!strcmp(cmd, "pcm_apsrc_req"))
-		pwrctrl->pcm_apsrc_req = val;
-	else if (!strcmp(cmd, "pcm_f26m_req"))
-		pwrctrl->pcm_f26m_req = val;
+
+	else if (!strcmp(cmd, "spm_apsrc_req"))
+		pwrctrl->spm_apsrc_req = val;
+	else if (!strcmp(cmd, "spm_f26m_req"))
+		pwrctrl->spm_f26m_req = val;
+	else if (!strcmp(cmd, "spm_lte_req"))
+		pwrctrl->spm_lte_req = val;
+	else if (!strcmp(cmd, "spm_infra_req"))
+		pwrctrl->spm_infra_req = val;
+	else if (!strcmp(cmd, "spm_vrf18_req"))
+		pwrctrl->spm_vrf18_req = val;
+	else if (!strcmp(cmd, "spm_dvfs_req"))
+		pwrctrl->spm_dvfs_req = val;
+	else if (!strcmp(cmd, "spm_dvfs_force_down"))
+		pwrctrl->spm_dvfs_force_down = val;
+	else if (!strcmp(cmd, "spm_ddren_req"))
+		pwrctrl->spm_ddren_req = val;
+	else if (!strcmp(cmd, "spm_flag_keep_csyspwrupack_high"))
+		pwrctrl->spm_flag_keep_csyspwrupack_high = val;
+	else if (!strcmp(cmd, "spm_flag_dis_vproc_vsram_dvs"))
+		pwrctrl->spm_flag_dis_vproc_vsram_dvs = val;
+	else if (!strcmp(cmd, "spm_flag_run_common_scenario"))
+		pwrctrl->spm_flag_run_common_scenario = val;
+	else if (!strcmp(cmd, "cpu_md_dvfs_sop_force_on"))
+		pwrctrl->cpu_md_dvfs_sop_force_on = val;
 
 	else if (!strcmp(cmd, "mcusys_idle_mask"))
 		pwrctrl->mcusys_idle_mask = val;
-	else if (!strcmp(cmd, "ca15top_idle_mask"))
-		pwrctrl->ca15top_idle_mask = val;
-	else if (!strcmp(cmd, "ca7top_idle_mask"))
-		pwrctrl->ca7top_idle_mask = val;
+	else if (!strcmp(cmd, "mp1top_idle_mask"))
+		pwrctrl->mp1top_idle_mask = val;
+	else if (!strcmp(cmd, "mp0top_idle_mask"))
+		pwrctrl->mp0top_idle_mask = val;
 	else if (!strcmp(cmd, "wfi_op"))
 		pwrctrl->wfi_op = val;
-	else if (!strcmp(cmd, "ca15_wfi0_en"))
-		pwrctrl->ca15_wfi0_en = val;
-	else if (!strcmp(cmd, "ca15_wfi1_en"))
-		pwrctrl->ca15_wfi1_en = val;
-	else if (!strcmp(cmd, "ca15_wfi2_en"))
-		pwrctrl->ca15_wfi2_en = val;
-	else if (!strcmp(cmd, "ca15_wfi3_en"))
-		pwrctrl->ca15_wfi3_en = val;
-	else if (!strcmp(cmd, "ca7_wfi0_en"))
-		pwrctrl->ca7_wfi0_en = val;
-	else if (!strcmp(cmd, "ca7_wfi1_en"))
-		pwrctrl->ca7_wfi1_en = val;
-	else if (!strcmp(cmd, "ca7_wfi2_en"))
-		pwrctrl->ca7_wfi2_en = val;
-	else if (!strcmp(cmd, "ca7_wfi3_en"))
-		pwrctrl->ca7_wfi3_en = val;
+	else if (!strcmp(cmd, "mp1_cpu0_wfi_en"))
+		pwrctrl->mp1_cpu0_wfi_en = val;
+	else if (!strcmp(cmd, "mp1_cpu1_wfi_en"))
+		pwrctrl->mp1_cpu1_wfi_en = val;
+	else if (!strcmp(cmd, "mp1_cpu2_wfi_en"))
+		pwrctrl->mp1_cpu2_wfi_en = val;
+	else if (!strcmp(cmd, "mp1_cpu3_wfi_en"))
+		pwrctrl->mp1_cpu3_wfi_en = val;
+	else if (!strcmp(cmd, "mp0_cpu0_wfi_en"))
+		pwrctrl->mp0_cpu0_wfi_en = val;
+	else if (!strcmp(cmd, "mp0_cpu1_wfi_en"))
+		pwrctrl->mp0_cpu1_wfi_en = val;
+	else if (!strcmp(cmd, "mp0_cpu2_wfi_en"))
+		pwrctrl->mp0_cpu2_wfi_en = val;
+	else if (!strcmp(cmd, "mp0_cpu3_wfi_en"))
+		pwrctrl->mp0_cpu3_wfi_en = val;
 
-	else if (!strcmp(cmd, "md1_req_mask"))
-		pwrctrl->md1_req_mask = val;
-	else if (!strcmp(cmd, "md2_req_mask"))
-		pwrctrl->md2_req_mask = val;
-	else if (!strcmp(cmd, "md_apsrc_sel"))
-		pwrctrl->md_apsrc_sel = val;
-	else if (!strcmp(cmd, "md2_apsrc_sel"))
-		pwrctrl->md2_apsrc_sel = val;
-	else if (!strcmp(cmd, "gce_req_mask"))
-		pwrctrl->gce_req_mask = val;
-	else if (!strcmp(cmd, "ccif0_to_ap_mask"))
-		pwrctrl->ccif0_to_ap_mask = val;
-	else if (!strcmp(cmd, "ccif0_to_md_mask"))
-		pwrctrl->ccif0_to_md_mask = val;
-	else if (!strcmp(cmd, "ccif1_to_ap_mask"))
-		pwrctrl->ccif1_to_ap_mask = val;
-	else if (!strcmp(cmd, "ccif1_to_md_mask"))
-		pwrctrl->ccif1_to_md_mask = val;
-	else if (!strcmp(cmd, "lte_mask"))
-		pwrctrl->lte_mask = val;
-	else if (!strcmp(cmd, "ccifmd_md1_event_mask"))
-		pwrctrl->ccifmd_md1_event_mask = val;
-	else if (!strcmp(cmd, "ccifmd_md2_event_mask"))
-		pwrctrl->ccifmd_md2_event_mask = val;
+	else if (!strcmp(cmd, "md1_req_mask_b"))
+		pwrctrl->md1_req_mask_b = val;
+	else if (!strcmp(cmd, "md2_req_mask_b"))
+		pwrctrl->md2_req_mask_b = val;
+	else if (!strcmp(cmd, "md_apsrc0_sel"))
+		pwrctrl->md_apsrc0_sel = val;
+	else if (!strcmp(cmd, "md_apsrc1_sel"))
+		pwrctrl->md_apsrc1_sel = val;
+	else if (!strcmp(cmd, "conn_apsrc_sel"))
+		pwrctrl->conn_apsrc_sel = val;
+	else if (!strcmp(cmd, "md_ddr_dbc_en"))
+		pwrctrl->md_ddr_dbc_en = val;
+	else if (!strcmp(cmd, "ccif0_to_ap_mask_b"))
+		pwrctrl->ccif0_to_ap_mask_b = val;
+	else if (!strcmp(cmd, "ccif0_to_md_mask_b"))
+		pwrctrl->ccif0_to_md_mask_b = val;
+	else if (!strcmp(cmd, "ccif1_to_ap_mask_b"))
+		pwrctrl->ccif1_to_ap_mask_b = val;
+	else if (!strcmp(cmd, "ccif1_to_md_mask_b"))
+		pwrctrl->ccif1_to_md_mask_b = val;
+	else if (!strcmp(cmd, "lte_mask_b"))
+		pwrctrl->lte_mask_b = val;
+	else if (!strcmp(cmd, "ccifmd_md1_event_mask_b"))
+		pwrctrl->ccifmd_md1_event_mask_b = val;
+	else if (!strcmp(cmd, "ccifmd_md2_event_mask_b"))
+		pwrctrl->ccifmd_md2_event_mask_b = val;
+	else if (!strcmp(cmd, "vsync_mask_b"))
+		pwrctrl->vsync_mask_b = val;
+	else if (!strcmp(cmd, "md_srcclkena_0_infra_mask_b"))
+		pwrctrl->md_srcclkena_0_infra_mask_b = val;
+	else if (!strcmp(cmd, "md_srcclkena_1_infra_mask_b"))
+		pwrctrl->md_srcclkena_1_infra_mask_b = val;
+	else if (!strcmp(cmd, "conn_srcclkena_infra_mask_b"))
+		pwrctrl->conn_srcclkena_infra_mask_b = val;
+	else if (!strcmp(cmd, "md32_srcclkena_infra_mask_b"))
+		pwrctrl->md32_srcclkena_infra_mask_b = val;
+	else if (!strcmp(cmd, "srcclkeni_infra_mask_b"))
+		pwrctrl->srcclkeni_infra_mask_b = val;
+	else if (!strcmp(cmd, "md_apsrcreq_0_infra_mask_b"))
+		pwrctrl->md_apsrcreq_0_infra_mask_b = val;
+	else if (!strcmp(cmd, "md_apsrcreq_1_infra_mask_b"))
+		pwrctrl->md_apsrcreq_1_infra_mask_b = val;
+	else if (!strcmp(cmd, "conn_apsrcreq_infra_mask_b"))
+		pwrctrl->conn_apsrcreq_infra_mask_b = val;
+	else if (!strcmp(cmd, "md32_apsrcreq_infra_mask_b"))
+		pwrctrl->md32_apsrcreq_infra_mask_b = val;
+	else if (!strcmp(cmd, "md_ddr_en_0_mask_b"))
+		pwrctrl->md_ddr_en_0_mask_b = val;
+	else if (!strcmp(cmd, "md_ddr_en_1_mask_b"))
+		pwrctrl->md_ddr_en_1_mask_b = val;
+	else if (!strcmp(cmd, "md_vrf18_req_0_mask_b"))
+		pwrctrl->md_vrf18_req_0_mask_b = val;
+	else if (!strcmp(cmd, "md_vrf18_req_1_mask_b"))
+		pwrctrl->md_vrf18_req_1_mask_b = val;
+	else if (!strcmp(cmd, "emi_bw_dvfs_req_mask"))
+		pwrctrl->emi_bw_dvfs_req_mask = val;
+	else if (!strcmp(cmd, "md_srcclkena_0_dvfs_req_mask_b"))
+		pwrctrl->md_srcclkena_0_dvfs_req_mask_b = val;
+	else if (!strcmp(cmd, "md_srcclkena_1_dvfs_req_mask_b"))
+		pwrctrl->md_srcclkena_1_dvfs_req_mask_b = val;
+	else if (!strcmp(cmd, "conn_srcclkena_dvfs_req_mask_b"))
+		pwrctrl->conn_srcclkena_dvfs_req_mask_b = val;
 
-	else if (!strcmp(cmd, "conn_mask"))
-		pwrctrl->conn_mask = val;
+	else if (!strcmp(cmd, "dvfs_halt_mask_b"))
+		pwrctrl->dvfs_halt_mask_b = val;
+	else if (!strcmp(cmd, "vdec_req_mask_b"))
+		pwrctrl->vdec_req_mask_b = val;
+	else if (!strcmp(cmd, "gce_req_mask_b"))
+		pwrctrl->gce_req_mask_b = val;
+	else if (!strcmp(cmd, "cpu_md_dvfs_erq_merge_mask_b"))
+		pwrctrl->cpu_md_dvfs_erq_merge_mask_b = val;
+	else if (!strcmp(cmd, "md1_ddr_en_dvfs_halt_mask_b"))
+		pwrctrl->md1_ddr_en_dvfs_halt_mask_b = val;
+	else if (!strcmp(cmd, "md2_ddr_en_dvfs_halt_mask_b"))
+		pwrctrl->md2_ddr_en_dvfs_halt_mask_b = val;
+	else if (!strcmp(cmd, "vsync_dvfs_halt_mask_b"))
+		pwrctrl->vsync_dvfs_halt_mask_b = val;
+	else if (!strcmp(cmd, "conn_ddr_en_mask_b"))
+		pwrctrl->conn_ddr_en_mask_b = val;
+	else if (!strcmp(cmd, "disp_req_mask_b"))
+		pwrctrl->disp_req_mask_b = val;
+	else if (!strcmp(cmd, "disp1_req_mask_b"))
+		pwrctrl->disp1_req_mask_b = val;
+	else if (!strcmp(cmd, "mfg_req_mask_b"))
+		pwrctrl->mfg_req_mask_b = val;
+	else if (!strcmp(cmd, "c2k_ps_rccif_wake_mask_b"))
+		pwrctrl->c2k_ps_rccif_wake_mask_b = val;
+	else if (!strcmp(cmd, "c2k_l1_rccif_wake_mask_b"))
+		pwrctrl->c2k_l1_rccif_wake_mask_b = val;
+	else if (!strcmp(cmd, "ps_c2k_rccif_wake_mask_b"))
+		pwrctrl->ps_c2k_rccif_wake_mask_b = val;
+	else if (!strcmp(cmd, "l1_c2k_rccif_wake_mask_b"))
+		pwrctrl->l1_c2k_rccif_wake_mask_b = val;
+	else if (!strcmp(cmd, "sdio_on_dvfs_req_mask_b"))
+		pwrctrl->sdio_on_dvfs_req_mask_b = val;
+	else if (!strcmp(cmd, "emi_boost_dvfs_req_mask_b"))
+		pwrctrl->emi_boost_dvfs_req_mask_b = val;
+	else if (!strcmp(cmd, "cpu_md_emi_dvfs_req_prot_dis"))
+		pwrctrl->cpu_md_emi_dvfs_req_prot_dis = val;
 
-	else if (!strcmp(cmd, "disp_req_mask"))
-		pwrctrl->disp_req_mask = val;
-	else if (!strcmp(cmd, "mfg_req_mask"))
-		pwrctrl->mfg_req_mask = val;
-	else if (!strcmp(cmd, "dsi0_ddr_en_mask"))
-		pwrctrl->dsi0_ddr_en_mask = val;
-	else if (!strcmp(cmd, "dsi1_ddr_en_mask"))
-		pwrctrl->dsi1_ddr_en_mask = val;
-	else if (!strcmp(cmd, "dpi_ddr_en_mask"))
-		pwrctrl->dpi_ddr_en_mask = val;
-	else if (!strcmp(cmd, "isp0_ddr_en_mask"))
-		pwrctrl->isp0_ddr_en_mask = val;
-	else if (!strcmp(cmd, "isp1_ddr_en_mask"))
-		pwrctrl->isp1_ddr_en_mask = val;
+	else if (!strcmp(cmd, "conn_mask_b"))
+		pwrctrl->conn_mask_b = val;
 
-	else if (!strcmp(cmd, "md32_req_mask"))
-		pwrctrl->md32_req_mask = val;
+	else if (!strcmp(cmd, "dsi0_ddr_en_mask_b"))
+		pwrctrl->dsi0_ddr_en_mask_b = val;
+	else if (!strcmp(cmd, "dsi1_ddr_en_mask_b"))
+		pwrctrl->dsi1_ddr_en_mask_b = val;
+	else if (!strcmp(cmd, "dpi_ddr_en_mask_b"))
+		pwrctrl->dpi_ddr_en_mask_b = val;
+	else if (!strcmp(cmd, "isp0_ddr_en_mask_b"))
+		pwrctrl->isp0_ddr_en_mask_b = val;
+	else if (!strcmp(cmd, "isp1_ddr_en_mask_b"))
+		pwrctrl->isp1_ddr_en_mask_b = val;
+
+	else if (!strcmp(cmd, "scp_req_mask_b"))
+		pwrctrl->scp_req_mask_b = val;
 	else if (!strcmp(cmd, "syspwreq_mask"))
 		pwrctrl->syspwreq_mask = val;
 	else if (!strcmp(cmd, "srclkenai_mask"))
@@ -341,22 +495,51 @@ static ssize_t suspend_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 	return store_pwr_ctrl(__spm_suspend.pwrctrl, buf, count);
 }
 
+#ifndef CONFIG_MTK_FPGA
 static ssize_t dpidle_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				 const char *buf, size_t count)
 {
+#if 0
 	return store_pwr_ctrl(__spm_dpidle.pwrctrl, buf, count);
+#else
+	return 0;
+#endif
+}
+
+static ssize_t sodi3_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
+				const char *buf, size_t count)
+{
+#if 0
+	return store_pwr_ctrl(__spm_sodi3.pwrctrl, buf, count);
+#else
+	return 0;
+#endif
 }
 
 static ssize_t sodi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 			       const char *buf, size_t count)
 {
+#if 0
 	return store_pwr_ctrl(__spm_sodi.pwrctrl, buf, count);
+#else
+	return 0;
+#endif
 }
+
+static ssize_t mcdi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
+			       const char *buf, size_t count)
+{
+#if 0
+	return store_pwr_ctrl(__spm_mcdi.pwrctrl, buf, count);
+#else
+	return 0;
+#endif
+}
+#endif
 
 static ssize_t talking_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				  const char *buf, size_t count)
 {
-/* for bring up */
 #if 0
 	return store_pwr_ctrl(__spm_talking.pwrctrl, buf, count);
 #else
@@ -364,21 +547,14 @@ static ssize_t talking_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 #endif
 }
 
-static ssize_t ddrdfs_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
-				 const char *buf, size_t count)
+static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
+				     const char *buf, size_t count)
 {
-/* for bring up */
 #if 0
-	return store_pwr_ctrl(__spm_ddrdfs.pwrctrl, buf, count);
+	return store_pwr_ctrl(__spm_vcore_dvfs.pwrctrl, buf, count);
 #else
 	return 0;
 #endif
-}
-
-static ssize_t vcorefs_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
-				  const char *buf, size_t count)
-{
-	return store_pwr_ctrl(__spm_vcore_dvfs.pwrctrl, buf, count);
 }
 
 /*
@@ -388,10 +564,10 @@ static ssize_t ddren_debug_show(struct kobject *kobj, struct kobj_attribute *att
 {
 	char *p = buf;
 
-	p += sprintf(p, "PCM_REG13_DATA = 0x%x\n", spm_read(SPM_PCM_REG13_DATA));
-	p += sprintf(p, "AP_STANBY_CON = 0x%x\n", spm_read(SPM_AP_STANBY_CON));
-	p += sprintf(p, "PCM_DEBUG_CON = 0x%x\n", spm_read(SPM_PCM_DEBUG_CON));
-	p += sprintf(p, "PCM_PASR_DPD_2 = 0x%x\n", spm_read(SPM_PCM_PASR_DPD_2));
+	p += sprintf(p, "PCM_REG13_DATA = 0x%x\n", spm_read(PCM_REG13_DATA));
+	p += sprintf(p, "AP_STANBY_CON = 0x%x\n", spm_read(SPM_AP_STANDBY_CON));
+	p += sprintf(p, "PCM_DEBUG_CON = 0x%x\n", spm_read(PCM_DEBUG_CON));
+	p += sprintf(p, "PCM_PASR_DPD_2 = 0x%x\n", spm_read(SPM_PASR_DPD_2));
 
 	BUG_ON(p - buf >= PAGE_SIZE);
 	return p - buf;
@@ -411,8 +587,8 @@ static ssize_t ddren_debug_store(struct kobject *kobj, struct kobj_attribute *at
 
 	if (!strcmp(cmd, "ddr_en_sel")) {
 		spin_lock_irqsave(&__spm_lock, flags);
-		con = spm_read(SPM_AP_STANBY_CON) & ~(1U << 22);
-		spm_write(SPM_AP_STANBY_CON, con | (!!val << 22));
+		con = spm_read(SPM_AP_STANDBY_CON) & ~MD_DDR_EN_DBC_EN_LSB;
+		spm_write(SPM_AP_STANDBY_CON, con | (!!val << 18));
 		spin_unlock_irqrestore(&__spm_lock, flags);
 	} else if (!strcmp(cmd, "md_ddr_en_out")) {
 		spin_lock_irqsave(&__spm_lock, flags);
@@ -420,7 +596,7 @@ static ssize_t ddren_debug_store(struct kobject *kobj, struct kobj_attribute *at
 		spin_unlock_irqrestore(&__spm_lock, flags);
 	} else if (!strcmp(cmd, "mm_ddr_en_mask")) {
 		spin_lock_irqsave(&__spm_lock, flags);
-		spm_write(SPM_PCM_PASR_DPD_2, ~val & 0x1f);
+		spm_write(SPM_PASR_DPD_2, ~val & 0x1f);
 		spin_unlock_irqrestore(&__spm_lock, flags);
 	} else {
 		return -EINVAL;
@@ -433,19 +609,22 @@ static ssize_t ddren_debug_store(struct kobject *kobj, struct kobj_attribute *at
 /*
  * golden_dump_xxx Function
  */
+#if 0
 static ssize_t golden_dump_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	char *p = buf;
 
-	spm_golden_setting_cmp(1);
+	/* spm_golden_setting_cmp(1); //TODO: wait DRAMC golden setting check enable */
 
 	BUG_ON(p - buf >= PAGE_SIZE);
 	return p - buf;
 }
+#endif
 
 /*
  * auto_suspend_resume_xxx Function
  */
+#if 0				/* FIXME */
 static ssize_t auto_suspend_resume_show(struct kobject *kobj, struct kobj_attribute *attr,
 					char *buf)
 {
@@ -458,13 +637,14 @@ static ssize_t auto_suspend_resume_show(struct kobject *kobj, struct kobj_attrib
 		p += sprintf(p, "[%d]wakeup:0x%x,timer:0x%x,r13:0x%x,event=0x%x,flag=0x%x\n",
 			     __spm_suspend.wakestatus[i].log_index,
 			     __spm_suspend.wakestatus[i].r12,
+			     __spm_suspend.wakestatus[i].r12_ext,
 			     __spm_suspend.wakestatus[i].timer_out,
 			     __spm_suspend.wakestatus[i].r13,
 			     __spm_suspend.wakestatus[i].event_reg,
 			     __spm_suspend.wakestatus[i].debug_flag);
 		if (0x90100000 != __spm_suspend.wakestatus[i].event_reg)
 			p += sprintf(p, "SLEEP_ABORT\n");
-		else if (0x1f != (__spm_suspend.wakestatus[i].debug_flag & 0x1F))
+		else if (0xf != (__spm_suspend.wakestatus[i].debug_flag & 0xF))
 			p += sprintf(p, "NOT_DEEP_SLEEP\n");
 		else
 			p += sprintf(p, "SLEEP_PASS\n");
@@ -475,21 +655,6 @@ static ssize_t auto_suspend_resume_show(struct kobject *kobj, struct kobj_attrib
 	BUG_ON(p - buf >= PAGE_SIZE);
 	return p - buf;
 }
-
-/* FIXME: early porting */
-#if 1
-void __attribute__ ((weak)) slp_create_auto_suspend_resume_thread(void)
-{
-}
-
-void __attribute__ ((weak)) slp_start_auto_suspend_resume_timer(u32 sec)
-{
-}
-
-void __attribute__ ((weak)) slp_set_auto_suspend_wakelock(bool lock)
-{
-}
-#endif
 
 static ssize_t auto_suspend_resume_store(struct kobject *kobj, struct kobj_attribute *attr,
 					 const char *buf, size_t count)
@@ -507,51 +672,59 @@ static ssize_t auto_suspend_resume_store(struct kobject *kobj, struct kobj_attri
 
 	return count;
 }
+#endif				/* 0 */
 
 /*
  * Init Function
  */
-DEFINE_ATTR_RO(suspend_pcm);
-DEFINE_ATTR_RO(dpidle_pcm);
-DEFINE_ATTR_RO(sodi_pcm);
-DEFINE_ATTR_RO(talking_pcm);
-DEFINE_ATTR_RO(ddrdfs_pcm);
-DEFINE_ATTR_RO(vcorefs_pcm);
+/* DEFINE_ATTR_RO(suspend_pcm); */
+/* DEFINE_ATTR_RO(dpidle_pcm); */
+/* DEFINE_ATTR_RO(sodi3_pcm); */
+/* DEFINE_ATTR_RO(sodi_pcm); */
+/* DEFINE_ATTR_RO(mcdi_pcm); */
+/* DEFINE_ATTR_RO(talking_pcm); */
+/* DEFINE_ATTR_RO(ddrdfs_pcm); */
 
 DEFINE_ATTR_RW(suspend_ctrl);
+#ifndef CONFIG_MTK_FPGA
 DEFINE_ATTR_RW(dpidle_ctrl);
+DEFINE_ATTR_RW(sodi3_ctrl);
 DEFINE_ATTR_RW(sodi_ctrl);
+DEFINE_ATTR_RW(mcdi_ctrl);
+#endif
 DEFINE_ATTR_RW(talking_ctrl);
-DEFINE_ATTR_RW(ddrdfs_ctrl);
-DEFINE_ATTR_RW(vcorefs_ctrl);
+DEFINE_ATTR_RW(vcore_dvfs_ctrl);
 
 DEFINE_ATTR_RW(ddren_debug);
-DEFINE_ATTR_RO(golden_dump);
+/* DEFINE_ATTR_RO(golden_dump); */
 
-DEFINE_ATTR_RW(auto_suspend_resume);
+/* DEFINE_ATTR_RW(auto_suspend_resume); */
 
 static struct attribute *spm_attrs[] = {
 	/* for spm_lp_scen.pcmdesc */
-	__ATTR_OF(suspend_pcm),
-	__ATTR_OF(dpidle_pcm),
-	__ATTR_OF(sodi_pcm),
-	__ATTR_OF(talking_pcm),
-	__ATTR_OF(ddrdfs_pcm),
-	__ATTR_OF(vcorefs_pcm),
+	/* __ATTR_OF(suspend_pcm), */
+	/* __ATTR_OF(dpidle_pcm), */
+	/* __ATTR_OF(sodi3_pcm), */
+	/* __ATTR_OF(sodi_pcm), */
+	/* __ATTR_OF(mcdi_pcm), */
+	/* __ATTR_OF(talking_pcm), */
+	/* __ATTR_OF(vcore_dvfs_pcm), */
 
 	/* for spm_lp_scen.pwrctrl */
 	__ATTR_OF(suspend_ctrl),
+#ifndef CONFIG_MTK_FPGA
 	__ATTR_OF(dpidle_ctrl),
+	__ATTR_OF(sodi3_ctrl),
 	__ATTR_OF(sodi_ctrl),
+	__ATTR_OF(mcdi_ctrl),
+#endif
 	__ATTR_OF(talking_ctrl),
-	__ATTR_OF(ddrdfs_ctrl),
-	__ATTR_OF(vcorefs_ctrl),
+	__ATTR_OF(vcore_dvfs_ctrl),
 
 	/* other debug interface */
 	__ATTR_OF(ddren_debug),
-	__ATTR_OF(golden_dump),
 
-	__ATTR_OF(auto_suspend_resume),
+	/* __ATTR_OF(auto_suspend_resume), */
 
 	/* must */
 	NULL,

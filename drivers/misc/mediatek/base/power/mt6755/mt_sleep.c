@@ -17,11 +17,9 @@
 #include "mt_spm_idle.h"
 #include "mt_spm_mtcmos.h"
 #include "mt_clkmgr.h"
-/*
-#if defined(CONFIG_ARCH_MT6735M)
+#ifdef CONFIG_MT_SND_SOC_6755
 #include <mt_soc_afe_control.h>
 #endif
-*/
 /**************************************
  * only for internal debug
  **************************************/
@@ -30,15 +28,7 @@
 #define SLP_REPLACE_DEF_WAKESRC     1
 #define SLP_SUSPEND_LOG_EN          1
 #else
-/*
-#if defined(CONFIG_ARCH_MT6735M)
-#define SLP_SLEEP_DPIDLE_EN         1
-#else
-*/
 #define SLP_SLEEP_DPIDLE_EN         0
-/*
-#endif
-*/
 #define SLP_REPLACE_DEF_WAKESRC     0
 #define SLP_SUSPEND_LOG_EN          1
 #endif
@@ -82,24 +72,13 @@ static bool slp_dump_regs = 1;
 static bool slp_check_mtcmos_pll = 1;
 
 static u32 slp_spm_flags = {
-
-#if defined(CONFIG_ARCH_MT6735)
-		0
-#elif defined(CONFIG_ARCH_MT6735M)
-		0
-#elif defined(CONFIG_ARCH_MT6753)
-#ifdef SPM_LEGACY_SUSPEND
-	SPM_CPU_PDN_DIS |
-	SPM_INFRA_PDN_DIS |
-	SPM_DDRPHY_PDN_DIS |
-	SPM_PASR_DIS |
-	SPM_CPU_DVS_DIS |
-	SPM_DISABLE_ATF_ABORT
+#if 0
+	SPM_FLAG_DIS_CPU_PDN |
+	    SPM_FLAG_DIS_INFRA_PDN |
+	    SPM_FLAG_DIS_DDRPHY_PDN |
+	    SPM_FLAG_DIS_DPD | SPM_FLAG_DIS_BUS_CLOCK_OFF | SPM_FLAG_DIS_VPROC_VSRAM_DVS
 #else
-	0
-#endif
-#else
-/* ERROR */
+	SPM_FLAG_DIS_INFRA_PDN | SPM_FLAG_DIS_DPD
 #endif
 };
 
@@ -116,28 +95,29 @@ u32 slp_spm_data = 0;
 #if 1
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
-		return state == PM_SUSPEND_MEM;
+	return state == PM_SUSPEND_MEM;
 }
 
 static int slp_suspend_ops_begin(suspend_state_t state)
 {
-    /* legacy log */
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-		slp_notice("Chip_pm_begin(%u)(%u)\n", is_cpu_pdn(slp_spm_flags), is_infra_pdn(slp_spm_flags));
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+	/* legacy log */
+	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+	slp_notice("Chip_pm_begin(%u)(%u)\n", is_cpu_pdn(slp_spm_flags),
+		   is_infra_pdn(slp_spm_flags));
+	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
 
-		slp_wake_reason = WR_NONE;
+	slp_wake_reason = WR_NONE;
 
-		return 0;
+	return 0;
 }
 
 static int slp_suspend_ops_prepare(void)
 {
-    /* legacy log */
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-		slp_crit2("Chip_pm_prepare\n");
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-		return 0;
+	/* legacy log */
+	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+	slp_crit2("Chip_pm_prepare\n");
+	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+	return 0;
 }
 
 #ifdef CONFIG_MTKPASR
@@ -149,6 +129,7 @@ static int slp_suspend_ops_prepare_late(void)
 	mtkpasr_phaseone_ops();
 	return 0;
 }
+
 static void slp_suspend_ops_wake(void)
 {
 	slp_notice("[%s]\n", __func__);
@@ -167,7 +148,8 @@ static int enter_pasrdpd(void)
 {
 	int error = 0;
 	u32 sr = 0, dpd = 0;
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+
+	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
 	slp_crit2("[%s]\n", __func__);
 	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
 	/* Setup SPM wakeup event firstly */
@@ -187,12 +169,17 @@ static int enter_pasrdpd(void)
 			slp_crit2("[%s][%d] No configuration on SR\n", __func__, __LINE__);
 		}
 		/* Configure PASR */
-		enter_pasr_dpd_config((sr & 0xFF), (sr >> 0x8));
+		/* enter_pasr_dpd_config((sr & 0xFF), (sr >> 0x8)); */
+		/* if (mrw_error) { */
+		/* pr_debug(KERN_ERR "[%s][%d] PM: Failed to configure MRW PASR [%d]!\n",
+		 *__FUNCTION__,__LINE__,mrw_error); */
+		/* } */
 	}
 	slp_crit2("Bye [%s]\n", __func__);
 
 	return error;
 }
+
 static void leave_pasrdpd(void)
 {
 	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
@@ -200,7 +187,7 @@ static void leave_pasrdpd(void)
 	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
 
 	/* Disable PASR */
-	exit_pasr_dpd_config();
+	/* exit_pasr_dpd_config(); */
 
 	slp_crit2("[%d]\n", __LINE__);
 	/* End PASR/DPD SW operations */
@@ -209,104 +196,120 @@ static void leave_pasrdpd(void)
 }
 #endif
 
+bool __attribute__ ((weak)) ConditionEnterSuspend(void)
+{
+	return true;
+}
 
 static int slp_suspend_ops_enter(suspend_state_t state)
 {
 	int ret = 0;
-/*
-	#if defined(CONFIG_ARCH_MT6735M)
-		int fm_radio_is_playing = 0;
-			if (ConditionEnterSuspend() == true)
-				fm_radio_is_playing = 0;
-		else
-			fm_radio_is_playing = 1;
-	#endif
-*/
-#ifdef CONFIG_MTKPASR
-    /* PASR SW operations */
-		enter_pasrdpd();
-#endif
 
-    /* legacy log */
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-		slp_crit2("Chip_pm_enter\n");
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-
-
-#if 0
-		if (slp_dump_gpio)
-			gpio_dump_regs();
-#endif
-
-#if 0
-		if (slp_dump_regs)
-			slp_dump_pm_regs();
-#endif
-
-		if (slp_check_mtcmos_pll)
-			slp_check_pm_mtcmos_pll();
-
-		if (!spm_cpusys0_can_power_down()) {
-				slp_error("CANNOT SLEEP DUE TO CPU1/2/3 PON\n");
-				ret = -EPERM;
-				goto LEAVE_SLEEP;
-		}
-
-		if (is_infra_pdn(slp_spm_flags) && !is_cpu_pdn(slp_spm_flags)) {
-				slp_error("CANNOT SLEEP DUE TO INFRA PDN BUT CPU PON\n");
-				ret = -EPERM;
-				goto LEAVE_SLEEP;
-		}
-
-/*
-#if defined(CONFIG_ARCH_MT6735M)
 #if SLP_SLEEP_DPIDLE_EN
-		if ((slp_ck26m_on) || (fm_radio_is_playing))
-			slp_wake_reason = spm_go_to_sleep_dpidle(slp_spm_deepidle_flags, slp_spm_data);
-		else
+#ifdef CONFIG_MT_SND_SOC_6755
+	int fm_radio_is_playing = 0;
+
+	if (ConditionEnterSuspend() == true)
+		fm_radio_is_playing = 0;
+	else
+		fm_radio_is_playing = 1;
+#endif				/* CONFIG_MT_SND_SOC_6755 */
 #endif
+#ifdef CONFIG_MTKPASR
+	/* PASR SW operations */
+	enter_pasrdpd();
+#endif
+
+	/* legacy log */
+	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+	slp_crit2("Chip_pm_enter\n");
+	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+
+
+#if 0
+	if (slp_dump_gpio)
+		gpio_dump_regs();
+#endif
+
+#if 0
+	if (slp_dump_regs)
+		slp_dump_pm_regs();
+#endif
+
+#if 0
+	if (slp_check_mtcmos_pll)
+		slp_check_pm_mtcmos_pll();
+
+	if (!spm_cpusys0_can_power_down()) {
+		slp_error("CANNOT SLEEP DUE TO CPU1/2/3 PON\n");
+		ret = -EPERM;
+		goto LEAVE_SLEEP;
+	}
+#endif
+
+	if (is_infra_pdn(slp_spm_flags) && !is_cpu_pdn(slp_spm_flags)) {
+		slp_error("CANNOT SLEEP DUE TO INFRA PDN BUT CPU PON\n");
+		ret = -EPERM;
+		goto LEAVE_SLEEP;
+	}
+
+	/* only for test */
+#if 0
+	slp_pasr_en(1, 0x0);
+	slp_dpd_en(1);
+#endif
+
+#if SLP_SLEEP_DPIDLE_EN
+#ifdef CONFIG_MT_SND_SOC_6755
+	if (slp_ck26m_on | fm_radio_is_playing)
+#else
+	if (slp_ck26m_on)
+#endif
+		slp_wake_reason = spm_go_to_sleep_dpidle(slp_spm_deepidle_flags, slp_spm_data);
+	else
 #endif
 		slp_wake_reason = spm_go_to_sleep(slp_spm_flags, slp_spm_data);
-*/
+
 LEAVE_SLEEP:
 #ifdef CONFIG_MTKPASR
-    /* PASR SW operations */
-		leave_pasrdpd();
+	/* PASR SW operations */
+	leave_pasrdpd();
 #endif
-		return ret;
+	return ret;
 }
 
 static void slp_suspend_ops_finish(void)
 {
-    /* legacy log */
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-		slp_crit2("Chip_pm_finish\n");
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+	/* legacy log */
+	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+	slp_crit2("Chip_pm_finish\n");
+	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
 }
 
 static void slp_suspend_ops_end(void)
 {
-    /* legacy log */
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
-		slp_notice("Chip_pm_end\n");
-		slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+	/* legacy log */
+	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
+	slp_notice("Chip_pm_end\n");
+	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
 }
 
 static const struct platform_suspend_ops slp_suspend_ops = {
-		.valid      = slp_suspend_ops_valid,
-		.begin      = slp_suspend_ops_begin,
-		.prepare    = slp_suspend_ops_prepare,
-		.enter      = slp_suspend_ops_enter,
-		.finish     = slp_suspend_ops_finish,
-		.end        = slp_suspend_ops_end,
+	.valid = slp_suspend_ops_valid,
+	.begin = slp_suspend_ops_begin,
+	.prepare = slp_suspend_ops_prepare,
+	.enter = slp_suspend_ops_enter,
+	.finish = slp_suspend_ops_finish,
+	.end = slp_suspend_ops_end,
 #ifdef CONFIG_MTKPASR
-		.prepare_late = slp_suspend_ops_prepare_late,
-		.wake	  = slp_suspend_ops_wake,
+	.prepare_late = slp_suspend_ops_prepare_late,
+	.wake = slp_suspend_ops_wake,
 #endif
 };
 #endif
 
-__attribute__((weak)) int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace)
+__attribute__ ((weak))
+int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace)
 {
 	return 0;
 }
@@ -318,46 +321,46 @@ __attribute__((weak)) int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool 
  */
 int slp_set_wakesrc(u32 wakesrc, bool enable, bool ck26m_on)
 {
-		int r;
-		unsigned long flags;
-			slp_notice("wakesrc = 0x%x, enable = %u, ck26m_on = %u\n",
-				wakesrc, enable, ck26m_on);
+	int r;
+	unsigned long flags;
+
+	slp_notice("wakesrc = 0x%x, enable = %u, ck26m_on = %u\n", wakesrc, enable, ck26m_on);
 
 #if SLP_REPLACE_DEF_WAKESRC
-		if (wakesrc & WAKE_SRC_CFG_KEY)
+	if (wakesrc & WAKE_SRC_CFG_KEY)
 #else
-		if (!(wakesrc & WAKE_SRC_CFG_KEY))
+	if (!(wakesrc & WAKE_SRC_CFG_KEY))
 #endif
-			return -EPERM;
+		return -EPERM;
 
 	spin_lock_irqsave(&slp_lock, flags);
 
 #if SLP_REPLACE_DEF_WAKESRC
-		if (ck26m_on)
-			r = spm_set_dpidle_wakesrc(wakesrc, enable, true);
+	if (ck26m_on)
+		r = spm_set_dpidle_wakesrc(wakesrc, enable, true);
 	else
-			r = spm_set_sleep_wakesrc(wakesrc, enable, true);
+		r = spm_set_sleep_wakesrc(wakesrc, enable, true);
 #else
-		if (ck26m_on)
-				r = spm_set_dpidle_wakesrc(wakesrc & ~WAKE_SRC_CFG_KEY, enable, false);
+	if (ck26m_on)
+		r = spm_set_dpidle_wakesrc(wakesrc & ~WAKE_SRC_CFG_KEY, enable, false);
 	else
-			r = spm_set_sleep_wakesrc(wakesrc & ~WAKE_SRC_CFG_KEY, enable, false);
+		r = spm_set_sleep_wakesrc(wakesrc & ~WAKE_SRC_CFG_KEY, enable, false);
 #endif
 
-		if (!r)
-			slp_ck26m_on = ck26m_on;
-		spin_unlock_irqrestore(&slp_lock, flags);
-		return r;
+	if (!r)
+		slp_ck26m_on = ck26m_on;
+	spin_unlock_irqrestore(&slp_lock, flags);
+	return r;
 }
 
 wake_reason_t slp_get_wake_reason(void)
 {
-		return slp_wake_reason;
+	return slp_wake_reason;
 }
 
 bool slp_will_infra_pdn(void)
 {
-		return is_infra_pdn(slp_spm_flags);
+	return is_infra_pdn(slp_spm_flags);
 }
 
 /*
@@ -366,27 +369,43 @@ bool slp_will_infra_pdn(void)
  */
 void slp_pasr_en(bool en, u32 value)
 {
-		if (slp_pars_dpd) {
-				if (en) {
-						slp_spm_flags &= ~SPM_PASR_DIS;
-						slp_spm_data = value;
-				} else {
-						slp_spm_flags |= SPM_PASR_DIS;
-						slp_spm_data = 0;
-				}
+#if 0				/* no pars */
+	if (slp_pars_dpd) {
+		if (en) {
+			slp_spm_flags &= ~SPM_PASR_DIS;
+			slp_spm_data = value;
+		} else {
+			slp_spm_flags |= SPM_PASR_DIS;
+			slp_spm_data = 0;
 		}
+	}
+#endif
+}
+
+/*
+ * en: 1: enable DPD, 0: disable DPD
+ */
+void slp_dpd_en(bool en)
+{
+	if (slp_pars_dpd) {
+		if (en)
+			slp_spm_flags &= ~SPM_FLAG_DIS_DPD;
+		else
+			slp_spm_flags |= SPM_FLAG_DIS_DPD;
+	}
 }
 
 void slp_module_init(void)
 {
-		spm_output_sleep_option();
-		slp_notice("SLEEP_DPIDLE_EN:%d, REPLACE_DEF_WAKESRC:%d, SUSPEND_LOG_EN:%d\n",
-			SLP_SLEEP_DPIDLE_EN, SLP_REPLACE_DEF_WAKESRC, SLP_SUSPEND_LOG_EN);
-		suspend_set_ops(&slp_suspend_ops);
+	spm_output_sleep_option();
+	slp_notice("SLEEP_DPIDLE_EN:%d, REPLACE_DEF_WAKESRC:%d, SUSPEND_LOG_EN:%d\n",
+		   SLP_SLEEP_DPIDLE_EN, SLP_REPLACE_DEF_WAKESRC, SLP_SUSPEND_LOG_EN);
+	suspend_set_ops(&slp_suspend_ops);
 #if SLP_SUSPEND_LOG_EN
-		console_suspend_enabled = 0;
+	console_suspend_enabled = 0;
 #endif
 }
+
 /*
 #ifdef CONFIG_MTK_FPGA
 static int __init spm_fpga_module_init(void)

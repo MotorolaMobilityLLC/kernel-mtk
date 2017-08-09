@@ -49,21 +49,22 @@
 ****************************/
 static unsigned int ckgen_meter(int val)
 {
+#if 0
 	int output = 0;
 	int i = 0;
 	unsigned int temp, clk26cali_0, clk_cfg_9, clk_misc_cfg_1;
 
 	clk26cali_0 = readl(CLK26CALI_0);
-	DRV_WriteReg32(CLK26CALI_0, clk26cali_0 | 0x80); /* enable fmeter_en */
+	DRV_WriteReg32(CLK26CALI_0, clk26cali_0 | 0x80);	/* enable fmeter_en */
 
 	clk_misc_cfg_1 = readl(CLK_MISC_CFG_1);
-	DRV_WriteReg32(CLK_MISC_CFG_1, 0x00FFFFFF); /* select divider */
+	DRV_WriteReg32(CLK_MISC_CFG_1, 0x00FFFFFF);	/* select divider */
 
 	clk_cfg_9 = readl(CLK_CFG_9);
-	DRV_WriteReg32(CLK_CFG_9, (val << 16)); /* select ckgen_cksw */
+	DRV_WriteReg32(CLK_CFG_9, (val << 16));	/* select ckgen_cksw */
 
 	temp = readl(CLK26CALI_0);
-	DRV_WriteReg32(CLK26CALI_0, temp | 0x10); /* start fmeter */
+	DRV_WriteReg32(CLK26CALI_0, temp | 0x10);	/* start fmeter */
 
 	/* wait frequency meter finish */
 	while (readl(CLK26CALI_0) & 0x10) {
@@ -75,7 +76,7 @@ static unsigned int ckgen_meter(int val)
 
 	temp = readl(CLK26CALI_2) & 0xFFFF;
 
-	output = (temp * 26000) / 1024; /* Khz */
+	output = (temp * 26000) / 1024;	/* Khz */
 
 	DRV_WriteReg32(CLK_CFG_9, clk_cfg_9);
 	DRV_WriteReg32(CLK_MISC_CFG_1, clk_misc_cfg_1);
@@ -85,25 +86,29 @@ static unsigned int ckgen_meter(int val)
 		return 0;
 	else
 		return output;
+#else
+	return 0;
+#endif
 }
 
 static unsigned int abist_meter(int val)
 {
+#if 0
 	int output = 0;
 	int i = 0;
 	unsigned int temp, clk26cali_0, clk_cfg_8, clk_misc_cfg_1;
 
 	clk26cali_0 = readl(CLK26CALI_0);
-	DRV_WriteReg32(CLK26CALI_0, clk26cali_0 | 0x80); /* enable fmeter_en */
+	DRV_WriteReg32(CLK26CALI_0, clk26cali_0 | 0x80);	/* enable fmeter_en */
 
 	clk_misc_cfg_1 = readl(CLK_MISC_CFG_1);
-	DRV_WriteReg32(CLK_MISC_CFG_1, 0xFFFFFF00); /* select divider */
+	DRV_WriteReg32(CLK_MISC_CFG_1, 0xFFFFFF00);	/* select divider */
 
 	clk_cfg_8 = readl(CLK_CFG_8);
-	DRV_WriteReg32(CLK_CFG_8, (val << 8)); /* select abist_cksw */
+	DRV_WriteReg32(CLK_CFG_8, (val << 8));	/* select abist_cksw */
 
 	temp = readl(CLK26CALI_0);
-	DRV_WriteReg32(CLK26CALI_0, temp | 0x1); /* start fmeter */
+	DRV_WriteReg32(CLK26CALI_0, temp | 0x1);	/* start fmeter */
 
 	/* wait frequency meter finish */
 	while (readl(CLK26CALI_0) & 0x1) {
@@ -115,7 +120,7 @@ static unsigned int abist_meter(int val)
 
 	temp = readl(CLK26CALI_1) & 0xFFFF;
 
-	output = (temp * 26000) / 1024; /* Khz */
+	output = (temp * 26000) / 1024;	/* Khz */
 
 	DRV_WriteReg32(CLK_CFG_8, clk_cfg_8);
 	DRV_WriteReg32(CLK_MISC_CFG_1, clk_misc_cfg_1);
@@ -125,6 +130,9 @@ static unsigned int abist_meter(int val)
 		return 0;
 	else
 		return output;
+#else
+	return 0;
+#endif
 }
 
 
@@ -157,17 +165,17 @@ static int ckgen_meter_read(struct seq_file *m, void *v)
 	int i;
 
 	for (i = 1; i < 39; i++)
-		seq_printf(m, "%s: %d\n", ckgen_array[i-1], ckgen_meter(i));
+		seq_printf(m, "%s: %d\n", ckgen_array[i - 1], ckgen_meter(i));
 
 	return 0;
 }
 
 static ssize_t ckgen_meter_write(struct file *file, const char __user *buffer,
-	size_t count, loff_t *data)
+				 size_t count, loff_t *data)
 {
 	char desc[128];
 	int len = 0;
-	/*int val;*/
+	/*int val; */
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
@@ -175,9 +183,9 @@ static ssize_t ckgen_meter_write(struct file *file, const char __user *buffer,
 
 	desc[len] = '\0';
 
-	/*if (sscanf(desc, "%d", &val) == 1)*/
+	/*if (sscanf(desc, "%d", &val) == 1) */
 	/*if (kstrtoint(desc, "%d", &val) == 1)
-		pr_debug("ckgen_meter %d is %d\n", val, ckgen_meter(val));*/
+	   pr_debug("ckgen_meter %d is %d\n", val, ckgen_meter(val)); */
 
 	return count;
 }
@@ -192,12 +200,13 @@ static int abist_meter_read(struct seq_file *m, void *v)
 
 	return 0;
 }
+
 static ssize_t abist_meter_write(struct file *file, const char __user *buffer,
-	size_t count, loff_t *data)
+				 size_t count, loff_t *data)
 {
 	char desc[128];
 	int len = 0;
-	/*int val;*/
+	/*int val; */
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
@@ -205,9 +214,9 @@ static ssize_t abist_meter_write(struct file *file, const char __user *buffer,
 
 	desc[len] = '\0';
 
-	/*if (sscanf(desc, "%d", &val) == 1)*/
+	/*if (sscanf(desc, "%d", &val) == 1) */
 	/*if (kstrtoint(desc, "%d", &val) == 1)
-		pr_debug("abist_meter %d is %d\n", val, abist_meter(val)); */
+	   pr_debug("abist_meter %d is %d\n", val, abist_meter(val)); */
 
 	return count;
 }
@@ -216,10 +225,11 @@ static int proc_abist_meter_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, abist_meter_read, NULL);
 }
+
 static const struct file_operations abist_meter_fops = {
 	.owner = THIS_MODULE,
-	.open  = proc_abist_meter_open,
-	.read  = seq_read,
+	.open = proc_abist_meter_open,
+	.read = seq_read,
 	.write = abist_meter_write,
 };
 
@@ -227,10 +237,11 @@ static int proc_ckgen_meter_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, ckgen_meter_read, NULL);
 }
+
 static const struct file_operations ckgen_meter_fops = {
 	.owner = THIS_MODULE,
-	.open  = proc_ckgen_meter_open,
-	.read  = seq_read,
+	.open = proc_ckgen_meter_open,
+	.read = seq_read,
 	.write = ckgen_meter_write,
 };
 
@@ -242,21 +253,22 @@ static const struct file_operations ckgen_meter_fops = {
 
 static unsigned int mt_get_emi_freq(void)
 {
+#if 0
 	int output = 0;
 	int i = 0;
 	unsigned int temp, clk26cali_0, clk_cfg_8, clk_misc_cfg_1;
 
 	clk26cali_0 = readl(CLK26CALI_0);
-	DRV_WriteReg32(CLK26CALI_0, clk26cali_0 | 0x80); /* enable fmeter_en */
+	DRV_WriteReg32(CLK26CALI_0, clk26cali_0 | 0x80);	/* enable fmeter_en */
 
 	clk_misc_cfg_1 = readl(CLK_MISC_CFG_1);
-	DRV_WriteReg32(CLK_MISC_CFG_1, 0xFFFFFF00); /* select divider */
+	DRV_WriteReg32(CLK_MISC_CFG_1, 0xFFFFFF00);	/* select divider */
 
 	clk_cfg_8 = readl(CLK_CFG_8);
-	DRV_WriteReg32(CLK_CFG_8, (14 << 8)); /* select abist_cksw */
+	DRV_WriteReg32(CLK_CFG_8, (14 << 8));	/* select abist_cksw */
 
 	temp = readl(CLK26CALI_0);
-	DRV_WriteReg32(CLK26CALI_0, temp | 0x1); /* start fmeter */
+	DRV_WriteReg32(CLK26CALI_0, temp | 0x1);	/* start fmeter */
 
 	/* wait frequency meter finish */
 	while (readl(CLK26CALI_0) & 0x1) {
@@ -268,7 +280,7 @@ static unsigned int mt_get_emi_freq(void)
 
 	temp = readl(CLK26CALI_1) & 0xFFFF;
 
-	output = (temp * 26000) / 1024; /* Khz */
+	output = (temp * 26000) / 1024;	/* Khz */
 
 	DRV_WriteReg32(CLK_CFG_8, clk_cfg_8);
 	DRV_WriteReg32(CLK_MISC_CFG_1, clk_misc_cfg_1);
@@ -278,26 +290,30 @@ static unsigned int mt_get_emi_freq(void)
 		return 0;
 	else
 		return output;
+#else
+	return 0;
+#endif
 }
 EXPORT_SYMBOL(mt_get_emi_freq);
 
 unsigned int mt_get_bus_freq(void)
 {
+#if 0
 	int output = 0;
 	int i = 0;
 	unsigned int temp, clk26cali_0, clk_cfg_9, clk_misc_cfg_1;
 
 	clk26cali_0 = readl(CLK26CALI_0);
-	DRV_WriteReg32(CLK26CALI_0, clk26cali_0 | 0x80); /* enable fmeter_en */
+	DRV_WriteReg32(CLK26CALI_0, clk26cali_0 | 0x80);	/* enable fmeter_en */
 
 	clk_misc_cfg_1 = readl(CLK_MISC_CFG_1);
-	DRV_WriteReg32(CLK_MISC_CFG_1, 0x00FFFFFF); /* select divider */
+	DRV_WriteReg32(CLK_MISC_CFG_1, 0x00FFFFFF);	/* select divider */
 
 	clk_cfg_9 = readl(CLK_CFG_9);
-	DRV_WriteReg32(CLK_CFG_9, (1 << 16)); /* select ckgen_cksw */
+	DRV_WriteReg32(CLK_CFG_9, (1 << 16));	/* select ckgen_cksw */
 
 	temp = readl(CLK26CALI_0);
-	DRV_WriteReg32(CLK26CALI_0, temp | 0x10); /* start fmeter */
+	DRV_WriteReg32(CLK26CALI_0, temp | 0x10);	/* start fmeter */
 
 	/* wait frequency meter finish */
 	while (readl(CLK26CALI_0) & 0x10) {
@@ -309,7 +325,7 @@ unsigned int mt_get_bus_freq(void)
 
 	temp = readl(CLK26CALI_2) & 0xFFFF;
 
-	output = (temp * 26000) / 1024; /* Khz */
+	output = (temp * 26000) / 1024;	/* Khz */
 
 	DRV_WriteReg32(CLK_CFG_9, clk_cfg_9);
 	DRV_WriteReg32(CLK_MISC_CFG_1, clk_misc_cfg_1);
@@ -319,26 +335,30 @@ unsigned int mt_get_bus_freq(void)
 		return 0;
 	else
 		return output;
+#else
+	return 0;
+#endif
 }
 EXPORT_SYMBOL(mt_get_bus_freq);
 
 static unsigned int mt_get_cpu_freq(void)
 {
+#if 0
 	int output = 0;
 	int i = 0;
 	unsigned int temp, clk26cali_0, clk_cfg_8, clk_misc_cfg_1;
 
 	clk26cali_0 = readl(CLK26CALI_0);
-	DRV_WriteReg32(CLK26CALI_0, clk26cali_0 | 0x80); /* enable fmeter_en */
+	DRV_WriteReg32(CLK26CALI_0, clk26cali_0 | 0x80);	/* enable fmeter_en */
 
 	clk_misc_cfg_1 = readl(CLK_MISC_CFG_1);
-	DRV_WriteReg32(CLK_MISC_CFG_1, 0xFFFF0300); /* select divider */
+	DRV_WriteReg32(CLK_MISC_CFG_1, 0xFFFF0300);	/* select divider */
 
 	clk_cfg_8 = readl(CLK_CFG_8);
-	DRV_WriteReg32(CLK_CFG_8, (39 << 8)); /* select abist_cksw */
+	DRV_WriteReg32(CLK_CFG_8, (39 << 8));	/* select abist_cksw */
 
 	temp = readl(CLK26CALI_0);
-	DRV_WriteReg32(CLK26CALI_0, temp | 0x1); /* start fmeter */
+	DRV_WriteReg32(CLK26CALI_0, temp | 0x1);	/* start fmeter */
 
 	/* wait frequency meter finish */
 	while (readl(CLK26CALI_0) & 0x1) {
@@ -350,7 +370,7 @@ static unsigned int mt_get_cpu_freq(void)
 
 	temp = readl(CLK26CALI_1) & 0xFFFF;
 
-	output = ((temp * 26000) / 1024) * 4; /* Khz */
+	output = ((temp * 26000) / 1024) * 4;	/* Khz */
 
 	DRV_WriteReg32(CLK_CFG_8, clk_cfg_8);
 	DRV_WriteReg32(CLK_MISC_CFG_1, clk_misc_cfg_1);
@@ -360,6 +380,9 @@ static unsigned int mt_get_cpu_freq(void)
 		return 0;
 	else
 		return output;
+#else
+	return 0;
+#endif
 }
 EXPORT_SYMBOL(mt_get_cpu_freq);
 
@@ -399,10 +422,11 @@ static int proc_cpu_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, cpu_speed_dump_read, NULL);
 }
+
 static const struct file_operations cpu_fops = {
 	.owner = THIS_MODULE,
-	.open  = proc_cpu_open,
-	.read  = seq_read,
+	.open = proc_cpu_open,
+	.read = seq_read,
 };
 
 
@@ -410,20 +434,22 @@ static int proc_emi_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, emi_speed_dump_read, NULL);
 }
+
 static const struct file_operations emi_fops = {
 	.owner = THIS_MODULE,
-	.open  = proc_emi_open,
-	.read  = seq_read,
+	.open = proc_emi_open,
+	.read = seq_read,
 };
 
 static int proc_bus_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, bus_speed_dump_read, NULL);
 }
+
 static const struct file_operations bus_fops = {
 	.owner = THIS_MODULE,
-	.open  = proc_bus_open,
-	.read  = seq_read,
+	.open = proc_bus_open,
+	.read = seq_read,
 };
 
 #if 0
@@ -431,20 +457,22 @@ static int proc_mmclk_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, mmclk_speed_dump_read, NULL);
 }
+
 static const struct file_operations mmclk_fops = {
 	.owner = THIS_MODULE,
-	.open  = proc_mmclk_open,
-	.read  = seq_read,
+	.open = proc_mmclk_open,
+	.read = seq_read,
 };
 
 static int proc_mfgclk_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, mfgclk_speed_dump_read, NULL);
 }
+
 static const struct file_operations mfgclk_fops = {
 	.owner = THIS_MODULE,
-	.open  = proc_mfgclk_open,
-	.read  = seq_read,
+	.open = proc_mfgclk_open,
+	.read = seq_read,
 };
 #endif
 
@@ -457,30 +485,16 @@ static int __init mt_power_management_init(void)
 
 	/* pm_power_off = mt_power_off; */
 
-	#if !defined(CONFIG_MTK_FPGA)
+#if !defined(CONFIG_MTK_FPGA)
 	/* cpu dormant driver init */
 /* **** */
 /*
 	mt_cpu_dormant_init();
-
-	// SPM driver init
-	spm_module_init();
-
-	// Sleep driver init (for suspend)
-	if (0x321 == code) {
-	   slp_module_init();
-	} else if (0x335 == code) {
-	   slp_module_init();
-	} else if (0x337 == code){
-	   slp_module_init();
-	} else {
-	   // unknown chip ID, error !!
-	}
 */
 
 	spm_module_init();
 	slp_module_init();
-	mt_clkmgr_init();
+	/* mt_clkmgr_init(); */
 
 	/* mt_pm_log_init(); // power management log init */
 
@@ -504,16 +518,19 @@ static int __init mt_power_management_init(void)
 
 		/* entry = proc_create("mfgclk_speed_dump", S_IRUGO, pm_init_dir, &mfgclk_fops); */
 #ifdef TOPCK_LDVT
-		entry = proc_create("abist_meter_test", S_IRUGO|S_IWUSR, pm_init_dir, &abist_meter_fops);
-		entry = proc_create("ckgen_meter_test", S_IRUGO|S_IWUSR, pm_init_dir, &ckgen_meter_fops);
+		entry =
+		    proc_create("abist_meter_test", S_IRUGO | S_IWUSR, pm_init_dir,
+				&abist_meter_fops);
+		entry =
+		    proc_create("ckgen_meter_test", S_IRUGO | S_IWUSR, pm_init_dir,
+				&ckgen_meter_fops);
 #endif
 	}
 
-	#endif
+#endif
 
 	return 0;
 }
-
 arch_initcall(mt_power_management_init);
 
 
@@ -526,9 +543,8 @@ static int __init mt_pm_late_init(void)
 #endif
 	return 0;
 }
-
 late_initcall(mt_pm_late_init);
-#endif /* #if !defined (MT_DORMANT_UT) */
+#endif				/* #if !defined (MT_DORMANT_UT) */
 
 
 MODULE_DESCRIPTION("MTK Power Management Init Driver");
