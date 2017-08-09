@@ -143,6 +143,9 @@ static int md3_check_hdr_info_size;
 static int md1_raw_img_size;
 static int md3_raw_img_size;
 
+static int curr_ccci_fo_version;
+#define CCCI_FO_VER_02			(2) /* For ubin */
+
 int ccci_get_fo_setting(char item[], unsigned int *val)
 {
 	char *ccci_name;
@@ -181,21 +184,38 @@ static unsigned int md_type_at_lk[MAX_MD_NUM];
 #define LK_LOAD_MD_ERR_INVALID_MD_ID	(1<<1)
 #define LK_LOAD_MD_ERR_NO_MD_LOAD	(1<<2)
 #define LK_LOAD_MD_ERR_LK_INFO_FAIL	(1<<3)
+#define LK_KERNEL_SETTING_MIS_SYNC	(1<<4)
 
 /* functions will be called by external */
 int get_lk_load_md_info(char buf[], int size)
 {
-	int ret = 0;
+	int has_write;
 
 	if (lk_load_img_status & LK_LOAD_MD_EN)
-		ret += snprintf(&buf[ret], size - ret, "LK Load MD:[Enabled](0x%08x)\n", lk_load_img_status);
+		has_write = snprintf(buf, size, "LK Load MD:[Enabled](0x%08x)\n", lk_load_img_status);
 	else
-		ret += snprintf(&buf[ret], size - ret, "LK Load MD:[Disabled](0x%08x)\n", lk_load_img_status);
-	ret += snprintf(&buf[ret], size - ret, " md_image load errno 1:[%d] 2:[%d] 3:[%d] 4:[%d] 5:[%d]\n",
-			lk_load_img_err_no[0], lk_load_img_err_no[1], lk_load_img_err_no[1], lk_load_img_err_no[3],
+		has_write = snprintf(buf, size, "LK Load MD:[Disabled](0x%08x)\n", lk_load_img_status);
+
+	if ((lk_load_img_status & (~0x1)) == 0) {
+		has_write += snprintf(&buf[has_write], size - has_write, "LK load MD success!\n");
+		return has_write;
+	}
+
+	has_write += snprintf(&buf[has_write], size - has_write, "LK load MD has error:\n");
+	has_write += snprintf(&buf[has_write], size - has_write, "---- More details ----------------\n");
+	if (lk_load_img_status & LK_LOAD_MD_ERR_INVALID_MD_ID)
+		has_write += snprintf(&buf[has_write], size - has_write, "Err: Got invalid md id\n");
+	if (lk_load_img_status & LK_LOAD_MD_ERR_NO_MD_LOAD)
+		has_write += snprintf(&buf[has_write], size - has_write, "Err: No valid md image\n");
+	if (lk_load_img_status & LK_LOAD_MD_ERR_LK_INFO_FAIL)
+		has_write += snprintf(&buf[has_write], size - has_write, "Err: Got lk info fail\n");
+	if (lk_load_img_status & LK_KERNEL_SETTING_MIS_SYNC)
+		has_write += snprintf(&buf[has_write], size - has_write, "Err: lk kernel setting mis sync\n");
+	has_write += snprintf(&buf[has_write], size - has_write, "ERR> 1:[%d] 2:[%d] 3:[%d] 4:[%d] 5:[%d]\n",
+			lk_load_img_err_no[0], lk_load_img_err_no[1], lk_load_img_err_no[2], lk_load_img_err_no[3],
 			lk_load_img_err_no[4]);
 
-	return ret;
+	return has_write;
 }
 
 /* function will be called by exteranl */
@@ -276,6 +296,64 @@ static int find_ccci_tag_inf(void __iomem *lk_inf_base, unsigned int tag_cnt, ch
 	return -1;
 }
 
+/*===== META arguments parse =================== */
+#define ATAG_MDINFO_DATA 0x41000806
+struct tag_header {
+	u32 size;
+	u32 tag;
+};
+static void parse_md_info_tag_val(unsigned int *raw_ptr)
+{
+	unsigned char *p;
+	int i;
+	int active_id = -1;
+	unsigned char md_info_tag_array[4];
+
+	/*--- md info tag item ---------------------------------- */
+	/* unsigned int tag_size = tag_header(2) + uchar[4](1)    */
+	/* unsigned int tag_key_value                             */
+	/* uchar[0]kuchar[0],uchar[0],uchar[0],uchar[0]           */
+	if (*raw_ptr != ((sizeof(struct tag_header) + sizeof(md_info_tag_array))>>2)) {
+		CCCI_UTIL_ERR_MSG("md info tag size mis-sync.(%d)\n", *raw_ptr);
+		return;
+	}
+	raw_ptr++;
+	if (*raw_ptr != ATAG_MDINFO_DATA) {
+		CCCI_UTIL_ERR_MSG("md info tag key mis-sync.\n");
+		return;
+	}
+	raw_ptr++;
+	p = (unsigned char *)raw_ptr;
+	for (i = 0; i < 4; i++)
+		md_info_tag_array[i] = p[i];
+
+	if (md_info_tag_array[1] & MD1_EN)
+		active_id = MD_SYS1;
+	else if (md_info_tag_array[1] & MD2_EN)
+		active_id = MD_SYS2;
+	else if (md_info_tag_array[1] & MD3_EN)
+		active_id = MD_SYS3;
+	else if (md_info_tag_array[1] & MD5_EN)
+		active_id = MD_SYS5;
+	else {
+		CCCI_UTIL_ERR_MSG("META MD setting not found [%d][%d]\n",
+			md_info_tag_array[0], md_info_tag_array[1]);
+		return;
+	}
+
+	CCCI_UTIL_ERR_MSG("md info tag val: [0x%x][0x%x][0x%x][0x%x]\n",
+				md_info_tag_array[0], md_info_tag_array[1],
+				md_info_tag_array[2], md_info_tag_array[3]);
+
+	if (active_id == MD_SYS1) {
+		if (md_capability(MD_SYS1, md_info_tag_array[0], md_type_at_lk[MD_SYS1]))
+			meta_md_support[active_id] = md_info_tag_array[0];
+		else
+			CCCI_UTIL_ERR_MSG("md_type:%d] not support wm_id %d\n",
+				md_type_at_lk[MD_SYS1], md_info_tag_array[0]);
+	}
+}
+
 static void lk_dt_info_collect(void)
 {
 	/* Device tree method */
@@ -304,6 +382,7 @@ static void lk_dt_info_collect(void)
 	}
 
 	lk_load_img_status |= LK_LOAD_MD_EN;
+	curr_ccci_fo_version = CCCI_FO_VER_02;
 
 	memcpy((void *)&lk_inf, raw_ptr, sizeof(ccci_lk_info_t));
 	if (lk_inf.lk_info_base_addr == 0LL) {
@@ -359,7 +438,13 @@ static void lk_dt_info_collect(void)
 		if ((md_id < MAX_MD_NUM) && (md_resv_mem_size[md_id] == 0)) {
 			md_resv_mem_size[md_id] = curr->size;
 			md_resv_mem_addr[md_id] = (phys_addr_t)curr->base_addr;
-			lk_load_img_err_no[md_id] = (int)curr->errno;
+			if (curr->errno & 0x80)
+				lk_load_img_err_no[md_id] = ((int)curr->errno) | 0xFFFFFF00; /*signed extension */
+			else
+				lk_load_img_err_no[md_id] = (int)curr->errno;
+
+			CCCI_UTIL_INF_MSG("md%d lk_load_img_err_no:\n", md_id+1, lk_load_img_err_no[md_id]);
+
 			if (lk_load_img_err_no[md_id] == 0)
 				md_env_rdy_flag |= 1<<md_id;
 			md_type_at_lk[md_id] = (int)curr->md_type;
@@ -429,6 +514,17 @@ static void lk_dt_info_collect(void)
 		}
 		md1_check_hdr_info_size = sizeof(struct md_check_header_v5);
 	}
+	/* Get MD1 raw image size */
+	find_ccci_tag_inf(lk_inf_base, tag_cnt, "md1img", (char *)&md1_raw_img_size, sizeof(int));
+
+	/* Get META settings at device tree, only MD1 use this */
+	/* These code must at last of this function for some varialbe need updated first */
+	raw_ptr = (unsigned int *)of_get_flat_dt_prop(dt_chosen_node, "atag,mdinfo", NULL);
+	if (raw_ptr == NULL)
+		CCCI_UTIL_INF_MSG("atag,mdinfo not found\n");
+	else
+		parse_md_info_tag_val(raw_ptr);
+
 	if (md_usage_case & (1<<MD_SYS3)) {
 		/* The allocated memory will be free after md structure initialized */
 		md3_check_hdr_info = kmalloc(sizeof(struct md_check_header), GFP_KERNEL);
@@ -446,23 +542,41 @@ static void lk_dt_info_collect(void)
 		}
 		md3_check_hdr_info_size = sizeof(struct md_check_header);
 	}
-
-	/* Get raw image size */
-	find_ccci_tag_inf(lk_inf_base, tag_cnt, "md1img", (char *)&md1_raw_img_size, sizeof(int));
+	/* Get MD3 raw image size */
 	find_ccci_tag_inf(lk_inf_base, tag_cnt, "md3img", (char *)&md3_raw_img_size, sizeof(int));
+
 _Exit:
 	iounmap(lk_inf_base);
 
 _Load_fail:
 	CCCI_UTIL_INF_MSG("=====Parsing done====================\n");
 
-	/* Show warning if modem enable but env not ready */
-	if ((md_env_rdy_flag & (1<<MD_SYS1)) != (md_usage_case & (1<<MD_SYS1))) {
+	/* Show warning if has some error */
+	/* MD1 part */
+	if ((md_usage_case & (1<<MD_SYS1)) && (!(md_env_rdy_flag & (1<<MD_SYS1)))) {
 		CCCI_UTIL_ERR_MSG("md1 env prepare abnormal, disable this modem\n");
 		md_usage_case &= ~(1<<MD_SYS1);
-	} else if ((md_env_rdy_flag & (1<<MD_SYS3)) != (md_usage_case & (1<<MD_SYS3))) {
+	} else if ((!(md_usage_case & (1<<MD_SYS1))) && (md_env_rdy_flag & (1<<MD_SYS1))) {
+		CCCI_UTIL_ERR_MSG("md1: kernel dis, but lk en\n");
+		md_usage_case &= ~(1<<MD_SYS1);
+		lk_load_img_status |= LK_KERNEL_SETTING_MIS_SYNC;
+	} else if ((!(md_usage_case & (1<<MD_SYS1))) && (!(md_env_rdy_flag & (1<<MD_SYS1)))) {
+		CCCI_UTIL_INF_MSG("md1: both lk and kernel dis\n");
+		md_usage_case &= ~(1<<MD_SYS1);
+		lk_load_img_err_no[MD_SYS1] = 0; /* For this case, clear error */
+	}
+	/* MD3 part */
+	if ((md_usage_case & (1<<MD_SYS3)) && (!(md_env_rdy_flag & (1<<MD_SYS3)))) {
 		CCCI_UTIL_ERR_MSG("md3 env prepare abnormal, disable this modem\n");
 		md_usage_case &= ~(1<<MD_SYS3);
+	} else if ((!(md_usage_case & (1<<MD_SYS3))) && (md_env_rdy_flag & (1<<MD_SYS3))) {
+		CCCI_UTIL_ERR_MSG("md3: kernel dis, but lk en\n");
+		md_usage_case &= ~(1<<MD_SYS3);
+		lk_load_img_status |= LK_KERNEL_SETTING_MIS_SYNC;
+	} else if ((!(md_usage_case & (1<<MD_SYS3))) && (!(md_env_rdy_flag & (1<<MD_SYS3)))) {
+		CCCI_UTIL_INF_MSG("md3: both lk and kernel dis\n");
+		md_usage_case &= ~(1<<MD_SYS3);
+		lk_load_img_err_no[MD_SYS3] = 0; /* For this case, clear error */
 	}
 }
 
@@ -564,10 +678,30 @@ int set_modem_support_cap(int md_id, int new_val)
 {
 	if (md_id < MAX_MD_NUM) {
 		if (((get_boot_mode() == META_BOOT) || (get_boot_mode() == ADVMETA_BOOT))
-		    && (meta_md_support[md_id] != 0))
-			meta_md_support[md_id] = new_val;
-		else
+			&& (meta_md_support[md_id] != 0)) {
+			if (curr_ccci_fo_version == CCCI_FO_VER_02) {
+				/* UBin version */
+				/* Priority: boot arg > NVRAM > default */
+				if (meta_md_support[md_id] == 0) {
+					CCCI_UTIL_INF_MSG("md%d: meta new wmid:%d\n", md_id + 1, new_val);
+					meta_md_support[md_id] = new_val;
+				} else {
+					CCCI_UTIL_INF_MSG("md%d: boot arg has val:%d(%d)\n", md_id + 1,
+							meta_md_support[md_id], new_val);
+					/* We hope first write clear meta default setting
+					** then, modem first boot will using meta setting that get from boot arguments*/
+					meta_md_support[md_id] = 0;
+					return -1;
+				}
+			} else {
+				/* Legcy version */
+				CCCI_UTIL_INF_MSG("md%d: meta legcy md type:%d\n", md_id + 1, new_val);
+					meta_md_support[md_id] = new_val;
+			}
+		} else {
+			CCCI_UTIL_INF_MSG("md%d: new mdtype(/wmid):%d\n", md_id + 1, new_val);
 			md_support[md_id] = new_val;
+		}
 		return 0;
 	}
 	return -1;

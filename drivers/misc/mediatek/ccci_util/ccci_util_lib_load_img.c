@@ -965,17 +965,23 @@ int get_md_wm_id_map(int ap_wm_id)
 
 int md_capability(int md_id, int wm_id, int curr_md_type)
 {
+	int md_type;
 	if (curr_md_type >= MAX_IMG_NUM)
 		return -1;
 	if (wm_id >= MAX_IMG_NUM)
 		return -2;
 
-	if (curr_ubin_id == 0) {
+	if (curr_md_type != 0)
+		md_type = curr_md_type;
+	else
+		md_type = curr_ubin_id;
+
+	if (md_type == 0) {
 		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "curr_ubin_id is default val\n");
 		return 1;
 	}
 	if (md_id == MD_SYS1) {
-		if (md1_capability_array[wm_id] & (1 << curr_ubin_id))	/* Note here, curr_md_type not used */
+		if (md1_capability_array[wm_id] & (1 << md_type))
 			return 1;
 		return 0;
 	}

@@ -14,9 +14,10 @@ static struct ccci_setting ccci_cfg_setting;
 void ccci_reload_md_type(struct ccci_modem *md, int type)
 {
 	if (type != md->config.load_type) {
-		set_modem_support_cap(md->index, type);
-		md->config.load_type = type;
-		md->config.setting |= MD_SETTING_RELOAD;
+		if (set_modem_support_cap(md->index, type) == 0) {
+			md->config.load_type = type;
+			md->config.setting |= MD_SETTING_RELOAD;
+		}
 	}
 }
 

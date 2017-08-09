@@ -199,6 +199,21 @@ static ssize_t ccci_lk_load_md_show(char *buf)
 
 CCCI_ATTR(lk_md, 0444, &ccci_lk_load_md_show, NULL);
 
+/* Sys -- get ccci private feature info */
+/* If platform has special feature setting, platform code will implemet this function */
+int __attribute__((weak)) ccci_get_plat_ft_inf(char buf[], int size);
+static ssize_t ccci_ft_inf_show(char *buf)
+{
+	if (ccci_get_plat_ft_inf) {
+		CCCI_UTIL_INF_MSG("using platform setting\n");
+		return (ssize_t)ccci_get_plat_ft_inf(buf, 4095);
+	}
+	/* Enter here means using default setting */
+	return (ssize_t)snprintf(buf, 4095, "ft_inf_ver:1");
+}
+
+CCCI_ATTR(ft_info, 0444, &ccci_ft_inf_show, NULL);
+
 /* Sys -- Runtime register debug */
 static char aat_cmd[32];
 static unsigned long aat_para[8];
@@ -590,6 +605,7 @@ static struct attribute *ccci_default_attrs[] = {
 	&ccci_attr_dump_max.attr,
 	&ccci_attr_lk_md.attr,
 	&ccci_attr_md_chn.attr,
+	&ccci_attr_ft_info.attr,
 	NULL
 };
 

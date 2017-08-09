@@ -2391,6 +2391,7 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 			snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s\n[%s]\n", debug_info->core_name, debug_info->name);
 			break;
 		}
+		ccci_event_log("md%d %s\n", md->index+1, ex_info);
 	}
 	if (md->ex_core_num > 1) {
 		CCCI_NORMAL_LOG(md->index, KERN, "%s+++++++%s", ex_info_temp, ex_info);
