@@ -18,6 +18,7 @@ struct mtk_dsi {
 	struct drm_device *drm_dev;
 	struct drm_encoder encoder;
 	struct drm_connector conn;
+	struct device_node *panel_node;
 	struct drm_panel *panel;
 	struct drm_bridge *bridge;
 	struct mipi_dsi_host host;
@@ -33,18 +34,19 @@ struct mtk_dsi {
 	struct clk *dsi0_engine_clk_cg;
 	struct clk *dsi0_digital_clk_cg;
 
-	u32 pll_clk_rate;
+	u32 data_rate;
 
 	unsigned long mode_flags;
 	enum mipi_dsi_pixel_format format;
 	unsigned int lanes;
 	struct videomode vm;
 	bool enabled;
+	int irq;
 };
 
-static inline struct mtk_dsi *host_to_mtk(struct mipi_dsi_host *host)
+static inline struct mtk_dsi *host_to_dsi(struct mipi_dsi_host *h)
 {
-	return container_of(host, struct mtk_dsi, host);
+	return container_of(h, struct mtk_dsi, host);
 }
 
 static inline struct mtk_dsi *encoder_to_dsi(struct drm_encoder *e)

@@ -27,4 +27,10 @@ config DRM_PANEL_S6E8AA0
 	select DRM_MIPI_DSI
 	select VIDEOMODE_HELPERS
 
+config DRM_PANEL_TRULY_TDO_BD0598U40004
+	tristate "TRULY TDO BD0598U40004 DSI video mode panel"
+	depends on OF
+	select DRM_MIPI_DSI
+	select VIDEOMODE_HELPERS
+
 endmenu
