@@ -1190,7 +1190,7 @@ int ddp_path_top_clock_on(void)
 	enable_clock(MT_CG_DISP0_SMI_LARB0, "DDP_LARB0");
 #else
 	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
-	ddp_clk_prepare_enable(MM_VENCPLL);
+	/* ddp_clk_prepare_enable(MM_VENCPLL); */
 	ddp_clk_enable(DISP0_SMI_COMMON);
 	ddp_clk_enable(DISP0_SMI_LARB0);
 #endif
@@ -1216,7 +1216,7 @@ int ddp_path_top_clock_off(void)
 #else
 	ddp_clk_disable(DISP0_SMI_LARB0);
 	ddp_clk_disable(DISP0_SMI_COMMON);
-	ddp_clk_disable_unprepare(MM_VENCPLL);
+	/* ddp_clk_disable_unprepare(MM_VENCPLL); */
 	ddp_clk_disable_unprepare(DISP_MTCMOS_CLK);
 #endif
 #endif
