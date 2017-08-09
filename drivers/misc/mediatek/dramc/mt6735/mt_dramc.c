@@ -63,6 +63,7 @@
 #ifdef CONFIG_OF_RESERVED_MEM
 #define DRAM_R0_DUMMY_READ_RESERVED_KEY "reserve-memory-dram_r0_dummy_read"
 #define DRAM_R1_DUMMY_READ_RESERVED_KEY "reserve-memory-dram_r1_dummy_read"
+#define DRAM_RSV_SIZE 0x1000
 #include <linux/of_reserved_mem.h>
 #include <mt-plat/mtk_memcfg.h>
 #endif
@@ -79,7 +80,7 @@ int init_done = 0;
 static DEFINE_MUTEX(dram_dfs_mutex);
 int org_dram_data_rate = 0;
 static unsigned int dram_rank_num;
-phys_addr_t dram_base, dram_add_rank0_base;
+phys_addr_t dram_rank0_addr, dram_rank1_addr;
 
 
 /* #include <mach/emi_bwl.h> */
@@ -1191,6 +1192,15 @@ static ssize_t freq_hopping_test_store(struct device_driver *driver,
 }
 #endif
 
+static void disable_dram_fh(void)
+{
+	unsigned int value;
+
+	value = ucDram_Register_Read(0xf4);
+	value &= ~(0x1 << 15);
+	ucDram_Register_Write(0xf4, value);
+}
+
 static int __init dt_scan_dram_info(unsigned long node, const char *uname, int depth, void *data)
 {
 	char *type = (char *)of_get_flat_dt_prop(node, "device_type", NULL);
@@ -1204,33 +1214,48 @@ static int __init dt_scan_dram_info(unsigned long node, const char *uname, int d
 		* The longtrail doesn't have a device_type on the
 		* /memory node, so look for the node called /memory@0.
 		*/
-		if (depth != 1 || strcmp(uname, "memory@0") != 0)
+		if (depth != 1 || strcmp(uname, "memory@0") != 0) {
+			disable_dram_fh();
 			return 0;
-	} else if (strcmp(type, "memory") != 0)
+		}
+	} else if (strcmp(type, "memory") != 0) {
+		disable_dram_fh();
 		return 0;
+	}
 
 	reg = (const __be32 *)of_get_flat_dt_prop(node, (const char *)"reg", (int *)&l);
-	if (reg == NULL)
+	if (reg == NULL) {
+		disable_dram_fh();
 		return 0;
+	}
 
 	endp = reg + (l / sizeof(__be32));
 
 	if (node) {
 		/* orig_dram_info */
 		dram_info = (const struct dram_info *)of_get_flat_dt_prop(node, "orig_dram_info", NULL);
-		if (dram_info == NULL)
+		if (dram_info == NULL) {
+			disable_dram_fh();
 			return 0;
-
-		dram_rank_num = dram_info->rank_num;
-		dram_base = dram_info->rank_info[0].start;
-
-		if (dram_rank_num == SINGLE_RANK)
-			pr_warn("[DFS]  enable (dram base): (%pa)\n", &dram_base);
-		else {
-			dram_add_rank0_base = dram_info->rank_info[1].start;
-			pr_warn("[DFS]  enable (dram base, dram rank1 base): (%pa,%pa)\n",
-								&dram_base, &dram_add_rank0_base);
 		}
+
+		if ((dram_rank_num == 0) || ((dram_rank_num != dram_info->rank_num) && (dram_rank_num != 0))) {
+			/* OTA, Rsv fail and 1GB simluate to 512MB */
+			dram_rank_num = dram_info->rank_num;
+
+			if (dram_rank0_addr == 0) /* Rsv fail */
+				dram_rank0_addr = dram_info->rank_info[0].start;
+
+			if (dram_rank_num == SINGLE_RANK)
+				pr_warn("[DFS]  enable (dram base): (%pa)\n", &dram_rank0_addr);
+			else {
+				if (dram_rank1_addr == 0) /* Rsv fail */
+					dram_rank1_addr = dram_info->rank_info[1].start;
+				pr_warn("[DFS]  enable (dram base, dram rank1 base): (%pa,%pa)\n",
+									&dram_rank0_addr, &dram_rank1_addr);
+			}
+		} else
+			pr_warn("[DFS]  rsv memory from LK node\n");
 	}
 
 	return node;
@@ -1273,15 +1298,15 @@ int DFS_APDMA_Enable(void)
 	while (readl(DMA_START) & 0x1)
 		;
 
-	if (dram_rank_num == DULE_RANK) {
-		writel(dram_base, DMA_SRC);
-		writel(dram_add_rank0_base, DMA_SRC2);
+	if (dram_rank_num == DUAL_RANK) {
+		writel(dram_rank0_addr, DMA_SRC);
+		writel(dram_rank1_addr, DMA_SRC2);
 		writel(dst_array_p, DMA_DST);
 		writel((BUFF_LEN >> 1), DMA_LEN1);
 		writel((BUFF_LEN >> 1), DMA_LEN2);
 		writel((DMA_CON_BURST_8BEAT | DMA_CON_WPEN), DMA_CON);
 	} else if (dram_rank_num == SINGLE_RANK) {
-		writel(dram_base, DMA_SRC);
+		writel(dram_rank0_addr, DMA_SRC);
 		writel(dst_array_p, DMA_DST);
 		writel(BUFF_LEN, DMA_LEN1);
 		writel(DMA_CON_BURST_8BEAT, DMA_CON);
@@ -1392,17 +1417,21 @@ int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
 	rsize = (unsigned int)rmem->size;
 
 	if (strstr(DRAM_R0_DUMMY_READ_RESERVED_KEY, rmem->name)) {
-		dram_base = rptr;
+		if (rsize < DRAM_RSV_SIZE)
+			return 0;
+		dram_rank0_addr = rptr;
 		dram_rank_num++;
-		pr_debug("[dram_dummy_read_reserve_mem_of_init] dram_base = %pa, size = 0x%x\n",
-				&dram_base, rsize);
+		pr_debug("[dram_dummy_read_reserve_mem_of_init] dram_rank0_addr = %pa, size = 0x%x\n",
+				&dram_rank0_addr, rsize);
 	}
 
 	if (strstr(DRAM_R1_DUMMY_READ_RESERVED_KEY, rmem->name)) {
-		dram_add_rank0_base = rptr;
+		if (rsize < DRAM_RSV_SIZE)
+			return 0;
+		dram_rank1_addr = rptr;
 		dram_rank_num++;
-		pr_debug("[dram_dummy_read_reserve_mem_of_init] dram_add_rank0_base = %pa, size = 0x%x\n",
-				&dram_add_rank0_base, rsize);
+		pr_debug("[dram_dummy_read_reserve_mem_of_init] dram_rank1_addr = %pa, size = 0x%x\n",
+				&dram_rank1_addr, rsize);
 	}
 
 	return 0;
@@ -1451,11 +1480,11 @@ static ssize_t DFS_APDMA_TEST_show(struct device_driver *driver, char *buf)
 {
 	dma_dummy_read_for_vcorefs(7);
 
-	if (dram_rank_num == DULE_RANK)
+	if (dram_rank_num == DUAL_RANK)
 		return snprintf(buf, PAGE_SIZE, "DFS APDMA Dummy Read Address src1:%pa src2:%pa\n",
-				&dram_base, &dram_add_rank0_base);
+				&dram_rank0_addr, &dram_rank1_addr);
 	else if (dram_rank_num == SINGLE_RANK)
-		return snprintf(buf, PAGE_SIZE, "DFS APDMA Dummy Read Address src1:%pa\n", &dram_base);
+		return snprintf(buf, PAGE_SIZE, "DFS APDMA Dummy Read Address src1:%pa\n", &dram_rank0_addr);
 	else
 		return snprintf(buf, PAGE_SIZE, "DFS APDMA Dummy Read rank number incorrect = %d !!!\n", dram_rank_num);
 }
@@ -1599,13 +1628,11 @@ static int dram_dt_init(void)
 		return -1;
 	}
 
-	if (dram_rank_num == 0) { /* happend to no rsv mem node from LK */
-		if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
-			pr_err("[DRAMC]find dt_scan_dram_info\n");
-		} else {
-			pr_err("[DRAMC]can't find dt_scan_dram_info\n");
-			return -1;
-		}
+	if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
+		pr_err("[DRAMC]find dt_scan_dram_info\n");
+	} else {
+		pr_err("[DRAMC]can't find dt_scan_dram_info\n");
+		return -1;
 	}
 
 	return ret;
