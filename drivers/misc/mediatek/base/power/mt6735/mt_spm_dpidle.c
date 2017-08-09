@@ -332,7 +332,9 @@ static long int idle_get_current_time_ms(void)
 static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 {
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
+#ifdef CONFIG_ARM64
 		mt_cpu_dormant(CPU_DEEPIDLE_MODE);
+#endif
 	} else {
 		/*
 		 * Mp0_axi_config[4] is one by default. No need to program it before entering suspend.
