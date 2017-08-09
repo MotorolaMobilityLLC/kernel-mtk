@@ -32,11 +32,6 @@
     movcs \tmp, #1
     bcs BSYM(702f)
 
-    /* if (irqnr == FIQ_DBG_SGI) return HAVE_IRQ (1) */
-    cmp \irqnr, #FIQ_DBG_SGI
-    moveq \tmp, #1
-    beq BSYM(702f)
-
     /* otherwise, return NO_IRQ (0) */
     mov \tmp, #0
 
