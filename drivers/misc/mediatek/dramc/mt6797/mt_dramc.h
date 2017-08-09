@@ -165,6 +165,10 @@ enum {
 	DRAM_FAIL
 }; /* DRAM status type */
 
+enum RANKNUM {
+	SINGLE_RANK = 1,
+	DUAL_RANK,
+};
 enum {
 	CHANNEL_A = 0,
 	CHANNEL_B,

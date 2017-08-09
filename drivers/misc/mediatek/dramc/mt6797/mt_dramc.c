@@ -50,6 +50,12 @@
 
 #include "mt_dramc.h"
 
+#ifdef CONFIG_OF_RESERVED_MEM
+#define DRAM_R0_DUMMY_READ_RESERVED_KEY "reserve-memory-dram_r0_dummy_read"
+#define DRAM_R1_DUMMY_READ_RESERVED_KEY "reserve-memory-dram_r1_dummy_read"
+#include <linux/of_reserved_mem.h>
+#include <mt-plat/mtk_memcfg.h>
+#endif
 void __iomem *DRAMCAO_CHA_BASE_ADDR;
 void __iomem *DDRPHY_BASE_ADDR;
 void __iomem *DRAMCNAO_CHA_BASE_ADDR;
@@ -58,10 +64,11 @@ void __iomem *DRAMCAO_CHB_BASE_ADDR;
 void __iomem *INFRACFG_AO_BASE_ADDR;
 void __iomem *DRAMCNAO_CHB_BASE_ADDR;
 void __iomem *SLEEP_BASE_ADDR;
+#define DRAM_RSV_SIZE 0x1000
 
 static DEFINE_MUTEX(dram_dfs_mutex);
 int org_dram_data_rate = 0;
-unsigned char old_IC = 0;
+unsigned char old_IC_No_DummyRead = 0;
 unsigned char DFS_type = 0;
 
 #ifdef CONFIG_MTK_DRAMC_PASR
@@ -71,9 +78,11 @@ static unsigned int enter_pdp_cnt;
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
 #define Reg_Readl(addr) readl(IOMEM(addr))
+static unsigned int dram_rank_num;
+phys_addr_t dram_rank0_addr, dram_rank1_addr;
 
 
-const struct dram_info *g_dram_info_dummy_read = NULL;
+struct dram_info *g_dram_info_dummy_read = NULL;
 
 static int __init dt_scan_dram_info(unsigned long node,
 const char *uname, int depth, void *data)
@@ -100,19 +109,31 @@ const char *uname, int depth, void *data)
 
 	endp = reg + (l / sizeof(__be32));
 	if (node) {
-		/* orig_dram_info */
 		g_dram_info_dummy_read =
-		(const struct dram_info *)of_get_flat_dt_prop(node,
+		(struct dram_info *)of_get_flat_dt_prop(node,
 		"orig_dram_info", NULL);
-	}
+		if (g_dram_info_dummy_read == NULL) {
+			old_IC_No_DummyRead = 1;
+			return 0; }
 
-	pr_err("[DRAMC] dram info dram rank number = %d\n",
-	g_dram_info_dummy_read->rank_num);
-	pr_err("[DRAMC] dram info dram rank0 base = 0x%llx\n",
-	g_dram_info_dummy_read->rank_info[0].start);
-	pr_err("[DRAMC] dram info dram rank1 base = 0x%llx\n",
-			g_dram_info_dummy_read->rank_info[0].start +
-			g_dram_info_dummy_read->rank_info[0].size);
+		pr_err("[DRAMC] dram info dram rank number = %d\n",
+		g_dram_info_dummy_read->rank_num);
+
+		if (dram_rank_num == SINGLE_RANK) {
+			g_dram_info_dummy_read->rank_info[0].start = dram_rank0_addr;
+			pr_err("[DRAMC] dram info dram rank0 base = 0x%llx\n",
+			g_dram_info_dummy_read->rank_info[0].start);
+		} else if (dram_rank_num == DUAL_RANK) {
+			g_dram_info_dummy_read->rank_info[0].start = dram_rank0_addr;
+			g_dram_info_dummy_read->rank_info[1].start = dram_rank1_addr;
+			pr_err("[DRAMC] dram info dram rank0 base = 0x%llx\n",
+			g_dram_info_dummy_read->rank_info[0].start);
+			pr_err("[DRAMC] dram info dram rank1 base = 0x%llx\n",
+			g_dram_info_dummy_read->rank_info[1].start);
+		}
+	  else
+		pr_err("[DRAMC] dram info dram rank number incorrect !!!\n");
+	}
 
 	return node;
 }
@@ -1228,11 +1249,11 @@ unsigned int get_dram_data_rate(void)
 		MEMPLL_FOUT = 1066;
 	else if (MEMPLL_FOUT == 3120) {
 		pr_err("[DRAMC] MEMPLL_FOUT: %d; ***OLD IC***\n", MEMPLL_FOUT);
-		old_IC = 1;
+		old_IC_No_DummyRead = 1;
 		MEMPLL_FOUT = 1600; /* old version,not support DFS */
 	}	else if (MEMPLL_FOUT == 3432) {
 		pr_err("[DRAMC] MEMPLL_FOUT: %d; ***OLD IC***\n", MEMPLL_FOUT);
-		old_IC = 1;
+		old_IC_No_DummyRead = 1;
 		MEMPLL_FOUT = 1700; /* old version,not support DFS */
 	}
 
@@ -1299,12 +1320,54 @@ int dram_steps_freq(unsigned int step)
 
 int dram_can_support_fh(void)
 {
-	if (old_IC)
+	if (old_IC_No_DummyRead)
 		return 0;
 	else
 		return 1;
 }
 
+#ifdef CONFIG_OF_RESERVED_MEM
+int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
+{
+	phys_addr_t rptr = 0;
+	unsigned int rsize = 0;
+
+	rptr = rmem->base;
+	rsize = (unsigned int)rmem->size;
+
+	if (strstr(DRAM_R0_DUMMY_READ_RESERVED_KEY, rmem->name)) {
+		if (rsize < DRAM_RSV_SIZE) {
+			pr_err("[DRAMC] Can NOT reserve memory for Rank0\n");
+			old_IC_No_DummyRead = 1;
+			return 0;
+		}
+		dram_rank0_addr = rptr;
+		dram_rank_num++;
+		pr_err("[dram_dummy_read_reserve_mem_of_init] dram_rank0_addr = %pa, size = 0x%x\n",
+				&dram_rank0_addr, rsize);
+	}
+
+	if (strstr(DRAM_R1_DUMMY_READ_RESERVED_KEY, rmem->name)) {
+		if (rsize < DRAM_RSV_SIZE) {
+			pr_err("[DRAMC] Can NOT reserve memory for Rank1\n");
+			old_IC_No_DummyRead = 1;
+			return 0;
+		}
+		dram_rank1_addr = rptr;
+		dram_rank_num++;
+		pr_err("[dram_dummy_read_reserve_mem_of_init] dram_rank1_addr = %pa, size = 0x%x\n",
+				&dram_rank1_addr, rsize);
+	}
+
+	return 0;
+}
+RESERVEDMEM_OF_DECLARE(dram_reserve_r0_dummy_read_init,
+DRAM_R0_DUMMY_READ_RESERVED_KEY,
+			dram_dummy_read_reserve_mem_of_init);
+RESERVEDMEM_OF_DECLARE(dram_reserve_r1_dummy_read_init,
+DRAM_R1_DUMMY_READ_RESERVED_KEY,
+			dram_dummy_read_reserve_mem_of_init);
+#endif
 static ssize_t complex_mem_test_show(struct device_driver *driver, char *buf)
 {
 	int ret;
@@ -1488,7 +1551,7 @@ static int dram_dt_init(void)
 	}
 
 	if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
-		pr_warn("[DRAMC]find dt_scan_dram_info\n");
+		pr_err("[DRAMC]find dt_scan_dram_info\n");
 	} else {
 		pr_err("[DRAMC]can't find dt_scan_dram_info\n");
 		return -1;
