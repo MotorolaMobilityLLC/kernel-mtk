@@ -1628,9 +1628,14 @@ static void TurnOffDacPower(void)
 	audckbufEnable(false);
 }
 
+static bool is_valid_hp_pga_idx(int reg_idx)
+{
+	return (reg_idx >= 0 && reg_idx <= 0x12) || reg_idx == 0x1f;
+}
+
 static void HeadsetVoloumeRestore(void)
 {
-	int index = 0, oldindex = 0, offset = 0, count = 1;
+	int index = 0, oldindex = 0, offset = 0, count = 1, reg_idx;
 
 	/*pr_warn("%s\n", __func__);*/
 	index = 8;
@@ -1639,8 +1644,12 @@ static void HeadsetVoloumeRestore(void)
 		pr_aud("index = %d oldindex = %d\n", index, oldindex);
 		offset = index - oldindex;
 		while (offset > 0) {
-			Ana_Set_Reg(ZCD_CON2, ((oldindex + count) << 7) | (oldindex + count),
-				    0xf9f);
+			reg_idx = oldindex + count;
+			if (is_valid_hp_pga_idx(reg_idx)) {
+				Ana_Set_Reg(ZCD_CON2,
+					    (reg_idx << 7) | reg_idx,
+					    0xf9f);
+			}
 			offset--;
 			count++;
 			udelay(100);
@@ -1649,19 +1658,23 @@ static void HeadsetVoloumeRestore(void)
 		pr_aud("index = %d oldindex = %d\n", index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
-			Ana_Set_Reg(ZCD_CON2, ((oldindex - count) << 7) | (oldindex - count),
-				    0xf9f);
+			reg_idx = oldindex - count;
+			if (is_valid_hp_pga_idx(reg_idx)) {
+				Ana_Set_Reg(ZCD_CON2,
+					    (reg_idx << 7) | reg_idx,
+					    0xf9f);
+			}
 			offset--;
 			count++;
 			udelay(100);
 		}
 	}
-	Ana_Set_Reg(ZCD_CON2, 0x0489, 0xf9f);
+	Ana_Set_Reg(ZCD_CON2, 0x408, 0xf9f);
 }
 
 static void HeadsetVoloumeSet(void)
 {
-	int index = 0, oldindex = 0, offset = 0, count = 1;
+	int index = 0, oldindex = 0, offset = 0, count = 1, reg_idx;
 	/* pr_warn("%s\n", __func__); */
 	index = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	oldindex = 8;
@@ -1669,8 +1682,12 @@ static void HeadsetVoloumeSet(void)
 		pr_aud("index = %d oldindex = %d\n", index, oldindex);
 		offset = index - oldindex;
 		while (offset > 0) {
-			Ana_Set_Reg(ZCD_CON2, ((oldindex + count) << 7) | (oldindex + count),
-				    0xf9f);
+			reg_idx = oldindex + count;
+			if (is_valid_hp_pga_idx(reg_idx)) {
+				Ana_Set_Reg(ZCD_CON2,
+					(reg_idx << 7) | reg_idx,
+					    0xf9f);
+			}
 			offset--;
 			count++;
 			udelay(200);
@@ -1679,8 +1696,12 @@ static void HeadsetVoloumeSet(void)
 		pr_aud("index = %d oldindex = %d\n", index, oldindex);
 		offset = oldindex - index;
 		while (offset > 0) {
-			Ana_Set_Reg(ZCD_CON2, ((oldindex - count) << 7) | (oldindex - count),
-				    0xf9f);
+			reg_idx = oldindex - count;
+			if (is_valid_hp_pga_idx(reg_idx)) {
+				Ana_Set_Reg(ZCD_CON2,
+					    (reg_idx << 7) | reg_idx,
+					    0xf9f);
+			}
 			offset--;
 			count++;
 			udelay(200);
@@ -1696,6 +1717,10 @@ static void Hp_Zcd_Enable(bool _enable)
 		/* when adjust gain during HP buffer on */
 		Ana_Set_Reg(ZCD_CON0, 0x1 << 8, 0x7 << 8);
 		Ana_Set_Reg(ZCD_CON0, 0x0 << 7, 0x1 << 7);
+
+		/* timeout, 1=5ms, 0=30ms */
+		Ana_Set_Reg(ZCD_CON0, 0x1 << 6, 0x1 << 6);
+
 		Ana_Set_Reg(ZCD_CON0, 0x0 << 4, 0x3 << 4);
 		Ana_Set_Reg(ZCD_CON0, 0x5 << 1, 0x7 << 1);
 		Ana_Set_Reg(ZCD_CON0, 0x1 << 0, 0x1 << 0);
@@ -1771,15 +1796,15 @@ static void Audio_Amp_Change(int channels, bool enable)
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0300, 0xffff);
 			/* from yoyo HQA script */
 
-			/* apply volume setting */
-			HeadsetVoloumeSet();
-
 			/* Enable ZCD, for minimize pop noise */
 			/* when adjust gain during HP buffer on */
 			Hp_Zcd_Enable(true);
 
 			/* HP output swtich release to normal output */
 			HP_Switch_to_Release();
+
+			/* apply volume setting */
+			HeadsetVoloumeSet();
 		}
 
 	} else {
@@ -1787,6 +1812,9 @@ static void Audio_Amp_Change(int channels, bool enable)
 		    && mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] ==
 		    false) {
 			/* pr_warn("Audio_Amp_Change off amp\n"); */
+
+			/* Disable AUD_ZCD */
+			Hp_Zcd_Enable(false);
 
 			HeadsetVoloumeRestore();
 			/* Set HPR/HPL gain as -1dB, step by step */
@@ -1797,9 +1825,6 @@ static void Audio_Amp_Change(int channels, bool enable)
 
 			/* switch to ground to de pop-noise */
 			HP_Switch_to_Ground();
-
-			/* Disable AUD_ZCD */
-			Hp_Zcd_Enable(false);
 
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF40F, 0xffff);
 			/* Disable HPR/HPL */

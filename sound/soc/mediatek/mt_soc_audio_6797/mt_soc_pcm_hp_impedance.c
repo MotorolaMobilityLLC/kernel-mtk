@@ -503,12 +503,15 @@ static void ApplyDctoDl(void)
 	     value += HpImpedancePhase1Step) {
 		volatile unsigned int *Sramdata = (unsigned int *)(Dl1_Hp_Playback_dma_buf->area);
 
+		/* add dcvalue for phase boost */
+/*		if (value > HpImpedancePhase1AdcValue)
+			value += HpImpedancePhase1Step;*/
+
+		if (value > HpImpedancePhase2AdcValue)
+			value = HpImpedancePhase2AdcValue;
+
 		FillDatatoDlmemory(Sramdata , Dl1_Hp_Playback_dma_buf->bytes , value);
 		/* apply to dram */
-
-		/* add dcvalue for phase boost */
-		if (value > HpImpedancePhase1AdcValue)
-			value += HpImpedancePhase1Step;
 
 		/* save for DC =0 offset */
 		if (value  == 0) {
@@ -581,7 +584,19 @@ static void ApplyDctoDl(void)
 			pr_aud("[phase2]value = %d average = %d dcinit_value = %d mhp_impedance=%d\n ",
 			       value, average, dcinit_value, mhp_impedance);
 			break;
+		} else {
+			usleep_range(1*300, 1*600);
 		}
+	}
+
+	/* Ramp-Down */
+	while (value > 0) {
+		volatile unsigned int *Sramdata = (unsigned int *)(Dl1_Hp_Playback_dma_buf->area);
+
+		value = value - HpImpedancePhase1Step;
+		/* apply to dram */
+		FillDatatoDlmemory(Sramdata , Dl1_Hp_Playback_dma_buf->bytes , value);
+		usleep_range(1*300, 1*600);
 	}
 #endif
 }
