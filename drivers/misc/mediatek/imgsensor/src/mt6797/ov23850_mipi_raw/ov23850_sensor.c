@@ -81,6 +81,16 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 240,
 	},
 	.normal_video = {
+	    		.pclk = 720000000,
+		.linelength = 9360,
+		.framelength = 2562,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 2816,
+		.grabwindow_height = 2112,
+		.mipi_data_lp2hs_settle_dc = 14, //check
+		.max_framerate = 300,
+	    #if 0
 			.pclk = 360000000,
 			.linelength = 9368,
 			.framelength = 1280,
@@ -90,6 +100,7 @@ static imgsensor_info_struct imgsensor_info = {
 			.grabwindow_height = 1080,
 			.mipi_data_lp2hs_settle_dc = 14, //check
 			.max_framerate = 300,
+			#endif
 	},
 	.hs_video = {
 		.pclk = 280000000,
@@ -161,7 +172,7 @@ static imgsensor_struct imgsensor = {
 static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 {{ 5664, 4240, 0, 0, 5664, 4240, 2832, 2120,  8,   4,   2816, 2112, 0,   0,  2816,  2112}, // Preview 
  { 5664, 4240, 0, 0, 5664, 4240, 5664, 4240, 16,   8,   5632, 4224, 0,   0,  5632,  4224}, // capture 
- { 5664, 4240, 0, 0, 5664, 4240, 5664, 4240, 16, 520,   5632, 3200, 0,   0,  5632,  3200}, // normal video 
+ { 5664, 4240, 0, 0, 5664, 4240, 2832, 2120,  8,   4,   2816, 2112, 0,   0,  2816,  2112}, // normal video
  { 5664, 4240, 0, 0, 5664, 4240, 2832, 2120,456, 520,   1920, 1080, 0,   0,  1920,  1080}, //hight speed video	1920x1080
  { 5664, 4240, 0, 0, 5664, 4240, 2832, 2120,776, 700,   1280, 720,  0,   0,  1280,  720 } //slim video
 };
@@ -2214,6 +2225,7 @@ write_cmos_sensor(0x5d23,0x00);
 write_cmos_sensor(0x5d29,0x40);
 write_cmos_sensor(0x0100,0x01);
 }
+#if 0
 static void preview_setting_1080p(void)
 {
 	write_cmos_sensor(0x0100,0x00);
@@ -2413,6 +2425,7 @@ static void preview_setting_1080p(void)
 	write_cmos_sensor(0x0100,0x01);
 
 }
+#endif
 static void capture_setting_pdaf(kal_uint16 currefps)
 {
 	LOG_INF("capture_setting_pdaf\n");
@@ -3141,10 +3154,12 @@ write_cmos_sensor(0x3400, 0x04);
 
 }
 
+#if 0
 static void normal_video_setting(kal_uint16 currefps)//1080p
 {
 	preview_setting_1080p();
 }
+#endif
 static void hs_video_setting(void)
 {}
 
@@ -3515,6 +3530,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
     return ERROR_NONE;
 }   /* capture() */
+#if 0
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
@@ -3532,7 +3548,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     normal_video_setting(imgsensor.current_fps);
     return ERROR_NONE;
 }
-
+#endif
 static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
                       MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
@@ -3711,14 +3727,15 @@ static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id, MSDK_SENSOR_EXPOSUR
     spin_unlock(&imgsensor_drv_lock);
     switch (scenario_id) {
         case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+            case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
             preview(image_window, sensor_config_data);
             break;
         case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
             capture(image_window, sensor_config_data);
             break;
-        case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-            normal_video(image_window, sensor_config_data);
-            break;
+        //case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+        //    normal_video(image_window, sensor_config_data);
+        //    break;
         case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
             hs_video(image_window, sensor_config_data);
             break;
