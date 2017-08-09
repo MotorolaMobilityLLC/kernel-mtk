@@ -60,6 +60,15 @@
 #define WDT_SWSYSRST		0x18
 #define WDT_SWSYSRST_KEY	0x88000000
 
+#define WDT_REQ_MODE 0x30
+#define WDT_REQ_MODE_KEY 0x33000000
+#define WDT_REQ_IRQ_EN 0x34
+#define WDT_REQ_IRQ_KEY 0x44000000
+typedef enum wk_req_mode {
+	WD_REQ_IRQ_MODE,
+	WD_REQ_RST_MODE,
+} WD_REQ_MODE;
+
 #define DRV_NAME		"mtk-wdt"
 #define DRV_VERSION		"1.0"
 
@@ -153,6 +162,45 @@ static void toprgu_register_reset_controller(struct platform_device *pdev, int r
 	ret = reset_controller_register(&mtk_wdt->reset_controller.rcdev);
 	if (ret)
 		pr_err("could not register toprgu reset controller: %d\n", ret);
+}
+
+/* for toprgu reset request from thermel & spm_wdt */
+static void __iomem *toprgu_base;
+
+int mtk_wdt_request_en_set(int mark_bit, int en)
+{
+	u32 reg;
+
+	reg = ioread32(toprgu_base + WDT_REQ_MODE);
+	reg |= WDT_REQ_MODE_KEY;
+
+	if (en)
+		reg |= mark_bit;
+	else
+		reg &= ~mark_bit;
+
+	iowrite32(reg, toprgu_base + WDT_REQ_MODE);
+
+	return 0;
+}
+
+int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode)
+{
+	u32 reg;
+	u32 ret = 0;
+
+	reg = ioread32(toprgu_base + WDT_REQ_IRQ_EN);
+	reg |= WDT_REQ_IRQ_KEY;
+
+	if (WD_REQ_IRQ_MODE == mode)
+		reg |= mark_bit;
+	else if (WD_REQ_RST_MODE == mode)
+		reg &= ~mark_bit;
+	else
+		ret = -1;
+	iowrite32(reg, toprgu_base + WDT_REQ_IRQ_EN);
+
+	return ret;
 }
 
 static int mtk_reset_handler(struct notifier_block *this, unsigned long mode,
@@ -267,6 +315,8 @@ static int mtk_wdt_probe(struct platform_device *pdev)
 	mtk_wdt->wdt_base = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(mtk_wdt->wdt_base))
 		return PTR_ERR(mtk_wdt->wdt_base);
+
+	toprgu_base = mtk_wdt->wdt_base;
 
 	mtk_wdt->wdt_dev.info = &mtk_wdt_info;
 	mtk_wdt->wdt_dev.ops = &mtk_wdt_ops;
