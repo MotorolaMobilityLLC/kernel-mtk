@@ -705,6 +705,7 @@ void SetApmixedCfg(uint32 offset, uint32 value, uint32 mask);
 void Afe_Log_Print(void);
 
 /* function to get pointer */
+unsigned int Get_Afe_Sram_Length(void);
 dma_addr_t Get_Afe_Sram_Phys_Addr(void);
 dma_addr_t Get_Afe_Sram_Capture_Phys_Addr(void);
 void *Get_Afe_SramBase_Pointer(void);

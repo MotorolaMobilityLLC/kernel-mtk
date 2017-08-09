@@ -280,6 +280,7 @@ static int mtk_i2s2_adc2_pcm_open(struct snd_pcm_substream *substream)
 
 static int mtk_i2s2_adc2_pcm_close(struct snd_pcm_substream *substream)
 {
+	AudDrv_Clk_Off();
 	return 0;
 }
 

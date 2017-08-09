@@ -275,23 +275,22 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 	int ret = 0;
 
-	pr_warn("mtk_capture_pcm_hw_params\n");
-
 	dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
 	dma_buf->dev.dev = substream->pcm->card->dev;
 	dma_buf->private_data = NULL;
 
-	if (mCaptureUseSram == true) {
-		runtime->dma_bytes = params_buffer_bytes(hw_params);
-		pr_warn("mtk_capture_pcm_hw_params mCaptureUseSram dma_bytes = %zu\n", runtime->dma_bytes);
-		substream->runtime->dma_area = (unsigned char *)Get_Afe_SramBase_Pointer();
-		substream->runtime->dma_addr = Get_Afe_Sram_Phys_Addr();
-	} else if (Capture_dma_buf->area) {
+	runtime->dma_bytes = params_buffer_bytes(hw_params);
+
+	if (AllocateAudioSram(&substream->runtime->dma_addr,	&substream->runtime->dma_area,
+		substream->runtime->dma_bytes, substream) == 0)
+		pr_warn("AllocateAudioSram success\n");
+	else if (Capture_dma_buf->area) {
 		pr_warn("Capture_dma_buf = %p Capture_dma_buf->area = %p apture_dma_buf->addr = 0x%lx\n",
 		       Capture_dma_buf, Capture_dma_buf->area, (long) Capture_dma_buf->addr);
-		runtime->dma_bytes = params_buffer_bytes(hw_params);
 		runtime->dma_area = Capture_dma_buf->area;
 		runtime->dma_addr = Capture_dma_buf->addr;
+		mCaptureUseSram = true;
+		AudDrv_Emi_Clk_On();
 	} else {
 		pr_warn("mtk_capture_pcm_hw_params snd_pcm_lib_malloc_pages\n");
 		ret =  snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
@@ -307,9 +306,14 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 static int mtk_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 {
 	pr_warn("mtk_capture_pcm_hw_free\n");
-	if (Capture_dma_buf->area)
+	if (Capture_dma_buf->area) {
+		if (mCaptureUseSram == true) {
+			AudDrv_Emi_Clk_Off();
+			mCaptureUseSram = false;
+		} else
+			freeAudioSram((void *)substream);
 		return 0;
-	else
+	} else
 		return snd_pcm_lib_free_pages(substream);
 
 }
@@ -327,27 +331,6 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 	AudDrv_Clk_On();
 	AudDrv_ADC_Clk_On();	/* TODO: sholud move to later sequence, where can have hires or not info */
 	VUL_Control_context = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_VUL);
-
-	/* can allocate sram_dbg */
-	AfeControlSramLock();
-
-#ifndef CAPTURE_FORCE_USE_DRAM
-	if (GetSramState() ==  SRAM_STATE_FREE) {
-		pr_warn("mtk_capture_pcm_open use sram\n");
-		mtk_capture_hardware.buffer_bytes_max = GetCaptureSramSize();
-		/* TODO: KC: should update .period_bytes_max also? */
-		SetSramState(SRAM_STATE_CAPTURE);
-		mCaptureUseSram = true;
-	} else {
-		pr_warn("mtk_capture_pcm_open use dram\n");
-		mtk_capture_hardware.buffer_bytes_max = UL1_MAX_BUFFER_SIZE;
-	}
-#else
-	pr_warn("mtk_capture_pcm_open use dram\n");
-	mtk_capture_hardware.buffer_bytes_max = UL1_MAX_BUFFER_SIZE;
-#endif
-
-	AfeControlSramUnLock();
 
 	runtime->hw = mtk_capture_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_capture_hardware , sizeof(struct snd_pcm_hardware));
@@ -367,22 +350,12 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 		return ret;
 	}
 
-	if (mCaptureUseSram == false)
-		AudDrv_Emi_Clk_On();
-
 	pr_warn("mtk_capture_pcm_open return\n");
 	return 0;
 }
 
 static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 {
-	if (mCaptureUseSram == false)
-		AudDrv_Emi_Clk_Off();
-
-	if (mCaptureUseSram == true) {
-		ClearSramState(SRAM_STATE_CAPTURE);
-		mCaptureUseSram = false;
-	}
 	AudDrv_ADC_Clk_Off();
 	AudDrv_Clk_Off();
 	return 0;

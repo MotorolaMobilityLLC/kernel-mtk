@@ -427,7 +427,7 @@ static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
 	.mask = 0,
 };
 
-static int mPlaybackSramState;
+static unsigned int mPlaybackDramState;
 static int mtk_pcm_i2s0_open(struct snd_pcm_substream *substream)
 {
 	int ret = 0;
@@ -436,12 +436,12 @@ static int mtk_pcm_i2s0_open(struct snd_pcm_substream *substream)
 	AfeControlSramLock();
 	if (GetSramState() == SRAM_STATE_FREE) {
 		mtk_i2s0_hardware.buffer_bytes_max = GetPLaybackSramFullSize();
-		mPlaybackSramState = SRAM_STATE_PLAYBACKFULL;
-		SetSramState(mPlaybackSramState);
+		mPlaybackDramState = SRAM_STATE_PLAYBACKFULL;
+		SetSramState(mPlaybackDramState);
 	} else {
 		mtk_i2s0_hardware.buffer_bytes_max = GetPLaybackSramPartial();
-		mPlaybackSramState = SRAM_STATE_PLAYBACKPARTIAL;
-		SetSramState(mPlaybackSramState);
+		mPlaybackDramState = SRAM_STATE_PLAYBACKPARTIAL;
+		SetSramState(mPlaybackDramState);
 	}
 	AfeControlSramUnLock();
 	runtime->hw = mtk_i2s0_hardware;
@@ -482,8 +482,8 @@ static int mtk_pcm_i2s0_close(struct snd_pcm_substream *substream)
 {
 	pr_debug("%s\n", __func__);
 	AfeControlSramLock();
-	ClearSramState(mPlaybackSramState);
-	mPlaybackSramState = GetSramState();
+	ClearSramState(mPlaybackDramState);
+	mPlaybackDramState = GetSramState();
 	AfeControlSramUnLock();
 	return 0;
 }

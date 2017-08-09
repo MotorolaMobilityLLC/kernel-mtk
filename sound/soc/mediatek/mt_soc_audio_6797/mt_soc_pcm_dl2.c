@@ -59,7 +59,6 @@
 
 
 static AFE_MEM_CONTROL_T *pMemControl;
-static int mPlaybackSramState;
 static struct snd_dma_buffer *Dl2_Playback_dma_buf;
 
 static DEFINE_SPINLOCK(auddrv_DL2Ctl_lock);
@@ -77,7 +76,6 @@ static int mtk_asoc_pcm_dl2_new(struct snd_soc_pcm_runtime *rtd);
 static int mtk_asoc_dl2_probe(struct snd_soc_platform *platform);
 
 static bool mPrepareDone;
-static bool mPlaybackUseSram;
 
 #define USE_RATE        (SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_48000)
 #define USE_RATE_MIN        8000
@@ -241,14 +239,11 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 
 	PRINTK_AUDDRV("mtk_pcm_dl2_open\n");
 
-		mtk_pcm_dl2_hardware.buffer_bytes_max = GetPLaybackDramLowLatencySize();
-		mPlaybackSramState = SRAM_STATE_PLAYBACKDRAM;
-		mPlaybackUseSram = false;
-	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
-		AudDrv_Emi_Clk_On();
+	mtk_pcm_dl2_hardware.buffer_bytes_max = GetPLaybackDramLowLatencySize();
+	AudDrv_Emi_Clk_On();
 
-	pr_warn("mtk_pcm_dl2_hardware.buffer_bytes_max = %zu mPlaybackSramState = %d\n",
-	       mtk_pcm_dl2_hardware.buffer_bytes_max, mPlaybackSramState);
+	pr_warn("mtk_pcm_dl2_hardware.buffer_bytes_max = %zu\n",
+	       mtk_pcm_dl2_hardware.buffer_bytes_max);
 	runtime->hw = mtk_pcm_dl2_hardware;
 
 	AudDrv_Clk_On();
@@ -292,13 +287,7 @@ static int mtk_soc_pcm_dl2_close(struct snd_pcm_substream *substream)
 		mPrepareDone = false;
 	}
 
-	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
-		AudDrv_Emi_Clk_Off();
-
-	AfeControlSramLock();
-	ClearSramState(mPlaybackSramState);
-	mPlaybackSramState = GetSramState();
-	AfeControlSramUnLock();
+	AudDrv_Emi_Clk_Off();
 	AudDrv_Clk_Off();
 	return 0;
 }

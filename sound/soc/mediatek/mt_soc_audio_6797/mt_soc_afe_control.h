@@ -189,7 +189,8 @@ void Set_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_sub
 			      uint32 size);
 
 struct snd_dma_buffer *Get_Mem_Buffer(Soc_Aud_Digital_Block MemBlock);
-int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length);
+int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length,
+	dma_addr_t dma_addr, unsigned char *dma_area);
 
 
 bool BackUp_Audio_Register(void);
@@ -230,5 +231,12 @@ bool UpdateAndCheckIrqStatus(int irq_num, bool bEnable);
 unsigned int Align64ByteSize(unsigned int insize);
 
 void AudDrv_checkDLISRStatus(void);
+
+/* sram mamager */
+bool InitSramManager(unsigned int sramblocksize);
+bool CheckSramAvail(unsigned int mSramLength, unsigned int *mSramBlockidx, unsigned int *mSramBlocknum);
+int AllocateAudioSram(dma_addr_t *sram_phys_addr, unsigned char **msram_virt_addr,
+	unsigned int mSramLength, void *user);
+int freeAudioSram(void *user);
 
 #endif

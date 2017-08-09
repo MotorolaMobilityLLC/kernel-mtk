@@ -116,6 +116,11 @@ void Auddrv_Reg_map(void)
 	APMIXEDSYS_ADDRESS = ioremap_nocache(APMIXEDSYS_BASE, 0x1000);
 }
 
+unsigned int Get_Afe_Sram_Length(void)
+{
+	return AFE_INTERNAL_SRAM_SIZE;
+}
+
 dma_addr_t Get_Afe_Sram_Phys_Addr(void)
 {
 	return (dma_addr_t) AFE_INTERNAL_SRAM_PHY_BASE;

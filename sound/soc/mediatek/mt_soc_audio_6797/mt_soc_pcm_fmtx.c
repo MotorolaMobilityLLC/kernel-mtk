@@ -63,9 +63,8 @@
 
 
 static AFE_MEM_CONTROL_T *pMemControl;
-static bool fake_buffer = 1;
 static struct snd_dma_buffer *FMTX_Playback_dma_buf;
-static unsigned int mPlaybackSramState = SRAM_STATE_FREE;
+static unsigned int mPlaybackDramState;
 
 static DEFINE_SPINLOCK(auddrv_FMTxCtl_lock);
 
@@ -262,15 +261,17 @@ static int mtk_pcm_fmtx_hw_params(struct snd_pcm_substream *substream,
 	int ret = 0;
 
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
-	if (mPlaybackSramState == SRAM_STATE_PLAYBACKFULL) {
-		/* substream->runtime->dma_bytes = AFE_INTERNAL_SRAM_SIZE; */
-		substream->runtime->dma_area = (unsigned char *)Get_Afe_SramBase_Pointer();
-		substream->runtime->dma_addr = AFE_INTERNAL_SRAM_PHY_BASE;
-		AudDrv_Allocate_DL1_Buffer(mDev, substream->runtime->dma_bytes);
+	if (AllocateAudioSram(&substream->runtime->dma_addr,	&substream->runtime->dma_area,
+		substream->runtime->dma_bytes, substream) == 0) {
+		AudDrv_Allocate_DL1_Buffer(mDev, substream->runtime->dma_bytes,
+			substream->runtime->dma_addr, substream->runtime->dma_area);
+		/* pr_warn("mtk_pcm_hw_params dma_bytes = %d\n",substream->runtime->dma_bytes); */
 	} else {
 		substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
 		substream->runtime->dma_area = FMTX_Playback_dma_buf->area;
 		substream->runtime->dma_addr = FMTX_Playback_dma_buf->addr;
+		mPlaybackDramState = true;
+		AudDrv_Emi_Clk_On();
 		SetFMTXBuffer(substream, hw_params);
 	}
 	/* ------------------------------------------------------- */
@@ -285,9 +286,13 @@ static int mtk_pcm_fmtx_hw_params(struct snd_pcm_substream *substream,
 static int mtk_pcm_fmtx_hw_free(struct snd_pcm_substream *substream)
 {
 	PRINTK_AUD_FMTX("mtk_pcm_fmtx_hw_free\n");
-	if (fake_buffer)
-		return 0;
-	return snd_pcm_lib_free_pages(substream);
+	pr_warn("%s sunstream = %p\n", __func__, substream);
+	if (mPlaybackDramState == true) {
+		AudDrv_Emi_Clk_Off();
+		mPlaybackDramState = false;
+	} else
+		freeAudioSram((void *)substream);
+	return 0;
 }
 
 
@@ -302,21 +307,11 @@ static int mtk_pcm_fmtx_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	AfeControlSramLock();
-	if (GetSramState() == SRAM_STATE_FREE) {
-		mtk_fmtx_hardware.buffer_bytes_max = GetPLaybackSramFullSize();
-		mPlaybackSramState = SRAM_STATE_PLAYBACKFULL;
-		SetSramState(mPlaybackSramState);
-	} else {
-		mtk_fmtx_hardware.buffer_bytes_max = GetPLaybackDramSize();
-		mPlaybackSramState = SRAM_STATE_PLAYBACKDRAM;
-	}
-	AfeControlSramUnLock();
-	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
-		AudDrv_Emi_Clk_On();
+	mPlaybackDramState = false;
+	mtk_fmtx_hardware.buffer_bytes_max = GetPLaybackSramFullSize();
 
-	pr_warn("mtk_I2S0dl1_hardware.buffer_bytes_max = %zu mPlaybackSramState = %d\n",
-	       mtk_fmtx_hardware.buffer_bytes_max, mPlaybackSramState);
+	pr_warn("mtk_I2S0dl1_hardware.buffer_bytes_max = %zu mPlaybackDramState = %d\n",
+	       mtk_fmtx_hardware.buffer_bytes_max, mPlaybackDramState);
 	runtime->hw = mtk_fmtx_hardware;
 
 	AudDrv_Clk_On();
@@ -350,13 +345,6 @@ static int mtk_pcm_fmtx_close(struct snd_pcm_substream *substream)
 {
 	PRINTK_AUD_FMTX("%s\n", __func__);
 	/* mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)CMB_STUB_AIF_0); */
-
-	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
-		AudDrv_Emi_Clk_Off();
-	AfeControlSramLock();
-	ClearSramState(mPlaybackSramState);
-	mPlaybackSramState = GetSramState();
-	AfeControlSramUnLock();
 
 	AudDrv_Clk_Off();
 	return 0;

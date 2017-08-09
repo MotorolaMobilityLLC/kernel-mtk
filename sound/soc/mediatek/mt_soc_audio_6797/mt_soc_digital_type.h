@@ -915,4 +915,31 @@ typedef struct {
 	int  mAud_irq_counter[Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE];
 } Aud_Irq_Block;
 
+/*
+  *  mUser is record for User
+      using sunstream pointer as reach user
+  */
+typedef struct {
+	bool mValid;
+	void *mUser;
+	unsigned int mLength;
+	dma_addr_t msram_phys_addr;
+	void *msram_virt_addr;
+} Aud_Sram_Block;
+
+/*
+  * use memory interface number as block number
+  * todo ?
+  */
+
+typedef struct {
+	dma_addr_t msram_phys_addr;
+	void *msram_virt_addr;
+	unsigned int mSramLength;
+	unsigned int mBlockSize;
+	unsigned int mBlocknum;
+	Aud_Sram_Block mAud_Sram_Block[Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE];
+} Aud_Sram_Manager;
+
+
 #endif

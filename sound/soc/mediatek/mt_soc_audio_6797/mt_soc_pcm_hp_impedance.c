@@ -72,7 +72,7 @@ static const int HpImpedancePhase2Step = 400;
 static const int HpImpedancePhase1AdcValue = 1200;
 static const int HpImpedancePhase2AdcValue = 7200;
 static const int HpImpedancePhase2AdcValue_DepopHw = 9300;
-static struct snd_dma_buffer *Dl1_Playback_dma_buf;
+static struct snd_dma_buffer *Dl1_Hp_Playback_dma_buf;
 
 #define AUXADC_BIT_RESOLUTION (1 << 12)
 #define AUXADC_VOLTAGE_RANGE 1800
@@ -159,8 +159,8 @@ static int mtk_pcm_hp_impedance_params(struct snd_pcm_substream *substream,
 	/* runtime->dma_bytes has to be set manually to allow mmap */
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
 
-	substream->runtime->dma_area = Dl1_Playback_dma_buf->area;
-	substream->runtime->dma_addr = Dl1_Playback_dma_buf->addr;
+	substream->runtime->dma_area = Dl1_Hp_Playback_dma_buf->area;
+	substream->runtime->dma_addr = Dl1_Hp_Playback_dma_buf->addr;
 	SetDL1Buffer(substream, hw_params);
 
 	pr_warn("mtk_pcm_hp_impedance_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
@@ -506,9 +506,9 @@ static void ApplyDctoDl(void)
 		       DCoffsetDefault_DepopHW : DCoffsetDefault;
 	for (value = 0; value <= (hpImpedancePhase2AdcValue + HpImpedancePhase2Step);
 	     value += HpImpedancePhase1Step) {
-		volatile unsigned int *Sramdata = (unsigned int *)(Dl1_Playback_dma_buf->area);
+		volatile unsigned int *Sramdata = (unsigned int *)(Dl1_Hp_Playback_dma_buf->area);
 
-		FillDatatoDlmemory(Sramdata , Dl1_Playback_dma_buf->bytes , value);
+		FillDatatoDlmemory(Sramdata , Dl1_Hp_Playback_dma_buf->bytes , value);
 		/* apply to dram */
 
 		/* add dcvalue for phase boost */
@@ -679,7 +679,7 @@ static int mtk_asoc_dhp_impedance_probe(struct snd_soc_platform *platform)
 	/* allocate dram */
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1,
 				   Dl1_MAX_BUFFER_SIZE);
-	Dl1_Playback_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DL1);
+	Dl1_Hp_Playback_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DL1);
 	return 0;
 }
 

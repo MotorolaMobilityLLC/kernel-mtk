@@ -141,22 +141,23 @@ const unsigned int AudioDramPlaybackSize = 1024 * 32;
 
 const unsigned int AudioDramPlaybackLowLatencySize = 1024 * 4;
 
-const size_t AudioSramCaptureSize = 1024 * 36;
-const size_t AudioDramCaptureSize = 1024 * 36;
+const size_t AudioSramCaptureSize = 1024 * 32;
+const size_t AudioDramCaptureSize = 1024 * 32;
 const size_t AudioInterruptLimiter = 100;
 static int Aud_APLL_DIV_APLL1_cntr;
 static int Aud_APLL_DIV_APLL2_cntr;
 static int irqcount;
 static int APLL1Counter;
 static int APLL2Counter;
-
 static Aud_Irq_Block mAudIrqBlock;
+static Aud_Sram_Manager mAud_Sram_Manager;
 
 static bool mExternalModemStatus;
 
 static struct mtk_dai mtk_dais[Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK];
 
 #define IrqShortCounter  512
+#define SramBlockSize (4096)
 
 /* mutex lock */
 static DEFINE_MUTEX(afe_control_mutex);
@@ -496,8 +497,8 @@ bool InitAfeControl(void)
 	Audio2ndAdcI2SStatus = false;
 	AudioMrgStatus = false;
 	memset((void *)&mAudIrqBlock, 0 , sizeof(Aud_Irq_Block));
+	InitSramManager(SramBlockSize);
 
-	memset((void *)&mAudioSramManager, 0, sizeof(AudioSramManager));
 	mAudioMrg->Mrg_I2S_SampleRate = SampleRateTransform(44100, Soc_Aud_Digital_Block_MRG_I2S_OUT);
 
 	for (i = AUDIO_APLL1_DIV0; i < AUDIO_APLL_DIV_NUM; i++)
@@ -2842,45 +2843,25 @@ bool SetTDMtoI2SEnable(bool enable)
  *  allocate DL1 Buffer
  *
 ******************************************************************************/
-int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length)
+int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length,
+	dma_addr_t dma_addr, unsigned char *dma_area)
 {
-#ifdef AUDIO_MEMORY_SRAM
-	kal_uint32 u4PhyAddr = 0;
-#endif
 	AFE_BLOCK_T *pblock;
 
 	pr_debug("%s Afe_Buf_Length = %d\n ", __func__, Afe_Buf_Length);
 	pblock = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]->rBlock);
 	pblock->u4BufferSize = Afe_Buf_Length;
 
-#ifdef AUDIO_MEMORY_SRAM
 	if (Afe_Buf_Length > AFE_INTERNAL_SRAM_SIZE) {
 		PRINTK_AUDDRV("Afe_Buf_Length > AUDDRV_DL1_MAX_BUFFER_LENGTH\n");
 		return -1;
 	}
-#endif
-	/* allocate memory */
-	{
-#ifdef AUDIO_MEMORY_SRAM
-		/* todo , there should be a sram manager to allocate memory for low power. */
-		u4PhyAddr = AFE_INTERNAL_SRAM_PHY_BASE;
-		pblock->pucPhysBufAddr = u4PhyAddr;
-#ifdef AUDIO_MEM_IOREMAP
-		PRINTK_AUDDRV("AudDrv_Allocate_DL1_Buffer length AUDIO_MEM_IOREMAP  = %d\n",
-			      Afe_Buf_Length);
-		pblock->pucVirtBufAddr = (kal_uint8 *) Get_Afe_SramBase_Pointer();
-#else
-		pblock->pucVirtBufAddr = AFE_INTERNAL_SRAM_VIR_BASE;
-#endif
-#else
-		PRINTK_AUDDRV("AudDrv_Allocate_DL1_Buffer use dram");
-		pblock->pucVirtBufAddr =
-		    dma_alloc_coherent(pDev, pblock->u4BufferSize, &pblock->pucPhysBufAddr,
-				       GFP_KERNEL);
-#endif
-	}
-	PRINTK_AUDDRV("AudDrv_Allocate_DL1_Buffer Afe_Buf_Length = %dpucVirtBufAddr = %p\n",
-		      Afe_Buf_Length, pblock->pucVirtBufAddr);
+
+	pblock->pucPhysBufAddr = (kal_uint32)dma_addr;
+	pblock->pucVirtBufAddr = dma_area;
+
+	pr_warn("%s  Afe_Buf_Length = %dpucVirtBufAddr = %p pblock->pucPhysBufAddr =0x%x\n",
+		__func__, Afe_Buf_Length, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 
 	/* check 32 bytes align */
 	if ((pblock->pucPhysBufAddr & 0x1f) != 0) {
@@ -4204,4 +4185,124 @@ void AudDrv_checkDLISRStatus(void)
 		}
 	}
 }
+
+bool InitSramManager(unsigned int sramblocksize)
+{
+	int i = 0;
+
+	memset((void *)&mAud_Sram_Manager, 0, sizeof(Aud_Sram_Manager));
+	mAud_Sram_Manager.msram_phys_addr = Get_Afe_Sram_Phys_Addr();
+	mAud_Sram_Manager.msram_virt_addr = Get_Afe_SramBase_Pointer();
+	mAud_Sram_Manager.mSramLength =  Get_Afe_Sram_Length();
+	mAud_Sram_Manager.mBlockSize = sramblocksize;
+	mAud_Sram_Manager.mBlocknum = (mAud_Sram_Manager.mSramLength / mAud_Sram_Manager.mBlockSize);
+	pr_warn("%s mBlocknum = %d mAud_Sram_Manager.mSramLength = %d mAud_Sram_Manager.mBlockSize = %d\n",
+	 __func__, mAud_Sram_Manager.mBlocknum, mAud_Sram_Manager.mSramLength, mAud_Sram_Manager.mBlockSize);
+	for (i = 0; i < mAud_Sram_Manager.mBlocknum ; i++) {
+		mAud_Sram_Manager.mAud_Sram_Block[i].mValid = true;
+		mAud_Sram_Manager.mAud_Sram_Block[i].mLength = mAud_Sram_Manager.mBlockSize;
+		mAud_Sram_Manager.mAud_Sram_Block[i].mUser = 0;
+		mAud_Sram_Manager.mAud_Sram_Block[i].msram_phys_addr =
+			mAud_Sram_Manager.msram_phys_addr + (sramblocksize * i);
+		mAud_Sram_Manager.mAud_Sram_Block[i].msram_virt_addr =
+			(void *)((char *)mAud_Sram_Manager.msram_virt_addr + (sramblocksize * i));
+	}
+	return true;
+}
+
+bool CheckSramAvail(unsigned int mSramLength, unsigned int *mSramBlockidx, unsigned int *mSramBlocknum)
+{
+	unsigned int MaxSramSize = 0;
+	bool StartRecord = false;
+	Aud_Sram_Block  *SramBlock = NULL;
+	int i = 0;
+
+	*mSramBlockidx = 0;
+
+	for (i = 0; i < mAud_Sram_Manager.mBlocknum; i++) {
+		SramBlock = &mAud_Sram_Manager.mAud_Sram_Block[i];
+		if ((SramBlock->mUser == NULL) && SramBlock->mValid) {
+			MaxSramSize += mAud_Sram_Manager.mBlockSize;
+			if (StartRecord == false) {
+				StartRecord = true;
+				*mSramBlockidx = i;
+			}
+			(*mSramBlocknum)++;
+
+			/* can callocate sram */
+			if (MaxSramSize >= mSramLength)
+				break;
+		}
+
+		/* when reach allocate buffer , reset condition*/
+		if ((SramBlock->mUser != NULL) && SramBlock->mValid) {
+			MaxSramSize = 0;
+			*mSramBlocknum = 0;
+			*mSramBlockidx = 0;
+			StartRecord = false;
+		}
+
+		if (SramBlock->mValid == 0) {
+			pr_warn("%s SramBlock->mValid == 0 i = %d\n", __func__, i);
+			break;
+		}
+	}
+
+	pr_warn("%s MaxSramSize = %d mSramLength = %d mSramBlockidx = %d mSramBlocknum= %d\n",
+	 __func__, MaxSramSize, mSramLength, *mSramBlockidx, *mSramBlocknum);
+
+	if (MaxSramSize >= mSramLength)
+		return true;
+	else
+		return false;
+}
+
+int AllocateAudioSram(dma_addr_t *sram_phys_addr, unsigned char **msram_virt_addr,
+	unsigned int mSramLength, void *user)
+{
+	unsigned int SramBlockNum = 0;
+	unsigned int SramBlockidx = 0;
+	int ret = 0;
+
+	AfeControlSramLock();
+	if (CheckSramAvail(mSramLength, &SramBlockidx, &SramBlockNum) == true) {
+		*sram_phys_addr = mAud_Sram_Manager.mAud_Sram_Block[SramBlockidx].msram_phys_addr;
+		*msram_virt_addr = (char *)mAud_Sram_Manager.mAud_Sram_Block[SramBlockidx].msram_virt_addr;
+
+		pr_warn("%s SramBlockidx = %d SramBlockNum = %d\n",
+			__func__, SramBlockidx, SramBlockNum);
+
+		/* set aud sram with user*/
+		while (SramBlockNum) {
+			mAud_Sram_Manager.mAud_Sram_Block[SramBlockidx].mUser = user;
+			SramBlockNum--;
+			SramBlockidx++;
+		}
+		AfeControlSramUnLock();
+	} else {
+		AfeControlSramUnLock();
+		ret =  -ENOMEM;
+	}
+
+	return ret;
+}
+
+int freeAudioSram(void *user)
+{
+	unsigned int i = 0;
+	Aud_Sram_Block  *SramBlock = NULL;
+
+	AfeControlSramLock();
+	for (i = 0; i < mAud_Sram_Manager.mBlocknum ; i++) {
+		SramBlock = &mAud_Sram_Manager.mAud_Sram_Block[i];
+		if (SramBlock->mUser == user) {
+			SramBlock->mUser = NULL;
+			pr_warn("%s SramBlockidx = %d\n", __func__, i);
+		}
+	}
+	AfeControlSramUnLock();
+	return 0;
+}
+
+
 
