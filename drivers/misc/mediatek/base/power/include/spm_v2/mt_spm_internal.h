@@ -110,11 +110,17 @@ extern struct clk *i2c3_clk_main;
 
 #ifndef CONFIG_MTK_FPGA
 #if 0 /* defined(CONFIG_ARCH_MT6797) */
-#define SPM_VCORE_EN
+#define SPM_VCORE_EN_MT6797
 #endif
 #endif
 
-#ifdef SPM_VCORE_EN
+#ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_ARCH_MT6755)
+#define SPM_VCORE_EN_MT6755
+#endif
+#endif
+
+#if defined(CONFIG_ARCH_MT6797)
 /* SPM_SW_RSV_1[3:0], trigger by cpu_wake_up_event */
 #define SPM_SCREEN_ON			0x1
 #define SPM_SCREEN_OFF			0x2

@@ -14,7 +14,6 @@
  * Config and Parameter
  **************************************/
 #define LOG_BUF_SIZE		256
-#define PCM_REST_WAIT_TIMEOUT   2000
 
 /**************************************
  * Define and Declare
@@ -66,27 +65,28 @@ const char *wakesrc_str[32] = {
 void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 {
 	u32 con1;
-	int vcorefs_retry;
+	int retry = 0, timeout = 2000;
 
 	/* [Vcorefs] backup r0 to POWER_ON_VAL0 for MEM Ctrl should work during PCM reset */
 	if (spm_read(PCM_REG1_DATA) == 0x1) {
 		con1 = spm_read(SPM_WAKEUP_EVENT_MASK);
 		spm_write(SPM_WAKEUP_EVENT_MASK, (con1 & ~(0x1)));
 
+#if defined(SPM_VCORE_EN_MT6797)
+		spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xFFFF)) | SPM_OFFLOAD);
+#endif
 		spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 
-		vcorefs_retry = 0;
 		while ((spm_read(SPM_IRQ_STA) & PCM_IRQ_ROOT_MASK_LSB) == 0) {
-			if (vcorefs_retry > PCM_REST_WAIT_TIMEOUT) {
-				pr_err("[VcoreFS] CPU triggers wake-up event fail!(timeout=%d)\n",
-					 PCM_REST_WAIT_TIMEOUT);
-				pr_err("[VcoreFS] Curr R15=0x%x\n", spm_read(PCM_REG15_DATA));
-				pr_err("[VcoreFS] Curr R6=0x%x\n", spm_read(PCM_REG6_DATA));
-				pr_err("[VcoreFS] Curr PCM_FSM_STA=0x%x\n", spm_read(PCM_FSM_STA));
+			if (retry > timeout) {
+				pr_err("[VcoreFS] CPU waiting F/W ack fail, PCM_FSM_STA: 0x%x, timeout: %d\n",
+							spm_read(PCM_FSM_STA), timeout);
+				pr_err("[VcoreFS] R6: 0x%x, R15: 0x%x\n",
+							spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 				BUG();
 			}
 			udelay(1);
-			vcorefs_retry++;
+			retry++;
 		}
 
 		spm_write(SPM_CPU_WAKEUP_EVENT, 0);
@@ -94,12 +94,13 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 
 		/* backup mem control from r0 to POWER_ON_VAL0 */
 		if (spm_read(SPM_POWER_ON_VAL0) != spm_read(PCM_REG0_DATA)) {
-			spm_crit("VAL0 from 0x%x to 0x%x\n",
-				 spm_read(SPM_POWER_ON_VAL0), spm_read(PCM_REG0_DATA));
+			spm_crit("VAL0 from 0x%x to 0x%x\n", spm_read(SPM_POWER_ON_VAL0), spm_read(PCM_REG0_DATA));
 			spm_write(SPM_POWER_ON_VAL0, spm_read(PCM_REG0_DATA));
 		}
+
 		/* disable r0 and r7 to control power */
 		spm_write(PCM_PWR_IO_EN, 0);
+
 		/* [Vcorefs] disable pcm timer after leaving FW */
 		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
 	}
@@ -506,29 +507,25 @@ void __spm_check_md_pdn_power_control(struct pwr_ctrl *pwr_ctrl)
 		pwr_ctrl->pcm_flags &= ~SPM_FLAG_DIS_MD_INFRA_PDN;
 }
 
-void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl,
-					 const struct pwr_ctrl *src_pwr_ctrl)
+void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const struct pwr_ctrl *src_pwr_ctrl)
 {
 	/* pwr_ctrl for mask/ctrl register */
-	dest_pwr_ctrl->dvfs_halt_mask_b = src_pwr_ctrl->dvfs_halt_mask_b;
-	dest_pwr_ctrl->sdio_on_dvfs_req_mask_b = src_pwr_ctrl->sdio_on_dvfs_req_mask_b;
-	dest_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b = src_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b;
-	dest_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b = src_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b;
-	dest_pwr_ctrl->md2_ddr_en_dvfs_halt_mask_b = src_pwr_ctrl->md2_ddr_en_dvfs_halt_mask_b;
-	dest_pwr_ctrl->md_srcclkena_0_dvfs_req_mask_b =
-	    src_pwr_ctrl->md_srcclkena_0_dvfs_req_mask_b;
-	dest_pwr_ctrl->md_srcclkena_1_dvfs_req_mask_b =
-	    src_pwr_ctrl->md_srcclkena_1_dvfs_req_mask_b;
-	dest_pwr_ctrl->conn_srcclkena_dvfs_req_mask_b =
-	    src_pwr_ctrl->conn_srcclkena_dvfs_req_mask_b;
+	dest_pwr_ctrl->dvfs_halt_mask_b			= src_pwr_ctrl->dvfs_halt_mask_b;
+	dest_pwr_ctrl->sdio_on_dvfs_req_mask_b		= src_pwr_ctrl->sdio_on_dvfs_req_mask_b;
+	dest_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b	= src_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b;
+	dest_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b	= src_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b;
+	dest_pwr_ctrl->md2_ddr_en_dvfs_halt_mask_b	= src_pwr_ctrl->md2_ddr_en_dvfs_halt_mask_b;
+	dest_pwr_ctrl->md_srcclkena_0_dvfs_req_mask_b	= src_pwr_ctrl->md_srcclkena_0_dvfs_req_mask_b;
+	dest_pwr_ctrl->md_srcclkena_1_dvfs_req_mask_b	= src_pwr_ctrl->md_srcclkena_1_dvfs_req_mask_b;
+	dest_pwr_ctrl->conn_srcclkena_dvfs_req_mask_b	= src_pwr_ctrl->conn_srcclkena_dvfs_req_mask_b;
 
-	dest_pwr_ctrl->vsync_dvfs_halt_mask_b = src_pwr_ctrl->vsync_dvfs_halt_mask_b;
-	dest_pwr_ctrl->emi_boost_dvfs_req_mask_b = src_pwr_ctrl->emi_boost_dvfs_req_mask_b;
-	dest_pwr_ctrl->emi_bw_dvfs_req_mask = src_pwr_ctrl->emi_bw_dvfs_req_mask;
-	dest_pwr_ctrl->cpu_md_emi_dvfs_req_prot_dis = src_pwr_ctrl->cpu_md_emi_dvfs_req_prot_dis;
-	dest_pwr_ctrl->spm_dvfs_req = src_pwr_ctrl->spm_dvfs_req;
-	dest_pwr_ctrl->spm_dvfs_force_down = src_pwr_ctrl->spm_dvfs_force_down;
-	dest_pwr_ctrl->cpu_md_dvfs_sop_force_on = src_pwr_ctrl->cpu_md_dvfs_sop_force_on;
+	dest_pwr_ctrl->vsync_dvfs_halt_mask_b		= src_pwr_ctrl->vsync_dvfs_halt_mask_b;
+	dest_pwr_ctrl->emi_boost_dvfs_req_mask_b	= src_pwr_ctrl->emi_boost_dvfs_req_mask_b;
+	dest_pwr_ctrl->emi_bw_dvfs_req_mask		= src_pwr_ctrl->emi_bw_dvfs_req_mask;
+	dest_pwr_ctrl->cpu_md_emi_dvfs_req_prot_dis	= src_pwr_ctrl->cpu_md_emi_dvfs_req_prot_dis;
+	dest_pwr_ctrl->spm_dvfs_req			= src_pwr_ctrl->spm_dvfs_req;
+	dest_pwr_ctrl->spm_dvfs_force_down		= src_pwr_ctrl->spm_dvfs_force_down;
+	dest_pwr_ctrl->cpu_md_dvfs_sop_force_on		= src_pwr_ctrl->cpu_md_dvfs_sop_force_on;
 
 	/* pwr_ctrl pcm_flag */
 	if (src_pwr_ctrl->pcm_flags_cust != 0) {
@@ -550,7 +547,6 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl,
 		if ((src_pwr_ctrl->pcm_flags & SPM_FLAG_EN_MET_DBG_FOR_VCORE_DVFS) != 0)
 			dest_pwr_ctrl->pcm_flags |= SPM_FLAG_EN_MET_DBG_FOR_VCORE_DVFS;
 	}
-
 }
 
 void __spm_enable_i2c3_clk(void)

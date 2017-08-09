@@ -13,9 +13,8 @@
 #endif
 #include <mt-plat/upmu_common.h>
 
-#ifdef CONFIG_MTK_VCOREFS
-#include <mach/mt_vcorefs_manager.h>
-#endif
+#include "mt_vcorefs_governor.h"
+
 #include "mt_spm_internal.h"
 
 #ifdef CONFIG_OF
@@ -111,8 +110,11 @@ u32 spm_irq_4 = 201;
 u32 spm_irq_5 = 202;
 u32 spm_irq_6 = 203;
 u32 spm_irq_7 = 204;
+
+#ifdef SPM_VCORE_EN_MT6755
 u32 spm_vcorefs_start_irq = 152;
 u32 spm_vcorefs_end_irq = 153;
+#endif
 #endif
 
 /**************************************
@@ -130,8 +132,11 @@ struct spm_irq_desc {
 };
 
 static twam_handler_t spm_twam_handler;
+
+#ifdef SPM_VCORE_EN_MT6755
 static vcorefs_handler_t vcorefs_handler;
 static vcorefs_start_handler_t vcorefs_start_handler;
+#endif
 
 void __attribute__((weak)) spm_sodi3_init(void)
 {
@@ -317,6 +322,7 @@ static int spm_irq_register(void)
 	return r;
 }
 
+#ifdef SPM_VCORE_EN_MT6755
 void spm_vcorefs_register_handler(vcorefs_handler_t handler, vcorefs_start_handler_t start_handler)
 {
 	vcorefs_handler = handler;
@@ -328,9 +334,8 @@ static irqreturn_t spm_vcorefs_start_handler(int irq, void *dev_id)
 {
 	if (vcorefs_start_handler)
 		vcorefs_start_handler();
-	/* FIXME */
-	/* mt_eint_virq_soft_clr(irq); */
 
+	mt_eint_virq_soft_clr(irq);
 	return IRQ_HANDLED;
 }
 
@@ -342,10 +347,11 @@ static irqreturn_t spm_vcorefs_end_handler(int irq, void *dev_id)
 		opp = spm_read(SPM_SW_RSV_5) & SPM_SW_RSV_5_LSB;
 		vcorefs_handler(opp);
 	}
-	/* FIXME */
-	/* mt_eint_virq_soft_clr(irq); */
+
+	mt_eint_virq_soft_clr(irq);
 	return IRQ_HANDLED;
 }
+#endif
 
 static void spm_register_init(void)
 {
@@ -454,6 +460,7 @@ static void spm_register_init(void)
 	if (!spm_ddrphy_base)
 		spm_err("[DDRPHY] base failed\n");
 
+#ifdef SPM_VCORE_EN_MT6755
 	node = of_find_compatible_node(NULL, NULL, "mediatek,spm_vcorefs_start_eint");
 	if (!node) {
 		spm_err("find spm_vcorefs_start_eint failed\n");
@@ -486,6 +493,7 @@ static void spm_register_init(void)
 	}
 	spm_err("spm_vcorefs_start_irq = %d, spm_vcorefs_end_irq = %d\n", spm_vcorefs_start_irq,
 		spm_vcorefs_end_irq);
+#endif
 	spm_err
 	    ("spm_base = %p, scp_i2c0_base = %p, scp_i2c1_base = %p, scp_i2c2_base = %p, scp_i2c3_base = %p\n",
 	     spm_base, scp_i2c0_base, scp_i2c1_base, scp_i2c2_base, scp_i2c3_base);
@@ -615,10 +623,8 @@ int spm_module_init(void)
 #endif
 
 #endif
-
 	spm_set_dummy_read_addr();
 
-#if 1
 	/* debug code */
 	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
 	spm_crit("[PMIC]wdtdbg_con1 : 0x%x\n", reg_val);
@@ -630,7 +636,9 @@ int spm_module_init(void)
 	spm_crit("[PMIC]vcore vosel_on=0x%x\n", reg_val);
 	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
 	spm_crit("[PMIC]wdtdbg_con1-after : 0x%x\n", reg_val);
-#endif
+
+/* set Vcore DVFS bootup opp by ddr shuffle opp */
+#if defined(CONFIG_ARCH_MT6755)
 	if (spm_read(SPM_POWER_ON_VAL0) & (1 << 14)) {
 		spm_write(SPM_SW_RSV_5, spm_read(SPM_SW_RSV_5) & ~1);
 		spm_crit2("SPM_SW_RSV5(0x%x) 1pll init(val0=0x%x)\n", spm_read(SPM_SW_RSV_5),
@@ -640,6 +648,19 @@ int spm_module_init(void)
 		spm_crit2("SPM_SW_RSV5(0x%x) 3pll init(val0=0x%x)\n", spm_read(SPM_SW_RSV_5),
 			spm_read(SPM_POWER_ON_VAL0));
 	}
+#elif defined(CONFIG_ARCH_MT6797)
+	if (spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR) == 0)
+		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) | SPM_SCREEN_ON_HPM);
+	else if (spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR) == 1)
+		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) | SPM_SCREEN_ON_LPM);
+	else
+		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) | SPM_SCREEN_OFF_LPM);
+
+	spm_crit2("SPM_SW_RSV_5: 0x%x, dramc shuf addr: %p, val: 0x%x\n",
+							spm_read(SPM_SW_RSV_5),
+							spm_ddrphy_base + SPM_SHUFFLE_ADDR,
+							spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR));
+#endif
 
 	return r;
 }
@@ -742,11 +763,10 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		}
 	}
 
-	/* FIXME */
-	/*
+#if defined(SPM_VCORE_EN_MT6797) || defined(SPM_VCORE_EN_MT6755)
 	if (dyna_load_pcm_done)
 		vcorefs_late_init_dvfs();
-	*/
+#endif
 
 	return err;
 }
