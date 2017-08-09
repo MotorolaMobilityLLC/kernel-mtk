@@ -68,8 +68,8 @@ void __iomem *SLEEP_BASE_ADDR;
 
 static DEFINE_MUTEX(dram_dfs_mutex);
 int highest_dram_data_rate = 0;
-unsigned char old_IC_No_DummyRead = 0;
-unsigned char DFS_type = 0;
+unsigned char No_DummyRead = 0;
+unsigned int DRAM_TYPE = 0;
 
 #ifdef CONFIG_MTK_DRAMC_PASR
 static unsigned int enter_pdp_cnt;
@@ -113,7 +113,7 @@ const char *uname, int depth, void *data)
 		(struct dram_info *)of_get_flat_dt_prop(node,
 		"orig_dram_info", NULL);
 		if (g_dram_info_dummy_read == NULL) {
-			old_IC_No_DummyRead = 1;
+			No_DummyRead = 1;
 			return 0; }
 
 		pr_err("[DRAMC] dram info dram rank number = %d\n",
@@ -397,7 +397,7 @@ void spm_dpd_dram_init(void)
 	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) & 0xfffffffe,
 	PDEF_DRAMC0_CHA_REG_1E4);
 
-	frequency = get_dram_data_rate(0) / 2;
+	frequency = get_dram_data_rate() / 2;
 	if (frequency <= 533)
 		u4value = 0x10160002;/*u4MR2Value = 0x14;*/
 	else if (frequency == 635)
@@ -527,7 +527,7 @@ void spm_dpd_dram_init(void)
 	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) & 0xfffffffe,
 	PDEF_DRAMC0_CHB_REG_1E4);
 
-	frequency = get_dram_data_rate(0) / 2;
+	frequency = get_dram_data_rate() / 2;
 	if (frequency <= 533)
 		u4value = 0x10160002;/*u4MR2Value = 0x14;*/
 	else if (frequency == 635)
@@ -1200,10 +1200,8 @@ bool pasr_is_valid(void)
 
 /************************************************
 * input parameter:
-* freq_sel: 0 -> Current frequency
-*           1 -> Highest frequency
 *************************************************/
-unsigned int get_dram_data_rate_from_reg(int freq_sel)
+unsigned int get_dram_data_rate_from_reg(void)
 {
 	unsigned char REF_CLK = 52;
 	unsigned int u2real_freq = 0;
@@ -1217,13 +1215,8 @@ unsigned int get_dram_data_rate_from_reg(int freq_sel)
 	if (readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x028)) & (1<<17))
 		return 0;
 
-	if (freq_sel == 0) {	/* current frequency */
 		mpdiv_shu_sel = (readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x028))>>8) & 0x7;
 		pll_shu_sel = readl(IOMEM(DDRPHY_BASE_ADDR + 0x63c)) & 0x3;
-	} else { /* highest frequency */
-		mpdiv_shu_sel = 0;
-		pll_shu_sel = 0;
-	}
 
 	u4MPDIV_IN_SEL =
 	readl(IOMEM(DDRPHY_BASE_ADDR +
@@ -1271,14 +1264,12 @@ unsigned int get_dram_data_rate_from_reg(int freq_sel)
 
 /************************************************
 * input parameter:
-* freq_sel: 0 -> Current frequency
-*           1 -> Highest frequency
 *************************************************/
-unsigned int get_dram_data_rate(int freq_sel)
+unsigned int get_dram_data_rate(void)
 {
 	unsigned int MEMPLL_FOUT = 0;
 
-	MEMPLL_FOUT = get_dram_data_rate_from_reg(freq_sel) << 1;
+	MEMPLL_FOUT = get_dram_data_rate_from_reg() << 1;
 
 	/* DVFS owner to request provide a spec. frequency,
 	not real frequency */
@@ -1296,15 +1287,6 @@ unsigned int get_dram_data_rate(int freq_sel)
 		MEMPLL_FOUT = 1066;
 	else if (MEMPLL_FOUT == 792)
 		MEMPLL_FOUT = 800;
-	else if (MEMPLL_FOUT == 3120) {
-		pr_err("[DRAMC] MEMPLL_FOUT: %d; ***OLD IC***\n", MEMPLL_FOUT);
-		old_IC_No_DummyRead = 1;
-		MEMPLL_FOUT = 1600; /* old version,not support DFS */
-	}	else if (MEMPLL_FOUT == 3432) {
-		pr_err("[DRAMC] MEMPLL_FOUT: %d; ***OLD IC***\n", MEMPLL_FOUT);
-		old_IC_No_DummyRead = 1;
-		MEMPLL_FOUT = 1700; /* old version,not support DFS */
-	}
 
 	return MEMPLL_FOUT;
 }
@@ -1324,13 +1306,15 @@ unsigned int read_dram_temperature(unsigned char channel)
 	return value;
 }
 
+unsigned int get_shuffle_status(void)
+{
+	return 0; /* readl(PDEF_DRAMC0_CHA_REG_010) & 0x6; */
+	/* HPM = 0, LPM = 1, ULPM = 2; 0x100040e4[2:1] */
+
+}
+
 int get_ddr_type(void)
 {
-	int DRAM_TYPE = -1;
-
-	/* MT6757 only support LPDDR3*/
-		DRAM_TYPE = TYPE_LPDDR3;
-
 	return DRAM_TYPE;
 
 }
@@ -1340,28 +1324,22 @@ int dram_steps_freq(unsigned int step)
 
 	switch (step) {
 	case 0:
-		if (DFS_type == 1)
+		if (DRAM_TYPE == TYPE_LPDDR3)
 			freq = 1866;
-		else if (DFS_type == 2)
-			freq = 1600;
-		else if (DFS_type == 3)
-			freq = 1700;
+		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
+			freq = 3200;
 		break;
 	case 1:
-		if (DFS_type == 1)
-			freq = 1270;
-		else if (DFS_type == 2)
-			freq = 1270;
-		else if (DFS_type == 3)
-			freq = 1270;
+		if (DRAM_TYPE == TYPE_LPDDR3)
+			freq = 1333;
+		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
+			freq = 2667;
 		break;
 	case 2:
-		if (DFS_type == 1)
-			freq = 800;
-		else if (DFS_type == 2)
-			freq = 800;
-		else if (DFS_type == 3)
-			freq = 800;
+		if (DRAM_TYPE == TYPE_LPDDR3)
+			freq = 933;
+		else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X))
+			freq = 1600;
 		break;
 	default:
 		return -1;
@@ -1371,7 +1349,7 @@ int dram_steps_freq(unsigned int step)
 
 int dram_can_support_fh(void)
 {
-	if (old_IC_No_DummyRead)
+	if (No_DummyRead)
 		return 0;
 	else
 		return 1;
@@ -1389,7 +1367,7 @@ int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
 	if (strstr(DRAM_R0_DUMMY_READ_RESERVED_KEY, rmem->name)) {
 		if (rsize < DRAM_RSV_SIZE) {
 			pr_err("[DRAMC] Can NOT reserve memory for Rank0\n");
-			old_IC_No_DummyRead = 1;
+			No_DummyRead = 1;
 			return 0;
 		}
 		dram_rank0_addr = rptr;
@@ -1401,7 +1379,7 @@ int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
 	if (strstr(DRAM_R1_DUMMY_READ_RESERVED_KEY, rmem->name)) {
 		if (rsize < DRAM_RSV_SIZE) {
 			pr_err("[DRAMC] Can NOT reserve memory for Rank1\n");
-			old_IC_No_DummyRead = 1;
+			No_DummyRead = 1;
 			return 0;
 		}
 		dram_rank1_addr = rptr;
@@ -1437,24 +1415,10 @@ const char *buf, size_t count)
 	return count;
 }
 
-#if 0
-#ifdef READ_DRAM_TEMP_TEST
-static ssize_t read_dram_temp_show(struct device_driver *driver, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "DRAM MR4 = 0x%x\n",
-	read_dram_temperature());
-}
-static ssize_t read_dram_temp_store(struct device_driver *driver,
-const char *buf, size_t count)
-{
-	return count;
-}
-#endif
-#endif
 static ssize_t read_dram_data_rate_show(struct device_driver *driver, char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "DRAM data rate = %d\n",
-	get_dram_data_rate(0));
+	get_dram_data_rate());
 }
 
 static ssize_t read_dram_data_rate_store(struct device_driver *driver,
@@ -1635,26 +1599,6 @@ static int __init dram_test_init(void)
 		return ret;
 	}
 
-#if 0
-#ifdef APDMA_TEST
-	ret = driver_create_file(&dram_test_drv.driver,
-	&driver_attr_dram_dummy_read_test);
-	if (ret) {
-		pr_warn("fail to create the DFS sysfs files\n");
-		return ret;
-	}
-#endif
-
-#ifdef READ_DRAM_TEMP_TEST
-	ret = driver_create_file(&dram_test_drv.driver,
-	&driver_attr_read_dram_temp_test);
-	if (ret) {
-		pr_warn("fail to create the read dram temp sysfs files\n");
-		return ret;
-	}
-#endif
-#endif
-
 	ret = driver_create_file(&dram_test_drv.driver,
 	&driver_attr_read_dram_data_rate);
 	if (ret) {
@@ -1662,15 +1606,10 @@ static int __init dram_test_init(void)
 		return ret;
 	}
 
-	highest_dram_data_rate = get_dram_data_rate(1);
-	if (highest_dram_data_rate == 1866)
-		DFS_type = 1;
-	else if (highest_dram_data_rate == 1700)
-		DFS_type = 3;
-	else if (highest_dram_data_rate == 1600)
-		DFS_type = 2;
-	pr_err("[DRAMC Driver] Highest Dram Data Rate = %d;  DFS_type = %d\n",
-	highest_dram_data_rate, DFS_type);
+	DRAM_TYPE = readl(PDEF_DRAMC0_CHA_REG_010) & 0xC00;
+	pr_err("[DRAMC Driver] dram type =%d\n", DRAM_TYPE);
+
+	pr_err("[DRAMC Driver] Dram Data Rate = %d\n", get_dram_data_rate());
 
 	if (dram_can_support_fh())
 		pr_err("[DRAMC Driver] dram can support DFS\n");

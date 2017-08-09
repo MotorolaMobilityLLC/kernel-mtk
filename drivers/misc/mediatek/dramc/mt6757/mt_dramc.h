@@ -44,6 +44,7 @@ Registers define
 #define PDEF_DRAMCNAO_CHA_REG_3B8	IOMEM((DRAMCNAO_CHA_BASE_ADDR + 0x03B8))
 #define PDEF_DRAMCNAO_CHB_REG_3B8	IOMEM((DRAMCNAO_CHB_BASE_ADDR + 0x03B8))
 
+#define PDEF_DRAMC0_CHA_REG_010	IOMEM((DRAMCAO_CHA_BASE_ADDR + 0x0010))
 #define PDEF_SPM_PASR_DPD_0	IOMEM((SLEEP_BASE_ADDR + 0x0630))
 #define PDEF_SPM_PASR_DPD_3	IOMEM((SLEEP_BASE_ADDR + 0x063C))
 #define PDEF_SPM_AP_SEMAPHORE	IOMEM((SLEEP_BASE_ADDR + 0x0428))
@@ -136,11 +137,13 @@ DRAMC API config
 extern unsigned int DMA_TIMES_RECORDER;
 extern phys_addr_t get_max_DRAM_size(void);
 /*void get_mempll_table_info(u32 *high_addr, u32 *low_addr, u32 *num);*/
-unsigned int get_dram_data_rate(int freq_sel);
+unsigned int get_dram_data_rate(void);
 unsigned int read_dram_temperature(unsigned char channel);
 /*void sync_hw_gating_value(void);*/
 /*unsigned int is_one_pll_mode(void);*/
 int dram_steps_freq(unsigned int step);
+unsigned int get_shuffle_status(void);
+int get_ddr_type(void);
 int dram_can_support_fh(void);
 void spm_dpd_init(void);
 void spm_dpd_dram_init(void);
@@ -156,10 +159,9 @@ unsigned char segment_rank1);
 int exit_pasr_dpd_config(void);
 
 enum DDRTYPE {
-	TYPE_DDR1 = 1,
-	TYPE_LPDDR2,
-	TYPE_LPDDR3,
-	TYPE_PCDDR3
+	TYPE_LPDDR3 = 1,
+	TYPE_LPDDR4,
+	TYPE_LPDDR4X
 };
 
 enum {
