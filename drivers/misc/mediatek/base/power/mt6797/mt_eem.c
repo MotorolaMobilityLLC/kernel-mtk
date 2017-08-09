@@ -1806,7 +1806,7 @@ static int base_ops_eem_2_pmic(struct eem_det *det, int eem_val)
 static void record(struct eem_det *det)
 {
 	int i;
-	unsigned int vSram;
+	unsigned int vSram, vWrite;
 
 	eem_debug("record() called !!\n");
 	det->recordRef[NR_FREQ * 2] = 0x00000000;
@@ -1817,8 +1817,11 @@ static void record(struct eem_det *det)
 				(unsigned int)(det->ops->volt_2_pmic(det, VMIN_SRAM)),
 				(unsigned int)(det->ops->volt_2_pmic(det, VMAX_SRAM)));
 
-		det->recordRef[i*2] = (det->recordRef[i*2] & (~0x3FFF)) |
+		vWrite = det->recordRef[i*2];
+		vWrite = (vWrite & (~0x3FFF)) |
 			((((PMIC_2_RMIC(det, vSram) & 0x7F) << 7) | (record_tbl_locked[i] & 0x7F)) & 0x3fff);
+
+		det->recordRef[i*2] = vWrite;
 	}
 	det->recordRef[NR_FREQ * 2] = 0xFFFFFFFF;
 	mb(); /* SRAM writing */
@@ -1827,27 +1830,30 @@ static void record(struct eem_det *det)
 static void restore_record(struct eem_det *det)
 {
 	int i;
+	unsigned int vWrite;
 
 	eem_debug("restore_record() called !!\n");
 	det->recordRef[NR_FREQ * 2] = 0x00000000;
 	mb(); /* SRAM writing */
 	for (i = 0; i < NR_FREQ; i++) {
+		vWrite = det->recordRef[i*2];
 		if (det_to_id(det) == EEM_DET_2L)
-			det->recordRef[i*2] = (det->recordRef[i*2] & (~0x3FFF)) |
+			vWrite = (vWrite & (~0x3FFF)) |
 				(((*(recordTbl + (i * 8) + 6) & 0x7F) << 7) |
 				(*(recordTbl + (i * 8) + 7) & 0x7F));
 		else if (det_to_id(det) == EEM_DET_L)
-			det->recordRef[i*2] = (det->recordRef[i*2] & (~0x3FFF)) |
+			vWrite = (vWrite & (~0x3FFF)) |
 				(((*(recordTbl + (i + 16) * 8 + 6) & 0x7F) << 7) |
 				(*(recordTbl + (i + 16) * 8 + 7) & 0x7F));
 		else if (det_to_id(det) == EEM_DET_CCI)
-			det->recordRef[i*2] = (det->recordRef[i*2] & (~0x3FFF)) |
+			vWrite = (vWrite & (~0x3FFF)) |
 				(((*(recordTbl + (i + 32) * 8 + 6) & 0x7F) << 7) |
 				(*(recordTbl + (i + 32) * 8 + 7) & 0x7F));
 		else if (det_to_id(det) == EEM_DET_BIG)
-			det->recordRef[i*2] = (det->recordRef[i*2] & (~0x3FFF)) |
+			vWrite = (vWrite & (~0x3FFF)) |
 				(((*(recordTbl + (i + 48) * 8 + 6) & 0x7F) << 7) |
 				(*(recordTbl + (i + 48) * 8 + 7) & 0x7F));
+		det->recordRef[i*2] = vWrite;
 	}
 	det->recordRef[NR_FREQ * 2] = 0xFFFFFFFF;
 	mb(); /* SRAM writing */
