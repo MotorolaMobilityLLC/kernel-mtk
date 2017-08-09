@@ -1598,7 +1598,7 @@ static long akm09912_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		ret = -ENOIOCTLCMD;
 		break;
 	}
-
+	ret = 0;
 	return ret;
 }
 
