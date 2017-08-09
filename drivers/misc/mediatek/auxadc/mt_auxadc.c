@@ -253,8 +253,8 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 		cali_oe = cali_oe_a - 512;
 		gain = 1 + cali_ge;
 	}
-		pr_debug("[AUXADC] cali_reg=%x,cali_oe_a(%x), cali_ge_a(%x),cali_ge(%x),cali_oe(%x),gain(%x)\n",
-	     cali_reg, cali_oe_a, cali_ge_a, cali_ge, cali_oe, gain);
+	/*pr_debug("[AUXADC] cali_reg=%x,cali_oe_a(%x), cali_ge_a(%x),cali_ge(%x),cali_oe(%x),gain(%x)\n",
+	     cali_reg, cali_oe_a, cali_ge_a, cali_ge, cali_oe, gain);*/
 #endif
 
 	if (dwChannel == PAD_AUX_XP || dwChannel == PAD_AUX_YM)
@@ -318,16 +318,19 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 		*rawdata = channel[dwChannel] - cali_oe;
 		cali_rawdata = channel[dwChannel] - cali_oe;
 
-	pr_debug("[adc_api: imm mode raw data => channel[%d] = %d\n", dwChannel, channel[dwChannel]);
+	/*pr_debug("[adc_api: imm mode raw data => channel[%d] = %d\n", dwChannel, channel[dwChannel]);*/
 	data[0] = (cali_rawdata * 1500 / (4096 + cali_ge)) / 1000;	/* convert to volt */
-	data[1] = (cali_rawdata * 1500 / (4096 + cali_ge)) % 1000;
-	pr_debug("[adc_api][external effuse cali]: imm mode => channel[%d] = %d.%3d\n", dwChannel, data[0], data[1]);
+	data[1] = (cali_rawdata * 150 / (4096 + cali_ge)) % 100;
+	data[2] = (cali_rawdata * 1500 / (4096 + cali_ge)) % 1000;
+	/*pr_debug("[adc_api][external effuse cali]: imm mode => channel[%d] = %d.%3d\n",
+	dwChannel, data[0], data[1]);*/
 #else
 	if (NULL != rawdata)
 		*rawdata = channel[dwChannel];
 
 	data[0] = (channel[dwChannel] * 150 / AUXADC_PRECISE / 100);
 	data[1] = ((channel[dwChannel] * 150 / AUXADC_PRECISE) % 100);
+	data[2] = ((channel[dwChannel] * 1500 / AUXADC_PRECISE) % 1000);
 #endif
 #if !defined(CONFIG_MTK_CLKMGR)
 	if (clk_auxadc) {
