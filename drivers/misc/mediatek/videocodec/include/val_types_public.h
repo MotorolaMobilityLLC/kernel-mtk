@@ -299,7 +299,10 @@ typedef struct _VAL_VCODEC_M4U_BUFFER_CONFIG_T {
  */
 typedef struct _VAL_MEMORY_T {                /* union extend 64bits for TEE*/
 	VAL_MEM_TYPE_T  eMemType;                   /* /< [IN]     The allocation memory type */
-	VAL_ULONG_T     u4MemSize;                  /* /< [IN]     The size of memory allocation */
+	union {
+		VAL_ULONG_T     u4MemSize;              /* /< [IN]     The size of memory allocation */
+		VAL_UINT64_T u4MemSize_ext64;
+	};
 	union {
 		VAL_VOID_T *pvMemVa;
 		VAL_UINT64_T pvMemVa_ext64;
