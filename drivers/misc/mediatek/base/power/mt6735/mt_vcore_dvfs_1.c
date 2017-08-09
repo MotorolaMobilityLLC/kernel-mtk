@@ -1115,7 +1115,7 @@ static int vcorefs_remove(struct platform_device *pdev);
 
 #ifdef CONFIG_OF
 static const struct of_device_id alsps_of_match[] = {
-	{ .compatible = "mediatek,vcorefs" },
+	{ .compatible = "mediatek,mt6735-vcorefs" },
 	{},
 };
 #endif
