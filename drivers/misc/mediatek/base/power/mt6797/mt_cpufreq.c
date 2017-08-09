@@ -232,6 +232,23 @@ static unsigned long mcumixed_base;
 #define CPU_DVFS_FREQ14_B_FY    (676000)	/* KHz */
 #define CPU_DVFS_FREQ15_B_FY    (507000)	/* KHz */
 
+#define CPU_IDVFS_FREQ0_B_FY    (9152)	/* Perc */
+#define CPU_IDVFS_FREQ1_B_FY    (9048)	/* Perc */
+#define CPU_IDVFS_FREQ2_B_FY    (8788)	/* Perc */
+#define CPU_IDVFS_FREQ3_B_FY    (8528)	/* Perc */
+#define CPU_IDVFS_FREQ4_B_FY    (8372)	/* Perc */
+#define CPU_IDVFS_FREQ5_B_FY    (7956)	/* Perc */
+#define CPU_IDVFS_FREQ6_B_FY    (7124)	/* Perc */
+#define CPU_IDVFS_FREQ7_B_FY    (6708)	/* Perc */
+#define CPU_IDVFS_FREQ8_B_FY    (5980)	/* Perc */
+#define CPU_IDVFS_FREQ9_B_FY    (5512)	/* Perc */
+#define CPU_IDVFS_FREQ10_B_FY	(4992)	/* Perc */
+#define CPU_IDVFS_FREQ11_B_FY	(4524)	/* Perc */
+#define CPU_IDVFS_FREQ12_B_FY	(4004)	/* Perc */
+#define CPU_IDVFS_FREQ13_B_FY	(3380)	/* Perc */
+#define CPU_IDVFS_FREQ14_B_FY	(2704)	/* Perc */
+#define CPU_IDVFS_FREQ15_B_FY	(2028)	/* Perc */
+
 /* for DVFS OPP table LL|L|CCI */
 #define CPU_DVFS_VOLT0_VPROC1_FY    (120000)	/* 10MV */
 #define CPU_DVFS_VOLT1_VPROC1_FY    (118000)	/* 10MV */
@@ -303,6 +320,24 @@ static unsigned long mcumixed_base;
 #define CPU_DVFS_FREQ13_L_SB    (689000)	/* KHz */
 #define CPU_DVFS_FREQ14_L_SB    (494000)	/* KHz */
 #define CPU_DVFS_FREQ15_L_SB    (338000)	/* KHz */
+
+/* for DVFS OPP table L/SB */
+#define CPU_IDVFS_FREQ0_L_SB	(9984)	/* Perc */
+#define CPU_IDVFS_FREQ1_L_SB	(9724)	/* Perc */
+#define CPU_IDVFS_FREQ2_L_SB	(9464)	/* Perc */
+#define CPU_IDVFS_FREQ3_L_SB	(9152)	/* Perc */
+#define CPU_IDVFS_FREQ4_L_SB	(8944)	/* Perc */
+#define CPU_IDVFS_FREQ5_L_SB	(8684)	/* Perc */
+#define CPU_IDVFS_FREQ6_L_SB	(8372)	/* Perc */
+#define CPU_IDVFS_FREQ7_L_SB	(7540)	/* Perc */
+#define CPU_IDVFS_FREQ8_L_SB	(6708)	/* Perc */
+#define CPU_IDVFS_FREQ9_L_SB	(5980)	/* Perc */
+#define CPU_IDVFS_FREQ10_L_SB	(5512)	/* Perc */
+#define CPU_IDVFS_FREQ11_L_SB	(4524)	/* Perc */
+#define CPU_IDVFS_FREQ12_L_SB	(4004)	/* Perc */
+#define CPU_IDVFS_FREQ13_L_SB	(3380)	/* Perc */
+#define CPU_IDVFS_FREQ14_L_SB	(2704)	/* Perc */
+#define CPU_IDVFS_FREQ15_L_SB	(2028)	/* Perc */
 
 /* for DVFS OPP table CCI/SB */
 #define CPU_DVFS_FREQ0_CCI_SB    (1092000)	/* KHz */
@@ -836,7 +871,6 @@ struct mt_cpu_dvfs_ops {
 };
 
 /* for freq change (PLL/MUX) */
-static unsigned int get_cur_phy_freq_b(struct mt_cpu_dvfs *p);
 static unsigned int get_cur_phy_freq(struct mt_cpu_dvfs *p);
 static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz);
 
@@ -846,7 +880,23 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt);	/* vo
 static unsigned int get_cur_volt_sram_l(struct mt_cpu_dvfs *p);
 static int set_cur_volt_sram_l(struct mt_cpu_dvfs *p, unsigned int volt);	/* volt: mv * 100 */
 static unsigned int get_cur_volt_sram_b(struct mt_cpu_dvfs *p);
+static unsigned int get_cur_phy_freq_b(struct mt_cpu_dvfs *p);
 static int set_cur_volt_sram_b(struct mt_cpu_dvfs *p, unsigned int volt);	/* volt: mv * 100 */
+
+/* #define ENABLE_IDVFS 1 */
+
+#ifdef ENABLE_IDVFS
+int disable_idvfs_flag = 0;
+#else
+int disable_idvfs_flag = 1;
+#endif
+
+#ifdef ENABLE_IDVFS
+static unsigned int idvfs_get_cur_phy_freq_b(struct mt_cpu_dvfs *p);
+static void idvfs_set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz);
+static int idvfs_set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt);	/* volt: mv * 100 */
+static int idvfs_set_cur_volt_sram_b(struct mt_cpu_dvfs *p, unsigned int volt);	/* volt: mv * 100 */
+#endif
 
 #ifndef DCM_ENABLE
 /* DCM */
@@ -894,6 +944,18 @@ static struct mt_cpu_dvfs_ops dvfs_ops_L = {
 	.set_cur_vsram = set_cur_volt_sram_l,
 	.set_sync_dcm = sync_dcm_set_mp1_freq,
 };
+
+#ifdef ENABLE_IDVFS
+static struct mt_cpu_dvfs_ops idvfs_ops_B = {
+	.get_cur_phy_freq = idvfs_get_cur_phy_freq_b,
+	.set_cur_freq = idvfs_set_cur_freq,
+	.get_cur_volt = get_cur_volt_extbuck,
+	.set_cur_volt = idvfs_set_cur_volt_extbuck,
+	.get_cur_vsram = get_cur_volt_sram_b,
+	.set_cur_vsram = idvfs_set_cur_volt_sram_b,
+	.set_sync_dcm = NULL,
+};
+#endif
 
 static struct mt_cpu_dvfs_ops dvfs_ops_B = {
 	.get_cur_phy_freq = get_cur_phy_freq_b,
@@ -945,7 +1007,11 @@ static struct mt_cpu_dvfs cpu_dvfs[] = {
 				.idx_normal_max_opp = -1,
 				.idx_opp_ppm_base = -1,
 				.idx_opp_ppm_limit = -1,
+#ifdef ENABLE_IDVFS
+				.ops = &idvfs_ops_B,
+#else
 				.ops = &dvfs_ops_B,
+#endif
 				.hopping_id = -1,
 				},
 
@@ -1015,6 +1081,29 @@ OPP_TBL(LL, SB, 2, 1);
 OPP_TBL(L, SB, 2, 1);
 OPP_TBL(CCI, SB, 2, 1);
 OPP_TBL(B, SB, 2, 2);
+
+#ifdef ENABLE_IDVFS
+#define IDVFS_OPP_MAP(idx) CPU_IDVFS_FREQ##idx##_B_FY
+/* #define IDVFS_OPP_MAP(idx) CPU_IDVFS_FREQ##idx##_B_SB */
+static unsigned int idvfs_opp_tbls[] = {
+	IDVFS_OPP_MAP(0),
+	IDVFS_OPP_MAP(1),
+	IDVFS_OPP_MAP(2),
+	IDVFS_OPP_MAP(3),
+	IDVFS_OPP_MAP(4),
+	IDVFS_OPP_MAP(5),
+	IDVFS_OPP_MAP(6),
+	IDVFS_OPP_MAP(7),
+	IDVFS_OPP_MAP(8),
+	IDVFS_OPP_MAP(9),
+	IDVFS_OPP_MAP(10),
+	IDVFS_OPP_MAP(11),
+	IDVFS_OPP_MAP(12),
+	IDVFS_OPP_MAP(13),
+	IDVFS_OPP_MAP(14),
+	IDVFS_OPP_MAP(15),
+};
+#endif
 
 /* 16 steps OPP table*/
 #if 1
@@ -1787,6 +1876,13 @@ static unsigned int _cpu_freq_calc(unsigned int con1, unsigned int ckdiv1)
 	return freq;
 }
 
+#ifdef ENABLE_IDVFS
+static unsigned int idvfs_get_cur_phy_freq_b(struct mt_cpu_dvfs *p)
+{
+	return cpu_dvfs_get_cur_freq(p);
+}
+#endif
+
 static unsigned int get_cur_phy_freq_b(struct mt_cpu_dvfs *p)
 {
 	unsigned int freq;
@@ -2063,6 +2159,21 @@ static int search_table_idx_by_freq(struct mt_cpu_dvfs *p, unsigned int freq)
 	return idx;
 }
 
+#ifdef ENABLE_IDVFS
+static void idvfs_set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz)
+{
+	int ret;
+	int idx;
+
+	idx = _search_available_freq_idx(p, target_khz, CPUFREQ_RELATION_L);
+
+	if (idx < 0)
+		idx = 0;
+
+	ret = BigIDVFSFreq(idvfs_opp_tbls[idx]);
+}
+#endif
+
 static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz)
 {
 	int idx;
@@ -2142,6 +2253,13 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 }
 
 /* for vsram change */
+#ifdef ENABLE_IDVFS
+static int idvfs_set_cur_volt_sram_b(struct mt_cpu_dvfs *p, unsigned int volt)
+{
+	return 0;
+}
+#endif
+
 static int set_cur_volt_sram_b(struct mt_cpu_dvfs *p, unsigned int volt)
 {
 	int ret;
@@ -2326,6 +2444,15 @@ static void dump_opp_table(struct mt_cpu_dvfs *p)
 		    );
 	}
 }
+
+#ifdef ENABLE_IDVFS
+static int idvfs_set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
+{
+	cpufreq_ver("Not allow to set VPROC when iDVFS enabled\n");
+
+	return 0;
+}
+#endif
 
 static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 {				/* volt: vproc (mv*100) */
@@ -2656,6 +2783,21 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 			goto out;
 	}
 
+#ifdef ENABLE_IDVFS
+	if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && !disable_idvfs_flag)
+		cpufreq_ver("DVFS: @%s(): freq(%s) = %d\n",
+				__func__, p->name, BigiDVFSSWAvgStatus());
+	else {
+		cpufreq_ver("DVFS: @%s(): Vproc = %dmv, Vsram = %dmv, freq(%s) = %dKHz\n",
+		    __func__,
+		    (p->ops->get_cur_volt(p)) / 100,
+		    (p->ops->get_cur_vsram(p) / 100), p->name, p->ops->get_cur_phy_freq(p));
+		if (do_dvfs_stress_test) {
+			BUG_ON(p->ops->get_cur_volt(p) < target_volt);
+			BUG_ON(p->ops->get_cur_phy_freq(p) != target_khz);
+		}
+	}
+#else
 	cpufreq_ver("DVFS: @%s(): Vproc = %dmv, Vsram = %dmv, freq(%s) = %dKHz\n",
 		    __func__,
 		    (p->ops->get_cur_volt(p)) / 100,
@@ -2666,6 +2808,7 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 		BUG_ON(p->ops->get_cur_volt(p) < target_volt);
 		BUG_ON(p->ops->get_cur_phy_freq(p) != target_khz);
 	}
+#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
 
@@ -2914,6 +3057,11 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 					policy = cpufreq_cpu_get(cpu);
 					_cpufreq_dfs_locked(policy, p, p->nr_opp_tbl - 1);
 					cpufreq_cpu_put(policy);
+				} else {
+#ifdef ENABLE_IDVFS
+					if (!disable_idvfs_flag)
+						BigiDVFSDisable();
+#endif
 				}
 				new_cci_opp_idx = _calc_new_cci_opp_idx(p, p->idx_opp_tbl);
 				/* set cci freq/volt */
@@ -3324,10 +3472,15 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target
 }
 
 int init_cci_status = 0;
+#define IDVFS_FMAX 2500
 static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 {
 	int ret = -EINVAL;
 	unsigned long flags;
+
+#ifdef ENABLE_IDVFS
+	unsigned int cur_vproc_mv_x100, cur_vsram_mv_x100 = 0;
+#endif
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 #if 0
@@ -3396,6 +3549,15 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 		cpufreq_lock(flags);
 		p->armpll_is_available = 1;
+#ifdef ENABLE_IDVFS
+		if (MT_CPU_DVFS_B == id && !disable_idvfs_flag) {
+			cur_vproc_mv_x100 = p->ops->get_cur_volt(p);
+			cur_vsram_mv_x100 = p->ops->get_cur_vsram(p);
+			eem_init_det_tmp();
+			BigiDVFSSWAvg(0, 1);
+			ret = BigiDVFSEnable(IDVFS_FMAX, cur_vproc_mv_x100, cur_vsram_mv_x100);
+		}
+#endif
 		cpufreq_unlock(flags);
 
 		if (init_cci_status == 0) {
@@ -4159,6 +4321,53 @@ static ssize_t cpufreq_turbo_mode_proc_write(struct file *file, const char __use
 	return count;
 }
 
+/* cpufreq_idvfs_mode */
+static int cpufreq_idvfs_mode_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "idvfs_mode = %d\n", (disable_idvfs_flag == 1) ? 0 : 1);
+
+	return 0;
+}
+
+static ssize_t cpufreq_idvfs_mode_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
+{
+#ifdef ENABLE_IDVFS
+	struct mt_cpu_dvfs *p;
+#endif
+	unsigned int idvfs_mode;
+	int rc;
+	unsigned long flags;
+	char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	rc = kstrtoint(buf, 10, &idvfs_mode);
+
+	if (rc < 0)
+		cpufreq_err("echo 0/1 > /proc/cpufreq/cpufreq_idvfs_mode\n");
+	else {
+#ifdef ENABLE_IDVFS
+		p = id_to_cpu_dvfs(MT_CPU_DVFS_B);
+		cpufreq_lock(flags);
+		disable_idvfs_flag = (idvfs_mode == 0) ? 1 : 0;
+		if (disable_idvfs_flag) {
+			BigiDVFSDisable();
+			p->ops = &dvfs_ops_B;
+		}
+		cpufreq_unlock(flags);
+#else
+	cpufreq_lock(flags);
+	disable_idvfs_flag = (idvfs_mode == 1) ? 0 : 1;
+	cpufreq_unlock(flags);
+#endif
+	}
+
+	free_page((unsigned long)buf);
+
+	return count;
+}
+
 static int cpufreq_up_threshold_ll_proc_show(struct seq_file *m, void *v)
 {
 	release_dvfs = 1;
@@ -4229,6 +4438,19 @@ static ssize_t cpufreq_up_threshold_l_proc_write(struct file *file,
 
 static int cpufreq_up_threshold_b_proc_show(struct seq_file *m, void *v)
 {
+#if 0
+	struct mt_cpu_dvfs *p;
+	unsigned long flags;
+
+	p = id_to_cpu_dvfs(MT_CPU_DVFS_B);
+	cpufreq_lock(flags);
+	disable_idvfs_flag = 1;
+	if (disable_idvfs_flag) {
+		BigiDVFSDisable();
+		p->ops = &dvfs_ops_B;
+	}
+	cpufreq_unlock(flags);
+#endif
 	seq_printf(m, "thres_b = %d\n", thres_b);
 
 	return 0;
@@ -4297,6 +4519,7 @@ PROC_FOPS_RW(cpufreq_oppidx);
 PROC_FOPS_RW(cpufreq_freq);
 PROC_FOPS_RW(cpufreq_volt);
 PROC_FOPS_RW(cpufreq_turbo_mode);
+PROC_FOPS_RW(cpufreq_idvfs_mode);
 PROC_FOPS_RW(cpufreq_up_threshold_ll);
 PROC_FOPS_RW(cpufreq_up_threshold_l);
 PROC_FOPS_RW(cpufreq_up_threshold_b);
@@ -4320,6 +4543,7 @@ static int _create_procfs(void)
 		PROC_ENTRY(cpufreq_up_threshold_ll),
 		PROC_ENTRY(cpufreq_up_threshold_l),
 		PROC_ENTRY(cpufreq_up_threshold_b),
+		PROC_ENTRY(cpufreq_idvfs_mode),
 	};
 
 	const struct pentry cpu_entries[] = {
