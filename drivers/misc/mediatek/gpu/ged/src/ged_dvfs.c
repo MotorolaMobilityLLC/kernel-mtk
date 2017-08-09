@@ -73,7 +73,7 @@ static unsigned int gpu_debug_enable;
 
 static unsigned int  g_cust_boost_freq_id;
 
-unsigned int g_gpu_timer_based_emu = 0;
+unsigned int g_gpu_timer_based_emu;
 
 static unsigned int gpu_pre_loading = 0;
 unsigned int gpu_loading = 0;
@@ -474,7 +474,9 @@ static bool ged_dvfs_policy(
 		gpu_av_loading = gpu_loading;
 	}
 
-	//GED_LOGE("[5566]  HWEvent Fallback\n");
+	
+	if(g_gpu_timer_based_emu)
+	{
 	if (ui32GPULoading >= 99)
 	{
 		i32NewFreqID = 0;
@@ -500,6 +502,7 @@ static bool ged_dvfs_policy(
 		i32NewFreqID += 1;
 	}
 
+
 	if (i32NewFreqID < ui32GPUFreq)
 	{
 		if (gpu_pre_loading * 17 / 10 < ui32GPULoading)
@@ -514,6 +517,19 @@ static bool ged_dvfs_policy(
 			i32NewFreqID += 1;
 		}
 	}
+	}
+	else
+	{
+		if (ui32GPULoading >= 70)
+		{
+			i32NewFreqID -= 1;
+		}
+		else if (ui32GPULoading <= 50)
+		{
+			i32NewFreqID += 1;
+		}
+	}
+
 
 	if (i32NewFreqID > i32MaxLevel)
 	{
@@ -995,7 +1011,11 @@ GED_ERROR ged_dvfs_system_init()
 	g_cust_upbound_freq_id = 0;
 	gpu_cust_upbound_freq = mt_gpufreq_get_freq_by_idx(g_cust_upbound_freq_id);
 
-
+#ifdef ENABLE_TIMER_BACKUP
+	g_gpu_timer_based_emu=0;
+#else	
+	g_gpu_timer_based_emu=1;
+#endif
 
 	// GPU HAL fp mount	
 	//mt_gpufreq_input_boost_notify_registerCB(ged_dvfs_freq_input_boostCB); // MTKFreqInputBoostCB
@@ -1036,5 +1056,5 @@ module_param(gpu_bottom_freq, uint, 0644);
 module_param(gpu_cust_boost_freq, uint, 0644);
 module_param(gpu_cust_upbound_freq, uint, 0644);
 module_param(g_gpu_timer_based_emu, uint, 0644);
-#endif	
+#endif
 
