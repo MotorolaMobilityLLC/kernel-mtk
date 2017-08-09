@@ -5258,6 +5258,9 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps)
 		eint_flag++;
 #endif
 
+#ifndef CONFIG_MTK_LEGACY
+		eint_flag++;
+#endif
 		/* 2.register eint */
 		node = of_find_compatible_node(NULL, NULL, "mediatek, DSI_TE_1-eint");
 		if (node) {
