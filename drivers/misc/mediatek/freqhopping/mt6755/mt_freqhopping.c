@@ -103,8 +103,10 @@ TODO: fix these ==> Unnecessary to fix, not in use
 
 /* keep track the status of each PLL */
 static fh_pll_t g_fh_pll[FH_PLL_NUM] = {
-	{FH_FH_DISABLE,		FH_PLL_ENABLE,		0,	ARMCA15PLL_DEF_FREQ,	0},
-	{FH_FH_DISABLE,		FH_PLL_ENABLE,		0,	ARMCA7PLL_DEF_FREQ,		0},
+	/* Enable SSC for RF desense */
+	{FH_FH_ENABLE_SSC,	FH_PLL_ENABLE,		0,	ARMCA15PLL_DEF_FREQ,	0},
+	/* Enable SSC for RF desense */
+	{FH_FH_ENABLE_SSC,	FH_PLL_ENABLE,		0,	ARMCA7PLL_DEF_FREQ,		0},
 	{FH_FH_DISABLE,		FH_PLL_ENABLE,		0,	MAINPLL_DEF_FREQ,		0},
 	{FH_FH_DISABLE,		FH_PLL_ENABLE,		0,	MEMPLL_DEF_FREQ,		0},
 	/* MMPLL SSC > GPU perf fail */
@@ -120,7 +122,7 @@ static fh_pll_t g_fh_pll[FH_PLL_NUM] = {
 static const struct freqhopping_ssc ssc_armca7pll_setting[] = {
 	{0, 0, 0, 0, 0, 0},/* Means disable */
 	{0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},/* Means User-Define */
-	{ARMCA7PLL_DEF_FREQ, 0, 9, 0, 8, 0xF6000}, /* 0 ~ -8% */
+	{ARMCA7PLL_DEF_FREQ, 0, 9, 0, 1, 0xF6000}, /* 0 ~ -1% */
 	{0, 0, 0, 0, 0, 0} /* EOF */
 };
 
@@ -176,7 +178,7 @@ static const struct freqhopping_ssc ssc_tvdpll_setting[] = {
 static const struct freqhopping_ssc ssc_armca15pll_setting[] = {
 	{0, 0, 0, 0, 0, 0},/* Means disable */
 	{0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},/* Means User-Define */
-	{ARMCA15PLL_DEF_FREQ, 0, 9, 0, 8, 0x130000}, /* 0 ~ -8% */
+	{ARMCA15PLL_DEF_FREQ, 0, 9, 0, 1, 0x130000}, /* 0 ~ -1% */
 	{0, 0, 0, 0, 0, 0} /* EOF */
 };
 
@@ -279,6 +281,10 @@ static const unsigned long g_reg_dvfs[] = {
 static void mt_fh_hal_default_conf(void)
 {
 	FH_MSG_DEBUG("%s", __func__);
+
+    /* default enable ARMCA15 and ARMCA7 PLL SSC for RF desense problems. */
+	freqhopping_config(FH_ARMCA15_PLLID, g_default_freq[FH_ARMCA15_PLLID], true);
+	freqhopping_config(FH_ARMCA7_PLLID, g_default_freq[FH_ARMCA7_PLLID], true);
 
 #if 1
 	/* Default turn off all PLL SSC on Jade */
