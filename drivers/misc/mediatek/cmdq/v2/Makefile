@@ -44,21 +44,8 @@ endif
 endif
 
 # platform dependent definition
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6795" "mt6735"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735"))
 ccflags-$(CONFIG_MTK_SMI_EXT) += -DCMDQ_CONFIG_SMI
-endif
-
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6795"))
-ccflags-y += -DCMDQ_USE_LEGACY
-endif
-
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6795" "mt6752"))
-ccflags-y += -DCMDQ_CG_M4U_LARB0
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)
-endif
-
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6752"))
-ccflags-y += -DCMDQ_SPECIAL_ESD_PRIORITY
 endif
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6580"))
