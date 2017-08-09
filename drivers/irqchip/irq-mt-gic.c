@@ -269,12 +269,33 @@ static int gic_retrigger(struct irq_data *d)
 	return 0;
 }
 
+/* set the priority mask to 0x00 for masking all irqs to this cpu */
+void gic_set_primask(void)
+{
+	struct gic_chip_data *gic = &gic_data[0];
+	void __iomem *base = gic_data_cpu_base(gic);
+
+	writel_relaxed(0x00, base + GIC_CPU_PRIMASK);
+}
+
+/* restore the priority mask value */
+void gic_clear_primask(void)
+{
+	struct gic_chip_data *gic = &gic_data[0];
+	void __iomem *base = gic_data_cpu_base(gic);
+
+	writel_relaxed(0xf0, base + GIC_CPU_PRIMASK);
+}
+
 #ifdef CONFIG_SMP
 static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val, bool force)
 {
 	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
 	unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
-	u32 val, mask, bit = 0;
+	u32 val, bit = 0;
+#ifndef CONFIG_MTK_IRQ_NEW_DESIGN
+	u32 mask;
+#endif
 
 #ifndef CONFIG_MTK_IRQ_NEW_DESIGN
 	if (!force)
@@ -1124,10 +1145,10 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 		return NULL;
 
 	ptr += sprintf(ptr, "[mt gic dump] irq = %d\n", irq);
-#ifndef CONFIG_MTK_PSCI
-	rc = -1;
-#else
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0);
+#else
+	rc = -1;
 #endif
 	if (rc < 0) {
 		ptr += sprintf(ptr, "[mt gic dump] not allowed to dump!\n");
@@ -1410,6 +1431,9 @@ int __init mt_gic_of_init(struct device_node *node, struct device_node *parent)
 	u32 percpu_offset;
 	int irq;
 	struct resource res;
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+	int i;
+#endif
 
 	if (WARN_ON(!node))
 		return -ENODEV;
@@ -1444,8 +1468,6 @@ int __init mt_gic_of_init(struct device_node *node, struct device_node *parent)
 	gic_cnt++;
 
 #ifdef CONFIG_MTK_IRQ_NEW_DESIGN
-	int i;
-
 	for (i = 0; i <= CONFIG_NR_CPUS-1; ++i) {
 		INIT_LIST_HEAD(&(irq_need_migrate_list[i].list));
 		spin_lock_init(&(irq_need_migrate_list[i].lock));
