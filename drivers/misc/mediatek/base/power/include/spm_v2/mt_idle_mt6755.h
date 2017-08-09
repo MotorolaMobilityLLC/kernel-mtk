@@ -83,7 +83,7 @@ extern void __iomem  *apmixed_base_in_idle;
 
 #define	CLK_CFG_UPDATE          TOPCKSYS_REG(0x004)
 #define CLK_CFG_4               TOPCKSYS_REG(0x080)
-#define DISP_PWM_MUX            TOPCKSYS_REG(0x0B0)
+#define CLK_CFG_7               TOPCKSYS_REG(0x0B0)
 
 #define ARMCA15PLL_BASE		APMIXEDSYS(0x200)
 #define ARMCA15PLL_CON0		APMIXEDSYS(0x0200)
