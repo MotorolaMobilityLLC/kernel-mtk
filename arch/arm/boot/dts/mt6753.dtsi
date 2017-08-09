@@ -1208,7 +1208,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		};
 
 		touch: touch@ {
-			compatible = "mediatek,mt6735-touch";
+			compatible = "mediatek,mt6735-touch",
+						"mediatek,mt6735m-touch",
+						"mediatek,mt6753-touch";
 			vtouch-supply = <&mt_pmic_vgp1_ldo_reg>;
 		};
 		accdet: ACCDET@ {
@@ -1223,7 +1225,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		hacc@0x10008000 {
 			compatible = "mediatek,hacc";
 			reg = <0x10008000 0x1000>;
-			interrupts = <0 173 0x8>;
+			interrupts = <0 174 0x8>;
 		};
 
 		MALI@0x13040000 {
