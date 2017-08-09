@@ -76,7 +76,7 @@ static void statsInfoEnvDisplay(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 
 	STA_RECORD_T *prStaRec;
 	UINT32 u4NumOfInfo, u4InfoId;
 	UINT32 u4RxErrBitmap;
-	STATS_INFO_ENV_T rStatsInfoEnv, *prInfo;
+	STATS_INFO_ENV_T *prInfo;
 	UINT32 u4Total, u4RateId;
 
 /*
@@ -145,11 +145,17 @@ static void statsInfoEnvDisplay(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 
 
 	/* init */
 	prAdapter = prGlueInfo->prAdapter;
-	prInfo = &rStatsInfoEnv;
-	kalMemZero(&rStatsInfoEnv, sizeof(rStatsInfoEnv));
+	/*prInfo = &rStatsInfoEnv;*/
+	prInfo = kalMemAlloc(sizeof(STATS_INFO_ENV_T), VIR_MEM_TYPE);
+	if (prInfo == NULL) {
+		DBGLOG(RX, INFO, "prInfo alloc fail");
+		return;
+	}
 
-	if (u4InBufLen > sizeof(rStatsInfoEnv))
-		u4InBufLen = sizeof(rStatsInfoEnv);
+	kalMemZero(prInfo, sizeof(STATS_INFO_ENV_T));
+
+	if (u4InBufLen > sizeof(STATS_INFO_ENV_T))
+		u4InBufLen = sizeof(STATS_INFO_ENV_T);
 
 	/* parse */
 	u4NumOfInfo = *(UINT32 *) prInBuf;
@@ -161,9 +167,9 @@ static void statsInfoEnvDisplay(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 
 		   use u4InBufLen, not sizeof(rStatsInfoEnv)
 		   because the firmware version maybe not equal to driver version
 		 */
-		kalMemCopy(&rStatsInfoEnv, prInBuf + 8, u4InBufLen);
+		kalMemCopy(prInfo, prInBuf + 8, u4InBufLen);
 
-		prStaRec = cnmGetStaRecByIndex(prAdapter, rStatsInfoEnv.ucStaRecIdx);
+		prStaRec = cnmGetStaRecByIndex(prAdapter, prInfo->ucStaRecIdx);
 		if (prStaRec == NULL)
 			continue;
 
@@ -413,6 +419,7 @@ static void statsInfoEnvDisplay(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 
 	}
 
 	STATS_DRIVER_OWN_RESET();
+	kalMemFree(prInfo, VIR_MEM_TYPE, sizeof(STATS_INFO_ENV_T));
 }
 
 #if 0

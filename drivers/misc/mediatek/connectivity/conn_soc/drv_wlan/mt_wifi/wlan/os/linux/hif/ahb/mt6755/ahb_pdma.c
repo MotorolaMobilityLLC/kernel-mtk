@@ -74,13 +74,17 @@
 
 #include <linux/module.h>
 
+#if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mt_clkmgr.h>
+#else
+#include <linux/clk.h>
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 
 #include "hif.h"
 #include "hif_pdma.h"
 #include "gl_os.h"
 
-#include <mach/emi_mpu.h>
+/* #include <mach/emi_mpu.h> */
 
 /* #if (CONF_MTK_AHB_DMA == 1) */
 
@@ -93,6 +97,9 @@
 #endif /* PDMA_DEBUG_SUP */
 
 static UINT32 gDmaReg[AP_DMA_HIF_0_LENGTH / 4 + 1];
+#if !defined(CONFIG_MTK_CLKMGR)
+struct clk *g_clk_wifi_pdma;
+#endif
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -185,6 +192,10 @@ VOID HifPdmaInit(GL_HIF_INFO_T *HifInfo)
 	emi_mpu_set_region_protection(gConEmiPhyBase, gConEmiPhyBase + 512 * 1024 - 1, 12,
 				      SET_ACCESS_PERMISSON(NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 							   NO_PROTECTION, FORBIDDEN, FORBIDDEN));
+#endif
+
+#if !defined(CONFIG_MTK_CLKMGR)
+	g_clk_wifi_pdma = HifInfo->clk_wifi_dma;
 #endif
 
 	PDMA_DBG("PDMA> HifPdmaInit ok!\n");
@@ -375,10 +386,23 @@ static VOID HifPdmaAckIntr(IN void *HifInfoSrc)
 /*----------------------------------------------------------------------------*/
 static VOID HifPdmaClockCtrl(IN UINT_32 FlgIsEnabled)
 {
+#if !defined(CONFIG_MTK_CLKMGR)
+	int ret = 0;
+#endif
+#if defined(CONFIG_MTK_CLKMGR)
 	if (FlgIsEnabled == TRUE)
 		enable_clock(MT_CG_INFRA_APDMA, "WLAN");
 	else
 		disable_clock(MT_CG_INFRA_APDMA, "WLAN");
+#else
+	if (FlgIsEnabled == TRUE) {
+		ret = clk_prepare_enable(g_clk_wifi_pdma);
+		if (ret)
+			DBGLOG(INIT, TRACE, "[CCF]clk_prepare_enable ret= %d\n", ret);
+	} else {
+		clk_disable_unprepare(g_clk_wifi_pdma);
+	}
+#endif
 }
 
 /*----------------------------------------------------------------------------*/

@@ -664,7 +664,7 @@ WLAN_STATUS rWlanStatus = WLAN_STATUS_SUCCESS;
 P_WLAN_BEACON_FRAME_T prBcnFrame = (P_WLAN_BEACON_FRAME_T) NULL;
 P_MSDU_INFO_T prBcnMsduInfo = (P_MSDU_INFO_T) NULL;
 PUINT_8 pucIEBuf = (PUINT_8) NULL;
-UINT_8 aucIEBuf[MAX_IE_LENGTH];
+PUINT_8 paucIEBuf = (PUINT_8) NULL;/*[MAX_IE_LENGTH]; aucIEBuf*/
 
 do {
 	ASSERT_BREAK((prAdapter != NULL) && (prP2pBssInfo != NULL) && (prBcnUpdateInfo != NULL));
@@ -693,8 +693,14 @@ do {
 		prBcnUpdateInfo->u4BcnBodyLen = u4NewBodyLen;
 	}
 
+	paucIEBuf = kalMemAlloc(MAX_IE_LENGTH, VIR_MEM_TYPE);
+	if (paucIEBuf == NULL) {
+		DBGLOG(P2P, TRACE, "p2p alloc paucIEBuf fail\n");
+		return WLAN_STATUS_FAILURE;
+	}
+
 	/* Temp buffer body part. */
-	kalMemCopy(aucIEBuf, pucNewBcnBody, u4NewBodyLen);
+	kalMemCopy(paucIEBuf, pucNewBcnBody, u4NewBodyLen);
 
 	if (pucNewBcnHdr) {
 		kalMemCopy(prBcnFrame, pucNewBcnHdr, u4NewHdrLen);
@@ -703,7 +709,8 @@ do {
 	}
 
 	pucIEBuf = (PUINT_8) ((ULONG) prBcnUpdateInfo->pucBcnHdr + (UINT_32) prBcnUpdateInfo->u4BcnHdrLen);
-	kalMemCopy(pucIEBuf, aucIEBuf, u4NewBodyLen);
+	kalMemCopy(pucIEBuf, paucIEBuf, u4NewBodyLen);
+	kalMemFree(paucIEBuf, VIR_MEM_TYPE, MAX_IE_LENGTH);
 	prBcnUpdateInfo->pucBcnBody = pucIEBuf;
 
 	/* Frame Length */

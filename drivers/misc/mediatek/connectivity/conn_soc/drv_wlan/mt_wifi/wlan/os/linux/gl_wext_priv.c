@@ -1301,7 +1301,6 @@ _priv_get_int(IN struct net_device *prNetDev,
 	UINT_32 u4BufLen = 0;
 	int status = 0;
 	P_NDIS_TRANSPORT_STRUCT prNdisReq;
-	INT_32 ch[50];
 
 	ASSERT(prNetDev);
 	ASSERT(prIwReqInfo);
@@ -1437,27 +1436,44 @@ _priv_get_int(IN struct net_device *prNetDev,
 			UINT_16 i, j = 0;
 			UINT_8 NumOfChannel = 50;
 			UINT_8 ucMaxChannelNum = 50;
-			RF_CHANNEL_INFO_T aucChannelList[50];
+			INT_32 ch[50];
+			/*RF_CHANNEL_INFO_T aucChannelList[50];*/
+			P_RF_CHANNEL_INFO_T paucChannelList;
+			P_RF_CHANNEL_INFO_T ChannelList_t;
 
-			kalGetChannelList(prGlueInfo, BAND_NULL, ucMaxChannelNum, &NumOfChannel, aucChannelList);
-			if (NumOfChannel > 50)
+			paucChannelList = kalMemAlloc(sizeof(RF_CHANNEL_INFO_T) * 50, VIR_MEM_TYPE);
+			if (paucChannelList == NULL) {
+				DBGLOG(REQ, INFO, "alloc ChannelList fail\n");
+				return -EFAULT;
+			}
+			kalMemZero(paucChannelList, sizeof(RF_CHANNEL_INFO_T) * 50);
+			kalGetChannelList(prGlueInfo, BAND_NULL, ucMaxChannelNum, &NumOfChannel, paucChannelList);
+			if (NumOfChannel > 50) {
+				ASSERT(0);
 				NumOfChannel = 50;
+			}
 
+			ChannelList_t = paucChannelList;
 			if (kalIsAPmode(prGlueInfo)) {
 				for (i = 0; i < NumOfChannel; i++) {
-					if ((aucChannelList[i].ucChannelNum <= 13)
-						|| (aucChannelList[i].ucChannelNum == 36
-						|| aucChannelList[i].ucChannelNum == 40
-						|| aucChannelList[i].ucChannelNum == 44
-						|| aucChannelList[i].ucChannelNum == 48)) {
-							ch[j] = (INT_32) aucChannelList[i].ucChannelNum;
+					if ((ChannelList_t->ucChannelNum <= 13)
+						|| (ChannelList_t->ucChannelNum == 36
+						|| ChannelList_t->ucChannelNum == 40
+						|| ChannelList_t->ucChannelNum == 44
+						|| ChannelList_t->ucChannelNum == 48)) {
+							ch[j] = (INT_32) ChannelList_t->ucChannelNum;
+							ChannelList_t++;
 							j++;
 					}
 				}
 			} else {
-				for (j = 0; j < NumOfChannel; j++)
-					ch[j] = (INT_32) aucChannelList[j].ucChannelNum;
+				for (j = 0; j < NumOfChannel; j++) {
+					ch[j] = (INT_32) ChannelList_t->ucChannelNum;
+					ChannelList_t++;
+				}
 			}
+
+			kalMemFree(paucChannelList, VIR_MEM_TYPE, sizeof(RF_CHANNEL_INFO_T) * 50);
 
 			prIwReqData->data.length = j;
 			if (copy_to_user(prIwReqData->data.pointer, ch, NumOfChannel * sizeof(INT_32)))
@@ -1650,15 +1666,28 @@ _priv_get_ints(IN struct net_device *prNetDev,
 			UINT_16 i;
 			UINT_8 NumOfChannel = 50;
 			UINT_8 ucMaxChannelNum = 50;
-			RF_CHANNEL_INFO_T aucChannelList[50];
+			/*RF_CHANNEL_INFO_T aucChannelList[50];*/
+			P_RF_CHANNEL_INFO_T paucChannelList;
+			P_RF_CHANNEL_INFO_T ChannelList_t;
 
-			kalGetChannelList(prGlueInfo, BAND_NULL, ucMaxChannelNum, &NumOfChannel, aucChannelList);
+			paucChannelList = kalMemAlloc(sizeof(RF_CHANNEL_INFO_T) * 50, VIR_MEM_TYPE);
+			if (paucChannelList == NULL) {
+				DBGLOG(REQ, INFO, "alloc fail\n");
+				return -EINVAL;
+			}
+			kalMemZero(paucChannelList, sizeof(RF_CHANNEL_INFO_T) * 50);
+
+			kalGetChannelList(prGlueInfo, BAND_NULL, ucMaxChannelNum, &NumOfChannel, paucChannelList);
 			if (NumOfChannel > 50)
 				NumOfChannel = 50;
 
-			for (i = 0; i < NumOfChannel; i++)
-				ch[i] = (INT_32) aucChannelList[i].ucChannelNum;
+			ChannelList_t = paucChannelList;
+			for (i = 0; i < NumOfChannel; i++) {
+				ch[i] = (INT_32) ChannelList_t->ucChannelNum;
+				ChannelList_t++;
+			}
 
+			kalMemFree(paucChannelList, VIR_MEM_TYPE, sizeof(RF_CHANNEL_INFO_T) * 50);
 			prIwReqData->data.length = NumOfChannel;
 			if (copy_to_user(prIwReqData->data.pointer, ch, NumOfChannel * sizeof(INT_32)))
 				return -EFAULT;

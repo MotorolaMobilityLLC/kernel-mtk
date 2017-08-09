@@ -2531,7 +2531,7 @@ int mtk_cfg80211_vendor_get_capabilities(struct wiphy *wiphy, struct wireless_de
 	struct sk_buff *skb;
 	/* UINT_32 u4BufLen; */
 
-	DBGLOG(REQ, INFO, "%s for vendor command \r\n", __func__);
+	DBGLOG(REQ, TRACE, "%s for vendor command \r\n", __func__);
 
 	ASSERT(wiphy);
 	ASSERT(wdev);
@@ -2578,6 +2578,29 @@ nla_put_failure:
 	return i4Status;
 }
 
+static struct nla_policy nla_parse_policy[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1] = {
+	[GSCAN_ATTRIBUTE_NUM_BUCKETS] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BASE_PERIOD] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BUCKETS_BAND] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BUCKET_ID] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BUCKET_PERIOD] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BUCKET_NUM_CHANNELS] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BUCKET_CHANNELS] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_REPORT_THRESHOLD] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_REPORT_EVENTS] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_BSSID] = {.type = NLA_UNSPEC},
+	[GSCAN_ATTRIBUTE_RSSI_LOW] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_RSSI_HIGH] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_RSSI_SAMPLE_SIZE] = {.type = NLA_U16},
+	[GSCAN_ATTRIBUTE_LOST_AP_SAMPLE_SIZE] = {.type = NLA_U32},
+	[GSCAN_ATTRIBUTE_MIN_BREACHING] = {.type = NLA_U16},
+	[GSCAN_ATTRIBUTE_NUM_AP] = {.type = NLA_U16},
+	[GSCAN_ATTRIBUTE_HOTLIST_FLUSH] = {.type = NLA_U8},
+	[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH] = {.type = NLA_U8},
+};
+
 int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len)
 {
 	WLAN_STATUS rStatus;
@@ -2591,16 +2614,6 @@ int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wde
 	struct nlattr *pbucket, *pchannel;
 	UINT_32 len_basic, len_bucket, len_channel;
 	int i, j, k;
-	static struct nla_policy policy[GSCAN_ATTRIBUTE_REPORT_EVENTS + 1] = {
-		[GSCAN_ATTRIBUTE_NUM_BUCKETS] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_BASE_PERIOD] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_BUCKETS_BAND] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_BUCKET_ID] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_BUCKET_PERIOD] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_BUCKET_NUM_CHANNELS] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_BUCKET_CHANNELS] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_REPORT_EVENTS] = {.type = NLA_U32},
-	};
 
 	ASSERT(wiphy);
 	ASSERT(wdev);
@@ -2617,7 +2630,7 @@ int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wde
 	kalMemZero(prWifiScanCmd, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS));
 	kalMemZero(attr, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_REPORT_EVENTS + 1));
 
-	nla_parse_nested(attr, GSCAN_ATTRIBUTE_REPORT_EVENTS, (struct nlattr *)(data - NLA_HDRLEN), policy);
+	nla_parse_nested(attr, GSCAN_ATTRIBUTE_REPORT_EVENTS, (struct nlattr *)(data - NLA_HDRLEN), nla_parse_policy);
 	len_basic = 0;
 	for (k = GSCAN_ATTRIBUTE_NUM_BUCKETS; k <= GSCAN_ATTRIBUTE_REPORT_EVENTS; k++) {
 		if (attr[k]) {
@@ -2639,7 +2652,7 @@ int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wde
 	DBGLOG(REQ, TRACE, "+++basic attribute size=%d pbucket=%p\r\n", len_basic, pbucket);
 
 	for (i = 0; i < prWifiScanCmd->num_buckets; i++) {
-		nla_parse_nested(attr, GSCAN_ATTRIBUTE_REPORT_EVENTS, (struct nlattr *)pbucket, policy);
+		nla_parse_nested(attr, GSCAN_ATTRIBUTE_REPORT_EVENTS, (struct nlattr *)pbucket, nla_parse_policy);
 		len_bucket = 0;
 		for (k = GSCAN_ATTRIBUTE_NUM_BUCKETS; k <= GSCAN_ATTRIBUTE_REPORT_EVENTS; k++) {
 			if (attr[k]) {
@@ -2720,36 +2733,38 @@ int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev
 	P_GLUE_INFO_T prGlueInfo = NULL;
 
 	INT_32 i4Status = -EINVAL;
-	PARAM_WIFI_GSCAN_CMD_PARAMS rWifiScanCmd;
+	/*PARAM_WIFI_GSCAN_CMD_PARAMS rWifiScanCmd;*/
+	P_PARAM_WIFI_GSCAN_CMD_PARAMS prWifiScanCmd;
 	struct nlattr *attr[GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE + 1];
 	/* UINT_32 num_scans = 0; */	/* another attribute */
 	int k;
-	static struct nla_policy policy[GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE + 1] = {
-		[GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_REPORT_THRESHOLD] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE] = {.type = NLA_U32},
-	};
 
 	ASSERT(wiphy);
 	ASSERT(wdev);
 	if ((data == NULL) || !data_len)
 		goto nla_put_failure;
 	DBGLOG(REQ, INFO, "%s for vendor command: data_len=%d \r\n", __func__, data_len);
-	kalMemZero(&rWifiScanCmd, sizeof(rWifiScanCmd));
+	/*kalMemZero(&rWifiScanCmd, sizeof(rWifiScanCmd));*/
+	prWifiScanCmd = kalMemAlloc(sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS), VIR_MEM_TYPE);
+	if (prWifiScanCmd == NULL)
+		goto nla_put_failure;
+
+	kalMemZero(prWifiScanCmd, sizeof(*prWifiScanCmd));
 	kalMemZero(attr, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE + 1));
 
-	nla_parse_nested(attr, GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE, (struct nlattr *)(data - NLA_HDRLEN), policy);
+	nla_parse_nested(attr, GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE,
+		(struct nlattr *)(data - NLA_HDRLEN), nla_parse_policy);
 	for (k = GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN; k <= GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE; k++) {
 		if (attr[k]) {
 			switch (k) {
 			case GSCAN_ATTRIBUTE_NUM_AP_PER_SCAN:
-				rWifiScanCmd.max_ap_per_scan = nla_get_u32(attr[k]);
+				prWifiScanCmd->max_ap_per_scan = nla_get_u32(attr[k]);
 				break;
 			case GSCAN_ATTRIBUTE_REPORT_THRESHOLD:
-				rWifiScanCmd.report_threshold = nla_get_u32(attr[k]);
+				prWifiScanCmd->report_threshold = nla_get_u32(attr[k]);
 				break;
 			case GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE:
-				rWifiScanCmd.num_scans = nla_get_u32(attr[k]);
+				prWifiScanCmd->num_scans = nla_get_u32(attr[k]);
 				break;
 			}
 		}
@@ -2758,15 +2773,15 @@ int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev
 	       *(UINT_32 *) attr[GSCAN_ATTRIBUTE_REPORT_THRESHOLD]);
 
 	DBGLOG(REQ, TRACE, "max_ap_per_scan=%d, report_threshold=%d num_scans=%d \r\n",
-	       rWifiScanCmd.max_ap_per_scan, rWifiScanCmd.report_threshold, rWifiScanCmd.num_scans);
+	       prWifiScanCmd->max_ap_per_scan, prWifiScanCmd->report_threshold, prWifiScanCmd->num_scans);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidSetGSCNAConfig,
-			   &rWifiScanCmd, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
-
+			   prWifiScanCmd, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+	kalMemFree(prWifiScanCmd, VIR_MEM_TYPE, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS));
 	return 0;
 
 nla_put_failure:
@@ -2783,16 +2798,6 @@ int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wirel
 	struct nlattr *paplist;
 	int i, k;
 	UINT_32 len_basic, len_aplist;
-	static struct nla_policy policy[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1] = {
-		[GSCAN_ATTRIBUTE_BSSID] = {.type = NLA_UNSPEC},
-		[GSCAN_ATTRIBUTE_RSSI_LOW] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_RSSI_HIGH] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_RSSI_SAMPLE_SIZE] = {.type = NLA_U16},
-		[GSCAN_ATTRIBUTE_LOST_AP_SAMPLE_SIZE] = {.type = NLA_U16},
-		[GSCAN_ATTRIBUTE_MIN_BREACHING] = {.type = NLA_U16},
-		[GSCAN_ATTRIBUTE_NUM_AP] = {.type = NLA_U16},
-		[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH] = {.type = NLA_U8},
-	};
 
 	ASSERT(wiphy);
 	ASSERT(wdev);
@@ -2806,7 +2811,8 @@ int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wirel
 	kalMemZero(&rWifiChangeCmd, sizeof(rWifiChangeCmd));
 	kalMemZero(attr, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1));
 
-	nla_parse_nested(attr, GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH, (struct nlattr *)(data - NLA_HDRLEN), policy);
+	nla_parse_nested(attr, GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH,
+		(struct nlattr *)(data - NLA_HDRLEN), nla_parse_policy);
 	len_basic = 0;
 	for (k = GSCAN_ATTRIBUTE_RSSI_SAMPLE_SIZE; k <= GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH; k++) {
 		if (attr[k]) {
@@ -2843,7 +2849,7 @@ int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wirel
 		paplist = (struct nlattr *)((UINT_8 *) paplist + NLA_HDRLEN);
 
 	for (i = 0; i < rWifiChangeCmd.num_ap; i++) {
-		nla_parse_nested(attr, GSCAN_ATTRIBUTE_RSSI_HIGH, (struct nlattr *)paplist, policy);
+		nla_parse_nested(attr, GSCAN_ATTRIBUTE_RSSI_HIGH, (struct nlattr *)paplist, nla_parse_policy);
 		paplist = (struct nlattr *)((UINT_8 *) paplist + NLA_HDRLEN);
 		/* request.attr_start(i) as nested attribute */
 		len_aplist = 0;
@@ -2899,14 +2905,6 @@ int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wd
 	struct nlattr *paplist;
 	int i, k;
 	UINT_32 len_basic, len_aplist;
-	static struct nla_policy policy[GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1] = {
-		[GSCAN_ATTRIBUTE_BSSID] = {.type = NLA_UNSPEC},
-		[GSCAN_ATTRIBUTE_RSSI_LOW] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_RSSI_HIGH] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_LOST_AP_SAMPLE_SIZE] = {.type = NLA_U32},
-		[GSCAN_ATTRIBUTE_NUM_AP] = {.type = NLA_U16},
-		[GSCAN_ATTRIBUTE_HOTLIST_FLUSH] = {.type = NLA_U8},
-	};
 
 	ASSERT(wiphy);
 	ASSERT(wdev);
@@ -2920,7 +2918,7 @@ int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wd
 	kalMemZero(&rWifiHotlistCmd, sizeof(rWifiHotlistCmd));
 	kalMemZero(attr, sizeof(struct nlattr *) * (GSCAN_ATTRIBUTE_SIGNIFICANT_CHANGE_FLUSH + 1));
 
-	nla_parse_nested(attr, GSCAN_ATTRIBUTE_NUM_AP, (struct nlattr *)(data - NLA_HDRLEN), policy);
+	nla_parse_nested(attr, GSCAN_ATTRIBUTE_NUM_AP, (struct nlattr *)(data - NLA_HDRLEN), nla_parse_policy);
 	len_basic = 0;
 	for (k = GSCAN_ATTRIBUTE_HOTLIST_FLUSH; k <= GSCAN_ATTRIBUTE_NUM_AP; k++) {
 		if (attr[k]) {
@@ -2949,7 +2947,7 @@ int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wd
 		paplist = (struct nlattr *)((UINT_8 *) paplist + NLA_HDRLEN);
 
 	for (i = 0; i < rWifiHotlistCmd.num_ap; i++) {
-		nla_parse_nested(attr, GSCAN_ATTRIBUTE_RSSI_HIGH, (struct nlattr *)paplist, policy);
+		nla_parse_nested(attr, GSCAN_ATTRIBUTE_RSSI_HIGH, (struct nlattr *)paplist, nla_parse_policy);
 		paplist = (struct nlattr *)((UINT_8 *) paplist + NLA_HDRLEN);
 		/* request.attr_start(i) as nested attribute */
 		len_aplist = 0;
@@ -3538,7 +3536,8 @@ mtk_cfg80211_testmode_get_lte_channel(IN struct wiphy *wiphy, IN void *data, IN 
 
 	struct sk_buff *skb;
 
-	PARAM_GET_CHN_LOAD rQueryLTEChn;
+	/*PARAM_GET_CHN_LOAD rQueryLTEChn;*/
+	P_PARAM_GET_CHN_LOAD prQueryLTEChn;
 	PARAM_PREFER_CHN_INFO rPreferChannels[2], ar2_4G_ChannelLoadingWeightScore[MAXMUN_2_4G_CHA_NUM];
 	P_PARAM_CHN_LOAD_INFO prChnLoad;
 	P_PARAM_GET_CHN_LOAD prGetChnLoad;
@@ -3564,22 +3563,28 @@ mtk_cfg80211_testmode_get_lte_channel(IN struct wiphy *wiphy, IN void *data, IN 
 	}
 
 	DBGLOG(P2P, INFO, "[Auto Channel]Get LTE Channels\n");
-
-	kalMemZero(&rQueryLTEChn, sizeof(rQueryLTEChn));
+	prQueryLTEChn = kalMemAlloc(sizeof(PARAM_GET_CHN_LOAD), VIR_MEM_TYPE);
+	if (prQueryLTEChn == NULL) {
+		DBGLOG(QM, TRACE, "alloc QueryLTEChn fail\n");
+		return -ENOMEM;
+	}
+	kalMemZero(prQueryLTEChn, sizeof(PARAM_GET_CHN_LOAD));
 
 	/* Query LTE Safe Channels */
-	rQueryLTEChn.rLteSafeChnList.au4SafeChannelBitmask[NL80211_TESTMODE_AVAILABLE_CHAN_2G_BASE_1 - 1] = 0xFFFFFFFF;
+	prQueryLTEChn->rLteSafeChnList.au4SafeChannelBitmask[NL80211_TESTMODE_AVAILABLE_CHAN_2G_BASE_1 - 1]
+			= 0xFFFFFFFF;
 
-	rQueryLTEChn.rLteSafeChnList.au4SafeChannelBitmask[NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_34 - 1] = 0xFFFFFFFF;
+	prQueryLTEChn->rLteSafeChnList.au4SafeChannelBitmask[NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_34 - 1]
+			= 0xFFFFFFFF;
 
-	rQueryLTEChn.rLteSafeChnList.au4SafeChannelBitmask[NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_149 - 1] =
+	prQueryLTEChn->rLteSafeChnList.au4SafeChannelBitmask[NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_149 - 1]
+			= 0xFFFFFFFF;
+
+	prQueryLTEChn->rLteSafeChnList.au4SafeChannelBitmask[NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_184 - 1] =
 	    0xFFFFFFFF;
 
-	rQueryLTEChn.rLteSafeChnList.au4SafeChannelBitmask[NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_184 - 1] =
-	    0xFFFFFFFF;
-	rStatus =
-	    kalIoctl(prGlueInfo, wlanoidQueryACSChannelList, &rQueryLTEChn, sizeof(rQueryLTEChn), TRUE, FALSE, TRUE,
-		     TRUE, &u4BufLen);
+	rStatus = kalIoctl(prGlueInfo, wlanoidQueryACSChannelList, prQueryLTEChn, sizeof(PARAM_GET_CHN_LOAD),
+			TRUE, FALSE, TRUE, TRUE, &u4BufLen);
 #if 0
 	if (fgIsPureAP) {
 
@@ -3718,7 +3723,7 @@ mtk_cfg80211_testmode_get_lte_channel(IN struct wiphy *wiphy, IN void *data, IN 
 		}
 
 		u4LteSafeChnBitMask_2_4G =
-		    rQueryLTEChn.rLteSafeChnList.au4SafeChannelBitmask[NL80211_TESTMODE_AVAILABLE_CHAN_2G_BASE_1 - 1];
+		    prQueryLTEChn->rLteSafeChnList.au4SafeChannelBitmask[NL80211_TESTMODE_AVAILABLE_CHAN_2G_BASE_1 - 1];
 
 		/*Find out the best channel */
 		for (ucIdx = ucDefaultIdx; ucIdx < ucMax_24G_Chn_List; ucIdx++) {
@@ -3810,6 +3815,7 @@ mtk_cfg80211_testmode_get_lte_channel(IN struct wiphy *wiphy, IN void *data, IN 
 		AcsChnReport[3]);
 
 	i4Status = cfg80211_testmode_reply(skb);
+	kalMemFree(prQueryLTEChn, VIR_MEM_TYPE, sizeof(PARAM_GET_CHN_LOAD));
 
 nla_put_failure:
 	return i4Status;

@@ -3895,128 +3895,156 @@ int TdlsexCfg80211TdlsOper(struct wiphy *wiphy, struct net_device *dev,
 VOID TdlsexCmd(P_GLUE_INFO_T prGlueInfo, UINT_8 *prInBuf, UINT_32 u4InBufLen)
 {
 	UINT_32 u4Subcmd;
+	static void (*TdlsCmdTestFunc)(P_GLUE_INFO_T, UINT_8 *, UINT_32);
 
 	/* parse TDLS sub-command */
 	u4Subcmd = CmdStringDecParse(prInBuf, &prInBuf, &u4InBufLen);
 	DBGLOG(TDLS, INFO, "<tdls_cmd> sub command = %u\n", (UINT32) u4Subcmd);
+	TdlsCmdTestFunc = NULL;
 
 	/* handle different sub-command */
 	switch (u4Subcmd) {
 #if TDLS_CFG_CMD_TEST		/* only for unit test */
 	case TDLS_CMD_TEST_TX_FRAME:
 		/* simulate to send a TDLS frame */
-		TdlsCmdTestTxFrame(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestTxFrame(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestTxFrame;
 		break;
 
 	case TDLS_CMD_TEST_TX_TDLS_FRAME:
 		/* simulate to send a TDLS frame from supplicant */
-		TdlsCmdTestTxTdlsFrame(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestTxTdlsFrame(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestTxTdlsFrame;
 		break;
 
 	case TDLS_CMD_TEST_RCV_FRAME:
 		/* simulate to receive a TDLS frame */
-		TdlsCmdTestRvFrame(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestRvFrame(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestRvFrame;
 		break;
 
 	case TDLS_CMD_TEST_PEER_ADD:
 		/* simulate to add a TDLS peer */
-		TdlsCmdTestAddPeer(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestAddPeer(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestAddPeer;
 		break;
 
 	case TDLS_CMD_TEST_PEER_UPDATE:
 		/* simulate to update a TDLS peer */
-		TdlsCmdTestUpdatePeer(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestUpdatePeer(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestUpdatePeer;
 		break;
 
 	case TDLS_CMD_TEST_DATA_FRAME:
 		/* simulate to send a data frame to the peer */
-		TdlsCmdTestDataSend(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestDataSend(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestDataSend;
 		break;
 
 	case TDLS_CMD_TEST_RCV_NULL:
 		/* simulate to receive a QoS null frame from the peer */
-		TdlsCmdTestNullRecv(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestNullRecv(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestNullRecv;
 		break;
 
 	case TDLS_CMD_TEST_SKIP_TX_FAIL:
 		/* command firmware to skip tx fail case */
-		TdlsCmdTestTxFailSkip(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestTxFailSkip(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestTxFailSkip;
 		break;
 
 	case TDLS_CMD_TEST_SKIP_KEEP_ALIVE:
 		/* command firmware to skip keep alive function */
-		TdlsCmdTestKeepAliveSkip(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestKeepAliveSkip(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestKeepAliveSkip;
 		break;
 
 	case TDLS_CMD_TEST_SKIP_CHSW_TIMEOUT:
 		/* command firmware to skip channel switch timeout function */
-		TdlsCmdTestChSwTimeoutSkip(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestChSwTimeoutSkip(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestChSwTimeoutSkip;
 		break;
 
 	case TDLS_CMD_TEST_PROHIBIT_SET_IN_AP:
 		/* simulate to set Prohibited Bit in AP */
-		TdlsCmdTestProhibitedBitSet(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestProhibitedBitSet(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestProhibitedBitSet;
 		break;
 
 	case TDLS_CMD_TEST_SCAN_DISABLE:
 		/* command to disable scan request to do channel switch */
-		TdlsCmdTestScanCtrl(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestScanCtrl(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestScanCtrl;
 		break;
 
 	case TDLS_CMD_TEST_DATA_FRAME_CONT:
 		/* simulate to send a data frame to the peer periodically */
-		TdlsCmdTestDataContSend(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestDataContSend(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestDataContSend;
 		break;
 
 	case TDLS_CMD_TEST_CH_SW_PROHIBIT_SET_IN_AP:
 		/* simulate to set channel switch Prohibited Bit in AP */
-		TdlsCmdTestChSwProhibitedBitSet(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestChSwProhibitedBitSet(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestChSwProhibitedBitSet;
 		break;
 
 	case TDLS_CMD_TEST_DELAY:
 		/* delay a where */
-		TdlsCmdTestDelay(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestDelay(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestDelay;
 		break;
 
 	case TDLS_CMD_TEST_PTI_TX_FAIL:
 		/* simulate the tx done fail for PTI */
-		TdlsCmdTestPtiTxDoneFail(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdTestPtiTxDoneFail(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdTestPtiTxDoneFail;
 		break;
 #endif /* TDLS_CFG_CMD_TEST */
 
 	case TDLS_CMD_MIB_UPDATE:
 		/* update MIB parameters */
-		TdlsCmdMibParamUpdate(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdMibParamUpdate(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdMibParamUpdate;
 		break;
 
 	case TDLS_CMD_UAPSD_CONF:
 		/* config UAPSD parameters */
-		TdlsCmdUapsdConf(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdUapsdConf(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdUapsdConf;
 		break;
 
 	case TDLS_CMD_CH_SW_CONF:
 		/* enable or disable or start or stop channel switch function */
-		TdlsCmdChSwConf(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdChSwConf(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdChSwConf;
 		break;
 
 	case TDLS_CMD_SETUP_CONF:
 		/* config setup parameters */
-		TdlsCmdSetupConf(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdSetupConf(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdSetupConf;
 		break;
 
 	case TDLS_CMD_INFO:
 		/* display all TDLS information */
-		TdlsCmdInfoDisplay(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdInfoDisplay(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdInfoDisplay;
 		break;
 
 	case TDLS_CMD_KEY_INFO:
 		/* display key information */
-		TdlsCmdKeyInfoDisplay(prGlueInfo, prInBuf, u4InBufLen);
+		/* TdlsCmdKeyInfoDisplay(prGlueInfo, prInBuf, u4InBufLen); */
+		TdlsCmdTestFunc = TdlsCmdKeyInfoDisplay;
 		break;
 
 	default:
 		break;
 	}
+
+	if (TdlsCmdTestFunc != NULL)
+		TdlsCmdTestFunc(prGlueInfo, prInBuf, u4InBufLen);
+
 }
 
 /*----------------------------------------------------------------------------*/
