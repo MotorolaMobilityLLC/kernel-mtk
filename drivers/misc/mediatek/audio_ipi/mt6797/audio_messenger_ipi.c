@@ -195,9 +195,6 @@ void audio_send_ipi_msg(
 	ipi_msg_t *ipi_msg = NULL;
 	uint32_t ipi_msg_len = 0;
 
-	AUD_LOG_D("send, task: %d, id: 0x%x, p1: 0x%x, p2: 0x%x\n",
-		  ipi_msg->task_scene, ipi_msg->msg_id, ipi_msg->param1, ipi_msg->param2);
-
 	ipi_msg = getIpiMsg(task_scene);
 	if (ipi_msg == NULL) {
 		AUD_LOG_E("%s(), ipi_msg = NULL, return\n", __func__);
