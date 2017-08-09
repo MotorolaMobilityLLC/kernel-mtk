@@ -448,6 +448,7 @@ static int _cl_bcct_read(struct seq_file *m, void *v)
 	{
 		int i = 0;
 
+		seq_printf(m, "%d\n", cl_bcct_cur_limit);
 		seq_printf(m, "klog %d\n", cl_bcct_klog_on);
 		seq_printf(m, "curr_limit %d\n", cl_bcct_cur_limit);
 
@@ -520,6 +521,8 @@ static int _cl_abcct_read(struct seq_file *m, void *v)
 {
 	mtk_cooler_bcct_dprintk("%s\n", __func__);
 
+	seq_printf(m, "%d\n", abcct_cur_bat_chr_curr_limit);
+	seq_printf(m, "abcct_cur_bat_chr_curr_limit %d\n", abcct_cur_bat_chr_curr_limit);
 	seq_printf(m, "abcct_target_temp %ld\n", abcct_target_temp);
 	seq_printf(m, "abcct_kp %ld\n", abcct_kp);
 	seq_printf(m, "abcct_ki %ld\n", abcct_ki);
@@ -541,6 +544,32 @@ static const struct file_operations _cl_abcct_fops = {
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.write = _cl_abcct_write,
+	.release = single_release,
+};
+
+static int _cl_chrlmt_read(struct seq_file *m, void *v)
+{
+	mtk_cooler_bcct_dprintk("%s\n", __func__);
+
+	seq_printf(m, "%d,%d\n", chrlmt_chr_input_curr_limit, chrlmt_bat_chr_curr_limit);
+	seq_printf(m, "chrlmt_chr_input_curr_limit %d\n", chrlmt_chr_input_curr_limit);
+	seq_printf(m, "chrlmt_bat_chr_curr_limit %d\n", chrlmt_bat_chr_curr_limit);
+	seq_printf(m, "abcct_cur_bat_chr_curr_limit %d\n", abcct_cur_bat_chr_curr_limit);
+	seq_printf(m, "cl_bcct_cur_limit %d\n", cl_bcct_cur_limit);
+
+	return 0;
+}
+
+static int _cl_chrlmt_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, _cl_chrlmt_read, PDE_DATA(inode));
+}
+
+static const struct file_operations _cl_chrlmt_fops = {
+	.owner = THIS_MODULE,
+	.open = _cl_chrlmt_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
 	.release = single_release,
 };
 
@@ -590,6 +619,8 @@ static int __init mtk_cooler_bcct_init(void)
 			mtk_cooler_bcct_dprintk_always("%s clabcct creation failed\n", __func__);
 		else
 			proc_set_user(entry, uid, gid);
+
+		entry = proc_create("bcctlmt", S_IRUGO, NULL, &_cl_chrlmt_fops);
 	}
 	return 0;
 
