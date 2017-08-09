@@ -127,14 +127,14 @@ static struct device_node *node;
 /* For L LL */
 static struct EEM2_data eem2_data;
 static struct EEM2_trig eem2_trig;
-static int eem2_lo_enable = 1;
+static int eem2_lo_enable;
 static unsigned int eem2_ctrl_lo[2];
 
 /* For big */
 static struct EEM2_big_data eem2_big_data;
 static struct EEM2_big_trig eem2_big_trig;
 static unsigned int eem2_big_regs[4];
-static unsigned int eem2_big_lo_enable = 1;
+static unsigned int eem2_big_lo_enable;
 static unsigned int eem2_big_initialized;
 
 /* static CHIP_SW_VER ver = CHIP_SW_VER_01; */
