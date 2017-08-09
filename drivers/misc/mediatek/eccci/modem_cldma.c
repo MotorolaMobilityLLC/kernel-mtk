@@ -1345,13 +1345,21 @@ static inline void cldma_stop(struct ccci_modem *md)
 		if ((++count) % 100000 == 0) {
 			CCCI_NORMAL_LOG(md->index, TAG, "stop Rx CLDMA, status=%x, count=%d\n", ret, count);
 #if defined(CONFIG_MTK_AEE_FEATURE)
-			aee_kernel_dal_show("stop Rx CLDMA failed.\n");
+			/* aee_kernel_dal_show("stop Rx CLDMA failed.\n"); */
 #endif
 			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
-			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
+			if ((count < 500000) || (count > 1200000))
+				ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
+#if defined(CONFIG_MTK_AEE_FEATURE)
+			if (count >= 1600000) {
+				aed_md_exception_api(NULL, 0, NULL, 0,
+					"md1:\nUNKNOWN Exception\nstop Rx CLDMA failed.\n", DB_OPT_DEFAULT);
+				break;
+			}
+#endif
 		}
 	} while (ret != 0);
 	/* clear all L2 and L3 interrupts */
