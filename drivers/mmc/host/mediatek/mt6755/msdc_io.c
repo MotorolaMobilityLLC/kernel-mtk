@@ -25,9 +25,6 @@
 /* FIX ME: check if it can be removed */
 const struct of_device_id msdc_of_ids[] = {
 	{   .compatible = "mediatek,mt6755-mmc", },
-	{   .compatible = "mediatek,mt6755-mmc", },
-	{   .compatible = "mediatek,msdc2", },
-	{   .compatible = "mediatek,msdc3", },
 	{ },
 };
 
@@ -1197,6 +1194,7 @@ static int msdc_get_pinctl_settings(struct msdc_host *host)
 	pins_clk_node = of_get_child_by_name(pinctl_sdr104_node, "pins_clk");
 	of_property_read_u8(pins_clk_node, "drive-strength",
 			&host->hw->clk_drv_sd_18);
+
 	/* SDR50 for SDcard */
 	pinctl_sdr50_node = of_parse_phandle(np, "pinctl_sdr50", 0);
 	pins_cmd_node = of_get_child_by_name(pinctl_sdr50_node, "pins_cmd");
@@ -1238,7 +1236,7 @@ static int msdc_get_rigister_settings(struct msdc_host *host)
 	struct device_node *np = mmc->parent->of_node;
 	struct device_node *register_setting_node = NULL;
 
-	/*parse hw property settings*/
+	/* parse hw property settings */
 	register_setting_node = of_parse_phandle(np, "register_setting", 0);
 	if (register_setting_node) {
 		of_property_read_u8(register_setting_node, "dat0rddly",
@@ -1305,7 +1303,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 		return -ENOMEM;
 	}
 
-	/* get irq #  */
+	/* get irq # */
 	host->irq = irq_of_parse_and_map(np, 0);
 	pr_err("[msdc%d] get irq # %d\n", mmc->index, host->irq);
 	BUG_ON(host->irq < 0);
@@ -1324,8 +1322,8 @@ int msdc_of_parse(struct mmc_host *mmc)
 		host->hw->flags |= MSDC_SYS_SUSPEND;
 
 	/* Returns 0 on success, -EINVAL if the property does not exist,
-	* -ENODATA if property does not have a value, and -EOVERFLOW if the
-	* property data isn't large enough.*/
+	 * -ENODATA if property does not have a value, and -EOVERFLOW if the
+	 * property data isn't large enough.*/
 
 	if (of_property_read_u8(np, "host_function", &host->hw->host_function))
 		pr_err("[msdc%d] host_function isn't found in device tree\n",
@@ -1334,11 +1332,11 @@ int msdc_of_parse(struct mmc_host *mmc)
 	if (of_find_property(np, "bootable", &len))
 		host->hw->boot = 1;
 
-	/*get cd_level*/
+	/* get cd_level */
 	if (of_property_read_u8(np, "cd_level", &host->hw->cd_level))
 		pr_err("[msdc%d] cd_level isn't found in device tree\n",
 				host->id);
-	/*get cd_gpio*/
+	/* get cd_gpio */
 	of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio);
 
 	msdc_get_rigister_settings(host);
@@ -1347,6 +1345,15 @@ int msdc_of_parse(struct mmc_host *mmc)
 	msdc_get_pinctl_settings(host);
 	#endif
 
+#if defined(CFG_DEV_MSDC2)
+	if (host->hw->host_function == MSDC_SDIO) {
+		host->hw->flags |= MSDC_EXT_SDIO_IRQ;
+		host->hw->request_sdio_eirq = mt_sdio_ops[2].sdio_request_eirq;
+		host->hw->enable_sdio_eirq = mt_sdio_ops[2].sdio_enable_eirq;
+		host->hw->disable_sdio_eirq = mt_sdio_ops[2].sdio_disable_eirq;
+		host->hw->register_pm = mt_sdio_ops[2].sdio_register_pm;
+	}
+#endif
 	return 0;
 }
 
@@ -1361,8 +1368,6 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 	int i, ret;
 	static char const * const msdc_names[] = {
 		"msdc0", "msdc1", "msdc2", "msdc3"};
-	/*static char const * const msdc_names[] =
-		{"mt6755-mmc", "mt6755-mmc", "msdc2", "msdc3"};*/
 	static char const * const ioconfig_names[] = {
 		"mediatek,iocfg_5", "mediatek,iocfg_0",
 		"mediatek,iocfg_4", "NOT EXIST"
