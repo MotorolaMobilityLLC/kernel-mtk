@@ -788,23 +788,29 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 #if SPM_VCORE_DVFS_EN
 static void spm_dvfsfw_init(void)
 {
+	unsigned long flags;
 	int ret;
 	u32 opp = 0, pll = 0;
 	struct spm_data spm_d;
 
 	memset(&spm_d, 0, sizeof(struct spm_data));
 	opp = vcorefs_get_curr_opp();
-	spm_d.u.vcorefs.init_opp = opp;
+	spm_d.u.args.arg0 = opp;
 
 	if (1)
 		pll = 0x1; /* PHYPLL */
 	else
 		pll = 0x0; /* CLRPLL */
 
-	spm_d.u.vcorefs.on_pll = pll;
+	spm_d.u.args.arg1 = pll;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
 	ret = spm_to_sspm_command(SPM_VCORE_DVFS_FWINIT, &spm_d);
 	if (ret < 0)
 		BUG();
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	spm_vcorefs_warn("DVFS_LEVEL: 0x%x(%u), DRAMC_DPY: 0x%x, RSV_5: 0x%x(%u)\n",
 						spm_read(DVFS_LEVEL), opp,
@@ -829,19 +835,27 @@ spm_vcorefs_pcm_setup_for_kick(struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctr
 
 void spm_to_sspm_pwarp_cmd(void)
 {
+	unsigned long flags;
 	int ret;
 	struct spm_data spm_d;
+
+	spin_lock_irqsave(&__spm_lock, flags);
 
 	memset(&spm_d, 0, sizeof(struct spm_data));
 	ret = spm_to_sspm_command(SPM_VCORE_PWARP_CMD, &spm_d);
 	if (ret < 0)
 		BUG();
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
 }
 
 void spm_msdc_setting(int msdc, bool msdc_sta)
 {
+	unsigned long flags;
 	int ret;
 	struct spm_data spm_d;
+
+	spin_lock_irqsave(&__spm_lock, flags);
 
 	memset(&spm_d, 0, sizeof(struct spm_data));
 	spm_d.u.args.arg0 = msdc;
@@ -849,6 +863,8 @@ void spm_msdc_setting(int msdc, bool msdc_sta)
 	ret = spm_to_sspm_command(SPM_PWR_CTRL_MSDC, &spm_d);
 	if (ret < 0)
 		BUG();
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	spm_vcorefs_warn("msdc: %d, msdc_sta: %d, SPM_SW_NONSERSV_3: 0x%x\n",
 							msdc, msdc_sta, spm_read(SPM_SW_NONSERSV_3));
@@ -862,6 +878,7 @@ void spm_msdc_setting(int msdc, bool msdc_sta)
 #if SPM_VCORE_DVFS_EN
 static void spm_dvfsfw_init(void)
 {
+	unsigned long flags;
 	u32 opp = 0, pll = 0, level = 0;
 	u32 dvfs_level[NUM_OPP] = { 0x8810, 0x4808, 0x4404, 0x2202, 0x1101};
 
@@ -883,11 +900,15 @@ static void spm_dvfsfw_init(void)
 
 	level = dvfs_level[opp];
 
+	spin_lock_irqsave(&__spm_lock, flags);
+
 	spm_write(DVFS_LEVEL, level);
 
 	spm_write(DRAMC_DPY_CLK_SW_CON_SEL, 0xBFFFF);
 
 	spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(1U << 0)) | pll);
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	spm_vcorefs_warn("DVFS_LEVEL: 0x%x(%u), DRAMC_DPY: 0x%x, RSV_5: 0x%x(%u)\n",
 						spm_read(DVFS_LEVEL), opp,
@@ -917,6 +938,10 @@ spm_vcorefs_pcm_setup_for_kick(struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctr
 
 void spm_msdc_setting(int msdc, bool msdc_sta)
 {
+	unsigned long flags;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
 	spm_write(SPM_SW_NONSERSV_3, (spm_read(SPM_SW_NONSERSV_3) & ~SPM_SW_NONSERSV_3_LSB));
 
 	if (msdc == MSDC1)
@@ -924,6 +949,8 @@ void spm_msdc_setting(int msdc, bool msdc_sta)
 
 	if (msdc == MSDC3)
 		spm_write(SPM_SW_NONSERSV_3, (spm_read(SPM_SW_NONSERSV_3) & ~(1U << MSDC3)) | (msdc_sta << MSDC3));
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	spm_vcorefs_warn("msdc: %d, msdc_sta: %d, SPM_SW_NONSERSV_3: 0x%x\n",
 							msdc, msdc_sta, spm_read(SPM_SW_NONSERSV_3));

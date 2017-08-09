@@ -529,8 +529,6 @@ struct spm_data {
 		} sodi;
 		struct {
 			unsigned int pcm_flags;
-			unsigned int init_opp;
-			unsigned int on_pll;
 		} vcorefs;
 	} u;
 };
