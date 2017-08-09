@@ -980,12 +980,6 @@ static int ext4_write_begin(struct file *file, struct address_space *mapping,
 	struct page *page;
 	pgoff_t index;
 	unsigned from, to;
-#if defined(FEATURE_STORAGE_PID_LOGGER)
-		struct page_pid_logger *tmp_logger;
-		unsigned long page_index;
-		/*extern spinlock_t g_locker;*/
-		unsigned long g_flags;
-#endif
 
 	trace_ext4_write_begin(inode, pos, len, flags);
 	/*
@@ -1089,24 +1083,8 @@ retry_journal:
 		return ret;
 	}
 	*pagep = page;
-#if defined(FEATURE_STORAGE_PID_LOGGER)
-		if (page_logger && (*pagep)) {
+	mt_pidlog_write_begin(*pagep);
 
-
-
-			page_index = (unsigned long)(__page_to_pfn(*pagep)) - PHYS_PFN_OFFSET;
-
-			tmp_logger = ((struct page_pid_logger *)page_logger) + page_index;
-			spin_lock_irqsave(&g_locker, g_flags);
-			if (page_index < (system_dram_size >> PAGE_SHIFT)) {
-				if (tmp_logger->pid1 == 0XFFFF)
-					tmp_logger->pid1 = current->pid;
-				else if (tmp_logger->pid1 != current->pid)
-					tmp_logger->pid2 = current->pid;
-			}
-			spin_unlock_irqrestore(&g_locker, g_flags);
-		}
-#endif
 	return ret;
 }
 

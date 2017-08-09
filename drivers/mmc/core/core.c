@@ -49,6 +49,7 @@
 #include "mmc_ops.h"
 #include "sd_ops.h"
 #include "sdio_ops.h"
+#include "../card/mt_mmc_block.h"
 
 /* If the device is not responding */
 #define MMC_CORE_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
@@ -600,6 +601,8 @@ int mmc_run_queue_thread(void *data)
 			atomic_set(&host->cq_rw, false);
 
 			if (done_mrq && !done_mrq->data->error && !done_mrq->cmd->error) {
+				task_id = (done_mrq->cmd->arg >> 16) & 0x1f;
+				mt_biolog_cmdq_dma_end(task_id);
 				mmc_check_write(host, done_mrq);
 				host->cur_rw_task = 99;
 				is_done = true;
@@ -617,7 +620,6 @@ int mmc_run_queue_thread(void *data)
 			spin_lock_irq(&host->dat_que_lock);
 			dat_mrq = mmc_get_dat_que(host);
 			spin_unlock_irq(&host->dat_que_lock);
-
 			if (dat_mrq) {
 				BUG_ON(dat_mrq->cmd->opcode != MMC_WRITE_REQUESTED_QUEUE
 					&& dat_mrq->cmd->opcode != MMC_READ_REQUESTED_QUEUE);
@@ -627,8 +629,8 @@ int mmc_run_queue_thread(void *data)
 
 				atomic_set(&host->cq_rw, true);
 				task_id = ((dat_mrq->cmd->arg >> 16) & 0x1f);
+				mt_biolog_cmdq_dma_start(task_id);
 				host->cur_rw_task = task_id;
-
 				host->ops->request(host, dat_mrq);
 				atomic_dec(&host->cq_rdy_cnt);
 				dat_mrq = NULL;
@@ -638,10 +640,11 @@ int mmc_run_queue_thread(void *data)
 		/* End request stage 2/2 */
 		if (is_done) {
 			task_id = (done_mrq->cmd->arg >> 16) & 0x1f;
+			mt_biolog_cmdq_isdone_start(task_id, host->areq_que[task_id]->mrq_que);
 			err = done_mrq->areq->err_check(host->card, done_mrq->areq);
 			mmc_post_req(host, done_mrq, 0);
+			mt_biolog_cmdq_isdone_end(task_id);
 			mmc_blk_end_queued_req(host, done_mrq->areq, task_id, err);
-
 			mmc_host_clk_release(host);
 			wake_up_interruptible(&host->cmp_que);
 			done_mrq = NULL;
@@ -1399,32 +1402,7 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 			 */
 			return NULL;
 		} else {
-#if defined(FEATURE_STORAGE_PERF_INDEX)
-			time1 = sched_clock();
-
-			idx = find_mmcqd_index();
-			if (start_async_req[idx] == 1) {
-
-
-				mmcqd_rq_count[idx]++;
-
-				if (host->areq->mrq->data->flags == MMC_DATA_WRITE) {
-
-					mmcqd_wr_rq_count[idx]++;
-					mmcqd_rq_size_wr[idx] +=
-						((host->areq->mrq->data->blocks) * (host->areq->mrq->data->blksz));
-					mmcqd_t_usage_wr[idx] += time1 - start_async_req_time[idx];
-				} else if (host->areq->mrq->data->flags == MMC_DATA_READ) {
-
-					mmcqd_rd_rq_count[idx]++;
-					mmcqd_rq_size_rd[idx] +=
-						((host->areq->mrq->data->blocks) * (host->areq->mrq->data->blksz));
-					mmcqd_t_usage_rd[idx] += time1 - start_async_req_time[idx];
-				}
-
-				start_async_req[idx] = 0;
-			}
-#endif
+			mt_biolog_mmcqd_req_end(host->areq->mrq->data);
 		}
 		/*
 		 * Check BKOPS urgency for each R1 response
@@ -1447,11 +1425,8 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 		else
 #endif
 		start_err = __mmc_start_data_req(host, areq->mrq);
-#if defined(FEATURE_STORAGE_PERF_INDEX)
-		start_async_req[idx] = 1;
-		start_async_req_time[idx] = sched_clock();
-#endif
 
+		mt_biolog_mmcqd_req_start();
 	}
 
 	if (host->areq)

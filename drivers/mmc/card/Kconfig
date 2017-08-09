@@ -85,3 +85,11 @@ config MMC_FFU
 	  This is an option to run firmware update on eMMC 5.0.
 	  Field firmware updates (FFU) enables features enhancment
 	  in the field.
+
+config MMC_BLOCK_IO_LOG
+	bool "Block IO log"
+	depends on MMC_BLOCK
+	default y
+	help
+	  Enable IO trace for performance analysis and application access
+	  pattern study.
