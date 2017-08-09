@@ -77,6 +77,7 @@ static fm_s32 mt6631_I2s_Setting(fm_s32 onoff, fm_s32 mode, fm_s32 sample);
 static fm_u16 mt6631_chan_para_get(fm_u16 freq);
 static fm_s32 mt6631_desense_check(fm_u16 freq, fm_s32 rssi);
 static fm_bool mt6631_TDD_chan_check(fm_u16 freq);
+static fm_bool mt6631_SPI_hopping_check(fm_u16 freq);
 static fm_s32 mt6631_soft_mute_tune(fm_u16 freq, fm_s32 *rssi, fm_bool *valid);
 static fm_s32 mt6631_pwron(fm_s32 data)
 {
@@ -317,7 +318,7 @@ static fm_s32 mt6631_RampDown(void)
 	/* A1.1. Disable FMAUD trigger */
 	ret = mt6631_host_write(0x81024058, 0x88800000);
 	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, " Disable FMAUD trigger failed\n");
+		WCN_DBG(FM_ALT | CHIP, "Disable FMAUD trigger failed\n");
 		return ret;
 	}
 
@@ -332,6 +333,7 @@ static fm_s32 mt6631_RampDown(void)
 	mt6631_host_read(0x81026004, &tem);   /* Set 0x81026004[0] = 0x0 */
 	tem = tem & 0xFFFFFFFE;
 	mt6631_host_write(0x81026004, tem);
+	WCN_DBG(FM_DBG | CHIP, "Switch SPI clock to 26MHz\n");
 
 	/* A0.0 Host control RF register */
 	ret = mt6631_set_bits(0x60, 0x0007, 0xFFF0);  /*Set 0x60 [D3:D0] = 0x7*/
@@ -747,7 +749,7 @@ static fm_s32 mt6631_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 	/* Enable connsys FM 2 wire RX */
 	mt6631_write(0x9B, 0xF9AB);				/* G2: Set audio output i2s TX mode */
 	mt6631_host_write(0x81024064, 0x00000014); /* G3: Enable aon_osc_clk_cg */
-	mt6631_host_write(0x81024058, 0x888100E3); /* G4: Enable FMAUD trigger */
+	mt6631_host_write(0x81024058, 0x888100C3); /* G4: Enable FMAUD trigger */
 	mt6631_host_write(0x81024054, 0x00000100); /* G5: Release fmsys memory power down*/
 
 	WCN_DBG(FM_NTC | CHIP, "pwr on seq ok\n");
@@ -838,6 +840,9 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 	fm_u16 pkt_size;
 	fm_u16 chan_para = 0;
 	fm_u16 freq_reg = 0;
+	fm_u32 reg_val = 0;
+	fm_u32 i = 0;
+	fm_bool flag_spi_hopping = fm_false;
 	fm_u16 tmp_reg[6] = {0};
 
 	fm_cb_op->cur_freq_set(freq);
@@ -861,33 +866,33 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 	/* A0. Host contrl RF register */
 	ret = mt6631_set_bits(0x60, 0x0007, 0xFFF0);  /* Set 0x60 [D3:D0] = 0x07*/
 	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "Host Control RF register 0x60 = 0x7 failed\n");
+		WCN_DBG(FM_ERR | CHIP, "%s: Host Control RF register 0x60 = 0x7 failed\n", __func__);
 
 	/* A0.1 Update FM ADPLL fast tracking mode gain */
 	ret = mt6631_set_bits(0x0F, 0x0455, 0xF800);
 	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "Set FM ADPLL gainA/B=0x455 failed\n");
+		WCN_DBG(FM_ERR | CHIP, "%s: Set FM ADPLL gainA/B=0x455 failed\n", __func__);
 
 	/* A0.2 Set FMSYS cell mode */
 	if (mt6631_TDD_chan_check(freq)) {
 		ret = mt6631_set_bits(0x30, 0x0008, 0xFFF3);	/* use TDD solution */
 		if (ret)
-			WCN_DBG(FM_ERR | CHIP, "freq[%d]: use TDD solution failed\n", freq);
+			WCN_DBG(FM_ERR | CHIP, "%s: freq[%d]: use TDD solution failed\n", __func__, freq);
 	} else {
 		ret = mt6631_set_bits(0x30, 0x0000, 0xFFF3);	/* default use FDD solution */
 		if (ret)
-			WCN_DBG(FM_ERR | CHIP, "freq[%d]: default use FDD solution failed\n", freq);
+			WCN_DBG(FM_ERR | CHIP, "%s: freq[%d]: default use FDD solution failed\n", __func__, freq);
 	}
 
 	/* A0.3 Host control RF register */
 	ret = mt6631_set_bits(0x60, 0x000F, 0xFFF0);	/* Set 0x60 [D3:D0] = 0x0F*/
 	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "Set 0x60 [D3:D0] = 0x0F failed\n");
+		WCN_DBG(FM_ERR | CHIP, "%s: Set 0x60 [D3:D0] = 0x0F failed\n", __func__);
 
 	/* A1 Get Channel parameter from map list*/
 
 	chan_para = mt6631_chan_para_get(freq);
-	WCN_DBG(FM_DBG | CHIP, "%d chan para = %d\n", (fm_s32) freq, (fm_s32) chan_para);
+	WCN_DBG(FM_DBG | CHIP, "%s: %d chan para = %d\n", __func__, (fm_s32) freq, (fm_s32) chan_para);
 
 	freq_reg = freq;
 	if (0 == fm_get_channel_space(freq_reg))
@@ -898,7 +903,7 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 	/*A1 Set rgfrf_chan = XXX*/
 	ret = mt6631_set_bits(0x65, freq_reg, 0xFC00);
 	if (ret) {
-		WCN_DBG(FM_ERR | CHIP, "set rgfrf_chan = xxx = %d failed\n", freq_reg);
+		WCN_DBG(FM_ERR | CHIP, "%s: set rgfrf_chan = xxx = %d failed\n", __func__, freq_reg);
 		return fm_false;
 	}
 
@@ -907,18 +912,49 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 		WCN_DBG(FM_ERR | CHIP, "set freq wr 0x65 failed\n");
 		return fm_false;
 	}
+	/* SPI hoppint setting*/
+	if (mt6631_SPI_hopping_check(freq)) {
 
+		WCN_DBG(FM_NTC | CHIP, "%s: freq:%d is SPI hopping channel,turn on 64M PLL\n", __func__, (fm_s32) freq);
+
+		/*Turn on 64M PLL wr 0x81021110[28] 0x1	D28 */
+		ret = mt6631_host_read(0x81021110, &reg_val);
+		if (ret)
+			WCN_DBG(FM_ERR | CHIP, "%s: read 0x81021110 failed\n", __func__);
+		reg_val |= 0x10000000;
+		ret = mt6631_host_write(0x81021110, reg_val);
+		if (ret)
+			WCN_DBG(FM_ERR | CHIP, "%s: write 0x81021110 failed\n", __func__);
+
+		for (i = 0; i < 100; i++) { /*rd 0x8002110C until D27 ==1*/
+
+			ret = mt6631_host_read(0x8002110C, &reg_val);
+
+			if (reg_val & 0x08000000) {
+				flag_spi_hopping = fm_true;
+				WCN_DBG(FM_DBG | CHIP, "%s: rd 0x8002110C[27] ==0x1 success !\n", __func__);
+				/* switch SPI clock to 64MHz */
+				ret = mt6631_host_read(0x81026004, &reg_val); /* wr 0x81026004[0] 0x1	D0 */
+				reg_val |= 0x00000001;
+				ret = mt6631_host_write(0x81026004, reg_val);
+				break;
+			}
+			Delayus(10);
+		}
+		if (fm_false == flag_spi_hopping)
+			WCN_DBG(FM_ERR | CHIP, "%s: Polling to read rd 0x8002110C[27] ==0x1 failed !\n", __func__);
+	}
 	/* A1.1 enable aon_osc_clk_cg */
 	mt6631_host_write(0x81024064, 0x00000014); /* G3: Enable aon_osc_clk_cg */
 	/* A1.1 enable FMAUD trigger */
-	mt6631_host_write(0x81024058, 0x888100E3); /* G4: Enable FMAUD trigger */
+	mt6631_host_write(0x81024058, 0x888100C3); /* G4: Enable FMAUD trigger */
 	/* A1.1 release fmsys memory power down */
 	mt6631_host_write(0x81024054, 0x00000100); /* G5: Release fmsys memory power down*/
 
 	/* A0. Host contrl RF register */
 	ret = mt6631_set_bits(0x60, 0x0007, 0xFFF0);  /* Set 0x60 [D3:D0] = 0x07*/
 	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "Host Control RF register 0x60 = 0x7 failed\n");
+		WCN_DBG(FM_ERR | CHIP, "%s: Host Control RF register 0x60 = 0x7 failed\n", __func__);
 
 
 	mt6631_read(0x62, &tmp_reg[0]);
@@ -928,7 +964,8 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 	mt6631_read(0x6b, &tmp_reg[4]);
 	mt6631_read(0x9b, &tmp_reg[5]);
 
-	WCN_DBG(FM_ALT | CHIP, "Before tune--0x62 0x64 0x69 0x6a 0x6b 0x9b = %04x %04x %04x %04x %04x %04x\n",
+	WCN_DBG(FM_ALT | CHIP, "%s: Before tune--0x62 0x64 0x69 0x6a 0x6b 0x9b = %04x %04x %04x %04x %04x %04x\n",
+			__func__,
 			tmp_reg[0],
 			tmp_reg[1],
 			tmp_reg[2],
@@ -939,7 +976,7 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 	/* A0.3 Host control RF register */
 	ret = mt6631_set_bits(0x60, 0x000F, 0xFF00);	/* Set 0x60 [D3:D0] = 0x0F*/
 	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "Set 0x60 [D3:D0] = 0x0F failed\n");
+		WCN_DBG(FM_ERR | CHIP, "%s: Set 0x60 [D3:D0] = 0x0F failed\n", __func__);
 
 	if (FM_LOCK(cmd_buf_lock))
 		return fm_false;
@@ -951,7 +988,7 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 	/* A0. Host contrl RF register */
 	ret = mt6631_set_bits(0x60, 0x0007, 0xFFF0);  /* Set 0x60 [D3:D0] = 0x07*/
 	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "Host Control RF register 0x60 = 0x7 failed\n");
+		WCN_DBG(FM_ERR | CHIP, "%s: Host Control RF register 0x60 = 0x7 failed\n", __func__);
 
 	memset(tmp_reg, 0, sizeof(tmp_reg[0])*6);
 
@@ -962,7 +999,8 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 	mt6631_read(0x6b, &tmp_reg[4]);
 	mt6631_read(0x9b, &tmp_reg[5]);
 
-	WCN_DBG(FM_ALT | CHIP, "After tune--0x62 0x64 0x69 0x6a 0x6b 0x9b = %04x %04x %04x %04x %04x %04x\n",
+	WCN_DBG(FM_ALT | CHIP, "%s: After tune--0x62 0x64 0x69 0x6a 0x6b 0x9b = %04x %04x %04x %04x %04x %04x\n",
+			__func__,
 			tmp_reg[0],
 			tmp_reg[1],
 			tmp_reg[2],
@@ -973,14 +1011,14 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 	/* A0.3 Host control RF register */
 	ret = mt6631_set_bits(0x60, 0x000F, 0xFF00);	/* Set 0x60 [D3:D0] = 0x0F*/
 	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "Set 0x60 [D3:D0] = 0x0F failed\n");
+		WCN_DBG(FM_ERR | CHIP, "%s: Set 0x60 [D3:D0] = 0x0F failed\n", __func__);
 
 	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, "mt6631_tune failed\n");
+		WCN_DBG(FM_ALT | CHIP, "%s: mt6631_tune failed\n", __func__);
 		return fm_false;
 	}
 
-	WCN_DBG(FM_DBG | CHIP, "set freq to %d ok\n", freq);
+	WCN_DBG(FM_DBG | CHIP, "%s: set freq to %d ok\n", __func__, freq);
 #if 0
 	/* ADPLL setting for dbg */
 	mt6631_top_write(0x0050, 0x00000007);
@@ -1381,8 +1419,10 @@ static fm_s32 mt6631_restore_search(void)
 static fm_s32 mt6631_soft_mute_tune(fm_u16 freq, fm_s32 *rssi, fm_bool *valid)
 {
 	fm_s32 ret = 0;
+	fm_s32 i = 0;
 	fm_u16 pkt_size;
-	/* fm_u16 freq;//, orig_freq; */
+	fm_u32 reg_val = 0;
+	fm_bool flag_spi_hopping = fm_false;
 	struct mt6631_full_cqi *p_cqi;
 	fm_s32 RSSI = 0, PAMD = 0, MR = 0, ATDC = 0;
 	fm_u32 PRX = 0, ATDEV = 0;
@@ -1393,6 +1433,39 @@ static fm_s32 mt6631_soft_mute_tune(fm_u16 freq, fm_s32 *rssi, fm_bool *valid)
 		ret = mt6631_set_bits(FM_CHANNEL_SET, 0x2000, 0x0FFF);	/* mdf HiLo */
 	else
 		ret = mt6631_set_bits(FM_CHANNEL_SET, 0x0000, 0x0FFF);	/* clear FA/HL/ATJ */
+
+	/* SPI hoppint setting*/
+	if (mt6631_SPI_hopping_check(freq)) {
+
+		WCN_DBG(FM_NTC | CHIP, "%s: freq:%d is SPI hopping channel,turn on 64M PLL\n", __func__, (fm_s32) freq);
+
+		/*Turn on 64M PLL wr 0x81021110[28] 0x1	D28 */
+		ret = mt6631_host_read(0x81021110, &reg_val);
+		if (ret)
+			WCN_DBG(FM_ERR | CHIP, "%s: read 0x81021110 failed\n", __func__);
+		reg_val |= 0x10000000;
+		ret = mt6631_host_write(0x81021110, reg_val);
+		if (ret)
+			WCN_DBG(FM_ERR | CHIP, "%s: write 0x81021110 failed\n", __func__);
+
+		for (i = 0; i < 100; i++) { /*rd 0x8002110C until D27 ==1*/
+
+			ret = mt6631_host_read(0x8002110C, &reg_val);
+
+			if (reg_val & 0x08000000) {
+				flag_spi_hopping = fm_true;
+				WCN_DBG(FM_DBG | CHIP, "%s: rd 0x8002110C[27] ==0x1 success !\n", __func__);
+				/* switch SPI clock to 64MHz */
+				ret = mt6631_host_read(0x81026004, &reg_val); /* wr 0x81026004[0] 0x1	D0 */
+				reg_val |= 0x00000001;
+				ret = mt6631_host_write(0x81026004, reg_val);
+				break;
+			}
+			Delayus(10);
+		}
+		if (fm_false == flag_spi_hopping)
+			WCN_DBG(FM_ERR | CHIP, "%s: Polling to read rd 0x8002110C[27] ==0x1 failed !\n", __func__);
+	}
 
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
@@ -1801,22 +1874,22 @@ static fm_u16 mt6631_chan_para_get(fm_u16 freq)
 	return mt6631_chan_para_map[pos];
 }
 
-/*
-static fm_bool mt6631_I2S_hopping_check(fm_u16 freq)
+
+static fm_bool mt6631_SPI_hopping_check(fm_u16 freq)
 {
 	fm_s32 size;
 
-	size = sizeof(mt6631_I2S_hopping_list) / sizeof(mt6631_I2S_hopping_list[0]);
+	size = sizeof(mt6631_SPI_hopping_list) / sizeof(mt6631_SPI_hopping_list[0]);
 
 	if (0 == fm_get_channel_space(freq))
 		freq *= 10;
 
 	while (size) {
-		if (mt6631_I2S_hopping_list[size - 1] == freq)
+		if (mt6631_SPI_hopping_list[size - 1] == freq)
 			return 1;
 		size--;
 	}
 
 	return 0;
 }
-*/
+
