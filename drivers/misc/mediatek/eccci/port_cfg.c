@@ -5,15 +5,14 @@
 #ifdef CONFIG_MTK_ENABLE_MD1
 static struct ccci_port md1_ccci_ports[] = {
 /* network port first for performace */
-	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 3, 3, 0xF4, 0xFF, 8, &net_port_ops, 0xFF, "ccmni0",},
+	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 3, 3, 0xF4, 0xFF, 0, &net_port_ops, 0xFF, "ccmni0",},
 	{CCCI_CCMNI2_TX, CCCI_CCMNI2_RX, 3, 4, 0xF4, 0xFF, 8, &net_port_ops, 0xFF, "ccmni1",},
 	{CCCI_CCMNI3_TX, CCCI_CCMNI3_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xFF, "ccmni2",},
-/*for IMS*/
 	{CCCI_CCMNI4_TX, CCCI_CCMNI4_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni3",},
 	{CCCI_CCMNI5_TX, CCCI_CCMNI5_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni4",},
 	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni5",},
 	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni6",},
-	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni7",},
+	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 3, 3, 0xF4, 0xFF, 0, &net_port_ops, 0xFF, "ccmni7",},
 /* for direct tethering */
 	{CCCI_CCMNILAN_TX, CCCI_CCMNILAN_RX, 3, 4, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni-lan",},
 /* char port, notes ccci_monitor must be first for md_cd_get_port_by_minor() implement */

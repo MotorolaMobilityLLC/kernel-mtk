@@ -2,6 +2,7 @@ config MTK_ECCCI_DRIVER
 	tristate "ECCCI Driver"
 	depends on MTK_CCCI_DEVICES
 	default n
+	select MTK_NET_CCMNI
 	help
 	  This option enables ECCCI device driver support,
 	  if yes, then modem1 is using eccci driver,

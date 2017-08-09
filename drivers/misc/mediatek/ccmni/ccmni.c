@@ -251,7 +251,7 @@ static u16 ccmni_select_queue(struct net_device *dev, struct sk_buff *skb,
 {
 	ccmni_instance_t *ccmni = (ccmni_instance_t *)netdev_priv(dev);
 
-	if (ccmni->ch.rx == CCCI_CCMNI1_RX || ccmni->ch.rx == CCCI_CCMNI2_RX) {
+	if (ccmni->ch.rx == CCCI_CCMNI1_RX || ccmni->ch.rx == CCCI_CCMNI2_RX || ccmni->ch.rx == CCCI_CCMNI8_RX) {
 		if (is_ack_skb(ccmni->md_id, skb))
 			return CCMNI_TXQ_FAST;
 		else
@@ -350,12 +350,24 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	ccci_tx_ch = tx_ch = ccmni->ch.tx;
 	if (ctlb->ccci_ops->md_ability & MODEM_CAP_DATA_ACK_DVD) {
-		if (ccmni->ch.rx == CCCI_CCMNI1_RX || ccmni->ch.rx == CCCI_CCMNI2_RX) {
-			is_ack = is_ack_skb(ccmni->md_id, skb);
-			if (is_ack)
-				ccci_tx_ch = (ccmni->ch.tx == CCCI_CCMNI1_TX)?CCCI_CCMNI1_DL_ACK:CCCI_CCMNI2_DL_ACK;
-			else
+		is_ack = is_ack_skb(ccmni->md_id, skb);
+		if (is_ack) {
+			switch (ccmni->ch.tx) {
+			case CCCI_CCMNI1_TX:
+				ccci_tx_ch = CCCI_CCMNI1_DL_ACK;
+				break;
+			case CCCI_CCMNI2_TX:
+				ccci_tx_ch = CCCI_CCMNI2_DL_ACK;
+				break;
+			case CCCI_CCMNI8_TX:
+				ccci_tx_ch = CCCI_CCMNI8_DLACK_RX;
+				break;
+			default:
 				ccci_tx_ch = ccmni->ch.tx;
+				break;
+			};
+		} else {
+			ccci_tx_ch = ccmni->ch.tx;
 		}
 	}
 
@@ -955,7 +967,8 @@ static void ccmni_md_state_callback(int md_id, int rx_ch, MD_STATE state)
 	case TX_IRQ:
 		if (netif_running(ccmni->dev) && atomic_read(&ccmni->usage) > 0) {
 			if (likely(ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_MQ)) {
-				if ((ch_num == CCCI_CCMNI1_DL_ACK) || (ch_num == CCCI_CCMNI2_DL_ACK))
+				if ((ch_num == CCCI_CCMNI1_DL_ACK) || (ch_num == CCCI_CCMNI2_DL_ACK) ||
+					(ch_num == CCCI_CCMNI8_DLACK_RX))
 					net_queue = netdev_get_tx_queue(ccmni->dev, CCMNI_TXQ_FAST);
 				else
 					net_queue = netdev_get_tx_queue(ccmni->dev, CCMNI_TXQ_NORMAL);
@@ -973,7 +986,8 @@ static void ccmni_md_state_callback(int md_id, int rx_ch, MD_STATE state)
 	case TX_FULL:
 		if (atomic_read(&ccmni->usage) > 0) {
 			if (ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_MQ) {
-				if ((ch_num == CCCI_CCMNI1_DL_ACK) || (ch_num == CCCI_CCMNI2_DL_ACK))
+				if ((ch_num == CCCI_CCMNI1_DL_ACK) || (ch_num == CCCI_CCMNI2_DL_ACK) ||
+					(ch_num == CCCI_CCMNI8_DLACK_RX))
 					net_queue = netdev_get_tx_queue(ccmni->dev, CCMNI_TXQ_FAST);
 				else
 					net_queue = netdev_get_tx_queue(ccmni->dev, CCMNI_TXQ_NORMAL);

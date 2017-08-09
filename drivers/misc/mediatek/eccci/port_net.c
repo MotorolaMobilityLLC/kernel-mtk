@@ -113,8 +113,8 @@ int ccmni_send_pkt(int md_id, int tx_ch, void *data)
 		tx_ch_to_port = CCCI_CCMNI1_TX;
 	else if (tx_ch == CCCI_CCMNI2_DL_ACK)
 		tx_ch_to_port = CCCI_CCMNI2_TX;
-	else if (tx_ch == CCCI_CCMNI3_DL_ACK)
-		tx_ch_to_port = CCCI_CCMNI3_TX;
+	else if (tx_ch == CCCI_CCMNI8_DLACK_RX)
+		tx_ch_to_port = CCCI_CCMNI8_TX;
 	else
 		tx_ch_to_port = tx_ch;
 #ifdef PORT_NET_TRACE
@@ -134,7 +134,7 @@ int ccmni_send_pkt(int md_id, int tx_ch, void *data)
 	/* if(!req) { */
 	/* return CCMNI_ERR_TX_BUSY; */
 	/* } */
-	if (tx_ch == CCCI_CCMNI1_DL_ACK || tx_ch == CCCI_CCMNI2_DL_ACK || tx_ch == CCCI_CCMNI3_DL_ACK)
+	if (tx_ch == CCCI_CCMNI1_DL_ACK || tx_ch == CCCI_CCMNI2_DL_ACK || tx_ch == CCCI_CCMNI8_DLACK_RX)
 		tx_queue = NET_ACK_TXQ_INDEX(port);
 	else
 		tx_queue = NET_DAT_TXQ_INDEX(port);
@@ -303,7 +303,7 @@ int ccmni_send_mbim_skb(int md_id, struct sk_buff *skb)
 	int tx_ch = 0;
 	int mbim_interface_current;
 
-	if (md_id < 0 || md_id > MAX_MD_NUM) {
+	if (md_id < 0 || md_id >= MAX_MD_NUM) {
 		CCCI_ERR_MSG(md_id, NET, "invalid MD id=%d\n", md_id);
 		return -EINVAL;
 	}
@@ -397,15 +397,24 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 		dev->stats.tx_dropped++;
 		return NETDEV_TX_OK;
 	}
-	if (likely((port->rx_ch == CCCI_CCMNI1_RX) || (port->rx_ch == CCCI_CCMNI2_RX))) {
-		/* only use on ccmni0 && ccmni1 */
-		if (unlikely(skb_is_ack(skb))) {
-			tx_channel = port->tx_ch == CCCI_CCMNI1_TX ? CCCI_CCMNI1_DL_ACK : CCCI_CCMNI2_DL_ACK;
+	if (skb_is_ack(skb)) {
+		switch (port->tx_ch) {
+		case CCCI_CCMNI1_TX:
+			tx_channel = CCCI_CCMNI1_DL_ACK;
 			tx_queue = NET_ACK_TXQ_INDEX(port);
-		} else {
+			break;
+		case CCCI_CCMNI2_TX:
+			tx_channel = CCCI_CCMNI2_DL_ACK;
+			tx_queue = NET_ACK_TXQ_INDEX(port);
+			break;
+		case CCCI_CCMNI8_TX:
+			tx_channel = CCCI_CCMNI8_DLACK_RX;
+			tx_queue = NET_ACK_TXQ_INDEX(port);
+			break;
+		default:
 			tx_channel = port->tx_ch;
 			tx_queue = NET_DAT_TXQ_INDEX(port);
-		}
+		};
 	} else {
 		tx_channel = port->tx_ch;
 		tx_queue = NET_DAT_TXQ_INDEX(port);
@@ -619,7 +628,7 @@ static int port_net_init(struct ccci_port *port)
 
 void ccmni_update_mbim_interface(int md_id, int id)
 {
-	if (md_id < 0 || md_id > MAX_MD_NUM) {
+	if (md_id < 0 || md_id >= MAX_MD_NUM) {
 		CCCI_ERR_MSG(md_id, NET, "invalid MD id=%d\n", md_id);
 		return;
 	}
