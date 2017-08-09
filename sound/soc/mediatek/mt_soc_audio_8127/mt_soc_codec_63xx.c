@@ -1754,8 +1754,7 @@ static int Headset_Speaker_Amp_Set(struct snd_kcontrol *kcontrol,
 #ifdef CONFIG_MTK_SPEAKER
 static const char * const speaker_amp_function[] = { "CALSSD", "CLASSAB", "RECEIVER" };
 
-static const char * const speaker_PGA_function[] = {
-	"XXXX", "XXX", "XXX", "XXX", "XXX", "XXX", "XXX", "XXX", "XXXX",
+static const char * const speaker_PGA_function[] = { "MUTE", "0Db", "4Db", "5Db", "6Db", "7Db", "8Db", "9Db", "10Db",
 	"11Db", "12Db", "13Db", "14Db", "15Db", "16Db", "17Db"
 };
 static const char * const speaker_OC_function[] = { "Off", "On" };
@@ -1941,21 +1940,17 @@ static const char *DAC_SampleRate_function[] =
 	{"8000", "11025", "16000", "24000", "32000", "44100", "48000"};
 */
 
-static const char * const DAC_DL_PGA_Headset_GAIN[] = {
-	"XXX", "XXX", "XXX", "XXX", "XXX", "XXXX", "XXXX", "XXXX"
-};
+static const char * const DAC_DL_PGA_Headset_GAIN[] = { "9Db", "7Db", "5Db", "3Db",
+"1Db", "-1Db", "-3Db", "-5Db" };
 
 static const char * const DAC_DL_PGA_Handset_GAIN[] = {
-	"XXXXX", "XXXXX", "XXXXX", "XXXXX", "XXXXX", "XXXXX", "XXXX", "XXXX", "XXXX", "XXXX",
-	"XXXX",
-	"1Db",
-	"3Db", "5Db", "7Db", "9Db"
-};
+	"-21Db", "-19Db", "-17Db", "-15Db", "-13Db", "-11Db", "-9b", "-7Db", "-5Db", "-3Db",
+	"-1Db", "1Db", "3Db", "5Db", "7Db", "9Db"};
 
 /* Lineout use */
 static const char * const DAC_DL_PGA_Speaker_GAIN[] = {
-	"XXX", "XXX", "XXX", "XXX", "XXX", "XXX", "XXX", "XXX", "XXX", "XXXX", "XXXX", "XXXX",
-	"-4Db", "-5Db", "-6Db", "-7Db", "-8Db", "-9Db", "-10Db", "-40Db"
+	"8Db", "7Db", "6Db", "5Db", "4Db", "3Db", "2Db", "1Db", "0Db", "-1Db", "-2Db", "-3Db", "-4Db", "-5Db",
+	"-6Db", "-7Db", "-8Db", "-9Db", "-10Db" , "-40Db"
 };
 
 
