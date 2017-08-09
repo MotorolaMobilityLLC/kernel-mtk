@@ -731,7 +731,7 @@ static int msdc_auto_cmd_done(struct msdc_host *host, int events,
 	} else {
 		msdc_reset_hw(host);
 		if (events & MSDC_INT_ACMDCRCERR) {
-			cmd->error = -EILSEQ;
+			cmd->error = -EIO;
 			host->error |= REQ_STOP_EIO;
 		} else if (events & MSDC_INT_ACMDTMO) {
 			cmd->error = -ETIMEDOUT;
