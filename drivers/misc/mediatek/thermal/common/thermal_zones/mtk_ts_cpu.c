@@ -553,8 +553,10 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 	curr_temp = tscpu_get_curr_temp();
 	tscpu_dprintk("tscpu_get_temp CPU Max T=%d\n", curr_temp);
 
-	if ((curr_temp > (trip_temp[0] - 15000)) || (curr_temp < -30000) || (curr_temp > 85000))
-		tscpu_warn("%d %d CPU T=%d\n", get_adaptive_power_limit(0), get_adaptive_power_limit(1), curr_temp);
+	if ((curr_temp > (trip_temp[0] - 15000)) || (curr_temp < -30000) || (curr_temp > 85000)) {
+		printk_ratelimited("%d %d CPU T=%d\n",
+			get_adaptive_power_limit(0), get_adaptive_power_limit(1), curr_temp);
+	}
 
 	temp_temp = curr_temp;
 	if (curr_temp != 0) {/* not resumed from suspensio... */

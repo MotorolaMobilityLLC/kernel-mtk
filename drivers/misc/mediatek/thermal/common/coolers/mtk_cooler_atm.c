@@ -30,6 +30,10 @@
 /*=============================================================
  *Local variable definition
  *=============================================================*/
+
+static int print_cunt;
+static int adaptive_limit[5][2];
+
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 unsigned int adaptive_cpu_power_limit = 0x7FFFFFFF;
@@ -240,9 +244,23 @@ static void set_adaptive_cpu_power_limit(unsigned int limit)
 	final_limit = MIN(adaptive_cpu_power_limit, static_cpu_power_limit);
 
 	if (prv_adp_cpu_pwr_lim != adaptive_cpu_power_limit) {
-		tscpu_printk("set_adaptive_cpu_power_limit %d, T=",
-			     (final_limit != 0x7FFFFFFF) ? final_limit : 0);
-		/*tscpu_print_all_temperature(0);*/
+		if (print_cunt < 5) {
+			adaptive_limit[print_cunt][0] = (final_limit != 0x7FFFFFFF) ? final_limit : 0;
+			adaptive_limit[print_cunt][1] = tscpu_get_curr_temp();
+		} else {
+			tscpu_warn("set_adaptive_cpu_power_limit %d T=%d,%d T=%d,%d T=%d,%d T=%d,%d T=%d\n",
+			adaptive_limit[0][0] , adaptive_limit[0][1],
+			adaptive_limit[1][0] , adaptive_limit[1][1],
+			adaptive_limit[2][0] , adaptive_limit[2][1],
+			adaptive_limit[3][0] , adaptive_limit[3][1],
+			adaptive_limit[4][0] , adaptive_limit[4][1]
+			);
+
+			print_cunt = 0;
+			adaptive_limit[0][0] = (final_limit != 0x7FFFFFFF) ? final_limit : 0;
+			adaptive_limit[0][1] = tscpu_get_curr_temp();
+		}
+		print_cunt++;
 
 #ifdef ATM_USES_PPM
 		gv_cpu_power_limit = final_limit;
