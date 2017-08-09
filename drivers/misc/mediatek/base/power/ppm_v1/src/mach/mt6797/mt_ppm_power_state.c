@@ -912,7 +912,7 @@ unsigned int ppm_get_root_cluster_by_state(enum ppm_power_state cur_state)
 #include <linux/ktime.h>
 #include "mt_idvfs.h"
 
-static unsigned int max_power;
+static unsigned int max_power_except_big;
 #define MAX_OCP_TARGET_POWER	127000
 
 static bool ppm_is_big_cluster_on(void)
@@ -936,30 +936,30 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 	if (!ppm_is_big_cluster_on())
 		return limited_power;
 
-	/* if max_power < limited_power, set (limited_power - max_power) to HW OCP */
-	if (!max_power) {
-		/* get max power budget for SW DLPT */
+	/* if max_power_except_big < limited_power, set (limited_power - max_power_except_big) to HW OCP */
+	if (!max_power_except_big) {
 		for_each_pwr_tbl_entry(i, power_table) {
 			if (power_table.power_tbl[i].cluster_cfg[PPM_CLUSTER_B].core_num == 0) {
-				max_power = (power_table.power_tbl[i].power_idx);
+				max_power_except_big = (power_table.power_tbl[i].power_idx);
 				break;
 			}
 		}
-		ppm_info("@%s: max_power = %d\n", __func__, max_power);
+		ppm_info("@%s: max_power_except_big = %d\n", __func__, max_power_except_big);
 	}
 
-	if (limited_power <= max_power) {
+	if (limited_power <= max_power_except_big) {
 		/* disable HW OCP by setting budget to 0 */
 		power_for_ocp = 0;
 		power_for_tbl_lookup = limited_power;
 	} else {
 		/* pass remaining power to HW OCP */
 		power_for_ocp = (percentage)
-			? ((limited_power - max_power) * 100 + (percentage - 1)) / percentage
-			: (limited_power - max_power);
+			? ((limited_power - max_power_except_big) * 100 + (percentage - 1)) / percentage
+			: (limited_power - max_power_except_big);
 		power_for_ocp = (power_for_ocp > MAX_OCP_TARGET_POWER)
 			? MAX_OCP_TARGET_POWER : power_for_ocp;
-		power_for_tbl_lookup = max_power;
+		/* set to max power in power table to avoid big core being throttled */
+		power_for_tbl_lookup = power_table.power_tbl[0].power_idx;
 	}
 
 	ret = BigOCPSetTarget(OCP_ALL, power_for_ocp);
