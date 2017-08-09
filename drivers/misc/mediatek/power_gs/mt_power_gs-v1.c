@@ -26,7 +26,7 @@
 struct proc_dir_entry *mt_power_gs_dir = NULL;
 
 #define DEBUG_BUF_SIZE 200
-static char dbg_buf[DEBUG_BUF_SIZE] = { 0 };
+static char buf[DEBUG_BUF_SIZE] = { 0 };
 
 static u16 gs_pmic_read(u16 reg)
 {
@@ -47,21 +47,20 @@ static void mt_power_gs_compare(char *scenario, char *pmic_name,
 	pr_warn("Scenario - PMIC - Addr  - Value  - Mask   - Golden - Wrong Bit\n");
 
 	for (i = 0; i < pmic_gs_len; i += 3) {
-		aee_sram_printk("%d\n", i);
 		val1 = gs_pmic_read(pmic_gs[i]) & pmic_gs[i + 1];
 		val2 = pmic_gs[i + 2] & pmic_gs[i + 1];
 
 		if (val1 != val2) {
-			p = dbg_buf;
-			p += sprintf(p, "%s - %s - 0x%x - 0x%04x - 0x%04x - 0x%04x -",
+			p = buf;
+			p += snprintf(p, sizeof(buf), "%s - %s - 0x%x - 0x%04x - 0x%04x - 0x%04x -",
 				     scenario, pmic_name, pmic_gs[i], gs_pmic_read(pmic_gs[i]),
 				     pmic_gs[i + 1], pmic_gs[i + 2]);
 
 			for (k = 0, diff = val1 ^ val2; diff != 0; k++, diff >>= 1) {
 				if ((diff % 2) != 0)
-					p += sprintf(p, " %d", k);
+					p += snprintf(p, sizeof(buf) - (p - buf), " %d", k);
 			}
-			pr_warn("%s\n", dbg_buf);
+			pr_warn("%s\n", buf);
 		}
 	}
 }
