@@ -726,8 +726,6 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 
 static int simple_sd_ioctl_sd30_mode_switch(struct msdc_ioctl *msdc_ctl)
 {
-	/* u32 base; */
-	/* struct msdc_hw hw; */
 	int id;
 #if DEBUG_MMC_IOCTL
 	unsigned int l_value;
@@ -739,11 +737,7 @@ static int simple_sd_ioctl_sd30_mode_switch(struct msdc_ioctl *msdc_ctl)
 		MMC_TIMING_MMC_HS,      /*UHS_SDR25*/
 		MMC_TIMING_MMC_HS,      /*UHS_SDR50*/
 		MMC_TIMING_MMC_HS200,   /*UHS_SDR104*/
-	#ifdef MSDC_IN_KERNEL318
 		MMC_TIMING_MMC_DDR52,   /*UHS_DDR50*/
-	#else
-		MMC_TIMING_UHS_DDR50,   /*UHS_DDR50*/
-	#endif
 		MMC_TIMING_MMC_HS400    /*EMMC_HS400*/
 		},
 		{
@@ -1178,7 +1172,7 @@ struct compat_simple_sd_ioctl {
 	compat_int_t trans_type;
 	compat_uint_t total_size;
 	compat_uint_t address;
-	compat_uptr_t *buffer;
+	compat_uptr_t buffer;
 	compat_int_t cmd_pu_driving;
 	compat_int_t cmd_pd_driving;
 	compat_int_t dat_pu_driving;
