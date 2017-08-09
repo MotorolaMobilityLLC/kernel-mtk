@@ -6,15 +6,14 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <asm/atomic.h>
-#include <linux/xlog.h>
+//#include <linux/xlog.h>
 //#include <asm/system.h>
 
 #include <linux/proc_fs.h>
 
 
 #include <linux/dma-mapping.h>
-
-#include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"

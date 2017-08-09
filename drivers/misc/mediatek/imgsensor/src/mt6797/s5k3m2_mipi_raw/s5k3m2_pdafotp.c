@@ -7,12 +7,12 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 #include <linux/slab.h>
-#include <linux/xlog.h>
+//#include <linux/xlog.h>
 
 
 #define PFX "S5K3M2_pdafotp"
 #define LOG_INF(fmt, args...)   pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
-#include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
@@ -68,7 +68,7 @@ static bool _read_3m2_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
 }
 
 bool read_3m2_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size){
-	int i;
+	//int i;
 	addr = 0x0800;
 	size = 1404;
 

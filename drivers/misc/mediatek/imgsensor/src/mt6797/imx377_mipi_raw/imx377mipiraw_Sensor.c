@@ -2,7 +2,7 @@
  *
  * Filename:
  * ---------
- *	 IMX214mipi_Sensor.c
+ *	 IMX377mipi_Sensor.c
  *
  * Project:
  * --------
@@ -27,9 +27,11 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 //#include <asm/system.h>
-#include <linux/xlog.h>
+//#include <linux/xlog.h>   
 
-#include "kd_camera_hw.h"
+#include <linux/types.h>
+#include <linux/io.h>
+#include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
@@ -40,7 +42,7 @@
 //#define LOG_WRN(format, args...) xlog_printk(ANDROID_LOG_WARN ,PFX, "[%S] " format, __FUNCTION__, ##args)
 //#defineLOG_INF(format, args...) xlog_printk(ANDROID_LOG_INFO ,PFX, "[%s] " format, __FUNCTION__, ##args)
 //#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
-#define LOG_INF(fmt, args...)   pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
+#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -208,11 +210,11 @@ static void set_dummy(void)
 
 static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 {
-	kal_int16 dummy_line;
+//	kal_int16 dummy_line;
 	kal_uint32 frame_length = imgsensor.frame_length;
 	//unsigned long flags;
 
-	LOG_INF("framerate = %d, min framelength should enable? \n", framerate,min_framelength_en);
+	LOG_INF("framerate = %d, min framelength should enable = %d\n", framerate,min_framelength_en);
 
 	frame_length = imgsensor.pclk / framerate * 10 / imgsensor.line_length;
 	spin_lock(&imgsensor_drv_lock);
@@ -238,9 +240,9 @@ static void write_shutter(kal_uint16 shutter)
 {
 
 	kal_uint16 realtime_fps = 0;
-	kal_uint16 SVR,SHR,shutter1;
-	kal_uint32 frame_length = 0;
-
+//	kal_uint16 SVR,SHR,shutter1;
+//	kal_uint32 frame_length = 0;
+		kal_uint16 SHR;
  #if 1
        //shutter=5000;//for test
        //return; //for test
@@ -386,12 +388,12 @@ static kal_uint16 set_gain(kal_uint16 gain)
 
     return gain;
 }	/*	set_gain  */
-
+#if 0
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
 	LOG_INF("image_mirror = %d\n", image_mirror);
 
-	kal_uint8 itemp;
+//	kal_uint8 itemp;
 
 	itemp=read_cmos_sensor(0x301A);
 	itemp &= ~0x01;
@@ -416,7 +418,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 			     break;
 		}
 }
-
+#endif
 /*************************************************************************
 * FUNCTION
 *	night_mode
@@ -1039,7 +1041,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				//iReadData(0x00,452,OTPData);
 				return ERROR_NONE;
 			}
-			LOG_INF("Read sensor id fail, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
+			LOG_INF("Read sensor id fail,write_id(0x%x), id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
 			retry--;
 		} while(retry > 0);
 		i++;
@@ -1092,7 +1094,7 @@ static kal_uint32 open(void)
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
 				break;
 			}
-			LOG_INF("Read sensor id fail, id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
+			LOG_INF("Read sensor id fail,write_id(0x%x), id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
 			retry--;
 		} while(retry > 0);
 		i++;
@@ -1221,7 +1223,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.autoflicker_en = KAL_FALSE;
 	}  else if(imgsensor.current_fps == imgsensor_info.cap2.max_framerate){
 		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-			LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",imgsensor_info.cap1.max_framerate/10);
+			LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",imgsensor.current_fps, imgsensor_info.cap1.max_framerate/10);
 		imgsensor.pclk = imgsensor_info.cap2.pclk;
 		imgsensor.line_length = imgsensor_info.cap2.linelength;
 		imgsensor.frame_length = imgsensor_info.cap2.framelength;
@@ -1229,7 +1231,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.autoflicker_en = KAL_FALSE;
 	}else {
 		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-			LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",imgsensor_info.cap1.max_framerate/10);
+			LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",imgsensor.current_fps, imgsensor_info.cap1.max_framerate/10);
 		imgsensor.pclk = imgsensor_info.cap.pclk;
 		imgsensor.line_length = imgsensor_info.cap.linelength;
 		imgsensor.frame_length = imgsensor_info.cap.framelength;
@@ -1636,11 +1638,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	UINT32 *feature_return_para_32=(UINT32 *) feature_para;
 	UINT32 *feature_data_32=(UINT32 *) feature_para;
     unsigned long long *feature_data=(unsigned long long *) feature_para;
-    unsigned long long *feature_return_para=(unsigned long long *) feature_para;
+  //  unsigned long long *feature_return_para=(unsigned long long *) feature_para;
 
 	SENSOR_WINSIZE_INFO_STRUCT *wininfo;
-    SENSOR_VC_INFO_STRUCT *pvcinfo;
-    SET_SENSOR_AWB_GAIN *pSetSensorAWB=(SET_SENSOR_AWB_GAIN *)feature_para;
+//    SENSOR_VC_INFO_STRUCT *pvcinfo;
+//    SET_SENSOR_AWB_GAIN *pSetSensorAWB=(SET_SENSOR_AWB_GAIN *)feature_para;
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
 	LOG_INF("feature_id = %d\n", feature_id);

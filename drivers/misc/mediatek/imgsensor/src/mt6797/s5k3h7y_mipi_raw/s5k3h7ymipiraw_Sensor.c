@@ -27,7 +27,7 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 //#include <asm/system.h>
-#include <linux/xlog.h>
+//#include <linux/xlog.h>
 #include "kd_camera_typedef.h"
 //#include "kd_camera_hw.h"
 #include "kd_imgsensor.h"
@@ -193,7 +193,7 @@ static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
     char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para >> 8),(char)(para & 0xFF)};
     iWriteRegI2C(pusendcmd , 4, imgsensor.i2c_write_id);
 }
-
+#if 0
 static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
 {
     kal_uint16 get_byte=0;
@@ -201,7 +201,7 @@ static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
     iReadRegI2C(pusendcmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
     return get_byte;
 }
-
+#endif
 static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 {
     char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para & 0xFF)};
@@ -237,7 +237,7 @@ static kal_uint32 return_sensor_id(void)
 }
 static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 {
-	kal_int16 dummy_line;
+	//kal_int16 dummy_line;
 		kal_uint32 frame_length = imgsensor.frame_length;
 		//unsigned long flags;
 
@@ -270,8 +270,8 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 static void write_shutter(kal_uint16 shutter)
 {
 
-	kal_uint16 realtime_fps = 0;
-		kal_uint32 frame_length = 0;
+	//kal_uint16 realtime_fps = 0;
+		//kal_uint32 frame_length = 0;
 		unsigned long flags;
 		spin_lock_irqsave(&imgsensor_drv_lock, flags);
 		imgsensor.shutter = shutter;
@@ -330,7 +330,8 @@ static void write_shutter(kal_uint16 shutter)
 *
 * GLOBALS AFFECTED
 *
-*************************************************************************/
+*************************************************************************/   
+#if 0
 static void set_shutter(kal_uint16 shutter)
 {
 
@@ -343,8 +344,7 @@ static void set_shutter(kal_uint16 shutter)
 	LOG_INF("Currently camera mode is %d,framerate is %d , framelength=%d,linelength=%d\n",imgsensor.sensor_mode,imgsensor.current_fps,imgsensor.frame_length,imgsensor.line_length);
 
 }
-
-
+#endif
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
@@ -501,7 +501,8 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 *
 * GLOBALS AFFECTED
 *
-*************************************************************************/
+*************************************************************************/   
+#if 0
 static void S5K3H7YInitSetting_FPGA(void)
 {
 	LOG_INF("S5K3H7YInitSetting_FPGA  enter\n");
@@ -585,7 +586,7 @@ write_cmos_sensor(0x0100,	0x0100);
 
 
 }
-
+#endif
 
 static void S5K3H7YInitSetting_2Lane84Mhz(void)
 {
@@ -814,9 +815,9 @@ static void sensor_init(void)
 //S5K3H7YInitSetting_FPGA();
 S5K3H7YInitSetting_2Lane84Mhz();
 
-return 0;
-LOG_INF("RRR2 enter\n");
 
+LOG_INF("RRR2 enter\n");
+#if 0
 	 // SENSORDB("enter\n");
 	//1600x1200
 	  write_cmos_sensor(0x6010,0x0001);   // Reset
@@ -860,7 +861,7 @@ LOG_INF("RRR2 enter\n");
 	  write_cmos_sensor(0x6F12,   0x7077);
 	  write_cmos_sensor(0x6F12,   0x7777);
 
-
+   #endif
 
 	  mdelay(2);
 	  LOG_INF("exit init\n");
@@ -874,7 +875,7 @@ static void preview_setting(void)
 	LOG_INF("preview seting enter,I'm the new one rrr1 \n");
 
 			LOG_INF("preview seting enter,I'm the new one rrrr2\n");
-			return 0;
+		//	return 0;
 	write_cmos_sensor(0x0100,   0x0000);
 	mdelay(10);
 
@@ -953,14 +954,12 @@ static void normal_capture_setting(void)
 
 
 }
-
+#if 0
 static void pip_capture_setting(void)
 {
 	normal_capture_setting();
-
-
 }
-
+#endif                         
 
 static void capture_setting(kal_uint16 currefps)
 {
@@ -1383,6 +1382,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	hs_video_setting();
 	set_mirror_flip(IMAGE_HV_MIRROR);
 	LOG_INF("Currently camera mode is %d,framerate is %d , framelength=%d,linelength=%d\n",imgsensor.sensor_mode,imgsensor.current_fps,imgsensor.frame_length,imgsensor.line_length);
+	return ERROR_NONE;
 }	/*	hs_video   */
 
 

@@ -12,7 +12,7 @@
 #define PFX "IMX258_pdafotp"
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
 
-#include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
@@ -87,7 +87,7 @@ bool read_imx258_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size){
 }
 
 bool read_imx258_eeprom_SPC( kal_uint16 addr, BYTE* data, kal_uint32 size){
-	int i;
+	//int i;
 	addr = 0x0F73;//0x0F73;
 	size = 126;
 	

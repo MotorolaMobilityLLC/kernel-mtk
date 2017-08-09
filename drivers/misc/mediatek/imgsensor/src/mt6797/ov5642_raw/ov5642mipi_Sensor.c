@@ -27,7 +27,7 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 //#include <asm/system.h>
-#include <linux/xlog.h>
+//#include <linux/xlog.h>
 #include "kd_camera_typedef.h"
 //#include "kd_camera_hw.h"
 #include "kd_imgsensor.h"
@@ -219,7 +219,7 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 {
     kal_uint32 frame_length = imgsensor.frame_length;
 
-    LOG_INF("framerate = %d, min framelength should enable? \n", framerate,min_framelength_en);
+    LOG_INF("framerate = %d, min framelength should enable = %d \n", framerate,min_framelength_en);
 
     frame_length = imgsensor.pclk / framerate * 10 / imgsensor.line_length;
 
@@ -445,7 +445,7 @@ static void night_mode(kal_bool enable)
 {
 /*No Need to implement this function*/
 }    /*    night_mode    */
-
+#if 0
 static void sensor_init(void)
 {
     LOG_INF("E\n");
@@ -689,7 +689,8 @@ static void sensor_init(void)
 
     write_cmos_sensor(0x0100, 0x01); // wake up from software sleep
 }    /*    MIPI_sensor_Init  */
-
+#endif
+#if 0
 static void OV5642MIPIYUV_set_5M_1lane(void)
 {
   	LOG_INF("OV5642MIPIYUV_set_5M_1lane \n");
@@ -1181,7 +1182,7 @@ static void OV5642MIPIYUV_set_5M_1lane(void)
 
 	return;
 }
-
+#endif
 
 static void OV5642MIPIRAW_set_5M_1lane(void)
 {
@@ -1789,7 +1790,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
                 return ERROR_NONE;
             }
-            LOG_INF("Read sensor id fail, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
+            LOG_INF("Read sensor id fail: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
             retry--;
         } while(retry > 0);
         i++;
@@ -1839,7 +1840,7 @@ static kal_uint32 open(void)
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
                 break;
             }
-            LOG_INF("Read sensor id fail, id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
+            LOG_INF("Read sensor id fail: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
             retry--;
         } while(retry > 0);
         i++;
@@ -1968,7 +1969,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
         imgsensor.autoflicker_en = KAL_FALSE;
     } else {
         if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-            LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",imgsensor_info.cap1.max_framerate/10);
+            LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",imgsensor.current_fps,imgsensor_info.cap1.max_framerate/10);
         imgsensor.pclk = imgsensor_info.cap.pclk;
         imgsensor.line_length = imgsensor_info.cap.linelength;
         imgsensor.frame_length = imgsensor_info.cap.framelength;
@@ -2357,7 +2358,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     UINT32 *feature_return_para_32=(UINT32 *) feature_para;
     UINT32 *feature_data_32=(UINT32 *) feature_para;
     unsigned long long *feature_data=(unsigned long long *) feature_para;
-    unsigned long long *feature_return_para=(unsigned long long *) feature_para;
+    //unsigned long long *feature_return_para=(unsigned long long *) feature_para;
 
     SENSOR_WINSIZE_INFO_STRUCT *wininfo;
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;

@@ -6,13 +6,13 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <asm/atomic.h>
-#include <linux/xlog.h>
-#include <mach/mt_typedefs.h>
+//#include <linux/xlog.h>
+//#include <mach/mt_typedefs.h>
 
 
 #include "kd_camera_hw.h"
 
-
+#include "kd_camera_typedef.h" 
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_camera_feature.h"
@@ -507,7 +507,7 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 {
 	int ret = 0;
-
+  #if 0
 	if (PwrType == PDN) {
 			/* PK_DBG("hwPowerOn: PDN %d\n", pwInfo.Voltage); */
 	
@@ -591,7 +591,7 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 			}
 	
 		}
-		
+	#endif	
 	PK_DBG("PinIdx(%d) PwrType(%d) val(%d)\n", PinIdx, PwrType, Val);
 
 	return ret;

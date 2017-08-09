@@ -1,7 +1,7 @@
 #ifndef _KD_CAMERA_HW_H_
 #define _KD_CAMERA_HW_H_
 
-#include <mach/mt_typedefs.h>
+//#include <mach/mt_typedefs.h>
 
 #ifdef CONFIG_MTK_LEGACY
 #include <mach/mt_gpio.h>
@@ -79,7 +79,7 @@ typedef enum {
 } Voltage;
 #else
 
-#ifndef CONFIG_PINCTRL_MT6797 
+#if 0//ndef CONFIG_PINCTRL_MT6797 
 #include <mach/gpio_const.h>
 #include <mach/mt_gpio.h>
 #include <cust_gpio_usage.h>

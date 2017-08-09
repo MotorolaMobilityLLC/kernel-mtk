@@ -27,9 +27,9 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 //#include <asm/system.h>
-#include <linux/xlog.h>
+//#include <linux/xlog.h>
 
-#include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
@@ -446,7 +446,7 @@ static void set_dummy(void)
 
 static kal_uint32 return_sensor_id(void)
 {
-	kal_uint32 tmp = 0;
+	//kal_uint32 tmp = 0;
 	int retry = 10;
 
 	if(write_cmos_sensor(0x0A02, 0x0F)==0){
@@ -466,11 +466,11 @@ static kal_uint32 return_sensor_id(void)
 }
 static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 {
-	kal_int16 dummy_line;
+	//kal_int16 dummy_line;
 	kal_uint32 frame_length = imgsensor.frame_length;
 	//unsigned long flags;
 
-	LOG_INF("framerate = %d, min framelength should enable? \n", framerate,min_framelength_en);
+	LOG_INF("framerate = %d, min framelength should enable = %d\n", framerate,min_framelength_en);
 
 	frame_length = imgsensor.pclk / framerate * 10 / imgsensor.line_length;
 	spin_lock(&imgsensor_drv_lock);
@@ -668,11 +668,11 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 	write_cmos_sensor(0x0104, 0x00);
 }
 
-
+#if 0
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
+   	kal_uint8  iTemp;
     LOG_INF("image_mirror = %d\n", image_mirror);
-	kal_uint8  iTemp;
 	iTemp = read_cmos_sensor(0x0101);
 	iTemp&= ~0x03; //Clear the mirror and flip bits.
 
@@ -694,7 +694,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
     }
 
 }
-
+#endif
 /*************************************************************************
 * FUNCTION
 *	night_mode
@@ -867,7 +867,7 @@ static void preview_setting(void)
 	mdelay(10);
 
 }
-
+#if 0
 static void capture_setting_pdaf(void)
 {
 	LOG_INF("capture_setting_pdaf E\n");
@@ -964,7 +964,7 @@ static void capture_setting_pdaf(void)
 	write_cmos_sensor(0x0100,0x01);
 	mdelay(10);
 }
-
+#endif
 static void capture_setting(kal_uint16 curretfps, kal_uint8  pdaf_mode)
 {
 	LOG_INF("capture E\n");
@@ -2621,7 +2621,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	UINT32 *feature_return_para_32=(UINT32 *) feature_para;
 	UINT32 *feature_data_32=(UINT32 *) feature_para;
 	unsigned long long *feature_data=(unsigned long long *) feature_para;
-    unsigned long long *feature_return_para=(unsigned long long *) feature_para;
+//    unsigned long long *feature_return_para=(unsigned long long *) feature_para;
 
 	SET_PD_BLOCK_INFO_T *PDAFinfo;
 
@@ -2729,7 +2729,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 			#if 1
 		case SENSOR_FEATURE_GET_PDAF_INFO:
-			LOG_INF("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%d\n", *feature_data);
+			LOG_INF("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%lld\n", *feature_data);
 			PDAFinfo= (SET_PD_BLOCK_INFO_T *)(uintptr_t)(*(feature_data+1));
 
 			switch (*feature_data) {
@@ -2767,7 +2767,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             break;
 		/*PDAF CMD*/
 		case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
-			LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%d\n", *feature_data);
+			LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%lld\n", *feature_data);
 			//PDAF capacity enable or not, 2p8 only full size support PDAF
 			switch (*feature_data) {
 				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:

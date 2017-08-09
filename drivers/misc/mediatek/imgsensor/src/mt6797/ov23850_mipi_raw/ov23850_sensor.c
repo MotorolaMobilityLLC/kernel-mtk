@@ -27,9 +27,9 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 //#include <asm/system.h>
-#include <linux/xlog.h>
+//#include <linux/xlog.h>
 
-#include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
@@ -323,7 +323,7 @@ static void set_dummy(void)
 
 static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 {
-    kal_int16 dummy_line;
+    //kal_int16 dummy_line;
     kal_uint32 frame_length = imgsensor.frame_length;
 
     LOG_INF("framerate = %d, min_framelength_en=%d\n", framerate,min_framelength_en);
@@ -349,7 +349,7 @@ static void write_shutter(kal_uint16 shutter)
     {
     //check
         kal_uint16 realtime_fps = 0;
-        kal_uint32 frame_length = 0;
+        //kal_uint32 frame_length = 0;
 
         if(imgsensor.sensor_mode == IMGSENSOR_MODE_HIGH_SPEED_VIDEO)
         {
@@ -412,18 +412,20 @@ static void set_shutter(kal_uint16 shutter)
 }
 
 
-
+#if 0
 static kal_uint16 gain2reg(const kal_uint16 gain)
-{
+{       
+	return 0;
 }
-
+#endif
 
 
 static kal_uint16 set_gain(kal_uint16 gain)
 {
     //check
     gain = gain / 4;//platform 1xgain = 64, sensor driver 1*gain = 16. div =4
-    write_cmos_sensor(0x0350b,(gain&0xff));
+    write_cmos_sensor(0x0350b,(gain&0xff)); 
+    return 0;
 }
 
 static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gain)
@@ -433,7 +435,7 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 }
 
 
-
+#if 0
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
     //check
@@ -463,7 +465,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
             break;
     }
 }
-
+#endif
 
 
 static void night_mode(kal_bool enable)
@@ -3365,7 +3367,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
                 return ERROR_NONE;
             }
-            LOG_INF("Read sensor id fail, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
+            LOG_INF("Read sensor id fail:0x%x, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
             retry--;
         } while(retry > 0);
         i++;
@@ -3416,7 +3418,7 @@ static kal_uint32 open(void)
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
                 break;
             }
-            LOG_INF("Read sensor id fail, id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
+            LOG_INF("Read sensor id fail: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
             retry--;
         } while(retry > 0);
         i++;
@@ -3495,7 +3497,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
         //imgsensor.autoflicker_en = KAL_FALSE;
     } else {
         if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-            LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",imgsensor_info.cap1.max_framerate/10);
+            LOG_INF("Warning: current_fps %d fps is not support, so use cap1's setting: %d fps!\n",imgsensor.current_fps,imgsensor_info.cap1.max_framerate/10);
         imgsensor.pclk = imgsensor_info.cap.pclk;
         imgsensor.line_length = imgsensor_info.cap.linelength;
         imgsensor.frame_length = imgsensor_info.cap.framelength;
@@ -3768,8 +3770,8 @@ static kal_uint32 set_auto_flicker_mode(kal_bool enable, UINT16 framerate)
 
 static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 framerate)
 {
-    kal_int16 dummyLine;
-    kal_uint32 lineLength,frameHeight;
+    //kal_int16 dummyLine;
+    kal_uint32 frameHeight;
 
     LOG_INF("ylscenario_id = %d, framerate = %d\n", scenario_id, framerate);
 
@@ -3883,9 +3885,9 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
     //check
-    LOG_INF("enable: %d\n", enable);
+		kal_int16 color_bar=0;
+		LOG_INF("enable: %d\n", enable);
 
-    kal_int16 color_bar=0;
     color_bar= read_cmos_sensor(0x5280);
 
     if(enable)
@@ -3907,7 +3909,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     UINT32 *feature_return_para_32=(UINT32 *) feature_para;
     UINT32 *feature_data_32=(UINT32 *) feature_para;
     unsigned long long *feature_data=(unsigned long long *) feature_para;
-    unsigned long long *feature_return_para=(unsigned long long *) feature_para;
+    //unsigned long long *feature_return_para=(unsigned long long *) feature_para;
     SENSOR_WINSIZE_INFO_STRUCT *wininfo;
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
     SENSOR_VC_INFO_STRUCT *pvcinfo;
@@ -3973,7 +3975,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             *feature_para_len=4;
             break;
         case SENSOR_FEATURE_SET_FRAMERATE:
-            LOG_INF("current fps :%d\n", *feature_data);
+            LOG_INF("current fps :%lld\n", *feature_data);
             spin_lock(&imgsensor_drv_lock);
             imgsensor.current_fps = *feature_data;
             spin_unlock(&imgsensor_drv_lock);
@@ -4028,7 +4030,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				}
 				break;
 		case SENSOR_FEATURE_GET_PDAF_INFO:
-			LOG_INF("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%d\n", *feature_data);
+			LOG_INF("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%lld\n", *feature_data);
 			PDAFinfo= (SET_PD_BLOCK_INFO_T *)(uintptr_t)(*(feature_data+1));
 
 			switch (*feature_data) {
@@ -4045,7 +4047,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 
 		case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
-			LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%d\n", *feature_data);
+			LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%lld\n", *feature_data);
 			//PDAF capacity enable or not, 2p8 only full size support PDAF
 			switch (*feature_data) {
 				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:

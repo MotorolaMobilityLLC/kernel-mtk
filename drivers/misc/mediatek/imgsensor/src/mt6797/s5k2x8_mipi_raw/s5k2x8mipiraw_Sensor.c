@@ -27,14 +27,13 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 //#include <asm/system.h>
-#include <linux/xlog.h>
+//#include <linux/xlog.h>
 
 //FW
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/err.h>
-
-#include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
@@ -407,7 +406,7 @@ static void set_dummy(void)
 
 static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 {
-    kal_int16 dummy_line;
+    //kal_int16 dummy_line;
     kal_uint32 frame_length = imgsensor.frame_length;
     //unsigned long flags;
 
@@ -457,8 +456,8 @@ static void set_shutter(kal_uint16 shutter)
     //LOG_INF("enter xxxx  set_shutter, shutter =%d\n", shutter);
 
     unsigned long flags;
-    kal_uint16 realtime_fps = 0;
-    kal_uint32 frame_length = 0;
+    //kal_uint16 realtime_fps = 0;
+    //kal_uint32 frame_length = 0;
     spin_lock_irqsave(&imgsensor_drv_lock, flags);
     imgsensor.shutter = shutter;
     spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
@@ -8279,7 +8278,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     UINT32 *feature_return_para_32=(UINT32 *) feature_para;
     UINT32 *feature_data_32=(UINT32 *) feature_para;
     unsigned long long *feature_data=(unsigned long long *) feature_para;
-    unsigned long long *feature_return_para=(unsigned long long *) feature_para;
+    //unsigned long long *feature_return_para=(unsigned long long *) feature_para;
 
     SET_PD_BLOCK_INFO_T *PDAFinfo;
     SENSOR_WINSIZE_INFO_STRUCT *wininfo;
@@ -8350,7 +8349,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             *feature_para_len=4;
             break;
         case SENSOR_FEATURE_SET_FRAMERATE:
-            LOG_INF("current fps :%d\n", *feature_data);
+            LOG_INF("current fps :%lld\n", *feature_data);
             spin_lock(&imgsensor_drv_lock);
             imgsensor.current_fps = *feature_data;
             spin_unlock(&imgsensor_drv_lock);
@@ -8382,7 +8381,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             spin_unlock(&imgsensor_drv_lock);
             break;
         case SENSOR_FEATURE_GET_CROP_INFO:
-            LOG_INF("SENSOR_FEATURE_GET_CROP_INFO scenarioId:%d\n", *feature_data);
+            LOG_INF("SENSOR_FEATURE_GET_CROP_INFO scenarioId:%lld\n", *feature_data);
 
             wininfo = (SENSOR_WINSIZE_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
 
@@ -8426,7 +8425,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 	    //add for s5k2x8 pdaf
         case SENSOR_FEATURE_GET_PDAF_INFO:
-            LOG_INF("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%d\n", *feature_data);
+            LOG_INF("SENSOR_FEATURE_GET_PDAF_INFO scenarioId:%lld\n", *feature_data);
             PDAFinfo= (SET_PD_BLOCK_INFO_T *)(uintptr_t)(*(feature_data+1));
 
             switch (*feature_data) {
@@ -8443,7 +8442,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             break;
 
         case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
-            LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%d\n", *feature_data);
+            LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%lld\n", *feature_data);
             //PDAF capacity enable or not, s5k2x8 only full size support PDAF
             switch (*feature_data) {
                 case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
