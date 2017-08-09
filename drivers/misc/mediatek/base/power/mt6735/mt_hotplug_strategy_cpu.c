@@ -17,6 +17,12 @@
 #include <linux/sched.h>
 
 #include "mt_hotplug_strategy_internal.h"
+#define HP_HAVE_SCHED_TPLG		0
+
+#if !HP_HAVE_SCHED_TPLG
+#include <linux/cpumask.h>
+#include <asm/topology.h>
+#endif
 
 /*
  * hps cpu interface - cpumask
@@ -90,6 +96,24 @@ void hps_cpu_get_tlp(unsigned int *avg, unsigned int *iowait_avg)
 #endif
 }
 
+void hps_cpu_get_big_little_cpumasks(struct cpumask *big, struct cpumask *little)
+{
+#if HP_HAVE_SCHED_TPLG
+	sched_get_big_little_cpus(big, little);
+#else
+	unsigned int cpu;
+
+	cpumask_clear(big);
+	cpumask_clear(little);
+
+	for_each_possible_cpu(cpu) {
+		if (arch_cpu_is_big(cpu))
+			cpumask_set_cpu(cpu, big);
+		else
+			cpumask_set_cpu(cpu, little);
+	}
+#endif /* HP_HAVE_SCHED_TPLG */
+}
 /*
  * init
  */
@@ -106,8 +130,7 @@ int hps_cpu_init(void)
 	cpumask_clear(&hps_ctxt.big_cpumask);
 
 	/* a. call api */
-	arch_get_cluster_cpus(&hps_ctxt.little_cpumask, 0);
-	arch_get_cluster_cpus(&hps_ctxt.big_cpumask, 1);
+	hps_cpu_get_big_little_cpumasks(&hps_ctxt.big_cpumask, &hps_ctxt.little_cpumask);
 	/* b. fix 2L2b */
 	/* cpulist_parse("0-1", &hps_ctxt.little_cpumask); */
 	/* cpulist_parse("2-3", &hps_ctxt.big_cpumask); */
