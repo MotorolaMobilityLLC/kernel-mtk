@@ -1397,3 +1397,4 @@
 	};
 };
 
+/include/ "cust_eint.dtsi"
