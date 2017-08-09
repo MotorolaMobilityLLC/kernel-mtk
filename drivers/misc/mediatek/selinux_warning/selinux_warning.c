@@ -16,7 +16,7 @@
 #include <linux/module.h>
 
 #ifdef CONFIG_MTK_AEE_FEATURE
-#include <linux/aee.h>
+#include <mt-plat/aee.h>
 #endif
 
 #define SELINUX_WARNING_C
@@ -110,8 +110,8 @@ void mtk_audit_hook(char *data)
 
 			sprintf(printbuf, "\nCR_DISPATCH_PROCESSNAME:%s\n", pname);
 			if (selinux_enforcing) {
-				aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT,
-					printbuf, data);
+				aee_kernel_warning_api(__FILE__, __LINE__,
+					DB_OPT_DEFAULT|DB_OPT_NATIVE_BACKTRACE,	printbuf, data);
 			}
 		}
 #endif
