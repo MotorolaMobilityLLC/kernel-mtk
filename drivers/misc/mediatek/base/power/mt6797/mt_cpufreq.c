@@ -3193,7 +3193,6 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 					cpu_dvfs_get_name(p));
 				cpufreq_lock(flags);
 				p->armpll_is_available = 0;
-
 				if (!cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
 #ifdef CONFIG_CPU_FREQ
 					policy = cpufreq_cpu_get(cpu);
@@ -3201,15 +3200,15 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 					cpufreq_cpu_put(policy);
 #endif
 #ifdef CONFIG_HYBRID_CPU_DVFS
-				if (!enable_cpuhvfs) {
+					if (!enable_cpuhvfs) {
 #endif
-					new_cci_opp_idx = _calc_new_cci_opp_idx(p, p->idx_opp_tbl);
-					/* set cci freq/volt */
-					_cpufreq_set_locked_cci(cpu_dvfs_get_cur_freq(p_cci),
-						cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx),
-						cpu_dvfs_get_volt_by_idx(p_cci, new_cci_opp_idx));
+						new_cci_opp_idx = _calc_new_cci_opp_idx(p, p->idx_opp_tbl);
+						/* set cci freq/volt */
+						_cpufreq_set_locked_cci(cpu_dvfs_get_cur_freq(p_cci),
+							cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx),
+							cpu_dvfs_get_volt_by_idx(p_cci, new_cci_opp_idx));
 #ifdef CONFIG_HYBRID_CPU_DVFS
-				}
+					}
 #endif
 				} else {
 					if (disable_idvfs_flag) {
@@ -3233,11 +3232,11 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 						cpufreq_cpu_put(policy);
 #endif
 					}
+
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before BigiDVFSDisable */
 					if (enable_cpuhvfs)
 						cpuhvfs_notify_cluster_off(cpu_dvfs_to_cluster(p));
 #endif
-
 #if 0
 					if (!disable_idvfs_flag)
 						BigiDVFSDisable();
