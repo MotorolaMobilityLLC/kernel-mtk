@@ -39,7 +39,7 @@ static ssize_t hps_proc_uint_write(struct file *file, const char __user *buffer,
 	unsigned int var;
 	unsigned int *pv;
 
-	desc[32] = '\0';
+	desc[31] = '\0';
 	pv = (unsigned int *)((struct seq_file *)file->private_data)->private;
 	len = min(count, sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
@@ -194,7 +194,7 @@ static ssize_t hps_num_base_perf_serv_proc_write(struct file *file,
 	char desc[32];
 	unsigned int num_online;
 
-	desc[32] = '\0';
+	desc[31] = '\0';
 	len = min(count, sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
@@ -306,7 +306,7 @@ static ssize_t hps_num_limit_thermal_proc_write(struct file *file,
 	int len = 0, little_num_limit_thermal = 0, big_num_limit_thermal = 0;
 	char desc[32];
 
-	desc[32] = '\0';
+	desc[31] = '\0';
 	len = min(count, sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
@@ -390,7 +390,7 @@ static ssize_t hps_num_limit_low_battery_proc_write(struct file *file,
 	int little_num_limit_low_battery = 0, big_num_limit_low_battery = 0;
 	char desc[32];
 
-	desc[32] = '\0';
+	desc[31] = '\0';
 	len = min(count, sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
@@ -477,7 +477,7 @@ static ssize_t hps_num_limit_ultra_power_saving_proc_write(struct file *file,
 	int big_num_limit_ultra_power_saving = 0;
 	char desc[32];
 
-	desc[32] = '\0';
+	desc[31] = '\0';
 	len = min(count, sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
@@ -566,7 +566,7 @@ static ssize_t hps_num_limit_power_serv_proc_write(struct file *file,
 	int little_num_limit_power_serv = 0, big_num_limit_power_serv = 0;
 	char desc[32];
 
-	desc[32] = '\0';
+	desc[31] = '\0';
 	len = min(count, sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
 		return 0;
