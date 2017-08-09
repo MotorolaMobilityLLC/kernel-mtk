@@ -4651,6 +4651,11 @@ int is_dim_layer(unsigned int long mva)
 	return 0;
 }
 
+void *primary_get_dpmgr_handle(void)
+{
+	return pgc->dpmgr_handle;
+}
+
 unsigned long get_dim_layer_mva_addr(void)
 {
 	if (dim_layer_mva == 0) {

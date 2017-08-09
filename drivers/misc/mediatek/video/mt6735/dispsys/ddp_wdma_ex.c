@@ -70,7 +70,7 @@ int wdma_start(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = wdma_index(module);
 
-	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_INTEN, 0x07);
+	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_INTEN, 0x03);
 	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_EN, 0x01);
 
 	return 0;

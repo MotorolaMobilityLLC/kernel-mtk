@@ -353,6 +353,8 @@ uint32_t DISP_GetScreenHeight(void);
 #endif
 
 void primary_display_update_present_fence(unsigned int fence_idx);
+void *primary_get_dpmgr_handle(void);
+
 extern unsigned int WDMA0_FRAME_START_FLAG;
 extern unsigned int ALL_LAYER_DISABLE_STEP;
 extern unsigned int gTriggerDispMode;	/* 0: normal, 1: lcd only, 2: none of lcd and lcm */

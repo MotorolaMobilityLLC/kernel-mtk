@@ -51,6 +51,7 @@
 #include "ddp_dump.h"
 #include "display_recorder.h"
 #include "fbconfig_kdebug.h"
+#include "ddp_manager.h"
 
 #include "mtk_ovl.h"
 #include "ion_drv.h"
@@ -2506,13 +2507,10 @@ int mtkfb_pm_restore_noirq(struct device *device)
 {
 	DISPCHECK("%s: %d\n", __func__, __LINE__);
 
-#ifndef CONFIG_MTK_CLKMGR
-	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
-	ddp_clk_prepare_enable(DISP0_SMI_COMMON);
-	ddp_clk_prepare_enable(DISP0_SMI_LARB0);
-#endif
 	is_ipoh_bootup = true;
-
+#ifndef CONFIG_MTK_CLKMGR
+	dpmgr_path_power_on(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+#endif
 	return 0;
 }
 
