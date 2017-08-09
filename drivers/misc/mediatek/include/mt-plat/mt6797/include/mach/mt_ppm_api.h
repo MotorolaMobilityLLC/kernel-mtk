@@ -37,6 +37,7 @@ typedef void (*met_set_ppm_state_funcMET)(unsigned int state);
 struct ppm_client_req {
 	unsigned int cluster_num;
 	unsigned int root_cluster;
+	bool is_ptp_policy_activate;
 	struct ppm_client_limit {
 		unsigned int cluster_id;
 		unsigned int cpu_id;

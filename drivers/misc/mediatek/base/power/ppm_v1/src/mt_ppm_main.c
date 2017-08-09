@@ -356,6 +356,7 @@ static void ppm_main_calc_new_limit(void)
 {
 	struct ppm_policy_data *pos;
 	int i, active_cnt = 0;
+	bool is_ptp_activate = false;
 	struct ppm_client_req *c_req = &(ppm_main_info.client_req);
 
 	FUNC_ENTER(FUNC_LV_MAIN);
@@ -370,6 +371,8 @@ static void ppm_main_calc_new_limit(void)
 				ppm_main_update_limit(pos,
 					&c_req->cpu_limit[i], &pos->req.limit[i]);
 			}
+
+			is_ptp_activate = (pos->policy == PPM_POLICY_PTPOD) ? true : false;
 
 			active_cnt++;
 		}
@@ -406,6 +409,9 @@ static void ppm_main_calc_new_limit(void)
 
 	/* fill root cluster */
 	c_req->root_cluster = ppm_get_root_cluster_by_state(ppm_main_info.cur_power_state);
+
+	/* fill ptpod activate flag */
+	c_req->is_ptp_policy_activate = is_ptp_activate;
 
 	FUNC_EXIT(FUNC_LV_MAIN);
 }

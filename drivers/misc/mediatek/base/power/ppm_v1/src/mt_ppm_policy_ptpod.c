@@ -113,11 +113,60 @@ static void ppm_ptpod_mode_change_cb(enum ppm_mode mode)
 	FUNC_EXIT(FUNC_LV_POLICY);
 }
 
+static int ppm_ptpod_test_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "PTPOD is_activate = %d\n", ptpod_policy.is_activated);
+
+	return 0;
+}
+
+static ssize_t ppm_ptpod_test_proc_write(struct file *file, const char __user *buffer,
+					size_t count, loff_t *pos)
+{
+	unsigned int enabled;
+
+	char *buf = ppm_copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	if (!kstrtouint(buf, 10, &enabled)) {
+		if (enabled)
+			mt_ppm_ptpod_policy_activate();
+		else
+			mt_ppm_ptpod_policy_deactivate();
+	} else
+		ppm_err("@%s: Invalid input!\n", __func__);
+
+	free_page((unsigned long)buf);
+	return count;
+}
+
+PROC_FOPS_RW(ptpod_test);
+
 static int __init ppm_ptpod_policy_init(void)
 {
-	int ret = 0;
+	int i, ret = 0;
+
+	struct pentry {
+		const char *name;
+		const struct file_operations *fops;
+	};
+
+	const struct pentry entries[] = {
+		PROC_ENTRY(ptpod_test),
+	};
 
 	FUNC_ENTER(FUNC_LV_POLICY);
+
+	/* create procfs */
+	for (i = 0; i < ARRAY_SIZE(entries); i++) {
+		if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, policy_dir, entries[i].fops)) {
+			ppm_err("%s(), create /proc/ppm/policy/%s failed\n", __func__, entries[i].name);
+			ret = -EINVAL;
+			goto out;
+		}
+	}
 
 	if (ppm_main_register_policy(&ptpod_policy)) {
 		ppm_err("@%s: ptpod policy register failed\n", __func__);
