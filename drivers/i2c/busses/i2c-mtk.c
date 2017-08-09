@@ -33,6 +33,9 @@
 #include <linux/of_irq.h>
 #include <linux/clk.h>
 #include <mt_cpufreq_hybrid.h>
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+#include <scp_helper.h>
+#endif
 #include "i2c-mtk.h"
 
 static struct i2c_dma_info g_dma_regs[10];
@@ -150,30 +153,52 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 
 static int i2c_get_semaphore(struct mt_i2c *i2c)
 {
-	if (i2c->id != 6)
-		return 0;
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	int count = 100;
+#endif
 
-	if (cpuhvfs_get_dvfsp_semaphore(SEMA_I2C_DRV) != 0) {
-		dev_err(i2c->dev, "sema time out 2ms\n");
+	switch (i2c->id) {
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	case 0:
+		while (1 != get_scp_semaphore(SEMAPHORE_I2C0) && count > 0)
+			count--;
+		return count > 0 ? 0 : -EBUSY;
+	case 1:
+		while (1 != get_scp_semaphore(SEMAPHORE_I2C1) && count > 0)
+			count--;
+		return count > 0 ? 0 : -EBUSY;
+#endif
+	case 6:
 		if (cpuhvfs_get_dvfsp_semaphore(SEMA_I2C_DRV) != 0) {
-			dev_err(i2c->dev, "sema time out 4ms\n");
-			i2c_dump_info(i2c);
-			BUG_ON(1);
-			return -EBUSY;
+			dev_err(i2c->dev, "sema time out 2ms\n");
+			if (cpuhvfs_get_dvfsp_semaphore(SEMA_I2C_DRV) != 0) {
+				dev_err(i2c->dev, "sema time out 4ms\n");
+				i2c_dump_info(i2c);
+				BUG_ON(1);
+				return -EBUSY;
+			}
 		}
+		return 0;
+	default:
+		return 0;
 	}
-
-	return 0;
 }
 
 static int i2c_release_semaphore(struct mt_i2c *i2c)
 {
-	if (i2c->id != 6)
+	switch (i2c->id) {
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	case 0:
+		return release_scp_semaphore(SEMAPHORE_I2C0) == 1 ? 0 : -EBUSY;
+	case 1:
+		return release_scp_semaphore(SEMAPHORE_I2C1) == 1 ? 0 : -EBUSY;
+#endif
+	case 6:
+		cpuhvfs_release_dvfsp_semaphore(SEMA_I2C_DRV);
 		return 0;
-
-	cpuhvfs_release_dvfsp_semaphore(SEMA_I2C_DRV);
-
-	return 0;
+	default:
+		return 0;
+	}
 }
 
 static void free_i2c_dma_bufs(struct mt_i2c *i2c)
@@ -748,13 +773,17 @@ static int __mt_i2c_transfer(struct mt_i2c *i2c,
 			}
 		}
 
-		/* Use HW semaphore to protect mt6313 access between AP and SPM */
-		if (i2c_get_semaphore(i2c) != 0)
+		/* Use HW semaphore to protect device access between AP and SPM, or SCP */
+		if (i2c_get_semaphore(i2c) != 0) {
+			dev_err(i2c->dev, "get hw semaphore failed.\n");
 			return -EBUSY;
+		}
 		ret = mt_i2c_do_transfer(i2c);
-		/* Use HW semaphore to protect mt6313 access between AP and SPM */
-		if (i2c_release_semaphore(i2c) != 0)
+		/* Use HW semaphore to protect device access between AP and SPM, or SCP */
+		if (i2c_release_semaphore(i2c) != 0) {
+			dev_err(i2c->dev, "release hw semaphore failed.\n");
 			ret = -EBUSY;
+		}
 
 		if (ret < 0)
 			goto err_exit;
