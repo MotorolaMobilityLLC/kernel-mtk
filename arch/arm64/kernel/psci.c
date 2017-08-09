@@ -490,16 +490,23 @@ static int __init cpu_psci_cpu_prepare(unsigned int cpu)
 static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 {
 	static void __iomem *reg_base;
-	unsigned int temp;
+	static volatile unsigned int temp;
 	int ret = 0;
 
 	reg_base = ioremap(MT6797_SPM_BASE_ADDR, 0x1000);
 	writel_relaxed((readl(reg_base + 0x218) | (1 << 0)), reg_base + 0x218);
 	iounmap(reg_base);
 
+	reg_base = ioremap(MT6797_IDVFS_BASE_ADDR, 0x1000);	/* 0x102224a0 */
+	temp = readl(reg_base + 0x4a0); /* dummy read */
+	iounmap(reg_base);
+
 	/* latch RESET */
 	reg_base = ioremap(MT6797_WDT_BASE_ADDR, 0x1000);
 	writel_relaxed((readl(reg_base + 0x018) | 0x88000800), reg_base + 0x018);
+	temp = readl(reg_base + 0x018);
+	if ((temp & 0x10800) != 0x10800)
+		pr_err("RESET reg = 0x%x\n", temp);
 	iounmap(reg_base);
 
 	if (hotplug) {
