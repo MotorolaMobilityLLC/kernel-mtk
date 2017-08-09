@@ -52,9 +52,9 @@ static DEFINE_SPINLOCK(GC0310_drv_lock);
 
 
 #define GC0310YUV_DEBUG
-
+#define PFX "GC0310YUV_DEBUG"
 #ifdef GC0310YUV_DEBUG
-#define SENSORDB printk
+#define SENSORDB(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
 #else
 #define SENSORDB(x,...)
 #endif

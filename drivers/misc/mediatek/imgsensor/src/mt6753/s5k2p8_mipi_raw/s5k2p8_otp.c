@@ -22,6 +22,8 @@ extern void kdSetI2CSpeed(u16 i2cSpeed);
 //extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length);
 extern int iMultiReadReg(u16 a_u2Addr , u8 * a_puBuff , u16 i2cId, u8 number);
 
+#define PFX "S5K2P8_OTP"
+#define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
 
 #define USHORT             unsigned short
 #define BYTE               unsigned char
@@ -49,7 +51,7 @@ bool byte_write_eeprom(kal_uint16 addr, BYTE data )
 		return false;
 	kdSetI2CSpeed(I2C_SPEED);
     if(iWriteRegI2C(pu_send_cmd, 3, EEPROM_WRITE_ID)<0) {
-		//printk("byte_write_eeprom fail, addr %x data %d\n",addr,data);
+		//LOG_INF("byte_write_eeprom fail, addr %x data %d\n",addr,data);
 		return false;
     }
 	Sleep(7);
@@ -77,7 +79,7 @@ bool page_write_eeprom(kal_uint16 addr, BYTE data[], kal_uint32 size)
 	for(i = 0; i< size; i++) {
 		pu_send_cmd[i+2] = (char)(data[i] & 0xFF);
 	}
-	printk("before iBurstWriteReg_multi\n");
+	LOG_INF("before iBurstWriteReg_multi\n");
 	if(1)//iBurstWriteReg_multi(pu_send_cmd , size, EEPROM_WRITE_ID, size)<0) //only support in K2 now
 		return false;
 	Sleep(10);
@@ -112,7 +114,7 @@ static bool _wrtie_eeprom(kal_uint16 addr, BYTE data[], kal_uint32 size ){
 	int i = 0;
 	int offset = addr;
 	for(i = 0; i < size; i++) {
-		//printk("wrtie_eeprom 0x%0x %d\n",offset, data[i]);
+		//LOG_INF("wrtie_eeprom 0x%0x %d\n",offset, data[i]);
 		if(!byte_write_eeprom( offset, data[i])){
 			return false;
 		}
@@ -128,7 +130,7 @@ static bool _read_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
 		if(!selective_read_eeprom(offset, &data[i])){
 			return false;
 		}
-		//printk("read_eeprom 0x%0x %d\n",offset, data[i]);
+		//LOG_INF("read_eeprom 0x%0x %d\n",offset, data[i]);
 		offset++;
 	}
 	get_done = true;
@@ -156,7 +158,7 @@ bool wrtie_eeprom(kal_uint16 addr, BYTE data[],kal_uint32 size ){
 bool wrtie_eeprom_fast(kal_uint16 addr, BYTE data[],kal_uint32 size ){
 	bool ret = false;
 	int size_to_send = size;
-	printk("wrtie_eeprom_fast\n");
+	LOG_INF("wrtie_eeprom_fast\n");
 	if( (addr&0xff) == 0 ){//align page
 		#if 0
 		if(size < EEPROM_PAGE_SIZE+1) {
@@ -164,16 +166,16 @@ bool wrtie_eeprom_fast(kal_uint16 addr, BYTE data[],kal_uint32 size ){
 		} else
 		#endif
 		{
-			printk("before page_write_eeprom\n");
+			LOG_INF("before page_write_eeprom\n");
     		for(; size_to_send > 0; size_to_send -= EEPROM_PAGE_SIZE) {
 				ret = page_write_eeprom( addr,  data, size_to_send > EEPROM_PAGE_SIZE ? EEPROM_PAGE_SIZE : size_to_send);
 				if(!ret) {
 					break;
 				}
 				data+=EEPROM_PAGE_SIZE;
-				printk("after page_write_eeprom %d\n",size_to_send);
+				LOG_INF("after page_write_eeprom %d\n",size_to_send);
 			}
-			printk("after page_write_eeprom\n");
+			LOG_INF("after page_write_eeprom\n");
 		}
 	} else {
         ret = _wrtie_eeprom(addr, data, size);

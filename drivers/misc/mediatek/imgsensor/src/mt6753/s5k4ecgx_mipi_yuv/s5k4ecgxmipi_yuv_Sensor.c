@@ -5987,7 +5987,7 @@ static void S5K4ECGX_MIPI_enb_preview(void)
 
 static void S5K4ECGX_Init_Setting(void)
 {
-    printk("[4EC Parallel] Sensor Init...\n");
+    SENSORDB("[4EC Parallel] Sensor Init...\n");
                 // FOR 4EC EVT1.1
                 // ARM Initiation
 
@@ -9586,11 +9586,11 @@ static void S5K4ECGX_Init_Setting(void)
 
 static void S5K4ECGX_enb_preview(){
 
-        printk("[4EC Parallel] Enable preview...\n");
+        SENSORDB("[4EC Parallel] Enable preview...\n");
     S5K4ECGX_write_cmos_sensor(0x002A, 0x023E);
     S5K4ECGX_write_cmos_sensor(0x0F12, 0x0001);
     S5K4ECGX_write_cmos_sensor(0x0F12, 0x0001);
-        printk("[4EC Parallel] Enable preview done...\n");
+        SENSORDB("[4EC Parallel] Enable preview done...\n");
 }
 
 

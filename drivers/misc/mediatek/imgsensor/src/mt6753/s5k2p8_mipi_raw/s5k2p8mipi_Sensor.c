@@ -571,10 +571,10 @@ static void sensor_init(void)
 
     wrtie_eeprom(0x0100, data, size);
     //read_eeprom(0x0000, data2, size);
-    //printk("final data2 ");
+    //LOG_INF("final data2 ");
     //for(j=0;j<size;j++)
-    //	printk(" %d\n",data2[j]);
-	printk("\n");
+    //	LOG_INF(" %d\n",data2[j]);
+	LOG_INF("\n");
 #endif
 
    /*****************************************************************************

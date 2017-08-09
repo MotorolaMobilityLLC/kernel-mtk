@@ -21,8 +21,9 @@
 
 #define CAM_CALGETDLT_DEBUG
 //#define CAM_CAL_DEBUG
-#ifdef CAM_CAL_DEBUG
-#define CAM_CALDB printk
+#ifdef CAM_CAL_DEBUGs
+#define PFX "imx214otp"
+#define CAM_CALDB(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
 #else
 #define CAM_CALDB(x,...)
 #endif
@@ -485,7 +486,7 @@ static long CAM_CAL_Ioctl(
             {
                 TimeIntervalUS = ktv2.tv_usec - ktv1.tv_usec;
             }
-            printk("Write data %d bytes take %lu us\n",ptempbuf->u4Length, TimeIntervalUS);
+            CAM_CALDB("Write data %d bytes take %lu us\n",ptempbuf->u4Length, TimeIntervalUS);
 #endif            
             break;
         case CAM_CALIOC_G_READ:
@@ -512,7 +513,7 @@ static long CAM_CAL_Ioctl(
             {
                 TimeIntervalUS = ktv2.tv_usec - ktv1.tv_usec;
             }
-            printk("Read data %d bytes take %lu us\n",ptempbuf->u4Length, TimeIntervalUS);
+            CAM_CALDB("Read data %d bytes take %lu us\n",ptempbuf->u4Length, TimeIntervalUS);
 #endif            
 
             break;
