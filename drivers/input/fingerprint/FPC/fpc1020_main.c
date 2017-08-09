@@ -24,8 +24,9 @@
 #include <linux/poll.h>
 #include <linux/types.h>
 /*MTK header*/
-#include <mach/mt_spi.h>
-/* #include <mach/mt_gpio.h> */
+#include <mt_spi.h>
+#include <mt_spi_hal.h>
+#include <mt-plat/mt_gpio.h>
 
 #ifndef CONFIG_OF
 #include <linux/spi/fpc1020.h>
@@ -79,10 +80,10 @@ enum {
 	FPC1020_WORKER_INPUT_MODE,
 	FPC1020_WORKER_EXIT
 };
-
+/*
 static struct pinctrl *fpc_pinctrl;
 static struct pinctrl_state *fpc_pin_default;
-
+*/
 
 /* -------------------------------------------------------------------- */
 /* fpc1020 driver constants						*/
@@ -128,15 +129,15 @@ static int fpc1020_supply_init(fpc1020_data_t *fpc1020);
 
 static int fpc1020_reset_init(fpc1020_data_t *fpc1020,
 					struct fpc1020_platform_data *pdata);
-
+#if 0
 static int fpc1020_irq_init(fpc1020_data_t *fpc1020,
 					struct fpc1020_platform_data *pdata);
-
+#endif
 static int fpc1020_spi_setup(fpc1020_data_t *fpc1020,
 					struct fpc1020_platform_data *pdata);
-
+#if 0
 static int fpc1020_worker_init(fpc1020_data_t *fpc1020);
-
+#endif
 static int fpc1020_worker_destroy(fpc1020_data_t *fpc1020);
 
 static int fpc1020_get_of_pdata(struct device *dev,
@@ -175,9 +176,9 @@ static int fpc1020_start_capture(fpc1020_data_t *fpc1020);
 static int fpc1020_new_job(fpc1020_data_t *fpc1020, int new_job);
 
 static int fpc1020_worker_goto_idle(fpc1020_data_t *fpc1020);
-
+#if 0
 static int fpc1020_worker_function(void *_fpc1020);
-
+#endif
 static int fpc1020_start_input(fpc1020_data_t *fpc1020);
 
 
@@ -240,7 +241,8 @@ static const struct file_operations fpc1020_fops = {
 struct fpc1020_attribute fpc1020_attr_##_field =			\
 					FPC1020_ATTR(_grp, _field, (_mode))
 
-#define DEVFS_SETUP_MODE (S_IWUSR|S_IWGRP|S_IWOTH|S_IRUSR|S_IRGRP|S_IROTH)
+/*#define DEVFS_SETUP_MODE (S_IWUSR|S_IWGRP|S_IWOTH|S_IRUSR|S_IRGRP|S_IROTH)*/
+#define DEVFS_SETUP_MODE (S_IWUSR|S_IWGRP|S_IRUSR|S_IRGRP|S_IROTH)
 
 static FPC1020_DEV_ATTR(setup, adc_gain,		DEVFS_SETUP_MODE);
 static FPC1020_DEV_ATTR(setup, adc_shift,		DEVFS_SETUP_MODE);
@@ -273,7 +275,8 @@ static const struct attribute_group fpc1020_setup_attr_group = {
 };
 
 #define DEVFS_DIAG_MODE_RO (S_IRUSR|S_IRGRP|S_IROTH)
-#define DEVFS_DIAG_MODE_RW (S_IWUSR|S_IWGRP|S_IWOTH|S_IRUSR|S_IRGRP|S_IROTH)
+/*#define DEVFS_DIAG_MODE_RW (S_IWUSR|S_IWGRP|S_IWOTH|S_IRUSR|S_IRGRP|S_IROTH)*/
+#define DEVFS_DIAG_MODE_RW (S_IWUSR|S_IWGRP|S_IRUSR|S_IRGRP|S_IROTH)
 
 static FPC1020_DEV_ATTR(diag, chip_id,		DEVFS_DIAG_MODE_RO);
 static FPC1020_DEV_ATTR(diag, selftest,		DEVFS_DIAG_MODE_RO);
@@ -353,7 +356,9 @@ static void __exit fpc1020_exit(void)
 /* -------------------------------------------------------------------- */
 int fpc1020_gpio_set(int cmd)
 {
+#if 0
 	struct device_node *node;
+	int ret;
 
 	switch (cmd) {
 	case 1:
@@ -375,12 +380,17 @@ int fpc1020_gpio_set(int cmd)
 		pinctrl_select_state(fpc_pinctrl, fpc_pin_default);
 		break;
 	}
+#endif
+	return 0;
 }
 
 /* -------------------------------------------------------------------- */
+/*
 static int fpc1020_gpio_init(void)
 {
+#if 0
 	struct device_node *node;
+	int ret;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,fpc1145");
 
@@ -390,12 +400,13 @@ static int fpc1020_gpio_init(void)
 			ret = PTR_RRR(pinctrl);
 			dev_err(node->dev, "fpc cannot find pinctrl\n");
 		}
-		return 0;
+		return -1;
 	}
 	pr_err("[fpc]%s can't find compatible node\n", __func__);
-	return -1;
+#endif
+	return 0;
 }
-
+*/
 
 /* -------------------------------------------------------------------- */
 static int fpc1020_probe(struct spi_device *spi)
@@ -405,10 +416,10 @@ static int fpc1020_probe(struct spi_device *spi)
 	struct device *dev = &spi->dev;
 	int error = 0;
 	fpc1020_data_t *fpc1020 = NULL;
-	size_t buffer_size;
+	/* size_t buffer_size; */
 
 	pr_err("fpc1020_probe enter++++++\n");
-#ifdef FPC_MTK
+#if 0
 		error = fpc1020_gpio_init();
 		if (error) {
 			dev_err(&spi->dev, "Could not do gpio init.\n");
@@ -435,17 +446,22 @@ static int fpc1020_probe(struct spi_device *spi)
 		mt_set_gpio_mode(0x80000000|68, 1);
 */
 #else
-
-	error = gpio_request(57, NULL);
+#if 0
+	#ifndef CONFIG_PINCTRL_MT6797
+	gpio_set_value(0x80000000|256, 1);
+	#else
+	error = gpio_request(256, NULL);
 	if (error) {
-		dev_err(&spi->dev, "Could not request GPIO#57.\n");
+		dev_err(&spi->dev, "Could not request GPIO#256.\n");
 		/*return -EIO;*/
 	}
-	error = gpio_direction_output(57, 1);
+	error = gpio_direction_output(256, 1);
 	if (error) {
-		dev_err(&spi->dev, "Could not set GPIO#57 as output.\n");
+		dev_err(&spi->dev, "Could not set GPIO#256 as output.\n");
 		/*return -EIO;*/
 	}
+	#endif
+#endif
 #endif
 	fpc1020 = kzalloc(sizeof(*fpc1020), GFP_KERNEL);
 	if (!fpc1020) {
@@ -457,12 +473,12 @@ static int fpc1020_probe(struct spi_device *spi)
 	}
 
 	pr_alert("%s\n", __func__);
-
+#if 0
 	buffer_size = fpc1020_calc_huge_buffer_minsize(fpc1020);
 	error = fpc1020_manage_huge_buffer(fpc1020, buffer_size);
 	if (error)
 		goto err;
-
+#endif
 	spi_set_drvdata(spi, fpc1020);
 	fpc1020->spi = spi;
 	fpc1020->spi_freq_khz = 1000u;
@@ -475,13 +491,13 @@ static int fpc1020_probe(struct spi_device *spi)
 	fpc1020->use_regulator_for_bezel = 0;
 	fpc1020->use_fpc2050 = 0;
 
-
+#if 0
 	init_waitqueue_head(&fpc1020->wq_irq_return);
 
 	error = fpc1020_init_capture(fpc1020);
 	if (error)
 		goto err;
-
+#endif
 	fpc1020_pdata = spi->dev.platform_data;
 
 	if (!fpc1020_pdata) {
@@ -511,9 +527,9 @@ static int fpc1020_probe(struct spi_device *spi)
 	error = fpc1020_reset_init(fpc1020, fpc1020_pdata);
 	/*if (error)
 		goto err;*/
-
+	/*
 	error = fpc1020_irq_init(fpc1020, fpc1020_pdata);
-	/*if (error)
+	if (error)
 		goto err;*/
 
 	error = fpc1020_spi_setup(fpc1020, fpc1020_pdata);
@@ -528,17 +544,22 @@ static int fpc1020_probe(struct spi_device *spi)
 	/*if (error)
 		goto err;*/
 
+	fpc1020_sleep(fpc1020, true);
+	pr_err("fpc sleep\n");
+
 	fpc1020->spi_freq_khz = fpc1020->chip.spi_max_khz;
 
 	dev_info(&fpc1020->spi->dev,
 			"Req. SPI frequency : %d kHz.\n",
 			fpc1020->spi_freq_khz);
 
+	spi_clr_pinctrl(1);
+#if 0
 	buffer_size = fpc1020_calc_huge_buffer_minsize(fpc1020);
 	error = fpc1020_manage_huge_buffer(fpc1020, buffer_size);
 	/*if (error)
 		goto err;*/
-
+#endif
 	error = fpc1020_setup_defaults(fpc1020);
 	/*if (error)
 		goto err;*/
@@ -565,6 +586,7 @@ static int fpc1020_probe(struct spi_device *spi)
 		dev_err(&fpc1020->spi->dev, "cdev_add failed.\n");
 		goto err_chrdev;
 	}
+#if 0
 
 	error = fpc1020_worker_init(fpc1020);
 	if (error)
@@ -586,6 +608,7 @@ static int fpc1020_probe(struct spi_device *spi)
 	error = fpc1020_start_input(fpc1020);
 	/*if (error)
 		goto err_cdev;*/
+#endif
 /*
 	error = fpc1020_sleep(fpc1020, true);
 	if (error)
@@ -596,16 +619,19 @@ static int fpc1020_probe(struct spi_device *spi)
 	pr_err("FPC1020 probe done+++++++\n");
 	return 0;
 
+/*
 err_cdev:
 	cdev_del(&fpc1020->cdev);
-
+*/
 err_chrdev:
 	unregister_chrdev_region(fpc1020->devno, 1);
 
 	fpc1020_manage_sysfs(fpc1020, spi, false);
-
+/*
 err:
 	fpc1020_cleanup(fpc1020, spi);
+	return error;
+*/
 	return error;
 }
 
@@ -634,6 +660,7 @@ static int fpc1020_remove(struct spi_device *spi)
 /* -------------------------------------------------------------------- */
 static int fpc1020_suspend(struct device *dev)
 {
+#if 0
 	fpc1020_data_t *fpc1020 = dev_get_drvdata(dev);
 
 	dev_dbg(&fpc1020->spi->dev, "%s\n", __func__);
@@ -641,12 +668,15 @@ static int fpc1020_suspend(struct device *dev)
 	fpc1020_worker_goto_idle(fpc1020);
 
 	return fpc1020_sleep(fpc1020, true);
+#endif
+	return 0;
 }
 
 
 /* -------------------------------------------------------------------- */
 static int fpc1020_resume(struct device *dev)
 {
+#if 0
 	fpc1020_data_t *fpc1020 = dev_get_drvdata(dev);
 
 	dev_dbg(&fpc1020->spi->dev, "%s\n", __func__);
@@ -655,6 +685,7 @@ static int fpc1020_resume(struct device *dev)
 		if (fpc1020->input.enabled)
 			fpc1020_start_input(fpc1020);
 	}
+#endif
 
 	return 0;
 }
@@ -960,6 +991,15 @@ static int fpc1020_reset_init(fpc1020_data_t *fpc1020,
 		fpc1020->soft_reset_enabled = false;
 
 		fpc1020->reset_gpio = pdata->reset_gpio;
+#ifndef CONFIG_PINCTRL_MT6797
+		error = mt_set_gpio_out(0x80000000|256, 1);
+#else
+		error = gpio_direction_output(fpc1020->reset_gpio, 1);
+#endif
+		if (error) {
+			dev_err(&fpc1020->spi->dev,
+			"gpio_direction_output(reset) failed.\n");
+		}
 /*
 		error = mt_set_gpio_mode(0x80000000|1, 0);
 		error |= mt_set_gpio_dir(0x80000000|1, 1);
@@ -1008,12 +1048,13 @@ static int fpc1020_reset_init(fpc1020_data_t *fpc1020,
 
 
 /* -------------------------------------------------------------------- */
+#if 0
 static int fpc1020_irq_init(fpc1020_data_t *fpc1020,
 					struct fpc1020_platform_data *pdata)
 {
 	int error = 0;
 #ifdef FPC_MTK
-	unsigned int gpiopin, debounce, fpc_irq;
+	unsigned int gpiopin, debounce, fpc_irq = 0;
 	u32 ints[2] = {0, 0};
 	struct device_node *node;
 
@@ -1022,8 +1063,8 @@ static int fpc1020_irq_init(fpc1020_data_t *fpc1020,
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 		gpiopin = ints[0];
 		debounce = ints[1];
-		mt_gpio_set_debounce(gpiopin, debounce);
-		fpc_irq = irq_of_parse_and_map(node, 0);
+		/*mt_gpio_set_debounce(gpiopin, debounce);*/
+		/*fpc_irq = irq_of_parse_and_map(node, 0);*/
 		pr_err("fpc_irq = %u\n", fpc_irq);
 		fpc1020->irq = fpc_irq;
 	} else
@@ -1066,9 +1107,10 @@ static int fpc1020_irq_init(fpc1020_data_t *fpc1020,
 		return error;
 	}
 #endif
+/*
 	error = request_irq(fpc1020->irq, fpc1020_interrupt,
 			IRQF_TRIGGER_RISING, "fpc1020", fpc1020);
-
+*/
 	if (error) {
 		dev_err(&fpc1020->spi->dev,
 			"request_irq %i failed.\n",
@@ -1081,7 +1123,7 @@ static int fpc1020_irq_init(fpc1020_data_t *fpc1020,
 
 	return error;
 }
-
+#endif
 
 /* -------------------------------------------------------------------- */
 static int fpc1020_spi_setup(fpc1020_data_t *fpc1020,
@@ -1156,18 +1198,19 @@ out_err:
 
 
 /* -------------------------------------------------------------------- */
+/*
 static int fpc1020_worker_init(fpc1020_data_t *fpc1020)
 {
 	int error = 0;
 
 	pr_debug("%s\n", __func__);
 
-	init_waitqueue_head(&fpc1020->worker.wq_wait_job);
+	//init_waitqueue_head(&fpc1020->worker.wq_wait_job);
 
 	sema_init(&fpc1020->worker.sem_idle, 0);
 
-	fpc1020->worker.req_mode = FPC1020_WORKER_IDLE_MODE;
-
+	//fpc1020->worker.req_mode = FPC1020_WORKER_IDLE_MODE;
+#if 0
 	fpc1020->worker.thread = kthread_run(fpc1020_worker_function,
 					   fpc1020, "%s",
 					   FPC1020_WORKER_THREAD_NAME);
@@ -1176,10 +1219,11 @@ static int fpc1020_worker_init(fpc1020_data_t *fpc1020)
 		dev_err(&fpc1020->spi->dev, "kthread_run failed.\n");
 		error = (int)PTR_ERR(fpc1020->worker.thread);
 	}
+#endif
 
 	return error;
 }
-
+*/
 
 /* -------------------------------------------------------------------- */
 static int fpc1020_worker_destroy(fpc1020_data_t *fpc1020)
@@ -1222,10 +1266,11 @@ static int fpc1020_get_of_pdata(struct device *dev,
 
 	if (node == NULL) {
 		dev_err(dev, "%s: Could not find OF device node\n", __func__);
-		goto of_err;
+		/* goto of_err; */
 	}
 
 	if (!irq_prop || !rst_prop) {
+		pdata->reset_gpio = be32_to_cpup(rst_prop);
 		dev_err(dev, "%s: Missing OF property\n", __func__);
 		goto of_err;
 	}
@@ -1248,7 +1293,7 @@ static int fpc1020_get_of_pdata(struct device *dev,
 	return 0;
 
 of_err:
-	pdata->reset_gpio = -EINVAL;
+	/* pdata->reset_gpio = -EINVAL; */
 	pdata->irq_gpio   = -EINVAL;
 	pdata->cs_gpio    = -EINVAL;
 	pdata->force_hwid = -EINVAL;
@@ -1568,7 +1613,7 @@ static ssize_t fpc1020_show_attr_diag(struct device *dev,
 {
 	fpc1020_data_t *fpc1020;
 	struct fpc1020_attribute *fpc_attr;
-	u64 val;
+	u64 val = 0;
 	int error = 0;
 	bool is_buffer = false;
 	u8 u8_buffer[FPC1020_REG_MAX_SIZE];
@@ -1874,6 +1919,7 @@ static int fpc1020_new_job(fpc1020_data_t *fpc1020, int new_job)
 
 
 /* -------------------------------------------------------------------- */
+/*
 static int fpc1020_worker_function(void *_fpc1020)
 {
 	fpc1020_data_t *fpc1020 = _fpc1020;
@@ -1912,7 +1958,7 @@ static int fpc1020_worker_function(void *_fpc1020)
 
 	return 0;
 }
-
+*/
 
 /* -------------------------------------------------------------------- */
 /* SPI debug interface, implementation					*/

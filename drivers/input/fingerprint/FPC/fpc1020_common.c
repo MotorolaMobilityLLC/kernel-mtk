@@ -13,6 +13,8 @@
 #include <linux/interrupt.h>
 #include <linux/clk.h>
 #include <linux/clk-private.h>
+/*MTK header*/
+#include <mt_spi.h>
 
 #ifndef CONFIG_OF
 #include <linux/spi/fpc1020_common.h>
@@ -300,9 +302,9 @@ static int fpc1020_write_sensor_1140_setup(fpc1020_data_t *fpc1020);
 static int fpc1020_write_sensor_1145_setup(fpc1020_data_t *fpc1020);
 
 static int fpc1020_write_sensor_1022_setup(fpc1020_data_t *fpc1020);
-
+#if 0
 static int fpc1020_check_irq_after_reset(fpc1020_data_t *fpc1020);
-
+#endif
 static int fpc1020_flush_adc(fpc1020_data_t *fpc1020);
 
 /* -------------------------------------------------------------------- */
@@ -470,17 +472,38 @@ int fpc1020_gpio_reset(fpc1020_data_t *fpc1020)
 	pr_err("mtk fpc1020_gpio_reset\n");
 	while (counter) {
 		counter--;
-
-		/*mt_set_gpio_out(0x80000000|1, 1);*/
-		fpc1020_gpio_set(1);
+	#ifndef CONFIG_PINCTRL_MT6797
+		mt_set_gpio_out(0x80000000|256, 1);
+	#else
+		/* fpc1020_gpio_set(1); */
+		gpio_set_value(fpc1020->reset_gpio, 1);
+	#endif
+		if (error) {
+			pr_err("fpc1020_gpio_reset Could not set GPIO#%d to high.\n", fpc1020->reset_gpio);
+			/*return -EIO;*/
+		}
 		udelay(FPC1020_RESET_HIGH1_US);
-
-		/*mt_set_gpio_out(0x80000000|1, 0);*/
-		fpc1020_gpio_set(0);
+	#ifndef CONFIG_PINCTRL_MT6797
+		mt_set_gpio_out(0x80000000|256, 0);
+	#else
+		/* fpc1020_gpio_set(0); */
+		gpio_set_value(fpc1020->reset_gpio, 0);
+	#endif
+		if (error) {
+			pr_err("fpc1020_gpio_reset Could not set GPIO#%d to low.\n", fpc1020->reset_gpio);
+			/*return -EIO;*/
+		}
 		udelay(FPC1020_RESET_LOW_US);
-
-		/*mt_set_gpio_out(0x80000000|1, 1);*/
-		fpc1020_gpio_set(1);
+	#ifndef CONFIG_PINCTRL_MT6797
+		mt_set_gpio_out(0x80000000|256, 1);
+	#else
+		/* fpc1020_gpio_set(1); */
+		gpio_set_value(fpc1020->reset_gpio, 1);
+	#endif
+		if (error) {
+			pr_err("fpc1020_gpio_reset Could not set GPIO#%d as high agian.\n", fpc1020->reset_gpio);
+			/*return -EIO;*/
+		}
 		udelay(FPC1020_RESET_HIGH2_US);
 /*
 		error = mt_get_gpio_out(fpc1020->irq_gpio | 0x80000000) ? 0 : -EIO;
@@ -699,6 +722,7 @@ int fpc1020_check_hw_id(fpc1020_data_t *fpc1020)
 /* -------------------------------------------------------------------- */
 const char *fpc1020_hw_id_text(fpc1020_data_t *fpc1020)
 {
+	pr_err("fpc fpc1020_hw_id_text revision is %s\n", chip_text[fpc1020->chip.type]);
 	return chip_text[fpc1020->chip.type];
 }
 
@@ -1703,6 +1727,7 @@ out:
 }
 
 /* -------------------------------------------------------------------- */
+#if 0
 static int fpc1020_check_irq_after_reset(fpc1020_data_t *fpc1020)
 {
 	int error = 0;
@@ -1732,7 +1757,7 @@ static int fpc1020_check_irq_after_reset(fpc1020_data_t *fpc1020)
 
 	return (error < 0) ? error : irq_status;
 }
-
+#endif
 
 /* -------------------------------------------------------------------- */
 int fpc1020_wait_for_irq(fpc1020_data_t *fpc1020, int timeout)
@@ -2215,10 +2240,10 @@ int fpc1020_sleep(fpc1020_data_t *fpc1020, bool deep_sleep)
 			retries--;
 		}
 	}
-
+#if 0
 	if (deep_sleep && sleep_ok && gpio_is_valid(fpc1020->reset_gpio))
 		gpio_set_value(fpc1020->reset_gpio, 0);
-
+#endif
 #ifdef MANUAL_CS
 	if (deep_sleep && sleep_ok && gpio_is_valid(fpc1020->cs_gpio))
 		gpio_set_value(fpc1020->cs_gpio, 0);
