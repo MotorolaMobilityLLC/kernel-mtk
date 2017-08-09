@@ -179,6 +179,7 @@ static VAL_UINT32_T gu4VdecLockThreadId;
 #define VENC_IRQ_STATUS_DRAM        0x8
 #define VENC_IRQ_STATUS_PAUSE       0x10
 #define VENC_IRQ_STATUS_SWITCH      0x20
+#define VENC_IRQ_STATUS_VPS         0x80
 #define VENC_SW_PAUSE                0x0AC
 #define VENC_SW_HRST_N               0x0A8
 
@@ -438,6 +439,7 @@ void enc_isr(void)
 		VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_SPS);
 		VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_PPS);
 		VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_FRM);
+		VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_VPS);
 		return;
 	}
 
@@ -467,6 +469,10 @@ void enc_isr(void)
 		if (gu4HwVencIrqStatus & VENC_IRQ_STATUS_FRM) {
 			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 			VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_FRM);
+		}
+		if (gu4HwVencIrqStatus & VENC_IRQ_STATUS_VPS) {
+			/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
+			VDO_HW_WRITE(KVA_VENC_IRQ_ACK_ADDR, VENC_IRQ_STATUS_VPS);
 		}
 	} else {
 		MODULE_MFV_LOGE("[VCODEC][ERROR] Invalid lock holder driver type = %d\n",
