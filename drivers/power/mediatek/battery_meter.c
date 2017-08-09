@@ -26,7 +26,8 @@
 #include <asm/uaccess.h>
 
 #include <mt-plat/mt_boot.h>
-#include <mt-plat/mt_boot_common.h>
+#include <mt-plat/mtk_rtc.h>
+
 
 #include <mt-plat/mt_boot_reason.h>
 
@@ -179,6 +180,7 @@ struct timespec last_oam_run_time;
 /* aging mechanism */
 #ifdef MTK_ENABLE_AGING_ALGORITHM
 
+#ifdef SOC_BY_HW_FG
 static signed int aging_ocv_1;
 static signed int aging_ocv_2;
 static signed int aging_car_1;
@@ -187,6 +189,7 @@ static signed int aging_dod_1;
 static signed int aging_dod_2;
 #ifdef MD_SLEEP_CURRENT_CHECK
 static signed int columb_before_sleep = 0x123456;
+#endif
 #endif
 /* static time_t aging_resume_time_1 = 0; */
 /* static time_t aging_resume_time_2 = 0; */
@@ -290,15 +293,6 @@ void fgauge_get_profile_id(void)
 /* function prototype */
 /* ============================================================ // */
 
-/* ============================================================ // */
-/* extern variable */
-/* ============================================================ // */
-
-/* ============================================================ // */
-/* extern function */
-/* ============================================================ // */
-/* extern int get_rtc_spare_fg_value(void); */
-/* extern unsigned long rtc_read_hw_time(void); */
 
 
 struct battery_custom_data batt_cust_data;
@@ -2739,7 +2733,7 @@ void dod_init(void)
 #if defined(CONFIG_POWER_EXT)
 	g_rtc_fg_soc = gFG_capacity_by_v;
 #else
-	g_rtc_fg_soc = gFG_capacity_by_v; /* get_rtc_spare_fg_value(); need fix */
+	g_rtc_fg_soc = get_rtc_spare_fg_value();
 #endif
 
 
@@ -2803,8 +2797,8 @@ if (((g_rtc_fg_soc != 0)
 	      || (abs(gFG_capacity_by_v_init - g_rtc_fg_soc) <
 		  abs(gFG_capacity_by_v - gFG_capacity_by_v_init))))
 	    || ((g_rtc_fg_soc != 0)
-		&& (g_boot_reason == BR_WDT_BY_PASS_PWK || g_boot_reason == BR_WDT
-		    || g_boot_reason == BR_TOOL_BY_PASS_PWK || g_boot_reason == BR_2SEC_REBOOT
+		&& (get_boot_reason() == BR_WDT_BY_PASS_PWK || get_boot_reason() == BR_WDT
+		    || get_boot_reason() == BR_TOOL_BY_PASS_PWK || get_boot_reason() == BR_2SEC_REBOOT
 		    || get_boot_mode() == RECOVERY_BOOT)))
 #else
 if (((g_rtc_fg_soc != 0)
@@ -2815,8 +2809,8 @@ if (((g_rtc_fg_soc != 0)
 	     ((gFG_capacity_by_v > batt_meter_cust_data.cust_poweron_low_capacity_tolrance
 	       || bat_is_charger_exist() == KAL_TRUE)))
 	    || ((g_rtc_fg_soc != 0)
-		&& (g_boot_reason == BR_WDT_BY_PASS_PWK || g_boot_reason == BR_WDT
-		    || g_boot_reason == BR_TOOL_BY_PASS_PWK || g_boot_reason == BR_2SEC_REBOOT
+		&& (get_boot_reason() == BR_WDT_BY_PASS_PWK || get_boot_reason() == BR_WDT
+		    || get_boot_reason() == BR_TOOL_BY_PASS_PWK || get_boot_reason() == BR_2SEC_REBOOT
 		    || get_boot_mode() == RECOVERY_BOOT)))
 #endif
 	{
@@ -2833,8 +2827,8 @@ if (((g_rtc_fg_soc != 0)
 	     ((gFG_capacity_by_v > batt_meter_cust_data.cust_poweron_low_capacity_tolrance
 	       || bat_is_charger_exist() == KAL_TRUE)))
 	    || ((g_rtc_fg_soc != 0)
-		&& (g_boot_reason == BR_WDT_BY_PASS_PWK || g_boot_reason == BR_WDT
-		    || g_boot_reason == BR_TOOL_BY_PASS_PWK || g_boot_reason == BR_2SEC_REBOOT
+		&& (get_boot_reason() == BR_WDT_BY_PASS_PWK || get_boot_reason() == BR_WDT
+		    || get_boot_reason() == BR_TOOL_BY_PASS_PWK || get_boot_reason() == BR_2SEC_REBOOT
 		    || get_boot_mode() == RECOVERY_BOOT))) {
 		gFG_capacity_by_v = g_rtc_fg_soc;
 	}

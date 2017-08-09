@@ -175,4 +175,6 @@ extern unsigned int pmic_get_vbif28_volt(void);
 extern bool hwPowerOn(MT65XX_POWER powerId, int voltage_uv, char *mode_name);
 extern bool hwPowerDown(MT65XX_POWER powerId, char *mode_name);
 
+extern int get_battery_plug_out_status(void);
+
 #endif				/* _MT_PMIC_COMMON_H_ */

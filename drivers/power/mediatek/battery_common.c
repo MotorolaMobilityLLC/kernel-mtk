@@ -60,6 +60,7 @@
 #include <asm/irq.h>
 
 #include <mt-plat/mt_boot.h>
+#include <mt-plat/mtk_rtc.h>
 
 #include <mach/mt_charging.h>
 #include <mt-plat/upmu_common.h>
@@ -305,24 +306,7 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_adjust_power,
 };
 
-/*
-*  extern function
-*/
-/* extern void mt_power_off(void); */
-/*extern bool mt_usb_is_device(void);
-#if defined(CONFIG_USB_MTK_HDRC) || defined(CONFIG_USB_MU3D_DRV)
-extern void mt_usb_connect(void);
-extern void mt_usb_disconnect(void);
-#else
-#define mt_usb_connect() do { } while (0)
-#define mt_usb_disconnect() do { } while (0)
-#endif*/
-/* extern int set_rtc_spare_fg_value(int val);
 
-#if defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
-extern void battery_meter_set_reset_soc(kal_bool bUSE_UI_SOC);
-extern signed int battery_meter_get_battery_soc(void);
-#endif*/
 
 /*void check_battery_exist(void);*/
 void charging_suspend_enable(void)
@@ -1891,12 +1875,11 @@ static void battery_update(struct battery_data *bat_data)
 		    BMT_status.UI_SOC, resetBatteryMeter);
 
 #if !defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
-	/* set RTC SOC to 1 to avoid SOC jump in charger boot.
+	/* set RTC SOC to 1 to avoid SOC jump in charger boot.*/
 	if (BMT_status.UI_SOC <= 1)
 		set_rtc_spare_fg_value(1);
 	else
 		set_rtc_spare_fg_value(BMT_status.UI_SOC);
-		*/
 
 #else
 	/* We store capacity before loading compenstation in RTC */
