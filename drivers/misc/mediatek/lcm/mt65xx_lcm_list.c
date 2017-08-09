@@ -939,7 +939,7 @@ unsigned char lcm_name_list[][128] = {
 #endif
 
 #if defined(OTM9608_QHD_DSI_CMD)
-	"otm9608_qhd_dsi_cmd",
+	"otm9608a_qhd_dsi_cmd",
 #endif
 };
 #endif
