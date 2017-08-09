@@ -243,6 +243,177 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		#size-cells = <1>;
 		ranges = <0 0 0 0xffffffff>;
 
+
+		dispsys: dispsys@14007000 {
+			compatible = "mediatek,mt6735-dispsys";
+
+			reg = <0x14007000 0x1000>,  /*DISP_OVL0      */
+			      <0 0>,		    /*DISP_OVL1      */
+			      <0x14008000 0x1000>,  /*DISP_RDMA0     */
+			      <0x14009000 0x1000>,  /*DISP_RDMA1     */
+			      <0x1400A000 0x1000>,  /*DISP_WDMA0     */
+			      <0x1400B000 0x1000>,  /*DISP_COLOR     */
+			      <0x1400C000 0x1000>,  /*DISP_CCORR     */
+			      <0x1400D000 0x1000>,  /*DISP_AAL       */
+			      <0x1400E000 0x1000>,  /*DISP_GAMMA     */
+			      <0x1400F000 0x1000>,  /*DISP_DITHER    */
+			      <0 0>,		    /*DISP_UFOE      */
+			      <0x1100E000 0x1000>,  /*DISP_PWM       */
+			      <0 0>,		    /*DISP_WDMA1     */
+			      <0x14014000 0x1000>,  /*DISP_MUTEX     */
+			      <0x14011000 0x1000>,  /*DISP_DSI0      */
+			      <0x14012000 0x1000>,  /*DISP_DPI0      */
+			      <0x14000000 0x1000>,  /*DISP_CONFIG    */
+			      <0x14015000 0x1000>,  /*DISP_SMI_LARB0 */
+			      <0x14016000 0x1000>,  /*DISP_SMI_COMMOM*/
+			      <0x14017000 0x1000>,  /*MIPITX0,real chip would use this:<0x14017000 0x1000>;*/
+			      <0x10206000 0x1000>,  /*DISP_CONFIG2*/
+			      <0x10210000 0x1000>,  /*DISP_CONFIG3*/
+			      <0x10211A70 0x000C>,  /*DISP_DPI_IO_DRIVING1 */
+			      <0x10211974 0x000C>,  /*DISP_DPI_IO_DRIVING2 */
+			      <0x10211B70 0x000C>,  /*DISP_DPI_IO_DRIVING3 */
+			      <0x10206044 0x000C>,  /*DISP_DPI_EFUSE */
+			      <0x10206514 0x000C>,  /*DISP_DPI_EFUSE_PERMISSION */
+			      <0x10206558 0x000C>,  /*DISP_DPI_EFUSE_KEY */
+			      <0x102100A0 0x1000>,  /*DISP_TVDPLL_CFG6 */
+			      <0x10209270 0x1000>,  /*DISP_TVDPLL_CON0 */
+			      <0x10209274 0x1000>,  /*DISP_TVDPLL_CON1 */
+			      <0 0>;		    /*DISP_OD      */
+
+			interrupts = <GIC_SPI 193 IRQ_TYPE_LEVEL_LOW>, /*DISP_OVL0 */
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_OVL1 */
+				     <GIC_SPI 194 IRQ_TYPE_LEVEL_LOW>, /*DISP_RDMA0 */
+				     <GIC_SPI 195 IRQ_TYPE_LEVEL_LOW>, /*DISP_RDMA1 */
+				     <GIC_SPI 196 IRQ_TYPE_LEVEL_LOW>, /*DISP_WDMA0 */
+				     <GIC_SPI 197 IRQ_TYPE_LEVEL_LOW>, /*DISP_COLOR */
+				     <GIC_SPI 198 IRQ_TYPE_LEVEL_LOW>, /*DISP_CCORR */
+				     <GIC_SPI 199 IRQ_TYPE_LEVEL_LOW>, /*DISP_AAL */
+				     <GIC_SPI 200 IRQ_TYPE_LEVEL_LOW>, /*DISP_GAMMA */
+				     <GIC_SPI 201 IRQ_TYPE_LEVEL_LOW>, /*DISP_DITHER */
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_UFOE */
+				     <GIC_SPI 117 IRQ_TYPE_LEVEL_LOW>, /*DISP_PWM */
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_WDMA1 */
+				     <GIC_SPI 186 IRQ_TYPE_LEVEL_LOW>, /*DISP_MUTEX */
+				     <GIC_SPI 203 IRQ_TYPE_LEVEL_LOW>, /*DISP_DSI0 */
+				     <GIC_SPI 204 IRQ_TYPE_LEVEL_LOW>, /*DISP_DPI0 */
+				     <GIC_SPI 205 IRQ_TYPE_LEVEL_LOW>, /*DISP_CONFIG, 0 means no IRQ*/
+				     <GIC_SPI 176 IRQ_TYPE_LEVEL_LOW>, /*DISP_SMI_LARB0 */
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_SMI_COMMOM*/
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*MIPITX0 */
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_CONFIG2*/
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_CONFIG3*/
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_DPI_IO_DRIVING */
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_TVDPLL_CFG6 */
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_TVDPLL_CON0 */
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_TVDPLL_CON1 */
+				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;   /*DISP_OD      */
+
+			clocks = <&mmsys MM_DISP0_SMI_COMMON>,
+				 <&mmsys MM_DISP0_SMI_LARB0>,
+				 <&mmsys MM_DISP0_DISP_OVL0>,
+				 <&mmsys MM_DISP0_DISP_RDMA0>,
+				 <&mmsys MM_DISP0_DISP_RDMA1>,
+				 <&mmsys MM_DISP0_DISP_WDMA0>,
+				 <&mmsys MM_DISP0_DISP_COLOR>,
+				 <&mmsys MM_DISP0_DISP_CCORR>,
+				 <&mmsys MM_DISP0_DISP_AAL>,
+				 <&mmsys MM_DISP0_DISP_GAMMA>,
+				 <&mmsys MM_DISP0_DISP_DITHER>,
+				 <&mmsys MM_DISP1_DSI_ENGINE>,
+				 <&mmsys MM_DISP1_DSI_DIGITAL>,
+				 <&mmsys MM_DISP1_DPI_ENGINE>,
+				 <&mmsys MM_DISP1_DPI_PIXEL>,
+				 <&perisys PERI_DISP_PWM>,
+				 <&topckgen TOP_MUX_DPI0>,
+				 <&topckgen TOP_TVDPLL_CK>,
+				 <&topckgen TOP_TVDPLL_D2>,
+				 <&topckgen TOP_DPI_CK>,
+				 <&scpsys SCP_SYS_DIS>;
+
+			clock-names = "DISP0_SMI_COMMON",
+				      "DISP0_SMI_LARB0",
+				      "DISP0_DISP_OVL0",
+				      "DISP0_DISP_RDMA0",
+				      "DISP0_DISP_RDMA1",
+				      "DISP0_DISP_WDMA0",
+				      "DISP0_DISP_COLOR",
+				      "DISP0_DISP_CCORR",
+				      "DISP0_DISP_AAL",
+				      "DISP0_DISP_GAMMA",
+				      "DISP0_DISP_DITHER",
+				      "DISP1_DSI_ENGINE",
+				      "DISP1_DSI_DIGITAL",
+				      "DISP1_DPI_ENGINE",
+				      "DISP1_DPI_PIXEL",
+				      "DISP_PWM",
+				      "MUX_DPI0",
+				      "TVDPLL_CK",
+				      "TVDPLL_D2",
+				      "DPI_CK",
+				      "DISP_MTCMOS_CLK";
+		};
+
+
+		topckgen: topckgen@10210000 {
+			compatible = "mediatek,mt6735-topckgen";
+			reg = <0x10210000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+
+		infrasys: infrasys@10000000 {
+			compatible = "mediatek,mt6735-infrasys";
+			reg = <0x10000000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+
+		perisys: perisys@10002000 {
+			compatible = "mediatek,mt6735-perisys";
+			reg = <0x10002000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+
+		mfgsys: mfgsys@13000000 {
+			compatible = "mediatek,mt6735-mfgsys";
+			reg = <0x13000000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+
+		imgsys: imgsys@15000000 {
+			compatible = "mediatek,mt6735-imgsys";
+			reg = <0x15000000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		mmsys: mmsys@14000000 {
+			compatible = "mediatek,mt6735-mmsys";
+			reg = <0x14000000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		vdecsys: vdecsys@16000000 {
+			compatible = "mediatek,mt6735-vdecsys";
+			reg = <0x16000000 0x1000>;
+			interrupts = <GIC_SPI 179 IRQ_TYPE_LEVEL_LOW>;
+			#clock-cells = <1>;
+		};
+
+		vencsys: vencsys@17000000 {
+			compatible = "mediatek,mt6735-vencsys";
+			reg = <0x17000000 0x1000>;
+			interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
+			#clock-cells = <1>;
+		};
+
+		audiosys: audiosys@11220000 {
+			compatible = "mediatek,mt6735-audiosys";
+			reg = <0x11220000 0x10000>;
+			#clock-cells = <1>;
+		};
+
 		chipid@08000000 {
 			compatible = "mediatek,chipid";
 			reg =	<0x08000000 0x0004>,
@@ -251,11 +422,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				<0x0800000C 0x0004>;
 		};
 
-		infrasys: infrasys@10000000 {
-			compatible = "mediatek,mt6735-infrasys";
-			reg = <0x10000000 0x1000>;
-			#clock-cells = <1>;
-		};
 
 		scpsys: scpsys@10000000 {
 			compatible = "mediatek,mt6735-scpsys";
@@ -287,11 +453,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x10002000 0x1000>;
 		};
 
-		perisys: perisys@10002000 {
-			compatible = "mediatek,mt6735-perisys";
-			reg = <0x10002000 0x1000>;
-			#clock-cells = <1>;
-		};
 
 		keypad: keypad@10003000 {
 			compatible = "mediatek,mt6735-keypad";
@@ -440,11 +601,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x1020e000 0x1000>;
 		};
 
-		topckgen: topckgen@10210000 {
-			compatible = "mediatek,mt6735-topckgen";
-			reg = <0x10210000 0x1000>;
-			#clock-cells = <1>;
-		};
 
 		cksys@10210000 {
 			compatible = "mediatek,cksys";
@@ -923,11 +1079,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		audiosys: audiosys@11220000 {
-			compatible = "mediatek,mt6735-audiosys";
-			reg = <0x11220000 0x10000>;
-			#clock-cells = <1>;
-		};
 
 		audgpio:mt_soc_dl1_pcm@11220000 {
 			compatible = "mediatek,mt-soc-dl1-pcm";
@@ -984,11 +1135,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			i2s1ws-gpio = <79 0>;
 		};
 
-		mfgsys: mfgsys@13000000 {
-			compatible = "mediatek,mt6735-mfgsys";
-			reg = <0x13000000 0x1000>;
-			#clock-cells = <1>;
-		};
 
 		g3d_config@13000000 {
 			compatible = "mediatek,g3d_config";
@@ -1010,11 +1156,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "mfg-main", "mfg-smi-common", "mtcmos-mfg", "mtcmos-display";
 		};
 
-		mmsys: mmsys@14000000 {
-			compatible = "mediatek,mt6735-mmsys";
-			reg = <0x14000000 0x1000>;
-			#clock-cells = <1>;
-		};
 
 		mmsys_config@14000000 {
 			compatible = "mediatek,mmsys_config";
@@ -1127,115 +1268,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				"venc-venc";
 		};
 
-		dispsys: dispsys@14007000 {
-			compatible = "mediatek,mt6735-dispsys";
-
-			reg = <0x14007000 0x1000>,  /*DISP_OVL0      */
-			      <0 0>,		    /*DISP_OVL1      */
-			      <0x14008000 0x1000>,  /*DISP_RDMA0     */
-			      <0x14009000 0x1000>,  /*DISP_RDMA1     */
-			      <0x1400A000 0x1000>,  /*DISP_WDMA0     */
-			      <0x1400B000 0x1000>,  /*DISP_COLOR     */
-			      <0x1400C000 0x1000>,  /*DISP_CCORR     */
-			      <0x1400D000 0x1000>,  /*DISP_AAL       */
-			      <0x1400E000 0x1000>,  /*DISP_GAMMA     */
-			      <0x1400F000 0x1000>,  /*DISP_DITHER    */
-			      <0 0>,		    /*DISP_UFOE      */
-			      <0x1100E000 0x1000>,  /*DISP_PWM       */
-			      <0 0>,		    /*DISP_WDMA1     */
-			      <0x14014000 0x1000>,  /*DISP_MUTEX     */
-			      <0x14011000 0x1000>,  /*DISP_DSI0      */
-			      <0x14012000 0x1000>,  /*DISP_DPI0      */
-			      <0x14000000 0x1000>,  /*DISP_CONFIG    */
-			      <0x14015000 0x1000>,  /*DISP_SMI_LARB0 */
-			      <0x14016000 0x1000>,  /*DISP_SMI_COMMOM*/
-			      <0x14017000 0x1000>,  /*MIPITX0,real chip would use this:<0x14017000 0x1000>;*/
-			      <0x10206000 0x1000>,  /*DISP_CONFIG2*/
-			      <0x10210000 0x1000>,  /*DISP_CONFIG3*/
-			      <0x10211A70 0x000C>,  /*DISP_DPI_IO_DRIVING1 */
-			      <0x10211974 0x000C>,  /*DISP_DPI_IO_DRIVING2 */
-			      <0x10211B70 0x000C>,  /*DISP_DPI_IO_DRIVING3 */
-			      <0x10206044 0x000C>,  /*DISP_DPI_EFUSE */
-			      <0x10206514 0x000C>,  /*DISP_DPI_EFUSE_PERMISSION */
-			      <0x10206558 0x000C>,  /*DISP_DPI_EFUSE_KEY */
-			      <0x102100A0 0x1000>,  /*DISP_TVDPLL_CFG6 */
-			      <0x10209270 0x1000>,  /*DISP_TVDPLL_CON0 */
-			      <0x10209274 0x1000>,  /*DISP_TVDPLL_CON1 */
-			      <0 0>;		    /*DISP_OD      */
-
-			interrupts = <GIC_SPI 193 IRQ_TYPE_LEVEL_LOW>, /*DISP_OVL0 */
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_OVL1 */
-				     <GIC_SPI 194 IRQ_TYPE_LEVEL_LOW>, /*DISP_RDMA0 */
-				     <GIC_SPI 195 IRQ_TYPE_LEVEL_LOW>, /*DISP_RDMA1 */
-				     <GIC_SPI 196 IRQ_TYPE_LEVEL_LOW>, /*DISP_WDMA0 */
-				     <GIC_SPI 197 IRQ_TYPE_LEVEL_LOW>, /*DISP_COLOR */
-				     <GIC_SPI 198 IRQ_TYPE_LEVEL_LOW>, /*DISP_CCORR */
-				     <GIC_SPI 199 IRQ_TYPE_LEVEL_LOW>, /*DISP_AAL */
-				     <GIC_SPI 200 IRQ_TYPE_LEVEL_LOW>, /*DISP_GAMMA */
-				     <GIC_SPI 201 IRQ_TYPE_LEVEL_LOW>, /*DISP_DITHER */
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_UFOE */
-				     <GIC_SPI 117 IRQ_TYPE_LEVEL_LOW>, /*DISP_PWM */
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_WDMA1 */
-				     <GIC_SPI 186 IRQ_TYPE_LEVEL_LOW>, /*DISP_MUTEX */
-				     <GIC_SPI 203 IRQ_TYPE_LEVEL_LOW>, /*DISP_DSI0 */
-				     <GIC_SPI 204 IRQ_TYPE_LEVEL_LOW>, /*DISP_DPI0 */
-				     <GIC_SPI 205 IRQ_TYPE_LEVEL_LOW>, /*DISP_CONFIG, 0 means no IRQ*/
-				     <GIC_SPI 176 IRQ_TYPE_LEVEL_LOW>, /*DISP_SMI_LARB0 */
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_SMI_COMMOM*/
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*MIPITX0 */
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_CONFIG2*/
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_CONFIG3*/
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_DPI_IO_DRIVING */
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_TVDPLL_CFG6 */
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_TVDPLL_CON0 */
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>,   /*DISP_TVDPLL_CON1 */
-				     <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;   /*DISP_OD      */
-
-			clocks = <&mmsys MM_DISP0_SMI_COMMON>,
-				 <&mmsys MM_DISP0_SMI_LARB0>,
-				 <&mmsys MM_DISP0_DISP_OVL0>,
-				 <&mmsys MM_DISP0_DISP_RDMA0>,
-				 <&mmsys MM_DISP0_DISP_RDMA1>,
-				 <&mmsys MM_DISP0_DISP_WDMA0>,
-				 <&mmsys MM_DISP0_DISP_COLOR>,
-				 <&mmsys MM_DISP0_DISP_CCORR>,
-				 <&mmsys MM_DISP0_DISP_AAL>,
-				 <&mmsys MM_DISP0_DISP_GAMMA>,
-				 <&mmsys MM_DISP0_DISP_DITHER>,
-				 <&mmsys MM_DISP1_DSI_ENGINE>,
-				 <&mmsys MM_DISP1_DSI_DIGITAL>,
-				 <&mmsys MM_DISP1_DPI_ENGINE>,
-				 <&mmsys MM_DISP1_DPI_PIXEL>,
-				 <&perisys PERI_DISP_PWM>,
-				 <&topckgen TOP_MUX_DPI0>,
-				 <&topckgen TOP_TVDPLL_CK>,
-				 <&topckgen TOP_TVDPLL_D2>,
-				 <&topckgen TOP_DPI_CK>,
-				 <&scpsys SCP_SYS_DIS>;
-
-			clock-names = "DISP0_SMI_COMMON",
-				      "DISP0_SMI_LARB0",
-				      "DISP0_DISP_OVL0",
-				      "DISP0_DISP_RDMA0",
-				      "DISP0_DISP_RDMA1",
-				      "DISP0_DISP_WDMA0",
-				      "DISP0_DISP_COLOR",
-				      "DISP0_DISP_CCORR",
-				      "DISP0_DISP_AAL",
-				      "DISP0_DISP_GAMMA",
-				      "DISP0_DISP_DITHER",
-				      "DISP1_DSI_ENGINE",
-				      "DISP1_DSI_DIGITAL",
-				      "DISP1_DPI_ENGINE",
-				      "DISP1_DPI_PIXEL",
-				      "DISP_PWM",
-				      "MUX_DPI0",
-				      "TVDPLL_CK",
-				      "TVDPLL_D2",
-				      "DPI_CK",
-				      "DISP_MTCMOS_CLK";
-		};
-
 		ispsys@15000000 {
 			compatible = "mediatek,mt6735-ispsys";
 			reg = <0x15004000 0x9000>,  /*ISP_ADDR      */
@@ -1271,11 +1303,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				"CG_IMAGE_LARB2_SMI";
 		};
 
-		imgsys: imgsys@15000000 {
-			compatible = "mediatek,mt6735-imgsys";
-			reg = <0x15000000 0x1000>;
-			#clock-cells = <1>;
-		};
 
 		smi_larb2@15001000 {
 			compatible = "mediatek,smi_larb2";
@@ -1317,12 +1344,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 						"FD-IMG_IMAGE_FD";
 		};
 
-		vdecsys: vdecsys@16000000 {
-			compatible = "mediatek,mt6735-vdecsys";
-			reg = <0x16000000 0x1000>;
-			interrupts = <GIC_SPI 179 IRQ_TYPE_LEVEL_LOW>;
-			#clock-cells = <1>;
-		};
 
 		vdec_gcon: vdec_gcon@16000000 {
 			compatible = "mediatek,mt6735-vdec_gcon";
@@ -1366,12 +1387,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 179 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		vencsys: vencsys@17000000 {
-			compatible = "mediatek,mt6735-vencsys";
-			reg = <0x17000000 0x1000>;
-			interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
-			#clock-cells = <1>;
-		};
 
 		venc_gcon: venc_gcon@17000000 {
 			compatible = "mediatek,mt6735-venc_gcon";
