@@ -48,10 +48,11 @@
 #define PSCI_POWER_STATE_TYPE_POWER_DOWN	1
 
 #ifdef CONFIG_ARCH_MT6797
+#define MT6797_SPM_BASE_ADDR		0x10006000
+#define MT6797_WDT_BASE_ADDR		0x10007000
 #define MT6797_IDVFS_BASE_ADDR		0x10222000
 
 #define CONFIG_CL2_BUCK_CTRL	1
- #undef CONFIG_CL2_BUCK_CTRL
 #define CONFIG_ARMPLL_CTRL	1
  #undef CONFIG_ARMPLL_CTRL
 #define CONFIG_OCP_IDVFS_CTRL	1
@@ -485,19 +486,45 @@ static int __init cpu_psci_cpu_prepare(unsigned int cpu)
 
 #ifdef CONFIG_ARCH_MT6797
 #ifdef CONFIG_CL2_BUCK_CTRL
-static int cpu_power_on_buck(unsigned int cpu)
+static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 {
 	static void __iomem *reg_base;
+	unsigned int temp;
 	int ret = 0;
+
+	pr_info("cpu_power_on_buck\n");
+	reg_base = ioremap(MT6797_SPM_BASE_ADDR, 0x1000);
+	writel_relaxed((readl(reg_base + 0x218) | (1 << 0)), reg_base + 0x218);
+	iounmap(reg_base);
+
+	/* latch RESET */
+	reg_base = ioremap(MT6797_WDT_BASE_ADDR, 0x1000);
+	writel_relaxed((readl(reg_base + 0x018) | 0x88000800), reg_base + 0x018);
+	iounmap(reg_base);
+
+	if (hotplug) {
+		pr_info("power on vproc\n");
+		ret = da9214_config_interface(0x0, 0x0, 0xF, 0);
+		ret = da9214_config_interface(0x5E, 0x1, 0x1, 0);
+
+		mdelay(10);
+	}
+
+	/* EXT_BUCK_ISO */
+	reg_base = ioremap(MT6797_SPM_BASE_ADDR, 0x1000);
+	writel_relaxed((readl(reg_base + 0x290) & ~(0x3)), reg_base + 0x290);
+	iounmap(reg_base);
+
+	/* unlatch RESET */
+	reg_base = ioremap(MT6797_WDT_BASE_ADDR, 0x1000);
+	temp = (readl(reg_base + 0x018) & ~(0x0800)) | 0x88000000;
+	writel_relaxed(temp, reg_base + 0x018);
+	iounmap(reg_base);
 
 	pr_info("power on vsram (%d) (max:%d)\n", cpu, num_possible_cpus());
 	reg_base = ioremap(MT6797_IDVFS_BASE_ADDR, 0x1000);
-	writel_relaxed((readl(reg_base + 0x02B0) | (0xf << 4)), reg_base + 0x02B0);
+	writel_relaxed((readl(reg_base + 0x2b0) | (0xf << 4)), reg_base + 0x2b0);
 	iounmap(reg_base);
-
-	pr_info("power on vproc\n");
-	ret = da9214_config_interface(0x0, 0x0, 0xF, 0);
-	ret = da9214_config_interface(0x5E, 0x1, 0x1, 0);
 
 	return ret;
 }
@@ -566,12 +593,16 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 		}
 	} else if ((cpu == 8) || (cpu == 9)) {
 		if (bypass_boot > 0) {
+#ifdef CONFIG_CL2_BUCK_CTRL
+			if (!g_cl2_online)
+				cpu_power_on_buck(cpu, 0);
+#endif
 			bypass_boot--;
 		} else {
 			if (!g_cl2_online) {
 				pr_info("boot cluster2\n");
 #ifdef CONFIG_CL2_BUCK_CTRL
-				cpu_power_on_buck(cpu);
+				cpu_power_on_buck(cpu, 1);
 #endif
 			}
 		}
