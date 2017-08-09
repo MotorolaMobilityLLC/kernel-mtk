@@ -654,8 +654,12 @@ static kal_uint16 set_gain(kal_uint16 gain)
     LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
 
 	write_cmos_sensor(0x0104, 0x01);
+    /* Global analog Gain for Long expo*/
     write_cmos_sensor(0x0204, (reg_gain>>8)& 0xFF);
-	write_cmos_sensor(0x0205, reg_gain & 0xFF);
+    write_cmos_sensor(0x0205, reg_gain & 0xFF);
+    /* Global analog Gain for Short expo*/
+    write_cmos_sensor(0x0216, (reg_gain>>8)& 0xFF);
+    write_cmos_sensor(0x0217, reg_gain & 0xFF);
     write_cmos_sensor(0x0104, 0x00);
 
     return gain;
@@ -711,6 +715,48 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
     /* Global analog Gain for Short expo*/
     write_cmos_sensor(0x0216, (reg_gain>>8)& 0xFF);
     write_cmos_sensor(0x0217, reg_gain & 0xFF);
+    write_cmos_sensor(0x0104, 0x00);
+
+}
+
+static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
+{
+    kal_uint16 realtime_fps = 0;
+    LOG_INF("le:0x%x, se:0x%x\n",le,se);
+    spin_lock(&imgsensor_drv_lock);
+    if (le > imgsensor.min_frame_length - imgsensor_info.margin)
+        imgsensor.frame_length = le + imgsensor_info.margin;
+    else
+        imgsensor.frame_length = imgsensor.min_frame_length;
+    if (imgsensor.frame_length > imgsensor_info.max_frame_length)
+        imgsensor.frame_length = imgsensor_info.max_frame_length;
+    spin_unlock(&imgsensor_drv_lock);
+    if (le < imgsensor_info.min_shutter) le = imgsensor_info.min_shutter;
+    if (imgsensor.autoflicker_en) {
+        realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
+        if(realtime_fps >= 297 && realtime_fps <= 305)
+            set_max_framerate(296,0);
+        else if(realtime_fps >= 147 && realtime_fps <= 150)
+            set_max_framerate(146,0);
+        else {
+        write_cmos_sensor(0x0104, 0x01);
+        write_cmos_sensor(0x0340, imgsensor.frame_length >> 8);
+        write_cmos_sensor(0x0341, imgsensor.frame_length & 0xFF);
+        write_cmos_sensor(0x0104, 0x00);
+        }
+    } else {
+        write_cmos_sensor(0x0104, 0x01);
+        write_cmos_sensor(0x0340, imgsensor.frame_length >> 8);
+        write_cmos_sensor(0x0341, imgsensor.frame_length & 0xFF);
+        write_cmos_sensor(0x0104, 0x00);
+    }
+    write_cmos_sensor(0x0104, 0x01);
+    /* Long exposure */
+    write_cmos_sensor(0x0202, (le >> 8) & 0xFF);
+    write_cmos_sensor(0x0203, le  & 0xFF);
+    /* Short exposure */
+    write_cmos_sensor(0x0224, (se >> 8) & 0xFF);
+    write_cmos_sensor(0x0225, se  & 0xFF);
     write_cmos_sensor(0x0104, 0x00);
 
 }
@@ -3332,6 +3378,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
             LOG_INF("SENSOR_FEATURE_SET_IMX230_PDFOCUS_AREA Start Pos=%d, Size=%d\n",(UINT32)*feature_data,(UINT32)*(feature_data+1));
             imx230_set_pd_focus_area(*feature_data,*(feature_data+1));
 			break;
+		case SENSOR_FEATURE_SET_HDR_SHUTTER:
+            LOG_INF("SENSOR_FEATURE_SET_HDR_SHUTTER LE=%d, SE=%d\n",(UINT16)*feature_data,(UINT16)*(feature_data+1));
+            hdr_write_shutter((UINT16)*feature_data,(UINT16)*(feature_data+1));
+            break;
         default:
             break;
     }
