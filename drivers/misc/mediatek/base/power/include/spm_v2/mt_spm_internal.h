@@ -19,6 +19,7 @@
 #include <linux/atomic.h>
 #include <linux/io.h>
 #include <mt-plat/aee.h>
+#include <mt-plat/mt_chip.h>
 
 #include "mt_clkbuf_ctl.h"
 #include "mt_spm.h"
@@ -473,10 +474,24 @@ static inline void update_pwrctrl_pcm_flags(u32 *flags)
 
 static inline void set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags)
 {
+#if defined(CONFIG_ARCH_MT6797)
+	int segment_code = mt_get_chip_hw_ver();
+#endif
+
 	if (pwrctrl->pcm_flags_cust == 0)
 		pwrctrl->pcm_flags = flags;
 	else
 		pwrctrl->pcm_flags = pwrctrl->pcm_flags_cust;
+
+#if defined(CONFIG_ARCH_MT6797)
+	if (0xCA01 == segment_code) {
+		pwrctrl->pcm_flags |= SPM_FLAG_EN_SEGMENT_E2;
+		/* for E2*/
+	} else {
+		pwrctrl->pcm_flags &= ~SPM_FLAG_EN_SEGMENT_E2;
+		/* for E1*/
+	}
+#endif
 }
 
 static inline void set_pwrctrl_pcm_data(struct pwr_ctrl *pwrctrl, u32 data)

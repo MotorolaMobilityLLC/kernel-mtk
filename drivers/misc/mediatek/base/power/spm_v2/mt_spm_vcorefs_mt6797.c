@@ -103,6 +103,12 @@ static struct pwr_ctrl vcore_dvfs_ctrl = {
 	.md1_ddr_en_dvfs_halt_mask_b = 0,
 	.md2_ddr_en_dvfs_halt_mask_b = 0,
 
+	/* SPM_AP_STANDBY_CON */
+	.conn_mask_b = 0,	/* bit[26] */
+	.scp_req_mask_b = 0,	/* bit[21] */
+	.md2_req_mask_b = 1,	/* bit[20] */
+	.md1_req_mask_b = 1,	/* bit[19] */
+
 	.md_srcclkena_0_dvfs_req_mask_b = 0,
 	.md_srcclkena_1_dvfs_req_mask_b = 0,
 	.conn_srcclkena_dvfs_req_mask_b = 0,
@@ -303,7 +309,7 @@ void spm_vcorefs_screen_on_setting(int dvfs_mode, u32 md_dvfs_req)
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		BUG();
 	}
-	spm_write(CPU_DVFS_REQ, (spm_read(CPU_DVFS_REQ) & (~0xFFF)) | md_dvfs_req);
+	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & ~(1 << 4)) | md_dvfs_req << 4);
 	spm_write(SPM_CPU_WAKEUP_EVENT, 0);
 
 	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_CLEAN_WAKE_EVENT_DONE);
@@ -388,6 +394,7 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
 {
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl;
+
 #if DYNAMIC_LOAD
 	u32 vcorefs_idx = spm_get_pcm_vcorefs_index();
 

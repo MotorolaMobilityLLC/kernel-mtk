@@ -37,7 +37,13 @@
 #define SPM_FLAG_DIS_SRCCLKEN_LOW             (1U << 15)
 #define SPM_FLAG_DIS_SYSRAM_SLEEP             (1U << 16)
 #define SPM_FLAG_EN_HPM_SODI                  (1U << 17)
+
+#if defined(CONFIG_ARCH_MT6755)
 #define SPM_FLAG_DIS_MCDI_FLOW                (1U << 18)
+#elif defined(CONFIG_ARCH_MT6797)
+#define SPM_FLAG_EN_SEGMENT_E2                (1U << 18)
+#endif
+
 #define SPM_FLAG_NOT_USED_IN_EN_LPMP3_WITH_DMA   (1U << 19)
 #define SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL        (1U << 20)
 #define SPM_FLAG_EN_CONN_CLOCK_BUF_CTRL       (1U << 21)

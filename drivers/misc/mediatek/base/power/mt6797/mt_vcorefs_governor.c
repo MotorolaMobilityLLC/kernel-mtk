@@ -143,7 +143,7 @@ static struct governor_profile governor_ctrl = {
 
 	.active_autok_kir = 0,
 	.autok_kir_group = ((1 << KIR_AUTOK_EMMC) | (1 << KIR_AUTOK_SD)),
-	.md_dvfs_req = 0x3fb,
+	.md_dvfs_req = 0x1,
 	.dvfs_timer = 0,
 
 	.curr_vcore_uv = VCORE_1_P_00_UV,
@@ -184,6 +184,7 @@ static char *kicker_name[] = {
 	"KIR_PERF",
 	"KIR_REESPI",
 	"KIR_TEESPI",
+	"KIR_SCP",
 	"KIR_SYSFS",
 	"NUM_KICKER",
 
@@ -304,6 +305,13 @@ bool is_vcorefs_feature_enable(void)
 	}
 
 	return gvrctrl->plat_feature_en;
+}
+
+bool is_vcorefs_dvfs_enable(void)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	return gvrctrl->vcore_dvs && gvrctrl->ddr_dfs;
 }
 
 bool vcorefs_get_screen_on_state(void)
@@ -700,18 +708,14 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 	gvrctrl->curr_vcore_uv = vcorefs_get_curr_vcore();
 	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
 
-	vcorefs_crit("opp: %d, vcore: %u(%u), fddr: %u(%u), screen_on: %u %s%s\n",
+	vcorefs_crit("opp: %d, vcore: %u(%u), fddr: %u(%u) %s%s\n",
 		     krconf->dvfs_opp,
 		     opp_ctrl_table[krconf->dvfs_opp].vcore_uv, gvrctrl->curr_vcore_uv,
 		     opp_ctrl_table[krconf->dvfs_opp].ddr_khz, gvrctrl->curr_ddr_khz,
-		     gvrctrl->screen_on,
 		     (gvrctrl->vcore_dvs) ? "[O]" : "[X]",
 		     (gvrctrl->ddr_dfs) ? "[O]" : "[X]");
 
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
-		return 0;
-
-	if (!gvrctrl->screen_on)
 		return 0;
 
 	timer = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->md_dvfs_req);
@@ -736,13 +740,12 @@ static int set_freq_with_opp(struct kicker_config *krconf)
 
 	gvrctrl->curr_axi_khz = ckgen_meter(1);
 
-	vcorefs_crit("opp: %d, faxi: %u(%u), screen_on: %u %s\n",
+	vcorefs_crit("opp: %d, faxi: %u(%u) %s\n",
 		     krconf->dvfs_opp,
 		     opp_ctrl_table[krconf->dvfs_opp].axi_khz, gvrctrl->curr_axi_khz,
-		     gvrctrl->screen_on,
 		     gvrctrl->freq_dfs ? "[O]" : "[X]");
 
-	if (!gvrctrl->freq_dfs || !gvrctrl->screen_on)
+	if (!gvrctrl->freq_dfs)
 		return 0;
 
 #if CCF_CONFIG

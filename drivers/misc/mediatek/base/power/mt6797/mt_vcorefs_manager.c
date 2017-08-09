@@ -242,12 +242,14 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 	struct kicker_config krconf;
-	int r;
+	int r, is_screen_on;
 	int is_autok, is_lock;
 
-	if (!feature_en || !pwrctrl->init_done) {
-		vcorefs_crit("feature_en: %d, init_done: %d, kr: %d, opp: %d\n",
-							feature_en, pwrctrl->init_done, kicker, opp);
+	is_screen_on = vcorefs_get_screen_on_state();
+
+	if (!feature_en || !pwrctrl->init_done || !is_screen_on) {
+		vcorefs_crit("feature_en: %d, init_done: %d, kr: %d, opp: %d, is_screen_on: %d\n",
+							feature_en, pwrctrl->init_done, kicker, opp, is_screen_on);
 		return -1;
 	}
 

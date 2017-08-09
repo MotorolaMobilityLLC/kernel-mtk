@@ -283,18 +283,22 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 {
 	u32 con1;
 	int retry = 0, timeout = 5000;
-	u32 save_r1, save_r15, save_pcm_sta, save_irq_sta;
+	u32 save_r1, save_r15, save_pcm_sta, save_irq_sta, dvfs_en;
 
 	/* [Vcorefs] backup r0 to POWER_ON_VAL0 for MEM Ctrl should work during PCM reset */
 	if (spm_read(PCM_REG1_DATA) == 0x1) {
 		if (!vcorefs_sodi_rekick_lock()) {
+			dvfs_en = !is_vcorefs_dvfs_enable();
 			save_r1  = spm_read(PCM_REG1_DATA);
 			save_r15 = spm_read(PCM_REG15_DATA);
 			save_pcm_sta = spm_read(PCM_FSM_STA);
 			save_irq_sta = spm_read(SPM_IRQ_STA);
 			con1 = spm_read(SPM_WAKEUP_EVENT_MASK);
 			spm_write(SPM_WAKEUP_EVENT_MASK, (con1 & ~(0x1)));
-			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (0x0)) | SPM_OFFLOAD);
+
+			/* don't change vcore and dram when dvfs enable reture false */
+			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & ~(1 << 7)) | (dvfs_en << 7));
+			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_OFFLOAD);
 			spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 
 			if (is_vcorefs_feature_enable()) {
@@ -322,7 +326,8 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 #endif
 			spm_write(SPM_CPU_WAKEUP_EVENT, 0);
 			spm_write(SPM_WAKEUP_EVENT_MASK, con1);
-			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (0x0)) | SPM_CLEAN_WAKE_EVENT_DONE);
+			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_CLEAN_WAKE_EVENT_DONE);
+			spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & ~(1 << 7)));
 		}
 
 		/* backup mem control from r0 to POWER_ON_VAL0 */

@@ -69,6 +69,7 @@ enum dvfs_kicker {
 	KIR_PERF,
 	KIR_REESPI,	/* From KERNEL */
 	KIR_TEESPI,	/* From SPI1 */
+	KIR_SCP,	/* For debug */
 	KIR_SYSFS,
 	NUM_KICKER,
 
@@ -117,6 +118,7 @@ extern int kicker_table[LAST_KICKER];
 
 /* Governor extern API */
 extern bool is_vcorefs_feature_enable(void);
+extern bool is_vcorefs_dvfs_enable(void);
 extern bool vcorefs_get_screen_on_state(void);
 extern int vcorefs_get_num_opp(void);
 extern int vcorefs_get_curr_opp(void);
