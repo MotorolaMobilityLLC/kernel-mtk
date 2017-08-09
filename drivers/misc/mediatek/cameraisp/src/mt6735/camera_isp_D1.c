@@ -7431,18 +7431,20 @@ static MINT32 ISP_ED_BufQue_CTRL_FUNC(ISP_ED_BUFQUE_STRUCT param)
 			ret = -EFAULT;
 			return ret;
 		} else {
-			IRQ_LOG_KEEPER(_CAMSV_D_IRQ, 0, _LOG_DBG,
-				       "pD(%d_0x%x) MF/L(%d,%d),(%d,%d),	RF/C/L(%d,%d,%d),(%d,%d,%d),dCq(%d)/Bq(%d)\n",
-				       param.processID, param.callerID,
-				       P2_EDBUF_MList_FirstBufIdx, P2_EDBUF_MList_LastBufIdx,
-				       P2_EDBUF_MgrList[P2_EDBUF_MList_FirstBufIdx].p2dupCQIdx,
-				       P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].p2dupCQIdx,
-				       P2_EDBUF_RList_FirstBufIdx, P2_EDBUF_RList_CurBufIdx,
-				       P2_EDBUF_RList_LastBufIdx,
-				       P2_EDBUF_RingList[P2_EDBUF_RList_FirstBufIdx].bufSts,
-				       P2_EDBUF_RingList[P2_EDBUF_RList_CurBufIdx].bufSts,
-				       P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].bufSts,
-				       param.p2dupCQIdx, param.p2burstQIdx);
+			if (P2_EDBUF_MList_LastBufIdx != -1) {
+				IRQ_LOG_KEEPER(_CAMSV_D_IRQ, 0, _LOG_DBG,
+					"pD(%d_0x%x) MF/L(%d,%d),(%d,%d),	RF/C/L(%d,%d,%d),(%d,%d,%d),dCq(%d)/Bq(%d)\n",
+						param.processID, param.callerID,
+						P2_EDBUF_MList_FirstBufIdx, P2_EDBUF_MList_LastBufIdx,
+						P2_EDBUF_MgrList[P2_EDBUF_MList_FirstBufIdx].p2dupCQIdx,
+						P2_EDBUF_MgrList[P2_EDBUF_MList_LastBufIdx].p2dupCQIdx,
+						P2_EDBUF_RList_FirstBufIdx, P2_EDBUF_RList_CurBufIdx,
+						P2_EDBUF_RList_LastBufIdx,
+						P2_EDBUF_RingList[P2_EDBUF_RList_FirstBufIdx].bufSts,
+						P2_EDBUF_RingList[P2_EDBUF_RList_CurBufIdx].bufSts,
+						P2_EDBUF_RingList[P2_EDBUF_RList_LastBufIdx].bufSts,
+						param.p2dupCQIdx, param.p2burstQIdx);
+			}
 			/* [2] add new element to the last of the list */
 			if (P2_EDBUF_RList_FirstBufIdx == P2_EDBUF_RList_LastBufIdx
 			    && P2_EDBUF_RingList[P2_EDBUF_RList_FirstBufIdx].bufSts ==
@@ -7581,6 +7583,12 @@ static MINT32 ISP_ED_BufQue_CTRL_FUNC(ISP_ED_BUFQUE_STRUCT param)
 		/* update the buffer status cuz deque success/fail may not be the first buffer in Rlist */
 		/* ////////////////////////////////////////////////////////////////////// */
 		idx2 = ISP_ED_BufQue_Get_FirstMatBuf(param, P2_EDBUF_RLIST_TAG, 1);
+		if (idx2 == -1) {
+			spin_unlock(&(SpinLockEDBufQueList));
+			LOG_ERR("ERRRRRRRRRRR findmatch	index fail");
+			ret = -EFAULT;
+			return ret;
+		}
 
 		if (param.ctrl == ISP_ED_BUFQUE_CTRL_DEQUE_SUCCESS)
 			P2_EDBUF_RingList[idx2].bufSts = ISP_ED_BUF_STATE_DEQUE_SUCCESS;
@@ -7599,12 +7607,6 @@ static MINT32 ISP_ED_BufQue_CTRL_FUNC(ISP_ED_BUFQUE_STRUCT param)
 		/* [3]update global     pointer */
 		ISP_ED_BufQue_Update_GPtr(P2_EDBUF_RLIST_TAG);
 		/* [4]erase     node in ring buffer     list */
-		if (idx2 == -1) {
-			spin_unlock(&(SpinLockEDBufQueList));
-			LOG_ERR("ERRRRRRRRRRR findmatch	index fail");
-			ret = -EFAULT;
-			return ret;
-		}
 		ISP_ED_BufQue_Erase(idx2, P2_EDBUF_RLIST_TAG);
 		spin_unlock(&(SpinLockEDBufQueList));
 		/* [5]wake up thread user that wait for a specific buffer and the thread that wait for deque */
@@ -12204,7 +12206,7 @@ EXPORT_SYMBOL(ISP_RegCallback);
 ********************************************************************************/
 MBOOL ISP_UnregCallback(ISP_CALLBACK_ENUM Type)
 {
-	if (Type > ISP_CALLBACK_AMOUNT) {
+	if (Type >= ISP_CALLBACK_AMOUNT) {
 		LOG_ERR("Type(%d) must smaller than %d", Type, ISP_CALLBACK_AMOUNT);
 		return MFALSE;
 	}
