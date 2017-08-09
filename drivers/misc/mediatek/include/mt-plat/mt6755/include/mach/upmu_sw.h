@@ -3,8 +3,10 @@
 #include <mach/upmu_hw.h>
 
 #define AUXADC_SUPPORT_IMM_CURRENT_MODE
-#define BATTERY_DTS_SUPPORT
+/*#define BATTERY_DTS_SUPPORT*/
 #define RBAT_PULL_UP_VOLT_BY_BIF
+#define BATTERY_SW_INIT
+
 
 #define FG_BAT_INT_H_NO 48
 #define FG_BAT_INT_L_NO 49
