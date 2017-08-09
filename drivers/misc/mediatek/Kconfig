@@ -1,0 +1,14 @@
+menuconfig MEDIATEK_SOLUTION
+	bool "MediaTek Properitary Configuration"
+	help
+	  Check this to enable MediaTek properity configuration.
+
+if MEDIATEK_SOLUTION
+
+config MTK_PLATFORM
+	string "MTK platform name"
+
+config ARCH_MTK_PROJECT
+	string "MTK project name"
+
+endif
