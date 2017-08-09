@@ -36,6 +36,10 @@ struct mtk_irq_mask {
 	__u32 mask6;
 	__u32 mask7;
 	__u32 mask8;
+	__u32 mask9;
+	__u32 mask10;
+	__u32 mask11;
+	__u32 mask12;
 	unsigned int footer;	/* for error checking */
 };
 

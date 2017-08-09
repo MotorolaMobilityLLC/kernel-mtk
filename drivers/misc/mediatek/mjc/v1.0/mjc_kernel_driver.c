@@ -1086,8 +1086,7 @@ static int mjc_pm_restore_noirq(struct device *device)
 {
 	/* IRQF_TRIGGER_LOW */
 	/* Gary todo */
-	mt_irq_set_sens(gi4IrqID, MT_LEVEL_SENSITIVE);
-	mt_irq_set_polarity(gi4IrqID, MT_POLARITY_LOW);
+	irq_set_irq_type(gi4IrqID, IRQF_TRIGGER_LOW);
 
 	return 0;
 }

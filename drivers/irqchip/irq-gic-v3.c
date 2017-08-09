@@ -34,6 +34,7 @@
 #include "irq-gic-common.h"
 #include "irqchip.h"
 
+#include <mach/mt_secure_api.h>
 #define IOMEM(x)        ((void __force __iomem *)(x))
 
 struct gic_chip_data {
@@ -232,7 +233,6 @@ static void gic_eoi_irq(struct irq_data *d)
 }
 
 void __iomem *INT_POL_CTL_REG;
-phys_addr_t INT_POL_CTL_phys;
 
 __weak void _mt_set_pol_reg(u32 reg_index, u32 value)
 {
@@ -423,6 +423,21 @@ static int gic_populate_rdist(void)
 	WARN(true, "CPU%d: mpidr %llx has no re-distributor!\n",
 	     smp_processor_id(), (unsigned long long)mpidr);
 	return -ENODEV;
+}
+
+void mt_gic_cpu_init_for_low_power(void)
+{
+	/* Enable system registers */
+	gic_enable_sre();
+
+	/* Set priority mask register */
+	gic_write_pmr(DEFAULT_PMR_VALUE);
+
+	/* EOI deactivates interrupt too (mode 0) */
+	gic_write_ctlr(ICC_CTLR_EL1_EOImode_drop_dir);
+
+	/* ... and let's hit the road... */
+	gic_write_grpen1(1);
 }
 
 static void gic_cpu_init(void)
@@ -645,10 +660,12 @@ static int gic_irq_domain_xlate(struct irq_domain *d,
 
 static int mt_gic_irqs;
 
-int mt_get_supported_irq_num_ex(void)
+#ifndef CONFIG_MTK_GIC
+int mt_get_supported_irq_num(void)
 {
 	return mt_gic_irqs;
 }
+#endif
 
 static const struct irq_domain_ops gic_irq_domain_ops = {
 	.map = gic_irq_domain_map,
@@ -669,6 +686,7 @@ static int __init gic_of_init(struct device_node *node,
 	int gic_irqs;
 	int err;
 	int i;
+	int irq_base;
 
 	dist_base = of_iomap(node, 0);
 	if (!dist_base) {
@@ -711,8 +729,6 @@ static int __init gic_of_init(struct device_node *node,
 	if (of_address_to_resource(node, redist_regions+1, &res))
 		WARN(!pol_base, "unable to map pol registers\n");
 
-	INT_POL_CTL_phys = res.start;
-
 	if (of_property_read_u64(node, "redistributor-stride", &redist_stride))
 		redist_stride = 0;
 
@@ -731,8 +747,19 @@ static int __init gic_of_init(struct device_node *node,
 		gic_irqs = 1020;
 	gic_data.irq_nr = gic_irqs;
 
-	gic_data.domain = irq_domain_add_tree(node, &gic_irq_domain_ops,
-					      &gic_data);
+	gic_irqs -= 16;	/* calculate # of irqs to allocate, PPI+SPI */
+	/* start from 16, which means the first PPI irq */
+	irq_base = irq_alloc_descs(-1, 16, gic_irqs, numa_node_id());
+	if (irq_base == -ENOMEM) {
+		pr_err("[GIC] alloc desc failed\n");
+		return -ENOMEM;
+	}
+
+	/* start from first PPI to the last SPI,
+	 * linear mapping, virq starts from 16 */
+	gic_data.domain = irq_domain_add_legacy(node, gic_irqs, irq_base,
+					    16, &gic_irq_domain_ops, &gic_data);
+
 	gic_data.rdist = alloc_percpu(typeof(*gic_data.rdist));
 
 	if (WARN_ON(!gic_data.domain) || WARN_ON(!gic_data.rdist)) {
@@ -746,7 +773,7 @@ static int __init gic_of_init(struct device_node *node,
 	gic_dist_init();
 	gic_cpu_init();
 
-	mt_gic_irqs = gic_irqs;
+	mt_gic_irqs = gic_data.irq_nr;
 
 	return 0;
 
@@ -765,3 +792,78 @@ out_unmap_dist:
 }
 
 IRQCHIP_DECLARE(gic_v3, "arm,gic-v3", gic_of_init);
+
+#ifndef CONFIG_MTK_GIC
+char *mt_irq_dump_status_buf(int irq, char *buf)
+{
+	int rc;
+	unsigned int result;
+	char *ptr = buf;
+
+	if (!ptr)
+		return NULL;
+
+	ptr += sprintf(ptr, "[mt gic dump] irq = %d\n", irq);
+#ifndef CONFIG_MTK_PSCI
+	rc = -1;
+#else
+	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0);
+#endif
+	if (rc < 0) {
+		ptr += sprintf(ptr, "[mt gic dump] not allowed to dump!\n");
+		return ptr;
+	}
+
+	/* get mask */
+	result = rc & 0x1;
+	ptr += sprintf(ptr, "[mt gic dump] enable = %d\n", result);
+
+	/* get group */
+	result = (rc >> 1) & 0x1;
+	ptr += sprintf(ptr, "[mt gic dump] group = %x (0x1:irq,0x0:fiq)\n",
+			result);
+
+	/* get priority */
+	result = (rc >> 2) & 0xff;
+	ptr += sprintf(ptr, "[mt gic dump] priority = %x\n", result);
+
+	/* get sensitivity */
+	result = (rc >> 10) & 0x1;
+	ptr += sprintf(ptr, "[mt gic dump] sensitivity = %x ", result);
+	ptr += sprintf(ptr, "(edge:0x1, level:0x0)\n");
+
+	/* get pending status */
+	result = (rc >> 11) & 0x1;
+	ptr += sprintf(ptr, "[mt gic dump] pending = %x\n", result);
+
+	/* get active status */
+	result = (rc >> 12) & 0x1;
+	ptr += sprintf(ptr, "[mt gic dump] active status = %x\n", result);
+
+	/* get polarity */
+	result = (rc >> 13) & 0x1;
+	ptr += sprintf(ptr,
+		"[mt gic dump] polarity = %x (0x0: high, 0x1:low)\n",
+		result);
+
+	/* get target cpu mask */
+	result = (rc >> 14) & 0xff;
+	ptr += sprintf(ptr, "[mt gic dump] tartget cpu mask = 0x%x\n", result);
+
+	return ptr;
+}
+
+void mt_irq_dump_status(int irq)
+{
+	char *buf = kmalloc(2048, GFP_KERNEL);
+
+	if (!buf)
+		return;
+
+	if (mt_irq_dump_status_buf(irq, buf))
+		pr_debug("%s", buf);
+
+	kfree(buf);
+}
+EXPORT_SYMBOL(mt_irq_dump_status);
+#endif

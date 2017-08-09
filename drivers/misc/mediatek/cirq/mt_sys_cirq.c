@@ -409,6 +409,8 @@ void mt_cirq_flush(void)
 }
 EXPORT_SYMBOL(mt_cirq_flush);
 
+__attribute__((weak)) u32 mt_irq_get_pol(u32 irq);
+
 /*
  * mt_cirq_clone_pol: Copy the polarity setting from GIC to SYS_CIRQ
  */
@@ -423,10 +425,14 @@ void mt_cirq_clone_pol(void)
 		irq_num = CIRQ_TO_IRQ_NUM(cirq_num);
 
 		if (cirq_num == 0 || irq_num % 32 == 0) {
-			st = readl(IOMEM
+			if (mt_irq_get_pol) {
+				st = mt_irq_get_pol(irq_num);
+			} else {
+				st = readl(IOMEM
 				   (INT_POL_CTL0 +
 				    ((irq_num -
 				      GIC_PRIVATE_SIGNALS) / 32 * 4)));
+			}
 		}
 
 		bit = 0x1 << ((irq_num - GIC_PRIVATE_SIGNALS) % 32);
@@ -863,6 +869,8 @@ int __init mt_cirq_init(void)
 	if (ret == 0)
 		pr_debug
 		("[CIRQ] CIRQ create sysfs file for pattern list setup...\n");
+
+	pr_warn("### CIRQ init done. ###\n");
 
 	return 0;
 }

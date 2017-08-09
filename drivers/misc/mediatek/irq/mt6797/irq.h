@@ -25,7 +25,7 @@ typedef void (*fiq_isr_handler) (void *arg, void *regs, void *svc_sp);
 #define NR_GIC_PPI              (16)
 #define GIC_PPI_OFFSET          (27)
 #define MT_NR_PPI               (5)
-#define MT_NR_SPI               (256)
+#define MT_NR_SPI               (384)
 #define NR_MT_IRQ_LINE          (GIC_PPI_OFFSET + MT_NR_PPI + MT_NR_SPI)
 
 #define GIC_PPI_GLOBAL_TIMER    (GIC_PPI_OFFSET + 0)

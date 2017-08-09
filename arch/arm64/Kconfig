@@ -338,9 +338,9 @@ config ARCH_MT6797
 	select PINCTRL_MT6797
 	select MFD_SYSCON
 	select MTK_BASE_POWER
-	select MTK_GIC
 	select MTK_POWER_GS
 	select MTK_SYSTRACKER_V2
+	select MTK_GIC_V3_EXT
 	help
 	  This enables support for MediaTek MT6797
 	  Support for aarch64/aarch32 Architecture

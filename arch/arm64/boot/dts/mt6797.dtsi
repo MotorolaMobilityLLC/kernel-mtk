@@ -299,6 +299,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			alloc-ranges = <0 0x40000000 0 0x60000000>;
 		};
 	};
+
 	gic: interrupt-controller@19000000 {
 		compatible = "arm,gic-v3";
 		#interrupt-cells = <3>;
@@ -310,7 +311,6 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			<0 0x19200000 0 0x200000>, // redistributor
 			<0 0x10220620 0 0x001000>; // INTPOL
 		interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
-
 	};
 
 	clocks {
@@ -1758,9 +1758,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		};
 
 		sys_cirq@10204000 {
-			compatible = "mediatek,sys_cirq";
+			compatible = "mediatek,mt6797-sys_cirq", "mediatek,mt6735-sys_cirq";
 			reg = <0x10204000 0x1000>;
 			interrupts = <GIC_SPI 291 IRQ_TYPE_EDGE_FALLING>;
+			mediatek,cirq_num = <220>;
+			mediatek,spi_start_offset = <72>;
 		};
 
 		m4u@10205000 {

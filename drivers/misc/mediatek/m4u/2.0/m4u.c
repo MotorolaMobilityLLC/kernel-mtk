@@ -1,6 +1,7 @@
 #include <linux/uaccess.h>
 #include <linux/module.h>
 #include <linux/fs.h>
+#include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/miscdevice.h>
 #include <asm/io.h>
@@ -2502,8 +2503,7 @@ static int m4u_pm_restore_noirq(struct device *device)
 	int i;
 
 	for (i = 0; i < TOTAL_M4U_NUM; i++) {
-		mt_irq_set_sens(gM4uDev->irq_num[i], MT_LEVEL_SENSITIVE);
-		mt_irq_set_polarity(gM4uDev->irq_num[i], MT_POLARITY_LOW);
+		irq_set_irq_type(gM4uDev->irq_num[i], IRQF_TRIGGER_LOW);
 	}
 
 	return 0;
