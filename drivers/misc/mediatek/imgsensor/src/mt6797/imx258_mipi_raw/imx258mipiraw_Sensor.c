@@ -3027,7 +3027,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			imgsensor.pdaf_mode= *feature_data_16;
 			break;
 		case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
-			set_shutter_frame_time((UINT16)*feature_data,(UINT16)*feature_data);
+			set_shutter_frame_time((UINT16)*feature_data,(UINT16)*(feature_data+1));
 			break;
 		default:
 			break;
