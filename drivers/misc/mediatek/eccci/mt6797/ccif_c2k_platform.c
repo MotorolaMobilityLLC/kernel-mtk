@@ -111,10 +111,10 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 
 #if !defined(CONFIG_MTK_CLKMGR)
 		clk_scp_sys_md2_main =
-		    devm_clk_get(&dev_ptr->dev, "scp-sys-md2-main");
+		    devm_clk_get(&dev_ptr->dev, "scp-sys-c2k-main");
 		if (IS_ERR(clk_scp_sys_md2_main)) {
 			CCCI_ERR_MSG(dev_cfg->index, TAG,
-				     "modem %d get scp-sys-md2-main failed\n",
+				     "modem %d get scp-sys-c2k-main failed\n",
 				     dev_cfg->index + 1);
 			return -1;
 		}
@@ -131,7 +131,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 
 		hw_info->ap_ccif_base = of_iomap(dev_ptr->dev.of_node, 0);
 		/*hw_info->md_ccif_base = hw_info->ap_ccif_base+0x1000; */
-		node = of_find_compatible_node(NULL, NULL, "mediatek,MD_CCIF1");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,md_ccif1");
 		hw_info->md_ccif_base = of_iomap(node, 0);
 
 		hw_info->ap_ccif_irq_id =
@@ -149,18 +149,22 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 		    (unsigned long)of_iomap(dev_ptr->dev.of_node, 2);
 
 		node =
-		    of_find_compatible_node(NULL, NULL, "mediatek,INFRACFG_AO");
+		    of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
 		hw_info->infra_ao_base = (unsigned long)of_iomap(node, 0);
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,SLEEP");
+		/*C2K related register move to c2k_misc in mt6797*/
+		node = of_find_compatible_node(NULL, NULL, "mediatek,c2k_misc");
+		hw_info->c2k_misc = (unsigned long)of_iomap(node, 0);
+
+		node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 		hw_info->sleep_base = (unsigned long)of_iomap(node, 0);
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,TOPRGU");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-toprgu");
 		hw_info->toprgu_base = (unsigned long)of_iomap(node, 0);
 
-		node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 		apmixed_base = (unsigned long)of_iomap(node, 0);
-		node = of_find_compatible_node(NULL, NULL, "mediatek,MCUCFG");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
 		apmcucfg_base = (unsigned long)of_iomap(node, 0);
 
 		CCCI_INF_MSG(dev_cfg->index, TAG,
@@ -175,10 +179,10 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 
 #if !defined(CONFIG_MTK_CLKMGR)
 		clk_scp_sys_md3_main =
-		    devm_clk_get(&dev_ptr->dev, "scp-sys-md2-main");
+		    devm_clk_get(&dev_ptr->dev, "scp-sys-c2k-main");
 		if (IS_ERR(clk_scp_sys_md3_main)) {
 			CCCI_ERR_MSG(dev_cfg->index, TAG,
-				     "modem %d get scp-sys-md2-main failed\n",
+				     "modem %d get scp-sys-c2k-main failed\n",
 				     dev_cfg->index + 1);
 			return -1;
 		}
@@ -304,51 +308,13 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 	case MD_SYS3:
 		/*check if meta mode */
 		if (is_meta_mode() || get_boot_mode() == FACTORY_BOOT) {
-			ccif_write32(md_ctrl->hw_info->infra_ao_base,
-				     INFRA_AO_C2K_CONFIG,
+			ccif_write32(md_ctrl->hw_info->c2k_misc,
+				     C2K_CONFIG,
 				     (ccif_read32
-				      (md_ctrl->hw_info->infra_ao_base,
-				       INFRA_AO_C2K_CONFIG) | ETS_SEL_BIT));
+				      (md_ctrl->hw_info->c2k_misc,
+				       C2K_CONFIG) | ETS_SEL_BIT));
 		}
-		/*step 1: set C2K boot mode */
-		/*
-		ccif_write32(md_ctrl->hw_info->infra_ao_base,
-			     INFRA_AO_C2K_CONFIG,
-			     (ccif_read32
-			      (md_ctrl->hw_info->infra_ao_base,
-			       INFRA_AO_C2K_CONFIG) & (~(0x7 << 8))) | (0x5 << 8));
-		*/
-		CCCI_INF_MSG(md->index, TAG, "C2K_CONFIG = 0x%x\n",
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
-					 INFRA_AO_C2K_CONFIG));
-/*
-		CCCI_INF_MSG(md->index, TAG, "MCUCFG_C2K_BOOT_STATUS = 0x%x\n",
-			     ccif_read32(apmcucfg_base,
-					 MCUCFG_C2K_BOOT_STATUS));
-		CCCI_INF_MSG(md->index, TAG, "MCUCFG_C2K_BOOT_STATUS2 = 0x%x\n",
-			     ccif_read32(apmcucfg_base,
-					 MCUCFG_C2K_BOOT_STATUS2));
-*/
-		ccif_write32(md_ctrl->hw_info->sleep_base, POWERON_CONFIG_EN,
-			0x0B160001);
-
-		ccif_write32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON,
-			     ccif_read32(md_ctrl->hw_info->sleep_base,
-					 SLEEP_CLK_CON) | 0xc);
-		ccif_write32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON,
-			     ccif_read32(md_ctrl->hw_info->sleep_base,
-					 SLEEP_CLK_CON) & (~(0x1 << PWR_CLK_DIS)));
-		ccif_write32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON,
-			     ccif_read32(md_ctrl->hw_info->sleep_base,
-					 SLEEP_CLK_CON) & (~(0x1 << PWR_ISO)));
-		ccif_write32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON,
-			     ccif_read32(md_ctrl->hw_info->sleep_base,
-					 SLEEP_CLK_CON) | (0x1 << PWR_RST_B));
-		CCCI_INF_MSG(md->index, TAG, "SLEEP_CLK_CON = 0x%x\n",
-			     ccif_read32(md_ctrl->hw_info->sleep_base,
-					 SLEEP_CLK_CON));
-
-		/*step 2: config srcclkena selection mask */
+		/*step 1: config srcclkena selection mask */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base, INFRA_MISC2,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
 					 INFRA_MISC2) | INFRA_MISC2_C2K_EN);
@@ -357,37 +323,27 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 					 INFRA_MISC2));
 
 
-		/*step 3: PMIC VTCXO_1 enable */
-		/*pmic_config_interface(0x0A02, 0xA12E, 0xFFFF, 0x0);*/
-
+		/*step 2: config ClkSQ resigeter */
 		/* ccif_write32(apmixed_base, AP_PLL_CON0,
 			     ccif_read32(apmixed_base,
 					 AP_PLL_CON0) | (0x1 << 1)); */
 		CCCI_INF_MSG(md->index, TAG, "AP_PLL_CON0 = 0x%x\n",
 			     ccif_read32(apmixed_base, AP_PLL_CON0));
 
-		/*ap hold c2k core*/
-		ccif_write32(md_ctrl->hw_info->infra_ao_base,
-			     INFRA_AO_C2K_CONFIG,
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
-					 INFRA_AO_C2K_CONFIG) | (0x1 << 1));
+		/*step 3: ap hold c2k core*/
+		ccif_write32(md_ctrl->hw_info->c2k_misc,
+			     C2K_CONFIG,
+			     ccif_read32(md_ctrl->hw_info->c2k_misc,
+					 C2K_CONFIG) | (0x1 << 1));
 
 		/*step 4: wake up C2K */
-		/*
-		ccif_write32(apmixed_base, MDPLL1_CON0,
-				 ccif_read32(apmixed_base,
-					 MDPLL1_CON0) & (~(0x1 << 9)));
-		CCCI_INF_MSG(md->index, TAG, "MDPLL1_CON0 = 0x%x\n",
-				 ccif_read32(apmixed_base, MDPLL1_CON0));
-		*/
-
 #if 1
 		ccif_write32(md_ctrl->hw_info->toprgu_base,
 			     TOP_RGU_WDT_SWSYSRST,
 			     (ccif_read32
 			      (md_ctrl->hw_info->toprgu_base,
 			       TOP_RGU_WDT_SWSYSRST) | 0x88000000) & (~(0x1 <<
-									15)));
+									16)));
 #else
 		mtk_wdt_set_c2k_sysrst(1);
 #endif
@@ -399,45 +355,39 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		/*step 5: mpu already set */
 		/*step 6: wake up C2K */
 		ccif_write32(md_ctrl->hw_info->infra_ao_base,
-			     INFRA_AO_C2K_SPM_CTRL,
+			     INFRA_AO_C2K_HANDSHAKE,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
-					 INFRA_AO_C2K_SPM_CTRL) | (0x1 << 1));
+					 INFRA_AO_C2K_HANDSHAKE) | (0x1 << 1));
 		while (!
 		       ((ccif_read32
-			 (md_ctrl->hw_info->infra_ao_base,
-			  INFRA_AO_C2K_STATUS) >> 1) & 0x1))
+			 (md_ctrl->hw_info->c2k_misc,
+			  C2K_STATUS) >> 1) & 0x1))
 			;
 
 		CCCI_INF_MSG(md->index, TAG,
 			     "[C2K] C2K_STATUS = 0x%x\n",
-			     ccif_read32(md_ctrl->hw_info->
-					 infra_ao_base,
-					 INFRA_AO_C2K_STATUS));
+			     ccif_read32(md_ctrl->hw_info->c2k_misc,
+					 C2K_STATUS));
 
 		ccif_write32(md_ctrl->hw_info->infra_ao_base,
-			     INFRA_AO_C2K_SPM_CTRL,
+			     INFRA_AO_C2K_HANDSHAKE,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
-					 INFRA_AO_C2K_SPM_CTRL) & (~(0x1 << 1)));
+					 INFRA_AO_C2K_HANDSHAKE) & (~(0x1 << 1)));
 		CCCI_INF_MSG(md->index, TAG,
-			     "[C2K] C2K_SPM_CTRL = 0x%x, C2K_STATUS = 0x%x\n",
+			     "[C2K] C2K_HANDSHAKE = 0x%x, C2K_STATUS = 0x%x\n",
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
-					 INFRA_AO_C2K_SPM_CTRL),
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
-					 INFRA_AO_C2K_STATUS));
-
-		ccif_write32(md_ctrl->hw_info->infra_ao_base,
-			     INFRA_TOPAXI_PROTECTEN_1,
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
-					 INFRA_TOPAXI_PROTECTEN_1) & (~(0x3 << 22)));
+					 INFRA_AO_C2K_HANDSHAKE),
+			     ccif_read32(md_ctrl->hw_info->c2k_misc,
+					 C2K_STATUS));
 
 		/*set c2k pll*/
 		config_c2k_pll();
 
 		/*release c2k arm core*/
-		ccif_write32(md_ctrl->hw_info->infra_ao_base,
-			     INFRA_AO_C2K_CONFIG,
-			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
-					 INFRA_AO_C2K_CONFIG) & (~(0x1 << 1)));
+		ccif_write32(md_ctrl->hw_info->c2k_misc,
+			     C2K_CONFIG,
+			     ccif_read32(md_ctrl->hw_info->c2k_misc,
+					 C2K_CONFIG) & (~(0x1 << 1)));
 
 		break;
 	}

@@ -16,7 +16,7 @@
 #obj- :=dummy.o
 
 #endif
-
+ifneq ($(CONFIG_MTK_ECCCI_C2K), y)
 ifeq ($(CONFIG_MTK_C2K_SUPPORT), y)
 
 ifeq ($(EVDO_VIA_HAVE_VOLT_PROTECTION), yes) #if we have voltage protection in design
@@ -33,6 +33,12 @@ c2k_sdio-y += cbp_sdio.o modem_sdio.o
 c2k_sdio-y += f_rawbulk.o rawbulk.o rawbulk_transfer.o
 
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+
+else
+
+obj- :=dummy.o
+
+endif
 
 else
 

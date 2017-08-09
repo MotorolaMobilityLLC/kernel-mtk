@@ -29,9 +29,9 @@
 #define APCCIF_CHDATA (0x100)
 
 /*C2K */
-#define INFRA_AO_C2K_CONFIG (0x360)
-#define INFRA_AO_C2K_STATUS (0x364)
-#define INFRA_AO_C2K_SPM_CTRL (0x368)
+#define C2K_CONFIG (0x360)
+#define C2K_STATUS (0x364)
+#define INFRA_AO_C2K_HANDSHAKE (0x368)
 
 #define MCUCFG_C2K_BOOT_STATUS (0x1308)
 #define MCUCFG_C2K_BOOT_STATUS2 (0x130c)
@@ -45,7 +45,7 @@
 
 /* [3:0]:mdsrc_req_0_en */
 /* [7:4]:mdsrc_req_1_en */
-#define INFRA_MISC2				(0xF0C)
+#define INFRA_MISC2				(0xF18)
 /* mdsrc_req_0/1_en[2]: for C2K */
 #define INFRA_MISC2_C2K_BIT		(2)
 #define INFRA_MISC2_C2K_EN		(0x11 << INFRA_MISC2_C2K_BIT)
@@ -105,6 +105,7 @@ struct md_hw_info {
 	/* #ifdef CONFIG_MTK_ECCCI_C2K */
 	unsigned long sleep_base;
 	unsigned long infra_ao_base;
+	unsigned long c2k_misc;
 	unsigned long toprgu_base;
 	unsigned long c2k_chip_id_base;
 	unsigned long md1_pccif_base;
