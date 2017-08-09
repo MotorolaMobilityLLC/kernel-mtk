@@ -139,7 +139,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
     if(touch_boost_flag > 0)
     {
 
-        mt_gpufreq_target(touch_boost_id);
+        mtk_set_mt_gpufreq_target(touch_boost_id);
         mtk_clear_touch_boost_flag();
     }
 
