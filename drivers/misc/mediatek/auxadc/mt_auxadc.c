@@ -248,7 +248,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	/* step1 check con2 if auxadc is busy */
 	while (AUXADC_DRV_ReadReg16((volatile u16 *)AUXADC_CON2) & 0x01) {
 		pr_debug("[adc_api]: wait for module idle\n");
-		msleep(100);
+		mdelay(1);
 		idle_count++;
 		if (idle_count > 30) {
 			/* wait for idle time out */
@@ -267,7 +267,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	/* step3  read channel and make sure old ready bit ==0 */
 	while (AUXADC_DRV_ReadReg16(AUXADC_DAT0 + dwChannel * 0x04) & (1 << 12)) {
 		pr_debug("[adc_api]: wait for channel[%d] ready bit clear\n", dwChannel);
-		msleep(20);
+		mdelay(1);
 		data_ready_count++;
 		if (data_ready_count > 30) {
 			/* wait for idle time out */
@@ -286,7 +286,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdat
 	udelay(25);		/* we must dealay here for hw sample cahnnel data */
 	while (0 == (AUXADC_DRV_ReadReg16(AUXADC_DAT0 + dwChannel * 0x04) & (1 << 12))) {
 		pr_debug("[adc_api]: wait for channel[%d] ready bit ==1\n", dwChannel);
-		msleep(20);
+		mdelay(1);
 		data_ready_count++;
 
 		if (data_ready_count > 30) {
