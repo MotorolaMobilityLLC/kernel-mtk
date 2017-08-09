@@ -1918,9 +1918,13 @@ static int enable_subsys(enum subsys_id id)
 #endif				/* MT_CCF_BRINGUP */
 
 #if CONTROL_LIMIT
+	#if MT_CCF_DEBUG
 	pr_debug("[CCF] %s: sys=%s, id=%d\n", __func__, sys->name, id);
+	#endif
 	if (allow[id] == 0) {
+		#if MT_CCF_DEBUG
 		pr_debug("[CCF] %s: do nothing return\n", __func__);
+		#endif
 		return 0;
 	}
 #endif
@@ -1972,9 +1976,13 @@ static int disable_subsys(enum subsys_id id)
 	return 0;
 #endif				/* MT_CCF_BRINGUP */
 #if CONTROL_LIMIT
+	#if MT_CCF_DEBUG
 	pr_debug("[CCF] %s: sys=%s, id=%d\n", __func__, sys->name, id);
+	#endif
 	if (allow[id] == 0) {
+		#if MT_CCF_DEBUG
 		pr_debug("[CCF] %s: do nothing return\n", __func__);
+		#endif
 		return 0;
 	}
 #endif
