@@ -1258,12 +1258,13 @@ request_end:
  */
 static int __mmc_start_data_req(struct mmc_host *host, struct mmc_request *mrq)
 {
+	int err;
+
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (host->card && host->card->ext_csd.cmdq_mode_en)
 		mrq->done = mmc_wait_cmdq_done;
 	else
 #endif
-	int err;
 
 	mrq->done = mmc_wait_data_done;
 	mrq->host = host;
