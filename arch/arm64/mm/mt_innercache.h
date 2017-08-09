@@ -18,4 +18,10 @@ extern void __inner_flush_dcache_all(void);
 extern void __inner_flush_dcache_L1(void);
 extern void __inner_flush_dcache_L2(void);
 
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+#define CACHE_FLUSH_BY_SETWAY	1
+#define CACHE_FLUSH_BY_MVA	2
+#define CACHE_FLUSH_TIMEOUT	1000
+#endif
+
 #endif	/* !__INNERCACHE_H */
