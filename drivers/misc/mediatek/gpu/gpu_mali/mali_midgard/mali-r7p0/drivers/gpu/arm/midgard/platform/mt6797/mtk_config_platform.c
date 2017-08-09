@@ -191,6 +191,8 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	mtk_kbase_spm_release();
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
 	MTKCLK_disable_unprepare(clk_gpupm);
+
+	lasttime = _get_time();
 #endif
 
 	MTKCLK_disable_unprepare(clk_mfg_main);
@@ -205,8 +207,6 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 
 	mt_gpufreq_voltage_enable_set(0);
 	base_write32(g_ldo_base+0xfbc, 0x0);
-
-	lasttime = _get_time();
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {
