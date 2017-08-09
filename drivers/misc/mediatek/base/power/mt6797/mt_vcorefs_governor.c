@@ -689,6 +689,11 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
 
+	if (!gvrctrl->screen_on) {
+		vcorefs_crit("NOT SUPPORT DVFS ON SCREEN OFF\n");
+		return 0;
+	}
+
 	timer = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->screen_on);
 
 	if (timer < 0) {
