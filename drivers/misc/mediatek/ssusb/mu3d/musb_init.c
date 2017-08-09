@@ -489,13 +489,13 @@ static int ssusb_clks_enable(struct ssusb_mtk *ssusb)
 	int ret;
 
 	ssusb_xtal_clock_enable(ssusb);
-
-	/*ret = clk_prepare_enable(ssusb->scp_sys);
-	   if (ret) {
-	   mu3d_dbg(K_ERR, "%s failed to enable scp-sys-clk\n", __func__);
-	   goto scp_sys_err;
-	   } */
 	pm_runtime_get_sync(ssusb->dev);
+	ret = clk_prepare_enable(ssusb->scp_sys);
+	if (ret) {
+		mu3d_dbg(K_ERR, "%s failed to enable top_usb30\n", __func__);
+		goto scp_sys_err;
+	}
+
 	ret = clk_prepare_enable(ssusb->peri_usb0);
 	if (ret) {
 		mu3d_dbg(K_ERR, "%s failed to enable peri-usb0\n", __func__);
@@ -516,6 +516,8 @@ clken_usb1_err:
 	clk_disable_unprepare(ssusb->peri_usb0);
 
 clken_usb0_err:
+	clk_disable_unprepare(ssusb->scp_sys);
+scp_sys_err:
 	pm_runtime_put_sync(ssusb->dev);
 	ssusb_xtal_clock_disable(ssusb);
 	return -EINVAL;
@@ -527,8 +529,10 @@ static int ssusb_clks_disable(struct ssusb_mtk *ssusb)
 		clk_disable_unprepare(ssusb->peri_usb1);
 
 	clk_disable_unprepare(ssusb->peri_usb0);
-	if (ssusb->ic_version != CHIP_SW_VER_01)
+	if (ssusb->ic_version != CHIP_SW_VER_01) {
+		clk_disable_unprepare(ssusb->scp_sys); /* only for ECO IC */
 		pm_runtime_put_sync(ssusb->dev);
+	}
 	ssusb_xtal_clock_disable(ssusb);
 	return 0;
 }
@@ -1222,12 +1226,12 @@ static void put_regs_map(struct ssusb_mtk *ssusb)
 static int get_ssusb_clks(struct platform_device *pdev, struct ssusb_mtk *ssusb)
 {
 	struct clk *tmp;
-	/*tmp = clk_get(&pdev->dev, "scp_sys_usb");
-	   if (IS_ERR(tmp)) {
-	   mu3d_dbg(K_ERR, "error to get scp-sys-usb\n");
-	   goto pwr_err;
-	   }
-	   ssusb->scp_sys = tmp; */
+	tmp = clk_get(&pdev->dev, "top_usb30");
+	if (IS_ERR(tmp)) {
+		mu3d_dbg(K_ERR, "error to get top_usb30\n");
+		goto pwr_err;
+	}
+	ssusb->scp_sys = tmp;
 	pm_runtime_enable(&pdev->dev);
 
 	tmp = clk_get(&pdev->dev, "peri_usb0");
@@ -1252,7 +1256,7 @@ clk_usb1_err:
 
 clk_usb0_err:
 	clk_put(ssusb->scp_sys);
-
+pwr_err:
 	return -EINVAL;
 }
 
