@@ -660,6 +660,8 @@ extern BOOLEAN fgIsBusAccessFailed;
 #define GLUE_FLAG_HIF_TX_CMD    BIT(13)
 #define GLUE_FLAG_RX_TO_OS      BIT(14)
 #define GLUE_FLAG_HIF_FW_OWN    BIT(15)
+#define GLUE_FLAG_HAL_MCR_RD	BIT(16)
+#define GLUE_FLAG_HAL_MCR_WR	BIT(17)
 
 #define GLUE_FLAG_RX_BIT            (10)
 #define GLUE_FLAG_TX_CMD_DONE_BIT   (11)
@@ -667,6 +669,8 @@ extern BOOLEAN fgIsBusAccessFailed;
 #define GLUE_FLAG_HIF_TX_CMD_BIT    (13)
 #define GLUE_FLAG_RX_TO_OS_BIT      (14)
 #define GLUE_FLAG_HIF_FW_OWN_BIT    (15)
+#define GLUE_FLAG_HAL_MCR_RD_BIT    (16)
+#define GLUE_FLAG_HAL_MCR_WR_BIT    (17)
 #endif
 
 #define GLUE_BOW_KFIFO_DEPTH        (1024)
@@ -858,6 +862,8 @@ struct _GLUE_INFO_T {
 #if CFG_SUPPORT_MULTITHREAD
 	struct completion rHifHaltComp;	/* indicate hif_thread halt complete */
 	struct completion rRxHaltComp;	/* indicate hif_thread halt complete */
+	struct completion rHalRDMCRComp;
+	struct completion rHalWRMCRComp;
 
 	UINT_32 u4TxThreadPid;
 	UINT_32 u4RxThreadPid;
@@ -991,8 +997,13 @@ struct _GLUE_INFO_T {
 	UINT_32 IsrSoftWareCnt;
 	UINT_32 IsrTxCnt;
 	UINT_32 IsrRxCnt;
+
 	UINT_64 u8SkbToDriver;
 	UINT_64 u8SkbFreed;
+
+	UINT_32 u4Register;
+	UINT_32 u4RegValue;
+	PUINT_32 prRegValue;
 };
 
 typedef irqreturn_t(*PFN_WLANISR) (int irq, void *dev_id, struct pt_regs *regs);

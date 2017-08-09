@@ -154,6 +154,11 @@
 #if defined(_HIF_SDIO)
 #define HAL_MCR_RD(_prAdapter, _u4Offset, _pu4Value) \
 do { \
+	HAL_MCR_HIF_RD(_prAdapter, _u4Offset, _pu4Value); \
+} while (0)
+
+#define HAL_MCR_HIF_RD(_prAdapter, _u4Offset, _pu4Value) \
+do { \
 	if (HAL_TEST_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR) == FALSE) { \
 		if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 			ASSERT(0); \
@@ -172,6 +177,11 @@ do { \
 } while (0)
 
 #define HAL_MCR_WR(_prAdapter, _u4Offset, _u4Value) \
+do { \
+	HAL_MCR_HIF_WR(_prAdapter, _u4Offset, _u4Value); \
+} while (0)
+
+#define HAL_MCR_HIF_WR(_prAdapter, _u4Offset, _u4Value) \
 do { \
 	if (HAL_TEST_FLAG(_prAdapter, ADAPTER_FLAG_HW_ERR) == FALSE) { \
 		if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
@@ -285,21 +295,53 @@ do { \
 }
 
 #else /* #if defined(_HIF_SDIO) */
+/* Now rx_thread don't access hif register, so if someone call HAL_MCR_RD,
+ * no need to use spinlock to protect u4Register and prRegValue. */
 #define HAL_MCR_RD(_prAdapter, _u4Offset, _pu4Value) \
-do{ \
+do { \
+	if ((!_prAdapter->prGlueInfo->hif_thread) || !kalStrnCmp(current->comm, "hif_thread", 10)) { \
+		HAL_MCR_HIF_RD(_prAdapter, _u4Offset, _pu4Value); \
+	} else { \
+		_prAdapter->prGlueInfo->u4Register = _u4Offset; \
+		_prAdapter->prGlueInfo->prRegValue = _pu4Value; \
+		KAL_WAKE_LOCK_TIMEOUT(_prAdapter, &_prAdapter->prGlueInfo->rTimeoutWakeLock, \
+							MSEC_TO_JIFFIES(WAKE_LOCK_THREAD_WAKEUP_TIMEOUT)); \
+		set_bit(GLUE_FLAG_HAL_MCR_RD_BIT, &_prAdapter->prGlueInfo->ulFlag); \
+		wake_up_interruptible(&_prAdapter->prGlueInfo->waitq_hif); \
+		wait_for_completion_interruptible(&_prAdapter->prGlueInfo->rHalRDMCRComp); \
+	} \
+} while (0)
+
+#define HAL_MCR_HIF_RD(_prAdapter, _u4Offset, _pu4Value) \
+do { \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
 	kalDevRegRead(_prAdapter->prGlueInfo, _u4Offset, _pu4Value); \
-}while(0)
+} while (0)
 
 #define HAL_MCR_WR(_prAdapter, _u4Offset, _u4Value) \
-do{ \
+do { \
+	if ((!_prAdapter->prGlueInfo->hif_thread) || !kalStrnCmp(current->comm, "hif_thread", 10)) { \
+		HAL_MCR_HIF_WR(_prAdapter, _u4Offset, _u4Value); \
+	} else { \
+		_prAdapter->prGlueInfo->u4Register = _u4Offset; \
+		_prAdapter->prGlueInfo->u4RegValue = _u4Value; \
+		KAL_WAKE_LOCK_TIMEOUT(_prAdapter, &_prAdapter->prGlueInfo->rTimeoutWakeLock, \
+							MSEC_TO_JIFFIES(WAKE_LOCK_THREAD_WAKEUP_TIMEOUT)); \
+		set_bit(GLUE_FLAG_HAL_MCR_WR_BIT, &_prAdapter->prGlueInfo->ulFlag); \
+		wake_up_interruptible(&_prAdapter->prGlueInfo->waitq_hif); \
+		wait_for_completion_interruptible(&_prAdapter->prGlueInfo->rHalWRMCRComp); \
+	} \
+} while (0)
+
+#define HAL_MCR_HIF_WR(_prAdapter, _u4Offset, _u4Value) \
+do { \
 	if (_prAdapter->rAcpiState == ACPI_STATE_D3) { \
 		ASSERT(0); \
 	} \
 	kalDevRegWrite(_prAdapter->prGlueInfo, _u4Offset, _u4Value); \
-}while(0)
+} while (0)
 
 #define HAL_PORT_RD(_prAdapter, _u4Port, _u4Len, _pucBuf, _u4ValidBufSize) \
 do{ \

@@ -2271,6 +2271,8 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 #if CFG_SUPPORT_MULTITHREAD
 	init_completion(&prGlueInfo->rHifHaltComp);
 	init_completion(&prGlueInfo->rRxHaltComp);
+	init_completion(&prGlueInfo->rHalRDMCRComp);
+	init_completion(&prGlueInfo->rHalWRMCRComp);
 #endif
 
 	/* initialize timer for OID timeout checker */
