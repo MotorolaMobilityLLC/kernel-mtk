@@ -1426,7 +1426,7 @@ static int __init idvfs_init(void)
 	int	err	= 0;
 	struct device_node *node = NULL;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,PTP3_IDVFS");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,idvfs");
 	if (node) {
 		/* Setup IO	addresses */
 		idvfs_base = of_iomap(node, 0);
