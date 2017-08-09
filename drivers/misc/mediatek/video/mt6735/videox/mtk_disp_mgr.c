@@ -1198,6 +1198,8 @@ static int set_memory_buffer(disp_session_input_config *input)
 
 #if !defined(OVL_TIME_SHARING)
 	ovl2mem_input_config((ovl2mem_in_config *)&input_params);
+#else
+	captured_session_input[DISP_SESSION_MEMORY - 1].session_id = input->session_id;
 #endif
 
 	return 0;
@@ -1444,6 +1446,9 @@ static int set_primary_buffer(disp_session_input_config *input)
 			dprec_submit(&session_info->event_setinput, input->config[i].next_buff_idx,
 				     dst_mva);
 	}
+#ifdef CONFIG_ALL_IN_TRIGGER_STAGE
+	captured_session_input[DISP_SESSION_PRIMARY - 1].session_id = input->session_id;
+#endif
 	DISPPR_FENCE("%s\n", fence_msg_buf);
 	mutex_unlock(&session_config_mutex);
 #ifndef CONFIG_ALL_IN_TRIGGER_STAGE

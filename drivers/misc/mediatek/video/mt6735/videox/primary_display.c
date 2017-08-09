@@ -5908,6 +5908,9 @@ void primary_display_update_present_fence(unsigned int fence_idx)
 #endif
 }
 
+static int config_wdma_output(disp_path_handle disp_handle,cmdqRecHandle cmdq_handle,
+			disp_mem_output_config *output, int is_multipass);
+
 int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
 {
 	int ret = 0;
@@ -5955,8 +5958,12 @@ int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
 			pgc->need_trigger_ovl1to2 = 0;
 		}
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
-		if (pgc->need_trigger_dcMirror_out == 0)
+		if (pgc->need_trigger_dcMirror_out == 0) {
+            if (cached_session_output[DISP_SESSION_PRIMARY - 1].security == DISP_SECURE_BUFFER)
+                config_wdma_output(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config,
+                    &cached_session_output[DISP_SESSION_PRIMARY - 1], 0);
 			DISPPR_ERROR("There is no output config when decouple mirror!!\n");
+		}
 
 		pgc->need_trigger_dcMirror_out = 0;
 		_trigger_ovl_to_memory_mirror(pgc->ovl2mem_path_handle,
