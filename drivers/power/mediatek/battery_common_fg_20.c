@@ -1842,6 +1842,7 @@ unsigned int bat_get_ui_percentage(void)
 {
 	if ((g_platform_boot_mode == META_BOOT) ||
 		(g_platform_boot_mode == ADVMETA_BOOT) ||
+		(g_platform_boot_mode == FACTORY_BOOT) ||
 		(g_platform_boot_mode == ATE_FACTORY_BOOT))
 		return 75;
 
