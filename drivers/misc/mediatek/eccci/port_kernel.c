@@ -232,6 +232,8 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 #else
 	ap_side_md_feature->feature_set[MISC_INFO_C2K].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 #endif
+	ap_side_md_feature->feature_set[MD_IMAGE_START_MEMORY].support_mask = CCCI_FEATURE_OPTIONAL_SUPPORT;
+
 }
 
 static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
@@ -252,7 +254,7 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 	unsigned int random_seed = 0;
 	struct timeval t;
 
-	CCCI_NOTICE_MSG(md->index, KERN, "prepare_runtime_data  rt_data %p\n", rt_data);
+	CCCI_NOTICE_MSG(md->index, KERN, "prepare_runtime_data  AP total %u features\n", RUNTIME_FEATURE_ID_MAX);
 
 	memset(&md_feature_ap, 0, sizeof(struct md_query_ap_feature));
 	config_ap_side_feature(md, &md_feature_ap);
@@ -268,7 +270,7 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 		return -1;
 	}
 
-	for (i = BOOT_INFO; i < RUNTIME_FEATURE_ID_MAX; i++) {
+	for (i = BOOT_INFO; i < FEATURE_COUNT; i++) {
 		memset(&rt_feature, 0, sizeof(struct ccci_runtime_feature));
 		memset(&rt_shm, 0, sizeof(struct ccci_runtime_share_memory));
 		memset(&rt_f_element, 0, sizeof(struct ccci_misc_info_element));
@@ -423,9 +425,14 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 #endif
 				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
 				break;
+			case MD_IMAGE_START_MEMORY:
+				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
+				rt_shm.addr = md->img_info[IMG_MD].address;
+				rt_shm.size = md->img_info[IMG_MD].size;
+				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				break;
 			default:
 				break;
-
 			};
 		} else {
 			rt_feature.data_len = 0;
@@ -460,6 +467,10 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 #ifdef MD_UMOLY_EE_SUPPORT
 		md->flight_mode = MD_FIGHT_MODE_NONE; /* leave flight mode */
 #endif
+		if (get_booting_start_id(md) | META_BOOT_ID) {
+			mod_timer(&md->md_status_poller, jiffies + 10 * HZ);
+			CCCI_NOTICE_MSG(md->index, KERN, "start md_status_poller in meta mode\n");
+		}
 		if (req->skb->len == sizeof(struct md_query_ap_feature) + sizeof(struct ccci_header))
 			prepare_runtime_data(md, req);
 		else if (req->skb->len == sizeof(struct ccci_header))
