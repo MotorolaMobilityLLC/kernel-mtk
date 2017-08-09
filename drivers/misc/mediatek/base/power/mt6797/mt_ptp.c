@@ -298,7 +298,11 @@ unsigned int sbTbl[][16] = {
 	{0x06, 0xa, 0x0c, 0x8, 0x1, 0x0cc, 0x04, 0x32},/* 247 */
 	{0x02, 0xa, 0x05, 0xa, 0x1, 0x0B0, 0x04, 0x2F},/* 182 */
 };
+#ifdef ENABLE_IDVFS
+static unsigned int ctrl_EEM_Enable = 1;
+#else
 static unsigned int ctrl_EEM_Enable;
+#endif
 static unsigned int *recordTbl;
 
 /**
