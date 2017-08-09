@@ -1320,7 +1320,7 @@ static inline void cldma_stop(struct ccci_modem *md)
 #if defined(CONFIG_MTK_AEE_FEATURE)
 			aee_kernel_dal_show("stop Tx CLDMA failed.\n");
 #endif
-			CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
+			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
@@ -1338,7 +1338,7 @@ static inline void cldma_stop(struct ccci_modem *md)
 #if defined(CONFIG_MTK_AEE_FEATURE)
 			aee_kernel_dal_show("stop Rx CLDMA failed.\n");
 #endif
-			CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
+			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
@@ -1405,7 +1405,7 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 #if defined(CONFIG_MTK_AEE_FEATURE)
 			aee_kernel_dal_show("stop Tx CLDMA failed for EE.\n");
 #endif
-			CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
+			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
@@ -1425,7 +1425,7 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 #if defined(CONFIG_MTK_AEE_FEATURE)
 			aee_kernel_dal_show("stop Rx CLDMA failed for EE.\n");
 #endif
-			CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
+			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
@@ -1841,7 +1841,7 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 		ccci_set_exp_region_protection(md);
 #endif
 		if (*((int *)(md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_SEQERR)) != 0) {
-			CCCI_ERROR_LOG(md->index, KERN, "MD found wrong sequence number\n");
+			CCCI_ERROR_LOG(md->index, TAG, "MD found wrong sequence number\n");
 			md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, -1);
 		}
 		wake_lock_timeout(&md_ctrl->trm_wake_lock, 10 * HZ);
@@ -1919,6 +1919,17 @@ static void md_cd_ccif_work(struct work_struct *work)
 	if (md_ctrl->channel_id & (1 << AP_MD_SEQ_ERROR)) {
 		CCCI_ERROR_LOG(md->index, TAG, "MD check seq fail\n");
 		md->ops->dump_info(md, DUMP_FLAG_CCIF, NULL, 0);
+	}
+	if (md_ctrl->channel_id & (1 << AP_MD_CCB_WAKEUP)) {
+		struct ccci_port *port;
+		int i;
+
+		CCCI_INF_MSG(md->index, TAG, "CCB wakeup\n");
+		for (i = 0; i < md->port_number; i++) {
+			port = md->ports + i;
+			if (port->rx_ch == CCCI_SMEM_CH)
+				port->ops->md_state_notice(port, RX_IRQ);
+		}
 	}
 }
 
@@ -2161,7 +2172,11 @@ static int md_cd_start(struct ccci_modem *md)
 	}
 	/* 2. clear share memory and ring buffer */
 #if 0				/* no need now, MD will clear share memory itself */
-	memset(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
+	memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
+#endif
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+	memset_io(md->smem_layout.ccci_ccb_dhl_base_vir, 0, md->smem_layout.ccci_ccb_dhl_size);
+	memset_io(md->smem_layout.ccci_raw_dhl_base_vir, 0, md->smem_layout.ccci_raw_dhl_size);
 #endif
 #if 1				/* just in case */
 	md_cd_clear_all_queue(md, OUT);
@@ -2375,7 +2390,7 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 			if (count == 0) {
 				if (en_power_check) {
 					CCCI_NORMAL_LOG(md->index, TAG, "MD is not in sleep mode, dump md status!\n");
-					CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
+					CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 					ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 						      md->smem_layout.ccci_exp_dump_size);
 
@@ -2405,7 +2420,7 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 		pending = mt_irq_get_pending(md_ctrl->hw_info->md_wdt_irq_id);
 		if (pending) {
 			CCCI_NORMAL_LOG(md->index, TAG, "WDT IRQ occur.");
-			CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
+			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 
@@ -2828,20 +2843,20 @@ static void dump_runtime_data_v2(struct ccci_modem *md, struct ap_query_md_featu
 {
 	u8 i = 0;
 
-	CCCI_BOOTUP_LOG(md->index, KERN, "head_pattern 0x%x\n", ap_feature->head_pattern);
+	CCCI_BOOTUP_LOG(md->index, TAG, "head_pattern 0x%x\n", ap_feature->head_pattern);
 
 	for (i = BOOT_INFO; i < AP_RUNTIME_FEATURE_ID_MAX; i++) {
-		CCCI_BOOTUP_LOG(md->index, KERN, "feature %u: mask %u, version %u\n",
+		CCCI_BOOTUP_LOG(md->index, TAG, "feature %u: mask %u, version %u\n",
 				i, ap_feature->feature_set[i].support_mask, ap_feature->feature_set[i].version);
 	}
-	CCCI_BOOTUP_LOG(md->index, KERN, "share_memory_support 0x%x\n", ap_feature->share_memory_support);
-	CCCI_BOOTUP_LOG(md->index, KERN, "ap_runtime_data_addr 0x%x\n", ap_feature->ap_runtime_data_addr);
-	CCCI_BOOTUP_LOG(md->index, KERN, "ap_runtime_data_size 0x%x\n", ap_feature->ap_runtime_data_size);
-	CCCI_BOOTUP_LOG(md->index, KERN, "md_runtime_data_addr 0x%x\n", ap_feature->md_runtime_data_addr);
-	CCCI_BOOTUP_LOG(md->index, KERN, "md_runtime_data_size 0x%x\n", ap_feature->md_runtime_data_size);
-	CCCI_BOOTUP_LOG(md->index, KERN, "set_md_mpu_start_addr 0x%x\n", ap_feature->set_md_mpu_start_addr);
-	CCCI_BOOTUP_LOG(md->index, KERN, "set_md_mpu_total_size 0x%x\n", ap_feature->set_md_mpu_total_size);
-	CCCI_BOOTUP_LOG(md->index, KERN, "tail_pattern 0x%x\n", ap_feature->tail_pattern);
+	CCCI_BOOTUP_LOG(md->index, TAG, "share_memory_support 0x%x\n", ap_feature->share_memory_support);
+	CCCI_BOOTUP_LOG(md->index, TAG, "ap_runtime_data_addr 0x%x\n", ap_feature->ap_runtime_data_addr);
+	CCCI_BOOTUP_LOG(md->index, TAG, "ap_runtime_data_size 0x%x\n", ap_feature->ap_runtime_data_size);
+	CCCI_BOOTUP_LOG(md->index, TAG, "md_runtime_data_addr 0x%x\n", ap_feature->md_runtime_data_addr);
+	CCCI_BOOTUP_LOG(md->index, TAG, "md_runtime_data_size 0x%x\n", ap_feature->md_runtime_data_size);
+	CCCI_BOOTUP_LOG(md->index, TAG, "set_md_mpu_start_addr 0x%x\n", ap_feature->set_md_mpu_start_addr);
+	CCCI_BOOTUP_LOG(md->index, TAG, "set_md_mpu_total_size 0x%x\n", ap_feature->set_md_mpu_total_size);
+	CCCI_BOOTUP_LOG(md->index, TAG, "tail_pattern 0x%x\n", ap_feature->tail_pattern);
 }
 
 static void dump_runtime_data(struct ccci_modem *md, struct modem_runtime *runtime)
@@ -2915,29 +2930,29 @@ static void dump_runtime_data(struct ccci_modem *md, struct modem_runtime *runti
 }
 
 #ifdef FEATURE_DBM_SUPPORT
-static void eccci_smem_sub_region_init(struct ccci_modem *md)
+static void md_cd_smem_sub_region_init(struct ccci_modem *md)
 {
 	volatile int __iomem *addr;
 	int i;
 
 	/* Region 0, dbm */
-	addr = (volatile int __iomem *)(md->mem_layout.smem_region_vir+CCCI_SMEM_OFFSET_MD1_DBM);
+	addr = (volatile int __iomem *)(md->smem_layout.ccci_exp_smem_dbm_debug_vir);
 	addr[0] = 0x44444444; /* Guard pattern 1 header */
 	addr[1] = 0x44444444; /* Guard pattern 2 header */
-	#ifdef DISABLE_PBM_FEATURE
+#ifdef DISABLE_PBM_FEATURE
 	for (i = 2; i < (10+2); i++)
 		addr[i] = 0xFFFFFFFF;
-	#else
+#else
 	for (i = 2; i < (10+2); i++)
 		addr[i] = 0x00000000;
-	#endif
+#endif
 	addr[i++] = 0x44444444; /* Guard pattern 1 tail */
 	addr[i++] = 0x44444444; /* Guard pattern 2 tail */
 
 	/* Notify PBM */
-	#ifndef DISABLE_PBM_FEATURE
+#ifndef DISABLE_PBM_FEATURE
 	init_md_section_level(KR_MD1);
-	#endif
+#endif
 }
 #endif
 
@@ -2970,7 +2985,7 @@ static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int sbp_co
 	ccci_h = (struct ccci_header *)req->skb->data;
 	ap_rt_data = (struct ap_query_md_feature *)(req->skb->data + sizeof(struct ccci_header));
 
-	CCCI_BOOTUP_LOG(md->index, KERN, "new api for sending rt data, sbp_code %u\n", sbp_code);
+	CCCI_BOOTUP_LOG(md->index, TAG, "new api for sending rt data, sbp_code %u\n", sbp_code);
 
 	ccci_set_ap_region_protection(md);
 	/*header */
@@ -2985,7 +3000,7 @@ static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int sbp_co
 	dump_runtime_data_v2(md, ap_rt_data);
 
 #ifdef FEATURE_DBM_SUPPORT
-	eccci_smem_sub_region_init(md);
+	md_cd_smem_sub_region_init(md);
 #endif
 	skb_put(req->skb, packet_size);
 	ret = md->ops->send_request(md, 0, req, NULL);	/*hardcode to queue 0 */
@@ -3131,9 +3146,9 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 #endif
 
 	dump_runtime_data(md, runtime);
-	#ifdef FEATURE_DBM_SUPPORT
-	eccci_smem_sub_region_init(md);
-	#endif
+#ifdef FEATURE_DBM_SUPPORT
+	md_cd_smem_sub_region_init(md);
+#endif
 	skb_put(req->skb, packet_size);
 	ret = md->ops->send_request(md, 0, req, NULL);	/* hardcode to queue 0 */
 	return ret;
@@ -3259,12 +3274,12 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 	}
 #endif
 	if (flag & DUMP_FLAG_IMAGE) {
-		CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD image memory\n");
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD image memory\n");
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (void *)md->mem_layout.md_region_vir,
 							MD_IMG_DUMP_SIZE);
 	}
 	if (flag & DUMP_FLAG_LAYOUT) {
-		CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD layout struct\n");
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD layout struct\n");
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, &md->mem_layout, sizeof(struct ccci_mem_layout));
 	}
 	if (flag & DUMP_FLAG_QUEUE_0) {
@@ -3284,7 +3299,7 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 			md->smem_layout.ccci_exp_smem_sleep_debug_size);
 	}
 	if (flag & DUMP_FLAG_MD_WDT) {
-		CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD RGU registers\n");
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD RGU registers\n");
 		md_cd_lock_modem_clock_src(1);
 #ifdef BASE_ADDR_MDRSTCTL
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_rgu_base, 0x88);
@@ -3293,7 +3308,7 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_rgu_base, 0x30);
 #endif
 		md_cd_lock_modem_clock_src(0);
-		CCCI_MEM_LOG_TAG(md->index, KERN, "wdt_enabled=%d\n", atomic_read(&md_ctrl->wdt_enabled));
+		CCCI_MEM_LOG_TAG(md->index, TAG, "wdt_enabled=%d\n", atomic_read(&md_ctrl->wdt_enabled));
 		mt_irq_dump_status(md_ctrl->hw_info->md_wdt_irq_id);
 	}
 	return length;
@@ -3307,6 +3322,20 @@ static int md_cd_ee_callback(struct ccci_modem *md, MODEM_EE_FLAG flag)
 		wdt_enable_irq(md_ctrl);
 	if (flag & EE_FLAG_DISABLE_WDT)
 		wdt_disable_irq(md_ctrl);
+	return 0;
+}
+
+static int md_cd_send_ccb_tx_notify(struct ccci_modem *md, int core_id)
+{
+	CCCI_INF_MSG(md->index, TAG, "ccb tx notify to core %d\n", core_id);
+	switch (core_id) {
+	case P_CORE:
+		md_cd_ccif_send(md, AP_MD_CCB_WAKEUP);
+		break;
+	case VOLTE_CORE:
+	default:
+		break;
+	}
 	return 0;
 }
 
@@ -3329,6 +3358,7 @@ static struct ccci_modem_ops md_cd_ops = {
 	.get_port_by_channel = &md_cd_get_port_by_channel,
 	/* .low_power_notify = &md_cd_low_power_notify, */
 	.ee_callback = &md_cd_ee_callback,
+	.send_ccb_tx_notify = &md_cd_send_ccb_tx_notify,
 };
 
 static ssize_t md_cd_dump_show(struct ccci_modem *md, char *buf)

@@ -161,16 +161,6 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 	return 0;
 }
 
-static void __iomem *eccci_smem_sub_region_addr(void *md_blk, int *size_o)
-{
-	struct ccci_modem *md = (struct ccci_modem *)md_blk;
-
-	if (size_o)
-		*size_o = 40;
-
-	return md->mem_layout.smem_region_vir+CCCI_SMEM_OFFSET_MD1_DBM+CCCI_SMEM_DBM_GUARD_SIZE;
-}
-
 int md_cd_io_remap_md_side_register(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
@@ -616,7 +606,6 @@ int md_cd_power_on(struct ccci_modem *md)
 	int ret = 0;
 	unsigned int reg_value;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	static int has_registed;
 
 	/* step 0: PMIC setting */
 	md1_pmic_setting_on();
@@ -665,12 +654,6 @@ int md_cd_power_on(struct ccci_modem *md)
 	/* step 5: disable MD WDT */
 	cldma_write32(md_ctrl->md_rgu_base, WDT_MD_MODE, WDT_MD_MODE_KEY);
 	cldma_write32(md_ctrl->l1_rgu_base, REG_L1RSTCTL_WDT_MODE, L1_WDT_MD_MODE_KEY);
-
-	/* fix me, put code here temp */
-	if (!has_registed) {
-		has_registed = 1;
-		register_smem_sub_region_mem_func(MD_SYS1, eccci_smem_sub_region_addr, SMEM_SUB_REGION00);
-	}
 
 #ifdef SET_EMI_STEP_BY_STAGE
 	CCCI_BOOTUP_LOG(md->index, KERN, "set domain register\n");

@@ -1224,29 +1224,29 @@ static void dump_runtime_data(struct ccci_modem *md, struct ap_query_md_feature 
 }
 
 #ifdef FEATURE_DBM_SUPPORT
-static void eccci_c2k_smem_sub_region_init(struct ccci_modem *md)
+static void md_ccif_smem_sub_region_init(struct ccci_modem *md)
 {
 	volatile int __iomem *addr;
 	int i;
 
 	/* Region 0, dbm */
-	addr = (volatile int __iomem *)(md->mem_layout.smem_region_vir+CCCI_SMEM_OFFSET_MD3_DBM);
+	addr = (volatile int __iomem *)(md->smem_layout.ccci_exp_smem_dbm_debug_vir);
 	addr[0] = 0x44444444; /* Guard pattern 1 header */
 	addr[1] = 0x44444444; /* Guard pattern 2 header */
-	#ifdef DISABLE_PBM_FEATURE
+#ifdef DISABLE_PBM_FEATURE
 	for (i = 2; i < (10+2); i++)
 		addr[i] = 0xFFFFFFFF;
-	#else
+#else
 	for (i = 2; i < (10+2); i++)
 		addr[i] = 0x00000000;
-	#endif
+#endif
 	addr[i++] = 0x44444444; /* Guard pattern 1 tail */
 	addr[i++] = 0x44444444; /* Guard pattern 2 tail */
 
 	/* Notify PBM */
-	#ifndef DISABLE_PBM_FEATURE
+#ifndef DISABLE_PBM_FEATURE
 	init_md_section_level(KR_MD3);
-	#endif
+#endif
 }
 #endif
 
@@ -1299,7 +1299,7 @@ static int md_ccif_op_send_runtime_data(struct ccci_modem *md,
 	dump_runtime_data(md, ap_rt_data);
 
 #ifdef FEATURE_DBM_SUPPORT
-	eccci_c2k_smem_sub_region_init(md);
+	md_ccif_smem_sub_region_init(md);
 #endif
 
 	ret = md_ccif_send(md, H2D_SRAM);
@@ -1453,9 +1453,8 @@ static int md_ccif_ring_buf_init(struct ccci_modem *md)
 		    CCCI_RINGBUF_CTL_LEN + rx_queue_buffer_size[i] +
 		    tx_queue_buffer_size[i];
 		if (md_ctrl->total_smem_size + bufsize >
-		    md->mem_layout.smem_region_size -
-		    md->smem_layout.ccci_exp_smem_size) {
-			CCCI_ERROR_LOG(md->index, TAG,
+		    md->mem_layout.smem_region_size - CCCI_SMEM_OFFSET_CCIF_SMEM) {
+			CCCI_ERR_MSG(md->index, TAG,
 				     "share memory too small,please check configure,smem_size=%d, exception_smem=%d\n",
 				     md->mem_layout.smem_region_size,
 				     md->smem_layout.ccci_exp_smem_size);

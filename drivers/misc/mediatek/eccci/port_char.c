@@ -18,6 +18,7 @@
 #include "port_ipc.h"
 #include "port_kernel.h"
 #include "port_char.h"
+#include "port_smem.h"
 #ifdef CONFIG_MTK_ECCCI_C2K
 #include "ccif_c2k_platform.h"
 #endif
@@ -943,6 +944,72 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 		break;
 
+	case CCCI_IOC_SMEM_BASE:
+		if (port->rx_ch == CCCI_SMEM_CH) {
+			struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
+
+			ret = put_user((unsigned int)smem_port->addr_phy,
+				(unsigned int __user *)arg);
+		} else {
+			ret = -EPERM;
+		}
+		break;
+	case CCCI_IOC_SMEM_LEN:
+		if (port->rx_ch == CCCI_SMEM_CH) {
+			struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
+
+			ret = put_user((unsigned int)smem_port->length,
+				(unsigned int __user *)arg);
+		} else {
+			ret = -EPERM;
+		}
+		break;
+	case CCCI_IOC_SMEM_TX_NOTIFY:
+		if (port->rx_ch == CCCI_SMEM_CH) {
+			unsigned int data;
+
+			if (copy_from_user(&data, (void __user *)arg, sizeof(unsigned int))) {
+				CCCI_INF_MSG(md->index, CHAR, "smem tx notify fail: copy_from_user fail!\n");
+				ret = -EFAULT;
+			} else {
+				ret = port_smem_tx_nofity(port, data);
+			}
+		} else {
+			ret = -EPERM;
+		}
+		break;
+	case CCCI_IOC_SMEM_RX_POLL:
+		if (port->rx_ch == CCCI_SMEM_CH)
+			ret = port_smem_rx_poll(port);
+		else
+			ret = -EPERM;
+		break;
+	case CCCI_IOC_SMEM_SET_STATE:
+		if (port->rx_ch == CCCI_SMEM_CH) {
+			struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
+			unsigned int data;
+
+			if (copy_from_user(&data, (void __user *)arg, sizeof(unsigned int))) {
+				CCCI_INF_MSG(md->index, CHAR, "smem set state fail: copy_from_user fail!\n");
+				ret = -EFAULT;
+			} else {
+				smem_port->state = data;
+			}
+		} else {
+			ret = -EPERM;
+		}
+		break;
+	case CCCI_IOC_SMEM_GET_STATE:
+		if (port->rx_ch == CCCI_SMEM_CH) {
+			struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
+
+			ret = put_user((unsigned int)smem_port->state,
+				(unsigned int __user *)arg);
+		} else {
+			ret = -EPERM;
+		}
+		break;
+
 	case CCCI_IOC_SET_HEADER:
 		port->flags |= PORT_F_USER_HEADER;
 		break;
@@ -1034,6 +1101,42 @@ unsigned int dev_char_poll(struct file *fp, struct poll_table_struct *poll)
 	return mask;
 }
 
+static int dev_char_mmap(struct file *fp, struct vm_area_struct *vma)
+{
+	struct ccci_port *port = fp->private_data;
+	struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
+	int pfn, len, ret;
+
+	CCCI_DBG_MSG(port->modem->index, CHAR, "mmap on %s\n", port->name);
+	if (port->rx_ch != CCCI_SMEM_CH)
+		return -EPERM;
+
+	CCCI_INF_MSG(port->modem->index, CHAR, "remap addr:0x%llx len:%d  map-len:%lu\n",
+			(unsigned long long)smem_port->addr_phy, smem_port->length, vma->vm_end - vma->vm_start);
+	if ((vma->vm_end - vma->vm_start) > smem_port->length) {
+		CCCI_ERR_MSG(port->modem->index, CHAR,
+			     "invalid mm size request from %s\n", port->name);
+		return -EINVAL;
+	}
+
+	len =
+	    (vma->vm_end - vma->vm_start) <
+	    smem_port->length ? vma->vm_end - vma->vm_start : smem_port->length;
+	pfn = smem_port->addr_phy;
+	pfn >>= PAGE_SHIFT;
+	/* ensure that memory does not get swapped to disk */
+	vma->vm_flags |= VM_IO;
+	/* ensure non-cacheable */
+	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+	ret = remap_pfn_range(vma, vma->vm_start, pfn, len, vma->vm_page_prot);
+	if (ret) {
+		CCCI_ERR_MSG(port->modem->index, CHAR, "remap failed %d/%x, 0x%llx -> 0x%llx\n", ret, pfn,
+			(unsigned long long)smem_port->addr_phy, (unsigned long long)vma->vm_start);
+		return -EAGAIN;
+	}
+	return 0;
+}
+
 static const struct file_operations char_dev_fops = {
 	.owner = THIS_MODULE,
 	.open = &dev_char_open,
@@ -1045,6 +1148,7 @@ static const struct file_operations char_dev_fops = {
 	.compat_ioctl = &dev_char_compat_ioctl,
 #endif
 	.poll = &dev_char_poll,
+	.mmap = &dev_char_mmap,
 };
 
 static int port_char_init(struct ccci_port *port)
@@ -1059,8 +1163,8 @@ static int port_char_init(struct ccci_port *port)
 	port->rx_length_th = MAX_QUEUE_LENGTH;
 	if (port->rx_ch == CCCI_IPC_RX)
 		port_ipc_init(port);	/* this will change port->minor, call it before register device */
-	else if ((port->rx_ch == CCCI_RPC_RX) && (port->minor == 0))
-		port_kernel_init(port);
+	else if (port->rx_ch == CCCI_SMEM_CH)
+		port_smem_init(port);   /* this will change port->minor, call it before register device */
 	else
 		port->private_data = dev;	/* not using */
 	ret = cdev_add(dev, MKDEV(port->modem->major, port->modem->minor_base + port->minor), 1);
@@ -1185,6 +1289,8 @@ static void port_char_md_state_notice(struct ccci_port *port, MD_STATE state)
 		port_ipc_md_state_notice(port, state);
 	if (port->rx_ch == CCCI_UART1_RX && state == GATED)
 		wake_up_all(&port->rx_wq);	/* check poll function */
+	if (port->rx_ch == CCCI_SMEM_CH && state == RX_IRQ)
+		port_smem_rx_wakeup(port);
 }
 
 struct ccci_port_ops char_port_ops = {

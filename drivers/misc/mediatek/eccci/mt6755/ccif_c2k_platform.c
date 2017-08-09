@@ -223,16 +223,6 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 	return 0;
 }
 
-static void __iomem *c2k_ccci_smem_sub_region_addr(void *md_blk, int *size_o)
-{
-	struct ccci_modem *md = (struct ccci_modem *)md_blk;
-
-	if (size_o)
-		*size_o = 40;
-
-	return md->mem_layout.smem_region_vir+CCCI_SMEM_OFFSET_MD3_DBM+CCCI_SMEM_DBM_GUARD_SIZE;
-}
-
 int md_ccif_io_remap_md_side_register(struct ccci_modem *md)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
@@ -508,7 +498,6 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 int md_ccif_power_on(struct ccci_modem *md)
 {
 	int ret = 0;
-	static int has_register;
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
 	switch (md->index) {
@@ -539,11 +528,6 @@ int md_ccif_power_on(struct ccci_modem *md)
 #endif
 		kicker_pbm_by_md(KR_MD3, true);
 		CCCI_NORMAL_LOG(md->index, TAG, "Call end kicker_pbm_by_md(3,true)\n");
-		if (!has_register) {
-			/* Fix me, put code here temp */
-			register_smem_sub_region_mem_func(MD_SYS3, c2k_ccci_smem_sub_region_addr, SMEM_SUB_REGION00);
-			has_register = 1;
-		}
 		break;
 	}
 	CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_power_on:ret=%d\n", ret);

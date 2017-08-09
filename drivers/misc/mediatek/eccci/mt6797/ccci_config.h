@@ -19,7 +19,9 @@
 #define FEATURE_SEQ_CHECK_EN
 #define FEATURE_POLL_MD_EN
 #define FEATURE_SCP_CCCI_SUPPORT
-#define FEATURE_DHL_LOG_EN
+#define FEATURE_DIRECT_TETHERING_LOGGING
+#define FEATURE_DHL_CCB_RAW_SUPPORT
+#define FEATURE_SMART_LOGGING
 #define FEATURE_MD1MD3_SHARE_MEM
 
 #if 0 /*DEPRECATED */
@@ -70,7 +72,10 @@
 #define CCCC_SMEM_CCIF_SRAM_SIZE 16 /* SRAM size we dump into smem */
 #define CCCI_SMEM_SLEEP_MODE_DBG_DUMP 512 /* only dump first 512bytes in sleep mode info */
 #define CCCI_SMEM_DBM_GUARD_SIZE 8
+#define CCCI_SMEM_DBM_SIZE 40
 #define CCCI_SMEM_CCISM_DUMP_SIZE (20*1024)
+#define CCCI_SMEM_SIZE_RUNTIME_AP 0x800 /* AP runtime data size */
+#define CCCI_SMEM_SIZE_RUNTIME_MD 0x800 /* MD runtime data size */
 /*================================================*/
 /* share memory region description */
 #define CCCI_SMEM_OFFSET_EXCEPTION 0 /* offset in whole share memory region */
@@ -88,21 +93,26 @@
 #define CCCI_SMEM_SIZE_SLEEP_MODE_DBG 1024 /* MD sleep mode debug info section in exception region tail */
 #define CCCI_SMEM_OFFSET_SLEEP_MODE_DBG (CCCI_SMEM_OFFSET_EXCEPTION+CCCI_SMEM_SIZE_EXCEPTION \
 										-CCCI_SMEM_SIZE_SLEEP_MODE_DBG)
-#define CCCI_SMEM_OFFSET_MD1_DBM (CCCI_SMEM_OFFSET_EXCEPTION+(64*1024-16*3-8))
-#define CCCI_SMEM_OFFSET_MD3_DBM (CCCI_SMEM_OFFSET_EXCEPTION+(64*1024-16*3-8))
+#define CCCI_SMEM_OFFSET_DBM_DEBUG (CCCI_SMEM_OFFSET_EXCEPTION+(64*1024-CCCI_SMEM_DBM_SIZE-CCCI_SMEM_DBM_GUARD_SIZE*2))
 /*== subset of exception region ends ==*/
 #define CCCI_SMEM_OFFSET_RUNTIME (CCCI_SMEM_OFFSET_EXCEPTION+CCCI_SMEM_SIZE_EXCEPTION)
-#define CCCI_SMEM_SIZE_RUNTIME_AP 0x800 /* AP runtime data size */
-#define CCCI_SMEM_SIZE_RUNTIME_MD 0x800 /* MD runtime data size */
 #define CCCI_SMEM_SIZE_RUNTIME	(CCCI_SMEM_SIZE_RUNTIME_AP+CCCI_SMEM_SIZE_RUNTIME_MD)
-#ifdef FEATURE_SCP_CCCI_SUPPORT
 #define CCCI_SMEM_OFFSET_CCISM (CCCI_SMEM_OFFSET_RUNTIME+CCCI_SMEM_SIZE_RUNTIME) /* SCP<->MD1/3 */
 #define CCCI_SMEM_SIZE_CCISM (32*1024)
+#define CCCI_SMEM_OFFSET_CCB_DHL (CCCI_SMEM_OFFSET_CCISM+CCCI_SMEM_SIZE_CCISM)
+#define CCCI_SMEM_SIZE_CCB_DHL 4096 /* round up to 4K alignment, mmap requirments, 0x425000 */
+#define CCCI_SMEM_OFFSET_RAW_DHL (CCCI_SMEM_OFFSET_CCB_DHL + CCCI_SMEM_SIZE_CCB_DHL)
+#define CCCI_SMEM_SIZE_RAW_DHL 4096
+#define CCCI_SMEM_OFFSET_DT_NETD (CCCI_SMEM_OFFSET_RAW_DHL + CCCI_SMEM_SIZE_RAW_DHL)
+#define CCCI_SMEM_SIZE_DT_NETD 4096
+#define CCCI_SMEM_OFFSET_DT_USB (CCCI_SMEM_OFFSET_DT_NETD + CCCI_SMEM_SIZE_DT_NETD)
+#define CCCI_SMEM_SIZE_DT_USB 4096
+
+#define CCCI_SMEM_OFFSET_SMART_LOGGING (CCCI_SMEM_OFFSET_DT_USB+CCCI_SMEM_SIZE_DT_USB) /*APM->MD1*/
+#define CCCI_SMEM_SIZE_SMART_LOGGING 0 /* variable, so it should be the last region for MD1 */
+
 #define CCCI_SMEM_OFFSET_CCIF_SMEM (CCCI_SMEM_OFFSET_CCISM+CCCI_SMEM_SIZE_CCISM) /*AP<->MD3*/
-#else
-#define CCCI_SMEM_OFFSET_CCIF_SMEM (CCCI_SMEM_OFFSET_RUNTIME+CCCI_SMEM_SIZE_RUNTIME) /*AP<->MD3*/
-#endif
-#define CCCI_SMEM_SIZE_CCIF_SMEM 0x0 /* variable, so it should be the last region for MD3 */
+#define CCCI_SMEM_SIZE_CCIF_SMEM 0 /* variable, so it should be the last region for MD3 */
 /*================================================ */
 
 /*================================================ */

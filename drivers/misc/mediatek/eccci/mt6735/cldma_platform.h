@@ -34,6 +34,7 @@
 /* peer */
 #define AP_MD_PEER_WAKEUP (5)
 #define AP_MD_SEQ_ERROR (6)
+#define AP_MD_CCB_WAKEUP (8)
 
 struct md_hw_info {
 	/* HW info - Register Address */

@@ -379,6 +379,14 @@ enum{
 /*md_init set MD boot env data before power on MD */
 #define CCCI_IOC_SET_BOOT_DATA			_IOW(CCCI_IOC_MAGIC, 47, unsigned int[16])
 
+/* for user space share memory user */
+#define CCCI_IOC_SMEM_BASE			_IOR(CCCI_IOC_MAGIC, 48, unsigned int)
+#define CCCI_IOC_SMEM_LEN			_IOR(CCCI_IOC_MAGIC, 49, unsigned int)
+#define CCCI_IOC_SMEM_TX_NOTIFY			_IOW(CCCI_IOC_MAGIC, 50, unsigned int)
+#define CCCI_IOC_SMEM_RX_POLL			_IOR(CCCI_IOC_MAGIC, 51, unsigned int)
+#define CCCI_IOC_SMEM_SET_STATE			_IOW(CCCI_IOC_MAGIC, 52, unsigned int)
+#define CCCI_IOC_SMEM_GET_STATE			_IOR(CCCI_IOC_MAGIC, 53, unsigned int)
+
 #define CCCI_IOC_SET_HEADER				_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER				_IO(CCCI_IOC_MAGIC,  113) /* emcs_va */
 #define CCCI_IOC_DL_TRAFFIC_CONTROL		_IOW(CCCI_IOC_MAGIC, 119, unsigned int) /* mdlogger */
@@ -577,9 +585,13 @@ typedef enum {
 	CCCI_CCMNI8_TX                  = 91,
 	CCCI_CCMNI8_TX_ACK              = 92,
 	CCCI_CCMNI8_DLACK_RX            = 93, /*__CCMNI_ACK_FAST_P*/
-
 	CCCI_MDL_MONITOR_DL             = 94,
 	CCCI_MDL_MONITOR_UL             = 95,
+	CCCI_CCMNILAN_RX                = 96,
+	CCCI_CCMNILAN_RX_ACK            = 97,
+	CCCI_CCMNILAN_TX                = 98,
+	CCCI_CCMNILAN_TX_ACK            = 99,
+	CCCI_CCMNILAN_DLACK_RX          = 100,
 
 	/*5 chs for C2K only*/
 	CCCI_C2K_PPP_DATA,		/* data ch for c2k */
@@ -588,8 +600,10 @@ typedef enum {
 	CCCI_C2K_AT3,	/*rild AT3 ch for c2k*/
 	CCCI_C2K_LB_DL,	/*downlink loopback*/
 
+	/* virtual channels */
 	CCCI_MONITOR_CH,
 	CCCI_DUMMY_CH,
+	CCCI_SMEM_CH,
 	CCCI_MAX_CH_NUM, /* RX channel ID should NOT be >= this!! */
 
 	CCCI_MONITOR_CH_ID = 0xf0000000, /* for backward compatible */
@@ -874,6 +888,20 @@ typedef enum {
 	HIF_EX_ALLQ_RESET, /* polling */
 } HIF_EX_STAGE;
 
+typedef enum {
+	SMEM_USER_RAW_DBM = 0,
+	SMEM_USER_CCB_DHL,
+	SMEM_USER_RAW_DHL,
+	SMEM_USER_RAW_NETD,
+	SMEM_USER_RAW_USB,
+	SMEM_USER_MAX,
+} SMEM_USER_ID;
+
+enum {
+	P_CORE = 0,
+	VOLTE_CORE,
+};
+
 /* runtime data format uses EEMCS's version, NOT the same with legacy CCCI */
 struct modem_runtime {
 	u32 Prefix;			 /* "CCIF" */
@@ -891,7 +919,7 @@ struct modem_runtime {
 	u32 ExceShareMemSize;
 	u32 CCIFShareMemBase;
 	u32 CCIFShareMemSize;
-#ifdef FEATURE_DHL_LOG_EN
+#ifdef FEATURE_SMART_LOGGING
 	u32 DHLShareMemBase; /* For DHL */
 	u32 DHLShareMemSize;
 #endif
@@ -943,18 +971,6 @@ typedef struct{
 
 #define MAX_KERN_API 24 /* 20 */
 
-typedef enum {
-	SMEM_SUB_REGION00 = 0, /* dbm */
-	SMEM_SUB_REGION01,
-	SMEM_SUB_REGION02,
-	SMEM_SUB_REGION03,
-	SMEM_SUB_REGION04,
-	SMEM_SUB_REGION05,
-	SMEM_SUB_REGION06,
-	SMEM_SUB_REGION07,
-	SMEM_SUB_REGION_MAX,
-} smem_sub_region_t;
-
 /* ============================================================================================== */
 /* Export API */
 /* ============================================================================================== */
@@ -997,8 +1013,6 @@ void ccci_power_off(void);
 /* Ubin API */
 int md_capability(int md_id, int wm_id, int curr_md_type);
 int get_md_wm_id_map(int ap_wm_id);
-/* AP MD user share */
-void __iomem *get_smem_start_addr(int md_id, int region_id, int *size_o);
 /* LK load modem */
 int modem_run_env_ready(int md_id);
 int get_lk_load_md_info(char buf[], int size);
@@ -1006,6 +1020,9 @@ int get_md_type_from_lk(int md_id);
 int get_raw_check_hdr(int md_id, char buf[], int size);
 int ccci_get_md_check_hdr_inf(int md_id, void *img_inf, char post_fix[]);
 int get_md_img_raw_size(int md_id);
+/* for kernel share memory user */
+void __iomem *get_smem_start_addr(int md_id, SMEM_USER_ID user_id, int *size_o);
+
 /* CCCI dump */
 #define CCCI_DUMP_TIME_FLAG		(1<<0)
 #define CCCI_DUMP_CLR_BUF_FLAG	(1<<1)

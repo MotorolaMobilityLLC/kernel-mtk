@@ -575,33 +575,12 @@ struct ccci_mem_layout {	/* all from AP view, AP has no haredware remap after MT
 	void __iomem *smem_region_vir;
 	phys_addr_t smem_region_phy;
 	unsigned int smem_region_size;
-	unsigned int smem_offset_AP_to_MD;	/* offset between AP and MD view of share memory */
-	/*DHL info*/
-	void __iomem *dhl_smem_vir;
-	phys_addr_t dhl_smem_phy;
-	unsigned int dhl_smem_size;
+	unsigned int smem_offset_AP_to_MD; /* offset between AP and MD view of share memory */
 	/*MD1 MD3 shared memory*/
 	void __iomem *md1_md3_smem_vir;
 	phys_addr_t md1_md3_smem_phy;
 	unsigned int md1_md3_smem_size;
 };
-
-
-/**
-*
-*--smem layout--
-*
-*--0x00200000  _ _ _ _ _ _ _ _
-*             | share mem      |
-*--0x00xxx000 |_ _ _ _ _ _ _ _ |
-*             |   (CCIF)       |
-*--0x00011000 |_ _ _ _ _ _ _ _ |
-*             | runtime data   |
-*--0x00010000 |_ _ _ _ _ _ _ _ |
-*             |  excption      |
-*--0x00000000 |_ _(4k dump)_ _ |
-*
-**/
 
 struct ccci_smem_layout {
 	/* total exception region */
@@ -621,19 +600,40 @@ struct ccci_smem_layout {
 	unsigned int ccci_ccism_smem_size;
 	unsigned int ccci_ccism_dump_size;
 
+	/* DHL share memory region */
+	void __iomem *ccci_ccb_dhl_base_vir;
+	phys_addr_t ccci_ccb_dhl_base_phy;
+	unsigned int ccci_ccb_dhl_size;
+	void __iomem *ccci_raw_dhl_base_vir;
+	phys_addr_t ccci_raw_dhl_base_phy;
+	unsigned int ccci_raw_dhl_size;
+
+	/* direct tethering region */
+	void __iomem *ccci_dt_netd_smem_base_vir;
+	phys_addr_t ccci_dt_netd_smem_base_phy;
+	unsigned int ccci_dt_netd_smem_size;
+	void __iomem *ccci_dt_usb_smem_base_vir;
+	phys_addr_t ccci_dt_usb_smem_base_phy;
+	unsigned int ccci_dt_usb_smem_size;
+
+	/* smart logging region */
+	void __iomem *ccci_smart_logging_base_vir;
+	phys_addr_t ccci_smart_logging_base_phy;
+	unsigned int ccci_smart_logging_size;
+
 	/* CCIF share memory region */
 	void __iomem *ccci_ccif_smem_base_vir;
 	phys_addr_t ccci_ccif_smem_base_phy;
 	unsigned int ccci_ccif_smem_size;
 
-	/* how we dump exception region */
+	/* sub regions in exception region */
 	void __iomem *ccci_exp_smem_ccci_debug_vir;
 	unsigned int ccci_exp_smem_ccci_debug_size;
 	void __iomem *ccci_exp_smem_mdss_debug_vir;
 	unsigned int ccci_exp_smem_mdss_debug_size;
 	void __iomem *ccci_exp_smem_sleep_debug_vir;
 	unsigned int ccci_exp_smem_sleep_debug_size;
-
+	void __iomem *ccci_exp_smem_dbm_debug_vir;
 };
 
 typedef enum {
@@ -701,6 +701,7 @@ struct ccci_modem_ops {
 	struct ccci_port *(*get_port_by_channel)(struct ccci_modem *md, CCCI_CH ch);
 	int (*low_power_notify)(struct ccci_modem *md, LOW_POEWR_NOTIFY_TYPE type, int level);
 	int (*ee_callback)(struct ccci_modem *md, MODEM_EE_FLAG flag);
+	int (*send_ccb_tx_notify)(struct ccci_modem *md, int core_id);
 };
 
 typedef void __iomem *(*smem_sub_region_cb_t)(void *md_blk, int *size_o);
@@ -710,7 +711,7 @@ typedef enum{
 	BOOT_INFO = 0,
 	EXCEPTION_SHARE_MEMORY,
 	CCIF_SHARE_MEMORY,
-	DHL_SHARE_MEMORY,
+	SMART_LOGGING_SHARE_MEMORY,
 	MD1MD3_SHARE_MEMORY,
 	/*ccci misc info*/
 	MISC_INFO_HIF_DMA_REMAP,
@@ -723,6 +724,10 @@ typedef enum{
 	MISC_INFO_C2K,
 	MD_IMAGE_START_MEMORY,
 	CCISM_SHARE_MEMORY,
+	DHL_CCB_SHARE_MEMORY,
+	DHL_RAW_SHARE_MEMORY,
+	DT_NETD_SHARE_MEMORY,
+	DT_USB_SHARE_MEMORY,
 	RUNTIME_FEATURE_ID_MAX,
 } MD_CCCI_RUNTIME_FEATURE_ID;
 
@@ -870,7 +875,6 @@ struct ccci_modem {
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 	struct work_struct scp_md_state_sync_work;
 #endif
-	smem_sub_region_cb_t sub_region_cb_tbl[SMEM_SUB_REGION_MAX];
 	/* unsigned char private_data[0];
 	do NOT use this manner, otherwise spinlock inside private_data will trigger alignment exception */
 };
@@ -1044,7 +1048,10 @@ int ccci_send_virtual_md_msg(struct ccci_modem *md, CCCI_CH ch, CCCI_MD_MSG msg,
 struct ccci_modem *ccci_get_modem_by_id(int md_id);
 int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned int len);
 void ccci_dump_log_history(struct ccci_modem *md, int dump_multi_rec, int tx_queue_num, int rx_queue_num);
-void ccci_dump_log_add(struct ccci_modem *md, DIRECTION dir, int queue_index, struct ccci_header *msg, int is_dropped);
+void ccci_dump_log_add(struct ccci_modem *md, DIRECTION dir, int queue_index,
+				struct ccci_header *msg, int is_dropped);
+int ccci_scp_ipi_send(int md_id, int op_id, void *data);
+void ccci_update_md_boot_stage(struct ccci_modem *md, MD_BOOT_STAGE stage);
 
 /* common sub-system */
 extern int ccci_subsys_bm_init(void);
@@ -1052,6 +1059,7 @@ extern int ccci_subsys_sysfs_init(void);
 extern int ccci_subsys_dfo_init(void);
 /* per-modem sub-system */
 extern int ccci_subsys_char_init(struct ccci_modem *md);
+
 extern void md_ex_monitor_func(unsigned long data);
 extern void md_ex_monitor2_func(unsigned long data);
 extern void md_bootup_timeout_func(unsigned long data);
@@ -1059,15 +1067,11 @@ extern void md_status_poller_func(unsigned long data);
 extern void md_status_timeout_func(unsigned long data);
 extern void ccci_subsys_kernel_init(void);
 extern int ccci_set_md_boot_data(struct ccci_modem *md, unsigned int data[], int len);
-
+extern int md_smem_port_cfg(struct ccci_modem *md);
 /*
  * if recv_request returns 0 or -CCCI_ERR_DROP_PACKET, then it's port's duty to free the request, and caller should
  * NOT reference the request any more. but if it returns other error, caller should be responsible to free the request.
  */
 extern int ccci_port_recv_request(struct ccci_modem *md, struct ccci_request *req, struct sk_buff *skb);
-
-int register_smem_sub_region_mem_func(int md_id, smem_sub_region_cb_t pfunc, int region_id);
-int ccci_scp_ipi_send(int md_id, int op_id, void *data);
-void ccci_update_md_boot_stage(struct ccci_modem *md, MD_BOOT_STAGE stage);
 
 #endif	/* __CCCI_CORE_H__ */

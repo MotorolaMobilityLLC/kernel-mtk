@@ -20,10 +20,14 @@ typedef enum {
 #endif
 	IPC_EL1_MSG_ID_BEGIN = IPC_L4C_MSG_ID_BEGIN + IPC_L4C_MSG_ID_RANGE,
 	IPC_EL1_MSG_ID_RANGE = 0x20,
-	IPC_CCCIIPC_MSG_ID_BEGIN = IPC_L4C_MSG_ID_BEGIN + IPC_L4C_MSG_ID_RANGE + IPC_EL1_MSG_ID_RANGE,
+	IPC_CCCIIPC_MSG_ID_BEGIN = IPC_EL1_MSG_ID_BEGIN + IPC_EL1_MSG_ID_RANGE,
 	IPC_CCCIIPC_MSG_ID_RANGE = 0x10,
 	IPC_IPCORE_MSG_ID_BEGIN = IPC_CCCIIPC_MSG_ID_BEGIN + IPC_CCCIIPC_MSG_ID_RANGE,
 	IPC_IPCORE_MSG_ID_RANGE = 0x8,
+	IPC_MDT_MSG_ID_BEGIN = IPC_IPCORE_MSG_ID_BEGIN + IPC_IPCORE_MSG_ID_RANGE,
+	IPC_MDT_MSG_ID_RANGE = 0x8,
+	IPC_UFPM_MSG_ID_BEGIN = IPC_MDT_MSG_ID_BEGIN + IPC_MDT_MSG_ID_RANGE,
+	IPC_UFPM_MSG_ID_RANGE = 0x18,
 } CCCI_IPC_MSG_ID_RANGE;
 
 struct ccci_ipc_ctrl {
@@ -89,6 +93,16 @@ struct garbage_filter_item {
 	u32 magic_code;
 } __packed;
 
+struct ccci_emi_info {
+	u8 ap_domain_id;
+	u8 md_domain_id;
+	u8 reserve[6];
+	u64 ap_view_bank0_base;
+	u64 bank0_size;
+	u64 ap_view_bank4_base;
+	u64 bank4_size;
+} __packed;
+
 typedef enum {
 	GF_IPV4V6 = 0,
 	GF_IPV4,
@@ -100,6 +114,7 @@ typedef enum {
 	GF_UDP = 17
 } GF_PROTOCOL_TYPE;
 
+/* internal API */
 int port_ipc_init(struct ccci_port *port);
 int port_ipc_req_match(struct ccci_port *port, struct ccci_request *req);
 int port_ipc_tx_wait(struct ccci_port *port);
@@ -108,6 +123,17 @@ int port_ipc_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg);
 void port_ipc_md_state_notice(struct ccci_port *port, MD_STATE state);
 int port_ipc_write_check_id(struct ccci_port *port, struct ccci_request *req);
 unsigned int port_ipc_poll(struct file *fp, struct poll_table_struct *poll);
-void port_ipc_kernel_read(struct ccci_port *port);
+
+/* export API */
+int ccci_ipc_send_ilm(int md_id, ipc_ilm_t *in_ilm);
+int ccci_get_emi_info(int md_id, struct ccci_emi_info *emi_info);
+
+/* external API */
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+extern int musb_md_msg_hdlr(ipc_ilm_t *ilm);
+#endif
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
+extern int pkt_track_md_msg_hdlr(ipc_ilm_t *ilm);
+#endif
 
 #endif				/* __PORT_IPC_H__ */

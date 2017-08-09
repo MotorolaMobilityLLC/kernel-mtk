@@ -268,6 +268,9 @@ void ccci_config_modem(struct ccci_modem *md)
 	md->smem_layout.ccci_exp_smem_sleep_debug_vir =
 		md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_SLEEP_MODE_DBG;
 	md->smem_layout.ccci_exp_smem_sleep_debug_size = CCCI_SMEM_SLEEP_MODE_DBG_DUMP;
+#ifdef FEATURE_DBM_SUPPORT
+	md->smem_layout.ccci_exp_smem_dbm_debug_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_DBM_DEBUG;
+#endif
 
 	/*runtime region */
 	md->smem_layout.ccci_rt_smem_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_RUNTIME;
@@ -281,6 +284,24 @@ void ccci_config_modem(struct ccci_modem *md)
 	md->smem_layout.ccci_ccism_smem_size = CCCI_SMEM_SIZE_CCISM;
 	md->smem_layout.ccci_ccism_dump_size = CCCI_SMEM_CCISM_DUMP_SIZE;
 #endif
+	/* CCB DHL region */
+#ifdef FEATURE_DHL_CCB_RAW_SUPPORT
+	md->smem_layout.ccci_ccb_dhl_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_CCB_DHL;
+	md->smem_layout.ccci_ccb_dhl_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_CCB_DHL;
+	md->smem_layout.ccci_ccb_dhl_size = CCCI_SMEM_SIZE_CCB_DHL;
+	md->smem_layout.ccci_raw_dhl_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_RAW_DHL;
+	md->smem_layout.ccci_raw_dhl_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_RAW_DHL;
+	md->smem_layout.ccci_raw_dhl_size = CCCI_SMEM_SIZE_RAW_DHL;
+#endif
+	/* direct tethering region */
+#ifdef FEATURE_DIRECT_TETHERING_LOGGING
+	md->smem_layout.ccci_dt_netd_smem_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_DT_NETD;
+	md->smem_layout.ccci_dt_netd_smem_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_DT_NETD;
+	md->smem_layout.ccci_dt_netd_smem_size = CCCI_SMEM_SIZE_DT_NETD;
+	md->smem_layout.ccci_dt_usb_smem_base_vir = md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_DT_USB;
+	md->smem_layout.ccci_dt_usb_smem_base_phy = md->mem_layout.smem_region_phy + CCCI_SMEM_OFFSET_DT_USB;
+	md->smem_layout.ccci_dt_usb_smem_size = CCCI_SMEM_SIZE_DT_USB;
+#endif
 
 	/* AP<->MD CCIF share memory region */
 #ifdef CCCI_SMEM_OFFSET_CCIF_SMEM
@@ -290,8 +311,19 @@ void ccci_config_modem(struct ccci_modem *md)
 		md->smem_layout.ccci_ccif_smem_size = CCCI_SMEM_SIZE_CCIF_SMEM;
 	}
 #endif
+	/* smart logging region */
+#ifdef FEATURE_SMART_LOGGING
+	if (md->index == MD_SYS1) {
+		md->smem_layout.ccci_smart_logging_base_phy = md->mem_layout.smem_region_phy +
+								CCCI_SMEM_OFFSET_SMART_LOGGING;
+		md->smem_layout.ccci_smart_logging_base_vir = md->mem_layout.smem_region_vir +
+								CCCI_SMEM_OFFSET_SMART_LOGGING;
+		md->smem_layout.ccci_smart_logging_size = md->mem_layout.smem_region_size -
+								CCCI_SMEM_OFFSET_SMART_LOGGING;
+	}
+#endif
 
-	/*md1 md3 shared memory region and remap*/
+	/* md1 md3 shared memory region and remap */
 	get_md1_md3_resv_smem_info(md->index, &md->mem_layout.md1_md3_smem_phy,
 		&md->mem_layout.md1_md3_smem_size);
 	md->mem_layout.md1_md3_smem_vir =
@@ -308,6 +340,11 @@ void ccci_config_modem(struct ccci_modem *md)
 	if (md->config.setting & MD_SETTING_ENABLE)
 		ccci_set_mem_remap(md, md_resv_smem_addr - md_resv_mem_addr,
 				   ALIGN(md_resv_mem_addr + md_resv_mem_size + md_resv_smem_size, 0x2000000));
+#if 0
+	CCCI_INF_MSG(md->index, CORE, "dump memory layout\n");
+	ccci_mem_dump(md->index, &md->mem_layout, sizeof(struct ccci_mem_layout));
+	ccci_mem_dump(md->index, &md->smem_layout, sizeof(struct ccci_smem_layout));
+#endif
 }
 
 /*
@@ -613,6 +650,7 @@ int ccci_register_modem(struct ccci_modem *modem)
 	if (ret < 0)
 		return ret;
 	ccci_config_modem(modem);
+	md_smem_port_cfg(modem); /* must be after modem config to get smem layout */
 	list_add_tail(&modem->entry, &modem_list);
 	ccci_sysfs_add_modem(modem->index, (void *)&modem->kobj, (void *)&ccci_md_ktype, boot_md_show, boot_md_store);
 	ccci_platform_init(modem);
@@ -917,62 +955,6 @@ int switch_MD2_Tx_Power(unsigned int mode)
 }
 EXPORT_SYMBOL(switch_MD2_Tx_Power);
 #endif
-
-int register_smem_sub_region_mem_func(int md_id, smem_sub_region_cb_t pfunc, int region_id)
-{
-	struct ccci_modem *md = NULL;
-	int ret = 0;
-
-	list_for_each_entry(md, &modem_list, entry) {
-		if (md->index == md_id) {
-			ret = 1;
-			break;
-		}
-	}
-	if (ret) {
-		if (region_id < SMEM_SUB_REGION_MAX) {
-			md->sub_region_cb_tbl[region_id] = pfunc;
-			CCCI_INIT_LOG(md_id, CORE, "region%d call back %p register success\n", region_id, pfunc);
-			return 0;
-		}
-
-		CCCI_INIT_LOG(md_id, CORE, "sub_region invalid %d\n", region_id);
-		return -2;
-	}
-
-	CCCI_INIT_LOG(md_id, CORE, "md id invalid %d\n", md_id);
-	return -1;
-}
-
-void __iomem *get_smem_start_addr(int md_id, int region_id, int *size_o)
-{
-	struct ccci_modem *md = NULL;
-	int ret = 0;
-
-	list_for_each_entry(md, &modem_list, entry) {
-		if (md->index == md_id) {
-			ret = 1;
-			break;
-		}
-	}
-
-	if (!ret) {
-		CCCI_INIT_LOG(md_id, CORE, "md%d not support\n", md_id+1);
-		return NULL;
-	}
-
-	if (region_id >= SMEM_SUB_REGION_MAX) {
-		CCCI_INIT_LOG(md_id, CORE, "region id%d not support\n", region_id);
-		return NULL;
-	}
-
-	if (md->sub_region_cb_tbl[region_id] == NULL) {
-		CCCI_INIT_LOG(md_id, CORE, "region%d call back not register\n", region_id);
-		return NULL;
-	}
-
-	return md->sub_region_cb_tbl[region_id](md, size_o);
-}
 
 subsys_initcall(ccci_init);
 

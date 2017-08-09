@@ -5,15 +5,17 @@
 #ifdef CONFIG_MTK_ENABLE_MD1
 static struct ccci_port md1_ccci_ports[] = {
 /* network port first for performace */
-	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 3, 3, 0xF4, 0xFF, 8, &net_port_ops, 0xF1, "ccmni0",},
-	{CCCI_CCMNI2_TX, CCCI_CCMNI2_RX, 3, 4, 0xF4, 0xFF, 8, &net_port_ops, 0xF2, "ccmni1",},
-	{CCCI_CCMNI3_TX, CCCI_CCMNI3_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xF3, "ccmni2",},
+	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 3, 3, 0xF4, 0xFF, 8, &net_port_ops, 0xFF, "ccmni0",},
+	{CCCI_CCMNI2_TX, CCCI_CCMNI2_RX, 3, 4, 0xF4, 0xFF, 8, &net_port_ops, 0xFF, "ccmni1",},
+	{CCCI_CCMNI3_TX, CCCI_CCMNI3_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xFF, "ccmni2",},
 /*for IMS*/
-	{CCCI_CCMNI4_TX, CCCI_CCMNI4_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xF4, "ccmni3",},
-	{CCCI_CCMNI5_TX, CCCI_CCMNI5_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xF5, "ccmni4",},
-	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xF6, "ccmni5",},
-	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xF7, "ccmni6",},
-	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 5, 5, 0xFF, 0xFF, 8, &net_port_ops, 0xF8, "ccmni7",},
+	{CCCI_CCMNI4_TX, CCCI_CCMNI4_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni3",},
+	{CCCI_CCMNI5_TX, CCCI_CCMNI5_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni4",},
+	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni5",},
+	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni6",},
+	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni7",},
+/* for direct tethering */
+	{CCCI_CCMNILAN_TX, CCCI_CCMNILAN_RX, 3, 4, 0xFF, 0xFF, 0, &net_port_ops, 0xFF, "ccmni-lan",},
 /* char port, notes ccci_monitor must be first for md_cd_get_port_by_minor() implement */
 	{CCCI_MONITOR_CH, CCCI_MONITOR_CH, 0xFF, 0xFF, 0xFF, 0xFF, 4, &char_port_ops, 0, "ccci_monitor",},
 	{CCCI_PCM_TX, CCCI_PCM_RX, 0, 0, 0xFF, 0xFF, 4, &char_port_ops, 1, "ccci_aud",},
@@ -36,7 +38,7 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_LB_IT_TX, CCCI_LB_IT_RX, 0, 0, 0xFF, 0xFF, 0, &char_port_ops, 18, "ccci_lb_it",},
 	{CCCI_MDL_MONITOR_UL, CCCI_MDL_MONITOR_DL, 1, 1, 3, 3, 0, &char_port_ops, 19, "ccci_mdl_monitor",},
 	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 4, &char_port_ops, 20, "ccci_rpc",},
-	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 0, &kernel_port_ops, 0, "ccci_rpc_k",},
+	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 0, &kernel_port_ops, 0xFF, "ccci_rpc_k",},
 
 /* IPC char port minor= minor idx + CCCI_IPC_MINOR_BASE(100) */
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &char_port_ops, 0, "ccci_ipc_1220_0",},
@@ -46,10 +48,18 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &char_port_ops, 4, "ccci_ipc_4",},
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &char_port_ops, 5, "ccci_ipc_5",},
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &ipc_kern_port_ops, 6, "ccci_ipc_6",},
+	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &ipc_kern_port_ops, 7, "ccci_ipc_7",},
+	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &ipc_kern_port_ops, 8, "ccci_ipc_8",},
 /* sys port */
-	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &kernel_port_ops, 0, "ccci_ctrl",},
-	{CCCI_SYSTEM_TX, CCCI_SYSTEM_RX, 0, 0, 0xFF, 0xFF, 0, &kernel_port_ops, 0, "ccci_sys",},
-	{CCCI_STATUS_TX, CCCI_STATUS_RX, 0, 0, 0, 0, 0, &kernel_port_ops, 0, "ccci_poll",},
+	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &kernel_port_ops, 0xFF, "ccci_ctrl",},
+	{CCCI_SYSTEM_TX, CCCI_SYSTEM_RX, 0, 0, 0xFF, 0xFF, 0, &kernel_port_ops, 0xFF, "ccci_sys",},
+	{CCCI_STATUS_TX, CCCI_STATUS_RX, 0, 0, 0, 0, 0, &kernel_port_ops, 0xFF, "ccci_poll",},
+/* smem port */
+	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 0, "ccci_raw_dbm",},
+	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 1, "ccci_ccb_dhl",},
+	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 2, "ccci_raw_dhl",},
+	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 3, "ccci_raw_netd",},
+	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 4, "ccci_raw_usb",},
 };
 #endif
 

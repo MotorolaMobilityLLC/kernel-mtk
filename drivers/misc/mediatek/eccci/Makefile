@@ -23,7 +23,7 @@ endif
 ccci-y := ccci_core.o ccci_bm.o ccci_support.o
 
 # port routines
-ccci-y += port_char.o port_net.o port_kernel.o port_ipc.o port_cfg.o
+ccci-y += port_char.o port_net.o port_kernel.o port_ipc.o port_cfg.o port_smem.o
 
 # modem drivers
 ifeq ($(CONFIG_MTK_ECCCI_CCIF), y)

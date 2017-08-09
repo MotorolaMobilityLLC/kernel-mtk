@@ -10,9 +10,8 @@
 #include "ccci_core.h"
 #include "ccci_bm.h"
 #include "port_ipc.h"
-#include "ccci_ipc_el1_msg_id.h"
+#include "ccci_ipc_msg_id.h"
 
-static struct ccci_ipc_ctrl *ipc_task_ctrl[MAX_NUM_IPC_TASKS];
 static struct ipc_task_id_map ipc_msgsvc_maptbl[] = {
 
 #define __IPC_ID_TABLE
@@ -65,8 +64,7 @@ static int port_ipc_ack_init(struct ccci_port *port)
 
 static int port_ipc_ack_recv_req(struct ccci_port *port, struct ccci_request *req)
 {
-	struct ccci_header *ccci_h = (struct ccci_header *)req->skb->data;
-	struct ccci_ipc_ctrl *ipc_ctrl = ipc_task_ctrl[ccci_h->reserved];	/* find port via task ID */
+	struct ccci_ipc_ctrl *ipc_ctrl = (struct ccci_ipc_ctrl *)port->private_data;
 
 	list_del(&req->entry);	/* dequeue from queue's list */
 	clear_bit(CCCI_TASK_PENDING, &ipc_ctrl->flag);
@@ -124,7 +122,7 @@ int port_ipc_rx_ack(struct ccci_port *port)
 	return ccci_send_msg_to_md(port->modem, CCCI_IPC_RX_ACK, IPC_MSGSVC_RVC_DONE, ipc_ctrl->task_id, 1);
 }
 
-static int send_new_time_to_md(int tz);
+static int send_new_time_to_md(struct ccci_modem *md, int tz);
 volatile int current_time_zone = 0;
 int port_ipc_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
 {
@@ -165,7 +163,7 @@ int port_ipc_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
 #ifdef FEATURE_MD_GET_CLIB_TIME
 		CCCI_DEBUG_LOG(port->modem->index, IPC, "CCCI_IPC_UPDATE_TIME 0x%x\n", (unsigned int)arg);
 		current_time_zone = (int)arg;
-		ret = send_new_time_to_md((int)arg);
+		ret = send_new_time_to_md(port->modem, (int)arg);
 #else
 		CCCI_REPEAT_LOG(port->modem->index, IPC, "CCCI_IPC_UPDATE_TIME 0x%x(dummy)\n", (unsigned int)arg);
 #endif
@@ -228,6 +226,19 @@ unsigned int port_ipc_poll(struct file *fp, struct poll_table_struct *poll)
 	return mask;
 }
 
+static struct ccci_port *find_ipc_port_by_task_id(struct ccci_modem *md, int task_id)
+{
+	int i;
+	struct ccci_port *port;
+
+	for (i = 0; i < md->port_number; i++) {
+		port = md->ports + i;
+		if (port->minor == task_id + CCCI_IPC_MINOR_BASE)
+			return port;
+	}
+	return NULL;
+}
+
 int port_ipc_init(struct ccci_port *port)
 {
 	struct ccci_ipc_ctrl *ipc_ctrl = kmalloc(sizeof(struct ccci_ipc_ctrl), GFP_KERNEL);
@@ -238,7 +249,6 @@ int port_ipc_init(struct ccci_port *port)
 	 */
 	ipc_ctrl->task_id = port->minor;
 	port->minor += CCCI_IPC_MINOR_BASE;
-	ipc_task_ctrl[ipc_ctrl->task_id] = ipc_ctrl;
 	init_waitqueue_head(&ipc_ctrl->tx_wq);
 	init_waitqueue_head(&ipc_ctrl->md_rdy_wq);
 	ipc_ctrl->md_is_ready = 0;
@@ -276,11 +286,12 @@ int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg)
 	struct local_para *local_para_ptr;
 	struct ccci_port *port;
 	int garbage_length;
-	u32 task_id = AP_IPC_GF;
 
 	memset(gf_port_list, 0, sizeof(gf_port_list));
 
-	port = ipc_task_ctrl[task_id]->port;
+	port = find_ipc_port_by_task_id(md, AP_IPC_GF);
+	if (!port)
+		return -EINVAL;
 	if (port->modem->md_state != READY)
 		return -ENODEV;
 
@@ -336,7 +347,7 @@ int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg)
 		/* set ilm */
 		ilm = (struct ccci_ipc_ilm *)skb_put(req->skb, sizeof(struct ccci_ipc_ilm));
 		ilm->src_mod_id = AP_MOD_GF;
-		ilm->dest_mod_id = MD_MOD_GF;
+		ilm->dest_mod_id = MD_MOD_IPCORE;
 		ilm->sap_id = 0;
 		if (reg)
 			ilm->msg_id = IPC_MSG_ID_IPCORE_GF_REG;
@@ -384,7 +395,7 @@ int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg)
 	}
 }
 
-static int port_ipc_kernel_write(ipc_ilm_t *in_ilm)
+static int port_ipc_kernel_write(struct ccci_modem *md, ipc_ilm_t *in_ilm)
 {
 	u32 task_id;
 	int count, actual_count, ret;
@@ -395,16 +406,16 @@ static int port_ipc_kernel_write(ipc_ilm_t *in_ilm)
 
 	/* src module id check */
 	task_id = in_ilm->src_mod_id & (~AP_UNIFY_ID_FLAG);
-	if (task_id >= ARRAY_SIZE(ipc_task_ctrl)) {
+	port = find_ipc_port_by_task_id(md, task_id);
+	if (!port) {
 		CCCI_ERROR_LOG(-1, IPC, "invalid task ID %x\n", in_ilm->src_mod_id);
-		return -1;
+		return -EINVAL;
 	}
 	if (in_ilm->local_para_ptr == NULL) {
 		CCCI_ERROR_LOG(-1, IPC, "invalid ILM local parameter pointer %p for task %d\n", in_ilm, task_id);
-		return -2;
+		return -EINVAL;
 	}
 
-	port = ipc_task_ctrl[task_id]->port;
 	if (port->modem->md_state != READY)
 		return -ENODEV;
 
@@ -457,6 +468,24 @@ static int port_ipc_kernel_write(ipc_ilm_t *in_ilm)
 	}
 }
 
+int ccci_ipc_send_ilm(int md_id, ipc_ilm_t *in_ilm)
+{
+	struct ccci_modem *md = ccci_get_modem_by_id(md_id);
+
+	if (!md)
+		return -EINVAL;
+	return port_ipc_kernel_write(md, in_ilm);
+}
+
+static int ccci_ipc_send_ilm_to_md1(ipc_ilm_t *in_ilm)
+{
+	struct ccci_modem *md = ccci_get_modem_by_id(0);
+
+	if (!md)
+		return -EINVAL;
+	return port_ipc_kernel_write(md, in_ilm);
+}
+
 static int port_ipc_kernel_recv_req(struct ccci_port *port, struct ccci_request *req)
 {
 	unsigned long flags;
@@ -500,6 +529,7 @@ static int port_ipc_kernel_thread(void *arg)
 	int ret;
 	struct ccci_ipc_ilm *ilm;
 	ipc_ilm_t out_ilm;
+	struct ipc_task_id_map *id_map;
 
 	CCCI_DEBUG_LOG(port->modem->index, IPC, "port %s's thread running\n", port->name);
 
@@ -533,10 +563,31 @@ static int port_ipc_kernel_thread(void *arg)
 		skb_pull(req->skb, sizeof(struct ccci_ipc_ilm));
 		out_ilm.local_para_ptr = (struct local_para *)(req->skb->data);
 		out_ilm.peer_buff_ptr = 0;
+		id_map = unify_AP_id_2_local_id(ccci_h->reserved);
+		if (id_map != NULL) {
+			switch (id_map->task_id) {
+			case AP_IPC_WMT:
 #ifdef FEATURE_CONN_MD_EXP_EN
-		mtk_conn_md_bridge_send_msg(&out_ilm);
+				mtk_conn_md_bridge_send_msg(&out_ilm);
 #endif
-		port->rx_length--;
+				break;
+			case AP_IPC_PKTTRC:
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT)
+				pkt_track_md_msg_hdlr(&out_ilm);
+#endif
+				break;
+			case AP_IPC_USB:
+#if defined(CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT) || defined(CONFIG_MTK_MD_DIRECT_LOGGING_SUPPORT)
+				musb_md_msg_hdlr(&out_ilm);
+#endif
+				break;
+			default:
+				CCCI_ERROR_LOG(port->modem->index, IPC, "recv unknown task ID %d\n", id_map->task_id);
+				break;
+			}
+		} else {
+			CCCI_ERROR_LOG(port->modem->index, IPC, "recv unknown module ID %d\n", ccci_h->reserved);
+		}
 		CCCI_DEBUG_LOG(port->modem->index, IPC, "read done on %s l=%d\n", port->name,
 			     out_ilm.local_para_ptr->msg_len);
 		req->policy = RECYCLE;
@@ -550,14 +601,14 @@ static int port_ipc_kernel_init(struct ccci_port *port)
 	struct ccci_ipc_ctrl *ipc_ctrl;
 
 	CCCI_DEBUG_LOG(port->modem->index, IPC, "IPC kernel port %s is initializing\n", port->name);
-	port->private_data = kthread_run(port_ipc_kernel_thread, port, "%s", port->name);
+	kthread_run(port_ipc_kernel_thread, port, "%s", port->name);
 	port->rx_length_th = MAX_QUEUE_LENGTH;
 
 	port_ipc_init(port);
 	ipc_ctrl = (struct ccci_ipc_ctrl *)port->private_data;
 	if (ipc_ctrl->task_id == AP_IPC_WMT) {
 #ifdef FEATURE_CONN_MD_EXP_EN
-		CONN_MD_BRIDGE_OPS ccci_ipc_conn_ops = {.rx_cb = port_ipc_kernel_write };
+		CONN_MD_BRIDGE_OPS ccci_ipc_conn_ops = {.rx_cb = ccci_ipc_send_ilm_to_md1};
 
 		mtk_conn_md_bridge_reg(MD_MOD_EL1, &ccci_ipc_conn_ops);
 #endif
@@ -572,7 +623,7 @@ struct ccci_port_ops ipc_kern_port_ops = {
 	.md_state_notice = &port_ipc_md_state_notice,
 };
 
-int send_new_time_to_md(int tz)
+int send_new_time_to_md(struct ccci_modem *md, int tz)
 {
 	ipc_ilm_t in_ilm;
 	char local_param[sizeof(local_para_struct) + 16];
@@ -599,10 +650,28 @@ int send_new_time_to_md(int tz)
 		     sys_tz.tz_minuteswest, sys_tz.tz_dsttime);
 	CCCI_DEBUG_LOG(-1, IPC, "Update time(A): [L:0x%08x][H:0x%08x][0x%08x][0x%08x]\n", timeinfo[0], timeinfo[1],
 		     timeinfo[2], timeinfo[3]);
-	if (port_ipc_kernel_write(&in_ilm) < 0) {
+	if (port_ipc_kernel_write(md, &in_ilm) < 0) {
 		CCCI_NORMAL_LOG(-1, IPC, "Update fail\n");
 		return -1;
 	}
 	CCCI_REPEAT_LOG(-1, IPC, "Update success\n");
 	return 0;
 }
+
+int ccci_get_emi_info(int md_id, struct ccci_emi_info *emi_info)
+{
+	struct ccci_modem *md = ccci_get_modem_by_id(md_id);
+
+	if (!md || !emi_info)
+		return -EINVAL;
+
+	emi_info->ap_domain_id = 0;
+	emi_info->ap_domain_id = 1;
+	emi_info->ap_view_bank0_base = md->mem_layout.md_region_phy;
+	emi_info->bank0_size = md->mem_layout.md_region_size;
+	emi_info->ap_view_bank4_base = md->mem_layout.smem_offset_AP_to_MD + 0x40000000;
+	emi_info->bank4_size = md->mem_layout.smem_region_size +
+				(md->mem_layout.smem_region_phy - md->mem_layout.smem_offset_AP_to_MD - 0x40000000);
+	return 0;
+}
+
