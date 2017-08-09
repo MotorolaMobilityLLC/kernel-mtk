@@ -94,4 +94,17 @@ config TOUCHSCREEN_MTK_GT9XX_HOTKNOT_SCP
 
 source "drivers/input/touchscreen/mediatek/GT9XX_hotknot_scp/Kconfig"
 
+config TOUCHSCREEN_MTK_GT911
+	bool "GT911 for Mediatek package"
+	default n
+	help
+	  Say Y here if you have GT911 touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/GT911/Kconfig"
+
 endif
