@@ -895,7 +895,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	if (fgIsWpsActive &&
 	    (prAdapter->rWifiVar.rConnSettings.eAuthMode < AUTH_MODE_WPA) &&
 	    (prAdapter->rWifiVar.rConnSettings.eOPMode == NET_TYPE_INFRA)) {
-		DBGLOG(RSN, INFO, "-- Skip the Protected BSS check\n");
+		DBGLOG(RSN, TRACE, "-- Skip the Protected BSS check\n");
 		return TRUE;
 	}
 #endif
@@ -904,9 +904,9 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	if ((prBss->u2CapInfo & CAP_INFO_PRIVACY) == 0) {
 
 		if (secEnabledInAis(prAdapter) == FALSE) {
-			DBGLOG(RSN, INFO, "-- No Protected BSS\n");
+			DBGLOG(RSN, TRACE, "-- No Protected BSS\n");
 		} else {
-			DBGLOG(RSN, INFO, "-- Protected BSS\n");
+			DBGLOG(RSN, TRACE, "-- Protected BSS\n");
 			return FALSE;
 		}
 		return TRUE;
@@ -915,7 +915,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 	/* Protection is required in this BSS. */
 	if ((prBss->u2CapInfo & CAP_INFO_PRIVACY) != 0) {
 		if (secEnabledInAis(prAdapter) == FALSE) {
-			DBGLOG(RSN, INFO, "-- Protected BSS\n");
+			DBGLOG(RSN, TRACE, "-- Protected BSS\n");
 			return FALSE;
 		}
 	}
@@ -927,7 +927,7 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		if (prBss->fgIEWPA) {
 			prBssRsnInfo = &prBss->rWPAInfo;
 		} else {
-			DBGLOG(RSN, INFO, "WPA Information Element does not exist.\n");
+			DBGLOG(RSN, TRACE, "WPA Information Element does not exist.\n");
 			return FALSE;
 		}
 	} else if (prAdapter->rWifiVar.rConnSettings.eAuthMode == AUTH_MODE_WPA2 ||
@@ -936,21 +936,21 @@ BOOLEAN rsnPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		if (prBss->fgIERSN) {
 			prBssRsnInfo = &prBss->rRSNInfo;
 		} else {
-			DBGLOG(RSN, INFO, "RSN Information Element does not exist.\n");
+			DBGLOG(RSN, TRACE, "RSN Information Element does not exist.\n");
 			return FALSE;
 		}
 	} else if (prAdapter->rWifiVar.rConnSettings.eEncStatus != ENUM_ENCRYPTION1_ENABLED) {
 		/* If the driver is configured to use WEP only, ignore this BSS. */
-		DBGLOG(RSN, INFO, "-- Not WEP-only legacy BSS\n");
+		DBGLOG(RSN, TRACE, "-- Not WEP-only legacy BSS\n");
 		return FALSE;
 	} else if (prAdapter->rWifiVar.rConnSettings.eEncStatus == ENUM_ENCRYPTION1_ENABLED) {
 		/* If the driver is configured to use WEP only, use this BSS. */
-		DBGLOG(RSN, INFO, "-- WEP-only legacy BSS\n");
+		DBGLOG(RSN, TRACE, "-- WEP-only legacy BSS\n");
 		return TRUE;
 	}
 
 	if (!rsnIsSuitableBSS(prAdapter, prBssRsnInfo)) {
-		DBGLOG(RSN, INFO, "RSN info check no matched\n");
+		DBGLOG(RSN, TRACE, "RSN info check no matched\n");
 		return FALSE;
 	}
 

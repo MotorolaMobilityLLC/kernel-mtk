@@ -1099,7 +1099,7 @@ VOID qmDeactivateStaRec(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 
 	qmUpdateStaRec(prAdapter, prStaRec);
 
-	DBGLOG(QM, INFO, "QM: -STA[%u]\n", prStaRec->ucIndex);
+	DBGLOG(QM, TRACE, "QM: -STA[%u]\n", prStaRec->ucIndex);
 }
 
 /*----------------------------------------------------------------------------*/

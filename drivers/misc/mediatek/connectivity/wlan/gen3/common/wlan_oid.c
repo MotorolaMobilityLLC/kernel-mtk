@@ -2284,7 +2284,7 @@ wlanoidSetConnect(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 		} else
 			DBGLOG(OID, INFO, "wrong bssid " MACSTR "to connect\n", MAC2STR(pParamConn->pucBssid));
 	} else
-		DBGLOG(OID, INFO, "No Bssid set\n");
+		DBGLOG(OID, TRACE, "No Bssid set\n");
 	prConnSettings->u4FreqInKHz = pParamConn->u4CenterFreq;
 
 	/* prepare for CMD_BUILD_CONNECTION & CMD_GET_CONNECTION_STATUS */

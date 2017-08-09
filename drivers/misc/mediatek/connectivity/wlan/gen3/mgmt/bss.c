@@ -682,7 +682,7 @@ VOID bssDetermineStaRecPhyTypeSet(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBs
 		      || (prAdapter->prGlueInfo->u2WapiAssocInfoIESz)
 #endif
 		    )) {
-			DBGLOG(BSS, INFO, "Ignore the HT Bit for TKIP as pairwise cipher configed!\n");
+			DBGLOG(BSS, TRACE, "Ignore the HT Bit for TKIP as pairwise cipher configed!\n");
 			prStaRec->ucPhyTypeSet &= ~(PHY_TYPE_BIT_HT | PHY_TYPE_BIT_VHT);
 		}
 
@@ -2023,7 +2023,7 @@ VOID bssInitializeClientList(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo
 	if (!LINK_IS_EMPTY(prStaRecOfClientList))
 		LINK_INITIALIZE(prStaRecOfClientList);
 
-	DBGLOG(BSS, INFO, "Init BSS[%u] Client List\n", prBssInfo->ucBssIndex);
+	DBGLOG(BSS, TRACE, "Init BSS[%u] Client List\n", prBssInfo->ucBssIndex);
 
 	bssCheckClientList(prAdapter, prBssInfo);
 

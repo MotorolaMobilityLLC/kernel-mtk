@@ -2427,7 +2427,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 		/* 4 <2.1> Check Unsupported BSS PHY Type */
 		if (!(prBssDesc->ucPhyTypeSet & (prAdapter->rWifiVar.ucAvailablePhyTypeSet))) {
 
-			DBGLOG(SCN, INFO, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n", prBssDesc->ucPhyTypeSet);
+			DBGLOG(SCN, TRACE, "SEARCH: Ignore unsupported ucPhyTypeSet = %x\n", prBssDesc->ucPhyTypeSet);
 			continue;
 		}
 		/* 4 <2.2> Check if has unknown NonHT BSS Basic Rate Set. */

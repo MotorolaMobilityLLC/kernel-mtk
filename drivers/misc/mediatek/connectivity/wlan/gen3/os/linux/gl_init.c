@@ -1706,7 +1706,7 @@ VOID wlanDebugInit(VOID)
 	/* Initial debug level is D1 */
 	for (i = 0; i < DBG_MODULE_NUM; i++) {
 		aucDebugModule[i] = DBG_CLASS_ERROR |
-		    DBG_CLASS_WARN | DBG_CLASS_STATE | DBG_CLASS_EVENT | DBG_CLASS_INFO;
+		    DBG_CLASS_WARN | DBG_CLASS_STATE | DBG_CLASS_INFO;
 	}
 	aucDebugModule[DBG_INTR_IDX] = 0;
 #endif /* DBG */

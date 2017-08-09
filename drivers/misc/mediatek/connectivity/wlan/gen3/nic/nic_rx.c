@@ -2674,7 +2674,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 	prGlueInfo = prAdapter->prGlueInfo;
 
 	if (prEvent->ucEID != EVENT_ID_DEBUG_MSG)
-		DBGLOG(RX, INFO, "RX EVENT: ID[0x%02X] SEQ[%u] LEN[%u]\n",
+		DBGLOG(RX, EVENT, "RX EVENT: ID[0x%02X] SEQ[%u] LEN[%u]\n",
 		prEvent->ucEID, prEvent->ucSeqNum, prEvent->u2PacketLength);
 
 	/* Event Handling */
@@ -3252,7 +3252,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 							       NULL,
 							       prSwRfb,
 							       REASON_CODE_CLASS_3_ERR, (PFN_TX_DONE_HANDLER) NULL)) {
-			DBGLOG(RX, INFO, "Send Deauth Error\n");
+			DBGLOG(RX, WARN, "Send Deauth Error\n");
 		}
 		break;
 

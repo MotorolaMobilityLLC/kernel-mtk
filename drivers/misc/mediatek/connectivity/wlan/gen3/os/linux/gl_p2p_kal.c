@@ -882,7 +882,7 @@ VOID kalP2PIndicateScanDone(IN P_GLUE_INFO_T prGlueInfo, IN UINT_8 ucRoleIndex, 
 			ASSERT(FALSE);
 			break;
 		}
-		DBGLOG(P2P, EVENT, "scan complete, cfg80211 scan request is %p\n", prGlueInfo->prScanRequest);
+		DBGLOG(P2P, INFO, "scan complete, cfg80211 scan request is %p\n", prGlueInfo->prScanRequest);
 
 		GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
 
