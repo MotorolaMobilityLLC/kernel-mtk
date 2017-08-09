@@ -7,7 +7,7 @@
 #include <linux/poll.h>
 #include <linux/uidgid.h>
 #include <mt-plat/mt_ccci_common.h>
-#include <mach/mt_boot.h>
+#include <mt-plat/mt_boot_common.h>
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif

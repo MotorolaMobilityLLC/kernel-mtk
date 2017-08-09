@@ -7,9 +7,10 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/conn_md/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/ccmni/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 
 ifeq ($(CONFIG_MTK_SECURITY_SW_SUPPORT), y)
-ccflags-y  += -DENABLE_MD_IMG_SECURITY_FEATURE
+# ccflags-y  += -DENABLE_MD_IMG_SECURITY_FEATURE
 endif
 ifeq ($(CONFIG_MTK_SEC_MODEM_NVRAM_ANTI_CLONE), y)
 ccflags-y  += -DMTK_SEC_MODEM_NVRAM_ANTI_CLONE

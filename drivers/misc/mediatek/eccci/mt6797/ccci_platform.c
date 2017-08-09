@@ -1,8 +1,6 @@
 #include <linux/platform_device.h>
 #include <linux/device.h>
 #include <linux/module.h>
-#include <mach/emi_mpu.h>
-#include <mach/sync_write.h>
 #include <mach/memory.h>
 #include <mach/upmu_sw.h>
 #include <linux/interrupt.h>
@@ -18,7 +16,9 @@
 #include "ccci_debug.h"
 #include "ccci_bm.h"
 #include "ccci_platform.h"
-
+#ifdef ENABLE_EMI_PROTECTION
+#include <mach/emi_mpu.h>
+#endif
 #define TAG "plat"
 
 static int is_4g_memory_size_support(void)
@@ -517,7 +517,6 @@ void ccci_set_mem_remap(struct ccci_modem *md, unsigned long smem_offset, phys_a
 		invalid &= 0xFFFFFFFF;
 	else
 		invalid -= KERN_EMI_BASE;
-
 	md->invalid_remap_base = invalid;
 	/* Set share memory remapping */
 #if 0				/* no hardware AP remap after MT6592 */
@@ -643,7 +642,7 @@ int ccci_plat_common_init(void)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,INFRACFG_AO");
 	infra_ao_base = (unsigned long)of_iomap(node, 0);
 	CCCI_INF_MSG(-1, TAG, "infra_ao_base:0x%p\n", (void *)infra_ao_base);
-	node = of_find_compatible_node(NULL, NULL, "mediatek,DBGAPB_BASE");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,dbgapb_base");
 	dbgapb_base = (unsigned long)of_iomap(node, 0);
 	CCCI_INF_MSG(-1, TAG, "dbgapb_base:%pa\n", &dbgapb_base);
 #ifdef FEATURE_LOW_BATTERY_SUPPORT

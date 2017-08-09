@@ -1,6 +1,6 @@
 
 #include <ssw.h>
-#include <mach/mt_ccci_common.h>
+#include <mt-plat/mt_ccci_common.h>
 #include "cust_gpio_usage.h"
 /*--------------Feature option---------------*/
 #define __ENABLE_SSW_SYSFS 1

@@ -2,11 +2,11 @@
 #include <linux/kthread.h>
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mt_boot_common.h>
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mt_clkmgr.h>
 #else
 #include <linux/clk.h>
-#endif	/*CONFIG_MTK_LEGACY */
+#endif	/*CONFIG_MTK_CLKMGR */
 
 #include <linux/platform_device.h>
 #ifdef CONFIG_OF
@@ -17,7 +17,9 @@
 #endif
 #include "ccci_off.h"
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_ECCCI_DRIVER) || defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
+
+#if !defined(CONFIG_MTK_CLKMGR)
 static struct clk *clk_scp_sys_md1_main;
 #endif
 
@@ -72,17 +74,16 @@ static struct clk *clk_scp_sys_md1_main;
 #define PLL_ARM7PLL_CON0(base)			((base)+0x0150)
 #define PLL_ARM7PLL_CON1(base)			((base)+0x0154)
 
-#if !defined(CONFIG_MTK_ECCCI_DRIVER) || defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-
 static void internal_md_power_down(void)
 {
 	int ret = 0;
 	unsigned short status, i;
 	void __iomem *md_topsm_base, *modem_lite_topsm_base, *modem_topsm_base,
-	    *tdd_base, *ltelt1_base, *ltelt1_base_1, *ltelt1_base_2, *md_pll_mixedsys_base;
+	    *tdd_base, *ltelt1_base, *ltelt1_base_1, *ltelt1_base_2,
+	    *md_pll_mixedsys_base;
 
 	pr_debug("[ccci-off]shutdown MDSYS1 !!!\n");
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 	pr_debug("[ccci-off]Call start md_power_on()\n");
 	ret = md_power_on(SYS_MD1);
 	pr_debug("[ccci-off]Call end md_power_on() ret=%d\n", ret);
@@ -336,7 +337,7 @@ static void internal_md_power_down(void)
 	sync_write32(0xFFFFFFFF, MODEM_TOPSM_RM_PLL_MASK1(modem_topsm_base));
 
 	pr_debug("[ccci-off]8.power off MD_INFRA/MODEM_TOP\n");
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 	ret = md_power_off(SYS_MD1, 0);
 #else
 	clk_disable_unprepare(clk_scp_sys_md1_main);
@@ -351,7 +352,7 @@ static void internal_md_power_down(void)
 	iounmap(ltelt1_base_2);
 	iounmap(md_pll_mixedsys_base);
 }
-#endif
+
 static int modem_power_down_worker(void *data)
 {
 	unsigned int val;
@@ -363,6 +364,7 @@ static int modem_power_down_worker(void *data)
 		pr_debug("[ccci-off]md1 effused,no need power off\n");
 	return 0;
 }
+
 static void modem_power_down(void)
 {
 	/* start kthread to power down modem */
@@ -376,6 +378,8 @@ static void modem_power_down(void)
 		pr_debug("[ccci-off] create kthread for power off md ok\n");
 	}
 }
+#endif
+
 int ccci_md_off(void)
 {
 #ifndef CONFIG_MTK_ECCCI_DRIVER
@@ -391,7 +395,7 @@ int ccci_md_off(void)
 	return 0;
 }
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 static int ccci_off_probe(struct platform_device *pdev)
 {
 	clk_scp_sys_md1_main = devm_clk_get(&pdev->dev, "scp-sys-md1-main");
@@ -428,12 +432,12 @@ static struct platform_driver ccci_off_dev_drv = {
 #endif
 		   },
 };
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 static int __init ccci_off_init(void)
 {
 	int ret;
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 	pr_debug("ccci_off_init 1\n");
 	ret = ccci_md_off();
 #else

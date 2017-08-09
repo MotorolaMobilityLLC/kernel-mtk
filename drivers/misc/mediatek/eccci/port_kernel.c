@@ -9,30 +9,30 @@
 #include <linux/of_fdt.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include "ccci_config.h"
 #ifdef FEATURE_GET_MD_EINT_ATTR_DTS
 #include <linux/irq.h>
 #endif
-#include <mach/mt6605.h>
-
+#ifdef ENABLE_MD_IMG_SECURITY_FEATURE
 #include <mach/mt_sec_export.h>
-
+#endif
 #if defined(CONFIG_MTK_AEE_FEATURE)
 #include <linux/aee.h>
 #else
 #define DB_OPT_DEFAULT    (0)	/* Dummy macro define to avoid build error */
 #define DB_OPT_FTRACE   (0)	/* Dummy macro define to avoid build error */
 #endif
-#include "ccci_config.h"
-#ifdef FEATURE_RF_CLK_BUF
 
-#if defined(CONFIG_MTK_LEGACY)
-#include <cust_clk_buf.h>
-#include <mach/mt_gpio.h>
-#else
-#include <linux/gpio.h>
+#ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
+#include <mach/mt6605.h>
 #endif
 
+#ifdef FEATURE_RF_CLK_BUF
+#include <linux/gpio.h>
 #include <mach/mt_clkbuf_ctl.h>
+#endif
+#ifdef FEATURE_GET_MD_GPIO_VAL
+#include <linux/gpio.h>
 #endif
 #include "ccci_core.h"
 #include "ccci_bm.h"
@@ -242,11 +242,7 @@ static void system_msg_handler(struct ccci_port *port, struct ccci_request *req)
 static int get_md_gpio_val(unsigned int num)
 {
 #if defined(FEATURE_GET_MD_GPIO_VAL)
-#if defined(CONFIG_MTK_LEGACY)
-	return mt_get_gpio_in(num);
-#else
 	return __gpio_get_value(num);
-#endif
 #else
 	return -1;
 #endif
@@ -298,9 +294,6 @@ static int get_md_adc_info(char *adc_name, unsigned int len)
 static int get_md_gpio_info(char *gpio_name, unsigned int len)
 {
 #if defined(FEATURE_GET_MD_GPIO_NUM)
-#if defined(CONFIG_MTK_LEGACY)
-	return mt_get_md_gpio(gpio_name, len);
-#else
 	struct device_node *node = of_find_compatible_node(NULL, NULL, "mediatek,MD_USE_GPIO");
 	int gpio_id = -1;
 
@@ -309,7 +302,6 @@ static int get_md_gpio_info(char *gpio_name, unsigned int len)
 	else
 		CCCI_INF_MSG(0, RPC, "MD_USE_GPIO is not set in device tree,need to check?\n");
 	return gpio_id;
-#endif
 #else
 	return -1;
 #endif
@@ -1034,7 +1026,6 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				clkbuf->CLKBuf_Count = 0xFF;
 				memset(&clkbuf->CLKBuf_Status, 0, sizeof(clkbuf->CLKBuf_Status));
 			} else {
-#if !defined(CONFIG_MTK_LEGACY)
 				unsigned int CLK_BUF1_STATUS, CLK_BUF2_STATUS, CLK_BUF3_STATUS, CLK_BUF4_STATUS;
 				struct device_node *node;
 				u32 vals[4];
@@ -1049,7 +1040,6 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				} else {
 					CCCI_ERR_MSG(md->index, RPC, "%s can't find compatible node\n", __func__);
 				}
-#endif
 				clkbuf->CLKBuf_Count = CLKBUF_MAX_COUNT;
 				clkbuf->CLKBuf_Status[0] = CLK_BUF1_STATUS;
 				clkbuf->CLKBuf_Status[1] = CLK_BUF2_STATUS;

@@ -311,7 +311,7 @@ static int command_parser(const char *input_str, char cmd[], unsigned long out_p
 	int i = 0, j, k;
 	char tmp_buf[32];
 	char filter_str[256];
-	int temp_valu;
+	int temp_valu, ret;
 
 	/* Filter out 0xD and 0xA */
 	j = 0;
@@ -361,9 +361,10 @@ static int command_parser(const char *input_str, char cmd[], unsigned long out_p
 		}
 		tmp_buf[j] = '\0';
 		/* change string to number */
-		temp_valu = kstrtoint(tmp_buf, 0, &out_put[k]);
-		if (temp_valu < 0)
-			CCCI_UTIL_ERR_MSG("sscanf return fail: %d\n", temp_valu);
+		ret = kstrtoint(tmp_buf, 0, &temp_valu);
+		out_put[k] = temp_valu;
+		if (ret < 0)
+			CCCI_UTIL_ERR_MSG("sscanf return fail: %d\n", ret);
 	}
 
 	return k + 1;

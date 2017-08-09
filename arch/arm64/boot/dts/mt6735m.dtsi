@@ -713,6 +713,16 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 
 		ssw:simswitch@0 {
 			compatible = "mediatek,sim_switch";
+			pinctrl-names =	"default",
+					"hot_plug_mode1",
+					"hot_plug_mode2",
+					"two_sims_bound_to_md1",
+					"sim1_md3_sim2_md1";
+			pinctrl-0 = <&ssw_default>;
+			pinctrl-1 = <&ssw_hot_plug_mode1>;
+			pinctrl-2 = <&ssw_hot_plug_mode2>;
+			pinctrl-3 = <&ssw_two_sims_bound_to_md1>;
+			pinctrl-4 = <&ssw_sim1_md3_sim2_md1>;
 		};
 
 		DNL3_XGPT64@0x1000C000 {
@@ -1757,4 +1767,174 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 	debounce = <206 1000>;
 	};
 };
+
+&pio {
+	ssw_default:ssw0default {
+	};
+
+	ssw_hot_plug_mode1:ssw@1 {
+
+		pins_cmd0_dat {
+			pins = <PINMUX_GPIO8__FUNC_MD_EINT1>;
+		};
+
+		pins_cmd1_dat {
+			pins = <PINMUX_GPIO9__FUNC_MD_EINT2>;
+		};
+	};
+
+	ssw_hot_plug_mode2:ssw@2 {
+
+		pins_cmd0_dat {
+			pins = <PINMUX_GPIO8__FUNC_C2K_UIM0_HOT_PLUG_IN>;
+		};
+
+		pins_cmd1_dat {
+			pins = <PINMUX_GPIO9__FUNC_MD_EINT2>;
+		};
+	};
+
+	ssw_two_sims_bound_to_md1:ssw@3 {
+		pins_cmd0_dat {
+			pins = <PINMUX_GPIO163__FUNC_MD_SIM1_SCLK>;
+			slew-rate = <1>;
+		};
+
+		pins_cmd1_dat {
+			pins = <PINMUX_GPIO164__FUNC_MD_SIM1_SRST>;
+			slew-rate = <1>;
+		};
+
+		pins_cmd2_dat {
+			pins = <PINMUX_GPIO165__FUNC_MD_SIM1_SDAT>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+
+		};
+
+		pins_cmd3_dat {
+			pins = <PINMUX_GPIO160__FUNC_MD_SIM2_SCLK>;
+			slew-rate = <1>;
+		};
+
+		pins_cmd4_dat {
+			pins = <PINMUX_GPIO161__FUNC_MD_SIM2_SRST>;
+			slew-rate = <1>;
+		};
+
+		pins_cmd5_dat {
+			pins = <PINMUX_GPIO162__FUNC_MD_SIM2_SDAT>;
+			slew-rate = <0>;
+			bias-pull-up = <00>;
+		};
+	};
+
+	ssw_sim1_md3_sim2_md1:ssw@4 {
+		pins_cmd0_dat {
+			pins = <PINMUX_GPIO163__FUNC_UIM0_CLK>;
+		};
+
+		pins_cmd1_dat {
+			pins = <PINMUX_GPIO164__FUNC_UIM0_RST>;
+		};
+
+		pins_cmd2_dat {
+			pins = <PINMUX_GPIO165__FUNC_UIM0_IO>;
+		};
+
+		pins_cmd3_dat {
+			pins = <PINMUX_GPIO160__FUNC_MD_SIM2_SCLK>;
+		};
+
+		pins_cmd4_dat {
+			pins = <PINMUX_GPIO161__FUNC_MD_SIM2_SRST>;
+		};
+
+		pins_cmd5_dat {
+			pins = <PINMUX_GPIO162__FUNC_MD_SIM2_SDAT>;
+		};
+	};
+};
+/*SSW end*/
+
+/*GPIO standardization CLDMA*/
+&mdcldma {
+	pinctrl-names = "default", "vsram_output_low", "vsram_output_high", "RFIC0_01_mode", "RFIC0_04_mode";
+
+	pinctrl-0 = <&vsram_default>;
+	pinctrl-1 = <&vsram_output_low>;
+	pinctrl-2 = <&vsram_output_high>;
+	pinctrl-3 = <&RFIC0_01_mode>;
+	pinctrl-4 = <&RFIC0_04_mode>;
+};
+
+&pio {
+	vsram_default: vsram0default {
+	};
+
+	vsram_output_low: vsram@1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO140__FUNC_GPIO140>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	vsram_output_high: vsram@2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO140__FUNC_GPIO140>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	RFIC0_01_mode: clockbuf@1{
+
+		pins_cmd0_dat {
+			pins = <PINMUX_GPIO110__FUNC_RFIC0_BSI_EN>;
+		};
+
+		pins_cmd1_dat {
+			pins = <PINMUX_GPIO111__FUNC_RFIC0_BSI_CK>;
+		};
+
+		pins_cmd2_dat {
+			pins = <PINMUX_GPIO112__FUNC_RFIC0_BSI_D2>;
+		};
+
+
+		pins_cmd3_dat {
+			pins = <PINMUX_GPIO113__FUNC_RFIC0_BSI_D1>;
+		};
+
+		pins_cmd4_dat {
+			pins = <PINMUX_GPIO114__FUNC_RFIC0_BSI_D0>;
+		};
+	};
+
+	RFIC0_04_mode: clockbuf@2{
+
+		pins_cmd0_dat {
+			pins = <PINMUX_GPIO110__FUNC_SPM_BSI_EN>;
+		};
+
+		pins_cmd1_dat {
+			pins = <PINMUX_GPIO111__FUNC_SPM_BSI_CLK>;
+		};
+
+		pins_cmd2_dat {
+			pins = <PINMUX_GPIO112__FUNC_SPM_BSI_D2>;
+		};
+
+		pins_cmd3_dat {
+			pins = <PINMUX_GPIO113__FUNC_SPM_BSI_D1>;
+		};
+
+		pins_cmd4_dat {
+			pins = <PINMUX_GPIO114__FUNC_SPM_BSI_D0>;
+		};
+
+	};
+};
+/*CLDMA end*/
 

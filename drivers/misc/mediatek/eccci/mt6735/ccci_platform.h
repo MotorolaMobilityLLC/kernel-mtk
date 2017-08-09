@@ -1,7 +1,7 @@
 #ifndef _CCCCI_PLATFORM_H_
 #define _CCCCI_PLATFORM_H_
 
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 #include "ccci_config.h"
 #include "ccci_core.h"
 

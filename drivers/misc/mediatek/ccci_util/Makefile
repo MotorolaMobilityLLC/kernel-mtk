@@ -18,7 +18,7 @@ ccci_util_lib-y += ccci_util_lib_main.o
 endif
 
 ifeq ($(CONFIG_MTK_SECURITY_SW_SUPPORT), y)
-ccflags-y  += -DENABLE_MD_IMG_SECURITY_FEATURE
+#ccflags-y  += -DENABLE_MD_IMG_SECURITY_FEATURE
 endif
 ifeq ($(CONFIG_MTK_SEC_MODEM_NVRAM_ANTI_CLONE), y)
 ccflags-y  += -DMTK_SEC_MODEM_NVRAM_ANTI_CLONE

@@ -23,8 +23,8 @@
 #if defined(CONFIG_MTK_AEE_FEATURE)
 #include <linux/aee.h>
 #endif
-#include <mach/mt_boot.h>
-#include <mach/mt_spm_sleep.h>
+#include <mt_spm_sleep.h>
+#include <mt-plat/mt_boot.h>
 #include "ccci_config.h"
 #include "ccci_core.h"
 #include "ccci_bm.h"

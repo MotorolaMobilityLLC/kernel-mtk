@@ -20,8 +20,10 @@
 #endif
 #include <asm/setup.h>
 #include <linux/atomic.h>
+#ifdef ENABLE_MD_IMG_SECURITY_FEATURE
 #include <mach/sec_osal.h>
 #include <mach/mt_sec_export.h>
+#endif
 #include <mt-plat/mt_boot_common.h>
 #include <mt-plat/mt_ccci_common.h>
 #include "ccci_util_log.h"

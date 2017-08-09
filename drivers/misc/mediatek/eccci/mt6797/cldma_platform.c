@@ -1,22 +1,26 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
-#include <mach/mt_spm_sleep.h>
-#include <mach/mt_clkbuf_ctl.h>
-
+#include "ccci_config.h"
 #if defined(CONFIG_MTK_LEGACY)
+#include <mt-plat/mt_gpio.h>
+#endif
+
+#if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mt_clkmgr.h>
-#include <mach/mt_gpio.h>
 #else
 #include <linux/clk.h>
-#endif				/*CONFIG_MTK_LEGACY */
+#endif /*CONFIG_MTK_CLKMGR */
+
+#ifdef FEATURE_RF_CLK_BUF
+#include <mach/mt_clkbuf_ctl.h>
+#endif
+#ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 #include <mach/mt6605.h>
-
-#include <mach/upmu_common.h>
-#include <mach/upmu_sw.h>
-#include <mach/upmu_hw.h>
+#endif
+#include <mt-plat/upmu_common.h>
 #include <mach/mt_pbm.h>
-
+#include <mt_spm_sleep.h>
 #include "ccci_core.h"
 #include "ccci_platform.h"
 #include "modem_cldma.h"
@@ -32,8 +36,11 @@
 #endif
 #include "ccci_core.h"
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 static struct clk *clk_scp_sys_md1_main;
+#endif
+
+#if !defined(CONFIG_MTK_LEGACY)
 static struct pinctrl *mdcldma_pinctrl;
 #endif
 
@@ -67,7 +74,7 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 		return -1;
 	}
 
-	of_property_read_u32(dev_ptr->dev.of_node, "cell-index", &dev_cfg->index);
+	of_property_read_u32(dev_ptr->dev.of_node, "mediatek,md_id", &dev_cfg->index);
 	CCCI_DBG_MSG(dev_cfg->index, TAG, "modem hw info get idx:%d\n", dev_cfg->index);
 	if (!get_modem_is_enabled(dev_cfg->index)) {
 		CCCI_ERR_MSG(dev_cfg->index, TAG, "modem %d not enable, exit\n", dev_cfg->index + 1);
@@ -76,9 +83,9 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 
 	switch (dev_cfg->index) {
 	case 0:		/* MD_SYS1 */
-		of_property_read_u32(dev_ptr->dev.of_node, "cldma,major", &dev_cfg->major);
-		of_property_read_u32(dev_ptr->dev.of_node, "cldma,minor_base", &dev_cfg->minor_base);
-		of_property_read_u32(dev_ptr->dev.of_node, "cldma,capability", &dev_cfg->capability);
+		dev_cfg->major = 0;
+		dev_cfg->minor_base = 0;
+		of_property_read_u32(dev_ptr->dev.of_node, "mediatek,cldma_capability", &dev_cfg->capability);
 
 		hw_info->cldma_ap_ao_base = (unsigned long)of_iomap(dev_ptr->dev.of_node, 0);
 		hw_info->cldma_md_ao_base = (unsigned long)of_iomap(dev_ptr->dev.of_node, 1);
@@ -107,6 +114,9 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 			CCCI_ERR_MSG(dev_cfg->index, TAG, "modem %d get mdcldma_pinctrl failed\n", dev_cfg->index + 1);
 			return -1;
 		}
+#endif
+
+#if !defined(CONFIG_MTK_CLKMGR)
 		clk_scp_sys_md1_main = devm_clk_get(&dev_ptr->dev, "scp-sys-md1-main");
 		if (IS_ERR(clk_scp_sys_md1_main)) {
 			CCCI_ERR_MSG(dev_cfg->index, TAG, "modem %d get scp-sys-md1-main failed\n", dev_cfg->index + 1);
@@ -288,7 +298,7 @@ int md_cd_power_on(struct ccci_modem *md)
 	switch (md->index) {
 	case MD_SYS1:
 
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		CCCI_INF_MSG(md->index, TAG, "Call start md_power_on()\n");
 		ret = md_power_on(SYS_MD1);
 		CCCI_INF_MSG(md->index, TAG, "Call end md_power_on() ret=%d\n", ret);
@@ -360,7 +370,7 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 	/* power off MD_INFRA and MODEM_TOP */
 	switch (md->index) {
 	case MD_SYS1:
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 		ret = md_power_off(SYS_MD1, timeout);
 #else
 		clk_disable(clk_scp_sys_md1_main);
@@ -594,7 +604,7 @@ void ccci_modem_restore_reg(struct ccci_modem *md)
 							   CLDMA_AP_TQCPBAK(md_ctrl->txq[i].index)));
 			}
 		}
-		/* wait write done */
+		/* wait write done*/
 		wmb();
 		/* start all Tx and Rx queues */
 		cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_START_CMD, CLDMA_BM_ALL_QUEUE);

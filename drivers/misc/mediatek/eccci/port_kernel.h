@@ -244,7 +244,9 @@ extern int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd);
 #if defined(FEATURE_GET_MD_PMIC_ADC_NUM)
 extern int PMIC_IMM_get_adc_channel_num(char *adc_name, int len);
 #endif
-
+#ifdef FEATURE_GET_MD_GPIO_VAL
+extern int mt_get_md_gpio(char *gpio_name, int len);
+#endif
 #if defined(FEATURE_GET_DRAM_TYPE_CLK)
 extern int get_dram_info(int *clk, int *type);
 #endif

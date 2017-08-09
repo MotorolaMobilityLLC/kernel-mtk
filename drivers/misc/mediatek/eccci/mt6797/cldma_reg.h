@@ -1,7 +1,7 @@
 #ifndef __CLDMA_REG_H__
 #define __CLDMA_REG_H__
 
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 #define INFRA_RST0_REG (0x0030)	/* rgu reset cldma reg */
 #define INFRA_RST1_REG (0x0034)	/* rgu clear cldma reset reg */
 #define CLDMA_AO_RST_MASK (1<<8)

@@ -1,8 +1,6 @@
 #include <linux/platform_device.h>
 #include <linux/device.h>
 #include <linux/module.h>
-#include <mach/emi_mpu.h>
-#include <mach/sync_write.h>
 #include <mach/memory.h>
 #include <mach/upmu_sw.h>
 #include <linux/interrupt.h>
@@ -18,7 +16,9 @@
 #include "ccci_debug.h"
 #include "ccci_bm.h"
 #include "ccci_platform.h"
-
+#ifdef ENABLE_EMI_PROTECTION
+#include <mach/emi_mpu.h>
+#endif
 #define TAG "plat"
 
 static int is_4g_memory_size_support(void)

@@ -2,9 +2,6 @@
 #include <linux/syscalls.h>
 #include <linux/module.h>
 #include <linux/memblock.h>
-#include <mach/sec_osal.h>
-#include <mach/mt_sec_export.h>
-#include <mach/mt_boot.h>
 #include <asm/setup.h>
 #include <linux/of_fdt.h>
 #include <mt-plat/mt_ccci_common.h>

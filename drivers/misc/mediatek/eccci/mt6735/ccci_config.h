@@ -1,16 +1,13 @@
 #ifndef ECCCI_INTERNAL_OPTION
 #define ECCCI_INTERNAL_OPTION
-
-#include <mach/mt_reg_base.h>
-
 /*================================================ */
 /*Bool option part*/
 /*================================================*/
 /*#define CCCI_STATISTIC*/
 #define FEATURE_GET_MD_GPIO_NUM
 #define FEATURE_GET_MD_GPIO_VAL
-#define FEATURE_GET_MD_ADC_NUM
-#define FEATURE_GET_MD_ADC_VAL
+/*#define FEATURE_GET_MD_ADC_NUM*/
+/*#define FEATURE_GET_MD_ADC_VAL*/
 #define FEATURE_GET_MD_EINT_ATTR
 #if defined(FEATURE_GET_MD_EINT_ATTR)
 #define FEATURE_GET_MD_EINT_ATTR_DTS
@@ -43,15 +40,15 @@
 #ifdef CONFIG_MTK_FPGA
 #define FEATURE_FPGA_PORTING
 #else
-#define FEATURE_RF_CLK_BUF
-#define ENABLE_32K_CLK_LESS
+/*#define FEATURE_RF_CLK_BUF*/
+/*#define ENABLE_32K_CLK_LESS*/
 #define FEATURE_MD_GET_CLIB_TIME
 #define FEATURE_C2K_ALWAYS_ON
 
-#define ENABLE_EMI_PROTECTION
+/*#define ENABLE_EMI_PROTECTION*/
 
 #ifdef CONFIG_ARCH_MT6735M
-#define ENABLE_DSP_SMEM_SHARE_MPU_REGION
+/*#define ENABLE_DSP_SMEM_SHARE_MPU_REGION*/
 #endif
 
 #endif

@@ -313,7 +313,6 @@ extern void c2k_reset_modem(void);
 #endif
 extern void mt_irq_dump_status(int irq);
 extern unsigned int ccci_get_md_debug_mode(struct ccci_modem *md);
-
 extern u32 mt_irq_get_pending(unsigned int irq);
 /* used for throttling feature - start */
 extern unsigned long ccci_modem_boot_count[];

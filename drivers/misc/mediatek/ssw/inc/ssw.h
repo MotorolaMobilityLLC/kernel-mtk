@@ -15,12 +15,8 @@
 #include <linux/string.h>
 #include <linux/uaccess.h>
 #include <linux/io.h>
-
-#include <mach/mt_typedefs.h>
-/*#include <mach/mtk_ccci_helper.h>*/
-#include <mach/mt_reg_base.h>
 #if defined(CONFIG_MTK_LEGACY)
-#include <mach/mt_gpio.h>
+#include <mt-plat/mt_gpio.h>
 #endif
 
 #define SSW_DBG(format, args...)    pr_debug("[ccci/ssw]" format, ##args)

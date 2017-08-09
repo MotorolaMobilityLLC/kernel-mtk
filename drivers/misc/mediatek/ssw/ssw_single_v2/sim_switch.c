@@ -1,9 +1,6 @@
 
 #include <ssw.h>
-#include <mach/mt_ccci_common.h>
-#if defined(CONFIG_MTK_LEGACY)
-#include "cust_gpio_usage.h"
-#endif
+#include <mt-plat/mt_ccci_common.h>
 /*--------------Feature option---------------*/
 #define __ENABLE_SSW_SYSFS 1
 
@@ -16,14 +13,12 @@ unsigned int sim_mode_curr = SINGLE_TALK_MDSYS;
 
 struct mutex sim_switch_mutex;
 
-#if !defined(CONFIG_MTK_LEGACY)
 struct pinctrl *ssw_pinctrl = NULL;
 
 struct pinctrl_state *hot_plug_mode1 = NULL;
 struct pinctrl_state *hot_plug_mode2 = NULL;
 struct pinctrl_state *two_sims_bound_to_md1 = NULL;
 struct pinctrl_state *sim1_md3_sim2_md1 = NULL;
-#endif
 
 static int set_sim_gpio(unsigned int mode);
 static int get_current_ssw_mode(void)
@@ -162,23 +157,6 @@ static int set_sim_gpio(unsigned int mode)
 	SSW_DBG("set_sim_gpio: %d\n", mode);
 	switch (mode) {
 	case SINGLE_TALK_MDSYS:
-#if defined(CONFIG_MTK_LEGACY)
-#if (defined(GPIO_SIM1_HOT_PLUG) && defined(GPIO_SIM2_HOT_PLUG))
-		mt_set_gpio_mode(GPIO_SIM1_HOT_PLUG,
-				 GPIO_SIM1_HOT_PLUG_M_MDEINT);
-		mt_set_gpio_mode(GPIO_SIM2_HOT_PLUG,
-				 GPIO_SIM2_HOT_PLUG_M_MDEINT);
-#endif
-		/*SIM1=> MD1 SIM1IF */
-		mt_set_gpio_mode(GPIO_SIM1_SCLK, GPIO_SIM1_SCLK_M_CLK);
-		mt_set_gpio_mode(GPIO_SIM1_SRST, GPIO_SIM1_SRST_M_MD_SIM1_SRST);
-		mt_set_gpio_mode(GPIO_SIM1_SIO, GPIO_SIM1_SIO_M_MD_SIM1_SDAT);
-		/*SIM2=> MD1 SIM2IF */
-		mt_set_gpio_mode(GPIO_SIM2_SCLK, GPIO_SIM2_SCLK_M_CLK);
-		mt_set_gpio_mode(GPIO_SIM2_SRST, GPIO_SIM2_SRST_M_MD_SIM2_SRST);
-		mt_set_gpio_mode(GPIO_SIM2_SIO, GPIO_SIM2_SIO_M_MD_SIM2_SDAT);
-#else
-
 		if (NULL != hot_plug_mode1)
 			pinctrl_select_state(ssw_pinctrl, hot_plug_mode1);
 		else
@@ -189,25 +167,8 @@ static int set_sim_gpio(unsigned int mode)
 
 		pinctrl_select_state(ssw_pinctrl, two_sims_bound_to_md1);
 
-#endif
 		break;
 	case SINGLE_TALK_MDSYS_LITE:
-#if defined(CONFIG_MTK_LEGACY)
-#if (defined(GPIO_SIM1_HOT_PLUG) && defined(GPIO_SIM2_HOT_PLUG))
-		mt_set_gpio_mode(GPIO_SIM1_HOT_PLUG,
-				 GPIO_SIM1_HOT_PLUG_M_C2K_UIM0_HOT_PLUG_IN);
-		mt_set_gpio_mode(GPIO_SIM2_HOT_PLUG,
-				 GPIO_SIM2_HOT_PLUG_M_MDEINT);
-#endif
-		/*SIM1=> MD3 SIM1IF */
-		mt_set_gpio_mode(GPIO_SIM1_SCLK, GPIO_SIM1_SCLK_M_UIM0_CLK);
-		mt_set_gpio_mode(GPIO_SIM1_SRST, GPIO_SIM1_SRST_M_UIM0_RST);
-		mt_set_gpio_mode(GPIO_SIM1_SIO, GPIO_SIM1_SIO_M_UIM0_IO);
-		/*SIM2=> MD1 SIM2IF */
-		mt_set_gpio_mode(GPIO_SIM2_SCLK, GPIO_SIM2_SCLK_M_CLK);
-		mt_set_gpio_mode(GPIO_SIM2_SRST, GPIO_SIM2_SRST_M_MD_SIM2_SRST);
-		mt_set_gpio_mode(GPIO_SIM2_SIO, GPIO_SIM2_SIO_M_MD_SIM2_SDAT);
-#else
 		if (NULL != hot_plug_mode2)
 			pinctrl_select_state(ssw_pinctrl, hot_plug_mode2);
 		else
@@ -216,34 +177,11 @@ static int set_sim_gpio(unsigned int mode)
 		/*SIM1=> MD1 SIM1IF */
 		/*SIM2=> MD1 SIM2IF */
 		pinctrl_select_state(ssw_pinctrl, sim1_md3_sim2_md1);
-
-#endif
 		break;
-
 	default:
 		SSW_DBG("[Error] Invalid Mode(%d)", mode);
 		return SSW_INVALID_PARA;
 	}
-#if defined(CONFIG_MTK_LEGACY)
-#if (defined(GPIO_SIM1_HOT_PLUG) && defined(GPIO_SIM2_HOT_PLUG))
-	SSW_DBG
-	    ("mode(%d),SIM1(eint=%d, sclk=%d, srst=%d , sio=%d) SIM2(eint=%d,sclk=%d, srst=%d , sio=%d)\n",
-	     mode, mt_get_gpio_mode(GPIO_SIM1_HOT_PLUG),
-	     mt_get_gpio_mode(GPIO_SIM1_SCLK), mt_get_gpio_mode(GPIO_SIM1_SRST),
-	     mt_get_gpio_mode(GPIO_SIM1_SIO),
-	     mt_get_gpio_mode(GPIO_SIM2_HOT_PLUG),
-	     mt_get_gpio_mode(GPIO_SIM2_SCLK), mt_get_gpio_mode(GPIO_SIM2_SRST),
-	     mt_get_gpio_mode(GPIO_SIM2_SIO));
-#else
-	SSW_DBG
-	    ("mode(%d),SIM1(sclk=%d, srst=%d , sio=%d) SIM2(sclk=%d, srst=%d , sio=%d)\n",
-	     mode, mt_get_gpio_mode(GPIO_SIM1_SCLK),
-	     mt_get_gpio_mode(GPIO_SIM1_SRST), mt_get_gpio_mode(GPIO_SIM1_SIO),
-	     mt_get_gpio_mode(GPIO_SIM2_SCLK), mt_get_gpio_mode(GPIO_SIM2_SRST),
-	     mt_get_gpio_mode(GPIO_SIM2_SIO));
-
-#endif
-#endif
 	return SSW_SUCCESS;
 }
 
@@ -289,46 +227,6 @@ static int get_sim_mode_init(void)
 static int sim_switch_init(void)
 {
 	SSW_DBG("sim_switch_init\n");
-#if defined(CONFIG_MTK_LEGACY)
-	/*init sim1 */
-	mt_set_gpio_dir(GPIO_SIM1_SCLK, 1);
-	mt_set_gpio_dir(GPIO_SIM1_SRST, 1);
-	mt_set_gpio_pull_enable(GPIO_SIM1_SIO, 1);
-	mt_set_gpio_pull_select(GPIO_SIM1_SIO, 1);
-	mt_set_gpio_dir(GPIO_SIM1_SIO, 0);
-	/*init sim2 */
-	mt_set_gpio_dir(GPIO_SIM2_SCLK, 1);
-	mt_set_gpio_dir(GPIO_SIM2_SRST, 1);
-	mt_set_gpio_pull_enable(GPIO_SIM2_SIO, 1);
-	mt_set_gpio_pull_select(GPIO_SIM2_SIO, 1);
-	mt_set_gpio_dir(GPIO_SIM2_SIO, 0);
-	SSW_DBG("SIM1 sclk= en=%d,dir=%d,in=%d,out=%d\n",
-		mt_get_gpio_pull_enable(GPIO_SIM1_SCLK),
-		mt_get_gpio_dir(GPIO_SIM1_SCLK), mt_get_gpio_in(GPIO_SIM1_SCLK),
-		mt_get_gpio_out(GPIO_SIM1_SCLK));
-	SSW_DBG("SIM1 srst= en=%d,dir=%d,in=%d,out=%d\n",
-		mt_get_gpio_pull_enable(GPIO_SIM1_SRST),
-		mt_get_gpio_dir(GPIO_SIM1_SRST), mt_get_gpio_in(GPIO_SIM1_SRST),
-		mt_get_gpio_out(GPIO_SIM1_SRST));
-	SSW_DBG("SIM1 sio= en=%d,dir=%d,in=%d,out=%d\n",
-		mt_get_gpio_pull_enable(GPIO_SIM1_SIO),
-		mt_get_gpio_dir(GPIO_SIM1_SIO), mt_get_gpio_in(GPIO_SIM1_SIO),
-		mt_get_gpio_out(GPIO_SIM1_SIO));
-
-	SSW_DBG("SIM2 sclk= en=%d,dir=%d,in=%d,out=%d\n",
-		mt_get_gpio_pull_enable(GPIO_SIM2_SCLK),
-		mt_get_gpio_dir(GPIO_SIM2_SCLK), mt_get_gpio_in(GPIO_SIM2_SCLK),
-		mt_get_gpio_out(GPIO_SIM2_SCLK));
-	SSW_DBG("SIM2 srst= en=%d,dir=%d,in=%d,out=%d\n",
-		mt_get_gpio_pull_enable(GPIO_SIM2_SRST),
-		mt_get_gpio_dir(GPIO_SIM2_SRST), mt_get_gpio_in(GPIO_SIM2_SRST),
-		mt_get_gpio_out(GPIO_SIM2_SRST));
-	SSW_DBG("SIM2 sio= en=%d,dir=%d,in=%d,out=%d\n",
-		mt_get_gpio_pull_enable(GPIO_SIM2_SIO),
-		mt_get_gpio_dir(GPIO_SIM2_SIO), mt_get_gpio_in(GPIO_SIM2_SIO),
-		mt_get_gpio_out(GPIO_SIM2_SIO));
-#endif
-
 	sim_mode_curr = get_sim_mode_init();
 	if (SSW_SUCCESS != set_sim_gpio(sim_mode_curr)) {
 		SSW_DBG("sim_switch_init fail\n");
@@ -339,7 +237,6 @@ static int sim_switch_init(void)
 
 static int sim_switch_probe(struct platform_device *dev)
 {
-#if !defined(CONFIG_MTK_LEGACY)
 	ssw_pinctrl = devm_pinctrl_get(&dev->dev);
 	if (IS_ERR(ssw_pinctrl)) {
 		SSW_DBG("cannot find ssw pinctrl.\n");
@@ -354,7 +251,6 @@ static int sim_switch_probe(struct platform_device *dev)
 	sim1_md3_sim2_md1 =
 	    pinctrl_lookup_state(ssw_pinctrl, "sim1_md3_sim2_md1");
 
-#endif				/*!defined(CONFIG_MTK_LEGACY) */
 	SSW_DBG("Enter sim_switch_probe\n");
 
 	mutex_init(&sim_switch_mutex);

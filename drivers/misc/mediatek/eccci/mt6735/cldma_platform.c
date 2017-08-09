@@ -1,26 +1,22 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
-#include <mach/mt_spm_sleep.h>
-#include <mach/mt_clkbuf_ctl.h>
-
-#if defined(CONFIG_MTK_LEGACY)
-#include <mach/mt_gpio.h>
-#endif
-
+#include "ccci_config.h"
 #if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mt_clkmgr.h>
 #else
 #include <linux/clk.h>
 #endif /*CONFIG_MTK_CLKMGR */
 
+#ifdef FEATURE_RF_CLK_BUF
+#include <mach/mt_clkbuf_ctl.h>
+#endif
+#ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 #include <mach/mt6605.h>
-
-#include <mach/upmu_common.h>
-#include <mach/upmu_sw.h>
-#include <mach/upmu_hw.h>
+#endif
+#include <mt-plat/upmu_common.h>
 #include <mach/mt_pbm.h>
-
+#include <mt_spm_sleep.h>
 #include "ccci_core.h"
 #include "ccci_platform.h"
 #include "modem_cldma.h"
@@ -40,9 +36,7 @@
 static struct clk *clk_scp_sys_md1_main;
 #endif
 
-#if !defined(CONFIG_MTK_LEGACY)
 static struct pinctrl *mdcldma_pinctrl;
-#endif
 
 #define TAG "mcd"
 void md_cldma_hw_reset(struct ccci_modem *md)
@@ -108,13 +102,11 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 		hw_info->md_boot_slave_Vector = MD_BOOT_VECTOR;
 		hw_info->md_boot_slave_Key = MD_BOOT_VECTOR_KEY;
 		hw_info->md_boot_slave_En = MD_BOOT_VECTOR_EN;
-#if !defined(CONFIG_MTK_LEGACY)
 		mdcldma_pinctrl = devm_pinctrl_get(&dev_ptr->dev);
 		if (IS_ERR(mdcldma_pinctrl)) {
 			CCCI_ERR_MSG(dev_cfg->index, TAG, "modem %d get mdcldma_pinctrl failed\n", dev_cfg->index + 1);
 			return -1;
 		}
-#endif
 
 #if !defined(CONFIG_MTK_CLKMGR)
 		clk_scp_sys_md1_main = devm_clk_get(&dev_ptr->dev, "scp-sys-md1-main");
@@ -231,15 +223,12 @@ int md_cd_power_on(struct ccci_modem *md)
 	int ret = 0;
 	unsigned int reg_value;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-#if defined(FEATURE_RF_CLK_BUF) && !defined(CONFIG_MTK_LEGACY)
+#if defined(FEATURE_RF_CLK_BUF)
 	struct pinctrl_state *RFIC0_01_mode;
 #endif
 
 	/* turn on VLTE */
 #ifdef FEATURE_VLTE_SUPPORT
-#if defined(CONFIG_MTK_LEGACY)
-	mt_set_gpio_out(GPIO_LTE_VSRAM_EXT_POWER_EN_PIN, 1);
-#else
 	struct pinctrl_state *vsram_output_high;
 
 	if (NULL != mdcldma_pinctrl) {
@@ -252,7 +241,6 @@ int md_cd_power_on(struct ccci_modem *md)
 	} else {
 		CCCI_INF_MSG(md->index, CORE, "mdcldma_pinctrl is NULL, some error happend.\n");
 	}
-#endif
 	CCCI_INF_MSG(md->index, CORE, "md_cd_power_on:mt_set_gpio_out(GPIO_LTE_VSRAM_EXT_POWER_EN_PIN,1)\n");
 
 	/* if(!(mt6325_upmu_get_swcid()==PMIC6325_E1_CID_CODE || */
@@ -283,16 +271,8 @@ int md_cd_power_on(struct ccci_modem *md)
 	mutex_lock(&clk_buf_ctrl_lock);	/* fixme,clkbuf, ->down(&clk_buf_ctrl_lock_2); */
 	CCCI_INF_MSG(md->index, TAG, "clock buffer, BSI ignore mode\n");
 
-#if defined(CONFIG_MTK_LEGACY)
-	mt_set_gpio_mode(GPIO_RFIC0_BSI_CK, GPIO_MODE_01);
-	mt_set_gpio_mode(GPIO_RFIC0_BSI_D0, GPIO_MODE_01);
-	mt_set_gpio_mode(GPIO_RFIC0_BSI_D1, GPIO_MODE_01);
-	mt_set_gpio_mode(GPIO_RFIC0_BSI_D2, GPIO_MODE_01);
-	mt_set_gpio_mode(GPIO_RFIC0_BSI_CS, GPIO_MODE_01);
-#else
 	RFIC0_01_mode = pinctrl_lookup_state(mdcldma_pinctrl, "RFIC0_01_mode");
 	pinctrl_select_state(mdcldma_pinctrl, RFIC0_01_mode);
-#endif
 #endif
 	/* power on MD_INFRA and MODEM_TOP */
 	switch (md->index) {
@@ -352,10 +332,10 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 {
 	int ret = 0;
 	unsigned int reg_value;
-#if defined(FEATURE_RF_CLK_BUF) && !defined(CONFIG_MTK_LEGACY)
+#if defined(FEATURE_RF_CLK_BUF)
 	struct pinctrl_state *RFIC0_04_mode;
 #endif
-#if defined(FEATURE_VLTE_SUPPORT) && !defined(CONFIG_MTK_LEGACY)
+#if defined(FEATURE_VLTE_SUPPORT)
 	struct pinctrl_state *vsram_output_low;
 #endif
 
@@ -389,16 +369,8 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 #ifdef FEATURE_RF_CLK_BUF
 	/* config RFICx as AP SPM control */
 	CCCI_INF_MSG(md->index, TAG, "clock buffer, AP SPM control mode\n");
-#if defined(CONFIG_MTK_LEGACY)
-	mt_set_gpio_mode(GPIO_RFIC0_BSI_CK, GPIO_MODE_04);
-	mt_set_gpio_mode(GPIO_RFIC0_BSI_D0, GPIO_MODE_04);
-	mt_set_gpio_mode(GPIO_RFIC0_BSI_D1, GPIO_MODE_04);
-	mt_set_gpio_mode(GPIO_RFIC0_BSI_D2, GPIO_MODE_04);
-	mt_set_gpio_mode(GPIO_RFIC0_BSI_CS, GPIO_MODE_04);
-#else
 	RFIC0_04_mode = pinctrl_lookup_state(mdcldma_pinctrl, "RFIC0_04_mode");
 	pinctrl_select_state(mdcldma_pinctrl, RFIC0_04_mode);
-#endif
 	mutex_unlock(&clk_buf_ctrl_lock);
 #endif
 	reg_value = ccci_read32(infra_ao_base, 0x338);
@@ -425,9 +397,6 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 		CCCI_INF_MSG(md->index, CORE, "md_cd_power_off:set VLTE on,bit0=0\n");
 		pmic_config_interface(0x04D6, 0x0, 0x1, 0);	/* bit[0] =>1'b0 */
 	}
-#if defined(CONFIG_MTK_LEGACY)
-	mt_set_gpio_out(GPIO_LTE_VSRAM_EXT_POWER_EN_PIN, 0);
-#else
 	if (NULL != mdcldma_pinctrl) {
 		vsram_output_low = pinctrl_lookup_state(mdcldma_pinctrl, "vsram_output_low");
 		if (IS_ERR(vsram_output_low)) {
@@ -438,7 +407,6 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 	} else {
 		CCCI_INF_MSG(md->index, CORE, "mdcldma_pinctrl is NULL, some error happend.\n");
 	}
-#endif
 	CCCI_INF_MSG(md->index, CORE, "md_cd_power_off:mt_set_gpio_out(GPIO_LTE_VSRAM_EXT_POWER_EN_PIN,0)\n");
 #endif
 	return ret;

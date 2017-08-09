@@ -17,6 +17,8 @@
 #endif
 #include "ccci_off.h"
 
+#if !defined(CONFIG_MTK_ECCCI_DRIVER) || defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
+
 #if !defined(CONFIG_MTK_CLKMGR)
 static struct clk *clk_scp_sys_md1_main;
 #endif
@@ -376,6 +378,7 @@ static void modem_power_down(void)
 		pr_debug("[ccci-off] create kthread for power off md ok\n");
 	}
 }
+#endif
 
 int ccci_md_off(void)
 {
