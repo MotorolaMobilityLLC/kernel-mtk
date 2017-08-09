@@ -127,6 +127,14 @@ config KEYSTONE_IRQ
 		is part of the Keystone 2 IPC mechanism
 
 config MTK_GIC
-       def_bool y if ARM64 && MEDIATEK_SOLUTION
-       select IRQ_DOMAIN
-       select MULTI_IRQ_HANDLER
+	def_bool y if ARM64 && MEDIATEK_SOLUTION
+	select IRQ_DOMAIN
+	select MULTI_IRQ_HANDLER
+	help
+		Support for Mediatek generic interrupt controller
+
+config MTK_EIC
+	bool
+	select IRQ_DOMAIN
+	help
+		Support for Mediatek external interrupt controller
