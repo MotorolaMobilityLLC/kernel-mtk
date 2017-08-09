@@ -479,7 +479,6 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	/* avoid lock prove to dump_stack in __debug_locks_off() */
 	xchg(&debug_locks, 0);
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_DONE);
-	aee_rr_rec_exp_type(1);
 	BUG();
 }
 
@@ -492,6 +491,7 @@ void notrace aee_wdt_atf_entry(void)
 	struct pt_regs pregs;
 	int cpu = get_HW_cpuid();
 
+	aee_rr_rec_exp_type(1);
 	if (atf_aee_debug_virt_addr) {
 		regs = (void *)(atf_aee_debug_virt_addr + (cpu * sizeof(struct atf_aee_regs)));
 
