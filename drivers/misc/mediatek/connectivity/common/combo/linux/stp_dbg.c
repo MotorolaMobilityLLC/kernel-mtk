@@ -84,6 +84,31 @@ enum {
 };
 #define MTK_WIFI_COMMAND_MAX    (__STP_DBG_COMMAND_MAX - 1)
 
+static UINT8 *taskStr[TASK_ID_INDX_MAX][GEN3_TASK_ID_MAX] = {
+	{"Task_WMT",
+	"Task_BT",
+	"Task_Wifi",
+	"Task_Tst",
+	"Task_FM",
+	"Task_Idle",
+	"Task_DrvStp",
+	"Task_DrvSdio",
+	"Task_NatBt"},
+	{"Task_WMT",
+	"Task_BT",
+	"Task_Wifi",
+	"Task_Tst",
+	"Task_FM",
+	"Task_GPS",
+	"Task_FLP",
+	"Task_BAL",
+	"Task_Idle",
+	"Task_DrvStp",
+	"Task_DrvSdio",
+	"Task_NatBt"},
+};
+
+
 static struct genl_family stp_dbg_gnl_family = {
 	.id = GENL_ID_GENERATE,
 	.hdrsize = 0,
@@ -1428,18 +1453,28 @@ INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd)
 
 PUINT8 _stp_dbg_id_to_task(UINT32 id)
 {
-	PUINT8 taskStr[] = {
-		"Task_WMT",
-		"Task_BT",
-		"Task_Wifi",
-		"Task_Tst",
-		"Task_FM",
-		"Task_Idle",
-		"Task_DrvStp",
-		"Task_DrvBtif",
-		"Task_NatBt",
-	};
-	return taskStr[id];
+	UINT32 chipId = mtk_wcn_wmt_chipid_query();
+	UINT32 taskIdIndx = TASK_ID_GEN2;
+	INT32 taskIdLen = 0;
+
+	switch (chipId) {
+	case 0x6632:
+			taskIdIndx = TASK_ID_GEN3;
+			if (id >= GEN3_TASK_ID_MAX)
+				taskIdLen = GEN3_TASK_ID_MAX;
+			break;
+	default:
+			taskIdIndx = TASK_ID_GEN2;
+			if (id >= GEN2_TASK_ID_MAX)
+				taskIdLen = GEN2_TASK_ID_MAX;
+			break;
+	}
+
+	if (taskIdLen) {
+			STP_DBG_ERR_FUNC("task id(%d) overflow(%d)\n", id, taskIdLen);
+			return NULL;
+	} else
+			return taskStr[taskIdIndx][id];
 }
 
 
@@ -1742,6 +1777,7 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 	PUINT8 tempbuf = NULL;
 	UINT32 i = 0;
 	INT32 iRet = 0;
+	UINT32 chipId = 0;
 
 	if (NULL == issue_info) {
 		STP_DBG_ERR_FUNC("null issue infor\n");
@@ -1797,7 +1833,15 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 				} else
 					/*BT stack trigger assert */
 				{
-					g_stp_dbg_cpupcr->fwTaskId = 8;
+					chipId = mtk_wcn_wmt_chipid_query();
+					switch (chipId) {
+					case 0x6632:
+							g_stp_dbg_cpupcr->fwTaskId = 11;
+							break;
+					default:
+							g_stp_dbg_cpupcr->fwTaskId = 8;
+							break;
+					}
 				}
 
 				g_stp_dbg_cpupcr->host_assert_info.assert_from_host = 0;
@@ -1816,7 +1860,15 @@ INT32 stp_dbg_set_fw_info(PUINT8 issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 	} else if (STP_FW_NOACK_ISSUE == issue_type) {
 		osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 		osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], issue_info, len);
-		g_stp_dbg_cpupcr->fwTaskId = 6;
+		chipId = mtk_wcn_wmt_chipid_query();
+		switch (chipId) {
+		case 0x6632:
+				g_stp_dbg_cpupcr->fwTaskId = 9;
+				break;
+		default:
+				g_stp_dbg_cpupcr->fwTaskId = 6;
+				break;
+		}
 		g_stp_dbg_cpupcr->fwRrq = 0;
 		g_stp_dbg_cpupcr->fwIsr = 0;
 		osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
