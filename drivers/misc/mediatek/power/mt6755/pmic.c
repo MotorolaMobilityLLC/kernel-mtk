@@ -216,8 +216,10 @@ unsigned int pmic_buck_vsleep_restore(unsigned int buck_num, unsigned int vsleep
 	unsigned int rdata = 0;
 
 	if (mtk_bucks[buck_num].vsleep_en_saved != 0x0fffffff) {
+		if (vsleep_addr == MT6351_PMIC_BUCK_VGPU_VSLEEP_EN_ADDR)
+			mtk_bucks[buck_num].vsleep_en_saved |= 0x13;
 		pmic_reg &= ~(vsleep_mask << vsleep_shift);
-		pmic_reg |= (mtk_bucks[buck_num].vsleep_en_saved << vsleep_shift);
+		pmic_reg |= (mtk_bucks[buck_num].vsleep_en_saved);
 		return_value = pwrap_wacs2(1, (vsleep_addr), pmic_reg, &rdata);
 		if (en_buck_vsleep_dbg == 1) {
 			pr_err("[pmic]restore %s_vsleep[0x%x]=0x%x, 0x%x\n", mtk_bucks[buck_num].desc.name,
@@ -2573,7 +2575,11 @@ void do_ptim(bool isSuspend)
 	/*set issue interrupt */
 	/*pmic_set_register_value(PMIC_RG_INT_EN_AUXADC_IMP,1); */
 
+#if defined(SWCHR_POWER_PATH)
+	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 1);
+#else
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 0);
+#endif
 	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN, 1);
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_CNT, 3);
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_MODE, 1);
