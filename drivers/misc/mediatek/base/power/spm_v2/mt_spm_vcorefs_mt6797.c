@@ -13,7 +13,6 @@
 #include "mt_spm_internal.h"
 #include "mt_spm_misc.h"
 #include "mt_dramc.h"
-#include "scp_excep.h"
 
 #define DYNAMIC_LOAD 1
 #define GATING_AUTO_SAVE 0
@@ -220,9 +219,6 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_info("PCM_IM_PTR      : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
 
 		__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
-
-		scp_dump_regs();
-		scp_aed_reset(EXCEP_RUNTIME);
 	}
 
 	return p;
