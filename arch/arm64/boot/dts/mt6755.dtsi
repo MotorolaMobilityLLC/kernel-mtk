@@ -1533,6 +1533,7 @@
 				<&audiosys AUDIO_TML>,
 				<&audiosys AUDIO_APLL1_DIV0>,
 				<&audiosys AUDIO_APLL2_DIV0>,
+				<&scpsys SCP_SYS_AUD>,
 				<&infrasys INFRA_AUDIO>,
 				<&infrasys INFRA_AUDIO_26M_BCLK>,
 				<&topckgen TOP_MUX_AUD1>,
@@ -1556,6 +1557,7 @@
 				"aud_tml_clk",
 				"aud_apll1_div0_clk",
 				"aud_apll2_div0_clk",
+				"scp_sys_aud",
 				"aud_infra_clk",
 				"aud_peri_26m_clk",
 				"aud_mux1_clk",
@@ -1567,15 +1569,6 @@
 				"apmixed_apll1_clk",
 				"apmixed_apll2_clk",
 				"top_clk26m_clk";
-			audclk-gpio = <149 0>;
-			audmiso-gpio = <150 0>;
-			audmosi-gpio = <151 0>;
-			vowclk-gpio = <148 0>;
-			extspkamp-gpio = <54 0>;
-			i2s1clk-gpio = <80 0>;
-			i2s1dat-gpio = <78 0>;
-			i2s1mclk-gpio = <9 0>;
-			i2s1ws-gpio = <79 0>;
 		};
 
 		mt_soc_ul1_pcm@11220000 {
