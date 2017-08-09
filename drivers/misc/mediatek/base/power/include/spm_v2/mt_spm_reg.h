@@ -9,9 +9,13 @@
 
 #include "mt_spm_reg_mt6755.h"
 
+#define WAKE_SRC_CONN2AP R12_CONN2AP_SPM_WAKEUP_B
+
 #elif defined(CONFIG_ARCH_MT6797)
 
 #include "mt_spm_reg_mt6797.h"
+
+#define WAKE_SRC_CONN2AP R12_CONN2AP_SPM_WAKEUP_B
 
 #endif
 
