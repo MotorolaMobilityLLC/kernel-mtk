@@ -473,7 +473,7 @@ static int __init mt_power_management_init(void)
 	}
 */
 
-	/* mt_clkmgr_init(); */
+	mt_clkmgr_init();
 
 	/* mt_pm_log_init(); // power management log init */
 
