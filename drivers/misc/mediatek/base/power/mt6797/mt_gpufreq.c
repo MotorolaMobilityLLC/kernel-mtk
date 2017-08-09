@@ -39,6 +39,7 @@
 #include "mt_clkmgr.h"
 #include "mt_cpufreq.h"
 #include "mt_gpufreq.h"
+#include "mt_static_power.h"
 #include "mt-plat/upmu_common.h"
 #include "mt-plat/sync_write.h"
 #include "mt-plat/mt_pmic_wrap.h"
@@ -52,6 +53,7 @@
 #include "mach/mt_pbm.h"
 #include "fan53555.h"
 
+#define STATIC_PWR_READY2USE
 /*
  * CONFIG
  */
@@ -658,8 +660,8 @@ static void mt_gpufreq_power_calculation(unsigned int idx, unsigned int freq,
 
 	p_total = p_dynamic + p_leakage;
 
-	gpufreq_ver("%d: p_dynamic = %d, p_leakage = %d, p_total = %d\n",
-		    idx, p_dynamic, p_leakage, p_total);
+	gpufreq_ver("%d: p_dynamic = %d, p_leakage = %d, p_total = %d, temp = %d\n",
+		    idx, p_dynamic, p_leakage, p_total, temp);
 
 	mt_gpufreqs_power[idx].gpufreq_power = p_total;
 }
