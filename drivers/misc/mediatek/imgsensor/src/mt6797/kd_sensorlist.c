@@ -2350,6 +2350,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
     case SENSOR_FEATURE_SET_PDAF:
     case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
+	case SENSOR_FEATURE_SET_PDFOCUS_AREA:      
         /*  */
         if (copy_from_user((void *)pFeaturePara , (void *) pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
         kfree(pFeaturePara);
@@ -2986,6 +2987,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_SET_ISO:
     case SENSOR_FEATURE_SET_PDAF:
     case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
+	case SENSOR_FEATURE_SET_PDFOCUS_AREA: 
         /*  */
         if (copy_to_user((void __user *) pFeatureCtrl->pFeaturePara, (void *)pFeaturePara , FeatureParaLen)) {
         kfree(pFeaturePara);
