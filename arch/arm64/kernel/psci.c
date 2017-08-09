@@ -33,6 +33,10 @@
 #include <asm/system_misc.h>
 #include <mtk_hibernate_core.h>
 
+#ifdef MTK_IRQ_NEW_DESIGN
+#include <linux/irqchip/mtk-gic-extend.h>
+#endif
+
 #define PSCI_POWER_STATE_TYPE_STANDBY		0
 #define PSCI_POWER_STATE_TYPE_POWER_DOWN	1
 
@@ -452,7 +456,9 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 	int err = psci_ops.cpu_on(cpu_logical_map(cpu), __pa(secondary_entry));
 	if (err)
 		pr_err("failed to boot CPU%d (%d)\n", cpu, err);
-
+#ifdef MTK_IRQ_NEW_DESIGN
+	gic_clear_primask();
+#endif
 	return err;
 }
 
@@ -475,7 +481,9 @@ static void cpu_psci_cpu_die(unsigned int cpu)
 	struct psci_power_state state = {
 		.type = PSCI_POWER_STATE_TYPE_POWER_DOWN,
 	};
-
+#ifdef MTK_IRQ_NEW_DESIGN
+	gic_set_primask();
+#endif
 	ret = psci_ops.cpu_off(state);
 
 	pr_crit("unable to power off CPU%u (%d)\n", cpu, ret);

@@ -39,7 +39,7 @@ obj-y += mt_otp.o
 obj-y += mt_gpufreq.o
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/$(MTK_PLATFORM)
 obj-y += mt_cpuidle.o
-
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/power/$(MTK_PLATFORM)
 #obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
 
 ifneq ($(CONFIG_ARM64), y)
