@@ -153,7 +153,8 @@ unsigned int battery_tracking_time;
 signed int batterypseudo1 = BATTERYPSEUDO1;
 signed int batterypseudo100 = BATTERYPSEUDO100;
 
-
+int Is_In_IPOH;
+int pending_wake_up_bat;
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* Integrate with NVRAM */
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -434,7 +435,11 @@ void wake_up_bat(void)
 	chr_wake_up_bat = KAL_TRUE;
 	bat_routine_thread_timeout = KAL_TRUE;
 	battery_meter_reset_sleep_time();
-	wake_up(&bat_routine_wq);
+
+	if (!Is_In_IPOH)
+		wake_up(&bat_routine_wq);
+	else
+		pending_wake_up_bat = TRUE;
 }
 EXPORT_SYMBOL(wake_up_bat);
 
@@ -2764,14 +2769,15 @@ void BAT_thread(void)
 	battery_log(BAT_LOG_CRTI, "[fg2.0]CUST_TRACKING_POINT: %d.\n", CUST_TRACKING_POINT);
 	mt_battery_update_time(&batteryThreadRunTime, BATTERY_THREAD_TIME);
 
-	if (bat_spm_timeout) {
-		wakeup_fg_algo((FG_MAIN + FG_RESUME));
-	} else if (fg_ipoh_reset) {
-		battery_log(BAT_LOG_CRTI, "[FG BAT_thread]FG_MAIN+FG_INIT  .\n");
+	if (fg_ipoh_reset) {
+		battery_log(BAT_LOG_CRTI, "[FG BAT_thread]FG_MAIN because IPOH  .\n");
 		battery_meter_set_init_flag(false);
-		fgauge_algo_run_get_init_data();
-		wakeup_fg_algo((FG_MAIN + FG_INIT));
+		wakeup_fg_algo((FG_MAIN));
 		fg_ipoh_reset = 0;
+		bat_spm_timeout = FALSE;
+	} else if (bat_spm_timeout) {
+		wakeup_fg_algo((FG_MAIN + FG_RESUME));
+		bat_spm_timeout = FALSE;
 	} else {
 		wakeup_fg_algo(FG_MAIN);
 	}
@@ -3531,7 +3537,6 @@ static void battery_timer_resume(void)
 
 	if (is_pcm_timer_trigger == KAL_TRUE || bat_spm_timeout || battery_meter_get_low_battery_interrupt_status()) {
 		mutex_lock(&bat_mutex);
-		bat_spm_timeout = FALSE;
 		battery_meter_reset_sleep_time();
 		BAT_thread();
 		mutex_unlock(&bat_mutex);
@@ -4032,17 +4037,31 @@ static int battery_pm_event(struct notifier_block *notifier, unsigned long pm_ev
 	switch (pm_event) {
 	case PM_HIBERNATION_PREPARE:	/* Going to hibernate */
 		pr_warn("[%s] pm_event %lu (IPOH)\n", __func__, pm_event);
-		fg_ipoh_reset = 1;
+		Is_In_IPOH = TRUE;
 	case PM_RESTORE_PREPARE:	/* Going to restore a saved image */
 	case PM_SUSPEND_PREPARE:	/* Going to suspend the system */
 		pr_warn("[%s] pm_event %lu\n", __func__, pm_event);
 		battery_timer_pause();
 		return NOTIFY_DONE;
-	case PM_POST_HIBERNATION:	/* Hibernation finished */
+
 	case PM_POST_SUSPEND:	/* Suspend finished */
 	case PM_POST_RESTORE:	/* Restore failed */
 		pr_warn("[%s] pm_event %lu\n", __func__, pm_event);
 		battery_timer_resume();
+		return NOTIFY_DONE;
+
+	case PM_POST_HIBERNATION:	/* Hibernation finished */
+		pr_warn("[%s] pm_event %lu\n", __func__, pm_event);
+		battery_timer_resume();
+
+		fg_ipoh_reset = 1;
+		if (pending_wake_up_bat) {
+			pr_warn("[%s] PM_POST_HIBERNATION b4r wakeup bat_routine_wq\n", __func__);
+			wake_up(&bat_routine_wq);
+		}
+		pending_wake_up_bat = FALSE;
+		Is_In_IPOH = FALSE;
+
 		return NOTIFY_DONE;
 	}
 	return NOTIFY_OK;
