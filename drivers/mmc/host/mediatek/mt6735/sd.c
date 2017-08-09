@@ -3371,41 +3371,12 @@ static void msdc_pm(pm_message_t state, void *data)
 		pr_err("msdc%d -> %s Suspend",
 			host->id, evt == PM_EVENT_SUSPEND ? "PM" : "USR");
 		if (host->hw->flags & MSDC_SYS_SUSPEND) {
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-			if (host->hw->host_function == MSDC_EMMC
-				&& host->mmc->card && mmc_card_mmc(host->mmc->card)) {
-				if (g_emmc_mode_switch == 0)
-					host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
-				else
-					host->mmc->pm_flags &= (~MMC_PM_KEEP_POWER);
-			}
-#else
-			if (host->hw->host_function == MSDC_EMMC
-				&& host->mmc->card && mmc_card_mmc(host->mmc->card))
-				host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
-#endif
-			emmc_sleep_failed = 0;
-			/* weiping fix */
-			/* (void)mmc_suspend_host(host->mmc); */
-
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-			if ((g_emmc_mode_switch == 0)
-				&& host->hw->host_function == MSDC_EMMC && host->mmc->card
-			    && mmc_card_mmc(host->mmc->card)) {
+			if (host->hw->host_function == MSDC_EMMC) {
 				msdc_save_emmc_setting(host);
 				host->power_control(host, 0);
 				msdc_pin_config(host, MSDC_PIN_PULL_DOWN);
 				msdc_pin_reset(host, MSDC_PIN_PULL_DOWN);
 			}
-#else
-			if (host->hw->host_function == MSDC_EMMC
-				&& host->mmc->card && mmc_card_mmc(host->mmc->card)) {
-				msdc_save_emmc_setting(host);
-				host->power_control(host, 0);
-				msdc_pin_config(host, MSDC_PIN_PULL_DOWN);
-				msdc_pin_reset(host, MSDC_PIN_PULL_DOWN);
-			}
-#endif
 #ifndef FPGA_PLATFORM
 			msdc_set_tdsel(host, 1);
 #endif
@@ -3434,48 +3405,14 @@ static void msdc_pm(pm_message_t state, void *data)
 			msdc_set_tdsel(host, 0);
 #endif
 
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-			if ((g_emmc_mode_switch == 0)
-				&& host->hw->host_function == MSDC_EMMC && host->mmc->card
-			    && mmc_card_mmc(host->mmc->card)) {
+			if (host->hw->host_function == MSDC_EMMC) {
 				msdc_reset_hw(host->id);
 				msdc_pin_reset(host, MSDC_PIN_PULL_UP);
 				msdc_pin_config(host, MSDC_PIN_PULL_UP);
 				host->power_control(host, 1);
 				mdelay(10);
 				msdc_restore_emmc_setting(host);
-				if (emmc_sleep_failed) {
-					msdc_pin_reset_force(host, MSDC_PIN_PULL_DOWN);
-					msdc_pin_reset_force(host, MSDC_PIN_PULL_UP);
-					mdelay(200);
-					/* weiping fix */
-					/* mmc_card_clr_sleep(host->mmc->card); */
-					host->mmc->pm_flags &= ~MMC_PM_KEEP_POWER;
-				}
 			}
-#else
-			if (host->hw->host_function == MSDC_EMMC && host->mmc->card
-				&& mmc_card_mmc(host->mmc->card)) {
-				msdc_reset_hw(host->id);
-				msdc_pin_reset(host, MSDC_PIN_PULL_UP);
-				msdc_pin_config(host, MSDC_PIN_PULL_UP);
-				host->power_control(host, 1);
-				mdelay(10);
-				msdc_restore_emmc_setting(host);
-				if (emmc_sleep_failed) {
-					msdc_pin_reset_force(host, MSDC_PIN_PULL_DOWN);
-					msdc_pin_reset_force(host, MSDC_PIN_PULL_UP);
-					mdelay(200);
-					/* weiping fix */
-					/* mmc_card_clr_sleep(host->mmc->card); */
-					host->mmc->pm_flags &= ~MMC_PM_KEEP_POWER;
-				}
-			}
-#endif
-			/* weiping fix */
-			/* (void)mmc_resume_host(host->mmc); */
-			if ((host->hw->host_function == MSDC_EMMC) && emmc_sleep_failed)
-				emmc_sleep_failed = 0;
 		} else {
 			host->mmc->pm_flags |= MMC_PM_IGNORE_PM_NOTIFY;
 			mmc_add_host(host->mmc);
@@ -9307,6 +9244,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	msdc_dump_clock_sts(host);
 #endif
 
+	if (host->hw->host_function == MSDC_EMMC)
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+
 #ifdef FPGA_PLATFORM
 #if 0				/*def CONFIG_MTK_EMMC_SUPPORT */
 	pr_debug("[%s]: waiting emmc init complete\n", __func__);
@@ -9390,11 +9330,6 @@ static int msdc_drv_suspend(struct platform_device *pdev, pm_message_t state)
 	struct mmc_host *mmc = platform_get_drvdata(pdev);
 	struct msdc_host *host = mmc_priv(mmc);
 	void __iomem *base = host->base;
-
-	/*bad sd because power is off, but sd is still inserted */
-	if ((host->hw->host_function == MSDC_SD) && (host->card_inserted == 1)
-		&& (g_msdc1_io == 0))
-		host->block_bad_card = 1;
 
 	if (mmc && state.event == PM_EVENT_SUSPEND
 		&& (host->hw->flags & MSDC_SYS_SUSPEND))

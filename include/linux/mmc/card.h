@@ -315,6 +315,7 @@ struct mmc_card {
 #define MMC_STATE_NEED_BKOPS	(1<<12)	/* card needs to do BKOPS */
 #endif
 #define MMC_STATE_SUSPENDED	(1<<6)		/* card is suspended */
+#define MMC_STATE_SLEEP     (1<<9)      /*card is sleep */
 	unsigned int		quirks; 	/* card quirks */
 #define MMC_QUIRK_LENIENT_FN0	(1<<0)		/* allow SDIO FN0 writes outside of the VS CCCR range */
 #define MMC_QUIRK_BLKSZ_FOR_BYTE_MODE (1<<1)	/* use func->cur_blksize */
@@ -501,6 +502,9 @@ static inline void __maybe_unused remove_quirk(struct mmc_card *card, int data)
 #define mmc_card_set_suspended(c) ((c)->state |= MMC_STATE_SUSPENDED)
 #define mmc_card_clr_suspended(c) ((c)->state &= ~MMC_STATE_SUSPENDED)
 
+#define mmc_card_is_sleep(c)      ((c)->state & MMC_STATE_SLEEP)
+#define mmc_card_set_sleep(c)     ((c)->state |= MMC_STATE_SLEEP)
+#define mmc_card_clr_sleep(c)     ((c)->state &= -MMC_STATE_SLEEP)
 /*
  * Quirk add/remove for MMC products.
  */
