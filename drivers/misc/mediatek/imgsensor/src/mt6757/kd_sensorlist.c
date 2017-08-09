@@ -102,11 +102,9 @@ static DEFINE_SPINLOCK(kdsensor_drv_lock);
 #ifndef SUPPORT_I2C_BUS_NUM3
     #define SUPPORT_I2C_BUS_NUM3        SUPPORT_I2C_BUS_NUM2
 #endif
-#define HW_TRIGGER_I2C_SUPPORT 0
+#define HW_TRIGGER_I2C_SUPPORT 1
 /*I2C trigger header file. drivers\i2c\busses\i2c-mtk.h*/
-#if HW_TRIGGER_I2C_SUPPORT 
 #include "i2c-mtk.h"
-#endif
 
 
 #define CAMERA_HW_DRVNAME1  "kd_camera_hw"
@@ -465,7 +463,6 @@ int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_siz
 			}
 		}
 	}
-#if HW_TRIGGER_I2C_SUPPORT 
 	else{
 		int ret = 0;
 		u32 speed_timing;
@@ -498,7 +495,7 @@ int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_siz
 				ret, a_pSendData[0], a_pSendData[1],speed_timing);
 		}
 	}
-#endif
+
     return 0;
 }
 
@@ -506,7 +503,6 @@ int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_siz
 /*******************************************************************************
 * iReadRegI2C with speed
 ********************************************************************************/
-#if HW_TRIGGER_I2C_SUPPORT 
 int iReadRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId, u16 timing)
 {
 	int ret = 0;
@@ -547,7 +543,7 @@ int iReadRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16
 	}
     return ret;
 }
-#endif
+
 /*******************************************************************************
 * iWriteReg
 ********************************************************************************/
@@ -661,7 +657,6 @@ int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
 		} while ((retry--) > 0);
 		/* KD_IMGSENSOR_PROFILE("iWriteRegI2C"); */
 	}
-#if HW_TRIGGER_I2C_SUPPORT 
 	else
 	{
 		u32 speed_timing;
@@ -697,14 +692,13 @@ int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
 			uDELAY(50);
 		}while (( --retry) > 0); // retry 3 times
 	}
-#endif
+
     return i4RetValue;
 }
 
 /*******************************************************************************
 * iWriteRegI2C with speed control
 ********************************************************************************/
-#if HW_TRIGGER_I2C_SUPPORT 
 int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timing)
 {
 	u32 speed_timing;
@@ -749,7 +743,7 @@ int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timi
 	
     return ret;
 }
-#endif
+
 int kdSetI2CBusNum(u32 i2cBusNum) {
     //Main2 Support
     //if ((i2cBusNum != SUPPORT_I2C_BUS_NUM2) && (i2cBusNum != SUPPORT_I2C_BUS_NUM1)) {
@@ -895,7 +889,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u
 		msg[i].len = transfer_length;
 		msg[i].buf = pData+(i*transfer_length);
 	}
-//	ret = mtk_i2c_transfer(pClient->adapter, msg, trans_num, 0, speed_timing);
+	ret = mtk_i2c_transfer(pClient->adapter, msg, trans_num, 0, speed_timing);
 	if (ret != trans_num) {
 		PK_ERR("[iBurstWriteReg_multi] I2C send failed (0x%x)! timing(0=%d) \n", ret,speed_timing);
 	}
@@ -2084,6 +2078,7 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
     pSensorInfo->AEShutDelayFrame                         = pInfo[IDNum]->AEShutDelayFrame;
     pSensorInfo->AESensorGainDelayFrame                   = pInfo[IDNum]->AESensorGainDelayFrame;
     pSensorInfo->AEISPGainDelayFrame                      = pInfo[IDNum]->AEISPGainDelayFrame;
+	pSensorInfo->FrameTimeDelayFrame                      = pInfo[IDNum]->FrameTimeDelayFrame;
     pSensorInfo->MIPIDataLowPwr2HighSpeedTermDelayCount   = pInfo[IDNum]->MIPIDataLowPwr2HighSpeedTermDelayCount;
     pSensorInfo->MIPIDataLowPwr2HighSpeedSettleDelayCount = pInfo[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;
 	pSensorInfo->MIPIDataLowPwr2HSSettleDelayM0           = pInfo[IDNum]->MIPIDataLowPwr2HighSpeedSettleDelayCount;

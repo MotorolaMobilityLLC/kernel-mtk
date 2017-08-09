@@ -14,12 +14,12 @@
 #
 # Makefile for misc devices that really don't fit anywhere else.
 #
-ifneq ($(CONFIG_PINCTRL_MT6757),y)
+#ifneq ($(CONFIG_PINCTRL_MT6757),y)
 # to use mtk legacy pinctrl
-subdir-ccflags-y += -I$(DRVGEN_OUT)/inc
-else
+#subdir-ccflags-y += -I$(DRVGEN_OUT)/inc
+#else
 subdir-ccflags-y += -I$(srctree)/drivers/i2c/busses/
-endif
+#endif
 define FILTER_PROJECT_DRV
 ifeq ($(wildcard $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/$(1)),)
 platform_drv += $(1)
