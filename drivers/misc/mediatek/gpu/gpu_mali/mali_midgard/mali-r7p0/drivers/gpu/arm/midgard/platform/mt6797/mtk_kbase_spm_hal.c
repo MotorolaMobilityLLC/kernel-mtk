@@ -12,6 +12,10 @@ static unsigned int max_level = 7;
 //  lowest freq => idx num - 1, level 0
 #define TRANS2IDX(level) (max_level - (level))
 
+extern int (*ged_sw_vsync_event_fp)(bool bMode);
+//static unsigned int VSync_SW;
+
+
 static struct {
 	int idx_fix;
 	unsigned int idx_floor;
@@ -77,6 +81,32 @@ static void spm_update_fc(void)
 		mtk_kbase_spm_set_vol_freq_cf(cv, cf, fv, ff);
 		MTKCLK_disable_unprepare(clk_dvfs_gpu);
 	}
+}
+
+
+static int spm_vsync_hint( bool bMode) 
+{
+	struct mtk_config *config = g_config;
+	if( bMode == true )
+	{
+			#if 1
+			MTKCLK_prepare_enable(clk_dvfs_gpu);
+			mtk_kbase_spm_boost(0, 0);
+			MTKCLK_disable_unprepare(clk_dvfs_gpu);
+			#endif
+			//printk("VSync_ON\n");
+	}
+	else
+	{
+		#if 1
+		MTKCLK_prepare_enable(clk_dvfs_gpu);
+		mtk_kbase_spm_boost(0, 300000);
+		MTKCLK_disable_unprepare(clk_dvfs_gpu);
+		#endif
+		//printk("VSync_OFF\n");
+	}
+	
+	return 0;
 }
 
 static void spm_boost(unsigned int idx)
@@ -251,6 +281,9 @@ void mtk_kbase_spm_hal_init(void)
 	mt_gpufreq_input_boost_notify_registerCB(spm_mtk_gpu_input_boost_CB);
 	// voltage
   	mt_gpufreq_update_volt_registerCB(spm_mtk_gpu_ptpod_update_notify);
+
+	//Vsync hint
+	ged_sw_vsync_event_fp = spm_vsync_hint;
 }
 
 void mtk_gpu_spm_resume_hal(void)
