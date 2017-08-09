@@ -242,6 +242,7 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 /*--------------------------------------------------------------------------*/
 /* MSDC GPIO Related Register                                               */
 /*--------------------------------------------------------------------------*/
+/* MSDC0 */
 #define MSDC0_GPIO_MODE23       (MSDC_GPIO_BASE   +  0x460)
 #define MSDC0_GPIO_MODE24       (MSDC_GPIO_BASE   +  0x470)
 #define MSDC0_GPIO_SMT_ADDR	    (MSDC0_IO_PAD_BASE + 0x10)
@@ -252,6 +253,7 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 #define MSDC0_GPIO_PUPD0_ADDR   (MSDC0_IO_PAD_BASE + 0xc0)
 #define MSDC0_GPIO_PUPD1_ADDR   (MSDC0_IO_PAD_BASE + 0xd0)
 
+/* MSDC1 */
 #define MSDC1_GPIO_MODE4        (MSDC_GPIO_BASE   +  0x330)
 #define MSDC1_GPIO_MODE5        (MSDC_GPIO_BASE   +  0x340)
 #define MSDC1_GPIO_IES_ADDR     (MSDC1_IO_PAD_BASE + 0x0)
@@ -262,6 +264,17 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 /* SR is in MSDC1_GPIO_DRV1_ADDR */
 #define MSDC1_GPIO_DRV1_ADDR    (MSDC1_IO_PAD_BASE + 0xb0)
 #define MSDC1_GPIO_PUPD_ADDR    (MSDC1_IO_PAD_BASE + 0xc0)
+
+/* MSDC2 */
+#define MSDC2_GPIO_MODE17       (MSDC_GPIO_BASE + 0x400)
+#define MSDC2_GPIO_MODE18       (MSDC_GPIO_BASE + 0x410)
+#define MSDC2_GPIO_SMT_ADDR     (MSDC2_IO_PAD_BASE + 0x10)
+#define MSDC2_GPIO_IES_ADDR     (MSDC2_IO_PAD_BASE + 0x0)
+#define MSDC2_GPIO_TDSEL_ADDR   (MSDC2_IO_PAD_BASE + 0x20)
+#define MSDC2_GPIO_RDSEL_ADDR   (MSDC2_IO_PAD_BASE + 0x40)
+#define MSDC2_GPIO_DRV_ADDR     (MSDC2_IO_PAD_BASE + 0xA0)
+#define MSDC2_GPIO_PUPD0_ADDR   (MSDC2_IO_PAD_BASE + 0xC0)
+#define MSDC2_GPIO_PUPD1_ADDR   (MSDC2_IO_PAD_BASE + 0xD0)
 
 /*--------------------------------------------------------------------------*/
 /* MSDC GPIO Related Register Mask                                               */
@@ -292,6 +305,16 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 #define MSDC1_MODE_DAT0_MASK            (0x7 << 4)
 #define MSDC1_MODE_CMD_MASK             (0x7 << 0)
 
+/* MSDC2_GPIO_MODE17, 0002b is msdc mode */
+#define MSDC2_MODE_DAT0_MASK            (0x7 << 28)
+#define MSDC2_MODE_DAT3_MASK            (0x7 << 24)
+#define MSDC2_MODE_CLK_MASK             (0x7 << 20)
+#define MSDC2_MODE_CMD_MASK             (0x7 << 16)
+#define MSDC2_MODE_DAT1_MASK            (0x7 << 12)
+
+/* MSDC2_GPIO_MODE18, 0002b is msdc mode */
+#define MSDC2_MODE_DAT2_MASK            (0x7 << 0)
+
 /* MSDC0 SMT mask*/
 #define MSDC0_SMT_DSL_MASK              (0x1  <<  4)
 #define MSDC0_SMT_RSTB_MASK             (0x1  <<  3)
@@ -304,6 +327,11 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 #define MSDC1_SMT_CMD_MASK              (0x1 << 9)
 #define MSDC1_SMT_CLK_MASK              (0x1 << 8)
 #define MSDC1_SMT_ALL_MASK              (0x7 << 8)
+/* MSDC2 SMT mask */
+#define MSDC2_SMT_CLK_MASK              (0x1 << 5)
+#define MSDC2_SMT_CMD_MASK              (0x1 << 4)
+#define MSDC2_SMT_DAT_MASK              (0x1 << 3)
+#define MSDC2_SMT_ALL_MASK              (0x7 << 3)
 
 /* MSDC0 PUPD0 mask */
 /* MSDC0 PUPD1 mask */
@@ -324,6 +352,11 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 #define MSDC1_IES_CMD_MASK              (0x1 <<  9)
 #define MSDC1_IES_CLK_MASK              (0x1 <<  8)
 #define MSDC1_IES_ALL_MASK              (0x7 <<  8)
+/* MSDC2 IES mask*/
+#define MSDC2_IES_CLK_MASK              (0x1 <<  5)
+#define MSDC2_IES_CMD_MASK              (0x1 <<  4)
+#define MSDC2_IES_DAT_MASK              (0x1 <<  3)
+#define MSDC2_IES_ALL_MASK              (0x7 <<  3)
 
 /* MSDC0 TDSEL mask*/
 #define MSDC0_TDSEL_DSL_MASK            (0xf  << 16)
@@ -337,6 +370,8 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 #define MSDC1_TDSEL_CMD_MASK            (0xf <<  4)
 #define MSDC1_TDSEL_CLK_MASK            (0xf <<  0)
 #define MSDC1_TDSEL_ALL_MASK            (0xfff << 0)
+/* MSDC2 TDSEL mask */
+#define MSDC2_TDSEL_ALL_MASK            (0xfff << 12)
 
 /* MSDC0 RDSEL mask*/
 #define MSDC0_RDSEL_DSL_MASK            (0x3f << 24)
@@ -351,6 +386,8 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 #define MSDC1_RDSEL0_ALL_MASK           (0xfff << 16)
 #define MSDC1_RDSEL_DAT_MASK            (0x3f << 0)
 #define MSDC1_RDSEL1_ALL_MASK           (0x3f << 0)
+/* MSDC2 RDSEL mask */
+#define MSDC2_RDSEL_ALL_MASK            (0x3f << 6)
 
 /* MSDC0 DRV mask*/
 #define MSDC0_DRV_DSL_MASK              (0xf  <<  16)
@@ -368,6 +405,21 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 #define MSDC1_DRV_DAT_MASK              (0x7 << 4)
 #define MSDC1_DRV_CLK_MASK              (0x7 << 0)
 #define MSDC1_DRV_ALL_MASK              (0xfff << 0)
+/* MSDC2 DRV mask */
+#define MSDC2_DRV_CLK_MASK              (0x7 << 20)
+#define MSDC2_DRV_CMD_MASK              (0x7 << 16)
+#define MSDC2_DRV_DAT_MASK              (0x7 << 12)
+#define MSDC2_DRV_ALL_MASK              (0xfff << 12)
+
+/* MSDC0 PUPD mask */
+#define MSDC0_PUPD0_MASK                (0xFFFFFFFF << 0)
+#define MSDC0_PUPD1_MASK                (0x7FFF << 0)
+/* MSDC1 PUPD mask */
+#define MSDC1_PUPD_MASK                 (0x7FFFFF << 0)
+/* MSDC2 PUPD mask */
+#define MSDC2_PUPD0_MASK                (0xFFFFF << 12)
+#define MSDC2_PUPD1_MASK                (0xF << 0)
+
 
 #ifndef FPGA_PLATFORM
 void msdc_set_driving_by_id(u32 id, struct msdc_hw *hw, bool sd_18);

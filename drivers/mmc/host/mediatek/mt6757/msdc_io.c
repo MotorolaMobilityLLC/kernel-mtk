@@ -571,7 +571,35 @@ void msdc_dump_padctl_by_id(u32 id)
 			MSDC_READ32(MSDC1_GPIO_PUPD_ADDR));
 		break;
 	case 2:
-		/* FIX ME */
+		pr_err("MSDC2 MODE17 [0x%x] =0x%8x\n",
+			MSDC2_GPIO_MODE17, MSDC_READ32(MSDC2_GPIO_MODE17));
+		pr_err("MSDC2 MODE18 [0x%x] =0x%8x\n",
+			MSDC2_GPIO_MODE18, MSDC_READ32(MSDC2_GPIO_MODE18));
+		pr_err("MSDC2 IES   [0x%p] =0x%8x\tshould:0x??????1f\n",
+			MSDC2_GPIO_IES_ADDR, MSDC_READ32(MSDC2_GPIO_IES_ADDR));
+		pr_err("MSDC2 SMT    [0x%x] =0x%8x\n",
+			MSDC2_GPIO_SMT_ADDR, MSDC_READ32(MSDC2_GPIO_SMT_ADDR));
+
+		pr_err("MSDC2 TDSEL  [0x%x] =0x%8x\n",
+			MSDC2_GPIO_TDSEL_ADDR,
+			MSDC_READ32(MSDC2_GPIO_TDSEL_ADDR));
+		/* Note1=> For Vcore=0.7V sleep mode
+		 * if TDSEL0~3 don't set to [1111]
+		 * the digital output function will fail
+		 */
+		pr_err("MSDC2 RDSEL  [0x%x] =0x%8x\n",
+			MSDC2_GPIO_RDSEL_ADDR,
+			MSDC_READ32(MSDC2_GPIO_RDSEL_ADDR));
+
+		pr_err("MSDC2 DRV    [0x%x] =0x%8x\n",
+			MSDC2_GPIO_DRV_ADDR, MSDC_READ32(MSDC2_GPIO_DRV_ADDR));
+
+		pr_err("MSDC2 PUPD0   [0x%x] =0x%8x\n",
+			MSDC2_GPIO_PUPD0_ADDR,
+			MSDC_READ32(MSDC2_GPIO_PUPD0_ADDR));
+		pr_err("MSDC2 PUPD1   [0x%x] =0x%8x\n",
+			MSDC2_GPIO_PUPD1_ADDR,
+			MSDC_READ32(MSDC2_GPIO_PUPD1_ADDR));
 	default:
 		pr_err("[%s] invalid host->id = %d\n", __func__, id);
 		break;
@@ -606,7 +634,13 @@ void msdc_set_pin_mode(struct msdc_host *host)
 		MSDC_SET_FIELD(MSDC1_GPIO_MODE5, MSDC1_MODE_CMD_MASK,  0x1);
 		break;
 	case 2:
-		/* FIX ME */
+		MSDC_SET_FIELD(MSDC2_GPIO_MODE17, MSDC2_MODE_DAT0_MASK, 0x1);
+		MSDC_SET_FIELD(MSDC2_GPIO_MODE17, MSDC2_MODE_DAT3_MASK, 0x1);
+		MSDC_SET_FIELD(MSDC2_GPIO_MODE17, MSDC2_MODE_CLK_MASK,  0x1);
+		MSDC_SET_FIELD(MSDC2_GPIO_MODE17, MSDC2_MODE_CMD_MASK,  0x1);
+		MSDC_SET_FIELD(MSDC2_GPIO_MODE17, MSDC2_MODE_DAT1_MASK, 0x1);
+
+		MSDC_SET_FIELD(MSDC2_GPIO_MODE18, MSDC2_MODE_DAT2_MASK, 0x1);
 	default:
 		pr_err("[%s] invalid host->id = %d\n", __func__, host->id);
 		break;
@@ -629,7 +663,8 @@ void msdc_set_ies_by_id(u32 id, int set_ies)
 			(set_ies ? 0x7 : 0));
 		break;
 	case 2:
-		/* FIX ME */
+		MSDC_SET_FIELD(MSDC2_GPIO_IES_ADDR, MSDC2_IES_ALL_MASK,
+			(set_ies ? 0x1f : 0));
 	default:
 		pr_err("[%s] invalid host->id = %d\n", __func__, id);
 		break;
@@ -648,7 +683,9 @@ void msdc_set_smt_by_id(u32 id, int set_smt)
 			(set_smt ? 0x7 : 0));
 		break;
 	case 2:
-		/* FIX ME */
+		MSDC_SET_FIELD(MSDC2_GPIO_SMT_ADDR, MSDC2_SMT_ALL_MASK,
+			(set_smt ? 0x7 : 0));
+		break;
 	default:
 		pr_err("[%s] invalid host->id = %d\n", __func__, id);
 		break;
@@ -665,7 +702,7 @@ void msdc_set_tdsel_by_id(u32 id, bool sleep, bool sd_18)
 		MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR, MSDC1_TDSEL_ALL_MASK, 0);
 		break;
 	case 2:
-		/* FIX ME */
+		MSDC_SET_FIELD(MSDC2_GPIO_TDSEL_ADDR, MSDC2_TDSEL_ALL_MASK, 0);
 	default:
 		pr_err("[%s] invalid host->id = %d\n", __func__, id);
 		break;
@@ -683,7 +720,7 @@ void msdc_set_rdsel_by_id(u32 id, bool sleep, bool sd_18)
 		MSDC_SET_FIELD(MSDC1_GPIO_RDSEL1_ADDR, MSDC1_RDSEL1_ALL_MASK, 0);
 		break;
 	case 2:
-		/* FIX ME */
+		MSDC_SET_FIELD(MSDC2_GPIO_RDSEL_ADDR, MSDC2_RDSEL_ALL_MASK, 0);
 	default:
 		pr_err("[%s] invalid host->id = %d\n", __func__, id);
 		break;
@@ -702,7 +739,8 @@ void msdc_set_tdsel_dbg_by_id(u32 id, u32 value)
 				value);
 		break;
 	case 2:
-		/* FIX ME */
+		MSDC_SET_FIELD(MSDC2_GPIO_TDSEL_ADDR, MSDC2_TDSEL_ALL_MASK,
+				value);
 	default:
 		pr_err("[%s] invalid host->id = %d\n", __func__, id);
 		break;
@@ -725,7 +763,8 @@ void msdc_set_rdsel_dbg_by_id(u32 id, u32 value)
 			(value >> 12) & 0x3f);
 		break;
 	case 2:
-		/* FIX ME */
+		MSDC_SET_FIELD(MSDC2_GPIO_RDSEL_ADDR, MSDC2_RDSEL_ALL_MASK,
+				value);
 	default:
 		pr_err("[%s] invalid host->id = %d\n", __func__, id);
 		break;
@@ -744,7 +783,8 @@ void msdc_get_tdsel_dbg_by_id(u32 id, u32 *value)
 				*value);
 		break;
 	case 2:
-		/* FIX ME */
+		MSDC_GET_FIELD(MSDC2_GPIO_TDSEL_ADDR, MSDC2_TDSEL_ALL_MASK,
+				*value);
 	default:
 		pr_err("[%s] invalid host->id = %d\n", __func__, id);
 		break;
@@ -844,7 +884,12 @@ void msdc_set_driving_by_id(u32 id, struct msdc_hw *hw, bool sd_18)
 		}
 		break;
 	case 2:
-		/* FIX ME */
+		MSDC_SET_FIELD(MSDC2_GPIO_DRV_ADDR, MSDC2_DRV_CMD_MASK,
+			hw->cmd_drv);
+		MSDC_SET_FIELD(MSDC2_GPIO_DRV_ADDR, MSDC2_DRV_CLK_MASK,
+			hw->clk_drv);
+		MSDC_SET_FIELD(MSDC2_GPIO_DRV_ADDR, MSDC2_DRV_DAT_MASK,
+			hw->dat_drv);
 	default:
 		pr_err("[%s] invalid host->id = %d\n", __func__, id);
 		break;
@@ -880,7 +925,12 @@ void msdc_get_driving_by_id(u32 id, struct msdc_hw *hw)
 			hw->dat_drv);
 		break;
 	case 2:
-		/* FIX ME */
+		MSDC_GET_FIELD(MSDC2_GPIO_DRV_ADDR, MSDC2_DRV_CMD_MASK,
+			hw->cmd_drv);
+		MSDC_GET_FIELD(MSDC2_GPIO_DRV_ADDR, MSDC2_DRV_CLK_MASK,
+			hw->clk_drv);
+		MSDC_GET_FIELD(MSDC2_GPIO_DRV_ADDR, MSDC2_DRV_DAT_MASK,
+			hw->dat_drv);
 	default:
 		pr_err("[%s] invalid host->id = %d\n", __func__, id);
 		break;
@@ -910,23 +960,23 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 			* 0x10002AC0[32:0] = 0x20000000
 			* 0x10002AD0[15:0] = 0
 			*/
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR, 0xFFFFFFFF, 0x20000000);
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, 0x7FFF, 0);
+			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR, MSDC0_PUPD0_MASK, 0x20000000);
+			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, MSDC0_PUPD1_MASK, 0);
 		} else if (MSDC_PIN_PULL_DOWN == mode) {
 			/* Switch MSDC0_* to 50K ohm PD, MSDC0_RSTB to 50K ohm PU
 			* 0x10002AC0[32:0] = 0x26666666
 			* 0x10002AD0[15:0] = 0x6666
 			*/
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR, 0xFFFFFFFF, 0x26666666);
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, 0x7FFF, 0x6666);
+			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR, MSDC0_PUPD0_MASK, 0x26666666);
+			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, MSDC0_PUPD1_MASK, 0x6666);
 		} else if (MSDC_PIN_PULL_UP == mode) {
 			/* Switch MSDC0_CLK to 50K ohm PD, MSDC0_CMD/MSDC0_DAT*
 			* to 10K ohm PU, MSDC0_RSTB to 50K ohm PU, MSDC0_DSL to 50K ohm PD
 			* 0x10002AC0[31:0] = 0x21111161
 			* 0x10002AD0[14:0] = 0x6111
 			*/
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR, 0xFFFFFFFF, 0x21111161);
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, 0x7FFF, 0x6111);
+			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR, MSDC0_PUPD0_MASK, 0x21111161);
+			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, MSDC0_PUPD1_MASK, 0x6111);
 		}
 		break;
 	case 1:
@@ -934,22 +984,41 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 			/* Switch MSDC1_* to no ohm PU
 			* 0x100020C0[22:0] = 0
 			*/
-			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, 0x7FFFFF, 0);
+			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_MASK, 0);
 		} else if (MSDC_PIN_PULL_DOWN == mode) {
 			/* Switch MSDC1_* to 50K ohm PD
 			* 0x100020C0[22:0] = 0x666666
 			*/
-			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, 0x7FFFFF, 0x666666);
+			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_MASK, 0x666666);
 		} else if (MSDC_PIN_PULL_UP == mode) {
 			/* Switch MSDC1_CLK to 50K ohm PD,
 			* MSDC1_CMD/MSDC1_DAT* to 10K ohm PU
 			* 0x100020C0[22:0] = 0x111161
 			*/
-			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, 0x7FFFFF, 0x111161);
+			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_MASK, 0x111161);
 		}
 		break;
 	case 2:
-		/* FIX ME */
+		if (MSDC_PIN_PULL_NONE == mode) {
+			/* Switch MSDC2_* to 0 ohm PU
+			 * 0x100028C0[31:12] = 0, 0x100028D0[3:0] = 0
+			 */
+			MSDC_SET_FIELD(MSDC2_GPIO_PUPD0_ADDR, MSDC2_PUPD0_MASK, 0);
+			MSDC_SET_FIELD(MSDC2_GPIO_PUPD1_ADDR, MSDC2_PUPD1_MASK, 0);
+		} else if (MSDC_PIN_PULL_DOWN == mode) {
+			/* Switch MSDC2_* to 50K ohm PD
+			 * 0x100028C0[31:12] = 0x66666, 0x100028D0[3:0] = 0x6
+			 */
+			MSDC_SET_FIELD(MSDC2_GPIO_PUPD0_ADDR, MSDC2_PUPD0_MASK, 0x66666);
+			MSDC_SET_FIELD(MSDC2_GPIO_PUPD0_ADDR, MSDC2_PUPD1_MASK, 0x6);
+		} else if (MSDC_PIN_PULL_UP == mode) {
+			/* Switch MSDC2_CLK to 50K ohm PD,
+			 * MSDC2_CMD/MSDC2_DAT* to 10K ohm PU
+			 * 0x100028C0[31:12] = 0x11611, 0x100028D0[3:0] = 0x1
+			 */
+			MSDC_SET_FIELD(MSDC2_GPIO_PUPD0_ADDR, MSDC2_PUPD0_MASK, 0x11611);
+			MSDC_SET_FIELD(MSDC2_GPIO_PUPD0_ADDR, MSDC2_PUPD1_MASK, 0x1);
+		}
 	default:
 		pr_err("[%s] invalid host->id!\n", __func__);
 		break;
