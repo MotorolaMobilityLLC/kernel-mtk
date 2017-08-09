@@ -1025,7 +1025,7 @@ static int mtk_afe_routing_remove(struct platform_device *pdev)
 /* supend and resume function */
 static int mtk_routing_pm_ops_suspend(struct device *device)
 {
-	pr_warn("%s\n", __func__);
+	/* pr_warn("%s\n", __func__); */
 	if (get_voice_status() == true)
 		return 0;
 
@@ -1051,7 +1051,7 @@ static int mtk_pm_ops_suspend_ipo(struct device *device)
 
 static int mtk_routing_pm_ops_resume(struct device *device)
 {
-	pr_warn("%s\n ", __func__);
+	/* pr_warn("%s\n ", __func__); */
 	if (AudDrvSuspendStatus == true) {
 		AudDrv_Suspend_Clk_On();
 		if (ConditionEnterSuspend() == true) {

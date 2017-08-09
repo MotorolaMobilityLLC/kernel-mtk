@@ -138,7 +138,7 @@ void AudDrv_Clk_On(void)
 	PRINTK_AUD_CLK("+AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	if (Aud_AFE_Clk_cntr == 0) {
-		pr_debug("-----------AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+		/* pr_debug("-----------AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr); */
 #ifdef PM_MANAGER_API
 
 		/* for Infra power */
@@ -159,7 +159,7 @@ void AudDrv_Clk_On(void)
 
 		PRINTK_AUD_CLK("AudDrv_Clk_On, in  PM_MANAGER_API\n");
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x60004000, 0x60004000);	/* for bringup test, need to modify */
-		pr_warn(" AudDrv_Clk_On done, AUDIO_TOP_CON0=%x\n", Afe_Get_Reg(AUDIO_TOP_CON0));
+		pr_debug("AudDrv_Clk_On done, AUDIO_TOP_CON0=%x\n", Afe_Get_Reg(AUDIO_TOP_CON0));
 #else
 #if 0				/* no need */
 		SetInfraCfg(AUDIO_CG_CLR, 0x2000000, 0x2000000);
