@@ -58,7 +58,7 @@
 
 static DEFINE_MUTEX(FGADC_mutex);
 
-int Enable_FGADC_LOG = 7;
+int Enable_FGADC_LOG = BMLOG_INFO_LEVEL;
 
 #define NETLINK_FGD 26
 #define CUST_SETTING_VERSION 0x100000
@@ -3536,9 +3536,9 @@ static int battery_meter_suspend(struct platform_device *dev, pm_message_t state
 
 #if defined(SOC_BY_SW_FG)
 		{
-			if (battery_meter_get_low_battery_interrupt_status() == KAL_TRUE)
+			/*if (battery_meter_get_low_battery_interrupt_status() == KAL_TRUE)
 				battery_meter_ctrl(BATTERY_METER_CMD_SET_LOW_BAT_INTERRUPT,
-						   &oam_v_ocv);
+						   &oam_v_ocv);*/
 			get_monotonic_boottime(&ap_suspend_time);
 		}
 #endif
