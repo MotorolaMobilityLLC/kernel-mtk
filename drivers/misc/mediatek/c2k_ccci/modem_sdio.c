@@ -5564,7 +5564,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd,
 	return 0;
 }
 
-#if CONFIG_COMPAT
+#ifdef CONFIG_COMPAT
 static long dev_char_compat_ioctl(struct file *filp, unsigned int cmd,
 				  unsigned long arg)
 {
@@ -5772,7 +5772,7 @@ static const struct file_operations char_dev_fops = {
 	.write = &dev_char_write,
 	.release = &dev_char_close,
 	.unlocked_ioctl = &dev_char_ioctl,
-#if CONFIG_COMPAT
+#ifdef CONFIG_COMPAT
 	.compat_ioctl = &dev_char_compat_ioctl,
 #endif
 	.poll = &dev_char_poll,
