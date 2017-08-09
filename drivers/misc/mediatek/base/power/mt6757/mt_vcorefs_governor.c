@@ -285,7 +285,7 @@ int vcorefs_get_curr_ddr(void)
 
 	return ddr_khz;
 }
-
+#if 0 /* bring-up disable */
 int vcorefs_get_vcore_by_steps(u32 steps)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -322,7 +322,7 @@ int vcorefs_get_ddr_by_steps(u32 steps)
 
 	return ddr_khz;
 }
-
+#endif
 char *governor_get_kicker_name(int id)
 {
 	return kicker_name[id];
@@ -439,6 +439,7 @@ static char *vcorefs_get_sram_debug_info(char *p)
 	return p;
 }
 
+#if 0 /* bring-up disable */
 static void vcorefs_set_sram_data(int index, u32 data)
 {
 	spm_write(VCOREFS_SRAM_BASE + index * 4, data);
@@ -459,6 +460,7 @@ static void vcorefs_init_sram_debug(void)
 	for (i = 0; i < 32; i++)
 		vcorefs_set_sram_data(i, 0);
 }
+#endif
 
 u32 get_vcore_dvfs_sram_debug_regs(uint32_t index)
 {
@@ -789,6 +791,7 @@ int kick_dvfs_by_opp_index(struct kicker_config *krconf)
 	return r;
 }
 
+#if 0 /* bring-up disable */
 static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
@@ -821,7 +824,7 @@ static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned lo
 static struct notifier_block vcorefs_fb_notif = {
 		.notifier_call = vcorefs_fb_notifier_callback,
 };
-
+#endif
 /*
  * AutoK related API
  */
@@ -936,7 +939,7 @@ int vcorefs_late_init_dvfs(void)
 
 	return 0;
 }
-
+#if 0 /* bring-up disable */
 static int init_vcorefs_cmd_table(void)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
@@ -981,9 +984,12 @@ static int init_vcorefs_cmd_table(void)
 
 	return 0;
 }
+#endif
 
 static int __init vcorefs_module_init(void)
 {
+	return 0; /* disable for bring-up */
+#if 0 /* disable for bring-up */
 	int r;
 	struct device_node *node;
 
@@ -1018,6 +1024,7 @@ static int __init vcorefs_module_init(void)
 	vcorefs_init_sram_debug();
 
 	return r;
+#endif
 }
 
 module_init(vcorefs_module_init);
