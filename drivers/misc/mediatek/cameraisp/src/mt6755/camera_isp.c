@@ -11192,9 +11192,10 @@ static MINT32 ISP_open(struct inode *pInode, struct file *pFile)
 		spin_unlock(&(IspInfo.SpinLockIspRef));
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d),	first user",
 			IspInfo.UserCount, current->comm, current->pid, current->tgid);
-		/* kerne log limit to 200 lines per second */
+		/* kernellog limit to 250 lines per second */
 		pr_detect_count = get_detect_count();
-		set_detect_count(200);
+		if (pr_detect_count < 250)
+			set_detect_count(250);
 	}
 	spin_lock(&(SpinLockImemDump));
 	for (i = 0; i <	PROCESS_MAX; i++) {
@@ -11374,7 +11375,7 @@ static MINT32 ISP_release(struct inode *pInode, struct file *pFile)
 	/*      */
 	LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d),	last user",
 		IspInfo.UserCount, current->comm, current->pid, current->tgid);
-	/* kerne log limit back to 100 lines per second */
+	/* kernellog limit back to default */
 	set_detect_count(pr_detect_count);
 	/* reason of close vf is to make sure camera can serve regular after previous abnormal exit */
 	Reg = ISP_RD32(ISP_REG_ADDR_TG_VF_CON);
