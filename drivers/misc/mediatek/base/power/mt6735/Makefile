@@ -1,5 +1,6 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/irq/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 
 ifeq ($(CONFIG_ARCH_MT6735),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/

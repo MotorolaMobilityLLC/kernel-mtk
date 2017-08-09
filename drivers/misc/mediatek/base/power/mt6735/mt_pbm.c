@@ -19,13 +19,13 @@
 #include <linux/vmalloc.h>
 
 #include <mach/mt_pbm.h>
-/* #include <mach/upmu_sw.h> */
-/* #include <mach/upmu_common.h> */
-/* #include <mach/mt_cpufreq.h> */
-/* #include <mach/mt_gpufreq.h> */
-/* #include <mach/mt_thermal.h> */
+#include <mach/upmu_sw.h>
+#include <mt-plat/upmu_common.h>
+#include <mt_cpufreq.h>
+#include <mt_gpufreq.h>
+#include <mach/mt_thermal.h>
 
-#if 0				/* #ifndef DISABLE_PBM_FEATURE */
+#ifndef DISABLE_PBM_FEATURE
 
 /**************************************
  * note

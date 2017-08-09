@@ -2,6 +2,7 @@
 #define _MT_PBM_
 
 /* #include <cust_pmic.h> */
+#include <mach/mt_pmic.h>
 
 #ifdef DISABLE_DLPT_FEATURE
 #define DISABLE_PBM_FEATURE
