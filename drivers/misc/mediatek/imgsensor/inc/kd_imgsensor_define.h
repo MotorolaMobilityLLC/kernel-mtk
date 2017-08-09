@@ -802,12 +802,20 @@ typedef struct {
 } SET_SENSOR_CALIBRATION_DATA_STRUCT, *PSET_SENSOR_CALIBRATION_DATA_STRUCT;
 
 
+#ifdef MTK_SUB2_IMGSENSOR
+typedef struct {
+	MSDK_SCENARIO_ID_ENUM ScenarioId[3];
+	ACDK_SENSOR_INFO_STRUCT * pInfo[3];
+	ACDK_SENSOR_CONFIG_STRUCT * pConfig[3];
+} ACDK_SENSOR_GETINFO_STRUCT, *PACDK_SENSOR_GETINFO_STRUCT;
 
+#else
 typedef struct {
 	MSDK_SCENARIO_ID_ENUM ScenarioId[2];
 	ACDK_SENSOR_INFO_STRUCT * pInfo[2];
 	ACDK_SENSOR_CONFIG_STRUCT * pConfig[2];
 } ACDK_SENSOR_GETINFO_STRUCT, *PACDK_SENSOR_GETINFO_STRUCT;
+#endif
 
 typedef struct {
 	MUINT32 SensorId;
@@ -829,9 +837,15 @@ typedef struct {
 	ACDK_SENSOR_CONFIG_STRUCT *pSensorConfigData;
 } ACDK_SENSOR_CONTROL_STRUCT;
 
+#ifdef MTK_SUB2_IMGSENSOR
+typedef struct {
+	ACDK_SENSOR_RESOLUTION_INFO_STRUCT * pResolution[3];
+} ACDK_SENSOR_PRESOLUTION_STRUCT;
+#else
 typedef struct {
 	ACDK_SENSOR_RESOLUTION_INFO_STRUCT *pResolution[2];
 } ACDK_SENSOR_PRESOLUTION_STRUCT;
+#endif
 
 
 
@@ -873,12 +887,21 @@ typedef struct {
 } stImgSensorFormat;
 
 #ifdef CONFIG_COMPAT
+#ifdef MTK_SUB2_IMGSENSOR
 /* Redifne structures for compat_ioctl */
+typedef struct {
+	MSDK_SCENARIO_ID_ENUM ScenarioId[3];
+	compat_uptr_t pInfo[3];
+	compat_uptr_t pConfig[3];
+} COMPAT_ACDK_SENSOR_GETINFO_STRUCT;
+#else
 typedef struct {
 	MSDK_SCENARIO_ID_ENUM ScenarioId[2];
 	compat_uptr_t pInfo[2];
 	compat_uptr_t pConfig[2];
 } COMPAT_ACDK_SENSOR_GETINFO_STRUCT;
+
+#endif
 
 typedef struct {
 	MUINT32 SensorId;
@@ -900,10 +923,15 @@ typedef struct {
 	compat_uptr_t pSensorConfigData;
 } COMPAT_ACDK_SENSOR_CONTROL_STRUCT;
 
+#ifdef MTK_SUB2_IMGSENSOR
+typedef struct {
+	compat_uptr_t pResolution[3];
+} COMPAT_ACDK_SENSOR_PRESOLUTION_STRUCT;
+#else
 typedef struct {
 	compat_uptr_t pResolution[2];
 } COMPAT_ACDK_SENSOR_PRESOLUTION_STRUCT;
-
+#endif
 #endif
 
 
@@ -992,10 +1020,16 @@ typedef struct {
 #define KDIMGSENSOR_DUAL_MASK_LSB 0x0000FFFF
 
 #define KDIMGSENSOR_NOSENSOR    "non_sensor"
-
+#ifdef MTK_SUB2_IMGSENSOR
+#define KDIMGSENSOR_MAX_INVOKE_DRIVERS  (3)
+#define KDIMGSENSOR_INVOKE_DRIVER_0     (0)
+#define KDIMGSENSOR_INVOKE_DRIVER_1     (1)
+#define KDIMGSENSOR_INVOKE_DRIVER_2     (2)
+#else
 #define KDIMGSENSOR_MAX_INVOKE_DRIVERS  (2)
 #define KDIMGSENSOR_INVOKE_DRIVER_0     (0)
 #define KDIMGSENSOR_INVOKE_DRIVER_1     (1)
+#endif
 
 /* For sensor synchronize the exposure time / sensor gain and isp gain. */
 typedef struct {
