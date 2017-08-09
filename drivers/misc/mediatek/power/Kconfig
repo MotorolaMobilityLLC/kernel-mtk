@@ -5,6 +5,16 @@ config MTK_PMIC
 	---help---
 	  MediaTek PMIC driver
 
+config MTK_RT9466_SUPPORT
+	bool "MTK_RT9466_SUPPORT"
+	select MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+	default n
+	---help---
+	  Mediatek Richtek RT9466 driver.
+	  Say y to support this driver.
+	  Say n and choose other chargers.
+	  This driver uses I2C bus.
+
 config MTK_BQ25896_SUPPORT
 	bool "MTK_BQ25896_SUPPORT"
 	select MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
