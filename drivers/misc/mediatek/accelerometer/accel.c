@@ -281,6 +281,7 @@ static ssize_t acc_show_enable_nodata(struct device *dev, struct device_attribut
 static ssize_t acc_store_enable_nodata(struct device *dev, struct device_attribute *attr,
 				       const char *buf, size_t count)
 {
+#ifndef CONFIG_MTK_SCP_SENSORHUB_V1
 	struct acc_context *cxt = NULL;
 
 	ACC_LOG("acc_store_enable nodata buf=%s\n", buf);
@@ -301,6 +302,7 @@ static ssize_t acc_store_enable_nodata(struct device *dev, struct device_attribu
 		ACC_ERR(" acc_store enable nodata cmd error !!\n");
 	}
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
+#endif
 	return count;
 }
 
