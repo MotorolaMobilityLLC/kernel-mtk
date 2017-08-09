@@ -4136,7 +4136,7 @@ void eem_set_pi_offset(enum eem_ctrl_id id, int step)
 
 	det->pi_offset = step;
 
-#ifdef CONFIG_PTP_AEE_RR_REC
+#ifdef CONFIG_EEM_AEE_RR_REC
 	aee_rr_rec_eem_pi_offset(step);
 #endif
 }

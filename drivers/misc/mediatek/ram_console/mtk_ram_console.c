@@ -2430,6 +2430,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_ptp_gpu_volt,
 	aee_rr_show_ptp_temp,
 	aee_rr_show_ptp_status,
+	aee_rr_show_eem_pi_offset,
 	aee_rr_show_thermal_temp,
 	aee_rr_show_thermal_status,
 	aee_rr_show_isr_el1,
