@@ -742,18 +742,18 @@ static void mtk_videobuf_queue(struct videobuf_queue *vq,
 	list_add_tail(&vb->queue, &pcdev->capture);
 	vb->state = VIDEOBUF_QUEUED;
 
-	if (pcdev->enable_vdoin == 0) {
-		pcdev->enable_vdoin = 1;
-		enable_irq(pcdev->irq);
-		writel((readl(pcdev->reg_vdoin_base) | (MTK_VDOIN_ENABLE_REG_BIT)), (pcdev->reg_vdoin_base));
-	}
-
 	if (pcdev->active)
 		return;
 
 	pcdev->active = list_entry(pcdev->capture.next,
 				   struct mtk_camera_buf, vb.queue);
 	pcdev->active->vb.state = VIDEOBUF_ACTIVE;
+
+	if (pcdev->enable_vdoin == 0) {
+		pcdev->enable_vdoin = 1;
+		enable_irq(pcdev->irq);
+		writel((readl(pcdev->reg_vdoin_base) | (MTK_VDOIN_ENABLE_REG_BIT)), (pcdev->reg_vdoin_base));
+	}
 }
 
 static void mtk_videobuf_release(struct videobuf_queue *vq,
@@ -767,7 +767,7 @@ static void mtk_videobuf_release(struct videobuf_queue *vq,
 	BUG_ON(in_interrupt());
 	videobuf_waiton(vq, vb, 0, 0);
 
-	if (vb->state == VIDEOBUF_DONE && pcdev->enable_vdoin == 1) {
+	if (pcdev->active == NULL && vb->state == VIDEOBUF_DONE && pcdev->enable_vdoin == 1) {
 		pcdev->enable_vdoin = 0;
 		disable_irq(pcdev->irq);
 		writel((readl(pcdev->reg_vdoin_base) | (MTK_VDOIN_ENABLE_REG_BIT)), (pcdev->reg_vdoin_base));
