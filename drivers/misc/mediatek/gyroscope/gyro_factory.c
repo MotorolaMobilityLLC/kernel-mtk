@@ -193,11 +193,45 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 	return err;
 }
 
+#if IS_ENABLED(CONFIG_COMPAT)
+static long compat_gyro_factory_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		GYRO_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
 
+	switch (cmd) {
+	case COMPAT_GYROSCOPE_IOCTL_INIT:
+	case COMPAT_GYROSCOPE_IOCTL_SMT_DATA:
+	case COMPAT_GYROSCOPE_IOCTL_READ_SENSORDATA_RAW:
+	/*case COMPAT_GYROSCOPE_IOCTL_READ_TEMPERATURE:
+	case COMPAT_GYROSCOPE_IOCTL_GET_POWER_STATUS: */
+	case COMPAT_GYROSCOPE_IOCTL_READ_SENSORDATA:
+		/* NVRAM will use below ioctl */
+	case COMPAT_GYROSCOPE_IOCTL_SET_CALI:
+	case COMPAT_GYROSCOPE_IOCTL_CLR_CALI:
+	case COMPAT_GYROSCOPE_IOCTL_GET_CALI:{
+			GYRO_LOG("compat_ion_ioctl : GYROSCOPE_IOCTL_XXX command is 0x%x\n", cmd);
+			return filp->f_op->unlocked_ioctl(filp, cmd,
+							  (unsigned long)compat_ptr(arg));
+		}
+	default:{
+			GYRO_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
+			return -ENOIOCTLCMD;
+		}
+	}
+}
+#endif
+
+/*----------------------------------------------------------------------------*/
 static const struct file_operations gyro_factory_fops = {
 	.open = gyro_factory_open,
 	.release = gyro_factory_release,
 	.unlocked_ioctl = gyro_factory_unlocked_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
+	.compat_ioctl = compat_gyro_factory_unlocked_ioctl,
+#endif
 };
 
 static struct miscdevice gyro_factory_device = {

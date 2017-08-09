@@ -89,11 +89,38 @@ static long baro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 	return err;
 }
 
+#if IS_ENABLED(CONFIG_COMPAT)
+static long compat_baro_factory_unlocked_ioctl(struct file *filp, unsigned int cmd,
+	unsigned long arg)
+{
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		BARO_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
 
+	switch (cmd) {
+	case COMPAT_BAROMETER_IOCTL_INIT:
+	/* case COMPAT_BAROMETER_IOCTL_READ_CHIPINFO: */
+	case COMPAT_BAROMETER_GET_PRESS_DATA:
+	case COMPAT_BAROMETER_GET_TEMP_DATA: {
+		BARO_LOG("compat_ion_ioctl : BAROMETER_IOCTL_XXX command is 0x%x\n", cmd);
+		return filp->f_op->unlocked_ioctl(filp, cmd,
+			(unsigned long)compat_ptr(arg));
+	}
+	default:
+		BARO_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
+		return -ENOIOCTLCMD;
+	}
+}
+#endif
+/*----------------------------------------------------------------------------*/
 static const struct file_operations baro_factory_fops = {
 	.open = baro_factory_open,
 	.release = baro_factory_release,
 	.unlocked_ioctl = baro_factory_unlocked_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
+	.compat_ioctl = compat_baro_factory_unlocked_ioctl,
+#endif
 };
 
 static struct miscdevice baro_factory_device = {

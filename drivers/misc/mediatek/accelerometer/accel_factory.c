@@ -181,11 +181,43 @@ static long acc_factory_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 	return err;
 }
 
+#if IS_ENABLED(CONFIG_COMPAT)
+static long compat_acc_factory_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		ACC_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
 
+	switch (cmd) {
+	case COMPAT_GSENSOR_IOCTL_INIT:
+	case COMPAT_GSENSOR_IOCTL_READ_CHIPINFO:
+	/* case COMPAT_GSENSOR_IOCTL_READ_GAIN: */
+	case COMPAT_GSENSOR_IOCTL_READ_RAW_DATA:
+	case COMPAT_GSENSOR_IOCTL_READ_SENSORDATA:
+		/* NVRAM will use below ioctl */
+	case COMPAT_GSENSOR_IOCTL_SET_CALI:
+	case COMPAT_GSENSOR_IOCTL_CLR_CALI:
+	case COMPAT_GSENSOR_IOCTL_GET_CALI:{
+			ACC_LOG("compat_ion_ioctl : GSENSOR_IOCTL_XXX command is 0x%x\n", cmd);
+			return filp->f_op->unlocked_ioctl(filp, cmd,
+							  (unsigned long)compat_ptr(arg));
+		}
+	default:{
+			ACC_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
+			return -ENOIOCTLCMD;
+		}
+	}
+}
+#endif
+/*----------------------------------------------------------------------------*/
 static const struct file_operations acc_factory_fops = {
 	.open = acc_factory_open,
 	.release = acc_factory_release,
 	.unlocked_ioctl = acc_factory_unlocked_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
+	.compat_ioctl = compat_acc_factory_unlocked_ioctl,
+#endif
 };
 
 static struct miscdevice acc_factory_device = {
