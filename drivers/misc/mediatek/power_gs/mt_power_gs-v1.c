@@ -1,9 +1,7 @@
-#include <linux/gfp.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/proc_fs.h>
-#include <linux/slab.h>
 
 #include <mt-plat/aee.h>
 #include <mt-plat/upmu_common.h>
@@ -11,10 +9,11 @@
 #include "mt_power_gs_array.h"
 
 #define gs_read(addr) (*(volatile u32 *)(addr))
-#define DEBUG_BUF_SIZE 2000
-#define DEBUG_BUF_RANGE (DEBUG_BUF_SIZE - 100)
 
 struct proc_dir_entry *mt_power_gs_dir = NULL;
+
+#define DEBUG_BUF_SIZE 200
+static char dbg_buf[DEBUG_BUF_SIZE] = { 0 };
 
 static u16 gs_pmic_read(u16 reg)
 {
@@ -30,20 +29,17 @@ static void mt_power_gs_compare(char *scenario, char *pmic_name,
 				const unsigned int *pmic_gs, unsigned int pmic_gs_len)
 {
 	unsigned int i, k, val1, val2, diff;
-	char *dbg_buf = kmalloc(DEBUG_BUF_SIZE, GFP_NOFS);
-	char *p = dbg_buf;
+	char *p;
 
-	if (!dbg_buf)
-		return;
+	pr_warn("Scenario - PMIC - Addr  - Value  - Mask   - Golden - Wrong Bit\n");
 
-	p += sprintf(p, "\nScenario - PMIC - Addr  - Value  - Mask   - Golden - Wrong Bit\n");
-
-	for (i = 0; i < pmic_gs_len && p - dbg_buf < DEBUG_BUF_RANGE ; i += 3) {
+	for (i = 0; i < pmic_gs_len; i += 3) {
 		aee_sram_printk("%d\n", i);
 		val1 = gs_pmic_read(pmic_gs[i]) & pmic_gs[i + 1];
 		val2 = pmic_gs[i + 2] & pmic_gs[i + 1];
 
 		if (val1 != val2) {
+			p = dbg_buf;
 			p += sprintf(p, "%s - %s - 0x%x - 0x%04x - 0x%04x - 0x%04x -",
 				     scenario, pmic_name, pmic_gs[i], gs_pmic_read(pmic_gs[i]),
 				     pmic_gs[i + 1], pmic_gs[i + 2]);
@@ -52,12 +48,9 @@ static void mt_power_gs_compare(char *scenario, char *pmic_name,
 				if ((diff % 2) != 0)
 					p += sprintf(p, " %d", k);
 			}
-			p += sprintf(p, "\n");
+			pr_warn("%s\n", dbg_buf);
 		}
 	}
-	pr_warn("%s\n", dbg_buf);
-
-	kfree(dbg_buf);
 }
 
 void mt_power_gs_dump_suspend(void)
