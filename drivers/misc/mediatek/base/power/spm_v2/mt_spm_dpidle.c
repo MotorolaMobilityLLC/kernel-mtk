@@ -706,13 +706,11 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	spin_lock_irqsave(&__spm_lock, flags);
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
-#elif defined(CONFIG_ARCH_MT6757)
-/* TBD */
 #endif
 
 #if SPM_AEE_RR_REC
@@ -734,11 +732,11 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 
 	__spm_check_md_pdn_power_control(pwrctrl);
 
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
-#elif defined(CONFIG_ARCH_MT6757)
-	/* TBD */
-#elif defined(CONFIG_ARCH_MT6797)
+#endif
+
+#if defined(CONFIG_ARCH_MT6797)
 	pwrctrl->pcm_flags &= ~SPM_FLAG_RUN_COMMON_SCENARIO;
 	pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
 	pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
@@ -781,13 +779,11 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	wr = spm_output_wake_reason(&wakesta, pcmdesc, dump_log);
 
 RESTORE_IRQ:
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif
-#elif defined(CONFIG_ARCH_MT6757)
-/* TBD */
 #endif
 	mt_irq_mask_restore(&mask);
 	spin_unlock_irqrestore(&__spm_lock, flags);
@@ -797,6 +793,7 @@ RESTORE_IRQ:
 #if SPM_AEE_RR_REC
 	aee_rr_rec_deepidle_val(0);
 #endif
+
 	if (wr != WR_UART_BUSY)
 		rekick_dpidle_common_scenario(pcmdesc, pwrctrl);
 
