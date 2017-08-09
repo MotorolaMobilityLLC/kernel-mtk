@@ -3186,6 +3186,9 @@ int hif_thread(void *data)
 
 		/* Release to FW own */
 		wlanReleasePowerControl(prGlueInfo->prAdapter);
+#if defined(MT6797)
+		nicEnableInterrupt(prGlueInfo->prAdapter);
+#endif
 	}
 
 	complete(&prGlueInfo->rHifHaltComp);

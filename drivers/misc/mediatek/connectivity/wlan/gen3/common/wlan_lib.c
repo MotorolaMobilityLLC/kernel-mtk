@@ -2029,7 +2029,10 @@ VOID wlanIST(IN P_ADAPTER_T prAdapter)
 	if (KAL_WAKE_LOCK_ACTIVE(prAdapter, &prAdapter->prGlueInfo->rIntrWakeLock))
 		KAL_WAKE_UNLOCK(prAdapter, &prAdapter->prGlueInfo->rIntrWakeLock);
 
+#if defined(MT6797)
+#else
 	nicEnableInterrupt(prAdapter);
+#endif
 
 	RECLAIM_POWER_CONTROL_TO_PM(prAdapter, FALSE);
 }
