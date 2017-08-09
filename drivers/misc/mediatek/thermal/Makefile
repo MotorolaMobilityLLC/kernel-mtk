@@ -13,7 +13,13 @@
 
 ccflags-y += -I$(srctree)
 
+ifeq ($(CONFIG_ARCH_MT7623), y)
+# MT2701 & MT7623 use the same thermal driver.
+THERMAL_CHIP_DRIVER_DIR := $(srctree)/drivers/misc/mediatek/thermal/mt2701
+else
 THERMAL_CHIP_DRIVER_DIR := $(srctree)/drivers/misc/mediatek/thermal/$(MTK_PLATFORM)
+endif
+
 ccflags-y  += -I$(THERMAL_CHIP_DRIVER_DIR)/inc
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 
@@ -32,5 +38,10 @@ obj-$(CONFIG_THERMAL) += mtk_cooler_vrt.o
 ifeq (,$(filter $(CONFIG_ARCH_MT8173) $(CONFIG_ARCH_MT8163) $(CONFIG_MACH_MT2701) $(CONFIG_ARCH_MT7623) $(CONFIG_ARCH_MT8127), y))
 obj-y += common/
 endif
-obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 
+ifeq ($(CONFIG_ARCH_MT7623), y)
+# MT2701 & MT7623 use the same thermal driver.
+obj-y += mt2701/
+else
+obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+endif
