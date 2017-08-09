@@ -1126,6 +1126,7 @@
 */
 #include "precomp.h"
 #include "mgmt/ais_fsm.h"
+#include <mach/emi_mpu.h>
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -1880,6 +1881,12 @@ wlanImageDividDownload(IN P_ADAPTER_T prAdapter, IN P_FIRMWARE_DIVIDED_DOWNLOAD_
 			if (gConEmiPhyBase) {
 				UINT_8 __iomem *pWiFiEmibaseaddr;
 
+				emi_mpu_set_region_protection(gConEmiPhyBase,
+					gConEmiPhyBase + 512 * 1024 - 1,
+					12,
+					SET_ACCESS_PERMISSON(NO_PROTECTION, NO_PROTECTION, NO_PROTECTION,
+					  NO_PROTECTION, NO_PROTECTION, NO_PROTECTION, NO_PROTECTION, NO_PROTECTION));
+
 				pWiFiEmibaseaddr = ioremap_nocache(gConEmiPhyBase, WIFI_EMI_MEM_SIZE);
 				DBGLOG(INIT, INFO,
 					"gConEmiPhyBase %p, idx %d, pEmiWiFibaseaddr %p, Dst %p, SecOffset %x, SecLen %x, fgEmiDownloaded %d\n",
@@ -1902,6 +1909,13 @@ wlanImageDividDownload(IN P_ADAPTER_T prAdapter, IN P_FIRMWARE_DIVIDED_DOWNLOAD_
 					}
 					if (i == (prFwHead->u4NumOfEntries - 1))
 						fgEmiDownloaded = TRUE;
+
+				emi_mpu_set_region_protection(gConEmiPhyBase,
+					gConEmiPhyBase + 512 * 1024 - 1,
+					12,
+					SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+					  NO_PROTECTION, FORBIDDEN, FORBIDDEN));
+
 			} else {
 				DBGLOG(INIT, ERROR, "consys emi memory address gConEmiPhyBase invalid\n");
 				u4Status = WLAN_STATUS_FAILURE;
