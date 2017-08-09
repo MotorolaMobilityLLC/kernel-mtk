@@ -723,7 +723,7 @@ void DisableALLbySampleRate(uint32 SampleRate)
 	pr_debug("%s APLLUsage = %d APLLCounter = %d SampleRate = %d\n", __func__, APLLUsage,
 		APLLCounter, SampleRate);
 
-	if ((GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1) && (APLLUsage == Soc_Aud_APLL1)) {
+	if (APLLUsage == Soc_Aud_APLL1) {
 		/* disable APLL1 */
 		APLLCounter--;
 		if (APLLCounter == 0) {
@@ -736,8 +736,8 @@ void DisableALLbySampleRate(uint32 SampleRate)
 			EnableApll1(false);
 			AudDrv_Clk_Off();
 		}
-	} else if ((GetApllbySampleRate(SampleRate) == Soc_Aud_APLL2)
-		   && (APLLUsage == Soc_Aud_APLL2)) {
+	} else if (APLLUsage == Soc_Aud_APLL2) {
+		/* disable APLL2 */
 		APLLCounter--;
 		if (APLLCounter == 0) {
 			/* disable APLL2 */
