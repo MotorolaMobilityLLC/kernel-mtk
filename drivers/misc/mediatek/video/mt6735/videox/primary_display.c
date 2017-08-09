@@ -5422,6 +5422,22 @@ int primary_display_resume(void)
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 1);
 
+#ifdef CONFIG_MTK_CLKMGR
+
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+	dpmgr_reset_module_handle(pgc->dpmgr_handle);
+#endif
+	/* For CCF, we move the power on control to noirq_restore in mtkfb */
+	DISPCHECK("dpmanager path power on[begin]\n");
+	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
+	DISPCHECK("dpmanager path power on[end]\n");
+
+	if (_is_decouple_mode(pgc->session_mode) && !pgc->force_on_wdma_path)
+		dpmgr_path_power_on(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 2);
+#endif
+
 	if (is_ipoh_bootup) {
 		DISPCHECK("[primary display path] leave primary_display_resume -- IPOH\n");
 		DISPCHECK("ESD check start[begin]\n");
@@ -5437,7 +5453,6 @@ int primary_display_resume(void)
 
 #ifndef CONFIG_MTK_CLKMGR
 	ddp_clk_prepare(DISP_MTCMOS_CLK);
-#endif
 
 #ifdef CONFIG_SINGLE_PANEL_OUTPUT
 	dpmgr_reset_module_handle(pgc->dpmgr_handle);
@@ -5451,6 +5466,7 @@ int primary_display_resume(void)
 		dpmgr_path_power_on(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 2);
+#endif
 
 	if (primary_display_is_video_mode()) {
 		DISPCHECK("mutex0 clear[begin]\n");
