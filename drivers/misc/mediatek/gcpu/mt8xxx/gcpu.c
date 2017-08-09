@@ -48,40 +48,6 @@
 	pr_debug("[GCPU Kernel] [%s] [%d] "log, __func__, __LINE__, ##args)
 #endif
 
-
-static struct clk *gcpu_clk;
-
-static const struct of_device_id gcpu_of_ids[] = {
-	{.compatible = "mediatek,mt8127-gcpu"},
-	{.compatible = "mediatek,mt8163-gcpu"},
-	{}
-};
-
-static int gcpu_enableclk(void)
-{
-	int ret = 0;
-
-	if (IS_ERR(gcpu_clk))
-		return -1;
-
-	ret = clk_prepare_enable(gcpu_clk);
-	if (ret)
-		GCPU_LOG_INFO("enable gcpu clock fail\n");
-
-	return 0;
-}
-
-static int gcpu_disableclk(void)
-{
-	if (IS_ERR(gcpu_clk))
-		return -1;
-
-	clk_disable_unprepare(gcpu_clk);
-	GCPU_LOG_INFO("disable gcpu clock\n");
-
-	return 0;
-}
-
 #if GCPU_TEE_ENABLE
 static int gcpu_tee_call(uint32_t cmd)
 {
@@ -121,23 +87,12 @@ static int gcpu_probe(struct platform_device *pdev)
 {
 	GCPU_LOG_INFO("gcpu_probe\n");
 
-	/* register for GCPU */
-	gcpu_clk = devm_clk_get(&pdev->dev, "main");
-	if (IS_ERR(gcpu_clk)) {
-		GCPU_LOG_INFO("get clock fail!\n");
-		return 1;
-	}
-
-	gcpu_enableclk();
-
 	return 0;
 }
 
 static int gcpu_remove(struct platform_device *pdev)
 {
 	GCPU_LOG_INFO("gcpu_remove\n");
-
-	gcpu_disableclk();
 
 	return 0;
 }
@@ -152,7 +107,6 @@ static int gcpu_suspend(struct platform_device *pdev, pm_message_t mesg)
 		ret = 1;
 	} else {
 		GCPU_LOG_INFO("Suspend ok\n");
-		gcpu_disableclk();
 		ret = 0;
 	}
 	return ret;
@@ -160,9 +114,17 @@ static int gcpu_suspend(struct platform_device *pdev, pm_message_t mesg)
 
 static int gcpu_resume(struct platform_device *pdev)
 {
+	int ret = 0;
+
 	GCPU_LOG_INFO("gcpu_resume\n");
-	gcpu_enableclk();
-	return 0;
+	if (gcpu_tee_call(TZCMD_GCPU_RESUME)) {
+		GCPU_LOG_ERR("gcpu_resume fail\n");
+		ret = 1;
+	} else {
+		GCPU_LOG_INFO("gcpu_resume ok\n");
+		ret = 0;
+	}
+	return ret;
 }
 
 struct platform_device gcpu_device = {
@@ -178,7 +140,6 @@ static struct platform_driver gcpu_driver = {
 	.driver = {
 		   .name = GCPU_DEV_NAME,
 		   .owner = THIS_MODULE,
-		   .of_match_table = gcpu_of_ids,
 		   }
 };
 #endif
