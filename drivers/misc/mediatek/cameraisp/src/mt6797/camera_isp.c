@@ -24,7 +24,6 @@
 #include <linux/atomic.h>
 #include <linux/sched.h>
 #include <linux/mm.h>
-#include "inc/mt_typedefs.h"
 
 /*#include <mach/hardware.h>*/
 /* #include <mach/mt6593_pll.h> */
@@ -91,11 +90,14 @@
 #endif
 typedef unsigned char           MUINT8;
 typedef unsigned int            MUINT32;
+typedef unsigned int            UINT32;
+
 /*  */
 typedef signed char             MINT8;
 typedef signed int              MINT32;
 /*  */
 typedef bool                    MBOOL;
+typedef unsigned char           BOOL;
 /*  */
 #ifndef MTRUE
 #define MTRUE               1
@@ -4824,8 +4826,9 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			break;
 		case ISP_RT_BUF_CTRL_DMA_EN: {
 			MUINT8 array[_cam_max_];
-			/* if(copy_from_user(array, (void __user*)rt_buf_ctrl.data_ptr, sizeof(UINT8)*_cam_max_) == 0) { */
-			if (copy_from_user(array, (void __user *)rt_buf_ctrl.pExtend, sizeof(UINT8)*_cam_max_) == 0) {
+			/* if(copy_from_user(array, (void __user*)rt_buf_ctrl.data_ptr,
+			   sizeof(MUINT8)*_cam_max_) == 0) { */
+			if (copy_from_user(array, (void __user *)rt_buf_ctrl.pExtend, sizeof(MUINT8)*_cam_max_) == 0) {
 				MUINT32 z;
 				for (z = 0; z < _cam_max_; z++) {
 					pstRTBuf[rt_buf_ctrl.module]->ring_buf[z].active = array[z];
