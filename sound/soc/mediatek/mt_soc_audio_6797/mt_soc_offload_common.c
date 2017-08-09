@@ -577,8 +577,10 @@ static int mtk_compr_offload_set_params(unsigned long arg)
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL3, false);
 	} else {
 		afe_offload_block.hw_buffer_size = Dl3_MAX_BUFFER_SIZE;
-		afe_offload_block.hw_buffer_area = Dl3_Playback_dma_buf->area;
-		afe_offload_block.hw_buffer_addr = Dl3_Playback_dma_buf->addr;
+		afe_offload_block.hw_buffer_area = (afe_offload_block.buf.pucVirtBufAddr +
+						    afe_offload_block.buf.u4BufferSize);
+		afe_offload_block.hw_buffer_addr = (afe_offload_block.buf.pucPhysBufAddr +
+						    afe_offload_block.buf.u4BufferSize);
 		mPlaybackDramState = true;
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL3, true);
 		AudDrv_Emi_Clk_On();
