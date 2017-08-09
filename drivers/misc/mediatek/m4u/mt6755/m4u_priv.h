@@ -233,7 +233,7 @@ extern int gM4U_log_to_uart;
 				if (level > gM4U_log_to_uart)\
 					pr_warn("M4U"string, ##args);\
 				else\
-					pr_debug("M4U"string, ##args);\
+					pr_warn("M4U"string, ##args);\
 			} \
 		} while (0)
 
@@ -259,7 +259,7 @@ extern int gM4U_log_to_uart;
 		if (seq_file)\
 			seq_printf(seq_file, fmt, ##args);\
 		else\
-			pr_debug(fmt, ##args);\
+			pr_warn(fmt, ##args);\
 	} while (0)
 
 /* ======================================= */
