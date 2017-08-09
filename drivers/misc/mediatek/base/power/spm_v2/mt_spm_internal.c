@@ -8,6 +8,7 @@
 #include <mach/mt_spm_mtcmos_internal.h>
 #include <asm/setup.h>
 #include "mt_spm_internal.h"
+#include "mt_vcorefs_governor.h"
 #include "mt_spm_vcore_dvfs.h"
 #include <mt-plat/upmu_common.h>
 
@@ -161,25 +162,31 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 #endif
 		spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 
-		while ((spm_read(SPM_IRQ_STA) & PCM_IRQ_ROOT_MASK_LSB) == 0) {
-			if (retry > timeout) {
-				pr_err("[VcoreFS] CPU waiting F/W ack fail, PCM_FSM_STA: 0x%x, timeout: %d\n",
-							spm_read(PCM_FSM_STA), timeout);
-				pr_err("[VcoreFS] R6: 0x%x, R15: 0x%x\n",
-							spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 #ifdef SPM_VCORE_EN_MT6797
-				BUG();
-#else
-				__check_dvfs_halt_source(__spm_vcore_dvfs.pwrctrl->dvfs_halt_src_chk);
-				pr_err("[VcoreFS] Next R15=0x%x\n", spm_read(PCM_REG15_DATA));
-				pr_err("[VcoreFS] Next R6=0x%x\n", spm_read(PCM_REG6_DATA));
-				pr_err("[VcoreFS] Next PCM_FSM_STA=0x%x\n", spm_read(PCM_FSM_STA));
-				pr_err("[VcoreFs] Next IRQ_STA=0x%x\n", spm_read(SPM_IRQ_STA));
+		if (is_vcorefs_feature_enable()) {
 #endif
+			while ((spm_read(SPM_IRQ_STA) & PCM_IRQ_ROOT_MASK_LSB) == 0) {
+				if (retry > timeout) {
+					pr_err("[VcoreFS] CPU waiting F/W ack fail, PCM_FSM_STA: 0x%x, timeout: %d\n",
+								spm_read(PCM_FSM_STA), timeout);
+					pr_err("[VcoreFS] R6: 0x%x, R15: 0x%x\n",
+								spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
+#ifdef SPM_VCORE_EN_MT6797
+					BUG();
+#else
+					__check_dvfs_halt_source(__spm_vcore_dvfs.pwrctrl->dvfs_halt_src_chk);
+					pr_err("[VcoreFS] Next R15=0x%x\n", spm_read(PCM_REG15_DATA));
+					pr_err("[VcoreFS] Next R6=0x%x\n", spm_read(PCM_REG6_DATA));
+					pr_err("[VcoreFS] Next PCM_FSM_STA=0x%x\n", spm_read(PCM_FSM_STA));
+					pr_err("[VcoreFs] Next IRQ_STA=0x%x\n", spm_read(SPM_IRQ_STA));
+#endif
+				}
+				udelay(1);
+				retry++;
 			}
-			udelay(1);
-			retry++;
+#ifdef SPM_VCORE_EN_MT6797
 		}
+#endif
 
 		spm_write(SPM_CPU_WAKEUP_EVENT, 0);
 		spm_write(SPM_WAKEUP_EVENT_MASK, con1);
