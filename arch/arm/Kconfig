@@ -935,6 +935,7 @@ config ARCH_MT6755
 	select CRYPTO_AES_ARM32_CE
 	select MTK_BASE_POWER
 	select ARM_HAS_SG_CHAIN
+	select COMMON_CLK if !MTK_CLKMGR
 	help
 	  This enable support for MediaTek MT6755
 
