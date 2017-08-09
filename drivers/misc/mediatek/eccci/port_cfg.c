@@ -21,11 +21,11 @@ static struct ccci_port md1_ccci_ports[] = {
 /* network port first for performace */
 	{CCCI_CCMNI1_TX, CCCI_CCMNI1_RX, 3, 3, 0xF4, 0xFF, 8, &net_port_ops, 0, "ccmni0",},
 	{CCCI_CCMNI2_TX, CCCI_CCMNI2_RX, 3, 4, 0xF4, 0xFF, 8, &net_port_ops, 1, "ccmni1",},
-	{CCCI_CCMNI3_TX, CCCI_CCMNI3_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 2, "ccmni2",},
-	{CCCI_CCMNI4_TX, CCCI_CCMNI4_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 3, "ccmni3",},
-	{CCCI_CCMNI5_TX, CCCI_CCMNI5_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 4, "ccmni4",},
-	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 5, "ccmni5",},
-	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 5, 5, 0xFF, 0xFF, 0, &net_port_ops, 6, "ccmni6",},
+	{CCCI_CCMNI3_TX, CCCI_CCMNI3_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 2, "ccmni2",},
+	{CCCI_CCMNI4_TX, CCCI_CCMNI4_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 3, "ccmni3",},
+	{CCCI_CCMNI5_TX, CCCI_CCMNI5_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 4, "ccmni4",},
+	{CCCI_CCMNI6_TX, CCCI_CCMNI6_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 5, "ccmni5",},
+	{CCCI_CCMNI7_TX, CCCI_CCMNI7_RX, 5, 5, 0xF5, 0xFF, 0, &net_port_ops, 6, "ccmni6",},
 	{CCCI_CCMNI8_TX, CCCI_CCMNI8_RX, 3, 3, 0xF4, 0xFF, 0, &net_port_ops, 7, "ccmni7",},
 #ifdef FEATURE_DIRECT_TETHERING_LOGGING
 	{CCCI_CCMNILAN_TX, CCCI_CCMNILAN_RX, 3, 4, 0xFF, 0xFF, 0, &net_port_ops, 8, "ccmni-lan",},
