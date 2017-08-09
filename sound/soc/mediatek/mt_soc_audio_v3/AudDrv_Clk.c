@@ -188,6 +188,24 @@ void AudDrv_Clk_probe(void *dev)
 		}
 	}
 
+	if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare) {
+		ret = clk_enable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
+		if (ret) {
+			pr_err
+			    ("%s [CCF]Aud enable_clock enable_clock CLOCK_MUX_AUDIOINTBUS fail",
+			     __func__);
+			BUG();
+			return;
+		}
+	} else {
+		pr_err
+		    ("%s [CCF]clk_prepare error Aud enable_clock CLOCK_MUX_AUDIOINTBUS fail",
+		     __func__);
+		BUG();
+		return;
+	}
+
+
 }
 
 void AudDrv_Clk_Deinit(void *dev)
