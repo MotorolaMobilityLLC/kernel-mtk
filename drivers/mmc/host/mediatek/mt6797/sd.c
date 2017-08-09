@@ -5265,7 +5265,6 @@ static void msdc_enable_cd_irq(struct msdc_host *host, int enable)
 }
 #endif
 /* called by msdc_ops_set_ios */
-
 static void msdc_init_hw(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
@@ -5273,10 +5272,6 @@ static void msdc_init_hw(struct msdc_host *host)
 
 	/* Power on */
 	msdc_pin_reset(host, MSDC_PIN_PULL_UP, 0);
-
-	msdc_clk_enable(host);
-
-	host->core_clkon = 1;
 
 	/* Configure to MMC/SD mode */
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_MODE, MSDC_SDMMC);
