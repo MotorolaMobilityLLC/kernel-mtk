@@ -34,6 +34,7 @@
 /*#define ATF_LOGGER_DEBUG*/
 #define ATF_LOG_CTRL_BUF_SIZE 256
 #define ATF_CRASH_MAGIC_NO	0xdead1abf
+#define ATF_LAST_MAGIC_NO	0x41544641
 /*#define atf_log_lock()        atomic_inc(&(atf_buf_vir_ctl->info.atf_buf_lock))*/
 /*#define atf_log_unlock()      atomic_dec(&(atf_buf_vir_ctl->info.atf_buf_lock))*/
 
@@ -537,6 +538,7 @@ static int __init atf_log_init(void)
 	struct proc_dir_entry *atf_log_dump_proc_file;
 #endif
 	struct proc_dir_entry *atf_crash_proc_file;
+	struct proc_dir_entry *atf_last_proc_file;
 
 	err = misc_register(&atf_log_dev);
 	if (unlikely(err)) {
@@ -607,7 +609,15 @@ static int __init atf_log_init(void)
 			pr_err("atf_log proc_create failed at atf_crash\n");
 			return -ENOMEM;
 		}
-		atf_buf_vir_ctl->info.atf_crash_flag = 0;
+		atf_buf_vir_ctl->info.atf_crash_flag = ATF_LAST_MAGIC_NO;
+		atf_crash_log_buf = ioremap_wc(atf_buf_vir_ctl->info.atf_crash_log_addr,
+				atf_buf_vir_ctl->info.atf_crash_log_size);
+	} else if (atf_buf_vir_ctl->info.atf_crash_flag == ATF_LAST_MAGIC_NO) {
+		atf_last_proc_file = proc_create("atf_last", 0444, atf_log_proc_dir, &proc_atf_crash_file_operations);
+		if (atf_last_proc_file == NULL) {
+			pr_err("atf_log proc_create failed at atf_last\n");
+			return -ENOMEM;
+		}
 		atf_crash_log_buf = ioremap_wc(atf_buf_vir_ctl->info.atf_crash_log_addr,
 				atf_buf_vir_ctl->info.atf_crash_log_size);
 	}
