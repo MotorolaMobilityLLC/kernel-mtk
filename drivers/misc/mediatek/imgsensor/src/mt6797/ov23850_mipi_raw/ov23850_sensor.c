@@ -172,7 +172,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 2816,
 		.grabwindow_height = 2112,
 		.mipi_data_lp2hs_settle_dc = 14,
-		.max_framerate = 300,
+		.max_framerate = 400,
     },
 	.margin =8,
 	.min_shutter = 2,
@@ -203,7 +203,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
 	.i2c_addr_table = {0x6c, 0x20, 0xff},
-    .i2c_speed = 300,
+    .i2c_speed = 400,
 };
 
 
@@ -304,7 +304,7 @@ static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
 		if (tosend >= I2C_BUFFER_LEN || IDX == len || addr != addr_last)
 		{
 			//LOG_INF("IDX %d,tosend %d addr_last 0x%x,addr 0x%x\n",IDX, tosend, addr_last, addr);
-			iBurstWriteReg_multi(puSendCmd , tosend, imgsensor.i2c_write_id, 3);
+			iBurstWriteReg_multi(puSendCmd , tosend, imgsensor.i2c_write_id, 3, imgsensor_info.i2c_speed);
 			tosend = 0;
 		}
 	}
@@ -415,7 +415,8 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
     kal_uint16 get_byte=0;
     char pusendcmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
-    iReadRegI2C(pusendcmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
+    //iReadRegI2C(pusendcmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
+	iReadRegI2CTiming(pusendcmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
     return get_byte;
 }
 
@@ -424,6 +425,7 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
     char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para & 0xFF)};
     iWriteRegI2C(pusendcmd , 3, imgsensor.i2c_write_id);
+	iWriteRegI2CTiming(pusendcmd , 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 }
 
 

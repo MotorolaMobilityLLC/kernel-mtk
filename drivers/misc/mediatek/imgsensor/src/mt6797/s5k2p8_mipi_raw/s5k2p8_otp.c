@@ -21,8 +21,6 @@
 
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
-extern void kdSetI2CSpeed(u16 i2cSpeed);
-//extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length);
 extern int iMultiReadReg(u16 a_u2Addr , u8 * a_puBuff , u16 i2cId, u8 number);
 
 
@@ -50,7 +48,6 @@ bool byte_write_eeprom(kal_uint16 addr, BYTE data )
 	char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(data & 0xFF)};
     if(addr > MAX_OFFSET)
 		return false;
-	kdSetI2CSpeed(I2C_SPEED);
     if(iWriteRegI2C(pu_send_cmd, 3, EEPROM_WRITE_ID)<0) {
 		//printk("byte_write_eeprom fail, addr %x data %d\n",addr,data);
 		return false;
@@ -71,7 +68,6 @@ bool page_write_eeprom(kal_uint16 addr, BYTE data[], kal_uint32 size)
 
     if( (addr+size) > MAX_OFFSET || size > EEPROM_PAGE_SIZE)
 		return false;
-	kdSetI2CSpeed(I2C_SPEED);
 
 
 	pu_send_cmd[0] = (char)(addr >> 8);
@@ -93,7 +89,6 @@ bool selective_read_eeprom(kal_uint16 addr, BYTE* data)
 	char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
     if(addr > MAX_OFFSET)
         return false;
-	kdSetI2CSpeed(I2C_SPEED);
 
 	if(iReadRegI2C(pu_send_cmd, 2, (u8*)data, 1, EEPROM_READ_ID)<0)
 		return false;
@@ -105,7 +100,6 @@ bool sequential_read_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size)
 	//char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
     if( (addr+size) > MAX_OFFSET || size > EEPROM_PAGE_SIZE)
         return false;
-	kdSetI2CSpeed(I2C_SPEED);
 	if( iMultiReadReg(addr , (u8*)data , EEPROM_READ_ID, size) <0)
 		return false;
     return true;

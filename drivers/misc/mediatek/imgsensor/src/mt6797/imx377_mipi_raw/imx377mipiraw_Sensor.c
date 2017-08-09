@@ -363,7 +363,7 @@ static void set_shutter(kal_uint16 shutter)
 			data = para[IDX+1];
 			puSendCmd[tosend++] = (char)(data & 0xFF);
 			//LOG_INF("addr 0x%x, data 0x%x\n",addr,data);
-			LOG_INF("puSendCmd[0] 0%x, puSendCmd[1] 0%x, puSendCmd[2] 0%x\n",puSendCmd[tosend-3],puSendCmd[tosend-2],puSendCmd[tosend-1]);
+			//LOG_INF("puSendCmd[0] 0%x, puSendCmd[1] 0%x, puSendCmd[2] 0%x\n",puSendCmd[tosend-3],puSendCmd[tosend-2],puSendCmd[tosend-1]);
 
 			IDX += 2;
 			addr_last = addr;
@@ -376,7 +376,7 @@ static void set_shutter(kal_uint16 shutter)
 			if(HW_trig)
 				iBurstWriteReg_HW(puSendCmd , tosend, imgsensor.i2c_write_id, 3);
 			else
-				iBurstWriteReg_multi(puSendCmd , tosend, imgsensor.i2c_write_id, 3);
+				iBurstWriteReg_multi(puSendCmd , tosend, imgsensor.i2c_write_id, 3, 0);
 			tosend = 0;
 		}
 	}

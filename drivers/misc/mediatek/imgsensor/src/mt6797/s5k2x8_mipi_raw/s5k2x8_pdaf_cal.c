@@ -43,7 +43,6 @@ unsigned char pdaf_checksum;//checksum of pd, SUM(0x0801~0x0D7C)%255+1
 
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
-extern void kdSetI2CSpeed(u16 i2cSpeed);
 //#define EEPROM_READ_ID  0xA1
 //#define EEPROM_WRITE_ID   0xA0
 #define I2C_SPEED        400  //CAT24C512 can support 1Mhz
@@ -69,7 +68,6 @@ static bool s5k2x8_selective_read_eeprom(kal_uint16 addr, BYTE* data)
 	char pu_send_cmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
     if(addr > MAX_OFFSET)
         return false;
-	kdSetI2CSpeed(I2C_SPEED);
 
 	if(iReadRegI2C(pu_send_cmd, 2, (u8*)data, 1, EEPROM_WRITE_ID)<0)
 		return false;
