@@ -50,26 +50,26 @@ static long monitor_hang_ioctl(struct file *file, unsigned int cmd, unsigned lon
  *****************************************************************************/
 static int monitor_hang_open(struct inode *inode, struct file *filp)
 {
-	LOGD("%s\n", __func__);
+	/* LOGD("%s\n", __func__); */
 	/* aee_kernel_RT_Monitor_api (600) ; */
 	return 0;
 }
 
 static int monitor_hang_release(struct inode *inode, struct file *filp)
 {
-	LOGD("%s\n", __func__);
+	/* LOGD("%s\n", __func__); */
 	return 0;
 }
 
 static unsigned int monitor_hang_poll(struct file *file, struct poll_table_struct *ptable)
 {
-	LOGD("%s\n", __func__);
+	/* LOGD("%s\n", __func__); */
 	return 0;
 }
 
 static ssize_t monitor_hang_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
-	LOGD("%s\n", __func__);
+	/* LOGD("%s\n", __func__); */
 	return 0;
 }
 
@@ -77,7 +77,7 @@ static ssize_t monitor_hang_write(struct file *filp, const char __user *buf, siz
 		loff_t *f_pos)
 {
 
-	LOGD("%s\n", __func__);
+	/* LOGD("%s\n", __func__); */
 	return 0;
 }
 
