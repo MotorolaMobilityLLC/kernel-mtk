@@ -4316,6 +4316,19 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 	return FALSE;
 }
 
+
+WLAN_STATUS
+nicTxSecFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
+		IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	DBGLOG(TX, INFO, "SEC Msdu WIDX:PID[%u:%u] Status[%u], SeqNo[%u]\n",
+			   prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus,
+			   prMsduInfo->ucTxSeqNum);
+
+	return WLAN_STATUS_SUCCESS;
+}
+
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function is called to identify 802.1x and Bluetooth-over-Wi-Fi
@@ -4372,10 +4385,11 @@ BOOLEAN wlanProcessSecurityFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET pr
 
 		/* Fill-up MSDU_INFO */
 		nicTxSetDataPacket(prAdapter, prMsduInfo, ucBssIndex,
-				   prCmdInfo->ucStaRecIndex, 0, u4PacketLen, nicTxDummyTxDone,
+				   prCmdInfo->ucStaRecIndex, 0, u4PacketLen, nicTxSecFrameTxDone,
 				   MSDU_RATE_MODE_AUTO, TX_PACKET_OS, 0, FALSE, TRUE);
 
 		prMsduInfo->prPacket = prPacket;
+		prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
 		/* No Tx descriptor template for MMPDU */
 		prMsduInfo->fgIsTXDTemplateValid = FALSE;
 
@@ -4433,7 +4447,7 @@ VOID wlanSecurityFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 			/* secFsmEventEapolTxDone(prAdapter, prSta, TX_RESULT_SUCCESS); */
 		}
 	}
-	DBGLOG(RSN, INFO, "SECURITY PKT TX DONE\n");
+	DBGLOG(RSN, INFO, "SECURITY PKT HOST TO HIF TX DONE\n");
 	kalSecurityFrameSendComplete(prAdapter->prGlueInfo, prCmdInfo->prPacket, WLAN_STATUS_SUCCESS);
 }
 
@@ -6392,7 +6406,7 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 
 	prWifiVar->ucDhcpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "DhcpTxDone", 1);
 	prWifiVar->ucArpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "ArpTxDone", 1);
-
+	prWifiVar->ucIcmpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "IcmpTxDone", 1);
 }
 
 VOID wlanCfgSetSwCtrl(IN P_ADAPTER_T prAdapter)
@@ -7643,16 +7657,26 @@ WLAN_STATUS wlanTriggerStatsLog(IN P_ADAPTER_T prAdapter, IN UINT_32 u4DurationI
 WLAN_STATUS
 wlanDhcpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-	DBGLOG(SW4, INFO, "DHCP PKT TX DONE WIDX:PID[%u:%u] Status[%u]\n",
-			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus);
+	DBGLOG(TX, INFO, "DHCP PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
 }
 
-WLAN_STATUS wlanArpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+WLAN_STATUS
+wlanArpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-	DBGLOG(SW4, INFO, "ARP PKT TX DONE WIDX:PID[%u:%u] Status[%u]\n",
-			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus);
+	DBGLOG(TX, INFO, "ARP PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+
+	return WLAN_STATUS_SUCCESS;
+}
+
+WLAN_STATUS
+wlanIcmpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	DBGLOG(TX, INFO, "ICMP PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
 }

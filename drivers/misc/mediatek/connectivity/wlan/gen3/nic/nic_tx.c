@@ -2670,11 +2670,17 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 
 		if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_DHCP) && prAdapter->rWifiVar.ucDhcpTxDone) {
 			prMsduInfo->pfTxDoneHandler = wlanDhcpTxDone;
+			prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
 			fgIsUseFixRate = TRUE;
 		} else if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_ARP) && prAdapter->rWifiVar.ucArpTxDone) {
 			prMsduInfo->pfTxDoneHandler = wlanArpTxDone;
+			prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
 			fgIsUseFixRate = TRUE;
+		} else if (GLUE_TEST_PKT_FLAG(prPacket, ENUM_PKT_ICMP) && prAdapter->rWifiVar.ucIcmpTxDone) {
+			prMsduInfo->pfTxDoneHandler = wlanIcmpTxDone;
+			prMsduInfo->ucTxSeqNum = GLUE_GET_PKT_SEQ_NO(prPacket);
 		}
+
 		if (fgIsUseFixRate == TRUE) {
 			if (prMsduInfo->ucBssIndex <= MAX_BSS_INDEX) {
 				P_BSS_INFO_T prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prMsduInfo->ucBssIndex);

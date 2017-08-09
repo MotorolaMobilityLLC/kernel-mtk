@@ -1385,7 +1385,7 @@ typedef struct _WIFI_VAR_T {
 	UINT_32 u4StatsLogDuration;
 	UINT_8 ucDhcpTxDone;
 	UINT_8 ucArpTxDone;
-
+	UINT_8 ucIcmpTxDone;
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */
 
 /* cnm_timer module */
