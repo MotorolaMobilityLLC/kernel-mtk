@@ -50,11 +50,6 @@
  */
 
 
-/* GADGET 318, FIXME */
-unsigned int rndis_test_tx_complete;
-unsigned int rndis_test_rx_error;
-unsigned int rndis_test_rx_usb_in;
-
 #define UETH__VERSION	"29-May-2008"
 
 static struct workqueue_struct	*mbim_uether_wq;

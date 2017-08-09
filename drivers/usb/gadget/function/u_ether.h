@@ -275,4 +275,21 @@ static inline bool can_support_ecm(struct usb_gadget *gadget)
 	return true;
 }
 
+extern unsigned int rndis_test_last_resp_id;
+extern unsigned int rndis_test_last_msg_id;
+
+extern unsigned long rndis_test_reset_msg_cnt;
+
+extern unsigned long rndis_test_rx_usb_in;
+extern unsigned long rndis_test_rx_net_out;
+extern unsigned long rndis_test_rx_nomem;
+extern unsigned long rndis_test_rx_error;
+
+extern unsigned long rndis_test_tx_net_in;
+extern unsigned long rndis_test_tx_busy;
+extern unsigned long rndis_test_tx_stop;
+
+extern unsigned long rndis_test_tx_usb_out;
+extern unsigned long rndis_test_tx_complete;
+
 #endif /* __U_ETHER_H */
