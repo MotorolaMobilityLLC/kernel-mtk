@@ -340,13 +340,15 @@ INT32 wmt_gpio_deinit(VOID)
 	for (i = 0; i < GPIO_PIN_ID_MAX; i++) {
 		gpio_ctrl_info.gpio_ctrl_state[i].gpio_num = DEFAULT_PIN_ID;
 		if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[i].gpio_num) {
-			devm_pinctrl_put(gpio_ctrl_info.pinctrl_info);
-			gpio_ctrl_info.pinctrl_info = NULL;
 			for (j = 0; j < GPIO_STATE_MAX; j++) {
 				if (0 != strlen(gpio_state_name[i][j]))
 					gpio_ctrl_info.gpio_ctrl_state[i].gpio_state[j] = NULL;
 			}
 		}
+	}
+	if (gpio_ctrl_info.pinctrl_info) {
+		devm_pinctrl_put(gpio_ctrl_info.pinctrl_info);
+		gpio_ctrl_info.pinctrl_info = NULL;
 	}
 
 	return iret;

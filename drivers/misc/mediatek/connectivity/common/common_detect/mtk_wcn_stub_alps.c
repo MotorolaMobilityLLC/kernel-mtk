@@ -340,12 +340,11 @@ static int _mt_combo_plt_do_deep_idle(COMBO_IF src, int enter)
 {
 	int ret = -1;
 
-
+#if 0
 	if (src != COMBO_IF_UART && src != COMBO_IF_MSDC && src != COMBO_IF_BTIF) {
 		CMB_STUB_LOG_WARN("src = %d is error\n", src);
 		return ret;
 	}
-#if 0
 	if (src >= 0 && src < COMBO_IF_MAX)
 		CMB_STUB_LOG_INFO("src = %s, to enter deep idle? %d\n", combo_if_name[src], enter);
 #endif
@@ -399,12 +398,8 @@ static int _mt_combo_plt_do_deep_idle(COMBO_IF src, int enter)
 			CMB_STUB_LOG_WARN("%s deep idle fail(%d)\n", enter == 1 ? "enter" : "exit", ret);
 		else
 			CMB_STUB_LOG_DBG("%s deep idle ok(%d)\n", enter == 1 ? "enter" : "exit", ret);
-
-
 		break;
-
 	default:
-		ret = -1;
 		break;
 	}
 
