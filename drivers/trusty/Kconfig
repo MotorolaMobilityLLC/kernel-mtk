@@ -8,26 +8,6 @@ config TRUSTY
 	tristate "Trusty"
 	default n
 
-config TRUSTY_FIQ
-	tristate
-	depends on TRUSTY
-
-config TRUSTY_FIQ_ARM
-	tristate
-	depends on TRUSTY
-	depends on ARM
-	select FIQ_GLUE
-	select TRUSTY_FIQ
-	default y
-
-config TRUSTY_FIQ_ARM64
-	tristate
-	depends on TRUSTY
-	depends on ARM64
-	select FIQ_GLUE
-	select TRUSTY_FIQ
-	default y
-
 config TRUSTY_LOG
 	tristate
 	depends on TRUSTY
