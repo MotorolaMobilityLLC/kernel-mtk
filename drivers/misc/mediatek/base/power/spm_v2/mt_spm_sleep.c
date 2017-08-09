@@ -795,20 +795,18 @@ RESTORE_IRQ:
 #if defined(CONFIG_ARCH_MT6797)
 	/* Re-kick VCORE DVFS */
 	if (is_vcorefs_feature_enable()) {
-		pr_err("DP-- re-kick VCORE\n");
 		__spm_backup_vcore_dvfs_dram_shuffle();
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
 		__spm_kick_im_to_fetch(pcmdesc);
 		__spm_init_pcm_register();
 		__spm_init_event_vector(pcmdesc);
-		pwrctrl->timer_val = 0;
 		__spm_check_md_pdn_power_control(pwrctrl);
 		__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 		pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
 		__spm_set_power_control(pwrctrl);
 		__spm_set_wakeup_event(pwrctrl);
-		pr_err("spm_kick_pcm_to_run VCORE\n");
+		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
 		__spm_kick_pcm_to_run(pwrctrl);
+		spm_crit2("R15: 0x%x\n", spm_read(PCM_REG15_DATA));
 	}
 #endif
 
