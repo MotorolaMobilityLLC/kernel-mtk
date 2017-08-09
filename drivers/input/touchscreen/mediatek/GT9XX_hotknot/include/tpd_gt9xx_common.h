@@ -299,7 +299,7 @@ enum CHIP_TYPE_T {
 #define GTP_DEBUG(fmt, arg...) \
 	pr_err("<<-GTP-DEBUG->> [%d]"fmt"\n", __LINE__, ##arg)
 #else
-#define GTP_DEBUG(fmt, arg...)
+#define GTP_DEBUG(fmt, arg...)					pr_debug("<<-GTP-DEBUG->> [%d]"fmt"\n", __LINE__, ##arg)
 #endif
 
 #if defined(CONFIG_GTP_DEBUG_ARRAY_ON)

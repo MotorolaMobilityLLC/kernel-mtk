@@ -143,7 +143,6 @@ u8 load_fw_process = 0;
 
 static u8 gup_burn_fw_app_section(struct i2c_client *client, u8 *fw_section, u16 start_addr,
 				  u32 len, u8 bank_cmd);
-static u8 gup_check_and_repair(struct i2c_client *, s32, u8 *, u32);
 
 static s32 gup_i2c_read(struct i2c_client *client, u8 *buf, s32 len)
 {
@@ -449,6 +448,7 @@ static u8 gup_enter_update_judge(struct st_fw_head *fw_head)
 }
 
 #if defined(CONFIG_GTP_AUTO_UPDATE_CFG)
+#if defined(CONFIG_GTP_AUTO_UPDATE)
 static u8 ascii2hex(u8 a)
 {
 	s8 value = 0;
@@ -464,7 +464,6 @@ static u8 ascii2hex(u8 a)
 
 	return value;
 }
-
 static s8 gup_update_config(struct i2c_client *client)
 {
 	s32 file_len = 0;
@@ -557,6 +556,7 @@ update_cfg_file_failed:
 	kfree(file_config);
 	return ret;
 }
+#endif
 #endif
 
 #if (defined(CONFIG_GTP_AUTO_UPDATE) && (!defined(CONFIG_GTP_HEADER_FW_UPDATE) || defined(CONFIG_GTP_AUTO_UPDATE_CFG)))
@@ -2172,6 +2172,7 @@ u8 gup_init_update_proc(struct i2c_client *client)
 #define _rRW_MISCTL__GIO1CTL_B1_                  0x41ed
 
 #if defined(CONFIG_GTP_COMPATIBLE_MODE)
+static u8 gup_check_and_repair(struct i2c_client *, s32, u8 *, u32);
 
 u8 gup_check_fs_mounted(char *path_name)
 {
@@ -2181,26 +2182,18 @@ u8 gup_check_fs_mounted(char *path_name)
 
 	err = kern_path("/", LOOKUP_FOLLOW, &root_path);
 
-	if (err) {
-		path_put(&root_path);
+	if (err)
 		return FAIL;
-	}
 
 	err = kern_path(path_name, LOOKUP_FOLLOW, &path);
-	if (err) {
-		path_put(&root_path);
-		path_put(&path);
-		return FAIL;
-	}
 
-	if (path.mnt->mnt_sb == root_path.mnt->mnt_sb) {
-		/* -- not mounted */
-		path_put(&root_path);
-		path_put(&path);
+	if (err)
 		return FAIL;
-	}
-	path_put(&root_path);
-	path_put(&path);
+
+	if (path.mnt->mnt_sb == root_path.mnt->mnt_sb)
+		/* -- not mounted */
+		return FAIL;
+
 	return SUCCESS;
 }
 

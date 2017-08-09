@@ -2,6 +2,7 @@
 
 #include "gt9xx_config.h"
 #include "include/tpd_gt9xx_common.h"
+#include "gt9xx_firmware.h"
 #define GUP_FW_INFO
 #if defined(CONFIG_TPD_PROXIMITY)
 #include <linux/hwmsensor.h>
@@ -2025,12 +2026,11 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 static irqreturn_t tpd_eint_interrupt_handler(int irq, void *dev_id)
 {
 	TPD_DEBUG_PRINT_INT;
-		GTP_DEBUG("tpd_eint_interrupt_handler tracking	failed!\n");
 
 	tpd_flag = 1;
 	/* enter EINT handler disable INT, make sure INT is disable when handle touch event including top/bottom half */
 	/* use _nosync to avoid deadlock */
-	disable_irq_nosync(touch_irq);
+	/*disable_irq_nosync(touch_irq);*/
 	wake_up_interruptible(&waiter);
 	return IRQ_HANDLED;
 }
@@ -2454,6 +2454,7 @@ static int touch_event_handler(void *unused)
 
 		set_current_state(TASK_RUNNING);
 		mutex_lock(&i2c_access);
+		disable_irq(touch_irq);
 #if defined(CONFIG_GTP_CHARGER_SWITCH)
 		gtp_charger_switch(0);
 #endif
@@ -2510,7 +2511,11 @@ static int touch_event_handler(void *unused)
 			continue;
 		}
 #endif
-	if (tpd_halt || (is_resetting == 1) || (load_fw_process == 1)) {
+	if (tpd_halt || (load_fw_process == 1)
+		#if (defined(CONFIG_GTP_ESD_PROTECT) || defined(CONFIG_GTP_COMPATIBLE_MODE))
+		|| (is_resetting == 1)
+		#endif
+		) {
 			/* mutex_unlock(&i2c_access); */
 			GTP_ERROR("return for interrupt after suspend...	");
 			goto exit_work_func;

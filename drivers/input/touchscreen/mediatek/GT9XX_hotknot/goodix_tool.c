@@ -489,6 +489,7 @@ static s32 goodix_tool_write(struct file *filp, const char __user *buff, unsigne
 			return FAIL;
 	}
 #endif
+#if defined(CONFIG_GTP_COMPATIBLE_MODE)
 	else if (19 == cmd_head.wr)	{
 		ret = copy_from_user(&cmd_head.data[0], &buff[CMD_HEAD_LENGTH], cmd_head.data_len);
 		if (0 == cmd_head.data[0]) {
@@ -505,6 +506,7 @@ static s32 goodix_tool_write(struct file *filp, const char __user *buff, unsigne
 				return FAIL;
 		}
 	}
+#endif
 #if defined(CONFIG_HOTKNOT_BLOCK_RW)
 	else if (21 == cmd_head.wr) {
 		u16 wait_hotknot_timeout = 0;
