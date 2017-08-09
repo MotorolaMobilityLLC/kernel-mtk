@@ -23,12 +23,6 @@
 #define TPD_ERR(fmt, args...)    pr_err("[S3320] %s %d : "fmt, __func__, __LINE__, ##args)
 #define TPD_LOG(fmt, args...)    pr_err("[S3320] %s %d : "fmt, __func__, __LINE__, ##args)
 
-#if 1				/* def CONFIG_MTK_I2C_EXTENSION */
-#define TPD_SUPPORT_I2C_DMA         1	/* if gt9l, better enable it if hardware platform supported */
-#else
-#define TPD_SUPPORT_I2C_DMA         0
-#endif
-
 #define _ERROR(e)      ((0x01 << e) | (0x01 << (sizeof(s32) * 8 - 1)))
 #define ERROR          _ERROR(1)	/*for common use */
 /*system relevant*/

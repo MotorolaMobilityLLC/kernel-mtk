@@ -484,12 +484,12 @@ struct work_struct work_fw_upgrade;
 
 struct i2c_client *ds4_i2c_client;
 
-#ifdef DMA_TEST
+#ifdef CONFIG_MTK_I2C_EXTENSION
 static u8 *I2CDMABuf_va;
 static dma_addr_t I2CDMABuf_pa;
 #else
 static char I2CDMABuf[4096];
-#endif				/* DMA_TEST */
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 
 
 struct i2c_client *tpd_i2c_client = NULL;
@@ -639,48 +639,42 @@ void synaptics_power(unsigned int on)
 /****************************************************************************
 * Synaptics I2C  Read / Write Functions
 ****************************************************************************/
-#if TPD_SUPPORT_I2C_DMA
 static int i2c_dma_write(struct i2c_client *client, const uint8_t *buf, int len)
 {
 	int i = 0;
 
-	/* TPD_ERR("i2c_dma_write = %d\n", len); */
-
-#ifdef DMA_TEST
+#ifdef CONFIG_MTK_I2C_EXTENSION
 	for (i = 0; i < len; i++)
 		I2CDMABuf_va[i] = buf[i];
-#else
-	for (i = 0; i < len; i++)
-		I2CDMABuf[i] = buf[i];
-#endif				/* DMA_TEST */
 
 	if (len < 8) {
-#if 0
+
 		client->addr = ((client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG));
 		if (download_status == 1)
 			client->timing = 400;
 		else
 			client->timing = 100;
-#endif				/* 0 */
 
 		return i2c_master_send(client, buf, len);
 	}
-#if 0
 	client->addr = (((client->addr & I2C_MASK_FLAG) | (I2C_DMA_FLAG)) | (I2C_ENEXT_FLAG));
 	if (download_status == 1)
 		client->timing = 400;
 	else
 		client->timing = 100;
-#endif				/* 0 */
 
-#ifdef DMA_TEST
 	return i2c_master_send(client, (const char *)I2CDMABuf_pa /*(u8 *)I2CDMABuf_pa */ , len);
-#else
-	return i2c_master_send(client,
-			       (unsigned char *)(uintptr_t) I2CDMABuf /*(u8 *)I2CDMABuf_pa */ ,
-			       len);
-#endif				/* DMA_TEST */
 
+#else
+	for (i = 0; i < len; i++)
+		I2CDMABuf[i] = buf[i];
+
+	if (len < 8)
+		return i2c_master_send(client, buf, len);
+
+	return i2c_master_send(client, (unsigned char *)(uintptr_t) I2CDMABuf, len);
+
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 }
 
 static int i2c_dma_read(struct i2c_client *client, uint8_t *buf, int len)
@@ -688,19 +682,18 @@ static int i2c_dma_read(struct i2c_client *client, uint8_t *buf, int len)
 	int i = 0, ret = 0;
 
 	/* TPD_ERR("i2c_dma_read = %d\n", len); */
+#ifdef CONFIG_MTK_I2C_EXTENSION
 
 	if (len < 8) {
-#if 0
 		client->addr = ((client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG));
 		client->timing = 400;
-#endif				/* 0 */
 		return i2c_master_recv(client, buf, len);
 	}
-#if 0
+
 	client->addr = (((client->addr & I2C_MASK_FLAG) | (I2C_DMA_FLAG)) | (I2C_ENEXT_FLAG));
 	client->timing = 400;
-#endif				/* 0 */
-#ifdef DMA_TEST
+
+
 	ret = i2c_master_recv(client, (char *)I2CDMABuf_pa /*(u8 *)I2CDMABuf_pa */ , len);
 	if (ret < 0)
 		return ret;
@@ -709,29 +702,24 @@ static int i2c_dma_read(struct i2c_client *client, uint8_t *buf, int len)
 	for (i = 0; i < len; i++)
 		buf[i] = I2CDMABuf_va[i];
 #else
-	ret =
-	    i2c_master_recv(client, (unsigned char *)(uintptr_t) I2CDMABuf /*(u8 *)I2CDMABuf_pa */ ,
-			    len);
+
+	if (len < 8)
+		return i2c_master_recv(client, buf, len);
+
+	ret = i2c_master_recv(client, (unsigned char *)(uintptr_t) I2CDMABuf, len);
 	if (ret < 0)
 		return ret;
 
 
 	for (i = 0; i < len; i++)
 		buf[i] = I2CDMABuf[i];
-#endif				/* DMA_TEST */
-
-
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 
 	return ret;
 }
-#else
-
-#endif				/* TPD_SUPPORT_I2C_DMA */
 
 static int i2c_msg_transfer(struct i2c_client *client, struct i2c_msg *msgs, int count)
 {
-
-#if TPD_SUPPORT_I2C_DMA
 	int i = 0, ret = 0;
 
 	for (i = 0; i < count; i++) {
@@ -745,7 +733,6 @@ static int i2c_msg_transfer(struct i2c_client *client, struct i2c_msg *msgs, int
 			return ret;
 
 	}
-#endif				/* TPD_SUPPORT_I2C_DMA */
 
 	return 0;
 }
@@ -760,11 +747,8 @@ int synaptics_ts_read_f54(struct i2c_client *client, u8 reg, int num, u8 *buf)
 		if (i2c_msgs.msg != NULL)
 			kfree(i2c_msgs.msg);
 
-#if 0
 		i2c_msgs.msg = kcalloc(message_count, sizeof(struct i2c_msg), GFP_KERNEL);
-#else
-		i2c_msgs.msg = kcalloc(message_count, sizeof(struct i2c_msg), GFP_KERNEL);
-#endif
+
 		i2c_msgs.count = message_count;
 		/* dev_dbg(&client->dev, "%s: Update message count %d(%d)\n",
 		   __func__, i2c_msgs.count, message_count); */
@@ -789,11 +773,7 @@ int synaptics_ts_read_f54(struct i2c_client *client, u8 reg, int num, u8 *buf)
 		i2c_msgs.msg[i + 1].buf = buf + BUFFER_SIZE * i;
 	}
 
-#if 1
 	if (i2c_msg_transfer(client, i2c_msgs.msg, message_count) < 0) {
-#else
-	if (i2c_transfer(client->adapter, i2c_msgs.msg, message_count) < 0) {
-#endif
 		/* if (printk_ratelimit()) */
 		TPD_ERR("transfer error\n");
 		return -EIO;
@@ -802,11 +782,9 @@ int synaptics_ts_read_f54(struct i2c_client *client, u8 reg, int num, u8 *buf)
 }
 EXPORT_SYMBOL(synaptics_ts_read_f54);
 
-#define C_I2C_FIFO_SIZE         8
 int synaptics_ts_read(struct i2c_client *client, u8 reg, int num, u8 *buf)
 {
 
-#if TPD_SUPPORT_I2C_DMA
 	u8 retry = 0;
 
 	struct i2c_msg msgs[] = {
@@ -835,43 +813,6 @@ int synaptics_ts_read(struct i2c_client *client, u8 reg, int num, u8 *buf)
 	}
 
 	return 0;
-#else
-	u8 beg = reg;
-	int err;
-	struct i2c_msg msgs[2] = { {0}, {0} };
-
-	mutex_lock(&s3320_i2c_access);
-
-	msgs[0].addr = client->addr;
-	msgs[0].flags = 0;
-	msgs[0].len = 1;
-	msgs[0].buf = &beg;
-
-	msgs[1].addr = client->addr;
-	msgs[1].flags = I2C_M_RD;
-	msgs[1].len = num;
-	msgs[1].buf = buf;
-
-	if (!client) {
-		mutex_unlock(&s3320_i2c_access);
-		return -EINVAL;
-	} else if (num > C_I2C_FIFO_SIZE) {
-		TPD_ERR(" length %d exceeds %d\n", num, C_I2C_FIFO_SIZE);
-		mutex_unlock(&s3320_i2c_access);
-		return -EINVAL;
-	}
-	err = i2c_transfer(client->adapter, msgs, sizeof(msgs) / sizeof(msgs[0]));
-	if (err != 2) {
-		TPD_ERR("i2c_transfer error: (%d %p %d) %d\n", reg, buf, num, err);
-		err = -EIO;
-	} else {
-		err = 0;
-	}
-
-	mutex_unlock(&s3320_i2c_access);
-
-	return err;
-#endif				/* TPD_SUPPORT_I2C_DMA */
 
 }
 EXPORT_SYMBOL(synaptics_ts_read);
@@ -879,7 +820,6 @@ EXPORT_SYMBOL(synaptics_ts_read);
 int synaptics_ts_write(struct i2c_client *client, u8 reg, u8 *buf, int len)
 {
 
-#if TPD_SUPPORT_I2C_DMA
 	u8 retry = 0;
 
 	unsigned char send_buf[len + 1];
@@ -906,38 +846,6 @@ int synaptics_ts_write(struct i2c_client *client, u8 reg, u8 *buf, int len)
 	}
 
 	return 0;
-
-#else
-	int err = 0, idx = 0, num = 0;
-	char send_buf[C_I2C_FIFO_SIZE];
-
-	mutex_lock(&s3320_i2c_access);
-
-	if (!client) {
-		mutex_unlock(&s3320_i2c_access);
-		return -EINVAL;
-	} else if (len >= C_I2C_FIFO_SIZE) {
-		TPD_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
-		mutex_unlock(&s3320_i2c_access);
-		return -EINVAL;
-	}
-
-	num = 0;
-	send_buf[num++] = reg;
-	for (idx = 0; idx < len; idx++)
-		send_buf[num++] = buf[idx];
-
-	err = i2c_master_send(client, send_buf, num);
-	if (err < 0) {
-		TPD_ERR("send command error!!\n");
-		mutex_unlock(&s3320_i2c_access);
-		return -EFAULT;
-	}
-
-	mutex_unlock(&s3320_i2c_access);
-
-	return err;
-#endif				/* TPD_SUPPORT_I2C_DMA */
 
 }
 EXPORT_SYMBOL(synaptics_ts_write);
@@ -3192,7 +3100,7 @@ static int synaptics_local_init(void)
 {
 	TPD_FUN();
 
-#ifdef DMA_TEST			/* def MTK_TEST */	/* DMA_TEST */
+#ifdef CONFIG_MTK_I2C_EXTENSION
 	tpd->dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
 	I2CDMABuf_va = (u8 *) dma_alloc_coherent(&tpd->dev->dev, 4096, &I2CDMABuf_pa, GFP_KERNEL);
 	if (!I2CDMABuf_va) {
@@ -3202,7 +3110,7 @@ static int synaptics_local_init(void)
 	TPD_ERR("Allocate Touch DMA I2C Buffer success!\n");
 #else
 	memset(I2CDMABuf, 0x00, sizeof(I2CDMABuf));
-#endif	/* MTK_TEST */			/* DMA_TEST */
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 
 	if (i2c_add_driver(&tpd_i2c_driver) != 0) {
 		TPD_ERR("i2c_add_driver failed\n");
@@ -3316,13 +3224,13 @@ static void __exit synaptics_driver_exit(void)
 
 	tpd_driver_remove(&tpd_device_driver);
 
-#ifdef DMA_TEST
+#ifdef CONFIG_MTK_I2C_EXTENSION
 	if (I2CDMABuf_va) {
 		dma_free_coherent(NULL, 4096, I2CDMABuf_va, I2CDMABuf_pa);
 		I2CDMABuf_va = NULL;
 		I2CDMABuf_pa = 0;
 	}
-#endif				/* DMA_TEST */
+#endif				/* CONFIG_MTK_I2C_EXTENSION */
 	if (touch_multi_tap_wq)
 		destroy_workqueue(touch_multi_tap_wq);
 
