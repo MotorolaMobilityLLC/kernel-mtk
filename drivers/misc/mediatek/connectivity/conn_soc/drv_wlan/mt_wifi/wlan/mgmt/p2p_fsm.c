@@ -1977,7 +1977,7 @@ VOID p2pFsmRunEventConnectionRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T pr
 		prConnReqInfo = &(prP2pFsmInfo->rConnReqInfo);
 		prChnlReqInfo = &(prP2pFsmInfo->rChnlReqInfo);
 
-		DBGLOG(P2P, INFO, "p2pFsmRunEventConnectionRequest\n");
+		DBGLOG(P2P, TRACE, "p2pFsmRunEventConnectionRequest\n");
 
 		if (prP2pBssInfo->eCurrentOPMode != OP_MODE_INFRASTRUCTURE)
 			break;
@@ -2189,7 +2189,8 @@ p2pFsmRunEventDeauthTxDone(IN P_ADAPTER_T prAdapter,
 
 		ASSERT_BREAK((prAdapter != NULL) && (prMsduInfo != NULL));
 
-		DBGLOG(P2P, TRACE, "Deauth TX Done\n");
+		DBGLOG(P2P, INFO, "Deauth TX Done Status: %d, seqNo %d\n",
+			rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 		prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 
@@ -2237,7 +2238,8 @@ p2pFsmRunEventMgmtFrameTxDone(IN P_ADAPTER_T prAdapter,
 		prMgmtTxReqInfo = &(prP2pFsmInfo->rMgmtTxInfo);
 
 		if (rTxDoneStatus != TX_RESULT_SUCCESS) {
-			DBGLOG(P2P, TRACE, "Mgmt Frame TX Fail, Status:%d.\n", rTxDoneStatus);
+			DBGLOG(P2P, INFO, "Mgmt Frame TX Fail, Status: %d, seq NO. %d, Cookie: 0x%llx\n",
+				rTxDoneStatus, prMsduInfo->ucTxSeqNum, prMgmtTxReqInfo->u8Cookie);
 		} else {
 			fgIsSuccess = TRUE;
 			DBGLOG(P2P, TRACE, "Mgmt Frame TX Done.\n");
@@ -2484,6 +2486,7 @@ VOID p2pFsmRunEventRxDeauthentication(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 								 prDeauthFrame->aucInfoElem, u2IELength, u2ReasonCode);
 
 				prP2pBssInfo->prStaRecOfAP = NULL;
+				DBGLOG(P2P, INFO, "GC RX Deauth Reason: %d\n", u2ReasonCode);
 
 				p2pFuncDisconnect(prAdapter, prStaRec, FALSE, u2ReasonCode);
 				p2pChangeMediaState(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED);
@@ -2518,6 +2521,7 @@ VOID p2pFsmRunEventRxDeauthentication(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 						/* kalP2PGOStationUpdate(prAdapter->prGlueInfo, prStaRec, FALSE); */
 
 						/* Indicate disconnect to Host. */
+						DBGLOG(P2P, INFO, "GO RX Deauth Reason: %d\n", u2ReasonCode);
 						p2pFuncDisconnect(prAdapter, prStaRec, FALSE, u2ReasonCode);
 
 						break;
@@ -2535,7 +2539,6 @@ VOID p2pFsmRunEventRxDeauthentication(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_
 		DBGLOG(P2P, TRACE, "Deauth Reason:%d\n", u2ReasonCode);
 
 	} while (FALSE);
-
 }				/* p2pFsmRunEventRxDeauthentication */
 
 /*----------------------------------------------------------------------------*/
@@ -2599,6 +2602,7 @@ VOID p2pFsmRunEventRxDisassociation(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T 
 
 				prP2pBssInfo->prStaRecOfAP = NULL;
 
+				DBGLOG(P2P, INFO, "GC RX Disassoc Reason %d\n", prStaRec->u2ReasonCode);
 				p2pFuncDisconnect(prAdapter, prStaRec, FALSE, prStaRec->u2ReasonCode);
 				p2pChangeMediaState(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED);
 				SET_NET_PWR_STATE_IDLE(prAdapter, NETWORK_TYPE_P2P_INDEX);
@@ -2632,6 +2636,7 @@ VOID p2pFsmRunEventRxDisassociation(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T 
 						/* kalP2PGOStationUpdate(prAdapter->prGlueInfo, prStaRec, FALSE); */
 
 						/* Indicate disconnect to Host. */
+						DBGLOG(P2P, INFO, "GO RX Disassoc Reason %d\n", u2ReasonCode);
 						p2pFuncDisconnect(prAdapter, prStaRec, FALSE, u2ReasonCode);
 
 						break;
@@ -2646,7 +2651,6 @@ VOID p2pFsmRunEventRxDisassociation(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T 
 		}
 
 	} while (FALSE);
-
 }				/* p2pFsmRunEventRxDisassociation */
 
 /*----------------------------------------------------------------------------*/

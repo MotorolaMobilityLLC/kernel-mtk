@@ -564,6 +564,8 @@ authSendAuthFrame(IN P_ADAPTER_T prAdapter,
 	/* TODO(Kevin): Also release the unused tail room of the composed MMPDU */
 
 	/* 4 <6> Inform TXM  to send this Authentication frame. */
+	DBGLOG(SAA, INFO, "network: %d Send Auth Frame %d, Status Code = %d seq num %d\n",
+		eNetTypeIndex, u2TransactionSeqNum, u2StatusCode, prMsduInfo->ucTxSeqNum);
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);
 
 	return WLAN_STATUS_SUCCESS;
@@ -1094,6 +1096,8 @@ authSendDeauthFrame(IN P_ADAPTER_T prAdapter,
 	prMsduInfo->ucTxSeqNum = nicIncreaseTxSeqNum(prAdapter);
 	prMsduInfo->pfTxDoneHandler = pfTxDoneHandler;
 	prMsduInfo->fgIsBasicRate = TRUE;
+	DBGLOG(SAA, INFO, "Sending Deauth, network: %d, seqNo %d\n",
+		eNetTypeIndex, prMsduInfo->ucTxSeqNum);
 
 	/* 4 <8> Inform TXM to send this Deauthentication frame. */
 	nicTxEnqueueMsdu(prAdapter, prMsduInfo);

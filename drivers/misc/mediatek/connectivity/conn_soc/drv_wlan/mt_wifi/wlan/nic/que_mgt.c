@@ -4537,7 +4537,8 @@ qmGetFrameAction(IN P_ADAPTER_T prAdapter,
 				return FRAME_ACTION_TX_PKT;
 		}
 
-		DBGLOG(QM, WARN, "Drop packets Action (Inactive %u).\n", prBssInfo->ucNetTypeIndex);
+		DBGLOG(QM, WARN, "Drop packets Action, SeqNo: %d (Bss Index %u).\n",
+				prMsduInfo->ucTxSeqNum, prBssInfo->ucNetTypeIndex);
 		TX_INC_CNT(&prAdapter->rTxCtrl, TX_INACTIVE_BSS_DROP);
 		return FRAME_ACTION_DROP_PKT;
 	}
@@ -4656,7 +4657,7 @@ VOID qmHandleEventBssAbsencePresence(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T
 	/* DBGLOG(QM, TRACE, ("qmHandleEventBssAbsencePresence (ucNetTypeIdx=%d, fgIsAbsent=%d, FreeQuota=%d)\n", */
 	/* prEventBssStatus->ucNetTypeIdx, prBssInfo->fgIsNetAbsent, prBssInfo->ucBssFreeQuota)); */
 
-	DBGLOG(QM, TRACE, "NAF=%d,%d,%d\n",
+	DBGLOG(QM, INFO, "NAF=%d,%d,%d\n",
 			   prEventBssStatus->ucNetTypeIdx, prBssInfo->fgIsNetAbsent, prBssInfo->ucBssFreeQuota);
 
 	if (!prBssInfo->fgIsNetAbsent) {

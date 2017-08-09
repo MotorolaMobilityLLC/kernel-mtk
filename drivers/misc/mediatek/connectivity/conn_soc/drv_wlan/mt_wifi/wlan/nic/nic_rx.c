@@ -2048,34 +2048,33 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 		break;
 
 	case EVENT_ID_TX_DONE:
-		{
-			P_EVENT_TX_DONE_T prTxDone;
+	{
+		P_EVENT_TX_DONE_T prTxDone;
 
-			prTxDone = (P_EVENT_TX_DONE_T) (prEvent->aucBuffer);
+		prTxDone = (P_EVENT_TX_DONE_T) (prEvent->aucBuffer);
+		if (prTxDone->ucStatus)
+			DBGLOG(RX, INFO, "EVENT_ID_TX_DONE PacketSeq:%u ucStatus: %u SN: %u\n",
+					    prTxDone->ucPacketSeq, prTxDone->ucStatus, prTxDone->u2SequenceNumber);
 
-			DBGLOG(RX, TRACE, "EVENT_ID_TX_DONE PacketSeq:%u ucStatus: %u SN: %u\n",
-					     prTxDone->ucPacketSeq, prTxDone->ucStatus, prTxDone->u2SequenceNumber);
-
-			/* call related TX Done Handler */
-			prMsduInfo = nicGetPendingTxMsduInfo(prAdapter, prTxDone->ucPacketSeq);
+		/* call related TX Done Handler */
+		prMsduInfo = nicGetPendingTxMsduInfo(prAdapter, prTxDone->ucPacketSeq);
 
 #if CFG_SUPPORT_802_11V_TIMING_MEASUREMENT
-			DBGLOG(RX, TRACE, "EVENT_ID_TX_DONE u4TimeStamp = %x u2AirDelay = %x\n",
-					     prTxDone->au4Reserved1, prTxDone->au4Reserved2);
+		DBGLOG(RX, TRACE, "EVENT_ID_TX_DONE u4TimeStamp = %x u2AirDelay = %x\n",
+					    prTxDone->au4Reserved1, prTxDone->au4Reserved2);
 
-			wnmReportTimingMeas(prAdapter, prMsduInfo->ucStaRecIndex,
-					    prTxDone->au4Reserved1, prTxDone->au4Reserved1 + prTxDone->au4Reserved2);
+		wnmReportTimingMeas(prAdapter, prMsduInfo->ucStaRecIndex,
+					   prTxDone->au4Reserved1, prTxDone->au4Reserved1 + prTxDone->au4Reserved2);
 #endif
 
-			if (prMsduInfo) {
-				prMsduInfo->pfTxDoneHandler(prAdapter, prMsduInfo,
-							    (ENUM_TX_RESULT_CODE_T) (prTxDone->ucStatus));
+		if (prMsduInfo) {
+			prMsduInfo->pfTxDoneHandler(prAdapter, prMsduInfo,
+							   (ENUM_TX_RESULT_CODE_T) (prTxDone->ucStatus));
 
-				cnmMgtPktFree(prAdapter, prMsduInfo);
-			}
+			cnmMgtPktFree(prAdapter, prMsduInfo);
 		}
+	}
 		break;
-
 	case EVENT_ID_SLEEPY_NOTIFY:
 		{
 			P_EVENT_SLEEPY_NOTIFY prEventSleepyNotify;

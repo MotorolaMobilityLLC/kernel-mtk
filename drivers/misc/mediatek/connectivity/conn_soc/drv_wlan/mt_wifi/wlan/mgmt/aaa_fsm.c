@@ -666,12 +666,17 @@ aaaFsmRunEventTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN E
 
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 
-	if ((!prStaRec) || (!prStaRec->fgIsInUse))
+	if ((!prStaRec) || (!prStaRec->fgIsInUse)) {
+		DBGLOG(AAA, INFO, "EVENT-TX DONE: Invalid StaRec");
 		return WLAN_STATUS_SUCCESS;	/* For the case of replying ERROR STATUS CODE */
+	}
 
 	ASSERT(prStaRec->ucNetTypeIndex < NETWORK_TYPE_INDEX_NUM);
 
 	prBssInfo = &(prAdapter->rWifiVar.arBssInfo[prStaRec->ucNetTypeIndex]);
+	DBGLOG(AAA, INFO, "TX DONE status: %d, AuthAssocState: %d, SeqNo: %d\n",
+			rTxDoneStatus, prStaRec->eAuthAssocState,
+			prMsduInfo->ucTxSeqNum);
 
 	switch (prStaRec->eAuthAssocState) {
 	case AAA_STATE_SEND_AUTH2:

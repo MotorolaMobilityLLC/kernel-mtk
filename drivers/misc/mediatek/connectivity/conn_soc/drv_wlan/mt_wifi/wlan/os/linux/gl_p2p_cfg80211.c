@@ -377,7 +377,7 @@ int mtk_p2p_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *req
 
 		prMsgScanRequest->rMsgHdr.eMsgId = MID_MNY_P2P_DEVICE_DISCOVERY;
 
-		DBGLOG(P2P, TRACE, "Requesting channel number:%d.\n", request->n_channels);
+		DBGLOG(P2P, INFO, "Requesting channel number:%d.\n", request->n_channels);
 
 		for (u4Idx = 0; u4Idx < request->n_channels; u4Idx++) {
 			/* Translate Freq from MHz to channel number. */
@@ -385,7 +385,7 @@ int mtk_p2p_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *req
 			prChannel = request->channels[u4Idx];
 
 			prRfChannelInfo->ucChannelNum = nicFreq2ChannelNum(prChannel->center_freq * 1000);
-			DBGLOG(P2P, INFO, "Scanning Channel:%d,  freq: %d\n",
+			DBGLOG(P2P, TRACE, "Scanning Channel:%d,  freq: %d\n",
 					   prRfChannelInfo->ucChannelNum, prChannel->center_freq);
 			switch (prChannel->band) {
 			case IEEE80211_BAND_2GHZ:
@@ -405,7 +405,7 @@ int mtk_p2p_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *req
 		}
 		prMsgScanRequest->u4NumChannel = request->n_channels;
 
-		DBGLOG(P2P, INFO, "Finish channel list.\n");
+		DBGLOG(P2P, TRACE, "Finish channel list.\n");
 
 		/* SSID */
 		prSsid = request->ssids;
@@ -1157,7 +1157,7 @@ int mtk_p2p_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev, struct
 		if ((wiphy == NULL) || (dev == NULL) || (sme == NULL))
 			break;
 
-		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_connect.\n");
+		DBGLOG(P2P, TRACE, "mtk_p2p_cfg80211_connect.\n");
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 
@@ -1176,7 +1176,8 @@ int mtk_p2p_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev, struct
 		COPY_SSID(prConnReqMsg->rSsid.aucSsid, prConnReqMsg->rSsid.ucSsidLen, sme->ssid, sme->ssid_len);
 
 		COPY_MAC_ADDR(prConnReqMsg->aucBssid, sme->bssid);
-		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_connect to %pM\n", prConnReqMsg->aucBssid);
+		DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_connect to %pM, IE len: %d\n",
+				prConnReqMsg->aucBssid, sme->ie_len);
 
 		DBGLOG(P2P, TRACE, "Assoc Req IE Buffer Length:%d\n", sme->ie_len);
 		kalMemCopy(prConnReqMsg->aucIEBuf, sme->ie, sme->ie_len);

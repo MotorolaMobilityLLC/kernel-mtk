@@ -970,8 +970,6 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	ENUM_PARAM_MEDIA_STATE_T eOriMediaStatus;
 
-	DBGLOG(P2P, TRACE, "p2pFuncDisconnect()");
-
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prStaRec != NULL));
 
@@ -983,6 +981,8 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 		/* kalP2PGOStationUpdate */
 		/* kalP2PGCIndicateConnectionStatus */
 		/* p2pIndicationOfMediaStateToHost(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED, prStaRec->aucMacAddr); */
+		DBGLOG(P2P, INFO, "p2pFuncDisconnect, eCurrentOPMode: %d, sendDeauth: %s\n",
+			prP2pBssInfo->eCurrentOPMode, fgSendDeauth ? "True" : "False");
 		if (prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT)
 			kalP2PGOStationUpdate(prAdapter->prGlueInfo, prStaRec, FALSE);
 
@@ -1042,6 +1042,7 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 	P_MSDU_INFO_T prTxMsduInfo = (P_MSDU_INFO_T) NULL;
 	P_WLAN_MAC_HEADER_T prWlanHdr = (P_WLAN_MAC_HEADER_T) NULL;
 	P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) NULL;
+	BOOLEAN fgIsProbrsp = FALSE;
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prMgmtTxReqInfo != NULL));
@@ -1062,11 +1063,12 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 				/* Leave it to TX Done handler. */
 				/* cnmMgtPktFree(prAdapter, prTxMsduInfo); */
 				prMgmtTxReqInfo->prMgmtTxMsdu = NULL;
+				DBGLOG(P2P, INFO, "p2pFuncTxMgmtFrame: Drop MGMT cookie: 0x%llx\n",
+					prMgmtTxReqInfo->u8Cookie);
 			}
 			/* 2. prMgmtTxReqInfo->prMgmtTxMsdu == NULL */
 			/* Packet transmitted, wait tx done. (cookie issue) */
 			/* 20120105 frog - use another u8cookie to store this value. */
-
 		}
 
 		ASSERT(prMgmtTxReqInfo->prMgmtTxMsdu == NULL);
@@ -1078,6 +1080,7 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 		switch (prWlanHdr->u2FrameCtrl & MASK_FRAME_TYPE) {
 		case MAC_FRAME_PROBE_RSP:
 			DBGLOG(P2P, TRACE, "p2pFuncTxMgmtFrame:  TX MAC_FRAME_PROBE_RSP\n");
+			fgIsProbrsp = TRUE;
 			prMgmtTxMsdu = p2pFuncProcessP2pProbeRsp(prAdapter, prMgmtTxMsdu);
 			break;
 		default:
@@ -1100,7 +1103,8 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 		prMgmtTxMsdu->ucTxSeqNum = nicIncreaseTxSeqNum(prAdapter);
 		prMgmtTxMsdu->pfTxDoneHandler = p2pFsmRunEventMgmtFrameTxDone;
 		prMgmtTxMsdu->fgIsBasicRate = TRUE;
-		DBGLOG(P2P, TRACE, "Mgmt seq NO. %d .\n", prMgmtTxMsdu->ucTxSeqNum);
+		DBGLOG(P2P, INFO, "%sMgmt seq NO. %d cookie: 0x%llx.\n", fgIsProbrsp ? "ProbeResp: " : "",
+				prMgmtTxMsdu->ucTxSeqNum, prMgmtTxReqInfo->u8Cookie);
 
 		nicTxEnqueueMsdu(prAdapter, prMgmtTxMsdu);
 
@@ -1324,7 +1328,7 @@ p2pFuncValidateAuth(IN P_ADAPTER_T prAdapter,
 	P_STA_RECORD_T prStaRec = (P_STA_RECORD_T) NULL;
 	P_WLAN_AUTH_FRAME_T prAuthFrame = (P_WLAN_AUTH_FRAME_T) NULL;
 
-	DBGLOG(P2P, TRACE, "p2pValidate Authentication Frame\n");
+	DBGLOG(P2P, INFO, "p2pValidate Authentication Frame\n");
 
 	do {
 		ASSERT_BREAK((prAdapter != NULL) &&
@@ -1611,9 +1615,9 @@ BOOLEAN p2pFuncValidateAssocReq(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
 		}
 
 		prWfdCfgSettings = &prAdapter->rWifiVar.prP2pFsmInfo->rWfdConfigureSettings;
-		DBGLOG(P2P, INFO, "Current WfdCfgSettings wfd_en %u wfd_info 0x%x  wfd_policy 0x%x wfd_flag 0x%x\n",
-			prWfdCfgSettings->ucWfdEnable, prWfdCfgSettings->u2WfdDevInfo,
-			prWfdCfgSettings->u4WfdPolicy, prWfdCfgSettings->u4WfdFlag);	/* Eddie */
+		DBGLOG(P2P, INFO, "AssocReq, wfd_en %u wfd_info 0x%x wfd_policy 0x%x wfd_flag 0x%x\n",
+				prWfdCfgSettings->ucWfdEnable, prWfdCfgSettings->u2WfdDevInfo,
+				prWfdCfgSettings->u4WfdPolicy, prWfdCfgSettings->u4WfdFlag);	/* Eddie */
 		if (prWfdCfgSettings->ucWfdEnable) {
 			if (prWfdCfgSettings->u4WfdPolicy & BIT(6)) {
 				/* Rejected all. */

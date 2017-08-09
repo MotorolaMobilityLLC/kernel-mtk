@@ -1976,14 +1976,14 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 	}
 
 	if (!prParams->aucMacAddr) {
-		DBGLOG(QM, TRACE, "%s MAC Address is NULL\n", __func__);
+		DBGLOG(QM, INFO, "%s MAC Address is NULL\n", __func__);
 		return -EINVAL;
 	}
 
 	skb = cfg80211_testmode_alloc_reply_skb(wiphy, sizeof(PARAM_GET_STA_STA_STATISTICS) + 1);
 
 	if (!skb) {
-		DBGLOG(QM, TRACE, "%s allocate skb failed:%x\n", __func__, rStatus);
+		DBGLOG(QM, ERROR, "%s allocate skb failed:%x\n", __func__, rStatus);
 		return -ENOMEM;
 	}
 
@@ -2039,6 +2039,15 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 		unsigned char __tmp = NL80211_DRIVER_TESTMODE_VERSION;
 
 		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_VERSION, sizeof(unsigned char), &__tmp) < 0))
+			goto nla_put_failure;
+	}
+
+	/* NLA_PUT_U8(skb, NL80211_TESTMODE_STA_STATISTICS_LINK_SCORE, u4LinkScore); */
+	{
+		unsigned char __tmp = u4LinkScore;
+
+		if (unlikely(nla_put(skb, NL80211_TESTMODE_STA_STATISTICS_LINK_SCORE,
+			sizeof(unsigned char), &__tmp) < 0))
 			goto nla_put_failure;
 	}
 
@@ -2189,7 +2198,38 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 		sizeof(rQueryStaStatistics.au4Reserved), &rQueryStaStatistics.au4Reserved) < 0))
 		goto nla_put_failure;
 
-
+	DBGLOG(QM, INFO, "%02x:%02x:%02x:%02x:%02x:%02x TxExTC %d TxTC %d TxFC %d TxLT %d LINKSCORE %d Per %d Rcpi %d ",
+			prParams->aucMacAddr[0],
+			prParams->aucMacAddr[1],
+			prParams->aucMacAddr[2],
+			prParams->aucMacAddr[3],
+			prParams->aucMacAddr[4],
+			prParams->aucMacAddr[5],
+			rQueryStaStatistics.u4TxExceedThresholdCount,
+			rQueryStaStatistics.u4TxTotalCount,
+			rQueryStaStatistics.u4TxFailCount,
+			rQueryStaStatistics.u4TxLifeTimeoutCount,
+			u4LinkScore,
+			rQueryStaStatistics.ucPer,
+			rQueryStaStatistics.ucRcpi);
+	DBGLOG(QM, INFO, "PhyMode %d LinkSpeed %d Flag %d TxAvgPT %d TCReEC0 %d TCReEC1 %d TCReEC2 %d TCReEC3 %d ",
+			rQueryStaStatistics.u4PhyMode,
+			rQueryStaStatistics.u2LinkSpeed,
+			rQueryStaStatistics.u4Flag,
+			rQueryStaStatistics.u4TxAverageProcessTime,
+			rQueryStaStatistics.au4TcResourceEmptyCount[0],
+			rQueryStaStatistics.au4TcResourceEmptyCount[1],
+			rQueryStaStatistics.au4TcResourceEmptyCount[2],
+			rQueryStaStatistics.au4TcResourceEmptyCount[3]);
+	DBGLOG(QM, INFO, "TcQlen0 %d TcQlen1 %d TcQlen2 %d TcQlen3 %d CQlen0 %d CQlen1 %d CQlen2 %d CQlen3 %d\n",
+			rQueryStaStatistics.au4TcQueLen[0],
+			rQueryStaStatistics.au4TcQueLen[1],
+			rQueryStaStatistics.au4TcQueLen[2],
+			rQueryStaStatistics.au4TcQueLen[3],
+			rQueryStaStatistics.au4TcCurrentQueLen[0],
+			rQueryStaStatistics.au4TcCurrentQueLen[1],
+			rQueryStaStatistics.au4TcCurrentQueLen[2],
+			rQueryStaStatistics.au4TcCurrentQueLen[3]);
 	i4Status = cfg80211_testmode_reply(skb);
 
 nla_put_failure:

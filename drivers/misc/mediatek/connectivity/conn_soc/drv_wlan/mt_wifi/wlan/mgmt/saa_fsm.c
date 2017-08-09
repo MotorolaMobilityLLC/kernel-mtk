@@ -703,12 +703,16 @@ saaFsmRunEventTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN E
 
 	prStaRec = cnmGetStaRecByIndex(prAdapter, prMsduInfo->ucStaRecIndex);
 
-	if (!prStaRec)
+	if (!prStaRec) {
+		DBGLOG(SAA, INFO, "EVENT-TX DONE: Invalid StaRec\n");
 		return WLAN_STATUS_INVALID_PACKET;
+	}
 
 	ASSERT(prStaRec);
 
-	DBGLOG(SAA, LOUD, "EVENT-TX DONE: Current Time = %u\n", kalGetTimeTick());
+	DBGLOG(SAA, INFO, "EVENT-TX DONE: Status: %d, eAuthAssocState: %d , SeqNO: %d ",
+		rTxDoneStatus, prStaRec->eAuthAssocState,
+		prMsduInfo->ucTxSeqNum);
 
 	eNextState = prStaRec->eAuthAssocState;
 
