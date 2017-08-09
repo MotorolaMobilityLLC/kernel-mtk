@@ -48,6 +48,16 @@
 
 #if !defined(CONFIG_MTK_CLKMGR)
 static struct clk *clk_scp_sys_md1_main;
+static struct clk *clk_infra_ccif_ap;
+static struct clk *clk_infra_ccif_md;
+static struct clk *clk_infra_ap_c2k_ccif_0;
+static struct clk *clk_infra_ap_c2k_ccif_1;
+static struct clk *clk_infra_md2md_ccif_0;
+static struct clk *clk_infra_md2md_ccif_1;
+static struct clk *clk_infra_md2md_ccif_2;
+static struct clk *clk_infra_md2md_ccif_3;
+static struct clk *clk_infra_md2md_ccif_4;
+static struct clk *clk_infra_md2md_ccif_5;
 #endif
 #if defined(CONFIG_PINCTRL_MT6797)
 static struct pinctrl *mdcldma_pinctrl;
@@ -151,6 +161,66 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 							dev_cfg->index + 1);
 			return -1;
 		}
+		clk_infra_ccif_ap = devm_clk_get(&dev_ptr->dev, "infra-ccif-ap");
+		if (IS_ERR(clk_infra_ccif_ap)) {
+			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get scp-sys-md1-main failed\n",
+							dev_cfg->index + 1);
+			return -1;
+		}
+		clk_infra_ccif_md = devm_clk_get(&dev_ptr->dev, "infra-ccif-md");
+		if (IS_ERR(clk_infra_ccif_md)) {
+			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get scp-sys-md1-main failed\n",
+							dev_cfg->index + 1);
+			return -1;
+		}
+		clk_infra_ap_c2k_ccif_0 = devm_clk_get(&dev_ptr->dev, "infra-ap-c2k-ccif-0");
+		if (IS_ERR(clk_infra_ap_c2k_ccif_0)) {
+			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-ap-c2k-ccif-0 failed\n",
+							dev_cfg->index + 1);
+			return -1;
+		}
+		clk_infra_ap_c2k_ccif_1 = devm_clk_get(&dev_ptr->dev, "infra-ap-c2k-ccif-1");
+		if (IS_ERR(clk_infra_ap_c2k_ccif_1)) {
+			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-ap-c2k-ccif-1 failed\n",
+							dev_cfg->index + 1);
+			return -1;
+		}
+		clk_infra_md2md_ccif_0 = devm_clk_get(&dev_ptr->dev, "infra-md2md-ccif-0");
+		if (IS_ERR(clk_infra_md2md_ccif_0)) {
+			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-md2md-ccif-0 failed\n",
+							dev_cfg->index + 1);
+			return -1;
+		}
+		clk_infra_md2md_ccif_1 = devm_clk_get(&dev_ptr->dev, "infra-md2md-ccif-1");
+		if (IS_ERR(clk_infra_md2md_ccif_1)) {
+			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-md2md-ccif-1 failed\n",
+							dev_cfg->index + 1);
+			return -1;
+		}
+		clk_infra_md2md_ccif_2 = devm_clk_get(&dev_ptr->dev, "infra-md2md-ccif-2");
+		if (IS_ERR(clk_infra_md2md_ccif_2)) {
+			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-md2md-ccif-2 failed\n",
+							dev_cfg->index + 1);
+			return -1;
+		}
+		clk_infra_md2md_ccif_3 = devm_clk_get(&dev_ptr->dev, "infra-md2md-ccif-3");
+		if (IS_ERR(clk_infra_md2md_ccif_3)) {
+			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-md2md-ccif-3 failed\n",
+							dev_cfg->index + 1);
+			return -1;
+		}
+		clk_infra_md2md_ccif_4 = devm_clk_get(&dev_ptr->dev, "infra-md2md-ccif-4");
+		if (IS_ERR(clk_infra_md2md_ccif_4)) {
+			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-md2md-ccif-4 failed\n",
+							dev_cfg->index + 1);
+			return -1;
+		}
+		clk_infra_md2md_ccif_5 = devm_clk_get(&dev_ptr->dev, "infra-md2md-ccif-5");
+		if (IS_ERR(clk_infra_md2md_ccif_5)) {
+			CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d get infra-md2md-ccif-5 failed\n",
+							dev_cfg->index + 1);
+			return -1;
+		}
 #endif
 		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 		hw_info->ap_mixed_base = (unsigned long)of_iomap(node, 0);
@@ -173,6 +243,35 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 					hw_info->cldma_irq_id, hw_info->ap_ccif_irq_id, hw_info->md_wdt_irq_id);
 
 	return 0;
+}
+
+void set_ccif_cg(unsigned int on)
+{
+#if defined(CONFIG_MTK_CLKMGR)
+	if (on) {
+		clk_prepare_enable(clk_infra_ccif_ap);
+		clk_prepare_enable(clk_infra_ccif_md);
+		clk_prepare_enable(clk_infra_ap_c2k_ccif_0);
+		clk_prepare_enable(clk_infra_ap_c2k_ccif_1);
+		clk_prepare_enable(clk_infra_md2md_ccif_0);
+		clk_prepare_enable(clk_infra_md2md_ccif_1);
+		clk_prepare_enable(clk_infra_md2md_ccif_2);
+		clk_prepare_enable(clk_infra_md2md_ccif_3);
+		clk_prepare_enable(clk_infra_md2md_ccif_4);
+		clk_prepare_enable(clk_infra_md2md_ccif_5);
+	} else {
+		clk_disable_unprepare(clk_infra_ccif_ap);
+		clk_disable_unprepare(clk_infra_ccif_md);
+		clk_disable_unprepare(clk_infra_ap_c2k_ccif_0);
+		clk_disable_unprepare(clk_infra_ap_c2k_ccif_1);
+		clk_disable_unprepare(clk_infra_md2md_ccif_0);
+		clk_disable_unprepare(clk_infra_md2md_ccif_1);
+		clk_disable_unprepare(clk_infra_md2md_ccif_2);
+		clk_disable_unprepare(clk_infra_md2md_ccif_3);
+		clk_disable_unprepare(clk_infra_md2md_ccif_4);
+		clk_disable_unprepare(clk_infra_md2md_ccif_5);
+	}
+#endif
 }
 
 int md_cd_io_remap_md_side_register(struct ccci_modem *md)
@@ -730,6 +829,7 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 #else
 		clk_disable(clk_scp_sys_md1_main);
 		clk_unprepare(clk_scp_sys_md1_main);	/* cannot be called in mutex context */
+		set_ccif_cg(0);
 #endif
 		clk_buf_set_by_flightmode(true);
 		md1_pmic_setting_off();

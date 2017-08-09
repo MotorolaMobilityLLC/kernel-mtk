@@ -1076,6 +1076,7 @@ extern int ccci_subsys_dfo_init(void);
 /* per-modem sub-system */
 extern int ccci_subsys_char_init(struct ccci_modem *md);
 
+extern void set_ccif_cg(unsigned int on);
 extern void md_ex_monitor_func(unsigned long data);
 extern void md_ex_monitor2_func(unsigned long data);
 extern void md_bootup_timeout_func(unsigned long data);

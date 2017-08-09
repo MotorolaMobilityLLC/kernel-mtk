@@ -1790,8 +1790,28 @@
 			mediatek,md_id = <0>;
 			mediatek,cldma_capability = <6>;
 			mediatek,md_smem_size = <0x100000>; /* md share memory size */
-			clocks = <&scpsys SCP_SYS_MD1>;
-			clock-names = "scp-sys-md1-main";
+			clocks = <&scpsys SCP_SYS_MD1>,
+				<&infrasys INFRA_CCIF_AP>,
+				<&infrasys INFRA_CCIF_MD>,
+				<&infrasys INFRA_AP_C2K_CCIF_0>,
+				<&infrasys INFRA_AP_C2K_CCIF_1>,
+				<&infrasys INFRA_MD2MD_CCIF_0>,
+				<&infrasys INFRA_MD2MD_CCIF_1>,
+				<&infrasys INFRA_MD2MD_CCIF_2>,
+				<&infrasys INFRA_MD2MD_CCIF_3>,
+				<&infrasys INFRA_MD2MD_CCIF_4>,
+				<&infrasys INFRA_MD2MD_CCIF_5>;
+			clock-names = "scp-sys-md1-main",
+				"infra-ccif-ap",
+				"infra-ccif-md",
+				"infra-ap-c2k-ccif-0",
+				"infra-ap-c2k-ccif-1",
+				"infra-md2md-ccif-0",
+				"infra-md2md-ccif-1",
+				"infra-md2md-ccif-2",
+				"infra-md2md-ccif-3",
+				"infra-md2md-ccif-4",
+				"infra-md2md-ccif-5";
 		};
 
 		aes_top0@10016000 {

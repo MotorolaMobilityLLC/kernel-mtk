@@ -539,6 +539,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	unsigned int sig_pid;
 	unsigned int md_boot_data[16] = { 0 };
 	int md_type = 0;
+	unsigned int ccif_on = 0;
 
 #ifdef CONFIG_MTK_SIM_LOCK_POWER_ON_WRITE_PROTECT
 	unsigned int val;
@@ -1069,6 +1070,16 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		CCCI_NORMAL_LOG(md->index, CHAR, "reset md1/md3 pccif ioctl called by %s\n", current->comm);
 		reset_md1_md3_pccif(md);
 #endif
+		break;
+	case CCCI_IOC_SET_CCIF_CG:
+		CCCI_NORMAL_LOG(md->index, CHAR, "set ccif cg ioctl called by %s\n", current->comm);
+		if (copy_from_user(&ccif_on, (void __user *)arg, sizeof(unsigned int))) {
+			CCCI_NORMAL_LOG(md->index, CHAR, "set ccif cg fail: copy_from_user fail!\n");
+			ret = -EFAULT;
+		} else {
+			CCCI_NORMAL_LOG(md->index, CHAR, "set ccif clock %s\n", ccif_on?"on":"off");
+			set_ccif_cg(ccif_on);
+		}
 		break;
 
 	default:

@@ -507,6 +507,7 @@ int md_ccif_power_off(struct ccci_modem *md, unsigned int timeout)
 		ret = md_power_off(SYS_MD3, timeout);
 #else
 		clk_disable_unprepare(clk_scp_sys_md3_main);
+		set_ccif_cg(0);
 #endif
 		kicker_pbm_by_md(KR_MD3, false);
 		CCCI_NORMAL_LOG(md->index, TAG, "Call end kicker_pbm_by_md(3,false)\n");
