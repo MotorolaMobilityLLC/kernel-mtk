@@ -1366,10 +1366,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <GIC_SPI 150 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		CQDMA@0x10217C00 {
-			compatible = "mediatek,CQDMA";
-			reg = <0x10217c00 0xC00>;
-			interrupts = <0 143 0x8>;
+		cqdma@10217c00 {
+			compatible = "mediatek,cqdma";
+			reg = <0x10217c00 0xc00>;
+			interrupts = <GIC_SPI 143 IRQ_TYPE_LEVEL_LOW>;
 			nr_channel = <1>;
 		};
 

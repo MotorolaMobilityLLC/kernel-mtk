@@ -1504,7 +1504,7 @@ static int dram_dt_init(void)
 	struct device_node *node = NULL;
 
 	/* DTS version */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,CQDMA");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,cqdma");
 	if (node) {
 		CQDMA_BASE_ADDR = of_iomap(node, 0);
 		pr_warn("[DRAMC]get CQDMA_BASE_ADDR @ %p\n", CQDMA_BASE_ADDR);
