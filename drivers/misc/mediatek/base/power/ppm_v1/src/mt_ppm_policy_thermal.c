@@ -30,6 +30,11 @@ void mt_ppm_cpu_thermal_protect(unsigned int limited_power)
 
 	ppm_info("Get budget from thermal => limited_power = %d\n", limited_power);
 
+	if (!thermal_policy.is_enabled) {
+		ppm_warn("PPM thermal policy is not enabled!\n");
+		goto end;
+	}
+
 	ppm_lock(&thermal_policy.lock);
 
 	thermal_policy.req.power_budget = limited_power;
@@ -41,6 +46,7 @@ void mt_ppm_cpu_thermal_protect(unsigned int limited_power)
 	} else
 		ppm_unlock(&thermal_policy.lock);
 
+end:
 	FUNC_EXIT(FUNC_LV_POLICY);
 }
 

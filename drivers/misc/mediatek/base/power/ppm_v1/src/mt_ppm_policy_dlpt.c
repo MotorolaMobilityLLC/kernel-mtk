@@ -48,6 +48,11 @@ void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned in
 
 	FUNC_ENTER(FUNC_LV_POLICY);
 
+	if (!dlpt_policy.is_enabled) {
+		ppm_warn("PPM DLPT policy is not enabled!\n");
+		goto end;
+	}
+
 	/* find power budget in table, skip this round if idx not found in table */
 	power_idx = ppm_find_pwr_idx(cluster_status);
 	if (power_idx < 0)

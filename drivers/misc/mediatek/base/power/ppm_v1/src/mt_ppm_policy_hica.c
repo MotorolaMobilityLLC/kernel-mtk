@@ -98,6 +98,9 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 
 	FUNC_ENTER(FUNC_LV_HICA);
 
+	if (!hica_policy.is_enabled)
+		goto hica_not_enabled;
+
 	ppm_lock(&hica_policy.lock);
 
 	ppm_hica_algo_data.ppm_cur_loads = cur_loads;
@@ -149,7 +152,7 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 
 end:
 	ppm_unlock(&hica_policy.lock);
-
+hica_not_enabled:
 	FUNC_EXIT(FUNC_LV_HICA);
 }
 
@@ -332,6 +335,11 @@ enum ppm_power_state ppm_hica_get_cur_state(void)
 
 	FUNC_ENTER(FUNC_LV_HICA);
 
+	if (!hica_policy.is_enabled) {
+		state = PPM_POWER_STATE_NONE;
+		goto end;
+	}
+
 	ppm_lock(&hica_policy.lock);
 
 	if (!hica_policy.is_activated) {
@@ -350,6 +358,7 @@ enum ppm_power_state ppm_hica_get_cur_state(void)
 
 	ppm_unlock(&hica_policy.lock);
 
+end:
 	FUNC_EXIT(FUNC_LV_HICA);
 
 	return state;
