@@ -53,7 +53,6 @@ extern int is_ext_buck_exist(void);
 extern unsigned int mt6311_read_byte(unsigned char cmd, unsigned char *returnData);
 
 extern u32 get_devinfo_with_index(u32 index);
-extern void (*cpufreq_freq_check)(enum mt_cpu_dvfs_id id);
 
 /* Freq Meter API */
 #ifdef __KERNEL__
