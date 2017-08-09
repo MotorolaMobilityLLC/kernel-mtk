@@ -49,6 +49,7 @@
 		pr_err("[CMDQ][DBG]"string, ##args);	\
 	}											\
 } while (0)
+#define CMDQ_AEE_READY
 #ifdef CMDQ_AEE_READY
 #define CMDQ_AEE(tag, string, args...)			\
 	do {										\
