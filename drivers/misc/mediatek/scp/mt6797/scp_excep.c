@@ -143,7 +143,7 @@ void exception_header_init(void *oldbufp)
 	bufp += sizeof(struct elf32_hdr);
 	offset += sizeof(struct elf32_hdr);
 	elf_setup_eident(elf->e_ident, ELFCLASS32);
-	elf_setup_elfhdr(elf, EM_ARM, struct elf32_hdr, struct elf32_phdr)
+	elf_setup_elfhdr(elf, EM_ARM, struct elf32_hdr, struct elf32_phdr);
 
 	nhdr = (struct elf32_phdr *) bufp;
 	bufp += sizeof(struct elf32_phdr);
