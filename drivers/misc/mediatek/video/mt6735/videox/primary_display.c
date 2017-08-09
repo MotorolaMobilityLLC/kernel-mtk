@@ -151,7 +151,7 @@ unsigned int isDSIOff = 0;
 unsigned int gPresentFenceIndex = 0;
 unsigned int gTriggerDispMode = 0; /* 0: normal, 1: lcd only, 2: none of lcd and lcm */
 disp_ddp_path_config last_primary_config;
-
+static atomic_t DvfsIsHPM = ATOMIC_INIT(1);
 
 void enqueue_buffer(display_primary_path_context *ctx, struct list_head *head,
 		    disp_internal_buffer_info *buf)
@@ -343,6 +343,39 @@ static void _primary_path_vsync_lock(void)
 static void _primary_path_vsync_unlock(void)
 {
 	mutex_unlock(&(pgc->vsync_lock));
+}
+
+static void _primary_path_set_dvfsHPM(bool bForcedinHPM, unsigned int needLock)
+{
+	if (needLock)
+		_primary_path_lock(__func__);
+
+	if (bForcedinHPM)
+		atomic_set(&DvfsIsHPM, 1);
+	else
+		atomic_set(&DvfsIsHPM, 0);
+
+
+	if (needLock)
+		_primary_path_unlock(__func__);
+}
+
+static bool _primary_path_IsForcedHPM(unsigned int needLock)
+{
+	bool bResult;
+
+	if (needLock)
+		_primary_path_lock(__func__);
+
+	if (atomic_read(&DvfsIsHPM) == 1)
+		bResult = true;
+	else
+		bResult = false;
+
+	if (needLock)
+		_primary_path_unlock(__func__);
+
+	return bResult;
 }
 
 
@@ -589,14 +622,18 @@ int primary_display_save_power_for_idle(int enter, unsigned int need_primary_loc
 		}
 	}
 
-	if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS) {
-		DISPMSG("MMDVFS enter:%d\n", enter);
-		if (enter)
-			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW); /* Vote to LPM mode */
-		else
-			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); /* Enter HPM mode */
+	if (_primary_path_IsForcedHPM(0) == false) {
+		if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS) {
+			DISPMSG("MMDVFS enter:%d\n", enter);
+			if (enter)
+				mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW); /* Vote to LPM mode */
+			else
+				mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); /* Enter HPM mode */
+		}
+	} else {
+		DISPMSG("MMDVFS is forced into HPM\n");
+		mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); /* Enter HPM mode */
 	}
-
 end:
 	if (enter)
 		atomic_set(&isDdp_Idle, 1);
@@ -672,6 +709,9 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 			_primary_path_unlock(__func__);
 			continue;
 		}
+
+		_primary_path_set_dvfsHPM(false, 0);
+
 		_primary_path_unlock(__func__);
 		/* _disp_primary_idle_lock(); */
 		_primary_path_esd_check_lock();
@@ -4332,6 +4372,8 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 	unsigned int rdma_state[50];
 
 	MMProfileLogEx(ddp_mmp_get_events()->session_release, MMProfileFlagStart, 1, userdata);
+
+
 	/* releaes OVL1 when primary setting */
 	if (ovl_get_status() == DDP_OVL1_STATUS_PRIMARY_RELEASED)
 		dpmgr_set_ovl1_status(DDP_OVL1_STATUS_SUB);
@@ -6052,7 +6094,7 @@ void primary_display_update_present_fence(unsigned int fence_idx)
 #endif
 }
 
-static int config_wdma_output(disp_path_handle disp_handle,cmdqRecHandle cmdq_handle,
+static int config_wdma_output(disp_path_handle disp_handle, cmdqRecHandle cmdq_handle,
 			disp_mem_output_config *output, int is_multipass);
 
 int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
@@ -6083,6 +6125,8 @@ int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
 	if (blocking)
 		DISPMSG("%s, change blocking to non blocking trigger\n", __func__);
 
+	_primary_path_set_dvfsHPM(true, 0);
+
 #ifdef MTK_DISP_IDLE_LP
 	_disp_primary_path_exit_idle(__func__, 0);
 #endif
@@ -6103,9 +6147,9 @@ int primary_display_trigger(int blocking, void *callback, unsigned int userdata)
 		}
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
 		if (pgc->need_trigger_dcMirror_out == 0) {
-            if (cached_session_output[DISP_SESSION_PRIMARY - 1].security == DISP_SECURE_BUFFER)
-                config_wdma_output(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config,
-                    &cached_session_output[DISP_SESSION_PRIMARY - 1], 0);
+			if (cached_session_output[DISP_SESSION_PRIMARY - 1].security == DISP_SECURE_BUFFER)
+				config_wdma_output(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config,
+					&cached_session_output[DISP_SESSION_PRIMARY - 1], 0);
 			DISPPR_ERROR("There is no output config when decouple mirror!!\n");
 		}
 
