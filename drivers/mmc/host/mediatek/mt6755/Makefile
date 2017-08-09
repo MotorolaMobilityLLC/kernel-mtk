@@ -6,24 +6,32 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 #workaround for include mmc/card/queue.h
 ccflags-y += -I$(srctree)/drivers/mmc/card
-
-#obj-$(CONFIG_MMC_MTK) += msdc_hw_ett.o
-obj-$(CONFIG_MMC_MTK) += sd.o
-
-obj-$(CONFIG_MMC_MTK) += dbg.o
-obj-$(CONFIG_MMC_MTK) += mt_sd_misc.o
-obj-$(CONFIG_MMC_MTK) += autok.o
-#obj-$(CONFIG_MMC_MTK) += sdio_autok.o sdio_autok_proc.o ettagent.o
-
-# kdump/kpainc interface move to lk
-#ifeq ($(CONFIG_MTK_AEE_IPANIC),y)
-#obj-$(CONFIG_MMC_MTK) += mt_dump.o
-#endif
-
-ifeq ($(CONFIG_MTK_EMMC_SUPPORT_OTP),y)
-obj-$(CONFIG_MMC_MTK) += emmc_otp.o
-endif
+#workaround for include mmc/core/core.h
+ccflags-y += -I$(srctree)/drivers/mmc/core
 
 #ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
 #ccflags-y += -DFEATURE_MET_MMC_INDEX
 #endif
+
+obj-$(CONFIG_MMC_MTK) += msdc.o
+
+msdc-y += sd.o mt_sd_misc.o
+msdc-y += msdc_tune.o
+msdc-y += dbg.o
+msdc-y += msdc_partition.o
+msdc-y += autok.o
+msdc-y += autok_dvfs.o
+
+msdc-y += msdc_io.o
+ifeq ($(CONFIG_MTK_FPGA),y)
+msdc-y += msdc_fpga_io.o
+endif
+
+ifeq ($(CONFIG_MTK_AEE_IPANIC),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic_wrap/$(MTK_PLATFORM)
+msdc-y += mt_dump.o
+endif
+
+ifeq ($(CONFIG_MTK_EMMC_SUPPORT_OTP),y)
+msdc-y += emmc_otp.o
+endif

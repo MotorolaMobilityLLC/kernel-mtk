@@ -45,6 +45,7 @@
 #define AUTOK_DBG_TRACE                           4
 #define AUTOK_DBG_LOUD                            5
 
+extern unsigned int do_autok_offline_tune_tx;
 extern unsigned int autok_debug_level;
 
 #define AUTOK_DBGPRINT(_level, _fmt ...)   \
@@ -104,15 +105,15 @@ enum AUTOK_PARAM {
 	/* DS Pad Z clk delay count, range: 0~63, Z dly1(0~31)+Z dly2(0~31) */
 	EMMC50_DS_Z_DLY1,
 
-	/* DS Pad Z clk del sel: [dly2_sel:dly1_sel] -> [0,1]: dly1 enable [1,2]:dl2 & dly1 enable ,
-	   else :no dly enable, */
+	/* DS Pad Z clk del sel: [dly2_sel:dly1_sel]
+	   -> [0,1]: dly1 enable [1,2]:dl2 & dly1 enable ,else :no dly enable, */
 	EMMC50_DS_Z_DLY1_SEL,
 
 	/* DS Pad Z clk delay count, range: 0~63, Z dly1(0~31)+Z dly2(0~31) */
 	EMMC50_DS_Z_DLY2,
 
-	/* DS Pad Z clk del sel: [dly2_sel:dly1_sel] -> [0,1]: dly1 enable [1,2]:dl2 & dly1 enable ,
-	   else :no dly enable, */
+	/* DS Pad Z clk del sel: [dly2_sel:dly1_sel]
+	   -> [0,1]: dly1 enable [1,2]:dl2 & dly1 enable ,else :no dly enable, */
 	EMMC50_DS_Z_DLY2_SEL,
 
 	/* DS Pad Z_DLY clk delay count, range: 0~31 */
@@ -171,7 +172,7 @@ enum AUTOK_PARAM {
 /**********************************************************
 * Feature  Control Defination                             *
 **********************************************************/
-#define AUTOK_OFFLINE_TUNE_TX_ENABLE 0
+#define AUTOK_OFFLINE_TUNE_TX_ENABLE 1
 #define AUTOK_OFFLINE_TUNE_ENABLE 0
 #define HS400_OFFLINE_TUNE_ENABLE 0
 #define HS200_OFFLINE_TUNE_ENABLE 0
@@ -192,7 +193,12 @@ extern int autok_init_hs400(struct msdc_host *host);
 extern void autok_tuning_parameter_init(struct msdc_host *host, u8 *res);
 extern int autok_execute_tuning(struct msdc_host *host, u8 *res);
 extern int hs200_execute_tuning(struct msdc_host *host, u8 *res);
+extern int hs200_execute_tuning_cmd(struct msdc_host *host, u8 *res);
 extern int hs400_execute_tuning(struct msdc_host *host, u8 *res);
+extern int hs400_execute_tuning_cmd(struct msdc_host *host, u8 *res);
+
+
+extern unsigned int do_autok_offline_tune_tx;
 
 #endif  /* _AUTOK_H_ */
 

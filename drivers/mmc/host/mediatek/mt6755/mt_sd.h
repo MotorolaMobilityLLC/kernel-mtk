@@ -1,123 +1,107 @@
 #ifndef MT_SD_H
 #define MT_SD_H
 
-#include <linux/bitops.h>
-#include <linux/mmc/host.h>
-#include <mt-plat/sync_write.h>
-/* weiping fix */
-#include "board.h"
-#if !defined(CONFIG_MTK_CLKMGR)
-#include <linux/clk.h>
-#endif
-
-/* #define MSDC_DMA_ADDR_DEBUG */
-/* ccyeh #define MSDC_HQA */
-
-#define MTK_MSDC_USE_CMD23
-#if defined(CONFIG_MTK_EMMC_CACHE) && defined(MTK_MSDC_USE_CMD23)
-#define MTK_MSDC_USE_CACHE
-extern unsigned int g_emmc_cache_size;
-#endif
-
-#ifdef MTK_MSDC_USE_CMD23
-#define MSDC_USE_AUTO_CMD23   (1)
-#endif
-
-#define HOST_MAX_NUM						(4)
-#define MAX_REQ_SZ							(512 * 1024)
-
-#define CMD_TUNE_UHS_MAX_TIME				(2*32*8*8)
-#define CMD_TUNE_HS_MAX_TIME				(2*32)
-
-#define READ_TUNE_UHS_CLKMOD1_MAX_TIME		(2*32*32*8)
-#define READ_TUNE_UHS_MAX_TIME				(2*32*32)
-#define READ_TUNE_HS_MAX_TIME				(2*32)
-
-#define WRITE_TUNE_HS_MAX_TIME				(2*32)
-#define WRITE_TUNE_UHS_MAX_TIME				(2*32*8)
-
-#define MAX_HS400_TUNE_COUNT				(576)	/* (32*18) */
-
-#define MAX_GPD_NUM							(1 + 1)	/* one null gpd */
-#define MAX_BD_NUM							(1024)
-#define MAX_BD_PER_GPD						(MAX_BD_NUM)
-#define CLK_SRC_MAX_NUM						(1)
-
-#define EINT_MSDC1_INS_POLARITY				(0)
-#define SDIO_ERROR_BYPASS
-
-/* #define MSDC_CLKSRC_REG     (0xf100000C)*/
-#define MSDC_DESENSE_REG					(0xf0007070)
-
-#ifdef CONFIG_SDIOAUTOK_SUPPORT
-#define MTK_SDIO30_ONLINE_TUNING_SUPPORT
-/* #define OT_LATENCY_TEST */
-#endif
-/* #define ONLINE_TUNING_DVTTEST */
-
 #ifdef CONFIG_FPGA_EARLY_PORTING
 #define FPGA_PLATFORM
 #else
 #define MTK_MSDC_BRINGUP_DEBUG
 #endif
-/* #define MTK_MSDC_DUMP_FIFO */
 
-#define CMD_SET_FOR_MMC_TUNE_CASE1			(0x00000000FB260140ULL)
-#define CMD_SET_FOR_MMC_TUNE_CASE2			(0x0000000000000080ULL)
-#define CMD_SET_FOR_MMC_TUNE_CASE3			(0x0000000000001000ULL)
-#define CMD_SET_FOR_MMC_TUNE_CASE4			(0x0000000000000020ULL)
-/* #define CMD_SET_FOR_MMC_TUNE_CASE5 (0x0000000000084000ULL) */
+#include <linux/bitops.h>
+#include <linux/mmc/host.h>
+#include <mt-plat/sync_write.h>
+#include <dt-bindings/mmc/mt6755-msdc.h>
 
-#define CMD_SET_FOR_SD_TUNE_CASE1			(0x000000007B060040ULL)
-#define CMD_SET_FOR_APP_TUNE_CASE1			(0x0008000000402000ULL)
+#define MSDC_WQ_ERROR_TUNE
 
-#define IS_IN_CMD_SET(cmd_num, set)			((0x1ULL << cmd_num) & (set))
+#define MSDC_AUTOK_ON_ERROR
+#ifdef MSDC_AUTOK_ON_ERROR
+/*#define DATA_TUNE_READ_DATA_ALLOW_FALLING_EDGE*/
+#endif
 
-#define MSDC_VERIFY_NEED_TUNE				(0)
-#define MSDC_VERIFY_ERROR					(1)
-#define MSDC_VERIFY_NEED_NOT_TUNE			(2)
+/*#define EMMC_SLEEP_FAIL_HANDLE*/
+
+#define MSDC_DMA_ADDR_DEBUG
+/*#define MSDC_HQA*/
+
+#define MTK_MSDC_USE_CMD23
+#if defined(CONFIG_MTK_EMMC_CACHE) && defined(MTK_MSDC_USE_CMD23)
+#define MTK_MSDC_USE_CACHE
+#endif
+
+#ifdef MTK_MSDC_USE_CMD23
+#define MSDC_USE_AUTO_CMD23             (1)
+#endif
+
+#ifdef MTK_MSDC_USE_CACHE
+#ifndef MMC_ENABLED_EMPTY_QUEUE_FLUSH
+/* #define MTK_MSDC_FLUSH_BY_CLK_GATE */
+#endif
+#endif
+
+#define HOST_MAX_NUM                    (4)
+#define MAX_REQ_SZ                      (512 * 1024)
+
+#ifdef FPGA_PLATFORM
+#define HOST_MAX_MCLK                   (200000000)
+#else
+#define HOST_MAX_MCLK                   (200000000)
+#endif
+#define HOST_MIN_MCLK                   (260000)
+
+/* ================================= */
+
+#define MAX_GPD_NUM                     (1 + 1) /* one null gpd */
+#define MAX_BD_NUM                      (1024)
+#define MAX_BD_PER_GPD                  (MAX_BD_NUM)
+#define CLK_SRC_MAX_NUM                 (1)
+
+#define SDIO_ERROR_BYPASS
+
+/*#define MTK_MSDC_DUMP_FIFO*/
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#define CONFIG_CMDQ_CMD_DAT_PARALLEL
+#endif
+
+/*--------------------------------------------------------------------------*/
+/* Common Macro                                                             */
+/*--------------------------------------------------------------------------*/
+#define REG_ADDR(x)                     ((volatile u32 *)(base + OFFSET_##x))
 
 /*--------------------------------------------------------------------------*/
 /* Common Definition                                                        */
 /*--------------------------------------------------------------------------*/
-#define MSDC_FIFO_SZ						(128)
-#define MSDC_FIFO_THD						(64)	/* (128) */
-#define MSDC_NUM							(4)
+#define MSDC_FIFO_SZ            (128)
+#define MSDC_FIFO_THD           (64)    /* (128) */
+#define MSDC_NUM                (4)
 
-/* No memory stick mode, 0 use to gate clock */
-#define MSDC_MS								(0)
-#define MSDC_SDMMC							(1)
+#define MSDC_MS                 (0)     /* No memory stick mode,
+					   0 use to gate clock */
+#define MSDC_SDMMC              (1)
 
-#define MSDC_MODE_UNKNOWN					(0)
-#define MSDC_MODE_PIO						(1)
-#define MSDC_MODE_DMA_BASIC					(2)
-#define MSDC_MODE_DMA_DESC					(3)
-#define MSDC_MODE_DMA_ENHANCED				(4)
-#define MSDC_MODE_MMC_STREAM				(5)
+#define MSDC_MODE_UNKNOWN       (0)
+#define MSDC_MODE_PIO           (1)
+#define MSDC_MODE_DMA_BASIC     (2)
+#define MSDC_MODE_DMA_DESC      (3)
+#define MSDC_MODE_DMA_ENHANCED  (4)
 
-#define MSDC_BUS_1BITS						(0)
-#define MSDC_BUS_4BITS						(1)
-#define MSDC_BUS_8BITS						(2)
+#define MSDC_BUS_1BITS          (0)
+#define MSDC_BUS_4BITS          (1)
+#define MSDC_BUS_8BITS          (2)
 
-#define MSDC_BRUST_8B						(3)
-#define MSDC_BRUST_16B						(4)
-#define MSDC_BRUST_32B						(5)
-#define MSDC_BRUST_64B						(6)
+#define MSDC_BRUST_8B           (3)
+#define MSDC_BRUST_16B          (4)
+#define MSDC_BRUST_32B          (5)
+#define MSDC_BRUST_64B          (6)
 
-#define MSDC_PIN_PULL_NONE					(0)
-#define MSDC_PIN_PULL_DOWN					(1)
-#define MSDC_PIN_PULL_UP					(2)
-#define MSDC_PIN_KEEP						(3)
+#define MSDC_AUTOCMD12          (0x0001)
+#define MSDC_AUTOCMD23          (0x0002)
+#define MSDC_AUTOCMD19          (0x0003)
+#define MSDC_AUTOCMD53          (0x0004)
 
-#define MSDC_AUTOCMD12						(1)
-#define MSDC_AUTOCMD23						(2)
-#define MSDC_AUTOCMD19						(3)
-#if defined(MTK_SDIO30_ONLINE_TUNING_SUPPORT) || defined(ONLINE_TUNING_DVTTEST)
-#define MSDC_AUTOCMD53						(4)
-#endif
-
-#define MSDC_EMMC_BOOTMODE0					(0)	/* Pull low CMD mode */
-#define MSDC_EMMC_BOOTMODE1					(1)	/* Reset CMD mode */
+#define MSDC_EMMC_BOOTMODE0     (0)     /* Pull low CMD mode */
+#define MSDC_EMMC_BOOTMODE1     (1)     /* Reset CMD mode */
 
 enum {
 	RESP_NONE = 0,
@@ -131,71 +115,170 @@ enum {
 	RESP_R1B
 };
 
-#define START_AT_RISING             (0x0)
-#define START_AT_FALLING            (0x1)
-#define START_AT_RISING_AND_FALLING (0x2)
-#define START_AT_RISING_OR_FALLING  (0x3)
+#include "msdc_reg.h"
 
-#define MSDC_SMPL_RISING        (0)
-#define MSDC_SMPL_FALLING       (1)
-#define MSDC_SMPL_SEPARATE      (2)
+/* MSDC_CFG[START_BIT] value */
+#define START_AT_RISING                 (0x0)
+#define START_AT_FALLING                (0x1)
+#define START_AT_RISING_AND_FALLING     (0x2)
+#define START_AT_RISING_OR_FALLING      (0x3)
 
-#define TYPE_CMD_RESP_EDGE      (0)
-#define TYPE_WRITE_CRC_EDGE     (1)
-#define TYPE_READ_DATA_EDGE     (2)
-#define TYPE_WRITE_DATA_EDGE    (3)
+#define TYPE_CMD_RESP_EDGE              (0)
+#define TYPE_WRITE_CRC_EDGE             (1)
+#define TYPE_READ_DATA_EDGE             (2)
+#define TYPE_WRITE_DATA_EDGE            (3)
 
 #define CARD_READY_FOR_DATA             (1<<8)
 #define CARD_CURRENT_STATE(x)           ((x&0x00001E00)>>9)
 
-#define MSDC_PIN_PULL_NONE      (0)
-#define MSDC_PIN_PULL_DOWN      (1)
-#define MSDC_PIN_PULL_UP        (2)
-#define MSDC_PIN_KEEP           (3)
+#define REQ_CMD_EIO  (0x1 << 0)
+#define REQ_CMD_TMO  (0x1 << 1)
+#define REQ_DAT_ERR  (0x1 << 2)
+#define REQ_STOP_EIO (0x1 << 3)
+#define REQ_STOP_TMO (0x1 << 4)
+#define REQ_CMD23_EIO (0x1 << 5)
+#define REQ_CMD23_TMO (0x1 << 6)
 
-/* add pull down/up mode define */
-#define MSDC_GPIO_PULL_UP       (0)
-#define MSDC_GPIO_PULL_DOWN     (1)
+typedef void (*sdio_irq_handler_t)(void *);  /* external irq handler */
+typedef void (*pm_callback_t)(pm_message_t state, void *data);
 
-#include "msdc_reg.h"
-#include "msdc_io.h"
+#define MSDC_CD_PIN_EN      (1 << 0)  /* card detection pin is wired   */
+#define MSDC_WP_PIN_EN      (1 << 1)  /* write protection pin is wired */
+#define MSDC_RST_PIN_EN     (1 << 2)  /* emmc reset pin is wired       */
+#define MSDC_SDIO_IRQ       (1 << 3)  /* use internal sdio irq (bus)   */
+#define MSDC_EXT_SDIO_IRQ   (1 << 4)  /* use external sdio irq         */
+#define MSDC_REMOVABLE      (1 << 5)  /* removable slot                */
+#define MSDC_SYS_SUSPEND    (1 << 6)  /* suspended by system           */
+#define MSDC_SD_NEED_POWER  (1 << 31) /* for some board, need SD power always on!! or cannot recognize the sd card*/
+
+#define MSDC_CMD_PIN        (0)
+#define MSDC_DAT_PIN        (1)
+#define MSDC_CD_PIN         (2)
+#define MSDC_WP_PIN         (3)
+#define MSDC_RST_PIN        (4)
+
+#define MSDC_DATA1_INT      (1)
+#define MSDC_BOOT_EN        (1)
+
+struct msdc_hw {
+	unsigned char clk_src;  /* host clock source */
+	unsigned char cmd_edge; /* command latch edge */
+	unsigned char rdata_edge;       /* read data latch edge */
+	unsigned char wdata_edge;       /* write data latch edge */
+	unsigned char clk_drv;  /* clock pad driving */
+	unsigned char cmd_drv;  /* command pad driving */
+	unsigned char dat_drv;  /* data pad driving */
+	unsigned char rst_drv;  /* RST-N pad driving */
+	unsigned char ds_drv;   /* eMMC5.0 DS pad driving */
+	unsigned char clk_drv_sd_18;    /* clock pad driving for SD card at 1.8v sdr104 mode */
+	unsigned char cmd_drv_sd_18;    /* command pad driving for SD card at 1.8v sdr104 mode */
+	unsigned char dat_drv_sd_18;    /* data pad driving for SD card at 1.8v sdr104 mode */
+	unsigned char clk_drv_sd_18_sdr50;      /* clock pad driving for SD card at 1.8v sdr50 mode */
+	unsigned char cmd_drv_sd_18_sdr50;      /* command pad driving for SD card at 1.8v sdr50 mode */
+	unsigned char dat_drv_sd_18_sdr50;      /* data pad driving for SD card at 1.8v sdr50 mode */
+	unsigned char clk_drv_sd_18_ddr50;      /* clock pad driving for SD card at 1.8v ddr50 mode */
+	unsigned char cmd_drv_sd_18_ddr50;      /* command pad driving for SD card at 1.8v ddr50 mode */
+	unsigned char dat_drv_sd_18_ddr50;      /* data pad driving for SD card at 1.8v ddr50 mode */
+	unsigned long flags;    /* hardware capability flags */
+	unsigned long data_pins;        /* data pins */
+	unsigned long data_offset;      /* data address offset */
+
+	unsigned char ddlsel;   /* data line delay line fine tune selecion*/
+	unsigned char rdsplsel; /* read: data line rising or falling latch fine tune selection */
+	unsigned char wdsplsel; /* write: data line rising or falling latch fine tune selection*/
+
+	unsigned char dat0rddly;        /*read; range: 0~31*/
+	unsigned char dat1rddly;        /*read; range: 0~31*/
+	unsigned char dat2rddly;        /*read; range: 0~31*/
+	unsigned char dat3rddly;        /*read; range: 0~31*/
+	unsigned char dat4rddly;        /*read; range: 0~31*/
+	unsigned char dat5rddly;        /*read; range: 0~31*/
+	unsigned char dat6rddly;        /*read; range: 0~31*/
+	unsigned char dat7rddly;        /*read; range: 0~31*/
+	unsigned char datwrddly;        /*write; range: 0~31*/
+	unsigned char cmdrrddly;        /*cmd; range: 0~31*/
+	unsigned char cmdrddly; /*cmd; range: 0~31*/
+
+	unsigned char cmdrtactr_sdr50;  /* command response turn around counter, sdr 50 mode*/
+	unsigned char wdatcrctactr_sdr50;       /* write data crc turn around counter, sdr 50 mode*/
+	unsigned char intdatlatcksel_sdr50;     /* internal data latch CK select, sdr 50 mode*/
+	unsigned char cmdrtactr_sdr200; /* command response turn around counter, sdr 200 mode*/
+	unsigned char wdatcrctactr_sdr200;      /* write data crc turn around counter, sdr 200 mode*/
+	unsigned char intdatlatcksel_sdr200;    /* internal data latch CK select, sdr 200 mode*/
+
+	unsigned int  boot;              /* define boot host */
+	unsigned char host_function;    /* define host function */
+	unsigned char cd_level;         /* card detection level */
+
+	/* config gpio pull mode */
+	void (*config_gpio_pin)(int type, int pull);
+
+	/* external power control for card */
+	void (*ext_power_on)(void);
+	void (*ext_power_off)(void);
+
+	/* external sdio irq operations */
+	void (*request_sdio_eirq)(sdio_irq_handler_t sdio_irq_handler, void *data);
+	void (*enable_sdio_eirq)(void);
+	void (*disable_sdio_eirq)(void);
+
+	/* external cd irq operations */
+	void (*request_cd_eirq)(sdio_irq_handler_t cd_irq_handler, void *data);
+	void (*enable_cd_eirq)(void);
+	void (*disable_cd_eirq)(void);
+	int (*get_cd_status)(void);
+
+	/* power management callback for external module */
+	void (*register_pm)(pm_callback_t pm_cb, void *data);
+};
+
+enum MSDC_POWER {
+	MSDC_VIO18_MC1 = 0,
+	MSDC_VIO18_MC2,
+	MSDC_VIO28_MC1,
+	MSDC_VIO28_MC2,
+	MSDC_VMC,
+	MSDC_VGP6,
+};
+
 
 /*--------------------------------------------------------------------------*/
 /* Descriptor Structure                                                     */
 /*--------------------------------------------------------------------------*/
 struct gpd_t {
-	u32 hwo:1;		/* could be changed by hw */
-	u32 bdp:1;
-	u32 rsv0:6;
-	u32 chksum:8;
-	u32 intr:1;
-	u32 rsv1:7;
-	u32 nexth4:4;
-	u32 ptrh4:4;
-	u32 next;
-	u32 ptr;
-	u32 buflen:24;
-	u32 extlen:8;
-	u32 arg;
-	u32 blknum;
-	u32 cmd;
+	u32  hwo:1; /* could be changed by hw */
+	u32  bdp:1;
+	u32  rsv0:6;
+	u32  chksum:8;
+	u32  intr:1;
+	u32  rsv1:7;
+	u32  nexth4:4;
+	u32  ptrh4:4;
+	u32  next;
+	u32  ptr;
+	u32  buflen:24;
+	u32  extlen:8;
+	u32  arg;
+	u32  blknum;
+	u32  cmd;
 };
 
 struct bd_t {
-	u32 eol:1;
-	u32 rsv0:7;
-	u32 chksum:8;
-	u32 rsv1:1;
-	u32 blkpad:1;
-	u32 dwpad:1;
-	u32 rsv2:5;
-	u32 nexth4:4;
-	u32 ptrh4:4;
-	u32 next;
-	u32 ptr;
-	u32 buflen:24;
-	u32 rsv3:8;
+	u32  eol:1;
+	u32  rsv0:7;
+	u32  chksum:8;
+	u32  rsv1:1;
+	u32  blkpad:1;
+	u32  dwpad:1;
+	u32  rsv2:5;
+	u32  nexth4:4;
+	u32  ptrh4:4;
+	u32  next;
+	u32  ptr;
+	u32  buflen:24;
+	u32  rsv3:8;
 };
+
 
 struct scatterlist_ex {
 	u32 cmd;
@@ -210,27 +293,27 @@ struct scatterlist_ex {
 #define DMA_FLAG_PAD_DWORD  (0x00000004)
 
 struct msdc_dma {
-	u32 flags;		/* flags */
-	u32 xfersz;		/* xfer size in bytes */
-	u32 sglen;		/* size of scatter list */
-	u32 blklen;		/* block size */
-	struct scatterlist *sg;	/* I/O scatter list */
-	struct scatterlist_ex *esg;	/* extended I/O scatter list */
-	u8 mode;		/* dma mode        */
-	u8 burstsz;		/* burst size      */
-	u8 intr;		/* dma done interrupt */
-	u8 padding;		/* padding */
-	u32 cmd;		/* enhanced mode command */
-	u32 arg;		/* enhanced mode arg */
-	u32 rsp;		/* enhanced mode command response */
-	u32 autorsp;		/* auto command response */
+	u32 flags;                   /* flags */
+	u32 xfersz;                  /* xfer size in bytes */
+	u32 sglen;                   /* size of scatter list */
+	u32 blklen;                  /* block size */
+	struct scatterlist *sg;      /* I/O scatter list */
+	struct scatterlist_ex *esg;  /* extended I/O scatter list */
+	u8  mode;                    /* dma mode        */
+	u8  burstsz;                 /* burst size      */
+	u8  intr;                    /* dma done interrupt */
+	u8  padding;                 /* padding */
+	u32 cmd;                     /* enhanced mode command */
+	u32 arg;                     /* enhanced mode arg */
+	u32 rsp;                     /* enhanced mode command response */
+	u32 autorsp;                 /* auto command response */
 
-	struct gpd_t *gpd;		/* pointer to gpd array */
-	struct bd_t *bd;		/* pointer to bd array */
-	dma_addr_t gpd_addr;	/* the physical address of gpd array */
-	dma_addr_t bd_addr;	/* the physical address of bd array */
-	u32 used_gpd;		/* the number of used gpd elements */
-	u32 used_bd;		/* the number of used bd elements */
+	struct gpd_t *gpd;           /* pointer to gpd array */
+	struct bd_t  *bd;            /* pointer to bd array */
+	dma_addr_t gpd_addr;         /* the physical address of gpd array */
+	dma_addr_t bd_addr;          /* the physical address of bd array */
+	u32 used_gpd;                /* the number of used gpd elements */
+	u32 used_bd;                 /* the number of used bd elements */
 };
 
 struct tune_counter {
@@ -239,12 +322,15 @@ struct tune_counter {
 	u32 time_write;
 	u32 time_hs400;
 };
+
+/*FIX ME, consider to move it into msdc_tune.c*/
 struct msdc_saved_para {
 	u32 pad_tune0;
+	u32 pad_tune1;
 	u32 ddly0;
 	u32 ddly1;
-	u8 cmd_resp_ta_cntr;
-	u8 wrdat_crc_ta_cntr;
+	u8 cmd_resp_ta_cntr;            /*to be removed, if pb1 works*/
+	u8 wrdat_crc_ta_cntr;           /*to be removed, if pb1 works*/
 	u8 suspend_flag;
 	u32 msdc_cfg;
 	u32 mode;
@@ -256,167 +342,20 @@ struct msdc_saved_para {
 	u8 int_dat_latch_ck_sel;
 	u8 ckgen_msdc_dly_sel;
 	u8 inten_sdio_irq;
-	/* for write: 3T need wait before host check busy after crc status */
-	u8 write_busy_margin;
-	/* for write: host check timeout change to 16T */
-	u8 write_crc_margin;
+	u8 write_busy_margin;           /* for write: 3T need wait before host
+					   check busy after crc status */
+	u8 write_crc_margin;            /* for write: host check timeout change
+					   to 16T */
 	u8 ds_dly1;
 	u8 ds_dly3;
 	u32 emmc50_pad_cmd_tune;
-	u8 cfg_cmdrsp_path;
-	u8 cfg_crcsts_path;
-	u8 resp_wait_cnt;
+	u32 emmc50_dat01;
+	u32 emmc50_dat23;
+	u32 emmc50_dat45;
+	u32 emmc50_dat67;
+	u32 pb1;
+	u32 pb2;
 };
-
-#if defined(MTK_SDIO30_ONLINE_TUNING_SUPPORT) || defined(ONLINE_TUNING_DVTTEST)
-
-#define DMA_ON 0
-#define DMA_OFF 1
-
-struct ot_work_t {
-	struct msdc_host *host;
-	int chg_volt;
-	atomic_t ot_disable;
-	atomic_t autok_done;
-};
-#endif
-
-#if 0
-struct msdc_host {
-	struct msdc_hw *hw;
-
-	struct mmc_host *mmc;	/* mmc structure */
-	struct mmc_command *cmd;
-	struct mmc_data *data;
-	struct mmc_request *mrq;
-	int cmd_rsp;
-	int cmd_rsp_done;
-	int cmd_r1b_done;
-
-	int error;
-	spinlock_t lock;	/* mutex */
-	spinlock_t clk_gate_lock;
-	/*to solve removing bad card race condition with hot-plug enable */
-	spinlock_t remove_bad_card;
-	spinlock_t sdio_irq_lock; /* avoid race condition @ DATA-1 interrupt case */
-	int clk_gate_count;
-	struct semaphore sem;
-
-	u32 blksz;		/* host block size */
-	void __iomem *base;	/* host base address */
-	int id;			/* host id */
-	int pwr_ref;		/* core power reference count */
-
-	u32 xfer_size;		/* total transferred size */
-
-	struct msdc_dma dma;	/* dma channel */
-	u32 dma_addr;		/* dma transfer address */
-	u32 dma_left_size;	/* dma transfer left size */
-	u32 dma_xfer_size;	/* dma transfer size in bytes */
-	int dma_xfer;		/* dma transfer mode */
-
-	u32 write_timeout_ms;
-	u32 timeout_ns;		/* data timeout ns */
-	u32 timeout_clks;	/* data timeout clks */
-
-	atomic_t abort;		/* abort transfer */
-
-	int irq;		/* host interrupt */
-
-	struct tasklet_struct card_tasklet;
-
-	/* struct delayed_work           remove_card; */
-#if defined(MTK_SDIO30_ONLINE_TUNING_SUPPORT) || defined(ONLINE_TUNING_DVTTEST)
-	struct ot_work_t ot_work;
-	atomic_t ot_done;
-	u32 sdio_performance_vcore;	/* vcore_fixed_during_sdio_transfer */
-	struct delayed_work set_vcore_workq; /* vcore_fixed_during_sdio_transfer */
-#endif
-	atomic_t sdio_stopping;
-
-	struct completion cmd_done;
-	struct completion xfer_done;
-	struct pm_message pm_state;
-
-	u8 timing;		/* timing specification used */
-	u8 power_mode;		/* host power mode */
-	u8 bus_width;		/* data bus width */
-	u32 mclk;		/* mmc subsystem clock */
-	u32 hclk;		/* host clock speed */
-	u32 sclk;		/* SD/MS clock speed */
-	u8 core_clkon;		/* Host core clock on ? */
-	u8 card_clkon;		/* Card clock on ? */
-	u8 core_power;		/* core power */
-	u8 card_inserted;	/* card inserted ? */
-	u8 suspend;		/* host suspended ? */
-	u8 reserved;
-	u8 app_cmd;		/* for app command */
-	u32 app_cmd_arg;
-	u64 starttime;
-	struct timer_list timer;
-	struct tune_counter t_counter;
-	u32 rwcmd_time_tune;
-	int read_time_tune;
-	int write_time_tune;
-	u32 write_timeout_uhs104;
-	u32 read_timeout_uhs104;
-	u32 write_timeout_emmc;
-	u32 read_timeout_emmc;
-	u8 autocmd;
-	u32 sw_timeout;
-	u32 power_cycle;	/* power cycle done in tuning flow */
-	bool power_cycle_enable;	/*Enable power cycle */
-	u32 continuous_fail_request_count;
-	u32 sd_30_busy;
-	bool tune;
-
-#define MSDC_VIO18_MC1	(0)
-#define MSDC_VIO18_MC2	(1)
-#define MSDC_VIO28_MC1	(2)
-#define MSDC_VIO28_MC2	(3)
-#define MSDC_VMC		(4)
-#define MSDC_VGP6		(5)
-
-	int power_domain;
-	struct msdc_saved_para saved_para;
-	int sd_cd_polarity;
-	/* to make sure insert mmc_rescan this work in start_host when boot up */
-	int sd_cd_insert_work;
-	/* driver will get a EINT(Level sensitive) when boot up with card insert */
-	struct wakeup_source trans_lock;
-	bool block_bad_card;
-	struct delayed_work write_timeout;
-#ifdef SDIO_ERROR_BYPASS
-	int sdio_error;		/* sdio error can't recovery */
-#endif
-	void (*power_control)(struct msdc_host *host, u32 on);
-	void (*power_switch)(struct msdc_host *host, u32 on);
-#if !defined(CONFIG_MTK_CLKMGR)
-	struct clk *clock_control;
-#endif
-	struct work_struct			work_tune; /* new thread tune */
-	struct mmc_request			*mrq_tune; /* backup host->mrq */
-};
-#else
-
-
-#define MSDC_NEW_TUNE
-#ifdef MSDC_NEW_TUNE
-#define MSDC_AUTOK_ON_ERROR
-#ifdef MSDC_AUTOK_ON_ERROR
-/*#define EIO	EILSEQ*/
-#endif
-/*#define DATA_TUNE_READ_DATA_ALLOW_FALLING_EDGE*/
-#endif
-
-typedef enum MSDC_POWER {
-	MSDC_VIO18_MC1 = 0,
-	MSDC_VIO18_MC2,
-	MSDC_VIO28_MC1,
-	MSDC_VIO28_MC2,
-	MSDC_VMC,
-	MSDC_VGP6,
-} MSDC_POWER_DOMAIN;
 
 struct msdc_host {
 	struct msdc_hw          *hw;
@@ -476,16 +415,14 @@ struct msdc_host {
 	struct completion       xfer_done;
 	struct pm_message       pm_state;
 
-
 	u32                     mclk;           /* mmc subsystem clock */
 	u32                     hclk;           /* host clock speed */
 	u32                     sclk;           /* SD/MS clock speed */
 	u8                      core_clkon;     /* host clock(cg) status */
-	u8                      timing;		/* timing specification used */
+	u8                      timing;         /* timing specification used */
 	u8                      core_power;     /* core power */
-	u8                      card_clkon;	/* Card clock on ? */
 	u8                      power_mode;     /* host power mode */
-	u8                      bus_width;	/* data bus width */
+	u8                      bus_width;
 	u8                      card_inserted;  /* card inserted ? */
 	u8                      suspend;        /* host suspended ? */
 	u8                      reserved;
@@ -506,19 +443,20 @@ struct msdc_host {
 	u32                     power_cycle;    /* power cycle done
 						   in tuning flow*/
 	bool                    power_cycle_enable; /* enable power cycle */
-	u32			continuous_fail_request_count;
+	bool                    error_tune_enable;  /* enable error tune flow */
 	u32                     sd_30_busy;
 	bool                    tune;
-	#ifdef MSDC_NEW_TUNE
+	bool                    first_tune_done;
 	bool                    async_tuning_in_progress;
 	bool                    async_tuning_done;
-	bool			legacy_tuning_in_progress;
-	bool			legacy_tuning_done;
+	bool                    legacy_tuning_in_progress;
+	bool                    legacy_tuning_done;
 	int                     autok_error;
-	#endif
 	u32                     tune_latch_ck_cnt;
-	bool			first_tune_done;
-	MSDC_POWER_DOMAIN       power_domain;
+#ifndef MSDC_WQ_ERROR_TUNE
+	unsigned int            err_mrq_dir;
+#endif
+	unsigned int            power_domain;
 	struct msdc_saved_para  saved_para;
 	int                     sd_cd_polarity;
 	int                     sd_cd_insert_work;
@@ -538,57 +476,89 @@ struct msdc_host {
 #endif
 	void    (*power_control)(struct msdc_host *host, u32 on);
 	void    (*power_switch)(struct msdc_host *host, u32 on);
-	u32	vmc_cal_default;
+	u32                     vmc_cal_default;
 
-#if !defined(CONFIG_MTK_CLKMGR)
 	struct clk *clock_control;
-#endif
+
+#ifdef MSDC_WQ_ERROR_TUNE
 	struct work_struct	work_tune; /* new thread tune */
 	struct mmc_request	*mrq_tune; /* backup host->mrq */
-};
 #endif
+};
 
 struct tag_msdc_hw_para {
-	unsigned int version;	/* msdc structure version info */
-	unsigned int clk_src;	/* host clock source */
-	unsigned int cmd_edge;	/* command latch edge */
-	unsigned int rdata_edge;	/* read data latch edge */
-	unsigned int wdata_edge;	/* write data latch edge */
-	unsigned int clk_drv;	/* clock pad driving */
-	unsigned int cmd_drv;	/* command pad driving */
-	unsigned int dat_drv;	/* data pad driving */
-	unsigned int rst_drv;	/* RST-N pad driving */
-	unsigned int ds_drv;	/* eMMC5.0 DS pad driving */
-	unsigned int clk_drv_sd_18;
-	unsigned int cmd_drv_sd_18;
-	unsigned int dat_drv_sd_18;
-	unsigned int clk_drv_sd_18_sdr50;
-	unsigned int cmd_drv_sd_18_sdr50;
-	unsigned int dat_drv_sd_18_sdr50;
-	unsigned int clk_drv_sd_18_ddr50;
-	unsigned int cmd_drv_sd_18_ddr50;
-	unsigned int dat_drv_sd_18_ddr50;
-	unsigned int flags;	/* hardware capability flags */
-	unsigned int data_pins;	/* data pins */
-	unsigned int data_offset;	/* data address offset */
-	unsigned int ddlsel;	/* data line delay line fine tune selecion */
-	unsigned int rdsplsel;	/* read: latch data line rising or falling */
-	unsigned int wdsplsel;	/* write: latch data line rising or falling */
-	unsigned int dat0rddly;	/* read; range: 0~31 */
-	unsigned int dat1rddly;	/* read; range: 0~31 */
-	unsigned int dat2rddly;	/* read; range: 0~31 */
-	unsigned int dat3rddly;	/* read; range: 0~31 */
-	unsigned int dat4rddly;	/* read; range: 0~31 */
-	unsigned int dat5rddly;	/* read; range: 0~31 */
-	unsigned int dat6rddly;	/* read; range: 0~31 */
-	unsigned int dat7rddly;	/* read; range: 0~31 */
-	unsigned int datwrddly;	/* write; range: 0~31 */
-	unsigned int cmdrrddly;	/* cmd; range: 0~31 */
-	unsigned int cmdrddly;	/* cmd; range: 0~31 */
-	unsigned int host_function;	/* define host function */
-	unsigned int boot;	/* define boot host */
-	unsigned int cd_level;	/* card detection level */
-	unsigned int end_flag;	/* This struct end flag, should be 0x5a5a5a5a */
+	unsigned int  version;          /* msdc structure version info */
+	unsigned int  clk_src;          /* host clock source */
+	unsigned int  cmd_edge;         /* command latch edge */
+	unsigned int  rdata_edge;       /* read data latch edge */
+	unsigned int  wdata_edge;       /* write data latch edge */
+	unsigned int  clk_drv;          /* clock pad driving */
+	unsigned int  cmd_drv;          /* command pad driving */
+	unsigned int  dat_drv;          /* data pad driving */
+	unsigned int  rst_drv;          /* RST-N pad driving */
+	unsigned int  ds_drv;           /* eMMC5.0 DS pad driving */
+	unsigned int  clk_drv_sd_18;    /* clock pad driving for SD card at
+					   1.8v sdr104 mode */
+	unsigned int  cmd_drv_sd_18;    /* command pad driving for SD card at
+					   1.8v sdr104 mode */
+	unsigned int  dat_drv_sd_18;    /* data pad driving for SD card at
+					   1.8v sdr104 mode */
+	unsigned int  clk_drv_sd_18_sdr50;    /* clock pad driving for SD card
+						 at 1.8v sdr50 mode */
+	unsigned int  cmd_drv_sd_18_sdr50;    /* command pad driving for SD
+						 card at 1.8v sdr50 mode */
+	unsigned int  dat_drv_sd_18_sdr50;    /* data pad driving for SD card
+						 at 1.8v sdr50 mode */
+	unsigned int  clk_drv_sd_18_ddr50;    /* clock pad driving for SD card
+						 at 1.8v ddr50 mode */
+	unsigned int  cmd_drv_sd_18_ddr50;    /* command pad driving for SD
+						 card at 1.8v ddr50 mode */
+	unsigned int  dat_drv_sd_18_ddr50;    /* data pad driving for SD card
+						 at 1.8v ddr50 mode */
+	unsigned int  flags;            /* hardware capability flags */
+	unsigned int  data_pins;        /* data pins */
+	unsigned int  data_offset;      /* data address offset */
+	unsigned int  ddlsel;           /* data line delay shared or
+					   separated selecion */
+	unsigned int  rdsplsel;         /* read: data line rising or falling
+					   latch selection */
+	unsigned int  wdsplsel;         /* write: data line rising or falling
+					   latch selection */
+	unsigned int  dat0rddly;        /*read; range: 0~31 */
+	unsigned int  dat1rddly;        /*read; range: 0~31 */
+	unsigned int  dat2rddly;        /*read; range: 0~31 */
+	unsigned int  dat3rddly;        /*read; range: 0~31 */
+	unsigned int  dat4rddly;        /*read; range: 0~31 */
+	unsigned int  dat5rddly;        /*read; range: 0~31 */
+	unsigned int  dat6rddly;        /*read; range: 0~31 */
+	unsigned int  dat7rddly;        /*read; range: 0~31 */
+	unsigned int  datwrddly;        /*write; range: 0~31 */
+	unsigned int  cmdrrddly;        /*cmd; range: 0~31 */
+	unsigned int  cmdrddly;         /*cmd; range: 0~31 */
+	unsigned int  boot;             /* define boot host*/
+	unsigned char host_function;    /* define host function*/
+	unsigned char cd_level;         /* card detection level*/
+	unsigned int  end_flag;         /* This struct end flag,
+					   should be 0x5a5a5a5a */
+};
+
+enum {
+	cmd_counter = 0,
+	read_counter,
+	write_counter,
+	all_counter,
+};
+
+enum {
+	TRAN_MOD_PIO,
+	TRAN_MOD_DMA,
+	TRAN_MOD_NUM
+};
+
+enum {
+	OPER_TYPE_READ,
+	OPER_TYPE_WRITE,
+	OPER_TYPE_NUM
 };
 
 struct dma_addr {
@@ -603,7 +573,7 @@ struct msdc_reg_control {
 	u32 mask;
 	u32 value;
 	u32 default_value;
-	int (*restore_func)(int restore);
+	/*int (*restore_func)(int restore);*/
 };
 
 static inline unsigned int uffs(unsigned int x)
@@ -635,63 +605,6 @@ static inline unsigned int uffs(unsigned int x)
 	return r;
 }
 
-#define sdr_read8(reg)        __raw_readb((const volatile void __iomem *)reg)
-#define sdr_read16(reg)       __raw_readw((const volatile void __iomem *)reg)
-#define sdr_read32(reg)       __raw_readl((const volatile void __iomem *)reg)
-
-#define sdr_write8(reg, val)      mt_reg_sync_writeb(val, reg)
-#define sdr_write16(reg, val)     mt_reg_sync_writew(val, reg)
-#define sdr_write32(reg, val)     mt_reg_sync_writel(val, reg)
-
-#define sdr_set_bits(reg, bs) \
-do {\
-	unsigned int tv = sdr_read32(reg);\
-	tv |= (u32)(bs); \
-	sdr_write32(reg, tv); \
-} while (0)
-#define sdr_clr_bits(reg, bs) \
-do { \
-	unsigned int tv = sdr_read32(reg);\
-	tv &= ~((u32)(bs)); \
-	sdr_write32(reg, tv); \
-} while (0)
-#define msdc_irq_save(val) \
-do { \
-	val = sdr_read32(MSDC_INTEN); \
-	sdr_clr_bits(MSDC_INTEN, val); \
-} while (0)
-
-#define msdc_irq_restore(val)	sdr_set_bits(MSDC_INTEN, val)
-
-#define sdr_set_field(reg, field, val) \
-do { \
-	unsigned int tv = sdr_read32(reg);    \
-	tv &= ~(field); \
-	tv |= ((val) << (uffs((unsigned int)field) - 1)); \
-	sdr_write32(reg, tv); \
-} while (0)
-#define sdr_get_field(reg, field, val) \
-do { \
-	unsigned int tv = sdr_read32(reg);    \
-	val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
-} while (0)
-#define sdr_set_field_discrete(reg, field, val) \
-do { \
-	unsigned int tv = sdr_read32(reg); \
-	tv = (val == 1) ? (tv|(field)) : (tv & ~(field));\
-	sdr_write32(reg, tv); \
-} while (0)
-#define sdr_get_field_discrete(reg, field, val) \
-do {    \
-	unsigned int tv = sdr_read32(reg); \
-	val = tv & (field); \
-	val = (val == field) ? 1 : 0; \
-} while (0)
-
-#define MSDC_SET_BIT32(reg, bs) sdr_set_bits(reg, bs)
-#define MSDC_CLR_BIT32(reg, bs) sdr_clr_bits(reg, bs)
-#define MSDC_SET_FIELD(reg, field, val) sdr_set_field(reg, field, val)
-#define MSDC_GET_FIELD(reg, field, val) sdr_get_field(reg, field, val)
 #define MSDC_READ8(reg)           __raw_readb((const volatile void *)reg)
 #define MSDC_READ16(reg)          __raw_readw((const volatile void *)reg)
 #define MSDC_READ32(reg)          __raw_readl((const volatile void *)reg)
@@ -699,275 +612,303 @@ do {    \
 #define MSDC_WRITE16(reg, val)    mt_reg_sync_writew(val, reg)
 #define MSDC_WRITE32(reg, val)    mt_reg_sync_writel(val, reg)
 
-#define UNSTUFF_BITS(resp, start, size)          \
-({				  \
-	const int __size = size;		\
-	const u32 __mask = (__size < 32 ? 1 << __size : 0) - 1;  \
-	const int __off = 3 - ((start) / 32);	   \
-	const int __shft = (start) & 31;	  \
-	u32 __res;			  \
-		  \
-	__res = resp[__off] >> __shft;		  \
-	if (__size + __shft > 32)		 \
-		__res |= resp[__off-1] << ((32 - __shft) % 32);  \
+#define UNSTUFF_BITS(resp, start, size) \
+({ \
+	const int __size = size; \
+	const u32 __mask = (__size < 32 ? 1 << __size : 0) - 1; \
+	const int __off = 3 - ((start) / 32); \
+	const int __shft = (start) & 31; \
+	u32 __res; \
+	__res = resp[__off] >> __shft; \
+	if (__size + __shft > 32) \
+		__res |= resp[__off-1] << ((32 - __shft) % 32); \
 	__res & __mask; \
 })
-#define sdc_is_busy()          (sdr_read32(SDC_STS) & SDC_STS_SDCBUSY)
-#define sdc_is_cmd_busy()      (sdr_read32(SDC_STS) & SDC_STS_CMDBUSY)
+
+#define MSDC_SET_BIT32(reg, bs) \
+	do { \
+		volatile unsigned int tv = MSDC_READ32(reg);\
+		tv |= (u32)(bs); \
+		MSDC_WRITE32(reg, tv); \
+	} while (0)
+
+#define MSDC_CLR_BIT32(reg, bs) \
+	do { \
+		volatile unsigned int tv = MSDC_READ32(reg);\
+		tv &= ~((u32)(bs)); \
+		MSDC_WRITE32(reg, tv); \
+	} while (0)
+
+#define MSDC_SET_FIELD(reg, field, val) \
+	do { \
+		volatile unsigned int tv = MSDC_READ32(reg); \
+		tv &= ~(field); \
+		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
+		MSDC_WRITE32(reg, tv); \
+	} while (0)
+
+#define MSDC_GET_FIELD(reg, field, val) \
+	do { \
+		volatile unsigned int tv = MSDC_READ32(reg); \
+		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
+	} while (0)
+
+#define sdc_is_busy()           (MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)
+#define sdc_is_cmd_busy()       (MSDC_READ32(SDC_STS) & SDC_STS_CMDBUSY)
+
+#ifdef CONFIG_CMDQ_CMD_DAT_PARALLEL
+#define sdc_send_cmdq_cmd(opcode, arg) \
+	do { \
+		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_CMDQEN, (1)); \
+		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_NUM, (opcode)); \
+		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_RSPTYPE, (1)); \
+		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG_DTYPE, (0)); \
+		MSDC_WRITE32(SDC_ARG, (arg)); \
+		MSDC_WRITE32(SDC_CMD, (0x0)); \
+	} while (0)
+#endif
 
 #define sdc_send_cmd(cmd, arg) \
-do { \
-	sdr_write32(SDC_ARG, (arg)); \
-	sdr_write32(SDC_CMD, (cmd)); \
-} while (0)
-
-/* can modify to read h/w register */
-/* #define is_card_present(h) ((sdr_read32(MSDC_PS) & MSDC_PS_CDSTS) ? 0 : 1);*/
-#define is_card_present(h)     (((struct msdc_host *)(h))->card_inserted)
-#define is_card_sdio(h)        (((struct msdc_host *)(h))->hw->register_pm)
-
-/*sd card change voltage wait time= (1/freq) * SDC_VOL_CHG_CNT(default 0x145) */
-#define msdc_set_vol_change_wait_count(count) sdr_set_field(SDC_VOL_CHG, \
-	SDC_VOL_CHG_CNT, (count))
+	do { \
+		MSDC_WRITE32(SDC_ARG, (arg)); \
+		MSDC_WRITE32(SDC_CMD, (cmd)); \
+	} while (0)
 
 #define msdc_retry(expr, retry, cnt, id) \
-do { \
-	int backup = cnt; \
-	while (retry) { \
-		if (!(expr)) \
-			break; \
-		if (cnt-- == 0) { \
-			retry--; mdelay(1); cnt = backup; \
+	do { \
+		int backup = cnt; \
+		while (retry) { \
+			if (!(expr)) \
+				break; \
+			if (cnt-- == 0) { \
+				retry--; mdelay(1); cnt = backup; \
+			} \
 		} \
-	} \
-	if (retry == 0) { \
-		msdc_dump_info(id); \
-	} \
-	WARN_ON(retry == 0); \
-} while (0)
+		if (retry == 0) { \
+			msdc_dump_info(id); \
+		} \
+		WARN_ON(retry == 0); \
+	} while (0)
 
 #define msdc_reset(id) \
-do { \
-	int retry = 3, cnt = 1000; \
-	sdr_set_bits(MSDC_CFG, MSDC_CFG_RST); \
-	mb(); /* need comment? */ \
-	msdc_retry(sdr_read32(MSDC_CFG) & MSDC_CFG_RST, retry, cnt, id); \
-} while (0)
+	do { \
+		int retry = 3, cnt = 1000; \
+		MSDC_SET_BIT32(MSDC_CFG, MSDC_CFG_RST); \
+		msdc_retry(MSDC_READ32(MSDC_CFG) & MSDC_CFG_RST, retry, \
+			cnt, id); \
+	} while (0)
 
 #define msdc_clr_int() \
-do { \
-	u32 val = sdr_read32(MSDC_INT); \
-	sdr_write32(MSDC_INT, val); \
-} while (0)
+	do { \
+		volatile u32 val = MSDC_READ32(MSDC_INT); \
+		MSDC_WRITE32(MSDC_INT, val); \
+	} while (0)
 
-/* For Inhanced DMA */
-#define msdc_init_gpd_ex(gpd, extlen, cmd, arg, blknum) \
-do { \
-	((struct gpd_t *)gpd)->extlen = extlen; \
-	((struct gpd_t *)gpd)->cmd    = cmd; \
-	((struct gpd_t *)gpd)->arg    = arg; \
-	((struct gpd_t *)gpd)->blknum = blknum; \
-} while (0)
+#define msdc_reset_hw(id) \
+	do { \
+		msdc_reset(id); \
+		msdc_clr_fifo(id); \
+		msdc_clr_int(); \
+	} while (0)
 
-#define msdc_init_bd(bd, blkpad, dwpad, dptr, dlen) \
-do { \
-	BUG_ON(dlen > 0xFFFFUL); \
-	((struct bd_t *)bd)->blkpad = blkpad; \
-	((struct bd_t *)bd)->dwpad  = dwpad; \
-	((struct bd_t *)bd)->ptr	 = (u32)dptr; \
-	((struct bd_t *)bd)->buflen = dlen; \
-} while (0)
+#define msdc_txfifocnt()        ((MSDC_READ32(MSDC_FIFOCS) \
+				 & MSDC_FIFOCS_TXCNT) >> 16)
+#define msdc_rxfifocnt()        ((MSDC_READ32(MSDC_FIFOCS) \
+				 & MSDC_FIFOCS_RXCNT) >> 0)
+#define msdc_fifo_write32(v)    MSDC_WRITE32(MSDC_TXDATA, (v))
+#define msdc_fifo_write8(v)     MSDC_WRITE8(MSDC_TXDATA, (v))
+#define msdc_fifo_read32()      MSDC_READ32(MSDC_RXDATA)
+#define msdc_fifo_read8()       MSDC_READ8(MSDC_RXDATA)
 
-#ifdef CONFIG_NEED_SG_DMA_LENGTH
-#define msdc_sg_len(sg, dma)         ((dma) ? (sg)->dma_length : (sg)->length)
-#else
-#define msdc_sg_len(sg, dma)         sg_dma_len(sg)
-#endif
-#define msdc_txfifocnt()   ((sdr_read32(MSDC_FIFOCS) & MSDC_FIFOCS_TXCNT) >> 16)
-#define msdc_rxfifocnt()   ((sdr_read32(MSDC_FIFOCS) & MSDC_FIFOCS_RXCNT) >> 0)
-#define msdc_fifo_write32(v)   sdr_write32(MSDC_TXDATA, (v))
-#define msdc_fifo_write8(v)    sdr_write8(MSDC_TXDATA, (v))
-#define msdc_fifo_read32()   sdr_read32(MSDC_RXDATA)
-#define msdc_fifo_read8()    sdr_read8(MSDC_RXDATA)
+/* can modify to read h/w register.*/
+/*#define is_card_present(h) \
+			((MSDC_READ32(MSDC_PS) & MSDC_PS_CDSTS) ? 0 : 1);*/
+#define is_card_present(h)      (((struct msdc_host *)(h))->card_inserted)
+#define is_card_sdio(h)         (((struct msdc_host *)(h))->hw->register_pm)
 
-#define msdc_dma_on()        sdr_clr_bits(MSDC_CFG, MSDC_CFG_PIO)
-#define msdc_dma_off()       sdr_set_bits(MSDC_CFG, MSDC_CFG_PIO)
-#define msdc_dma_status()    ((sdr_read32(MSDC_CFG) & MSDC_CFG_PIO) >> 3)
+#define CMD_TIMEOUT             (HZ/10 * 5)     /* 100ms x5 */
+#define DAT_TIMEOUT             (HZ    * 5)     /* 1000ms x5 */
+#define CLK_TIMEOUT             (HZ    * 5)     /* 5s    */
+#define POLLING_BUSY            (HZ    * 3)
 
-/* Debug message event */
-#define MSDC_EVT_NONE        (0)	/* No event */
-#define MSDC_EVT_DMA         (1 << 0)	/* DMA related event */
-#define MSDC_EVT_CMD         (1 << 1)	/* MSDC CMD related event */
-#define MSDC_EVT_RSP         (1 << 2)	/* MSDC CMD RSP related event */
-#define MSDC_EVT_INT         (1 << 3)	/* MSDC INT event */
-#define MSDC_EVT_CFG         (1 << 4)	/* MSDC CFG event */
-#define MSDC_EVT_FUC         (1 << 5)	/* Function event */
-#define MSDC_EVT_OPS         (1 << 6)	/* Read/Write operation event */
-#define MSDC_EVT_FIO         (1 << 7)	/* FIFO operation event */
-#define MSDC_EVT_WRN         (1 << 8)	/* Warning event */
-#define MSDC_EVT_PWR         (1 << 9)	/* Power event */
-#define MSDC_EVT_CLK         (1 << 10)	/* Trace clock gate/ungate operation */
-#define MSDC_EVT_CHE         (1 << 11)	/* eMMC cache feature operation */
-		/* ==================================================== */
-#define MSDC_EVT_RW          (1 << 12)	/* Trace the Read/Write Command */
-#define MSDC_EVT_NRW         (1 << 13)	/* Trace other Command */
-#define MSDC_EVT_ALL         (0xffffffff)
-
-#define MSDC_EVT_MASK        (MSDC_EVT_ALL)
-
-extern unsigned int sd_debug_zone[HOST_MAX_NUM];
-
-#define N_MSG(evt, fmt, args...) \
-do { \
-	if ((MSDC_EVT_##evt) & sd_debug_zone[host->id]) { \
-		pr_err("msdc%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
-			host->id,  ##args , __func__, __LINE__, current->comm, \
-			current->pid); \
-	}	\
-} while (0)
-
-#define CMD_MSG(fmt, args...) \
-do { \
-	if (MSDC_EVT_CMD & sd_debug_zone[host->id]) {\
-		pr_err("msdc%d -> "fmt"\n", host->id, ##args); \
-	} \
-} while (0)
-
-#define ERR_MSG(fmt, args...) \
-	pr_err("msdc%d -> "fmt" <- %s() : L<%d> PID<%s><0x%x>\n", \
-		host->id,  ##args , __func__, __LINE__, current->comm, current->pid)
-
-extern int drv_mode[HOST_MAX_NUM];
-extern int msdc_latest_transfer_mode[HOST_MAX_NUM];
-extern int msdc_latest_operation_type[HOST_MAX_NUM];
-
-extern void mmc_remove_card(struct mmc_card *card);
-extern void mmc_detach_bus(struct mmc_host *host);
-extern void mmc_power_off(struct mmc_host *host);
-extern void msdc_dump_gpd_bd(int id);
-
-extern int msdc_tune_cmdrsp(struct msdc_host *host);
-extern unsigned int msdc_do_command(struct msdc_host *host,
-	struct mmc_command *cmd, int tune, unsigned long timeout);
-#ifdef MTK_SDIO30_ONLINE_TUNING_SUPPORT
-extern unsigned int autok_get_current_vcore_offset(void);
-#endif
-#if defined(FEATURE_MET_MMC_INDEX)
-extern void met_mmc_issue(struct mmc_host *host, struct mmc_request *req);
-extern void met_mmc_dma_stop(struct mmc_host *host, u32 lba, unsigned int len,
-	u32 opcode, unsigned int bd_num);
-#endif
-extern void init_tune_sdio(struct msdc_host *host);
-extern int mmc_flush_cache(struct mmc_card *card);
-
-#ifdef CONFIG_MTK_HIBERNATION
-extern unsigned int mt_eint_get_polarity_external(unsigned int eint_num);
-#endif
-extern int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
-	u32 *status);
-/* weiping fix */
-#if defined(CFG_DEV_MSDC0)
-extern struct msdc_hw msdc0_hw;
-#endif
-#if defined(CFG_DEV_MSDC1)
-extern struct msdc_hw msdc1_hw;
-#endif
+#ifdef CONFIG_OF
 #if defined(CFG_DEV_MSDC2)
 extern struct msdc_hw msdc2_hw;
 #endif
 #if defined(CFG_DEV_MSDC3)
 extern struct msdc_hw msdc3_hw;
 #endif
+#endif
 
-extern int msdc_setting_parameter(struct msdc_hw *hw, unsigned int *para);
-/*workaround for VMC 1.8v -> 1.84v */
-extern void upmu_set_rg_vmc_184(unsigned char x);
+extern struct msdc_host *mtk_msdc_host[];
+extern unsigned int msdc_latest_transfer_mode[HOST_MAX_NUM];
+#ifdef MSDC_DMA_ADDR_DEBUG
+extern struct dma_addr msdc_latest_dma_address[MAX_BD_PER_GPD];
+#endif
+extern int g_dma_debug[HOST_MAX_NUM];
 
-struct msdc_hw {
-	unsigned char clk_src;	/* host clock source */
-	unsigned char cmd_edge;	/* command latch edge */
-	unsigned char rdata_edge;	/* read data latch edge */
-	unsigned char wdata_edge;	/* write data latch edge */
-	unsigned char clk_drv;	/* clock pad driving */
-	unsigned char cmd_drv;	/* command pad driving */
-	unsigned char dat_drv;	/* data pad driving */
-	unsigned char rst_drv;	/* RST-N pad driving */
-	unsigned char ds_drv;	/* eMMC5.0 DS pad driving */
-	unsigned char clk_drv_sd_18;	/* clock pad driving for SD card at 1.8v sdr104 mode */
-	unsigned char cmd_drv_sd_18;	/* command pad driving for SD card at 1.8v sdr104 mode */
-	unsigned char dat_drv_sd_18;	/* data pad driving for SD card at 1.8v sdr104 mode */
-	unsigned char clk_drv_sd_18_sdr50;	/* clock pad driving for SD card at 1.8v sdr50 mode */
-	unsigned char cmd_drv_sd_18_sdr50;	/* command pad driving for SD card at 1.8v sdr50 mode */
-	unsigned char dat_drv_sd_18_sdr50;	/* data pad driving for SD card at 1.8v sdr50 mode */
-	unsigned char clk_drv_sd_18_ddr50;	/* clock pad driving for SD card at 1.8v ddr50 mode */
-	unsigned char cmd_drv_sd_18_ddr50;	/* command pad driving for SD card at 1.8v ddr50 mode */
-	unsigned char dat_drv_sd_18_ddr50;	/* data pad driving for SD card at 1.8v ddr50 mode */
-	unsigned long flags;	/* hardware capability flags */
-	unsigned long data_pins;	/* data pins */
-	unsigned long data_offset;	/* data address offset */
+extern u32 g_sd_mode_switch;
 
-	unsigned char ddlsel;	/* data line delay line fine tune selecion*/
-	unsigned char rdsplsel;	/* read: data line rising or falling latch fine tune selection */
-	unsigned char wdsplsel;	/* write: data line rising or falling latch fine tune selection*/
-
-	unsigned char dat0rddly;	/*read; range: 0~31*/
-	unsigned char dat1rddly;	/*read; range: 0~31*/
-	unsigned char dat2rddly;	/*read; range: 0~31*/
-	unsigned char dat3rddly;	/*read; range: 0~31*/
-	unsigned char dat4rddly;	/*read; range: 0~31*/
-	unsigned char dat5rddly;	/*read; range: 0~31*/
-	unsigned char dat6rddly;	/*read; range: 0~31*/
-	unsigned char dat7rddly;	/*read; range: 0~31*/
-	unsigned char datwrddly;	/*write; range: 0~31*/
-	unsigned char cmdrrddly;	/*cmd; range: 0~31*/
-	unsigned char cmdrddly;	/*cmd; range: 0~31*/
-
-	unsigned char cmdrtactr_sdr50;	/* command response turn around counter, sdr 50 mode*/
-	unsigned char wdatcrctactr_sdr50;	/* write data crc turn around counter, sdr 50 mode*/
-	unsigned char intdatlatcksel_sdr50;	/* internal data latch CK select, sdr 50 mode*/
-	unsigned char cmdrtactr_sdr200;	/* command response turn around counter, sdr 200 mode*/
-	unsigned char wdatcrctactr_sdr200;	/* write data crc turn around counter, sdr 200 mode*/
-	unsigned char intdatlatcksel_sdr200;	/* internal data latch CK select, sdr 200 mode*/
-
-	struct msdc_ett_settings *ett_hs200_settings;
-	unsigned int ett_hs200_count;
-	struct msdc_ett_settings *ett_hs400_settings;
-	unsigned int ett_hs400_count;
-
-	unsigned char host_function;          /* define host function*/
-
-	bool boot;		/* define boot host */
-	bool cd_level;		/* card detection level */
-
-	/* config gpio pull mode */
-	void (*config_gpio_pin)(int type, int pull);
-
-	/* external power control for card */
-	void (*ext_power_on)(void);
-	void (*ext_power_off)(void);
-
-	/* external sdio irq operations */
-	void (*request_sdio_eirq)(sdio_irq_handler_t sdio_irq_handler, void *data);
-	void (*enable_sdio_eirq)(void);
-	void (*disable_sdio_eirq)(void);
-
-	/* external cd irq operations */
-	void (*request_cd_eirq)(sdio_irq_handler_t cd_irq_handler, void *data);
-	void (*enable_cd_eirq)(void);
-	void (*disable_cd_eirq)(void);
-	int (*get_cd_status)(void);
-
-	/* power management callback for external module */
-	void (*register_pm)(pm_callback_t pm_cb, void *data);
+enum {
+	SD_TOOL_ZONE = 0,
+	SD_TOOL_DMA_SIZE  = 1,
+	SD_TOOL_PM_ENABLE = 2,
+	SD_TOOL_SDIO_PROFILE = 3,
+	SD_TOOL_CLK_SRC_SELECT = 4,
+	SD_TOOL_REG_ACCESS = 5,
+	SD_TOOL_SET_DRIVING = 6,
+	SD_TOOL_DESENSE = 7,
+	RW_BIT_BY_BIT_COMPARE = 8,
+	SMP_TEST_ON_ONE_HOST = 9,
+	SMP_TEST_ON_ALL_HOST = 10,
+	SD_TOOL_MSDC_HOST_MODE = 11,
+	SD_TOOL_DMA_STATUS = 12,
+	SD_TOOL_ENABLE_SLEW_RATE = 13,
+	SD_TOOL_ENABLE_SMT = 14,
+	MMC_PERF_DEBUG = 15,
+	MMC_PERF_DEBUG_PRINT = 16,
+	SD_TOOL_SET_RDTDSEL = 17,
+	MMC_REGISTER_READ = 18,
+	MMC_REGISTER_WRITE = 19,
+	MSDC_READ_WRITE = 20,
+	MMC_ERROR_TUNE = 21,
+	MMC_EDC_EMMC_CACHE = 22,
+	MMC_DUMP_GPD = 23,
+	MMC_ETT_TUNE = 24,
+	MMC_CRC_STRESS = 25,
+	ENABLE_AXI_MODULE = 26,
+	SDIO_AUTOK_RESULT = 27,
+	MMC_CMDQ_STATUS = 28,
+	DO_AUTOK_OFFLINE_TUNE_TX = 29
 };
 
-extern void __iomem *gpio_reg_base;
-extern void __iomem *infracfg_ao_reg_base;
-extern void __iomem *infracfg_reg_base;
-extern void __iomem *pericfg_reg_base;
-extern void __iomem *emi_reg_base;
-extern void __iomem *toprgu_reg_base;
-extern void __iomem *apmixed_reg_base1;
-extern void __iomem *topckgen_reg_base;
+enum {
+	MODE_PIO = 0,
+	MODE_DMA = 1,
+	MODE_SIZE_DEP = 2,
+};
 
-#endif				/* end of  MT_SD_H */
+/* Variable declared in dbg.c */
+extern u32 msdc_host_mode[];
+extern u32 msdc_host_mode2[];
+
+extern unsigned int sd_debug_zone[];
+extern u32 drv_mode[];
+extern u32 dma_size[];
+extern unsigned char msdc_clock_src[];
+
+extern u32 sdio_pro_enable;
+
+extern bool emmc_sleep_failed;
+
+extern int msdc_rsp[];
+
+extern void pmic_ldo_oc_int_register(void);
+
+/**********************************************************/
+/* Functions                                               */
+/**********************************************************/
+#include "msdc_io.h"
+
+/* Function provided by sd.c */
+struct gendisk *mmc_get_disk(struct mmc_card *card);
+int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
+	u32 hs400_src);
+void msdc_clr_fifo(unsigned int id);
+unsigned int msdc_do_command(struct msdc_host *host,
+	struct mmc_command *cmd,
+	int                 tune,
+	unsigned long       timeout);
+int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq);
+void msdc_dump_info(u32 id);
+void msdc_dump_register(struct msdc_host *host);
+void msdc_dump_register_core(u32 id, void __iomem *base);
+void msdc_dump_dbg_register_core(u32 id, void __iomem *base);
+int msdc_get_cache_region(void);
+int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
+	u32 *status);
+int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,
+	u32 *status);
+struct dma_addr *msdc_get_dma_address(int host_id);
+int msdc_get_dma_status(int host_id);
+struct msdc_host *msdc_get_host(int host_function, bool boot,
+	bool secondary);
+int msdc_pio_read(struct msdc_host *host, struct mmc_data *data);
+int msdc_pio_write(struct msdc_host *host, struct mmc_data *data);
+int msdc_reinit(struct msdc_host *host);
+void msdc_select_clksrc(struct msdc_host *host, int clksrc);
+void msdc_send_stop(struct msdc_host *host);
+void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz);
+void msdc_set_smpl(struct msdc_host *host, u32 clkmode, u8 mode, u8 type,
+	u8 *edge);
+void msdc_set_smpl_all(struct msdc_host *host, u32 clock_mode);
+int msdc_switch_part(struct msdc_host *host, char part_id);
+int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+unsigned int msdc_do_cmdq_command(struct msdc_host *host,
+	struct mmc_command *cmd,
+	int tune,
+	unsigned long timeout);
+#endif
+
+/* Function provided by msdc_partition.c */
+void msdc_proc_emmc_create(void);
+int msdc_can_apply_cache(unsigned long long start_addr,
+	unsigned int size);
+u64 msdc_get_capacity(int get_emmc_total);
+u64 msdc_get_user_capacity(struct msdc_host *host);
+u32 msdc_get_other_capacity(struct msdc_host *host, char *name);
+
+/* Function provided by mmc/core/sd.c */
+int mmc_sd_power_cycle(struct mmc_host *host, u32 ocr,
+	struct mmc_card *card);
+
+/* Function provided by mmc/core/bus.c */
+void mmc_remove_card(struct mmc_card *card);
+
+/* Function provided by drivers/irqchip/irq-mt-eic.c */
+int mt_eint_get_polarity_external(unsigned int irq_num);
+
+#define MET_USER_EVENT_SUPPORT
+/*#include <linux/met_drv.h>*/
+#if defined(FEATURE_MET_MMC_INDEX)
+void met_mmc_issue(struct mmc_host *host, struct mmc_request *req);
+#endif
+
+#define check_mmc_cache_ctrl(card) \
+	(card && mmc_card_mmc(card) && (card->ext_csd.cache_ctrl & 0x1))
+#define check_mmc_cache_flush_cmd(cmd) \
+	((cmd->opcode == MMC_SWITCH) && \
+	 (((cmd->arg >> 16) & 0xFF) == EXT_CSD_FLUSH_CACHE) && \
+	 (((cmd->arg >> 8) & 0x1)))
+#define check_mmc_cmd2425(opcode) \
+	((opcode == MMC_WRITE_MULTIPLE_BLOCK) || \
+	 (opcode == MMC_WRITE_BLOCK))
+#define check_mmc_cmd1718(opcode) \
+	((opcode == MMC_READ_MULTIPLE_BLOCK) || \
+	 (opcode == MMC_READ_SINGLE_BLOCK))
+#define check_mmc_cmd1825(opcode) \
+	((opcode == MMC_READ_MULTIPLE_BLOCK) || \
+	 (opcode == MMC_WRITE_MULTIPLE_BLOCK))
+#define check_mmc_cmd01213(opcode) \
+	((opcode == MMC_GO_IDLE_STATE) || \
+	 (opcode == MMC_STOP_TRANSMISSION) || \
+	 (opcode == MMC_SEND_STATUS))
+#define check_mmc_cmd4445(opcode) \
+	((opcode == MMC_SET_QUEUE_CONTEXT) || \
+	 (opcode == MMC_QUEUE_READ_ADDRESS))
+#define check_mmc_cmd4647(opcode) \
+	((opcode == MMC_READ_REQUESTED_QUEUE) || \
+	 (opcode == MMC_WRITE_REQUESTED_QUEUE))
+#define check_mmc_cmd48(opcode) \
+	(opcode == MMC_CMDQ_TASK_MGMT)
+#define check_mmc_cmd44(x) \
+	((x) && \
+	 ((x)->opcode == MMC_SET_QUEUE_CONTEXT))
+#define check_mmc_cmd13_sqs(x) \
+	(((x)->opcode == MMC_SEND_STATUS) && \
+	 ((x)->arg & (1 << 15)))
+
+#endif /* end of  MT_SD_H */
+

@@ -127,6 +127,8 @@ extern  int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl);
 #define MSDC_GET_PARTSIZE               (13)
 
 #define MSDC_CD_PIN_EN_SDCARD           _IOW('r', 14, int)
+#define MSDC_SD_POWER_OFF               (15)
+#define MSDC_SD_POWER_ON                (16)
 
 #define MSDC_ERASE_SELECTED_AREA        (0x20)
 #define MSDC_CARD_DUNM_FUNC             (0xff)
