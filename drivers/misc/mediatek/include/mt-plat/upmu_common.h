@@ -195,7 +195,7 @@ extern void pmic_register_interrupt_callback(unsigned int intNo, void (EINT_FUNC
 extern unsigned short is_battery_remove_pmic(void);
 
 extern signed int PMIC_IMM_GetCurrent(void);
-extern unsigned int PMIC_IMM_GetOneChannelValue(mt6328_adc_ch_list_enum dwChannel, int deCount,
+extern unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int deCount,
 					      int trimd);
 extern void pmic_auxadc_init(void);
 

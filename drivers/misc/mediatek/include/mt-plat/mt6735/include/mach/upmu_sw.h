@@ -101,7 +101,7 @@ typedef enum {
 	MT6328_AUX_CH13,
 	MT6328_AUX_CH14,
 	MT6328_AUX_CH15,
-} mt6328_adc_ch_list_enum;
+} pmic_adc_ch_list_enum;
 
 /* ============================================================================== */
 /* DLPT define */

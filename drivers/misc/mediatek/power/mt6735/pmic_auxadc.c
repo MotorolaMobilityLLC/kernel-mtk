@@ -153,7 +153,7 @@ signed int PMIC_IMM_GetCurrent(void)
 /*
  * PMIC-AUXADC
  */
-unsigned int PMIC_IMM_GetOneChannelValue(mt6328_adc_ch_list_enum dwChannel, int deCount, int trimd)
+unsigned int PMIC_IMM_GetOneChannelValue(pmic_adc_ch_list_enum dwChannel, int deCount, int trimd)
 {
 	signed int ret = 0;
 	signed int ret_data;
