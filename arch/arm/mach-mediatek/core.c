@@ -22,3 +22,4 @@ static const char *mt_dt_match[] __initconst = {
 DT_MACHINE_START(MT6735_DT, "MT6735")
 	.dt_compat = mt_dt_match,
 MACHINE_END
+#endif
