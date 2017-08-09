@@ -303,6 +303,15 @@ config MTK_PUMP_EXPRESS_PLUS_SUPPORT
 	  Set Yes to enable PE+.
 	  Set No to disable PE+.
 
+config MTK_PUMP_EXPRESS_PLUS_20_SUPPORT
+	bool "MediaTek PUMP EXPRESS PLUS 2.0"
+	default n
+	help
+	  fast charging, by using switch charger
+	  to achive better charging ability,it reduce more IC heat than PE+
+	  Set Yes to enable PE+20.
+	  Set No to disable PE+20.
+
 config MTK_BIF_SUPPORT
 	bool "MTK_BIF_SUPPORT"
 	default n

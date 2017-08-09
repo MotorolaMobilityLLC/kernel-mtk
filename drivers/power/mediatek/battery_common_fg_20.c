@@ -90,6 +90,19 @@
 #include <mach/mt_pmic.h>
 
 
+#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+#ifndef PUMP_EXPRESS_SERIES
+#define PUMP_EXPRESS_SERIES
+#endif
+#endif
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+#ifndef PUMP_EXPRESS_SERIES
+#define PUMP_EXPRESS_SERIES
+#endif
+#endif
+
+
 
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
 #include <mach/diso.h>
@@ -716,7 +729,7 @@ static struct battery_data battery_main = {
 	.BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD,
 	.BAT_PRESENT = 1,
 	.BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION,
-#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+#if defined(PUMP_EXPRESS_SERIES)
 	.BAT_CAPACITY = -1,
 #else
 	.BAT_CAPACITY = 50,
@@ -1573,26 +1586,60 @@ static ssize_t store_Charger_Type(struct device *dev, struct device_attribute *a
 
 static DEVICE_ATTR(Charger_Type, 0664, show_Charger_Type, store_Charger_Type);
 
-#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+
+
+
+
 static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *attr, char *buf)
 {
-#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+#if defined(PUMP_EXPRESS_SERIES)
 	int icount = 20;	/* max debouncing time 20 * 0.2 sec */
+#endif
+	int is_ta_detected = 0;
 
-	if (KAL_TRUE == ta_check_chr_type &&
-		STANDARD_CHARGER == BMT_status.charger_type &&
-		BMT_status.UI_SOC2 >= batt_cust_data.ta_start_battery_soc &&
+
+	battery_log(BAT_LOG_CRTI, "[%s]show_Pump_Express chr_type:%d UISOC2:%d startsoc:%d stopsoc:%d\n", __func__,
+	BMT_status.charger_type, BMT_status.UI_SOC2,
+	batt_cust_data.ta_start_battery_soc, batt_cust_data.ta_stop_battery_soc);
+
+
+#if defined(PUMP_EXPRESS_SERIES)
+	if (STANDARD_CHARGER == BMT_status.charger_type &&
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+		KAL_TRUE == pe20_check_chr_type &&
+#endif
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+		KAL_TRUE == ta_check_chr_type &&
+#endif
 		BMT_status.UI_SOC2 < batt_cust_data.ta_stop_battery_soc) {
-		battery_log(BAT_LOG_CRTI, "[%s]Wait for PE detection\n", __func__);
 		do {
 			icount--;
 			msleep(200);
-		} while (icount && ta_check_chr_type);
+			battery_log(BAT_LOG_CRTI, "[%s]icount:%d\n", __func__, icount);
+		} while (icount &&
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+			pe20_check_chr_type &&
+#endif
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+			ta_check_chr_type &&
+#endif
+			KAL_TRUE
+		);
 	}
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+	if (is_pe20_connect == KAL_TRUE)
+		is_ta_detected = 1;
+		battery_log(BAT_LOG_CRTI, "is_pe20_connect:%d\n", is_pe20_connect);
 #endif
 
-#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
+#endif
 
+
+
+
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
 	if ((KAL_TRUE == ta_check_chr_type) && (STANDARD_CHARGER == BMT_status.charger_type)) {
 		battery_log(BAT_LOG_CRTI, "[%s]Wait for PE detection\n", __func__);
 		do {
@@ -1601,9 +1648,13 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 	}
 #endif
 
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
+	if (is_ta_connect == KAL_TRUE)
+		is_ta_detected = 1;
+#endif
 
-	battery_log(BAT_LOG_CRTI, "Pump express = %d\n", is_ta_connect);
-	return sprintf(buf, "%u\n", is_ta_connect);
+
+	return sprintf(buf, "%u\n", is_ta_detected);
 }
 
 static ssize_t store_Pump_Express(struct device *dev, struct device_attribute *attr,
@@ -1626,7 +1677,8 @@ static ssize_t store_Pump_Express(struct device *dev, struct device_attribute *a
 }
 
 static DEVICE_ATTR(Pump_Express, 0664, show_Pump_Express, store_Pump_Express);
-#endif
+
+
 
 static void mt_battery_update_EM(struct battery_data *bat_data)
 {
@@ -2550,7 +2602,7 @@ CHARGER_TYPE mt_charger_type_detection(void)
 		BMT_status.charger_type = CHR_Type_num;
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
+#if defined(PUMP_EXPRESS_SERIES)
 		/*if (BMT_status.UI_SOC2 == 100) {
 			BMT_status.bat_charging_state = CHR_BATFULL;
 			BMT_status.bat_full = KAL_TRUE;
@@ -2574,6 +2626,13 @@ CHARGER_TYPE mt_charger_type_detection(void)
 	mutex_unlock(&charger_type_mutex);
 
 	return BMT_status.charger_type;
+}
+
+void mt_charger_enable_DP_voltage(int ison)
+{
+	mutex_lock(&charger_type_mutex);
+	battery_charging_control(CHARGING_CMD_SET_DP, &ison);
+	mutex_unlock(&charger_type_mutex);
 }
 
 CHARGER_TYPE mt_get_charger_type(void)
@@ -2673,6 +2732,11 @@ static void mt_battery_charger_detect_check(void)
 		ta_cable_out_occur = KAL_TRUE;
 		battery_log(BAT_LOG_FULL, "[PE+] Cable OUT\n");
 #endif
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+		mtk_pe20_plugout_reset();
+#endif
+
 
 #ifdef CONFIG_MTK_BQ25896_SUPPORT
 /*New low power feature of MT6531: disable charger CLK without CHARIN.
@@ -2789,6 +2853,11 @@ void do_chrdet_int_task(void)
 			ta_check_chr_type = KAL_TRUE;
 			ta_cable_out_occur = KAL_TRUE;
 #endif
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+		mtk_pe20_plugout_reset();
+#endif
+
 
 		}
 
@@ -3826,6 +3895,11 @@ static int battery_probe(struct platform_device *dev)
 	wake_lock_init(&TA_charger_suspend_lock, WAKE_LOCK_SUSPEND, "TA charger suspend wakelock");
 #endif
 
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+	wake_lock_init(&PE20_charger_suspend_lock, WAKE_LOCK_SUSPEND, "TA20 charger suspend wakelock");
+#endif
+
+
 	/* Integrate with Android Battery Service */
 	ret = power_supply_register(&(dev->dev), &ac_main.psy);
 	if (ret) {
@@ -3919,9 +3993,8 @@ static int battery_probe(struct platform_device *dev)
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_SW_CoulombCounter);
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Charging_CallState);
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Charger_Type);
-#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 		ret_device_file = device_create_file(&(dev->dev), &dev_attr_Pump_Express);
-#endif
+
 	}
 
 	/* battery_meter_initial();      //move to mt_battery_GetBatteryData() to decrease booting time */

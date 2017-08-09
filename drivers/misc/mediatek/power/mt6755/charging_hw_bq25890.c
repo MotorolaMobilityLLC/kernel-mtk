@@ -27,6 +27,7 @@
 /* ============================================================ // */
 #define STATUS_OK    0
 #define STATUS_UNSUPPORTED    -1
+#define STATUS_FAIL -2
 #define GETARRAYNUM(array) (sizeof(array)/sizeof(array[0]))
 
 /* ============================================================ // */
@@ -832,7 +833,8 @@ static unsigned int charging_set_current(void *data)
 	array_size = GETARRAYNUM(CS_VTH);
 	set_chr_current = bmt_find_closest_level(CS_VTH, array_size, current_value);
 	register_value = charging_parameter_to_value(CS_VTH, array_size, set_chr_current);
-	/* bq25890_config_interface(bq25890_CON4, register_value, 0x7F, 0); */
+	battery_log(BAT_LOG_FULL, "charging_set_ICHG:%d\n", register_value);
+
 	bq25890_set_ichg(register_value);
 
 	return status;
@@ -846,22 +848,10 @@ static unsigned int charging_set_input_current(void *data)
 	unsigned int array_size;
 	unsigned int register_value;
 
-	/*if(current_value >= CHARGE_CURRENT_2500_00_MA)
-	   {
-	   register_value = 0x6;
-	   }
-	   else if(current_value == CHARGE_CURRENT_1000_00_MA)
-	   {
-	   register_value = 0x4;
-	   }
-	   else
-	   { */
 	array_size = GETARRAYNUM(INPUT_CS_VTH);
 	set_chr_current = bmt_find_closest_level(INPUT_CS_VTH, array_size, current_value);
 	register_value = charging_parameter_to_value(INPUT_CS_VTH, array_size, set_chr_current);
-	/*} */
-
-	/* bq25890_config_interface(bq25890_CON0, register_value, 0x3F, 0);//input  current */
+	battery_log(BAT_LOG_FULL, "charging_set_input_current:%d\n", register_value);
 	bq25890_set_iinlim(register_value);
 
 /*For USB_IF compliance test only when USB is in suspend(Ibus < 2.5mA) or unconfigured(Ibus < 70mA) states*/
@@ -870,8 +860,7 @@ static unsigned int charging_set_input_current(void *data)
 		register_value = 0x7f;
 	else
 		register_value = 0x13;
-
-	charging_set_vindpm(&register_value);
+	bq25890_set_VINDPM(register_value);
 #endif
 
 	return status;
@@ -1232,6 +1221,156 @@ static unsigned int charging_set_ta_current_pattern(void *data)
 	return STATUS_OK;
 }
 
+static unsigned int charging_set_ta20_reset(void *data)
+{
+	bq25890_set_VINDPM(0x13);
+	bq25890_set_ichg(8);
+
+	bq25890_set_ico_en_start(0);
+	bq25890_set_iinlim(0x0);
+	msleep(250);
+	bq25890_set_iinlim(0xc);
+	bq25890_set_ico_en_start(1);
+	return STATUS_OK;
+}
+
+
+struct timespec ptime[13];
+
+static int cptime[13][2];
+
+static int dtime(int i)
+{
+	struct timespec time;
+
+	time = timespec_sub(ptime[i], ptime[i-1]);
+	return time.tv_nsec/1000000;
+}
+
+#define PEOFFTIME 40
+#define PEONTIME 90
+
+static unsigned int charging_set_ta20_current_pattern(void *data)
+{
+	int value;
+	int i, j = 0;
+	int flag;
+	CHR_VOLTAGE_ENUM chr_vol = *(CHR_VOLTAGE_ENUM *) data;
+	int errcnt = 0;
+
+	bq25890_set_VINDPM(0x13);
+	bq25890_set_ichg(8);
+	bq25890_set_ico_en_start(0);
+
+	usleep_range(1000, 1200);
+	value = (chr_vol - CHR_VOLT_05_500000_V) / CHR_VOLT_00_500000_V;
+
+	bq25890_set_iinlim(0x0);
+	msleep(70);
+
+	get_monotonic_boottime(&ptime[j++]);
+	for (i = 4; i >= 0; i--) {
+		flag = value & (1 << i);
+
+		if (flag == 0) {
+			bq25890_set_iinlim(0xc);
+			msleep(PEOFFTIME);
+			get_monotonic_boottime(&ptime[j]);
+			cptime[j][0] = PEOFFTIME;
+			cptime[j][1] = dtime(j);
+			if (cptime[j][1] < 30 || cptime[j][1] > 65) {
+				battery_log(BAT_LOG_CRTI,
+					"charging_set_ta20_current_pattern fail1: idx:%d target:%d actual:%d\n",
+					i, PEOFFTIME, cptime[j][1]);
+				errcnt = 1;
+				return STATUS_FAIL;
+			}
+			j++;
+			bq25890_set_iinlim(0x0);
+			msleep(PEONTIME);
+			get_monotonic_boottime(&ptime[j]);
+			cptime[j][0] = PEONTIME;
+			cptime[j][1] = dtime(j);
+			if (cptime[j][1] < 90 || cptime[j][1] > 115) {
+				battery_log(BAT_LOG_CRTI,
+					"charging_set_ta20_current_pattern fail2: idx:%d target:%d actual:%d\n",
+					i, PEOFFTIME, cptime[j][1]);
+				errcnt = 1;
+				return STATUS_FAIL;
+			}
+			j++;
+
+		} else {
+			bq25890_set_iinlim(0xc);
+			msleep(PEONTIME);
+			get_monotonic_boottime(&ptime[j]);
+			cptime[j][0] = PEONTIME;
+			cptime[j][1] = dtime(j);
+			if (cptime[j][1] < 90 || cptime[j][1] > 115) {
+				battery_log(BAT_LOG_CRTI,
+					"charging_set_ta20_current_pattern fail3: idx:%d target:%d actual:%d\n",
+					i, PEOFFTIME, cptime[j][1]);
+				errcnt = 1;
+				return STATUS_FAIL;
+			}
+			j++;
+			bq25890_set_iinlim(0x0);
+			msleep(PEOFFTIME);
+			get_monotonic_boottime(&ptime[j]);
+			cptime[j][0] = PEOFFTIME;
+			cptime[j][1] = dtime(j);
+			if (cptime[j][1] < 30 || cptime[j][1] > 65) {
+				battery_log(BAT_LOG_CRTI,
+					"charging_set_ta20_current_pattern fail4: idx:%d target:%d actual:%d\n",
+					i, PEOFFTIME, cptime[j][1]);
+				errcnt = 1;
+				return STATUS_FAIL;
+			}
+			j++;
+		}
+	}
+
+	bq25890_set_iinlim(0xc);
+	msleep(160);
+	get_monotonic_boottime(&ptime[j]);
+	cptime[j][0] = 160;
+	cptime[j][1] = dtime(j);
+	if (cptime[j][1] < 150 || cptime[j][1] > 240) {
+		battery_log(BAT_LOG_CRTI,
+			"charging_set_ta20_current_pattern fail5: idx:%d target:%d actual:%d\n",
+			i, PEOFFTIME, cptime[j][1]);
+		errcnt = 1;
+		return STATUS_FAIL;
+	}
+	j++;
+
+	bq25890_set_iinlim(0x0);
+	msleep(30);
+	bq25890_set_iinlim(0xc);
+
+	battery_log(BAT_LOG_CRTI,
+	"[charging_set_ta20_current_pattern]:err:%d chr_vol:%d bit:%d time:%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d!!\n",
+	errcnt, chr_vol, value,
+	cptime[1][0], cptime[2][0], cptime[3][0], cptime[4][0], cptime[5][0],
+	cptime[6][0], cptime[7][0], cptime[8][0], cptime[9][0], cptime[10][0], cptime[11][0]);
+
+	battery_log(BAT_LOG_CRTI,
+	"[charging_set_ta20_current_pattern2]:err:%d chr_vol:%d bit:%d time:%3d %3d %3d %3d %3d %3d %3d %3d %3d %3d %3d!!\n",
+	errcnt, chr_vol, value,
+	cptime[1][1], cptime[2][1], cptime[3][1], cptime[4][1], cptime[5][1],
+	cptime[6][1], cptime[7][1], cptime[8][1], cptime[9][1], cptime[10][1], cptime[11][1]);
+
+
+	bq25890_set_ico_en_start(1);
+	bq25890_set_iinlim(0x3f);
+
+	if (errcnt == 0)
+		return STATUS_OK;
+
+	return STATUS_FAIL;
+}
+
+
 static unsigned int charging_set_vindpm(void *data)
 {
 	unsigned int status = STATUS_OK;
@@ -1560,6 +1699,19 @@ static unsigned int charging_set_vindpm_voltage(void *data)
 
 	return status;
 }
+
+static unsigned int charging_set_dp(void *data)
+	{
+		unsigned int status = STATUS_OK;
+		unsigned int en;
+
+		en = *(int *) data;
+		hw_charging_enable_dp_voltage(en);
+
+		return status;
+	}
+
+
 static unsigned int (*const charging_func[CHARGING_CMD_NUMBER]) (void *data) = {
 charging_hw_init, charging_dump_register, charging_enable, charging_set_cv_voltage,
 	    charging_get_current, charging_set_current, charging_set_input_current,
@@ -1572,7 +1724,8 @@ charging_hw_init, charging_dump_register, charging_enable, charging_set_cv_volta
 	    charging_set_ta_current_pattern, charging_set_error_state, charging_diso_init,
 	    charging_get_diso_state, charging_set_vindpm_voltage, charging_set_vbus_ovp_en,
 	    charging_get_bif_vbat, charging_set_chrind_ck_pdn, charging_sw_init, charging_enable_safetytimer,
-	charging_set_hiz_swchr, charging_get_bif_tbat};
+		charging_set_hiz_swchr, charging_get_bif_tbat, charging_set_ta20_reset,
+		charging_set_ta20_current_pattern, charging_set_dp};
 
 /*
 * FUNCTION

@@ -74,6 +74,11 @@
 #define POST_CHARGING_TIME (30*60)	/* 30mins */
 #define FULL_CHECK_TIMES 6
 
+#define STATUS_OK    0
+#define STATUS_UNSUPPORTED    -1
+#define STATUS_FAIL -2
+
+
 /* ============================================================ // */
 /* global variable */
 /* ============================================================ // */
@@ -114,6 +119,40 @@ kal_bool ta_vchr_tuning = KAL_TRUE;
 kal_bool pep_det_rechg = KAL_FALSE;
 #endif
 int ta_v_chr_org = 0;
+#endif
+
+ /* ///////////////////////////////////////////////////////////////////////////////////////// */
+  /* // PUMP EXPRESS */
+  /* ///////////////////////////////////////////////////////////////////////////////////////// */
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+struct wake_lock PE20_charger_suspend_lock;
+kal_bool pe20_check_chr_type = KAL_TRUE;
+kal_bool pe20_cable_out_occur = KAL_FALSE;
+kal_bool is_pe20_connect = KAL_FALSE;
+kal_bool pe20_vchr_tuning = KAL_TRUE;
+int pe20_v_chr_org = 0;
+int pe20_v_chr_current = CHR_VOLT_05_000000_V;
+int pe20_idx = -1;
+int pe20_vbus = CHR_VOLT_05_000000_V;
+kal_bool pe20_cv_state = KAL_FALSE;
+
+typedef struct _PE20_PROFILE_STRUCT {
+	int BatVoltage;
+	CHR_VOLTAGE_ENUM ChrVoltage;
+} PE20_PROFILE_STRUCT, *PE20_PROFILE_STRUCT_P;
+
+PE20_PROFILE_STRUCT pe20_profile[] = {
+	{BATTERY_VOLT_03_400000_V/1000, VBAT3400_VBUS},
+	{BATTERY_VOLT_03_500000_V/1000, VBAT3500_VBUS},
+	{BATTERY_VOLT_03_600000_V/1000, VBAT3600_VBUS},
+	{BATTERY_VOLT_03_700000_V/1000, VBAT3700_VBUS},
+	{BATTERY_VOLT_03_800000_V/1000, VBAT3800_VBUS},
+	{BATTERY_VOLT_03_900000_V/1000, VBAT3900_VBUS},
+	{BATTERY_VOLT_04_000000_V/1000, VBAT4000_VBUS},
+	{BATTERY_VOLT_04_100000_V/1000, VBAT4100_VBUS},
+	{BATTERY_VOLT_04_200000_V/1000, VBAT4200_VBUS},
+	{BATTERY_VOLT_04_300000_V/1000, VBAT4200_VBUS},
+};
 #endif
 
  /* ///////////////////////////////////////////////////////////////////////////////////////// */
@@ -161,8 +200,8 @@ unsigned int get_charging_setting_current(void)
 	return g_temp_CC_value;
 }
 
-#if defined(CONFIG_MTK_DYNAMIC_BAT_CV_SUPPORT)
-static unsigned int get_constant_voltage(void)
+
+unsigned int get_constant_voltage(void)
 {
 	unsigned int cv;
 #ifdef CONFIG_MTK_BIF_SUPPORT
@@ -222,30 +261,252 @@ static unsigned int get_constant_voltage(void)
 #endif
 	return cv;
 }
-#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
-static void switch_charger_set_vindpm(unsigned int chr_v)
+
+
+void switch_charger_set_vindpm(unsigned int chr_v)
 {
 	/*unsigned int delta_v = 0; */
-	unsigned int vindpm = 0;
-
-	/*chr_v = battery_meter_get_charger_voltage();*/
-	/*delta_v = chr_v - ta_v_chr_org; */
-
-	if (chr_v > 11000)
-		vindpm = 12000;
-	else if (chr_v > 8000)
-		vindpm = 9000;
-	else if (chr_v > 6000)
-		vindpm = 7000;
-	else
-		vindpm = 5000;
-
-	battery_charging_control(CHARGING_CMD_SET_VINDPM, &vindpm);
-	battery_log(BAT_LOG_CRTI,
-		    "[PE+] switch charger set VINDPM=%dmV with charger volatge=%dmV\n",
-		    vindpm, chr_v);
+	battery_charging_control(CHARGING_CMD_SET_VINDPM, &chr_v);
 }
-#endif
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+static DEFINE_MUTEX(pe20_mutex);
+
+
+void mtk_pe20_plugout_reset(void)
+{
+	unsigned int hw_ovp_en;
+
+	hw_ovp_en = 1;
+	battery_charging_control(CHARGING_CMD_SET_VBUS_OVP_EN, &hw_ovp_en);
+	pe20_vbus = CHR_VOLT_05_000000_V;
+	pe20_check_chr_type = KAL_TRUE;
+	is_pe20_connect = KAL_FALSE;
+	pe20_cable_out_occur = KAL_TRUE;
+	switch_charger_set_vindpm(CHR_VOLT_04_500000_V);
+	pe20_idx = -1;
+	battery_log(BAT_LOG_CRTI, "[PE+20]mtk_pe20_plugout_reset\n");
+	mt_charger_enable_DP_voltage(0);
+}
+
+static void mtk_pe20_reset_vchr(void)
+{
+	battery_charging_control(CHARGING_CMD_SET_TA20_RESET, NULL);
+	battery_log(BAT_LOG_CRTI, "[PE+20]mtk_pe20_reset_vchr(): reset Vchr to 5V\n");
+
+}
+
+static signed int mtk_pe20_set_chr_voltage(CHR_VOLTAGE_ENUM chr_vol)
+{
+	signed int ret = 0;
+
+	if (pe20_cable_out_occur == KAL_FALSE) {
+		ret = battery_charging_control(CHARGING_CMD_SET_TA20_CURRENT_PATTERN, &chr_vol);
+	} else {
+		pe20_check_chr_type = KAL_TRUE;
+		battery_log(BAT_LOG_CRTI, "[PE+20]mtk_pe20_set_chr_voltage() Cable out\n");
+	}
+	return ret;
+}
+
+#define PE20_RETRY_TIMES 3
+#define PE20_SW_RETRY_TIMES 5
+static signed int mtk_pe20_retry_increase(CHR_VOLTAGE_ENUM chr_vol)
+{
+	signed int ret = 0;
+	int real_v_chr, ori_v_chr;
+	kal_bool retransmit = KAL_TRUE;
+	unsigned int sw_retry_count = 0;
+	unsigned int retransmit_count = 0;
+
+	do {
+
+		ori_v_chr = battery_meter_get_charger_voltage();
+		ret = mtk_pe20_set_chr_voltage(chr_vol);
+		real_v_chr = battery_meter_get_charger_voltage();
+
+		if (abs(real_v_chr - chr_vol) < CHR_VOLT_00_500000_V && ret == 0) {
+			retransmit = KAL_FALSE;
+		} else {
+
+			if (ret == STATUS_OK || sw_retry_count >= PE20_SW_RETRY_TIMES)
+				retransmit_count++;
+			else
+				sw_retry_count++;
+
+			mtk_pe20_reset_vchr();
+			battery_log(BAT_LOG_CRTI,
+				    "[PE+20]Communicated with adapter fail:retry=%d,%d real_v_chr=%d, target_v_chr=%d ret=%d\n",
+				    retransmit_count, sw_retry_count, real_v_chr, chr_vol, ret);
+		}
+
+		if ((retransmit_count == PE20_RETRY_TIMES) || (BMT_status.charger_exist == KAL_FALSE))
+			retransmit = KAL_FALSE;
+
+	} while ((retransmit == KAL_TRUE) && (pe20_cable_out_occur == KAL_FALSE));
+
+	battery_log(BAT_LOG_CRTI,
+	"[PE+20]Finished communicating with adapter,ori_vchr:%d real_vchr=%d, target_vchr=%d, retry=%d,%d\n",
+		    ori_v_chr, real_v_chr, chr_vol, retransmit_count, sw_retry_count);
+
+	if (retransmit_count == PE20_RETRY_TIMES)
+		return STATUS_FAIL;
+
+		return STATUS_OK;
+}
+
+static void mtk_pe20_detector(void)
+{
+	signed int ret;
+	unsigned int hw_ovp_en;
+
+	pe20_v_chr_org = battery_meter_get_charger_voltage();
+
+	if (abs(pe20_v_chr_org - CHR_VOLT_08_500000_V) > CHR_VOLT_00_500000_V)
+		ret = mtk_pe20_retry_increase(CHR_VOLT_08_500000_V);
+	else
+		ret = mtk_pe20_retry_increase(CHR_VOLT_06_500000_V);
+
+	if (ret == STATUS_OK) {
+		is_pe20_connect = KAL_TRUE;
+		hw_ovp_en = 0;
+		battery_charging_control(CHARGING_CMD_SET_VBUS_OVP_EN, &hw_ovp_en);
+		mt_charger_enable_DP_voltage(1);
+	} else
+		is_pe20_connect = KAL_FALSE;
+}
+
+static void mtk_pe20_init(void)
+{
+	is_pe20_connect = KAL_FALSE;
+	pe20_cable_out_occur = KAL_FALSE;
+
+	battery_charging_control(CHARGING_CMD_INIT, NULL);
+}
+
+static void battery_pump_express20_charger_check(void)
+{
+	if (KAL_TRUE == pe20_check_chr_type &&
+	    (STANDARD_CHARGER == BMT_status.charger_type) &&
+	    BMT_status.SOC >= batt_cust_data.ta_start_battery_soc &&
+	    BMT_status.SOC < batt_cust_data.ta_stop_battery_soc) {
+		battery_log(BAT_LOG_CRTI, "[PE+20]Starting PE+20 Adaptor detection %d %d %d %d\n"
+			, KAL_TRUE == pe20_check_chr_type, (STANDARD_CHARGER == BMT_status.charger_type)
+			, BMT_status.SOC >= batt_cust_data.ta_start_battery_soc
+			, BMT_status.SOC < batt_cust_data.ta_stop_battery_soc);
+
+		mutex_lock(&pe20_mutex);
+		wake_lock(&PE20_charger_suspend_lock);
+
+
+		mtk_pe20_init();
+		mtk_pe20_reset_vchr();
+		mtk_pe20_detector();
+
+		/* need to re-check if the charger plug out during ta detector */
+		if (KAL_TRUE == pe20_cable_out_occur)
+			pe20_check_chr_type = KAL_TRUE;
+		else
+			pe20_check_chr_type = KAL_FALSE;
+
+		wake_unlock(&PE20_charger_suspend_lock);
+		mutex_unlock(&pe20_mutex);
+		pe20_check_chr_type = KAL_FALSE;
+	}
+
+	BMT_status.charger_vol = battery_meter_get_charger_voltage();
+
+	battery_log(BAT_LOG_CRTI,
+			"[PE+20]charger_check, SOC=%d,%d,%d pe20_check_chr_type=%d, charger_type=%d, is_pe20_connect=%d chr_vol:%d %d,%d,%d,%d\n",
+			BMT_status.SOC, batt_cust_data.ta_start_battery_soc, batt_cust_data.ta_stop_battery_soc,
+			pe20_check_chr_type, BMT_status.charger_type, is_pe20_connect, BMT_status.charger_vol,
+			KAL_TRUE == pe20_check_chr_type, (STANDARD_CHARGER == BMT_status.charger_type),
+			BMT_status.SOC >= batt_cust_data.ta_start_battery_soc,
+			BMT_status.SOC < batt_cust_data.ta_stop_battery_soc);
+
+}
+
+static void battery_pump_express20_algorithm_start(void)
+{
+	int i;
+	int bat_vol = battery_meter_get_battery_voltage(KAL_FALSE);
+	int size;
+	int vbus_vol = battery_meter_get_charger_voltage();
+	signed int ret = 2;
+	int pre_pe20_vbus, pre_pe20_idx;
+	int tune = 0;
+	signed int charging_current;
+	kal_bool current_sign;
+	static int cnt;
+	int pes = 0;
+
+	if (is_pe20_connect == KAL_FALSE)
+		return;
+
+	mutex_lock(&pe20_mutex);
+	wake_lock(&PE20_charger_suspend_lock);
+
+	pre_pe20_vbus = pe20_vbus;
+	pre_pe20_idx = pe20_idx;
+
+	charging_current = battery_meter_get_battery_current();
+	current_sign = battery_meter_get_battery_current_sign();
+
+	if (BMT_status.SOC > 85 && current_sign == KAL_TRUE && charging_current < 10000 && pe20_cv_state == KAL_FALSE) {
+			mtk_pe20_reset_vchr();
+			pe20_cv_state = KAL_TRUE;
+			cnt = 0;
+			pes = 1;
+
+	} else if (pe20_cv_state == KAL_FALSE) {
+		size = sizeof(pe20_profile) / sizeof(PE20_PROFILE_STRUCT);
+		for (i = 0; i < size; i++) {
+			tune = 0;
+
+			if (bat_vol > (pe20_profile[i].BatVoltage + 100))
+				continue;
+
+			if (i < pe20_idx && bat_vol > (pe20_profile[i].BatVoltage + 30))
+				continue;
+
+			if (pe20_vbus != pe20_profile[i].ChrVoltage)
+				tune = 1;
+
+			pe20_vbus = pe20_profile[i].ChrVoltage;
+			pe20_idx = i;
+
+			if (abs(vbus_vol - pe20_vbus) >= 1000)
+				tune = 2;
+
+			if (tune != 0) {
+				ret = mtk_pe20_retry_increase(pe20_vbus);
+				switch_charger_set_vindpm(pe20_vbus - 1000);
+			}
+			break;
+		}
+		pes = 2;
+	} else if (BMT_status.SOC < 80) {
+		pes = 3;
+		pe20_cv_state = KAL_FALSE;
+	}
+
+	battery_log(BAT_LOG_CRTI,
+		"[PE+20]start vbus:%d:%d idx:%d:%d bat:%d tune:%d ret:%d soc:%d,%d I:%d,%d %d\n"
+		, pre_pe20_vbus, pe20_vbus, pre_pe20_idx, pe20_idx, bat_vol, tune, ret, BMT_status.SOC
+		, (int)pe20_cv_state, (int)current_sign, (int)charging_current, pes);
+
+	wake_unlock(&PE20_charger_suspend_lock);
+	mutex_unlock(&pe20_mutex);
+
+}
+
+void set_pe20_charging_current(void)
+{
+
+	g_temp_input_CC_value = CHARGE_CURRENT_3200_00_MA;
+	g_temp_CC_value = TA_AC_CHARGING_CURRENT;
+
+}
 #endif
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
@@ -365,7 +626,7 @@ static void mtk_ta_detector(void)
 		batt_cust_data.v_charger_max = V_CHARGER_MAX;
 
 		/*Set BQ25896 VINDPM to 4.6V for vbus = 5V */
-		vindpm = 5000;
+		vindpm = SWITCH_CHR_VINDPM_5V;
 		battery_charging_control(CHARGING_CMD_SET_VINDPM, &vindpm);
 #endif
 	}
@@ -390,7 +651,11 @@ static void battery_pump_express_charger_check(void)
 	if (KAL_TRUE == ta_check_chr_type &&
 	    STANDARD_CHARGER == BMT_status.charger_type &&
 	    BMT_status.SOC >= batt_cust_data.ta_start_battery_soc &&
-	    BMT_status.SOC < batt_cust_data.ta_stop_battery_soc) {
+	    BMT_status.SOC < batt_cust_data.ta_stop_battery_soc
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+	    && is_pe20_connect == KAL_FALSE
+#endif
+	    ) {
 		battery_log(BAT_LOG_CRTI, "[PE+]Starting PE Adaptor detection\n");
 
 		mutex_lock(&ta_mutex);
@@ -433,6 +698,11 @@ static void battery_pump_express_algorithm_start(void)
 	unsigned int chr_ovp_en;
 
 	battery_log(BAT_LOG_FULL, "[PE+][battery_pump_express_algorithm_start]start PEP...");
+#endif
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+			if (is_pe20_connect == KAL_TRUE)
+				return;
 #endif
 
 	mutex_lock(&ta_mutex);
@@ -544,7 +814,7 @@ static void battery_pump_express_algorithm_start(void)
 			}
 		}
 		/*Set VINDPM after Vbus voltage is set or reset */
-		switch_charger_set_vindpm(charger_vol);
+		switch_charger_set_vindpm(charger_vol-1000);
 
 #endif
 		battery_log(BAT_LOG_CRTI,
@@ -557,7 +827,13 @@ static void battery_pump_express_algorithm_start(void)
 #if defined(TA_12V_SUPPORT)
 		batt_cust_data.v_charger_max = V_CHARGER_MAX;
 		chr_ovp_en = 1;
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+		if (is_pe20_connect == KAL_FALSE)
+					battery_charging_control(CHARGING_CMD_SET_VBUS_OVP_EN, &chr_ovp_en);
+#else
 		battery_charging_control(CHARGING_CMD_SET_VBUS_OVP_EN, &chr_ovp_en);
+#endif
+
 #endif
 	}
 
@@ -1020,6 +1296,11 @@ void select_charging_current(void)
 			if (is_ta_connect == KAL_TRUE)
 				set_ta_charging_current();
 #endif
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+			if (is_pe20_connect == KAL_TRUE)
+				set_pe20_charging_current();
+#endif
+
 		} else if (BMT_status.charger_type == CHARGING_HOST) {
 			g_temp_input_CC_value = batt_cust_data.charging_host_charger_current;
 			g_temp_CC_value = batt_cust_data.charging_host_charger_current;
@@ -1100,6 +1381,10 @@ static void pchr_turn_on_charging(void)
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 		battery_pump_express_algorithm_start();
+#endif
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+		battery_pump_express20_algorithm_start();
 #endif
 
 		/* Set Charging Current */
@@ -1315,6 +1600,11 @@ PMU_STATUS BAT_BatteryStatusFailAction(void)
 void mt_battery_charging_algorithm(void)
 {
 	battery_charging_control(CHARGING_CMD_RESET_WATCH_DOG_TIMER, NULL);
+
+
+#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
+	battery_pump_express20_charger_check();
+#endif
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 #if defined(PUMPEX_PLUS_RECHG)

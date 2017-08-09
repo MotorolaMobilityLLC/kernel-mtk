@@ -122,6 +122,9 @@ typedef enum {
 	CHARGING_CMD_ENABLE_SAFETY_TIMER,
 	CHARGING_CMD_SET_HIZ_SWCHR,
 	CHARGING_CMD_GET_BIF_TBAT,
+	CHARGING_CMD_SET_TA20_RESET,
+	CHARGING_CMD_SET_TA20_CURRENT_PATTERN,
+	CHARGING_CMD_SET_DP,
 	CHARGING_CMD_NUMBER
 } CHARGING_CTRL_CMD;
 
@@ -499,6 +502,49 @@ typedef enum {
 	CHARGE_CURRENT_MAX
 } CHR_CURRENT_ENUM;
 
+/* Enum of charger current List */
+typedef enum {
+	CHR_VOLT_00_500000_V = 500,
+	CHR_VOLT_01_000000_V = 1000,
+	CHR_VOLT_04_000000_V = 4000,
+	CHR_VOLT_04_500000_V = 4500,
+	CHR_VOLT_05_000000_V = 5000,
+	CHR_VOLT_05_500000_V = 5500,
+	CHR_VOLT_06_000000_V = 6050,
+	CHR_VOLT_06_500000_V = 6500,
+	CHR_VOLT_07_000000_V = 7000,
+	CHR_VOLT_07_500000_V = 7500,
+	CHR_VOLT_08_000000_V = 8000,
+	CHR_VOLT_08_500000_V = 8500,
+	CHR_VOLT_09_000000_V = 9000,
+	CHR_VOLT_09_500000_V = 9500,
+	CHR_VOLT_10_000000_V = 10000,
+	CHR_VOLT_10_500000_V = 10500,
+	CHR_VOLT_11_000000_V = 11000,
+	CHR_VOLT_11_500000_V = 11500,
+	CHR_VOLT_12_000000_V = 12000,
+	CHR_VOLT_12_500000_V = 12500,
+	CHR_VOLT_13_000000_V = 13000,
+	CHR_VOLT_13_500000_V = 13500,
+	CHR_VOLT_14_000000_V = 14000,
+	CHR_VOLT_14_500000_V = 14500,
+	CHR_VOLT_15_000000_V = 15000,
+	CHR_VOLT_15_500000_V = 15500,
+	CHR_VOLT_16_000000_V = 16000,
+	CHR_VOLT_16_500000_V = 16500,
+	CHR_VOLT_17_000000_V = 17000,
+	CHR_VOLT_17_500000_V = 17500,
+	CHR_VOLT_18_000000_V = 18000,
+	CHR_VOLT_18_500000_V = 18500,
+	CHR_VOLT_19_000000_V = 19000,
+	CHR_VOLT_19_500000_V = 19500,
+	CHR_VOLT_20_000000_V = 20000,
+	CHR_VOLT_MAX,
+
+} CHR_VOLTAGE_ENUM;
+
+
+
 /* ============================================================ */
 /* structure */
 /* ============================================================ */
@@ -538,7 +584,12 @@ extern unsigned int mt6311_get_chip_id(void);
 extern int is_mt6311_exist(void);
 extern int is_mt6311_sw_ready(void);
 
+extern void hw_charging_enable_dp_voltage(int ison);
 
+
+/* switch charger */
+extern void switch_charger_set_vindpm(unsigned int chr_v);
+extern void mtk_pe20_plugout_reset(void);
 /*extern BATTERY_VOLTAGE_ENUM battery_get_cv_voltage(void);*/
 /*extern void battery_set_cv_voltage(BATTERY_VOLTAGE_ENUM cv);*/
 

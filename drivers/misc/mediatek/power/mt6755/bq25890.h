@@ -187,6 +187,10 @@
 #define CON9_PUMPX_DN   0x1
 #define CON9_PUMPX_DN_SHIFT  0
 
+#define FORCE_ICO_MASK 0x1
+#define FORCE_ICO__SHIFT 7
+
+
 /* CONA */
 #define CONA_BOOST_VLIM_MASK 0xF
 #define CONA_BOOST_VLIM_SHIFT 4
@@ -306,6 +310,8 @@ extern void bq25890_set_iterml(unsigned int val);
 extern void bq25890_set_vreg(unsigned int val);
 extern void bq25890_set_batlowv(unsigned int val);
 extern void bq25890_set_vrechg(unsigned int val);
+extern unsigned int bq25890_get_vreg(void);
+
 
 
 /* con7 */
