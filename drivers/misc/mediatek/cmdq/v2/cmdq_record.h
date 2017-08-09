@@ -1,5 +1,5 @@
-#ifndef __CMDQ_RECORD_COMMON_H__
-#define __CMDQ_RECORD_COMMON_H__
+#ifndef __CMDQ_RECORD_H__
+#define __CMDQ_RECORD_H__
 
 #include <linux/types.h>
 #include "cmdq_def.h"
@@ -499,4 +499,4 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-#endif				/* __CMDQ_RECORD_COMMON_H__ */
+#endif				/* __CMDQ_RECORD_H__ */

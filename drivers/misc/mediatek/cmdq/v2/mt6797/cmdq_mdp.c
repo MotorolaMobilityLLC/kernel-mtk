@@ -39,12 +39,16 @@ bool cmdq_mdp_clock_is_enable_##FN_NAME(void)	\
 #else
 typedef struct CmdqMdpModuleClock {
 	struct clk *clk_CAM_MDP;
-	struct clk *clk_MDP_RDMA;
+	struct clk *clk_MDP_RDMA0;
+	struct clk *clk_MDP_RDMA1;
 	struct clk *clk_MDP_RSZ0;
 	struct clk *clk_MDP_RSZ1;
+	struct clk *clk_MDP_RSZ2;
 	struct clk *clk_MDP_WDMA;
-	struct clk *clk_MDP_WROT;
+	struct clk *clk_MDP_WROT0;
+	struct clk *clk_MDP_WROT1;
 	struct clk *clk_MDP_TDSHP;
+	struct clk *clk_MDP_COLOR;
 } CmdqMdpModuleClock;
 
 static CmdqMdpModuleClock gCmdqMdpModuleClock;
@@ -62,27 +66,27 @@ bool cmdq_mdp_clock_is_enable_##FN_NAME(void)	\
 #endif				/* !defined(CMDQ_USE_CCF) */
 
 IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP, CAM_MDP);
-IMP_ENABLE_MDP_HW_CLOCK(MDP_RDMA0, MDP_RDMA);
-IMP_ENABLE_MDP_HW_CLOCK(MDP_RDMA1, MDP_RDMA);
+IMP_ENABLE_MDP_HW_CLOCK(MDP_RDMA0, MDP_RDMA0);
+IMP_ENABLE_MDP_HW_CLOCK(MDP_RDMA1, MDP_RDMA1);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_RSZ0, MDP_RSZ0);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_RSZ1, MDP_RSZ1);
-IMP_ENABLE_MDP_HW_CLOCK(MDP_RSZ2, MDP_RSZ0);
+IMP_ENABLE_MDP_HW_CLOCK(MDP_RSZ2, MDP_RSZ2);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_WDMA, MDP_WDMA);
-IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT0, MDP_WROT);
-IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT1, MDP_WROT);
+IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT0, MDP_WROT0);
+IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT1, MDP_WROT1);
 IMP_ENABLE_MDP_HW_CLOCK(MDP_TDSHP0, MDP_TDSHP);
-IMP_ENABLE_MDP_HW_CLOCK(MDP_COLOR0, MDP_TDSHP);
+IMP_ENABLE_MDP_HW_CLOCK(MDP_COLOR0, MDP_COLOR);
 IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP, CAM_MDP);
-IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA0, MDP_RDMA);
-IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA1, MDP_RDMA);
+IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA0, MDP_RDMA0);
+IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA1, MDP_RDMA1);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RSZ0, MDP_RSZ0);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RSZ1, MDP_RSZ1);
-IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RSZ2, MDP_RSZ0);
+IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RSZ2, MDP_RSZ2);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_WDMA, MDP_WDMA);
-IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_WROT0, MDP_WROT);
-IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_WROT1, MDP_WROT);
+IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_WROT0, MDP_WROT0);
+IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_WROT1, MDP_WROT1);
 IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_TDSHP0, MDP_TDSHP);
-IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_COLOR0, MDP_TDSHP);
+IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_COLOR0, MDP_COLOR);
 #undef IMP_ENABLE_MDP_HW_CLOCK
 #undef IMP_MDP_HW_CLOCK_IS_ENABLE
 
@@ -379,20 +383,28 @@ void cmdq_mdp_enable_clock(bool enable, CMDQ_ENG_ENUM engine)
 void cmdq_mdp_init_module_clk(void)
 {
 #if defined(CMDQ_OF_SUPPORT) && defined(CMDQ_USE_CCF)
-	cmdq_dev_get_module_clock_by_name("mediatek,MMSYS_CONFIG", "CAM_MDP",
+	cmdq_dev_get_module_clock_by_name("mediatek,mmsys_config", "CAM_MDP",
 					  &gCmdqMdpModuleClock.clk_CAM_MDP);
-	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rdma", "MDP_RDMA",
-					  &gCmdqMdpModuleClock.clk_MDP_RDMA);
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rdma0", "MDP_RDMA0",
+					  &gCmdqMdpModuleClock.clk_MDP_RDMA0);
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rdma1", "MDP_RDMA1",
+					  &gCmdqMdpModuleClock.clk_MDP_RDMA1);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rsz0", "MDP_RSZ0",
 					  &gCmdqMdpModuleClock.clk_MDP_RSZ0);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rsz1", "MDP_RSZ1",
 					  &gCmdqMdpModuleClock.clk_MDP_RSZ1);
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_rsz2", "MDP_RSZ2",
+					  &gCmdqMdpModuleClock.clk_MDP_RSZ2);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_wdma", "MDP_WDMA",
 					  &gCmdqMdpModuleClock.clk_MDP_WDMA);
-	cmdq_dev_get_module_clock_by_name("mediatek,mdp_wrot", "MDP_WROT",
-					  &gCmdqMdpModuleClock.clk_MDP_WROT);
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_wrot0", "MDP_WROT0",
+					  &gCmdqMdpModuleClock.clk_MDP_WROT0);
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_wrot1", "MDP_WROT1",
+					  &gCmdqMdpModuleClock.clk_MDP_WROT1);
 	cmdq_dev_get_module_clock_by_name("mediatek,mdp_tdshp", "MDP_TDSHP",
 					  &gCmdqMdpModuleClock.clk_MDP_TDSHP);
+	cmdq_dev_get_module_clock_by_name("mediatek,mdp_color", "MDP_COLOR",
+					  &gCmdqMdpModuleClock.clk_MDP_COLOR);
 #endif
 }
 
@@ -837,6 +849,7 @@ void cmdq_mdp_platform_function_setting(void)
 
 	pFunc->mdpClockIsOn = cmdq_mdp_clock_is_on;
 	pFunc->enableMdpClock = cmdq_mdp_enable_clock;
+	pFunc->initModuleCLK = cmdq_mdp_init_module_clk;
 
 	pFunc->mdpDumpRsz = cmdq_mdp_dump_rsz;
 	pFunc->mdpDumpTdshp = cmdq_mdp_dump_tdshp;

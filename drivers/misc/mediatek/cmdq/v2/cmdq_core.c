@@ -897,7 +897,11 @@ static int cmdq_core_print_record(const RecordStruct *pRecord, int index, char *
 		profileMarkerCount = CMDQ_MAX_PROFILE_MARKER_IN_TASK;
 
 	for (i = 0; i < profileMarkerCount; i++) {
-		length = snprintf(buf, bufLen, "(P%d,%s,%lld,)",
+		if (NULL == pRecord->profileMarkerTag)
+			break;
+		if (NULL == pRecord->profileMarkerTag[i])
+			continue;
+		length = snprintf(buf, bufLen, "(P%d,%s,%lld)",
 				  i, pRecord->profileMarkerTag[i], pRecord->profileMarkerTimeNS[i]);
 		bufLen -= length;
 		buf += length;
@@ -4583,7 +4587,7 @@ static void cmdq_core_fill_task_profile_marker_record(RecordStruct *pRecord,
 		/* timestamp, each count is 76ns */
 		cmdqBackupReadSlot(hSlot, i, &value);
 		pRecord->profileMarkerTimeNS[i] = value * 76;
-		pRecord->profileMarkerTag[i] = (char *)(const unsigned long long *)&pTask->profileMarker.tag[i];
+		pRecord->profileMarkerTag[i] = (char *)(CMDQ_U32_PTR(pTask->profileMarker.tag[i]));
 	}
 #endif
 }
