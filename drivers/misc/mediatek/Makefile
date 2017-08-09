@@ -82,6 +82,7 @@ obj-$(CONFIG_MTK_SM100)	+= tc1_interface/vib_drv/
 obj-$(CONFIG_MTK_ACCDET)	+= accdet/
 obj-$(CONFIG_MTK_ECCCI_C2K) += c2k_usb/
 obj-$(CONFIG_MTK_IRTX_SUPPORT) += irtx/
+obj-$(CONFIG_MTK_IR_LEARNING_SUPPORT) += ir_learning/
 obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += videocodec/
 obj-$(CONFIG_MTK_JPEG)	+= jpeg/
 obj-$(CONFIG_MTK_RTC)	+= rtc/

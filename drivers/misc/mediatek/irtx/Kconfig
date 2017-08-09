@@ -3,3 +3,11 @@ config MTK_IRTX_SUPPORT
 	default n
 	---help---
 	  IRTX driver support for MediaTek SoC
+
+config MTK_IRTX_HW_SUPPORT
+	bool "MediaTek consumer IR tansmitter"
+	default n
+	---help---
+	  This is a backward compatibility option: MTK_IRTX_SUPPORT is for "main stream" solution,
+	  which should be kept same as native layer setting. MTK_IRTX_HW_SUPPORT is for obsolete
+	  hardware solution, which is kept for testing or some old project.

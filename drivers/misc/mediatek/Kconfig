@@ -202,6 +202,7 @@ config MTK_CACHE_FLUSH_RANGE_PARALLEL
 source "drivers/misc/mediatek/gpt/Kconfig"
 source "drivers/misc/mediatek/uart/Kconfig"
 source "drivers/misc/mediatek/irtx/Kconfig"
+source "drivers/misc/mediatek/ir_learning/Kconfig"
 source "drivers/misc/mediatek/irq/Kconfig"
 source "drivers/misc/mediatek/auxadc/Kconfig"
 source "drivers/misc/mediatek/videocodec/Kconfig"

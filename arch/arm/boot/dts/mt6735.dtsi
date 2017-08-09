@@ -694,6 +694,19 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "clk-irtx-main";
 		};
 
+		irtx-pwm {
+			compatible = "mediatek,irtx-pwm";
+			pwm_ch = <2>;
+			pwm_data_invert = <0>;
+		};
+
+		irlearning-spi {
+			compatible = "mediatek,irlearning-spi";
+			spi_clock = <109000000>;
+			spi_data_invert = <0>;
+			spi_cs_invert = <1>;
+		};
+
 		apuart0: apuart0@11002000 {
 			cell-index = <0>;
 			compatible = "mediatek,mt6735-uart";
