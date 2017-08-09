@@ -1267,4 +1267,9 @@ u32 spm_get_register(void __force __iomem *offset)
 	return spm_read(offset);
 }
 
+void spm_set_register(void __force __iomem *offset, u32 value)
+{
+	spm_write(offset, value);
+}
+
 MODULE_DESCRIPTION("SPM Driver v0.1");

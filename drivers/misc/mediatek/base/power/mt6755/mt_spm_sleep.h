@@ -23,4 +23,9 @@ extern bool spm_set_suspned_pcm_init_flag(u32 *suspend_flags);
 
 extern void spm_output_sleep_option(void);
 
+/* record last wakesta */
+extern u32 spm_get_last_wakeup_src(void);
+extern u32 spm_get_last_wakeup_misc(void);
+extern u32 spm_get_register(void __force __iomem *offset);
+extern void spm_set_register(void __force __iomem *offset, u32 value);
 #endif
