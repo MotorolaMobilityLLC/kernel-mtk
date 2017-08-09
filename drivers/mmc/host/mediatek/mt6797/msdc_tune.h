@@ -1,8 +1,33 @@
 #ifndef _MSDC_TUNE_H_
 #define _MSDC_TUNE_H_
 
+#define MSDC_CLKTXDLY                   0
+#define MSDC0_HS400_CLKTXDLY            0
+#define MSDC0_HS400_CMDTXDLY            0xA
+#define MSDC0_HS400_DAT0TXDLY           0
+#define MSDC0_HS400_DAT1TXDLY           0
+#define MSDC0_HS400_DAT2TXDLY           0
+#define MSDC0_HS400_DAT3TXDLY           0
+#define MSDC0_HS400_DAT4TXDLY           0
+#define MSDC0_HS400_DAT5TXDLY           0
+#define MSDC0_HS400_DAT6TXDLY           0
+#define MSDC0_HS400_DAT7TXDLY           0
+#define MSDC0_HS400_TXSKEW              1
+
+#define MSDC0_DDR50_DDRCKD              1
+
+#define MSDC0_CLKTXDLY                  0
+#define MSDC0_CMDTXDLY                  0
+#define MSDC0_DAT0TXDLY                 0
+#define MSDC0_DAT1TXDLY                 0
+#define MSDC0_DAT2TXDLY                 0
+#define MSDC0_DAT3TXDLY                 0
+#define MSDC0_DAT4TXDLY                 0
+#define MSDC0_DAT5TXDLY                 0
+#define MSDC0_DAT6TXDLY                 0
+#define MSDC0_DAT7TXDLY                 0
 /* Declared in msdc_tune.c */
-/* FIX ME: move it to another file */
+/* FIXME: move it to another file */
 extern int g_ett_tune;
 extern int g_reset_tune;
 
@@ -28,9 +53,10 @@ extern u32 sdio_cmd_drv;
 extern u32 sdio_data_drv;
 extern u32 sdio_tune_flag;
 
-void msdc_init_tune_setting(struct msdc_host *host, int re_init);
+void msdc_init_tune_setting(struct msdc_host *host);
 void msdc_ios_tune_setting(struct msdc_host *host, struct mmc_ios *ios);
 void msdc_sdio_set_long_timing_delay_by_freq(struct msdc_host *host, u32 clock);
+void msdc_init_tune_path(struct msdc_host *host, unsigned char timing);
 
 void msdc_reset_pwr_cycle_counter(struct msdc_host *host);
 void msdc_reset_tmo_tune_counter(struct msdc_host *host,
@@ -63,8 +89,9 @@ void emmc_clear_timing(void);
 void msdc_save_timing_as_0(struct msdc_host *host);
 void msdc_save_timing_setting(struct msdc_host *host, u32 init_hw,
 	u32 emmc_suspend, u32 sdio_suspend, u32 power_tuning, u32 power_off);
-void msdc_set_timing_setting(struct msdc_host *host,
-	int emmc_restore, int sdio_restore);
+void msdc_restore_timing_setting(struct msdc_host *host);
+
+unsigned int msdc_tuning_smpl(struct msdc_host *host);
 void msdc_restore_info(struct msdc_host *host);
 
 enum EMMC_CHIP_TAG {

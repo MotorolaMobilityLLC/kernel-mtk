@@ -329,9 +329,10 @@ int msdc_of_parse(struct mmc_host *mmc)
 	if (of_property_read_u8(np, "cd_level", &host->hw->cd_level))
 		pr_err("[msdc%d] cd_level isn't found in device tree\n",
 				host->id);
-
+#ifdef SDCARD_HOTPLUG_NEW
 	/*get cd_gpio*/
 	of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio);
+#endif
 	msdc_get_rigister_settings(host);
 	msdc_get_pinctl_settings(host);
 
@@ -381,12 +382,12 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 
 	ret = mmc_of_parse(mmc);
 	if (ret) {
-		pr_err("%s: mmc of parse error!!\n", __func__);
+		pr_err("%s: mmc of parse error!!: %d\n", __func__, ret);
 		return ret;
 	}
 	ret = msdc_of_parse(mmc);
 	if (ret) {
-		pr_err("%s: msdc of parse error!!\n", __func__);
+		pr_err("%s: msdc of parse error!!: %d\n", __func__, ret);
 		return ret;
 	}
 
@@ -508,11 +509,10 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 #endif
 #endif
 	/* Get SD card detect eint irq */
-	/* FIXME: use linux default to detect SDcard */
-#if 0
+#ifndef SDCARD_HOTPLUG_NEW
 	if ((host->hw->host_function == MSDC_SD) && (eint_node == NULL)) {
 		eint_node = of_find_compatible_node(NULL, NULL,
-			"mediatek, MSDC1_INS-eint");
+			"mediatek,mt6797-sdcard-ins");
 		if (eint_node) {
 			*cd_irq = irq_of_parse_and_map(eint_node, 0);
 			if (*cd_irq == 0)
@@ -1219,13 +1219,13 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
 			MSDC_SET_FIELD(MSDC1_GPIO_R1_ADDR,
 				MSDC1_R1_ALL_MASK, 0x3f);
 		} else if (MSDC_PIN_PULL_UP == mode) {
-			/* cmd/dat:0/0/1: Pull-up with 50Kohm */
+			/* cmd/dat:0/1/0: Pull-up with 10Kohm */
 			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR,
 				MSDC1_PUPD_CMD_DAT_MASK, 0x0);
-			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR,
-				MSDC1_R0_CMD_DAT_MASK, 0x0);
-			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR,
-				MSDC1_R1_CMD_DAT_MASK, 0x1f);
+			MSDC_SET_FIELD(MSDC1_GPIO_R0_ADDR,
+				MSDC1_R0_CMD_DAT_MASK, 0x1f);
+			MSDC_SET_FIELD(MSDC1_GPIO_R1_ADDR,
+				MSDC1_R1_CMD_DAT_MASK, 0x0);
 			/* clk: 1/0/1: Pull-down with 50Kohm */
 			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR,
 				MSDC1_PUPD_CLK_MASK, 0x1);

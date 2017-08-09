@@ -11,7 +11,9 @@
 #include <linux/of_irq.h>
 extern const struct of_device_id msdc_of_ids[];
 extern struct msdc_hw *p_msdc_hw[];
+#ifdef SDCARD_HOTPLUG_NEW
 extern unsigned int cd_gpio;
+#endif
 extern struct device_node *eint_node;
 
 extern void __iomem *gpio_base;

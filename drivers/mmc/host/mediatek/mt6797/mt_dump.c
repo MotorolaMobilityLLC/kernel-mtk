@@ -435,40 +435,54 @@ static unsigned int simp_mmc_enable_clk(struct simp_mmc_host *host)
 
 	clk_setl(apmixed_reg_base + MSDCPLL_CON1_OFFSET, 0x80000000);
 
-	clk_setl(apmixed_reg_base + MSDCPLL_CON0_OFFSET, 0x1);
+	clk_setl(apmixed_reg_base + MSDCPLL_CON0_OFFSET, 0x111);
 	msdc_mdelay(1);
 
 	/* step2: enable mux */
-	mt_reg_sync_writel(0x01010100,
-		topckgen_reg_base + MSDC_CLK_CFG_2_OFFSET);
-	mt_reg_sync_writel(0x07020203,
+	/* mt_reg_sync_writel(0x01010100,
+		topckgen_reg_base + MSDC_CLK_CFG_2_OFFSET); */
+	mt_reg_sync_writel(0x2010100,
 		topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET);
 
-	mt_reg_sync_writel(0xFFFFFFFF,
-		pericfg_reg_base + MSDC_PERI_PDN_CLR0_OFFSET);
+	/* mt_reg_sync_writel(0xFFFFFFFF,
+		pericfg_reg_base + MSDC_PERI_PDN_CLR0_OFFSET); */
 
 #if MTK_MMC_DUMP_DBG
-	if (!apmixed_reg_base || !topckgen_reg_base) {
-		pr_err(" apmixed_reg_base = %p, topckgen_reg_base = %p",
-			apmixed_reg_base, topckgen_reg_base);
-		goto out;
+	if (topckgen_reg_base) {
+		/* CLK_CFG_3 control msdc clock source PLL */
+		pr_err(" CLK_CFG_3 register address is 0x%p\n\n",
+			topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET);
+		pr_err(" bit[9~8]=01b,     bit[15]=0b\n");
+		pr_err(" bit[19~16]=0001b, bit[23]=0b\n");
+		pr_err(" bit[26~24]=0010b, bit[31]=0b\n");
+		pr_err(" Read value is       0x%x\n",
+			MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET));
+	}
+	if (apmixed_reg_base) {
+		/* bit0 is enables PLL, 0: disable 1: enable */
+		pr_err(" MSDCPLL_CON0_OFFSET register address is 0x%p\n\n",
+			apmixed_reg_base + MSDCPLL_CON0_OFFSET);
+		pr_err(" bit[0]=1b\n");
+		pr_err(" Read value is       0x%x\n",
+			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON0_OFFSET));
+
+		pr_err(" MSDCPLL_CON1_OFFSET register address is 0x%p\n\n",
+			apmixed_reg_base + MSDCPLL_CON1_OFFSET);
+		pr_err(" Read value is       0x%x\n",
+			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON1_OFFSET));
+
+		pr_err(" MSDCPLL_CON2_OFFSET register address is 0x%p\n\n",
+			apmixed_reg_base + MSDCPLL_CON2_OFFSET);
+		pr_err(" Read value is       0x%x\n",
+			MSDC_READ32(apmixed_reg_base + MSDCPLL_CON2_OFFSET));
+
+		pr_err(" MSDCPLL_PWR_CON0 register address is 0x%p\n\n",
+			apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET);
+		pr_err(" bit[0]=1b\n");
+		pr_err(" Read value is       0x%x\n",
+			MSDC_READ32(apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET));
 	}
 
-	pr_err(" MSDCPLL_PWR_CON0[0x%p][bit0~1 should be 2b'01]=0x%x",
-		(apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET),
-		MSDC_READ32(apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET));
-	pr_err(" MSDCPLL_CON0    [0x%p][bit0 should be 1b'1]=0x%x",
-		(apmixed_reg_base + MSDCPLL_CON0_OFFSET),
-		MSDC_READ32(apmixed_reg_base + MSDCPLL_CON0_OFFSET));
-	pr_err(" CLK_CFG_2       [0x%p][bit[31:24]should be 0x01]=0x%x",
-		(topckgen_reg_base + MSDC_CLK_CFG_2_OFFSET),
-		MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_2_OFFSET));
-	pr_err(" CLK_CFG_3       [0x%p][bit[15:0]should be 0x0202]=0x%x",
-		(topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET),
-		MSDC_READ32(topckgen_reg_base + MSDC_CLK_CFG_3_OFFSET));
-	pr_err(" PERI_PDN_STA0   [0x%p][bit13=msdc0, bit14=msdc1,0:on,1:off]=0x%x",
-		(topckgen_reg_base + MSDC_PERI_PDN_STA0_OFFSET),
-		MSDC_READ32(topckgen_reg_base + MSDC_PERI_PDN_STA0_OFFSET));
 #endif
 
 out:

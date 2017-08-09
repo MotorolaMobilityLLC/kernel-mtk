@@ -14,6 +14,7 @@ obj-$(CONFIG_MMC_MTK) += mt_sd_misc.o
 obj-$(CONFIG_MMC_MTK) += msdc_tune.o
 obj-$(CONFIG_MMC_MTK) += msdc_partition.o
 obj-$(CONFIG_MMC_MTK) += msdc_io.o
+obj-$(CONFIG_MMC_MTK) += autok.o
 
 ifeq ($(CONFIG_MTK_FPGA),y)
 obj-$(CONFIG_MMC_MTK) += msdc_fpga_io.o

@@ -195,6 +195,7 @@
 #define	MSDC_CFG_CKMOD_HS400		(0x1  << 22)	/* RW */
 #define	MSDC_CFG_START_BIT		(0x3  << 23)	/* RW */
 #define	MSDC_CFG_SCLK_STOP_DDR		(0x1  << 25)	/* RW */
+#define MSDC_CFG_DVFS_EN                (0x1  << 30)    /* RW */
 
 /* MSDC_IOCON mask */
 #define	MSDC_IOCON_SDR104CKS		(0x1  << 0)	/* RW */
@@ -369,7 +370,8 @@
 #define	MSDC_PB0_RESV1			(0x1 <<	0)
 #define	MSDC_PB0_EN_8BITSUP		(0x1 <<	1)
 #define	MSDC_PB0_DIS_RECMDWR		(0x1 <<	2)
-#define	MSDC_PB0_RESV2			(0x7 <<	3)
+#define MSDC_PB0_RD_DAT_SEL             (0x1 << 3)
+#define MSDC_PB0_RESV2                  (0x3 << 4)
 #define	MSDC_PB0_DESCUP			(0x1 <<	6)
 #define	MSDC_PB0_INT_DAT_LATCH_CK_SEL	(0x7 <<	7)
 #define	MSDC_PB0_CKGEN_MSDC_DLY_SEL	(0x1F<<10)

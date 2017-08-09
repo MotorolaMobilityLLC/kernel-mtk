@@ -14,6 +14,14 @@
 #include <linux/clk.h>
 
 #include "board.h"
+#define MSDC_NEW_TUNE
+#ifdef MSDC_NEW_TUNE
+#define EIO	EILSEQ
+#define MSDC_NEW_TUNE_DBG
+/*#define DATA_TUNE_READ_DATA_ALLOW_FALLING_EDGE*/
+#endif
+
+#define SDCARD_HOTPLUG_NEW
 #define MSDC_DMA_ADDR_DEBUG
 /*#define MSDC_HQA*/
 
@@ -137,6 +145,13 @@ enum {
 #define CARD_READY_FOR_DATA             (1<<8)
 #define CARD_CURRENT_STATE(x)           ((x&0x00001E00)>>9)
 
+#define REQ_CMD_EIO  (0x1 << 0)
+#define REQ_CMD_TMO  (0x1 << 1)
+#define REQ_DAT_ERR  (0x1 << 2)
+#define REQ_STOP_EIO (0x1 << 3)
+#define REQ_STOP_TMO (0x1 << 4)
+#define REQ_CMD23_EIO (0x1 << 5)
+#define REQ_CMD23_TMO (0x1 << 6)
 enum MSDC_POWER {
 	MSDC_VIO18_MC1 = 0,
 	MSDC_VIO18_MC2,
@@ -231,6 +246,7 @@ struct tune_counter {
 /*FIX ME, consider to move it into msdc_tune.c*/
 struct msdc_saved_para {
 	u32 pad_tune0;
+	u32 pad_tune1;
 	u32 ddly0;
 	u32 ddly1;
 	u8 cmd_resp_ta_cntr;
@@ -256,6 +272,12 @@ struct msdc_saved_para {
 	u8 cfg_cmdrsp_path;
 	u8 cfg_crcsts_path;
 	u8 resp_wait_cnt;
+	u32 emmc50_dat01;
+	u32 emmc50_dat23;
+	u32 emmc50_dat45;
+	u32 emmc50_dat67;
+	u32 pb1;
+	u32 pb2;
 };
 
 #if defined(MTK_SDIO30_ONLINE_TUNING_SUPPORT) || defined(ONLINE_TUNING_DVTTEST)
@@ -363,6 +385,13 @@ struct msdc_host {
 	bool                    power_cycle_enable; /*Enable power cycle*/
 	bool                    error_tune_enable;  /* enable error tune flow */
 	u32                     sd_30_busy;
+	bool                    async_tuning_in_progress;
+	bool                    async_tuning_done;
+	bool			legacy_tuning_in_progress;
+	bool			legacy_tuning_done;
+	int                     autok_error;
+	u32			tune_latch_ck_cnt;
+	unsigned int		err_mrq_dir;
 	bool                    tune;
 	unsigned int		power_domain;
 	struct msdc_saved_para  saved_para;
@@ -381,8 +410,6 @@ struct msdc_host {
 	void    (*power_control)(struct msdc_host *host, u32 on);
 	void    (*power_switch)(struct msdc_host *host, u32 on);
 	struct clk *clock_control;
-	struct work_struct	work_tune; /* new thread tune */
-	struct mmc_request	*mrq_tune; /* backup host->mrq */
 };
 
 struct tag_msdc_hw_para {
@@ -706,6 +733,7 @@ void msdc_set_smpl(struct msdc_host *host, u8 HS400, u8 mode, u8 type,
 	u8 *edge);
 void msdc_set_smpl_all(struct msdc_host *host, u8 HS400);
 int msdc_switch_part(struct msdc_host *host, char part_id);
+int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
 
 /* Function provided by msdc_partition.c */
 void msdc_proc_emmc_create(void);
