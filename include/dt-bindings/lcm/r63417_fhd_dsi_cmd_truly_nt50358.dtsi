@@ -87,7 +87,7 @@
 		lcm_params-dpi-lsb_io_driving_current;
 
 		lcm_params-dsi-mode = <0>;
-		lcm_params-dsi-switch_mode = <1>;
+		lcm_params-dsi-switch_mode = <2>;
 		lcm_params-dsi-DSI_WMEM_CONTI;
 		lcm_params-dsi-DSI_RMEM_CONTI;
 		lcm_params-dsi-VC_NUM;
@@ -105,8 +105,8 @@
 		lcm_params-dsi-vertical_frontporch_for_low_power;
 		lcm_params-dsi-vertical_active_line = <1920>;
 		lcm_params-dsi-horizontal_sync_active = <10>;
-		lcm_params-dsi-horizontal_backporch = <20>;
-		lcm_params-dsi-horizontal_frontporch = <40>;
+		lcm_params-dsi-horizontal_backporch = <60>;
+		lcm_params-dsi-horizontal_frontporch = <100>;
 		lcm_params-dsi-horizontal_blanking_pixel;
 		lcm_params-dsi-horizontal_active_pixel = <1080>;
 		lcm_params-dsi-horizontal_bllp;

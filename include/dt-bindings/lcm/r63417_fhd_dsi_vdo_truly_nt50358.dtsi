@@ -29,8 +29,8 @@
 		lcm_params-dbi-msb_io_driving_current;
 		lcm_params-dbi-ctrl_io_driving_current;
 
-		lcm_params-dbi-te_mode = <1>;
-		lcm_params-dbi-te_edge_polarity = <0>;
+		lcm_params-dbi-te_mode;
+		lcm_params-dbi-te_edge_polarity;
 		lcm_params-dbi-te_hs_delay_cnt;
 		lcm_params-dbi-te_vs_width_cnt;
 		lcm_params-dbi-te_vs_width_cnt_div;
@@ -86,8 +86,8 @@
 		lcm_params-dpi-io_driving_current;
 		lcm_params-dpi-lsb_io_driving_current;
 
-		lcm_params-dsi-mode = <1>;
-		lcm_params-dsi-switch_mode = <1>;
+		lcm_params-dsi-mode = <2>;
+		lcm_params-dsi-switch_mode = <0>;
 		lcm_params-dsi-DSI_WMEM_CONTI;
 		lcm_params-dsi-DSI_RMEM_CONTI;
 		lcm_params-dsi-VC_NUM;
@@ -156,8 +156,8 @@
 		/* compress_ratio, lr_mode_en, vlc_disable, vlc_config */
 		lcm_params-dsi-edp_panel;
 
-		lcm_params-dsi-customization_esd_check_enable = <1>;
-		lcm_params-dsi-esd_check_enable = <0>;
+		lcm_params-dsi-customization_esd_check_enable = <0>;
+		lcm_params-dsi-esd_check_enable = <1>;
 
 		lcm_params-dsi-lcm_int_te_monitor;
 		lcm_params-dsi-lcm_int_te_period;
