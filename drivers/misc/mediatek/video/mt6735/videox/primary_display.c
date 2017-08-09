@@ -4657,9 +4657,7 @@ unsigned long get_dim_layer_mva_addr(void)
 		int frame_buffer_size = ALIGN_TO(DISP_GetScreenWidth(),
 						 MTK_FB_ALIGNMENT) * ALIGN_TO(DISP_GetScreenHeight(),
 									      MTK_FB_ALIGNMENT) * 4;
-		unsigned long dim_layer_va = pgc->framebuffer_va + 2 * frame_buffer_size;
 
-		memset_io((void *)dim_layer_va, 0, frame_buffer_size);
 		dim_layer_mva = pgc->framebuffer_mva + 2 * frame_buffer_size;
 		DISPMSG("init dim layer mva %lu, size %d", dim_layer_mva, frame_buffer_size);
 	}
