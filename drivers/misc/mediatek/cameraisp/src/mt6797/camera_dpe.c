@@ -124,7 +124,7 @@ typedef bool MBOOL;
 
 /* #define DPE_WAITIRQ_LOG  */
 #define DPE_USE_GCE
-#define DPE_DEBUG_USE
+/* #define DPE_DEBUG_USE  */
 /* #define DPE_MULTIPROCESS_TIMEING_ISSUE  */
 /*I can' test the situation in FPGA, because the velocity of FPGA is so slow. */
 #define MyTag "[DPE]"
@@ -133,12 +133,12 @@ typedef bool MBOOL;
 #define LOG_VRB(format,	args...)    pr_debug(MyTag format, ##args)
 
 #ifdef DPE_DEBUG_USE
-#define LOG_DBG(format, args...)    pr_info(MyTag format, ##args)
+#define LOG_DBG(format, args...)    pr_debug(MyTag format, ##args)
 #else
 #define LOG_DBG(format, args...)
 #endif
 
-#define LOG_INF(format, args...)    pr_info(MyTag format,  ##args)
+#define LOG_INF(format, args...)    pr_debug(MyTag format,  ##args)
 #define LOG_NOTICE(format, args...) pr_notice(MyTag format,  ##args)
 #define LOG_WRN(format, args...)    pr_warn(MyTag format,  ##args)
 #define LOG_ERR(format, args...)    pr_err(MyTag format,  ##args)
@@ -1187,59 +1187,59 @@ static MINT32 ConfigDVEHW(DPE_DVEConfig *pDveConfig)
 #endif
 
 	if (DPE_DBG_DBGLOG == (DPE_DBG_DBGLOG & DPEInfo.DebugMask)) {
-		LOG_INF("ConfigDVEHW Start!\n");
+		LOG_DBG("ConfigDVEHW Start!\n");
 
-		LOG_INF("DPE_DVE_CTRL_REG:0x%x!\n", pDveConfig->DPE_DVE_CTRL);
+		LOG_DBG("DPE_DVE_CTRL_REG:0x%x!\n", pDveConfig->DPE_DVE_CTRL);
 
-		LOG_INF("DPE_DVE_ORG_L_HORZ_BBOX_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_L_HORZ_BBOX);
-		LOG_INF("DPE_DVE_ORG_L_VERT_BBOX_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_L_VERT_BBOX);
-		LOG_INF("DPE_DVE_ORG_R_HORZ_BBOX_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_R_HORZ_BBOX);
-		LOG_INF("DPE_DVE_ORG_R_VERT_BBOX_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_R_VERT_BBOX);
+		LOG_DBG("DPE_DVE_ORG_L_HORZ_BBOX_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_L_HORZ_BBOX);
+		LOG_DBG("DPE_DVE_ORG_L_VERT_BBOX_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_L_VERT_BBOX);
+		LOG_DBG("DPE_DVE_ORG_R_HORZ_BBOX_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_R_HORZ_BBOX);
+		LOG_DBG("DPE_DVE_ORG_R_VERT_BBOX_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_R_VERT_BBOX);
 
-		LOG_INF("DPE_DVE_ORG_SIZE_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_SIZE);
-		LOG_INF("DPE_DVE_ORG_SR_0_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_SR_0);
-		LOG_INF("DPE_DVE_ORG_SR_1_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_SR_1);
-		LOG_INF("DPE_DVE_ORG_SV_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_SV);
+		LOG_DBG("DPE_DVE_ORG_SIZE_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_SIZE);
+		LOG_DBG("DPE_DVE_ORG_SR_0_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_SR_0);
+		LOG_DBG("DPE_DVE_ORG_SR_1_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_SR_1);
+		LOG_DBG("DPE_DVE_ORG_SV_REG:0x%x!\n", pDveConfig->DPE_DVE_ORG_SV);
 
-		LOG_INF("DPE_DVE_CAND_NUM_REG:0x%x!\n", pDveConfig->DPE_DVE_CAND_NUM);
-		LOG_INF("DPE_DVE_CAND_SEL_0_REG:0x%x!\n", pDveConfig->DPE_DVE_CAND_SEL_0);
-		LOG_INF("DPE_DVE_CAND_SEL_1_REG:0x%x!\n", pDveConfig->DPE_DVE_CAND_SEL_1);
-		LOG_INF("DPE_DVE_CAND_SEL_2_REG:0x%x!\n", pDveConfig->DPE_DVE_CAND_SEL_2);
-		LOG_INF("DPE_DVE_CAND_TYPE_0_REG:0x%x!\n", pDveConfig->DPE_DVE_CAND_TYPE_0);
-		LOG_INF("DPE_DVE_CAND_TYPE_1_REG:0x%x!\n", pDveConfig->DPE_DVE_CAND_TYPE_1);
+		LOG_DBG("DPE_DVE_CAND_NUM_REG:0x%x!\n", pDveConfig->DPE_DVE_CAND_NUM);
+		LOG_DBG("DPE_DVE_CAND_SEL_0_REG:0x%x!\n", pDveConfig->DPE_DVE_CAND_SEL_0);
+		LOG_DBG("DPE_DVE_CAND_SEL_1_REG:0x%x!\n", pDveConfig->DPE_DVE_CAND_SEL_1);
+		LOG_DBG("DPE_DVE_CAND_SEL_2_REG:0x%x!\n", pDveConfig->DPE_DVE_CAND_SEL_2);
+		LOG_DBG("DPE_DVE_CAND_TYPE_0_REG:0x%x!\n", pDveConfig->DPE_DVE_CAND_TYPE_0);
+		LOG_DBG("DPE_DVE_CAND_TYPE_1_REG:0x%x!\n", pDveConfig->DPE_DVE_CAND_TYPE_1);
 
-		LOG_INF("DPE_DVE_RAND_LUT_REG:0x%x!\n", pDveConfig->DPE_DVE_RAND_LUT);
-		LOG_INF("DPE_DVE_GMV_REG:0x%x!\n", pDveConfig->DPE_DVE_GMV);
-		LOG_INF("DPE_DVE_DV_INI_REG:0x%x!\n", pDveConfig->DPE_DVE_DV_INI);
-		LOG_INF("DPE_DVE_BLK_VAR_CTRL_REG:0x%x!\n", pDveConfig->DPE_DVE_BLK_VAR_CTRL);
-		LOG_INF("DPE_DVE_SMTH_LUMA_CTRL_REG:0x%x!\n", pDveConfig->DPE_DVE_SMTH_LUMA_CTRL);
-		LOG_INF("DPE_DVE_SMTH_DV_CTRL_REG:0x%x!\n", pDveConfig->DPE_DVE_SMTH_DV_CTRL);
+		LOG_DBG("DPE_DVE_RAND_LUT_REG:0x%x!\n", pDveConfig->DPE_DVE_RAND_LUT);
+		LOG_DBG("DPE_DVE_GMV_REG:0x%x!\n", pDveConfig->DPE_DVE_GMV);
+		LOG_DBG("DPE_DVE_DV_INI_REG:0x%x!\n", pDveConfig->DPE_DVE_DV_INI);
+		LOG_DBG("DPE_DVE_BLK_VAR_CTRL_REG:0x%x!\n", pDveConfig->DPE_DVE_BLK_VAR_CTRL);
+		LOG_DBG("DPE_DVE_SMTH_LUMA_CTRL_REG:0x%x!\n", pDveConfig->DPE_DVE_SMTH_LUMA_CTRL);
+		LOG_DBG("DPE_DVE_SMTH_DV_CTRL_REG:0x%x!\n", pDveConfig->DPE_DVE_SMTH_DV_CTRL);
 
-		LOG_INF("DPE_DVE_ORD_CTRL_REG:0x%x!\n", pDveConfig->DPE_DVE_ORD_CTRL);
-		LOG_INF("DPE_DVE_TYPE_CTRL_0_REG:0x%x!\n", pDveConfig->DPE_DVE_TYPE_CTRL_0);
-		LOG_INF("DPE_DVE_TYPE_CTRL_1_REG:0x%x!\n", pDveConfig->DPE_DVE_TYPE_CTRL_1);
+		LOG_DBG("DPE_DVE_ORD_CTRL_REG:0x%x!\n", pDveConfig->DPE_DVE_ORD_CTRL);
+		LOG_DBG("DPE_DVE_TYPE_CTRL_0_REG:0x%x!\n", pDveConfig->DPE_DVE_TYPE_CTRL_0);
+		LOG_DBG("DPE_DVE_TYPE_CTRL_1_REG:0x%x!\n", pDveConfig->DPE_DVE_TYPE_CTRL_1);
 
-		LOG_INF("DPE_DVE_IMGI_L_BASE_ADDR_REG:0x%x!\n",
+		LOG_DBG("DPE_DVE_IMGI_L_BASE_ADDR_REG:0x%x!\n",
 			pDveConfig->DPE_DVE_IMGI_L_BASE_ADDR);
-		LOG_INF("DPE_DVE_IMGI_R_BASE_ADDR_REG:0x%x!\n",
+		LOG_DBG("DPE_DVE_IMGI_R_BASE_ADDR_REG:0x%x!\n",
 			pDveConfig->DPE_DVE_IMGI_R_BASE_ADDR);
-		LOG_INF("DPE_DVE_DVI_L_BASE_ADDR_REG:0x%x!\n", pDveConfig->DPE_DVE_DVI_L_BASE_ADDR);
-		LOG_INF("DPE_DVE_DVI_R_BASE_ADDR_REG:0x%x!\n", pDveConfig->DPE_DVE_DVI_R_BASE_ADDR);
-		LOG_INF("DPE_DVE_MASKI_L_BASE_ADDR_REG:0x%x!\n",
+		LOG_DBG("DPE_DVE_DVI_L_BASE_ADDR_REG:0x%x!\n", pDveConfig->DPE_DVE_DVI_L_BASE_ADDR);
+		LOG_DBG("DPE_DVE_DVI_R_BASE_ADDR_REG:0x%x!\n", pDveConfig->DPE_DVE_DVI_R_BASE_ADDR);
+		LOG_DBG("DPE_DVE_MASKI_L_BASE_ADDR_REG:0x%x!\n",
 			pDveConfig->DPE_DVE_MASKI_L_BASE_ADDR);
-		LOG_INF("DPE_DVE_MASKI_R_BASE_ADDR_REG:0x%x!\n",
+		LOG_DBG("DPE_DVE_MASKI_R_BASE_ADDR_REG:0x%x!\n",
 			pDveConfig->DPE_DVE_MASKI_R_BASE_ADDR);
 
 
-		LOG_INF("DPE_DVE_DVO_L_BASE_ADDR_REG:0x%x!\n", pDveConfig->DPE_DVE_DVO_L_BASE_ADDR);
-		LOG_INF("DPE_DVE_DVO_R_BASE_ADDR_REG:0x%x!\n", pDveConfig->DPE_DVE_DVO_R_BASE_ADDR);
-		LOG_INF("DPE_DVE_CONFO_L_BASE_ADDR_REG:0x%x!\n",
+		LOG_DBG("DPE_DVE_DVO_L_BASE_ADDR_REG:0x%x!\n", pDveConfig->DPE_DVE_DVO_L_BASE_ADDR);
+		LOG_DBG("DPE_DVE_DVO_R_BASE_ADDR_REG:0x%x!\n", pDveConfig->DPE_DVE_DVO_R_BASE_ADDR);
+		LOG_DBG("DPE_DVE_CONFO_L_BASE_ADDR_REG:0x%x!\n",
 			pDveConfig->DPE_DVE_CONFO_L_BASE_ADDR);
-		LOG_INF("DPE_DVE_CONFO_R_BASE_ADDR_REG:0x%x!\n",
+		LOG_DBG("DPE_DVE_CONFO_R_BASE_ADDR_REG:0x%x!\n",
 			pDveConfig->DPE_DVE_CONFO_R_BASE_ADDR);
-		LOG_INF("DPE_DVE_RESPO_L_BASE_ADDR_REG:0x%x!\n",
+		LOG_DBG("DPE_DVE_RESPO_L_BASE_ADDR_REG:0x%x!\n",
 			pDveConfig->DPE_DVE_RESPO_L_BASE_ADDR);
-		LOG_INF("DPE_DVE_RESPO_R_BASE_ADDR_REG:0x%x!\n",
+		LOG_DBG("DPE_DVE_RESPO_R_BASE_ADDR_REG:0x%x!\n",
 			pDveConfig->DPE_DVE_RESPO_R_BASE_ADDR);
 
 	}
@@ -1700,52 +1700,52 @@ static MINT32 ConfigWMFEHW(DPE_WMFEConfig *pWmfeConfig)
 
 	if (DPE_DBG_DBGLOG == (DPE_DBG_DBGLOG & DPEInfo.DebugMask)) {
 
-		LOG_INF("ConfigWMFEHW Start!\n");
+		LOG_DBG("ConfigWMFEHW Start!\n");
 
-		LOG_INF("DPE_WMFE_CTRL_0_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_CTRL_0);
-		LOG_INF("DPE_WMFE_SIZE_0_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_SIZE_0);
-		LOG_INF("DPE_WMFE_IMGI_BASE_ADDR_0_REG:0x%x!\n",
+		LOG_DBG("DPE_WMFE_CTRL_0_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_CTRL_0);
+		LOG_DBG("DPE_WMFE_SIZE_0_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_SIZE_0);
+		LOG_DBG("DPE_WMFE_IMGI_BASE_ADDR_0_REG:0x%x!\n",
 			pWmfeConfig->DPE_WMFE_IMGI_BASE_ADDR_0);
-		LOG_INF("DPE_WMFE_IMGI_STRIDE_0_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_IMGI_STRIDE_0);
-		LOG_INF("DPE_WMFE_DPI_BASE_ADDR_0_REG:0x%x!\n",
+		LOG_DBG("DPE_WMFE_IMGI_STRIDE_0_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_IMGI_STRIDE_0);
+		LOG_DBG("DPE_WMFE_DPI_BASE_ADDR_0_REG:0x%x!\n",
 			pWmfeConfig->DPE_WMFE_DPI_BASE_ADDR_0);
-		LOG_INF("DPE_WMFE_DPI_STRIDE_0_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_DPI_STRIDE_0);
-		LOG_INF("DPE_WMFE_TBLI_BASE_ADDR_0_REG:0x%x!\n",
+		LOG_DBG("DPE_WMFE_DPI_STRIDE_0_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_DPI_STRIDE_0);
+		LOG_DBG("DPE_WMFE_TBLI_BASE_ADDR_0_REG:0x%x!\n",
 			pWmfeConfig->DPE_WMFE_TBLI_BASE_ADDR_0);
-		LOG_INF("DPE_WMFE_TBLI_STRIDE_0_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_TBLI_STRIDE_0);
-		LOG_INF("DPE_WMFE_DPO_BASE_ADDR_0_REG:0x%x!\n",
+		LOG_DBG("DPE_WMFE_TBLI_STRIDE_0_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_TBLI_STRIDE_0);
+		LOG_DBG("DPE_WMFE_DPO_BASE_ADDR_0_REG:0x%x!\n",
 			pWmfeConfig->DPE_WMFE_DPO_BASE_ADDR_0);
-		LOG_INF("DPE_WMFE_DPO_STRIDE_0_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_DPO_STRIDE_0);
+		LOG_DBG("DPE_WMFE_DPO_STRIDE_0_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_DPO_STRIDE_0);
 
-		LOG_INF("DPE_WMFE_CTRL_1_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_CTRL_1);
-		LOG_INF("DPE_WMFE_SIZE_1_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_SIZE_1);
-		LOG_INF("DPE_WMFE_IMGI_BASE_ADDR_1_REG:0x%x!\n",
+		LOG_DBG("DPE_WMFE_CTRL_1_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_CTRL_1);
+		LOG_DBG("DPE_WMFE_SIZE_1_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_SIZE_1);
+		LOG_DBG("DPE_WMFE_IMGI_BASE_ADDR_1_REG:0x%x!\n",
 			pWmfeConfig->DPE_WMFE_IMGI_BASE_ADDR_1);
-		LOG_INF("DPE_WMFE_IMGI_STRIDE_1_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_IMGI_STRIDE_1);
-		LOG_INF("DPE_WMFE_DPI_BASE_ADDR_1_REG:0x%x!\n",
+		LOG_DBG("DPE_WMFE_IMGI_STRIDE_1_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_IMGI_STRIDE_1);
+		LOG_DBG("DPE_WMFE_DPI_BASE_ADDR_1_REG:0x%x!\n",
 			pWmfeConfig->DPE_WMFE_DPI_BASE_ADDR_1);
-		LOG_INF("DPE_WMFE_DPI_STRIDE_1_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_DPI_STRIDE_1);
-		LOG_INF("DPE_WMFE_TBLI_BASE_ADDR_1_REG:0x%x!\n",
+		LOG_DBG("DPE_WMFE_DPI_STRIDE_1_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_DPI_STRIDE_1);
+		LOG_DBG("DPE_WMFE_TBLI_BASE_ADDR_1_REG:0x%x!\n",
 			pWmfeConfig->DPE_WMFE_TBLI_BASE_ADDR_1);
-		LOG_INF("DPE_WMFE_TBLI_STRIDE_1_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_TBLI_STRIDE_1);
-		LOG_INF("DPE_WMFE_DPO_BASE_ADDR_1_REG:0x%x!\n",
+		LOG_DBG("DPE_WMFE_TBLI_STRIDE_1_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_TBLI_STRIDE_1);
+		LOG_DBG("DPE_WMFE_DPO_BASE_ADDR_1_REG:0x%x!\n",
 			pWmfeConfig->DPE_WMFE_DPO_BASE_ADDR_1);
-		LOG_INF("DPE_WMFE_DPO_STRIDE_1_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_DPO_STRIDE_1);
+		LOG_DBG("DPE_WMFE_DPO_STRIDE_1_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_DPO_STRIDE_1);
 
-		LOG_INF("DPE_WMFE_CTRL_2_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_CTRL_2);
-		LOG_INF("DPE_WMFE_SIZE_2_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_SIZE_2);
-		LOG_INF("DPE_WMFE_IMGI_BASE_ADDR_2_REG:0x%x!\n",
+		LOG_DBG("DPE_WMFE_CTRL_2_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_CTRL_2);
+		LOG_DBG("DPE_WMFE_SIZE_2_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_SIZE_2);
+		LOG_DBG("DPE_WMFE_IMGI_BASE_ADDR_2_REG:0x%x!\n",
 			pWmfeConfig->DPE_WMFE_IMGI_BASE_ADDR_2);
-		LOG_INF("DPE_WMFE_IMGI_STRIDE_2_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_IMGI_STRIDE_2);
-		LOG_INF("DPE_WMFE_DPI_BASE_ADDR_2_REG:0x%x!\n",
+		LOG_DBG("DPE_WMFE_IMGI_STRIDE_2_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_IMGI_STRIDE_2);
+		LOG_DBG("DPE_WMFE_DPI_BASE_ADDR_2_REG:0x%x!\n",
 			pWmfeConfig->DPE_WMFE_DPI_BASE_ADDR_2);
-		LOG_INF("DPE_WMFE_DPI_STRIDE_2_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_DPI_STRIDE_2);
-		LOG_INF("DPE_WMFE_TBLI_BASE_ADDR_2_REG:0x%x!\n",
+		LOG_DBG("DPE_WMFE_DPI_STRIDE_2_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_DPI_STRIDE_2);
+		LOG_DBG("DPE_WMFE_TBLI_BASE_ADDR_2_REG:0x%x!\n",
 			pWmfeConfig->DPE_WMFE_TBLI_BASE_ADDR_2);
-		LOG_INF("DPE_WMFE_TBLI_STRIDE_2_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_TBLI_STRIDE_2);
-		LOG_INF("DPE_WMFE_DPO_BASE_ADDR_2_REG:0x%x!\n",
+		LOG_DBG("DPE_WMFE_TBLI_STRIDE_2_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_TBLI_STRIDE_2);
+		LOG_DBG("DPE_WMFE_DPO_BASE_ADDR_2_REG:0x%x!\n",
 			pWmfeConfig->DPE_WMFE_DPO_BASE_ADDR_2);
-		LOG_INF("DPE_WMFE_DPO_STRIDE_2_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_DPO_STRIDE_2);
+		LOG_DBG("DPE_WMFE_DPO_STRIDE_2_REG:0x%x!\n", pWmfeConfig->DPE_WMFE_DPO_STRIDE_2);
 
 	}
 #ifdef DPE_USE_GCE
@@ -1948,181 +1948,181 @@ static MINT32 DPE_DumpReg(void)
 	MINT32 Ret = 0;
 	MUINT32 i, j;
 	/*  */
-	LOG_DBG("- E.");
+	LOG_INF("- E.");
 	/*  */
-	LOG_DBG("DVE Config Info\n");
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2C),
+	LOG_INF("DVE Config Info\n");
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2C),
 		(unsigned int)DPE_RD32(DPE_DVE_CTRL_REG));
 
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x30),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x30),
 		(unsigned int)DPE_RD32(DPE_DVE_ORG_L_HORZ_BBOX_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x34),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x34),
 		(unsigned int)DPE_RD32(DPE_DVE_ORG_L_VERT_BBOX_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x38),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x38),
 		(unsigned int)DPE_RD32(DPE_DVE_ORG_R_HORZ_BBOX_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x3C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x3C),
 		(unsigned int)DPE_RD32(DPE_DVE_ORG_R_VERT_BBOX_REG));
 
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x40),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x40),
 		(unsigned int)DPE_RD32(DPE_DVE_ORG_SIZE_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x44),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x44),
 		(unsigned int)DPE_RD32(DPE_DVE_ORG_SR_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x48),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x48),
 		(unsigned int)DPE_RD32(DPE_DVE_ORG_SR_1_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x4C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x4C),
 		(unsigned int)DPE_RD32(DPE_DVE_ORG_SV_REG));
 
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x50),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x50),
 		(unsigned int)DPE_RD32(DPE_DVE_CAND_NUM_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x54),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x54),
 		(unsigned int)DPE_RD32(DPE_DVE_CAND_SEL_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x58),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x58),
 		(unsigned int)DPE_RD32(DPE_DVE_CAND_SEL_1_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x5C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x5C),
 		(unsigned int)DPE_RD32(DPE_DVE_CAND_SEL_2_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x60),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x60),
 		(unsigned int)DPE_RD32(DPE_DVE_CAND_TYPE_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x64),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x64),
 		(unsigned int)DPE_RD32(DPE_DVE_CAND_TYPE_1_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x68),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x68),
 		(unsigned int)DPE_RD32(DPE_DVE_RAND_LUT_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x6C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x6C),
 		(unsigned int)DPE_RD32(DPE_DVE_GMV_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x70),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x70),
 		(unsigned int)DPE_RD32(DPE_DVE_DV_INI_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x74),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x74),
 		(unsigned int)DPE_RD32(DPE_DVE_BLK_VAR_CTRL_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x78),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x78),
 		(unsigned int)DPE_RD32(DPE_DVE_SMTH_LUMA_CTRL_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x7C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x7C),
 		(unsigned int)DPE_RD32(DPE_DVE_SMTH_DV_CTRL_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x80),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x80),
 		(unsigned int)DPE_RD32(DPE_DVE_ORD_CTRL_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x84),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x84),
 		(unsigned int)DPE_RD32(DPE_DVE_TYPE_CTRL_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x88),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x88),
 		(unsigned int)DPE_RD32(DPE_DVE_TYPE_CTRL_1_REG));
 
-	LOG_DBG("DVE Debug Info\n");
+	LOG_INF("DVE Debug Info\n");
 
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x120),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x120),
 		(unsigned int)DPE_RD32(DPE_DVE_DBG_INFO_00_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x124),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x124),
 		(unsigned int)DPE_RD32(DPE_DVE_DBG_INFO_01_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x128),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x128),
 		(unsigned int)DPE_RD32(DPE_DVE_DBG_INFO_02_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x12C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x12C),
 		(unsigned int)DPE_RD32(DPE_DVE_DBG_INFO_03_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x130),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x130),
 		(unsigned int)DPE_RD32(DPE_DVE_DBG_INFO_04_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x134),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x134),
 		(unsigned int)DPE_RD32(DPE_DVE_DBG_INFO_05_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x138),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x138),
 		(unsigned int)DPE_RD32(DPE_DVE_DBG_INFO_06_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x13C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x13C),
 		(unsigned int)DPE_RD32(DPE_DVE_DBG_INFO_07_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x140),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x140),
 		(unsigned int)DPE_RD32(DPE_DVE_DBG_INFO_08_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x144),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x144),
 		(unsigned int)DPE_RD32(DPE_DVE_DBG_INFO_09_REG));
 
 
-	LOG_DBG("WMFE Config Info\n");
+	LOG_INF("WMFE Config Info\n");
 	/* WMFE Config0 */
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x230),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x230),
 		(unsigned int)DPE_RD32(DPE_WMFE_CTRL_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x234),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x234),
 		(unsigned int)DPE_RD32(DPE_WMFE_SIZE_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x238),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x238),
 		(unsigned int)DPE_RD32(DPE_WMFE_IMGI_BASE_ADDR_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x23C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x23C),
 		(unsigned int)DPE_RD32(DPE_WMFE_IMGI_STRIDE_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x240),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x240),
 		(unsigned int)DPE_RD32(DPE_WMFE_DPI_BASE_ADDR_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x244),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x244),
 		(unsigned int)DPE_RD32(DPE_WMFE_DPI_STRIDE_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x248),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x248),
 		(unsigned int)DPE_RD32(DPE_WMFE_TBLI_BASE_ADDR_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x24C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x24C),
 		(unsigned int)DPE_RD32(DPE_WMFE_TBLI_STRIDE_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x250),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x250),
 		(unsigned int)DPE_RD32(DPE_WMFE_DPO_BASE_ADDR_0_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x254),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x254),
 		(unsigned int)DPE_RD32(DPE_WMFE_DPO_STRIDE_0_REG));
 
 
 	/* WMFE Config1 */
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x270),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x270),
 		(unsigned int)DPE_RD32(DPE_WMFE_CTRL_1_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x274),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x274),
 		(unsigned int)DPE_RD32(DPE_WMFE_SIZE_1_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x278),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x278),
 		(unsigned int)DPE_RD32(DPE_WMFE_IMGI_BASE_ADDR_1_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x27C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x27C),
 		(unsigned int)DPE_RD32(DPE_WMFE_IMGI_STRIDE_1_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x280),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x280),
 		(unsigned int)DPE_RD32(DPE_WMFE_DPI_BASE_ADDR_1_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x284),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x284),
 		(unsigned int)DPE_RD32(DPE_WMFE_DPI_STRIDE_1_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x288),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x288),
 		(unsigned int)DPE_RD32(DPE_WMFE_TBLI_BASE_ADDR_1_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x28C),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x28C),
 		(unsigned int)DPE_RD32(DPE_WMFE_TBLI_STRIDE_1_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x290),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x290),
 		(unsigned int)DPE_RD32(DPE_WMFE_DPO_BASE_ADDR_1_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x294),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x294),
 		(unsigned int)DPE_RD32(DPE_WMFE_DPO_STRIDE_1_REG));
 
 	/* WMFE Config2 */
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2B0),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2B0),
 		(unsigned int)DPE_RD32(DPE_WMFE_CTRL_2_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2B4),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2B4),
 		(unsigned int)DPE_RD32(DPE_WMFE_SIZE_2_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2B8),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2B8),
 		(unsigned int)DPE_RD32(DPE_WMFE_IMGI_BASE_ADDR_2_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2BC),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2BC),
 		(unsigned int)DPE_RD32(DPE_WMFE_IMGI_STRIDE_2_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2C0),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2C0),
 		(unsigned int)DPE_RD32(DPE_WMFE_DPI_BASE_ADDR_2_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2C4),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2C4),
 		(unsigned int)DPE_RD32(DPE_WMFE_DPI_STRIDE_2_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2C8),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2C8),
 		(unsigned int)DPE_RD32(DPE_WMFE_TBLI_BASE_ADDR_2_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2CC),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2CC),
 		(unsigned int)DPE_RD32(DPE_WMFE_TBLI_STRIDE_2_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2D0),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2D0),
 		(unsigned int)DPE_RD32(DPE_WMFE_DPO_BASE_ADDR_2_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2D4),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2D4),
 		(unsigned int)DPE_RD32(DPE_WMFE_DPO_STRIDE_2_REG));
 
 
-	LOG_DBG("WMFE Debug Info\n");
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2F4),
+	LOG_INF("WMFE Debug Info\n");
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2F4),
 		(unsigned int)DPE_RD32(DPE_WMFE_DBG_INFO_00_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2F8),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2F8),
 		(unsigned int)DPE_RD32(DPE_WMFE_DBG_INFO_01_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2FC),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x2FC),
 		(unsigned int)DPE_RD32(DPE_WMFE_DBG_INFO_02_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x300),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x300),
 		(unsigned int)DPE_RD32(DPE_WMFE_DBG_INFO_03_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x304),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x304),
 		(unsigned int)DPE_RD32(DPE_WMFE_DBG_INFO_04_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x308),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x308),
 		(unsigned int)DPE_RD32(DPE_WMFE_DBG_INFO_05_REG));
 
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x7F4),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x7F4),
 		(unsigned int)DPE_RD32(DPE_DMA_DBG_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x7F8),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x7F8),
 		(unsigned int)DPE_RD32(DPE_DMA_REQ_STATUS_REG));
-	LOG_DBG("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x7FC),
+	LOG_INF("[0x%08X %08X]\n", (unsigned int)(DPE_BASE_HW + 0x7FC),
 		(unsigned int)DPE_RD32(DPE_DMA_RDY_STATUS_REG));
 
 
-	LOG_DBG("DVE:HWProcessIdx:%d, WriteIdx:%d, ReadIdx:%d\n", g_DVE_RequestRing.HWProcessIdx,
+	LOG_INF("DVE:HWProcessIdx:%d, WriteIdx:%d, ReadIdx:%d\n", g_DVE_RequestRing.HWProcessIdx,
 		g_DVE_RequestRing.WriteIdx, g_DVE_RequestRing.ReadIdx);
 
 	for (i = 0; i < _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_; i++) {
-		LOG_DBG\
+		LOG_INF
 		    ("DVE:RequestState:%d, processID:0x%08X, callerID:0x%08X, enqueReqNum:%d,\
 		     FrameWRIdx:%d, RrameRDIdx:%d\n",\
 		     g_DVE_RequestRing.DVEReq_Struct[i].RequestState,\
@@ -2133,7 +2133,7 @@ static MINT32 DPE_DumpReg(void)
 		     g_DVE_RequestRing.DVEReq_Struct[i].RrameRDIdx);
 
 		for (j = 0; j < _SUPPORT_MAX_DPE_FRAME_REQUEST_;) {
-			LOG_DBG
+			LOG_INF
 			    ("DVE:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
 			     j, g_DVE_RequestRing.DVEReq_Struct[i].DveFrameStatus[j]
 			     , j + 1, g_DVE_RequestRing.DVEReq_Struct[i].DveFrameStatus[j + 1],
@@ -2143,11 +2143,11 @@ static MINT32 DPE_DumpReg(void)
 		}
 	}
 
-	LOG_DBG("WMFE:HWProcessIdx:%d, WriteIdx:%d, ReadIdx:%d\n", g_WMFE_RequestRing.HWProcessIdx,
+	LOG_INF("WMFE:HWProcessIdx:%d, WriteIdx:%d, ReadIdx:%d\n", g_WMFE_RequestRing.HWProcessIdx,
 		g_WMFE_RequestRing.WriteIdx, g_WMFE_RequestRing.ReadIdx);
 
 	for (i = 0; i < _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_; i++) {
-		LOG_DBG\
+		LOG_INF
 		    ("WMFE:RequestState:%d, processID:0x%08X, callerID:0x%08X, enqueReqNum:%d,\
 		     FrameWRIdx:%d, RrameRDIdx:%d\n",\
 		     g_WMFE_RequestRing.WMFEReq_Struct[i].RequestState,\
@@ -2158,7 +2158,7 @@ static MINT32 DPE_DumpReg(void)
 		     g_WMFE_RequestRing.WMFEReq_Struct[i].RrameRDIdx);
 
 		for (j = 0; j < _SUPPORT_MAX_DPE_FRAME_REQUEST_;) {
-			LOG_DBG
+			LOG_INF
 			    ("WMFE:FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d, FrameStatus[%d]:%d\n",
 			     j, g_WMFE_RequestRing.WMFEReq_Struct[i].WmfeFrameStatus[j]
 			     , j + 1, g_WMFE_RequestRing.WMFEReq_Struct[i].WmfeFrameStatus[j + 1],
@@ -2171,7 +2171,7 @@ static MINT32 DPE_DumpReg(void)
 
 
 
-	LOG_DBG("- X.");
+	LOG_INF("- X.");
 	/*  */
 	return Ret;
 }
@@ -2923,7 +2923,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						g_DVE_RequestRing.WriteIdx =
 						    (g_DVE_RequestRing.WriteIdx +
 						     1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-						LOG_INF("DVE request enque done!!\n");
+						LOG_DBG("DVE request enque done!!\n");
 					} else {
 						LOG_DBG("DVE request enque frame!!\n");
 					}
@@ -3013,7 +3013,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				g_DVE_RequestRing.WriteIdx =
 				    (g_DVE_RequestRing.WriteIdx +
 				     1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-				LOG_INF("DVE request enque done!!\n");
+				LOG_DBG("DVE request enque done!!\n");
 			} else {
 				LOG_ERR
 				    ("No Empty DVE Buffer! WriteIdx(%d), RequestState(%d), FrameWRIdx(%d),\
@@ -3045,7 +3045,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				dequeNum =
 				    g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
 				    enqueReqNum;
-				LOG_INF("DVE DEQUE_NUM(%d)\n", dequeNum);
+				LOG_DBG("DVE DEQUE_NUM(%d)\n", dequeNum);
 			} else {
 				dequeNum = 0;
 				LOG_ERR\
@@ -3110,7 +3110,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					g_DVE_RequestRing.ReadIdx =
 					    (g_DVE_RequestRing.ReadIdx +
 					     1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-					LOG_INF("DVE ReadIdx(%d)\n", g_DVE_RequestRing.ReadIdx);
+					LOG_DBG("DVE ReadIdx(%d)\n", g_DVE_RequestRing.ReadIdx);
 				}
 				spin_unlock_irqrestore(&
 						       (DPEInfo.
@@ -3152,7 +3152,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					dequeNum =
 					    g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.
 									    ReadIdx].enqueReqNum;
-					LOG_INF("DVE DEQUE_NUM(%d)\n", dequeNum);
+					LOG_DBG("DVE DEQUE_NUM(%d)\n", dequeNum);
 				} else {
 					dequeNum = 0;
 					LOG_ERR\
@@ -3467,7 +3467,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				dequeNum =
 				    g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
 				    enqueReqNum;
-				LOG_INF("WMFE_DEQUE_NUM(%d)\n", dequeNum);
+				LOG_DBG("WMFE_DEQUE_NUM(%d)\n", dequeNum);
 			} else {
 				dequeNum = 0;
 				LOG_ERR\
@@ -3536,7 +3536,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					g_WMFE_RequestRing.ReadIdx =
 					    (g_WMFE_RequestRing.ReadIdx +
 					     1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-					LOG_INF("WMFE ReadIdx(%d)\n", g_WMFE_RequestRing.ReadIdx);
+					LOG_DBG("WMFE ReadIdx(%d)\n", g_WMFE_RequestRing.ReadIdx);
 				}
 				spin_unlock_irqrestore(&
 						       (DPEInfo.
@@ -3586,7 +3586,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					dequeNum =
 					    g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.
 									      ReadIdx].enqueReqNum;
-					LOG_INF("WMFE_DEQUE_NUM(%d)\n", dequeNum);
+					LOG_DBG("WMFE_DEQUE_NUM(%d)\n", dequeNum);
 				} else {
 					dequeNum = 0;
 					LOG_ERR\
@@ -3651,7 +3651,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				g_WMFE_RequestRing.ReadIdx =
 				    (g_WMFE_RequestRing.ReadIdx +
 				     1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-				LOG_INF("WMFE Request ReadIdx(%d)\n", g_WMFE_RequestRing.ReadIdx);
+				LOG_DBG("WMFE Request ReadIdx(%d)\n", g_WMFE_RequestRing.ReadIdx);
 
 				spin_unlock_irqrestore(&
 						       (DPEInfo.
