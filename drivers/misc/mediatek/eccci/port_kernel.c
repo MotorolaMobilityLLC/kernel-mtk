@@ -558,6 +558,8 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 			md->dtr_state = 1;
 		else		/*disconnect */
 			md->dtr_state = 0;
+	} else if (ccci_h->data[1] == C2K_CCISM_SHM_INIT_ACK && md->index == MD_SYS3) {
+		ccci_update_md_boot_stage(md, MD_ACK_SCP_INIT);
 	} else {
 		CCCI_ERR_MSG(md->index, KERN, "receive unknown data from CCCI_CONTROL_RX = %d\n", ccci_h->data[1]);
 	}

@@ -382,7 +382,14 @@ static void scp_md_state_sync_work(struct work_struct *work)
 
 	switch (md->boot_stage) {
 	case MD_BOOT_STAGE_2:
-		ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT, 0, 1);
+		switch (md->index) {
+		case MD_SYS1:
+			ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT, 0, 1);
+			break;
+		case MD_SYS3:
+			ccci_send_msg_to_md(md, CCCI_CONTROL_TX, C2K_CCISM_SHM_INIT, 0, 1);
+			break;
+		};
 		break;
 	case MD_BOOT_STAGE_EXCEPTION:
 		data = md->boot_stage;
@@ -417,7 +424,14 @@ static void ccci_scp_ipi_rx_work(struct work_struct *work)
 				/* too early to init share memory here, EMI MPU may not be ready yet */
 				break;
 			case SCP_CCCI_STATE_RBREADY:
-				ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT_DONE, 0, 1);
+				switch (md->index) {
+				case MD_SYS1:
+					ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT_DONE, 0, 1);
+					break;
+				case MD_SYS3:
+					ccci_send_msg_to_md(md, CCCI_CONTROL_TX, C2K_CCISM_SHM_INIT_DONE, 0, 1);
+					break;
+				};
 				data = md->boot_stage;
 				ccci_scp_ipi_send(md->index, CCCI_OP_MD_STATE, &data);
 				break;
