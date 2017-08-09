@@ -733,22 +733,6 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		md->flight_mode = MD_FIGHT_MODE_LEAVE; /* leave flight mode */
 		ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_LEAVE_FLIGHT_MODE, 0);
 		break;
-
-	case CCCI_IOC_POWER_ON_MD_REQUEST:
-		CCCI_NORMAL_LOG(md->index, CHAR, "Power on MD request ioctl called by %s\n", current->comm);
-		ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_POWER_ON_REQUEST, 0);
-		break;
-
-	case CCCI_IOC_POWER_OFF_MD_REQUEST:
-		CCCI_NORMAL_LOG(md->index, CHAR, "Power off MD request ioctl called by %s\n", current->comm);
-		ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_POWER_OFF_REQUEST, 0);
-		break;
-	case CCCI_IOC_POWER_ON_MD:
-	case CCCI_IOC_POWER_OFF_MD:
-		/* abandoned */
-		CCCI_NORMAL_LOG(md->index, CHAR, "Power on/off MD by user(%d) called by %s\n", ch, current->comm);
-		ret = -1;
-		break;
 	case CCCI_IOC_SIM_SWITCH:
 		if (copy_from_user(&sim_mode, (void __user *)arg, sizeof(unsigned int))) {
 			CCCI_BOOTUP_LOG(md->index, CHAR, "IOC_SIM_SWITCH: copy_from_user fail!\n");

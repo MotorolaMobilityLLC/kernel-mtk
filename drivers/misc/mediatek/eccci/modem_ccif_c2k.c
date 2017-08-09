@@ -993,6 +993,7 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	ccci_reset_seq_num(md);
 	md->heart_beat_counter = 0;
 	md->data_usb_bypass = 0;
+	md->ex_stage = EX_NONE;
 	md->mdlog_dump_done = 0;
 	CCCI_NORMAL_LOG(md->index, TAG, "CCIF modem is starting\n");
 	/*1. load modem image */
