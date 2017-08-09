@@ -1810,7 +1810,7 @@ unsigned int mt_gpufreq_target(unsigned int idx)
 	/************************************************
 	 * target frequency == current frequency, skip it
 	 *************************************************/
-	if (g_cur_gpu_freq == target_freq) {
+	if (g_cur_gpu_freq == target_freq && g_cur_gpu_volt == target_volt) {
 		mutex_unlock(&mt_gpufreq_lock);
 		gpufreq_dbg("GPU frequency from %d KHz to %d KHz (skipped) due to same frequency\n",
 			    g_cur_gpu_freq, target_freq);
