@@ -321,7 +321,8 @@ static int __init tpd_device_init(void);
 static void __exit tpd_device_exit(void);
 static int tpd_probe(struct platform_device *pdev);
 static int tpd_remove(struct platform_device *pdev);
-
+static struct work_struct tpd_init_work;
+static struct workqueue_struct *tpd_init_workqueue;
 static int tpd_suspend_flag;
 int tpd_register_flag = 0;
 /* global variable definitions */
@@ -644,16 +645,25 @@ static int tpd_remove(struct platform_device *pdev)
 }
 
 /* called when loaded into kernel */
-static int __init tpd_device_init(void)
+static void tpd_init_work_callback(struct work_struct *work)
 {
 	TPD_DEBUG("MediaTek touch panel driver init\n");
 	if (platform_driver_register(&tpd_driver) != 0) {
 		TPD_DMESG("unable to register touch panel driver.\n");
-		return -1;
 	}
+}
+static int __init tpd_device_init(void)
+{
+	int res = 0;
+
+	tpd_init_workqueue = create_singlethread_workqueue("mtk-tpd");
+	INIT_WORK(&tpd_init_work, tpd_init_work_callback);
+
+	res = queue_work(tpd_init_workqueue, &tpd_init_work);
+	if (!res)
+		pr_err("tpd : touch device init failed res:%d\n", res);
 	return 0;
 }
-
 /* should never be called */
 static void __exit tpd_device_exit(void)
 {
