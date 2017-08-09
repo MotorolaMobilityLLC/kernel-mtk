@@ -575,37 +575,39 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 {
 	/* unsigned long flags; */
 	kal_uint32 volatile u4RegValue;
+	kal_uint32 volatile irq_mcu_en;
 
 	AudDrv_Clk_On();
 	u4RegValue = Afe_Get_Reg(AFE_IRQ_MCU_STATUS);
 	u4RegValue &= 0x5f;
-	/*
-	u4tmpValue = Afe_Get_Reg(AFE_IRQ_MCU_EN);
-	u4tmpValue &= 0xff;
-	u4tmpValue1 = Afe_Get_Reg(AFE_IRQ_MCU_CNT5);
-	u4tmpValue1 &= 0x0003ffff;
-	u4tmpValue2 = Afe_Get_Reg(AFE_IRQ5_MCU_CNT_MON);
-	u4tmpValue2 &= 0x0003ffff;
-	*/
 
 	/* here is error handle , for interrupt is trigger but not status , clear all interrupt with bit 6 */
 	if (u4RegValue == 0) {
-		pr_warn("%s(), [AudioWarn] u4RegValue = %d, irqcount = %d\n", __func__, u4RegValue,
-			irqcount);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 0, 0x5f);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 1, 0x5f);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 2, 0x5f);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 3, 0x5f);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 4, 0x5f);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 5, 0x5f);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 6, 0x5f);
+		irq_mcu_en = Afe_Get_Reg(AFE_IRQ_MCU_EN);
+		pr_warn("%s(), [AudioWarn] u4RegValue = 0x%x, irqcount = %d, AFE_IRQ_MCU_EN = 0x%x\n",
+			__func__,
+			u4RegValue,
+			irqcount,
+			irq_mcu_en);
+
+		/* only clear IRQ which is sent to MCU */
+		irq_mcu_en &= 0x7f;
+		Afe_Set_Reg(AFE_IRQ_MCU_CLR, irq_mcu_en, irq_mcu_en);
 		irqcount++;
 
 		if (irqcount > AudioInterruptLimiter) {
-			SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, false);
-			SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
-			SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE, false);
-			SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE, false);
+			if (irq_mcu_en & (1 << Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE))
+				Afe_Set_Reg(AFE_IRQ_MCU_CON, 0 << 0, 1 << 0);
+			if (irq_mcu_en & (1 << Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE))
+				Afe_Set_Reg(AFE_IRQ_MCU_CON, 0 << 1, 1 << 1);
+			if (irq_mcu_en & (1 << Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE))
+				Afe_Set_Reg(AFE_IRQ_MCU_CON, 0 << 2, 1 << 2);
+			if (irq_mcu_en & (1 << Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE))
+				Afe_Set_Reg(AFE_IRQ_MCU_CON, 0 << 3, 1 << 3);
+			if (irq_mcu_en & (1 << Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE))
+				Afe_Set_Reg(AFE_IRQ_MCU_CON, 0 << 12, 1 << 12);
+			if (irq_mcu_en & (1 << Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE))
+				Afe_Set_Reg(AFE_IRQ_MCU_CON, 0 << 14, 1 << 14);
 			irqcount = 0;
 		}
 
