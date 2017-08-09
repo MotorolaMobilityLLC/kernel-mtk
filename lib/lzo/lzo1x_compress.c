@@ -212,6 +212,7 @@ m_len_done:
 	*out_len = op - out;
 	return in_end - (ii - ti);
 }
+static noinline size_t
 lzo1x_1_do_compress_zram(const unsigned char *in, size_t in_len,
 		    unsigned char *out, size_t *out_len,
 		    size_t ti, void *wrkmem, int *tmp_hash)
@@ -510,7 +511,7 @@ int lzo1x_1_compress_zram(const unsigned char *in, size_t in_len,
 			hash_total += tmp_hash;
 		}
 		if (*out_len >= 4) {
-			unsigned int *tmp_op = op;
+			unsigned int *tmp_op = (unsigned int *)op;
 
 			out_hash = out_hash ^ *tmp_op;
 		}
@@ -564,7 +565,7 @@ int lzo1x_1_compress_zram(const unsigned char *in, size_t in_len,
 	if (out_hash != 0)
 		*checksum = out_hash^(unsigned int)*checksum;
 	if (*out_len >= 4) {
-		unsigned int *tmp_out = out;
+		unsigned int *tmp_out = (unsigned int *)out;
 		unsigned int tmp_checksum = 0;
 
 		tmp_checksum = (unsigned int)*checksum+(unsigned int)*tmp_out;
