@@ -75,9 +75,3 @@ config MTK_OD_SUPPORT
 	  not short enough to display clear moving objects.
 	  This feature allows to speed up the change time of each pixels.
 	  MUST fill the over-drive table correctly according to LCD property.
-
-config MTK_WFD_SUPPORT
-	bool "MTK_WFD_SUPPORT"
-	default n
-	help
-	 wfd info for display driver
