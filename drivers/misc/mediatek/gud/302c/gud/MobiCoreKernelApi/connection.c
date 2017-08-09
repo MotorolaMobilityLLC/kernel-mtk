@@ -150,11 +150,11 @@ int connection_write_data(struct connection *conn, void *buffer,
 
 	MCDRV_DBG_VERBOSE(mc_kapi, "buffer length %u from pid %u\n", len,
 			  conn->sequence_magic);
-	skb = nlmsg_new(NLMSG_SPACE(len), GFP_KERNEL);
+	skb = nlmsg_new(len, GFP_KERNEL);
 	if (!skb)
 		return -ENOMEM;
 
-	nlh = nlmsg_put(skb, 0, conn->sequence_magic, 2, NLMSG_LENGTH(len),
+	nlh = nlmsg_put(skb, 0, conn->sequence_magic, 2, len,
 			NLM_F_REQUEST);
 	if (!nlh) {
 		kfree_skb(skb);
