@@ -400,7 +400,7 @@ void __iomem  *camsys_base;
 #endif
 
 #define INFRA0_CG  0x87BFFF00/*0: Disable  ( with clock), 1: Enable ( without clock )*/
-#define INFRA1_CG  0x0246CF76/*0: Disable  ( with clock), 1: Enable ( without clock )*/
+#define INFRA1_CG  0x0246CE76/*0: Disable  ( with clock), 1: Enable ( without clock )*/
 #define INFRA2_CG  0x2DFFb6FD/*0: Disable  ( with clock), 1: Enable ( without clock ), 9:dummy for usb ref*/
 #define AUD_0_CG   0x0F0C0304
 #define AUD_1_CG   0x00030000
