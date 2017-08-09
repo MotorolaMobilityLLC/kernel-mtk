@@ -714,6 +714,34 @@ typedef struct {
 	MUINT16 VC3_SIZEV;
 } SENSOR_VC_INFO_STRUCT, *pSENSOR_VC_INFO_STRUCT;
 
+typedef struct {
+	MUINT16 VC_Num;
+	MUINT16 VC_PixelNum;
+	MUINT16 ModeSelect;   /* 0: auto mode, 1:direct mode  */
+	MUINT16 EXPO_Ratio;   /* 1/1, 1/2, 1/4, 1/8 */
+	MUINT16 ODValue;      /* OD Vaule */
+	MUINT16 RG_STATSMODE; /* STATS divistion mdoe 0: 16x16, 1:8x8, 2:4x4, 3:1x1*/
+	MUINT16 VC0_ID;
+	MUINT16 VC0_DataType; /*virtual channel 0*/
+	MUINT16 VC0_BitDepth;
+	MUINT16 VC0_SIZEH;
+	MUINT16 VC0_SIZEV;
+	MUINT16 VC1_ID;       /*virtual channel 1*/
+	MUINT16 VC1_DataType;
+	MUINT16 VC1_BitDepth;
+	MUINT16 VC1_SIZEH;
+	MUINT16 VC1_SIZEV;
+	MUINT16 VC2_ID;       /*virtual channel 2*/
+	MUINT16 VC2_DataType;
+	MUINT16 VC2_BitDepth;
+	MUINT16 VC2_SIZEH;
+	MUINT16 VC2_SIZEV;
+	MUINT16 VC3_ID;       /*virtual channel 3*/
+	MUINT16 VC3_DataType;
+	MUINT16 VC3_BitDepth;
+	MUINT16 VC3_SIZEH;
+	MUINT16 VC3_SIZEV;
+} SENSOR_VC_INFO2_STRUCT, *pSENSOR_VC_INFO2_STRUCT;
 
 typedef struct {
 	MUINT32 ABS_GAIN_GR;
