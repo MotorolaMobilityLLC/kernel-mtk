@@ -286,6 +286,8 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 		if (copy_from_user(&record_tmp_list->record, (void __user *)arg, sizeof(CONFIG_RECORD))) {
 			pr_debug("list_add: copy_from_user failed! line:%d\n", __LINE__);
+			kfree(record_tmp_list);
+			record_tmp_list = NULL;
 			return -EFAULT;
 		}
 		list_add(&record_tmp_list->list, &head_list.list);
