@@ -860,7 +860,7 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 
 	switch (scen) {
 	case SMI_BWC_SCEN_VENC:
-		if (g_mmdvfs_concurrency | (1 << SMI_BWC_SCEN_VR))
+		if (g_mmdvfs_concurrency & (1 << SMI_BWC_SCEN_VR))
 			mmdvfs_set_step(scen, get_venc_step(g_mmdvfs_info->video_record_size[0] *
 			g_mmdvfs_info->video_record_size[1]));
 		break;
@@ -879,7 +879,7 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 
 			vr_step = get_vr_step(g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.camera_mode);
 
-			if (g_mmdvfs_concurrency | (1 << SMI_BWC_SCEN_VENC))
+			if (g_mmdvfs_concurrency & (1 << SMI_BWC_SCEN_VENC))
 				venc_step = get_venc_step(g_mmdvfs_info->video_record_size[0] *
 				g_mmdvfs_info->video_record_size[1]);
 
