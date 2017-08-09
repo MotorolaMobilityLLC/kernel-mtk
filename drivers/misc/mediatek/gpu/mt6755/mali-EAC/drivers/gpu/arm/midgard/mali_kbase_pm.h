@@ -942,7 +942,7 @@ void mtk_clear_power_on_freq_flag(void);
 struct kbase_device *MaliGetMaliData(void);
 
 void MTKCalGpuUtilization(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle);
-int mtk_gpu_dvfs_commit(unsigned int ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitTyp);
+void mtk_gpu_dvfs_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitTyp, int* pbCommited);
 unsigned int MTKCalPowerIndex(void);
 int mtk_get_vgpu_power_on_flag(void);
 #endif				/* _KBASE_PM_H_ */

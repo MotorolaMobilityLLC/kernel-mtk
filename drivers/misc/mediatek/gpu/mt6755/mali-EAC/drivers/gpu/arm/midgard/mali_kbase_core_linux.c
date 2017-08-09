@@ -366,7 +366,7 @@ struct kbase_device *MaliGetMaliData(void)
 {
 	return gpsMaliData;
 }
-#ifndef NO_DVFS_FOR_BRINGUP
+
 static void _mtk_set_gpu_boost_duration(void)
 {
     g_gpu_boost_duartion = MTK_GPU_BOOST_DURATION;
@@ -381,10 +381,9 @@ static int _mtk_get_gpu_boost_duration(void)
 {
     return g_gpu_boost_duartion;
 }
-#endif 
+
 void mtk_gpu_input_boost_CB(unsigned int ui32BoostFreqID)
 {
-#ifndef NO_DVFS_FOR_BRINGUP    
     int iCurrentFreqID;
     //pr_debug("[MALI] mtk_gpu_input_boost_CB! boost to index=%d\n", ui32BoostFreqID);
 
@@ -405,12 +404,11 @@ void mtk_gpu_input_boost_CB(unsigned int ui32BoostFreqID)
         pr_debug("[MALI] boost CB set to FREQ id=%d\n", ui32BoostFreqID);
         mtk_set_touch_boost_flag(ui32BoostFreqID);
     }
-#endif 
+
 }
 
 void mtk_gpu_power_limit_CB(unsigned int ui32LimitFreqID)
 {
-#ifndef NO_DVFS_FOR_BRINGUP
     int iCurrentFreqID;
 
     pr_debug("[MALI] boost CB set to freq id=%d\n", ui32LimitFreqID);
@@ -418,11 +416,10 @@ void mtk_gpu_power_limit_CB(unsigned int ui32LimitFreqID)
     iCurrentFreqID = mt_gpufreq_get_cur_freq_index();
 
     if(ui32LimitFreqID > iCurrentFreqID)
-        mt_gpufreq_target(ui32LimitFreqID);
-#endif        
+        mtk_set_mt_gpufreq_target(ui32LimitFreqID);
 }
 
-void mtk_kbase_boost_gpu_freq()
+void mtk_kbase_boost_gpu_freq(void)
 {
     mtk_gpu_input_boost_CB(0);
 
@@ -433,7 +430,6 @@ void mtk_kbase_boost_gpu_freq()
 /* MTK custom boost. 0 is the lowest frequency index. The function is used for performance service currently.*/
 void mtk_kbase_custom_boost_gpu_freq(unsigned int ui32FreqLevel)
 {
-#ifndef NO_DVFS_FOR_BRINGUP    
     unsigned int uiTableNum;
     uiTableNum = mt_gpufreq_get_dvfs_table_num();
 
@@ -444,16 +440,15 @@ void mtk_kbase_custom_boost_gpu_freq(unsigned int ui32FreqLevel)
     if(g_custom_gpu_boost_id < mt_gpufreq_get_cur_freq_index())
     {
         pr_debug("[MALI] mtk_kbase_custom_boost_gpu_freq set gpu freq to index=%d, cuurent index=%d", g_custom_gpu_boost_id, mt_gpufreq_get_cur_freq_index());
-        mt_gpufreq_target(g_custom_gpu_boost_id);
+        mtk_set_mt_gpufreq_target(g_custom_gpu_boost_id);
     }
-#endif
+
     return;
 }
 
 /* MTK set boost. 0 is the lowest frequency index. The function is used for GED boost currently.*/
 void mtk_kbase_ged_bottom_gpu_freq(unsigned int ui32FreqLevel)
 {
-#ifndef NO_DVFS_FOR_BRINGUP
     unsigned int uiTableNum;
     uiTableNum = mt_gpufreq_get_dvfs_table_num();
 
@@ -469,20 +464,16 @@ void mtk_kbase_ged_bottom_gpu_freq(unsigned int ui32FreqLevel)
     if(g_ged_gpu_boost_id < mt_gpufreq_get_cur_freq_index())
     {
         pr_debug("[MALI] mtk_kbase_set_bottom_gpu_freq_fp set gpu freq to index=%d, cuurent index=%d  (GED boost)", g_ged_gpu_boost_id, mt_gpufreq_get_cur_freq_index());
-        mt_gpufreq_target(g_ged_gpu_boost_id);
+        mtk_set_mt_gpufreq_target(g_ged_gpu_boost_id);
     }
-#endif
+
     return;
 }
 
 
-unsigned int mtk_kbase_custom_get_gpu_freq_level_count()
+unsigned int mtk_kbase_custom_get_gpu_freq_level_count(void)
 {
-#ifndef NO_DVFS_FOR_BRINGUP
     return mt_gpufreq_get_dvfs_table_num();
-#else
-    return 0;
-#endif
 }
 
 int _mtk_dvfs_index_clipping(int iTargetVirtualFreqID, int start, int end)
@@ -494,15 +485,22 @@ int _mtk_dvfs_index_clipping(int iTargetVirtualFreqID, int start, int end)
     else
         return iTargetVirtualFreqID;
 }
-#if 0
-int mtk_gpu_dvfs_commit(unsigned int ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType)
+
+void mtk_gpu_dvfs_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int* pbCommited)
 {
-	mt_gpufreq_target(ui32NewFreqID);
+    int ret = -1;
+	ret = mtk_set_mt_gpufreq_target(ui32NewFreqID);
+	if(NULL!=pbCommited){
+        if(ret == 0){
+		    *pbCommited = true;
+        }else{
+            *pbCommited = false;
+        }
+    }
 }
-#endif
+
 int mtk_gpu_dvfs(void)
 {
-#ifndef NO_DVFS_FOR_BRINGUP
 
     int iCurrentFreqID, iTargetFreqID;
 	int iCurrentVirtualFreqID = 0, iTargetVirtualFreqID;
@@ -582,7 +580,7 @@ int mtk_gpu_dvfs(void)
     // thermal power limit
     if (iTargetFreqID < mt_gpufreq_get_thermal_limit_index())
     {
-        mt_gpufreq_target(mt_gpufreq_get_thermal_limit_index());
+        mtk_set_mt_gpufreq_target(mt_gpufreq_get_thermal_limit_index());
         return MALI_FALSE;
     }
 
@@ -608,7 +606,7 @@ int mtk_gpu_dvfs(void)
     
     if(iTargetFreqID > higher_boost_id)
     {
-        mt_gpufreq_target(higher_boost_id);
+        mtk_set_mt_gpufreq_target(higher_boost_id);
         return MALI_FALSE;
     }
 
@@ -618,7 +616,7 @@ int mtk_gpu_dvfs(void)
         return MALI_TRUE;
     }
 
-    if(mt_gpufreq_target(iTargetFreqID) == 0)
+    if(mtk_set_mt_gpufreq_target(iTargetFreqID) == 0)
     {
         return MALI_TRUE;   
     }
@@ -626,9 +624,7 @@ int mtk_gpu_dvfs(void)
     {
         return MALI_FALSE;
     }
-#else
-    return MALI_TRUE;           
-#endif    
+    
 }
 
 

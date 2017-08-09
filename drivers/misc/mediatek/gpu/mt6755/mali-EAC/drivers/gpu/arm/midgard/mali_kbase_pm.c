@@ -113,7 +113,7 @@ void kbase_pm_register_access_disable(struct kbase_device *kbdev)
 }
 
 extern void (*ged_dvfs_cal_gpu_utilization_fp)(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle);
-extern void (*ged_dvfs_gpu_freq_commit_fp)(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType);
+extern void (*ged_dvfs_gpu_freq_commit_fp)(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int* pbCommited);
 extern unsigned int (*mtk_get_gpu_power_loading_fp)(void);
 
 mali_error kbase_pm_init(struct kbase_device *kbdev)
