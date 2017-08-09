@@ -3,6 +3,7 @@
 #endif
 
 #include "lcm_drv.h"
+
 /* --------------------------------------------------------------------------- */
 /* Local Constants */
 /* --------------------------------------------------------------------------- */
@@ -29,14 +30,19 @@ static LCM_UTIL_FUNCS lcm_util = { 0 };
 /* Local Functions */
 /* --------------------------------------------------------------------------- */
 
-#define dsi_set_cmdq_V2(cmd, count, ppara, force_update) lcm_util.dsi_set_cmdq_V2(cmd, count, ppara, force_update)
-#define dsi_set_cmdq(pdata, queue_size, force_update)	 lcm_util.dsi_set_cmdq(pdata, queue_size, force_update)
-#define wrtie_cmd(cmd)					 lcm_util.dsi_write_cmd(cmd)
-#define write_regs(addr, pdata, byte_nums)		 lcm_util.dsi_write_regs(addr, pdata, byte_nums)
-#define read_reg					 lcm_util.dsi_read_reg()
+#define dsi_set_cmdq_V2(cmd, count, ppara, force_update)	\
+	lcm_util.dsi_set_cmdq_V2(cmd, count, ppara, force_update)
+#define dsi_set_cmdq(pdata, queue_size, force_update)		\
+	lcm_util.dsi_set_cmdq(pdata, queue_size, force_update)
+#define wrtie_cmd(cmd)									\
+	lcm_util.dsi_write_cmd(cmd)
+#define write_regs(addr, pdata, byte_nums)				\
+	lcm_util.dsi_write_regs(addr, pdata, byte_nums)
+#define read_reg											\
+	lcm_util.dsi_read_reg()
 
 
-static struct LCM_setting_table {
+struct LCM_setting_table {
 	unsigned cmd;
 	unsigned char count;
 	unsigned char para_list[64];
@@ -67,33 +73,33 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	 */
 
 	/* sleep out */
-	{ 0x11, 0, {} },
-	{ REGFLAG_DELAY, 120, {} },
+	{0x11, 0, {} },
+	{REGFLAG_DELAY, 120, {} },
 
 	/* SET PASSWORD */
-	{ 0xB9, 3, {0xFF, 0x83, 0x92} },
-	{ REGFLAG_DELAY, 10, {} },
+	{0xB9, 3, {0xFF, 0x83, 0x92} },
+	{REGFLAG_DELAY, 10, {} },
 
 	/* set mipi 4 lane */
-	{ 0xBA, 17, {0x13, 0x83, 0x00, 0xD6,
-		    0xC5, 0x10, 0x09, 0xFF,
+	{0xBA, 17, {0x11, 0x83, 0x00, 0xD6,
+		    0xC5, 0x00, 0x09, 0xFF,
 		    0x0F, 0x27, 0x03, 0x21,
 		    0x27, 0x25, 0x20, 0x00,
 		    0x10} },
 
 	/* SET POWER */
-	{ 0xB1, 13, {0x7C, 0x00, 0x43, 0xBB,
+	{0xB1, 13, {0x7C, 0x00, 0x43, 0xBB,
 		    0x00, 0x1A, 0x1A, 0x2F,
 		    0x36, 0x3F, 0x3F, 0x42,
 		    0x7A} },
 
 	/* SET DISPLAY RELATED REGISTER */
-	{ 0xB2, 12, {0x08, 0xC8, 0x06, 0x06,
+	{0xB2, 12, {0x08, 0xC8, 0x06, 0x06,
 		    0x04, 0x84, 0x00, 0xFF,
 		    0x06, 0x06, 0x04, 0x20} },
 
 	/* SET CYC */
-	{ 0xB4, 23, {0x00, 0x00, 0x05, 0x0A,
+	{0xB4, 23, {0x00, 0x00, 0x05, 0x0A,
 		    0x8F, 0x06, 0x0A, 0x95,
 		    0x01, 0x07, 0x06, 0x0C,
 		    0x02, 0x08, 0x08, 0x21,
@@ -101,44 +107,44 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 		    0x04, 0x1A, 0x95} },
 
 	/* set TE on */
-	{ 0x35, 1, {0x00} },
+	{0x35, 1, {0x00} },
 
-	{ 0xBF, 4, {0x05, 0x60, 0x02, 0x00} },
+	{0xBF, 4, {0x05, 0x60, 0x02, 0x00} },
 
 	/* VCOM//64 */
-	{ 0xB6, 1, {0x6A} },
+	{0xB6, 1, {0x6A} },
 
 	/* SET RGB OR BGR */
-	{ 0x36, 1, {0x08} },
+	{0x36, 1, {0x08} },
 
 	/* SET RGB OR BGR */
-	{ 0xC0, 2, {0x03, 0x94} },
+	{0xC0, 2, {0x03, 0x94} },
 
 	/* SET DSI VIDEO MODE */
-	{ 0xC2, 1, {0x03} },
+	{0xC2, 1, {0x03} },
 
-	{ 0xC6, 4, {0x35, 0x08, 0x20, 0x04} },
+	{0xC6, 4, {0x35, 0x00, 0x20, 0x04} },
 
 	/* SET PANEL */
-	{ 0xCC, 1, {0x09} },
+	{0xCC, 1, {0x09} },
 
-	{ 0xD4, 1, {0x00} },
+	{0xD4, 1, {0x00} },
 
-	{ 0xD5, 23, {0x00, 0x01, 0x04, 0x00,
+	{0xD5, 23, {0x00, 0x01, 0x04, 0x00,
 		    0x01, 0x67, 0x89, 0xAB,
 		    0x45, 0xCC, 0xCC, 0xCC,
 		    0x00, 0x10, 0x54, 0xBA,
 		    0x98, 0x76, 0xCC, 0xCC,
 		    0xCC, 0x00, 0x00} },
 
-	{ 0xD8, 23, {0x00, 0x00, 0x05, 0x00,
+	{0xD8, 23, {0x00, 0x00, 0x05, 0x00,
 		    0x9A, 0x00, 0x02, 0x95,
 		    0x01, 0x07, 0x06, 0x00,
 		    0x08, 0x08, 0x00, 0x1D,
 		    0x08, 0x08, 0x08, 0x00,
 		    0x00, 0x00, 0x77} },
 
-	{ 0xE0, 34, {0x00, 0x12, 0x19, 0x33,
+	{0xE0, 34, {0x00, 0x12, 0x19, 0x33,
 		    0x36, 0x3F, 0x28, 0x47,
 		    0x06, 0x0C, 0x0E, 0x12,
 		    0x14, 0x12, 0x14, 0x12,
@@ -148,7 +154,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 		    0x12, 0x14, 0x12, 0x14,
 		    0x12, 0x1A} },
 
-	{ 0xE1, 34, {0x00, 0x12, 0x19, 0x33,
+	{0xE1, 34, {0x00, 0x12, 0x19, 0x33,
 		    0x36, 0x3F, 0x28, 0x47,
 		    0x06, 0x0C, 0x0E, 0x12,
 		    0x14, 0x12, 0x14, 0x12,
@@ -158,7 +164,7 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 		    0x12, 0x14, 0x12, 0x14,
 		    0x12, 0x1A} },
 
-	{ 0xE2, 34, {0x00, 0x12, 0x19, 0x33,
+	{0xE2, 34, {0x00, 0x12, 0x19, 0x33,
 		    0x36, 0x3F, 0x28, 0x47,
 		    0x06, 0x0C, 0x0E, 0x12,
 		    0x14, 0x12, 0x14, 0x12,
@@ -169,44 +175,47 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 		    0x12, 0x1A} },
 
 	/* SET PIXEL FORMAT */
-	{ 0x3A, 1, {0x77} },
+	{0x3A, 1, {0x77} },
 
 	/* sleep out */
-	{ 0x29, 0, {} },
+	{0x29, 0, {} },
 };
 
-
+#if 0
 static struct LCM_setting_table lcm_set_window[] = {
-	{ 0x2A, 4, {0x00, 0x00, (FRAME_WIDTH >> 8), (FRAME_WIDTH & 0xFF)} },
-	{ 0x2B, 4, {0x00, 0x00, (FRAME_HEIGHT >> 8), (FRAME_HEIGHT & 0xFF)} },
-	{ REGFLAG_END_OF_TABLE, 0x00, {} }
+	{0x2A, 4, {0x00, 0x00, (FRAME_WIDTH >> 8), (FRAME_WIDTH & 0xFF)} },
+	{0x2B, 4, {0x00, 0x00, (FRAME_HEIGHT >> 8), (FRAME_HEIGHT & 0xFF)} },
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
 
 static struct LCM_setting_table lcm_sleep_out_setting[] = {
 	/* Sleep Out */
-	{ 0x11, 0, {} },
-	{ REGFLAG_DELAY, 120, {} },
+	{0x11, 0, {} },
+	{REGFLAG_DELAY, 120, {} },
 
 	/* Display ON */
-	{ 0x29, 0, {} },
-	{ REGFLAG_END_OF_TABLE, 0x00, {} }
+	{0x29, 0, {} },
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
-
+#endif
 
 static struct LCM_setting_table lcm_deep_sleep_mode_in_setting[] = {
+	/* Display off sequence */
+	{0x28, 0, {} },
+
 	/* Sleep Mode On */
-	{ 0x10, 0, {} },
-	{ REGFLAG_DELAY, 120, {} },
-	{ REGFLAG_END_OF_TABLE, 0x00, {} }
+	{0x10, 0, {} },
+	{REGFLAG_DELAY, 120, {} },
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
-
+#if 0
 static struct LCM_setting_table lcm_backlight_level_setting[] = {
-	{ 0x51, 1, {0xFF} },
-	{ REGFLAG_END_OF_TABLE, 0x00, {} }
+	{0x51, 1, {0xFF} },
+	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
-
+#endif
 
 static void push_table(struct LCM_setting_table *table, unsigned int count,
 		       unsigned char force_update)
@@ -261,7 +270,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	/* DSI */
 	/* Command mode setting */
-	params->dsi.LANE_NUM = LCM_FOUR_LANE;
+	params->dsi.LANE_NUM = LCM_TWO_LANE;
 	/* The following defined the fomat for data coming from LCD engine. */
 	params->dsi.data_format.color_order = LCM_COLOR_ORDER_RGB;
 	params->dsi.data_format.trans_seq = LCM_DSI_TRANS_SEQ_MSB_FIRST;
@@ -278,17 +287,13 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.vertical_frontporch = 15;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
-	params->dsi.horizontal_sync_active = 50;
-	params->dsi.horizontal_backporch = 50;
-	params->dsi.horizontal_frontporch = 50;
+	params->dsi.horizontal_sync_active = 76;
+	params->dsi.horizontal_backporch = 76;
+	params->dsi.horizontal_frontporch = 76;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#if (LCM_DSI_CMD_MODE)
-	params->dsi.PLL_CLOCK = 350;	/* this value must be in MTK suggested table */
-#else
-	params->dsi.PLL_CLOCK = 218;	/* this value must be in MTK suggested table */
-#endif
+	params->dsi.PLL_CLOCK = 450;	/* this value must be in MTK suggested table */
 #else
 	params->dsi.pll_div1 = 0;
 	params->dsi.pll_div2 = 0;
@@ -297,12 +302,14 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.cont_clock = 1;
 
+/*
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 1;
+	params->dsi.esd_check_enable = 0;
 	params->dsi.customization_esd_check_enable = 0;
-	params->dsi.lcm_esd_check_table[0].cmd = 0x53;
-	params->dsi.lcm_esd_check_table[0].count = 1;
+	params->dsi.lcm_esd_check_table[0].cmd          = 0x53;
+	params->dsi.lcm_esd_check_table[0].count        = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
+*/
 }
 
 
@@ -331,7 +338,7 @@ static void lcm_resume(void)
 	lcm_init();
 }
 
-
+#if 0
 static void lcm_update(unsigned int x, unsigned int y, unsigned int width, unsigned int height)
 {
 	unsigned int x0 = x;
@@ -390,7 +397,6 @@ static void lcm_setpwm(unsigned int divider)
 	/* TBD */
 }
 
-
 static unsigned int lcm_getpwm(unsigned int divider)
 {
 	/* ref freq = 15MHz, B0h setting 0x80, so 80.6% * freq is pwm_clk; */
@@ -398,9 +404,9 @@ static unsigned int lcm_getpwm(unsigned int divider)
 	unsigned int pwm_clk = 23706 / (1 << divider);
 	return pwm_clk;
 }
+#endif
 
 LCM_DRIVER hx8392a_dsi_vdo_lcm_drv = {
-
 	.name = "hx8392a_vdo_cmd",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
