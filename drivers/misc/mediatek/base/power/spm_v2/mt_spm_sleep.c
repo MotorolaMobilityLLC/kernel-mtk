@@ -12,7 +12,9 @@
 #else
 #include <linux/irqchip/mt-gic.h>
 #endif
+#if defined(CONFIG_MTK_SYS_CIRQ)
 #include <mt-plat/mt_cirq.h>
+#endif
 #include <mach/mt_clkmgr.h>
 #include "mt_cpuidle.h"
 #ifdef CONFIG_MTK_WD_KICKER
@@ -571,8 +573,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	mt_irq_mask_all(&mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
 
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
+#endif
 
 	spm_set_sysclk_settle();
 
@@ -624,8 +628,10 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	last_wr = spm_output_wake_reason(&spm_wakesta, pcmdesc);
 
 RESTORE_IRQ:
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
+#endif
 
 	mt_irq_mask_restore(&mask);
 
