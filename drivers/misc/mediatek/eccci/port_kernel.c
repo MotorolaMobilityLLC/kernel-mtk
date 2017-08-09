@@ -2278,6 +2278,7 @@ void ccci_md_exception_notify(struct ccci_modem *md, MD_EX_STAGE stage)
 		del_timer(&md->md_status_timeout);
 
 		md->ee_info_flag |= ((1 << MD_EE_FLOW_START) | (1 << MD_EE_WDT_GET) | (1 << MD_STATE_UPDATE));
+		md->ops->broadcast_state(md, EXCEPTION);
 		mod_timer(&md->ex_monitor, jiffies);
 		break;
 	default:
