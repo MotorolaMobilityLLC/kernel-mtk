@@ -597,7 +597,7 @@ static void free_buffer(struct videobuf_queue *vq, struct mtk_camera_buf *buf)
 
 	BUG_ON(in_interrupt());
 
-	videobuf_waiton(vq, vb, 0, 1);
+	videobuf_waiton(vq, vb, 0, 0);
 	vb->state = VIDEOBUF_NEEDS_INIT;
 }
 
@@ -691,6 +691,7 @@ static irqreturn_t mtk_camera_irq(int irq, void *data)
 			if (!list_empty(&pcdev->capture)) {
 				pcdev->active = list_entry(pcdev->capture.next,
 					struct mtk_camera_buf, vb.queue);
+				pcdev->active->vb.state = VIDEOBUF_ACTIVE;
 			} else{
 				pcdev->active = NULL;
 			}
@@ -708,7 +709,7 @@ static void mtk_videobuf_queue(struct videobuf_queue *vq,
 	struct mtk_camera_dev *pcdev = ici->priv;
 
 	list_add_tail(&vb->queue, &pcdev->capture);
-	vb->state = VIDEOBUF_ACTIVE;
+	vb->state = VIDEOBUF_QUEUED;
 
 	if (pcdev->enable_vdoin == 0) {
 		pcdev->enable_vdoin = 1;
@@ -716,29 +717,31 @@ static void mtk_videobuf_queue(struct videobuf_queue *vq,
 		writel((readl(pcdev->reg_vdoin_base) | (MTK_VDOIN_ENABLE_REG_BIT)), (pcdev->reg_vdoin_base));
 	}
 
-	if (list_empty(&pcdev->capture))
+	if (pcdev->active)
 		return;
 
 	pcdev->active = list_entry(pcdev->capture.next,
 				   struct mtk_camera_buf, vb.queue);
+	pcdev->active->vb.state = VIDEOBUF_ACTIVE;
 }
 
 static void mtk_videobuf_release(struct videobuf_queue *vq,
 				 struct videobuf_buffer *vb)
 {
-	struct mtk_camera_buf *buf =
-			container_of(vb, struct mtk_camera_buf, vb);
 	struct soc_camera_device *icd = vq->priv_data;
 	struct device *dev = icd->parent;
 	struct soc_camera_host *ici = to_soc_camera_host(dev);
 	struct mtk_camera_dev *pcdev = ici->priv;
 
-	free_buffer(vq, buf);
-	if (pcdev->enable_vdoin == 1) {
+	BUG_ON(in_interrupt());
+	videobuf_waiton(vq, vb, 0, 0);
+
+	if (vb->state == VIDEOBUF_DONE && pcdev->enable_vdoin == 1) {
 		pcdev->enable_vdoin = 0;
 		disable_irq(pcdev->irq);
 		writel((readl(pcdev->reg_vdoin_base) | (MTK_VDOIN_ENABLE_REG_BIT)), (pcdev->reg_vdoin_base));
 	}
+	vb->state = VIDEOBUF_NEEDS_INIT;
 }
 
 static const struct videobuf_queue_ops mtk_videobuf_ops = {
