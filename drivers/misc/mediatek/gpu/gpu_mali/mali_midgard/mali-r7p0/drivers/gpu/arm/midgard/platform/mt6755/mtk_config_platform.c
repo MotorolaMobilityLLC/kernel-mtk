@@ -255,6 +255,9 @@ int kbase_platform_early_init(void)
 int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 {
     struct mtk_config *config;
+    unsigned int gpu_efuse;
+    extern int g_mtk_gpu_efuse_set_already;
+	
     if (!pdev || !kbdev) {
         pr_alert("input parameter is NULL \n");
         return -1;
@@ -296,6 +299,15 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 		pr_alert("cannot get mtcmos display\n");
 		return PTR_ERR(config->clk_display_scp);
 	}
+	
+	gpu_efuse =  (get_devinfo_with_index(17) >> 6)&0x01;
+	pr_alert("[Mali] get_devinfo_with_index = 0x%x , gpu_efuse = 0x%x  \n", get_devinfo_with_index(17), gpu_efuse);
+	if( gpu_efuse == 1 )
+		kbdev->pm.debug_core_mask = (u64)1;	 // 1-core
+	else
+		kbdev->pm.debug_core_mask = (u64)3;	 // 2-core
+
+	g_mtk_gpu_efuse_set_already = 1;
     
     return 0;
 }
