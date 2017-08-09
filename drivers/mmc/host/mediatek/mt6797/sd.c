@@ -1838,7 +1838,8 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	MSDC_CLR_BIT32(MSDC_INTEN, wints_cmd);
 	rawarg = cmd->arg;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
+	if (host->hw->host_function == MSDC_EMMC)
+		dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
 #endif
 	sdc_send_cmd(rawcmd, rawarg);
 
@@ -1938,7 +1939,8 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 			break;
 		}
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		dbg_add_host_log(host->mmc, 1, cmd->opcode, cmd->resp[0]);
+		if (host->hw->host_function == MSDC_EMMC)
+			dbg_add_host_log(host->mmc, 1, cmd->opcode, cmd->resp[0]);
 #endif
 	} else if (intsts & MSDC_INT_RSPCRCERR) {
 		cmd->error = (unsigned int)-EILSEQ;
@@ -1966,7 +1968,8 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 #endif
 		    ) {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			mmc_cmd_dump(host->mmc);
+			if (host->hw->host_function == MSDC_EMMC)
+				mmc_cmd_dump(host->mmc);
 #endif
 			msdc_dump_info(host->id);
 		}
@@ -2172,7 +2175,10 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 			pr_err("[%s]: msdc%d XXX CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
 			msdc_dump_info(host->id);
-			mmc_cmd_dump(host->mmc);
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+			if (host->hw->host_function == MSDC_EMMC)
+				mmc_cmd_dump(host->mmc);
+#endif
 			/*msdc_reset_hw(host->id);*/
 		}
 	}
