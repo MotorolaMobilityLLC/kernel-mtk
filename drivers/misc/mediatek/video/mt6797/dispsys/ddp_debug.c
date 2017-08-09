@@ -203,7 +203,7 @@ static void process_dbg_opt(const char *opt)
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
 			return;
 		}
-		/* ddp_init_met_tag(met_on,rdma0_mode,rdma1_mode); */
+		ddp_init_met_tag(met_on, rdma0_mode, rdma1_mode);
 		DDPMSG("process_dbg_opt, met_on=%d,rdma0_mode %d, rdma1 %d\n", met_on, rdma0_mode,
 		       rdma1_mode);
 		sprintf(buf, "met_on:%d,rdma0_mode:%d,rdma1_mode:%d\n", met_on, rdma0_mode,
