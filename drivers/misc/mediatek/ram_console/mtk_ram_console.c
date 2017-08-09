@@ -60,6 +60,9 @@ struct last_reboot_reason {
 	uint32_t clk_data[8];
 	uint32_t suspend_debug_flag;
 
+	uint32_t vcore_dvfs_opp;
+	uint32_t vcore_dvfs_status;
+
 	uint8_t cpu_dvfs_vproc_big;
 	uint8_t cpu_dvfs_vproc_little;
 	uint8_t cpu_dvfs_oppidx;
@@ -899,6 +902,30 @@ unsigned long *aee_rr_rec_cpu_dormant_pa(void)
 		return NULL;
 }
 
+void aee_rr_rec_vcore_dvfs_opp(u32 val)
+{
+	if (!ram_console_init_done)
+		return;
+	LAST_RR_SET(vcore_dvfs_opp, val);
+}
+
+u32 aee_rr_curr_vcore_dvfs_opp(void)
+{
+	return LAST_RR_VAL(vcore_dvfs_opp);
+}
+
+void aee_rr_rec_vcore_dvfs_status(u32 val)
+{
+	if (!ram_console_init_done)
+		return;
+	LAST_RR_SET(vcore_dvfs_status, val);
+}
+
+u32 aee_rr_curr_vcore_dvfs_status(void)
+{
+	return LAST_RR_VAL(vcore_dvfs_status);
+}
+
 void aee_rr_rec_cpu_dvfs_vproc_big(u8 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -1214,6 +1241,16 @@ void aee_rr_show_clk(struct seq_file *m)
 		seq_printf(m, "clk_data: 0x%x\n", LAST_RRR_VAL(clk_data[i]));
 }
 
+void aee_rr_show_vcore_dvfs_opp(struct seq_file *m)
+{
+	seq_printf(m, "vcore_dvfs_opp: 0x%x\n", LAST_RRR_VAL(vcore_dvfs_opp));
+}
+
+void aee_rr_show_vcore_dvfs_status(struct seq_file *m)
+{
+	seq_printf(m, "vcore_dvfs_status: 0x%x\n", LAST_RRR_VAL(vcore_dvfs_status));
+}
+
 void aee_rr_show_cpu_dvfs_vproc_big(struct seq_file *m)
 {
 	seq_printf(m, "cpu_dvfs_vproc_big: 0x%x\n", LAST_RRR_VAL(cpu_dvfs_vproc_big));
@@ -1341,6 +1378,8 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_deepidle,
 	aee_rr_show_sodi,
 	aee_rr_show_spm_suspend,
+	aee_rr_show_vcore_dvfs_opp,
+	aee_rr_show_vcore_dvfs_status,
 	aee_rr_show_clk,
 	aee_rr_show_cpu_dvfs_vproc_big,
 	aee_rr_show_cpu_dvfs_vproc_little,
