@@ -2485,6 +2485,7 @@ static int __build_path_direct_link(void)
 #endif
 #ifndef MTK_FB_CMDQ_DISABLE
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_ENABLE);
+	cmdqRecFlush(pgc->cmdq_handle_config);
 #else
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
 #endif

@@ -108,7 +108,7 @@
 /**
  * DUAL OVL engine support.
  */
-#define OVL_CASCADE_SUPPORT
+/* #define OVL_CASCADE_SUPPORT */
 
 /**
  * OVL layer configurations.
