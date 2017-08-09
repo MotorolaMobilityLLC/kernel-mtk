@@ -499,6 +499,7 @@ static void _hdmi_rdma_irq_handler(DISP_MODULE_ENUM module, unsigned int param)
 static int hdmi_fence_release_kthread(void *data)
 {
 	int layid = 0;
+	int ovl_release = 0;
 	unsigned int session_id = 0;
 	int fence_idx = 0;
 	unsigned int layer_3d_format = 0;
@@ -521,8 +522,20 @@ static int hdmi_fence_release_kthread(void *data)
 			continue;
 
 		if (ext_disp_path_source_is_RDMA(MHL_SESSION_ID)) {
-			if (ext_disp_get_ovl_req_status(MHL_SESSION_ID) == EXTD_OVL_REMOVED)
+			if (ext_disp_get_ovl_req_status(MHL_SESSION_ID) == EXTD_OVL_REMOVED) {
 				ext_disp_path_change(EXTD_OVL_NO_REQ, MHL_SESSION_ID);
+
+				if ((ovl_release == 1) && (EXTD_OVERLAY_CNT > 1)) {
+					for (layid = 1; layid < EXTD_OVERLAY_CNT; layid++) {
+						fence_idx = disp_sync_find_fence_idx_by_addr(session_id,
+										layid, ovl_config_address[layid]);
+						fence_idx = ((fence_idx >= 0) ? (fence_idx + 1) : fence_idx);
+						mtkfb_release_fence(session_id, layid, fence_idx);
+					}
+
+					ovl_release = 0;
+				}
+			}
 
 			ext_disp_get_curr_addr(input_curr_addr, 0);
 			fence_idx = disp_sync_find_fence_idx_by_addr(session_id, 0, input_curr_addr[0]);
@@ -539,6 +552,7 @@ static int hdmi_fence_release_kthread(void *data)
 				if (ovl_config_address[layid] != input_curr_addr[layid]) {
 					ovl_config_address[layid] = input_curr_addr[layid];
 					ovl_reg_updated = true;
+					ovl_release = 1;
 				}
 
 				if (ext_disp_is_dim_layer(input_curr_addr[layid]) == 1)

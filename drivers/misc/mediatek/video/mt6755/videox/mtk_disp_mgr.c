@@ -706,7 +706,7 @@ static int set_external_buffer(disp_session_input_config *input)
 				input->config[i].sur_aen = 0;
 				input->config[i].src_fmt = DISP_FORMAT_RGB888;
 				input->config[i].src_pitch = input->config[i].src_width;
-				input->config[i].src_phy_addr = 0;
+				input->config[i].src_phy_addr = (void *)get_dim_layer_mva_addr();
 				input->config[i].next_buff_idx = 0;
 				/* force dim layer as non-sec */
 				input->config[i].security = DISP_NORMAL_BUFFER;

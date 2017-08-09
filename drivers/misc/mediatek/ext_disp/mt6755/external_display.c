@@ -1126,7 +1126,7 @@ int ext_disp_config_input_multiple(disp_session_input_config *input, int idx, un
 	} else if (layer_cnt > 1) {
 		ext_disp_path_change(EXTD_OVL_INSERT_REQ, session);
 		if (ext_disp_get_ovl_req_status(session) == EXTD_OVL_INSERT_REQ) {
-			EXT_DISP_LOG("config M4U Port DISP_MODULE_RDMA1\n");
+			EXT_DISP_LOG("config M4U Port M4U_PORT_DISP_OVL1\n");
 			sPort.ePortID = M4U_PORT_DISP_OVL1;
 			sPort.Virtuality = 1;
 			sPort.Security = 0;
@@ -1333,9 +1333,9 @@ int ext_disp_path_change(enum EXTD_OVL_REQ_STATUS action, unsigned int session)
 /*			if (pgc->ovl_req_state == EXTD_OVL_REMOVED) {*/
 				/* 0 - DDP_OVL1_STATUS_IDLE */
 /*				dpmgr_set_ovl1_status(0);
-			}
+			}*/
 			pgc->ovl_req_state = EXTD_OVL_NO_REQ;
-*/			break;
+			break;
 		case EXTD_OVL_REQUSTING_REQ:
 /*			if (ovl_get_status() == DDP_OVL1_STATUS_PRIMARY) {*/
 				/* 1 - DDP_OVL1_STATUS_SUB_REQUESTING */
