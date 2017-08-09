@@ -50,7 +50,7 @@ int wdma_start(DISP_MODULE_ENUM module, void *handle)
 	unsigned int idx = wdma_index(module);
 
 	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_INTEN, 0x03);
-	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_EN, 0x01);
+	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_EN, 0x80000001);
 
 	return 0;
 }
@@ -203,6 +203,8 @@ static int wdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 		ddp_clk_enable(DISP0_DISP_WDMA1);
 #endif
 #endif
+	/* enable WDMA DCM */
+	DISP_REG_SET(handle, idx * DISP_WDMA_INDEX_OFFSET + DISP_REG_WDMA_EN, 0x80000000);
 	return 0;
 }
 
