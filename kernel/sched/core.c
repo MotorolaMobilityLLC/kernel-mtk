@@ -3860,9 +3860,7 @@ change:
 
 	prev_class = p->sched_class;
 	__setscheduler(rq, p, attr, true);
-#ifdef CONFIG_MTPROF
-	check_mt_rt_mon_info(p);
-#endif
+
 	if (running)
 		p->sched_class->set_curr_task(rq);
 	if (queued) {
@@ -3877,6 +3875,9 @@ change:
 	task_rq_unlock(rq, p, &flags);
 
 	rt_mutex_adjust_pi(p);
+#ifdef CONFIG_MTPROF
+	check_mt_rt_mon_info(p);
+#endif
 
 	return 0;
 }
