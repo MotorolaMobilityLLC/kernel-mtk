@@ -2085,7 +2085,7 @@ struct struct_block_io_ring {
 	char block_io_log_debugfs[BLOCK_IO_BUFFER_SIZE];
 };
 #define MAX_BLOCK_IO_LOG_COUNT 120
-struct struct_block_io_ring block_io_ring[MAX_BLOCK_IO_LOG_COUNT] = { { { 0 } } };
+char *block_io_ring = NULL;
 int block_io_ring_index = 0;
 int stopringlog = 0;
 static void g_var_clear(unsigned int idx)
@@ -2165,7 +2165,7 @@ static ssize_t block_io_debug_read(struct file *file, char __user *ubuf, size_t 
 	int i = 0;
 	char *debug_fs = NULL;
 	struct struct_block_io_ring *tmp_logger;
-
+	struct struct_block_io_ring *tmp_logger2;
 	stopringlog = 1;
 	index = block_io_ring_index;
 
@@ -2174,8 +2174,9 @@ static ssize_t block_io_debug_read(struct file *file, char __user *ubuf, size_t 
 		memset(debug_fs, 0 , MAX_BLOCK_IO_LOG_COUNT * sizeof(struct struct_block_io_ring));
 	for (i = 0; i < MAX_BLOCK_IO_LOG_COUNT; i++) {
 		tmp_logger = ((struct struct_block_io_ring *)debug_fs) + i;
+		tmp_logger2 = ((struct struct_block_io_ring *)block_io_ring) + ((index + i) % MAX_BLOCK_IO_LOG_COUNT);
 		snprintf((tmp_logger->block_io_log_debugfs), BLOCK_IO_BUFFER_SIZE,
-			block_io_ring[(index + i)%MAX_BLOCK_IO_LOG_COUNT].block_io_log_debugfs);
+			(tmp_logger2->block_io_log_debugfs));
 	}
 	count1 = simple_read_from_buffer(ubuf, count, ppos, debug_fs,
 		sizeof(struct struct_block_io_ring) * MAX_BLOCK_IO_LOG_COUNT);
@@ -2446,11 +2447,11 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 #if defined(FEATURE_STORAGE_PID_LOGGER)
 				pr_debug("[BLOCK_TAG] mmcqd:%d %s\n", mmcqd[idx], block_io_log_dst_buffer);
 			if (stopringlog == 0) {
-				memset(&(block_io_ring[block_io_ring_index].block_io_log_debugfs), 0,
+				memset((((struct struct_block_io_ring *)block_io_ring) + block_io_ring_index), 0,
 					sizeof(char)*BLOCK_IO_BUFFER_SIZE);
 			    time = get_current_time_us();
 				rem_nsec = do_div(time, 1000000000);
-				snprintf((block_io_ring[block_io_ring_index].block_io_log_debugfs),
+				snprintf((((struct struct_block_io_ring *)block_io_ring) + block_io_ring_index),
 					BLOCK_IO_BUFFER_SIZE, "\n[%5lu.%06lu]q:%d.%s",
 					(unsigned long)time, rem_nsec / 1000, idx, block_io_log_dst_buffer);
 				block_io_ring_index++;
@@ -2819,6 +2820,11 @@ static struct mmc_blk_data *mmc_blk_alloc_req(struct mmc_card *card,
 			pr_debug("page_logger malloc fail\n");
 		spin_lock_init(&g_locker);
 	}
+	if (!block_io_ring) {
+		block_io_ring = vmalloc(MAX_BLOCK_IO_LOG_COUNT * sizeof(struct struct_block_io_ring));
+		if (block_io_ring)
+			memset(block_io_ring, 0 , MAX_BLOCK_IO_LOG_COUNT * sizeof(struct struct_block_io_ring));
+		}
 #endif
 #if defined(FEATURE_STORAGE_META_LOG)
 	check_perdev_minors = perdev_minors;
