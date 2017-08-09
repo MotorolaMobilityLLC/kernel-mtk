@@ -1941,6 +1941,23 @@ struct SMI_SETTING mm_gpu_setting_config = {
 struct SMI_SETTING ui_idle_setting_config = { 0, NULL, {0}, {0} };
 struct SMI_SETTING hdmi_setting_config = { 0, NULL, {0}, {0} };
 struct SMI_SETTING hdmi4k_setting_config = { 0, NULL, {0}, {0} };
+
+#elif defined(SMI_BRINGUP)
+struct SMI_SETTING init_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING vr_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING swdec_vp_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING vp_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING vr_slow_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING mm_gpu_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING vpwfd_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING venc_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING icfp_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING vss_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING vpmjc_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING n3d_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING ui_idle_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING hdmi_setting_config = { 0, NULL, {0}, {0} };
+struct SMI_SETTING hdmi4k_setting_config = { 0, NULL, {0}, {0} };
 #endif
 
 struct SMI_PROFILE_CONFIG smi_profile_config[SMI_PROFILE_CONFIG_NUM] = {

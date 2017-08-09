@@ -26,7 +26,7 @@
 #include <aee.h>
 
 /* Define SMI_INTERNAL_CCF_SUPPORT when CCF needs to be enabled */
-#if !defined(CONFIG_MTK_CLKMGR)
+#if !defined(CONFIG_MTK_CLKMGR) && !defined(SMI_BRINGUP)
 #define SMI_INTERNAL_CCF_SUPPORT
 #endif
 
@@ -258,6 +258,13 @@ static unsigned short int *larb_port_backup[SMI_LARB_NR] = { larb0_port_backup,
 	larb1_port_backup, larb2_port_backup, larb3_port_backup,
 	larb4_port_backup, larb5_port_backup, larb6_port_backup
 };
+
+#elif defined(SMI_BRINGUP)
+#define SMI_REG_REGION_MAX 1
+
+static const unsigned int larb_port_num[SMI_LARB_NR] = {0};
+static unsigned short int *larb_port_backup[SMI_LARB_NR] = {0};
+
 #endif
 
 static unsigned long gSMIBaseAddrs[SMI_REG_REGION_MAX];

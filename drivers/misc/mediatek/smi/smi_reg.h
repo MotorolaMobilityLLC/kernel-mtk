@@ -342,6 +342,9 @@
 #define SMI_LARB4_PORT_NUM  4
 #define SMI_LARB5_PORT_NUM  10
 #define SMI_LARB6_PORT_NUM  10
+
+#elif defined(SMI_BRINGUP)
+#define SMI_LARB_NR     1
 #endif
 
 #define SMI_LARB_STAT                   (0x0)
