@@ -915,7 +915,7 @@ static int mpu_check_violation(void)
 
 #ifdef CONFIG_MTK_AEE_FEATURE
 	if ((enable_gpu_aee == 0) && (((master_ID & 0x7) == MASTER_MFG))) {
-		pr_err("[EMI MPU] GPU make violatin but will NOT trigger AEE.\n");
+		pr_err("[EMI MPU] Skip, GPU checker is OFF\n");
 	} else {
 	if (wr_vio != 0) {
 		/* EMI violation is relative to MD at user build*/
@@ -952,9 +952,11 @@ static int mpu_check_violation(void)
 #endif
 
 	/* MTK: debug for GPU MPU  violation*/
-	pr_err("[EMI_MPU][MALI] ready to kbase_check_PA. PA=0x%x.\n",
-	dbg_t + emi_physical_offset);
-	kbase_check_PA(dbg_t + emi_physical_offset);
+	if ((master_ID & 0x7) == MASTER_MFG) {
+		pr_err("[EMI_MPU][MALI] ready to kbase_check_PA. PA=0x%x.\n",
+		dbg_t + emi_physical_offset);
+		kbase_check_PA(dbg_t + emi_physical_offset);
+	}
 	__clear_emi_mpu_vio(0);
 	mt_devapc_clear_emi_violation();
 	vio_addr = dbg_t + emi_physical_offset;
@@ -1719,11 +1721,10 @@ static ssize_t emi_mpu_gpu_show(struct device_driver *driver, char *buf)
 {
 	char *ptr = buf;
 
-	ptr += sprintf(ptr, "AEE(0:disable, 1:enable):%x\n", enable_gpu_aee);
 	if (enable_gpu_aee)
-		ptr += sprintf(ptr, "GPU's violation will trigger AEE\n");
+		ptr += sprintf(ptr, "GPU checker: ON\n");
 	else
-		ptr += sprintf(ptr, "GPU's violation will NOT trigger AEE\n");
+		ptr += sprintf(ptr, "GPU checker: OFF\n");
 
 	return strlen(buf);
 }
