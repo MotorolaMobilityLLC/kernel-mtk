@@ -1079,11 +1079,17 @@ static const struct mtk_i2c_compatible mt6757_compat = {
 	.idvfs_i2c = 0,
 };
 
+static const struct mtk_i2c_compatible elbrus_compat = {
+	.dma_support = 2,
+	.idvfs_i2c = 1,
+};
+
 
 static const struct of_device_id mtk_i2c_of_match[] = {
 	{ .compatible = "mediatek,mt6735-i2c", .data = &mt6735_compat },
 	{ .compatible = "mediatek,mt6797-i2c", .data = &mt6797_compat },
 	{ .compatible = "mediatek,mt6757-i2c", .data = &mt6757_compat },
+	{ .compatible = "mediatek,elbrus-i2c", .data = &elbrus_compat },
 	{},
 };
 
@@ -1096,6 +1102,7 @@ static int mt_i2c_probe(struct platform_device *pdev)
 	unsigned int clk_src_in_hz;
 	struct resource *res;
 	const struct of_device_id *of_id;
+
 	i2c = devm_kzalloc(&pdev->dev, sizeof(struct mt_i2c), GFP_KERNEL);
 	if (i2c == NULL)
 		return -ENOMEM;
