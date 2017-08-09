@@ -4,7 +4,7 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <mt-plat/upmu_common.h>
-#ifdef CONFIG_MT_SND_SOC_6797
+#ifdef CONFIG_MT_SND_SOC_NEW_ARCH
 #include <mt_soc_afe_control.h>
 #endif
 #define KPD_DEBUG	KPD_YES
@@ -281,7 +281,6 @@ bool __attribute__ ((weak)) ConditionEnterSuspend(void)
 /********************************************************************/
 void kpd_wakeup_src_setting(int enable)
 {
-#ifdef CONFIG_MT_SND_SOC_6797
 	int is_fm_radio_playing = 0;
 
 	/* If FM is playing, keep keypad as wakeup source */
@@ -291,7 +290,6 @@ void kpd_wakeup_src_setting(int enable)
 		is_fm_radio_playing = 1;
 
 	if (is_fm_radio_playing == 0) {
-#endif
 		if (enable == 1) {
 			kpd_print("enable kpd work!\n");
 			enable_kpd(1);
@@ -299,9 +297,7 @@ void kpd_wakeup_src_setting(int enable)
 			kpd_print("disable kpd work!\n");
 			enable_kpd(0);
 		}
-#ifdef CONFIG_MT_SND_SOC_6797
 	}
-#endif
 }
 
 /********************************************************************/

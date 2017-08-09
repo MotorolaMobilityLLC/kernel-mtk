@@ -431,6 +431,11 @@
 		compatible = "mediatek,mt6757-keypad";
 		reg = <0 0x10010000 0 0x1000>;
 		interrupts = <GIC_SPI 164 IRQ_TYPE_EDGE_FALLING>;
+
+		mrdump_ext_rst: mrdump_ext_rst {
+			compatible = "mediatek, mrdump_ext_rst-eint";
+			status = "disabled";
+		};
 	};
 
 	topmisc@10011000 {
