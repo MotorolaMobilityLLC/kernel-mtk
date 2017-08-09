@@ -12,8 +12,8 @@
  */
 
 
-#include "fan53528_system.h"
-#include "fan53528_buck_core.h"
+#include "fan53528buc08x_system.h"
+#include "fan53528buc08x_buck_core.h"
 
 #define FAN53528_I2C_CHANNEL           0
 

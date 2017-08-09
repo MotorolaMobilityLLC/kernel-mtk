@@ -16,36 +16,26 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 
-#include "fan53528_system.h"
-#include "fan53528_buck_core.h"
+#include "fan53528buc08x_system.h"
+#include "fan53528buc08x_buck_core.h"
 
 static DEFINE_MUTEX(fan53528_io_lock);
 
 static struct i2c_client *fan53528_i2c_client;
 
-static unsigned char fan53528_regval[5] = {0x00, 0x00, 0x00, 0x00, 0x00};
-
 static int fan53528_read_device(void *client, u32 addr, int len, void *dst)
 {
-	memcpy(dst, &fan53528_regval[addr], len);
-	return 0;
-#if 0
 	struct i2c_client *i2c = (struct i2c_client *)client;
 
 	return i2c_smbus_read_i2c_block_data(i2c, addr, len, dst);
-#endif
 }
 
 static int fan53528_write_device(void *client, u32 addr,
 		int len, const void *src)
 {
-	memcpy(&fan53528_regval[addr], src, len);
-	return 0;
-#if 0
 	struct i2c_client *i2c = (struct i2c_client *)client;
 
 	return i2c_smbus_write_i2c_block_data(i2c, addr, len, src);
-#endif
 }
 
 static int fan53528_read_byte(unsigned char addr, unsigned char *val)
