@@ -1211,7 +1211,7 @@ int get_io_reg_base(void)
 	of_property_read_u32(node, "reg", &thermal_phy_base);
 	/*tscpu_printk("[THERM_CTRL] thermal_base thermal_phy_base=0x%x\n",thermal_phy_base); */
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,AUXADC");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-auxadc");
 	BUG_ON(node == 0);
 	if (node) {
 		/* Setup IO addresses */
