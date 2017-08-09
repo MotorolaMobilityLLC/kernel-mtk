@@ -62,17 +62,32 @@
 /*
 * New hotpug strategy
 */
+int hps_current_core(void)
+{
+	int load_cores, tlp_cores, online_cores, i;
+
+	load_cores = tlp_cores = online_cores = i = 0;
+	for (i = hps_sys.cluster_num - 1; i >= 0; i--)
+		online_cores += hps_sys.cluster_info[i].target_core_num;
+	if (hps_ctxt.cur_loads > hps_ctxt.rush_boost_threshold * online_cores)
+		tlp_cores = hps_ctxt.cur_tlp / 100 + (hps_ctxt.cur_tlp % 100 ? 1 : 0);
+	else
+		tlp_cores = 0;
+	load_cores = hps_ctxt.cur_loads / hps_ctxt.up_threshold +
+	    (hps_ctxt.cur_loads % hps_ctxt.up_threshold ? 1 : 0);
+	return max(tlp_cores, load_cores);
+}
+
+
+
+
 static int hps_algo_heavytsk_det(void)
 {
-	int i, j, ret, sys_cores, hvy_cores;
+	int i, j, ret, sys_cores, hvy_cores, target_cores_limit;
 
-	i = j = ret = sys_cores = hvy_cores = 0;
-	/*sys_cores = hps_cal_cores(); */
-	/* Check heavy task value of last cluster if needed */
-#if 0
-	if (hps_sys.cluster_info[hps_sys.cluster_num - 1].hvyTsk_value)
-		ret = 1;
-#endif
+	i = j = ret = sys_cores = hvy_cores = target_cores_limit = 0;
+	/*Calculate system cores */
+	target_cores_limit = hps_current_core();
 
 	for (i = hps_sys.cluster_num - 1; i > 0; i--) {
 		if (hps_sys.cluster_info[i - 1].hvyTsk_value)
@@ -109,6 +124,37 @@ static int hps_algo_heavytsk_det(void)
 		}
 	}
 #endif
+	if (sys_cores > target_cores_limit) {
+		for (i = 0; i < hps_sys.cluster_num; i++) {
+			for (j = hps_sys.cluster_info[i].base_value;
+			     j <= hps_sys.cluster_info[i].limit_value; j++) {
+				if (sys_cores <= target_cores_limit)
+					break;
+				if (hps_sys.cluster_info[i].target_core_num > 0) {
+					hps_sys.cluster_info[i].target_core_num--;
+					sys_cores--;
+				} else {
+					ret = 1;
+					continue;
+				}
+			}
+		}
+	} else {
+		for (i = 0; i < hps_sys.cluster_num; i++) {
+			for (j = hps_sys.cluster_info[i].base_value;
+			     j <= hps_sys.cluster_info[i].limit_value; j++) {
+				if (sys_cores >= target_cores_limit)
+					break;
+				if (hps_sys.cluster_info[i].target_core_num <
+				    hps_sys.cluster_info[i].limit_value) {
+					hps_sys.cluster_info[i].target_core_num++;
+					sys_cores++;
+					ret = 1;
+				} else
+					continue;
+			}
+		}
+	}
 	return ret;
 }
 
@@ -180,8 +226,7 @@ int hps_cal_core_num(struct hps_sys_struct *hps_sys, int core_val, int base_val)
 	/* Process root cluster */
 	root_cluster = hps_sys->root_cluster_id;
 	for (cpu = hps_sys->cluster_info[root_cluster].base_value;
-		cpu <= hps_sys->cluster_info[root_cluster].limit_value;
-		cpu++) {
+	     cpu <= hps_sys->cluster_info[root_cluster].limit_value; cpu++) {
 		if (core_val <= 0)
 			goto out;
 		else {
@@ -194,8 +239,7 @@ int hps_cal_core_num(struct hps_sys_struct *hps_sys, int core_val, int base_val)
 		if (root_cluster == i)	/* Skip root cluster */
 			continue;
 		for (cpu = hps_sys->cluster_info[i].base_value;
-			cpu <= hps_sys->cluster_info[i].limit_value;
-			cpu++) {
+		     cpu <= hps_sys->cluster_info[i].limit_value; cpu++) {
 			if (core_val <= 0)
 				goto out;
 			else {
