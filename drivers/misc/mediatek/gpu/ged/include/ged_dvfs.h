@@ -34,6 +34,9 @@
 #define GED_GAS_SIGNAL_EVENT               49
 #define GED_SIGNAL_BOOST_HOST_EVENT               50
 
+/* GED_DVFS_DIFF_THRESHOLD (us) */
+#define GED_DVFS_DIFF_THRESHOLD 500 
+
 #define GED_DVFS_TIMER_BACKUP 0x5566dead
 
 typedef enum GED_DVFS_COMMIT_TAG

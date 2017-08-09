@@ -154,6 +154,10 @@ static void ged_timer_switch_work_handle(struct work_struct *psWork)
 }
 
 extern unsigned int g_gpu_timer_based_emu;
+extern unsigned long g_ulCalResetTS_us; // calculate loading reset time stamp
+extern unsigned long g_ulPreCalResetTS_us; // previous calculate loading reset time stamp
+extern unsigned long g_ulWorkingPeriod_us; // last frame half, t0
+
 GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQueryData)
 {
 #ifdef ENABLE_COMMON_DVFS	
@@ -164,8 +168,14 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 
 	unsigned long t;
 	long phase = 0;
+	unsigned long ul3DFenceDoneTime;
 
 	ged_sw_vsync_event(true);
+	
+	ul3DFenceDoneTime = ged_monitor_3D_fence_done_time(); 
+	psQueryData-> ul3DFenceDoneTime = ul3DFenceDoneTime;
+	psQueryData->ulWorkingPeriod_us = g_ulWorkingPeriod_us;
+	psQueryData->ulPreCalResetTS_us = g_ulCalResetTS_us; // IMPORTANT
 	temp = ged_get_time();
 
 	
@@ -233,9 +243,17 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	{
 		do_div(temp,1000);
 		t = (unsigned long)(temp);
-		ged_dvfs_run(t, phase, ged_monitor_3D_fence_done_time());
+		
+		if(ul3DFenceDoneTime>t) // for some cases just align vsync to FenceDoneTime
+		{
+			if(ul3DFenceDoneTime - t < GED_DVFS_DIFF_THRESHOLD) // allow diff
+				t = ul3DFenceDoneTime;
+		}
 		psQueryData->usT = t;
-		psQueryData-> ul3DFenceDoneTime = ged_monitor_3D_fence_done_time();
+		
+		ged_dvfs_run(t, phase, ul3DFenceDoneTime);
+		
+		
 		ged_dvfs_sw_vsync_query_data(psQueryData);
 	}		
 	else

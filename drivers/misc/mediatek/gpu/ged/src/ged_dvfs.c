@@ -82,9 +82,9 @@ static unsigned int gpu_block = 0;
 static unsigned int gpu_idle = 0;
 
 
-static unsigned long g_ulCalResetTS_us = 0; // calculate loading reset time stamp
-static unsigned long g_ulPreCalResetTS_us = 0; // previous calculate loading reset time stamp
-static unsigned long g_ulWorkingPeriod_us = 0; // last frame half, t0
+unsigned long g_ulCalResetTS_us = 0; // calculate loading reset time stamp
+unsigned long g_ulPreCalResetTS_us = 0; // previous calculate loading reset time stamp
+unsigned long g_ulWorkingPeriod_us = 0; // last frame half, t0
 
 unsigned long g_ulPreDVFS_TS_us = 0; // record previous DVFS applying time stamp
 
@@ -524,7 +524,7 @@ static bool ged_dvfs_policy(
 		}
 	}
 	}
-	else if(GED_DVFS_TIMER_BACKUP==phase) // easy to boost in offscreen case
+	else if(GED_DVFS_TIMER_BACKUP==phase) // easy to boost in offscreen cases
 	{
 		if (ui32GPULoading >= 50)
 		{
@@ -869,11 +869,10 @@ void ged_dvfs_sw_vsync_query_data(GED_DVFS_UM_QUERY_PACK* psQueryData)
 	psQueryData->ui32GPULoading = gpu_loading;
 	psQueryData->ui32GPUFreqID =  mt_gpufreq_get_cur_freq_index();
 	psQueryData->gpu_cur_freq = mt_gpufreq_get_freq_by_idx(psQueryData->ui32GPUFreqID) ;
-	psQueryData->gpu_pre_freq = g_ui32PreFreqID;
+	psQueryData->gpu_pre_freq = mt_gpufreq_get_freq_by_idx(g_ui32PreFreqID);
 	psQueryData->nsOffset = ged_dvfs_vsync_offset_level_get();
 
-	psQueryData->ulWorkingPeriod_us = g_ulWorkingPeriod_us;
-	psQueryData->ulPreCalResetTS_us = g_ulPreCalResetTS_us;
+
 
 }
 

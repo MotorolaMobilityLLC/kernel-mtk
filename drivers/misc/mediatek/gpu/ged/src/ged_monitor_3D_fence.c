@@ -95,7 +95,7 @@ static void ged_monitor_3D_fence_work_cb(struct work_struct *psWork)
 			unsigned int uiFreqLevelID;
 			if (mtk_get_bottom_gpu_freq(&uiFreqLevelID))
 			{
-				if (uiFreqLevelID > 0)
+				if (uiFreqLevelID > 0 && ged_monitor_3D_fence_switch)
 				{
 #ifdef GED_DEBUG_MONITOR_3D_FENCE
 					ged_log_buf_print(ghLogBuf_GED, "mtk_set_bottom_gpu_freq(0)");
@@ -141,11 +141,7 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 		return GED_OK;
 	}
 	
-	if(!ged_monitor_3D_fence_switch)
-	{
-		return GED_OK;
-	}
-	
+
 	t = ged_get_time();
 
 	do_div(t,1000);
@@ -214,6 +210,7 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 #endif
 
 #ifdef GED_DVFS_ENABLE
+							if(ged_monitor_3D_fence_switch)
 							mtk_set_bottom_gpu_freq(mt_gpufreq_get_dvfs_table_num() - 1);
 #endif
 						}
