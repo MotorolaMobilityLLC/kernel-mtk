@@ -67,7 +67,7 @@ void __iomem *SLEEP_BASE_ADDR;
 #define DRAM_RSV_SIZE 0x1000
 
 static DEFINE_MUTEX(dram_dfs_mutex);
-int org_dram_data_rate = 0;
+int highest_dram_data_rate = 0;
 unsigned char old_IC_No_DummyRead = 0;
 unsigned char DFS_type = 0;
 
@@ -385,7 +385,7 @@ void spm_dpd_dram_init(void)
 	writel(readl(PDEF_DRAMC0_CHA_REG_1E4) & 0xfffffffe,
 	PDEF_DRAMC0_CHA_REG_1E4);
 
-	frequency = get_dram_data_rate() / 2;
+	frequency = get_dram_data_rate(0) / 2;
 	if (frequency <= 533)
 		u4value = 0x10160002;/*u4MR2Value = 0x14;*/
 	else if (frequency == 635)
@@ -502,7 +502,7 @@ void spm_dpd_dram_init(void)
 	writel(readl(PDEF_DRAMC0_CHB_REG_1E4) & 0xfffffffe,
 	PDEF_DRAMC0_CHB_REG_1E4);
 
-	frequency = get_dram_data_rate() / 2;
+	frequency = get_dram_data_rate(0) / 2;
 	if (frequency <= 533)
 		u4value = 0x10160002;/*u4MR2Value = 0x14;*/
 	else if (frequency == 635)
@@ -1166,7 +1166,12 @@ bool pasr_is_valid(void)
 	return true;
 }
 
-unsigned int get_dram_data_rate_from_reg(void)
+/************************************************
+* input parameter:
+* freq_sel: 0 -> Current frequency
+*           1 -> Highest frequency
+*************************************************/
+unsigned int get_dram_data_rate_from_reg(int freq_sel)
 {
 	unsigned char REF_CLK = 52;
 	unsigned int u2real_freq = 0;
@@ -1180,8 +1185,13 @@ unsigned int get_dram_data_rate_from_reg(void)
 	if (readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x028)) & (1<<17))
 		return 0;
 
-	mpdiv_shu_sel = (readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x028))>>8) & 0x7;
-	pll_shu_sel = readl(IOMEM(DDRPHY_BASE_ADDR + 0x63c)) & 0x3;
+	if (freq_sel == 0) {	/* current frequency */
+		mpdiv_shu_sel = (readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x028))>>8) & 0x7;
+		pll_shu_sel = readl(IOMEM(DDRPHY_BASE_ADDR + 0x63c)) & 0x3;
+	} else { /* highest frequency */
+		mpdiv_shu_sel = 0;
+		pll_shu_sel = 0;
+	}
 
 	u4MPDIV_IN_SEL =
 	readl(IOMEM(DDRPHY_BASE_ADDR +
@@ -1227,11 +1237,16 @@ unsigned int get_dram_data_rate_from_reg(void)
 	return u2real_freq;
 }
 
-unsigned int get_dram_data_rate(void)
+/************************************************
+* input parameter:
+* freq_sel: 0 -> Current frequency
+*           1 -> Highest frequency
+*************************************************/
+unsigned int get_dram_data_rate(int freq_sel)
 {
 	unsigned int MEMPLL_FOUT = 0;
 
-	MEMPLL_FOUT = get_dram_data_rate_from_reg() << 1;
+	MEMPLL_FOUT = get_dram_data_rate_from_reg(freq_sel) << 1;
 
 	/* DVFS owner to request provide a spec. frequency,
 	not real frequency */
@@ -1407,7 +1422,7 @@ const char *buf, size_t count)
 static ssize_t read_dram_data_rate_show(struct device_driver *driver, char *buf)
 {
 	return snprintf(buf, PAGE_SIZE, "DRAM data rate = %d\n",
-	get_dram_data_rate());
+	get_dram_data_rate(0));
 }
 
 static ssize_t read_dram_data_rate_store(struct device_driver *driver,
@@ -1615,15 +1630,15 @@ static int __init dram_test_init(void)
 		return ret;
 	}
 
-	org_dram_data_rate = get_dram_data_rate();
-	if (org_dram_data_rate == 1866)
+	highest_dram_data_rate = get_dram_data_rate(1);
+	if (highest_dram_data_rate == 1866)
 		DFS_type = 1;
-	else if (org_dram_data_rate == 1700)
+	else if (highest_dram_data_rate == 1700)
 		DFS_type = 3;
-	else if (org_dram_data_rate == 1600)
+	else if (highest_dram_data_rate == 1600)
 		DFS_type = 2;
-	pr_err("[DRAMC Driver] Dram Data Rate = %d;  DFS_type = %d\n",
-	org_dram_data_rate, DFS_type);
+	pr_err("[DRAMC Driver] Highest Dram Data Rate = %d;  DFS_type = %d\n",
+	highest_dram_data_rate, DFS_type);
 
 	if (dram_can_support_fh())
 		pr_err("[DRAMC Driver] dram can support DFS\n");

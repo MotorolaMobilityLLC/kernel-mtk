@@ -348,7 +348,7 @@ int vcorefs_get_curr_ddr(void)
 {
 	int ddr_khz;
 
-	ddr_khz = get_dram_data_rate() * 1000;
+	ddr_khz = get_dram_data_rate(0) * 1000;
 
 	return ddr_khz;
 }
