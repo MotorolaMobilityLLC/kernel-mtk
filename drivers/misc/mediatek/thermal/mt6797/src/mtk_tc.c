@@ -53,7 +53,7 @@
 /*
 Bank0 : BIG     (TS_MCU1)
 Bank1 : GPU     (TS_MCU4)
-Bank2 : SOC     (TS_MCU2)
+Bank2 : SOC     (TS_MCU2,TS_MCU3)
 Bank3 : CPU-L   (TS_MCU2)
 Bank4 : CPU-LL  (TS_MCU2)
 Bank5 : MCUCCI  (TS_MCU2)
@@ -71,8 +71,8 @@ bank_t tscpu_g_bank[THERMAL_BANK_NUM] = {
 	       .ts = {TS_FILL(MCU4)},
 	       .ts_number = 1},
 	[2] = {
-	       .ts = {TS_FILL(MCU2)},
-	       .ts_number = 1},
+	       .ts = {TS_FILL(MCU2), TS_FILL(MCU3)},
+	       .ts_number = 2},
 	[3] = {
 	       .ts = {TS_FILL(MCU2)},
 	       .ts_number = 1},
@@ -315,7 +315,7 @@ void get_thermal_slope_intercept(struct TS_PTPOD *ts_info, thermal_bank_name ts_
 	/*
 	Bank0 : BIG     (TS_MCU1)
 	Bank1 : GPU     (TS_MCU4)
-	Bank2 : SOC     (TS_MCU2)
+	Bank2 : SOC     (TS_MCU2,TS_MCU3)
 	Bank3 : CPU-L   (TS_MCU2)
 	Bank4 : CPU-LL  (TS_MCU2)
 	Bank5 : MCUCCI  (TS_MCU2)
@@ -591,7 +591,7 @@ static S32 raw_to_temperature_roomt(U32 ret, thermal_sensor_name ts_name)
 /*
 Bank0 : BIG     (TS_MCU1)
 Bank1 : GPU     (TS_MCU4)
-Bank2 : SOC     (TS_MCU2)
+Bank2 : SOC     (TS_MCU2,TS_MCU3)
 Bank3 : CPU-L   (TS_MCU2)
 Bank4 : CPU-LL  (TS_MCU2)
 Bank5 : MCUCCI  (TS_MCU2)
@@ -621,7 +621,7 @@ int get_immediate_soc_wrap(void)
 {
 	int curr_temp;
 
-	curr_temp = tscpu_bank_ts[THERMAL_BANK2][MCU2];
+	curr_temp = MAX(tscpu_bank_ts[THERMAL_BANK2][MCU2], tscpu_bank_ts[THERMAL_BANK2][MCU3]);
 	tscpu_dprintk("get_immediate_soc_wrap curr_temp=%d\n", curr_temp);
 
 	return curr_temp;
@@ -659,7 +659,7 @@ int get_immediate_mcucci_wrap(void)
 /*
 Bank0 : BIG     (TS_MCU1)
 Bank1 : GPU     (TS_MCU4)
-Bank2 : SOC     (TS_MCU2)
+Bank2 : SOC     (TS_MCU2,TS_MCU3)
 Bank3 : CPU-L   (TS_MCU2)
 Bank4 : CPU-LL  (TS_MCU2)
 Bank5 : MCUCCI  (TS_MCU2)
@@ -683,7 +683,17 @@ int get_immediate_ts2_wrap(void)
 	curr_temp1 = MAX(tscpu_bank_ts[THERMAL_BANK4][MCU2], tscpu_bank_ts[THERMAL_BANK5][MCU2]);
 	curr_temp = MAX(curr_temp, curr_temp1);
 
-	tscpu_dprintk("get_immediate_ts1_wrap curr_temp=%d\n", curr_temp);
+	tscpu_dprintk("get_immediate_ts2_wrap curr_temp=%d\n", curr_temp);
+
+	return curr_temp;
+}
+
+int get_immediate_ts3_wrap(void)
+{
+	int curr_temp;
+
+	curr_temp = tscpu_bank_ts[THERMAL_BANK2][MCU3];
+	tscpu_dprintk("get_immediate_ts3_wrap curr_temp=%d\n", curr_temp);
 
 	return curr_temp;
 }
@@ -693,7 +703,7 @@ int get_immediate_ts4_wrap(void)
 	int curr_temp;
 
 	curr_temp = tscpu_bank_ts[THERMAL_BANK1][MCU4];
-	tscpu_dprintk("get_immediate_ts1_wrap curr_temp=%d\n", curr_temp);
+	tscpu_dprintk("get_immediate_ts4_wrap curr_temp=%d\n", curr_temp);
 
 	return curr_temp;
 }
