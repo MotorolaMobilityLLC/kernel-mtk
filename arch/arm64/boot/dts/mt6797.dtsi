@@ -1273,6 +1273,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cell-index = <0>;
 			reg = <0x1100a000 0x1000>;
 			interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_SPI>;
+			clock-names = "spi-main";
+			clock-frequency = <109000000>;
+			clock-div = <1>;
 		};
 
 		fpc1145: fpc {
@@ -1313,6 +1317,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cell-index = <1>;
 			reg = <0x11012000 0x1000>;
 			interrupts = <GIC_SPI 131 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_SPI1>;
+			clock-names = "spi-main";
+			clock-frequency = <109000000>;
+			clock-div = <1>;
 		};
 
 		dvfs_proc1@11015000 {
@@ -1332,6 +1340,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cell-index = <2>;
 			reg = <0x11018000 0x1000>;
 			interrupts = <GIC_SPI 132 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_SPI2>;
+			clock-names = "spi-main";
+			clock-frequency = <109000000>;
+			clock-div = <1>;
 		};
 
 		spi3:spi@11019000 {
@@ -1339,6 +1351,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cell-index = <3>;
 			reg = <0x11019000 0x1000>;
 			interrupts = <GIC_SPI 133 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_SPI3>;
+			clock-names = "spi-main";
+			clock-frequency = <109000000>;
+			clock-div = <1>;
 		};
 
 		spi4:spi@1101a000 {
@@ -1346,6 +1362,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cell-index = <4>;
 			reg = <0x1101a000 0x1000>;
 			interrupts = <GIC_SPI 134 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_SPI4>;
+			clock-names = "spi-main";
+			clock-frequency = <109000000>;
+			clock-div = <1>;
 		};
 
 		spi5:spi@1101b000 {
@@ -1353,6 +1373,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cell-index = <5>;
 			reg = <0x1101b000 0x1000>;
 			interrupts = <GIC_SPI 135 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_SPI5>;
+			clock-names = "spi-main";
+			clock-frequency = <109000000>;
+			clock-div = <1>;
 		};
 
 		irtx@1101d000 {
