@@ -2466,9 +2466,10 @@ static int _mt_cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz,
 	}
 #else
 	/* fix notify transition hang issue for Linux-3.18 */
-	freqs.cpu = policy->cpu;
-	if (policy)
+	if (policy) {
+		freqs.cpu = policy->cpu;
 		cpufreq_freq_transition_begin(policy, &freqs);
+	}
 #endif
 #endif
 
