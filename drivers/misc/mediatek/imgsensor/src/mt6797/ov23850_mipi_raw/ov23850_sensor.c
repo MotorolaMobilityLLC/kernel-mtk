@@ -3304,11 +3304,12 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0317,0x00);
 	write_cmos_sensor(0x0318,0x03);
 	mdelay(1);
+	//Deskew
+	ov23850_setting_Deskew(0);
 	ov23850_MIPI_table_write_cmos_sensor(addr_data_pair_prv, sizeof(addr_data_pair_prv)/sizeof(kal_uint16));
 	/*None PDAF focus windows range*/
 	ov23850_setting_PDAF(PDAF_OFF);
-	//Deskew
-	ov23850_setting_Deskew(0);
+
 
 	write_cmos_sensor(0x0100,0x01);
 
@@ -3334,6 +3335,10 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0318,0x03);
 	#endif
 	mdelay(1);
+#if defined(FULL_24FPS)
+	//Deskew
+	ov23850_setting_Deskew(1);
+#endif
 	ov23850_MIPI_table_write_cmos_sensor(addr_data_pair_cap, sizeof(addr_data_pair_cap)/sizeof(kal_uint16));
 
 	/*None PDAF focus windows range*/
@@ -3341,18 +3346,18 @@ static void capture_setting(kal_uint16 currefps)
 		ov23850_setting_PDAF(PDAF_ON);
     else
 		ov23850_setting_PDAF(PDAF_OFF);
-#if defined(FULL_24FPS)
-	//Deskew
-	ov23850_setting_Deskew(1);
-#endif
+
 	///mdelay(30);
 	write_cmos_sensor(0x0100, 0x01);
 
-write_cmos_sensor(0x3208, 0);//group start
-write_cmos_sensor(0x380c, 0x18);
-write_cmos_sensor(0x380d, 0x60);
-write_cmos_sensor(0x3208, 0x10);//group end
-write_cmos_sensor(0x3208, 0xa0);//group latch
+#if defined(FULL_24FPS)
+	write_cmos_sensor(0x3208, 0);//group start
+	write_cmos_sensor(0x380c, 0x18);
+	write_cmos_sensor(0x380d, 0x60);
+	write_cmos_sensor(0x3208, 0x10);//group end
+	write_cmos_sensor(0x3208, 0xa0);//group latch
+#endif
+
 
 
 
@@ -3368,14 +3373,15 @@ static void normal_video_setting(kal_uint16 currefps)//1080p
 	write_cmos_sensor(0x0317,0x00);
 	write_cmos_sensor(0x0318,0x03);
 	mdelay(1);
+	//Deskew
+	ov23850_setting_Deskew(0);
 	ov23850_MIPI_table_write_cmos_sensor(addr_data_pair_normal_video, sizeof(addr_data_pair_normal_video)/sizeof(kal_uint16));
 
     if(imgsensor.pdaf_mode == 1)
 		ov23850_setting_PDAF(PDAF_ON);
     else
 		ov23850_setting_PDAF(PDAF_OFF);
-	//Deskew
-	ov23850_setting_Deskew(0);
+
 
 	write_cmos_sensor(0x0100,0x01);
 }
