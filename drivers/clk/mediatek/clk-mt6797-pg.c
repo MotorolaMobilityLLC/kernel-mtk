@@ -1409,7 +1409,7 @@ static int spm_mtcmos_ctrl_c2k(int state)
 }
 
 
-
+#if 0
 static void set_bus_protect(int en, uint32_t mask, unsigned long expired)
 {
 #if MT_CCF_DEBUG
@@ -1557,13 +1557,14 @@ static int spm_mtcmos_power_on_general_locked(struct subsys *sys, int wait_power
 
 	return 0;
 }
-
+#endif
 /* enable op*/
+/*
 static int general_sys_enable_op(struct subsys *sys)
 {
 	return spm_mtcmos_power_on_general_locked(sys, 1, 0);
 }
-
+*/
 static int MD1_sys_enable_op(struct subsys *sys)
 {
 	return spm_mtcmos_ctrl_md1(STA_POWER_ON);
@@ -1655,11 +1656,12 @@ static int C2K_sys_enable_op(struct subsys *sys)
 
 
 /* disable op */
+/*
 static int general_sys_disable_op(struct subsys *sys)
 {
 	return spm_mtcmos_power_off_general_locked(sys, 1, 0);
 }
-
+*/
 static int MD1_sys_disable_op(struct subsys *sys)
 {
 	/*printk("MD1_sys_disable_op\r\n"); */
