@@ -207,6 +207,9 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 	char option[64], arg[10];
 	int i, j;
 
+	arg1 = 0;
+	arg2 = 0;
+
 	if (cnt >= sizeof(buf))
 		return -EINVAL;
 
