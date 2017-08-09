@@ -694,6 +694,7 @@ static int mag_misc_init(struct mag_context *cxt)
 	return err;
 }
 
+/*
 static void mag_input_destroy(struct mag_context *cxt)
 {
 	struct input_dev *dev = cxt->idev;
@@ -701,6 +702,7 @@ static void mag_input_destroy(struct mag_context *cxt)
 	input_unregister_device(dev);
 	input_free_device(dev);
 }
+*/
 
 static int mag_input_init(struct mag_context *cxt)
 {
@@ -925,7 +927,7 @@ static int mag_probe(void)
 	err = mag_real_driver_init();
 	if (err) {
 		MAG_ERR("mag_real_driver_init fail\n");
-		goto exit_alloc_data_failed;
+		goto real_driver_init_fail;
 	}
 
 	err = mag_factory_device_init();
@@ -942,11 +944,12 @@ static int mag_probe(void)
 	MAG_LOG("----magel_probe OK !!\n");
 	return 0;
 
+real_driver_init_fail:
 exit_alloc_input_dev_failed:
-	mag_input_destroy(mag_context_obj);
+	kfree(mag_context_obj);
 
 exit_alloc_data_failed:
-	kfree(mag_context_obj);
+
 	MAG_ERR("----magel_probe fail !!!\n");
 	return err;
 }
