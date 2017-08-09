@@ -256,7 +256,8 @@ int mt_eint_set_deint(u32 eint_num, u32 irq_num)
 
 #ifdef CONFIG_MTK_SEC_DEINT_SUPPORT
 	if (mt_eint_get_deint_sec_en(deint_mapped) == 1) {
-		pr_err("%s: irq_num(%u) can't use secure deint(%u)\n", __func__, irq_num, deint_mapped);
+		pr_err("%s: eint_num(%u) can't use secure deint(%u)\n", __func__, eint_num, deint_mapped);
+		return -1;
 	}
 #endif
 	if (deint_mapped >= MAX_DEINT_CNT) {
