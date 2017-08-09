@@ -54,6 +54,7 @@ static int cal_base_cores(void)
 	return base_val;
 }
 
+/*
 static int hps_cal_cores(void)
 {
 	int rush_boost_cores, sys_cores;
@@ -67,10 +68,10 @@ static int hps_cal_cores(void)
 	sys_cores = hps_ctxt.cur_loads / hps_ctxt.up_threshold + (hps_ctxt.cur_loads % hps_ctxt.up_threshold ? 1 : 0);
 	return max(sys_cores, rush_boost_cores);
 }
-
+*/
 static int hps_algo_rush_boost(void)
 {
-	unsigned int val, base_val;
+	int val, base_val;
 
 	base_val = cal_base_cores();
 
@@ -87,7 +88,10 @@ static int hps_algo_rush_boost(void)
 		BUG_ON(!(val > hps_sys.total_online_cores));
 		if (val > num_possible_cpus())
 			val = num_possible_cpus();
-		val -= base_val;
+		if (val > base_val)
+			val -= base_val;
+		else
+			val = 0;
 		hps_sys.tlp_avg = hps_ctxt.tlp_avg;
 		hps_sys.rush_cnt = hps_ctxt.rush_count;
 		hps_cal_core_num(&hps_sys, val, base_val);
@@ -104,7 +108,7 @@ static int hps_algo_rush_boost(void)
  */
 static int hps_algo_up(void)
 {
-	unsigned int val, base_val;
+	int val, base_val;
 
 	base_val = cal_base_cores();
 
@@ -129,7 +133,10 @@ static int hps_algo_up(void)
 			    hps_ctxt.up_threshold * hps_ctxt.up_times *
 			    hps_sys.total_online_cores) {
 				val = hps_sys.total_online_cores + 1;
-				val -= base_val;
+				if (val > base_val)
+					val -= base_val;
+				else
+					val = 0;
 				hps_sys.up_load_avg = hps_ctxt.up_loads_sum / hps_ctxt.up_times;
 				hps_cal_core_num(&hps_sys, val, base_val);
 
@@ -147,10 +154,9 @@ static int hps_algo_up(void)
  */
 static int hps_algo_down(void)
 {
-	unsigned int val, base_val;
+	int val, base_val;
 
 	base_val = cal_base_cores();
-
 	if (hps_sys.total_online_cores > 1) {
 		val = hps_ctxt.down_loads_history[hps_ctxt.down_loads_history_index];
 		hps_ctxt.down_loads_history[hps_ctxt.down_loads_history_index] = hps_ctxt.cur_loads;
@@ -172,11 +178,14 @@ static int hps_algo_down(void)
 			unsigned int down_threshold = hps_ctxt.down_threshold * hps_ctxt.down_times;
 
 			val = hps_sys.total_online_cores;
+
 			while (hps_ctxt.down_loads_sum < down_threshold * (val - 1))
 				--val;
 			BUG_ON(val < 0);
-			val -= base_val;
-
+			if (val > base_val)
+				val -= base_val;
+			else
+				val = 0;
 			hps_sys.down_load_avg = hps_ctxt.down_loads_sum / hps_ctxt.down_times;
 			hps_cal_core_num(&hps_sys, val, base_val);
 
@@ -188,46 +197,57 @@ static int hps_algo_down(void)
 	return 0;
 }
 
-static int hps_algo_heavytsk_det(void)
-{
-	int i, j, ret, sys_cores;
-
-	i = j = ret = sys_cores = 0;
-	sys_cores = hps_cal_cores();
-	/* Check heavy task value of last cluster if needed*/
-	#if 0
-	if (hps_sys.cluster_info[hps_sys.cluster_num-1].hvyTsk_value)
-			ret = 1;
-	#endif
-	for (i = hps_sys.cluster_num-1; i > 0; i--) {
-		if (hps_sys.cluster_info[i-1].hvyTsk_value)
-			ret = 1;
-
-		hps_sys.cluster_info[i].target_core_num =
-			max(hps_sys.cluster_info[i].online_core_num,
-			hps_sys.cluster_info[i-1].hvyTsk_value);
-		sys_cores -= hps_sys.cluster_info[i].target_core_num;
-	}
 #if 0
-	sys_cores -= hps_sys.cluster_info[0].target_core_num;
-	if (sys_cores <= 0)
-		return ret;
+int hps_algo_heavytsk_det(void)
+{
+	int i, j, ret, sys_cores, hvy_cores;
 
-	for (i = hps_sys.cluster_num-1; i > 0; i--) {
-		for (j = hps_sys.cluster_info[i].target_core_num; j < hps_sys.cluster_info[i].limit_value; j++) {
-			if (sys_cores <= 0)
-				break;
-			hps_sys.cluster_info[i].target_core_num++;
-			sys_cores--;
+	i = j = ret = sys_cores = hvy_cores = 0;
+	/*sys_cores = hps_cal_cores(); */
+	/* Check heavy task value of last cluster if needed */
+#if 0
+	if (hps_sys.cluster_info[hps_sys.cluster_num - 1].hvyTsk_value)
+		ret = 1;
+#endif
+
+	for (i = hps_sys.cluster_num - 1; i > 0; i--) {
+		if (hps_sys.cluster_info[i - 1].hvyTsk_value)
+			ret = 1;
+		hvy_cores += hps_sys.cluster_info[i].hvyTsk_value;
+
+		if (i == hps_sys.cluster_num - 1)
+			hps_sys.cluster_info[i].target_core_num =
+			    max3(hps_sys.cluster_info[i].online_core_num,
+				 hps_sys.cluster_info[i - 1].hvyTsk_value,
+				 hps_sys.cluster_info[i].hvyTsk_value);
+		else
+			hps_sys.cluster_info[i].target_core_num =
+			    max(hps_sys.cluster_info[i].online_core_num,
+				hps_sys.cluster_info[i - 1].hvyTsk_value);
+		if (hps_sys.cluster_info[i].target_core_num > hps_sys.cluster_info[i].limit_value)
+			hps_sys.cluster_info[i].target_core_num =
+			    hps_sys.cluster_info[i].limit_value;
+		sys_cores += hps_sys.cluster_info[i].target_core_num;
+	}
+#if 1
+	hvy_cores += hps_sys.cluster_info[0].hvyTsk_value;
+	sys_cores += hps_sys.cluster_info[0].target_core_num;
+	if (sys_cores < hvy_cores) {
+		for (i = hps_sys.cluster_num - 1; i >= 0; i--) {
+			for (j = hps_sys.cluster_info[i].target_core_num;
+			     j < hps_sys.cluster_info[i].limit_value; j++) {
+				if (sys_cores >= hvy_cores)
+					break;
+				hps_sys.cluster_info[i].target_core_num++;
+				hvy_cores--;
+				ret = 1;
+			}
 		}
 	}
 #endif
-	/*Disable operation of  big cluster */
-	hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;
-
 	return ret;
 }
-
+#endif
 static int hps_algo_perf_indicator(void)
 {
 	return 0;
@@ -235,8 +255,8 @@ static int hps_algo_perf_indicator(void)
 
 /* Notice : Sorting function pointer by priority */
 static int (*hps_func[]) (void) = {
-hps_algo_rush_boost, hps_algo_heavytsk_det, hps_algo_perf_indicator, hps_algo_up,
-	    hps_algo_down};
+hps_algo_rush_boost, hps_algo_perf_indicator, hps_algo_up, hps_algo_down};
+
 int hps_ops_init(void)
 {
 	int i;
