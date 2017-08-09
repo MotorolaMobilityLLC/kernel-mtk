@@ -984,6 +984,10 @@ static unsigned int aed_ee_poll(struct file *file, struct poll_table_struct *pta
 
 static ssize_t aed_ee_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
+	if (aed_dev.eerec == NULL) {
+		LOGE("aed_ee_read fail for invalid kerec\n");
+		return 0;
+	}
 	return msg_copy_to_user(__func__, aed_dev.eerec->msg, buf, count, f_pos);
 }
 
