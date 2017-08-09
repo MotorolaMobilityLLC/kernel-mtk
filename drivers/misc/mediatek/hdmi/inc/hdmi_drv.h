@@ -305,7 +305,7 @@ struct HDMI_DRIVER {
 	void (*hdmistatus)(void);
 	void (*hdcpkey)(u8 *pbhdcpkey);
 #if defined(HDMI_MT8193_SUPPORT)
-	      void (*getedid)(struct HDMI_EDID_INFO_T *pv_get_info);
+	      void (*getedid)(HDMI_EDID_T *pv_get_info);
 #else
 	void (*getedid)(void *pv_get_info);
 #endif
