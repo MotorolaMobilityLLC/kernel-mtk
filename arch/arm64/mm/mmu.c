@@ -456,6 +456,14 @@ static void __init map_mem(void)
 		__map_memblock(start, end);
 	}
 
+#ifdef CONFIG_MTK_SVP
+	if (memory_ssvp_inited())
+		create_mapping(memory_ssvp_cma_base(),
+				__phys_to_virt(memory_ssvp_cma_base()),
+				memory_ssvp_cma_size(),
+				__pgprot(PROT_DEVICE_nGnRE));
+#endif
+
 	/* Limit no longer required. */
 	memblock_set_current_limit(MEMBLOCK_ALLOC_ANYWHERE);
 }

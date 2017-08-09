@@ -153,7 +153,7 @@ static struct SSVP_Region _svpregs[__MAX_NR_SSVPSUBS];
 
 #define _TUI_MBSIZE CONFIG_MTK_TUI_RAM_SIZE
 
-static int memory_ssvp_init(struct reserved_mem *rmem)
+static int __init memory_ssvp_init(struct reserved_mem *rmem)
 {
 	int ret;
 
