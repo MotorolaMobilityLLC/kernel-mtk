@@ -105,6 +105,7 @@ struct wake_status spm_wakesta; /* record last wakesta */
 #define WAKE_SRC_FOR_SUSPEND \
 	(WAKE_SRC_R12_MD32_WDT_EVENT_B | \
 	WAKE_SRC_R12_KP_IRQ_B | \
+	WAKE_SRC_R12_PCM_TIMER |            \
 	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B | \
 	WAKE_SRC_R12_EINT_EVENT_B | \
 	WAKE_SRC_R12_CONN_WDT_IRQ_B | \
@@ -122,6 +123,7 @@ struct wake_status spm_wakesta; /* record last wakesta */
 #define WAKE_SRC_FOR_SUSPEND \
 	(WAKE_SRC_R12_MD32_WDT_EVENT_B | \
 	WAKE_SRC_R12_KP_IRQ_B | \
+	WAKE_SRC_R12_PCM_TIMER |            \
 	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B | \
 	WAKE_SRC_R12_EINT_EVENT_B | \
 	WAKE_SRC_R12_CONN_WDT_IRQ_B | \
