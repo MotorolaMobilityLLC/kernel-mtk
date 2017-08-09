@@ -1905,6 +1905,9 @@ static void tscpu_thermal_release(void)
 
 	aee_rr_rec_thermal_status(TSCPU_RELEASE);
 
+	BUG_ON((~__raw_readl((infracfg_ao_base + 0x0094)) & 0x400) != 0x400);
+	BUG_ON((DRV_Reg32(TS_CONFIGURE) & TS_TURN_OFF) != 0x0);
+
 	/*thermal_auxadc_get_data(2, 11);*/
 	thermal_release_all_periodoc_temp_sensing();	/* must release before start */
 
