@@ -48,6 +48,7 @@ static struct mrdump_control_block mrdump_cblock __attribute__((section (".mrdum
 static const struct mrdump_platform *mrdump_plat;
 
 static char mrdump_lk[12];
+static int mrdump_rsv_conflict;
 
 static u32 *append_elf_note(u32 *buf, char *name, unsigned type, void *data,
 			    size_t data_len)
@@ -451,7 +452,7 @@ static int param_set_mrdump_enable(const char *val, const struct kernel_param *k
 {
 	int retval = 0;
 	/* Always disable if version not matched...cannot enable manually. */
-	if ((mrdump_plat != NULL) && (0 == memcmp(mrdump_cblock.sig, MRDUMP_GO_DUMP, 8))) {
+	if ((mrdump_plat != NULL) && (0 == memcmp(mrdump_cblock.sig, MRDUMP_GO_DUMP, 8)) && !mrdump_rsv_conflict) {
 		retval = param_set_bool(val, kp);
 		if (retval == 0) {
 			mrdump_plat->hw_enable(mrdump_enable);
@@ -557,6 +558,75 @@ struct kernel_param_ops param_ops_mrdump_device = {
 param_check_int(device, &mrdump_output_device);
 module_param_cb(device, &param_ops_mrdump_device, &mrdump_output_device, S_IRUGO | S_IWUSR);
 __MODULE_PARM_TYPE(device, int);
+
+
+mrdump_rsvmem_block_t __initdata rsvmem_block[4];
+
+static __init char *find_next_mrdump_rsvmem(char *p, int len)
+{
+	char *tmp_p;
+
+	tmp_p = memchr(p, ',', len);
+	if (!tmp_p)
+		return NULL;
+	if (*(tmp_p+1) != 0) {
+		tmp_p = memchr(tmp_p+1, ',', strlen(tmp_p));
+		if (!tmp_p)
+			return NULL;
+	} else{
+		return NULL;
+	}
+	return tmp_p + 1;
+}
+static int __init early_mrdump_rsvmem(char *p)
+{
+	unsigned long start_addr, size;
+	int ret;
+	char *tmp_p = p;
+	int i;
+
+	for (i = 0; i < 4; i++) {
+		ret = sscanf(tmp_p, "0x%lx,0x%lx", &start_addr, &size);
+		if (ret != 2) {
+			pr_alert("%s:%s reserve failed ret=%d\n", __func__, p, ret);
+			return 0;
+		}
+		rsvmem_block[i].start_addr = start_addr;
+		rsvmem_block[i].size = size;
+		tmp_p = find_next_mrdump_rsvmem(tmp_p, strlen(tmp_p));
+		if (!tmp_p)
+			break;
+	}
+/*
+	for(i = 0;i<4;i++)
+	{
+		if(rsvmem_block[i].start_addr)
+			pr_err(" mrdump region start = %pa size =%pa\n",
+						rsvmem_block[i].start_addr,mrdump_rsvmem_block[i].size);
+	}
+*/
+	return 0;
+}
+
+__init void mrdump_rsvmem(void)
+{
+	int i;
+
+	for (i = 0; i < 4; i++) {
+		if (rsvmem_block[i].start_addr) {
+			if (!memblock_is_region_reserved(rsvmem_block[i].start_addr, rsvmem_block[i].size))
+				memblock_reserve(rsvmem_block[i].start_addr, rsvmem_block[i].size);
+			else {
+				mrdump_rsv_conflict = 1;
+				mrdump_enable = 0;
+				pr_err(" error mrdump region start = %pa size =%pa is reserved by others\n",
+						(void *)rsvmem_block[i].start_addr, (void *)rsvmem_block[i].size);
+			}
+		}
+	}
+}
+
+early_param("mrdump_rsvmem", early_mrdump_rsvmem);
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MediaTek MRDUMP module");

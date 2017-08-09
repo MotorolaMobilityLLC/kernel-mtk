@@ -40,6 +40,7 @@
 #include <asm/sizes.h>
 #include <asm/tlb.h>
 #include <asm/alternative.h>
+#include <mt-plat/mrdump.h>
 
 #include "mm.h"
 
@@ -159,6 +160,7 @@ void __init arm64_memblock_init(void)
 		dma_phys_limit = max_zone_dma_phys();
 	dma_contiguous_reserve(dma_phys_limit);
 
+	mrdump_rsvmem();
 	memblock_allow_resize();
 	memblock_dump_all();
 }

@@ -136,6 +136,12 @@ struct mrdump_mini_elf_header {
 	struct mrdump_mini_elf_note misc[MRDUMP_MINI_NR_MISC];
 };
 
+typedef struct mrdump_rsvmem_block {
+	phys_addr_t start_addr;
+	phys_addr_t size;
+} mrdump_rsvmem_block_t;
+
+
 #define MRDUMP_MINI_HEADER_SIZE ALIGN(sizeof(struct mrdump_mini_elf_header), PAGE_SIZE)
 #define MRDUMP_MINI_DATA_SIZE (MRDUMP_MINI_NR_SECTION * MRDUMP_MINI_SECTION_SIZE)
 #define MRDUMP_MINI_BUF_SIZE (MRDUMP_MINI_HEADER_SIZE + MRDUMP_MINI_DATA_SIZE)
@@ -169,6 +175,8 @@ static inline void aee_kdump_reboot(AEE_REBOOT_MODE reboot_mode, const char *msg
 }
 
 #endif
+
+void __init __weak mrdump_rsvmem(void);
 
 typedef int (*mrdump_write)(void *buf, int off, int len, int encrypt);
 #if defined(CONFIG_MTK_AEE_IPANIC)
