@@ -768,7 +768,7 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 	unsigned long arg)
 {
 	struct msdc_ioctl msdc_ctl;
-	int ret;
+	int ret = 0;
 	struct msdc_host *host;
 
 	if ((struct msdc_ioctl *)arg == NULL) {

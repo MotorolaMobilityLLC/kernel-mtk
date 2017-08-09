@@ -42,7 +42,7 @@
 #endif
 
 #define HOST_MAX_NUM                    (4)
-#define MAX_REQ_SZ                      (512 * 1024)
+#define MAX_REQ_SZ                      (4 * 1024 * 1024)
 
 #ifdef FPGA_PLATFORM
 #define HOST_MAX_MCLK			(200000000)
@@ -389,6 +389,7 @@ struct msdc_host {
 	struct mmc_command      *cmd;
 	struct mmc_data         *data;
 	struct mmc_request      *mrq;
+	ulong                   *pio_kaddr;
 	int                     cmd_rsp;
 	int                     cmd_rsp_done;
 	int                     cmd_r1b_done;

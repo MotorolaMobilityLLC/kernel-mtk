@@ -110,7 +110,7 @@ static int emmc_do_sleep_awake;
 #define DEFAULT_DTOC            (3)     /* data timeout counter.
 					1048576 * 3 sclk. */
 
-#define MAX_DMA_CNT             (64 * 1024 - 512)
+#define MAX_DMA_CNT             (4 * 1024 * 1024)
 				/* a WIFI transaction may be 50K */
 #define MAX_DMA_CNT_SDIO        (0xFFFFFFFF - 255)
 				/* a LTE  transaction may be 128K */
@@ -218,7 +218,7 @@ int msdc_rsp[] = {
 
 #define msdc_init_bd(bd, blkpad, dwpad, dptr, dlen) \
 	do { \
-		BUG_ON(dlen > 0xFFFFUL); \
+		BUG_ON(dlen > 0xFFFFFFUL); \
 		((struct bd_t *)bd)->blkpad = blkpad; \
 		((struct bd_t *)bd)->dwpad = dwpad; \
 		((struct bd_t *)bd)->ptr = (u32)dptr; \
@@ -1933,8 +1933,9 @@ int msdc_pio_read(struct msdc_host *host, struct mmc_data *data)
 	struct page *hmpage = NULL;
 	int i = 0, subpage = 0, totalpages = 0;
 	int flag = 0;
-	ulong kaddr[DIV_ROUND_UP(MAX_SGMT_SZ, PAGE_SIZE)];
+	ulong *kaddr = host->pio_kaddr;
 
+	BUG_ON(!kaddr);
 	BUG_ON(sg == NULL);
 	/*MSDC_CLR_BIT32(MSDC_INTEN, wints);*/
 	while (1) {
@@ -2141,8 +2142,9 @@ int msdc_pio_write(struct msdc_host *host, struct mmc_data *data)
 	struct page *hmpage = NULL;
 	int i = 0, totalpages = 0;
 	int flag, subpage = 0;
-	ulong kaddr[DIV_ROUND_UP(MAX_SGMT_SZ, PAGE_SIZE)];
+	ulong *kaddr = host->pio_kaddr;
 
+	BUG_ON(!kaddr);
 	/* MSDC_CLR_BIT32(MSDC_INTEN, wints); */
 	while (1) {
 		if (!get_xfer_done) {
@@ -2406,8 +2408,6 @@ static int msdc_dma_config(struct msdc_host *host, struct msdc_dma *dma)
 	case MSDC_MODE_DMA_BASIC:
 		if (host->hw->host_function == MSDC_SDIO)
 			BUG_ON(dma->xfersz > 0xFFFFFFFF);
-		else
-			BUG_ON(dma->xfersz > 65535);
 
 		BUG_ON(dma->sglen != 1);
 		dma_address = sg_dma_address(sg);
@@ -2526,8 +2526,7 @@ static void msdc_dma_setup(struct msdc_host *host, struct msdc_dma *dma,
 	else
 		max_dma_len = MAX_DMA_CNT;
 
-	if (sglen == 1 &&
-	     msdc_sg_len(sg, host->dma_xfer) <= max_dma_len)
+	if (sglen == 1)
 		dma->mode = MSDC_MODE_DMA_BASIC;
 	else
 		dma->mode = MSDC_MODE_DMA_DESC;
@@ -4699,6 +4698,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->dma.bd =
 		dma_alloc_coherent(&pdev->dev, MAX_BD_NUM * sizeof(struct bd_t),
 			&host->dma.bd_addr, GFP_KERNEL);
+	host->pio_kaddr = kmalloc(DIV_ROUND_UP(MAX_SGMT_SZ, PAGE_SIZE) *
+		sizeof(ulong), GFP_KERNEL);
+	BUG_ON(!host->pio_kaddr);
 	BUG_ON((!host->dma.gpd) || (!host->dma.bd));
 	msdc_init_gpd_bd(host, &host->dma);
 	msdc_clock_src[host->id] = host->hw->clk_src;
@@ -4832,7 +4834,7 @@ static int msdc_drv_remove(struct platform_device *pdev)
 		host->dma.gpd, host->dma.gpd_addr);
 	dma_free_coherent(NULL, MAX_BD_NUM * sizeof(struct bd_t),
 		host->dma.bd, host->dma.bd_addr);
-
+	kfree(host->pio_kaddr);
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
 	if (mem)
