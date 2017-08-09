@@ -290,7 +290,8 @@ static unsigned long ion_heap_shrink_count(struct shrinker *shrinker,
 					     shrinker);
 	int total = 0;
 
-	total = ion_heap_freelist_size(heap) / PAGE_SIZE;
+	if (heap->flags & ION_HEAP_FLAG_DEFER_FREE)
+		total = ion_heap_freelist_size(heap) / PAGE_SIZE;
 	if (heap->ops->shrink)
 		total += heap->ops->shrink(heap, sc->gfp_mask, 0);
 	return total;
