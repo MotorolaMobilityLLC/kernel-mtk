@@ -110,8 +110,8 @@ void disableXhciAllPortPower(struct xhci_hcd *xhci)
 	int num_u3_port;
 	int num_u2_port;
 
-	num_u3_port = SSUSB_U3_PORT_NUM(readl((void __iomem *)_SSUSB_IP_CAP(xhci->base_regs)));
-	num_u2_port = SSUSB_U2_PORT_NUM(readl((void __iomem *)_SSUSB_IP_CAP(xhci->base_regs)));
+	num_u3_port = SSUSB_U3_PORT_NUM(readl((void __iomem *)_SSUSB_IP_CAP(xhci->sif_regs)));
+	num_u2_port = SSUSB_U2_PORT_NUM(readl((void __iomem *)_SSUSB_IP_CAP(xhci->sif_regs)));
 
 	mtk_power_log("port number, u3-%d, u2-%d\n", num_u3_port, num_u2_port);
 

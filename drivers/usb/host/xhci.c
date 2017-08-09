@@ -676,8 +676,9 @@ static void xhci_only_stop_hcd(struct usb_hcd *hcd)
 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
 
 	spin_lock_irq(&xhci->lock);
+#ifndef CONFIG_USB_XHCI_MTK
 	xhci_halt(xhci);
-
+#endif
 	/* The shared_hcd is going to be deallocated shortly (the USB core only
 	 * calls this function when allocation fails in usb_add_hcd(), or
 	 * usb_remove_hcd() is called).  So we need to unset xHCI's pointer.
@@ -704,7 +705,6 @@ void xhci_stop(struct usb_hcd *hcd)
 		xhci_only_stop_hcd(xhci->shared_hcd);
 		return;
 	}
-
 	spin_lock_irq(&xhci->lock);
 	/* Make sure the xHC is halted for a USB3 roothub
 	 * (xhci_stop() could be called as part of failed init).
