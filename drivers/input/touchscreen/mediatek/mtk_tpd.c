@@ -517,6 +517,9 @@ static int tpd_probe(struct platform_device *pdev)
 #ifdef CONFIG_MTK_FB	/*Fix build errors,as some projects  cannot support these apis while bring up*/
 		TPD_RES_X = DISP_GetScreenWidth();
 		TPD_RES_Y = DISP_GetScreenHeight();
+#else/*for some projects, we do not use mtk framebuffer*/
+	TPD_RES_X = tpd_dts_data.tpd_resolution[0];
+	TPD_RES_Y = tpd_dts_data.tpd_resolution[1];
 #endif
 #endif
 #else
