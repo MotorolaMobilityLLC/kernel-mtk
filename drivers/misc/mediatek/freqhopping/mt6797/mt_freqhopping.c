@@ -61,6 +61,25 @@ static fh_pll_t g_fh_pll[FH_PLL_NUM] = { };	/* init during run time. */
 
 
 /*********************************/
+/* FHCTL PLL name                */
+/*********************************/
+static const char *g_pll_name[FH_PLL_NUM] = {
+	"CAX0PLL",
+	"CAX1PLL",
+	"CAX2PLL",
+	"CAX3PLL",
+	"VDECPLL",
+	"MPLL",
+	"MAINPLL",
+	"MEMPLL",
+	"MSDCPLL",
+	"MFGPLL",
+	"IMGPLL",
+	"TVDPLL",
+	"CODECPLL",
+};
+
+/*********************************/
 /* FHCTL PLL SSC Setting Table   */
 /*********************************/
 #define UNINIT_DDS   0x0
@@ -1163,6 +1182,7 @@ static int mt_fh_hal_is_support_DFS_mode(void)
 /* TODO: module_init(mt_freqhopping_init); */
 /* TODO: module_exit(cpufreq_exit); */
 
+/* Engineer mode will use the proc msg to create UI!!! */
 static int __fh_debug_proc_read(struct seq_file *m, void *v, fh_pll_t *pll)
 {
 	int id;
@@ -1173,24 +1193,47 @@ static int __fh_debug_proc_read(struct seq_file *m, void *v, fh_pll_t *pll)
 	/* [WWK] Could print ENG ID and PLL mapping */
 
 	seq_puts(m, "\r\n[freqhopping debug flag]\r\n");
+	seq_puts(m, "[1st Status] FH_FH_UNINIT:0, FH_FH_DISABLE: 1, FH_FH_ENABLE_SSC:2 \r\n");
+	seq_puts(m, "[2nd Setting_id] Disable:0, Default:1, PLL_SETTING_IDX__USER:9 \r\n");
 	seq_puts(m, "===============================================\r\n");
 
-
+    /****** String Format sensitive for EM mode ******/
+	seq_puts(m, "id");
 	for (id = 0; id < FH_PLL_NUM; ++id)
-		seq_printf(m, "PLL%d==", id);
+		seq_printf(m, "=%s", g_pll_name[id]);
 
 	seq_puts(m, "\r\n");
 
-	seq_puts(m, "[Status] FH_FH_UNINIT:0, FH_FH_DISABLE: 1, FH_FH_ENABLE_SSC:2 \r\n");
 
-	for (id = 0; id < FH_PLL_NUM; ++id)
-		seq_printf(m, "%04d==\r\n", pll[id].fh_status);
 
+	for (id = 0; id < FH_PLL_NUM; ++id) {
+		/* "  =%04d==%04d==%04d==%04d=\r\n" */
+		if (id == 0)
+			seq_puts(m, "  =");
+		else
+			seq_puts(m, "==");
+
+		seq_printf(m, "%04d", pll[id].fh_status);
+
+		if (id == (FH_PLL_NUM - 1))
+			seq_puts(m, "=");
+	}
 	seq_puts(m, "\r\n");
 
-	seq_puts(m, "[Setting_id] Disable:0, Default:1, PLL_SETTING_IDX__USER:9 \r\n");
-	for (id = 0; id < FH_PLL_NUM; ++id)
-		seq_printf(m, "%04d==\r\n", pll[id].setting_id);
+
+	for (id = 0; id < FH_PLL_NUM; ++id) {
+		/* "  =%04d==%04d==%04d==%04d=\r\n" */
+		if (id == 0)
+			seq_puts(m, "  =");
+		else
+			seq_puts(m, "==");
+
+		seq_printf(m, "%04d", pll[id].setting_id);
+
+		if (id == (FH_PLL_NUM - 1))
+			seq_puts(m, "=");
+	}
+    /*************************************************/
 
 	seq_puts(m, "\r\n");
 

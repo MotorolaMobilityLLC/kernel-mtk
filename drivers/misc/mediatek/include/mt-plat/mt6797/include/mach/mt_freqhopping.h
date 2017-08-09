@@ -8,7 +8,7 @@
 #define HP_EN_REG_SEMAPHORE_PROTECT
 
 #define FHTAG "[FH]"
-#define VERBOSE_DEBUG 1
+#define VERBOSE_DEBUG 0
 #define DEBUG_MSG_ENABLE 0
 
 #if VERBOSE_DEBUG
