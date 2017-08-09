@@ -2027,7 +2027,7 @@ static ssize_t block_io_debug_read(struct file *file, char __user *ubuf, size_t 
 	index = block_io_ring_index;
 
 	debug_fs = vmalloc(MAX_BLOCK_IO_LOG_COUNT * sizeof(struct struct_block_io_ring));
-	if (debug_fs)
+	if (debug_fs) {
 		memset(debug_fs, 0 , MAX_BLOCK_IO_LOG_COUNT * sizeof(struct struct_block_io_ring));
 	for (i = 0; i < MAX_BLOCK_IO_LOG_COUNT; i++) {
 		tmp_logger = ((struct struct_block_io_ring *)debug_fs) + i;
@@ -2037,6 +2037,7 @@ static ssize_t block_io_debug_read(struct file *file, char __user *ubuf, size_t 
 	count1 = simple_read_from_buffer(ubuf, count, ppos, debug_fs,
 		sizeof(struct struct_block_io_ring) * MAX_BLOCK_IO_LOG_COUNT);
 	vfree(debug_fs);
+		}
 	stopringlog = 0;
 	return count1;
 }
