@@ -5,6 +5,7 @@
 #include <linux/device.h>
 #include <linux/percpu.h>
 #include <linux/hardirq.h>
+#include <linux/clk-private.h>
 
 extern int met_mode;
 
@@ -26,14 +27,37 @@ DECLARE_PER_CPU(char[MET_STRBUF_SIZE], met_strbuf_irq);
 DECLARE_PER_CPU(char[MET_STRBUF_SIZE], met_strbuf_sirq);
 DECLARE_PER_CPU(char[MET_STRBUF_SIZE], met_strbuf);
 
-#ifdef CONFIG_FTRACE
+#ifdef CONFIG_TRACING
 #define TRACE_PUTS(p) \
 	do { \
-		trace_puts(pmet_strbuf);; \
+		trace_puts(p);; \
 	} while (0)
 #else
 #define TRACE_PUTS(p) do {} while (0)
 #endif
+
+#define GET_MET_PRINTK_BUFFER_ENTER_CRITICAL() \
+	({ \
+		char *pmet_strbuf; \
+		preempt_disable(); \
+		if (in_nmi()) \
+			pmet_strbuf = per_cpu(met_strbuf_nmi, smp_processor_id()); \
+		else if (in_irq()) \
+			pmet_strbuf = per_cpu(met_strbuf_irq, smp_processor_id()); \
+		else if (in_softirq()) \
+			pmet_strbuf = per_cpu(met_strbuf_sirq, smp_processor_id()); \
+		else \
+			pmet_strbuf = per_cpu(met_strbuf, smp_processor_id()); \
+		pmet_strbuf;\
+	})
+
+#define PUT_MET_PRINTK_BUFFER_EXIT_CRITICAL(pmet_strbuf) \
+	do {\
+		if (pmet_strbuf)\
+			TRACE_PUTS(pmet_strbuf); \
+		preempt_enable_no_resched(); \
+	} while (0)
+
 
 #define MET_PRINTK(FORMAT, args...) \
 	do { \
@@ -81,6 +105,7 @@ struct metdevice {
 	int polling_interval;
 	int polling_count_reload;
 	int __percpu *polling_count;
+	int header_read_again; /*for header size > 1 page*/
 	void (*start)(void);
 	void (*stop)(void);
 	int (*reset)(void);
@@ -137,7 +162,7 @@ void fs_unreg(void);
 #define MET_CLASS_ALL	0x80000000
 
 /* IOCTL commands of MET tagging */
-/*typedef*/ struct _mtag_cmd_t {
+/*typedef*/ struct mtag_cmd_t {
 	unsigned int class_id;
 	unsigned int value;
 	unsigned int slen;
@@ -148,30 +173,34 @@ void fs_unreg(void);
 
 #define TYPE_START		1
 #define TYPE_END		2
-#define TYPE_ONESHOT		3
+#define TYPE_ONESHOT	3
 #define TYPE_ENABLE		4
-#define TYPE_DISABLE		5
-#define TYPE_REC_SET		6
+#define TYPE_DISABLE	5
+#define TYPE_REC_SET	6
 #define TYPE_DUMP		7
-#define TYPE_DUMP_SIZE		8
-#define TYPE_DUMP_SAVE		9
-#define TYPE_USRDATA		10
+#define TYPE_DUMP_SIZE	8
+#define TYPE_DUMP_SAVE	9
+#define TYPE_USRDATA	10
 #define TYPE_DUMP_AGAIN		11
+#define TYPE_ASYNC_START	12
+#define TYPE_ASYNC_END	13
 
 /* Use 'm' as magic number */
 #define MTAG_IOC_MAGIC  'm'
 /* Please use a different 8-bit number in your code */
-#define MTAG_CMD_START		_IOW(MTAG_IOC_MAGIC, TYPE_START, mtag_cmd_t)
-#define MTAG_CMD_END		_IOW(MTAG_IOC_MAGIC, TYPE_END, mtag_cmd_t)
-#define MTAG_CMD_ONESHOT	_IOW(MTAG_IOC_MAGIC, TYPE_ONESHOT, mtag_cmd_t)
+#define MTAG_CMD_START		_IOW(MTAG_IOC_MAGIC, TYPE_START, struct mtag_cmd_t)
+#define MTAG_CMD_END		_IOW(MTAG_IOC_MAGIC, TYPE_END, struct mtag_cmd_t)
+#define MTAG_CMD_ONESHOT	_IOW(MTAG_IOC_MAGIC, TYPE_ONESHOT, struct mtag_cmd_t)
 #define MTAG_CMD_ENABLE		_IOW(MTAG_IOC_MAGIC, TYPE_ENABLE, int)
 #define MTAG_CMD_DISABLE	_IOW(MTAG_IOC_MAGIC, TYPE_DISABLE, int)
 #define MTAG_CMD_REC_SET	_IOW(MTAG_IOC_MAGIC, TYPE_REC_SET, int)
-#define MTAG_CMD_DUMP		_IOW(MTAG_IOC_MAGIC, TYPE_DUMP, mtag_cmd_t)
+#define MTAG_CMD_DUMP		_IOW(MTAG_IOC_MAGIC, TYPE_DUMP, struct mtag_cmd_t)
 #define MTAG_CMD_DUMP_SIZE	_IOWR(MTAG_IOC_MAGIC, TYPE_DUMP_SIZE, int)
-#define MTAG_CMD_DUMP_SAVE	_IOW(MTAG_IOC_MAGIC, TYPE_DUMP_SAVE, mtag_cmd_t)
-#define MTAG_CMD_USRDATA	_IOW(MTAG_IOC_MAGIC, TYPE_USRDATA, mtag_cmd_t)
+#define MTAG_CMD_DUMP_SAVE	_IOW(MTAG_IOC_MAGIC, TYPE_DUMP_SAVE, struct mtag_cmd_t)
+#define MTAG_CMD_USRDATA	_IOW(MTAG_IOC_MAGIC, TYPE_USRDATA, struct mtag_cmd_t)
 #define MTAG_CMD_DUMP_AGAIN	_IOW(MTAG_IOC_MAGIC, TYPE_DUMP_AGAIN, void *)
+#define MTAG_CMD_ASYNC_START		_IOW(MTAG_IOC_MAGIC, TYPE_ASYNC_START, struct mtag_cmd_t)
+#define MTAG_CMD_ASYNC_END		_IOW(MTAG_IOC_MAGIC, TYPE_ASYNC_END, struct mtag_cmd_t)
 
 /* include file */
 #ifndef MET_USER_EVENT_SUPPORT
@@ -182,6 +211,10 @@ void fs_unreg(void);
 #define met_tag_start(id, name) (0)
 
 #define met_tag_end(id, name) (0)
+
+#define met_tag_async_start(id, name , cookie) (0)
+
+#define met_tag_async_end(id, name , cookie) (0)
 
 #define met_tag_oneshot(id, name, value) (0)
 
@@ -205,6 +238,13 @@ void fs_unreg(void);
 
 #define met_show_bw_limiter() (0)
 #define met_reg_bw_limiter() (0)
+#define met_show_clk_tree() (0)
+#define met_reg_clk_tree() (0)
+#define met_ccf_clk_enable(clk) (0)
+#define met_ccf_clk_disable(clk) (0)
+#define met_ccf_clk_set_rate(clk, top) (0)
+#define met_ccf_clk_set_parent(clk, parent) (0)
+#define met_fh_print_dds(pll_id, dds_value) (0)
 
 #else
 #include <linux/kernel.h>
@@ -217,6 +257,14 @@ int __attribute__((weak)) met_tag_start(unsigned int class_id,
 
 int __attribute__((weak)) met_tag_end(unsigned int class_id,
 					const char *name);
+
+int __attribute__((weak)) met_tag_async_start(unsigned int class_id,
+					const char *name,
+					unsigned int cookie);
+
+int __attribute__((weak)) met_tag_async_end(unsigned int class_id,
+					const char *name,
+					unsigned int cookie);
 
 int __attribute__((weak)) met_tag_oneshot(unsigned int class_id,
 					const char *name,
@@ -241,11 +289,44 @@ int __attribute__((weak)) met_save_log(const char *pathname);
 
 int __attribute__((weak)) met_show_bw_limiter(void);
 int __attribute__((weak)) met_reg_bw_limiter(void *fp);
+int __attribute__((weak)) met_show_clk_tree(const char *name,
+			unsigned int addr,
+			unsigned int status);
+int __attribute__((weak)) met_reg_clk_tree(void *fp);
+
+int __attribute__((weak)) met_ccf_clk_enable(struct clk *clk);
+int __attribute__((weak)) met_ccf_clk_disable(struct clk *clk);
+int __attribute__((weak)) met_ccf_clk_set_rate(struct clk *clk, struct clk *top);
+int __attribute__((weak)) met_ccf_clk_set_parent(struct clk *clk, struct clk *parent);
+
+extern unsigned int __attribute__((weak)) met_fh_dds[];
+int __attribute__((weak)) met_fh_print_dds(int pll_id, unsigned int dds_value);
 
 #define met_record_on()		tracing_on()
 
 #define met_record_off()	tracing_off()
 
 #endif				/* MET_USER_EVENT_SUPPORT */
+
+
+/*
+ * Wrapper for DISP/MDP/GCE mmsys profiling
+ */
+
+void __attribute__((weak)) met_mmsys_event_gce_thread_begin(ulong thread_no, ulong task_handle, ulong engineFlag,
+								void *pCmd, ulong size);
+void __attribute__((weak)) met_mmsys_event_gce_thread_end(ulong thread_no, ulong task_handle, ulong engineFlag);
+
+void __attribute__((weak)) met_mmsys_event_disp_sof(int mutex_id);
+void __attribute__((weak)) met_mmsys_event_disp_mutex_eof(int mutex_id);
+void __attribute__((weak)) met_mmsys_event_disp_ovl_eof(int ovl_id);
+
+void __attribute__((weak)) met_mmsys_config_isp_base_addr(unsigned long *isp_reg_list);
+void __attribute__((weak)) met_mmsys_event_isp_pass1_begin(int sensor_id);
+void __attribute__((weak)) met_mmsys_event_isp_pass1_end(int sensor_id);
+
+
+
+
 
 #endif				/* MET_DRV */

@@ -2074,20 +2074,17 @@
 			    <0x17001000 0x1000>;  /* LARB 3 */
 
 			clocks = <&mmsys MM_DISP0_SMI_COMMON>,
-			       <&mmsys MM_DISP0_SMI_LARB0>,
-			       <&imgsys IMG_IMAGE_LARB2_SMI>,
-			       <&vdecsys VDEC0_VDEC>,
-			       <&vdecsys VDEC1_LARB>,
-			       <&vencsys VENC_LARB>,
-			       <&vencsys VENC_VENC>;
-
-			clock-names = "smi-common",
-				"smi-larb0",
-				"img-larb2",
-				"vdec0-vdec",
-				"vdec1-larb",
-				"venc-larb",
-				"venc-venc";
+				<&mmsys MM_DISP0_SMI_LARB0>,
+				<&imgsys IMG_IMAGE_LARB2_SMI>,
+				<&vdecsys VDEC1_LARB>,
+				<&vencsys VENC_VENC>,
+				<&vencsys VENC_LARB>,
+				<&scpsys SCP_SYS_VEN>,
+				<&scpsys SCP_SYS_VDE>,
+				<&scpsys SCP_SYS_ISP>,
+				<&scpsys SCP_SYS_DIS>;
+			clock-names = "smi-common", "smi-larb0", "img-larb2", "vdec1-larb", "venc-venc", "venc-larb",
+			"mtcmos-ven", "mtcmos-vde", "mtcmos-isp", "mtcmos-dis";
 		};
 
 		smi_common@14016000 {
