@@ -903,6 +903,7 @@ config ARCH_MT6580
 	select ARM_HAS_SG_CHAIN
 	select MTK_BASE_POWER
 	select MTK_EIC
+	select MTK_WATCHPOINT
 	select PINCTRL
 	select PINCTRL_MT6580
 	select MFD_SYSCON
