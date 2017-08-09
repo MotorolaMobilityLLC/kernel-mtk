@@ -3075,7 +3075,7 @@ void wake_up_pmic(void)
 }
 EXPORT_SYMBOL(wake_up_pmic);
 
-#ifdef CONFIG_MTK_LEGACY
+#if 0 /* def CONFIG_MTK_LEGACY */
 void mt_pmic_eint_irq(void)
 {
 	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");*/
