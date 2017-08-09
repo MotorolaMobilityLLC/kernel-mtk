@@ -606,6 +606,7 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	struct die_args *dargs = (struct die_args *)ptr;
 
 	aee_disable_api();
+	dump_stack();
 
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_IPANIC_DIE);
 	aee_rr_rec_exp_type(2);
