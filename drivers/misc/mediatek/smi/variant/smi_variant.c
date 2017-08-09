@@ -1160,7 +1160,7 @@ static int mtk_smi_remove(struct platform_device *pdev)
 	pm_runtime_disable(&pdev->dev);
 	return 0;
 }
-
+/*
 static int mtk_smi_larb_fb_suspend(void)
 {
 	int i;
@@ -1231,7 +1231,7 @@ static int mtk_smi_variant_event_notify(struct notifier_block *self,
 
 static struct notifier_block mtk_smi_variant_event_notifier = {
 	.notifier_call  = mtk_smi_variant_event_notify,
-};
+};*/
 
 static int __init smi_init(void)
 {
@@ -1265,7 +1265,7 @@ static int __init smi_init(void)
 	spin_lock_init(&g_SMIInfo.SMI_lock);
 
 	SMI_DBG_Init();
-	fb_register_client(&mtk_smi_variant_event_notifier);
+	/* fb_register_client(&mtk_smi_variant_event_notifier);*/
 	SMIMSG("smi_init done\n");
 
 	return 0;
