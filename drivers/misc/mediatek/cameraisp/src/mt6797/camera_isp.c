@@ -813,28 +813,77 @@ static SV_LOG_STR gSvLog[ISP_IRQ_TYPE_AMOUNT];
 	}
 #if 1
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...) do {\
-		char *ptr; \
-		char *pDes;\
-		MUINT32 *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
-		unsigned int str_leng;\
-		if (_LOG_ERR == logT) {\
-			str_leng = NORMAL_STR_LEN*ERR_PAGE; \
-		} else if (_LOG_DBG == logT) {\
-			str_leng = NORMAL_STR_LEN*DBG_PAGE; \
-		} else if (_LOG_INF == logT) {\
-			str_leng = NORMAL_STR_LEN*INF_PAGE;\
-		} else {\
-			str_leng = 0;\
-		} \
-		ptr = pDes = (char *)&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);    \
-		sprintf((char *)(pDes), fmt, ##__VA_ARGS__);   \
+	char *ptr; \
+	char *pDes;\
+	MINT32 avaLen;\
+	MUINT32 *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
+	unsigned int str_leng;\
+	MUINT32 i;\
+	SV_LOG_STR *pSrc = &gSvLog[irq];\
+	if (_LOG_ERR == logT) {\
+		str_leng = NORMAL_STR_LEN*ERR_PAGE; \
+	} else if (_LOG_DBG == logT) {\
+		str_leng = NORMAL_STR_LEN*DBG_PAGE; \
+	} else if (_LOG_INF == logT) {\
+		str_leng = NORMAL_STR_LEN*INF_PAGE;\
+	} else {\
+		str_leng = 0;\
+	} \
+	ptr = pDes = (char *)&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);    \
+	avaLen = str_leng - 1 - gSvLog[irq]._cnt[ppb][logT];\
+	if (avaLen > 1) {\
+		snprintf((char *)(pDes), avaLen, fmt, ##__VA_ARGS__);   \
 		if ('\0' != gSvLog[irq]._str[ppb][logT][str_leng - 1]) {\
 			LOG_ERR("log str over flow(%d)", irq);\
 		} \
 		while (*ptr++ != '\0') {        \
 			(*ptr2)++;\
 		}     \
-	} while (0);
+	} else { \
+		LOG_INF("(%d)(%d)log str avalible=0, print log\n", irq, logT);\
+		ptr = pSrc->_str[ppb][logT];\
+		if (0 != pSrc->_cnt[ppb][logT]) {\
+			if (_LOG_DBG == logT) {\
+				for (i = 0; i < DBG_PAGE; i++) {\
+					if (ptr[NORMAL_STR_LEN*(i+1) - 1] != '\0') {\
+						ptr[NORMAL_STR_LEN*(i+1) - 1] = '\0';\
+						LOG_DBG("%s", &ptr[NORMAL_STR_LEN*i]);\
+					} else{\
+						LOG_DBG("%s", &ptr[NORMAL_STR_LEN*i]);\
+						break;\
+					} \
+				} \
+			} \
+			else if (_LOG_INF == logT) {\
+				for (i = 0; i < INF_PAGE; i++) {\
+					if (ptr[NORMAL_STR_LEN*(i+1) - 1] != '\0') {\
+						ptr[NORMAL_STR_LEN*(i+1) - 1] = '\0';\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*i]);\
+					} else{\
+						LOG_INF("%s", &ptr[NORMAL_STR_LEN*i]);\
+						break;\
+					} \
+				} \
+			} \
+			else if (_LOG_ERR == logT) {\
+				for (i = 0; i < ERR_PAGE; i++) {\
+					if (ptr[NORMAL_STR_LEN*(i+1) - 1] != '\0') {\
+						ptr[NORMAL_STR_LEN*(i+1) - 1] = '\0';\
+						LOG_ERR("%s", &ptr[NORMAL_STR_LEN*i]);\
+					} else{\
+						LOG_ERR("%s", &ptr[NORMAL_STR_LEN*i]);\
+						break;\
+					} \
+				} \
+			} \
+			else {\
+				LOG_ERR("N.S.%d", logT);\
+			} \
+			ptr[0] = '\0';\
+			pSrc->_cnt[ppb][logT] = 0;\
+		} \
+	} \
+} while (0);
 #else
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, args...)    pr_warn(IRQTag fmt,  ##args)
 #endif
