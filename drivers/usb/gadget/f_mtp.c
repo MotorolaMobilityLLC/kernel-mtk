@@ -710,7 +710,6 @@ static struct usb_request
 	} else {
 		req = list_first_entry(head, struct usb_request, list);
 		list_del(&req->list);
-		req->zero = 0;
 	}
 	spin_unlock_irqrestore(&dev->lock, flags);
 	return req;
@@ -1061,14 +1060,10 @@ static ssize_t mtp_write(struct file *fp, const char __user *buf,
 			break;
 		}
 
-		if (count > MTP_BULK_BUFFER_SIZE) {
+		if (count > MTP_BULK_BUFFER_SIZE)
 			xfer = MTP_BULK_BUFFER_SIZE;
-		} else {
+		else
 			xfer = count;
-			/* let udc driver to send zlp */
-			if ((count & (dev->ep_in->maxpacket - 1)) == 0)
-				req->zero = 1;
-		}
 		if (xfer && copy_from_user(req->buf, buf, xfer)) {
 			r = -EFAULT;
 			break;
@@ -1173,14 +1168,10 @@ static void send_file_work(struct work_struct *data)
 			break;
 		}
 
-		if (count > MTP_BULK_BUFFER_SIZE) {
+		if (count > MTP_BULK_BUFFER_SIZE)
 			xfer = MTP_BULK_BUFFER_SIZE;
-		} else {
+		else
 			xfer = count;
-			/* let udc driver to send zlp */
-			if ((count & (dev->ep_in->maxpacket - 1)) == 0)
-				req->zero = 1;
-		}
 
 		if (hdr_size) {
 			/* prepend MTP data header */
@@ -1188,7 +1179,7 @@ static void send_file_work(struct work_struct *data)
 			if (count >= 0xffffffff)
 				header->length = __cpu_to_le32(0xffffffff);
 			else
-				header->length = __cpu_to_le32(count);	
+				header->length = __cpu_to_le32(count);
 			header->type = __cpu_to_le16(2); /* data packet */
 			header->command = __cpu_to_le16(dev->xfer_command);
 			header->transaction_id =
