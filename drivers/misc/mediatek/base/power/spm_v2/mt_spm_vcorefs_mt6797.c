@@ -21,8 +21,9 @@
 #define VCOREFS_AEE_RR_REC 0
 #endif
 
- /* TIMEOUT */
-#define SPM_DVFS_TIMEOUT	3000	/* 3ms */
+/* TIMEOUT */
+#define SPM_DVS_TIMEOUT		2500	/* 2.5ms */
+#define SPM_DFS_TIMEOUT		2500	/* 2.5ms */
 #define SPM_SCREEN_TIMEOUT	1000	/* 1ms */
 
 /* BW threshold for SPM_SW_RSV_4 */
@@ -33,7 +34,7 @@
 #define get_vcore_sta()		(spm_read(PCM_REG6_DATA) & SPM_VCORE_STA_REG)
 
 /* get Vcore DVFS is progress */
-#define is_dvfs_in_progress()	(spm_read(PCM_REG6_DATA) & SPM_FLAG_DVFS_ACTIVE)
+#define is_dfs_in_progress()	(spm_read(PCM_REG6_DATA) & SPM_FLAG_DVFS_ACTIVE)
 
 /* get F/W screen on/off setting status */
 #define get_screen_sta()	(spm_read(SPM_SW_RSV_1) & 0xF)
@@ -201,6 +202,20 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 	return p;
 }
 
+u32 spm_vcorefs_get_MD_status(void)
+{
+	return spm_read(MD2SPM_DVFS_CON);
+}
+
+int spm_vcorefs_set_cpu_dvfs_req(u32 val, u32 mask)
+{
+	u32 value = (spm_read(CPU_DVFS_REQ) & ~mask) | (val & mask);
+
+	spm_write(CPU_DVFS_REQ, value);
+
+	return 0;
+}
+
 /*
  * EMIBW
  */
@@ -248,17 +263,15 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 	unsigned long flags;
 	u8 dvfs_req;
 	u32 target_sta, req;
-	int timer = 0;
+	int t_dvfs = 0, t_dvs = 0, t_dfs = 0;
+	bool dvs_en, dfs_en;
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_ENTER);
 
-	timer = wait_spm_complete_by_condition(!is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
-	if (timer < 0) {
-		spm_vcorefs_dump_dvfs_regs(NULL);
-		BUG();
-	}
+	dvs_en = ((pwrctrl->pcm_flags & SPM_FLAG_DIS_VCORE_DVS) == 0);
+	dfs_en = ((pwrctrl->pcm_flags & SPM_FLAG_DIS_VCORE_DFS) == 0);
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);
 
@@ -281,8 +294,6 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 		return -EINVAL;
 	}
 
-	spm_vcorefs_crit("dvfs_req: 0x%x, target_sta: 0x%x\n", dvfs_req, target_sta);
-
 	req = spm_read(SPM_SRC_REQ) & ~(SPM_DVFS_REQ_LSB);
 	spm_write(SPM_SRC_REQ, req | (dvfs_req << 5));
 	pwrctrl->spm_dvfs_req = dvfs_req;
@@ -291,34 +302,41 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 
 	if (opp == OPPI_PERF) {
 
-		timer = wait_spm_complete_by_condition(get_vcore_sta() == target_sta, SPM_DVFS_TIMEOUT);
+		if (dvs_en) {
+			t_dvs = wait_spm_complete_by_condition(get_vcore_sta() == target_sta, SPM_DVS_TIMEOUT);
 
-		/* DVFS time is out of spec */
-		if (timer < 0) {
-			spm_vcorefs_dump_dvfs_regs(NULL);
-			BUG();
+			/* DVS time is out of spec */
+			if (t_dvs < 0) {
+				spm_vcorefs_crit("DVS TIMEOUT: 0x%x, 0x%x\n", dvfs_req, target_sta);
+				spm_vcorefs_dump_dvfs_regs(NULL);
+				BUG();
+			}
 		}
+
+		if (dfs_en) {
+			t_dfs = wait_spm_complete_by_condition(!is_dfs_in_progress(), SPM_DFS_TIMEOUT);
+
+			/* DFS time is out of spec */
+			if (t_dfs < 0) {
+				spm_vcorefs_crit("DFS TIMEOUT: 0x%x, 0x%x\n", dvfs_req, target_sta);
+				spm_vcorefs_dump_dvfs_regs(NULL);
+				BUG();
+			}
+		}
+
+		t_dvfs = t_dvs + t_dfs;
+
+		spm_vcorefs_crit("dvfs_req: 0x%x, target_sta: 0x%x, t_dvfs: %d(%d)(%d)\n",
+								dvfs_req, target_sta, t_dvfs, t_dvs, t_dfs);
+	} else {
+		spm_vcorefs_crit("dvfs_req: 0x%x, target_sta: 0x%x\n", dvfs_req, target_sta);
 	}
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_LEAVE);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
-	return timer;
-}
-
-u32 spm_vcorefs_get_MD_status(void)
-{
-	return spm_read(MD2SPM_DVFS_CON);
-}
-
-int spm_vcorefs_set_cpu_dvfs_req(u32 val, u32 mask)
-{
-	u32 value = (spm_read(CPU_DVFS_REQ) & ~mask) | (val & mask);
-
-	spm_write(CPU_DVFS_REQ, value);
-
-	return 0;
+	return t_dvfs;
 }
 
 /*
@@ -326,18 +344,15 @@ int spm_vcorefs_set_cpu_dvfs_req(u32 val, u32 mask)
  */
 int spm_vcorefs_screen_on_setting(void)
 {
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 	unsigned long flags;
 	int timer = 0;
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
-/*	timer = wait_spm_complete_by_condition(!is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
-	if (timer < 0) {
-		spm_vcorefs_dump_dvfs_regs(NULL);
-		BUG();
-	}
-*/
 	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_SCREEN_ON);
+
+	pwrctrl->cpu_md_emi_dvfs_req_prot_dis = 0;
 	spm_write(SPM_SRC2_MASK, spm_read(SPM_SRC2_MASK) & (~CPU_MD_EMI_DVFS_REQ_PROT_DIS_LSB));
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
@@ -361,18 +376,15 @@ int spm_vcorefs_screen_on_setting(void)
 
 int spm_vcorefs_screen_off_setting(u32 md_dvfs_req)
 {
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 	unsigned long flags;
 	int timer = 0;
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
-/*	timer = wait_spm_complete_by_condition(!is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
-	if (timer < 0) {
-		spm_vcorefs_dump_dvfs_regs(NULL);
-		BUG();
-	}
-*/
 	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_SCREEN_OFF);
+
+	pwrctrl->cpu_md_emi_dvfs_req_prot_dis = 1;
 	spm_write(SPM_SRC2_MASK, spm_read(SPM_SRC2_MASK) | CPU_MD_EMI_DVFS_REQ_PROT_DIS_LSB);
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
