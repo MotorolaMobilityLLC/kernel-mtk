@@ -15,6 +15,10 @@
 #include <linux/freezer.h>
 #include <linux/platform_device.h>
 
+#include <linux/irqdomain.h>
+#include <linux/of_platform.h>
+#include <linux/of_irq.h>
+
 #include "trustzone/kree/tz_mod.h"
 #include "trustzone/kree/mem.h"
 #include "trustzone/kree/system.h"
@@ -51,6 +55,7 @@ struct MTIOMMU_PIN_RANGE_T {
 *****************************************************************************/
 static struct cdev tz_client_cdev;
 static dev_t tz_client_dev;
+
 static int tz_client_open(struct inode *inode, struct file *filp);
 static int tz_client_release(struct inode *inode, struct file *filp);
 static long tz_client_ioctl(struct file *file, unsigned int cmd,
@@ -1060,119 +1065,12 @@ static const struct dev_pm_ops tz_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(tz_suspend, tz_resume)
 };
 
-/* add tz virtual driver for suspend/resume support */
-static struct platform_driver tz_driver = {
-	.driver = {
-		   .name = TZ_DEVNAME,
-		   .pm = &tz_pm_ops,
-		   .owner = THIS_MODULE,
-		   },
-#ifdef TZ_PLAYREADY_SECURETIME_SUPPORT
-.shutdown   = st_shutdown,
-#endif
-};
-
-
-/* add tz virtual device for suspend/resume support */
-static struct platform_device tz_device = {
-	.name = TZ_DEVNAME,
-	.id = -1,
-};
-
-/******************************************************************************
- * register_tz_driver
- *
- * DESCRIPTION:
- *   register the device driver !
- *
- * PARAMETERS:
- *   None
- *
- * RETURNS:
- *   0 for success
- *
- * NOTES:
- *   None
- *
- ******************************************************************************/
-static int __init register_tz_driver(void)
-{
-	int ret = 0;
-
-	if (platform_device_register(&tz_device)) {
-		ret = -ENODEV;
-		pr_warn("[%s] could not register device for the device, ret:%d\n",
-			MODULE_NAME,
-			ret);
-		return ret;
-	}
-
-	if (platform_driver_register(&tz_driver)) {
-		ret = -ENODEV;
-		pr_warn("[%s] could not register device for the device, ret:%d\n",
-			MODULE_NAME,
-			ret);
-		platform_device_unregister(&tz_device);
-		return ret;
-	}
-
-	return ret;
-}
-#ifdef TZ_PLAYREADY_SECURETIME_SUPPORT
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-
-static void st_early_suspend(struct early_suspend *h)
-{
-	pr_debug("st_early_suspend: start\n");
-	securetime_savefile();
-}
-
-static void st_late_resume(struct early_suspend *h)
-{
-	int ret = 0;
-	KREE_SESSION_HANDLE securetime_session = 0;
-
-	ret = KREE_CreateSession(TZ_TA_PLAYREADY_UUID, &securetime_session);
-	if (ret != TZ_RESULT_SUCCESS)
-		pr_warn("[securetime]CreateSession error %d\n", ret);
-
-	TEE_update_pr_time_intee(securetime_session);
-	ret = KREE_CloseSession(securetime_session);
-	if (ret != TZ_RESULT_SUCCESS)
-		pr_warn("[securetime]CloseSession error %d\n", ret);
-}
-
-static struct early_suspend securetime_early_suspend = {
-	.level  = 258,
-	.suspend = st_early_suspend,
-	.resume  = st_late_resume,
-};
-#endif
-#endif
-
-/******************************************************************************
- * tz_client_init
- *
- * DESCRIPTION:
- *   Init the device driver !
- *
- * PARAMETERS:
- *   None
- *
- * RETURNS:
- *   0 for success
- *
- * NOTES:
- *   None
- *
- ******************************************************************************/
 static struct class *pTzClass;
 static struct device *pTzDevice;
 
-static int __init tz_client_init(void)
+static int mtee_probe(struct platform_device *pdev)
 {
-	int ret = 0;
+	int ret;
 	TZ_RESULT tzret;
 #ifdef ENABLE_INC_ONLY_COUNTER
 	struct task_struct *thread;
@@ -1187,13 +1085,18 @@ static int __init tz_client_init(void)
 #endif
 #endif
 
-	ret = register_tz_driver();
-	if (ret) {
-		pr_warn("[%s] register device/driver failed, ret:%d\n",
-			MODULE_NAME,
-			ret);
-		return ret;
-	}
+#ifdef CONFIG_OF
+	struct device_node *parent_node;
+
+	if (pdev->dev.of_node) {
+		parent_node = of_irq_find_parent(pdev->dev.of_node);
+		if (parent_node)
+			kree_set_sysirq_node(parent_node);
+		else
+			pr_warn("can't find interrupt-parent device node from mtee\n");
+	} else
+		pr_warn("No mtee device node\n");
+#endif
 
 	tz_client_dev = MKDEV(MAJOR_DEV_NUM, 0);
 
@@ -1256,6 +1159,136 @@ static int __init tz_client_init(void)
 	thread_securetime_gb = kthread_run(update_securetime_thread_gb, NULL,
 						"update_securetime_gb");
 #endif
+
+	return 0;
+}
+
+static const struct of_device_id mtee_of_match[] = {
+	{ .compatible = "mediatek,mtee", },
+};
+MODULE_DEVICE_TABLE(of, mtee_of_match);
+
+/* add tz virtual driver for suspend/resume support */
+static struct platform_driver tz_driver = {
+	.probe = mtee_probe,
+	.driver = {
+		.name = TZ_DEVNAME,
+		.pm = &tz_pm_ops,
+		.owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		.of_match_table = mtee_of_match,
+#endif
+	},
+#ifdef TZ_PLAYREADY_SECURETIME_SUPPORT
+	.shutdown   = st_shutdown,
+#endif
+};
+
+
+/******************************************************************************
+ * register_tz_driver
+ *
+ * DESCRIPTION:
+ *   register the device driver !
+ *
+ * PARAMETERS:
+ *   None
+ *
+ * RETURNS:
+ *   0 for success
+ *
+ * NOTES:
+ *   None
+ *
+ ******************************************************************************/
+static int __init register_tz_driver(void)
+{
+	int ret = 0;
+
+#ifndef CONFIG_OF
+	if (platform_device_register(&tz_device)) {
+		ret = -ENODEV;
+		pr_warn("[%s] could not register device for the device, ret:%d\n",
+			MODULE_NAME,
+			ret);
+		return ret;
+	}
+#endif
+
+	if (platform_driver_register(&tz_driver)) {
+		ret = -ENODEV;
+		pr_warn("[%s] could not register device for the device, ret:%d\n",
+			MODULE_NAME,
+			ret);
+#ifndef CONFIG_OF
+		platform_device_unregister(&tz_device);
+#endif
+		return ret;
+	}
+
+	return ret;
+}
+#ifdef TZ_PLAYREADY_SECURETIME_SUPPORT
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+
+static void st_early_suspend(struct early_suspend *h)
+{
+	pr_debug("st_early_suspend: start\n");
+	securetime_savefile();
+}
+
+static void st_late_resume(struct early_suspend *h)
+{
+	int ret = 0;
+	KREE_SESSION_HANDLE securetime_session = 0;
+
+	ret = KREE_CreateSession(TZ_TA_PLAYREADY_UUID, &securetime_session);
+	if (ret != TZ_RESULT_SUCCESS)
+		pr_warn("[securetime]CreateSession error %d\n", ret);
+
+	TEE_update_pr_time_intee(securetime_session);
+	ret = KREE_CloseSession(securetime_session);
+	if (ret != TZ_RESULT_SUCCESS)
+		pr_warn("[securetime]CloseSession error %d\n", ret);
+}
+
+static struct early_suspend securetime_early_suspend = {
+	.level  = 258,
+	.suspend = st_early_suspend,
+	.resume  = st_late_resume,
+};
+#endif
+#endif
+
+/******************************************************************************
+ * tz_client_init
+ *
+ * DESCRIPTION:
+ *   Init the device driver !
+ *
+ * PARAMETERS:
+ *   None
+ *
+ * RETURNS:
+ *   0 for success
+ *
+ * NOTES:
+ *   None
+ *
+ ******************************************************************************/
+static int __init tz_client_init(void)
+{
+	int ret = 0;
+
+	ret = register_tz_driver();
+	if (ret) {
+		pr_warn("[%s] register device/driver failed, ret:%d\n",
+			MODULE_NAME,
+			ret);
+		return ret;
+	}
+
 	return 0;
 }
 arch_initcall(tz_client_init);

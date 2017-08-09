@@ -3,12 +3,18 @@
 #include <linux/types.h>
 #include <linux/interrupt.h>
 #include <linux/slab.h>
+#include <linux/irqdomain.h>
+#include <linux/of_irq.h>
+#include <dt-bindings/interrupt-controller/arm-gic.h>
 
 #include "tz_cross/trustzone.h"
 #include "tz_cross/ta_system.h"
 #include "tz_cross/ta_irq.h"
 #include "trustzone/kree/system.h"
 #include "kree_int.h"
+
+static struct irq_domain *sysirq;
+static struct device_node *sysirq_node;
 
 /*************************************************************
  *           REE Service
@@ -34,6 +40,8 @@ TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
 	unsigned long flags;
 	TZ_RESULT ret = TZ_RESULT_SUCCESS;
 	unsigned int *token;
+	unsigned int virq;
+	struct of_phandle_args oirq;
 
 	if (param->enable) {
 		flags = 0;
@@ -58,19 +66,46 @@ TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE])
 			*token = param->irq;
 			param->token = (void *)token;
 		}
-		rret = request_irq(param->irq, KREE_IrqHandler, flags,
+
+		if (sysirq_node) {
+			oirq.np = sysirq_node;
+			oirq.args_count = 3;
+			oirq.args[0] = GIC_SPI; /* SPI */
+			oirq.args[1] = param->irq - 32;
+			oirq.args[2] = flags;
+			virq = irq_create_of_mapping(&oirq);
+		} else
+			virq = param->irq;
+
+		pr_debug("%s: [irq] of_map got virq:%u, hwirq:%u(gic#)\n"
+			 , __func__, virq, param->irq);
+
+		if (virq > 0)
+			rret = request_irq(virq, KREE_IrqHandler, flags,
 					"TEE IRQ", param->token);
+		else
+			rret = -EINVAL;
+
 		if (rret) {
 			kfree(token);
+			pr_warn("request_irq return error: %d\n", rret);
 			if (rret == -ENOMEM)
 				ret = TZ_RESULT_ERROR_OUT_OF_MEMORY;
 			else
 				ret = TZ_RESULT_ERROR_BAD_PARAMETERS;
 		}
 	} else {
-		free_irq(param->irq, param->token);
-		if (param->token && *(unsigned int *)param->token == param->irq)
-			kfree(param->token);
+		if (sysirq)
+			virq = irq_find_mapping(sysirq, param->irq - 32);
+		else
+			virq = param->irq;
+
+		if (virq) {
+			free_irq(virq, param->token);
+			if (param->token &&
+			    *(unsigned int *)param->token == param->irq)
+				kfree(param->token);
+		}
 	}
 	return ret;
 }
@@ -236,4 +271,12 @@ void kree_irq_mask_restore(unsigned int *pmask, unsigned int size)
 				  TZ_ParamTypes1(TZPT_MEM_INPUT), param);
 	if (ret != TZ_RESULT_SUCCESS)
 		pr_warn("%s error: %s\n", __func__, TZ_GetErrorString(ret));
+}
+
+void kree_set_sysirq_node(struct device_node *pnode)
+{
+	if (pnode) {
+		sysirq_node = pnode;
+		sysirq = irq_find_host(sysirq_node);
+	}
 }
