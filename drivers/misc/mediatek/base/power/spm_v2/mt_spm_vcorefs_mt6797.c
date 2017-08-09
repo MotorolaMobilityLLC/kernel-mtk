@@ -384,6 +384,8 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
 	pwrctrl = __spm_vcore_dvfs.pwrctrl;
 #endif
 
+	__spm_clean_after_wakeup();
+
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 
 	if (!vcorefs_sodi_rekick_lock())
