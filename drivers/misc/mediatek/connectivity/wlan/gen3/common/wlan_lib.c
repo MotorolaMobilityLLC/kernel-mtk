@@ -4650,6 +4650,7 @@ VOID wlanEnableATGO(IN P_ADAPTER_T prAdapter)
 *         WLAN_STATUS_FAILURE
 */
 /*----------------------------------------------------------------------------*/
+UINT_32 g_u2FwIDVersion = 0;
 WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 {
 	UINT_8 aucZeroMacAddr[] = NULL_MAC_ADDR;
@@ -4657,7 +4658,6 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	P_CMD_INFO_T prCmdInfo;
 	P_WIFI_CMD_T prWifiCmd;
 	UINT_32 u4RxPktLength;
-	UINT_32 u4FwIDVersion = 0;
 	UINT_8 aucBuffer[sizeof(WIFI_EVENT_T) + sizeof(EVENT_NIC_CAPABILITY_T)];
 	P_HW_MAC_RX_DESC_T prRxStatus;
 	P_WIFI_EVENT_T prEvent;
@@ -4735,8 +4735,7 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	prAdapter->u4FwFeatureFlag0 = prEventNicCapability->u4FeatureFlag0;
 	prAdapter->u4FwFeatureFlag1 = prEventNicCapability->u4FeatureFlag1;
 
-	u4FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
-	mtk_wcn_set_wifi_ver(u4FwIDVersion);
+	g_u2FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
 #if CFG_ENABLE_CAL_LOG
 	DBGLOG(NIC, LOUD, " RF CAL FAIL  = (%d),BB CAL FAIL  = (%d)\n",
 			    prEventNicCapability->ucRfCalFail, prEventNicCapability->ucBbCalFail);
@@ -4752,6 +4751,16 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 
 	return WLAN_STATUS_SUCCESS;
 }
+
+UINT_32 wlanGetFwIDVersion(void)
+{
+	UINT_32 u4FwIDVersion = 0;
+
+	u4FwIDVersion = g_u2FwIDVersion;
+
+	return u4FwIDVersion;
+}
+EXPORT_SYMBOL(wlanGetFwIDVersion);
 
 #if TXPWR_USE_PDSLOPE
 
