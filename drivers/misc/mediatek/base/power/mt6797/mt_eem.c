@@ -583,7 +583,8 @@ static void eem_restore_eem_volt(struct eem_det *det);
 #define VMAX_VAL_GPU            (112900)
 #define VMIN_VAL_GPU		(80000)
 #define VMAX_VAL_LITTLE		(120000)
-#define VMIN_VAL_LITTLE		(77500)
+#define VMIN_VAL_LITTLE		(78000)
+#define VMIN_VAL_LITTLE_SB	(77000)
 
 #define DTHI_VAL		0x01		/* positive */
 #define DTLO_VAL		0xfe		/* negative (2's compliment) */
@@ -2451,6 +2452,7 @@ static void eem_init_ctrl(struct eem_ctrl *ctrl)
 static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 {
 	enum eem_det_id det_id = det_to_id(det);
+	unsigned int binLevel;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 	eem_debug("det=%s, id=%d\n", ((char *)(det->name) + 8), det_id);
@@ -2470,6 +2472,17 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	det->VCO = VCO_VAL;
 	det->DCCONFIG = DCCONFIG_VAL;
 
+	#ifdef __KERNEL__
+		binLevel = GET_BITS_VAL(3:0, get_devinfo_with_index(22));
+	#else
+		binLevel = GET_BITS_VAL(3:0, eem_read(0x1020671C));
+	#endif
+	if (binLevel == 0)
+		det->VMIN       = det->ops->volt_2_eem(det, VMIN_VAL_LITTLE);
+	else if (binLevel == 1)
+		det->VMIN       = det->ops->volt_2_eem(det, VMIN_VAL_LITTLE_SB);
+	else
+		det->VMIN       = det->ops->volt_2_eem(det, VMIN_VAL_LITTLE);
 	/*
 	if (NULL != det->ops->get_volt) {
 		det->VBOOT = det->ops->get_volt(det);
@@ -2527,7 +2540,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_L_MONEN;
 		det->VBOOT      = det->ops->volt_2_eem(det, det->VBOOT);
 		det->VMAX	= det->ops->volt_2_eem(det, VMAX_VAL_LITTLE);
-		det->VMIN	= det->ops->volt_2_eem(det, VMIN_VAL_LITTLE);
 		det->recordRef	= recordRef + 36;
 		#if 0
 			int i;
@@ -2549,7 +2561,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_2L_MONEN;
 		det->VBOOT      = det->ops->volt_2_eem(det, det->VBOOT);
 		det->VMAX	= det->ops->volt_2_eem(det, VMAX_VAL_LITTLE);
-		det->VMIN	= det->ops->volt_2_eem(det, VMIN_VAL_LITTLE);
 		det->recordRef	= recordRef;
 		#if 0
 			int i;
@@ -2571,7 +2582,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CCI_MONEN;
 		det->VBOOT      = det->ops->volt_2_eem(det, det->VBOOT);
 		det->VMAX	= det->ops->volt_2_eem(det, VMAX_VAL_LITTLE);
-		det->VMIN	= det->ops->volt_2_eem(det, VMIN_VAL_LITTLE);
 		det->recordRef	= recordRef + 72;
 		#if 0
 			int i;
