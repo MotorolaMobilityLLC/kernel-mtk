@@ -4614,6 +4614,11 @@ static void msdc_restore_info(struct msdc_host *host)
 	sdr_set_field(MSDC_INTEN, MSDC_INT_SDIOIRQ,
 		host->saved_para.inten_sdio_irq);	/* get INTEN status for SDIO */
 	sdr_write32(MSDC_IOCON, host->saved_para.iocon);
+
+	if (host->hw->host_function == MSDC_SDIO) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->rescan_entered = 0;
+	}
 }
 
 static void msdc_update_cahce_status(struct msdc_host *host,
@@ -9439,6 +9444,10 @@ static int msdc_drv_resume(struct platform_device *pdev)
 	}
 
 	/* This mean WIFI not controller by PM */
+	if (host->hw->host_function == MSDC_SDIO) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->rescan_entered = 0;
+	}
 
 	return ret;
 }
