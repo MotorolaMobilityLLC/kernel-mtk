@@ -1436,6 +1436,29 @@ typedef struct _P2P_FUNCTION_LINKER {
 #endif
 
 /*
+ * State Machine:
+ * -->STOP: Turn on/off WiFi
+ * -->DISABLE: Screen was off (wlanHandleSystemSuspend)
+ * -->ENABLE: Screen was on (wlanHandleSystemResume)
+ * ----->clear DISABLE
+ * -->RUNNING: Screen was on && Tx/Rx was ongoing (wlanHardStartXmit/kalRxIndicatePkts)
+*/
+struct GL_PER_MON_T {
+	TIMER_T rPerfMonTimer;
+	ULONG ulPerfMonFlag;
+	ULONG ulLastTxBytes;
+	ULONG ulP2PLastRxBytes;
+	ULONG ulP2PLastTxBytes;
+	ULONG ulLastRxBytes;
+	/*in bps*/
+	ULONG ulThroughput;
+	/*in ms*/
+	UINT32 u4UpdatePeriod;
+	UINT32 u4TarPerfLevel;
+	UINT32 u4CurrPerfLevel;
+};
+
+/*
  * Major ADAPTER structure
  * Major data structure for driver operation
  */
@@ -1670,6 +1693,7 @@ struct _ADAPTER_T {
 #endif
 
 	ULONG	ulSuspendFlag;
+	struct GL_PER_MON_T rPerMonitor;
 
 };				/* end of _ADAPTER_T */
 
@@ -1687,6 +1711,14 @@ struct _ADAPTER_T {
 *                                 M A C R O S
 ********************************************************************************
 */
+#define PERF_MON_DISABLE_BIT_OFF    (0)
+#define PERF_MON_STOP_BIT_OFF       (1)
+#define PERF_MON_RUNNING_BIT_OFF     (2)
+
+#define THROUGHPUT_L1_THRESHOLD		(20*1024*1024)
+#define THROUGHPUT_L2_THRESHOLD		(60*1024*1024)
+#define THROUGHPUT_L3_THRESHOLD		(135*1024*1024)
+
 #define SUSPEND_FLAG_FOR_WAKEUP_REASON	(0)
 #define SUSPEND_FLAG_CLEAR_WHEN_RESUME	(1)
 

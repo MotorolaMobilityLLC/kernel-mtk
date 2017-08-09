@@ -3142,6 +3142,10 @@ int priv_driver_set_suspend_mode(IN struct net_device *prNetDev, IN char *pcComm
 		}
 
 		prGlueInfo->fgIsInSuspendMode = fgEnable;
+		if (fgEnable)
+			kalPerMonDisable(prGlueInfo);
+		else
+			kalPerMonEnable(prGlueInfo);
 
 		wlanSetSuspendMode(prGlueInfo, fgEnable);
 		p2pSetSuspendMode(prGlueInfo, fgEnable);

@@ -2805,6 +2805,8 @@ bailout:
 	} while (FALSE);
 
 	if (i4Status == WLAN_STATUS_SUCCESS) {
+		/* Init performance monitor structure */
+		kalPerMonInit(prGlueInfo);
 #if CFG_SUPPORT_AGPS_ASSIST
 		kalIndicateAgpsNotify(prAdapter, AGPS_EVENT_WLAN_ON, NULL, 0);
 #endif
@@ -2915,6 +2917,9 @@ static VOID wlanRemove(VOID)
 		free_netdev(prDev);
 		return;
 	}
+
+	kalPerMonDestroy(prGlueInfo);
+
 #if CFG_ENABLE_BT_OVER_WIFI
 	if (prGlueInfo->rBowInfo.fgIsNetRegistered) {
 		bowNotifyAllLinkDisconnected(prGlueInfo->prAdapter);

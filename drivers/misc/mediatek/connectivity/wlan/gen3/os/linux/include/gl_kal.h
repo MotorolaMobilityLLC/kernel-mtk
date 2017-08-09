@@ -913,6 +913,10 @@ struct KAL_HALT_CTRL_T {
 *                                 M A C R O S
 ********************************************************************************
 */
+#define KAL_SET_BIT(bitOffset, value)				set_bit(bitOffset, &value)
+#define KAL_CLR_BIT(bitOffset, value)				clear_bit(bitOffset, &value)
+#define KAL_TEST_AND_CLEAR_BIT(bitOffset, value)	test_and_clear_bit(bitOffset, &value)
+#define KAL_TEST_BIT(bitOffset, value)				test_bit(bitOffset, &value)
 
 /*----------------------------------------------------------------------------*/
 /* Macros of getting current thread id                                        */
@@ -1620,4 +1624,14 @@ INT_32 kalHaltTryLock(VOID);
 VOID kalHaltUnlock(VOID);
 VOID kalSetHalted(BOOLEAN fgHalt);
 BOOLEAN kalIsHalted(VOID);
+
+INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonEnable(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo);
+INT_32 kalPerMonDestroy(IN P_GLUE_INFO_T prGlueInfo);
+VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam);
+INT_32 kalBoostCpu(UINT_32 core_num);
+
 #endif /* _GL_KAL_H */

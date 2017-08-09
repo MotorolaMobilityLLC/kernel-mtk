@@ -1595,6 +1595,7 @@ WLAN_STATUS kalRxIndicatePkts(IN P_GLUE_INFO_T prGlueInfo, IN PVOID apvPkts[], I
 
 	for (ucIdx = 0; ucIdx < ucPktNum; ucIdx++)
 		kalRxIndicateOnePkt(prGlueInfo, apvPkts[ucIdx]);
+	kalPerMonStart(prGlueInfo);
 
 	KAL_WAKE_LOCK_TIMEOUT(prGlueInfo->prAdapter, &prGlueInfo->rTimeoutWakeLock,
 			      MSEC_TO_JIFFIES(WAKE_LOCK_RX_TIMEOUT));
@@ -2139,6 +2140,7 @@ kalHardStartXmit(struct sk_buff *prSkb, IN struct net_device *prDev, P_GLUE_INFO
 	/* Update NetDev statisitcs */
 	prDev->stats.tx_bytes += prSkb->len;
 	prDev->stats.tx_packets++;
+	kalPerMonStart(prGlueInfo);
 
 	DBGLOG(TX, LOUD,
 	       "Enqueue frame for BSS[%u] QIDX[%u] PKT_LEN[%u] TOT_CNT[%ld] PER-Q_CNT[%ld]\n",
@@ -5495,3 +5497,227 @@ VOID kalDumpWTBL(P_ADAPTER_T prAdapter)
 	glUnmapConnsysAddr(prAdapter->prGlueInfo, pucWtblBaseAddr, 0x60320000);
 }
 #endif
+
+#if 0
+VOID kalPerMonDump(IN P_GLUE_INFO_T prGlueInfo)
+{
+	struct GL_PER_MON_T *prPerMonitor;
+
+	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
+	DBGLOG(SW4, WARN, "ulPerfMonFlag:0x%lx\n", prPerMonitor->ulPerfMonFlag);
+	DBGLOG(SW4, WARN, "ulLastTxBytes:%ld\n", prPerMonitor->ulLastTxBytes);
+	DBGLOG(SW4, WARN, "ulLastRxBytes:%ld\n", prPerMonitor->ulLastRxBytes);
+	DBGLOG(SW4, WARN, "ulP2PLastTxBytes:%ld\n", prPerMonitor->ulP2PLastTxBytes);
+	DBGLOG(SW4, WARN, "ulP2PLastRxBytes:%ld\n", prPerMonitor->ulP2PLastRxBytes);
+	DBGLOG(SW4, WARN, "ulThroughput:%ld\n", prPerMonitor->ulThroughput);
+	DBGLOG(SW4, WARN, "u4UpdatePeriod:%d\n", prPerMonitor->u4UpdatePeriod);
+	DBGLOG(SW4, WARN, "u4TarPerfLevel:%d\n", prPerMonitor->u4TarPerfLevel);
+	DBGLOG(SW4, WARN, "u4CurrPerfLevel:%d\n", prPerMonitor->u4CurrPerfLevel);
+	DBGLOG(SW4, WARN, "netStats tx_bytes:%ld\n", prGlueInfo->prDevHandler->stats.tx_bytes);
+	DBGLOG(SW4, WARN, "netStats tx_bytes:%ld\n", prGlueInfo->prDevHandler->stats.rx_bytes);
+	DBGLOG(SW4, WARN, "p2p netStats tx_bytes:%ld\n", prGlueInfo->prP2PInfo->prDevHandler->stats.tx_bytes);
+	DBGLOG(SW4, WARN, "p2p netStats tx_bytes:%ld\n", prGlueInfo->prP2PInfo->prDevHandler->stats.rx_bytes);
+}
+#endif
+
+inline INT_32 kalPerMonInit(IN P_GLUE_INFO_T prGlueInfo)
+{
+	struct GL_PER_MON_T *prPerMonitor;
+
+	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
+	DBGLOG(SW4, INFO, "enter %s\n", __func__);
+	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag))
+		DBGLOG(SW4, WARN, "abnormal, perf monitory already running\n");
+	KAL_CLR_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	KAL_CLR_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	KAL_SET_BIT(PERF_MON_STOP_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	prPerMonitor->u4UpdatePeriod = 1000;
+	cnmTimerInitTimer(prGlueInfo->prAdapter,
+		&prPerMonitor->rPerfMonTimer,
+		(PFN_MGMT_TIMEOUT_FUNC) kalPerMonHandler, (ULONG) NULL);
+	DBGLOG(SW4, INFO, "exit %s\n", __func__);
+	return 0;
+}
+
+inline INT_32 kalPerMonDisable(IN P_GLUE_INFO_T prGlueInfo)
+{
+	struct GL_PER_MON_T *prPerMonitor;
+
+	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
+
+	DBGLOG(SW4, INFO, "enter %s\n", __func__);
+	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
+		DBGLOG(SW4, TRACE, "need to stop before disable\n");
+		kalPerMonStop(prGlueInfo);
+	}
+	KAL_SET_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	DBGLOG(SW4, TRACE, "exit %s\n", __func__);
+	return 0;
+}
+
+inline INT_32 kalPerMonEnable(IN P_GLUE_INFO_T prGlueInfo)
+{
+	struct GL_PER_MON_T *prPerMonitor;
+
+	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
+
+	DBGLOG(SW4, INFO, "enter %s\n", __func__);
+	KAL_CLR_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	DBGLOG(SW4, TRACE, "exit %s\n", __func__);
+	return 0;
+}
+
+inline INT_32 kalPerMonStart(IN P_GLUE_INFO_T prGlueInfo)
+{
+	struct GL_PER_MON_T *prPerMonitor;
+
+	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
+	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
+	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag))
+		return 0;
+	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
+		DBGLOG(SW4, TRACE, "perf monitor already running\n");
+		return 0;
+	}
+	cnmTimerStartTimer(prGlueInfo->prAdapter, &prPerMonitor->rPerfMonTimer, prPerMonitor->u4UpdatePeriod);
+	KAL_SET_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	KAL_CLR_BIT(PERF_MON_STOP_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	DBGLOG(SW4, INFO, "perf monitor started\n");
+	return 0;
+}
+
+inline INT_32 kalPerMonStop(IN P_GLUE_INFO_T prGlueInfo)
+{
+	struct GL_PER_MON_T *prPerMonitor;
+
+	prPerMonitor = &prGlueInfo->prAdapter->rPerMonitor;
+	DBGLOG(SW4, TRACE, "enter %s\n", __func__);
+
+	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
+		DBGLOG(SW4, TRACE, "perf monitory disabled\n");
+		return 0;
+	}
+
+	if (KAL_TEST_BIT(PERF_MON_STOP_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
+		DBGLOG(SW4, TRACE, "perf monitory already stopped\n");
+		return 0;
+	}
+
+	KAL_SET_BIT(PERF_MON_STOP_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+	if (KAL_TEST_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
+		cnmTimerStopTimer(prGlueInfo->prAdapter, &prPerMonitor->rPerfMonTimer);
+		KAL_CLR_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+		prPerMonitor->ulLastRxBytes = 0;
+		prPerMonitor->ulLastTxBytes = 0;
+		prPerMonitor->ulP2PLastRxBytes = 0;
+		prPerMonitor->ulP2PLastTxBytes = 0;
+		prPerMonitor->ulThroughput = 0;
+		prPerMonitor->u4CurrPerfLevel = 0;
+		prPerMonitor->u4TarPerfLevel = 0;
+		/*Cancel CPU performance mode request*/
+		kalBoostCpu(0);
+	}
+	DBGLOG(SW4, TRACE, "exit %s\n", __func__);
+	return 0;
+}
+
+inline INT_32 kalPerMonDestroy(IN P_GLUE_INFO_T prGlueInfo)
+{
+	kalPerMonDisable(prGlueInfo);
+	return 0;
+}
+
+
+VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
+{
+	/*Calculate current throughput*/
+	struct GL_PER_MON_T *prPerMonitor;
+
+	LONG latestTxBytes, latestRxBytes, txDiffBytes, rxDiffBytes;
+	LONG p2pLatestTxBytes, p2pLatestRxBytes, p2pTxDiffBytes, p2pRxDiffBytes;
+	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
+
+	if ((prGlueInfo->ulFlag & GLUE_FLAG_HALT) || (!prAdapter->fgIsP2PRegistered))
+		return;
+	prPerMonitor = &prAdapter->rPerMonitor;
+	DBGLOG(SW4, TRACE, "enter kalPerMonHandler\n");
+	if (KAL_TEST_BIT(PERF_MON_DISABLE_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
+		KAL_CLR_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+		DBGLOG(SW4, WARN, "perf monitory disabled, omit timeout event\n");
+		return;
+	}
+
+	if (KAL_TEST_BIT(PERF_MON_STOP_BIT_OFF, prPerMonitor->ulPerfMonFlag)) {
+		KAL_CLR_BIT(PERF_MON_RUNNING_BIT_OFF, prPerMonitor->ulPerfMonFlag);
+		DBGLOG(SW4, WARN, "perf monitory stopped, omit timeout event\n");
+		return;
+	}
+	latestTxBytes = prGlueInfo->prDevHandler->stats.tx_bytes;
+	latestRxBytes = prGlueInfo->prDevHandler->stats.rx_bytes;
+	p2pLatestTxBytes = prGlueInfo->prP2PInfo->prDevHandler->stats.tx_bytes;
+	p2pLatestRxBytes = prGlueInfo->prP2PInfo->prDevHandler->stats.rx_bytes;
+	if (0 == prPerMonitor->ulLastRxBytes &&
+		0 == prPerMonitor->ulLastTxBytes &&
+		0 == prPerMonitor->ulP2PLastRxBytes &&
+		0 == prPerMonitor->ulP2PLastTxBytes) {
+		prPerMonitor->ulThroughput = 0;
+	} else {
+		txDiffBytes = latestTxBytes - prPerMonitor->ulLastTxBytes;
+		rxDiffBytes = latestRxBytes - prPerMonitor->ulLastRxBytes;
+		if (0 > txDiffBytes)
+			txDiffBytes = -(txDiffBytes);
+		if (0 > rxDiffBytes)
+			rxDiffBytes = -(rxDiffBytes);
+
+		p2pTxDiffBytes = p2pLatestTxBytes - prPerMonitor->ulP2PLastTxBytes;
+		p2pRxDiffBytes = p2pLatestRxBytes - prPerMonitor->ulP2PLastRxBytes;
+		if (0 > p2pTxDiffBytes)
+			p2pTxDiffBytes = -(p2pTxDiffBytes);
+		if (0 > p2pRxDiffBytes)
+			p2pRxDiffBytes = -(p2pRxDiffBytes);
+
+		prPerMonitor->ulThroughput = txDiffBytes + rxDiffBytes + p2pTxDiffBytes + p2pRxDiffBytes;
+		prPerMonitor->ulThroughput *= 1000;
+		prPerMonitor->ulThroughput /= prPerMonitor->u4UpdatePeriod;
+		prPerMonitor->ulThroughput <<= 3;
+	}
+	/*start the timer again  to make sure we can cancel performance mode request in the end*/
+	cnmTimerStartTimer(prGlueInfo->prAdapter, &prPerMonitor->rPerfMonTimer, prPerMonitor->u4UpdatePeriod);
+
+	prPerMonitor->ulLastTxBytes = latestTxBytes;
+	prPerMonitor->ulLastRxBytes = latestRxBytes;
+	prPerMonitor->ulP2PLastTxBytes = p2pLatestTxBytes;
+	prPerMonitor->ulP2PLastRxBytes = p2pLatestRxBytes;
+
+	if (prPerMonitor->ulThroughput < THROUGHPUT_L1_THRESHOLD)
+		prPerMonitor->u4TarPerfLevel = 0;
+	else if (prPerMonitor->ulThroughput < THROUGHPUT_L2_THRESHOLD)
+		prPerMonitor->u4TarPerfLevel = 1;
+	else if (prPerMonitor->ulThroughput < THROUGHPUT_L3_THRESHOLD)
+		prPerMonitor->u4TarPerfLevel = 2;
+	else
+		prPerMonitor->u4TarPerfLevel = 3;
+	if (prPerMonitor->u4TarPerfLevel != prPerMonitor->u4CurrPerfLevel) {
+		if (0 == prPerMonitor->u4TarPerfLevel) {
+			/*cancel CPU performance mode request*/
+			kalPerMonStop(prGlueInfo);
+		} else{
+			DBGLOG(SW4, TRACE, "throughput:%ld bps\n", prPerMonitor->ulThroughput);
+			/*adjust CPU core number to prPerMonitor->u4TarPerfLevel+1*/
+			kalBoostCpu(prPerMonitor->u4TarPerfLevel+1);
+			/*start the timer again  to make sure we can cancel performance mode request in the end*/
+			cnmTimerStartTimer(prGlueInfo->prAdapter,
+				&prPerMonitor->rPerfMonTimer,
+				prPerMonitor->u4UpdatePeriod);
+		}
+	}
+	prPerMonitor->u4CurrPerfLevel = prPerMonitor->u4TarPerfLevel;
+	DBGLOG(SW4, TRACE, "exit kalPerMonHandler\n");
+}
+
+INT_32 __weak kalBoostCpu(UINT_32 core_num)
+{
+	DBGLOG(SW4, WARN, "enter weak kalBoostCpu, core_num:%d\n", core_num);
+	return 0;
+}
+
