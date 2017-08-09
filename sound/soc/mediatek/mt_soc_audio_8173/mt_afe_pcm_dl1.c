@@ -181,11 +181,9 @@ static int mt_pcm_dl1_hw_params(struct snd_pcm_substream *substream,
 		pr_err("%s snd_pcm_lib_malloc_pages fail %d\n", __func__, ret);
 
 	pr_debug("%s dma_bytes = %zu dma_area = %p dma_addr = 0x%llx\n",
-		 __func__, substream->runtime->dma_bytes,
-		 substream->runtime->dma_area, (unsigned long long)substream->runtime->dma_addr);
+		 __func__, substream->runtime->dma_bytes, substream->runtime->dma_area,
+		 (unsigned long long)substream->runtime->dma_addr);
 
-	pr_debug("%s runtime rate = %u channels = %u substream->pcm->device = %d\n",
-		 __func__, runtime->rate, runtime->channels, substream->pcm->device);
 	return ret;
 }
 
@@ -211,8 +209,9 @@ static int mt_pcm_dl1_prepare(struct snd_pcm_substream *substream)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt_pcm_dl1_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 
-	pr_debug("%s rate = %u channels = %u period_size = %lu\n",
-		 __func__, runtime->rate, runtime->channels, runtime->period_size);
+	pr_debug("%s rate = %u channels = %u format = %d period_size = %lu\n",
+		 __func__, runtime->rate, runtime->channels,
+		 runtime->format, runtime->period_size);
 
 	/* HW sequence: */
 	/* mt_pcm_dl1_prestart->codec->mt_pcm_dl1_start */
@@ -331,8 +330,9 @@ static int mt_pcm_dl1_start(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *const runtime = substream->runtime;
 	struct timespec curr_tstamp;
 
-	pr_debug("%s period = %lu rate = %u channels = %u\n",
-		 __func__, runtime->period_size, runtime->rate, runtime->channels);
+	pr_debug("%s rate = %u channels = %u format = %d period_size = %lu\n",
+		 __func__, runtime->rate, runtime->channels,
+		 runtime->format, runtime->period_size);
 
 	/* set dl1 sample ratelimit_state */
 	mt_afe_set_sample_rate(MT_AFE_DIGITAL_BLOCK_MEM_DL1, runtime->rate);

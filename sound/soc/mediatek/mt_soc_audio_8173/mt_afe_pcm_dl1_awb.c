@@ -168,6 +168,12 @@ static int mt_pcm_dl1_awb_hw_free(struct snd_pcm_substream *substream)
 
 static int mt_pcm_dl1_awb_prepare(struct snd_pcm_substream *substream)
 {
+	struct snd_pcm_runtime *runtime = substream->runtime;
+
+	pr_debug("%s rate = %u channels = %u format = %d period_size = %lu\n",
+		 __func__, runtime->rate, runtime->channels,
+		 runtime->format, runtime->period_size);
+
 	return 0;
 }
 

@@ -70,7 +70,7 @@ static int mt_pcm_btsco_open(struct snd_pcm_substream *substream)
 	int ret = 0;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_debug("%s stream = %d\n", __func__, substream->stream);
+	pr_debug("%s stream[%d]\n", __func__, substream->stream);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 		snd_soc_set_runtime_hwparams(substream, &mt_pcm_btsco_out_hardware);
@@ -96,8 +96,6 @@ static int mt_pcm_btsco_open(struct snd_pcm_substream *substream)
 		mt_afe_emi_clk_on();
 #endif
 
-	pr_debug("%s substream->pcm->device = %d\n", __func__, substream->pcm->device);
-
 	if (ret < 0) {
 		pr_err("%s mt_pcm_btsco_close\n", __func__);
 		mt_pcm_btsco_close(substream);
@@ -109,7 +107,7 @@ static int mt_pcm_btsco_open(struct snd_pcm_substream *substream)
 
 static int mt_pcm_btsco_close(struct snd_pcm_substream *substream)
 {
-	pr_debug("%s stream = %d\n", __func__, substream->stream);
+	pr_debug("%s stream[%d]\n", __func__, substream->stream);
 
 	mt_afe_main_clk_off();
 
@@ -131,7 +129,7 @@ static int mt_pcm_btsco_hw_params(struct snd_pcm_substream *substream,
 	int ret = 0;
 	size_t buffer_size = params_buffer_bytes(hw_params);
 
-	pr_debug("%s stream = %d\n", __func__, substream->stream);
+	pr_debug("%s stream[%d]\n", __func__, substream->stream);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
@@ -172,7 +170,7 @@ static int mt_pcm_btsco_hw_params(struct snd_pcm_substream *substream,
 
 static int mt_pcm_btsco_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_debug("%s stream = %d\n", __func__, substream->stream);
+	pr_debug("%s stream[%d]\n", __func__, substream->stream);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 #ifndef AUDIO_BTSCO_MEMORY_SRAM
@@ -188,8 +186,10 @@ static int mt_pcm_btsco_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_debug("%s rate = %u channels = %u period_size = %lu\n", __func__,
-		 runtime->rate, runtime->channels, runtime->period_size);
+	pr_debug("%s stream[%d] rate = %u channels = %u format = %d period_size = %lu\n",
+		 __func__, substream->stream, runtime->rate, runtime->channels,
+		 runtime->format, runtime->period_size);
+
 	return 0;
 }
 
@@ -216,9 +216,9 @@ static int mt_pcm_btsco_start(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct mt_afe_irq_status irq_status;
 
-	pr_debug("%s stream = %d period = %lu rate = %u channels = %u\n",
-		 __func__, substream->stream, runtime->period_size, runtime->rate,
-		 runtime->channels);
+	pr_debug("%s stream[%d] rate = %u channels = %u format = %d period_size = %lu\n",
+		 __func__, substream->stream, runtime->rate, runtime->channels,
+		 runtime->format, runtime->period_size);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		mt_afe_add_ctx_substream(MT_AFE_MEM_CTX_DL1, substream);
@@ -289,7 +289,7 @@ static int mt_pcm_btsco_start(struct snd_pcm_substream *substream)
 
 static int mt_pcm_btsco_stop(struct snd_pcm_substream *substream)
 {
-	pr_debug("%s stream = %d\n", __func__, substream->stream);
+	pr_debug("%s stream[%d]\n", __func__, substream->stream);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		/* here to turn off digital part */
@@ -332,7 +332,7 @@ static int mt_pcm_btsco_stop(struct snd_pcm_substream *substream)
 
 static int mt_pcm_btsco_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_debug("%s stream = %d cmd = %d\n", __func__, substream->stream, cmd);
+	pr_debug("%s stream[%d] cmd = %d\n", __func__, substream->stream, cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:

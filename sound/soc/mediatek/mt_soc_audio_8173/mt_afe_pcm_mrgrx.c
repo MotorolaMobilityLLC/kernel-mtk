@@ -188,8 +188,9 @@ static int mt_pcm_mrgrx_prepare(struct snd_pcm_substream *substream)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt_pcm_mrgrx_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 
-	pr_debug("%s rate = %u channels = %u period_size = %lu\n",
-		__func__, runtime->rate, runtime->channels, runtime->period_size);
+	pr_debug("%s rate = %u channels = %u format = %d period_size = %lu\n",
+		 __func__, runtime->rate, runtime->channels,
+		 runtime->format, runtime->period_size);
 
 	if (priv->prepare_done == false) {
 		mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X) CMB_STUB_AIF_3);
