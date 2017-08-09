@@ -4381,7 +4381,7 @@ int irq_add_user(const void *_user,
 	}
 
 	/* create instance */
-	new_user = kzalloc(sizeof(*new_user), GFP_KERNEL | GFP_ATOMIC);
+	new_user = kzalloc(sizeof(*new_user), GFP_ATOMIC);
 	if (!new_user) {
 		spin_unlock_irqrestore(&afe_control_lock, flags);
 		return -ENOMEM;
