@@ -1626,8 +1626,10 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 
 	p += sprintf(p, "\n******** dcm dump register *********\n");
 	p += sprintf(p, "\n=== armcore DCM ===\n");
+	mt6797_0x1001AXXX_lock();
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "ARMPLLDIV_DCMCTL",
 				ARMPLLDIV_DCMCTL, reg_read(ARMPLLDIV_DCMCTL));
+	mt6797_0x1001AXXX_unlock();
 
 	p += sprintf(p, "\nmcusys DCM:\n");
 	p += sprintf(p, "%-30s(0x%08lX): 0x%08X\n", "MCUCFG_L2C_SRAM_CTRL",
