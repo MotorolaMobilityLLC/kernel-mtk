@@ -68,4 +68,17 @@ config TOUCHSCREEN_MTK_SYNAPTICS_I2C_RMI4
 
 source "drivers/input/touchscreen/mediatek/synaptics_i2c_rmi4/Kconfig"
 
+config TOUCHSCREEN_MTK_GT910
+	bool "GT910 for Mediatek package"
+	default n
+	help
+	Say Y here if you have GT910 touch panel.
+
+	If unsure, say N.
+
+	To compile this dirver as a module, choose M here: the
+	module will be called.
+
+source "drivers/input/touchscreen/mediatek/GT910/Kconfig"
+
 endif
