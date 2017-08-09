@@ -330,6 +330,8 @@ int msdc_of_parse(struct mmc_host *mmc)
 		pr_err("[msdc%d] cd_level isn't found in device tree\n",
 				host->id);
 
+	/*get cd_gpio*/
+	of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio);
 	msdc_get_rigister_settings(host);
 	msdc_get_pinctl_settings(host);
 
@@ -511,7 +513,7 @@ u32 g_msdc3_flash;
 #ifdef CONFIG_MTK_LEGACY
 #include <mach/mt_pm_ldo.h>
 #endif
-#include <mach/upmu_common.h>
+#include <mt-plat/upmu_common.h>
 #ifndef CONFIG_MTK_LEGACY
 struct regulator *reg_vemc;
 struct regulator *reg_vmc;
@@ -535,6 +537,7 @@ void msdc_get_regulators(struct device *dev)
 
 bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 {
+#if 0
 	struct regulator *reg = NULL;
 
 	switch (powerId) {
@@ -560,10 +563,12 @@ bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 	regulator_enable(reg);
 	pr_err("msdc_hwPoweron:%d: name:%s", powerId, mode_name);
 	return TRUE;
+#endif
 }
 
 bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
 {
+#if 0
 	struct regulator *reg = NULL;
 
 	switch (powerId) {
@@ -589,6 +594,7 @@ bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
 	pr_err("msdc_hwPowerOff:%d: name:%s", powerId, mode_name);
 
 	return TRUE;
+#endif
 }
 
 #else /*for CONFIG_MTK_LEGACY defined*/
@@ -645,6 +651,7 @@ u32 msdc_ldo_power(u32 on, MT65XX_POWER powerId, int voltage_mv,
 
 void msdc_dump_ldo_sts(struct msdc_host *host)
 {
+#if 0
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 	u32 ldo_en = 0, ldo_vol = 0;
 	u32 id = host->id;
@@ -677,10 +684,12 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 		break;
 	}
 #endif
+#endif
 }
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 {
+#if 0
 	unsigned int reg_val;
 	switch (host->id) {
 	case 1:
@@ -715,10 +724,12 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 	default:
 		break;
 	}
+#endif
 }
 
 void msdc_sdio_power(struct msdc_host *host, u32 on)
 {
+#if 0
 	switch (host->id) {
 #if defined(CFG_DEV_MSDC2)
 	case 2:
@@ -730,11 +741,12 @@ void msdc_sdio_power(struct msdc_host *host, u32 on)
 		which always turns on */
 		break;
 	}
-
+#endif
 }
 
 void msdc_emmc_power(struct msdc_host *host, u32 on)
 {
+#if 0
 	unsigned long tmo = 0;
 	void __iomem *base = host->base;
 	unsigned int sa_timeout;
@@ -779,10 +791,12 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 	}
 
 	msdc_dump_ldo_sts(host);
+#endif
 }
 
 void msdc_sd_power(struct msdc_host *host, u32 on)
 {
+#if 0
 	u32 card_on = on;
 	switch (host->id) {
 	case 1:
@@ -808,6 +822,7 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 	}
 
 	msdc_dump_ldo_sts(host);
+#endif
 }
 
 /**************************************************************/
@@ -831,7 +846,7 @@ u32 hclks_msdc30_1[] = {PLLCLK_50M, PLLCLK_208M, PLLCLK_200M, PLLCLK_156M,
 u32 hclks_msdc30_2[] = {PLLCLK_50M};
 u32 *hclks_msdc = NULL;
 
-#include <mach/mt_idle.h>
+/* #include <mt-plat/mt_idle.h> */
 struct clk *g_msdc0_pll_sel;
 struct clk *g_msdc0_pll_400m;
 struct clk *g_msdc0_pll_200m;
@@ -1378,7 +1393,10 @@ void msdc_set_driving_by_id(u32 id, struct msdc_hw *hw, bool sd_18)
 		break;
 	}
 }
-
+void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18)
+{
+	msdc_set_driving_by_id(host->id, hw, sd_18);
+}
 void msdc_get_driving_by_id(u32 id, struct msdc_hw *hw)
 {
 	switch (id) {

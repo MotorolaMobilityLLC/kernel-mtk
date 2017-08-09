@@ -11,7 +11,7 @@
 #include <linux/of_irq.h>
 extern const struct of_device_id msdc_of_ids[];
 extern struct msdc_hw *p_msdc_hw[];
-
+extern unsigned int cd_gpio;
 extern struct device_node *eint_node;
 
 extern void __iomem *gpio_base;
@@ -44,7 +44,7 @@ void msdc_fpga_pwr_init(void);
 /* Section 2: Power                                           */
 /**************************************************************/
 #include <mt-plat/upmu_common.h>
-
+#if 0
 #define REG_VEMC_VOSEL_CAL              MT6351_PMIC_RG_VEMC_CAL_ADDR
 #define REG_VEMC_VOSEL                  MT6351_PMIC_RG_VEMC_VOSEL_ADDR
 #define REG_VEMC_EN                     MT6351_PMIC_RG_VEMC_EN_ADDR
@@ -83,7 +83,7 @@ void msdc_fpga_pwr_init(void);
 #define MASK_VMCH_EN                    MT6351_PMIC_RG_VMCH_EN_MASK
 #define SHIFT_VMCH_EN                   MT6351_PMIC_RG_VMCH_EN_SHIFT
 #define FIELD_VMCH_EN                   (MASK_VMCH_EN << SHIFT_VMCH_EN)
-
+#endif
 #define VEMC_VOSEL_CAL_mV(cal)          ((cal <= 0) ? \
 						((0-(cal))/20) : (32-(cal)/20))
 #define VEMC_VOSEL_3V                   (0)
@@ -97,7 +97,7 @@ void msdc_fpga_pwr_init(void);
 						((0-(cal))/20) : (32-(cal)/20))
 #define VMCH_VOSEL_3V                   (0)
 #define VMCH_VOSEL_3V3                  (1)
-
+#if 0
 #define REG_VCORE_VOSEL_SW		MT6351_PMIC_BUCK_VCORE_VOSEL_ADDR
 #define	VCORE_VOSEL_SW_MASK		MT6351_PMIC_BUCK_VCORE_VOSEL_MASK
 #define	VCORE_VOSEL_SW_SHIFT		MT6351_PMIC_BUCK_VCORE_VOSEL_SHIFT
@@ -107,7 +107,7 @@ void msdc_fpga_pwr_init(void);
 #define REG_VIO18_CAL			MT6351_PMIC_RG_VIO18_CAL_ADDR
 #define VIO18_CAL_MASK			MT6351_PMIC_RG_VIO18_CAL_MASK
 #define VIO18_CAL_SHIFT			MT6351_PMIC_RG_VIO18_CAL_SHIFT
-
+#endif
 #define CARD_VOL_ACTUAL			VOL_2900
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on);
@@ -436,6 +436,7 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 
 #ifndef FPGA_PLATFORM
 void msdc_set_driving_by_id(u32 id, struct msdc_hw *hw, bool sd_18);
+void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18);
 void msdc_get_driving_by_id(u32 id, struct msdc_hw *hw);
 void msdc_set_ies_by_id(u32 id, int set_ies);
 void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat);
@@ -450,6 +451,7 @@ void msdc_dump_padctl_by_id(u32 id);
 void msdc_pin_config_by_id(u32 id, u32 mode);
 #else
 #define msdc_set_driving_by_id(id, hw, sd_18)
+#define msdc_set_driving(host, hw, sd_18)
 #define msdc_get_driving_by_id(host, hw)
 #define msdc_set_ies_by_id(id, set_ies)
 #define msdc_set_sr_by_id(id, clk, cmd, dat)
@@ -467,9 +469,6 @@ void msdc_pin_config_by_id(u32 id, u32 mode);
 
 #define msdc_get_driving(host, hw) \
 	msdc_get_driving_by_id(host->id, hw)
-
-#define msdc_set_driving(host, hw, sd_18) \
-	msdc_set_driving_by_id(host->id, hw, sd_18)
 
 #define msdc_set_ies(host, set_ies) \
 	msdc_set_ies_by_id(host->id, set_ies)
