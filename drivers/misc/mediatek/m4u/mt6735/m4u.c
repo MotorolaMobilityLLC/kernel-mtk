@@ -16,7 +16,6 @@
 #include <linux/timer.h>
 /* #include <asm/mach/map.h> */
 #include <mt-plat/sync_write.h>
-#include <mach/mt_clkmgr.h>
 #include <linux/irq.h>
 #include <asm/cacheflush.h>
 /* #include <asm/system.h> */
@@ -2163,7 +2162,7 @@ static const struct file_operations m4u_fops = {
 		/* .mmap = NULL; */
 };
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 const char *smi_clk_name[] = { "smi_common", "m4u_disp0_smi_larb0",
 		"m4u_vdec0_vdec", "m4u_vdec1_larb", "m4u_img_image_larb2_smi",
 		"m4u_venc_venc", "m4u_venc_larb" };
@@ -2171,7 +2170,7 @@ const char *smi_clk_name[] = { "smi_common", "m4u_disp0_smi_larb0",
 
 static int m4u_probe(struct platform_device *pdev)
 {
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	int i;
 #endif
 	struct device_node *node = pdev->dev.of_node;
@@ -2191,7 +2190,7 @@ static int m4u_probe(struct platform_device *pdev)
 	gM4uDev->m4u_base[pdev->id] = (unsigned long) of_iomap(node, 0);
 	gM4uDev->irq_num[pdev->id] = irq_of_parse_and_map(node, 0);
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	gM4uDev->infra_m4u = devm_clk_get(&pdev->dev, "infra_m4u");
 	if (IS_ERR(gM4uDev->infra_m4u)) {
 		M4UMSG("cannot get infra m4u clock\n");
@@ -2422,7 +2421,7 @@ static int __init MTK_M4U_Init(void)
 
 static int __init mtk_m4u_late_init(void)
 {
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	smi_common_clock_off();
 #endif
 return 0;

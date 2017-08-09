@@ -1,6 +1,5 @@
 #include <linux/slab.h>
 #include <linux/interrupt.h>
-#include <mach/mt_clkmgr.h>
 
 #include "m4u_priv.h"
 #include "m4u_hw.h"
@@ -795,7 +794,7 @@ int m4u_power_off(int m4u_index)
 
 static int m4u_clock_on(void)
 {
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 /* no m4u, smi CG */
 	enable_clock(MT_CG_INFRA_M4U, "infra_m4u");
 /* enable_clock(MT_CG_INFRA_SMI, "infra_smi"); */
@@ -813,7 +812,7 @@ static int m4u_clock_on(void)
 /*
 static int m4u_clock_off(void)
 {
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
     disable_clock(MT_CG_INFRA_M4U, "infra_m4u");
     disable_clock(MT_CG_INFRA_SMI, "infra_smi");
 #else
@@ -826,7 +825,7 @@ static int m4u_clock_off(void)
 
 static int larb_clock_on(int larb)
 {
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 	switch (larb) {
 	case 0:
 		enable_clock(MT_CG_DISP0_SMI_LARB0, "m4u_larb0");
@@ -891,7 +890,7 @@ static int larb_clock_on(int larb)
 
 static int larb_clock_off(int larb)
 {
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 	switch (larb) {
 	case 0:
 		disable_clock(MT_CG_DISP0_SMI_LARB0, "m4u_larb0");
@@ -960,7 +959,7 @@ static int larb_clock_all_off(void)
 
 void smi_common_clock_on(void)
 {
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "smi_common");
 	/* m4uHw_set_field_by_mask(0, 0xf4000108, 0x1, 0x1); */
 #else
@@ -974,7 +973,7 @@ EXPORT_SYMBOL(smi_common_clock_on);
 
 void smi_common_clock_off(void)
 {
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "smi_common");
 	/* m4uHw_set_field_by_mask(0, 0xf4000108, 0x1, 0x0); */
 #else

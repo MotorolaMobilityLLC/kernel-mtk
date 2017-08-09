@@ -61,8 +61,14 @@
 #define register_larb_monitor(...)
 #endif
 
-#if !defined(CONFIG_MTK_LEGACY)
+
+#ifdef CONFIG_MTK_CLKMGR
+#include <mach/mt_clkmgr.h>
+#else
 #include <linux/clk.h>
+#endif
+
+#if !defined(CONFIG_MTK_CLKMGR)
 
 enum {
 	SMI_COMMON_CLK,
@@ -75,7 +81,7 @@ enum {
 	SMI_CLK_NUM,
 };
 
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 struct m4u_device {
 	struct miscdevice dev;
@@ -84,7 +90,7 @@ struct m4u_device {
 	struct dentry *debug_root;
 	unsigned long m4u_base[TOTAL_M4U_NUM];
 	unsigned int irq_num[TOTAL_M4U_NUM];
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	struct clk *infra_m4u;
 	struct clk *smi_clk[SMI_CLK_NUM];
 #endif
