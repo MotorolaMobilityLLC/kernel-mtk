@@ -5,7 +5,7 @@
 #ifndef __KREE_H__
 #define __KREE_H__
 
-#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
+#if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) || defined(CONFIG_TRUSTY)
 
 #include "trustzone/tz_cross/trustzone.h"
 
@@ -46,5 +46,5 @@ TZ_RESULT KREE_CloseSession(KREE_SESSION_HANDLE handle);
 TZ_RESULT KREE_TeeServiceCall(KREE_SESSION_HANDLE handle, uint32_t command,
 			      uint32_t paramTypes, MTEEC_PARAM param[4]);
 
-#endif				/* CONFIG_MTK_IN_HOUSE_TEE_SUPPORT */
+#endif				/* CONFIG_MTK_IN_HOUSE_TEE_SUPPORT || CONFIG_TRUSTY */
 #endif				/* __KREE_H__ */

@@ -5,7 +5,7 @@
 #ifndef __KREE_TZ_IRQ_H__
 #define __KREE_TZ_IRQ_H__
 
-#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
+#if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) || defined(CONFIG_TRUSTY)
 
 void kree_irq_init(void);
 int kree_set_fiq(int irq, unsigned long irq_flags);
@@ -24,6 +24,6 @@ void kree_irq_mask_restore(unsigned int *pmask, unsigned int size);
 #define kree_enable_fiq(irq)
 #define kree_disable_fiq(irq)
 
-#endif				/* CONFIG_MTK_IN_HOUSE_TEE_SUPPORT */
+#endif				/* CONFIG_MTK_IN_HOUSE_TEE_SUPPORT || CONFIG_TRUSTY */
 
 #endif				/* __KREE_TZ_IRQ_H__ */

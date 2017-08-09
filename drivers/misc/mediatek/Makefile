@@ -139,6 +139,9 @@ obj-$(CONFIG_GATOR_DRIVER) += gator-driver/
 endif # gator-driver folder exist
 
 obj-$(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) += trustzone/
+ifeq ($(CONFIG_HAVE_MTK_IN_HOUSE_TEE_SUPPORT),y)
+obj-$(CONFIG_TRUSTY) += trustzone/
+endif
 
 ifneq (,$(filter $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6580) $(CONFIG_ARCH_MT8173) $(CONFIG_ARCH_MT6755), y))
 obj-$(CONFIG_THERMAL)   += thermal/

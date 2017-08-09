@@ -5,7 +5,7 @@
 #ifndef __KREE_MEM_H__
 #define __KREE_MEM_H__
 
-#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
+#if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) || defined(CONFIG_TRUSTY)
 
 #include "tz_cross/trustzone.h"
 
@@ -338,5 +338,5 @@ TZ_RESULT KREE_StopSecurechunkmemSvc(KREE_SESSION_HANDLE session,
 TZ_RESULT KREE_QuerySecurechunkmem(KREE_SESSION_HANDLE session,
 				unsigned long *cm_pa, uint32_t *size);
 
-#endif				/* CONFIG_MTK_IN_HOUSE_TEE_SUPPORT */
+#endif				/* CONFIG_MTK_IN_HOUSE_TEE_SUPPORT || CONFIG_TRUSTY*/
 #endif				/* __KREE_MEM_H__ */
