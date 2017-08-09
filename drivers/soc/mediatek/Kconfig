@@ -22,6 +22,7 @@ config MTK_SCPSYS
 	depends on MTK_INFRACFG
 	select SOC_MEDIATEK
 	select REGMAP
+	select PM_GENERIC_DOMAINS
 	help
 	  Say yes here to add support for the MediaTek SCPSYS power domain
 	  driver.
