@@ -685,8 +685,8 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 		pr_debug("[LP] end: %d, flag:%d,%d\n", end_cnt++, atomic_read(&isDdp_Idle),
 			 atomic_read(&idle_detect_flag));
 		if (enter_cnt != end_cnt) {
-			pr_debug("[LP][ASSERT]%d, %d, %d\n", enter_cnt, end_cnt, stop_cnt);
-			ASSERT(0);
+			pr_err("[LP][ASSERT]%d, %d, %d\n", enter_cnt, end_cnt, stop_cnt);
+			/* ASSERT(0); */
 		}
 	}
 
