@@ -2404,7 +2404,7 @@ static int __init dram_4gb_init(void)
 	struct device_node *node;
 
 	/* get the information for 4G mode */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-infrasys");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
 	if (node) {
 		INFRASYS_BASE_ADDR = of_iomap(node, 0);
 	} else {
