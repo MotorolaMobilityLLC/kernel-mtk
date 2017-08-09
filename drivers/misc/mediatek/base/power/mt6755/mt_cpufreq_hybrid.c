@@ -52,8 +52,6 @@
 /**************************************
  * [Hybrid DVFS] Parameter
  **************************************/
-#define NUM_CPU_OPP		8
-
 #define ENTRY_EACH_LOG		3
 
 
