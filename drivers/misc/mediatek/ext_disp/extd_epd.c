@@ -97,7 +97,7 @@ static void _epd_rdma_irq_handler(DISP_MODULE_ENUM module, unsigned int param)
 /* extern int ddp_dpi_dump(DISP_MODULE_ENUM module, int level); */
 static int epd_fence_release_kthread(void *data)
 {
-	struct sched_param param = {.sched_priority = RTPM_PRIO_SCRN_UPDATE };
+	struct sched_param param = {.sched_priority = 94 }; /*RTPM_PRIO_SCRN_UPDATE*/
 
 	sched_setscheduler(current, SCHED_RR, &param);
 

@@ -302,10 +302,10 @@ int hdmi_free_hdmi_buffer(void)
 static int hdmi_wait_vsync_kthread(void *data)
 {
 	disp_session_vsync_config vsync_config;
-/*
-	struct sched_param param = {.sched_priority = RTPM_PRIO_SCRN_UPDATE };
+
+	struct sched_param param = {.sched_priority = 94 }; /*RTPM_PRIO_SCRN_UPDATE*/
 	sched_setscheduler(current, SCHED_RR, &param);
-*/
+
 
 	for (;;) {
 		ext_disp_wait_for_vsync((void *)&vsync_config, MHL_SESSION_ID);
