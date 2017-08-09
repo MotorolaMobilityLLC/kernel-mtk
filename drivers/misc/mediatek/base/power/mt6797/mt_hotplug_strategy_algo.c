@@ -297,7 +297,7 @@ void hps_algo_main(void)
 			}
 		}
 	}
-	if (infoIdvfs != 0x55) {
+	if (get_efuse_status() != 0) {
 		if (hps_algo_heavytsk_det())
 			hps_sys.action_id = 0xE1;
 	}
