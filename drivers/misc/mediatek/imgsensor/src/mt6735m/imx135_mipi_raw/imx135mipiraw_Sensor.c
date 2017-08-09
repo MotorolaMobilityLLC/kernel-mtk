@@ -268,7 +268,7 @@ static imgsensor_info_struct imgsensor_info = {
     .custom4_delay_frame = 2,
     .custom5_delay_frame = 2,
 
-    .isp_driving_current = ISP_DRIVING_2MA,
+    .isp_driving_current = ISP_DRIVING_4MA,
     .sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,
     .mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
     .mipi_settle_delay_mode = MIPI_SETTLEDELAY_AUTO, //0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
@@ -276,7 +276,7 @@ static imgsensor_info_struct imgsensor_info = {
     .mclk = 24,
     .mipi_lane_num = SENSOR_MIPI_4_LANE,
     .i2c_addr_table = {0x20, 0x40, 0xff},
-    .i2c_speed = 300, // i2c read/write speed
+    .i2c_speed = 200, // i2c read/write speed
 };
 
 
@@ -667,7 +667,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
     write_cmos_sensor(0x0204, (reg_gain>>8)& 0xFF);
     write_cmos_sensor(0x0205, reg_gain & 0xFF);
     // SE  Gain
-    write_cmos_sensor(0x0233, reg_gain & 0xFF);
+    //write_cmos_sensor(0x0233, reg_gain & 0xFF);
     write_cmos_sensor_8(0x0104, 0x00);
 
     return gain;
@@ -692,6 +692,10 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
             if (le < imgsensor_info.min_shutter) le = imgsensor_info.min_shutter;
             if (se < imgsensor_info.min_shutter) se = imgsensor_info.min_shutter;
 
+        // Framelength should be an even number
+        le = (le >> 1) << 1;
+        se = (se >> 1) << 1;
+        imgsensor.frame_length = (imgsensor.frame_length >> 1) << 1;
 
         // Extend frame length
         write_cmos_sensor_8(0x0104, 0x01);
@@ -739,7 +743,7 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 static void ihdr_write_shutter(kal_uint16 le, kal_uint16 se)
 {
     kal_uint8 iRation;
-    kal_uint8 iReg;
+    //kal_uint8 iReg;
 
     LOG_INF("le:0x%x, se:0x%x\n",le,se);
     if (imgsensor.ihdr_en) {
@@ -2977,13 +2981,14 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                     memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[0],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
                     break;
             }
+			break;
         case SENSOR_FEATURE_SET_IHDR_SHUTTER_GAIN:
             LOG_INF("SENSOR_SET_SENSOR_IHDR LE=%d, SE=%d, Gain=%d\n",(UINT16)*feature_data,(UINT16)*(feature_data+1),(UINT16)*(feature_data+2));
             ihdr_write_shutter_gain((UINT16)*feature_data,(UINT16)*(feature_data+1),(UINT16)*(feature_data+2));
             break;
         case SENSOR_FEATURE_SET_HDR_SHUTTER:
             LOG_INF("SENSOR_FEATURE_SET_HDR_SHUTTER LE=%d, SE=%d\n",(UINT16)*feature_data,(UINT16)*(feature_data+1));
-            ihdr_write_shutter_gain((UINT16)*feature_data,(UINT16)*(feature_data+1),(UINT16)*(feature_data+2));
+            ihdr_write_shutter((UINT16)*feature_data,(UINT16)*(feature_data+1));
             break;
         default:
             break;
