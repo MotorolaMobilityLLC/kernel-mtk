@@ -4451,7 +4451,7 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		}
 
 		/* autok failed three times will try reinit tuning */
-		if (host->reautok_times >= 4) {
+		if ((host->reautok_times >= 4) || (host->tune_smpl_times >= 4)) {
 recovery:
 			pr_err("msdc%d autok error\n", host->id);
 			/* eMMC will chang to HS200 and lower frequence */
