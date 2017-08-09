@@ -1499,7 +1499,7 @@ static ssize_t store_Charging_CallState(struct device *dev, struct device_attrib
 
 	/*rv = sscanf(buf, "%u", &g_call_state);*/
 	rv = kstrtouint(buf, 0, &g_call_state);
-	if (rv != 1)
+	if (rv != 0)
 		return -EINVAL;
 	battery_log(BAT_LOG_CRTI, "call state = %d\n", g_call_state);
 	return size;
@@ -1522,7 +1522,7 @@ static ssize_t store_V_0Percent_Tracking(struct device *dev, struct device_attri
 
 	/*rv = sscanf(buf, "%u", &V_0Percent_Tracking);*/
 	rv = kstrtouint(buf, 0, &V_0Percent_Tracking);
-	if (rv != 1)
+	if (rv != 0)
 		return -EINVAL;
 	battery_log(BAT_LOG_CRTI, "V_0Percent_Tracking = %d\n", V_0Percent_Tracking);
 	return size;
@@ -1589,7 +1589,7 @@ static ssize_t store_Pump_Express(struct device *dev, struct device_attribute *a
 
 	/*rv = sscanf(buf, "%u", &is_ta_connect);*/
 	rv = kstrtouint(buf, 0, &is_ta_connect);
-	if (rv != 1)
+	if (rv != 0)
 		return -EINVAL;
 	battery_log(BAT_LOG_CRTI, "Pump express= %d\n", is_ta_connect);
 	return size;
@@ -3945,13 +3945,15 @@ static ssize_t store_BatteryNotify(struct device *dev, struct device_attribute *
 				   const char *buf, size_t size)
 {
 	/*char *pvalue = NULL;*/
-	unsigned int reg_BatteryNotifyCode = 0;
-	unsigned long val;
+	int rv;
+	unsigned long reg_BatteryNotifyCode = 0;
 
 	battery_log(BAT_LOG_CRTI, "[Battery] store_BatteryNotify\n");
 	if (buf != NULL && size != 0) {
 		battery_log(BAT_LOG_CRTI, "[Battery] buf is %s and size is %Zu\n", buf, size);
-		reg_BatteryNotifyCode = kstrtoul(buf, 16, &val);
+		rv = kstrtoul(buf, 0, &reg_BatteryNotifyCode);
+		if (rv != 0)
+			return -EINVAL;
 		g_BatteryNotifyCode = reg_BatteryNotifyCode;
 		battery_log(BAT_LOG_CRTI, "[Battery] store code : %x\n", g_BatteryNotifyCode);
 	}
@@ -3970,13 +3972,15 @@ static ssize_t store_BN_TestMode(struct device *dev, struct device_attribute *at
 				 size_t size)
 {
 	/*char *pvalue = NULL;*/
-	unsigned long pval;
-	unsigned int reg_BN_TestMode = 0;
+	int rv;
+	unsigned long reg_BN_TestMode = 0;
 
 	battery_log(BAT_LOG_CRTI, "[Battery] store_BN_TestMode\n");
 	if (buf != NULL && size != 0) {
 		battery_log(BAT_LOG_CRTI, "[Battery] buf is %s and size is %Zu\n", buf, size);
-		reg_BN_TestMode = kstrtoul(buf, 16, &pval);
+		rv = kstrtoul(buf, 0, &reg_BN_TestMode);
+		if (rv != 0)
+			return -EINVAL;
 		g_BN_TestMode = reg_BN_TestMode;
 		battery_log(BAT_LOG_CRTI, "[Battery] store g_BN_TestMode : %x\n", g_BN_TestMode);
 	}
