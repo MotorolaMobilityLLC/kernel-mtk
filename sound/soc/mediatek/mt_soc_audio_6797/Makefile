@@ -1,14 +1,17 @@
 # MTK Platform Support
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+# include path
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
-# ccflags-y += -D_GIT318_READY # uncomment after ready
-ccflags-y += -D_GIT318_PMIC_READY# uncomment after ready
-
+# flags for not ready feature, uncomment after ready
+ccflags-y += -D_GIT318_READY
+ccflags-y += -D_GIT318_PMIC_READY
 ccflags-y += -DAUDIO_USING_WRAP_DRIVER
-# ccflags-y += -D_MT_IDLE_HEADER # uncomment after ready
+ccflags-y += -D_MT_IDLE_HEADER
+#
 EXTRA_CFLAGS := -I$(src)/../common
 obj-$(CONFIG_MT_SND_SOC_6797) += AudDrv_Afe.o AudDrv_Ana.o AudDrv_Clk.o AudDrv_Gpio.o
 obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_afe_control.o mt_soc_afe_connection.o mt_soc_pcm_common.o mt_soc_offload_gdma.o mt_soc_offload_common.o

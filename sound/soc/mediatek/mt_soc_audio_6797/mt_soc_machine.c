@@ -169,8 +169,16 @@ static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
 				     size_t count, loff_t *pos)
 {
 	const int size = 4096;
-	char buffer[size];
+	/* char buffer[size]; */
+	char *buffer = NULL; /* for reduce kernel stack */
 	int n = 0;
+	int ret = 0;
+
+	buffer = kmalloc(size, GFP_KERNEL);
+	if (!buffer) {
+		kfree(buffer);
+		return -ENOMEM;
+	}
 
 	pr_debug("mt_soc_ana_debug_read count = %zu\n", count);
 	AudDrv_Clk_On();
@@ -430,7 +438,9 @@ static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
 	audckbufEnable(false);
 	AudDrv_Clk_Off();
 
-	return simple_read_from_buffer(buf, count, pos, buffer, n);
+	ret = simple_read_from_buffer(buf, count, pos, buffer, n);
+	kfree(buffer);
+	return ret;
 }
 
 
@@ -444,8 +454,16 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 				size_t count, loff_t *pos)
 {
 	const int size = 4096;
-	char buffer[size];
+	/* char buffer[size]; */
+	char *buffer = NULL; /* for reduce kernel stack */
 	int n = 0;
+	int ret = 0;
+
+	buffer = kmalloc(size, GFP_KERNEL);
+	if (!buffer) {
+		kfree(buffer);
+		return -ENOMEM;
+	}
 
 	AudDrv_Clk_On();
 
@@ -766,7 +784,9 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 	pr_debug("mt_soc_debug_read len = %d\n", n);
 	AudDrv_Clk_Off();
 
-	return  simple_read_from_buffer(buf, count, pos, buffer, n);
+	ret = simple_read_from_buffer(buf, count, pos, buffer, n);
+	kfree(buffer);
+	return ret;
 }
 
 static char const ParSetkeyAfe[] = "Setafereg";

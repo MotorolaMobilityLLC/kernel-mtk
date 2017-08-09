@@ -649,12 +649,11 @@ AudDrv_IRQ_handler_exit:
 
 uint32 GetApllbySampleRate(uint32 SampleRate)
 {
-	if (SampleRate == 176400 || SampleRate == 88200 || SampleRate == 44100
-	    || SampleRate == 22050 || SampleRate == 11025) {
+	if (SampleRate == 176400 || SampleRate == 88200 || SampleRate == 44100 ||
+	    SampleRate == 22050 || SampleRate == 11025)
 		return Soc_Aud_APLL1;
-	} else {
+	else
 		return Soc_Aud_APLL2;
-	}
 }
 
 
@@ -952,7 +951,7 @@ void EnableAfe(bool bEnable)
 	MemEnable = CheckMemIfEnable();
 
 	if (false == bEnable && false == MemEnable) {
-		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x0);
+		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_OF
 		AudDrv_GPIO_PMIC_Select(bEnable);

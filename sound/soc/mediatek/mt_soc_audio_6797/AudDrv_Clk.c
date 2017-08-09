@@ -1787,8 +1787,8 @@ void AudDrv_Emi_Clk_On(void)
 	if (Aud_EMI_cntr == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef _MT_IDLE_HEADER
-		disable_dpidle_by_bit(MT_CG_AUDIO_AFE);
-		disable_soidle_by_bit(MT_CG_AUDIO_AFE);
+		disable_dpidle_by_bit(MT_CG_ID_AUDIO_AFE);
+		disable_soidle_by_bit(MT_CG_ID_AUDIO_AFE);
 #endif
 #endif
 	}
@@ -1803,8 +1803,8 @@ void AudDrv_Emi_Clk_Off(void)
 	if (Aud_EMI_cntr == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef _MT_IDLE_HEADER
-		enable_dpidle_by_bit(MT_CG_AUDIO_AFE);
-		enable_soidle_by_bit(MT_CG_AUDIO_AFE);
+		enable_dpidle_by_bit(MT_CG_ID_AUDIO_AFE);
+		enable_soidle_by_bit(MT_CG_ID_AUDIO_AFE);
 #endif
 #endif
 	}

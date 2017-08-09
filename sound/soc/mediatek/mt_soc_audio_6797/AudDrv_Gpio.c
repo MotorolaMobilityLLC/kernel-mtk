@@ -70,9 +70,9 @@ enum audio_system_gpio_type {
 	GPIO_EXTAMP2_HIGH,
 	GPIO_EXTAMP2_LOW,
 	GPIO_RCVSPK_HIGH,
-	GPIO_RCVSPK_LOW,
+	GPIO_RCVSPK_LOW,*/
 	GPIO_HPDEPOP_HIGH,
-	GPIO_HPDEPOP_LOW,*/
+	GPIO_HPDEPOP_LOW,
 	GPIO_NUM
 };
 
@@ -98,9 +98,9 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 	[GPIO_EXTAMP2_HIGH] = {"audextamp2_high", false, NULL},
 	[GPIO_EXTAMP2_LOW] = {"audextamp2_low", false, NULL},
 	[GPIO_RCVSPK_HIGH] = {"audcvspk_high", false, NULL},
-	[GPIO_RCVSPK_LOW] = {"audcvspk_low", false, NULL},
+	[GPIO_RCVSPK_LOW] = {"audcvspk_low", false, NULL},*/
 	[GPIO_HPDEPOP_HIGH] = {"hpdepop-pullhigh", false, NULL},
-	[GPIO_HPDEPOP_LOW] = {"hpdepop-pulllow", false, NULL},*/
+	[GPIO_HPDEPOP_LOW] = {"hpdepop-pulllow", false, NULL},
 };
 #endif
 
@@ -416,7 +416,6 @@ int AudDrv_GPIO_RCVSPK_Select(int bEnable)
 int AudDrv_GPIO_HPDEPOP_Select(int bEnable)
 {
 	int retval = 0;
-#if 0
 	if (bEnable == 1) {
 		if (aud_gpios[GPIO_HPDEPOP_LOW].gpio_prepare) {
 			retval =
@@ -433,6 +432,5 @@ int AudDrv_GPIO_HPDEPOP_Select(int bEnable)
 		}
 
 	}
-#endif
 	return retval;
 }

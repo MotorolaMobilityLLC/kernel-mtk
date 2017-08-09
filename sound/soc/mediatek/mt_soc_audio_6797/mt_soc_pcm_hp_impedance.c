@@ -62,7 +62,7 @@
 
 static AFE_MEM_CONTROL_T *pHp_impedance_MemControl;
 /* static const int DCoffsetDefault = 1500;  //95: 1622 */
-static const int DCoffsetDefault = 1460;  /* denali: 1460 */
+static const int DCoffsetDefault = 1620;  /* Jade: 1620 */
 
 static const int DCoffsetVariance = 200;    /* denali 0.2v */
 
@@ -70,7 +70,7 @@ static const int mDcRangestep = 7;
 static const int HpImpedancePhase1Step = 150;
 static const int HpImpedancePhase2Step = 400;
 static const int HpImpedancePhase1AdcValue = 1200;
-static const int HpImpedancePhase2AdcValue = 7200;
+static const int HpImpedancePhase2AdcValue = 9300;
 static struct snd_dma_buffer *Dl1_Playback_dma_buf;
 
 /* extern int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd); */
@@ -411,7 +411,8 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 }
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-static int phase1table[] = {7, 13};
+/* static int phase1table[] = {7, 13}; */
+static int phase1table[] = {10, 18};	/* Jade Phone */
 static unsigned short Phase1Check(unsigned short adcvalue,
 				  unsigned int adcoffset)
 {
@@ -429,7 +430,8 @@ static unsigned short Phase1Check(unsigned short adcvalue,
 		return 0;
 }
 
-static int phase2table[] = {10, 26};
+/* static int phase2table[] = {10, 26}; */
+static int phase2table[] = {34, 50};	/* Jade Phone */
 static unsigned short Phase2Check(unsigned short adcvalue,
 				  unsigned int adcoffset)
 {

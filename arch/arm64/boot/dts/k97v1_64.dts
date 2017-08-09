@@ -656,7 +656,9 @@
 			"aud_smartpa_mode1",
 			"aud_smartpa_mode3",
 			"aud_tdm_mode0",
-			"aud_tdm_mode1";
+			"aud_tdm_mode1",
+			"hpdepop-pullhigh",
+			"hpdepop-pulllow";
 	pinctrl-0 = <&aud_pins_pmicclk_mode0>;
 	pinctrl-1 = <&aud_pins_pmicclk_mode1>;
 	pinctrl-2 = <&aud_pins_smartpa_mode0>;
@@ -664,6 +666,8 @@
 	pinctrl-4 = <&aud_pins_smartpa_mode3>;
 	pinctrl-5 = <&aud_pins_tdm_mode0>;
 	pinctrl-6 = <&aud_pins_tdm_mode1>;
+	pinctrl-7 = <&aud_pins_hpdepop_high>;
+	pinctrl-8 = <&aud_pins_hpdepop_low>;
 	status = "okay";
 };
 
@@ -772,6 +776,23 @@
 			pins = <PINMUX_GPIO138__FUNC_TDM_DATA0>;
 		};
 	};
+
+	aud_pins_hpdepop_high: audhpdepophigh {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO111__FUNC_GPIO111>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	aud_pins_hpdepop_low: audhpdepoplow {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO111__FUNC_GPIO111>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
 	/* external amp support */
 	max98926L@31 {
 		compatible = "maxim,max98926L";

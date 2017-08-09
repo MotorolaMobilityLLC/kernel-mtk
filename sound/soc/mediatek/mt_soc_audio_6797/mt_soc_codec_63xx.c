@@ -87,8 +87,6 @@
 #include "../../../../drivers/misc/mediatek/auxadc/mt6755/mt_auxadc_sw.h"
 #endif
 
-/*#define HP_HW_DEPOP*//* hw depop from 6755 */
-
 /* static function declaration */
 static bool AudioPreAmp1_Sel(int Mul_Sel);
 static bool GetAdcStatus(void);
@@ -128,6 +126,8 @@ static const int DC1unit_in_uv = 19184;	/* in uv with 0DB */
 /* static const int DC1unit_in_uv = 21500; */	/* in uv with 0DB */
 static const int DC1devider = 8;	/* in uv */
 
+static unsigned int mUseHpDepopFlow;
+
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef EFUSE_HP_TRIM
 static unsigned int RG_AUDHPLTRIM_VAUDP15, RG_AUDHPRTRIM_VAUDP15, RG_AUDHPLFINETRIM_VAUDP15,
@@ -139,12 +139,6 @@ static unsigned int RG_AUDHPLTRIM_VAUDP15, RG_AUDHPRTRIM_VAUDP15, RG_AUDHPLFINET
 static unsigned int pin_extspkamp, pin_extspkamp_2, pin_vowclk, pin_audmiso, pin_rcvspkswitch;
 static unsigned int pin_mode_extspkamp, pin_mode_extspkamp_2, pin_mode_vowclk, pin_mode_audmiso,
 	pin_mode_rcvspkswitch;
-
-#ifdef HP_HW_DEPOP
-static unsigned int pin_hpswitchtoground;
-static unsigned int pin_mode_hpswitchtoground;
-#endif
-
 
 #ifdef CONFIG_MTK_SPEAKER
 static int Speaker_mode = AUDIO_SPEAKER_MODE_AB;
@@ -588,6 +582,10 @@ void OpenTrimBufferHardware(bool enable)
 	if (enable) {
 		pr_warn("%s true\n", __func__);
 		TurnOnDacPower();
+
+		/* AUXADC large scale - AUXADC_CON2(AUXADC ADC AVG SELECTION[9]) */
+		Ana_Set_Reg(0x0EAA, 0x0200, 0x0200);
+
 		/* set analog part (HP playback) */
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0xA000);
 		/* Enable cap-less LDOs (1.6V) */
@@ -741,6 +739,21 @@ void OpenAnalogHeadphone(bool bEnable)
 	}
 }
 
+static void HP_Switch_to_Ground(void)
+{
+	if (mUseHpDepopFlow) {
+		AudDrv_GPIO_HPDEPOP_Select(true);
+		udelay(10);
+	}
+}
+
+static void HP_Switch_to_Release(void)
+{
+	if (mUseHpDepopFlow) {
+		AudDrv_GPIO_HPDEPOP_Select(false);
+	}
+}
+
 bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 {
 	pr_warn("%s benable = %d\n", __func__, bEnable);
@@ -763,6 +776,7 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, 0x7f00, 0xffff);
 		Ana_Set_Reg(AFE_DL_DC_COMP_CFG2, 0x0001, 0xffff);
 #endif
+		HP_Switch_to_Ground();
 
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0xA000);
 		/* Enable cap-less LDOs (1.6V) */
@@ -785,7 +799,12 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Enable LCH Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON5, 0x0009, 0xffff);
 		/* Select HPR as HPDET output and select DACLP as HPDET circuit input */
+
+		/* HP output swtich release to normal output */
+		HP_Switch_to_Release();
 	} else {
+		HP_Switch_to_Ground();
+
 		Ana_Set_Reg(AUDDEC_ANA_CON5, 0x0000, 0xffff);
 		/* Disable headphone speaker detection */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE080, 0xffff);
@@ -802,6 +821,10 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Disable cap-less LDOs (1.6V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON1, 0x2000, 0x2000);
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE000, 0xffff);
+
+		/* HP output swtich release to normal output */
+		HP_Switch_to_Release();
+
 		TurnOffDacPower();
 	}
 	return true;
@@ -825,15 +848,11 @@ static void SetHprOffset(int OffsetTrimming)
 	int DCoffsetValue = 0;
 	unsigned short RegValue = 0;
 
-	pr_warn("%s OffsetTrimming = %d\n", __func__, OffsetTrimming);
-	DCoffsetValue = OffsetTrimming * 1000000;
-	DCoffsetValue = (DCoffsetValue / DC1devider);	/* in uv */
-	pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue);
-	DCoffsetValue = (DCoffsetValue / DC1unit_in_uv);
-	pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue);
+	DCoffsetValue = (OffsetTrimming * 11250 + 2048) / 4096;
+	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
-	pr_warn("%s RegValue = 0x%x\n", __func__, RegValue);
+	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
 	Ana_Set_Reg(AFE_DL_DC_COMP_CFG1, RegValue, 0xffff);
 }
 
@@ -843,15 +862,11 @@ static void SetHplOffset(int OffsetTrimming)
 	int DCoffsetValue = 0;
 	unsigned short RegValue = 0;
 
-	pr_warn("%s OffsetTrimming = %d\n", __func__, OffsetTrimming);
-	DCoffsetValue = OffsetTrimming * 1000000;
-	DCoffsetValue = (DCoffsetValue / DC1devider);	/* in uv */
-	pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue);
-	DCoffsetValue = (DCoffsetValue / DC1unit_in_uv);
-	pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue);
+	DCoffsetValue = (OffsetTrimming * 11250 + 2048) / 4096;
+	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
-	pr_warn("%s RegValue = 0x%x\n", __func__, RegValue);
+	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
 	Ana_Set_Reg(AFE_DL_DC_COMP_CFG0, RegValue, 0xffff);
 }
 
@@ -865,16 +880,16 @@ static void EnableDcCompensation(bool bEnable)
 static void SetHprOffsetTrim(void)
 {
 	int OffsetTrimming = mHprTrimOffset - TrimOffset;
-
-	pr_warn("%s mHprTrimOffset = %d TrimOffset = %d\n", __func__, mHprTrimOffset, TrimOffset);
+	pr_warn("%s OffsetTrimming = %d (mHprTrimOffset(%d)- TrimOffset(%d))\n", __func__,
+		OffsetTrimming, mHprTrimOffset, TrimOffset);
 	SetHprOffset(OffsetTrimming);
 }
 
 static void SetHpLOffsetTrim(void)
 {
 	int OffsetTrimming = mHplTrimOffset - TrimOffset;
-
-	pr_warn("%s mHprTrimOffset = %d TrimOffset = %d\n", __func__, mHplTrimOffset, TrimOffset);
+	pr_warn("%s OffsetTrimming = %d (mHplTrimOffset(%d)- TrimOffset(%d))\n", __func__,
+		OffsetTrimming, mHplTrimOffset, TrimOffset);
 	SetHplOffset(OffsetTrimming);
 }
 
@@ -1425,19 +1440,6 @@ static void HeadsetVoloumeSet(void)
 	Ana_Set_Reg(ZCD_CON2, (index << 7) | (index), 0xf9f);
 }
 
-#ifdef HP_HW_DEPOP
-static void HP_Switch_to_Ground(void)
-{
-	AudDrv_GPIO_HPDEPOP_Select(true);
-	udelay(10);
-}
-
-static void HP_Switch_to_Release(void)
-{
-	AudDrv_GPIO_HPDEPOP_Select(false);
-}
-#endif
-
 static void Audio_Amp_Change(int channels, bool enable)
 {
 	if (enable) {
@@ -1449,10 +1451,10 @@ static void Audio_Amp_Change(int channels, bool enable)
 		    && mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] ==
 		    false) {
 			pr_warn("%s\n", __func__);
-#ifdef HP_HW_DEPOP
+
 			/* switch to ground to de pop-noise */
 			HP_Switch_to_Ground();
-#endif
+
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0xA000);
 			/* Enable cap-less LDOs (1.6V) */
 			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0100, 0x0100);
@@ -1505,19 +1507,14 @@ static void Audio_Amp_Change(int channels, bool enable)
 			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0300, 0xffff);
 			/* from yoyo HQA script */
 
-			/* apply volume setting */
-			HeadsetVoloumeSet();
-#ifdef HP_HW_DEPOP
 			/* HP output swtich release to normal output */
 			HP_Switch_to_Release();
-#endif
+
+			/* apply volume setting */
+			HeadsetVoloumeSet();
 		}
 
 	} else {
-#ifdef HP_HW_DEPOP
-		/* switch to ground to de pop-noise */
-		HP_Switch_to_Ground();
-#endif
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false
 		    && mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] ==
 		    false) {
@@ -1529,10 +1526,19 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* Ana_Set_Reg(ZCD_CON2, 0x0F9F, 0xffff); */
 			/* Set HPR/HPL gain as minimum (~ -40dB) */
 			setHpGainZero();
+
+			/* switch to ground to de pop-noise */
+			HP_Switch_to_Ground();
+
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF40F, 0xffff);
 			/* Disable HPR/HPL */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE00F, 0xffff);
 			/* HPR/HPL mux to open */
+
+			EnableDcCompensation(false);
+
+			/* HP output swtich release to normal output */
+			HP_Switch_to_Release();
 		}
 
 		if (GetDLStatus() == false) {
@@ -1552,12 +1558,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* De_OSC of HP */
 
 			TurnOffDacPower();
-#ifdef HP_HW_DEPOP
-			/* HP output swtich release to normal output */
-			HP_Switch_to_Release();
-#endif
 		}
-		EnableDcCompensation(false);
 	}
 }
 
@@ -2102,10 +2103,10 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			TurnOnDacPower();
 
 		pr_warn("%s\n", __func__);
-#ifdef HP_HW_DEPOP
+
 		/* switch to ground to de pop-noise */
 		HP_Switch_to_Ground();
-#endif
+
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0xA000);
 		/* Enable cap-less LDOs (1.6V) */
 		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0100, 0x0100);
@@ -2168,21 +2169,28 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0B00, 0xffff);
 		/* from yoyo HQA script */
 
+		/* HP output swtich release to normal output */
+		HP_Switch_to_Release();
+
 		/* apply volume setting */
 		HeadsetVoloumeSet();
 		Apply_Speaker_Gain();
-#ifdef HP_HW_DEPOP
-		/* HP output swtich release to normal output */
-		HP_Switch_to_Release();
-#endif
 	} else {
 		HeadsetVoloumeRestore();
 		/* Set HPR/HPL gain as 0dB, step by step */
 		setHpGainZero();
+
+		HP_Switch_to_Ground();
+		/* switch to ground to de pop-noise */
+
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xEA0F, 0xffff);
 		/* Disable HPR/HPL */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE00F, 0xffff);
 		/* HPR/HPL mux to open */
+
+		HP_Switch_to_Release();
+		/* HP output swtich release to normal output */
+
 		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x4230, 0xffff);
 		/* Disable LOL */
 		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x4228, 0xffff);
@@ -4478,6 +4486,8 @@ static const struct snd_soc_dapm_route mtk_audio_map[] = {
 static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 {
 	pr_warn("%s\n", __func__);
+
+	audckbufEnable(true);
 	Ana_Set_Reg(TOP_CLKSQ, 0x0, 0x0001);
 	/* Disable CLKSQ 26MHz */
 	Ana_Set_Reg(AUDDEC_ANA_CON9, 0x1000, 0x1000);
@@ -4488,6 +4498,7 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	/* Disable HeadphoneL/HeadphoneR/voice short circuit protection */
 	/* Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0x0010); */
 	/* power off mic bias1 */
+	audckbufEnable(false);
 }
 
 void InitCodecDefault(void)
@@ -4630,9 +4641,19 @@ static int mtk_mt6331_codec_dev_probe(struct platform_device *pdev)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 
 
-	if (pdev->dev.of_node)
+	if (pdev->dev.of_node) {
 		dev_set_name(&pdev->dev, "%s", MT_SOC_CODEC_NAME);
 
+		/* check if use hp depop flow */
+		of_property_read_u32(pdev->dev.of_node,
+				     "use_hp_depop_flow",
+				     &mUseHpDepopFlow);
+		pr_warn("%s(), use_hp_depop_flow = %d\n",
+			__func__,
+			mUseHpDepopFlow);
+	} else {
+		pr_warn("%s(), pdev->dev.of_node = NULL!!!\n", __func__);
+	}
 
 	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_codec(&pdev->dev,
