@@ -3261,7 +3261,7 @@ static void ISP_EnableClock(MBOOL En)
 		spin_lock(&(IspInfo.SpinLockClock));
 		G_u4EnableClockCount--;
 		spin_unlock(&(IspInfo.SpinLockClock));
-		/*Disable_Unprepare_ccf_clock();*/
+		Disable_Unprepare_ccf_clock();
 #endif
 	}
 }
