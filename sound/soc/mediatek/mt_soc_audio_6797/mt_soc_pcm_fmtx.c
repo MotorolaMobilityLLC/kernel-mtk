@@ -288,7 +288,7 @@ static int mtk_pcm_fmtx_hw_params(struct snd_pcm_substream *substream,
 static int mtk_pcm_fmtx_hw_free(struct snd_pcm_substream *substream)
 {
 	PRINTK_AUD_FMTX("mtk_pcm_fmtx_hw_free\n");
-	pr_warn("%s sunstream = %p\n", __func__, substream);
+	pr_warn("%s substream = %p\n", __func__, substream);
 	if (mPlaybackDramState == true) {
 		AudDrv_Emi_Clk_Off();
 		mPlaybackDramState = false;
@@ -326,11 +326,6 @@ static int mtk_pcm_fmtx_open(struct snd_pcm_substream *substream)
 
 	if (ret < 0)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_fmtx_playback_constraints\n");
-	else
-		pr_warn("SNDRV_PCM_STREAM_CAPTURE mtkalsa_fmtx_playback_constraints\n");
 
 	if (ret < 0) {
 		pr_err("ret < 0 mtkalsa_fmtx_playback close\n");

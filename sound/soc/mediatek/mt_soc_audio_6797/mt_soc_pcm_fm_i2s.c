@@ -207,10 +207,6 @@ static int mtk_pcm_fm_i2s_open(struct snd_pcm_substream *substream)
 	pr_warn("mtk_pcm_fm_i2s_open runtime rate = %d channels = %d substream->pcm->device = %d\n",
 	       runtime->rate, runtime->channels, substream->pcm->device);
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_fm_i2s_playback_constraints\n");
-
-
 	if (ret < 0) {
 		pr_err("mtk_pcm_fm_i2s_close\n");
 		mtk_pcm_fm_i2s_close(substream);

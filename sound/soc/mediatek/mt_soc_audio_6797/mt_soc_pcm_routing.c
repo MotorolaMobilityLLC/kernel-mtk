@@ -565,7 +565,7 @@ static int Audio_Mode_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 
 static int Audio_Irqcnt1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Audio_Irqcnt1_Get\n");
+	/*pr_warn("Audio_Irqcnt1_Get\n");*/
 	AudDrv_Clk_On();
 	ucontrol->value.integer.value[0] = Afe_Get_Reg(AFE_IRQ_MCU_CNT1);
 	AudDrv_Clk_Off();
@@ -586,7 +586,7 @@ static int Audio_Irqcnt1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 static int Audio_Irqcnt2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Audio_Irqcnt2_Get\n");
+	/*pr_warn("Audio_Irqcnt2_Get\n");*/
 	AudDrv_Clk_On();
 	ucontrol->value.integer.value[0] = Afe_Get_Reg(AFE_IRQ_MCU_CNT2);
 	AudDrv_Clk_Off();
@@ -930,9 +930,6 @@ static int mtk_routing_pcm_open(struct snd_pcm_substream *substream)
 	}
 	if (substream->pcm->device & 2)
 		runtime->hw.info &= ~(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID);
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_playback_constraints\n");
 
 	if (err < 0) {
 		pr_warn("mtk_routing_pcm_close\n");

@@ -105,7 +105,7 @@ static int mtk_dummypcm_close(struct snd_pcm_substream *substream)
 
 static int mtk_dummypcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_warn("dummy_pcm_trigger cmd = %d\n", cmd);
+	/*pr_warn("dummy_pcm_trigger cmd = %d\n", cmd);*/
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -121,7 +121,7 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream,
 			int channel, snd_pcm_uframes_t pos,
 			void __user *dst, snd_pcm_uframes_t count)
 {
-	pr_warn("dummy_pcm_copy pos = %lu count = %lu\n ", pos, count);
+	/*pr_warn("dummy_pcm_copy pos = %lu count = %lu\n ", pos, count);*/
 	return 0;
 }
 
@@ -129,7 +129,7 @@ static int mtk_pcm_silence(struct snd_pcm_substream *substream,
 			   int channel, snd_pcm_uframes_t pos,
 			   snd_pcm_uframes_t count)
 {
-	pr_warn("dummy_pcm_silence\n");
+	/*pr_warn("dummy_pcm_silence\n");*/
 	return 0; /* do nothing */
 }
 
@@ -139,13 +139,13 @@ static void *dummy_page[2];
 static struct page *mtk_pcm_page(struct snd_pcm_substream *substream,
 				 unsigned long offset)
 {
-	pr_warn("dummy_pcm_page\n");
+	/*pr_warn("dummy_pcm_page\n");*/
 	return virt_to_page(dummy_page[substream->stream]); /* the same page */
 }
 
 static int mtk_pcm_prepare(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_alsa_prepare\n");
+	/*pr_warn("mtk_alsa_prepare\n");*/
 	return 0;
 }
 
@@ -154,13 +154,13 @@ static int mtk_pcm_hw_params(struct snd_pcm_substream *substream,
 {
 	int ret = 0;
 
-	PRINTK_AUDDRV("mtk_pcm_hw_params\n");
+	/*PRINTK_AUDDRV("mtk_pcm_hw_params\n");*/
 	return ret;
 }
 
 static int mtk_dummy_pcm_hw_free(struct snd_pcm_substream *substream)
 {
-	PRINTK_AUDDRV("mtk_dummy_pcm_hw_free\n");
+	/*PRINTK_AUDDRV("mtk_dummy_pcm_hw_free\n");*/
 	return snd_pcm_lib_free_pages(substream);
 }
 

@@ -203,10 +203,6 @@ static int mtk_pcm_hp_impedance_open(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		PRINTK_AUDDRV("snd_pcm_hw_constraint_integer failed\n");
 
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		PRINTK_AUDDRV("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_playback_constraints\n");
-
 	if (ret < 0) {
 		PRINTK_AUDDRV("mtk_soc_pcm_hp_impedance_close\n");
 		mtk_soc_pcm_hp_impedance_close(substream);

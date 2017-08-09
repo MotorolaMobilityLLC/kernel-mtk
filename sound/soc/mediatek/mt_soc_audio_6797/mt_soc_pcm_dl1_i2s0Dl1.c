@@ -258,7 +258,6 @@ static int mtk_pcm_I2S0dl1_hw_params(struct snd_pcm_substream *substream,
 		AudDrv_Allocate_DL1_Buffer(mDev, substream->runtime->dma_bytes,
 			substream->runtime->dma_addr, substream->runtime->dma_area);
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_DL1, false);
-		/* pr_warn("mtk_pcm_hw_params dma_bytes = %d\n",substream->runtime->dma_bytes); */
 	} else {
 		substream->runtime->dma_area = Dl1I2S0_Playback_dma_buf->area;
 		substream->runtime->dma_addr = Dl1I2S0_Playback_dma_buf->addr;
@@ -277,7 +276,7 @@ static int mtk_pcm_I2S0dl1_hw_params(struct snd_pcm_substream *substream,
 
 static int mtk_pcm_I2S0dl1_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_warn("%s sunstream = %p\n", __func__, substream);
+	pr_warn("%s substream = %p\n", __func__, substream);
 	if (mPlaybackDramState == true) {
 		AudDrv_Emi_Clk_Off();
 		mPlaybackDramState = false;
@@ -316,9 +315,6 @@ static int mtk_pcm_I2S0dl1_open(struct snd_pcm_substream *substream)
 
 	if (ret < 0)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_I2S0dl1_playback_constraints\n");
 
 	if (ret < 0) {
 		pr_err("ret < 0 mtk_pcm_I2S0dl1_close\n");

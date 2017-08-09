@@ -209,7 +209,7 @@ void SetAnalogSuspend(bool bEnable)
 {
 	pr_warn("%s bEnable ==%d mAnaSuspend = %d\n", __func__, bEnable, mAnaSuspend);
 	if ((bEnable == true) && (mAnaSuspend == false)) {
-		Ana_Log_Print();
+		/*Ana_Log_Print();*/
 		SavePowerState();
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == true) {
 			mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] =
@@ -231,10 +231,10 @@ void SetAnalogSuspend(bool bEnable)
 			    false;
 			Speaker_Amp_Change(false);
 		}
-		Ana_Log_Print();
+		/*Ana_Log_Print();*/
 		mAnaSuspend = true;
 	} else if ((bEnable == false) && (mAnaSuspend == true)) {
-		Ana_Log_Print();
+		/*Ana_Log_Print();*/
 		if (mCodec_data->mAudio_BackUpAna_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] ==
 		    true) {
 			Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true);
@@ -260,7 +260,7 @@ void SetAnalogSuspend(bool bEnable)
 			    false;
 		}
 		RestorePowerState();
-		Ana_Log_Print();
+		/*Ana_Log_Print();*/
 		mAnaSuspend = false;
 	}
 }
@@ -268,32 +268,30 @@ void SetAnalogSuspend(bool bEnable)
 static int audck_buf_Count;
 void audckbufEnable(bool enable)
 {
-	pr_warn("audckbufEnable audck_buf_Count = %d enable = %d\n", audck_buf_Count, enable);
+	pr_warn("audckbufEnable(), audck_buf_Count = %d, enable = %d\n",
+		audck_buf_Count, enable);
+
 	mutex_lock(&Ana_buf_Ctrl_Mutex);
 	if (enable) {
 		if (audck_buf_Count == 0) {
-			pr_warn("+clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef _GIT318_READY
 			clk_buf_ctrl(CLK_BUF_AUDIO, true);
 #endif
 #endif
-			pr_warn("-clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
 		}
 		audck_buf_Count++;
 	} else {
 		audck_buf_Count--;
 		if (audck_buf_Count == 0) {
-			pr_warn("+clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef _GIT318_READY
 			clk_buf_ctrl(CLK_BUF_AUDIO, false);
 #endif
 #endif
-			pr_warn("-clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
 		}
 		if (audck_buf_Count < 0) {
-			pr_warn("audck_buf_Count count <0\n");
+			pr_warn("audck_buf_Count count < 0\n");
 			audck_buf_Count = 0;
 		}
 	}
@@ -1320,7 +1318,7 @@ static struct snd_soc_dai_driver mtk_6331_dai_codecs[] = {
 uint32 GetDLNewIFFrequency(unsigned int frequency)
 {
 	uint32 Reg_value = 0;
-	/* pr_warn("AudioPlatformDevice ApplyDLNewIFFrequency ApplyDLNewIFFrequency = %d", frequency); */
+
 	switch (frequency) {
 	case 8000:
 		Reg_value = 0;
@@ -1350,8 +1348,10 @@ uint32 GetDLNewIFFrequency(unsigned int frequency)
 	case 96000:
 	case 192000:
 		Reg_value = 8;
+		break;
 	default:
-		pr_warn("ApplyDLNewIFFrequency with frequency = %d", frequency);
+		pr_warn("GetDLNewIFFrequency invalid freq %d\n", frequency);
+		break;
 	}
 	return Reg_value;
 }
@@ -1439,7 +1439,7 @@ static void HeadsetVoloumeRestore(void)
 {
 	int index = 0, oldindex = 0, offset = 0, count = 1;
 
-	pr_warn("%s\n", __func__);
+	/*pr_warn("%s\n", __func__);*/
 	index = 8;
 	oldindex = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR];
 	if (index > oldindex) {

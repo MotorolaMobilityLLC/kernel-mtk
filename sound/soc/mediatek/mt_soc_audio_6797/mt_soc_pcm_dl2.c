@@ -258,11 +258,6 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		pr_err("snd_pcm_hw_constraint_integer failed\n");
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_dl2playback_constraints\n");
-	else
-		pr_warn("SNDRV_PCM_STREAM_CAPTURE mtkalsa_dl2playback_constraints\n");
-
 	if (ret < 0) {
 		pr_err("ret < 0 mtk_soc_pcm_dl2_close\n");
 		mtk_soc_pcm_dl2_close(substream);

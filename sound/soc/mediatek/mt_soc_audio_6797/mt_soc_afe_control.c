@@ -2845,25 +2845,27 @@ int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length,
 {
 	AFE_BLOCK_T *pblock;
 
-	pr_debug("%s Afe_Buf_Length = %d\n ", __func__, Afe_Buf_Length);
 	pblock = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]->rBlock);
 	pblock->u4BufferSize = Afe_Buf_Length;
 
 	if (Afe_Buf_Length > AFE_INTERNAL_SRAM_SIZE) {
-		PRINTK_AUDDRV("Afe_Buf_Length > AUDDRV_DL1_MAX_BUFFER_LENGTH\n");
+		pr_err("%s(), Afe_Buf_Length %d > %d\n",
+		       __func__,
+		       Afe_Buf_Length,
+		       AFE_INTERNAL_SRAM_SIZE);
 		return -1;
 	}
 
 	pblock->pucPhysBufAddr = (kal_uint32)dma_addr;
 	pblock->pucVirtBufAddr = dma_area;
 
-	pr_warn("%s  Afe_Buf_Length = %dpucVirtBufAddr = %p pblock->pucPhysBufAddr =0x%x\n",
+	pr_warn("%s(), Afe_Buf_Length = %d, pucVirtBufAddr = %p, pblock->pucPhysBufAddr = 0x%x\n",
 		__func__, Afe_Buf_Length, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 
 	/* check 32 bytes align */
 	if ((pblock->pucPhysBufAddr & 0x1f) != 0) {
-		PRINTK_AUDDRV("[Auddrv] AudDrv_Allocate_DL1_Buffer is not aligned (0x%x)\n",
-			      pblock->pucPhysBufAddr);
+		pr_warn("[Auddrv] AudDrv_Allocate_DL1_Buffer is not aligned (0x%x)\n",
+			pblock->pucPhysBufAddr);
 	}
 
 	pblock->u4SampleNumMask = 0x001f;	/* 32 byte align */
@@ -2936,7 +2938,7 @@ bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream 
 	substreamList *temp = NULL;
 	unsigned long flags;
 
-	pr_debug("+%s MemBlock = %d substream = %p\n ", __func__, MemBlock, substream);
+	pr_debug("+%s MemBlock = %d substream = %p\n", __func__, MemBlock, substream);
 	spin_lock_irqsave(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
 	if (head == NULL) {	/* frst item is NULL */
@@ -2958,7 +2960,7 @@ bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream 
 
 	AFE_Mem_Control_context[MemBlock]->MemIfNum++;
 	spin_unlock_irqrestore(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
-	pr_debug("-%s MemBlock = %d\n ", __func__, MemBlock);
+	/*pr_debug("-%s MemBlock = %d\n ", __func__, MemBlock);*/
 
 	/* DumpMemifSubStream(); */
 	return true;
@@ -4267,9 +4269,6 @@ int AllocateAudioSram(dma_addr_t *sram_phys_addr, unsigned char **msram_virt_add
 		*sram_phys_addr = mAud_Sram_Manager.mAud_Sram_Block[SramBlockidx].msram_phys_addr;
 		*msram_virt_addr = (char *)mAud_Sram_Manager.mAud_Sram_Block[SramBlockidx].msram_virt_addr;
 
-		pr_warn("%s SramBlockidx = %d SramBlockNum = %d\n",
-			__func__, SramBlockidx, SramBlockNum);
-
 		/* set aud sram with user*/
 		while (SramBlockNum) {
 			mAud_Sram_Manager.mAud_Sram_Block[SramBlockidx].mUser = user;
@@ -4306,10 +4305,10 @@ bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram)
 {
 	bool highBitEnable = enable_4G() & usingdram;
 
-	pr_debug("%s MemBlock = %d usingdram = %d\n",
+	/*pr_debug("%s MemBlock = %d usingdram = %d\n",
 		 __func__,
 		 MemBlock,
-		 usingdram);
+		 usingdram);*/
 
 	switch (MemBlock) {
 	case Soc_Aud_Digital_Block_MEM_DL1:

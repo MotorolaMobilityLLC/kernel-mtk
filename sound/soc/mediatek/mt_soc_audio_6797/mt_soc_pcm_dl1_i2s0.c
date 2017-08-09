@@ -465,9 +465,6 @@ static int mtk_pcm_i2s0_open(struct snd_pcm_substream *substream)
 	pr_debug("mtk_pcm_i2s0_open runtime rate = %d channels = %d substream->pcm->device = %d\n",
 		 runtime->rate, runtime->channels, substream->pcm->device);
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_debug("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_i2s0_playback_constraints\n");
-
 	 if (ret < 0) {
 		pr_err("mtk_pcm_i2s0_close\n");
 		mtk_pcm_i2s0_close(substream);

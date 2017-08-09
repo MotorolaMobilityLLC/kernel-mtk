@@ -917,7 +917,7 @@ typedef struct {
 
 /*
   *  mUser is record for User
-      using sunstream pointer as reach user
+      using substream pointer as reach user
   */
 typedef struct {
 	bool mValid;

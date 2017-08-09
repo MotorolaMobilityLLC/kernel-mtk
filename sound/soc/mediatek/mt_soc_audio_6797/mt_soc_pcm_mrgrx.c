@@ -202,9 +202,6 @@ static int mtk_pcm_mrgrx_open(struct snd_pcm_substream *substream)
 	pr_warn("mtk_pcm_mrgrx_open runtime rate = %d channels = %d substream->pcm->device = %d\n",
 	       runtime->rate, runtime->channels, substream->pcm->device);
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_mrgrx_playback_constraints\n");
-
 	if (ret < 0) {
 		pr_warn("mtk_pcm_mrgrx_close\n");
 		mtk_pcm_mrgrx_close(substream);

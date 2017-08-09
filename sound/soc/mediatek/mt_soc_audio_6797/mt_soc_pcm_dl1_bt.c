@@ -223,7 +223,7 @@ static int mtk_pcm_dl1bt_hw_params(struct snd_pcm_substream *substream,
 
 static int mtk_pcm_dl1bt_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_warn("%s sunstream = %p\n", __func__, substream);
+	pr_warn("%s substream = %p\n", __func__, substream);
 	if (mPlaybackDramState == true) {
 		AudDrv_Emi_Clk_Off();
 		mPlaybackDramState = false;
@@ -265,9 +265,6 @@ static int mtk_dl1bt_pcm_open(struct snd_pcm_substream *substream)
 	/* print for hw pcm information */
 	PRINTK_AUDDRV("mtk_dl1bt_pcm_open runtime rate = %d channels = %d substream->pcm->device = %d\n",
 		      runtime->rate, runtime->channels, substream->pcm->device);
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		PRINTK_AUDDRV("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_playback_constraints\n");
 
 	if (ret < 0) {
 		PRINTK_AUDDRV("mtk_Dl1Bt_close\n");
