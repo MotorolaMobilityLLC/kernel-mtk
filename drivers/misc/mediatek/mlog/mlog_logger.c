@@ -724,7 +724,7 @@ int mlog_doread(char __user *buf, size_t len)
 			v = '\n';
 
 		/* MLOG_PRINTK("[mlog] %d: %s\n", strfmt_idx, strfmt_list[strfmt_idx]); */
-		size = sprintf(mlog_str, strfmt_list[strfmt_idx++], v);
+		size = snprintf(mlog_str, MLOG_STR_LEN, strfmt_list[strfmt_idx++], v);
 
 		if (strfmt_idx >= strfmt_len)
 			strfmt_idx = strfmt_proc;
