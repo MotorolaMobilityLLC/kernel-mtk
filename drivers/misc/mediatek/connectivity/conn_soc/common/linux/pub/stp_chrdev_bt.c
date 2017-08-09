@@ -55,7 +55,7 @@ static UINT32 gDbgLevel = BT_LOG_INFO;
 
 #define BT_DBG_FUNC(fmt, arg...)	\
 	do { if (gDbgLevel >= BT_LOG_DBG)	\
-		pr_warn(PFX "%s: "  fmt, __func__ , ##arg);	\
+		pr_debug(PFX "%s: "  fmt, __func__ , ##arg);	\
 	} while (0)
 #define BT_INFO_FUNC(fmt, arg...)	\
 	do { if (gDbgLevel >= BT_LOG_INFO)	\
@@ -69,13 +69,8 @@ static UINT32 gDbgLevel = BT_LOG_INFO;
 	do { if (gDbgLevel >= BT_LOG_ERR)	\
 		pr_err(PFX "%s: "   fmt, __func__ , ##arg);	\
 	} while (0)
-#define BT_TRC_FUNC(f)	\
-	do { if (gDbgLevel >= BT_LOG_DBG)	\
-		pr_info(PFX "<%s> <%d>\n", __func__, __LINE__);	\
-	} while (0)
 
 #define VERSION "1.0"
-
 
 
 #if WMT_CREATE_NODE_DYNAMIC
@@ -110,7 +105,7 @@ static VOID bt_cdev_rst_cb(ENUM_WMTDRV_TYPE_T src,
 
 	if (sz <= sizeof(ENUM_WMTRSTMSG_TYPE_T)) {
 		memcpy((PINT8) & rst_msg, (PINT8) buf, sz);
-		BT_INFO_FUNC("src = %d, dst = %d, type = %d, buf = 0x%x sz = %d, max = %d\n", src,
+		BT_DBG_FUNC("src = %d, dst = %d, type = %d, buf = 0x%x sz = %d, max = %d\n", src,
 			     dst, type, rst_msg, sz, WMTRSTMSG_RESET_MAX);
 		if ((src == WMTDRV_TYPE_WMT) && (dst == WMTDRV_TYPE_BT)
 		    && (type == WMTMSG_TYPE_RESET)) {
@@ -127,7 +122,7 @@ static VOID bt_cdev_rst_cb(ENUM_WMTDRV_TYPE_T src,
 		}
 	} else {
 		/* Invalid message format */
-		BT_INFO_FUNC("Invalid message format!\n");
+		BT_WARN_FUNC("Invalid message format!\n");
 	}
 }
 
@@ -290,11 +285,6 @@ long BT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	BT_DBG_FUNC("%s:  cmd: 0x%x\n", __func__, cmd);
 
 	switch (cmd) {
-	case 1:
-		/* Send raw data */
-		BT_DBG_FUNC("%s: Disable send raw data function\n", __func__);
-		retval = -EINVAL;
-		break;
 	case COMBO_IOC_BT_HWVER:
 		/* Get combo HW version */
 		hw_ver_sym = mtk_wcn_wmt_hwver_get();
@@ -315,6 +305,12 @@ long BT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			BT_ERR_FUNC("Host trigger FW assert Failed\n");
 			retval = (-1000);
 		}
+		break;
+	case COMBO_IOCTL_BT_IC_HW_VER:
+		retval = mtk_wcn_wmt_ic_info_get(WMTCHIN_HWVER);
+		break;
+	case COMBO_IOCTL_BT_IC_FW_VER:
+		retval = mtk_wcn_wmt_ic_info_get(WMTCHIN_FWVER);
 		break;
 	default:
 		retval = -EFAULT;
@@ -349,7 +345,8 @@ static int BT_open(struct inode *inode, struct file *file)
 
 		BT_INFO_FUNC("Now it's in MTK Bluetooth Mode\n");
 		BT_INFO_FUNC("STP is ready!\n");
-		BT_INFO_FUNC("Register BT event callback!\n");
+
+		BT_DBG_FUNC("Register BT event callback!\n");
 		mtk_wcn_stp_register_event_cb(BT_TASK_INDX, BT_event_cb);
 	} else {
 		BT_ERR_FUNC("STP is not ready\n");
@@ -357,7 +354,7 @@ static int BT_open(struct inode *inode, struct file *file)
 		return -ENODEV;
 	}
 
-	BT_INFO_FUNC("Register BT reset callback!\n");
+	BT_DBG_FUNC("Register BT reset callback!\n");
 	mtk_wcn_wmt_msgcb_reg(WMTDRV_TYPE_BT, bt_cdev_rst_cb);
 
 /* init_MUTEX(&wr_mtx); */
@@ -377,7 +374,7 @@ static int BT_close(struct inode *inode, struct file *file)
 	mtk_wcn_stp_register_event_cb(BT_TASK_INDX, NULL);
 
 	if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_off(WMTDRV_TYPE_BT)) {
-		BT_INFO_FUNC("WMT turn off BT fail!\n");
+		BT_ERR_FUNC("WMT turn off BT fail!\n");
 		return -EIO;	/* Mostly, native program will not check this return value. */
 	}
 
@@ -434,9 +431,9 @@ static int BT_init(void)
 
 error:
 #if WMT_CREATE_NODE_DYNAMIC
-	if (!(IS_ERR(stpbt_dev)))
+	if (!IS_ERR(stpbt_dev))
 		device_destroy(stpbt_class, dev);
-	if (!(IS_ERR(stpbt_class))) {
+	if (!IS_ERR(stpbt_class)) {
 		class_destroy(stpbt_class);
 		stpbt_class = NULL;
 	}
