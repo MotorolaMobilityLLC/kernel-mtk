@@ -787,6 +787,7 @@ static INT32 wmt_core_hw_check(VOID)
 	case 0x6571:
 	case 0x6752:
 	case 0x0279:
+	case 0x0326:
 	case 0x0321:
 	case 0x0335:
 	case 0x0337:
@@ -2173,12 +2174,18 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 	UINT8 host_lte_btwf_coex_cmd[] = { 0x01, 0x10, 0x00, 0x00, 0x00 };
 	UINT8 host_lte_btwf_coex_evt[] = { 0x02, 0x10, 0x01, 0x00, 0x00 };
 	UINT8 *pTxBuf = NULL;
-	UINT8 msg_local_buffer[1300] = { 0 };
 	UINT8 evtbuf[8] = { 0 };
 	INT32 iRet = -1;
 	UINT16 msg_len = 0;
 	UINT32 total_len = 0;
 	UINT32 index = 0;
+	UINT8 *msg_local_buffer = NULL;
+
+	msg_local_buffer = kmalloc(1300, GFP_KERNEL);
+	if (!msg_local_buffer) {
+			WMT_ERR_FUNC("msg_local_buffer kmalloc memory fail\n");
+			return 0;
+	}
 
 	pTxBuf = (UINT8 *) pWmtOp->au4OpData[0];
 	if (NULL == pTxBuf) {
@@ -2234,7 +2241,7 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 		fgFail = MTK_WCN_BOOL_FALSE;
 
 	} while (0);
-
+	kfree(msg_local_buffer);
 	return fgFail;
 }
 #endif

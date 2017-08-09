@@ -37,7 +37,10 @@ ifneq ($(CONFIG_MTK_COMBO),)
     ifneq ($(filter "CONSYS_8127",$(CONFIG_MTK_COMBO_CHIP)),)
 		obj-y   +=  conn_soc/
 	endif
-	ifneq ($(filter "CONSYS_6752",$(CONFIG_MTK_COMBO_CHIP)),)
+    	ifneq ($(filter "CONSYS_6752",$(CONFIG_MTK_COMBO_CHIP)),)
+		obj-y   +=  conn_soc/
+	endif
+	ifneq ($(filter "CONSYS_6755",$(CONFIG_MTK_COMBO_CHIP)),)
 		obj-y   +=  conn_soc/
 	endif
 	ifneq ($(filter "CONSYS_6592",$(CONFIG_MTK_COMBO_CHIP)),)

@@ -91,6 +91,14 @@ config MTK_COMBO_CHIP_CONSYS_6735
 	  is
 	  MT6735
 
+config MTK_COMBO_CHIP_CONSYS_6755
+	bool "CONSYS_6755"
+	help
+	  this config is used to decided SOC consys version
+	  in current platform
+	  is
+	  MT6755
+
 config MTK_COMBO_CHIP_CONSYS_6580
 	bool "CONSYS_6580"
 	help
@@ -117,6 +125,7 @@ config MTK_COMBO_CHIP
 	default "CONSYS_6582" if MTK_COMBO_CHIP_CONSYS_6582
 	default "CONSYS_8127" if MTK_COMBO_CHIP_CONSYS_8127
 	default "CONSYS_6752" if MTK_COMBO_CHIP_CONSYS_6752
+	default "CONSYS_6755" if MTK_COMBO_CHIP_CONSYS_6755
 	default "CONSYS_6592" if MTK_COMBO_CHIP_CONSYS_6592
 	default "CONSYS_8163" if MTK_COMBO_CHIP_CONSYS_8163
 	default "CONSYS_6735" if MTK_COMBO_CHIP_CONSYS_6735

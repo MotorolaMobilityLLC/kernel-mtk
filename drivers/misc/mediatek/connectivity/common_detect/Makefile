@@ -42,6 +42,9 @@ ifneq ($(KERNELRELEASE),)
 	ifneq ($(filter "CONSYS_6752",$(CONFIG_MTK_COMBO_CHIP)),)
 		SOC_CHIP_SUPPORT := true
 	endif
+	ifneq ($(filter "CONSYS_6755",$(CONFIG_MTK_COMBO_CHIP)),)
+		SOC_CHIP_SUPPORT := true
+	endif
 	ifneq ($(filter "CONSYS_6735",$(CONFIG_MTK_COMBO_CHIP)),)
 		SOC_CHIP_SUPPORT := true
 	endif

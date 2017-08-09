@@ -1044,6 +1044,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	    (0x6582 == wmt_ic_ops_soc.icId) ||
 	    (0x6592 == wmt_ic_ops_soc.icId) ||
 	    (0x0279 == wmt_ic_ops_soc.icId) ||
+	    (0x0326 == wmt_ic_ops_soc.icId) ||
 	    (0x0321 == wmt_ic_ops_soc.icId) || (0x0335 == wmt_ic_ops_soc.icId) || (0x0337 == wmt_ic_ops_soc.icId)) {
 		wmt_stp_wifi_lte_coex();
 		WMT_DBG_FUNC("wmt_stp_wifi_lte_coex done!\n");
@@ -1604,6 +1605,7 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 		    (0x6580 == wmt_ic_ops_soc.icId) ||
 		    (0x0279 == wmt_ic_ops_soc.icId) ||
 		    (0x8163 == wmt_ic_ops_soc.icId) ||
+		    (0x0326 == wmt_ic_ops_soc.icId) ||
 		    (0x0321 == wmt_ic_ops_soc.icId) ||
 		    (0x0335 == wmt_ic_ops_soc.icId) || (0x0337 == wmt_ic_ops_soc.icId)) {
 			iRet =
@@ -2003,6 +2005,7 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	if (0x6752 == wmt_ic_ops_soc.icId ||
 	    0x8127 == wmt_ic_ops_soc.icId ||
 	    0x6571 == wmt_ic_ops_soc.icId ||
+	    0x0326 == wmt_ic_ops_soc.icId ||
 	    0x0321 == wmt_ic_ops_soc.icId ||
 	    0x0335 == wmt_ic_ops_soc.icId ||
 	    0x0337 == wmt_ic_ops_soc.icId || 0x8163 == wmt_ic_ops_soc.icId || 0x6580 == wmt_ic_ops_soc.icId) {

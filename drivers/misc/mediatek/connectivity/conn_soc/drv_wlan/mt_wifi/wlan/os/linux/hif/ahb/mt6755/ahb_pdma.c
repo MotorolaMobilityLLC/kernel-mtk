@@ -84,7 +84,7 @@
 #include "hif_pdma.h"
 #include "gl_os.h"
 
-/* #include <mach/emi_mpu.h> */
+#include <mach/emi_mpu.h>
 
 /* #if (CONF_MTK_AHB_DMA == 1) */
 
@@ -190,7 +190,7 @@ VOID HifPdmaInit(GL_HIF_INFO_T *HifInfo)
 	DBGLOG(INIT, INFO, "[wlan] MPU region 12, 0x%08x - 0x%08x\n", (UINT_32) gConEmiPhyBase,
 	       (UINT_32) (gConEmiPhyBase + 512 * 1024));
 	emi_mpu_set_region_protection(gConEmiPhyBase, gConEmiPhyBase + 512 * 1024 - 1, 12,
-				      SET_ACCESS_PERMISSON(NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+				      SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 							   NO_PROTECTION, FORBIDDEN, FORBIDDEN));
 #endif
 
