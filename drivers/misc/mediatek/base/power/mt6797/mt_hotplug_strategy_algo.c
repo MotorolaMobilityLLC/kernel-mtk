@@ -95,7 +95,7 @@ static void hps_algo_do_cluster_action(unsigned int cluster_id)
 	}
 }
 
-unsigned int get_cluster_cpus(unsigned int cluster_id)
+unsigned int hps_get_cluster_cpus(unsigned int cluster_id)
 {
 	struct cpumask cls_cpus, cpus;
 
@@ -195,7 +195,7 @@ void hps_algo_main(void)
 		hps_sys.cluster_info[i].target_core_num = hps_sys.cluster_info[i].online_core_num =
 		    0;
 		hps_sys.cluster_info[i].online_core_num =
-		    get_cluster_cpus(hps_sys.cluster_info[i].cluster_id);
+		    hps_get_cluster_cpus(hps_sys.cluster_info[i].cluster_id);
 		hps_sys.total_online_cores += hps_sys.cluster_info[i].online_core_num;
 	}
 

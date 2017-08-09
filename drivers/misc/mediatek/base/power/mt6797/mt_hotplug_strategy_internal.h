@@ -345,7 +345,7 @@ extern void hps_algo_amp(void);
 extern void hps_algo_main(void);
 extern int hps_cal_core_num(struct hps_sys_struct *hps_sys, unsigned int core_val,
 			    unsigned int base_val);
-extern unsigned int get_cluster_cpus(unsigned int cluster_id);
+extern unsigned int hps_get_cluster_cpus(unsigned int cluster_id);
 /*
  * mt_hotplug_strategy_procfs.c
  */
