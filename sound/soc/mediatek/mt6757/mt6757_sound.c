@@ -395,7 +395,7 @@ void SetChipModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribut
 		pr_debug("%s(), PCM2_INTF_CON(0x%lx) = 0x%x\n", __func__, PCM2_INTF_CON,
 			 reg_pcm2_intf_con);
 		Afe_Set_Reg(PCM2_INTF_CON, reg_pcm2_intf_con, MASK_ALL);
-/*
+#ifdef _NON_COMMON_FEATURE_READY
 		if (p_modem_pcm_attribute.mPcmModeWidebandSel == Soc_Aud_PCM_MODE_PCM_MODE_8K) {
 			Afe_Set_Reg(AFE_ASRC2_CON1, 0x00098580, 0xffffffff);
 			Afe_Set_Reg(AFE_ASRC2_CON2, 0x00400000, 0xffffffff);
@@ -432,7 +432,7 @@ void SetChipModemPcmConfig(int modem_index, AudioDigitalPCM p_modem_pcm_attribut
 			Afe_Set_Reg(AFE_ASRC3_CON4, 0x00026160, 0xffffffff);
 			Afe_Set_Reg(AFE_ASRC3_CON7, 0x000130b0, 0xffffffff);
 		}
-*/
+#endif
 	} else if (modem_index == MODEM_2 || modem_index == MODEM_EXTERNAL) {
 		/* MODEM_2 use PCM_INTF_CON1 (0x530) !!! */
 		if (p_modem_pcm_attribute.mPcmModeWidebandSel == Soc_Aud_PCM_MODE_PCM_MODE_8K) {

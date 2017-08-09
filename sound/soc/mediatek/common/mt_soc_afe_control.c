@@ -318,8 +318,9 @@ bool get_internalmd_status(void)
 		    get_voice_status() ||
 		    get_voice_md2_status() ||
 		    get_voice_md2_bt_status());
-		    /*get_voice_ultra_status());*/
-
+#ifdef _NON_COMMON_FEATURE_READY
+		    get_voice_ultra_status();
+#endif
 	return (mExternalModemStatus == true) ? false : ret;
 }
 
@@ -1524,7 +1525,7 @@ bool checkUplinkMEMIfStatus(void)
 		mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL_DATA2]->mState;
 }
 
-/*
+#ifdef _NON_COMMON_FEATURE_READY
 bool SetHDMIMCLK(void)
 {
 	uint32 mclksamplerate = mHDMIOutput->mSampleRate * 256;
@@ -1832,7 +1833,7 @@ bool SetHDMIConnection(uint32 ConnectionState, uint32 Input, uint32 Output)
 	}
 	return true;
 }
-*/
+#endif
 
 bool SetConnection(uint32 ConnectionState, uint32 Input, uint32 Output)
 {

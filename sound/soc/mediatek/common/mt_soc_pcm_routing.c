@@ -1057,7 +1057,9 @@ static int mtk_routing_pm_ops_suspend(struct device *device)
 
 	if (get_voice_status() ||
 		get_voice_md2_status())
-		/*get_voice_ultra_status())*/
+#ifdef _NON_COMMON_FEATURE_READY
+		get_voice_ultra_status())
+#endif
 		return 0;
 
 	if (AudDrvSuspendStatus == false) {
