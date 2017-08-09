@@ -1817,21 +1817,39 @@ EXPORT_SYMBOL(mt_cpufreq_restore_default_volt);
 unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 {
 #ifndef DISABLE_PBM_FEATURE
-	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+	struct mt_cpu_dvfs *p;
 	int temp;
+	int mw = 0;
+	int i;
 
-	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
-		temp = tscpu_get_temp_by_bank(THERMAL_BANK4) / 1000;
-		return mt_spower_get_leakage(MT_SPOWER_CPULL, p->ops->get_cur_volt(p) / 100, temp);
-	} else if (cpu_dvfs_is(p, MT_CPU_DVFS_L)) {
-		temp = tscpu_get_temp_by_bank(THERMAL_BANK3) / 1000;
-		return mt_spower_get_leakage(MT_SPOWER_CPUL, p->ops->get_cur_volt(p) / 100, temp);
-	} else if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
-		temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
-		return mt_spower_get_leakage(MT_SPOWER_CPUBIG, p->ops->get_cur_volt(p) / 100, temp);
-	} else
-		return 0;
-
+	if (id == 0) {
+		for_each_cpu_dvfs_only(i, p) {
+			if (cpu_dvfs_is(p, MT_CPU_DVFS_LL) && p->armpll_is_available) {
+				temp = tscpu_get_temp_by_bank(THERMAL_BANK4) / 1000;
+				mw += mt_spower_get_leakage(MT_SPOWER_CPULL, p->ops->get_cur_volt(p) / 100, temp);
+			} else if (cpu_dvfs_is(p, MT_CPU_DVFS_L) && p->armpll_is_available) {
+				temp = tscpu_get_temp_by_bank(THERMAL_BANK3) / 1000;
+				mw += mt_spower_get_leakage(MT_SPOWER_CPUL, p->ops->get_cur_volt(p) / 100, temp);
+			} else if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && p->armpll_is_available) {
+				temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
+				mw += mt_spower_get_leakage(MT_SPOWER_CPUBIG, p->ops->get_cur_volt(p) / 100, temp);
+			}
+		}
+	} else if (id > 0) {
+		id = id - 1;
+		p = id_to_cpu_dvfs(id);
+		if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
+			temp = tscpu_get_temp_by_bank(THERMAL_BANK4) / 1000;
+			mw = mt_spower_get_leakage(MT_SPOWER_CPULL, p->ops->get_cur_volt(p) / 100, temp);
+		} else if (cpu_dvfs_is(p, MT_CPU_DVFS_L)) {
+			temp = tscpu_get_temp_by_bank(THERMAL_BANK3) / 1000;
+			mw = mt_spower_get_leakage(MT_SPOWER_CPUL, p->ops->get_cur_volt(p) / 100, temp);
+		} else if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
+			temp = tscpu_get_temp_by_bank(THERMAL_BANK0) / 1000;
+			mw = mt_spower_get_leakage(MT_SPOWER_CPUBIG, p->ops->get_cur_volt(p) / 100, temp);
+		}
+	}
+	return mw;
 #else
 	return 0;
 #endif
