@@ -867,9 +867,7 @@ void mt_afe_set_hdmi_clock_source(uint32_t SampleRate, int apllclksel) /*AudDrv_
 
 void mt_afe_top_apll_clk_on(void)/*AudDrv_TOP_Apll_Clk_On*/
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&afe_clk_lock, flags);
+        mutex_lock(&afe_clk_mutex);
 	PRINTK_AUD_CLK("%s aud_top_apll_clk_cntr:%d\n", __func__, aud_top_apll_clk_cntr);
 
 	if (aud_top_apll_clk_cntr == 0) {
@@ -879,14 +877,12 @@ void mt_afe_top_apll_clk_on(void)/*AudDrv_TOP_Apll_Clk_On*/
 	}
 	aud_top_apll_clk_cntr++;
 
-	spin_unlock_irqrestore(&afe_clk_lock, flags);
+	mutex_unlock(&afe_clk_mutex);
 }
 
 void mt_afe_top_apll_clk_off(void)/*AudDrv_TOP_Apll_Clk_Off*/
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&afe_clk_lock, flags);
+	mutex_lock(&afe_clk_mutex);
 	PRINTK_AUD_CLK("%s aud_top_apll_clk_cntr:%d\n", __func__, aud_top_apll_clk_cntr);
 
 	aud_top_apll_clk_cntr--;
@@ -900,7 +896,7 @@ void mt_afe_top_apll_clk_off(void)/*AudDrv_TOP_Apll_Clk_Off*/
 		aud_top_apll_clk_cntr = 0;
 	}
 
-	spin_unlock_irqrestore(&afe_clk_lock, flags);
+	mutex_unlock(&afe_clk_mutex);
 }
 
 
