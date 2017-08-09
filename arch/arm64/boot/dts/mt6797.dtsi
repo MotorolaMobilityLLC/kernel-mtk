@@ -1832,7 +1832,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			<0x10211000 0x300>, // MD1 PCCIF
 			<0x10213000 0x300>; // MD3 PCCIF
 			interrupts = <GIC_SPI 149 IRQ_TYPE_LEVEL_LOW>, // C2K_CCIF
-						<GIC_SPI 283 IRQ_TYPE_EDGE_FALLING>; // C2K_WDT
+						<GIC_SPI 287 IRQ_TYPE_EDGE_FALLING>; // C2K_WDT
 			cell-index = <2>;
 			ccif,major = <169>;
 			ccif,minor_base = <0>;
