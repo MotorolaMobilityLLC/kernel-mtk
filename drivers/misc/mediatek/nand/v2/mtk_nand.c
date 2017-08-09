@@ -3935,7 +3935,7 @@ int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 	/* else */
 	/* pr_debug("[xl] mtk_nand_exec_read_page no memcpy 0x%x 0x%x\n", pPageBuf[0],buf[0]); */
 	if (bRet != ERR_RTN_SUCCESS) {
-		pr_debug("ECC uncorrectable , fake buffer returned\n");
+		pr_err("ECC uncorrectable , fake buffer returned\n");
 		memset(pPageBuf, 0xff, u4PageSize);
 		memset(pFDMBuf, 0xff, u4SecNum * 8);
 	}
@@ -4092,6 +4092,9 @@ bool mtk_nand_exec_read_sector(struct mtd_info *mtd, u32 u4RowAddr, u32 u4ColAdd
 				|| (devinfo.feature_set.FeatureSet.rtype == RTYPE_HYNIX)) {
 				g_hynix_retry_count--;
 			}
+		} else {
+			pr_err("u4RowAddr:0x%x read retry fail, mtd_ecc(A):%x ,fail, mtd_ecc(B):%x\n",
+				u4RowAddr, mtd->ecc_stats.failed, backup_failed);
 		}
 		mtk_nand_rrtry_func(mtd, devinfo, feature, TRUE);
 		g_sandisk_retry_case = 0;
@@ -4103,7 +4106,7 @@ bool mtk_nand_exec_read_sector(struct mtd_info *mtd, u32 u4RowAddr, u32 u4ColAdd
 
 	PFM_END_R(pfm_time_read, u4PageSize + 32);
 	if (bRet != ERR_RTN_SUCCESS) {
-		pr_debug("ECC uncorrectable , fake buffer returned\n");
+		pr_err("ECC uncorrectable , fake buffer returned\n");
 		memset(pPageBuf, 0xff, u4PageSize);
 		memset(pFDMBuf, 0xff, u4SecNum * 8);
 	}
@@ -6942,7 +6945,7 @@ static int mtk_nand_suspend(struct platform_device *pdev, pm_message_t state)
 		} else if (mtk_nfi_dev_comp->chip_ver == 2) {
 			host->saved_para.sNFI_PAGEFMT_REG32 = DRV_Reg32(NFI_PAGEFMT_REG32);
 		} else {
-			pr_err("[mtk_nand_init_hw] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+			pr_err("[NFI] Suspend ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
 				mtk_nfi_dev_comp->chip_ver);
 		}
 		host->saved_para.sNFI_CON_REG16 = DRV_Reg32(NFI_CON_REG16);
@@ -6974,7 +6977,7 @@ static int mtk_nand_suspend(struct platform_device *pdev, pm_message_t state)
 #else
 		ret = regulator_disable(mtk_nand_regulator);
 		if (ret != 0)
-			pr_err("regulator disable failed: %d\n", ret);
+			pr_err("[NFI] Suspend regulator disable failed: %d\n", ret);
 #endif
 #endif
 		nand_disable_clock();
@@ -7028,7 +7031,11 @@ static int mtk_nand_resume(struct platform_device *pdev)
 #else
 		ret = regulator_set_voltage(mtk_nand_regulator, 3300000, 3300000);
 		if (ret != 0)
-			pr_err("regulator set vol failed: %d\n", ret);
+			pr_err("[NFI] Resume regulator set vol failed: %d\n", ret);
+
+		ret = regulator_enable(mtk_nand_regulator);
+		if (ret != 0)
+			pr_err("[NFI] Resume regulator_enable failed: %d\n", ret);
 #endif
 #endif
 		udelay(200);
@@ -7041,7 +7048,7 @@ static int mtk_nand_resume(struct platform_device *pdev)
 		} else if (mtk_nfi_dev_comp->chip_ver == 2) {
 			DRV_WriteReg32(NFI_PAGEFMT_REG32, host->saved_para.sNFI_PAGEFMT_REG32);
 		} else {
-			pr_err("[mtk_nand_resume] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+			pr_err("[NFI] Resume ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
 				mtk_nfi_dev_comp->chip_ver);
 		}
 		DRV_WriteReg32(NFI_CON_REG16, host->saved_para.sNFI_CON_REG16);
