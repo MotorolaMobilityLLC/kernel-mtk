@@ -2,11 +2,16 @@
 #define __CLDMA_REG_H__
 
 #include <mt-plat/sync_write.h>
-#define INFRA_RST0_REG (0x0030)	/* rgu reset cldma reg */
-#define INFRA_RST1_REG (0x0034)	/* rgu clear cldma reset reg */
-#define CLDMA_AO_RST_MASK (1<<8)
-#define CLDMA_PD_RST_MASK (1<<26)
-/*===========================CLDMA_AO_INDMA: 1000A804-1000A844==================================*/
+/* INFRA */
+#define INFRA_RST0_REG_PD (0x0150) /*(0x0030)	/* rgu reset cldma reg */
+#define INFRA_RST1_REG_PD (0x0154) /*(0x0034)	/* rgu clear cldma reset reg */
+#define CLDMA_PD_RST_MASK (1<<2)
+#define INFRA_RST0_REG_AO (0x0140)
+#define INFRA_RST1_REG_AO (0x0144)
+#define CLDMA_AO_RST_MASK (1<<6)
+
+#define INFRA_AO_MD_SRCCLKENA    (0xF0C) /* SRC CLK ENA */
+/*===========================CLDMA_AO_INDMA: 10014804-10014844==================================*/
 #define CLDMA_AP_UL_START_ADDR_BK_0      (0x0804)
 	/* The start address of first TGPD descriptor for power-down back-up. */
 #define CLDMA_AP_UL_START_ADDR_BK_1      (0x0808)
@@ -25,7 +30,7 @@
 #define CLDMA_AP_UL_CURRENT_ADDR_BK_5    (0x083C)
 #define CLDMA_AP_UL_CURRENT_ADDR_BK_6    (0x0840)
 #define CLDMA_AP_UL_CURRENT_ADDR_BK_7    (0x0844)
-/*===========================CLDMA_AO_OUTDMA:1000AA04-1000AAC8==================================*/
+/*===========================CLDMA_AO_OUTDMA:10014A04-10014B2C==================================*/
 #define CLDMA_AP_SO_CFG                     (0x0A04)	/* Operation Configuration */
 #define CLDMA_AP_SO_DUMMY_2                 (0x0A10)	/* Dummy Register 2 */
 #define CLDMA_AP_SO_DUMMY_3                 (0x0A14)	/* Dummy Register 3 */
@@ -48,7 +53,30 @@
 #define CLDMA_AP_SO_CURRENT_ADDR_7          (0x0AB4)	/* The address of current processing RGPD descriptor. */
 #define CLDMA_AP_SO_STATUS                  (0x0AB8)	/* SME OUT SBDMA operation status. */
 #define CLDMA_AP_DEBUG_ID_EN                (0x0AC8)	/* DEBUG_ID Enable */
-/*=======================CLDMA_AO_MISC:  1000AC58-1000AD50==================================*/
+#define CLDMA_AP_SO_LAST_UPDATE_ADDR_0         (0x0AD0)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_SO_LAST_UPDATE_ADDR_1         (0x0AD4)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_SO_LAST_UPDATE_ADDR_2         (0x0AD8)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_SO_LAST_UPDATE_ADDR_3         (0x0ADC)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_SO_LAST_UPDATE_ADDR_4         (0x0AE0)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_SO_LAST_UPDATE_ADDR_5         (0x0AE4)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_SO_LAST_UPDATE_ADDR_6         (0x0AE8)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_SO_LAST_UPDATE_ADDR_7         (0x0AEC)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_SO_NEXT_ALLOW_LEN_1           (0x0AF0)	/* Next allow buffer length */
+#define CLDMA_AP_SO_NEXT_ALLOW_LEN_2           (0x0AF4)	/* Next allow buffer length */
+#define CLDMA_AP_SO_NEXT_ALLOW_LEN_3           (0x0AF8)	/* Next allow buffer length */
+#define CLDMA_AP_SO_NEXT_ALLOW_LEN_4           (0x0AFC)	/* Next allow buffer length */
+#define CLDMA_AP_SO_NEXT_ALLOW_LEN_5           (0x0B00)	/* Next allow buffer length */
+#define CLDMA_AP_SO_NEXT_ALLOW_LEN_6           (0x0B04)	/* Next allow buffer length */
+#define CLDMA_AP_SO_NEXT_ALLOW_LEN_7           (0x0B08)	/* Next allow buffer length */
+#define CLDMA_AP_SO_NEXT_BUF_PTR_0             (0x0B10)	/* Next data buffer pointer */
+#define CLDMA_AP_SO_NEXT_BUF_PTR_1             (0x0B14)	/* Next data buffer pointer */
+#define CLDMA_AP_SO_NEXT_BUF_PTR_2             (0x0B18)	/* Next data buffer pointer */
+#define CLDMA_AP_SO_NEXT_BUF_PTR_3             (0x0B1C)	/* Next data buffer pointer */
+#define CLDMA_AP_SO_NEXT_BUF_PTR_4             (0x0B20)	/* Next data buffer pointer */
+#define CLDMA_AP_SO_NEXT_BUF_PTR_5             (0x0B24)	/* Next data buffer pointer */
+#define CLDMA_AP_SO_NEXT_BUF_PTR_6             (0x0B28)	/* Next data buffer pointer */
+#define CLDMA_AP_SO_NEXT_BUF_PTR_7             (0x0B2C)	/* Next data buffer pointer */
+/*=======================CLDMA_AO_MISC:  10014C58-10014D50==================================*/
 #define CLDMA_AP_L2RIMR0                    (0x0C58)	/* Level 2 Interrupt Mask Register (RX Part) */
 #define CLDMA_AP_L2RIMR1                    (0x0C5C)	/* Level 2 Interrupt Mask Register (RX Part) */
 #define CLDMA_AP_L2RIMCR0                   (0x0C60)	/* Level 2 Interrupt Mask Clear Register (RX Part) */
@@ -62,7 +90,7 @@
 #define CLDMA_AP_ADDR_REMAP_TO              (0x0D48)	/* Address Remap To Which Bank */
 #define CLDMA_AP_ADDR_REMAP_MASK            (0x0D4C)	/* Address Remap Mask */
 #define CLDMA_AP_DUMMY                      (0x0D50)	/* Dummy Register */
-/*=======================CLDMA_PD_INDMA: 1021A000-1021A140==================================*/
+/*=======================CLDMA_PD_INDMA: 1021B000-1021B160==================================*/
 #define CLDMA_AP_UL_SBDMA_CODA_VERSION      (0x0000)	/* ULSBDMA Version Control Register */
 #define CLDMA_AP_UL_START_ADDR_0            (0x0004)	/* The start address of first TGPD descriptor */
 #define CLDMA_AP_UL_START_ADDR_1            (0x0008)	/* The start address of first TGPD descriptor */
@@ -135,7 +163,16 @@
 #define CLDMA_AP_TCR7                       (0x0138)	/* Traffic control value for TX queue 7 */
 #define CLDMA_AP_TCR_CMD                    (0x013C)	/* Traffic control command register */
 #define CLDMA_AP_UL_CHECKSUM_CHANNEL_ENABLE (0x0140)	/* Per-channel checksum checking function enable */
-/*========================CLDMA_PD_OUTDMA:1021A200-1021A3C4==================================*/
+#define CLDMA_AP_UL_LAST_UPDATE_ADDR_0      (0x0144)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_UL_LAST_UPDATE_ADDR_1      (0x0148)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_UL_LAST_UPDATE_ADDR_2      (0x014C)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_UL_LAST_UPDATE_ADDR_3      (0x0150)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_UL_LAST_UPDATE_ADDR_4      (0x0154)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_UL_LAST_UPDATE_ADDR_5      (0x0158)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_UL_LAST_UPDATE_ADDR_6      (0x015C)	/* The address of last updated TGPD descriptor. */
+#define CLDMA_AP_UL_LAST_UPDATE_ADDR_7      (0x0160)	/* The address of last updated TGPD descriptor. */
+
+/*========================CLDMA_PD_OUTDMA:1021B200-1021B3C4==================================*/
 #define CLDMA_AP_SO_OUTDMA_CODA_VERSION     (0x0200)	/* SOOUTDMA Version Control Register */
 #define CLDMA_AP_SO_ERROR                   (0x0300)	/* ERROR */
 #define CLDMA_AP_SO_DUMMY_0                 (0x0308)	/* Dummy Register 0 */
@@ -166,7 +203,7 @@
 #define CLDMA_AP_SO_START_CMD               (0x03BC)	/* SME OUT SBDMA START command. */
 #define CLDMA_AP_SO_RESUME_CMD              (0x03C0)	/* SO OUTDMA RESUME command. */
 #define CLDMA_AP_SO_STOP_CMD                (0x03C4)	/* SO OUTDMA STOP command. */
-/*===========================CLDMA_PD_MISC:  1021A400-1021A4B4================================*/
+/*===========================CLDMA_PD_MISC:  1021B400-1021B4B4================================*/
 #define CLDMA_AP_CLDMA_CODA_VERSION	(0x0400) /* CLDMAVersion Control Register */
 #define CLDMA_AP_L2TISAR0		(0x0410) /* Level 2 Interrupt Status and Acknowledgment Register (TX Part) */
 #define CLDMA_AP_L2TISAR1		(0x0414) /* Level 2 Interrupt Status and Acknowledgment Register (TX Part) */
@@ -201,6 +238,10 @@
 #define CLDMA_AP_DBG_WDATA		(0x04AC) /* Debug information (wdata) of ltel2_axi_master */
 #define CLDMA_AP_CHNL_IDLE		(0x04B0) /* Dma channel idle */
 #define CLDMA_AP_CLDMA_IP_BUSY		(0x04B4) /* Half DMA busy status */
+#define CLDMA_AP_L3TISAR2               (0x04C0) /* Level3 Interrupt Status and Acknowldgement Register(TX Part) */
+#define CLDMA_AP_L3TIMR2                (0x04C4) /* Level3 Interrupt Mask Register(TX Part) */
+#define CLDMA_AP_L3TIMCR2               (0x04C8) /* Level3 Interrupt Mask Clear Register(TX Part) */
+#define CLDMA_AP_L3TIMSR2               (0x04CC) /* Level3 Interrupt Mask Set Register(TX Part) */
 
 /*assistant macros*/
 #define CLDMA_AP_TQSAR(i)  (CLDMA_AP_UL_START_ADDR_0   + (4 * (i)))

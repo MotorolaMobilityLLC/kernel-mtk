@@ -32,20 +32,6 @@ typedef enum {
 #define MD_LWG_FLAG (MD_LTE_FLAG|MD_FDD_FLAG|MD_2G_FLAG)
 #define MD_LTG_FLAG (MD_LTE_FLAG|MD_TDD_FLAG|MD_2G_FLAG)
 
-#define CCCI_SMEM_DUMP_SIZE      4096/* smem size we dump when EE */
-#define CCCI_SMEM_SIZE_EXCEPTION 0x10000/* exception smem total size */
-#define CCCI_SMEM_OFFSET_EXREC 2048/* where the exception record begain in smem */
-#define CCCC_SMEM_CCIF_SRAM_SIZE 16
-#define CCCI_SMEM_OFFSET_CCIF_SRAM (CCCI_SMEM_OFFSET_EXREC+1024-CCCC_SMEM_CCIF_SRAM_SIZE)
-#define CCCI_SMEM_OFFSET_EPON 0xC64
-#define CCCI_SMEM_OFFSET_SEQERR 0x34
-#define CCCI_SMEM_OFFSET_CCCI_DEBUG 0 /* where the MD CCCI debug info begain in smem */
-#define CCCI_SMEM_CCCI_DEBUG_SIZE 2048 /* MD CCCI debug info size */
-#define CCCI_SMEM_OFFSET_MDSS_DEBUG 2048 /* where the MD SS debug info begain in smem */
-#define CCCI_SMEM_MDSS_DEBUG_SIZE 2048 /* MD SS debug info size */
-#define CCCI_SMEM_SLEEP_MODE_DBG_SIZE 1024 /* MD sleep mode debug info section in smem tail */
-#define CCCI_SMEM_SLEEP_MODE_DBG_DUMP 512 /* only dump first 512bytes in sleep mode info */
-
 /* MD type defination */
 typedef enum {
 	md_type_invalid = 0,
@@ -56,7 +42,15 @@ typedef enum {
 	modem_lwg,
 	modem_ltg,
 	modem_sglte,
-	MAX_IMG_NUM = modem_sglte /* this enum starts from 1 */
+	modem_ultg,
+	modem_ulwg,
+	modem_ulwtg,
+	modem_ulwcg,
+	modem_ulwctg,
+	modem_ulttg,
+	modem_ulfwg,
+	modem_ulfwcg,
+	MAX_IMG_NUM = modem_ulfwcg /* this enum starts from 1 */
 } MD_LOAD_TYPE;
 
 /* MD logger configure file */
@@ -65,16 +59,16 @@ typedef enum {
 
 /* Image string and header */
 /* image name/path */
-#define MOEDM_IMAGE_NAME                "modem.img"
+#define MOEDM_IMAGE_NAME			"modem.img"
 #define DSP_IMAGE_NAME					"DSP_ROM"
-#define CONFIG_MODEM_FIRMWARE_PATH	  "/etc/firmware/"
-#define CONFIG_MODEM_FIRMWARE_CIP_PATH  "/custom/etc/firmware/"
+#define CONFIG_MODEM_FIRMWARE_PATH		"/etc/firmware/"
+#define CONFIG_MODEM_FIRMWARE_CIP_PATH	"/custom/etc/firmware/"
 #define IMG_ERR_STR_LEN				 64
 
 /* image header constants */
 #define MD_HEADER_MAGIC_NO "CHECK_HEADER"
 
-#define DEBUG_STR		  "Debug"
+#define DEBUG_STR		"Debug"
 #define RELEASE_STR		"Release"
 #define INVALID_STR		"INVALID"
 
@@ -90,6 +84,14 @@ struct ccci_header {
 	u32 reserved;
 } __packed; /* not necessary, but it's a good gesture, :) */
 
+/*do not modify this c2k structure, because we assume its total size is 32bit,
+   and used as ccci_header's 'reserved' member*/
+struct c2k_ctrl_port_msg {
+	unsigned char id_hi;
+	unsigned char id_low;
+	unsigned char chan_num;
+	unsigned char option;
+} __packed; /* not necessary, but it's a good gesture, :) */
 
 struct md_check_header {
 	unsigned char check_header[12];  /* magic number is "CHECK_HEADER"*/
@@ -133,6 +135,190 @@ struct md_check_header_v3 {
 
 	unsigned int  size;			  /* the size of this structure */
 } __packed;
+
+struct _md_regin_info {
+	unsigned int region_offset;
+	unsigned int region_size;
+};
+
+
+struct md_check_header_v4 {
+	unsigned char check_header[12]; /* magic number is "CHECK_HEADER"*/
+	unsigned int header_verno; /* header structure version number */
+	unsigned int product_ver; /* 0x0:invalid; 0x1:debug version; 0x2:release version */
+	unsigned int image_type; /* 0x0:invalid; 0x1:2G modem; 0x2: 3G modem */
+	unsigned char platform[16]; /* MT6573_S01 or MT6573_S02 */
+	unsigned char build_time[64]; /* build time string */
+	unsigned char build_ver[64]; /* project version, ex:11A_MD.W11.28 */
+
+	unsigned char bind_sys_id; /* bind to md sys id, MD SYS1: 1, MD SYS2: 2, MD SYS5: 5 */
+	unsigned char ext_attr; /* no shrink: 0, shrink: 1 */
+	unsigned char reserved[2]; /* for reserved */
+
+	unsigned int mem_size; /* md ROM/RAM image size requested by md */
+	unsigned int md_img_size; /* md image size, exclude head size */
+	unsigned int rpc_sec_mem_addr; /* RPC secure memory address */
+
+	unsigned int dsp_img_offset;
+	unsigned int dsp_img_size;
+
+	unsigned int region_num; /* total region number */
+	struct _md_regin_info region_info[8]; /* max support 8 regions */
+	unsigned int domain_attr[4]; /* max support 4 domain settings, each region has 4 control bits*/
+
+	unsigned char reserved2[4];
+
+	unsigned int size; /* the size of this structure */
+} __packed;
+
+struct md_check_header_v5 {
+	unsigned char check_header[12]; /* magic number is "CHECK_HEADER"*/
+	unsigned int  header_verno; /* header structure version number */
+	unsigned int  product_ver; /* 0x0:invalid; 0x1:debug version; 0x2:release version */
+	unsigned int  image_type; /* 0x0:invalid; 0x1:2G modem; 0x2: 3G modem */
+	unsigned char platform[16]; /* MT6573_S01 or MT6573_S02 */
+	unsigned char build_time[64]; /* build time string */
+	unsigned char build_ver[64]; /* project version, ex:11A_MD.W11.28 */
+
+	unsigned char bind_sys_id; /* bind to md sys id, MD SYS1: 1, MD SYS2: 2, MD SYS5: 5 */
+	unsigned char ext_attr; /* no shrink: 0, shrink: 1 */
+	unsigned char reserved[2]; /* for reserved */
+
+	unsigned int  mem_size; /* md ROM/RAM image size requested by md */
+	unsigned int  md_img_size; /* md image size, exclude head size */
+	unsigned int  rpc_sec_mem_addr; /* RPC secure memory address */
+
+	unsigned int  dsp_img_offset;
+	unsigned int  dsp_img_size;
+
+	unsigned int  region_num; /* total region number */
+	struct _md_regin_info region_info[8]; /* max support 8 regions */
+	unsigned int  domain_attr[4]; /* max support 4 domain settings, each region has 4 control bits*/
+
+	unsigned int  arm7_img_offset;
+	unsigned int  arm7_img_size;
+
+	unsigned char reserved_1[56];
+
+
+	unsigned int  size; /* the size of this structure */
+} __packed;
+
+struct md_check_header_struct {
+	unsigned char check_header[12];  /* magic number is "CHECK_HEADER"*/
+	unsigned int  header_verno;	  /* header structure version number */
+	unsigned int  product_ver;	   /* 0x0:invalid; 0x1:debug version; 0x2:release version */
+	unsigned int  image_type;		/* 0x0:invalid; 0x1:2G modem; 0x2: 3G modem */
+	unsigned char platform[16];	  /* MT6573_S01 or MT6573_S02 */
+	unsigned char build_time[64];	/* build time string */
+	unsigned char build_ver[64];	 /* project version, ex:11A_MD.W11.28 */
+
+	unsigned char bind_sys_id;	   /* bind to md sys id, MD SYS1: 1, MD SYS2: 2 */
+	unsigned char ext_attr;		  /* no shrink: 0, shrink: 1*/
+	unsigned char reserved[2];	   /* for reserved */
+
+	unsigned int  mem_size;		  /* md ROM/RAM image size requested by md */
+	unsigned int  md_img_size;	   /* md image size, exclude head size*/
+#if 0 /* no use now, we still use struct */
+	union {
+		struct {
+			unsigned int  reserved_info;	 /* for reserved */
+			unsigned int  size;			  /* the size of this structure */
+		} v12;
+		struct {
+			unsigned int  rpc_sec_mem_addr;  /* RPC secure memory address */
+
+			unsigned int  dsp_img_offset;
+			unsigned int  dsp_img_size;
+			unsigned char reserved2[88];
+
+			unsigned int  size;			  /* the size of this structure */
+		} v3;
+		struct {
+			unsigned int rpc_sec_mem_addr; /* RPC secure memory address */
+
+			unsigned int dsp_img_offset;
+			unsigned int dsp_img_size;
+
+			unsigned int region_num; /* total region number */
+			struct _md_regin_info region_info[8]; /* max support 8 regions */
+			unsigned int domain_attr[4]; /* max support 4 domain settings, each region has 4 control bits*/
+
+			unsigned char reserved2[4];
+
+			unsigned int size; /* the size of this structure */
+		} v4;
+		struct {
+			unsigned int  rpc_sec_mem_addr; /* RPC secure memory address */
+
+			unsigned int  dsp_img_offset;
+			unsigned int  dsp_img_size;
+
+			unsigned int  region_num; /* total region number */
+			struct _md_regin_info region_info[8]; /* max support 8 regions */
+			unsigned int  domain_attr[4]; /* max support 4 domain settings, each region has 4 control bits*/
+
+			unsigned int  arm7_img_offset;
+			unsigned int  arm7_img_size;
+
+			unsigned char reserved_1[56];
+
+			unsigned int  size; /* the size of this structure */
+		} v5;
+	} diff;
+#endif
+} __packed;
+
+/* ======================= */
+/* index id region_info                        */
+/* ----------------------------- */
+enum {
+	/* MPU_REGION_INFO_ID_SEC_OS,
+	MPU_REGION_INFO_ID_ATF,
+	MPU_REGION_INFO_ID_SCP_OS,
+	MPU_REGION_INFO_ID_MD1_SEC_SMEM,
+	MPU_REGION_INFO_ID_MD2_SEC_SMEM,
+	MPU_REGION_INFO_ID_MD1_SMEM,
+	MPU_REGION_INFO_ID_MD2_SMEM,
+	MPU_REGION_INFO_ID_MD1_MD2_SMEM, */
+	MD_SET_REGION_MD1_ROM_DSP = 0,
+	MD_SET_REGION_MD1_MCURW_HWRO,
+	MD_SET_REGION_MD1_MCURO_HWRW,
+	MD_SET_REGION_MD1_MCURW_HWRW,/* old dsp region */
+	MD_SET_REGION_MD1_RW = 4,
+	/* MPU_REGION_INFO_ID_MD2_ROM,
+	MPU_REGION_INFO_ID_MD2_RW,
+	MPU_REGION_INFO_ID_AP,
+	MPU_REGION_INFO_ID_WIFI_EMI_FW,
+	MPU_REGION_INFO_ID_WMT, */
+	MPU_REGION_INFO_ID_LAST = MD_SET_REGION_MD1_RW,
+	MPU_REGION_INFO_ID_TOTAL_NUM,
+};
+
+
+
+/* ====================== */
+/* domain info                                 */
+/* ---------------------------- */
+enum{
+	MPU_DOMAIN_ID_AP = 0,
+	MPU_DOMAIN_ID_MD = 1,
+	MPU_DOMAIN_ID_MD3 = 5,
+	MPU_DOMAIN_ID_MDHW = 7,
+	MPU_DOMAIN_ID_TOTAL_NUM,
+};
+
+/* ====================== */
+/* index id domain_attr                     */
+/* ---------------------------- */
+enum{
+	MPU_DOMAIN_INFO_ID_MD1 = 0,
+	MPU_DOMAIN_INFO_ID_MD3,
+	MPU_DOMAIN_INFO_ID_MDHW,
+	MPU_DOMAIN_INFO_ID_LAST = MPU_DOMAIN_INFO_ID_MDHW,
+	MPU_DOMAIN_INFO_ID_TOTAL_NUM,
+};
+
 
 
 /* ================================================================================= */
@@ -186,6 +372,7 @@ struct md_check_header_v3 {
 /* modem protocol type for meta: AP_TST or DHL */
 #define CCCI_IOC_GET_MD_PROTOCOL_TYPE	_IOR(CCCI_IOC_MAGIC, 42, char[16])
 #define CCCI_IOC_SEND_SIGNAL_TO_USER	_IOW(CCCI_IOC_MAGIC, 43, unsigned int) /* md_init */
+#define CCCI_IOC_RESET_MD1_MD3_PCCIF	_IO(CCCI_IOC_MAGIC, 45) /* md_init */
 
 
 #define CCCI_IOC_SET_HEADER				_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
@@ -386,6 +573,17 @@ typedef enum {
 	CCCI_CCMNI8_TX                  = 91,
 	CCCI_CCMNI8_TX_ACK              = 92,
 	CCCI_CCMNI8_DLACK_RX            = 93, /*__CCMNI_ACK_FAST_P*/
+
+	CCCI_MDL_MONITOR_DL             = 94,
+	CCCI_MDL_MONITOR_UL             = 95,
+
+	/*5 chs for C2K only*/
+	CCCI_C2K_PPP_DATA,		/* data ch for c2k */
+	CCCI_C2K_AT,	/*rild AT ch for c2k*/
+	CCCI_C2K_AT2,	/*rild AT2 ch for c2k*/
+	CCCI_C2K_AT3,	/*rild AT3 ch for c2k*/
+	CCCI_C2K_LB_DL,	/*downlink loopback*/
+
 	CCCI_MONITOR_CH,
 	CCCI_DUMMY_CH,
 	CCCI_MAX_CH_NUM, /* RX channel ID should NOT be >= this!! */
@@ -394,6 +592,32 @@ typedef enum {
 	CCCI_FORCE_ASSERT_CH = 20090215,
 	CCCI_INVALID_CH_ID = 0xffffffff,
 } CCCI_CH;
+
+enum c2k_channel {
+	CTRL_CH_C2K = 0,
+	AUDIO_CH_C2K = 1,
+	DATA_PPP_CH_C2K = 2,
+	MDLOG_CTRL_CH_C2K = 3,
+	FS_CH_C2K = 4,
+	AT_CH_C2K = 5,
+	AGPS_CH_C2K = 6,
+	AT2_CH_C2K = 7,
+	AT3_CH_C2K = 8,
+	MDLOG_CH_C2K = 9,
+
+	STATUS_CH_C2K = 11,
+	NET1_CH_C2K = 12,
+	NET2_CH_C2K = 13,	/*need sync with c2k */
+	NET3_CH_C2K = 14,	/*need sync with c2k */
+	NET4_CH_C2K = 15,
+	NET5_CH_C2K = 16,
+
+	C2K_MAX_CH_NUM,
+
+	LOOPBACK_C2K = 255,
+	MD2AP_LOOPBACK_C2K = 256,
+};
+
 
 /* AP->md_init messages on monitor channel */
 typedef enum {
@@ -493,12 +717,22 @@ enum {
 	/* used for throttling feature - start */
 	MD_THROTTLING = 0x112, /* SW throughput throttling */
 	/* used for throttling feature - end */
+/* TEST_MESSAGE_FOR_BRINGUP */
+	TEST_MSG_ID_MD2AP = 0x114,  /* for IT only */
+	TEST_MSG_ID_AP2MD = 0x115,  /* for IT only */
+	TEST_MSG_ID_L1CORE_MD2AP = 0x116,  /* for IT only */
+	TEST_MSG_ID_L1CORE_AP2MD = 0x117,  /* for IT only */
 
 	/* swtp */
 	MD_SW_MD1_TX_POWER = 0x10E,
 	MD_SW_MD2_TX_POWER = 0x10F,
 	MD_SW_MD1_TX_POWER_REQ = 0x110,
 	MD_SW_MD2_TX_POWER_REQ = 0x111,
+
+	/*c2k ctrl msg start from 0x200*/
+	C2K_STATUS_IND_MSG = 0x201, /* for usb bypass */
+	C2K_STATUS_QUERY_MSG = 0x202, /* for usb bypass */
+	C2K_HB_MSG = 0x207,
 
 	/* System channel, MD->AP message start from 0x1000 */
 	MD_WDT_MONITOR = 0x1000,
@@ -530,6 +764,7 @@ typedef enum {
 typedef enum {
 	IMG_MD = 0,
 	IMG_DSP,
+	IMG_ARMV7,
 	IMG_NUM,
 } MD_IMG_TYPE;
 
@@ -552,6 +787,14 @@ struct IMG_CHECK_INFO {
 	unsigned int mem_size; /*md rom+ram mem size*/
 	unsigned int md_img_size; /*modem image actual size, exclude head size*/
 	PRODUCT_VER_TYPE version;
+	unsigned int header_verno;  /* header structure version number */
+};
+
+
+struct IMG_REGION_INFO {
+	unsigned int  region_num;        /* total region number */
+	struct _md_regin_info region_info[8];    /* max support 8 regions */
+	unsigned int  domain_attr[4];    /* max support 4 domain settings, each region has 4 control bits*/
 };
 
 struct ccci_image_info {
@@ -563,9 +806,12 @@ struct ccci_image_info {
 	unsigned int tail_length; /* signature tail */
 	unsigned int dsp_offset;
 	unsigned int dsp_size;
+	unsigned int arm7_offset;
+	unsigned int arm7_size;
 	char *ap_platform;
 	struct IMG_CHECK_INFO img_info; /* read from MD image header */
 	struct IMG_CHECK_INFO ap_info; /* get from AP side configuration */
+	struct IMG_REGION_INFO rmpu_info;  /* refion pinfo for RMPU setting */
 };
 
 struct ccci_dev_cfg {
@@ -632,11 +878,19 @@ struct modem_runtime {
 	u32 ExceShareMemSize;
 	u32 CCIFShareMemBase;
 	u32 CCIFShareMemSize;
+#ifdef FEATURE_DHL_LOG_EN
+	u32 DHLShareMemBase; /* For DHL */
+	u32 DHLShareMemSize;
+#endif
+#ifdef FEATURE_MD1MD3_SHARE_MEM
+	u32 MD1MD3ShareMemBase; /* For MD1 MD3 share memory */
+	u32 MD1MD3ShareMemSize;
+#endif
 	u32 TotalShareMemBase;
 	u32 TotalShareMemSize;
 	u32 CheckSum;
 #endif
-	u32 Postfix;			/* "CCIF" */
+	u32 Postfix; /* "CCIF" */
 #if 1 /* misc region */
 	u32 misc_prefix;	/* "MISC" */
 	u32 support_mask;
@@ -674,7 +928,19 @@ typedef struct{
 	ccci_sys_cb_func_t	func;
 } ccci_sys_cb_func_info_t;
 
-#define MAX_KERN_API 20
+#define MAX_KERN_API 24 /* 20 */
+
+typedef enum {
+	SMEM_SUB_REGION00 = 0, /* dbm */
+	SMEM_SUB_REGION01,
+	SMEM_SUB_REGION02,
+	SMEM_SUB_REGION03,
+	SMEM_SUB_REGION04,
+	SMEM_SUB_REGION05,
+	SMEM_SUB_REGION06,
+	SMEM_SUB_REGION07,
+	SMEM_SUB_REGION_MAX,
+} smem_sub_region_t;
 
 /* ============================================================================================== */
 /* Export API */
@@ -692,6 +958,7 @@ char *ccci_get_md_info_str(int md_id); /* Export by ccci util */
 int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_fix[]); /* Export by ccci util */
 int get_md_resv_mem_info(int md_id, phys_addr_t *r_rw_base, unsigned int *r_rw_size,
 					phys_addr_t *srw_base, unsigned int *srw_size); /* Export by ccci util */
+int get_md1_md3_resv_smem_info(int md_id, phys_addr_t *rw_base, unsigned int *rw_size);
 /* used for throttling feature - start */
 unsigned long ccci_get_md_boot_count(int md_id);
 /* used for throttling feature - end */
@@ -701,9 +968,21 @@ int register_ccci_sys_call_back(int md_id, unsigned int id, ccci_sys_cb_func_t f
 int switch_sim_mode(int id, char *buf, unsigned int len);
 unsigned int get_sim_switch_type(void);
 
+#ifdef CONFIG_MTK_ECCCI_C2K
+/* for c2k usb bypass */
+int ccci_c2k_rawbulk_intercept(int ch_id, unsigned int interception);
+int ccci_c2k_buffer_push(int ch_id, void *buf, int count);
+int modem_dtr_set(int on, int low_latency);
+int modem_dcd_state(void);
+#endif
 /* CLib for modem get ap time */
 void notify_time_update(void);
 int wait_time_update_notify(void);
 /*cb API for system power off*/
 void ccci_power_off(void);
+/* Ubin API */
+int md_capability(int md_id, int wm_id, int curr_md_type);
+int get_md_wm_id_map(int ap_wm_id);
+/* AP MD user share */
+void __iomem *get_smem_start_addr(int md_id, int region_id, int *size_o);
 #endif

@@ -32,6 +32,11 @@ ifeq ($(CONFIG_MTK_ECCCI_CLDMA), y)
 ccci-y += modem_cldma.o
 endif
 
+# make sure modem_cldma.c run before modem_ccif_c2k.c, because when IRAT, c2k will use md1's ccmni
+ifeq ($(CONFIG_MTK_ECCCI_C2K), y)
+ccci-y += ccci_ringbuf.o modem_ccif_c2k.o
+endif
+
 # modem_xxx.o and modem_ut.o should not be enabled both, unless you checked code (device number. etc.).
 ifeq ($(CONFIG_MTK_ECCCI_UT), y)
 ccci-y += modem_ut.o

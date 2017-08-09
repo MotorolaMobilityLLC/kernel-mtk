@@ -27,6 +27,10 @@
 
 void ccci_clear_md_region_protection(struct ccci_modem *md);
 void ccci_set_mem_access_protection(struct ccci_modem *md);
+#ifdef SET_EMI_STEP_BY_STAGE
+void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md);
+void ccci_set_mem_access_protection_second_stage(struct ccci_modem *md);
+#endif
 void ccci_set_ap_region_protection(struct ccci_modem *md);
 #ifdef ENABLE_DSP_SMEM_SHARE_MPU_REGION
 void ccci_set_exp_region_protection(struct ccci_modem *md);
@@ -44,5 +48,5 @@ extern unsigned int get_max_DRAM_size(void);
 extern unsigned int get_phys_offset(void);
 #endif
 
-#define MD_IN_DEBUG(md) ((ccci_get_md_debug_mode(md)&(DBG_FLAG_JTAG|DBG_FLAG_DEBUG)) != 0)
+#define MD_IN_DEBUG(md) (0)/* ((ccci_get_md_debug_mode(md)&(DBG_FLAG_JTAG|DBG_FLAG_DEBUG)) != 0) */
 #endif				/* _CCCCI_PLATFORM_H_ */

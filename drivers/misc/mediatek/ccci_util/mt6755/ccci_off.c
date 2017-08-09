@@ -41,7 +41,7 @@ static struct clk *clk_scp_sys_md1_main;
 
 #define MODEM_LITE_TOPSM_RM_TMR_PWR0(base)	((base)+0x0018)
 #define MODEM_LITE_TOPSM_RM_TMR_PWR1(base)	((base)+0x001C)
-#define MODEM_LITE_TOPSM_RM_PWR_CON0(base)	((base)+0x0800)
+#define MODEM_LITE_TOPSM_RM_PWR_CON0(base) ((base)+0x0800)
 #define MODEM_LITE_TOPSM_RM_PLL_MASK0(base)	((base)+0x0830)
 #define MODEM_LITE_TOPSM_RM_PLL_MASK1(base)	((base)+0x0834)
 #define MODEM_LITE_TOPSM_SM_REQ_MASK(base)	((base)+0x08B0)

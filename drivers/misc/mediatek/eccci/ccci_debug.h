@@ -21,6 +21,8 @@ do { \
 		pr_debug("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
 	else if (ccci_debug_enable == 2) \
 		pr_notice("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+	else if (ccci_debug_enable == 6) \
+		pr_err("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
 } while (0)
 /* for normal log, print to RAM by default, print to UART when needed */
 #define CCCI_INF_MSG(idx, tag, fmt, args...) \
@@ -29,7 +31,12 @@ do { \
 		pr_debug("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
 	else if (ccci_debug_enable == 2) \
 		pr_notice("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+	else if (ccci_debug_enable == 5 || ccci_debug_enable == 6) \
+		pr_err("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
 } while (0)
+
+/* for critical init log*/
+#define CCCI_NOTICE_MSG(idx, tag, fmt, args...) pr_notice("[ccci%d/ntc/" tag "]" fmt, (idx+1), ##args)
 /* for error log */
 #define CCCI_ERR_MSG(idx, tag, fmt, args...) pr_err("[ccci%d/err/" tag "]" fmt, (idx+1), ##args)
 

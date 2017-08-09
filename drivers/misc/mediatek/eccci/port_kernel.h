@@ -8,8 +8,14 @@
 #define CCCI_AED_DUMP_CCIF_REG		(1<<2)
 #define CCCI_AED_DUMP_EX_PKT		(1<<3)
 
+#ifdef MD_UMOLY_EE_SUPPORT
+#define EE_BUF_LEN_UMOLY		(0x700)
+#define AED_STR_LEN		(2048)
+#define EE_BUF_LEN		(256)
+#else
 #define EE_BUF_LEN		(256)
 #define AED_STR_LEN		(512)
+#endif
 
 #define CCCI_EXREC_OFFSET_OFFENDER 288
 
@@ -28,11 +34,29 @@ enum {
 	DSP_EX_TYPE_ASSERT = 11,
 	DSP_EX_TYPE_EXCEPTION = 12,
 	DSP_EX_FATAL_ERROR = 13,
+
+	/*cross core trigger exception, only md3 will trigger this exception*/
+	CC_MD1_EXCEPTION = 15,
+
 	NUM_EXCEPTION,
 	MD_EX_TYPE_C2K_ERROR = 0x25,
 	MD_EX_TYPE_EMI_CHECK = 99,
 	MD_EX_C2K_FATAL_ERROR = 0x3000,
 };
+
+#ifdef MD_UMOLY_EE_SUPPORT
+enum {
+	MD_EX_DUMP_INVALID = 0,
+	MD_EX_DUMP_ASSERT = 1,
+	MD_EX_DUMP_3P_EX = 2,
+	MD_EX_DUMP_2P_EX = 3,
+
+	MD_EX_DUMP_EMI_CHECK = MD_EX_TYPE_EMI_CHECK,
+
+	/*MD_EX_C2K_FATAL_ERROR = 0x3000,*/
+	MD_EX_DUMP_UNKNOWN,
+};
+#endif
 
 enum {
 	MD_EE_FLOW_START = 0,
@@ -134,6 +158,7 @@ struct ccci_rpc_clkbuf_result {
 /* hardcode, becarefull with data size, should not exceed tmp_data[] in ccci_rpc_work_helper() */
 #define GPIO_MAX_COUNT 3
 #endif
+#define GPIO_MAX_COUNT_V2 10
 #define GPIO_PIN_NAME_STR_MAX_LEN 34
 #define ADC_CH_NAME_STR_MAX_LEN 33
 
@@ -156,6 +181,23 @@ struct ccci_rpc_gpio_adc_intput {
 struct ccci_rpc_gpio_adc_output {
 	u32 gpioPinNum[GPIO_MAX_COUNT];
 	u32 gpioPinValue[GPIO_MAX_COUNT];
+	u32 adcChNum;
+	u32 adcChMeasSum;
+} __packed;	/* the total size should sync with tmp_data[] using in ccci_rpc_work_helper() */
+
+struct ccci_rpc_gpio_adc_intput_v2 { /* 10 pin GPIO support */
+	u16 reqMask;
+	u16 gpioValidPinMask;
+	char gpioPinName[GPIO_MAX_COUNT_V2][GPIO_PIN_NAME_STR_MAX_LEN];
+	u32 gpioPinNum[GPIO_MAX_COUNT_V2];
+	char adcChName[ADC_CH_NAME_STR_MAX_LEN];
+	u32 adcChNum;
+	u32 adcChMeasCount;
+} __packed;
+
+struct ccci_rpc_gpio_adc_output_v2 { /* 10 pin GPIO support */
+	u32 gpioPinNum[GPIO_MAX_COUNT_V2];
+	u32 gpioPinValue[GPIO_MAX_COUNT_V2];
 	u32 adcChNum;
 	u32 adcChMeasSum;
 } __packed;	/* the total size should sync with tmp_data[] using in ccci_rpc_work_helper() */

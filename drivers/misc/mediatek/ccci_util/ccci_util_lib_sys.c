@@ -116,7 +116,7 @@ static ssize_t boot_status_store(const char *buf, size_t count)
 	unsigned int md_id;
 
 	md_id = buf[0] - '0';
-	CCCI_UTIL_DBG_MSG("md%d get boot store\n", md_id + 1);
+	CCCI_UTIL_INF_MSG("md%d get boot store\n", md_id + 1);
 	if (md_id < MAX_MD_NUM) {
 		if (trigger_md_boot(md_id) != 0)
 			CCCI_UTIL_INF_MSG("md%d n/a\n", md_id + 1);
@@ -269,8 +269,8 @@ static int dump_line_with_32(unsigned long addr, char buf[], int num, int size)
 static int runtime_reg_dump(unsigned long start_addr, unsigned int size, unsigned int access_width, char out_buf[])
 {
 	unsigned int i, buf_idx, dump_num_in_line, has_dumped;
-	unsigned long curr_addr;
 	int (*rd_func)(unsigned long, char *, int, int);
+	unsigned long curr_addr;
 
 	if (size > 4096)
 		size = 4096;
@@ -311,7 +311,7 @@ static int command_parser(const char *input_str, char cmd[], unsigned long out_p
 	int i = 0, j, k;
 	char tmp_buf[32];
 	char filter_str[256];
-	int temp_valu, ret;
+	int temp_valu;
 
 	/* Filter out 0xD and 0xA */
 	j = 0;
@@ -361,10 +361,9 @@ static int command_parser(const char *input_str, char cmd[], unsigned long out_p
 		}
 		tmp_buf[j] = '\0';
 		/* change string to number */
-		ret = kstrtoint(tmp_buf, 0, &temp_valu);
-		out_put[k] = temp_valu;
-		if (ret < 0)
-			CCCI_UTIL_ERR_MSG("sscanf return fail: %d\n", ret);
+		temp_valu = kstrtoul(tmp_buf, 16, &out_put[k]);
+		if (temp_valu < 0)
+			CCCI_UTIL_ERR_MSG("sscanf return fail: %d\n", temp_valu);
 	}
 
 	return k + 1;
@@ -543,7 +542,7 @@ static ssize_t kcfg_setting_show(char *buf)
 	actual_write = snprintf(&buf[curr], 4096 - curr, "total:%d\n", curr);
 	curr += actual_write;
 
-	CCCI_UTIL_DBG_MSG("cfg_info_buffer size:%d\n", curr);
+	CCCI_UTIL_INF_MSG("cfg_info_buffer size:%d\n", curr);
 	return (ssize_t) curr;
 }
 
@@ -613,7 +612,7 @@ int ccci_common_sysfs_init(void)
 
 	memset(ccci_sys_info, 0, sizeof(struct ccci_info));
 
-	ret = kobject_init_and_add(&ccci_sys_info->kobj, &ccci_ktype, (struct kobject *)kernel_kobj, CCCI_KOBJ_NAME);
+	ret = kobject_init_and_add(&ccci_sys_info->kobj, &ccci_ktype, kernel_kobj, CCCI_KOBJ_NAME);
 	if (ret < 0) {
 		kobject_put(&ccci_sys_info->kobj);
 		CCCI_UTIL_ERR_MSG("fail to add ccci kobject\n");

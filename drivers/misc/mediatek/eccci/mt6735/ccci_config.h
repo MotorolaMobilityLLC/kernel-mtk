@@ -54,6 +54,23 @@
 
 #endif
 
+#define CCCI_SMEM_DUMP_SIZE			4096/* smem size we dump when EE */
+#define CCCI_SMEM_SIZE_EXCEPTION	0x10000/* exception smem total size */
+#define CCCI_SMEM_SIZE_RUNTIME_AP	0x800/* AP runtime data size */
+#define CCCI_SMEM_SIZE_RUNTIME_MD 0x800/* MD runtime data size */
+#define CCCI_SMEM_SIZE_RUNTIME	(CCCI_SMEM_SIZE_RUNTIME_AP+CCCI_SMEM_SIZE_RUNTIME_MD)
+#define CCCI_SMEM_OFFSET_EXREC 2048/* where the exception record begain in smem */
+#define CCCC_SMEM_CCIF_SRAM_SIZE 16
+#define CCCI_SMEM_OFFSET_CCIF_SRAM (CCCI_SMEM_OFFSET_EXREC+1024-CCCC_SMEM_CCIF_SRAM_SIZE)
+#define CCCI_SMEM_OFFSET_EPON 0xC64
+#define CCCI_SMEM_OFFSET_SEQERR 0x34
+#define CCCI_SMEM_OFFSET_CCCI_DEBUG 0 /* where the MD CCCI debug info begain in smem */
+#define CCCI_SMEM_CCCI_DEBUG_SIZE 2048 /* MD CCCI debug info size */
+#define CCCI_SMEM_OFFSET_MDSS_DEBUG 2048 /* where the MD SS debug info begain in smem */
+#define CCCI_SMEM_MDSS_DEBUG_SIZE 2048 /* MD SS debug info size */
+#define CCCI_SMEM_SLEEP_MODE_DBG_SIZE 1024 /* MD sleep mode debug info section in smem tail */
+#define CCCI_SMEM_SLEEP_MODE_DBG_DUMP 512 /* only dump first 512bytes in sleep mode info */
+
 /*================================================ */
 /*Configure value option part*/
 /*================================================*/
@@ -67,6 +84,7 @@
 #define RELOAD_TH            3	/*reload pool if pool size dropped below 1/RELOAD_TH */
 #define MD_HEADER_VER_NO    (3)
 #define MEM_LAY_OUT_VER     (1)
+#define AP_MD_HS_V2          2	/*handshake version*/
 
 #define CCCI_MEM_ALIGN      (SZ_32M)
 #define CCCI_SMEM_ALIGN_MD1 (0x200000)	/*2M */
@@ -75,4 +93,5 @@
 #define CURR_SEC_CCCI_SYNC_VER (1)	/*Note: must sync with sec lib, if ccci and sec has dependency change */
 #define CCCI_DRIVER_VER     0x20110118
 
+#define CCCI_LOG_LEVEL 5
 #endif

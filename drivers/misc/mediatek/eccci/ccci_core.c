@@ -74,9 +74,6 @@ int ccci_port_recv_request(struct ccci_modem *md, struct ccci_request *req, stru
 	struct ccci_port *port = NULL;
 	struct list_head *port_list = NULL;
 	int ret = -CCCI_ERR_CHANNEL_NUM_MIS_MATCH;
-#ifdef FEATURE_SEQ_CHECK_EN
-	u16 channel, seq_num, assert_bit;
-#endif
 	char matched = 0;
 
 	if (likely(skb)) {
@@ -91,7 +88,7 @@ int ccci_port_recv_request(struct ccci_modem *md, struct ccci_request *req, stru
 		ret = -CCCI_ERR_CHANNEL_NUM_MIS_MATCH;
 		goto err_exit;
 	}
-	if (unlikely((md->md_state == GATED || md->md_state == RESET || md->md_state == INVALID) &&
+	if (unlikely((md->md_state == GATED || md->md_state == INVALID) &&
 		     ccci_h->channel != CCCI_MONITOR_CH)) {
 		ret = -CCCI_ERR_HIF_NOT_POWER_ON;
 		goto err_exit;
@@ -105,13 +102,9 @@ int ccci_port_recv_request(struct ccci_modem *md, struct ccci_request *req, stru
 		 * kind of multi-cast if needed.
 		 */
 		matched =
-		    (port->ops->req_match == NULL) ? (ccci_h->channel == port->rx_ch) : port->ops->req_match(port, req);
+		    (port->ops->req_match == NULL || req == NULL) ?
+			(ccci_h->channel == port->rx_ch) : port->ops->req_match(port, req);
 		if (matched) {
-#ifdef FEATURE_SEQ_CHECK_EN
-			channel = ccci_h->channel;
-			seq_num = ccci_h->seq_num;
-			assert_bit = ccci_h->assert_bit;
-#endif
 			if (likely(skb && port->ops->recv_skb)) {
 				ret = port->ops->recv_skb(port, skb);
 			} else if (req && port->ops->recv_request) {
@@ -121,21 +114,6 @@ int ccci_port_recv_request(struct ccci_modem *md, struct ccci_request *req, stru
 				ret = -CCCI_ERR_CHANNEL_NUM_MIS_MATCH;
 				goto err_exit;
 			}
-
-#ifdef FEATURE_SEQ_CHECK_EN
-			if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
-				if (assert_bit && ((seq_num - md->seq_nums[IN][channel]) & 0x7FFF) != 1) {
-					CCCI_ERR_MSG(md->index, CORE, "port %s seq number out-of-order %d->%d\n",
-						     port->name, seq_num, md->seq_nums[IN][channel]);
-					md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, 0);
-					md->ops->force_assert(md, CCIF_INTR_SEQ);
-				} else {
-					/* CCCI_INF_MSG(md->index, CORE, "ch %d seq %d->%d %d\n",
-						channel, md->seq_nums[IN][channel], seq_num, assert_bit); */
-					md->seq_nums[IN][channel] = seq_num;
-				}
-			}
-#endif
 			if (ret == -CCCI_ERR_PORT_RX_FULL)
 				port->rx_busy_count++;
 			break;
@@ -144,7 +122,7 @@ int ccci_port_recv_request(struct ccci_modem *md, struct ccci_request *req, stru
 
  err_exit:
 	if (ret == -CCCI_ERR_CHANNEL_NUM_MIS_MATCH || ret == -CCCI_ERR_HIF_NOT_POWER_ON) {
-		CCCI_ERR_MSG(md->index, CORE, "drop on channel %d\n", ccci_h->channel);
+		/* CCCI_ERR_MSG(md->index, CORE, "drop on channel %d\n", ccci_h->channel); */ /* Fix me, mask temp */
 		if (req) {
 			list_del(&req->entry);
 			req->policy = RECYCLE;
@@ -276,18 +254,39 @@ void ccci_config_modem(struct ccci_modem *md)
 	md->smem_layout.ccci_exp_smem_ccci_debug_size = CCCI_SMEM_CCCI_DEBUG_SIZE;
 	md->smem_layout.ccci_exp_smem_mdss_debug_vir =
 	    md->smem_layout.ccci_exp_smem_base_vir + CCCI_SMEM_OFFSET_MDSS_DEBUG;
-	md->smem_layout.ccci_exp_smem_mdss_debug_size = CCCI_SMEM_MDSS_DEBUG_SIZE;
+#ifdef MD_UMOLY_EE_SUPPORT
+	if (md->index == MD_SYS1)
+		md->smem_layout.ccci_exp_smem_mdss_debug_size = CCCI_SMEM_MDSS_DEBUG_SIZE_UMOLY;
+	else
+#endif
+		md->smem_layout.ccci_exp_smem_mdss_debug_size = CCCI_SMEM_MDSS_DEBUG_SIZE;
 	md->smem_layout.ccci_exp_smem_sleep_debug_vir = md->smem_layout.ccci_exp_smem_base_vir +
 		md->smem_layout.ccci_exp_smem_size - CCCI_SMEM_SLEEP_MODE_DBG_SIZE;
 	md->smem_layout.ccci_exp_smem_sleep_debug_size = CCCI_SMEM_SLEEP_MODE_DBG_DUMP;
+
 	/* exception record start address */
 	md->smem_layout.ccci_exp_rec_base_vir = md->smem_layout.ccci_exp_smem_base_vir + CCCI_SMEM_OFFSET_EXREC;
+
+	/*runtime region */
+	md->smem_layout.ccci_rt_smem_base_phy = md->smem_layout.ccci_exp_smem_base_phy +
+	    md->smem_layout.ccci_exp_smem_size;
+	md->smem_layout.ccci_rt_smem_base_vir = md->smem_layout.ccci_exp_smem_base_vir +
+	    md->smem_layout.ccci_exp_smem_size;
+	md->smem_layout.ccci_rt_smem_size = CCCI_SMEM_SIZE_RUNTIME;
+
+	/*md1 md3 shared memory region and remap*/
+	get_md1_md3_resv_smem_info(md->index, &md->mem_layout.md1_md3_smem_phy,
+		&md->mem_layout.md1_md3_smem_size);
+	md->mem_layout.md1_md3_smem_vir =
+	    ioremap_nocache(md->mem_layout.md1_md3_smem_phy, md->mem_layout.md1_md3_smem_size);
+	memset_io(md->mem_layout.md1_md3_smem_vir, 0, md->mem_layout.md1_md3_smem_size);
 
 	/* updae image info */
 	md->img_info[IMG_MD].type = IMG_MD;
 	md->img_info[IMG_MD].address = md->mem_layout.md_region_phy;
 	md->img_info[IMG_DSP].type = IMG_DSP;
 	md->img_info[IMG_DSP].address = md->mem_layout.dsp_region_phy;
+	md->img_info[IMG_ARMV7].type = IMG_ARMV7;
 
 	if (md->config.setting & MD_SETTING_ENABLE)
 		ccci_set_mem_remap(md, md_resv_smem_addr - md_resv_mem_addr,
@@ -298,7 +297,10 @@ void ccci_config_modem(struct ccci_modem *md)
  * for debug log: 0 to disable; 1 for print to ram; 2 for print to uart
  * other value to desiable all log
  */
-unsigned int ccci_debug_enable = 4;
+#ifndef CCCI_LOG_LEVEL
+#define CCCI_LOG_LEVEL 0
+#endif
+unsigned int ccci_debug_enable = CCCI_LOG_LEVEL;
 
 /* ================================================================== */
 /* MD relate sys */
@@ -704,6 +706,62 @@ int switch_MD2_Tx_Power(unsigned int mode)
 }
 EXPORT_SYMBOL(switch_MD2_Tx_Power);
 #endif
+
+int register_smem_sub_region_mem_func(int md_id, smem_sub_region_cb_t pfunc, int region_id)
+{
+	struct ccci_modem *md = NULL;
+	int ret = 0;
+
+	list_for_each_entry(md, &modem_list, entry) {
+		if (md->index == md_id) {
+			ret = 1;
+			break;
+		}
+	}
+	if (ret) {
+		if (region_id < SMEM_SUB_REGION_MAX) {
+			md->sub_region_cb_tbl[region_id] = pfunc;
+			CCCI_INF_MSG(md_id, CORE, "region%d call back %p register success\n", region_id, pfunc);
+			return 0;
+		}
+
+		CCCI_INF_MSG(md_id, CORE, "sub_region invalid %d\n", region_id);
+		return -2;
+	}
+
+	CCCI_INF_MSG(md_id, CORE, "md id invalid %d\n", md_id);
+	return -1;
+}
+
+void __iomem *get_smem_start_addr(int md_id, int region_id, int *size_o)
+{
+	struct ccci_modem *md = NULL;
+	int ret = 0;
+
+	list_for_each_entry(md, &modem_list, entry) {
+		if (md->index == md_id) {
+			ret = 1;
+			break;
+		}
+	}
+
+	if (!ret) {
+		CCCI_INF_MSG(md_id, CORE, "md%d not support\n", md_id+1);
+		return NULL;
+	}
+
+	if (region_id >= SMEM_SUB_REGION_MAX) {
+		CCCI_INF_MSG(md_id, CORE, "region id%d not support\n", region_id);
+		return NULL;
+	}
+
+	if (md->sub_region_cb_tbl[region_id] == NULL) {
+		CCCI_INF_MSG(md_id, CORE, "region%d call back not register\n", region_id);
+		return NULL;
+	}
+
+	return md->sub_region_cb_tbl[region_id](md, size_o);
+}
 
 subsys_initcall(ccci_init);
 

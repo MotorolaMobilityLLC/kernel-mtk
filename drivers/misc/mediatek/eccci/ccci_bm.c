@@ -5,7 +5,6 @@
 #include <linux/module.h>
 
 #include <mt-plat/mt_ccci_common.h>
-
 #include "ccci_config.h"
 #include "ccci_bm.h"
 #ifdef CCCI_BM_TRACE
@@ -34,14 +33,17 @@ void ccci_bm_stat_timer_func(unsigned long data)
 static struct ccci_request *ccci_req_dequeue(struct ccci_req_queue *queue)
 {
 	unsigned long flags;
-	struct ccci_request *result;
+	struct ccci_request *result = NULL;
 
 	spin_lock_irqsave(&queue->req_lock, flags);
+	if (list_empty(&queue->req_list))
+		goto out;
 	result = list_first_entry(&queue->req_list, struct ccci_request, entry);
 	if (result) {
 		queue->count--;
 		list_del(&result->entry);
 	}
+out:
 	spin_unlock_irqrestore(&queue->req_lock, flags);
 	return result;
 }
@@ -304,7 +306,7 @@ struct ccci_request *ccci_alloc_req(DIRECTION dir, int size, char blk1, char blk
 		}
 		CCCI_INF_MSG(-1, BM, "fail to alloc req for %ps, no retry\n", __builtin_return_address(0));
 	}
-	if (unlikely(size > 0 && !req->skb)) {
+	if (unlikely(size > 0 && req && !req->skb)) {
 		CCCI_ERR_MSG(-1, BM, "fail to alloc skb for %ps, size=%d\n", __builtin_return_address(0), size);
 		req->policy = NOOP;
 		ccci_free_req(req);

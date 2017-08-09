@@ -38,6 +38,9 @@ ccci-y := ccci_platform.o $(core_obj) $(mach_obj) $(sec_obj)
 ifeq ($(CONFIG_MTK_ECCCI_CLDMA), y)
 ccci-y += cldma_platform.o
 endif
+ifeq ($(CONFIG_MTK_ECCCI_C2K), y)
+ccci-y += ccif_c2k_platform.o
+endif
 
 else
 obj-  := dummy.o # avoid build error

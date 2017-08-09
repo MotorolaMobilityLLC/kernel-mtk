@@ -16,7 +16,7 @@
 #define CCIF_PKG_HEADER 0xAABBAABB
 #define CCIF_PKG_FOOTER 0xCCDDEEFF
 
-static inline void *rbf_memcpy1(void *__dest, __const void *__src, size_t __n)
+static inline void *rbf_memcpy(void *__dest, __const void *__src, size_t __n)
 {
 	int i = 0;
 	unsigned char *d = (unsigned char *)__dest, *s = (unsigned char *)__src;
@@ -50,7 +50,7 @@ static inline void *rbf_memcpy1(void *__dest, __const void *__src, size_t __n)
 	return __dest;
 }
 
-#define rbf_memcpy memcpy
+/* #define rbf_memcpy memcpy */
 #define CCIF_RBF_READ(bufaddr, output_addr, read_size, read_pos, buflen)\
 	do {\
 		if (read_pos + read_size < buflen) {\
@@ -79,7 +79,8 @@ static inline void *rbf_memcpy1(void *__dest, __const void *__src, size_t __n)
 	} while (0)
 
 static void ccci_ringbuf_dump(int md_id, unsigned char *title,
-			      unsigned char *buffer, unsigned int read, unsigned int length, int dump_size)
+			      unsigned char *buffer, unsigned int read,
+			      unsigned int length, int dump_size)
 {
 	int i, j;
 	unsigned char tmp_buf[256];
@@ -87,13 +88,15 @@ static void ccci_ringbuf_dump(int md_id, unsigned char *title,
 
 	if (write >= length)
 		write -= length;
-	CCCI_INF_MSG(md_id, TAG, "%s rbdump: buf=0x%p, read=%d, write=%d\n", title, buffer, read, write);
+	CCCI_INF_MSG(md_id, TAG, "%s rbdump: buf=0x%p, read=%d, write=%d\n",
+		     title, buffer, read, write);
 	read = (read >> 3) << 3;
-	/* 8byte align */
+	/* 8byte align*/
 	write = ((write + 7) >> 3) << 3;
 	if (write >= length)
 		write -= length;
-	CCCI_INF_MSG(md_id, TAG, "rbdump:aligned read=%d,write=%d\n", read, write);
+	CCCI_INF_MSG(md_id, TAG, "rbdump:aligned read=%d,write=%d\n", read,
+		     write);
 	i = read;
 	while (1) {
 		memset(tmp_buf, 0, sizeof(tmp_buf));
@@ -101,7 +104,8 @@ static void ccci_ringbuf_dump(int md_id, unsigned char *title,
 		for (j = 0; j < 4; j++) {
 			snprintf(tmp_buf, sizeof(tmp_buf),
 				 "%s %02X%02X%02X%02X", tmp_buf, *(buffer + i),
-				 *(buffer + i + 1), *(buffer + i + 2), *(buffer + i + 3));
+				 *(buffer + i + 1), *(buffer + i + 2),
+				 *(buffer + i + 3));
 			i += sizeof(unsigned int);
 			if (i >= length)
 				i -= length;
@@ -231,10 +235,11 @@ int ccci_ringbuf_write(int md_id, struct ccci_ringbuf *ringbuf, unsigned char *d
 int ccci_ringbuf_readable(int md_id, struct ccci_ringbuf *ringbuf)
 {
 	unsigned char *rx_buffer, *outptr;
-	unsigned int read, write, size, ccci_pkg_len, ccif_pkg_len;
+	unsigned int read, write, ccci_pkg_len, ccif_pkg_len;
 	unsigned int footer_pos, length;
 	unsigned int header[2] = { 0 };
 	unsigned int footer[2] = { 0 };
+	int size;
 
 	if (ringbuf == NULL) {
 		CCCI_ERR_MSG(md_id, TAG, "rbrdb param error,ringbuf==NULL\n");

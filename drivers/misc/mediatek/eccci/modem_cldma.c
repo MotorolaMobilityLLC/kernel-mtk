@@ -73,7 +73,7 @@ static int net_rx_queue_buffer_number[CLDMA_RXQ_NUM] = { 0, 0, 0, 512, 512, 128,
 static int net_tx_queue_buffer_number[CLDMA_TXQ_NUM] = { 0, 0, 0, 256, 256, 64, 0, 0 };
 #endif
 static int normal_rx_queue_buffer_number[CLDMA_RXQ_NUM] = { 16, 16, 16, 16, 0, 0, 16, 2 };
-static int normal_tx_queue_buffer_number[CLDMA_TXQ_NUM] = { 16, 32, 16, 16, 0, 0, 16, 2 };
+static int normal_tx_queue_buffer_number[CLDMA_TXQ_NUM] = { 16, 16, 16, 16, 0, 0, 16, 2 };
 static int net_rx_queue2ring[CLDMA_RXQ_NUM] = { -1, -1, -1, 0, 1, 2, -1, -1 };
 static int net_tx_queue2ring[CLDMA_TXQ_NUM] = { -1, -1, -1, 0, 1, 2, -1, -1 };
 static int normal_rx_queue2ring[CLDMA_RXQ_NUM] = { 0, 1, 2, 3, -1, -1, 4, 5 };
@@ -95,7 +95,8 @@ static const unsigned char high_priority_queue_mask = 0x00;
 
 #define CLDMA_CG_POLL 6
 #define CLDMA_ACTIVE_T 20
-#define BOOT_TIMER_ON 10
+
+#define BOOT_TIMER_ON 20/*10*/
 
 #define TAG "mcd"
 
@@ -433,6 +434,7 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 			spin_unlock_irqrestore(&queue->ring_lock, flags);
 			break;
 		}
+		spin_unlock_irqrestore(&queue->ring_lock, flags);
 		skb = req->skb;
 		/* update skb */
 		dma_unmap_single(&md->plat_dev->dev, req->data_buffer_ptr_saved,
@@ -474,7 +476,7 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 		port_recv_time = (sched_clock() - port_recv_time);
 #endif
 		CCCI_DBG_MSG(md->index, TAG, "Rx port recv req ret=%d\n", ret);
-
+		spin_lock_irqsave(&queue->ring_lock, flags);
 		if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
 			/* mark cldma_request as available */
 			req->skb = NULL;
@@ -484,6 +486,7 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 			spin_unlock_irqrestore(&queue->ring_lock, flags);
 
 			/* update log */
+			ccci_chk_rx_seq_num(md, &ccci_h, queue->index);
 #if TRAFFIC_MONITOR_INTERVAL
 			md_ctrl->rx_traffic_monitor[queue->index]++;
 #endif
@@ -585,6 +588,7 @@ static int cldma_gpd_net_rx_collect(struct md_cd_queue *queue, int budget, int b
 		skb_put(skb, rgpd->data_buff_len);
 		skb_bytes = skb->len;
 		*rxbytes += skb_bytes;
+		ccci_chk_rx_seq_num(md, (struct ccci_header *)skb->data, queue->index);
 		/* upload skb */
 		if (using_napi) {
 			ccci_port_recv_request(md, NULL, skb);
@@ -769,6 +773,11 @@ again:
 			((L2RISAR0 & CLDMA_BM_INT_DONE & (1 << queue->index)) ||
 			(cldma_rx_active & CLDMA_BM_INT_DONE & (1 << queue->index)))) {
 			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2RISAR0, (1 << queue->index));
+#ifdef ENABLE_CLDMA_AP_SIDE
+			/* clear IP busy register wake up cpu case */
+			cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY,
+					cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY));
+#endif
 			spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 			md_cd_lock_cldma_clock_src(0);
 			retry++;
@@ -1496,6 +1505,9 @@ static inline void cldma_reset(struct ccci_modem *md)
 		break;
 	}
 	/* TODO: enable debug ID? */
+#ifdef MD_CACHE_TO_NONECACHE
+	cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_ADDR_REMAP_FROM, 0xA0000000);
+#endif
 }
 
 static inline void cldma_start(struct ccci_modem *md)
@@ -1684,7 +1696,13 @@ static void md_cd_wdt_work(struct work_struct *work)
 	/* 1. dump RGU reg */
 	CCCI_INF_MSG(md->index, TAG, "Dump MD RGU registers\n");
 	md_cd_lock_modem_clock_src(1);
+#ifdef BASE_ADDR_MDRSTCTL
+	ccci_write32(md_ctrl->md_pll_base->md_busreg1, 0x94, 0xE7C5);/* pre-action */
+	ccci_mem_dump(md->index, md_ctrl->md_rgu_base, 0x8B);
+	ccci_mem_dump(md->index, (md_ctrl->md_rgu_base + 0x200), 0x60);
+#else
 	ccci_mem_dump(md->index, md_ctrl->md_rgu_base, 0x30);
+#endif
 	md_cd_lock_modem_clock_src(0);
 	if (md->md_state == INVALID) {
 		CCCI_ERR_MSG(md->index, TAG, "md_cd_wdt_work: md_state is INVALID\n");
@@ -1694,16 +1712,26 @@ static void md_cd_wdt_work(struct work_struct *work)
 	wake_lock_timeout(&md_ctrl->trm_wake_lock, 10 * HZ);
 
 #if 1
+#ifdef MD_UMOLY_EE_SUPPORT
+	if (*((int *)(md->mem_layout.smem_region_vir +
+		CCCI_SMEM_OFFSET_MDSS_DEBUG + CCCI_SMEM_OFFSET_EPON_UMOLY)) == 0xBAEBAE10) {	/* hardcode */
+#else
 	if (*((int *)(md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_EPON)) == 0xBAEBAE10) {	/* hardcode */
+#endif
 		/* 3. reset */
 		ret = md->ops->reset(md);
 		CCCI_INF_MSG(md->index, TAG, "reset MD after SW WDT %d\n", ret);
 		/* 4. send message, only reset MD on non-eng load */
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
 
+#ifdef CONFIG_MTK_ECCCI_C2K
+		exec_ccci_kern_func_by_md_id(MD_SYS3, ID_RESET_MD, NULL, 0);
+#else
 #ifdef CONFIG_MTK_SVLTE_SUPPORT
 		c2k_reset_modem();
 #endif
+#endif
+
 	} else {
 		if (md->critical_user_active[2] == 0) {
 			ret = md->ops->reset(md);
@@ -1724,6 +1752,7 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
 	CCCI_INF_MSG(md->index, TAG, "MD WDT IRQ\n");
+#ifndef DISABLE_MD_WDT_PROCESS
 #ifdef ENABLE_DSP_SMEM_SHARE_MPU_REGION
 	ccci_set_exp_region_protection(md);
 #endif
@@ -1735,9 +1764,15 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 	state = cldma_read32(md_ctrl->md_rgu_base, WDT_MD_STA);
 	cldma_write32(md_ctrl->md_rgu_base, WDT_MD_MODE, WDT_MD_MODE_KEY);
 	CCCI_INF_MSG(md->index, TAG, "WDT IRQ disabled for debug, state=%X\n", state);
+#ifdef L1_BASE_ADDR_L1RGU
+	state = cldma_read32(md_ctrl->l1_rgu_base, REG_L1RSTCTL_WDT_STA);
+	cldma_write32(md_ctrl->l1_rgu_base, REG_L1RSTCTL_WDT_MODE, L1_WDT_MD_MODE_KEY);
+	CCCI_INF_MSG(md->index, TAG, "WDT IRQ disabled for debug, L1 state=%X\n", state);
+#endif
 #endif
 	/* 2. start a work queue to do the reset, because we used flush_work which is not designed for ISR */
 	schedule_work(&md_ctrl->wdt_work);
+#endif
 	return IRQ_HANDLED;
 }
 
@@ -1790,7 +1825,7 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 #endif
 		if (*((int *)(md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_SEQERR)) != 0) {
 			CCCI_INF_MSG(md->index, KERN, "MD found wrong sequence number\n");
-			md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, 0);
+			md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, -1);
 		}
 		wake_lock_timeout(&md_ctrl->trm_wake_lock, 10 * HZ);
 		ccci_md_exception_notify(md, EX_INIT);
@@ -2056,7 +2091,7 @@ static int md_cd_start(struct ccci_modem *md)
 	/* 0. init security, as security depends on dummy_char, which is ready very late. */
 	ccci_init_security();
 
-	CCCI_INF_MSG(md->index, TAG, "CLDMA modem is starting\n");
+	CCCI_INF_MSG(md->index, TAG, "new git code, CLDMA modem is starting\n");
 	/* 1. load modem image */
 	if (1/*md->config.setting&MD_SETTING_FIRST_BOOT || md->config.setting&MD_SETTING_RELOAD */) {
 		ccci_clear_md_region_protection(md);
@@ -2082,6 +2117,21 @@ static int md_cd_start(struct ccci_modem *md)
 			md->mem_layout.dsp_region_vir = md->mem_layout.md_region_vir + md->img_info[IMG_MD].dsp_offset;
 			md->mem_layout.dsp_region_size = ret;
 		}
+		CCCI_ERR_MSG(md->index, TAG, "load ARMV7 firmware begin[0x%x]<0x%x>\n",
+			md->img_info[IMG_MD].arm7_size, md->img_info[IMG_MD].arm7_offset);
+		if ((md->img_info[IMG_MD].arm7_size != 0) && (md->img_info[IMG_MD].arm7_offset != 0)) {
+			md->img_info[IMG_ARMV7].address = md->img_info[IMG_MD].address+md->img_info[IMG_MD].arm7_offset;
+			ret = ccci_load_firmware(md->index, &md->img_info[IMG_ARMV7], img_err_str, md->post_fix);
+			if (ret < 0) {
+				CCCI_ERR_MSG(md->index, TAG, "load ARMV7 firmware fail, %s\n", img_err_str);
+				goto out;
+			}
+			if (md->img_info[IMG_ARMV7].size > md->img_info[IMG_MD].arm7_size) {
+				CCCI_ERR_MSG(md->index, TAG, "ARMV7 image real size too large %d\n",
+					     md->img_info[IMG_ARMV7].size);
+				goto out;
+			}
+		}
 		ret = 0;	/* load_std_firmware returns MD image size */
 		md->config.setting &= ~MD_SETTING_RELOAD;
 	}
@@ -2101,8 +2151,10 @@ static int md_cd_start(struct ccci_modem *md)
 	/* 4. power on modem, do NOT touch MD register before this */
 	if (md->config.setting & MD_SETTING_FIRST_BOOT) {
 #if defined(CONFIG_MTK_LEGACY)
+#ifndef NO_POWER_OFF_ON_STARTMD
 		ret = md_cd_power_off(md, 0);
 		CCCI_INF_MSG(md->index, TAG, "power off MD first %d\n", ret);
+#endif
 #endif
 		md->config.setting &= ~MD_SETTING_FIRST_BOOT;
 	}
@@ -2118,6 +2170,9 @@ static int md_cd_start(struct ccci_modem *md)
 		CCCI_ERR_MSG(md->index, TAG, "power on MD fail %d\n", ret);
 		goto out;
 	}
+#ifdef SET_EMI_STEP_BY_STAGE
+	ccci_set_mem_access_protection_1st_stage(md);
+#endif
 	/* 5. update mutex */
 	atomic_set(&md_ctrl->reset_on_going, 0);
 	/* 6. start timer */
@@ -2137,6 +2192,9 @@ static int md_cd_start(struct ccci_modem *md)
 			cldma_on = 1;
 			break;
 		}
+		CCCI_INF_MSG(md->index, TAG, "CLDMA clock is still off, retry=%d\n", retry);
+		mdelay(1000);
+
 		CCCI_INF_MSG(md->index, TAG, "CLDMA clock is still off, retry=%d\n", retry);
 		mdelay(1000);
 	}
@@ -2257,34 +2315,67 @@ static int md_cd_reset(struct ccci_modem *md)
 	return 0;
 }
 
+static int check_power_off_en(struct ccci_modem *md)
+{
+	#ifdef ENABLE_MD_POWER_OFF_CHECK
+	int smem_val;
+
+	if (md->index != MD_SYS1)
+		return 1;
+
+	smem_val = *((int *)((long)md->mem_layout.smem_region_vir + 8*1024+31*4));
+	CCCI_INF_MSG(md->index, TAG, "share for power off:%x\n", smem_val);
+	if (smem_val != 0) {
+			CCCI_INF_MSG(md->index, TAG, "[ccci]enable power off check\n");
+			return 1;
+	}
+	CCCI_INF_MSG(md->index, TAG, "disable power off check\n");
+	return 0;
+	#else
+	return 1;
+	#endif
+}
+
 static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 {
 	int ret = 0, count = 0;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	u32 pending;
+	int en_power_check;
 
 	CCCI_INF_MSG(md->index, TAG, "CLDMA modem is power off, timeout=%d\n", timeout);
 	md->sim_type = 0xEEEEEEEE;	/* reset sim_type(MCC/MNC) to 0xEEEEEEEE */
 
 	md_cd_check_emi_state(md, 1);	/* Check EMI before */
+	en_power_check = check_power_off_en(md);
 
 	if (timeout) {		/* only debug in Flight mode */
 		count = 5;
 		while (spm_is_md1_sleep() == 0) {
 			count--;
 			if (count == 0) {
-				CCCI_INF_MSG(md->index, TAG, "MD is not in sleep mode, dump md status!\n");
-				CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
-				ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
-					      md->smem_layout.ccci_exp_dump_size);
+				if (en_power_check) {
+					CCCI_INF_MSG(md->index, TAG, "MD is not in sleep mode, dump md status!\n");
+					CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
+					ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
+						      md->smem_layout.ccci_exp_dump_size);
 
-				md_cd_dump_debug_register(md);
-				cldma_dump_register(md);
+					md_cd_dump_debug_register(md);
+					cldma_dump_register(md);
 #if defined(CONFIG_MTK_AEE_FEATURE)
-				aed_md_exception_api(NULL, 0, NULL, 0,
-						     "After AP send EPOF, MD didn't go to sleep in 4 seconds.",
-						     DB_OPT_DEFAULT);
+#ifdef MD_UMOLY_EE_SUPPORT
+					aed_md_exception_api(md->smem_layout.ccci_exp_smem_mdss_debug_vir,
+							     md->smem_layout.ccci_exp_smem_mdss_debug_size, NULL, 0,
+							     "After AP send EPOF, MD didn't go to sleep in 4 seconds.",
+							     DB_OPT_DEFAULT);
+#else
+					aed_md_exception_api(NULL, 0, NULL, 0,
+							     "After AP send EPOF, MD didn't go to sleep in 4 seconds.",
+							     DB_OPT_DEFAULT);
+
 #endif
+#endif
+				}
 				break;
 			}
 			md_cd_lock_cldma_clock_src(1);
@@ -2484,9 +2575,6 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
 		policy = req->policy;
 		ioc_override = req->ioc_override;
 		blocking = req->blocking;
-		/* free old request as wrapper, do NOT reference this request after this point */
-		req->policy = NOOP;
-		ccci_free_req(req);
 	} else {
 		policy = FREE;	/* here we assume only network use this kind of API */
 		ioc_override = 0;
@@ -2499,7 +2587,7 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
  retry:
 	spin_lock_irqsave(&queue->ring_lock, flags);
 		/* we use irqsave as network require a lock in softirq, cause a potential deadlock */
-	CCCI_DBG_MSG(md->index, TAG, "get a Tx req on q%d free=%d\n", qno, queue->budget);
+	CCCI_DBG_MSG(md->index, TAG, "get a Tx req on q%d free=%d, tx_bytes = %X\n", qno, queue->budget, tx_bytes);
 	tx_req = queue->tx_xmit;
 	if (tx_req->skb == NULL) {
 		ccci_inc_tx_seq_num(md, (struct ccci_header *)skb->data);
@@ -2552,7 +2640,7 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
 		/* check CLDMA status */
 		md_cd_lock_cldma_clock_src(1);
 		if (cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << qno)) {
-			CCCI_ERR_MSG(md->index, TAG, "ch=%d qno=%d free slot 0, CLDMA_AP_UL_STATUS=0x%x\n",
+			CCCI_DBG_MSG(md->index, TAG, "ch=%d qno=%d free slot 0, CLDMA_AP_UL_STATUS=0x%x\n",
 				ccci_h.channel, qno, cldma_read32(md_ctrl->cldma_ap_pdn_base,
 				CLDMA_AP_UL_STATUS));
 			queue->busy_count++;
@@ -2583,8 +2671,13 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
 	}
 
  __EXIT_FUN:
+	if (req && !ret) {
+		/* free old request as wrapper, only when we've ate this request */
+		req->policy = NOOP;
+		ccci_free_req(req);
+	}
 #ifdef CLDMA_TRACE
-	if (ret) {
+	if (unlikely(ret)) {
 		CCCI_DBG_MSG(md->index, TAG, "txq_active=%d, qno=%d is 0,drop ch%d package,ret=%d\n",
 			     md_ctrl->txq_active, qno, ccci_h.channel, ret);
 		trace_cldma_error(qno, ccci_h.channel, ret, __LINE__);
@@ -2691,6 +2784,26 @@ static struct ccci_port *md_cd_get_port_by_channel(struct ccci_modem *md, CCCI_C
 	return NULL;
 }
 
+static void dump_runtime_data_v2(struct ccci_modem *md, struct ap_query_md_feature *ap_feature)
+{
+	u8 i = 0;
+
+	CCCI_INF_MSG(md->index, KERN, "head_pattern 0x%x\n", ap_feature->head_pattern);
+
+	for (i = BOOT_INFO; i < AP_RUNTIME_FEATURE_ID_MAX; i++) {
+		CCCI_NOTICE_MSG(md->index, KERN, "feature %u: mask %u, version %u\n",
+				i, ap_feature->feature_set[i].support_mask, ap_feature->feature_set[i].version);
+	}
+	CCCI_INF_MSG(md->index, KERN, "share_memory_support 0x%x\n", ap_feature->share_memory_support);
+	CCCI_INF_MSG(md->index, KERN, "ap_runtime_data_addr 0x%x\n", ap_feature->ap_runtime_data_addr);
+	CCCI_INF_MSG(md->index, KERN, "ap_runtime_data_size 0x%x\n", ap_feature->ap_runtime_data_size);
+	CCCI_INF_MSG(md->index, KERN, "md_runtime_data_addr 0x%x\n", ap_feature->md_runtime_data_addr);
+	CCCI_INF_MSG(md->index, KERN, "md_runtime_data_size 0x%x\n", ap_feature->md_runtime_data_size);
+	CCCI_INF_MSG(md->index, KERN, "set_md_mpu_start_addr 0x%x\n", ap_feature->set_md_mpu_start_addr);
+	CCCI_INF_MSG(md->index, KERN, "set_md_mpu_total_size 0x%x\n", ap_feature->set_md_mpu_total_size);
+	CCCI_INF_MSG(md->index, KERN, "tail_pattern 0x%x\n", ap_feature->tail_pattern);
+}
+
 static void dump_runtime_data(struct ccci_modem *md, struct modem_runtime *runtime)
 {
 	char ctmp[12];
@@ -2761,6 +2874,84 @@ static void dump_runtime_data(struct ccci_modem *md, struct modem_runtime *runti
 	CCCI_INF_MSG(md->index, TAG, "----------------------------------------------\n");
 }
 
+#ifdef FEATURE_DBM_SUPPORT
+static void eccci_smem_sub_region_init(struct ccci_modem *md)
+{
+	volatile int __iomem *addr;
+	int i;
+
+	/* Region 0, dbm */
+	addr = (volatile int __iomem *)(md->mem_layout.smem_region_vir+CCCI_SMEM_MD1_DBM_OFFSET);
+	addr[0] = 0x44444444; /* Guard pattern 1 header */
+	addr[1] = 0x44444444; /* Guard pattern 2 header */
+	#ifdef DISABLE_PBM_FEATURE
+	for (i = 2; i < (10+2); i++)
+		addr[i] = 0xFFFFFFFF;
+	#else
+	for (i = 2; i < (10+2); i++)
+		addr[i] = 0x00000000;
+	#endif
+	addr[i] = 0x44444444; /* Guard pattern 1 tail */
+	addr[i++] = 0x44444444; /* Guard pattern 2 tail */
+
+	/* Notify PBM */
+	#ifndef DISABLE_PBM_FEATURE
+	init_md_section_level(KR_MD1);
+	#endif
+}
+#endif
+
+static void config_ap_runtime_data(struct ccci_modem *md, struct ap_query_md_feature *ap_feature)
+{
+	ap_feature->head_pattern = AP_FEATURE_QUERY_PATTERN;
+	/*AP query MD feature set */
+
+	ap_feature->share_memory_support = 1;
+	ap_feature->ap_runtime_data_addr = md->smem_layout.ccci_rt_smem_base_phy - md->mem_layout.smem_offset_AP_to_MD;
+	ap_feature->ap_runtime_data_size = CCCI_SMEM_SIZE_RUNTIME_AP;
+	ap_feature->md_runtime_data_addr = ap_feature->ap_runtime_data_addr + CCCI_SMEM_SIZE_RUNTIME_AP;
+	ap_feature->md_runtime_data_size = CCCI_SMEM_SIZE_RUNTIME_MD;
+	ap_feature->set_md_mpu_start_addr = md->mem_layout.smem_region_phy - md->mem_layout.smem_offset_AP_to_MD;
+	ap_feature->set_md_mpu_total_size = md->mem_layout.smem_region_size;
+	ap_feature->tail_pattern = AP_FEATURE_QUERY_PATTERN;
+}
+
+static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int sbp_code)
+{
+	int packet_size = sizeof(struct ap_query_md_feature) + sizeof(struct ccci_header);
+	struct ccci_request *req = NULL;
+	struct ccci_header *ccci_h;
+	struct ap_query_md_feature *ap_rt_data;
+	int ret;
+
+	req = ccci_alloc_req(OUT, packet_size, 1, 1);
+	if (!req)
+		return -CCCI_ERR_ALLOCATE_MEMORY_FAIL;
+	ccci_h = (struct ccci_header *)req->skb->data;
+	ap_rt_data = (struct ap_query_md_feature *)(req->skb->data + sizeof(struct ccci_header));
+
+	CCCI_NOTICE_MSG(md->index, KERN, "new api for sending rt data, sbp_code %u\n", sbp_code);
+
+	ccci_set_ap_region_protection(md);
+	/*header */
+	ccci_h->data[0] = 0x00;
+	ccci_h->data[1] = packet_size;
+	ccci_h->reserved = MD_INIT_CHK_ID;
+	ccci_h->channel = CCCI_CONTROL_TX;
+
+	memset(ap_rt_data, 0, sizeof(struct ap_query_md_feature));
+	config_ap_runtime_data(md, ap_rt_data);
+
+	dump_runtime_data_v2(md, ap_rt_data);
+
+#ifdef FEATURE_DBM_SUPPORT
+	eccci_smem_sub_region_init(md);
+#endif
+	skb_put(req->skb, packet_size);
+	ret = md->ops->send_request(md, 0, req, NULL);	/*hardcode to queue 0 */
+	return ret;
+}
+
 static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 {
 	int packet_size = sizeof(struct modem_runtime) + sizeof(struct ccci_header);
@@ -2777,6 +2968,11 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 #ifdef FEATURE_MD_GET_CLIB_TIME
 	struct timeval t;
 #endif
+	if (md->runtime_version == AP_MD_HS_V2) {
+		ret = md_cd_send_runtime_data_v2(md, sbp_code);
+		return ret;
+	}
+
 	snprintf(str, sizeof(str), "%s", AP_PLATFORM_INFO);
 	req = ccci_alloc_req(OUT, packet_size, 1, 1);
 	if (!req)
@@ -2823,8 +3019,15 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 	/* share memory layout */
 	runtime->ExceShareMemBase = md->mem_layout.smem_region_phy - md->mem_layout.smem_offset_AP_to_MD;
 	runtime->ExceShareMemSize = md->mem_layout.smem_region_size;
+#ifdef FEATURE_MD1MD3_SHARE_MEM
+	runtime->TotalShareMemBase = md->mem_layout.smem_region_phy - md->mem_layout.smem_offset_AP_to_MD;
+	runtime->TotalShareMemSize = md->mem_layout.smem_region_size + md->mem_layout.md1_md3_smem_size;
+	runtime->MD1MD3ShareMemBase = md->mem_layout.md1_md3_smem_phy - md->mem_layout.smem_offset_AP_to_MD;
+	runtime->MD1MD3ShareMemSize = md->mem_layout.md1_md3_smem_size;
+#else
 	runtime->TotalShareMemBase = md->mem_layout.smem_region_phy - md->mem_layout.smem_offset_AP_to_MD;
 	runtime->TotalShareMemSize = md->mem_layout.smem_region_size;
+#endif
 	/* misc region, little endian for string */
 	runtime->misc_prefix = 0x4353494D;	/* "MISC" */
 	runtime->misc_postfix = 0x4353494D;	/* "MISC" */
@@ -2848,10 +3051,14 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 	get_random_bytes(&random_seed, sizeof(int));
 	runtime->feature_2_val[0] = random_seed;
 	runtime->support_mask |= (FEATURE_SUPPORT << (MISC_RAND_SEED * 2));
-	/* SBP */
-	if (sbp_code > 0) {
+	/* SBP + WM_ID */
+	if ((sbp_code > 0) || (md->config.load_type)) {
 		runtime->support_mask |= (FEATURE_SUPPORT << (MISC_MD_SBP_SETTING * 2));
 		runtime->feature_4_val[0] = sbp_code;
+	if (md->config.load_type < modem_ultg)
+		runtime->feature_4_val[1] = 0;
+	else
+		runtime->feature_4_val[1] = get_md_wm_id_map(md->config.load_type);
 	}
 
 	/* CCCI debug */
@@ -2898,6 +3105,9 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 #endif
 
 	dump_runtime_data(md, runtime);
+	#ifdef FEATURE_DBM_SUPPORT
+	eccci_smem_sub_region_init(md);
+	#endif
 	skb_put(req->skb, packet_size);
 	ret = md->ops->send_request(md, 0, req, NULL);	/* hardcode to queue 0 */
 	return ret;
@@ -2996,15 +3206,25 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 		}
 		CCCI_INF_MSG(md->index, TAG, "Dump CCIF SRAM (last 16bytes)\n");
 		ccci_mem_dump(md->index, dest_buff, length);
+#ifdef MD_UMOLY_EE_SUPPORT /* for bootup trace, umoly is in register instead of ccif */
+		struct md_pll_reg *md_reg = md_ctrl->md_pll_base;
+		/* 10. Bootup trace Reg*/
+		CCCI_INF_MSG(md->index, TAG, "Bootup trace Reg: PSCroe && L1 Core\n");
+		ccci_mem_dump(md->index, md_reg->md_bootup_0, MD_Bootup_DUMP_LEN0);
+		ccci_mem_dump(md->index, md_reg->md_bootup_1, MD_Bootup_DUMP_LEN1);
+		ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action */
+		ccci_mem_dump(md->index, md_reg->md_bootup_2, MD_Bootup_DUMP_LEN2);
+		ccci_mem_dump(md->index, md_reg->md_bootup_3, MD_Bootup_DUMP_LEN3);
+#endif
 	}
 	if (flag & DUMP_FLAG_CLDMA) {
 		cldma_dump_register(md);
-		if (length == 0) {
-			cldma_dump_all_gpd(md);
+		if (length == -1) {
 			cldma_dump_packet_history(md);
+			cldma_dump_all_gpd(md);
 		} else {
-			cldma_dump_gpd_queue(md, length);
 			cldma_dump_queue_history(md, length);
+			cldma_dump_gpd_queue(md, length);
 		}
 	}
 	if (flag & DUMP_FLAG_REG)
@@ -3023,15 +3243,15 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 	}
 	if (flag & DUMP_FLAG_QUEUE_0) {
 		cldma_dump_register(md);
-		cldma_dump_gpd_queue(md, 0);
 		cldma_dump_queue_history(md, 0);
+		cldma_dump_gpd_queue(md, 0);
 	}
 	if (flag & DUMP_FLAG_QUEUE_0_1) {
 		cldma_dump_register(md);
-		cldma_dump_gpd_queue(md, 0);
-		cldma_dump_gpd_queue(md, 1);
 		cldma_dump_queue_history(md, 0);
 		cldma_dump_queue_history(md, 1);
+		cldma_dump_gpd_queue(md, 0);
+		cldma_dump_gpd_queue(md, 1);
 	}
 	if (flag & DUMP_FLAG_SMEM_MDSLP) {
 		ccci_cmpt_mem_dump(md->index, md->smem_layout.ccci_exp_smem_sleep_debug_vir,
@@ -3040,7 +3260,12 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 	if (flag & DUMP_FLAG_MD_WDT) {
 		CCCI_INF_MSG(md->index, KERN, "Dump MD RGU registers\n");
 		md_cd_lock_modem_clock_src(1);
+#ifdef BASE_ADDR_MDRSTCTL
+		ccci_mem_dump(md->index, md_ctrl->md_rgu_base, 0x88);
+		ccci_mem_dump(md->index, (md_ctrl->md_rgu_base + 0x200), 0x5c);
+#else
 		ccci_mem_dump(md->index, md_ctrl->md_rgu_base, 0x30);
+#endif
 		md_cd_lock_modem_clock_src(0);
 		CCCI_INF_MSG(md->index, KERN, "wdt_enabled=%d\n", atomic_read(&md_ctrl->wdt_enabled));
 		mt_irq_dump_status(md_ctrl->hw_info->md_wdt_irq_id);
@@ -3094,7 +3319,7 @@ static ssize_t md_cd_dump_store(struct ccci_modem *md, const char *buf, size_t c
 	if (strncmp(buf, "ccif", count - 1) == 0)
 		md->ops->dump_info(md, DUMP_FLAG_CCIF_REG | DUMP_FLAG_CCIF, NULL, 0);
 	if (strncmp(buf, "cldma", count - 1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, 0);
+		md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, -1);
 	if (strncmp(buf, "register", count - 1) == 0)
 		md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
 	if (strncmp(buf, "smem", count - 1) == 0)
@@ -3517,7 +3742,12 @@ static struct platform_driver modem_cldma_driver = {
 static int __init modem_cd_init(void)
 {
 	int ret;
-
+#ifdef TEST_MESSAGE_FOR_BRINGUP
+/* temp for bringup */
+	register_ccci_sys_call_back(0, TEST_MSG_ID_MD2AP, ccci_sysmsg_echo_test);
+	register_ccci_sys_call_back(0, TEST_MSG_ID_L1CORE_MD2AP, ccci_sysmsg_echo_test_l1core);
+/*  */
+#endif
 	ret = platform_driver_register(&modem_cldma_driver);
 	if (ret) {
 		CCCI_ERR_MSG(-1, TAG, "clmda modem platform driver register fail(%d)\n", ret);

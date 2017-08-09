@@ -112,6 +112,237 @@ typedef struct _ex_exception_log_t {
 	EX_CONTENT_T content;
 } __packed EX_LOG_T;
 
+#ifdef MD_UMOLY_EE_SUPPORT
+/* MD32 exception struct */
+typedef enum {
+	CMIF_MD32_EX_INVALID = 0,
+	CMIF_MD32_EX_ASSERT_LINE,
+	CMIF_MD32_EX_ASSERT_EXT,
+	CMIF_MD32_EX_FATAL_ERROR,
+	CMIF_MD32_EX_FATAL_ERROR_EXT,
+} CMIF_MD32_EX_TYPE;
+
+typedef struct ex_fatalerr_md32_ {
+	unsigned int ex_code[2];
+	unsigned int ifabtpc;
+	unsigned int ifabtcau;
+	unsigned int daabtcau;
+	unsigned int daabtpc;
+	unsigned int daabtad;
+	unsigned int daabtsp;
+	unsigned int lr;
+	unsigned int sp;
+	unsigned int interrupt_count;
+	unsigned int vic_mask;
+	unsigned int vic_pending;
+	unsigned int cirq_mask_31_0;
+	unsigned int cirq_mask_63_32;
+	unsigned int cirq_pend_31_0;
+	unsigned int cirq_pend_63_32;
+} __packed EX_FATALERR_MD32;
+
+typedef struct ex_assertfail_md32_ {
+	u32 ex_code[3];
+	u32 line_num;
+	char file_name[64];
+} __packed EX_ASSERTFAIL_MD32;
+
+typedef union {
+	EX_FATALERR_MD32 fatalerr;
+	EX_ASSERTFAIL_MD32 assert;
+} __packed EX_MD32_CONTENT_T;
+
+#define MD32_FDD_ROCODE   "FDD_ROCODE"
+#define MD32_TDD_ROCODE   "TDD_ROCODE"
+typedef struct _ex_md32_log_ {
+	u32 finish_fill;
+	u32 except_type;
+	EX_MD32_CONTENT_T except_content;
+	unsigned int ex_log_mem_addr;
+	unsigned int md32_active_mode;
+} __packed EX_MD32_LOG_T;
+
+/* CoreSonic exception struct */
+typedef enum {
+	CS_EXCEPTION_ASSERTION = 0x45584300,
+	CS_EXCEPTION_FATAL_ERROR = 0x45584301,
+	CS_EXCEPTION_CTI_EVENT = 0x45584302,
+	CS_EXCEPTION_UNKNOWN = 0x45584303,
+} CS_EXCEPTION_TYPE_T;
+
+typedef struct ex_fatalerr_cs_ {
+	u32 error_status;
+	u32 error_pc;
+	u32 error_lr;
+	u32 error_address;
+	u32 error_code1;
+	u32 error_code2;
+} __packed EX_FATALERR_CS;
+
+typedef struct ex_assertfail_cs_ {
+	u32 line_num;
+	u32 para1;
+	u32 para2;
+	u32 para3;
+	char file_name[128];
+} __packed EX_ASSERTFAIL_CS;
+
+typedef union {
+	EX_FATALERR_CS fatalerr;
+	EX_ASSERTFAIL_CS assert;
+} __packed EX_CS_CONTENT_T;
+
+typedef struct _ex_cs_log_t {
+	u32 except_type;
+	EX_CS_CONTENT_T except_content;
+} __packed  EX_CS_LOG_T;
+
+/* PCORE, L1CORE exception struct */
+enum {
+	MD_EX_PL_INVALID = 0,
+	MD_EX_PL_UNDEF = 1,
+	MD_EX_PL_SWI = 2,
+	MD_EX_PL_PREF_ABT = 3,
+	MD_EX_PL_DATA_ABT = 4,
+	MD_EX_PL_STACKACCESS = 5,
+
+	MD_EX_PL_FATALERR_TASK = 6,
+	MD_EX_PL_FATALERR_BUF = 7,
+	MD_EX_PL_ASSERT_FAIL = 16,
+	MD_EX_PL_ASSERT_DUMP = 17,
+	MD_EX_PL_ASSERT_NATIVE = 18,
+	MD_EX_CC_INVALID_EXCEPTION = 0x20,
+	MD_EX_CC_PCORE_EXCEPTION = 0x21,
+	MD_EX_CC_L1CORE_EXCEPTION = 0x22,
+	MD_EX_CC_CS_EXCEPTION = 0x23,
+	MD_EX_CC_MD32_EXCEPTION = 0x24,
+
+	EMI_MPU_VIOLATION = 0x30,
+	/* NUM_EXCEPTION, */
+
+};
+
+/* MD core list */
+typedef enum {
+	MD_PCORE,
+	MD_L1CORE,
+	MD_CS_ICC,
+	MD_CS_IMC,
+	MD_CS_MPC,
+	MD_MD32_DFE,
+	MD_MD32_BRP,
+	MD_MD32_RAKE,
+	MD_CORE_NUM
+} MD_CORE_NAME;
+typedef struct _exp_pl_header_t {
+	u32 ex_core_id;
+	u8 ex_type;
+	u8 ex_nvram;
+	u16 ex_serial_num;
+} __packed EX_PL_HEADER_T;
+typedef struct ex_time_stamp {
+	u32 USCNT;
+	u32 GLB_TS;
+} EX_TIME_STAMP;
+typedef struct _ex_pl_environment_info_t {
+	EX_TIME_STAMP ex_timestamp;
+	u8 boot_mode;		/* offset: +0x10 */
+	u8 execution_unit[8];
+	u8 status;		/* offset: +0x21, length: 1 */
+	u8 ELM_status;		/* offset: +0x22, length: 1 */
+	u8 reserved2;
+	unsigned int stack_ptr;
+	u8 stack_dump[40];
+	u16 ext_queue_pending_cnt;
+	u16 interrupt_mask3;
+	u8 ext_queue_pending[80];
+	u8 interrupt_mask[8];
+	u32 processing_lisr;
+	u32 lr;
+} __packed EX_PL_ENVINFO_T;
+typedef struct _ex_pl_fatalerror_code_t {
+	u32 code1;
+	u32 code2;
+	u32 code3;
+} __packed EX_PL_FATALERR_CODE_T;
+
+typedef struct _ex_pl_analysis_t {
+	u32 trace;
+	u8 param[40];
+	u8 owner[8];
+	unsigned char core[7];
+	u8 is_cadefa_sup;
+} __packed EX_PL_ANALYSIS_T;
+
+typedef struct _ex_pl_fatalerror_t {
+	EX_PL_FATALERR_CODE_T error_code;
+	u8 description[20];
+	EX_PL_ANALYSIS_T ex_analy;
+	u8 reserved1[356];
+} __packed EX_PL_FATALERR_T;
+
+typedef struct _ex_pl_assert_t {
+	u8 filepath[256];
+	u8 filename[64];
+	u32 linenumber;
+	u32 para[3];
+	u8 reserved1[368];
+	u8 guard[4];
+} __packed EX_PL_ASSERTFAIL_T;
+
+typedef struct _ex_pl_diagnosisinfo_t {
+	u8 diagnosis;
+	char owner[8];
+	u8 reserve[3];
+	u8 timing_check[24];
+} __packed EX_PL_DIAGNOSISINFO_T;
+
+typedef union {
+	EX_PL_FATALERR_T fatalerr;
+	EX_PL_ASSERTFAIL_T assert;
+} __packed EX_PL_CONTENT_T;
+
+typedef struct _ex_exp_PL_log_t {
+	EX_PL_HEADER_T header; /* 8 bytes */
+	char sw_ver[32]; /* 4 bytes: 8 */
+	char sw_project_name[32];  /* 8: 12 */
+	char sw_flavor[32];/* 8:20 */
+	char sw_buildtime[16];/* 4: 28 */
+	EX_PL_ENVINFO_T envinfo;/* : 32 */
+	EX_PL_DIAGNOSISINFO_T diagnoinfo; /* 36:  */
+	EX_PL_CONTENT_T content;
+} __packed EX_PL_LOG_T;
+
+/* exception overview struct */
+#define MD_CORE_TOTAL_NUM   (8)
+#define MD_CORE_NAME_LEN    (11)
+#define MD_CORE_NAME_DEBUG  (MD_CORE_NAME_LEN + 5 + 16) /* +5 for 16, +16 for md32 TDD FDD */
+#define ECT_SRC_NONE    (0x0)
+#define ECT_SRC_PS      (0x1 << 0)
+#define ECT_SRC_L1      (0x1 << 1)
+#define ECT_SRC_MD32    (0x1 << 2)
+#define ECT_SRC_CS      (0x1 << 3)
+#define ECT_SRC_ARM7    (0x1 << 10)
+#define ECT_SRC_RMPU    (0x1 << 11)
+#define ECT_SRC_C2K     (0x1 << 12)
+
+typedef struct ex_main_reason_t {
+	u32 core_offset;
+	u8 is_offender;
+	char core_name[MD_CORE_NAME_LEN];
+} __packed EX_MAIN_REASON_T;
+
+typedef struct ex_overview_t {
+	u32 core_num;
+	EX_MAIN_REASON_T main_reson[MD_CORE_TOTAL_NUM];
+	u32 ect_status;
+	u32 cs_status;
+	u32 md32_status;
+} __packed EX_OVERVIEW_T;
+
+/* #define CCCI_EXREC_OFFSET_OFFENDER1 396 */
+#endif
+
 typedef struct _ccci_msg {
 	union {
 		u32 magic;	/* For mail box magic number */
@@ -130,16 +361,27 @@ typedef struct _ccci_msg {
 typedef struct dump_debug_info {
 	unsigned int type;
 	char *name;
+#ifdef MD_UMOLY_EE_SUPPORT
+	char core_name[MD_CORE_NAME_DEBUG];
+#endif
 	unsigned int more_info;
 	union {
 		struct {
+#ifdef MD_UMOLY_EE_SUPPORT
+			char file_name[256]; /* use pCore: file path, contain file name */
+#else
 			char file_name[30];
+#endif
 			int line_num;
 			unsigned int parameters[3];
 		} assert;
 		struct {
 			int err_code1;
 			int err_code2;
+#ifdef MD_UMOLY_EE_SUPPORT
+			int err_code3;
+			char *ExStr;
+#endif
 			char offender[9];
 		} fatal_error;
 		ccci_msg_t data;
@@ -261,6 +503,7 @@ struct ccci_port {
 	struct wake_lock rx_wakelock;
 	unsigned int tx_busy_count;
 	unsigned int rx_busy_count;
+	int interception;
 };
 #define PORT_F_ALLOW_DROP	(1<<0)	/* packet will be dropped if port's Rx buffer full */
 #define PORT_F_RX_FULLED	(1<<1)	/* rx buffer has been full once */
@@ -292,7 +535,32 @@ struct ccci_mem_layout {	/* all from AP view, AP has no haredware remap after MT
 	phys_addr_t smem_region_phy;
 	unsigned int smem_region_size;
 	unsigned int smem_offset_AP_to_MD;	/* offset between AP and MD view of share memory */
+	/*DHL info*/
+	void __iomem *dhl_smem_vir;
+	phys_addr_t dhl_smem_phy;
+	unsigned int dhl_smem_size;
+	/*MD1 MD3 shared memory*/
+	void __iomem *md1_md3_smem_vir;
+	phys_addr_t md1_md3_smem_phy;
+	unsigned int md1_md3_smem_size;
 };
+
+
+/**
+*
+*--smem layout--
+*
+*--0x00200000  _ _ _ _ _ _ _ _
+*             | share mem      |
+*--0x00xxx000 |_ _ _ _ _ _ _ _ |
+*             |   (CCIF)       |
+*--0x00011000 |_ _ _ _ _ _ _ _ |
+*             | runtime data   |
+*--0x00010000 |_ _ _ _ _ _ _ _ |
+*             |  excption      |
+*--0x00000000 |_ _(4k dump)_ _ |
+*
+**/
 
 struct ccci_smem_layout {
 	/* total exception region */
@@ -300,6 +568,13 @@ struct ccci_smem_layout {
 	phys_addr_t ccci_exp_smem_base_phy;
 	unsigned int ccci_exp_smem_size;
 	unsigned int ccci_exp_dump_size;
+
+	/* runtime data and mpu region */
+	void __iomem *ccci_rt_smem_base_vir;
+	phys_addr_t ccci_rt_smem_base_phy;
+	unsigned int ccci_rt_smem_size;
+
+	unsigned int ccci_ccif_smem_size;
 
 	/* how we dump exception region */
 	void __iomem *ccci_exp_smem_ccci_debug_vir;
@@ -379,6 +654,92 @@ struct ccci_modem_ops {
 	int (*ee_callback)(struct ccci_modem *md, MODEM_EE_FLAG flag);
 };
 
+typedef void __iomem *(*smem_sub_region_cb_t)(void *md_blk, int *size_o);
+
+/****************handshake v2*************/
+typedef enum{
+	BOOT_INFO = 0,
+	EXCEPTION_SHARE_MEMORY,
+	CCIF_SHARE_MEMORY,
+	DHL_SHARE_MEMORY,
+	MD1MD3_SHARE_MEMORY,
+	/*ccci misc info*/
+	MISC_INFO_HIF_DMA_REMAP,
+	MISC_INFO_RTC_32K_LESS,
+	MISC_INFO_RANDOM_SEED_NUM,
+	MISC_INFO_GPS_COCLOCK,
+	MISC_INFO_SBP_ID,
+	MISC_INFO_CCCI,
+	MISC_INFO_CLIB_TIME,
+	MISC_INFO_C2K,
+	RUNTIME_FEATURE_ID_MAX,
+} MD_CCCI_RUNTIME_FEATURE_ID;
+
+typedef enum{
+	AP_RUNTIME_FEATURE_ID_MAX,
+} AP_CCCI_RUNTIME_FEATURE_ID;
+
+typedef enum{
+	CCCI_FEATURE_NOT_EXIST = 0,
+	CCCI_FEATURE_NOT_SUPPORT = 1,
+	CCCI_FEATURE_MUST_SUPPORT = 2,
+	CCCI_FEATURE_OPTIONAL_SUPPORT = 3,
+	CCCI_FEATURE_SUPPORT_BACKWARD_COMPAT = 4,
+} CCCI_RUNTIME_FEATURE_SUPPORT_TYPE;
+
+struct ccci_feature_support {
+	u8 support_mask:4;
+	u8 version:4;
+};
+
+struct ccci_runtime_feature {
+	u8 feature_id;	/*for debug only*/
+	struct ccci_feature_support support_info;
+	u8 reserved[2];
+	u32 data_len;
+	u32 data[0];
+};
+
+struct ccci_runtime_boot_info {
+	u32 boot_channel;
+	u32 booting_start_id;
+	u32 boot_attributes;
+	u32 boot_ready_id;
+};
+
+struct ccci_runtime_share_memory {
+	u32 addr;
+	u32 size;
+};
+
+struct ccci_misc_info_element {
+	u32 feature[4];
+};
+
+#define FEATURE_COUNT 64
+#define MD_FEATURE_QUERY_PATTERN 0x49434343
+#define AP_FEATURE_QUERY_PATTERN 0x43434349
+
+struct md_query_ap_feature {
+	u32 head_pattern;
+	struct ccci_feature_support feature_set[FEATURE_COUNT];
+	u32 tail_pattern;
+};
+
+struct ap_query_md_feature {
+	u32 head_pattern;
+	struct ccci_feature_support feature_set[FEATURE_COUNT];
+	u32 share_memory_support;
+	u32 ap_runtime_data_addr;
+	u32 ap_runtime_data_size;
+	u32 md_runtime_data_addr;
+	u32 md_runtime_data_size;
+	u32 set_md_mpu_start_addr;
+	u32 set_md_mpu_total_size;
+	u32 tail_pattern;
+};
+/*********************************************/
+
 struct ccci_modem {
 	unsigned char index;
 	unsigned char *private_data;
@@ -427,8 +788,17 @@ struct ccci_modem {
 	spinlock_t ctrl_lock;
 	volatile unsigned int ee_info_flag;
 	DEBUG_INFO_T debug_info;
+#ifdef MD_UMOLY_EE_SUPPORT
+	DEBUG_INFO_T debug_info1[MD_CORE_NUM - 1];
+	unsigned char ex_core_num;
+#endif
 	unsigned char ex_type;
 	EX_LOG_T ex_info;
+#ifdef MD_UMOLY_EE_SUPPORT
+	EX_PL_LOG_T ex_pl_info;
+#endif
+	unsigned short heart_beat_counter;
+	int dtr_state; /* only for usb bypass */
 #if PACKET_HISTORY_DEPTH
 	struct ccci_log tx_history[MAX_TXQ_NUM][PACKET_HISTORY_DEPTH];
 	struct ccci_log rx_history[MAX_RXQ_NUM][PACKET_HISTORY_DEPTH];
@@ -440,6 +810,10 @@ struct ccci_modem {
 #ifdef CCCI_SKB_TRACE
 	unsigned long long netif_rx_profile[8];
 #endif
+	int data_usb_bypass;
+	int runtime_version;
+
+	smem_sub_region_cb_t sub_region_cb_tbl[SMEM_SUB_REGION_MAX];
 	/* unsigned char private_data[0];
 	do NOT use this manner, otherwise spinlock inside private_data will trigger alignment exception */
 };
@@ -460,8 +834,8 @@ static inline void ccci_setup_channel_mapping(struct ccci_modem *md)
 	for (i = 0; i < ARRAY_SIZE(md->rx_ch_ports); i++) {
 		if (!list_empty(&md->rx_ch_ports[i])) {
 			list_for_each_entry(port, &md->rx_ch_ports[i], entry) {
-				CCCI_DBG_MSG(md->index, CORE, "CH%d ports:%s(%d/%d)\n", i,
-					port->name, port->rx_ch, port->tx_ch);
+				CCCI_DBG_MSG(md->index, CORE, "CH%d ports:%s(%d/%d)\n",
+					i, port->name, port->rx_ch, port->tx_ch);
 			}
 		}
 	}
@@ -491,6 +865,28 @@ static inline void ccci_inc_tx_seq_num(struct ccci_modem *md, struct ccci_header
 	if ((ccci_h->channel == CCCI_RPC_TX || ccci_h->channel == CCCI_FS_TX) && md->boot_stage != MD_BOOT_STAGE_1)
 		ccci_h->assert_bit = 0;
 
+#endif
+}
+
+static inline void ccci_chk_rx_seq_num(struct ccci_modem *md, struct ccci_header *ccci_h, int qno)
+{
+#ifdef FEATURE_SEQ_CHECK_EN
+	u16 channel, seq_num, assert_bit;
+
+	channel = ccci_h->channel;
+	seq_num = ccci_h->seq_num;
+	assert_bit = ccci_h->assert_bit;
+
+	if (assert_bit && md->seq_nums[IN][channel] != 0 && ((seq_num - md->seq_nums[IN][channel]) & 0x7FFF) != 1) {
+		CCCI_ERR_MSG(md->index, CORE, "channel %d seq number out-of-order %d->%d\n",
+			     channel, seq_num, md->seq_nums[IN][channel]);
+		md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, qno);
+		md->ops->force_assert(md, CCIF_INTR_SEQ);
+	} else {
+		/* CCCI_INF_MSG(md->index, CORE, "ch %d seq %d->%d %d\n",
+			channel, md->seq_nums[IN][channel], seq_num, assert_bit); */
+		md->seq_nums[IN][channel] = seq_num;
+	}
 #endif
 }
 
@@ -575,6 +971,10 @@ static inline void ccci_request_struct_init(struct ccci_request *req)
 	INIT_LIST_HEAD(&req->entry);
 }
 
+#ifdef FEATURE_MD_GET_CLIB_TIME
+extern volatile int current_time_zone;
+#endif
+
 struct ccci_modem *ccci_allocate_modem(int private_size);
 int ccci_register_modem(struct ccci_modem *modem);
 int ccci_register_dev_node(const char *name, int major_id, int minor);
@@ -604,5 +1004,7 @@ extern void ccci_subsys_kernel_init(void);
  * NOT reference the request any more. but if it returns other error, caller should be responsible to free the request.
  */
 extern int ccci_port_recv_request(struct ccci_modem *md, struct ccci_request *req, struct sk_buff *skb);
+
+int register_smem_sub_region_mem_func(int md_id, smem_sub_region_cb_t pfunc, int region_id);
 
 #endif	/* __CCCI_CORE_H__ */

@@ -198,6 +198,7 @@ struct md_cd_ctrl {
 	void __iomem *cldma_ap_pdn_base;
 	void __iomem *cldma_md_pdn_base;
 	void __iomem *md_rgu_base;
+	void __iomem *l1_rgu_base;
 	void __iomem *md_boot_slave_Vector;
 	void __iomem *md_boot_slave_Key;
 	void __iomem *md_boot_slave_En;
@@ -212,6 +213,8 @@ struct md_cd_ctrl {
 	void __iomem *md_topsm_status;
 	void __iomem *md_ost_status;
 	void __iomem *md_pll;
+	/*struct md_pll_reg md_pll_base; struct moved to platform part*/
+	struct md_pll_reg *md_pll_base;
 
 	unsigned int cldma_irq_id;
 	unsigned int ap_ccif_irq_id;
@@ -308,21 +311,27 @@ static inline void md_cd_queue_struct_init(struct md_cd_queue *queue, struct ccc
 	queue->debug_id = 0;
 	queue->busy_count = 0;
 }
+#ifndef CONFIG_MTK_ECCCI_C2K
 #ifdef CONFIG_MTK_SVLTE_SUPPORT
 extern void c2k_reset_modem(void);
 #endif
+#endif
 extern void mt_irq_dump_status(int irq);
 extern unsigned int ccci_get_md_debug_mode(struct ccci_modem *md);
+
 extern u32 mt_irq_get_pending(unsigned int irq);
 /* used for throttling feature - start */
 extern unsigned long ccci_modem_boot_count[];
 /* used for throttling feature - end */
-#ifdef FEATURE_MD_GET_CLIB_TIME
-extern volatile int current_time_zone;
-#endif
+
 #define GF_PORT_LIST_MAX 128
 extern int gf_port_list_reg[GF_PORT_LIST_MAX];
 extern int gf_port_list_unreg[GF_PORT_LIST_MAX];
 extern int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg);
+
+#ifdef TEST_MESSAGE_FOR_BRINGUP
+extern int ccci_sysmsg_echo_test(int, int);
+extern int ccci_sysmsg_echo_test_l1core(int, int);
+#endif
 
 #endif				/* __MODEM_CD_H__ */

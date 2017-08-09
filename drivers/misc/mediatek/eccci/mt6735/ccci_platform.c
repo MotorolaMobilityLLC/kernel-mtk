@@ -75,6 +75,9 @@ static int is_4g_memory_size_support(void)
 #define MPU_REGION_ID_MD2_RW        8
 #define MPU_REGION_ID_MD1_SMEM      9
 #define MPU_REGION_ID_MD2_LG3G      10
+#define MPU_REGION_ID_MD3_ROM       7
+#define MPU_REGION_ID_MD3_RW        8
+#define MPU_REGION_ID_MD3_SMEM      10
 #define MPU_REGION_ID_WIFI_EMI_FW   12
 #define MPU_REGION_ID_WMT           13
 #define MPU_REGION_ID_MD1_RW        14
@@ -97,7 +100,16 @@ static int is_4g_memory_size_support(void)
 	FORBIDDEN,      FORBIDDEN,     FORBIDDEN,     FORBIDDEN,     SEC_R_NSEC_R,  SEC_R_NSEC_R)
 #define MPU_ACCESS_PERMISSON_MD1_DSP_CL_ATTR SET_ACCESS_PERMISSON(FORBIDDEN,     FORBIDDEN,     \
 	FORBIDDEN,      FORBIDDEN,     FORBIDDEN,     FORBIDDEN,     NO_PROTECTION, FORBIDDEN)
+
+#define MPU_ACCESS_PERMISSON_MD3_ROM_ATTR    SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
+	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R)
+#define MPU_ACCESS_PERMISSON_MD3_RW_ATTR     SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
+	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R)
+#define MPU_ACCESS_PERMISSON_MD3_SMEM_ATTR   SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
+	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION)
 #endif
+
+
 unsigned long infra_ao_base;
 unsigned long dbgapb_base;
 /* -- MD1 Bank 0 */
@@ -114,6 +126,13 @@ unsigned long dbgapb_base;
 #define MD2_BANK4_MAP0 ((unsigned int *)(infra_ao_base+0x318))
 #define MD2_BANK4_MAP1 ((unsigned int *)(infra_ao_base+0x31C))
 
+/*-- MD3 Bank 0 */
+#define MD3_BANK0_MAP0 ((unsigned int *)(infra_ao_base+0x310))
+#define MD3_BANK0_MAP1 ((unsigned int *)(infra_ao_base+0x314))
+/*-- MD3 Bank 4 */
+#define MD3_BANK4_MAP0 ((unsigned int *)(infra_ao_base+0x318))
+#define MD3_BANK4_MAP1 ((unsigned int *)(infra_ao_base+0x31C))
+
 void ccci_clear_md_region_protection(struct ccci_modem *md)
 {
 #ifdef ENABLE_EMI_PROTECTION
@@ -124,6 +143,16 @@ void ccci_clear_md_region_protection(struct ccci_modem *md)
 		rom_mem_mpu_id = MPU_REGION_ID_MD1_ROM;
 		rw_mem_mpu_id = MPU_REGION_ID_MD1_RW;
 		break;
+#ifndef CONFIG_ARCH_MT6735M
+	case MD_SYS2:
+		rom_mem_mpu_id = MPU_REGION_ID_MD2_ROM;
+		rw_mem_mpu_id = MPU_REGION_ID_MD2_RW;
+		break;
+	case MD_SYS3:
+		rom_mem_mpu_id = MPU_REGION_ID_MD3_ROM;
+		rw_mem_mpu_id = MPU_REGION_ID_MD3_RW;
+		break;
+#endif
 	default:
 		CCCI_INF_MSG(md->index, TAG, "[error]MD ID invalid when clear MPU protect\n");
 		return;
@@ -297,6 +326,18 @@ void ccci_set_mem_access_protection(struct ccci_modem *md)
 		rw_mem_mpu_attr = MPU_ACCESS_PERMISSON_MD1_RW_ATTR;
 		shr_mem_mpu_attr = MPU_ACCESS_PERMISSON_MD1_SMEM_ATTR;
 		break;
+#ifndef CONFIG_ARCH_MT6735M
+	case MD_SYS3:
+		img_info = &md->img_info[IMG_MD];
+		md_layout = &md->mem_layout;
+		rom_mem_mpu_id = MPU_REGION_ID_MD3_ROM;
+		rw_mem_mpu_id =	MPU_REGION_ID_MD3_RW;
+		shr_mem_mpu_id = MPU_REGION_ID_MD3_SMEM;
+		rom_mem_mpu_attr = MPU_ACCESS_PERMISSON_MD3_ROM_ATTR;
+		rw_mem_mpu_attr = MPU_ACCESS_PERMISSON_MD3_RW_ATTR;
+		shr_mem_mpu_attr = MPU_ACCESS_PERMISSON_MD3_SMEM_ATTR;
+		break;
+#endif
 	default:
 		CCCI_ERR_MSG(md->index, CORE, "[error]invalid when MPU protect\n");
 		return;
@@ -451,6 +492,21 @@ int set_md_smem_remap(struct ccci_modem *md, phys_addr_t src, phys_addr_t des, p
 		mt_reg_sync_writel(remap2_val, MD2_BANK4_MAP1);
 #endif
 		break;
+	case MD_SYS3:
+		remap1_val = (((des>>24)|0x1)&0xFF)
+				  + ((((invalid+0x2000000*0)>>16)|1<<8)&0xFF00)
+				  + ((((invalid+0x2000000*1)>>8)|1<<16)&0xFF0000)
+				  + ((((invalid+0x2000000*2)>>0)|1<<24)&0xFF000000);
+		remap2_val = ((((invalid+0x2000000*3)>>24)|0x1)&0xFF)
+				  + ((((invalid+0x2000000*4)>>16)|1<<8)&0xFF00)
+				  + ((((invalid+0x2000000*5)>>8)|1<<16)&0xFF0000)
+				  + ((((invalid+0x2000000*6)>>0)|1<<24)&0xFF000000);
+
+#ifdef ENABLE_MEM_REMAP_HW
+		mt_reg_sync_writel(remap1_val, MD3_BANK4_MAP0);
+		mt_reg_sync_writel(remap2_val, MD3_BANK4_MAP1);
+#endif
+		break;
 	default:
 		break;
 	}
@@ -502,6 +558,22 @@ int set_md_rom_rw_mem_remap(struct ccci_modem *md, phys_addr_t src, phys_addr_t 
 		mt_reg_sync_writel(remap2_val, MD2_BANK0_MAP1);
 #endif
 		break;
+	case MD_SYS3:
+		remap1_val = (((des>>24)|0x1)&0xFF)
+				  + ((((des+0x2000000*1)>>16)|1<<8)&0xFF00)
+				  + ((((des+0x2000000*2)>>8)|1<<16)&0xFF0000)
+				  + ((((invalid+0x2000000*7)>>0)|1<<24)&0xFF000000);
+		remap2_val = ((((invalid+0x2000000*8)>>24)|0x1)&0xFF)
+				  + ((((invalid+0x2000000*9)>>16)|1<<8)&0xFF00)
+				  + ((((invalid+0x2000000*10)>>8)|1<<16)&0xFF0000)
+				  + ((((invalid+0x2000000*11)>>0)|1<<24)&0xFF000000);
+
+#ifdef ENABLE_MEM_REMAP_HW
+		mt_reg_sync_writel(remap1_val, MD3_BANK0_MAP0);
+		mt_reg_sync_writel(remap2_val, MD3_BANK0_MAP1);
+#endif
+		break;
+
 	default:
 		break;
 	}

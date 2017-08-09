@@ -42,4 +42,20 @@
 #define MD2_RGU_BASE 0x30050000
 #define APCCIF1_SRAM_SIZE 512
 
+/*
+* ============================================================
+*  Modem 3 part
+* ============================================================
+* need modify, haow
+*/
+#define MD3_BOOT_VECTOR 0x30190000
+#define MD3_BOOT_VECTOR_KEY 0x3019379C
+#define MD3_BOOT_VECTOR_EN 0x30195488
+
+#define MD3_BOOT_VECTOR_VALUE 0x00000000
+#define MD3_BOOT_VECTOR_KEY_VALUE 0x3567C766
+#define MD3_BOOT_VECTOR_EN_VALUE 0xA3B66175
+#define MD3_RGU_BASE 0x30050000
+#define APCCIF1_SRAM_SIZE 512
+
 #endif				/* __MODEM_REG_BASE_H__ */

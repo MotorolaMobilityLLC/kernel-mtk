@@ -5,6 +5,12 @@
 #include <linux/kthread.h>
 #include <linux/rtc.h>
 #include <linux/kernel.h>
+#include <mt-plat/mt_boot_common.h>
+
+#include <linux/fs.h>
+#include <linux/random.h>
+#include <linux/timer.h>
+
 #include <linux/of.h>
 #include <linux/of_fdt.h>
 #include <linux/of_irq.h>
@@ -39,14 +45,368 @@
 #include "ccci_platform.h"
 #include "port_kernel.h"
 
+#if defined(ENABLE_32K_CLK_LESS)
+#include <mach/mtk_rtc.h>
+#endif
+
 static void ccci_ee_info_dump(struct ccci_modem *md);
 static void ccci_aed(struct ccci_modem *md, unsigned int dump_flag, char *aed_str, int db_opt);
+static void status_msg_handler(struct ccci_port *port, struct ccci_request *req);
 
 #define MAX_QUEUE_LENGTH 16
 #define EX_TIMER_SWINT 10
 #define EX_TIMER_MD_EX 5
-#define EX_TIMER_MD_EX_REC_OK 10
+#define EX_TIMER_MD_EX_REC_OK 30
 #define EX_TIMER_MD_HANG 5
+
+#ifdef CONFIG_MTK_ECCCI_C2K
+int modem_dtr_set(int on, int low_latency)
+{
+	struct ccci_modem *md = NULL;
+	unsigned char control_signal = 0;
+	struct c2k_ctrl_port_msg c2k_ctl_msg;
+	int ret = 0;
+
+	/* only md3 can usb bypass */
+	md = ccci_get_modem_by_id(MD_SYS3);
+
+	c2k_ctl_msg.chan_num = DATA_PPP_CH_C2K;
+	c2k_ctl_msg.id_hi = (C2K_STATUS_IND_MSG & 0xFF00) >> 8;
+	c2k_ctl_msg.id_low = C2K_STATUS_IND_MSG & 0xFF;
+	c2k_ctl_msg.option = 0;
+	if (on)
+		c2k_ctl_msg.option |= 0x04;
+	else
+		c2k_ctl_msg.option &= 0xFB;
+
+	CCCI_INF_MSG(md->index, KERN, "usb bypass dtr set(%d)(0x%x)\n", on, (u32) (*((u32 *)&c2k_ctl_msg)));
+	ccci_send_msg_to_md(md, CCCI_CONTROL_TX, C2K_STATUS_IND_MSG, (u32) (*((u32 *)&c2k_ctl_msg)), 1);
+
+	return ret;
+}
+
+int modem_dcd_state(void)
+{
+	struct ccci_modem *md = NULL;
+	unsigned char control_signal = 0;
+	struct c2k_ctrl_port_msg c2k_ctl_msg;
+	int dcd_state = 0;
+	int ret = 0;
+
+	/* only md3 can usb bypass */
+	md = ccci_get_modem_by_id(MD_SYS3);
+
+	c2k_ctl_msg.chan_num = DATA_PPP_CH_C2K;
+	c2k_ctl_msg.id_hi = (C2K_STATUS_QUERY_MSG & 0xFF00) >> 8;
+	c2k_ctl_msg.id_low = C2K_STATUS_QUERY_MSG & 0xFF;
+	c2k_ctl_msg.option = 0;
+
+	CCCI_INF_MSG(md->index, KERN, "usb bypass query state(0x%x)\n", (u32) (*((u32 *)&c2k_ctl_msg)));
+	ret = ccci_send_msg_to_md(md, CCCI_CONTROL_TX, C2K_STATUS_QUERY_MSG, (u32) (*((u32 *)&c2k_ctl_msg)), 1);
+	if (ret == -CCCI_ERR_MD_NOT_READY)
+		dcd_state = 0;
+	else {
+		msleep(20);
+		dcd_state = md->dtr_state;
+	}
+	return dcd_state;
+}
+#endif
+
+static inline void append_runtime_feature(char **p_rt_data, struct ccci_runtime_feature *rt_feature, void *data)
+{
+	CCCI_DBG_MSG(-1, KERN, "append rt_data %p, feature %u len %u\n",
+		     *p_rt_data, rt_feature->feature_id, rt_feature->data_len);
+	memcpy(*p_rt_data, rt_feature, sizeof(struct ccci_runtime_feature));
+	*p_rt_data += sizeof(struct ccci_runtime_feature);
+	if (data != NULL) {
+		memcpy(*p_rt_data, data, rt_feature->data_len);
+		*p_rt_data += rt_feature->data_len;
+	}
+}
+
+static unsigned int get_booting_start_id(struct ccci_modem *md)
+{
+	struct file *filp = NULL;
+	LOGGING_MODE mdlog_flag = MODE_IDLE;
+	char md_logger_cfg_file[32];
+	u32 booting_start_id;
+	int ret;
+
+	if (md->index == 0)
+		snprintf(md_logger_cfg_file, 32, "%s", MD1_LOGGER_FILE_PATH);
+	else
+		snprintf(md_logger_cfg_file, 32, "%s", MD2_LOGGER_FILE_PATH);
+
+	CCCI_INF_MSG(md->index, KERN, "md_logger_cfg_file %s\n", md_logger_cfg_file);
+	filp = filp_open(md_logger_cfg_file, O_RDONLY, 0777);
+	if (!IS_ERR(filp)) {
+		ret = kernel_read(filp, 0, (char *)&mdlog_flag, sizeof(int));
+		if (ret != sizeof(int))
+			mdlog_flag = MODE_IDLE;
+	} else {
+		CCCI_ERR_MSG(md->index, KERN, "open %s fail", md_logger_cfg_file);
+		filp = NULL;
+	}
+	if (filp != NULL)
+		filp_close(filp, NULL);
+
+	if (is_meta_mode() || is_advanced_meta_mode())
+		booting_start_id = ((char)mdlog_flag << 8 | META_BOOT_ID);
+	else
+		booting_start_id = ((char)mdlog_flag << 8 | NORMAL_BOOT_ID);
+
+	return booting_start_id;
+}
+
+static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_feature *ap_side_md_feature)
+{
+
+	md->runtime_version = AP_MD_HS_V2;
+	ap_side_md_feature->feature_set[BOOT_INFO].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	ap_side_md_feature->feature_set[EXCEPTION_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	if (md->index == MD_SYS1)
+		ap_side_md_feature->feature_set[CCIF_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+	else
+		ap_side_md_feature->feature_set[CCIF_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+
+#ifdef FEATURE_DHL_LOG_EN
+	/*to do: enable DHL */
+	ap_side_md_feature->feature_set[DHL_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+#else
+	ap_side_md_feature->feature_set[DHL_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+#endif
+
+#ifdef FEATURE_MD1MD3_SHARE_MEM
+	ap_side_md_feature->feature_set[MD1MD3_SHARE_MEMORY].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+#else
+	ap_side_md_feature->feature_set[MD1MD3_SHARE_MEMORY].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+#endif
+
+	ap_side_md_feature->feature_set[MISC_INFO_HIF_DMA_REMAP].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+
+#if defined(ENABLE_32K_CLK_LESS)
+	if (crystal_exist_status()) {
+		CCCI_DBG_MSG(md->index, KERN, "MISC_32K_LESS no support, crystal_exist_status 1\n");
+		ap_side_md_feature->feature_set[MISC_INFO_RTC_32K_LESS].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	} else {
+		CCCI_DBG_MSG(md->index, KERN, "MISC_32K_LESS support\n");
+		ap_side_md_feature->feature_set[MISC_INFO_RTC_32K_LESS].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+	}
+#else
+	CCCI_DBG_MSG(md->index, KERN, "ENABLE_32K_CLK_LESS disabled\n");
+	ap_side_md_feature->feature_set[MISC_INFO_RTC_32K_LESS].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+#endif
+	ap_side_md_feature->feature_set[MISC_INFO_RANDOM_SEED_NUM].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	ap_side_md_feature->feature_set[MISC_INFO_GPS_COCLOCK].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	ap_side_md_feature->feature_set[MISC_INFO_SBP_ID].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+	ap_side_md_feature->feature_set[MISC_INFO_CCCI].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+#ifdef FEATURE_MD_GET_CLIB_TIME
+	ap_side_md_feature->feature_set[MISC_INFO_CLIB_TIME].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+#else
+	ap_side_md_feature->feature_set[MISC_INFO_CLIB_TIME].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+#endif
+#ifdef FEATURE_C2K_ALWAYS_ON
+	ap_side_md_feature->feature_set[MISC_INFO_C2K].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+#else
+	ap_side_md_feature->feature_set[MISC_INFO_C2K].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+#endif
+}
+
+static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
+{
+	u8 i = 0;
+	u32 total_len;
+	/*runtime data buffer */
+	char *rt_data = (char *)md->smem_layout.ccci_rt_smem_base_vir;
+
+	struct ccci_runtime_feature rt_feature;
+	/*runtime feature type */
+	struct ccci_runtime_share_memory rt_shm;
+	struct ccci_misc_info_element rt_f_element;
+
+	struct md_query_ap_feature *md_feature;
+	struct md_query_ap_feature md_feature_ap;
+	struct ccci_runtime_boot_info boot_info;
+	unsigned int random_seed = 0;
+	struct timeval t;
+
+	CCCI_NOTICE_MSG(md->index, KERN, "prepare_runtime_data  rt_data %p\n", rt_data);
+
+	memset(&md_feature_ap, 0, sizeof(struct md_query_ap_feature));
+	config_ap_side_feature(md, &md_feature_ap);
+
+	md_feature = (struct md_query_ap_feature *)skb_pull(req->skb, sizeof(struct ccci_header));
+
+	if (md_feature->head_pattern != MD_FEATURE_QUERY_PATTERN ||
+	    md_feature->tail_pattern != MD_FEATURE_QUERY_PATTERN) {
+		CCCI_ERR_MSG(md->index, KERN, "md_feature pattern is wrong: head 0x%x, tail 0x%x\n",
+			     md_feature->head_pattern, md_feature->tail_pattern);
+		return -1;
+	}
+
+	for (i = BOOT_INFO; i < RUNTIME_FEATURE_ID_MAX; i++) {
+		memset(&rt_feature, 0, sizeof(struct ccci_runtime_feature));
+		memset(&rt_shm, 0, sizeof(struct ccci_runtime_share_memory));
+		memset(&rt_f_element, 0, sizeof(struct ccci_misc_info_element));
+		rt_feature.feature_id = i;
+		if (md_feature->feature_set[i].support_mask == CCCI_FEATURE_MUST_SUPPORT &&
+		    md_feature_ap.feature_set[i].support_mask < CCCI_FEATURE_MUST_SUPPORT) {
+			CCCI_ERR_MSG(md->index, KERN, "feature %u not support for AP\n", rt_feature.feature_id);
+			return -1;
+		}
+
+		CCCI_INF_MSG(md->index, KERN, "md_query_ap_feature %u mask %u, version %u\n",
+			     rt_feature.feature_id, md_feature->feature_set[i].support_mask,
+			     md_feature->feature_set[i].version);
+
+		if (md_feature->feature_set[i].support_mask == CCCI_FEATURE_NOT_EXIST) {
+			rt_feature.support_info = md_feature->feature_set[i];
+		} else if (md_feature->feature_set[i].support_mask == CCCI_FEATURE_MUST_SUPPORT) {
+			rt_feature.support_info = md_feature->feature_set[i];
+		} else if (md_feature->feature_set[i].support_mask == CCCI_FEATURE_OPTIONAL_SUPPORT) {
+			if (md_feature->feature_set[i].version == md_feature_ap.feature_set[i].version &&
+			    md_feature_ap.feature_set[i].support_mask >= CCCI_FEATURE_MUST_SUPPORT) {
+				rt_feature.support_info.support_mask = CCCI_FEATURE_MUST_SUPPORT;
+				rt_feature.support_info.version = md_feature_ap.feature_set[i].version;
+			} else {
+				rt_feature.support_info.support_mask = CCCI_FEATURE_NOT_SUPPORT;
+				rt_feature.support_info.version = md_feature_ap.feature_set[i].version;
+			}
+		} else if (md_feature->feature_set[i].support_mask == CCCI_FEATURE_SUPPORT_BACKWARD_COMPAT) {
+			if (md_feature->feature_set[i].version >= md_feature_ap.feature_set[i].version) {
+				rt_feature.support_info.support_mask = CCCI_FEATURE_MUST_SUPPORT;
+				rt_feature.support_info.version = md_feature_ap.feature_set[i].version;
+			} else {
+				rt_feature.support_info.support_mask = CCCI_FEATURE_NOT_SUPPORT;
+				rt_feature.support_info.version = md_feature_ap.feature_set[i].version;
+			}
+		}
+
+		if (rt_feature.support_info.support_mask == CCCI_FEATURE_MUST_SUPPORT) {
+			switch (rt_feature.feature_id) {
+			case BOOT_INFO:
+				memset(&boot_info, 0, sizeof(boot_info));
+				rt_feature.data_len = sizeof(boot_info);
+				boot_info.boot_channel = CCCI_CONTROL_RX;
+				boot_info.booting_start_id = get_booting_start_id(md);
+				append_runtime_feature(&rt_data, &rt_feature, &boot_info);
+				break;
+
+			case EXCEPTION_SHARE_MEMORY:
+				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
+				rt_shm.addr = md->smem_layout.ccci_exp_smem_base_phy -
+				    md->mem_layout.smem_offset_AP_to_MD;
+				rt_shm.size = md->smem_layout.ccci_exp_smem_size;
+				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				break;
+			case CCIF_SHARE_MEMORY:
+				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
+				rt_shm.addr = md->smem_layout.ccci_exp_smem_base_phy +
+				    md->smem_layout.ccci_exp_smem_size +
+				    md->smem_layout.ccci_rt_smem_size - md->mem_layout.smem_offset_AP_to_MD;
+				rt_shm.size = md->smem_layout.ccci_ccif_smem_size;
+				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				break;
+			case DHL_SHARE_MEMORY:
+				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
+				rt_shm.addr = md->mem_layout.dhl_smem_phy - md->mem_layout.smem_offset_AP_to_MD;
+				rt_shm.size = md->mem_layout.dhl_smem_size;
+				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				break;
+			case MD1MD3_SHARE_MEMORY:
+				rt_feature.data_len = sizeof(struct ccci_runtime_share_memory);
+				rt_shm.addr = md->mem_layout.md1_md3_smem_phy - md->mem_layout.smem_offset_AP_to_MD;
+				rt_shm.size = md->mem_layout.md1_md3_smem_size;
+				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				break;
+
+			case MISC_INFO_HIF_DMA_REMAP:
+				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
+				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
+				break;
+			case MISC_INFO_RTC_32K_LESS:
+				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
+				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
+				break;
+			case MISC_INFO_RANDOM_SEED_NUM:
+				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
+				get_random_bytes(&random_seed, sizeof(int));
+				rt_f_element.feature[0] = random_seed;
+				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
+				break;
+			case MISC_INFO_GPS_COCLOCK:
+				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
+				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
+				break;
+			case MISC_INFO_SBP_ID:
+				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
+				rt_f_element.feature[0] = md->sbp_code;
+				if (md->config.load_type < modem_ultg)
+					rt_f_element.feature[1] = 0;
+				else
+					rt_f_element.feature[1] = get_md_wm_id_map(md->config.load_type);
+				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
+				break;
+			case MISC_INFO_CCCI:
+				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
+#ifdef FEATURE_SEQ_CHECK_EN
+				rt_f_element.feature[0] |= (1 << 0);
+#endif
+#ifdef FEATURE_POLL_MD_EN
+				rt_f_element.feature[0] |= (1 << 1);
+#endif
+				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
+				break;
+			case MISC_INFO_CLIB_TIME:
+				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
+				do_gettimeofday(&t);
+
+				/*set seconds information */
+				rt_f_element.feature[0] = ((unsigned int *)&t.tv_sec)[0];
+				rt_f_element.feature[1] = ((unsigned int *)&t.tv_sec)[1];
+				/*sys_tz.tz_minuteswest; */
+				rt_f_element.feature[2] = current_time_zone;
+				/*not used for now */
+				rt_f_element.feature[3] = sys_tz.tz_dsttime;
+				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
+				break;
+			case MISC_INFO_C2K:
+				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
+#ifdef FEATURE_C2K_ALWAYS_ON
+				rt_f_element.feature[0] = (0
+#ifdef CONFIG_MTK_C2K_SUPPORT
+							   | (1 << 0)
+#endif
+#ifdef CONFIG_MTK_SVLTE_SUPPORT
+							   | (1 << 1)
+#endif
+#ifdef CONFIG_MTK_SRLTE_SUPPORT
+							   | (1 << 2)
+#endif
+#ifdef CONFIG_MTK_C2K_OM_SOLUTION1
+							   | (1 << 3)
+#endif
+				    );
+#endif
+				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
+				break;
+			default:
+				break;
+
+			};
+		} else {
+			rt_feature.data_len = 0;
+			append_runtime_feature(&rt_data, &rt_feature, NULL);
+		}
+
+	}
+
+	total_len = rt_data - (char *)md->smem_layout.ccci_rt_smem_base_vir;
+	ccci_mem_dump(md->index, md->smem_layout.ccci_rt_smem_base_vir, total_len);
+
+	return 0;
+}
 
 /*
  * all supported modems should follow these handshake messages as a protocol.
@@ -57,6 +417,7 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 	struct ccci_modem *md = port->modem;
 	struct ccci_header *ccci_h = (struct ccci_header *)req->skb->data;
 	unsigned long flags;
+	struct c2k_ctrl_port_msg *c2k_ctl_msg = NULL;
 	char need_update_state = 0;
 
 	CCCI_INF_MSG(md->index, KERN, "control message 0x%X,0x%X\n", ccci_h->data[1], ccci_h->reserved);
@@ -64,6 +425,17 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 	    && ccci_h->reserved == MD_INIT_CHK_ID && md->boot_stage == MD_BOOT_STAGE_0) {
 		del_timer(&md->bootup_timer);
 		md->boot_stage = MD_BOOT_STAGE_1;
+
+		if (req->skb->len == sizeof(struct md_query_ap_feature) + sizeof(struct ccci_header))
+			prepare_runtime_data(md, req);
+		else if (req->skb->len == sizeof(struct ccci_header))
+			CCCI_INF_MSG(md->index, KERN, "get old handshake message\n");
+		else
+			CCCI_ERR_MSG(md->index, KERN, "get invalid MD_QUERY_MSG, skb->len =%u\n", req->skb->len);
+
+#ifdef SET_EMI_STEP_BY_STAGE
+		ccci_set_mem_access_protection_second_stage(md);
+#endif
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_BOOT_UP, 0);
 	} else if (ccci_h->data[1] == MD_NORMAL_BOOT && md->boot_stage == MD_BOOT_STAGE_1) {
 		del_timer(&md->bootup_timer);
@@ -113,7 +485,14 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 				md->ops->broadcast_state(md, EXCEPTION);
 			}
 			/* copy exception info */
-			memcpy(&md->ex_info, skb_pull(req->skb, sizeof(struct ccci_header)), sizeof(EX_LOG_T));
+#ifdef MD_UMOLY_EE_SUPPORT
+			if (md->index == MD_SYS1)
+				memcpy(&md->ex_pl_info, skb_pull(req->skb, sizeof(struct ccci_header)),
+				       sizeof(EX_PL_LOG_T));
+			else
+#endif
+				memcpy(&md->ex_info, skb_pull(req->skb, sizeof(struct ccci_header)), sizeof(EX_LOG_T));
+
 			mod_timer(&md->ex_monitor, jiffies);
 		}
 	} else if (ccci_h->data[1] == MD_EX_PASS) {
@@ -135,6 +514,24 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 		CCCI_ERR_MSG(md->index, KERN, "AP CCCI driver version mis-match to MD!!\n");
 		md->config.setting |= MD_SETTING_STOP_RETRY_BOOT;
 		ccci_aed(md, 0, "AP/MD driver version mis-match\n", DB_OPT_DEFAULT);
+	} else if (md->index == MD_SYS3 && ccci_h->data[1] == C2K_HB_MSG) {
+		status_msg_handler(port, req);
+		CCCI_INF_MSG(md->index, KERN, "heart beat msg received\n");
+		return;
+	} else if (ccci_h->data[1] == C2K_STATUS_IND_MSG && md->index == MD_SYS3) {
+		c2k_ctl_msg = (struct c2k_ctrl_port_msg *)&ccci_h->reserved;
+		CCCI_INF_MSG(md->index, KERN, "c2k status ind 0x%02x\n", c2k_ctl_msg->option);
+		if (c2k_ctl_msg->option & 0x80)	/*connect */
+			md->dtr_state = 1;
+		else		/*disconnect */
+			md->dtr_state = 0;
+	} else if (ccci_h->data[1] == C2K_STATUS_QUERY_MSG && md->index == MD_SYS3) {
+		c2k_ctl_msg = (struct c2k_ctrl_port_msg *)&ccci_h->reserved;
+		CCCI_INF_MSG(md->index, KERN, "c2k status query 0x%02x\n", c2k_ctl_msg->option);
+		if (c2k_ctl_msg->option & 0x80)	/*connect */
+			md->dtr_state = 1;
+		else		/*disconnect */
+			md->dtr_state = 0;
 	} else {
 		CCCI_ERR_MSG(md->index, KERN, "receive unknown data from CCCI_CONTROL_RX = %d\n", ccci_h->data[1]);
 	}
@@ -142,6 +539,35 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 	ccci_free_req(req);
 }
 
+#ifdef TEST_MESSAGE_FOR_BRINGUP
+int ccci_notify_md_by_sys_msg(int md_id, unsigned int msg, unsigned int data)
+{
+	int ret = 0;
+	struct ccci_modem *md;
+	int idx = 0;		/* get modem informaton (in Bach ,callback are registered in modem 0) */
+
+	md = ccci_get_modem_by_id(idx);
+
+	return ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, msg, data, 1);
+}
+
+int ccci_sysmsg_echo_test(int md_id, int data)
+{
+	CCCI_DBG_MSG(md_id, KERN, "system message: Enter ccci_sysmsg_echo_test data= %08x", data);
+	ccci_notify_md_by_sys_msg(md_id, TEST_MSG_ID_AP2MD, data);
+	return 0;
+}
+EXPORT_SYMBOL(ccci_sysmsg_echo_test);
+
+int ccci_sysmsg_echo_test_l1core(int md_id, int data)
+{
+	CCCI_DBG_MSG(md_id, KERN, "system message: Enter ccci_sysmsg_echo_test_l1core data= %08x", data);
+	ccci_notify_md_by_sys_msg(md_id, TEST_MSG_ID_L1CORE_AP2MD, data);
+	return 0;
+}
+EXPORT_SYMBOL(ccci_sysmsg_echo_test_l1core);
+
+#endif
 /* for backward compatibility */
 ccci_sys_cb_func_info_t ccci_sys_cb_table_100[MAX_MD_NUM][MAX_KERN_API];
 ccci_sys_cb_func_info_t ccci_sys_cb_table_1000[MAX_MD_NUM][MAX_KERN_API];
@@ -232,6 +658,16 @@ static void system_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	case MD_SW_MD1_TX_POWER_REQ:
 	case MD_SW_MD2_TX_POWER_REQ:
 #endif
+#ifdef TEST_MESSAGE_FOR_BRINGUP
+	/* Fall through */
+	case TEST_MSG_ID_MD2AP:
+	/* Fall through */
+	case TEST_MSG_ID_AP2MD:
+	/* Fall through */
+	case TEST_MSG_ID_L1CORE_MD2AP:
+	/* Fall through */
+	case TEST_MSG_ID_L1CORE_AP2MD:
+#endif
 		exec_ccci_sys_call_back(md->index, ccci_h->data[1], ccci_h->reserved);
 		break;
 	};
@@ -242,7 +678,11 @@ static void system_msg_handler(struct ccci_port *port, struct ccci_request *req)
 static int get_md_gpio_val(unsigned int num)
 {
 #if defined(FEATURE_GET_MD_GPIO_VAL)
+#if defined(CONFIG_MTK_LEGACY)
+	return mt_get_gpio_in(num);
+#else
 	return __gpio_get_value(num);
+#endif
 #else
 	return -1;
 #endif
@@ -294,6 +734,9 @@ static int get_md_adc_info(char *adc_name, unsigned int len)
 static int get_md_gpio_info(char *gpio_name, unsigned int len)
 {
 #if defined(FEATURE_GET_MD_GPIO_NUM)
+#if defined(CONFIG_MTK_LEGACY)
+	return mt_get_md_gpio(gpio_name, len);
+#else
 	struct device_node *node = of_find_compatible_node(NULL, NULL, "mediatek,MD_USE_GPIO");
 	int gpio_id = -1;
 
@@ -302,6 +745,7 @@ static int get_md_gpio_info(char *gpio_name, unsigned int len)
 	else
 		CCCI_INF_MSG(0, RPC, "MD_USE_GPIO is not set in device tree,need to check?\n");
 	return gpio_id;
+#endif
 #else
 	return -1;
 #endif
@@ -389,10 +833,10 @@ static int get_eint_attr_val(struct device_node *node, int index)
 				case IRQ_TYPE_LEVEL_LOW:
 					md_eint_struct[SIM_HOT_PLUG_EINT_POLARITY].value_sim[index] =
 					    (value & 0x5) ? 1 : 0;
-					/*1/4: IRQ_TYPE_EDGE_RISING/IRQ_TYPE_LEVEL_HIGH Set 1*/
+					/*1/4: IRQ_TYPE_EDGE_RISING/IRQ_TYPE_LEVEL_HIGH Set 1 */
 					md_eint_struct[SIM_HOT_PLUG_EINT_SENSITIVITY].value_sim[index] =
 					    (value & 0x3) ? 1 : 0;
-					/*1/2: IRQ_TYPE_EDGE_RISING/IRQ_TYPE_LEVEL_FALLING Set 1*/
+					/*1/2: IRQ_TYPE_EDGE_RISING/IRQ_TYPE_LEVEL_FALLING Set 1 */
 					break;
 				default:	/* invalid */
 					md_eint_struct[SIM_HOT_PLUG_EINT_POLARITY].value_sim[index] = -1;
@@ -401,15 +845,15 @@ static int get_eint_attr_val(struct device_node *node, int index)
 					break;
 				}
 				/* CCCI_INF_MSG(-1, RPC, "%s:  --- %d_%d_%d\n", md_eint_struct[type].property,
-					md_eint_struct[type].index,
-					md_eint_struct[SIM_HOT_PLUG_EINT_POLARITY].value_sim[index],
-				md_eint_struct[SIM_HOT_PLUG_EINT_SENSITIVITY].value_sim[index]); */
+				   md_eint_struct[type].index,
+				   md_eint_struct[SIM_HOT_PLUG_EINT_POLARITY].value_sim[index],
+				   md_eint_struct[SIM_HOT_PLUG_EINT_SENSITIVITY].value_sim[index]); */
 				type++;
 			} /* special case: polarity's position == sensitivity's end] */
 			else {
 				md_eint_struct[type].value_sim[index] = value;
 				/* CCCI_INF_MSG(-1, RPC, "%s: --- %d_%d\n", md_eint_struct[type].property,
-					md_eint_struct[type].index, md_eint_struct[type].value_sim[index]); */
+				   md_eint_struct[type].index, md_eint_struct[type].value_sim[index]); */
 			}
 		} else {
 			md_eint_struct[type].value_sim[index] = ERR_SIM_HOT_PLUG_QUERY_TYPE;
@@ -428,7 +872,7 @@ void get_dtsi_eint_node(void)
 	for (i = 0; i < MD_SIM_MAX; i++) {
 		if (eint_node_prop.name[i].node_name != NULL) {
 			/* CCCI_INF_MSG(-1, TAG, "node_%d__ %d\n", i,
-				(int)(strlen(eint_node_prop.name[i].node_name))); */
+			   (int)(strlen(eint_node_prop.name[i].node_name))); */
 			if (strlen(eint_node_prop.name[i].node_name) > 0) {
 				/* CCCI_INF_MSG(-1, TAG, "found %s: node %d\n", eint_node_prop.name[i].node_name, i); */
 				node = of_find_node_by_name(NULL, eint_node_prop.name[i].node_name);
@@ -490,18 +934,15 @@ static int get_eint_attr(char *name, unsigned int name_len, unsigned int type, c
 #endif
 }
 
-static void ccci_rpc_get_gpio_adc(struct ccci_rpc_gpio_adc_intput *input,
-	struct ccci_rpc_gpio_adc_output *output)
+static void ccci_rpc_get_gpio_adc(struct ccci_rpc_gpio_adc_intput *input, struct ccci_rpc_gpio_adc_output *output)
 {
 	int num;
 	unsigned int val, i;
 
-	if ((input->reqMask & (RPC_REQ_GPIO_PIN | RPC_REQ_GPIO_VALUE)) ==
-	    (RPC_REQ_GPIO_PIN | RPC_REQ_GPIO_VALUE)) {
+	if ((input->reqMask & (RPC_REQ_GPIO_PIN | RPC_REQ_GPIO_VALUE)) == (RPC_REQ_GPIO_PIN | RPC_REQ_GPIO_VALUE)) {
 		for (i = 0; i < GPIO_MAX_COUNT; i++) {
 			if (input->gpioValidPinMask & (1 << i)) {
-				num = get_md_gpio_info(input->gpioPinName[i],
-						      strlen(input->gpioPinName[i]));
+				num = get_md_gpio_info(input->gpioPinName[i], strlen(input->gpioPinName[i]));
 				if (num >= 0) {
 					output->gpioPinNum[i] = num;
 					val = get_md_gpio_val(num);
@@ -513,8 +954,7 @@ static void ccci_rpc_get_gpio_adc(struct ccci_rpc_gpio_adc_intput *input,
 		if (input->reqMask & RPC_REQ_GPIO_PIN) {
 			for (i = 0; i < GPIO_MAX_COUNT; i++) {
 				if (input->gpioValidPinMask & (1 << i)) {
-					num = get_md_gpio_info(input->gpioPinName[i],
-							      strlen(input->gpioPinName[i]));
+					num = get_md_gpio_info(input->gpioPinName[i], strlen(input->gpioPinName[i]));
 					if (num >= 0)
 						output->gpioPinNum[i] = num;
 				}
@@ -529,8 +969,69 @@ static void ccci_rpc_get_gpio_adc(struct ccci_rpc_gpio_adc_intput *input,
 			}
 		}
 	}
-	if ((input->reqMask & (RPC_REQ_ADC_PIN | RPC_REQ_ADC_VALUE)) ==
-	    (RPC_REQ_ADC_PIN | RPC_REQ_ADC_VALUE)) {
+	if ((input->reqMask & (RPC_REQ_ADC_PIN | RPC_REQ_ADC_VALUE)) == (RPC_REQ_ADC_PIN | RPC_REQ_ADC_VALUE)) {
+		num = get_md_adc_info(input->adcChName, strlen(input->adcChName));
+		if (num >= 0) {
+			output->adcChNum = num;
+			output->adcChMeasSum = 0;
+			for (i = 0; i < input->adcChMeasCount; i++) {
+				val = get_md_adc_val(num);
+				output->adcChMeasSum += val;
+			}
+		}
+	} else {
+		if (input->reqMask & RPC_REQ_ADC_PIN) {
+			num = get_md_adc_info(input->adcChName, strlen(input->adcChName));
+			if (num >= 0)
+				output->adcChNum = num;
+		}
+		if (input->reqMask & RPC_REQ_ADC_VALUE) {
+			output->adcChMeasSum = 0;
+			for (i = 0; i < input->adcChMeasCount; i++) {
+				val = get_md_adc_val(input->adcChNum);
+				output->adcChMeasSum += val;
+			}
+		}
+	}
+}
+
+static void ccci_rpc_get_gpio_adc_v2(struct ccci_rpc_gpio_adc_intput_v2 *input,
+				     struct ccci_rpc_gpio_adc_output_v2 *output)
+{
+	int num;
+	unsigned int val, i;
+
+	if ((input->reqMask & (RPC_REQ_GPIO_PIN | RPC_REQ_GPIO_VALUE)) == (RPC_REQ_GPIO_PIN | RPC_REQ_GPIO_VALUE)) {
+		for (i = 0; i < GPIO_MAX_COUNT_V2; i++) {
+			if (input->gpioValidPinMask & (1 << i)) {
+				num = get_md_gpio_info(input->gpioPinName[i], strlen(input->gpioPinName[i]));
+				if (num >= 0) {
+					output->gpioPinNum[i] = num;
+					val = get_md_gpio_val(num);
+					output->gpioPinValue[i] = val;
+				}
+			}
+		}
+	} else {
+		if (input->reqMask & RPC_REQ_GPIO_PIN) {
+			for (i = 0; i < GPIO_MAX_COUNT_V2; i++) {
+				if (input->gpioValidPinMask & (1 << i)) {
+					num = get_md_gpio_info(input->gpioPinName[i], strlen(input->gpioPinName[i]));
+					if (num >= 0)
+						output->gpioPinNum[i] = num;
+				}
+			}
+		}
+		if (input->reqMask & RPC_REQ_GPIO_VALUE) {
+			for (i = 0; i < GPIO_MAX_COUNT_V2; i++) {
+				if (input->gpioValidPinMask & (1 << i)) {
+					val = get_md_gpio_val(input->gpioPinNum[i]);
+					output->gpioPinValue[i] = val;
+				}
+			}
+		}
+	}
+	if ((input->reqMask & (RPC_REQ_ADC_PIN | RPC_REQ_ADC_VALUE)) == (RPC_REQ_ADC_PIN | RPC_REQ_ADC_VALUE)) {
 		num = get_md_adc_info(input->adcChName, strlen(input->adcChName));
 		if (num >= 0) {
 			output->adcChNum = num;
@@ -759,7 +1260,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				/* TODO : please check it */
 				/* save original modem secro length */
 				CCCI_DBG_MSG(md->index, RPC, "<rpc>RPC_GET_SECRO_OP: save MD SECRO length: (%d)\n",
-						img_len);
+					     img_len);
 				img_len_bak = img_len;
 
 				blk_sz = masp_secro_blk_sz();
@@ -779,7 +1280,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				img_len = img_len_bak;
 
 				CCCI_DBG_MSG(md->index, RPC, "<rpc>RPC_GET_SECRO_OP: restore MD SECRO length: (%d)\n",
-						img_len);
+					     img_len);
 
 				if (tmp_data[0] != 0) {
 					CCCI_ERR_MSG(md->index, RPC, "RPC_GET_SECRO_OP: get data fail:%d\n",
@@ -869,7 +1370,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 
 				/* NOTE: tmp_data[1] not [0] */
 				tmp_data[1] = (unsigned int)get_num;
-					/* get_num may be invalid after exit this function */
+				/* get_num may be invalid after exit this function */
 				pkt[pkt_num].len = sizeof(unsigned int);
 				pkt[pkt_num++].buf = (void *)(&tmp_data[1]);
 				pkt[pkt_num].len = sizeof(unsigned int);
@@ -1026,20 +1527,20 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				clkbuf->CLKBuf_Count = 0xFF;
 				memset(&clkbuf->CLKBuf_Status, 0, sizeof(clkbuf->CLKBuf_Status));
 			} else {
+#if !defined(CONFIG_MTK_LEGACY)
 				unsigned int CLK_BUF1_STATUS, CLK_BUF2_STATUS, CLK_BUF3_STATUS, CLK_BUF4_STATUS;
 				struct device_node *node;
-				u32 vals[4];
 
-				node = of_find_compatible_node(NULL, NULL, "mediatek,rf_clock_buffer");
+				node = of_find_compatible_node(NULL, NULL, "mediatek, rf_clock_buffer");
 				if (node) {
-					of_property_read_u32_array(node, "mediatek,clkbuf-config", vals, 4);
-					CLK_BUF1_STATUS = vals[0];
-					CLK_BUF2_STATUS = vals[1];
-					CLK_BUF3_STATUS = vals[2];
-					CLK_BUF4_STATUS = vals[3];
+					of_property_read_u32(node, "buffer1", (u32 *)&CLK_BUF1_STATUS);
+					of_property_read_u32(node, "buffer2", (u32 *)&CLK_BUF2_STATUS);
+					of_property_read_u32(node, "buffer3", (u32 *)&CLK_BUF3_STATUS);
+					of_property_read_u32(node, "buffer4", (u32 *)&CLK_BUF4_STATUS);
 				} else {
 					CCCI_ERR_MSG(md->index, RPC, "%s can't find compatible node\n", __func__);
 				}
+#endif
 				clkbuf->CLKBuf_Count = CLKBUF_MAX_COUNT;
 				clkbuf->CLKBuf_Status[0] = CLK_BUF1_STATUS;
 				clkbuf->CLKBuf_Status[1] = CLK_BUF2_STATUS;
@@ -1089,6 +1590,9 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 		{
 			struct ccci_rpc_gpio_adc_intput *input;
 			struct ccci_rpc_gpio_adc_output *output;
+			struct ccci_rpc_gpio_adc_intput_v2 *input_v2;
+			struct ccci_rpc_gpio_adc_output_v2 *output_v2;
+			unsigned int pkt_size;
 
 			if (pkt_num != 1) {
 				CCCI_ERR_MSG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
@@ -1101,17 +1605,42 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				pkt[pkt_num++].buf = (void *)&tmp_data[0];
 				break;
 			}
-			input = (struct ccci_rpc_gpio_adc_intput *)(pkt[0].buf);
-			pkt_num = 0;
-			tmp_data[0] = 0;
-			pkt[pkt_num].len = sizeof(unsigned int);
-			pkt[pkt_num++].buf = (void *)&tmp_data[0];
-			pkt[pkt_num].len = sizeof(struct ccci_rpc_gpio_adc_output);
-			pkt[pkt_num++].buf = (void *)&tmp_data[1];
-			output = (struct ccci_rpc_gpio_adc_output *)&tmp_data[1];
-			memset(output, 0xF, sizeof(struct ccci_rpc_gpio_adc_output));	/* 0xF for failure */
-			CCCI_DBG_MSG(md->index, KERN, "IPC_RPC_GET_GPIO_ADC_OP request=%x\n", input->reqMask);
-			ccci_rpc_get_gpio_adc(input, output);
+			pkt_size = pkt[0].len;
+			if (pkt_size == sizeof(struct ccci_rpc_gpio_adc_intput)) {
+				input = (struct ccci_rpc_gpio_adc_intput *)(pkt[0].buf);
+				pkt_num = 0;
+				tmp_data[0] = 0;
+				pkt[pkt_num].len = sizeof(unsigned int);
+				pkt[pkt_num++].buf = (void *)&tmp_data[0];
+				pkt[pkt_num].len = sizeof(struct ccci_rpc_gpio_adc_output);
+				pkt[pkt_num++].buf = (void *)&tmp_data[1];
+				output = (struct ccci_rpc_gpio_adc_output *)&tmp_data[1];
+				memset(output, 0xF, sizeof(struct ccci_rpc_gpio_adc_output));	/* 0xF for failure */
+				CCCI_DBG_MSG(md->index, KERN, "IPC_RPC_GET_GPIO_ADC_OP request=%x\n", input->reqMask);
+				ccci_rpc_get_gpio_adc(input, output);
+			} else if (pkt_size == sizeof(struct ccci_rpc_gpio_adc_intput_v2)) {
+				input_v2 = (struct ccci_rpc_gpio_adc_intput_v2 *)(pkt[0].buf);
+				pkt_num = 0;
+				tmp_data[0] = 0;
+				pkt[pkt_num].len = sizeof(unsigned int);
+				pkt[pkt_num++].buf = (void *)&tmp_data[0];
+				pkt[pkt_num].len = sizeof(struct ccci_rpc_gpio_adc_output_v2);
+				pkt[pkt_num++].buf = (void *)&tmp_data[1];
+				output_v2 = (struct ccci_rpc_gpio_adc_output_v2 *)&tmp_data[1];
+				/* 0xF for failure */
+				memset(output_v2, 0xF, sizeof(struct ccci_rpc_gpio_adc_output_v2));
+				CCCI_INF_MSG(md->index, KERN, "IPC_RPC_GET_GPIO_ADC_OP request=%x\n",
+					     input_v2->reqMask);
+				ccci_rpc_get_gpio_adc_v2(input_v2, output_v2);
+			} else {
+				CCCI_ERR_MSG(md->index, RPC, "can't recognize pkt size%d!\n", pkt_size);
+				tmp_data[0] = FS_PARAM_ERROR;
+				pkt_num = 0;
+				pkt[pkt_num].len = sizeof(unsigned int);
+				pkt[pkt_num++].buf = (void *)&tmp_data[0];
+				pkt[pkt_num].len = sizeof(unsigned int);
+				pkt[pkt_num++].buf = (void *)&tmp_data[0];
+			}
 			break;
 		}
 
@@ -1222,7 +1751,7 @@ static void rpc_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	int i, data_len = 0, AlignLength, ret;
 	struct rpc_pkt pkt[RPC_MAX_ARG_NUM];
 	char *ptr, *ptr_base;
-	unsigned int tmp_data[64];	/* size of tmp_data should be >= any RPC output result */
+	unsigned int tmp_data[128];	/* size of tmp_data should be >= any RPC output result */
 
 	/* sanity check */
 	if (rpc_buf->header.reserved < 0 || rpc_buf->header.reserved > RPC_REQ_BUFFER_NUM ||
@@ -1424,9 +1953,10 @@ int port_kernel_recv_req(struct ccci_port *port, struct ccci_request *req)
 		wake_up_all(&port->rx_wq);
 		return 0;
 	}
+
 	port->flags |= PORT_F_RX_FULLED;
 	spin_unlock_irqrestore(&port->rx_req_lock, flags);
-	if (port->flags & PORT_F_ALLOW_DROP /* || !(port->flags&PORT_F_RX_EXCLUSIVE) */) {
+	if (port->flags & PORT_F_ALLOW_DROP/* || !(port->flags&PORT_F_RX_EXCLUSIVE) */) {
 		CCCI_INF_MSG(port->modem->index, IPC, "port %s Rx full, drop packet\n", port->name);
 		goto drop;
 	} else {
@@ -1555,9 +2085,14 @@ static void ccci_aed(struct ccci_modem *md, unsigned int dump_flag, char *aed_st
 	void *md_img_addr = NULL;
 	int md_img_len = 0;
 	int info_str_len = 0;
-	char buff[AED_STR_LEN];
+	char *buff;		/*[AED_STR_LEN]; */
 	char *img_inf;
 
+	buff = kmalloc(AED_STR_LEN, GFP_KERNEL);
+	if (buff == NULL) {
+		CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for buff!\n");
+		goto err_exit1;
+	}
 	img_inf = ccci_get_md_info_str(md->index);
 	if (img_inf == NULL)
 		img_inf = "";
@@ -1568,8 +2103,8 @@ static void ccci_aed(struct ccci_modem *md, unsigned int dump_flag, char *aed_st
 		buff[AED_STR_LEN - 1] = '\0';	/* Cut string length to AED_STR_LEN */
 
 	snprintf(buff, AED_STR_LEN, "md%d:%s%s", md->index + 1, aed_str, img_inf);
-		/* MD ID must sync with aee_dump_ccci_debug_info() */
-
+	/* MD ID must sync with aee_dump_ccci_debug_info() */
+ err_exit1:
 	if (dump_flag & CCCI_AED_DUMP_CCIF_REG) {	/* check this first, as we overwrite share memory here */
 		ex_log_addr = md->smem_layout.ccci_exp_smem_mdss_debug_vir;
 		ex_log_len = md->smem_layout.ccci_exp_smem_mdss_debug_size;
@@ -1593,6 +2128,515 @@ static void ccci_aed(struct ccci_modem *md, unsigned int dump_flag, char *aed_st
 	aed_md_exception_api(ex_log_addr, ex_log_len, md_img_addr, md_img_len, buff, db_opt);
 #endif
 }
+
+#ifdef MD_UMOLY_EE_SUPPORT
+static void ccci_md_ee_info_dump(struct ccci_modem *md)
+{
+	char *ex_info;		/*[EE_BUF_LEN] = ""; */
+	char *i_bit_ex_info;	/*[EE_BUF_LEN] = "\n[Others] May I-Bit dis too long\n"; */
+	int db_opt = (DB_OPT_DEFAULT | DB_OPT_FTRACE);
+	int dump_flag = 0;
+	int core_id;
+	char *ex_info_temp;	/*[EE_BUF_LEN] = ""; */
+	DEBUG_INFO_T *debug_info = &md->debug_info;
+	unsigned char c;
+
+	struct rtc_time tm;
+	struct timeval tv = { 0 };
+	struct timeval tv_android = { 0 };
+	struct rtc_time tm_android;
+
+	ex_info = kmalloc(EE_BUF_LEN_UMOLY, GFP_KERNEL);
+	if (ex_info == NULL) {
+		CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for ex_info!\n");
+		goto err_exit;
+	}
+	ex_info_temp = kmalloc(EE_BUF_LEN_UMOLY, GFP_KERNEL);
+	if (ex_info_temp == NULL) {
+		CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for ex_info_temp!\n");
+		goto err_exit;
+	}
+
+	do_gettimeofday(&tv);
+	tv_android = tv;
+	rtc_time_to_tm(tv.tv_sec, &tm);
+	tv_android.tv_sec -= sys_tz.tz_minuteswest * 60;
+	rtc_time_to_tm(tv_android.tv_sec, &tm_android);
+	CCCI_INF_MSG(md->index, KERN, "Sync:%d%02d%02d %02d:%02d:%02d.%u(%02d:%02d:%02d.%03d(TZone))\n",
+		     tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+		     tm.tm_hour, tm.tm_min, tm.tm_sec,
+		     (unsigned int)tv.tv_usec,
+		     tm_android.tm_hour, tm_android.tm_min, tm_android.tm_sec, (unsigned int)tv_android.tv_usec);
+	for (core_id = 0; core_id < md->ex_core_num; core_id++) {
+		if (core_id == 1) {
+			snprintf(ex_info_temp, EE_BUF_LEN_UMOLY, "%s", ex_info);
+			debug_info = &md->debug_info1[core_id - 1];
+		} else if (core_id > 1) {
+			snprintf(ex_info_temp, EE_BUF_LEN_UMOLY, "%smd%d:%s", ex_info_temp, md->index + 1, ex_info);
+			debug_info = &md->debug_info1[core_id - 1];
+		}
+		CCCI_INF_MSG(md->index, KERN, "exception type(%d):%s\n", debug_info->type,
+			     debug_info->name ? : "Unknown");
+
+		switch (debug_info->type) {
+		case MD_EX_DUMP_ASSERT:
+			CCCI_INF_MSG(md->index, KERN, "filename = %s\n", debug_info->assert.file_name);
+			CCCI_INF_MSG(md->index, KERN, "line = %d\n", debug_info->assert.line_num);
+			CCCI_INF_MSG(md->index, KERN, "para0 = %d, para1 = %d, para2 = %d\n",
+				     debug_info->assert.parameters[0],
+				     debug_info->assert.parameters[1], debug_info->assert.parameters[2]);
+			snprintf(ex_info, EE_BUF_LEN_UMOLY,
+					"%s\n[%s] file:%s line:%d\np1:0x%08x\np2:0x%08x\np3:0x%08x\n\n",
+					debug_info->core_name,
+					debug_info->name,
+					debug_info->assert.file_name,
+					debug_info->assert.line_num,
+					debug_info->assert.parameters[0],
+					debug_info->assert.parameters[1], debug_info->assert.parameters[2]);
+			break;
+		case MD_EX_DUMP_3P_EX:
+			CCCI_INF_MSG(md->index, KERN, "fatal error code 1 = 0x%08X\n",
+				     debug_info->fatal_error.err_code1);
+			CCCI_INF_MSG(md->index, KERN, "fatal error code 2 = 0x%08X\n",
+				     debug_info->fatal_error.err_code2);
+			CCCI_INF_MSG(md->index, KERN, "fatal error code 3 = 0x%08X\n",
+				     debug_info->fatal_error.err_code3);
+			CCCI_INF_MSG(md->index, KERN, "fatal error offender %s\n", debug_info->fatal_error.offender);
+			if (debug_info->fatal_error.offender[0] != '\0') {
+				snprintf(ex_info, EE_BUF_LEN_UMOLY,
+					 "%s\n[%s] err_code1:0x%08X err_code2:0x%08X erro_code3:0x%08X\nMD Offender:%s\n%s\n",
+					 debug_info->core_name, debug_info->name, debug_info->fatal_error.err_code1,
+					 debug_info->fatal_error.err_code2, debug_info->fatal_error.err_code3,
+					 debug_info->fatal_error.offender, debug_info->fatal_error.ExStr);
+			} else {
+				snprintf(ex_info, EE_BUF_LEN_UMOLY,
+					 "%s\n[%s] err_code1:0x%08X err_code2:0x%08X err_code3:0x%08X\n%s\n",
+					 debug_info->core_name, debug_info->name, debug_info->fatal_error.err_code1,
+					 debug_info->fatal_error.err_code2, debug_info->fatal_error.err_code3,
+					 debug_info->fatal_error.ExStr);
+			}
+			break;
+		case MD_EX_DUMP_2P_EX:
+			CCCI_INF_MSG(md->index, KERN, "fatal error code 1 = 0x%08X\n\n",
+				     debug_info->fatal_error.err_code1);
+			CCCI_INF_MSG(md->index, KERN, "fatal error code 2 = 0x%08X\n\n",
+				     debug_info->fatal_error.err_code2);
+
+			snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s\n[%s] err_code1:0x%08X err_code2:0x%08X\n\n",
+				 debug_info->core_name, debug_info->name, debug_info->fatal_error.err_code1,
+				 debug_info->fatal_error.err_code2);
+			break;
+		case MD_EX_DUMP_EMI_CHECK:
+			CCCI_INF_MSG(md->index, KERN, "md_emi_check: 0x%08X, 0x%08X, %02d, 0x%08X\n\n",
+				     debug_info->data.data0, debug_info->data.data1,
+				     debug_info->data.channel, debug_info->data.reserved);
+			snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s\n[emi_chk] 0x%08X, 0x%08X, %02d, 0x%08X\n\n",
+				 debug_info->core_name, debug_info->data.data0, debug_info->data.data1,
+				 debug_info->data.channel, debug_info->data.reserved);
+			break;
+		case MD_EX_DUMP_UNKNOWN:
+		default:	/* Only display exception name */
+			snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s\n[%s]\n", debug_info->core_name, debug_info->name);
+			break;
+		}
+	}
+	if (md->ex_core_num > 1) {
+		CCCI_INF_MSG(md->index, KERN, "%s+++++++%s", ex_info_temp, ex_info);
+		snprintf(ex_info_temp, EE_BUF_LEN_UMOLY, "%smd%d:%s", ex_info_temp, md->index + 1, ex_info);
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s", ex_info_temp);
+
+		debug_info = &md->debug_info;
+		/*CCCI_INF_MSG(md->index, KERN, "=======***==================\n");
+		   CCCI_INF_MSG(md->index, KERN, "Core Id(%d/%lu):%s", core_id, sizeof(ex_info_temp), ex_info);
+		   CCCI_INF_MSG(md->index, KERN, "===========================\n"); */
+	}
+	/* Add additional info */
+	switch (debug_info->more_info) {
+	case MD_EE_CASE_ONLY_SWINT:
+		strcat(ex_info, "\nOnly SWINT case\n");
+		break;
+	case MD_EE_CASE_SWINT_MISSING:
+		strcat(ex_info, "\nSWINT missing case\n");
+		break;
+	case MD_EE_CASE_ONLY_EX:
+		strcat(ex_info, "\nOnly EX case\n");
+		break;
+	case MD_EE_CASE_ONLY_EX_OK:
+		strcat(ex_info, "\nOnly EX_OK case\n");
+		break;
+	case MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG:
+		i_bit_ex_info = kmalloc(EE_BUF_LEN_UMOLY, GFP_KERNEL);
+		if (i_bit_ex_info == NULL) {
+			CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for i_bit_ex_info!\n");
+			break;
+		}
+		strcat(i_bit_ex_info, ex_info);
+		strcpy(ex_info, i_bit_ex_info);
+		break;
+	case MD_EE_CASE_TX_TRG:
+	case MD_EE_CASE_ISR_TRG:
+		strcat(ex_info, "\n[Others] May I-Bit dis too long\n");
+		break;
+	case MD_EE_CASE_NO_RESPONSE:
+		/* use strcpy, otherwise if this happens after a MD EE, the former EE info will be printed out */
+		strcpy(ex_info, "\n[Others] MD long time no response\n");
+		db_opt |= DB_OPT_FTRACE;
+		break;
+	case MD_EE_CASE_WDT:
+		strcpy(ex_info, "\n[Others] MD watchdog timeout interrupt\n");
+		break;
+	default:
+		break;
+	}
+
+	/* get ELM_status field from MD side */
+	c = md->ex_pl_info.envinfo.ELM_status;
+	CCCI_INF_MSG(md->index, KERN, "ELM_status: %x\n", c);
+	switch (c) {
+	case 0xFF:
+		strcat(ex_info, "\nno ELM info\n");
+		break;
+	case 0xAE:
+		strcat(ex_info, "\nELM rlat:FAIL\n");
+		break;
+	case 0xBE:
+		strcat(ex_info, "\nELM wlat:FAIL\n");
+		break;
+	case 0xDE:
+		strcat(ex_info, "\nELM r/wlat:PASS\n");
+		break;
+	default:
+		break;
+	}
+
+	/* Dump MD EE info */
+	CCCI_INF_MSG(md->index, KERN, "Dump MD EX log, 0x%x\n", debug_info->more_info);
+	if (debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0)
+		ccci_mem_dump(md->index, &md->ex_info, sizeof(EX_LOG_T));
+	else
+		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
+	/* Dump MD image memory */
+	CCCI_INF_MSG(md->index, KERN, "Dump MD image memory\n");
+	ccci_mem_dump(md->index, (void *)md->mem_layout.md_region_vir, MD_IMG_DUMP_SIZE);
+	/* Dump MD memory layout */
+	CCCI_INF_MSG(md->index, KERN, "Dump MD layout struct\n");
+	ccci_mem_dump(md->index, &md->mem_layout, sizeof(struct ccci_mem_layout));
+	/* Dump MD register */
+	md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
+
+	if (debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0) {
+		/* MD will not fill in share memory before we send runtime data */
+		dump_flag = CCCI_AED_DUMP_EX_PKT;
+	} else {		/* otherwise always dump whole share memory,
+				   as MD will fill debug log into its 2nd 1K region after bootup */
+		dump_flag = CCCI_AED_DUMP_EX_MEM;
+		if (debug_info->more_info == MD_EE_CASE_NO_RESPONSE)
+			dump_flag |= CCCI_AED_DUMP_CCIF_REG;
+	}
+err_exit:
+	md->boot_stage = MD_BOOT_STAGE_EXCEPTION;
+	/* update here to maintain handshake stage info during exception handling */
+	if (debug_info->type == MD_EX_TYPE_C2K_ERROR && debug_info->fatal_error.err_code1 == MD_EX_C2K_FATAL_ERROR)
+		CCCI_INF_MSG(md->index, KERN, "C2K EE, No need trigger DB\n");
+	else
+		ccci_aed(md, dump_flag, ex_info, db_opt);
+	if (debug_info->more_info == MD_EE_CASE_ONLY_SWINT)
+		md->ops->dump_info(md, DUMP_FLAG_QUEUE_0 | DUMP_FLAG_CCIF | DUMP_FLAG_CCIF_REG, NULL, 0);
+}
+
+static char md_ee_plstr[MD_EX_PL_FATALERR_BUF + 1][32] = {
+	"INVALID",
+	"Fatal error (undefine)",
+	"Fatal error (swi)",
+	"Fatal error (prefetch abort)",
+	"Fatal error (data abort)",
+	"Fatal error (stack)",
+	"Fatal error (task)",
+	"Fatal error (buff)"
+};
+
+static char md_ee_plInvalid[MD_EX_CC_MD32_EXCEPTION - MD_EX_CC_INVALID_EXCEPTION + 1][32] = {
+	"CC Invalid Exception",
+	"CC PCore Exception",
+	"CC L1Core Exception",
+	"CC CS Exception",
+	"CC MD32 Exception"
+};
+
+void strmncopy(char *src, char *dst, int src_len, int dst_len)
+{
+	int temp_m, temp_n, temp_i;
+
+	temp_m = src_len - 1;
+	temp_n = dst_len - 1;
+	temp_n = (temp_m > temp_n) ? temp_n : temp_m;
+	for (temp_i = 0; temp_i < temp_n; temp_i++) {
+		dst[temp_i] = src[temp_i];
+		if (dst[temp_i] == 0x00)
+			break;
+	}
+	CCCI_DBG_MSG(-1, KERN, "copy str(%d) %s\n", temp_i, dst);
+}
+
+/* todo: copy error code can convert a mini function */
+
+static void ccci_md_exp_change(struct ccci_modem *md)
+{
+	EX_OVERVIEW_T *ex_overview;
+	int ee_type, ee_case;
+
+	DEBUG_INFO_T *debug_info = &md->debug_info;
+	int core_id;
+	unsigned char off_core_num; /* number of offender core: need parse */
+	unsigned int temp_i;
+
+	EX_PL_LOG_T *ex_PLloginfo;
+	EX_CS_LOG_T *ex_csLogInfo;
+	EX_MD32_LOG_T *ex_md32LogInfo;
+
+	if (debug_info == NULL)
+		return;
+	CCCI_DBG_MSG(md->index, KERN, "ccci_md_exp_change, ee_case(0x%x)\n", debug_info->more_info);
+
+	ee_case = debug_info->more_info;
+	memset(debug_info, 0, sizeof(DEBUG_INFO_T));
+	debug_info->more_info = ee_case;
+	off_core_num = 0;
+
+	if ((debug_info->more_info == MD_EE_CASE_NORMAL) && (md->boot_stage == MD_BOOT_STAGE_0)) {
+		ex_PLloginfo = &md->ex_pl_info;
+		core_id = MD_CORE_TOTAL_NUM;
+		off_core_num++;
+		goto PL_CORE_PROC;
+	}
+	ex_overview = (EX_OVERVIEW_T *) md->smem_layout.ccci_exp_rec_base_vir;
+
+	for (core_id = 0; core_id < MD_CORE_TOTAL_NUM; core_id++) {
+		CCCI_DBG_MSG(md->index, KERN, "core_id(%x/%x): offset=%x, if_offender=%d, %s\n", (core_id + 1),
+			     ex_overview->core_num, ex_overview->main_reson[core_id].core_offset,
+			     ex_overview->main_reson[core_id].is_offender, ex_overview->main_reson[core_id].core_name);
+		if (ex_overview->main_reson[core_id].is_offender) {
+			off_core_num++;
+
+			/* (core name): PCORE/L1CORE/CS_ICC/CS_IMC/CS_MPC/MD32_BRP/MD32_DFE/MD32_RAKE */
+			debug_info->core_name[0] = '(';
+			for (temp_i = 1; temp_i < MD_CORE_NAME_LEN; temp_i++) {
+				debug_info->core_name[temp_i] = ex_overview->main_reson[core_id].core_name[temp_i - 1];
+				if (debug_info->core_name[temp_i] == '\0')
+					break;
+			}
+			debug_info->core_name[temp_i++] = ')';
+			debug_info->core_name[temp_i] = '\0';
+			CCCI_INF_MSG(md->index, KERN, "core_id(0x%x/%d), %s\n", core_id, off_core_num,
+				     debug_info->core_name);
+			md->ex_pl_info.envinfo.ELM_status = 0;
+			switch (core_id) {
+			case MD_PCORE:
+			case MD_L1CORE:
+				ex_PLloginfo =
+				    (EX_PL_LOG_T *) ((char *)ex_overview +
+						     ex_overview->main_reson[core_id].core_offset);
+				md->ex_pl_info.envinfo.ELM_status = ex_PLloginfo->envinfo.ELM_status;
+PL_CORE_PROC:
+				ee_type = ex_PLloginfo->header.ex_type;
+				debug_info->type = ee_type;
+				ee_case = ee_type;
+				CCCI_INF_MSG(md->index, KERN, "PL ex type(0x%x)\n", ee_type);
+				switch (ee_type) {
+				case MD_EX_PL_INVALID:
+					debug_info->name = "INVALID";
+					break;
+				case MD_EX_PL_UNDEF:
+				case MD_EX_PL_SWI:
+				case MD_EX_PL_PREF_ABT:
+				case MD_EX_PL_DATA_ABT:
+				case MD_EX_PL_STACKACCESS:
+				case MD_EX_PL_FATALERR_TASK:
+				case MD_EX_PL_FATALERR_BUF:
+					debug_info->type = MD_EX_DUMP_3P_EX;
+					debug_info->name = md_ee_plstr[ee_type];
+					if (ex_PLloginfo->content.fatalerr.ex_analy.owner[0] != 0xCC) {
+						strmncopy(ex_PLloginfo->content.fatalerr.ex_analy.owner,
+							debug_info->fatal_error.offender,
+							sizeof(ex_PLloginfo->content.fatalerr.ex_analy.owner),
+							sizeof(debug_info->fatal_error.offender));
+						CCCI_INF_MSG(md->index, KERN, "offender: %s\n",
+							     debug_info->fatal_error.offender);
+					}
+					debug_info->fatal_error.err_code1 =
+					    ex_PLloginfo->content.fatalerr.error_code.code1;
+					debug_info->fatal_error.err_code2 =
+					    ex_PLloginfo->content.fatalerr.error_code.code2;
+					debug_info->fatal_error.err_code3 =
+					    ex_PLloginfo->content.fatalerr.error_code.code3;
+					if (ex_PLloginfo->content.fatalerr.ex_analy.is_cadefa_sup)
+						debug_info->fatal_error.ExStr = "CaDeFa Supported\n";
+					else
+						debug_info->fatal_error.ExStr = "";
+					break;
+				case MD_EX_PL_ASSERT_FAIL:
+				case MD_EX_PL_ASSERT_DUMP:
+				case MD_EX_PL_ASSERT_NATIVE:
+					debug_info->type = MD_EX_DUMP_ASSERT;/* = MD_EX_TYPE_ASSERT; */
+					debug_info->name = "ASSERT";
+					CCCI_DBG_MSG(md->index, KERN, "p filename1(%s)\n",
+						ex_PLloginfo->content.assert.filepath);
+					strmncopy(ex_PLloginfo->content.assert.filepath,
+						debug_info->assert.file_name,
+						sizeof(ex_PLloginfo->content.assert.filepath),
+						sizeof(debug_info->assert.file_name));
+					CCCI_DBG_MSG(md->index, KERN,
+						"p filename2:(%s)\n", debug_info->assert.file_name);
+					debug_info->assert.line_num = ex_PLloginfo->content.assert.linenumber;
+					debug_info->assert.parameters[0] = ex_PLloginfo->content.assert.para[0];
+					debug_info->assert.parameters[1] = ex_PLloginfo->content.assert.para[1];
+					debug_info->assert.parameters[2] = ex_PLloginfo->content.assert.para[2];
+					break;
+
+				case EMI_MPU_VIOLATION:
+					debug_info->type = MD_EX_DUMP_3P_EX;
+					ee_case = MD_EX_TYPE_FATALERR_BUF;
+					debug_info->name = "Fatal error (rmpu violation)";
+					debug_info->fatal_error.err_code1 =
+					    ex_PLloginfo->content.fatalerr.error_code.code1;
+					debug_info->fatal_error.err_code2 =
+					    ex_PLloginfo->content.fatalerr.error_code.code2;
+					debug_info->fatal_error.err_code3 =
+					    ex_PLloginfo->content.fatalerr.error_code.code3;
+					debug_info->fatal_error.ExStr = "EMI MPU VIOLATION\n";
+					break;
+				case MD_EX_CC_INVALID_EXCEPTION:
+				case MD_EX_CC_PCORE_EXCEPTION:
+				case MD_EX_CC_L1CORE_EXCEPTION:
+				case MD_EX_CC_CS_EXCEPTION:
+				case MD_EX_CC_MD32_EXCEPTION:
+					debug_info->name = md_ee_plInvalid[ee_type - MD_EX_CC_INVALID_EXCEPTION];
+					break;
+				default:
+					debug_info->name = "UNKNOWN Exception";
+					break;
+				}
+				debug_info->ext_mem = ex_PLloginfo;
+				debug_info->ext_size = sizeof(EX_PL_LOG_T);
+				break;
+			case MD_CS_ICC:
+			case MD_CS_IMC:
+			case MD_CS_MPC:
+				ex_csLogInfo =
+				    (EX_CS_LOG_T *) ((char *)ex_overview +
+						     ex_overview->main_reson[core_id].core_offset);
+				ee_type = ex_csLogInfo->except_type;
+				CCCI_INF_MSG(md->index, KERN, "cs ex type(0x%x)\n", ee_type);
+				switch (ee_type) {
+				case CS_EXCEPTION_ASSERTION:
+					debug_info->type = MD_EX_DUMP_ASSERT;
+					ee_case = MD_EX_TYPE_ASSERT;
+
+					debug_info->name = "ASSERT";
+					strmncopy(ex_csLogInfo->except_content.assert.file_name,
+						debug_info->assert.file_name,
+						sizeof(ex_csLogInfo->except_content.assert.file_name),
+						sizeof(debug_info->assert.file_name));
+					debug_info->assert.line_num = ex_csLogInfo->except_content.assert.line_num;
+					debug_info->assert.parameters[0] = ex_csLogInfo->except_content.assert.para1;
+					debug_info->assert.parameters[1] = ex_csLogInfo->except_content.assert.para2;
+					debug_info->assert.parameters[2] = ex_csLogInfo->except_content.assert.para3;
+					break;
+				case CS_EXCEPTION_FATAL_ERROR:
+					debug_info->type = MD_EX_DUMP_2P_EX;
+					ee_case = MD_EX_TYPE_FATALERR_TASK;
+
+					debug_info->name = "Fatal error";
+					debug_info->fatal_error.err_code1 =
+					    ex_csLogInfo->except_content.fatalerr.error_code1;
+					debug_info->fatal_error.err_code2 =
+					    ex_csLogInfo->except_content.fatalerr.error_code2;
+					break;
+				case CS_EXCEPTION_CTI_EVENT:
+					debug_info->name = "CC CTI Exception";
+					break;
+				case CS_EXCEPTION_UNKNOWN:
+				default:
+					debug_info->name = "UNKNOWN Exception";
+					break;
+				}
+				debug_info->ext_mem = ex_csLogInfo;
+				debug_info->ext_size = sizeof(EX_CS_LOG_T);
+				break;
+			case MD_MD32_DFE:
+			case MD_MD32_BRP:
+			case MD_MD32_RAKE:
+				ex_md32LogInfo =
+				    (EX_MD32_LOG_T *) ((char *)ex_overview +
+						       ex_overview->main_reson[core_id].core_offset);
+				ee_type = ex_md32LogInfo->except_type;
+				CCCI_INF_MSG(md->index, KERN, "md32 ex type(0x%x), name: %s\n", ee_type,
+					     ex_md32LogInfo->except_content.assert.file_name);
+				switch (ex_md32LogInfo->md32_active_mode) {
+				case 1:
+					strcat(debug_info->core_name, MD32_FDD_ROCODE);
+					break;
+				case 2:
+					strcat(debug_info->core_name, MD32_TDD_ROCODE);
+					break;
+				default:
+					break;
+				}
+				switch (ee_type) {
+				case CMIF_MD32_EX_ASSERT_LINE:
+				case CMIF_MD32_EX_ASSERT_EXT:
+					debug_info->type = MD_EX_DUMP_ASSERT;
+					ee_case = MD_EX_TYPE_ASSERT;
+					debug_info->name = "ASSERT";
+					strmncopy(ex_md32LogInfo->except_content.assert.file_name,
+						debug_info->assert.file_name,
+						sizeof(ex_md32LogInfo->except_content.assert.file_name),
+						sizeof(debug_info->assert.file_name));
+					debug_info->assert.line_num = ex_md32LogInfo->except_content.assert.line_num;
+					debug_info->assert.parameters[0] =
+					    ex_md32LogInfo->except_content.assert.ex_code[0];
+					debug_info->assert.parameters[1] =
+					    ex_md32LogInfo->except_content.assert.ex_code[1];
+					debug_info->assert.parameters[2] =
+					    ex_md32LogInfo->except_content.assert.ex_code[2];
+					break;
+				case CMIF_MD32_EX_FATAL_ERROR:
+				case CMIF_MD32_EX_FATAL_ERROR_EXT:
+					debug_info->type = MD_EX_DUMP_2P_EX;
+					ee_case = MD_EX_TYPE_FATALERR_TASK;
+
+					debug_info->name = "Fatal error";
+					debug_info->fatal_error.err_code1 =
+					    ex_md32LogInfo->except_content.fatalerr.ex_code[0];
+					debug_info->fatal_error.err_code2 =
+					    ex_md32LogInfo->except_content.fatalerr.ex_code[1];
+					break;
+				case CS_EXCEPTION_CTI_EVENT:
+				case CS_EXCEPTION_UNKNOWN:
+				default:
+					debug_info->name = "UNKNOWN Exception";
+					break;
+				}
+				debug_info->ext_mem = ex_md32LogInfo;
+				debug_info->ext_size = sizeof(EX_MD32_LOG_T);
+				break;
+			}
+			if (off_core_num < MD_CORE_NUM) {
+				debug_info->md_image = (void *)md->mem_layout.md_region_vir;
+				debug_info->md_size = MD_IMG_DUMP_SIZE;
+
+				debug_info = &md->debug_info1[off_core_num - 1];
+				memset(debug_info, 0, sizeof(DEBUG_INFO_T));
+				if (off_core_num == 1)
+					md->ex_type = ee_case;
+			}
+
+		}
+	}
+	md->ex_core_num = off_core_num;
+	CCCI_DBG_MSG(md->index, KERN, "core_ex_num(%d/%d)\n", off_core_num, md->ex_core_num);
+}
+#endif
 
 static void ccci_ee_info_dump(struct ccci_modem *md)
 {
@@ -1753,7 +2797,7 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 
 	/* Dump MD EE info */
 	CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
-	if (debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0)
+	if ((md->index == MD_SYS3) || (debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0))
 		ccci_mem_dump(md->index, &md->ex_info, sizeof(EX_LOG_T));
 	else
 		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
@@ -1797,10 +2841,14 @@ static void ccci_md_exception(struct ccci_modem *md)
 	if (debug_info == NULL)
 		return;
 
-	if (debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0)
+	if ((md->index == MD_SYS3) ||
+	(debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0)) {
 		ex_info = &md->ex_info;
-	else
+		CCCI_DBG_MSG(md->index, KERN, "Parse ex info from ccci packages\n");
+	} else {
 		ex_info = (EX_LOG_T *) md->smem_layout.ccci_exp_rec_base_vir;
+		CCCI_DBG_MSG(md->index, KERN, "Parse ex info from shared memory\n");
+	}
 	ee_case = debug_info->more_info;
 
 	memset(debug_info, 0, sizeof(DEBUG_INFO_T));
@@ -2038,12 +3086,22 @@ void md_ex_monitor2_func(unsigned long data)
 	if (ee_on_going)
 		return;
 
-	ccci_md_exception(md);
-	ccci_ee_info_dump(md);
+#ifdef MD_UMOLY_EE_SUPPORT
+	if ((md->index == MD_SYS1)/* &&
+	    !(md->debug_info.more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0)*/) {
+		ccci_md_exp_change(md);
+		ccci_md_ee_info_dump(md);
+	} else {
+#endif
+		ccci_md_exception(md);
+		ccci_ee_info_dump(md);
+#ifdef MD_UMOLY_EE_SUPPORT
+	}
+#endif
 
 	spin_lock_irqsave(&md->ctrl_lock, flags);
 	md->ee_info_flag = 0;	/* this should be the last action of a regular exception flow,
-				clear flag for reset MD later */
+				   clear flag for reset MD later */
 	spin_unlock_irqrestore(&md->ctrl_lock, flags);
 
 	CCCI_INF_MSG(md->index, KERN, "Enable WDT at exception exit.");
@@ -2056,7 +3114,7 @@ void md_bootup_timeout_func(unsigned long data)
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	char ex_info[EE_BUF_LEN] = "";
 
-	CCCI_INF_MSG(md->index, KERN, "MD_BOOT_HS%d_FAIL!\n", (md->boot_stage + 1));
+	CCCI_ERR_MSG(md->index, KERN, "MD_BOOT_HS%d_FAIL!\n", (md->boot_stage + 1));
 	md->ops->broadcast_state(md, BOOT_FAIL);
 	if (md->config.setting & MD_SETTING_STOP_RETRY_BOOT)
 		return;

@@ -1,10 +1,9 @@
 menuconfig MTK_CCCI_DEVICES
 	bool "CCCI Devices"
-	default n
+	default y
 	help
 	  Say Y here to enable CCCI basic support.
 	  If you say N, all CCCI related code (including dummy API) will be disable.
-
 
 config MTK_ENABLE_MD1
 	bool "MTK_ENABLE_MD1"

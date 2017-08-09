@@ -13,14 +13,15 @@
 
 struct ccif_sram_layout {
 	struct ccci_header dl_header;
+	struct md_query_ap_feature md_rt_data;
 	struct ccci_header up_header;
-	struct modem_runtime runtime_data;
+	struct ap_query_md_feature ap_rt_data;
 };
 
 struct md_ccif_queue {
 	DIRECTION dir;
 	unsigned char index;
-	unsigned char rx_on_going;
+	atomic_t rx_on_going;
 	unsigned char debug_id;
 	int budget;
 	unsigned int ccif_ch;

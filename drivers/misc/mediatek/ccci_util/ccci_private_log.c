@@ -93,7 +93,8 @@ static ssize_t ccci_log_read(struct file *file, char __user *buf, size_t size, l
 			ret = wait_event_interruptible(ccci_log_buf.log_wq, !atomic_read(&ccci_log_buf.last_ops));
 			if (ret == -ERESTARTSYS)
 				return -EINTR;
-			goto retry;
+			else
+				goto retry;
 		} else {
 			return -EAGAIN;
 		}

@@ -48,16 +48,27 @@ static char *type_str[] = {[md_type_invalid] = "invalid",
 	[modem_tg] = "tg",
 	[modem_lwg] = "lwg",
 	[modem_ltg] = "ltg",
-	[modem_sglte] = "sglte"
+	[modem_sglte] = "sglte",
+	[modem_ultg] = "ultg",
+	[modem_ulwg] = "ulwg",
+	[modem_ulwtg] = "ulwtg",
+	[modem_ulwcg] = "ulwcg",
+	[modem_ulwctg] = "ulwctg",
+	[modem_ulttg] = "ulttg",
+	[modem_ulfwg] = "ulfwg",
+	[modem_ulfwcg] = "ulfwcg"
 };
 
+static int curr_ubin_id;
 static char *product_str[] = {[INVALID_VARSION] = INVALID_STR,
 	[DEBUG_VERSION] = DEBUG_STR,
 	[RELEASE_VERSION] = RELEASE_STR
 };
 
 static struct md_check_header md_img_header[MAX_MD_NUM];
-static struct md_check_header_v3 md_img_header_v3[MAX_MD_NUM];
+/*static struct md_check_header_v3 md_img_header_v3[MAX_MD_NUM];*/
+static struct md_check_header_v4 md_img_header_v4[MAX_MD_NUM];
+static struct md_check_header_v5 md_img_header_v5[MAX_MD_NUM];
 /*static struct ccci_image_info		img_info[MAX_MD_NUM][IMG_NUM]; */
 char md_img_info_str[MAX_MD_NUM][256];
 
@@ -111,7 +122,9 @@ static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_inf
 	int idx;
 	unsigned int md_size;
 	unsigned char *start, *ptr;
-	struct md_check_header_v3 *head = &md_img_header_v3[md_id];
+	int region_id, domain_id; /* add for v4 v5 */
+	/* struct md_check_header_v3 *head = &md_img_header_v3[md_id]; */
+	struct md_check_header_v4 *head = &md_img_header_v4[md_id];
 
 	get_md_resv_mem_info(md_id, NULL, &md_size, NULL, NULL);
 	/*memcpy(head, (void*)(parse_addr - sizeof(struct md_check_header_v3)), sizeof(struct md_check_header_v3)); */
@@ -125,7 +138,7 @@ static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_inf
 	ret = strncmp(head->check_header, MD_HEADER_MAGIC_NO, 12);
 	if (ret) {
 		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "md check header not exist!\n");
-		ret = 0;
+		ret = -CCCI_ERR_LOAD_IMG_CHECK_HEAD;
 	} else {
 		if (head->header_verno < 3) {
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Error]md check header version mis-match to AP:[%d]!\n",
@@ -167,6 +180,8 @@ static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_inf
 			md_size_check = true;
 #endif
 
+			if ((md_id == MD_SYS1) && (head->image_type >= modem_ultg) && (head->image_type <= MAX_IMG_NUM))
+				curr_ubin_id = head->image_type;
 			image->ap_info.image_type = type_str[head->image_type];
 			image->ap_info.platform = ccci_get_ap_platform();
 			image->img_info.image_type = type_str[head->image_type];
@@ -175,6 +190,7 @@ static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_inf
 			image->img_info.build_ver = head->build_ver;
 			image->img_info.product_ver = product_str[head->product_ver];
 			image->img_info.version = head->product_ver;
+			image->img_info.header_verno = head->header_verno;
 
 			if (md_type_check && md_plat_check && md_sys_match && md_size_check) {
 				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Modem header check OK!\n");
@@ -238,7 +254,7 @@ static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_inf
 							  image->dsp_size);
 				if (image->dsp_offset == 0xCDCDCDAA) {
 					CCCI_UTIL_INF_MSG_WITH_ID(md_id, "DSP on EMI disabled\n");
-				} else if ((image->dsp_offset & 0xFFFF) != 0) {
+				} else if (((image->dsp_offset&0xFFFF) != 0) && (head->header_verno == 3)) {
 					CCCI_UTIL_INF_MSG_WITH_ID(md_id, "DSP image offset not 64KB align\n");
 					ret = -CCCI_ERR_LOAD_IMG_MD_CHECK;
 				} else if (image->dsp_offset + image->dsp_size > md_size) {
@@ -248,12 +264,247 @@ static int check_md_header_v3(int md_id, void *parse_addr, struct ccci_image_inf
 			} else {
 				image->dsp_offset = 0;
 			}
+
+			if (head->header_verno >= 4) {  /* RMPU only avilable after check header v4 */
+				for (region_id = 0; region_id <= MPU_REGION_INFO_ID_LAST; region_id++) {
+					image->rmpu_info.region_info[region_id].region_offset =
+						head->region_info[region_id].region_offset;
+					image->rmpu_info.region_info[region_id].region_size =
+						head->region_info[region_id].region_size;
+					CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+						"[CCCI_UTIL] load_image: check_header_v4, region(%d): size = %x , offset = %x\n",
+						region_id, head->region_info[region_id].region_size,
+								head->region_info[region_id].region_offset);
+				}
+
+				for (domain_id = 0; domain_id < MPU_DOMAIN_INFO_ID_TOTAL_NUM; domain_id++) {
+					image->rmpu_info.domain_attr[domain_id] = head->domain_attr[domain_id];
+					CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+						"[CCCI_UTIL] load_image: check_header_v4, domain(%d): attr = %x\n",
+						domain_id, head->domain_attr[domain_id]);
+				}
+			}
 			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "(MD)[build_ver]=%s, [build_time]=%s\n",
 						  image->img_info.build_ver, image->img_info.build_time);
 			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "(MD)[product_ver]=%s\n", image->img_info.product_ver);
 		}
 	}
 	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "**********************MD image check V3***************************\n");
+
+	return ret;
+}
+
+static int md_check_header_parser(int md_id, void *parse_addr, struct ccci_image_info *image)
+{
+	int ret;
+	bool md_type_check = false;
+	bool md_plat_check = false;
+	bool md_sys_match = false;
+	bool md_size_check = false;
+	unsigned int md_size;
+	unsigned int header_size;
+	int idx, header_up;
+	unsigned char *start, *ptr;
+	int region_id, domain_id; /* add for v4 v5 */
+
+	struct md_check_header_struct *head = NULL;
+	struct md_check_header *headv12 = NULL;
+	struct md_check_header_v4 *headv34 = NULL;
+	struct md_check_header_v5 *headv5 = NULL;
+
+	get_md_resv_mem_info(md_id, NULL, &md_size, NULL, NULL);
+
+	header_size = *(((unsigned int *)parse_addr) - 1);
+	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "MD image header size = %d\n", header_size);
+
+	if (header_size == sizeof(struct md_check_header_v3)) { /* v3, v4 */
+		headv34 = &md_img_header_v4[md_id];
+		headv12 = (struct md_check_header *)headv34;
+		head = (struct md_check_header_struct *)headv34;
+		header_up = 4;
+	} else if (header_size == sizeof(struct md_check_header_v5)) {/* v5 */
+		headv5 = &md_img_header_v5[md_id];
+		headv34 = (struct md_check_header_v4 *)headv5;
+		headv12 = (struct md_check_header *)headv5;
+		head = (struct md_check_header_struct *)headv5;
+		header_up = 5;
+	} else { /* Default Load v1/2 */
+		/* if (header_size == sizeof(struct md_check_header)) {*//* v1, v2 */
+		headv12 = &md_img_header[md_id];
+		head = (struct md_check_header_struct *)headv12;
+		header_up = 2;
+	}
+
+	start = (unsigned char *)(head);
+	ptr = (unsigned char *)(parse_addr - header_size);
+	for (idx = 0; idx < header_size; idx++)
+		*start++ = *ptr++;
+
+	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "**********************MD image check v%d %d***************************\n",
+				  (int)head->header_verno, (int)header_size);
+	ret = strncmp(head->check_header, MD_HEADER_MAGIC_NO, 12);
+	if (ret) {
+		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "md check header not exist!\n");
+		ret = -CCCI_ERR_LOAD_IMG_CHECK_HEAD;
+	} else if (head->header_verno > header_up) {
+			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Error]md check header version mis-match to AP:[%d]!\n",
+						  head->header_verno);
+		ret = -CCCI_ERR_LOAD_IMG_CHECK_HEAD;
+	} else {
+#ifdef ENABLE_2G_3G_CHECK
+		if ((head->image_type != 0) && (head->image_type == md->config.load_type))
+			md_type_check = true;
+#else
+		md_type_check = true;
+#endif
+
+#ifdef ENABLE_CHIP_VER_CHECK
+		if (!strncmp(head->platform, ccci_get_ap_platform(), AP_PLATFORM_LEN))
+			md_plat_check = true;
+#else
+		md_plat_check = true;
+#endif
+
+		if (head->bind_sys_id == (md_id + 1))
+			md_sys_match = true;
+#ifdef ENABLE_MEM_SIZE_CHECK
+		if (head->header_verno >= 2) {
+			/*md_size = md->mem_layout.md_region_size; */
+			if (head->mem_size == md_size) {
+				md_size_check = true;
+			} else if (head->mem_size < md_size) {
+				md_size_check = true;
+				CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+					"[Warning]md size in md header isn't sync to DFO setting: (%08x, %08x)\n",
+					head->mem_size, md_size);
+			}
+			image->img_info.mem_size = head->mem_size;
+			image->ap_info.mem_size = md_size;
+		} else {
+			md_size_check = true;
+		}
+#else
+		md_size_check = true;
+#endif
+		if ((md_id == MD_SYS1) && (head->image_type >= modem_ultg) && (head->image_type <= MAX_IMG_NUM))
+			curr_ubin_id = head->image_type;
+		image->ap_info.image_type = type_str[head->image_type];
+		image->ap_info.platform = ccci_get_ap_platform();
+		image->img_info.image_type = type_str[head->image_type];
+		image->img_info.platform = head->platform;
+		image->img_info.build_time = head->build_time;
+		image->img_info.build_ver = head->build_ver;
+		image->img_info.product_ver = product_str[head->product_ver];
+		image->img_info.version = head->product_ver;
+		image->img_info.header_verno = head->header_verno;
+
+		if (md_type_check && md_plat_check && md_sys_match && md_size_check) {
+			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Modem header check OK!\n");
+		} else {
+			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "[Error]Modem header check fail!\n");
+			if (!md_type_check)
+				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "[Reason]MD type(2G/3G) mis-match to AP!\n");
+
+			if (!md_plat_check)
+				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "[Reason]MD platform mis-match to AP!\n");
+
+			if (!md_sys_match)
+				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "[Reason]MD image is not for MD SYS%d!\n",
+							  md_id + 1);
+
+			if (!md_size_check)
+				CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+							  "[Reason]MD mem size mis-match to AP setting!\n");
+
+			ret = -CCCI_ERR_LOAD_IMG_MD_CHECK;
+		}
+
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "(MD)[type]=%s, (AP)[type]=%s\n", image->img_info.image_type,
+					  image->ap_info.image_type);
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "(MD)[plat]=%s, (AP)[plat]=%s\n", image->img_info.platform,
+					  image->ap_info.platform);
+		if (head->header_verno >= 2) {
+			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "(MD)[size]=%x, (AP)[size]=%x\n",
+						  image->img_info.mem_size, image->ap_info.mem_size);
+			if (head->md_img_size) {
+				if (image->size >= head->md_img_size)
+					image->size = head->md_img_size;
+				else {
+					char title[50];
+					char info[100];
+
+					snprintf(title, sizeof(title),
+						 "MD%d mem size smaller than image header setting", md_id + 1);
+					snprintf(info, sizeof(info),
+						 "MD%d mem cfg size(0x%x)<header size(0x%x),please check memory config in <chip>.dtsi",
+						 md_id + 1, image->size, head->md_img_size);
+#if defined(CONFIG_MTK_AEE_FEATURE)
+					aed_md_exception_api(NULL, 0, (const int *)info, sizeof(info),
+							     (const char *)title, DB_OPT_DEFAULT);
+#endif
+					CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+								  "[Reason]MD image size mis-match to AP!\n");
+					ret = -CCCI_ERR_LOAD_IMG_MD_CHECK;
+				}
+				image->ap_info.md_img_size = image->size;
+				image->img_info.md_img_size = head->md_img_size;
+			}
+			/* else {image->size -= 0x1A0;} workaround for md not check in check header */
+			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "(MD)[img_size]=%x, (AP)[img_size]=%x\n",
+						  head->md_img_size, image->size);
+		}
+
+		if (head->header_verno >= 3) { /* dsp offset && size */
+			image->dsp_offset = headv34->dsp_img_offset;
+			image->dsp_size = headv34->dsp_img_size;
+			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "DSP image offset=%x size=%x\n", image->dsp_offset,
+					image->dsp_size);
+			if (image->dsp_offset == 0xCDCDCDAA) {
+				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "DSP on EMI disabled\n");
+			} else if (((image->dsp_offset&0xFFFF) != 0) && (head->header_verno == 3)) {
+				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "DSP image offset not 64KB align\n");
+				ret = -CCCI_ERR_LOAD_IMG_MD_CHECK;
+			} else if (image->dsp_offset + image->dsp_size > md_size) {
+				CCCI_UTIL_INF_MSG_WITH_ID(md_id, "DSP image size too large %x\n", md_size);
+				ret = -CCCI_ERR_LOAD_IMG_MD_CHECK;
+			}
+		} else {
+			image->dsp_offset = 0;
+		}
+
+		if (head->header_verno >= 4) {  /* RMPU only avilable after check header v4 */
+			for (region_id = 0; region_id <= MPU_REGION_INFO_ID_LAST; region_id++) {
+				image->rmpu_info.region_info[region_id].region_offset =
+					headv34->region_info[region_id].region_offset;
+				image->rmpu_info.region_info[region_id].region_size =
+					headv34->region_info[region_id].region_size;
+				CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+					"[CCCI_UTIL] load_image: check_header_v4, region(%d): size = %x , offset = %x\n",
+					region_id, headv34->region_info[region_id].region_size,
+					headv34->region_info[region_id].region_offset);
+			}
+			for (domain_id = 0; domain_id < MPU_DOMAIN_INFO_ID_TOTAL_NUM; domain_id++) {
+				image->rmpu_info.domain_attr[domain_id] = headv34->domain_attr[domain_id];
+				CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+					"[CCCI_UTIL] load_image: check_header_v4, domain(%d): attr = %x\n", domain_id,
+							headv34->domain_attr[domain_id]);
+			}
+		}
+
+		if (head->header_verno >= 5) {  /* ARM7 only avilable after check header v5 */
+			image->arm7_offset = headv5->arm7_img_offset;
+			image->arm7_size = headv5->arm7_img_size;
+			CCCI_UTIL_INF_MSG_WITH_ID(md_id,
+				"[CCCI_UTIL] load_image: check_header_v5, arm7_offset = 0x%08X, arm_size = 0x%08X\n",
+				image->arm7_offset, image->arm7_size);
+		}
+
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "(MD)[build_ver]=%s, [build_time]=%s\n",
+					  image->img_info.build_ver, image->img_info.build_time);
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "(MD)[product_ver]=%s\n", image->img_info.product_ver);
+
+	}
+	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "**********************MD image check end***************************\n");
 
 	return ret;
 }
@@ -270,12 +521,14 @@ static int check_md_header(int md_id, void *parse_addr, struct ccci_image_info *
 	int idx;
 	unsigned char *start, *ptr;
 	struct md_check_header *head = &md_img_header[md_id];
-
 	get_md_resv_mem_info(md_id, NULL, &md_size, NULL, NULL);
+
 	header_size = *(((unsigned int *)parse_addr) - 1);
-	CCCI_UTIL_DBG_MSG_WITH_ID(md_id, "MD image header size = %d\n", header_size);
-	if (header_size == sizeof(struct md_check_header_v3))
+	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "MD image header size = %d\n", header_size);
+	if (header_size == sizeof(struct md_check_header_v3)) /* v3, v4 */
 		return check_md_header_v3(md_id, parse_addr, image);
+	else if (header_size == sizeof(struct md_check_header_v5))
+		return md_check_header_parser(md_id, parse_addr, image);
 
 	/*memcpy(head, (void*)(parse_addr - sizeof(struct md_check_header)), sizeof(struct md_check_header)); */
 	start = (unsigned char *)(head);
@@ -287,8 +540,8 @@ static int check_md_header(int md_id, void *parse_addr, struct ccci_image_info *
 				  (int)sizeof(struct md_check_header));
 	ret = strncmp(head->check_header, MD_HEADER_MAGIC_NO, 12);
 	if (ret) {
-		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "md check header not exist!\n");
-		ret = 0;
+		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "md check header not exist! %d\n", header_size);
+		ret = -CCCI_ERR_LOAD_IMG_CHECK_HEAD;
 	} else {
 		if (head->header_verno > 2) {
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Error]md check header version mis-match to AP:[%d]!\n",
@@ -486,7 +739,7 @@ static int load_cipher_firmware_v2(int md_id,
 static void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 {
 	/* name format: modem_X_YY_K_Ex.img */
-	int X, Ex;
+	int X, Ex = 0;
 	char YY_K[IMG_POSTFIX_LEN];
 	unsigned int feature_val = 0;
 
@@ -498,6 +751,18 @@ static void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 	/* X */
 	X = md_id + 1;
 
+	if ((curr_ubin_id != 0) && (md_id == MD_SYS1)) {
+		if (buf) {
+			snprintf(buf, IMG_POSTFIX_LEN, "%d_%s_n", X, type_str[curr_ubin_id]);
+			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "MD%d image postfix=%s\n", md_id + 1, buf);
+		}
+
+		if (buf_ex) {
+			snprintf(buf_ex, IMG_POSTFIX_LEN, "%d_%s_n_E%d", X, type_str[curr_ubin_id], Ex);
+			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "MD%d image postfix=%s\n", md_id + 1, buf_ex);
+		}
+		return;
+	}
 	/* YY_ */
 	YY_K[0] = '\0';
 	switch (md_id) {
@@ -506,6 +771,9 @@ static void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 		break;
 	case MD_SYS2:
 		feature_val = get_modem_support_cap(MD_SYS2);
+		break;
+	case MD_SYS3:
+		feature_val = get_modem_support_cap(MD_SYS3);
 		break;
 	case MD_SYS5:
 		feature_val = get_modem_support_cap(MD_SYS5);
@@ -599,6 +867,10 @@ static int find_img_to_open(int md_id, MD_IMG_TYPE img_type, char active_file_pa
 		snprintf(img_name[0], IMG_NAME_LEN, "dsp_%s.bin", post_fix);
 		snprintf(img_name[1], IMG_NAME_LEN, "dsp_%s.bin", post_fix_ex);
 		snprintf(img_name[2], IMG_NAME_LEN, "%s", DSP_IMAGE_NAME);
+	} else if (img_type == IMG_ARMV7) {	/* Gen ARMV7 image name */
+		snprintf(img_name[0], IMG_NAME_LEN, "armv7_%s.bin", post_fix);
+		snprintf(img_name[1], IMG_NAME_LEN, "armv7_%s.bin", post_fix_ex);
+		snprintf(img_name[2], IMG_NAME_LEN, "%s", "armv7.bin");
 	} else {
 		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "Invalid img type%d\n", img_type);
 		return -CCCI_ERR_INVALID_PARAM;
@@ -644,6 +916,32 @@ static int find_img_to_open(int md_id, MD_IMG_TYPE img_type, char active_file_pa
 		}
 	}
 
+	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Find ubin img @default\n");
+	for (i = modem_ultg; i <= MAX_IMG_NUM; i++) {
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Curr i:%d\n", i);
+		if (img_type == IMG_MD)
+			snprintf(img_name[0], IMG_NAME_LEN, "modem_%d_%s_n.img", md_id+1, type_str[i]);
+		else if (img_type == IMG_DSP)
+			snprintf(img_name[0], IMG_NAME_LEN, "dsp_%d_%s_n.bin", md_id+1, type_str[i]);
+		else if (img_type == IMG_ARMV7)
+			snprintf(img_name[0], IMG_NAME_LEN, "armv7_%d_%s_n.bin", md_id+1, type_str[i]);
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "try to open %s\n", img_name[0]);
+		snprintf(full_path, IMG_PATH_LEN, "%s%s", CONFIG_MODEM_FIRMWARE_PATH, img_name[0]);
+		filp = filp_open(full_path, O_RDONLY, 0644);
+		if (IS_ERR(filp)) {
+			continue;
+		} else {	/* Open image success */
+			snprintf(active_file_path, IMG_PATH_LEN, full_path);
+			filp_close(filp, current->files);
+			snprintf(active_post_fix, IMG_POSTFIX_LEN, "%d_%s_n", md_id + 1, type_str[i]);
+			return 0;
+		}
+	}
+
+	if (i > MAX_IMG_NUM) {
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Find ubin img @default fail\n");
+		return -CCCI_ERR_LOAD_IMG_NOT_FOUND;
+	}
 	active_post_fix[0] = '\0';
 	CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "No Image file found\n");
 	{
@@ -815,6 +1113,13 @@ static int load_image(int md_id, struct ccci_image_info *img_inf, char post_fix[
 			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "load_firmware for %s failed:ret=%d!\n", img->file_name, ret);
 			goto out;
 		}
+	} else if (img_type == IMG_ARMV7) {
+		/* load armv7 */
+		ret = load_std_firmware(md_id, filp, img);
+		if (ret < 0) {
+			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "load_firmware for %s failed:ret=%d!\n", img->file_name, ret);
+			goto out;
+		}
 	}
 
  out:
@@ -926,4 +1231,63 @@ int ccci_init_security(void)
 	CCCI_UTIL_INF_MSG("security is off!\n");
 #endif
 	return ret;
+}
+
+static const int md1_capability_array[] = {
+	0, 0, 0, 0, 0, 0, 0, 0,
+/* ultg */
+	((1 << modem_ulwtg) | (1 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ulwg */
+	((1 << modem_ulwtg) | (0 << modem_ultg) | (1 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ulwtg */
+	((1 << modem_ulwtg) | (0 << modem_ultg) | (1 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ulwcg */
+	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ulwctg */
+	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ulttg */
+	((1 << modem_ulwtg) | (1 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ulfwg */
+	((1 << modem_ulwtg) | (0 << modem_ultg) | (1 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ulfwcg */
+	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
+};
+
+static const int ap_md_wm_id_map_array[] = { 0x0,	/* 0-invalid */
+	0x0,			/* 1-2g */
+	0x0,			/* 2-3g */
+	0x0,			/* 3-wg */
+	0x0,			/* 4-tg */
+	0x0,			/* 5-lwg */
+	0x0,			/* 6-ltg */
+	0x0,			/* 7-sglte */
+	0x33,			/* 8-ultg */
+	0x39,			/* 9-ulwg */
+	0x3B,			/* 10-ulwtg */
+	0x3D,			/* 11-ulwcg */
+	0x3F,			/* 12-ulwctg */
+	0x13,			/* 13-ulttg */
+	0x29,			/* 14-ulfwg */
+	0x2D,			/* 15-ulfwcg */
+};
+
+int get_md_wm_id_map(int ap_wm_id)
+{
+	if (ap_wm_id < (sizeof(ap_md_wm_id_map_array) / sizeof(int)))
+		return ap_md_wm_id_map_array[ap_wm_id];
+	return 0;
+}
+
+int md_capability(int md_id, int wm_id, int curr_md_type)
+{
+	if (curr_md_type >= MAX_IMG_NUM)
+		return -1;
+	if (wm_id >= MAX_IMG_NUM)
+		return -2;
+	if (md_id == MD_SYS1) {
+		if (md1_capability_array[curr_ubin_id] & (1 << wm_id))	/* Note here, curr_md_type not used */
+			return 1;
+		return 0;
+	}
+	return -3;
 }

@@ -18,6 +18,9 @@
 #include "port_ipc.h"
 #include "port_kernel.h"
 #include "port_char.h"
+#ifdef CONFIG_MTK_ECCCI_C2K
+#include "ccif_c2k_platform.h"
+#endif
 
 #ifdef FEATURE_GET_MD_BAT_VOL	/* must be after ccci_config.h */
 #include <mach/battery_common.h>
@@ -242,6 +245,145 @@ static ssize_t dev_char_read(struct file *file, char *buf, size_t count, loff_t 
 	return ret ? ret : read_len;
 }
 
+#ifdef CONFIG_MTK_ECCCI_C2K
+
+int ccci_c2k_rawbulk_intercept(int ch_id, unsigned int interception)
+{
+	int ret = 0;
+	struct ccci_modem *md = NULL;
+	struct ccci_port *port = NULL;
+	struct list_head *port_list = NULL;
+	char matched = 0;
+	int ch_id_rx = 0;
+
+	/* USB bypass's channel id offset, please refer to viatel_rawbulk.h */
+	if (ch_id >= FS_CH_C2K)
+		ch_id += 2;
+	else
+		ch_id += 1;
+
+	/*only data and log channel are legal*/
+	if (ch_id == DATA_PPP_CH_C2K) {
+		ch_id = CCCI_C2K_PPP_DATA;
+		ch_id_rx = CCCI_C2K_PPP_DATA;
+	} else if (ch_id == MDLOG_CH_C2K) {
+		ch_id = CCCI_MD_LOG_TX;
+		ch_id_rx = CCCI_MD_LOG_RX;
+	} else {
+		ret = -ENODEV;
+		CCCI_ERR_MSG(MD_SYS3, CHAR, "Err: wrong ch_id(%d) from usb bypass\n", ch_id);
+		return ret;
+	}
+
+	/* only md3 can usb bypass */
+	md = ccci_get_modem_by_id(MD_SYS3);
+
+	/*use rx channel to find port*/
+	port_list = &md->rx_ch_ports[ch_id_rx];
+	list_for_each_entry(port, port_list, entry) {
+		matched = (ch_id == port->tx_ch);
+		if (matched) {
+			port->interception = !!interception;
+			if (port->interception)
+				atomic_inc(&port->usage_cnt);
+			else
+				atomic_dec(&port->usage_cnt);
+			if (ch_id == CCCI_C2K_PPP_DATA)
+				md->data_usb_bypass = !!interception;
+			ret = 0;
+			CCCI_INF_MSG(md->index, CHAR, "port(%s) ch(%d) interception(%d) set\n",
+				port->name, ch_id, interception);
+		}
+	}
+	if (!matched) {
+		ret = -ENODEV;
+		CCCI_ERR_MSG(md->index, CHAR, "Err: no port found when setting interception(%d,%d)\n",
+			ch_id, interception);
+	}
+
+	return ret;
+}
+
+
+int ccci_c2k_buffer_push(int ch_id, void *buf, int count)
+{
+	int ret = 0;
+	struct ccci_modem *md = NULL;
+	struct ccci_port *port = NULL;
+	struct list_head *port_list = NULL;
+	struct ccci_request *req = NULL;
+	struct ccci_header *ccci_h = NULL;
+	char matched = 0;
+	size_t actual_count = 0;
+	int ch_id_rx = 0;
+	unsigned char blk1 = 0;	/* usb will call this routine in ISR, so we cannot schedule */
+	unsigned char blk2 = 1;	/* default blocking for all request from USB */
+
+	/* USB bypass's channel id offset, please refer to viatel_rawbulk.h */
+	if (ch_id >= FS_CH_C2K)
+		ch_id += 2;
+	else
+		ch_id += 1;
+
+	/* only data and log channel are legal */
+	if (ch_id == DATA_PPP_CH_C2K) {
+		ch_id = CCCI_C2K_PPP_DATA;
+		ch_id_rx = CCCI_C2K_PPP_DATA;
+	} else if (ch_id == MDLOG_CH_C2K) {
+		ch_id = CCCI_MD_LOG_TX;
+		ch_id_rx = CCCI_MD_LOG_RX;
+	} else {
+		ret = -ENODEV;
+		CCCI_ERR_MSG(MD_SYS3, CHAR, "Err: wrong ch_id(%d) from usb bypass\n", ch_id);
+		return ret;
+	}
+
+	/* only md3 can usb bypass */
+	md = ccci_get_modem_by_id(MD_SYS3);
+
+	CCCI_INF_MSG(md->index, CHAR, "data from usb bypass (ch%d)(%d)\n", ch_id, count);
+
+	actual_count = count > CCCI_MTU ? CCCI_MTU : count;
+
+	port_list = &md->rx_ch_ports[ch_id_rx];
+	list_for_each_entry(port, port_list, entry) {
+		matched = (ch_id == port->tx_ch);
+		if (matched) {
+			req = ccci_alloc_req(OUT, actual_count, blk1, blk2);
+			if (req) {
+				req->policy = RECYCLE;
+				ccci_h = (struct ccci_header *)skb_put(req->skb, sizeof(struct ccci_header));
+				ccci_h->data[0] = 0;
+				ccci_h->data[1] = actual_count + sizeof(struct ccci_header);
+				ccci_h->channel = port->tx_ch;
+				ccci_h->reserved = 0;
+
+				memcpy(skb_put(req->skb, actual_count), buf, actual_count);
+
+				/* for md3, ccci_h->channel will probably change after call send_request,
+				because md3's channel mapping. */
+				/* do NOT reference request after called this,
+				   modem may have freed it, unless you get -EBUSY */
+				ret = ccci_port_send_request(port, req);
+
+				if (ret) {
+					if (ret == -EBUSY && !req->blocking)
+						ret = -EAGAIN;
+					goto push_err_out;
+				}
+				return ret < 0 ? ret : actual_count;
+push_err_out:
+				ccci_free_req(req);
+				return ret;
+			}
+			/* consider this case as non-blocking */
+			return -ENOMEM;
+		}
+	}
+}
+
+#endif
+
 static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
 {
 	struct ccci_port *port = file->private_data;
@@ -250,6 +392,7 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	struct ccci_header *ccci_h = NULL;
 	size_t actual_count = 0;
 	int ret = 0, header_len = 0;
+	char *dump_buf = NULL;
 
 	if (port->tx_ch == CCCI_MONITOR_CH)
 		return -EPERM;
@@ -282,7 +425,10 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 		actual_count = count > (CCCI_MTU + header_len) ? (CCCI_MTU + header_len) : count;
 	else
 		actual_count = count > CCCI_MTU ? CCCI_MTU : count;
-	CCCI_DBG_MSG(port->modem->index, CHAR, "write on %s for %zu of %zu\n", port->name, actual_count, count);
+
+	/*if (CCCI_FS_TX != port->tx_ch)
+		CCCI_INF_MSG(port->modem->index, CHAR, "write on %s for %zu of %zu, md_s=%d\n",
+			port->name, actual_count, count, port->modem->md_state); */
 
 	req = ccci_alloc_req(OUT, actual_count, blocking, blocking);
 	if (req) {
@@ -320,13 +466,24 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 			port_ch_dump(port->modem->index, "chr_write", req->skb->data + sizeof(struct ccci_header),
 				     actual_count);
 		}
+		if (port->tx_ch == CCCI_UART1_TX && port->modem->index == MD_SYS3) {
+			dump_buf = (char *)(req->skb->data+sizeof(struct ccci_header));
+			CCCI_INF_MSG(port->modem->index, CHAR, "mdlog_ctrl: 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n",
+				     *dump_buf, *(dump_buf+1), *(dump_buf+2), *(dump_buf+3),
+					 *(dump_buf+4), *(dump_buf+5), *(dump_buf+6), *(dump_buf+7));
+		}
 		/* 4. send out */
+		/* for md3, ccci_h->channel will probably change after call send_request,
+		because md3's channel mapping */
 		ret = ccci_port_send_request(port, req);
 			/* do NOT reference request after called this, modem may have freed it, unless you get -EBUSY */
 		if (ccci_h && ccci_h->channel == CCCI_UART2_TX) {
 			/* CCCI_INF_MSG(port->modem->index, CHAR,
 				"write done on %s, l=%zu r=%d\n", port->name, actual_count, ret); */
 		}
+		if (port->tx_ch == CCCI_UART1_TX && port->modem->index == MD_SYS3)
+			CCCI_INF_MSG(port->modem->index, CHAR, "write done on %s, l=%zu r=%d\n",
+			 port->name, actual_count, ret);
 
 		if (ret) {
 			if (ret == -EBUSY && !req->blocking)
@@ -418,13 +575,24 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ret = md->ops->reset(md);
 		if (ret == 0) {
 			ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
+			#ifdef CONFIG_MTK_ECCCI_C2K
+			if (md->index == MD_SYS1)
+				exec_ccci_kern_func_by_md_id(MD_SYS3, ID_RESET_MD, NULL, 0);
+			else if (md->index == MD_SYS3)
+				exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
+			#else
 #ifdef CONFIG_MTK_SVLTE_SUPPORT
 			c2k_reset_modem();
 #endif
+			#endif
 		}
 		break;
 	case CCCI_IOC_FORCE_MD_ASSERT:
 		CCCI_INF_MSG(md->index, CHAR, "Force MD assert ioctl(%d) called by %s\n", ch, current->comm);
+		if (md->index == MD_SYS3)
+			/* MD3 use interrupt to force assert */
+			ret = md->ops->force_assert(md, CCIF_INTERRUPT);
+		else
 		ret = md->ops->force_assert(md, CCCI_MESSAGE);
 		break;
 	case CCCI_IOC_SEND_RUN_TIME_DATA:
@@ -450,8 +618,15 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		if (ret == 0) {
 			md->ops->stop(md, 0);
 			ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_STOP_MD_REQUEST, 0);
+#ifdef CONFIG_MTK_ECCCI_C2K
+			if (md->index == MD_SYS1)
+				exec_ccci_kern_func_by_md_id(MD_SYS3, ID_RESET_MD, NULL, 0);
+			else if (md->index == MD_SYS3)
+				exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
+#else
 #ifdef CONFIG_MTK_SVLTE_SUPPORT
 			c2k_reset_modem();
+#endif
 #endif
 		}
 		break;
@@ -536,7 +711,13 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			ret = -EFAULT;
 		} else {
 			CCCI_INF_MSG(md->index, CHAR, "IOC_RELOAD_MD_TYPE: storing md type(%ld)!\n", state);
-			ccci_reload_md_type(md, state);
+			if ((state >= modem_ultg) && (state <= MAX_IMG_NUM) && (md->index == MD_SYS1)) {
+				if (md_capability(MD_SYS1, state, 0))
+					ccci_reload_md_type(md, state);
+				else
+					ret = -1;
+			} else
+				ccci_reload_md_type(md, state);
 		}
 		break;
 	case CCCI_IOC_SET_MD_IMG_EXIST:
@@ -671,6 +852,8 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 				sbp_custom_value = "";
 #endif
 			}
+			if (sbp_custom_value == NULL)
+				sbp_custom_value = "";
 			ret = kstrtouint(sbp_custom_value, 0, &md->sbp_code_default);
 			if (!ret) {
 				CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_GET_MD_SBP_CFG: get config sbp code:%d!\n",
@@ -718,6 +901,12 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			ret = kill_proc_info(SIGUSR2, &sig_info, pid);
 			CCCI_INF_MSG(md->index, CHAR, "send signal %d to rild %d ret=%ld\n", sig, pid, ret);
 		}
+		break;
+	case CCCI_IOC_RESET_MD1_MD3_PCCIF:
+#ifdef CONFIG_MTK_ECCCI_C2K
+		CCCI_INF_MSG(md->index, CHAR, "reset md1/md3 pccif ioctl called by %s\n", current->comm);
+		reset_md1_md3_pccif(md);
+#endif
 		break;
 
 	default:
@@ -812,18 +1001,83 @@ static int port_char_init(struct ccci_port *port)
 		port->private_data = dev;	/* not using */
 	ret = cdev_add(dev, MKDEV(port->modem->major, port->modem->minor_base + port->minor), 1);
 	ret = ccci_register_dev_node(port->name, port->modem->major, port->modem->minor_base + port->minor);
+	port->interception = 0;
 	return ret;
 }
+
+#ifdef CONFIG_MTK_ECCCI_C2K
+static int c2k_req_push_to_usb(struct ccci_port *port, struct ccci_request *req)
+{
+	return 0;
+#if 0
+	struct ccci_header *ccci_h = NULL;
+	int ret, read_len, read_count, full_req_done = 0;
+	unsigned long flags;
+	int push_room = 0;
+	int c2k_ch_id;
+
+	if (port->rx_ch == CCCI_C2K_PPP_DATA)
+		c2k_ch_id = DATA_PPP_CH_C2K-1;
+	else if (port->rx_ch == CCCI_MD_LOG_RX)
+		c2k_ch_id = MDLOG_CH_C2K-2;
+	else {
+		ret = -ENODEV;
+		CCCI_ERR_MSG(port->modem->index, CHAR, "Err: wrong ch_id(%d) from usb bypass\n", port->rx_ch);
+		return ret;
+	}
+
+	/* caculate available data */
+	ccci_h = (struct ccci_header *)req->skb->data;
+	read_len = req->skb->len - sizeof(struct ccci_header);
+	/* remove CCCI header */
+	skb_pull(req->skb, sizeof(struct ccci_header));
+
+retry_push:
+	/* push to usb */
+	read_count = rawbulk_push_upstream_buffer(c2k_ch_id, req->skb->data, read_len);
+	CCCI_DBG_MSG(port->modem->index, CHAR, "data push to usb bypass (ch%d)(%d)\n", port->rx_ch, read_count);
+
+	if (read_count > 0) {
+		skb_pull(req->skb, read_count);
+		read_len -= read_count;
+		if (read_len > 0)
+			goto retry_push;
+		else if (read_len == 0) {
+			req->policy = RECYCLE;
+			ccci_free_req(req);
+		} else if (read_len < 0)
+			CCCI_ERR_MSG(port->modem->index, CHAR, "read_len error, check why come here\n");
+	} else {
+		CCCI_INF_MSG(port->modem->index, CHAR, "usb buf full\n");
+		msleep(20);
+		goto retry_push;
+	}
+
+exit:
+	return ret?ret:read_len;
+#endif
+}
+#endif
 
 static int port_char_recv_req(struct ccci_port *port, struct ccci_request *req)
 {
 	unsigned long flags;	/* as we can not tell the context, use spin_lock_irqsafe for safe */
 
-	if (!atomic_read(&port->usage_cnt)
-	    && (port->rx_ch != CCCI_UART2_RX && port->rx_ch != CCCI_FS_RX && port->rx_ch != CCCI_RPC_RX))
+	if (!atomic_read(&port->usage_cnt) &&
+		(port->rx_ch != CCCI_UART2_RX && port->rx_ch != CCCI_C2K_AT &&
+			port->rx_ch != CCCI_FS_RX && port->rx_ch != CCCI_RPC_RX))
 		goto drop;
 	if (port->rx_ch == CCCI_RPC_RX && process_rpc_kernel_msg(port, req))
 		return 0;
+
+#ifdef CONFIG_MTK_ECCCI_C2K
+	if ((port->modem->index == MD_SYS3) && port->interception) {
+		list_del(&req->entry);
+		c2k_req_push_to_usb(port, req);
+		return 0;
+	}
+#endif
+
 	CCCI_DBG_MSG(port->modem->index, CHAR, "recv on %s, len=%d\n", port->name, port->rx_length);
 	spin_lock_irqsave(&port->rx_req_lock, flags);
 	if (port->rx_length < port->rx_length_th) {

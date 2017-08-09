@@ -28,6 +28,16 @@ config MTK_ECCCI_CCIF
 	  if no, ccif hardware is disabled,
 	  The option default disabled.
 
+config MTK_ECCCI_C2K
+	tristate "ECCCI CCIF C2K driver"
+	depends on MTK_ECCCI_DRIVER
+	default n
+	help
+	  This option enables ECCCI CCIF C2K driver,
+	  if yes, c2k modem is enabled,
+	  if no, c2k modem is disabled,
+	  The option default disabled.
+
 config MTK_ECCCI_UT
 	tristate "ECCCI UT mode"
 	depends on MTK_ECCCI_DRIVER

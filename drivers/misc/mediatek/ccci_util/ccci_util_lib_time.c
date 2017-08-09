@@ -36,6 +36,7 @@ void ccci_timer_for_md_init(void)
 	spin_lock_init(&wait_count_lock);
 	wait_count = 0;
 	get_update = 0;
+	mb();
 	api_ready = 1;
 }
 

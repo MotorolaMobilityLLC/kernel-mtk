@@ -194,6 +194,23 @@ struct ccmni_ccci_ops eccci_ccmni_ops = {
 	.get_ccmni_ch = ccci_get_ccmni_channel,
 };
 
+struct ccmni_ccci_ops eccci_cc3mni_ops = {
+	.ccmni_ver = CCMNI_DRV_V0,
+	.ccmni_num = 3,
+	.name = "cc3mni",
+#if defined CONFIG_MTK_IRAT_SUPPORT
+	.md_ability = MODEM_CAP_CCMNI_IRAT | MODEM_CAP_TXBUSY_STOP,
+	.irat_md_id = MD_SYS1,
+#else
+	.md_ability = MODEM_CAP_TXBUSY_STOP,
+	.irat_md_id = -1,
+#endif
+	.napi_poll_weigh = 0,
+	.send_pkt = ccmni_send_pkt,
+	.napi_poll = ccmni_napi_poll,
+	.get_ccmni_ch = ccci_get_ccmni_channel,
+};
+
 #endif
 
 #define  IPV4_VERSION 0x40
@@ -389,14 +406,23 @@ static void ccmni_tx_timeout(struct net_device *dev)
 static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 {
 	struct ccci_port *port = *((struct ccci_port **)netdev_priv(dev));
+	unsigned int timeout = 0;
 
 	switch (cmd) {
 	case SIOCSTXQSTATE:
-		if (!ifr->ifr_ifru.ifru_ivalue) {
+		/* ifru_ivalue[3~0]:start/stop; ifru_ivalue[7~4]:reserve; */
+		/* ifru_ivalue[15~8]:user id, bit8=rild, bit9=thermal */
+		/* ifru_ivalue[31~16]: watchdog timeout value */
+		if ((ifr->ifr_ifru.ifru_ivalue & 0xF) == 0) {
 			if (atomic_read(&port->usage_cnt) > 0) {
 				atomic_dec(&port->usage_cnt);
 				netif_stop_queue(dev);
-				dev->watchdog_timeo = 60 * HZ;	/* stop queue won't stop Tx watchdog (ndo_tx_timeout) */
+				/* stop queue won't stop Tx watchdog (ndo_tx_timeout) */
+				timeout = (ifr->ifr_ifru.ifru_ivalue & 0xFFFF0000) >> 16;
+				if (timeout == 0)
+					dev->watchdog_timeo = 60*HZ;
+				else
+					dev->watchdog_timeo = timeout*HZ;
 			}
 		} else {
 			if (atomic_read(&port->usage_cnt) <= 0) {
@@ -457,7 +483,10 @@ static int port_net_init(struct ccci_port *port)
 #ifdef CCMNI_U
 	if (port->rx_ch == CCCI_CCMNI1_RX) {
 		eccci_ccmni_ops.md_ability |= port->modem->capability;
-		ccmni_ops.init(port->modem->index, &eccci_ccmni_ops);
+		if (port->modem->index == MD_SYS1)
+			ccmni_ops.init(port->modem->index, &eccci_ccmni_ops);
+		else if (port->modem->index == MD_SYS3)
+			ccmni_ops.init(port->modem->index, &eccci_cc3mni_ops);
 	}
 	return 0;
 #endif
