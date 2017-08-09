@@ -36,6 +36,7 @@
 
 /*1 enable,0 disable,touch_panel_eint default status, need to confirm after register eint*/
 int irq_flag = 1;
+static spinlock_t irq_flag_lock;
 /*0 power off,default, 1 power on*/
 static int power_flag;
 static int tpd_flag;
@@ -365,11 +366,20 @@ static int tpd_power_on(void)
 
 void gt1x_irq_enable(void)
 {
+	unsigned long flags;
+
+	spin_lock_irqsave(&irq_flag_lock, flags);
+
 	if (irq_flag == 0) {
-		irq_flag++;
+		irq_flag = 1;
+		spin_unlock_irqrestore(&irq_flag_lock, flags);
 		enable_irq(touch_irq);
-	} else {
+	} else if (irq_flag == 1) {
+		spin_unlock_irqrestore(&irq_flag_lock, flags);
 		GTP_INFO("Touch Eint already enabled!");
+	} else {
+		spin_unlock_irqrestore(&irq_flag_lock, flags);
+		GTP_ERROR("Invalid irq_flag %d!", irq_flag);
 	}
 	/*GTP_INFO("Enable irq_flag=%d",irq_flag);*/
 
@@ -377,11 +387,20 @@ void gt1x_irq_enable(void)
 
 void gt1x_irq_disable(void)
 {
+	unsigned long flags;
+
+	spin_lock_irqsave(&irq_flag_lock, flags);
+
 	if (irq_flag == 1) {
-		irq_flag--;
+		irq_flag = 0;
+		spin_unlock_irqrestore(&irq_flag_lock, flags);
 		disable_irq(touch_irq);
-	} else {
+	} else if (irq_flag == 0) {
+		spin_unlock_irqrestore(&irq_flag_lock, flags);
 		GTP_INFO("Touch Eint already disabled!");
+	} else {
+		spin_unlock_irqrestore(&irq_flag_lock, flags);
+		GTP_ERROR("Invalid irq_flag %d!", irq_flag);
 	}
 	/*GTP_INFO("Disable irq_flag=%d",irq_flag);*/
 }
@@ -597,13 +616,20 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 static irqreturn_t tpd_eint_interrupt_handler(unsigned irq, struct irq_desc *desc)
 {
-	TPD_DEBUG_PRINT_INT;
+	unsigned long flags;
 
+	TPD_DEBUG_PRINT_INT;
 	tpd_flag = 1;
+	spin_lock_irqsave(&irq_flag_lock, flags);
+	if (irq_flag == 0) {
+		spin_unlock_irqrestore(&irq_flag_lock, flags);
+		return IRQ_HANDLED;
+	}
 	/* enter EINT handler disable INT, make sure INT is disable when handle touch event including top/bottom half */
 	/* use _nosync to avoid deadlock */
+	irq_flag = 0;
+	spin_unlock_irqrestore(&irq_flag_lock, flags);
 	disable_irq_nosync(touch_irq);
-	irq_flag--;
 	/*GTP_INFO("disable irq_flag=%d",irq_flag);*/
 	wake_up_interruptible(&waiter);
 	return IRQ_HANDLED;
@@ -845,6 +871,29 @@ int gt1x_debug_proc(u8 *buf, int count)
 		else
 			GTP_ERROR("error mode :%d", mode);
 		return count;
+	} else if (strcmp(mode_str, "enable_irq") == 0) {
+		if (mode == 0) {
+			GTP_ERROR("enable_irq 0, touch_irq = %d, irq_flag = %d",
+				(int)touch_irq, irq_flag);
+			disable_irq(touch_irq);
+		} else if (mode == 1) {
+			GTP_ERROR("enable_irq 1, touch_irq = %d, irq_flag = %d",
+				(int)touch_irq, irq_flag);
+			enable_irq(touch_irq);
+		} else
+			GTP_ERROR("error mode :%d", mode);
+	} else if (strcmp(mode_str, "rerequest_irq") == 0) {
+		int ret;
+
+		GTP_ERROR("rerequest_irq, touch_irq = %d, irq_flag = %d",
+			(int)touch_irq, irq_flag);
+		free_irq(touch_irq, NULL);
+		ret = tpd_irq_registration();
+		if (ret < 0)
+			GTP_ERROR("rerequest_irq fail, %d!", ret);
+	} else if (strcmp(mode_str, "eint_dump_status") == 0) {
+		GTP_ERROR("eint_dump_status, %u", touch_irq);
+		/*mt_eint_dump_status(1);*/
 	}
 
 	return -1;
@@ -936,7 +985,7 @@ static int tpd_local_init(void)
 
 	GTP_INFO("end %s, %d\n", __func__, __LINE__);
 	tpd_type_cap = 1;
-
+	spin_lock_init(&irq_flag_lock);
 	return 0;
 }
 
