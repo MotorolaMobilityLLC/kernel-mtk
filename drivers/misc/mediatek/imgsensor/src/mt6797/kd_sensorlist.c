@@ -86,9 +86,17 @@ static DEFINE_SPINLOCK(kdsensor_drv_lock);
 #ifndef SUPPORT_I2C_BUS_NUM3
     #define SUPPORT_I2C_BUS_NUM3        SUPPORT_I2C_BUS_NUM2
 #endif
+#define HW_TRIGGER_I2C_SUPPORT 0
+#if HW_TRIGGER_I2C_SUPPORT
+#include "i2c-mtk.h"
+#endif
+
 
 #define CAMERA_HW_DRVNAME1  "kd_camera_hw"
 #define CAMERA_HW_DRVNAME2  "kd_camera_hw_bus2"
+#if HW_TRIGGER_I2C_SUPPORT
+#define CAMERA_HW_DRVNAME3  "kd_camera_hw_trigger"
+#endif
 
 #if defined(CONFIG_MTK_LEGACY)
 static struct i2c_board_info i2c_devs1 __initdata = {I2C_BOARD_INFO(CAMERA_HW_DRVNAME1, 0xfe>>1)};
@@ -189,6 +197,10 @@ static struct platform_device camerahw_platform_device = {
 struct platform_device* pCamerahw_platform_device;
 static struct i2c_client *g_pstI2Cclient;
 static struct i2c_client *g_pstI2Cclient2;
+#if HW_TRIGGER_I2C_SUPPORT
+static struct i2c_client *g_pstI2Cclient3;
+#endif
+
 
 /* 81 is used for V4L driver */
 static dev_t g_CAMERA_HWdevno = MKDEV(250, 0);
@@ -239,7 +251,9 @@ static unsigned int g_IsSearchSensor;
 ********************************************************************************/
 static const struct i2c_device_id CAMERA_HW_i2c_id[] = {{CAMERA_HW_DRVNAME1, 0}, {} };
 static const struct i2c_device_id CAMERA_HW_i2c_id2[] = {{CAMERA_HW_DRVNAME2, 0}, {} };
-
+#if HW_TRIGGER_I2C_SUPPORT
+static const struct i2c_device_id CAMERA_HW_i2c_id3[] = {{CAMERA_HW_DRVNAME3, 0}, {} };
+#endif
 
 
 /*******************************************************************************
@@ -351,7 +365,7 @@ int iReadReg(u16 a_u2Addr , u8 *a_puBuff , u16 i2cId)
     if (g_IsSearchSensor == 1)
         g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag) | I2C_A_FILTER_MSG;
     else
-        g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag)&(~I2C_A_FILTER_MSG); 
+        g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag)&(~I2C_A_FILTER_MSG);
 #endif
     spin_unlock(&kdsensor_drv_lock);
     /*  */
@@ -378,8 +392,8 @@ int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_siz
     int  i4RetValue = 0;
     if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1) {
     spin_lock(&kdsensor_drv_lock);
-    g_pstI2Cclient->addr = (i2cId >> 1); 
-#ifdef CONFIG_MTK_I2C_EXTENSION    
+    g_pstI2Cclient->addr = (i2cId >> 1);
+#ifdef CONFIG_MTK_I2C_EXTENSION
     g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_DMA_FLAG);
 
     /* Remove i2c ack error log during search sensor */
@@ -553,6 +567,96 @@ int kdReleaseI2CTriggerLock(void)
 * iBurstWriteReg
 ********************************************************************************/
 #define MAX_CMD_LEN          255
+
+#if HW_TRIGGER_I2C_SUPPORT
+int iBurstWriteReg_HW(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length){
+
+#if 0
+	u32 old_addr = 0;
+	int ret = 0;
+	int retry = 0;
+
+	if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1) {
+		if (bytes > MAX_CMD_LEN) {
+			PK_ERR("[iBurstWriteReg_HW] exceed the max write length\n");
+			return 1;
+		}
+		struct i2c_msg msg_w[1] = {
+			{
+				.addr = i2cId >> 1,
+				.flags = 0,
+				.len = bytes,
+				.buf = pData,
+			}
+		};
+		spin_lock(&kdsensor_drv_lock);
+		g_pstI2Cclient->addr = (i2cId >> 1);
+
+		spin_unlock(&kdsensor_drv_lock);
+
+		ret = 0;
+		retry = 3;
+		do {
+			ret = i2c_master_send(g_pstI2Cclient, (u8 *)phyAddr,
+			bytes == transfer_length ? transfer_length : ((bytes/transfer_length)<<16)|transfer_length);
+			retry--;
+			if ((ret&0xffff) != transfer_length) {
+				PK_ERR("Error sent I2C ret = %d\n", ret);
+			}
+		} while (((ret&0xffff) != transfer_length) && (retry > 0));
+
+		dma_free_coherent(&(pCamerahw_platform_device->dev), bytes, buf, phyAddr);
+		spin_lock(&kdsensor_drv_lock);
+		g_pstI2Cclient->addr = old_addr;
+		spin_unlock(&kdsensor_drv_lock);
+	}	else {
+		if (bytes > MAX_CMD_LEN) {
+			PK_DBG("[iBurstWriteReg] exceed the max write length\n");
+			return 1;
+		}
+		phyAddr = 0;
+		buf = dma_alloc_coherent(&(pCamerahw_platform_device->dev), bytes, (dma_addr_t *)&phyAddr, GFP_KERNEL);
+
+		if (NULL == buf) {
+			PK_ERR("[iBurstWriteReg] Not enough memory\n");
+			return -1;
+		}
+		memset(buf, 0, bytes);
+		memcpy(buf, pData, bytes);
+		/* PK_DBG("[iBurstWriteReg] bytes = %d, phy addr = 0x%x\n", bytes, phyAddr ); */
+
+		old_addr = g_pstI2Cclient2->addr;
+		spin_lock(&kdsensor_drv_lock);
+		g_pstI2Cclient2->addr = (i2cId >> 1);
+#ifdef CONFIG_MTK_I2C_EXTENSION
+		g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG);
+		g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag)&(~I2C_POLLING_FLAG);
+#endif
+		spin_unlock(&kdsensor_drv_lock);
+		ret = 0;
+		retry = 3;
+		do {
+			ret = i2c_master_send(g_pstI2Cclient2, (u8 *)phyAddr,
+			bytes == transfer_length ? transfer_length : ((bytes/transfer_length)<<16)|transfer_length);
+			retry--;
+			if ((ret&0xffff) != transfer_length) {
+				PK_ERR("Error sent I2C ret = %d\n", ret);
+			}
+		} while (((ret&0xffff) != transfer_length) && (retry > 0));
+
+
+		dma_free_coherent(&(pCamerahw_platform_device->dev), bytes, buf, phyAddr);
+		spin_lock(&kdsensor_drv_lock);
+		g_pstI2Cclient2->addr = old_addr;
+		spin_unlock(&kdsensor_drv_lock);
+	}
+#endif
+	return 0;
+
+}
+
+#endif
+
 int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
 {
 
@@ -583,7 +687,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
 
     old_addr = g_pstI2Cclient->addr;
     spin_lock(&kdsensor_drv_lock);
-       g_pstI2Cclient->addr = (i2cId >> 1);  
+       g_pstI2Cclient->addr = (i2cId >> 1);
        #ifdef CONFIG_MTK_I2C_EXTENSION
        g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG);
        g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_POLLING_FLAG);
@@ -625,7 +729,7 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length)
 
     old_addr = g_pstI2Cclient2->addr;
     spin_lock(&kdsensor_drv_lock);
-    g_pstI2Cclient2->addr = (i2cId >> 1); 
+    g_pstI2Cclient2->addr = (i2cId >> 1);
     #ifdef CONFIG_MTK_I2C_EXTENSION
     g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag | I2C_ENEXT_FLAG | I2C_DMA_FLAG);
     g_pstI2Cclient2->ext_flag = (g_pstI2Cclient2->ext_flag)&(~I2C_POLLING_FLAG);
@@ -665,7 +769,7 @@ int iMultiWriteReg(u8 *pData, u16 lens, u16 i2cId)
     int ret = 0;
 
     if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1) {
-    g_pstI2Cclient->addr = (i2cId >> 1);   
+    g_pstI2Cclient->addr = (i2cId >> 1);
     #ifdef CONFIG_MTK_I2C_EXTENSION
     g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)|(I2C_DMA_FLAG);
     #endif
@@ -699,7 +803,7 @@ int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
     /* KD_IMGSENSOR_PROFILE_INIT(); */
     spin_lock(&kdsensor_drv_lock);
     if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1) {
-    g_pstI2Cclient->addr = (i2cId >> 1);   
+    g_pstI2Cclient->addr = (i2cId >> 1);
     #ifdef CONFIG_MTK_I2C_EXTENSION
     g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_DMA_FLAG);
     #endif
@@ -3419,7 +3523,7 @@ static long CAMERA_HW_Ioctl(
         }
     }
     }
-	
+
     pIdx = (u32 *)pBuff;
     switch (a_u4Command) {
 
@@ -3676,14 +3780,15 @@ inline static void UnregisterCAMERA_HWCharDrv(void)
 static int CAMERA_HW_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
     int i4RetValue = 0;
-    PK_DBG("[CAMERA_HW] Attach I2C\n");
+    PK_DBG("[CAMERA_HW] Attach I2C g_pstI2Cclient %p\n",client);
 
     /* get sensor i2c client */
     spin_lock(&kdsensor_drv_lock);
     g_pstI2Cclient = client;
+
     /* set I2C clock rate */
-    #ifdef CONFIG_MTK_I2C_EXTENSION 
-    g_pstI2Cclient->timing = 100;/* 100k */    
+    #ifdef CONFIG_MTK_I2C_EXTENSION
+    g_pstI2Cclient->timing = 100;/* 100k */
     g_pstI2Cclient->ext_flag &= ~I2C_POLLING_FLAG; /* No I2C polling busy waiting */
     #endif
     spin_unlock(&kdsensor_drv_lock);
@@ -3884,8 +3989,8 @@ static int CAMERA_HW_i2c_probe2(struct i2c_client *client, const struct i2c_devi
     /* get sensor i2c client */
     g_pstI2Cclient2 = client;
 
-    /* set I2C clock rate */                
-    #ifdef CONFIG_MTK_I2C_EXTENSION  
+    /* set I2C clock rate */
+    #ifdef CONFIG_MTK_I2C_EXTENSION
     g_pstI2Cclient2->timing = 100;/* 100k */
     g_pstI2Cclient2->ext_flag &= ~I2C_POLLING_FLAG; /* No I2C polling busy waiting */
     #endif
@@ -3912,7 +4017,45 @@ static int CAMERA_HW_i2c_remove2(struct i2c_client *client)
 {
     return 0;
 }
+#if HW_TRIGGER_I2C_SUPPORT
+static int CAMERA_HW_i2c_probe3(struct i2c_client *client, const struct i2c_device_id *id)
+{
+    //int i4RetValue = 0;
+    PK_DBG("[CAMERA_HW] Attach I2C for HW trriger g_pstI2Cclient3 %p\n",client);
 
+    spin_lock(&kdsensor_drv_lock);
+
+    /* get sensor i2c client */
+    g_pstI2Cclient3 = client;
+
+    /* set I2C clock rate */
+    #ifdef CONFIG_MTK_I2C_EXTENSION
+    g_pstI2Cclient3->timing = 100;/* 100k */
+    g_pstI2Cclient3->ext_flag &= ~I2C_POLLING_FLAG; /* No I2C polling busy waiting */
+    #endif
+    spin_unlock(&kdsensor_drv_lock);
+#if 0
+    /* Register char driver */
+    i4RetValue = RegisterCAMERA_HWCharDrv2();
+
+    if (i4RetValue) {
+    PK_ERR("[CAMERA_HW] register char device failed!\n");
+    return i4RetValue;
+    }
+#endif
+    /* spin_lock_init(&g_CamHWLock); */
+
+    PK_ERR("[CAMERA_HW] Attached!!\n");
+    return 0;
+}
+/*******************************************************************************
+* CAMERA_HW_i2c_remove
+********************************************************************************/
+static int CAMERA_HW_i2c_remove3(struct i2c_client *client)
+{
+    return 0;
+}
+#endif
 
 /*******************************************************************************
 * I2C Driver structure
@@ -3937,6 +4080,28 @@ struct i2c_driver CAMERA_HW_i2c_driver2 = {
     .id_table = CAMERA_HW_i2c_id2,
 };
 
+#if HW_TRIGGER_I2C_SUPPORT
+#ifdef CONFIG_OF
+    static const struct of_device_id CAMERA_HW3_i2c_driver_of_ids[] = {
+	{ .compatible = "mediatek,camera_main_hw", },
+	{}
+    };
+#endif
+
+struct i2c_driver CAMERA_HW_i2c_driver3 = {
+    .probe = CAMERA_HW_i2c_probe3,
+    .remove = CAMERA_HW_i2c_remove3,
+    .driver = {
+    .name = CAMERA_HW_DRVNAME3,
+    .owner = THIS_MODULE,
+#ifdef CONFIG_OF
+    .of_match_table = CAMERA_HW3_i2c_driver_of_ids,
+#endif
+    },
+	.id_table = CAMERA_HW_i2c_id3,
+};
+#endif
+
 /*******************************************************************************
 * CAMERA_HW_probe
 ********************************************************************************/
@@ -3952,6 +4117,9 @@ static int CAMERA_HW_probe(struct platform_device *pdev)
 #endif
 
 	pCamerahw_platform_device = pdev;
+#if	HW_TRIGGER_I2C_SUPPORT
+	i2c_add_driver(&CAMERA_HW_i2c_driver3);
+#endif
     return i2c_add_driver(&CAMERA_HW_i2c_driver);
 }
 
@@ -3960,6 +4128,10 @@ static int CAMERA_HW_probe(struct platform_device *pdev)
 ********************************************************************************/
 static int CAMERA_HW_remove(struct platform_device *pdev)
 {
+#if	HW_TRIGGER_I2C_SUPPORT
+		i2c_del_driver(&CAMERA_HW_i2c_driver3);
+#endif
+
     i2c_del_driver(&CAMERA_HW_i2c_driver);
     return 0;
 }
