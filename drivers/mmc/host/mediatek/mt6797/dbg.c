@@ -636,6 +636,7 @@ void msdc_set_host_mode_speed(struct seq_file *m, struct msdc_host *host,
 	 * CMD1 will timeout
 	 */
 	host->mmc->ios.timing = MMC_TIMING_LEGACY;
+	host->mmc->ios.clock = 26000;
 	if (mmc_hw_reset(host->mmc))
 		seq_puts(m, "[SD_Debug] Reinit card failed, Can not switch speed mode\n");
 	mmc_release_host(host->mmc);

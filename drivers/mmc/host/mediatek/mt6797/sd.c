@@ -4554,6 +4554,7 @@ static void msdc_card_reset(struct mmc_host *mmc)
 	udelay(2);
 	msdc_pin_reset(host, MSDC_PIN_PULL_UP, 1);
 	usleep_range(200, 500);
+	msdc_init_hw(host);
 }
 static struct mmc_host_ops mt_msdc_ops = {
 	.post_req                      = msdc_post_req,
