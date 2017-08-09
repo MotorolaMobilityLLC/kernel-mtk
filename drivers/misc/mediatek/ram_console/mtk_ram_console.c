@@ -22,6 +22,7 @@
 #include <linux/io.h>
 #include <mach/wd_api.h>
 #include "ram_console.h"
+#include <mt-plat/mt_debug_latch.h>
 
 #define RAM_CONSOLE_HEADER_STR_LEN 1024
 
@@ -1389,11 +1390,31 @@ void aee_rr_show_last_pc(struct seq_file *m)
 	}
 }
 
+int __weak mt_lastbus_dump(char *buf)
+{
+	return 1;
+}
+
+void aee_rr_show_last_bus(struct seq_file *m)
+{
+	char *reg_buf = kmalloc(4096, GFP_KERNEL);
+
+	if (reg_buf) {
+		if (mt_lastbus_dump) {
+			mt_lastbus_dump(reg_buf);
+			seq_printf(m, "%s\n", reg_buf);
+		}
+		kfree(reg_buf);
+	}
+}
+
+
 last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_wdt_status,
 	aee_rr_show_fiq_step,
 	aee_rr_show_exp_type,
 	aee_rr_show_last_pc,
+	aee_rr_show_last_bus,
 	aee_rr_show_mcdi,
 	aee_rr_show_mcdi_r15,
 	aee_rr_show_suspend_debug_flag,
