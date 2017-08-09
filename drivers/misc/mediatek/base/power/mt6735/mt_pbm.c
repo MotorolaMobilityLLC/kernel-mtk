@@ -14,6 +14,7 @@
 #include <linux/sched/rt.h>
 #include <linux/platform_device.h>
 #include <linux/vmalloc.h>
+#include <linux/suspend.h>
 #include <linux/proc_fs.h>
 
 #include <mach/mt_pbm.h>
@@ -82,8 +83,9 @@ static struct pbm pbm_ctrl = {
 	.hpf_en = 31,		/* bin: 11111 (Flash, GPU, CPU, MD, DLPT) */
 };
 
+int g_dlpt_need_do = 1;
+static DEFINE_MUTEX(pbm_mutex);
 static DEFINE_MUTEX(pbm_table_lock);
-static struct wake_lock pbm_wakelock;
 static struct task_struct *pbm_thread;
 static atomic_t kthread_nreq = ATOMIC_INIT(0);
 /* extern u32 get_devinfo_with_index(u32 index); */
@@ -469,25 +471,24 @@ static int pbm_thread_handle(void *data)
 			continue;
 		}
 
-		wake_lock(&pbm_wakelock);
+		mutex_lock(&pbm_mutex);
+		if (g_dlpt_need_do == 1) {
+			if (g_dlpt_stop == 0) {
+				pbm_allocate_budget_manager();
+				g_dlpt_state_sync = 0;
+			} else {
+				pbm_err("DISABLE PBM\n");
 
-		if (g_dlpt_stop == 0) {
-			pbm_allocate_budget_manager();
-			g_dlpt_state_sync = 0;
-		} else {
-			pbm_err("DISABLE PBM\n");
-
-			if (g_dlpt_state_sync == 0) {
-				mt_cpufreq_set_power_limit_by_pbm(0);
-				mt_gpufreq_set_power_limit_by_pbm(0);
-				g_dlpt_state_sync = 1;
-				pbm_err("Release DLPT limit\n");
+				if (g_dlpt_state_sync == 0) {
+					mt_cpufreq_set_power_limit_by_pbm(0);
+					mt_gpufreq_set_power_limit_by_pbm(0);
+					g_dlpt_state_sync = 1;
+					pbm_err("Release DLPT limit\n");
+				}
 			}
 		}
-
 		atomic_dec(&kthread_nreq);
-
-		wake_unlock(&pbm_wakelock);
+		mutex_unlock(&pbm_mutex);
 	}
 
 	__set_current_state(TASK_RUNNING);
@@ -507,6 +508,40 @@ static int create_pbm_kthread(void)
 	pwrctrl->pbm_drv_done = 1;	/* avoid other hpf call thread before thread init done */
 
 	return 0;
+}
+
+static int
+_mt_pbm_pm_callback(struct notifier_block *nb,
+		unsigned long action, void *ptr)
+{
+	switch (action) {
+
+	case PM_SUSPEND_PREPARE:
+		pbm_err("PM_SUSPEND_PREPARE:start\n");
+		mutex_lock(&pbm_mutex);
+		g_dlpt_need_do = 0;
+		mutex_unlock(&pbm_mutex);
+		pbm_err("PM_SUSPEND_PREPARE:end\n");
+		break;
+
+	case PM_HIBERNATION_PREPARE:
+		break;
+
+	case PM_POST_SUSPEND:
+		pbm_err("PM_POST_SUSPEND:start\n");
+		mutex_lock(&pbm_mutex);
+		g_dlpt_need_do = 1;
+		mutex_unlock(&pbm_mutex);
+		pbm_err("PM_POST_SUSPEND:end\n");
+		break;
+
+	case PM_POST_HIBERNATION:
+		break;
+
+	default:
+		return NOTIFY_DONE;
+	}
+	return NOTIFY_OK;
 }
 
 #if 1 /* CONFIG_PBM_PROC_FS */
@@ -623,7 +658,8 @@ static int __init pbm_module_init(void)
 	mt_pbm_create_procfs();
 	#endif
 
-	wake_lock_init(&pbm_wakelock, WAKE_LOCK_SUSPEND, "pbm");
+	pm_notifier(_mt_pbm_pm_callback, 0);
+
 	register_dlpt_notify(&kicker_pbm_by_dlpt, DLPT_PRIO_PBM);
 	ret = create_pbm_kthread();
 
