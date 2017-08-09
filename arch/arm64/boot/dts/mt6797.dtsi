@@ -70,6 +70,12 @@
 		interrupts = <GIC_SPI 292 IRQ_TYPE_EDGE_RISING>;
 	};
 
+	/* ATF logger SW IRQ number 325 = 32 + 293 */
+	atf_logger {
+		compatible = "mediatek,atf_logger";
+		interrupts = <GIC_SPI 293 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	utos {
 		compatible = "microtrust,utos";
 		interrupts = <GIC_SPI 294 IRQ_TYPE_EDGE_RISING>,
@@ -336,11 +342,22 @@
 			alloc-ranges = <0 0x40000000 0 0x80000000>;
 		};
 
-		/* reserve 64KB at DRAM start + 70MB */
+		/* we reserved 2 sections for ATF */
+		/* atf-reserved-memory for ATF image, xlat tab, bss, etc. */
+		/* atf-ramdump-memory for ATF debug purpose, for ramdump */
+		/* We use MPU region 1 to protected these 2 sections */
+		/* reserve 64KB at DRAM start + 70MB, for ATF use */
 		atf-reserved-memory@44600000 {
 			compatible = "mediatek,mt6797-atf-reserved-memory";
 			no-map;
 			reg = <0 0x44600000 0 0x10000>;
+		};
+
+		/* reserve 192KB after atf-reserved-memory, for ATF ramdump */
+		atf-ramdump-memory@44610000 {
+			compatible = "mediatek,mt6797-atf-ramdump-memory";
+			no-map;
+			reg = <0 0x44610000 0 0x30000>;
 		};
 
 		reserve-memory-scp_share {
