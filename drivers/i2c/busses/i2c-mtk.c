@@ -45,6 +45,34 @@ static inline u16 i2c_readw(struct mt_i2c *i2c, u8 offset)
 	return readw(i2c->base + offset);
 }
 
+void __iomem *infra_base;
+
+s32 map_cg_regs(void)
+{
+	struct device_node *infrasys_node;
+
+	infrasys_node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+	if (!infrasys_node) {
+		pr_err("Cannot find infrasys_node\n");
+		return -ENODEV;
+	}
+	infra_base = of_iomap(infrasys_node, 0);
+	if (!infra_base) {
+		pr_err("infra_base iomap failed\n");
+		return -ENOMEM;
+	}
+	return 0;
+}
+
+s32 dump_cg_regs(void)
+{
+	pr_err("[I2C] cg regs dump:\n"
+		"%8s : 0x%08x 0x%08x 0x%08x\n%8s : 0x%08x 0x%08x 0x%08x\n",
+		"Address", 0x10001090, 0x10001094, 0x100010b0,
+		"Values", readw(infra_base + 0x90), readw(infra_base + 0x94),
+		readw(infra_base + 0xb0));
+}
+
 static inline void i2c_writel_dma(u32 value, struct mt_i2c *i2c, u8 offset)
 {
 	writel(value, i2c->pdmabase + offset);
@@ -458,6 +486,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	if (tmo == 0) {
 		dev_err(i2c->dev, "addr: %x, transfer timeout\n", i2c->addr);
 		i2c_dump_info(i2c);
+		dump_cg_regs();
 		mt_i2c_init_hw(i2c);
 		return -ETIMEDOUT;
 	}
@@ -845,6 +874,8 @@ static s32 __init mt_i2c_init(void)
 		return ret;
 	}
 #endif
+	if (!map_cg_regs())
+		pr_warn("Mapp cg regs successfully.\n");
 
 	pr_err(" mt_i2c_init driver as platform device\n");
 	return platform_driver_register(&mt_i2c_driver);
