@@ -67,12 +67,8 @@
 #include "AudDrv_Ana.h"
 #include "AudDrv_Clk.h"
 #include "mt_soc_analog_type.h"
-#ifdef _GIT318_READY
 #include "mt_clkbuf_ctl.h"
-#endif
-#ifdef _GIT318_PMIC_READY
 #include <mach/mt_pmic.h>
-#endif
 #include <mt-plat/mt_chip.h>
 #ifdef _VOW_ENABLE
 #include <mt-plat/vow_api.h>
@@ -159,9 +155,6 @@ static unsigned int dAuxAdcChannel = 16;
 static const int mDcOffsetTrimChannel = 9;
 static bool mInitCodec;
 static uint32 MicbiasRef, GetMicbias;
-#ifdef MT6755_AW8736_REWORK
-static bool mHPDePop;
-#endif
 
 static int reg_AFE_VOW_CFG0 = 0x0000;	/* VOW AMPREF Setting */
 static int reg_AFE_VOW_CFG1 = 0x0000;	/* VOW A,B timeout initial value (timer) */
@@ -1888,9 +1881,6 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 }
 
 
-
-#ifdef CONFIG_OF
-
 #define GAP (2)			/* unit: us */
 #if defined(CONFIG_MTK_LEGACY)
 #define AW8736_MODE3 /*0.8w*/ \
@@ -2007,103 +1997,6 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #endif
 }
 
-#else /*CONFIG_OF*/
-#ifndef CONFIG_MTK_SPEAKER
-#ifdef AW8736_MODE_CTRL
-/* 0.75us<TL<10us; 0.75us<TH<10us */
-#define GAP (2)			/* unit: us */
-/*1.2w*/
-static void AW8736_MODE1(void)
-{
-	mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-}
-/*1.0w*/
-static void AW8736_MODE2(void)
-{
-	do {
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-	} while (0)
-}
-/*0.8w*/
-static void AW8736_MODE3(void)
-{
-	do {
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-	} while (0)
-}
-
-/*it depends on THD, range: 1.5 ~ 2.0w*/
-static void AW8736_MODE4(void)
-{
-	do {
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);
-		udelay(GAP);
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);
-	} while (0)
-}
-#endif
-#endif
-
-static void Ext_Speaker_Amp_Change(bool enable)
-{
-#define SPK_WARM_UP_TIME        (25)	/* unit is ms */
-#ifndef CONFIG_FPGA_EARLY_PORTING
-
-	if (enable) {
-		pr_debug("Ext_Speaker_Amp_Change ON+\n");
-#ifndef CONFIG_MTK_SPEAKER
-		pr_warn("Ext_Speaker_Amp_Change ON set GPIO\n");
-		mt_set_gpio_mode(GPIO_EXT_SPKAMP_EN_PIN, GPIO_MODE_00);	/* GPIO117: DPI_D3, mode 0 */
-		mt_set_gpio_pull_enable(GPIO_EXT_SPKAMP_EN_PIN, GPIO_PULL_ENABLE);
-		mt_set_gpio_dir(GPIO_EXT_SPKAMP_EN_PIN, GPIO_DIR_OUT);	/* output */
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);	/* low disable */
-		udelay(1000);
-		mt_set_gpio_dir(GPIO_EXT_SPKAMP_EN_PIN, GPIO_DIR_OUT);	/* output */
-
-#ifdef AW8736_MODE_CTRL
-		AW8736_MODE3();
-#else
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ONE);	/* high enable */
-#endif
-
-		msleep(SPK_WARM_UP_TIME);
-#endif
-		pr_debug("Ext_Speaker_Amp_Change ON-\n");
-	} else {
-		pr_debug("Ext_Speaker_Amp_Change OFF+\n");
-#ifndef CONFIG_MTK_SPEAKER
-		/* mt_set_gpio_mode(GPIO_EXT_SPKAMP_EN_PIN, GPIO_MODE_00); //GPIO117: DPI_D3, mode 0 */
-		mt_set_gpio_dir(GPIO_EXT_SPKAMP_EN_PIN, GPIO_DIR_OUT);	/* output */
-		mt_set_gpio_out(GPIO_EXT_SPKAMP_EN_PIN, GPIO_OUT_ZERO);	/* low disbale */
-		udelay(500);
-#endif
-		pr_debug("Ext_Speaker_Amp_Change OFF-\n");
-	}
-#endif
-}
-#endif
 
 static int Ext_Speaker_Amp_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
@@ -4670,10 +4563,7 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 	/* Get PCB ID : Channel 12 */
 	IMM_GetOneChannelValue(12, data, &rawdata);
 	pr_warn("PCB_ID: voltage: %d.%d\n", data[0], data[1]);
-	if ((data[0] == 0) && (data[1] < 25))
-		mHPDePop = false;	/* EVB don't use hp de pop circuit */
-	else
-		mHPDePop = true;
+
 	if ((data[0] == 0) && (data[1] > 40 && data[1] < 54)) {
 		/* 0.505v : rework version -- use GPIO 54 */
 		pin_extspkamp = (54 | 0x80000000);
@@ -4685,8 +4575,6 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 			pr_err("Ext_Speaker_Amp_Change GetGPIO_Info FAIL!!!\n");
 			return -1;
 		}
-		pin_extspkamp = (115 | 0x80000000);
-		pin_mode_extspkamp = 0;
 		pr_warn("Get AW8736 SHDN IO %u from DTS\n", (pin_extspkamp - 0x80000000));
 	}
 #endif

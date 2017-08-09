@@ -52,7 +52,6 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
-/*#define _MT_IDLE_HEADER*/
 
 /*#include <mach/mt_pm_ldo.h>*/
 /*#include <mach/pmic_mt6325_sw.h>
@@ -61,15 +60,13 @@
 #include <mt-plat/upmu_common.h>
 #include <linux/spinlock.h>
 #include <linux/delay.h>
-#ifdef _MT_IDLE_HEADER
-#include "mt_idle.h"
-#endif
 #include <linux/err.h>
 #include <linux/platform_device.h>
+#include "mt_idle.h"
+#include "mt_clk_id.h"
 #include "AudDrv_Common.h"
 #include "AudDrv_Clk.h"
 #include "AudDrv_Afe.h"
-
 
 /*****************************************************************************
  *                         D A T A   T Y P E S
@@ -110,6 +107,7 @@ enum audio_system_clock_type {
 	CLOCK_APLL2_TUNER,
 	CLOCK_APLL1_DIV0,
 	CLOCK_APLL2_DIV0,
+	CLOCK_SCP_SYS_AUD,
 	CLOCK_INFRA_SYS_AUDIO,
 	CLOCK_PERI_AUDIO26M,
 	CLOCK_TOP_AUD_MUX1,
@@ -144,6 +142,7 @@ static struct audio_clock_attr aud_clks[CLOCK_NUM] = {
 	[CLOCK_APLL2_TUNER] = {"aud_apll2_tuner_clk", false, false, NULL},
 	[CLOCK_APLL1_DIV0] = {"aud_apll1_div0_clk", false, false, NULL},
 	[CLOCK_APLL2_DIV0] = {"aud_apll2_div0_clk", false, false, NULL},
+	[CLOCK_SCP_SYS_AUD] = {"scp_sys_aud", false, false, NULL},
 	[CLOCK_INFRA_SYS_AUDIO] = {"aud_infra_clk", false, false, NULL},
 	[CLOCK_PERI_AUDIO26M] = {"aud_peri_26m_clk", false, false, NULL},
 	[CLOCK_TOP_AUD_MUX1] = {"aud_mux1_clk", false, false, NULL},
@@ -181,6 +180,9 @@ void AudDrv_Clk_probe(void *dev)
 		return;
 
 	for (i = 0; i < ARRAY_SIZE(aud_clks); i++) {
+		if (i == CLOCK_SCP_SYS_AUD)	/* CLOCK_SCP_SYS_AUD is MTCMOS */
+			continue;
+
 		if (aud_clks[i].clk_status) {
 			ret = clk_prepare(aud_clks[i].clock);
 			if (ret) {
@@ -200,6 +202,9 @@ void AudDrv_Clk_Deinit(void *dev)
 
 	pr_debug("%s\n", __func__);
 	for (i = 0; i < ARRAY_SIZE(aud_clks); i++) {
+		if (i == CLOCK_SCP_SYS_AUD)	/* CLOCK_SCP_SYS_AUD is MTCMOS */
+			continue;
+
 		if (aud_clks[i].clock && !IS_ERR(aud_clks[i].clock) && aud_clks[i].clk_prepare) {
 			clk_unprepare(aud_clks[i].clock);
 			aud_clks[i].clk_prepare = false;
@@ -433,9 +438,21 @@ void AudDrv_Clk_On(void)
 			BUG();
 			goto UNLOCK;
 		}
-		/* pr_debug("-----------[CCF]AudDrv_Clk_On, aud_dac_predis_clk:%d\n",
-			aud_clks[CLOCK_DAC_PREDIS].clk_prepare); */
 
+		spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+
+		/* CLOCK_SCP_SYS_AUD is MTCMOS */
+		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status) {
+			ret = clk_prepare_enable(aud_clks[CLOCK_SCP_SYS_AUD].clock);
+			if (ret) {
+				pr_err("%s [CCF]Aud clk_prepare_enable %s fail\n", __func__,
+					aud_clks[CLOCK_SCP_SYS_AUD].name);
+				BUG();
+				goto UNLOCK;
+			}
+		}
+
+		return;
 #endif
 #else
 		SetInfraCfg(AUDIO_CG_CLR, 0x2000000, 0x2000000);
@@ -496,10 +513,16 @@ void AudDrv_Clk_Off(void)
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare)
 			clk_disable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
 
+		spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+
+		/* CLOCK_SCP_SYS_AUD is MTCMOS */
+		if (aud_clks[CLOCK_SCP_SYS_AUD].clk_status)
+			clk_disable_unprepare(aud_clks[CLOCK_SCP_SYS_AUD].clock);
+
 		if (aud_clks[CLOCK_PERI_AUDIO26M].clk_prepare)
 			clk_disable(aud_clks[CLOCK_PERI_AUDIO26M].clock);
 
-
+		return;
 #endif
 
 #else
@@ -1976,10 +1999,8 @@ void AudDrv_Emi_Clk_On(void)
 	mutex_lock(&auddrv_pmic_mutex);
 	if (Aud_EMI_cntr == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING	/* george early porting disable */
-#ifdef _MT_IDLE_HEADER
-		disable_dpidle_by_bit(MT_CG_AUDIO_AFE);
-		disable_soidle_by_bit(MT_CG_AUDIO_AFE);
-#endif
+		disable_dpidle_by_bit(MT_CG_ID_AUDIO_AFE);
+		disable_soidle_by_bit(MT_CG_ID_AUDIO_AFE);
 #endif
 	}
 	Aud_EMI_cntr++;
@@ -1992,10 +2013,8 @@ void AudDrv_Emi_Clk_Off(void)
 	Aud_EMI_cntr--;
 	if (Aud_EMI_cntr == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING	/* george early porting disable */
-#ifdef _MT_IDLE_HEADER
-		enable_dpidle_by_bit(MT_CG_AUDIO_AFE);
-		enable_soidle_by_bit(MT_CG_AUDIO_AFE);
-#endif
+		enable_dpidle_by_bit(MT_CG_ID_AUDIO_AFE);
+		enable_soidle_by_bit(MT_CG_ID_AUDIO_AFE);
 #endif
 	}
 

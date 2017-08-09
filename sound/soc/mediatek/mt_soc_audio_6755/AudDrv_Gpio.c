@@ -315,12 +315,12 @@ int AudDrv_GPIO_EXTAMP2_Select(int bEnable, int mode)
 						aud_gpios[GPIO_EXTAMP2_LOW].gpioctrl);
 				if (retval)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP2_LOW] pins\n");
-				udelay(5);
+				udelay(2);
 				retval = pinctrl_select_state(pinctrlaud,
 						aud_gpios[GPIO_EXTAMP2_HIGH].gpioctrl);
 				if (retval)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP2_HIGH] pins\n");
-				udelay(5);
+				udelay(2);
 			}
 		}
 	} else {
