@@ -511,6 +511,7 @@ volatile MUINT32 g_TempAddr = 0;
 /* static ISP_DEQUE_BUF_INFO_STRUCT g_deque_buf = {0,{}};    // Marked to remove build warning.WARNING */
 
 unsigned long g_Flash_SpinLock;
+static MINT32 mMclk1User;
 
 #ifndef _rtbc_use_cq0c_
 static MUINT32 g_rtbcAAA;
@@ -2519,8 +2520,7 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 			imem_ref_cnt = (MINT32) atomic_read(&g_imem_ref_cnt[ref_cnt_ctrl.id]);
 			LOG_DBG("g_imem_ref_cnt[%d]: %d.", ref_cnt_ctrl.id, imem_ref_cnt);
 
-			if((imem_ref_cnt == 0))   
-			{   
+			if ((imem_ref_cnt == 0)) {
 				if(ref_cnt_ctrl.ctrl == ISP_REF_CNT_DEC_AND_RESET_IF_LAST_ONE) /* No user left and ctrl is RESET_IF_LAST_ONE, do ISP reset. */
 				{
                     /* camera1. single thread, we rest p1p2 after all the object are destroyed */
@@ -5507,6 +5507,12 @@ static MINT32 ISP_release(struct inode *pInode, struct file *pFile)
 	/* cam 3 variable un-initilization */
 	ISP_release_FrmB();
 	/*  */
+
+	mMclk1User = 0;
+	ISP_WR32(ISP_ADDR + 0x4200, 0x00000001);
+	LOG_DBG("ISP_MCLK1_EN release\n");
+
+
 EXIT:
 
 	spin_unlock(&(g_IspInfo.SpinLockIspRef));
@@ -6221,7 +6227,7 @@ static ssize_t ISP_DumpRegToProc(struct file *pPage,
 			     ISP_RD32(ISP_ADDR + i));
 	}
 
-          
+
 	*ppStart = (char*)((unsigned long)pPage + (unsigned long)off);
 
 	Length = (long)((unsigned long)p - (unsigned long)pPage);
@@ -6291,7 +6297,7 @@ static ssize_t CAMIO_DumpRegToProc(struct file *pPage,
 	} else {
 		Length = 0;
 	}
-    
+
 	/*  */
 	ret = Length < Count ? Length : Count;
 
@@ -6393,15 +6399,29 @@ void ISP_MCLK1_EN(bool En)
 {
 	MUINT32 temp = 0;
 
-	temp = ISP_RD32((void *)(ISP_ADDR + 0x4200));
+		if (1 == En)
+			mMclk1User++;
+		else {
+			mMclk1User--;
+			if (mMclk1User <= 0)
+				mMclk1User = 0;
+		}
 
-	if (En) {
-		temp |= 0x20000000;
-		ISP_WR32((void *)(ISP_ADDR + 0x4200), temp);
-	} else {
-		temp &= 0xDFFFFFFF;
-		ISP_WR32((void *)(ISP_ADDR + 0x4200), temp);
-	}
+		temp = ISP_RD32(ISP_ADDR + 0x4200);
+		if (En) {
+			if (mMclk1User > 0) {
+				temp |= 0x20000000;
+				ISP_WR32(ISP_ADDR + 0x4200, temp);
+			}
+		} else {
+			if (mMclk1User == 0) {
+				temp &= 0xDFFFFFFF;
+				ISP_WR32(ISP_ADDR + 0x4200, temp);
+			}
+		}
+		temp = ISP_RD32(ISP_ADDR + 0x4200);
+		LOG_DBG("ISP_MCLK1_EN(%d), mMclk1User(%d)", temp, mMclk1User);
+
 }
 EXPORT_SYMBOL(ISP_MCLK1_EN);
 
