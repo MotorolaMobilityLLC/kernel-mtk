@@ -1755,7 +1755,6 @@ long wmt_dev_tm_temp_query(void)
 		mtk_wcn_wmt_therm_ctrl(WMTTHERM_ENABLE);
 		current_temp = mtk_wcn_wmt_therm_ctrl(WMTTHERM_READ);
 		mtk_wcn_wmt_therm_ctrl(WMTTHERM_DISABLE);
-		wmt_lib_notify_stp_sleep();
 		idx_temp_table = (idx_temp_table + 1) % HISTORY_NUM;
 		temp_table[idx_temp_table] = current_temp;
 		do_gettimeofday(&query_time);

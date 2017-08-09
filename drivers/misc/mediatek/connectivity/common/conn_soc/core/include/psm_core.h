@@ -53,7 +53,7 @@
 #define PSM_HANDLING 127
 
 #define STP_PSM_WMT_PS_TASK_HANDLING_TIME  30	/* 20 milli-seconds */
-#define STP_PSM_IDLE_TIME_SLEEP           5000	/* temporary for stress testing */
+#define STP_PSM_IDLE_TIME_SLEEP           30	/* temporary for stress testing */
 #define STP_PSM_SDIO_IDLE_TIME_SLEEP           100	/* temporary for SDIO stress testing */
 #define STP_PSM_WAIT_EVENT_TIMEOUT        6000
 #if 0
