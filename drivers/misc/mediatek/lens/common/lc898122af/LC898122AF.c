@@ -340,8 +340,6 @@ static void LC898122AF_init_drv(void)
 
 static inline int moveAF(unsigned long a_u4Position)
 {
-	int ret = 0;
-
 	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
 		LOG_INF("out of range\n");
 		return -EINVAL;
