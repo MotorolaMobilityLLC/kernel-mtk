@@ -1545,9 +1545,6 @@ void mtkts_wmt_cancel_thermal_timer(void)
 	else
 		return;
 
-	del_timer(&wmt_stats_timer);
-
-	/* cancel timer */
 	/* pr_debug("mtkts_wmt_cancel_thermal_timer\n"); */
 
 	/* stop thermal framework polling when entering deep idle */
@@ -1571,9 +1568,6 @@ void mtkts_wmt_start_thermal_timer(void)
 	if (p_linux_if->thz_dev != NULL && p_linux_if->interval != 0)
 		mod_delayed_work(system_freezable_wq, &(p_linux_if->thz_dev->poll_queue),
 				 round_jiffies(msecs_to_jiffies(2000)));
-
-	wmt_stats_timer.expires = jiffies + 1 * HZ;
-	add_timer(&wmt_stats_timer);
 }
 
 static const struct file_operations _wmt_tm_fops = {
@@ -1844,7 +1838,7 @@ static int __init wmt_tm_init(void)
 	wmt_stats_info.pre_time = 0;
 	wmt_stats_info.pre_tx_bytes = 0;
 
-	init_timer(&wmt_stats_timer);
+	init_timer_deferrable(&wmt_stats_timer);
 	wmt_stats_timer.function = (void *)&wmt_cal_stats;
 	wmt_stats_timer.data = (unsigned long)&wmt_stats_info;
 	wmt_stats_timer.expires = jiffies + 1 * HZ;

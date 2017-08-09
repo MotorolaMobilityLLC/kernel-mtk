@@ -562,10 +562,6 @@ void mtkts_pa_cancel_thermal_timer(void)
 	/* cancel timer */
 	/* pr_debug("mtkts_pa_cancel_thermal_timer\n"); */
 
-#if Feature_Thro_update
-	del_timer(&pa_stats_timer);
-#endif
-
 	/* stop thermal framework polling when entering deep idle */
 	if (thz_dev)
 		cancel_delayed_work(&(thz_dev->poll_queue));
@@ -578,11 +574,6 @@ void mtkts_pa_start_thermal_timer(void)
 	/* resume thermal framework polling when leaving deep idle */
 	if (thz_dev != NULL && interval != 0)
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(3000)));
-
-#if Feature_Thro_update
-	pa_stats_timer.expires = jiffies + 1 * HZ;
-	add_timer(&pa_stats_timer);
-#endif
 }
 
 
@@ -668,7 +659,7 @@ static int __init mtktspa_init(void)
 	pa_stats_info.pre_time = 0;
 	pa_stats_info.pre_tx_bytes = 0;
 
-	init_timer(&pa_stats_timer);
+	init_timer_deferrable(&pa_stats_timer);
 	pa_stats_timer.function = (void *)&pa_cal_stats;
 	pa_stats_timer.data = (unsigned long) &pa_stats_info;
 	pa_stats_timer.expires = jiffies + 1 * HZ;
