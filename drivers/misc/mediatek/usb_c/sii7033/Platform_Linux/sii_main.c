@@ -36,7 +36,7 @@ struct gpio sii70xx_gpio[NUM_GPIO] = {
 	{GPIO_RESET_CTRL, GPIOF_OUT_INIT_HIGH, "RESET_CTRL_En"}
 };
 
- /*MHL*/ int drp_mode = DFP;
+ /*MHL*/ int drp_mode = DRP;
 module_param(drp_mode, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 MODULE_PARM_DESC(drp_mode,
 		 "An integer parameter to switch	PD mode between DRP(0) DFP(1) and UFP(2)");
