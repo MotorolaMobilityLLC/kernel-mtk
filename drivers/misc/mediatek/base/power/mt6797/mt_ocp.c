@@ -11,7 +11,6 @@
 #include <linux/uaccess.h>
 #include <linux/interrupt.h>
 #include <linux/cpu.h>
-
 #include <linux/ktime.h>
 
 #ifdef CONFIG_OF
@@ -40,26 +39,6 @@
 	#define ocp_deb(fmt, args...)     pr_debug(TAG fmt, ##args)
 #endif
 
-
-
-/*add by ue, zzz */
-#include <mt-plat/sync_write.h>
-
-struct cpu_opp_info {
-	int freq;
-	int pll;
-	int ckdiv;
-	int postdiv;
-};
-
-struct cpu_info {
-	const char *name;
-	struct cpu_opp_info cpu_opp_info_LL[8];
-	struct cpu_opp_info cpu_opp_info_L[8];
-	int vmin_hi;
-	int vmin_lo;
-};
-
 /* adb command list
 echo 6 0 1 > /proc/ocp/dvt_test //enable AUXPUMX for L/LL
 echo 6 0 0 > /proc/ocp/dvt_test //disable AUXPUMX for L/LL
@@ -71,38 +50,7 @@ echo 6 2 0 > /proc/ocp/dvt_test //disable AUXPUMX for GPU
 echo 7 > 1000 1100 /proc/ocp/dvt_test // L,LL Vproc, Vsram
 echo 8 > 1000 1100 /proc/ocp/dvt_test // Big Vproc, Vsram
 
-echo 9 7 7 > /proc/ocp/dvt_test // LL, L oppidx freq
-echo 10 7 > /proc/ocp/dvt_test // Big oppidx freq
 */
-
-const unsigned int big_opp[] = { 2288, 2093, 1495, 1001, 897, 806, 750, 350 };
-
-/* freq, pll, clkdiv, posdiv */
-struct cpu_info cpu_info_fy = {
-"FY",
-{{ 1001, 0x40134000, 0x8, 0x1 }, /* LL */
-{  910, 0x40118000, 0x8, 0x1 },
-{  819, 0x400FC000, 0x8, 0x1 },
-{  689, 0x400D4000, 0x8, 0x1 },
-{  598, 0x400B8000, 0x8, 0x1 },
-{  494, 0x40130000, 0x8, 0x2 },
-{  338, 0x400D0000, 0x8, 0x2 },
-{  156, 0x400C0000, 0x8, 0x3 },
-},
-{ { 1807, 0x40116000, 0x8, 0x0 }, /* L */
-{ 1651, 0x400FE000, 0x8, 0x0 },
-{ 1495, 0x400E6000, 0x8, 0x0 },
-{ 1196, 0x400B8000, 0x8, 0x0 },
-{ 1027, 0x4013C000, 0x8, 0x1 },
-{  871, 0x4010C000, 0x8, 0x1 },
-{  663, 0x400CC000, 0x8, 0x1 },
-{  286, 0x400B0000, 0x8, 0x2 },
-},
-0,
-0,
-};
-/* zzz */
-
 
 static unsigned int HW_API_DEBUG_ON;
 static unsigned int IRQ_Debug_on;
@@ -114,7 +62,6 @@ static unsigned int big_dreq_enable;
 static unsigned int dvt_test_on;
 static unsigned int hqa_test;
 static unsigned int do_ocp_stress_test;
-
 
 /* OCP ADDR */
 #ifdef CONFIG_OF
@@ -601,7 +548,6 @@ return 0;
 /*
 int BigOCPAvgPwrGet(unsigned long long *AvgLkg, unsigned long long *AvgAct, unsigned int Count)
 {
-
 int i, Temp, Leakage, Total;
 
 *AvgLkg = 0;
@@ -1287,32 +1233,38 @@ return 0;
 /* Big OCP init API */
 void Cluster2_OCP_ON(void)
 {
+#ifdef OCP_ON
 if (ocp_cluster2_enable == 0) {
 	BigOCPConfig(300, 10000);
 	BigOCPSetTarget(3, 127000);
 	BigOCPEnable(3, 1, 625, 0);
 	}
+#endif
 }
 
 /* Little OCP init API */
 void Cluster0_OCP_ON(void)
 {
+#ifdef OCP_ON
 if (ocp_cluster0_enable == 0) {
 	LittleOCPConfig(0, 300, 10000);
 	LittleOCPSetTarget(0, 127000);
-	LittleOCPDVFSSet(0, 897, 1000);
+	LittleOCPDVFSSet(0, 624, 900);
 	LittleOCPEnable(0, 1, 625);
 	}
+#endif
 }
 
 void Cluster1_OCP_ON(void)
 {
+#ifdef OCP_ON
 if (ocp_cluster1_enable == 0) {
 	LittleOCPConfig(1, 300, 10000);
 	LittleOCPSetTarget(1, 127000);
-	LittleOCPDVFSSet(1, 1274, 1000);
+	LittleOCPDVFSSet(1, 338, 780);
 	LittleOCPEnable(1, 1, 625);
 	}
+#endif
 }
 
 
@@ -1918,7 +1870,12 @@ char *buf = _copy_from_user_for_proc(buffer, count);
 if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[3]) > 0) {
 	switch (function_id) {
 	case 8:
-		Cluster2_OCP_ON();
+		/*Cluster2_OCP_ON();*/
+		if (ocp_cluster2_enable == 0) {
+			BigOCPConfig(300, 10000);
+			BigOCPSetTarget(3, 127000);
+			BigOCPEnable(3, 1, 625, 0);
+		}
 		break;
 	case 3:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -1981,7 +1938,13 @@ if (!buf)
 if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 	switch (function_id) {
 	case 8:
-		Cluster0_OCP_ON();
+		/*Cluster0_OCP_ON();*/
+		if (ocp_cluster0_enable == 0) {
+			LittleOCPConfig(0, 300, 10000);
+			LittleOCPSetTarget(0, 127000);
+			LittleOCPDVFSSet(0, 624, 900);
+			LittleOCPEnable(0, 1, 625);
+		}
 		break;
 	case 4:
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -2046,7 +2009,13 @@ if (!buf)
 if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) > 0) {
 		switch (function_id) {
 		case 8:
-			Cluster1_OCP_ON();
+			/*Cluster1_OCP_ON();*/
+			if (ocp_cluster1_enable == 0) {
+				LittleOCPConfig(1, 300, 10000);
+				LittleOCPSetTarget(1, 127000);
+				LittleOCPDVFSSet(1, 338, 780);
+				LittleOCPEnable(1, 1, 625);
+			}
 			break;
 		case 4:
 			if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -2871,32 +2840,6 @@ else if (dvt_test_on == 124 || dvt_test_on == 224)
 
 
 return 0;
-}
-
-/* zzz */
-static int set_cpu_opp(int oppidx_ll, int oppidx_l)
-{
-struct cpu_opp_info *opp_info_L = cpu_info_fy.cpu_opp_info_L;
-struct cpu_opp_info *opp_info_LL = cpu_info_fy.cpu_opp_info_LL;
-
-
-if ((oppidx_ll >= 8) || (oppidx_l >= 8))
-	return 0;
-
-
-ocp_write(0x1001A200, 0xF0000101);
-ocp_write(0x1001A204, (opp_info_LL[oppidx_ll].pll | (opp_info_LL[oppidx_ll].postdiv << 24)));
-/* LL bit 9:5, defautl use all 0  */
-ocp_write_field(0x1001A274, 9:5, 0x8);
-
-ocp_write(0x1001A210, 0xF0000101);
-ocp_write(0x1001A214, (opp_info_L[oppidx_l].pll | (opp_info_L[oppidx_l].postdiv << 24)));
-/* L bit 14:10, defautl use all 0 */
-ocp_write_field(0x1001A274, 14:10, 0x8);
-
-ocp_write(0x1001A274, (ocp_read(0x1001A274) & 0xffff83ff));
-
-return 1;
 }
 
 
@@ -3893,26 +3836,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			BigiDVFSSRAMLDOSet(val[1]*100);
 		}
 		break;
-	case 9:
-		/* LL, L , opp idx */
-		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
-			set_cpu_opp(val[0], val[1]);
 
-		break;
-	case 10:
-		/* Big freq, opp idx  */
-		if (sscanf(buf, "%d %d", &function_id, &val[0]) == 2) {
-			if (val[0] < 8) {
-				/* switch 26M */
-				ocp_write_field(0x1001a270, 1:0, 0x00);
-				udelay(100);
-				BigiDVFSPllSetFreq(big_opp[val[0]]);
-				udelay(100);
-				/* switch armpll */
-				ocp_write_field(0x1001a270, 1:0, 0x01);
-			}
-		}
-		break;
 	case 11:
 		/* SPARK */
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -4443,7 +4367,6 @@ return 0;
 
 #endif
 /* CONFIG_PROC_FS */
-
 
 /*
 * Module driver
