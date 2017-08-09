@@ -4120,9 +4120,9 @@ extern enum HDMI_CABLE_TYPE MHL_Connect_type;
 extern enum HDMI_STATE hdmi_drv_get_state(void);
 void si_mhl_tx_drv_video_3d_update(struct mhl_dev_context *dev_context, int video_3d)
 {
-	vendor_specific_info_frame_t vsif;	
+    vendor_specific_info_frame_t vsif;	
     struct drv_hw_context *hw_context = (struct drv_hw_context *)&dev_context->drv_context;
-    
+    static unsigned long long old_time = 0;
 
     MHL_TX_DBG_INFO((struct drv_hw_context *) (&dev_context->drv_context), "Input Timing Update to: video 3D configuration changed-%d, cable type: %d\n", video_3d, MHL_Connect_type);
     if(MHL_Connect_type != MHL_3D_GLASSES)
@@ -4158,8 +4158,14 @@ void si_mhl_tx_drv_video_3d_update(struct mhl_dev_context *dev_context, int vide
     if(MHL_Connect_type != MHL_3D_GLASSES)
     {
         msleep(120);
-        if(hdmi_drv_get_state()==HDMI_STATE_ACTIVE)
-            unmute_video(hw_context);
+        if(hdmi_drv_get_state()==HDMI_STATE_ACTIVE) {
+		/*for some tv can't switch time in short time, so add delay time */
+		if(sched_clock() - old_time < 2000000000)
+			msleep(2500 -(sched_clock() - old_time)/1000000);
+
+		unmute_video(hw_context);
+	}
+	old_time = sched_clock();
     }  
     
     MHL_TX_DBG_INFO((struct drv_hw_context *) (&dev_context->drv_context), "Input Timing Update to: video 3D configuration changed done\n");
