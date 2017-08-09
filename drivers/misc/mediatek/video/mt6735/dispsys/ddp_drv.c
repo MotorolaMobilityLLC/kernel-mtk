@@ -858,7 +858,8 @@ static int disp_resume(struct platform_device *pdev)
 
 
 static const struct of_device_id dispsys_of_ids[] = {
-	{.compatible = "mediatek,dispsys",},
+	{ .compatible = "mediatek,mt6735-dispsys", },
+	{ .compatible = "mediatek,dispsys", },
 	{}
 };
 
