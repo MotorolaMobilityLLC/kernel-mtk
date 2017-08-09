@@ -8,9 +8,12 @@
 #include <asm/atomic.h>
 #include <linux/slab.h>
 
-
+#ifdef IMX258_PDAFOTP_DEBUG
 #define PFX "IMX258_pdafotp"
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __FUNCTION__, ##args)
+#else
+#define LOG_INF(format, args...)
+#endif
 
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
