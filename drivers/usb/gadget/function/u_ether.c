@@ -197,6 +197,7 @@ static void defer_kevent(struct eth_dev *dev, int flag)
 }
 
 static void rx_complete(struct usb_ep *ep, struct usb_request *req);
+static void tx_complete(struct usb_ep *ep, struct usb_request *req);
 
 static int
 rx_submit(struct eth_dev *dev, struct usb_request *req, gfp_t gfp_flags)
@@ -256,7 +257,6 @@ rx_submit(struct eth_dev *dev, struct usb_request *req, gfp_t gfp_flags)
 
 	req->buf = skb->data;
 	req->length = size;
-	req->complete = rx_complete;
 	req->context = skb;
 
 	retval = usb_ep_queue(out, req, gfp_flags);
@@ -349,6 +349,7 @@ static int prealloc(struct list_head *list, struct usb_ep *ep, unsigned n)
 {
 	unsigned		i;
 	struct usb_request	*req;
+	bool			usb_in;
 
 	if (!n)
 		return -ENOMEM;
@@ -359,10 +360,21 @@ static int prealloc(struct list_head *list, struct usb_ep *ep, unsigned n)
 		if (i-- == 0)
 			goto extra;
 	}
+
+	if (ep->desc->bEndpointAddress & USB_DIR_IN)
+		usb_in = true;
+	else
+		usb_in = false;
+
 	while (i--) {
 		req = usb_ep_alloc_request(ep, GFP_ATOMIC);
 		if (!req)
 			return list_empty(list) ? -ENOMEM : 0;
+		/* update completion handler */
+		if (usb_in)
+			req->complete = tx_complete;
+		else
+			req->complete = rx_complete;
 		list_add(&req->list, list);
 	}
 	return 0;
@@ -628,10 +640,10 @@ static int alloc_tx_buffer(struct eth_dev *dev)
 		req = container_of(act, struct usb_request, list);
 		if (!req->buf) {
 #if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
-			req->buf = kmalloc(dev->tx_req_bufsize,
+			req->buf = kzalloc(dev->tx_req_bufsize,
 						GFP_ATOMIC | GFP_DMA);
 #else
-			req->buf = kmalloc(dev->tx_req_bufsize,
+			req->buf = kzalloc(dev->tx_req_bufsize,
 						GFP_ATOMIC);
 #endif
 			if (!req->buf)
@@ -661,8 +673,8 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 	int			retval;
 	struct usb_request	*req = NULL;
 	unsigned long		flags;
-	struct usb_ep		*in;
-	u16			cdc_filter;
+	struct usb_ep		*in = NULL;
+	u16			cdc_filter = 0;
 	bool			multi_pkt_xfer = false;
 
 	spin_lock_irqsave(&dev->lock, flags);
@@ -670,9 +682,6 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		in = dev->port_usb->in_ep;
 		cdc_filter = dev->port_usb->cdc_filter;
 		multi_pkt_xfer = dev->port_usb->multi_pkt_xfer;
-	} else {
-		in = NULL;
-		cdc_filter = 0;
 	}
 	spin_unlock_irqrestore(&dev->lock, flags);
 
@@ -681,16 +690,6 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		return NETDEV_TX_OK;
 	}
 
-	/* Allocate memory for tx_reqs to support multi packet transfer */
-	spin_lock_irqsave(&dev->req_lock, flags);
-	if (multi_pkt_xfer && !dev->tx_req_bufsize) {
-		retval = alloc_tx_buffer(dev);
-		if (retval < 0) {
-			spin_unlock_irqrestore(&dev->req_lock, flags);
-			return -ENOMEM;
-		}
-	}
-	spin_unlock_irqrestore(&dev->req_lock, flags);
 
 	/* apply outgoing CDC or RNDIS filters */
 	if (skb && !is_promisc(cdc_filter)) {
@@ -713,8 +712,32 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		}
 		/* ignores USB_CDC_PACKET_TYPE_DIRECTED */
 	}
+	/*
+	 * No buffer copies needed, unless the network stack did it
+	 * or the hardware can't use skb buffers or there's not enough
+	 * enough space for extra headers we need.
+	 */
+	spin_lock_irqsave(&dev->lock, flags);
+	if (dev->wrap && dev->port_usb)
+		skb = dev->wrap(dev->port_usb, skb);
+	spin_unlock_irqrestore(&dev->lock, flags);
+
+	if (!skb) {
+		if (!dev->port_usb->supports_multi_frame)
+			dev->net->stats.tx_dropped++;
+		/* no error code for dropped packets */
+		return NETDEV_TX_OK;
+	}
 
 	spin_lock_irqsave(&dev->req_lock, flags);
+	/* Allocate memory for tx_reqs to support multi packet transfer */
+	if (multi_pkt_xfer && !dev->tx_req_bufsize) {
+		retval = alloc_tx_buffer(dev);
+		if (retval < 0) {
+			spin_unlock_irqrestore(&dev->req_lock, flags);
+			return -ENOMEM;
+		}
+	}
 	/*
 	 * this freelist can be empty if an interrupt triggered disconnect()
 	 * and reconfigured the gadget (shutting down this queue) after the
@@ -733,38 +756,26 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		netif_stop_queue(net);
 	spin_unlock_irqrestore(&dev->req_lock, flags);
 
-	/* no buffer copies needed, unless the network stack did it
-	 * or the hardware can't use skb buffers.
-	 * or there's not enough space for extra headers we need
-	 */
-	if (dev->wrap) {
-		unsigned long	flags;
-
-		spin_lock_irqsave(&dev->lock, flags);
-		if (dev->port_usb)
-			skb = dev->wrap(dev->port_usb, skb);
-		spin_unlock_irqrestore(&dev->lock, flags);
-		if (!skb) {
-			/* Multi frame CDC protocols may store the frame for
-			 * later which is not a dropped frame.
-			 */
-			if (dev->port_usb->supports_multi_frame)
-				goto multiframe;
-			goto drop;
-		}
-	}
-
-	spin_lock_irqsave(&dev->req_lock, flags);
-	dev->tx_skb_hold_count++;
-	spin_unlock_irqrestore(&dev->req_lock, flags);
 
 	if (multi_pkt_xfer) {
+		pr_debug("req->length:%d header_len:%u\n"
+				"skb->len:%d skb->data_len:%d\n",
+				req->length, dev->header_len,
+				skb->len, skb->data_len);
+		/* Add RNDIS Header */
+		memcpy(req->buf + req->length, dev->port_usb->header,
+						dev->header_len);
+		/* Increment req length by header size */
+		req->length += dev->header_len;
+		/* Copy received IP data from SKB */
 		memcpy(req->buf + req->length, skb->data, skb->len);
-		req->length = req->length + skb->len;
+		/* Increment req length by skb data length */
+		req->length += skb->len;
 		length = req->length;
 		dev_kfree_skb_any(skb);
 
 		spin_lock_irqsave(&dev->req_lock, flags);
+		dev->tx_skb_hold_count++;
 		if (dev->tx_skb_hold_count < dev->dl_max_pkts_per_xfer) {
 			if (dev->no_tx_req_used > TX_REQ_THRESHOLD) {
 				list_add(&req->list, &dev->tx_reqs);
@@ -774,18 +785,14 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		}
 
 		dev->no_tx_req_used++;
+		dev->tx_skb_hold_count = 0;
 		spin_unlock_irqrestore(&dev->req_lock, flags);
 
-		spin_lock_irqsave(&dev->lock, flags);
-		dev->tx_skb_hold_count = 0;
-		spin_unlock_irqrestore(&dev->lock, flags);
 	} else {
 		length = skb->len;
 		req->buf = skb->data;
 		req->context = skb;
 	}
-
-	req->complete = tx_complete;
 
 	/* NCM requires no zlp if transfer is dwNtbInMaxSize */
 	if (dev->port_usb->is_fixed &&
@@ -835,13 +842,11 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 			dev_kfree_skb_any(skb);
 		else
 			req->length = 0;
-drop:
 		dev->net->stats.tx_dropped++;
-multiframe:
 		spin_lock_irqsave(&dev->req_lock, flags);
 		if (list_empty(&dev->tx_reqs))
 			netif_start_queue(net);
-		list_add(&req->list, &dev->tx_reqs);
+		list_add_tail(&req->list, &dev->tx_reqs);
 		spin_unlock_irqrestore(&dev->req_lock, flags);
 	}
 success:
@@ -1290,6 +1295,12 @@ struct net_device *gether_connect(struct gether *link)
 
 	if (!dev)
 		return ERR_PTR(-EINVAL);
+	link->header = kzalloc(sizeof(struct rndis_packet_msg_type),
+			GFP_ATOMIC);
+	if (!link->header) {
+		result = -ENOMEM;
+		goto fail;
+	}
 
 	link->in_ep->driver_data = dev;
 	result = usb_ep_enable(link->in_ep);
@@ -1345,10 +1356,13 @@ struct net_device *gether_connect(struct gether *link)
 fail1:
 		(void) usb_ep_disable(link->in_ep);
 	}
-fail0:
 	/* caller is responsible for cleanup on error */
-	if (result < 0)
+	if (result < 0) {
+fail0:
+		kfree(link->header);
+fail:
 		return ERR_PTR(result);
+	}
 	return dev->net;
 }
 EXPORT_SYMBOL_GPL(gether_connect);
@@ -1399,6 +1413,8 @@ void gether_disconnect(struct gether *link)
 		usb_ep_free_request(link->in_ep, req);
 		spin_lock(&dev->req_lock);
 	}
+	kfree(link->header);
+	link->header = NULL;
 	spin_unlock(&dev->req_lock);
 	link->in_ep->driver_data = NULL;
 	link->in_ep->desc = NULL;
