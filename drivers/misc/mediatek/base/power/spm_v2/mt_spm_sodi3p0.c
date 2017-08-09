@@ -181,8 +181,9 @@ static int pre_emi_refresh_cnt;
 static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi3_cnt;
 static unsigned int logout_selfrefresh_cnt;
-#if defined(CONFIG_ARCH_MT6755)
 static int by_ccif1_count;
+#if defined(CONFIG_ARCH_MT6797)
+static unsigned long int logout_prev_dvfs_time;
 #endif
 
 
@@ -286,9 +287,18 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 		sodi3_logout_curr_time = spm_get_current_time_ms();
 
 		if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
-			need_log_out = 1;
-		} else if ((wakesta->r12 & (0x1 << 4)) == 0) {
 #if defined(CONFIG_ARCH_MT6755)
+			need_log_out = 1;
+#elif defined(CONFIG_ARCH_MT6797)
+			if (wakesta->r12_ext != WAKE_SRC_R12_EXT_VCORE_DVFS_B) {
+				need_log_out = 1;
+			} else if (sodi3_logout_curr_time - logout_prev_dvfs_time > 20U) {
+				wakesta->r12 = WAKE_SRC_R12_PCM_TIMER;
+				need_log_out = 1;
+				logout_prev_dvfs_time = sodi3_logout_curr_time;
+			}
+#endif
+		} else if ((wakesta->r12 & (0x1 << 4)) == 0) {
 			if (wakesta->r12 & (0x1 << 18)) {
 				/* wake up by R12_CCIF1_EVENT_B */
 				if ((by_ccif1_count >= 5) ||
@@ -300,8 +310,10 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 				}
 				by_ccif1_count++;
 			}
-#elif defined(CONFIG_ARCH_MT6797)
-			need_log_out = 1;
+#if defined(CONFIG_ARCH_MT6797)
+			else {
+				need_log_out = 1;
+			}
 #endif
 		} else if ((wakesta->timer_out <= SODI3_LOGOUT_TIMEOUT_CRITERIA) ||
 			   (wakesta->timer_out >= SODI3_LOGOUT_MAXTIME_CRITERIA)) {
@@ -335,11 +347,6 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 				if (wakesta->assert_pc != 0) {
 					sodi3_err("Warning: wakeup reason is WR_PCM_ASSERT!\n");
 					wr = WR_PCM_ASSERT;
-#if defined(CONFIG_ARCH_MT6797)
-				} else if (wakesta->r12_ext == 0x400) {
-					sodi3_err("wake up by vcore dvfs\n");
-					wr = WR_WAKE_SRC;
-#endif
 				} else if (wakesta->r12 == 0) {
 					sodi3_err("Warning: wakeup reason is WR_UNKNOWN!\n");
 					wr = WR_UNKNOWN;
@@ -370,6 +377,12 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 
 					if (wakesta->wake_misc & WAKE_MISC_CPU_WAKE)
 						strncat(buf, " CPU", sizeof(buf) - strlen(buf) - 1);
+
+#if defined(CONFIG_ARCH_MT6797)
+					if (wakesta->r12_ext == WAKE_SRC_R12_EXT_VCORE_DVFS_B) {
+						strncat(buf, " vcore dvfs", sizeof(buf) - strlen(buf) - 1);
+					}
+#endif
 				}
 				for (i = 1; i < 32; i++) {
 					if (wakesta->r12 & (1U << i)) {
