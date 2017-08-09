@@ -2140,6 +2140,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 331 IRQ_TYPE_LEVEL_HIGH>;
 		};
 
+		ptpotp@10222000 {
+			compatible = "mediatek,ptpotp";
+			reg = <0x10222000 0x1000>;
+		};
+
 		gic@10240000 {
 			compatible = "mediatek,gic";
 			reg = <0x10240000 0x40000>;

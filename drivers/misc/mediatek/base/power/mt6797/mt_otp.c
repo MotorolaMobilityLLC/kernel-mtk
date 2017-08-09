@@ -20,6 +20,7 @@
 
 /* project includes */
 #include "mt_otp.h"
+#include "mt_cpufreq.h"
 
 #ifdef CONFIG_OF
 	#include <linux/of.h>
@@ -55,7 +56,6 @@
 	#endif
 #endif
 
-
 #ifdef __KERNEL__
 #define OTP_TAG     "OTP"
 #ifdef USING_XLOG
@@ -84,7 +84,7 @@
 void __iomem *otp_base; /* 0x10222000 */
 #endif
 
-#define OTP_BASEADDR		(otp_base + 0x2440)
+#define OTP_BASEADDR		(otp_base + 0x440)
 #define OTP_PID_CTL0		(OTP_BASEADDR + 0x00)
 #define OTP_PID_ERRMAX		(OTP_BASEADDR + 0x04)
 #define OTP_PID_ERRMIN		(OTP_BASEADDR + 0x08)
@@ -123,7 +123,13 @@ static struct OTP_debug_data otp_debug_data;
 static struct OTP_ctrl_data otp_ctrl_data;
 static struct OTP_score_data otp_score_data;
 
+#ifdef ENABLE_IDVFS
+int otp_enable = 1;
+#else
 int otp_enable = 0;
+#endif
+
+int MODE = 0;
 
 static unsigned int otp_reg_dump_addr_off[] = {0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C, 0x20, 0x24, 0x28, 0x2C};
 /* static unsigned int otp_fifo_size[] = {4, 8, 16, 32}; */
@@ -132,6 +138,8 @@ unsigned int BTS;
 
 int CurTempPT = 0;
 int CurTempPT_next = 0;
+
+int CurTemp;
 
 #if DUMP_FULL_LOG
 unsigned int otp_reg_dump_data[ARRAY_SIZE(otp_reg_dump_addr_off)];
@@ -149,36 +157,44 @@ int BigOTPSetTempUpdate (int TempTarget);
 */
 
 /* otp_config_data */
-unsigned int t_target = 0x977;
+unsigned int t_target = 110;
 unsigned int error_sum_mode = 0x3;
 unsigned int fifo_size = 0x3;
 unsigned int adapt_mode = 0x1;
 unsigned int error_sum_clamp = 0x1;
 unsigned int fifo_clean = 0x0;
-unsigned int pid_en = 0x1;
+unsigned int pid_en = 0x0;
 unsigned int pos_sum_thold = 0x04;
 unsigned int neg_err_thold = 0x0;
 unsigned int pos_err_fifo_size = 0x3;
 
 /* otp_ctrl_data */
-unsigned int piderrmax = 0xFFFFFFFF;
-unsigned int piderrmin = 0x0;
+unsigned int piderrmax = 0x7FFFFFFF;
+unsigned int piderrmin = 0x10000000;
 unsigned int kp_step = 0x0;
-unsigned int kp = 0x3;
+unsigned int kp = 0xFFF6;
 unsigned int ki_step = 0x0;
-unsigned int ki = 0x3;
+unsigned int ki = 0xFFF8;
 unsigned int kd_step = 0x0;
-unsigned int kd = 0x3;
+unsigned int kd = 0xFFFB;
 
 /* otp_score_data */
-unsigned int pid_score_s = 0x1;
-unsigned int pid_score_m = 0x7FFF;
+unsigned int pid_score_s = 0x200;
+unsigned int pid_score_m = 0x1500;
 unsigned int pid_freq_sht = 0x5;
 unsigned int pid_calc_sht = 0x0;
+unsigned int pid_score_sht = 0x6;
+unsigned int pid_freq_s = 0x0080;
+unsigned int pid_freq_m = 0x3000;
+/*
+unsigned int pid_score_s = 0x200;
+unsigned int pid_score_m = 0x1500;
+unsigned int pid_freq_sht = 0x6;
+unsigned int pid_calc_sht = 0x0;
 unsigned int pid_score_sht = 0x4;
-unsigned int pid_freq_s = 0x0200;
-unsigned int pid_freq_m = 0x0020;
-
+unsigned int pid_freq_s = 0x0050;
+unsigned int pid_freq_m = 0xFFFF;
+*/
 /* otp_debug_data */
 unsigned int interrupt_clr = 0x0;
 unsigned int interrupt_en = 0x1;
@@ -778,7 +794,10 @@ static void set_otp_score_data(
 
 static void Normal_Mode_Setting(void)
 {
-	set_otp_ctrl_data(0x1050, 0x0FFF, 0x2, 0x2, 0x1, 0x2, 0x1, 0x2);
+
+	/* derrmax, piderrmin, kp_step, kp, ki_step, ki, kd_step, kd */
+	/* set_otp_ctrl_data(0x7FFFFFFF, 0x10000000, 0x0, 0xFF06, 0x0, 0xFF9C, 0x0, 0xFF9C); */
+	set_otp_ctrl_data(0x7FFFFFFF, 0x10000000, 0x0, 0xFFF6, 0x0, 0xFFF8, 0x0, 0xFFFB);
 }
 
 void getTHslope(void)
@@ -788,7 +807,7 @@ void getTHslope(void)
 	thermal_bank_name ts_bank;
 #endif
 
-#if defined(__KERNEL__) && defined(CONFIG_THERMAL) && !defined(EARLY_PORTING)
+#if 1
 	ts_bank = BIG_CORE_BANK;
 	get_thermal_slope_intercept(&ts_info, ts_bank);
 	MTS = ts_info.ts_MTS;
@@ -799,11 +818,19 @@ void getTHslope(void)
 #endif
 }
 
+
+int BigOTPSetTempUpdate(void)
+{
+	thermal_set_big_core_speed(0xC, 0x00010032, 0x30D);
+	return 0;
+}
+
+
 int ADC2Temp(int ADC)
 {
 	int temp;
 
-	temp = (((BTS << 4) - ((ADC * MTS) >> 6)) & 0x00003FC0) >> 6;
+	temp = (((BTS << 4) - ((ADC * MTS) >> 6)) & 0x00003FFF) * 1000 >> 6;
 	temp = temp + 25000;
 
 	return temp;
@@ -813,9 +840,13 @@ static int Temp2ADC(int Temp)
 {
 	int adc;
 
-	Temp = Temp - 25000;
-	adc = (int)(((((BTS << 4) - (((unsigned int)Temp / 1000) << 6)) & 0x0000FFFF) << 6) / MTS);
+	Temp = Temp - 25;
+	adc = (int)(((((BTS << 4) - (((unsigned int)Temp) << 6)) & 0x0000FFFF) << 6) / MTS);
 
+/*
+	otp_info("[OTP] MTS = 0x%x, BTS = 0x%x\n", MTS, BTS);
+	otp_info("[OTP] temp %d = adc 0x%x\n", Temp+25, adc);
+*/
 	return adc;
 }
 
@@ -838,20 +869,24 @@ int BigOTPSetTempPolicy(enum otp_policy TempPolicy)
 
 static void enable_OTP(void)
 {
+	getTHslope();
+
+	BigOTPSetTempUpdate();
+
 	set_otp_config_data(
-		t_target, error_sum_mode, fifo_size, adapt_mode, error_sum_clamp, fifo_clean,
+		Temp2ADC(t_target), error_sum_mode, fifo_size, adapt_mode, error_sum_clamp, fifo_clean,
 		pos_sum_thold, neg_err_thold, pos_err_fifo_size);
-	if (BigOTPSetTempPolicy(NORMAL_MODE) != 0)
+	if (BigOTPSetTempPolicy(MODE) != 0)
 		set_otp_ctrl_data(piderrmax, piderrmin, kp_step, kp, ki_step, ki, kd_step, kd);
 	set_otp_score_data(
 		pid_score_s, pid_score_m, pid_freq_sht, pid_calc_sht, pid_score_sht, pid_freq_s, pid_freq_m);
 	set_otp_debug_data(
 		interrupt_clr, interrupt_en, nth_debug_mux, pos_err_fifo_mux, err_fifo_mux, error_sum_fifo_mux);
+#ifdef PID_EN_enable
 	pid_en = 0x1;
+#endif
 	otp_set_PID_EN(&otp_config_data, pid_en);
 	otp_PID_EN_apply(&otp_config_data);
-	otp_info("[OTP] enable OTP setting\n");
-	getTHslope();
 }
 
 static void disable_OTP(void)
@@ -895,22 +930,43 @@ int BigOTPSetTempTarget(int TempTarget)
 	return 0;
 }
 
+unsigned int BigOTPGetFreqpct(void)
+{
+	unsigned int freq;
+	unsigned int freqpct_x100;
+	int i;
+
+	otp_set_NTH_DEBUG_MUX(&otp_debug_data, 6);
+	otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
+	freq = (otp_read(OTP_PID_DEBUGOUT) & 0x7FFFF);
+
+	freqpct_x100 = ((freq & 0x7F000) >> 12) * 100;
+	for (i = 0; i < 12; i++) {
+		if (freq & (1 << (11-i)))
+			freqpct_x100 += (50 / (1<<i));
+	}
+
+	return freqpct_x100;
+}
+
 TempInfo BigOTPGetTemp(void)
 {
 	int i;
 	int index_len = 32;
 	TempInfo TempArray;
-	unsigned int TempErr;
-	unsigned int Temp_ADC;
+	int TempErr;
+	int Temp_ADC;
 	int Temp;
 
+	otp_info("[OTP] MTS = 0x%x\n", MTS);
+	otp_info("[OTP] BTS = 0x%x\n", BTS);
 	for (i = 0; i < index_len; i++) {
 		otp_set_ERR_FIFO_MUX(&otp_debug_data, i);
 		otp_ERR_FIFO_MUX_apply(&otp_debug_data);
 		otp_set_NTH_DEBUG_MUX(&otp_debug_data, 0x1);
 		otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
-		TempErr = otp_read(OTP_PID_DEBUGOUT) & 0x0000FFFF;
-		Temp_ADC = t_target - TempErr;
+		TempErr = (((otp_read(OTP_PID_DEBUGOUT) & 0x0000FFFF) ^ 0x8000) - 0x8000);
+		Temp_ADC = Temp2ADC(t_target) - TempErr;
 		Temp = ADC2Temp((int)Temp_ADC);
 		TempArray.data[i] = Temp;
 	}
@@ -918,7 +974,7 @@ TempInfo BigOTPGetTemp(void)
 	return TempArray;
 }
 
-
+/*
 int BigOTPGetCurrTemp(void)
 {
 	unsigned int CurTempErr;
@@ -935,18 +991,27 @@ int BigOTPGetCurrTemp(void)
 
 	return CurTemp;
 }
+*/
 
-int BigOTPSetTempUpdate(int TempTarget)
+int BigOTPGetCurrTemp(void)
 {
-	return 0;
-}
+	int CurTemp;
 
+	CurTemp = get_immediate_big_wrap();
+
+	return CurTemp;
+}
 
 int BigOTPISRHandler(void)
 {
 	unsigned int freq_intb_value;
 
 #if DEBUG
+	TempInfo Temparray;
+	int i;
+#endif
+
+#if 0
 	if (unlikely(CurTempPT == CurTempPT_next))
 		CurTempPT = 0;
 	else
@@ -973,10 +1038,16 @@ int BigOTPISRHandler(void)
 
 	if (!freq_intb_value) {
 		otp_info("[OTP] ISR\n");
+		#if DEBUG
+			otp_info("[OTP] Temp from TC, Temp=%d\n", get_immediate_big_wrap());
+			Temparray = BigOTPGetTemp();
+			for (i = 0; i < 32; i++)
+				otp_info("[OTP] TempArray <%0d> %d\n", i, Temparray.data[i]);
+		#endif
 		otp_set_INTERRUPT_CLR(&otp_debug_data, 0x1);
 		otp_INTERRUPT_CLR_apply(&otp_debug_data);
-	}
 
+	}
 	return 0;
 }
 
@@ -1012,7 +1083,7 @@ static int otp_resume(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id mt_otp_of_match[] = {
-	{ .compatible = "mediatek,mcucfg", },
+	{ .compatible = "mediatek,ptpotp", },
 	{},
 };
 #endif
@@ -1060,6 +1131,7 @@ out:
 static int otp_enable_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "otp_enable = %d\n", otp_enable);
+	seq_printf(m, "pid_en = %d\n", pid_en);
 
 	return 0;
 }
@@ -1068,12 +1140,18 @@ static int otp_enable_proc_show(struct seq_file *m, void *v)
 
 static ssize_t otp_enable_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
-	int val = 0;
 	char *buf = _copy_from_user_for_proc(buffer, count);
 
 	if (!buf)
 		return -EINVAL;
 
+	if (sscanf(buf, "%d %d", &otp_enable, &pid_en) == 2) {
+		if (otp_enable == 1)
+			enable_OTP();
+		else
+			disable_OTP();
+	}
+/*
 	if (!kstrtoint(buf, 10, &val)) {
 		if (1 == val) {
 			otp_enable = 1;
@@ -1083,17 +1161,42 @@ static ssize_t otp_enable_proc_write(struct file *file, const char __user *buffe
 			disable_OTP();
 		}
 	}
-
-	otp_info("[OTP] otp_enable=%d\n", otp_enable);
+*/
 	free_page((unsigned long)buf);
 
 	return count;
 }
 
+/* otp_policy */
+static int otp_policy_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "otp_policy = %d\n", MODE);
+	return 0;
+}
+
+static ssize_t otp_policy_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
+{
+	char *buf = _copy_from_user_for_proc(buffer, count);
+	int val = 0;
+
+	if (!buf)
+		return -EINVAL;
+
+	if (!kstrtoint(buf, 10, &val)) {
+		if (val == 0)
+			MODE = 0;
+		else
+			MODE = 1;
+	}
+
+	free_page((unsigned long)buf);
+
+	return count;
+}
 /* otp_config_data */
 static int otp_config_data_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "t_target           = 0x%x\n", t_target);
+	seq_printf(m, "t_target           = %d\n", t_target);
 	seq_printf(m, "error_sum_mode     = 0x%x\n", error_sum_mode);
 	seq_printf(m, "fifo_size          = 0x%x\n", fifo_size);
 	seq_printf(m, "adapt_mode         = 0x%x\n", adapt_mode);
@@ -1124,12 +1227,12 @@ static ssize_t otp_config_data_proc_write(struct file *file, const char __user *
 	if (!buf)
 		return -EINVAL;
 
-	if (sscanf(buf, "%x %x %x %x %x %x %x %x %x",
+	if (sscanf(buf, "%d %x %x %x %x %x %x %x %x",
 		&t_target, &error_sum_mode, &fifo_size, &adapt_mode, &error_sum_clamp,
 		&fifo_clean, &pos_sum_thold, &neg_err_thold, &pos_err_fifo_size) == 9)
 
 		set_otp_config_data(
-			t_target & 0xFFF,
+			Temp2ADC(t_target) & 0xFFF,
 			error_sum_mode & 0x03,
 			fifo_size & 0x03,
 			adapt_mode & 0x1,
@@ -1180,12 +1283,12 @@ static ssize_t otp_ctrl_data_proc_write(struct file *file, const char __user *bu
 		set_otp_ctrl_data(
 		piderrmax & 0xFFFFFFFF,
 		piderrmin & 0xFFFFFFFF,
-		kp_step & 0xFFFF0000,
-		kp & 0x0000FFFF,
-		ki_step & 0xFFFF0000,
-		ki & 0x0000FFFF,
-		kd & 0xFFFF0000,
-		kd_step & 0x0000FFFF);
+		kp_step & 0xFFFF,
+		kp & 0xFFFF,
+		ki_step & 0xFFFF,
+		ki & 0xFFFF,
+		kd & 0xFFFF,
+		kd_step & 0xFFFF);
 
 	free_page((unsigned long)buf);
 
@@ -1225,13 +1328,13 @@ static ssize_t otp_score_data_proc_write(struct file *file, const char __user *b
 		&pid_score_sht, &pid_freq_s, &pid_freq_m) == 7)
 
 		set_otp_score_data(
-			pid_score_s & 0xFFFF0000,
-			pid_score_m & 0x0000FFFF,
-			pid_freq_sht & 0x0000001F,
-			pid_calc_sht & 0x00001F00,
-			pid_score_sht & 0x001F0000,
-			pid_freq_s & 0xFFFF0000,
-			pid_freq_m & 0x0000FFFF);
+			pid_score_s & 0xFFFF,
+			pid_score_m & 0xFFFF,
+			pid_freq_sht & 0x1F,
+			pid_calc_sht & 0x1F,
+			pid_score_sht & 0x1F,
+			pid_freq_s & 0xFFFF,
+			pid_freq_m & 0xFFFF);
 
 	free_page((unsigned long)buf);
 
@@ -1269,16 +1372,57 @@ static ssize_t otp_debug_data_proc_write(struct file *file, const char __user *b
 		&pos_err_fifo_mux, &err_fifo_mux, &error_sum_fifo_mux) == 6
 )
 		set_otp_debug_data(
-			interrupt_clr & 0x00000001,
-			interrupt_en & 0x00000001,
-			nth_debug_mux & 0x01F00000,
-			pos_err_fifo_mux & 0x00070000,
-			err_fifo_mux & 0x00001F00,
-			error_sum_fifo_mux & 0x0000001F);
+			interrupt_clr & 0x1,
+			interrupt_en & 0x1,
+			nth_debug_mux & 0x1F,
+			pos_err_fifo_mux & 0x7,
+			err_fifo_mux & 0x1F,
+			error_sum_fifo_mux & 0x1F);
 
 	free_page((unsigned long)buf);
 
 	return count;
+}
+
+/* otp_curr_temp */
+static int otp_curr_temp_proc_show(struct seq_file *m, void *v)
+{
+
+	unsigned int score;
+	unsigned int freq;
+	unsigned int freqpct_x100;
+	int i;
+
+	otp_set_NTH_DEBUG_MUX(&otp_debug_data, 5);
+	otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
+	score = (otp_read(OTP_PID_DEBUGOUT) & 0xFFFFFF);
+	otp_set_NTH_DEBUG_MUX(&otp_debug_data, 6);
+	otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
+	freq = (otp_read(OTP_PID_DEBUGOUT) & 0x7FFFF);
+
+	freqpct_x100 = ((freq & 0x7F000) >> 12) * 100;
+	for (i = 0 ; i < 12; i++) {
+		if (freq & (1 << (11-i)))
+			freqpct_x100 += (50 / (1<<i));
+	}
+
+	seq_printf(m, "%d\t0x%x\t0x%x\t%d\n", get_immediate_big_wrap(), score, freq, freqpct_x100);
+
+	return 0;
+}
+
+/* otp_history_temp */
+static int otp_history_temp_proc_show(struct seq_file *m, void *v)
+{
+	TempInfo Temparray;
+	int i;
+
+	Temparray = BigOTPGetTemp();
+
+	for (i = 0; i < 32; i++)
+		seq_printf(m, "%d\t", Temparray.data[i]);
+
+	return 0;
 }
 
 /* otp_debug_status */
@@ -1330,10 +1474,13 @@ static int otp_debug_status_proc_show(struct seq_file *m, void *v)
 #define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 
 	PROC_FOPS_RW(otp_enable);
+	PROC_FOPS_RW(otp_policy);
 	PROC_FOPS_RW(otp_config_data);
 	PROC_FOPS_RW(otp_ctrl_data);
 	PROC_FOPS_RW(otp_score_data);
 	PROC_FOPS_RW(otp_debug_data);
+	PROC_FOPS_RO(otp_curr_temp);
+	PROC_FOPS_RO(otp_history_temp);
 	PROC_FOPS_RO(otp_debug_status);
 
 static int _create_procfs(void)
@@ -1349,10 +1496,13 @@ static int _create_procfs(void)
 	const struct pentry entries[] = {
 
 	PROC_ENTRY(otp_enable),
+	PROC_ENTRY(otp_policy),
 	PROC_ENTRY(otp_config_data),
 	PROC_ENTRY(otp_ctrl_data),
 	PROC_ENTRY(otp_score_data),
 	PROC_ENTRY(otp_debug_data),
+	PROC_ENTRY(otp_curr_temp),
+	PROC_ENTRY(otp_history_temp),
 	PROC_ENTRY(otp_debug_status),
 	};
 
@@ -1381,22 +1531,15 @@ static int __init otp_init(void)
 {
 	int err = 0;
 
-#if DEBUG
-	otp_info("\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
-	otp_info("\n[OTP] INIT\n");
-	otp_info("\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
-#endif
-
 	struct device_node *node = NULL;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,ptpotp");
 
 	if (!node) {
 		otp_error("[OTP] find node failed\n");
 	} else {
 		/* Setup IO addresses */
 		otp_base = of_iomap(node, 0);
-		otp_info("[OTP] otp_base=0x%p\n", otp_base);
 	}
 
 	err = platform_driver_register(&otp_driver);
@@ -1423,10 +1566,9 @@ out:
 
 static void __exit otp_exit(void)
 {
-	otp_info("OTP de-initialization\n");
 }
 
-module_init(otp_init);
+late_initcall(otp_init);
 module_exit(otp_exit);
 
 MODULE_DESCRIPTION("MediaTek OTP Driver v0.1");

@@ -7,6 +7,8 @@
 #include <mt-plat/sync_write.h>
 #endif
 
+#define PID_EN_enable		(1)
+
 /**
  * OTP control register PID_CTL0
  */
@@ -129,7 +131,8 @@ struct OTP_score_data {
 };
 
 enum otp_policy {
-	NORMAL_MODE
+	NORMAL_MODE,
+	MANUAL_MODE
 		/* CONSERVATIVE_MODE, */
 		/* AGGRESSIVE_MODE */
 };
@@ -140,6 +143,9 @@ typedef struct {
 
 extern int BigOTPISRHandler(void);
 extern TempInfo BigOTPGetTemp(void);
+extern unsigned int BigOTPGetFreqpct(void);
+extern void BigOTPEnable(void);
+extern void BigOTPDisable(void);
 
 #endif  /* __MT_OTP_H__ */
 
