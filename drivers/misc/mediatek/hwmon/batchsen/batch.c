@@ -662,10 +662,36 @@ static long batch_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lon
 	return 0;
 }
 /*----------------------------------------------------------------------------*/
+#ifdef CONFIG_COMPAT
+static long batch_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+{
+	long err = 0;
+
+	void __user *arg32 = compat_ptr(arg);
+
+	if (!fp->f_op || !fp->f_op->unlocked_ioctl)
+		return -ENOTTY;
+
+	switch (cmd) {
+	case COMPAT_BATCH_IO_GET_SENSORS_DATA:
+		err = fp->f_op->unlocked_ioctl(fp, BATCH_IO_GET_SENSORS_DATA, (unsigned long)arg32);
+		break;
+	default:
+		BATCH_ERR("Unknown cmd %x!!\n", cmd);
+		return -ENOIOCTLCMD;
+	}
+
+	return err;
+}
+#endif
+/*----------------------------------------------------------------------------*/
 static const struct file_operations batch_fops = {
 	.open   = batch_open,
 	.release = batch_release,
 	.unlocked_ioctl = batch_unlocked_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = batch_compat_ioctl,
+#endif
 };
 /*----------------------------------------------------------------------------*/
 static int batch_misc_init(struct batch_context *cxt)

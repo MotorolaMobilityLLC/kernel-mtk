@@ -1232,7 +1232,47 @@ static long hwmsen_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lo
 
 	return 0;
 }
+/*----------------------------------------------------------------------------*/
+#ifdef CONFIG_COMPAT
+static long hwmsen_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+{
+	long err = 0;
 
+	void __user *arg32 = compat_ptr(arg);
+
+	if (!fp->f_op || !fp->f_op->unlocked_ioctl)
+		return -ENOTTY;
+
+	switch (cmd) {
+	case COMPAT_HWM_IO_SET_DELAY:
+		err = fp->f_op->unlocked_ioctl(fp, HWM_IO_SET_DELAY, (unsigned long)arg32);
+		break;
+	case COMPAT_HWM_IO_SET_WAKE:
+		err = fp->f_op->unlocked_ioctl(fp, HWM_IO_SET_WAKE, (unsigned long)arg32);
+		break;
+	case COMPAT_HWM_IO_ENABLE_SENSOR:
+		err = fp->f_op->unlocked_ioctl(fp, HWM_IO_ENABLE_SENSOR, (unsigned long)arg32);
+		break;
+	case COMPAT_HWM_IO_DISABLE_SENSOR:
+		err = fp->f_op->unlocked_ioctl(fp, HWM_IO_DISABLE_SENSOR, (unsigned long)arg32);
+		break;
+	case COMPAT_HWM_IO_GET_SENSORS_DATA:
+		err = fp->f_op->unlocked_ioctl(fp, HWM_IO_GET_SENSORS_DATA, (unsigned long)arg32);
+		break;
+	case COMPAT_HWM_IO_ENABLE_SENSOR_NODATA:
+		err = fp->f_op->unlocked_ioctl(fp, HWM_IO_ENABLE_SENSOR_NODATA, (unsigned long)arg32);
+		break;
+	case COMPAT_HWM_IO_DISABLE_SENSOR_NODATA:
+		err = fp->f_op->unlocked_ioctl(fp, HWM_IO_DISABLE_SENSOR_NODATA, (unsigned long)arg32);
+		break;
+	default:
+		HWM_ERR("Unknown cmd %x!!\n", cmd);
+		return -ENOIOCTLCMD;
+	}
+
+	return err;
+}
+#endif
 /*----------------------------------------------------------------------------*/
 static const struct file_operations hwmsen_fops = {
 /*      .owner  = THIS_MODULE,*/
@@ -1240,6 +1280,9 @@ static const struct file_operations hwmsen_fops = {
 	.release = hwmsen_release,
 /*      .ioctl  = hwmsen_ioctl,*/
 	.unlocked_ioctl = hwmsen_unlocked_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = hwmsen_compat_ioctl,
+#endif
 };
 
 /*----------------------------------------------------------------------------*/

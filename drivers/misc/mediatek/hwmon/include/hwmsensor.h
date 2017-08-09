@@ -10,6 +10,9 @@
 
 #include <linux/ioctl.h>
 #include <linux/types.h>
+#ifdef CONFIG_COMPAT
+#include <linux/compat.h>
+#endif
 
 #define SENSOR_TYPE_ACCELEROMETER       1
 #define SENSOR_TYPE_MAGNETIC_FIELD      2
@@ -314,11 +317,36 @@ struct hwm_sensor_data {
 	uint32_t reserved;
 };
 
+#ifdef CONFIG_COMPAT
+struct compat_hwm_sensor_data {
+	/* sensor identifier */
+	compat_int_t sensor;
+	/* sensor values */
+	compat_int_t	values[6];
+	/* sensor values divide */
+	compat_uint_t value_divide;
+	/* sensor accuracy */
+	char status;
+	/* whether updata? */
+	compat_int_t update;
+	/* time is in nanosecond */
+	compat_s64 time;
+
+	compat_uint_t reserved;
+};
+#endif
+
 struct hwm_trans_data {
 	struct hwm_sensor_data data[MAX_SENSOR_DATA_UPDATE_ONCE];
 	uint64_t data_type;
 };
 
+#ifdef CONFIG_COMPAT
+struct compat_hwm_trans_data {
+	struct compat_hwm_sensor_data data[MAX_SENSOR_DATA_UPDATE_ONCE];
+	compat_u64 data_type;
+};
+#endif
 
 #define MAX_BATCH_DATA_PER_QUREY    18
 struct batch_trans_data {
@@ -326,6 +354,14 @@ struct batch_trans_data {
 	int numOfDataLeft;
 	struct hwm_sensor_data data[MAX_BATCH_DATA_PER_QUREY];
 };
+
+#ifdef CONFIG_COMPAT
+struct compat_batch_trans_data {
+	compat_int_t numOfDataReturn;
+	compat_int_t numOfDataLeft;
+	struct compat_hwm_sensor_data data[MAX_BATCH_DATA_PER_QUREY];
+};
+#endif
 
 /*----------------------------------------------------------------------------*/
 #define HWM_IOC_MAGIC           0x91
@@ -345,11 +381,30 @@ struct batch_trans_data {
 #define HWM_IO_DISABLE_SENSOR_NODATA	_IOW(HWM_IOC_MAGIC, 0x06, uint32_t)
 /* Get sensors data */
 #define HWM_IO_GET_SENSORS_DATA			_IOWR(HWM_IOC_MAGIC, 0x07, struct hwm_trans_data)
+#ifdef CONFIG_COMPAT
+/* set delay */
+#define COMPAT_HWM_IO_SET_DELAY		_IOW(HWM_IOC_MAGIC, 0x01, compat_uint_t)
 
+/* wake up */
+#define COMPAT_HWM_IO_SET_WAKE			_IO(HWM_IOC_MAGIC, 0x02)
+
+/* Enable/Disable  sensor */
+#define COMPAT_HWM_IO_ENABLE_SENSOR	_IOW(HWM_IOC_MAGIC, 0x03, compat_uint_t)
+#define COMPAT_HWM_IO_DISABLE_SENSOR	_IOW(HWM_IOC_MAGIC, 0x04, compat_uint_t)
+
+/* Enable/Disable sensor */
+#define COMPAT_HWM_IO_ENABLE_SENSOR_NODATA		_IOW(HWM_IOC_MAGIC, 0x05, compat_uint_t)
+#define COMPAT_HWM_IO_DISABLE_SENSOR_NODATA	_IOW(HWM_IOC_MAGIC, 0x06, compat_uint_t)
+/* Get sensors data */
+#define COMPAT_HWM_IO_GET_SENSORS_DATA			_IOWR(HWM_IOC_MAGIC, 0x07, struct compat_hwm_trans_data)
+#endif
 /*----------------------------------------------------------------------------*/
 #define BATCH_IOC_MAGIC           0x92
 
 /* Get sensor data */
 #define BATCH_IO_GET_SENSORS_DATA			_IOWR(BATCH_IOC_MAGIC, 0x01, struct batch_trans_data)
+#ifdef CONFIG_COMPAT
+#define COMPAT_BATCH_IO_GET_SENSORS_DATA	_IOWR(BATCH_IOC_MAGIC, 0x01, struct compat_batch_trans_data)
+#endif
 
 #endif				/* __HWMSENSOR_H__ */
