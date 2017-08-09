@@ -719,15 +719,18 @@ audio_unbind(struct usb_configuration *c, struct usb_function *f)
 	struct usb_request *req;
 	struct audio_source_instance *fi_audio = to_fi_audio_source(f->fi);
 	struct audio_source_config *config = fi_audio->config;
+	unsigned long flags;
 
 	while ((req = audio_req_get(audio)))
 		audio_request_free(req, audio->in_ep);
 
 	snd_card_free_when_closed(audio->card);
+	spin_lock_irqsave(&audio->lock, flags);
 	audio->card = NULL;
 	audio->pcm = NULL;
 	audio->substream = NULL;
 	audio->in_ep = NULL;
+	spin_unlock_irqrestore(&audio->lock, flags);
 	config->card = -1;
 	config->device = -1;
 }
@@ -754,13 +757,16 @@ static int audio_pcm_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct audio_dev *audio = substream->private_data;
+	unsigned long flags;
 
 	runtime->private_data = audio;
 	runtime->hw = audio_hw_info;
 	snd_pcm_limit_hw_rates(runtime);
 	runtime->hw.channels_max = 2;
 
+	spin_lock_irqsave(&audio->lock, flags);
 	audio->substream = substream;
+	spin_unlock_irqrestore(&audio->lock, flags);
 	return 0;
 }
 
@@ -800,13 +806,16 @@ static int audio_pcm_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct audio_dev *audio = runtime->private_data;
+	unsigned long flags;
 
+	spin_lock_irqsave(&audio->lock, flags);
 	audio->period = snd_pcm_lib_period_bytes(substream);
 	audio->period_offset = 0;
 	audio->buffer_start = runtime->dma_area;
 	audio->buffer_end = audio->buffer_start
 		+ snd_pcm_lib_buffer_bytes(substream);
 	audio->buffer_pos = audio->buffer_start;
+	spin_unlock_irqrestore(&audio->lock, flags);
 
 	return 0;
 }
