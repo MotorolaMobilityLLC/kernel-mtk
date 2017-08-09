@@ -1009,9 +1009,6 @@ unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 #else
 	int temp = 40;
 #endif
-	if (cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE))
-		return mt_spower_get_leakage(MT_SPOWER_CPU, p->ops->get_cur_volt(p) / 100, temp);
-	else
 		return mt_spower_get_leakage(MT_SPOWER_CPU, p->ops->get_cur_volt(p) / 100, temp);
 #else
 	return 0;
@@ -3746,9 +3743,10 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 				cpufreq_lock(flags);
 				cur_freq = p->ops->get_cur_phy_freq(p);
 
-				if (freq != cur_freq)
+				if (freq != cur_freq) {
 					p->ops->set_cur_freq(p, cur_freq, freq);
 					p->idx_opp_tbl = i;
+				}
 #ifndef DISABLE_PBM_FEATURE
 				if (!p->dvfs_disable_by_suspend)
 					_kick_PBM_by_cpu(p);
