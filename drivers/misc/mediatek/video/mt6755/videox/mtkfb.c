@@ -1597,6 +1597,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			compat_uint_t __user *data32;
 			compat_uint_t displayid = 0;
 			compat_mtk_dispif_info_t compat_dispif_info;
+			memset(&compat_dispif_info, 0, sizeof(compat_mtk_dispif_info_t));
 			data32 = compat_ptr(arg);
 
 			if (get_user(displayid, data32)) {
@@ -1620,6 +1621,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			} else {
 				DISPERR("information for displayid: %d is not available now\n",
 				displayid);
+				return -EFAULT;
 			}
 			compat_dispif_info.displayWidth =
 				dispif_info[displayid].displayWidth;
