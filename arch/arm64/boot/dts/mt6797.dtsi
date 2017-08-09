@@ -636,7 +636,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		};
 
 		dramc_conf@10004000 {
-			compatible = "mediatek,dramc_conf";
+			compatible = "mediatek,dramc";
 			reg = <0x10004000 0x1000>;
 		};
 
