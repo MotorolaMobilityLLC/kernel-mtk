@@ -236,7 +236,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 				dir = GPIO_DIR_OUT;
 				outp = GPIO_OUT_ONE;	/* High means enable LED */
 			} else {
-				mode = GPIO_IRTX_OUT_PIN_M_IRTX_OUT;
+				mode = GPIO_MODE_00;
 				dir = GPIO_DIR_OUT;
 				outp = GPIO_OUT_ZERO;	/* Low means disable LED */
 
