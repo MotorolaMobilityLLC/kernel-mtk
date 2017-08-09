@@ -783,7 +783,10 @@ first_try:
 		}
 
 		if (atomic_read(&epfile->error)) {
-			pr_err("%s: ep=%p\n", __func__, epfile->ep);
+			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+
+			if (__ratelimit(&ratelimit))
+				pr_err("[ratelimit]%s: ep=%p\n", __func__, epfile->ep);
 		}
 
 		/* Wait for endpoint to be enabled */
