@@ -135,21 +135,54 @@ static void LC898212XD_init(void)
 	int Hall_Off = 0x80;	/* Please Read Offset from EEPROM or OTP */
 	int Hall_Bias = 0x80;	/* Please Read Bias from EEPROM or OTP */
 
+	unsigned short HallMinCheck = 0;
+	unsigned short HallMaxCheck = 0;
+	unsigned short HallCheck = 0;
+
 	g_SelectEEPROM = 1;
 
 	if (s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x001A, &val1) < 0)
 		g_SelectEEPROM = 0;
 
+	g_LC898212_SearchDir = 1;
 
-	if ( g_SelectEEPROM == 0 ) {
-		unsigned short HallDataCheck;
+	if (strcmp(CONFIG_ARCH_MTK_PROJECT, "k55v2_64_stereo") == 0) {
 
-		LOG_INF("Select imx258 e2prom!!\n");
+		LOG_INF("CONFIG_ARCH_MTK_PROJECT = %s\n", CONFIG_ARCH_MTK_PROJECT);
+
+		/* Jade Stereo IMX258 - Error Version */
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0016, &val1);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0015, &val2);
+		HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0018, &val1);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0017, &val2);
+		HallMaxCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		if ((0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
+			(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+
+			Hall_Min = HallMinCheck;
+			Hall_Max = HallMaxCheck;
+
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x001A, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0019, &val2);
+			Hall_Off = val2;
+			Hall_Bias = val1;
+		}
+
+	} else if (strncmp(CONFIG_ARCH_MTK_PROJECT, "demo97v1", 6) == 0) {
+
+		LOG_INF("CONFIG_ARCH_MTK_PROJECT = %s\n", CONFIG_ARCH_MTK_PROJECT);
 
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0003, &val1);
+		LOG_INF("Addr = 0x0003 , Data = %x\n", val1);
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0004, &val2);
+		LOG_INF("Addr = 0x0004 , Data = %x\n", val2);
 
 		if (val1 == 0xb && val2 == 0x2) { /* EEPROM Version */
+
+			/* MTK define format - Everest stereo format , PDAF:2000 , Addr = 0x0F33*/
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F33, &val2);
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F34, &val1);
 			Hall_Min = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
@@ -162,13 +195,81 @@ static void LC898212XD_init(void)
 			Hall_Off = val1;
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F38, &val2);
 			Hall_Bias = val2;
-		} else { /* Undefined Version */
+
+		} else {
+
+			/* MTK define format - Everest PDAF:2048 , Addr = 0x0F63 Version:b001 */
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val2);
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F64, &val1);
+			HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F65, &val2);
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F66, &val1);
+			HallMaxCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
 			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
-			HallDataCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-			if ((0x1FFF <= HallDataCheck && HallDataCheck <= 0x7FFF) ||
-				(0x8001 <= HallDataCheck && HallDataCheck <= 0xEFFF)) { /* IMX258 PDAF */
+			if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
+				(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+
+				Hall_Min = HallMinCheck;
+				Hall_Max = HallMaxCheck;
+
+				/* s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1); */
+				Hall_Off = val1;
+				/* s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2); */
+				Hall_Bias = val2;
+				/* MTK define format - Everest PDAF:2048 , Addr = 0x0F63 Version:b001 - End*/
+
+			} else {
+				/* MTK define format - Everest Bayer+Mono PDAF:2000 , Addr = 0x0F33 , Error Version */
+				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F33, &val2);
+				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F34, &val1);
+				HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F35, &val2);
+				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F36, &val1);
+				HallMaxCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F37, &val1);
+				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F38, &val2);
+
+				if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
+					(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+
+					Hall_Min = HallMinCheck;
+					Hall_Max = HallMaxCheck;
+
+					/* s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F37, &val1); */
+					Hall_Off = val1;
+					/* s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F38, &val2); */
+					Hall_Bias = val2;
+				}
+				/* MTK define format - Everest Bayer+Mono , Error Version - End*/
+			}
+		}
+	} else if (strncmp(CONFIG_ARCH_MTK_PROJECT, "k97v1", 5) == 0) {
+
+		LOG_INF("CONFIG_ARCH_MTK_PROJECT = %s\n", CONFIG_ARCH_MTK_PROJECT);
+
+		if (g_SelectEEPROM == 0) { /* IMX258 PDAF */
+
+			/* Liteon define format - Everest IMX258 PDAF - remove Koli */
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
+			HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F69, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F70, &val2);
+			HallMaxCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val1);
+			HallCheck = val1;
+
+			if ((HallCheck == 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
+				(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
+
 				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val1);
 				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F64, &val2);
 				Hall_Bias = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
@@ -177,57 +278,59 @@ static void LC898212XD_init(void)
 				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F66, &val2);
 				Hall_Off = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
-				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
-				Hall_Min = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+				Hall_Min = HallMinCheck;
 
-				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F69, &val1);
-				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F70, &val2);
-				Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
-			} else { /* Jade Stereo IMX258 */
-
-				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0016, &val1);
-				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0015, &val2);
-				HallDataCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
-
-				if ((0x1FFF <= HallDataCheck && HallDataCheck <= 0x7FFF) ||
-					(0x8001 <= HallDataCheck && HallDataCheck <= 0xEFFF)) {
-					s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0016, &val1);
-					s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0015, &val2);
-					Hall_Min = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
-					s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0018, &val1);
-					s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0017, &val2);
-					Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
-
-					s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x001A, &val1);
-					s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0019, &val2);
-					Hall_Off = val2;
-					Hall_Bias = val1;
-				}
+				Hall_Max = HallMaxCheck;
 			}
+			/* Liteon define format - Everest IMX258 PDAF - end */
+
+		} else {
+
+			LOG_INF("Select ov23850 e2prom!!\n");
+
+			s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F63, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F64, &val2);
+			Hall_Bias = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F65, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F66, &val2);
+			Hall_Off = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F67, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F68, &val2);
+			Hall_Min = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+			s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F69, &val1);
+			s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F70, &val2);
+			Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+			g_LC898212_SearchDir = 0;
 		}
-
-		g_LC898212_SearchDir = 1;
 	} else {
+		/* MTK define format - Everest PDAF:2048 , Addr = 0x0F63 Version:b001 */
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F63, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F64, &val1);
+		HallMinCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-		LOG_INF("Select ov23850 e2prom!!\n");
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F65, &val2);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F66, &val1);
+		HallMaxCheck = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F63, &val1);
-		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F64, &val2);
-		Hall_Bias = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1);
+		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2);
 
-		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F65, &val1);
-		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F66, &val2);
-		Hall_Off = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+		if ((val1 != 0) && (val2 != 0) && (0x1FFF <= HallMaxCheck && HallMaxCheck <= 0x7FFF) &&
+			(0x8001 <= HallMinCheck && HallMinCheck <= 0xEFFF)) {
 
-		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F67, &val1);
-		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F68, &val2);
-		Hall_Min = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+			Hall_Min = HallMinCheck;
+			Hall_Max = HallMaxCheck;
 
-		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F69, &val1);
-		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F70, &val2);
-		Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
-		g_LC898212_SearchDir = 0;
+			/* s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F67, &val1); */
+			Hall_Off = val1;
+			/* s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F68, &val2); */
+			Hall_Bias = val2;
+			/* MTK define format - Everest PDAF:2048 , Addr = 0x0F63 Version:b001 - End*/
+
+		}
 	}
 
 	/* Range Protection : Min = 0x8001 , Max = 0x7FFF */
