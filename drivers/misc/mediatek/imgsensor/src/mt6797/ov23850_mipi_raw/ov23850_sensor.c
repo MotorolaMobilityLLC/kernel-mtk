@@ -55,7 +55,8 @@
 #define MULTI_WRITE 0
 /*Enable PDAF function */
 //#define ENABLE_PDAF_VC
-#define FULL_24FPS
+//#define HW_DESKEW_ENABLE
+//#define FULL_24FPS
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 
@@ -3257,15 +3258,20 @@ for(i=0;i<(sizeof(addr_data_pair_init)/sizeof(kal_uint16));i+=2){
 #define PDAF_OFF 0
 static void ov23850_setting_PDAF(int enable)
 {
+#if defined(ENABLE_PDAF_VC)
 	LOG_INF("PDAF is %d\n",enable);
 	if(enable)
 		ov23850_MIPI_table_write_cmos_sensor(addr_data_pair_pdaf_on, sizeof(addr_data_pair_pdaf_on)/sizeof(kal_uint16));
 	else
 		ov23850_MIPI_table_write_cmos_sensor(addr_data_pair_pdaf_off, sizeof(addr_data_pair_pdaf_off)/sizeof(kal_uint16));
+#else
+	LOG_INF("PDAF is %d\n",enable);
+#endif
 }
 
 static void ov23850_setting_Deskew(int enable)
 {
+#if defined(HW_DESKEW_ENABLE)
 	if(enable){
 		/*Deskew funciton*/
 		write_cmos_sensor(0x4800, 0x64);//r4800 = r4800 | 60, clk gate en
@@ -3289,7 +3295,7 @@ static void ov23850_setting_Deskew(int enable)
 		write_cmos_sensor(0x4800, 0x04);//r4800 = r4800 | 60, clk gate en
 		write_cmos_sensor(0x484b, 0x01);//r484b = r484b|02 ; [1] clk start after mipi rst
 	}
-
+#endif
 }
 
 static void preview_setting(void)
@@ -3333,7 +3339,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0304,0x47);
 	write_cmos_sensor(0x0317,0x00);
 	write_cmos_sensor(0x0318,0x03);
-	#endif
+#endif
 	mdelay(1);
 #if defined(FULL_24FPS)
 	//Deskew
@@ -3347,7 +3353,7 @@ static void capture_setting(kal_uint16 currefps)
     else
 		ov23850_setting_PDAF(PDAF_OFF);
 
-	///mdelay(30);
+	//mdelay(30);
 	write_cmos_sensor(0x0100, 0x01);
 
 #if defined(FULL_24FPS)
@@ -3382,8 +3388,8 @@ static void normal_video_setting(kal_uint16 currefps)//1080p
     else
 		ov23850_setting_PDAF(PDAF_OFF);
 
-
 	write_cmos_sensor(0x0100,0x01);
+
 }
 
 static void hs_video_setting(void)
