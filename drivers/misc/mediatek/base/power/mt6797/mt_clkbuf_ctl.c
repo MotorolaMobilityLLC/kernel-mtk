@@ -72,9 +72,9 @@ static struct kobj_attribute _name##_attr = {	\
 #define clkbuf_readl(addr)		DRV_Reg32(addr)
 #define clkbuf_writel(addr, val)	mt_reg_sync_writel(val, addr)
 
-#if 0 /*everest early porting: used by PMIC clock buf*/
 static void __iomem *pwrap_base;
-#endif
+
+#ifdef ENABLE_PMIC_CLK_BUFFER
 
 #define PWRAP_REG(ofs)		(pwrap_base + ofs)
 
@@ -107,10 +107,24 @@ static void __iomem *pwrap_base;
 #define PMIC_CW00_XO_EXTBUF2_EN_M_SHIFT		5
 #define PMIC_CW00_XO_EXTBUF3_MODE_MASK		0x3
 #define PMIC_CW00_XO_EXTBUF3_MODE_SHIFT		6
+#define PMIC_CW00_XO_BB_LPM_EN_MASK		0x1
+#define PMIC_CW00_XO_BB_LPM_EN_SHIFT		12
 
+/*
+ * 0x701A	CW13	Code Word 13
+ * 15:14	RG_XO_EXTBUF4_ISET	XO Control Signal of Current on EXTBUF4
+ * 13:12	RG_XO_EXTBUF4_HD	XO Control Signal of EXTBUF4 Output driving Strength
+ * 11:10	RG_XO_EXTBUF3_ISET	XO Control Signal of Current on EXTBUF3
+ * 9:8		RG_XO_EXTBUF3_HD	XO Control Signal of EXTBUF3 Output driving Strength
+ * 7:6		RG_XO_EXTBUF2_ISET	XO Control Signal of Current on EXTBUF2
+ * 5:4		RG_XO_EXTBUF2_HD	XO Control Signal of EXTBUF2 Output driving Strength
+ * 3:2		RG_XO_EXTBUF1_ISET	XO Control Signal of Current on EXTBUF1
+ * 1:0		RG_XO_EXTBUF1_HD	XO Control Signal of EXTBUF1 Output driving Strength
+ */
 #define PMIC_CW13_ADDR				0x701A
-/* FIXME: temp value for *CPCB<20pF */
-#define PMIC_CW13_INIT_VAL			0x6666
+#define PMIC_CW13_DEFAULT_VAL			0xAAAA
+#define PMIC_CW13_XO_EXTBUF_HD_VAL		((0x2 << 0) | (0x2 << 4) \
+						 | (0x2 << 8) | (0x2 << 12))
 
 #define PMIC_CW14_ADDR				0x701C
 #define PMIC_CW14_XO_EXTBUF3_EN_M_MASK		0x1
@@ -121,6 +135,7 @@ static void __iomem *pwrap_base;
 #define PMIC_CW15_DCXO_STATIC_AUXOUT_EN_SHIFT	0
 #define PMIC_CW15_DCXO_STATIC_AUXOUT_SEL_MASK	0xF
 #define PMIC_CW15_DCXO_STATIC_AUXOUT_SEL_SHIFT	1
+#endif /* ENABLE_PMIC_CLK_BUFFER */
 
 /* FIXME: only for bring up Co-TSX before DT is ready */
 /* #define CLKBUF_COTSX_BRINGUP */
@@ -132,14 +147,60 @@ static bool clkbuf_debug;
 /* false: rf_clkbuf, true: pmic_clkbuf */
 static bool is_pmic_clkbuf;
 
+static unsigned int afcdac_val = 0x2A80008; /* afc_default=4096 */
+static bool is_clkbuf_afcdac_updated;
+
+#ifdef ENABLE_PMIC_CLK_BUFFER
+static unsigned int g_pmic_cw13_rg_val = PMIC_CW13_DEFAULT_VAL;
+#endif /* ENABLE_PMIC_CLK_BUFFER */
+/* FIXME: Before MP, using suggested driving current to test. */
+#define TEST_SUGGEST_RF_DRIVING_CURR_BEFORE_MP
+#ifdef ENABLE_PMIC_CLK_BUFFER
+#define TEST_SUGGEST_PMIC_DRIVING_CURR_BEFORE_MP
+#endif /* ENABLE_PMIC_CLK_BUFFER */
+
 #if !defined(CONFIG_MTK_LEGACY)  /*Everest early porting: DCT tool generate .h file? */
 static unsigned int CLK_BUF1_STATUS, CLK_BUF2_STATUS,
-		    CLK_BUF3_STATUS, CLK_BUF4_STATUS,
-		    CLK_BUF5_STATUS_PMIC, CLK_BUF6_STATUS_PMIC,
-		    CLK_BUF7_STATUS_PMIC, CLK_BUF8_STATUS_PMIC;
+		    CLK_BUF3_STATUS, CLK_BUF4_STATUS;
+#ifdef ENABLE_PMIC_CLK_BUFFER
+static unsigned int CLK_BUF5_STATUS_PMIC = CLOCK_BUFFER_HW_CONTROL,
+		    CLK_BUF6_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL,
+		    CLK_BUF7_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL,
+		    CLK_BUF8_STATUS_PMIC = CLOCK_BUFFER_HW_CONTROL;
+#endif /* ENABLE_PMIC_CLK_BUFFER */
+
+static unsigned int RF_CLK_BUF1_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
+		    RF_CLK_BUF2_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
+		    RF_CLK_BUF3_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
+		    RF_CLK_BUF4_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA;
+#ifdef ENABLE_PMIC_CLK_BUFFER
+static unsigned int PMIC_CLK_BUF5_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
+		    PMIC_CLK_BUF6_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
+		    PMIC_CLK_BUF7_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA,
+		    PMIC_CLK_BUF8_DRIVING_CURR = CLK_BUF_DRIVING_CURR_1_4MA;
+#endif /* ENABLE_PMIC_CLK_BUFFER */
+
 #else /* CONFIG_MTK_LEGACY */
+
+#ifdef ENABLE_PMIC_CLK_BUFFER
 static unsigned int CLK_BUF5_STATUS_PMIC, CLK_BUF6_STATUS_PMIC,
 			CLK_BUF7_STATUS_PMIC, CLK_BUF8_STATUS_PMIC;
+#endif /* ENABLE_PMIC_CLK_BUFFER */
+#if !defined(RF_CLK_BUF1_DRIVING_CURR)
+#define RF_CLK_BUF1_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
+#define RF_CLK_BUF2_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
+#define RF_CLK_BUF3_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
+#define RF_CLK_BUF4_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
+#endif
+#ifdef ENABLE_PMIC_CLK_BUFFER
+#if !defined(PMIC_CLK_BUF5_DRIVING_CURR)
+#define PMIC_CLK_BUF5_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
+#define PMIC_CLK_BUF6_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
+#define PMIC_CLK_BUF7_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
+#define PMIC_CLK_BUF8_DRIVING_CURR	CLK_BUF_DRIVING_CURR_1_4MA
+#endif
+#endif /* ENABLE_PMIC_CLK_BUFFER */
+
 #ifdef CLKBUF_COTSX_BRINGUP
 #undef CLK_BUF1_STATUS
 #undef CLK_BUF2_STATUS
@@ -215,7 +276,7 @@ static void spm_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 
 static void pmic_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 {
-#if 0 /*everest early porting*/
+#ifdef ENABLE_PMIC_CLK_BUFFER
 	u32 conn_conf = 0, nfc_conf = 0;
 
 	pmic_config_interface(PMIC_CW00_ADDR, (status[PMIC_CLK_BUF_CONN] % 2),
@@ -233,8 +294,32 @@ static void pmic_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 		     __func__, conn_conf, nfc_conf,
 		     status[PMIC_CLK_BUF_CONN],
 		     status[PMIC_CLK_BUF_NFC]);
-#endif /*everest early porting*/
+#endif /* ENABLE_PMIC_CLK_BUFFER */
 }
+
+#ifdef ENABLE_PMIC_CLK_BUFFER
+/*
+ * Baseband Low Power Mode (BBLPM) for PMIC clkbuf
+ * Condition: flightmode on + conn mtcmos off + NFC clkbuf off + enter deepidle
+ * Caller: deep idle
+ */
+void clk_buf_control_bblpm(bool on)
+{
+	u32 cw00 = 0;
+
+	if (!is_pmic_clkbuf ||
+	    (pmic_clk_buf_swctrl[PMIC_CLK_BUF_NFC] == CLK_BUF_SW_ENABLE))
+		return;
+
+	pmic_config_interface_nolock(PMIC_CW00_ADDR, (on ? 1 : 0),
+			      PMIC_CW00_XO_BB_LPM_EN_MASK,
+			      PMIC_CW00_XO_BB_LPM_EN_SHIFT);
+
+	pmic_read_interface_nolock(PMIC_CW00_ADDR, &cw00,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	clk_buf_dbg("%s(%u): CW00=0x%x\n", __func__, (on ? 1 : 0), cw00);
+}
+#endif /* ENABLE_PMIC_CLK_BUFFER */
 
 /* for spm driver use */
 bool is_clk_buf_under_flightmode(void)
@@ -260,8 +345,22 @@ void clk_buf_set_by_flightmode(bool is_flightmode_on)
 
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 {
-	if (is_pmic_clkbuf)
+#ifdef ENABLE_PMIC_CLK_BUFFER
+	if (is_pmic_clkbuf) {
+		mutex_lock(&clk_buf_ctrl_lock);
+
+		/* record the status of NFC from caller for checking BBLPM */
+		if (id == CLK_BUF_NFC)
+			pmic_clk_buf_swctrl[id] = onoff;
+
+		mutex_unlock(&clk_buf_ctrl_lock);
+
+		clk_buf_dbg("%s: id=%d, onoff=%d, is_flightmode_on=%d\n",
+			    __func__, id, onoff, g_is_flightmode_on);
+
 		return false;
+	}
+#endif /*ENABLE_PMIC_CLK_BUFFER*/
 
 	if (id >= CLK_BUF_INVALID) /* TODO: need check DCT tool for CLK BUF SW control */
 		return false;
@@ -314,6 +413,64 @@ void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status)
 		else
 			status[i] = clk_buf_swctrl_modem_on[i];
 	}
+}
+
+/*
+ * Let caller get driving current setting of RF clock buffer
+ * Caller: ccci & ccci will send it to modem
+ */
+void clk_buf_get_rf_drv_curr(void *rf_drv_curr)
+{
+#ifdef TEST_SUGGEST_RF_DRIVING_CURR_BEFORE_MP
+	RF_CLK_BUF1_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA,
+	RF_CLK_BUF2_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA,
+	RF_CLK_BUF3_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA,
+	RF_CLK_BUF4_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA;
+#endif
+
+	((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[0] = RF_CLK_BUF1_DRIVING_CURR;
+	((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[1] = RF_CLK_BUF2_DRIVING_CURR;
+	((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[2] = RF_CLK_BUF3_DRIVING_CURR;
+	((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[3] = RF_CLK_BUF4_DRIVING_CURR;
+
+	clk_buf_warn("%s: rf_drv_curr_vals=%d %d %d %d\n", __func__,
+		     ((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[0],
+		     ((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[1],
+		     ((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[2],
+		     ((MTK_CLK_BUF_DRIVING_CURR *)rf_drv_curr)[3]);
+}
+
+/* Called by ccci driver to keep afcdac value sent from modem */
+void clk_buf_save_afc_val(unsigned int afcdac)
+{
+#if 0
+	if (is_pmic_clkbuf)
+		return;
+
+	afcdac_val = afcdac;
+
+	if (!is_clkbuf_afcdac_updated) {
+		spm_write(SPM_BSI_EN_SR, afcdac_val);
+		is_clkbuf_afcdac_updated = true;
+	}
+
+	clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x\n", __func__,
+		     afcdac_val, spm_read(SPM_BSI_EN_SR));
+#endif
+}
+
+/* Called by suspend driver to write afcdac into SPM register */
+void clk_buf_write_afcdac(void)
+{
+#if 0
+	if (is_pmic_clkbuf)
+		return;
+
+	spm_write(SPM_BSI_EN_SR, afcdac_val);
+	clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x, afcdac_updated=%d\n",
+		     __func__, afcdac_val, spm_read(SPM_BSI_EN_SR),
+		     is_clkbuf_afcdac_updated);
+#endif
 }
 
 static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
@@ -379,6 +536,7 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	p += sprintf(p, "CKBUF4_AUD  SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d/%d\n",
 		     CLK_BUF4_STATUS, clk_buf_swctrl[3],
 		     clk_buf_swctrl_modem_on[3]);
+#ifdef ENABLE_PMIC_CLK_BUFFER
 	p += sprintf(p, "********** PMIC clock buffer state (%c) **********\n",
 		     (is_pmic_clkbuf ? 'O' : 'X'));
 	p += sprintf(p, "CKBUF1_BB   SW(1)/HW(2) CTL: %d, Disable(0)/Enable(1): %d\n",
@@ -392,7 +550,28 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	p += sprintf(p, "\n********** clock buffer command help **********\n");
 	p += sprintf(p, "BSI  switch on/off: echo bsi en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
 	p += sprintf(p, "PMIC switch on/off: echo pmic en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
+#endif /* ENABLE_PMIC_CLK_BUFFER */
 
+#ifdef ENABLE_PMIC_CLK_BUFFER
+	if (is_pmic_clkbuf)
+		p += sprintf(p, "g_pmic_cw13_rg_val=0x%x\n", g_pmic_cw13_rg_val);
+	else
+#endif /* ENABLE_PMIC_CLK_BUFFER */
+		p += sprintf(p, "afcdac=0x%x, is_afcdac_updated=%d\n",
+			     afcdac_val, is_clkbuf_afcdac_updated);
+
+	p += sprintf(p, "rf_drv_curr_vals=%d %d %d %d\n",
+		     RF_CLK_BUF1_DRIVING_CURR,
+		     RF_CLK_BUF2_DRIVING_CURR,
+		     RF_CLK_BUF3_DRIVING_CURR,
+		     RF_CLK_BUF4_DRIVING_CURR);
+#ifdef ENABLE_PMIC_CLK_BUFFER
+	p += sprintf(p, "pmic_drv_curr_vals=%d %d %d %d\n",
+		     PMIC_CLK_BUF5_DRIVING_CURR,
+		     PMIC_CLK_BUF6_DRIVING_CURR,
+		     PMIC_CLK_BUF7_DRIVING_CURR,
+		     PMIC_CLK_BUF8_DRIVING_CURR);
+#endif /* ENABLE_PMIC_CLK_BUFFER */
 	len = p - buf;
 
 	return len;
@@ -448,7 +627,7 @@ static struct attribute_group spm_attr_group = {
 
 bool is_clk_buf_from_pmic(void)
 {
-#if 0 /*everest early porting: used for PMIC clockbuf*/
+#ifdef ENABLE_PMIC_CLK_BUFFER
 	unsigned int reg = 0;
 	bool ret = false;
 
@@ -480,14 +659,39 @@ bool is_clk_buf_from_pmic(void)
 	return ret;
 #else
 	return false;
-#endif /*everest early porting: used for PMIC clockbuf*/
+#endif /* ENABLE_PMIC_CLK_BUFFER */
 };
 
-#if 0 /*everest early porting: used for PMIC clockbuf*/
+#ifdef ENABLE_PMIC_CLK_BUFFER
+static void gen_pmic_cw13_rg_val(void)
+{
+#ifdef TEST_SUGGEST_PMIC_DRIVING_CURR_BEFORE_MP
+	PMIC_CLK_BUF5_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA,
+	PMIC_CLK_BUF6_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA,
+	PMIC_CLK_BUF7_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA,
+	PMIC_CLK_BUF8_DRIVING_CURR = CLK_BUF_DRIVING_CURR_0_9MA;
+#endif
+	g_pmic_cw13_rg_val = PMIC_CW13_XO_EXTBUF_HD_VAL |
+			     (PMIC_CLK_BUF5_DRIVING_CURR << 2) |
+			     (PMIC_CLK_BUF6_DRIVING_CURR << 6) |
+			     (PMIC_CLK_BUF7_DRIVING_CURR << 10) |
+			     (PMIC_CLK_BUF8_DRIVING_CURR << 14);
+
+	clk_buf_warn("%s: g_pmic_cw13_rg_val=0x%x, pmic_drv_curr_vals=%d %d %d %d\n",
+		     __func__, g_pmic_cw13_rg_val,
+		     PMIC_CLK_BUF5_DRIVING_CURR,
+		     PMIC_CLK_BUF6_DRIVING_CURR,
+		     PMIC_CLK_BUF7_DRIVING_CURR,
+		     PMIC_CLK_BUF8_DRIVING_CURR);
+}
+#endif /* ENABLE_PMIC_CLK_BUFFER */
+
 static void clk_buf_pmic_wrap_init(void)
 {
+#ifdef ENABLE_PMIC_CLK_BUFFER
 	u32 conn_conf = 0, nfc_conf = 0, pmic_cw13 = 0;
 
+	gen_pmic_cw13_rg_val();
 #if 0
 	/* Switch clkbuf2,3 to S/W mode control */
 	pmic_config_interface(PMIC_CW00_ADDR, 0,
@@ -508,7 +712,7 @@ static void clk_buf_pmic_wrap_init(void)
 		     __func__, conn_conf, nfc_conf, pmic_cw13);
 	pmic_config_interface(PMIC_CW00_ADDR, PMIC_CW00_INIT_VAL,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
-	pmic_config_interface(PMIC_CW13_ADDR, PMIC_CW13_INIT_VAL,
+	pmic_config_interface(PMIC_CW13_ADDR, g_pmic_cw13_rg_val,
 			    PMIC_REG_MASK, PMIC_REG_SHIFT);
 #endif
 
@@ -532,8 +736,8 @@ static void clk_buf_pmic_wrap_init(void)
 	clkbuf_writel(DCXO_NFC_WDATA1, nfc_conf | 0x0800);	/* bit11 = 1 */
 
 	clkbuf_writel(DCXO_ENABLE, DCXO_CONN_ENABLE | DCXO_NFC_ENABLE);
+#endif /* ENABLE_PMIC_CLK_BUFFER */
 }
-#endif /*everest early porting*/
 
 static int clk_buf_fs_init(void)
 {
@@ -549,37 +753,89 @@ static int clk_buf_fs_init(void)
 	return r;
 }
 
+static void clk_buf_clear_rf_setting(void)
+{
+#ifdef ENABLE_PMIC_CLK_BUFFER
+	memset(clk_buf_swctrl, 0, sizeof(clk_buf_swctrl));
+	memset(clk_buf_swctrl_modem_on, 0, sizeof(clk_buf_swctrl_modem_on));
+
+#if !defined(CONFIG_MTK_LEGACY)
+	CLK_BUF1_STATUS = CLOCK_BUFFER_DISABLE;
+	CLK_BUF2_STATUS = CLOCK_BUFFER_DISABLE;
+	CLK_BUF3_STATUS = CLOCK_BUFFER_DISABLE;
+	CLK_BUF4_STATUS = CLOCK_BUFFER_DISABLE;
+	CLK_BUF5_STATUS_PMIC = CLOCK_BUFFER_HW_CONTROL;
+	CLK_BUF6_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL;
+	CLK_BUF7_STATUS_PMIC = CLOCK_BUFFER_SW_CONTROL;
+	CLK_BUF8_STATUS_PMIC = CLOCK_BUFFER_HW_CONTROL;
+
+	clk_buf_warn("%s: RF_CLK_BUF?_STATUS=%d %d %d %d\n", __func__,
+		     CLK_BUF1_STATUS, CLK_BUF2_STATUS,
+		     CLK_BUF3_STATUS, CLK_BUF4_STATUS);
+	clk_buf_warn("%s: PMIC_CLK_BUF?_STATUS=%d %d %d %d\n", __func__,
+		     CLK_BUF5_STATUS_PMIC, CLK_BUF6_STATUS_PMIC,
+		     CLK_BUF7_STATUS_PMIC, CLK_BUF8_STATUS_PMIC);
+#endif
+#endif /* ENABLE_PMIC_CLK_BUFFER */
+}
+
 bool clk_buf_init(void)
 {
 	struct device_node *node;
-
 #if !defined(CONFIG_MTK_LEGACY)
-#if 1 /* for kernel 3.18 */
-	u32 vals[4];
+	u32 vals[CLKBUF_NUM] = {0, 0, 0, 0};
+	int ret = -1;
 
+#if 1 /* for kernel 3.18 */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,rf_clock_buffer");
 	if (node) {
-		of_property_read_u32_array(node, "mediatek,clkbuf-config", vals, 4);
+		of_property_read_u32_array(node, "mediatek,clkbuf-config",
+					   vals, CLKBUF_NUM);
 		CLK_BUF1_STATUS = vals[0];
 		CLK_BUF2_STATUS = vals[1];
 		CLK_BUF3_STATUS = vals[2];
 		CLK_BUF4_STATUS = vals[3];
+		ret = of_property_read_u32_array(node, "mediatek,clkbuf-driving-current",
+						 vals, CLKBUF_NUM);
+		if (!ret) {
+			RF_CLK_BUF1_DRIVING_CURR = vals[0];
+			RF_CLK_BUF2_DRIVING_CURR = vals[1];
+			RF_CLK_BUF3_DRIVING_CURR = vals[2];
+			RF_CLK_BUF4_DRIVING_CURR = vals[3];
+			clk_buf_warn("%s: device tree rf_drv_curr_vals=%d %d %d %d\n", __func__,
+				     RF_CLK_BUF1_DRIVING_CURR,
+				     RF_CLK_BUF2_DRIVING_CURR,
+				     RF_CLK_BUF3_DRIVING_CURR,
+				     RF_CLK_BUF4_DRIVING_CURR);
+		}
 	} else {
 		clk_buf_err("%s can't find compatible node for rf_clock_buffer\n", __func__);
 		BUG();
 	}
-
+#ifdef ENABLE_PMIC_CLK_BUFFER
 	node = of_find_compatible_node(NULL, NULL, "mediatek,pmic_clock_buffer");
 	if (node) {
-		of_property_read_u32_array(node, "mediatek,clkbuf-config", vals, 4);
-		CLK_BUF5_STATUS_PMIC = vals[0];
-		CLK_BUF6_STATUS_PMIC = vals[1];
-		CLK_BUF7_STATUS_PMIC = vals[2];
-		CLK_BUF8_STATUS_PMIC = vals[3];
+		ret = of_property_read_u32_array(node, "mediatek,clkbuf-config",
+						 vals, CLKBUF_NUM);
+		if (!ret) {
+			CLK_BUF5_STATUS_PMIC = vals[0];
+			CLK_BUF6_STATUS_PMIC = vals[1];
+			CLK_BUF7_STATUS_PMIC = vals[2];
+			CLK_BUF8_STATUS_PMIC = vals[3];
+		}
+		ret = of_property_read_u32_array(node, "mediatek,clkbuf-driving-current",
+						 vals, CLKBUF_NUM);
+		if (!ret) {
+			PMIC_CLK_BUF5_DRIVING_CURR = vals[0];
+			PMIC_CLK_BUF6_DRIVING_CURR = vals[1];
+			PMIC_CLK_BUF7_DRIVING_CURR = vals[2];
+			PMIC_CLK_BUF8_DRIVING_CURR = vals[3];
+		}
 	} else {
 		clk_buf_err("%s can't find compatible node for pmic_clock_buffer\n", __func__);
 		BUG();
 	}
+#endif /* ENABLE_PMIC_CLK_BUFFER */
 #else /* for kernel 3.10 */
 	node = of_find_compatible_node(NULL, NULL, "mediatek, rf_clock_buffer");
 	if (node) {
@@ -587,21 +843,39 @@ bool clk_buf_init(void)
 		of_property_read_u32(node, "buffer2", (u32 *)&CLK_BUF2_STATUS);
 		of_property_read_u32(node, "buffer3", (u32 *)&CLK_BUF3_STATUS);
 		of_property_read_u32(node, "buffer4", (u32 *)&CLK_BUF4_STATUS);
+		ret = of_property_read_u32_array(node, "mediatek,clkbuf-driving-current",
+						 vals, CLKBUF_NUM);
+		if (!ret) {
+			RF_CLK_BUF1_DRIVING_CURR = vals[0];
+			RF_CLK_BUF2_DRIVING_CURR = vals[1];
+			RF_CLK_BUF3_DRIVING_CURR = vals[2];
+			RF_CLK_BUF4_DRIVING_CURR = vals[3];
+		}
 	} else {
 		clk_buf_err("%s can't find compatible node for rf_clock_buffer\n", __func__);
 		BUG_ON(1);
 	}
 
+#ifdef ENABLE_PMIC_CLK_BUFFER
 	node = of_find_compatible_node(NULL, NULL, "mediatek, pmic_clock_buffer");
 	if (node) {
 		of_property_read_u32(node, "buffer1", (u32 *)&CLK_BUF5_STATUS_PMIC);
 		of_property_read_u32(node, "buffer2", (u32 *)&CLK_BUF6_STATUS_PMIC);
 		of_property_read_u32(node, "buffer3", (u32 *)&CLK_BUF7_STATUS_PMIC);
 		of_property_read_u32(node, "buffer4", (u32 *)&CLK_BUF8_STATUS_PMIC);
+		ret = of_property_read_u32_array(node, "mediatek,clkbuf-driving-current", vals, CLKBUF_NUM);
+		if (!ret) {
+			PMIC_CLK_BUF5_DRIVING_CURR = vals[0];
+			PMIC_CLK_BUF6_DRIVING_CURR = vals[1];
+			PMIC_CLK_BUF7_DRIVING_CURR = vals[2];
+			PMIC_CLK_BUF8_DRIVING_CURR = vals[3];
+		}
 	} else {
 		clk_buf_err("%s can't find compatible node for pmic_clock_buffer\n", __func__);
 		BUG_ON(1);
 	}
+#endif /* ENABLE_PMIC_CLK_BUFFER */
+
 #endif /* for kernel 3.18 */
 #endif /* CONFIG_MTK_LEGACY */
 	if (is_clkbuf_initiated)
@@ -610,7 +884,6 @@ bool clk_buf_init(void)
 	if (clk_buf_fs_init())
 		return false;
 
-#if 0 /*everest early porting*/
 	/* Co-TSX @PMIC */
 	if (is_clk_buf_from_pmic()) {
 		is_pmic_clkbuf = true;
@@ -626,8 +899,14 @@ bool clk_buf_init(void)
 		}
 
 		clk_buf_pmic_wrap_init();
+		clk_buf_clear_rf_setting();
+	} else { /* VCTCXO @RF */
+#if 0
+		spm_write(SPM_BSI_EN_SR, afcdac_val);
+		clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x\n", __func__,
+			     afcdac_val, spm_read(SPM_BSI_EN_SR));
+#endif
 	}
-#endif /*everest early porting*/
 
 	is_clkbuf_initiated = true;
 

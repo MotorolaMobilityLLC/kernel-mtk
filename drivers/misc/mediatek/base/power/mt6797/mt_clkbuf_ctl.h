@@ -12,7 +12,7 @@
 #include <cust_clk_buf.h>
 #endif
 
-#if 0 /*TODO: need add Pad name@DCT tool */ /*Everest early porting*/
+#if 1 /*TODO: need add Pad name@DCT tool */
 #ifndef GPIO_RFIC0_BSI_CS
 #define GPIO_RFIC0_BSI_CS         (GPIO159 | 0x80000000)   /* RFIC0_BSI_CS = GPIO159 */
 #endif
@@ -48,10 +48,17 @@ enum pmic_clk_buf_id {
 
 #if !defined(CONFIG_MTK_LEGACY)
 typedef enum {
-	CLK_BUF_DISABLE	= 0,
+	CLOCK_BUFFER_DISABLE	= 0,
 	CLOCK_BUFFER_SW_CONTROL = 1,
 	CLOCK_BUFFER_HW_CONTROL = 2,
 } CLK_BUF_STATUS;
+
+typedef enum {
+	CLK_BUF_DRIVING_CURR_0_4MA,
+	CLK_BUF_DRIVING_CURR_0_9MA,
+	CLK_BUF_DRIVING_CURR_1_4MA,
+	CLK_BUF_DRIVING_CURR_1_9MA
+} MTK_CLK_BUF_DRIVING_CURR;
 #endif
 
 typedef enum {
@@ -64,9 +71,15 @@ typedef enum {
 #define STA_CLK_ON      1
 #define STA_CLK_OFF     0
 
+/* #define ENABLE_PMIC_CLK_BUFFER */
+
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff);
 void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status);
+void clk_buf_get_rf_drv_curr(void *rf_drv_curr);
 void clk_buf_set_by_flightmode(bool is_flightmode_on);
+void clk_buf_save_afc_val(unsigned int afcdac);
+void clk_buf_write_afcdac(void);
+void clk_buf_control_bblpm(bool on);
 bool clk_buf_init(void);
 bool is_clk_buf_under_flightmode(void);
 bool is_clk_buf_from_pmic(void);
