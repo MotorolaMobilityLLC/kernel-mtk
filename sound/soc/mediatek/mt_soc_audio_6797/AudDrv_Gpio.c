@@ -132,6 +132,7 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 
 void AudDrv_GPIO_probe(void *dev)
 {
+	unsigned int chip_ver = mt_get_chip_hw_ver();
 #ifdef CONFIG_PINCTRL_MT6797
 	int ret;
 	int i = 0;
@@ -146,9 +147,10 @@ void AudDrv_GPIO_probe(void *dev)
 	}
 
 	/* update hpdepop gpio by chip version */
-	if (mt_get_chip_hw_ver() == 0xCA01) { /* is e2 */
+	pr_warn("%s(), chip_ver = 0x%x\n", __func__, chip_ver);
+	if (chip_ver == 0xCA01) { /* is e2 */
 		struct audio_gpio_attr gpio_hpdepop_high = {"hpdepop-pullhigh_e2", false, NULL};
-		struct audio_gpio_attr gpio_hpdepop_low = {"hpdepop-pullhigh_e2", false, NULL};
+		struct audio_gpio_attr gpio_hpdepop_low = {"hpdepop-pulllow_e2", false, NULL};
 
 		aud_gpios[GPIO_HPDEPOP_HIGH] = gpio_hpdepop_high;
 		aud_gpios[GPIO_HPDEPOP_LOW] = gpio_hpdepop_low;
