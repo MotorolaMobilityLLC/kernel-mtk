@@ -426,14 +426,14 @@ static kal_uint32 imx214_MONO_ATR(UINT16 DarkLimit, UINT16 OverExp)
 static void set_dummy(void)
 {
 	LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
-       write_cmos_sensor(0x0104, 1);
+       /*write_cmos_sensor(0x0104, 1);*/
 
 	write_cmos_sensor(0x0340, imgsensor.frame_length >> 8);
 	write_cmos_sensor(0x0341, imgsensor.frame_length & 0xFF);
 	write_cmos_sensor(0x0342, imgsensor.line_length >> 8);
 	write_cmos_sensor(0x0343, imgsensor.line_length & 0xFF);
 
-	write_cmos_sensor(0x0104, 0);
+	/*write_cmos_sensor(0x0104, 0);*/
 
 }	/*	set_dummy  */
 
@@ -490,24 +490,24 @@ static void write_shutter(kal_uint16 shutter)
 			set_max_framerate(146,0);
 		else {
 		// Extend frame length
-		write_cmos_sensor(0x0104, 1);
+		/*write_cmos_sensor(0x0104, 1);*/
 		write_cmos_sensor(0x0340, imgsensor.frame_length >> 8);
 		write_cmos_sensor(0x0341, imgsensor.frame_length & 0xFF);
-		write_cmos_sensor(0x0104, 0);
+		/*write_cmos_sensor(0x0104, 0);*/
 	    }
 	} else {
 		// Extend frame length
-		write_cmos_sensor(0x0104, 1);
+		/*write_cmos_sensor(0x0104, 1);*/
 		write_cmos_sensor(0x0340, imgsensor.frame_length >> 8);
 		write_cmos_sensor(0x0341, imgsensor.frame_length & 0xFF);
-		write_cmos_sensor(0x0104, 0);
+		/*write_cmos_sensor(0x0104, 0);*/
 	}
 
 	// Update Shutter
-		write_cmos_sensor(0x0104, 1);
+		/*write_cmos_sensor(0x0104, 1);*/
              write_cmos_sensor(0x0202, (shutter >> 8) & 0xFF);
              write_cmos_sensor(0x0203, shutter  & 0xFF);
-             write_cmos_sensor(0x0104, 0);
+             /*write_cmos_sensor(0x0104, 0);*/
 
 	LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 
@@ -593,14 +593,14 @@ static kal_uint16 set_gain(kal_uint16 gain)
     spin_unlock(&imgsensor_drv_lock);
     LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
 
-    write_cmos_sensor(0x0104, 1);
+    /*write_cmos_sensor(0x0104, 1);*/
     /* Global analog Gain for Long expo*/
     write_cmos_sensor(0x0204, (reg_gain>>8)& 0xFF);
     write_cmos_sensor(0x0205, reg_gain & 0xFF);
     /* Global analog Gain for Short expo*/
     write_cmos_sensor(0x0216, (reg_gain>>8)& 0xFF);
     write_cmos_sensor(0x0217, reg_gain & 0xFF);
-    write_cmos_sensor(0x0104, 0);
+    /*write_cmos_sensor(0x0104, 0);*/
 
     return gain;
 }	/*	set_gain  */
@@ -627,18 +627,18 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
         else if(realtime_fps >= 147 && realtime_fps <= 150)
             set_max_framerate(146,0);
         else {
-        write_cmos_sensor(0x0104, 1);
+        /*write_cmos_sensor(0x0104, 1);*/
         write_cmos_sensor(0x0340, imgsensor.frame_length >> 8);
         write_cmos_sensor(0x0341, imgsensor.frame_length & 0xFF);
-        write_cmos_sensor(0x0104, 0);
+        /*write_cmos_sensor(0x0104, 0);*/
         }
     } else {
-        write_cmos_sensor(0x0104, 1);
+        /*write_cmos_sensor(0x0104, 1);*/
         write_cmos_sensor(0x0340, imgsensor.frame_length >> 8);
         write_cmos_sensor(0x0341, imgsensor.frame_length & 0xFF);
-        write_cmos_sensor(0x0104, 0);
+        /*write_cmos_sensor(0x0104, 0);*/
     }
-    write_cmos_sensor(0x0104, 1);
+    /*write_cmos_sensor(0x0104, 1);*/
     /* Long exposure */
     write_cmos_sensor(0x0202, (le >> 8) & 0xFF);
     write_cmos_sensor(0x0203, le  & 0xFF);
@@ -655,7 +655,7 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
     /* Global analog Gain for Short expo*/
     write_cmos_sensor(0x0216, (reg_gain>>8)& 0xFF);
     write_cmos_sensor(0x0217, reg_gain & 0xFF);
-    write_cmos_sensor(0x0104, 0);
+    /*write_cmos_sensor(0x0104, 0);*/
 
 }
 
@@ -680,18 +680,18 @@ static void ihdr_write_shutter(kal_uint16 le, kal_uint16 se)
         else if(realtime_fps >= 147 && realtime_fps <= 150)
             set_max_framerate(146,0);
         else {
-        write_cmos_sensor(0x0104, 1);
+        /*write_cmos_sensor(0x0104, 1);*/
         write_cmos_sensor(0x0340, imgsensor.frame_length >> 8);
         write_cmos_sensor(0x0341, imgsensor.frame_length & 0xFF);
-        write_cmos_sensor(0x0104, 0);
+       /* write_cmos_sensor(0x0104, 0);*/
         }
     } else {
-        write_cmos_sensor(0x0104, 1);
+       /* write_cmos_sensor(0x0104, 1);*/
         write_cmos_sensor(0x0340, imgsensor.frame_length >> 8);
         write_cmos_sensor(0x0341, imgsensor.frame_length & 0xFF);
-        write_cmos_sensor(0x0104, 0);
+        /*write_cmos_sensor(0x0104, 0);*/
     }
-    write_cmos_sensor(0x0104, 1);
+    /*write_cmos_sensor(0x0104, 1);*/
     /* Long exposure */
     write_cmos_sensor(0x0202, (le >> 8) & 0xFF);
     write_cmos_sensor(0x0203, le  & 0xFF);
@@ -699,7 +699,7 @@ static void ihdr_write_shutter(kal_uint16 le, kal_uint16 se)
     write_cmos_sensor(0x0224, (se >> 8) & 0xFF);
     write_cmos_sensor(0x0225, se  & 0xFF);
 
-    write_cmos_sensor(0x0104, 0);
+    /*write_cmos_sensor(0x0104, 0);*/
 
 }
 
