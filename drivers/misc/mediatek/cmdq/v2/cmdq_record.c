@@ -115,7 +115,7 @@ int32_t cmdqRecCreate(CMDQ_SCENARIO_ENUM scenario, cmdqRecHandle *pHandle)
 		return -EINVAL;
 	}
 
-	handle = kzalloc(sizeof(uint8_t *) * sizeof(cmdqRecStruct), GFP_KERNEL);
+	handle = kzalloc(sizeof(cmdqRecStruct), GFP_KERNEL);
 	if (NULL == handle)
 		return -ENOMEM;
 
