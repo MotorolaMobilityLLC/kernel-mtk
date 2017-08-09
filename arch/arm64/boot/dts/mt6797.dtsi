@@ -757,7 +757,14 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,pericfg";
 			reg = <0x10003000 0x1000>;
 		};
-
+		cqdma@10212c00 {
+			compatible = "mediatek,mt-cqdma-v1";
+			reg = <0x10212c00 0x100>,
+			      <0x10212d00 0x100>;
+			interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 119 IRQ_TYPE_LEVEL_LOW>;
+			nr_channel = <2>;
+		};
 		dramc_conf@10004000 {
 			compatible = "mediatek,dramc";
 			reg = <0x10004000 0x1000>;
