@@ -1881,23 +1881,6 @@ int ion_drv_put_kernel_handle(void *kernel_handle)
 	return ion_handle_put(kernel_handle);
 }
 
-int ion_device_destroy_heaps(struct ion_device *dev, int need_lock)
-{
-	struct ion_heap *heap, *tmp;
-
-	if (need_lock)
-		down_write(&dev->lock);
-
-	plist_for_each_entry_safe(heap, tmp, &dev->heaps, node) {
-		plist_del((struct plist_node *)heap, &dev->heaps);
-		ion_heap_destroy(heap);
-	}
-
-	if (need_lock)
-		up_write(&dev->lock);
-	return 0;
-}
-
 struct ion_heap *ion_drv_get_heap(struct ion_device *dev, int heap_id, int need_lock)
 {
 	struct ion_heap *_heap, *heap = NULL, *tmp;

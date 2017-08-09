@@ -222,6 +222,14 @@ int ion_dma_unmap_area(int fd, ion_user_handle_t handle, int dir);
 void ion_dma_map_area_va(void *start, size_t size, ION_DMA_DIR dir);
 void ion_dma_unmap_area_va(void *start, size_t size, ION_DMA_DIR dir);
 
+struct ion_heap *ion_mm_heap_create(struct ion_platform_heap *);
+void ion_mm_heap_destroy(struct ion_heap *);
+
+struct ion_heap *ion_fb_heap_create(struct ion_platform_heap *);
+void ion_fb_heap_destroy(struct ion_heap *);
+
+int ion_device_destroy_heaps(struct ion_device *dev);
+
 #endif
 
 #endif

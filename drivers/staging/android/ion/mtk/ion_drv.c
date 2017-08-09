@@ -588,6 +588,51 @@ static long ion_custom_ioctl(struct ion_client *client, unsigned int cmd,
  DEFINE_SIMPLE_ATTRIBUTE(debug_profile_fops, debug_profile_get,
  debug_profile_set, "%llu\n");*/
 
+
+struct ion_heap *ion_mtk_heap_create(struct ion_platform_heap *heap_data)
+{
+	struct ion_heap *heap = NULL;
+
+	switch ((int)heap_data->type) {
+	case ION_HEAP_TYPE_MULTIMEDIA:
+		heap = ion_mm_heap_create(heap_data);
+		break;
+	case ION_HEAP_TYPE_FB:
+		heap = ion_fb_heap_create(heap_data);
+		break;
+	default:
+		heap = ion_heap_create(heap_data);
+	}
+
+	if (IS_ERR_OR_NULL(heap)) {
+		pr_err("%s: error creating heap %s type %d base %lu size %zu\n",
+		       __func__, heap_data->name, heap_data->type,
+		       heap_data->base, heap_data->size);
+		return ERR_PTR(-EINVAL);
+	}
+
+	heap->name = heap_data->name;
+	heap->id = heap_data->id;
+	return heap;
+}
+
+void ion_mtk_heap_destroy(struct ion_heap *heap)
+{
+	if (!heap)
+		return;
+
+	switch ((int)heap->type) {
+	case ION_HEAP_TYPE_MULTIMEDIA:
+		ion_mm_heap_destroy(heap);
+		break;
+	case ION_HEAP_TYPE_FB:
+		ion_fb_heap_destroy(heap);
+		break;
+	default:
+		ion_heap_destroy(heap);
+	}
+}
+
 int ion_drv_create_heap(struct ion_platform_heap *heap_data)
 {
 	struct ion_heap *heap;
@@ -605,9 +650,25 @@ int ion_drv_create_heap(struct ion_platform_heap *heap_data)
 	return 0;
 }
 
+int ion_device_destroy_heaps(struct ion_device *dev)
+{
+	struct ion_heap *heap, *tmp;
+
+	down_write(&dev->lock);
+
+	plist_for_each_entry_safe(heap, tmp, &dev->heaps, node) {
+		plist_del((struct plist_node *)heap, &dev->heaps);
+		ion_mtk_heap_destroy(heap);
+	}
+
+	up_write(&dev->lock);
+
+	return 0;
+}
+
 static int ion_drv_probe(struct platform_device *pdev)
 {
-	int ret, i;
+	int i;
 	struct ion_platform_data *pdata = pdev->dev.platform_data;
 	unsigned int num_heaps = pdata->nr;
 
@@ -621,6 +682,7 @@ static int ion_drv_probe(struct platform_device *pdev)
 	/* create the heaps as specified in the board file */
 	for (i = 0; i < num_heaps; i++) {
 		struct ion_platform_heap *heap_data = &pdata->heaps[i];
+		struct ion_heap *heap;
 
 		if (heap_data->type == ION_HEAP_TYPE_CARVEOUT && heap_data->base == 0) {
 			/* reserve for carveout heap failed */
@@ -628,9 +690,12 @@ static int ion_drv_probe(struct platform_device *pdev)
 			continue;
 		}
 
-		ret = ion_drv_create_heap(heap_data);
-		if (ret)
-			goto err;
+		heap = ion_mtk_heap_create(heap_data);
+
+		if (IS_ERR_OR_NULL(heap))
+			continue;
+
+		ion_device_add_heap(g_ion_device, heap);
 	}
 
 	platform_set_drvdata(pdev, g_ion_device);
@@ -644,19 +709,16 @@ static int ion_drv_probe(struct platform_device *pdev)
 	ion_profile_init();
 
 	return 0;
-
-err:
-	ion_device_destroy_heaps(g_ion_device, 1);
-	return ret;
-
 }
 
 int ion_drv_remove(struct platform_device *pdev)
 {
 	struct ion_device *idev = platform_get_drvdata(pdev);
 
-	ion_device_destroy_heaps(idev, 1);
+	ion_device_destroy_heaps(g_ion_device);
+
 	ion_device_destroy(idev);
+
 	return 0;
 }
 
@@ -692,7 +754,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 
 struct ion_platform_data ion_drv_platform_data = {
 
-.nr = ARRAY_SIZE(ion_drv_platform_heaps), .heaps = ion_drv_platform_heaps, };
+.nr = ARRAY_SIZE(ion_drv_platform_heaps), .heaps = ion_drv_platform_heaps};
 
 static struct platform_driver ion_driver = {
 		.probe = ion_drv_probe,
