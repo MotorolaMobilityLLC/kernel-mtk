@@ -420,6 +420,8 @@ static void _mt_gpufreq_kick_pbm(int enable);
 static bool g_limited_pbm_ignore_state;
 static unsigned int mt_gpufreq_pbm_limited_gpu_power;	/* PBM limit power */
 static unsigned int mt_gpufreq_pbm_limited_index;	/* Limited frequency index for PBM */
+#define GPU_OFF_SETTLE_TIME_MS		(100)
+struct delayed_work notify_pbm_gpuoff_work;
 #endif
 
 int __attribute__ ((weak))
@@ -847,6 +849,17 @@ static unsigned int mt_gpufreq_calc_pmic_settle_time(unsigned int volt_old, unsi
 	return delay;
 }
 
+#ifndef DISABLE_PBM_FEATURE
+static void mt_gpufreq_notify_pbm_gpuoff(struct work_struct *work)
+{
+	mutex_lock(&mt_gpufreq_lock);
+	if (!mt_gpufreq_volt_enable_state)
+		_mt_gpufreq_kick_pbm(0);
+
+	mutex_unlock(&mt_gpufreq_lock);
+}
+#endif
+
 /* Set VGPU enable/disable when GPU clock be switched on/off */
 unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 {
@@ -958,10 +971,17 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 			BUG();
 	}
 
-	if (enable == 1)
-		_mt_gpufreq_kick_pbm(1);
-	else
-		_mt_gpufreq_kick_pbm(0);
+#ifndef DISABLE_PBM_FEATURE
+	if (enable == 1) {
+		if (delayed_work_pending(&notify_pbm_gpuoff_work))
+			cancel_delayed_work(&notify_pbm_gpuoff_work);
+		else
+			_mt_gpufreq_kick_pbm(1);
+	} else {
+		schedule_delayed_work(&notify_pbm_gpuoff_work, msecs_to_jiffies(GPU_OFF_SETTLE_TIME_MS));
+	}
+
+	#endif
 
 	mt_gpufreq_volt_enable_state = enable;
 exit:
@@ -2757,6 +2777,10 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		gpufreq_err("failed to create gpufreq_low_batt_volume thread\n");
 
 	hrtimer_start(&mt_gpufreq_low_batt_volume_timer, ktime, HRTIMER_MODE_REL);
+#endif
+
+#ifndef DISABLE_PBM_FEATURE
+	INIT_DEFERRABLE_WORK(&notify_pbm_gpuoff_work, mt_gpufreq_notify_pbm_gpuoff);
 #endif
 
 	return 0;
