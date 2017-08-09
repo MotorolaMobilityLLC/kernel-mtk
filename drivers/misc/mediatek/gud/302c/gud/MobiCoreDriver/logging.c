@@ -66,6 +66,9 @@ static char *log_line;			/* Log Line buffer */
 static uint32_t log_line_len;		/* Log Line buffer current length */
 static int thread_err;
 
+#ifdef CONFIG_MT_TRUSTONIC_TEE_DEBUGFS
+extern uint8_t trustonic_swd_debug;
+#endif
 static void log_eol(uint16_t source)
 {
 	if (!strnlen(log_line, LOG_LINE_SIZE)) {
@@ -73,12 +76,18 @@ static void log_eol(uint16_t source)
 		log_line_len = 0;
 		return;
 	}
+#ifdef CONFIG_MT_TRUSTONIC_TEE_DEBUGFS
+	if (trustonic_swd_debug) {
+#endif
 	/* MobiCore Userspace */
 	if (prev_source)
-		dev_info(mcd, "%03x|%s\n", prev_source, log_line);
+		pr_debug("%03x|%s\n", prev_source, log_line);
 	/* MobiCore kernel */
 	else
-		dev_info(mcd, "%s\n", log_line);
+		pr_debug("%s\n", log_line);
+#ifdef CONFIG_MT_TRUSTONIC_TEE_DEBUGFS
+	}
+#endif
 
 	log_line_len = 0;
 	log_line[0] = 0;
