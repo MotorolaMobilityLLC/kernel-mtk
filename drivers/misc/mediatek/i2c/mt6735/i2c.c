@@ -19,9 +19,9 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mt_clkmgr.h>	/* mt_clkmgr.h will be removed after CCF porting is finished. */
-#endif				/* defined(CONFIG_MTK_LEGACY) */
+#endif				/* defined(CONFIG_MTK_CLKMGR) */
 #include <asm/io.h>
 /* #include <mach/dma.h> */
 /* #include <mach/mt_reg_base.h> */
@@ -1252,7 +1252,7 @@ static s32 _i2c_deal_result_3dcamera(struct mt_i2c_t *i2c, struct mt_i2c_msg *ms
 static void mt_i2c_clock_enable(struct mt_i2c_t *i2c)
 {
 #if (!defined(CONFIG_MT_I2C_FPGA_ENABLE))
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 	if (i2c->dma_en) {
 		I2CINFO(I2C_T_TRANSFERFLOW, "Before dma clock enable .....\n");
 		enable_clock(MT_CG_PERI_APDMA, "i2c");
@@ -1275,7 +1275,7 @@ static void mt_i2c_clock_enable(struct mt_i2c_t *i2c)
 static void mt_i2c_clock_disable(struct mt_i2c_t *i2c)
 {
 #if (!defined(CONFIG_MT_I2C_FPGA_ENABLE))
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 	if (i2c->dma_en) {
 		I2CINFO(I2C_T_TRANSFERFLOW, "Before dma clock disable .....\n");
 		disable_clock(MT_CG_PERI_APDMA, "i2c");
@@ -1467,7 +1467,7 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 	i2c->irqnr = irq;
 	pr_info("reg: 0x%p, irq: 0x%d, id: %d\n", i2c->base, i2c->irqnr, i2c->id);
 
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 
 #if (defined(CONFIG_MT_I2C_FPGA_ENABLE))
 	i2c->clk = I2C_CLK_RATE;
