@@ -51,14 +51,16 @@
 
 
 
-#define GYRO_FS_SEL			         (0x02<<SHIFT_GYRO_FS_SEL)
+#define GYRO_FS_SEL			         (ICM20645_FS_2000<<SHIFT_GYRO_FS_SEL)
 
 
-#define ICM20645_FS_1000			 0x02
+#define ICM20645_FS_2000			 0x03
 
-
-#define ICM20645_FS_1000_LSB		   33
-#define ICM20645_FS_MAX_LSB			  131
+/* give more accurancy gyroscope rawdata, 2000 lsb is 32768 / 2000 = 16.4,
+ * we magnify 10 times 16.4 and 131, then follows 164 and 1310
+ */
+#define ICM20645_FS_2000_LSB		   164
+#define ICM20645_FS_MAX_LSB			  1310
 
 #define GYRO_DLPFCFG	(7<<3)
 #define GYRO_FCHOICE	0x01

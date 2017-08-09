@@ -16,8 +16,8 @@
 #include <gyroscope.h>
 
 /*----------------------------------------------------------------------------*/
-#define ICM20645_DEFAULT_FS		ICM20645_FS_1000
-#define ICM20645_DEFAULT_LSB		ICM20645_FS_1000_LSB
+#define ICM20645_DEFAULT_FS		ICM20645_FS_2000
+#define ICM20645_DEFAULT_LSB		ICM20645_FS_2000_LSB
 /*---------------------------------------------------------------------------*/
 #define DEBUG 0
 /*----------------------------------------------------------------------------*/
@@ -919,12 +919,16 @@ static int icm20645_init_client(struct i2c_client *client, bool enable)
 		GYRO_ERR("ICM20645_SetDataFormat ERR!\n");
 		return res;
 	}
-	res = ICM20645_Setfilter(client, GYRO_AVGCFG_8X);
+	/* this is used to cts gyroscope measurement test, this case will use 500hz frquency,
+	 * so we calibrate sensor in factory use use 500hz and 1x filter to give raw data, if
+	 * we use 100hz and 8x filter in factory calibration will lead raw data not accurancy 
+	 */
+	res = ICM20645_Setfilter(client, GYRO_AVGCFG_1X);
 	if (res != ICM20645_SUCCESS) {
 		GYRO_ERR("ICM20645_Setfilter ERR!\n");
 		return res;
 	}
-	res = ICM20645_SetSampleRate(client, 125);
+	res = ICM20645_SetSampleRate(client, 500);
 	if (res != ICM20645_SUCCESS) {
 		GYRO_ERR("ICM20645_SetSampleRate ERR!\n");
 		return res;
