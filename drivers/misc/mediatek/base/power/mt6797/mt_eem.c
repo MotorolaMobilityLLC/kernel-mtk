@@ -437,6 +437,7 @@ static unsigned int cpu_speed;
 #include <linux/file.h>
 #include <linux/delay.h>
 #include <linux/types.h>
+#include <linux/time.h>
 #ifdef __KERNEL__
 #include <linux/topology.h>
 #endif
@@ -666,6 +667,7 @@ static void _mt_eem_aee_init(void)
 #define BITS(r, val)	((val << LSB(r)) & BITMASK(r))
 
 #define GET_BITS_VAL(_bits_, _val_)   (((_val_) & (BITMASK(_bits_))) >> ((0) ? _bits_))
+
 /*
  * LOG
  */
@@ -722,6 +724,19 @@ static void _mt_eem_aee_init(void)
 	#define FUNC_ENTER(lv)
 	#define FUNC_EXIT(lv)
 #endif /* CONFIG_CPU_DVFS_SHOWLOG */
+
+/* Get time stmp to known the time period */
+static unsigned long long eem_pTime_us, eem_cTime_us, eem_diff_us;
+#define TIME_TH_US 3000
+#define EEM_IS_TOO_LONG()   \
+	do {	\
+		eem_diff_us = eem_cTime_us - eem_pTime_us;	\
+		if (eem_diff_us > TIME_TH_US) {                \
+			pr_warn(EEM_TAG "caller_addr %p: %llu us\n", __builtin_return_address(0), eem_diff_us); \
+		} else if (eem_diff_us < 0) {	\
+			pr_warn(EEM_TAG "E: misuse caller_addr %p\n", __builtin_return_address(0)); \
+		}	\
+	} while (0)
 
 /*
  * REG ACCESS
@@ -2207,6 +2222,16 @@ static void get_freq_table_gpu(struct eem_det *det)
 	det->num_freq_tbl = i;
 }
 
+#ifdef __KERNEL__
+static long long eem_get_current_time_us(void)
+{
+	struct timeval t;
+
+	do_gettimeofday(&t);
+	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec);
+}
+#endif
+
 #if 0
 static int set_volt_lte(struct eem_det *det)
 {
@@ -2316,6 +2341,7 @@ void mt_ptp_lock(unsigned long *flags)
 	/* get_md32_semaphore(SEMAPHORE_PTP); */
 #ifdef __KERNEL__
 	spin_lock_irqsave(&eem_spinlock, *flags);
+	eem_pTime_us = eem_get_current_time_us();
 #endif
 	/* FUNC_EXIT(FUNC_LV_HELP); */
 }
@@ -2327,6 +2353,8 @@ void mt_ptp_unlock(unsigned long *flags)
 {
 	/* FUNC_ENTER(FUNC_LV_HELP); */
 #ifdef __KERNEL__
+	eem_cTime_us = eem_get_current_time_us();
+	EEM_IS_TOO_LONG();
 	spin_unlock_irqrestore(&eem_spinlock, *flags);
 	/* FIXME: lock with MD32 */
 	/* release_md32_semaphore(SEMAPHORE_PTP); */
@@ -3534,7 +3562,8 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 		}
 		*/
 	}
-	eem_error("M,B=(%d),T(%d),DC(0x%x),V74(0x%x),V30(0x%x),F74(0x%x),F30(0x%x),sts(0x%x),250(0x%x)\n",
+	if (eem_log_en)
+		eem_error("M,B=%d,T=%d,DC=%x,V74=%x,V30=%x,F74=%x,F30=%x,sts=%x,250=%x\n",
 		det->ctrl_id,
 		det->ops->get_temp(det),
 		eem_read(EEM_DCVALUES),
@@ -3684,7 +3713,7 @@ int ptp_isr(void)
 
 	FUNC_ENTER(FUNC_LV_MODULE);
 
-	mt_ptp_lock(&flags);
+	/* mt_ptp_lock(&flags); */
 
 #if 0
 	if (!(BIT(PTP_CTRL_VCORE) & eem_read(EEMODINTST))) {
@@ -3710,9 +3739,12 @@ int ptp_isr(void)
 		if (i == EEM_CTRL_SOC)
 			continue;
 
+		mt_ptp_lock(&flags);
 		/* TODO: FIXME, it is better to link i @ struct eem_det */
-		if ((BIT(i) & eem_read(EEMODINTST)))
+		if ((BIT(i) & eem_read(EEMODINTST))) {
+			mt_ptp_unlock(&flags);
 			continue;
+		}
 
 		det = &eem_detectors[i];
 
@@ -3721,9 +3753,10 @@ int ptp_isr(void)
 		/*mt_eem_reg_dump_locked(); */
 
 		eem_isr_handler(det);
+		mt_ptp_unlock(&flags);
 	}
 
-	mt_ptp_unlock(&flags);
+	/* mt_ptp_unlock(&flags); */
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 #ifdef __KERNEL__
