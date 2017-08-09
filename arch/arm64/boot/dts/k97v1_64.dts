@@ -1105,7 +1105,7 @@
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO197__FUNC_GPIO197>;
 			slew-rate = <1>;
-			output-high;
+			output-low;
 		};
 	};
 
