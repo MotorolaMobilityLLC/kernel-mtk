@@ -72,12 +72,6 @@ const char *aee_filter_list[AEE_FILTER_NUM] = {
 	"u:r:vdc:s0",
 /*	"u:r:untrusted_app:s0", */
 	"u:r:zygote:s0",
-	"u:r:mobile_log_d:s0",
-	"u:r:guiext-server:s0",
-	"u:r:mtkrild:s0",
-	"u:r:mtkrildmd2:s0",
-	"u:r:nvram_agent_binder:s0",
-	"u:r:nvram_daemon:s0",
 };
 
 static int mtk_check_filter(char *scontext);
