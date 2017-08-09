@@ -1295,8 +1295,7 @@
 			      <0x11000100 0x80>;
 			interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <10>;
-			clocks = <&clk_null>, <&clk_null>;
-			/* clocks = <&infrasys INFRA_I2C0>, <&infrasys INFRA_AP_DMA>; */
+			clocks = <&infrasys INFRA_I2C0>, <&infrasys INFRA_AP_DMA>;
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -1309,8 +1308,7 @@
 			      <0x11000180 0x80>;
 			interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <10>;
-			clocks = <&clk_null>, <&clk_null>;
-			/* clocks = <&infrasys INFRA_I2C1>, <&infrasys INFRA_AP_DMA>; */
+			clocks = <&infrasys INFRA_I2C1>, <&infrasys INFRA_AP_DMA>;
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -1323,8 +1321,7 @@
 			      <0x11000200 0x80>;
 			interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <10>;
-			clocks = <&clk_null>, <&clk_null>;
-			/* clocks = <&infrasys INFRA_I2C2>, <&infrasys INFRA_AP_DMA>; */
+			clocks = <&infrasys INFRA_I2C2>, <&infrasys INFRA_AP_DMA>;
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -1380,8 +1377,7 @@
 			      <0x11000280 0x80>;
 			interrupts = <GIC_SPI 87 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <10>;
-			clocks = <&clk_null>, <&clk_null>;
-			/* clocks = <&infrasys INFRA_I2C3>, <&infrasys INFRA_AP_DMA>; */
+			clocks = <&infrasys INFRA_I2C3>, <&infrasys INFRA_AP_DMA>;
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -1405,8 +1401,7 @@
 			      <0x11000300 0x80>;
 			interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_LOW>;
 			clock-div = <10>;
-			clocks = <&clk_null>, <&clk_null>;
-			/* clocks = <&infrasys INFRA_I2C4>, <&infrasys INFRA_AP_DMA>; */
+			clocks = <&infrasys INFRA_I2C4>, <&infrasys INFRA_AP_DMA>;
 			clock-names = "main", "dma";
 			#address-cells = <1>;
 			#size-cells = <0>;
