@@ -32,6 +32,7 @@ TZ_RESULT KREE_TeeServiceCallNoCheck(KREE_SESSION_HANDLE handle,
 typedef TZ_RESULT(*KREE_REE_Service_Func) (u32 op,
 					u8 uparam[REE_SERVICE_BUFFER_SIZE]);
 
+struct clk *mtee_clk_get(const char *clk_name);
 
 /* REE Services function prototype */
 TZ_RESULT KREE_ServRequestIrq(u32 op, u8 uparam[REE_SERVICE_BUFFER_SIZE]);

@@ -28,6 +28,7 @@
 #include <linux/freezer.h>
 #include <linux/platform_device.h>
 
+#include <linux/clk.h>
 #include <linux/irqdomain.h>
 #include <linux/of_platform.h>
 #include <linux/of_irq.h>
@@ -62,6 +63,67 @@ struct MTIOMMU_PIN_RANGE_T {
 	uint32_t nrPages;
 	uint32_t isPage;
 };
+
+#ifdef CONFIG_OF
+/*Used for clk management*/
+#define CLK_NAME_LEN 16
+struct mtee_clk {
+	struct list_head list;
+	char clk_name[CLK_NAME_LEN];
+	struct clk *clk;
+};
+static LIST_HEAD(mtee_clk_list);
+
+static void mtee_clks_init(struct platform_device *pdev)
+{
+	int clks_num;
+	int idx;
+
+	clks_num = of_property_count_strings(pdev->dev.of_node, "clock-names");
+	for (idx = 0; idx < clks_num; idx++) {
+		const char *clk_name;
+		struct clk *clk;
+		struct mtee_clk *mtee_clk;
+
+		if (of_property_read_string_index(pdev->dev.of_node, "clock-names", idx, &clk_name)) {
+			pr_warn("[%s] get clk_name failed, index:%d\n",
+				MODULE_NAME,
+				idx);
+			continue;
+		}
+		if (strlen(clk_name) > CLK_NAME_LEN-1) {
+			pr_warn("[%s] clk_name %s is longer than %d, trims to %d\n",
+				MODULE_NAME,
+				clk_name, CLK_NAME_LEN-1, CLK_NAME_LEN-1);
+		}
+		clk = devm_clk_get(&pdev->dev, clk_name);
+		if (IS_ERR(clk)) {
+			pr_warn("[%s] get devm_clk_get failed, clk_name:%s\n",
+				MODULE_NAME,
+				clk_name);
+			continue;
+		}
+
+		mtee_clk = kzalloc(sizeof(struct mtee_clk), GFP_KERNEL);
+		strncpy(mtee_clk->clk_name, clk_name, CLK_NAME_LEN-1);
+		mtee_clk->clk = clk;
+
+		list_add(&mtee_clk->list, &mtee_clk_list);
+	}
+}
+
+struct clk *mtee_clk_get(const char *clk_name)
+{
+	struct mtee_clk *cur;
+	struct mtee_clk *tmp;
+
+	list_for_each_entry_safe(cur, tmp, &mtee_clk_list, list) {
+		if (strncmp(cur->clk_name, clk_name, strlen(cur->clk_name)) == 0)
+			return cur->clk;
+	}
+	return NULL;
+}
+#endif
 
 /*****************************************************************************
 * FUNCTION DEFINITION
@@ -1118,6 +1180,8 @@ static int mtee_probe(struct platform_device *pdev)
 			pr_warn("can't find interrupt-parent device node from mtee\n");
 	} else
 		pr_warn("No mtee device node\n");
+
+	mtee_clks_init(pdev);
 #endif
 
 	tz_client_dev = MKDEV(MAJOR_DEV_NUM, 0);
