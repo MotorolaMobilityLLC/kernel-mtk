@@ -1137,10 +1137,14 @@ int mt_cpufreq_update_volt(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl, int n
 	p_l = id_to_cpu_dvfs(MT_CPU_DVFS_L);
 	p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
 
-	if (!cpu_dvfs_is_available(p_ll) || !cpu_dvfs_is_available(p_l) || !cpu_dvfs_is_available(p_cci))
+	if (!cpu_dvfs_is_available(p_ll) || !cpu_dvfs_is_available(p_l) || !cpu_dvfs_is_available(p_cci) ||
+	    p->nr_opp_tbl == 0)
 		return 0;
 
-	BUG_ON(nr_volt_tbl > p->nr_opp_tbl);
+	if (nr_volt_tbl > p->nr_opp_tbl) {
+		cpufreq_err("nr_volt_tbl = %d, nr_opp_tbl = %d\n", nr_volt_tbl, p->nr_opp_tbl);
+		BUG();
+	}
 
 	cpufreq_lock();
 
@@ -1544,13 +1548,7 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 	aee_record_cpu_dvfs_step(4);
 
 #ifdef DCM_ENABLE
-	/* DCM (freq: high -> low) */
-	if (cur_khz > target_khz) {
-		if (cpu_dvfs_is(p, MT_CPU_DVFS_CCI))
-			p->ops->set_sync_dcm(0);
-		else
-			p->ops->set_sync_dcm(target_khz/1000);
-	}
+	p->ops->set_sync_dcm(0);	/* clock won't be slow down */
 #endif
 
 	now[SET_FREQ] = ktime_get();
@@ -1597,9 +1595,7 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 		max[SET_FREQ] = delta[SET_FREQ];
 
 #ifdef DCM_ENABLE
-	/* DCM (freq: low -> high)*/
-	if (cur_khz < target_khz)
-		p->ops->set_sync_dcm(target_khz/1000);
+	p->ops->set_sync_dcm(target_khz / 1000);
 #endif
 }
 
