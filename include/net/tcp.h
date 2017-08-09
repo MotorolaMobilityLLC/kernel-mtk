@@ -88,14 +88,14 @@ void tcp_time_wait(struct sock *sk, int state, int timeo);
 				 * to ~3sec-8min depending on RTO.
 				 */
 
-#define TCP_RETR2	15	/*
+#define TCP_RETR2	10	/*
 				 * This should take at least
 				 * 90 minutes to time out.
 				 * RFC1122 says that the limit is 100 sec.
 				 * 15 is ~13-30min depending on RTO.
 				 */
 
-#define TCP_SYN_RETRIES	 6	/* This is how many retries are done
+#define TCP_SYN_RETRIES	 9	/* This is how many retries are done
 				 * when active opening a connection.
 				 * RFC1122 says the minimum retry MUST
 				 * be at least 180secs.  Nevertheless
@@ -128,7 +128,7 @@ void tcp_time_wait(struct sock *sk, int state, int timeo);
 #define TCP_DELACK_MIN	4U
 #define TCP_ATO_MIN	4U
 #endif
-#define TCP_RTO_MAX	((unsigned)(120*HZ))
+#define TCP_RTO_MAX	((unsigned)(60*HZ))
 #define TCP_RTO_MIN	((unsigned)(HZ/5))
 #define TCP_TIMEOUT_INIT ((unsigned)(1*HZ))	/* RFC6298 2.1 initial RTO value	*/
 #define TCP_TIMEOUT_FALLBACK ((unsigned)(3*HZ))	/* RFC 1122 initial RTO value, now
