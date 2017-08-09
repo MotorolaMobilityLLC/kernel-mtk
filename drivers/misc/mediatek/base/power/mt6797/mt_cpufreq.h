@@ -57,6 +57,8 @@ extern int mt_cpufreq_update_volt(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl
 				  int nr_volt_tbl);
 extern void mt_cpufreq_restore_default_volt(enum mt_cpu_dvfs_id id);
 extern unsigned int mt_cpufreq_get_cur_volt(enum mt_cpu_dvfs_id id);
+typedef void (*mt_cpufreq_set_ptbl_funcPTP)(enum mt_cpu_dvfs_id id, int restore);
+extern void mt_cpufreq_set_ptbl_registerCB(mt_cpufreq_set_ptbl_funcPTP pCB);
 
 /* PBM */
 extern unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id);

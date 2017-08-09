@@ -1505,6 +1505,14 @@ static int _search_available_freq_idx(struct mt_cpu_dvfs *p, unsigned int target
 }
 
 /* for PTP-OD */
+static mt_cpufreq_set_ptbl_funcPTP mt_cpufreq_update_private_tbl;
+
+void mt_cpufreq_set_ptbl_registerCB(mt_cpufreq_set_ptbl_funcPTP pCB)
+{
+	mt_cpufreq_update_private_tbl = pCB;
+}
+EXPORT_SYMBOL(mt_cpufreq_set_ptbl_registerCB);
+
 static int _set_cur_volt_locked(struct mt_cpu_dvfs *p, unsigned int volt)	/* volt: mv * 100 */
 {
 	int ret = -1;
@@ -1526,7 +1534,7 @@ static int _set_cur_volt_locked(struct mt_cpu_dvfs *p, unsigned int volt)	/* vol
 	return ret;
 }
 
-static int _restore_default_volt_b(struct mt_cpu_dvfs *p)
+static int _restore_default_volt_b(struct mt_cpu_dvfs *p, enum mt_cpu_dvfs_id id)
 {
 	unsigned long flags;
 	int i;
@@ -1550,6 +1558,9 @@ static int _restore_default_volt_b(struct mt_cpu_dvfs *p)
 	for (i = 0; i < p->nr_opp_tbl; i++)
 		p->opp_tbl[i].cpufreq_volt = p->opp_tbl[i].cpufreq_volt_org;
 
+	if (NULL != mt_cpufreq_update_private_tbl)
+			mt_cpufreq_update_private_tbl(id, 1);
+
 	freq = p->ops->get_cur_phy_freq(p);
 	volt = p->ops->get_cur_volt(p);
 
@@ -1569,7 +1580,7 @@ static int _restore_default_volt_b(struct mt_cpu_dvfs *p)
 	return ret;
 }
 
-static int _restore_default_volt(struct mt_cpu_dvfs *p)
+static int _restore_default_volt(struct mt_cpu_dvfs *p, enum mt_cpu_dvfs_id id)
 {
 	unsigned long flags;
 	int i;
@@ -1602,6 +1613,9 @@ static int _restore_default_volt(struct mt_cpu_dvfs *p)
 	/* restore to default volt */
 	for (i = 0; i < p->nr_opp_tbl; i++)
 		p->opp_tbl[i].cpufreq_volt = p->opp_tbl[i].cpufreq_volt_org;
+
+	if (NULL != mt_cpufreq_update_private_tbl)
+			mt_cpufreq_update_private_tbl(id, 1);
 
 	freq = p->ops->get_cur_phy_freq(p);
 	volt = p->ops->get_cur_volt(p);
@@ -1672,7 +1686,10 @@ int mt_cpufreq_update_volt_b(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl, int
 
 	/* update volt table */
 	for (i = 0; i < nr_volt_tbl; i++)
-		p->opp_tbl[i].cpufreq_volt = PMIC_VAL_TO_VOLT(volt_tbl[i]);
+		p->opp_tbl[i].cpufreq_volt = EXTBUCK_VAL_TO_VOLT(volt_tbl[i]);
+
+	if (NULL != mt_cpufreq_update_private_tbl)
+			mt_cpufreq_update_private_tbl(id, 0);
 
 	freq = p->ops->get_cur_phy_freq(p);
 	volt = p->ops->get_cur_volt(p);
@@ -1729,7 +1746,10 @@ int mt_cpufreq_update_volt(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl, int n
 
 	/* update volt table */
 	for (i = 0; i < nr_volt_tbl; i++)
-		p->opp_tbl[i].cpufreq_volt = PMIC_VAL_TO_VOLT(volt_tbl[i]);
+		p->opp_tbl[i].cpufreq_volt = EXTBUCK_VAL_TO_VOLT(volt_tbl[i]);
+
+	if (NULL != mt_cpufreq_update_private_tbl)
+			mt_cpufreq_update_private_tbl(id, 0);
 
 	freq = p->ops->get_cur_phy_freq(p);
 	volt = p->ops->get_cur_volt(p);
@@ -1769,9 +1789,9 @@ void mt_cpufreq_restore_default_volt(enum mt_cpu_dvfs_id id)
 	}
 
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
-		_restore_default_volt_b(p);
+		_restore_default_volt_b(p, id);
 	else
-	_restore_default_volt(p);
+		_restore_default_volt(p, id);
 
 	FUNC_EXIT(FUNC_LV_API);
 }
