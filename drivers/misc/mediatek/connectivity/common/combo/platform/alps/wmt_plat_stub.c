@@ -108,7 +108,7 @@ static unsigned int wmt_plat_get_drv_status(unsigned int type)
 INT32 wmt_plat_stub_init(VOID)
 {
 	INT32 iRet = -1;
-	CMB_STUB_CB stub_cb;
+	CMB_STUB_CB stub_cb = {0};
 
 	stub_cb.aif_ctrl_cb = wmt_plat_audio_ctrl;
 	stub_cb.func_ctrl_cb = wmt_plat_func_ctrl;
