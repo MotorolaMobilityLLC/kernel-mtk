@@ -64,6 +64,17 @@ config FOUR_KEY_HEADSET
 
 	  If unsure, say N.
 
+config HEADSET_SUPPORT_FIVE_POLE
+	tristate "MediaTek ACCDET driver"
+	---help---
+
+	  HEADSET_SUPPORT_FIVE_POLE support for MediaTek SOC
+
+	  If you want to use MediaTek ACCDET five pole headset,
+	  say Y or M here.
+
+	  If unsure, say N.
+
 config TS3A225E_ACCDET
 	tristate "MediaTek ACCDET driver"
 	---help---

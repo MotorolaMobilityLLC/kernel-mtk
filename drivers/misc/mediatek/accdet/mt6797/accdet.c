@@ -99,6 +99,7 @@ char *accdet_report_string[4] = {
 	"No_device",
 	"Headset_mic",
 	"Headset_no_mic",
+	"Headset_five_pole",
 	/*"HEADSET_illegal",*/
 	/* "Double_check"*/
 };
@@ -854,6 +855,14 @@ static inline void check_cable_type(void)
 			if (1 == eint_accdet_sync_flag) {
 				accdet_status = MIC_BIAS;
 				cable_type = HEADSET_MIC;
+#ifdef CONFIG_HEADSET_SUPPORT_FIVE_POLE
+				msleep(20);
+				if (pmic_pwrap_read(0x0F46) & 0x01) {
+					/*check 5 pole headset*/
+					ACCDET_DEBUG("[Accdet]check 5 pole headset: YES\n");
+					cable_type = HEADSET_FIVE_POLE;
+				}
+#endif
 				/*AB=11 debounce=30ms*/
 				pmic_pwrap_write(ACCDET_DEBOUNCE3, cust_headset_settings->debounce3 * 30);
 			} else {
