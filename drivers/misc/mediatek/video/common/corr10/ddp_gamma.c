@@ -63,6 +63,9 @@ static int disp_gamma_start(DISP_MODULE_ENUM module, void *cmdq)
 static void disp_gamma_init(disp_gamma_id_t id, unsigned int width, unsigned int height, void *cmdq)
 {
 	DISP_REG_SET(cmdq, DISP_REG_GAMMA_SIZE, (width << 16) | height);
+#if defined(CONFIG_ARCH_MT6797) /* disable stall cg for avoid display path hang */
+	DISP_REG_MASK(cmdq, DISP_REG_GAMMA_CFG, 0x0 << 8, 0x1 << 8);
+#endif
 }
 
 static int disp_gamma_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
@@ -305,6 +308,9 @@ static void ccorr_dump_reg(void);
 static void disp_ccorr_init(disp_ccorr_id_t id, unsigned int width, unsigned int height, void *cmdq)
 {
 	DISP_REG_SET(cmdq, DISP_REG_CCORR_SIZE, (width << 16) | height);
+#if defined(CONFIG_ARCH_MT6797) /* disable stall cg for avoid display path hang */
+	DISP_REG_MASK(cmdq, DISP_REG_CCORR_CFG, 0x0 << 8, 0x1 << 8);
+#endif
 }
 
 static int disp_ccorr_start(DISP_MODULE_ENUM module, void *cmdq)

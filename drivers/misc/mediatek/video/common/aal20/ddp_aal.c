@@ -89,7 +89,9 @@ static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *c
 
 	disp_aal_write_init_regs(cmdq);
 #endif
-
+#if defined(CONFIG_ARCH_MT6797) /* disable stall cg for avoid display path hang */
+	DISP_REG_MASK(cmdq, DISP_AAL_CFG, 0x1 << 4, 0x1 << 4);
+#endif
 	g_aal_hist_available = 0;
 	g_aal_dirty_frame_retrieved = 1;
 
