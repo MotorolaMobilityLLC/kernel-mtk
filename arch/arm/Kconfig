@@ -961,9 +961,8 @@ config ARCH_MT6755
 	select GENERIC_SCHED_CLOCK
 	select ARCH_REQUIRE_GPIOLIB
 	select MTK_SYS_CIRQ
+	select MTK_GIC
 	select MTK_EIC
-	select ARMV7_COMPAT
-        select ARMV7_COMPAT_CPUINFO
 	select CPU_IDLE
 	select PINCTRL
 	select KERNEL_MODE_NEON
@@ -976,6 +975,8 @@ config ARCH_MT6755
 	select MTK_POWER_GS
 	select MTK_LM_MODE
 	select POWER_SUPPLY
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_IRQ_NEW_DESIGN_DEBUG
 	help
 	  This enable support for MediaTek MT6755
 
