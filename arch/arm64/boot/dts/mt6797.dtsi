@@ -4014,6 +4014,10 @@
 			compatible = "mediatek,mt6797-accdet";
 		};
 
+		swtp: swtp@ {
+			compatible = "mediatek, swtp-eint";
+		};
+
 		bat_notify {
 			compatible = "mediatek,bat_notify";
 		};

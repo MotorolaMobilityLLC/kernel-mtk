@@ -1110,6 +1110,9 @@ extern void md_status_timeout_func(unsigned long data);
 extern void ccci_subsys_kernel_init(void);
 extern int ccci_set_md_boot_data(struct ccci_modem *md, unsigned int data[], int len);
 extern int md_smem_port_cfg(struct ccci_modem *md);
+extern int switch_MD1_Tx_Power(unsigned int mode);
+extern int switch_MD2_Tx_Power(unsigned int mode);
+extern int ccci_get_modem_state(int md_id);
 extern int check_ee_done(struct ccci_modem *md, int timeout);
 /*
  * if recv_request returns 0 or -CCCI_ERR_DROP_PACKET, then it's port's duty to free the request, and caller should

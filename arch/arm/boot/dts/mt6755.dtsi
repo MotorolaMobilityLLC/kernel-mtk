@@ -2439,7 +2439,6 @@
 		gps {
 			compatible = "mediatek,gps";
 		};
-
 		accdet: accdet@ {
 			compatible = "mediatek,mt6755-accdet";
 		};
@@ -3359,6 +3358,10 @@
 	usb_typec: usb_typec {
 		compatible = "mediatek,fusb300-eint";
 		status = "disabled";
+	};
+
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
 	};
 
 	rf_clock_buffer_ctrl:rf_clock_buffer {

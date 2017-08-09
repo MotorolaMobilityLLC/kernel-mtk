@@ -632,6 +632,9 @@
 			compatible = "mediatek, ext_buck_oc-eint";
 			status = "disabled";
 		};
+		swtp: swtp {
+			compatible = "mediatek, swtp-eint";
+		};
 	};
 
 	bus {

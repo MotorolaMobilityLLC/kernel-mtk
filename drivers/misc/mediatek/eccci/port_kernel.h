@@ -300,6 +300,21 @@ struct gpio_item {
 	char gpio_name_from_dts[64];
 };
 
+#ifdef FEATURE_MTK_SWITCH_TX_POWER
+#define SWTP_EINT_PIN_PLUG_IN        (1)
+#define SWTP_EINT_PIN_PLUG_OUT       (0)
+struct swtp_t {
+	unsigned int	md_id;
+	unsigned int	irq;
+	unsigned int	gpiopin;
+	unsigned int	setdebounce;
+	unsigned int	eint_type;
+	unsigned int	curr_mode;
+	unsigned int	retry_cnt;
+	spinlock_t		spinlock;
+	struct delayed_work delayed_work;
+};
+#endif
 int port_kernel_init(struct ccci_port *port);
 int port_kernel_req_match(struct ccci_port *port, struct ccci_request *req);
 

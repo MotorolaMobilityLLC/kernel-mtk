@@ -3373,6 +3373,10 @@
 		status = "disabled";
 	};
 
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
+	};
+
 	rf_clock_buffer_ctrl:rf_clock_buffer {
 		compatible = "mediatek,rf_clock_buffer";
 		mediatek,clkbuf-quantity = <4>;
