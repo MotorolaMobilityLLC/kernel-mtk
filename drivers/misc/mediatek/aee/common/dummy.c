@@ -82,6 +82,12 @@ __weak void aed_md32_exception_api(const int *log, int log_size, const int *phy,
 }
 EXPORT_SYMBOL(aed_md32_exception_api);
 
+__weak void aed_scp_exception_api(const int *log, int log_size, const int *phy, int phy_size,
+				   const char *detail, const int db_opt)
+{
+}
+EXPORT_SYMBOL(aed_scp_exception_api);
+
 __weak void aed_combo_exception_api(const int *log, int log_size, const int *phy, int phy_size,
 				    const char *detail, const int db_opt)
 {

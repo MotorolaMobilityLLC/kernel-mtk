@@ -1914,6 +1914,7 @@ static struct aee_kernel_api kernel_api = {
 	.kernel_reportAPI = kernel_reportAPI,
 	.md_exception = external_exception,
 	.md32_exception = external_exception,
+	.scp_exception = external_exception,
 	.combo_exception = external_exception
 };
 

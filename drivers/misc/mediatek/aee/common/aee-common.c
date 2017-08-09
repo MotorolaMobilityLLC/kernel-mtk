@@ -248,6 +248,27 @@ void aed_md32_exception_api(const int *log, int log_size, const int *phy, int ph
 }
 EXPORT_SYMBOL(aed_md32_exception_api);
 
+void aed_scp_exception_api(const int *log, int log_size, const int *phy, int phy_size,
+			    const char *detail, const int db_opt)
+{
+#ifdef CONFIG_MTK_AEE_AED
+	LOGD("%s\n", __func__);
+	if (g_aee_api) {
+		if (g_aee_api->md_exception) {
+			g_aee_api->md_exception("scp", log, log_size, phy, phy_size, detail,
+						db_opt);
+		} else {
+			LOGD("g_aee_api->scp_exception = 0x%p\n", g_aee_api->scp_exception);
+		}
+	} else {
+		LOGD("g_aee_api is null\n");
+	}
+	LOGD("%s out\n", __func__);
+#endif
+}
+EXPORT_SYMBOL(aed_scp_exception_api);
+
+
 void aed_combo_exception_api(const int *log, int log_size, const int *phy, int phy_size,
 			     const char *detail, const int db_opt)
 {
