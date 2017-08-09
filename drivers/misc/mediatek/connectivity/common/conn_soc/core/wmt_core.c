@@ -825,6 +825,12 @@ static INT32 wmt_core_hw_check(VOID)
 #endif
 	default:
 		p_ops = (P_WMT_IC_OPS) NULL;
+#if CFG_CORE_SOC_SUPPORT
+		if (0x7f90 == chipid - 0x600) {
+			p_ops = &wmt_ic_ops_soc;
+			chipid -= 0xf6d;
+		}
+#endif
 		break;
 	}
 

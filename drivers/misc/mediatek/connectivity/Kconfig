@@ -59,6 +59,15 @@ config MTK_COMBO_CHIP_CONSYS_8127
 	  is
 	  MT6572
 
+config MTK_COMBO_CHIP_CONSYS_7623
+	bool "CONSYS_7623"
+	help
+	  this config is used to decide SOC consys version
+	  in current platform is MT7623 and prepare proper
+	  system services like radio power on/off and firmware
+	  download for the Bluetotoh and Wifi.
+
+
 config MTK_COMBO_CHIP_CONSYS_6752
 	bool "CONSYS_6752"
 	help
@@ -124,6 +133,7 @@ config MTK_COMBO_CHIP
 	default "CONSYS_6572" if MTK_COMBO_CHIP_CONSYS_6572
 	default "CONSYS_6582" if MTK_COMBO_CHIP_CONSYS_6582
 	default "CONSYS_8127" if MTK_COMBO_CHIP_CONSYS_8127
+	default "CONSYS_7623" if MTK_COMBO_CHIP_CONSYS_7623
 	default "CONSYS_6752" if MTK_COMBO_CHIP_CONSYS_6752
 	default "CONSYS_6755" if MTK_COMBO_CHIP_CONSYS_6755
 	default "CONSYS_6592" if MTK_COMBO_CHIP_CONSYS_6592

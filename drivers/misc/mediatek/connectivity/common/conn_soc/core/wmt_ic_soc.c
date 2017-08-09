@@ -42,7 +42,6 @@
 #include "wmt_core.h"
 #include "wmt_lib.h"
 #include "stp_core.h"
-#include <upmu_common.h>
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -2114,6 +2113,7 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	/*send wmt part patch address command */
 	if (0x6752 == wmt_ic_ops_soc.icId ||
 	    0x8127 == wmt_ic_ops_soc.icId ||
+	    0x7623 == wmt_ic_ops_soc.icId ||
 	    0x6571 == wmt_ic_ops_soc.icId ||
 	    0x0326 == wmt_ic_ops_soc.icId ||
 	    0x0321 == wmt_ic_ops_soc.icId ||
