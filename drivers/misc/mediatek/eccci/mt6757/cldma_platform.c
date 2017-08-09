@@ -239,15 +239,38 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 	CCCI_DEBUG_LOG(dev_cfg->index, TAG, "dev_major:%d,minor_base:%d,capability:%d\n",
 							dev_cfg->major,
 		     dev_cfg->minor_base, dev_cfg->capability);
+	if (hw_info->cldma_ap_ao_base == 0 ||
+		hw_info->cldma_md_ao_base == 0 ||
+		hw_info->cldma_ap_pdn_base == 0 ||
+		hw_info->cldma_md_pdn_base  == 0) {
+		CCCI_ERROR_LOG(dev_cfg->index, TAG,
+			"ap_cldma: ao_base=0x%p, pdn_base=0x%p,md_cldma: ao_base=0x%p, pdn_base=0x%p\n",
+			(void *)hw_info->cldma_ap_ao_base, (void *)hw_info->cldma_ap_pdn_base,
+			(void *)hw_info->cldma_md_ao_base, (void *)hw_info->cldma_md_pdn_base);
+		return -1;
+	}
+	if (hw_info->ap_ccif_base == 0 ||
+		hw_info->md_ccif_base == 0) {
+		CCCI_ERROR_LOG(dev_cfg->index, TAG, "ap_ccif_base:0x%p, md_ccif_base:0x%p\n",
+			(void *)hw_info->ap_ccif_base, (void *)hw_info->md_ccif_base);
+		return -1;
+	}
+	if (hw_info->cldma_irq_id == 0 ||
+		hw_info->ap_ccif_irq_id == 0 ||
+		hw_info->md_wdt_irq_id == 0) {
+		CCCI_ERROR_LOG(dev_cfg->index, TAG, "cldma_irq:%d,ccif_irq:%d,md_wdt_irq:%d\n",
+			hw_info->cldma_irq_id, hw_info->ap_ccif_irq_id, hw_info->md_wdt_irq_id);
+		return -1;
+	}
 	CCCI_DEBUG_LOG(dev_cfg->index, TAG,
-		     "ap_cldma: ao_base=0x%p, pdn_base=0x%p,md_cldma: ao_base=0x%p, pdn_base=0x%p\n",
-		     (void *)hw_info->cldma_ap_ao_base, (void *)hw_info->cldma_ap_pdn_base,
-		     (void *)hw_info->cldma_md_ao_base, (void *)hw_info->cldma_md_pdn_base);
+		"ap_cldma: ao_base=0x%p, pdn_base=0x%p,md_cldma: ao_base=0x%p, pdn_base=0x%p\n",
+		(void *)hw_info->cldma_ap_ao_base, (void *)hw_info->cldma_ap_pdn_base,
+		(void *)hw_info->cldma_md_ao_base, (void *)hw_info->cldma_md_pdn_base);
 
 	CCCI_DEBUG_LOG(dev_cfg->index, TAG, "ap_ccif_base:0x%p, md_ccif_base:0x%p\n",
-					(void *)hw_info->ap_ccif_base, (void *)hw_info->md_ccif_base);
+		(void *)hw_info->ap_ccif_base, (void *)hw_info->md_ccif_base);
 	CCCI_DEBUG_LOG(dev_cfg->index, TAG, "cldma_irq:%d,ccif_irq:%d,md_wdt_irq:%d\n",
-					hw_info->cldma_irq_id, hw_info->ap_ccif_irq_id, hw_info->md_wdt_irq_id);
+		hw_info->cldma_irq_id, hw_info->ap_ccif_irq_id, hw_info->md_wdt_irq_id);
 
 	return 0;
 }

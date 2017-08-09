@@ -187,14 +187,23 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_c
 		return -1;
 	}
 
-	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "modem ccif of node get dev_major:%d\n", dev_cfg->major);
-	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "modem ccif of node get minor_base:%d\n", dev_cfg->minor_base);
-	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "modem ccif of node get capability:%d\n", dev_cfg->capability);
+	if (hw_info->ap_ccif_base == 0) {
+		CCCI_ERROR_LOG(dev_cfg->index, TAG, "ap_ccif_base:0x%p\n", (void *)hw_info->ap_ccif_base);
+		return -1;
+	}
+	if (hw_info->ap_ccif_irq_id == 0) {
+		CCCI_ERROR_LOG(dev_cfg->index, TAG, "ccif_irq_id:%d\n", hw_info->ap_ccif_irq_id);
+		return -1;
+	}
+	if (hw_info->md_wdt_irq_id == 0) {
+		CCCI_ERROR_LOG(dev_cfg->index, TAG, "md_wdt_irq_id:%d\n", hw_info->md_wdt_irq_id);
+		return -1;
+	}
 
-	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "ap_ccif_base:0x%p\n", (void *)hw_info->ap_ccif_base);
-	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "ccif_irq_id:%d\n", hw_info->ap_ccif_irq_id);
-	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "md_wdt_irq_id:%d\n", hw_info->md_wdt_irq_id);
-
+	CCCI_NORMAL_LOG(dev_cfg->index, TAG,
+		"ap_ccif node info: major:%d, minor:%d, capability=%d, ap_ccif_base=0x%p, ccif_irq=%d, md_wdt_irq=%d\n",
+		dev_cfg->major, dev_cfg->minor_base, dev_cfg->capability,
+		(void *)hw_info->ap_ccif_base, hw_info->ap_ccif_irq_id, hw_info->md_wdt_irq_id);
 	return 0;
 }
 
