@@ -33,14 +33,10 @@
 #include <linux/of_irq.h>
 #include <linux/ioport.h>
 
-#include <linux/aee.h>
 #include <asm/io.h>
 
-#include <mach/hardware.h>
-#include <mach/sync_write.h>
-#include <mach/mt_spm_sleep.h>
-#include <mach/mt_clkmgr.h>
-#include <mach/mt_secure_api.h>
+#include <mt-plat/sync_write.h>
+#include <mt-plat/aee.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"
@@ -276,6 +272,7 @@ int reset_scp(int reset)
 {
 	unsigned int prev_ready;
 	int ret = -1;
+	unsigned int *reg;
 
 	del_timer(&scp_ready_timer);
 
@@ -290,16 +287,17 @@ int reset_scp(int reset)
 
 	scp_logger_stop();
 
-#ifdef CONFIG_ARM64
 
-	/* reset through smc call */
-	pr_debug("[SCP] reset by smc calls\n");
-	ret = mt_secure_call(MTK_SIP_KERNEL_SCP_RESET, reset, 0, 0);
-	pr_debug("[SCP] ret=%d\n", ret);
+	pr_debug("[SCP] reset scp\n");
+	reg = (unsigned int *)scpreg.cfg;
 
-#else
-	/* TODO: add 32bit API */
-#endif
+	if (reset) {
+		*(unsigned int *)reg = 0x0;
+		dsb(SY);
+	}
+	*(unsigned int *)reg = 0x1;
+	ret = 0;
+
 
 	if (ret == 0) {
 		init_timer(&scp_ready_timer);

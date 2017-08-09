@@ -14,9 +14,9 @@
 
 #include <linux/spinlock.h>
 #include <linux/slab.h>
-#include <linux/aee.h>
+#include <mt-plat/aee.h>
 #include <linux/interrupt.h>
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"

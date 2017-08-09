@@ -13,7 +13,7 @@
 */
 
 #include <linux/mutex.h>
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
 
@@ -116,7 +116,7 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 
 		if (wait)
 			while (HOST_TO_SCP_REG)
-				NULL;
+				;
 
 		mutex_unlock(&scp_ipi_mutex);
 	} else {

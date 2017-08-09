@@ -14,9 +14,9 @@
 
 #include <linux/slab.h>         /* needed by kmalloc */
 #include <linux/workqueue.h>
-#include <linux/aee.h>
+#include <mt-plat/aee.h>
+#include <mt-plat/sync_write.h>
 #include <linux/mutex.h>
-#include <mach/sync_write.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"

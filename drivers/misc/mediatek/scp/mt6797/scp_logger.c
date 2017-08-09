@@ -28,8 +28,7 @@
 #include <linux/kfifo.h>
 #include <asm/spinlock.h>
 
-#include <mach/hardware.h>
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
 

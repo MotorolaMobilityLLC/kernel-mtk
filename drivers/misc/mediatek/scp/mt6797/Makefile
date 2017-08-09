@@ -1,4 +1,3 @@
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
 obj-y += scp.o
 scp-y := scp_helper.o scp_excep.o scp_ipi.o scp_irq.o scp_logger.o
 
