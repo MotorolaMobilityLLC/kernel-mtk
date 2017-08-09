@@ -858,12 +858,23 @@
 			compatible = "mediatek,mt-eic";
 			reg = <0x1000b000 0x1000>;
 			interrupts = <GIC_SPI 155 IRQ_TYPE_LEVEL_HIGH>;
-			max_deint_cnt = <4>;
-			deint_possible_irq = <191 192 193 194>;
+			mediatek,max_deint_cnt = <4>;
+			mediatek,deint_possible_irq = <191 192 193 194>;
 			#interrupt-cells = <2>;
 			interrupt-controller;
 			mediatek,max_eint_num = <160>;
 			mediatek,mapping_table_entry = <0>;
+			mediatek,debtime_setting_entry = <10>;
+			mediatek,debtime_setting_array	= <0 128>,
+							<1 256>,
+							<2 512>,
+							<3 1024>,
+							<4 16384>,
+							<5 32768>,
+							<6 65536>,
+							<7 131072>,
+							<8 262144>,
+							<9 524288>;
 		};
 
 		apmixedsys: apmixedsys@1000c000 {

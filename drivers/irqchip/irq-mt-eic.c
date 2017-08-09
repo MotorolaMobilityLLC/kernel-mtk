@@ -826,7 +826,7 @@ static unsigned int mt_can_en_debounce(unsigned int eint_num)
  /*
  * mt_eint_set_hw_debounce: Set the de-bounce time for the specified EINT number.
  * @gpio_pin: EINT number to acknowledge
- * @ms: the de-bounce time to set (in miliseconds)
+ * @us: the de-bounce time to set (in microsecond)
  */
 void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int us)
 {
