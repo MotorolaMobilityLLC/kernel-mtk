@@ -262,106 +262,96 @@ static inline void spi_rec_time(const char *str)
 
 #endif
 
-#if 0
-#if !defined(CONFIG_MTK_LEGACY)
+#if 1
 struct pinctrl *pinctrl_spi;
-struct pinctrl_state *pins_spi_default;
-struct pinctrl_state *pins_spi1_cs_set, *pins_spi1_cs_clear, *pins_spi1_clk_set, *pins_spi1_clk_clear;
-struct pinctrl_state *pins_spi1_miso_set, *pins_spi1_miso_clear, *pins_spi1_mosi_set, *pins_spi1_mosi_clear;
+struct pinctrl_state *pins_spi_cs_set, *pins_spi_cs_clear, *pins_spi_clk_set, *pins_spi_clk_clear;
+struct pinctrl_state *pins_spi_miso_set, *pins_spi_miso_clear, *pins_spi_mosi_set, *pins_spi_mosi_clear;
 
-static int spi_get_gpio_info(struct platform_device *pdev)
+static int spi_get_pinctrl_info(struct platform_device *pdev)
 {
 	int ret;
 
-	/*SPI_DBG("spi_get_gpio_info pin ctrl===================\n");*/
+	SPI_DBG("spi_get_gpio_info pin ctrl===================\n");
 	pinctrl_spi = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(pinctrl_spi)) {
 		ret = PTR_ERR(pinctrl_spi);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl1!\n");
+		dev_err(&pdev->dev, "Cannot find spi pinctrl1!\n");
 		return ret;
 	}
-	pins_spi_default = pinctrl_lookup_state(pinctrl_spi, "spi1_gpio_def");
-	if (IS_ERR(pins_spi_default)) {
-		ret = PTR_ERR(pins_spi_default);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl pins_spi_default!\n");
+	pins_spi_cs_set = pinctrl_lookup_state(pinctrl_spi, "spi1_cs_set");
+	if (IS_ERR(pins_spi_cs_set)) {
+		ret = PTR_ERR(pins_spi_cs_set);
+		dev_err(&pdev->dev, "Cannot find spi pinctrl pins_spi1_cs_set!\n");
 		return ret;
 	}
-	pins_spi1_cs_set = pinctrl_lookup_state(pinctrl_spi, "spi1_cs_set");
-	if (IS_ERR(pins_spi1_cs_set)) {
-		ret = PTR_ERR(pins_spi1_cs_set);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl pins_spi1_cs_set!\n");
+	pins_spi_cs_clear = pinctrl_lookup_state(pinctrl_spi, "spi1_cs_clr");
+	if (IS_ERR(pins_spi_cs_clear)) {
+		ret = PTR_ERR(pins_spi_cs_clear);
+		dev_err(&pdev->dev, "Cannot find spi pinctrl pins_spi1_cs_clear!\n");
 		return ret;
 	}
-	pins_spi1_cs_clear = pinctrl_lookup_state(pinctrl_spi, "spi1_cs_clr");
-	if (IS_ERR(pins_spi1_cs_clear)) {
-		ret = PTR_ERR(pins_spi1_cs_clear);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl pins_spi1_cs_clear!\n");
+	pins_spi_clk_set = pinctrl_lookup_state(pinctrl_spi, "spi1_clk_set");
+	if (IS_ERR(pins_spi_clk_set)) {
+		ret = PTR_ERR(pins_spi_clk_set);
+		dev_err(&pdev->dev, "Cannot find spi pinctrl pins_spi1_clk_set!\n");
 		return ret;
 	}
-	pins_spi1_clk_set = pinctrl_lookup_state(pinctrl_spi, "spi1_clk_set");
-	if (IS_ERR(pins_spi1_clk_set)) {
-		ret = PTR_ERR(pins_spi1_clk_set);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl pins_spi1_clk_set!\n");
+	pins_spi_clk_clear = pinctrl_lookup_state(pinctrl_spi, "spi1_clk_clr");
+	if (IS_ERR(pins_spi_clk_clear)) {
+		ret = PTR_ERR(pins_spi_clk_clear);
+		dev_err(&pdev->dev, "Cannot find spi pinctrl pins_spi1_clk_clear!\n");
 		return ret;
 	}
-	pins_spi1_clk_clear = pinctrl_lookup_state(pinctrl_spi, "spi1_clk_clr");
-	if (IS_ERR(pins_spi1_clk_clear)) {
-		ret = PTR_ERR(pins_spi1_clk_clear);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl pins_spi1_clk_clear!\n");
+	pins_spi_miso_set = pinctrl_lookup_state(pinctrl_spi, "spi1_miso_set");
+	if (IS_ERR(pins_spi_miso_set)) {
+		ret = PTR_ERR(pins_spi_miso_set);
+		dev_err(&pdev->dev, "Cannot find spi pinctrl pins_spi1_miso_set!\n");
 		return ret;
 	}
-	pins_spi1_miso_set = pinctrl_lookup_state(pinctrl_spi, "spi1_miso_set");
-	if (IS_ERR(pins_spi1_miso_set)) {
-		ret = PTR_ERR(pins_spi1_miso_set);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl pins_spi1_miso_set!\n");
+	pins_spi_miso_clear = pinctrl_lookup_state(pinctrl_spi, "spi1_miso_clr");
+	if (IS_ERR(pins_spi_miso_clear)) {
+		ret = PTR_ERR(pins_spi_miso_clear);
+		dev_err(&pdev->dev, "Cannot find spi pinctrl pins_spi1_miso_clear!\n");
 		return ret;
 	}
-	pins_spi1_miso_clear = pinctrl_lookup_state(pinctrl_spi, "spi1_miso_clr");
-	if (IS_ERR(pins_spi1_miso_clear)) {
-		ret = PTR_ERR(pins_spi1_miso_clear);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl pins_spi1_miso_clear!\n");
+	pins_spi_mosi_set = pinctrl_lookup_state(pinctrl_spi, "spi1_mosi_set");
+	if (IS_ERR(pins_spi_mosi_set)) {
+		ret = PTR_ERR(pins_spi_mosi_set);
+		dev_err(&pdev->dev, "Cannot find spi pinctrl pins_spi1_mosi_set!\n");
 		return ret;
 	}
-	pins_spi1_mosi_set = pinctrl_lookup_state(pinctrl_spi, "spi1_mosi_set");
-	if (IS_ERR(pins_spi1_mosi_set)) {
-		ret = PTR_ERR(pins_spi1_mosi_set);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl pins_spi1_mosi_set!\n");
-		return ret;
-	}
-	pins_spi1_mosi_clear = pinctrl_lookup_state(pinctrl_spi, "spi1_mosi_clr");
-	if (IS_ERR(pins_spi1_mosi_clear)) {
-		ret = PTR_ERR(pins_spi1_mosi_clear);
-		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl pins_spi1_mosi_clear!\n");
+	pins_spi_mosi_clear = pinctrl_lookup_state(pinctrl_spi, "spi1_mosi_clr");
+	if (IS_ERR(pins_spi_mosi_clear)) {
+		ret = PTR_ERR(pins_spi_mosi_clear);
+		dev_err(&pdev->dev, "Cannot find spi pinctrl pins_spi1_mosi_clear!\n");
 		return ret;
 	}
 	return 0;
 }
 
-static int spi_set_gpio_info(struct platform_device *pdev , int spi_pin_mode)
+void spi_set_pinctrl(struct platform_device *pdev)
 {
-	spi_get_gpio_info(pdev);
+	spi_get_pinctrl_info(pdev);
 
-	if (spi_pin_mode == 1) {
-		pinctrl_select_state(pinctrl_spi, pins_spi1_cs_set);
-		pinctrl_select_state(pinctrl_spi, pins_spi1_clk_set);
-		pinctrl_select_state(pinctrl_spi, pins_spi1_miso_set);
-		pinctrl_select_state(pinctrl_spi, pins_spi1_mosi_set);
-		/*SPI_DBG("spi_get_gpio_info pin ctrl set 1111===================\n");
-		SPI_DBG("spi_get_gpio_info pin gpio65 mode= %d\n", mt_get_gpio_mode(65|0x80000000));
-		SPI_DBG("spi_get_gpio_info pin gpio66 mode= %d\n", mt_get_gpio_mode(66|0x80000000));
-		SPI_DBG("spi_get_gpio_info pin gpio67 mode= %d\n", mt_get_gpio_mode(67|0x80000000));
-		SPI_DBG("spi_get_gpio_info pin gpio68 mode= %d\n", mt_get_gpio_mode(68|0x80000000));*/
-	} else {
-		pinctrl_select_state(pinctrl_spi, pins_spi1_cs_clear);
-		pinctrl_select_state(pinctrl_spi, pins_spi1_clk_clear);
-		pinctrl_select_state(pinctrl_spi, pins_spi1_miso_clear);
-		pinctrl_select_state(pinctrl_spi, pins_spi1_mosi_clear);
-	}
-	return 0;
+	pinctrl_select_state(pinctrl_spi, pins_spi_cs_set);
+	pinctrl_select_state(pinctrl_spi, pins_spi_clk_set);
+	pinctrl_select_state(pinctrl_spi, pins_spi_miso_set);
+	pinctrl_select_state(pinctrl_spi, pins_spi_mosi_set);
+
+}
+
+void spi_clr_pinctrl(struct platform_device *pdev)
+{
+	spi_get_pinctrl_info(pdev);
+
+	pinctrl_select_state(pinctrl_spi, pins_spi_cs_clear);
+	pinctrl_select_state(pinctrl_spi, pins_spi_clk_clear);
+	pinctrl_select_state(pinctrl_spi, pins_spi_miso_clear);
+	pinctrl_select_state(pinctrl_spi, pins_spi_mosi_clear);
 }
 
 #endif
-#endif
+
 static void spi_gpio_set(struct mt_spi_t *ms)
 {
 /*  mt_set_gpio_mode(GPIO_SPI_CS_PIN, GPIO_SPI_CS_PIN_M_SPI_CS_N);
