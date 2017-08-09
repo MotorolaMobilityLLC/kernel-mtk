@@ -1219,7 +1219,7 @@ static struct eem_det eem_detectors[NR_EEM_DET] = {
 		.ctrl_id	= EEM_CTRL_GPU,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
 		.max_freq_khz	= 800000,/* 800 MHz */
-		.VBOOT		= 98778, /* 0.975V */
+		.VBOOT		= 100060, /* 1.0006V */
 		.volt_offset	= 0,
 		.eem_v_base	= EEM_V_BASE,
 		.eem_step	= EEM_STEP,
@@ -3575,7 +3575,7 @@ void eem_init01(void)
 					vboot = det->ops->volt_2_eem(det, det->ops->get_volt(det));
 			}
 
-			eem_debug("%s, vboot = %d, VBOOT = %d\n", ((char *)(det->name) + 8), vboot, det->VBOOT);
+			eem_error("%s, vboot = %d, VBOOT = %d\n", ((char *)(det->name) + 8), vboot, det->VBOOT);
 			#ifdef __KERNEL__
 				if (vboot != det->VBOOT) {
 					aee_kernel_warning("mt_eem",

@@ -382,7 +382,7 @@ int fan53555_vosel(unsigned long val)
 	unsigned long reg_val = 0;
 
 	/* 0.603~1.411V (step 12.826mv) */
-	reg_val = (((val * 1000) - 603000) + 12825) / 12826;
+	reg_val = (((val * 1000) - 603000) + 6413) / 12826;
 
 	if (reg_val > 63)
 		reg_val = 63;
