@@ -5,7 +5,9 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-/* #include <ddp_clkmgr.h> */
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
+#include <ddp_clkmgr.h>
+#endif
 #endif
 #include <cmdq_record.h>
 #include <ddp_drv.h>

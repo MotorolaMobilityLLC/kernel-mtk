@@ -9,8 +9,10 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 #include <linux/clk.h>
-/* #include <ddp_clkmgr.h> */
+#include <ddp_clkmgr.h>
+#endif
 #endif
 
 /* #include <mach/mt_gpio.h> */
