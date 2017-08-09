@@ -346,6 +346,7 @@ static struct notifier_block cpu_nfb __cpuinitdata = {
 
 static int __init regs_backup(void)
 {
+	return 0;
 
 	register_cpu_notifier(&cpu_nfb);
 

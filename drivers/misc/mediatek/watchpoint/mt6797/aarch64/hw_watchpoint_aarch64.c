@@ -575,6 +575,8 @@ static int __init hw_watchpoint_init(void)
 #ifdef WATCHPOINT_TEST_SUIT
 	int ret;
 #endif
+	return 0;
+
 	spin_lock_init(&wp_lock);
 	err = platform_driver_register(&wp_driver);
 	if (err) {

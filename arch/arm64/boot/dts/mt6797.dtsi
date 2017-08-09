@@ -1222,6 +1222,21 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 139 IRQ_TYPE_LEVEL_LOW>;
 		};
 
+		cpu_dbgapb: cpu_dbgapb@10410000 {
+			compatible = "mediatek,mt6797-dbg_debug";
+			num = <10>;
+			reg =  <0x10410000 0x1000
+				0x10510000 0x1000
+				0x10610000 0x1000
+				0x10710000 0x1000
+				0x10810000 0x1000
+				0x10910000 0x1000
+				0x10a10000 0x1000
+				0x10b10000 0x1000
+				0x10c10000 0x1000
+				0x10d10000 0x1000>;
+		};
+
 		gic1@19000000 {
 			compatible = "mediatek,gic1";
 			reg = <0x19000000 0x400000>;
