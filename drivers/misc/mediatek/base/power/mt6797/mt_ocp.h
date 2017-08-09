@@ -38,7 +38,7 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 
 #define HW_API_RET_DEBUG_ON 1
 
-/* turn on OCP in hotplug stage */
+/* turn on OCP driver */
 #define OCP_ON 1
 
 /**

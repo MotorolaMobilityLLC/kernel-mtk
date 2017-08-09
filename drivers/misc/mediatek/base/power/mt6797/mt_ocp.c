@@ -97,6 +97,9 @@ echo 8 > 1000 1100 /proc/ocp/dvt_test // Big Vproc, Vsram
 	#define CONFIG_OCP_AEE_RR_REC 1
 #endif
 
+static unsigned int OCP_DEBUG_FLAG;
+static unsigned int BIG_OCP_ON;
+static unsigned int LITTLE_OCP_ON;
 static unsigned int HW_API_DEBUG_ON;
 static unsigned int IRQ_Debug_on;
 static unsigned int Reg_Debug_on;
@@ -140,6 +143,7 @@ static void _mt_ocp_aee_init(void)
 
 }
 #endif
+
 
 typedef struct OCP_OPT {
 	unsigned short ocp_cluster0_flag;
@@ -1490,67 +1494,67 @@ unsigned int OCPMcusysPwrGet(void)
 /* Big OCP init API */
 void Cluster2_OCP_ON(void)
 {
-#if OCP_ON
+if (BIG_OCP_ON) {
 	BigOCPConfig(300, 10000);
 	BigOCPSetTarget(3, 127000);
 	BigOCPEnable(3, 1, 625, 0);
 	ocp_opt.ocp_cluster2_flag = 1;
 	ocp_opt.ocp_cluster2_enable = 1;
 	BigiDVFSChannel(1, 1);
-#endif
+	}
 }
 
 void Cluster2_OCP_OFF(void)
 {
-#if OCP_ON
+if (BIG_OCP_ON) {
 	ocp_opt.ocp_cluster2_flag = 0;
 	ocp_opt.ocp_cluster2_enable = 0;
 	BigiDVFSChannel(1, 0);
 	BigOCPDisable();
-#endif
+	}
 }
 
 /* Little OCP init API */
 void Cluster0_OCP_ON(void)
 {
-#if OCP_ON
+if (LITTLE_OCP_ON) {
 	LittleOCPConfig(0, 300, 10000);
 	LittleOCPSetTarget(0, 127000);
 	LittleOCPDVFSSet(0, 624, 900);
 	LittleOCPEnable(0, 1, 625);
 	ocp_opt.ocp_cluster0_flag = 1;
 	ocp_opt.ocp_cluster0_enable = 0;
-#endif
+	}
 }
 
 void Cluster0_OCP_OFF(void)
 {
-#if OCP_ON
+if (LITTLE_OCP_ON) {
 	ocp_opt.ocp_cluster0_flag = 0;
 	ocp_opt.ocp_cluster0_enable = 0;
 	LittleOCPDisable(0);
-#endif
+	}
 }
 
 void Cluster1_OCP_ON(void)
 {
-#if OCP_ON
+if (LITTLE_OCP_ON) {
 	LittleOCPConfig(1, 300, 10000);
 	LittleOCPSetTarget(1, 127000);
 	LittleOCPDVFSSet(1, 338, 780);
 	LittleOCPEnable(1, 1, 625);
 	ocp_opt.ocp_cluster1_flag = 1;
 	ocp_opt.ocp_cluster1_enable = 0;
-#endif
+	}
 }
 
 void Cluster1_OCP_OFF(void)
 {
-#if OCP_ON
+if (LITTLE_OCP_ON) {
 	ocp_opt.ocp_cluster1_flag = 0;
 	ocp_opt.ocp_cluster1_enable = 0;
 	LittleOCPDisable(1);
-#endif
+	}
 }
 
 int ocp_status_get(int cluster)
@@ -3144,10 +3148,14 @@ else if (dvt_test_on == 123 || dvt_test_on == 223)
 else if (dvt_test_on == 124 || dvt_test_on == 224)
 	seq_printf(m, "TopRawLkg  = %d\n", ocp_status[1].TopRawLkg);
 
-if (dvt_test_on == 1)
-	seq_printf(m, "reg:0x%x [%d:%d] = %x\n", dvt_test_set, dvt_test_msb, dvt_test_lsb,
+if (dvt_test_on == 1) {
+	if (dvt_test_set < 0x3000)
+		seq_printf(m, "reg: 0x10001000 + 0x%x [%d:%d] = %x\n", dvt_test_set, dvt_test_msb, dvt_test_lsb,
+			_ocp_read_field(OCPPROB_BASE + dvt_test_set, dvt_test_msb:dvt_test_lsb));
+	else
+		seq_printf(m, "reg:0x%x [%d:%d] = %x\n", dvt_test_set, dvt_test_msb, dvt_test_lsb,
 			ocp_read_field(dvt_test_set, dvt_test_msb:dvt_test_lsb));
-
+}
 return 0;
 }
 
@@ -4096,13 +4104,13 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			} else if (val[0] == 2) {
 				if (val[1] == 0) {
 					/* disable pinmux */
-					_ocp_write_field(OCPPROB_BASE + 0x1120, 30:30, 0x1);
+					_ocp_write_field(OCPPROB_BASE + 0x1120, 9:9, 0x1);
 					/* GPU AGPIO prob out volt disable */
 					_ocp_write(OCPPROB_BASE + 0xfd4, 0x000000ff);
 				} else if (val[1] == 1) {
 					/* enable pinmux */
 					/* GPU AGPIO enable */
-					_ocp_write_field(OCPPROB_BASE + 0x1120, 30:30, 0x0);
+					_ocp_write_field(OCPPROB_BASE + 0x1120, 9:9, 0x0);
 					/* GPU AGPIO prob out volt enable */
 					_ocp_write(OCPPROB_BASE + 0xfd4, 0x0000ff00);
 				}
@@ -4149,6 +4157,15 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 		if (sscanf(buf, "%d %x %d %d %x", &function_id, &dvt_test_set, &dvt_test_msb,
 				&dvt_test_lsb, &val[0]) == 5) {
 			ocp_write_field(dvt_test_set, dvt_test_msb:dvt_test_lsb, val[0]);
+			dvt_test_on = 1;
+		} else if (sscanf(buf, "%d %x %d %d", &function_id, &dvt_test_set, &dvt_test_msb, &dvt_test_lsb) == 4)
+			dvt_test_on = 1;
+
+		break;
+	case 10:
+		if (sscanf(buf, "%d %x %d %d %x", &function_id, &dvt_test_set, &dvt_test_msb,
+				&dvt_test_lsb, &val[0]) == 5) {
+			_ocp_write_field(OCPPROB_BASE + dvt_test_set, dvt_test_msb:dvt_test_lsb, val[0]);
 			dvt_test_on = 1;
 		} else if (sscanf(buf, "%d %x %d %d", &function_id, &dvt_test_set, &dvt_test_msb, &dvt_test_lsb) == 4)
 			dvt_test_on = 1;
@@ -4728,22 +4745,48 @@ for (i = 0; i < 2000; i++) {
 /* ocp_debug */
 static int ocp_debug_proc_show(struct seq_file *m, void *v)
 {
-seq_printf(m, "OCP debug (log level) = %d\n", HW_API_DEBUG_ON);
+seq_printf(m, "OCP debug (log level) = %d\n", OCP_DEBUG_FLAG);
+seq_printf(m, "HW_API_DEBUG_ON       = %d\n", HW_API_DEBUG_ON);
+seq_printf(m, "IRQ_Debug_on          = %d\n", IRQ_Debug_on);
+seq_printf(m, "Reg_Debug_on          = %d\n", Reg_Debug_on);
+seq_printf(m, "BIG_OCP_ON            = %d\n", BIG_OCP_ON);
+seq_printf(m, "LITTLE_OCP_ON         = %d\n", LITTLE_OCP_ON);
 return 0;
 }
 
 static ssize_t ocp_debug_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
-unsigned int dbg_lv;
+int dbg_lv, rc;
 char *buf = _copy_from_user_for_proc(buffer, count);
 
 if (!buf)
 	return -EINVAL;
-
-if (kstrtoint(buf, 10, &dbg_lv) == 1)
-	HW_API_DEBUG_ON = dbg_lv;
-else
+rc = kstrtoint(buf, 10, &dbg_lv);
+if (rc < 0)
 	ocp_err("echo dbg_lv (dec) > /proc/ocp/ocp_debug\n");
+else
+	OCP_DEBUG_FLAG = dbg_lv;
+
+
+if (OCP_DEBUG_FLAG == 0) {
+	HW_API_DEBUG_ON = 0;
+	IRQ_Debug_on = 0;
+	Reg_Debug_on = 0;
+	BIG_OCP_ON = 1;
+	LITTLE_OCP_ON = 0;
+} else if (OCP_DEBUG_FLAG == 1)
+	HW_API_DEBUG_ON = 1;
+else if  (OCP_DEBUG_FLAG == 2)
+	IRQ_Debug_on = 1;
+else if  (OCP_DEBUG_FLAG == 3)
+	Reg_Debug_on = 1;
+else if  (OCP_DEBUG_FLAG == 4)
+	BIG_OCP_ON = 0;
+else if  (OCP_DEBUG_FLAG == 5)
+	LITTLE_OCP_ON = 1;
+
+
+
 
 free_page((unsigned long)buf);
 return count;
@@ -4877,6 +4920,13 @@ ocp0_irq1_number = irq_of_parse_and_map(node, 3);
 ocp1_irq0_number = irq_of_parse_and_map(node, 4);
 ocp1_irq1_number = irq_of_parse_and_map(node, 5);
 
+#endif
+
+
+#if OCP_ON
+/* turn on OCP in hotplug stage */
+BIG_OCP_ON = 1;
+LITTLE_OCP_ON = 0;
 #endif
 
 /* register platform device/driver */
