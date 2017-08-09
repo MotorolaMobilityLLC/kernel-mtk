@@ -38,7 +38,7 @@
 #define PAGE_SIZE_ 256
 #define BUFF_SIZE 8
 
-static DEFINE_SPINLOCK(g_CAM_CALLock); /* for SMP */
+static DEFINE_SPINLOCK(g_CAM_CALLock);/*for SMP*/
 #define CAM_CAL_I2C_BUSNUM 2
 
 #define CAM_CAL_DEV_MAJOR_NUMBER 226
@@ -61,22 +61,25 @@ static DEFINE_SPINLOCK(g_CAM_CALLock); /* for SMP */
 /*******************************************************************************
 *
 ********************************************************************************/
-static struct i2c_board_info kd_cam_cal_dev __initdata = {
+/*static struct i2c_board_info kd_cam_cal_dev __initdata = {
 	I2C_BOARD_INFO(CAM_CAL_DRVNAME, 0xA0 >> 1)
 };
+*/
 /* A0 for page0 A2 for page 2 and so on for 8 pages */
 
 static struct i2c_client *g_pstI2Cclient;
+static int selective_read_region(u32 addr, u8 *data, u16 i2c_id, u32 size);
+
 
 /* 81 is used for V4L driver */
-static dev_t g_CAM_CALdevno = MKDEV(CAM_CAL_DEV_MAJOR_NUMBER, 0);
-static struct cdev *g_pCAM_CAL_CharDrv;
+/*static dev_t g_CAM_CALdevno = MKDEV(CAM_CAL_DEV_MAJOR_NUMBER, 0);*/
+/*static struct cdev *g_pCAM_CAL_CharDrv;*/
 /* static spinlock_t g_CAM_CALLock; */
 /* spin_lock(&g_CAM_CALLock); */
 /* spin_unlock(&g_CAM_CALLock); */
 
-static struct class *CAM_CAL_class;
-static atomic_t g_CAM_CALatomic;
+/*static struct class *CAM_CAL_class;*/
+/*static atomic_t g_CAM_CALatomic;*/
 /* static DEFINE_SPINLOCK(kdcam_cal_drv_lock); */
 /* spin_lock(&kdcam_cal_drv_lock); */
 /* spin_unlock(&kdcam_cal_drv_lock); */
@@ -85,14 +88,17 @@ static atomic_t g_CAM_CALatomic;
 #define EEPROM_I2C_SPEED 100
 /* #define LSCOTPDATASIZE 0x03c4 //964 */
 /* static kal_uint8 lscotpdata[LSCOTPDATASIZE]; */
-
+/*
 static void kdSetI2CSpeed(u32 i2cSpeed)
 {
+#ifdef USE_I2C_MTK_EXT
 	spin_lock(&g_CAM_CALLock);
 	g_pstI2Cclient->timing = i2cSpeed;
 	spin_unlock(&g_CAM_CALLock);
+#endif
 
 }
+*/
 
 static int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId)
 {
@@ -100,7 +106,9 @@ static int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u1
 
 	spin_lock(&g_CAM_CALLock);
 	g_pstI2Cclient->addr = (i2cId >> 1);
+#ifdef USE_I2C_MTK_EXT
 	g_pstI2Cclient->ext_flag = (g_pstI2Cclient->ext_flag) & (~I2C_DMA_FLAG);
+#endif
 
 	spin_unlock(&g_CAM_CALLock);
 	i4RetValue = i2c_master_send(g_pstI2Cclient, a_pSendData, a_sizeSendData);
@@ -164,13 +172,13 @@ static int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId)
 }
 #endif
 
-static bool selective_read_byte(u32 addr, BYTE *data, u16 i2c_id)
+static bool selective_read_byte(u32 addr, u8 *data, u16 i2c_id)
 {
 	/* CAM_CALDB("selective_read_byte\n"); */
 
 	u8 page = addr / PAGE_SIZE_; /* size of page was 256 */
 	u8 offset = addr % PAGE_SIZE_;
-	kdSetI2CSpeed(EEPROM_I2C_SPEED);
+	/*kdSetI2CSpeed(EEPROM_I2C_SPEED);*/
 
 	if (iReadRegI2C(&offset, 1, (u8 *)data, 1, i2c_id + (page << 1)) < 0) {
 		CAM_CALERR("fail selective_read_byte addr =0x%x data = 0x%x,page %d, offset 0x%x",
@@ -182,17 +190,17 @@ static bool selective_read_byte(u32 addr, BYTE *data, u16 i2c_id)
 	return true;
 }
 
-static int selective_read_region(u32 addr, BYTE *data, u16 i2c_id, u32 size)
+static int selective_read_region(u32 addr, u8 *data, u16 i2c_id, u32 size)
 {
-	/* u32 page = addr/PAGE_SIZE; /* size of page was 256 */
+	/* u32 page = addr/PAGE_SIZE; // size of page was 256 */
 	/* u32 offset = addr%PAGE_SIZE; */
-	BYTE *buff = data;
+	u8 *buff = data;
 	u32 size_to_read = size;
 	/* kdSetI2CSpeed(EEPROM_I2C_SPEED); */
 	int ret = 0;
 
 	while (size_to_read > 0) {
-		if (selective_read_byte(addr, (u8 *)buff, i2c_id)) {
+		if (selective_read_byte(addr, buff, i2c_id)) {
 			addr += 1;
 			buff += 1;
 			size_to_read -= 1;
@@ -227,12 +235,13 @@ static int selective_read_region(u32 addr, BYTE *data, u16 i2c_id, u32 size)
 
 
 /* Burst Write Data */
+/*
 static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigned char *pinputdata)
 {
 	CAM_CALDB("not implemented!");
 	return 0;
 }
-
+*/
 unsigned int cat24c16_selective_read_region(struct i2c_client *client, unsigned int addr,
 	unsigned char *data, unsigned int size)
 {

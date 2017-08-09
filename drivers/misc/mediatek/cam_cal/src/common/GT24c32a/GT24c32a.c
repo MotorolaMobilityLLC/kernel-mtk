@@ -12,7 +12,7 @@
 #include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
-#include "kd_camera_hw.h"
+/*#include "kd_camera_hw.h"*/
 #include "eeprom.h"
 #include "eeprom_define.h"
 #include "GT24c32a.h"
@@ -100,7 +100,9 @@ static atomic_t g_EEPROMatomic;
 
 #define Read_NUMofEEPROM 2
 static struct i2c_client *g_pstI2Cclient;
+#ifdef USE_I2C_MTK_EXT
 static DEFINE_SPINLOCK(g_EEPROMLock); /* for SMP */
+#endif
 
 
 /*******************************************************************************
@@ -116,6 +118,7 @@ extern int iReadReg(u16 a_u2Addr , u8 *a_puBuff , u16 i2cId);
 *
 ********************************************************************************/
 /* maximun read length is limited at "I2C_FIFO_SIZE" in I2c-mt6516.c which is 8 bytes */
+#if 0
 static int iWriteEEPROM(u16 a_u2Addr  , u32 a_u4Bytes, u8 *puDataInBytes)
 {
 	u32 u4Index;
@@ -143,7 +146,7 @@ static int iWriteEEPROM(u16 a_u2Addr  , u32 a_u4Bytes, u8 *puDataInBytes)
 	/* EEPROMDB("[EEPROM] iWriteEEPROM done!!\n"); */
 	return 0;
 }
-
+#endif
 
 /* maximun read length is limited at "I2C_FIFO_SIZE" in I2c-mt65xx.c which is 8 bytes */
 static int iReadEEPROM(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
@@ -157,9 +160,11 @@ static int iReadEEPROM(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
 		EEPROMDB("[GT24c32a] exceed I2c-mt65xx.c 8 bytes limitation\n");
 		return -1;
 	}
+#ifdef USE_I2C_MTK_EXT
 	spin_lock(&g_EEPROMLock); /* for SMP */
 	g_pstI2Cclient->addr = g_pstI2Cclient->addr & (I2C_MASK_FLAG | I2C_WR_FLAG);
 	spin_unlock(&g_EEPROMLock); /* for SMP */
+#endif
 
 	/* EEPROMDB("[EEPROM] i2c_master_send\n"); */
 	i4RetValue = i2c_master_send(g_pstI2Cclient, puReadCmd, 2);
@@ -174,15 +179,16 @@ static int iReadEEPROM(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
 		EEPROMDB("[GT24c32a] I2C read data failed!!\n");
 		return -1;
 	}
+#ifdef USE_I2C_MTK_EXT
 	spin_lock(&g_EEPROMLock); /* for SMP */
 	g_pstI2Cclient->addr = g_pstI2Cclient->addr & I2C_MASK_FLAG;
 	spin_unlock(&g_EEPROMLock); /* for SMP */
-
+#endif
 	/* EEPROMDB("[GT24c32a] iReadEEPROM done!!\n"); */
 	return 0;
 }
 
-
+#if 0
 static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigned char *pinputdata)
 {
 #if 0
@@ -237,7 +243,6 @@ static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length, unsign
 }
 
 
-
 static int iReadDataFromGT24c32a(unsigned int  ui4_offset, unsigned int  ui4_length, unsigned char *pinputdata)
 {
 
@@ -287,12 +292,11 @@ static int iReadDataFromGT24c32a(unsigned int  ui4_offset, unsigned int  ui4_len
 		do {
 			if (16 <= loop[loopCount]) {
 
-				EEPROMDB("[GT24c32a]1 loopCount=%d loop[loopCount]=%d puSendCmd[0]=%x
-				puSendCmd[1]=%x, EEPROM(%x)\n",
-				loopCount , loop[loopCount], puSendCmd[0], puSendCmd[1],
+				EEPROMDB("[GT24c32a]1 loopCount=%d loop[loopCount]=%d puSendCmd[0]=%xpuSendCmd[1]=%x,\
+				EEPROM(%x)\n", loopCount , loop[loopCount], puSendCmd[0], puSendCmd[1],\
 				EEPROM_Address[loopCount]);
 				/* iReadRegI2C(puSendCmd , 2, (u8*)pBuff,16,EEPROM_Address[loopCount]); */
-				i4RetValue = iBurstReadRegI2C(puSendCmd , 2, (u8 *)pBuff, 16,
+				i4RetValue = iBurstReadRegI2C(puSendCmd , 2, (u8 *)pBuff, 16,\
 				EEPROM_Address[loopCount]);
 				if (i4RetValue != 0) {
 					EEPROMDB("[GT24c32a] I2C iReadData failed!!\n");
@@ -305,9 +309,8 @@ static int iReadDataFromGT24c32a(unsigned int  ui4_offset, unsigned int  ui4_len
 				puSendCmd[1] = (char)((SampleOffset + u4IncOffset) & 0xFF);
 				pBuff = pinputdata + u4IncOffset;
 			} else if (0 < loop[loopCount]) {
-				EEPROMDB("[GT24c32a]2 loopCount=%d loop[loopCount]=%d puSendCmd[0]=%x
-				puSendCmd[1]=%x\n", loopCount ,
-					loop[loopCount], puSendCmd[0], puSendCmd[1]);
+				EEPROMDB("[GT24c32a]2 loopCount=%d loop[loopCount]=%d puSendCmd[0]=%x puSendCmd[1]=%x\n",
+				loopCount , loop[loopCount], puSendCmd[0], puSendCmd[1]);
 				/* iReadRegI2C(puSendCmd , 2, (u8*)pBuff,loop[loopCount],
 				EEPROM_Address[loopCount]); */
 				i4RetValue = iBurstReadRegI2C(puSendCmd , 2, (u8 *)pBuff, 16,
@@ -375,6 +378,8 @@ static int iReadData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigne
 	/* EEPROMDB("[S24EEPORM] iReadData done\n" ); */
 	return 0;
 }
+#endif
+
 
 unsigned int gt24c32a_selective_read_region(struct i2c_client *client, unsigned int addr,
 	unsigned char *data, unsigned int size)

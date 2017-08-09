@@ -31,7 +31,7 @@
 /*#include <linux/log.h>*/
 #define PFX "CAM_CAL_DRV"
 #define CAM_CALINF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
-#define CAM_CALDB(format, args...)     pr_info(PFX "[%s] " format, __func__, ##args)
+#define CAM_CALDB(format, args...)     pr_debug(PFX "[%s] " format, __func__, ##args)
 #define CAM_CALERR(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 #else
 #define CAM_CALDB(x, ...)
@@ -130,9 +130,9 @@ static int cam_cal_get_cmd_info(unsigned int sensorID, stCAM_CAL_CMD_INFO_STRUCT
 					  (*g_i2c_info[g_curBusIdx]).addr);
 				if (cam_cal_get_i2c_client(g_i2c_info[g_curBusIdx], &(cmdInfo->client))) {
 					for (j = 0; pCamCalFunc[j].cmdType != 0; j++) {
-						CAM_CALDB("pCamCalFunc[%d].cmdType = %d,
-						pCamCalList[%d].cmdType = %d\n",
-						j, pCamCalFunc[j].cmdType, i,
+						CAM_CALDB("pCamCalFunc[%d].cmdType = %d,\
+						pCamCalList[%d].cmdType = %d\n",\
+						j, pCamCalFunc[j].cmdType, i,\
 						pCamCalList[i].cmdType);
 				if (pCamCalFunc[j].cmdType == pCamCalList[i].cmdType
 						    || pCamCalList[i].cmdType == 0) {

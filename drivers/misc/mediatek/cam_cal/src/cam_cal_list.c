@@ -15,7 +15,7 @@
 #define PFX "cam_cal_list"
 
 #define CAM_CALINF(format, args...)     pr_info(PFX "[%s] " format, __func__, ##args)
-#define CAM_CALDB(format, args...)      pr_info(PFX "[%s] " format, __func__, ##args)
+#define CAM_CALDB(format, args...)      pr_debug(PFX "[%s] " format, __func__, ##args)
 #define CAM_CALERR(format, args...)     pr_info(format, ##args)
 #else
 #define CAM_CALINF(x, ...)

@@ -26,7 +26,7 @@
 #endif
 
 
-static DEFINE_SPINLOCK(g_CAM_CALLock); /* for SMP */
+/*static DEFINE_SPINLOCK(g_CAM_CALLock);*//* for SMP */
 /* #define CAM_CAL_I2C_BUSNUM 1 */
 #define CAM_CAL_I2C_BUSNUM 3
 #define CAM_CAL_DEV_MAJOR_NUMBER 226
@@ -50,18 +50,18 @@ static DEFINE_SPINLOCK(g_CAM_CALLock); /* for SMP */
 /*******************************************************************************
 *
 ********************************************************************************/
-static struct i2c_board_info kd_cam_cal_dev __initdata = { I2C_BOARD_INFO(CAM_CAL_DRVNAME, 0xAA >> 1)};
+/*static struct i2c_board_info kd_cam_cal_dev __initdata = { I2C_BOARD_INFO(CAM_CAL_DRVNAME, 0xAA >> 1)};*/
 static struct i2c_client *g_pstI2Cclient;
 
 /* 81 is used for V4L driver */
-static dev_t g_CAM_CALdevno = MKDEV(CAM_CAL_DEV_MAJOR_NUMBER, 0);
-static struct cdev *g_pCAM_CAL_CharDrv;
+/*static dev_t g_CAM_CALdevno = MKDEV(CAM_CAL_DEV_MAJOR_NUMBER, 0);*/
+/*static struct cdev *g_pCAM_CAL_CharDrv;*/
 /* static spinlock_t g_CAM_CALLock; */
 /* spin_lock(&g_CAM_CALLock); */
 /* spin_unlock(&g_CAM_CALLock); */
 
-static struct class *CAM_CAL_class;
-static atomic_t g_CAM_CALatomic;
+/*static struct class *CAM_CAL_class;*/
+/*static atomic_t g_CAM_CALatomic;*/
 /* static DEFINE_SPINLOCK(kdcam_cal_drv_lock); */
 /* spin_lock(&kdcam_cal_drv_lock); */
 /* spin_unlock(&kdcam_cal_drv_lock); */
@@ -70,6 +70,7 @@ static atomic_t g_CAM_CALatomic;
 *
 ********************************************************************************/
 /* maximun read length is limited at "I2C_FIFO_SIZE" in I2c-mt65xx.c which is 8 bytes */
+#if 0
 static int iWriteCAM_CAL(u16 a_u2Addr  , u32 a_u4Bytes, u8 *puDataInBytes)
 {
 	int  i4RetValue = 0;
@@ -95,7 +96,7 @@ static int iWriteCAM_CAL(u16 a_u2Addr  , u32 a_u4Bytes, u8 *puDataInBytes)
 	/* CAM_CALDB("[CAM_CAL] iWriteCAM_CAL done!!\n"); */
 	return 0;
 }
-
+#endif
 
 /* maximun read length is limited at "I2C_FIFO_SIZE" in I2c-mt65xx.c which is 8 bytes */
 static int iReadCAM_CAL(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
@@ -109,10 +110,11 @@ static int iReadCAM_CAL(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
 		CAM_CALDB("[BRCB032GWZ] exceed I2c-mt65xx.c 8 bytes limitation\n");
 		return -1;
 	}
+#ifdef USE_I2C_MTK_EXT
 	spin_lock(&g_CAM_CALLock); /* for SMP */
 	g_pstI2Cclient->addr = g_pstI2Cclient->addr & (I2C_MASK_FLAG | I2C_WR_FLAG);
 	spin_unlock(&g_CAM_CALLock); /* for SMP */
-
+#endif
 	/* CAM_CALDB("[CAM_CAL] i2c_master_send\n"); */
 	i4RetValue = i2c_master_send(g_pstI2Cclient, puReadCmd, 2);
 	if (i4RetValue != 2) {
@@ -126,15 +128,17 @@ static int iReadCAM_CAL(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
 		CAM_CALDB("[CAM_CAL] I2C read data failed!!\n");
 		return -1;
 	}
+#ifdef USE_I2C_MTK_EXT
 	spin_lock(&g_CAM_CALLock); /* for SMP */
 	g_pstI2Cclient->addr = g_pstI2Cclient->addr & I2C_MASK_FLAG;
 	spin_unlock(&g_CAM_CALLock); /* for SMP */
+#endif
 
 	/* CAM_CALDB("[CAM_CAL] iReadCAM_CAL done!!\n"); */
 	return 0;
 }
 
-
+#if 0
 static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigned char *pinputdata)
 {
 	int  i4RetValue = 0;
@@ -184,6 +188,7 @@ static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length, unsign
 
 	return 0;
 }
+#endif
 
 /* int iReadData(stCAM_CAL_INFO_STRUCT * st_pOutputBuffer) */
 static int iReadData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigned char *pinputdata)
