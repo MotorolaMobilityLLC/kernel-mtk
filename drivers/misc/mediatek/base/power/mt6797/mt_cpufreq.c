@@ -1992,6 +1992,7 @@ static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 
 #ifdef ENABLE_IDVFS
 		if (!disable_idvfs_flag && cpu_dvfs_is(p, MT_CPU_DVFS_B) && p->armpll_is_available) {
+			aee_record_cpu_dvfs_cb(14);
 			idvfs_avg = (BigiDVFSSWAvgStatus() / (10000 / IDVFS_FMAX));
 			ppm_data[i].freq_idx = _search_available_freq_idx(p, idvfs_avg * 1000, CPUFREQ_RELATION_L);
 			cpufreq_ver("iDVFS average freq = %d, idx map to %d\n",
@@ -2007,7 +2008,11 @@ static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 			i, ppm_data[i].core_num, ppm_data[i].freq_idx, ppm_data[i].volt);
 	}
 
+	aee_record_cpu_dvfs_cb(15);
+
 	mt_ppm_dlpt_kick_PBM(ppm_data, (unsigned int)arch_get_nr_clusters());
+
+	aee_record_cpu_dvfs_cb(0);
 #endif
 }
 #endif
