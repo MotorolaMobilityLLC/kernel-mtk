@@ -20,7 +20,8 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #endif
 #ifdef ENABLE_IDVFS
 #include "mt_ocp.h"
-#define PPM_HW_OCP_SUPPORT		(0)
+#define PPM_HW_OCP_SUPPORT		(1)
+#define PPM_GET_POWER_FROM_OCP		(0)
 #else
 #define PPM_HW_OCP_SUPPORT		(0)
 #endif
@@ -100,7 +101,8 @@ struct ppm_power_tbl_data {
 };
 
 struct ppm_pwr_idx_ref_tbl {
-	const unsigned int core_power[DVFS_OPP_NUM];
+	const unsigned int core_dynamic_power[DVFS_OPP_NUM];
+	const unsigned int core_total_power[DVFS_OPP_NUM];
 	const unsigned int l2_power[DVFS_OPP_NUM];
 };
 
@@ -118,7 +120,7 @@ struct ppm_pwr_idx_ref_tbl_data {
 /*==============================================================*/
 extern unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage);
 extern unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
-					unsigned int cluster_num);
+					unsigned int cluster_num, unsigned int percentage);
 
 #ifdef __cplusplus
 }

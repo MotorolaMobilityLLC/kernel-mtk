@@ -17,11 +17,11 @@ enum PPM_DLPT_MODE {
 	HW_MODE,	/* use HW OCP only */
 };
 
+static unsigned int ppm_dlpt_calc_trans_precentage(void);
 static unsigned int ppm_dlpt_pwr_budget_preprocess(unsigned int budget);
 #if PPM_HW_OCP_SUPPORT
 static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget, unsigned int pwr_idx);
 #else
-static unsigned int ppm_dlpt_calc_trans_precentage(void);
 static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget);
 #endif
 static void ppm_dlpt_update_limit_cb(enum ppm_power_state new_state);
@@ -29,6 +29,9 @@ static void ppm_dlpt_status_change_cb(bool enable);
 static void ppm_dlpt_mode_change_cb(enum ppm_mode mode);
 
 static unsigned int dlpt_percentage_to_real_power;
+#if PPM_HW_OCP_SUPPORT
+static unsigned int dlpt_percentage_by_ocp;
+#endif
 static enum PPM_DLPT_MODE dlpt_mode;
 
 /* other members will init by ppm_main */
@@ -52,6 +55,9 @@ void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned in
 	unsigned int max_volt = 0;
 	unsigned int budget = 0;
 	int i;
+#if PPM_HW_OCP_SUPPORT
+	unsigned int percentage = dlpt_percentage_to_real_power;
+#endif
 
 	FUNC_ENTER(FUNC_LV_POLICY);
 
@@ -65,7 +71,10 @@ void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned in
 		max_volt = MAX(max_volt, cluster_status[i].volt);
 	}
 #if PPM_HW_OCP_SUPPORT
-	budget = ppm_calc_total_power(cluster_status, cluster_num);
+	if (!percentage)
+		percentage = ppm_dlpt_calc_trans_precentage();
+
+	budget = ppm_calc_total_power(cluster_status, cluster_num, percentage);
 	if (!budget)
 		goto end;
 
@@ -108,7 +117,7 @@ void mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power)
 	case HYBRID_MODE:
 #if PPM_HW_OCP_SUPPORT
 		dlpt_policy.req.power_budget = (dlpt_mode == SW_MODE)
-			? budget : ppm_set_ocp(budget, dlpt_percentage_to_real_power);
+			? budget : ppm_set_ocp(budget, dlpt_percentage_by_ocp);
 #else
 		dlpt_policy.req.power_budget = budget;
 #endif
@@ -126,26 +135,7 @@ end:
 	FUNC_EXIT(FUNC_LV_POLICY);
 }
 
-#if PPM_HW_OCP_SUPPORT
-static unsigned int ppm_dlpt_pwr_budget_preprocess(unsigned int budget)
-{
-	unsigned int percentage = dlpt_percentage_to_real_power;
 
-	if (!percentage)
-		percentage = 100;
-
-	return (budget * percentage + (100 - 1)) / 100;
-}
-
-static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget, unsigned int pwr_idx)
-{
-	/* just calculate new ratio */
-	dlpt_percentage_to_real_power = (pwr_idx * 100 + (budget - 1)) / budget;
-	ppm_dbg(DLPT, "new dlpt ratio = %d (%d/%d)\n", dlpt_percentage_to_real_power, pwr_idx, budget);
-
-	return budget;
-}
-#else
 static unsigned int ppm_dlpt_calc_trans_precentage(void)
 {
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
@@ -163,6 +153,26 @@ static unsigned int ppm_dlpt_calc_trans_precentage(void)
 	return dlpt_percentage_to_real_power;
 }
 
+#if PPM_HW_OCP_SUPPORT
+static unsigned int ppm_dlpt_pwr_budget_preprocess(unsigned int budget)
+{
+	unsigned int percentage = dlpt_percentage_by_ocp;
+
+	if (!percentage)
+		percentage = 100;
+
+	return (budget * percentage + (100 - 1)) / 100;
+}
+
+static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget, unsigned int pwr_idx)
+{
+	/* just calculate new ratio */
+	dlpt_percentage_by_ocp = (pwr_idx * 100 + (budget - 1)) / budget;
+	ppm_dbg(DLPT, "new dlpt ratio = %d (%d/%d)\n", dlpt_percentage_by_ocp, pwr_idx, budget);
+
+	return budget;
+}
+#else
 static unsigned int ppm_dlpt_pwr_budget_preprocess(unsigned int budget)
 {
 	unsigned int percentage = dlpt_percentage_to_real_power;
