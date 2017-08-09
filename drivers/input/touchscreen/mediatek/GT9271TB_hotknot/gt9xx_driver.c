@@ -1066,8 +1066,8 @@ static s32 gtp_init_panel(struct i2c_client *client)
 	u8 opr_buf[16];
 	u8 sensor_id = 0;
 	u8 retry = 0;
-	u8 flash_cfg_version;
-	u8 drv_cfg_version;
+	u8 flash_cfg_version = 0;
+	u8 drv_cfg_version = 0;
 
 	u8 cfg_info_group0[] = CTP_CFG_GROUP0;
 	u8 cfg_info_group1[] = CTP_CFG_GROUP1;
