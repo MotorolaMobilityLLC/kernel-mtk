@@ -95,6 +95,13 @@ config SW_SYNC_USER
 	  *WARNING* improper use of this can result in deadlocking kernel
 	  drivers from userspace.
 
+config MTK_GMO_RAM_OPTIMIZE
+	bool "MTK ram optimize"
+	default n
+	help
+	  Provide for phone to use memory efficiently.
+
+
 source "drivers/staging/android/ion/Kconfig"
 
 source "drivers/staging/android/fiq_debugger/Kconfig"
