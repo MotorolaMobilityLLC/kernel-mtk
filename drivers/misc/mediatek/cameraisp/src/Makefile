@@ -6,9 +6,9 @@ obj-y := cameraisp_dummy.o
 #  obj-y += $(CONFIG_MTK_PLATFORM)/
 #endif
 
-#ifeq ($(CONFIG_ARCH_MT6735M),y)
-#  obj-y += $(CONFIG_MTK_PLATFORM)/
-#endif
+ifeq ($(CONFIG_ARCH_MT6735M),y)
+  obj-y += $(CONFIG_MTK_PLATFORM)/
+endif
 
 ifeq ($(CONFIG_ARCH_MT6735),y)
   obj-y += $(CONFIG_MTK_PLATFORM)/

@@ -21,9 +21,9 @@ ifneq ($(CONFIG_ARM64), y)
 # For arm32
   ifeq ($(strip $(CONFIG_ARCH_MT6735M)),y)
     obj-y += cameraisp_dummy2.o
-    #obj-y += camera_isp_D2.o
-    #obj-y += camera_sysram_D2.o
-    #obj-y += camera_pipe_mgr_D2.o
+    obj-y += camera_isp_D2.o
+    obj-y += camera_sysram_D2.o
+    obj-y += camera_pipe_mgr_D2.o
   else
     obj-y += camera_isp_D1.o
     obj-y += camera_sysram_D1.o
@@ -33,9 +33,9 @@ else
 # For arm64
   ifeq ($(strip $(CONFIG_ARCH_MT6735M)),y)
     obj-y += cameraisp_dummy2.o
-    #obj-y += camera_isp_D2.o
-    #obj-y += camera_sysram_D2.o
-    #obj-y += camera_pipe_mgr_D2.o
+    obj-y += camera_isp_D2.o
+    obj-y += camera_sysram_D2.o
+    obj-y += camera_pipe_mgr_D2.o
   else
     obj-y += camera_isp_D1.o
     obj-y += camera_sysram_D1.o
