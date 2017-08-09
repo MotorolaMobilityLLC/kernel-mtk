@@ -2375,8 +2375,11 @@ mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy, IN void *data, 
 		goto nla_put_failure;
 
 	i4Status = cfg80211_testmode_reply(skb);
+	skb = NULL;
 
 nla_put_failure:
+	if (skb != NULL)
+		kfree_skb(skb);
 	return i4Status;
 }
 
