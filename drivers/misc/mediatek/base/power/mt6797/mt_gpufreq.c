@@ -947,6 +947,7 @@ EXPORT_SYMBOL(mt_gpufreq_voltage_enable_set);
 
 void mt_gpufreq_enable_by_ptpod(void)
 {
+	mt_gpufreq_voltage_enable_set(0);
 #ifdef MTK_GPU_SPM
 	if (mt_gpufreq_ptpod_disable)
 		mtk_gpu_spm_resume();
