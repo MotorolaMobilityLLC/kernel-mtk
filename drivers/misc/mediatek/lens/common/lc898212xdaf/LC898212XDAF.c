@@ -287,9 +287,15 @@ static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
 	stAF_MotorCalPos stMotorCalPos;
 	u32 u4AF_CalibData_INF;
 	u32 u4AF_CalibData_MACRO;
+	u8 val1;
 
 	u4AF_CalibData_INF = 0;
 	u4AF_CalibData_MACRO = 0;
+
+	g_SelectEEPROM = 1;
+
+	if (s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x001A, &val1) < 0)
+		g_SelectEEPROM = 0;
 
 	if (g_SelectEEPROM == 1) {
 		u8 val1 = 0, val2 = 0;
@@ -303,6 +309,14 @@ static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0013, &val2);
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0014, &val1);
 		AF_Marco = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F67, &val1);
+		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F68, &val2);
+		Hall_Min = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F69, &val1);
+		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F70, &val2);
+		Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
 		if (AF_Marco > 1023 || AF_Infi > 1023 || AF_Infi > AF_Marco) {
 			u4AF_CalibData_INF = convertAF_DAC(AF_Infi);
