@@ -530,6 +530,8 @@ void ipanic_recursive_ke(struct pt_regs *regs, struct pt_regs *excp_regs, int cp
 	mrdump_mini_ke_cpu_regs(excp_regs);
 	mrdump_mini_per_cpu_regs(cpu, regs);
 	flush_cache_all();
+	if (!has_mt_dump_support())
+		emergency_restart();
 	ipanic_mrdump_mini(AEE_REBOOT_MODE_NESTED_EXCEPTION, "Nested Panic");
 
 	ipanic_data_to_sd(IPANIC_DT_CURRENT_TSK, 0);
