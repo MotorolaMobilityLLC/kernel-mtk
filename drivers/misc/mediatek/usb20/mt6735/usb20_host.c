@@ -250,7 +250,7 @@ static bool musb_is_host(void)
 	#if defined(CONFIG_MTK_LEGACY)
 	iddig_state = mt_get_gpio_in(iddig_pin);
 	#else
-	iddig_state = __gpio_get_value(0);
+	iddig_state = __gpio_get_value(iddig_pin);
 	#endif
 	#else
 	iddig_state = mt_get_gpio_in(GPIO_OTG_IDDIG_EINT_PIN);
@@ -508,7 +508,7 @@ static void otg_int_init(void)
 	#else
 	/*gpio_request(iddig_pin, "USB_IDDIG");*/
 	gpio_set_debounce(iddig_pin, 64000);
-	usb_iddig_number = mt_gpio_to_irq(0);
+	usb_iddig_number = mt_gpio_to_irq(iddig_pin);
 	ret = request_irq(usb_iddig_number, mt_usb_ext_iddig_int, IRQF_TRIGGER_LOW, "USB_IDDIG", NULL);
 	#endif
 	if (ret > 0)

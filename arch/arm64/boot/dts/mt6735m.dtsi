@@ -1246,7 +1246,6 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			dma = <1>;
 			num_eps = <16>;
 			dma_channels = <8>;
-			iddig_gpio = <0 1>;
 			drvvbus_gpio = <83 2>;
 		};
 

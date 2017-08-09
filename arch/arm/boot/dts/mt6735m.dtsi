@@ -1239,7 +1239,6 @@
 			dma = <1>;
 			num_eps = <16>;
 			dma_channels = <8>;
-			iddig_gpio = <0 1>;
 			drvvbus_gpio = <83 2>;
 		};
 
