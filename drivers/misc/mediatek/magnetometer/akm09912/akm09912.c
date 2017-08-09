@@ -29,7 +29,7 @@
 /*----------------------------------------------------------------------------*/
 #define AKM09912_DEBUG		1
 #define AKM09912_RETRY_COUNT	10
-#define AKM09912_DEFAULT_DELAY	100
+#define AKM09912_DEFAULT_DELAY	20
 
 
 #if AKM09912_DEBUG

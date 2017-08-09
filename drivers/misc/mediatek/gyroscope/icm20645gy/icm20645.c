@@ -226,6 +226,63 @@ static int icm20645_lp_mode(struct i2c_client *client, bool on)
 		}
 #endif
 	}
+
+/* all_chip_lp_config */
+#ifdef ICM20645_ACCESS_BY_GSE_I2C
+	res = ICM20645_hwmsen_read_block(ICM20645_REG_PWR_CTL, databuf, 0x01);
+	if (res < 0) {
+		GYRO_LOG("icm20645_lp_mode fail at %x\n", on);
+		return ICM20645_ERR_I2C;
+	}
+#else
+	if (hwmsen_read_byte(client, ICM20645_REG_PWR_CTL, databuf)) {
+		GYRO_LOG("icm20645_lp_mode fail at %x\n", on);
+		return ICM20645_ERR_I2C;
+	}
+#endif
+
+	if (on == true) {
+		databuf[0] |= BIT_LP_EN;
+#ifdef ICM20645_ACCESS_BY_GSE_I2C
+		res = ICM20645_hwmsen_write_block(ICM20645_REG_PWR_CTL, databuf, 0x01);
+		if (res < 0) {
+			GYRO_LOG("icm20645_lp_mode fail at %x\n", on);
+			return ICM20645_ERR_I2C;
+		}
+#else
+		if (hwmsen_write_byte(client, ICM20645_REG_PWR_CTL, databuf)) {
+			GYRO_LOG("icm20645_lp_mode fail at %x\n", on);
+			return ICM20645_ERR_I2C;
+		}
+#endif
+	} else {
+		databuf[0] &= ~BIT_LP_EN;
+#ifdef ICM20645_ACCESS_BY_GSE_I2C
+		res = ICM20645_hwmsen_write_block(ICM20645_REG_PWR_CTL, databuf, 0x01);
+		if (res < 0) {
+			GYRO_LOG("icm20645_lp_mode fail at %x\n", on);
+			return ICM20645_ERR_I2C;
+		}
+#else
+		if (hwmsen_write_byte(client, ICM20645_REG_PWR_CTL, databuf)) {
+			GYRO_LOG("icm20645_lp_mode fail at %x\n", on);
+			return ICM20645_ERR_I2C;
+		}
+#endif
+
+	}
+	return ICM20645_SUCCESS;
+
+}
+
+static int icm20645_lowest_power_mode(struct i2c_client *client, bool on)
+{
+	int res;
+	u8 databuf[2];
+
+	memset(databuf, 0, sizeof(databuf));
+	icm20645_set_bank(client, BANK_SEL_0);
+
 /* all_chip_lp_config */
 #ifdef ICM20645_ACCESS_BY_GSE_I2C
 	res = ICM20645_hwmsen_read_block(ICM20645_REG_PWR_CTL, databuf, 0x01);
@@ -525,19 +582,20 @@ static int ICM20645_Setfilter(struct i2c_client *client, int filter_sample)
 static int ICM20645_SetSampleRate(struct i2c_client *client, int sample_rate)
 {
 	u8 databuf[2] = { 0 };
-	int rate_div = 0;
 	int res = 0;
 
-	rate_div = 1125 / sample_rate - 1;
+	if (sample_rate >= 500)
+		databuf[0] = 0;
+	else
+		databuf[0] = 1125 / sample_rate - 1;
 
 	icm20645_set_bank(client, BANK_SEL_2);
 
 #ifdef ICM20645_ACCESS_BY_GSE_I2C
-	databuf[0] = rate_div;
 	res = ICM20645_hwmsen_write_block(ICM20645_REG_SAMRT_DIV, databuf, 0x1);
 #else
+	databuf[1] = databuf[0];
 	databuf[0] = ICM20645_REG_SAMRT_DIV;
-	databuf[1] = rate_div;
 	res = i2c_master_send(client, databuf, 0x2);
 #endif
 	if (res <= 0) {
@@ -1235,6 +1293,49 @@ static int icm20645_enable_nodata(int en)
 
 static int icm20645_set_delay(u64 ns)
 {
+	unsigned int hw_rate, delay_t, err;
+
+	delay_t = ns / 1000 / 1000;
+	hw_rate = 1000 / delay_t;
+
+	err = ICM20645_SetPowerMode(obj_i2c_data->client, true);
+	if (err < 0) {
+		GYRO_LOG("ICM20645_SetPowerMode on fail\n\r");
+		err = -1;
+	}
+
+	err = icm20645_lowest_power_mode(obj_i2c_data->client, false);
+	if (err != 0) {
+		GYRO_ERR("icm20645gy_lowest_power_mode error\n\r");
+		err = -1;
+	}
+
+	if (hw_rate >= 500) {
+		err = ICM20645_Setfilter(obj_i2c_data->client, GYRO_AVGCFG_1X);
+		if (err != ICM20645_SUCCESS) {
+			GYRO_ERR("ICM20645_Setfilter ERR!\n");
+			return err;
+		}
+	} else if (hw_rate >= 100) {
+		err = ICM20645_Setfilter(obj_i2c_data->client, GYRO_AVGCFG_4X);
+		if (err != ICM20645_SUCCESS) {
+			GYRO_ERR("ICM20645_Setfilter ERR!\n");
+			return err;
+		}
+	 }
+
+	err = ICM20645_SetSampleRate(obj_i2c_data->client, hw_rate);
+	if (err != 0 ) {
+		GYRO_ERR("icm20645gy_SetSampleRate error\n\r");
+		err = -1;
+	}
+
+	err = icm20645_lowest_power_mode(obj_i2c_data->client, true);
+	if (err != 0) {
+		GYRO_ERR("icm20645gy_lowest_power_mode error\n\r");
+		err = -1;
+	}
+
 	return 0;
 }
 
