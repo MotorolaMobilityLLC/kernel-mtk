@@ -64,7 +64,7 @@ void __iomem *auxadc_apmix_base = NULL;
 #if !defined(CONFIG_MTK_LEGACY)
 #include <linux/clk.h>
 #else
-#include <cust_adc.h>		/* generate by DCT Tool */
+/*#include <cust_adc.h>*/		/* generate by DCT Tool */
 #include <mach/mt_clkmgr.h>
 #endif				/* defined(CONFIG_MTK_LEGACY) */
 
