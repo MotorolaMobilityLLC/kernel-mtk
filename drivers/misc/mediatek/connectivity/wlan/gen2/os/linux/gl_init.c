@@ -2402,6 +2402,7 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	init_completion(&prGlueInfo->rHaltComp);
 	init_completion(&prGlueInfo->rPendComp);
 #if CFG_ENABLE_WIFI_DIRECT
+	init_completion(&prGlueInfo->rP2pReq);
 	init_completion(&prGlueInfo->rSubModComp);
 #endif
 

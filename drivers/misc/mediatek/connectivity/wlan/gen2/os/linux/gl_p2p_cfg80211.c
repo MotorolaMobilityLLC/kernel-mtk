@@ -906,9 +906,12 @@ int mtk_p2p_cfg80211_remain_on_channel(struct wiphy *wiphy,
 				       unsigned int duration, u64 *cookie)
 {
 	INT_32 i4Rslt = -EINVAL;
+	ULONG timeout = 0;
 	P_GLUE_INFO_T prGlueInfo = (P_GLUE_INFO_T) NULL;
 	P_GL_P2P_INFO_T prGlueP2pInfo = (P_GL_P2P_INFO_T) NULL;
 	P_MSG_P2P_CHNL_REQUEST_T prMsgChnlReq = (P_MSG_P2P_CHNL_REQUEST_T) NULL;
+	P_P2P_CHNL_REQ_INFO_T prChnlReqInfo = (P_P2P_CHNL_REQ_INFO_T)NULL;
+	P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T)NULL;
 
 	do {
 		if ((wiphy == NULL) || (wdev == NULL) || (chan == NULL) || (cookie == NULL))
@@ -916,6 +919,8 @@ int mtk_p2p_cfg80211_remain_on_channel(struct wiphy *wiphy,
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
 		prGlueP2pInfo = prGlueInfo->prP2PInfo;
+		prP2pFsmInfo = prGlueInfo->prAdapter->rWifiVar.prP2pFsmInfo;
+		prChnlReqInfo = &(prP2pFsmInfo->rChnlReqInfo);
 
 		*cookie = prGlueP2pInfo->u8Cookie++;
 
@@ -935,10 +940,33 @@ int mtk_p2p_cfg80211_remain_on_channel(struct wiphy *wiphy,
 
 		mtk_p2p_cfg80211func_channel_format_switch(chan, NL80211_CHAN_HT20,	/* 4 KH Need Check */
 							   &prMsgChnlReq->rChannelInfo, &prMsgChnlReq->eChnlSco);
+		reinit_completion(&prGlueInfo->rP2pReq);
 
 		mboxSendMsg(prGlueInfo->prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prMsgChnlReq, MSG_SEND_METHOD_BUF);
 
-		i4Rslt = 0;
+		/*
+		 * Need wait until firmare grant channel to sync with supplicant,
+		 * wait 2HZ to avoid grant channel takes too long or failed
+		 */
+		timeout = wait_for_completion_timeout(&prGlueInfo->rP2pReq, msecs_to_jiffies(2000));
+		if (timeout == 0) {
+			DBGLOG(P2P, INFO, "Request channel timeout(2HZ)\n");
+			/*
+			 * Throw out remain/cancel on request channel to
+			 * simulate this channel request has been success
+			 */
+			kalP2PIndicateChannelReady(prGlueInfo,
+				prChnlReqInfo->u8Cookie,
+				prChnlReqInfo->ucReqChnlNum,
+				prChnlReqInfo->eBand,
+				prChnlReqInfo->eChnlSco,
+				prChnlReqInfo->u4MaxInterval);
+			/* Indicate channel return. */
+			kalP2PIndicateChannelExpired(prGlueInfo, &prP2pFsmInfo->rChnlReqInfo);
+
+			/* Return Channel */
+			p2pFuncReleaseCh(prGlueInfo->prAdapter, &(prP2pFsmInfo->rChnlReqInfo));
+		}
 
 		i4Rslt = 0;
 	} while (FALSE);
@@ -952,14 +980,17 @@ int mtk_p2p_cfg80211_cancel_remain_on_channel(struct wiphy *wiphy,
 					      u64 cookie)
 {
 	INT_32 i4Rslt = -EINVAL;
+	ULONG timeout = 0;
 	P_GLUE_INFO_T prGlueInfo = (P_GLUE_INFO_T) NULL;
 	P_MSG_P2P_CHNL_ABORT_T prMsgChnlAbort = (P_MSG_P2P_CHNL_ABORT_T) NULL;
+	P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T)NULL;
 
 	do {
 		if ((wiphy == NULL) || (wdev == NULL))
 			break;
 
 		prGlueInfo = *((P_GLUE_INFO_T *) wiphy_priv(wiphy));
+		prP2pFsmInfo = prGlueInfo->prAdapter->rWifiVar.prP2pFsmInfo;
 
 		prMsgChnlAbort = cnmMemAlloc(prGlueInfo->prAdapter, RAM_TYPE_MSG, sizeof(MSG_P2P_CHNL_ABORT_T));
 
@@ -973,8 +1004,17 @@ int mtk_p2p_cfg80211_cancel_remain_on_channel(struct wiphy *wiphy,
 
 		prMsgChnlAbort->rMsgHdr.eMsgId = MID_MNY_P2P_CHNL_ABORT;
 		prMsgChnlAbort->u8Cookie = cookie;
-
+		reinit_completion(&prGlueInfo->rP2pReq);
 		mboxSendMsg(prGlueInfo->prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prMsgChnlAbort, MSG_SEND_METHOD_BUF);
+		timeout = wait_for_completion_timeout(&prGlueInfo->rP2pReq, msecs_to_jiffies(2000));
+		if (timeout == 0) {
+			DBGLOG(P2P, INFO, "Cancel remain on channel timeout(2HZ)\n");
+			/* Indicate channel return. */
+			kalP2PIndicateChannelExpired(prGlueInfo, &prP2pFsmInfo->rChnlReqInfo);
+
+			/* Return Channel */
+			p2pFuncReleaseCh(prGlueInfo->prAdapter, &(prP2pFsmInfo->rChnlReqInfo));
+		}
 
 		i4Rslt = 0;
 	} while (FALSE);
@@ -991,6 +1031,7 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 	P_GL_P2P_INFO_T prGlueP2pInfo = (P_GL_P2P_INFO_T) NULL;
 	INT_32 i4Rslt = -EINVAL;
 	struct _MSG_P2P_EXTEND_LISTEN_INTERVAL_T *prMsgExtListenReq = NULL;
+	ULONG timeout = 0;
 	P_MSG_P2P_MGMT_TX_REQUEST_T prMsgTxReq = (P_MSG_P2P_MGMT_TX_REQUEST_T) NULL;
 	P_MSDU_INFO_T prMgmtFrame = (P_MSDU_INFO_T) NULL;
 	PUINT_8 pucFrameBuf = (PUINT_8) NULL;
@@ -1045,9 +1086,14 @@ int mtk_p2p_cfg80211_mgmt_tx(struct wiphy *wiphy,
 		kalMemCopy(pucFrameBuf, params->buf, params->len);
 
 		prMgmtFrame->u2FrameLength = params->len;
+		reinit_completion(&prGlueInfo->rP2pReq);
 
 		mboxSendMsg(prGlueInfo->prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prMsgTxReq, MSG_SEND_METHOD_BUF);
 
+		timeout = wait_for_completion_timeout(&prGlueInfo->rP2pReq, msecs_to_jiffies(5000));
+		if (timeout == 0)
+			DBGLOG(P2P, INFO, "wait mgmt tx done timeout cookie 0x%llx\n",
+				prMsgTxReq->u8Cookie);
 		i4Rslt = 0;
 	} while (FALSE);
 
