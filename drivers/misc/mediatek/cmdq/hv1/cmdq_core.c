@@ -6200,8 +6200,9 @@ int32_t cmdqCoreReleaseTask(struct TaskStruct *pTask)
 			BUG_ON(pThread->taskCount > 1);
 
 			/* suspend and reset the thread */
-			status = cmdq_core_suspend_HW_thread(thread);
-			BUG_ON(status < 0);
+			/* might meet unsuspendable situation, can be ignored due to following reset */
+			/* status = cmdq_core_suspend_HW_thread(thread); */
+			/* BUG_ON(status < 0); */
 			pThread->taskCount = 0;
 			cmdq_core_disable_HW_thread(thread);
 		} else {
