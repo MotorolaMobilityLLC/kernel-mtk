@@ -35,6 +35,7 @@
 #ifdef CONFIG_ARCH_MT6797
 #include <mt6797/da9214.h>
 #include <mach/mt_freqhopping.h>
+#include <mt_dcm.h>
 #include <mt_clkmgr.h>
 #include <mt_idvfs.h>
 #include <mt_ocp.h>
@@ -596,6 +597,8 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 #ifdef CONFIG_CL2_BUCK_CTRL
 				cpu_power_on_buck(cpu, 1);
 #endif
+				/* enable MP2 Sync DCM */
+				dcm_mcusys_mp2_sync_dcm(1);
 			}
 		}
 	}
