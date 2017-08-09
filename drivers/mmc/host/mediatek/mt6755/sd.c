@@ -5846,16 +5846,12 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->mrq_tune = NULL;
 	#endif
 
-	/* ret = mmc_add_host(mmc); */
 	/* Use ordered workqueue to reduce msdc moudle init time */
 	if (!queue_delayed_work(wq_init, &host->work_init, 0)) {
 		pr_err("msdc%d queue delay work failed BUG_ON,[%s]L:%d\n",
 			host->id, __func__, __LINE__);
 		BUG();
 	}
-
-	if (ret)
-		goto free_irq;
 
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 	pr_debug("[%s]: msdc%d, mmc->caps=0x%x, mmc->caps2=0x%x\n",
@@ -5865,9 +5861,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	return 0;
 
-free_irq:
-	free_irq(host->irq, host);
-	pr_err("[%s]: msdc%d init fail free irq!\n", __func__, host->id);
 release:
 	platform_set_drvdata(pdev, NULL);
 	msdc_deinit_hw(host);
@@ -6032,7 +6025,7 @@ static int __init mt_msdc_init(void)
 {
 	int ret;
 
-	/* config tune at workqueue */
+	/* Alloc init workqueue */
 	wq_init = alloc_ordered_workqueue("msdc-init", 0);
 	if (!wq_init) {
 		pr_err("msdc create work_queue failed.[%s]:%d", __func__, __LINE__);
