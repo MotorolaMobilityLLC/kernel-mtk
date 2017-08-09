@@ -149,7 +149,10 @@ _osal_inline_ char *osal_strsep(char **str, const char *c)
 
 _osal_inline_ int osal_strtol(const char *str, UINT32 adecimal, long *res)
 {
-	return kstrtol(str, adecimal, res);
+	if (4 == sizeof(long))
+		return kstrtou32(str, adecimal, (UINT32 *) res);
+	else
+		return kstrtol(str, adecimal, res);
 }
 
 _osal_inline_ char *osal_strstr(char *str1, const char *str2)
