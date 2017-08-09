@@ -1,0 +1,37 @@
+MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+ARCH_MTK_PROJECT := $(subst ",,$(CONFIG_ARCH_MTK_PROJECT))
+
+MTK_PLATFORM_PATH_ROOT := $(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)
+MTK_PROJECT_PATH_ROOT := $(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/$(ARCH_MTK_PROJECT)
+MTK_CUSTOM_PATH  := $(srctree)/drivers/misc/mediatek
+
+ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/inc \
+             -I$(MTK_CUSTOM_PATH)/imgsensor/inc \
+
+ifeq ($(CONFIG_ARCH_MT6592),y)
+    ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mt6592/inc
+else
+    ifeq ($(CONFIG_ARCH_MT6582),y)
+        ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mt6582/inc
+    else
+        ifeq ($(CONFIG_ARCH_MT6752),y)
+	          ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mt6752/inc
+	          ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mt6752/lc898122af
+        else
+            ifneq (,$(filter y,$(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753)))
+                ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mt6735/inc
+            else
+                ifeq ($(CONFIG_ARCH_MT6580),y)
+                    ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mt6580/inc
+                else
+                    ifeq ($(CONFIG_ARCH_MT6795),y)
+                        ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/mt6795/inc
+                    else
+                        ccflags-y += -I$(MTK_CUSTOM_PATH)/lens/common/inc
+                    endif
+                endif
+            endif
+        endif
+    endif
+endif
+

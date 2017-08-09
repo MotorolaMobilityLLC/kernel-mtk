@@ -22,12 +22,10 @@
 #include <linux/time.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
-#include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
-#include <linux/xlog.h>
 #include <linux/version.h>
-#include <mach/upmu_common.h>
 /* #include <mach/mt6333.h> */
 
 #include "kd_flashlight.h"

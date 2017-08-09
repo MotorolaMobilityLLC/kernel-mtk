@@ -4,6 +4,7 @@
  *
  */
 
+#include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include <linux/platform_device.h>
@@ -12,8 +13,7 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 #include "BU64745GWZAF.h"
-#include "../camera/kd_camera_hw.h"
-#include <linux/xlog.h>
+#include "kd_camera_typedef.h"
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
@@ -57,12 +57,12 @@ static unsigned long g_u4InitPosition = 100;
 
 static int g_sr = 3;
 
-
+/* not used
 static void WR_I2C(CL_UBYTE slvadr, CL_UBYTE size, CL_UBYTE *dat)
 {
 
 }
-
+*/
 /* ********************************************************* */
 /* Read Data from Slave device via I2C master device */
 /* --------------------------------------------------------- */
@@ -85,10 +85,12 @@ static void WR_I2C(CL_UBYTE slvadr, CL_UBYTE size, CL_UBYTE *dat)
 /* [S][SlaveAdr][W]+[dat[0]]+[dat[1]]+[RS][SlaveAdr][R]+[RD_DAT0]+[RD_DAT1][P] */
 /*  */
 /* ********************************************************* */
+
+/* not used
 static CL_UWORD RD_I2C(CL_UBYTE slvadr, CL_UBYTE size, CL_UBYTE *dat)
 {
 	CL_UWORD read_data = 0;
-
+*/
 	/* Please write your source code here. */
 
 	/* This is for ROHM's microprocessor
@@ -102,9 +104,10 @@ static CL_UWORD RD_I2C(CL_UBYTE slvadr, CL_UBYTE size, CL_UBYTE *dat)
 	   printf("call RD_I2C (0x%02X, 0x%04X)\n", dat[0], read_data );
 	   }
 	 */
+/* not used
 	return read_data;
 }
-
+*/
 
 /* ***************************************************** */
 /* **** Write to the Memory register < 84h > */
@@ -375,13 +378,13 @@ static CL_BOOL func_ReLOAD_FACT_DATA(void)
 	return 0;
 }
 
-
+/* not used
 static int s4AF_ReadReg(unsigned short *a_pu2Result)
 {
 
 	return 0;
 }
-
+*/
 static int s4AF_WriteReg(u16 a_u2Data)
 {
 	return 0;

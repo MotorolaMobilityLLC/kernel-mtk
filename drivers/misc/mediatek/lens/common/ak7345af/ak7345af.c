@@ -4,6 +4,7 @@
  *
  */
 
+#include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include <linux/platform_device.h>
@@ -12,7 +13,7 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 #include "AK7345AF.h"
-#include "../camera/kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 
 #define LENS_I2C_BUSNUM 1
 static struct i2c_board_info kd_lens_dev __initdata = { I2C_BOARD_INFO("AK7345AF", 0x18) };

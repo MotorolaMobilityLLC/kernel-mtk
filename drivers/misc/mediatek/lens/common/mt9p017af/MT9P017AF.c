@@ -4,6 +4,7 @@
  *
  */
 
+#include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include <linux/platform_device.h>
@@ -12,13 +13,12 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 #include "MT9P017AF.h"
-#include "../camera/kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 /* #include "kd_cust_lens.h" */
 
 /* #include <mach/mt6573_pll.h> */
 /* #include <mach/mt6573_gpt.h> */
 /* #include <mach/mt6573_gpio.h> */
-#include <linux/xlog.h>
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif

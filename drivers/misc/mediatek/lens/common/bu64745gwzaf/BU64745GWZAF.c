@@ -4,6 +4,7 @@
  *
  */
 
+#include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include <linux/platform_device.h>
@@ -12,8 +13,7 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 #include "BU64745GWZAF.h"
-#include "../camera/kd_camera_hw.h"
-#include <linux/xlog.h>
+#include "kd_camera_typedef.h"
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif

@@ -17,13 +17,9 @@
 #include "kd_flashlight.h"
 #include <asm/io.h>
 #include <asm/uaccess.h>
-#include "kd_camera_hw.h"
-#ifdef CONFIG_MTK_LEGACY
-#include <cust_i2c.h>
-#endif
+#include "kd_camera_typedef.h"
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
-#include <linux/xlog.h>
 #include <linux/version.h>
 #include <linux/mutex.h>
 #include <linux/i2c.h>
@@ -259,19 +255,9 @@ static struct i2c_driver LM3642_i2c_driver = {
 	.remove = LM3642_remove,
 	.id_table = LM3642_id,
 };
-#ifdef CONFIG_MTK_LEGACY
-struct LM3642_platform_data LM3642_pdata = {0, 0, 0, 0, 0};
-static struct i2c_board_info i2c_LM3642 __initdata = {
-	I2C_BOARD_INFO(LM3642_NAME, I2C_STROBE_MAIN_SLAVE_7_BIT_ADDR),
-	.platform_data = &LM3642_pdata,
-};
-#endif
 static int __init LM3642_init(void)
 {
 	PK_DBG("LM3642_init\n");
-#ifdef CONFIG_MTK_LEGACY
-	i2c_register_board_info(I2C_STROBE_MAIN_CHANNEL, &i2c_LM3642, 1);
-#endif
 	return i2c_add_driver(&LM3642_i2c_driver);
 }
 
