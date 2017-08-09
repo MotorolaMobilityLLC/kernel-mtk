@@ -1955,17 +1955,14 @@ static void do_one_broadcast(struct sock *sk,
 	} else if (sk_filter(sk, p->skb2)) {
 		kfree_skb(p->skb2);
 		p->skb2 = NULL;
+	} else if ((val = netlink_broadcast_deliver(sk, p->skb2)) < 0) {
+		netlink_overrun(sk);
+		if (nlk->flags & NETLINK_BROADCAST_SEND_ERROR)
+			p->delivery_failure = 1;
 	} else {
-		val = netlink_broadcast_deliver(sk, p->skb2);
-		if (val < 0) {
-			netlink_overrun(sk);
-			if (nlk->flags & NETLINK_BROADCAST_SEND_ERROR)
-				p->delivery_failure = 1;
-		} else {
-			p->congested |= val;
-			p->delivered = 1;
-			p->skb2 = NULL;
-		}
+		p->congested |= val;
+		p->delivered = 1;
+		p->skb2 = NULL;
 	}
 	sock_put(sk);
 }
