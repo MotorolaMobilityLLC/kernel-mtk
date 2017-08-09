@@ -245,6 +245,11 @@ static int mtk_pconf_set_driving(struct mtk_pinctrl *pctl,
 	unsigned int bits, mask, shift;
 	const struct mtk_drv_group_desc *drv_grp;
 
+	if (pctl->devdata->mt_set_gpio_driving) {
+		pctl->devdata->mt_set_gpio_driving(pin | 0x80000000, driving);
+		return 0;
+	}
+
 	if (pin >= pctl->devdata->npins)
 		return -EINVAL;
 
@@ -355,6 +360,24 @@ static int mtk_pconf_set_pull_select(struct mtk_pinctrl *pctl,
 		else
 			pctl->devdata->mt_set_gpio_pull_select(pin | 0x80000000, 0);
 
+		if (pctl->devdata->mt_set_gpio_pull_resistor) {
+			switch (arg) {
+
+			case MTK_PUPD_SET_R1R0_00:
+				break;
+			case MTK_PUPD_SET_R1R0_01:
+				pctl->devdata->mt_set_gpio_pull_resistor(pin | 0x80000000, 0x1);
+				break;
+			case MTK_PUPD_SET_R1R0_10:
+				pctl->devdata->mt_set_gpio_pull_resistor(pin | 0x80000000, 0x2);
+				break;
+			case MTK_PUPD_SET_R1R0_11:
+				pctl->devdata->mt_set_gpio_pull_resistor(pin | 0x80000000, 0x3);
+				break;
+			default:
+				break;
+			}
+		}
 		return 0;
 	}
 

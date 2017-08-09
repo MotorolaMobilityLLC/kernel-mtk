@@ -788,20 +788,20 @@ int mt_set_gpio_driving_base(unsigned long pin, unsigned long strength)
 
 #ifdef GPIO_BRINGUP
 	if (3 == DRV_width[pin].width) {
-		if (strength > 0x111)
+		if (strength > 0x7)
 			return -ERWRAPPER;
 		reg = GPIO_RD32(addr);
-		reg &= ~(0x111 << bit);
+		reg &= ~(0x7 << bit);
 		GPIO_WR32(addr, reg);
 
 		reg = GPIO_RD32(addr);
 		reg |= (strength << bit);
 		GPIO_WR32(addr, reg);
 	} else if (2 == DRV_width[pin].width) {
-		if (strength > 0x11)
+		if (strength > 0x3)
 			return -ERWRAPPER;
 		reg = GPIO_RD32(addr);
-		reg &= ~(0x11 << bit);
+		reg &= ~(0x3 << bit);
 		GPIO_WR32(addr, reg);
 
 		reg = GPIO_RD32(addr);
@@ -822,19 +822,18 @@ int mt_set_gpio_driving_base(unsigned long pin, unsigned long strength)
 
 #else
 	if (3 == DRV_width[pin].width) {
-		if (strength > 0x111)
+		if (strength > 0x7)
 			return -ERWRAPPER;
 
-		GPIO_SET_BITS((0x111 << bit), addr + 8);
+		GPIO_SET_BITS((0x7 << bit), addr + 8);
 		GPIO_SET_BITS((strength << bit), addr + 4);
 
 	} else if (2 == DRV_width[pin].width) {
-		if (strength > 0x11)
+		if (strength > 0x3)
 			return -ERWRAPPER;
 
-		GPIO_SET_BITS((0x11 << bit), addr + 8);
+		GPIO_SET_BITS((0x3 << bit), addr + 8);
 		GPIO_SET_BITS((strength << bit), addr + 4);
-
 
 	} else if (1 == DRV_width[pin].width) {
 		if (strength > 1)
@@ -865,11 +864,11 @@ int mt_get_gpio_driving_base(unsigned long pin)
 	bit = DRV_offset[pin].offset;
 
 	if (3 == DRV_width[pin].width)
-		return GPIO_RD32(addr) & (0x111 << bit);
+		return (GPIO_RD32(addr) >> bit) & 0x7;
 	else if (2 == DRV_width[pin].width)
-		return GPIO_RD32(addr) & (0x11 << bit);
+		return (GPIO_RD32(addr) >> bit) & 0x3;
 	else if (1 == DRV_width[pin].width)
-		return GPIO_RD32(addr) & (0x1 << bit);
+		return (GPIO_RD32(addr) >> bit) & 0x1;
 
 	return -ERINVAL;
 }

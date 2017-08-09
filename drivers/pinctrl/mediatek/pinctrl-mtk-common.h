@@ -229,6 +229,7 @@ struct mtk_eint_offsets {
  */
 
 extern int mt_set_gpio_mode(unsigned long pin, unsigned long mode);
+extern int mt_set_gpio_driving(unsigned long pin, unsigned long strength);
 extern int mt_set_gpio_dir(unsigned long pin, unsigned long dir);
 extern int mt_get_gpio_dir(unsigned long pin);
 extern int mt_get_gpio_out(unsigned long pin);
@@ -236,8 +237,10 @@ extern int mt_set_gpio_out(unsigned long pin, unsigned long output);
 extern int mt_get_gpio_in(unsigned long pin);
 extern int mt_set_gpio_ies(unsigned long pin, unsigned long enable);
 extern int mt_set_gpio_smt(unsigned long pin, unsigned long enable);
+extern int mt_set_gpio_slew_rate(unsigned long pin, unsigned long enable);
 extern int mt_set_gpio_pull_enable(unsigned long pin, unsigned long enable);
 extern int mt_set_gpio_pull_select(unsigned long pin, unsigned long select);
+extern int mt_set_gpio_pull_resistor(unsigned long pin, unsigned long resistors);
 
 
 struct mtk_pinctrl_devdata {
@@ -262,11 +265,14 @@ struct mtk_pinctrl_devdata {
 	int (*mt_get_gpio_dir)(unsigned long pin);
 	int (*mt_get_gpio_out)(unsigned long pin);
 	int (*mt_set_gpio_out)(unsigned long pin, unsigned long output);
+	int (*mt_set_gpio_driving)(unsigned long pin, unsigned long strength);
 	int (*mt_get_gpio_in)(unsigned long pin);
 	int (*mt_set_gpio_ies)(unsigned long pin, unsigned long enable);
 	int (*mt_set_gpio_smt)(unsigned long pin, unsigned long enable);
+	int (*mt_set_gpio_slew_rate)(unsigned long pin, unsigned long enable);
 	int (*mt_set_gpio_pull_enable)(unsigned long pin, unsigned long enable);
 	int (*mt_set_gpio_pull_select)(unsigned long pin, unsigned long select);
+	int (*mt_set_gpio_pull_resistor)(unsigned long pin, unsigned long resistors);
 	unsigned int dir_offset;
 	unsigned int ies_offset;
 	unsigned int smt_offset;
