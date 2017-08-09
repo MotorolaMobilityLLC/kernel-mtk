@@ -9795,6 +9795,7 @@ static int hmp_active_task_migration_cpu_stop(void *data)
 	rcu_read_unlock();
 	double_unlock_balance(busiest_rq, target_rq);
 out_unlock:
+	put_task_struct(p);
 	busiest_rq->active_balance = 0;
 	raw_spin_unlock_irq(&busiest_rq->lock);
 	return 0;
@@ -9816,7 +9817,7 @@ static void hmp_force_down_migration(int this_cpu)
 	struct sched_entity *se;
 	struct rq *target;
 	unsigned long flags;
-	unsigned int force;
+	unsigned int force = 0;
 	struct task_struct *p;
 	struct clb_env clbenv;
 #ifdef CONFIG_SCHED_HMP_PLUS
@@ -9887,6 +9888,7 @@ static void hmp_force_down_migration(int this_cpu)
 		/* Check migration threshold */
 		if (!target->active_balance &&
 		    hmp_down_migration(curr_cpu, &target_cpu, se, &clbenv)) {
+			get_task_struct(p);
 			target->active_balance = 1;
 			target->push_cpu = target_cpu;
 			target->migrate_task = p;
@@ -9913,7 +9915,7 @@ static void hmp_force_up_migration(int this_cpu)
 	struct sched_entity *se;
 	struct rq *target;
 	unsigned long flags;
-	unsigned int force;
+	unsigned int force = 0;
 	struct task_struct *p;
 	struct clb_env clbenv;
 
@@ -9980,6 +9982,7 @@ static void hmp_force_up_migration(int this_cpu)
 		/* Check migration threshold */
 		if (!target->active_balance &&
 			hmp_up_migration(curr_cpu, &target_cpu, se, &clbenv)) {
+			get_task_struct(p);
 			target->active_balance = 1;
 			target->push_cpu = target_cpu;
 			target->migrate_task = p;
@@ -10085,6 +10088,7 @@ static unsigned int hmp_idle_pull(int this_cpu)
 	/* now we have a candidate */
 	raw_spin_lock_irqsave(&target->lock, flags);
 	if (!target->active_balance && task_rq(p) == target) {
+		get_task_struct(p);
 		target->push_cpu = this_cpu;
 		target->migrate_task = p;
 		trace_sched_hmp_migrate(p, target->push_cpu, 3);
