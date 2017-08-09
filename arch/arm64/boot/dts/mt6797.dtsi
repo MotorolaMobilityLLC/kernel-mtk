@@ -272,7 +272,7 @@
 			no-map;
 			size = <0 0xa100000>; /* md_size+smem_size */
 			alignment = <0 0x2000000>;
-			alloc-ranges = <0 0x40000000 0 0xC0000000>;
+			alloc-ranges = <0 0x40000000 0 0x80000000>;
 		};
 
 		reserve-memory-ccci_share {
@@ -313,6 +313,7 @@
 			no-map;
 			size = <0 0x200000>;
 			alignment = <0 0x200000>;
+			alloc-ranges = <0 0x40000000 0 0x80000000>;
 		};
 
 		spm-reserve-memory {
