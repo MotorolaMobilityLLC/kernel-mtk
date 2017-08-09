@@ -180,9 +180,9 @@ static void msdc_init_hw(struct msdc_host *host);
 
 #ifndef FPGA_PLATFORM
 #ifndef CONFIG_MTK_LEGACY
-struct regulator *reg_VEMC_3V3 = NULL;
-struct regulator *reg_VMC = NULL;
-struct regulator *reg_VMCH = NULL;
+struct regulator *reg_vemc_3v3 = NULL;
+struct regulator *reg_vmc = NULL;
+struct regulator *reg_vmch = NULL;
 #endif
 #endif
 
@@ -1171,11 +1171,11 @@ bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 	struct regulator *reg = NULL;
 
 	if (powerId == POWER_LDO_VMCH)
-		reg = reg_VMCH;
+		reg = reg_vmch;
 	else if (powerId == POWER_LDO_VMC)
-		reg = reg_VMC;
+		reg = reg_vmc;
 	else if (powerId == POWER_LDO_VEMC_3V3)
-		reg = reg_VEMC_3V3;
+		reg = reg_vemc_3v3;
 	if (reg == NULL)
 		return false;
 
@@ -1192,11 +1192,11 @@ bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
 	struct regulator *reg = NULL;
 
 	if (powerId == POWER_LDO_VMCH)
-		reg = reg_VMCH;
+		reg = reg_vmch;
 	else if (powerId == POWER_LDO_VMC)
-		reg = reg_VMC;
+		reg = reg_vmc;
 	else if (powerId == POWER_LDO_VEMC_3V3)
-		reg = reg_VEMC_3V3;
+		reg = reg_vemc_3v3;
 
 	if (reg == NULL)
 		return false;
@@ -8876,12 +8876,12 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	/* get regulator supply node */
 	pdev->dev.of_node = of_find_compatible_node(NULL, NULL,
 		"mediatek,mt_pmic_regulator_supply");
-	if (reg_VEMC_3V3 == NULL)
-		reg_VEMC_3V3 = regulator_get(&(pdev->dev), "VEMC_3V3");
-	if (reg_VMC == NULL)
-		reg_VMC = regulator_get(&(pdev->dev), "VMC");
-	if (reg_VMCH == NULL)
-		reg_VMCH = regulator_get(&(pdev->dev), "VMCH");
+	if (reg_vemc_3v3 == NULL)
+		reg_vemc_3v3 = regulator_get(&(pdev->dev), "vemc_3v3");
+	if (reg_vmc == NULL)
+		reg_vmc = regulator_get(&(pdev->dev), "vmc");
+	if (reg_vmch == NULL)
+		reg_vmch = regulator_get(&(pdev->dev), "vmch");
 	/* restore original dev.of_node */
 	pdev->dev.of_node = msdc_node;
 #endif
