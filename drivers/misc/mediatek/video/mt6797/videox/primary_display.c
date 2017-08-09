@@ -6320,81 +6320,139 @@ done:
 int primary_display_switch_dst_mode(int mode)
 {
 	DISP_STATUS ret = DISP_STATUS_ERROR;
+	disp_path_handle disp_handle = NULL;
+	disp_ddp_path_config *pconfig = NULL;
 	void *lcm_cmd = NULL;
+	int temp_mode = 0;
 
-	pr_debug("[ERROR: primary_display_switch_dst_mode]this function not enable in disp driver\n");
 	DISPFUNC();
 	_primary_path_switch_dst_lock();
 	disp_sw_mutex_lock(&(pgc->capture_lock));
+	_primary_path_lock(__func__);
+	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
+		MMProfileFlagStart, primary_display_cur_dst_mode, mode);
+	DISPMSG("C2V]cur_mode:%d, dst_mode:%d\n", primary_display_cur_dst_mode, mode);
+
 	if (pgc->plcm->params->type != LCM_TYPE_DSI) {
-		pr_debug("[primary_display_switch_dst_mode] Error, only support DSI IF\n");
+		MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
+				MMProfileFlagPulse, 5, pgc->plcm->params->type);
+		DISPERR("[C2V]dst mode switch only support DSI IF\n");
 		goto done;
 	}
 	if (pgc->state == DISP_SLEPT) {
+		MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
+			MMProfileFlagPulse, 6, pgc->state);
 		DISPCHECK
 		    ("[primary_display_switch_dst_mode], primary display path is already sleep, skip\n");
 		goto done;
 	}
 
+	if (pgc->lcm_refresh_rate != 120) {
+		DISPCHECK("Only support 120HZ CV switch. But lcm_refresh_rate is:%d\n",
+			pgc->lcm_refresh_rate);
+		goto done;
+	}
+
 	if (mode == primary_display_cur_dst_mode) {
+		MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
+			MMProfileFlagPulse, 7, mode);
 		DISPCHECK
 		    ("[primary_display_switch_dst_mode]not need switch,cur_mode:%d, switch_mode:%d\n",
 		     primary_display_cur_dst_mode, mode);
 		goto done;
 	}
+
+	/* get c2v switch lcm cmd */
 	lcm_cmd = disp_lcm_switch_mode(pgc->plcm, mode);
 	if (lcm_cmd == NULL) {
+		MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
+			MMProfileFlagPulse, 8, mode);
 		DISPCHECK
 		    ("[primary_display_switch_dst_mode]get lcm cmd fail primary_display_cur_dst_mode=%d mode=%d\n",
 		     primary_display_cur_dst_mode, mode);
 		goto done;
-	} else {
-		int temp_mode = 0;
-
-		if (0 != dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config,
-				     DDP_SWITCH_LCM_MODE, lcm_cmd)) {
-			pr_err("switch lcm mode fail, return directly\n");
-			goto done;
-		}
-		_primary_path_lock(__func__);
-		temp_mode = (int)(pgc->plcm->params->dsi.mode);
-		pgc->plcm->params->dsi.mode = pgc->plcm->params->dsi.switch_mode;
-		pgc->plcm->params->dsi.switch_mode = temp_mode;
-		dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
-		if (0 != dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config,
-				     DDP_SWITCH_DSI_MODE, lcm_cmd)) {
-			pr_err("switch dsi mode fail, return directly\n");
-			_primary_path_unlock(__func__);
-			goto done;
-		}
 	}
+
+	/* disable idlemgr */
+	set_idlemgr(0, 0);
+
+	/* When switch to vdo mode, go back to DL mode if display path change to DC mode by SMART OVL */
+	if (disp_helper_get_option(DISP_OPT_SMART_OVL) && !primary_display_is_video_mode()) {
+		/* switch to the mode before idle */
+		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
+			primary_get_sess_id(), 0, NULL, 0);
+
+		set_is_dc(0);
+	}
+
+	/* set power down mode forbidden */
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		primary_display_sodi_rule_init();
-	_cmdq_stop_trigger_loop();
+		spm_sodi_mempll_pwr_mode(1);
+
+	/* 2. do c2v */
+	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
+		MMProfileFlagPulse, 4, 0);
+	_cmdq_reset_config_handle();
+
+	/* C2V switch control flow - cmdq */
+	if (0 != dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config,
+		DDP_SWITCH_DSI_MODE, lcm_cmd)) {
+		MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
+			MMProfileFlagPulse, 9, 0);
+		DISPERR("[C2V]switch dsi mode fail, return directly\n");
+		ret = -1;
+	}
+
+	/* 2. modify lcm mode - sw */
+	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
+		MMProfileFlagPulse, 4, 1);
+	temp_mode = (int)(pgc->plcm->params->dsi.mode);
+	pgc->plcm->params->dsi.mode = pgc->plcm->params->dsi.switch_mode;
+	pgc->plcm->params->dsi.switch_mode = temp_mode;
+	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
+
+	/* 3. rebuild trigger loop */
+	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
+		MMProfileFlagPulse, 4, 2);
+
 	_cmdq_build_trigger_loop();
+	_cmdq_stop_trigger_loop();
 	_cmdq_start_trigger_loop();
-	_cmdq_reset_config_handle();	/* must do this */
-	_cmdq_handle_clear_dirty(pgc->cmdq_handle_config);
+	_cmdq_reset_config_handle();
 	_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 
-	primary_display_cur_dst_mode = mode;
+	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
+		MMProfileFlagPulse, 4, 4);
 
-	if (primary_display_is_video_mode()) {
-		if (_need_lfr_check()) {
-			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
-					       DDP_IRQ_DSI0_FRAME_DONE);
-		} else {
-			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
-					       DDP_IRQ_RDMA0_DONE);
-		}
-	} else {
+	/* 1.Change PLL CLOCK parameter and build fps lcm command */
+	disp_lcm_adjust_fps(pgc->cmdq_handle_config, pgc->plcm, pgc->lcm_refresh_rate);
+	disp_handle = pgc->dpmgr_handle;
+	pconfig = dpmgr_path_get_last_config(disp_handle);
+	pconfig->dispif_config.dsi.PLL_CLOCK = pgc->plcm->params->dsi.PLL_CLOCK;
+	/* 3.Change DSI clock */
+	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_PHY_CLK_CHANGE,
+		&pgc->plcm->params->dsi.PLL_CLOCK);
+	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_config, 1);
+
+	primary_display_cur_dst_mode = mode;
+	DISPMSG("primary_display_cur_dst_mode %d\n", primary_display_cur_dst_mode);
+	if (primary_display_is_video_mode())
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
-				       DDP_IRQ_DSI0_EXT_TE);
-	}
-	_primary_path_unlock(__func__);
+		   DDP_IRQ_RDMA0_DONE);
+	else
+		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+			DDP_IRQ_DSI0_EXT_TE);
+	/* 4. reinit lowpower params */
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		primary_display_sodi_rule_init();
+	/* enable idlemgr */
+	set_idlemgr(1, 0);
+
 	ret = DISP_STATUS_OK;
 done:
-/* dprec_handle_option(0x0); */
+	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
+		MMProfileFlagEnd, primary_display_cur_dst_mode, mode);
+	_primary_path_unlock(__func__);
 	disp_sw_mutex_unlock(&(pgc->capture_lock));
 	_primary_path_switch_dst_unlock();
 	return ret;

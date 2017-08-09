@@ -40,6 +40,7 @@ typedef struct {
 	MMP_Event MutexParent;
 	MMP_Event MUTEX_IRQ[5];
 	MMP_Event primary_Parent;
+	MMP_Event primary_display_switch_dst_mode;
 	MMP_Event primary_trigger;
 	MMP_Event primary_suspend;
 	MMP_Event primary_resume;

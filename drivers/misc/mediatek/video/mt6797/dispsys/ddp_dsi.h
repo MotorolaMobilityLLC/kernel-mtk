@@ -206,6 +206,7 @@ typedef int		INT32;
 	void DSI_ForceConfig(int forceconfig);
 	int DSI_set_roi(int x, int y);
 	int DSI_check_roi(void);
+	int ddp_dsi_trigger(DISP_MODULE_ENUM module, void *cmdq);
 
 #ifdef __cplusplus
 }

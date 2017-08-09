@@ -129,7 +129,8 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_SHOW_VISUAL_DEBUG_INFO",
 	"DISP_OPT_RDMA_UNDERFLOW_AEE",
 	"DISP_OPT_HRT",
-	"DISP_OPT_PARTIAL_UPDATE"
+	"DISP_OPT_PARTIAL_UPDATE",
+	"DISP_OPT_CV_BYSUSPEND"
 };
 
 const char *disp_helper_option_spy(DISP_HELPER_OPT option)
@@ -363,6 +364,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_HRT, 1);
 	/* display partial update */
 	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 0);
+	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 1);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

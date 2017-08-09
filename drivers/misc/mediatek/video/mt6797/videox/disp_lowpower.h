@@ -44,6 +44,9 @@ void enable_idlemgr(unsigned int flag);
 unsigned int get_idlemgr_flag(void);
 unsigned int set_idlemgr(unsigned int flag, int need_lock);
 int _blocking_flush(void);
+unsigned int get_idlemgr_flag(void);
+unsigned int set_idlemgr(unsigned int flag, int need_lock);
+void primary_display_sodi_enable(int flag);
 /**************************************** for met******************************************* */
 /*
 return 0: not enter ultra lowpower state which means mipi pll enable

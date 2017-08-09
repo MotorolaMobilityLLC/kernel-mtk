@@ -544,7 +544,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.mode   = SYNC_PULSE_VDO_MODE;
 	params->dsi.switch_mode = CMD_MODE;
 #endif
-	params->dsi.switch_mode_enable = 0;
+	params->dsi.switch_mode_enable = 1;
 
 	/* DSI*/
 	/* Command mode setting */
@@ -558,12 +558,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	/* Highly depends on LCD driver capability.*/
 	params->dsi.packet_size = 256;
 
-#if (LCM_DSI_CMD_MODE)
-	params->dsi.packet_size_mult = 4;
-#endif
 	/*video mode timing*/
-
-	params->dsi.ssc_disable = 1;
 
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
@@ -581,7 +576,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 /*command mode clock*/
 #if (LCM_DSI_CMD_MODE)
 #if (defined UFO_ON_3X_60) || (defined UFO_ON_3X_120)
-	params->dsi.PLL_CLOCK = 140;/*260;*/
+	params->dsi.PLL_CLOCK = 168;/*260;*/
 #else
 	params->dsi.PLL_CLOCK = 500; /*this value must be in MTK suggested table*/
 #endif
@@ -590,7 +585,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 /*video mode clock*/
 #if (!LCM_DSI_CMD_MODE)
 #if (defined UFO_ON_3X_60) || (defined UFO_ON_3X_120)
-	params->dsi.PLL_CLOCK = 125;
+	params->dsi.PLL_CLOCK = 168;
 #else
 	params->dsi.PLL_CLOCK = 450; /*this value must be in MTK suggested table*/
 #endif
@@ -604,9 +599,9 @@ static void lcm_get_params(LCM_PARAMS *params)
 #endif
 	params->dsi.esd_check_enable = 1;
 	params->dsi.customization_esd_check_enable = 0;
-	params->dsi.lcm_esd_check_table[0].cmd          = 0x53;
+	params->dsi.lcm_esd_check_table[0].cmd          = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count        = 1;
-	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
+	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
 
 	params->dsi.lane_swap_en = 1;
 
@@ -615,7 +610,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_2] = MIPITX_PHY_LANE_1;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_3] = MIPITX_PHY_LANE_0;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_CK] = MIPITX_PHY_LANE_3;
-	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX] = MIPITX_PHY_LANE_3;
+	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX] = MIPITX_PHY_LANE_CK;
 
 	params->od_table_size = OD_TBL_M_SIZE;
 	params->od_table = (void *)&od_table_33x33;
@@ -971,21 +966,25 @@ static int lcm_adjust_fps(void *cmdq, int fps, LCM_PARAMS *params)
 	pr_debug("%s:to %d\n", __func__, fps);
 #endif
 
-	if (fps == 60) {
-		/*push_table(cmdq, lcm_60fps_setting,
-		sizeof(lcm_60fps_setting) / sizeof(struct LCM_setting_table), 1);*/
-		lcm_send_60hz(cmdq);
-		params->dsi.PLL_CLOCK = 140;
-	} else if (fps == 120) {
-		/*push_table(cmdq, lcm_120fps_setting,
-		sizeof(lcm_120fps_setting) / sizeof(struct LCM_setting_table), 1);*/
-		lcm_send_120hz(cmdq);
-		params->dsi.PLL_CLOCK = 300;
+	if (params->dsi.mode == CMD_MODE) {
+		if (fps == 60) {
+			lcm_send_60hz(cmdq);
+			params->dsi.PLL_CLOCK = 168;
+		} else if (fps == 120) {
+			lcm_send_120hz(cmdq);
+			params->dsi.PLL_CLOCK = 320;
+		} else {
+			return -1;
+		}
 	} else {
-		return -1;
+		if (fps == 60)
+			params->dsi.PLL_CLOCK = 168;
+		else if (fps == 120)
+			params->dsi.PLL_CLOCK = 350;
+		else
+			return -1;
 	}
 	return 0;
-
 }
 #endif
 

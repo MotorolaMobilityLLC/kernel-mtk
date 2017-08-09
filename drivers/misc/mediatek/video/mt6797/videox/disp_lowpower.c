@@ -933,6 +933,11 @@ unsigned int get_mipi_clk(void)
 	}
 }
 
+void primary_display_sodi_enable(int flag)
+{
+	spm_enable_sodi(flag);
+}
+
 /* for met - end */
 void primary_display_sodi_rule_init(void)
 {
