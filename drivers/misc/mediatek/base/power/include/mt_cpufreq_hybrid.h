@@ -84,6 +84,7 @@ enum pause_src {
 	PAUSE_I2CDRV,
 	PAUSE_IDLE,
 	PAUSE_SUSPEND,
+	PAUSE_HWGOV,
 	NUM_PAUSE_SRC
 };
 
@@ -148,10 +149,6 @@ extern unsigned int cpuhvfs_get_curr_volt(unsigned int cluster);
 
 extern void cpuhvfs_set_opp_limit(unsigned int cluster, unsigned int ceiling, unsigned int floor);
 
-#ifdef CPUHVFS_HW_GOVERNOR
-extern void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback);
-#endif
-
 extern int cpuhvfs_get_dvfsp_semaphore(enum sema_user user);
 extern void cpuhvfs_release_dvfsp_semaphore(enum sema_user user);
 
@@ -180,8 +177,6 @@ static inline unsigned int cpuhvfs_get_curr_volt(unsigned int cluster)	{ return 
 static inline void cpuhvfs_set_opp_limit(unsigned int cluster, unsigned int ceiling,
 					 unsigned int floor)		{}
 
-static inline void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback)	{}
-
 static inline int cpuhvfs_get_dvfsp_semaphore(enum sema_user user)	{ return 0; }
 static inline void cpuhvfs_release_dvfsp_semaphore(enum sema_user user)	{}
 
@@ -196,6 +191,19 @@ static inline void cpuhvfs_dvfsp_resume(unsigned int on_cluster, struct init_sta
 
 static inline void cpuhvfs_dump_dvfsp_info(void)	{}
 static inline void cpuhvfs_get_pause_status_i2c(void)	{}	/* deprecated */
+#endif
+
+
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+extern void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback);
+
+extern int cpuhvfs_enable_hw_governor(struct init_sta *sta);
+extern int cpuhvfs_disable_hw_governor(struct init_sta *ret_sta);
+#else
+static inline void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback)	{}
+
+static inline int cpuhvfs_enable_hw_governor(struct init_sta *sta)	{ return -EPERM; }
+static inline int cpuhvfs_disable_hw_governor(struct init_sta *ret_sta)	{ return 0; }
 #endif
 
 #endif	/* _MT_CPUFREQ_HYBRID_ */
