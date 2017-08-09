@@ -2099,7 +2099,6 @@ static int yamaha530_i2c_remove(struct i2c_client *client)
 		&geomagnetic_raw_attribute_group);
 	input_unregister_device(data->input_data);
 	kfree(data);
-		kfree(data);
     }
 
 	this_client = NULL;
