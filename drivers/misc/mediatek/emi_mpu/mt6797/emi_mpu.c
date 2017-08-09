@@ -931,15 +931,13 @@ static int mpu_check_violation(void)
 				pr_err("[EMI MPU] A strange violation.\n");
 		} else {
 		aee_kernel_exception("EMI MPU",
-"%sEMI_MPUS = 0x%x,EMI_MPUT = 0x%x\n CHKER = 0x%x,CHKER_TYPE = 0x%x,CHKER_ADR = 0x%x\n MPUA = 0x%x, MPUI = 0x%x\n%s%s\n",
+"%sEMI_MPUS = 0x%x,EMI_MPUT = 0x%x\n CHKER = 0x%x,CHKER_TYPE = 0x%x,CHKER_ADR = 0x%x\n%s%s\n",
 				     "EMI MPU violation.\n",
 				     dbg_s,
 				     dbg_t+emi_physical_offset,
 				     readl(IOMEM(EMI_CHKER)),
 				     readl(IOMEM(EMI_CHKER_TYPE)),
 				     readl(IOMEM(EMI_CHKER_ADR)),
-				     mt_emi_reg_read(EMI_MPUA),
-				     mt_emi_reg_read(EMI_MPUI),
 				     "CRDISPATCH_KEY:EMI MPU Violation Issue/",
 				     master_name);
 		}
