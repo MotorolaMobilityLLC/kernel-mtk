@@ -980,7 +980,6 @@ int neu_rpmb_req_get_wc(struct mmc_card *card, unsigned int *wc)
 	struct emmc_rpmb_req rpmb_req;
 	struct s_rpmb rpmb_frame;
 	u8 nonce[RPMB_SZ_NONCE] = {0};
-	u8 hmac[RPMB_SZ_MAC];
 	int ret;
 
 	memset(&rpmb_frame, 0, sizeof(rpmb_frame));
@@ -1040,9 +1039,8 @@ EXPORT_SYMBOL(neu_rpmb_req_read_data);
 int neu_rpmb_req_write_data(struct mmc_card *card, struct s_rpmb *param, u32 blk_cnt)/*struct mmc_card *card, */
 {
 	struct emmc_rpmb_req rpmb_req;
-	int i = 0, ret;
+	int ret;
 	u32 wc = 0xFFFFFFFF;
-	u8 hmac[RPMB_SZ_MAC];
 
 	rpmb_req.type = RPMB_WRITE_DATA;
 	rpmb_req.blk_cnt = blk_cnt;
@@ -1124,7 +1122,7 @@ static int emmc_rpmb_execute(u32 cmdId)
 	return 0;
 }
 
-void emmc_rpmb_listenDci(void)
+int emmc_rpmb_listenDci(void *data)
 {
 	enum mc_result mc_ret;
 	u32 cmdId;
@@ -1157,6 +1155,8 @@ void emmc_rpmb_listenDci(void)
 			break;
 		}
 	}
+
+	return 0;
 }
 
 static int emmc_rpmb_open_session(void)
@@ -1264,6 +1264,10 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 	struct mmc_card *card = mtk_msdc_host[0]->mmc->card;
 	struct rpmb_ioc_param param;
 	int ret;
+#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
+	struct rpmb_infor rpmbinfor;
+	int i;
+#endif
 
 	MSG(INFO, "%s, !!!!!!!!!!!!\n", __func__);
 
@@ -1272,10 +1276,8 @@ static long emmc_rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		MSG(ERR, "%s, err=%x\n", __func__, err);
 		return -1;
 	}
-#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
-	struct rpmb_infor rpmbinfor;
-	int i;
 
+#if (defined(CONFIG_MICROTRUST_TZ_DRIVER))
 	if ((cmd == RPMB_IOCTL_SOTER_WRITE_DATA) || (cmd == RPMB_IOCTL_SOTER_READ_DATA)) {
 		err = copy_from_user(rpmb_buffer, (void *)arg, 4);
 		if (err < 0) {
