@@ -49,25 +49,12 @@
 #define ENABLE_DPI_INTERRUPT        0
 /*#define DISABLE_CLOCK_API */
 
-#if !defined(CONFIG_MTK_LEGACY)
-static void __iomem *clk_apmixed_base;
-#ifndef TVDPLL_CON0
-#define TVDPLL_CON0             (clk_apmixed_base + 0x260)
-#endif
-#ifndef TVDPLL_CON1
-#define TVDPLL_CON1             (clk_apmixed_base + 0x264)
-#endif
-#endif
-
 #define K2_SMT
-static int cache_bg_parameter;
-
 
 #undef LCD_BASE
 #define LCD_BASE (0xF4024000)
 #define DPI_REG_OFFSET(r)       offsetof(struct DPI_REGS, r)
 #define REG_ADDR(base, offset)  (((BYTE *)(base)) + (offset))
-
 
 #ifdef INREG32
 #undef INREG32
@@ -90,6 +77,17 @@ static int cache_bg_parameter;
 
 #define DPI_MASKREG32(cmdq, REG, MASK, VALUE)           DISP_REG_MASK((cmdq), (REG), (VALUE), (MASK))
 
+#if !defined(CONFIG_MTK_LEGACY)
+static void __iomem *clk_apmixed_base;
+#ifndef TVDPLL_CON0
+#define TVDPLL_CON0             (clk_apmixed_base + 0x260)
+#endif
+#ifndef TVDPLL_CON1
+#define TVDPLL_CON1             (clk_apmixed_base + 0x264)
+#endif
+#endif
+
+static int cache_bg_parameter;
 static unsigned char s_isDpiPowerOn;
 static unsigned char s_isDpiStart;
 static unsigned char s_isDpiConfig;
@@ -201,7 +199,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 #if defined(CONFIG_MTK_LEGACY)
 			clksrc = 4;
 #else
-			clksrc = DPI_CK;
+			/*clksrc = DPI_CK;*/
 #endif
 			prediv = 0x83109D89;	/*54M*/
 			break;
@@ -212,7 +210,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 #if defined(CONFIG_MTK_LEGACY)
 			clksrc = 4;
 #else
-			clksrc = DPI_CK;
+			/*clksrc = DPI_CK;*/
 #endif
 			prediv = 0x83109D89;	/*54M*/
 			break;
@@ -222,7 +220,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 #if defined(CONFIG_MTK_LEGACY)
 			clksrc = 2;	        /*148M*/
 #else
-			clksrc = TVDPLL_D2;
+			/*clksrc = TVDPLL_D2;*/
 #endif
 			break;
 		}
@@ -231,7 +229,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 #if defined(CONFIG_MTK_LEGACY)
 			clksrc = 1;	        /*296M*/
 #else
-			clksrc = TVDPLL_CK;
+			/*clksrc = TVDPLL_CK;*/
 #endif
 			break;
 		}
@@ -242,9 +240,11 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 #if defined(CONFIG_MTK_LEGACY)
 	clkmux_sel(MT_MUX_DPI0, clksrc, "DPI");
 #else
+/*
 	disp_clk_enable(MUX_DPI0);
 	disp_clk_set_parent(MUX_DPI0, clksrc);
 	disp_clk_disable(MUX_DPI0);
+*/
 #endif
 	DPI_OUTREG32(NULL, TVDPLL_CON0, 0xc0000101);	/*TVDPLL enable*/
 	DPI_OUTREG32(NULL, TVDPLL_CON1, prediv);	/*set TVDPLL output clock frequency*/
@@ -439,8 +439,10 @@ int ddp_dpi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 		ret += enable_clock(MT_CG_DISP1_DPI_PIXEL, "DPI");
 		ret += enable_clock(MT_CG_DISP1_DPI_ENGINE, "DPI");
 #else
+/*
 		ret += disp_clk_enable(DISP1_DPI_PIXEL);
 		ret += disp_clk_enable(DISP1_DPI_ENGINE);
+*/
 #endif
 #endif
 		if (ret > 0)
@@ -464,8 +466,10 @@ int ddp_dpi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 		ret += disable_clock(MT_CG_DISP1_DPI_PIXEL, "DPI");
 		ret += disable_clock(MT_CG_DISP1_DPI_ENGINE, "DPI");
 #else
+/*
 		disp_clk_disable(DISP1_DPI_PIXEL);
 		disp_clk_disable(DISP1_DPI_ENGINE);
+*/
 #endif
 #endif
 		if (ret > 0)
@@ -648,10 +652,9 @@ int ddp_dpi_init(DISP_MODULE_ENUM module, void *cmdq)
 	DPI_OUTREGBIT(cmdq, struct DPI_REG_INTERRUPT, DPI_REG->INT_ENABLE, UNDERFLOW, enInt.UNDERFLOW);
 */
 #endif
-
+/*
 #if !defined(CONFIG_MTK_LEGACY)
 	struct device_node *node;
-	/* apmixed */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
 	if (!node)
 		pr_debug("[CLK_APMIXED] find node failed\n");
@@ -659,7 +662,7 @@ int ddp_dpi_init(DISP_MODULE_ENUM module, void *cmdq)
 	if (!clk_apmixed_base)
 		pr_debug("[CLK_APMIXED] base failed\n");
 #endif
-
+*/
 	_Enable_Interrupt();
 	pr_warn("DISP/DPI,ddp_dpi_init done %p\n", cmdq);
 
