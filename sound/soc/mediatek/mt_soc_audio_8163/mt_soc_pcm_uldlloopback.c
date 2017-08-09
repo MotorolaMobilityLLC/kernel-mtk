@@ -59,6 +59,137 @@
  *    function implementation
  */
 
+enum {
+	AP_LOOPBACK_NONE = 0,
+	AP_LOOPBACK_AMIC_TO_SPK,
+	AP_LOOPBACK_AMIC_TO_HP,
+	AP_LOOPBACK_HEADSET_MIC_TO_SPK,
+	AP_LOOPBACK_HEADSET_MIC_TO_HP,
+};
+
+struct mt_pcm_uldlloopback_priv {
+	uint32_t ap_loopback_type;
+};
+
+static int ap_loopback_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	/* struct mt_pcm_uldlloopback_priv *priv = snd_soc_component_get_drvdata(component); */
+	struct mt_pcm_uldlloopback_priv *priv = dev_get_drvdata(component->dev);
+
+	ucontrol->value.integer.value[0] = priv->ap_loopback_type;
+	return 0;
+}
+
+static int ap_loopback_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	/* struct mt_pcm_uldlloopback_priv *priv = snd_soc_component_get_drvdata(component); */
+	struct mt_pcm_uldlloopback_priv *priv = dev_get_drvdata(component->dev);
+	uint32_t sample_rate = 48000;
+	long set_value = ucontrol->value.integer.value[0];
+
+	if (priv->ap_loopback_type == set_value) {
+		pr_debug("%s dummy operation for %u", __func__, priv->ap_loopback_type);
+		return 0;
+	}
+
+	if (priv->ap_loopback_type != AP_LOOPBACK_NONE) {
+
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
+			SetI2SAdcEnable(false);
+
+		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
+		if (GetI2SDacEnable() == false)
+			SetI2SDacEnable(false);
+
+		SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I03,
+			Soc_Aud_InterConnectionOutput_O03);
+		SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I04,
+			Soc_Aud_InterConnectionOutput_O04);
+
+		EnableAfe(false);
+
+		AudDrv_Clk_Off();
+		AudDrv_ADC_Clk_Off();
+		AudDrv_ANA_Clk_Off();
+	}
+
+	if (set_value == AP_LOOPBACK_AMIC_TO_SPK ||
+	    set_value == AP_LOOPBACK_AMIC_TO_HP ||
+	    set_value == AP_LOOPBACK_HEADSET_MIC_TO_SPK ||
+	    set_value == AP_LOOPBACK_HEADSET_MIC_TO_HP) {
+
+		AudioDigtalI2S AudI2SConfig;
+
+		AudI2SConfig.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
+		AudI2SConfig.mBuffer_Update_word = 8;
+		AudI2SConfig.mFpga_bit_test = 0;
+		AudI2SConfig.mFpga_bit = 0;
+		AudI2SConfig.mloopback = 0;
+		AudI2SConfig.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
+		AudI2SConfig.mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
+		AudI2SConfig.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_32BITS;
+		AudI2SConfig.mI2S_SAMPLERATE = sample_rate;
+
+		AudDrv_ANA_Clk_On();
+		AudDrv_Clk_On();
+		AudDrv_ADC_Clk_On();
+
+		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL1, AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
+		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL2, AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
+		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_InterConnectionOutput_O03);
+		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT, Soc_Aud_InterConnectionOutput_O04);
+
+		SetSampleRate(Soc_Aud_Digital_Block_MEM_I2S,  sample_rate);
+
+		/* configure downlink */
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == false) {
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+			SetI2SDacOut(sample_rate, false, OUTPUT_DATA_FORMAT_24BIT);
+			SetI2SDacEnable(true);
+		} else
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+
+		/* configure uplink */
+		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false) {
+			SetI2SAdcIn(&AudI2SConfig);
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
+			SetI2SAdcEnable(true);
+		} else
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, true);
+
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I03,
+			Soc_Aud_InterConnectionOutput_O03);
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I04,
+			Soc_Aud_InterConnectionOutput_O04);
+
+		EnableAfe(true);
+	}
+
+	priv->ap_loopback_type = ucontrol->value.integer.value[0];
+
+	return 0;
+}
+
+static const char *const ap_loopback_function[] = {
+	"AP_LOOPBACK_NONE",
+	"AP_LOOPBACK_AMIC_TO_SPK",
+	"AP_LOOPBACK_AMIC_TO_HP",
+	"AP_LOOPBACK_HEADSET_MIC_TO_SPK",
+	"AP_LOOPBACK_HEADSET_MIC_TO_HP",
+};
+
+static const struct soc_enum mt_pcm_loopback_control_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ap_loopback_function), ap_loopback_function),
+};
+
+static const struct snd_kcontrol_new mt_pcm_loopback_controls[] = {
+	SOC_ENUM_EXT("AP_Loopback_Select", mt_pcm_loopback_control_enum[0], ap_loopback_get,
+		     ap_loopback_set),
+};
+
 static int mtk_uldlloopback_probe(struct platform_device *pdev);
 static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream);
 static int mtk_asoc_uldlloopbackpcm_new(struct snd_soc_pcm_runtime *rtd);
@@ -345,6 +476,9 @@ static struct snd_soc_platform_driver mtk_soc_dummy_platform = {
 
 static int mtk_uldlloopback_probe(struct platform_device *pdev)
 {
+	struct device *dev = &pdev->dev;
+	struct mt_pcm_uldlloopback_priv *priv;
+
 	pr_debug("mtk_uldlloopback_probe\n");
 
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
@@ -354,6 +488,14 @@ static int mtk_uldlloopback_probe(struct platform_device *pdev)
 
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_ULDLLOOPBACK_PCM);
+
+	priv = devm_kzalloc(dev, sizeof(struct mt_pcm_uldlloopback_priv), GFP_KERNEL);
+	if (unlikely(!priv)) {
+		pr_err("%s failed to allocate private data\n", __func__);
+		return -ENOMEM;
+	}
+
+	dev_set_drvdata(dev, priv);
 
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev, &mtk_soc_dummy_platform);
@@ -372,6 +514,9 @@ static int mtk_asoc_uldlloopbackpcm_new(struct snd_soc_pcm_runtime *rtd)
 static int mtk_afe_uldlloopback_probe(struct snd_soc_platform *platform)
 {
 	pr_debug("mtk_afe_uldlloopback_probe\n");
+
+	snd_soc_add_platform_controls(platform, mt_pcm_loopback_controls,
+				      ARRAY_SIZE(mt_pcm_loopback_controls));
 	return 0;
 }
 

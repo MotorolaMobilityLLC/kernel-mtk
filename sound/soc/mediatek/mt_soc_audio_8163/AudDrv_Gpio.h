@@ -75,6 +75,8 @@ void AudDrv_GPIO_probe(void *dev);
 int AudDrv_GPIO_PMIC_Select(int bEnable);
 int AudDrv_GPIO_I2S_Select(int bEnable);
 int AudDrv_GPIO_EXTAMP_Select(int bEnable);
+int AudDrv_GPIO_EXTAMP_Gain_Set(int value);
+int AudDrv_GPIO_HP_SPK_Switch_Select(int bEnable);
 
 #endif
 
