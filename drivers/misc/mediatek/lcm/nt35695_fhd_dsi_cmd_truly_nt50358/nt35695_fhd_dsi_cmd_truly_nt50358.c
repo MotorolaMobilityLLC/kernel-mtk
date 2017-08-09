@@ -1027,7 +1027,9 @@ static void lcm_init(void)
 {
 	unsigned char cmd = 0x0;
 	unsigned char data = 0xFF;
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	int ret = 0;
+#endif
 
 	cmd = 0x00;
 	data = 0x0E;
