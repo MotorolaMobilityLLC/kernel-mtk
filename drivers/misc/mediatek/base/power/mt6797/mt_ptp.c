@@ -385,6 +385,9 @@ static unsigned int *recordTbl;
 /* Global variable for slow idle*/
 volatile unsigned int ptp_data[3] = {0, 0, 0};
 
+/* Global variable for I DVFS use */
+unsigned int infoIdvfs;
+
 struct eem_det;
 struct eem_ctrl;
 u32 *recordRef;
@@ -2984,6 +2987,8 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 		}
 	#else
 		eem_set_eem_volt(det);
+		if (EEM_CTRL_BIG == det->ctrl_id)
+			infoIdvfs = 0xff;
 	#endif
 
 out:
