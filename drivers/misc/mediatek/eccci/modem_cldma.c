@@ -105,92 +105,48 @@ static const unsigned char high_priority_queue_mask = 0x00;
 
 #define IS_NET_QUE(md, qno) \
 	((md->md_state != EXCEPTION || md->ex_stage != EX_INIT_DONE) && ((1<<qno) & NET_RX_QUEUE_MASK))
-/*
- * do NOT add any static data, data should be in modem's instance
- */
-
-static void cldma_dump_gpd_ring(int md_id, dma_addr_t start, int size)
-{
-	/* assume TGPD and RGPD's "next" pointers use the same offset */
-	struct cldma_tgpd *curr = (struct cldma_tgpd *)phys_to_virt(start);
-	int i, *tmp;
-
-	CCCI_INF_MSG(md_id, TAG, " gpd starts from 0x%x\n", (unsigned int)start);
-	/*
-	 * virtual address get from dma_pool_alloc is not equal to phys_to_virt.
-	 * e.g. dma_pool_alloca returns 0xFFDFF00, and phys_to_virt will return 0xDF364000 for the same
-	 * DMA address. therefore we can't compare gpd address with @start to exit loop.
-	 */
-	for (i = 0; i < size; i++) {
-		tmp = (int *)curr;
-		CCCI_INF_MSG(md_id, TAG, " 0x%p: %X %X %X %X\n", curr, *tmp, *(tmp + 1), *(tmp + 2),
-		       *(tmp + 3));
-		curr = (struct cldma_tgpd *)phys_to_virt(curr->next_gpd_ptr);
-	}
-}
 
 static void cldma_dump_gpd_queue(struct ccci_modem *md, unsigned int qno)
 {
+	unsigned int *tmp;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	struct cldma_request *req;
+	struct cldma_request *req = NULL;
+#ifdef CLDMA_DUMP_BD
+	struct cldma_request *req_bd = NULL;
+#endif
 
-	CCCI_INF_MSG(md->index, TAG, " dump txq%d GPD\n", qno);
-	req = list_first_entry(&md_ctrl->txq[qno].tr_ring->gpd_ring, struct cldma_request, entry);
-	cldma_dump_gpd_ring(md->index, req->gpd_addr, md_ctrl->txq[qno].tr_ring->length);
+	/* use request's link head to traverse */
+	CCCI_INF_MSG(md->index, TAG, " dump txq %d request\n", qno);
+	list_for_each_entry(req, &md_ctrl->txq[qno].tr_ring->gpd_ring, entry) {
+		tmp = (unsigned int *)req->gpd;
+		CCCI_INF_MSG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->gpd,
+			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+#ifdef CLDMA_DUMP_BD
+		list_for_each_entry(req_bd, &req->bd, entry) {
+			tmp = (unsigned int *)req_bd->gpd;
+			CCCI_INF_MSG(md->index, TAG, "-0x%p: %X %X %X %X\n", req_bd->gpd,
+				   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+		}
+#endif
+	}
 
-	CCCI_INF_MSG(md->index, TAG, " dump rxq%d GPD\n", qno);
-	req = list_first_entry(&md_ctrl->rxq[qno].tr_ring->gpd_ring, struct cldma_request, entry);
-	cldma_dump_gpd_ring(md->index, req->gpd_addr, md_ctrl->rxq[qno].tr_ring->length);
+	/* use request's link head to traverse */
+	CCCI_INF_MSG(md->index, TAG, " dump rxq %d, tr_ring=%p -> gpd_ring=0x%p\n", qno, md_ctrl->rxq[qno].tr_ring,
+		&md_ctrl->rxq[qno].tr_ring->gpd_ring);
+	list_for_each_entry(req, &md_ctrl->rxq[qno].tr_ring->gpd_ring, entry) {
+		tmp = (unsigned int *)req->gpd;
+		CCCI_INF_MSG(md->index, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
+			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+	}
 }
 
 static void cldma_dump_all_gpd(struct ccci_modem *md)
 {
-#define TRAVERSE_VIA_GPD
 	int i;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
-	struct cldma_request *req = NULL;
-#ifndef TRAVERSE_VIA_GPD
-	struct cldma_request *req_bd = NULL;
-	unsigned int *tmp;
-#endif
 
-	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
-#ifdef TRAVERSE_VIA_GPD
-		/* use GPD's pointer to traverse */
-		CCCI_INF_MSG(md->index, TAG, " dump txq %d GPD\n", i);
-		req = list_first_entry(&md_ctrl->txq[i].tr_ring->gpd_ring, struct cldma_request, entry);
-		cldma_dump_gpd_ring(md->index, req->gpd_addr, md_ctrl->txq[i].tr_ring->length);
-#else
-		/* use request's link head to traverse */
-		CCCI_INF_MSG(md->index, TAG, " dump txq %d request\n", i);
-		list_for_each_entry(req, &md_ctrl->txq[i].tr_ring->gpd_ring, entry) {
-			tmp = (unsigned int *)req->gpd;
-			CCCI_INF_MSG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->gpd,
-			       *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
-			list_for_each_entry(req_bd, &req->bd, entry) {
-				tmp = (unsigned int *)req_bd->gpd;
-				CCCI_INF_MSG(md->index, TAG, "-0x%p: %X %X %X %X\n", req_bd->gpd,
-				       *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
-			}
-		}
-#endif
-	}
-	for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++) {
-#ifdef TRAVERSE_VIA_GPD
-		/* use GPD's pointer to traverse */
-		CCCI_INF_MSG(md->index, TAG, " dump rxq %d GPD\n", i);
-		req = list_first_entry(&md_ctrl->rxq[i].tr_ring->gpd_ring, struct cldma_request, entry);
-		cldma_dump_gpd_ring(md->index, req->gpd_addr, md_ctrl->rxq[i].tr_ring->length);
-#else
-		/* use request's link head to traverse */
-		CCCI_INF_MSG(md->index, TAG, " dump rxq %d request\n", i);
-		list_for_each_entry(req, &md_ctrl->rxq[i].tr_ring->gpd_ring, entry) {
-			tmp = (unsigned int *)req->gpd;
-			CCCI_INF_MSG(md->index, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
-			       *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
-		}
-#endif
-	}
+	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++)
+		cldma_dump_gpd_queue(md, i);
 }
 
 #if TRAFFIC_MONITOR_INTERVAL
@@ -1102,6 +1058,7 @@ static void cldma_tx_ring_init(struct ccci_modem *md, struct cldma_ring *ring)
 			bd->bd_flags |= 0x1;	/* EOL */
 		}
 		gpd->next_gpd_ptr = first_item->gpd_addr;
+		CCCI_INF_MSG(md->index, TAG, "ring=%p -> gpd_ring=%p\n", ring, &ring->gpd_ring);
 	}
 }
 
