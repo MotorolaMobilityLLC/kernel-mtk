@@ -192,5 +192,7 @@ extern bool hwPowerDown(MT65XX_POWER powerId, char *mode_name);
 extern int get_battery_plug_out_status(void);
 
 extern void pmic_turn_on_clock(unsigned int enable);
+extern int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur);
+extern void get_ptim_value(bool isSuspend, unsigned int *bat, signed int *cur);
 
 #endif				/* _MT_PMIC_COMMON_H_ */

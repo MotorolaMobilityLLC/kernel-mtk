@@ -2670,15 +2670,15 @@ unsigned int ptim_cnt = 0;
 signed int count_time_out_adc_imp = 36;
 unsigned int count_adc_imp = 0;
 
-int do_ptim(bool isSuspend)
+
+int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur)
 {
 	unsigned int vbat_reg;
 	int ret = 0;
 
 	count_adc_imp = 0;
 	/*PMICLOG("[do_ptim] start\n"); */
-	if (isSuspend == false)
-		pmic_auxadc_lock();
+
 	/*pmic_set_register_value(PMIC_RG_AUXADC_RST,1); */
 	/*pmic_set_register_value(PMIC_RG_AUXADC_RST,0); */
 
@@ -2735,9 +2735,6 @@ MT6351_PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN));*/
 	pmic_set_register_value(PMIC_AUXADC_CLR_IMP_CNT_STOP, 0);
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_CLR, 0);
 
-
-	if (isSuspend == false)
-		pmic_auxadc_unlock();
 	/*PMICLOG("[do_ptim2] 0xee8=0x%x  0x2c6=0x%x\n", upmu_get_reg_value
 	(0xee8),upmu_get_reg_value(0x2c6));*/
 
@@ -2747,13 +2744,63 @@ MT6351_PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN));*/
 
 
 	vbat_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_IMP_AVG);
-	ptim_bat_vol = (vbat_reg * 3 * 18000) / 32768;
+	/*ptim_bat_vol = (vbat_reg * 3 * 18000) / 32768;*/
+	*bat = (vbat_reg * 3 * 18000) / 32768;
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
-	fgauge_read_IM_current((void *)&ptim_R_curr);
+	fgauge_read_IM_current((void *)cur);
+#else
+	*cur = 0;
 #endif
+	pr_err("do_ptim_internal : bat %d cur %d\n", *bat, *cur);
+
+#if defined(SWCHR_POWER_PATH)
+	pr_err("do_ptim_internal test: bat %d cur %d\n", *bat, *cur);
+#endif
+
+
+
 	return ret;
 }
+
+int do_ptim(bool isSuspend)
+{
+	int ret;
+
+	if (isSuspend == false)
+		pmic_auxadc_lock();
+
+	ret = do_ptim_internal(isSuspend, &ptim_bat_vol, &ptim_R_curr);
+
+	if (isSuspend == false)
+		pmic_auxadc_unlock();
+	return ret;
+}
+
+int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur)
+{
+	int ret;
+
+	if (isSuspend == false)
+		pmic_auxadc_lock();
+
+	ret = do_ptim_internal(isSuspend, bat, cur);
+
+	if (isSuspend == false)
+		pmic_auxadc_unlock();
+	return ret;
+}
+
+void get_ptim_value(bool isSuspend, unsigned int *bat, signed int *cur)
+{
+	if (isSuspend == false)
+		pmic_auxadc_lock();
+	*bat = ptim_bat_vol;
+	*cur = ptim_R_curr;
+	if (isSuspend == false)
+		pmic_auxadc_unlock();
+}
+
 
 
 void enable_dummy_load(unsigned int en)
