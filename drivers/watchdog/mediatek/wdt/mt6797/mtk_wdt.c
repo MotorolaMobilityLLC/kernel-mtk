@@ -275,6 +275,7 @@ void wdt_dump_reg(void)
 	pr_alert("MTK_WDT_REQ_MODE:0x%x\n", __raw_readl(MTK_WDT_REQ_MODE));
 	pr_alert("MTK_WDT_REQ_IRQ_EN:0x%x\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
 	pr_alert("MTK_WDT_DRAMC_CTL:0x%x\n", __raw_readl(MTK_WDT_DRAMC_CTL));
+	pr_alert("MTK_WDT_LATCH_CTL:0x%x\n", __raw_readl(MTK_WDT_LATCH_CTL));
 	pr_alert("****************dump wdt reg end*************\n");
 
 }
@@ -294,6 +295,7 @@ void aee_wdt_dump_reg(void)
 	aee_wdt_printf("REQ_MODE:0x%x\n", __raw_readl(MTK_WDT_REQ_MODE));
 	aee_wdt_printf("REQ_IRQ_EN:0x%x\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
 	aee_wdt_printf("DRAMC_CTL:0x%x\n", __raw_readl(MTK_WDT_DRAMC_CTL));
+	aee_wdt_printf("LATCH_CTL:0x%x\n", __raw_readl(MTK_WDT_LATCH_CTL));
 	aee_wdt_printf("***dump wdt reg end***\n");
 */
 }
@@ -330,6 +332,8 @@ void wdt_arch_reset(char mode)
 	else
 		wdt_mode_val = wdt_mode_val | (MTK_WDT_MODE_KEY|MTK_WDT_MODE_EXTEN);
 
+	/*set latch register to 0 for SW reset*/
+	mt_reg_sync_writel((MTK_WDT_LENGTH_CTL_KEY | 0x0), MTK_WDT_LATCH_CTL);
 	mt_reg_sync_writel(wdt_mode_val, MTK_WDT_MODE);
 	pr_debug("wdt_arch_reset called end MTK_WDT_MODE =%x\n", wdt_mode_val);
 	udelay(100);
