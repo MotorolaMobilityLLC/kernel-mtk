@@ -350,7 +350,7 @@ void mt_spm_pmic_wrap_get_cmd_full(enum pmic_wrap_phase_id phase, int idx, unsig
 	   __func__, phase, idx, *p_cmd_addr, *p_cmd_wdata); */
 
 }
-EXPORT_SYMBOL(mt_cpufreq_get_pmic_cmd_full);
+EXPORT_SYMBOL(mt_spm_pmic_wrap_get_cmd_full);
 
 void mt_spm_pmic_wrap_apply_cmd(int idx)
 {				/* kick spm */

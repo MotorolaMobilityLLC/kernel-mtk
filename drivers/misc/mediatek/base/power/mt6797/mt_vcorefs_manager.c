@@ -80,7 +80,7 @@ void vcorefs_register_req_notify(vcorefs_req_handler_t handler)
 {
 	vcorefs_req_handler = handler;
 }
-EXPORT_SYMBOL(spm_vcorefs_register_handler);
+EXPORT_SYMBOL(vcorefs_register_req_notify);
 
 /*
  * Manager extern API

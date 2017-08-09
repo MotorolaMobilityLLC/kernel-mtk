@@ -685,6 +685,29 @@ static char *local_buf;
 static dma_addr_t local_buf_dma;
 static const struct firmware *spm_fw[DYNA_LOAD_PCM_MAX];
 
+int spm_fw_count = DYNA_LOAD_PCM_MAX;
+void *get_spm_firmware_version(uint32_t index)
+{
+	void *ptr = NULL;
+	int loop = 30;
+
+	while (dyna_load_pcm_done == 0 && loop > 0) {
+		loop--;
+		msleep(100);
+	}
+
+	if (index == 0) {
+		ptr = (void *)&spm_fw_count;
+		spm_crit("SPM firmware version count = %d\n", spm_fw_count);
+	} else if (index <= DYNA_LOAD_PCM_MAX) {
+		ptr = dyna_load_pcm[index - 1].version;
+		spm_crit("SPM firmware version(0x%x) = %s\n", index - 1, (char *)ptr);
+	}
+
+	return ptr;
+}
+EXPORT_SYMBOL(get_spm_firmware_version);
+
 /*Reserved memory by device tree!*/
 int reserve_memory_spm_fn(struct reserved_mem *rmem)
 {
@@ -1134,14 +1157,14 @@ void spm_twam_set_idle_select(unsigned int sel)
 {
 	idle_sel = sel & 0x3;
 }
-EXPORT_SYMBOL(spm_twam_set_idle_select)
+EXPORT_SYMBOL(spm_twam_set_idle_select);
 
 static unsigned int window_len;
 void spm_twam_set_window_length(unsigned int len)
 {
 	window_len = len;
 }
-EXPORT_SYMBOL(spm_twam_set_window_length)
+EXPORT_SYMBOL(spm_twam_set_window_length);
 
 static struct twam_sig mon_type;
 void spm_twam_set_mon_type(struct twam_sig *mon)

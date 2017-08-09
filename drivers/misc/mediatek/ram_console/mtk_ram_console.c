@@ -2612,6 +2612,22 @@ void aee_rr_show_suspend_debug_regs(struct seq_file *m)
 				i + 1, get_suspend_debug_regs(i + 1));
 }
 
+__weak void *get_spm_firmware_version(uint32_t index)
+{
+	return NULL;
+}
+
+void aee_rr_show_spm_firmware_version(struct seq_file *m)
+{
+	int i;
+	uint32_t *ptr = (uint32_t *)get_spm_firmware_version(0);
+
+	if (ptr != NULL)
+		for (i = 0; i < *ptr; i++)
+			seq_printf(m, "SPM firmware version(index %d) = %s\n",
+					i + 1, (char *)get_spm_firmware_version(i + 1));
+}
+
 int __weak mt_reg_dump(char *buf)
 {
 	return 1;
@@ -2657,6 +2673,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_mcdi_r15,
 	aee_rr_show_suspend_debug_flag,
 	aee_rr_show_suspend_debug_regs,
+	aee_rr_show_spm_firmware_version,
 	aee_rr_show_deepidle,
 	aee_rr_show_sodi3,
 	aee_rr_show_sodi,
