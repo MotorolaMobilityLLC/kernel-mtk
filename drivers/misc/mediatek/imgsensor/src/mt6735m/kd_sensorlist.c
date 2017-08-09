@@ -1899,10 +1899,10 @@ static inline int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	unsigned int FeatureParaLen = 0;
 	void *pFeaturePara = NULL;
 
-	ACDK_SENSOR_GROUP_INFO_STRUCT *pSensorGroupInfo = NULL;
+	/* ACDK_SENSOR_GROUP_INFO_STRUCT *pSensorGroupInfo = NULL; */
 	ACDK_KD_SENSOR_SYNC_STRUCT *pSensorSyncInfo = NULL;
-	char kernelGroupNamePtr[128];
-	unsigned char *pUserGroupNamePtr = NULL;
+	/* char kernelGroupNamePtr[128]; */
+	/* unsigned char *pUserGroupNamePtr = NULL; */
 	signed int ret = 0;
 
 
@@ -2050,6 +2050,7 @@ static inline int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 
 
 		break;
+#if 0
 	case SENSOR_FEATURE_GET_GROUP_INFO:
 		if (copy_from_user
 		    ((void *)pFeaturePara, (void *)pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
@@ -2067,6 +2068,7 @@ static inline int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		}
 		pSensorGroupInfo->GroupNamePtr = kernelGroupNamePtr;
 		break;
+#endif
 	case SENSOR_FEATURE_SET_ESHUTTER_GAIN:
 		if (copy_from_user
 		    ((void *)pFeaturePara, (void *)pFeatureCtrl->pFeaturePara, FeatureParaLen)) {
@@ -2174,6 +2176,7 @@ static inline int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			return -EFAULT;
 		}
 		break;
+#if 0
 		/* copy from and to user */
 	case SENSOR_FEATURE_GET_GROUP_INFO:
 		/* copy 32 bytes */
@@ -2193,6 +2196,7 @@ static inline int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			return -EFAULT;
 		}
 		break;
+#endif
 	default:
 		break;
 	}
