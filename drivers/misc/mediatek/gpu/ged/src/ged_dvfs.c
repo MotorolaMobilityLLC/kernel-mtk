@@ -310,6 +310,10 @@ void ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent,
         case GED_DVFS_VSYNC_OFFSET_GAS_EVENT:
             (bSwitch)? (g_ui32EventStatus|=GED_EVENT_GAS): (g_ui32EventStatus&= (~GED_EVENT_GAS));
             break;
+	case GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT:
+            (bSwitch) ? (g_ui32EventStatus |= GED_EVENT_LOW_POWER_MODE) : (g_ui32EventStatus &= (~GED_EVENT_LOW_POWER_MODE));
+            ged_dvfs_probe_signal(GED_LOW_POWER_MODE_SIGNAL_EVENT);
+	    break;
         default:
             GED_LOGE("%s: not acceptable event:%u \n", __func__,  eEvent); 
             goto CHECK_OUT;

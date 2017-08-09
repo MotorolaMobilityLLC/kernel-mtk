@@ -338,7 +338,17 @@ static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer,
                                 ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_GAS_EVENT, true);
                     }
 		}
-                else
+		else if (strcmp(pcCMD, "mhl4k-vid") == 0)
+		{
+                    if ((*pcValue) == '1'|| (*pcValue) == '0')
+                    {
+                        if ((*pcValue) -'0' == 0)
+                            ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT, false);
+                        else
+                            ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT, true);
+                    }
+		}
+		    else
                 {
                     GED_LOGE("unknow command:%s %c",pcCMD,*pcValue);
                 }
