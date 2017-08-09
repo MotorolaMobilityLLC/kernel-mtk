@@ -34,15 +34,16 @@
 #endif				/* VLTE_SUPPORT */
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
-#define MT_CCF_DEBUG	0
 #if defined(CONFIG_ARCH_MT6797)
-#define MT_CCF_BRINGUP  1
+#define MT_CCF_DEBUG	0
+#define MT_CCF_BRINGUP  0
+#define CONTROL_LIMIT 1
 #else
+#define MT_CCF_DEBUG	0
 #define MT_CCF_BRINGUP	0
 #endif
-
 #endif
-#define MT_CCF_DEBUG	0
+
 #define	CHECK_PWR_ST	1
 
 #ifndef GENMASK
@@ -1410,8 +1411,8 @@ static int spm_mtcmos_ctrl_c2k(int state)
 static void set_bus_protect(int en, uint32_t mask, unsigned long expired)
 {
 #if MT_CCF_DEBUG
-/*	pr_debug("[CCF] %s: en=%d, mask=%u, expired=%lu: S\n", __func__,
-		 en, mask, expired);*/
+	pr_debug("[CCF] %s: en=%d, mask=%u, expired=%lu: S\n", __func__,
+		 en, mask, expired);
 #endif				/* MT_CCF_DEBUG */
 	if (!mask)
 		return;
@@ -1870,6 +1871,26 @@ static int subsys_is_on(enum subsys_id id)
 	return r;
 }
 
+#if CONTROL_LIMIT
+int allow[NR_SYSS] = {
+1,	/*SYS_MD1 = 0,*/
+1,	/*SYS_CONN = 1,*/
+1,	/*SYS_DIS = 2,*/
+1,	/*SYS_ISP = 3,*/
+1,	/*SYS_VDE = 4,*/
+0,	/*SYS_MFG_CORE3 = 5,*/
+0,	/*SYS_MFG_CORE2 = 6,*/
+0,	/*SYS_MFG_CORE1 = 7,*/
+0,	/*SYS_MFG_CORE0 = 8,*/
+0,	/*SYS_MFG = 9,*/
+0,	/*SYS_MFG_ASYNC = 10,*/
+1,	/*SYS_MJC = 11,*/
+1,	/*SYS_VEN = 12,*/
+1,	/*SYS_AUDIO = 13,*/
+1,	/*SYS_C2K = 14,*/
+0,	/*NR_SYSS = 15,*/
+};
+#endif
 static int enable_subsys(enum subsys_id id)
 {
 	int r;
@@ -1895,6 +1916,15 @@ static int enable_subsys(enum subsys_id id)
 	}
 	return 0;
 #endif				/* MT_CCF_BRINGUP */
+
+#if CONTROL_LIMIT
+	pr_debug("[CCF] %s: sys=%s, id=%d\n", __func__, sys->name, id);
+	if (allow[id] == 0) {
+		pr_debug("[CCF] %s: do nothing return\n", __func__);
+		return 0;
+	}
+#endif
+
 
 	mtk_clk_lock(flags);
 
@@ -1941,6 +1971,15 @@ static int disable_subsys(enum subsys_id id)
 	}
 	return 0;
 #endif				/* MT_CCF_BRINGUP */
+#if CONTROL_LIMIT
+	pr_debug("[CCF] %s: sys=%s, id=%d\n", __func__, sys->name, id);
+	if (allow[id] == 0) {
+		pr_debug("[CCF] %s: do nothing return\n", __func__);
+		return 0;
+	}
+#endif
+
+
 
 	/* TODO: check all clocks related to this subsys are off */
 	/* could be power off or not */
@@ -1982,8 +2021,8 @@ static int pg_enable(struct clk_hw *hw)
 	struct mt_power_gate *pg = to_power_gate(hw);
 
 #if MT_CCF_DEBUG
-/*	pr_debug("[CCF] %s: sys=%s, pd_id=%u\n", __func__,
-		 __clk_get_name(hw->clk), pg->pd_id);*/
+	pr_debug("[CCF] %s: sys=%s, pd_id=%u\n", __func__,
+		 __clk_get_name(hw->clk), pg->pd_id);
 #endif				/* MT_CCF_DEBUG */
 
 	return enable_subsys(pg->pd_id);
@@ -1994,8 +2033,8 @@ static void pg_disable(struct clk_hw *hw)
 	struct mt_power_gate *pg = to_power_gate(hw);
 
 #if MT_CCF_DEBUG
-/*	pr_debug("[CCF] %s: sys=%s, pd_id=%u\n", __func__,
-		 __clk_get_name(hw->clk), pg->pd_id);*/
+	pr_debug("[CCF] %s: sys=%s, pd_id=%u\n", __func__,
+		 __clk_get_name(hw->clk), pg->pd_id);
 #endif				/* MT_CCF_DEBUG */
 
 	disable_subsys(pg->pd_id);
@@ -2017,9 +2056,9 @@ int pg_prepare(struct clk_hw *hw)
 	struct mt_power_gate *pg = to_power_gate(hw);
 
 #if MT_CCF_DEBUG
-/*	pr_debug("[CCF] %s: sys=%s, pre_sys=%s\n", __func__,
+	pr_debug("[CCF] %s: sys=%s, pre_sys=%s\n", __func__,
 		 __clk_get_name(hw->clk),
-		 pg->pre_clk ? __clk_get_name(pg->pre_clk) : "");*/
+		 pg->pre_clk ? __clk_get_name(pg->pre_clk) : "");
 #endif				/* MT_CCF_DEBUG */
 
 	if (pg->pre_clk) {
@@ -2037,9 +2076,9 @@ void pg_unprepare(struct clk_hw *hw)
 	struct mt_power_gate *pg = to_power_gate(hw);
 
 #if MT_CCF_DEBUG
-/*	pr_debug("[CCF] %s: clk=%s, pre_clk=%s\n", __func__,
+	pr_debug("[CCF] %s: clk=%s, pre_clk=%s\n", __func__,
 		 __clk_get_name(hw->clk),
-		 pg->pre_clk ? __clk_get_name(pg->pre_clk) : "");*/
+		 pg->pre_clk ? __clk_get_name(pg->pre_clk) : "");
 #endif				/* MT_CCF_DEBUG */
 
 	pg_disable(hw);
@@ -2106,6 +2145,8 @@ struct clk *mt_clk_register_power_gate(const char *name,
 #define vdec_sel		"vdec_sel"
 #define venc_sel		"venc_sel"
 #define mfg_sel			"mfg_sel"
+#define	infra_audio_26m	"infra_audio_26m"
+
 /* FIXME: set correct value: E */
 
 struct mtk_power_gate {
@@ -2129,17 +2170,17 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_MD1, pg_md1, NULL, NULL, SYS_MD1),
 	PGATE(SCP_SYS_CONN, pg_conn, NULL, NULL, SYS_CONN),
 	PGATE(SCP_SYS_DIS, pg_dis, NULL, mm_sel, SYS_DIS),
-	PGATE(SCP_SYS_ISP, pg_isp, NULL, NULL, SYS_ISP),
-	PGATE(SCP_SYS_VDE, pg_vde, NULL, vdec_sel, SYS_VDE),
+	PGATE(SCP_SYS_ISP, pg_isp, NULL, mm_sel, SYS_ISP),
+	PGATE(SCP_SYS_VDE, pg_vde, NULL, mm_sel, SYS_VDE),
 	PGATE(SCP_SYS_MFG_ASYNC, pg_mfg_async, NULL, NULL, SYS_MFG_ASYNC),
 	PGATE(SCP_SYS_MFG, pg_mfg, pg_mfg_async, mfg_sel, SYS_MFG),
 	PGATE(SCP_SYS_MFG_CORE3, pg_mfg_core3, pg_mfg, NULL, SYS_MFG_CORE3),
 	PGATE(SCP_SYS_MFG_CORE2, pg_mfg_core2, pg_mfg, NULL, SYS_MFG_CORE2),
 	PGATE(SCP_SYS_MFG_CORE1, pg_mfg_core1, pg_mfg, NULL, SYS_MFG_CORE1),
 	PGATE(SCP_SYS_MFG_CORE0, pg_mfg_core0, pg_mfg, NULL, SYS_MFG_CORE0),
-	PGATE(SCP_SYS_MJC, pg_mjc, NULL, NULL, SYS_MJC),
-	PGATE(SCP_SYS_VEN, pg_ven, NULL, NULL, SYS_VEN),
-	PGATE(SCP_SYS_AUDIO, pg_audio, NULL, NULL, SYS_AUDIO),
+	PGATE(SCP_SYS_MJC, pg_mjc, NULL, mm_sel, SYS_MJC),
+	PGATE(SCP_SYS_VEN, pg_ven, NULL, mm_sel, SYS_VEN),
+	PGATE(SCP_SYS_AUDIO, pg_audio, NULL, infra_audio_26m, SYS_AUDIO),
 	PGATE(SCP_SYS_C2K, pg_c2k, NULL, NULL, SYS_C2K),
 };
 
@@ -2186,7 +2227,7 @@ static void __init init_clk_scpsys(void __iomem *infracfg_reg,
 			clk_data->clks[pg->id] = clk;
 
 #if MT_CCF_DEBUG
-/*		pr_debug("[CCF] %s: pgate %3d: %s\n", __func__, i, pg->name);*/
+		pr_debug("[CCF] %s: pgate %3d: %s\n", __func__, i, pg->name);
 #endif				/* MT_CCF_DEBUG */
 	}
 }
@@ -2259,6 +2300,14 @@ static void __init mt_scpsys_init(struct device_node *node)
 	/* subsys init: per modem owner request, disable modem power first */
 	disable_subsys(SYS_MD1);
 	disable_subsys(SYS_C2K);
+
+	spm_mtcmos_ctrl_mfg_async(STA_POWER_ON);
+	spm_mtcmos_ctrl_mfg(STA_POWER_ON);
+	spm_mtcmos_ctrl_mfg_core0(STA_POWER_ON);
+	spm_mtcmos_ctrl_mfg_core1(STA_POWER_ON);
+	spm_mtcmos_ctrl_mfg_core2(STA_POWER_ON);
+	spm_mtcmos_ctrl_mfg_core3(STA_POWER_ON);
+
 #else				/*power on all subsys for bring up */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	spm_mtcmos_ctrl_mfg_async(STA_POWER_ON);
@@ -2304,7 +2353,6 @@ void mtcmos_force_off(void)
 #endif
 
 #if CLK_DEBUG
-
 /*
  * debug / unit test
  */
@@ -2347,6 +2395,7 @@ static void dump_pg_state(const char *clkname, struct seq_file *s)
 		   __clk_get_prepare_count(c),
 		   __clk_get_enable_count(c), __clk_get_rate(c), p ? __clk_get_name(p) : "");
 
+
 	clk_put(c);
 }
 
@@ -2354,13 +2403,20 @@ static int test_pg_dump_state_all(struct seq_file *s, void *v)
 {
 	static const char *const clks[] = {
 		pg_md1,
-		pg_c2k,
 		pg_conn,
 		pg_dis,
-		pg_mfg,
 		pg_isp,
 		pg_vde,
+		pg_mfg_core3,
+		pg_mfg_core2,
+		pg_mfg_core1,
+		pg_mfg_core0,
+		pg_mfg,
+		pg_mfg_async,
+		pg_mjc,
 		pg_ven,
+		pg_audio,
+		pg_c2k,
 	};
 
 	int i;

@@ -674,15 +674,15 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			#clock-cells = <1>;
 		};
 
-		scpsys: scpsys@10001000 {
-			compatible = "mediatek,mt6797-scpsys";
-			reg = <0x10001000 0x1000>, <0x10006000 0x1000>;
-			#clock-cells = <1>;
-		};
-
 		infrasys: infracfg_ao@10001000 {
 			compatible = "mediatek,infracfg_ao";
 			reg = <0x10001000 0x1000>;
+			#clock-cells = <1>;
+		};
+
+		scpsys: scpsys@10001000 {
+			compatible = "mediatek,mt6797-scpsys";
+			reg = <0x10001000 0x1000>, <0x10006000 0x1000>;
 			#clock-cells = <1>;
 		};
 
