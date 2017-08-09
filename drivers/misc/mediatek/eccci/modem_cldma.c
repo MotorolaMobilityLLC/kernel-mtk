@@ -340,8 +340,7 @@ static int cldma_gpd_rx_refill(struct md_cd_queue *queue)
 			/* set HWO and mark cldma_request as available*/
 			spin_lock_irqsave(&queue->ring_lock, flags);
 			spin_lock(&md_ctrl->cldma_timeout_lock);
-			if (md_ctrl->rxq_active & (1 << queue->index))
-				cldma_write8(&rgpd->gpd_flags, 0, 0x81);
+			cldma_write8(&rgpd->gpd_flags, 0, 0x81);
 			spin_unlock(&md_ctrl->cldma_timeout_lock);
 			req->skb = new_skb;
 			spin_unlock_irqrestore(&queue->ring_lock, flags);
