@@ -105,3 +105,4 @@ endif
 
 obj-$(CONFIG_MTK_MULTIBRIDGE_SUPPORT) += multibridge/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
+obj-$(CONFIG_MTK_FMRADIO) += fmradio/
