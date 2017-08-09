@@ -42,6 +42,8 @@
 #include <linux/of_address.h>
 
 #include <m4u.h>
+#include <m4u_priv.h>
+
 #include <cmdq_core.h>
 
 #include <linux/module.h>
@@ -9821,6 +9823,7 @@ static MINT32 __init ISP_Init(void)
 	LOG_DBG("register isp callback for GCE");
 	cmdqCoreRegisterDebugRegDumpCB(ISP_BeginGCECallback, ISP_EndGCECallback);
 
+	m4u_enable_tf(M4U_PORT_CAM_IMGI, 0);
 
 	/* TODO: Check this */
 #ifndef EVEREST_EP_CODE_MARK
