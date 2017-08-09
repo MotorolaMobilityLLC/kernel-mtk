@@ -241,8 +241,6 @@ static int __init mtk_memcfg_late_init(void)
 	struct proc_dir_entry *entry = NULL;
 	struct proc_dir_entry *mtk_memcfg_dir = NULL;
 
-	pr_info("[%s] start\n", __func__);
-
 	mtk_memcfg_dir = proc_mkdir("mtk_memcfg", NULL);
 
 	if (!mtk_memcfg_dir) {
