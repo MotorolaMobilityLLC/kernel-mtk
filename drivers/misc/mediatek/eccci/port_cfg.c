@@ -34,8 +34,9 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_DUMMY_CH, CCCI_DUMMY_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 16, "ccci_ioctl4",},
 	{CCCI_IT_TX, CCCI_IT_RX, 0, 0, 0xFF, 0xFF, 4, &char_port_ops, 17, "ccci_it",},
 	{CCCI_LB_IT_TX, CCCI_LB_IT_RX, 0, 0, 0xFF, 0xFF, 0, &char_port_ops, 18, "ccci_lb_it",},
-	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 4, &char_port_ops, 19, "ccci_rpc",},
-	{CCCI_MDL_MONITOR_UL, CCCI_MDL_MONITOR_DL, 1, 1, 3, 3, 0, &char_port_ops, 20, "ccci_mdl_monitor",},
+	{CCCI_MDL_MONITOR_UL, CCCI_MDL_MONITOR_DL, 1, 1, 3, 3, 0, &char_port_ops, 19, "ccci_mdl_monitor",},
+	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 4, &char_port_ops, 20, "ccci_rpc",},
+	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 0, &kernel_port_ops, 0, "ccci_rpc_k",},
 
 /* IPC char port minor= minor idx + CCCI_IPC_MINOR_BASE(100) */
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &char_port_ops, 0, "ccci_ipc_1220_0",},
@@ -49,7 +50,6 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_CONTROL_TX, CCCI_CONTROL_RX, 0, 0, 0, 0, 0, &kernel_port_ops, 0, "ccci_ctrl",},
 	{CCCI_SYSTEM_TX, CCCI_SYSTEM_RX, 0, 0, 0xFF, 0xFF, 0, &kernel_port_ops, 0, "ccci_sys",},
 	{CCCI_STATUS_TX, CCCI_STATUS_RX, 0, 0, 0, 0, 0, &kernel_port_ops, 0, "ccci_poll",},
-
 };
 #endif
 
@@ -85,7 +85,9 @@ static struct ccci_port md2_ccci_ports[] = {
 	{CCCI_DUMMY_CH, CCCI_DUMMY_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 16, "ccci2_ioctl4",},
 	{CCCI_IT_TX, CCCI_IT_RX, 0, 0, 0xFF, 0xFF, 4, &char_port_ops, 17, "ccci2_it",},
 	{CCCI_LB_IT_TX, CCCI_LB_IT_RX, 0, 0, 0xFF, 0xFF, 0, &char_port_ops, 18, "ccci2_lb_it",},
-	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 0xFF, 0xFF, 0, &char_port_ops, 19, "ccci2_rpc",},
+	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 4, &char_port_ops, 19, "ccci2_rpc",},
+	{CCCI_RPC_TX, CCCI_RPC_RX, 1, 1, 1, 1, 0, &kernel_port_ops, 0, "ccci2_rpc_k",},
+
 /* IPC char port minor= minor idx + CCCI_IPC_MINOR_BASE(100) */
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &char_port_ops, 0, "ccci2_ipc_0",},
 	{CCCI_IPC_TX, CCCI_IPC_RX, 1, 1, 0xFF, 0xFF, 0, &char_port_ops, 2, "ccci2_ipc_2",},

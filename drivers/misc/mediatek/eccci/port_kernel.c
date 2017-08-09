@@ -2000,6 +2000,7 @@ static int port_kernel_thread(void *arg)
 			break;
 		case CCCI_RPC_RX:
 			rpc_msg_handler(port, req);
+			CCCI_DBG_MSG(port->modem->index, KERN, "rpc done %s\n", port->name);
 			break;
 		case CCCI_STATUS_RX:
 			status_msg_handler(port, req);
@@ -2038,7 +2039,7 @@ int port_kernel_recv_req(struct ccci_port *port, struct ccci_request *req)
 	port->flags |= PORT_F_RX_FULLED;
 	spin_unlock_irqrestore(&port->rx_req_lock, flags);
 	if (port->flags & PORT_F_ALLOW_DROP/* || !(port->flags&PORT_F_RX_EXCLUSIVE) */) {
-		CCCI_INF_MSG(port->modem->index, IPC, "port %s Rx full, drop packet\n", port->name);
+		CCCI_INF_MSG(port->modem->index, KERN, "port %s Rx full, drop packet\n", port->name);
 		goto drop;
 	} else {
 		return -CCCI_ERR_PORT_RX_FULL;
@@ -2046,46 +2047,53 @@ int port_kernel_recv_req(struct ccci_port *port, struct ccci_request *req)
 
  drop:
 	/* drop this packet */
-	CCCI_INF_MSG(port->modem->index, IPC, "drop on %s, len=%d\n", port->name, port->rx_length);
+	CCCI_INF_MSG(port->modem->index, KERN, "drop on %s, len=%d\n", port->name, port->rx_length);
 	list_del(&req->entry);
 	req->policy = RECYCLE;
 	ccci_free_req(req);
 	return -CCCI_ERR_DROP_PACKET;
 }
 
-int process_rpc_kernel_msg(struct ccci_port *port, struct ccci_request *req)
+int port_kernel_req_match(struct ccci_port *port, struct ccci_request *req)
 {
-	struct rpc_buffer *rpc_buf = (struct rpc_buffer *)req->skb->data;
+	struct ccci_header *ccci_h = (struct ccci_header *)req->skb->data;
+	struct rpc_buffer *rpc_buf;
 
-	switch (rpc_buf->op_id) {
+	if (ccci_h->channel == CCCI_RPC_RX) {
+		rpc_buf = (struct rpc_buffer *)req->skb->data;
+		switch (rpc_buf->op_id) {
 #ifdef CONFIG_MTK_TC1_FEATURE
 		/* LGE specific OP ID */
-	case RPC_CCCI_LGE_FAC_READ_SIM_LOCK_TYPE:
-	case RPC_CCCI_LGE_FAC_READ_FUSG_FLAG:
-	case RPC_CCCI_LGE_FAC_CHECK_UNLOCK_CODE_VALIDNESS:
-	case RPC_CCCI_LGE_FAC_CHECK_NETWORK_CODE_VALIDNESS:
-	case RPC_CCCI_LGE_FAC_WRITE_SIM_LOCK_TYPE:
-	case RPC_CCCI_LGE_FAC_READ_IMEI:
-	case RPC_CCCI_LGE_FAC_WRITE_IMEI:
-	case RPC_CCCI_LGE_FAC_READ_NETWORK_CODE_LIST_NUM:
-	case RPC_CCCI_LGE_FAC_READ_NETWORK_CODE:
-	case RPC_CCCI_LGE_FAC_WRITE_NETWORK_CODE_LIST_NUM:
-	case RPC_CCCI_LGE_FAC_WRITE_UNLOCK_CODE_VERIFY_FAIL_COUNT:
-	case RPC_CCCI_LGE_FAC_READ_UNLOCK_CODE_VERIFY_FAIL_COUNT:
-	case RPC_CCCI_LGE_FAC_WRITE_UNLOCK_FAIL_COUNT:
-	case RPC_CCCI_LGE_FAC_READ_UNLOCK_FAIL_COUNT:
-	case RPC_CCCI_LGE_FAC_WRITE_UNLOCK_CODE:
-	case RPC_CCCI_LGE_FAC_VERIFY_UNLOCK_CODE:
-	case RPC_CCCI_LGE_FAC_WRITE_NETWORK_CODE:
-	case RPC_CCCI_LGE_FAC_INIT_SIM_LOCK_DATA:
-		CCCI_DBG_MSG(port->modem->index, KERN, "userspace rpc msg 0x%x\n", rpc_buf->op_id);
-		return 0;
+		case RPC_CCCI_LGE_FAC_READ_SIM_LOCK_TYPE:
+		case RPC_CCCI_LGE_FAC_READ_FUSG_FLAG:
+		case RPC_CCCI_LGE_FAC_CHECK_UNLOCK_CODE_VALIDNESS:
+		case RPC_CCCI_LGE_FAC_CHECK_NETWORK_CODE_VALIDNESS:
+		case RPC_CCCI_LGE_FAC_WRITE_SIM_LOCK_TYPE:
+		case RPC_CCCI_LGE_FAC_READ_IMEI:
+		case RPC_CCCI_LGE_FAC_WRITE_IMEI:
+		case RPC_CCCI_LGE_FAC_READ_NETWORK_CODE_LIST_NUM:
+		case RPC_CCCI_LGE_FAC_READ_NETWORK_CODE:
+		case RPC_CCCI_LGE_FAC_WRITE_NETWORK_CODE_LIST_NUM:
+		case RPC_CCCI_LGE_FAC_WRITE_UNLOCK_CODE_VERIFY_FAIL_COUNT:
+		case RPC_CCCI_LGE_FAC_READ_UNLOCK_CODE_VERIFY_FAIL_COUNT:
+		case RPC_CCCI_LGE_FAC_WRITE_UNLOCK_FAIL_COUNT:
+		case RPC_CCCI_LGE_FAC_READ_UNLOCK_FAIL_COUNT:
+		case RPC_CCCI_LGE_FAC_WRITE_UNLOCK_CODE:
+		case RPC_CCCI_LGE_FAC_VERIFY_UNLOCK_CODE:
+		case RPC_CCCI_LGE_FAC_WRITE_NETWORK_CODE:
+		case RPC_CCCI_LGE_FAC_INIT_SIM_LOCK_DATA:
+			CCCI_INF_MSG(port->modem->index, KERN, "userspace rpc msg 0x%x on %s\n",
+						rpc_buf->op_id, port->name);
+			return 0;
 #endif
-	default:
-		CCCI_DBG_MSG(port->modem->index, KERN, "kernelspace rpc msg 0x%x\n", rpc_buf->op_id);
-		port_kernel_recv_req(port, req);
-		return 1;
+		default:
+			CCCI_INF_MSG(port->modem->index, KERN, "kernelspace rpc msg 0x%x on %s\n",
+						rpc_buf->op_id, port->name);
+			return 1;
+		}
 	}
+	/*default all port_kernell return 1*/
+	return 1;
 }
 
 static void port_kernel_md_state_notice(struct ccci_port *port, MD_STATE state)
@@ -2111,6 +2119,7 @@ static void port_kernel_md_state_notice(struct ccci_port *port, MD_STATE state)
 
 struct ccci_port_ops kernel_port_ops = {
 	.init = &port_kernel_init,
+	.req_match = &port_kernel_req_match,
 	.recv_request = &port_kernel_recv_req,
 	.md_state_notice = &port_kernel_md_state_notice,
 };

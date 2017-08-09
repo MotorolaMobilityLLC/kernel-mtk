@@ -270,7 +270,7 @@ struct eint_node_struct {
 #endif
 
 int port_kernel_init(struct ccci_port *port);
-int process_rpc_kernel_msg(struct ccci_port *port, struct ccci_request *req);
+int port_kernel_req_match(struct ccci_port *port, struct ccci_request *req);
 
 #if defined(FEATURE_GET_MD_ADC_NUM)
 extern int IMM_get_adc_channel_num(char *channel_name, int len);

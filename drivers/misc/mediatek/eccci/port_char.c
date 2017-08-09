@@ -553,7 +553,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 
 		if (md_status_show_count[md->index] == 0) {
-			CCCI_INF_MSG(md->index, CHAR, "MD state %ld\n", state);
+			CCCI_INF_MSG(md->index, CHAR, "MD state %ld, %d\n", state, md->md_state);
 			md_status_show_count[md->index]++;
 		}
 
@@ -997,7 +997,7 @@ static int port_char_init(struct ccci_port *port)
 	port->rx_length_th = MAX_QUEUE_LENGTH;
 	if (port->rx_ch == CCCI_IPC_RX)
 		port_ipc_init(port);	/* this will change port->minor, call it before register device */
-	else if (port->rx_ch == CCCI_RPC_RX)
+	else if ((port->rx_ch == CCCI_RPC_RX) && (port->minor == 0))
 		port_kernel_init(port);
 	else
 		port->private_data = dev;	/* not using */
@@ -1069,8 +1069,6 @@ static int port_char_recv_req(struct ccci_port *port, struct ccci_request *req)
 		(port->rx_ch != CCCI_UART2_RX && port->rx_ch != CCCI_C2K_AT &&
 			port->rx_ch != CCCI_FS_RX && port->rx_ch != CCCI_RPC_RX))
 		goto drop;
-	if (port->rx_ch == CCCI_RPC_RX && process_rpc_kernel_msg(port, req))
-		return 0;
 
 #ifdef CONFIG_MTK_ECCCI_C2K
 	if ((port->modem->index == MD_SYS3) && port->interception) {
@@ -1116,6 +1114,8 @@ static int port_char_req_match(struct ccci_port *port, struct ccci_request *req)
 	if (ccci_h->channel == port->rx_ch) {
 		if (unlikely(port->rx_ch == CCCI_IPC_RX))
 			return port_ipc_req_match(port, req);
+		if (unlikely(port->rx_ch == CCCI_RPC_RX))
+			return (port_kernel_req_match(port, req) == 0);
 		return 1;
 	}
 	return 0;

@@ -49,9 +49,8 @@ int boot_md_show(int md_id, char *buf, int size)
 int boot_md_store(int md_id)
 {
 	struct ccci_modem *md;
-
-	CCCI_INF_MSG(-1, CORE, "ccci core boot md%d\n", md_id + 1);
 	list_for_each_entry(md, &modem_list, entry) {
+		CCCI_INF_MSG(md_id, CORE, "ccci core boot md%d, md_state=%d\n", md_id + 1, md->md_state);
 		if (md->index == md_id && md->md_state == GATED) {
 			md->ops->start(md);
 			return 0;

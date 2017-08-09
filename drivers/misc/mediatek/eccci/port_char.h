@@ -1,6 +1,4 @@
 
-extern int process_rpc_kernel_msg(struct ccci_port *port, struct ccci_request *req);
-
 extern int rawbulk_push_upstream_buffer(int transfer_id, const void *buffer,
 		unsigned int length);
 
