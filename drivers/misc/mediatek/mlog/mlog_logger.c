@@ -35,8 +35,8 @@
 #endif
 
 /* for collecting ion total memory usage*/
-#ifdef CONFIG_ION_MTK
-#include <linux/ion_drv.h>
+#ifdef CONFIG_MTK_ION
+#include <mtk/ion_drv.h>
 #endif
 
 #include "mlog_internal.h"
@@ -383,7 +383,7 @@ static void mlog_meminfo(void)
 	/* MLOG_PRINTK("active: %lu, inactive: %lu\n", active, inactive); */
 	shmem = P2K(global_page_state(NR_SHMEM));
 
-#ifdef CONFIG_ION_MTK
+#ifdef CONFIG_MTK_ION
 	ion = B2K((unsigned long)ion_mm_heap_total_memory());
 #endif
 
