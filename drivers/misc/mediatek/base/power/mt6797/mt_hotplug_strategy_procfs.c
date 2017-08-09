@@ -172,6 +172,7 @@ PROC_FOPS_RW_UINT(rush_boost_threshold,
 		  hps_ctxt.rush_boost_threshold, hps_proc_uint_write_with_lock_reset);
 PROC_FOPS_RW_UINT(rush_boost_times, hps_ctxt.rush_boost_times, hps_proc_uint_write_with_lock_reset);
 PROC_FOPS_RW_UINT(tlp_times, hps_ctxt.tlp_times, hps_proc_uint_write_with_lock_reset);
+PROC_FOPS_RW_UINT(power_mode, hps_ctxt.power_mode, hps_proc_uint_write_with_lock_reset);
 
 /***********************************************************
 * procfs callback - algo bound series
@@ -664,6 +665,7 @@ int hps_procfs_init(void)
 		PROC_ENTRY(num_limit_low_battery),
 		PROC_ENTRY(num_limit_ultra_power_saving),
 		PROC_ENTRY(num_limit_power_serv),
+		PROC_ENTRY(power_mode),
 	};
 
 	hps_warn("hps_procfs_init\n");
