@@ -113,12 +113,14 @@ static int fpc1020_open(struct inode *inode, struct file *file);
 static ssize_t fpc1020_write(struct file *file, const char *buff,
 					size_t count, loff_t *ppos);
 
+#if 0
 static ssize_t fpc1020_read(struct file *file, char *buff,
 				size_t count, loff_t *ppos);
 
 static int fpc1020_release(struct inode *inode, struct file *file);
 
 static unsigned int fpc1020_poll(struct file *file, poll_table *wait);
+#endif
 
 static int fpc1020_cleanup(fpc1020_data_t *fpc1020, struct spi_device *spidev);
 
@@ -170,8 +172,10 @@ static ssize_t fpc1020_store_attr_diag(struct device *dev,
 					size_t count);
 
 static u8 fpc1020_selftest_short(fpc1020_data_t *fpc1020);
+#if 0
 
 static int fpc1020_start_capture(fpc1020_data_t *fpc1020);
+#endif
 
 static int fpc1020_new_job(fpc1020_data_t *fpc1020, int new_job);
 
@@ -220,9 +224,11 @@ static const struct file_operations fpc1020_fops = {
 	.owner          = THIS_MODULE,
 	.open           = fpc1020_open,
 	.write          = fpc1020_write,
+	/*
 	.read           = fpc1020_read,
 	.release        = fpc1020_release,
 	.poll           = fpc1020_poll,
+	*/
 };
 
 
@@ -721,7 +727,7 @@ static ssize_t fpc1020_write(struct file *file, const char *buff,
 	return -ENOTTY;
 }
 
-
+#if 0
 /* -------------------------------------------------------------------- */
 static ssize_t fpc1020_read(struct file *file, char *buff,
 				size_t count, loff_t *ppos)
@@ -811,9 +817,9 @@ static int fpc1020_release(struct inode *inode, struct file *file)
 
 	if (down_interruptible(&fpc1020->mutex))
 		return -ERESTARTSYS;
-
-	fpc1020_start_input(fpc1020);
 /*
+	fpc1020_start_input(fpc1020);
+
 	fpc1020_worker_goto_idle(fpc1020);
 
 	fpc1020_sleep(fpc1020, true);
@@ -885,7 +891,7 @@ static unsigned int fpc1020_poll(struct file *file, poll_table *wait)
 
 	return ret;
 }
-
+#endif
 
 /* -------------------------------------------------------------------- */
 static int fpc1020_cleanup(fpc1020_data_t *fpc1020, struct spi_device *spidev)
@@ -1830,7 +1836,7 @@ out:
 	return fpc1020->diag.selftest;
 };
 
-
+#if 0
 /* -------------------------------------------------------------------- */
 static int fpc1020_start_capture(fpc1020_data_t *fpc1020)
 {
@@ -1870,7 +1876,7 @@ static int fpc1020_start_capture(fpc1020_data_t *fpc1020)
 
 	return error;
 }
-
+#endif
 
 /* -------------------------------------------------------------------- */
 static int fpc1020_worker_goto_idle(fpc1020_data_t *fpc1020)
