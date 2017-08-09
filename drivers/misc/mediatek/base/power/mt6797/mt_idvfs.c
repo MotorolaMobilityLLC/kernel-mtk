@@ -403,7 +403,7 @@ static int iDVFSAPB_pmic_manual_big(int	volt_mv) /* it's only for DA9214 PMIC  *
 	int i;
 
 	/* voltage range 300 ~ 1200mv */
-	if ((volt_mv > 1200) | (volt_mv < 300))
+	if ((volt_mv > 1200) || (volt_mv < 300))
 		return -1;
 
 	iDVFSAPB_DA9214_write(0xd9, (DA9214_MV_TO_STEP(volt_mv) | 0x0080));
@@ -560,6 +560,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 		} else
 			return -1;
 	}
+	AEE_RR_REC(idvfs_state_manchine, 20);
 
 #if 0
 	/* check pos div only 0 or 1 */
@@ -577,6 +578,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	/* 01001: 3/4, 10001:4/5, 11001: 5/6, 11100:2/6, 01000: 4/4 */
 	mt6797_0x1001AXXX_reg_set(0x274, 0x1f, 0x8);
 	udelay(2);
+	AEE_RR_REC(idvfs_state_manchine, 21);
 
 #if IDVFS_CCF_I2C6
 	/* I2CV6 (APPM I2C) clock CCF control enable */
@@ -587,9 +589,11 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 		return -4;
 	}
 #endif
+	AEE_RR_REC(idvfs_state_manchine, 22);
 
 	/* move to prob init */
 	iDVFSAPB_init();
+	AEE_RR_REC(idvfs_state_manchine, 23);
 
 	/* get current vproc volt */
 	da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
@@ -604,6 +608,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	/* fix sarm = 1180mv */
 	BigiDVFSSRAMLDOSet(118000);
 	cur_vsram_mv_x100 = 118000;
+	AEE_RR_REC(idvfs_state_manchine, 24);
 	udelay(20); /* wait LDO set stable */
 
 	idvfs_ver("iDVFS enable cur Vproc = %u(mv_x100), Vsarm = %u(mv_x100).\n",
@@ -624,6 +629,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	SEC_BIGIDVFSENABLE(idvfs_init_opt.idvfs_ctrl_reg, cur_vproc_mv_x100, cur_vsram_mv_x100);
 	/* ram console, 0x00107203 is ATF define */
 	AEE_RR_REC(idvfs_ctrl_reg, (idvfs_init_opt.idvfs_ctrl_reg | 0x1));
+	AEE_RR_REC(idvfs_state_manchine, 25);
 
 	/* enable sw channel status and clear oct/otpl channel status by struct */
 	idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].status = 1;
@@ -640,12 +646,14 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	/* cfg or init OCP then enable OCP channel */
 	if (idvfs_init_opt.ocp_endis)
 		Cluster2_OCP_ON();
+	AEE_RR_REC(idvfs_state_manchine, 26);
 
 	/* cfg or init OTP then enable OTP channel */
 	/* mark channel enable, otp will chk itself */
 	/* BigiDVFSChannel(2, 1); */
 	if (idvfs_init_opt.otp_endis)
 		BigOTPEnable();
+	AEE_RR_REC(idvfs_state_manchine, 27);
 
 	/* enable struct idvfs_status = 1, 1: enable finish */
 	idvfs_init_opt.idvfs_status = 1;
@@ -680,7 +688,7 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	return -1;
 #else
 	int i;
-	unsigned char ret_val = 0;
+	/* unsigned char ret_val = 0; */
 
 	/* for back legacy DVFS mode debug */
 	if (disable_idvfs_flag)
@@ -717,12 +725,13 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 		idvfs_init_opt.idvfs_status = 3;
 		AEE_RR_REC(idvfs_state_manchine, 3);
 	}
+	AEE_RR_REC(idvfs_state_manchine, 30);
 
 	/* before BigiDVFS disable aee pmic status */
-	da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
+	/* da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
 	AEE_RR_REC(idvfs_curr_volt, ((AEE_RR_CURR(idvfs_curr_volt) & 0xff00) | ret_val));
 	da9214_read_interface(0x5e, &ret_val, 0xff, 0);
-	AEE_RR_REC(idvfs_curr_volt, ((AEE_RR_CURR(idvfs_curr_volt) & 0x00ff) | (ret_val << 8)));
+	AEE_RR_REC(idvfs_curr_volt, ((AEE_RR_CURR(idvfs_curr_volt) & 0x00ff) | (ret_val << 8))); */
 
 	idvfs_ver("[****]iDVFS start disable.\n");
 	/* idvfs_ver("iDVFS disable OCP/OTP channel.\n"); */
@@ -732,35 +741,44 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	/* BigiDVFSChannel(1, 0); */
 	/* BigOCPDisable(); */
 
-	if (idvfs_init_opt.ocp_endis)
-		Cluster2_OCP_OFF();
-
-	/* disable OTP channel */
-	if (idvfs_init_opt.otp_endis) {
-		/* wait otp move to itself disable channel */
-		BigiDVFSChannel(2, 0);
-		BigOTPDisable();
-	}
-
 	/* down to 30% = 750MHz(IDVFS_FREQMz_STORE) for disable */
 	/* BigIDVFSFreq(3000), ()IDVFS_FREQMz_STORE / 4) * 100 = 30 */
 	idvfs_ver("iDVFS disable force setting FreqREQ = 30%%, 750MHz(IDVFS_FREQMz_STORE)\n");
 	SEC_BIGIDVFS_WRITE(0x10222498, ((IDVFS_FREQMz_STORE / 25) << 12));
+
+	/* force disable otp/ocp channel first */
+	SEC_BIGIDVFS_WRITE(0x10222470, (SEC_BIGIDVFS_READ(0x10222470) & 0xfffffff3));
+	AEE_RR_REC(idvfs_state_manchine, 31);
 	udelay(120);
+
+	if (idvfs_init_opt.ocp_endis)
+		Cluster2_OCP_OFF();
+	AEE_RR_REC(idvfs_state_manchine, 32);
+
+	/* disable OTP channel */
+	/* wait otp move to itself disable channel */
+	/* BigiDVFSChannel(2, 0); */
+	if (idvfs_init_opt.otp_endis)
+		BigOTPDisable();
+	AEE_RR_REC(idvfs_state_manchine, 33);
 
 	/* call smc */ /* function_id = SMC_IDVFS_BigiDVFSDisable */
 	SEC_BIGIDVFSDISABLE();
 	AEE_RR_REC(idvfs_ctrl_reg, 0x0);
+	AEE_RR_REC(idvfs_state_manchine, 34);
 
 	/* set Vproc = 1000mv for 750MHz(IDVFS_FREQMz_STORE), due to PTP VBOOT */
 	da9214_vosel_buck_b(IDVFS_VPROC_STORE);
+	AEE_RR_REC(idvfs_state_manchine, 35);
 
 	/* set Vsram = 1100mv for 750MHz */
 	/* When next iDVFS enable Freq = 750MHz(default),
 	so the Vproc need parking to 880mv, Vsarm parking to 1005mv(default). */
 	BigiDVFSSRAMLDOSet(IDVFS_VSRAM_STORE);
+	AEE_RR_REC(idvfs_state_manchine, 36);
 
 	udelay(20); /* settle time Max(pmic, sarm) */
+	AEE_RR_REC(idvfs_state_manchine, 37);
 
 #if IDVFS_DREQ_ENABLE
 	/* if dreq enable */
@@ -771,6 +789,7 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	/* I2CV6 (APPM I2C) clock CCF control disable */
 	clk_disable(idvfs_i2c6_clk);
 #endif
+	AEE_RR_REC(idvfs_state_manchine, 38);
 
 	/* clear all channel status by struct */
 	for (i = 0; i < IDVFS_CHANNEL_NP; i++) {
@@ -1130,7 +1149,7 @@ int BigiDVFSSRAMLDOSet(unsigned int mVolts_x100)
 
 	rc = SEC_BIGIDVFSSRAMLDOSET(mVolts_x100);
 	/* due to iDVFS fix don't need recoder */
-	AEE_RR_REC(idvfs_sram_ldo, mVolts_x100);
+	AEE_RR_REC(idvfs_sram_ldo, (mVolts_x100 / 100));
 
 	if (rc >= 0)
 		idvfs_ver("SRAM LDO setting = %u(x100mv) success.\n", mVolts_x100);

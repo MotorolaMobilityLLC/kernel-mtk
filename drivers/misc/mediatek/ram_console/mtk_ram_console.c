@@ -2349,12 +2349,12 @@ void aee_rr_show_idvfs_swreq_cnt(struct seq_file *m)
 void aee_rr_show_idvfs_curr_volt(struct seq_file *m)
 {
 	seq_printf(m, "idvfs_curr_volt = %umv, 0x5e = 0x%x\n",
-		((LAST_RRR_VAL(idvfs_curr_volt) * 10) + 300), (LAST_RRR_VAL(idvfs_curr_volt) >> 8));
+		(((LAST_RRR_VAL(idvfs_curr_volt) & 0xff) * 10) + 300), (LAST_RRR_VAL(idvfs_curr_volt) >> 8));
 }
 
 void aee_rr_show_idvfs_sram_ldo(struct seq_file *m)
 {
-	seq_printf(m, "idvfs_sram_ldo = %umv_x100\n", LAST_RRR_VAL(idvfs_sram_ldo));
+	seq_printf(m, "idvfs_sram_ldo = %umv\n", LAST_RRR_VAL(idvfs_sram_ldo));
 }
 
 void aee_rr_show_idvfs_swavg_curr_pct_x100(struct seq_file *m)
