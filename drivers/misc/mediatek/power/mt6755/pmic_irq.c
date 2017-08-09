@@ -488,14 +488,16 @@ void wake_up_pmic(void)
 }
 EXPORT_SYMBOL(wake_up_pmic);
 
+/*
 #ifdef CONFIG_MTK_LEGACY
 void mt_pmic_eint_irq(void)
 {
-	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");*/
+	PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");
 	wake_up_pmic();
-	/*return;*/
+	return;
 }
 #else
+*/
 irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 {
 	/*PMICLOG("[mt_pmic_eint_irq] receive interrupt\n");*/
@@ -503,7 +505,7 @@ irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 	disable_irq_nosync(irq);
 	return IRQ_HANDLED;
 }
-#endif
+/*#endif*/
 
 void pmic_enable_interrupt(unsigned int intNo, unsigned int en, char *str)
 {
@@ -551,11 +553,10 @@ void pmic_register_interrupt_callback(unsigned int intNo, void (EINT_FUNC_PTR) (
 
 void PMIC_EINT_SETTING(void)
 {
-#ifndef CONFIG_MTK_LEGACY
 	struct device_node *node = NULL;
 	int ret = 0;
 	u32 ints[2] = { 0, 0 };
-#endif
+
 	upmu_set_reg_value(MT6351_INT_CON0, 0);
 	upmu_set_reg_value(MT6351_INT_CON1, 0);
 	upmu_set_reg_value(MT6351_INT_CON2, 0);
@@ -603,11 +604,10 @@ void PMIC_EINT_SETTING(void)
 	/* pmic_enable_interrupt(51, 1, "PMIC"); */
 #endif
 
-#ifdef CONFIG_MTK_LEGACY
 	/*mt_eint_set_hw_debounce(g_eint_pmic_num, g_cust_eint_mt_pmic_debounce_cn);*/
-	mt_eint_registration(g_eint_pmic_num, g_cust_eint_mt_pmic_type, mt_pmic_eint_irq, 0);
-	mt_eint_unmask(g_eint_pmic_num);
-#else
+	/*mt_eint_registration(g_eint_pmic_num, g_cust_eint_mt_pmic_type, mt_pmic_eint_irq, 0);*/
+	/*mt_eint_unmask(g_eint_pmic_num);*/
+
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6351-pmic");
 	if (node) {
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
@@ -620,7 +620,6 @@ void PMIC_EINT_SETTING(void)
 		enable_irq(g_pmic_irq);
 	} else
 		PMICLOG("can't find compatible node\n");
-#endif
 
 	PMICLOG("[CUST_EINT] CUST_EINT_MT_PMIC_MT6325_NUM=%d\n", g_eint_pmic_num);
 	PMICLOG("[CUST_EINT] CUST_EINT_PMIC_DEBOUNCE_CN=%d\n", g_cust_eint_mt_pmic_debounce_cn);
@@ -696,13 +695,14 @@ int pmic_thread_kthread(void *x)
 #endif
 
 		set_current_state(TASK_INTERRUPTIBLE);
-
+/*
 #ifdef CONFIG_MTK_LEGACY
 		mt_eint_unmask(g_eint_pmic_num);
 #else
+*/
 		if (g_pmic_irq != 0)
 			enable_irq(g_pmic_irq);
-#endif
+/*#endif*/
 		schedule();
 	}
 
