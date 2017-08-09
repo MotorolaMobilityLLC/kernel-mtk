@@ -747,6 +747,22 @@ void mmc_run_queue_thread_dat(void *data)
 	}
 }
 #endif
+static void __mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
+{
+#ifdef CONFIG_K42_MMC_RETUNE
+	int err;
+
+	/* Assumes host controller has been runtime resumed by mmc_claim_host */
+	err = mmc_retune(host);
+	if (err) {
+		mrq->cmd->error = err;
+		mmc_request_done(host, mrq);
+		return;
+	}
+#endif
+
+	host->ops->request(host, mrq);
+}
 
 static int mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 {
@@ -754,6 +770,8 @@ static int mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 	unsigned int i, sz;
 	struct scatterlist *sg;
 #endif
+	mmc_retune_hold(host);
+
 	if (mmc_card_removed(host->card))
 		return -ENOMEDIUM;
 
@@ -826,7 +844,7 @@ static int mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 			&& mrq->cmd->opcode != MMC_SEND_STATUS)
 			mmc_wait_cmdq_empty(host);
 #endif
-	host->ops->request(host, mrq);
+	__mmc_start_request(host, mrq);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	}
 #endif
@@ -1298,22 +1316,22 @@ static int mmc_wait_for_data_req_done(struct mmc_host *host,
 							    host->areq);
 				break; /* return err */
 			} else {
+				mmc_retune_recheck(host);
 				pr_info("%s: req failed (CMD%u): %d, retrying...\n",
 					mmc_hostname(host),
 					cmd->opcode, cmd->error);
 				cmd->retries--;
 				cmd->error = 0;
-				host->ops->request(host, mrq);
+				__mmc_start_request(host, mrq);
 				continue; /* wait for done/new event again */
 			}
 		} else if (context_info->is_new_req) {
 			context_info->is_new_req = false;
-			if (!next_req) {
-				err = MMC_BLK_NEW_REQUEST;
-				break; /* return err */
-			}
+			if (!next_req)
+				return MMC_BLK_NEW_REQUEST;
 		}
 	}
+	mmc_retune_release(host);
 	return err;
 }
 
@@ -1348,12 +1366,16 @@ static void mmc_wait_for_req_done(struct mmc_host *host,
 		    mmc_card_removed(host->card))
 			break;
 
+		mmc_retune_recheck(host);
+
 		pr_debug("%s: req failed (CMD%u): %d, retrying...\n",
 			 mmc_hostname(host), cmd->opcode, cmd->error);
 		cmd->retries--;
 		cmd->error = 0;
-		host->ops->request(host, mrq);
+		__mmc_start_request(host, mrq);
 	}
+
+	mmc_retune_release(host);
 }
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
