@@ -4731,7 +4731,9 @@ int __init eem_init(void)
 
 	get_devinfo(&eem_devinfo);
 
-#ifdef __KERNEL__
+	eem_error("[EEM] new_eem_val=%d, ctrl_EEM_Enable=%d\n", new_eem_val, ctrl_EEM_Enable);
+
+#if 0 /* def __KERNEL__ */
 	if (new_eem_val == 0) {
 		ctrl_EEM_Enable = 0;
 		eem_debug("Disable EEM by kernel config\n");
