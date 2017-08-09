@@ -228,16 +228,18 @@ struct data_unit_t {
 		fall_t fall_data_t;
 		tilt_event_t tilt_event;
 		in_pocket_event_t inpocket_event;
+		int32_t data[7];
 	};
 };
 
 struct sensorFIFO {
 /* volatile struct SCP_sensorData * volatile rp; */
 /* volatile struct SCP_sensorData * volatile wp; */
-	int rp;			/* use int for store DRAM FIFO LSB 32bit read pointer */
-	int wp;
+	uint32_t rp;			/* use int for store DRAM FIFO LSB 32bit read pointer */
+	uint32_t wp;
 	uint32_t FIFOSize;
-	struct SCP_sensorData data[0];
+	uint32_t reserve;
+	struct data_unit_t data[0];
 };
 
 typedef struct {
@@ -312,7 +314,7 @@ typedef struct {
 	uint8_t action;
 	uint8_t reserve[2];
 	/* struct sensorFIFO   *bufferBase; */
-	int bufferBase;		/* use int to store buffer DRAM base LSB 32 bits */
+	uint32_t bufferBase;/* use int to store buffer DRAM base LSB 32 bits */
 	uint32_t bufferSize;
 	/* uint32_t    reserved[8]; */
 } SCP_SENSOR_HUB_SET_CONFIG_REQ;

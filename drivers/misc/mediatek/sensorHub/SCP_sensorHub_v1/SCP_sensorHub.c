@@ -33,7 +33,7 @@
 #include "SCP_sensorHub.h"
 #include "hwmsen_helper.h"
 
-
+#define SENSOR_DATA_SIZE 48
 
 #define SCP_sensorHub_DEV_NAME        "SCP_sensorHub"
 static int SCP_sensorHub_probe(void);
@@ -74,7 +74,8 @@ struct SCP_sensorHub_data {
 	atomic_t disable_fifo_full_notify;
 
 	volatile struct sensorFIFO *volatile SCP_sensorFIFO;
-	dma_addr_t mapping;
+	phys_addr_t shub_dram_phys;
+	phys_addr_t shub_dram_virt;
 };
 
 static struct device SCP_sensorHub_dev = {
@@ -134,6 +135,7 @@ static int SCP_sensorHub_get_scp_semaphore(void)
 	return err;
 }
 
+#if 0
 static int SCP_sensorHub_init_client(void)
 {				/* call by init done workqueue */
 	struct SCP_sensorHub_data *obj = obj_data;
@@ -165,6 +167,31 @@ static int SCP_sensorHub_init_client(void)
 	return SCP_SENSOR_HUB_SUCCESS;
 }
 
+#endif
+
+static int SCP_sensorHub_init_client(void)
+{				/* call by init done workqueue */
+	struct SCP_sensorHub_data *obj = obj_data;
+	SCP_SENSOR_HUB_DATA data;
+	unsigned int len = 0;
+
+	obj->shub_dram_phys = get_reserve_mem_phys(SENS_MEM_ID);
+	obj->shub_dram_virt = get_reserve_mem_virt(SENS_MEM_ID);
+
+	data.set_config_req.sensorType = 0;
+	data.set_config_req.action = SENSOR_HUB_SET_CONFIG;
+	data.set_config_req.bufferBase = (unsigned int)(obj->shub_dram_phys & 0xFFFFFFFF);
+	data.set_config_req.bufferSize = get_reserve_mem_size(SENS_MEM_ID);
+	len = sizeof(data.set_config_req);
+
+	SCP_sensorHub_req_send(&data, &len, 1);
+
+	SCP_ERR("fwq SCP_sensorHub_init_client done\n");
+
+	return SCP_SENSOR_HUB_SUCCESS;
+}
+
+
 static int SCP_sensorHub_ReadChipInfo(char *buf, int bufsize)
 {
 	if ((NULL == buf) || (bufsize <= 30))
@@ -178,7 +205,7 @@ static int SCP_sensorHub_ReadSensorData(int handle, struct hwm_sensor_data *sens
 {
 	struct SCP_sensorHub_data *obj = obj_data;
 	char *pStart, *pEnd, *pNext;
-	struct SCP_sensorData curData;
+	struct data_unit_t curData;
 	char *rp, *wp;
 	int offset;
 	int fifo_usage;
@@ -196,12 +223,12 @@ static int SCP_sensorHub_ReadSensorData(int handle, struct hwm_sensor_data *sens
 		return -2;
 	}
 
-	dma_sync_single_for_cpu(&SCP_sensorHub_dev, obj->mapping, obj->SCP_sensorFIFO->FIFOSize,
-				DMA_FROM_DEVICE);
+	/* dma_sync_single_for_cpu(&SCP_sensorHub_dev, obj->mapping, obj->SCP_sensorFIFO->FIFOSize,
+				DMA_FROM_DEVICE); */
 	pStart = (char *)obj->SCP_sensorFIFO + offsetof(struct sensorFIFO, data);
-	pEnd = (char *)pStart + obj->SCP_sensorFIFO->FIFOSize;
-	rp = pStart + (int)obj->SCP_sensorFIFO->rp;
-	wp = pStart + (int)obj->SCP_sensorFIFO->wp;
+	pEnd = pStart + obj->SCP_sensorFIFO->FIFOSize;
+	rp = pStart + obj->SCP_sensorFIFO->rp;
+	wp = pStart + obj->SCP_sensorFIFO->wp;
 
 	if (rp < pStart || pEnd <= rp) {
 		SCP_ERR("FIFO rp invalid : %p, %p, %p\n", pStart, pEnd, rp);
@@ -232,19 +259,17 @@ static int SCP_sensorHub_ReadSensorData(int handle, struct hwm_sensor_data *sens
 		}
 		return -6;
 	}
-
-	pNext = rp + offsetof(struct SCP_sensorData,
-				  data) + ((struct SCP_sensorData *)rp)->dataLength;
-	pNext = (char *)((((unsigned long)pNext + 3) >> 2) << 2);
+	pNext = rp + SENSOR_DATA_SIZE;
 
 	if (SCP_TRC_BATCH_DETAIL & atomic_read(&(obj_data->trace)))
-		SCP_LOG("dataLength = %d, pNext = %p, rp = %p, wp = %p\n",
-			((struct SCP_sensorData *)rp)->dataLength, pNext, rp, wp);
+		SCP_LOG("sensor_type = %d, pNext = %p, rp = %p, wp = %p\n",
+			((struct data_unit_t *)rp)->sensor_type, pNext, rp, wp);
 
-	if (((struct SCP_sensorData *)rp)->dataLength != 6
-		   && ((struct SCP_sensorData *)rp)->dataLength != 8)
-		SCP_ERR("Wrong dataLength = %d\n",
-		((struct SCP_sensorData *)rp)->dataLength);
+
+	if (((struct data_unit_t *)rp)->sensor_type < 0 || ((struct data_unit_t *)rp)->sensor_type > 58) {
+		SCP_ERR("Wrong data, sensor_type = %d .\n", ((struct data_unit_t *)rp)->sensor_type);
+		return -7;
+	}
 
 	if (pNext < pEnd) {
 		memcpy((char *)&curData, rp, pNext - rp);
@@ -258,12 +283,13 @@ static int SCP_sensorHub_ReadSensorData(int handle, struct hwm_sensor_data *sens
 	}
 
 	obj->SCP_sensorFIFO->rp = (int)(rp - pStart);
-	dma_sync_single_for_device(&SCP_sensorHub_dev, obj->mapping, obj->SCP_sensorFIFO->FIFOSize, DMA_TO_DEVICE);
+	/*
+	dma_sync_single_for_device(&SCP_sensorHub_dev, obj->mapping, obj->SCP_sensorFIFO->FIFOSize, DMA_TO_DEVICE);*/
 	err = release_scp_semaphore(SEMAPHORE_SENSOR);
 	if (err < 0)
 			SCP_ERR("release_scp_semaphore fail : %d\n", err);
 
-	sensorData->sensor = curData.sensorType;
+	sensorData->sensor = curData.sensor_type;
 	sensorData->value_divide = 1000;	/* need to check */
 	sensorData->status = SENSOR_STATUS_ACCURACY_MEDIUM;
 	sensorData->values[0] = curData.data[0];
@@ -537,6 +563,7 @@ int SCP_sensorHub_req_send(SCP_SENSOR_HUB_DATA_P data, uint *len, unsigned int w
 				(atomic_read(&(obj_data->wait_rsp)) == 0));
 	del_timer_sync(&obj_data->timer);
 	err = userData->rsp.errCode;
+
 	if (t6 - t1 > 3000000LL)
 		SCP_ERR("%llu, %llu, %llu, %llu, %llu, %llu\n", t1, t2, t3, t4, t5, t6);
 	mutex_unlock(&SCP_sensorHub_req_mutex);
@@ -735,7 +762,111 @@ static int SCP_sensorHub_get_data(int handle, struct hwm_sensor_data *sensorData
 
 	return SCP_sensorHub_ReadSensorData(handle, sensorData);
 }
+static int SCP_sensorHub_get_fifo_status(int *dataLen, int *status, char *reserved,
+					 struct batch_timestamp_info *p_batch_timestampe_info)
+{
+	struct SCP_sensorHub_data *obj = obj_data;
+	int err = 0;
+	SCP_SENSOR_HUB_DATA data;
+	char *pStart, *pEnd, *pNext;
+	unsigned int len = 0;
+	char *rp, *wp;
+	struct batch_timestamp_info *pt = p_batch_timestampe_info;
+	int i, offset;
 
+	if (SCP_TRC_FUN == atomic_read(&(obj_data->trace)))
+		SCP_FUN();
+	for (i = 0; i <= ID_SENSOR_MAX_HANDLE; i++)
+		pt[i].total_count = 0;
+
+	*dataLen = 0;
+	*status = 1;
+
+	data.get_data_req.sensorType = 0;
+	data.get_data_req.action = SENSOR_HUB_GET_DATA;
+	len = sizeof(data.get_data_req);
+
+	err = SCP_sensorHub_req_send(&data, &len, 1);
+	/*
+	if (0 != err) {
+		SCP_ERR("SCP_sensorHub_req_send error: ret value=%d\n", err);
+		return -1;
+	}*/
+	/* To prevent get fifo status during scp wrapper around dram fifo. */
+	err = SCP_sensorHub_get_scp_semaphore();
+	if (err < 0) {
+		SCP_ERR("SCP_sensorHub_get_scp_semaphore fail : %d\n", err);
+		return -2;
+	}
+
+	err = release_scp_semaphore(SEMAPHORE_SENSOR);
+	if (err < 0) {
+		SCP_ERR("release_scp_semaphore fail : %d\n", err);
+		return -3;
+	}
+	pStart = (char *)obj->SCP_sensorFIFO + offsetof(struct sensorFIFO, data);
+	pEnd = pStart + obj->SCP_sensorFIFO->FIFOSize;
+	rp = pStart + obj->SCP_sensorFIFO->rp;
+	wp = pStart + obj->SCP_sensorFIFO->wp;
+
+	if (SCP_TRC_BATCH & atomic_read(&(obj_data->trace))) {
+		SCP_ERR("FIFO pStart = %p, rp = %p, wp = %p, pEnd = %p\n", pStart, rp, wp,
+				pEnd);
+	}
+
+	if (rp < pStart || pEnd <= rp) {
+		SCP_ERR("FIFO rp invalid : %p, %p, %p\n", pStart, pEnd, rp);
+		return -4;
+	}
+
+	if (wp < pStart || pEnd < wp) {
+		SCP_ERR("FIFO wp invalid : %p, %p, %p\n", pStart, pEnd, wp);
+		return -5;
+	}
+
+	if (rp == wp) {
+		SCP_ERR("FIFO empty\n");
+		return -6;
+	}
+
+
+	while (rp != wp) {
+		struct data_unit_t *pdata = (struct data_unit_t *)rp;
+
+		pNext =	rp + SENSOR_DATA_SIZE;
+
+		if (SCP_TRC_BATCH_DETAIL & atomic_read(&(obj_data->trace)))
+			SCP_LOG("rp = %p, sensor_type = %d, pNext = %p\n", rp,
+					pdata->sensor_type, pNext);
+
+		if (pdata->sensor_type < 0 || pdata->sensor_type > 58) {
+			SCP_ERR("Wrong data, sensor_type = %d .\n", pdata->sensor_type);
+			return -7;
+		}
+
+		pt[pdata->sensor_type].total_count++;
+
+		if (pNext < pEnd)
+			rp = pNext;
+		else {
+			offset = (int)(pNext - pEnd);
+			rp = pStart + offset;
+		}
+		(*dataLen)++;
+	}
+	pr_err("liujiang --> %s    7  .\n", __func__);
+	if (SCP_TRC_BATCH & atomic_read(&(obj_data->trace)))
+		SCP_ERR("dataLen = %d, status = %d\n", *dataLen, *status);
+	pStart = (char *)obj->SCP_sensorFIFO + offsetof(struct sensorFIFO, data);
+	pEnd = (char *)pStart + obj->SCP_sensorFIFO->FIFOSize;
+	rp = pStart + (int)obj->SCP_sensorFIFO->rp;
+	wp = pStart + (int)obj->SCP_sensorFIFO->wp;
+	return 0;
+}
+
+
+
+#if 0
 static int SCP_sensorHub_get_fifo_status(int *dataLen, int *status, char *reserved,
 					 struct batch_timestamp_info *p_batch_timestampe_info)
 {
@@ -836,6 +967,8 @@ static int SCP_sensorHub_get_fifo_status(int *dataLen, int *status, char *reserv
 		SCP_ERR("dataLen = %d, status = %d\n", *dataLen, *status);
 	return 0;
 }
+
+#endif
 
 int sensor_enable_to_hub(uint8_t sensorType, int enabledisable)
 {
@@ -1397,7 +1530,8 @@ static int SCP_sensorHub_probe(void)
 	}
 
 	memset(obj, 0, sizeof(struct SCP_sensorHub_data));
-	obj->SCP_sensorFIFO = kzalloc(SCP_SENSOR_HUB_FIFO_SIZE, GFP_KERNEL);
+	/* obj->SCP_sensorFIFO = kzalloc(SCP_SENSOR_HUB_FIFO_SIZE, GFP_KERNEL); */
+	obj->SCP_sensorFIFO = (struct sensorFIFO *)get_reserve_mem_virt(SENS_MEM_ID);
 	if (!obj->SCP_sensorFIFO) {
 		SCP_ERR("Allocate SCP_sensorFIFO fail\n");
 		err = -ENOMEM;
@@ -1459,10 +1593,9 @@ static int SCP_sensorHub_probe(void)
 		SCP_ERR("register SCP sensor hub control data path err\n");
 		goto exit_kfree;
 	}
-
 	SCP_sensorHub_init_flag = 0;
 	SCP_sensorHub_init_client();
-	pr_debug("%s: OK new\n", __func__);
+	SCP_ERR("fwq init done\n");
 
 	return 0;
 
