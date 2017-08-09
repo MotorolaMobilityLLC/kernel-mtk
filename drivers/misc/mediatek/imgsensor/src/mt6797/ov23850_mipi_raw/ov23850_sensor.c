@@ -2849,7 +2849,7 @@ static void ov23850_setting_Deskew(int enable)
 		/*Deskew funciton*/
 		write_cmos_sensor(0x4800, 0x64);//r4800 = r4800 | 60, clk gate en
 		write_cmos_sensor(0x484b, 0x03);//r484b = r484b|02 ; [1] clk start after mipi rst
-		write_cmos_sensor(0x4850, 0x7c);//[6] eof_busy_en
+		write_cmos_sensor(0x4850, 0x5c);//[6] eof_busy_en
 										//[5] one_time_one_lane
 										//[4] r_wait_pa_cal
 										//[3] r_deskew_auto_en
@@ -2911,7 +2911,7 @@ static void capture_setting(kal_uint16 currefps)
     else
 		ov23850_setting_PDAF(PDAF_OFF);
 	//Deskew
-	ov23850_setting_Deskew(0);
+	ov23850_setting_Deskew(1);
 	
 	write_cmos_sensor(0x0100, 0x01);
 }
