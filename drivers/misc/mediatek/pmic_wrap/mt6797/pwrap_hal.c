@@ -1083,7 +1083,7 @@ s32 pwrap_init(void)
 	/* Set SPI_CK_freq = 26MHz. It can marked when use fpga verify, because it has no address on Everest fpga */
 #ifdef CONFIG_MTK_FPGA
 #else
-	__pwrap_spi_clk_set(void)();
+	__pwrap_spi_clk_set();
 #endif
 
 	PWRAPLOG("pwrap_init---- debug2 ok\n");
