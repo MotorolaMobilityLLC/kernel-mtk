@@ -266,9 +266,6 @@ static int erase_chip(struct spi_nor *nor)
 {
 	dev_dbg(nor->dev, " %lldKiB\n", (long long)(nor->mtd.size >> 10));
 
-	/* Send write enable, then erase commands. */
-	write_enable(nor);
-
 	return nor->write_reg(nor, SPINOR_OP_CHIP_ERASE, NULL, 0, 0);
 }
 
@@ -323,6 +320,8 @@ static int spi_nor_erase(struct mtd_info *mtd, struct erase_info *instr)
 
 	/* whole-chip erase? */
 	if (len == mtd->size) {
+		write_enable(nor);
+
 		if (erase_chip(nor)) {
 			ret = -EIO;
 			goto erase_err;
@@ -340,6 +339,8 @@ static int spi_nor_erase(struct mtd_info *mtd, struct erase_info *instr)
 	/* "sector"-at-a-time erase */
 	} else {
 		while (len) {
+			write_enable(nor);
+
 			if (nor->erase(nor, addr)) {
 				ret = -EIO;
 				goto erase_err;
@@ -353,6 +354,8 @@ static int spi_nor_erase(struct mtd_info *mtd, struct erase_info *instr)
 				goto erase_err;
 		}
 	}
+
+	write_disable(nor);
 
 	spi_nor_unlock_and_unprep(nor, SPI_NOR_OPS_ERASE);
 
