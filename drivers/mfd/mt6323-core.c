@@ -24,7 +24,10 @@
 static const struct mfd_cell mt6323_devs[] = {
 	{
 		.name = "mt6323-regulator",
-		.of_compatible = "mediatek,mt6323-regulator",
+		.of_compatible = "mediatek,mt6323-regulator"
+	}, {
+		.name = "mt6323-pmic",
+		.of_compatible = "mediatek,mt6323-pmic"
 	},
 };
 
