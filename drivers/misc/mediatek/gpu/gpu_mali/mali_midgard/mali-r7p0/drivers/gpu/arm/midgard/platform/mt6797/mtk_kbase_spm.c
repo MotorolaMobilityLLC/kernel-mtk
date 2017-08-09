@@ -79,7 +79,7 @@ void mtk_kbase_spm_kick(struct pcm_desc *pd)
 	DVFS_GPU_write32(DVFS_GPU_PCM_IM_PTR, (uint32_t)virt_to_phys(pd->base));
 	DVFS_GPU_write32(DVFS_GPU_PCM_IM_LEN, pd->size);
 	DVFS_GPU_write32(DVFS_GPU_PCM_CON1, SPM_PROJECT_CODE | CON1_PCM_TIMER_EN | CON1_FIX_SC_CK_DIS | CON1_RF_SYNC);
-	DVFS_GPU_write32(DVFS_GPU_PCM_CON1, SPM_PROJECT_CODE | CON1_PCM_TIMER_EN | CON1_FIX_SC_CK_DIS | CON1_MIF_APBEN);
+	DVFS_GPU_write32(DVFS_GPU_PCM_CON1, SPM_PROJECT_CODE | CON1_PCM_TIMER_EN | CON1_FIX_SC_CK_DIS | CON1_MIF_APBEN | CON1_IM_NONRP_EN);
 
 	DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x0081); /* sync register and enable IO output for r0 and r7 */
 
@@ -90,17 +90,25 @@ void mtk_kbase_spm_kick(struct pcm_desc *pd)
 	spm_release();
 }
 
-void mtk_kbase_spm_con(unsigned int val)
+void mtk_kbase_spm_con(unsigned int val, unsigned int mask)
 {
-	DVFS_GPU_write32(SPM_RSV_CON, val);
+	unsigned int reg = DVFS_GPU_read32(SPM_RSV_CON);
+	reg &= ~mask;
+	reg |= (val & mask);
+	DVFS_GPU_write32(SPM_RSV_CON, reg);
 }
 
 void mtk_kbase_spm_wait(void)
 {
 	int retry = 0xffff;
-	while (DVFS_GPU_read32(SPM_RSV_STA) != DVFS_GPU_read32(SPM_RSV_CON) && --retry)
+	while (DVFS_GPU_read32(SPM_RSV_STA) != DVFS_GPU_read32(SPM_RSV_CON) /*&& --retry*/)
 	{
 		udelay(1);
+	}
+
+	if (retry <= 0)
+	{
+		pr_err("dvfs_gpu spm wait timeout! STA:%u CON:%d\n", DVFS_GPU_read32(SPM_RSV_STA), DVFS_GPU_read32(SPM_RSV_CON));
 	}
 }
 
@@ -111,7 +119,7 @@ unsigned int mtk_kbase_spm_get_vol(unsigned int addr)
 	if (volreg < 0xaa)
 		return 603000 + (0x3f & volreg) * 12826;
 	else
-		return volreg;
+		return volreg * 1000;
 }
 
 unsigned int mtk_kbase_spm_get_freq(unsigned int addr)
@@ -119,19 +127,22 @@ unsigned int mtk_kbase_spm_get_freq(unsigned int addr)
 	unsigned int freqreg = DVFS_GPU_read32(addr);
 
 	if (freqreg & 0x80000000)
-		return ((0xffffff & freqreg) * 26) >> (14 + ((0xf000000 & freqreg) >> 24));
+	{
+		unsigned long mfgpll = freqreg & ~0xffe00000;
+		unsigned int post_div = (freqreg >> 24) & 0x3;
+		return (((mfgpll * 100 * 26  >> 14) / (1 << post_div) + 5) / 10) * 100;
+	}
 	else
+	{
 		return freqreg;
+	}
 }
 
-static unsigned int g_dvfs_en = 1;
 void mtk_kbase_spm_set_dvfs_en(unsigned int en)
 {
-	g_dvfs_en = en;
-}
-unsigned int mtk_kbase_spm_get_dvfs_en(void)
-{
-	return g_dvfs_en;
+	spm_acquire();
+	mtk_kbase_spm_con(en ? SPM_RSV_BIT_DVFS_EN : 0, SPM_RSV_BIT_DVFS_EN);
+	spm_release();
 }
 
 static void spm_vf_adjust(unsigned int* pv, unsigned int* pf)
@@ -140,15 +151,6 @@ static void spm_vf_adjust(unsigned int* pv, unsigned int* pf)
 	if (pv && *pv < g_config->min_vol) *pv = g_config->min_vol;
 	if (pf && *pf > g_config->max_freq) *pf = g_config->max_freq;
 	if (pf && *pf < g_config->min_freq) *pf = g_config->min_freq;
-}
-
-unsigned int mtk_kbase_get_voltage_by_freq(unsigned int f)
-{
-	unsigned int vol = 800000;
-	spm_vf_adjust(NULL, &f);
-	vol += (f-154) * g_config->slope / 1000000;
-	spm_vf_adjust(&vol, NULL);
-	return vol;
 }
 
 /* Flow to set ceiling / floor
@@ -168,8 +170,6 @@ void mtk_kbase_spm_set_vol_freq_ceiling(unsigned int v, unsigned int f)
 	DVFS_GPU_write32(SPM_SW_CEIL_F, f);
 	DVFS_GPU_write32(SPM_RSV_CON, en);
 	spm_release();
-
-	mdelay(1);
 }
 void mtk_kbase_spm_set_vol_freq_floor(unsigned int v, unsigned int f)
 {
@@ -184,8 +184,6 @@ void mtk_kbase_spm_set_vol_freq_floor(unsigned int v, unsigned int f)
 	DVFS_GPU_write32(SPM_RSV_CON, en);
 	mtk_kbase_spm_wait();
 	spm_release();
-
-	mdelay(1);
 }
 void mtk_kbase_spm_fix_vol_freq(unsigned int v, unsigned int f)
 {
@@ -202,7 +200,5 @@ void mtk_kbase_spm_fix_vol_freq(unsigned int v, unsigned int f)
 	DVFS_GPU_write32(SPM_SW_FLOOR_F, f);
 	DVFS_GPU_write32(SPM_RSV_CON, en);
 	spm_release();
-
-	mdelay(1);
 }
 

@@ -14,10 +14,7 @@
 #include <ged_dvfs.h>
 #endif
 
-#ifndef MTK_GPU_SPM
 #include <mt_gpufreq.h>
-#endif
-
 #include <fan53555.h>
 
 struct mtk_config *g_config;
@@ -49,27 +46,12 @@ static void mt6797_gpu_set_power(int on)
 {
 	if (on)
 	{
-		/* LDO: VSRAM_GPU */
 		base_write32(g_ldo_base+0xfbc, 0x1ff);
-
-#ifdef MTK_GPU_SPM
-		/* FAN53555: VGPU */
-		fan53555_config_interface(0x0, 0x1, 0x1, 0x7);
-#else
 		mt_gpufreq_voltage_enable_set(1);
-#endif
-		udelay(340);
 	}
 	else
 	{
-#ifdef MTK_GPU_SPM
-		/* FAN53555: VGPU */
-		fan53555_config_interface(0x0, 0x0, 0x1, 0x7);
-#else
 		mt_gpufreq_voltage_enable_set(0);
-#endif
-
-		/* LDO: VSRAM_GPU */
 		base_write32(g_ldo_base+0xfbc, 0x0);
 	}
 }
@@ -113,11 +95,10 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	MFG_write32(0x3f0, 0xffffffff);
 
 #ifdef MTK_GPU_SPM
+	MTKCLK_prepare_enable(clk_gpupm);
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
 	mtk_kbase_spm_acquire();
-	mtk_kbase_spm_con(SPM_RSV_BIT_EN |
-		(mtk_kbase_spm_get_dvfs_en() ? SPM_RSV_BIT_DVFS_EN : 0)
-		);
+	mtk_kbase_spm_con(SPM_RSV_BIT_EN, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
 	mtk_kbase_spm_release();
 #endif
@@ -148,10 +129,11 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 
 #ifdef MTK_GPU_SPM
 	mtk_kbase_spm_acquire();
-	mtk_kbase_spm_con(0);
+	mtk_kbase_spm_con(0, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
 	mtk_kbase_spm_release();
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
+	MTKCLK_disable_unprepare(clk_gpupm);
 #endif
 
 	MTKCLK_disable_unprepare(clk_mfg_main);
@@ -211,14 +193,14 @@ ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *att
 	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ldo 0xfc8 = 0x%08x\n\n", base_read32(g_ldo_base+0xfc8));
 
 	/* dump VGPU */
-	//{
-	//	unsigned char x = 0;
-	//	fan53555_read_interface(0x0, &x, 0xff, 0x0);
-	//	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "fan53555 0x0 = 0x%x\n", x);
-	//	fan53555_read_interface(0x1, &x, 0xff, 0x0);
-	//	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "fan53555 0x1 = 0x%x\n", x);
-	//	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "\n");
-	//}
+	{
+		unsigned char x = 0;
+		fan53555_read_interface(0x0, &x, 0xff, 0x0);
+		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "fan53555 0x0 = 0x%x\n", x);
+		fan53555_read_interface(0x1, &x, 0xff, 0x0);
+		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "fan53555 0x1 = 0x%x\n", x);
+		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "\n");
+	}
 
 	/* dump DFP registers */
 	//ret += scnprintf(buf + ret, PAGE_SIZE - ret, "DFP_ctrl = %u\n", DFP_read32(DFP_CTRL));
@@ -228,16 +210,16 @@ ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *att
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
 
 	i = mtk_kbase_spm_get_vol(SPM_SW_CUR_V);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "current voltage: %u.%06uV\n", i / 1000000, i % 1000000);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "current freqency: %uMHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_CUR_F));
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "current voltage: %u.%06u V\n", i / 1000000, i % 1000000);
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "current freqency: %u kHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_CUR_F));
 
 	i = mtk_kbase_spm_get_vol(SPM_SW_CEIL_V);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ceiling voltage: %u.%06uV\n", i / 1000000, i % 1000000);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "cceiling freqency: %uMHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_CEIL_F));
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "ceiling voltage: %u.%06u V\n", i / 1000000, i % 1000000);
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "cceiling freqency: %u kHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_CEIL_F));
 
 	i = mtk_kbase_spm_get_vol(SPM_SW_FLOOR_V);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "floor voltage: %u.%06uV\n", i / 1000000, i % 1000000);
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "floor freqency: %uMHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_FLOOR_F));
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "floor voltage: %u.%06u V\n", i / 1000000, i % 1000000);
+	ret += scnprintf(buf + ret, PAGE_SIZE - ret, "floor freqency: %u kHz\n\n", mtk_kbase_spm_get_freq(SPM_SW_FLOOR_F));
 
 	for (k = 0; k < ARRAY_SIZE(dvfs_gpu_bases); ++k)
 	{
@@ -303,7 +285,7 @@ ssize_t mtk_kbase_dvfs_gpu_set(struct device *dev, struct device_attribute *attr
 		int items = sscanf(buf, "ceiling_fv %u %u", &f, &v);
 		if (items == 2 && v > 0 && f > 0)
 		{
-			mtk_kbase_spm_set_vol_freq_ceiling(v*1000, f/1000);
+			mtk_kbase_spm_set_vol_freq_ceiling(v, f);
 		}
 	}
 	else if (strncmp("floor_fv", buf, MIN(8, count)) == 0)
@@ -312,7 +294,7 @@ ssize_t mtk_kbase_dvfs_gpu_set(struct device *dev, struct device_attribute *attr
 		int items = sscanf(buf, "floor_fv %u %u", &f, &v);
 		if (items == 2 && v > 0 && f > 0)
 		{
-			mtk_kbase_spm_set_vol_freq_floor(v*1000, f/1000);
+			mtk_kbase_spm_set_vol_freq_floor(v, f);
 		}
 	}
 	else if (strncmp("fix_fv", buf, MIN(6, count)) == 0)
@@ -321,7 +303,7 @@ ssize_t mtk_kbase_dvfs_gpu_set(struct device *dev, struct device_attribute *attr
 		int items = sscanf(buf, "fix_fv %u %u", &f, &v);
 		if (items == 2 && v > 0 && f > 0)
 		{
-			mtk_kbase_spm_fix_vol_freq(v*1000, f/1000);
+			mtk_kbase_spm_fix_vol_freq(v, f);
 		}
 	}
 
@@ -381,11 +363,10 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	dev_err(kbdev->dev, "xxxx clk_ap_dmau:%p\n", config->clk_ap_dma);
 #endif
 
-	config->max_vol = 1125000;
-	config->max_freq = 700;
-	config->min_vol = 800000;
-	config->min_freq = 154;
-	config->slope = 595;
+	config->max_vol = 1125;
+	config->max_freq = 700000;
+	config->min_vol = 800;
+	config->min_freq = 154500;
 
 	g_config = kbdev->mtk_config = config;
 
@@ -401,9 +382,17 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
 
 	mtk_kbase_spm_kick(&dvfs_gpu_pcm);
+	mtk_kbase_spm_set_dvfs_en(1);
+
+	DVFS_GPU_write32(SPM_GPU_POWER, 0x1);
 
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
+	MTKCLK_disable_unprepare(clk_gpupm);
 #endif
+
+	/* RG_GPULDO_RSV_H_0-8 = 0x8 */
+	base_write32(g_ldo_base+0xfd8, 0x88888888);
+	base_write32(g_ldo_base+0xfe4, 0x00000008);
 
 	base_write32(g_ldo_base+0xfc0, 0x0f0f0f0f);
 	base_write32(g_ldo_base+0xfc4, 0x0f0f0f0f);

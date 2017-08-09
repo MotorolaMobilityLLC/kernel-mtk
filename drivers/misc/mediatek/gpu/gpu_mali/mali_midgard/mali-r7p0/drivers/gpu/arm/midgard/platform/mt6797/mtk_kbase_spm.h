@@ -47,7 +47,6 @@ struct mtk_config {
 	unsigned int max_freq;
 	unsigned int min_vol;
 	unsigned int min_freq;
-	unsigned int slope;
 };
 
 #define MFG_OCP_DCM_CON             0x460
@@ -75,6 +74,9 @@ struct mtk_config {
 #define M0_REC0          0x300
 #define M1_REC0          0x350
 #define M2_REC0          0x3A0
+
+#define SPM_GPU_POWER    (0x3A0 + 4 * 9)
+#define SPM_BYPASS_DFP   (0x3A0 + 4 * 10)
 
 #define SPM_SW_FLAG      0x600
 #define SPM_SW_DEBUG     0x604
@@ -163,7 +165,7 @@ void mtk_kbase_spm_kick(struct pcm_desc *pd);
 void mtk_kbase_spm_acquire(void);
 void mtk_kbase_spm_release(void);
 
-void mtk_kbase_spm_con(unsigned int val);
+void mtk_kbase_spm_con(unsigned int val, unsigned int mask);
 void mtk_kbase_spm_wait(void);
 
 unsigned int mtk_kbase_spm_get_vol(unsigned int addr); /* unit uV, 1e6 = 1 V */
