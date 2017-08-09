@@ -398,7 +398,7 @@ static void smi_prepare_clk(struct clk *smi_clk, char *name)
 			SMIMSG("clk_prepare return error %d, %s\n", ret, name);
 		} else {
 			SMIDBG(1, "clk:%s prepare done.\n", name);
-			SMIDBG(1, "smi_prepare_count = %d", ++smi_prepare_count);
+			SMIDBG(1, "smi_prepare_count=%d\n", ++smi_prepare_count);
 		}
 	} else {
 		SMIMSG("clk_prepare error, smi_clk can't be NULL, %s\n", name);
@@ -415,7 +415,7 @@ static void smi_enable_clk(struct clk *smi_clk, char *name)
 			SMIMSG("clk_enable return error %d, %s\n", ret, name);
 		} else {
 			SMIDBG(1, "clk:%s enable done.\n", name);
-			SMIDBG(1, "smi_enable_count = %d", ++smi_enable_count);
+			SMIDBG(1, "smi_enable_count=%d\n", ++smi_enable_count);
 		}
 	} else {
 		SMIMSG("clk_enable error, smi_clk can't be NULL, %s\n", name);
@@ -427,7 +427,7 @@ static void smi_unprepare_clk(struct clk *smi_clk, char *name)
 	if (smi_clk != NULL) {
 		clk_unprepare(smi_clk);
 		SMIDBG(1, "clk:%s unprepare done.\n", name);
-		SMIDBG(1, "smi_prepare_count = %d", --smi_prepare_count);
+		SMIDBG(1, "smi_prepare_count=%d\n", --smi_prepare_count);
 	} else {
 		SMIMSG("smi_unprepare error, smi_clk can't be NULL, %s\n", name);
 	}
@@ -438,7 +438,7 @@ static void smi_disable_clk(struct clk *smi_clk, char *name)
 	if (smi_clk != NULL) {
 		clk_disable(smi_clk);
 		SMIDBG(1, "clk:%s disable done.\n", name);
-		SMIDBG(1, "smi_enable_count = %d\n", --smi_enable_count);
+		SMIDBG(1, "smi_enable_count=%d\n", --smi_enable_count);
 	} else {
 		SMIMSG("smi_disable error, smi_clk can't be NULL, %s\n", name);
 	}
@@ -865,6 +865,7 @@ static void backup_larb_smi(int index)
 static void restore_larb_smi(int index)
 {
 	int port_index = 0;
+	int i = 0;
 	unsigned short int *backup_ptr = NULL;
 	unsigned long larb_base = 0;
 	unsigned long larb_offset = 0x200;
@@ -892,6 +893,12 @@ static void restore_larb_smi(int index)
 		M4U_WriteReg32(larb_base, larb_offset, backup_value);
 		backup_ptr++;
 		larb_offset += 4;
+	}
+
+	/* set grouping */
+	if (smi_restore_num[index]) {
+		for (i = 0 ; i < smi_restore_num[index]; i++)
+			M4U_WriteReg32(larb_base, smi_larb_restore[index][i].offset, smi_larb_restore[index][i].value);
 	}
 
 	/* we do not backup 0x20 because it is a fixed setting */
@@ -1218,7 +1225,6 @@ void smi_bus_optimization(int optimization_larbs, int smi_profile)
 		}
 	}
 
-
 	if (enable_bw_optimization) {
 		SMIDBG(1, "dump register before setting\n");
 		if (smi_debug_level)
@@ -1231,6 +1237,7 @@ void smi_bus_optimization(int optimization_larbs, int smi_profile)
 		if (smi_debug_level)
 			smi_dumpDebugMsg();
 	}
+
 
 	for (i = 0; i < SMI_LARB_NR; i++) {
 		int larb_mask = 1 << i;
@@ -1521,8 +1528,12 @@ static long smi_ioctl(struct file *pFile, unsigned int cmd, unsigned long param)
 			SMIDBG(1, "after smi_bwc_config, smi_prepare_count=%d, smi_enable_count=%d\n",
 				smi_prepare_count, smi_enable_count);
 
-			if (smi_prepare_count || smi_enable_count)
-				SMIERR("clk status abnormal!!prepare_count or enable_count not equal to 0\n");
+			if (smi_prepare_count || smi_enable_count) {
+				if (smi_debug_level > 99)
+					SMIERR("clk status abnormal!!prepare or enable ref count is not 0\n");
+				else
+					SMIDBG(1, "clk status abnormal!!prepare or enable ref count is not 0\n");
+			}
 
 			break;
 		}
@@ -1873,8 +1884,12 @@ static int smi_probe(struct platform_device *pdev)
 	SMIDBG(1, "after smi_common_init, smi_prepare_count=%d, smi_enable_count=%d\n",
 	 smi_prepare_count, smi_enable_count);
 
-	if (smi_prepare_count || smi_enable_count)
-		SMIERR("clk status abnormal!!prepare_count or enable_count not equal to 0\n");
+	if (smi_prepare_count || smi_enable_count) {
+		if (smi_debug_level > 99)
+			SMIERR("clk status abnormal!!prepare or enable ref count is not 0\n");
+		else
+			SMIDBG(1, "clk status abnormal!!prepare or enable ref count is not 0\n");
+	}
 
 	smi_debug_level = prev_smi_debug_level;
 	return 0;

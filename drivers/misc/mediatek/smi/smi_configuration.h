@@ -101,5 +101,6 @@ extern int smi_larb_debug_offset_num[SMI_LARB_NR];
 extern unsigned long *smi_larb_debug_offset[SMI_LARB_NR];
 extern struct SMI_SETTING_VALUE smi_vc_setting[SMI_VC_SETTING_NUM];
 extern struct SMI_CLK_INFO smi_clk_info[SMI_CLK_CNT];
-
+extern struct SMI_SETTING_VALUE *smi_larb_restore[SMI_LARB_NR];
+extern unsigned int smi_restore_num[SMI_LARB_NR];
 #endif
