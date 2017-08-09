@@ -109,6 +109,7 @@ typedef struct imgsensor_info_struct {
 
     kal_uint8  mipi_lane_num;        //mipi lane num
     kal_uint8  i2c_addr_table[5];    //record sensor support all write id addr, only supprt 4must end with 0xff
+    kal_uint32  i2c_speed;
 } imgsensor_info_struct;
 
 /* SENSOR READ/WRITE ID */
@@ -118,7 +119,11 @@ typedef struct imgsensor_info_struct {
 //#define IMGSENSOR_READ_ID_2  (0x21)
 
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
+extern int iReadRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId, u16 timing);
+
 extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
+extern int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timing);
+
 //for s5k2x8 pdaf
 extern bool s5k2x8_read_otp_pdaf_data( kal_uint16 addr, BYTE* data, kal_uint32 size);
 
