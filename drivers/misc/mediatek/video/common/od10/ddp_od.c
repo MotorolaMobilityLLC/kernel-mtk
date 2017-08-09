@@ -203,8 +203,13 @@ static void _od_reg_init(void *cmdq)
 
 static void od_refresh_screen(void)
 {
+#if defined(CONFIG_ARCH_ELBRUS)
+	return;
+#else
+
 	if (g_od_ddp_notify != NULL)
 		g_od_ddp_notify(DISP_MODULE_OD, DISP_PATH_EVENT_OD_TRIGGER);
+#endif
 }
 
 
@@ -698,7 +703,7 @@ void disp_od_set_smi_clock(int enabled)
 
 	ODDBG(OD_LOG_ALWAYS, "disp_od_set_smi_clock(%d), od_enabled=%d", enabled, g_od_is_enabled);
 
-#if defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_ARCH_MT6757) || defined(CONFIG_ARCH_ELBRUS)
 	larb_clk = DISP0_SMI_LARB4;
 #else
 	larb_clk = DISP0_SMI_LARB5;
