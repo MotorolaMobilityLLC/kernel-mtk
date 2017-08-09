@@ -376,7 +376,14 @@ struct kbase_device *MaliGetMaliData(void)
 /// MTK_GED {
 void mtk_gpu_dvfs_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int* pbCommited)
 {
-	int ret = mtk_set_mt_gpufreq_target(ui32NewFreqID);
+	int ret;
+#ifdef LIMIT_DVFS_520
+	if (ui32NewFreqID <= 1)
+	{
+		ui32NewFreqID = 2;
+	}
+#endif
+	ret = mtk_set_mt_gpufreq_target(ui32NewFreqID);
 	if (pbCommited) {
 		if (0 == ret) {
 			*pbCommited = true;
