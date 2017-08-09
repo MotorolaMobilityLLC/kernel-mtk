@@ -1,5 +1,7 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/irq/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6755/
+
 
 obj-y += mt_pm_init.o
 obj-y += mt_sleep.o
