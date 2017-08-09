@@ -63,16 +63,16 @@ static void status_msg_handler(struct ccci_port *port, struct ccci_request *req)
 
 #if defined(FEATURE_GET_MD_GPIO_NUM)
 static struct gpio_item gpio_mapping_table[] = {
-	{"GPIO_FDD_BAND_Support_Detection_1", "GPIO_FDD_BAND_SUPPORT_DETECT_1ST_PIN",},
-	{"GPIO_FDD_BAND_Support_Detection_2", "GPIO_FDD_BAND_SUPPORT_DETECT_2ND_PIN",},
-	{"GPIO_FDD_BAND_Support_Detection_3", "GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN",},
-	{"GPIO_FDD_BAND_Support_Detection_4", "GPIO_FDD_BAND_SUPPORT_DETECT_4TH_PIN",},
-	{"GPIO_FDD_BAND_Support_Detection_5", "GPIO_FDD_BAND_SUPPORT_DETECT_5TH_PIN",},
-	{"GPIO_FDD_BAND_Support_Detection_6", "GPIO_FDD_BAND_SUPPORT_DETECT_6TH_PIN",},
-	{"GPIO_FDD_BAND_Support_Detection_7", "GPIO_FDD_BAND_SUPPORT_DETECT_7TH_PIN",},
-	{"GPIO_FDD_BAND_Support_Detection_8", "GPIO_FDD_BAND_SUPPORT_DETECT_8TH_PIN",},
-	{"GPIO_FDD_BAND_Support_Detection_9", "GPIO_FDD_BAND_SUPPORT_DETECT_9TH_PIN",},
-	{"GPIO_FDD_BAND_Support_Detection_A", "GPIO_FDD_BAND_SUPPORT_DETECT_ATH_PIN",},
+	{"GPIO_FDD_Band_Support_Detection_1", "GPIO_FDD_BAND_SUPPORT_DETECT_1ST_PIN",},
+	{"GPIO_FDD_Band_Support_Detection_2", "GPIO_FDD_BAND_SUPPORT_DETECT_2ND_PIN",},
+	{"GPIO_FDD_Band_Support_Detection_3", "GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN",},
+	{"GPIO_FDD_Band_Support_Detection_4", "GPIO_FDD_BAND_SUPPORT_DETECT_4TH_PIN",},
+	{"GPIO_FDD_Band_Support_Detection_5", "GPIO_FDD_BAND_SUPPORT_DETECT_5TH_PIN",},
+	{"GPIO_FDD_Band_Support_Detection_6", "GPIO_FDD_BAND_SUPPORT_DETECT_6TH_PIN",},
+	{"GPIO_FDD_Band_Support_Detection_7", "GPIO_FDD_BAND_SUPPORT_DETECT_7TH_PIN",},
+	{"GPIO_FDD_Band_Support_Detection_8", "GPIO_FDD_BAND_SUPPORT_DETECT_8TH_PIN",},
+	{"GPIO_FDD_Band_Support_Detection_9", "GPIO_FDD_BAND_SUPPORT_DETECT_9TH_PIN",},
+	{"GPIO_FDD_Band_Support_Detection_A", "GPIO_FDD_BAND_SUPPORT_DETECT_ATH_PIN",},
 };
 #endif
 
@@ -791,10 +791,11 @@ static int get_md_gpio_info(char *gpio_name, unsigned int len)
 		return gpio_id;
 	}
 
-	CCCI_DBG_MSG(0, RPC, "serching %s in device tree\n", gpio_name);
+	CCCI_INF_MSG(0, RPC, "looking for %s id, len %d\n", gpio_name, len);
 	for (i = 0; i < ARRAY_SIZE(gpio_mapping_table); i++) {
+		CCCI_DBG_MSG(0, RPC, "compare with %s\n", gpio_mapping_table[i].gpio_name_from_md);
 		if (!strncmp(gpio_name, gpio_mapping_table[i].gpio_name_from_md, len)) {
-			CCCI_DBG_MSG(0, RPC, "%s found in device tree\n", gpio_mapping_table[i].gpio_name_from_dts);
+			CCCI_INF_MSG(0, RPC, "searching %s in device tree\n", gpio_mapping_table[i].gpio_name_from_dts);
 			of_property_read_u32(node, gpio_mapping_table[i].gpio_name_from_dts, &gpio_id);
 			break;
 		}
@@ -804,8 +805,10 @@ static int get_md_gpio_info(char *gpio_name, unsigned int len)
 	   it will not be listed in gpio_mapping_table,
 	   so try read directly from device tree here.
 	*/
-	if (gpio_id < 0)
+	if (gpio_id < 0) {
+		CCCI_INF_MSG(0, RPC, "try directly get id from device tree\n");
 		of_property_read_u32(node, gpio_name, &gpio_id);
+	}
 
 	CCCI_INF_MSG(0, RPC, "%s id %d\n", gpio_name, gpio_id);
 	return gpio_id;
