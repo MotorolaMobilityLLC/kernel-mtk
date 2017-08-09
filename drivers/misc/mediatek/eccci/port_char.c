@@ -496,7 +496,7 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 				port_ipc_tx_wait(port);
 #endif
 		}
-		return ret < 0 ? ret : actual_count;
+		return actual_count;
 
  err_out:
 		ccci_free_req(req);

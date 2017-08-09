@@ -853,7 +853,7 @@ static inline void ccci_reset_seq_num(struct ccci_modem *md)
 static inline void ccci_inc_tx_seq_num(struct ccci_modem *md, struct ccci_header *ccci_h)
 {
 #ifdef FEATURE_SEQ_CHECK_EN
-	if (ccci_h->channel >= sizeof(md->seq_nums[OUT]) || ccci_h->channel < 0) {
+	if (ccci_h->channel >= ARRAY_SIZE(md->seq_nums[OUT]) || ccci_h->channel < 0) {
 		CCCI_INF_MSG(md->index, CORE, "ignore seq inc on channel %x\n", *(((u32 *) ccci_h) + 2));
 		return;		/* for force assert channel, etc. */
 	}

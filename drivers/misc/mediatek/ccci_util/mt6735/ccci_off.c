@@ -88,8 +88,8 @@ static void internal_md_power_down(void)
 	pr_debug("[ccci-off]Call end md_power_on() ret=%d\n", ret);
 #else
 	pr_debug("[ccci-off]Call start clk_prepare_enable()\n");
-	clk_prepare_enable(clk_scp_sys_md1_main);
-	pr_debug("[ccci-off]Call end clk_prepare_enable()\n");
+	ret = clk_prepare_enable(clk_scp_sys_md1_main);
+	pr_debug("[ccci-off]Call end clk_prepare_enable()ret=%d\n", ret);
 #endif
 	pr_debug("[ccci-off]0.power on MD_INFRA/MODEM_TOP ret=%d\n", ret);
 	if (ret)

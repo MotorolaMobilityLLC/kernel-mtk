@@ -889,23 +889,8 @@ static int get_eint_attr_val(struct device_node *node, int index)
 	int ret = 0, type;
 
 	for (type = 0; type < SIM_HOT_PLUG_EINT_MAX; type++) {
-		switch (type) {
-		case SIM_HOT_PLUG_EINT_NUMBER:
-		case SIM_HOT_PLUG_EINT_DEBOUNCETIME:
-		case SIM_HOT_PLUG_EINT_POLARITY:
-		case SIM_HOT_PLUG_EINT_SENSITIVITY:
-		case SIM_HOT_PLUG_EINT_SOCKETTYPE:
-		case SIM_HOT_PLUG_EINT_DEDICATEDEN:
-		case SIM_HOT_PLUG_EINT_SRCPIN:
-			ret =
-			    of_property_read_u32_index(node, md_eint_struct[type].property, md_eint_struct[type].index,
-						       &value);
-			break;
-		default:
-			/* CCCI_ERR_MSG(-1, TAG, "maybe you add one type, but no process it!\n"); */
-			ret = -1;
-			break;
-		}
+		ret = of_property_read_u32_index(node, md_eint_struct[type].property,
+			md_eint_struct[type].index, &value);
 		if (!ret) {
 			/* special case: polarity's position == sensitivity's start[ */
 			if (type == SIM_HOT_PLUG_EINT_POLARITY) {

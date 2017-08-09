@@ -256,6 +256,7 @@ int gf_port_list_unreg[GF_PORT_LIST_MAX];
 static int port_ipc_parse_gf_port(GF_IP_TYPE ip_type, GF_PROTOCOL_TYPE prot_type, struct garbage_filter_item *list,
 				  int number)
 {
+#define PORT_IPC_BUFFER_SIZE 256
 	struct file *filp = NULL;
 	static const char * const file_list[] = {
 		"/proc/net/tcp",
@@ -267,7 +268,7 @@ static int port_ipc_parse_gf_port(GF_IP_TYPE ip_type, GF_PROTOCOL_TYPE prot_type
 	int port_number = -1;
 	char *buffer;
 
-	buffer = kmalloc(256, GFP_KERNEL);
+	buffer = kmalloc(PORT_IPC_BUFFER_SIZE, GFP_KERNEL);
 	if (buffer == NULL) {
 		CCCI_INF_MSG(-1, IPC, "%s kmalloc 256 failed\n", __func__);
 		return -1;
@@ -287,7 +288,7 @@ static int port_ipc_parse_gf_port(GF_IP_TYPE ip_type, GF_PROTOCOL_TYPE prot_type
 
 	if (!IS_ERR(filp)) {
 		port_number = 0;
-		kernel_read(filp, 0, buffer, sizeof(buffer));
+		kernel_read(filp, 0, buffer, PORT_IPC_BUFFER_SIZE);
 		/* TODO: parse file */
 		if (prot_type == GF_TCP && ip_type == GF_IPV4) {
 			int i;

@@ -284,8 +284,8 @@ int md_cd_power_on(struct ccci_modem *md)
 		CCCI_INF_MSG(md->index, TAG, "Call end md_power_on() ret=%d\n", ret);
 #else
 		CCCI_INF_MSG(md->index, TAG, "Call start clk_prepare_enable()\n");
-		clk_prepare_enable(clk_scp_sys_md1_main);
-		CCCI_INF_MSG(md->index, TAG, "Call end clk_prepare_enable()\n");
+		ret = clk_prepare_enable(clk_scp_sys_md1_main);
+		CCCI_INF_MSG(md->index, TAG, "Call end clk_prepare_enable()ret=%d\n", ret);
 #endif
 
 		kicker_pbm_by_md(MD1, true);
@@ -295,8 +295,6 @@ int md_cd_power_on(struct ccci_modem *md)
 #ifdef FEATURE_RF_CLK_BUF
 	mutex_unlock(&clk_buf_ctrl_lock);	/* fixme,clkbuf, ->delete */
 #endif
-	if (ret)
-		return ret;
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 	/* notify NFC */
@@ -305,7 +303,7 @@ int md_cd_power_on(struct ccci_modem *md)
 
 	/* disable MD WDT */
 	cldma_write32(md_ctrl->md_rgu_base, WDT_MD_MODE, WDT_MD_MODE_KEY);
-	return 0;
+	return ret;
 }
 
 int md_cd_bootup_cleanup(struct ccci_modem *md, int success)

@@ -472,7 +472,7 @@ int ccci_reserve_mem_of_init(struct reserved_mem *rmem)
 			resv_smem_addr = rptr;
 			resv_smem_size = rsize;
 		} else
-			CCCI_UTIL_INF_MSG("memory reserve key %s not support\n", uname);
+			CCCI_UTIL_INF_MSG("memory reserve key %s not support\n", rmem->name);
 
 		return 0;
 	}

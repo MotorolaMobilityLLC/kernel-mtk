@@ -2546,7 +2546,6 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
 	unsigned long flags;
 	unsigned int tx_bytes = 0;
 	DATA_POLICY policy;
-
 #ifdef CLDMA_TRACE
 	static unsigned long long last_leave_time[CLDMA_TXQ_NUM] = { 0 };
 	static unsigned int sample_time[CLDMA_TXQ_NUM] = { 0 };
@@ -2563,6 +2562,7 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
 		tx_interal = total_time - last_leave_time[qno];
 #endif
 
+	memset(&ccci_h, 0, sizeof(struct ccci_header));
 #if TRAFFIC_MONITOR_INTERVAL
 	if ((jiffies - md_ctrl->traffic_stamp) / HZ >= TRAFFIC_MONITOR_INTERVAL) {
 		md_ctrl->traffic_stamp = jiffies;
@@ -3232,7 +3232,8 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 		if (length == -1) {
 			cldma_dump_packet_history(md);
 			cldma_dump_all_gpd(md);
-		} else {
+		}
+		if (length >= 0 && length < CLDMA_TXQ_NUM) {
 			cldma_dump_queue_history(md, length);
 			cldma_dump_gpd_queue(md, length);
 		}

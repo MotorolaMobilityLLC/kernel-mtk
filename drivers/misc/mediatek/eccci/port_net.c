@@ -462,6 +462,7 @@ static const struct net_device_ops ccmni_netdev_ops = {
 	.ndo_get_stats = ccmni_get_stats,
 };
 
+#ifndef CCMNI_U
 static int port_net_poll(struct napi_struct *napi, int budget)
 {
 	struct ccci_port *port = *((struct ccci_port **)netdev_priv(napi->dev));
@@ -478,12 +479,21 @@ static void napi_polling_timer_func(unsigned long data)
 	CCCI_ERR_MSG(port->modem->index, NET, "lost NAPI polling on %s\n", port->name);
 }
 
+static void ccmni_make_etherframe(void *_eth_hdr, unsigned char *mac_addr, unsigned int packet_type)
+{
+	struct ethhdr *eth_hdr = _eth_hdr;
+
+	memcpy(eth_hdr->h_dest, mac_addr, sizeof(eth_hdr->h_dest));
+	memset(eth_hdr->h_source, 0, sizeof(eth_hdr->h_source));
+	if (packet_type == 0x60)
+		eth_hdr->h_proto = cpu_to_be16(ETH_P_IPV6);
+	else
+		eth_hdr->h_proto = cpu_to_be16(ETH_P_IP);
+}
+#endif
+
 static int port_net_init(struct ccci_port *port)
 {
-	struct ccci_port **temp;
-	struct net_device *dev = NULL;
-	struct netdev_entity *nent = NULL;
-
 #ifdef CCMNI_U
 	if (port->rx_ch == CCCI_CCMNI1_RX) {
 		eccci_ccmni_ops.md_ability |= port->modem->capability;
@@ -493,7 +503,10 @@ static int port_net_init(struct ccci_port *port)
 			ccmni_ops.init(port->modem->index, &eccci_cc3mni_ops);
 	}
 	return 0;
-#endif
+#else
+	struct ccci_port **temp;
+	struct net_device *dev = NULL;
+	struct netdev_entity *nent = NULL;
 
 	CCCI_DBG_MSG(port->modem->index, NET, "network port is initializing\n");
 	dev = alloc_etherdev(sizeof(struct ccci_port *));
@@ -531,32 +544,13 @@ static int port_net_init(struct ccci_port *port)
 	CCCI_DBG_MSG(port->modem->index, NET, "network device %s hard_header_len=%d\n", dev->name,
 		     dev->hard_header_len);
 	return 0;
-}
-
-static void ccmni_make_etherframe(void *_eth_hdr, unsigned char *mac_addr, unsigned int packet_type)
-{
-	struct ethhdr *eth_hdr = _eth_hdr;
-
-	memcpy(eth_hdr->h_dest, mac_addr, sizeof(eth_hdr->h_dest));
-	memset(eth_hdr->h_source, 0, sizeof(eth_hdr->h_source));
-	if (packet_type == 0x60)
-		eth_hdr->h_proto = cpu_to_be16(ETH_P_IPV6);
-	else
-		eth_hdr->h_proto = cpu_to_be16(ETH_P_IP);
+#endif
 }
 
 static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 {
-	struct netdev_entity *nent = (struct netdev_entity *)port->private_data;
-	struct ccci_modem *md = port->modem;
-	struct net_device *dev = nent->ndev;
-	unsigned int packet_type;
-	int skb_len = skb->len;
-#if defined(CCMNI_U) || !defined(FEATURE_SEQ_CHECK_EN)
-	struct ccci_header *ccci_h = (struct ccci_header *)skb->data;
-#endif
-
 #ifdef CCMNI_U
+	struct ccci_header *ccci_h = (struct ccci_header *)skb->data;
 #ifdef PORT_NET_TRACE
 	unsigned long long rx_cb_time;
 	unsigned long long total_time;
@@ -564,19 +558,28 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 	total_time = sched_clock();
 #endif
 	skb_pull(skb, sizeof(struct ccci_header));
-	CCCI_DBG_MSG(md->index, NET, "[RX]: 0x%08X, 0x%08X, %08X, 0x%08X\n",
+	CCCI_DBG_MSG(port->modem->index, NET, "[RX]: 0x%08X, 0x%08X, %08X, 0x%08X\n",
 		     ccci_h->data[0], ccci_h->data[1], ccci_h->channel, ccci_h->reserved);
 #ifdef PORT_NET_TRACE
 	rx_cb_time = sched_clock();
 #endif
-	ccmni_ops.rx_callback(md->index, ccci_h->channel, skb, NULL);
+	ccmni_ops.rx_callback(port->modem->index, ccci_h->channel, skb, NULL);
 #ifdef PORT_NET_TRACE
 	rx_cb_time = sched_clock() - rx_cb_time;
 	total_time = sched_clock() - total_time;
-	trace_port_net_rx(md->index, PORT_RXQ_INDEX(port), port->rx_ch, (unsigned int)rx_cb_time,
+	trace_port_net_rx(port->modem->index, PORT_RXQ_INDEX(port), port->rx_ch, (unsigned int)rx_cb_time,
 			  (unsigned int)total_time);
 #endif
 	return 0;
+#else
+
+	struct netdev_entity *nent = (struct netdev_entity *)port->private_data;
+	struct ccci_modem *md = port->modem;
+	struct net_device *dev = nent->ndev;
+	unsigned int packet_type;
+	int skb_len = skb->len;
+#if !defined(FEATURE_SEQ_CHECK_EN)
+	struct ccci_header *ccci_h = (struct ccci_header *)skb->data;
 #endif
 
 #ifdef PORT_NET_TRACE
@@ -646,13 +649,11 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 			  (unsigned int)total_time);
 #endif
 	return 0;
+#endif
 }
 
 static void port_net_md_state_notice(struct ccci_port *port, MD_STATE state)
 {
-	struct netdev_entity *nent = (struct netdev_entity *)port->private_data;
-	struct net_device *dev = nent->ndev;
-
 #ifdef CCMNI_U
 	ccmni_ops.md_state_callback(port->modem->index, port->rx_ch, state);
 	switch (state) {
@@ -665,11 +666,11 @@ static void port_net_md_state_notice(struct ccci_port *port, MD_STATE state)
 	default:
 		break;
 	};
-	return;
-#endif
+#else
+	struct netdev_entity *nent = (struct netdev_entity *)port->private_data;
+	struct net_device *dev = nent->ndev;
 
 	/* CCCI_INF_MSG(port->modem->index, NET, "port_net_md_state_notice: %s, md_sta=%d\n", port->name, state); */
-
 	switch (state) {
 	case RX_IRQ:
 		mod_timer(&nent->polling_timer, jiffies + HZ);
@@ -699,6 +700,7 @@ static void port_net_md_state_notice(struct ccci_port *port, MD_STATE state)
 	default:
 		break;
 	};
+#endif
 }
 
 void port_net_md_dump_info(struct ccci_port *port, unsigned int flag)

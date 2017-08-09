@@ -938,10 +938,6 @@ static int find_img_to_open(int md_id, MD_IMG_TYPE img_type, char active_file_pa
 		}
 	}
 
-	if (i > MAX_IMG_NUM) {
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Find ubin img @default fail\n");
-		return -CCCI_ERR_LOAD_IMG_NOT_FOUND;
-	}
 	active_post_fix[0] = '\0';
 	CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "No Image file found\n");
 	{
@@ -998,7 +994,6 @@ static int load_std_firmware(int md_id, struct file *filp, struct ccci_image_inf
 	set_fs(KERNEL_DS);
 
 	load_addr = img->address;
-
 	if (img->offset != 0)
 		filp->f_pos = img->offset;
 	else {
@@ -1015,7 +1010,7 @@ static int load_std_firmware(int md_id, struct file *filp, struct ccci_image_inf
 		while (1) {
 			/* Map 1M memory */
 			start = ioremap_nocache((load_addr + read_size), size_per_read);
-			if (start <= 0) {
+			if (start == NULL) {
 				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image ioremap fail: %p\n", start);
 				set_fs(curr_fs);
 				return -CCCI_ERR_LOAD_IMG_NOMEM;
@@ -1048,7 +1043,7 @@ static int load_std_firmware(int md_id, struct file *filp, struct ccci_image_inf
 		while (1) {
 			/* Map 1M memory */
 			start = ioremap_nocache((load_addr + read_size), size_per_read);
-			if (start <= 0) {
+			if (start == NULL) {
 				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image ioremap fail: %p\n", start);
 				set_fs(curr_fs);
 				return -CCCI_ERR_LOAD_IMG_NOMEM;
