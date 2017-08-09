@@ -41,6 +41,7 @@
 #include <linux/swap.h>
 #include <linux/rcupdate.h>
 #include <linux/notifier.h>
+#include <linux/freezer.h>
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
 #include <mt-plat/aee.h>
@@ -132,6 +133,11 @@ task_notify_func(struct notifier_block *self, unsigned long val, void *data)
 static unsigned long lowmem_count(struct shrinker *s,
 				  struct shrink_control *sc)
 {
+#ifdef CONFIG_FREEZER
+	/* Do not allow LMK to work when system is freezing */
+	if (pm_freezing)
+		return 0;
+#endif
 	return global_page_state(NR_ACTIVE_ANON) +
 		global_page_state(NR_ACTIVE_FILE) +
 		global_page_state(NR_INACTIVE_ANON) +
