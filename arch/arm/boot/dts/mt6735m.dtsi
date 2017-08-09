@@ -1732,6 +1732,11 @@
 									<0x08000008 0x0004>,
 									<0x0800000C 0x0004>;
 		};
+		pwm:pwm@11006000 {
+			compatible = "mediatek,pwm";
+			reg = <0x11006000 0x1000>;
+			interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_LOW>;
+		};
 	};
 
 /* sensor part */
