@@ -362,8 +362,10 @@ static int mtk_pconf_set_pull_select(struct mtk_pinctrl *pctl,
 	if (pctl->devdata->mt_set_gpio_pull_enable) {
 		if (enable)
 			pctl->devdata->mt_set_gpio_pull_enable(pin | 0x80000000, 1);
-	    else
+	    else {
 			pctl->devdata->mt_set_gpio_pull_enable(pin | 0x80000000, 0);
+			return 0;
+		}
 	} else
 		pr_debug("pinctrl gpin pull enable base not ready\n");
 
