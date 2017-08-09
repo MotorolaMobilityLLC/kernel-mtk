@@ -6785,7 +6785,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 			if (_cam_max_ == DebugFlag[1]) {
 				/* only for wait timestamp to ready */
-				ISP_WaitTimestampReady(DebugFlag[0], DebugFlag[2]);
+				Ret = ISP_WaitTimestampReady(DebugFlag[0], DebugFlag[2]);
 				break;
 			}
 
@@ -11251,7 +11251,6 @@ static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE
 	}
 
 	if (_pdo_ == dma_id) {
-		frmPeriod = ((ISP_RD32(CAM_REG_TG_SUB_PERIOD(module)) >> 8) & 0x1F) + 1;
 		if (dma_en & 0x400) {
 			fbc_ctrl1.Raw = ISP_RD32(CAM_REG_FBC_PDO_CTL1(module));
 			fbc_ctrl2.Raw = ISP_RD32(CAM_REG_FBC_PDO_CTL2(module));
@@ -11497,6 +11496,7 @@ static int32_t ISP_PopBufTimestamp(MUINT32 module, MUINT32 dma_id, S_START_T *pT
 
 static int32_t ISP_WaitTimestampReady(MUINT32 module, MUINT32 dma_id)
 {
+	MUINT32 _timeout = 0;
 	MUINT32 wait_cnt = 0;
 
 	if (IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt > IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt)
@@ -11506,6 +11506,30 @@ static int32_t ISP_WaitTimestampReady(MUINT32 module, MUINT32 dma_id)
 		(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt,
 		(MUINT32)IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt);
 
+	#if 1
+	for (wait_cnt = 3; wait_cnt > 0; wait_cnt--) {
+		_timeout = wait_event_interruptible_timeout(
+			IspInfo.WaitQueueHead,
+			(IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt >
+				IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt),
+			ISP_MsToJiffies(2000));
+		/* check if user is interrupted by system signal */
+		if ((_timeout != 0) && (!(IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt >
+				IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt))) {
+			LOG_INF("interrupted by system signal, return value(%d)\n", _timeout);
+			return -ERESTARTSYS;
+		}
+
+		if (_timeout > 0)
+			break;
+
+		LOG_INF("WARNING: cam:%d dma:%d wait left count %d", module, dma_id, wait_cnt);
+	}
+	if (0 == wait_cnt) {
+		LOG_ERR("ERROR: cam:%d dma:%d wait timestamp timeout!!!", module, dma_id);
+		return -EFAULT;
+	}
+	#else
 	while (IspInfo.TstpQInfo[module].Dmao[dma_id].TotalWrCnt <=
 		IspInfo.TstpQInfo[module].Dmao[dma_id].TotalRdCnt) {
 
@@ -11527,6 +11551,7 @@ static int32_t ISP_WaitTimestampReady(MUINT32 module, MUINT32 dma_id)
 
 		wait_cnt++;
 	}
+	#endif
 
 	return 0;
 }
