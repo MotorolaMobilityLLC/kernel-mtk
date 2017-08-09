@@ -16,14 +16,9 @@
 #include <linux/input.h>
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
-#include <linux/earlysuspend.h>
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
 #include <asm/atomic.h>
-
-#include <mach/mt_typedefs.h>
-#include <mach/mt_gpio.h>
-#include <mach/mt_pm_ldo.h>
 
 #include "step_counter.h"
 #include "pedometer.h"
@@ -36,7 +31,7 @@
 #include "tilt_detector.h"
 #include "wake_gesture.h"
 #include "glance_gesture.h"
-#include <linux/batch.h>
+#include <batch.h>
 #include <mach/md32_ipi.h>
 #include <linux/time.h>
 
@@ -284,10 +279,6 @@ struct SCP_sensorHub_data {
 	atomic_t firlen;
 	atomic_t fir_en;
 	struct data_filter fir;
-#endif
-	/*early suspend */
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(USE_EARLY_SUSPEND)
-	struct early_suspend early_drv;
 #endif
 };
 
@@ -690,6 +681,35 @@ static long SCP_sensorHub_unlocked_ioctl(struct file *file, unsigned int cmd, un
 	return err;
 }
 
+#if IS_ENABLED(CONFIG_COMPAT)
+static long compat_SCP_sensorHub_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		SCP_ERR("compat_ion_ioctl file has no f_op or no f_op->unlocked_ioctl.\n");
+		return -ENOTTY;
+	}
+
+	switch (cmd) {
+	case COMPAT_GSENSOR_IOCTL_INIT:
+	case COMPAT_GSENSOR_IOCTL_READ_CHIPINFO:
+	/* case COMPAT_GSENSOR_IOCTL_READ_GAIN: */
+	case COMPAT_GSENSOR_IOCTL_READ_RAW_DATA:
+	case COMPAT_GSENSOR_IOCTL_READ_SENSORDATA:
+		/* NVRAM will use below ioctl */
+	case COMPAT_GSENSOR_IOCTL_SET_CALI:
+	case COMPAT_GSENSOR_IOCTL_CLR_CALI:
+	case COMPAT_GSENSOR_IOCTL_GET_CALI:{
+			SCP_LOG("compat_ion_ioctl : GSENSOR_IOCTL_XXX command is 0x%x\n", cmd);
+			return filp->f_op->unlocked_ioctl(filp, cmd,
+							  (unsigned long)compat_ptr(arg));
+		}
+	default:{
+			SCP_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
+			return -ENOIOCTLCMD;
+		}
+	}
+}
+#endif
 
 /*----------------------------------------------------------------------------*/
 static const struct file_operations SCP_sensorHub_fops = {
@@ -697,6 +717,9 @@ static const struct file_operations SCP_sensorHub_fops = {
 	.open = SCP_sensorHub_open,
 	.release = SCP_sensorHub_release,
 	.unlocked_ioctl = SCP_sensorHub_unlocked_ioctl,
+#if IS_ENABLED(CONFIG_COMPAT)
+	.compat_ioctl = compat_SCP_sensorHub_unlocked_ioctl,
+#endif
 };
 
 /*----------------------------------------------------------------------------*/
@@ -705,9 +728,6 @@ static struct miscdevice SCP_sensorHub_device = {
 	.name = "SCP_sensorHub",
 	.fops = &SCP_sensorHub_fops,
 };
-
-/*----------------------------------------------------------------------------*/
-#if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
 /*----------------------------------------------------------------------------*/
 #if 0
 static int SCP_sensorHub_suspend(struct platform_device *dev, pm_message_t state)
@@ -723,19 +743,6 @@ static int SCP_sensorHub_resume(struct platform_device *dev)
 
 /*----------------------------------------------------------------------------*/
 #endif
-#else				/* #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND) */
-/*----------------------------------------------------------------------------*/
-static void SCP_sensorHub_early_suspend(struct early_suspend *h)
-{
-}
-
-/*----------------------------------------------------------------------------*/
-static void SCP_sensorHub_late_resume(struct early_suspend *h)
-{
-}
-
-/*----------------------------------------------------------------------------*/
-#endif				/* #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND) */
 /*----------------------------------------------------------------------------*/
 static unsigned long long t1, t2, t3, t4, t5, t6;
 int SCP_sensorHub_req_send(SCP_SENSOR_HUB_DATA_P data, uint *len, unsigned int wait)
@@ -1241,12 +1248,6 @@ static int SCP_sensorHub_probe(void)
 		SCP_ERR("register SCP sensor hub control data path err\n");
 		goto exit_kfree;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(USE_EARLY_SUSPEND)
-	obj->early_drv.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,
-	    obj->early_drv.suspend = SCP_sensorHub_early_suspend,
-	    obj->early_drv.resume = SCP_sensorHub_late_resume,
-	    register_early_suspend(&obj->early_drv);
-#endif
 
 	SCP_sensorHub_init_flag = 0;
 	pr_debug("%s: OK new\n", __func__);
