@@ -3,7 +3,6 @@
 
 #include "ddp_hal.h"
 #include "ddp_manager.h"
-#include "mt-plat/mt_typedefs.h"
 #include <linux/types.h>
 #include "disp_session.h"
 #include "disp_lcm.h"
@@ -14,6 +13,17 @@ typedef enum {
 	SINGLE_LAYER_MODE,
 	DEBUG_RDMA1_DSI0_MODE
 } DISP_PRIMARY_PATH_MODE;
+
+typedef unsigned char   UINT8;
+typedef unsigned int    UINT32;
+
+#ifndef TRUE
+	#define TRUE	(1)
+#endif
+
+#ifndef FALSE
+	#define FALSE	(0)
+#endif
 
 #define ALIGN_TO(x, n)	(((x) + ((n) - 1)) & ~((n) - 1))
 

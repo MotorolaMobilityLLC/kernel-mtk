@@ -96,11 +96,11 @@ static disp_session_input_config session_input;
 #define ASSERT_LAYER    (DDP_OVL_LAYER_MUN-1)
 #define DISP_DEFAULT_UI_LAYER_ID (DDP_OVL_LAYER_MUN-1)
 #define DISP_CHANGED_UI_LAYER_ID (DDP_OVL_LAYER_MUN-2)
-
+#define NOT_REFERENCED(x)   { (x) = (x); }
 #define CHECK_RET(expr)    \
 do {                   \
 	int ret = (expr);  \
-	ASSERT(0 == ret);  \
+	BUG_ON(!(0 == ret));  \
 } while (0)
 
 #define MTKFB_LOG(fmt, arg...) \
@@ -243,7 +243,7 @@ static int mtkfb_setcolreg(u_int regno, u_int red, u_int green,
 		/* TODO: RGB888, BGR888, ABGR8888 */
 
 	default:
-		ASSERT(0);
+		BUG_ON(1);
 	}
 
 exit:
@@ -721,7 +721,7 @@ static void set_fb_fix(struct mtkfb_device *fbdev)
 		fix->visual = FB_VISUAL_PSEUDOCOLOR;
 		break;
 	default:
-		ASSERT(0);
+		BUG_ON(1);
 	}
 
 	fix->accel = FB_ACCEL_NONE;
@@ -824,17 +824,17 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 
 		/* Check if format is RGB565 or BGR565 */
 
-		ASSERT(8 == var->green.offset);
-		ASSERT(16 == var->red.offset + var->blue.offset);
-		ASSERT(16 == var->red.offset || 0 == var->red.offset);
+		BUG_ON(!(8 == var->green.offset));
+		BUG_ON(!(16 == var->red.offset + var->blue.offset));
+		BUG_ON(!(16 == var->red.offset || 0 == var->red.offset));
 	} else if (32 == bpp) {
 		var->red.length = var->green.length = var->blue.length = var->transp.length = 8;
 
 		/* Check if format is ARGB565 or ABGR565 */
 
-		ASSERT(8 == var->green.offset && 24 == var->transp.offset);
-		ASSERT(16 == var->red.offset + var->blue.offset);
-		ASSERT(16 == var->red.offset || 0 == var->red.offset);
+		BUG_ON(!(8 == var->green.offset && 24 == var->transp.offset));
+		BUG_ON(!(16 == var->red.offset + var->blue.offset));
+		BUG_ON(!(16 == var->red.offset || 0 == var->red.offset));
 	}
 
 	var->red.msb_right = var->green.msb_right = var->blue.msb_right = var->transp.msb_right = 0;
@@ -1865,7 +1865,7 @@ static void mtkfb_free_resources(struct mtkfb_device *fbdev, int state)
 	switch (state) {
 	case MTKFB_ACTIVE:
 		r = unregister_framebuffer(fbdev->fb_info);
-		ASSERT(0 == r);
+		BUG_ON(!(0 == r));
 		/* lint -fallthrough */
 	case 5:
 		mtkfb_unregister_sysfs(fbdev);

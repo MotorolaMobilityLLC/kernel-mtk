@@ -25,6 +25,9 @@
 
 #include <linux/types.h>
 
+typedef unsigned char   UINT8;
+typedef unsigned int    UINT32;
+
 void PanelMaster_Init(void);
 void PanelMaster_Deinit(void);
 int fb_config_execute_cmd(void);

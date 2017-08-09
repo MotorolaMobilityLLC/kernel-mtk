@@ -1,4 +1,3 @@
-#include "mt-plat/mt_typedefs.h"
 #include <linux/types.h>
 #include "primary_display.h"
 #include "ddp_hal.h"
@@ -44,12 +43,12 @@ static void *dal_fb_addr;
 static unsigned long dal_fb_pa;
 
 /* static BOOL dal_enable_when_resume = FALSE; */
-static BOOL dal_disable_when_resume = FALSE;
+static bool dal_disable_when_resume;
 static unsigned int dal_fg_color = RGB888_To_RGB565(DAL_COLOR_WHITE);
 static unsigned int dal_bg_color = RGB888_To_RGB565(DAL_COLOR_RED);
 static char dal_print_buffer[1024];
 
-bool dal_shown = FALSE;
+bool dal_shown = 0;
 unsigned int isAEEEnabled = 0;
 
 DEFINE_SEMAPHORE(dal_sem);
@@ -230,8 +229,8 @@ DAL_STATUS DAL_Clean(void)
 		DAL_Dynamic_Change_FB_Layer(isAEEEnabled);	/* restore UI layer to DEFAULT_UI_LAYER */
 	}
 
-	dal_shown = FALSE;
-	dal_disable_when_resume = FALSE;
+	dal_shown = 0;
+	dal_disable_when_resume = 0;
 
 	primary_display_trigger(0, NULL, 0);
 
@@ -344,7 +343,7 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 
 
 	if (!dal_shown)
-		dal_shown = TRUE;
+		dal_shown = 1;
 
 	ret = primary_display_trigger(0, NULL, 0);
 

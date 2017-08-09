@@ -3,7 +3,6 @@
 #include "ddp_log.h"
 
 #include <linux/types.h>
-#include "mt-plat/mt_typedefs.h"
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
@@ -504,7 +503,7 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 						       ddp_get_module_name(module_list[i]),
 						       ddp_get_module_name(module_list[step]), k);
 						DISP_REG_SET(handle, sel_out_map[j].reg,
-							     (kal_uint16) k);
+							     (uint16_t) k);
 						break;
 					}
 				}
@@ -530,7 +529,7 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 						       ddp_get_module_name(module_list[step]),
 						       ddp_get_module_name(module_list[i]), k);
 						DISP_REG_SET(handle, sel_in_map[j].reg,
-							     (kal_uint16) k);
+							     (uint16_t) k);
 						found = 1;
 						break;
 					}
@@ -780,8 +779,8 @@ static int ddp_mutex_set_l(int mutex_id, int *module_list, DDP_MODE ddp_mode, vo
 static void ddp_check_mutex_l(int mutex_id, int *module_list, DDP_MODE ddp_mode)
 {
 	int i = 0;
-	kal_uint32 real_value = 0;
-	kal_uint32 expect_value = 0;
+	uint32_t real_value = 0;
+	uint32_t expect_value = 0;
 	unsigned int real_sof, real_eof, val;
 	unsigned int expect_sof, expect_eof;
 	int module_num = ddp_get_module_num_l(module_list);
@@ -1093,7 +1092,7 @@ int ddp_mutex_reset(int mutex_id, void *handle)
 int ddp_is_moudule_in_mutex(int mutex_id, DISP_MODULE_ENUM module)
 {
 	int ret = 0;
-	kal_uint32 real_value = 0;
+	uint32_t real_value = 0;
 
 	if (mutex_id < DISP_MUTEX_DDP_FIRST || mutex_id > DISP_MUTEX_DDP_LAST) {
 		DDPDUMP("error:check_moudule_in_mute fail:exceed mutex max (0 ~ %d)\n",

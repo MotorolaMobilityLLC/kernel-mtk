@@ -1,13 +1,63 @@
 #ifndef _DDP_REG_H_
 #define _DDP_REG_H_
 #include "mt-plat/sync_write.h"
-#include "mt-plat/mt_typedefs.h"
 #include "display_recorder.h"
 #include "cmdq_record.h"
 #include "cmdq_core.h"
 #include "ddp_hal.h"
 
+typedef unsigned int    UINT32;
 /* //////////////////////////////////// macro /////////////////////////////////////////// */
+#define READ_REGISTER_UINT32(reg)       (*(volatile UINT32 * const)(reg))
+
+#define WRITE_REGISTER_UINT32(reg, val) ((*(volatile UINT32 * const)(reg)) = (val))
+
+#define READ_REGISTER_UINT16(reg)       ((*(volatile UINT16 * const)(reg)))
+
+#define WRITE_REGISTER_UINT16(reg, val) ((*(volatile UINT16 * const)(reg)) = (val))
+
+#define READ_REGISTER_UINT8(reg)        ((*(volatile UINT8 * const)(reg)))
+
+#define WRITE_REGISTER_UINT8(reg, val)  ((*(volatile UINT8 * const)(reg)) = (val))
+
+#define INREG8(x)           READ_REGISTER_UINT8((UINT8 *)((void *)(x)))
+#define OUTREG8(x, y)       WRITE_REGISTER_UINT8((UINT8 *)((void *)(x)), (UINT8)(y))
+#define SETREG8(x, y)       OUTREG8(x, INREG8(x)|(y))
+#define CLRREG8(x, y)       OUTREG8(x, INREG8(x)&~(y))
+#define MASKREG8(x, y, z)   OUTREG8(x, (INREG8(x)&~(y))|(z))
+
+#define INREG16(x)          READ_REGISTER_UINT16((UINT16 *)((void *)(x)))
+#define OUTREG16(x, y)      WRITE_REGISTER_UINT16((UINT16 *)((void *)(x)), (UINT16)(y))
+#define SETREG16(x, y)      OUTREG16(x, INREG16(x)|(y))
+#define CLRREG16(x, y)      OUTREG16(x, INREG16(x)&~(y))
+#define MASKREG16(x, y, z)  OUTREG16(x, (INREG16(x)&~(y))|(z))
+
+#define INREG32(x)          READ_REGISTER_UINT32((UINT32 *)((void *)(x)))
+#define OUTREG32(x, y)      WRITE_REGISTER_UINT32((UINT32 *)((void *)(x)), (UINT32)(y))
+#define SETREG32(x, y)      OUTREG32(x, INREG32(x)|(y))
+#define CLRREG32(x, y)      OUTREG32(x, INREG32(x)&~(y))
+#define MASKREG32(x, y, z)  OUTREG32(x, (INREG32(x)&~(y))|(z))
+
+#ifndef ASSERT
+    #define ASSERT(expr)        BUG_ON(!(expr))
+#endif
+
+#define AS_INT32(x)     (*(INT32 *)((void *)x))
+#define AS_INT16(x)     (*(INT16 *)((void *)x))
+#define AS_INT8(x)      (*(INT8  *)((void *)x))
+
+#define AS_UINT32(x)    (*(UINT32 *)((void *)x))
+#define AS_UINT16(x)    (*(UINT16 *)((void *)x))
+#define AS_UINT8(x)     (*(UINT8  *)((void *)x))
+
+#ifndef FALSE
+  #define FALSE (0)
+#endif
+
+#ifndef TRUE
+  #define TRUE  (1)
+#endif
+
 
 /* #define ENABLE_CLK_MGR */
 

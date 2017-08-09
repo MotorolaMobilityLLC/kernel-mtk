@@ -3,7 +3,6 @@
 #include <linux/semaphore.h>
 #include <linux/slab.h>
 
-#include "mt-plat/mt_typedefs.h"
 #include "mtkfb_console.h"
 #include "ddp_hal.h"
 
@@ -52,8 +51,8 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 
 	int font_draw_table16[4];
 
-	ASSERT(x <= (MFC_WIDTH - MFC_FONT_WIDTH));
-	ASSERT(y <= (MFC_HEIGHT - MFC_FONT_HEIGHT));
+	BUG_ON(!(x <= (MFC_WIDTH - MFC_FONT_WIDTH)));
+	BUG_ON(!(y <= (MFC_HEIGHT - MFC_FONT_HEIGHT)));
 
 	offset = y * MFC_PITCH + x * MFC_BPP;
 	dest = (MFC_ROW_FIRST + offset);
@@ -108,7 +107,7 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 		}
 		break;
 	default:
-		ASSERT(0);
+		BUG_ON(1);
 	}
 }
 
@@ -283,7 +282,7 @@ MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color, unsigned int b
 
 	if (down_interruptible(&ctxt->sem)) {
 		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		ASSERT(0);
+		BUG_ON(1);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -304,7 +303,7 @@ MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle)
 
 	if (down_interruptible(&ctxt->sem)) {
 		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		ASSERT(0);
+		BUG_ON(1);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -325,7 +324,7 @@ MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str)
 
 	if (down_interruptible(&ctxt->sem)) {
 		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		ASSERT(0);
+		BUG_ON(1);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -351,7 +350,7 @@ MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
 
 	if (down_interruptible(&ctxt->sem)) {
 		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		ASSERT(0);
+		BUG_ON(1);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 
@@ -381,7 +380,7 @@ MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_co
 
 	if (down_interruptible(&ctxt->sem)) {
 		pr_err("[MFC] ERROR: Can't get semaphore in %s()\n", __func__);
-		ASSERT(0);
+		BUG_ON(1);
 		return MFC_STATUS_LOCK_FAIL;
 	}
 

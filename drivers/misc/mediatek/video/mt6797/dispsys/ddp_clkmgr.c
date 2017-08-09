@@ -3,11 +3,14 @@
 #include "ddp_log.h"
 #include <linux/of.h>
 #include <linux/of_address.h>
-#include "mt-plat/mt_typedefs.h"
+#include <linux/types.h>
 #include "mt-plat/sync_write.h"
 
 #ifndef CONFIG_MTK_CLKMGR
 
+#define READ_REGISTER_UINT32(reg)       (*(volatile uint32_t * const)(reg))
+#define INREG32(x)          READ_REGISTER_UINT32((uint32_t *)((void *)(x)))
+#define DRV_Reg32(addr) INREG32(addr)
 #define clk_readl(addr) DRV_Reg32(addr)
 #define clk_writel(addr, val) mt_reg_sync_writel(val, addr)
 #define clk_setl(addr, val) mt_reg_sync_writel(clk_readl(addr) | (val), addr)

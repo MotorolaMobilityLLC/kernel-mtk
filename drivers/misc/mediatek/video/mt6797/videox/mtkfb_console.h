@@ -1,17 +1,20 @@
 #ifndef __MTK_FB_CONSOLE_H__
 #define __MTK_FB_CONSOLE_H__
 
-#include "mt-plat/mt_typedefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+typedef unsigned char   UINT8;
+typedef unsigned int	UINT32;
+typedef int		INT32;
+typedef unsigned char   BYTE;
 
 #define MFC_CHECK_RET(expr)             \
 do {                                \
 	MFC_STATUS ret = (expr);        \
-	ASSERT(MFC_STATUS_OK == ret);   \
+	BUG_ON(!(MFC_STATUS_OK == ret));   \
 } while (0)
 
 

@@ -2,7 +2,6 @@
 #define __DSI_DRV_H__
 
 
-#include "mt-plat/mt_typedefs.h"
 
 #include "lcm_drv.h"
 #include "ddp_hal.h"
@@ -11,6 +10,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef unsigned char	UINT8;
+typedef unsigned short	UINT16;
+typedef unsigned int	UINT32;
+typedef int		INT32;
 
 /* --------------------------------------------------------------------------- */
 

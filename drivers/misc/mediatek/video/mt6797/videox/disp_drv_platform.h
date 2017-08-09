@@ -2,7 +2,6 @@
 #define __DISP_DRV_PLATFORM_H__
 
 #include <linux/dma-mapping.h>
-#include "mt-plat/mt_typedefs.h"
 #include "mt-plat/mt_gpio.h"
 #include "m4u.h"
 /* #include <mach/mt_reg_base.h> */

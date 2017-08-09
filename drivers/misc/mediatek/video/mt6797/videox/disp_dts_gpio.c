@@ -1,5 +1,4 @@
 #include "disp_dts_gpio.h"
-#include "mt-plat/mt_typedefs.h" /* ASSERT */
 #include "disp_helper.h"
 #include <linux/kernel.h> /* printk */
 
@@ -21,7 +20,7 @@ static long _set_state(const char *name)
 	long ret = 0;
 	struct pinctrl_state *pState = 0;
 
-	ASSERT(this_pctrl);
+	BUG_ON(!this_pctrl);
 
 	pState = pinctrl_lookup_state(this_pctrl, name);
 	if (IS_ERR(pState)) {
@@ -58,7 +57,7 @@ exit:
 
 long disp_dts_gpio_select_state(DTS_GPIO_STATE s)
 {
-	ASSERT((unsigned int)(s) < (unsigned int)(DTS_GPIO_STATE_MAX));
+	BUG_ON(!((unsigned int)(s) < (unsigned int)(DTS_GPIO_STATE_MAX)));
 	return _set_state(this_state_name[s]);
 }
 

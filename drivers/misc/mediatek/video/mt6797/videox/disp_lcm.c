@@ -580,15 +580,15 @@ int disp_lcm_is_video_mode(disp_lcm_handle *plcm)
 	if (_is_lcm_inited(plcm))
 		lcm_param = plcm->params;
 	else
-		ASSERT(0);
+		BUG_ON(1);
 
 	switch (lcm_param->type) {
 	case LCM_TYPE_DBI:
-		return FALSE;
+		return 0;
 	case LCM_TYPE_DSI:
 		break;
 	case LCM_TYPE_DPI:
-		return TRUE;
+		return 1;
 	default:
 		DISPMSG("[LCM] TYPE: unknown\n");
 		break;
@@ -597,18 +597,19 @@ int disp_lcm_is_video_mode(disp_lcm_handle *plcm)
 	if (lcm_param->type == LCM_TYPE_DSI) {
 		switch (lcm_param->dsi.mode) {
 		case CMD_MODE:
-			return FALSE;
+			return 0;
 		case SYNC_PULSE_VDO_MODE:
 		case SYNC_EVENT_VDO_MODE:
 		case BURST_VDO_MODE:
-			return TRUE;
+			return 1;
 		default:
 			DISPMSG("[LCM] DSI Mode: Unknown\n");
 			break;
 		}
 	}
 
-	ASSERT(0);
+	BUG_ON(1);
+	return -1;
 }
 
 int disp_lcm_set_lcm_cmd(disp_lcm_handle *plcm, void *cmdq_handle, unsigned int *lcm_cmd,
