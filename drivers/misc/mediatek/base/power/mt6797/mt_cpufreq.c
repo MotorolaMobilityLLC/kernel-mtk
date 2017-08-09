@@ -2592,17 +2592,16 @@ static void set_cur_freq_hybrid(struct mt_cpu_dvfs *p, unsigned int cur_khz, uns
 
 	cluster = cpu_dvfs_to_cluster(p);
 	index = search_table_idx_by_freq(p, target_khz);
-	volt = cpu_dvfs_get_volt_by_idx(p, index);
 
-	cpufreq_ver("cluster%u: target_khz = %u (%u), index = %d (%u)\n",
-		    cluster, target_khz, cur_khz, index, volt);
-
-	aee_record_cpu_volt(p, volt);
+	cpufreq_ver("cluster%u: target_khz = %u (%u), index = %d\n",
+		    cluster, target_khz, cur_khz, index);
 
 	r = cpuhvfs_set_target_opp(cluster, index, &volt_val);
 	BUG_ON(r);
 
-	notify_cpu_volt_sampler(p, EXTBUCK_VAL_TO_VOLT(volt_val));
+	volt = EXTBUCK_VAL_TO_VOLT(volt_val);
+	aee_record_cpu_volt(p, volt);
+	notify_cpu_volt_sampler(p, volt);
 }
 #endif
 
@@ -3666,7 +3665,7 @@ UNLOCK_OL:
 
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
 					if (enable_cpuhvfs && enable_hw_gov)
-						goto UNLOCK_DP;
+						goto NEXT_DP;
 #endif
 					if (p_ll->armpll_is_available && (action == CPU_DOWN_PREPARE)) {
 						cur_volt = p_cci->ops->get_cur_volt(p_cci);
@@ -3688,7 +3687,7 @@ UNLOCK_OL:
 					}
 
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
-UNLOCK_DP:
+NEXT_DP:
 #endif
 					aee_record_cpu_dvfs_cb(9);
 
@@ -4355,6 +4354,73 @@ static void __set_cpuhvfs_init_sta(struct init_sta *sta)
 	}
 }
 
+#ifdef CPUHVFS_HW_GOVERNOR
+static void notify_cpuhvfs_change_cb(struct dvfs_log *log_box, int num_log)
+{
+	int i, j;
+	unsigned int tf_sum, t_diff, avg_f, volt;
+	unsigned long flags;
+	struct mt_cpu_dvfs *p;
+	struct cpufreq_freqs freqs;
+
+	cpufreq_lock(flags);
+	if (!enable_hw_gov || num_log < 1) {
+		cpufreq_unlock(flags);
+		return;
+	}
+
+	for (i = 0; i < NUM_PHY_CLUSTER; i++) {
+		p = cluster_to_cpu_dvfs(i);
+
+		if (!p->armpll_is_available)
+			continue;
+
+		if (num_log == 1) {
+			j = log_box[0].opp[i];
+		} else {
+			tf_sum = 0;
+			for (j = num_log - 1; j >= 1; j--) {
+				tf_sum += (log_box[j].time - log_box[j - 1].time) *
+					  cpu_dvfs_get_freq_by_idx(p, log_box[j - 1].opp[i]);
+			}
+
+			t_diff = log_box[num_log - 1].time - log_box[0].time;
+			avg_f = tf_sum / t_diff;
+
+			/* find OPP_F >= AVG_F from the lowest frequency OPP */
+			for (j = p->nr_opp_tbl - 1; j >= 0; j--) {
+				if (cpu_dvfs_get_freq_by_idx(p, j) >= avg_f)
+					break;
+			}
+
+			if (j < 0) {
+				cpufreq_err("tf_sum = %u, t_diff = %u, avg_f = %u, max_f = %u\n",
+					    tf_sum, t_diff, avg_f, cpu_dvfs_get_freq_by_idx(p, 0));
+				BUG();
+			}
+		}
+
+		if (j == p->idx_opp_tbl)
+			continue;
+
+		freqs.old = cpu_dvfs_get_cur_freq(p);
+		freqs.new = cpu_dvfs_get_freq_by_idx(p, j);
+		cpufreq_freq_transition_begin(p->mt_policy, &freqs);
+
+		p->idx_opp_tbl = j;
+		aee_record_freq_idx(p, p->idx_opp_tbl);
+
+		volt = cpu_dvfs_get_cur_volt(p);
+		aee_record_cpu_volt(p, volt);
+		notify_cpu_volt_sampler(p, volt);
+
+		cpufreq_freq_transition_end(p->mt_policy, &freqs, 0);
+	}
+
+	cpufreq_unlock(flags);
+}
+#endif
+
 static int _mt_cpufreq_syscore_suspend(void)
 {
 	if (enable_cpuhvfs)
@@ -4577,6 +4643,10 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 			}
 
 			register_syscore_ops(&_mt_cpufreq_syscore_ops);
+
+#ifdef CPUHVFS_HW_GOVERNOR
+			cpuhvfs_register_dvfs_notify(notify_cpuhvfs_change_cb);
+#endif
 		} else {
 			enable_cpuhvfs = 0;
 		}
