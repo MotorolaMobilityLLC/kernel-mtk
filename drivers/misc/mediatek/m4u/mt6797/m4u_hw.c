@@ -1319,10 +1319,12 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], MMProfileFlagStart, port, virt); */
 
 	/* Prefetch Distance & Direction, one bit for each port, 1:-, 0:+ */
+	/*
 	if (dir != 0 || dis != 1)
 		m4u_config_prog_dist(port, dir, dis, 1, 0, 0);
 	else
 		m4u_invalid_prog_dist_by_id(port);
+	*/
 
 	spin_lock(&gM4u_reg_lock);
 
