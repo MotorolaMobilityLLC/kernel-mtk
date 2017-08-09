@@ -20,33 +20,25 @@
 
 #ifndef __MT_PWM_HAL_H__
 #define __MT_PWM_HAL_H__
-#if 0
-#include <mach/mt_reg_base.h>
-#include <mach/mt_typedefs.h>
-#include <mach/mt_clkmgr.h>
-#ifdef CONFIG_MTK_LEGACY
-#include <mach/mt_gpio.h>
-#endif
-#include <mach/irqs.h>
-#include <mach/upmu_common.h>
-#include <mach/sync_write.h>
-#ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-#endif
-#endif
 #include <linux/types.h>
+#include <mt-plat/sync_write.h>
 /**********************************
 * Global enum data
 ***********************************/
+/******************* Register Manipulations*****************/
+#define INREG32(reg)          __raw_readl((void *)reg)
+#define OUTREG32(reg, val)      mt_reg_sync_writel(val, (void *)reg)
+#define OUTREG32_DMA(reg, val)   ((*(volatile long*)(reg)) |= (long)(val))
+#define SETREG32(reg, val)      OUTREG32(reg, INREG32(reg)|(val))
+#define CLRREG32(reg, val)      OUTREG32(reg, INREG32(reg)&~(val))
+#define MASKREG32(x, y, z)  OUTREG32(x, (INREG32(x)&~(y))|(z))
+
 enum PWN_NO {
 	PWM_MIN,
 	PWM1 = PWM_MIN,
 	PWM2,
 	PWM3,
 	PWM4,
-	PWM5,
 	PWM_NUM,
 	PWM_MAX = PWM_NUM
 };
