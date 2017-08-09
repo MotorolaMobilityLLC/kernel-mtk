@@ -667,7 +667,7 @@ ssize_t wmt_dbg_read(struct file *filp, char __user *buf, size_t count, loff_t *
 		} else {
 			INT32 i = 0;
 			INT32 len = 0;
-			INT8 msg_info[128];
+			INT8 msg_info[512];
 			INT32 max_num = 0;
 
 			/*we do not check page buffer, because there are only 100 bytes in g_coex_buf,
