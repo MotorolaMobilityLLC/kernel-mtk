@@ -2086,15 +2086,55 @@ void tscpu_update_tempinfo(void)
 #endif
 }
 
+#if defined(CONFIG_ARCH_MT6797)
+DEFINE_SPINLOCK(timer_lock);
+int is_worktimer_en = 1;
+#endif
+
+void tscpu_workqueue_cancel_timer(void)
+{
+#ifdef FAST_RESPONSE_ATM
+	if (is_worktimer_en && thz_dev) {
+		cancel_delayed_work(&(thz_dev->poll_queue));
+
+		tscpu_dprintk("[tTimer] workqueue stopping\n");
+		spin_lock(&timer_lock);
+		is_worktimer_en = 0;
+		spin_unlock(&timer_lock);
+	}
+#else
+	if (thz_dev)
+		cancel_delayed_work(&(thz_dev->poll_queue));
+#endif
+}
+
+void tscpu_workqueue_start_timer(void)
+{
+#ifdef FAST_RESPONSE_ATM
+	if (!is_worktimer_en && thz_dev != NULL && interval != 0) {
+		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), 0);
+
+		tscpu_dprintk("[tTimer] workqueue starting\n");
+		spin_lock(&timer_lock);
+		is_worktimer_en = 1;
+		spin_unlock(&timer_lock);
+	}
+#else
+	/* resume thermal framework polling when leaving deep idle */
+	if (thz_dev != NULL && interval != 0)
+		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
+#endif
+
+}
+
 void tscpu_cancel_thermal_timer(void)
 {
 	/* stop thermal framework polling when entering deep idle */
-	if (thz_dev)
-		cancel_delayed_work(&(thz_dev->poll_queue));
 
 #ifdef FAST_RESPONSE_ATM
 	atm_cancel_hrtimer();
 #endif
+	tscpu_workqueue_cancel_timer();
 
 #if defined(CONFIG_ARCH_MT6755)
 	/*Patch to pause thermal controller and turn off auxadc GC.
@@ -2108,11 +2148,9 @@ void tscpu_start_thermal_timer(void)
 {
 #ifdef FAST_RESPONSE_ATM
 	atm_restart_hrtimer();
+#else
+	tscpu_workqueue_start_timer();
 #endif
-
-	/* resume thermal framework polling when leaving deep idle */
-	if (thz_dev != NULL && interval != 0)
-		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));
 
 #if defined(CONFIG_ARCH_MT6755)
 /*Patch to pause thermal controller and turn off auxadc GC.

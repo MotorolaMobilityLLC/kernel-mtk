@@ -281,6 +281,8 @@ extern int tscpu_next_fp_factor;
 
 /*In common/thermal_zones/mtk_ts_cpu.c*/
 extern long long thermal_get_current_time_us(void);
+extern void tscpu_workqueue_cancel_timer(void);
+extern void tscpu_workqueue_start_timer(void);
 
 extern void __iomem  *therm_clk_infracfg_ao_base;
 extern int Num_of_GPU_OPP;

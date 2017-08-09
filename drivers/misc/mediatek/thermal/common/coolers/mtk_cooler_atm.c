@@ -1846,6 +1846,8 @@ static enum hrtimer_restart atm_loop(struct hrtimer *timer)
 	ktime_t ktime;
 	int temp;
 
+	tscpu_workqueue_start_timer();
+
 	atm_prev_maxtj = atm_curr_maxtj;
 	atm_curr_maxtj = tscpu_get_curr_temp();
 
