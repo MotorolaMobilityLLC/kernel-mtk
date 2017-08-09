@@ -214,6 +214,9 @@ static struct OCP_STAT ocp_hqa[3][10000];
 /* BIG CPU */
 int BigOCPConfig(int VOffInmV, int VStepInuV)
 {
+if (ocp_cluster2_enable == 1)
+	return 0;
+
 if (VOffInmV < 0 || VOffInmV > 1000) {
 	if (HW_API_RET_DEBUG_ON)
 		ocp_err("parameter VOffInmV must be 0 ~ 1000 mV");
@@ -650,6 +653,16 @@ return mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPAVGPWRGET, Count, 0, 0);
 /* Little CPU */
 int LittleOCPConfig(int Cluster, int VOffInmV, int VStepInuV)
 {
+
+if (Cluster == OCP_LL) {
+	if (ocp_cluster0_enable == 1)
+		return 0;
+}
+if (Cluster == OCP_L) {
+	if (ocp_cluster1_enable == 1)
+		return 0;
+}
+
 
 if (VOffInmV < 0 || VOffInmV > 1000) {
 	if (HW_API_RET_DEBUG_ON)
@@ -3963,21 +3976,21 @@ int i;
 			seq_printf(m, "Cluster 1 CPU3RawLkg   = %d * 1.5uA\n", ocp_hqa[1][i].CPU3RawLkg);
 		}
 		if (ocp_cluster2_enable == 1) {
-			seq_printf(m, "Cluster 2 CapToLkg     = %d mA(mW)\n", ocp_hqa[2][i].CapToLkg);
-			seq_printf(m, "Cluster 2 CapOCCGPct   = %d %%\n", ocp_hqa[2][i].CapOCCGPct);
-			seq_printf(m, "Cluster 2 CaptureValid = %d\n", ocp_hqa[2][i].CaptureValid);
-			seq_printf(m, "Cluster 2 CapTotAct    = %d mA(mW)\n", ocp_hqa[2][i].CapTotAct);
-			seq_printf(m, "Cluster 2 CapMAFAct    = %d mA(mW)\n", ocp_hqa[2][i].CapMAFAct);
 			if (ocp_hqa[2][i].CGAvgValid == 1) {
 				seq_printf(m, "Cluster 2 CGAvgValid   = %d\n", ocp_hqa[2][i].CGAvgValid);
 				seq_printf(m, "Cluster 2 CGAvg        = %llu %%\n", ocp_hqa[2][i].CGAvg);
+				seq_printf(m, "Cluster 2 CapToLkg     = %d mA(mW)\n", ocp_hqa[2][i].CapToLkg);
+				seq_printf(m, "Cluster 2 CapOCCGPct   = %d %%\n", ocp_hqa[2][i].CapOCCGPct);
+				seq_printf(m, "Cluster 2 CaptureValid = %d\n", ocp_hqa[2][i].CaptureValid);
+				seq_printf(m, "Cluster 2 CapTotAct    = %d mA(mW)\n", ocp_hqa[2][i].CapTotAct);
+				seq_printf(m, "Cluster 2 CapMAFAct    = %d mA(mW)\n", ocp_hqa[2][i].CapMAFAct);
+				seq_printf(m, "Cluster 2 TopRawLkg    = %d * 1.5uA\n", ocp_hqa[2][i].TopRawLkg);
+				seq_printf(m, "Cluster 2 CPU0RawLkg   = %d * 1.5uA\n", ocp_hqa[2][i].CPU0RawLkg);
+				seq_printf(m, "Cluster 2 CPU1RawLkg   = %d * 1.5uA\n", ocp_hqa[2][i].CPU1RawLkg);
 			} else {
 				seq_printf(m, "Cluster 2 AvgAct       = %llu mA(mW)\n", ocp_hqa[2][i].CGAvg);
 				/*seq_printf(m, "Cluster 2 AvgLkg       = %llu mA\n", ocp_hqa[2][i].AvgLkg);*/
 			}
-			seq_printf(m, "Cluster 2 TopRawLkg    = %d * 1.5uA\n", ocp_hqa[2][i].TopRawLkg);
-			seq_printf(m, "Cluster 2 CPU0RawLkg   = %d * 1.5uA\n", ocp_hqa[2][i].CPU0RawLkg);
-			seq_printf(m, "Cluster 2 CPU1RawLkg   = %d * 1.5uA\n", ocp_hqa[2][i].CPU1RawLkg);
 		}
 	}
 	return 0;
@@ -4003,8 +4016,7 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 					if (hqa_test > 10000)
 						hqa_test = 10000;
 
-					i = 0;
-					while (i < hqa_test) {
+					for (i = 0; i < hqa_test; i++) {
 						/* This test must disable PPM*/
 						LittleOCPDVFSSet(0, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000,
 								mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100);
@@ -4044,7 +4056,6 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 						ocp_hqa[1][i].CGAvg = AvgAct;
 						ocp_hqa[1][i].AvgLkg = AvgLkg;
 
-						i++;
 					}
 				}
 				break;
@@ -4054,9 +4065,8 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 					if (hqa_test > 10000)
 						hqa_test = 10000;
 
-					j = 0;
 					BigOCPClkAvg(1, val[1]);
-					while (j < hqa_test) {
+					for (j = 0; j < hqa_test; j++) {
 						BigOCPCapture(1, 1, 0, 15);
 						mdelay(val[2]);
 
@@ -4079,8 +4089,6 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 						BigOCPClkAvgStatus(&CGAvg);
 						ocp_hqa[2][j].CGAvgValid = ocp_read_field(OCPAPBSTATUS04, 27:27);
 						ocp_hqa[2][j].CGAvg = (unsigned long long)CGAvg;
-
-						j++;
 					}
 				}
 				break;
@@ -4090,13 +4098,11 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 					if (hqa_test > 10000)
 						hqa_test = 10000;
 
-					j = 0;
-					while (j < hqa_test) {
+					for (j = 0; j < hqa_test; j++) {
 						ocp_hqa[2][j].CGAvg = BigOCPAvgPwrGet(val[1]);
 
 						mdelay(val[2]);
 
-						j++;
 					}
 				}
 				break;
