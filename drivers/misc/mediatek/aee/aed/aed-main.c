@@ -1192,7 +1192,7 @@ static const struct file_operations proc_current_ke_##ENTRY##_fops = { \
 	.open		= current_ke_##ENTRY##_open, \
 	.read		= seq_read, \
 	.llseek		= seq_lseek, \
-	.release	= seq_release, \
+	.release	= seq_release_private, \
 }
 
 
