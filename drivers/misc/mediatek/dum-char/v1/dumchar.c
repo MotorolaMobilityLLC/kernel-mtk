@@ -1,3 +1,4 @@
+#define DEBUG
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -18,10 +19,14 @@
 #include <linux/mtd/mtd.h>
 #include <generated/autoconf.h>
 #include <linux/sched.h>	/* show_stack(current,NULL) */
-#include <mach/env.h>
+#include <env.h>
 
 #include "dumchar.h"		/* local definitions */
+#ifdef CONFIG_MTK_EMMC_SUPPORT
 #include "pmt.h"
+#else
+#include "partition_define.h"
+#endif
 #include <linux/mmc/host.h>
 /* #include <linux/mmc/sd_misc.h> */
 /* #include "../mmc-host/mt_sd.h" */
@@ -309,11 +314,11 @@ static ssize_t sd_read(struct file *filp, char __user *buf, size_t count, loff_t
 			int n = copy_to_user(buf, pbuf + (addr - startaddr), count);
 
 			if (n != 0)
-				pr_err("read fail in DumChar_sd_read\n");
+				pr_debug("read fail in DumChar_sd_read\n");
 
 			total_retlen = count - n;
 		} else
-			pr_err("read fail DumChar_sd_read!\n");
+			pr_debug("read fail DumChar_sd_read!\n");
 
 #if defined(PrintBuff)
 		pr_debug("******************************\nGet %ld bytes from %d in %s in user:\n",
@@ -933,20 +938,20 @@ int mtd_close_read_ahead(void)
 			filp = filp_open(target, O_RDWR, 0666);
 			if (IS_ERR(filp)) {
 				ret = PTR_ERR(filp);
-				pr_err(
+				pr_debug(
 				       "[mtd_close_read_ahead]Open %s partition fail! errno=%d\n",
 				       target, ret);
 				continue;
 			}
 			ret = filp->f_op->read(filp, &origin, sizeof(origin), &(filp->f_pos));
 			if (sizeof(origin) != ret) {
-				pr_err("[mtd_close_read_ahead]read fail!errno=%d\n", ret);
+				pr_debug("[mtd_close_read_ahead]read fail!errno=%d\n", ret);
 				filp_close(filp, NULL);
 				continue;
 			}
 			ret = filp->f_op->write(filp, &value, sizeof(value), &(filp->f_pos));
 			if (sizeof(value) != ret) {
-				pr_err("[mtd_close_read_ahead]write fail!errno=%d\n", ret);
+				pr_debug("[mtd_close_read_ahead]write fail!errno=%d\n", ret);
 				filp_close(filp, NULL);
 				continue;
 			}
@@ -1001,18 +1006,12 @@ int dumchar_probe(struct platform_device *dev)
 	struct storage_info s_info = { 0 };
 	/* struct msdc_host *host_ctl; */
 	pr_debug("[Dumchar_probe]*******************Introduction******************\n");
-	pr_debug
-	    ("[Dumchar_probe]There are 3 address in eMMC Project: Linear Address, Logical Address, Physical Address\n");
-	pr_debug
-	    ("[Dumchar_probe]Linear Address: Used in scatter file, uboot, preloader,flash tool etc.\n");
-	pr_debug
-	    ("[Dumchar_probe]Linear Address: MBR linear address is fixed in eMMCComo.mk, that is same for all chips in
-	    the project\n");
-	pr_debug
-	    ("[Dumchar_probe]Logical Address: Used in /proc/dumchar_info, mmcblk0 etc. MBR logical address is 0\n");
-	pr_debug
-	    ("[Dumchar_probe]Physical Address: Used in eMMC driver, MBR Physical Address
-	    = MBR Linear Address - (BOOT1 size + BOOT2 Size + RPMB Size)\n");
+	pr_debug("[Dumchar_probe]There are 3 address in eMMC Project: Linear, Logical and Physical Address\n");
+	pr_debug("[Dumchar_probe]Linear Address: Used in scatter file, uboot, preloader,flash tool etc.\n");
+	pr_debug("[Dumchar_probe]MBR linear address is fixed in eMMCComo.mk, that is same for all chips\n");
+	pr_debug("[Dumchar_probe]Logical Address: Used in /proc/dumchar_info, mmcblk0 etc. MBR logical address is 0\n");
+	pr_debug("[Dumchar_probe]Physical Address: Used in eMMC driver");
+	pr_debug("MBR Physical Address = MBR Linear Address - (BOOT1 size + BOOT2 Size + RPMB Size)\n");
 	pr_debug("[Dumchar_probe]define  User_Region_Header (BOOT1 size + BOOT2 Size + RPMB Size)\n");
 	pr_debug("[Dumchar_probe]*******************Introduction******************\n");
 
@@ -1131,12 +1130,6 @@ int dumchar_probe(struct platform_device *dev)
 	}
 
 	dumchar_class = class_create(THIS_MODULE, "dumchar");
-	if (IS_ERR(dumchar_class)) {
-		pr_debug("DumChar: fail in class create");
-		result = PTR_ERR(dumchar_class);
-		goto fail_register_chrdev;
-	}
-
 	for (l = 0; l < PART_NUM; l++) {
 		if (!strcmp(dumchar_devices[l].dumname, "otp")) {
 			dumchar_device[l] =

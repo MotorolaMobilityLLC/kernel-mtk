@@ -4,7 +4,7 @@
 #include <linux/statfs.h>
 #include <asm/uaccess.h>	/*set_fs get_fs mm_segment_t */
 #include <partition_define.h>
-#include <mach/env.h>
+#include <env.h>
 
 #ifndef CONFIG_MTK_EMMC_SUPPORT
 #include <linux/syscalls.h>
@@ -437,7 +437,7 @@ EXPORT_SYMBOL(env_init);
 
 static void load_default_env(void)
 {
-	int i;
+	int i, ret;
 	char *tmp;
 	int mum = 1;
 	char load_buf[20] = { 0 };
@@ -462,7 +462,7 @@ static void load_default_env(void)
 		}
 		load_buf[i] = tmp[i];
 	}
-	kstrtoll(load_buf, 10, &data_free_size_th);
+	ret = kstrtoll(load_buf, 10, &data_free_size_th);
 	data_free_size_th *= mum;
 
 	pr_err("[%s]find %s = %llx\n", MODULE_NAME, DATA_FREE_SIZE_TH_NAME, data_free_size_th);
