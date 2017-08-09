@@ -4654,9 +4654,9 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 	}
 	/*      */
 	if (copy_from_user(&rt_buf_ctrl, (void __user *)Param, sizeof(ISP_BUFFER_CTRL_STRUCT)) == 0) {
-		p1_fbc          = kmalloc(sizeof(CQ_RTBC_FBC)*_rt_dma_max_, GFP_KERNEL);
-		p1_fbc_reg      = kmalloc(sizeof(unsigned long)*_rt_dma_max_, GFP_KERNEL);
-		p1_dma_addr_reg = kmalloc(sizeof(unsigned long)*_rt_dma_max_, GFP_KERNEL);
+		p1_fbc          = kcalloc(_rt_dma_max_, sizeof(CQ_RTBC_FBC), GFP_KERNEL);
+		p1_fbc_reg      = kcalloc(_rt_dma_max_, sizeof(unsigned long), GFP_KERNEL);
+		p1_dma_addr_reg = kcalloc(_rt_dma_max_, sizeof(unsigned long), GFP_KERNEL);
 		rt_buf_info     = kmalloc(sizeof(ISP_RT_BUF_INFO_STRUCT), GFP_KERNEL);
 		deque_buf       = kmalloc(sizeof(ISP_DEQUE_BUF_INFO_STRUCT), GFP_KERNEL);
 		if ((NULL == p1_fbc) || (NULL == p1_fbc_reg) || (NULL == p1_dma_addr_reg) ||
@@ -4746,11 +4746,11 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			{
 				LOG_ERR("[rtbc]invalid dma channel(%d)", rt_dma);
 
-			kfree((unsigned int *)p1_fbc);
-			kfree(p1_fbc_reg);
-			kfree(p1_dma_addr_reg);
-			kfree(rt_buf_info);
-			kfree(deque_buf);
+				kfree((unsigned int *)p1_fbc);
+				kfree(p1_fbc_reg);
+				kfree(p1_dma_addr_reg);
+				kfree(rt_buf_info);
+				kfree(deque_buf);
 				return -EFAULT;
 			}
 		}
@@ -5295,6 +5295,11 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 										     ring_buf
 										     [rt_dma].
 										     active);
+										kfree((unsigned int *)p1_fbc);
+										kfree(p1_fbc_reg);
+										kfree(p1_dma_addr_reg);
+										kfree(rt_buf_info);
+										kfree(deque_buf);
 										return -EFAULT;
 									}
 								}
@@ -5392,6 +5397,11 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 									     pstRTBuf->
 									     ring_buf[rt_dma].
 									     active);
+									kfree((unsigned int *)p1_fbc);
+									kfree(p1_fbc_reg);
+									kfree(p1_dma_addr_reg);
+									kfree(rt_buf_info);
+									kfree(deque_buf);
 									return -EFAULT;
 								}
 							}
@@ -6094,13 +6104,24 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 #ifdef _rtbc_buf_que_2_0_
 		case ISP_RT_BUF_CTRL_DMA_EN:
 			{
-				MUINT8 array[_rt_dma_max_];
+				/*MUINT8 array[_rt_dma_max_];*/
+				MUINT8 *array;
+
+				array = kcalloc(_rt_dma_max_, sizeof(MUINT8), GFP_KERNEL);
+				if (NULL == array) {
+					kfree((unsigned int *)p1_fbc);
+					kfree(p1_fbc_reg);
+					kfree(p1_dma_addr_reg);
+					kfree(rt_buf_info);
+					kfree(deque_buf);
+					return -ENOMEM;
+				}
+
 				/* if(copy_from_user(array, (void __user*)rt_buf_ctrl.data_ptr,
 				sizeof(UINT8)*_rt_dma_max_)     == 0) { */
 				if (copy_from_user
 				    (array, (void __user *)rt_buf_ctrl.pExtend,
 				     sizeof(UINT8) * _rt_dma_max_) == 0) {
-					MUINT32 z;
 
 					bRawEn = MFALSE;
 					bRawDEn = MFALSE;
@@ -6125,6 +6146,7 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 					LOG_ERR("[rtbc][DMA_EN]:copy_from_user failed");
 					Ret = -EFAULT;
 				}
+				kfree(array);
 			}
 			break;
 #endif
