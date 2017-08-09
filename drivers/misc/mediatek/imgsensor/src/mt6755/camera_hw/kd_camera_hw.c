@@ -824,7 +824,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 		}
 #endif
 	} else if (pwInfo.PowerType == PDN) {
-		PK_DBG("hwPowerDown: PDN %d\n", pwInfo.Voltage);
+		//PK_DBG("hwPowerDown: PDN %d\n", pwInfo.Voltage);
 
 
 		if (pwInfo.Voltage == Vol_High) {
@@ -838,7 +838,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 			}
 		}
 	} else if (pwInfo.PowerType == RST) {
-		PK_DBG("hwPowerDown: RST %d\n", pwInfo.Voltage);
+		//PK_DBG("hwPowerDown: RST %d\n", pwInfo.Voltage);
 		if (pwInfo.Voltage == Vol_High) {
 			if (mtkcam_gpio_set(pinSetIdx, RST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON])) {
 				PK_ERR("[CAMERA SENSOR] set gpio failed!!\n");
@@ -880,8 +880,8 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 	}
 	/* power ON */
 	if (On) {
-		PK_DBG("kdCISModulePowerOn -on:currSensorName=%s\n", currSensorName);
-		PK_DBG("kdCISModulePowerOn -on:pinSetIdx=%d\n", pinSetIdx);
+		PK_DBG("kdCISModulePowerOn -on:currSensorName=%s pinSetIdx=%d\n", currSensorName, pinSetIdx);
+
 
     /* MIPI SWITCH */
 	if(has_mipi_switch){
@@ -902,7 +902,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			    && (0 ==
 				strcmp(PowerOnList.PowerSeq[pwListIdx].SensorName,
 				       currSensorName))) {
-				PK_DBG("sensorIdx:%d\n", SensorIdx);
+				//PK_DBG("sensorIdx:%d\n", SensorIdx);
 
 				sensorInPowerList = KAL_TRUE;
 
@@ -1133,8 +1133,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			    && (0 ==
 				strcmp(PowerOnList.PowerSeq[pwListIdx].SensorName,
 				       currSensorName))) {
-				PK_DBG("kdCISModulePowerOn get in---\n");
-				PK_DBG("sensorIdx:%d\n", SensorIdx);
+				PK_DBG("kdCISModulePowerOn -off:currSensorName=%s pinSetIdx=%d\n", currSensorName, pinSetIdx);
 
 				sensorInPowerList = KAL_TRUE;
 
@@ -1153,7 +1152,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 								       PowerInfo[pwIdx - 1].Delay);
 						}
 					} else {
-						PK_DBG("pwIdx=%d\n", pwIdx);
+						/*PK_DBG("pwIdx=%d\n", pwIdx);*/
 					}
 				}
 			} else if (PowerOnList.PowerSeq[pwListIdx].SensorName == NULL) {
@@ -1781,15 +1780,14 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 	}
 	/* power ON */
 	if (On) {
-		PK_DBG("kdCISModulePowerOn -on:currSensorName=%s\n", currSensorName);
-		PK_DBG("kdCISModulePowerOn -on:pinSetIdx=%d\n", pinSetIdx);
+		PK_DBG("kdCISModulePowerOn -on:currSensorName=%s pinSetIdx=%d\n", currSensorName, pinSetIdx);
 
 		for (pwListIdx = 0; pwListIdx < 16; pwListIdx++) {
 			if (currSensorName && (PowerOnList.PowerSeq[pwListIdx].SensorName != NULL)
 			    && (0 ==
 				strcmp(PowerOnList.PowerSeq[pwListIdx].SensorName,
 				       currSensorName))) {
-				PK_DBG("sensorIdx:%d\n", SensorIdx);
+				//PK_DBG("sensorIdx:%d\n", SensorIdx);
 
 				sensorInPowerList = KAL_TRUE;
 
@@ -2016,8 +2014,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			    && (0 ==
 				strcmp(PowerOnList.PowerSeq[pwListIdx].SensorName,
 				       currSensorName))) {
-				PK_DBG("kdCISModulePowerOn get in---\n");
-				PK_DBG("sensorIdx:%d\n", SensorIdx);
+				PK_DBG("kdCISModulePowerOn -off:currSensorName=%s pinSetIdx=%d\n", currSensorName, pinSetIdx);
 
 				sensorInPowerList = KAL_TRUE;
 
@@ -2036,7 +2033,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 								       PowerInfo[pwIdx - 1].Delay);
 						}
 					} else {
-						PK_DBG("pwIdx=%d\n", pwIdx);
+						//PK_DBG("pwIdx=%d\n", pwIdx);
 					}
 				}
 			} else if (PowerOnList.PowerSeq[pwListIdx].SensorName == NULL) {
