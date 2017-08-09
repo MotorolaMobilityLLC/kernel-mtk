@@ -1929,7 +1929,7 @@ char block_io_log_source_buffer[PID_LOG_LENGTH] = {0};
 struct struct_block_io_ring {
 	char block_io_log_debugfs[BLOCK_IO_BUFFER_SIZE];
 };
-#define MAX_BLOCK_IO_LOG_COUNT 40
+#define MAX_BLOCK_IO_LOG_COUNT 120
 struct struct_block_io_ring block_io_ring[MAX_BLOCK_IO_LOG_COUNT] = { { { 0 } } };
 int block_io_ring_index = 0;
 int stopringlog = 0;
