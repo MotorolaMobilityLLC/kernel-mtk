@@ -1612,6 +1612,12 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 
 			default:
 				prTxQue = qmDetermineStaTxQueue(prAdapter, prCurrentMsduInfo, &ucTC);
+				if (!prTxQue) {
+					DBGLOG(QM, INFO, "Drop the Packet for TxQue is NULL\n");
+					prTxQue = &rNotEnqueuedQue;
+					TX_INC_CNT(&prAdapter->rTxCtrl, TX_INACTIVE_STA_DROP);
+					QM_DBG_CNT_INC(prQM, QM_DBG_CNT_24);
+				}
 #if ARP_MONITER_ENABLE
 				prStaRec = QM_GET_STA_REC_PTR_FROM_INDEX(prAdapter, prCurrentMsduInfo->ucStaRecIndex);
 				if (prStaRec && IS_STA_IN_AIS(prStaRec) && prCurrentMsduInfo->eSrc == TX_PACKET_OS)
@@ -1624,7 +1630,7 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 				DBGLOG(QM, TRACE, "Forward Pkt to STA[%u] BSS[%u]\n",
 						   prCurrentMsduInfo->ucStaRecIndex, prCurrentMsduInfo->ucBssIndex);
 
-				if (prTxQue->u4NumElem >= prQM->u4MaxForwardBufferCount) {
+				if (prTxQue && (prTxQue->u4NumElem >= prQM->u4MaxForwardBufferCount)) {
 					DBGLOG(QM, INFO,
 					       "Drop the Packet for full Tx queue (forwarding) Bss %u\n",
 						prCurrentMsduInfo->ucBssIndex);
@@ -1683,7 +1689,6 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 		}
 #endif
 
-		DBGLOG(QM, LOUD, "Current queue length = %u\n", prTxQue->u4NumElem);
 	} while (prNextMsduInfo);
 
 	if (QUEUE_IS_NOT_EMPTY(&rNotEnqueuedQue)) {
@@ -3140,7 +3145,8 @@ P_SW_RFB_T qmHandleRxPackets(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfbList
 			/* for wapi integrity test. WPI_1x packet should be always in non-encrypted mode.
 				if we received any WPI(0x88b4) packet that is encrypted, drop here. */
 			if (u2Etype == ETH_WPI_1X &&
-				HAL_RX_STATUS_GET_SEC_MODE(prRxStatus) != 0) {
+				HAL_RX_STATUS_GET_SEC_MODE(prRxStatus) != 0 &&
+				HAL_RX_STATUS_IS_CIPHER_MISMATCH(prRxStatus) == 0) {
 				DBGLOG(QM, INFO, "drop wpi packet with sec mode\n");
 				prCurrSwRfb->eDst = RX_PKT_DESTINATION_NULL;
 				QUEUE_INSERT_TAIL(prReturnedQue, (P_QUE_ENTRY_T) prCurrSwRfb);

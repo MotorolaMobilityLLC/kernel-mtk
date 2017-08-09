@@ -2321,13 +2321,8 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	prSwRfb->fgFragFrame = FALSE;
 	prSwRfb->fgReorderBuffer = FALSE;
 
-	/* ToDo: Add comments by WH.Su */
-	if (HAL_RX_STATUS_IS_CIPHER_MISMATCH(prRxStatus)) {
-		/* DBGLOG(RX, TRACE, ("Not the CM bit\n")); */
-		prRxStatus->u2StatusFlag = prRxStatus->u2StatusFlag & !RX_STATUS_FLAG_CIPHER_MISMATCH;
-	}
 	/* BA session */
-	if (prRxStatus->u2StatusFlag == RXS_DW2_AMPDU_nERR_VALUE)
+	if ((prRxStatus->u2StatusFlag & RXS_DW2_AMPDU_nERR_BITMAP) == RXS_DW2_AMPDU_nERR_VALUE)
 		prSwRfb->fgReorderBuffer = TRUE;
 	/* non BA session */
 	else if ((prRxStatus->u2StatusFlag & RXS_DW2_RX_nERR_BITMAP) == RXS_DW2_RX_nERR_VALUE) {
