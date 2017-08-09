@@ -42,6 +42,8 @@
 static int mtk_cpu_num;
 
 static int ram_console_init_done;
+static unsigned int old_wdt_status;
+static int ram_console_clear;
 
 /*
    This group of API call by sub-driver module to report reboot reasons
@@ -504,10 +506,12 @@ void ram_console_enable_console(int enabled)
 
 static int ram_console_check_header(struct ram_console_buffer *buffer)
 {
-	/*int i; */
-	if (!buffer || (buffer->sz_buffer != ram_console_buffer->sz_buffer)
-	    || buffer->off_pl > buffer->sz_buffer || buffer->off_lk > buffer->sz_buffer
-	    || buffer->off_linux > buffer->sz_buffer || buffer->off_console > buffer->sz_buffer) {
+	/*int i;*/
+	if (!buffer || (buffer->sz_buffer != ram_console_buffer->sz_buffer) || buffer->off_pl > buffer->sz_buffer
+	    || buffer->off_lk > buffer->sz_buffer || buffer->off_linux > buffer->sz_buffer
+	    || buffer->off_console > buffer->sz_buffer
+	    || buffer->off_pl + ALIGN(buffer->sz_pl, 64) != buffer->off_lpl
+	    || buffer->off_lk + ALIGN(buffer->sz_lk, 64) != buffer->off_llk) {
 		pr_err("ram_console: ilegal header.");
 		/*
 		   for (i = 0; i < 16; i++)
@@ -546,6 +550,7 @@ static int ram_console_lastk_show(struct ram_console_buffer *buffer, struct seq_
 
 	seq_printf(m, "ram console header, hw_status: %u, fiq step %u.\n",
 		   wdt_status, LAST_RRR_BUF_VAL(buffer, fiq_step));
+	seq_printf(m, "%s, old status is %u.\n", ram_console_clear ? "Clear" : "Not Clear", old_wdt_status);
 
 #ifdef CONFIG_PSTORE_CONSOLE
 	/*pr_err("ram_console: pstore show start\n");*/
@@ -582,10 +587,13 @@ static int __init ram_console_save_old(struct ram_console_buffer *buffer, size_t
 static int __init ram_console_init(struct ram_console_buffer *buffer, size_t buffer_size)
 {
 	ram_console_buffer = buffer;
+	buffer->sz_buffer = buffer_size;
 
-	if (buffer->sig != REBOOT_REASON_SIG) {
+	old_wdt_status = LAST_RRPL_BUF_VAL(buffer, wdt_status);
+	if (buffer->sig != REBOOT_REASON_SIG  || ram_console_check_header(buffer)) {
 		memset_io((void *)buffer, 0, buffer_size);
 		buffer->sig = REBOOT_REASON_SIG;
+		ram_console_clear = 1;
 	}
 	ram_console_save_old(buffer, buffer_size);
 	if (buffer->sz_lk != 0 && buffer->off_lk + ALIGN(buffer->sz_lk, 64) == buffer->off_llk)
@@ -2753,6 +2761,7 @@ int aee_rr_reboot_reason_show(struct seq_file *m, void *v)
 
 	if (ram_console_check_header(ram_console_old)) {
 		seq_puts(m, "NO VALID DATA.\n");
+		seq_printf(m, "%s, old status is %u.\n", ram_console_clear ? "Clear" : "Not Clear", old_wdt_status);
 		seq_puts(m, "Only try to dump last_XXX.\n");
 		for (i = 0; i < array_size(aee_rr_last_xxx); i++)
 			aee_rr_last_xxx[i] (m);
