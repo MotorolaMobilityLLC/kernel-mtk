@@ -77,7 +77,7 @@ extern struct clk *clk_btif_apdma; /*btif apdma clock*/
 #define TX_DMA_VFF_VALID_SIZE(base) (unsigned long)(base + 0x3C) /*BTIF Tx Virtual FIFO Valid Size Register */
 #define TX_DMA_VFF_LEFT_SIZE(base)  (unsigned long)(base + 0x40) /*BTIF Tx Virtual FIFO Left Size Register */
 #define TX_DMA_DEBUG_STATUS(base)   (unsigned long)(base + 0x50) /*BTIF Tx Virtual FIFO Debug Status Register */
-#define TX_DMA_VFF_ADDR_BIT29(base) (unsigned long)(base + 0x54) /*BTIF Tx Virtual FIFO Base Address Register BIT29*/
+#define TX_DMA_VFF_ADDR_H(base)     (unsigned long)(base + 0x54) /*BTIF Tx Virtual FIFO Base High Address Register */
 
 /*Rx Register Address Mapping*/
 #define RX_DMA_INT_FLAG(base)       (unsigned long)(base + 0x0)	/*BTIF Rx Virtual FIFO Interrupt Flag Register */
@@ -96,7 +96,7 @@ extern struct clk *clk_btif_apdma; /*btif apdma clock*/
 #define RX_DMA_VFF_VALID_SIZE(base) (unsigned long)(base + 0x3C) /*BTIF Rx Virtual FIFO Valid Size Register */
 #define RX_DMA_VFF_LEFT_SIZE(base)  (unsigned long)(base + 0x40) /*BTIF Rx Virtual FIFO Left Size  Register */
 #define RX_DMA_DEBUG_STATUS(base)   (unsigned long)(base + 0x50) /*BTIF Rx Virtual FIFO Debug Status Register */
-#define RX_DMA_VFF_ADDR_BIT29(base) (unsigned long)(base + 0x54) /*BTIF Rx Virtual FIFO Base Address Register BIT29*/
+#define RX_DMA_VFF_ADDR_H(base)     (unsigned long)(base + 0x54) /*BTIF Rx Virtual FIFO Base High Address Register */
 
 #define DMA_EN_BIT (0x1)
 #define DMA_STOP_BIT (0x1)
