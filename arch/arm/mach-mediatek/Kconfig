@@ -11,5 +11,6 @@ if ARCH_MEDIATEK
 config MACH_MT2701
 	bool "MediaTek MT2701 SoCs support"
 	default ARCH_MEDIATEK
+	select MFD_SYSCON
 
 endif
