@@ -1475,7 +1475,7 @@ int mt_afe_update_hw_ptr(enum mt_afe_mem_context mem_context)
 	struct snd_pcm_runtime *runtime;
 	int rc = 0;
 
-	if (unlikely(mem_context > MT_AFE_MEM_CTX_COUNT || mem_context < 0))
+	if (mem_context >= MT_AFE_MEM_CTX_COUNT || mem_context < 0)
 		return rc;
 
 	afe_block = &(afe_mem_control_context[mem_context]->block);
