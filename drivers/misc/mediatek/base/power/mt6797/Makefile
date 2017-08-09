@@ -37,7 +37,7 @@ obj-y += mt_vcorefs_governor.o
 obj-y += mt_ptp.o
 #obj-y += mt_static_power.o
 obj-y += mt_cpufreq.o
-#obj-y += mt_gpufreq.o
+obj-y += mt_gpufreq.o
 #obj-y += mt_cpuidle.o
 
 #obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o

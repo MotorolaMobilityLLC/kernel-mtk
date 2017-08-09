@@ -14,7 +14,9 @@
 #include <linux/proc_fs.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
+#endif
 #include <linux/spinlock.h>
 #include <linux/kthread.h>
 #include <linux/hrtimer.h>
@@ -301,13 +303,17 @@ static bool mt_gpufreq_debug;
 static bool mt_gpufreq_pause;
 static bool mt_gpufreq_keep_max_frequency_state;
 static bool mt_gpufreq_keep_opp_frequency_state;
+#if 0
 static unsigned int mt_gpufreq_keep_opp_frequency;
+#endif
 static unsigned int mt_gpufreq_keep_opp_index;
 static bool mt_gpufreq_fixed_freq_volt_state;
 static unsigned int mt_gpufreq_fixed_frequency;
 static unsigned int mt_gpufreq_fixed_voltage;
 
+#if 0
 static unsigned int mt_gpufreq_volt_enable;
+#endif
 static unsigned int mt_gpufreq_volt_enable_state;
 #ifdef MT_GPUFREQ_INPUT_BOOST
 static unsigned int mt_gpufreq_input_boost_state = 1;
@@ -368,6 +374,12 @@ static unsigned int mt_gpufreq_pbm_limited_gpu_power;	/* PBM limit power */
 static unsigned int mt_gpufreq_pbm_limited_index;	/* Limited frequency index for PBM */
 #endif
 
+int __attribute__ ((weak))
+get_immediate_gpu_wrap(void)
+{
+	pr_err("get_immediate_gpu_wrap doesn't exist");
+	return 0;
+}
 #ifdef MT_GPUFREQ_LOW_BATT_VOLUME_POLLING_TIMER
 enum hrtimer_restart mt_gpufreq_low_batt_volume_timer_func(struct hrtimer *timer)
 {
@@ -1273,6 +1285,7 @@ static void mt_gpufreq_volt_switch(unsigned int volt_old, unsigned int volt_new)
 
 static unsigned int _mt_gpufreq_get_cur_freq(void)
 {
+	#if 0
 	unsigned int mmpll = 0;
 	unsigned int freq = 0;
 
@@ -1292,6 +1305,8 @@ static unsigned int _mt_gpufreq_get_cur_freq(void)
 	gpufreq_dbg("mmpll = 0x%x, freq = %d\n", mmpll, freq);
 
 	return freq;		/* KHz */
+	#endif
+	return 0;
 }
 
 static unsigned int _mt_gpufreq_get_cur_volt(void)
@@ -2104,7 +2119,7 @@ void mt_gpufreq_setvolt_registerCB(sampler_func pCB)
 }
 EXPORT_SYMBOL(mt_gpufreq_setvolt_registerCB);
 
-
+#ifdef CONFIG_HAS_EARLYSUSPEND
 /*********************************
  * early suspend callback function
  **********************************/
@@ -2123,10 +2138,10 @@ void mt_gpufreq_late_resume(struct early_suspend *h)
 
 	/* mt_gpufreq_state_set(1); */
 }
-
+#endif
 static unsigned int mt_gpufreq_dvfs_get_gpu_freq(void)
 {
-#if 1
+#if 0
 	unsigned int mmpll = 0;
 	unsigned int freq = 0;
 
@@ -2150,12 +2165,8 @@ static unsigned int mt_gpufreq_dvfs_get_gpu_freq(void)
 		BUG();
 
 	return mmpll;		/* KHz */
-#else
-	unsigned int gpu_freq = mt_get_mfgclk_freq();
-	/* check freq meter */
-	gpufreq_dbg("g_cur_gpu_freq = %d KHz, Meter = %d KHz\n", g_cur_gpu_freq, gpu_freq);
-	return gpu_freq;
 #endif
+	return 0;
 }
 
 static int mt_gpufreq_pm_restore_early(struct device *dev)
@@ -2430,7 +2441,8 @@ static struct platform_driver mt_gpufreq_pdrv = {
 };
 
 
-#ifdef CONFIG_PROC_FS
+/* #ifdef CONFIG_PROC_FS */
+#if 0
 /*
  * PROC
  */
@@ -2723,10 +2735,11 @@ static ssize_t mt_gpufreq_limited_power_proc_write(struct file *file,
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtouint(desc, 0, &power) == 0) {
+	if (kstrtouint(desc, 0, &power) == 0)
 		mt_gpufreq_thermal_protect(power);
 	else
 		gpufreq_warn("bad argument!! please provide the maximum limited power\n");
+
 
 	return count;
 }
@@ -2759,7 +2772,7 @@ static ssize_t mt_gpufreq_limited_by_pbm_proc_write(struct file *file, const cha
 		return 0;
 	desc[len] = '\0';
 
-	if (kstrtouint(desc, 0, &power) == 0) {
+	if (kstrtouint(desc, 0, &power) == 0)
 		mt_gpufreq_set_power_limit_by_pbm(power);
 	else
 		gpufreq_warn("bad argument!! please provide the maximum limited power\n");
@@ -3273,9 +3286,9 @@ static int mt_gpufreq_create_procfs(void)
 /**********************************
  * mediatek gpufreq initialization
  ***********************************/
+ #if 0
 static int __init mt_gpufreq_init(void)
 {
-#if 0
 	int ret = 0;
 
 	gpufreq_info("@%s\n", __func__);
@@ -3343,12 +3356,8 @@ static int __init mt_gpufreq_init(void)
 
 out:
 	return ret;
-
-#else
-	return 0;
-#endif
 }
-
+#endif
 static void __exit mt_gpufreq_exit(void)
 {
 	platform_driver_unregister(&mt_gpufreq_pdrv);
