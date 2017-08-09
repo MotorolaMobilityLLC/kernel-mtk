@@ -64,7 +64,7 @@ static bool mmp_trace_log_on;
 			pr_debug("MMP:%s(): "fmt"\n", __func__, ##arg); \
 	} while (0)
 
-#define MMP_MSG(fmt, arg...) pr_notice("MMP: %s(): "fmt"\n", __func__, ##arg)
+#define MMP_MSG(fmt, arg...) pr_warn("MMP: %s(): "fmt"\n", __func__, ##arg)
 
 typedef struct {
 	MMProfile_EventInfo_t event_info;
