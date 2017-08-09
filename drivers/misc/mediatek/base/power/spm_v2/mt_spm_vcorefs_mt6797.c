@@ -185,6 +185,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_info("SPM_SW_RSV_3    : 0x%x\n", spm_read(SPM_SW_RSV_3));
 		spm_vcorefs_info("SPM_SW_RSV_4    : 0x%x\n", spm_read(SPM_SW_RSV_4));
 		spm_vcorefs_info("SPM_SW_RSV_5    : 0x%x\n", spm_read(SPM_SW_RSV_5));
+		spm_vcorefs_info("PCM_REG_DATA_INI: 0x%x\n", spm_read(PCM_REG_DATA_INI));
 		spm_vcorefs_info("PCM_REG0_DATA   : 0x%x\n", spm_read(PCM_REG0_DATA));
 		spm_vcorefs_info("PCM_REG1_DATA   : 0x%x\n", spm_read(PCM_REG1_DATA));
 		spm_vcorefs_info("PCM_REG2_DATA   : 0x%x\n", spm_read(PCM_REG2_DATA));
@@ -202,6 +203,8 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_info("PCM_REG14_DATA  : 0x%x\n", spm_read(PCM_REG14_DATA));
 		spm_vcorefs_info("PCM_REG15_DATA  : %u\n"  , spm_read(PCM_REG15_DATA));
 		spm_vcorefs_info("PCM_IM_PTR      : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
+
+		scp_dump_regs();
 	}
 
 	return p;

@@ -170,9 +170,8 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 				if (retry > timeout) {
 					pr_err("[VcoreFS] CPU waiting F/W ack fail, PCM_FSM_STA: 0x%x, timeout: %d\n",
 								spm_read(PCM_FSM_STA), timeout);
-					pr_err("[VcoreFS] R6: 0x%x, R15: 0x%x\n",
-								spm_read(PCM_REG6_DATA), spm_read(PCM_REG15_DATA));
 #ifdef SPM_VCORE_EN_MT6797
+					spm_vcorefs_dump_dvfs_regs(NULL);
 					BUG();
 #else
 					__check_dvfs_halt_source(__spm_vcore_dvfs.pwrctrl->dvfs_halt_src_chk);
