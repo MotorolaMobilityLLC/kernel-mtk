@@ -120,7 +120,7 @@ static int ipanic_mmprofile(void *data, unsigned char *buffer, size_t sz_buf)
 		}
 	}
 
-	MMProfileGetDumpBuffer(index, (unsigned int *)&pbuf, &bufsize);
+	MMProfileGetDumpBuffer(index, (unsigned long *)&pbuf, &bufsize);
 	if (bufsize == 0) {
 		errno = 0;
 	} else if (bufsize > sz_buf) {

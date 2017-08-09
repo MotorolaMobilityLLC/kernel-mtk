@@ -240,7 +240,7 @@ extern unsigned int reset_boot_up_device(int type);	/* force to re-initialize th
 /*#ifdef CONFIG_MTK_MMPROFILE_SUPPORT*/
 #ifdef CONFIG_MMPROFILE
 extern unsigned int MMProfileGetDumpSize(void);
-extern void MMProfileGetDumpBuffer(unsigned int Start, unsigned int *pAddr, unsigned int *pSize);
+extern void MMProfileGetDumpBuffer(unsigned int Start, unsigned long *pAddr, unsigned int *pSize);
 #endif
 extern void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs);
 extern void mrdump_mini_ke_cpu_regs(struct pt_regs *regs);
