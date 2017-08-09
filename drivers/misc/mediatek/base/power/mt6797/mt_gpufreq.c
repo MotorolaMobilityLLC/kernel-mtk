@@ -36,7 +36,6 @@
 
 #include <asm/uaccess.h>
 
-
 #include "mach/mt_clkmgr.h"
 #include "mt_cpufreq.h"
 #include "mt_gpufreq.h"
@@ -629,8 +628,7 @@ static void mt_gpufreq_power_calculation(unsigned int idx, unsigned int freq,
 	    ((freq * 100) / ref_freq) *
 	    ((volt * 100) / ref_volt) * ((volt * 100) / ref_volt) / (100 * 100 * 100);
 
-	/* FIXME: should not use a hardcode value for leakage power */
-#if 0
+#ifdef STATIC_PWR_READY2USE
 	p_leakage =
 	    mt_spower_get_leakage(MT_SPOWER_GPU, (volt / 100), temp);
 #else
@@ -2020,13 +2018,14 @@ unsigned int mt_gpufreq_get_leakage_mw(void)
 #else
 	temp = 40;
 #endif
-	/* FIXME: spower is not ready */
-#if 0
-	return mt_spower_get_leakage(MT_SPOWER_VCORE, cur_vcore, temp);
+
+#ifdef STATIC_PWR_READY2USE
+	return mt_spower_get_leakage(MT_SPOWER_GPU, cur_vcore, temp);
 #else
 	return 130;
 #endif
-#else
+
+#else /* DISABLE_PBM_FEATURE */
 	return 0;
 #endif
 }
@@ -2235,8 +2234,9 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	/**********************
 	 * Initial leackage power usage
 	 ***********************/
-	/* TODO: check this! */
-	/* mt_spower_init(); */
+#ifdef STATIC_PWR_READY2USE
+	mt_spower_init();
+#endif
 
 	/**********************
 	 * Initial SRAM debugging ptr
