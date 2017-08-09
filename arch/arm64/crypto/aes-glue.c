@@ -164,6 +164,7 @@ static int cbc_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
 	int err, first, rounds = 6 + ctx->key_length / 4;
 	struct blkcipher_walk walk;
 	unsigned int blocks;
+	u8 update_iv[AES_BLOCK_SIZE];
 
 	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
 	blkcipher_walk_init(&walk, dst, src, nbytes);
@@ -171,9 +172,17 @@ static int cbc_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
 
 	kernel_neon_begin();
 	for (first = 1; (blocks = (walk.nbytes / AES_BLOCK_SIZE)); first = 0) {
+
+		if (blocks && (blocks < (nbytes / AES_BLOCK_SIZE)))
+			memcpy(update_iv, walk.src.virt.addr + walk.nbytes - walk.ivsize, walk.ivsize);
+
 		aes_cbc_decrypt(walk.dst.virt.addr, walk.src.virt.addr,
 				(u8 *)ctx->key_dec, rounds, blocks, walk.iv,
 				first);
+
+		if (blocks && (blocks < (nbytes / AES_BLOCK_SIZE)))
+			memcpy(walk.iv, update_iv, walk.ivsize);
+
 		err = blkcipher_walk_done(desc, &walk, walk.nbytes % AES_BLOCK_SIZE);
 	}
 	kernel_neon_end();
@@ -208,6 +217,7 @@ static int ctr_encrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
 	if (nbytes) {
 		u8 *tdst = walk.dst.virt.addr + blocks * AES_BLOCK_SIZE;
 		u8 *tsrc = walk.src.virt.addr + blocks * AES_BLOCK_SIZE;
+
 		u8 __aligned(8) tail[AES_BLOCK_SIZE];
 
 		/*
