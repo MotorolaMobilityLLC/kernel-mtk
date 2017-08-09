@@ -154,7 +154,7 @@
 	(((((new_volt) - (old_volt)) + 1250 - 1) / 1250) + PMIC_CMD_DELAY_TIME)
 #define PMIC_VOLT_DOWN_SETTLE_TIME(old_volt, new_volt)	\
 	(((((old_volt) - (new_volt)) * 2)  / 625) + PMIC_CMD_DELAY_TIME)
-#define PMIC_VOLT_ON_OFF_DELAY_US       (200)
+#define PMIC_VOLT_ON_OFF_DELAY_US       (400)
 /* #define GPU_DVFS_PMIC_SETTLE_TIME (40) // us */
 
 #define PMIC_BUCK_VGPU_VOSEL_ON		MT6351_PMIC_BUCK_VGPU_VOSEL_ON
@@ -768,7 +768,8 @@ static unsigned int mt_gpufreq_calc_pmic_settle_time(unsigned int volt_old, unsi
 /* Set VGPU enable/disable when GPU clock be switched on/off */
 unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 {
-	unsigned int reg_val = 0, delay = 0;
+	unsigned int delay = 0;
+	unsigned short rg_buck_gpu_en = 0, rg_da_qi_gpu_en = 0;
 	int ret = 0;
 
 	if (enable == 0)
@@ -816,10 +817,9 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 
 	/* (g_cur_gpu_volt / 1250) + 26; */
 	/* delay = mt_gpufreq_calc_pmic_settle_time(0, g_cur_gpu_volt); */
-
+	delay = PMIC_VOLT_ON_OFF_DELAY_US;
 	gpufreq_dbg("@%s: enable = %x, delay = %d\n", __func__, enable, delay);
-
-	udelay(PMIC_VOLT_ON_OFF_DELAY_US);
+	udelay(delay);
 
 #ifdef MT_GPUFREQ_AEE_RR_REC
 	if (enable == 1)
@@ -830,15 +830,17 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 					   ~(1 << GPU_DVFS_IS_VGPU_ENABLED));
 #endif
 
-	pmic_read_interface(PMIC_ADDR_VGPU_EN, &reg_val,
-			    PMIC_ADDR_VGPU_EN_MASK, PMIC_ADDR_VGPU_EN_SHIFT);
+	rg_buck_gpu_en = pmic_get_register_value(PMIC_BUCK_VGPU_EN);
+	rg_da_qi_gpu_en = pmic_get_register_value(PMIC_DA_QI_VGPU_EN);
 
 	/* Error checking */
-	if (enable == 1 && reg_val == 0) {
+	if (enable == 1 && (rg_buck_gpu_en == 0 || rg_da_qi_gpu_en == 0)) {
 		/* VGPU enable fail, dump info and trigger BUG() */
 		int i = 0;
 
-		gpufreq_err("@%s: enable = %x, delay = %d\n", __func__, enable, delay);
+		gpufreq_err("@%s: enable=%x, delay=%d, buck_gpu_en=%u, da_qi_gpu_en=%u\n",
+			    __func__, enable, delay, rg_buck_gpu_en,
+			    rg_da_qi_gpu_en);
 
 		/* read PMIC chip id via PMIC wrapper */
 		for (i = 0; i < 10; i++) {
