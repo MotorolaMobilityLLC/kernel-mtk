@@ -2058,12 +2058,12 @@ int port_kernel_req_match(struct ccci_port *port, struct ccci_request *req)
 		case RPC_CCCI_LGE_FAC_VERIFY_UNLOCK_CODE:
 		case RPC_CCCI_LGE_FAC_WRITE_NETWORK_CODE:
 		case RPC_CCCI_LGE_FAC_INIT_SIM_LOCK_DATA:
-			CCCI_INF_MSG(port->modem->index, KERN, "userspace rpc msg 0x%x on %s\n",
+			CCCI_DBG_MSG(port->modem->index, KERN, "userspace rpc msg 0x%x on %s\n",
 						rpc_buf->op_id, port->name);
 			return 0;
 #endif
 		default:
-			CCCI_INF_MSG(port->modem->index, KERN, "kernelspace rpc msg 0x%x on %s\n",
+			CCCI_DBG_MSG(port->modem->index, KERN, "kernelspace rpc msg 0x%x on %s\n",
 						rpc_buf->op_id, port->name);
 			return 1;
 		}

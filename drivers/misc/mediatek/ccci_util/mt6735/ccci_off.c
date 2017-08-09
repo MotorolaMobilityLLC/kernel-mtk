@@ -310,15 +310,22 @@ static void internal_md_power_down(void)
 		     MD_TOPSM_RM_PWR_CON1(md_topsm_base));
 	sync_write32(ioread32(MD_TOPSM_RM_PWR_CON1(md_topsm_base)) | 0x00000090, MD_TOPSM_RM_PWR_CON1(md_topsm_base));
 	sync_write32(ioread32(MD_TOPSM_RM_PLL_MASK0(md_topsm_base)) | 0xFFFF0000, MD_TOPSM_RM_PLL_MASK0(md_topsm_base));
-	sync_write32(ioread32(MD_TOPSM_RM_PLL_MASK1(md_topsm_base)) | 0xFFFFFFFF, MD_TOPSM_RM_PLL_MASK1(md_topsm_base));
-	sync_write32(ioread32(MODEM_TOPSM_RM_PLL_MASK0(modem_topsm_base)) | 0xFFFFFFFF,
-		     MODEM_TOPSM_RM_PLL_MASK0(modem_topsm_base));
+
+/*	sync_write32(ioread32(MD_TOPSM_RM_PLL_MASK1(md_topsm_base)) | 0xFFFFFFFF,
+			MD_TOPSM_RM_PLL_MASK1(md_topsm_base));*/
+	sync_write32(0xFFFFFFFF, MD_TOPSM_RM_PLL_MASK1(md_topsm_base));
+/*	sync_write32(ioread32(MODEM_TOPSM_RM_PLL_MASK0(modem_topsm_base)) | 0xFFFFFFFF,
+			MODEM_TOPSM_RM_PLL_MASK0(modem_topsm_base));*/
+	sync_write32(0xFFFFFFFF, MODEM_TOPSM_RM_PLL_MASK0(modem_topsm_base));
+
 	sync_write32(ioread32(MODEM_TOPSM_RM_PLL_MASK1(modem_topsm_base)) | 0x0000000F,
-		     MODEM_TOPSM_RM_PLL_MASK1(modem_topsm_base));
-	sync_write32(ioread32(MODEM_LITE_TOPSM_RM_PLL_MASK0(modem_lite_topsm_base)) | 0xFFFFFFFF,
-		     MODEM_LITE_TOPSM_RM_PLL_MASK0(modem_lite_topsm_base));
+			MODEM_TOPSM_RM_PLL_MASK1(modem_topsm_base));
+/*	sync_write32(ioread32(MODEM_LITE_TOPSM_RM_PLL_MASK0(modem_lite_topsm_base)) | 0xFFFFFFFF,
+			MODEM_LITE_TOPSM_RM_PLL_MASK0(modem_lite_topsm_base));*/
+	sync_write32(0xFFFFFFFF, MODEM_LITE_TOPSM_RM_PLL_MASK0(modem_lite_topsm_base));
+
 	sync_write32(ioread32(MODEM_LITE_TOPSM_RM_PLL_MASK1(modem_lite_topsm_base)) | 0x0000000F,
-		     MODEM_LITE_TOPSM_RM_PLL_MASK1(modem_lite_topsm_base));
+			MODEM_LITE_TOPSM_RM_PLL_MASK1(modem_lite_topsm_base));
 
 	pr_debug("[ccci-off]7.power off CR4\n");
 	sync_write32(0xFFFFFFFF, MD_TOPSM_SM_REQ_MASK(md_topsm_base));

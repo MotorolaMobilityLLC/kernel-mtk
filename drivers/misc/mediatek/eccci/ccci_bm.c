@@ -422,8 +422,8 @@ void ccci_skb_queue_init(struct ccci_skb_queue *queue, unsigned int skb_size, un
 	if (fill_now) {
 		for (i = 0; i < queue->max_len; i++) {
 			struct sk_buff *skb = __alloc_skb_from_kernel(skb_size, GFP_KERNEL);
-
-			skb_queue_tail(&queue->skb_list, skb);
+			if (skb != NULL)
+				skb_queue_tail(&queue->skb_list, skb);
 		}
 		queue->pre_filled = 1;
 	} else {

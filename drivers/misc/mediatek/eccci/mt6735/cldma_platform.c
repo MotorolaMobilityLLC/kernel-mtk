@@ -270,9 +270,10 @@ int md_cd_power_on(struct ccci_modem *md)
 	/* config RFICx as BSI */
 	mutex_lock(&clk_buf_ctrl_lock);	/* fixme,clkbuf, ->down(&clk_buf_ctrl_lock_2); */
 	CCCI_INF_MSG(md->index, TAG, "clock buffer, BSI ignore mode\n");
-
-	RFIC0_01_mode = pinctrl_lookup_state(mdcldma_pinctrl, "RFIC0_01_mode");
-	pinctrl_select_state(mdcldma_pinctrl, RFIC0_01_mode);
+	if (NULL != mdcldma_pinctrl) {
+		RFIC0_01_mode = pinctrl_lookup_state(mdcldma_pinctrl, "RFIC0_01_mode");
+		pinctrl_select_state(mdcldma_pinctrl, RFIC0_01_mode);
+	}
 #endif
 	/* power on MD_INFRA and MODEM_TOP */
 	switch (md->index) {
