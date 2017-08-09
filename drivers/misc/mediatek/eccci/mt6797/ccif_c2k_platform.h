@@ -165,5 +165,6 @@ extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
 extern void mtk_wdt_set_c2k_sysrst(unsigned int flag);
 extern void ccci_mem_dump(int md_id, void *start_addr, int len);
+extern int mtk_wdt_swsysret_config(int bit, int set_value);
 
 #endif /*__CLDMA_PLATFORM_H__*/

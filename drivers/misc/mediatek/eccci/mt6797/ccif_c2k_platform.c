@@ -380,7 +380,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		*/
 
 		/*step 4: wake up C2K */
-#if 1
+#if 0
 		ccif_write32(md_ctrl->hw_info->toprgu_base,
 			     TOP_RGU_WDT_SWSYSRST,
 			     (ccif_read32
@@ -388,7 +388,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			       TOP_RGU_WDT_SWSYSRST) | 0x88000000) & (~(0x1 <<
 									16)));
 #else
-		mtk_wdt_set_c2k_sysrst(1);
+		mtk_wdt_swsysret_config(0x1 << 16, 0);
 #endif
 		CCCI_BOOTUP_LOG(md->index, TAG,
 			     "[C2K] TOP_RGU_WDT_SWSYSRST = 0x%x\n",
