@@ -2,6 +2,7 @@
 #include <linux/interrupt.h>
 
 #include "m4u_priv.h"
+#include "m4u_port_priv.h"
 #include "m4u_hw.h"
 
 #include <linux/of.h>
@@ -12,11 +13,23 @@ static m4u_domain_t gM4uDomain;
 static unsigned long gM4UBaseAddr[TOTAL_M4U_NUM];
 static unsigned long gLarbBaseAddr[SMI_LARB_NR];
 static unsigned long gPericfgBaseAddr;
+static unsigned int gM4UTagCount[]  = {64};
 
+static M4U_RANGE_DES_T gM4u0_seq[M4U0_SEQ_NR] = {{0} };
+/* static M4U_RANGE_DES_T gM4u1_seq[M4U1_SEQ_NR] = {{0} }; */
+static M4U_RANGE_DES_T *gM4USeq[] = {gM4u0_seq, NULL};
 static M4U_MAU_STATUS_T gM4u0_mau[M4U0_MAU_NR] = {{0} };
 static unsigned int gMAU_candidate_id = M4U0_MAU_NR - 1;
 
 static DEFINE_MUTEX(gM4u_seq_mutex);
+
+static M4U_PROG_DIST_T gM4U0_prog_pfh[M4U0_PROG_PFH_NR] = {{0} };
+/* static M4U_PROG_DIST_T gM4u1_prog_pfh[M4U0_PROG_PFH_NR] = {{0} }; */
+static M4U_PROG_DIST_T *gM4UProgPfh[] = {gM4U0_prog_pfh, NULL};
+
+static DEFINE_MUTEX(gM4u_prog_pfh_mutex);
+
+#define TF_PROTECT_BUFFER_SIZE 128L
 
 int gM4U_L2_enable = 1;
 int gM4U_4G_DRAM_Mode = 0;
@@ -829,6 +842,48 @@ const char *smi_clk_name[] = {
 };
 #endif
 
+#if !defined(CONFIG_MTK_CLKMGR)
+static int smi_larb_clock_prepare(void)
+{
+	int ret;
+
+	ret = clk_prepare(gM4uDev->smi_clk[SMI_COMMON_CLK]);
+	if (ret)
+		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[SMI_COMMON_CLK]);
+
+	ret = clk_prepare(gM4uDev->smi_clk[DISP0_SMI_LARB0_CLK]);
+	if (ret)
+		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[DISP0_SMI_LARB0_CLK]);
+	ret = clk_prepare(gM4uDev->smi_clk[VDEC0_VDEC_CLK]);
+	if (ret)
+		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VDEC0_VDEC_CLK]);
+	ret = clk_prepare(gM4uDev->smi_clk[VDEC1_LARB_CLK]);
+	if (ret)
+		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VDEC1_LARB_CLK]);
+	ret = clk_prepare(gM4uDev->smi_clk[VENC_VENC_CLK]);
+	if (ret)
+		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VENC_VENC_CLK]);
+	ret = clk_prepare(gM4uDev->smi_clk[VENC_LARB_CLK]);
+	if (ret)
+		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VENC_LARB_CLK]);
+
+	return 0;
+}
+
+static int smi_larb_clock_unprepare(void)
+{
+	clk_unprepare(gM4uDev->smi_clk[SMI_COMMON_CLK]);
+
+	clk_unprepare(gM4uDev->smi_clk[DISP0_SMI_LARB0_CLK]);
+	clk_unprepare(gM4uDev->smi_clk[VDEC0_VDEC_CLK]);
+	clk_unprepare(gM4uDev->smi_clk[VDEC1_LARB_CLK]);
+	clk_unprepare(gM4uDev->smi_clk[VENC_VENC_CLK]);
+	clk_unprepare(gM4uDev->smi_clk[VENC_LARB_CLK]);
+
+	return 0;
+}
+#endif
+
 static int larb_clock_on(int larb)
 {
 #if defined(CONFIG_MTK_CLKMGR)
@@ -843,12 +898,10 @@ static int larb_clock_on(int larb)
 	case 2:
 		enable_clock(MT_CG_IMAGE_LARB2_SMI, "m4u_larb2");
 	break;
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6753)
 	case 3:
 		enable_clock(MT_CG_VENC_VENC, "m4u_larb3");
 		enable_clock(MT_CG_VENC_LARB, "m4u_larb3");
 	break;
-#endif
 	default:
 		M4UMSG("error: unknown larb id  %d, %s\n", larb, __func__);
 	break;
@@ -858,33 +911,31 @@ static int larb_clock_on(int larb)
 
 	switch (larb) {
 	case 0:
-		ret = clk_prepare_enable(gM4uDev->smi_clk[DISP0_SMI_LARB0_CLK]);
+		ret = clk_enable(gM4uDev->smi_clk[DISP0_SMI_LARB0_CLK]);
 		if (ret)
-			M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[DISP0_SMI_LARB0_CLK]);
+			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[DISP0_SMI_LARB0_CLK]);
 	break;
 	case 1:
-		ret = clk_prepare_enable(gM4uDev->smi_clk[VDEC0_VDEC_CLK]);
+		ret = clk_enable(gM4uDev->smi_clk[VDEC0_VDEC_CLK]);
 	    if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VDEC0_VDEC_CLK]);
-	    ret = clk_prepare_enable(gM4uDev->smi_clk[VDEC1_LARB_CLK]);
+		M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[VDEC0_VDEC_CLK]);
+	    ret = clk_enable(gM4uDev->smi_clk[VDEC1_LARB_CLK]);
 	    if (ret)
-		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VDEC1_LARB_CLK]);
+		M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[VDEC1_LARB_CLK]);
 	break;
 	case 2:
-		ret = clk_prepare_enable(gM4uDev->smi_clk[LARB2_SMI_CLK]);
+		ret = clk_enable(gM4uDev->smi_clk[LARB2_SMI_CLK]);
 		if (ret)
-			M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[LARB2_SMI_CLK]);
+			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[LARB2_SMI_CLK]);
 	break;
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6753)
 	case 3:
-		ret = clk_prepare_enable(gM4uDev->smi_clk[VENC_VENC_CLK]);
+		ret = clk_enable(gM4uDev->smi_clk[VENC_VENC_CLK]);
 		if (ret)
-			M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VENC_VENC_CLK]);
-		ret = clk_prepare_enable(gM4uDev->smi_clk[VENC_LARB_CLK]);
+			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[VENC_VENC_CLK]);
+		ret = clk_enable(gM4uDev->smi_clk[VENC_LARB_CLK]);
 		if (ret)
-			M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[VENC_LARB_CLK]);
+			M4UMSG("error: enable clk %s fail!.\n", smi_clk_name[VENC_LARB_CLK]);
 	break;
-#endif
 	default:
 		M4UMSG("error: unknown larb id  %d, %s\n", larb, __func__);
 	break;
@@ -908,12 +959,10 @@ static int larb_clock_off(int larb)
 	case 2:
 		disable_clock(MT_CG_IMAGE_LARB2_SMI, "m4u_larb2");
 	break;
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6753)
 	case 3:
 		disable_clock(MT_CG_VENC_VENC, "m4u_larb3");
 		disable_clock(MT_CG_VENC_LARB, "m4u_larb3");
 	break;
-#endif
 	default:
 		M4UMSG("error: unknown larb id  %d, %s\n", larb, __func__);
 	break;
@@ -921,21 +970,19 @@ static int larb_clock_off(int larb)
 #else
 	switch (larb) {
 	case 0:
-		clk_disable_unprepare(gM4uDev->smi_clk[DISP0_SMI_LARB0_CLK]);
+		clk_disable(gM4uDev->smi_clk[DISP0_SMI_LARB0_CLK]);
 	break;
 	case 1:
-		clk_disable_unprepare(gM4uDev->smi_clk[VDEC0_VDEC_CLK]);
-		clk_disable_unprepare(gM4uDev->smi_clk[VDEC1_LARB_CLK]);
+		clk_disable(gM4uDev->smi_clk[VDEC0_VDEC_CLK]);
+		clk_disable(gM4uDev->smi_clk[VDEC1_LARB_CLK]);
 	break;
 	case 2:
-		clk_disable_unprepare(gM4uDev->smi_clk[LARB2_SMI_CLK]);
+		clk_disable(gM4uDev->smi_clk[LARB2_SMI_CLK]);
 	break;
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6753)
 	case 3:
-		clk_disable_unprepare(gM4uDev->smi_clk[VENC_VENC_CLK]);
-		clk_disable_unprepare(gM4uDev->smi_clk[VENC_LARB_CLK]);
+		clk_disable(gM4uDev->smi_clk[VENC_VENC_CLK]);
+		clk_disable(gM4uDev->smi_clk[VENC_LARB_CLK]);
 	break;
-#endif
 	default:
 		M4UMSG("error: unknown larb id  %d, %s\n", larb, __func__);
 	break;
@@ -969,7 +1016,7 @@ void smi_common_clock_on(void)
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "smi_common");
 	/* m4uHw_set_field_by_mask(0, 0xf4000108, 0x1, 0x1); */
 #else
-	int ret = clk_prepare_enable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
+	int ret = clk_enable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
 
 	if (ret)
 		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[SMI_COMMON_CLK]);
@@ -983,11 +1030,132 @@ void smi_common_clock_off(void)
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "smi_common");
 	/* m4uHw_set_field_by_mask(0, 0xf4000108, 0x1, 0x0); */
 #else
-	clk_disable_unprepare(gM4uDev->smi_clk[SMI_COMMON_CLK]);
+	clk_disable(gM4uDev->smi_clk[SMI_COMMON_CLK]);
 #endif
 }
 EXPORT_SYMBOL(smi_common_clock_off);
 
+int m4u_enable_prog_dist_by_id(int port, int id)
+{
+	unsigned long m4u_base = gM4UBaseAddr[m4u_port_2_m4u_id(port)];
+
+	spin_lock(&gM4u_reg_lock);
+	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(id), F_PF_EN(1), 1);
+	spin_unlock(&gM4u_reg_lock);
+
+	return 0;
+}
+
+int m4u_disable_prog_dist_by_id(int port, int id)
+{
+	unsigned long m4u_base = gM4UBaseAddr[m4u_port_2_m4u_id(port)];
+
+	spin_lock(&gM4u_reg_lock);
+	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(id), F_PF_EN(1), 0);
+	spin_unlock(&gM4u_reg_lock);
+
+	return 0;
+}
+
+int m4u_config_prog_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id, int sel)
+{
+	int i, free_id = -1;
+	int m4u_index = m4u_port_2_m4u_id(port);
+	unsigned int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
+	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
+	unsigned long larb_base;
+	unsigned int larb, larb_port;
+	unsigned int axi_id;
+	M4U_PROG_DIST_T *pProgPfh = gM4UProgPfh[m4u_index] + M4U_PROG_PFH_NUM(m4u_index)*m4u_slave_id;
+
+	larb = m4u_port_2_larb_id(port);
+	larb_port = m4u_port_2_larb_port(port);
+	larb_base = gLarbBaseAddr[larb];
+	axi_id = ((larb) << 7 | ((port) << 2) | mm_id);
+
+	mutex_lock(&gM4u_prog_pfh_mutex);
+
+	for (i = 0; i < M4U_PROG_PFH_NUM(m4u_index); i++) {
+		if (1 == pProgPfh[i].Enabled) {
+			if (axi_id == pProgPfh[i].axi_id) {
+				free_id = i;
+				M4UMSG(
+				"original value: module = %s, axi_id = %d, dir = %d, dist = %d, sel = %d.\n",
+				m4u_get_port_name(port), axi_id, dir, dist, sel);
+				M4UMSG(
+				"new value: module = %s, mm_id = %d, dir = %d, dist = %d, sel = %d.\n",
+				m4u_get_port_name(pProgPfh[i].port), pProgPfh[i].axi_id, pProgPfh[i].dir,
+				pProgPfh[i].dist, pProgPfh[i].sel);
+				break;
+			} else  if (((axi_id & F_PF_AXI_ID_MSK) == (pProgPfh[i].axi_id & F_PF_AXI_ID_MSK))
+				&& (sel == 0 || pProgPfh[i].sel == 0)) {
+				M4UERR(
+				"m4u error: cannot set two direction or difference distance in the same port.\n");
+				M4UMSG("original value: module = %s, axi_id = %d, dir = %d, dist = %d, sel = %d.\n",
+					m4u_get_port_name(port), axi_id, dir, dist, sel);
+				M4UMSG("new value: module = %s, axi_id = %d, dir = %d, dist = %d, sel = %d.\n",
+					m4u_get_port_name(pProgPfh[i].port), pProgPfh[i].axi_id,
+					pProgPfh[i].dir, pProgPfh[i].dist, pProgPfh[i].sel);
+				mutex_unlock(&gM4u_seq_mutex);
+				return -1;
+			}
+		} else {
+			free_id = i;
+			break;
+		}
+	}
+
+	if (free_id == -1) {
+		M4ULOG_MID("warning: can not find available prog pfh reg.\n");
+		mutex_unlock(&gM4u_prog_pfh_mutex);
+		return -1;
+	}
+
+	pProgPfh[free_id].Enabled = 1;
+	pProgPfh[free_id].port = port;
+	pProgPfh[free_id].axi_id = axi_id;
+	pProgPfh[free_id].dir = dir;
+	pProgPfh[free_id].dist = dist;
+	pProgPfh[free_id].en = en;
+	pProgPfh[free_id].sel = sel;
+	mutex_unlock(&gM4u_prog_pfh_mutex);
+
+	spin_lock(&gM4u_reg_lock);
+
+	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(free_id), F_PF_DIR(1), F_PF_DIR(!!(dir)));
+
+	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(free_id), F_PF_DIST(1), F_PF_DIST(dist));
+
+	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(free_id), F_PF_ID_MASK(1), F_PF_ID(axi_id));
+
+	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(free_id), F_PF_EN(1), F_PF_EN(!!(en)));
+
+	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(free_id), F_PF_ID_COMP_SEL(1), F_PF_ID_COMP_SEL(!!(sel)));
+
+	spin_unlock(&gM4u_reg_lock);
+
+	return free_id;
+}
+
+int m4u_invalid_prog_dist_by_id(int port, int id)
+{
+	int m4u_index = m4u_port_2_m4u_id(port);
+	int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
+	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
+	M4U_PROG_DIST_T *pProgPfh = gM4UProgPfh[m4u_index] + M4U_PROG_PFH_NUM(m4u_index)*m4u_slave_id;
+
+	mutex_lock(&gM4u_prog_pfh_mutex);
+
+	pProgPfh[id].Enabled = 0;
+
+	mutex_unlock(&gM4u_prog_pfh_mutex);
+
+	spin_lock(&gM4u_reg_lock);
+	M4U_WriteReg32(m4u_base, REG_MMU_PROG_DIST(id), 0);
+	spin_unlock(&gM4u_reg_lock);
+
+	return 0;
+}
 
 int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart, unsigned int MVAEnd)
 {
@@ -1122,7 +1290,7 @@ static int m4u_invalid_seq_range_by_mva(int m4u_index, int m4u_slave_id, unsigne
 static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 {
 	int m4u_index = m4u_port_2_m4u_id(port);
-	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
+	/* unsigned long m4u_base = gM4UBaseAddr[m4u_index]; */
 	unsigned long larb_base;
 	unsigned int larb, larb_port;
 	int ret = 0;
@@ -1134,11 +1302,11 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 
 	spin_lock(&gM4u_reg_lock);
 	/* Direction, one bit for each port, 1:-, 0:+ */
-	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PFH_DIR(port),
+	/* m4uHw_set_field_by_mask(m4u_base, REG_MMU_PFH_DIR(port),
 			F_MMU_PFH_DIR(port, 1), F_MMU_PFH_DIR(port, dir));
 
 	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PFH_DIST(port),
-			F_MMU_PFH_DIST_MASK(port), F_MMU_PFH_DIST_VAL(port, dis));
+			F_MMU_PFH_DIST_MASK(port), F_MMU_PFH_DIST_VAL(port, dis)); */
 
 	if (m4u_index == 0) {
 		int mmu_en = 0;
@@ -1421,7 +1589,7 @@ int m4u_reg_backup(void)
 	int m4u_id, m4u_slave;
 	int seq, mau;
 	unsigned int real_size;
-	int pfh_dist, pfh_dir;
+	int dist;
 
 	for (m4u_id = 0; m4u_id < TOTAL_M4U_NUM; m4u_id++) {
 		m4u_base = gM4UBaseAddr[m4u_id];
@@ -1435,10 +1603,8 @@ int m4u_reg_backup(void)
 		__M4U_BACKUP(m4u_base, REG_MMU_HW_DEBUG                    , *(pReg++));
 		__M4U_BACKUP(m4u_base, REG_MMU_NON_BLOCKING_DIS            , *(pReg++));
 		__M4U_BACKUP(m4u_base, REG_MMU_LEGACY_4KB_MODE             , *(pReg++));
-		for (pfh_dist = 0; pfh_dist < MMU_PFH_DIST_NR; pfh_dist++)
-			__M4U_BACKUP(m4u_base, REG_MMU_PFH_DIST_NR(pfh_dist)    , *(pReg++));
-		for (pfh_dir = 0; pfh_dir < MMU_PFH_DIR_NR; pfh_dir++)
-			__M4U_BACKUP(m4u_base, REG_MMU_PFH_DIR_NR(pfh_dir)    , *(pReg++));
+		for (dist = 0; dist < MMU_TOTAL_PROG_DIST_NR; dist++)
+			__M4U_BACKUP(m4u_base, REG_MMU_PROG_DIST(dist)     , *(pReg++));
 		__M4U_BACKUP(m4u_base, REG_MMU_CTRL_REG                    , *(pReg++));
 		__M4U_BACKUP(m4u_base, REG_MMU_IVRP_PADDR                  , *(pReg++));
 		__M4U_BACKUP(m4u_base, REG_MMU_INT_L2_CONTROL              , *(pReg++));
@@ -1480,7 +1646,7 @@ int m4u_reg_restore(void)
 	int m4u_id, m4u_slave;
 	int seq, mau;
 	unsigned int real_size;
-	int pfh_dist, pfh_dir;
+	int dist;
 
 	for (m4u_id = 0; m4u_id < TOTAL_M4U_NUM; m4u_id++) {
 		m4u_base = gM4UBaseAddr[m4u_id];
@@ -1494,10 +1660,8 @@ int m4u_reg_restore(void)
 		__M4U_RESTORE(m4u_base, REG_MMU_HW_DEBUG                    , *(pReg++));
 		__M4U_RESTORE(m4u_base, REG_MMU_NON_BLOCKING_DIS            , *(pReg++));
 		__M4U_RESTORE(m4u_base, REG_MMU_LEGACY_4KB_MODE             , *(pReg++));
-		for (pfh_dist = 0; pfh_dist < MMU_PFH_DIST_NR; pfh_dist++)
-			__M4U_RESTORE(m4u_base, REG_MMU_PFH_DIST_NR(pfh_dist)    , *(pReg++));
-		for (pfh_dir = 0; pfh_dir < MMU_PFH_DIR_NR; pfh_dir++)
-			__M4U_RESTORE(m4u_base, REG_MMU_PFH_DIR_NR(pfh_dir)    , *(pReg++));
+		for (dist = 0; dist < MMU_TOTAL_PROG_DIST_NR; dist++)
+			__M4U_RESTORE(m4u_base, REG_MMU_PROG_DIST(dist)     , *(pReg++));
 		__M4U_RESTORE(m4u_base, REG_MMU_CTRL_REG                    , *(pReg++));
 		__M4U_RESTORE(m4u_base, REG_MMU_IVRP_PADDR                  , *(pReg++));
 		__M4U_RESTORE(m4u_base, REG_MMU_INT_L2_CONTROL              , *(pReg++));
@@ -2111,6 +2275,26 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 	unsigned long pProtectVA;
 	phys_addr_t ProtectPA;
 
+#if !defined(CONFIG_MTK_CLKMGR)
+	int i;
+
+	/*gM4uDev->infra_m4u = devm_clk_get(gM4uDev->pDev[m4u_id], "infra_m4u");
+	if (IS_ERR(gM4uDev->infra_m4u)) {
+		M4UMSG("cannot get infra m4u clock\n");
+		return PTR_ERR(gM4uDev->infra_m4u);
+	}*/
+
+	for (i = SMI_COMMON_CLK; i < SMI_CLK_NUM; i++) {
+		gM4uDev->smi_clk[i] = devm_clk_get(gM4uDev->pDev[m4u_id], smi_clk_name[i]);
+		if (IS_ERR(gM4uDev->smi_clk[i])) {
+			M4UMSG("cannot get %s clock\n", smi_clk_name[i]);
+			return PTR_ERR(gM4uDev->smi_clk[i]);
+		}
+	}
+	smi_larb_clock_prepare();
+	smi_common_clock_on();
+#endif
+
 	gM4UBaseAddr[m4u_id] = m4u_dev->m4u_base[m4u_id];
 
 	pProtectVA = (unsigned long) kmalloc(TF_PROTECT_BUFFER_SIZE*2, GFP_KERNEL|__GFP_ZERO);
@@ -2178,6 +2362,9 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 
 int m4u_hw_deinit(struct m4u_device *m4u_dev, int m4u_id)
 {
+#if !defined(CONFIG_MTK_CLKMGR)
+	smi_larb_clock_unprepare();
+#endif
 
 #if 1
 	free_irq(m4u_dev->irq_num[m4u_id], NULL);

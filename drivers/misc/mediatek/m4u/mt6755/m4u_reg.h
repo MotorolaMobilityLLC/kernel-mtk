@@ -1,5 +1,12 @@
-#ifndef _MT6735_M4U_REG_D2_H__
-#define _MT6735_M4U_REG_D2_H__
+#ifndef _JADE_M4U_REG_H__
+#define _JADE_M4U_REG_H__
+
+#define M4U_BASE0	0xf0205000
+
+#define LARB0_BASE	0xf4015000
+#define LARB1_BASE	0xf6010000
+#define LARB2_BASE	0xf5001000
+#define LARB3_BASE	0xf7001000
 
 /* ================================================= */
 /* common macro definitions */
@@ -18,6 +25,7 @@
 #define REG_MMUg_PT_BASE_SEC         (0x4)
  #define F_MMUg_PT_VA_MSK_SEC        0xffff0000
 
+
 #define REG_MMU_PROG_EN                 0x10
     #define F_MMU0_PROG_EN               1
 
@@ -30,12 +38,12 @@
 
 #define REG_MMU_PROG_DSC                0x18
 
-#define REG_MMU_INVLD		 (0x20)
-    #define F_MMU_INV_ALL		 0x2
-    #define F_MMU_INV_RANGE	 0x1
+#define REG_MMU_INVLD		(0x20)
+    #define F_MMU_INV_ALL		0x2
+    #define F_MMU_INV_RANGE		0x1
 
-#define REG_MMU_INVLD_SA		 (0x24)
-#define REG_MMU_INVLD_EA          (0x28)
+#define REG_MMU_INVLD_SA		(0x24)
+#define REG_MMU_INVLD_EA		(0x28)
 
 #define REG_MMU_INVLD_SEC           (0x2c)
      #define F_MMU_INV_SEC_ALL          0x2
@@ -44,20 +52,25 @@
 #define REG_MMU_INVLD_SA_SEC        (0x30)
 #define REG_MMU_INVLD_EA_SEC        (0x34)
 
-#define REG_INVLID_SEL		 (0x38)
- #define F_MMU_INV_EN_L1	 (1<<0)
- #define F_MMU_INV_EN_L2	 (1<<1)
+#define REG_INVLID_SEL		(0x38)
+ #define F_MMU_INV_EN_L2	(1<<1)
+ #define F_MMU_INV_EN_L1	(1<<0)
 
 #define REG_INVLID_SEL_SEC          (0x3c)
- #define F_MMU_INV_SEC_EN_L1	 (1<<0)
- #define F_MMU_INV_SEC_EN_L2	 (1<<1)
- #define F_MMU_INV_SEC_INV_DONE      (1<<2)
- #define F_MMU_INV_SEC_INV_INT_CLR   (1<<3)
- #define F_MMU_INV_SEC_INV_INT_EN    (1<<4)
  #define F_MMU_INV_SEC_DBG           (1<<5)
-
+ #define F_MMU_INV_SEC_INV_INT_EN    (1<<4)
+ #define F_MMU_INV_SEC_INV_INT_CLR   (1<<3)
+ #define F_MMU_INV_SEC_INV_DONE      (1<<2)
+ #define F_MMU_INV_SEC_EN_L2		(1<<1)
+ #define F_MMU_INV_SEC_EN_L1		(1<<0)
 
 #define REG_MMU_SEC_ABORT_INFO      (0x40)
+    #define F_MMU_M4U_DOMAIN_ABORT    F_BIT_VAL(en, 31)
+    #define F_MMU_SEC_ABORT_WR(en)    F_BIT_VAL(en, 29)
+    #define F_MMU_SEC_ABORT_ADDR    F_MSK_SHIFT(regval, 28, 17)
+    #define F_MMU_SEC_ABORT_DOMAIN    F_MSK_SHIFT(regval, 16, 14)
+    #define F_MMU_SEC_ABORT_ID    F_MSK_SHIFT(regval, 13, 0)
+
 #define REG_MMU_DUMMY               (0X44)
 #define REG_MMU_STANDARD_AXI_MODE   (0x48)
 
@@ -67,6 +80,14 @@
  #define F_MMU_TABLE_WALK_ULTRA_BIT F_BIT_SET(0)
 
 #define REG_MMU_DCM_DIS         (0x50)
+    #define F_MMU_MTLB_LOGIC_STALL_DCM    F_BIT_SET(14)
+    #define F_MMU_RS_ENTRY_STALL_DCM    F_BIT_SET(13)
+    #define F_MMU_FIFO_ENTRY_STALL_DCM    F_BIT_SET(12)
+    #define F_MMU_SLICE_ENTRY_STALL_DCM    F_BIT_SET(11)
+    #define F_MMU_ULTRA_SLICE_STALL_ENTRY_DCM    F_BIT_SET(10)
+    #define F_MMU_L2_LOGIC_STALL_DCM    F_BIT_SET(9)
+    #define F_MMU_TOP_STALL_DCM     F_BIT_SET(8)
+    #define F_MMU_APB_DCM           F_BIT_SET(7)
     #define F_MMU_MTLB_LOGIC_DCM    F_BIT_SET(6)
     #define F_MMU_RS_ENTRY_DCM    F_BIT_SET(5)
     #define F_MMU_FIFO_ENTRY_DCM     F_BIT_SET(4)
@@ -88,18 +109,10 @@
     #define F_MMU_MMU0_BLOCKING_MODE  F_BIT_SET(0)
 
 #define REG_MMU_LEGACY_4KB_MODE     (0x60)
-
 #define REG_MMU_DBG0                (0X64)
-     #define F_MMU_L2_TLB_DBG_SIGNALS    F_MSK(13, 0)
-
 #define REG_MMU_DBG1                (0x68)
-     #define F_MMU_MMU0_AXI_INTERFACE_DBG_SIGNALS    F_MSK(12, 0)
-
 #define REG_MMU_DBG2                (0x6c)
-     #define F_MMU_MMU0_GLOBAL_DATA_COUNT_DBG_COUNTER    F_MSK(11, 0)
-
 #define REG_MMU_SMI_COMMON_DBG0     (0x78)
-     #define F_MMU_SMI_COMMON_DGB_SISGNALS    F_MSK(23, 0)
 
 #define REG_MMU_MMU_COHERENCE_EN          0x80
 #define REG_MMU_IN_ORDER_WR_EN            0x84
@@ -112,26 +125,26 @@
     #define F_READ_ENTRY_MMx_MAIN(id)       F_BIT_SET(27+id)
     #define F_READ_ENTRY_PFH                F_BIT_SET(26)
     #define F_READ_ENTRY_MAIN_IDX(idx)      F_VAL(idx, 16, 12)
-    #define F_READ_ENTRY_PFH_IDX(idx)       F_VAL(idx, 9, 5)
-    /* #define F_READ_ENTRY_PFH_HI_LO(high)    F_VAL(high, 4,4) */
-    /* #define F_READ_ENTRY_PFH_PAGE(page)     F_VAL(page, 3,2) */
+    #define F_READ_ENTRY_PFH_IDX(idx)       F_VAL(idx, 10, 5)
+    /* #define F_READ_ENTRY_PFH_HI_LO(high)    F_VAL(high, 4, 4) */
+    /* #define F_READ_ENTRY_PFH_PAGE(page)     F_VAL(page, 3, 2) */
     #define F_READ_ENTRY_PFH_PAGE_IDX(idx)    F_VAL(idx, 4, 2)
     #define F_READ_ENTRY_PFH_WAY(way)       F_VAL(way, 1, 0)
 
 #define REG_MMU_DES_RDATA        0x104
 
 #define REG_MMU_PFH_TAG_RDATA    0x108
-    #define F_PFH_TAG_VA_GET(mmu, tag)    ((mmu == 0)?F_MMU0_PFH_TAG_VA_GET(tag) : F_MMU1_PFH_TAG_VA_GET(tag))
-    #define F_MMU0_PFH_TAG_VA_GET(tag)    (F_MSK_SHIFT(tag, 15, 4)<<(MMU_SET_MSB_OFFSET(0)+1))
+    #define F_PFH_TAG_VA_GET(mmu, tag)    ((mmu == 0) ? F_MMU0_PFH_TAG_VA_GET(tag) : F_MMU1_PFH_TAG_VA_GET(tag))
+    #define F_MMU0_PFH_TAG_VA_GET(tag)    (F_MSK_SHIFT(tag, 14, 4)<<(MMU_SET_MSB_OFFSET(0)+1))
     #define F_MMU1_PFH_TAG_VA_GET(tag)    (F_MSK_SHIFT(tag, 15, 4)<<(MMU_SET_MSB_OFFSET(1)+1))
-    #define F_MMU_PFH_TAG_VA_LAYER0_MSK(mmu)  ((mmu = 0)?F_MSK(31, 28):F_MSK(31, 28))
+    #define F_MMU_PFH_TAG_VA_LAYER0_MSK(mmu)  ((mmu = 0) ? F_MSK(31, 29) : F_MSK(31, 28))
     #define F_PFH_TAG_LAYER_BIT         F_BIT_SET(3)
     #define F_PFH_TAG_16X_BIT           F_BIT_SET(2) /* this bit is always 0 -- cost down. */
     #define F_PFH_TAG_SEC_BIT           F_BIT_SET(1)
     #define F_PFH_TAG_AUTO_PFH          F_BIT_SET(0)
 
 /* tag related macro */
-    #define MMU0_SET_ORDER         5
+    #define MMU0_SET_ORDER         6
     #define MMU1_SET_ORDER         5
     #define MMU_SET_ORDER(mmu)      ((mmu == 0) ? MMU0_SET_ORDER : MMU1_SET_ORDER)
     #define MMU_SET_NR(mmu)    (1<<MMU_SET_ORDER(mmu))
@@ -144,16 +157,16 @@
     #define MMU_PFH_TOTAL_LINE(mmu) (MMU_SET_NR(mmu)*MMU_WAY_NR)
 
 #define REG_MMU_CTRL_REG         0x110
+    #define F_MMU_CTRL_HIT_AT_PFQ_EN(en)    F_BIT_VAL(en, 11)
+    #define F_MMU_CTRL_HIT_AT_PFQ_L2_EN(en) F_BIT_VAL(en, 10)
+    #define F_MMU_CTRL_HANG_PREVENTION(en)  F_BIT_VAL(en,  9)
+    #define F_MMU_CTRL_INVALID_FIFO_EN(en)  F_BIT_VAL(en,  8)
+    #define F_MMU_CTRL_LAYER2_PFH_DIS(dis)  F_BIT_VAL(dis, 7)
+    #define F_MMU_CTRL_INT_HANG_EN(en)      F_BIT_VAL(en,  6)
+    #define F_MMU_CTRL_TF_PROTECT_SEL(en)   F_VAL(en, 5, 4)
+    #define F_MMU_CTRL_MONITOR_CLR(clr)     F_BIT_VAL(clr, 2)
+    #define F_MMU_CTRL_MONITOR_EN(en)       F_BIT_VAL(en,  1)
     #define F_MMU_CTRL_PFH_DIS(dis)         F_BIT_VAL(dis, 0)
-    #define F_MMU_CTRL_MONITOR_EN(en)       F_BIT_VAL(en, 1)
-    #define F_MMU_CTRL_MONITOR_CLR(clr)       F_BIT_VAL(clr, 2)
-    #define F_MMU_CTRL_TF_PROTECT_SEL(en)           F_VAL(en, 5, 4)
-    #define F_MMU_CTRL_INT_HANG_EN(en)    F_BIT_VAL(en, 6)
-    #define F_MMU_CTRL_LAYER2_PREFETCH_DIS(dis)          F_BIT_VAL(dis, 7)
-    #define F_MMU_CTRL_INVALIDATE_FIFO_EN(en)        F_BIT_VAL(en, 8)
-    #define F_MMU_CTRL_HANG_PREVENTION(en)      F_BIT_VAL(en, 9)
-    #define F_MMU_CTRL_HIT_AT_PFQ_L2_EN(en)   F_BIT_VAL(en, 10)
-    #define F_MMU_CTRL_HIT_AT_PFQ_EN(en)   F_BIT_VAL(en, 11)
 
 #define REG_MMU_IVRP_PADDR       0x114
     #define F_MMU_IVRP_PA_SET(PA)       (PA>>1)
@@ -187,10 +200,11 @@
 #define REG_MMU_CPE_DONE        0x12C
 
 #define REG_MMU_L2_FAULT_ST         0x130
-    #define F_INT_L2_PFH_OUT_FIFO_ERROR                   F_BIT_SET(5)
-    #define F_INT_L2_PFH_IN_FIFO_ERROR                    F_BIT_SET(6)
-    #define F_INT_L2_MISS_OUT_FIFO_ERROR             F_BIT_SET(7)
     #define F_INT_L2_MISS_IN_FIFO_ERR                     F_BIT_SET(8)
+    #define F_INT_L2_MISS_OUT_FIFO_ERROR             F_BIT_SET(7)
+    #define F_INT_L2_PFH_IN_FIFO_ERROR                    F_BIT_SET(6)
+    #define F_INT_L2_PFH_OUT_FIFO_ERROR                   F_BIT_SET(5)
+
 #define REG_MMU_MAIN_FAULT_ST       0x134
 
 #define REG_MMU_TBWALK_FAULT_VA         0x138
@@ -214,10 +228,9 @@
 
 #define REG_MMU_PFH_VLD_0   (0x180)
 #define REG_MMU_PFH_VLD(mmu, set, way) \
-		(REG_MMU_PFH_VLD_0+(((set)>>5)<<2)+((way)<<((mmu == 0) \
-				? (MMU0_SET_ORDER - 3):(MMU1_SET_ORDER - 3))))
+	(REG_MMU_PFH_VLD_0+(((set)>>5)<<2)+((way)<<((mmu == 0) \
+			? (MMU0_SET_ORDER - 3):(MMU1_SET_ORDER - 3))))
     #define F_MMU_PFH_VLD_BIT(set, way)      F_BIT_SET((set)&0x1f)       /* set%32 */
-
 
 #define MMU01_SQ_OFFSET (0x600-0x300)
 #define REG_MMU_SQ_START(mmu, x)             (0x300+((x)<<3)+((mmu)*MMU01_SQ_OFFSET))
@@ -276,20 +289,24 @@
 #define REG_MMU_MAU_VA(mmu)                (0x990+((mmu)*0xa0))
 #define REG_MMU_MAU_ASSERT_ST(mmu)                (0x994+((mmu)*0xa0))
 
-
-#define REG_MMU_PFH_DIST0           0xb00
-#define REG_MMU_PFH_DIST1           0xb04
-#define REG_MMU_PFH_DIST2           0xb08
-#define REG_MMU_PFH_DIST3           0xb0c
-#define REG_MMU_PFH_DIST(port)      (REG_MMU_PFH_DIST0+(((port)>>3)<<2))
-    #define F_MMU_PFH_DIST_VAL(port, val) ((val&0xf)<<(((port)&0x7)<<2))
-    #define F_MMU_PFH_DIST_MASK(port)     F_MMU_PFH_DIST_VAL((port), 0xf)
-#define REG_MMU_PFH_DIST_NR(nr)      (REG_MMU_PFH_DIST0 + ((nr)<<2))
-
-#define REG_MMU_PFH_DIR0         0xd00
-#define REG_MMU_PFH_DIR(port)    (REG_MMU_PFH_DIR0)
-#define F_MMU_PFH_DIR(port, val) ((!!(val))<<((port)&0x1f))
-#define REG_MMU_PFH_DIR_NR(nr) (REG_MMU_PFH_DIR0 + ((nr)<<2))
+#define MMU_TOTAL_PROG_DIST_NR         8
+#define REG_MMU_PROG_DIST0           0xb00
+#define REG_MMU_PROG_DIST1           0xb04
+#define REG_MMU_PROG_DIST2           0xb08
+#define REG_MMU_PROG_DIST3           0xb0c
+#define REG_MMU_PROG_DIST4           0xb10
+#define REG_MMU_PROG_DIST5           0xb14
+#define REG_MMU_PROG_DIST6           0xb18
+#define REG_MMU_PROG_DIST7           0xb1c
+#define REG_MMU_PROG_DIST(dist)      (0xb00+((dist)<<2))
+    #define F_PF_ID_COMP_SEL(sel)    F_BIT_VAL(sel, 16)
+    #define F_PF_DIR(dir)            F_BIT_VAL(dir, 15)
+    #define F_PF_DIST(dist)          F_MSK_SHIFT(dist, 14, 11)
+    #define F_PF_AXI_ID_MSK          (~0x3) /* only for MM iommu. */
+    #define F_PF_ID_MASK(id)         F_MSK_SHIFT(id, 10, 1)
+    #define F_PF_ID(id)              F_VAL(id, 10, 1)
+    #define F_PF_EN(en)              F_BIT_VAL(en, 0)
+#define REG_MMU_SMI_ASYNC_CFG        0xb80
 
 /* ================================================================ */
 /* SMI larb */
@@ -307,13 +324,12 @@
     #define F_SMI_DOMN(port, domain)        ((domain&0xf)<<(((port)&0x7)<<2))
 
 /* ========================================================================= */
-/* peripheral system */
+/*        peripheral system */
 /* ========================================================================= */
 #define REG_PERIAXI_BUS_CTL3   (0x208)
     #define F_PERI_MMU_EN(port, en)       ((en)<<((port)))
 
-
-#include <mt-plat/sync_write.h>
+#include <sync_write.h>
 
 static inline unsigned int COM_ReadReg32(unsigned long addr)
 {
@@ -329,17 +345,18 @@ static inline unsigned int M4U_ReadReg32(unsigned long M4uBase, unsigned int Off
 {
 	unsigned int val;
 
-	val = COM_ReadReg32((M4uBase+Offset));
+	val = COM_ReadReg32((M4uBase + Offset));
 	return val;
 }
 
 static inline void M4U_WriteReg32(unsigned long M4uBase, unsigned int Offset, unsigned int Val)
 {
+	/* M4UMSG("M4U_WriteReg32: M4uBase: 0x%lx, Offset:0x%x, val:0x%x\n", M4uBase, Offset, Val); */
 	COM_WriteReg32((M4uBase+Offset), Val);
 }
 
 static inline void m4uHw_set_field_by_mask(unsigned long M4UBase, unsigned int reg,
-				      unsigned long mask, unsigned int val)
+					unsigned long mask, unsigned int val)
 {
 	unsigned int regval;
 
@@ -349,9 +366,9 @@ static inline void m4uHw_set_field_by_mask(unsigned long M4UBase, unsigned int r
 }
 
 static inline unsigned int m4uHw_get_field_by_mask(unsigned long M4UBase, unsigned int reg,
-				      unsigned int mask)
+					unsigned int mask)
 {
 	return M4U_ReadReg32(M4UBase, reg)&mask;
 }
 
-#endif /* _MT6735_M4U_REG_D2_H__ */
+#endif

@@ -1,38 +1,35 @@
-#include "m4u_platform.h"
-#include "m4u_priv.h"
-#include "m4u_hw.h"
+#ifndef __M4U_PORT_PRIV_H__
+#define __M4U_PORT_PRIV_H__
 
-unsigned int gM4UTagCount[]  = {32};
-
-const char *gM4U_SMILARB[] = {
+static const char * const gM4U_SMILARB[] = {
 	"mediatek,SMI_LARB0", "mediatek,SMI_LARB1", "mediatek,SMI_LARB2", "mediatek,SMI_LARB3"};
 
-M4U_RANGE_DES_T gM4u0_seq[M4U0_SEQ_NR] = {{0} };
-M4U_RANGE_DES_T *gM4USeq[] = {gM4u0_seq};
 
 #define M4U0_PORT_INIT(name, slave, larb, port)  {\
-		name, 0, slave, larb, port, (((larb)<<7)|((port)<<2)), 1 \
+		name, 0, slave, larb, port, (((larb)<<7)|((port)<<2)), 1\
 }
 
 m4u_port_t gM4uPort[] = {
+
 	M4U0_PORT_INIT("DISP_OVL0", 0, 0,  0),
 	M4U0_PORT_INIT("DISP_RDMA0", 0, 0,  1),
 	M4U0_PORT_INIT("DISP_WDMA0", 0, 0,  2),
 	M4U0_PORT_INIT("DISP_OVL1", 0, 0,  3),
 	M4U0_PORT_INIT("DISP_RDMA1", 0, 0,  4),
-	M4U0_PORT_INIT("DISP_OD_R", 0, 0,  5),
-	M4U0_PORT_INIT("DISP_OD_W", 0, 0,  6),
-	M4U0_PORT_INIT("MDP_RDMA", 0, 0,  7),
-	M4U0_PORT_INIT("MDP_WDMA", 0, 0,  8),
-	M4U0_PORT_INIT("MDP_WROT", 0, 0,  9),
+	M4U0_PORT_INIT("DISP_WDMA1", 0, 0,  5),
+	M4U0_PORT_INIT("DISP_2L_OVL0", 0, 0,  6),
+	M4U0_PORT_INIT("DISP_2L_OVL1", 0, 0,  7),
+	M4U0_PORT_INIT("MDP_RDMA", 0, 0,  8),
+	M4U0_PORT_INIT("MDP_WDMA", 0, 0,  9),
+	M4U0_PORT_INIT("MDP_WROT", 0, 0,  10),
 
 	M4U0_PORT_INIT("VDEC_MC", 0, 1,  0),
 	M4U0_PORT_INIT("VDEC_PP", 0, 1,  1),
-	M4U0_PORT_INIT("VDEC_AVC_MV", 0, 1,  2),
-	M4U0_PORT_INIT("VDEC_PRED_RD", 0, 1,  3),
-	M4U0_PORT_INIT("VDEC_PRED_WR", 0, 1,  4),
-	M4U0_PORT_INIT("VDEC_VLD", 0, 1,  5),
-	M4U0_PORT_INIT("VDEC_PPWRAP", 0, 1,  6),
+	M4U0_PORT_INIT("VDEC_VLD", 0, 1,  3),
+	M4U0_PORT_INIT("VDEC_AVC_MV", 0, 1,  4),
+	M4U0_PORT_INIT("VDEC_PRED_RD", 0, 1,  5),
+	M4U0_PORT_INIT("VDEC_PRED_WR", 0, 1,  6),
+	M4U0_PORT_INIT("VDEC_PPWRAP", 0, 1,  7),
 
 	M4U0_PORT_INIT("CAM_IMGO", 0, 2,  0),
 	M4U0_PORT_INIT("CAM_RRZO", 0, 2,  1),
@@ -72,3 +69,5 @@ m4u_port_t gM4uPort[] = {
 
 	M4U0_PORT_INIT("UNKNOWN", 0, 4,  0),
 };
+
+#endif

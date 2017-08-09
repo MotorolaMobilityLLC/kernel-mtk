@@ -1073,6 +1073,103 @@ int m4u_cache_sync(m4u_client_t *client, M4U_PORT_ID port,
 	return ret;
 }
 
+void m4u_dma_map_area(void *start, size_t size, M4U_DMA_DIR dir)
+{
+	if (dir == M4U_DMA_FROM_DEVICE)
+		dmac_map_area(start, size, DMA_FROM_DEVICE);
+	else if (dir == M4U_DMA_TO_DEVICE)
+		dmac_map_area(start, size, DMA_TO_DEVICE);
+}
+
+void m4u_dma_unmap_area(void *start, size_t size, M4U_DMA_DIR dir)
+{
+	if (dir == M4U_DMA_FROM_DEVICE)
+		dmac_unmap_area(start, size, DMA_FROM_DEVICE);
+	else if (dir == M4U_DMA_TO_DEVICE)
+		dmac_unmap_area(start, size, DMA_TO_DEVICE);
+}
+
+long m4u_dma_op(m4u_client_t *client, M4U_PORT_ID port,
+		unsigned long va, unsigned int size, unsigned int mva,
+		M4U_DMA_TYPE dma_type, M4U_DMA_DIR dma_dir)
+{
+	struct scatterlist *sg;
+	int i, j;
+	struct sg_table *table = NULL;
+	int npages = 0;
+	unsigned long start = -1;
+
+	m4u_buf_info_t *pMvaInfo = NULL;
+
+	if (client)
+		pMvaInfo = m4u_client_find_buf(client, mva, 0);
+
+	/* some user may sync mva from other client
+	(eg. ovl may not know who allocated this buffer,
+	but he need to sync cache).
+	we make a workaround here by query mva from mva manager */
+	if (!pMvaInfo)
+		pMvaInfo = mva_get_priv(mva);
+
+	if (!pMvaInfo) {
+		M4UMSG("m4u dma fail, cannot find buf: mva=0x%x, client=0x%p.\n", mva, client);
+		return -1;
+	}
+
+	if ((pMvaInfo->size != size) || (pMvaInfo->va != va)) {
+		M4UMSG("m4u dma fail: expect mva=0x%x,size=0x%x,va=0x%lx, but mva=0x%x,size=0x%x,va=0x%lx\n",
+			pMvaInfo->mva, pMvaInfo->size, pMvaInfo->va, mva, size, va);
+		return -1;
+	}
+
+	if ((va|size) & (L1_CACHE_BYTES-1)) /* va size should be cache line align */
+		M4UMSG("warning: cache_sync not align: va=0x%lx,size=0x%x,align=0x%x\n",
+			va, size, L1_CACHE_BYTES);
+
+	table = pMvaInfo->sg_table;
+	npages = PAGE_ALIGN(size) / PAGE_SIZE;
+
+	mutex_lock(&gM4u_cache_sync_user_lock);
+
+	if (!cache_map_vm_struct) {
+		M4UMSG(" error: cache_map_vm_struct is NULL, retry\n");
+		m4u_cache_sync_init();
+	}
+
+	if (!cache_map_vm_struct) {
+		M4UMSG("error: cache_map_vm_struct is NULL, no vmalloc area\n");
+		mutex_unlock(&gM4u_cache_sync_user_lock);
+		return -ENOMEM;
+	}
+
+	for_each_sg(table->sgl, sg, table->nents, i) {
+		int npages_this_entry = PAGE_ALIGN(sg->length) / PAGE_SIZE;
+		struct page *page = sg_page(sg);
+
+		BUG_ON(i >= npages);
+		for (j = 0; j < npages_this_entry; j++) {
+			start = (unsigned long) m4u_cache_map_page_va(page++);
+
+			if (IS_ERR_OR_NULL((void *) start)) {
+				M4UMSG("cannot do cache sync: ret=%lu\n", start);
+				mutex_unlock(&gM4u_cache_sync_user_lock);
+				return -EFAULT;
+			}
+
+			if (dma_type == M4U_DMA_MAP_AREA)
+				m4u_dma_map_area((void *)start, PAGE_SIZE, dma_dir);
+			else if (dma_type == M4U_DMA_UNMAP_AREA)
+				m4u_dma_unmap_area((void *)start, PAGE_SIZE, dma_dir);
+
+			m4u_cache_unmap_page_va(start);
+		}
+	}
+
+	mutex_unlock(&gM4u_cache_sync_user_lock);
+
+	return 0;
+}
+
 int m4u_dump_info(int m4u_index)
 {
 	return 0;
@@ -1807,6 +1904,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 	M4U_PORT_ID PortID;
 	M4U_PORT_ID ModuleID;
 	M4U_CACHE_STRUCT m4u_cache_data;
+	M4U_DMA_STRUCT m4u_dma_data;
 	m4u_client_t *client = filp->private_data;
 
 	switch (cmd) {
@@ -1883,6 +1981,19 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		ret = m4u_cache_sync(client, m4u_cache_data.port, m4u_cache_data.va,
 				     m4u_cache_data.size, m4u_cache_data.mva,
 				     m4u_cache_data.eCacheSync);
+		break;
+
+	case MTK_M4U_T_DMA_OP:
+		ret = copy_from_user(&m4u_dma_data, (void *) arg,
+				sizeof(M4U_DMA_STRUCT));
+		if (ret) {
+			M4UMSG("m4u dma map/unmap area,copy_from_user failed:%d\n", ret);
+			return -EFAULT;
+		}
+
+		ret = m4u_dma_op(client, m4u_dma_data.port, m4u_dma_data.va,
+				m4u_dma_data.size, m4u_dma_data.mva,
+				m4u_dma_data.eDMAType, m4u_dma_data.eDMADir);
 		break;
 
 	case MTK_M4U_T_CONFIG_PORT:
@@ -2183,10 +2294,6 @@ static int m4u_probe(struct platform_device *pdev)
 {
 	struct device_node *node = pdev->dev.of_node;
 
-#if !defined(CONFIG_MTK_CLKMGR)
-	int i;
-#endif
-
 	M4UINFO("m4u_probe 0\n");
 
 	if (pdev->dev.of_node) {
@@ -2201,23 +2308,6 @@ static int m4u_probe(struct platform_device *pdev)
 	gM4uDev->pDev[pdev->id] = &pdev->dev;
 	gM4uDev->m4u_base[pdev->id] = (unsigned long)of_iomap(node, 0);
 	gM4uDev->irq_num[pdev->id] = irq_of_parse_and_map(node, 0);
-
-#if !defined(CONFIG_MTK_CLKMGR)
-	gM4uDev->infra_m4u = devm_clk_get(&pdev->dev, "infra_m4u");
-	if (IS_ERR(gM4uDev->infra_m4u)) {
-		M4UMSG("cannot get infra m4u clock\n");
-		return PTR_ERR(gM4uDev->infra_m4u);
-	}
-
-	for (i = SMI_COMMON_CLK; i < SMI_CLK_NUM; i++) {
-		gM4uDev->smi_clk[i] = devm_clk_get(&pdev->dev, smi_clk_name[i]);
-		if (IS_ERR(gM4uDev->smi_clk[i])) {
-			M4UMSG("cannot get %s clock\n", smi_clk_name[i]);
-			return PTR_ERR(gM4uDev->smi_clk[i]);
-		}
-	}
-	smi_common_clock_on();
-#endif
 
 	M4UMSG("m4u_probe 2, of_iomap: 0x%lx, irq_num: %d, pDev: %p\n",
 		gM4uDev->m4u_base[pdev->id], gM4uDev->irq_num[pdev->id], gM4uDev->pDev[pdev->id]);

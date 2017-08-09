@@ -2112,6 +2112,25 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 	unsigned long pProtectVA;
 	phys_addr_t ProtectPA;
 
+#if !defined(CONFIG_MTK_CLKMGR)
+	int i;
+
+	gM4uDev->infra_m4u = devm_clk_get(gM4uDev->pDev[m4u_id], "infra_m4u");
+	if (IS_ERR(gM4uDev->infra_m4u)) {
+		M4UMSG("cannot get infra m4u clock\n");
+		return PTR_ERR(gM4uDev->infra_m4u);
+	}
+
+	for (i = SMI_COMMON_CLK; i < SMI_CLK_NUM; i++) {
+		gM4uDev->smi_clk[i] = devm_clk_get(gM4uDev->pDev[m4u_id], smi_clk_name[i]);
+		if (IS_ERR(gM4uDev->smi_clk[i])) {
+			M4UMSG("cannot get %s clock\n", smi_clk_name[i]);
+			return PTR_ERR(gM4uDev->smi_clk[i]);
+		}
+	}
+	smi_common_clock_on();
+#endif
+
 	gM4UBaseAddr[m4u_id] = m4u_dev->m4u_base[m4u_id];
 
 	pProtectVA = (unsigned long) kmalloc(TF_PROTECT_BUFFER_SIZE*2, GFP_KERNEL|__GFP_ZERO);

@@ -3,7 +3,13 @@
 
 #define M4U_PGSIZES (SZ_4K | SZ_64K | SZ_1M | SZ_16M)
 
+#define TOTAL_M4U_NUM           1
+
 #define M4U_SLAVE_NUM(m4u_id)   ((m4u_id) ? 1 : 1)  /* m4u0 has 1 slaves, iommu(m4u1) has 1 slave */
+
+/* seq range related */
+#define SEQ_NR_PER_MM_SLAVE    8
+#define SEQ_NR_PER_PERI_SLAVE    0
 
 #define M4U0_SEQ_NR         (SEQ_NR_PER_MM_SLAVE*M4U_SLAVE_NUM(0))
 #define M4U1_SEQ_NR         (SEQ_NR_PER_PERI_SLAVE*M4U_SLAVE_NUM(1))
@@ -13,6 +19,21 @@
 
 #define M4U_SEQ_ALIGN_MSK   (0x100000-1)
 #define M4U_SEQ_ALIGN_SIZE  0x100000
+
+/* mau related */
+#define MAU_NR_PER_M4U_SLAVE    4
+
+/* smi */
+#define SMI_LARB_NR     4
+
+/* prog pfh dist related */
+#define PROG_PFH_DIST    8
+
+#define M4U0_PROG_PFH_NR         (PROG_PFH_DIST*M4U_SLAVE_NUM(0))
+#define M4U1_PROG_PFH_NR         (PROG_PFH_DIST*M4U_SLAVE_NUM(1))
+#define M4U_PROG_PFH_NUM(m4u_id)   ((m4u_id) ? M4U1_PROG_PFH_NR : M4U0_PROG_PFH_NR)
+
+#define DOMAIN_VALUE 0x44444444
 
 typedef struct _M4U_PERF_COUNT {
 	unsigned int transaction_cnt;
@@ -72,6 +93,17 @@ typedef struct _M4U_MAU_STATUS  /* mau entry */
 	unsigned int MVAStart;
 	unsigned int MVAEnd;
 } M4U_MAU_STATUS_T;
+
+typedef struct _M4U_PROG_DIST  /* prog pfh dist */
+{
+	unsigned int Enabled;
+	M4U_PORT_ID port;
+	unsigned int axi_id;
+	unsigned int dir;
+	unsigned int dist;
+	unsigned int en;
+	unsigned int sel;
+} M4U_PROG_DIST_T;
 
 extern m4u_port_t gM4uPort[];
 extern int gM4u_port_num;
@@ -145,12 +177,6 @@ void m4u_print_perf_counter(int m4u_index, int m4u_slave_id, const char *msg);
 int m4u_dump_reg(int m4u_index, unsigned int start);
 void smi_common_clock_on(void);
 void smi_common_clock_off(void);
-
-extern unsigned int gM4UTagCount[];
-extern const char *gM4U_SMILARB[];
-extern M4U_RANGE_DES_T gM4u0_seq[];
-extern M4U_RANGE_DES_T *gM4USeq[];
-extern m4u_port_t gM4uPort[];
 
 extern struct m4u_device *gM4uDev;
 
