@@ -1859,6 +1859,9 @@ static u32 slp_spm_SODI3_flags = {
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
 	#endif
+	#ifdef CONFIG_ARCH_MT6755
+	SPM_FLAG_DIS_VPROC_VSRAM_DVS |
+	#endif
 	SPM_FLAG_DIS_SYSRAM_SLEEP
 };
 
@@ -1869,6 +1872,9 @@ static u32 slp_spm_SODI_flags = {
 	#endif
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
+	#endif
+	#ifdef CONFIG_ARCH_MT6755
+	SPM_FLAG_DIS_VPROC_VSRAM_DVS |
 	#endif
 	SPM_FLAG_DIS_SYSRAM_SLEEP
 };
