@@ -2005,6 +2005,7 @@ WLAN_STATUS wlanSendCommand(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo)
 	P_TX_CTRL_T prTxCtrl;
 	UINT_8 ucTC;		/* "Traffic Class" SW(Driver) resource classification */
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	BOOLEAN pfgIsSecOrMgmt = FALSE;
 
 	/* sanity check */
 	ASSERT(prAdapter);
@@ -2042,8 +2043,12 @@ WLAN_STATUS wlanSendCommand(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo)
 			/* <1.1> Assign Traffic Class(TC) = TC4. */
 			ucTC = TC4_INDEX;
 
+			if ((prCmdInfo->eCmdType == COMMAND_TYPE_SECURITY_FRAME) ||
+				(prCmdInfo->eCmdType == COMMAND_TYPE_MANAGEMENT_FRAME))
+				pfgIsSecOrMgmt = TRUE;
+
 			/* <1.2> Check if pending packet or resource was exhausted */
-			rStatus = nicTxAcquireResource(prAdapter, ucTC);
+			rStatus = nicTxAcquireResource(prAdapter, ucTC, pfgIsSecOrMgmt);
 			if (rStatus == WLAN_STATUS_RESOURCES) {
 				DbgPrint("NO Resource:%d\n", ucTC);
 				break;
@@ -2621,7 +2626,7 @@ WLAN_STATUS wlanSendNicPowerCtrlCmd(IN P_ADAPTER_T prAdapter, IN UINT_8 ucPowerM
 			break;
 		}
 		/* 3.1 Acquire TX Resource */
-		if (nicTxAcquireResource(prAdapter, ucTC) == WLAN_STATUS_RESOURCES) {
+		if (nicTxAcquireResource(prAdapter, ucTC, FALSE) == WLAN_STATUS_RESOURCES) {
 
 			/* wait and poll tx resource */
 			if (nicTxPollingResource(prAdapter, ucTC) != WLAN_STATUS_SUCCESS) {
@@ -2752,7 +2757,7 @@ wlanImageSectionDownloadAggregated(IN P_ADAPTER_T prAdapter,
 
 	/* 5.1 main loop for maximize transmission count per access */
 	while (u4Offset < u4ImgSecSize) {
-		if (nicTxAcquireResource(prAdapter, ucTC) == WLAN_STATUS_SUCCESS) {
+		if (nicTxAcquireResource(prAdapter, ucTC, FALSE) == WLAN_STATUS_SUCCESS) {
 			/* 5.1.1 calculate u4Length */
 			if (u4Offset + CMD_PKT_SIZE_FOR_IMAGE < u4ImgSecSize)
 				u4Length = CMD_PKT_SIZE_FOR_IMAGE;
@@ -2893,7 +2898,7 @@ wlanImageSectionDownload(IN P_ADAPTER_T prAdapter,
 	/* 6. Send FW_Download command */
 	while (1) {
 		/* 6.1 Acquire TX Resource */
-		if (nicTxAcquireResource(prAdapter, ucTC) == WLAN_STATUS_RESOURCES) {
+		if (nicTxAcquireResource(prAdapter, ucTC, FALSE) == WLAN_STATUS_RESOURCES) {
 			if (nicTxPollingResource(prAdapter, ucTC) != WLAN_STATUS_SUCCESS) {
 				u4Status = WLAN_STATUS_FAILURE;
 				DBGLOG(INIT, ERROR, "Fail to get TX resource return within timeout\n");
@@ -2971,7 +2976,7 @@ WLAN_STATUS wlanImageQueryStatus(IN P_ADAPTER_T prAdapter)
 	/* 5. Send command */
 	while (1) {
 		/* 5.1 Acquire TX Resource */
-		if (nicTxAcquireResource(prAdapter, ucTC) == WLAN_STATUS_RESOURCES) {
+		if (nicTxAcquireResource(prAdapter, ucTC, FALSE) == WLAN_STATUS_RESOURCES) {
 			if (nicTxPollingResource(prAdapter, ucTC) != WLAN_STATUS_SUCCESS) {
 				u4Status = WLAN_STATUS_FAILURE;
 				DBGLOG(INIT, ERROR, "Fail to get TX resource return within timeout\n");
@@ -3147,7 +3152,7 @@ WLAN_STATUS wlanConfigWifiFunc(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnable, IN
 	/* 5. Seend WIFI start command */
 	while (1) {
 		/* 5.1 Acquire TX Resource */
-		if (nicTxAcquireResource(prAdapter, ucTC) == WLAN_STATUS_RESOURCES) {
+		if (nicTxAcquireResource(prAdapter, ucTC, FALSE) == WLAN_STATUS_RESOURCES) {
 
 			/* wait and poll tx resource */
 			if (nicTxPollingResource(prAdapter, ucTC) != WLAN_STATUS_SUCCESS) {
