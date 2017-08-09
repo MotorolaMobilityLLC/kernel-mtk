@@ -1574,6 +1574,14 @@ struct tcp_iter_state {
 	loff_t			last_pos;
 };
 
+/* MTK_NET_CHANGES */
+/*
+ * reset tcp connection by uid
+ */
+struct uid_err {
+	int appuid;
+	int errNum;
+};
 int tcp_proc_register(struct net *net, struct tcp_seq_afinfo *afinfo);
 void tcp_proc_unregister(struct net *net, struct tcp_seq_afinfo *afinfo);
 
@@ -1601,6 +1609,10 @@ static inline bool tcp_stream_memory_free(const struct sock *sk)
 
 	return notsent_bytes < tcp_notsent_lowat(tp);
 }
+
+/* MTK_NET_CHANGES */
+extern void tcp_v4_reset_connections_by_uid(struct uid_err uid_e);
+extern void tcp_v4_handle_retrans_time_by_uid(struct uid_err uid_e);
 
 extern int tcp_nuke_addr(struct net *net, struct sockaddr *addr);
 

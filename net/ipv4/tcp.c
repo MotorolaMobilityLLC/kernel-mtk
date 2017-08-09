@@ -593,6 +593,20 @@ int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
 		else
 			answ = tp->write_seq - tp->snd_nxt;
 		break;
+				/* MTK_NET_CHANGES */
+case SIOCKILLSOCK:
+{
+	struct uid_err uid_e;
+
+	if (copy_from_user(&uid_e, (char __user *)arg, sizeof(uid_e)))
+		return -EFAULT;
+	pr_debug("SIOCKILLSOCK uid = %d , err = %d", uid_e.appuid, uid_e.errNum);
+	if (uid_e.errNum == 0)
+		tcp_v4_handle_retrans_time_by_uid(uid_e);
+	else
+		tcp_v4_reset_connections_by_uid(uid_e);
+	return 0;
+}
 	default:
 		return -ENOIOCTLCMD;
 	}
