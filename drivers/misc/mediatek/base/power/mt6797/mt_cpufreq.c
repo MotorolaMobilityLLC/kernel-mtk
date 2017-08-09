@@ -3104,6 +3104,7 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 
 	enum mt_cpu_dvfs_id id_cci;
 	struct mt_cpu_dvfs *p_cci;
+	struct mt_cpu_dvfs *p_ll, *p_l, *p_b;
 	int ret = -1;
 	unsigned int target_volt_vpro1 = 0;
 
@@ -3135,9 +3136,21 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	if (do_dvfs_stress_test) {
 		new_opp_idx = jiffies & 0xF;
 
+		p_ll = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
+		p_l = id_to_cpu_dvfs(MT_CPU_DVFS_L);
+		p_b = id_to_cpu_dvfs(MT_CPU_DVFS_B);
+
+		if (cpu_dvfs_is(p, MT_CPU_DVFS_LL))
+			if (new_opp_idx < p_ll->idx_opp_ppm_limit)
+				new_opp_idx = p_ll->idx_opp_ppm_limit;
+
+		if (cpu_dvfs_is(p, MT_CPU_DVFS_L))
+			if (new_opp_idx < p_l->idx_opp_ppm_limit)
+				new_opp_idx = p_l->idx_opp_ppm_limit;
+
 		if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
-			if (new_opp_idx < thres_b)
-				new_opp_idx = thres_b;
+			if (new_opp_idx < p_b->idx_opp_ppm_limit)
+				new_opp_idx = p_b->idx_opp_ppm_limit;
 	} else
 		new_opp_idx = _calc_new_opp_idx(id_to_cpu_dvfs(id), new_opp_idx);
 
