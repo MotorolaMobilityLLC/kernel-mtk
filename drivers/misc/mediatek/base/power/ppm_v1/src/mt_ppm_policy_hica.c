@@ -451,6 +451,8 @@ PROC_FOPS_RW_HICA_SETTINGS(freq_hold_time, p->freq_hold_time);
 PROC_FOPS_RO_HICA_SETTINGS(freq_hold_cnt, p->freq_hold_cnt);
 PROC_FOPS_RW_HICA_SETTINGS(tlp_bond, p->tlp_bond);
 
+#define OUTPUT_BUF_SIZE	32
+
 static int __init ppm_hica_policy_init(void)
 {
 	int ret = 0, i, j, k;
@@ -458,7 +460,7 @@ static int __init ppm_hica_policy_init(void)
 	struct proc_dir_entry *hica_setting_dir = NULL;
 	struct proc_dir_entry *trans_rule_dir = NULL;
 	struct ppm_state_transfer_data *data;
-	char str[32];
+	char str[OUTPUT_BUF_SIZE];
 
 	struct pentry {
 		const char *name;
@@ -506,7 +508,7 @@ static int __init ppm_hica_policy_init(void)
 			if (!data->transition_data[j].transition_rule)
 				continue;
 
-			sprintf(str, "%s_to_%s", ppm_get_power_state_name(i / 2),
+			snprintf(str, OUTPUT_BUF_SIZE, "%s_to_%s", ppm_get_power_state_name(i / 2),
 				ppm_get_power_state_name(data->transition_data[j].next_state));
 			trans_rule_dir = proc_mkdir(str, hica_setting_dir);
 			if (!trans_rule_dir) {
