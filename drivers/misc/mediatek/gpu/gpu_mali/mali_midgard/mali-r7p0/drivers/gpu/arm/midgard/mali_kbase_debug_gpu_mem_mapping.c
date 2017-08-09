@@ -300,7 +300,7 @@ static bool kbasep_mmu_dump_level(struct kbase_context *kctx, phys_addr_t pgd, i
 	KBASE_DEBUG_ASSERT(NULL != kctx);
 	lockdep_assert_held(&kctx->reg_lock);
 #if PRINT_DETAIL
-	dev_info(kctx->kbdev->dev,"======== mmu level:%d\n", level);
+	dev_MTK_info(kctx->kbdev->dev,"======== mmu level:%d\n", level);
 #endif
 	mmu_mode = kctx->kbdev->mmu_mode;
 
@@ -315,7 +315,7 @@ static bool kbasep_mmu_dump_level(struct kbase_context *kctx, phys_addr_t pgd, i
 	phy_u64 = (u64)phy_addr;
 	phy_u64 &= PAGE_MASK;
 #if PRINT_DETAIL
-	dev_info(kctx->kbdev->dev,"=====%pa, %llx, %llx \n", &phy_addr, phy_u64, m_pgd);
+	dev_MTK_info(kctx->kbdev->dev,"=====%pa, %llx, %llx \n", &phy_addr, phy_u64, m_pgd);
 #endif
 	if ((phy_u64&MIDGARD_MMU_PA_MASK) == (pa&MIDGARD_MMU_PA_MASK))
 		goto success;
@@ -332,7 +332,7 @@ static bool kbasep_mmu_dump_level(struct kbase_context *kctx, phys_addr_t pgd, i
 				phy_u64 = (u64) phy_addr;
 				phy_u64 &= PAGE_MASK;
 #if PRINT_DETAIL
-				dev_info(kctx->kbdev->dev,"=%pa \n", &phy_addr);
+				dev_MTK_info(kctx->kbdev->dev,"=%pa \n", &phy_addr);
 #endif
 				if ((phy_u64&MIDGARD_MMU_PA_MASK) == (pa&MIDGARD_MMU_PA_MASK))
 					goto success;
@@ -350,7 +350,7 @@ static bool kbasep_mmu_dump_level(struct kbase_context *kctx, phys_addr_t pgd, i
 			/*if (mmu_mode->pte_is_valid(pte))*/ {
 				phy_addr = mmu_mode->pte_to_phy_addr(pte);
 #if PRINT_DETAIL
-				dev_info(kctx->kbdev->dev,"=%pa \n", &phy_addr);
+				dev_MTK_info(kctx->kbdev->dev,"=%pa \n", &phy_addr);
 #endif
 				phy_u64 = (u64) phy_addr;
 				phy_u64 &= PAGE_MASK;
@@ -399,7 +399,7 @@ static bool kbasep_check_va_reg(struct kbase_context *kctx, u64 pa)
 			phy_u64 = (u64)reg->gpu_alloc->pages[i];
 			phy_u64 &= PAGE_MASK;
 			if ((phy_u64&MIDGARD_MMU_PA_MASK) == (pa&MIDGARD_MMU_PA_MASK)) {
-				dev_info(kctx->kbdev->dev,"    Get the PA:%016llx in VA region, kctx:%p, PID:%llx\n, Process:%s",
+				dev_MTK_info(kctx->kbdev->dev,"    Get the PA:%016llx in VA region, kctx:%p, PID:%llx\n, Process:%s",
 					phy_u64, kctx, (u64)(kctx->tgid), kctx->process_name);
 				ret = true;
 			}
@@ -437,7 +437,7 @@ bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 	struct kbasep_js_device_data *js_devdata;
 	/*unsigned long flags;*/
 
-	pr_info("Mali PA page check:%llx\n", pa);
+	pr_MTK_info("Mali PA page check:%llx\n", pa);
 	pa &= PAGE_MASK;
 	kbdev_list = kbase_dev_list_get();
 	if(kbdev_list == NULL)
@@ -448,7 +448,7 @@ bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 
 		kbdev = list_entry(entry, struct kbase_device, entry);
 		if(kbdev == NULL) {
-			pr_info("    No Mali device\n");
+			pr_MTK_info("    No Mali device\n");
 			return false;
 		}
 
@@ -463,10 +463,10 @@ bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 				KBASE_DEBUG_ASSERT(atom != NULL);
 			}
 			else
-				pr_info("No atoms in slot :%d\n", s);
+				pr_MTK_info("No atoms in slot :%d\n", s);
 			if (atom != NULL) {
 				kbase_job_slot_hardstop(atom->kctx, s, atom);
-				pr_info("hard-stop\n");
+				pr_MTK_info("hard-stop\n");
 			}
 		}
 		spin_unlock_irqrestore(&js_devdata->runpool_irq.lock, flags);
@@ -483,32 +483,32 @@ bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 			kctx = element->kctx;
 			ret = kbasep_mmu_dump_level(kctx, kctx->pgd, MIDGARD_MMU_TOPLEVEL, pa);
 			if (ret == true) {
-				dev_info(kctx->kbdev->dev,"    Get the PA:%016llx, %s, PID:%llx\n",
+				dev_MTK_info(kctx->kbdev->dev,"    Get the PA:%016llx, %s, PID:%llx\n",
 						pa, kctx->process_name,  (u64)(kctx->tgid));
 			}
 			else {
-				dev_info(kctx->kbdev->dev,"    Didn't get the PA:%016llx in :%s\n",
+				dev_MTK_info(kctx->kbdev->dev,"    Didn't get the PA:%016llx in :%s\n",
 						pa, kctx->process_name);
 			}
 			ret = kbasep_check_va_reg(kctx, pa);
 			if (ret == false) {
-				dev_info(kctx->kbdev->dev,"    Didn't get the PA:%016llx in VA region\n", pa);
+				dev_MTK_info(kctx->kbdev->dev,"    Didn't get the PA:%016llx in VA region\n", pa);
 			}
 
-			dev_info(kctx->kbdev->dev,"\n Map history: \n");
+			dev_MTK_info(kctx->kbdev->dev,"\n Map history: \n");
 			for (i = 0; i < TRACE_MAP_COUNT; i++)
-				dev_info(kctx->kbdev->dev," VA:%llx, PA:%llx\n",
+				dev_MTK_info(kctx->kbdev->dev," VA:%llx, PA:%llx\n",
 						kctx->map_pa_trace[0][i], kctx->map_pa_trace[1][i]);
-			dev_info(kctx->kbdev->dev,"\n Unap history: \n");
+			dev_MTK_info(kctx->kbdev->dev,"\n Unap history: \n");
 			for (i = 0; i < TRACE_MAP_COUNT; i++)
-				dev_info(kctx->kbdev->dev," VA:%llx, PA:%llx\n",
+				dev_MTK_info(kctx->kbdev->dev," VA:%llx, PA:%llx\n",
 						kctx->unmap_pa_trace[0][i], kctx->unmap_pa_trace[1][i]);
 
 			kbase_gpu_vm_unlock(kctx);
 
-			dev_info(kctx->kbdev->dev,"\n MMU REG history: \n");
+			dev_MTK_info(kctx->kbdev->dev,"\n MMU REG history: \n");
 			for (i = 0; i < TRACE_MMU_REG_COUNT; i++)
-				dev_info(kctx->kbdev->dev," MMU offset:%x, VAL:%x\n",
+				dev_MTK_info(kctx->kbdev->dev," MMU offset:%x, VAL:%x\n",
 					kbdev->mmu_reg_trace[0][i], kbdev->mmu_reg_trace[1][i]);
 		}
 
@@ -517,7 +517,7 @@ bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 	kbase_dev_list_put(kbdev_list);
 
 	if(kctx == NULL) {
-		pr_info("    No Mali context \n");
+		pr_MTK_info("    No Mali context \n");
 		return false;
 	}
 

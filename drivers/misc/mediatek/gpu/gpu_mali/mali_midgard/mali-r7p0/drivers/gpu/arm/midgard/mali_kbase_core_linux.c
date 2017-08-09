@@ -3350,7 +3350,7 @@ static void kbase_device_coherency_init(struct kbase_device *kbdev, u32 gpu_id)
 
 			kbdev->system_coherency = override_coherency;
 
-			dev_info(kbdev->dev,
+			dev_MTK_info(kbdev->dev,
 				"Using coherency override, mode %u set from dtb",
 				override_coherency);
 		} else
@@ -3377,7 +3377,7 @@ static void kbase_logging_started_cb(void *data)
 
 	if (kbase_prepare_to_reset_gpu(kbdev))
 		kbase_reset_gpu(kbdev);
-	dev_info(kbdev->dev, "KBASE - Bus logger restarted\n");
+	dev_MTK_info(kbdev->dev, "KBASE - Bus logger restarted\n");
 }
 #endif
 
@@ -3571,7 +3571,7 @@ static int kbase_common_device_init(struct kbase_device *kbdev)
 		kbase_dev_list_put(dev_list);
 	}
 
-	dev_info(kbdev->dev, "Probed as %s\n", dev_name(kbdev->mdev.this_device));
+	dev_MTK_info(kbdev->dev, "Probed as %s\n", dev_name(kbdev->mdev.this_device));
 
 	return 0;
 
@@ -3741,7 +3741,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 			&& defined(CONFIG_REGULATOR)
 	kbdev->regulator = regulator_get_optional(kbdev->dev, "mali");
 	if (IS_ERR_OR_NULL(kbdev->regulator)) {
-		dev_info(kbdev->dev, "Continuing without Mali regulator control\n");
+		dev_MTK_info(kbdev->dev, "Continuing without Mali regulator control\n");
 		kbdev->regulator = NULL;
 		/* Allow probe to continue without regulator */
 	}
@@ -3753,7 +3753,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 #ifdef CONFIG_HAVE_CLK  // MTK
 	kbdev->clock = clk_get(kbdev->dev, "clk_mali");
 	if (IS_ERR_OR_NULL(kbdev->clock)) {
-		dev_info(kbdev->dev, "Continuing without Mali clock control\n");
+		dev_MTK_info(kbdev->dev, "Continuing without Mali clock control\n");
 		kbdev->clock = NULL;
 		/* Allow probe to continue without clock. */
 	} else {

@@ -120,7 +120,7 @@ static void kbase_job_fault_resume_worker(struct work_struct *data)
 	katom = event->katom;
 	kctx = katom->kctx;
 
-	dev_info(kctx->kbdev->dev, "Job dumping wait\n");
+	dev_MTK_info(kctx->kbdev->dev, "Job dumping wait\n");
 
 	/* When it was waked up, it need to check if queue is empty or the
 	 * failed atom belongs to different context. If yes, wake up. Both
@@ -141,7 +141,7 @@ static void kbase_job_fault_resume_worker(struct work_struct *data)
 	 */
 	kbase_job_fault_resume_event_cleanup(kctx);
 
-	dev_info(kctx->kbdev->dev, "Job dumping finish, resume scheduler\n");
+	dev_MTK_info(kctx->kbdev->dev, "Job dumping finish, resume scheduler\n");
 }
 
 static struct base_job_fault_event *kbase_job_fault_event_queue(
@@ -175,7 +175,7 @@ static void kbase_job_fault_event_post(struct kbase_device *kbdev,
 	INIT_WORK(&event->job_fault_work, kbase_job_fault_resume_worker);
 	queue_work(kbdev->job_fault_resume_workq, &event->job_fault_work);
 
-	dev_info(katom->kctx->kbdev->dev, "Job fault happen, start dump: %d_%d",
+	dev_MTK_info(katom->kctx->kbdev->dev, "Job fault happen, start dump: %d_%d",
 			katom->kctx->tgid, katom->kctx->id);
 
 }
@@ -200,7 +200,7 @@ bool kbase_debug_job_fault_process(struct kbase_jd_atom *katom,
 		kbase_job_fault_event_queue(
 				&kctx->job_fault_resume_event_list,
 				katom, completion_code);
-		dev_info(kctx->kbdev->dev, "queue:%d\n",
+		dev_MTK_info(kctx->kbdev->dev, "queue:%d\n",
 				kbase_jd_atom_id(kctx, katom));
 		return true;
 	}
@@ -217,7 +217,7 @@ bool kbase_debug_job_fault_process(struct kbase_jd_atom *katom,
 			kbase_job_fault_event_post(kctx->kbdev, katom,
 					completion_code);
 			atomic_inc(&kctx->job_fault_count);
-			dev_info(kctx->kbdev->dev, "post:%d\n",
+			dev_MTK_info(kctx->kbdev->dev, "post:%d\n",
 					kbase_jd_atom_id(kctx, katom));
 			return true;
 
@@ -234,7 +234,7 @@ static int debug_job_fault_show(struct seq_file *m, void *v)
 	struct kbase_context *kctx = event->katom->kctx;
 	int i;
 
-	dev_info(kbdev->dev, "debug job fault seq show:%d_%d, %d",
+	dev_MTK_info(kbdev->dev, "debug job fault seq show:%d_%d, %d",
 			kctx->tgid, kctx->id, event->reg_offset);
 
 	if (kctx->reg_dump == NULL) {
@@ -274,7 +274,7 @@ static void *debug_job_fault_next(struct seq_file *m, void *v, loff_t *pos)
 	struct kbase_device *kbdev = m->private;
 	struct base_job_fault_event *event = (struct base_job_fault_event *)v;
 
-	dev_info(kbdev->dev, "debug job fault seq next:%d, %d",
+	dev_MTK_info(kbdev->dev, "debug job fault seq next:%d, %d",
 			event->reg_offset, (int)*pos);
 
 	return event;
@@ -285,7 +285,7 @@ static void *debug_job_fault_start(struct seq_file *m, loff_t *pos)
 	struct kbase_device *kbdev = m->private;
 	struct base_job_fault_event *event;
 
-	dev_info(kbdev->dev, "fault job seq start:%d", (int)*pos);
+	dev_MTK_info(kbdev->dev, "fault job seq start:%d", (int)*pos);
 
 	/* The condition is trick here. It needs make sure the
 	 * fault hasn't happened and the dumping hasn't been started,
@@ -326,7 +326,7 @@ static void debug_job_fault_stop(struct seq_file *m, void *v)
 
 	if (v != NULL) {
 		kfree(v);
-		dev_info(kbdev->dev, "debug job fault seq stop stage 1");
+		dev_MTK_info(kbdev->dev, "debug job fault seq stop stage 1");
 
 	} else {
 		if (!list_empty(&kbdev->job_fault_event_list)) {
@@ -334,7 +334,7 @@ static void debug_job_fault_stop(struct seq_file *m, void *v)
 				&kbdev->job_fault_event_list);
 			wake_up(&kbdev->job_fault_resume_wq);
 		}
-		dev_info(kbdev->dev, "debug job fault seq stop stage 2");
+		dev_MTK_info(kbdev->dev, "debug job fault seq stop stage 2");
 	}
 
 }
@@ -353,7 +353,7 @@ static int debug_job_fault_open(struct inode *in, struct file *file)
 	seq_open(file, &ops);
 
 	((struct seq_file *)file->private_data)->private = kbdev;
-	dev_info(kbdev->dev, "debug job fault seq open");
+	dev_MTK_info(kbdev->dev, "debug job fault seq open");
 
 	kbdev->job_fault_debug = true;
 
@@ -374,7 +374,7 @@ static int debug_job_fault_release(struct inode *in, struct file *file)
 	 */
 	kbase_job_fault_event_cleanup(kbdev);
 
-	dev_info(kbdev->dev, "debug job fault seq close");
+	dev_MTK_info(kbdev->dev, "debug job fault seq close");
 
 	return 0;
 }

@@ -193,7 +193,7 @@ void mtk_debug_dump_registers(void)
 		}
 		else
 		{
-			PRINT_LOGS(mtklog, "VGPU is off");
+			PRINT_LOGS(mtklog, "[dump] cannot dump MFG: VGPU is off");
 		}
 
 		power_release();
@@ -615,6 +615,10 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	memset(config, 0, sizeof(struct mtk_config));
 
 	spin_lock_init(&mtk_power_lock);
+
+#ifdef MTK_MT6797_DEBUG
+	mtk_debbug_register_init();
+#endif
 
 	g_ldo_base =        _mtk_of_ioremap("mediatek,infracfg_ao");
 	g_MFG_base = 	    _mtk_of_ioremap("mediatek,g3d_config");

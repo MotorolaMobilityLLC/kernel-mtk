@@ -656,7 +656,7 @@ static void jd_force_failure(struct kbase_device *kbdev, struct kbase_jd_atom *k
 			kbdev->force_replay_limit =
 			   (prandom_u32() % KBASEP_FORCE_REPLAY_RANDOM_LIMIT) + 1;
 
-		dev_info(kbdev->dev, "force_replay : promoting to error\n");
+		dev_MTK_info(kbdev->dev, "force_replay : promoting to error\n");
 	}
 }
 

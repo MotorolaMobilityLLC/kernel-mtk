@@ -12,8 +12,12 @@ extern unsigned int _mtk_mali_ged_log;
 	_MTK_MALI_PRINT(__VA_ARGS__)
 #define dev_MTK_err(dev, ...) \
 	do { _MTK_MALI_PRINT(__VA_ARGS__); dev_err(dev, __VA_ARGS__); } while (0)
+#define dev_MTK_info(dev, ...) \
+	do { _MTK_MALI_PRINT(__VA_ARGS__); dev_info(dev, __VA_ARGS__); } while (0)
 #define pr_MTK_err( ...) \
 	do { _MTK_MALI_PRINT(__VA_ARGS__); pr_err(__VA_ARGS__); } while (0)
+#define pr_MTK_info( ...) \
+	do { _MTK_MALI_PRINT(__VA_ARGS__); pr_info(__VA_ARGS__); } while (0)
 
 #else
 
