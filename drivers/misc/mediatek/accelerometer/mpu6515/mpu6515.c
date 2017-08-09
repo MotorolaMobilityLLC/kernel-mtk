@@ -764,6 +764,7 @@ static int MPU6515_WriteCalibration(struct i2c_client *client, int dat[MPU6515_A
 /*----------------------------------------------------------------------------*/
 static int MPU6515_CheckDeviceID(struct i2c_client *client)
 {
+	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	u8 databuf[10];
 	int res = 0;
 
@@ -789,7 +790,8 @@ static int MPU6515_CheckDeviceID(struct i2c_client *client)
 		goto exit_MPU6515_CheckDeviceID;
 	}
 
-	GSE_LOG("MPU6515_CheckDeviceID 0x%x\n", databuf[0]);
+	if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
+		GSE_LOG("MPU6515_CheckDeviceID 0x%x\n", databuf[0]);
 
 exit_MPU6515_CheckDeviceID:
 	if (res <= 0)
@@ -2101,7 +2103,8 @@ static int mpu6515_suspend(struct i2c_client *client, pm_message_t msg)
 	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	int err = 0;
 
-	GSE_FUN();
+	if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
+		GSE_FUN();
 
 	if (msg.event == PM_EVENT_SUSPEND) {
 		if (obj == NULL) {
@@ -2136,7 +2139,8 @@ static int mpu6515_resume(struct i2c_client *client)
 	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	int err;
 
-	GSE_FUN();
+	if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
+		GSE_FUN();
 
 	if (obj == NULL) {
 		GSE_ERR("null pointer!!\n");

@@ -370,6 +370,7 @@ static int MPU6515_ReadStart(struct i2c_client *client, bool enable)
 /* ----------------------------------------------------------------------------// */
 static int MPU6515_SetPWR_MGMT_2(struct i2c_client *client, bool enable)
 {
+	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	u8 databuf[2] = { 0 };
 	int res = 0;
 
@@ -378,8 +379,8 @@ static int MPU6515_SetPWR_MGMT_2(struct i2c_client *client, bool enable)
 	else
 		databuf[1] = 0xC7;
 
-
-	GYRO_LOG("MPU6515_SetPWR_MGMT_2 : en = %d, reg = %x\n", enable, databuf[1]);
+	if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
+		GYRO_LOG("MPU6515_SetPWR_MGMT_2 : en = %d, reg = %x\n", enable, databuf[1]);
 
 	databuf[0] = MPU6515_REG_PWR_CTL2;
 #ifdef MPU6515_ACCESS_BY_GSE_I2C
@@ -399,7 +400,8 @@ static int MPU6515_SetPWR_MGMT_2(struct i2c_client *client, bool enable)
 		{
 			GYRO_ERR("read power ctl 2 register err!\n");
 	} else {
-		GYRO_LOG("MPU6515_REG_PWR_CTL = %x\n", databuf[0]);
+		if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
+			GYRO_LOG("MPU6515_REG_PWR_CTL = %x\n", databuf[0]);
 	}
 
 	return MPU6515_SUCCESS;
@@ -408,6 +410,7 @@ static int MPU6515_SetPWR_MGMT_2(struct i2c_client *client, bool enable)
 /* ----------------------------------------------------------------------------// */
 static int MPU6515_SetPowerMode(struct i2c_client *client, bool enable)
 {
+	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	u8 databuf[2] = { 0 };
 	int res = 0;
 
@@ -451,7 +454,8 @@ static int MPU6515_SetPowerMode(struct i2c_client *client, bool enable)
 		GYRO_LOG("set power mode failed!\n");
 		return MPU6515_ERR_I2C;
 	} else {
-		GYRO_LOG("set power mode ok %d!\n", enable);
+		if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
+			GYRO_LOG("set power mode ok %d!\n", enable);
 	}
 
 	sensor_power = enable;
@@ -462,10 +466,12 @@ static int MPU6515_SetPowerMode(struct i2c_client *client, bool enable)
 /*----------------------------------------------------------------------------*/
 static int MPU6515_SetDataFormat(struct i2c_client *client, u8 dataformat)
 {
+	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	u8 databuf[2] = { 0 };
 	int res = 0;
 
-	GYRO_FUN();
+	if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
+		GYRO_FUN();
 
 	databuf[0] = MPU6515_REG_CFG;
 	databuf[1] = dataformat;
@@ -488,7 +494,8 @@ static int MPU6515_SetDataFormat(struct i2c_client *client, u8 dataformat)
 			GYRO_ERR("read data format register err!\n");
 			return MPU6515_ERR_I2C;
 	} else {
-		GYRO_LOG("read  data format: 0x%x\n", databuf[0]);
+		if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
+			GYRO_LOG("read  data format: 0x%x\n", databuf[0]);
 	}
 
 	return MPU6515_SUCCESS;
@@ -496,10 +503,12 @@ static int MPU6515_SetDataFormat(struct i2c_client *client, u8 dataformat)
 
 static int MPU6515_SetFullScale(struct i2c_client *client, u8 dataformat)
 {
+	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	u8 databuf[2] = { 0 };
 	int res = 0;
 
-	GYRO_FUN();
+	if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
+		GYRO_FUN();
 
 	databuf[0] = MPU6515_REG_GYRO_CFG;
 	databuf[1] = dataformat;
@@ -522,7 +531,8 @@ static int MPU6515_SetFullScale(struct i2c_client *client, u8 dataformat)
 			GYRO_ERR("read data format register err!\n");
 			return MPU6515_ERR_I2C;
 	} else {
-		GYRO_LOG("read  data format: 0x%x\n", databuf[0]);
+		if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
+			GYRO_LOG("read  data format: 0x%x\n", databuf[0]);
 	}
 
 	return MPU6515_SUCCESS;
@@ -532,6 +542,7 @@ static int MPU6515_SetFullScale(struct i2c_client *client, u8 dataformat)
 /* set the sample rate */
 static int MPU6515_SetSampleRate(struct i2c_client *client, int sample_rate)
 {
+	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	u8 databuf[2] = { 0 };
 	int rate_div = 0;
 	int res = 0;
@@ -546,7 +557,8 @@ static int MPU6515_SetSampleRate(struct i2c_client *client, int sample_rate)
 			GYRO_ERR("read gyro data format register err!\n");
 			return MPU6515_ERR_I2C;
 	} else {
-		GYRO_LOG("read  gyro data format register: 0x%x\n", databuf[0]);
+		if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
+			GYRO_LOG("read  gyro data format register: 0x%x\n", databuf[0]);
 	}
 
 	if ((databuf[0] & 0x07) == 0)	/* Analog sample rate is 8KHz */
@@ -583,7 +595,8 @@ static int MPU6515_SetSampleRate(struct i2c_client *client, int sample_rate)
 			GYRO_ERR("read gyro sample rate register err!\n");
 			return MPU6515_ERR_I2C;
 	} else {
-		GYRO_LOG("read  gyro sample rate: 0x%x\n", databuf[0]);
+		if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
+			GYRO_LOG("read  gyro sample rate: 0x%x\n", databuf[0]);
 	}
 
 	return MPU6515_SUCCESS;
@@ -1253,7 +1266,8 @@ static int mpu6515_gpio_config(void)
 	pins_default = pinctrl_lookup_state(pinctrl, "pin_default");
 	if (IS_ERR(pins_default)) {
 		ret = PTR_ERR(pins_default);
-		GYRO_ERR("Cannot find gyro pinctrl default!\n");
+		/* not define default in DTS now, TBD */
+		/* GYRO_ERR("Cannot find gyro pinctrl default!\n"); */
 
 	}
 
@@ -1274,7 +1288,9 @@ static int mpu6515_init_client(struct i2c_client *client, bool enable)
 	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	int res = 0;
 
-	GYRO_FUN();
+	if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
+		GYRO_FUN();
+
 	mpu6515_gpio_config();
 
 	res = MPU6515_SetPowerMode(client, true);
