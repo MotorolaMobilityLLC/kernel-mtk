@@ -23,6 +23,17 @@
 		atag,videolfb-lcmname= "r63419_wqhd_truly_phantom_2k_cmd_ok";
 	};
 
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		memory-lowpower-reserved-memory {
+			compatible = "mediatek,memory-lowpower";
+			size = <0 0x30000000>;
+			alignment = <0 0x10000000>;
+		};
+	};
 
 	soc {
 		compatible = "simple-bus";
