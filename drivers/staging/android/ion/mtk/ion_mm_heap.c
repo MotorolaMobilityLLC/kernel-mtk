@@ -501,7 +501,9 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 			for (m = rb_first(&client->handles); m; m = rb_next(m)) {
 				struct ion_handle
 				*handle = rb_entry(m, struct ion_handle, node);
+#if ION_RUNTIME_DEBUGGER
 				int i;
+#endif
 
 				ION_PRINT_LOG_OR_SEQ(s,
 						"\thandle=0x%p, buffer=0x%p, heap=%d, backtrace is:\n",
