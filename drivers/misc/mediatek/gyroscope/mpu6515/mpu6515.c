@@ -675,7 +675,7 @@ static int MPU6515_FIFOConfig(struct i2c_client *client, u8 clk)
 /*----------------------------------------------------------------------------*/
 static int MPU6515_ReadFifoData(struct i2c_client *client, s16 *data, int *datalen)
 {
-	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
+	struct mpu6515_i2c_data *obj;
 	u8 buf[MPU6515_DATA_LEN] = { 0 };
 	s16 tmp1[MPU6515_AXES_NUM] = { 0 };
 	s16 tmp2[MPU6515_AXES_NUM] = { 0 };
@@ -688,6 +688,8 @@ static int MPU6515_ReadFifoData(struct i2c_client *client, s16 *data, int *datal
 
 	if (NULL == client)
 		return -EINVAL;
+
+	obj = i2c_get_clientdata(client);
 
 	/* stop putting data in FIFO */
 	MPU6515_ReadStart(client, FALSE);
