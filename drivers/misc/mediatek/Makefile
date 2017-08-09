@@ -123,5 +123,7 @@ obj-$(CONFIG_MTK_EMI_MPU)	+= emi_mpu/
 obj-$(CONFIG_MTK_MJC_DRIVER)	+= mjc/
 obj-$(CONFIG_HAVE_XLOG_SUPPORT) += xlog/
 obj-$(CONFIG_MTK_EMI_MBW) += emi_mbw/
-
+obj-&(CONFIG_MTK_EMI_MBW) += emi_mbw/
 obj-$(CONFIG_MTK_TC1_FEATURE)   += tc1_interface/
+obj-$(CONFIG_MTK_BTCVSD) += btcvsd/
+
