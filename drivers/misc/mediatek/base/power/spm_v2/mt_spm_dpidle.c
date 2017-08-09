@@ -282,7 +282,11 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.md_ddr_dbc_en = 0,
 	.md1_req_mask_b = 1,
 	.md2_req_mask_b = 0,
-	.scp_req_mask_b = 0,
+#if defined(CONFIG_ARCH_MT6755)
+	.scp_req_mask_b = 0, /* bit 21 */
+#elif defined(CONFIG_ARCH_MT6797)
+	.scp_req_mask_b = 1, /* bit 21 */
+#endif
 	.lte_mask_b = 0,
 	.md_apsrc1_sel = 0,
 	.md_apsrc0_sel = 0,
@@ -316,7 +320,11 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.md_apsrcreq_0_infra_mask_b = 1,
 	.md_apsrcreq_1_infra_mask_b = 0,
 	.conn_apsrcreq_infra_mask_b = 1,
+#if defined(CONFIG_ARCH_MT6755)
 	.md32_apsrcreq_infra_mask_b = 0,
+#elif defined(CONFIG_ARCH_MT6797)
+	.md32_apsrcreq_infra_mask_b = 1,
+#endif
 	.md_ddr_en_0_mask_b = 1,
 	.md_ddr_en_1_mask_b = 0,
 	.md_vrf18_req_0_mask_b = 1,
@@ -345,6 +353,9 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.sdio_on_dvfs_req_mask_b = 0,
 	.emi_boost_dvfs_req_mask_b = 0,
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
+#if defined(CONFIG_ARCH_MT6797)
+	.disp_od_req_mask_b = 0, /* bit 27, set 0 for deepidle */
+#endif
 
 	/* SPM_CLK_CON */
 	.srclkenai_mask = 1,
@@ -372,8 +383,7 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 	u32 v0, v1;
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
-		/* FIXME */
-		/* mt_cpu_dormant(CPU_DEEPIDLE_MODE); */
+		mt_cpu_dormant(CPU_DEEPIDLE_MODE);
 	} else {
 		/* backup MPx_AXI_CONFIG */
 		v0 = reg_read(MP0_AXI_CONFIG);
@@ -521,8 +531,7 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 
 	__spm_check_md_pdn_power_control(pwrctrl);
 
-	/* FIXME */
-	/* __spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl); */
+	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 
 	__spm_set_power_control(pwrctrl);
 
@@ -659,8 +668,7 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	__spm_init_event_vector(pcmdesc);
 
-	/* FIXME */
-	/* __spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl); */
+	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 
 	__spm_set_power_control(pwrctrl);
 
