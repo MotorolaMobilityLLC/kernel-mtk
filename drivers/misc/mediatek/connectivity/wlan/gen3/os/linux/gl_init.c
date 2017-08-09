@@ -2541,7 +2541,9 @@ static INT_32 wlanProbe(PVOID pvData)
 		 * _HIF_SDIO: bus driver handle
 		 */
 		bRet = glBusInit(pvData);
-		/* wlanDebugTC4Init(); */
+#if (CFG_SUPPORT_TRACE_TC4 == 1)
+		wlanDebugTC4Init();
+#endif
 		/* Cannot get IO address from interface */
 		if (FALSE == bRet) {
 			DBGLOG(INIT, ERROR, "wlanProbe: glBusInit() fail\n");
@@ -3010,9 +3012,9 @@ static VOID wlanRemove(VOID)
 	glBusRelease(prDev);
 
 	kalHaltUnlock();
-
-	/* wlanDebugUninit(); */
-
+#if (CFG_SUPPORT_TRACE_TC4 == 1)
+	wlanDebugTC4Uninit();
+#endif
 	/* 4 <6> Unregister the card */
 	wlanNetUnregister(prDev->ieee80211_ptr);
 

@@ -449,7 +449,9 @@
 
 #define CFG_SUPPORT_STATISTICS			1
 
-#define CFG_FORCE_USE_20BW						0
+#define CFG_FORCE_USE_20BW			0
+
+#define CFG_SUPPORT_TRACE_TC4			0
 /*------------------------------------------------------------------------------
  * Flags of Firmware Download Option.
  *------------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 #include "precomp.h"
 
+#if (CFG_SUPPORT_TRACE_TC4 == 1)
 struct COMMAND {
 	UINT_8 ucCID;
 	BOOLEAN fgSetQuery;
@@ -50,7 +51,7 @@ VOID wlanDebugTC4Init(VOID)
 	/* debug for command/tc4 resource end */
 }
 
-VOID wlanDebugUninit(VOID)
+VOID wlanDebugTC4Uninit(VOID)
 {
 	/* debug for command/tc4 resource begin */
 	kalMemFree(gprTcReleaseTraceBuffer, PHY_MEM_TYPE,
@@ -67,7 +68,7 @@ VOID wlanTraceTxCmd(P_CMD_INFO_T prCmd)
 	prCurCmd->u8TxTime = sched_clock();
 	prCurCmd->eCmdType = prCmd->eCmdType;
 	if (prCmd->eCmdType == COMMAND_TYPE_MANAGEMENT_FRAME) {
-		P_WLAN_MAC_MGMT_HEADER_T prMgmt = (P_WLAN_MAC_MGMT_HEADER_T)((P_MSDU_INFO_T)prCmd->prPacket)->prPacket;
+		P_WLAN_MAC_MGMT_HEADER_T prMgmt = (P_WLAN_MAC_MGMT_HEADER_T)prCmd->prMsduInfo->prPacket;
 
 		prCurCmd->u.rMgmtFrame.u2FrameCtl = prMgmt->u2FrameCtrl;
 		prCurCmd->u.rMgmtFrame.u2DurationID = prMgmt->u2Duration;
@@ -162,3 +163,4 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 		}
 	}
 }
+#endif

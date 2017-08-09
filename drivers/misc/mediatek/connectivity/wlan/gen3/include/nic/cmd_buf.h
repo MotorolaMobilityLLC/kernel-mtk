@@ -158,11 +158,13 @@ wlanSendSetQueryCmd(IN P_ADAPTER_T prAdapter,
 		    PUINT_8 pucInfoBuffer, OUT PVOID pvSetQueryBuffer, IN UINT_32 u4SetQueryBufferLen);
 
 VOID cmdBufDumpCmdQueue(P_QUE_T prQueue, CHAR *queName);
+#if (CFG_SUPPORT_TRACE_TC4 == 1)
 VOID wlanDebugTC4Init(VOID);
-VOID wlanDebugUninit(VOID);
+VOID wlanDebugTC4Uninit(VOID);
 VOID wlanTraceReleaseTcRes(P_ADAPTER_T prAdapter, PUINT_16 aucTxRlsCnt, UINT_8 ucAvailable);
 VOID wlanTraceTxCmd(P_CMD_INFO_T prCmd);
 VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen);
+#endif
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

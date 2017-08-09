@@ -914,7 +914,9 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC, IN UI
 			u4CurrTick = kalGetTimeTick();
 		if (CHECK_FOR_TIMEOUT(kalGetTimeTick(), u4CurrTick,
 				SEC_TO_SYSTIME(TC4_NO_RESOURCE_DELAY_MS))) {
+#if (CFG_SUPPORT_TRACE_TC4 == 1)
 			wlanDumpTcResAndTxedCmd(NULL, 0);
+#endif
 			cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
 		}
 	}
@@ -1211,10 +1213,10 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN UINT_16 *au2TxRlsCnt)
 					prTcqStatus->au2FreeBufferCount[i]);
 			}
 		}
-		#if 0
+#if (CFG_SUPPORT_TRACE_TC4 == 1)
 		if (au2TxRlsCnt[TC4_INDEX] != 0)
 			wlanTraceReleaseTcRes(prAdapter, au2TxRlsCnt, prTcqStatus->au2FreeBufferCount[TC4_INDEX]);
-		#endif
+#endif
 		for (i = TC0_INDEX; i < TC_NUM; i++)
 			prQM->au4QmTcResourceBackCounter[i] += au2FreeTcResource[i];
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
@@ -2336,9 +2338,9 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 
 	prTxCtrl = &prAdapter->rTxCtrl;
 	pucOutputBuf = prTxCtrl->pucTxCoalescingBufPtr;
-
-	/* wlanTraceTxCmd(prCmdInfo); */
-
+#if (CFG_SUPPORT_TRACE_TC4 == 1)
+	wlanTraceTxCmd(prCmdInfo);
+#endif
 	if (prCmdInfo->eCmdType == COMMAND_TYPE_SECURITY_FRAME) {
 		prMsduInfo = prCmdInfo->prMsduInfo;
 
