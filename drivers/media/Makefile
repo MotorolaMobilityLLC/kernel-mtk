@@ -2,6 +2,8 @@
 # Makefile for the kernel multimedia device drivers.
 #
 
+subdir-ccflags-y += -Werror
+
 media-objs	:= media-device.o media-devnode.o media-entity.o
 
 #

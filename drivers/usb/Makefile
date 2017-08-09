@@ -4,6 +4,8 @@
 
 # Object files in subdirectories
 
+subdir-ccflags-y += -Werror
+
 obj-$(CONFIG_USB)		+= core/
 
 obj-$(CONFIG_USB_DWC3)		+= dwc3/
