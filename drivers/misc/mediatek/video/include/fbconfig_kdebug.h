@@ -139,7 +139,8 @@ typedef struct {
 
 struct misc_property {
 	unsigned int dual_port:1;
-	unsigned int reserved:31;
+	unsigned int overall_layer_num:5;
+	unsigned int reserved:26;
 };
 
 void Panel_Master_DDIC_config(void);

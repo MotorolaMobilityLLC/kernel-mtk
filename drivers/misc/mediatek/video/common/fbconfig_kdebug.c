@@ -78,6 +78,7 @@ static int global_layer_id = -1;
 struct dentry *ConfigPara_dbgfs = NULL;
 CONFIG_RECORD_LIST head_list;
 LCM_REG_READ reg_read;
+
 /* int esd_check_addr; */
 /* int esd_check_para_num; */
 /* int esd_check_type; */
@@ -553,6 +554,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 		if (pm->pLcm_params->lcm_if == LCM_INTERFACE_DSI_DUAL)
 			misc.dual_port = 1;
+		misc.overall_layer_num = TOTAL_OVL_LAYER_NUM;
 		ret = copy_to_user(argp, &misc,  sizeof(misc));
 		return 0;
 	}
