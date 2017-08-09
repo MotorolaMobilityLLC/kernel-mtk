@@ -2093,7 +2093,7 @@ static unsigned int _search_available_volt(struct mt_cpu_dvfs *p, unsigned int t
 }
 
 static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz,
-			       struct cpufreq_policy *policy, unsigned int target_volt)
+			       struct cpufreq_policy *policy, unsigned int target_volt, int log)
 {
 	int ret = -1;
 
@@ -2109,10 +2109,11 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	if (cur_khz != get_turbo_freq(p->cpu_id, target_khz)) {
-		cpufreq_dbg("@%s(), %s: (%d, %d): freq = %d (%d), volt = %d (%d), cpus = %d, cur = %d\n",
-			__func__, cpu_dvfs_get_name(p), p->idx_opp_ppm_base, p->idx_opp_ppm_limit,
-			target_khz, get_turbo_freq(p->cpu_id, target_khz), target_volt,
-			get_turbo_volt(p->cpu_id, target_volt), num_online_cpus(), cur_khz);
+		if (log)
+			cpufreq_dbg("@%s(), %s: (%d, %d): freq = %d (%d), volt = %d (%d), cpus = %d, cur = %d\n",
+				__func__, cpu_dvfs_get_name(p), p->idx_opp_ppm_base, p->idx_opp_ppm_limit,
+				target_khz, get_turbo_freq(p->cpu_id, target_khz), target_volt,
+				get_turbo_volt(p->cpu_id, target_volt), num_online_cpus(), cur_khz);
 	}
 
 	target_volt = get_turbo_volt(p->cpu_id, target_volt);
@@ -2227,6 +2228,7 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	    (cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE)) ? MT_CPU_DVFS_BIG : MT_CPU_DVFS_LITTLE;
 	struct mt_cpu_dvfs *p_second = id_to_cpu_dvfs(id_second);
 	unsigned int target_volt;	/* mv * 100 */
+	int log = 1;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
@@ -2248,8 +2250,10 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	}
 
 	/* get current idx here to avoid idx synchronization issue */
-	if (new_opp_idx == -1)
+	if (new_opp_idx == -1) {
 		new_opp_idx = p->idx_opp_tbl;
+		log = 0;
+	}
 
 	if (do_dvfs_stress_test)
 		new_opp_idx = jiffies & 0x7;	/* 0~7 */
@@ -2267,9 +2271,9 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	target_freq = cpu_dvfs_get_freq_by_idx(p, new_opp_idx);
 
 #ifdef CONFIG_CPU_FREQ
-	ret = _cpufreq_set_locked(p, cur_freq, target_freq, policy, target_volt);
+	ret = _cpufreq_set_locked(p, cur_freq, target_freq, policy, target_volt, log);
 #else
-	ret = _cpufreq_set_locked(p, cur_freq, target_freq, NULL, target_volt);
+	ret = _cpufreq_set_locked(p, cur_freq, target_freq, NULL, target_volt, log);
 #endif
 
 	p->idx_opp_tbl = new_opp_idx;
