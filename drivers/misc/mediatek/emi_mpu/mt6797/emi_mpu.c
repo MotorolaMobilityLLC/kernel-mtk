@@ -2465,12 +2465,26 @@ static int __init dram_4gb_init(void)
 early_initcall(dram_4gb_init);
 #endif
 
+#define INFRA_TOP_DBG_CON0                     IOMEM(INFRACFG_BASE_ADDR+0x100)
+#define INFRA_TOP_DBG_CON1                     IOMEM(INFRACFG_BASE_ADDR+0x104)
+#define INFRA_TOP_DBG_CON2                     IOMEM(INFRACFG_BASE_ADDR+0x108)
+#define INFRA_TOP_DBG_CON3                     IOMEM(INFRACFG_BASE_ADDR+0x10C)
+
+#define EMI_DFTB                     IOMEM(EMI_BASE_ADDR+0x0E8)
+#define EMI_APBDBG                     IOMEM(EMI_BASE_ADDR+0x5FC)
+
 #define MEM_DCM_CTRL                     IOMEM(INFRA_BASE_ADDR+0x78)
 
 #define EMI_CONM                       IOMEM(EMI_BASE_ADDR+0x060)
 #define EMI_BMEN                        IOMEM(EMI_BASE_ADDR+0x400)
 #define EMI_MSEL                         IOMEM(EMI_BASE_ADDR+0x440)
 #define EMI_MSEL2                       IOMEM(EMI_BASE_ADDR+0x468)
+#define EMI_MSEL3                       IOMEM(EMI_BASE_ADDR+0x470)
+#define EMI_MSEL4                       IOMEM(EMI_BASE_ADDR+0x478)
+#define EMI_MSEL5                       IOMEM(EMI_BASE_ADDR+0x480)
+#define EMI_MSEL6                       IOMEM(EMI_BASE_ADDR+0x488)
+#define EMI_MSEL7                       IOMEM(EMI_BASE_ADDR+0x490)
+#define EMI_MSEL8                       IOMEM(EMI_BASE_ADDR+0x498)
 #define EMI_BMEN2                     IOMEM(EMI_BASE_ADDR+0x4E8)
 #define EMI_BMRW0                    IOMEM(EMI_BASE_ADDR+0x4F8)
 #define EMI_WSCT                         IOMEM(EMI_BASE_ADDR+0x428)
@@ -2496,9 +2510,17 @@ early_initcall(dram_4gb_init);
 #define EMI_CONI                          IOMEM(EMI_BASE_ADDR+0x040)
 #define EMI_TEST0                         IOMEM(EMI_BASE_ADDR+0x0D0)
 #define EMI_TEST1                         IOMEM(EMI_BASE_ADDR+0x0D8)
-
 void dump_emi_latency(void)
 {
+mt_reg_sync_writel(0x00000060, INFRA_TOP_DBG_CON0);
+mt_reg_sync_writel(0x00000080, INFRA_TOP_DBG_CON1);
+mt_reg_sync_writel(0x00000360, INFRA_TOP_DBG_CON2);
+mt_reg_sync_writel(0x000004E0, INFRA_TOP_DBG_CON3);
+
+mt_reg_sync_writel(readl(EMI_DFTB) | (1<<8),       EMI_DFTB);
+
+/* Read EMI debug out */
+pr_err("EMI debug out EMI_APBDBG= 0x%x\n", readl(EMI_APBDBG));
 /* Disable EMI DCM */
 pr_err("Disable EMI DCM\n");
 mt_reg_sync_writel(readl(MEM_DCM_CTRL) & (~(1<<7)), MEM_DCM_CTRL);
@@ -2510,16 +2532,18 @@ mt_reg_sync_writel(readl(MEM_DCM_CTRL) & (~0x1),    MEM_DCM_CTRL);
 pr_err("Enable EMI bus monitor\n");
 mt_reg_sync_writel(readl(EMI_CONM) | (1<<30), EMI_CONM);
 mt_reg_sync_writel(0x00FF0000, EMI_BMEN);
-mt_reg_sync_writel(0x00200001, EMI_MSEL);
+mt_reg_sync_writel(0x00100003, EMI_MSEL);
 mt_reg_sync_writel(0x00000008, EMI_MSEL2);
 mt_reg_sync_writel(0x02000000, EMI_BMEN2);
-mt_reg_sync_writel(0x55555555, EMI_BMRW0);
+mt_reg_sync_writel(0xAAAAAAAA, EMI_BMRW0);
 mt_reg_sync_writel(readl(EMI_BMEN) | 0x1, EMI_BMEN);
 
-mdelay(3);
+mdelay(5);
 
 pr_err("Get latency Result\n");
 mt_reg_sync_writel(readl(EMI_BMEN) | 0x2, EMI_BMEN);
+/* Read EMI debug out */
+pr_err("EMI debug out EMI_APBDBG= 0x%x\n", readl(EMI_APBDBG));
 
 pr_err("-----------Get BW RESULT----------------\n");
 /* Get BW result */
@@ -2531,6 +2555,10 @@ pr_err("EMI_WSCT4 = 0x%x\n", readl(EMI_WSCT4));
 /* Get latency result */
 pr_err("EMI_TTYPE1 = 0x%x\n", readl(EMI_TTYPE1));
 pr_err("EMI_TTYPE9 = 0x%x\n", readl(EMI_TTYPE9));
+pr_err("EMI_TTYPE2 = 0x%x\n", readl(EMI_TTYPE2));
+pr_err("EMI_TTYPE10 = 0x%x\n", readl(EMI_TTYPE10));
+pr_err("EMI_TTYPE3 = 0x%x\n", readl(EMI_TTYPE3));
+pr_err("EMI_TTYPE11 = 0x%x\n", readl(EMI_TTYPE11));
 pr_err("EMI_TTYPE4 = 0x%x\n", readl(EMI_TTYPE4));
 pr_err("EMI_TTYPE12 = 0x%x\n", readl(EMI_TTYPE12));
 pr_err("EMI_TTYPE5 = 0x%x\n", readl(EMI_TTYPE5));
@@ -2539,6 +2567,8 @@ pr_err("EMI_TTYPE6 = 0x%x\n", readl(EMI_TTYPE6));
 pr_err("EMI_TTYPE14 = 0x%x\n", readl(EMI_TTYPE14));
 pr_err("EMI_TTYPE7 = 0x%x\n", readl(EMI_TTYPE7));
 pr_err("EMI_TTYPE15 = 0x%x\n", readl(EMI_TTYPE15));
+pr_err("EMI_TTYPE8 = 0x%x\n", readl(EMI_TTYPE8));
+pr_err("EMI_TTYPE16 = 0x%x\n", readl(EMI_TTYPE16));
 
 pr_err("EMI_CONI  = 0x%x\n", readl(EMI_CONI));
 pr_err("EMI_TEST0 = 0x%x\n", readl(EMI_TEST0));
@@ -2577,12 +2607,15 @@ readl(IOMEM(SMI_BASE_ADDR+0x434)));
 pr_err("Bus debug register 0x10201190= 0x%x\n",
 readl(IOMEM(INFRACFG_BASE_ADDR+0x190)));
 
+/* Read EMI debug out */
+pr_err("EMI debug out EMI_APBDBG= 0x%x\n", readl(EMI_APBDBG));
 }
+
 void dump_emi_MM(void)
 {
-
+/*temp for MM, should be removed later */
 /* Disable EMI DCM */
-pr_err("Disable EMI DCM\n");
+pr_err("Disable EMI DCM @ pgt_scan_show start\n");
 mt_reg_sync_writel(readl(MEM_DCM_CTRL) & (~(1<<7)), MEM_DCM_CTRL);
 mt_reg_sync_writel(readl(MEM_DCM_CTRL) | (0x1f<<1), MEM_DCM_CTRL);
 mt_reg_sync_writel(readl(MEM_DCM_CTRL) | 0x1,       MEM_DCM_CTRL);
@@ -2591,25 +2624,22 @@ mt_reg_sync_writel(readl(MEM_DCM_CTRL) & (~0x1),    MEM_DCM_CTRL);
 /* Enable EMI bus monitor */
 pr_err("Enable EMI bus monitor\n");
 mt_reg_sync_writel(readl(EMI_CONM) | (1<<30), EMI_CONM);
-mt_reg_sync_writel(0x00FF0000, EMI_BMEN);
-mt_reg_sync_writel(0x00200001, EMI_MSEL);
-mt_reg_sync_writel(0x00000004, EMI_MSEL2);
-mt_reg_sync_writel(0x02000000, EMI_BMEN2);
-mt_reg_sync_writel(0x55555555, EMI_BMRW0);
+mt_reg_sync_writel(0xC8FF0000, EMI_BMEN);
+mt_reg_sync_writel(0xCAFFC9FF, EMI_MSEL);
+mt_reg_sync_writel(0xCCFFCBFF, EMI_MSEL2);
+mt_reg_sync_writel(0xCEFFCDFF, EMI_MSEL3);
+mt_reg_sync_writel(0x88FFCFFF, EMI_MSEL4);
+mt_reg_sync_writel(0x8AFF89FF, EMI_MSEL5);
+mt_reg_sync_writel(0x8CFF8BFF, EMI_MSEL6);
+mt_reg_sync_writel(0x8EFF8DFF, EMI_MSEL7);
+mt_reg_sync_writel(0x00008FFF, EMI_MSEL8);
 mt_reg_sync_writel(readl(EMI_BMEN) | 0x1, EMI_BMEN);
-
-mdelay(5);
+pr_err("Disable EMI DCM @ pgt_scan_show end\n");
 
 pr_err("Get latency Result\n");
 mt_reg_sync_writel(readl(EMI_BMEN) | 0x2, EMI_BMEN);
 
 pr_err("-----------Get BW RESULT----------------\n");
-/* Get BW result */
-pr_err("EMI_WSCT = 0x%x\n", readl(EMI_WSCT));
-pr_err("EMI_WSCT2 = 0x%x\n", readl(EMI_WSCT2));
-pr_err("EMI_WSCT3 = 0x%x\n", readl(EMI_WSCT3));
-pr_err("EMI_WSCT4 = 0x%x\n", readl(EMI_WSCT4));
-
 
 /* Get latency result */
 pr_err("EMI_TTYPE1 = 0x%x\n", readl(EMI_TTYPE1));
@@ -2628,9 +2658,5 @@ pr_err("EMI_TTYPE7 = 0x%x\n", readl(EMI_TTYPE7));
 pr_err("EMI_TTYPE15 = 0x%x\n", readl(EMI_TTYPE15));
 pr_err("EMI_TTYPE8 = 0x%x\n", readl(EMI_TTYPE8));
 pr_err("EMI_TTYPE16 = 0x%x\n", readl(EMI_TTYPE16));
-
-pr_err("EMI_CONI  = 0x%x\n", readl(EMI_CONI));
-pr_err("EMI_TEST0 = 0x%x\n", readl(EMI_TEST0));
-pr_err("EMI_TEST1 = 0x%x\n", readl(EMI_TEST1));
 
 }
