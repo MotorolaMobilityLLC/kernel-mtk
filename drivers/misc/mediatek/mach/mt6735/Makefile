@@ -6,6 +6,9 @@
 
 ifneq ($(CONFIG_ARM64), y)
 # For arm32
+obj-y += mt_cpuxgpt.o
+obj-y += mt_gpt.o
+obj-y += ca53_timer.o
 obj-y += mt_cache_v7.o
 
 # Module project related part
@@ -15,6 +18,9 @@ else
 ############################ For arm64 #############################
 
 obj-y += mt_cache_v8.o
+obj-y += mt_cpuxgpt.o
+obj-y += mt_gpt.o
+obj-y += ca53_timer.o
 # Module project related part
 #obj-y += $(ARCH_MTK_PROJECT)/
 
