@@ -528,29 +528,6 @@ static int vcorefs_enable_ddr(bool enable)
 	return 0;
 }
 
-static void vcorefs_reload_spm_firmware(int flag)
-{
-
-	struct governor_profile *gvrctrl = &governor_ctrl;
-
-	mutex_lock(&governor_mutex);
-
-	if ((flag & SPM_FLAG_DIS_VCORE_DVS) != 0)
-		gvrctrl->vcore_dvs = 0;
-	else
-		gvrctrl->vcore_dvs = 1;
-
-	if ((flag & SPM_FLAG_DIS_VCORE_DFS) != 0)
-		gvrctrl->ddr_dfs = 0;
-	else
-		gvrctrl->ddr_dfs = 1;
-
-	vcorefs_crit("re-kick vcore dvfs FW (vcore_dvs: %d ddr_dfs: %d)\n", gvrctrl->vcore_dvs, gvrctrl->ddr_dfs);
-	spm_go_to_vcore_dvfs(flag, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
-
-	mutex_unlock(&governor_mutex);
-}
-
 int governor_debug_store(const char *buf)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
@@ -559,6 +536,8 @@ int governor_debug_store(const char *buf)
 
 	if (sscanf(buf, "%31s 0x%x", cmd, &val) == 2 ||
 		   sscanf(buf, "%31s %d", cmd, &val) == 2) {
+
+		vcorefs_crit("vcore_debug: cmd: %s, val: %d\n", cmd, val);
 
 		if (!strcmp(cmd, "plat_feature_en")) {
 			gvrctrl->plat_feature_en = val;
@@ -573,8 +552,6 @@ int governor_debug_store(const char *buf)
 			vcorefs_enable_ddr(val);
 		else if (!strcmp(cmd, "freq_dfs"))
 			gvrctrl->freq_dfs = val;
-		else if (!strcmp(cmd, "load_spm"))
-			vcorefs_reload_spm_firmware(val);
 		else if (!strcmp(cmd, "dvfs_cnt"))
 			clean_dvfs_counter(val);
 		else if (!strcmp(cmd, "screen")) {
@@ -686,12 +663,13 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 	gvrctrl->curr_vcore_uv = vcorefs_get_curr_vcore();
 	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
 
-	vcorefs_crit("opp: %d, vcore: %u(%u), fddr: %u(%u), screen_on: %u %s\n",
+	vcorefs_crit("opp: %d, vcore: %u(%u), fddr: %u(%u), screen_on: %u %s%s\n",
 		     krconf->dvfs_opp,
 		     opp_ctrl_table[krconf->dvfs_opp].vcore_uv, gvrctrl->curr_vcore_uv,
 		     opp_ctrl_table[krconf->dvfs_opp].ddr_khz, gvrctrl->curr_ddr_khz,
 		     gvrctrl->screen_on,
-		     (gvrctrl->vcore_dvs || gvrctrl->ddr_dfs) ? "" : "[X]");
+		     (gvrctrl->vcore_dvs) ? "[O]" : "[X]",
+		     (gvrctrl->ddr_dfs) ? "[O]" : "[X]");
 
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
@@ -722,7 +700,7 @@ static int set_freq_with_opp(struct kicker_config *krconf)
 		     krconf->dvfs_opp,
 		     opp_ctrl_table[krconf->dvfs_opp].axi_khz, gvrctrl->curr_axi_khz,
 		     gvrctrl->screen_on,
-		     gvrctrl->freq_dfs ? "" : "[X]");
+		     gvrctrl->freq_dfs ? "[O]" : "[X]");
 
 	if (!gvrctrl->freq_dfs || !gvrctrl->screen_on)
 		return 0;
@@ -997,14 +975,22 @@ int vcorefs_late_init_dvfs(void)
 {
 	struct kicker_config krconf;
 	struct governor_profile *gvrctrl = &governor_ctrl;
+	int flag;
 
-	if (is_vcorefs_feature_enable())
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
-/*	else {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS, 0,
-						gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+	if (is_vcorefs_feature_enable()) {
+
+		flag = SPM_FLAG_RUN_COMMON_SCENARIO;
+
+		if (!gvrctrl->vcore_dvs)
+			flag |= SPM_FLAG_DIS_VCORE_DVS;
+		if (!gvrctrl->ddr_dfs)
+			flag |= SPM_FLAG_DIS_VCORE_DFS;
+
+		vcorefs_crit("[%s] vcore_dvs: %d, ddr_dfs: %d, freq_dfs: %d, pcm_flag: 0x%x\n", __func__,
+						gvrctrl->vcore_dvs, gvrctrl->ddr_dfs, gvrctrl->freq_dfs, flag);
+		spm_go_to_vcore_dvfs(flag, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
 	}
-*/
+
 	mutex_lock(&governor_mutex);
 	gvrctrl->late_init_opp = set_init_opp_index();
 
