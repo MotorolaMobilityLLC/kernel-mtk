@@ -114,6 +114,8 @@ struct mt_battery_charging_custom_data {
 	int talking_sync_time;
 
 	/* Battery Temperature Protection */
+	int max_discharge_temperature;
+	int min_discharge_temperature;
 	int max_charge_temperature;
 	int min_charge_temperature;
 	int err_charge_temperature;

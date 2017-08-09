@@ -112,6 +112,8 @@ static struct mt_battery_charging_custom_data default_charging_data = {
 	.talking_sync_time = 60,
 
 	/* Battery Temperature Protection */
+	.max_discharge_temperature = 60,
+	.min_discharge_temperature = -10,
 	.max_charge_temperature = 50,
 	.min_charge_temperature = 0,
 	.err_charge_temperature = 0xFF,
@@ -1913,6 +1915,24 @@ static u32 mt_battery_average_method(u32 *bufferdata, u32 data, s32 *sum, u8 bat
 	return avgdata;
 }
 
+static int filter_battery_temperature(int instant_temp)
+{
+	int check_count;
+
+	/* recheck 3 times for critical temperature */
+	for (check_count = 0; check_count < 3; check_count++) {
+		if (instant_temp > p_bat_charging_data->max_discharge_temperature
+			|| instant_temp < p_bat_charging_data->min_discharge_temperature) {
+
+			instant_temp = battery_meter_get_battery_temperature();
+			pr_warn("recheck battery temperature result: %d\n", instant_temp);
+			msleep(20);
+			continue;
+		}
+	}
+	return instant_temp;
+}
+
 void mt_battery_GetBatteryData(void)
 {
 	u32 bat_vol, charger_vol, Vsense, ZCV;
@@ -1973,7 +1993,7 @@ void mt_battery_GetBatteryData(void)
 	if (p_bat_charging_data->use_avg_temperature)
 		BMT_status.temperature = avg_temperature;
 	else
-		BMT_status.temperature = temperature;
+		BMT_status.temperature = filter_battery_temperature(temperature);
 
 	if ((g_battery_thermal_throttling_flag == 1) || (g_battery_thermal_throttling_flag == 3)) {
 		if (battery_cmd_thermal_test_mode == 1) {
@@ -1983,12 +2003,13 @@ void mt_battery_GetBatteryData(void)
 				    BMT_status.temperature);
 		}
 #if defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
-		if (temperature > 60 || temperature < -10) {
+		if (BMT_status.temperature > p_bat_charging_data->max_discharge_temperature
+			|| BMT_status.temperature < p_bat_charging_data->min_discharge_temperature) {
 			struct battery_data *bat_data = &battery_main;
 			struct power_supply *bat_psy = &bat_data->psy;
 
 			pr_warn("[Battery] instant Tbat(%d) out of range, power down device.\n",
-				temperature);
+				BMT_status.temperature);
 
 			bat_data->BAT_CAPACITY = 0;
 			power_supply_changed(bat_psy);
@@ -2324,7 +2345,8 @@ static void mt_battery_thermal_check(void)
 				    BMT_status.temperature);
 		}
 #if defined(CONFIG_MTK_JEITA_STANDARD_SUPPORT)
-		if (BMT_status.temperature > 60 || BMT_status.temperature < -10) {
+		if (BMT_status.temperature > p_bat_charging_data->max_discharge_temperature
+			|| BMT_status.temperature < p_bat_charging_data->min_discharge_temperature) {
 			struct battery_data *bat_data = &battery_main;
 			struct power_supply *bat_psy = &bat_data->psy;
 
@@ -2341,7 +2363,7 @@ static void mt_battery_thermal_check(void)
 				orderly_poweroff(true);
 		}
 #else
-		if (BMT_status.temperature >= 60) {
+		if (BMT_status.temperature >= p_bat_charging_data->max_discharge_temperature) {
 #if defined(CONFIG_POWER_EXT)
 			battery_log(BAT_LOG_CRTI,
 				    "[BATTERY] CONFIG_POWER_EXT, no update battery update power down.\n");
@@ -2358,7 +2380,8 @@ static void mt_battery_thermal_check(void)
 					struct power_supply *bat_psy = &bat_data->psy;
 
 					battery_log(BAT_LOG_ERROR,
-						    "[Battery] Tbat(%d)>=60, system need power down.\n",
+						    "[Battery] Tbat(%d)>=%d, system need power down.\n",
+						    p_bat_charging_data->max_discharge_temperature,
 						    BMT_status.temperature);
 
 					bat_data->BAT_CAPACITY = 0;
@@ -2684,6 +2707,16 @@ static int bat_setup_charger_locked(void)
 		pr_warn("%s: charger setup done\n", __func__);
 	}
 
+	/* if there is no external charger, we just enable detect irq */
+#if defined(CONFIG_POWER_EXT) && defined(NO_EXTERNAL_CHARGER)
+	ret = irq_set_irq_wake(g_bat.irq, true);
+	if (ret)
+		pr_err("%s: irq_set_irq_wake err = %d\n", __func__, ret);
+
+	enable_irq(g_bat.irq);
+	pr_warn("%s: no charger. just enable detect irq.\n", __func__);
+#endif
+
 	return ret;
 }
 
@@ -2935,6 +2968,64 @@ void check_battery_exist(void)
 #endif
 }
 
+static void bat_parse_node(struct device_node *np, char *name, int *cust_val)
+{
+	u32 val;
+
+	if (of_property_read_u32(np, name, &val) == 0) {
+		(*cust_val) = (int)val;
+		pr_debug("%s get %s :%d\n", __func__, name, *cust_val);
+	}
+}
+
+static void init_charging_data_from_dt(struct device_node *np)
+{
+	bat_parse_node(np, "v_charger_max", &p_bat_charging_data->v_charger_max);
+	bat_parse_node(np, "v_charger_min", &p_bat_charging_data->v_charger_min);
+	bat_parse_node(np, "max_discharge_temperature", &p_bat_charging_data->max_discharge_temperature);
+	bat_parse_node(np, "min_discharge_temperature", &p_bat_charging_data->min_discharge_temperature);
+	bat_parse_node(np, "max_charge_temperature", &p_bat_charging_data->max_charge_temperature);
+	bat_parse_node(np, "min_charge_temperature", &p_bat_charging_data->min_charge_temperature);
+	bat_parse_node(np, "use_avg_temperature", &p_bat_charging_data->use_avg_temperature);
+	bat_parse_node(np, "usb_charger_current", &p_bat_charging_data->usb_charger_current);
+	bat_parse_node(np, "ac_charger_current", &p_bat_charging_data->ac_charger_current);
+	bat_parse_node(np, "non_std_ac_charger_current", &p_bat_charging_data->non_std_ac_charger_current);
+	bat_parse_node(np, "charging_host_charger_current", &p_bat_charging_data->charging_host_charger_current);
+	bat_parse_node(np, "apple_0_5a_charger_current", &p_bat_charging_data->apple_0_5a_charger_current);
+	bat_parse_node(np, "apple_1_0a_charger_current", &p_bat_charging_data->apple_1_0a_charger_current);
+	bat_parse_node(np, "apple_2_1a_charger_current", &p_bat_charging_data->apple_2_1a_charger_current);
+	bat_parse_node(np, "ta_start_battery_soc", &p_bat_charging_data->ta_start_battery_soc);
+	bat_parse_node(np, "ta_stop_battery_soc", &p_bat_charging_data->ta_stop_battery_soc);
+	bat_parse_node(np, "ta_ac_9v_input_current", &p_bat_charging_data->ta_ac_9v_input_current);
+	bat_parse_node(np, "ta_ac_7v_input_current", &p_bat_charging_data->ta_ac_7v_input_current);
+	bat_parse_node(np, "ta_ac_charging_current", &p_bat_charging_data->ta_ac_charging_current);
+	bat_parse_node(np, "ta_9v_support", &p_bat_charging_data->ta_9v_support);
+	bat_parse_node(np, "temp_pos_60_threshold", &p_bat_charging_data->temp_pos_60_threshold);
+	bat_parse_node(np, "temp_pos_60_thres_minus_x_degree", &p_bat_charging_data->temp_pos_60_thres_minus_x_degree);
+	bat_parse_node(np, "temp_pos_45_threshold", &p_bat_charging_data->temp_pos_45_threshold);
+	bat_parse_node(np, "temp_pos_45_thres_minus_x_degree", &p_bat_charging_data->temp_pos_45_thres_minus_x_degree);
+	bat_parse_node(np, "temp_pos_10_threshold", &p_bat_charging_data->temp_pos_10_threshold);
+	bat_parse_node(np, "temp_pos_10_thres_plus_x_degree", &p_bat_charging_data->temp_pos_10_thres_plus_x_degree);
+	bat_parse_node(np, "temp_pos_0_threshold ", &p_bat_charging_data->temp_pos_0_threshold);
+	bat_parse_node(np, "temp_pos_0_thres_plus_x_degree", &p_bat_charging_data->temp_pos_0_thres_plus_x_degree);
+	bat_parse_node(np, "temp_neg_10_threshold", &p_bat_charging_data->temp_neg_10_threshold);
+	bat_parse_node(np, "temp_neg_10_thres_plus_x_degree",
+		&p_bat_charging_data->temp_neg_10_thres_plus_x_degree);
+	bat_parse_node(np, "jeita_temp_above_pos_60_cv_voltage ",
+		&p_bat_charging_data->jeita_temp_above_pos_60_cv_voltage);
+	bat_parse_node(np, "jeita_temp_pos_45_to_pos_60_cv_voltage",
+		&p_bat_charging_data->jeita_temp_pos_45_to_pos_60_cv_voltage);
+	bat_parse_node(np, "jeita_temp_pos_10_to_pos_45_cv_voltage",
+		&p_bat_charging_data->jeita_temp_pos_10_to_pos_45_cv_voltage);
+	bat_parse_node(np, "jeita_temp_pos_0_to_pos_10_cv_voltage",
+		&p_bat_charging_data->jeita_temp_pos_0_to_pos_10_cv_voltage);
+	bat_parse_node(np, "jeita_temp_neg_10_to_pos_0_cv_voltage",
+		&p_bat_charging_data->jeita_temp_neg_10_to_pos_0_cv_voltage);
+	bat_parse_node(np, "jeita_temp_below_neg_10_cv_voltage",
+		&p_bat_charging_data->jeita_temp_below_neg_10_cv_voltage);
+
+}
+
 static int battery_probe(struct platform_device *pdev)
 {
 	struct class_device *class_dev = NULL;
@@ -2958,7 +3049,7 @@ static int battery_probe(struct platform_device *pdev)
 		p_bat_charging_data = &default_charging_data;
 
 		/* populate property here */
-
+		init_charging_data_from_dt(pdev->dev.of_node);
 	}
 
 	irq_set_status_flags(g_bat.irq, IRQ_NOAUTOEN);

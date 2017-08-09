@@ -2725,8 +2725,10 @@ static ssize_t show_FG_Current(struct device *dev, struct device_attribute *attr
 	s32 val = 0;
 	bool is_charging = 0;
 
-	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &val);
-	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT_SIGN, &is_charging);
+	if (battery_meter_ctrl) {
+		ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &val);
+		ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT_SIGN, &is_charging);
+	}
 
 	if (is_charging == true)
 		fg_current_inout_battery = val;
