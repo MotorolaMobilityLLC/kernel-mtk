@@ -4,6 +4,7 @@ ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/video/include
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/gpu/ged/include
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735"))
 ifeq ($(CONFIG_ARCH_MT6735),y)
@@ -64,7 +65,7 @@ ifeq ($(CONFIG_MTK_THERMAL_PA_VIA_ATCMD),y)
     #obj-$(CONFIG_THERMAL) += mtk_cooler_mdulthro.o
     obj-$(CONFIG_THERMAL) += mtk_cooler_mutt.o
 endif
-#obj-$(CONFIG_THERMAL) += mtk_cooler_fps.o
+obj-$(CONFIG_THERMAL) += mtk_cooler_fps.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_bcct.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_atm.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_dtm.o
