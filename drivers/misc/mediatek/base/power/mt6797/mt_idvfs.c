@@ -680,12 +680,12 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	if (infoIdvfs == 0x55) {
 		/* empty eFuse, and init Big ptp by temp eFuse */
 		eem_init_det_tmp();
-		idvfs_ver("iDVFS enable temp ptp1 for empty eFuse.\n");
+		idvfs_ver("[****]iDVFS Start Enable: empty eFuse use temp ptp1.\n");
 		/* swithc eFuse enable ptp finish */
 		infoIdvfs = 0xff;
 	} else if (infoIdvfs == 0xff) {
 		/* true eFuse enable ptp */
-		idvfs_ver("iDVFS check ptp1 true init ok!\n");
+		idvfs_ver("[****]iDVFS Start Enable: chk ptp1 init ok!\n");
 	} else {
 		idvfs_ver("iDVFS not enable and wait ptp1 enable!\n");
 		return -5;
@@ -734,7 +734,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	da9214_read_interface(0xd9, &ret_volt, 0x7f, 0);
 	cur_vproc_mv_x100 = ((DA9214_STEP_TO_MV(ret_volt & 0x7f)) * 100);
 	cur_vsram_mv_x100 = BigiDVFSSRAMLDOGet();
-	idvfs_ver("[****]iDVFS Start Enable: Cur Vproc = %d(mv_x100), Vsarm = %d(mv_x100).\n",
+	idvfs_ver("iDVFS enable cur Vproc = %d(mv_x100), Vsarm = %d(mv_x100).\n",
 			cur_vproc_mv_x100, cur_vsram_mv_x100);
 
 	/* set and get current vsram volt */
@@ -911,35 +911,31 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 /* return 0:Ok, -1: Invalid Parameter */
 int BigiDVFSChannel(unsigned int Channelm, unsigned int EnDis)
 {
-	if ((idvfs_init_opt.idvfs_status == 1) ||
-		(idvfs_init_opt.idvfs_status == 4)) {
+	/* call smc */
+	/* function_id = SMC_IDVFS_BigiDVFSChannel */
+	/* rc = SEC_BIGIDVFSCHANNEL(Channelm, EnDis); */
+	/* setting register */
+	switch (Channelm) {
+	case 0:
+		/* SW channel */
+		idvfs_write_field(0x10222470, 1:1, EnDis);
+		break;
 
-		/* call smc */
-		/* function_id = SMC_IDVFS_BigiDVFSChannel */
-		/* rc = SEC_BIGIDVFSCHANNEL(Channelm, EnDis); */
-		/* setting register */
-		switch (Channelm) {
-		case 0:
-			/* SW channel */
-			idvfs_write_field(0x10222470, 1:1, EnDis);
-			break;
+	case 1:
+		/* OCP channel */
+		idvfs_write_field(0x10222470, 2:2, EnDis);
+		break;
 
-		case 1:
-			/* OCP channel */
-			idvfs_write_field(0x10222470, 2:2, EnDis);
-			break;
-
-		case 2:
-			/* OTP channel */
-			idvfs_write_field(0x10222470, 3:3, EnDis);
-			break;
-		}
-		/* setting struct */
-		idvfs_init_opt.channel[Channelm].status = EnDis;
-		idvfs_ver("iDVFS channel %s select success, EnDis = %d.\n",
-			idvfs_init_opt.channel[Channelm].name, EnDis);
-		return 0;
+	case 2:
+		/* OTP channel */
+		idvfs_write_field(0x10222470, 3:3, EnDis);
+		break;
 	}
+	/* setting struct */
+	idvfs_init_opt.channel[Channelm].status = EnDis;
+	idvfs_ver("iDVFS channel %s select success, EnDis = %d.\n",
+		idvfs_init_opt.channel[Channelm].name, EnDis);
+	return 0;
 
 	/* iDVFS disable stage */
 	return -1;
@@ -1112,11 +1108,12 @@ int BigiDVFSPllSetFreq(unsigned int Freq)
 	}
 
 	/* check big cluster online */
-	/* if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
-		return -1; */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return -1;
 
 	SEC_BIGIDVFSPLLSETFREQ(Freq);
 	idvfs_ver("Legacy iDVFS setting PLL Freq success. Freq = %dMHz.\n", Freq);
+	idvfs_init_opt.freq_cur = Freq;
 	return 0;
 }
 
@@ -1133,8 +1130,11 @@ unsigned int BigiDVFSPllGetFreq(void)
 	}
 
 	/* check big cluster online */
-	/* if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
-		return 0; */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return 0;
+
+	/* quick response freq */
+	/* return idvfs_init_opt.freq_cur; */
 
 	/* default fcur = 1500MHz */
 	armpllcon1 = idvfs_read(0x102224a4);
@@ -1149,7 +1149,6 @@ unsigned int BigiDVFSPllGetFreq(void)
 
 int BigiDVFSPllDisable(void)
 {
-
 	if ((idvfs_read(0x102224a0) & 0x1) == 0) {
 		idvfs_error("PLL already disable.\n");
 		return -1;
@@ -1494,7 +1493,7 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 			idvfs_init_opt.idvfs_status,
 			idvfs_init_opt.freq_max,
 			idvfs_init_opt.freq_min,
-			idvfs_init_opt.freq_cur,
+			(idvfs_init_opt.idvfs_status) ? BigiDVFSSWAvgStatus() : BigiDVFSPllGetFreq(),
 			idvfs_init_opt.i2c_speed,
 			idvfs_init_opt.swavg_length,
 			idvfs_init_opt.swavg_endis);
@@ -1574,6 +1573,9 @@ static int dvt_test_proc_show(struct seq_file *m, void *v)
 	/* reg dump */
 	/* for(i = 0; i < 24; i++) */
 	/* seq_printf(m, "Reg 0x%x = 0x%x.\n", (i + 0x470), idvfs_read(0x10222470 + i)); */
+
+	/* cpu 8/9 online info */
+	/* seq_printf(m, "CPU 8/9 online = %d / %d\n", cpu_online(8), cpu_online(9)); */
 	seq_puts(m, "======================================================\n");
 
 	return 0;
