@@ -1841,6 +1841,11 @@ static int usb3_switch_en(struct usbtypc *typec, int on)
 {
 	int retval = 0;
 
+	if (!typec->pinctrl || !typec->pin_cfg || !typec->u3_sw) {
+		fusb_printk(K_ERR, "%s not init\n", __func__);
+		goto end;
+	}
+
 	fusb_printk(K_DEBUG, "%s on=%d\n", __func__, on);
 
 	if (on == ENABLE) {	/*enable usb switch */
@@ -1852,7 +1857,7 @@ static int usb3_switch_en(struct usbtypc *typec, int on)
 	}
 
 	fusb_printk(K_DEBUG, "%s gpio=%d\n", __func__, gpio_get_value(typec->u3_sw->en_gpio));
-
+end:
 	return retval;
 }
 
@@ -1860,6 +1865,11 @@ static int usb3_switch_en(struct usbtypc *typec, int on)
 static int usb3_switch_sel(struct usbtypc *typec, int sel)
 {
 	int retval = 0;
+
+	if (!typec->pinctrl || !typec->pin_cfg || !typec->u3_sw) {
+		fusb_printk(K_ERR, "%s not init\n", __func__);
+		goto end;
+	}
 
 	fusb_printk(K_DEBUG, "%s on=%d\n", __func__, sel);
 
@@ -1872,7 +1882,7 @@ static int usb3_switch_sel(struct usbtypc *typec, int sel)
 	}
 
 	fusb_printk(K_DEBUG, "%s gpio=%d\n", __func__, gpio_get_value(typec->u3_sw->sel_gpio));
-
+end:
 	return retval;
 }
 
@@ -2028,6 +2038,11 @@ int usb_redriver_config(struct usbtypc *typec, int ctrl_pin, int stat)
 	int retval = 0;
 	int pin_num = 0;
 
+	if (!typec->pinctrl || !typec->pin_cfg || !typec->u_rd) {
+		fusb_printk(K_ERR, "%s not init\n", __func__);
+		goto end;
+	}
+
 	fusb_printk(K_DEBUG, "%s pin=%d, stat=%d\n", __func__, ctrl_pin, stat);
 
 	if (ctrl_pin == U3_EQ_C1) {
@@ -2068,7 +2083,7 @@ int usb_redriver_config(struct usbtypc *typec, int ctrl_pin, int stat)
 
 	fusb_printk(K_DEBUG, "%s gpio=%d, out=%d\n", __func__, pin_num,
 		    gpio_get_value(pin_num));
-
+end:
 	return retval;
 }
 
@@ -2085,6 +2100,11 @@ int usb_redriver_exit_dps(struct usbtypc *typec)
 {
 	int retval = 0;
 
+	if (!typec->u_rd) {
+		fusb_printk(K_ERR, "%s not init\n", __func__);
+		goto end;
+	}
+
 	if ((typec->u_rd->eq_c1 == U3_EQ_HIGH) || (typec->u_rd->eq_c2 == U3_EQ_HIGH)) {
 		retval |= usb_redriver_config(typec, U3_EQ_C1, typec->u_rd->eq_c1);
 		retval |= usb_redriver_config(typec, U3_EQ_C2, typec->u_rd->eq_c2);
@@ -2097,6 +2117,7 @@ int usb_redriver_exit_dps(struct usbtypc *typec)
 		retval |= usb_redriver_config(typec, U3_EQ_C1, typec->u_rd->eq_c1);
 		retval |= usb_redriver_config(typec, U3_EQ_C2, typec->u_rd->eq_c2);
 	}
+end:
 	return retval;
 }
 
@@ -2558,9 +2579,9 @@ static int fusb300_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	port_type = 0x92;
 	ConfigurePortType(port_type);
 
-	fusb300_eint_init(typec);
 	usb_redriver_init(typec);
 	usb3_switch_init(typec);
+	fusb300_eint_init(typec);
 	fusb_printk(K_DEBUG, "%s %x\n", __func__, fusb300_i2c_r_reg(client, 0x1));
 
 	/*precheck status */
