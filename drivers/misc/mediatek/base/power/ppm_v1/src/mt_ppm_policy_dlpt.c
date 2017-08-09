@@ -88,7 +88,7 @@ void mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power)
 	case HYBRID_MODE:
 #if PPM_HW_OCP_SUPPORT
 		dlpt_policy.req.power_budget = (dlpt_mode == SW_MODE)
-			? budget : ppm_set_ocp(budget);
+			? budget : ppm_set_ocp(budget, dlpt_percentage_to_real_power);
 #else
 		dlpt_policy.req.power_budget = budget;
 #endif

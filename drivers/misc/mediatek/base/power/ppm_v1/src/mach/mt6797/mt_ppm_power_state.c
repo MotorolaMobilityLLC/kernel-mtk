@@ -94,30 +94,30 @@ static bool ppm_trans_rule_4L_LL_to_L_ONLY(
 /*==============================================================*/
 /* cluster limit for each power state */
 static const struct ppm_cluster_limit state_limit_LL_ONLY[] = {
-	[0] = LIMIT(7, 0, 1, 4),
-	[1] = LIMIT(7, 0, 0, 0),
-	[2] = LIMIT(7, 0, 0, 0),
+	[0] = LIMIT(15, 0, 1, 4),
+	[1] = LIMIT(15, 0, 0, 0),
+	[2] = LIMIT(15, 0, 0, 0),
 };
 STATE_LIMIT(LL_ONLY);
 
 static const struct ppm_cluster_limit state_limit_L_ONLY[] = {
-	[0] = LIMIT(7, 0, 0, 0),
-	[1] = LIMIT(4, 0, 1, 4),
-	[2] = LIMIT(7, 0, 0, 0),
+	[0] = LIMIT(15, 0, 0, 0),
+	[1] = LIMIT(8, 0, 1, 4),
+	[2] = LIMIT(15, 0, 0, 0),
 };
 STATE_LIMIT(L_ONLY);
 
 static const struct ppm_cluster_limit state_limit_4LL_L[] = {
-	[0] = LIMIT(7, 0, 1, 4),
-	[1] = LIMIT(7, 0, 0, 4),
-	[2] = LIMIT(7, 0, 0, 2),
+	[0] = LIMIT(15, 0, 1, 4),
+	[1] = LIMIT(15, 0, 0, 4),
+	[2] = LIMIT(15, 0, 0, 2),
 };
 STATE_LIMIT(4LL_L);
 
 static const struct ppm_cluster_limit state_limit_4L_LL[] = {
-	[0] = LIMIT(7, 0, 0, 4),
-	[1] = LIMIT(7, 0, 1, 4),
-	[2] = LIMIT(7, 0, 0, 2),
+	[0] = LIMIT(15, 0, 0, 4),
+	[1] = LIMIT(15, 0, 1, 4),
+	[2] = LIMIT(15, 0, 0, 2),
 };
 STATE_LIMIT(4L_LL);
 
@@ -300,7 +300,7 @@ const unsigned int perf_idx_search_prio[NR_PPM_POWER_STATE][NR_PPM_POWER_STATE] 
 };
 
 /*==============================================================*/
-/* Local Function Implementation					*/
+/* Local Function Implementation				*/
 /*==============================================================*/
 /* transition rules */
 static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
@@ -651,8 +651,8 @@ enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state cur_stat
 		ppm_get_power_state_name(cur_state), LL_core_min, LL_core_max,
 		 L_core_min, L_core_max, B_core_min, B_core_max, LL_freq_min, L_freq_max);
 
-	LL_core_max = (LL_core_max == -1) ? 4 : LL_core_max;
-	L_core_max = (L_core_max == -1) ? 4 : L_core_max;
+	LL_core_max = (LL_core_max == -1) ? get_cluster_max_cpu_core(PPM_CLUSTER_LL) : LL_core_max;
+	L_core_max = (L_core_max == -1) ? get_cluster_max_cpu_core(PPM_CLUSTER_L) : L_core_max;
 
 	/* need to check freq limit for cluster move/merge */
 	if (cur_state == PPM_POWER_STATE_LL_ONLY || cur_state == PPM_POWER_STATE_L_ONLY) {
@@ -775,7 +775,7 @@ void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_p
 				req->limit[PPM_CLUSTER_LL].min_cpu_core = 0;
 				req->limit[PPM_CLUSTER_L].min_cpu_core = LL_min_core;
 				ppm_ver("Judge: move LL min core to L = %d\n", LL_min_core);
-			} else if (sum <= 4) {
+			} else if (sum <= get_cluster_max_cpu_core(PPM_CLUSTER_L)) {
 				req->limit[PPM_CLUSTER_LL].min_cpu_core = 0;
 				req->limit[PPM_CLUSTER_L].min_cpu_core = sum;
 				ppm_ver("Judge: merge LL and L min core = %d\n", sum);
@@ -799,32 +799,37 @@ void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_p
 	}
 }
 
+static unsigned int max_power;
+
 /* return value is the remaining power budget for SW DLPT */
-unsigned int ppm_set_ocp(unsigned int limited_power)
+unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 {
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
 	int i, ret = 0;
-	unsigned int max_power = 0, remaining_power = 0;
+	unsigned int remaining_power = 0;
 
-	/* get max power budget for SW DLPT */
 	/* if max_power < limited_power, set (limited_power - max_power) to HW OCP */
-	for_each_pwr_tbl_entry(i, power_table) {
-		if (power_table.power_tbl[i].cluster_cfg[PPM_CLUSTER_B].core_num == 0) {
-			max_power = (power_table.power_tbl[i].power_idx) * PPM_OCP_MAX_POWER_RATIO;
-			break;
+	if (!max_power) {
+		/* get max power budget for SW DLPT */
+		for_each_pwr_tbl_entry(i, power_table) {
+			if (power_table.power_tbl[i].cluster_cfg[PPM_CLUSTER_B].core_num == 0) {
+				max_power = (power_table.power_tbl[i].power_idx);
+				break;
+			}
 		}
+		ppm_info("@%s: max_power = %d\n", __func__, max_power);
 	}
 
-	ppm_ver("@%s: max_power = %d\n", __func__, max_power);
-
-	if (max_power >= limited_power) {
+	if (limited_power <= max_power) {
 		/* disable HW OCP (waiting for API) */
 		/* BigOCPDisable(ALL, OCP_mW); */
 		return limited_power;
 	}
 
 	/* pass remaining power to HW OCP and re-enable it (waiting for API) */
-	remaining_power = limited_power - (max_power * PPM_OCP_MAX_POWER_RATIO);
+	remaining_power = (percentage)
+		? ((limited_power - max_power) * 100 + (percentage - 1)) / percentage
+		: (limited_power - max_power);
 #if 0
 	BigOCPDisable();
 	ret = BigOCPEnable(ALL, remaining_power, 0, 0);

@@ -13,13 +13,13 @@ extern "C" {
 /*==============================================================*/
 /* ppm driver update state to MET directly  0: turn off */
 #define PPM_UPDATE_STATE_DIRECT_TO_MET  (1)
-#define PPM_HW_OCP_SUPPORT		(1)
+
+#define PPM_HW_OCP_SUPPORT		(0)
 
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
-#define DLPT_MAX_REAL_POWER_FY	(3890)		/* TODO: check this */
-#define DLPT_MAX_REAL_POWER_SB	(4992)		/* TODO: check this */
-#define PPM_OCP_MAX_POWER_RATIO	(120 / 100)
+#define DLPT_MAX_REAL_POWER_FY	(11546)
+#define DLPT_MAX_REAL_POWER_SB	(13763)
 
 #define	LCMOFF_MIN_FREQ		(598000)	/* TODO: check this */
 #define	PTPOD_FREQ_IDX		(3)		/* TODO: check this */
@@ -30,7 +30,7 @@ extern "C" {
 #define PWRTHRO_LOW_BAT_LV1_MW	(600)
 #define PWRTHRO_LOW_BAT_LV2_MW	(600)
 
-#define DVFS_OPP_NUM		(8)
+#define DVFS_OPP_NUM		(16)
 
 #define PPM_DEFAULT_HOLD_TIME		(4)
 #define PPM_DEFAULT_FREQ_HOLD_TIME	(4)
@@ -89,7 +89,7 @@ struct ppm_power_tbl_data {
 /*==============================================================*/
 /* APIs								*/
 /*==============================================================*/
-unsigned int ppm_set_ocp(unsigned int limited_power);
+extern unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage);
 
 #ifdef __cplusplus
 }
