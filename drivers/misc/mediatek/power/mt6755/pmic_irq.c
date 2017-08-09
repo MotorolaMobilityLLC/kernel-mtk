@@ -617,7 +617,8 @@ void PMIC_EINT_SETTING(void)
 		ret = request_irq(g_pmic_irq, (irq_handler_t) mt_pmic_eint_irq, IRQF_TRIGGER_NONE, "pmic-eint", NULL);
 		if (ret > 0)
 			PMICLOG("EINT IRQ LINENNOT AVAILABLE\n");
-		enable_irq(g_pmic_irq);
+		/*enable_irq(g_pmic_irq);*/
+		disable_irq(g_pmic_irq);
 	} else
 		PMICLOG("can't find compatible node\n");
 
