@@ -29,7 +29,9 @@
 #endif
 #include "aee-common.h"
 #include <mach/mt_secure_api.h>
-
+#ifdef CONFIG_MTK_EIC_HISTORY_DUMP
+#include <linux/irqchip/mt-eic.h>
+#endif
 
 #define THREAD_INFO(sp) ((struct thread_info *) \
 				((unsigned long)(sp) & ~(THREAD_SIZE - 1)))
@@ -161,7 +163,10 @@ void aee_wdt_dump_info(void)
 			LOGE("\n");
 		}
 	}
-
+#ifdef CONFIG_MTK_EIC_HISTORY_DUMP
+	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_EINT_DEBUG);
+	dump_eint_trigger_history();
+#endif
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_WDT_DONE);
 }
 

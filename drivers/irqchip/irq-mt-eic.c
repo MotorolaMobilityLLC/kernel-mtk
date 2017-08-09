@@ -112,6 +112,18 @@ struct builtin_eint {
 	unsigned int builtin_eint;
 };
 
+struct debcnt_setting {
+	unsigned int setting;
+	unsigned int deb_time;
+};
+
+struct eint_debcnt_option {
+	unsigned int deb_entry;
+	struct debcnt_setting *setting;
+};
+
+struct eint_debcnt_option eint_debtime_setting;
+
 struct eint_chip {
 	unsigned int max_channel;
 	unsigned int *dual_edges;
@@ -148,6 +160,9 @@ static struct deint_des *deint_descriptors;
 
 static int mt_eint_get_level(unsigned int eint_num);
 static unsigned int mt_eint_flip_edge(struct eint_chip *chip, unsigned int eint_num);
+static unsigned int mt_eint_get_debounce_cnt(unsigned int cur_eint_num);
+static unsigned long cur_debug_eint;
+
 
 static void mt_eint_clr_deint_selection(u32 deint_mapped)
 {
@@ -806,15 +821,16 @@ static unsigned int mt_can_en_debounce(unsigned int eint_num)
 	return 0;
 }
 
-/*
+ /*
  * mt_eint_set_hw_debounce: Set the de-bounce time for the specified EINT number.
  * @gpio_pin: EINT number to acknowledge
  * @ms: the de-bounce time to set (in miliseconds)
  */
-void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int ms)
+void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int us)
 {
 	unsigned int dbnc, bit, clr_bit, rst, unmask = 0, eint_num;
 	unsigned long base, clr_base;
+	unsigned int i;
 
 	eint_num = mt_gpio_to_irq(gpio_pin) - EINT_IRQ_BASE;
 
@@ -825,7 +841,7 @@ void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int ms)
 
 	base = (eint_num / 4) * 4 + EINT_DBNC_SET_BASE;
 	clr_base = (eint_num / 4) * 4 + EINT_DBNC_CLR_BASE;
-	EINT_FUNC.deb_time[eint_num] = ms;
+	EINT_FUNC.deb_time[eint_num] = us >> 10;
 
 	/*
 	 * Don't enable debounce once debounce time is 0 or
@@ -836,24 +852,13 @@ void mt_eint_set_hw_debounce(unsigned int gpio_pin, unsigned int ms)
 		return;
 	}
 
-	if (ms == 0) {
-		dbnc = 0;
-		dbgmsg("ms should not be 0. eint_num:%d in %s\n", eint_num, __func__);
-	} else if (ms <= 1) {
-		dbnc = 1;
-	} else if (ms <= 16) {
-		dbnc = 2;
-	} else if (ms <= 32) {
-		dbnc = 3;
-	} else if (ms <= 64) {
-		dbnc = 4;
-	} else if (ms <= 128) {
-		dbnc = 5;
-	} else if (ms <= 256) {
-		dbnc = 6;
-	} else {
-		dbnc = 7;
+	for (i = 0; i < eint_debtime_setting.deb_entry; i++) {
+		dbnc = eint_debtime_setting.setting[i].setting;
+		if (us <= eint_debtime_setting.setting[i].deb_time) {
+			break;
+		}
 	}
+
 
 	/* setp 1: mask the EINT */
 	if (!mt_eint_get_mask(eint_num)) {
@@ -1043,6 +1048,7 @@ void dump_eint_trigger_history(void)
 
 static ssize_t eint_dump_history_show(struct device_driver *driver, char *buf)
 {
+	dump_eint_trigger_history();
 	return snprintf(buf, PAGE_SIZE, "History Dump:%s\n", eint_history_dump_enable == 1 ? "Enable" : "Disable");
 }
 
@@ -1059,6 +1065,38 @@ static ssize_t eint_dump_history_store(struct device_driver *driver, const char 
 	return count;
 }
 DRIVER_ATTR(eint_history, 0644, eint_dump_history_show, eint_dump_history_store);
+
+
+
+static ssize_t per_eint_dump_show(struct device_driver *driver, char *buf)
+{
+	ssize_t ret;
+
+	if (cur_debug_eint >= EINT_MAX_CHANNEL)
+		return;
+
+	ret = snprintf(buf, PAGE_SIZE, "[EINT] eint:%d,mask:%x,pol:%x,deb:%d us,sens:%x\n", cur_debug_eint,
+			mt_eint_get_mask(cur_debug_eint), mt_eint_get_polarity(cur_debug_eint),
+			mt_eint_get_debounce_cnt(cur_debug_eint), mt_eint_get_sens(cur_debug_eint));
+	return ret;
+}
+
+static ssize_t per_eint_dump_store(struct device_driver *driver, const char *buf, size_t count)
+{
+	char *p = (char *)buf;
+	unsigned long num;
+
+	if (kstrtoul(p, 10, &num) != 0) {
+		pr_err("[EIC] can not kstrtoul for %s\n", p);
+		return -1;
+	}
+	cur_debug_eint = num;
+	return count;
+}
+
+DRIVER_ATTR(per_eint_dump, 0644, per_eint_dump_show, per_eint_dump_store);
+
+
 
 #endif
 
@@ -1480,7 +1518,6 @@ int mt_gpio_set_debounce(unsigned gpio, unsigned debounce)
 	if (gpio >= EINT_MAX_CHANNEL)
 		return -EINVAL;
 
-	debounce /= 1000;
 	mt_eint_set_hw_debounce(gpio, debounce);
 
 	return 0;
@@ -1736,7 +1773,7 @@ EXPORT_SYMBOL(mt_eint_virq_soft_clr);
 
 
 #if defined(CONFIG_MTK_EIC_HISTORY_DUMP)
-static struct platform_driver eint_driver = {
+struct platform_driver eint_driver = {
 	.driver = {
 		.name = "eint",
 		.bus = &platform_bus_type,
@@ -1873,6 +1910,48 @@ static int __init mt_eint_init(void)
 		}
 	}
 
+	if (of_property_read_u32(node, "mediatek,debtime_setting_entry",
+				&eint_debtime_setting.deb_entry)) {
+		eint_debtime_setting.deb_entry = 8;
+		pr_warn("[EIC] debtime_setting refer to default.\n");
+		eint_debtime_setting.setting  = kcalloc(eint_debtime_setting.deb_entry,
+						sizeof(struct debcnt_setting), GFP_KERNEL);
+
+		eint_debtime_setting.setting[0].deb_time = 512;
+		eint_debtime_setting.setting[0].setting =  0;
+		eint_debtime_setting.setting[1].deb_time = 1024;
+		eint_debtime_setting.setting[1].setting =  1;
+		eint_debtime_setting.setting[2].deb_time = 16384;
+		eint_debtime_setting.setting[2].setting =  2;
+		eint_debtime_setting.setting[3].deb_time = 32768;
+		eint_debtime_setting.setting[3].setting =  3;
+		eint_debtime_setting.setting[4].deb_time = 65536;
+		eint_debtime_setting.setting[4].setting = 4;
+		eint_debtime_setting.setting[5].deb_time = 131072;
+		eint_debtime_setting.setting[5].setting = 5;
+		eint_debtime_setting.setting[6].deb_time = 262144;
+		eint_debtime_setting.setting[6].setting = 6;
+		eint_debtime_setting.setting[7].deb_time = 524288;
+		eint_debtime_setting.setting[7].setting = 7;
+	} else{
+		eint_debtime_setting.setting  = kcalloc(eint_debtime_setting.deb_entry,
+							sizeof(struct debcnt_setting), GFP_KERNEL);
+		spec = of_get_property(node, "mediatek,debtime_setting_array", &len);
+		if (spec == NULL)
+			return -EINVAL;
+		len /= sizeof(*spec);
+		pr_warn("[EIC] debtime_setting: entry=%d, spec=%d, len=%d\n",
+				eint_debtime_setting.deb_entry, be32_to_cpup(spec), len);
+
+		for (i = 0; i < eint_debtime_setting.deb_entry; i++) {
+			eint_debtime_setting.setting[i].setting = be32_to_cpup(spec + (i*2));
+			eint_debtime_setting.setting[i].deb_time = be32_to_cpup(spec + (i*2)+1);
+			pr_debug("[EIC] setting, deb_time = %u,%u\n",
+				 eint_debtime_setting.setting[i].setting,
+				 eint_debtime_setting.setting[i].deb_time);
+		}
+	}
+
 	/* assign to domain 0 for AP */
 	mt_eint_setdomain0();
 
@@ -1881,7 +1960,6 @@ static int __init mt_eint_init(void)
 #else
 	wake_lock_init(&EINT_suspend_lock, WAKE_LOCK_SUSPEND, "EINT wakelock");
 #endif
-
 	setup_MD_eint();
 	for (i = 0; i < EINT_MAX_CHANNEL; i++) {
 		EINT_FUNC.is_deb_en[i] = 0;
@@ -1934,9 +2012,10 @@ static int __init mt_eint_init(void)
 		pr_err("Fail to register eint_driver");
 
 	ret |= driver_create_file(&eint_driver.driver, &driver_attr_eint_history);
-
+	ret |= driver_create_file(&eint_driver.driver, &driver_attr_per_eint_dump);
 	if (ret)
 		pr_err("Fail to create eint_driver sysfs files");
+
 
 	eint_trigger_history_init();
 #endif
@@ -1944,11 +2023,12 @@ static int __init mt_eint_init(void)
 	return 0;
 }
 
-#if (EINT_DEBUG == 1)
 static unsigned int mt_eint_get_debounce_cnt(unsigned int cur_eint_num)
 {
-	unsigned int dbnc, deb;
+	unsigned int dbnc, deb, dben;
 	unsigned long base;
+	unsigned int i;
+
 
 	base = (cur_eint_num / 4) * 4 + EINT_DBNC_BASE;
 
@@ -1959,58 +2039,31 @@ static unsigned int mt_eint_get_debounce_cnt(unsigned int cur_eint_num)
 		deb = EINT_FUNC.deb_time[cur_eint_num];
 	else {
 		dbnc = readl(IOMEM(base));
-		dbnc = ((dbnc >> EINT_DBNC_SET_DBNC_BITS) >>
-			((cur_eint_num % 4) * 8) & EINT_DBNC);
-
-		switch (dbnc) {
-		case 0:
-			/* 0.5 actually, but we don't allow user to set. */
-			deb = 0;
-			dbgmsg(KERN_CRIT
-			       "ms should not be 0. eint_num:%d in %s\n",
-				cur_eint_num, __func__);
-			break;
-		case 1:
-			deb = 1;
-			break;
-		case 2:
-			deb = 16;
-			break;
-		case 3:
-			deb = 32;
-			break;
-		case 4:
-			deb = 64;
-			break;
-		case 5:
-			deb = 128;
-			break;
-		case 6:
-			deb = 256;
-			break;
-		case 7:
-			deb = 512;
-			break;
-		default:
-			deb = 0;
-			pr_err("inv deb time in the EIN_CON, dbnc:%d, deb:%d\n"
-				, dbnc, deb);
-			break;
-		}
+		dben = (dbnc >> ((cur_eint_num % 4) * 8) & EINT_DBNC_EN_BIT);
+		dbnc = ((dbnc >> EINT_DBNC_SET_DBNC_BITS) >> ((cur_eint_num % 4) * 8) & EINT_DBNC);
+		for (i = 0; i < eint_debtime_setting.deb_entry; i++) {
+			if (dben == 0) {
+				deb = 0;
+				pr_warn("[EIC] debounce disable, return directly");
+				break;
+			}
+			if (dbnc == eint_debtime_setting.setting[i].setting)
+				deb = eint_debtime_setting.setting[i].deb_time;
+			}
 	}
-
 	return deb;
 }
+
 
 void mt_eint_dump_status(unsigned int eint)
 {
 	if (eint >= EINT_MAX_CHANNEL)
 		return;
-	pr_notice("[EINT] eint:%d,mask:%x,pol:%x,deb:%x,sens:%x\n", eint,
-		  mt_eint_get_mask(eint), mt_eint_get_polarity(eint),
-		  mt_eint_get_debounce_cnt(eint), mt_eint_get_sens(eint));
+	pr_notice("[EINT] eint:%d,mask:%x,pol:%x,deb:%d us,sens:%x\n", eint,
+			mt_eint_get_mask(eint), mt_eint_get_polarity(eint),
+			mt_eint_get_debounce_cnt(eint), mt_eint_get_sens(eint));
 }
-#endif
+
 
 /*
  * mt_eint_print_status: Print the EINT status register.
@@ -2046,6 +2099,9 @@ void mt_eint_print_status(void)
 	}
 	pr_notice("\n");
 }
+
+
+
 EXPORT_SYMBOL(mt_eint_print_status);
 
 arch_initcall(mt_eint_init);

@@ -39,7 +39,7 @@
 #define EINT_DBNC_EN_BIT           (0x1)
 #define EINT_DBNC_RST_BIT          (0x1)
 #define EINT_DBNC_0_MS             (0x7)
-#define EINT_DBNC                  (0x7)
+#define EINT_DBNC                  (0xF)
 #define EINT_DBNC_SET_EN           (0x1)
 #define EINT_DBNC_CLR_EN           (0x1)
 #define EINT_STA_DEFAULT	0x00000000
@@ -90,7 +90,7 @@ extern int mt_get_supported_irq_num_ex(void) __attribute__((weak));
 
 void mt_eint_mask(unsigned int eint_num);
 void mt_eint_unmask(unsigned int eint_num);
-void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int ms);
+void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int us);
 void mt_eint_set_polarity(unsigned int eint_num, unsigned int pol);
 unsigned int mt_eint_set_sens(unsigned int eint_num, unsigned int sens);
 void mt_eint_virq_soft_clr(unsigned int virq);
