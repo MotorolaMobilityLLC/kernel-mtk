@@ -34,6 +34,7 @@ typedef enum CMDQ_IWC_ADDR_METADATA_TYPE {
 	CMDQ_IWC_NMVA_2_MVA = 2,	/* map normal MVA to secure world */
 	CMDQ_IWC_DDP_REG_HDCP = 3,	/* DDP register needs to set opposite value when HDCP fail */
 	CMDQ_IWC_MEMSET_BUFFER = 4,	/*memset this specify buffer*/
+	CMDQ_IWC_NMVA_2_MVA_REVERSE = 5, /* map normal MVA to secure world */
 } CMDQ_IWC_ADDR_METADATA_TYPE;
 
 

@@ -424,7 +424,7 @@ static long cmdq_driver_process_command_request(struct cmdqCommandStruct *pComma
 	    || (CMDQ_SCENARIO_USER_MDP == pCommand->scenario)) {
 		CMDQ_VERBOSE("user space request, scenario:%d\n", pCommand->scenario);
 	} else {
-		CMDQ_LOG("[WARNING]fix user space request to CMDQ_SCENARIO_USER_SPACE\n");
+		CMDQ_VERBOSE("[WARNING]fix user space request to CMDQ_SCENARIO_USER_SPACE\n");
 		pCommand->scenario = CMDQ_SCENARIO_USER_SPACE;
 	}
 
@@ -589,7 +589,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		    || (CMDQ_SCENARIO_USER_MDP == job.command.scenario)) {
 			CMDQ_VERBOSE("user space request, scenario:%d\n", job.command.scenario);
 		} else {
-			CMDQ_LOG("[WARNING]fix user space request to CMDQ_SCENARIO_USER_SPACE\n");
+			CMDQ_VERBOSE("[WARNING]fix user space request to CMDQ_SCENARIO_USER_SPACE\n");
 			job.command.scenario = CMDQ_SCENARIO_USER_SPACE;
 		}
 		status = cmdqCoreSubmitTaskAsync(&job.command, NULL, 0, &pTask);

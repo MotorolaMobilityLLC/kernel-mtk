@@ -220,6 +220,8 @@ typedef enum CMDQ_SEC_ADDR_METADATA_TYPE {
 	CMDQ_SAM_H_2_MVA = 1,	/* sec handle to sec MVA */
 	CMDQ_SAM_NMVA_2_MVA = 2,	/* map normal MVA to secure world */
 	CMDQ_SAM_DDP_REG_HDCP = 3,	/* DDP register needs to set opposite value when HDCP fail */
+	CMDQ_SAM_MEMSET_BUFFER = 4,	/*memset this specify buffer*/
+	CMDQ_SAM_NMVA2_MVA_REVERSE = 5, /* reverse map normal MVA to secure world */
 } CMDQ_SEC_ADDR_METADATA_TYPE;
 
 typedef struct cmdqSecAddrMetadataStruct {

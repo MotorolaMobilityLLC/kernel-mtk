@@ -41,6 +41,7 @@
 
 #include <linux/kthread.h>
 #include <linux/delay.h>
+#include <linux/rtpm_prio.h>
 
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
@@ -148,7 +149,7 @@ static int cmdq_core_print_log_kthread(void *data)
 	uint32_t msgOffset;
 	int32_t msgMAXSize;
 	bool needPrintLog;
-	struct sched_param param = {.sched_priority = 94 }; /* RTPM_PRIO_SCRN_UPDATE */
+	struct sched_param param = {.sched_priority = RTPM_PRIO_SCRN_UPDATE };
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
