@@ -157,6 +157,7 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 		dev_err(i2c->dev, "sema time out 2ms\n");
 		if (cpuhvfs_get_dvfsp_semaphore(SEMA_I2C_DRV) != 0) {
 			dev_err(i2c->dev, "sema time out 4ms\n");
+			i2c_dump_info(i2c);
 			BUG_ON(1);
 			return -EBUSY;
 		}
