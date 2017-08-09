@@ -2429,6 +2429,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x16027800 0x800>;
 		};
 
+		mrdump_ext_rst: mrdump_ext_rst {
+			compatible = "mediatek, mrdump_ext_rst-eint";
+		};
+
 		hevc_vld@16028000 {
 			compatible = "mediatek,mt6797-hevc_vld";
 			reg = <0x16028000 0x1000>;
