@@ -192,6 +192,10 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 		spm_write(SPM_CPU_WAKEUP_EVENT, 0);
 		spm_write(SPM_WAKEUP_EVENT_MASK, con1);
 
+#ifdef SPM_VCORE_EN_MT6797
+		spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_CLEAN_WAKE_EVENT_DONE);
+#endif
+
 		/* backup mem control from r0 to POWER_ON_VAL0 */
 		if (spm_read(SPM_POWER_ON_VAL0) != spm_read(PCM_REG0_DATA)) {
 			spm_crit("VAL0 from 0x%x to 0x%x\n", spm_read(SPM_POWER_ON_VAL0), spm_read(PCM_REG0_DATA));
