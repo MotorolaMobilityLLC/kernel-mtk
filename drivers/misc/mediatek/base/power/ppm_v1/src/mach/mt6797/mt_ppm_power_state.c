@@ -318,6 +318,10 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	if (ppm_main_info.fixed_root_cluster == PPM_CLUSTER_LL)
 		return false;
 
+	/* keep in LL ONLY state if LCM is off */
+	if (ppm_lcmoff_is_policy_activated())
+		return false;
+
 	/* check heavy task */
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 	{

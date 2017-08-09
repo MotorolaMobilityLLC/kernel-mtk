@@ -29,6 +29,17 @@ static struct ppm_policy_data lcmoff_policy = {
 	.mode_change_cb		= ppm_lcmoff_mode_change_cb,
 };
 
+bool ppm_lcmoff_is_policy_activated(void)
+{
+	bool is_activate;
+
+	ppm_lock(&lcmoff_policy.lock);
+	is_activate = lcmoff_policy.is_activated;
+	ppm_unlock(&lcmoff_policy.lock);
+
+	return is_activate;
+}
+
 static enum ppm_power_state ppm_lcmoff_get_power_state_cb(enum ppm_power_state cur_state)
 {
 	return cur_state;

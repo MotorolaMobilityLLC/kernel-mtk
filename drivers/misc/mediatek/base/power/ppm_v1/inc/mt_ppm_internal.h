@@ -335,6 +335,9 @@ extern enum ppm_power_state ppm_hica_get_state_by_pwr_budget(enum ppm_power_stat
 extern enum ppm_power_state ppm_hica_get_cur_state(void);
 extern void ppm_hica_fix_root_cluster_changed(int cluster_id);
 
+/* lcmoff */
+extern bool ppm_lcmoff_is_policy_activated(void);
+
 /* Power state/Power table */
 extern struct ppm_power_state_data *ppm_get_power_state_info(void);
 extern const struct ppm_power_tbl_data ppm_get_power_table(void);

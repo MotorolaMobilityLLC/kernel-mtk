@@ -308,6 +308,10 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 	if (ppm_main_info.fixed_root_cluster == 0)
 		return false;
 
+	/* keep in LL ONLY state if LCM is off */
+	if (ppm_lcmoff_is_policy_activated())
+		return false;
+
 	/* check loading */
 	if (data.ppm_cur_loads > (settings->loading_bond - settings->loading_delta)
 		&& data.ppm_cur_tlp <= settings->tlp_bond) {
