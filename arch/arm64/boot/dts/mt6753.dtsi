@@ -33,7 +33,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		#size-cells = <1>;
 		ranges = <0 0 0 0xffffffff>;
 
-		mmc0: MSDC0@11230000{
+		mmc0: msdc0@11230000{
 				compatible = "mediatek,mt6753-mmc";
 				reg = <0x11230000 0x10000  /* MSDC0_BASE   */
 					0x10000e84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
@@ -41,7 +41,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				status = "disabled";
 		};
 
-		mmc1: MSDC1@11240000{
+		mmc1: msdc1@11240000{
 				compatible = "mediatek,mt6753-mmc";
 				reg = <0x11240000 0x10000  /* MSDC1_BASE   */
 					0x10000e84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */

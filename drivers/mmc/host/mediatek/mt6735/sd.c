@@ -8721,9 +8721,9 @@ int msdc_of_parse(struct mmc_host *mmc)
 	host->hw = kzalloc(sizeof(struct msdc_hw), GFP_KERNEL);
 
 	/*basic settings*/
-	if (0 == strcmp(np->name, "MSDC0"))
+	if (0 == strcmp(np->name, "msdc0"))
 		host->id = 0;
-	else if (0 == strcmp(np->name, "MSDC1"))
+	else if (0 == strcmp(np->name, "msdc1"))
 		host->id = 1;
 	else if (0 == strcmp(np->name, "MSDC2"))
 		host->id = 2;
@@ -8901,9 +8901,9 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	pr_debug("[%s]: pwr gpio dir = 0x%x\n", __func__, l_val);
 #endif
 
-	if (strcmp(pdev->dev.of_node->name, "MSDC0") == 0)
+	if (strcmp(pdev->dev.of_node->name, "msdc0") == 0)
 		pdev->id = 0;
-	else if (strcmp(pdev->dev.of_node->name, "MSDC1") == 0)
+	else if (strcmp(pdev->dev.of_node->name, "msdc1") == 0)
 		pdev->id = 1;
 
 #if defined(CFG_DEV_MSDC2)
