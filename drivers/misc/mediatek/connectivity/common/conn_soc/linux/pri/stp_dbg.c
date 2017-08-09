@@ -215,7 +215,7 @@ P_WCN_CORE_DUMP_T wcn_core_dump_init(UINT32 packet_num, UINT32 timeout)
 
 	osal_memset(core_dmp, 0, sizeof(WCN_CORE_DUMP_T));
 
-	core_dmp->compressor = wcn_compressor_init("core_dump_compressor", L1_BUF_SIZE, 11*packet_num*KBYTES);
+	core_dmp->compressor = wcn_compressor_init("core_dump_compressor", L1_BUF_SIZE, 18*packet_num*KBYTES);
 	if (!core_dmp->compressor) {
 		STP_DBG_ERR_FUNC("create compressor failed!\n");
 		goto fail;
