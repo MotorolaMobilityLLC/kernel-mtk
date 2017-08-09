@@ -4386,7 +4386,7 @@ static int config_wdma_output(disp_path_handle disp_handle,
 {
 	disp_ddp_path_config *pconfig = NULL;
 
-	ASSERT(output != NULL);
+	BUG_ON(output == NULL);
 	pconfig = dpmgr_path_get_last_config(disp_handle);
 	pconfig->wdma_config.dstAddress = output->addr;
 	pconfig->wdma_config.srcHeight = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
@@ -5930,7 +5930,8 @@ unsigned int primary_display_get_option(const char *option)
 		return PRIMARY_SESSION_INPUT_LAYER_COUNT - 1;
 	if (!strcmp(option, "M4U_ENABLE"))
 		return disp_helper_get_option(DISP_OPT_USE_M4U);
-	ASSERT(0);
+	BUG_ON(1);
+	return 0; /* avoid build warning */
 }
 
 int primary_display_lcm_ATA(void)

@@ -85,40 +85,40 @@ static void *dal_fb_addr;
 static unsigned long dal_fb_pa;
 
 /*static BOOL dal_enable_when_resume = FALSE;*/
-static BOOL dal_disable_when_resume = FALSE;
+static bool dal_disable_when_resume;
 static unsigned int dal_fg_color = RGB888_To_RGB565(DAL_COLOR_WHITE);
 static unsigned int dal_bg_color = RGB888_To_RGB565(DAL_COLOR_RED);
 static char dal_print_buffer[1024];
 
-BOOL dal_shown = FALSE;
+bool dal_shown = false;
 unsigned int isAEEEnabled = 0;
 
 /* --------------------------------------------------------------------------- */
 
 
-UINT32 DAL_GetLayerSize(void)
+uint32_t DAL_GetLayerSize(void)
 {
 	/* avoid lcdc read buffersize+1 issue */
 	return DAL_WIDTH * DAL_HEIGHT * DAL_BPP + 4096;
 }
 /*
-static DAL_STATUS DAL_SetRedScreen(UINT32 *addr)
+static DAL_STATUS DAL_SetRedScreen(uint32_t *addr)
 {
-	UINT32 i;
-	const UINT32 BG_COLOR = MAKE_TWO_RGB565_COLOR(DAL_BG_COLOR, DAL_BG_COLOR);
+	uint32_t i;
+	const uint32_t BG_COLOR = MAKE_TWO_RGB565_COLOR(DAL_BG_COLOR, DAL_BG_COLOR);
 
-	for (i = 0; i < DAL_GetLayerSize() / sizeof(UINT32); ++i)
+	for (i = 0; i < DAL_GetLayerSize() / sizeof(uint32_t); ++i)
 		*addr++ = BG_COLOR;
 	return DAL_STATUS_OK;
 }
 */
 DAL_STATUS DAL_SetScreenColor(DAL_COLOR color)
 {
-	UINT32 i;
-	UINT32 size;
-	UINT32 BG_COLOR;
+	uint32_t i;
+	uint32_t size;
+	uint32_t BG_COLOR;
 	MFC_CONTEXT *ctxt = NULL;
-	UINT32 offset;
+	uint32_t offset;
 	unsigned int *addr;
 
 	color = RGB888_To_RGB565(color);
@@ -133,7 +133,7 @@ DAL_STATUS DAL_SetScreenColor(DAL_COLOR color)
 	addr = (unsigned int *)(ctxt->fb_addr + offset);
 
 	size = DAL_GetLayerSize() - offset;
-	for (i = 0; i < size / sizeof(UINT32); ++i)
+	for (i = 0; i < size / sizeof(uint32_t); ++i)
 		*addr++ = BG_COLOR;
 	ctxt->screen_color = color;
 
@@ -232,8 +232,8 @@ DAL_STATUS DAL_Clean(void)
 		DAL_Dynamic_Change_FB_Layer(isAEEEnabled);	/* restore UI layer to DEFAULT_UI_LAYER */
 	}
 
-	dal_shown = FALSE;
-	dal_disable_when_resume = FALSE;
+	dal_shown = false;
+	dal_disable_when_resume = false;
 
 	primary_display_trigger(0, NULL, 0);
 
@@ -321,7 +321,7 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 
 
 	if (!dal_shown)
-		dal_shown = TRUE;
+		dal_shown = true;
 
 	ret = primary_display_trigger(0, NULL, 0);
 
@@ -346,9 +346,9 @@ DAL_STATUS DAL_OnDispPowerOn(void)
 #else
 unsigned int isAEEEnabled = 0;
 
-UINT32 DAL_GetLayerSize(void)
+uint32_t DAL_GetLayerSize(void)
 {
-	/* xuecheng, avoid lcdc read buffersize+1 issue */
+	/*  avoid lcdc read buffersize+1 issue */
 	return DAL_WIDTH * DAL_HEIGHT * DAL_BPP + 4096;
 }
 

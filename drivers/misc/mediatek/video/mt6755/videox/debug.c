@@ -10,7 +10,7 @@
 #include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/types.h>
-#include <mt-plat/mt_typedefs.h>
+/*#include <mt-plat/mt_typedefs.h>*/
 #include "m4u.h"
 #include "disp_drv_log.h"
 #include "mtkfb.h"
@@ -349,7 +349,7 @@ static void process_dbg_opt(const char *opt)
 
 	} else if (0 == strncmp(opt, "dsi0_clk:", 9)) {
 		char *p = (char *)opt + 9;
-		UINT32 clk;
+		uint32_t clk;
 
 		ret = kstrtouint(p, 0, &clk);
 		if (ret) {
@@ -358,7 +358,7 @@ static void process_dbg_opt(const char *opt)
 		}
 	} else if (0 == strncmp(opt, "dst_switch:", 11)) {
 		char *p = (char *)opt + 11;
-		UINT32 mode;
+		uint32_t mode;
 
 		ret = kstrtouint(p, 0, &mode);
 		if (ret) {

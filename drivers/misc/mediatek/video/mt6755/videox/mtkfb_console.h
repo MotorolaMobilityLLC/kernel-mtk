@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include <linux/types.h>
-#include <mt-plat/mt_typedefs.h>
+/*#include <mt-plat/mt_typedefs.h>*/
 
 #define MFC_CHECK_RET(expr)             \
 do {                                \
@@ -33,19 +33,19 @@ do {                                \
 	typedef struct {
 		struct semaphore sem;
 
-		UINT8 *fb_addr;
-		UINT32 fb_width;
-		UINT32 fb_height;
-		UINT32 fb_bpp;
-		UINT32 fg_color;
-		UINT32 bg_color;
-		UINT32 screen_color;
-		UINT32 rows;
-		UINT32 cols;
-		UINT32 cursor_row;
-		UINT32 cursor_col;
-		UINT32 font_width;
-		UINT32 font_height;
+		uint8_t *fb_addr;
+		uint32_t fb_width;
+		uint32_t fb_height;
+		uint32_t fb_bpp;
+		uint32_t fg_color;
+		uint32_t bg_color;
+		uint32_t screen_color;
+		uint32_t rows;
+		uint32_t cols;
+		uint32_t cursor_row;
+		uint32_t cursor_col;
+		uint32_t font_width;
+		uint32_t font_height;
 	} MFC_CONTEXT;
 
 /* MTK Framebuffer Console API */
@@ -72,11 +72,11 @@ do {                                \
 
 	MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str);
 
-	MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_color,
-					UINT32 bg_color);
+	MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, uint32_t fg_color,
+					uint32_t bg_color);
 
-	MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color);
-	UINT32 MFC_Get_Cursor_Offset(MFC_HANDLE handle);
+	MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, uint32_t color);
+	uint32_t MFC_Get_Cursor_Offset(MFC_HANDLE handle);
 
 	/* screen logger */
 	typedef struct _screen_logger {

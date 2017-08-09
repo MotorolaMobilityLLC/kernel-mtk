@@ -569,7 +569,7 @@ static int _sync_convert_fb_layer_to_disp_input(unsigned int session_id, disp_in
 #if 1
 	if (DISP_FORMAT_ARGB8888 == src->src_fmt || DISP_FORMAT_ABGR8888 == src->src_fmt
 	    || DISP_FORMAT_RGBA8888 == src->src_fmt || DISP_FORMAT_BGRA8888 == src->src_fmt) {
-		dst->aen = TRUE;
+		dst->aen = true;
 	}
 #endif
 

@@ -8,7 +8,7 @@
 #include <linux/interrupt.h>
 #include <linux/wait.h>
 #include <mach/irqs.h>
-#include <mt-plat/mt_typedefs.h>
+/*#include <mt-plat/mt_typedefs.h>*/
 #include <linux/types.h>
 #include "disp_drv_log.h"
 #include "disp_drv_platform.h"
@@ -568,9 +568,9 @@ bool DSI_clk_HS_state(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		DSI_READREG32(PDSI_PHY_LCCON_REG, &tmpreg, &DSI_REG[i]->DSI_PHY_LCCON);
-		return tmpreg.LC_HS_TX_EN ? TRUE : FALSE;
+		return tmpreg.LC_HS_TX_EN ? true : false;
 	}
-	return FALSE;
+	return false;
 }
 
 void DSI_clk_HS_mode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enter)
@@ -1054,9 +1054,9 @@ DSI_STATUS DSI_TXRX_Control(DISP_MODULE_ENUM module, cmdqRecHandle cmdq,
 	unsigned int lane_num_bitvalue = 0;
 	int lane_num = dsi_params->LANE_NUM;
 	int vc_num = 0;
-	bool null_packet_en = FALSE;
-	bool dis_eotp_en = FALSE;
-	bool hstx_cklp_en = dsi_params->cont_clock ? FALSE : TRUE;
+	bool null_packet_en = false;
+	bool dis_eotp_en = false;
+	bool hstx_cklp_en = dsi_params->cont_clock ? false : true;
 	int max_return_size = 0;
 
 	switch (lane_num) {
@@ -2393,7 +2393,7 @@ void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_setting_ta
 					    (unsigned long)(&DSI_VM_CMD_REG[d]->data[0].byte0);
 					mask_para = (0xFF << ((goto_addr & 0x3) * 8));
 					set_para = (cmd << ((goto_addr & 0x3) * 8));
-					MASKREG32(goto_addr & (~0x3), mask_para, set_para);
+					DSI_MASKREG32(cmdq, goto_addr & (~0x3), mask_para, set_para);
 
 					for (i = 0; i < count; i++) {
 						goto_addr =
@@ -2402,7 +2402,7 @@ void DSI_set_cmdq_V3(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_setting_ta
 						mask_para = (0xFF << ((goto_addr & 0x3) * 8));
 						set_para =
 						    (para_list[i] << ((goto_addr & 0x3) * 8));
-						MASKREG32(goto_addr & (~0x3), mask_para, set_para);
+						DSI_MASKREG32(cmdq, goto_addr & (~0x3), mask_para, set_para);
 					}
 				} else {
 					vm_cmdq.LONG_PKT = 0;
@@ -2826,7 +2826,7 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	if (MIPITX_IsEnabled(module, cmdq)) {
-		s_isDsiPowerOn = TRUE;
+		s_isDsiPowerOn = true;
 #ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 		set_mipi26m(1);
@@ -2843,7 +2843,7 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
-					       "DSI0 power manager API return FALSE\n");
+					       "DSI0 power manager API return false\n");
 			}
 		}
 #endif
@@ -3117,7 +3117,7 @@ int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq)
 		DSI_Send_ROI(module, cmdq, g_lcm_x, g_lcm_y, _dsi_context[i].lcm_width,
 			     _dsi_context[i].lcm_height);
 		DSI_SetMode(module, cmdq, _dsi_context[i].dsi_params.mode);
-		DSI_clk_HS_mode(module, cmdq, TRUE);
+		DSI_clk_HS_mode(module, cmdq, true);
 	}
 
 	return 0;
@@ -3156,7 +3156,7 @@ int ddp_dsi_stop(DISP_MODULE_ENUM module, void *cmdq_handle)
 		/* TODO: modify this with wait event */
 		DSI_WaitForNotBusy(module, cmdq_handle);
 	}
-	DSI_clk_HS_mode(module, cmdq_handle, FALSE);
+	DSI_clk_HS_mode(module, cmdq_handle, false);
 	return 0;
 }
 
@@ -3393,7 +3393,7 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 				if (ret > 0)
 					pr_warn("DISP/DSI " "DSI power manager API return FALSE\n");
 			}
-			s_isDsiPowerOn = TRUE;
+			s_isDsiPowerOn = true;
 			DDPMSG("ipoh dsi power on return\n");
 			return DSI_STATUS_OK;
 		}
@@ -3408,7 +3408,7 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
-					       "DSI power manager API return FALSE\n");
+					       "DSI power manager API return false\n");
 			}
 		}
 		/* restore dsi register */
@@ -3433,7 +3433,7 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 
 		DSI_Reset(module, NULL);
 #endif
-		s_isDsiPowerOn = TRUE;
+		s_isDsiPowerOn = true;
 	}
 	/* DSI_DumpRegisters(module,1); */
 	return DSI_STATUS_OK;
@@ -3457,7 +3457,7 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 		DSI_BackupRegisters(module, NULL);
 #ifdef ENABLE_CLK_MGR
 		/* disable HS mode */
-		DSI_clk_HS_mode(module, NULL, FALSE);
+		DSI_clk_HS_mode(module, NULL, false);
 		/* enter ULPS mode */
 		DSI_lane0_ULP_mode(module, NULL, 1);
 		DSI_clk_ULP_mode(module, NULL, 1);
@@ -3485,7 +3485,7 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
-					       "DSI power manager API return FALSE\n");
+					       "DSI power manager API return false\n");
 			}
 		}
 		/* disable mipi pll */
@@ -3497,7 +3497,7 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 #endif
 
 #endif
-		s_isDsiPowerOn = FALSE;
+		s_isDsiPowerOn = false;
 	}
 	/* DSI_DumpRegisters(module,1); */
 	return DSI_STATUS_OK;
@@ -3761,7 +3761,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 				      DSI_START, 0);
 		}
 		/* 3.disable HS */
-		/* DSI_clk_HS_mode(module, cmdq_trigger_handle, FALSE); */
+		/* DSI_clk_HS_mode(module, cmdq_trigger_handle, false); */
 
 	} else if (state == CMDQ_START_VDO_MODE) {
 
@@ -3783,7 +3783,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 		DSI_SetMode(module, cmdq_trigger_handle, dsi_params->mode);
 
 		/* 2. enable HS */
-		/* DSI_clk_HS_mode(module, cmdq_trigger_handle, TRUE); */
+		/* DSI_clk_HS_mode(module, cmdq_trigger_handle, true); */
 
 		/* 3. enable mutex */
 		/* ddp_mutex_enable(mutex_id_for_latest_trigger,0,cmdq_trigger_handle); */

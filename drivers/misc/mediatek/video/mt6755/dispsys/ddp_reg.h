@@ -1,7 +1,7 @@
 #ifndef _DDP_REG_H_
 #define _DDP_REG_H_
 #include <mt-plat/sync_write.h>
-#include <mt-plat/mt_typedefs.h>
+/*#include <mt-plat/mt_typedefs.h>*/
 /* #include <mach/mt_reg_base.h> */
 #include <linux/types.h>
 #include "display_recorder.h"
@@ -1049,6 +1049,14 @@ extern volatile unsigned long dsi_reg_va;
 /* --------------------------------------------------------------------------- */
 /* Register Field Access */
 /* --------------------------------------------------------------------------- */
+
+#define READ_REGISTER_UINT32(reg)	(*(volatile uint32_t *const)(reg))
+#define INREG32(x)	READ_REGISTER_UINT32((uint32_t *)((void *)(x)))
+#define DRV_Reg32(addr)	INREG32(addr)
+#define WRITE_REGISTER_UINT32(reg, val)	((*(volatile uint32_t *const)(reg)) = (val))
+#define OUTREG32(x, y)	WRITE_REGISTER_UINT32((uint32_t *)((void *)(x)), (uint32_t)(y))
+#define AS_UINT32(x)	(*(uint32_t *)((void *)x))
+
 
 #define REG_FLD(width, shift) \
 	((unsigned int)((((width) & 0xFF) << 16) | ((shift) & 0xFF)))

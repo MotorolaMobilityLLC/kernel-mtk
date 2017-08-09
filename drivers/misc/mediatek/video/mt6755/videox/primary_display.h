@@ -5,7 +5,7 @@
 #include "ddp_manager.h"
 #include <linux/types.h>
 #include "disp_session.h"
-#include <mt-plat/mt_typedefs.h>
+/*#include <mt-plat/mt_typedefs.h>*/
 
 typedef enum {
 	DIRECT_LINK_MODE,
@@ -245,7 +245,7 @@ unsigned long get_dim_layer_mva_addr(void);
 int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end, unsigned long *va,
 				  unsigned long *mva);
 int Panel_Master_dsi_config_entry(const char *name, void *config_value);
-int fbconfig_get_esd_check_test(uint32_t dsi_id, uint32_t cmd, UINT8 *buffer, uint32_t num);
+int fbconfig_get_esd_check_test(uint32_t dsi_id, uint32_t cmd, uint8_t *buffer, uint32_t num);
 
 
 /* defined in mtkfb.c should move to mtkfb.h*/

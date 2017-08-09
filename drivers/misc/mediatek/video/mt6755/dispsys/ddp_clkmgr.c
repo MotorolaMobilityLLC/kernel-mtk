@@ -4,8 +4,9 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/types.h>
-#include <mt-plat/mt_typedefs.h>
+/*#include <mt-plat/mt_typedefs.h>*/
 #include <mt-plat/sync_write.h>
+#include "ddp_reg.h"
 
 #ifndef CONFIG_MTK_CLKMGR
 

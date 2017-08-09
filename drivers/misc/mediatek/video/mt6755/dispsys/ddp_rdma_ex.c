@@ -594,7 +594,7 @@ static int rdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 void rdma_enable_color_transform(DISP_MODULE_ENUM module)
 {
 	unsigned int idx = rdma_index(module);
-	UINT32 value = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx);
+	uint32_t value = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx);
 
 	value = value | REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_EXT_MTX_EN), 1) |
 	    REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_ENABLE), 1);
@@ -604,7 +604,7 @@ void rdma_enable_color_transform(DISP_MODULE_ENUM module)
 void rdma_disable_color_transform(DISP_MODULE_ENUM module)
 {
 	unsigned int idx = rdma_index(module);
-	UINT32 value = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx);
+	uint32_t value = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx);
 
 	value = value | REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_EXT_MTX_EN), 0) |
 	    REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_ENABLE), 0);
