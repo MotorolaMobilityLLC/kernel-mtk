@@ -47,6 +47,9 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/of_gpio.h>
+#include <linux/pinctrl/consumer.h>
+#include <linux/gpio.h>
 #else
 #include <mach/mt_reg_base.h>
 #endif
@@ -725,9 +728,37 @@ void nand_disable_clock(void)
 {
 
 }
+
+void nand_prepare_clock(void)
+{
+
+}
+
+void nand_unprepare_clock(void)
+{
+
+}
 #else
 #define PWR_DOWN 0
 #define PWR_ON	 1
+void nand_prepare_clock(void)
+{
+	#if !defined(CONFIG_MTK_LEGACY)
+	clk_prepare(nfi_clock);
+	clk_prepare(nfi_ecc_clock);
+	clk_prepare(nfi_bclk_clock);
+	#endif
+}
+
+void nand_unprepare_clock(void)
+{
+	#if !defined(CONFIG_MTK_LEGACY)
+	clk_unprepare(nfi_clock);
+	clk_unprepare(nfi_ecc_clock);
+	clk_unprepare(nfi_bclk_clock);
+	#endif
+}
+
 void nand_enable_clock(void)
 {
 #if defined(CONFIG_MTK_LEGACY)
@@ -738,9 +769,9 @@ void nand_enable_clock(void)
 	/* if(clock_is_on(MT_CG_INFRA_NFI_BCLK)==PWR_DOWN) */
 	enable_clock(MT_CG_INFRA_NFI_BCLK, "NFI");
 #else
-	clk_prepare_enable(nfi_clock);
-	clk_prepare_enable(nfi_ecc_clock);
-	clk_prepare_enable(nfi_bclk_clock);
+	clk_enable(nfi_clock);
+	clk_enable(nfi_ecc_clock);
+	clk_enable(nfi_bclk_clock);
 #endif
 }
 
@@ -754,9 +785,9 @@ void nand_disable_clock(void)
 	/* if(clock_is_on(MT_CG_INFRA_NFI)==PWR_ON) */
 	disable_clock(MT_CG_INFRA_NFI, "NFI");
 #else
-	clk_disable_unprepare(nfi_clock);
-	clk_disable_unprepare(nfi_ecc_clock);
-	clk_disable_unprepare(nfi_bclk_clock);
+	clk_disable(nfi_clock);
+	clk_disable(nfi_ecc_clock);
+	clk_disable(nfi_bclk_clock);
 #endif
 }
 #endif
@@ -6331,6 +6362,7 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	pr_debug("[FPGA Dummy]Enable NFI and NFIECC Clock\n");
 #else
 	/* MSG(INIT, "[NAND]Enable NFI and NFIECC Clock\n"); */
+	nand_prepare_clock();
 	nand_enable_clock();
 
 #endif
@@ -6693,6 +6725,7 @@ out:
 	platform_set_drvdata(pdev, NULL);
 	kfree(host);
 	nand_disable_clock();
+	nand_unprepare_clock();
 	return err;
 }
 
@@ -6760,6 +6793,7 @@ static int mtk_nand_suspend(struct platform_device *pdev, pm_message_t state)
 #endif
 #endif
 		nand_disable_clock();
+		nand_unprepare_clock();
 		host->saved_para.suspend_flag = 1;
 	} else {
 		pr_debug("[NFI] Suspend twice !\n");
@@ -6814,6 +6848,7 @@ static int mtk_nand_resume(struct platform_device *pdev)
 #endif
 		udelay(200);
 		pr_debug("[NFI] delay 200us for power on reset flow!\n");
+		nand_prepare_clock();
 		nand_enable_clock();
 		DRV_WriteReg16(NFI_CNFG_REG16, host->saved_para.sNFI_CNFG_REG16);
 		DRV_WriteReg32(NFI_PAGEFMT_REG32, host->saved_para.sNFI_PAGEFMT_REG32);
@@ -6922,7 +6957,7 @@ static int mtk_nand_remove(struct platform_device *pdev)
 	kfree(host);
 
 	nand_disable_clock();
-
+	nand_unprepare_clock();
 	return 0;
 }
 
