@@ -28,6 +28,7 @@
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/kthread.h>
+#include <linux/reboot.h>
 /*
 #if !defined CONFIG_HAS_WAKELOCKS
 #include <linux/pm_wakeup.h>  included in linux/device.h
@@ -3015,6 +3016,7 @@ void pwrkey_int_handler_r(void)
 						timer_pos, timer_pre, timer_pos - timer_pre, long_pwrkey_press);
 		if (long_pwrkey_press) {	/*500ms*/
 			PMICLOG("Power Key Pressed during kernel power off charging, reboot OS\r\n");
+			kernel_restart("kernel power off charging  reboot system");
 			/*arch_reset(0, NULL);*/
 		}
 	}
