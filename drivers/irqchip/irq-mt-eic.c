@@ -132,7 +132,7 @@ struct eint_chip {
 static struct eint_chip *mt_eint_chip;
 
 static struct eint_func EINT_FUNC;
-
+static unsigned int MAX_HW_DEBOUNCE_CNT;
 static unsigned int EINT_MAX_CHANNEL;
 static unsigned int MAX_DEINT_CNT;
 
@@ -1828,6 +1828,17 @@ static int __init mt_eint_init(void)
 
 	pr_debug("[EIC] max_eint_num = %d\n", EINT_MAX_CHANNEL);
 
+
+	if (of_property_read_u32(node,
+				 "mediatek,max_hw_deb_cnt",
+				 &MAX_HW_DEBOUNCE_CNT))	{
+		pr_warn("[EIC] no mediatek,max_hw_deb_cnt specified\n");
+		MAX_HW_DEBOUNCE_CNT = 16;
+		pr_warn("[EIC] setup default value\n");
+	}
+
+	pr_debug("[EIC] max debunce num = %d\n", MAX_HW_DEBOUNCE_CNT);
+
 	EINT_FUNC.eint_auto_umask = kmalloc(sizeof(unsigned int) *
 					EINT_MAX_CHANNEL, GFP_KERNEL);
 	EINT_FUNC.is_deb_en = kmalloc(sizeof(unsigned int) *
@@ -2035,7 +2046,6 @@ static int __init mt_eint_init(void)
 		pr_err("Fail to create eint_driver sysfs files");
 		return -1;
 	}
-
 	eint_trigger_history_init();
 #endif
 
@@ -2080,7 +2090,7 @@ void mt_eint_dump_status(unsigned int eint)
 	if (eint >= EINT_MAX_CHANNEL)
 		return;
 	pr_notice("[EINT] eint:%d,mask:%x,pol:%x,deb:%d us,sens:%x(%s)\n", eint,
-			mt_eint_get_mask(eint), mt_eint_get_polarity(eint),
+		  mt_eint_get_mask(eint), mt_eint_get_polarity(eint),
 		  mt_eint_get_debounce_cnt(eint), mt_eint_get_sens(eint),
 		  mt_eint_get_sens(eint) == MT_EDGE_SENSITIVE ? "edge" : "level"
 		);

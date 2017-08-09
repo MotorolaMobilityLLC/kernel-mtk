@@ -64,7 +64,6 @@
  */
 #define MT_EINT_POL_NEG         0
 #define MT_EINT_POL_POS         1
-#define MAX_HW_DEBOUNCE_CNT     32
 #define EINTF_TRIGGER_RISING    0x00000001
 #define EINTF_TRIGGER_FALLING   0x00000002
 #define EINTF_TRIGGER_HIGH      0x00000004
