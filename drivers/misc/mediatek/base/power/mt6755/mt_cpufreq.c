@@ -2761,66 +2761,68 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	}
 	cpufreq_unlock(flags);
 
-	if (!ignore_ppm[MT_CPU_DVFS_LITTLE]) {
-		get_online_cpus();
-		cpumask_and(&cpu_online_cpumask, &dvfs_cpumask[MT_CPU_DVFS_LITTLE], cpu_online_mask);
-		cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)cpu_online_mask);
-		cpulist_scnprintf(str2, sizeof(str2), (const struct cpumask *)&cpu_online_cpumask);
-		cpufreq_ver("cpu_online_mask = %s, cpu_online_cpumask for little = %s\n", str1, str2);
-		ret = -1;
-		for_each_cpu(i, &cpu_online_cpumask) {
-			policy[MT_CPU_DVFS_LITTLE] = cpufreq_cpu_get(i);
-			if (policy[MT_CPU_DVFS_LITTLE]) {
-				p = id_to_cpu_dvfs(MT_CPU_DVFS_LITTLE);
-				if (p->idx_opp_ppm_limit == -1)
-					policy[MT_CPU_DVFS_LITTLE]->max = cpu_dvfs_get_max_freq(p);
-				else
-					policy[MT_CPU_DVFS_LITTLE]->max = cpu_dvfs_get_freq_by_idx(p,
-						p->idx_opp_ppm_limit);
-				if (p->idx_opp_ppm_base == -1)
-					policy[MT_CPU_DVFS_LITTLE]->min = cpu_dvfs_get_min_freq(p);
-				else
-					policy[MT_CPU_DVFS_LITTLE]->min = cpu_dvfs_get_freq_by_idx(p,
-						p->idx_opp_ppm_base);
-				cpufreq_cpu_put(policy[MT_CPU_DVFS_LITTLE]);
-				ret = 0;
-				break;
-			}
+	get_online_cpus();
+	cpumask_and(&cpu_online_cpumask, &dvfs_cpumask[MT_CPU_DVFS_LITTLE], cpu_online_mask);
+	cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)cpu_online_mask);
+	cpulist_scnprintf(str2, sizeof(str2), (const struct cpumask *)&cpu_online_cpumask);
+	cpufreq_ver("cpu_online_mask = %s, cpu_online_cpumask for little = %s\n", str1, str2);
+	ret = -1;
+	for_each_cpu(i, &cpu_online_cpumask) {
+		policy[MT_CPU_DVFS_LITTLE] = cpufreq_cpu_get(i);
+		if (policy[MT_CPU_DVFS_LITTLE]) {
+			p = id_to_cpu_dvfs(MT_CPU_DVFS_LITTLE);
+			if (p->idx_opp_ppm_limit == -1)
+				policy[MT_CPU_DVFS_LITTLE]->max = cpu_dvfs_get_max_freq(p);
+			else
+				policy[MT_CPU_DVFS_LITTLE]->max = cpu_dvfs_get_freq_by_idx(p,
+					p->idx_opp_ppm_limit);
+			if (p->idx_opp_ppm_base == -1)
+				policy[MT_CPU_DVFS_LITTLE]->min = cpu_dvfs_get_min_freq(p);
+			else
+				policy[MT_CPU_DVFS_LITTLE]->min = cpu_dvfs_get_freq_by_idx(p,
+					p->idx_opp_ppm_base);
+			cpufreq_cpu_put(policy[MT_CPU_DVFS_LITTLE]);
+			ret = 0;
+			break;
 		}
-		put_online_cpus();
+	}
+	put_online_cpus();
+
+	if (!ignore_ppm[MT_CPU_DVFS_LITTLE]) {
 		if (!ret)
 			_mt_cpufreq_set(policy[MT_CPU_DVFS_LITTLE], MT_CPU_DVFS_LITTLE, -1);
 		else
 			goto second_limit;
 	}
 second_limit:
-	if (!ignore_ppm[MT_CPU_DVFS_BIG]) {
-		get_online_cpus();
-		cpumask_and(&cpu_online_cpumask, &dvfs_cpumask[MT_CPU_DVFS_BIG], cpu_online_mask);
-		cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)cpu_online_mask);
-		cpulist_scnprintf(str2, sizeof(str2), (const struct cpumask *)&cpu_online_cpumask);
-		cpufreq_ver("cpu_online_mask = %s, cpu_online_cpumask for big = %s\n", str1, str2);
-		ret = -1;
-		for_each_cpu(i, &cpu_online_cpumask) {
-			policy[MT_CPU_DVFS_BIG] = cpufreq_cpu_get(i);
-			if (policy[MT_CPU_DVFS_BIG]) {
-				p = id_to_cpu_dvfs(MT_CPU_DVFS_BIG);
-				if (p->idx_opp_ppm_limit == -1)
-					policy[MT_CPU_DVFS_BIG]->max = cpu_dvfs_get_max_freq(p);
-				else
-					policy[MT_CPU_DVFS_BIG]->max = cpu_dvfs_get_freq_by_idx(p,
-						p->idx_opp_ppm_limit);
-				if (p->idx_opp_ppm_base == -1)
-					policy[MT_CPU_DVFS_BIG]->min = cpu_dvfs_get_min_freq(p);
-				else
-					policy[MT_CPU_DVFS_BIG]->min = cpu_dvfs_get_freq_by_idx(p,
-						p->idx_opp_ppm_base);
-				cpufreq_cpu_put(policy[MT_CPU_DVFS_BIG]);
-				ret = 0;
-				break;
-			}
+	get_online_cpus();
+	cpumask_and(&cpu_online_cpumask, &dvfs_cpumask[MT_CPU_DVFS_BIG], cpu_online_mask);
+	cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)cpu_online_mask);
+	cpulist_scnprintf(str2, sizeof(str2), (const struct cpumask *)&cpu_online_cpumask);
+	cpufreq_ver("cpu_online_mask = %s, cpu_online_cpumask for big = %s\n", str1, str2);
+	ret = -1;
+	for_each_cpu(i, &cpu_online_cpumask) {
+		policy[MT_CPU_DVFS_BIG] = cpufreq_cpu_get(i);
+		if (policy[MT_CPU_DVFS_BIG]) {
+			p = id_to_cpu_dvfs(MT_CPU_DVFS_BIG);
+			if (p->idx_opp_ppm_limit == -1)
+				policy[MT_CPU_DVFS_BIG]->max = cpu_dvfs_get_max_freq(p);
+			else
+				policy[MT_CPU_DVFS_BIG]->max = cpu_dvfs_get_freq_by_idx(p,
+					p->idx_opp_ppm_limit);
+			if (p->idx_opp_ppm_base == -1)
+				policy[MT_CPU_DVFS_BIG]->min = cpu_dvfs_get_min_freq(p);
+			else
+				policy[MT_CPU_DVFS_BIG]->min = cpu_dvfs_get_freq_by_idx(p,
+					p->idx_opp_ppm_base);
+			cpufreq_cpu_put(policy[MT_CPU_DVFS_BIG]);
+			ret = 0;
+			break;
 		}
-		put_online_cpus();
+	}
+	put_online_cpus();
+
+	if (!ignore_ppm[MT_CPU_DVFS_BIG]) {
 		if (!ret)
 			_mt_cpufreq_set(policy[MT_CPU_DVFS_BIG], MT_CPU_DVFS_BIG, -1);
 		else
