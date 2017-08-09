@@ -3871,8 +3871,9 @@ int mt_clkmgr_init(void)
 #define VDE_PWR_STA_MASK    (0x1 << 7)
 #define ISP_PWR_STA_MASK    (0x1 << 5)
 #define MFG_PWR_STA_MASK    (0x1 << 4)
+#define DIS_PWR_STA_MASK    (0x1 << 3)
 
-bool clkmgr_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask)
+bool clkmgr_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask, enum idle_mode mode)
 {
 	int i, j;
 	unsigned int sd_mask = 0;
@@ -3900,8 +3901,14 @@ bool clkmgr_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mas
 
 #ifdef PLL_CLK_LINK
 	sta = clk_readl(SPM_PWR_STATUS);
-	if (sta & (MFG_PWR_STA_MASK | ISP_PWR_STA_MASK | VDE_PWR_STA_MASK))
-		return false;
+
+	if (mode == dpidle) {
+		if (sta & (MFG_PWR_STA_MASK | ISP_PWR_STA_MASK | VDE_PWR_STA_MASK | DIS_PWR_STA_MASK))
+			return false;
+	} else if (mode == soidle) {
+		if (sta & (MFG_PWR_STA_MASK | ISP_PWR_STA_MASK | VDE_PWR_STA_MASK))
+			return false;
+	}
 #endif
 	return true;
 }
