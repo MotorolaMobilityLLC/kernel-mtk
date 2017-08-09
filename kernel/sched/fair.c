@@ -9682,10 +9682,15 @@ static unsigned int hmp_down_migration(int cpu, int *target_cpu, struct sched_en
 
 	/* [1.5]if big is busy and little is idle, just go to little */
 	if (rq_length(*target_cpu) == 0 && caller == HMP_SELECT_RQ && rq_length(curr_cpu) > 0) {
-		check->status |= HMP_BIG_BUSY_LITTLE_IDLE;
-		check->status |= HMP_MIGRATION_APPROVED;
-		check->result = 1;
-		goto trace;
+		struct rq *curr_rq = cpu_rq(curr_cpu);
+
+		/* if current big core is not heavy task and wake up task is heavy task no go to little */
+		if (!(!is_heavy_task(curr_rq->curr) && is_heavy_task(p))) {
+			check->status |= HMP_BIG_BUSY_LITTLE_IDLE;
+			check->status |= HMP_MIGRATION_APPROVED;
+			check->result = 1;
+			goto trace;
+		}
 	}
 
 	/* [2] Filter low-priority task */
