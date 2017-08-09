@@ -331,6 +331,7 @@ extern int gt1x_hold_ss51_dsp_no_reset(void);
 extern int gt1x_load_patch(u8 *patch, u32 patch_size, int offset, int bank_size);
 extern int gt1x_startup_patch(void);
 extern void gt1x_auto_update_done(void);
+extern int gt1x_is_tpd_halt(void);
 
 /* Export from gt1x_tool.c */
 #ifdef CONFIG_GTP_CREATE_WR_NODE

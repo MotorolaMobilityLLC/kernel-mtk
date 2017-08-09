@@ -471,6 +471,11 @@ void gt1x_power_switch(s32 state)
 	}
 }
 
+int gt1x_is_tpd_halt(void)
+{
+	return tpd_halt;
+}
+
 static int tpd_irq_registration(void)
 {
 	struct device_node *node = NULL;

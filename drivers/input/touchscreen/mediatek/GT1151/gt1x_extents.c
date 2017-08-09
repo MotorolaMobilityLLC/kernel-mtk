@@ -34,6 +34,7 @@
 #endif
 #include <linux/uaccess.h>
 #include <linux/proc_fs.h>	/*proc */
+#include <linux/ratelimit.h>
 
 #include <asm/ioctl.h>
 #include "include/gt1x_tpd_common.h"
@@ -573,6 +574,12 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	u32 value = 0;
 	s32 ret = 0;		/*the initial value must be 0*/
 	u8 *data = NULL;
+	static struct ratelimit_state ratelimit = {
+		.lock = __RAW_SPIN_LOCK_UNLOCKED(ratelimit.lock),
+		.interval = HZ/2,
+		.burst = 1,
+		.begin = 1,
+	};
 
 	GTP_DEBUG("IOCTL CMD:%x", cmd);
 	/*GTP_DEBUG("command:%d, length:%d, rw:%s", _IOC_NR(cmd), _IOC_SIZE(cmd),
@@ -607,10 +614,20 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 		break;
 	case IO_IIC_READ:
+		if (1 == gt1x_is_tpd_halt()) {
+			if (__ratelimit(&ratelimit))
+				GTP_ERROR("touch is suspended.");
+			break;
+		}
 		ret = io_iic_read(data, (void __user *)arg);
 		break;
 
 	case IO_IIC_WRITE:
+		if (1 == gt1x_is_tpd_halt()) {
+			if (__ratelimit(&ratelimit))
+				GTP_ERROR("touch is suspended.");
+			break;
+		}
 		ret = io_iic_write(data);
 		break;
 
@@ -697,6 +714,10 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 
 	case HOTKNOT_LOAD_AUTHENTICATION:
+		if (1 == gt1x_is_tpd_halt()) {
+			GTP_ERROR("touch is suspended.");
+			break;
+		}
 #ifdef CONFIG_GTP_ESD_PROTECT
 		gt1x_esd_switch(SWITCH_ON);
 #endif
@@ -704,6 +725,10 @@ static long gt1x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 
 	case HOTKNOT_RECOVERY_MAIN:
+		if (1 == gt1x_is_tpd_halt()) {
+			GTP_ERROR("touch is suspended.");
+			break;
+		}
 		ret = hotknot_recovery_main_system();
 		break;
 #ifdef CONFIG_HOTKNOT_BLOCK_RW
