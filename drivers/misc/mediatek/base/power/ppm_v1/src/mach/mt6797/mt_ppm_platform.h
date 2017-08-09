@@ -39,6 +39,7 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #endif
 
 #define PPM_FAST_ATM_SUPPORT		(1)
+#define PPM_OUTPUT_MAIN_LOG_TO_UART	(1)
 
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)

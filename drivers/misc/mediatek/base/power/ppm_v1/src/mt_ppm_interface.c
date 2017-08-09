@@ -10,7 +10,11 @@
 
 /* procfs dir for policies */
 struct proc_dir_entry *policy_dir = NULL;
+#ifdef PPM_OUTPUT_MAIN_LOG_TO_UART
+unsigned int ppm_debug = 2;
+#else
 unsigned int ppm_debug = 0;
+#endif
 #if 0
 unsigned int ppm_func_lv_mask = (FUNC_LV_MODULE  | FUNC_LV_API | FUNC_LV_MAIN | FUNC_LV_POLICY);
 #else
