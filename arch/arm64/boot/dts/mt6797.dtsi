@@ -2197,6 +2197,21 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x10222000 0x1000>;
 		};
 
+		bpi_bsi_slv0@10228000 {
+			compatible = "mediatek,bpi_bsi_slv0";
+			reg = <0x10228000 0x1000>;
+		};
+
+		bpi_bsi_slv1@10229000 {
+			compatible = "mediatek,bpi_bsi_slv1";
+			reg = <0x10229000 0x6000>;
+		};
+
+		bpi_bsi_slv2@1022f000 {
+			compatible = "mediatek,bpi_bsi_slv2";
+			reg = <0x1022f000 0x1000>;
+		};
+
 		gic@10240000 {
 			compatible = "mediatek,gic";
 			reg = <0x10240000 0x40000>;
