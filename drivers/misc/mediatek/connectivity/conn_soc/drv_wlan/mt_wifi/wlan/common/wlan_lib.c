@@ -3480,7 +3480,6 @@ BOOLEAN wlanProcessSecurityFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET pr
 	UINT_8 aucEthDestAddr[PARAM_MAC_ADDR_LEN];
 	BOOLEAN fgIs1x = FALSE;
 	BOOLEAN fgIsPAL = FALSE;
-	BOOLEAN fgIsNeedAck = FALSE;
 	UINT_32 u4PacketLen;
 	ULONG u4SysTime;
 	UINT_8 ucNetworkType;
@@ -3500,7 +3499,6 @@ BOOLEAN wlanProcessSecurityFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET pr
 						aucEthDestAddr,
 						&fgIs1x,
 						&fgIsPAL,
-						&fgIsNeedAck,
 						&ucNetworkType) == TRUE) {
 		/* almost TRUE except frame length < 14B */
 
@@ -3511,8 +3509,6 @@ BOOLEAN wlanProcessSecurityFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET pr
 		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_CMD_RESOURCE);
 		QUEUE_REMOVE_HEAD(&prAdapter->rFreeCmdList, prCmdInfo, P_CMD_INFO_T);
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_CMD_RESOURCE);
-
-		DBGLOG(RSN, INFO, "T1X len=%u\n", u4PacketLen);
 
 		if (prCmdInfo) {
 			P_STA_RECORD_T prStaRec;

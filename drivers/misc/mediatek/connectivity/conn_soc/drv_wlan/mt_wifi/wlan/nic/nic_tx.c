@@ -1913,10 +1913,10 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 	UINT_8 aucEthDestAddr[PARAM_MAC_ADDR_LEN];
 	BOOLEAN fgIs1x = FALSE;
 	BOOLEAN fgIsPAL = FALSE;
-	BOOLEAN fgIsNeedAck = FALSE;
 	UINT_32 u4PacketLen;
 	ULONG u4SysTime;
 	UINT_8 ucNetworkType;
+	struct sk_buff *prSkb = (struct sk_buff *)prPacket;
 
 	ASSERT(prAdapter);
 
@@ -1928,7 +1928,7 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 					       &ucPriorityParam,
 					       &u4PacketLen,
 					       aucEthDestAddr,
-					       &fgIs1x, &fgIsPAL, &fgIsNeedAck, &ucNetworkType) == FALSE) {
+					       &fgIs1x, &fgIsPAL, &ucNetworkType) == FALSE) {
 		return FALSE;
 	}
 #if CFG_ENABLE_PKT_LIFETIME_PROFILE
@@ -1965,11 +1965,7 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 	prMsduInfo->u2FrameLength = (UINT_16) u4PacketLen;
 	COPY_MAC_ADDR(prMsduInfo->aucEthDestAddr, aucEthDestAddr);
 
-	if (fgIsNeedAck == TRUE)
-		prMsduInfo->fgNeedTxDoneStatus = TRUE;
-	else
-		prMsduInfo->fgNeedTxDoneStatus = FALSE;
-
+	STATS_TX_PKT_CALLBACK(prSkb->data, prMsduInfo);
 	return TRUE;
 }
 

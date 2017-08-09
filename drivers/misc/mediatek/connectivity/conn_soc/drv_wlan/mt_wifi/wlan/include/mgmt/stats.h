@@ -42,6 +42,14 @@ typedef enum _STATS_EVENT_HOST_ID {
 	STATS_HOST_EVENT_RX_DROP
 } STATS_EVENT_HOST_ID;
 
+enum TX_DONE_CFG {
+	CFG_ARP = 0,
+	CFG_DNS = 1,
+	CFG_TCP = 2,
+	CFG_UDP = 3,
+	CFG_NUM
+};
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -272,7 +280,7 @@ do {														\
 
 #define STATS_TX_TIME_TO_HIF				StatsEnvTxTime2Hif
 
-#define STATS_TX_PKT_INFO_DISPLAY			StatsTxPktInfoDisplay
+#define STATS_TX_PKT_CALLBACK				StatsTxPktCallBack
 #define STATS_TX_PKT_DONE_INFO_DISPLAY			StatsTxPktDoneInfoDisplay
 
 #define STATS_DRIVER_OWN_RESET() \
@@ -308,7 +316,7 @@ do {							\
 
 #define STATS_TX_TIME_ARRIVE(__Skb__)
 #define STATS_TX_TIME_TO_HIF(__MsduInfo__, __HwTxHeader__)
-#define STATS_TX_PKT_INFO_DISPLAY(__Pkt__, __fgIsNeedAck__)
+#define STATS_TX_PKT_CALLBACK(__Pkt__, __fgIsNeedAck__)
 #define STATS_TX_PKT_DONE_INFO_DISPLAY(__Adapter__, __Event__)
 
 #define STATS_DRIVER_OWN_RESET()
@@ -349,8 +357,12 @@ VOID statsEventHandle(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 u4InBufLen
 
 VOID StatsRxPktInfoDisplay(UINT_8 *pPkt);
 
-VOID StatsTxPktInfoDisplay(UINT_8 *pPkt, PBOOLEAN pfgIsNeedAck);
+VOID StatsTxPktCallBack(UINT_8 *pPkt, P_MSDU_INFO_T prMsduInfo);
 
 VOID StatsTxPktDoneInfoDisplay(ADAPTER_T *prAdapter, UINT_8 *pucEvtBuf);
+
+VOID StatsSetCfgTxDone(UINT_16 u2Cfg, BOOLEAN fgSet);
+
+UINT_16 StatsGetCfgTxDone(VOID);
 
 /* End of stats.h */

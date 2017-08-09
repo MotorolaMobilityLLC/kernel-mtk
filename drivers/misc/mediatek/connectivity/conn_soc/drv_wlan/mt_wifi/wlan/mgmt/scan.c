@@ -1459,7 +1459,8 @@ P_BSS_DESC_T scanAllocateBssDesc(IN P_ADAPTER_T prAdapter)
 		 * inserted to BSSDescList immediately.
 		 */
 		LINK_INSERT_TAIL(prBSSDescList, &prBssDesc->rLinkEntry);
-	}
+	} else
+		DBGLOG(SCN, ERROR, "no bss desc available\n");
 
 	return prBssDesc;
 
@@ -1535,6 +1536,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 #endif
 
 	default:
+		 DBGLOG(SCN, ERROR, "wrong bss type %d\n", (INT_32)(u2CapInfo & CAP_INFO_BSS_TYPE));
 		return NULL;
 	}
 
@@ -1545,7 +1547,7 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 
 	if (u2IELength > CFG_IE_BUFFER_SIZE)
 		u2IELength = CFG_IE_BUFFER_SIZE;
-
+	kalMemZero(&rSsid, sizeof(rSsid));
 	IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
 		switch (IE_ID(pucIE)) {
 		case ELEM_ID_SSID:
@@ -1581,7 +1583,12 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		if (fgEscape == TRUE)
 			break;
 	}
-
+	if (fgIsValidSsid)
+		DBGLOG(SCN, EVENT, "%s %pM channel %d\n", rSsid.aucSsid, prWlanBeaconFrame->aucBSSID,
+				HIF_RX_HDR_GET_CHNL_NUM(prSwRfb->prHifRxHdr));
+	else
+		DBGLOG(SCN, EVENT, "hidden ssid, %pM channel %d\n", prWlanBeaconFrame->aucBSSID,
+				HIF_RX_HDR_GET_CHNL_NUM(prSwRfb->prHifRxHdr));
 	/* 4 <1.2> Replace existing BSS_DESC_T or allocate a new one */
 	prBssDesc = scanSearchExistingBssDescWithSsid(prAdapter,
 						      eBSSType,
@@ -1618,7 +1625,6 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			if (prBssDesc)
 				break;
 			/* 4 <1.2.6> no space, should not happen */
-			/* ASSERT(0); // still no space available ? */
 			return NULL;
 
 		} while (FALSE);
@@ -1636,15 +1642,17 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			prBssDesc->eBSSType = eBSSType;
 		} else if (HIF_RX_HDR_GET_CHNL_NUM(prSwRfb->prHifRxHdr) != prBssDesc->ucChannelNum &&
 			   prBssDesc->ucRCPI > prSwRfb->prHifRxHdr->ucRcpi) {
-
 			/* for signal strength is too much weaker and previous beacon is not stale */
 			if ((prBssDesc->ucRCPI - prSwRfb->prHifRxHdr->ucRcpi) >= REPLICATED_BEACON_STRENGTH_THRESHOLD &&
-			    rCurrentTime - prBssDesc->rUpdateTime <= REPLICATED_BEACON_FRESH_PERIOD) {
+				(rCurrentTime - prBssDesc->rUpdateTime) <= REPLICATED_BEACON_FRESH_PERIOD) {
+				DBGLOG(SCN, EVENT, "rssi is too much weaker and previous one is fresh\n");
 				return prBssDesc;
 			}
 			/* for received beacons too close in time domain */
-			else if (rCurrentTime - prBssDesc->rUpdateTime <= REPLICATED_BEACON_TIME_THRESHOLD)
+			else if (rCurrentTime - prBssDesc->rUpdateTime <= REPLICATED_BEACON_TIME_THRESHOLD) {
+				DBGLOG(SCN, EVENT, "receive beacon/probe reponses too close\n");
 				return prBssDesc;
+			}
 		}
 
 		/* if Timestamp has been reset, re-generate BSS DESC 'cause AP should have reset itself */
@@ -1675,8 +1683,11 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 #endif
 
 	/* NOTE: Keep consistency of Scan Record during JOIN process */
-	if ((fgIsNewBssDesc == FALSE) && prBssDesc->fgIsConnecting)
+	if ((fgIsNewBssDesc == FALSE) && prBssDesc->fgIsConnecting) {
+		DBGLOG(SCN, INFO, "we're connecting this BSS(%pM) now, don't update it\n",
+				prBssDesc->aucBSSID);
 		return prBssDesc;
+	}
 	/* 4 <2> Get information from Fixed Fields */
 	prBssDesc->eBSSType = eBSSType;	/* Update the latest BSS type information. */
 
@@ -2329,8 +2340,10 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 	prWlanBeaconFrame = (P_WLAN_BEACON_FRAME_T) prSwRfb->pvHeader;
 
 	/*ALPS01475157: don't show SSID on scan list for multicast MAC AP */
-	if (IS_BMCAST_MAC_ADDR(prWlanBeaconFrame->aucSrcAddr))
+	if (IS_BMCAST_MAC_ADDR(prWlanBeaconFrame->aucSrcAddr)) {
+		DBGLOG(SCN, WARN, "received beacon/probe response from multicast AP\n");
 		return rStatus;
+	}
 
 	/* 4 <1> Parse and add into BSS_DESC_T */
 	prBssDesc = scanAddToBssDesc(prAdapter, prSwRfb);

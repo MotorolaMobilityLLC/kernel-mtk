@@ -76,7 +76,8 @@
 #define PROC_DRV_STATUS                         "status"
 #define PROC_RX_STATISTICS                      "rx_statistics"
 #define PROC_TX_STATISTICS                      "tx_statistics"
-#define PROC_DBG_LEVEL_NAME              "dbgLevel"
+#define PROC_DBG_LEVEL_NAME						"dbgLevel"
+#define PROC_NEED_TX_DONE						"TxDoneCfg"
 #define PROC_ROOT_NAME			"wlan"
 
 #define PROC_MCR_ACCESS_MAX_USER_INPUT_LEN      20
@@ -539,6 +540,90 @@ static const struct file_operations dbglevel_ops = {
 	.write = procDbgLevelWrite,
 };
 
+static ssize_t procTxDoneCfgRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	UINT_8 *temp = &aucProcBuf[0];
+	UINT_32 u4CopySize = 0;
+	UINT_16 u2TxDoneCfg = 0;
+
+	/* if *f_ops>0, we should return 0 to make cat command exit */
+	if (*f_pos > 0)
+		return 0;
+
+	u2TxDoneCfg = StatsGetCfgTxDone();
+	SPRINTF(temp, ("Tx Done Configure:\nARP %d\nDNS %d\nTCP %d\nUDP %d\n",
+			u2TxDoneCfg & 0x1, (u2TxDoneCfg>>CFG_DNS) & 0x1,
+			(u2TxDoneCfg>>CFG_TCP) & 0x1, (u2TxDoneCfg>>CFG_UDP) & 0x1));
+
+	u4CopySize = kalStrLen(aucProcBuf);
+	if (u4CopySize > count)
+		u4CopySize = count;
+	if (copy_to_user(buf, aucProcBuf, u4CopySize)) {
+		pr_err("copy to user failed\n");
+		return -EFAULT;
+	}
+
+	*f_pos += u4CopySize;
+	return (ssize_t)u4CopySize;
+}
+
+static ssize_t procTxDoneCfgWrite(struct file *file, const char *buffer, size_t count, loff_t *data)
+{
+#define MODULE_NAME_LENGTH 5
+
+	UINT_8 i = 0;
+	UINT_32 u4CopySize = sizeof(aucProcBuf);
+	UINT_8 *temp = &aucProcBuf[0];
+	UINT_16 u2SetTxDoneCfg = 0;
+	UINT_16 u2ClsTxDoneCfg = 0;
+	UINT_8 aucModule[MODULE_NAME_LENGTH];
+	UINT_32 u4Enabled;
+	UINT_8 aucModuleArray[CFG_NUM][MODULE_NAME_LENGTH] = {"ARP", "DNS", "TCP", "UDP"};
+
+	kalMemSet(aucProcBuf, 0, u4CopySize);
+	if (u4CopySize >= count + 1)
+		u4CopySize = count;
+
+	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
+		pr_err("error of copy from user\n");
+		return -EFAULT;
+	}
+	aucProcBuf[u4CopySize] = '\0';
+	temp = &aucProcBuf[0];
+	while (temp) {
+		/* pick up a string and teminated after meet : */
+		if (sscanf(temp, "%s %d", aucModule, &u4Enabled) != 2)  {
+			pr_info("read param fail, aucModule=%s\n", aucModule);
+			break;
+		}
+		for (i = 0; i < CFG_NUM; i++) {
+			if (kalStrniCmp(aucModule, aucModuleArray[i], MODULE_NAME_LENGTH) == 0) {
+				if (u4Enabled)
+					u2SetTxDoneCfg |= 1 << i;
+				else
+					u2ClsTxDoneCfg |= 1 << i;
+				break;
+			}
+		}
+		temp = kalStrChr(temp, ',');
+		if (!temp)
+			break;
+		temp++; /* skip ',' */
+	}
+	if (u2SetTxDoneCfg)
+		StatsSetCfgTxDone(u2SetTxDoneCfg, TRUE);
+
+	if (u2ClsTxDoneCfg)
+		StatsSetCfgTxDone(u2ClsTxDoneCfg, FALSE);
+	return count;
+}
+
+static const struct file_operations proc_txdone_ops = {
+	.owner = THIS_MODULE,
+	.read = procTxDoneCfgRead,
+	.write = procTxDoneCfgWrite,
+};
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This function create a PROC fs in linux /proc/net subdirectory.
@@ -786,6 +871,13 @@ INT_32 procInitFs(VOID)
 	proc_set_user(gprProcRoot, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
 
 	prEntry = proc_create(PROC_DBG_LEVEL_NAME, 0664, gprProcRoot, &dbglevel_ops);
+	if (prEntry == NULL) {
+		pr_err("Unable to create /proc entry dbgLevel\n\r");
+		return -1;
+	}
+	proc_set_user(prEntry, KUIDT_INIT(PROC_UID_SHELL), KGIDT_INIT(PROC_GID_WIFI));
+
+	prEntry = proc_create(PROC_NEED_TX_DONE, 0664, gprProcRoot, &proc_txdone_ops);
 	if (prEntry == NULL) {
 		pr_err("Unable to create /proc entry dbgLevel\n\r");
 		return -1;

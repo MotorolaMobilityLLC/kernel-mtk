@@ -52,6 +52,7 @@ statsInfoEnvRequest(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4SetBuffer
 */
 UINT_64 u8DrvOwnStart, u8DrvOwnEnd;
 UINT32 u4DrvOwnMax = 0;
+static UINT_16 su2TxDoneCfg;
 
 /*******************************************************************************
 *						P R I V A T E  F U N C T I O N S
@@ -999,19 +1000,53 @@ VOID StatsEnvTxTime2Hif(MSDU_INFO_T *prMsduInfo, HIF_TX_HEADER_T *prHwTxHeader)
 	}
 }
 
-static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, PBOOLEAN needAck)
+static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P_MSDU_INFO_T prMsduInfo)
 {
 	/* get ethernet protocol */
 	UINT_16 u2EtherType = (pucPkt[ETH_TYPE_LEN_OFFSET] << 8) | (pucPkt[ETH_TYPE_LEN_OFFSET + 1]);
 	PUINT_8 pucEthBody = &pucPkt[ETH_HLEN];
 
 	switch (u2EtherType) {
+	case ETH_P_ARP:
+	{
+		UINT_16 u2OpCode = (pucEthBody[6] << 8) | pucEthBody[7];
+
+		if ((su2TxDoneCfg & (1 << CFG_ARP)) == 0)
+			break;
+		switch (eventType) {
+		case EVENT_RX:
+			if (u2OpCode == ARP_PRO_REQ)
+				DBGLOG(RX, INFO, "<RX> Arp Req From IP: %d.%d.%d.%d\n",
+					pucEthBody[14], pucEthBody[15], pucEthBody[16], pucEthBody[17]);
+			else if (u2OpCode == ARP_PRO_RSP)
+				DBGLOG(RX, INFO, "<RX> Arp Rsp from IP: %d.%d.%d.%d\n",
+					pucEthBody[14], pucEthBody[15], pucEthBody[16], pucEthBody[17]);
+			break;
+		case EVENT_TX:
+			if (u2OpCode == ARP_PRO_REQ)
+				DBGLOG(TX, INFO, "<TX> Arp Req to IP: %d.%d.%d.%d\n",
+					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
+			else if (u2OpCode == ARP_PRO_RSP)
+				DBGLOG(TX, INFO, "<TX> Arp Rsp to IP: %d.%d.%d.%d\n",
+					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
+			prMsduInfo->fgNeedTxDoneStatus = TRUE;
+			break;
+		case EVENT_TX_DONE:
+			if (u2OpCode == ARP_PRO_REQ)
+				DBGLOG(TX, INFO, "<TX status:%d> Arp Req to IP: %d.%d.%d.%d\n", status,
+					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
+			else if (u2OpCode == ARP_PRO_RSP)
+				DBGLOG(TX, INFO, "<TX status:%d> Arp Rsp to IP: %d.%d.%d.%d\n", status,
+					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
+			break;
+		}
+		break;
+	}
 	case ETH_P_IP:
 	{
 		UINT_8 ucIpProto = pucEthBody[9]; /* IP header without options */
 		UINT_8 ucIpVersion = (pucEthBody[0] & IPVH_VERSION_MASK) >> IPVH_VERSION_OFFSET;
-		UINT_16 u2IpId = *(UINT_16 *) &pucEthBody[4];
-
+		UINT_16 u2IpId = pucEthBody[4]<<8 | pucEthBody[5];
 		if (ucIpVersion != IPVERSION)
 			break;
 		switch (ucIpProto) {
@@ -1033,12 +1068,12 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 							ucIcmpType, u2IcmpId, u2IcmpSeq);
 				break;
 			case EVENT_TX:
-				DBGLOG(RX, INFO, "<TX> ICMP: Type %d, Id 0x04%x, Seq BE 0x%04x\n",
+				DBGLOG(TX, INFO, "<TX> ICMP: Type %d, Id 0x04%x, Seq BE 0x%04x\n",
 								ucIcmpType, u2IcmpId, u2IcmpSeq);
-				*needAck = TRUE;
+				prMsduInfo->fgNeedTxDoneStatus = TRUE;
 				break;
 			case EVENT_TX_DONE:
-				DBGLOG(RX, INFO, "<TX status:%d> Type %d, Id 0x%04x, Seq 0x%04x\n",
+				DBGLOG(TX, INFO, "<TX status:%d> Type %d, Id 0x%04x, Seq 0x%04x\n",
 						status, ucIcmpType, u2IcmpId, u2IcmpSeq);
 				break;
 			}
@@ -1048,41 +1083,93 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 		{
 			/* the number of DHCP packets is seldom so we print log here */
 			PUINT_8 pucUdp = &pucEthBody[20];
-			PUINT_8 pucBootp = &pucUdp[8];
-			UINT_8 ucUdpDstPort;
-			UINT_32 u4TransID;
+			PUINT_8 pucUdpPayload = &pucUdp[8];
+			UINT_16 u2UdpDstPort;
+			UINT_16 u2UdpSrcPort;
 
-			if (pucUdp[2] != 0x00)
+			u2UdpDstPort = (pucUdp[2] << 8) | pucUdp[3];
+			u2UdpSrcPort = (pucUdp[0] << 8) | pucUdp[1];
+			/* dhcp */
+			if ((u2UdpDstPort == UDP_PORT_DHCPS) || (u2UdpDstPort == UDP_PORT_DHCPC)) {
+				UINT_32 u4TransID = pucUdpPayload[4]<<24 | pucUdpPayload[5]<<16 |
+						pucUdpPayload[6]<<8  | pucUdpPayload[7];
+
+				switch (eventType) {
+				case EVENT_RX:
+					DBGLOG(RX, INFO, "<RX> DHCP: IPID 0x%02x, MsgType 0x%x, TransID 0x%08x\n",
+									u2IpId, pucUdpPayload[0], u4TransID);
+					break;
+				case EVENT_TX:
+					DBGLOG(TX, INFO, "<TX> DHCP: IPID 0x%02x, MsgType 0x%x, TransID 0x%08x\n",
+									u2IpId, pucUdpPayload[0], u4TransID);
+					prMsduInfo->fgNeedTxDoneStatus = TRUE;
+					prMsduInfo->fgIsBasicRate = TRUE;
+					break;
+				case EVENT_TX_DONE:
+					DBGLOG(TX, INFO,
+						"<TX status:%d> DHCP: IPID 0x%02x, MsgType 0x%x, TransID 0x%08x\n",
+							status, u2IpId, pucUdpPayload[0], u4TransID);
+					break;
+				}
+			} else if (u2UdpDstPort == UDP_PORT_DNS) { /* tx dns */
+				UINT_16 u2TransId = (pucUdpPayload[0] << 8) | pucUdpPayload[1];
+
+				if ((su2TxDoneCfg & (1 << CFG_DNS)) == 0)
+					break;
+				if (eventType == EVENT_TX) {
+					DBGLOG(TX, INFO, "<TX> DNS: IPID 0x%02x, TransID 0x%04x\n", u2IpId, u2TransId);
+					prMsduInfo->fgNeedTxDoneStatus = TRUE;
+				} else if (eventType == EVENT_TX_DONE)
+					DBGLOG(TX, INFO, "<TX status:%d> DNS: IPID 0x%02x, TransID 0x%04x\n",
+							status, u2IpId, u2TransId);
+			} else if (u2UdpSrcPort == UDP_PORT_DNS && eventType == EVENT_RX) { /* rx dns */
+				UINT_16 u2TransId = (pucUdpPayload[0] << 8) | pucUdpPayload[1];
+
+				if ((su2TxDoneCfg & (1 << CFG_DNS)) == 0)
+					break;
+				DBGLOG(RX, INFO, "<RX> DNS: IPID 0x%02x, TransID 0x%04x\n", u2IpId, u2TransId);
+			} else if ((su2TxDoneCfg & (1 << CFG_UDP)) != 0) {
+				switch (eventType) {
+				case EVENT_RX:
+					DBGLOG(RX, INFO, "<RX> UDP: IPID 0x%04x\n", u2IpId);
+					break;
+				case EVENT_TX:
+					DBGLOG(TX, INFO, "<TX> UDP: IPID 0x%04x\n", u2IpId);
+					prMsduInfo->fgNeedTxDoneStatus = TRUE;
+					break;
+				case EVENT_TX_DONE:
+					DBGLOG(TX, INFO, "<TX status:%d> UDP: IPID 0x%04x\n", status, u2IpId);
+					break;
+				}
+			}
+			break;
+		}
+		case IP_PRO_TCP:
+			if ((su2TxDoneCfg & (1 << CFG_TCP)) == 0)
 				break;
-			ucUdpDstPort = pucUdp[3];
-			if ((ucUdpDstPort != UDP_PORT_DHCPS) && (ucUdpDstPort != UDP_PORT_DHCPC))
-				break;
-			u4TransID = pucBootp[4]<<24  | pucBootp[5]<<16 | pucBootp[6]<<8  | pucBootp[7];
+
 			switch (eventType) {
 			case EVENT_RX:
-				DBGLOG(RX, INFO, "<RX> DHCP: IPID 0x%02x, MsgType 0x%x, TransID 0x%04x\n",
-								u2IpId, pucBootp[0], u4TransID);
+				DBGLOG(RX, INFO, "<RX> TCP: IPID 0x%04x\n", u2IpId);
 				break;
 			case EVENT_TX:
-				DBGLOG(RX, INFO, "<TX> DHCP: IPID 0x%02x, MsgType 0x%x, TransID 0x%04x\n",
-								u2IpId, pucBootp[0], u4TransID);
-				*needAck = TRUE;
+				DBGLOG(TX, INFO, "<TX> TCP: IPID 0x%04x\n", u2IpId);
+				prMsduInfo->fgNeedTxDoneStatus = TRUE;
 				break;
 			case EVENT_TX_DONE:
-				DBGLOG(RX, INFO, "<TX status:%d> DHCP: IPID 0x%02x, MsgType 0x%x, TransID 0x%04x\n",
-						status, u2IpId, pucBootp[0], u4TransID);
+				DBGLOG(TX, INFO, "<TX status:%d> TCP: IPID 0x%04x\n", status, u2IpId);
 				break;
 			}
 			break;
 		}
-		}
 		break;
 	}
+	case ETH_P_PRE_1X:
+		DBGLOG(RX, INFO, "pre-1x\n");
 	case ETH_P_1X:
 	{
 		PUINT_8 pucEapol = pucEthBody;
 		UINT_8 ucEapolType = pucEapol[1];
-
 		switch (ucEapolType) {
 		case 0: /* eap packet */
 			switch (eventType) {
@@ -1091,11 +1178,11 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 						pucEapol[4], pucEapol[5], pucEapol[7]);
 				break;
 			case EVENT_TX:
-				DBGLOG(RX, INFO, "<TX> EAP Packet: code %d, id %d, type %d\n",
+				DBGLOG(TX, INFO, "<TX> EAP Packet: code %d, id %d, type %d\n",
 						pucEapol[4], pucEapol[5], pucEapol[7]);
 				break;
 			case EVENT_TX_DONE:
-				DBGLOG(RX, INFO, "<TX status: %d> EAP Packet: code %d, id %d, type %d\n",
+				DBGLOG(TX, INFO, "<TX status: %d> EAP Packet: code %d, id %d, type %d\n",
 						status, pucEapol[4], pucEapol[5], pucEapol[7]);
 				break;
 			}
@@ -1106,30 +1193,40 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 				DBGLOG(RX, INFO, "<RX> EAPOL: start\n");
 				break;
 			case EVENT_TX:
-				DBGLOG(RX, INFO, "<RX> EAPOL: start\n");
+				DBGLOG(TX, INFO, "<RX> EAPOL: start\n");
 				break;
 			case EVENT_TX_DONE:
-				DBGLOG(RX, INFO, "<TX status: %d> EAPOL: start\n", status);
+				DBGLOG(TX, INFO, "<TX status: %d> EAPOL: start\n", status);
 				break;
 			}
 			break;
 		case 3: /* key */
+		{
+			UINT_16 u2KeyInfo = pucEapol[5]<<8 | pucEapol[6];
 			switch (eventType) {
 			case EVENT_RX:
-				DBGLOG(RX, INFO, "<RX> EAPOL: key, KeyInfo 0x%04x\n",
-						*((PUINT_16)(&pucEapol[5])));
+				DBGLOG(RX, INFO,
+					"<RX> EAPOL: key, KeyInfo 0x%04x, Nonce %02x%02x%02x%02x%02x%02x%02x%02x...\n",
+					u2KeyInfo, pucEapol[17], pucEapol[18], pucEapol[19], pucEapol[20],
+					pucEapol[21], pucEapol[22], pucEapol[23], pucEapol[24]);
 				break;
 			case EVENT_TX:
-				DBGLOG(RX, INFO, "<TX> EAPOL: key, KeyInfo 0x%04x\n",
-						*((PUINT_16)(&pucEapol[5])));
+				DBGLOG(TX, INFO,
+					"<TX> EAPOL: key, KeyInfo 0x%04x, Nonce %02x%02x%02x%02x%02x%02x%02x%02x...\n",
+					u2KeyInfo,
+					pucEapol[17], pucEapol[18], pucEapol[19], pucEapol[20],
+					pucEapol[21], pucEapol[22], pucEapol[23], pucEapol[24]);
 				break;
 			case EVENT_TX_DONE:
-				DBGLOG(RX, INFO, "<TX status: %d> EAPOL: key, KeyInfo 0x%04x\n",
-							status, *((PUINT_16)(&pucEapol[5])));
+				DBGLOG(TX, INFO,
+					"<TX status: %d> EAPOL: key, KeyInfo 0x%04x, Nonce %02x%02x%02x%02x%02x%02x%02x%02x...\n",
+					status, u2KeyInfo, pucEapol[17], pucEapol[18], pucEapol[19],
+					pucEapol[20], pucEapol[21], pucEapol[22], pucEapol[23], pucEapol[24]);
 				break;
 			}
 
 			break;
+		}
 		}
 		break;
 	}
@@ -1138,18 +1235,17 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 		UINT_8 ucSubType = pucEthBody[3]; /* sub type filed*/
 		UINT_16 u2Length = *(PUINT_16)&pucEthBody[6];
 		UINT_16 u2Seq = *(PUINT_16)&pucEthBody[8];
-
 		switch (eventType) {
 		case EVENT_RX:
 			DBGLOG(RX, INFO, "<RX> WAPI: subType %d, Len %d, Seq %d\n",
 					ucSubType, u2Length, u2Seq);
 			break;
 		case EVENT_TX:
-			DBGLOG(RX, INFO, "<TX> WAPI: subType %d, Len %d, Seq %d\n",
+			DBGLOG(TX, INFO, "<TX> WAPI: subType %d, Len %d, Seq %d\n",
 					ucSubType, u2Length, u2Seq);
 			break;
 		case EVENT_TX_DONE:
-			DBGLOG(RX, INFO, "<TX status: %d> WAPI: subType %d, Len %d, Seq %d\n",
+			DBGLOG(TX, INFO, "<TX status: %d> WAPI: subType %d, Len %d, Seq %d\n",
 					status, ucSubType, u2Length, u2Seq);
 			break;
 		}
@@ -1194,26 +1290,12 @@ VOID StatsRxPktInfoDisplay(UINT_8 *pPkt)
 * \retval None
 */
 /*----------------------------------------------------------------------------*/
-VOID StatsTxPktInfoDisplay(UINT_8 *pPkt, PBOOLEAN pfgIsNeedAck)
+VOID StatsTxPktCallBack(UINT_8 *pPkt, P_MSDU_INFO_T prMsduInfo)
 {
 	UINT_16 u2EtherTypeLen;
 
-	*pfgIsNeedAck = FALSE;
 	u2EtherTypeLen = (pPkt[ETH_TYPE_LEN_OFFSET] << 8) | (pPkt[ETH_TYPE_LEN_OFFSET + 1]);
-	statsParsePktInfo(pPkt, 0, EVENT_TX, pfgIsNeedAck);
-#if 0
-	if (u2EtherTypeLen == ETH_P_ARP) {
-		UINT_8 *pucDstIp = &aucLookAheadBuf[ETH_HLEN];
-
-		if (pucDstIp[7] == ARP_PRO_REQ) {
-			DBGLOG(RX, TRACE, "<tx> OS tx a arp req to %d.%d.%d.%d\n",
-					     pucDstIp[24], pucDstIp[25], pucDstIp[26], pucDstIp[27]);
-		} else if (pucDstIp[7] == ARP_PRO_RSP) {
-			DBGLOG(RX, TRACE, "<tx> OS tx a arp rsp to %d.%d.%d.%d\n",
-					     pucDstIp[14], pucDstIp[15], pucDstIp[16], pucDstIp[17]);
-		}
-	}
-#endif
+	statsParsePktInfo(pPkt, 0, EVENT_TX, prMsduInfo);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1230,9 +1312,25 @@ VOID StatsTxPktDoneInfoDisplay(ADAPTER_T *prAdapter, UINT_8 *pucEvtBuf)
 	EVENT_TX_DONE_STATUS_T *prTxDone;
 
 	prTxDone = (EVENT_TX_DONE_STATUS_T *) pucEvtBuf;
-	statsParsePktInfo(prTxDone->aucPktBuf, prTxDone->ucStatus, EVENT_TX_DONE, NULL);
+	/*
+	 * Why 65 Bytes:
+	 * 8B + wlanheader(40B) + hif_tx_header(16B) + 6B + 6B(LLC) - 12B
+	 */
+	statsParsePktInfo(&prTxDone->aucPktBuf[64], prTxDone->ucStatus, EVENT_TX_DONE, NULL);
 }
 
+VOID StatsSetCfgTxDone(UINT_16 u2Cfg, BOOLEAN fgSet)
+{
+	if (fgSet)
+		su2TxDoneCfg |= u2Cfg;
+	else
+		su2TxDoneCfg &= ~u2Cfg;
+}
+
+UINT_16 StatsGetCfgTxDone(VOID)
+{
+	return su2TxDoneCfg;
+}
 #endif /* CFG_SUPPORT_STATISTICS */
 
 /* End of stats.c */

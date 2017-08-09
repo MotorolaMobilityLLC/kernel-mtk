@@ -2128,7 +2128,7 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 				   OUT PUINT_32 pu4PacketLen,
 				   OUT PUINT_8 pucEthDestAddr,
 				   OUT PBOOLEAN pfgIs1X,
-				   OUT PBOOLEAN pfgIsPAL, OUT PBOOLEAN pfgIsNeedAck, OUT PUINT_8 pucNetworkType)
+				   OUT PBOOLEAN pfgIsPAL, OUT PUINT_8 pucNetworkType)
 {
 
 	UINT_32 u4PacketLen;
@@ -2155,28 +2155,11 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 	/* 4 <3> Obtain the User Priority for WMM */
 	u2EtherTypeLen = (aucLookAheadBuf[ETH_TYPE_LEN_OFFSET] << 8) | (aucLookAheadBuf[ETH_TYPE_LEN_OFFSET + 1]);
 
-	STATS_TX_PKT_INFO_DISPLAY(aucLookAheadBuf, pfgIsNeedAck);
-
-#if 0
-	if (u2EtherTypeLen == ETH_P_ARP) {
-		UINT_8 *pucDstIp = &aucLookAheadBuf[ETH_HLEN];
-
-		if (pucDstIp[7] == ARP_PRO_REQ) {
-			DBGLOG(INIT, TRACE, "<tx> OS tx a arp req to %d.%d.%d.%d\n",
-					     pucDstIp[24], pucDstIp[25], pucDstIp[26], pucDstIp[27]);
-		} else if (pucDstIp[7] == ARP_PRO_RSP) {
-			DBGLOG(INIT, TRACE, "<tx> OS tx a arp rsp to %d.%d.%d.%d\n",
-					     pucDstIp[14], pucDstIp[15], pucDstIp[16], pucDstIp[17]);
-		}
-	}
-#endif
-
 	if ((u2EtherTypeLen == ETH_P_IP) && (u4PacketLen >= LOOK_AHEAD_LEN)) {
 		PUINT_8 pucIpHdr = &aucLookAheadBuf[ETH_HLEN];
 		UINT_8 ucIpVersion;
 
 		ucIpVersion = (pucIpHdr[0] & IPVH_VERSION_MASK) >> IPVH_VERSION_OFFSET;
-		/* printk ("ip version %x\n", ucIpVersion); */
 		if (ucIpVersion == IPVERSION) {
 			UINT_8 ucIpTos;
 			/* Get the DSCP value from the header of IP packet. */
@@ -2185,22 +2168,42 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 		}
 
 		/* TODO(Kevin): Add TSPEC classifier here */
-	} else if (u2EtherTypeLen == ETH_P_1X) {	/* For Port Control */
-		/* DBGLOG(REQ, TRACE, ("Tx 1x\n")); */
-		*pfgIs1X = TRUE;
-	} else if (u2EtherTypeLen == ETH_P_PRE_1X) {	/* For Pre 1x pkt */
-		/* DBGLOG(REQ, TRACE, ("Tx Pre-1x\n")); */
+	}  else if (u2EtherTypeLen == ETH_P_1X || u2EtherTypeLen == ETH_P_PRE_1X) {	/* For Port Control */
+		PUINT_8 pucEapol = &aucLookAheadBuf[ETH_HLEN];
+		UINT_8 ucEapolType = pucEapol[1];
+		UINT_16 u2KeyInfo = pucEapol[5]<<8 | pucEapol[6];
+
+		switch (ucEapolType) {
+		case 0: /* eap packet */
+			DBGLOG(TX, INFO, "<TX> EAP Packet: code %d, id %d, type %d\n",
+					pucEapol[4], pucEapol[5], pucEapol[7]);
+			break;
+		case 1: /* eapol start */
+			DBGLOG(TX, INFO, "<TX> EAPOL: start\n");
+			break;
+		case 3: /* key */
+			DBGLOG(TX, INFO,
+				"<TX> EAPOL: key, KeyInfo 0x%04x, Nonce %02x%02x%02x%02x%02x%02x%02x%02x...\n",
+				u2KeyInfo, pucEapol[17], pucEapol[18], pucEapol[19], pucEapol[20],
+				pucEapol[21], pucEapol[22], pucEapol[23], pucEapol[24]);
+			break;
+		}
 		*pfgIs1X = TRUE;
 	}
 #if CFG_SUPPORT_WAPI
 	else if (u2EtherTypeLen == ETH_WPI_1X) {
-		/* DBGLOG(REQ, TRACE, ("Tx WPI-1x\n")); */
+		PUINT_8 pucEthBody = &aucLookAheadBuf[ETH_HLEN];
+		UINT_8 ucSubType = pucEthBody[3]; /* sub type filed*/
+		UINT_16 u2Length = *(PUINT_16)&pucEthBody[6];
+		UINT_16 u2Seq = *(PUINT_16)&pucEthBody[8];
+
+		DBGLOG(TX, INFO, "<TX> WAPI: subType %d, Len %d, Seq %d\n",
+				ucSubType, u2Length, u2Seq);
 		*pfgIs1X = TRUE;
 	}
 #endif
 #if (CFG_SUPPORT_TDLS == 1)
 	else if (u2EtherTypeLen == TDLS_FRM_PROT_TYPE) {
-		/* DBGLOG(REQ, TRACE, ("Tx PROT-TYPE\n")); */
 		TDLSEX_UP_ASSIGN(ucUserPriority);
 	}
 #endif /* CFG_SUPPORT_TDLS */
@@ -2228,8 +2231,28 @@ kalQoSFrameClassifierAndPacketInfo(IN P_GLUE_INFO_T prGlueInfo,
 			*pfgIsPAL = TRUE;
 			ucUserPriority = (UINT_8) prSkb->priority;
 
-			if (tmp == BOW_PROTOCOL_ID_SECURITY_FRAME)
+			if (tmp == BOW_PROTOCOL_ID_SECURITY_FRAME) {
+				PUINT_8 pucEapol = &aucLookAheadBuf[ETH_SNAP_OFFSET + 5];
+				UINT_8 ucEapolType = pucEapol[1];
+				UINT_16 u2KeyInfo = pucEapol[5]<<8 | pucEapol[6];
+
+				switch (ucEapolType) {
+				case 0: /* eap packet */
+					DBGLOG(TX, INFO, "<TX> EAP Packet: code %d, id %d, type %d\n",
+							pucEapol[4], pucEapol[5], pucEapol[7]);
+					break;
+				case 1: /* eapol start */
+					DBGLOG(TX, INFO, "<TX> EAPOL: start\n");
+					break;
+				case 3: /* key */
+					DBGLOG(TX, INFO,
+						"<TX> EAPOL: key, KeyInfo 0x%04x, Nonce %02x%02x%02x%02x%02x%02x%02x%02x...\n",
+						u2KeyInfo, pucEapol[17], pucEapol[18], pucEapol[19], pucEapol[20],
+						pucEapol[21], pucEapol[22], pucEapol[23], pucEapol[24]);
+					break;
+				}
 				*pfgIs1X = TRUE;
+			}
 		}
 	}
 	/* 4 <4> Return the value of Priority Parameter. */
@@ -3857,10 +3880,12 @@ kalIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 
 		if (!bss) {
 			ScanDoneFailCnt++;
-			DBGLOG(SCN, TRACE, "cfg80211_inform_bss_frame() returned with NULL\n");
+			DBGLOG(SCN, WARN, "inform bss to cfg80211 failed, bss channel %d, rcpi %d\n",
+					ucChannelNum, i4SignalStrength);
 		} else {
 			cfg80211_put_bss(wiphy, bss);
-			DBGLOG(SCN, TRACE, "iok\n");
+			DBGLOG(SCN, TRACE, "inform bss to cfg80211, bss channel %d, rcpi %d\n",
+					ucChannelNum, i4SignalStrength);
 		}
 	}
 

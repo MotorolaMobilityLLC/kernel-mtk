@@ -242,6 +242,8 @@ VOID bssUpdateDTIMCount(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T e
 
 VOID bssSetTIMBitmap(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN UINT_16 u2AssocId);
 
+P_STA_RECORD_T bssGetClientByAddress(IN P_BSS_INFO_T prBssInfo, PUINT_8 pucMacAddr);
+
 /*link function to p2p module for txBcnIETable*/
 
 /* WMM-2.2.2 WMM ACI to AC coding */

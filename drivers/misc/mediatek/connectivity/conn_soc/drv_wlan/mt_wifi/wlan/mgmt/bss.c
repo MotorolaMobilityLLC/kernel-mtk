@@ -1902,6 +1902,36 @@ VOID bssRemoveStaRecFromClientList(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prB
 }				/* end of bssRemoveStaRecFromClientList() */
 #endif /* CFG_SUPPORT_ADHOC || CFG_SUPPORT_AAA */
 
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief Get station record by Address for AP mode
+*
+* @param[in] prBssInfo              Pointer to BSS_INFO_T.
+* @param[in] pucMacAddr               Pointer to target mac address
+*
+* @return pointer of STA_RECORD_T if found, otherwise, return NULL
+*/
+/*----------------------------------------------------------------------------*/
+
+P_STA_RECORD_T bssGetClientByAddress(IN P_BSS_INFO_T prBssInfo, PUINT_8 pucMacAddr)
+{
+	P_LINK_T prStaRecOfClientList;
+
+	ASSERT(prBssInfo);
+	ASSERT(pucMacAddr);
+
+	prStaRecOfClientList = &prBssInfo->rStaRecOfClientList;
+	if (!LINK_IS_EMPTY(prStaRecOfClientList)) {
+		P_STA_RECORD_T prCurrStaRec;
+
+		LINK_FOR_EACH_ENTRY(prCurrStaRec, prStaRecOfClientList, rLinkEntry, STA_RECORD_T) {
+			if (EQUAL_MAC_ADDR(prCurrStaRec->aucMacAddr, pucMacAddr))
+				return prCurrStaRec;
+		}
+	}
+	return NULL;
+}
+
 #if CFG_SUPPORT_ADHOC
 /*----------------------------------------------------------------------------*/
 /* Routines for IBSS(AdHoc) only                                              */
