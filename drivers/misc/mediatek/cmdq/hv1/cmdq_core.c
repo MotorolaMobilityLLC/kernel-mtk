@@ -2227,7 +2227,7 @@ static void cmdq_core_enable_common_clock_locked(const bool enable, const uint64
 		}
 		atomic_inc(&gCmdqThreadUsage);
 		/* SMI related threads common clock enable, excluding display scenario on his own */
-		if (!cmdq_core_is_disp_scenario(scenario)) {
+		if (!cmdq_core_is_disp_scenario(scenario) && (scenario != CMDQ_SCENARIO_TRIGGER_LOOP)) {
 			if (0 == atomic_read(&gSMIThreadUsage)) {
 				CMDQ_VERBOSE("[CLOCK] SMI clock enable %d\n", scenario);
 				cmdq_core_enable_common_clock_locked_impl(enable);
@@ -2244,7 +2244,7 @@ static void cmdq_core_enable_common_clock_locked(const bool enable, const uint64
 
 
 		/* SMI related threads common clock enable, excluding display scenario on his own */
-		if (!cmdq_core_is_disp_scenario(scenario)) {
+		if (!cmdq_core_is_disp_scenario(scenario) && (scenario != CMDQ_SCENARIO_TRIGGER_LOOP)) {
 			atomic_dec(&gSMIThreadUsage);
 
 			if (0 >= atomic_read(&gSMIThreadUsage)) {
