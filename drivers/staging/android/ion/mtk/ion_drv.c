@@ -467,7 +467,7 @@ static long ion_sys_ioctl(struct ion_client *client, unsigned int cmd,
 		struct ion_handle *kernel_handle;
 
 		kernel_handle = ion_drv_get_handle(client,
-				NULL, Param.record_param.handle, from_kernel);
+				-1, Param.record_param.handle, from_kernel);
 		if (IS_ERR(kernel_handle)) {
 			IONMSG("ion_set_handle_bt fail!\n");
 			ret = -EINVAL;

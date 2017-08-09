@@ -428,7 +428,7 @@ static int compat_get_ion_sys_cache_sync_param(
 	err = get_user(handle, &data32->handle);
 	err |= put_user(handle, &data->handle);
 	err |= get_user(va, &data32->va);
-	err |= put_user(va, &data->va);
+	err |= put_user(compat_ptr(va), &data->va);
 	err |= get_user(size, &data32->size);
 	err |= put_user(size, &data->size);
 	err |= get_user(sync_type, &data32->sync_type);
@@ -452,7 +452,7 @@ static int compat_get_ion_sys_dma_op_param(
 	err = get_user(handle, &data32->handle);
 	err |= put_user(handle, &data->handle);
 	err |= get_user(va, &data32->va);
-	err |= put_user(va, &data->va);
+	err |= put_user(compat_ptr(va), &data->va);
 	err |= get_user(size, &data32->size);
 	err |= put_user(size, &data->size);
 	err |= get_user(dma_type, &data32->dma_type);
