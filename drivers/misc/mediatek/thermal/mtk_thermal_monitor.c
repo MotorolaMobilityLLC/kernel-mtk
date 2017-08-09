@@ -823,7 +823,6 @@ static int mtk_sysinfo_get_info(unsigned int mask)
 	int i;
 	int nocpucores = 0, *cpufreqs, *cpuloadings;
 	int nogpucores = 0, *gpufreqs, *gpuloadings;
-	int noextraattr = 0;
 
 	if (mask == 0x0)
 		return 0;
@@ -863,12 +862,6 @@ static int mtk_sysinfo_get_info(unsigned int mask)
 		}
 	}
 	mutex_unlock(&MTM_SYSINFO_LOCK);
-
-	/* print extra info */
-	for (i = 0; i < noextraattr; i++) {
-		THRML_STORAGE_LOG(THRML_LOGGER_MSG_MISC_EX_INFO, get_misc_ex_info, attrnames[i],
-				  attrvalues[i], attrunits[i]);
-	}
 
 	/* print batt info */
 	if (mask & THERMAL_SYS_INFO_BATT) {

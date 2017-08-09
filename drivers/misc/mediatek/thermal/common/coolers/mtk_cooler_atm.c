@@ -1638,7 +1638,7 @@ static void phpb_params_init(void)
 	phpb_params[PHPB_PARAM_CPU].tt = 20;
 	phpb_params[PHPB_PARAM_CPU].tp = 20;
 #endif
-	strncpy(phpb_params[PHPB_PARAM_CPU].type, "cpu", strlen("cpu"));
+	strcpy(phpb_params[PHPB_PARAM_CPU].type, "cpu");
 
 #if defined(CLATM_SET_INIT_CFG)
 	phpb_params[PHPB_PARAM_GPU].tt = CLATM_INIT_CFG_PHPB_GPU_TT;
@@ -1647,7 +1647,7 @@ static void phpb_params_init(void)
 	phpb_params[PHPB_PARAM_GPU].tt = 80;
 	phpb_params[PHPB_PARAM_GPU].tp = 80;
 #endif
-	strncpy(phpb_params[PHPB_PARAM_GPU].type, "gpu", strlen("gpu"));
+	strcpy(phpb_params[PHPB_PARAM_GPU].type, "gpu");
 }
 #endif	/* PRECISE_HYBRID_POWER_BUDGET */
 
