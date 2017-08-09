@@ -521,6 +521,36 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	return wr;
 }
 
+void rekick_dpidle_common_scenario(struct pcm_desc *pcmdesc, struct pwr_ctrl *pwrctrl)
+{
+#if defined(CONFIG_ARCH_MT6797)
+	if (is_vcorefs_feature_enable()) {
+		__spm_backup_vcore_dvfs_dram_shuffle();
+		__spm_kick_im_to_fetch(pcmdesc);
+		__spm_init_pcm_register();
+		__spm_init_event_vector(pcmdesc);
+		__spm_check_md_pdn_power_control(pwrctrl);
+		__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
+
+		pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
+		pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
+		pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
+
+		__spm_set_power_control(pwrctrl);
+		__spm_set_wakeup_event(pwrctrl);
+		__spm_set_vcorefs_wakeup_event(__spm_vcore_dvfs.pwrctrl);
+
+		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
+
+		__spm_kick_pcm_to_run(pwrctrl);
+
+#if SPM_AEE_RR_REC
+		aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_DEEPIDLE);
+#endif
+	}
+#endif
+}
+
 wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 {
 	struct wake_status wakesta;
@@ -640,32 +670,7 @@ RESTORE_IRQ:
 	aee_rr_rec_deepidle_val(0);
 #endif
 
-#if defined(CONFIG_ARCH_MT6797)
-	/* Re-kick VCORE DVFS */
-	if (is_vcorefs_feature_enable()) {
-		__spm_backup_vcore_dvfs_dram_shuffle();
-		__spm_kick_im_to_fetch(pcmdesc);
-		__spm_init_pcm_register();
-		__spm_init_event_vector(pcmdesc);
-		__spm_check_md_pdn_power_control(pwrctrl);
-		__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
-		pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
-		pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
-		pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
-
-		__spm_set_power_control(pwrctrl);
-		__spm_set_wakeup_event(pwrctrl);
-		__spm_set_vcorefs_wakeup_event(__spm_vcore_dvfs.pwrctrl);
-
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-
-		__spm_kick_pcm_to_run(pwrctrl);
-
-#if SPM_AEE_RR_REC
-		aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_DEEPIDLE);
-#endif
-	}
-#endif
+	rekick_dpidle_common_scenario(pcmdesc, pwrctrl);
 
 	return wr;
 }
@@ -798,30 +803,8 @@ RESTORE_IRQ:
 	pwrctrl->timer_val = dpidle_timer_val;
 	pwrctrl->wake_src = dpidle_wake_src;
 
-#if defined(CONFIG_ARCH_MT6797)
-	/* Re-kick VCORE DVFS */
-	if (is_vcorefs_feature_enable()) {
-		__spm_backup_vcore_dvfs_dram_shuffle();
-		__spm_kick_im_to_fetch(pcmdesc);
-		__spm_init_pcm_register();
-		__spm_init_event_vector(pcmdesc);
-		__spm_check_md_pdn_power_control(pwrctrl);
-		__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
-		pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
-		pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
-		pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
+	rekick_dpidle_common_scenario(pcmdesc, pwrctrl);
 
-		__spm_set_power_control(pwrctrl);
-		__spm_set_wakeup_event(pwrctrl);
-		__spm_set_vcorefs_wakeup_event(__spm_vcore_dvfs.pwrctrl);
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-		__spm_kick_pcm_to_run(pwrctrl);
-
-#if SPM_AEE_RR_REC
-		aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_DEEPIDLE);
-#endif
-	}
-#endif
 	return last_wr;
 }
 
