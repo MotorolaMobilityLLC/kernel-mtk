@@ -32,7 +32,6 @@
 #include <asm/io.h>
 #include <asm/irq.h>
 
-/* #include <mach/mt_sleep.h> */
 #include <mt-plat/mt_boot.h>
 
 #include <mt_charging.h>
@@ -40,7 +39,6 @@
 #include <mt_battery_common.h>
 #include <mt_battery_meter.h>
 #include <linux/irq.h>
-/* #include <mach/mt_pmic_irq.h> */
 #include <linux/reboot.h>
 
 struct battery_common_data g_bat;
@@ -2620,13 +2618,12 @@ static int bat_setup_charger_locked(void)
 		BAT_thread();
 		g_bat.init_done = true;
 
-/* TODO: wait pmic irq
 		ret = irq_set_irq_wake(g_bat.irq, true);
 		if (ret)
 			pr_err("%s: irq_set_irq_wake err = %d\n", __func__, ret);
 
 		enable_irq(g_bat.irq);
-*/
+
 		pr_notice("%s: charger setup done\n", __func__);
 	}
 
@@ -2894,8 +2891,8 @@ static int battery_probe(struct platform_device *pdev)
 	 */
 	atomic_set(&bat_thread_wakeup, 0);
 
-	/* TODO: wait until pmic irq ready */
-	/* g_bat.irq = PMIC_IRQ(RG_INT_STATUS_CHRDET); */
+	/* TODO: hard-code chr_det irq temporarily. get from dts after pmic irq is ready */
+	g_bat.irq = 512 + 14;
 
 	p_bat_charging_data = (struct mt_battery_charging_custom_data *)dev_get_platdata(dev);
 	if (!p_bat_charging_data) {
@@ -2906,11 +2903,6 @@ static int battery_probe(struct platform_device *pdev)
 
 	}
 
-	/*as per MTK, we can't enable interrupt, before we call BAT_thread()
-	 * for the first time. */
-
-	/* TODO: wait pmic irq */
-	/*
 	irq_set_status_flags(g_bat.irq, IRQ_NOAUTOEN);
 	ret = request_threaded_irq(g_bat.irq, NULL,
 				   ops_chrdet_int_handler,
@@ -2919,12 +2911,6 @@ static int battery_probe(struct platform_device *pdev)
 		pr_err("%s: request_threaded_irq err = %d\n", __func__, ret);
 		return ret;
 	}
-	*/
-
-	/* AP:
-	 * Now, proceed with unmodified MTK code, which does not return errors,
-	 * when it fails.
-	 */
 
 	/* Integrate with NVRAM */
 	ret = alloc_chrdev_region(&adc_cali_devno, 0, 1, ADC_CALI_DEVNAME);
@@ -3070,9 +3056,8 @@ static void battery_shutdown(struct platform_device *pdev)
 #endif
 	pr_info("******** battery driver shutdown!! ********\n");
 
-/* TODO: wait pmic irq
 	disable_irq(g_bat.irq);
-*/
+
 	mutex_lock(&bat_mutex);
 	fg_battery_shutdown = true;
 	wake_up_bat_update_meter();
@@ -3090,18 +3075,16 @@ static void battery_shutdown(struct platform_device *pdev)
 #endif
 	/* turn down interrupt thread and wakeup ability */
 
-/* TODO: wait pmic irq
 	irq_set_irq_wake(g_bat.irq, false);
 	free_irq(g_bat.irq, pdev);
-*/
+
 	mutex_unlock(&bat_mutex);
 }
 
 static int battery_suspend(struct platform_device *dev, pm_message_t state)
 {
-/* TODO: wait pmic irq
 	disable_irq(g_bat.irq);
-*/
+
 	mutex_lock(&bat_mutex);
 	battery_suspended = true;
 	mutex_unlock(&bat_mutex);
@@ -3115,9 +3098,9 @@ static int battery_resume(struct platform_device *dev)
 	g_refresh_ui_soc = true;
 	if (bat_charger_is_pcm_timer_trigger())
 		wake_up_bat_update_meter();
-/* TODO: wait pmic irq
+
 	enable_irq(g_bat.irq);
-*/
+
 	return 0;
 }
 
