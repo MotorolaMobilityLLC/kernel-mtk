@@ -47,6 +47,13 @@
 #include <mach/upmu_hw.h>
 #endif
 
+#ifdef CONFIG_OF_RESERVED_MEM
+#define DRAM_R0_DUMMY_READ_RESERVED_KEY "reserve-memory-dram_r0_dummy_read"
+#define DRAM_R1_DUMMY_READ_RESERVED_KEY "reserve-memory-dram_r1_dummy_read"
+#include <linux/of_reserved_mem.h>
+#include <mt-plat/mtk_memcfg.h>
+#endif
+
 static void __iomem *CQDMA_BASE_ADDR;
 static void __iomem *DRAMCAO_BASE_ADDR;
 static void __iomem *DDRPHY_BASE_ADDR;
@@ -60,7 +67,11 @@ static char dfs_dummy_buffer[BUFF_LEN] __aligned(PAGE_SIZE);
 int init_done = 0;
 static DEFINE_MUTEX(dram_dfs_mutex);
 int org_dram_data_rate = 0;
-static unsigned int dram_base, dram_add_rank0_base, dram_rank_num;
+static unsigned int dram_rank_num;
+phys_addr_t dram_base, dram_add_rank0_base;
+#ifndef CONFIG_OF_RESERVED_MEM
+dram_info_t *dram_info = NULL;
+#endif
 
 /* #include <mach/emi_bwl.h> */
 #define DRAMC_LPDDR2    (0x1e0)
@@ -1163,6 +1174,7 @@ static ssize_t freq_hopping_test_store(struct device_driver *driver,
 }
 #endif
 
+#ifndef CONFIG_OF_RESERVED_MEM
 static int __init dt_scan_dram_info(unsigned long node, const char *uname, int depth, void *data)
 {
 	char *type = (char *)of_get_flat_dt_prop(node, "device_type", NULL);
@@ -1193,10 +1205,11 @@ static int __init dt_scan_dram_info(unsigned long node, const char *uname, int d
 	dram_rank_num = dram_info->rank_num;
 	dram_base = dram_info->rank_info[0].start;
 	dram_add_rank0_base = (dram_info->rank_info[0].start) + (dram_info->rank_info[0].size);
-	pr_warn("[DFS]  enable (dram base, dram rank1 base): (%x,%x)\n", dram_base, dram_add_rank0_base);
+	pr_warn("[DFS]  enable (dram base, dram rank1 base): (%pa,%pa)\n", &dram_base, &dram_add_rank0_base);
 
 	return node;
 }
+#endif
 
 int DFS_APDMA_early_init(void)
 {
@@ -1356,6 +1369,37 @@ void dma_dummy_read_for_vcorefs(int loops)
 #endif /* #ifdef CONFIG_MTK_CLKMGR */
 }
 
+#ifdef CONFIG_OF_RESERVED_MEM
+int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
+{
+	phys_addr_t rptr = 0;
+	unsigned int rsize = 0;
+
+	rptr = rmem->base;
+	rsize = (unsigned int)rmem->size;
+
+	if (strstr(DRAM_R0_DUMMY_READ_RESERVED_KEY, rmem->name) == 0) {
+		dram_base = rptr;
+		dram_rank_num++;
+		pr_debug("[dram_dummy_read_reserve_mem_of_init] dram_base = %pa, size = 0x%x\n",
+				&dram_base, rsize);
+	}
+
+	if (strstr(DRAM_R1_DUMMY_READ_RESERVED_KEY, rmem->name) == 0) {
+		dram_add_rank0_base = rptr;
+		dram_rank_num++;
+		pr_debug("[dram_dummy_read_reserve_mem_of_init] dram_add_rank0_base = %pa, size = 0x%x\n",
+				&dram_add_rank0_base, rsize);
+	}
+
+	return 0;
+}
+RESERVEDMEM_OF_DECLARE(dram_reserve_r0_dummy_read_init, DRAM_R0_DUMMY_READ_RESERVED_KEY,
+			dram_dummy_read_reserve_mem_of_init);
+RESERVEDMEM_OF_DECLARE(dram_reserve_r1_dummy_read_init, DRAM_R1_DUMMY_READ_RESERVED_KEY,
+			dram_dummy_read_reserve_mem_of_init);
+#endif
+
 unsigned int is_one_pll_mode(void)
 {
 	int data;
@@ -1395,10 +1439,10 @@ static ssize_t DFS_APDMA_TEST_show(struct device_driver *driver, char *buf)
 	dma_dummy_read_for_vcorefs(7);
 
 	if (dram_rank_num == DULE_RANK)
-		return snprintf(buf, PAGE_SIZE, "DFS APDMA Dummy Read Address src1:0x%x src2:0x%x\n",
-				dram_base, dram_add_rank0_base);
+		return snprintf(buf, PAGE_SIZE, "DFS APDMA Dummy Read Address src1:%pa src2:%pa\n",
+				&dram_base, &dram_add_rank0_base);
 	else
-		return snprintf(buf, PAGE_SIZE, "DFS APDMA Dummy Read Address src1:0x%x\n", dram_base);
+		return snprintf(buf, PAGE_SIZE, "DFS APDMA Dummy Read Address src1:%pa\n", &dram_base);
 }
 
 static ssize_t DFS_APDMA_TEST_store(struct device_driver *driver,
@@ -1540,12 +1584,14 @@ static int dram_dt_init(void)
 		return -1;
 	}
 
+#ifndef CONFIG_OF_RESERVED_MEM
 	if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
 		pr_warn("[DRAMC]find dt_scan_dram_info\n");
 	} else {
 		pr_warn("[DRAMC]can't find dt_scan_dram_info\n");
 		return -1;
 	}
+#endif
 
 	return ret;
 }
