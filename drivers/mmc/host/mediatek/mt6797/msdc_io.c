@@ -41,6 +41,17 @@ enum MSDC_LDO_POWER {
 	POWER_LDO_VMC,
 	POWER_LDO_VEMC,
 };
+
+void msdc_get_regulators(struct device *dev)
+{
+	if (reg_vemc == NULL)
+		reg_vemc = regulator_get(dev, "vemc");
+	if (reg_vmc == NULL)
+		reg_vmc = regulator_get(dev, "vmc");
+	if (reg_vmch == NULL)
+		reg_vmch = regulator_get(dev, "vmch");
+}
+
 bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 {
 	struct regulator *reg = NULL;
@@ -575,8 +586,8 @@ int msdc_of_parse(struct mmc_host *mmc)
 int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 		unsigned int *cd_irq)
 {
-	struct device temp_dev;
 	int i, ret;
+	struct device_node *msdc_backup_node;
 	static const char const *msdc_names[] = {"msdc0", "msdc1", "msdc2", "msdc3"};
 
 	for (i = 0; i < HOST_MAX_NUM; i++) {
@@ -703,15 +714,14 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 		pr_debug("of_iomap for topckgen base @ 0x%p\n",
 			topckgen_reg_base);
 	}
+	/* backup original dev.of_node */
+	msdc_backup_node = pdev->dev.of_node;
 	/* get regulator supply node */
-	temp_dev.of_node = of_find_compatible_node(NULL, NULL,
+	pdev->dev.of_node = of_find_compatible_node(NULL, NULL,
 		"mediatek,mt_pmic_regulator_supply");
-	if (reg_vemc == NULL)
-		reg_vemc = regulator_get(&temp_dev, "vemc");
-	if (reg_vmc == NULL)
-		reg_vmc = regulator_get(&temp_dev, "vmc");
-	if (reg_vmch == NULL)
-		reg_vmch = regulator_get(&temp_dev, "vmch");
+	msdc_get_regulators(&(pdev->dev));
+	/* restore original dev.of_node */
+	pdev->dev.of_node = msdc_backup_node;
 
 #endif
 
