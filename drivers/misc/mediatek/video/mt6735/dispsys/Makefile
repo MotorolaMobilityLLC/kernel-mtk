@@ -6,7 +6,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/base/power/mt6735/ \
-             -I$(srctree)/drivers/misc/mediatek/lcm/inc
+             -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \
                     -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6735
@@ -44,7 +44,8 @@ endif
 ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 ccflags-y += \
-	 -I$(srctree)/../vendor/trustonic/platform/$(MTK_PLATFORM)/trustlets/tplay/Tltplay/public
+	 -I$(srctree)/../vendor/trustonic/platform/$(MTK_PLATFORM)/trustlets/tplay/Tltplay/public/ \
+	 -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/trustzone/tplay/Tltplay/public/
 
 include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
 endif

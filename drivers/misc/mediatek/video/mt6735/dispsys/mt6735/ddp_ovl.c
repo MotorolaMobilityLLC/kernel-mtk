@@ -519,9 +519,9 @@ static int ovl_layer_config(DISP_MODULE_ENUM module, unsigned int layer,
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	DDPMSG("ovl%d, layer=%d, source=%s, off(x=%d, y=%d), dst(%d, %d, %d, %d), pitch=%d, fmt=%s, addr=%lx,\n",
 	       idx, layer, (source == 0) ? "memory" : "dim", src_x, src_y, dst_x, dst_y,
-	       dst_w, dst_h, src_pitch, ovl_intput_format_name(fmt, input_swap));
+	       dst_w, dst_h, src_pitch, ovl_intput_format_name(fmt, input_swap), addr);
 	DDPMSG("keyEn=%d, key=%d, aen=%d, alpha=%d, sur_aen=%d,sur_alpha=0x%x, constant_color=0x%x, yuv_range=%d,\n",
-	       addr, key_en, key, aen, alpha, sur_aen, dst_alpha << 2 | src_alpha, constant_color, yuv_range);
+	       key_en, key, aen, alpha, sur_aen, dst_alpha << 2 | src_alpha, constant_color, yuv_range);
 	DDPMSG("sec=%d,ovlsec=%d\n", sec, is_engine_sec);
 #endif
 	if (source == OVL_LAYER_SOURCE_RESERVED) { /* ==1, means constant color */
