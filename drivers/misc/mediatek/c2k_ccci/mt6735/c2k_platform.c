@@ -135,15 +135,13 @@ int modem_sdio_reserve_mem_of_init(struct reserved_mem *rmem)
 
 	rptr = rmem->base;
 	rsize = (unsigned int)rmem->size;
-	MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
-				  "%s,uname:%s,base:0x%llx,size:0x%x\n",
+	MTK_MEMCFG_LOG_AND_PRINTK("%s,uname:%s,base:0x%llx,size:0x%x\n",
 				  __func__, rmem->name,
 				  (unsigned long long)rptr, rsize);
 
 	if (strstr(CCCI_MD3_MEM_RESERVED_KEY, rmem->name) == 0) {
 		if (rsize < MD3_MEM_RAM_ROM) {
-			MTK_MEMCFG_LOG_AND_PRINTK(KERN_ERR
-						  "%s: reserve size=0x%x != 0x%x\n",
+			MTK_MEMCFG_LOG_AND_PRINTK("%s: reserve size=0x%x != 0x%x\n",
 						  __func__, rsize,
 						  MD3_MEM_RESERVED_SIZE);
 			return 0;

@@ -414,7 +414,7 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 		if (size == 0)
 			continue;
 
-		MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
+		MTK_MEMCFG_LOG_AND_PRINTK(
 			"[debug]DRAM size (dt) :  0x%llx - 0x%llx  (0x%llx)\n",
 				(unsigned long long)base,
 				(unsigned long long)base +
@@ -428,7 +428,7 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 			"orig_dram_info", NULL);
 	if (dram_info) {
 		for (i = 0; i < dram_info->rank_num; i++) {
-			MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
+			MTK_MEMCFG_LOG_AND_PRINTK(
 				"[debug]orig_dram rank[%d]   :   0x%08llx - 0x%08llx (0x%llx)\n",
 				i,
 				dram_info->rank_info[i].start,
@@ -445,7 +445,7 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 			"mblock_info", NULL);
 	if (mblock_info) {
 		for (i = 0; i < mblock_info->mblock_num; i++) {
-			MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
+			MTK_MEMCFG_LOG_AND_PRINTK(
 				"[debug]mblock[%d][r%d]  :   0x%08llx - 0x%08llx (0x%llx)\n",
 				i,
 				mblock_info->mblock[i].rank,
@@ -462,7 +462,7 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 	mem_desc = (struct mem_desc *)of_get_flat_dt_prop(node,
 			"lca_reserved_mem", NULL);
 	if (mem_desc && mem_desc->size) {
-		MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
+		MTK_MEMCFG_LOG_AND_PRINTK(
 			"[PHY layout]lca_reserved_mem   :   0x%08llx - 0x%08llx (0x%llx)\n",
 			mem_desc->start,
 			mem_desc->start +
@@ -476,7 +476,7 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 	mem_desc = (struct mem_desc *)of_get_flat_dt_prop(node,
 			"tee_reserved_mem", NULL);
 	if (mem_desc && mem_desc->size) {
-		MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
+		MTK_MEMCFG_LOG_AND_PRINTK(
 			"[PHY layout]tee_reserved_mem   :   0x%08llx - 0x%08llx (0x%llx)\n",
 			mem_desc->start,
 			mem_desc->start +
@@ -495,7 +495,7 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 	/* verify memory size */
 #if 0
 	if (dram_sz != phone_dram_sz) {
-		MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
+		MTK_MEMCFG_LOG_AND_PRINTK(
 			"memory size not matched: dram_sz: 0x%llx, phone_dram_sz: 0x%llx\n",
 				(unsigned long long)dram_sz,
 				(unsigned long long)phone_dram_sz);
@@ -504,7 +504,7 @@ static int dt_scan_memory(unsigned long node, const char *uname,
 #endif
 
 	/* print memory information */
-	MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
+	MTK_MEMCFG_LOG_AND_PRINTK(
 		"[debug]available DRAM size = 0x%llx\n[PHY layout]FB (dt) :  0x%llx - 0x%llx  (0x%llx)\n",
 			(unsigned long long)kernel_mem_sz,
 			(unsigned long long)fb_base,

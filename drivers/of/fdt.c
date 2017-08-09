@@ -459,7 +459,7 @@ static int __init __reserved_mem_reserve_reg(unsigned long node,
 			pr_debug("Reserved memory: reserved region for node '%s': base %pa, size %ld MiB\n",
 				uname, &base, (unsigned long)size / SZ_1M);
 			if (nomap)
-				MTK_MEMCFG_LOG_AND_PRINTK(KERN_ALERT
+				MTK_MEMCFG_LOG_AND_PRINTK(
 					"[PHY layout]%s   :   0x%08llx - 0x%08llx (0x%llx)\n",
 					uname,
 					(unsigned long long)base,
