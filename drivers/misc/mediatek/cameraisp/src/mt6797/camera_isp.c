@@ -6252,20 +6252,22 @@ static int compat_get_isp_buf_ctrl_struct_data(
         compat_ISP_BUFFER_CTRL_STRUCT __user *data32,
         ISP_BUFFER_CTRL_STRUCT __user *data)
 {
-    compat_uint_t tmp;
-    compat_uptr_t uptr;
-    int err = 0;
+	compat_uint_t tmp;
+	compat_uptr_t uptr;
+	int err = 0;
 
-    err = get_user(tmp, &data32->ctrl);
-    err |= put_user(tmp, &data->ctrl);
-    err |= get_user(tmp, &data32->buf_id);
-    err |= put_user(tmp, &data->buf_id);
-    err |= get_user(uptr, &data32->data_ptr);
-    err |= put_user(compat_ptr(uptr), &data->data_ptr);
-    err |= get_user(uptr, &data32->ex_data_ptr);
-    err |= put_user(compat_ptr(uptr), &data->ex_data_ptr);
-    err |= get_user(uptr, &data32->pExtend);
-    err |= put_user(compat_ptr(uptr), &data->pExtend);
+	err = get_user(tmp, &data32->ctrl);
+	err |= put_user(tmp, &data->ctrl);
+	err |= get_user(tmp, &data32->module);
+	err |= put_user(tmp, &data->module);
+	err |= get_user(tmp, &data32->buf_id);
+	err |= put_user(tmp, &data->buf_id);
+	err |= get_user(uptr, &data32->data_ptr);
+	err |= put_user(compat_ptr(uptr), &data->data_ptr);
+	err |= get_user(uptr, &data32->ex_data_ptr);
+	err |= put_user(compat_ptr(uptr), &data->ex_data_ptr);
+	err |= get_user(uptr, &data32->pExtend);
+	err |= put_user(compat_ptr(uptr), &data->pExtend);
 
     return err;
 }
@@ -6274,23 +6276,25 @@ static int compat_put_isp_buf_ctrl_struct_data(
         compat_ISP_BUFFER_CTRL_STRUCT __user *data32,
         ISP_BUFFER_CTRL_STRUCT __user *data)
 {
-    compat_uint_t tmp;
-/*	compat_uptr_t uptr;*/
-    int err = 0;
+	compat_uint_t tmp;
+	/*	compat_uptr_t uptr;*/
+	int err = 0;
 
-    err = get_user(tmp, &data->ctrl);
-    err |= put_user(tmp, &data32->ctrl);
-    err |= get_user(tmp, &data->buf_id);
-    err |= put_user(tmp, &data32->buf_id);
-    /* Assume data pointer is unchanged. */
-    /* err |= get_user(compat_ptr(uptr), &data->data_ptr); */
-    /* err |= put_user(uptr, &data32->data_ptr); */
-    /* err |= get_user(compat_ptr(uptr), &data->ex_data_ptr); */
-    /* err |= put_user(uptr, &data32->ex_data_ptr); */
-    /* err |= get_user(compat_ptr(uptr), &data->pExtend); */
-    /* err |= put_user(uptr, &data32->pExtend); */
+	err = get_user(tmp, &data->ctrl);
+	err |= put_user(tmp, &data32->ctrl);
+	err |= get_user(tmp, &data->module);
+	err |= put_user(tmp, &data32->module);
+	err |= get_user(tmp, &data->buf_id);
+	err |= put_user(tmp, &data32->buf_id);
+	/* Assume data pointer is unchanged. */
+	/* err |= get_user(compat_ptr(uptr), &data->data_ptr); */
+	/* err |= put_user(uptr, &data32->data_ptr); */
+	/* err |= get_user(compat_ptr(uptr), &data->ex_data_ptr); */
+	/* err |= put_user(uptr, &data32->ex_data_ptr); */
+	/* err |= get_user(compat_ptr(uptr), &data->pExtend); */
+	/* err |= put_user(uptr, &data32->pExtend); */
 
-    return err;
+	return err;
 }
 
 static int compat_get_isp_ref_cnt_ctrl_struct_data(
@@ -6331,6 +6335,7 @@ static int compat_put_isp_ref_cnt_ctrl_struct_data(
 }
 
 
+#if 0
 static int compat_get_isp_register_userkey_struct_data(
         compat_ISP_REGISTER_USERKEY_STRUCT __user *data32,
         ISP_REGISTER_USERKEY_STRUCT __user *data)
@@ -6363,179 +6368,230 @@ static int compat_put_isp_register_userkey_struct_data(
 
     return err;
 }
+#endif
 
 static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-    long ret = 0;
+	long ret = 0;
 
-    if (!filp->f_op || !filp->f_op->unlocked_ioctl)
-    return -ENOTTY;
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl)
+		return -ENOTTY;
 
-    switch (cmd) {
-    case COMPAT_ISP_READ_REGISTER:
-    {
-        compat_ISP_REG_IO_STRUCT __user *data32;
-        ISP_REG_IO_STRUCT __user *data;
-        int err = 0;
+	switch (cmd) {
+	case COMPAT_ISP_READ_REGISTER:
+	{
+		compat_ISP_REG_IO_STRUCT __user *data32;
+		ISP_REG_IO_STRUCT __user *data;
 
-        data32 = compat_ptr(arg);
-        data = compat_alloc_user_space(sizeof(*data));
-        if (data == NULL)
-            return -EFAULT;
+		int err = 0;
 
-        err = compat_get_isp_read_register_data(data32, data);
-        if (err){
-            LOG_INF("compat_get_isp_read_register_data error!!!\n");
-            return err;
-        }
-        ret = filp->f_op->unlocked_ioctl(filp, ISP_READ_REGISTER, (unsigned long)data);
-        err = compat_put_isp_read_register_data(data32, data);
-        if (err){
-            LOG_INF("compat_put_isp_read_register_data error!!!\n");
-            return err;
-        }
-        return ret;
-    }
-    case COMPAT_ISP_WRITE_REGISTER:
-    {
-        compat_ISP_REG_IO_STRUCT __user *data32;
-        ISP_REG_IO_STRUCT __user *data;
-        int err = 0;
+		data32 = compat_ptr(arg);
+		data = compat_alloc_user_space(sizeof(*data));
+		if (data == NULL)
+			return -EFAULT;
 
-        data32 = compat_ptr(arg);
-        data = compat_alloc_user_space(sizeof(*data));
-        if (data == NULL)
-            return -EFAULT;
+		err = compat_get_isp_read_register_data(data32, data);
+		if (err) {
+			LOG_INF("compat_get_isp_read_register_data error!!!\n");
+			return err;
+		}
+		ret = filp->f_op->unlocked_ioctl(filp, ISP_READ_REGISTER, (unsigned long)data);
+		err = compat_put_isp_read_register_data(data32, data);
+		if (err) {
+			LOG_INF("compat_put_isp_read_register_data error!!!\n");
+			return err;
+		}
+		return ret;
+	}
+	case COMPAT_ISP_WRITE_REGISTER:
+	{
+		compat_ISP_REG_IO_STRUCT __user *data32;
+		ISP_REG_IO_STRUCT __user *data;
 
-        err = compat_get_isp_read_register_data(data32, data);
-        if (err)
-        {
-            LOG_INF("COMPAT_ISP_WRITE_REGISTER error!!!\n");
-            return err;
-        }
-        ret = filp->f_op->unlocked_ioctl(filp, ISP_WRITE_REGISTER, (unsigned long)data);
-        return ret;
-    }
-    case COMPAT_ISP_BUFFER_CTRL:
-    {
-	    compat_ISP_BUFFER_CTRL_STRUCT __user *data32;
-	    ISP_BUFFER_CTRL_STRUCT __user *data;
-	    int err = 0;
+		int err = 0;
 
-	    data32 = compat_ptr(arg);
-	    data = compat_alloc_user_space(sizeof(*data));
-	    if (data == NULL)
-	        return -EFAULT;
+		data32 = compat_ptr(arg);
+		data = compat_alloc_user_space(sizeof(*data));
+		if (data == NULL)
+			return -EFAULT;
 
-	    err = compat_get_isp_buf_ctrl_struct_data(data32, data);
-	    if (err)
-	        return err;
-	    if (err)
-	    {
-	        LOG_INF("compat_get_isp_buf_ctrl_struct_data error!!!\n");
-	        return err;
-	    }
-	    ret = filp->f_op->unlocked_ioctl(filp, ISP_BUFFER_CTRL, (unsigned long)data);
-	    err = compat_put_isp_buf_ctrl_struct_data(data32, data);
+		err = compat_get_isp_read_register_data(data32, data);
+		if (err) {
+			LOG_INF("COMPAT_ISP_WRITE_REGISTER error!!!\n");
+			return err;
+		}
+		ret = filp->f_op->unlocked_ioctl(filp, ISP_WRITE_REGISTER, (unsigned long)data);
+		return ret;
+	}
+	case COMPAT_ISP_BUFFER_CTRL:
+	{
+		compat_ISP_BUFFER_CTRL_STRUCT __user *data32;
+		ISP_BUFFER_CTRL_STRUCT __user *data;
 
-	    if (err)
-	    {
-	        LOG_INF("compat_put_isp_buf_ctrl_struct_data error!!!\n");
-	        return err;
-	    }
-	    return ret;
+		int err = 0;
 
-    }
-    case COMPAT_ISP_REF_CNT_CTRL:
-    {
-	    compat_ISP_REF_CNT_CTRL_STRUCT __user *data32;
-	    ISP_REF_CNT_CTRL_STRUCT __user *data;
-	    int err = 0;
+		data32 = compat_ptr(arg);
+		data = compat_alloc_user_space(sizeof(*data));
+		if (data == NULL)
+			return -EFAULT;
 
-	    data32 = compat_ptr(arg);
-	    data = compat_alloc_user_space(sizeof(*data));
-	    if (data == NULL)
-	        return -EFAULT;
+		err = compat_get_isp_buf_ctrl_struct_data(data32, data);
+		if (err)
+			return err;
+		if (err) {
+			LOG_INF("compat_get_isp_buf_ctrl_struct_data error!!!\n");
+			return err;
+		}
+		ret = filp->f_op->unlocked_ioctl(filp, ISP_BUFFER_CTRL, (unsigned long)data);
+		err = compat_put_isp_buf_ctrl_struct_data(data32, data);
 
-	    err = compat_get_isp_ref_cnt_ctrl_struct_data(data32, data);
-	    if (err)
-	    {
-	        LOG_INF("compat_get_isp_ref_cnt_ctrl_struct_data error!!!\n");
-	        return err;
-	    }
-	    ret = filp->f_op->unlocked_ioctl(filp, ISP_REF_CNT_CTRL, (unsigned long)data);
-	    err = compat_put_isp_ref_cnt_ctrl_struct_data(data32, data);
-	    if (err)
-	    {
-	        LOG_INF("compat_put_isp_ref_cnt_ctrl_struct_data error!!!\n");
-	        return err;
-	    }
-	    return ret;
-    }
-    case COMPAT_ISP_REGISTER_IRQ_USER_KEY:
-    {
-	    compat_ISP_REGISTER_USERKEY_STRUCT __user *data32;
-	    ISP_REGISTER_USERKEY_STRUCT __user *data;
-	    int err = 0;
+		if (err) {
+			LOG_INF("compat_put_isp_buf_ctrl_struct_data error!!!\n");
+			return err;
+		}
+		return ret;
 
-	    data32 = compat_ptr(arg);
-	    data = compat_alloc_user_space(sizeof(*data));
-	    if (data == NULL)
-	        return -EFAULT;
+	}
+	case COMPAT_ISP_REF_CNT_CTRL:
+	{
+		compat_ISP_REF_CNT_CTRL_STRUCT __user *data32;
+		ISP_REF_CNT_CTRL_STRUCT __user *data;
 
-	    err = compat_get_isp_register_userkey_struct_data(data32, data);
-	    if (err)
-	    {
-	        LOG_INF("compat_get_isp_register_userkey_struct_data error!!!\n");
-	        return err;
-	    }
-	    ret = filp->f_op->unlocked_ioctl(filp, ISP_REGISTER_IRQ_USER_KEY, (unsigned long)data);
-	    err = compat_put_isp_register_userkey_struct_data(data32, data);
-	    if (err)
-	    {
-	        LOG_INF("compat_put_isp_register_userkey_struct_data error!!!\n");
-	        return err;
-	    }
-	    return ret;
-    }
-    case COMPAT_ISP_DEBUG_FLAG:
-    {
-	    /* compat_ptr(arg) will convert the arg */
-	    ret = filp->f_op->unlocked_ioctl(filp, ISP_DEBUG_FLAG, (unsigned long)compat_ptr(arg));
-	    return ret;
-    }
-    case COMPAT_ISP_GET_INT_ERR:
-    {
-	    /* compat_ptr(arg) will convert the arg */
-	    ret = filp->f_op->unlocked_ioctl(filp, ISP_GET_INT_ERR, (unsigned long)compat_ptr(arg));
-	    return ret;
-    }
-    case COMPAT_ISP_GET_DMA_ERR:
-    {
-	    /* compat_ptr(arg) will convert the arg */
-	    ret = filp->f_op->unlocked_ioctl(filp, ISP_GET_DMA_ERR, (unsigned long)compat_ptr(arg));
-	    return ret;
-    }
-    case ISP_GET_CUR_SOF:
-    case ISP_GET_DROP_FRAME:
-    case ISP_RESET_BY_HWMODULE:
-    case ISP_CLEAR_IRQ: /* structure (no pointer) */
-    case ISP_FLUSH_IRQ_REQUEST:
-    case ISP_P2_BUFQUE_CTRL:/* structure (no pointer) */
-    case ISP_UPDATE_REGSCEN:
-    case ISP_QUERY_REGSCEN:
-    case ISP_UPDATE_BURSTQNUM:
-    case ISP_QUERY_BURSTQNUM:
-    case ISP_DUMP_REG:
-    case ISP_DUMP_ISR_LOG:
-    case ISP_WAKELOCK_CTRL:
-    case ISP_VF_LOG:
-    case ISP_GET_START_TIME:
-    return filp->f_op->unlocked_ioctl(filp, cmd, arg);
-    default:
-    return -ENOIOCTLCMD;
-    /* return ISP_ioctl(filep, cmd, arg); */
-    }
+		int err = 0;
+
+		data32 = compat_ptr(arg);
+		data = compat_alloc_user_space(sizeof(*data));
+		if (data == NULL)
+			return -EFAULT;
+
+		err = compat_get_isp_ref_cnt_ctrl_struct_data(data32, data);
+		if (err) {
+			LOG_INF("compat_get_isp_ref_cnt_ctrl_struct_data error!!!\n");
+			return err;
+		}
+		ret = filp->f_op->unlocked_ioctl(filp, ISP_REF_CNT_CTRL, (unsigned long)data);
+		err = compat_put_isp_ref_cnt_ctrl_struct_data(data32, data);
+		if (err) {
+			LOG_INF("compat_put_isp_ref_cnt_ctrl_struct_data error!!!\n");
+			return err;
+		}
+		return ret;
+	}
+#if 0
+	case COMPAT_ISP_REGISTER_IRQ_USER_KEY:
+	{
+		compat_ISP_REGISTER_USERKEY_STRUCT __user *data32;
+		ISP_REGISTER_USERKEY_STRUCT __user *data;
+
+		int err = 0;
+
+		data32 = compat_ptr(arg);
+		data = compat_alloc_user_space(sizeof(*data));
+		if (data == NULL)
+			return -EFAULT;
+
+		err = compat_get_isp_register_userkey_struct_data(data32, data);
+		if (err) {
+			LOG_INF("compat_get_isp_register_userkey_struct_data error!!!\n");
+			return err;
+		}
+		ret = filp->f_op->unlocked_ioctl(filp, ISP_REGISTER_IRQ_USER_KEY, (unsigned long)data);
+		err = compat_put_isp_register_userkey_struct_data(data32, data);
+		if (err) {
+			LOG_INF("compat_put_isp_register_userkey_struct_data error!!!\n");
+			return err;
+		}
+		return ret;
+	}
+#endif
+	case COMPAT_ISP_DEBUG_FLAG:
+	{
+		/* compat_ptr(arg) will convert the arg */
+		ret = filp->f_op->unlocked_ioctl(filp, ISP_DEBUG_FLAG, (unsigned long)compat_ptr(arg));
+		return ret;
+	}
+	case COMPAT_ISP_GET_INT_ERR:
+	{
+		/* compat_ptr(arg) will convert the arg */
+		ret =
+		filp->f_op->unlocked_ioctl(filp, ISP_GET_INT_ERR,
+				(unsigned long)compat_ptr(arg));
+		return ret;
+	}
+	case COMPAT_ISP_GET_DMA_ERR:
+	{
+		/* compat_ptr(arg) will convert the arg */
+		ret =
+		filp->f_op->unlocked_ioctl(filp, ISP_GET_DMA_ERR,
+				(unsigned long)compat_ptr(arg));
+		return ret;
+	}
+	case COMPAT_ISP_WAKELOCK_CTRL:
+	{
+		ret =
+		filp->f_op->unlocked_ioctl(filp, ISP_WAKELOCK_CTRL,
+				(unsigned long)compat_ptr(arg));
+		return ret;
+	}
+	case COMPAT_ISP_GET_DROP_FRAME:
+	{
+		ret =
+		filp->f_op->unlocked_ioctl(filp, ISP_GET_DROP_FRAME,
+				(unsigned long)compat_ptr(arg));
+		return ret;
+	}
+	case COMPAT_ISP_GET_CUR_SOF:
+	{
+		ret =
+		filp->f_op->unlocked_ioctl(filp, ISP_GET_CUR_SOF,
+				(unsigned long)compat_ptr(arg));
+		return ret;
+	}
+	case COMPAT_ISP_RESET_BY_HWMODULE:
+	{
+		ret =
+		filp->f_op->unlocked_ioctl(filp, ISP_RESET_BY_HWMODULE,
+				(unsigned long)compat_ptr(arg));
+		return ret;
+	}
+	case COMPAT_ISP_DUMP_ISR_LOG:
+	{
+		ret =
+		filp->f_op->unlocked_ioctl(filp, ISP_DUMP_ISR_LOG,
+				(unsigned long)compat_ptr(arg));
+		return ret;
+	}
+	case COMPAT_ISP_VF_LOG:
+	{
+		ret =
+		filp->f_op->unlocked_ioctl(filp, ISP_VF_LOG,
+				(unsigned long)compat_ptr(arg));
+		return ret;
+	}
+	case COMPAT_ISP_GET_START_TIME:
+	{
+		ret =
+		filp->f_op->unlocked_ioctl(filp, ISP_GET_START_TIME,
+				(unsigned long)compat_ptr(arg));
+		return ret;
+	}
+	case ISP_WAIT_IRQ:
+	case ISP_CLEAR_IRQ: /* structure (no pointer) */
+	case ISP_REGISTER_IRQ_USER_KEY:
+	case ISP_MARK_IRQ_REQUEST:
+	case ISP_GET_MARK2QUERY_TIME:
+	case ISP_FLUSH_IRQ_REQUEST:
+	case ISP_P2_BUFQUE_CTRL:/* structure (no pointer) */
+	case ISP_UPDATE_REGSCEN:
+	case ISP_QUERY_REGSCEN:
+	case ISP_UPDATE_BURSTQNUM:
+	case ISP_QUERY_BURSTQNUM:
+	case ISP_DUMP_REG:
+	return filp->f_op->unlocked_ioctl(filp, cmd, arg);
+	default:
+	return -ENOIOCTLCMD;
+	/* return ISP_ioctl(filep, cmd, arg); */
+	}
 }
 
 #endif
