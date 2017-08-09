@@ -306,7 +306,7 @@ static void process_dbg_opt(const char *opt)
 		sprintf(buf, "corr_dbg_en = 0x%x\n", corr_dbg_en);
 #endif
 	} else if (0 == strncmp(opt, "aal_test:", 9)) {
-		/*aal_test(opt + 9, buf);*/
+		aal_test(opt + 9, buf);
 	} else if (0 == strncmp(opt, "pwm_test:", 9)) {
 		disp_pwm_test(opt + 9, buf);
 	} else if (0 == strncmp(opt, "dither_test:", 12)) {

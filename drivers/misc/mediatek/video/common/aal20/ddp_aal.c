@@ -494,14 +494,15 @@ static int aal_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, vo
 /*****************************************************************************
  * AAL Backup / Restore function
  *****************************************************************************/
-struct { /* structure for backup AAL register value */
+struct aal_backup { /* structure for backup AAL register value */
 	unsigned int DRE_MAPPING;
 	unsigned int DRE_FLT_FORCE[11];
 	unsigned int CABC_00;
 	unsigned int CABC_02;
 	unsigned int CABC_GAINLMT[11];
-} g_aal_backup;
-
+};
+struct aal_backup g_aal_backup;
+static int g_aal_io_mask;
 
 static void ddp_aal_backup(void)
 {
@@ -634,9 +635,15 @@ static int aal_ioctl(DISP_MODULE_ENUM module, void *handle,
 	return ret;
 }
 #endif
+
 static int aal_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
 	int ret = 0;
+
+	if (g_aal_io_mask != 0) {
+		AAL_DBG("aal_ioctl masked");
+		return ret;
+	}
 
 	switch (msg) {
 	case DISP_IOCTL_AAL_EVENTCTL:
@@ -779,6 +786,21 @@ static void aal_test_ink(const char *cmd)
 }
 
 
+static void aal_ut_cmd(const char *cmd)
+{
+	if (strncmp(cmd, "reset", 5) == 0) {
+		g_aal_initialed = 0;
+		memset(&g_aal_backup, 0, sizeof(struct aal_backup));
+		AAL_DBG("ut:reset");
+	} else if (strncmp(cmd, "ioctl_on", 8) == 0) {
+		g_aal_io_mask = 0;
+		AAL_DBG("ut:ioctl on");
+	} else if (strncmp(cmd, "ioctl_off", 9) == 0) {
+		g_aal_io_mask = 1;
+		AAL_DBG("ut:ioctl off");
+	}
+}
+
 void aal_test(const char *cmd, char *debug_output)
 {
 	debug_output[0] = '\0';
@@ -794,5 +816,7 @@ void aal_test(const char *cmd, char *debug_output)
 		int bypass = (cmd[7] == '1');
 
 		aal_bypass(DISP_MODULE_AAL, bypass);
+	} else if (strncmp(cmd, "ut:", 3) == 0) { /* debug command for UT */
+		aal_ut_cmd(cmd + 3);
 	}
 }
