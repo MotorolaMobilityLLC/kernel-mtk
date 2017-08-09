@@ -44,6 +44,7 @@
 #include <linux/debugfs.h>
 #include <linux/dcache.h>
 #include <asm/cacheflush.h>
+#include <asm/uaccess.h>
 #include <linux/dma-direction.h>
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
@@ -837,6 +838,78 @@ static const struct file_operations spm_debug_fops = {
 	.release = single_release,
 };
 
+#if defined(CONFIG_ARCH_MT6797)
+/* SPM/SCP debug bridge */
+#define NR_CMD_BUF		128
+static u32 check_scp_freq_req = 1;
+static char dbg_buf[4096] = { 0 };
+static char cmd_buf[512] = { 0 };
+
+u32 is_check_scp_freq_req(void)
+{
+	return check_scp_freq_req;
+}
+
+static int _spm_scp_debug_open(struct seq_file *s, void *data)
+{
+	return 0;
+}
+
+static int spm_scp_debug_open(struct inode *inode, struct file *filp)
+{
+	return single_open(filp, _spm_scp_debug_open, inode->i_private);
+}
+
+static ssize_t spm_scp_debug_read(struct file *filp,
+			       char __user *userbuf, size_t count, loff_t *f_pos)
+{
+	int len = 0;
+	char *p = dbg_buf;
+
+	p += sprintf(p, "********** SPM/SCP debug **********\n");
+	p += sprintf(p, "check_scp_freq_req = %u\n", check_scp_freq_req);
+
+	p += sprintf(p, "\n********** command help **********\n");
+	p += sprintf(p, "scp_debug help:               cat /sys/kernel/debug/spm/scp_debug\n");
+	p += sprintf(p, "Check SCP freq. req on/off:   echo check 1/0 > /sys/kernel/debug/spm/scp_debug\n");
+
+	len = p - dbg_buf;
+
+	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
+}
+
+static ssize_t spm_scp_debug_write(struct file *filp,
+				const char __user *userbuf, size_t count, loff_t *f_pos)
+{
+	char cmd[NR_CMD_BUF];
+	int param;
+
+	count = min(count, sizeof(cmd_buf) - 1);
+
+	if (copy_from_user(cmd_buf, userbuf, count))
+		return -EFAULT;
+
+	cmd_buf[count] = '\0';
+
+	if (sscanf(cmd_buf, "%127s %x", cmd, &param) == 2) {
+		if (!strcmp(cmd, "check"))
+			check_scp_freq_req = param;
+
+		return count;
+	}
+
+	return -EINVAL;
+}
+
+static const struct file_operations spm_scp_debug_fops = {
+	.open = spm_scp_debug_open,
+	.read = spm_scp_debug_read,
+	.write = spm_scp_debug_write,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+#endif
+
 static int SPM_detect_open(struct inode *inode, struct file *file)
 {
 	pr_debug("open major %d minor %d (pid %d)\n", imajor(inode), iminor(inode), current->pid);
@@ -961,6 +1034,9 @@ int spm_module_late_init(void)
 	}
 
 	spm_file = debugfs_create_file("firmware", S_IRUGO, spm_dir, NULL, &spm_debug_fops);
+#if defined(CONFIG_ARCH_MT6797)
+	debugfs_create_file("scp_debug", S_IRUGO, spm_dir, NULL, &spm_scp_debug_fops);
+#endif
 
 	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
 		dyna_load_pcm[i].ready = 0;

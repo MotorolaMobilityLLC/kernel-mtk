@@ -23,6 +23,10 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic_wrap/$(CONFIG_MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cameraisp/src/$(CONFIG_MTK_PLATFORM)/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/met/$(MTK_PLATFORM)/
 
+ifeq ($(CONFIG_ARCH_MT6797), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/$(CONFIG_MTK_PLATFORM)/
+endif
+
 #ifeq ($(CONFIG_ARCH_MT6735),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/

@@ -26,6 +26,16 @@
 #include "mt_spm_misc.h"
 #include <mt-plat/upmu_common.h>
 #include <camera_isp.h>
+#if defined(CONFIG_ARCH_MT6797)
+#include <scp_helper.h>
+#endif
+
+#if defined(CONFIG_ARCH_MT6797)
+int __attribute__((weak)) check_scp_resource(void)
+{
+	return 0;
+}
+#endif
 
 /**************************************
  * Config and Parameter
@@ -192,6 +202,13 @@ unsigned int spm_cpu_bitmask_all = MP0_CPU0 |
 									MP1_CPU2 |
 									MP1_CPU3 |
 									MP2_CPU0 | MP2_CPU1;
+
+static u32 scp_request_freq;
+
+u32 is_scp_request_freq(void)
+{
+	return scp_request_freq;
+}
 #endif
 
 /**************************************
@@ -465,6 +482,7 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 #endif
 #endif
 
+#if defined(CONFIG_ARCH_MT6755)
 	spm_write(SPM_SRC_REQ, (!!pwrctrl->cpu_md_dvfs_sop_force_on << 16) |
 			(!!pwrctrl->spm_flag_run_common_scenario << 10) |
 			(!!pwrctrl->spm_flag_dis_vproc_vsram_dvs << 9) |
@@ -477,6 +495,36 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			(!!pwrctrl->spm_lte_req << 2) |
 			(!!pwrctrl->spm_f26m_req << 1) |
 			(!!pwrctrl->spm_apsrc_req << 0));
+#elif defined(CONFIG_ARCH_MT6797)
+	{
+		u8 spm_vrf18_req = pwrctrl->spm_vrf18_req;
+		u8 spm_infra_req = pwrctrl->spm_infra_req;
+		u8 spm_f26m_req = pwrctrl->spm_f26m_req;
+
+		if ((is_check_scp_freq_req() == 1) && check_scp_resource()) {
+			scp_request_freq = 1;
+
+			spm_vrf18_req = 1;
+			spm_infra_req = 1;
+			spm_f26m_req = 1;
+		} else {
+			scp_request_freq = 0;
+		}
+
+		spm_write(SPM_SRC_REQ, (!!pwrctrl->cpu_md_dvfs_sop_force_on << 16) |
+				(!!pwrctrl->spm_flag_run_common_scenario << 10) |
+				(!!pwrctrl->spm_flag_dis_vproc_vsram_dvs << 9) |
+				(!!pwrctrl->spm_flag_keep_csyspwrupack_high << 8) |
+				(!!pwrctrl->spm_ddren_req << 7) |
+				(!!pwrctrl->spm_dvfs_force_down << 6) |
+				(!!pwrctrl->spm_dvfs_req << 5) |
+				(!!spm_vrf18_req << 4) |
+				(!!spm_infra_req << 3) |
+				(!!pwrctrl->spm_lte_req << 2) |
+				(!!spm_f26m_req << 1) |
+				(!!pwrctrl->spm_apsrc_req << 0));
+	}
+#endif
 
 	spm_write(SPM_SRC_MASK,
 			(!!pwrctrl->conn_srcclkena_dvfs_req_mask_b << 31) |
@@ -748,10 +796,19 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 		  wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 		  wakesta->event_reg, wakesta->isr);
 
+#if defined(CONFIG_ARCH_MT6797)
+	spm_print(suspend, "raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x, scp_request_freq = %u",
+			wakesta->raw_ext_sta,
+			wakesta->wake_misc,
+			spm_read(SPM_SW_FLAG),
+			scp_request_freq);
+#else
 	spm_print(suspend, "raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x\n",
 			wakesta->raw_ext_sta,
 			wakesta->wake_misc,
 			spm_read(SPM_SW_FLAG));
+#endif
+
 	return wr;
 }
 

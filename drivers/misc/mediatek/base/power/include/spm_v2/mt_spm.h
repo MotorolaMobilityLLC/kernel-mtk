@@ -42,6 +42,11 @@ extern u32 spm_irq_7;
 /* #include <mach/mt_irq.h> */
 #include <mt-plat/sync_write.h>
 
+#if defined(CONFIG_ARCH_MT6797)
+/* for SPM/SCP debug */
+extern u32 is_check_scp_freq_req(void);
+#endif
+
 /**************************************
  * Config and Parameter
  **************************************/
