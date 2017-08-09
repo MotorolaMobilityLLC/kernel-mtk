@@ -1102,10 +1102,12 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 97 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		auxadc@11001000 {
-			compatible = "mediatek,auxadc";
+		auxadc: adc_hw@11001000 {
+			compatible = "mediatek,mt6797-auxadc";
 			reg = <0x11001000 0x1000>;
 			interrupts = <GIC_SPI 74 0x2>;
+			clocks = <&infrasys INFRA_AUXADC>;
+			clock-names = "auxadc-main";
 		};
 
 		apuart0: apuart0@11002000 {

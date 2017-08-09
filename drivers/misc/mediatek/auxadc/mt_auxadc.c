@@ -346,7 +346,7 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 	} else
 		pr_err("[AUXADC] auxadc_apmix_base error\n");
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-auxadc");
+	node = of_find_compatible_node(NULL, NULL, AUXADC_NODE);
 	if (!node)
 		pr_err("[AUXADC] find node failed\n");
 
@@ -1660,6 +1660,7 @@ static int mt_auxadc_resume(struct platform_device *dev)
 #ifdef CONFIG_OF
 static const struct of_device_id mt_auxadc_of_match[] = {
 	{.compatible = "mediatek,mt6735-auxadc",},
+	{.compatible = "mediatek,mt6797-auxadc",},
 	{},
 };
 #endif
