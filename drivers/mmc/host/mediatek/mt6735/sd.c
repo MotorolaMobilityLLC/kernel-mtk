@@ -69,6 +69,7 @@
 
 #define MET_USER_EVENT_SUPPORT
 
+#include<mt-plat/upmu_common.h>
 
 /* weiping fix */
 #if 0
@@ -84,13 +85,7 @@
 #include <mach/mt_pmic_wrap.h>
 #endif
 #include <linux/met_drv.h>
-#if 1 /* #ifndef FPGA_PLATFORM */
-#include <mach/mt_pm_ldo.h>
-#include <mach/upmu_common.h>
-#include <mach/upmu_sw.h>
-#include <mach/upmu_hw.h>
 #include <mach/eint.h>
-#endif
 #include <mach/mt_storage_logger.h>
 #include <mach/partition.h>
 #include <mach/emi_mpu.h>
@@ -1138,8 +1133,6 @@ void msdc_set_smpl(struct msdc_host *host, u8 HS400, u8 mode, u8 type, u8 *edge)
 }
 
 #ifndef FPGA_PLATFORM
-/* weiping fix power*/
-#if 0
 #ifndef CONFIG_MTK_LEGACY
 enum MSDC_LDO_POWER {
 	POWER_LDO_VMCH,
@@ -1248,7 +1241,7 @@ static u32 msdc_ldo_power(u32 on, MT65XX_POWER powerId, int voltage_uv,
 	return 0;
 }
 #endif
-#endif /* weiping fix power */
+
 void msdc_set_smt(struct msdc_host *host, int set_smt)
 {
 	switch (host->id) {
@@ -1624,8 +1617,7 @@ static void msdc_pin_pud(struct msdc_host *host, u32 mode)
 	}
 
 }
-/* weiping fix power */
-#if 0
+
 #ifndef CONFIG_MTK_LEGACY
 static void msdc_emmc_power(struct msdc_host *host, u32 on)
 {
@@ -1835,20 +1827,6 @@ static void msdc_sdio_power(struct msdc_host *host, u32 on)
 	}
 
 }
-#else /* weiping fix power */
-static void msdc_emmc_power(struct msdc_host *host, u32 on)
-{
-}
-static void msdc_sd_power(struct msdc_host *host, u32 on)
-{
-}
-static void msdc_sd_power_switch(struct msdc_host *host, u32 on)
-{
-}
-static void msdc_sdio_power(struct msdc_host *host, u32 on)
-{
-}
-#endif /* weiping fix power */
 #endif
 
 static void msdc_reset_pwr_cycle_counter(struct msdc_host *host)

@@ -1549,9 +1549,8 @@ extern struct msdc_hw msdc3_hw;
 #endif
 
 extern int msdc_setting_parameter(struct msdc_hw *hw, unsigned int *para);
-/* weiping fix power */
 /*workaround for VMC 1.8v -> 1.84v */
-/*extern void upmu_set_rg_vmc_184(kal_uint8 x);*/
+extern void upmu_set_rg_vmc_184(unsigned char x);
 
 extern void __iomem *gpio_reg_base;
 extern void __iomem *infracfg_ao_reg_base;
