@@ -586,9 +586,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 		}
 	} else if (pwInfo.PowerType == PDN) {
 		/* PK_DBG("hwPowerOn: PDN %d\n", pwInfo.Voltage); */
-		mtkcam_gpio_set(pinSetIdx, PDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);
-
-
+		/*mtkcam_gpio_set(pinSetIdx, PDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_OFF]);*/
 		if (pwInfo.Voltage == Vol_High) {
 			if (mtkcam_gpio_set(pinSetIdx, PDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON])) {
 				PK_DBG("[CAMERA SENSOR] set gpio failed!!\n");
@@ -600,7 +598,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 			}
 		}
 	} else if (pwInfo.PowerType == RST) {
-		mtkcam_gpio_set(pinSetIdx, RST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);
+		/*mtkcam_gpio_set(pinSetIdx, RST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_OFF]);*/
 		if (pwInfo.Voltage == Vol_High) {
 			if (mtkcam_gpio_set(pinSetIdx, RST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON])) {
 				PK_DBG("[CAMERA SENSOR] set gpio failed!!\n");
@@ -681,7 +679,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 						return FALSE;
 					}
 				} else {
-					if (mtkcam_gpio_set(pinSetIdx, CUST_MAIN2_DVDD, 1-PowerCustList.PowerCustInfo[CUST_MAIN2_DVDD].Voltage)) {
+					if (mtkcam_gpio_set(pinSetIdx, MAIN2_DVDD, 1-PowerCustList.PowerCustInfo[CUST_MAIN2_DVDD].Voltage)) {
 						PK_DBG("[CAMERA CUST_MAIN2_DVDD] set gpio failed!!\n");
 					}
 				}
@@ -692,7 +690,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 						return FALSE;
 					}
 				} else {
-					if (mtkcam_gpio_set(pinSetIdx, CUST_SUB_DVDD, 1-PowerCustList.PowerCustInfo[CUST_SUB_DVDD].Voltage)) {
+					if (mtkcam_gpio_set(pinSetIdx, SUB_DVDD, 1-PowerCustList.PowerCustInfo[CUST_SUB_DVDD].Voltage)) {
 						PK_DBG("[CAMERA CUST_SUB_DVDD] set gpio failed!!\n");
 					}
 				}
@@ -703,7 +701,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 						return FALSE;
 					}
 				} else {
-					if (mtkcam_gpio_set(pinSetIdx, CUST_DVDD, 1-PowerCustList.PowerCustInfo[CUST_DVDD].Voltage)) {
+					if (mtkcam_gpio_set(pinSetIdx, DVDD, 1-PowerCustList.PowerCustInfo[CUST_DVDD].Voltage)) {
 						PK_DBG("[CAMERA CUST_DVDD] set gpio failed!!\n");
 					}
 				}
@@ -715,7 +713,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 				return FALSE;
 			}
 		} else {
-			if (mtkcam_gpio_set(pinSetIdx, CUST_DOVDD, 1-PowerCustList.PowerCustInfo[CUST_DOVDD].Voltage)) {
+			if (mtkcam_gpio_set(pinSetIdx, DOVDD, 1-PowerCustList.PowerCustInfo[CUST_DOVDD].Voltage)) {
 				PK_DBG("[CAMERA CUST_AVDD] set gpio failed!!\n");/* 1-voltage for reverse*/
 			}
 		}
@@ -726,12 +724,12 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 				return FALSE;
 			}
 		} else {
-			if (mtkcam_gpio_set(pinSetIdx, CUST_AFVDD, 1-PowerCustList.PowerCustInfo[CUST_AFVDD].Voltage)) {
+			if (mtkcam_gpio_set(pinSetIdx, AFVDD, 1-PowerCustList.PowerCustInfo[CUST_AFVDD].Voltage)) {
 				PK_DBG("[CAMERA CUST_DOVDD] set gpio failed!!\n");/* 1-voltage for reverse*/
 			}
 		}
 	} else if (pwInfo.PowerType == PDN) {
-		PK_DBG("hwPowerDown: PDN %d\n", pwInfo.Voltage);
+		/*PK_DBG("hwPowerDown: PDN %d\n", pwInfo.Voltage);*/
 		if (pwInfo.Voltage == Vol_High) {
 			if (mtkcam_gpio_set(pinSetIdx, PDN, pinSet[pinSetIdx][IDX_PS_CMPDN + IDX_PS_ON])) {
 				PK_DBG("[CAMERA SENSOR] set gpio failed!!\n");
@@ -743,7 +741,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 			}
 		}
 	} else if (pwInfo.PowerType == RST) {
-		PK_DBG("hwPowerDown: RST %d\n", pwInfo.Voltage);
+		/*PK_DBG("hwPowerDown: RST %d\n", pwInfo.Voltage);*/
 		if (pwInfo.Voltage == Vol_High) {
 			if (mtkcam_gpio_set(pinSetIdx, RST, pinSet[pinSetIdx][IDX_PS_CMRST + IDX_PS_ON])) {
 				PK_DBG("[CAMERA SENSOR] set gpio failed!!\n");
@@ -1026,7 +1024,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			    && (0 ==
 				strcmp(PowerOnList.PowerSeq[pwListIdx].SensorName,
 				       currSensorName))) {
-				PK_DBG("kdCISModulePowerOn get in---\n");
+				/*PK_DBG("kdCISModulePowerOn get in---\n");*/
 				PK_DBG("sensorIdx:%d\n", SensorIdx);
 
 				sensorInPowerList = KAL_TRUE;
