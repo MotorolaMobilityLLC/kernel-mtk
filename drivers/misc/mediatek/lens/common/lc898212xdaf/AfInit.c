@@ -36,20 +36,24 @@ void AfInit(unsigned char hall_off, unsigned char hall_bias)
 	unsigned short pos;
 
 	if (g_LC898212_SearchDir == 0) {
-		DataLen = sizeof(Init_Table) / sizeof(IniData);
+		/* IMX230, OV23850 */
+		DataLen = sizeof(Init_Table_TVC820) / sizeof(IniData);
 
 		for (i = 0; i < DataLen; i++) {
-			if (Init_Table[i].addr == WAIT) {
-				WaitTime(Init_Table[i].data);
+			if (Init_Table_TVC820[i].addr == WAIT) {
+				WaitTime(Init_Table_TVC820[i].data);
 				continue;
 			}
 
-			if (Init_Table[i].addr >= REG_ADDR_START)
-				RegWriteA(Init_Table[i].addr, (unsigned char)(Init_Table[i].data & 0x00ff));
+			if (Init_Table_TVC820[i].addr >= REG_ADDR_START)
+				RegWriteA(Init_Table_TVC820[i].addr,
+					(unsigned char)(Init_Table_TVC820[i].data & 0x00ff));
 			else
-				RamWriteA(Init_Table[i].addr, (unsigned short)Init_Table[i].data);
+				RamWriteA(Init_Table_TVC820[i].addr,
+					(unsigned short)Init_Table_TVC820[i].data);
 		}
 	} else {
+		/* IMX214, IMX258 */
 		DataLen = sizeof(Init_Table_TVC651) / sizeof(IniData);
 
 		for (i = 0; i < DataLen; i++) {
@@ -62,7 +66,8 @@ void AfInit(unsigned char hall_off, unsigned char hall_bias)
 				RegWriteA(Init_Table_TVC651[i].addr,
 					(unsigned char)(Init_Table_TVC651[i].data & 0x00ff));
 			else
-				RamWriteA(Init_Table_TVC651[i].addr, (unsigned short)Init_Table_TVC651[i].data);
+				RamWriteA(Init_Table_TVC651[i].addr,
+					(unsigned short)Init_Table_TVC651[i].data);
 		}
 	}
 

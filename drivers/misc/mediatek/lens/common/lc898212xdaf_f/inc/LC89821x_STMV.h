@@ -6,23 +6,23 @@
 /* Definations */
 /* ************************** */
 /* Convergence Judgement */
-#define INI_MSSET_211		(unsigned char)0x00	/* Initialize Value For [8Fh] */
-#define CHTGX_THRESHOLD		(unsigned short)0x0200	/* Convergence Judge Threshold */
-#define CHTGOKN_TIME		(unsigned char)0x80	/* 64 Sampling Time 1.365msec( EQCLK=12MHz ) */
+#define INI_MSSET_211		((unsigned char)0x00)
+#define CHTGX_THRESHOLD		((unsigned short)0x0200)	/* Convergence Judge Threshold */
+#define CHTGOKN_TIME		((unsigned char)0x80)	/* 64 Sampling Time 1.365msec( EQCLK=12MHz ) */
 #define CHTGOKN_WAIT		3	/* CHTGOKN_WAIT(3ms) > CHTGOKN_TIME(2.732msec) */
 
 /* StepMove */
-#define STMV_SIZE		(unsigned short)0x0180	/* StepSize(MS1Z12) */
-#define STMV_INTERVAL		(unsigned char)0x01	/* Step Interval(STMVINT) */
+#define STMV_SIZE		((unsigned short)0x0180)	/* StepSize(MS1Z12) */
+#define STMV_INTERVAL		((unsigned char)0x01)	/* Step Interval(STMVINT) */
 
-#define STMCHTG_ON		(unsigned char)0x08	/* STMVEN Register Set */
-#define STMSV_ON		(unsigned char)0x04
-#define STMLFF_ON		(unsigned char)0x02
-#define STMVEN_ON		(unsigned char)0x01
-#define STMCHTG_OFF		(unsigned char)0x00
-#define STMSV_OFF		(unsigned char)0x00
-#define STMLFF_OFF		(unsigned char)0x00
-#define STMVEN_OFF		(unsigned char)0x00
+#define STMCHTG_ON		((unsigned char)0x08)	/* STMVEN Register Set */
+#define STMSV_ON		((unsigned char)0x04)
+#define STMLFF_ON		((unsigned char)0x02)
+#define STMVEN_ON		((unsigned char)0x01)
+#define STMCHTG_OFF		((unsigned char)0x00)
+#define STMSV_OFF		((unsigned char)0x00)
+#define STMLFF_OFF		((unsigned char)0x00)
+#define STMVEN_OFF		((unsigned char)0x00)
 
 #define STMCHTG_SET		STMCHTG_ON	/* Convergence Judgement On */
 #define STMSV_SET		STMSV_ON	/* Setting Target Position = End Position */
@@ -208,80 +208,12 @@ struct INIDATA {
 	unsigned short data;
 } IniData_F;
 
+/* Camera Module Small */
+/* IMX214 + LC898212XD */
+/* IMX258 + LC898212XD */
 const struct INIDATA Init_Table_F[] = {
-#if 1
 	/* Addr,   Data */
 
-	/* TDK_CL-ACT_ 212_SPtype_Ini_130114 */
-	{0x0080, 0x34},		/* CLKSEL 1/1, CLKON */
-	{0x0081, 0x20},		/* AD 4Time */
-	{0x0084, 0xE0},		/* STBY   AD ON,DA ON,OP ON */
-	{0x0087, 0x05},		/* PIDSW OFF,AF ON,MS2 ON */
-	{0x00A4, 0x24},		/* Internal OSC Setup (No01=24.18MHz) */
-
-	{0x003A, 0x0000},	/* OFFSET Clear */
-	{0x0004, 0x0000},	/* RZ Clear(Target Value) */
-	{0x0002, 0x0000},	/* PIDZO Clear */
-	{0x0018, 0x0000},	/* MS1Z22 Clear(STMV Target Value) */
-/* { WAIT, 5 },                // Wait 5 ms */
-
-	/* Filter Setting: ST140911-1.h For TVC-820 */
-	{0x0088, 0x68},
-	{0x0028, 0x8080},
-	{0x004C, 0x4000},
-	{0x0083, 0x2C},
-	{0x0085, 0xC0},
-	{WAIT, 1},		/* Wait 1 ms */
-
-        {0x0085, 0x00},
-	{0x0084, 0xE3},
-	{0x0097, 0x00},
-	{0x0098, 0x42},
-	{0x0099, 0x00},
-	{0x009A, 0x00},
-
-	{0x0086, 0x40},
-	{0x0040, 0x4030},
-	{0x0042, 0x7150},
-	{0x0044, 0x8F90},
-	{0x0046, 0x61B0},
-	{0x0048, 0x7FF0},
-	{0x004A, 0x3930},
-	{0x004C, 0x4030},
-	{0x004E, 0x7FF0}, // depend on hw setting
-	//{ 0x004E, 0x8010 },
-	{0x0050, 0x04f0},
-	{0x0052, 0x7610},
-	{0x0054, 0x2030},
-	{0x0056, 0x0000},
-	{0x0058, 0x7FF0},
-	{0x005A, 0x0680},
-	{0x005C, 0x72f0},
-	{0x005E, 0x7f70},
-	{0x0060, 0x7ed0},
-	{0x0062, 0x7ff0},
-	{0x0064, 0x0000},
-	{0x0066, 0x0000},
-	{0x0068, 0x5130},
-	{0x006A, 0x72f0},
-	{0x006C, 0x8010},
-	{0x006E, 0x0000},
-	{0x0070, 0x0000},
-	{0x0072, 0x18e0},
-	{0x0074, 0x4e30},
-	{0x0030, 0x0000},
-	{0x0076, 0x0C50},
-	{0x0078, 0x4000},
-	{WAIT, 5},		/* Wait 5 ms */
-
-	{0x0086, 0x60},
-
-
-	{0x0087, 0x85}
-#else
-	/* Addr,   Data */
-
-	/* TDK_CL-ACT_ 212_SPtype_Ini_130114 */
 	{0x0080, 0x34},		/* CLKSEL 1/1, CLKON */
 	{0x0081, 0x20},		/* AD 4Time */
 	{0x0084, 0xE0},		/* STBY   AD ON,DA ON,OP ON */
@@ -293,7 +225,7 @@ const struct INIDATA Init_Table_F[] = {
 	{0x0002, 0x0000},	/* PIDZO Clear */
 	{0x0018, 0x0000},	/* MS1Z22 Clear(STMV Target Value) */
 
-	/* Filter Setting: ST140911-1.h For TVC-820 */
+	/* Filter Setting: ST140911-1.h For TVC-651 */
 	{0x0088, 0x70},
 	{0x0028, 0x8080},
 	{0x004C, 0x4000},
@@ -301,6 +233,7 @@ const struct INIDATA Init_Table_F[] = {
 	{0x0085, 0xC0},
 	{WAIT, 1},		/* Wait 1 ms */
 
+	{0x0085, 0x00},
 	{0x0084, 0xE3},
 	{0x0097, 0x00},
 	{0x0098, 0x42},
@@ -342,9 +275,7 @@ const struct INIDATA Init_Table_F[] = {
 
 	{0x0086, 0x60},
 
-
 	{0x0087, 0x85}
-#endif
 };
 
 
@@ -356,7 +287,7 @@ typedef struct STMVPAR {
 
 extern int s4AF_WriteReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 extern int s4AF_ReadReg_LC898212XDAF_F(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData,
-				 u16 a_sizeRecvData, u16 i2cId);
+									u16 a_sizeRecvData, u16 i2cId);
 
 #endif
 

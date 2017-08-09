@@ -17,7 +17,10 @@ struct INIDATA {
 	unsigned short data;
 } IniData;
 
-const struct INIDATA Init_Table[] = {
+/* Camera Module Big */
+/* IMX230 + LC898212XD */
+/* OV23850 + LC898212XD */
+const struct INIDATA Init_Table_TVC820[] = {
 	/* Addr,   Data */
 
 	/* TDK_CL-ACT_ 212_SPtype_Ini_130114 */
@@ -88,6 +91,9 @@ const struct INIDATA Init_Table[] = {
 
 };
 
+/* Camera Module Small */
+/* IMX214 + LC898212XD */
+/* IMX258 + LC898212XD */
 const struct INIDATA Init_Table_TVC651[] = {
 	/* Addr,   Data */
 
