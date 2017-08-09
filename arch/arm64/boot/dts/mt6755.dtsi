@@ -1963,6 +1963,10 @@
 					"SYSPLL2_D2";
 		};
 
+		mhl:mhl@0 {
+			compatible = "mediatek,sii8348-hdmi";
+		};
+
 		disp_ovl0@14008000 {
 			compatible = "mediatek,disp_ovl0";
 			reg = <0x14008000 0x1000>;
