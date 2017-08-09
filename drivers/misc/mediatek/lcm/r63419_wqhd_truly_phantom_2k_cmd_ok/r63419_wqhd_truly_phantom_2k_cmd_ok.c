@@ -88,6 +88,8 @@ static LCM_UTIL_FUNCS lcm_util;
 #define read_reg_v2(cmd, buffer, buffer_size)		lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
 #define dsi_swap_port(swap)				lcm_util.dsi_swap_port(swap)
 
+#define set_gpio_lcd_enp(cmd) lcm_util.set_gpio_lcd_enp_bias(cmd)
+
 #ifndef BUILD_LK
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -119,6 +121,14 @@ static LCM_UTIL_FUNCS lcm_util;
 #ifdef CONFIG_MTK_LEGACY
 static struct i2c_board_info tps65132_board_info __initdata = {I2C_BOARD_INFO(I2C_ID_NAME, TPS_ADDR)};
 #endif
+
+#if !defined(CONFIG_MTK_LEGACY)
+static const struct of_device_id lcm_of_match[] = {
+		{ .compatible = "mediatek,i2c_lcd_bias" },
+		{},
+};
+#endif
+
 static struct i2c_client *tps65132_i2c_client;
 
 
@@ -153,6 +163,9 @@ static struct i2c_driver tps65132_iic_driver = {
 	.driver		= {
 		.owner	= THIS_MODULE,
 		.name	= "tps65132",
+#if !defined(CONFIG_MTK_LEGACY)
+			.of_match_table = lcm_of_match,
+#endif
 	},
 };
 /*****************************************************************************
@@ -450,8 +463,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	/* Highly depends on LCD driver capability. */
 	params->dsi.packet_size = 256;
-	params->dsi.ssc_disable = 0;
-	params->dsi.ssc_range = 3;
+	params->dsi.ssc_disable = 1;
+	/* params->dsi.ssc_range = 3; */
 	/* video mode timing */
 
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
@@ -486,14 +499,14 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lane_swap[MIPITX_PHY_PORT_1][MIPITX_PHY_LANE_2]	= MIPITX_PHY_LANE_3;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_1][MIPITX_PHY_LANE_3]	= MIPITX_PHY_LANE_1;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_1][MIPITX_PHY_LANE_CK]	= MIPITX_PHY_LANE_0;
-	params->dsi.lane_swap[MIPITX_PHY_PORT_1][MIPITX_PHY_LANE_RX]	= MIPITX_PHY_LANE_2;
+	params->dsi.lane_swap[MIPITX_PHY_PORT_1][MIPITX_PHY_LANE_RX]	= MIPITX_PHY_LANE_CK;
 
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_0]	= MIPITX_PHY_LANE_CK;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_1]	= MIPITX_PHY_LANE_2;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_2]	= MIPITX_PHY_LANE_1;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_3]	= MIPITX_PHY_LANE_0;
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_CK]	= MIPITX_PHY_LANE_3;
-	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX]	= MIPITX_PHY_LANE_CK;
+	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX]	= MIPITX_PHY_LANE_3;
 }
 
 #ifdef BUILD_LK
@@ -588,6 +601,8 @@ static void lcm_init(void)
 	mt_set_gpio_mode(GPIO_65132_EN, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO_65132_EN, GPIO_DIR_OUT);
 	mt_set_gpio_out(GPIO_65132_EN, GPIO_OUT_ONE);
+#else
+	set_gpio_lcd_enp(1);
 #endif
 	/* MDELAY(5); */
 #ifdef BUILD_LK
@@ -643,6 +658,8 @@ static void lcm_suspend(void)
 	mt_set_gpio_mode(GPIO_65132_EN, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO_65132_EN, GPIO_DIR_OUT);
 	mt_set_gpio_out(GPIO_65132_EN, GPIO_OUT_ZERO);
+#else
+	set_gpio_lcd_enp(0);
 #endif
 	push_table(lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	SET_RESET_PIN(0);
@@ -757,7 +774,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 
 
 LCM_DRIVER r63419_wqhd_truly_phantom_cmd_lcm_drv = {
-	.name		= "r63419_wqhd_truly_phantom_cmd",
+	.name		= "r63419_wqhd_truly_phantom_2k_cmd_ok",
 	.set_util_funcs	= lcm_set_util_funcs,
 	.get_params	= lcm_get_params,
 	.init		= lcm_init,
@@ -767,7 +784,7 @@ LCM_DRIVER r63419_wqhd_truly_phantom_cmd_lcm_drv = {
 	.init_power	= lcm_init_power,
 	.resume_power	= lcm_resume_power,
 	.suspend_power	= lcm_suspend_power,
-	.ata_check		= lcm_ata_check,
+	.ata_check	= lcm_ata_check,
 	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 #if (LCM_DSI_CMD_MODE)
 	.update		= lcm_update,

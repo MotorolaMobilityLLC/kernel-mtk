@@ -85,7 +85,8 @@ static struct dispsys_device *dispsys_dev;
 unsigned int dispsys_irq[DISP_REG_NUM] = { 0 };
 volatile unsigned long dispsys_reg[DISP_REG_NUM] = { 0 };
 
-volatile unsigned long mipi_tx_reg = 0;
+volatile unsigned long mipi_tx0_reg = 0;
+volatile unsigned long mipi_tx1_reg = 0;
 volatile unsigned long dsi_reg_va = 0;
 /* from DTS, for debug */
 unsigned long ddp_reg_pa_base[DISP_REG_NUM] = {
@@ -115,7 +116,7 @@ unsigned long ddp_reg_pa_base[DISP_REG_NUM] = {
 	0x1400d000,	/* OVL0_2L */
 	0x1400e000,	/* OVL1_2L */
 	0x10215000,	/* MIPITX0*/
-/*	0x1021e000	//MIPITX1*/
+	0x1021e000	/*MIPITX1*/
 };
 
 #ifndef CONFIG_MTK_CLKMGR
@@ -551,7 +552,8 @@ static int disp_is_intr_enable(DISP_REG_ENUM module)
 	case DISP_REG_CONFIG:
 	case DISP_REG_SMI_LARB0:
 	case DISP_REG_SMI_COMMON:
-	case DISP_REG_MIPI:
+	case DISP_REG_MIPI0:
+	case DISP_REG_MIPI1:
 		return 0;
 	default:
 		return 0;
@@ -678,7 +680,8 @@ static int disp_probe(struct platform_device *pdev)
 	}
 	/* mipi tx reg map here */
 	dsi_reg_va = dispsys_reg[DISP_REG_DSI0];
-	mipi_tx_reg = dispsys_reg[DISP_REG_MIPI];
+	mipi_tx0_reg = dispsys_reg[DISP_REG_MIPI0];
+	mipi_tx1_reg = dispsys_reg[DISP_REG_MIPI1];
 #ifndef DISP_NO_DPI
 	DPI_REG = (PDPI_REGS)dispsys_reg[DISP_REG_DPI0];
 #endif

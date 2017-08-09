@@ -68,23 +68,28 @@ typedef struct {
 	unsigned RG_DSI_LDOCORE_EN:1;
 	unsigned RG_DSI_CKG_LDOOUT_EN:1;
 	unsigned RG_DSI_BCLK_SEL:2;
-	unsigned RG_DSI_LD_IDX_SEL:3;
-	unsigned rsv_7:1;
+	unsigned RG_DSI_LD_IDX_SEL:2;
+	unsigned RG_DSI_LDO_LPF_EN:1;
+	unsigned RG_DSI_LDO_VOD_EN:1;
+	unsigned RG_DSI_CKG_IPLUS:1;
+	unsigned RG_DSI_CKG_IMINUS:1;
 	unsigned RG_DSI_PHYCLK_SEL:2;
 	unsigned RG_DSI_DSICLK_FREQ_SEL:1;
-	unsigned RG_DSI_LPTX_CLMP_EN:1;
-	unsigned rsv_12:20;
+	unsigned RG_DSI_BIST_2D5G_EN:1;
+	unsigned RG_DSI_BIST_2D5G_SEL:1;
+	unsigned RG_DSI_BIST_DATA_SEL:1;
+	unsigned RG_DSI_BIST_2D5G_PRESERVE0:6;
+	unsigned rsv_22:10;
 } MIPITX_DSI_CON_REG, *PMIPITX_DSI_CON_REG;
 
 typedef struct {
 	unsigned RG_DSI_LNTC_LDOOUT_EN:1;
-	unsigned RG_DSI_LNTC_LOOPBACK_EN:1;
-	unsigned RG_DSI_LNTC_LPTX_IPLUS1:1;
-	unsigned RG_DSI_LNTC_LPTX_IPLUS2:1;
-	unsigned RG_DSI_LNTC_LPTX_IMINUS:1;
-	unsigned RG_DSI_LNTC_LPCD_IPLUS:1;
-	unsigned RG_DSI_LNTC_LPCD_IMINUS:1;
-	unsigned rsv_7:1;
+	unsigned RG_DSI_LNTC_CKLANE_EN:1;
+	unsigned RG_DSI_LNTC_IPLUS:1;
+	unsigned RG_DSI_LNTC_IMINUS:1;
+	unsigned RG_DSI_LNTC_PN_SWAP:1;
+	unsigned RG_DSI_LNTC_EO_SWAP:1;
+	unsigned rev_6:2;
 	unsigned RG_DSI_LNTC_RT_CODE:4;
 	unsigned rsv_12:20;
 } MIPITX_DSI_CLOCK_LANE_REG, *PMIPITX_DSI_CLOCK_LANE_REG;
@@ -92,98 +97,93 @@ typedef struct {
 typedef struct {
 	unsigned RG_DSI_LNT0_LDOOUT_EN:1;
 	unsigned RG_DSI_LNT0_CKLANE_EN:1;
-	unsigned RG_DSI_LNT0_LPTX_IPLUS1:1;
-	unsigned RG_DSI_LNT0_LPTX_IPLUS2:1;
-	unsigned RG_DSI_LNT0_LPTX_IMINUS:1;
-	unsigned RG_DSI_LNT0_LPCD_IPLUS:1;
-	unsigned RG_DSI_LNT0_LPCD_IMINUS:1;
-	unsigned rsv_7:1;
+	unsigned RG_DSI_LNT0_IPLUS:1;
+	unsigned RG_DSI_LNT0_IMINUS:1;
+	unsigned RG_DSI_LNT0_PN_SWAP:1;
+	unsigned RG_DSI_LNT0_EO_SWAP:1;
+	unsigned rev_6:2;
 	unsigned RG_DSI_LNT0_RT_CODE:4;
-	unsigned rsv_11:20;
+	unsigned rsv_12:20;
 } MIPITX_DSI_DATA_LANE0_REG, *PMIPITX_DSI_DATA_LANE0_REG;
 
 
 typedef struct {
 	unsigned RG_DSI_LNT1_LDOOUT_EN:1;
 	unsigned RG_DSI_LNT1_CKLANE_EN:1;
-	unsigned RG_DSI_LNT1_LPTX_IPLUS1:1;
-	unsigned RG_DSI_LNT1_LPTX_IPLUS2:1;
-	unsigned RG_DSI_LNT1_LPTX_IMINUS:1;
-	unsigned RG_DSI_LNT1_LPCD_IPLUS:1;
-	unsigned RG_DSI_LNT1_LPCD_IMINUS:1;
-	unsigned rsv_7:1;
+	unsigned RG_DSI_LNT1_IPLUS:1;
+	unsigned RG_DSI_LNT1_IMINUS:1;
+	unsigned RG_DSI_LNT1_PN_SWAP:1;
+	unsigned RG_DSI_LNT1_EO_SWAP:1;
+	unsigned rev_6:2;
 	unsigned RG_DSI_LNT1_RT_CODE:4;
-	unsigned rsv_11:20;
+	unsigned rsv_12:20;
 } MIPITX_DSI_DATA_LANE1_REG, *PMIPITX_DSI_DATA_LANE1_REG;
 
 
 typedef struct {
 	unsigned RG_DSI_LNT2_LDOOUT_EN:1;
-	unsigned RG_DSI_LNT2_LOOPBACK_EN:1;
-	unsigned RG_DSI_LNT2_LPTX_IPLUS1:1;
-	unsigned RG_DSI_LNT2_LPTX_IPLUS2:1;
-	unsigned RG_DSI_LNT2_LPTX_IMINUS:1;
-	unsigned RG_DSI_LNT2_LPCD_IPLUS:1;
-	unsigned RG_DSI_LNT2_LPCD_IMINUS:1;
-	unsigned rsv_7:1;
+	unsigned RG_DSI_LNT2_CKLANE_EN:1;
+	unsigned RG_DSI_LNT2_IPLUS:1;
+	unsigned RG_DSI_LNT2_IMINUS:1;
+	unsigned RG_DSI_LNT2_PN_SWAP:1;
+	unsigned RG_DSI_LNT2_EO_SWAP:1;
+	unsigned rev_6:2;
 	unsigned RG_DSI_LNT2_RT_CODE:4;
-	unsigned rsv_11:20;
+	unsigned rsv_12:20;
 } MIPITX_DSI_DATA_LANE2_REG, *PMIPITX_DSI_DATA_LANE2_REG;
 
 typedef struct {
 	unsigned RG_DSI_LNT3_LDOOUT_EN:1;
-	unsigned RG_DSI_LNT3_LOOPBACK_EN:1;
-	unsigned RG_DSI_LNT3_LPTX_IPLUS1:1;
-	unsigned RG_DSI_LNT3_LPTX_IPLUS2:1;
-	unsigned RG_DSI_LNT3_LPTX_IMINUS:1;
-	unsigned RG_DSI_LNT3_LPCD_IPLUS:1;
-	unsigned RG_DSI_LNT3_LPCD_IMINUS:1;
-	unsigned rsv_7:1;
+	unsigned RG_DSI_LNT3_CKLANE_EN:1;
+	unsigned RG_DSI_LNT3_IPLUS:1;
+	unsigned RG_DSI_LNT3_IMINUS:1;
+	unsigned RG_DSI_LNT3_PN_SWAP:1;
+	unsigned RG_DSI_LNT3_EO_SWAP:1;
+	unsigned rev_6:2;
 	unsigned RG_DSI_LNT3_RT_CODE:4;
-	unsigned rsv_11:20;
+	unsigned rsv_12:20;
 } MIPITX_DSI_DATA_LANE3_REG, *PMIPITX_DSI_DATA_LANE3_REG;
 
 typedef struct {
-	unsigned RG_DSI_LNT_INTR_EN:1;
-	unsigned RG_DSI_LNT_HS_BIAS_EN:1;
-	unsigned RG_DSI_LNT_IMP_CAL_EN:1;
+	unsigned rev_0:3;
 	unsigned RG_DSI_LNT_TESTMODE_EN:1;
-	unsigned RG_DSI_LNT_IMP_CAL_CODE:4;
+	unsigned RG_DSI_PRESERVE0:4;
 	unsigned RG_DSI_LNT_AIO_SEL:3;
 	unsigned RG_DSI_PAD_TIE_LOW_EN:1;
-	unsigned rsv_12:1;
-	unsigned RG_DSI_PRESERVE:3;
+	unsigned RG_DSI_PRESERVE1:4;
 	unsigned rsv_16:16;
 } MIPITX_DSI_TOP_CON_REG, *PMIPITX_DSI_TOP_CON_REG;
 
 
 typedef struct {
 	unsigned RG_DSI_BG_CORE_EN:1;
-	unsigned RG_DSI_BG_CKEN:1;
-	unsigned RG_DSI_BG_DIV:2;
-	unsigned RG_DSI_BG_FAST_CHARGE:1;
+	unsigned rev_1:3;
 	unsigned RG_DSI_V12_SEL:3;
 	unsigned RG_DSI_V10_SEL:3;
-	unsigned RG_DSI_V072_SEL:3;
 	unsigned RG_DSI_V04_SEL:3;
-	unsigned RG_DSI_V032_SEL:3;
-	unsigned RG_DSI_V02_SEL:3;
-	unsigned rsv_23:1;
-	unsigned RG_DSI_BG_R1_TRIM:4;
-	unsigned RG_DSI_BG_R2_TRIM:4;
+	unsigned RG_DSI_V075_SEL:3;
+	unsigned RG_DSI_V07_SEL:3;
+	unsigned RG_DSI_V035_SEL:3;
+	unsigned RG_DSI_V03_SEL:3;
+	unsigned rev_25:7;
 } MIPITX_DSI_BG_CON_REG, *PMIPITX_DSI_BG_CON_REG;
 
 
 typedef struct {
 	unsigned RG_DSI0_MPPLL_PLL_EN:1;
+	unsigned rev_1:1;
 	unsigned RG_DSI0_MPPLL_PREDIV:2;
-	unsigned RG_DSI0_MPPLL_TXDIV0:2;
-	unsigned RG_DSI0_MPPLL_TXDIV1:2;
 	unsigned RG_DSI0_MPPLL_POSDIV:3;
+	unsigned rev_7:1;
 	unsigned RG_DSI0_MPPLL_MONVC_EN:1;
 	unsigned RG_DSI0_MPPLL_MONREF_EN:1;
+	unsigned rev_10:1;
 	unsigned RG_DSI0_MPPLL_VDO_EN:1;
-	unsigned rsv_13:19;
+	unsigned RG_DSI_MPPLL_S2QDIV:2;
+	unsigned RG_DSI_MPPLL_PLLOUT_EN:1;
+	unsigned rev_15:9;
+	unsigned RG_DSI_MPPLL_PRESERVE0:4;
+	unsigned RG_DSI_MPPLL_PRESERVE1:4;
 } MIPITX_DSI_PLL_CON0_REG, *PMIPITX_DSI_PLL_CON0_REG;
 
 
@@ -196,10 +196,7 @@ typedef struct {
 } MIPITX_DSI_PLL_CON1_REG, *PMIPITX_DSI_PLL_CON1_REG;
 
 typedef struct {
-	unsigned RG_DSI0_MPPLL_SDM_PCW_0_7:8;
-	unsigned RG_DSI0_MPPLL_SDM_PCW_8_15:8;
-	unsigned RG_DSI0_MPPLL_SDM_PCW_16_23:8;
-	unsigned RG_DSI0_MPPLL_SDM_PCW_H:7;
+	unsigned RG_DSI_MPPLL_SDM_PCW:31;
 	unsigned rsv_31:1;
 } MIPITX_DSI_PLL_CON2_REG, *PMIPITX_DSI_PLL_CON2_REG;
 
@@ -220,10 +217,7 @@ typedef struct {
 	unsigned RG_MPPLL_TST_EN:1;
 	unsigned RG_MPPLL_TSTCK_EN:1;
 	unsigned RG_MPPLL_TSTSEL:2;
-	unsigned RG_MPPLL_S2QDIV:2;
-	unsigned RG_MPPLL_PLLOUT_EN:1;
-	unsigned RG_MPPLL_PRESERVE:5;
-	unsigned rsv_12:20;
+	unsigned rsv_4:28;
 } MIPITX_DSI_PLL_TOP_REG, *PMIPITX_DSI_PLL_TOP_REG;
 
 
@@ -237,51 +231,68 @@ typedef struct {
 
 
 typedef struct {
-	unsigned RGS_DSI_LNT_IMP_CAL_OUTPUT:1;
-	unsigned rsv_1:31;
-} MIPITX_DSI_RGS_REG, *PMIPITX_DSI_RGS_REG;
-
+	unsigned RG_DSI_GPI0_IES:1;
+	unsigned RG_DSI_GPI1_IES:1;
+	unsigned RG_DSI_GPI2_IES:1;
+	unsigned RG_DSI_GPI3_IES:1;
+	unsigned RG_DSI_GPI4_IES:1;
+	unsigned RG_DSI_GPI5_IES:1;
+	unsigned RG_DSI_GPI6_IES:1;
+	unsigned RG_DSI_GPI7_IES:1;
+	unsigned RG_DSI_GPI8_IES:1;
+	unsigned RG_DSI_GPI9_IES:1;
+	unsigned rev_10:6;
+	unsigned RG_DSI_GPI0_SMT:1;
+	unsigned RG_DSI_GPI1_SMT:1;
+	unsigned RG_DSI_GPI2_SMT:1;
+	unsigned RG_DSI_GPI3_SMT:1;
+	unsigned RG_DSI_GPI4_SMT:1;
+	unsigned RG_DSI_GPI5_SMT:1;
+	unsigned RG_DSI_GPI6_SMT:1;
+	unsigned RG_DSI_GPI7_SMT:1;
+	unsigned RG_DSI_GPI8_SMT:1;
+	unsigned RG_DSI_GPI9_SMT:1;
+	unsigned rev_26:6;
+} MIPITX_DSI_GPI_CON0_REG, *PMIPITX_DSI_GPI_CON0_REG;
 
 typedef struct {
-	unsigned RG_DSI0_GPI0_EN:1;
-	unsigned RG_DSI0_GPI1_EN:1;
-	unsigned RG_DSI0_GPI2_EN:1;
-	unsigned RG_DSI0_GPI3_EN:1;
-	unsigned RG_DSI0_GPI4_EN:1;
-	unsigned RG_DSI0_GPI5_EN:1;
-	unsigned RG_DSI0_GPI6_EN:1;
-	unsigned RG_DSI0_GPI7_EN:1;
-	unsigned RG_DSI0_GPI8_EN:1;
-	unsigned RG_DSI0_GPI9_EN:1;
-	unsigned RG_DSI0_GPI_SMT_EN:1;
-	unsigned RG_DSI0_GPI_DRIVE_EN:1;
-	unsigned rsv_12:20;
-} MIPITX_DSI_GPI_EN_REG, *PMIPITX_DSI_GPI_EN_REG;
+	unsigned RG_DSI_GPI0_PU:1;
+	unsigned RG_DSI_GPI1_PU:1;
+	unsigned RG_DSI_GPI2_PU:1;
+	unsigned RG_DSI_GPI3_PU:1;
+	unsigned RG_DSI_GPI4_PU:1;
+	unsigned RG_DSI_GPI5_PU:1;
+	unsigned RG_DSI_GPI6_PU:1;
+	unsigned RG_DSI_GPI7_PU:1;
+	unsigned RG_DSI_GPI8_PU:1;
+	unsigned RG_DSI_GPI9_PU:1;
+	unsigned rev_10:6;
+	unsigned RG_DSI_GPI0_PD:1;
+	unsigned RG_DSI_GPI1_PD:1;
+	unsigned RG_DSI_GPI2_PD:1;
+	unsigned RG_DSI_GPI3_PD:1;
+	unsigned RG_DSI_GPI4_PD:1;
+	unsigned RG_DSI_GPI5_PD:1;
+	unsigned RG_DSI_GPI6_PD:1;
+	unsigned RG_DSI_GPI7_PD:1;
+	unsigned RG_DSI_GPI8_PD:1;
+	unsigned RG_DSI_GPI9_PD:1;
+	unsigned rev_26:6;
+} MIPITX_DSI_GPI_CON1_REG, *PMIPI_DSI_GPI_CON1_REG;
 
 typedef struct {
-	unsigned RG_DSI0_GPI0_PD:1;
-	unsigned RG_DSI0_GPI1_PD:1;
-	unsigned RG_DSI0_GPI2_PD:1;
-	unsigned RG_DSI0_GPI3_PD:1;
-	unsigned RG_DSI0_GPI4_PD:1;
-	unsigned RG_DSI0_GPI5_PD:1;
-	unsigned RG_DSI0_GPI6_PD:1;
-	unsigned RG_DSI0_GPI7_PD:1;
-	unsigned RG_DSI0_GPI8_PD:1;
-	unsigned RG_DSI0_GPI9_PD:1;
-	unsigned rsv_10:6;
-	unsigned RG_DSI0_GPI0_PU:1;
-	unsigned RG_DSI0_GPI1_PU:1;
-	unsigned RG_DSI0_GPI2_PU:1;
-	unsigned RG_DSI0_GPI3_PU:1;
-	unsigned RG_DSI0_GPI4_PU:1;
-	unsigned RG_DSI0_GPI5_PU:1;
-	unsigned RG_DSI0_GPI6_PU:1;
-	unsigned RG_DSI0_GPI7_PU:1;
-	unsigned RG_DSI0_GPI8_PU:1;
-	unsigned RG_DSI0_GPI9_PU:1;
-	unsigned rsv_26:6;
-} MIPITX_DSI_GPI_PULL_REG, *PMIPITX_DSI_GPI_PULL_REG;
+	unsigned RG_DSI_GPI0_RDSEL:2;
+	unsigned RG_DSI_GPI1_RDSEL:2;
+	unsigned RG_DSI_GPI2_RDSEL:2;
+	unsigned RG_DSI_GPI3_RDSEL:2;
+	unsigned RG_DSI_GPI4_RDSEL:2;
+	unsigned RG_DSI_GPI5_RDSEL:2;
+	unsigned RG_DSI_GPI6_RDSEL:2;
+	unsigned RG_DSI_GPI7_RDSEL:2;
+	unsigned RG_DSI_GPI8_RDSEL:2;
+	unsigned RG_DSI_GPI9_RDSEL:2;
+	unsigned rev_20:12;
+} MIPITX_DSI_GPI_CON2_REG, *PMIPI_DSI_GPI_CON2_REG;
 
 
 typedef struct {
@@ -365,7 +376,9 @@ typedef struct {
 	unsigned MIPI_TX_DBG_OUT_EN:1;
 	unsigned MIPI_TX_GPIO_MODE_EN:1;
 	unsigned MIPI_TX_APB_ASYNC_CNT_EN:1;
-	unsigned rsv_7:25;
+	unsigned MIPI_TX_TST_CK_OUT_EN:1;
+	unsigned MIPI_TX_TST_CK_OUT_SEL:1;
+	unsigned rsv_9:23;
 } MIPITX_DSI_DBG_CON_REG, *PMIPITX_DSI_DBG_CON_REG;
 
 typedef struct {
@@ -373,6 +386,18 @@ typedef struct {
 	unsigned MIPI_TX_APB_ASYNC_ERR_ADDR:10;
 	unsigned rsv_11:21;
 } MIPITX_DSI_APB_ASYNC_STA_REG, *PMIPITX_DSI_APB_ASYNC_STA_REG;
+
+typedef struct {
+	unsigned TX_HS_BIST_LANE_NUM:4;
+	unsigned TX_HS_BIST_SKEW_MODE:1;
+	unsigned TX_HS_BIST_MODE:2;
+	unsigned TX_HS_BIST_TM_ZERO:7;
+	unsigned TX_HS_BIST_RDY_SEL:3;
+	unsigned rev_19:13;
+} MIPITX_DSI_HS_BIST_CON_REG, *PMIPITX_DSI_HS_BIST_CON_REG;
+typedef struct {
+	unsigned TX_HS_BIST_PAT:32;
+} MIPITX_DSI_HS_BIST_PAT_REG, *PMIPITX_DSI_HS_BIST_PAT_REG;
 
 
 /* field definition */
@@ -981,9 +1006,9 @@ typedef struct {
 	MIPITX_DSI_PLL_TOP_REG MIPITX_DSI_PLL_TOP;	/* 0064 */
 	MIPITX_DSI_PLL_PWR_REG MIPITX_DSI_PLL_PWR;	/* 0068 */
 	UINT32 rsv_6C;		/* 006C */
-	MIPITX_DSI_RGS_REG MIPITX_DSI_RGS;	/* 0070 */
-	MIPITX_DSI_GPI_EN_REG MIPITX_DSI_GPI_EN;	/* 0074 */
-	MIPITX_DSI_GPI_PULL_REG MIPITX_DSI_GPI_PULL;	/* 0078 */
+	MIPITX_DSI_GPI_CON0_REG MIPITX_DSI_GPI_CON0;	/* 0070 */
+	MIPITX_DSI_GPI_CON1_REG MIPITX_DSI_GPI_CON1;	/* 0074 */
+	MIPITX_DSI_GPI_CON2_REG MIPITX_DSI_GPI_CON2;	/* 0078 */
 	MIPITX_DSI_PHY_SEL_REG MIPITX_DSI_PHY_SEL;	/* 007C */
 
 	MIPITX_DSI_SW_CTRL_REG MIPITX_DSI_SW_CTRL_EN;	/* 0080 */
@@ -1017,7 +1042,8 @@ STATIC_ASSERT(0x0098 == offsetof(DSI_REGS, DSI_3D_CON));
 /* mipi and dsi's extern variable */
 extern volatile unsigned long dispsys_reg[DISP_REG_NUM];
 extern unsigned long ddp_reg_pa_base[DISP_REG_NUM];
-extern volatile unsigned long mipi_tx_reg;
+extern volatile unsigned long mipi_tx0_reg;
+extern volatile unsigned long mipi_tx1_reg;
 extern volatile unsigned long dsi_reg_va;
 
 /* DTS will assign reigister address dynamically, so can not define to 0x1000 */
@@ -1056,7 +1082,8 @@ extern volatile unsigned long dsi_reg_va;
 #define DDP_REG_BASE_DISP_OVL0_2L  dispsys_reg[DISP_REG_OVL0_2L]
 #define DDP_REG_BASE_DISP_OVL1_2L  dispsys_reg[DISP_REG_OVL1_2L]
 
-#define MIPI_TX_REG_BASE			(mipi_tx_reg)
+#define MIPI_TX0_REG_BASE			(mipi_tx0_reg)
+#define MIPI_TX1_REG_BASE			(mipi_tx1_reg)
 
 #define DISPSYS_REG_ADDR_MIN            (DISPSYS_CONFIG_BASE)
 #define DISPSYS_REG_ADDR_MAX            (DDP_REG_BASE_DISP_OVL1_2L)
@@ -1090,7 +1117,8 @@ extern volatile unsigned long dsi_reg_va;
 #define DISPSYS_CCORR_BASE		        DDP_REG_BASE_DISP_CCORR
 
 
-#define MIPITX_BASE					    MIPI_TX_REG_BASE
+#define MIPITX0_BASE					    MIPI_TX0_REG_BASE
+#define MIPITX1_BASE					    MIPI_TX1_REG_BASE
 
 #ifdef INREG32
 #undef INREG32

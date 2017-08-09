@@ -74,8 +74,10 @@ char *ddp_get_module_name(DISP_MODULE_ENUM module)
 		return "ufoe ";
 	case DISP_MODULE_OVL0_VIRTUAL:
 		return "ovl0_virtual";
-	case DISP_MODULE_MIPI:
-		return "mipi";
+	case DISP_MODULE_MIPI0:
+		return "mipi0";
+	case DISP_MODULE_MIPI1:
+		return "mipi1";
 	case DISP_MODULE_DSC:
 		return "dsc";
 	case DISP_PATH0:
@@ -138,8 +140,10 @@ DISP_MODULE_ENUM ddp_get_reg_module(DISP_REG_ENUM reg_module)
 		return DISP_MODULE_OVL0_2L;
 	case DISP_REG_OVL1_2L:
 		return DISP_MODULE_OVL1_2L;
-	case DISP_REG_MIPI:
-		return DISP_MODULE_MIPI;
+	case DISP_REG_MIPI0:
+		return DISP_MODULE_MIPI0;
+	case DISP_REG_MIPI1:
+		return DISP_MODULE_MIPI1;
 	default:
 		DDPERR("%s: invalid reg module id=%d\n", __func__, reg_module);
 		BUG();
@@ -301,10 +305,11 @@ DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	0,			/* DISP_MODULE_SPLIT1, */
 
 	&ddp_driver_dsi0,	/* DISP_MODULE_DSI0  , */
-	&ddp_driver_dsi0,	/* DISP_MODULE_DSI1  , */
-	0,			/* DISP_MODULE_DSIDUAL, */
+	&ddp_driver_dsi1,	/* DISP_MODULE_DSI1  , */
+	&ddp_driver_dsidual,	/* DISP_MODULE_DSIDUAL, */
 	0,			/* DISP_MODULE_SMI_LARB0 , */
 	0,			/* DISP_MODULE_SMI_COMMON, */
-	0,			/* DISP_MODULE_MIPI */
+	0,			/* DISP_MODULE_MIPI0 */
+	0,			/* DISP_MODULE_MIPI1 */
 	0,			/* DISP_MODULE_UNKNOWN, //20 */
 };

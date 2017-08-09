@@ -50,6 +50,7 @@
 #include "mt_boot.h"
 #include "disp_helper.h"
 #include "compat_mtkfb.h"
+#include "disp_dts_gpio.h"
 
 /* static variable */
 static u32 MTK_FB_XRES;
@@ -2162,8 +2163,8 @@ found:
 	DISPCHECK("[DT][videolfb] islcmfound = %d\n", islcmconnected);
 	DISPCHECK("[DT][videolfb] is_lcm_inited = %d\n", is_lcm_inited);
 	DISPCHECK("[DT][videolfb] fps        = %d\n", lcd_fps);
-	DISPCHECK("[DT][videolfb] fb_base    = 0x%pa\n", &fb_base);
-	DISPCHECK("[DT][videolfb] vram       = %d\n", vramsize);
+	DISPCHECK("[DT][videolfb] fb_base    = 0x%lx\n", (unsigned long)fb_base);
+	DISPCHECK("[DT][videolfb] vram       = 0x%x (%d)\n", vramsize, vramsize);
 	DISPCHECK("[DT][videolfb] lcmname    = %s\n", mtkfb_lcm_name);
 	return 0;
 }
@@ -2278,11 +2279,21 @@ static int mtkfb_probe(struct device *dev)
 	struct fb_info *fbi;
 	int init_state;
 	int r = 0;
+
+	struct platform_device *pdev;
+	long dts_gpio_state = 0;
+
 	pr_debug("mtkfb_probe\n");
 
 	_parse_tag_videolfb();
 
 	init_state = 0;
+
+	pdev = to_platform_device(dev);
+	/* repo call DTS gpio module, if not necessary, invoke nothing */
+	dts_gpio_state = disp_dts_gpio_init_repo(pdev);
+	if (dts_gpio_state != 0)
+		dev_err(&pdev->dev, "retrieve GPIO DTS failed.");
 
 	fbi = framebuffer_alloc(sizeof(struct mtkfb_device), dev);
 	if (!fbi) {

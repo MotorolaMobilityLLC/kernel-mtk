@@ -3330,6 +3330,8 @@ static int update_primary_intferface_module(void)
 	return 0;
 }
 
+#define MTK_NO_DISP_IN_LK
+
 int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited)
 {
 	DISP_STATUS ret = DISP_STATUS_OK;
@@ -3645,6 +3647,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	pgc->lcm_fps = lcm_fps;
 	pgc->lcm_refresh_rate = 60;
 	pgc->state = DISP_ALIVE;
+
+#if defined(MTK_NO_DISP_IN_LK)
+	/* FIXME: [cc] set the backlight */
+	DISPCHECK("set backlight in Kernel\n");
+	disp_bls_set_backlight(520);
+#endif
 
 /*
 	primary_display_sodi_rule_init();

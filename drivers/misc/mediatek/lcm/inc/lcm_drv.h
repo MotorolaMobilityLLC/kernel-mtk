@@ -542,6 +542,11 @@ typedef struct {
 	unsigned int pll_div1;
 	unsigned int pll_div2;
 	unsigned int fbk_div;
+
+	unsigned int pll_prediv;
+	unsigned int pll_posdiv;
+	unsigned int pll_s2qdiv;
+
 	unsigned int fbk_sel;
 	unsigned int rg_bir;
 	unsigned int rg_bic;

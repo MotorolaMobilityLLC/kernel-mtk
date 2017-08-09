@@ -297,8 +297,8 @@ DISP_MODULE_ENUM ddp_get_reg_module(DISP_REG_ENUM reg_module);
 
 /* dsi */
 extern DDP_MODULE_DRIVER ddp_driver_dsi0;
-/* extern DDP_MODULE_DRIVER ddp_driver_dsi1; */
-/* extern DDP_MODULE_DRIVER ddp_driver_dsidual; */
+extern DDP_MODULE_DRIVER ddp_driver_dsi1;
+extern DDP_MODULE_DRIVER ddp_driver_dsidual;
 /* dpi */
 extern DDP_MODULE_DRIVER ddp_driver_dpi;
 

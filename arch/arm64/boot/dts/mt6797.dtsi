@@ -1929,7 +1929,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			clock-names = "MDP_COLOR";
 		};
 
-		mtkfb@0 {
+		mtkfb: mtkfb@0 {
 			compatible = "mediatek,mtkfb";
 		};
 
