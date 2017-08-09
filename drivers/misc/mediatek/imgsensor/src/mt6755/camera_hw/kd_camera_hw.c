@@ -510,7 +510,7 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 		break;
 	};
 
-	PK_DBG("PinIdx(%d) PwrType(%d) val(%d)\n", PinIdx, PwrType, Val);
+	/* PK_DBG("PinIdx(%d) PwrType(%d) val(%d)\n", PinIdx, PwrType, Val); */
 
 	return ret;
 }
@@ -524,8 +524,8 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 				return FALSE;
 			}
 		} else {
-			if (mtkcam_gpio_set(pinSetIdx, CUST_AVDD, PowerCustList.PowerCustInfo[CUST_AVDD].Voltage)) {
-					PK_DBG("[CAMERA CUST_AVDD] set gpio failed!!\n");
+			if (mtkcam_gpio_set(pinSetIdx, pwInfo.PowerType, PowerCustList.PowerCustInfo[CUST_AVDD].Voltage)) {
+				PK_DBG("[CAMERA CUST_AVDD] set gpio failed!!\n");
 			}
 		}
 	} else if (pwInfo.PowerType == DVDD) {
@@ -541,8 +541,8 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 					return FALSE;
 				}
 			} else {
-				if (mtkcam_gpio_set(pinSetIdx, CUST_MAIN2_DVDD, PowerCustList.PowerCustInfo[CUST_MAIN2_DVDD].Voltage)) {
-						PK_DBG("[CAMERA CUST_MAIN2_DVDD] set gpio failed!!\n");
+				if (mtkcam_gpio_set(pinSetIdx, pwInfo.PowerType, PowerCustList.PowerCustInfo[CUST_MAIN2_DVDD].Voltage)) {
+					PK_DBG("[CAMERA CUST_MAIN2_DVDD] set gpio failed!!\n");
 				}
 			}
 		} else if (pinSetIdx == 1) {
@@ -557,7 +557,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 					return FALSE;
 				}
 			} else {
-				if (mtkcam_gpio_set(pinSetIdx, CUST_SUB_DVDD, PowerCustList.PowerCustInfo[CUST_SUB_DVDD].Voltage)) {
+				if (mtkcam_gpio_set(pinSetIdx, pwInfo.PowerType, PowerCustList.PowerCustInfo[CUST_SUB_DVDD].Voltage)) {
 					PK_DBG("[CAMERA CUST_SUB_DVDD] set gpio failed!!\n");
 				}
 			}
@@ -569,7 +569,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 					return FALSE;
 				}
 			} else {
-				if (mtkcam_gpio_set(pinSetIdx, CUST_DVDD, PowerCustList.PowerCustInfo[CUST_DVDD].Voltage)) {
+				if (mtkcam_gpio_set(pinSetIdx, pwInfo.PowerType, PowerCustList.PowerCustInfo[CUST_DVDD].Voltage)) {
 					PK_DBG("[CAMERA CUST_DVDD] set gpio failed!!\n");
 				}
 			}
@@ -581,7 +581,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 				return FALSE;
 			}
 		} else {
-			if (mtkcam_gpio_set(pinSetIdx, CUST_DOVDD, PowerCustList.PowerCustInfo[CUST_DOVDD].Voltage)) {
+			if (mtkcam_gpio_set(pinSetIdx, pwInfo.PowerType, PowerCustList.PowerCustInfo[CUST_DOVDD].Voltage)) {
 					PK_DBG("[CAMERA CUST_DOVDD] set gpio failed!!\n");
 			}
 
