@@ -20,8 +20,7 @@
 #include <mach/mt_clkmgr.h>
 /* #include <mach/mt_dcm.h> */
 #include <mach/mt_spm_mtcmos.h>
-/* #include <mach/mt_spm_sleep.h> */
-/* #include <mach/mt_freqhopping.h> */
+#include <mach/mt_freqhopping.h>
 /* #include <mach/mt_gpufreq.h> */
 /* #include <mach/irqs.h> */
 
@@ -29,6 +28,7 @@
 /* #include <mach/upmu_sw.h> */
 /* #include <mach/upmu_hw.h> */
 #include "mt_spm.h"
+#include "mt_spm_sleep.h"
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -53,12 +53,12 @@ void __iomem *clk_vdec_gcon_base;
 /* #define DISP_CLK_LOG */
 /* #define SYS_LOG */
 /* #define MUX_LOG_TOP */
-#define MUX_LOG
+/* #define MUX_LOG */
 /* #define PLL_LOG_TOP */
 #define PLL_LOG
 
 /* **** */
-#define Bring_Up
+/* #define Bring_Up */
 
 #define VLTE_SUPPORT
 
@@ -459,7 +459,7 @@ static struct pll plls[NR_PLLS] = {
 	/* .pwr_addr = ARMCA7PLL_PWR_CON0, */
 	 .ops = &arm_pll_ops,
 	/* **** */
-	/* .hp_id = FH_ARM_PLLID, */
+	.hp_id = FH_ARM_PLLID,
 	.hp_switch = 1,
 	}, {
 	.name = __stringify(MAINPLL),
@@ -470,7 +470,7 @@ static struct pll plls[NR_PLLS] = {
 	/* .pwr_addr = MAINPLL_PWR_CON0, */
 	.ops = &sdm_pll_ops,
 	/* **** */
-	/* .hp_id = FH_MAIN_PLLID, */
+	.hp_id = FH_MAIN_PLLID,
 	.hp_switch = 1,
 	}, {
 	.name = __stringify(MSDCPLL),
@@ -481,7 +481,7 @@ static struct pll plls[NR_PLLS] = {
 	/* .pwr_addr = MSDCPLL_PWR_CON0, */
 	.ops = &sdm_pll_ops,
 	/* **** */
-	/* .hp_id = FH_MSDC_PLLID, */
+	.hp_id = FH_MSDC_PLLID,
 	.hp_switch = 1,
 	}, {
 	 .name = __stringify(UNIVPLL),
@@ -500,7 +500,7 @@ static struct pll plls[NR_PLLS] = {
 	/* .pwr_addr = MMPLL_PWR_CON0, */
 	.ops = &sdm_pll_ops,
 	/* **** */
-	/* .hp_id = FH_MM_PLLID, */
+	.hp_id = FH_MM_PLLID,
 	.hp_switch = 1,
 	}, {
 	.name = __stringify(VENCPLL),
@@ -511,7 +511,7 @@ static struct pll plls[NR_PLLS] = {
 	/* .pwr_addr = VENCPLL_PWR_CON0, */
 	.ops = &sdm_pll_ops,
 	/* **** */
-	/* .hp_id = FH_VENC_PLLID, */
+	.hp_id = FH_VENC_PLLID,
 	.hp_switch = 1,
 	}, {
 	.name = __stringify(TVDPLL),
@@ -522,7 +522,7 @@ static struct pll plls[NR_PLLS] = {
 	/* .pwr_addr = TVDPLL_PWR_CON0, */
 	.ops = &sdm_pll_ops,
 	/* **** */
-	/* .hp_id = FH_TVD_PLLID, */
+	.hp_id = FH_TVD_PLLID,
 	.hp_switch = 1,
 	}, /* {
 	.name = __stringify(MPLL),
@@ -1340,11 +1340,11 @@ static int sys_get_state_op(struct subsys *sys)
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 /* **** */
-/* unsigned int sta = clk_readl(SPM_PWR_STATUS); */
-/* unsigned int sta_s = clk_readl(SPM_PWR_STATUS_2ND); */
+	unsigned int sta = clk_readl(SPM_PWR_STATUS);
+	unsigned int sta_s = clk_readl(SPM_PWR_STATUS_2ND);
 
-/* return (sta & sys->sta_mask) && (sta_s & sys->sta_mask); */
-	return 0;
+	return (sta & sys->sta_mask) && (sta_s & sys->sta_mask);
+	/* return 0; */
 #else
 	return 0;
 #endif
@@ -3479,7 +3479,6 @@ static void cg_all_force_on(void)
 
 static void cg_bootup_pdn(void)
 {
-#if 0
 	/* AUDIO */
 	clk_writel(AUDIO_TOP_CON0, AUD_CG);
 
@@ -3503,7 +3502,6 @@ static void cg_bootup_pdn(void)
 
 	/* VENC */
 	/* clk_clrl(VENC_CG_CON, VENC_CG); */
-#endif
 }
 
 
@@ -3512,16 +3510,16 @@ static void mt_subsys_init(void)
 	int i;
 	struct subsys *sys;
 /* **** */
-/*
-    syss[SYS_MD1].ctl_addr = SPM_MD_PWR_CON;
-    syss[SYS_CONN].ctl_addr = SPM_CONN_PWR_CON;
-    syss[SYS_DIS].ctl_addr = SPM_DIS_PWR_CON;
-    syss[SYS_MFG].ctl_addr = SPM_MFG_PWR_CON;
-    syss[SYS_ISP].ctl_addr = SPM_ISP_PWR_CON;
-    syss[SYS_VDE].ctl_addr = SPM_VDE_PWR_CON;
-    //syss[SYS_VEN].ctl_addr = SPM_VEN_PWR_CON;
-    //syss[SYS_MD2].ctl_addr = SPM_MD2_PWR_CON;
-*/
+
+	syss[SYS_MD1].ctl_addr = SPM_MD_PWR_CON;
+	syss[SYS_CONN].ctl_addr = SPM_CONN_PWR_CON;
+	syss[SYS_DIS].ctl_addr = SPM_DIS_PWR_CON;
+	syss[SYS_MFG].ctl_addr = SPM_MFG_PWR_CON;
+	syss[SYS_ISP].ctl_addr = SPM_ISP_PWR_CON;
+	syss[SYS_VDE].ctl_addr = SPM_VDE_PWR_CON;
+	/* syss[SYS_VEN].ctl_addr = SPM_VEN_PWR_CON; */
+	/* syss[SYS_MD2].ctl_addr = SPM_MD2_PWR_CON; */
+
 	for (i = 0; i < NR_SYSS; i++) {
 		sys = &syss[i];
 		sys->state = sys->ops->get_state(sys);
@@ -3833,22 +3831,23 @@ int mt_clkmgr_init(void)
 	BUG_ON(initialized);
 
 /*
-    spm_mtcmos_ctrl_vdec(STA_POWER_DOWN);
-    spm_mtcmos_ctrl_venc(STA_POWER_DOWN);
-    spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
-    spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_vdec(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_venc(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
 */
 	spm_mtcmos_ctrl_vdec(STA_POWER_ON);
-/* spm_mtcmos_ctrl_venc(STA_POWER_ON); */
+	/* spm_mtcmos_ctrl_venc(STA_POWER_ON); */
 	spm_mtcmos_ctrl_isp(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg(STA_POWER_ON);
-/* spm_mtcmos_ctrl_connsys(STA_POWER_ON); */
+	/* spm_mtcmos_ctrl_connsys(STA_POWER_ON); */
 
 	cg_all_force_on();
 
 	cg_bootup_pdn();
 
-	return 1;
+/* **** */
+	/* return 1; */
 
 	mt_plls_init();
 	mt_subsys_init();
@@ -3857,7 +3856,7 @@ int mt_clkmgr_init(void)
 
 	initialized = 1;
 /* **** */
-/* mt_freqhopping_init(); */
+	mt_freqhopping_init();
 	print_grp_regs();
 
 	pr_warn("%s: CLKMGR_INCFILE_VER=%s\n", __func__, CLKMGR_INCFILE_VER);
@@ -3866,56 +3865,47 @@ int mt_clkmgr_init(void)
 }
 
 /* **** */
-/*
-#ifdef CONFIG_MTK_MMC
-extern void msdc_clk_status(int * status);
-#else
-void msdc_clk_status(int * status) { *status = 0; }
-#endif
+/* movr to .h */
 
-
-//#define VEN_PWR_STA_MASK    (0x1 << 8)
+/* #define VEN_PWR_STA_MASK    (0x1 << 8) */
 #define VDE_PWR_STA_MASK    (0x1 << 7)
 #define ISP_PWR_STA_MASK    (0x1 << 5)
 #define MFG_PWR_STA_MASK    (0x1 << 4)
 
 bool clkmgr_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask)
 {
-    int i,j;
-    unsigned int sd_mask = 0;
-    unsigned int cg_mask = 0;
+	int i, j;
+	unsigned int sd_mask = 0;
+	unsigned int cg_mask = 0;
 
 #ifdef PLL_CLK_LINK
-    unsigned int sta;
+	unsigned int sta;
 #endif
-    msdc_clk_status(&sd_mask);
-    if (sd_mask) {
-	block_mask[CG_PERI] |= sd_mask;
-	return false;
-    }
-
-    for (i = CG_INFRA; i < NR_GRPS; i++) {
-	cg_mask = grps[i].state & condition_mask[i];
-	if (cg_mask)
-		{
-			for (j = CG_INFRA; j < NR_GRPS; j++)
-			{
-				block_mask[j] = grps[j].state & condition_mask[j];
-			}
-
-	    //block_mask[i] |= cg_mask;
-	    return false;
+	msdc_clk_status(&sd_mask);
+	if (sd_mask) {
+		block_mask[CG_PERI] |= sd_mask;
+		return false;
 	}
-    }
+
+	for (i = CG_INFRA; i < NR_GRPS; i++) {
+		cg_mask = grps[i].state & condition_mask[i];
+		if (cg_mask) {
+			for (j = CG_INFRA; j < NR_GRPS; j++)
+				block_mask[j] = grps[j].state & condition_mask[j];
+
+			/* block_mask[i] |= cg_mask; */
+			return false;
+		}
+	}
 
 #ifdef PLL_CLK_LINK
-    sta = clk_readl(SPM_PWR_STATUS);
-    if (sta & (MFG_PWR_STA_MASK | ISP_PWR_STA_MASK | VDE_PWR_STA_MASK))
-	return false;
+	sta = clk_readl(SPM_PWR_STATUS);
+	if (sta & (MFG_PWR_STA_MASK | ISP_PWR_STA_MASK | VDE_PWR_STA_MASK))
+		return false;
 #endif
-    return true;
+	return true;
 }
-*/
+
 static unsigned int clk_cfg_4;
 void clkmgr_faudintbus_pll2sq(void)
 {
@@ -4071,8 +4061,8 @@ static int subsys_test_read(struct seq_file *m, void *v)
 	unsigned int value = 0, sta = 0, sta_s = 0;
 	const char *name;
 /* **** */
-/* sta = clk_readl(SPM_PWR_STATUS); */
-/* sta_s = clk_readl(SPM_PWR_STATUS_2ND); */
+	sta = clk_readl(SPM_PWR_STATUS);
+	sta_s = clk_readl(SPM_PWR_STATUS_2ND);
 
 	seq_puts(m, "********** subsys register dump **********\n");
 	for (i = 0; i < NR_SYSS; i++) {
@@ -4768,23 +4758,22 @@ static int mt_clkmgr_debug_module_init(void)
 static int __init mt_clkmgr_late_init(void)
 {
 /* **** */
-/*
-    mt_enable_clock(MT_CG_DISP1_DPI_PIXEL, "clkmgr");
-    mt_disable_clock(MT_CG_DISP1_DPI_PIXEL, "clkmgr");
+	mt_enable_clock(MT_CG_DISP1_DPI_PIXEL, "clkmgr");
+	mt_disable_clock(MT_CG_DISP1_DPI_PIXEL, "clkmgr");
 
-    mt_enable_clock(MT_CG_IMAGE_LARB2_SMI, "clkmgr");
-    mt_disable_clock(MT_CG_IMAGE_LARB2_SMI, "clkmgr");
-    mt_enable_clock(MT_CG_VDEC0_VDEC, "clkmgr");
-    mt_disable_clock(MT_CG_VDEC0_VDEC, "clkmgr");
-    //mt_enable_clock(MT_CG_VENC_LARB, "clkmgr");
-    //mt_disable_clock(MT_CG_VENC_LARB, "clkmgr");
+	mt_enable_clock(MT_CG_IMAGE_LARB2_SMI, "clkmgr");
+	mt_disable_clock(MT_CG_IMAGE_LARB2_SMI, "clkmgr");
+	mt_enable_clock(MT_CG_VDEC0_VDEC, "clkmgr");
+	mt_disable_clock(MT_CG_VDEC0_VDEC, "clkmgr");
+	/* mt_enable_clock(MT_CG_VENC_LARB, "clkmgr"); */
+	/* mt_disable_clock(MT_CG_VENC_LARB, "clkmgr"); */
 
-    enable_mux(MT_MUX_AUD1, "clkmgr");
-    disable_mux(MT_MUX_AUD1, "clkmgr");
-    enable_mux(MT_MUX_AUD2, "clkmgr");
-    disable_mux(MT_MUX_AUD2, "clkmgr");
-    print_grp_regs();
-*/
+	enable_mux(MT_MUX_AUD1, "clkmgr");
+	disable_mux(MT_MUX_AUD1, "clkmgr");
+	enable_mux(MT_MUX_AUD2, "clkmgr");
+	disable_mux(MT_MUX_AUD2, "clkmgr");
+	print_grp_regs();
+
 	return 0;
 }
 module_init(mt_clkmgr_debug_module_init);
@@ -4799,13 +4788,13 @@ void all_force_off(void)
 	clk_info("All force off\n");
 	/* MTCMOS */
 	spm_mtcmos_ctrl_mdsys1(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mdsys2(STA_POWER_DOWN);
+	/* spm_mtcmos_ctrl_mdsys2(STA_POWER_DOWN); */
 	spm_mtcmos_ctrl_connsys(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_disp(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_vdec(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_venc(STA_POWER_DOWN);
+	/* spm_mtcmos_ctrl_venc(STA_POWER_DOWN); */
 
 	/* PLL */
 	enable_pll(MSDCPLL, "clk");
