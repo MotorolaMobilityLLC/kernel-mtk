@@ -520,7 +520,7 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 		BUG_ON(da9214_config_interface(0x0, 0x0, 0xF, 0) < 0);
 		BUG_ON(da9214_config_interface(0x5E, 0x1, 0x1, 0) < 0);
 
-		udelay(500);
+		udelay(1000);
 	}
 
 	/* EXT_BUCK_ISO */
@@ -537,6 +537,7 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	spin_unlock(&reset_lock);
 
 	/* set VSRAM enable, cal_eFuse, rsh = 0x0f -> 0x08 */
+	udelay(240);
 	BigiDVFSSRAMLDOSet(110000);
 	udelay(240);
 
