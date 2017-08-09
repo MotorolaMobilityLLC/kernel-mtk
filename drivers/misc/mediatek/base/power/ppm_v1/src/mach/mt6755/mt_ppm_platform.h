@@ -14,6 +14,7 @@ extern "C" {
 /* ppm driver update state to MET directly  0: turn off */
 #define PPM_UPDATE_STATE_DIRECT_TO_MET  (1)
 #define PPM_HW_OCP_SUPPORT		(0)
+#define PPM_DLPT_ENHANCEMENT		(0)
 
 /* DLPT */
 #define PPM_DLPT_DEFAULT_MODE	(SW_MODE)

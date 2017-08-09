@@ -21,10 +21,10 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #ifdef ENABLE_IDVFS
 #include "mt_ocp.h"
 #define PPM_HW_OCP_SUPPORT		(1)
-#define PPM_GET_POWER_FROM_OCP		(0)
 #else
 #define PPM_HW_OCP_SUPPORT		(0)
 #endif
+#define PPM_DLPT_ENHANCEMENT		(1)
 
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
@@ -119,8 +119,10 @@ struct ppm_pwr_idx_ref_tbl_data {
 /* APIs								*/
 /*==============================================================*/
 extern unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage);
+#if PPM_DLPT_ENHANCEMENT
 extern unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 					unsigned int cluster_num, unsigned int percentage);
+#endif
 
 #ifdef __cplusplus
 }

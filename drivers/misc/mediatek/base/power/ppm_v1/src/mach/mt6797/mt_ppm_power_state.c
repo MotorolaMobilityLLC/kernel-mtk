@@ -904,13 +904,15 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 
 	return power_for_tbl_lookup;
 }
+#endif
 
+#if PPM_DLPT_ENHANCEMENT
 unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 				unsigned int cluster_num, unsigned int percentage)
 {
 	unsigned int budget = 0;
 
-#if PPM_GET_POWER_FROM_OCP
+#if 0
 	int i, ret;
 
 	for (i = 0; i < cluster_num; i++) {
@@ -972,7 +974,7 @@ unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 	int i;
 	ktime_t now, delta;
 
-	for_each_ppm_clusters(i) {
+	for (i = 0; i < cluster_num; i++) {
 		int core = cluster_status[i].core_num;
 		int opp = cluster_status[i].freq_idx;
 
