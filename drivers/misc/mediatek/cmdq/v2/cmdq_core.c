@@ -691,7 +691,7 @@ uint32_t cmdqCoreGetEvent(CMDQ_EVENT_ENUM event)
 	uint32_t regValue = 0;
 	int32_t eventValue = cmdq_core_get_event_value(event);
 
-	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, (0x3FF && eventValue));
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, (0x3FF & eventValue));
 	regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
 	return regValue;
 }
@@ -2856,10 +2856,8 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			CMDQ_LOG("Enable GCE Ultra ability");
 			CMDQ_REG_SET32(CMDQ_BUS_CONTROL_TYPE, 0x3);
 #endif
-#ifdef CMDQ_EVENT_NEED_BACKUP
 			/* Restore event */
 			cmdq_get_func()->eventRestore();
-#endif
 
 		}
 		atomic_inc(&gCmdqThreadUsage);
@@ -2879,10 +2877,8 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 		CMDQ_VERBOSE("[CLOCK] Disable CMDQ(GCE) Clock test=%d SMI %d\n",
 			     atomic_read(&gCmdqThreadUsage), atomic_read(&gSMIThreadUsage));
 		if (0 >= atomic_read(&gCmdqThreadUsage)) {
-#ifdef CMDQ_EVENT_NEED_BACKUP
 			/* Backup event */
 			cmdq_get_func()->eventBackup();
-#endif
 			/* clock-off */
 			cmdq_get_func()->enableGCEClockLocked(enable);
 		}
@@ -7417,11 +7413,6 @@ int32_t cmdqCoreInitialize(void)
 	/* Reset overall first error dump */
 	memset(&gCmdqFirstError, 0x0, sizeof(DumpFirstErrorStruct));
 	gCmdqFirstError.cmdqMaxSize = CMDQ_MAX_FIRSTERROR;
-#endif
-
-#ifdef CMDQ_EVENT_NEED_BACKUP
-	/* Initialize backup event */
-	cmdq_get_func()->initialBackupEvent();
 #endif
 
 	/* pre-allocate free tasks */

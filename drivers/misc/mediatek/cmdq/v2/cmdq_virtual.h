@@ -80,9 +80,6 @@ typedef void (*CmdqDumpGPR) (void);
 /* flag from scenario */
 typedef uint64_t(*CmdqFlagFromScenario) (CMDQ_SCENARIO_ENUM scenario);
 
-/* initial backup evet setting */
-typedef void (*CmdqInitialBackupEvent) (void);
-
 /* evet backup */
 typedef void (*CmdqEventBackup) (void);
 
@@ -124,7 +121,6 @@ typedef struct cmdqCoreFuncStruct {
 	CmdqDumpSMI dumpSMI;
 	CmdqDumpGPR dumpGPR;
 	CmdqFlagFromScenario flagFromScenario;
-	CmdqInitialBackupEvent initialBackupEvent;
 	CmdqEventBackup eventBackup;
 	CmdqEventRestore eventRestore;
 	CmdqTestSetup testSetup;

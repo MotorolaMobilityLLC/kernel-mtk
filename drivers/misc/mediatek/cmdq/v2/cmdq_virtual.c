@@ -993,35 +993,31 @@ uint64_t cmdq_virtual_flag_from_scenario(CMDQ_SCENARIO_ENUM scn)
  *
  */
 #ifdef CMDQ_EVENT_NEED_BACKUP
-#define CMDQ_EVENT_BACKUP_COUNT (2)
-typedef struct cmdqBackupEventStruct {
-	CMDQ_EVENT_ENUM EventID[CMDQ_EVENT_BACKUP_COUNT];
-	uint32_t BackupValue[CMDQ_EVENT_BACKUP_COUNT];
-} cmdqBackupEventStruct;
-cmdqBackupEventStruct gCmdqBackupEvent;
-#endif				/* CMDQ_EVENT_NEED_BACKUP */
+struct cmdq_backup_event_struct {
+	CMDQ_EVENT_ENUM EventID;
+	uint32_t BackupValue;
+};
 
-void cmdq_virtual_initial_backup_event(void)
-{
-#ifdef CMDQ_EVENT_NEED_BACKUP
-	memset(&(gCmdqBackupEvent.BackupValue[0]), 0, sizeof(gCmdqBackupEvent.BackupValue));
-	memset(&(gCmdqBackupEvent.EventID[0]), -1, sizeof(gCmdqBackupEvent.EventID));
-
-	gCmdqBackupEvent.EventID[0] = cmdq_core_get_event_value(CMDQ_SYNC_TOKEN_VENC_EOF);
-	gCmdqBackupEvent.EventID[1] = cmdq_core_get_event_value(CMDQ_SYNC_TOKEN_VENC_INPUT_READY);
+static struct cmdq_backup_event_struct g_cmdq_backup_event[] = {
+	{CMDQ_SYNC_TOKEN_VENC_EOF, 0,},
+	{CMDQ_SYNC_TOKEN_VENC_INPUT_READY, 0,}
+};
 #endif				/* CMDQ_EVENT_NEED_BACKUP */
-}
 
 void cmdq_virtual_event_backup(void)
 {
 #ifdef CMDQ_EVENT_NEED_BACKUP
 	int i;
+	int array_size = (sizeof(g_cmdq_backup_event) / sizeof(g_cmdq_backup_event[0]));
 
-	for (i = 0; i < CMDQ_EVENT_BACKUP_COUNT; i++) {
-		if (-1 == gCmdqBackupEvent.EventID[i])
+	for (i = 0; i < array_size; i++) {
+		if (g_cmdq_backup_event[i].EventID < 0 || g_cmdq_backup_event[i].EventID >= CMDQ_SYNC_TOKEN_MAX)
 			continue;
 
-		cmdqCoreGetEvent(gCmdqBackupEvent.EventID[i]);
+		g_cmdq_backup_event[i].BackupValue = cmdqCoreGetEvent(g_cmdq_backup_event[i].EventID);
+		CMDQ_MSG("[backup event] event: %s, value: %d\n",
+				cmdq_core_get_event_name_ENUM(g_cmdq_backup_event[i].EventID),
+				g_cmdq_backup_event[i].BackupValue);
 	}
 #endif				/* CMDQ_EVENT_NEED_BACKUP */
 }
@@ -1030,12 +1026,20 @@ void cmdq_virtual_event_restore(void)
 {
 #ifdef CMDQ_EVENT_NEED_BACKUP
 	int i;
+	int array_size = (sizeof(g_cmdq_backup_event) / sizeof(g_cmdq_backup_event[0]));
 
-	for (i = 0; i < CMDQ_EVENT_BACKUP_COUNT; i++) {
-		if (-1 == gCmdqBackupEvent.EventID[i])
+	for (i = 0; i < array_size; i++) {
+		if (g_cmdq_backup_event[i].EventID < 0 || g_cmdq_backup_event[i].EventID >= CMDQ_SYNC_TOKEN_MAX)
 			continue;
 
-		cmdqCoreSetEvent(gCmdqBackupEvent.EventID[i]);
+		CMDQ_MSG("[restore event] event: %s, value: %d\n",
+				cmdq_core_get_event_name_ENUM(g_cmdq_backup_event[i].EventID),
+				g_cmdq_backup_event[i].BackupValue);
+
+		if (1 == g_cmdq_backup_event[i].BackupValue)
+			cmdqCoreSetEvent(g_cmdq_backup_event[i].EventID);
+		else if (0 == g_cmdq_backup_event[i].BackupValue)
+			cmdqCoreClearEvent(g_cmdq_backup_event[i].EventID);
 	}
 #endif				/* CMDQ_EVENT_NEED_BACKUP */
 }
@@ -1185,7 +1189,6 @@ void cmdq_virtual_function_setting(void)
 	 * Event backup
 	 *
 	 */
-	pFunc->initialBackupEvent = cmdq_virtual_initial_backup_event;
 	pFunc->eventBackup = cmdq_virtual_event_backup;
 	pFunc->eventRestore = cmdq_virtual_event_restore;
 
