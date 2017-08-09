@@ -84,7 +84,7 @@ struct mt_spi_t {
 /*open time record debug, log can't affect transfer*/
 /*	#define SPI_REC_DEBUG */
 
-u32 pad_macro;
+u32 pad_macro[] = {0, 1, 1, 0, 0, 0};
 static void enable_clk(struct mt_spi_t *ms)
 {
 #if (!defined(CONFIG_MT_SPI_FPGA_ENABLE))
@@ -137,7 +137,7 @@ static void spi_dump_reg(struct mt_spi_t *ms)
 	SPI_DBG("tx_s:0x%.8x\n", spi_readl(ms, SPI_TX_SRC_REG));
 	SPI_DBG("rx_d:0x%.8x\n", spi_readl(ms, SPI_RX_DST_REG));
 	SPI_DBG("sta1:0x%.8x\n", spi_readl(ms, SPI_STATUS1_REG));
-	SPI_DBG(":0x%.8x\n", spi_readl(ms, SPI_STATUS1_REG));
+	SPI_DBG(":0x%.8x\n", spi_readl(ms, SPI_PAD_SEL_REG));
 	SPI_DBG("||*****************************************||\n");
 
 }
@@ -1117,7 +1117,7 @@ static int mt_do_spi_setup(struct mt_spi_t *ms, struct mt_chip_conf *chip_config
 	reg_val |= (chip_config->deassert << SPI_CMD_DEASSERT_OFFSET);
 	spi_writel(ms, SPI_CMD_REG, reg_val);
 
-/*	spi_writel(ms, SPI_PAD_SEL_REG, pad_macro);*/
+	spi_writel(ms, SPI_PAD_SEL_REG, pad_macro[ms->pdev->id]);
 /*
 #if defined(GPIO_SPI_CS_PIN) && defined(GPIO_SPI_SCK_PIN)
 	&&defined(GPIO_SPI_MISO_PIN) && defined(GPIO_SPI_MOSI_PIN)
