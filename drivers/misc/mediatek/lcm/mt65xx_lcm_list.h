@@ -227,6 +227,7 @@ extern LCM_DRIVER ek79007_wsvgalnl_dsi_vdo_lcm_drv;
 
 extern LCM_DRIVER cm_n070ice_dsi_vdo_mt8173_lcm_drv;
 extern LCM_DRIVER nt35595_fhd_dsi_cmd_truly_nt50358_extern_lcm_drv;
+extern LCM_DRIVER r69429_wqxga_dsi_vdo_lcm_drv;
 
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);

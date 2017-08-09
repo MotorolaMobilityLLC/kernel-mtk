@@ -32,8 +32,6 @@
 #include <platform/mt_pmic.h>
 #elif defined(BUILD_UBOOT)
 #else
-#include <mach/mt_gpio.h>
-#include <mach/mt_pm_ldo.h>
 #endif
 
 /* --------------------------------------------------------------------------- */
@@ -72,6 +70,9 @@ unsigned int GPIO_LCD_LED_EN;
 #define write_regs(addr, pdata, byte_nums)				 lcm_util.dsi_write_regs(addr, pdata, byte_nums)
 #define read_reg(cmd)						  lcm_util.dsi_dcs_read_lcm_reg(cmd)
 #define read_reg_v2(cmd, buffer, buffer_size) lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
+
+#define GPIO_OUT_ONE 1
+#define GPIO_OUT_ZERO 0
 
 #define   LCM_DSI_CMD_MODE									0
 
@@ -343,7 +344,7 @@ static void init_power(void)
 #endif
 }
 
-static void lcm_init(struct platform_device *pdev)
+static void lcm_init(void)
 {
 #ifdef BUILD_LK
 	printf("%s, LK\n", __func__);

@@ -34,6 +34,13 @@ config TOUCHSCREEN_MTK_GT1151
 
 source "drivers/input/touchscreen/mediatek/GT1151/Kconfig"
 
+config TOUCHSCREEN_MTK_GT928
+	tristate "GT928 Touchscreen"
+	help
+	  Say Y here if you have Goodix GT928 touchscreen,
+	  connected to your system.
+	  If unsure, say N.
+	  To compile this driver as a module, choose M here.
 config TOUCHSCREEN_MTK_GT9XXTB_HOTKNOT
 	bool "GT9XXTB hotknot for Mediatek package"
 	default n
