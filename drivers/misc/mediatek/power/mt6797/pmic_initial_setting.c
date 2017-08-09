@@ -150,8 +150,7 @@ void PMIC_INIT_SETTING_V1(void)
 
 	chip_version = pmic_get_register_value(PMIC_SWCID);
 
-	/* This flag is used for fg to judge if battery even removed manually */
-	is_battery_remove = !pmic_get_register_value(PMIC_STRUP_PWROFF_SEQ_EN);
+	is_battery_remove = !PMIC_check_battery();
 	is_wdt_reboot_pmic = pmic_get_register_value(PMIC_WDTRSTB_STATUS);
 	pmic_set_register_value(PMIC_TOP_RST_MISC_SET,  0x8);
 	is_wdt_reboot_pmic_chk = pmic_get_register_value(PMIC_WDTRSTB_STATUS);
@@ -216,6 +215,7 @@ ret = pmic_config_interface(0x282, 0x0, 0x1, 11);
 ret = pmic_config_interface(0x28E, 0x0, 0x1, 4);
 ret = pmic_config_interface(0x410, 0x8, 0x3F, 8);
 ret = pmic_config_interface(0x414, 0x3, 0x3, 4);
+ret = pmic_config_interface(0x41A, 0x40, 0x7F, 0);
 ret = pmic_config_interface(0x422, 0x1, 0x1, 7);
 ret = pmic_config_interface(0x436, 0x0, 0x3, 2);
 ret = pmic_config_interface(0x44A, 0x3, 0x3, 8);
@@ -270,7 +270,6 @@ ret = pmic_config_interface(0x61A, 0x4, 0x7F, 8);
 ret = pmic_config_interface(0x61E, 0x64, 0x7F, 0);
 ret = pmic_config_interface(0x620, 0x64, 0x7F, 0);
 ret = pmic_config_interface(0x626, 0x3, 0x3, 0);
-ret = pmic_config_interface(0x626, 0x1, 0x3, 4);
 ret = pmic_config_interface(0x626, 0x1, 0x1, 8);
 ret = pmic_config_interface(0x62E, 0x11, 0x7F, 0);
 ret = pmic_config_interface(0x62E, 0x4, 0x7F, 8);
@@ -296,13 +295,11 @@ ret = pmic_config_interface(0x68A, 0x1, 0x1, 8);
 ret = pmic_config_interface(0x692, 0x0, 0x7F, 0);
 ret = pmic_config_interface(0x692, 0x1, 0x7F, 8);
 ret = pmic_config_interface(0x69E, 0x0, 0x3, 0);
-ret = pmic_config_interface(0x6A0, 0x1, 0x1, 1);
 ret = pmic_config_interface(0x6A6, 0x11, 0x7F, 0);
 ret = pmic_config_interface(0x6A6, 0x4, 0x7F, 8);
-ret = pmic_config_interface(0x6AC, 0x50, 0x7F, 0);
+ret = pmic_config_interface(0x6A8, 0x48, 0x7F, 0);
 ret = pmic_config_interface(0x6B2, 0x3, 0x3, 0);
 ret = pmic_config_interface(0x6B2, 0x1, 0x3, 4);
-ret = pmic_config_interface(0x6B2, 0x1, 0x1, 8);
 ret = pmic_config_interface(0xA00, 0x1, 0x1, 2);
 ret = pmic_config_interface(0xA00, 0x0, 0x7, 5);
 ret = pmic_config_interface(0xA02, 0x1, 0x1, 9);
@@ -333,7 +330,6 @@ ret = pmic_config_interface(0xA4C, 0x0, 0x7, 5);
 ret = pmic_config_interface(0xA4E, 0x1, 0x1, 9);
 ret = pmic_config_interface(0xA54, 0x1, 0x1, 9);
 ret = pmic_config_interface(0xA5A, 0x1, 0x1, 9);
-ret = pmic_config_interface(0xA5E, 0x1, 0x1, 2);
 ret = pmic_config_interface(0xA5E, 0x0, 0x7, 5);
 ret = pmic_config_interface(0xA66, 0x1, 0x1, 9);
 ret = pmic_config_interface(0xA68, 0x1, 0x1, 3);
