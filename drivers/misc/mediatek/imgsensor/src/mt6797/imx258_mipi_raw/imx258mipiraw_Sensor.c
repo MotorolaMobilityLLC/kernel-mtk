@@ -479,7 +479,7 @@ static void load_imx258_SPC_Data(void)
 
 static void set_dummy(void)
 {
-    LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
+    //LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
     /* you can set dummy by imgsensor.dummy_line and imgsensor.dummy_pixel, or you can set dummy by imgsensor.frame_length and imgsensor.line_length */
 	write_cmos_sensor(0x0104, 0x01);
 
@@ -2845,8 +2845,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	SENSOR_WINSIZE_INFO_STRUCT *wininfo;
 	SENSOR_VC_INFO_STRUCT *pvcinfo;
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
-
-	LOG_INF("feature_id = %d\n", feature_id);
+  
+  if(!((feature_id == 3004) || (feature_id == 3006)))
+		LOG_INF("feature_id = %d\n", feature_id);
+	
 	switch (feature_id) {
 		case SENSOR_FEATURE_GET_PERIOD:
 			*feature_return_para_16++ = imgsensor.line_length;

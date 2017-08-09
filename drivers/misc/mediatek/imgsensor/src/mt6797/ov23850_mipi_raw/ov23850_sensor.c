@@ -472,7 +472,7 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 
     LOG_INF("framerate = %d, min_framelength_en=%d\n", framerate,min_framelength_en);
     frame_length = imgsensor.pclk / framerate * 10 / imgsensor.line_length;
-    LOG_INF("frame_length =%d\n", frame_length);
+    //LOG_INF("frame_length =%d\n", frame_length);
     spin_lock(&imgsensor_drv_lock);
     imgsensor.frame_length = (frame_length > imgsensor.min_frame_length) ? frame_length : imgsensor.min_frame_length;
     imgsensor.dummy_line = imgsensor.frame_length - imgsensor.min_frame_length;
@@ -485,6 +485,7 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
     if (min_framelength_en)
         imgsensor.min_frame_length = imgsensor.frame_length;
     spin_unlock(&imgsensor_drv_lock);
+    LOG_INF("framerate = %d, min_framelength_en=%d\n", framerate,min_framelength_en);
     set_dummy();
 }
 
