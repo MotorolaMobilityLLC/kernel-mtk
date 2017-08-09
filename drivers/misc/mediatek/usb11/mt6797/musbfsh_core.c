@@ -2292,7 +2292,7 @@ static int __init musbfsh_init_controller(struct device *dev,
 	MYDBG("skip wake_lock(&musbfsh_suspend_lock)\n");
 #endif
 
-	MYDBG("end of %s(), build time : %s\n", __func__, __TIME__);
+	/* MYDBG("end of %s(), build time : %s\n", __func__, __TIME__); */
 
 #endif
 #ifdef MTK_DT_USB_SUPPORT

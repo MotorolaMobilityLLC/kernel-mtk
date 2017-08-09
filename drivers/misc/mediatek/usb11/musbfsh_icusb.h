@@ -146,4 +146,6 @@ extern enum PHY_VOLTAGE_TYPE get_usb11_phy_voltage(void);
 extern void mt65xx_usb11_mac_reset_and_phy_stress_set(void);
 extern int is_usb11_enabled(void);
 
+#define MYDBG(fmt, args...) pr_warn("MTK_ICUSB [DBG], <%s(), %d> " fmt, \
+				__func__, __LINE__, ## args)
 #endif

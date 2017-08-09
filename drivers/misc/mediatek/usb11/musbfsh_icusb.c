@@ -411,7 +411,8 @@ nlmsg_failure:			/* Used by NLMSG_PUT */
 /* Receive messages from netlink socket. */
 static void udp_receive(struct sk_buff *skb)
 {
-	u_int uid, seq;
+	kuid_t uid,
+	u_int seq;
 	void *data;
 	struct nlmsghdr *nlh;
 	char reply_data[16];
@@ -424,8 +425,8 @@ static void udp_receive(struct sk_buff *skb)
 	uid = NETLINK_CREDS(skb)->uid;
 	seq = nlh->nlmsg_seq;
 	data = NLMSG_DATA(nlh);
-	MYDBG("recv skb from user space uid:%d pid:%d seq:%d\n",
-	      uid, g_pid, seq);
+	MYDBG("recv skb from user space pid:%d seq:%d\n",
+	      g_pid, seq);
 	MYDBG("data is :%s\n", (char *)data);
 
 

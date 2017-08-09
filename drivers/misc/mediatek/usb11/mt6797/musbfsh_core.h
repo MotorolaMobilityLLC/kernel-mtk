@@ -327,6 +327,8 @@ int musbfsh_wake_lock_hold = 0;
 
 #ifdef CONFIG_MTK_ICUSB_SUPPORT
 #include "musbfsh_icusb.h"
+#include "mach/upmu_hw.h"
+#include "mt-plat/upmu_common.h"
 extern void musbfsh_init_phy_by_voltage(enum PHY_VOLTAGE_TYPE);
 extern void musbfsh_open_vsim_power(int on);
 extern void musbfsh_open_vsim_power1(int on);
