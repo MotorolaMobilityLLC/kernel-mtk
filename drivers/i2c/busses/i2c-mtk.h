@@ -185,6 +185,11 @@ struct mt_i2c_ext {
 	u32 timing;
 };
 
+struct mtk_i2c_compatible {
+	unsigned char dma_support;  /* 0 : original; 1: 4gb  support 2: 33bit support; 3: 36 bit support */
+	unsigned char idvfs_i2c;
+};
+
 struct mt_i2c {
 	struct i2c_adapter adap;	/* i2c host adapter */
 	struct device *dev;
@@ -202,6 +207,9 @@ struct mt_i2c {
 	bool have_pmic;			/* can use i2c pins form PMIC */
 	bool have_dcm;			/* HW DCM function */
 	bool use_push_pull;		/* IO config push-pull mode */
+	bool appm;			/* I2C for APPM */
+	bool gpupm;			/* I2C for GPUPM */
+	bool buffermode;	/* I2C Buffer mode support */
 	/* set when doing the transfer */
 	u16 irq_stat;			/* interrupt status */
 	unsigned int speed_hz;		/* The speed in transfer */
@@ -218,7 +226,19 @@ struct mt_i2c {
 	struct mutex i2c_mutex;
 	struct mt_i2c_ext ext_data;
 	bool is_hw_trig;
+	const struct mtk_i2c_compatible *dev_comp;
 };
+
+#if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)
+#define CONFIG_MT_I2C_FPGA_ENABLE
+#endif
+
+#if (defined(CONFIG_MT_I2C_FPGA_ENABLE))
+#define FPGA_CLOCK	12000	/* FPGA crystal frequency (KHz) */
+#define I2C_CLK_DIV	(5)	/* frequency divider*/
+#define I2C_CLK_RATE	((FPGA_CLOCK / I2C_CLK_DIV)	* 1000) /* Hz for FPGA I2C work frequency */
+#endif
+
 
 extern void i2c_dump_info(struct mt_i2c *i2c);
 extern void mt_irq_dump_status(unsigned int irq);

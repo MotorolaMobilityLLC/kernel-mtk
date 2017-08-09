@@ -148,6 +148,7 @@ static void record_i2c_dma_info(struct mt_i2c *i2c)
 
 static int mt_i2c_clock_enable(struct mt_i2c *i2c)
 {
+#if !defined(CONFIG_MT_I2C_FPGA_ENABLE)
 	int ret;
 
 	ret = clk_prepare_enable(i2c->clk_dma);
@@ -175,10 +176,14 @@ err_pmic:
 err_main:
 	clk_disable_unprepare(i2c->clk_dma);
 	return ret;
+#else
+	return 0;
+#endif
 }
 
 static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 {
+#if !defined(CONFIG_MT_I2C_FPGA_ENABLE)
 	if (i2c->have_pmic)
 		clk_disable_unprepare(i2c->clk_pmic);
 
@@ -187,12 +192,34 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 		clk_disable_unprepare(i2c->clk_arb);
 
 	clk_disable_unprepare(i2c->clk_dma);
+#endif
 }
 
 static int i2c_get_semaphore(struct mt_i2c *i2c)
 {
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	int count = 100;
+#endif
+
+	if (i2c->appm) {
+		if (cpuhvfs_get_dvfsp_semaphore(SEMA_I2C_DRV) != 0) {
+			dev_err(i2c->dev, "sema time out 2ms\n");
+			if (cpuhvfs_get_dvfsp_semaphore(SEMA_I2C_DRV) != 0) {
+				dev_err(i2c->dev, "sema time out 4ms\n");
+				i2c_dump_info(i2c);
+				BUG_ON(1);
+				return -EBUSY;
+			}
+		}
+	}
+
+#ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
+	if (i2c->gpupm) {
+		if (dvfs_gpu_pm_spin_lock_for_vgpu() != 0) {
+			dev_err(i2c->dev, "sema time out.\n");
+			return -EBUSY;
+		}
+	}
 #endif
 
 	switch (i2c->id) {
@@ -206,25 +233,6 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 			count--;
 		return count > 0 ? 0 : -EBUSY;
 #endif
-	case 6:
-		if (cpuhvfs_get_dvfsp_semaphore(SEMA_I2C_DRV) != 0) {
-			dev_err(i2c->dev, "sema time out 2ms\n");
-			if (cpuhvfs_get_dvfsp_semaphore(SEMA_I2C_DRV) != 0) {
-				dev_err(i2c->dev, "sema time out 4ms\n");
-				i2c_dump_info(i2c);
-				BUG_ON(1);
-				return -EBUSY;
-			}
-		}
-		return 0;
-#ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
-	case 7:
-		if (dvfs_gpu_pm_spin_lock_for_vgpu() != 0) {
-			dev_err(i2c->dev, "sema time out.\n");
-			return -EBUSY;
-		}
-		return 0;
-#endif
 	default:
 		return 0;
 	}
@@ -232,20 +240,20 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 
 static int i2c_release_semaphore(struct mt_i2c *i2c)
 {
+	if (i2c->appm)
+		cpuhvfs_release_dvfsp_semaphore(SEMA_I2C_DRV);
+
+#ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
+	if (i2c->gpupm)
+		dvfs_gpu_pm_spin_unlock_for_vgpu();
+#endif
+
 	switch (i2c->id) {
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	case 0:
 		return release_scp_semaphore(SEMAPHORE_I2C0) == 1 ? 0 : -EBUSY;
 	case 1:
 		return release_scp_semaphore(SEMAPHORE_I2C1) == 1 ? 0 : -EBUSY;
-#endif
-	case 6:
-		cpuhvfs_release_dvfsp_semaphore(SEMA_I2C_DRV);
-		return 0;
-#ifdef CONFIG_MTK_GPU_SPM_DVFS_SUPPORT
-	case 7:
-		dvfs_gpu_pm_spin_unlock_for_vgpu();
-		return 0;
 #endif
 	default:
 		return 0;
@@ -506,7 +514,11 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		speed_hz = i2c->ext_data.timing;
 	else
 		speed_hz = i2c->speed_hz;
+#if !defined(CONFIG_MT_I2C_FPGA_ENABLE)
 	ret = i2c_set_speed(i2c, clk_get_rate(i2c->clk_main) / i2c->clk_src_div);
+#else
+	ret = i2c_set_speed(i2c, I2C_CLK_RATE);
+#endif
 	if (ret) {
 		dev_err(i2c->dev, "Failed to set the speed\n");
 		return -EINVAL;
@@ -545,12 +557,12 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		i2c, OFFSET_INTR_MASK);
 	/* Set transfer and transaction len */
 	if (i2c->op == I2C_MASTER_WRRD) {
-		if (i2c->id != 6) {
-			i2c_writew(i2c->msg_len, i2c, OFFSET_TRANSFER_LEN);
-			i2c_writew(i2c->msg_aux_len, i2c, OFFSET_TRANSFER_LEN_AUX);
-		} else {
+		if ((i2c->appm) && (i2c->dev_comp->idvfs_i2c)) {
 			i2c_writew((i2c->msg_len & 0xFF) | ((i2c->msg_aux_len<<8) & 0x1F00),
 				i2c, OFFSET_TRANSFER_LEN);
+		} else {
+			i2c_writew(i2c->msg_len, i2c, OFFSET_TRANSFER_LEN);
+			i2c_writew(i2c->msg_aux_len, i2c, OFFSET_TRANSFER_LEN_AUX);
 		}
 		i2c_writew(0x02, i2c, OFFSET_TRANSAC_LEN);
 	} else if (i2c->op == I2C_MASTER_MULTI_WR) {
@@ -564,7 +576,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 	/* Prepare buffer data to start transfer */
 	if (isDMA == true) {
 #ifdef CONFIG_MTK_LM_MODE
-		if (enable_4G()) {
+		if ((i2c->dev_comp->dma_support == 1) && (enable_4G())) {
 			i2c_writel_dma(0x1, i2c, OFFSET_TX_MEM_ADDR2);
 			i2c_writel_dma(0x1, i2c, OFFSET_RX_MEM_ADDR2);
 		}
@@ -573,18 +585,27 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 			i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
 			i2c_writel_dma(I2C_DMA_CON_RX, i2c, OFFSET_CON);
 			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_RX_MEM_ADDR);
+			if ((i2c->dev_comp->dma_support >= 2))
+				i2c_writel_dma(i2c->dma_buf.paddr >> 32, i2c, OFFSET_RX_MEM_ADDR2);
+
 			i2c_writel_dma(i2c->msg_len, i2c, OFFSET_RX_LEN);
 		} else if (i2c->op == I2C_MASTER_WR || i2c->op == I2C_MASTER_MULTI_WR) {
 			i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
 			i2c_writel_dma(I2C_DMA_CON_TX, i2c, OFFSET_CON);
 			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
+			if ((i2c->dev_comp->dma_support >= 2))
+				i2c_writel_dma(i2c->dma_buf.paddr >> 32, i2c, OFFSET_TX_MEM_ADDR2);
+
 			i2c_writel_dma(i2c->total_len, i2c, OFFSET_TX_LEN);
 		} else {
 			i2c_writel_dma(0x0000, i2c, OFFSET_INT_FLAG);
 			i2c_writel_dma(0x0000, i2c, OFFSET_CON);
 			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
-			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c,
-				OFFSET_RX_MEM_ADDR);
+			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_RX_MEM_ADDR);
+			if ((i2c->dev_comp->dma_support >= 2)) {
+				i2c_writel_dma(i2c->dma_buf.paddr >> 32, i2c, OFFSET_TX_MEM_ADDR2);
+				i2c_writel_dma(i2c->dma_buf.paddr >> 32, i2c, OFFSET_RX_MEM_ADDR2);
+			}
 			i2c_writel_dma(i2c->msg_len, i2c, OFFSET_TX_LEN);
 			i2c_writel_dma(i2c->msg_aux_len, i2c, OFFSET_RX_LEN);
 		}
@@ -951,7 +972,7 @@ int hw_trig_i2c_enable(struct i2c_adapter *adap)
 {
 	struct mt_i2c *i2c = i2c_get_adapdata(adap);
 
-	if (i2c->id != 8 && i2c->id != 9)
+	if (!i2c->buffermode)
 		return -1;
 	if (mt_i2c_clock_enable(i2c))
 		return -EBUSY;
@@ -967,7 +988,7 @@ int hw_trig_i2c_disable(struct i2c_adapter *adap)
 {
 	struct mt_i2c *i2c = i2c_get_adapdata(adap);
 
-	if (i2c->id != 8 && i2c->id != 9)
+	if (!i2c->buffermode)
 		return -1;
 	mutex_lock(&i2c->i2c_mutex);
 	i2c->is_hw_trig = false;
@@ -983,7 +1004,7 @@ int hw_trig_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
 	int ret;
 	struct mt_i2c *i2c = i2c_get_adapdata(adap);
 
-	if (i2c->id != 8 && i2c->id != 9)
+	if (!i2c->buffermode)
 		return -1;
 	mutex_lock(&i2c->i2c_mutex);
 	ret = __mt_i2c_transfer(i2c, msgs, num);
@@ -1034,11 +1055,39 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	i2c->have_pmic = of_property_read_bool(np, "mediatek,have-pmic");
 	i2c->have_dcm = of_property_read_bool(np, "mediatek,have-dcm");
 	i2c->use_push_pull = of_property_read_bool(np, "mediatek,use-push-pull");
+	i2c->appm = of_property_read_bool(np, "mediatek,appm_used");
+	i2c->gpupm = of_property_read_bool(np, "mediatek,gpupm_used");
+	i2c->buffermode = of_property_read_bool(np, "mediatek,buffermode_used");
 	pr_err("[I2C] id : %d, freq : %d, div : %d.\n", i2c->id, i2c->speed_hz, i2c->clk_src_div);
 	if (i2c->clk_src_div == 0)
 		return -EINVAL;
 	return 0;
 }
+
+static const struct mtk_i2c_compatible mt6735_compat = {
+	.dma_support = 0,
+	.idvfs_i2c = 0,
+};
+
+static const struct mtk_i2c_compatible mt6797_compat = {
+	.dma_support = 1,
+	.idvfs_i2c = 1,
+};
+
+static const struct mtk_i2c_compatible mt6757_compat = {
+	.dma_support = 2,
+	.idvfs_i2c = 0,
+};
+
+
+static const struct of_device_id mtk_i2c_of_match[] = {
+	{ .compatible = "mediatek,mt6735-i2c", .data = &mt6735_compat },
+	{ .compatible = "mediatek,mt6797-i2c", .data = &mt6797_compat },
+	{ .compatible = "mediatek,mt6757-i2c", .data = &mt6757_compat },
+	{},
+};
+
+MODULE_DEVICE_TABLE(of, mtk_i2c_of_match);
 
 static int mt_i2c_probe(struct platform_device *pdev)
 {
@@ -1046,7 +1095,7 @@ static int mt_i2c_probe(struct platform_device *pdev)
 	struct mt_i2c *i2c;
 	unsigned int clk_src_in_hz;
 	struct resource *res;
-
+	const struct of_device_id *of_id;
 	i2c = devm_kzalloc(&pdev->dev, sizeof(struct mt_i2c), GFP_KERNEL);
 	if (i2c == NULL)
 		return -ENOMEM;
@@ -1070,6 +1119,7 @@ static int mt_i2c_probe(struct platform_device *pdev)
 	i2c->irqnr = platform_get_irq(pdev, 0);
 	if (i2c->irqnr <= 0)
 		return -EINVAL;
+	init_waitqueue_head(&i2c->wait);
 
 	ret = devm_request_irq(&pdev->dev, i2c->irqnr, mt_i2c_irq,
 		IRQF_TRIGGER_NONE, I2C_DRV_NAME, i2c);
@@ -1079,6 +1129,11 @@ static int mt_i2c_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	of_id = of_match_node(mtk_i2c_of_match, pdev->dev.of_node);
+	if (!of_id)
+		return -EINVAL;
+
+	i2c->dev_comp = of_id->data;
 	i2c->adap.dev.of_node = pdev->dev.of_node;
 	i2c->dev = &i2c->adap.dev;
 	i2c->adap.dev.parent = &pdev->dev;
@@ -1089,6 +1144,19 @@ static int mt_i2c_probe(struct platform_device *pdev)
 	i2c->adap.retries = 1;
 	i2c->adap.nr = i2c->id;
 
+	if (i2c->dev_comp->dma_support == 2) {
+		if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(33))) {
+			dev_err(&pdev->dev, "dma_set_mask return error.\n");
+			return -EINVAL;
+		}
+	} else if (i2c->dev_comp->dma_support == 3) {
+		if (dma_set_mask(&pdev->dev, DMA_BIT_MASK(36))) {
+			dev_err(&pdev->dev, "dma_set_mask return error.\n");
+			return -EINVAL;
+		}
+	}
+
+#if !defined(CONFIG_MT_I2C_FPGA_ENABLE)
 	i2c->clk_main = devm_clk_get(&pdev->dev, "main");
 	if (IS_ERR(i2c->clk_main)) {
 		dev_err(&pdev->dev, "cannot get main clock\n");
@@ -1104,6 +1172,8 @@ static int mt_i2c_probe(struct platform_device *pdev)
 		i2c->clk_arb = NULL;
 	else
 		dev_dbg(&pdev->dev, "i2c%d has the relevant arbitrator clk.\n", i2c->id);
+#endif
+
 	if (i2c->have_pmic) {
 		i2c->clk_pmic = devm_clk_get(&pdev->dev, "pmic");
 		if (IS_ERR(i2c->clk_pmic)) {
@@ -1118,7 +1188,6 @@ static int mt_i2c_probe(struct platform_device *pdev)
 		i2c->clk_main, clk_src_in_hz);
 
 	strlcpy(i2c->adap.name, I2C_DRV_NAME, sizeof(i2c->adap.name));
-	init_waitqueue_head(&i2c->wait);
 	mutex_init(&i2c->i2c_mutex);
 	ret = i2c_set_speed(i2c, clk_src_in_hz);
 	if (ret) {
@@ -1160,11 +1229,7 @@ static int mt_i2c_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static const struct of_device_id mtk_i2c_of_match[] = {
-	{ .compatible = "mediatek,mt6735-i2c", },
-	{ .compatible = "mediatek,mt6797-i2c", },
-	{},
-};
+
 MODULE_DEVICE_TABLE(of, mt_i2c_match);
 
 static struct platform_driver mt_i2c_driver = {

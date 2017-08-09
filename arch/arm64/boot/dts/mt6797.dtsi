@@ -2480,6 +2480,7 @@
 						<&infrasys INFRA_I2C2_ARB>;
 			clock-names = "main", "dma", "arb";
 			clock-div = <10>;
+			mediatek,buffermode_used;
 		};
 
 		spi0:spi@1100a000 {
@@ -2528,6 +2529,7 @@
 						<&infrasys INFRA_I2C3_ARB>;
 			clock-names = "main", "dma", "arb";
 			clock-div = <10>;
+			mediatek,buffermode_used;
 		};
 
 		i2c6:i2c@1100e000 {
@@ -2539,6 +2541,7 @@
 			clocks = <&infrasys INFRA_I2C_APPM>, <&infrasys INFRA_AP_DMA>;
 			clock-names = "main", "dma";
 			clock-div = <10>;
+			mediatek,appm_used;
 		};
 
 		pwm_disp@1100f000 {
@@ -2555,6 +2558,7 @@
 			clocks = <&infrasys INFRA_I2C_GPUPM>, <&infrasys INFRA_AP_DMA>;
 			clock-names = "main", "dma";
 			clock-div = <10>;
+			mediatek,gpupm_used;
 		};
 
 		i2c4:i2c@11011000 {
