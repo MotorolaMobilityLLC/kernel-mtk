@@ -2399,7 +2399,7 @@ static int mtkfb_probe(struct device *dev)
 		ret = DAL_Init(fbVA, fbPA);
 	}
 
-/*	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) */
+	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		_mtkfb_internal_test((unsigned long)(fbdev->fb_va_base), MTK_FB_XRES, MTK_FB_YRES);
 
 

@@ -2270,8 +2270,6 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, primary_display_cmdq_enabled());
 	}
 
-	dpmgr_path_start(pgc->dpmgr_handle, primary_display_cmdq_enabled());
-
 	if (_should_set_cmdq_dirty())
 		_cmdq_set_config_handle_dirty();
 
@@ -2988,7 +2986,7 @@ static int update_primary_intferface_module(void)
 	return 0;
 }
 
-#define MTK_NO_DISP_IN_LK
+/* #define MTK_NO_DISP_IN_LK */
 
 int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited)
 {
@@ -3258,7 +3256,6 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	pgc->state = DISP_ALIVE;
 
 #if defined(MTK_NO_DISP_IN_LK)
-	/* FIXME: [cc] set the backlight */
 	DISPCHECK("set backlight in Kernel\n");
 	disp_bls_set_backlight(520);
 #endif
