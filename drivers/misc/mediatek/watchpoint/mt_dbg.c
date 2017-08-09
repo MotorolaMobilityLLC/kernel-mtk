@@ -393,8 +393,14 @@ int __cpuinit dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long
 	pr_debug("[MTK WP] cpu %lx do %s,action: 0x%lx\n",
 			this_cpu, __func__, action);
 #endif
+
+#if 1	/* restore EDSCR */
+	args = cs_cpu_read(wp_context->debug_regs[i], EDSCR);
+	cs_cpu_write(wp_context->debug_regs[this_cpu], EDSCR, args);
+#else	/* restore MDSCR_EL1 or DBGDSCRext */
 	smp_call_function_single(i, smp_read_dbgdscr_callback, &args, 1);
 	smp_write_dbgdscr_callback(&args);
+#endif
 	isb();
 #ifdef DBG_REG_DUMP
 	pr_debug("[MTK WP] cpu %lx do %s, CPU%d's dbgdscr=0x%x\n",
@@ -421,11 +427,12 @@ int __cpuinit dbgregs_hotplug_callback(struct notifier_block *nfb, unsigned long
 #endif
 	}
 
+#if 0
 #ifndef CONFIG_ARM64
 	smp_call_function_single(i, smp_read_dbgvcr_callback, &args, 1);
 	smp_write_dbgvcr_callback(&args);
 #endif
-
+#endif
 	isb();
 
 	return NOTIFY_OK;
@@ -445,6 +452,6 @@ static int __init regs_backup(void)
 	return 0;
 }
 
-module_init(regs_backup);
+subsys_initcall(regs_backup);
 #endif
 #endif
