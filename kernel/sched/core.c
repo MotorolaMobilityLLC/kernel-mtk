@@ -845,6 +845,29 @@ static void set_load_weight(struct task_struct *p)
 }
 
 #ifdef CONFIG_MTK_SCHED_CMP_TGS
+#ifdef CONFIG_MT_SCHED_TRACE_DETAIL
+static void tgs_log(struct rq *rq, struct task_struct *p)
+{
+	struct task_struct *tg = p->group_leader;
+	int i, num_cluster;
+
+	if (group_leader_is_empty(p))
+		return;
+
+	num_cluster = arch_get_nr_clusters();
+
+	mt_sched_printf(sched_cmp, "%d:%s %d:%s ", tg->pid, tg->comm, p->pid, p->comm);
+
+	for (i = 0; i < num_cluster; i++) {
+		mt_sched_printf(sched_cmp, "cluster %d: %lu %lu %lu ",
+			i,
+			tg->thread_group_info[i].nr_running,
+			tg->thread_group_info[i].cfs_nr_running,
+			tg->thread_group_info[i].utilization_avg_contrib);
+	}
+}
+#endif /* CONFIG_MT_SCHED_TRACE_DETAIL */
+
 static void sched_tg_enqueue(struct rq *rq, struct task_struct *p)
 {
 	int id;
@@ -861,7 +884,7 @@ static void sched_tg_enqueue(struct rq *rq, struct task_struct *p)
 	tg->thread_group_info[id].nr_running++;
 	raw_spin_unlock_irqrestore(&tg->thread_group_info_lock, flags);
 
-#ifdef CONFIG_MT_SCHED_INFO
+#ifdef CONFIG_MT_SCHED_TRACE_DETAIL
 	tgs_log(rq, p);
 #endif
 }
@@ -883,37 +906,11 @@ static void sched_tg_dequeue(struct rq *rq, struct task_struct *p)
 	tg->thread_group_info[id].nr_running--;
 	raw_spin_unlock_irqrestore(&tg->thread_group_info_lock, flags);
 
-#ifdef CONFIG_MT_SCHED_INFO
+#ifdef CONFIG_MT_SCHED_TRACE_DETAIL
 	tgs_log(rq, p);
 #endif
 }
-
-#endif
-
-#ifdef CONFIG_MTK_SCHED_CMP_TGS
-#ifdef CONFIG_MT_SCHED_INFO
-static void tgs_log(struct rq *rq, struct task_struct *p)
-{
-	struct task_struct *tg = p->group_leader;
-	int i, num_cluster;
-
-	if (group_leader_is_empty(p))
-		return;
-
-	num_cluster = arch_get_nr_cluster();
-
-	mt_sched_printf("%d:%s %d:%s ", tg->pid, tg->comm, p->pid, p->comm);
-
-	for (i = 0; i < num_cluster; i++) {
-		mt_sched_printf("cluster %d: %lu %lu %lu ",
-			i,
-			tg->thread_group_info[0].nr_running,
-			tg->thread_group_info[0].cfs_nr_running,
-			tg->thread_group_info[0].load_avg_ratio);
-	}
-}
-#endif
-#endif
+#endif /* CONFIG_MTK_SCHED_CMP_TGS */
 
 static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
 {

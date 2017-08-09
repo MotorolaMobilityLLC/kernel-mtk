@@ -82,6 +82,16 @@ config MT_SCHED_TRACE
 	   including select_task_rq, check_preempt, find_lowest_rq.
 	   Say no if not sure.
 
+config MT_SCHED_TRACE_DETAIL
+	bool "mt scheduling trace log information in more dtails"
+	depends on MT_SCHED_TRACE
+	default n
+	help
+	   MTK scheduling trace in details. It logs more scheduler details
+	   into ftrace.
+	   depends on ftrace.
+	   Say no if not sure.
+
 config MT_SCHED_DEBUG
 	bool "mt scheduling log, also output the scheduling log into Kernel log"
 	depends on MT_SCHED_TRACE
