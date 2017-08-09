@@ -1289,7 +1289,7 @@ static int jpeg_probe(struct platform_device *pdev)
 #ifdef JPEG_PM_DOMAIN_ENABLE
 	pjenc_dev = pdev;
 	pm_runtime_enable(&pdev->dev);
-	pm_runtime_get_sync(&pdev->dev);
+	/*pm_runtime_get_sync(&pdev->dev);*/
 	/*pm_runtime_put_sync(&pdev->dev);*/
 #else
 	/* venc-mtcmos lead to disp power scpsys SCP_SYS_DISP */
@@ -1533,9 +1533,8 @@ static struct file_operations const jdec_fops = {
 
 static int jdec_probe(struct platform_device *pdev)
 {
-
-	int ret;
 #ifdef JPEG_DEV
+	int ret;
 	struct class_device *class_dev = NULL;
 #endif
 	JPEG_MSG("+jdec_probe\n");
@@ -1545,8 +1544,8 @@ static int jdec_probe(struct platform_device *pdev)
 	}
 	pjdec_dev = pdev;
 	pm_runtime_enable(&pdev->dev);
-	ret = pm_runtime_get_sync(&pjdec_dev->dev);
-	JPEG_MSG("jdec_probe  pm return %d\n", ret);
+	/*ret = pm_runtime_get_sync(&pjdec_dev->dev);*/
+	/*JPEG_MSG("jdec_probe  pm return %d\n", ret);*/
 #ifdef JPEG_DEV
 	ret = alloc_chrdev_region(&jdec_devno, 0, 1, JDEC_DEVNAME);
 	if (ret)
