@@ -350,7 +350,7 @@ static int tpd_fb_notifier_callback(struct notifier_block *self, unsigned long e
 	struct fb_event *evdata = NULL;
 	int blank;
 
-	TPD_DMESG("tpd_fb_notifier_callback\n");
+	TPD_DEBUG("tpd_fb_notifier_callback\n");
 
 	evdata = data;
 	/* If we aren't interested in this event, skip it immediately ... */
