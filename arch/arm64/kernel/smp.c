@@ -131,6 +131,9 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
 
 		if (!cpu_online(cpu)) {
 			pr_crit("CPU%u: failed to come online\n", cpu);
+			#ifdef CONFIG_ARCH_MT6797
+			BUG_ON(1);
+			#endif
 			ret = -EIO;
 		}
 	} else {
