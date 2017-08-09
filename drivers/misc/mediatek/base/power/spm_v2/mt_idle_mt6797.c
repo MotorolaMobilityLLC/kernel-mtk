@@ -237,23 +237,19 @@ bool cg_check_idle_can_enter(
 	unsigned int *condition_mask, unsigned int *block_mask, enum mt_idle_mode mode)
 {
 	int i;
-#if 0
 	unsigned int sd_mask = 0;
-#endif
 	u32 clks[NR_GRPS];
 	u32 r = 0;
 	unsigned int sta;
 	bool ret = true;
 	int k;
 
-#if 0
 	/* SD status */
 	msdc_clk_status(&sd_mask);
 	if (sd_mask) {
 		block_mask[CG_INFRA0] |= sd_mask;
 		ret = false;
 	}
-#endif
 
 	/* CG status */
 	get_all_clock_state(clks);
