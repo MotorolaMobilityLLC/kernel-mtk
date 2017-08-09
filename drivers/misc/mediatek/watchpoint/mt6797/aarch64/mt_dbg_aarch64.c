@@ -86,6 +86,8 @@ void print_dbgregs(int cpuid)
 #if 1
 unsigned int *mt_save_dbg_regs(unsigned int *p, unsigned int cpuid)
 {
+
+#if 0
 	struct wp_trace_context_t *wp_context;
 
 	register_wp_context(&wp_context);
@@ -147,11 +149,13 @@ unsigned int *mt_save_dbg_regs(unsigned int *p, unsigned int cpuid)
 			     : : "x0", "x1", "x2", "x3", "x4", "x5");
 	isb();
 
+#endif
 	return p;
 }
 
 void mt_restore_dbg_regs(unsigned int *p, unsigned int cpuid)
 {
+#if 0
 	unsigned long dscr;
 	struct wp_trace_context_t *wp_context;
 #ifdef DBG_REG_DUMP
@@ -217,6 +221,7 @@ void mt_restore_dbg_regs(unsigned int *p, unsigned int cpuid)
 			     : : "x0", "x1", "x2", "x3", "x4", "x5");
 #endif
 	isb();
+#endif
 }
 
 
@@ -228,6 +233,7 @@ void mt_restore_dbg_regs(unsigned int *p, unsigned int cpuid)
  **/
 void mt_copy_dbg_regs(int to, int from)
 {
+#if 0
 	unsigned long base_to, base_from;
 	unsigned long args;
 	struct wp_trace_context_t *wp_context;
@@ -273,6 +279,7 @@ void mt_copy_dbg_regs(int to, int from)
 	dbg_reg_copy(DBGWCR + 0x30, base_to, base_from);
 
 	isb();
+#endif
 }
 
 
