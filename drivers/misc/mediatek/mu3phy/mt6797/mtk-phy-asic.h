@@ -267,7 +267,8 @@ struct u2phy_reg_e {
 #define RG_IDPULLUP                        (0x1<<0)	/* 0:0 */
 
 /* U3D_U2PHYDMON0 */
-#define RG_USB20_PRBS7_BERTH               (0xff<<0)	/* 7:0 */
+#define E60802_RG_USB20_PRBS7_BERTH        (0xff<<0)    /* 0:7 */
+#define E60802_RG_USB20_EOP_CTL            (0xf<<0)     /* 19:16 */
 
 /* U3D_U2PHYDMON1 */
 #define USB20_UART_O                       (0x1<<31)	/* 31:31 */
@@ -522,7 +523,8 @@ struct u2phy_reg_e {
 #define RG_IDPULLUP_OFST                   (0)
 
 /* U3D_U2PHYDMON0 */
-#define RG_USB20_PRBS7_BERTH_OFST          (0)
+#define E60802_RG_USB20_PRBS7_BERTH_OFST   (0)
+#define E60802_RG_USB20_EOP_CTL_OFST       (16)
 
 /* U3D_U2PHYDMON1 */
 #define USB20_UART_O_OFST                  (31)

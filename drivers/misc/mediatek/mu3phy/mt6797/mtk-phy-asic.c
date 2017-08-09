@@ -15,13 +15,7 @@
 #include "mu3d_hal_usb_drv.h"
 #endif
 
-#ifdef FOR_BRING_UP
-#define enable_clock(x, y)
-#define disable_clock(x, y)
-#define hwPowerOn(x, y, z)
-#define hwPowerDown(x, y)
-#define set_ada_ssusb_xtal_ck(x)
-#endif
+#define FOR_BRING_UP
 
 #include <mt-plat/upmu_common.h>
 
@@ -36,8 +30,10 @@
 #include <linux/of_address.h>
 #endif
 
+#ifndef FOR_BRING_UP
 #ifndef CONFIG_MTK_CLKMGR
 static struct clk *musb_clk;
+#endif
 #endif
 
 
@@ -147,11 +143,14 @@ void uart_usb_switch_dump_register(void)
 	/*set_ada_ssusb_xtal_ck(1); */
 
 	/* f_fusb30_ck:125MHz */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 	clk_enable(musb_clk);
 #endif
+#endif
+
 	udelay(50);
 
 #ifdef CONFIG_MTK_FPGA
@@ -181,12 +180,13 @@ void uart_usb_switch_dump_register(void)
 	/*set_ada_ssusb_xtal_ck(0); */
 
 	/* f_fusb30_ck:125MHz */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 	clk_disable(musb_clk);
 #endif
-
+#endif
 	os_printk(K_INFO, "[MUSB]addr: 0x110020B0 (UART0), value: %x\n\n",
 		  DRV_Reg8(ap_uart0_base + 0xB0));
 }
@@ -199,23 +199,26 @@ bool usb_phy_check_in_uart_mode(void)
 	/*set_ada_ssusb_xtal_ck(1); */
 
 	/* f_fusb30_ck:125MHz */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 	clk_enable(musb_clk);
 #endif
-
+#endif
 	udelay(50);
 	usb_port_mode = U3PhyReadReg32((phys_addr_t) U3D_U2PHYDTM0) >> RG_UART_MODE_OFST;
 
 	/* ADA_SSUSB_XTAL_CK:26MHz */
-	set_ada_ssusb_xtal_ck(0);
+	/* set_ada_ssusb_xtal_ck(0); */
 
 	/* f_fusb30_ck:125MHz */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 	clk_disable(musb_clk);
+#endif
 #endif
 	os_printk(K_INFO, "%s+ usb_port_mode = %d\n", __func__, usb_port_mode);
 
@@ -257,10 +260,12 @@ void usb_phy_switch_to_uart(void)
 	/*set_ada_ssusb_xtal_ck(1); */
 
 	/* f_fusb30_ck:125MHz */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 	clk_enable(musb_clk);
+#endif
 #endif
 	udelay(50);
 
@@ -301,12 +306,13 @@ void usb_phy_switch_to_uart(void)
 	/*set_ada_ssusb_xtal_ck(0); */
 
 	/* f_fusb30_ck:125MHz */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 	clk_disable(musb_clk);
 #endif
-
+#endif
 	/* GPIO Selection */
 	DRV_WriteReg32(ap_uart0_base + 0xB0, 0x1);
 
@@ -330,10 +336,12 @@ void usb_phy_switch_to_usb(void)
 	/*set_ada_ssusb_xtal_ck(0); */
 
 	/* f_fusb30_ck:125MHz */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 	clk_disable(musb_clk);
+#endif
 #endif
 }
 #endif
@@ -363,9 +371,9 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	if (ret)
 		pr_debug("VA10 enable FAIL!!!\n");
 
-	ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x02);
+	ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x01);
 	if (ret)
-		pr_debug("VA10 output selection to 1.0v FAIL!!!\n");
+		pr_debug("VA10 output selection to 0.95 FAIL!!!\n");
 
 	/*---CLOCK-----*/
 	/* ADA_SSUSB_XTAL_CK:26MHz */
@@ -376,12 +384,13 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	/* enable_ssusb26m_ck(true); */
 
 	/* f_fusb30_ck:125MHz */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 	clk_enable(musb_clk);
 #endif
-
+#endif
 	/* AD_SSUSB_48M_CK:48MHz */
 	/* It seems that when turning on f_fusb30_ck, AD_SSUSB_48M_CK will also turn on. */
 
@@ -469,6 +478,10 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 	/*Release force suspendm.  (force_suspendm=0) (let suspendm=1, enable usb 480MHz pll) */
 	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST, FORCE_SUSPENDM, 0);
 #endif
+
+	/* for 20nm setting */
+	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDMON0, E60802_RG_USB20_EOP_CTL_OFST,
+			  E60802_RG_USB20_EOP_CTL, 0x9);
 
 	/*Wait 800 usec */
 	udelay(800);
@@ -729,12 +742,13 @@ void usb_phy_savecurrent(unsigned int clk_on)
 		udelay(10);
 
 		/* f_fusb30_ck:125MHz */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 		clk_disable(musb_clk);
 #endif
-
+#endif
 		/* ADA_SSUSB_XTAL_CK:26MHz */
 		/*set_ada_ssusb_xtal_ck(0); */
 
@@ -768,9 +782,9 @@ void usb_phy_recover(unsigned int clk_on)
 		if (ret)
 			pr_debug("VA10 enable FAIL!!!\n");
 
-		ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x02);
+		ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_VOSEL, 0x01);
 		if (ret)
-			pr_debug("VA10 output selection to 1.0v FAIL!!!\n");
+			pr_debug("VA10 output selection to 0.95v FAIL!!!\n");
 
 		/*---CLOCK-----*/
 		/* ADA_SSUSB_XTAL_CK:26MHz */
@@ -781,12 +795,13 @@ void usb_phy_recover(unsigned int clk_on)
 		/* enable_ssusb26m_ck(true); */
 
 		/* f_fusb30_ck:125MHz */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 		clk_enable(musb_clk);
 #endif
-
+#endif
 		/* AD_SSUSB_48M_CK:48MHz */
 		/* It seems that when turning on f_fusb30_ck, AD_SSUSB_48M_CK will also turn on. */
 
@@ -915,6 +930,10 @@ void usb_phy_recover(unsigned int clk_on)
 			  RG_USB20_HS_100U_U3_EN, 1);
 #endif
 
+	/* for 20nm setting */
+	U3PhyWriteField32((phys_addr_t) U3D_U2PHYDMON0, E60802_RG_USB20_EOP_CTL_OFST,
+			  E60802_RG_USB20_EOP_CTL, 0x9);
+
 	/*
 	 * 1 RG_SSUSB_TX_EIDLE_CM<3:0> / 1100-->1110 / low-power
 	 *   E-idle common mode(650mV to 600mV) - 0x11290b18 bit [31:28]
@@ -980,12 +999,13 @@ void usb_fake_powerdown(unsigned int clk_on)
 	if (clk_on) {
 		/*---CLOCK-----*/
 		/* f_fusb30_ck:125MHz */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 		clk_disable(musb_clk);
 #endif
-
+#endif
 		/*---POWER-----*/
 		/* Set RG_VUSB10_ON as 1 after VDD10 Ready */
 		/*hwPowerDown(MT6331_POWER_LDO_VUSB10, "VDD10_USB_P0"); */
@@ -1014,12 +1034,13 @@ void Charger_Detect_Init(void)
 	if (charger_det_en == true) {
 #endif
 		/* turn on USB reference clock. */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 		clk_enable(musb_clk);
 #endif
-
+#endif
 		/* wait 50 usec. */
 		udelay(50);
 
@@ -1030,10 +1051,12 @@ void Charger_Detect_Init(void)
 		udelay(1);
 
 		/* 4 14. turn off internal 48Mhz PLL. */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 		clk_disable(musb_clk);
+#endif
 #endif
 
 #ifdef CONFIG_USBIF_COMPLIANCE
@@ -1054,12 +1077,13 @@ void Charger_Detect_Release(void)
 	if (charger_det_en == true) {
 #endif
 		/* turn on USB reference clock. */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 		clk_enable(musb_clk);
 #endif
-
+#endif
 		/* wait 50 usec. */
 		udelay(50);
 
@@ -1070,10 +1094,12 @@ void Charger_Detect_Release(void)
 		udelay(1);
 
 		/* 4 14. turn off internal 48Mhz PLL. */
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_PERI_USB0, "USB30");
 #else
 		clk_disable(musb_clk);
+#endif
 #endif
 
 #ifdef CONFIG_USBIF_COMPLIANCE
@@ -1087,7 +1113,7 @@ void Charger_Detect_Release(void)
 }
 
 
-
+#ifndef FOR_BRING_UP
 #ifdef CONFIG_OF
 static int mt_usb_dts_probe(struct platform_device *pdev)
 {
@@ -1111,8 +1137,10 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 
 static int mt_usb_dts_remove(struct platform_device *pdev)
 {
+#ifndef FOR_BRING_UP
 #ifndef CONFIG_MTK_CLKMGR
 	clk_unprepare(musb_clk);
+#endif
 #endif
 	return 0;
 }
@@ -1148,6 +1176,7 @@ static void __exit musb_phy_cleanup(void)
 	platform_driver_unregister(&mt_usb_dts_driver);
 }
 module_exit(musb_phy_cleanup);
+#endif
 #endif
 
 #endif

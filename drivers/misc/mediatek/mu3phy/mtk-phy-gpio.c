@@ -304,7 +304,7 @@ PHY_INT32 I2cReadReg(PHY_UINT8 dev_id, PHY_UINT8 Addr, PHY_UINT8 *Data)
 #define REG_I2C_SOFT_RESET   (*((volatile unsigned short int *) (PHY_I2C_BASE + 0x50)))
 #define REG_I2C_CONTROL		 (*((volatile unsigned short int *) (PHY_I2C_BASE + 0x10)))
 
-#define IS_PRINT 1
+#define IS_PRINT 0
 
 PHY_INT32 I2cWriteReg(PHY_UINT8 dev_id, PHY_UINT8 addr, PHY_UINT8 val)
 {
