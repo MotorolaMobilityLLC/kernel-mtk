@@ -818,51 +818,10 @@ DRIVER_ATTR(cqdma_dvt, 0664, cqdma_dvt_show, cqdma_dvt_store);
 #endif	/* !LDVT */
 
 
-struct mtk_cqdma_compatible {
-	unsigned int Enable_LPAE;
-	unsigned int dma_ch;
-	unsigned int irq_type;
-};
-
-static const struct mtk_cqdma_compatible mt6755_compat = {
-	.Enable_LPAE = 0,
-	.dma_ch = 2,
-	.irq_type = IRQF_TRIGGER_LOW,
-};
-
-static const struct mtk_cqdma_compatible mt6735_compat = {
-	.Enable_LPAE = 0,
-	.dma_ch = 1,
-	.irq_type = IRQF_TRIGGER_LOW,
-};
-
-static const struct mtk_cqdma_compatible mt6795_compat = {
-	.Enable_LPAE = 0,
-	.dma_ch = 1,
-	.irq_type = IRQF_TRIGGER_LOW | IRQF_SHARED,
-};
-
-static const struct mtk_cqdma_compatible mt6752_compat = {
-	.Enable_LPAE = 0,
-	.dma_ch = 1,
-	.irq_type = IRQF_TRIGGER_LOW | IRQF_SHARED,
-};
-
-static const struct mtk_cqdma_compatible mt6595_compat = {
-	.Enable_LPAE = 1,
-	.dma_ch = 1,
-	.irq_type = IRQF_TRIGGER_LOW | IRQF_SHARED,
-};
-
-static const struct of_device_id mtk_cqdma_of_match[] = {
-	{ .compatible = "mediatek,mt6755-cqdma", .data = &mt6755_compat },
-	{ .compatible = "mediatek,mt6735-cqdma", .data = &mt6735_compat },
-	{ .compatible = "mediatek,mt6752-cqdma", .data = &mt6752_compat },
-	{ .compatible = "mediatek,mt6795-cqdma", .data = &mt6795_compat },
-	{ .compatible = "mediatek,mt6595-cqdma", .data = &mt6595_compat },
+static const struct of_device_id cqdma_of_ids[] = {
+	{ .compatible = "mediatek,mt-cqdma-v1", },
 	{}
 };
-MODULE_DEVICE_TABLE(of, mtk_cqdma_of_match);
 
 static void cqdma_reset(int nr_channel)
 {
@@ -877,22 +836,17 @@ static int cqdma_probe(struct platform_device *pdev)
 	int ret = 0, irq = 0;
 	unsigned int i;
 	struct resource *res;
-	const struct of_device_id *of_id;
-	const struct mtk_cqdma_compatible *cqdma_comp;
 
 	pr_debug("[MTK CQDMA] module probe.\n");
 
-	of_id = of_match_node(mtk_cqdma_of_match, pdev->dev.of_node);
-	if (!of_id) {
-		pr_err("[MTK CQDMA] mtk_cqdma_of_match fail !!!\n");
-		return -EINVAL;
+	of_property_read_u32(pdev->dev.of_node, "nr_channel", &nr_cqdma_channel);
+	if (!nr_cqdma_channel) {
+		pr_err("[CQDMA] no channel found\n");
+		return -ENODEV;
 	}
-
-	cqdma_comp = of_id->data;
-	nr_cqdma_channel = cqdma_comp->dma_ch;
 	pr_err("[CQDMA] DMA channel = %d\n", nr_cqdma_channel);
 
-	for (i = 0; i < cqdma_comp->dma_ch; i++) {
+	for (i = 0; i < nr_cqdma_channel; i++) {
 		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
 		env_info[i].base = devm_ioremap_resource(&pdev->dev, res);
 		env_info[i].irq = platform_get_irq(pdev, i);
@@ -901,24 +855,23 @@ static int cqdma_probe(struct platform_device *pdev)
 			pr_err("unable to map CQDMA%d base registers and irq=%d!!!\n", i, irq);
 			return -EINVAL;
 		}
+		/*pr_debug("[CQDMA%d] vbase = 0x%p, irq = %d\n", i, env_info[i].base, env_info[i].irq);*/
 		pr_err("[CQDMA%d] vbase = 0x%p, irq = %d\n", i, env_info[i].base, env_info[i].irq);
 	}
 
-	cqdma_reset(cqdma_comp->dma_ch);
+	cqdma_reset(nr_cqdma_channel);
 
-	for (i = 0; i < cqdma_comp->dma_ch; i++) {
-		ret = request_irq(env_info[i].irq, gdma1_irq_handler, cqdma_comp->irq_type, "CQDMA", &dma_ctrl);
+	for (i = 0; i < nr_cqdma_channel; i++) {
+		ret = request_irq(env_info[i].irq, gdma1_irq_handler, IRQF_TRIGGER_NONE, "CQDMA", &dma_ctrl);
 		if (ret > 0)
 			pr_err("GDMA%d IRQ LINE NOT AVAILABLE,ret 0x%x!!\n", i, ret);
 	}
 
 #ifdef CONFIG_ARM_LPAE
-	for (i = 0; i < cqdma_comp->dma_ch; i++) {
-		if (cqdma_comp->Enable_LPAE) {
-			mt_reg_sync_writel(DMA_ADDR2_EN_BIT, DMA_SRC_4G_SUPPORT(i));
-			mt_reg_sync_writel(DMA_ADDR2_EN_BIT, DMA_DST_4G_SUPPORT(i));
-			mt_reg_sync_writel(DMA_ADDR2_EN_BIT, DMA_JUMP_4G_SUPPORT(i));
-		}
+	for (i = 0; i < nr_cqdma_channel; i++) {
+		mt_reg_sync_writel(DMA_ADDR2_EN_BIT, DMA_SRC_4G_SUPPORT(i));
+		mt_reg_sync_writel(DMA_ADDR2_EN_BIT, DMA_DST_4G_SUPPORT(i));
+		mt_reg_sync_writel(DMA_ADDR2_EN_BIT, DMA_JUMP_4G_SUPPORT(i));
 	}
 #endif
 
@@ -937,7 +890,7 @@ static struct platform_driver mtk_cqdma_driver = {
 		.name = "cqdma",
 		.owner = THIS_MODULE,
 #ifdef CONFIG_OF
-		.of_match_table = of_match_ptr(mtk_cqdma_of_match),
+		.of_match_table = cqdma_of_ids,
 #endif
 		},
 };
