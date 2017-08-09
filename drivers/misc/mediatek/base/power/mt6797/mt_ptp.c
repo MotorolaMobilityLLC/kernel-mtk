@@ -3662,6 +3662,7 @@ void get_devinfo(struct eem_devinfo *p)
 		if (0 == val[i]) {
 			ctrl_EEM_Enable = 0;
 			infoIdvfs = 0x55;
+			eem_error("No EEM EFUSE available, Turn off EEM-1 !!\n");
 			break;
 		}
 	}
