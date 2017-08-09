@@ -95,6 +95,24 @@ config SND_SOC_MT7623_RFB
 	  The driver is based on MT_SND_SOC_2701.
 	  Select Y if you have such device.
 
+config MTK_SPKGPIO_REWORK
+    bool "MTK_SPKGPIO_REWORK"
+	default n
+	help
+	  This is only for MTK internal phone only
+	  Enable SPKGPIO REWORK check functionality
+	  Will choose the correct GPIO for external AMP
+          If you say Y, enable MTK_SPKGPIO_REWORK
+
+config MTK_HP_ANASWITCH
+    bool "MTK_HP_ANASWITCH"
+	default n
+	help
+	  This will enable headphone analog switch control
+	  for de-pop functionality
+	  Only enable this when you have headphone analog switch
+          If you say Y, enable MTK_HP_ANASWITCH
+
 config MTK_BTCVSD_ALSA
     bool "MTK_BTCVSD_ALSA"
 	default n

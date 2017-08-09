@@ -92,10 +92,9 @@
 #include "AudDrv_Common_func.h"
 #include "AudDrv_Gpio.h"
 
-#define MT6755_AW8736_REWORK	/* use different GPIO for rework version */
 #define AW8736_MODE_CTRL /* AW8736 PA output power mode control*/
 
-#ifdef MT6755_AW8736_REWORK
+#ifdef CONFIG_MTK_SPKGPIO_REWORK	/* Only use in MTK internal phone */
 #include "../../../../drivers/misc/mediatek/auxadc/mt_auxadc.h"
 #endif
 
@@ -397,8 +396,9 @@ static void NvregEnable(bool enable)
 	mutex_unlock(&Ana_Clk_Mutex);
 }
 
-static void HP_Switch_to_Ground(void)
+static void HP_Ana_Switch_to_On(void)
 {
+#if defined(CONFIG_MTK_HP_ANASWITCH)
 #if defined(CONFIG_MTK_LEGACY)
 	int ret;
 
@@ -415,12 +415,14 @@ static void HP_Switch_to_Ground(void)
 	AudDrv_GPIO_HPDEPOP_Select(true);
 #endif
 
-	udelay(500);
+	usleep_range(500, 800);
+#endif
 }
 
-static void HP_Switch_to_Release(void)
+static void HP_Ana_Switch_to_Release(void)
 {
-	udelay(500);
+#if defined(CONFIG_MTK_HP_ANASWITCH)
+	usleep_range(500, 800);
 
 #if defined(CONFIG_MTK_LEGACY)
 	int ret;
@@ -437,7 +439,7 @@ static void HP_Switch_to_Release(void)
 #else
 	AudDrv_GPIO_HPDEPOP_Select(false);
 #endif
-
+#endif
 }
 
 #ifdef _VOW_ENABLE
@@ -822,7 +824,7 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(AFE_DL_DC_COMP_CFG2, 0x0001, 0xffff);
 #endif
 
-		HP_Switch_to_Ground();
+		HP_Ana_Switch_to_On();
 
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0xA000);
 		/* Enable cap-less LDOs (1.6V) */
@@ -847,10 +849,10 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		/* Select HPR as HPDET output and select DACLP as HPDET circuit input */
 
 		/* HP output swtich release to normal output */
-		HP_Switch_to_Release();
+		HP_Ana_Switch_to_Release();
 
 	} else {
-		HP_Switch_to_Ground();
+		HP_Ana_Switch_to_On();
 
 		Ana_Set_Reg(AUDDEC_ANA_CON5, 0x0000, 0xffff);
 		/* Disable headphone speaker detection */
@@ -870,7 +872,7 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE000, 0xffff);
 
 		/* HP output swtich release to normal output */
-		HP_Switch_to_Release();
+		HP_Ana_Switch_to_Release();
 
 		TurnOffDacPower();
 	}
@@ -1514,7 +1516,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			pr_warn("%s\n", __func__);
 
 			/* switch to ground to de pop-noise */
-			HP_Switch_to_Ground();
+			HP_Ana_Switch_to_On();
 
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0xA000);
 			/* Enable cap-less LDOs (1.6V) */
@@ -1569,7 +1571,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* from yoyo HQA script */
 
 			/* HP output swtich release to normal output */
-			HP_Switch_to_Release();
+			HP_Ana_Switch_to_Release();
 
 			/* apply volume setting */
 			HeadsetVoloumeSet();
@@ -1590,7 +1592,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			setHpGainZero();
 
 			/* switch to ground to de pop-noise */
-			HP_Switch_to_Ground();
+			HP_Ana_Switch_to_On();
 
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF40F, 0xffff);
 			/* Disable HPR/HPL */
@@ -1600,7 +1602,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			EnableDcCompensation(false);
 
 			/* HP output swtich release to normal output */
-			HP_Switch_to_Release();
+			HP_Ana_Switch_to_Release();
 		}
 
 		if (GetDLStatus() == false) {
@@ -1927,12 +1929,12 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 #define NULL_PIN_DEFINITION    (-1)
 static void Ext_Speaker_Amp_Change(bool enable)
 {
-#define SPK_WARM_UP_TIME        (25)	/* unit is ms */
+#define SPK_WARM_UP_TIME        (35)	/* unit is ms */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if defined(CONFIG_MTK_LEGACY)
 	int ret;
 
-#ifndef MT6755_AW8736_REWORK
+#ifndef CONFIG_MTK_SPKGPIO_REWORK
 	ret = GetGPIO_Info(5, &pin_extspkamp, &pin_mode_extspkamp);
 	if (ret < 0) {
 		pr_err("Ext_Speaker_Amp_Change GetGPIO_Info FAIL!!!\n");
@@ -1958,10 +1960,10 @@ static void Ext_Speaker_Amp_Change(bool enable)
 			mt_set_gpio_out(pin_extspkamp_2, GPIO_OUT_ZERO);	/* low disable */
 		}
 #else
-#ifndef MT6755_AW8736_REWORK
+#ifndef CONFIG_MTK_SPKGPIO_REWORK
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
 #else
-		if (pin_extspkamp != (54 | 0x80000000))
+		if (pin_extspkamp == 0)
 			AudDrv_GPIO_EXTAMP_Select(false, 3);
 		else
 			AudDrv_GPIO_EXTAMP2_Select(false, 3);
@@ -1969,7 +1971,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #endif				/*CONFIG_MTK_LEGACY */
 
 		/*udelay(1000);*/
-		usleep_range(1*1000, 2*1000);
+		usleep_range(1*1000, 1.5*1000);
 #if defined(CONFIG_MTK_LEGACY)
 		mt_set_gpio_dir(pin_extspkamp, GPIO_DIR_OUT);	/* output */
 		if (pin_extspkamp_2 != NULL_PIN_DEFINITION)
@@ -1983,10 +1985,10 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		if (pin_extspkamp_2 != NULL_PIN_DEFINITION)
 			mt_set_gpio_out(pin_extspkamp_2, GPIO_OUT_ONE);	/* high enable */
 #else
-#ifndef MT6755_AW8736_REWORK
+#ifndef CONFIG_MTK_SPKGPIO_REWORK
 		AudDrv_GPIO_EXTAMP_Select(true, 3);
 #else
-		if (pin_extspkamp != (54 | 0x80000000))
+		if (pin_extspkamp == 0)
 			AudDrv_GPIO_EXTAMP_Select(true, 3);
 		else
 			AudDrv_GPIO_EXTAMP2_Select(true, 3);
@@ -2008,16 +2010,16 @@ static void Ext_Speaker_Amp_Change(bool enable)
 			mt_set_gpio_out(pin_extspkamp_2, GPIO_OUT_ZERO);	/* low disbale */
 		}
 #else
-#ifndef MT6755_AW8736_REWORK
+#ifndef CONFIG_MTK_SPKGPIO_REWORK
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
 #else
-		if (pin_extspkamp != (54 | 0x80000000))
+		if (pin_extspkamp == 0)
 			AudDrv_GPIO_EXTAMP_Select(false, 3);
 		else
 			AudDrv_GPIO_EXTAMP2_Select(false, 3);
 #endif
 #endif
-		usleep_range(150, 300);
+		/* usleep_range(150, 300); */
 #endif
 		/* pr_debug("Ext_Speaker_Amp_Change OFF-\n"); */
 	}
@@ -2136,7 +2138,7 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		pr_warn("%s\n", __func__);
 
 		/* switch to ground to de pop-noise */
-		HP_Switch_to_Ground();
+		HP_Ana_Switch_to_On();
 
 		Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA155, 0xA000);
 		/* Enable cap-less LDOs (1.6V) */
@@ -2201,7 +2203,7 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* from yoyo HQA script */
 
 		/* HP output swtich release to normal output */
-		HP_Switch_to_Release();
+		HP_Ana_Switch_to_Release();
 
 		/* apply volume setting */
 		HeadsetVoloumeSet();
@@ -2211,13 +2213,13 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		/* Set HPR/HPL gain as 0dB, step by step */
 		setHpGainZero();
 
-		HP_Switch_to_Ground();
+		HP_Ana_Switch_to_On();
 		/* switch to ground to de pop-noise */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xEA0F, 0xffff);
 		/* Disable HPR/HPL */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE00F, 0xffff);
 		/* HPR/HPL mux to open */
-		HP_Switch_to_Release();
+		HP_Ana_Switch_to_Release();
 		/* HP output swtich release to normal output */
 
 		Ana_Set_Reg(AUDDEC_ANA_CON3, 0x4230, 0xffff);
@@ -4540,10 +4542,9 @@ static void InitGlobalVarDefault(void)
 
 static int mt6331_codec_probe(struct snd_soc_codec *codec)
 {
-#ifdef MT6755_AW8736_REWORK
+#ifdef CONFIG_MTK_SPKGPIO_REWORK		/* Only use in MTK internal phone */
 	int data[4];
 	int rawdata;
-	int ret;
 #endif
 	struct snd_soc_dapm_context *dapm = &codec->dapm;
 
@@ -4594,25 +4595,20 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 	 *   false: RF clock buffer
 	 *   true : PMIC clock buffer */
 	mClkBufferfromPMIC = is_clk_buf_from_pmic();
-	pr_debug("Clk_buf_from_pmic is %d\n", mClkBufferfromPMIC);
+	pr_debug("%s Clk_buf_from_pmic is %d\n", __func__, mClkBufferfromPMIC);
 
-#ifdef MT6755_AW8736_REWORK
+#ifdef CONFIG_MTK_SPKGPIO_REWORK		/* Only use in MTK internal phone */
 	/* Get PCB ID : Channel 12 */
 	IMM_GetOneChannelValue(12, data, &rawdata);
 	pr_warn("PCB_ID: voltage: %d.%d\n", data[0], data[1]);
 
 	if ((data[0] == 0) && (data[1] > 40 && data[1] < 54)) {
 		/* 0.505v : rework version -- use GPIO 54 */
-		pin_extspkamp = (54 | 0x80000000);
-		pin_mode_extspkamp = 0;
-		pr_warn("AW8736 rework version WS3000 -- use GPIO %u as SHDN\n", pin_extspkamp);
+		pin_extspkamp = -1;
+		pr_warn("AW8736 Rework version\n");
 	} else {
-		ret = GetGPIO_Info(5, &pin_extspkamp, &pin_mode_extspkamp);
-		if (ret < 0) {
-			pr_err("Ext_Speaker_Amp_Change GetGPIO_Info FAIL!!!\n");
-			return -1;
-		}
-		pr_warn("Get AW8736 SHDN IO %u from DTS\n", (pin_extspkamp - 0x80000000));
+		pin_extspkamp = 0;
+		pr_warn("AW8736 Normal version\n");
 	}
 #endif
 	return 0;
