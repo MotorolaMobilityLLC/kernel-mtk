@@ -797,6 +797,7 @@ sched_trace(sched_log);
 sched_trace(sched_rt);
 sched_trace(sched_rt_info);
 sched_trace(sched_lb);
+sched_trace(sched_lb_info);
  #ifdef CONFIG_MTK_SCHED_CMP
 sched_trace(sched_cmp);
 sched_trace(sched_cmp_info);

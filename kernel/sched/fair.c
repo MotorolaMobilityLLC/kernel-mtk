@@ -6371,6 +6371,8 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 		int cpu;
 
 		schedstat_inc(p, se.statistics.nr_failed_migrations_affine);
+		mt_sched_printf(sched_lb, "[%s] %d %s affinity fail 0x%lu ",
+			__func__, p->pid, p->comm, p->cpus_allowed.bits[0]);
 
 		env->flags |= LBF_SOME_PINNED;
 
@@ -6420,6 +6422,8 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 		if (tsk_cache_hot) {
 			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
 			schedstat_inc(p, se.statistics.nr_forced_migrations);
+			mt_sched_printf(sched_lb, "[%s] %d %s running fail",
+				__func__, p->pid, p->comm);
 		}
 		return 1;
 	}
@@ -7271,6 +7275,9 @@ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
 
 	cpu_rq(cpu)->cpu_capacity = capacity;
 	sdg->sgc->capacity = capacity;
+
+	mt_sched_printf(sched_lb_info, "[%s] %d: %lu ", __func__, cpu, capacity);
+
 }
 
 void update_group_capacity(struct sched_domain *sd, int cpu)
@@ -7329,11 +7336,14 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
 		group = child->groups;
 		do {
 			capacity += group->sgc->capacity;
+			mt_sched_printf(sched_lb_info, "[%s] %lu: %lu ",
+				__func__, sched_group_cpus(group)->bits[0], capacity);
 			group = group->next;
 		} while (group != child->groups);
 	}
 
 	sdg->sgc->capacity = capacity;
+	mt_sched_printf(sched_lb_info, "[%s] final %d: %lu ", __func__, cpu, capacity);
 }
 
 /*
@@ -7483,11 +7493,16 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 		sgs->sum_weighted_load += weighted_cpuload(i);
 		if (idle_cpu(i))
 			sgs->idle_cpus++;
+
+		mt_sched_printf(sched_lb_info, "[%s] %d: %lu %lu %d %d", __func__, i,
+			sgs->group_load, load, rq->nr_running, sgs->sum_nr_running);
 	}
 
 	/* Adjust by relative CPU capacity of the group */
 	sgs->group_capacity = group->sgc->capacity;
 	sgs->avg_load = (sgs->group_load*SCHED_CAPACITY_SCALE) / sgs->group_capacity;
+	mt_sched_printf(sched_lb_info, "[%s] %lu %lu %lu", __func__, sgs->avg_load,
+		sgs->group_load, sgs->group_capacity);
 
 	if (sgs->sum_nr_running)
 		sgs->load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
@@ -7518,14 +7533,21 @@ static bool update_sd_pick_busiest(struct lb_env *env,
 {
 	struct sg_lb_stats *busiest = &sds->busiest_stat;
 
+	mt_sched_printf(sched_lb_info, "[%s] %lx: %d %d %lu %lu ", __func__, sched_group_cpus(sg)->bits[0],
+		sgs->group_type, busiest->group_type, sgs->avg_load, busiest->avg_load);
+
 	if (sgs->group_type > busiest->group_type)
 		return true;
 
-	if (sgs->group_type < busiest->group_type)
+	if (sgs->group_type < busiest->group_type) {
+		mt_sched_printf(sched_lb_info, "[%s] %d: fail busiest 1", __func__, env->src_cpu);
 		return false;
+	}
 
-	if (sgs->avg_load <= busiest->avg_load)
+	if (sgs->avg_load <= busiest->avg_load) {
+		mt_sched_printf(sched_lb_info, "[%s] %d: fail busiest 2", __func__, env->src_cpu);
 		return false;
+	}
 
 	/* This is the busiest node in its class. */
 	if (!(env->sd->flags & SD_ASYM_PACKING))
@@ -7543,6 +7565,8 @@ static bool update_sd_pick_busiest(struct lb_env *env,
 		if (group_first_cpu(sds->busiest) > group_first_cpu(sg))
 			return true;
 	}
+
+	mt_sched_printf(sched_lb_info, "[%s] %d: fail busiest 3", __func__, env->src_cpu);
 
 	return false;
 }
@@ -7611,6 +7635,9 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 
 		update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
 						&overload);
+
+		mt_sched_printf(sched_lb_info, "[%s] %lx %lu",
+			__func__, sched_group_cpus(sg)->bits[0], sgs->avg_load);
 
 		if (local_group)
 			goto next_group;
@@ -7883,8 +7910,13 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 		return sds.busiest;
 
 	/* There is no busy sibling group to pull tasks from */
-	if (!sds.busiest || busiest->sum_nr_running == 0)
+	if (!sds.busiest || busiest->sum_nr_running == 0) {
+		if (!sds.busiest)
+			mt_sched_printf(sched_lb, "[%s] %d: fail no busiest ", __func__, env->src_cpu);
+		else
+			mt_sched_printf(sched_lb, "[%s] %d: fail busiest no task ", __func__, env->src_cpu);
 		goto out_balanced;
+	}
 
 	sds.avg_load = (SCHED_CAPACITY_SCALE * sds.total_load)
 						/ sds.total_capacity;
@@ -7906,15 +7938,21 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	 * If the local group is busier than the selected busiest group
 	 * don't try and pull any tasks.
 	 */
-	if (local->avg_load >= busiest->avg_load)
+	if (local->avg_load >= busiest->avg_load) {
+		mt_sched_printf(sched_lb, "[%s] %d: fail no larger %lu busiest=%lu", __func__,
+			env->src_cpu, local->avg_load, busiest->avg_load);
 		goto out_balanced;
+	}
 
 	/*
 	 * Don't pull any tasks if this group is already above the domain
 	 * average load.
 	 */
-	if (local->avg_load >= sds.avg_load)
+	if (local->avg_load >= sds.avg_load) {
+		mt_sched_printf(sched_lb, "[%s] %d: fail no larger %lu sds=%lu", __func__,
+			env->src_cpu, local->avg_load, sds.avg_load);
 		goto out_balanced;
+	}
 
 #ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
 	if ((env->idle == CPU_IDLE) || (env->idle == CPU_NEWLY_IDLE)) {
@@ -7937,8 +7975,11 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 		 * imbalance_pct to be conservative.
 		 */
 		if (100 * busiest->avg_load <=
-				env->sd->imbalance_pct * local->avg_load)
+				env->sd->imbalance_pct * local->avg_load){
+			mt_sched_printf(sched_lb, "[%s] %d: fail imbalance_pct fail %lu %d %lu",
+				__func__, env->src_cpu, busiest->avg_load, env->sd->imbalance_pct, local->avg_load);
 			goto out_balanced;
+		}
 	}
 
 force_balance:
@@ -8153,6 +8194,7 @@ redo:
 	busiest = find_busiest_queue(&env, group);
 	if (!busiest) {
 		schedstat_inc(sd, lb_nobusyq[idle]);
+		mt_sched_printf(sched_lb, "[%s] %d: fail no busyq", __func__, env.src_cpu);
 		goto out_balanced;
 	}
 
@@ -8288,7 +8330,7 @@ more_balance:
 			raw_spin_lock_irqsave(&busiest->lock, flags);
 #ifdef CONFIG_MTK_SCHED_CMP_TGS
 			env.loop_max	= min_t(unsigned long, sysctl_sched_nr_migrate, busiest->nr_running);
-			mt_sched_printf(sched_log, "2 env.loop_max=%d, busiest->nr_running=%d",
+			mt_sched_printf(sched_cmp, "2 env.loop_max=%d, busiest->nr_running=%d",
 					env.loop_max, busiest->nr_running);
 #endif /* CONFIG_MTK_SCHED_CMP */
 #ifdef CONFIG_MTK_SCHED_CMP_TGS
@@ -8412,6 +8454,11 @@ out_one_pinned:
 
 	ld_moved = 0;
 out:
+	if (CPU_NEWLY_IDLE == idle)
+		mt_sched_printf(sched_lb, "%s idle balance %d: moved=%d", __func__, this_cpu, ld_moved);
+	else
+		mt_sched_printf(sched_lb, "%s periodic balance %d: moved=%d", __func__, this_cpu, ld_moved);
+
 	return ld_moved;
 }
 
