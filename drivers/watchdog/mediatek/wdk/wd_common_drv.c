@@ -22,13 +22,27 @@
 /*************************************************************************
  * Feature configure region
  *************************************************************************/
+#define __ENABLE_WDT_SYSFS__
 #define __ENABLE_WDT_AT_INIT__
 
 /* ------------------------------------------------------------------------ */
+#define PFX "wdk: "
 #define DEBUG_WDK 0
+#if DEBUG_WDK
+#define dbgmsg(msg...) pr_debug(PFX msg)
+#else
+#define dbgmsg(...)
+#endif
+#define msg(msg...) pr_info(PFX msg)
+#define warnmsg(msg...) pr_warn(PFX msg)
+#define errmsg(msg...) pr_err(PFX msg)
+
 #define MIN_KICK_INTERVAL	 1
 #define MAX_KICK_INTERVAL	30
+#define	MRDUMP_SYSRESETB	0
+#define	MRDUMP_EINTRST		1
 #define PROC_WK "wdk"
+#define	PROC_MRDUMP_RST	"mrdump_rst"
 
 static int kwdt_thread(void *arg);
 static int start_kicker(void);
@@ -168,6 +182,78 @@ static ssize_t wk_proc_cmd_write(struct file *file, const char *buf, size_t coun
 	return count;
 }
 
+static int mrdump_proc_cmd_read(struct seq_file *s, void *v)
+{
+	return 0;
+}
+
+static int mrdump_proc_cmd_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mrdump_proc_cmd_read, NULL);
+}
+
+static ssize_t mrdump_proc_cmd_write(struct file *file, const char *buf, size_t count, loff_t *data)
+{
+	int ret = 0;
+	int mrdump_rst_source;
+	int en, mode;		/* enable or disable ext wdt 1<-->enable 0<-->disable */
+	char mrdump_cmd_buf[128];
+	struct wd_api *my_wd_api = NULL;
+
+	ret = get_wd_api(&my_wd_api);
+	if (ret)
+		pr_debug("get public api error in wd common driver %d", ret);
+
+	if (count == 0)
+		return -1;
+
+	if (count > 255)
+		count = 255;
+
+	ret = copy_from_user(mrdump_cmd_buf, buf, count);
+	if (ret < 0)
+		return -1;
+
+	mrdump_cmd_buf[count] = '\0';
+
+	dbgmsg("Write %s\n", mrdump_cmd_buf);
+
+	ret = sscanf(mrdump_cmd_buf, "%d %d %d", &mrdump_rst_source, &mode, &en);
+	if (ret != 3)
+		pr_debug("%s: expect 3 numbers\n", __func__);
+
+	pr_debug("[MRDUMP] rst_source=%d mode=%d enable=%d\n", mrdump_rst_source, mode, en);
+
+	if (1 < mrdump_rst_source) {
+		errmsg("The mrdump_rst_source(%d) value should be smaller than 2\n",
+		       mrdump_rst_source);
+		return -1;
+	}
+
+	if (1 < mode) {
+		errmsg("The mrdump_rst_mode(%d) value should be smaller than 2\n", mode);
+		return -1;
+	}
+
+	spin_lock(&lock);
+	if (mrdump_rst_source == MRDUMP_SYSRESETB) {
+		ret = my_wd_api->wd_debug_key_sysrst_config(en, mode);
+	} else if (mrdump_rst_source == MRDUMP_EINTRST) {
+		ret = my_wd_api->wd_debug_key_eint_config(en, mode);
+	} else {
+		pr_debug("[MRDUMP] invalid mrdump_rst_source\n");
+		ret = -1;
+	}
+	spin_unlock(&lock);
+
+	if (ret == 0)
+		pr_debug("[MRDUMP] MRDUMP External success\n");
+	else
+		pr_debug("[MRDUMP] MRDUMP External key not support!\n");
+
+	return count;
+}
+
 static int start_kicker_thread_with_default_setting(void)
 {
 	int ret = 0;
@@ -241,6 +327,15 @@ static const struct file_operations wk_proc_cmd_fops = {
 	.release = single_release,
 };
 
+static const struct file_operations mrdump_rst_proc_cmd_fops = {
+	.owner = THIS_MODULE,
+	.open = mrdump_proc_cmd_open,
+	.read = seq_read,
+	.write = mrdump_proc_cmd_write,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 int wk_proc_init(void)
 {
 
@@ -248,6 +343,10 @@ int wk_proc_init(void)
 
 	if (!de)
 		pr_debug("[wk_proc_init]: create /proc/wdk failed\n");
+
+	de = proc_create(PROC_MRDUMP_RST, 0660, NULL, &mrdump_rst_proc_cmd_fops);
+	if (!de)
+		pr_debug("[wk_proc_init]: create /proc/mrdump_rst failed\n");
 
 	pr_debug("[WDK] Initialize proc\n");
 
@@ -383,6 +482,7 @@ static int start_kicker(void)
 			int ret = PTR_ERR(wk_tsk[i]);
 
 			wk_tsk[i] = NULL;
+			pr_alert("[WDK]kthread_create failed, wdtk-%d\n", i);
 			return ret;
 		}
 		/* wk_cpu_update_bit_flag(i,1); */

@@ -26,6 +26,8 @@ static int wd_restart(enum wd_restart_type type);
 static int set_mode(enum ext_wdt_mode mode);
 static int wd_dram_reserved_mode(bool enabled);
 static int thermal_direct_mode_config(WD_REQ_CTL en, WD_REQ_MODE mode);
+static int debug_key_eint_config(WD_REQ_CTL en, WD_REQ_MODE mode);
+static int debug_key_sysrst_config(WD_REQ_CTL en, WD_REQ_MODE mode);
 
 static struct wd_api g_wd_api_obj = {
 	.ready = 1,
@@ -47,6 +49,8 @@ static struct wd_api g_wd_api_obj = {
 	.wd_get_kick_bit = wd_get_kick_bit,
 	.wd_dram_reserved_mode = wd_dram_reserved_mode,
 	.wd_thermal_direct_mode_config = thermal_direct_mode_config,
+	.wd_debug_key_eint_config = debug_key_eint_config,
+	.wd_debug_key_sysrst_config = debug_key_sysrst_config,
 };
 
 /* struct wd_private_api  *g_wd_private_api_obj; */
@@ -275,6 +279,47 @@ static int wd_dram_reserved_mode(bool enabled)
 	return ret;
 }
 
+static int debug_key_eint_config(WD_REQ_CTL en, WD_REQ_MODE mode)
+{
+	int res = 0;
+
+	pr_debug("debug_key_eint_config(en:0x%x,mode:0x%x)\n", en, mode);
+	if (WD_REQ_EN == en)
+		res = mtk_wdt_request_en_set(MTK_WDT_REQ_EINT_MARK, WD_REQ_EN);
+	else if (WD_REQ_DIS == en)
+		res = mtk_wdt_request_en_set(MTK_WDT_REQ_EINT_MARK, WD_REQ_DIS);
+	else
+		res = -2;
+
+	if (WD_REQ_IRQ_MODE == mode)
+		res = mtk_wdt_request_mode_set(MTK_WDT_REQ_EINT_MARK, WD_REQ_IRQ_MODE);
+	else if (WD_REQ_RST_MODE == mode)
+		res = mtk_wdt_request_mode_set(MTK_WDT_REQ_EINT_MARK, WD_REQ_RST_MODE);
+	else
+		res = -3;
+	return res;
+}
+
+static int debug_key_sysrst_config(WD_REQ_CTL en, WD_REQ_MODE mode)
+{
+	int res = 0;
+
+	pr_debug("debug_key_sysrst_config(en:0x%x,mode:0x%x)\n", en, mode);
+	if (WD_REQ_EN == en)
+		res = mtk_wdt_request_en_set(MTK_WDT_REQ_SYSRST_MARK, WD_REQ_EN);
+	else if (WD_REQ_DIS == en)
+		res = mtk_wdt_request_en_set(MTK_WDT_REQ_SYSRST_MARK, WD_REQ_DIS);
+	else
+		res = -2;
+
+	if (WD_REQ_IRQ_MODE == mode)
+		res = mtk_wdt_request_mode_set(MTK_WDT_REQ_SYSRST_MARK, WD_REQ_IRQ_MODE);
+	else if (WD_REQ_RST_MODE == mode)
+		res = mtk_wdt_request_mode_set(MTK_WDT_REQ_SYSRST_MARK, WD_REQ_RST_MODE);
+	else
+		res = -3;
+	return res;
+}
 
 #else
 /* dummy api */
@@ -422,7 +467,47 @@ static int thermal_direct_mode_config(WD_REQ_CTL en, WD_REQ_MODE mode)
 	return res;
 }
 
+static int debug_key_eint_config(WD_REQ_CTL en, WD_REQ_MODE mode)
+{
+	int res = 0;
 
+	pr_debug("debug_key_eint_config(en:0x%x,mode:0x%x)\n", en, mode);
+	if (WD_REQ_EN == en)
+		res = mtk_wdt_request_en_set(MTK_WDT_REQ_EINT_MARK, WD_REQ_EN);
+	else if (WD_REQ_DIS == en)
+		res = mtk_wdt_request_en_set(MTK_WDT_REQ_EINT_MARK, WD_REQ_DIS);
+	else
+		res = -2;
+
+	if (WD_REQ_IRQ_MODE == mode)
+		res = mtk_wdt_request_mode_set(MTK_WDT_REQ_EINT_MARK, WD_REQ_IRQ_MODE);
+	else if (WD_REQ_RST_MODE == mode)
+		res = mtk_wdt_request_mode_set(MTK_WDT_REQ_EINT_MARK, WD_REQ_RST_MODE);
+	else
+		res = -3;
+	return res;
+}
+
+static int debug_key_sysrst_config(WD_REQ_CTL en, WD_REQ_MODE mode)
+{
+	int res = 0;
+
+	pr_debug("debug_key_sysrst_config(en:0x%x,mode:0x%x)\n", en, mode);
+	if (WD_REQ_EN == en)
+		res = mtk_wdt_request_en_set(MTK_WDT_REQ_SYSRST_MARK, WD_REQ_EN);
+	else if (WD_REQ_DIS == en)
+		res = mtk_wdt_request_en_set(MTK_WDT_REQ_SYSRST_MARK, WD_REQ_DIS);
+	else
+		res = -2;
+
+	if (WD_REQ_IRQ_MODE == mode)
+		res = mtk_wdt_request_mode_set(MTK_WDT_REQ_SYSRST_MARK, WD_REQ_IRQ_MODE);
+	else if (WD_REQ_RST_MODE == mode)
+		res = mtk_wdt_request_mode_set(MTK_WDT_REQ_SYSRST_MARK, WD_REQ_RST_MODE);
+	else
+		res = -3;
+	return res;
+}
 
 #endif
 

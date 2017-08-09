@@ -4,6 +4,8 @@
 #define MTK_WDT_REQ_DEBUG_EN_MARK		(0x80000)
 #define MTK_WDT_REQ_SPM_THERMAL_MARK		(0x0001)
 #define MTK_WDT_REQ_SPM_SCPSYS_MARK		(0x0002)
+#define MTK_WDT_REQ_EINT_MARK			(1<<2)
+#define MTK_WDT_REQ_SYSRST_MARK			(1<<3)
 #define MTK_WDT_REQ_THERMAL_MARK		(1<<18)
 
 #ifndef FALSE
@@ -61,6 +63,8 @@ struct wd_api {
 	int (*wd_thermal_mode_config)(WD_REQ_CTL en, WD_REQ_MODE mode);
 	int (*wd_dram_reserved_mode)(bool enabled);
 	int (*wd_thermal_direct_mode_config)(WD_REQ_CTL en, WD_REQ_MODE mode);
+	int (*wd_debug_key_eint_config)(WD_REQ_CTL en, WD_REQ_MODE mode);
+	int (*wd_debug_key_sysrst_config)(WD_REQ_CTL en, WD_REQ_MODE mode);
 };
 
 int wd_api_init(void);
