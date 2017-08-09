@@ -29,6 +29,8 @@
 #define CPUXGPT_BASE_PHY    mt_cpuxgpt_base_phys
 #define INDEX_BASE_PHY      (CPUXGPT_BASE_PHY+0x0674)
 #define CTL_BASE_PHY        (CPUXGPT_BASE_PHY+0x0670)
+#define CPUXGPT_IRQID_BASE cpuxgpt_irq[0]
+
 static struct resource cpuxgpt_r;
 static phys_addr_t mt_cpuxgpt_base_phys;
 
@@ -400,12 +402,12 @@ int cpu_xgpt_register_timer(unsigned int id, irqreturn_t (*func)(int irq, void *
 
 		/*cpuxgpt assigne  for per core*/
 #ifdef CONFIG_MTK_GIC
-		/*irq_set_affinity(irq_id, cpumask_of((irq_id - CPUXGPT_IRQID_BASE)%num_possible_cpus()));*/
+		irq_force_affinity(irq_id, cpumask_of((irq_id - CPUXGPT_IRQID_BASE)%num_possible_cpus()));
 
 #else
-		/*mt_gic_cfg_irq2cpu(irq_id,0,0);*//*don't trigger IRQ to CPU0*/
-		/*mt_gic_cfg_irq2cpu(irq_id,(irq_id - CPUXGPT_IRQID_BASE)%num_possible_cpus(),1); */
+		mt_gic_cfg_irq2cpu(irq_id, 0, 0);/*don't trigger IRQ to CPU0*/
 		/*trigger IRQ to CPUx*/
+		mt_gic_cfg_irq2cpu(irq_id, (irq_id - CPUXGPT_IRQID_BASE)%num_possible_cpus(), 1);
 #endif
 
 		ret = request_irq(irq_id, (irq_handler_t)cpuxgpt_irq_handler[id], IRQF_TRIGGER_HIGH, name, NULL);
