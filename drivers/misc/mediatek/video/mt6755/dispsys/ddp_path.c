@@ -836,7 +836,7 @@ DISP_MODULE_ENUM ddp_get_dst_module(DDP_SCENARIO_ENUM ddp_scenario)
 	if (module_num >= 0)
 		module_name = module_list_scenario[ddp_scenario][module_num];
 
-	DDPMSG("ddp_get_dst_module, scneario=%s, dst_module=%s\n",
+	DDPDBG("ddp_get_dst_module, scneario=%s, dst_module=%s\n",
 	       ddp_get_scenario_name(ddp_scenario), ddp_get_module_name(module_name));
 
 	return module_name;
