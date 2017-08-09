@@ -30,6 +30,7 @@
 #include <linux/sizes.h>
 #include <linux/irqchip/arm-gic-v3.h>
 #include <linux/irqchip/mtk-gic-extend.h>
+#include <linux/io.h>
 #include <mach/mt_secure_api.h>
 
 #define IOMEM(x)        ((void __force __iomem *)(x))
@@ -40,6 +41,19 @@ void __iomem *INT_POL_CTL1;
 static void __iomem *GIC_REDIST_BASE;
 static u32 wdt_irq;
 static u32 reg_len_pol0;
+
+#ifndef readq
+/* for some kernel config, readq might not be defined, ex aarch32 */
+static inline u64 readq(const void __iomem *addr)
+{
+	u64 ret = readl(addr + 4);
+
+	ret <<= 32;
+	ret |= readl(addr);
+
+	return ret;
+}
+#endif
 
 static inline unsigned int gic_irq(struct irq_data *d)
 {

@@ -36,6 +36,15 @@
 
 #define IOMEM(x)        ((void __force __iomem *)(x))
 
+#ifndef writeq_relaxed
+/* for some kernel config, writeq not exist, aarch32 */
+static inline void writeq_relaxed(u64 val, void __iomem *addr)
+{
+	writel((u32) (val), addr);
+	writel((u32) (val >> 32), (addr + 4));
+}
+#endif
+
 struct gic_chip_data {
 	void __iomem		*dist_base;
 	void __iomem		**redist_base;
