@@ -1959,7 +1959,7 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	int *modules;
 	int module_num;
 
-	if (primary_display_is_sleepd()) {
+	if (primary_display_is_sleepd_nolock()) {
 		DISP_LOG_E("%s when DISP suspended\n", __func__);
 		return -1;
 	}

@@ -6763,6 +6763,16 @@ int primary_display_is_alive(void)
 
 	return temp;
 }
+int primary_display_is_sleepd_nolock(void)
+{
+	unsigned int temp = 0;
+	/* DISPFUNC(); */
+
+	if (pgc->state == DISP_SLEPT)
+		temp = 1;
+
+	return temp;
+}
 
 int primary_display_is_sleepd(void)
 {

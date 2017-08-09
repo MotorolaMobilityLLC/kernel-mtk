@@ -264,6 +264,7 @@ int primary_display_get_pages(void);
 int primary_display_set_overlay_layer(primary_disp_input_config *input);
 int primary_display_is_alive(void);
 int primary_display_is_sleepd(void);
+int primary_display_is_sleepd_nolock(void);
 int primary_display_wait_for_vsync(void *config);
 unsigned int primary_display_get_ticket(void);
 int primary_display_config_input(primary_disp_input_config *input);
