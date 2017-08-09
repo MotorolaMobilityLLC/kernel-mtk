@@ -27,7 +27,7 @@ mcKernelApi-objs := MobiCoreKernelApi/main.o \
 # Release mode by default
 ccflags-y := -DNDEBUG
 ccflags-y += -Wno-declaration-after-statement
-ccflags-y += -Wno-error=date-time
+#ccflags-y += -Wno-error=date-time
 
 ccflags-$(CONFIG_MOBICORE_DEBUG) += -DDEBUG
 ccflags-$(CONFIG_MOBICORE_VERBOSE) += -DDEBUG_VERBOSE
