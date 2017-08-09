@@ -1060,12 +1060,12 @@ int cm36652_setup_eint(struct i2c_client *client)
 		APS_ERR("Cannot find alsps pinctrl pin_cfg!\n");
 
 	}
-	pinctrl_select_state(pinctrl, pins_cfg);
 /* eint request */
 	if (cm36652_obj->irq_node) {
 		of_property_read_u32_array(cm36652_obj->irq_node, "debounce", ints, ARRAY_SIZE(ints));
 		gpio_request(ints[0], "p-sensor");
 		gpio_set_debounce(ints[0], ints[1]);
+		pinctrl_select_state(pinctrl, pins_cfg);
 		APS_LOG("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
 
 		cm36652_obj->irq = irq_of_parse_and_map(cm36652_obj->irq_node, 0);
