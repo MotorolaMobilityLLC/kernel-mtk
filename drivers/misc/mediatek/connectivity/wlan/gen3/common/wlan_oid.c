@@ -7596,7 +7596,8 @@ wlanoidSet802dot11PowerSaveProfile(IN P_ADAPTER_T prAdapter,
 			else if (prAdapter->u4CtiaPowerMode == 2)
 				prPowerMode->ePowerMode = Param_PowerModeFast_PSP;
 		}
-	}
+	} else if (prAdapter->rWifiVar.ePowerMode != Param_PowerModeMax)
+		prPowerMode->ePowerMode = prAdapter->rWifiVar.ePowerMode;
 
 	status = nicConfigPowerSaveProfile(prAdapter, prPowerMode->ucBssIdx, prPowerMode->ePowerMode, TRUE);
 

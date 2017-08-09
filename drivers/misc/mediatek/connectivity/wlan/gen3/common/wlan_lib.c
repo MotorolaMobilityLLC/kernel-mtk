@@ -6479,6 +6479,7 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	prWifiVar->ucDhcpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "DhcpTxDone", 1);
 	prWifiVar->ucArpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "ArpTxDone", 1);
 	prWifiVar->ucIcmpTxDone = (UINT_8) wlanCfgGetUint32(prAdapter, "IcmpTxDone", 1);
+	prWifiVar->ePowerMode = (PARAM_POWER_MODE) wlanCfgGetUint32(prAdapter, "PowerSave", Param_PowerModeMax);
 }
 
 VOID wlanCfgSetSwCtrl(IN P_ADAPTER_T prAdapter)
