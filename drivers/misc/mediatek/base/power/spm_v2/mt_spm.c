@@ -530,12 +530,10 @@ static void spm_register_init(void)
 	__spm_dbgout_md_ddr_en(true);
 #endif
 
-#if defined(CONFIG_ARCH_MT6755)
 	/* init r7 with POWER_ON_VAL1 */
 	spm_write(PCM_REG_DATA_INI, spm_read(SPM_POWER_ON_VAL1));
 	spm_write(PCM_PWR_IO_EN, PCM_RF_SYNC_R7);
 	spm_write(PCM_PWR_IO_EN, 0);
-#endif
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
