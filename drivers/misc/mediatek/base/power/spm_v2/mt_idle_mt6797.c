@@ -292,7 +292,8 @@ bool cg_check_idle_can_enter(
 						ISP_PWR_STA_MASK |
 						VDE_PWR_STA_MASK |
 						VEN_PWR_STA_MASK |
-						MJC_PWR_STA_MASK))
+						MJC_PWR_STA_MASK |
+						DIS_PWR_STA_MASK))
 				return false;
 		}
 	}
