@@ -337,9 +337,9 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 
 			if (trans_mode == 1) {
 #ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
-				pr_info("phys_addr: 0x%llx\n", dma_addr);
+				I2CLOG("phys_addr: 0x%llx\n", dma_addr);
 #else
-				pr_info("phys_addr: 0x%x\n", dma_addr);
+				I2CLOG("phys_addr: 0x%x\n", dma_addr);
 #endif
 				ret = i2c_trans_data(bus_id, address, (void *)(uintptr_t)dma_addr,
 						number, ext_flag, timing, operation);

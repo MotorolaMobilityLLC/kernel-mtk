@@ -14,16 +14,14 @@
 #include <linux/mm.h>
 #include <linux/dma-mapping.h>
 #include <linux/scatterlist.h>
-/* #include <linux/aee.h> */
 #ifdef CONFIG_OF
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
 #include <asm/scatterlist.h>
 #include <asm/io.h>
+#include <mt-plat/aee.h>
 #include <mt-plat/sync_write.h>
-/* #include <mach/dma.h> */
-/* #include <mach/mt_reg_base.h> */
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
@@ -492,8 +490,19 @@ static s32 _i2c_deal_result(struct mt_i2c_t *i2c)
 		/*Transfer success, we need to get data from fifo */
 		if ((!i2c->dma_en) && (i2c->op == I2C_MASTER_RD || i2c->op == I2C_MASTER_WRRD)) {
 			data_size = (i2c_readl(i2c, OFFSET_FIFO_STAT) >> 4) & 0x000F;
-			BUG_ON(data_size > i2c->msg_len);
-			/* I2CLOG("data_size=%d\n",data_size); */
+
+			if (i2c->op == I2C_MASTER_RD && data_size > i2c->msg_len) {
+				I2CERR("data_size=%d, msg_len=%d\n", data_size, i2c->msg_len);
+				_i2c_dump_info(i2c);
+				BUG_ON(data_size > i2c->msg_len);
+			}
+
+			if (i2c->op == I2C_MASTER_WRRD && data_size > i2c->trans_data.trans_auxlen) {
+				I2CERR("data_size=%d, msg_len=%d\n", data_size, i2c->msg_len);
+				_i2c_dump_info(i2c);
+				BUG_ON(data_size > i2c->trans_data.trans_auxlen);
+			}
+
 			while (data_size--) {
 				*ptr = i2c_readl(i2c, OFFSET_DATA_PORT);
 				/* I2CLOG("addr %x read byte = 0x%x\n", i2c->addr, *ptr); */
@@ -693,7 +702,7 @@ static void _i2c_write_reg(struct mt_i2c_t *i2c)
 	if (0x0 == (i2c_readl(i2c, OFFSET_TIMING))) {
 		/* set timing reg */
 		i2c_writel(i2c, OFFSET_TIMING, 0x1410);
-		/* aee_kernel_warning(I2CTAG, "@%s():%d,\n", __func__, __LINE__); */
+		aee_kernel_warning(I2CTAG, "@%s():%d,\n", __func__, __LINE__);
 		/* i2c_writel(i2c, OFFSET_HS, i2c->high_speed_reg); */
 	}
 }
@@ -1300,6 +1309,44 @@ static void mt_i2c_clock_disable(struct mt_i2c_t *i2c)
 	I2CINFO(I2C_T_TRANSFERFLOW, "clock disable done.....\n");
 #endif
 }
+
+#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
+int i2c_tui_enable_clock(void)
+{
+	struct i2c_adapter *adap;
+	struct mt_i2c_t *i2c;
+
+	adap = i2c_get_adapter(0);
+	if (!adap) {
+		I2CERR("Cannot get adapter\n");
+		return -1;
+	}
+
+	i2c = i2c_get_adapdata(adap);
+	clk_prepare_enable(i2c->clk_main);
+	clk_prepare_enable(i2c->clk_dma);
+
+	return 0;
+}
+
+int i2c_tui_disable_clock(void)
+{
+	struct i2c_adapter *adap;
+	struct mt_i2c_t *i2c;
+
+	adap = i2c_get_adapter(0);
+	if (!adap) {
+		I2CERR("Cannot get adapter\n");
+		return -1;
+	}
+
+	i2c = i2c_get_adapdata(adap);
+	clk_disable_unprepare(i2c->clk_dma);
+	clk_disable_unprepare(i2c->clk_main);
+
+	return 0;
+}
+#endif
 
 static irqreturn_t mt_i2c_irq(s32 irqno, void *dev_id)
 {
