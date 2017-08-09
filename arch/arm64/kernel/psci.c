@@ -22,6 +22,7 @@
 #include <linux/pm.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
+#include <linux/spinlock.h>
 #include <uapi/linux/psci.h>
 
 #include <asm/compiler.h>
@@ -70,6 +71,12 @@ int ocp_cl0_init = 0;
 int ocp_cl1_init = 0;
 int idvfs_init = 0;
 #endif
+
+#ifdef CONFIG_CL2_BUCK_CTRL
+DEFINE_SPINLOCK(reset_lock);
+int reset_flags;
+#endif
+
 #endif
 
 struct psci_power_state {
@@ -493,6 +500,11 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	static volatile unsigned int temp;
 	int ret = 0;
 
+	/* set reset_flags for OCP */
+	spin_lock(&reset_lock);
+	reset_flags = 1;
+	spin_unlock(&reset_lock);
+
 	reg_base = ioremap(MT6797_SPM_BASE_ADDR, 0x1000);
 	writel_relaxed((readl(reg_base + 0x218) | (1 << 0)), reg_base + 0x218);
 	iounmap(reg_base);
@@ -518,6 +530,11 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 
 	/* unlatch RESET */
 	mtk_wdt_swsysret_config(MTK_WDT_SWSYS_RST_PWRAP_SPI_CTL_RST, 0);
+
+	/* clear reset_flags for OCP */
+	spin_lock(&reset_lock);
+	reset_flags = 0;
+	spin_unlock(&reset_lock);
 
 	/* set VSRAM enable, cal_eFuse, rsh = 0x0f -> 0x08 */
 	BigiDVFSSRAMLDOSet(110000);
