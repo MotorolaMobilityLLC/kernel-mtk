@@ -202,12 +202,12 @@ unsigned int neg_err_thold = 0x0;
 unsigned int pos_err_fifo_size = 0x3;
 
 /* otp_ctrl_data */
-unsigned int piderrmax = 0x00000A80;
-unsigned int piderrmin = 0xFFFFF580;
+unsigned int piderrmax = 0x00000FA0;
+unsigned int piderrmin = 0xFFFFF060;
 unsigned int kp_step = 0x0;
 unsigned int kp = 0xFF9C;
 unsigned int ki_step = 0x0;
-unsigned int ki = 0xFFFE;
+unsigned int ki = 0xFFFD;
 unsigned int kd_step = 0x0;
 unsigned int kd = 0x0;
 
@@ -824,7 +824,7 @@ static void Normal_Mode_Setting(void)
 {
 
 	/* derrmax, piderrmin, kp_step, kp, ki_step, ki, kd_step, kd */
-	set_otp_ctrl_data(0x00000A80, 0xFFFFF580, 0x0, 0xFF9C, 0x0, 0xFFFE, 0x0, 0x0);
+	set_otp_ctrl_data(0x00000FA0, 0xFFFFF060, 0x0, 0xFF9C, 0x0, 0xFFFD, 0x0, 0x0);
 }
 
 void getTHslope(void)
