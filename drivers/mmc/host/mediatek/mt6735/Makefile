@@ -21,6 +21,6 @@ ifeq ($(CONFIG_MTK_EMMC_SUPPORT_OTP),y)
 obj-$(CONFIG_MMC_MTK) += emmc_otp.o
 endif
 
-ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
-ccflags-y += -DFEATURE_MET_MMC_INDEX
-endif
+#ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
+#ccflags-y += -DFEATURE_MET_MMC_INDEX
+#endif
