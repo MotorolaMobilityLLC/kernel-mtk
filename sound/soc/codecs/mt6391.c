@@ -831,6 +831,9 @@ static void mt6391_set_iv_hp_trim_offset(struct mt6391_priv *codec_data)
 
 static void mt6391_turn_on_headphone_amp(struct mt6391_priv *codec_data)
 {
+	int gain_l = codec_data->device_volume[MT6391_VOL_HPOUTL];
+	int gain_r = codec_data->device_volume[MT6391_VOL_HPOUTR];
+
 	pr_debug("%s\n", __func__);
 
 	if (codec_data->device_power[MT6391_DEV_OUT_HEADSETL]) {
@@ -860,8 +863,8 @@ static void mt6391_turn_on_headphone_amp(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_AUDACCDEPOP_CFG0, 0x0030, 0xffff);
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG0, 0x0008, 0xffff);
 	mt6391_set_reg(codec_data, MT6397_IBIASDIST_CFG0, 0x0552, 0xffff);
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON2, 0x0c0c, 0xffff);
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON3, 0x000F, 0xffff);
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON2, 0xc0c, 0xf0f);
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON3, 0xf, 0xf);
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG1, 0x0900, 0xffff);
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG2, 0x0082, 0xffff);
 
@@ -874,7 +877,7 @@ static void mt6391_turn_on_headphone_amp(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG1, 0x0100, 0xffff);
 	udelay(100);
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG2, 0x0022, 0xffff);
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON2, 0x00c0c, 0xffff);
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON2, ((gain_r << 8) | gain_l), 0xf0f);
 	udelay(100);
 
 	mt6391_set_reg(codec_data, MT6397_AUDCLKGEN_CFG0, 0x0001, 0x0001);
@@ -925,6 +928,8 @@ static void mt6391_turn_off_headphone_amp(struct mt6391_priv *codec_data)
 
 static void mt6391_turn_on_voice_amp(struct mt6391_priv *codec_data)
 {
+	int gain = codec_data->device_volume[MT6391_VOL_HSOUTL];
+
 	if (codec_data->device_power[MT6391_DEV_OUT_EARPIECEL]) {
 		pr_debug("%s turn on already\n", __func__);
 		return;
@@ -954,7 +959,7 @@ static void mt6391_turn_on_voice_amp(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_IBIASDIST_CFG0, 0x0552, 0xffff);
 
 	/* handset gain , minimun gain */
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON3, 0x000F, 0xffff);
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON3, 0xf, 0xf);
 	/* short HS to vcm and HS output stability enhance */
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG2, 0x00A2, 0xffff);
 	/* handset gain , minimun gain */
@@ -963,7 +968,7 @@ static void mt6391_turn_on_voice_amp(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG2, 0x0022, 0xffff);
 
 	/* handset gain , normal gain */
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON3, 0x0002, 0xffff);
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON3, gain, 0xf);
 	mt6391_set_reg(codec_data, MT6397_AUDCLKGEN_CFG0, 0x0001, 0x0001); /* reset decoder */
 	/* power on audio DAC right channels */
 	mt6391_set_reg(codec_data, MT6397_AUDDAC_CON0, 0x0009, 0xffff);
@@ -1010,6 +1015,9 @@ static void mt6391_turn_off_voice_amp(struct mt6391_priv *codec_data)
 
 static void mt6391_turn_on_speaker_amp(struct mt6391_priv *codec_data)
 {
+	int gain_l = codec_data->device_volume[MT6391_VOL_SPKL];
+	int gain_r = codec_data->device_volume[MT6391_VOL_SPKR];
+
 	pr_debug("%s\n", __func__);
 
 	if (codec_data->device_power[MT6391_DEV_OUT_SPEAKERL]) {
@@ -1052,6 +1060,7 @@ static void mt6391_turn_on_speaker_amp(struct mt6391_priv *codec_data)
 
 	mt6391_set_reg(codec_data, MT6397_AFUNC_AUD_CON2, 0x0000, 0x0080);
 
+	mt6391_set_reg(codec_data, MT6397_SPK_CON9, 1 << 13, 1 << 13);
 	mt6391_set_reg(codec_data, MT6397_SPK_CON9, 0x0100, 0x0f00);	/* set gain L */
 	mt6391_set_reg(codec_data, MT6397_SPK_CON5, (0x1 << 11), 0x7800);	/* set gain R */
 
@@ -1065,22 +1074,22 @@ static void mt6391_turn_on_speaker_amp(struct mt6391_priv *codec_data)
 		mt6391_set_reg(codec_data, MT6397_SPK_CON2, 0x0014, 0xffff);
 		mt6391_set_reg(codec_data, MT6397_SPK_CON5, 0x0014, 0x07ff);
 		/* SPK gain setting */
-		mt6391_set_reg(codec_data, MT6397_SPK_CON9, 0x0800, 0xffff);
-		mt6391_set_reg(codec_data, MT6397_SPK_CON5, (0x8 << 11), 0x7800);
+		mt6391_set_reg(codec_data, MT6397_SPK_CON9, gain_l << 8, 0xf00);
+		mt6391_set_reg(codec_data, MT6397_SPK_CON5, gain_r << 11, 0x7800);
 	} else if (codec_data->speaker_channel_sel == MT6391_CHANNEL_SEL_MONO_LEFT) {
 		mt6391_set_reg(codec_data, MT6397_SPK_CON0,
 			       0x3001 | (codec_data->speaker_mode << 2),
 			       0xffff);
 		mt6391_set_reg(codec_data, MT6397_SPK_CON2, 0x0014, 0xffff);
 		/* SPK gain setting */
-		mt6391_set_reg(codec_data, MT6397_SPK_CON9, 0x0800, 0xffff);
+		mt6391_set_reg(codec_data, MT6397_SPK_CON9, gain_l << 8, 0xf00);
 	} else if (codec_data->speaker_channel_sel == MT6391_CHANNEL_SEL_MONO_RIGHT) {
 		mt6391_set_reg(codec_data, MT6397_SPK_CON3,
 			       0x3001 | (codec_data->speaker_mode << 2),
 			       0xffff);
 		mt6391_set_reg(codec_data, MT6397_SPK_CON5, 0x0014, 0x07ff);
 		/* SPK gain setting */
-		mt6391_set_reg(codec_data, MT6397_SPK_CON5, (0x8 << 11), 0x7800);
+		mt6391_set_reg(codec_data, MT6397_SPK_CON5, gain_r << 11, 0x7800);
 	} else {
 		pr_err("%s unexpected condition\n", __func__);
 	}
@@ -1088,6 +1097,7 @@ static void mt6391_turn_on_speaker_amp(struct mt6391_priv *codec_data)
 	/* spk output stage enabke and enable */
 	mt6391_set_reg(codec_data, MT6397_SPK_CON11, 0x0f00, 0xffff);
 	usleep_range(4000, 5000);
+	mt6391_set_reg(codec_data, MT6397_SPK_CON9, 0 << 13, 1 << 13);
 
 	pr_debug("%s done\n", __func__);
 }
@@ -1133,6 +1143,11 @@ static void mt6391_turn_off_speaker_amp(struct mt6391_priv *codec_data)
 
 static void mt6391_turn_on_headset_speaker_amp(struct mt6391_priv *codec_data)
 {
+	int gain_hpl = codec_data->device_volume[MT6391_VOL_HPOUTL];
+	int gain_hpr = codec_data->device_volume[MT6391_VOL_HPOUTR];
+	int gain_spkl = codec_data->device_volume[MT6391_VOL_SPKL];
+	int gain_spkr = codec_data->device_volume[MT6391_VOL_SPKR];
+
 	pr_debug("%s\n", __func__);
 
 	if (codec_data->device_power[MT6391_DEV_OUT_SPEAKER_HEADSET_L]) {
@@ -1168,8 +1183,8 @@ static void mt6391_turn_on_headset_speaker_amp(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG0, 0x0008, 0xffff);
 	/* audio bias adjustment */
 	mt6391_set_reg(codec_data, MT6397_IBIASDIST_CFG0, 0x0552, 0xffff);
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON2, 0x0C0C, 0xffff);	/* HP PGA gain */
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON3, 0x000F, 0xffff);	/* HP PGA gain */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON2, 0xc0c, 0xf0f);	/* HP PGA gain */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON3, 0xf, 0xf);	/* HS PGA gain */
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG1, 0x0900, 0xffff);	/* HP enhance */
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG2, 0x0082, 0xffff);	/* HS enahnce */
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG0, 0x0009, 0xffff);
@@ -1181,7 +1196,8 @@ static void mt6391_turn_on_headset_speaker_amp(struct mt6391_priv *codec_data)
 	udelay(100);
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG2, 0x0022, 0xffff);	/* HS VCM not short */
 
-	mt6391_set_reg(codec_data, MT6397_ZCD_CON2, 0x0808, 0xffff);	/* HP PGA gain */
+	/* HP PGA gain */
+	mt6391_set_reg(codec_data, MT6397_ZCD_CON2, ((gain_hpr << 8) | gain_hpl), 0xf0f);
 	udelay(100);
 	mt6391_set_reg(codec_data, MT6397_ZCD_CON4, 0x0505, 0xffff);	/* HP PGA gain */
 
@@ -1194,6 +1210,7 @@ static void mt6391_turn_on_headset_speaker_amp(struct mt6391_priv *codec_data)
 	mt6391_set_mux(codec_data, MT6391_DEV_OUT_SPEAKERL, MT6391_MUX_AUDIO);
 	mt6391_set_reg(codec_data, MT6397_AUDBUF_CFG0, 0x1106, 0x1106);	/* set headhpone mux */
 
+	mt6391_set_reg(codec_data, MT6397_SPK_CON9, 1 << 13, 1 << 13);
 	mt6391_set_reg(codec_data, MT6397_SPK_CON9, 0x0100, 0x0f00);	/* set gain L */
 	mt6391_set_reg(codec_data, MT6397_SPK_CON5, (0x1 << 11), 0x7800);	/* set gain R */
 
@@ -1209,14 +1226,15 @@ static void mt6391_turn_on_headset_speaker_amp(struct mt6391_priv *codec_data)
 	mt6391_set_reg(codec_data, MT6397_SPK_CON2, 0x0014, 0xffff);
 	mt6391_set_reg(codec_data, MT6397_SPK_CON5, 0x0014, 0x07ff);
 
-	/* SPK gain setting */
-	mt6391_set_reg(codec_data, MT6397_SPK_CON9, 0x0400, 0xffff);
+	/* SPK-L gain setting */
+	mt6391_set_reg(codec_data, MT6397_SPK_CON9, gain_spkl << 8, 0xf00);
 	/* SPK-R gain setting */
-	mt6391_set_reg(codec_data, MT6397_SPK_CON5, (0x4 << 11), 0x7800);
+	mt6391_set_reg(codec_data, MT6397_SPK_CON5, gain_spkr << 11, 0x7800);
 	/* spk output stage enabke and enableAudioClockPortDST */
 	mt6391_set_reg(codec_data, MT6397_SPK_CON11, 0x0f00, 0xffff);
 	mt6391_set_reg(codec_data, MT6397_AFUNC_AUD_CON2, 0x0000, 0x0080);
 	usleep_range(4000, 5000);
+	mt6391_set_reg(codec_data, MT6397_SPK_CON9, 0 << 13, 1 << 13);
 
 	pr_debug("%s done\n", __func__);
 }
@@ -1358,7 +1376,6 @@ static void mt6391_turn_on_adc(struct mt6391_priv *codec_data, int adc_type)
 		mt6391_set_reg(codec_data, MT6397_NCP_CLKDIV_CON0, 0x102B, 0x102B);
 		mt6391_set_reg(codec_data, MT6397_NCP_CLKDIV_CON1, 0x0000, 0xffff);
 		mt6391_set_reg(codec_data, MT6397_AUDDIGMI_CON0, 0x0180, 0x0180);
-		mt6391_set_reg(codec_data, MT6397_AUDPREAMPGAIN_CON0, 0x0033, 0x0033);
 
 		if (warmup_time > 0)
 			usleep_range(warmup_time, warmup_time + 1);
