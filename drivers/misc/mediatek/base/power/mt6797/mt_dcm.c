@@ -664,7 +664,7 @@ int dcm_mem(ENUM_MEM_DCM on)
 
 		dcm_mem_toggle();
 
-		dcm_dfs_mem_rate(0x2);
+		dcm_dfs_mem_rate(0x0);
 
 		reg_write(DFS_MEM_DCM_CTRL,
 					aor(reg_read(DFS_MEM_DCM_CTRL),
