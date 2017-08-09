@@ -1,15 +1,14 @@
-# drivers/dispsys/mt6735
+# drivers/dispsys/mt6735m
+include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/ \
-             -I$(srctree)/drivers/misc/mediatek/videox/$(MTK_PLATFORM)/ \
-             -I$(srctree)/drivers/misc/mediatek/videox/$(MTK_PLATFORM)/mt6735/ \
-             -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/mt6735/ \
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
+             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
+             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/mt6735m/ \
+             -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/mt6735m/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/ \
-             -I$(srctree)/drivers/misc/mediatek/dispsys/$(MTK_PLATFORM)/ \
-             -I$(srctree)/drivers/misc/mediatek/dispsys/$(MTK_PLATFORM)/mt6735/
-
-#ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
+             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/ \
+             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6735m/
 
 ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)

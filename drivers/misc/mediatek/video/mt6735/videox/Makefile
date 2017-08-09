@@ -1,7 +1,7 @@
 # drivers/video/mtk/Makefile
 #
 
-obj-$(CONFIG_MTK_VIDEOX) += mtkfb_console.o        \
+obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
 			    disp_assert_layer.o    \
 			    mtkfb.o                \
 			    debug.o                \
@@ -16,7 +16,7 @@ obj-$(CONFIG_MTK_VIDEOX) += mtkfb_console.o        \
 			    fbconfig_kdebug_k2.o   \
 			    disp_helper.o
 
-ifneq ($(CONFIG_MTK_VIDEOX), y)
+ifneq ($(CONFIG_MTK_FB), y)
 obj-y += mtkfb_dummy.o
 endif
 
@@ -25,9 +25,10 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/     \
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/     \
+             -I$(srctree)/drivers/misc/mediatek/video/common/   \
+             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/   \
              -I$(srctree)/drivers/misc/mediatek/sync/      \
-             -I$(srctree)/drivers/misc/mediatek/dispsys/$(MTK_PLATFORM)   \
              -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)      \
              -I$(srctree)/drivers/misc/mediatek/cmdq/      \
              -I$(srctree)/drivers/misc/mediatek/ext_disp/$(MTK_PLATFORM) \
@@ -37,26 +38,26 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/     \
 ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
 
 ifeq ($(CONFIG_ARCH_MT6735),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/dispsys/$(MTK_PLATFORM)/mt6735/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6735/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/mt6735/
 endif
 ifeq ($(CONFIG_ARCH_MT6735M),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/dispsys/$(MTK_PLATFORM)/mt6735m/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6735m/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/mt6735m/
 endif
 ifeq ($(CONFIG_ARCH_MT6753),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/dispsys/$(MTK_PLATFORM)/mt6753/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6753/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/mt6753/
 endif
 
 ifeq ($(CONFIG_ARCH_MT6735),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/videox/$(MTK_PLATFORM)/mt6735/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/mt6735/
 endif
 ifeq ($(CONFIG_ARCH_MT6735M),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/videox/$(MTK_PLATFORM)/mt6735m/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/mt6735m/
 endif
 ifeq ($(CONFIG_ARCH_MT6753),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/videox/$(MTK_PLATFORM)/mt6753/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/mt6753/
 endif
 
 ccflags-y += -I$(srctree)/drivers/staging/android/ion \

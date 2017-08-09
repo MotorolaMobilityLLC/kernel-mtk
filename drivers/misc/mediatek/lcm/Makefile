@@ -8,10 +8,10 @@ LCM_LISTS := $(subst ",,$(CONFIG_CUSTOM_KERNEL_LCM))
 obj-$(CONFIG_MTK_LCM) += $(foreach LCM,$(LCM_LISTS),$(LCM)/)
 
 subdir-ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
-subdir-ccflags-$(CONFIG_MTK_VIDEOX) += -I$(srctree)/drivers/misc/mediatek/dispsys/$(MTK_PLATFORM) \
-                                       -I$(srctree)/drivers/misc/mediatek/dispsys/$(MTK_PLATFORM)/mt6735 \
-                                       -I$(srctree)/drivers/misc/mediatek/videox/$(MTK_PLATFORM) \
-                                       -I$(srctree)/drivers/misc/mediatek/video/
+subdir-ccflags-$(CONFIG_MTK_FB) += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys \
+                                       -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6735 \
+                                       -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox \
+                                       -I$(srctree)/drivers/misc/mediatek/video/include
 
 LCM_DEFINES := $(shell echo $(CONFIG_CUSTOM_KERNEL_LCM) | tr a-z A-Z)
 DEFINES += $(foreach LCM,$(LCM_DEFINES),$(LCM))
