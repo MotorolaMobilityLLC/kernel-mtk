@@ -28,6 +28,10 @@ static struct fm_lowlevel_ops MT6580fm_low_ops;
 #ifdef MT6630_FM
 static struct fm_lowlevel_ops MT6630fm_low_ops;
 #endif
+#ifdef MT6631_FM
+static struct fm_lowlevel_ops MT6631fm_low_ops;
+#endif
+
 /* MTK FM Radio private advanced features */
 #if 0				/* (!defined(MT6620_FM)&&!defined(MT6628_FM)) */
 static struct fm_priv priv_adv;
@@ -286,6 +290,11 @@ fm_s32 fm_open(struct fm *fmp)
 #ifdef MT6630_FM
 			fm_low_ops = MT6630fm_low_ops;
 			fmp->chip_id = 0x6630;
+#endif
+		} else if (chipid == 0x6797) {
+#ifdef MT6631_FM
+			fm_low_ops = MT6631fm_low_ops;
+			fmp->chip_id = 0x6631;
 #endif
 		}
 
@@ -926,7 +935,7 @@ fm_s32 fm_scan(struct fm *fm, struct fm_scan_parm *parm)
 
 	if (fm_true ==
 	    fm_low_ops.bi.scan(fm->min_freq, fm->max_freq, &(parm->freq), parm->ScanTBL,
-			       &(parm->ScanTBLSize), scandir, space)) {
+				  &(parm->ScanTBLSize), scandir, space)) {
 		parm->err = FM_SUCCESS;
 	} else {
 		WCN_DBG(FM_ALT | MAIN, "fm_scan failed\n");
@@ -2492,11 +2501,11 @@ out:
 
 /*
 ************************************************************************************
-Function:         fm_get_gps_rtc_info()
+Function:	    fm_get_gps_rtc_info()
 
-Description:     get GPS RTC drift info, and this function should not block
+Description:	get GPS RTC drift info, and this function should not block
 
-Date:              2011/04/10
+Date:		    2011/04/10
 
 Return Value:   success:0, failed: error coe
 ************************************************************************************
@@ -2757,7 +2766,12 @@ static fm_s32 fm_para_init(struct fm *fmp)
 fm_s32 fm_cust_config_setup(fm_s8 *filename)
 {
 	fm_s32 ret;
-#if (defined(MT6620_FM) || defined(MT6628_FM) || defined(MT6627_FM) || defined(MT6630_FM) || defined(MT6580_FM))
+#if (defined(MT6620_FM) || \
+	defined(MT6628_FM) || \
+	defined(MT6627_FM) || \
+	defined(MT6630_FM) || \
+	defined(MT6580_FM) || \
+	defined(MT6631_FM))
 #ifdef MT6628_FM
 	ret = MT6628fm_cust_config_setup(filename);
 	if (ret < 0)
@@ -2782,6 +2796,11 @@ fm_s32 fm_cust_config_setup(fm_s8 *filename)
 	ret = MT6630fm_cust_config_setup(filename);
 	if (ret < 0)
 		WCN_DBG(FM_ERR | MAIN, "MT6630fm_cust_config_setup failed\n");
+#endif
+#ifdef MT6631_FM
+	ret = MT6631fm_cust_config_setup(filename);
+	if (ret < 0)
+		WCN_DBG(FM_ERR | MAIN, "MT6631fm_cust_config_setup failed\n");
 #endif
 #else
 	ret = fm_cust_config(filename);
@@ -3071,7 +3090,12 @@ fm_s32 fm_env_setup(void)
 	fm_s32 ret = 0;
 
 	WCN_DBG(FM_NTC | MAIN, "%s\n", __func__);
-#if (defined(MT6620_FM) || defined(MT6628_FM) || defined(MT6627_FM) || defined(MT6580_FM) || defined(MT6630_FM))
+#if (defined(MT6620_FM) || \
+	defined(MT6628_FM) || \
+	defined(MT6627_FM) || \
+	defined(MT6580_FM) || \
+	defined(MT6630_FM) || \
+	defined(MT6631_FM))
 #ifdef MT6620_FM
 	/* register call back functions */
 	ret = fm_callback_register(&MT6620fm_low_ops);
@@ -3172,6 +3196,26 @@ fm_s32 fm_env_setup(void)
 
 	WCN_DBG(FM_NTC | MAIN, "3. fm rds ops registered\n");
 #endif
+#ifdef MT6631_FM
+    /* register call back functions */
+	ret = fm_callback_register(&MT6631fm_low_ops);
+	if (ret)
+		return ret;
+
+	WCN_DBG(FM_NTC | MAIN, "1. fm callback registered\n");
+    /* get low level functions */
+	ret = MT6631fm_low_ops_register(&MT6631fm_low_ops);
+	if (ret)
+		return ret;
+
+	WCN_DBG(FM_NTC | MAIN, "2. fm low ops registered\n");
+    /* get rds level functions */
+	ret = MT6631fm_rds_ops_register(&MT6631fm_low_ops);
+	if (ret)
+		return ret;
+
+	WCN_DBG(FM_NTC | MAIN, "3. fm rds ops registered\n");
+#endif
 #else
 	/* register call back functions */
 	ret = fm_callback_register(&fm_low_ops);
@@ -3256,7 +3300,12 @@ fm_s32 fm_env_destroy(void)
 
 	fm_link_release();
 
-#if (defined(MT6620_FM) || defined(MT6628_FM) || defined(MT6627_FM) || defined(MT6580_FM) || defined(MT6630_FM))
+#if (defined(MT6620_FM) || \
+	defined(MT6628_FM) || \
+	defined(MT6627_FM) || \
+	defined(MT6580_FM) || \
+	defined(MT6630_FM) || \
+	defined(MT6631_FM))
 #if defined(MT6620_FM)
 	/* register call back functions */
 	ret = fm_callback_unregister(&MT6620fm_low_ops);
@@ -3348,6 +3397,25 @@ fm_s32 fm_env_destroy(void)
 
 	/* put rds func */
 	ret = MT6630fm_rds_ops_unregister(&MT6630fm_low_ops);
+
+	if (ret)
+		return -1;
+#endif
+#if defined(MT6631_FM)
+    /* register call back functions */
+	ret = fm_callback_unregister(&MT6631fm_low_ops);
+
+	if (ret)
+		return -1;
+
+    /* put low level functions */
+	ret = MT6631fm_low_ops_unregister(&MT6631fm_low_ops);
+
+	if (ret)
+		return -1;
+
+    /* put rds func */
+	ret = MT6631fm_rds_ops_unregister(&MT6631fm_low_ops);
 
 	if (ret)
 		return -1;

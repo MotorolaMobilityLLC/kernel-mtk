@@ -8,7 +8,12 @@
 #include "fm_stdlib.h"
 #include "fm_patch.h"
 #include "fm_config.h"
-#if (!defined(MT6628_FM) && !defined(MT6620_FM) && !defined(MT6627_FM) && !defined(MT6580_FM) && !defined(MT6630_FM))
+#if (!defined(MT6628_FM) && \
+	!defined(MT6620_FM) && \
+	!defined(MT6627_FM) && \
+	!defined(MT6580_FM) && \
+	!defined(MT6630_FM) && \
+	!defined(MT6631_FM))
 #include "fm_cust_cfg.h"
 #endif
 static fm_cust_cfg fm_config;
@@ -394,7 +399,12 @@ static fm_s32 fm_cust_config_default(fm_cust_cfg *cfg)
 		pr_err("%s,invalid pointer\n", __func__);
 		return -FM_EPARA;
 	}
-#if (!defined(MT6628_FM) && !defined(MT6620_FM) && !defined(MT6627_FM) && !defined(MT6580_FM) && !defined(MT6630_FM))
+#if (!defined(MT6628_FM) && \
+	!defined(MT6620_FM) && \
+	!defined(MT6627_FM) && \
+	!defined(MT6580_FM) && \
+	!defined(MT6630_FM) && \
+	!defined(MT6631_FM))
 
 	cfg->rx_cfg.long_ana_rssi_th = FM_RX_RSSI_TH_LONG;
 	cfg->rx_cfg.short_ana_rssi_th = FM_RX_RSSI_TH_SHORT;

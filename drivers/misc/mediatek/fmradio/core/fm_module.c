@@ -107,23 +107,28 @@ static long fm_ops_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg)
 	case FM_IOCTL_POWERUP:{
 			struct fm_tune_parm parm;
 
+			WCN_DBG(FM_NTC | MAIN, "FM_IOCTL_POWERUP:0\n");
 			if (copy_from_user(&parm, (void *)arg, sizeof(struct fm_tune_parm))) {
 				ret = -EFAULT;
 				goto out;
 			}
 
 			ret = fm_powerup(fm, &parm);
-			if (ret < 0)
+			if (ret < 0) {
+				WCN_DBG(FM_NTC | MAIN, "FM_IOCTL_POWERUP:fail in fm_powerup, return\n");
 				goto out;
+			}
 			ret = fm_tune(fm, &parm);
-			if (ret < 0)
+			if (ret < 0) {
+				WCN_DBG(FM_NTC | MAIN, "FM_IOCTL_POWERUP:fail in fm_tune, return\n");
 				goto out;
+			}
 
 			if (copy_to_user((void *)arg, &parm, sizeof(struct fm_tune_parm))) {
 				ret = -EFAULT;
 				goto out;
 			}
-			WCN_DBG(FM_DBG | MAIN, "FM_IOCTL_POWERUP:1\n");
+			WCN_DBG(FM_NTC | MAIN, "FM_IOCTL_POWERUP:1\n");
 
 			break;
 		}
@@ -1190,7 +1195,9 @@ out:
 		if (fm_sys_state_get(fm) == FM_SUBSYS_RST_OFF) {
 			fm->wholechiprst = fm_false;
 			/* subsystem reset */
+			WCN_DBG(FM_NTC | MAIN, "fm_subsys_reset START\n");
 			fm_subsys_reset(fm);
+			WCN_DBG(FM_NTC | MAIN, "fm_subsys_reset END\n");
 		}
 	}
 

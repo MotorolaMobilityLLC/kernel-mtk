@@ -116,6 +116,7 @@ struct fm_trace_fifo_t {
 	fm_u32 len;
 	fm_s32 (*trace_in)(struct fm_trace_fifo_t *thiz, struct fm_trace_t *new_tra);
 	fm_s32 (*trace_out)(struct fm_trace_fifo_t *thiz, struct fm_trace_t *dst_tra);
+
 	fm_bool (*is_full)(struct fm_trace_fifo_t *thiz);
 	fm_bool (*is_empty)(struct fm_trace_fifo_t *thiz);
 };
@@ -156,7 +157,12 @@ struct fm_trace_fifo_t {
 	__ret;                          \
 })
 
-#if (defined(MT6620_FM) || defined(MT6628_FM) || defined(MT6627_FM) || defined(MT6580_FM) || defined(MT6630_FM))
+#if (defined(MT6620_FM) || \
+	defined(MT6628_FM) || \
+	defined(MT6627_FM) || \
+	defined(MT6580_FM) || \
+	defined(MT6630_FM) || \
+	defined(MT6631_FM))
 #include "fm_utils.h"
 
 #define RX_BUF_SIZE 128

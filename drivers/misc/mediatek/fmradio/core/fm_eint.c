@@ -1,4 +1,9 @@
-#if (defined(MT6620_FM) || defined(MT6628_FM) || defined(MT6627_FM) || defined(MT6580_FM) || defined(MT6630_FM))
+#if (defined(MT6620_FM) || \
+	defined(MT6628_FM) || \
+	defined(MT6627_FM) || \
+	defined(MT6580_FM) || \
+	defined(MT6630_FM) || \
+	defined(MT6631_FM))
 #include "osal_typedef.h"
 #include "stp_exp.h"
 #include "wmt_exp.h"

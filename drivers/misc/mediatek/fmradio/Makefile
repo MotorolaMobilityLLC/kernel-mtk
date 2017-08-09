@@ -136,6 +136,36 @@ $(warning $(mtk_fm_drv-objs))
 	#obj-$(CONFIG_MTK_FM) += private/
 endif
 
+
+# MT6631 FM driver
+ifeq ($(findstring MT6631_FM,$(CONFIG_MTK_FM_CHIP)),MT6631_FM)
+$(warning MT6631_FM)
+	FM_CHIP := mt6631
+	FM_CHIP_PATH := $(FM_CHIP)/pub/$(FM_CHIP)
+	subdir-ccflags-y += -DMT6631_FM
+	subdir-ccflags-y += -I$(src)/inc \
+					-I$(src)/$(FM_CHIP)/inc \
+					-I$(src)/../connectivity/common/combo/include \
+					-I$(src)/../connectivity/common/combo/linux/include \
+					-I$(src)/../connectivity/common/common_detect
+
+	obj-$(CONFIG_MTK_FM) += mtk_fm_drv.o
+	mt6631-objs	:= core/fm_module.o \
+					core/fm_main.o \
+					core/fm_config.o \
+					core/fm_rds_parser.o \
+					core/fm_patch.o \
+					core/fm_utils.o \
+					core/fm_link.o \
+					core/fm_eint.o \
+					$(FM_CHIP_PATH)_fm_lib.o \
+					$(FM_CHIP_PATH)_fm_rds.o \
+					$(FM_CHIP_PATH)_fm_cmd.o \
+					$(FM_CHIP_PATH)_fm_config.o
+	mtk_fm_drv-objs += $(mt6631-objs)
+$(warning $(mtk_fm_drv-objs))
+	#obj-$(CONFIG_MTK_FM) += private/
+endif
 endif
 
 obj-y += dummy.o

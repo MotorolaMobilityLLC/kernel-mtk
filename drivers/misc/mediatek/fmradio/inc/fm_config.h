@@ -74,6 +74,8 @@
 #define FM_CHIP_MT6620 0x6620
 #define FM_CHIP_MT6627 0x6627
 #define FM_CHIP_MT6580 0x6580
+#define FM_CHIP_MT6630 0x6630
+#define FM_CHIP_MT6631 0x6631
 #define FM_CHIP_UNSUPPORTED 0xffff
 
 enum fm_cfg_parser_state {
@@ -189,6 +191,10 @@ extern fm_u16 MT6580fm_cust_config_fetch(enum fm_cust_cfg_op op_code);
 #ifdef MT6630_FM
 extern fm_s32 MT6630fm_cust_config_setup(const fm_s8 *filepath);
 extern fm_u16 MT6630fm_cust_config_fetch(enum fm_cust_cfg_op op_code);
+#endif
+#ifdef MT6631_FM
+extern fm_s32 MT6631fm_cust_config_setup(const fm_s8 *filepath);
+extern fm_u16 MT6631fm_cust_config_fetch(enum fm_cust_cfg_op op_code);
 #endif
 
 #endif /* __FM_CONFIG_H__ */

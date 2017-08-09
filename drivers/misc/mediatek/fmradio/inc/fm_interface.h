@@ -277,7 +277,12 @@ extern fm_s32 MT6630fm_low_ops_unregister(struct fm_lowlevel_ops *ops);
 extern fm_s32 MT6630fm_rds_ops_register(struct fm_lowlevel_ops *ops);
 extern fm_s32 MT6630fm_rds_ops_unregister(struct fm_lowlevel_ops *ops);
 #endif
-
+#ifdef MT6631_FM
+extern fm_s32 MT6631fm_low_ops_register(struct fm_lowlevel_ops *ops);
+extern fm_s32 MT6631fm_low_ops_unregister(struct fm_lowlevel_ops *ops);
+extern fm_s32 MT6631fm_rds_ops_register(struct fm_lowlevel_ops *ops);
+extern fm_s32 MT6631fm_rds_ops_unregister(struct fm_lowlevel_ops *ops);
+#endif
 /*
  * fm_get_channel_space - get the spcace of gived channel
  * @freq - value in 760~1080 or 7600~10800
