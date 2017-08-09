@@ -37,6 +37,14 @@ config MT_SND_SOC_8163
 	help
         If you say Y, enable MT_SND_SOC_8163_driver.
 
+config MT_SND_SOC_8127
+	bool "MT_SND_SOC_8127"
+	help
+        If you say Y, enable MT_SND_SOC_8127_driver.
+        Must enable this to use medatek 8127 audio driver.
+	The default value is n for MT8127.
+        Recommnad to configure it before using MT8127 audio driver.
+
 config MTK_SPEAKER
 	bool "MTK_SPEAKER"
 	default n
