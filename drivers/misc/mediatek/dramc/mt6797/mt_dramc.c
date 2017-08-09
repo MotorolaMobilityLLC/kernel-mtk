@@ -1003,7 +1003,7 @@ unsigned int get_dram_data_rate_from_reg(void)
 		*2^(RG_*_RPHYPLL_FBKSEL)/2^(RG_*_RPHYPLL_PREDIV) */
 		unsigned int u4DDRPHY_PLL1 =
 		readl(IOMEM(DDRPHY_BASE_ADDR +
-		(u4DDRPHY_PLL1_Addr[pll_shu_sel])));
+		(u4DDRPHY_PLL1_Addr[0])));
 		unsigned int u4FBKDIV = (u4DDRPHY_PLL1>>24) & 0x7F;
 		unsigned char u1FBKSEL = (u4DDRPHY_PLL1>>20) & 0x3;
 		unsigned char u1PREDIV = (u4DDRPHY_PLL1>>18) & 0x3;
@@ -1031,7 +1031,7 @@ unsigned int get_dram_data_rate_from_reg(void)
 		}
 
 	u2real_freq = u2real_freq >> u1MPDIV_Sel;
-	pr_err("[DRAMC] GetPhyFrequency: %d\n\n", u2real_freq);
+	pr_err("[DRAMC] GetPhyFrequency: %d\n", u2real_freq);
 	return u2real_freq;
 }
 
@@ -1643,10 +1643,13 @@ unsigned int get_dram_data_rate(void)
 		MEMPLL_FOUT = 1270;
 	else if (MEMPLL_FOUT == 1040)
 		MEMPLL_FOUT = 1066;
-	else if (MEMPLL_FOUT == 3120)
-		MEMPLL_FOUT = 1600;  /* old version, do not support DFS */
-	else if (MEMPLL_FOUT == 3432)
-		MEMPLL_FOUT = 1700;  /* old version, do not support DFS */
+	else if (MEMPLL_FOUT == 3120) {
+		pr_err("[DRAMC] MEMPLL_FOUT: %d; ***OLD IC***\n", MEMPLL_FOUT);
+		MEMPLL_FOUT = 1600; /* old version,not support DFS */
+	}	else if (MEMPLL_FOUT == 3432) {
+		pr_err("[DRAMC] MEMPLL_FOUT: %d; ***OLD IC***\n", MEMPLL_FOUT);
+		MEMPLL_FOUT = 1700; /* old version,not support DFS */
+	}
 
 	return MEMPLL_FOUT;
 }
