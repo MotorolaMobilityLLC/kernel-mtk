@@ -632,6 +632,11 @@ int primary_display_esd_recovery(void)
 	* all cmdq event will be cleared after suspend */
 	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
 
+	/* set dirty to trigger one frame -- cmd mode */
+	if (!primary_display_is_video_mode()) {
+		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+		mdelay(40);
+	}
 done:
 	primary_display_manual_unlock();
 	DISPCHECK("[ESD]ESD recovery end\n");
