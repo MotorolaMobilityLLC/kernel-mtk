@@ -171,6 +171,7 @@
 #include "mt6630_reg.h"
 #include "sdio.h"
 #define NIC_TX_PAGE_SIZE                        128	/* in unit of bytes */
+DEFINE_SPINLOCK(HifLock);
 #endif
 
 #if !defined(CONFIG_MTK_CLKMGR)
@@ -328,8 +329,7 @@ UINT_32 IsrCnt = 0, IsrPassCnt = 0, TaskIsrCnt = 0; /* MT6797 */
 static struct platform_device *HifAhbPDev;
 
 #endif /* CONF_HIF_DEV_MISC */
-static struct semaphore gPortRwSema;
-static struct task_struct *gPortRwTask;
+
 /*******************************************************************************
 *                       P U B L I C   F U N C T I O N S
 ********************************************************************************
@@ -449,8 +449,6 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 	HifInfo->confRegBaseAddr = ioremap(DYNAMIC_REMAP_CONF_BASE, DYNAMIC_REMAP_CONF_LENGTH);
 #endif
 	g_pHifRegBaseAddr = &(HifInfo->HifRegBaseAddr);
-	sema_init(&gPortRwSema, 1);
-	gPortRwTask = NULL;
 
 	DBGLOG(INIT, INFO, "[WiFi/HIF]HifInfo->HifRegBaseAddr=0x%p, HifInfo->McuRegBaseAddr=0x%p\n",
 	       HifInfo->HifRegBaseAddr, HifInfo->McuRegBaseAddr);
@@ -913,17 +911,8 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 
 	ASSERT(Buf);
 	ASSERT(Size <= MaxBufSize);
-	if (down_trylock(&gPortRwSema)) {
-		if (gPortRwTask) {
-			DBGLOG(RX, ERROR, "show the thread who held rw semaphore\n");
-			show_stack(gPortRwTask, NULL);
-		} else
-			DBGLOG(RX, ERROR, "No task held sema, but we can't get it\n");
-		kalSendAeeWarning("[Wlan Driver]", "%s was reentry, previous caller %s, current caller %s",
-			__func__, gPortRwTask ? gPortRwTask->comm:"NULL", current->comm);
-		kalBreakPoint();
-	}
-	gPortRwTask = current;
+
+
 	{/* sdio like operation */
 
 	/* CMD53 port mode to write n-byte, if count >= block size => block mode, otherwise =>	byte mode  */
@@ -970,6 +959,8 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			pfWlanDmaOps->DmaClockCtrl(TRUE);
 	}
 #endif
+
+	my_sdio_disable(HifLock);
 
 	writel(info.word, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD_SETUP));
 	wmb();
@@ -1084,8 +1075,6 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 					if ((FwCnt + 1) % 16 == 0)
 						DBGLOG(RX, WARN, "\n");
 				}
-				gPortRwTask = NULL;
-				up(&gPortRwSema);
 				DBGLOG(RX, WARN, "\n\n");
 				return TRUE;
 				}
@@ -1117,6 +1106,8 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 		dma_unmap_single(HifInfo->Dev, DmaConf.Dst, count, DMA_FROM_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
+		my_sdio_enable(HifLock);
+
 		if (pfWlanDmaOps != NULL)
 			pfWlanDmaOps->DmaClockCtrl(FALSE);
 
@@ -1133,9 +1124,10 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			DBGLOG(RX, TRACE, "basic readl idx = %x, addr = %x, rVal = %x, HifBase = %p\n", IdLoop, Port, *LoopBuf, HifInfo->HifRegBaseAddr);
 			LoopBuf++;
 		}
+
+		my_sdio_enable(HifLock);
+
 	}
-	gPortRwTask = NULL;
-	up(&gPortRwSema);
 
 	return TRUE;
 }				/* end of kalDevPortRead() */
@@ -1198,17 +1190,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 #if (MTK_WCN_SINGLE_MODULE == 0)
 	HifTxCnt++;
 #endif
-	if (down_trylock(&gPortRwSema)) {
-		if (gPortRwTask) {
-			DBGLOG(RX, ERROR, "show the thread who held rw semaphore\n");
-			show_stack(gPortRwTask, NULL);
-		} else
-			DBGLOG(RX, ERROR, "No task held sema, but we can't get it\n");
-		kalSendAeeWarning("[Wlan Driver]", "%s was reentry, previous caller %s, current caller %s",
-			__func__, gPortRwTask ? gPortRwTask->comm:"NULL", current->comm);
-		kalBreakPoint();
-	}
-	gPortRwTask = current;
+
 
 	{/* sdio like operation */
     /* CMD53 port mode to write n-byte, if count >= block size => block mode, otherwise =>  byte mode  */
@@ -1251,6 +1233,8 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 			pfWlanDmaOps->DmaClockCtrl(TRUE);
 	}
 #endif
+
+	my_sdio_disable(HifLock);
 
 	writel(info.word, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD_SETUP));
 	wmb();
@@ -1353,8 +1337,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 					if ((FwCnt + 1) % 16 == 0)
 						DBGLOG(TX, WARN, "\n");
 					}
-					gPortRwTask = NULL;
-					up(&gPortRwSema);
+
 					return TRUE;
 				}
 #endif /* CONF_HIF_DMA_DBG */
@@ -1380,6 +1363,8 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 		dma_unmap_single(HifInfo->Dev, DmaConf.Src, count, DMA_TO_DEVICE);
 #endif /* MTK_DMA_BUF_MEMCPY_SUP */
 
+		my_sdio_enable(HifLock);
+
 		if (pfWlanDmaOps != NULL)
 			pfWlanDmaOps->DmaClockCtrl(FALSE);
 
@@ -1404,10 +1389,11 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 			LoopBuf++;
 		}
 
+		my_sdio_enable(HifLock);
+
 		HIF_DBG_TX(("\n\n"));
 	}
-	gPortRwTask = NULL;
-	up(&gPortRwSema);
+
 	return TRUE;
 
 }				/* end of kalDevPortWrite() */

@@ -273,6 +273,15 @@ typedef struct _MTK_WCN_HIF_DMA_CONF {
 #define HIF_DMAR_WRITEL(_hif, _addr, _val)   \
 		writel(_val, (volatile UINT_32 *)((_hif)->DmaRegBaseAddr + _addr))
 
+#define my_sdio_disable(__lock)\
+{\
+	spin_lock_bh(&__lock);\
+}
+
+#define my_sdio_enable(__lock)\
+{\
+	spin_unlock_bh(&__lock);\
+}
 #else
 #define HIF_REG_READL(_hif, _addr)          \
 	    sdio_readl((volatile UINT_32 *)((_hif)->HifRegBaseAddr + _addr))
