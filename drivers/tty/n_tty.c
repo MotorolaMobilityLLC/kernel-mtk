@@ -1163,10 +1163,10 @@ static void n_tty_receive_break(struct tty_struct *tty)
 		isig(SIGINT, tty);
 		if (!L_NOFLSH(tty)) {
 			/* flushing needs exclusive termios_rwsem */
-			up_read(&tty->termios_rwsem);
+			up_write(&tty->termios_rwsem);
 			n_tty_flush_buffer(tty);
 			tty_driver_flush_buffer(tty);
-			down_read(&tty->termios_rwsem);
+			down_write(&tty->termios_rwsem);
 		}
 		return;
 	}
@@ -1244,10 +1244,10 @@ n_tty_receive_signal_char(struct tty_struct *tty, int signal, unsigned char c)
 {
 	if (!L_NOFLSH(tty)) {
 		/* flushing needs exclusive termios_rwsem */
-		up_read(&tty->termios_rwsem);
+		up_write(&tty->termios_rwsem);
 		n_tty_flush_buffer(tty);
 		tty_driver_flush_buffer(tty);
-		down_read(&tty->termios_rwsem);
+		down_write(&tty->termios_rwsem);
 	}
 	if (I_IXON(tty))
 		start_tty(tty);
