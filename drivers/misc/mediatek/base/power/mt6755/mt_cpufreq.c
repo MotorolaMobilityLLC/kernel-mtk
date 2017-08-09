@@ -195,10 +195,6 @@ ktime_t max[NR_SET_V_F];
 #define CPUFREQ_BOUNDARY_FOR_FHCTL   (CPU_DVFS_FREQ4_L)
 #define CPUFREQ_LAST_FREQ_LEVEL    (CPU_DVFS_FREQ7_LL)
 
-/* Fix me */
-#define FH_ARMCA7_PLLID 0
-#define FH_ARMCA15_PLLID 1
-
 /* Debugging */
 #undef TAG
 #define TAG     "[Power/cpufreq] "
@@ -1365,7 +1361,7 @@ enum top_ckmuxsel mt_cpufreq_get_clock_switch(enum mt_cpu_dvfs_id id)
 }
 
 #define POS_SETTLE_TIME (2)
-#if 1
+#if 0
 static void adjust_armpll_dds(struct mt_cpu_dvfs *p, unsigned int dds, unsigned int pos_div)
 {
 	unsigned int cur_volt;
@@ -1668,8 +1664,8 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 
 	/* actual FHCTL */
 	dds = _cpu_dds_calc(opp_tbl[TARGET_OPP_IDX].slot->vco_dds);
-	adjust_armpll_dds(p, dds, opp_tbl[TARGET_OPP_IDX].slot->pos_div);
-#if 0
+	/* adjust_armpll_dds(p, dds, opp_tbl[TARGET_OPP_IDX].slot->pos_div); */
+#if 1
 	dds &= ~(_BITMASK_(26:24));
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_LITTLE))
 		mt_dfs_armpll(FH_ARMCA7_PLLID, dds);
@@ -3743,6 +3739,7 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 
 				if (freq != cur_freq)
 					p->ops->set_cur_freq(p, cur_freq, freq);
+					p->idx_opp_tbl = i;
 #ifndef DISABLE_PBM_FEATURE
 				if (!p->dvfs_disable_by_suspend)
 					_kick_PBM_by_cpu(p);
