@@ -1016,7 +1016,9 @@ void ged_log_trace_begin(char *name)
 	if(ged_log_trace_enable)
 	{
         	__mt_update_tracing_mark_write_addr();
+#ifdef GED_SYSTRACE_UTIL
         	event_trace_printk(tracing_mark_write_addr, "B|%d|%s\n", current->tgid, name);
+#endif
 	}
 }
 EXPORT_SYMBOL(ged_log_trace_begin);
@@ -1026,7 +1028,9 @@ void ged_log_trace_end(void)
 	if(ged_log_trace_enable)
 	{
         	__mt_update_tracing_mark_write_addr();
+#ifdef GED_SYSTRACE_UTIL
         	event_trace_printk(tracing_mark_write_addr, "E\n");
+#endif
 	}
 }
 EXPORT_SYMBOL(ged_log_trace_end);
@@ -1036,7 +1040,9 @@ void ged_log_trace_counter(char *name, int count)
 	if(ged_log_trace_enable)
 	{
         	__mt_update_tracing_mark_write_addr();
+#ifdef GED_SYSTRACE_UTIL
         	event_trace_printk(tracing_mark_write_addr, "C|5566|%s|%d\n", name, count);
+#endif
 	}
 }
 EXPORT_SYMBOL(ged_log_trace_counter);
