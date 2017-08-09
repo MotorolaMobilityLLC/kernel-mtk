@@ -188,7 +188,7 @@ static struct tipc_msg_buf *_alloc_msg_buf(size_t sz)
 		return NULL;
 
 	/* allocate buffer that can be shared with secure world */
-	mb->buf_va = _alloc_shareable_mem(sz, &mb->buf_pa, GFP_KERNEL);
+	mb->buf_va = _alloc_shareable_mem(sz, &mb->buf_pa, GFP_KERNEL | GFP_DMA);
 	if (!mb->buf_va)
 		goto err_alloc;
 

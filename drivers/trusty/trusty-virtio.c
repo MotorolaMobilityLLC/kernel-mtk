@@ -301,7 +301,7 @@ static struct virtqueue *_find_vq(struct virtio_device *vdev,
 	tvr->size = PAGE_ALIGN(vring_size(tvr->elem_num, tvr->align));
 
 	/* allocate memory for the vring. */
-	tvr->vaddr = alloc_pages_exact(tvr->size, GFP_KERNEL | __GFP_ZERO);
+	tvr->vaddr = alloc_pages_exact(tvr->size, GFP_KERNEL | __GFP_ZERO | GFP_DMA);
 	if (!tvr->vaddr) {
 		dev_err(&vdev->dev, "vring alloc failed\n");
 		return ERR_PTR(-ENOMEM);
@@ -538,7 +538,7 @@ static int trusty_virtio_add_devices(struct trusty_ctx *tctx)
 
 	/* allocate buffer to load device descriptor into */
 	descr_buf_sz = PAGE_SIZE;
-	descr_va = alloc_pages_exact(descr_buf_sz, GFP_KERNEL | __GFP_ZERO);
+	descr_va = alloc_pages_exact(descr_buf_sz, GFP_KERNEL | __GFP_ZERO | GFP_DMA);
 	if (!descr_va) {
 		dev_err(tctx->dev, "Failed to allocate shared area\n");
 		return -ENOMEM;
