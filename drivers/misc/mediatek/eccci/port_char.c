@@ -923,7 +923,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 				sbp_custom_value = "";
 #endif
 			}
-			if (sbp_custom_value == NULL)
+			if ((sbp_custom_value == NULL) || (!strcmp(sbp_custom_value, "0")))
 				sbp_custom_value = "";
 			ret = kstrtouint(sbp_custom_value, 0, &md->sbp_code_default);
 			if (!ret) {
