@@ -63,4 +63,41 @@ config PREEMPT_MONITOR
 	  local_irq_disable/enable monitor.
 	  If you are not sure about whether to enable it or not, please set n.
 
+config PRINTK_PROCESS_INFO
+	bool "Prefix pid/process_name to each kernel log"
+	default y
+	help
+	  PRINTK_PROCESS_INFO which is used to control whether to show
+	  process information about this log.
+	  the information about which cpu about this
+	  process in, and whether in isr.
+
+config MT_PRINTK_UART_CONSOLE
+	bool "MTK printk UART controller"
+	default y
+	help
+	  MT_PRINTK_UART_CONSOLE which is used to control whether to
+	  control printk to uart console.  when boot up finish
+	  uart console do not output printk log.
+	  also RD can set the setting by command.
+
+config LOG_TOO_MUCH_WARNING
+	bool "printk too much warning"
+	default y
+	help
+	  LOG_TOO_MUCH_WARNING which is used to control whether to
+	  detect printk too much issue. kernel log too much will detect and
+	  create a exception when printk log large than
+	  LOG_TOO_MUCH_DETECT_COUNT in one second.
+
+config LOG_TOO_MUCH_DETECT_COUNT
+	hex "printk too much detect count"
+	default 300
+	depends on LOG_TOO_MUCH_WARNING
+
+config LOG_TOO_MUCH_DETECT_GAP
+	hex "detect log too much delay time"
+	default 10
+	depends on LOG_TOO_MUCH_WARNING
+
 endif

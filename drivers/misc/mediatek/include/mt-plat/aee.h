@@ -170,7 +170,7 @@ void aee_oops_free(struct aee_oops *oops);
 /* DB dump option bits, set relative bit to 1 to include related file in db */
 #define DB_OPT_DEFAULT                  (0)
 #define DB_OPT_FTRACE                   (1<<0)
-#define DB_OPT_STORAGE_LOG              (1<<1)
+#define DB_OPT_PRINTK_TOO_MUCH          (1<<1)
 #define DB_OPT_NE_JBT_TRACES            (1<<2)
 #define DB_OPT_SWT_JBT_TRACES           (1<<3)
 #define DB_OPT_VM_TRACES                (1<<4)

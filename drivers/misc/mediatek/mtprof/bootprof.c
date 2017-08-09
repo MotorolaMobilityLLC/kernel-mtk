@@ -5,6 +5,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <asm/uaccess.h>
+#include <linux/printk.h>
 
 #include "internal.h"
 #include "mt_cputime.h"
@@ -57,13 +58,13 @@ void log_boot(char *str)
 #ifdef CONFIG_MT_PRINTK_UART_CONSOLE
 static void bootup_finish(void)
 {
-	/* mt_disable_uart(); */
-	/* printk_too_much_enable = 1; */
+	mt_disable_uart();
+	set_logtoomuch_enable(1);
 }
 #else
 static void bootup_finish(void)
 {
-	/* printk_too_much_enable = 1; */
+	set_logtoomuch_enable(1);
 }
 #endif
 /* extern void (*set_intact_mode)(void); */
