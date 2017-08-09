@@ -180,25 +180,17 @@ static int hps_algo_heavytsk_det(void)
 
 	i = ret = 0;
 
-	for (i = 0; i < hps_sys.cluster_num; i++) {
+	for (i = hps_sys.cluster_num-1; i > 0; i--) {
 		if (!hps_sys.cluster_info[i].hvyTsk_value)
 			continue;
 		else
 			ret = 1;
 
-		if ((i + 1) < hps_sys.cluster_num) {
-			hps_sys.cluster_info[i + 1].base_value =
-			    max(hps_sys.cluster_info[i + 1].base_value,
-				hps_sys.cluster_info[i].hvyTsk_value);
-		}
-		if (i - 1 >= 0)
-			hps_sys.cluster_info[i].target_core_num =
-			    max(hps_sys.cluster_info[i].online_core_num,
-				hps_sys.cluster_info[i].base_value);
-		else
-			hps_sys.cluster_info[i].target_core_num =
-			    hps_sys.cluster_info[i].online_core_num;
+		hps_sys.cluster_info[i].target_core_num =
+			max(hps_sys.cluster_info[i].online_core_num,
+			hps_sys.cluster_info[i-1].hvyTsk_value);
 	}
+
 	return ret;
 }
 
