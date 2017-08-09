@@ -316,6 +316,7 @@ struct msdc_host {
 	int irq;		/* host interrupt */
 
 	struct clk *src_clk;	/* msdc source clock */
+	struct clk *extra_sclk;	/* msdc extra source clock */
 	struct clk *src_clk_parent; /* src_clk's parent */
 	struct clk *hs400_src;	/* 400Mhz source clock */
 	struct clk *h_clk;      /* msdc h_clk */
@@ -532,10 +533,14 @@ static void msdc_gate_clock(struct msdc_host *host)
 {
 	clk_disable_unprepare(host->src_clk);
 	clk_disable_unprepare(host->h_clk);
+	if (!IS_ERR(host->extra_sclk))
+		clk_disable_unprepare(host->extra_sclk);
 }
 
 static void msdc_ungate_clock(struct msdc_host *host)
 {
+	if (!IS_ERR(host->extra_sclk))
+		clk_prepare_enable(host->extra_sclk);
 	clk_prepare_enable(host->h_clk);
 	clk_prepare_enable(host->src_clk);
 	while (!(readl(host->base + MSDC_CFG) & MSDC_CFG_CKSTB))
@@ -1557,6 +1562,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	if (ret == -EPROBE_DEFER)
 		goto host_free;
 
+	host->extra_sclk = devm_clk_get(&pdev->dev, "extra");
 	host->src_clk = devm_clk_get(&pdev->dev, "source");
 	if (IS_ERR(host->src_clk)) {
 		ret = PTR_ERR(host->src_clk);
