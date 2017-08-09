@@ -966,10 +966,7 @@ P_BSS_INFO_T cnmGetBssInfoAndInit(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_T eNe
 		return prBssInfo;
 	}
 
-	if (wlanGetEcoVersion(prAdapter) == 1)
-		ucOwnMacIdx = 0;
-	else
-		ucOwnMacIdx = (eNetworkType == NETWORK_TYPE_MBSS) ? 0 : 1;
+	ucOwnMacIdx = (eNetworkType == NETWORK_TYPE_MBSS) ? 0 : 1;
 
 	/* Find available HW set */
 	do {
