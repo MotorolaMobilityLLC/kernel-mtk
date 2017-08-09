@@ -46,7 +46,7 @@ __weak int emmc_autok(void)
 
 __weak int sd_autok(void)
 {
-	return -1;
+	return 0;
 }
 
 __weak int sdio_autok(void)
@@ -165,40 +165,40 @@ static char *kicker_name[] = {
 	"LAST_KICKER",
 };
 
-static struct notifier_block vcorefs_fb_notif;
-
-static int
-vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *fb_evdata)
+static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
-	struct fb_event *evdata = fb_evdata;
+	struct fb_event *evdata = data;
 	int blank;
 
-	if (gvrctrl->md_dvfs_req & MD_DISABLE_SCREEN_CHANGE)
-		return 0;
-
-	/* skip non-interested event immediately */
-	if (event != FB_EVENT_BLANK || event != FB_EARLY_EVENT_BLANK)
+	if (event != FB_EVENT_BLANK)
 		return 0;
 
 	blank = *(int *)evdata->data;
-	if ((blank == FB_BLANK_POWERDOWN) && (event == FB_EVENT_BLANK)) {
-		mutex_lock(&governor_mutex);
-		/* set screen OFF state */
-		gvrctrl->screen_on = 0;
-		spm_vcorefs_screen_off_setting(gvrctrl->md_dvfs_req);
 
-		mutex_unlock(&governor_mutex);
-	} else if ((blank == FB_BLANK_UNBLANK) && (event == FB_EARLY_EVENT_BLANK)) {
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
 		mutex_lock(&governor_mutex);
-		/* set screen ON state */
-		gvrctrl->screen_on = 1;
 		spm_vcorefs_screen_on_setting();
+		gvrctrl->screen_on = 1;
 		mutex_unlock(&governor_mutex);
+		break;
+	case FB_BLANK_POWERDOWN:
+		mutex_lock(&governor_mutex);
+		spm_vcorefs_screen_off_setting(gvrctrl->md_dvfs_req);
+		gvrctrl->screen_on = 0;
+		mutex_unlock(&governor_mutex);
+		break;
+	default:
+		break;
 	}
 
 	return 0;
 }
+
+static struct notifier_block vcorefs_fb_notif = {
+		.notifier_call = vcorefs_fb_notifier_callback,
+};
 
 /*
  * set vcore cmd
@@ -1060,10 +1060,11 @@ static int __init vcorefs_module_init(void)
 		return r;
 	}
 
-	/* set screen ON/OFF state to SPM for MD DVFS control */
-	memset(&vcorefs_fb_notif, 0, sizeof(vcorefs_fb_notif));
-	vcorefs_fb_notif.notifier_call = vcorefs_fb_notifier_callback;
 	r = fb_register_client(&vcorefs_fb_notif);
+	if (r) {
+		vcorefs_err("FAILED TO REGISTER FB CLIENT (%d)\n", r);
+		return r;
+	}
 
 	return r;
 }
