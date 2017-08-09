@@ -52,6 +52,10 @@ config MTK_SHARED_SDCARD
 	help
 	  sdcard will be a folder of /data
 
+config MTK_SENSOR_SUPPORT
+	bool "MTK_SENSOR_SUPPORT"
+	help
+	  sensor config to sensor port sensor feature in project.
 source "drivers/misc/mediatek/uart/Kconfig"
 source "drivers/misc/mediatek/irtx/Kconfig"
 source "drivers/misc/mediatek/irq/Kconfig"
@@ -87,6 +91,11 @@ source "drivers/misc/mediatek/video/Kconfig"
 source "drivers/misc/mediatek/dramc/Kconfig"
 source "drivers/misc/mediatek/sync/Kconfig"
 
+source "drivers/misc/mediatek/accelerometer/Kconfig"
+source "drivers/misc/mediatek/alsps/Kconfig"
+source "drivers/misc/mediatek/gyroscope/Kconfig"
+source "drivers/misc/mediatek/magnetometer/Kconfig"
+source "drivers/misc/mediatek/hwmon/Kconfig"
 source "drivers/misc/mediatek/gud/Kconfig"
 source "drivers/misc/mediatek/freqhopping/Kconfig"
 source "drivers/misc/mediatek/cirq/Kconfig"

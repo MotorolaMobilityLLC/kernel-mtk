@@ -16,6 +16,14 @@ obj-$(CONFIG_MTK_AUXADC)	+= auxadc/
 obj-$(CONFIG_MTK_M4U)	+= m4u/
 obj-$(CONFIG_MTK_GPT_SCHEME_SUPPORT)	+= partition/
 obj-$(CONFIG_MTK_SYSENV)	+= sysenv/
+ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
+obj-$(CONFIG_MTK_HWMON)	    += hwmon/
+obj-$(CONFIG_CUSTOM_KERNEL_ALSPS) += alsps/
+obj-$(CONFIG_CUSTOM_KERNEL_ACCELEROMETER) += accelerometer/
+obj-$(CONFIG_CUSTOM_KERNEL_GYROSCOPE) += gyroscope/
+obj-$(CONFIG_CUSTOM_KERNEL_MAGNETOMETER) += magnetometer/
+obj-$(CONFIG_CUSTOM_KERNEL_BAROMETER) += barometer/
+endif
 obj-$(CONFIG_MTPROF)	+= mtprof/
 obj-$(CONFIG_MTK_I2C)  += i2c/
 obj-$(CONFIG_MTK_LEDS)	+= leds/

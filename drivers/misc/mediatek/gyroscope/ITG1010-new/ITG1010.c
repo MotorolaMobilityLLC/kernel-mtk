@@ -16,7 +16,7 @@
  * GNU General Public License for more details.
  *
  */
-#include <mt_boot.h>
+
 #include "cust_gyro.h"
 #include "ITG1010.h"
 #include "gyroscope.h"
@@ -403,33 +403,6 @@ static int ITG1010_WriteCalibration(struct i2c_client *client, int dat[ITG1010_A
 /*----------------------------------------------------------------------------*/
 
 
-/*----------------------------------------------------------------------------*/
-static int ITG1010_ReadStart(struct i2c_client *client, bool enable)
-{
-	u8 databuf[2] = {0};
-	int res = 0;
-
-	GYRO_LOG();
-
-	if (enable)
-		/* enable xyz gyro in FIFO */
-		databuf[0] = (ITG1010_FIFO_GYROX_EN|ITG1010_FIFO_GYROY_EN|ITG1010_FIFO_GYROZ_EN);
-	else
-		/* disable xyz gyro in FIFO */
-		databuf[0] = 0;
-
-	res = ITG1010_i2c_write_block(client, ITG1010_REG_FIFO_EN, databuf, 1);
-	if (res <= 0) {
-		GYRO_ERR(" enable xyz gyro in FIFO error,enable: 0x%x!\n", databuf[0]);
-		return ITG1010_ERR_I2C;
-	}
-	GYRO_LOG("ITG1010_ReadStart: enable xyz gyro in FIFO: 0x%x\n", databuf[0]);
-
-	return ITG1010_SUCCESS;
-}
-
-
-
 /* ----------------------------------------------------------------------------// */
 static int ITG1010_SetPowerMode(struct i2c_client *client, bool enable)
 {
@@ -558,128 +531,6 @@ static int ITG1010_SetSampleRate(struct i2c_client *client, int sample_rate)
 	return ITG1010_SUCCESS;
 }
 /*----------------------------------------------------------------------------*/
-/*----------------------------------------------------------------------------*/
-static int ITG1010_FIFOConfig(struct i2c_client *client, u8 clk)
-{
-	u8 databuf[2] = {0};
-	int res = 0;
-
-	GYRO_LOG();
-
-	/* use gyro X, Y or Z for clocking */
-	databuf[0] = clk;
-	res = ITG1010_i2c_write_block(client, ITG1010_REG_PWR_CTL, databuf, 1);
-	if (res <= 0) {
-		GYRO_ERR("write Power CTRL register err!\n");
-		return ITG1010_ERR_I2C;
-	}
-	GYRO_LOG("ITG1010 use gyro X for clocking OK!\n");
-
-	mdelay(50);
-
-	/* enable xyz gyro in FIFO */
-	databuf[0] = (ITG1010_FIFO_GYROX_EN|ITG1010_FIFO_GYROY_EN|ITG1010_FIFO_GYROZ_EN);
-	res = ITG1010_i2c_write_block(client, ITG1010_REG_FIFO_EN, databuf, 1);
-	if (res <= 0) {
-		GYRO_ERR("write Power CTRL register err!\n");
-		return ITG1010_ERR_I2C;
-	}
-	GYRO_LOG("ITG1010 enable xyz gyro in FIFO OK!\n");
-
-	/* disable AUX_VDDIO */
-	databuf[0] = ITG1010_AUX_VDDIO_DIS;
-	res = ITG1010_i2c_write_block(client, ITG1010_REG_AUX_VDD, databuf, 1);
-	if (res <= 0) {
-		GYRO_ERR("write AUX_VDD register err!\n");
-		return ITG1010_ERR_I2C;
-	}
-	GYRO_LOG("ITG1010 disable AUX_VDDIO OK!\n");
-
-	/* enable FIFO and reset FIFO */
-	databuf[0] = (ITG1010_FIFO_EN | ITG1010_FIFO_RST);
-	res = ITG1010_i2c_write_block(client, ITG1010_REG_FIFO_CTL, databuf, 1);
-	if (res <= 0) {
-		GYRO_ERR("write FIFO CTRL register err!\n");
-		return ITG1010_ERR_I2C;
-	}
-
-	GYRO_LOG("ITG1010_FIFOConfig OK!\n");
-	return ITG1010_SUCCESS;
-}
-
-/*----------------------------------------------------------------------------*/
-static int ITG1010_ReadFifoData(struct i2c_client *client, s16 *data, int *datalen)
-{
-	struct ITG1010_i2c_data *obj = i2c_get_clientdata(client);
-	u8 buf[ITG1010_DATA_LEN] = {0};
-	s16 tmp1[ITG1010_AXES_NUM] = {0};
-	s16 tmp2[ITG1010_AXES_NUM] = {0};
-	int err = 0;
-	u8 tmp = 0;
-	int packet_cnt = 0;
-	int i;
-
-	GYRO_LOG();
-
-	if (NULL == client)
-		return -EINVAL;
-
-	/* stop putting data in FIFO */
-	ITG1010_ReadStart(client, FALSE);
-
-	/* read data number of bytes in FIFO */
-	err = ITG1010_i2c_read_block(client, ITG1010_REG_FIFO_CNTH, &tmp, 1);
-	if (err) {
-		GYRO_ERR("read data high number of bytes error: %d\n", err);
-		return -1;
-	}
-	packet_cnt = tmp << 8;
-
-	err = ITG1010_i2c_read_block(client, ITG1010_REG_FIFO_CNTL, &tmp, 1);
-	if (err) {
-		GYRO_ERR("read data low number of bytes error: %d\n", err);
-		return -1;
-	}
-	packet_cnt = (packet_cnt + tmp) / ITG1010_DATA_LEN;
-	GYRO_LOG("ITG1010 Read Data packet number OK: %d\n", packet_cnt);
-	*datalen = packet_cnt;
-
-	/* Within +-5% range: timing_tolerance * packet_thresh=0.05*75 */
-	if (packet_cnt && (abs(packet_thresh - packet_cnt) < 4)) {
-		/* read data in FIFO */
-		for (i = 0; i < packet_cnt; i++) {
-			err = ITG1010_i2c_read_block(client, ITG1010_REG_FIFO_DATA, buf, ITG1010_DATA_LEN);
-			if (err != 0) {
-				GYRO_ERR("ITG1010 read data from FIFO error: %d\n", err);
-				return -2;
-			}
-			GYRO_LOG("ITG1010 read Data of diff address from FIFO OK !\n");
-
-			tmp1[ITG1010_AXIS_X] = (s16)((buf[ITG1010_AXIS_X*2+1]) | (buf[ITG1010_AXIS_X*2] << 8));
-			tmp1[ITG1010_AXIS_Y] = (s16)((buf[ITG1010_AXIS_Y*2+1]) | (buf[ITG1010_AXIS_Y*2] << 8));
-			tmp1[ITG1010_AXIS_Z] = (s16)((buf[ITG1010_AXIS_Z*2+1]) | (buf[ITG1010_AXIS_Z*2] << 8));
-
-			/* remap coordinate// */
-			tmp2[obj->cvt.map[ITG1010_AXIS_X]] = obj->cvt.sign[ITG1010_AXIS_X]*tmp1[ITG1010_AXIS_X];
-			tmp2[obj->cvt.map[ITG1010_AXIS_Y]] = obj->cvt.sign[ITG1010_AXIS_Y]*tmp1[ITG1010_AXIS_Y];
-			tmp2[obj->cvt.map[ITG1010_AXIS_Z]] = obj->cvt.sign[ITG1010_AXIS_Z]*tmp1[ITG1010_AXIS_Z];
-
-			data[3 * i + ITG1010_AXIS_X] = tmp2[ITG1010_AXIS_X];
-			data[3 * i + ITG1010_AXIS_Y] = tmp2[ITG1010_AXIS_Y];
-			data[3 * i + ITG1010_AXIS_Z] = tmp2[ITG1010_AXIS_Z];
-
-			GYRO_LOG("gyro FIFO packet[%d]:[%04X %04X %04X] => [%5d %5d %5d]\n", i,
-			data[3*i + ITG1010_AXIS_X], data[3*i + ITG1010_AXIS_Y], data[3*i + ITG1010_AXIS_Z],
-			data[3*i + ITG1010_AXIS_X], data[3*i + ITG1010_AXIS_Y], data[3*i + ITG1010_AXIS_Z]);
-		}
-
-	} else {
-		GYRO_ERR("ITG1010 Incorrect packet count: %d\n", packet_cnt);
-		return -3;
-	}
-
-	return 0;
-}
 
 /*----------------------------------------------------------------------------*/
 static int ITG1010_ReadGyroData(struct i2c_client *client, char *buf, int bufsize)
@@ -755,152 +606,6 @@ static int ITG1010_ReadGyroData(struct i2c_client *client, char *buf, int bufsiz
 	return 0;
 }
 
-/* for factory mode */
-static int ITG1010_PROCESS_SMT_DATA(struct i2c_client *client, short *data)
-{
-	int total_num = 0;
-	int retval = 0;
-	long xSum = 0;
-	long ySum = 0;
-	long zSum = 0;
-	long xAvg, yAvg, zAvg;
-	long xRMS, yRMS, zRMS;
-	int i = 0;
-
-	int bias_thresh = 5242; /* 40 dps * 131.072 LSB/dps */
-	/* float RMS_thresh = 687.19f; // (.2 dps * 131.072) ^ 2 */
-	long RMS_thresh = 68719; /* (.2 dps * 131.072) ^ 2 */
-
-	total_num = data[0];
-	retval = data[1];
-	GYRO_LOG("ITG1010 read gyro data OK, total number: %d\n", total_num);
-	for (i = 0; i < total_num; i++) {
-		xSum = xSum + data[ITG1010_AXES_NUM*i + ITG1010_AXIS_X + 2];
-		ySum = ySum + data[ITG1010_AXES_NUM*i + ITG1010_AXIS_Y + 2];
-		zSum = zSum + data[ITG1010_AXES_NUM*i + ITG1010_AXIS_Z + 2];
-
-	/*
-	FLPLOGD("read gyro data OK: packet_num:%d, [X:%5d, Y:%5d, Z:%5d]\n", i, data[ITG1010_AXES_NUM*i
-	+ ITG1010_AXIS_X +2], data[ITG1010_AXES_NUM*i + ITG1010_AXIS_Y +2], data[ITG1010_AXES_NUM*i
-	+ ITG1010_AXIS_Z +2]);
-	   FLPLOGD("ITG1010 xSum: %5d,  ySum: %5d, zSum: %5d\n", xSum, ySum, zSum);
-	   */
-
-	}
-	GYRO_LOG("ITG1010 xSum: %5ld,  ySum: %5ld, zSum: %5ld\n", xSum, ySum, zSum);
-
-	if (total_num != 0) {
-		xAvg = (xSum / total_num);
-		yAvg = (ySum / total_num);
-		zAvg = (zSum / total_num);
-	} else {
-		xAvg = xSum;
-		yAvg = ySum;
-		zAvg = zSum;
-	}
-	GYRO_LOG("ITG1010 xAvg: %ld,  yAvg: %ld,  zAvg: %ld\n", xAvg, yAvg, zAvg);
-
-	if (abs(xAvg) > bias_thresh) {
-		GYRO_LOG("X-Gyro bias exceeded threshold\n");
-		retval |= 1 << 3;
-	}
-	if (abs(yAvg) >  bias_thresh) {
-		GYRO_LOG("Y-Gyro bias exceeded threshold\n");
-		retval |= 1 << 4;
-	}
-	if (abs(zAvg) > bias_thresh) {
-		GYRO_LOG("Z-Gyro bias exceeded threshold\n");
-		retval |= 1 << 5;
-	}
-
-	xRMS = 0;
-	yRMS = 0;
-	zRMS = 0;
-
-	/* Finally, check RMS */
-	for (i = 0; i < total_num ; i++) {
-		xRMS += (data[ITG1010_AXES_NUM*i + ITG1010_AXIS_X+2]-xAvg)*(data[ITG1010_AXES_NUM*i
-			+ ITG1010_AXIS_X+2]-xAvg);
-		yRMS += (data[ITG1010_AXES_NUM*i + ITG1010_AXIS_Y+2]-yAvg)*(data[ITG1010_AXES_NUM*i
-			+ ITG1010_AXIS_Y+2]-yAvg);
-		zRMS += (data[ITG1010_AXES_NUM*i + ITG1010_AXIS_Z+2]-zAvg)*(data[ITG1010_AXES_NUM*i
-			+ ITG1010_AXIS_Z+2]-zAvg);
-	}
-	GYRO_LOG("ITG1010 xRMS: %ld,  yRMS: %ld,  zRMS: %ld\n", xRMS, yRMS, zRMS);
-
-	xRMS = 100*xRMS;
-	yRMS = 100*yRMS;
-	zRMS = 100*zRMS;
-	if (FACTORY_BOOT == get_boot_mode())
-		return retval;
-	if (xRMS > RMS_thresh * total_num) {
-		GYRO_LOG("X-Gyro RMS exceeded threshold, RMS_thresh: %ld\n", RMS_thresh * total_num);
-		retval |= 1 << 6;
-	}
-	if (yRMS > RMS_thresh * total_num) {
-		GYRO_LOG("Y-Gyro RMS exceeded threshold, RMS_thresh: %ld\n", RMS_thresh * total_num);
-		retval |= 1 << 7;
-	}
-	if (zRMS > RMS_thresh * total_num) {
-		GYRO_LOG("Z-Gyro RMS exceeded threshold, RMS_thresh: %ld\n", RMS_thresh * total_num);
-		retval |= 1 << 8;
-	}
-	if (xRMS == 0 || yRMS == 0 || zRMS == 0)
-		/* If any of the RMS noise value returns zero, then we might have dead gyro or FIFO/register failure */
-		retval |= 1 << 9;
-	GYRO_LOG("retval %d\n", retval);
-
-	return retval;
-}
-
-/*----------------------------------------------------------------------------*/
-static int ITG1010_SMTReadSensorData(struct i2c_client *client, s16 *buf, int bufsize)
-{
-	int res = 0;
-	int i;
-	int datalen, total_num = 0;
-
-	GYRO_LOG();
-	if (sensor_power == false)
-		ITG1010_SetPowerMode(client, true);
-
-	if (NULL == buf)
-		return -1;
-
-	if (NULL == client) {
-		*buf = 0;
-		return -2;
-	}
-
-	for (i = 0; i < ITG1010_AXES_NUM; i++) {
-		res = ITG1010_FIFOConfig(client, (i+1));
-		if (res) {
-			GYRO_ERR("ITG1010_FIFOConfig error:%d!\n", res);
-			return -3;
-		}
-
-		/* putting data in FIFO during the delayed 600ms */
-		mdelay(600);
-
-		res = ITG1010_ReadFifoData(client, &(buf[total_num+2]), &datalen);
-		if (res) {
-			if (res == (-3))
-				buf[1] = (1 << i);
-			else {
-				GYRO_ERR("ITG1010_ReadData error:%d!\n", res);
-				return -3;
-			}
-		} else {
-			buf[0] = datalen;
-			total_num += datalen*ITG1010_AXES_NUM;
-		}
-	}
-	GYRO_LOG("gyroscope read data OK, total packet: %d", buf[0]);
-
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
 static int ITG1010_ReadChipInfo(struct i2c_client *client, char *buf, int bufsize)
 {
 	u8 databuf[10];
@@ -1363,16 +1068,9 @@ static long ITG1010_unlocked_ioctl(struct file *file, unsigned int cmd,
 			err = -ENOMEM;
 			break;
 		}
-		memset(SMTdata, 0, sizeof(*SMTdata) * 800);
-		ITG1010_SMTReadSensorData(client, SMTdata, 800);
 
-		GYRO_LOG("gyroscope read data from kernel OK: SMTdata[0]:%d, copied packet:%zd!\n", SMTdata[0],
-		 ((SMTdata[0]*ITG1010_AXES_NUM+2)*sizeof(s16)+1));
-
-		smtRes = ITG1010_PROCESS_SMT_DATA(client, SMTdata);
 		GYRO_LOG("ioctl smtRes: %d!\n", smtRes);
 		copy_cnt = copy_to_user(data, &smtRes,  sizeof(smtRes));
-		kfree(SMTdata);
 
 		if (copy_cnt) {
 			err = -EFAULT;
