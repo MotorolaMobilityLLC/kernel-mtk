@@ -156,6 +156,17 @@ void dump_pmic_info(void)
 	spm_notice("[PMIC]vcore vosel_on=0x%x\n", reg_val);
 }
 
+void spm_fw_version(void)
+{
+	u32 sodi_idx;
+	struct pcm_desc *pcmdesc;
+
+	sodi_idx = spm_get_sodi_pcm_index();
+	pcmdesc = &(dyna_load_pcm[sodi_idx].desc);
+
+	spm_vcorefs_info("SODI_VER        : %s\n", pcmdesc->version);
+}
+
 char *spm_vcorefs_dump_dvfs_regs(char *p)
 {
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
@@ -175,6 +186,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "PCM_IM_PTR      : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
 	} else {
 		dump_pmic_info();
+		spm_fw_version();
 		spm_vcorefs_info("SPM_SW_FLAG     : 0x%x\n", spm_read(SPM_SW_FLAG));
 		spm_vcorefs_info("SPM_SW_DEBUG    : 0x%x\n", spm_read(SPM_SW_DEBUG));
 		spm_vcorefs_info("MD2SPM_DVFS_CON : 0x%x\n", spm_read(MD2SPM_DVFS_CON));
