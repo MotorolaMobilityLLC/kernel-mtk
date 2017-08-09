@@ -4223,7 +4223,7 @@ int freeAudioSram(void *user)
 		SramBlock = &mAud_Sram_Manager.mAud_Sram_Block[i];
 		if (SramBlock->mUser == user) {
 			SramBlock->mUser = NULL;
-			pr_warn("%s SramBlockidx = %d\n", __func__, i);
+			pr_aud("%s SramBlockidx = %d\n", __func__, i);
 		}
 	}
 	AfeControlSramUnLock();
