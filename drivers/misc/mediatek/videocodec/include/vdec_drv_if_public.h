@@ -532,6 +532,9 @@ typedef struct __VDEC_DRV_PICINFO_T {
 	VAL_UINT32_T    u4FrameRate;                /* /< [OUT] One of VDEC_DRV_FRAME_RATE */
 	VAL_UINT32_T    u4PictureStructure;         /* /< [OUT] One of VDEC_DRV_PIC_STRUCT */
 	VAL_UINT32_T    u4IsProgressiveOnly;        /* /< [OUT] 1: Progressive only. 0: Not progressive only. */
+	VAL_INT32_T     u4BitDepthLuma;             /* /< [OUT] Sequence luma bitdepth */
+	VAL_INT32_T     u4BitDepthChroma;           /* /< [OUT] Sequence chroma bitdepth */
+	VAL_BOOL_T      bIsHorizontalScaninLSB;     /* /< [OUT] Scan direction in 10bit LSB 2 bit */
 } VDEC_DRV_PICINFO_T;
 
 /**
@@ -558,6 +561,9 @@ typedef struct __VDEC_DRV_SEQINFO_T {
 	VAL_INT32_T     i4AspectRatioWidth;         /* /< [OUT] Sequence aspect ratio width */
 	VAL_INT32_T     i4AspectRatioHeight;        /* /< [OUT] Sequence aspect ratio height */
 	VAL_BOOL_T      bIsThumbnail;               /* /< [OUT] check thumbnail */
+	VAL_INT32_T     u4BitDepthLuma;             /* /< [OUT] Sequence luma bitdepth */
+	VAL_INT32_T     u4BitDepthChroma;           /* /< [OUT] Sequence chroma bitdepth */
+	VAL_BOOL_T      bIsHorizontalScaninLSB;     /* /< [OUT] Scan direction in 10bit LSB 2 bit */
 } VDEC_DRV_SEQINFO_T;
 
 /**
