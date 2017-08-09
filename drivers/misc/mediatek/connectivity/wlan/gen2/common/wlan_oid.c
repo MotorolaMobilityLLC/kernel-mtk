@@ -1647,10 +1647,12 @@ wlanoidSetBssidListScanExt(IN P_ADAPTER_T prAdapter,
 				aisFsmScanRequest(prAdapter, prSsid, pucIe, u4IeLength);
 			} else {
 				/* reject the scan request */
+				cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer);
 				rStatus = WLAN_STATUS_FAILURE;
 			}
 		} else {
 			/* reject the scan request */
+			cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer);
 			rStatus = WLAN_STATUS_FAILURE;
 		}
 	} else
@@ -1662,6 +1664,7 @@ wlanoidSetBssidListScanExt(IN P_ADAPTER_T prAdapter,
 			aisFsmScanRequest(prAdapter, prSsid, pucIe, u4IeLength);
 		} else {
 			/* reject the scan request */
+			cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer);
 			rStatus = WLAN_STATUS_FAILURE;
 			DBGLOG(OID, WARN, "ScanEx fail %d!\n", prAdapter->fgEnOnlineScan);
 		}
