@@ -274,8 +274,152 @@ phys_addr_t kbase_debug_gpu_mem_mapping(struct kbase_context *kctx, u64 va)
 	}
 	if (kctx->kbdev->debug_gpu_page_tables)
 		show(kctx, "VA %016llx mapped -> PA %pa\n", va, &phy_addr);
+	
 	return phy_addr;
 
 }
+
+#define KBASE_MMU_PAGE_ENTRIES 512
+
+#define PRINT_DETAIL 0
+
+static bool kbasep_mmu_dump_level(struct kbase_context *kctx, phys_addr_t pgd, int level, u64 pa)
+{
+	phys_addr_t target_pgd;
+	u64 *pgd_page;
+	int i;
+	struct kbase_mmu_mode const *mmu_mode;
+	bool ret =false;
+	u64 m_pgd, phy_u64;
+	phys_addr_t phy_addr;
+
+	KBASE_DEBUG_ASSERT(NULL != kctx);
+#if PRINT_DETAIL
+	dev_info(kctx->kbdev->dev,"======== mmu level:%d\n", level);
+#endif
+	mmu_mode = kctx->kbdev->mmu_mode;
+
+	pgd_page = kmap(pfn_to_page(PFN_DOWN(pgd)));
+	if (!pgd_page) {
+		dev_warn(kctx->kbdev->dev, "kbasep_mmu_dump_level: kmap failure\n");
+		return ret;
+	}
+
+	m_pgd = pgd | level;
+	phy_addr = mmu_mode->pte_to_phy_addr(m_pgd);
+	phy_u64 = (u64)phy_addr;
+#if PRINT_DETAIL
+	dev_info(kctx->kbdev->dev,"=====%pa, %llx, %llx \n", &phy_addr, phy_u64, m_pgd);
+#endif
+	if ((phy_u64&MIDGARD_MMU_PA_MASK) == (pa&MIDGARD_MMU_PA_MASK))
+		goto success;
+	/* A modified physical address that contains the page table level */
+	if (level == 3) {
+		u64 *ate_page,ate;
+
+		ate_page = pgd_page;
+		for (i=0; i < KBASE_MMU_PAGE_ENTRIES; i++) {
+			
+			ate = ate_page[i];
+			if (mmu_mode->ate_is_valid(ate)) {
+				phy_addr = ate_to_phy_addr(ate);
+				phy_u64 = (u64) phy_addr;
+#if PRINT_DETAIL
+				dev_info(kctx->kbdev->dev,"=%pa \n", &phy_addr);
+#endif
+				if ((phy_u64&MIDGARD_MMU_PA_MASK) == (pa&MIDGARD_MMU_PA_MASK))
+					goto success;
+
+			}
+		}
+	
+	}
+	else {
+		u64 pte;
+
+		/* Followed by the page table itself */
+		for (i=0; i < KBASE_MMU_PAGE_ENTRIES; i++) {
+			pte = pgd_page[i];
+			if (mmu_mode->pte_is_valid(pte)) {
+				phy_addr = mmu_mode->pte_to_phy_addr(pte);	
+#if PRINT_DETAIL		
+				dev_info(kctx->kbdev->dev,"=%pa \n", &phy_addr);
+#endif
+				phy_u64 = (u64) phy_addr;
+				if ((phy_u64&MIDGARD_MMU_PA_MASK) == (pa&MIDGARD_MMU_PA_MASK))
+					goto success;
+
+			}
+		}
+	}
+
+
+	if (level < 3) {
+	    for (i = 0; i < KBASE_MMU_PAGE_ENTRIES; i++) {
+		if (mmu_mode->pte_is_valid(pgd_page[i])) {
+			target_pgd = mmu_mode->pte_to_phy_addr(pgd_page[i]);
+
+			ret = kbasep_mmu_dump_level(kctx, target_pgd, level + 1, pa);
+			if (ret == true)
+				goto success;
+		}
+	    }
+	}
+
+	kunmap(pfn_to_page(PFN_DOWN(pgd)));
+	return ret;
+
+success: ret = true;
+	kunmap(pfn_to_page(PFN_DOWN(pgd)));
+
+	return ret;
+}
+
+bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
+{
+	bool ret = false;
+	struct list_head *entry;
+	const struct list_head *kbdev_list;
+	struct kbase_context *kctx = NULL;
+
+	pr_info("Mali PA check\n");
+
+	kbdev_list = kbase_dev_list_get();
+	if(kbdev_list == NULL)
+		return false;
+	list_for_each(entry, kbdev_list) {
+		struct kbase_device *kbdev = NULL;
+		struct kbasep_kctx_list_element *element;
+
+		kbdev = list_entry(entry, struct kbase_device, entry);
+		if(kbdev == NULL) {
+			pr_info("    No Mali device\n");
+			return false;
+		}
+		list_for_each_entry(element, &kbdev->kctx_list, link) {
+			/* list for each kctx opened on this device */
+			kctx = element->kctx;
+			ret = kbasep_mmu_dump_level(kctx, kctx->pgd, MIDGARD_MMU_TOPLEVEL, pa);
+
+			if (ret == true) {
+				dev_info(kctx->kbdev->dev,"    Get the PA:%016llx in PID:%llx\n", pa, (u64)(kctx->tgid));	
+			}
+			else {
+				dev_info(kctx->kbdev->dev,"    Didn't get the PA:%016llx in GPU page table\n", pa);
+			}
+		}
+	}
+	kbase_dev_list_put(kbdev_list);
+
+	if(kctx == NULL) {
+		pr_info("    No Mali context \n");
+		return false;
+	}
+
+	return ret;
+}
+
+KBASE_EXPORT_SYMBOL(kbase_debug_gpu_mem_mapping_check_pa);
+
 KBASE_EXPORT_SYMBOL(kbase_debug_gpu_mem_mapping);
 
