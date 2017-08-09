@@ -603,7 +603,9 @@ ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, con
 {
 	int pin;
 	int ret;
-
+#ifndef CONFIG_MTK_FPGA
+	int smt;
+#endif
 #ifdef MTK_MT6306_SUPPORT
 	int group, on;
 #endif
