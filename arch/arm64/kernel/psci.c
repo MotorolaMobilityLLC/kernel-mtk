@@ -364,9 +364,9 @@ static int __init psci_0_2_init(struct device_node *np)
 
 #ifndef CONFIG_ARCH_MT6797
 	arm_pm_restart = psci_sys_reset;
-#endif
 
 	pm_power_off = psci_sys_poweroff;
+#endif
 
 out_put_node:
 	of_node_put(np);
