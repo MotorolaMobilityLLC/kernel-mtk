@@ -32,7 +32,7 @@ void mt_ppm_cpu_thermal_protect(unsigned int limited_power)
 {
 	FUNC_ENTER(FUNC_LV_POLICY);
 
-	ppm_info("Get budget from thermal => limited_power = %d\n", limited_power);
+	ppm_ver("Get budget from thermal => limited_power = %d\n", limited_power);
 
 	ppm_lock(&thermal_policy.lock);
 

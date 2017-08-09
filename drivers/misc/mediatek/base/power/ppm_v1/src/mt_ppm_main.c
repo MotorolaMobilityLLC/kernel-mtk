@@ -488,6 +488,7 @@ int mt_ppm_main(void)
 	struct ppm_client_req *last_req = &(ppm_main_info.last_req);
 	enum ppm_power_state prev_state;
 	enum ppm_power_state next_state;
+	unsigned int policy_mask = 0;
 	int i, notify_hps_first = 0;
 
 	FUNC_ENTER(FUNC_LV_MAIN);
@@ -509,6 +510,7 @@ int mt_ppm_main(void)
 		if ((pos->is_activated || pos->policy == PPM_POLICY_HICA)
 			&& pos->update_limit_cb) {
 			ppm_lock(&pos->lock);
+			policy_mask |= 1 << pos->policy;
 			pos->update_limit_cb(next_state);
 			ppm_unlock(&pos->lock);
 		}
@@ -522,6 +524,33 @@ int mt_ppm_main(void)
 		ppm_main_info.cluster_num * sizeof(*c_req->cpu_limit))) {
 		char buf[128];
 		char *ptr = buf;
+
+		/* print debug message */
+		if (prev_state != next_state)
+			ptr += sprintf(ptr, "[%s]->[%s]: ", ppm_get_power_state_name(prev_state),
+						ppm_get_power_state_name(next_state));
+		else
+			ptr += sprintf(ptr, "[%s]: ", ppm_get_power_state_name(next_state));
+
+		for (i = 0; i < c_req->cluster_num; i++) {
+			ptr += sprintf(ptr, "(%d)(%d)(%d)(%d) ",
+				c_req->cpu_limit[i].min_cpufreq_idx,
+				c_req->cpu_limit[i].max_cpufreq_idx,
+				c_req->cpu_limit[i].min_cpu_core,
+				c_req->cpu_limit[i].max_cpu_core
+			);
+
+			if (c_req->cpu_limit[i].has_advise_freq || c_req->cpu_limit[i].has_advise_core)
+				ptr += sprintf(ptr, "[(%d)(%d)(%d)(%d)] ",
+					c_req->cpu_limit[i].has_advise_freq,
+					c_req->cpu_limit[i].advise_cpufreq_idx,
+					c_req->cpu_limit[i].has_advise_core,
+					c_req->cpu_limit[i].advise_cpu_core
+				);
+		}
+
+		ppm_dbg(MAIN, "(0x%x)(%d)(%d)%s\n", policy_mask, ppm_main_info.min_power_budget,
+			c_req->root_cluster, buf);
 
 		/* check need to notify hps first or not
 		   1. one or more power budget related policy is activate
@@ -560,32 +589,6 @@ int mt_ppm_main(void)
 					ppm_main_info.client_info[i].limit_cb(*c_req);
 			}
 		}
-
-		/* print debug message */
-		if (prev_state != next_state)
-			ptr += sprintf(ptr, "[%s]->[%s]: ", ppm_get_power_state_name(prev_state),
-						ppm_get_power_state_name(next_state));
-		else
-			ptr += sprintf(ptr, "[%s]: ", ppm_get_power_state_name(next_state));
-
-		for (i = 0; i < c_req->cluster_num; i++) {
-			ptr += sprintf(ptr, "(%d)(%d)(%d)(%d) ",
-				c_req->cpu_limit[i].min_cpufreq_idx,
-				c_req->cpu_limit[i].max_cpufreq_idx,
-				c_req->cpu_limit[i].min_cpu_core,
-				c_req->cpu_limit[i].max_cpu_core
-			);
-
-			if (c_req->cpu_limit[i].has_advise_freq || c_req->cpu_limit[i].has_advise_core)
-				ptr += sprintf(ptr, "[(%d)(%d)(%d)(%d)] ",
-					c_req->cpu_limit[i].has_advise_freq,
-					c_req->cpu_limit[i].advise_cpufreq_idx,
-					c_req->cpu_limit[i].has_advise_core,
-					c_req->cpu_limit[i].advise_cpu_core
-				);
-		}
-
-		ppm_dbg(MAIN, "(%d)%s\n", c_req->root_cluster, buf);
 
 		memcpy(last_req->cpu_limit, c_req->cpu_limit,
 			ppm_main_info.cluster_num * sizeof(*c_req->cpu_limit));
