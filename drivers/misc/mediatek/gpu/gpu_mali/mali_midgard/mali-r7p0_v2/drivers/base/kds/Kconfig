@@ -12,6 +12,9 @@
 #
 #
 
-CONFIG_MALI_MIDGARD := y
 
-obj-$(CONFIG_MALI_MIDGARD) += midgard/
+
+config KDS
+	tristate "Kernel dependency system"
+	help
+	  This option enables the generic kernel dependency system

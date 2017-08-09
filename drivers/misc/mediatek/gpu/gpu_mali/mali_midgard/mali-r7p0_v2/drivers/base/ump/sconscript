@@ -1,5 +1,5 @@
 #
-# (C) COPYRIGHT 2012 ARM Limited. All rights reserved.
+# (C) COPYRIGHT 2010-2013 ARM Limited. All rights reserved.
 #
 # This program is free software and is provided to you under the terms of the
 # GNU General Public License version 2 as published by the Free Software
@@ -12,6 +12,10 @@
 #
 #
 
-CONFIG_MALI_MIDGARD := y
 
-obj-$(CONFIG_MALI_MIDGARD) += midgard/
+Import('env')
+
+if Glob('src/sconscript') and int(env['ump']) == 1:
+	SConscript( 'src/sconscript' )
+	SConscript( 'docs/sconscript' )
+

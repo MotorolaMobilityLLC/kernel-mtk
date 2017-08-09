@@ -12,6 +12,7 @@
 #
 #
 
-CONFIG_MALI_MIDGARD := y
 
-obj-$(CONFIG_MALI_MIDGARD) += midgard/
+
+obj-$(CONFIG_KDS) += kds.o
+obj-$(CONFIG_KDS_TEST) += kds_test.o

@@ -12,6 +12,8 @@
 #
 #
 
-CONFIG_MALI_MIDGARD := y
 
-obj-$(CONFIG_MALI_MIDGARD) += midgard/
+
+menu "ARM GPU Configuration"
+source "drivers/gpu/arm/midgard/Kconfig"
+endmenu

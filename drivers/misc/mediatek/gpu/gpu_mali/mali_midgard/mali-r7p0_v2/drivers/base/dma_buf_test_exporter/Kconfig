@@ -12,6 +12,9 @@
 #
 #
 
-CONFIG_MALI_MIDGARD := y
 
-obj-$(CONFIG_MALI_MIDGARD) += midgard/
+config DMA_SHARED_BUFFER_TEST_EXPORTER
+	tristate "Test exporter for the dma-buf framework"
+	depends on DMA_SHARED_BUFFER
+	help
+	  This option enables the test exporter usable to help test importerts.

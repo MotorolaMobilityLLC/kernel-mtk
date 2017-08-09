@@ -12,6 +12,15 @@
 #
 #
 
-CONFIG_MALI_MIDGARD := y
 
-obj-$(CONFIG_MALI_MIDGARD) += midgard/
+
+config UMP
+	tristate "Enable Unified Memory Provider (UMP) support"
+	default n
+    help
+	  Enable this option to build support for the ARM UMP module.
+	  UMP can be used by the Mali T6xx module to improve performance
+	  by reducing the copying of data by sharing memory.
+
+	  To compile this driver as a module, choose M here:
+	  this will generate one module, called ump.

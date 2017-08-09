@@ -12,6 +12,7 @@
 #
 #
 
-CONFIG_MALI_MIDGARD := y
 
-obj-$(CONFIG_MALI_MIDGARD) += midgard/
+
+obj-y += mali_kbase_config_vexpress.o
+obj-y += mali_kbase_cpu_vexpress.o

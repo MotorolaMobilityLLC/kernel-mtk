@@ -12,6 +12,7 @@
 #
 #
 
-CONFIG_MALI_MIDGARD := y
 
-obj-$(CONFIG_MALI_MIDGARD) += midgard/
+ifneq ($(CONFIG_DMA_SHARED_BUFFER),)
+obj-m := dma_buf_lock.o
+endif

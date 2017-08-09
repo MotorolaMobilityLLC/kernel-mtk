@@ -12,6 +12,21 @@
 #
 #
 
-CONFIG_MALI_MIDGARD := y
 
-obj-$(CONFIG_MALI_MIDGARD) += midgard/
+# linux build system bootstrap for out-of-tree module
+
+# default to building for the host
+ARCH ?= $(shell uname -m)
+
+ifeq ($(KDIR),)
+$(error Must specify KDIR to point to the kernel to target))
+endif
+
+all: dma_buf_lock
+
+dma_buf_lock:
+	$(MAKE) ARCH=$(ARCH) -C $(KDIR) M=$(CURDIR) EXTRA_CFLAGS="-I$(CURDIR)/../../../../include"
+
+clean:
+	$(MAKE) ARCH=$(ARCH) -C $(KDIR) M=$(CURDIR) clean
+

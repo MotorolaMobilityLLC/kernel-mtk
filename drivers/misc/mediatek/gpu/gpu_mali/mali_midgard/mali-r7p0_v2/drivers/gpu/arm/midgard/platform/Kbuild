@@ -12,6 +12,10 @@
 #
 #
 
-CONFIG_MALI_MIDGARD := y
 
-obj-$(CONFIG_MALI_MIDGARD) += midgard/
+
+ifeq ($(CONFIG_MALI_PLATFORM_THIRDPARTY),y)
+# remove begin and end quotes from the Kconfig string type
+	platform_name := $(shell echo $(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME))
+	obj-y += $(platform_name)/
+endif
