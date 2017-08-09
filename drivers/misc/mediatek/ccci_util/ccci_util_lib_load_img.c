@@ -57,7 +57,9 @@ static char *type_str[] = {[md_type_invalid] = "invalid",
 	[modem_ulwctg] = "ulwctg",
 	[modem_ulttg] = "ulttg",
 	[modem_ulfwg] = "ulfwg",
-	[modem_ulfwcg] = "ulfwcg"
+	[modem_ulfwcg] = "ulfwcg",
+	[modem_ulctg] = "ulctg",
+	[modem_ultctg] = "ultctg"
 };
 
 static int curr_ubin_id;
@@ -877,6 +879,10 @@ static const int md1_capability_array[] = {
 	((1 << modem_ulwtg) | (0 << modem_ultg) | (1 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
 /* ulfwcg */
 	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (1 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ulctg */
+	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
+/* ultctg */
+	((0 << modem_ulwtg) | (0 << modem_ultg) | (0 << modem_ulwg) | (0 << modem_ulwcg) | (1 << modem_ulwctg)),
 };
 
 static const int ap_md_wm_id_map_array[] = { 0x0,	/* 0-invalid */
@@ -895,6 +901,8 @@ static const int ap_md_wm_id_map_array[] = { 0x0,	/* 0-invalid */
 	0x13,			/* 13-ulttg */
 	0x29,			/* 14-ulfwg */
 	0x2D,			/* 15-ulfwcg */
+	0x37,			/* 16-ulctg */
+	0x17,			/* 17-ultctg */
 };
 
 int get_md_wm_id_map(int ap_wm_id)

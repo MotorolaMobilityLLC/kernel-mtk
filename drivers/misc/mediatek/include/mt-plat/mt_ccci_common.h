@@ -50,7 +50,9 @@ typedef enum {
 	modem_ulttg,
 	modem_ulfwg,
 	modem_ulfwcg,
-	MAX_IMG_NUM = modem_ulfwcg /* this enum starts from 1 */
+	modem_ulctg,
+	modem_ultctg,
+	MAX_IMG_NUM = modem_ultctg /* this enum starts from 1 */
 } MD_LOAD_TYPE;
 
 /* MD logger configure file */
