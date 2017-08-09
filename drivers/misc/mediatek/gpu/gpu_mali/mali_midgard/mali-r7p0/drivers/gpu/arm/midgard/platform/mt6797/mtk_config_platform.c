@@ -160,7 +160,7 @@ static int _dump_mfg_n_ldo_registers(unsigned int mtklog, int in_irq)
 	_mtk_dump_register(mtklog, 0x1000c, 0x240, 0x10);
 	_mtk_dump_register(mtklog, 0x10001, 0xfc0, 0x10);
 
-	_mtk_dump_register(mtklog, 0x10006, 0x170, 0x10);
+	_mtk_dump_register(mtklog, 0x10006, 0x170, 0x20);
 	_mtk_dump_register(mtklog, 0x10201, 0x1B0, 0x10);
 	_mtk_dump_register(mtklog, 0x10001, 0x220, 0x10);
 	_mtk_dump_register(mtklog, 0x10201, 0x190, 0x10);
@@ -253,6 +253,16 @@ static void mtk_init_spm_dvfs_gpu(void)
 }
 #endif
 
+static void toprgu_mfg_reset(void)
+{
+#define MTK_WDT_SWSYS_RST_MFG_RST (0x0004)
+	int mtk_wdt_swsysret_config(int bit, int set_value);
+
+	mtk_wdt_swsysret_config(MTK_WDT_SWSYS_RST_MFG_RST, 1);
+	udelay(1);
+	mtk_wdt_swsysret_config(MTK_WDT_SWSYS_RST_MFG_RST, 0);
+}
+
 static int mtk_pm_callback_power_on(void)
 {
 	struct mtk_config *config = g_config;
@@ -275,6 +285,8 @@ static int mtk_pm_callback_power_on(void)
 	/* Release MFG PROT */
 	udelay(100);
 	spm_topaxi_protect(MFG_PROT_MASK, 0);
+	MTK_err("protect off [0x10001224]=0x%08x, [0x10001228]=0x%08x",
+		base_read32(g_0x10001_base + 0x224), base_read32(g_0x10001_base + 0x228));
 
 #ifdef MTK_GPU_APM
 	/* enable GPU hot-plug */
@@ -371,6 +383,8 @@ static void mtk_pm_callback_power_off(void)
 
 	/* Set MFG PROT */
 	spm_topaxi_protect(MFG_PROT_MASK, 1);
+	MTK_err("protect on [0x10001224]=0x%08x, [0x10001228]=0x%08x",
+		base_read32(g_0x10001_base + 0x224), base_read32(g_0x10001_base + 0x228));
 
 	MTKCLK_disable_unprepare(clk_mfg_main);
 #ifndef MTK_GPU_APM
@@ -712,8 +726,12 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	DFP_write32(CLK_MISC_CFG_0, DFP_read32(CLK_MISC_CFG_0) & 0xfffffffe);
 #endif
 
+	toprgu_mfg_reset();
+
 	/* Set MFG PROT */
 	spm_topaxi_protect(MFG_PROT_MASK, 1);
+	MTK_err("protect on [0x10001224]=0x%08x, [0x10001228]=0x%08x",
+		base_read32(g_0x10001_base + 0x224), base_read32(g_0x10001_base + 0x228));
 
 	return 0;
 }
