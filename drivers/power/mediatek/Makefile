@@ -52,7 +52,11 @@ else
 												ifeq ($(CONFIG_MTK_BQ25896_SUPPORT),y)
 													obj-$(CONFIG_MTK_SMART_BATTERY) += switch_charging.o
 												else
-													obj-$(CONFIG_MTK_SMART_BATTERY) += linear_charging.o
+													ifeq ($(CONFIG_MTK_BQ25898_DUAL_SUPPORT),y)
+														obj-$(CONFIG_MTK_SMART_BATTERY) += switch_charging.o
+													else
+														obj-$(CONFIG_MTK_SMART_BATTERY) += linear_charging.o
+													endif
 												endif
 											endif
 										endif
