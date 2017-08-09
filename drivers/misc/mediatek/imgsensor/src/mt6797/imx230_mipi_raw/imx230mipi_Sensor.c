@@ -1368,7 +1368,7 @@ static void preview_setting_HDR_ES2(void)
 	write_cmos_sensor(0x0114,0x03);
 	write_cmos_sensor(0x0220,0x03);
 	write_cmos_sensor(0x0221,0x22);
-	write_cmos_sensor(0x0222,0x10);
+	write_cmos_sensor(0x0222,0x04);//0x10,modify to 4x ratio
 	write_cmos_sensor(0x0340,0x08);
 	write_cmos_sensor(0x0341,0x3C);
 	write_cmos_sensor(0x0342,0x17);
@@ -1739,7 +1739,7 @@ static void capture_setting_HDR_ES2(void)
 	write_cmos_sensor(0x0114,0x03);
 	write_cmos_sensor(0x0220,0x03);
 	write_cmos_sensor(0x0221,0x11);
-	write_cmos_sensor(0x0222,0x08);
+	write_cmos_sensor(0x0222,0x04);//0x10,modify to 4x ratio
 	write_cmos_sensor(0x0340,0x10);
 	write_cmos_sensor(0x0341,0x1E);
 	write_cmos_sensor(0x0342,0x17);
@@ -2240,7 +2240,7 @@ static void normal_video_setting_30fps_HDR(void)
 	write_cmos_sensor(0x0114,0x03);
 	write_cmos_sensor(0x0220,0x03);
 	write_cmos_sensor(0x0221,0x11);
-	write_cmos_sensor(0x0222,0x01);
+	write_cmos_sensor(0x0222,0x04);//0x10,modify to 4x ratio
 	write_cmos_sensor(0x0340,0x0C);
 	write_cmos_sensor(0x0341,0x30);
 	write_cmos_sensor(0x0342,0x17);
