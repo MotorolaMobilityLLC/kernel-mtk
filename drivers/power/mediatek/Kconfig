@@ -276,6 +276,15 @@ config MTK_HAFG_20
 	  Set Yes to support Fuel Gauge 2.0 feature.
 	  Set No to disable Fuel Gauge 2.0.
 
+config MTK_EMBEDDED_BATTERY
+	bool "MediaTek Fuel Gauge 2.0 Embedded Battery"
+	default n
+	help
+	  Embedded Battery Feature
+	  Please note that fuel gauge 2.0 feature is must
+	  Set Yes to support Fuel Gauge 2.0 Embedded Battery feature.
+	  Set No to disable Fuel Gauge 2.0 Embedded Battery feature.
+
 config MTK_PUMP_EXPRESS_SUPPORT
 	bool "MediaTek PUMP EXPRESS"
 	default n
