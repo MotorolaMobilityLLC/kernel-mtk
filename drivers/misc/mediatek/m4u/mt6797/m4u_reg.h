@@ -140,7 +140,7 @@
 #define F_PFH_TAG_VA_GET(mmu, tag)    ((mmu == 0)?F_MMU0_PFH_TAG_VA_GET(tag) : F_MMU1_PFH_TAG_VA_GET(tag))
 #define F_MMU0_PFH_TAG_VA_GET(tag)    (F_MSK_SHIFT(tag, 13, 4)<<(MMU_SET_MSB_OFFSET(0)+1))
 #define F_MMU1_PFH_TAG_VA_GET(tag)    (F_MSK_SHIFT(tag, 15, 4)<<(MMU_SET_MSB_OFFSET(1)+1))
-#define F_MMU_PFH_TAG_VA_LAYER0_MSK(mmu)  ((mmu = 0)?F_MSK(31, 29):F_MSK(31, 28))
+#define F_MMU_PFH_TAG_VA_LAYER0_MSK(mmu)  ((mmu == 0)?F_MSK(31, 29):F_MSK(31, 28))
 #define F_PFH_TAG_LAYER_BIT	 F_BIT_SET(3)
 #define F_PFH_TAG_16X_BIT	   F_BIT_SET(2)	/* this bit is always 0 -- cost down. */
 #define F_PFH_TAG_SEC_BIT	   F_BIT_SET(1)
