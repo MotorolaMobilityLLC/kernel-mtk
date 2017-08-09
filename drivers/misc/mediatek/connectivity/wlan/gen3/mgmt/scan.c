@@ -743,6 +743,21 @@
 
 #define ROAMING_NO_SWING_RCPI_STEP              (10)
 
+#define RSSI_HI_5GHZ	(-60)
+#define RSSI_MED_5GHZ	(-70)
+#define RSSI_LO_5GHZ	(-80)
+
+#define PREF_HI_5GHZ	(20)
+#define PREF_MED_5GHZ	(15)
+#define PREF_LO_5GHZ	(10)
+
+INT_32 rssiRangeHi = RSSI_HI_5GHZ;
+INT_32 rssiRangeMed = RSSI_MED_5GHZ;
+INT_32 rssiRangeLo = RSSI_LO_5GHZ;
+UINT_8 pref5GhzHi = PREF_HI_5GHZ;
+UINT_8 pref5GhzMed = PREF_MED_5GHZ;
+UINT_8 pref5GhzLo = PREF_LO_5GHZ;
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -2418,6 +2433,29 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 
 }				/* end of scanProcessBeaconAndProbeResp() */
 
+INT_32 scanResultsAdjust5GPref(P_BSS_DESC_T prBssDesc)
+{
+	INT_32 rssi = RCPI_TO_dBm(prBssDesc->ucRCPI);
+	INT_32 orgRssi = rssi;
+
+	if (prBssDesc->eBand == BAND_5G) {
+		if (rssi >= rssiRangeHi)
+			rssi += pref5GhzHi;
+		else if (rssi >= rssiRangeMed)
+			rssi += pref5GhzMed;
+		else if (rssi >= rssiRangeLo)
+			rssi += pref5GhzLo;
+	}
+	/* Reduce chances of roam ping-pong */
+	if (prBssDesc->fgIsConnected)
+		rssi += (ROAMING_NO_SWING_RCPI_STEP >> 1);
+
+	if (prBssDesc->eBand == BAND_5G || prBssDesc->fgIsConnected)
+		DBGLOG(SCN, TRACE, "Adjust 5G band RSSI: " MACSTR " band=%d, orgRssi=%d afterRssi=%d\n",
+			MAC2STR(prBssDesc->aucBSSID), prBssDesc->eBand, orgRssi, rssi);
+	return rssi;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief Search the Candidate of BSS Descriptor for JOIN(Infrastructure) or
@@ -2850,12 +2888,17 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 				/* TODO(Kevin): We shouldn't compare the actual value, we should
 				 * allow some acceptable tolerance of some RSSI percentage here.
 				 */
+				INT_32 u4PrimAdjRssi = scanResultsAdjust5GPref(prPrimaryBssDesc);
+				INT_32 u4CandAdjRssi = scanResultsAdjust5GPref(prCandidateBssDesc);
+
 				DBGLOG(SCN, TRACE,
-				       "Candidate [" MACSTR "]: RCPI = %d, joinFailCnt=%d, Primary [" MACSTR
-				       "]: RCPI = %d, joinFailCnt=%d\n", MAC2STR(prCandidateBssDesc->aucBSSID),
-				       prCandidateBssDesc->ucRCPI, prCandidateBssDesc->ucJoinFailureCount,
+				       "Candidate [" MACSTR "]: RCPI=%d, RSSI=%d, joinFailCnt=%d, Primary ["
+				       MACSTR "]: RCPI=%d, RSSI=%d, joinFailCnt=%d\n",
+				       MAC2STR(prCandidateBssDesc->aucBSSID),
+				       prCandidateBssDesc->ucRCPI, u4CandAdjRssi,
+				       prCandidateBssDesc->ucJoinFailureCount,
 				       MAC2STR(prPrimaryBssDesc->aucBSSID),
-				       prPrimaryBssDesc->ucRCPI,
+				       prPrimaryBssDesc->ucRCPI, u4PrimAdjRssi,
 				       prPrimaryBssDesc->ucJoinFailureCount);
 
 				ASSERT(!(prCandidateBssDesc->fgIsConnected && prPrimaryBssDesc->fgIsConnected));
@@ -2874,19 +2917,15 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 				/* NOTE: To prevent SWING, we do roaming only if target AP
 				 * has at least 5dBm larger than us. */
 				if (prCandidateBssDesc->fgIsConnected) {
-					if ((prCandidateBssDesc->ucRCPI + ROAMING_NO_SWING_RCPI_STEP <=
-					     prPrimaryBssDesc->ucRCPI)
+					if (u4CandAdjRssi < u4PrimAdjRssi
 					    && prPrimaryBssDesc->ucJoinFailureCount < SCN_BSS_JOIN_FAIL_THRESOLD) {
-
 						prCandidateBssDesc = prPrimaryBssDesc;
 						prCandidateStaRec = prPrimaryStaRec;
 						continue;
 					}
 				} else if (prPrimaryBssDesc->fgIsConnected) {
-					if ((prCandidateBssDesc->ucRCPI <
-					     prPrimaryBssDesc->ucRCPI + ROAMING_NO_SWING_RCPI_STEP)
+					if (u4CandAdjRssi < u4PrimAdjRssi
 					    || (prCandidateBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD)) {
-
 						prCandidateBssDesc = prPrimaryBssDesc;
 						prCandidateStaRec = prPrimaryStaRec;
 						continue;
@@ -2894,8 +2933,7 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 				} else if (prPrimaryBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD)
 					continue;
 				else if (prCandidateBssDesc->ucJoinFailureCount >= SCN_BSS_JOIN_FAIL_THRESOLD ||
-					 prCandidateBssDesc->ucRCPI < prPrimaryBssDesc->ucRCPI) {
-
+					 u4CandAdjRssi < u4PrimAdjRssi) {
 					prCandidateBssDesc = prPrimaryBssDesc;
 					prCandidateStaRec = prPrimaryStaRec;
 					continue;
