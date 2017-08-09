@@ -649,6 +649,8 @@ unsigned long g_Flash_SpinLock;
 
 static volatile unsigned int G_u4EnableClockCount;
 
+int pr_detect_count;
+
 /*save ion fd*/
 #define ENABLE_KEEP_ION_HANDLE
 
@@ -5376,7 +5378,8 @@ static MINT32 ISP_P2_BufQue_CTRL_FUNC(ISP_P2_BUFQUE_STRUCT param)
 		break;
 	case ISP_P2_BUFQUE_CTRL_WAIT_FRAME:             /* wait for a specific buffer */
 		/* [1]find first match buffer */
-		LOG_INF("ISP_P2_BUFQUE_CTRL_WAIT_FRAME, before pty/pID/cID (%d/0x%x/0x%x),idx(%d)", property, param.processID, param.callerID, idx);
+		/*LOG_INF("ISP_P2_BUFQUE_CTRL_WAIT_FRAME, before pty/pID/cID (%d/0x%x/0x%x),idx(%d)", \
+		    property, param.processID, param.callerID, idx);*/
 		/* wait for frame enqued due to user might call deque api before the frame is enqued to kernel */
 		restTime = wait_event_interruptible_timeout(
 				   P2WaitQueueHead_WaitFrameEQDforDQ,
@@ -7561,6 +7564,12 @@ static MINT32 ISP_open(
 	} else {
 		IspInfo.UserCount++;
 		spin_unlock(&(IspInfo.SpinLockIspRef));
+
+		/* kernellog limit to (current+150) lines per second */
+		pr_detect_count = get_detect_count();
+		i = pr_detect_count + 150;
+		set_detect_count(i);
+
 		LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d), first user\n",
 			IspInfo.UserCount, current->comm, current->pid, current->tgid);
 	}
@@ -7639,7 +7648,7 @@ static MINT32 ISP_open(
 #endif
 
 #ifdef KERNEL_LOG
-	IspInfo.DebugMask = (ISP_DBG_INT | ISP_DBG_BUF_CTRL | ISP_DBG_WRITE_REG); /* Jessy: In EP, Add ISP_DBG_WRITE_REG for debug. Should remove it after EP */
+	IspInfo.DebugMask = (ISP_DBG_INT);
 #endif
 	/*  */
 EXIT:
@@ -7790,6 +7799,8 @@ static MINT32 ISP_release(
 	LOG_DBG("Curr UserCount(%d), (process, pid, tgid)=(%s, %d, %d),	last user",
 		IspInfo.UserCount, current->comm, current->pid, current->tgid);
 
+	/* kernel log limit back to default */
+	set_detect_count(pr_detect_count);
 
 	/* Close VF when ISP_release */
 	/* reason of close vf is to make sure camera can serve regular after previous abnormal exit */
