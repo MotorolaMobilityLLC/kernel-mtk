@@ -774,7 +774,7 @@ void lcm_common_init(void)
 
 void lcm_common_suspend(void)
 {
-	if (_LCM_DTS.suspend_size > 8) {
+	if (_LCM_DTS.suspend_size > 32) {
 		pr_debug("[LCM][ERROR] %s/%d: Suspend table overflow %d\n", __func__, __LINE__,
 		       _LCM_DTS.suspend_size);
 		return;
@@ -913,20 +913,25 @@ void lcm_common_setbacklight(unsigned int level)
 	else
 		mapped_level = 0;
 
-	if (_LCM_DTS.backlight_size > 1) {
+	if (_LCM_DTS.backlight_size > 32) {
 		pr_debug("[LCM][ERROR] %s/%d: Backlight table overflow %d\n", __func__, __LINE__,
 		       _LCM_DTS.backlight_size);
 		return;
 	}
 
 	if (_LCM_DTS.parsing != 0) {
+		unsigned int i;
 		LCM_DATA *backlight;
 		LCM_DATA_T3 *backlight_data_t3;
 
-		if (_LCM_DTS.backlight_size > 0) {
-			backlight = &(_LCM_DTS.backlight[0]);
-			backlight_data_t3 = &(backlight->data_t3);
-			backlight_data_t3->data[0] = mapped_level;
+		for (i = 0; i < _LCM_DTS.backlight_size; i++) {
+			if (i == (_LCM_DTS.backlight_size - 1)) {
+				backlight = &(_LCM_DTS.backlight[i]);
+				backlight_data_t3 = &(backlight->data_t3);
+				backlight_data_t3->data[i] = mapped_level;
+			} else
+				backlight = &(_LCM_DTS.backlight[i]);
+
 			switch (backlight->func) {
 			case LCM_FUNC_GPIO:
 				lcm_gpio_set_data(backlight->type, &backlight->data_t1);
@@ -976,7 +981,7 @@ unsigned int lcm_common_compare_id(void)
 {
 	unsigned int compare = 0;
 
-	if (_LCM_DTS.compare_id_size > 8) {
+	if (_LCM_DTS.compare_id_size > 32) {
 		pr_debug("[LCM][ERROR] %s/%d: Init table overflow %d\n", __func__, __LINE__,
 		       _LCM_DTS.init_size);
 		return 0;

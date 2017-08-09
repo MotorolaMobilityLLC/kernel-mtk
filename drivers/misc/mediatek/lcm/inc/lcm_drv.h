@@ -686,9 +686,9 @@ typedef struct {
 
 	LCM_PARAMS params;
 	LCM_DATA init[256];
-	LCM_DATA compare_id[8];
-	LCM_DATA suspend[8];
-	LCM_DATA backlight[8];
+	LCM_DATA compare_id[32];
+	LCM_DATA suspend[32];
+	LCM_DATA backlight[32];
 } LCM_DTS;
 
 
