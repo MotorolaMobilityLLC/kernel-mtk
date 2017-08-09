@@ -465,7 +465,7 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 			} else {
 				/*External Mode*/
 				/*ovl1->wdma1*/
-				cmdqRecWaitNoClear(nonsec_switch_handle, cmdq_event);
+				cmdqRecWaitNoClear(nonsec_switch_handle, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 			}
 
 			/*_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);*/

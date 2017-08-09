@@ -720,52 +720,35 @@ static noinline void print_layer_config_args(int module, int local_layer, OVL_CO
 }
 
 static int ovl_is_sec[OVL_NUM];
-static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *handle)
+static int setup_ovl_sec(DISP_MODULE_ENUM module, void *handle, int is_engine_sec)
 {
 	int i = 0;
-	int enabled_layers = 0;
-	int has_sec_layer = 0;
-	int local_layer, global_layer;
 	int ovl_idx = ovl_to_index(module);
 	CMDQ_ENG_ENUM cmdq_engine;
-	CMDQ_EVENT_ENUM cmdq_event_nonsec_end;
-
-	if (pConfig->dst_dirty)
-		ovl_roi(module, pConfig->dst_w, pConfig->dst_h, gOVLBackground, handle);
-
-	if (!pConfig->ovl_dirty)
-		return 0;
-	/* check if we has sec layer */
-	for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++) {
-		if (pConfig->ovl_config[i].layer_en &&
-		    (pConfig->ovl_config[i].security == DISP_SECURE_BUFFER))
-			has_sec_layer = 1;
-	}
-
+	/*CMDQ_EVENT_ENUM cmdq_event_nonsec_end;*/
 	cmdq_engine = ovl_to_cmdq_engine(module);
-	cmdq_event_nonsec_end = ovl_to_cmdq_event_nonsec_end(module);
+	/*cmdq_event_nonsec_end = ovl_to_cmdq_event_nonsec_end(module);*/
 
-	if (has_sec_layer) {
+	if (is_engine_sec) {
 
 		cmdqRecSetSecure(handle, 1);
-
 		/* set engine as sec */
 		cmdqRecSecureEnablePortSecurity(handle, (1LL << cmdq_engine));
 		/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
 		if (ovl_is_sec[ovl_idx] == 0)
 			DDPMSG("[SVP] switch ovl%d to sec\n", ovl_idx);
-		ovl_is_sec[ovl_idx] = 1;
+			ovl_is_sec[ovl_idx] = 1;
 	} else {
 		if (ovl_is_sec[ovl_idx] == 1) {
 			/* ovl is in sec stat, we need to switch it to nonsec */
-			static cmdqRecHandle nonsec_switch_handle;
+			cmdqRecHandle nonsec_switch_handle;
 			int ret;
-
-			ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
-					    &(nonsec_switch_handle));
+			ret =
+			cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
+				&(nonsec_switch_handle));
 			if (ret)
 				DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
-				       __func__, ret);
+				__func__, ret);
 
 			cmdqRecReset(nonsec_switch_handle);
 			/*_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);*/
@@ -778,26 +761,43 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 					_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);
 			} else {
 				/*External Mode*/
-				cmdqRecWaitNoClear(nonsec_switch_handle, CMDQ_EVENT_DISP_WDMA1_EOF);
+				/*_cmdq_insert_wait_frame_done_token_mira(nonsec_switch_handle);*/
+				cmdqRecWaitNoClear(nonsec_switch_handle, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 			}
 			cmdqRecSetSecure(nonsec_switch_handle, 1);
 
 			/* we should disable ovl before new (nonsec) setting take effect
-			 * or translation fault may happen,
-			 * if we switch ovl to nonsec BUT its setting is still sec */
-			for (i = 0; i < 4; i++)
+			* or translation fault may happen,
+			* if we switch ovl to nonsec BUT its setting is still sec */
+			for (i = 0; i < ovl_layer_num(module); i++)
 				ovl_layer_switch(module, i, 0, nonsec_switch_handle);
-			/*in fact, dapc/port_sec will be disabled by cmdq */
-			cmdqRecSecureEnablePortSecurity(nonsec_switch_handle, (1LL << cmdq_engine));
-			/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
-			cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);
-			cmdqRecFlushAsync(nonsec_switch_handle);
-			cmdqRecDestroy(nonsec_switch_handle);
-			cmdqRecWait(handle, cmdq_event_nonsec_end);
-			DDPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
-		}
+				/*in fact, dapc/port_sec will be disabled by cmdq */
+				cmdqRecSecureEnablePortSecurity(nonsec_switch_handle, (1LL << cmdq_engine));
+				/* cmdqRecSecureEnableDAPC(handle, (1LL << cmdq_engine)); */
+				/*cmdqRecSetEventToken(nonsec_switch_handle, cmdq_event_nonsec_end);*/
+				/*cmdqRecFlushAsync(nonsec_switch_handle);*/
+				cmdqRecFlush(nonsec_switch_handle);
+				cmdqRecDestroy(nonsec_switch_handle);
+				/*cmdqRecWait(handle, cmdq_event_nonsec_end);*/
+				DDPMSG("[SVP] switch ovl%d to nonsec\n", ovl_idx);
+			}
 		ovl_is_sec[ovl_idx] = 0;
 	}
+
+	return 0;
+}
+
+static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *handle)
+{
+	int enabled_layers = 0;
+	int has_sec_layer = 0;
+	int local_layer, global_layer, layer_id;
+
+	if (pConfig->dst_dirty)
+		ovl_roi(module, pConfig->dst_w, pConfig->dst_h, gOVLBackground, handle);
+
+	if (!pConfig->ovl_dirty)
+		return 0;
 
 	for (global_layer = 0; global_layer < TOTAL_OVL_LAYER_NUM; global_layer++) {
 		if (!(pConfig->ovl_layer_scanned & (1 << global_layer)))
@@ -809,10 +809,18 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 		BUG();
 	}
 
+	/* check if the ovl module has sec layer */
+	for (layer_id = global_layer; layer_id < (global_layer + ovl_layer_num(module)); layer_id++) {
+			if (pConfig->ovl_config[layer_id].layer_en &&
+				(pConfig->ovl_config[layer_id].security == DISP_SECURE_BUFFER))
+					has_sec_layer = 1;
+	}
+
+	setup_ovl_sec(module, handle, has_sec_layer);
+
 	for (local_layer = 0; local_layer < ovl_layer_num(module); local_layer++, global_layer++) {
 
 		OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[global_layer];
-
 		pConfig->ovl_layer_scanned |= (1 << global_layer);
 
 		if (ovl_cfg->layer_en == 0)

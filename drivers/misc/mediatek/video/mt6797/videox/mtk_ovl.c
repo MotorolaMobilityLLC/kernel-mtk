@@ -494,12 +494,12 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 		return ret;
 	}
 	_ovl2mem_path_lock(__func__);
-
+	cmdqRecClearEventToken(pgc->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 	dpmgr_path_start(pgc->dpmgr_handle, ovl2mem_cmdq_enabled());
 	dpmgr_path_trigger(pgc->dpmgr_handle, pgc->cmdq_handle_config, ovl2mem_cmdq_enabled());
 
 	cmdqRecWait(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_WDMA1_EOF);
-
+	cmdqRecSetEventToken(pgc->cmdq_handle_config, CMDQ_SYNC_DISP_EXT_STREAM_EOF);
 	dpmgr_path_stop(pgc->dpmgr_handle, ovl2mem_cmdq_enabled());
 
 	/* /cmdqRecDumpCommand(pgc->cmdq_handle_config); */
