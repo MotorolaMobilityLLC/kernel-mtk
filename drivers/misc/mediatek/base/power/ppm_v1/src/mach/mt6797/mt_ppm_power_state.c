@@ -1051,6 +1051,8 @@ unsigned int ppm_get_root_cluster_by_state(enum ppm_power_state cur_state)
 #include "mt_idvfs.h"
 
 static unsigned int max_power_except_big;
+/* set a margin (2B @ idx 14) to avoid big be throttled / un-throttled frequently */
+static unsigned int big_on_margin;
 #define MAX_OCP_TARGET_POWER	127000
 
 static bool ppm_is_big_cluster_on(void)
@@ -1067,6 +1069,7 @@ static bool ppm_is_big_cluster_on(void)
 unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 {
 	struct ppm_power_tbl_data power_table = ppm_get_power_table();
+	struct ppm_pwr_idx_ref_tbl_data ref_tbl = ppm_get_pwr_idx_ref_tbl();
 	int i, ret = 0;
 	unsigned int power_for_ocp = 0, power_for_tbl_lookup = 0;
 
@@ -1078,16 +1081,25 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 				break;
 			}
 		}
-		ppm_info("@%s: max_power_except_big = %d\n", __func__, max_power_except_big);
+
+		big_on_margin = (ref_tbl.pwr_idx_ref_tbl[PPM_CLUSTER_B].core_total_power[14] * 2)
+				+ ref_tbl.pwr_idx_ref_tbl[PPM_CLUSTER_B].l2_power[14];
+
+		ppm_info("@%s: max_power_except_big = %d, big_on_margin = %d\n",
+			__func__, max_power_except_big, big_on_margin);
 	}
 
 	/* no need to set big OCP since big cluster is powered off */
 	if (!ppm_is_big_cluster_on()) {
 		/* no need to throttle big core since it is not powered on */
 		if (limited_power > max_power_except_big
-			&& limited_power < power_table.power_tbl[0].power_idx)
-			return power_table.power_tbl[0].power_idx;
-		else
+			&& limited_power < power_table.power_tbl[0].power_idx) {
+			/* limited_power is over margin so big can be turned on! */
+			if (limited_power > max_power_except_big + big_on_margin)
+				return power_table.power_tbl[0].power_idx;
+			else
+				return max_power_except_big;
+		} else
 			return limited_power;
 	}
 
