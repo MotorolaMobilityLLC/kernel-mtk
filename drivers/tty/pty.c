@@ -686,6 +686,40 @@ static int pty_unix98_ioctl(struct tty_struct *tty,
 	return -ENOIOCTLCMD;
 }
 
+static int pts_unix98_ioctl(struct tty_struct *tty,
+			    unsigned int cmd, unsigned long arg)
+{
+	switch (cmd) {
+	case TIOCSPTLCK: /* Set PT Lock (disallow slave open) */
+		return pty_set_lock(tty, (int __user *)arg);
+	case TIOCGPTLCK: /* Get PT Lock status */
+		return pty_get_lock(tty, (int __user *)arg);
+	case TIOCPKT: /* Set PT packet mode */
+		return pty_set_pktmode(tty, (int __user *)arg);
+	case TIOCGPKT: /* Get PT packet mode */
+		return pty_get_pktmode(tty, (int __user *)arg);
+	case TIOCGPTN: /* Get PT Number */
+		return -ENOTTY;
+	case TIOCSIG:    /* Send signal to other side of pty */
+		return pty_signal(tty, (int) arg);
+	case TCXONC: /* Flow Control */
+		switch (arg) {
+		case TCIOFF:
+			tty->link->peer_stops = 1;
+			break;
+		case TCION:
+			tty->link->peer_stops = 0;
+			if (waitqueue_active(&tty->link->write_wait))
+				wake_up_interruptible(&tty->link->write_wait);
+				break;
+		default:
+		return -EINVAL;
+		}
+	return 0;
+	}
+	return -ENOIOCTLCMD;
+}
+
 /**
  *	ptm_unix98_lookup	-	find a pty master
  *	@driver: ptm driver
@@ -774,7 +808,7 @@ static const struct tty_operations pty_unix98_ops = {
 	.chars_in_buffer = pty_chars_in_buffer,
 	.unthrottle = pty_unthrottle,
 	.set_termios = pty_set_termios,
-	.ioctl = pty_unix98_ioctl,
+	.ioctl = pts_unix98_ioctl,
 	.start = pty_start,
 	.stop = pty_stop,
 	.shutdown = pty_unix98_shutdown,
