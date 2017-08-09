@@ -682,7 +682,7 @@ static int __init disp_probe_1(void)
 	ret = misc_register(&disp_misc_dev);
 	if (ret) {
 		pr_err("disp: fail to create mtk_disp node\n");
-		return ERR_PTR(ret);
+		return ret;
 	}
 	/* secure video path implementation: a physical address is allocated to place a handle for decryption buffer. */
 	init_tplay_handle(&(pdev->dev));	/* non-zero value for valid VA */
