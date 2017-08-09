@@ -188,7 +188,7 @@ int mtk_cfg80211_vendor_set_country_code(struct wiphy *wiphy, struct wireless_de
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
 	struct nlattr *attr;
-	UINT_8 country[2];
+	UINT_8 country[2] = {0, 0};
 
 	ASSERT(wiphy && wdev);
 	if ((data == NULL) || (data_len == 0))
@@ -282,7 +282,7 @@ int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wde
 	/* CMD_GSCN_REQ_T rCmdGscnParam; */
 
 	/* INT_32 i4Status = -EINVAL; */
-	P_PARAM_WIFI_GSCAN_CMD_PARAMS prWifiScanCmd;
+	P_PARAM_WIFI_GSCAN_CMD_PARAMS prWifiScanCmd = NULL;
 	struct nlattr *attr[GSCAN_ATTRIBUTE_REPORT_EVENTS + 1];
 	struct nlattr *pbucket, *pchannel;
 	UINT_32 len_basic, len_bucket, len_channel;
@@ -394,10 +394,12 @@ int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wde
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidSetGSCNAParam,
 			   prWifiScanCmd, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS), FALSE, FALSE, TRUE, FALSE, &u4BufLen);
-
+	kalMemFree(prWifiScanCmd, VIR_MEM_TYPE, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS));
 	return 0;
 
 nla_put_failure:
+	if (prWifiScanCmd != NULL)
+		kalMemFree(prWifiScanCmd, VIR_MEM_TYPE, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS));
 	return -1;
 }
 
@@ -409,7 +411,7 @@ int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev
 
 	INT_32 i4Status = -EINVAL;
 	/*PARAM_WIFI_GSCAN_CMD_PARAMS rWifiScanCmd;*/
-	P_PARAM_WIFI_GSCAN_CMD_PARAMS prWifiScanCmd;
+	P_PARAM_WIFI_GSCAN_CMD_PARAMS prWifiScanCmd = NULL;
 	struct nlattr *attr[GSCAN_ATTRIBUTE_NUM_SCANS_TO_CACHE + 1];
 	/* UINT_32 num_scans = 0; */	/* another attribute */
 	int k;
@@ -460,6 +462,8 @@ int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev
 	return 0;
 
 nla_put_failure:
+	if (prWifiScanCmd != NULL)
+		kalMemFree(prWifiScanCmd, VIR_MEM_TYPE, sizeof(PARAM_WIFI_GSCAN_CMD_PARAMS));
 	return i4Status;
 }
 
