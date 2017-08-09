@@ -300,13 +300,13 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 
 static int mtk_extd_mgr_open(struct inode *inode, struct file *file)
 {
-	EXT_MGR_FUNC();
+	/*EXT_MGR_FUNC();*/
 	return 0;
 }
 
 static int mtk_extd_mgr_release(struct inode *inode, struct file *file)
 {
-	EXT_MGR_FUNC();
+	/*EXT_MGR_FUNC();*/
 	return 0;
 }
 
