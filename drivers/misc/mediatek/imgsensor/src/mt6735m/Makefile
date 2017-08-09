@@ -19,7 +19,7 @@ obj-y				+= kd_sensorlist.o
 
 $(info -= project path  $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/ =-)
 
-ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/imgsensor/src/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw),)
+ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/imgsensor/src/mt6735m/camera_project/$(ARCH_MTK_PROJECT)/camera_hw),)
 obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/camera_hw/
 $(info by porject kd_camera_hw)
 else
