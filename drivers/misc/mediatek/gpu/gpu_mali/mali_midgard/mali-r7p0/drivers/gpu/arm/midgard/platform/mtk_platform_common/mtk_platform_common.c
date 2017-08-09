@@ -190,6 +190,56 @@ static const struct file_operations kbasep_gpu_memory_usage_debugfs_open = {
 	.release = single_release,
 };
 
+static int g_dvfs_enabled = 1;
+
+int mtk_kbase_is_gpu_dvfs_enabled(void)
+{
+	return g_dvfs_enabled;
+}
+
+static int proc_gpu_dvfs_enabled_show(struct seq_file *m, void *v)
+{
+	int dvfs_enabled;
+	dvfs_enabled = mtk_kbase_is_gpu_dvfs_enabled();
+	seq_printf(m, "dvfs_enabled: %d\n", dvfs_enabled);
+	return 0;
+}
+
+static int kbasep_gpu_dvfs_enable_debugfs_open(struct inode *in, struct file *file)
+{
+	return single_open(file, proc_gpu_dvfs_enabled_show , NULL);
+}
+
+static ssize_t kbasep_gpu_dvfs_enable_write(struct file *file, const char __user *buffer,
+		size_t count, loff_t *data)
+{
+	char desc[32];
+	int len = 0;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len)) {
+		return 0;
+	}
+	desc[len] = '\0';
+
+	if(!strncmp(desc, "1", 1))
+		g_dvfs_enabled = 1;
+	else if(!strncmp(desc, "0", 1))
+		g_dvfs_enabled = 0;
+	else if(!strncmp(desc, "2", 1))
+		g_dvfs_enabled = 2;
+
+	return count;
+}
+
+static const struct file_operations kbasep_gpu_dvfs_enable_debugfs_fops = {
+	.open    = kbasep_gpu_dvfs_enable_debugfs_open,
+	.read    = seq_read,
+	.write   = kbasep_gpu_dvfs_enable_write,
+	.release = single_release,
+};
+
+
 static struct proc_dir_entry *mali_pentry;
 
 void proc_mali_register(void)
@@ -203,7 +253,7 @@ void proc_mali_register(void)
     proc_create("memory_usage", 0, mali_pentry, &kbasep_gpu_memory_usage_debugfs_open);
 //    proc_create("utilization", 0, mali_pentry, &kbasep_gpu_utilization_debugfs_fops);
 //    proc_create("frequency", 0, mali_pentry, &kbasep_gpu_frequency_debugfs_fops);
-//    proc_create("dvfs_enable", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_enable_debugfs_fops);
+    proc_create("dvfs_enable", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_enable_debugfs_fops);
 //    proc_create("input_boost", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_input_boost_debugfs_fops);
 //    proc_create("dvfs_freq", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_freq_debugfs_fops);
 //    proc_create("dvfs_threshold", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_threshold_debugfs_fops);
@@ -219,6 +269,7 @@ void proc_mali_unregister(void)
     remove_proc_entry("memory_usage", mali_pentry);
 //    remove_proc_entry("utilization", mali_pentry);
 //    remove_proc_entry("frequency", mali_pentry);
+    remove_proc_entry("dvfs_enable", mali_pentry);
 //    remove_proc_entry("mali", NULL);
     mali_pentry = NULL;
 }
@@ -235,7 +286,7 @@ int mtk_get_vgpu_power_on_flag(void)
 int mtk_set_vgpu_power_on_flag(int power_on_id)
 {
 	g_vgpu_power_on_flag = power_on_id;
-	
+
 	return 0;
 }
 
@@ -246,6 +297,6 @@ int mtk_set_mt_gpufreq_target(int freq_id)
 	} else {
 		pr_alert("MALI: VGPU power is off, ignore set freq: %d. \n",freq_id);
 	}
-	
+
 	return 0;
 }
