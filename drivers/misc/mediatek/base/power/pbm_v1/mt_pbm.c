@@ -190,6 +190,17 @@ static struct task_struct *pbm_thread;
 static atomic_t kthread_nreq = ATOMIC_INIT(0);
 /* extern u32 get_devinfo_with_index(u32 index); */
 
+/*
+ * weak function
+ */
+#if 1
+__weak int tscpu_get_min_cpu_pwr(void)
+{
+	pbm_crit("tscpu_get_min_cpu_pwr not ready\n");
+	return 0;
+}
+#endif
+
 int get_battery_volt(void)
 {
 	return PMIC_IMM_GetOneChannelValue(PMIC_AUX_BATSNS_AP, 5, 1);
