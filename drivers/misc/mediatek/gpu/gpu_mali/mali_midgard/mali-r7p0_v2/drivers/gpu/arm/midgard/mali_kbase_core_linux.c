@@ -1698,25 +1698,40 @@ static int kbase_release(struct inode *inode, struct file *filp)
 
 static long kbase_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	u64 msg[(CALL_MAX_SIZE + 7) >> 3] = { 0xdeadbeefdeadbeefull };	/* alignment fixup */
+	///u64 msg[(CALL_MAX_SIZE + 7) >> 3] = { 0xdeadbeefdeadbeefull };	/* alignment fixup */
+	u64* msg = kmalloc(CALL_MAX_SIZE + 7, GFP_KERNEL);
 	u32 size = _IOC_SIZE(cmd);
 	struct kbase_context *kctx = filp->private_data;
 
-	if (size > CALL_MAX_SIZE)
+	if (size > CALL_MAX_SIZE){
+		kfree(msg);
 		return -ENOTTY;
+	}
 
-	if (0 != copy_from_user(&msg, (void __user *)arg, size)) {
+	if (!msg) {        
+		pr_alert("kmalloc fail, %d byte\n", CALL_MAX_SIZE + 7);        
+		kfree(msg);
+		return -EFAULT;    
+	}
+	*msg = 0xdeadbeefdeadbeefull;
+
+	if (0 != copy_from_user(msg, (void __user *)arg, size)) {
 		dev_err(kctx->kbdev->dev, "failed to copy ioctl argument into kernel space\n");
+		kfree(msg);
 		return -EFAULT;
 	}
 
-	if (kbase_dispatch(kctx, &msg, size) != 0)
+	if (MALI_ERROR_NONE != kbase_dispatch(kctx, msg, size)){
+		kfree(msg);
 		return -EFAULT;
-
-	if (0 != copy_to_user((void __user *)arg, &msg, size)) {
+	}
+	if (0 != copy_to_user((void __user *)arg, msg, size)) {
 		dev_err(kctx->kbdev->dev, "failed to copy results of UK call back to user space\n");
+		kfree(msg);
 		return -EFAULT;
 	}
+    
+	kfree(msg);
 	return 0;
 }
 
