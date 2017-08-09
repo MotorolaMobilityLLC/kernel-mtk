@@ -16,8 +16,8 @@
 #include <linux/init.h>
 #include <linux/sched.h>
 
-#include "mt_hotplug_strategy_internal.h"
-#include "mt_hotplug_strategy.h"
+#include <mt-plat/mt_hotplug_strategy_internal.h>
+#include <mt-plat/mt_hotplug_strategy.h>
 
 int hps_set_cpu_num_base(enum hps_base_type_e type, unsigned int little_cpu,
 			 unsigned int big_cpu)

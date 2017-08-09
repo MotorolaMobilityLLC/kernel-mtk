@@ -44,7 +44,7 @@
 
 /* project includes */
 #include "mach/mt_thermal.h"
-#include "mt_hotplug_strategy.h"
+#include <mt-plat/mt_hotplug_strategy.h>
 /*#include "mach/mt_spm_idle.h"*/
 #include "mach/mt_clkmgr.h"
 #include "mach/mt_freqhopping.h"
