@@ -21,8 +21,8 @@
 #define SPM_DVFS_HPM		1
 #define SPM_DVFS_LPM		0
 
-#define SPM_CHK_GUARD_TIME	100	/* FIXME */
-
+#define SPM_CHK_GUARD_TIME	10
+#define SPM_HPM_HOLD_TIME 1000
 /* PCM_REG6_DATA */
 #define SPM_FLAG_DVFS_ACTIVE (1<<23)	/* bit 23 */
 #define SPM_FLAG_DVFS_STATE (1<<24)
@@ -115,6 +115,8 @@ static struct pwr_ctrl vcore_dvfs_ctrl = {
 	.emi_bw_dvfs_req_mask = 1,	/* default disable, enable by fliper */
 	.emi_boost_dvfs_req_mask_b = 0,	/* default disable, enable by fliper */
 
+	.dvfs_halt_src_chk = 1,
+
 	/* +450 SPM_EMI_BW_MODE */
 	/* [0]EMI_BW_MODE, [1]EMI_BOOST_MODE default is 0 */
 
@@ -154,11 +156,14 @@ static inline int _wait_spm_dvfs_complete(int opp, int timeout)
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 	bool partial = ((pwrctrl->pcm_flags & SPM_FLAG_DIS_VCORE_DFS) != 0);
 
+	/* wait 10 usec before check status */
+	udelay(SPM_CHK_GUARD_TIME);
+
 	val = spm_read(PCM_REG6_DATA);
 	if (partial == true) {
-		udelay(SPM_CHK_GUARD_TIME);
+		udelay(SPM_CHK_GUARD_TIME*10);
 		spm_vcorefs_info("hh: skip chk idle instead of comp (flags=0x%x) udelay(%d)\n",
-				 pwrctrl->pcm_flags, SPM_CHK_GUARD_TIME);
+				 pwrctrl->pcm_flags, SPM_CHK_GUARD_TIME*10);
 		while (!((val & SPM_FLAG_DVFS_ACTIVE) == 0)) {
 			if (i >= timeout) {
 				i = -EBUSY;
@@ -197,7 +202,6 @@ bool _get_total_bw_enable(void)
 
 	return enabled;
 }
-
 
 /* get SPM DVFS Logic output */
 int _find_spm_dvfs_result(int opp)
@@ -377,6 +381,9 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_info("PCM_REG13_DATA: 0x%x\n", spm_read(PCM_REG13_DATA));
 		spm_vcorefs_info("PCM_REG14_DATA: 0x%x\n", spm_read(PCM_REG14_DATA));
 		spm_vcorefs_err("PCM_REG15_DATA: %u\n", spm_read(PCM_REG15_DATA));
+		spm_vcorefs_info("PCM_REG12_MASK_B_STA: 0x%x\n", spm_read(PCM_REG12_MASK_B_STA));
+		spm_vcorefs_info("PCM_REG12_EXT_DATA: 0x%x\n", spm_read(PCM_REG12_EXT_DATA));
+		spm_vcorefs_info("PCM_REG12_EXT_MASK_B_STA: 0x%x\n", spm_read(PCM_REG12_EXT_MASK_B_STA));
 	}
 
 	return p;
@@ -508,6 +515,7 @@ int spm_vcorefs_set_dvfs_hpm_force(int opp, int vcore, int ddr)
 	int r = 0;
 	unsigned long flags;
 	int timeout = SPM_DVFS_TIMEOUT;
+	int do_check = 1;
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_ENTER);
 
@@ -518,6 +526,8 @@ int spm_vcorefs_set_dvfs_hpm_force(int opp, int vcore, int ddr)
 		spm_vcorefs_err("wait idle timeout(opp:%d)\n", opp);
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		spm_vcorefs_aee_warn("set_hpm_force_waitidle_timeout(opp:%d)\n", opp);
+		__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
+		do_check = 0;
 	}
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);
@@ -540,6 +550,8 @@ int spm_vcorefs_set_dvfs_hpm_force(int opp, int vcore, int ddr)
 			spm_vcorefs_err("wait complete timeout(opp:%d)\n", opp);
 			spm_vcorefs_dump_dvfs_regs(NULL);
 			spm_vcorefs_aee_warn("set_hpm_force_complete_timeout(opp:%d)\n", opp);
+			__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
+			do_check = 0;
 		}
 	}
 
@@ -551,7 +563,8 @@ int spm_vcorefs_set_dvfs_hpm_force(int opp, int vcore, int ddr)
 		if (r < 0) {
 			spm_vcorefs_err("chk result fail opp:%d\n", opp);
 			spm_vcorefs_dump_dvfs_regs(NULL);
-			BUG();
+			if (do_check)
+				BUG();
 		}
 	}
 
@@ -568,14 +581,17 @@ int spm_vcorefs_set_dvfs_hpm(int opp, int vcore, int ddr)
 	int r = 0;
 	unsigned long flags;
 	int timeout = SPM_DVFS_TIMEOUT;
+	int do_check = 1;
 
-	bool is_total_bw_enabled;
+	bool is_total_bw_enabled = false;
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_ENTER);
 
-	/* disable total bw for dvfs result check */
-	is_total_bw_enabled = _get_total_bw_enable();
-	spm_vcorefs_enable_total_bw(false);
+	if (opp == OPPI_PERF) {
+		/* disable total bw for dvfs result check */
+		is_total_bw_enabled = _get_total_bw_enable();
+		spm_vcorefs_enable_total_bw(false);
+	}
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
@@ -584,6 +600,8 @@ int spm_vcorefs_set_dvfs_hpm(int opp, int vcore, int ddr)
 		spm_vcorefs_err("wait idle timeout(opp:%d)\n", opp);
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		spm_vcorefs_aee_warn("set_hpm_waitidle_timeout(opp:%d)\n", opp);
+		__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
+		do_check = 0;
 	}
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);
@@ -610,6 +628,8 @@ int spm_vcorefs_set_dvfs_hpm(int opp, int vcore, int ddr)
 			spm_vcorefs_err("wait complete timeout(opp:%d)\n", opp);
 			spm_vcorefs_dump_dvfs_regs(NULL);
 			spm_vcorefs_aee_warn("set_hpm_complete_timeout(opp:%d)\n", opp);
+			__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
+			do_check = 0;
 		}
 	}
 
@@ -621,15 +641,20 @@ int spm_vcorefs_set_dvfs_hpm(int opp, int vcore, int ddr)
 		if (r < 0) {
 			spm_vcorefs_err("chk result fail opp:%d\n", opp);
 			spm_vcorefs_dump_dvfs_regs(NULL);
-			BUG();
+			if (do_check)
+				BUG();
 		}
 	}
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_LEAVE);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
-	/* restore to orignal total bw setting */
-	spm_vcorefs_enable_total_bw(is_total_bw_enabled);
+	if (opp == OPPI_PERF) {
+		/* keep hpm at least 1ms */
+		udelay(SPM_HPM_HOLD_TIME);
+		/* restore to orignal total bw setting */
+		spm_vcorefs_enable_total_bw(is_total_bw_enabled);
+	}
 
 	return (r > 0) ? 0 : r;
 }
@@ -640,6 +665,7 @@ int spm_vcorefs_set_dvfs_lpm_force(int opp, int vcore, int ddr)
 	int r = 0;
 	unsigned long flags;
 	int timeout = SPM_DVFS_TIMEOUT;
+	int do_check = 1;
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_ENTER);
 
@@ -650,6 +676,8 @@ int spm_vcorefs_set_dvfs_lpm_force(int opp, int vcore, int ddr)
 		spm_vcorefs_err("wait idle timeout(opp:%d)\n", opp);
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		spm_vcorefs_aee_warn("set_lpm_force_waitidle_timeout(opp:%d)\n", opp);
+		__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
+		do_check = 0;
 	}
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);
@@ -670,6 +698,8 @@ int spm_vcorefs_set_dvfs_lpm_force(int opp, int vcore, int ddr)
 			spm_vcorefs_err("wait complete timeout(opp:%d)\n", opp);
 			spm_vcorefs_dump_dvfs_regs(NULL);
 			spm_vcorefs_aee_warn("set_lpm_force_complete_timeout(opp:%d)\n", opp);
+			__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
+			do_check = 0;
 		}
 	}
 
@@ -681,7 +711,8 @@ int spm_vcorefs_set_dvfs_lpm_force(int opp, int vcore, int ddr)
 		if (r < 0) {
 			spm_vcorefs_err("chk result fail opp:%d\n", opp);
 			spm_vcorefs_dump_dvfs_regs(NULL);
-			BUG();
+			if (do_check)
+				BUG();
 		}
 	}
 

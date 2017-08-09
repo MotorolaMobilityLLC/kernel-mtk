@@ -820,10 +820,9 @@ struct dvfs_func {
 
 static struct dvfs_func spm_dvfs_func_list[] = {
 	{spm_vcorefs_set_dvfs_hpm_force,
-	 (1 << KIR_MM_16MCAM | 1 << KIR_SDIO | 1 << KIR_SYSFS | 1 << KIR_PERF), "set hpm_force"},
+	 (1 << KIR_MM_16MCAM | 1 << KIR_SDIO | 1 << KIR_SYSFS | 1 << KIR_PERF | 1 << KIR_OVL), "set hpm_force"},
 	{spm_vcorefs_set_dvfs_hpm, (1 << KIR_MM_WFD | 1 << KIR_MM_MHL | 1 << KIR_SYSFS_N),
 	 "set hpm"},
-	{spm_vcorefs_set_total_bw, (1 << KIR_OVL), "set total_bw_mask"},
 	{vcorefs_release_hpm, (1 << KIR_LATE_INIT), "clear hpm_lpm_forced"},
 	{vcorefs_handle_kir_sysfsx_req,
 	 (1 << KIR_SYSFSX | (1 << KIR_AUTOK_EMMC | 1 << KIR_AUTOK_SDIO | 1 << KIR_AUTOK_SD)),
@@ -985,13 +984,13 @@ int vcorefs_late_init_dvfs(void)
 	/* spm_vcorefs_set_opp_state(gvrctrl->boot_up_opp); */
 	/* spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0); */
 	plat_init_opp = gvrctrl->late_init_opp;
-	/* if (plat_init_opp != gvrctrl->boot_up_opp) { */
-	/* set to late init opp */
-	krconf.kicker = KIR_LATE_INIT;
-	krconf.opp = plat_init_opp;
-	krconf.dvfs_opp = plat_init_opp;
-	kick_dvfs_by_opp_index(&krconf);
-	/* } */
+	if (is_vcorefs_feature_enable()) {
+		/* set to late init opp */
+		krconf.kicker = KIR_LATE_INIT;
+		krconf.opp = plat_init_opp;
+		krconf.dvfs_opp = plat_init_opp;
+		kick_dvfs_by_opp_index(&krconf);
+	}
 
 	mutex_unlock(&governor_mutex);
 	/* inform manager for governor init down */

@@ -8,27 +8,6 @@
 #include "mt_spm_vcore_dvfs.h"
 #include "mt_spm.h"
 
-/* todo */
-__weak u32 aee_rr_curr_vcore_dvfs_opp(void)
-{
-	return 0;
-}
-
-__weak u32 aee_rr_curr_vcore_dvfs_status(void)
-{
-	return 0;
-}
-
-__weak void aee_rr_rec_vcore_dvfs_opp(u32 opp)
-{
-}
-
-__weak void aee_rr_rec_vcore_dvfs_status(u32 status)
-{
-}
-
-/* end of todo */
-
 static DEFINE_MUTEX(vcorefs_mutex);
 
 #define DEFINE_ATTR_RO(_name)			\
