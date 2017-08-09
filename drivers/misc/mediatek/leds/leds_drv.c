@@ -54,7 +54,7 @@ struct mt65xx_led_data *g_leds_data[MT65XX_LED_TYPE_TOTAL];
 #ifdef BACKLIGHT_SUPPORT_LP8557
 static unsigned int last_level1 = 102;
 static struct i2c_client *g_client;
-static int I2C_SET_FOR_BACKLIGHT  = 149;
+static int I2C_SET_FOR_BACKLIGHT  = 350;
 #endif
 /****************************************************************************
  * DEBUG MACROS
@@ -217,14 +217,22 @@ static void mt65xx_led_set(struct led_classdev *led_cdev,
 {
 	struct mt65xx_led_data *led_data =
 	    container_of(led_cdev, struct mt65xx_led_data, cdev);
-	#ifdef BACKLIGHT_SUPPORT_LP8557
+#ifdef BACKLIGHT_SUPPORT_LP8557
 	bool flag = FALSE;
 	int value = 0;
 	int retval;
+	struct device_node *node = NULL;
 	struct i2c_client *client = g_client;
 	value = i2c_smbus_read_byte_data(g_client, 0x10);
 	LEDS_DRV_DEBUG("LEDS:mt65xx_led_set:0x10 = %d\n", value);
-	#endif
+
+	node = of_find_compatible_node(NULL, NULL,
+						    "mediatek,lcd-backlight");
+	if (node) {
+		I2C_SET_FOR_BACKLIGHT = of_get_named_gpio(node, "gpios", 0);
+		LEDS_DRV_DEBUG("Led_i2c gpio num for power:%d\n", I2C_SET_FOR_BACKLIGHT);
+	}
+#endif
 	if (strcmp(led_data->cust.name, "lcd-backlight") == 0) {
 #ifdef CONTROL_BL_TEMPERATURE
 		mutex_lock(&bl_level_limit_mutex);
@@ -244,21 +252,19 @@ static void mt65xx_led_set(struct led_classdev *led_cdev,
 		mutex_unlock(&bl_level_limit_mutex);
 #endif
 	}
-	#ifdef BACKLIGHT_SUPPORT_LP8557
+#ifdef BACKLIGHT_SUPPORT_LP8557
+	retval = gpio_request(I2C_SET_FOR_BACKLIGHT, "i2c_set_for_backlight");
+	if (retval)
+		LEDS_DRV_DEBUG("LEDS: request I2C gpio149 failed\n");
+
 	if (strcmp(led_data->cust.name, "lcd-backlight") == 0) {
 		if (level == 0) {
 			LEDS_DRV_DEBUG("LEDS:mt65xx_led_set:close the power\n");
 			i2c_smbus_write_byte_data(client, 0x00, 0);
-			retval = gpio_request(I2C_SET_FOR_BACKLIGHT, "i2c_set_for_backlight");
-			if (retval)
-				LEDS_DRV_DEBUG("LEDS: request I2C gpio149 failed\n");
 			gpio_direction_output(I2C_SET_FOR_BACKLIGHT, 0);
 		}
 		if (!last_level1 && level) {
 			LEDS_DRV_DEBUG("LEDS:mt65xx_led_set:open the power\n");
-			retval = gpio_request(I2C_SET_FOR_BACKLIGHT, "i2c_set_for_backlight");
-			if (retval)
-				LEDS_DRV_DEBUG("LEDS: request I2C gpio149 failed\n");
 			gpio_direction_output(I2C_SET_FOR_BACKLIGHT, 1);
 			mdelay(100);
 			i2c_smbus_write_byte_data(client, 0x10, 4);
@@ -266,9 +272,10 @@ static void mt65xx_led_set(struct led_classdev *led_cdev,
 		}
 		last_level1 = level;
 	}
-	#endif
+	gpio_free(I2C_SET_FOR_BACKLIGHT);
+#endif
 	mt_mt65xx_led_set(led_cdev, level);
-	#ifdef BACKLIGHT_SUPPORT_LP8557
+#ifdef BACKLIGHT_SUPPORT_LP8557
 	if (strcmp(led_data->cust.name, "lcd-backlight") == 0) {
 		if (flag) {
 			i2c_smbus_write_byte_data(client, 0x14, 0xdf);
@@ -276,7 +283,7 @@ static void mt65xx_led_set(struct led_classdev *led_cdev,
 			i2c_smbus_write_byte_data(client, 0x00, 1);
 		}
 	}
-	#endif
+#endif
 }
 
 static int mt65xx_blink_set(struct led_classdev *led_cdev,
@@ -294,7 +301,25 @@ static int mt65xx_blink_set(struct led_classdev *led_cdev,
 int mt65xx_leds_brightness_set(enum mt65xx_led_type type,
 			       enum led_brightness level)
 {
+	int val;
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
+#ifdef BACKLIGHT_SUPPORT_LP8557
+	bool flag = FALSE;
+	int value = 0;
+	int retval;
+	struct device_node *node = NULL;
+	struct i2c_client *client = g_client;
+
+	value = i2c_smbus_read_byte_data(g_client, 0x10);
+	LEDS_DRV_DEBUG("LEDS:mt65xx_led_set:0x10 = %d\n", value);
+
+	node = of_find_compatible_node(NULL, NULL,
+						    "mediatek,lcd-backlight");
+	if (node) {
+		I2C_SET_FOR_BACKLIGHT = of_get_named_gpio(node, "gpios", 0);
+		LEDS_DRV_DEBUG("Led_i2c gpio num for power:%d\n", I2C_SET_FOR_BACKLIGHT);
+	}
+#endif
 
 	LEDS_DRV_DEBUG("#%d:%d\n", type, level);
 
@@ -306,8 +331,40 @@ int mt65xx_leds_brightness_set(enum mt65xx_led_type type,
 	else if (level < 0)
 		level = 0;
 
-	return mt65xx_led_set_cust(&cust_led_list[type], level);
+#ifdef BACKLIGHT_SUPPORT_LP8557
+	retval = gpio_request(I2C_SET_FOR_BACKLIGHT, "i2c_set_for_backlight");
+	if (retval)
+		LEDS_DRV_DEBUG("LEDS: request I2C gpio149 failed\n");
 
+	if (strcmp(cust_led_list[type].name, "lcd-backlight") == 0) {
+		if (level == 0) {
+
+			i2c_smbus_write_byte_data(client, 0x00, 0);
+			gpio_direction_output(I2C_SET_FOR_BACKLIGHT, 0);
+		}
+		if (!last_level1 && level) {
+
+			gpio_direction_output(I2C_SET_FOR_BACKLIGHT, 1);
+			mdelay(100);
+			i2c_smbus_write_byte_data(client, 0x10, 4);
+			flag = TRUE;
+		}
+		last_level1 = level;
+	}
+	gpio_free(I2C_SET_FOR_BACKLIGHT);
+#endif
+
+	val = mt65xx_led_set_cust(&cust_led_list[type], level);
+#ifdef BACKLIGHT_SUPPORT_LP8557
+	if (strcmp(cust_led_list[type].name, "lcd-backlight") == 0) {
+		if (flag) {
+			i2c_smbus_write_byte_data(client, 0x14, 0xdf);
+			i2c_smbus_write_byte_data(client, 0x04, 0xff);
+			i2c_smbus_write_byte_data(client, 0x00, 1);
+		}
+	}
+#endif
+	return val;
 }
 EXPORT_SYMBOL(mt65xx_leds_brightness_set);
 
@@ -574,18 +631,11 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 	int ret;/* rc; */
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
 	#ifdef BACKLIGHT_SUPPORT_LP8557
-	struct device_node *node = NULL;
 
 	/*i2c_register_board_info(4, &leds_board_info, 1);*/
 	if (i2c_add_driver(&led_i2c_driver)) {
 		LEDS_DRV_DEBUG("unable to add led-i2c driver.\n");
 		return -1;
-	}
-	node = of_find_compatible_node(NULL, NULL,
-						    "mediatek,lcd-backlight");
-	if (node) {
-		I2C_SET_FOR_BACKLIGHT = of_get_named_gpio(node, "gpios", 0);
-		LEDS_DRV_DEBUG("Led_i2c gpio num for power:%d\n", I2C_SET_FOR_BACKLIGHT);
 	}
 	#endif
 	LEDS_DRV_DEBUG("%s\n", __func__);
