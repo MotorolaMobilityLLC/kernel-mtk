@@ -92,12 +92,6 @@ extern int musb_skip_charge_detect;
 extern int musb_is_shutting;
 extern int musb_removed;
 
-extern struct usb_ep *ep_in;
-extern struct usb_ep *ep_out;
-extern int bitdebug_enabled;
-extern unsigned bitdebug_writeCnt;
-extern unsigned bitdebug_readCnt;
-
 extern unsigned musb_uart_debug;
 extern struct musb *mtk_musb;
 extern bool mtk_usb_power;
