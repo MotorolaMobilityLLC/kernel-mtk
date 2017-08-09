@@ -24,11 +24,22 @@ void __attribute__((weak))  mt_spm_pmic_wrap_set_phase(enum pmic_wrap_phase_id p
 
 void spm_dpidle_pre_process(void)
 {
+	u32 value = 0;
+
 	__spm_pmic_pg_force_on();
 
 	spm_pmic_power_mode(PMIC_PWR_DEEPIDLE, 0, 0);
 
 	spm_bypass_boost_gpio_set();
+
+	value = 0;
+	pmic_read_interface_nolock(MT6351_TOP_CON, &value, 0x037F, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+								IDX_DI_SRCCLKEN_IN2_NORMAL,
+								value | (1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+								IDX_DI_SRCCLKEN_IN2_SLEEP,
+								value & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
 
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);
