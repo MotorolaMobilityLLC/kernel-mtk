@@ -3784,6 +3784,15 @@ static unsigned int msdc_command_resp_polling(struct msdc_host *host,
 				break;
 			default:	/* Response types 1, 3, 4, 5, 6, 7(1b) */
 				*rsp = sdr_read32(SDC_RESP0);
+				/* workaround for latch error */
+				if (((cmd->opcode == 13) || (cmd->opcode == 25)) && (*rsp & R1_OUT_OF_RANGE)
+					&& (host->hw->host_function == MSDC_EMMC)) {
+					pr_err("[%s]: msdc%d XXX CMD<%d> resp<0x%.8x>,bit31=1,force make crc error\n",
+						__func__, host->id, cmd->opcode, *rsp);
+					cmd->error = (unsigned int)-EIO;
+					if (cmd->opcode == 25)
+						msdc_reset_hw(host->id);
+				}
 				break;
 			}
 		} else if (intsts & MSDC_INT_RSPCRCERR) {
@@ -3792,10 +3801,8 @@ static unsigned int msdc_command_resp_polling(struct msdc_host *host,
 				__func__, host->id, cmd->opcode, cmd->arg);
 			if ((MMC_RSP_R1B == mmc_resp_type(cmd))
 				&& (host->hw->host_function != MSDC_SDIO)) {
-				pr_err("[%s]: msdc%d XXX CMD<%d> ARG<0x%.8X> CRC not reset hw\n",
+				pr_err("[%s]: msdc%d XXX CMD<%d> ARG<0x%.8X> is R1B, CRC not reset hw...\n",
 					__func__, host->id, cmd->opcode, cmd->arg);
-			} else if (cmd->opcode == 13) {
-				pr_err("XXX CMD<13>CRC not reset hw...\n");
 			} else {
 				msdc_reset_hw(host->id);
 			}
@@ -3808,12 +3815,10 @@ static unsigned int msdc_command_resp_polling(struct msdc_host *host,
 				msdc_dump_info(host->id);
 			if ((cmd->opcode == 5) && emmc_do_sleep_awake)
 				msdc_dump_info(host->id);
-			if ((MMC_RSP_R1B == mmc_resp_type(cmd))
+			if (((MMC_RSP_R1B == mmc_resp_type(cmd)) || (cmd->opcode == 13))
 				&& (host->hw->host_function != MSDC_SDIO)) {
-				pr_err("[%s]: msdc%d XXX CMD<%d> ARG<0x%.8X> TMO not reset hw\n",
+				pr_err("[%s]: msdc%d XXX CMD<%d> ARG<0x%.8X> is R1B, TMO not reset hw...\n",
 					__func__, host->id, cmd->opcode, cmd->arg);
-			} else if (cmd->opcode == 13) {
-				pr_err("XXX CMD<13>CRC not reset hw...\n");
 			} else {
 				msdc_reset_hw(host->id);
 			}
@@ -5959,7 +5964,7 @@ int hs400_restore_cmd_tune(int restore)
 		base = mtk_msdc_host[0]->base;
 		if (!restore) {
 			sdr_set_field(EMMC50_PAD_CMD_TUNE, MSDC_EMMC50_PAD_CMD_TUNE_TXDLY,
-				0x8);
+				0x4);
 		}
 	}
 	return 0;
@@ -7519,6 +7524,8 @@ static void msdc_apply_ett_settings(struct msdc_host *host, int mode)
 		sdr_get_field(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3,
 			host->saved_para.ds_dly3);
 	}
+	/* workaround for denali */
+	sdr_set_field(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, 0);
 }
 
 /* ops.set_ios */
