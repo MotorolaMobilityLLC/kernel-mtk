@@ -233,20 +233,22 @@ static int primary_resume_kthread(void *data)
 	pr_warn("primary_resume_kthread in!\n");
 	for ( ; ; ) {
 		wait_event_interruptible(primary_resume_wq, atomic_read(&primary_resume_event));
-		atomic_set(&primary_resume_event, 0);
 		if (is_hdmi_plug_out_valid() && !is_early_suspended) {
 			g_suspend_flag = 1;
 			clr_hdmi_plug_out_valid();
 			pr_warn("primary_resume_kthread: hdmi plug out,call primary_resume\n");
 			msleep(30);
 			primary_display_resume();
+			atomic_set(&primary_resume_event, 0);
 			msleep(700);
 			g_suspend_flag = 0;
 #if  defined(CONFIG_MTK_LEDS)
 			mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_HALF);
 #endif
-		} else
+		} else {
+			atomic_set(&primary_resume_event, 0);
 			pr_warn("primary_resume_kthread: hdmi not plug out--skip primary_resume\n");
+		}
 		if (kthread_should_stop())
 			break;
 	}
@@ -482,7 +484,11 @@ int external_display_switch_mode(DISP_MODE mode, unsigned int *session_created, 
 		return ret;
 	}
 
-	if (path_info.switching < DEV_MAX_NUM) {
+	if (path_info.switching < DEV_MAX_NUM
+#ifdef CONFIG_SINGLE_PANEL_OUTPUT
+		|| (atomic_read(&primary_resume_event) == 1)
+#endif
+		) {
 		/*mode is switching, return directly*/
 		return ret;
 	}
