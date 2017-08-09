@@ -117,6 +117,7 @@ static bool mt_dvfsp_paused_by_idle;
 
 #define NR_CMD_BUF		128
 #define LOG_BUF_LEN		500
+#define DBG_BUF_LEN		4096
 
 /* FIXME: early porting */
 #if 1
@@ -2252,7 +2253,7 @@ void mt_idle_init(void)
 /***************************/
 /* debugfs                 */
 /***************************/
-static char dbg_buf[4096] = { 0 };
+static char dbg_buf[DBG_BUF_LEN] = { 0 };
 static char cmd_buf[512] = { 0 };
 
 /* idle_state */
@@ -2273,33 +2274,38 @@ static ssize_t idle_state_read(struct file *filp,
 	char *p = dbg_buf;
 	int i;
 
-	p += sprintf(p, "********** idle state dump **********\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "********** idle state dump **********\n");
 
 	for (i = 0; i < nr_cpu_ids; i++) {
-		p += sprintf(p, "dpidle_cnt[%d]=%lu, dpidle_26m[%d]=%lu, soidle3_cnt[%d]=%lu, soidle_cnt[%d]=%lu, ",
-				i, dpidle_cnt[i], i, dpidle_f26m_cnt[i], i, soidle3_cnt[i], i, soidle_cnt[i]);
-		p += sprintf(p, "mcidle_cnt[%d]=%lu, slidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n",
-				i, mcidle_cnt[i], i, slidle_cnt[i], i, rgidle_cnt[i]);
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+			      "dpidle_cnt[%d]=%lu, dpidle_26m[%d]=%lu, soidle3_cnt[%d]=%lu, soidle_cnt[%d]=%lu, ",
+			      i, dpidle_cnt[i], i, dpidle_f26m_cnt[i], i, soidle3_cnt[i], i, soidle_cnt[i]);
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+			      "mcidle_cnt[%d]=%lu, slidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n",
+			      i, mcidle_cnt[i], i, slidle_cnt[i], i, rgidle_cnt[i]);
 	}
 
-	p += sprintf(p, "\n********** variables dump **********\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n********** variables dump **********\n");
 	for (i = 0; i < NR_TYPES; i++)
-		p += sprintf(p, "%s_switch=%d, ", idle_name[i], idle_switch[i]);
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "%s_switch=%d, ", idle_name[i], idle_switch[i]);
 
-	p += sprintf(p, "\n");
-	p += sprintf(p, "idle_ratio_en = %u\n", idle_ratio_en);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "idle_ratio_en = %u\n", idle_ratio_en);
 
-	p += sprintf(p, "\n********** idle command help **********\n");
-	p += sprintf(p, "status help:   cat /sys/kernel/debug/cpuidle/idle_state\n");
-	p += sprintf(p, "switch on/off: echo switch mask > /sys/kernel/debug/cpuidle/idle_state\n");
-	p += sprintf(p, "idle ratio profile: echo ratio 1/0 > /sys/kernel/debug/cpuidle/idle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n********** idle command help **********\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "status help:   cat /sys/kernel/debug/cpuidle/idle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "switch on/off: echo switch mask > /sys/kernel/debug/cpuidle/idle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "idle ratio profile: echo ratio 1/0 > /sys/kernel/debug/cpuidle/idle_state\n");
 
-	p += sprintf(p, "soidle3 help:   cat /sys/kernel/debug/cpuidle/soidle3_state\n");
-	p += sprintf(p, "soidle help:   cat /sys/kernel/debug/cpuidle/soidle_state\n");
-	p += sprintf(p, "dpidle help:   cat /sys/kernel/debug/cpuidle/dpidle_state\n");
-	p += sprintf(p, "mcidle help:   cat /sys/kernel/debug/cpuidle/mcidle_state\n");
-	p += sprintf(p, "slidle help:   cat /sys/kernel/debug/cpuidle/slidle_state\n");
-	p += sprintf(p, "rgidle help:   cat /sys/kernel/debug/cpuidle/rgidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "soidle3 help:   cat /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle help:   cat /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "dpidle help:   cat /sys/kernel/debug/cpuidle/dpidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "mcidle help:   cat /sys/kernel/debug/cpuidle/mcidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "slidle help:   cat /sys/kernel/debug/cpuidle/slidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "rgidle help:   cat /sys/kernel/debug/cpuidle/rgidle_state\n");
 
 	len = p - dbg_buf;
 
@@ -2364,22 +2370,25 @@ static ssize_t mcidle_state_read(struct file *filp, char __user *userbuf, size_t
 	char *p = dbg_buf;
 	int cpus, reason;
 
-	p += sprintf(p, "*********** deep idle state ************\n");
-	p += sprintf(p, "mcidle_time_critera=%u\n", mcidle_time_critera);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "*********** deep idle state ************\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "mcidle_time_critera=%u\n", mcidle_time_critera);
 
 	for (cpus = 0; cpus < nr_cpu_ids; cpus++) {
-		p += sprintf(p, "cpu:%d\n", cpus);
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "cpu:%d\n", cpus);
 		for (reason = 0; reason < NR_REASONS; reason++) {
-			p += sprintf(p, "[%d]mcidle_block_cnt[%s]=%lu\n", reason,
+			p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[%d]mcidle_block_cnt[%s]=%lu\n", reason,
 				     reason_name[reason], mcidle_block_cnt[cpus][reason]);
 		}
-		p += sprintf(p, "\n");
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
 	}
 
-	p += sprintf(p, "\n********** mcidle command help **********\n");
-	p += sprintf(p, "mcidle help:   cat /sys/kernel/debug/cpuidle/mcidle_state\n");
-	p += sprintf(p, "switch on/off: echo [mcidle] 1/0 > /sys/kernel/debug/cpuidle/mcidle_state\n");
-	p += sprintf(p, "modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/mcidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n********** mcidle command help **********\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "mcidle help:   cat /sys/kernel/debug/cpuidle/mcidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "switch on/off: echo [mcidle] 1/0 > /sys/kernel/debug/cpuidle/mcidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/mcidle_state\n");
 
 	len = p - dbg_buf;
 
@@ -2443,48 +2452,58 @@ static ssize_t dpidle_state_read(struct file *filp, char __user *userbuf, size_t
 	int i;
 	int k;
 
-	p += sprintf(p, "*********** deep idle state ************\n");
-	p += sprintf(p, "dpidle_time_critera=%u\n", dpidle_time_critera);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "*********** deep idle state ************\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "dpidle_time_critera=%u\n", dpidle_time_critera);
 
 	for (i = 0; i < NR_REASONS; i++) {
-		p += sprintf(p, "[%d]dpidle_block_cnt[%s]=%lu\n", i, reason_name[i],
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[%d]dpidle_block_cnt[%s]=%lu\n", i, reason_name[i],
 				dpidle_block_cnt[i]);
 	}
 
-	p += sprintf(p, "\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
 
 	for (i = 0; i < NR_GRPS; i++) {
-		p += sprintf(p, "[%02d]dpidle_condition_mask[%-8s]=0x%08x\t\tdpidle_block_mask[%-8s]=0x%08x\n", i,
-				cg_grp_get_name(i), dpidle_condition_mask[i],
-				cg_grp_get_name(i), dpidle_block_mask[i]);
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+			      "[%02d]dpidle_condition_mask[%-8s]=0x%08x\t\tdpidle_block_mask[%-8s]=0x%08x\n", i,
+			      cg_grp_get_name(i), dpidle_condition_mask[i],
+			      cg_grp_get_name(i), dpidle_block_mask[i]);
 	}
 
 	for (i = 0; i < NR_GRPS; i++) {
-		p += sprintf(p, "[%-8s]\n", cg_grp_get_name(i));
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[%-8s]\n", cg_grp_get_name(i));
 
 		for (k = 0; k < 32; k++) {
 			if (dpidle_blocking_stat[i][k] != 0)
-				p += sprintf(p, "%-2d: %d\n", k, dpidle_blocking_stat[i][k]);
+				p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "%-2d: %d\n",
+					      k, dpidle_blocking_stat[i][k]);
 		}
 	}
 	for (i = 0; i < NR_GRPS; i++)
 		for (k = 0; k < 32; k++)
 			dpidle_blocking_stat[i][k] = 0;
 
-	p += sprintf(p, "dpidle_by_pass_cg=%u\n", dpidle_by_pass_cg);
-	p += sprintf(p, "dpidle_by_pass_i2c_appm_cg=%u\n", dpidle_by_pass_i2c_appm_cg);
-	p += sprintf(p, "dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);
-	p += sprintf(p, "dpidle_dump_log = %u\n", dpidle_dump_log);
-	p += sprintf(p, "(0: None, 1: Reduced, 2: Full\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "dpidle_by_pass_cg=%u\n", dpidle_by_pass_cg);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "dpidle_by_pass_i2c_appm_cg=%u\n",
+		      dpidle_by_pass_i2c_appm_cg);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "dpidle_by_pass_pg=%u\n", dpidle_by_pass_pg);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "dpidle_dump_log = %u\n", dpidle_dump_log);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "(0: None, 1: Reduced, 2: Full\n");
 
-	p += sprintf(p, "\n*********** dpidle command help  ************\n");
-	p += sprintf(p, "dpidle help:   cat /sys/kernel/debug/cpuidle/dpidle_state\n");
-	p += sprintf(p, "switch on/off: echo [dpidle] 1/0 > /sys/kernel/debug/cpuidle/dpidle_state\n");
-	p += sprintf(p, "cpupdn on/off: echo cpupdn 1/0 > /sys/kernel/debug/cpuidle/dpidle_state\n");
-	p += sprintf(p, "en_dp_by_bit:  echo enable id > /sys/kernel/debug/cpuidle/dpidle_state\n");
-	p += sprintf(p, "dis_dp_by_bit: echo disable id > /sys/kernel/debug/cpuidle/dpidle_state\n");
-	p += sprintf(p, "modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/dpidle_state\n");
-	p += sprintf(p, "bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/dpidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n*********** dpidle command help  ************\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "dpidle help:   cat /sys/kernel/debug/cpuidle/dpidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "switch on/off: echo [dpidle] 1/0 > /sys/kernel/debug/cpuidle/dpidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "cpupdn on/off: echo cpupdn 1/0 > /sys/kernel/debug/cpuidle/dpidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "en_dp_by_bit:  echo enable id > /sys/kernel/debug/cpuidle/dpidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "dis_dp_by_bit: echo disable id > /sys/kernel/debug/cpuidle/dpidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/dpidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/dpidle_state\n");
 
 	len = p - dbg_buf;
 
@@ -2562,53 +2581,65 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	char *p = dbg_buf;
 	int i;
 
-	p += sprintf(p, "*********** soidle3 state ************\n");
-	p += sprintf(p, "soidle3_time_critera=%u\n", soidle3_time_critera);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "*********** soidle3 state ************\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle3_time_critera=%u\n", soidle3_time_critera);
 
 	for (i = 0; i < NR_REASONS; i++) {
-		p += sprintf(p,
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 			"[%d]soidle3_block_cnt[%s]=%lu\n",
 			i, reason_name[i], soidle3_block_cnt[i]);
 	}
 
-	p += sprintf(p, "\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
 
 	for (i = 0; i < NR_PLLS; i++) {
-		p += sprintf(p,
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 			"[%02d]soidle3_pll_condition_mask[%-8s]=0x%08x\t\tsoidle3_pll_block_mask[%-8s]=0x%08x\n",
 			i,
 			pll_grp_get_name(i), soidle3_pll_condition_mask[i],
 			pll_grp_get_name(i), soidle3_pll_block_mask[i]);
 	}
 
-	p += sprintf(p, "\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
 
 	for (i = 0; i < NR_GRPS; i++) {
-		p += sprintf(p,
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 			"[%02d]soidle3_condition_mask[%-8s]=0x%08x\t\tsoidle3_block_mask[%-8s]=0x%08x\n",
 			i,
 			cg_grp_get_name(i), soidle3_condition_mask[i],
 			cg_grp_get_name(i), soidle3_block_mask[i]);
 	}
 
-	p += sprintf(p, "soidle3_bypass_pll=%u\n", soidle3_by_pass_pll);
-	p += sprintf(p, "soidle3_bypass_cg=%u\n", soidle3_by_pass_cg);
-	p += sprintf(p, "soidle3_by_pass_i2c_appm_cg=%u\n", soidle3_by_pass_i2c_appm_cg);
-	p += sprintf(p, "soidle3_bypass_en=%u\n", soidle3_by_pass_en);
-	p += sprintf(p, "sodi3_flags=0x%x\n", sodi3_flags);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle3_bypass_pll=%u\n", soidle3_by_pass_pll);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle3_bypass_cg=%u\n", soidle3_by_pass_cg);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "soidle3_by_pass_i2c_appm_cg=%u\n", soidle3_by_pass_i2c_appm_cg);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle3_bypass_en=%u\n", soidle3_by_pass_en);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "sodi3_flags=0x%x\n", sodi3_flags);
 
-	p += sprintf(p, "\n*********** soidle3 command help  ************\n");
-	p += sprintf(p, "soidle3 help:  cat /sys/kernel/debug/cpuidle/soidle3_state\n");
-	p += sprintf(p, "switch on/off: echo [soidle3] 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
-	p += sprintf(p, "cpupdn on/off: echo cpupdn 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
-	p += sprintf(p, "en_dp_by_bit:  echo enable id > /sys/kernel/debug/cpuidle/soidle3_state\n");
-	p += sprintf(p, "dis_dp_by_bit: echo disable id > /sys/kernel/debug/cpuidle/soidle3_state\n");
-	p += sprintf(p, "modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle3_state\n");
-	p += sprintf(p, "bypass pll:    echo bypass_pll 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
-	p += sprintf(p, "bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
-	p += sprintf(p, "bypass appm:   echo bypass_appm 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
-	p += sprintf(p, "bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
-	p += sprintf(p, "sodi3 flags:   echo sodi3_flags value > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n*********** soidle3 command help  ************\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "soidle3 help:  cat /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "switch on/off: echo [soidle3] 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "cpupdn on/off: echo cpupdn 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "en_dp_by_bit:  echo enable id > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "dis_dp_by_bit: echo disable id > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "bypass pll:    echo bypass_pll 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "bypass appm:   echo bypass_appm 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "sodi3 flags:   echo sodi3_flags value > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	len = p - dbg_buf;
 
 	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
@@ -2688,45 +2719,55 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	char *p = dbg_buf;
 	int i;
 
-	p += sprintf(p, "*********** soidle state ************\n");
-	p += sprintf(p, "soidle_time_critera=%u\n", soidle_time_critera);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "*********** soidle state ************\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle_time_critera=%u\n", soidle_time_critera);
 
 	for (i = 0; i < NR_REASONS; i++) {
-		p += sprintf(p,
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 			"[%d]soidle_block_cnt[%s]=%lu\n",
 			i, reason_name[i], soidle_block_cnt[i]);
 	}
 
-	p += sprintf(p, "\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
 
 	for (i = 0; i < NR_GRPS; i++) {
-		p += sprintf(p,
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 			"[%02d]soidle_condition_mask[%-8s]=0x%08x\t\tsoidle_block_mask[%-8s]=0x%08x\n",
 			i,
 			cg_grp_get_name(i), soidle_condition_mask[i],
 			cg_grp_get_name(i), soidle_block_mask[i]);
 	}
 
-	p += sprintf(p, "soidle_bypass_cg=%u\n", soidle_by_pass_cg);
-	p += sprintf(p, "soidle_by_pass_i2c_appm_cg=%u\n", soidle_by_pass_i2c_appm_cg);
-	p += sprintf(p, "soidle_by_pass_pg=%u\n", soidle_by_pass_pg);
-	p += sprintf(p, "soidle_bypass_en=%u\n", soidle_by_pass_en);
-	p += sprintf(p, "sodi_flags=0x%x\n", sodi_flags);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle_bypass_cg=%u\n", soidle_by_pass_cg);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle_by_pass_i2c_appm_cg=%u\n", soidle_by_pass_i2c_appm_cg);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle_by_pass_pg=%u\n", soidle_by_pass_pg);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "soidle_bypass_en=%u\n", soidle_by_pass_en);
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "sodi_flags=0x%x\n", sodi_flags);
 #if defined(CONFIG_ARCH_MT6797)
-	p += sprintf(p, "sodi_fw=0x%x\n", get_sodi_fw_mode());
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "sodi_fw=0x%x\n", get_sodi_fw_mode());
 #endif
 
-	p += sprintf(p, "\n*********** soidle command help  ************\n");
-	p += sprintf(p, "soidle help:   cat /sys/kernel/debug/cpuidle/soidle_state\n");
-	p += sprintf(p, "switch on/off: echo [soidle] 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
-	p += sprintf(p, "cpupdn on/off: echo cpupdn 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
-	p += sprintf(p, "en_dp_by_bit:  echo enable id > /sys/kernel/debug/cpuidle/soidle_state\n");
-	p += sprintf(p, "dis_dp_by_bit: echo disable id > /sys/kernel/debug/cpuidle/soidle_state\n");
-	p += sprintf(p, "modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle_state\n");
-	p += sprintf(p, "bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
-	p += sprintf(p, "bypass appm:   echo bypass_appm 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
-	p += sprintf(p, "bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
-	p += sprintf(p, "sodi flags:	echo sodi_flags value > /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n*********** soidle command help  ************\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "soidle help:   cat /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "switch on/off: echo [soidle] 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "cpupdn on/off: echo cpupdn 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "en_dp_by_bit:  echo enable id > /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "dis_dp_by_bit: echo disable id > /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "bypass appm:   echo bypass_appm 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "sodi flags:	echo sodi_flags value > /sys/kernel/debug/cpuidle/soidle_state\n");
 
 	len = p - dbg_buf;
 
@@ -2808,24 +2849,25 @@ static ssize_t slidle_state_read(struct file *filp, char __user *userbuf, size_t
 	char *p = dbg_buf;
 	int i;
 
-	p += sprintf(p, "*********** slow idle state ************\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "*********** slow idle state ************\n");
 	for (i = 0; i < NR_REASONS; i++) {
-		p += sprintf(p, "[%d]slidle_block_cnt[%s]=%lu\n",
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[%d]slidle_block_cnt[%s]=%lu\n",
 			     i, reason_name[i], slidle_block_cnt[i]);
 	}
 
-	p += sprintf(p, "\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
 
 	for (i = 0; i < NR_GRPS; i++) {
-		p += sprintf(p,
+		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 			     "[%02d]slidle_condition_mask[%-8s]=0x%08x\t\tslidle_block_mask[%-8s]=0x%08x\n",
 			     i, cg_grp_get_name(i), slidle_condition_mask[i], cg_grp_get_name(i),
 			     slidle_block_mask[i]);
 	}
 
-	p += sprintf(p, "\n********** slidle command help **********\n");
-	p += sprintf(p, "slidle help:   cat /sys/kernel/debug/cpuidle/slidle_state\n");
-	p += sprintf(p,
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n********** slidle command help **********\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		     "slidle help:   cat /sys/kernel/debug/cpuidle/slidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 		     "switch on/off: echo [slidle] 1/0 > /sys/kernel/debug/cpuidle/slidle_state\n");
 
 	len = p - dbg_buf;
@@ -2887,62 +2929,64 @@ static ssize_t reg_dump_read(struct file *filp, char __user *userbuf, size_t cou
 	int len = 0;
 	char *p = dbg_buf;
 
-	p += sprintf(p, "SPM_PWR_STATUS = 0x%08x\n", idle_readl(SPM_PWR_STATUS));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_PWR_STATUS = 0x%08x\n", idle_readl(SPM_PWR_STATUS));
 
-	p += sprintf(p, "SPM_MFG_PWR_CON = 0x%08x\n", idle_readl(SPM_MFG_PWR_CON));
-	p += sprintf(p, "SPM_ISP_PWR_CON = 0x%08x\n", idle_readl(SPM_ISP_PWR_CON));
-	p += sprintf(p, "SPM_VDE_PWR_CON = 0x%08x\n", idle_readl(SPM_VDE_PWR_CON));
-	p += sprintf(p, "SPM_VEN_PWR_CON = 0x%08x\n", idle_readl(SPM_VEN_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_MFG_PWR_CON = 0x%08x\n", idle_readl(SPM_MFG_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_ISP_PWR_CON = 0x%08x\n", idle_readl(SPM_ISP_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_VDE_PWR_CON = 0x%08x\n", idle_readl(SPM_VDE_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_VEN_PWR_CON = 0x%08x\n", idle_readl(SPM_VEN_PWR_CON));
 
-	p += sprintf(p, "DISP_CG_CON0 = 0x%08x\n", idle_readl(DISP_CG_CON0));
-	p += sprintf(p, "DISP_CG_CON1 = 0x%08x\n", idle_readl(DISP_CG_CON1));
-	p += sprintf(p, "MFG_CG_CON = 0x%08x\n", idle_readl(MFG_CG_CON));
-	p += sprintf(p, "IMG_CG_CON = 0x%08x\n", idle_readl(IMG_CG_CON));
-	p += sprintf(p, "VDEC_CG_CON_0 = 0x%08x\n", idle_readl(VDEC_CG_CON_0));
-	p += sprintf(p, "VDEC_CG_CON_1 = 0x%08x\n", idle_readl(VDEC_CG_CON_1));
-	p += sprintf(p, "VENCSYS_CG_CON = 0x%08x\n", idle_readl(VENCSYS_CG_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "DISP_CG_CON0 = 0x%08x\n", idle_readl(DISP_CG_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "DISP_CG_CON1 = 0x%08x\n", idle_readl(DISP_CG_CON1));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MFG_CG_CON = 0x%08x\n", idle_readl(MFG_CG_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "IMG_CG_CON = 0x%08x\n", idle_readl(IMG_CG_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "VDEC_CG_CON_0 = 0x%08x\n", idle_readl(VDEC_CG_CON_0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "VDEC_CG_CON_1 = 0x%08x\n", idle_readl(VDEC_CG_CON_1));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "VENCSYS_CG_CON = 0x%08x\n", idle_readl(VENCSYS_CG_CON));
 
 	/* INFRA CG*/
-	p += sprintf(p, "INFRA_SW_CG_0_STA = 0x%08x\n", idle_readl(INFRA_SW_CG_0_STA));
-	p += sprintf(p, "INFRA_SW_CG_1_STA = 0x%08x\n", idle_readl(INFRA_SW_CG_1_STA));
-	p += sprintf(p, "INFRA_SW_CG_2_STA = 0x%08x\n", idle_readl(INFRA_SW_CG_2_STA));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "INFRA_SW_CG_0_STA = 0x%08x\n", idle_readl(INFRA_SW_CG_0_STA));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "INFRA_SW_CG_1_STA = 0x%08x\n", idle_readl(INFRA_SW_CG_1_STA));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "INFRA_SW_CG_2_STA = 0x%08x\n", idle_readl(INFRA_SW_CG_2_STA));
 
 	/* PLL */
-	p += sprintf(p, "=== PLL ====\n");
-	p += sprintf(p, "MAINPLL_CON0 = 0x%08x\n", idle_readl(MAINPLL_CON0));
-	p += sprintf(p, "UNIVPLL_CON0 = 0x%08x\n", idle_readl(UNIVPLL_CON0));
-	p += sprintf(p, "MSDCPLL_CON0 = 0x%08x\n", idle_readl(MSDCPLL_CON0));
-	p += sprintf(p, "TVDPLL_CON0 = 0x%08x\n", idle_readl(TVDPLL_CON0));
-	p += sprintf(p, "APLL1_CON0 = 0x%08x\n", idle_readl(APLL1_CON0));
-	p += sprintf(p, "APLL2_CON0 = 0x%08x\n", idle_readl(APLL2_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "=== PLL ====\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MAINPLL_CON0 = 0x%08x\n", idle_readl(MAINPLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "UNIVPLL_CON0 = 0x%08x\n", idle_readl(UNIVPLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MSDCPLL_CON0 = 0x%08x\n", idle_readl(MSDCPLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "TVDPLL_CON0 = 0x%08x\n", idle_readl(TVDPLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "APLL1_CON0 = 0x%08x\n", idle_readl(APLL1_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "APLL2_CON0 = 0x%08x\n", idle_readl(APLL2_CON0));
 #if defined(CONFIG_ARCH_MT6755)
-	p += sprintf(p, "ARMCA15PLL_CON0 = 0x%08x\n", idle_readl(ARMCA15PLL_CON0));
-	p += sprintf(p, "ARMCA7PLL_CON0 = 0x%08x\n", idle_readl(ARMCA7PLL_CON0));
-	p += sprintf(p, "MMPLL_CON0 = 0x%08x\n", idle_readl(MMPLL_CON0));
-	p += sprintf(p, "VENCPLL_CON0 = 0x%08x\n", idle_readl(VENCPLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "ARMCA15PLL_CON0 = 0x%08x\n", idle_readl(ARMCA15PLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "ARMCA7PLL_CON0 = 0x%08x\n", idle_readl(ARMCA7PLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MMPLL_CON0 = 0x%08x\n", idle_readl(MMPLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "VENCPLL_CON0 = 0x%08x\n", idle_readl(VENCPLL_CON0));
 #elif defined(CONFIG_ARCH_MT6797)
-	p += sprintf(p, "MFGPLL_CON0 = 0x%08x\n", idle_readl(MFGPLL_CON0));
-	p += sprintf(p, "IMGPLL_CON0 = 0x%08x\n", idle_readl(IMGPLL_CON0));
-	p += sprintf(p, "MPLL_CON0 = 0x%08x\n", idle_readl(MPLL_CON0));
-	p += sprintf(p, "CODECPLL_CON0 = 0x%08x\n", idle_readl(CODECPLL_CON0));
-	p += sprintf(p, "MDPLL1_CON0 = 0x%08x\n", idle_readl(MDPLL1_CON0));
-	p += sprintf(p, "VDECPLL_CON0 = 0x%08x\n", idle_readl(VDECPLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MFGPLL_CON0 = 0x%08x\n", idle_readl(MFGPLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "IMGPLL_CON0 = 0x%08x\n", idle_readl(IMGPLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MPLL_CON0 = 0x%08x\n", idle_readl(MPLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "CODECPLL_CON0 = 0x%08x\n", idle_readl(CODECPLL_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MDPLL1_CON0 = 0x%08x\n", idle_readl(MDPLL1_CON0));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "VDECPLL_CON0 = 0x%08x\n", idle_readl(VDECPLL_CON0));
 #endif
 
 	/* MTCMOS */
-	p += sprintf(p, "=== MTCMOS ====\n");
-	p += sprintf(p, "SPM_ISP_PWR_CON = 0x%08x\n", idle_readl(SPM_ISP_PWR_CON));
-	p += sprintf(p, "SPM_MFG_PWR_CON = 0x%08x\n", idle_readl(SPM_MFG_PWR_CON));
-	p += sprintf(p, "SPM_MFGAYSNC_PWR_CON = 0x%08x\n", idle_readl(SPM_MFG_PWR_CON - 0x4));
-	p += sprintf(p, "SPM_VDE_PWR_CON = 0x%08x\n", idle_readl(SPM_VDE_PWR_CON));
-	p += sprintf(p, "SPM_VEN_PWR_CON = 0x%08x\n", idle_readl(SPM_VEN_PWR_CON));
-	p += sprintf(p, "SPM_DIS_PWR_CON = 0x%08x\n", idle_readl(SPM_DIS_PWR_CON));
-	p += sprintf(p, "SPM_AUDIO_PWR_CON = 0x%08x\n", idle_readl(SPM_AUDIO_PWR_CON));
-	p += sprintf(p, "SPM_MD1_PWR_CON = 0x%08x\n", idle_readl(SPM_MD1_PWR_CON));
-/*	p += sprintf(p, "SPM_MD2_PWR_CON = 0x%08x\n", idle_readl(SPM_MD2_PWR_CON));*/
-	p += sprintf(p, "SPM_C2K_PWR_CON = 0x%08x\n", idle_readl(SPM_C2K_PWR_CON));
-	p += sprintf(p, "SPM_CONN_PWR_CON = 0x%08x\n", idle_readl(SPM_CONN_PWR_CON));
-	p += sprintf(p, "SPM_MDSYS_INTF_INFRA_PWR_CON = 0x%08x\n", idle_readl(SPM_MDSYS_INTF_INFRA_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "=== MTCMOS ====\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_ISP_PWR_CON = 0x%08x\n", idle_readl(SPM_ISP_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_MFG_PWR_CON = 0x%08x\n", idle_readl(SPM_MFG_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_MFGAYSNC_PWR_CON = 0x%08x\n",
+		      idle_readl(SPM_MFG_PWR_CON - 0x4));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_VDE_PWR_CON = 0x%08x\n", idle_readl(SPM_VDE_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_VEN_PWR_CON = 0x%08x\n", idle_readl(SPM_VEN_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_DIS_PWR_CON = 0x%08x\n", idle_readl(SPM_DIS_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_AUDIO_PWR_CON = 0x%08x\n", idle_readl(SPM_AUDIO_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_MD1_PWR_CON = 0x%08x\n", idle_readl(SPM_MD1_PWR_CON));
+/*	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_MD2_PWR_CON = 0x%08x\n", idle_readl(SPM_MD2_PWR_CON));*/
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_C2K_PWR_CON = 0x%08x\n", idle_readl(SPM_C2K_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_CONN_PWR_CON = 0x%08x\n", idle_readl(SPM_CONN_PWR_CON));
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "SPM_MDSYS_INTF_INFRA_PWR_CON = 0x%08x\n",
+		      idle_readl(SPM_MDSYS_INTF_INFRA_PWR_CON));
 
 	len = p - dbg_buf;
 
