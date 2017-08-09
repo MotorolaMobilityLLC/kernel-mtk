@@ -2391,6 +2391,8 @@ INT32 opfunc_flash_patch_down(P_WMT_OP pWmtOp)
 	UINT16 wmtPktLen = 0;
 	UINT32 u4Res = 0;
 	UINT8 evtBuf[osal_sizeof(WMT_FLASH_PATCH_DWN_EVT)];
+	unsigned long ctrlpa1 = 0;
+	unsigned long ctrlpa2 = 0;
 
 	do {
 		osal_memcpy(gFlashBuf, WMT_FLASH_PATCH_DWN_CMD, sizeof(WMT_FLASH_PATCH_DWN_CMD));
@@ -2436,6 +2438,10 @@ INT32 opfunc_flash_patch_down(P_WMT_OP pWmtOp)
 		if (iRet || (u4Res != sizeof(WMT_FLASH_PATCH_DWN_EVT))) {
 			WMT_ERR_FUNC("wmt_core: read WMT_FLASH_PATCH_DWN_EVT length(%zu, %d) fail(%d)\n",
 				     sizeof(WMT_FLASH_PATCH_DWN_EVT), u4Res, iRet);
+			ctrlpa1 = WMTDRV_TYPE_WMT;
+			ctrlpa2 = 39;
+			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT, &ctrlpa1, &ctrlpa2);
+
 			iRet = -5;
 			u4Res = -2;
 			break;
@@ -2471,6 +2477,8 @@ INT32 opfunc_flash_patch_ver_get(P_WMT_OP pWmtOp)
 	UINT32 u4PatchType = pWmtOp->au4OpData[3];
 	UINT32 u4PatchVer = 0;
 	UINT8 evtBuf[osal_sizeof(WMT_FLASH_PATCH_VER_GET_EVT)];
+	unsigned long ctrlpa1 = 0;
+	unsigned long ctrlpa2 = 0;
 
 	do {
 		osal_memcpy(&WMT_FLASH_PATCH_VER_GET_CMD[5], &u4PatchType, sizeof(u4PatchType));
@@ -2489,6 +2497,11 @@ INT32 opfunc_flash_patch_ver_get(P_WMT_OP pWmtOp)
 		if (iRet || (u4Res != sizeof(WMT_FLASH_PATCH_VER_GET_EVT))) {
 			WMT_ERR_FUNC("wmt_core: read WMT_FLASH_PATCH_VER_GET_EVT length(%zu, %d) fail(%d)\n",
 					sizeof(WMT_FLASH_PATCH_VER_GET_EVT), u4Res, iRet);
+
+			ctrlpa1 = WMTDRV_TYPE_WMT;
+			ctrlpa2 = 38;
+			wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT, &ctrlpa1, &ctrlpa2);
+
 			iRet = -5;
 			u4Res = -2;
 			break;
