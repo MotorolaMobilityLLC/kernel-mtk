@@ -566,11 +566,10 @@ static int mtk_afe_mrgrx_awb_probe(struct snd_soc_platform *platform)
 									     MRGRX_MAX_BUFFER_SIZE,
 									     &Mrgrx_Awb_Capture_dma_buf->
 									     addr, GFP_KERNEL);
-		}
-
-		if (Mrgrx_Awb_Capture_dma_buf->area) {
-			/* asign the max buffer size*/
-			Mrgrx_Awb_Capture_dma_buf->bytes = MRGRX_MAX_BUFFER_SIZE;
+			if (Mrgrx_Awb_Capture_dma_buf->area) {
+				/* asign the max buffer size*/
+				Mrgrx_Awb_Capture_dma_buf->bytes = MRGRX_MAX_BUFFER_SIZE;
+			}
 		}
 	}
 
