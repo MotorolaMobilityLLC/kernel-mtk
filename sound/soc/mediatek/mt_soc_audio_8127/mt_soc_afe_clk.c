@@ -20,7 +20,7 @@
 #include <mt-plat/upmu_common.h>
 
 #include <sync_write.h>
-#ifdef IDLE_TASK_DRIVER_API
+#ifdef _MT_IDLE_HEADER
 #include <mt_idle.h>
 #endif
 #ifdef COMMON_CLOCK_FRAMEWORK_API
@@ -1117,7 +1117,7 @@ void mt_afe_apll1tuner_clk_off(void)
 
 void mt_afe_emi_clk_on(void)
 {
-#ifdef IDLE_TASK_DRIVER_API
+#ifdef _MT_IDLE_HEADER
 	mutex_lock(&emi_clk_mutex);
 	if (aud_emi_clk_cntr == 0) {
 		disable_dpidle_by_bit(MT_CG_AUDIO_AFE);
@@ -1130,7 +1130,7 @@ void mt_afe_emi_clk_on(void)
 
 void mt_afe_emi_clk_off(void)
 {
-#ifdef IDLE_TASK_DRIVER_API
+#ifdef _MT_IDLE_HEADER
 	mutex_lock(&emi_clk_mutex);
 	aud_emi_clk_cntr--;
 	if (aud_emi_clk_cntr == 0) {
@@ -1142,11 +1142,5 @@ void mt_afe_emi_clk_off(void)
 	}
 	mutex_unlock(&emi_clk_mutex);
 #endif
-
-void mt_afe_show_clk_cnt(void)
-{
-
 }
 
-
-}

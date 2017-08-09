@@ -20,11 +20,7 @@
  *****************************************************************************/
 
 #define CONFIG_MTK_DEEP_IDLE
-#ifdef CONFIG_MTK_DEEP_IDLE
-#ifdef _MT_IDLE_HEADER
-#include "mt_idle.h"
-#endif
-#endif
+
 
 #include "mt_soc_afe_common.h"
 #include "mt_soc_afe_def.h"
@@ -81,6 +77,13 @@
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
+
+#ifdef CONFIG_MTK_DEEP_IDLE
+#ifdef _MT_IDLE_HEADER
+#include "mt_idle.h"
+#endif
+#endif
+
 #if 0
 #include <linux/mfd/pm8xxx/pm8921.h>
 #endif

@@ -64,6 +64,4 @@ void mt_afe_set_hdmi_clock_source(uint32_t SampleRate, int apllclksel);
 void mt_afe_emi_clk_on(void);
 void mt_afe_emi_clk_off(void);
 
-void mt_afe_show_clk_cnt(void);
-
 #endif

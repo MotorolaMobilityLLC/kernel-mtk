@@ -10,11 +10,9 @@ ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFOR
 # ccflags-y += -D_GIT318_PMIC_READY
 ccflags-y += -D_WCN_SUPPORT
 ccflags-y += -DAUDIO_USING_WRAP_DRIVER
-# ccflags-y += -D_MT_IDLE_HEADER
+ccflags-y += -D_MT_IDLE_HEADER
 
 EXTRA_CFLAGS := -I$(src)/../common
-#obj-$(CONFIG_MT_SND_SOC_8127) += AudDrv_Afe.o AudDrv_Ana.o AudDrv_Clk.o AudDrv_Gpio.o
-#obj-$(CONFIG_MT_SND_SOC_8127) += AudDrv_Gpio.o
 obj-$(CONFIG_MT_SND_SOC_8127) += mt_soc_afe_control.o mt_soc_afe_connection.o mt_soc_pcm_common.o mt_soc_afe_gpio.o
 obj-$(CONFIG_MT_SND_SOC_8127) += mt_soc_pcm_capture.o mt_soc_pcm_dl1.o mt_soc_pcm_dummy.o mt_soc_pcm_routing.o
 obj-$(CONFIG_MT_SND_SOC_8127) += mt_soc_pcm_hdmi.o mt_soc_pcm_dl1_i2s0.o mt_soc_pcm_dl1_i2s0Dl1.o mt_soc_pcm_i2s0_awb.o
@@ -28,10 +26,6 @@ obj-$(CONFIG_MTK_SPEAKER) += mt_soc_codec_speaker_63xx.o
 
 ifeq ($(CONFIG_MT_ENG_BUILD),y)
 ifeq ($(CONFIG_MT_SND_SOC_8127),y)
-#CFLAGS_AudDrv_Afe.o += -DDEBUG
-#CFLAGS_AudDrv_Ana.o += -DDEBUG
-#CFLAGS_AudDrv_Clk.o += -DDEBUG
-#CFLAGS_AudDrv_Gpio.o += -DDEBUG
 CFLAGS_mt_soc_afe_control.o += -DDEBUG
 CFLAGS_mt_soc_afe_connection.o += -DDEBUG
 CFLAGS_mt_soc_pcm_common.o += -DDEBUG
