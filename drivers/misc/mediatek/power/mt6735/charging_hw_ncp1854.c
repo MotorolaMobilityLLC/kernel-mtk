@@ -168,20 +168,12 @@ static unsigned int charging_hw_init(void *data)
 	pr_notice("[BATTERY:ncp1854] ChargerHwInit_ncp1854\n");
 
 	ncp1854_status = ncp1854_get_chip_status();
-	/* if you want disable factory mode,the FTRY pin and FCTRY_MOD_REG need differ */
-	ncp1854_set_fctry_mode(0x0);
 	ncp1854_set_otg_en(0x0);
 	ncp1854_set_trans_en(0);
 	ncp1854_set_tj_warn_opt(0x0);	/* set at disabled, by MT6325 BATON */
-/* ncp1854_set_int_mask(0x0); //disable all interrupt */
+	/* ncp1854_set_int_mask(0x0); //disable all interrupt */
 	ncp1854_set_int_mask(0x1);	/* enable all interrupt for boost mode status monitor */
 	/* ncp1854_set_tchg_rst(0x1); //reset charge timer */
-#ifdef NCP1854_PWR_PATH
-	ncp1854_set_pwr_path(0x1);
-#else
-	ncp1854_set_pwr_path(0x0);
-#endif
-
 	ncp1854_set_chgto_dis(0x1);	/* disable charge timer */
 	/* WEAK WAIT, WEAK SAFE, WEAK CHARGE */
 	if ((ncp1854_status == 0x8) || (ncp1854_status == 0x9) || (ncp1854_status == 0xA))
