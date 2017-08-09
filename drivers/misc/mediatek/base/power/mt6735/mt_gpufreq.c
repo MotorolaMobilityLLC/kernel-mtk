@@ -39,18 +39,18 @@
 #include "mach/mt_freqhopping.h"
 #include "mt_cpufreq.h"
 #include "mt_gpufreq.h"
-#include "sync_write.h"
+#include "mt-plat/sync_write.h"
 #include "mt_static_power.h"
 #ifndef GPUDVFS_WORKAROUND_FOR_GIT
 #include "mach/mt_thermal.h"
 #endif
-#include "upmu_common.h"
+#include "mt-plat/upmu_common.h"
 #include "mach/upmu_sw.h"
 #include "mach/upmu_hw.h"
 #include "mach/mt_pbm.h"
 #include "mt_vcore_dvfs.h"
 #include "mt_ptp.h"
-#include "mt_devinfo.h"
+#include "mt-plat/mt_devinfo.h"
 
 
 /**************************************************

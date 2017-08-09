@@ -42,7 +42,7 @@
 #include <linux/of_address.h>
 #endif
 
-#include "aee.h"
+#include "mt-plat/aee.h"
 
 /* project includes */
 #ifndef CPUDVFS_WORKAROUND_FOR_GIT
@@ -55,7 +55,7 @@
 #include "mt_ptp.h"
 #include "mt_static_power.h"
 #include "mach/mt_pbm.h"
-#include "mt_devinfo.h"
+#include "mt-plat/mt_devinfo.h"
 
 #ifndef __KERNEL__
 #include "freqhop_sw.h"
@@ -65,7 +65,7 @@
 #include "efuse.h"	/* for SLT efuse check */
 #else
 #include "mt_spm.h"
-#include "upmu_common.h"
+#include "mt-plat/upmu_common.h"
 #include "mach/upmu_sw.h"
 #include "mach/upmu_hw.h"
 /* #include "pwrap_hal.h" */
@@ -2235,8 +2235,10 @@ static int _mt_cpufreq_set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int 
 			cpufreq_err("pmic 6328 HW CID = %x\n", val);
 		}
 
+#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 		aee_kernel_warning(TAG, "@%s():%d, cur_vsram = %d, cur_vproc = %d\n",
 				   __func__, __LINE__, cur_vsram, cur_vproc);
+#endif
 
 		cur_vproc = cpu_dvfs_get_cur_volt(p);
 		cur_vsram = cur_vproc + NORMAL_DIFF_VSRAM_VPROC;
