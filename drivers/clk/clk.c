@@ -24,6 +24,10 @@
 
 #include "clk.h"
 
+/* MET */
+#define MET_USER_EVENT_SUPPORT
+#include "../drivers/misc/mediatek/include/mt-plat/met_drv.h"
+
 static DEFINE_SPINLOCK(enable_lock);
 static DEFINE_MUTEX(prepare_lock);
 
@@ -645,6 +649,47 @@ static inline void clk_debug_unregister(struct clk *clk)
 }
 #endif
 
+/* MET */
+static void chk_clk_tree_show_one(struct clk *c, int level)
+{
+	if (!c)
+		return;
+
+	if (c->enable_count)
+		met_show_clk_tree(c->name, 0, 1);
+	else
+		met_show_clk_tree(c->name, 0, 0);
+}
+static void chk_clk_tree_show_subtree(struct clk *c, int level)
+{
+	struct clk *child;
+
+	if (!c)
+		return;
+
+	chk_clk_tree_show_one(c, level);
+
+	hlist_for_each_entry(child, &c->children, child_node)
+		chk_clk_tree_show_subtree(child, level + 1);
+}
+int chk_clk_tree(void)
+{
+	struct clk *c;
+
+	clk_prepare_lock();
+
+	hlist_for_each_entry(c, &clk_root_list, child_node)
+		chk_clk_tree_show_subtree(c, 0);
+
+	hlist_for_each_entry(c, &clk_orphan_list, child_node)
+		chk_clk_tree_show_subtree(c, 0);
+
+	clk_prepare_unlock();
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(chk_clk_tree);
+
 /* caller must hold prepare_lock */
 static void clk_unprepare_unused_subtree(struct clk *clk)
 {
@@ -1091,6 +1136,10 @@ static void __clk_disable(struct clk *clk)
 #endif /*CONFIG_COMMON_CLK_FREQ_STATS_ACCOUNTING*/
 
 	__clk_disable(clk->parent);
+
+	/* MET */
+	if (clk->name != NULL)
+		met_show_clk_tree(clk->name, 0, 0);
 }
 
 /**
@@ -1149,6 +1198,11 @@ static int __clk_enable(struct clk *clk)
 	}
 
 	clk->enable_count++;
+
+	/* MET */
+	if (clk->name != NULL)
+		met_show_clk_tree(clk->name, 0, 1);
+
 	return 0;
 }
 
