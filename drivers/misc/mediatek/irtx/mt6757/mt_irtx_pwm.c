@@ -77,6 +77,40 @@ struct pwm_spec_config irtx_pwm_config = {
 	.PWM_MODE_MEMORY_REGS.WAVE_NUM = 1,
 };
 
+#define IRTX_GPIO_MODE_DEFAULT 0
+#define IRTX_GPIO_MODE_LED_SET 1
+
+char *irtx_gpio_cfg[] = { "irtx_gpio_default", "irtx_gpio_led_set" };
+
+void switch_irtx_gpio(int mode)
+{
+	struct pinctrl *ppinctrl_irtx = mt_irtx_dev.ppinctrl_irtx;
+	struct pinctrl_state *pins_irtx = NULL;
+
+	pr_notice("[IRTX][PinC]%s(%d)+\n", __func__, mode);
+
+	if (mode >= (sizeof(irtx_gpio_cfg) / sizeof(irtx_gpio_cfg[0]))) {
+		pr_err("[IRTX][PinC]%s(%d) fail!! - parameter error!\n", __func__, mode);
+		return;
+	}
+
+	if (IS_ERR(ppinctrl_irtx)) {
+		pr_err("[IRTX][PinC]%s ppinctrl_irtx:%p is error! err:%ld\n",
+		       __func__, ppinctrl_irtx, PTR_ERR(ppinctrl_irtx));
+		return;
+	}
+
+	pins_irtx = pinctrl_lookup_state(ppinctrl_irtx, irtx_gpio_cfg[mode]);
+	if (IS_ERR(pins_irtx)) {
+		pr_err("[IRTX][PinC]%s pinctrl_lockup(%p, %s) fail!! ppinctrl:%p, err:%ld\n", __func__,
+		       ppinctrl_irtx, irtx_gpio_cfg[mode], pins_irtx, PTR_ERR(pins_irtx));
+		return;
+	}
+
+	pinctrl_select_state(ppinctrl_irtx, pins_irtx);
+	pr_notice("[IRTX][PinC]%s(%d)-\n", __func__, mode);
+}
+
 static int dev_char_open(struct inode *inode, struct file *file)
 {
 	int ret = 0;
@@ -116,7 +150,7 @@ static ssize_t dev_char_read(struct file *file, char *buf, size_t count, loff_t 
 static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
-	unsigned int para = 0;
+	unsigned int para = 0, gpio_id = -1, en = 0;
 
 	switch (cmd) {
 	case IRTX_IOC_GET_SOLUTTION_TYPE:
@@ -127,7 +161,16 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			pr_err("[IRTX] IRTX_IOC_SET_IRTX_LED_EN: copy_from_user fail!\n");
 			ret = -EFAULT;
 		} else {
-			/* TODO */
+			/* en: bit 12; */
+			/* gpio: bit 0-11 */
+			gpio_id = (unsigned long)((para & 0x0FFF0000) > 16);
+			en = (para & 0xF);
+			pr_warn("[IRTX] IRTX_IOC_SET_IRTX_LED_EN: 0x%x, gpio_id:%ul, en:%ul\n", para, gpio_id, en);
+
+			if (en)
+				switch_irtx_gpio(IRTX_GPIO_MODE_LED_SET);
+			else
+				switch_irtx_gpio(IRTX_GPIO_MODE_DEFAULT);
 		}
 		break;
 	default:
@@ -170,8 +213,10 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	mt_set_intr_enable(1);
 	mt_pwm_26M_clk_enable_hal(1);
 	pr_debug("[IRTX] irtx before read IRTXCFG:0x%x\n", (irtx_read32(mt_irtx_dev.reg_base, IRTXCFG)));
-	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_BASE_ADDR = (u32 *) wave_phy;
+	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_BASE_ADDR = (u32 *)(wave_phy);
 	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_SIZE = (buf_size ? (buf_size - 1) : 0);
+
+	switch_irtx_gpio(IRTX_GPIO_MODE_LED_SET);
 
 	mt_set_intr_ack(0);
 	mt_set_intr_ack(1);
@@ -185,6 +230,8 @@ exit:
 	pr_debug("[IRTX] done, clean up\n");
 	dma_free_coherent(&mt_irtx_dev.plat_dev->dev, count, wave_vir, wave_phy);
 	mt_pwm_disable(irtx_pwm_config.pwm_no, irtx_pwm_config.pmic_pad);
+	switch_irtx_gpio(IRTX_GPIO_MODE_DEFAULT);
+
 	return ret;
 }
 
@@ -224,6 +271,9 @@ static int irtx_probe(struct platform_device *plat_dev)
 	pr_debug("[IRTX] device tree info: major=%d pwm=%d invert=%d\n",
 			major, mt_irtx_dev.pwm_ch, mt_irtx_dev.pwm_data_invert);
 #endif
+
+	switch_irtx_gpio(IRTX_GPIO_MODE_DEFAULT);
+
 	if (!major) {
 		ret = alloc_chrdev_region(&dev_t_irtx, 0, 1, irtx_driver_name);
 		if (ret) {
