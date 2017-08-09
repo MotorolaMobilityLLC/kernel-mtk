@@ -1126,10 +1126,16 @@ static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
 	}
 
 	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
-	if (buf)
-		len += sprintf(buf+len, "<%d>", smp_processor_id());
-	else
-		len += snprintf(NULL, 0, "<%d>", smp_processor_id());
+#if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
+
+	if (syslog == false && printk_too_much_enable == 1) {
+		if (buf)
+			len += sprintf(buf+len, "<%d>", smp_processor_id());
+		else
+			len += snprintf(NULL, 0, "<%d>", smp_processor_id());
+	}
+
+#endif
 
 	return len;
 }
