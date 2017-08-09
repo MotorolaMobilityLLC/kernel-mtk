@@ -2327,9 +2327,13 @@ static ssize_t block_io_debug_read(struct file *file, char __user *ubuf, size_t 
 	struct struct_block_io_ring *tmp_logger2;
 	stopringlog = 1;
 	index = block_io_ring_index;
+	if (block_io_ring == NULL) {
+		stopringlog = 0;
+		return count1;
+	}
 
 	debug_fs = vmalloc(MAX_BLOCK_IO_LOG_COUNT * sizeof(struct struct_block_io_ring));
-	if (debug_fs && block_io_ring != NULL) {
+	if (debug_fs) {
 		memset(debug_fs, 0 , MAX_BLOCK_IO_LOG_COUNT * sizeof(struct struct_block_io_ring));
 	for (i = 0; i < MAX_BLOCK_IO_LOG_COUNT; i++) {
 		tmp_logger = ((struct struct_block_io_ring *)debug_fs) + i;
