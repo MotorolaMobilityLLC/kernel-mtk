@@ -227,6 +227,10 @@ static struct platform_driver swsusp_helper_driver = {
 
 static int swsusp_pm_event(struct notifier_block *notifier, unsigned long pm_event, void *unused)
 {
+	/* skip if current process is in the fly of exiting */
+	if (current->flags & PF_EXITING)
+		return NOTIFY_DONE;
+
 	switch (pm_event) {
 	case PM_HIBERNATION_PREPARE: /* Going to hibernate */
 #ifdef CONFIG_MTK_SYSENV
