@@ -143,5 +143,7 @@ void msdc_error_tune_debug3(struct msdc_host *host,
 		struct mmc_command *cmd, u32 *intsts);
 int multi_rw_compare(struct seq_file *m, int host_num,
 		uint address, int count, uint type, int multi_thread);
+void msdc_select_card_type(struct mmc_host *host);
+int msdc_reinit(struct msdc_host *host);
 
 #endif

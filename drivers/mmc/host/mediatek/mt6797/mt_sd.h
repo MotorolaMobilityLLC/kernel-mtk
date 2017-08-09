@@ -13,8 +13,15 @@
 #include <linux/clk.h>
 #include <mt-plat/sync_write.h>
 
-
 #define MSDC_NEW_TUNE
+
+#define TUNE_NONE            (0)        /* No need tune */
+#define TUNE_ASYNC_CMD       (0x1 << 0) /* async transfer cmd crc */
+#define TUNE_ASYNC_DATA      (0x1 << 1) /* async transfer data crc */
+#define TUNE_LEGACY_CMD      (0x1 << 2) /* legacy transfer cmd crc */
+#define TUNE_LEGACY_DATA     (0x1 << 3) /* legacy transfer data crc */
+#define TUNE_AUTOK_PASS      (0x1 << 4) /* autok pass flag */
+
 #define MSDC_DMA_ADDR_DEBUG
 /*#define MSDC_HQA*/
 
@@ -153,6 +160,7 @@ enum {
 #define REQ_STOP_TMO (0x1 << 4)
 #define REQ_CMD23_EIO (0x1 << 5)
 #define REQ_CMD23_TMO (0x1 << 6)
+#define REQ_CRC_STATUS_ERR (0x1 << 7)
 
 typedef void (*sdio_irq_handler_t)(void *);  /* external irq handler */
 typedef void (*pm_callback_t)(pm_message_t state, void *data);
@@ -340,15 +348,6 @@ struct msdc_dma {
 	u32 used_gpd;                /* the number of used gpd elements */
 	u32 used_bd;                 /* the number of used bd elements */
 };
-
-struct tune_counter {
-	u32 time_cmd;
-	u32 time_read;
-	u32 time_write;
-	u32 time_hs400;
-};
-
-/*FIX ME, consider to move it into msdc_tune.c*/
 struct msdc_saved_para {
 	u32 pad_tune0;
 	u32 pad_tune1;
@@ -453,37 +452,23 @@ struct msdc_host {
 	u32                     app_cmd_arg;
 	u64                     starttime;
 	struct timer_list       timer;
-	struct tune_counter     t_counter;
-	u32                     rwcmd_time_tune;
-	int                     read_time_tune;
-	int                     write_time_tune;
-	u32                     write_timeout_uhs104;
-	u32                     read_timeout_uhs104;
-	u32                     write_timeout_emmc;
-	u32                     read_timeout_emmc;
-	u32			write_timeout_ms;     /* data write busy timeout ms */
+	u32                     write_timeout_ms;  /* data write busy timeout ms */
 	u8                      autocmd;
 	u32                     sw_timeout;
-	u32                     power_cycle;    /* power cycle done
-						   in tuning flow*/
-	bool                    power_cycle_enable; /*Enable power cycle*/
-	bool                    error_tune_enable;  /* enable error tune flow */
-	u32                     sd_30_busy;
-	bool                    async_tuning_in_progress;
-	bool                    async_tuning_done;
-	bool			legacy_tuning_in_progress;
-	bool			legacy_tuning_done;
+	/* msdc autok */
+	bool                    tuning_in_progress;
+	u32			need_tune;
 	int                     autok_error;
-	u32			tune_latch_ck_cnt;
-	unsigned int		err_mrq_dir;
-	bool                    tune;
-	unsigned int		power_domain;
+	int                     reautok_times;
+	u32                     tune_latch_ck_cnt;
 	struct msdc_saved_para  saved_para;
+
+	unsigned int            power_domain;
 	int                     sd_cd_polarity;
 	int                     sd_cd_insert_work;
-				/* to make sure insert mmc_rescan this work
-				   in start_host when boot up.
-				   Driver will get a EINT(Level sensitive)
+	/*  to make sure insert mmc_rescan this work
+	 *  in start_host when boot up.
+	 *  Driver will get a EINT(Level sensitive)
 				   when boot up phone with card insert */
 	struct wakeup_source	trans_lock;
 	bool                    block_bad_card;
@@ -496,76 +481,7 @@ struct msdc_host {
 	struct clk *clock_control;
 };
 
-struct tag_msdc_hw_para {
-	unsigned int  version;          /* msdc structure version info */
-	unsigned int  clk_src;          /* host clock source */
-	unsigned int  cmd_edge;         /* command latch edge */
-	unsigned int  rdata_edge;       /* read data latch edge */
-	unsigned int  wdata_edge;       /* write data latch edge */
-	unsigned int  clk_drv;          /* clock pad driving */
-	unsigned int  cmd_drv;          /* command pad driving */
-	unsigned int  dat_drv;          /* data pad driving */
-	unsigned int  rst_drv;          /* RST-N pad driving */
-	unsigned int  ds_drv;           /* eMMC5.0 DS pad driving */
-	unsigned int  clk_drv_sd_18;    /* clock pad driving for SD card at
-					   1.8v sdr104 mode */
-	unsigned int  cmd_drv_sd_18;    /* command pad driving for SD card at
-					   1.8v sdr104 mode */
-	unsigned int  dat_drv_sd_18;    /* data pad driving for SD card at
-					   1.8v sdr104 mode */
-	unsigned int  clk_drv_sd_18_sdr50;    /* clock pad driving for SD card
-						 at 1.8v sdr50 mode */
-	unsigned int  cmd_drv_sd_18_sdr50;    /* command pad driving for SD
-						 card at 1.8v sdr50 mode */
-	unsigned int  dat_drv_sd_18_sdr50;    /* data pad driving for SD card
-						 at 1.8v sdr50 mode */
-	unsigned int  clk_drv_sd_18_ddr50;    /* clock pad driving for SD card
-						 at 1.8v ddr50 mode */
-	unsigned int  cmd_drv_sd_18_ddr50;    /* command pad driving for SD
-						 card at 1.8v ddr50 mode */
-	unsigned int  dat_drv_sd_18_ddr50;    /* data pad driving for SD card
-						 at 1.8v ddr50 mode */
-	unsigned int  flags;            /* hardware capability flags */
-	unsigned int  data_pins;        /* data pins */
-	unsigned int  data_offset;      /* data address offset */
-	unsigned int  ddlsel;           /* data line delay shared or
-					   separated selecion */
-	unsigned int  rdsplsel;         /* read: data line rising or falling
-					   latch selection */
-	unsigned int  wdsplsel;         /* write: data line rising or falling
-					   latch selection */
-	unsigned int  dat0rddly;        /*read; range: 0~31 */
-	unsigned int  dat1rddly;        /*read; range: 0~31 */
-	unsigned int  dat2rddly;        /*read; range: 0~31 */
-	unsigned int  dat3rddly;        /*read; range: 0~31 */
-	unsigned int  dat4rddly;        /*read; range: 0~31 */
-	unsigned int  dat5rddly;        /*read; range: 0~31 */
-	unsigned int  dat6rddly;        /*read; range: 0~31 */
-	unsigned int  dat7rddly;        /*read; range: 0~31 */
-	unsigned int  datwrddly;        /*write; range: 0~31 */
-	unsigned int  cmdrrddly;        /*cmd; range: 0~31 */
-	unsigned int  cmdrddly;         /*cmd; range: 0~31 */
-	unsigned int  host_function;    /* define host function*/
-	unsigned int  boot;             /* define boot host*/
-	unsigned int  cd_level;         /* card detection level*/
-	unsigned int  end_flag;         /* This struct end flag,
-					   should be 0x5a5a5a5a */
-};
-
-enum {
-	cmd_counter = 0,
-	read_counter,
-	write_counter,
-	all_counter,
-};
-
-enum {
-	MSDC_STATE_DEFAULT = 0,
-	MSDC_STATE_DDR,
-	MSDC_STATE_HS200,
-	MSDC_STATE_HS400
-};
-
+#include "msdc_io.h"
 enum {
 	TRAN_MOD_PIO,
 	TRAN_MOD_DMA,
@@ -736,25 +652,12 @@ static inline unsigned int uffs(unsigned int x)
 #define CLK_TIMEOUT             (HZ    * 5)     /* 5s    */
 #define POLLING_BUSY            (HZ    * 3)
 
-#ifdef CONFIG_OF
-#if defined(CFG_DEV_MSDC2)
-extern struct msdc_hw msdc2_hw;
-#endif
-#if defined(CFG_DEV_MSDC3)
-extern struct msdc_hw msdc3_hw;
-#endif
-#endif
-
 extern struct msdc_host *mtk_msdc_host[];
 extern unsigned int msdc_latest_transfer_mode[HOST_MAX_NUM];
 #ifdef MSDC_DMA_ADDR_DEBUG
 extern struct dma_addr msdc_latest_dma_address[MAX_BD_PER_GPD];
 #endif
 extern int g_dma_debug[HOST_MAX_NUM];
-
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-extern u32 g_emmc_mode_switch;
-#endif
 
 enum {
 	MODE_PIO = 0,
@@ -777,12 +680,24 @@ extern bool emmc_sleep_failed;
 
 extern int msdc_rsp[];
 extern u8 g_emmc_id;
-/**********************************************************/
-/* Functions                                               */
-/**********************************************************/
-#include "msdc_io.h"
 
-/* Function provided by sd.c */
+#define check_mmc_cache_ctrl(card) \
+	(card && mmc_card_mmc(card) && (card->ext_csd.cache_ctrl & 0x1))
+#define check_mmc_cache_flush_cmd(cmd) \
+	((cmd->opcode == MMC_SWITCH) && \
+	 (((cmd->arg >> 16) & 0xFF) == EXT_CSD_FLUSH_CACHE) && \
+	 (((cmd->arg >> 8) & 0x1)))
+#define check_mmc_cmd2425(opcode) \
+	((opcode == MMC_WRITE_MULTIPLE_BLOCK) || \
+	 (opcode == MMC_WRITE_BLOCK))
+#define check_mmc_cmd1718(opcode) \
+	((opcode == MMC_READ_MULTIPLE_BLOCK) || \
+	 (opcode == MMC_READ_SINGLE_BLOCK))
+
+#define check_mmc_cmd1825(opcode) \
+	((opcode == MMC_READ_MULTIPLE_BLOCK) || \
+	 (opcode == MMC_WRITE_MULTIPLE_BLOCK))
+
 struct gendisk *mmc_get_disk(struct mmc_card *card);
 int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 	u32 hs400_src);
@@ -808,7 +723,6 @@ int msdc_get_reserve(void);
 int msdc_get_offset(void);
 int msdc_pio_read(struct msdc_host *host, struct mmc_data *data);
 int msdc_pio_write(struct msdc_host *host, struct mmc_data *data);
-int msdc_reinit(struct msdc_host *host);
 void msdc_select_clksrc(struct msdc_host *host, int clksrc);
 void msdc_send_stop(struct msdc_host *host);
 void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz);
@@ -817,30 +731,16 @@ void msdc_set_smpl(struct msdc_host *host, u8 HS400, u8 mode, u8 type,
 void msdc_set_smpl_all(struct msdc_host *host, u8 HS400);
 int msdc_switch_part(struct msdc_host *host, char part_id);
 int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
-
+int sdcard_reset_tuning(struct mmc_host *mmc);
+int emmc_reinit_tuning(struct mmc_host *mmc);
 /* Function provided by msdc_partition.c */
 void msdc_proc_emmc_create(void);
 int msdc_can_apply_cache(unsigned long long start_addr,
 	unsigned int size);
-
-/* Function provided by ettagent.c */
-int ettagent_init(void);
-void ettagent_exit(void);
-
-/* Function provided by sdio_mt_online_tuning_test.c */
-int mt_msdc_online_tuning_test(struct msdc_host *host, u32 rawcmd,
-	u32 rawarg, u8 rw);
-
-/* Function provided by block.c */
-u32 __mmc_sd_num_wr_blocks(struct mmc_card *card);
-
-/* Function provided by mmc/core/sd.c */
-int mmc_sd_power_cycle(struct mmc_host *host, u32 ocr,
-	struct mmc_card *card);
-
+void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios);
 /* Function provided by mmc/core/bus.c */
 void mmc_remove_card(struct mmc_card *card);
-
+void msdc_set_bad_card_and_remove(struct msdc_host *host);
 /* Function provided by drivers/irqchip/irq-mt-eic.c */
 int mt_eint_get_polarity_external(unsigned int irq_num);
 
@@ -851,7 +751,6 @@ int mt_eint_get_polarity_external(unsigned int irq_num);
 s32 pwrap_read_nochk(u32  adr, u32 *rdata);
 s32 pwrap_write_nochk(u32  adr, u32  wdata);
 #endif
-
 #define MET_USER_EVENT_SUPPORT
 /* #include <linux/met_drv.h> */
 #if defined(FEATURE_MET_MMC_INDEX)
@@ -860,20 +759,5 @@ void met_mmc_issue(struct mmc_host *host, struct mmc_request *req);
 
 int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	u32 *status);
-#define check_mmc_cache_ctrl(card) \
-	(card && mmc_card_mmc(card) && (card->ext_csd.cache_ctrl & 0x1))
-#define check_mmc_cache_flush_cmd(cmd) \
-	((cmd->opcode == MMC_SWITCH) && \
-	 (((cmd->arg >> 16) & 0xFF) == EXT_CSD_FLUSH_CACHE) && \
-	 (((cmd->arg >> 8) & 0x1)))
-#define check_mmc_cmd2425(opcode) \
-	((opcode == MMC_WRITE_MULTIPLE_BLOCK) || \
-	 (opcode == MMC_WRITE_BLOCK))
-#define check_mmc_cmd1718(opcode) \
-	((opcode == MMC_READ_MULTIPLE_BLOCK) || \
-	 (opcode == MMC_READ_SINGLE_BLOCK))
 
-#define check_mmc_cmd1825(opcode) \
-	((opcode == MMC_READ_MULTIPLE_BLOCK) || \
-	 (opcode == MMC_WRITE_MULTIPLE_BLOCK))
 #endif /* end of  MT_SD_H */

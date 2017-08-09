@@ -18,32 +18,319 @@
 #include "msdc_tune.h"
 #include "dbg.h"
 
+u32 g_msdc0_io;
+u32 g_msdc0_flash;
+u32 g_msdc1_io;
+u32 g_msdc1_flash;
+u32 g_msdc2_io;
+u32 g_msdc2_flash;
+u32 g_msdc3_io;
+u32 g_msdc3_flash;
 
 /**************************************************************/
-/* Section 1: Device Tree                                     */
+/* Section 1: Power                                           */
+/**************************************************************/
+#include <mt-plat/upmu_common.h>
+
+struct regulator *reg_vemc;
+struct regulator *reg_vmc;
+struct regulator *reg_vmch;
+
+enum MSDC_LDO_POWER {
+	POWER_LDO_VMCH,
+	POWER_LDO_VMC,
+	POWER_LDO_VEMC,
+};
+bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
+{
+	struct regulator *reg = NULL;
+	int ret = 0;
+
+	switch (powerId) {
+	case POWER_LDO_VMCH:
+		reg = reg_vmch;
+		break;
+	case POWER_LDO_VMC:
+		reg = reg_vmc;
+		break;
+	case POWER_LDO_VEMC:
+		reg = reg_vemc;
+		break;
+	default:
+		pr_err("[msdc] Invalid power id\n");
+		return false;
+	}
+	if (reg == NULL) {
+		pr_err("[msdc] regulator pointer is NULL\n");
+		return false;
+	}
+	/* New API voltage use micro V */
+	regulator_set_voltage(reg, powerVolt, powerVolt);
+	ret = regulator_enable(reg);
+	if (ret) {
+		pr_err("msdc regulator_enable failed: %d\n", ret);
+		return false;
+	}
+	pr_err("msdc_hwPoweron:%d: name:%s", powerId, mode_name);
+	return true;
+}
+
+bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
+{
+	struct regulator *reg = NULL;
+
+	switch (powerId) {
+	case POWER_LDO_VMCH:
+		reg = reg_vmch;
+		break;
+	case POWER_LDO_VMC:
+		reg = reg_vmc;
+		break;
+	case POWER_LDO_VEMC:
+		reg = reg_vemc;
+		break;
+	default:
+		pr_err("[msdc] Invalid power id\n");
+		return false;
+	}
+	if (reg == NULL) {
+		pr_err("[msdc] regulator pointer is NULL\n");
+		return false;
+	}
+	/* New API voltage use micro V */
+	regulator_disable(reg);
+	pr_err("msdc_hwPowerOff:%d: name:%s", powerId, mode_name);
+
+	return true;
+}
+u32 msdc_ldo_power(u32 on, unsigned int powerId, int voltage_mv,
+	u32 *status)
+{
+	int voltage_uv = voltage_mv * 1000;
+
+	if (on) { /* want to power on */
+		if (*status == 0) {  /* can power on */
+			pr_err("msdc LDO<%d> power on<%d>\n", powerId,
+				voltage_uv);
+			msdc_hwPowerOn(powerId, voltage_uv, "msdc");
+			*status = voltage_uv;
+		} else if (*status == voltage_uv) {
+			pr_err("msdc LDO<%d><%d> power on again!\n", powerId,
+				voltage_uv);
+		} else { /* for sd3.0 later */
+			pr_err("msdc LDO<%d> change<%d> to <%d>\n", powerId,
+				*status, voltage_uv);
+			msdc_hwPowerDown(powerId, "msdc");
+			msdc_hwPowerOn(powerId, voltage_uv, "msdc");
+			/*hwPowerSetVoltage(powerId, voltage_uv, "msdc");*/
+			*status = voltage_uv;
+		}
+	} else {  /* want to power off */
+		if (*status != 0) {  /* has been powerred on */
+			pr_err("msdc LDO<%d> power off\n", powerId);
+			msdc_hwPowerDown(powerId, "msdc");
+			*status = 0;
+		} else {
+			pr_err("LDO<%d> not power on\n", powerId);
+		}
+	}
+
+	return 0;
+}
+
+void msdc_dump_ldo_sts(struct msdc_host *host)
+{
+#ifdef MTK_MSDC_BRINGUP_DEBUG
+	u32 ldo_en = 0, ldo_vol = 0;
+	u32 id = host->id;
+
+	switch (id) {
+	case 0:
+		pmic_read_interface_nolock(REG_VEMC_EN, &ldo_en, MASK_VEMC_EN,
+			SHIFT_VEMC_EN);
+		pmic_read_interface_nolock(REG_VEMC_VOSEL, &ldo_vol,
+			MASK_VEMC_VOSEL, SHIFT_VEMC_VOSEL);
+		pr_err("VEMC_EN=0x%x, be:1b'1,VEMC_VOL=0x%x, be:1b'0(3.0V),1b'1(3.3V)\n",
+			ldo_en, ldo_vol);
+		break;
+	case 1:
+		pmic_read_interface_nolock(REG_VMC_EN, &ldo_en, MASK_VMC_EN,
+			SHIFT_VMC_EN);
+		pmic_read_interface_nolock(REG_VMC_VOSEL, &ldo_vol,
+			MASK_VMC_VOSEL, SHIFT_VMC_VOSEL);
+		pr_err("VMC_EN=0x%x, be:bit1=1,VMC_VOL=0x%x, be:3b'101(2.8V),3b'011(1.8V)\n",
+			ldo_en, ldo_vol);
+
+		pmic_read_interface_nolock(REG_VMCH_EN, &ldo_en, MASK_VMCH_EN,
+			SHIFT_VMCH_EN);
+		pmic_read_interface_nolock(REG_VMCH_VOSEL, &ldo_vol,
+			MASK_VMCH_VOSEL, SHIFT_VMCH_VOSEL);
+		pr_err("VMCH_EN=0x%x, be:bit1=1, VMCH_VOL=0x%x, be:1b'0(3V),1b'1(3.3V)\n",
+			ldo_en, ldo_vol);
+		break;
+	default:
+		break;
+	}
+#endif
+}
+
+void msdc_sd_power_switch(struct msdc_host *host, u32 on)
+{
+	unsigned int reg_val;
+
+	switch (host->id) {
+	case 1:
+		msdc_ldo_power(on, POWER_LDO_VMC, VOL_1800, &g_msdc1_io);
+		/* MT6351 have no 2.9v setting, So calibration 100mv here */
+		if (on) {
+			/* VMC calibration. */
+			pmic_read_interface(REG_VMC_VOSEL_CAL,
+				&reg_val,
+				MASK_VMC_VOSEL_CAL,
+				SHIFT_VMC_VOSEL_CAL);
+
+			/* -100mv. since 2.9V is 2.8V + 100mV. */
+			reg_val = reg_val + 5;
+
+			pmic_config_interface(REG_VMC_VOSEL_CAL,
+				reg_val,
+				MASK_VMC_VOSEL_CAL,
+				SHIFT_VMC_VOSEL_CAL);
+		}
+
+		msdc_set_tdsel(host, 0, 1);
+		msdc_set_rdsel(host, 0, 1);
+		msdc_set_driving(host, host->hw, 1);
+		break;
+	case 2:
+		msdc_ldo_power(on, POWER_LDO_VMC, VOL_1800, &g_msdc2_io);
+		msdc_set_tdsel(host, 0, 1);
+		msdc_set_rdsel(host, 0, 1);
+		msdc_set_driving(host, host->hw, 1);
+		break;
+	default:
+		break;
+	}
+}
+
+void msdc_sdio_power(struct msdc_host *host, u32 on)
+{
+	switch (host->id) {
+#if defined(CFG_DEV_MSDC2)
+	case 2:
+		g_msdc2_flash = g_msdc2_io;
+		break;
+#endif
+	default:
+		/* if host_id is 3, it uses default 1.8v setting,
+		which always turns on */
+		break;
+	}
+
+}
+
+void msdc_emmc_power(struct msdc_host *host, u32 on)
+{
+	unsigned long tmo = 0;
+	void __iomem *base = host->base;
+	unsigned int sa_timeout;
+
+	/* if MMC_CAP_WAIT_WHILE_BUSY not set, mmc core layer will wait for
+	 sa_timeout */
+	if (host->mmc && host->mmc->card && (on == 0) &&
+	    host->mmc->caps & MMC_CAP_WAIT_WHILE_BUSY) {
+		/* max timeout: 1000ms */
+		sa_timeout = host->mmc->card->ext_csd.sa_timeout;
+		if ((DIV_ROUND_UP(sa_timeout, 10000)) < 1000)
+			tmo = DIV_ROUND_UP(sa_timeout, 10000000/HZ) + HZ/100;
+		else
+			tmo = HZ;
+		tmo += jiffies;
+
+		while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
+			if (time_after(jiffies, tmo)) {
+				pr_err("Dat0 keep low before power off,sa_timeout = 0x%x",
+					sa_timeout);
+				emmc_sleep_failed = 1;
+				break;
+			}
+		}
+	}
+
+	/* Set to 3.0V - 100mV
+	 * 4'b0000: 0 mV
+	 * 4'b0001: -20 mV
+	 * 4'b0010: -40 mV
+	 * 4'b0011: -60 mV
+	 * 4'b0100: -80 mV
+	 * 4'b0101: -100 mV
+	*/
+	msdc_ldo_power(on, POWER_LDO_VEMC, VOL_3000, &g_msdc0_flash);
+	/* cal 3.0V - 100mv */
+	if (on && CARD_VOL_ACTUAL != VOL_3000) {
+		pmic_config_interface(REG_VEMC_VOSEL_CAL,
+			VEMC_VOSEL_CAL_mV(CARD_VOL_ACTUAL - VOL_3000),
+			MASK_VEMC_VOSEL_CAL,
+			SHIFT_VEMC_VOSEL_CAL);
+	}
+
+	msdc_dump_ldo_sts(host);
+}
+
+void msdc_sd_power(struct msdc_host *host, u32 on)
+{
+	u32 card_on = on;
+
+	switch (host->id) {
+	case 1:
+		msdc_set_driving(host, host->hw, 0);
+		msdc_set_tdsel(host, 0, 0);
+		msdc_set_rdsel(host, 0, 0);
+		if (host->hw->flags & MSDC_SD_NEED_POWER)
+			card_on = 1;
+		msdc_ldo_power(card_on, POWER_LDO_VMCH, VOL_2900,
+			&g_msdc1_flash);
+		msdc_ldo_power(on, POWER_LDO_VMC, VOL_2900, &g_msdc1_io);
+
+		break;
+	case 2:
+		msdc_set_driving(host, host->hw, 0);
+		msdc_set_tdsel(host, 0, 0);
+		msdc_set_rdsel(host, 0, 0);
+		msdc_ldo_power(on, POWER_LDO_VMCH, VOL_3000, &g_msdc2_flash);
+		msdc_ldo_power(on, POWER_LDO_VMC, VOL_3000, &g_msdc2_io);
+		break;
+	default:
+		break;
+	}
+
+	msdc_dump_ldo_sts(host);
+}
+void msdc_sd_power_off(void)
+{
+	struct msdc_host *host = mtk_msdc_host[1];
+
+	pr_err("Power Off, SD card\n");
+
+	/* power must be on */
+	g_msdc1_io = VOL_3000 * 1000;
+	g_msdc1_flash = VOL_3000 * 1000;
+
+	/* power off */
+	msdc_ldo_power(0, POWER_LDO_VMC, VOL_3000, &g_msdc1_io);
+	msdc_ldo_power(0, POWER_LDO_VMCH, VOL_3000, &g_msdc1_flash);
+
+	if (host != NULL)
+		msdc_set_bad_card_and_remove(host);
+}
+EXPORT_SYMBOL(msdc_sd_power_off);
+/**************************************************************/
+/* Section 2: Device Tree                                     */
 /**************************************************************/
 
 const struct of_device_id msdc_of_ids[] = {
 	{   .compatible = "mediatek,mt6797-mmc", },
-	{   .compatible = "mediatek,MSDC2", },
-	{   .compatible = "mediatek,MSDC3", },
 	{ },
-};
-
-unsigned int msdc_host_enable[HOST_MAX_NUM] = {
-	1,
-	1,
-/* FIXME: if msdc2 msdc3 modify device tree standard, msdc_host_enable can be removed */
-#if defined(CFG_DEV_MSDC2)
-	1,
-#else
-	0,
-#endif
-#if defined(CFG_DEV_MSDC3)
-	1,
-#else
-	0,
-#endif
 };
 
 /* GPIO node */
@@ -288,30 +575,18 @@ int msdc_of_parse(struct mmc_host *mmc)
 int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 		unsigned int *cd_irq)
 {
-	/* regulator node */
-#if !defined(FPGA_PLATFORM) && !defined(CONFIG_MTK_LEGACY)
-	struct device_node *msdc_backup_node;
-#endif
-	unsigned int host_id = 0;
+	struct device temp_dev;
 	int i, ret;
 	static const char const *msdc_names[] = {"msdc0", "msdc1", "msdc2", "msdc3"};
 
 	for (i = 0; i < HOST_MAX_NUM; i++) {
 		if (0 == strcmp(pdev->dev.of_node->name, msdc_names[i])) {
-			if (msdc_host_enable[i] == 0)
-				return 1;
 			pdev->id = i;
-			host_id = i;
+			pr_err("msdc%d of msdc probe %s!\n",
+				i, pdev->dev.of_node->name);
 			break;
 		}
 	}
-	if (i == HOST_MAX_NUM) {
-		pr_err("%s: Can not find msdc host\n", __func__);
-		return 1;
-	}
-
-	pr_err("msdc%d of msdc DT probe %s!\n",
-			host_id, pdev->dev.of_node->name);
 
 	ret = mmc_of_parse(mmc);
 	if (ret) {
@@ -324,6 +599,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 		return ret;
 	}
 
+#ifndef FPGA_PLATFORM
 	if (gpio_node == NULL) {
 		gpio_node = of_find_compatible_node(NULL, NULL,
 			"mediatek,gpio");
@@ -352,8 +628,6 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 			io_cfg_b_base = of_iomap(io_cfg_b_node, 0);
 		pr_debug("of_iomap for io_cfg_b base @ 0x%p\n", io_cfg_b_base);
 	}
-
-#ifndef FPGA_PLATFORM
 	if (infracfg_ao_node == NULL) {
 		infracfg_ao_node = of_find_compatible_node(NULL, NULL,
 			"mediatek,infracfg_ao");
@@ -429,342 +703,20 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc,
 		pr_debug("of_iomap for topckgen base @ 0x%p\n",
 			topckgen_reg_base);
 	}
-
-#ifndef CONFIG_MTK_LEGACY
-	/* backup original dev.of_node */
-	msdc_backup_node = pdev->dev.of_node;
 	/* get regulator supply node */
-	pdev->dev.of_node = of_find_compatible_node(NULL, NULL,
+	temp_dev.of_node = of_find_compatible_node(NULL, NULL,
 		"mediatek,mt_pmic_regulator_supply");
-	msdc_get_regulators(&(pdev->dev));
-	/* restore original dev.of_node */
-	pdev->dev.of_node = msdc_backup_node;
-#endif
-#endif
-
-	return 0;
-}
-
-u32 g_msdc0_io;
-u32 g_msdc0_flash;
-u32 g_msdc1_io;
-u32 g_msdc1_flash;
-u32 g_msdc2_io;
-u32 g_msdc2_flash;
-u32 g_msdc3_io;
-u32 g_msdc3_flash;
-
-#ifndef FPGA_PLATFORM
-/**************************************************************/
-/* Section 2: Power                                           */
-/**************************************************************/
-#ifdef CONFIG_MTK_LEGACY
-#include <mach/mt_pm_ldo.h>
-#endif
-#include <mt-plat/upmu_common.h>
-#ifndef CONFIG_MTK_LEGACY
-struct regulator *reg_vemc;
-struct regulator *reg_vmc;
-struct regulator *reg_vmch;
-
-enum MSDC_LDO_POWER {
-	POWER_LDO_VMCH,
-	POWER_LDO_VMC,
-	POWER_LDO_VEMC,
-};
-
-void msdc_get_regulators(struct device *dev)
-{
 	if (reg_vemc == NULL)
-		reg_vemc = regulator_get(dev, "vemc");
+		reg_vemc = regulator_get(&temp_dev, "vemc");
 	if (reg_vmc == NULL)
-		reg_vmc = regulator_get(dev, "vmc");
+		reg_vmc = regulator_get(&temp_dev, "vmc");
 	if (reg_vmch == NULL)
-		reg_vmch = regulator_get(dev, "vmch");
-}
+		reg_vmch = regulator_get(&temp_dev, "vmch");
 
-bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
-{
-	struct regulator *reg = NULL;
-	int ret = 0;
-
-	switch (powerId) {
-	case POWER_LDO_VMCH:
-		reg = reg_vmch;
-		break;
-	case POWER_LDO_VMC:
-		reg = reg_vmc;
-		break;
-	case POWER_LDO_VEMC:
-		reg = reg_vemc;
-		break;
-	default:
-		pr_err("[msdc] Invalid power id\n");
-		return false;
-	}
-	if (reg == NULL) {
-		pr_err("[msdc] regulator pointer is NULL\n");
-		return false;
-	}
-	/* New API voltage use micro V */
-	regulator_set_voltage(reg, powerVolt, powerVolt);
-	ret = regulator_enable(reg);
-	if (ret) {
-		pr_err("msdc regulator_enable failed: %d\n", ret);
-		return false;
-	}
-	pr_err("msdc_hwPoweron:%d: name:%s", powerId, mode_name);
-	return true;
-}
-
-bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
-{
-	struct regulator *reg = NULL;
-
-	switch (powerId) {
-	case POWER_LDO_VMCH:
-		reg = reg_vmch;
-		break;
-	case POWER_LDO_VMC:
-		reg = reg_vmc;
-		break;
-	case POWER_LDO_VEMC:
-		reg = reg_vemc;
-		break;
-	default:
-		pr_err("[msdc] Invalid power id\n");
-		return false;
-	}
-	if (reg == NULL) {
-		pr_err("[msdc] regulator pointer is NULL\n");
-		return false;
-	}
-	/* New API voltage use micro V */
-	regulator_disable(reg);
-	pr_err("msdc_hwPowerOff:%d: name:%s", powerId, mode_name);
-
-	return true;
-}
-
-#else /*for CONFIG_MTK_LEGACY defined*/
-#define	POWER_LDO_VMCH		MT6351_POWER_LDO_VMCH
-#define	POWER_LDO_VMC		MT6351_POWER_LDO_VMC
-#define	POWER_LDO_VEMC		MT6351_POWER_LDO_VEMC
-
-#define msdc_hwPowerOn(powerId, powerVolt, name) \
-	hwPowerOn(powerId, powerVolt, name)
-
-#define msdc_hwPowerDown(powerId, name) \
-	hwPowerDown(powerId, name)
 #endif
-
-#ifndef CONFIG_MTK_LEGACY
-u32 msdc_ldo_power(u32 on, unsigned int powerId, int voltage_mv,
-	u32 *status)
-#else
-u32 msdc_ldo_power(u32 on, MT65XX_POWER powerId, int voltage_mv,
-	u32 *status)
-#endif
-{
-	int voltage_uv = voltage_mv * 1000;
-
-	if (on) { /* want to power on */
-		if (*status == 0) {  /* can power on */
-			pr_err("msdc LDO<%d> power on<%d>\n", powerId,
-				voltage_uv);
-			msdc_hwPowerOn(powerId, voltage_uv, "msdc");
-			*status = voltage_uv;
-		} else if (*status == voltage_uv) {
-			pr_err("msdc LDO<%d><%d> power on again!\n", powerId,
-				voltage_uv);
-		} else { /* for sd3.0 later */
-			pr_err("msdc LDO<%d> change<%d> to <%d>\n", powerId,
-				*status, voltage_uv);
-			msdc_hwPowerDown(powerId, "msdc");
-			msdc_hwPowerOn(powerId, voltage_uv, "msdc");
-			/*hwPowerSetVoltage(powerId, voltage_uv, "msdc");*/
-			*status = voltage_uv;
-		}
-	} else {  /* want to power off */
-		if (*status != 0) {  /* has been powerred on */
-			pr_err("msdc LDO<%d> power off\n", powerId);
-			msdc_hwPowerDown(powerId, "msdc");
-			*status = 0;
-		} else {
-			pr_err("LDO<%d> not power on\n", powerId);
-		}
-	}
 
 	return 0;
 }
-
-void msdc_dump_ldo_sts(struct msdc_host *host)
-{
-#ifdef MTK_MSDC_BRINGUP_DEBUG
-	u32 ldo_en = 0, ldo_vol = 0;
-	u32 id = host->id;
-
-	switch (id) {
-	case 0:
-		pmic_read_interface_nolock(REG_VEMC_EN, &ldo_en, MASK_VEMC_EN,
-			SHIFT_VEMC_EN);
-		pmic_read_interface_nolock(REG_VEMC_VOSEL, &ldo_vol,
-			MASK_VEMC_VOSEL, SHIFT_VEMC_VOSEL);
-		pr_err("VEMC_EN=0x%x, be:1b'1,VEMC_VOL=0x%x, be:1b'0(3.0V),1b'1(3.3V)\n",
-			ldo_en, ldo_vol);
-		break;
-	case 1:
-		pmic_read_interface_nolock(REG_VMC_EN, &ldo_en, MASK_VMC_EN,
-			SHIFT_VMC_EN);
-		pmic_read_interface_nolock(REG_VMC_VOSEL, &ldo_vol,
-			MASK_VMC_VOSEL, SHIFT_VMC_VOSEL);
-		pr_err("VMC_EN=0x%x, be:bit1=1,VMC_VOL=0x%x, be:3b'101(2.8V),3b'011(1.8V)\n",
-			ldo_en, ldo_vol);
-
-		pmic_read_interface_nolock(REG_VMCH_EN, &ldo_en, MASK_VMCH_EN,
-			SHIFT_VMCH_EN);
-		pmic_read_interface_nolock(REG_VMCH_VOSEL, &ldo_vol,
-			MASK_VMCH_VOSEL, SHIFT_VMCH_VOSEL);
-		pr_err("VMCH_EN=0x%x, be:bit1=1, VMCH_VOL=0x%x, be:1b'0(3V),1b'1(3.3V)\n",
-			ldo_en, ldo_vol);
-		break;
-	default:
-		break;
-	}
-#endif
-}
-
-void msdc_sd_power_switch(struct msdc_host *host, u32 on)
-{
-	unsigned int reg_val;
-	switch (host->id) {
-	case 1:
-		msdc_ldo_power(on, POWER_LDO_VMC, VOL_1800, &g_msdc1_io);
-		/* MT6351 have no 2.9v setting, So calibration 100mv here */
-		if (on) {
-			/* VMC calibration. */
-			pmic_read_interface(REG_VMC_VOSEL_CAL,
-				&reg_val,
-				MASK_VMC_VOSEL_CAL,
-				SHIFT_VMC_VOSEL_CAL);
-
-			/* -100mv. since 2.9V is 2.8V + 100mV. */
-			reg_val = reg_val + 5;
-
-			pmic_config_interface(REG_VMC_VOSEL_CAL,
-				reg_val,
-				MASK_VMC_VOSEL_CAL,
-				SHIFT_VMC_VOSEL_CAL);
-		}
-
-		msdc_set_tdsel(host, 0, 1);
-		msdc_set_rdsel(host, 0, 1);
-		msdc_set_driving(host, host->hw, 1);
-		break;
-	case 2:
-		msdc_ldo_power(on, POWER_LDO_VMC, VOL_1800, &g_msdc2_io);
-		msdc_set_tdsel(host, 0, 1);
-		msdc_set_rdsel(host, 0, 1);
-		msdc_set_driving(host, host->hw, 1);
-		break;
-	default:
-		break;
-	}
-}
-
-void msdc_sdio_power(struct msdc_host *host, u32 on)
-{
-	switch (host->id) {
-#if defined(CFG_DEV_MSDC2)
-	case 2:
-		g_msdc2_flash = g_msdc2_io;
-		break;
-#endif
-	default:
-		/* if host_id is 3, it uses default 1.8v setting,
-		which always turns on */
-		break;
-	}
-
-}
-
-void msdc_emmc_power(struct msdc_host *host, u32 on)
-{
-	unsigned long tmo = 0;
-	void __iomem *base = host->base;
-	unsigned int sa_timeout;
-
-	/* if MMC_CAP_WAIT_WHILE_BUSY not set, mmc core layer will wait for
-	 sa_timeout */
-	if (host->mmc && host->mmc->card && (on == 0) &&
-	    host->mmc->caps & MMC_CAP_WAIT_WHILE_BUSY) {
-		/* max timeout: 1000ms */
-		sa_timeout = host->mmc->card->ext_csd.sa_timeout;
-		if ((DIV_ROUND_UP(sa_timeout, 10000)) < 1000)
-			tmo = DIV_ROUND_UP(sa_timeout, 10000000/HZ) + HZ/100;
-		else
-			tmo = HZ;
-		tmo += jiffies;
-
-		while ((MSDC_READ32(MSDC_PS) & 0x10000) != 0x10000) {
-			if (time_after(jiffies, tmo)) {
-				pr_err("Dat0 keep low before power off,sa_timeout = 0x%x",
-					sa_timeout);
-				emmc_sleep_failed = 1;
-				break;
-			}
-		}
-	}
-
-	/* Set to 3.0V - 100mV
-	 * 4'b0000: 0 mV
-	 * 4'b0001: -20 mV
-	 * 4'b0010: -40 mV
-	 * 4'b0011: -60 mV
-	 * 4'b0100: -80 mV
-	 * 4'b0101: -100 mV
-	*/
-	msdc_ldo_power(on, POWER_LDO_VEMC, VOL_3000, &g_msdc0_flash);
-	/* cal 3.0V - 100mv */
-	if (on && CARD_VOL_ACTUAL != VOL_3000) {
-		pmic_config_interface(REG_VEMC_VOSEL_CAL,
-			VEMC_VOSEL_CAL_mV(CARD_VOL_ACTUAL - VOL_3000),
-			MASK_VEMC_VOSEL_CAL,
-			SHIFT_VEMC_VOSEL_CAL);
-	}
-
-	msdc_dump_ldo_sts(host);
-}
-
-void msdc_sd_power(struct msdc_host *host, u32 on)
-{
-	u32 card_on = on;
-	switch (host->id) {
-	case 1:
-		msdc_set_driving(host, host->hw, 0);
-		msdc_set_tdsel(host, 0, 0);
-		msdc_set_rdsel(host, 0, 0);
-		if (host->hw->flags & MSDC_SD_NEED_POWER)
-			card_on = 1;
-		msdc_ldo_power(card_on, POWER_LDO_VMCH, VOL_2900,
-			&g_msdc1_flash);
-		msdc_ldo_power(on, POWER_LDO_VMC, VOL_2900, &g_msdc1_io);
-
-		break;
-	case 2:
-		msdc_set_driving(host, host->hw, 0);
-		msdc_set_tdsel(host, 0, 0);
-		msdc_set_rdsel(host, 0, 0);
-		msdc_ldo_power(on, POWER_LDO_VMCH, VOL_3000, &g_msdc2_flash);
-		msdc_ldo_power(on, POWER_LDO_VMC, VOL_3000, &g_msdc2_io);
-		break;
-	default:
-		break;
-	}
-
-	msdc_dump_ldo_sts(host);
-}
-
 /**************************************************************/
 /* Section 3: Clock                                           */
 /**************************************************************/
@@ -786,22 +738,11 @@ u32 hclks_msdc30_1[] = {PLLCLK_50M, PLLCLK_208M, PLLCLK_200M, PLLCLK_156M,
 u32 hclks_msdc30_2[] = {PLLCLK_50M};
 u32 *hclks_msdc = NULL;
 
-/* #include <mt-plat/mt_idle.h> */
-#if 0
-struct clk *g_msdc0_pll_sel;
-struct clk *g_msdc0_pll_400m;
-struct clk *g_msdc0_pll_200m;
-#endif
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host)
 {
 	if (pdev->id == 0) {
 		host->clock_control = devm_clk_get(&pdev->dev, "msdc0-clock");
-#if 0
-		g_msdc0_pll_sel  = devm_clk_get(&pdev->dev, "MSDC0_PLL_SEL");
-		g_msdc0_pll_400m = devm_clk_get(&pdev->dev, "MSDC0_PLL_400M");
-		g_msdc0_pll_200m = devm_clk_get(&pdev->dev, "MSDC0_PLL_200M");
-#endif
 	} else if (pdev->id == 1) {
 		host->clock_control = devm_clk_get(&pdev->dev, "msdc1-clock");
 	} else if (pdev->id == 2) {
@@ -816,23 +757,6 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 		pr_err("[msdc%d] can not prepare clock control\n", pdev->id);
 		return 1;
 	}
-#if 0
-	/* FIXME: There is no 800Mhz clock source, So removed change clock source */
-	if (host->id == 0) {
-		if (IS_ERR(g_msdc0_pll_sel) ||
-		    IS_ERR(g_msdc0_pll_400m) || IS_ERR(g_msdc0_pll_200m)) {
-			pr_err("msdc0 get pll error,g_msdc0_pll_sel=%p, g_msdc0_pll_400m=%p,g_msdc0_pll_200m=%p\n",
-				g_msdc0_pll_sel,
-				g_msdc0_pll_400m, g_msdc0_pll_200m);
-			return 1;
-		}
-		if (clk_prepare(g_msdc0_pll_sel)) {
-			pr_err("msdc%d can not prepare g_msdc0_pll_sel\n",
-				pdev->id);
-			return 1;
-		}
-	}
-#endif
 	return 0;
 }
 
@@ -1457,4 +1381,4 @@ void msdc_polling_axi_status(int line, int dead)
 		i = 0;
 	}
 }
-#endif /*if !defined(FPGA_PLATFORM)*/
+

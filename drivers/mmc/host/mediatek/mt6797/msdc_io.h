@@ -111,15 +111,12 @@ void msdc_fpga_pwr_init(void);
 #define CARD_VOL_ACTUAL			VOL_2900
 
 void msdc_sd_power_switch(struct msdc_host *host, u32 on);
-void msdc_get_regulators(struct device *dev);
-#if !defined(FPGA_PLATFORM)
+#ifndef FPGA_PLATFORM
 void msdc_emmc_power(struct msdc_host *host, u32 on);
 void msdc_sd_power(struct msdc_host *host, u32 on);
 void msdc_sdio_power(struct msdc_host *host, u32 on);
 void msdc_dump_ldo_sts(struct msdc_host *host);
-#endif
-
-#ifdef FPGA_PLATFORM
+#else
 void msdc_fpga_power(struct msdc_host *host, u32 on);
 bool hwPowerOn_fpga(void);
 bool hwPowerDown_fpga(void);
@@ -163,7 +160,7 @@ extern  u32 hclks_msdc[];
 #define msdc_get_hclks(host)		hclks_msdc
 #define msdc_clk_enable(host)
 #define msdc_clk_disable(host)
-
+#define msdc_get_ccf_clk_pointer(pdev, host)
 #else /* FPGA_PLATFORM */
 
 void msdc_dump_clock_sts(struct msdc_host *host);

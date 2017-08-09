@@ -26,7 +26,6 @@
 #include <linux/seq_file.h>
 #include <mt-plat/mt_chip.h>
 
-/* #include <core/mmc_ops.h> */
 #include <core.h>
 #include "mt_sd.h"
 #include "dbg.h"

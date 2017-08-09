@@ -209,7 +209,7 @@ static void msdc_init_dma_latest_address(void)
 
 }
 #endif
-static void msdc_select_card_type(struct mmc_host *host)
+void msdc_select_card_type(struct mmc_host *host)
 {
 	struct mmc_card *card = host->card;
 	u8 card_type = card->ext_csd.raw_card_type;
@@ -386,22 +386,34 @@ void msdc_set_host_mode_speed(struct seq_file *m, struct msdc_host *host,
 		seq_puts(m, "[SD_Debug]host  support MMC_CAP_UHS_SDR12\n");
 		seq_puts(m, "[SD_Debug]              MMC_CAP_UHS_SDR25\n");
 		break;
-	case MMC_TIMING_UHS_SDR104:
-		host->mmc->caps |= MMC_CAP_UHS_SDR104;
-		host->mmc->caps |= MMC_CAP_UHS_DDR50;
+	case MMC_TIMING_UHS_SDR50:
+		host->mmc->caps |= MMC_CAP_UHS_SDR50;
 		host->mmc->caps |= MMC_CAP_UHS_SDR25;
 		host->mmc->caps |= MMC_CAP_UHS_SDR12;
 		seq_puts(m, "[SD_Debug]host  support MMC_CAP_UHS_SDR12\n");
 		seq_puts(m, "[SD_Debug]              MMC_CAP_UHS_SDR25\n");
+		seq_puts(m, "[SD_Debug]              MMC_CAP_UHS_SDR50\n");
+		break;
+	case MMC_TIMING_UHS_SDR104:
+		host->mmc->caps |= MMC_CAP_UHS_SDR104;
+		host->mmc->caps |= MMC_CAP_UHS_DDR50;
+		host->mmc->caps |= MMC_CAP_UHS_SDR50;
+		host->mmc->caps |= MMC_CAP_UHS_SDR25;
+		host->mmc->caps |= MMC_CAP_UHS_SDR12;
+		seq_puts(m, "[SD_Debug]host  support MMC_CAP_UHS_SDR12\n");
+		seq_puts(m, "[SD_Debug]              MMC_CAP_UHS_SDR25\n");
+		seq_puts(m, "[SD_Debug]              MMC_CAP_UHS_SDR50\n");
 		seq_puts(m, "[SD_Debug]              MMC_CAP_UHS_DDR50\n");
 		seq_puts(m, "[SD_Debug]              MMC_CAP_UHS_SDR104\n");
 		break;
 	case MMC_TIMING_UHS_DDR50:
 		host->mmc->caps |= MMC_CAP_UHS_DDR50;
+		host->mmc->caps |= MMC_CAP_UHS_SDR50;
 		host->mmc->caps |= MMC_CAP_UHS_SDR25;
 		host->mmc->caps |= MMC_CAP_UHS_SDR12;
 		seq_puts(m, "[SD_Debug]host  support MMC_CAP_UHS_SDR12\n");
 		seq_puts(m, "[SD_Debug]              MMC_CAP_UHS_SDR25\n");
+		seq_puts(m, "[SD_Debug]              MMC_CAP_UHS_SDR50\n");
 		seq_puts(m, "[SD_Debug]              MMC_CAP_UHS_DDR50\n");
 		break;
 	case MMC_TIMING_MMC_DDR52:
@@ -479,6 +491,56 @@ void msdc_get_host_mode_speed(struct seq_file *m,
 
 	seq_puts(m, "[SD_Debug] Command queue feature is disable\n");
 
+}
+
+int msdc_reinit(struct msdc_host *host)
+{
+	struct mmc_host *mmc;
+	struct mmc_card *card;
+	int ret = -1;
+
+	if (!host) {
+		ERR_MSG("msdc_host is NULL");
+		return -1;
+	}
+	mmc = host->mmc;
+	if (!mmc) {
+		ERR_MSG("mmc is NULL");
+		return -1;
+	}
+
+	card = mmc->card;
+	if (card == NULL)
+		ERR_MSG("mmc->card is NULL");
+	if (host->block_bad_card)
+		ERR_MSG("Need block this bad SD card from re-initialization");
+
+
+	if (host->hw->host_function == MSDC_EMMC)
+		return -1;
+
+	if (host->hw->host_function != MSDC_SD)
+		goto skip_reinit2;
+
+	if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE) || (host->block_bad_card != 0))
+		goto skip_reinit1;
+	mmc_claim_host(mmc);
+	mmc->ios.timing = MMC_TIMING_LEGACY;
+	msdc_ops_set_ios(mmc, &mmc->ios);
+	/* power reset sdcard */
+	/* ret = mmc->bus_ops->reset(mmc); */
+	mmc_release_host(mmc);
+
+	ERR_MSG("Reinit %s", ret == 0 ? "success" : "fail");
+
+skip_reinit1:
+	if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE) && (host->mmc->card)
+		&& mmc_card_present(host->mmc->card)
+		&& (!mmc_card_removed(host->mmc->card))
+		&& (host->block_bad_card == 0))
+		ret = 0;
+skip_reinit2:
+	return ret;
 }
 
 static void msdc_set_field(void __iomem *address, unsigned int start_bit,
@@ -1648,6 +1710,159 @@ static void msdc_enable_emmc_cache(struct seq_file *m,
 	}
 	mmc_put_card(host->mmc->card);
 }
+#ifdef MTK_MSDC_ERROR_TUNE_DEBUG
+#define MTK_MSDC_ERROR_NONE	(0)
+#define MTK_MSDC_ERROR_CMD_TMO	(0x1)
+#define MTK_MSDC_ERROR_CMD_CRC	(0x1 << 1)
+#define MTK_MSDC_ERROR_DAT_TMO	(0x1 << 2)
+#define MTK_MSDC_ERROR_DAT_CRC	(0x1 << 3)
+#define MTK_MSDC_ERROR_ACMD_TMO	(0x1 << 4)
+#define MTK_MSDC_ERROR_ACMD_CRC	(0x1 << 5)
+unsigned int g_err_tune_dbg_count = 0;
+unsigned int g_err_tune_dbg_host = 0;
+unsigned int g_err_tune_dbg_cmd = 0;
+unsigned int g_err_tune_dbg_arg = 0;
+unsigned int g_err_tune_dbg_error = MTK_MSDC_ERROR_NONE;
+
+static void msdc_error_tune_debug_print(struct seq_file *m, int p1, int p2, int p3, int p4, int p5)
+{
+	g_err_tune_dbg_host = p1;
+	g_err_tune_dbg_cmd = p2;
+	g_err_tune_dbg_arg = p3;
+	g_err_tune_dbg_error = p4;
+	g_err_tune_dbg_count = p5;
+	if (g_err_tune_dbg_count &&
+	    (g_err_tune_dbg_error != MTK_MSDC_ERROR_NONE)) {
+		seq_puts(m, "===================MSDC error debug start =======================\n");
+		seq_printf(m, "host:%d, cmd=%d, arg=%d, error=%d, count=%d\n",
+			g_err_tune_dbg_host, g_err_tune_dbg_cmd,
+			g_err_tune_dbg_arg, g_err_tune_dbg_error,
+			g_err_tune_dbg_count);
+	} else {
+		g_err_tune_dbg_host = 0;
+		g_err_tune_dbg_cmd = 0;
+		g_err_tune_dbg_arg = 0;
+		g_err_tune_dbg_error = MTK_MSDC_ERROR_NONE;
+		g_err_tune_dbg_count = 0;
+		seq_printf(m, "host:%d, cmd=%d, arg=%d, error=%d, count=%d\n",
+			g_err_tune_dbg_host, g_err_tune_dbg_cmd,
+			g_err_tune_dbg_arg, g_err_tune_dbg_error,
+			g_err_tune_dbg_count);
+		seq_puts(m, "=====================MSDC error debug end =======================\n");
+	}
+}
+
+void msdc_error_tune_debug1(struct msdc_host *host, struct mmc_command *cmd,
+		struct mmc_command *sbc, u32 *intsts)
+{
+	if (!g_err_tune_dbg_error ||
+	    (g_err_tune_dbg_count <= 0) ||
+	    (g_err_tune_dbg_host != host->id))
+		return;
+
+	if (g_err_tune_dbg_cmd == cmd->opcode) {
+		if ((cmd->opcode != MMC_SWITCH)
+		 || ((cmd->opcode == MMC_SWITCH) &&
+		     (g_err_tune_dbg_arg == ((cmd->arg >> 16) & 0xff)))) {
+			if (g_err_tune_dbg_error & MTK_MSDC_ERROR_CMD_TMO) {
+				*intsts = MSDC_INT_CMDTMO;
+				g_err_tune_dbg_count--;
+			} else if (g_err_tune_dbg_error
+				 & MTK_MSDC_ERROR_CMD_CRC) {
+				*intsts = MSDC_INT_RSPCRCERR;
+				g_err_tune_dbg_count--;
+			}
+			pr_err("[%s]: got the error cmd:%d, arg=%d, dbg error=%d, cmd->error=%d, count=%d\n",
+				__func__, g_err_tune_dbg_cmd,
+				g_err_tune_dbg_arg, g_err_tune_dbg_error,
+				cmd->error, g_err_tune_dbg_count);
+		}
+	}
+
+#ifdef MTK_MSDC_USE_CMD23
+	if ((g_err_tune_dbg_cmd == MMC_SET_BLOCK_COUNT) &&
+	    sbc &&
+	    (host->autocmd & MSDC_AUTOCMD23)) {
+		if (g_err_tune_dbg_error & MTK_MSDC_ERROR_ACMD_TMO) {
+			*intsts = MSDC_INT_ACMDTMO;
+		} else if (g_err_tune_dbg_error
+			& MTK_MSDC_ERROR_ACMD_CRC) {
+			*intsts = MSDC_INT_ACMDCRCERR;
+		} else {
+			return;
+		}
+		pr_err("[%s]: got the error cmd:%d, dbg error=%d, sbc->error=%d, count=%d\n",
+			__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_error,
+			sbc->error, g_err_tune_dbg_count);
+	}
+#endif
+}
+
+void msdc_error_tune_debug2(struct msdc_host *host, struct mmc_command *stop,
+		u32 *intsts)
+{
+	void __iomem *base = host->base;
+
+	if (!g_err_tune_dbg_error ||
+	    (g_err_tune_dbg_count <= 0) ||
+	    (g_err_tune_dbg_host != host->id))
+		return;
+
+	if (g_err_tune_dbg_cmd == (MSDC_READ32(SDC_CMD) & 0x3f)) {
+		if (g_err_tune_dbg_error & MTK_MSDC_ERROR_DAT_TMO) {
+			*intsts = MSDC_INT_DATTMO;
+			g_err_tune_dbg_count--;
+		} else if (g_err_tune_dbg_error & MTK_MSDC_ERROR_DAT_CRC) {
+			*intsts = MSDC_INT_DATCRCERR;
+			g_err_tune_dbg_count--;
+		}
+		pr_err("[%s]: got the error cmd:%d, dbg error 0x%x, data->error=%d, count=%d\n",
+			__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_error,
+			host->data->error, g_err_tune_dbg_count);
+	}
+	if ((g_err_tune_dbg_cmd == MMC_STOP_TRANSMISSION) &&
+	    stop &&
+	    (host->autocmd & MSDC_AUTOCMD12)) {
+		if (g_err_tune_dbg_error & MTK_MSDC_ERROR_ACMD_TMO) {
+			*intsts = MSDC_INT_ACMDTMO;
+			g_err_tune_dbg_count--;
+		} else if (g_err_tune_dbg_error & MTK_MSDC_ERROR_ACMD_CRC) {
+			*intsts = MSDC_INT_ACMDCRCERR;
+			g_err_tune_dbg_count--;
+		}
+		pr_err("[%s]: got the error cmd:%d, dbg error 0x%x, stop->error=%d, host->error=%d, count=%d\n",
+			__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_error,
+			stop->error, host->error, g_err_tune_dbg_count);
+	}
+}
+
+void msdc_error_tune_debug3(struct msdc_host *host,
+		struct mmc_command *cmd, u32 *intsts)
+{
+	if (!g_err_tune_dbg_error ||
+	    (g_err_tune_dbg_count <= 0) ||
+	    (g_err_tune_dbg_host != host->id))
+		return;
+
+	if (g_err_tune_dbg_cmd != cmd->opcode)
+		return;
+
+	if ((g_err_tune_dbg_cmd != MMC_SWITCH)
+	 || ((g_err_tune_dbg_cmd == MMC_SWITCH) &&
+	     (g_err_tune_dbg_arg == ((cmd->arg >> 16) & 0xff)))) {
+		if (g_err_tune_dbg_error & MTK_MSDC_ERROR_CMD_TMO) {
+			*intsts = MSDC_INT_CMDTMO;
+			g_err_tune_dbg_count--;
+		} else if (g_err_tune_dbg_error & MTK_MSDC_ERROR_CMD_CRC) {
+			*intsts = MSDC_INT_RSPCRCERR;
+			g_err_tune_dbg_count--;
+		}
+		pr_err("[%s]: got the error cmd:%d, arg=%d, dbg error=%d, cmd->error=%d, count=%d\n",
+			__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_arg,
+			g_err_tune_dbg_error, cmd->error, g_err_tune_dbg_count);
+	}
+}
+#endif /*ifdef MTK_MSDC_ERROR_TUNE_DEBUG*/
 int g_count = 0;
 /* ========== driver proc interface =========== */
 static int msdc_debug_proc_show(struct seq_file *m, void *v)
@@ -2147,7 +2362,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 
 #ifdef MTK_MSDC_ERROR_TUNE_DEBUG
 	case MMC_ERROR_TUNE:
-		msdc_error_tune_debug_print(p1, p2, p3, p4, p5);
+		msdc_error_tune_debug_print(m, p1, p2, p3, p4, p5);
 		break;
 #endif
 	case ENABLE_AXI_MODULE:
@@ -2234,165 +2449,6 @@ invalid_host_id:
 	seq_printf(m, "[SD_Debug]invalid host id: %d\n", id);
 	return 1;
 }
-#ifdef MTK_MSDC_ERROR_TUNE_DEBUG
-#define MTK_MSDC_ERROR_NONE	(0)
-#define MTK_MSDC_ERROR_CMD_TMO	(0x1)
-#define MTK_MSDC_ERROR_CMD_CRC	(0x1 << 1)
-#define MTK_MSDC_ERROR_DAT_TMO	(0x1 << 2)
-#define MTK_MSDC_ERROR_DAT_CRC	(0x1 << 3)
-#define MTK_MSDC_ERROR_ACMD_TMO	(0x1 << 4)
-#define MTK_MSDC_ERROR_ACMD_CRC	(0x1 << 5)
-unsigned int g_err_tune_dbg_count = 0;
-unsigned int g_err_tune_dbg_host = 0;
-unsigned int g_err_tune_dbg_cmd = 0;
-unsigned int g_err_tune_dbg_arg = 0;
-unsigned int g_err_tune_dbg_error = MTK_MSDC_ERROR_NONE;
-
-static void msdc_error_tune_debug_print(int p1, int p2, int p3, int p4, int p5)
-{
-	g_err_tune_dbg_host = p1;
-	g_err_tune_dbg_cmd = p2;
-	g_err_tune_dbg_arg = p3;
-	g_err_tune_dbg_error = p4;
-	g_err_tune_dbg_count = p5;
-	if (g_err_tune_dbg_count &&
-	    (g_err_tune_dbg_error != MTK_MSDC_ERROR_NONE)) {
-		pr_err("===================MSDC error debug start =======================\n");
-		pr_err("host:%d, cmd=%d, arg=%d, error=%d, count=%d\n",
-			g_err_tune_dbg_host, g_err_tune_dbg_cmd,
-			g_err_tune_dbg_arg, g_err_tune_dbg_error,
-			g_err_tune_dbg_count);
-	} else {
-		g_err_tune_dbg_host = 0;
-		g_err_tune_dbg_cmd = 0;
-		g_err_tune_dbg_arg = 0;
-		g_err_tune_dbg_error = MTK_MSDC_ERROR_NONE;
-		g_err_tune_dbg_count = 0;
-		pr_err("host:%d, cmd=%d, arg=%d, error=%d, count=%d\n",
-			g_err_tune_dbg_host, g_err_tune_dbg_cmd,
-			g_err_tune_dbg_arg, g_err_tune_dbg_error,
-			g_err_tune_dbg_count);
-		pr_err("=====================MSDC error debug end =======================\n");
-	}
-}
-
-void msdc_error_tune_debug1(struct msdc_host *host, struct mmc_command *cmd,
-		struct mmc_command *sbc, u32 *intsts)
-{
-	u32 opcode = cmd->opcode;
-
-	if (!g_err_tune_dbg_error ||
-	    (g_err_tune_dbg_count <= 0) ||
-	    (g_err_tune_dbg_host != host->id))
-		return;
-
-	if (g_err_tune_dbg_cmd == opcode) {
-		if ((opcode != MMC_SWITCH)
-		 || ((opcode == MMC_SWITCH) &&
-		     (g_err_tune_dbg_arg == (cmd->arg >> 16) & 0xff))) {
-			if (g_err_tune_dbg_error & MTK_MSDC_ERROR_CMD_TMO) {
-				*intsts = MSDC_INT_CMDTMO;
-				g_err_tune_dbg_count--;
-			} else if (g_err_tune_dbg_error
-				 & MTK_MSDC_ERROR_CMD_CRC) {
-				*intsts = MSDC_INT_RSPCRCERR;
-				g_err_tune_dbg_count--;
-			}
-			pr_err("[%s]: got the error cmd:%d, arg=%d, dbg error=%d, cmd->error=%d, count=%d\n",
-				__func__, g_err_tune_dbg_cmd,
-				g_err_tune_dbg_arg, g_err_tune_dbg_error,
-				cmd->error, g_err_tune_dbg_count);
-		}
-	}
-
-#ifdef MTK_MSDC_USE_CMD23
-	if ((g_err_tune_dbg_cmd == MMC_SET_BLOCK_COUNT) &&
-	    sbc &&
-	    (host->autocmd & MSDC_AUTOCMD23)) {
-		if (g_err_tune_dbg_error & MTK_MSDC_ERROR_ACMD_TMO) {
-			*intsts = MSDC_INT_ACMDTMO;
-		} else if (g_err_tune_dbg_error
-			& MTK_MSDC_ERROR_ACMD_CRC) {
-			*intsts = MSDC_INT_ACMDCRCERR;
-		} else {
-			return;
-		}
-		pr_err("[%s]: got the error cmd:%d, dbg error=%d, sbc->error=%d, count=%d\n",
-			__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_error,
-			sbc->error, g_err_tune_dbg_count);
-	}
-#endif
-}
-
-void msdc_error_tune_debug2(struct msdc_host *host, struct mmc_command *stop,
-		u32 *intsts)
-{
-	void __iomem *base = host->base;
-
-	if (!g_err_tune_dbg_error ||
-	    (g_err_tune_dbg_count <= 0) ||
-	    (g_err_tune_dbg_host != host->id))
-		return;
-
-	if (g_err_tune_dbg_cmd == (MSDC_READ32(SDC_CMD) & 0x3f)) {
-		if (g_err_tune_dbg_error & MTK_MSDC_ERROR_DAT_TMO) {
-			*intsts = MSDC_INT_DATTMO;
-			g_err_tune_dbg_count--;
-		} else if (g_err_tune_dbg_error & MTK_MSDC_ERROR_DAT_CRC) {
-			*intsts = MSDC_INT_DATCRCERR;
-			g_err_tune_dbg_count--;
-		}
-		pr_err("[%s]: got the error cmd:%d, dbg error 0x%x, data->error=%d, count=%d\n",
-			__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_error,
-			host->data->error, g_err_tune_dbg_count);
-	}
-	if ((g_err_tune_dbg_cmd == MMC_STOP_TRANSMISSION) &&
-	    stop &&
-	    (host->autocmd & MSDC_AUTOCMD12)) {
-		if (g_err_tune_dbg_error & MTK_MSDC_ERROR_ACMD_TMO) {
-			*intsts = MSDC_INT_ACMDTMO;
-			g_err_tune_dbg_count--;
-		} else if (g_err_tune_dbg_error & MTK_MSDC_ERROR_ACMD_CRC) {
-			*intsts = MSDC_INT_ACMDCRCERR;
-			g_err_tune_dbg_count--;
-		}
-		pr_err("[%s]: got the error cmd:%d, dbg error 0x%x, stop->error=%d, host->error=%d, count=%d\n",
-			__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_error,
-			stop->error, host->error, g_err_tune_dbg_count);
-	}
-}
-
-void msdc_error_tune_debug3(struct msdc_host *host,
-		struct mmc_command *cmd, u32 *intsts)
-{
-	u32 opcode = cmd->opcode;
-
-	if (!g_err_tune_dbg_error ||
-	    (g_err_tune_dbg_count <= 0) ||
-	    (g_err_tune_dbg_host != host->id))
-		return;
-
-	if (g_err_tune_dbg_cmd != cmd->opcode)
-		return;
-
-	if ((g_err_tune_dbg_cmd != MMC_SWITCH)
-	 || ((g_err_tune_dbg_cmd == MMC_SWITCH) &&
-	     (g_err_tune_dbg_arg == ((cmd->arg >> 16) & 0xff)))) {
-		if (g_err_tune_dbg_error & MTK_MSDC_ERROR_CMD_TMO) {
-			*intsts = MSDC_INT_CMDTMO;
-			g_err_tune_dbg_count--;
-		} else if (g_err_tune_dbg_error & MTK_MSDC_ERROR_CMD_CRC) {
-			*intsts = MSDC_INT_RSPCRCERR;
-			g_err_tune_dbg_count--;
-		}
-		pr_err("[%s]: got the error cmd:%d, arg=%d, dbg error=%d, cmd->error=%d, count=%d\n",
-			__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_arg,
-			g_err_tune_dbg_error, cmd->error, g_err_tune_dbg_count);
-	}
-}
-#endif /*ifdef MTK_MSDC_ERROR_TUNE_DEBUG*/
-
-
 static ssize_t msdc_debug_proc_write(struct file *file, const char *buf,
 	size_t count, loff_t *data)
 {
