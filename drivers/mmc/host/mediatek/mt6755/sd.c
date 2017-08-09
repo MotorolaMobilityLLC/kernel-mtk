@@ -4348,6 +4348,7 @@ static unsigned int msdc_command_resp_polling(struct msdc_host *host,
 	}
  out:
 	host->cmd = NULL;
+	/*
 	if (!cmd->error)
 		CMD_MSG("CMD<%d> arg<0x%.8x> resp<0x%.8x>",
 			cmd->opcode, cmd->arg, cmd->resp[0]);
@@ -4356,6 +4357,7 @@ static unsigned int msdc_command_resp_polling(struct msdc_host *host,
 			cmd->opcode, cmd->arg, cmd->resp[0], cmd->error);
 		msdc_dump_register(host);
 	}
+	*/
 	return cmd->error;
 }
 
@@ -9491,6 +9493,7 @@ static int msdc_get_rigister_settings(struct msdc_host *host)
 	}
 
 	/* parse ett */
+	#if 0
 	if (MSDC_EMMC == host->hw->host_function
 		&& !of_property_read_u32(register_setting_node, "ett-hs200-cells", &host->hw->ett_hs200_count)) {
 		host->hw->ett_hs200_settings =
@@ -9532,6 +9535,7 @@ static int msdc_get_rigister_settings(struct msdc_host *host)
 		pr_err("[MSDC%d]error: hs400 ett setting is not found in DT.\n", host->id);
 	}
 #endif
+	#endif
 }
 
 /**
@@ -9871,8 +9875,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 			pr_err("can't find MSDC1_INS-eint compatible node\n");
 	}
 
-
-
 	/* Set host parameters to mmc */
 	mmc->ops = &mt_msdc_ops;
 	mmc->f_min = HOST_MIN_MCLK;
@@ -9888,6 +9890,10 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #else
 	mmc->caps |= MMC_CAP_ERASE;
 #endif
+	/* Remove HS200 and DDR temporarily */
+	mmc->caps &= ~(MMC_CAP_UHS_DDR50);
+	mmc->caps2 &= ~(MMC_CAP2_HS200);
+
 	mmc->max_busy_timeout = 0;
 	/* MMC core transfer sizes tunable parameters */
 	mmc->max_segs = MAX_HW_SGMTS;

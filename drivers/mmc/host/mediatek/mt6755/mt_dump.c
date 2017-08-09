@@ -375,6 +375,7 @@ static unsigned int simp_mmc_set_signal_voltage(struct simp_mmc_host *host, int 
 #if 1
 static unsigned int simp_mmc_enable_clk(struct simp_mmc_host *host)
 {
+#if 0
 	/*check base address ,cause KE too early to initial it at msdc_drv_probe */
 	if (NULL == apmixed_reg_base1 || NULL == topckgen_reg_base || NULL == pericfg_reg_base) {
 		pr_err("apmixed_reg_base1=%p, topckgen_reg_base=%p,pericfg_reg_base=%p\n",
@@ -419,7 +420,7 @@ static unsigned int simp_mmc_enable_clk(struct simp_mmc_host *host)
 		       topckgen_reg_base);
 
 #endif
-
+#endif
 	return SIMP_SUCCESS;
 }
 #endif
