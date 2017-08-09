@@ -185,7 +185,7 @@ int osal_filp_open_read_only(const char *file_path)
 
 	val = down_interruptible(&osal_fp_sem);
 
-	for (filp_id = 1; filp_id < OSAL_MAX_FP_COUNT; filp_id++) {
+	for (filp_id = 1; filp_id < OSAL_MAX_FP_COUNT - 1 ; filp_id++) {
 		if (g_osal_fp[filp_id] == NULL)
 			break;
 	}
