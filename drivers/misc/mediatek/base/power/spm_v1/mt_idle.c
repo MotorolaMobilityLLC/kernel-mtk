@@ -530,7 +530,9 @@ static void __iomem *mfgsys_base;
 static void __iomem *mmsys_base;
 static void __iomem *imgsys_base;
 static void __iomem *vdecsys_base;
+#if !defined(CONFIG_ARCH_MT6735M)
 static void __iomem *vencsys_base;
+#endif
 static void __iomem *cksys_base;
 
 #define INFRA_REG(ofs)      (infrasys_base + ofs)
@@ -619,9 +621,10 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 		clks[CG_VDEC0] = idle_readl(VDEC_CKEN_SET); /* VDEC0 */
 		clks[CG_VDEC1] = idle_readl(LARB_CKEN_SET); /* VDEC1 */
 	}
-
+#if !defined(CONFIG_ARCH_MT6735M)
 	if (sys_is_on(SYS_VEN))
 		clks[CG_VENC] = idle_readl(VENC_CG_CON); /* VENC_JPEG */
+#endif
 #else
 	/* TODO */
 #endif
@@ -698,13 +701,17 @@ static int __init get_base_from_node(
 	node = of_find_matching_node(NULL, ids);
 	if (!node) {
 		idle_err("node '%s' not found!\n", cmp);
+#if !defined(CONFIG_ARCH_MT6580)
 		BUG();
+#endif
 	}
 
 	*pbase = of_iomap(node, idx);
 	if (!(*pbase)) {
 		idle_err("node '%s' cannot iomap!\n", cmp);
+#if !defined(CONFIG_ARCH_MT6580)
 		BUG();
+#endif
 	}
 
 	return 0;
@@ -747,11 +754,13 @@ static void __init iomap_init(void)
 		{.compatible = "mediatek,mt6735-vdec_gcon"},
 		{ /* sentinel */ }
 	};
+#if !defined(CONFIG_ARCH_MT6735M)
 	static const struct of_device_id venc_gcon_ids[] = {
 		{.compatible = "mediatek,venc_gcon"},
 		{.compatible = "mediatek,mt6735-venc_gcon"},
 		{ /* sentinel */ }
 	};
+#endif
 	static const struct of_device_id cksys_ids[] = {
 		{.compatible = "mediatek,cksys"},
 		{.compatible = "mediatek,mt6735-cksys"},
@@ -765,7 +774,9 @@ static void __init iomap_init(void)
 	get_base_from_node(mmsys_config_ids, &mmsys_base, 0, "mmsys_config");
 	get_base_from_node(imgsys_ids, &imgsys_base, 0, "imgsys");
 	get_base_from_node(vdec_gcon_ids, &vdecsys_base, 0, "vdec_gcon");
+#if !defined(CONFIG_ARCH_MT6735M)
 	get_base_from_node(venc_gcon_ids, &vencsys_base, 0, "venc_gcon");
+#endif
 	get_base_from_node(cksys_ids, &cksys_base, 0, "cksys");
 }
 
