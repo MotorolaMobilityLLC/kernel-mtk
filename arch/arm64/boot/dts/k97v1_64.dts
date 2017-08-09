@@ -1500,8 +1500,9 @@
 	spi1_cs_clr_cfg:spi1_cs_clear@gpio237{
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO237__FUNC_GPIO237>;
-			slew-rate = <0>;
-			bias-pull-down = <00>;
+			input-disable;
+			bias-disable;
+			input-schmitt-enable;
 		};
 	};
 	spi1_clk_set_cfg:spi1_clk_set@gpio234{
@@ -1512,8 +1513,9 @@
 	spi1_clk_clr_cfg:spi1_clk_clear@gpio234{
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO234__FUNC_GPIO234>;
-			slew-rate = <0>;
-			bias-pull-down = <00>;
+			input-disable;
+			bias-disable;
+			input-schmitt-enable;
 		};
 	};
 	spi1_miso_set_cfg:spi1_miso_set@gpio235{
@@ -1524,8 +1526,9 @@
 	spi1_miso_clr_cfg:spi1_miso_clear@gpio235{
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO235__FUNC_GPIO235>;
-			slew-rate = <0>;
-			bias-pull-down = <00>;
+			input-disable;
+			bias-disable;
+			input-schmitt-enable;
 		};
 	};
 	spi1_mosi_set_cfg:spi1_mosi_set@gpio236{
@@ -1536,8 +1539,9 @@
 	spi1_mosi_clr_cfg:spi1_mosi_clear@gpio236{
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO236__FUNC_GPIO236>;
-			slew-rate = <0>;
-			bias-pull-down = <00>;
+			input-disable;
+			bias-disable;
+			input-schmitt-enable;
 		};
 	};
 	/* SPI GPIO Settings - End */
