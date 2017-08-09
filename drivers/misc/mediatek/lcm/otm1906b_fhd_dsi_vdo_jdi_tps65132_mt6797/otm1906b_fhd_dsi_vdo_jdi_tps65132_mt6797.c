@@ -514,7 +514,7 @@ static void push_table(void *cmdq, struct LCM_setting_table *table, unsigned int
 			break;
 
 		default:
-			dsi_set_cmdq_V22(cmdq, cmd, table[i].count, table[i].para_list, force_update);
+			dsi_set_cmdq_V2(cmd, table[i].count, table[i].para_list, force_update);
 		}
 	}
 }
@@ -563,8 +563,6 @@ static void lcm_get_params(LCM_PARAMS *params)
 #endif
 	/*video mode timing*/
 
-	params->dsi.ssc_disable = 1;
-
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
 	params->dsi.vertical_sync_active				= 2;
@@ -604,9 +602,9 @@ static void lcm_get_params(LCM_PARAMS *params)
 #endif
 	params->dsi.esd_check_enable = 1;
 	params->dsi.customization_esd_check_enable = 0;
-	params->dsi.lcm_esd_check_table[0].cmd          = 0x53;
+	params->dsi.lcm_esd_check_table[0].cmd          = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count        = 1;
-	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
+	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
 
 	params->dsi.lane_swap_en = 1;
 
@@ -802,12 +800,12 @@ static unsigned int lcm_esd_check(void)
 
 	read_reg_v2(0x53, buffer, 1);
 
-	if (buffer[0] != 0x24) {
-		pr_debug("[LCM ERROR] [0x53]=0x%02x\n", buffer[0]);
+if (buffer[0] != 0x24) {
+	/*	pr_debug("[LCM ERROR] [0x53]=0x%02x\n", buffer[0]);*/
 		return TRUE;
 
 	} else {
-		pr_debug("[LCM NORMAL] [0x53]=0x%02x\n", buffer[0]);
+	/*	pr_debug("[LCM NORMAL] [0x53]=0x%02x\n", buffer[0]);*/
 		return FALSE;
 	}
 #else
@@ -831,7 +829,7 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 	unsigned int data_array[3];
 	unsigned char read_buf[4];
 
-	pr_debug("ATA check size = 0x%x,0x%x,0x%x,0x%x\n", x0_MSB, x0_LSB, x1_MSB, x1_LSB);
+	/*pr_debug("ATA check size = 0x%x,0x%x,0x%x,0x%x\n", x0_MSB, x0_LSB, x1_MSB, x1_LSB);*/
 	data_array[0] = 0x0005390A;/*HS packet*/
 	data_array[1] = (x1_MSB<<24)|(x0_LSB<<16)|(x0_MSB<<8)|0x2a;
 	data_array[2] = (x1_LSB);
@@ -871,7 +869,7 @@ static void lcm_setbacklight(unsigned int level)
 #ifdef BUILD_LK
 	dprintf(0, "%s,lk nt35595 backlight: level = %d\n", __func__, level);
 #else
-	pr_debug("%s, kernel nt35595 backlight: level = %d\n", __func__, level);
+	/*pr_debug("%s, kernel nt35595 backlight: level = %d\n", __func__, level);*/
 #endif
 	/* Refresh value of backlight level.*/
 	lcm_backlight_level_setting[0].para_list[0] = level;
@@ -968,7 +966,7 @@ static int lcm_adjust_fps(void *cmdq, int fps, LCM_PARAMS *params)
 #ifdef BUILD_LK
 	dprintf(0, "%s:to %d\n", __func__, fps);
 #else
-	pr_debug("%s:to %d\n", __func__, fps);
+	/*pr_debug("%s:to %d\n", __func__, fps);*/
 #endif
 
 	if (fps == 60) {
