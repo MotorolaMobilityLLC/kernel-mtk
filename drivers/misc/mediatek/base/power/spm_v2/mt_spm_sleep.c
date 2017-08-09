@@ -241,11 +241,11 @@ static struct pwr_ctrl suspend_ctrl = {
 #if defined(CONFIG_ARCH_MT6797)
 	.disp_od_req_mask_b = 0,
 
-	.spm_apsrc_req = 0,
+	.spm_apsrc_req = 1,
 	.spm_f26m_req = 1,
-	.spm_lte_req = 0,
-	.spm_infra_req = 0,
-	.spm_vrf18_req = 0,
+	.spm_lte_req = 1,
+	.spm_infra_req = 1,
+	.spm_vrf18_req = 1,
 #else
 	.spm_apsrc_req = 0,
 	.spm_f26m_req = 0,
@@ -716,18 +716,6 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 #if SPM_AEE_RR_REC
 	aee_rr_rec_spm_suspend_val(SPM_SUSPEND_ENTER_WFI);
-#endif
-#if defined(CONFIG_ARCH_MT6797)
-	spm_crit2("spm_trigger_wfi_for_sleep\n");
-	spm_crit2("SPM_AP_STANDBY_CON 0x%x\n", spm_read(SPM_AP_STANDBY_CON));
-	spm_crit2("SPM_SRC_REQ 0x%x\n", spm_read(SPM_SRC_REQ));
-	spm_crit2("SPM_SRC_MASK 0x%x\n", spm_read(SPM_SRC_MASK));
-	spm_crit2("SPM_SRC2_MASK 0x%x\n", spm_read(SPM_SRC2_MASK));
-	spm_crit2("SPM_SW_FLAG 0x%x\n", spm_read(SPM_SW_FLAG));
-	spm_crit2("SPM_CLK_CON = %x\n", spm_read(SPM_CLK_CON));
-	spm_crit2("PCM_PWR_IO_EN = %x\n", spm_read(PCM_PWR_IO_EN));
-	spm_crit2("PCM_CON0 = %x\n", spm_read(PCM_CON0));
-	spm_crit2("PCM_CON1 = %x\n", spm_read(PCM_CON1));
 #endif
 	spm_trigger_wfi_for_sleep(pwrctrl);
 #if SPM_AEE_RR_REC
