@@ -92,4 +92,7 @@ extern int pasr_enter(u32 *sr, u32 *dpd);
 extern int pasr_exit(void);
 extern unsigned long mtkpasr_enable_sr;
 
+/* eint */
+extern void mt_eint_print_status(void);
+
 #endif  /* _MT_SPM_MISC_H */

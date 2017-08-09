@@ -29,6 +29,8 @@
 #include "mt_spm_internal.h"
 #include "mt_spm_pmic_wrap.h"
 
+#include <mt-plat/mt_ccci_common.h>
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -283,7 +285,7 @@ static void spm_kick_pcm_to_run(struct pwr_ctrl *pwrctrl)
 {
 	/* enable PCM WDT (normal mode) to start count if needed */
 #if SPM_PCMWDT_EN
-	{
+	if (!pwrctrl->wdt_disable) {
 		u32 con1;
 
 		con1 = spm_read(PCM_CON1) & ~(PCM_WDT_WAKE_MODE_LSB | PCM_WDT_EN_LSB);
@@ -380,10 +382,8 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		spm_crit2("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
 			  spm_ap_mdsrc_req_cnt, spm_read(SPM_POWER_ON_VAL1) & (1 << 17));
 
-#if 0
 	if (wakesta->r12 & WAKE_SRC_R12_EINT_EVENT_B)
 		mt_eint_print_status();
-#endif
 
 #if 0
 	if (wakesta->debug_flag & (1 << 18)) {
@@ -397,7 +397,6 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 	}
 #endif
 
-#if 0
 #ifdef CONFIG_MTK_CCCI_DEVICES
 	/* if (wakesta->r13 & 0x18) { */
 		spm_crit2("dump ID_DUMP_MD_SLEEP_MODE");
@@ -409,7 +408,8 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 #ifdef CONFIG_MTK_ECCCI_DRIVER
 	if (wakesta->r12 & WAKE_SRC_R12_CLDMA_EVENT_B)
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
-#endif
+	if (wakesta->r12 & WAKE_SRC_R12_CCIF1_EVENT_B)
+		exec_ccci_kern_func_by_md_id(2, ID_GET_MD_WAKEUP_SRC, NULL, 0);
 #endif
 #endif
 	return wr;
