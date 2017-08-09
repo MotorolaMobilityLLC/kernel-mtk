@@ -104,6 +104,8 @@
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 6)
 #define N_INIT_T_BOOT_STAGE1	\
 		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 7)
+#define N_SWITCH_CORE \
+		MAKE_SMC_CALL_ID(ID_FIELD_F_FAST_SMC_CALL, ID_FIELD_W_64, ID_FIELD_T_TRUSTED_OS_SERVICE2, 8)
 
 /*For nt side Standard Call*/
 #define NT_SCHED_T		\
@@ -455,5 +457,34 @@ static inline void nt_sched_t_fiq(
 	[fun_id] "r" (NT_SCHED_T_FIQ), [temp] "r" (temp)
 	: "x0", "x1", "x2", "x3", "memory");
 }
+
+
+static inline void nt_sched_core(
+	uint64_t p0,
+	uint64_t p1,
+	uint64_t p2)
+{
+	uint64_t temp[3];
+	temp[0] = p0;
+	temp[1] = p1;
+	temp[2] = p2;
+
+	__asm__ volatile(
+	/* ".arch_extension sec\n" */
+	"mov x0, %[fun_id]\n\t"
+	"ldr x1, [%[temp], #0]\n\t"
+	"ldr x2, [%[temp], #8]\n\t"
+	"ldr x3, [%[temp], #16]\n\t"
+	"smc 0\n\t"
+	"nop"
+	: :
+	[fun_id] "r" (N_SWITCH_CORE), [temp] "r" (temp)
+	: "x0", "x1", "x2", "x3", "memory");
+}
+
+
+
+
+
 
 #endif /* SMC_CALL_H_ */

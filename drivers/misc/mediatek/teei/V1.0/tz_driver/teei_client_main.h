@@ -14,5 +14,6 @@ extern unsigned char *daulOS_VFS_write_share_mem;
 extern unsigned char *daulOS_VFS_read_share_mem;
 extern unsigned char *vfs_flush_address;
 extern unsigned long bdrv_message_buff;
-
+extern unsigned long tlog_message_buff;
+extern unsigned long teei_vfs_flag;
 #endif /* __TEEI_CLIENT_MAIN_H__ */

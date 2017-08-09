@@ -56,6 +56,8 @@
 #define VDRV_MAX_SIZE			(0x80000)
 #define NQ_VALID				1
 
+#define TEEI_VFS_NUM			0x8
+
 #define F_CREATE_NQ_ID			0x01
 #define F_CREATE_CTL_ID			0x02
 #define F_CREATE_VDRV_ID		0x04
@@ -102,6 +104,15 @@
 #define SOTER_IRQ				(285)
 #define FP_ACK_IRQ				(287)
 #define BDRV_IRQ				(278)
+#define TEEI_LOG_IRQ				(277)
+#define SOTER_ERROR_IRQ				(276)
+
+#define TLOG_CONTEXT_LEN			(300)
+#define TLOG_MAX_CNT				(50)
+
+#define TLOG_UNUSE				(0)
+#define TLOG_INUSE				(1)
+
 #if 0
 /******************************
  * Message header
@@ -200,6 +211,13 @@ struct teei_shared_mem_head {
 	int shared_mem_cnt;
 	struct list_head shared_mem_list;
 };
+
+struct tlog_struct {
+	int valid;
+	struct work_struct work;
+	char context[TLOG_CONTEXT_LEN];
+};
+
 static int sub_pid;
 static 	struct cpumask mask = { CPU_BITS_NONE };
 
@@ -212,6 +230,10 @@ unsigned long sys_ctl_buffer = NULL;
 unsigned long vdrv_buffer = NULL;
 
 unsigned long teei_config_flag = 0;
+static struct tlog_struct tlog_ent[TLOG_MAX_CNT];
+
+unsigned int soter_error_flag = 0;
+
 
 /*
  * structures and MACROs for NQ buffer
@@ -233,8 +255,9 @@ static DEFINE_MUTEX(nt_t_NQ_lock);
 static DEFINE_MUTEX(t_nt_NQ_lock);
 
 struct semaphore smc_lock;
+struct semaphore cpu_down_lock;
 struct semaphore api_lock;
-
+static int print_context(void);
 
 struct NQ_head {
 	unsigned int start_index;
@@ -277,6 +300,8 @@ struct semaphore boot_sema;
 struct semaphore fp_lock;
 unsigned long boot_vfs_addr;
 unsigned long boot_soter_flag;
+
+extern struct mutex pm_mutex;
 
 #if 1
 
@@ -373,9 +398,12 @@ static void secondary_nt_sched_t(void *info)
 
 static void nt_sched_t_call(void)
 {
+	nt_sched_t();
+#if 0
 	int cpu_id = 0;
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_nt_sched_t, NULL, 1);
+#endif
 }
 
 
@@ -396,7 +424,7 @@ int global_fn(void)
 	/* forward_call_flag = GLSCH_NONE; */
 
 	while (1) {
-#if 1
+#if 0
 		if ((forward_call_flag == GLSCH_NONE) && (fp_call_flag == GLSCH_NONE)) {
 			set_freezable();
 			set_current_state(TASK_INTERRUPTIBLE);
@@ -424,11 +452,20 @@ int global_fn(void)
 			/*msleep_interruptible(10);*/
 		} else if (fp_call_flag == GLSCH_HIGH) {
 			/* printk("[%s][%d]**************************\n", __func__, __LINE__ ); */
-			nt_sched_t_call();
+			if (teei_vfs_flag == 0) {
+				nt_sched_t_call();
+			} else {
+				up(&smc_lock);
+				msleep_interruptible(1);
+			}
 		} else if (forward_call_flag == GLSCH_LOW) {
 			/* printk("[%s][%d]**************************\n", __func__, __LINE__ ); */
-			nt_sched_t_call();
-			msleep_interruptible(10);
+			if (teei_vfs_flag == 0)	{
+				nt_sched_t_call();
+			} else {
+				up(&smc_lock);
+				msleep_interruptible(1);
+			}
 		} else {
 			/* printk("[%s][%d]**************************\n", __func__, __LINE__ ); */
 			up(&smc_lock);
@@ -773,6 +810,24 @@ static void secondary_teei_smc_call(void *info)
 	/* with a rmb() */
 	rmb();
 	TDEBUG("secondary teei smc call...");
+
+	if (cd->cmd_buf != NULL) {
+	/*	Flush_Dcache_By_Area((unsigned long)(cd->cmd_buf), (unsigned long)(cd->cmd_buf) + cd->cmd_len);*/
+	}
+
+	if (cd->resp_buf != NULL) {
+	/*	Flush_Dcache_By_Area((unsigned long)(cd->resp_buf), (unsigned long)(cd->resp_buf) + cd->resp_len);*/
+	}
+
+	if (cd->meta_data != NULL) {
+	/*	Flush_Dcache_By_Area((unsigned long)(cd->meta_data), (unsigned long)(cd->meta_data) +
+			sizeof(struct teei_encode_meta) * (TEEI_MAX_RES_PARAMS + TEEI_MAX_REQ_PARAMS));*/
+		}
+
+		if (cd->info_data != NULL) {
+		/*        Flush_Dcache_By_Area((unsigned long)(cd->info_data), (unsigned long)(cd->info_data) + cd->info_len);*/
+		}
+
 	cd->retVal = __teei_smc_call(cd->local_cmd,
 			cd->teei_cmd_type,
 			cd->dev_file_id,
@@ -838,6 +893,7 @@ int teei_smc_call(u32 teei_cmd_type,
 	smc_call_entry.psema = psema;
 
 	down(&smc_lock);
+	/*down(&cpu_down_lock);*/
 
 	/* with a wmb() */
 	wmb();
@@ -853,6 +909,7 @@ int teei_smc_call(u32 teei_cmd_type,
 
 	tz_free_shared_mem(local_smc_cmd, sizeof(struct teei_smc_cmd));
 
+	/*up(&cpu_down_lock);*/
 	return smc_call_entry.retVal;
 }
 
@@ -889,8 +946,13 @@ static int teei_client_close_session_for_service(
 
 	if (temp_ses == NULL)
 		return -EINVAL;
+	if (ses_close == NULL)
+		return -ENOMEM;
 
+	if (res == NULL)
+		return -ENOMEM;
 	ses_close->session_id = temp_ses->sess_id;
+	printk("======== ses_close->session_id = %d =========\n", ses_close->session_id);
 	curr_cont = temp_ses->parent_cont;
 
 	retVal = teei_smc_call(TEEI_CMD_TYPE_CLOSE_SESSION,
@@ -1040,6 +1102,7 @@ static int teei_client_session_init(void *private_data, void *argp)
 	}
 
 	down_read(&(teei_contexts_head.teei_contexts_sem));
+	/*print_context();*/
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
 			ctx_found = 1;
@@ -1099,14 +1162,20 @@ static int teei_client_session_open(void *private_data, void *argp)
 	int enc_found = 0;
 	int retVal = 0;
 	unsigned long dev_file_id = (unsigned long)private_data;
-
+	printk("ses open [%ld]\n", (unsigned long)ses_open);
+	printk("ses open [%ld]\n", (unsigned long)ses_open);
+	printk("ses open [%ld]\n", (unsigned long)ses_open);
+	if (ses_open == NULL) {
+		
+		return -EFAULT;
+	}
 	/* Get the paraments about this session from user space. */
 	if (copy_from_user(ses_open, argp, sizeof(struct ser_ses_id))) {
 		printk("[%s][%d] copy from user failed!\n", __func__, __LINE__);
 		tz_free_shared_mem(ses_open, sizeof(struct ser_ses_id));
 		return -EFAULT;
 	}
-
+print_context();
 	/* Search the teei_context structure */
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
@@ -1231,6 +1300,7 @@ static int teei_client_session_close(void *private_data, void *argp)
 	}
 
 	down_read(&(teei_contexts_head.teei_contexts_sem));
+	print_context();
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
 			list_for_each_entry(temp_ses, &temp_cont->sess_link, link) {
@@ -1446,15 +1516,23 @@ static int teei_client_context_init(void *private_data, void *argp)
 	int error_code = 0;
 	int *resp_flag = tz_malloc_shared_mem(4, GFP_KERNEL);
 	char *name = tz_malloc_shared_mem(sizeof(ctx.name), GFP_KERNEL);
+	if (resp_flag == NULL)
+		return -ENOMEM;
 
+	if (name == NULL)
+		return -ENOMEM;
 	if (copy_from_user(&ctx, argp, sizeof(ctx))) {
 		printk("[%s][%d] copy from user failed.\n ", __func__, __LINE__);
 		return -EFAULT;
 	}
 
 	memcpy(name, ctx.name, sizeof(ctx.name));
+	printk("[%s][%d] context name = %s.\n ", __func__, __LINE__, name);
+	Flush_Dcache_By_Area((unsigned long)name,
+		(unsigned long)name+sizeof(ctx.name));
 
 	down_write(&(teei_contexts_head.teei_contexts_sem));
+print_context();
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
 			dev_found = 1;
@@ -1493,14 +1571,17 @@ static int teei_client_context_close(void *private_data, void *argp)
 	int dev_found = 0;
 	int *resp_flag = (int *) tz_malloc_shared_mem(4, GFP_KERNEL);
 	int error_code = 0;
-
+	if (resp_flag == NULL)
+		return -ENOMEM;
 	if (copy_from_user(&ctx, argp, sizeof(ctx))) {
 		printk("[%s][%d] copy from user failed!\n", __func__, __LINE__);
 		return -EFAULT;
 	}
 
 	down_write(&(teei_contexts_head.teei_contexts_sem));
+	print_context();
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
+	printk("cont_id = %ld =======\n", temp_cont->cont_id);
 		if (temp_cont->cont_id == dev_file_id) {
 			dev_found = 1;
 			break;
@@ -2068,9 +2149,11 @@ static int print_context(void)
 		printk("[%s][%d] context id [%lx]\n", __func__, __LINE__, temp_cont->cont_id);
 		list_for_each_entry(temp_sess, &temp_cont->sess_link, link) {
 			printk("[%s][%d] session id [%x]\n", __func__, __LINE__, temp_sess->sess_id);
+/*
 			list_for_each_entry(dec_context, &temp_sess->encode_list, head) {
 				printk("[%s][%d] encode_id [%x]\n", __func__, __LINE__, dec_context->encode_id);
 			}
+*/
 		}
 	}
 	return 0;
@@ -2465,12 +2548,6 @@ static int teei_client_shared_mem_free(void *private_data, void *argp)
  * @param file
  * @param cmd
  * @param arg
- *[   13.669747].(7)[544:teei_daemon][TEEI][TZDriver]request irq [ 283 ] OK.
-[   13.669747][TEEI][TZDriver]request irq [ 284 ] OK.
-[TEEI][TZDriver]request irq [ 282 ] OK.
-[TEEI][TZDriver]request irq [ 285 ] OK.
-[TEEI][TZDriver]request irq [ 287 ] OK.
-[TEEI][TZDriver]request irq [ 278 ] OK.
  * @return
  */
 static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg)
@@ -2483,7 +2560,7 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 		return -ECANCELED;
 	}
 	down(&api_lock);
-
+	mutex_lock(&pm_mutex);
 	switch (cmd) {
 
 	case TEEI_CLIENT_IOCTL_INITCONTEXT_REQ:
@@ -2642,6 +2719,7 @@ static long teei_client_ioctl(struct file *file, unsigned cmd, unsigned long arg
 			printk("[%s][%d] command not found!\n", __func__, __LINE__);
 			retVal = -EINVAL;
 	}
+	mutex_unlock(&pm_mutex);
 	up(&api_lock);
 	return retVal;
 }
@@ -2779,6 +2857,7 @@ static __always_inline unsigned int get_end_index(struct NQ_head *nq_head)
 
 static irqreturn_t nt_sched_irq_handler(void)
 {
+	int cpu_id = raw_smp_processor_id();
 	if (boot_soter_flag == START_STATUS) {
 		forward_call_flag = GLSCH_FOR_SOTER;
 		up(&smc_lock);
@@ -2793,6 +2872,7 @@ static irqreturn_t nt_sched_irq_handler(void)
 
 int register_sched_irq_handler(void)
 {
+		
 	int retVal = 0;
 	retVal = request_irq(SCHED_IRQ, nt_sched_irq_handler, 0, "tz_drivers_service", NULL);
 
@@ -2808,6 +2888,8 @@ int register_sched_irq_handler(void)
 
 static irqreturn_t nt_soter_irq_handler(void)
 {
+			int cpu_id = raw_smp_processor_id(); 
+ 
 	irq_call_flag = GLSCH_HIGH;
 	up(&smc_lock);
 	return IRQ_HANDLED;
@@ -2828,8 +2910,33 @@ int register_soter_irq_handler(void)
 }
 
 
+static irqreturn_t nt_error_irq_handler(void)
+{
+	printk("secure system ERROR !\n");
+		soter_error_flag = 1;
+	up(&(boot_sema));
+		up(&smc_lock);
+		return IRQ_HANDLED;
+}
+
+
+int register_error_irq_handler(void)
+{
+		int retVal = 0;
+		retVal = request_irq(SOTER_ERROR_IRQ, nt_error_irq_handler, 0, "tz_drivers_service", NULL);
+
+		if (retVal)
+			printk("ERROR for request_irq %d error code : %d.\n", SOTER_ERROR_IRQ, retVal);
+		else
+			printk("request irq [ %d ] OK.\n", SOTER_ERROR_IRQ);
+
+		return 0;
+}
+
+
 static irqreturn_t nt_fp_ack_handler(void)
 {
+	
 	fp_call_flag = GLSCH_NONE;
 	up(&boot_sema);
 	up(&smc_lock);
@@ -2861,8 +2968,18 @@ int get_bdrv_id(void)
 static irqreturn_t nt_bdrv_handler(void)
 {
 	int bdrv_id = 0;
-
+	int cpu_id = raw_smp_processor_id();
 	bdrv_id = get_bdrv_id();
+
+#if 0
+		if (bdrv_id == TEEI_VFS_NUM) {
+			teei_vfs_flag = 1;
+
+	}
+#endif
+
+	teei_vfs_flag = 1;
+
 	add_bdrv_queue(bdrv_id);
 	up(&smc_lock);
 
@@ -2887,12 +3004,15 @@ int register_bdrv_handler(void)
 
 static irqreturn_t nt_boot_irq_handler(void)
 {
+	int cpu_id = raw_smp_processor_id();
 	if (boot_soter_flag == START_STATUS) {
+		printk("boot irq  handler if\n");
 		boot_soter_flag = END_STATUS;
 		up(&smc_lock);
 		up(&(boot_sema));
 		return IRQ_HANDLED;
 	} else {
+		printk("boot irq hanler else\n");
 		if (forward_call_flag == GLSCH_NONE)
 			forward_call_flag = GLSCH_NEG;
 		else
@@ -2905,7 +3025,72 @@ static irqreturn_t nt_boot_irq_handler(void)
 	}
 }
 
+void init_tlog_entry(void)
+{
+	int i = 0;
 
+	for (i = 0; i < TLOG_MAX_CNT; i++)
+		tlog_ent[i].valid = TLOG_UNUSE;
+
+	return;
+}
+
+int search_tlog_entry(void)
+{
+	int i = 0;
+
+	for (i = 0; i < TLOG_MAX_CNT; i++) {
+		if (tlog_ent[i].valid == TLOG_UNUSE) {
+			tlog_ent[i].valid = TLOG_INUSE;
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+
+void tlog_func(struct work_struct *entry)
+{
+	struct tlog_struct *ts = container_of(entry, struct tlog_struct, work);
+
+	printk("TLOG %s", (char *)(ts->context));
+	ts->valid = TLOG_UNUSE;
+	return;
+}
+
+
+irqreturn_t tlog_handler(void)
+{
+	int pos = 0;
+	printk("~tlog handler~\n");
+	pos = search_tlog_entry();
+
+	if (-1 != pos) {
+		memset(tlog_ent[pos].context, 0, TLOG_CONTEXT_LEN);
+		memcpy(tlog_ent[pos].context, (char *)tlog_message_buff, TLOG_CONTEXT_LEN);
+		Flush_Dcache_By_Area((unsigned long)tlog_message_buff, (unsigned long)tlog_message_buff + TLOG_CONTEXT_LEN);
+		INIT_WORK(&(tlog_ent[pos].work), tlog_func);
+		queue_work(secure_wq, &(tlog_ent[pos].work));
+	}
+		irq_call_flag = GLSCH_HIGH;
+		up(&smc_lock);
+
+		return IRQ_HANDLED;
+}
+
+int register_tlog_handler(void)
+{
+		int retVal = 0;
+		retVal = request_irq(TEEI_LOG_IRQ, tlog_handler, 0, "tz_drivers_service", NULL);
+
+		if (retVal)
+			printk("ERROR for request_irq %d error code : %d.\n", TEEI_LOG_IRQ, retVal);
+		else
+			printk("request irq [ %d ] OK.\n", TEEI_LOG_IRQ);
+
+		return 0;
+}
 
 int register_boot_irq_handler(void)
 {
@@ -2942,6 +3127,7 @@ int switch_to_t_os_stages2(void)
 
 	down(&(boot_sema));
 	down(&(smc_lock));
+	/*down(&cpu_down_lock);*/
 
 	/* n_switch_to_t_os_stage2(); */
 	boot_stage2();
@@ -2954,6 +3140,7 @@ int switch_to_t_os_stages2(void)
 		return -1;
 
 	down(&(boot_sema));
+	/*up(&cpu_down_lock);*/
 	up(&(boot_sema));
 
 	return 0;
@@ -2982,6 +3169,7 @@ int t_os_load_image(void)
 	/* N_INVOKE_T_LOAD_TEE to TOS */
 	set_sch_load_img_cmd();
 	down(&smc_lock);
+	/*down(&cpu_down_lock);*/
 	/* n_invoke_t_load_tee(0, 0, 0); */
 	load_tee();
 
@@ -2995,6 +3183,7 @@ int t_os_load_image(void)
 
 	/* block here until the TOS ack N_SWITCH_TO_T_OS_STAGE2 */
 	down(&(boot_sema));
+	/*up(&cpu_down_lock);*/
 	up(&(boot_sema));
 
 	return 0;
@@ -3006,9 +3195,7 @@ int t_os_load_image(void)
 static const struct file_operations teei_client_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = teei_client_ioctl,
-#ifdef CONFIG_COMPAT
 	.compat_ioctl = teei_client_ioctl,
-#endif
 	.open = teei_client_open,
 	.mmap = teei_client_mmap,
 	.release = teei_client_release
@@ -3203,7 +3390,10 @@ int send_fp_command(unsigned long share_memory_size)
 	int cpu_id = 0;
 
 	down(&fp_lock);
+	mutex_lock(&pm_mutex);
+
 	down(&smc_lock);
+	/*down(&cpu_down_lock);*/
 	down(&boot_sema);
 
 	fp_command_entry.mem_size = share_memory_size;
@@ -3217,6 +3407,8 @@ int send_fp_command(unsigned long share_memory_size)
 	up(&boot_sema);
 
 	rmb();
+	mutex_unlock(&pm_mutex);
+	/*up(&cpu_down_lock);*/
 	up(&fp_lock);
 	return fp_command_entry.retVal;
 }
@@ -3271,7 +3463,8 @@ static void boot_stage1(unsigned long vir_address)
 static int init_teei_framework(void)
 {
 	long retVal = 0;
-
+	int i = 0;
+	unsigned long secure_mem_p = 0;
 	boot_soter_flag = START_STATUS;
 
 	sema_init(&(boot_sema), 1);
@@ -3283,23 +3476,24 @@ static int init_teei_framework(void)
 	register_soter_irq_handler();
 	register_fp_ack_handler();
 	register_bdrv_handler();
-	printk("[%s][%d]\n", __func__, __LINE__);
+	register_tlog_handler();
+	register_error_irq_handler();
+
 	secure_wq = create_workqueue("Secure Call");
-	printk("[%s][%d]\n", __func__, __LINE__);
 	daulOS_VFS_write_share_mem = kmalloc(VDRV_MAX_SIZE, GFP_KERNEL);
-	printk("[%s][%d]\n", __func__, __LINE__);
 	if (daulOS_VFS_write_share_mem == NULL) {
 		printk("[%s][%d] kmalloc daulOS_VFS_write_share_mem failed!\n", __func__, __LINE__);
 		return -1;
 	}
-	printk("[%s][%d]\n", __func__, __LINE__);
 	daulOS_VFS_read_share_mem = kmalloc(VDRV_MAX_SIZE, GFP_KERNEL);
-	printk("[%s][%d]\n", __func__, __LINE__);
 	if (daulOS_VFS_read_share_mem == NULL) {
 		printk("[%s][%d] kmalloc daulOS_VFS_read_share_mem failed!\n", __func__, __LINE__);
 		return -1;
 	}
 	printk("[%s][%d]\n", __func__, __LINE__);
+	printk("[%s][%d] VFS_SIZE = %d, SZ_4K = %d\n", __func__, __LINE__, VFS_SIZE, SZ_4K);
+	printk("[%s][%d] ROUND_UP(VFS_SIZE, SZ_4K) = %d\n", __func__, __LINE__, ROUND_UP(VFS_SIZE, SZ_4K));
+	printk("[%s][%d] get_order(ROUND_UP(VFS_SIZE, SZ_4K)) = %d\n", __func__, __LINE__, get_order(ROUND_UP(VFS_SIZE, SZ_4K)));
 	boot_vfs_addr = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(VFS_SIZE, SZ_4K)));
 	printk("[%s][%d]\n", __func__, __LINE__);
 	if (boot_vfs_addr == NULL) {
@@ -3309,6 +3503,7 @@ static int init_teei_framework(void)
 	printk("[%s][%d]\n", __func__, __LINE__);
 	down(&(boot_sema));
 	down(&(smc_lock));
+	/*down(&cpu_down_lock);*/
 	printk("[%s][%d]\n", __func__, __LINE__);
 	/* n_init_t_boot_stage1((unsigned long)virt_to_phys(boot_vfs_addr), 0, 0); */
 
@@ -3316,14 +3511,17 @@ static int init_teei_framework(void)
 
 	down(&(boot_sema));
 	up(&(boot_sema));
+	/*up(&cpu_down_lock);*/
 
 	free_pages(boot_vfs_addr, get_order(ROUND_UP(VFS_SIZE, SZ_4K)));
 
 	boot_soter_flag = END_STATUS;
-
-	printk("[%s][%d] begin to load Soter services.\n", __func__, __LINE__);
-	switch_to_t_os_stages2();
-	printk("[%s][%d] load Soter services successfully.\n", __func__, __LINE__);
+		if (soter_error_flag == 1) {
+			return -1;
+		}
+	/**printk("[%s][%d] begin to load Soter services.\n", __func__, __LINE__);
+	**switch_to_t_os_stages2();
+	**printk("[%s][%d] load Soter services successfully.\n", __func__, __LINE__);*/
 
 	printk("[%s][%d] begin to create the command buffer!\n", __func__, __LINE__);
 	retVal = create_cmd_buff();
@@ -3333,14 +3531,27 @@ static int init_teei_framework(void)
 	}
 	printk("[%s][%d] end of creating the command buffer!\n", __func__, __LINE__);
 
+	printk("[%s][%d] begin to load Soter services.\n", __func__, __LINE__);
+	switch_to_t_os_stages2();
+	printk("[%s][%d] load Soter services successfully.\n", __func__, __LINE__);
+
+		if (soter_error_flag == 1) {
+		return -1;
+		}
 	init_smc_work();
 
 	printk("[%s][%d] begin to init daulOS services.\n", __func__, __LINE__);
-	teei_service_init();
+	retVal = teei_service_init();
+	if (retVal == -1)
+		return -1;
+
 	printk("[%s][%d] init daulOS services successfully.\n", __func__, __LINE__);
 
 	printk("[%s][%d] begin to load TEEs.\n", __func__, __LINE__);
 	t_os_load_image();
+	if (soter_error_flag == 1)
+		return -1;
+
 	printk("[%s][%d] load TEEs successfully.\n", __func__, __LINE__);
 
 	teei_config_flag = 1;
@@ -3406,29 +3617,22 @@ return_fn:
 
 
 
-
+static int teei_cpu_id[] = {0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101, 0x0102, 0x0103};
 static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 		unsigned long action, void *hcpu)
 {
 	unsigned int cpu = (unsigned long)hcpu;
 	/*unsigned int sched_cpu = 4;*/
 	unsigned int sched_cpu = get_current_cpuid();
+	struct cpumask mtee_mask = { CPU_BITS_NONE };
 	int retVal = 0;
 	int i;
-/*
-					//~ for_each_online_cpu(i) {
-			       //~ if (i == sched_cpu) {
-				//~ continue;
-			//~ }
-			//~ printk("~~~~~~~~~~~~~online cpu [%d]~~~~~~~~~~~~~~\n",i);
-			//~ }
-			//~
-*/
-	/*	printk("cpu down call back $$$$$$$$$$$$$$$$$$$$$$$$$$$$   [%ld] \n",action); */
 	switch (action) {
 	case CPU_DOWN_PREPARE:
+	case CPU_DOWN_PREPARE_FROZEN:
 			if (cpu == sched_cpu) {
 				printk("cpu down prepare ************************\n");
+				/*retVal = down_trylock(&cpu_down_lock);*/
 				retVal = down_trylock(&smc_lock);
 				if (retVal == 1)
 					return NOTIFY_BAD;
@@ -3442,10 +3646,17 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 						}
 						current_cpu_id = i;
 					}
-					cpumask_set_cpu(current_cpu_id, &mask);
-
-					if (sched_setaffinity(sub_pid, &mask) == -1)
+					printk("[%s][%d]brefore cpumask set cpu\n", __func__, __LINE__);
+					cpumask_set_cpu(current_cpu_id, &mtee_mask);
+					/*cpumask_set_cpu(current_cpu_id, &mask);*/
+					printk("[%s][%d]after cpumask set cpu\n", __func__, __LINE__);
+					if (sched_setaffinity(sub_pid, &mtee_mask) == -1)
 						printk("warning: could not set CPU affinity, continuing...\n");
+
+					/* TODO smc_call to notify ATF to switch the CPU*/
+					/* NT_switch_T(current_cpu_id);*/
+					printk("current cpu id  \n");
+					nt_sched_core(teei_cpu_id[current_cpu_id], teei_cpu_id[cpu], 0);
 					printk("change cpu id = [%d]\n", current_cpu_id);
 				}
 			}
@@ -3454,14 +3665,17 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 	case CPU_DOWN_FAILED:
 			if (cpu_notify_flag == 1) {
 				printk("cpu down failed *************************\n");
+				/*up(&cpu_down_lock);*/
 				up(&smc_lock);
 				cpu_notify_flag = 0;
 			}
 			break;
 
 	case CPU_DEAD:
+	case CPU_DEAD_FROZEN:
 			if (cpu_notify_flag == 1) {
 				printk("cpu down success ***********************\n");
+				/*up(&cpu_down_lock);*/
 				up(&smc_lock);
 				cpu_notify_flag = 0;
 			}
@@ -3524,12 +3738,14 @@ static int teei_client_init(void)
 
 	INIT_LIST_HEAD(&teei_contexts_head.context_list);
 
+	init_tlog_entry();
+
 	sema_init(&(smc_lock), 1);
+	sema_init(&(cpu_down_lock), 1);
 	int i;
 	for_each_online_cpu(i)
 	{
 		current_cpu_id = i;
-		printk("init stage : current_cpu_id = %d\n", current_cpu_id);
 		printk("init stage : current_cpu_id = %d\n", current_cpu_id);
 	}
 	printk("begin to create sub_thread.\n");
@@ -3543,7 +3759,7 @@ static int teei_client_init(void)
 		printk("warning: could not set CPU affinity, continuing...\n");
 
 	register_cpu_notifier(&tz_driver_cpu_notifer);
-
+	printk("after  register cpu notify\n");
 	teei_config_init();
 
 	goto return_fn;
@@ -3564,20 +3780,16 @@ return_fn:
 static void teei_client_exit(void)
 {
 	TINFO("teei_client exit");
-
 	device_destroy(driver_class, teei_client_device_no);
 	class_destroy(driver_class);
 	unregister_chrdev_region(teei_client_device_no, 1);
 }
 
-
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("TEEI <www.microtrust.com>");
 MODULE_DESCRIPTION("TEEI Agent");
 MODULE_VERSION("1.00");
-
 module_init(teei_client_init);
-
 module_exit(teei_client_exit);
 
 

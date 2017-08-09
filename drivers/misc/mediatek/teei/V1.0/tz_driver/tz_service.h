@@ -10,12 +10,12 @@ enum {
 };
 
 struct service_handler {
-	unsigned int sysno; /*! 服务调用号 */
-	void *param_buf; /*! 双系统通信缓冲区 */
+	unsigned int sysno; /*! ?�务调用??*/
+	void *param_buf; /*! ?�系统通信缓冲??*/
 	unsigned size;
-	void (*init)(struct service_handler *handler); /*! 服务初始化处理 */
-	void (*deinit)(struct service_handler *handler); /*! 服务停止处理 */
-	int (*handle)(struct service_handler *handler); /*! 服务调用 */
+	void (*init)(struct service_handler *handler); /*! ?�务?��??��???*/
+	void (*deinit)(struct service_handler *handler); /*! ?�务?�止处�? */
+	int (*handle)(struct service_handler *handler); /*! ?�务调用 */
 };
 
 /** @brief
@@ -26,10 +26,12 @@ extern char *tsc_drivers_buf;
 extern struct semaphore printer_rd_sem;
 extern struct semaphore printer_wr_sem;
 extern struct semaphore smc_lock;
+extern struct semaphore cpu_down_lock;
 extern struct semaphore boot_sema;
 extern unsigned long boot_vfs_addr;
 extern unsigned long boot_soter_flag;
 extern int forward_call_flag;
+extern unsigned int soter_error_flag; 
 #ifdef VFS_RDWR_SEM
 extern struct semaphore VFS_rd_sem;
 extern struct semaphore VFS_wr_sem;

@@ -81,13 +81,12 @@
 unsigned long message_buff = 0;
 unsigned long fdrv_message_buff = 0;
 unsigned long bdrv_message_buff = 0;
+unsigned long tlog_message_buff = 0;
 
 static unsigned long nt_t_buffer;
 unsigned long t_nt_buffer;
 
-#if 0 /* mask for kernel unused-variables build warning */
 static unsigned long sys_ctl_buffer;
-#endif
 unsigned long fp_buff_addr = NULL;
 
 extern int get_current_cpuid(void);
@@ -219,9 +218,7 @@ static int serivce_cmd_flag;
 static int smc_flag;
 static int sys_call_no;
 static long register_shared_param_buf(struct service_handler *handler);
-#if 0 /* mask for kernel unused-function build warning */
 static int register_interrupt_handler(void);
-#endif
 static int init_all_service_handlers(void);
 static int start_teei_service(void);
 static int printer_thread_function(unsigned long virt_addr, unsigned long para_vaddr, unsigned long buff_vaddr);
@@ -269,11 +266,10 @@ static struct work_entry work_ent;
 struct timeval stime;
 struct timeval etime;
 int vfs_write_flag = 0;
+unsigned long teei_vfs_flag = 0;
 
 #define printk(fmt, args...) printk("\033[;34m[TEEI][TZDriver]"fmt"\033[0m", ##args)
 /*add by microtrust*/
-
-#if 0 /* mask for kernel unused-function build warning */
 static unsigned int get_master_cpu_id(unsigned int gic_irqs)
 {
 	unsigned int i;
@@ -287,8 +283,6 @@ static unsigned int get_master_cpu_id(unsigned int gic_irqs)
 	target_id = target_id & 0xff;
 	return target_id;
 }
-#endif
-
 /****************************************
 //extern u32 get_irq_target_microtrust(void);
 //~ static int get_current_cpuid(void)
@@ -325,15 +319,13 @@ int cal_time(struct timeval start_time, struct timeval end_time)
 	return timestamp;
 }
 
-#if 0 /* mask for kernel unused-function build warning */
 static void secondary_teei_ack_invoke_drv(void)
 {
 	n_ack_t_invoke_drv(0, 0, 0);
 	return;
 }
-#endif
 
-#if 0 /* mask for kernel unused-function build warning */
+
 static void post_teei_ack_invoke_drv(int cpu_id)
 {
 	smp_call_function_single(cpu_id,
@@ -342,9 +334,9 @@ static void post_teei_ack_invoke_drv(int cpu_id)
 				1);
 	return;
 }
-#endif
 
-#if 0 /* mask for kernel unused-function build warning */
+
+
 static void teei_ack_invoke_drv(void)
 {
 	int cpu_id = 0;
@@ -367,7 +359,6 @@ static void teei_ack_invoke_drv(void)
 #endif
 	return;
 }
-#endif
 
 void tz_down(struct semaphore *sem)
 {
@@ -460,6 +451,7 @@ static int  __reetime_handle(struct service_handler *handler)
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
+	teei_vfs_flag = 0;
 	/* down(&smc_lock); */
 #if 0
 	teei_ack_invoke_drv();
@@ -570,8 +562,6 @@ int vfs_thread_function(unsigned long virt_addr, unsigned long para_vaddr, unsig
 	wait_for_completion_interruptible(&VFS_wr_comp);
 #endif
 	/*printk("=============================2222222222222222222222222222222222============================================\n");*/
-
-	return 0;
 }
 
 
@@ -596,6 +586,7 @@ static int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
+	teei_vfs_flag = 0;
 	/* down(&smc_lock); */
 
 #if 0
@@ -761,12 +752,21 @@ static long register_shared_param_buf(struct service_handler *handler)
 
 	/* Call the smc_fast_call */
 	/* n_invoke_t_fast_call(0, 0, 0); */
+
+	down(&(boot_sema));
+	down(&(smc_lock));
+	/*down(&cpu_down_lock);*/
+
 	invoke_fastcall();
+
+	down(&(boot_sema));
+	up(&(boot_sema));
 
 	memcpy(&msg_head, message_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
 
 	local_irq_restore(irq_flag);
+	/*up(&cpu_down_lock);*/
 
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_VDRV)) {
@@ -784,19 +784,35 @@ static long register_shared_param_buf(struct service_handler *handler)
 	free_pages(handler->param_buf, get_order(ROUND_UP(handler->size, SZ_4K)));
 	handler->param_buf = NULL;
 
+
 	return retVal;
 
 
 }
 
-static void load_func(struct work_struct *entry)
+static void secondary_load_func(void)
 {
-	vfs_thread_function(boot_vfs_addr, NULL, NULL);
-
 	Flush_Dcache_By_Area((unsigned long)boot_vfs_addr, (unsigned long)boot_vfs_addr + VFS_SIZE);
 	printk("[%s][%d]: %s end.\n", __func__, __LINE__, __func__);
-	down(&smc_lock);
 	n_ack_t_load_img(0, 0, 0);
+
+	return ;
+}
+
+
+static void load_func(struct work_struct *entry)
+{
+	int cpu_id = 0;
+
+	vfs_thread_function(boot_vfs_addr, NULL, NULL);
+
+	down(&smc_lock);
+
+	cpu_id = get_current_cpuid();
+	printk("[%s][%d]current cpu id[%d] \n", __func__, __LINE__, cpu_id);
+	printk("[%s][%d]current cpu id[%d] \n", __func__, __LINE__, cpu_id);
+	printk("[%s][%d]current cpu id[%d] \n", __func__, __LINE__, cpu_id);
+	smp_call_function_single(cpu_id, secondary_load_func, NULL, 1);
 
 	return;
 }
@@ -843,7 +859,6 @@ void handle_dispatch(void)
 	}
 }
 
-#if 0 /* mask for kernel unused-function build warning */
 static void do_service(void *p)
 {
 	while (true) {
@@ -857,9 +872,7 @@ static void do_service(void *p)
 
 	return 0;
 }
-#endif
 
-#if 0 /* mask for kernel unused-function build warning */
 static irqreturn_t drivers_interrupt(int irq, void *dummy)
 {
 	unsigned int p0, p1, p2, p3, p4, p5, p6;
@@ -874,9 +887,7 @@ static irqreturn_t drivers_interrupt(int irq, void *dummy)
 
 	return IRQ_HANDLED;
 }
-#endif
 
-#if 0 /* mask for kernel unused-function build warning */
 static int register_interrupt_handler(void)
 {
 
@@ -890,7 +901,6 @@ static int register_interrupt_handler(void)
 
 	return 0;
 }
-#endif
 
 static int init_all_service_handlers(void)
 {
@@ -1010,9 +1020,17 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 	memcpy(msg_buff + sizeof(struct message_head), &msg_body, sizeof(struct create_NQ_struct));
 	Flush_Dcache_By_Area((unsigned long)msg_buff, (unsigned long)msg_buff + MESSAGE_SIZE);
 
+	down(&(boot_sema));
+	down(&(smc_lock));
+	/*down(&cpu_down_lock);*/
+
 	/* Call the smc_fast_call */
 	/* n_invoke_t_fast_call(0, 0, 0); */
 	invoke_fastcall();
+
+
+	down(&(boot_sema));
+	up(&(boot_sema));
 
 	memcpy(&msg_head, msg_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, msg_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
@@ -1020,6 +1038,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 	local_irq_restore(irq_flag);
 
 	/* Check the response from T_OS. */
+	/*up(&cpu_down_lock);*/
 
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_NQ)) {
 		retVal = msg_ack.retVal;
@@ -1040,7 +1059,7 @@ return_fn:
 	return retVal;
 }
 
-#if 0 /* mask for kernel unused-function build warning */
+
 static long create_ctl_buffer(unsigned long msg_buff, unsigned long size)
 {
 	long retVal = 0;
@@ -1108,7 +1127,6 @@ static long create_ctl_buffer(unsigned long msg_buff, unsigned long size)
 	/* printk("[%s][%d]: %s end.\n", __FILE__, __LINE__, __func__); */
 	return retVal;
 }
-#endif
 
 
 void NQ_init(unsigned long NQ_buff)
@@ -1157,8 +1175,6 @@ int add_nq_entry(unsigned char *command_buff, int command_length, int valid_flag
 	temp_head->end_index = (temp_head->end_index + 1) % temp_head->Max_count;
 
 	Flush_Dcache_By_Area((unsigned long)nt_t_buffer, (unsigned long)(nt_t_buffer + NQ_BUFF_SIZE));
-
-	return 0;
 }
 
 unsigned char *get_nq_entry(unsigned char *buffer_addr)
@@ -1387,6 +1403,7 @@ struct init_cmdbuf_struct {
 	unsigned long phy_addr;
 	unsigned long fdrv_phy_addr;
 	unsigned long bdrv_phy_addr;
+	unsigned long tlog_phy_addr;
 };
 
 struct init_cmdbuf_struct init_cmdbuf_entry;
@@ -1399,12 +1416,13 @@ static void secondary_init_cmdbuf(void *info)
 	/* with a rmb() */
 	rmb();
 
-	printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx.\n", __func__, __LINE__,
-	(unsigned long)cd->phy_addr, (unsigned long)cd->fdrv_phy_addr, (unsigned long)cd->bdrv_phy_addr);
+		printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx.\n", __func__, __LINE__,
+		(unsigned long)cd->phy_addr, (unsigned long)cd->fdrv_phy_addr,
+		(unsigned long)cd->bdrv_phy_addr, (unsigned long)cd->tlog_phy_addr);
 
 	n_init_t_fc_buf(cd->phy_addr, cd->fdrv_phy_addr, 0);
 
-	n_init_t_fc_buf(cd->bdrv_phy_addr, 0, 0);
+	n_init_t_fc_buf(cd->bdrv_phy_addr, cd->tlog_phy_addr, 0);
 
 
 	/* with a wmb() */
@@ -1412,7 +1430,8 @@ static void secondary_init_cmdbuf(void *info)
 }
 
 
-static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_address, unsigned long bdrv_phy_address)
+static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_address,
+			unsigned long bdrv_phy_address, unsigned long tlog_phy_address)
 {
 	int cpu_id = 0;
 
@@ -1458,16 +1477,26 @@ long create_cmd_buff(void)
 		return -ENOMEM;
 	}
 
+	tlog_message_buff = (unsigned long) __get_free_pages(GFP_KERNEL, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+	if (tlog_message_buff == NULL) {
+		printk("[%s][%d] Create tlog message buffer failed!\n", __FILE__, __LINE__);
+		free_pages(message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+		free_pages(fdrv_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+		free_pages(bdrv_message_buff, get_order(ROUND_UP(MESSAGE_LENGTH, SZ_4K)));
+		return -ENOMEM;
+		}
 
 	/* smc_call to notify SOTER the share memory(message_buff) */
 
 	/* n_init_t_fc_buf((unsigned long)virt_to_phys(message_buff), 0, 0); */
-	printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx\n", __func__, __LINE__,\
-	(unsigned long)virt_to_phys(message_buff), \
-	(unsigned long)virt_to_phys(fdrv_message_buff),\
-	(unsigned long)virt_to_phys(bdrv_message_buff));
-	init_cmdbuf((unsigned long)virt_to_phys(message_buff),
-	(unsigned long)virt_to_phys(fdrv_message_buff), (unsigned long)virt_to_phys(bdrv_message_buff));
+			printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx\n", __func__, __LINE__,
+			(unsigned long)virt_to_phys(message_buff),
+			(unsigned long)virt_to_phys(fdrv_message_buff),
+			(unsigned long)virt_to_phys(bdrv_message_buff),
+			(unsigned long)virt_to_phys(tlog_message_buff));
+
+	init_cmdbuf((unsigned long)virt_to_phys(message_buff), (unsigned long)virt_to_phys(fdrv_message_buff),
+			(unsigned long)virt_to_phys(bdrv_message_buff), (unsigned long)virt_to_phys(tlog_message_buff));
 
 	return 0;
 }
@@ -1522,13 +1551,21 @@ unsigned long create_fp_fdrv(int buff_size)
 
 	/* Call the smc_fast_call */
 	/* n_invoke_t_fast_call(0, 0, 0); */
+	down(&(smc_lock));
+	/*down(&cpu_down_lock);*/
+	down(&(boot_sema));
+
 	invoke_fastcall();
+
+	down(&(boot_sema));
+	up(&(boot_sema));
 
 	memcpy(&msg_head, message_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
 
 	local_irq_restore(irq_flag);
 
+	/*up(&cpu_down_lock);*/
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_FDRV)) {
 		retVal = msg_ack.retVal;
@@ -1538,7 +1575,7 @@ unsigned long create_fp_fdrv(int buff_size)
 			return temp_addr;
 		}
 	} else
-		retVal = 0;
+		retVal = NULL;
 
 	/* Release the resource and return. */
 	free_pages(temp_addr, get_order(ROUND_UP(buff_size, SZ_4K)));
@@ -1558,14 +1595,22 @@ int teei_service_init(void)
 	create_nq_buffer();
 	printk("[%s][%d] end of creating nq buffer!\n", __func__, __LINE__);
 
+	if (soter_error_flag == 1)
+		return -1;
+
 	printk("[%s][%d] begin to create fp buffer!\n", __func__, __LINE__);
 	fp_buff_addr = create_fp_fdrv(FP_BUFF_SIZE);
+
+	if (soter_error_flag == 1)
+		return -1;
 
 	/**
 	 * init service handler
 	 */
 	init_all_service_handlers();
 
+	if (soter_error_flag == 1)
+		return -1;
 	/**
 	 * start service thread
 	 */

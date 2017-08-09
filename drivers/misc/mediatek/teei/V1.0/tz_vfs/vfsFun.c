@@ -86,8 +86,8 @@ static ssize_t tz_vfs_read(struct file *filp, char __user *buf,
 	struct TEEI_vfs_command *vfs_p = NULL;
 	int length = 0;
 	int ret = 0;
-
-
+int cpu_id = raw_smp_processor_id();
+	/*printk("read begin cpu[%d]\n",cpu_id);*/
 #ifdef VFS_RDWR_SEM
 	down_interruptible(&VFS_rd_sem);
 #else
@@ -116,13 +116,16 @@ static ssize_t tz_vfs_read(struct file *filp, char __user *buf,
 		ret = -EFAULT;
 	else
 		ret = length;
-
+	cpu_id = raw_smp_processor_id();
+	/*printk("read end cpu_id[%d]\n",cpu_id);*/
 	return ret;
 }
 
 static ssize_t tz_vfs_write(struct file *filp, const char __user *buf,
 			size_t size, loff_t *ppos)
 {
+int cpu_id = raw_smp_processor_id();
+	/*printk("write begin cpu_id[%d]\n",cpu_id);*/
 	if (copy_from_user((void *)daulOS_VFS_share_mem, buf, size))
 		return -EFAULT;
 
@@ -133,7 +136,8 @@ static ssize_t tz_vfs_write(struct file *filp, const char __user *buf,
 #else
 	complete(&VFS_wr_comp);
 #endif
-
+	cpu_id = raw_smp_processor_id();
+	/*printk("write end cpu_id[%d]\n",cpu_id);*/
 	return 0;
 }
 
