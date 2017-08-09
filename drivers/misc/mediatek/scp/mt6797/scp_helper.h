@@ -73,6 +73,21 @@ enum SEMAPHORE_FLAG {
 	SEMAPHORE_SENSOR,
 	NR_FLAG = 8,
 };
+/* reserve memory ID */
+typedef enum {
+	VOW_MEM_ID	= 0,
+	SENS_MEM_ID	= 1,
+	MP3_MEM_ID	= 2,
+	FLP_MEM_ID	= 3,
+	RTOS_MEM_ID	= 4,
+	NUMS_MEM_ID	= 5,
+} scp_reserve_mem_id_t;
+typedef struct {
+	scp_reserve_mem_id_t num;
+	u64 start_phys;
+	u64 start_virt;
+	u64 size;
+} scp_reserve_mblock_t;
 
 /* @group_id: the group want to swap in tcm and run. */
 extern int get_scp_semaphore(int flag);

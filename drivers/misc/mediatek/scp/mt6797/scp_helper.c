@@ -31,38 +31,78 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/of_fdt.h>
 #include <linux/ioport.h>
-
 #include <asm/io.h>
-
 #include <mt-plat/sync_write.h>
 #include <mt-plat/aee.h>
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"
 
+#ifdef CONFIG_OF_RESERVED_MEM
+#include <linux/of_reserved_mem.h>
+#include <mt-plat/mtk_memcfg.h>
+#endif
 
+#define ENABLE_SCP_EMI_PROTECTION       (0)
+#if ENABLE_SCP_EMI_PROTECTION
+#include <emi_mpu.h>
+#endif
+#define MPU_REGION_ID_SCP_SMEM       22
 
 #define TIMEOUT 5000
-/*
-#define LOG_TO_AP_UART
-*/
 #define IS_CLK_DMA_EN 0x40000
 #define SCP_READY_TIMEOUT (2 * HZ) /* 2 seconds*/
 
+phys_addr_t scp_mem_base_phys;
+phys_addr_t scp_mem_base_virt;
+phys_addr_t scp_mem_size;
 struct scp_regs scpreg;
-
 unsigned char *scp_send_buff;
 unsigned char *scp_recv_buff;
-
 static struct workqueue_struct *scp_workqueue;
 static unsigned int scp_ready;
 static struct timer_list scp_ready_timer;
 static struct scp_work_struct scp_notify_work;
 static struct mutex scp_notify_mutex;
-
 unsigned char **scp_swap_buf;
-
+typedef struct {
+	u64 start;
+	u64 size;
+} mem_desc_t;
+static scp_reserve_mblock_t scp_reserve_mblock[] = {
+	{
+		.num = VOW_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x9000,/*36KB*/
+	},
+	{
+		.num = SENS_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x800000,/*8MB*/
+	},
+	{
+		.num = MP3_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x400000,/*4MB*/
+	},
+	{
+		.num = FLP_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x1000,/*4KB*/
+	},
+	{
+		.num = RTOS_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x100000,/*1MB*/
+	},
+};
 void memcpy_to_scp(void __iomem *trg, const void *src, int size)
 {
 	int i;
@@ -311,7 +351,6 @@ int reset_scp(int reset)
 
 	return ret;
 }
-
 /*
  * parse device tree and mapping iomem
  * @return: 0 if success
@@ -459,7 +498,109 @@ static int create_files(void)
 
 	return 0;
 }
+#ifdef CONFIG_OF_RESERVED_MEM
+#define SCP_MEM_RESERVED_KEY "mediatek,reserve-memory-scp_share"
+int scp_reserve_mem_of_init(struct reserved_mem *rmem)
+{
+	scp_reserve_mem_id_t id;
+	phys_addr_t accumlate_memory_size = 0;
 
+	scp_mem_base_phys = (phys_addr_t) rmem->base;
+	scp_mem_size = (phys_addr_t) rmem->size;
+
+	pr_debug("[SCP] phys:0x%llx - 0x%llx (0x%llx)\n", (phys_addr_t)rmem->base,
+			(phys_addr_t)rmem->base + (phys_addr_t)rmem->size, (phys_addr_t)rmem->size);
+	accumlate_memory_size = 0;
+	for (id = 0; id < NUMS_MEM_ID; id++) {
+		scp_reserve_mblock[id].start_phys = scp_mem_base_phys + accumlate_memory_size;
+		accumlate_memory_size += scp_reserve_mblock[id].size;
+		pr_debug("[SCP][reserve_mem:%d]: phys:0x%llx - 0x%llx (0x%llx)\n", id,
+			scp_reserve_mblock[id].start_phys,
+			scp_reserve_mblock[id].start_phys+scp_reserve_mblock[id].size,
+			scp_reserve_mblock[id].size);
+	}
+	return 0;
+}
+
+RESERVEDMEM_OF_DECLARE(scp_reserve_mem_init, SCP_MEM_RESERVED_KEY, scp_reserve_mem_of_init);
+#endif
+phys_addr_t get_reserve_mem_phys(scp_reserve_mem_id_t id)
+{
+	if (id >= NUMS_MEM_ID) {
+		pr_err("[SCP] no reserve memory for 0x%d", id);
+		return 0;
+	} else
+		return scp_reserve_mblock[id].start_phys;
+}
+EXPORT_SYMBOL_GPL(get_reserve_mem_phys);
+
+phys_addr_t get_reserve_mem_virt(scp_reserve_mem_id_t id)
+{
+	if (id >= NUMS_MEM_ID) {
+		pr_err("[SCP] no reserve memory for 0x%d", id);
+		return 0;
+	} else
+		return scp_reserve_mblock[id].start_virt;
+}
+EXPORT_SYMBOL_GPL(get_reserve_mem_virt);
+
+phys_addr_t get_reserve_mem_size(scp_reserve_mem_id_t id)
+{
+	if (id >= NUMS_MEM_ID) {
+		pr_err("[SCP] no reserve memory for 0x%d", id);
+		return 0;
+	} else
+		return scp_reserve_mblock[id].size;
+}
+EXPORT_SYMBOL_GPL(get_reserve_mem_size);
+
+
+static void scp_reserve_memory_ioremap(void)
+{
+	scp_reserve_mem_id_t id;
+	phys_addr_t accumlate_memory_size;
+
+	accumlate_memory_size = 0;
+	scp_mem_base_virt = (phys_addr_t)ioremap_nocache(scp_mem_base_phys, scp_mem_size);
+	pr_debug("[SCP]reserve mem: virt:0x%llx - 0x%llx (0x%llx)\n", (phys_addr_t)scp_mem_base_virt,
+		(phys_addr_t)scp_mem_base_virt + (phys_addr_t)scp_mem_size, scp_mem_size);
+	for (id = 0; id < NUMS_MEM_ID; id++) {
+		scp_reserve_mblock[id].start_virt = scp_mem_base_virt + accumlate_memory_size;
+		accumlate_memory_size += scp_reserve_mblock[id].size;
+	}
+	/* the reserved memory should be larger then expected memory
+	 * or scp_reserve_mblock does not match dts*/
+	BUG_ON(accumlate_memory_size > scp_mem_size);
+#ifdef DEBUG
+	for (id = 0; id < NUMS_MEM_ID; id++) {
+		pr_debug("[SCP][mem_reserve-%d] phys:0x%llx,virt:0x%llx,size:0x%llx\n",
+			id, get_reserve_mem_phys(id), get_reserve_mem_virt(id), get_reserve_mem_size(id));
+	}
+#endif
+}
+
+#if ENABLE_SCP_EMI_PROTECTION
+void set_scp_mpu(void)
+{
+	unsigned int shr_mem_phy_start, shr_mem_phy_end, shr_mem_mpu_id,
+		     shr_mem_mpu_attr;
+	shr_mem_mpu_id = MPU_REGION_ID_SCP_SMEM;
+	shr_mem_phy_start = scp_mem_base_phys;
+	shr_mem_phy_end = scp_mem_size - 0x1;
+	shr_mem_mpu_attr =
+		SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+				NO_PROTECTION, FORBIDDEN, FORBIDDEN,
+				NO_PROTECTION);
+	pr_debug("[SCP] MPU Start protect SCP Share region<%d:%08x:%08x> %x\n",
+			shr_mem_mpu_id, shr_mem_phy_start, shr_mem_phy_end,
+			shr_mem_mpu_attr);
+	emi_mpu_set_region_protection(shr_mem_phy_start,        /*START_ADDR */
+			shr_mem_phy_end,  /*END_ADDR */
+			shr_mem_mpu_id,   /*region */
+			shr_mem_mpu_attr);
+
+}
+#endif
 /*
  * driver initialization entry point
  */
@@ -521,6 +662,10 @@ static int __init scp_init(void)
 		return -1;
 	}
 
+	scp_reserve_memory_ioremap();
+#if ENABLE_SCP_EMI_PROTECTION
+	set_scp_mpu();
+#endif
 	reset_scp(0);
 
 	return ret;

@@ -290,6 +290,14 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			no-map;
 			reg = <0 0x44600000 0 0x10000>;
 		};
+
+		reserve-memory-scp_share {
+			compatible = "mediatek,reserve-memory-scp_share";
+			no-map;
+			size = <0 0x1000000>; /*16 MB share mem size */
+			alignment = <0 0x1000000>;
+			alloc-ranges = <0 0x40000000 0 0x60000000>;
+		};
 	};
 	gic: interrupt-controller@19000000 {
 		compatible = "arm,gic-v3";
