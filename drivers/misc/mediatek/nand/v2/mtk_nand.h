@@ -14,6 +14,11 @@
 
 #define NFI_CNFG_REG16	((volatile unsigned short *)(NFI_BASE+0x0000))
 #define NFI_PAGEFMT_REG32   ((volatile unsigned int *)(NFI_BASE+0x0004))
+/* for MT8127 */
+#define NFI_PAGEFMT_REG16   ((volatile unsigned short *)(NFI_BASE+0x0004))
+#define PAGEFMT_SPARE_MASK_V1   (0xF00)	/* 4bit */
+#define PAGEFMT_SPARE_SHIFT_V1  (4)
+
 #define NFI_CON_REG16	((volatile unsigned int *)(NFI_BASE+0x0008))
 #define NFI_ACCCON_REG32	((volatile unsigned int *)(NFI_BASE+0x000C))
 #define NFI_INTR_EN_REG16   ((volatile unsigned short *)(NFI_BASE+0x0010))
@@ -457,14 +462,23 @@
 #define DEC_FER7               (0x0080)
 
 /* ECC_DECENUM */
-#define ERR_NUM0               (0x0000007F)
-#define ERR_NUM1               (0x00007F00)
-#define ERR_NUM2               (0x007F0000)
-#define ERR_NUM3               (0x7F000000)
-#define ERR_NUM4               (0x0000007F)
-#define ERR_NUM5               (0x00007F00)
-#define ERR_NUM6               (0x007F0000)
-#define ERR_NUM7               (0x7F000000)
+#define ERR_NUM0_V1               (0x0000003F)
+#define ERR_NUM1_V1               (0x00003F00)
+#define ERR_NUM2_V1               (0x003F0000)
+#define ERR_NUM3_V1               (0x3F000000)
+#define ERR_NUM4_V1               (0x0000003F)
+#define ERR_NUM5_V1               (0x00003F00)
+#define ERR_NUM6_V1               (0x003F0000)
+#define ERR_NUM7_V1               (0x3F000000)
+
+#define ERR_NUM0_V2               (0x0000007F)
+#define ERR_NUM1_V2               (0x00007F00)
+#define ERR_NUM2_V2               (0x007F0000)
+#define ERR_NUM3_V2               (0x7F000000)
+#define ERR_NUM4_V2               (0x0000007F)
+#define ERR_NUM5_V2               (0x00007F00)
+#define ERR_NUM6_V2               (0x007F0000)
+#define ERR_NUM7_V2               (0x7F000000)
 
 /* ECC_DECDONE */
 #define DEC_DONE0               (0x0001)
@@ -496,6 +510,7 @@ struct nfi_saved_para {
 	u8 suspend_flag;
 	u16 sNFI_CNFG_REG16;
 	u32 sNFI_PAGEFMT_REG32;
+	u16 sNFI_PAGEFMT_REG16;
 	u32 sNFI_CON_REG16;
 	u32 sNFI_ACCCON_REG32;
 	u16 sNFI_INTR_EN_REG16;

@@ -244,6 +244,32 @@ struct device_node *mtk_efuse_node = NULL;
 void __iomem *mtk_infra_base;
 struct device_node *mtk_infra_node = NULL;
 
+/*
+ * NFI controller version define
+ *
+ * 1: MT8127
+ * 2: MT8163
+ * Reserved.
+ */
+struct mtk_nfi_compatible {
+	unsigned char chip_ver;
+};
+
+static const struct mtk_nfi_compatible mt8127_compat = {
+	.chip_ver = 1,
+};
+
+static const struct mtk_nfi_compatible mt8163_compat = {
+	.chip_ver = 2,
+};
+
+static const struct of_device_id mtk_nfi_of_match[] = {
+	{ .compatible = "mediatek,mt8127-nfi", .data = &mt8127_compat },
+	{ .compatible = "mediatek,mt8163-nfi", .data = &mt8163_compat },
+	{}
+};
+
+const struct mtk_nfi_compatible *mtk_nfi_dev_comp = NULL;
 #endif
 
 struct device *mtk_dev;
@@ -762,12 +788,24 @@ void nand_unprepare_clock(void)
 void nand_enable_clock(void)
 {
 #if defined(CONFIG_MTK_LEGACY)
-	/* if(clock_is_on(MT_CG_INFRA_NFI)==PWR_DOWN) */
-	enable_clock(MT_CG_INFRA_NFI, "NFI");
-	/* if(clock_is_on(MT_CG_INFRA_NFI_ECC)==PWR_DOWN) */
-	enable_clock(MT_CG_INFRA_NFI_ECC, "NFI");
-	/* if(clock_is_on(MT_CG_INFRA_NFI_BCLK)==PWR_DOWN) */
-	enable_clock(MT_CG_INFRA_NFI_BCLK, "NFI");
+	if (mtk_nfi_dev_comp->chip_ver == 1) {
+		/* if(clock_is_on(MT_CG_PERI_NFI)==PWR_DOWN) */
+		enable_clock(MT_CG_PERI_NFI, "NFI");
+		/* if(clock_is_on(MT_CG_PERI_NFI_ECC)==PWR_DOWN) */
+		enable_clock(MT_CG_PERI_NFI_ECC, "NFI");
+		/* if(clock_is_on(MT_CG_PERI_NFIPAD)==PWR_DOWN) */
+		enable_clock(MT_CG_PERI_NFIPAD, "NFI");
+	} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+		/* if(clock_is_on(MT_CG_INFRA_NFI)==PWR_DOWN) */
+		enable_clock(MT_CG_INFRA_NFI, "NFI");
+		/* if(clock_is_on(MT_CG_INFRA_NFI_ECC)==PWR_DOWN) */
+		enable_clock(MT_CG_INFRA_NFI_ECC, "NFI");
+		/* if(clock_is_on(MT_CG_INFRA_NFI_BCLK)==PWR_DOWN) */
+		enable_clock(MT_CG_INFRA_NFI_BCLK, "NFI");
+	} else {
+		pr_err("[nand_enable_clock] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+			mtk_nfi_dev_comp->chip_ver);
+	}
 #else
 	clk_enable(nfi_clock);
 	clk_enable(nfi_ecc_clock);
@@ -778,12 +816,24 @@ void nand_enable_clock(void)
 void nand_disable_clock(void)
 {
 #if defined(CONFIG_MTK_LEGACY)
-	/* if(clock_is_on(MT_CG_INFRA_NFI_BCLK)==PWR_ON) */
-	disable_clock(MT_CG_INFRA_NFI_BCLK, "NFI");
-	/* if(clock_is_on(MT_CG_INFRA_NFI_ECC)==PWR_ON) */
-	disable_clock(MT_CG_INFRA_NFI_ECC, "NFI");
-	/* if(clock_is_on(MT_CG_INFRA_NFI)==PWR_ON) */
-	disable_clock(MT_CG_INFRA_NFI, "NFI");
+	if (mtk_nfi_dev_comp->chip_ver == 1) {
+		/* if(clock_is_on(MT_CG_PERI_NFIPAD)==PWR_ON) */
+		disable_clock(MT_CG_PERI_NFIPAD, "NFI");
+		/* if(clock_is_on(MT_CG_PERI_NFI_ECC)==PWR_ON) */
+		disable_clock(MT_CG_PERI_NFI_ECC, "NFI");
+		/* if(clock_is_on(MT_CG_PERI_NFI)==PWR_ON) */
+		disable_clock(MT_CG_PERI_NFI, "NFI");
+	} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+		/* if(clock_is_on(MT_CG_INFRA_NFI_BCLK)==PWR_ON) */
+		disable_clock(MT_CG_INFRA_NFI_BCLK, "NFI");
+		/* if(clock_is_on(MT_CG_INFRA_NFI_ECC)==PWR_ON) */
+		disable_clock(MT_CG_INFRA_NFI_ECC, "NFI");
+		/* if(clock_is_on(MT_CG_INFRA_NFI)==PWR_ON) */
+		disable_clock(MT_CG_INFRA_NFI, "NFI");
+	} else {
+		pr_err("[nand_disable_clock] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+			mtk_nfi_dev_comp->chip_ver);
+	}
 #else
 	clk_disable(nfi_clock);
 	clk_disable(nfi_ecc_clock);
@@ -909,7 +959,10 @@ void dump_nfi(void)
 #if __DEBUG_NAND
 	pr_debug("~~~~Dump NFI Register in Kernel~~~~\n");
 	pr_debug("NFI_CNFG_REG16: 0x%x\n", DRV_Reg16(NFI_CNFG_REG16));
-	pr_debug("NFI_PAGEFMT_REG32: 0x%x\n", DRV_Reg32(NFI_PAGEFMT_REG32));
+	if (mtk_nfi_dev_comp->chip_ver == 1)
+		pr_debug("NFI_PAGEFMT_REG16: 0x%x\n", DRV_Reg32(NFI_PAGEFMT_REG16));
+	else if (mtk_nfi_dev_comp->chip_ver == 2)
+		pr_debug("NFI_PAGEFMT_REG32: 0x%x\n", DRV_Reg32(NFI_PAGEFMT_REG32));
 	pr_debug("NFI_CON_REG16: 0x%x\n", DRV_Reg16(NFI_CON_REG16));
 	pr_debug("NFI_ACCCON_REG32: 0x%x\n", DRV_Reg32(NFI_ACCCON_REG32));
 	pr_debug("NFI_INTR_EN_REG16: 0x%x\n", DRV_Reg16(NFI_INTR_EN_REG16));
@@ -1742,6 +1795,14 @@ static bool mtk_nand_check_bch_error(struct mtd_info *mtd, u8 *pDataBuf, u8 *spa
 	u32 u4ErrBitLoc1th, u4ErrBitLoc2nd;
 #endif
 
+	u32 ERR_NUM0 = 0;
+
+	if (mtk_nfi_dev_comp->chip_ver == 1) {
+		ERR_NUM0 = ERR_NUM0_V1;
+	} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+		ERR_NUM0 = ERR_NUM0_V2;
+	}
+
 	while (0 == (u2SectorDoneMask & DRV_Reg16(ECC_DECDONE_REG16))) {
 		timeout--;
 		if (0 == timeout)
@@ -1804,7 +1865,6 @@ static bool mtk_nand_check_bch_error(struct mtd_info *mtd, u8 *pDataBuf, u8 *spa
 		failed_sec = 0;
 	}
 #else
-
 	for (j = 0; j <= u4SecIndex; ++j) {
 		u4ErrNum = (DRV_Reg32((ECC_DECENUM0_REG32 + (j / 4))) >> ((j % 4) * 8)) & ERR_NUM0;
 		/* We will manually correct the error bits in the last sector, not all the sectors of the page! */
@@ -2046,11 +2106,19 @@ static void mtk_nand_set_autoformat(bool bEnable)
  ******************************************************************************/
 static void mtk_nand_configure_fdm(u16 u2FDMSize)
 {
-	NFI_CLN_REG32(NFI_PAGEFMT_REG32, PAGEFMT_FDM_MASK | PAGEFMT_FDM_ECC_MASK);
-	NFI_SET_REG32(NFI_PAGEFMT_REG32, u2FDMSize << PAGEFMT_FDM_SHIFT);
-	NFI_SET_REG32(NFI_PAGEFMT_REG32, u2FDMSize << PAGEFMT_FDM_ECC_SHIFT);
+	if (mtk_nfi_dev_comp->chip_ver == 1) {
+		NFI_CLN_REG16(NFI_PAGEFMT_REG16, PAGEFMT_FDM_MASK | PAGEFMT_FDM_ECC_MASK);
+		NFI_SET_REG16(NFI_PAGEFMT_REG16, u2FDMSize << PAGEFMT_FDM_SHIFT);
+		NFI_SET_REG16(NFI_PAGEFMT_REG16, u2FDMSize << PAGEFMT_FDM_ECC_SHIFT);
+	} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+		NFI_CLN_REG32(NFI_PAGEFMT_REG32, PAGEFMT_FDM_MASK | PAGEFMT_FDM_ECC_MASK);
+		NFI_SET_REG32(NFI_PAGEFMT_REG32, u2FDMSize << PAGEFMT_FDM_SHIFT);
+		NFI_SET_REG32(NFI_PAGEFMT_REG32, u2FDMSize << PAGEFMT_FDM_ECC_SHIFT);
+	} else {
+		pr_err("[mtk_nand_configure_fdm] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+			mtk_nfi_dev_comp->chip_ver);
+	}
 }
-
 
 static bool mtk_nand_pio_ready(void)
 {
@@ -2403,6 +2471,7 @@ cleanup:
 static bool mtk_nand_check_dececc_done(u32 u4SecNum)
 {
 	u32 dec_mask;
+	u32 fsm_mask;
 	struct timeval timer_timeout, timer_cur;
 
 	do_gettimeofday(&timer_timeout);
@@ -2423,7 +2492,18 @@ static bool mtk_nand_check_dececc_done(u32 u4SecNum)
 			return false;
 		}
 	}
-	while ((DRV_Reg32(ECC_DECFSM_REG32) & 0x3F3FFF0F) != ECC_DECFSM_IDLE) {
+
+	if (mtk_nfi_dev_comp->chip_ver == 1) {
+		fsm_mask = 0x7F0F0F0F;
+	} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+		fsm_mask = 0x3F3FFF0F;
+	} else {
+		fsm_mask = 0xFFFFFFFF;
+		pr_err("[mtk_nand_check_dececc_done] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+			mtk_nfi_dev_comp->chip_ver);
+	}
+
+	while ((DRV_Reg32(ECC_DECFSM_REG32) & fsm_mask) != ECC_DECFSM_IDLE) {
 		do_gettimeofday(&timer_cur);
 		if (timeval_compare(&timer_cur, &timer_timeout) >= 0) {
 			pr_notice("ECC_DECDONE: timeout 0x%x 0x%x %d\n",
@@ -2897,7 +2977,14 @@ static bool mtk_nand_read_status(void)
 	NFI_CLN_REG16(NFI_CNFG_REG16, CNFG_HW_ECC_EN);
 
 	/* Disable 16-bit I/O */
-	NFI_CLN_REG32(NFI_PAGEFMT_REG32, PAGEFMT_DBYTE_EN);
+	if (mtk_nfi_dev_comp->chip_ver == 1) {
+		NFI_CLN_REG16(NFI_PAGEFMT_REG16, PAGEFMT_DBYTE_EN);
+	} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+		NFI_CLN_REG32(NFI_PAGEFMT_REG32, PAGEFMT_DBYTE_EN);
+	} else {
+		pr_err("[mtk_nand_read_status] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+			mtk_nfi_dev_comp->chip_ver);
+	}
 	NFI_SET_REG16(NFI_CNFG_REG16, CNFG_OP_SRD | CNFG_READ_EN | CNFG_BYTE_RW);
 
 	DRV_WriteReg32(NFI_CON_REG16, CON_NFI_SRD | (1 << CON_NFI_NOB_SHIFT));
@@ -2917,7 +3004,14 @@ static bool mtk_nand_read_status(void)
 	DRV_WriteReg32(NFI_CON_REG16, 0);
 
 	if (devinfo.iowidth == 16) {
-		NFI_SET_REG32(NFI_PAGEFMT_REG32, PAGEFMT_DBYTE_EN);
+		if (mtk_nfi_dev_comp->chip_ver == 1) {
+			NFI_SET_REG16(NFI_PAGEFMT_REG16, PAGEFMT_DBYTE_EN);
+		} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+			NFI_SET_REG32(NFI_PAGEFMT_REG32, PAGEFMT_DBYTE_EN);
+		} else {
+			pr_err("[mtk_nand_read_status] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+				mtk_nfi_dev_comp->chip_ver);
+		}
 		NFI_CLN_REG16(NFI_CNFG_REG16, CNFG_BYTE_RW);
 	}
 	/* check READY/BUSY status first */
@@ -4509,31 +4603,61 @@ static void mtk_nand_select_chip(struct mtd_info *mtd, int chip)
 		mtd->oobsize = spare_per_sector * (mtd->writesize / hw->nand_sec_size);
 		pr_debug("[NAND]select ecc bit:%d, sparesize :%d\n", ecc_bit, mtd->oobsize);
 		/* Setup PageFormat */
-
-		if (16384 == mtd->writesize) {
-			NFI_SET_REG32(NFI_PAGEFMT_REG32,
-					  (spare_bit << PAGEFMT_SPARE_SHIFT) | PAGEFMT_16K_1KS);
-			nand->cmdfunc = mtk_nand_command_bp;
-		} else if (8192 == mtd->writesize) {
-			NFI_SET_REG32(NFI_PAGEFMT_REG32,
-					  (spare_bit << PAGEFMT_SPARE_SHIFT) | PAGEFMT_8K_1KS);
-			nand->cmdfunc = mtk_nand_command_bp;
-		} else if (4096 == mtd->writesize) {
-			if (MLC_DEVICE == FALSE)
+		if (mtk_nfi_dev_comp->chip_ver == 1) {
+			if (16384 == mtd->writesize) {
+				NFI_SET_REG16(NFI_PAGEFMT_REG16,
+						  (spare_bit << PAGEFMT_SPARE_SHIFT_V1) | PAGEFMT_16K_1KS);
+				nand->cmdfunc = mtk_nand_command_bp;
+			} else if (8192 == mtd->writesize) {
+				NFI_SET_REG16(NFI_PAGEFMT_REG16,
+						  (spare_bit << PAGEFMT_SPARE_SHIFT_V1) | PAGEFMT_8K_1KS);
+				nand->cmdfunc = mtk_nand_command_bp;
+			} else if (4096 == mtd->writesize) {
+				if (MLC_DEVICE == FALSE)
+					NFI_SET_REG16(NFI_PAGEFMT_REG16,
+							  (spare_bit << PAGEFMT_SPARE_SHIFT_V1) | PAGEFMT_4K);
+				else
+					NFI_SET_REG16(NFI_PAGEFMT_REG16,
+							  (spare_bit << PAGEFMT_SPARE_SHIFT_V1) | PAGEFMT_4K_1KS);
+				nand->cmdfunc = mtk_nand_command_bp;
+			} else if (2048 == mtd->writesize) {
+				if (MLC_DEVICE == FALSE)
+					NFI_SET_REG16(NFI_PAGEFMT_REG16,
+							  (spare_bit << PAGEFMT_SPARE_SHIFT_V1) | PAGEFMT_2K);
+				else
+					NFI_SET_REG16(NFI_PAGEFMT_REG16,
+							  (spare_bit << PAGEFMT_SPARE_SHIFT_V1) | PAGEFMT_2K_1KS);
+				nand->cmdfunc = mtk_nand_command_bp;
+			}
+		} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+			if (16384 == mtd->writesize) {
 				NFI_SET_REG32(NFI_PAGEFMT_REG32,
-						  (spare_bit << PAGEFMT_SPARE_SHIFT) | PAGEFMT_4K);
-			else
+						  (spare_bit << PAGEFMT_SPARE_SHIFT) | PAGEFMT_16K_1KS);
+				nand->cmdfunc = mtk_nand_command_bp;
+			} else if (8192 == mtd->writesize) {
 				NFI_SET_REG32(NFI_PAGEFMT_REG32,
-						  (spare_bit << PAGEFMT_SPARE_SHIFT) | PAGEFMT_4K_1KS);
-			nand->cmdfunc = mtk_nand_command_bp;
-		} else if (2048 == mtd->writesize) {
-			if (MLC_DEVICE == FALSE)
-				NFI_SET_REG32(NFI_PAGEFMT_REG32,
-						  (spare_bit << PAGEFMT_SPARE_SHIFT) | PAGEFMT_2K);
-			else
-				NFI_SET_REG32(NFI_PAGEFMT_REG32,
-						  (spare_bit << PAGEFMT_SPARE_SHIFT) | PAGEFMT_2K_1KS);
-			nand->cmdfunc = mtk_nand_command_bp;
+						  (spare_bit << PAGEFMT_SPARE_SHIFT) | PAGEFMT_8K_1KS);
+				nand->cmdfunc = mtk_nand_command_bp;
+			} else if (4096 == mtd->writesize) {
+				if (MLC_DEVICE == FALSE)
+					NFI_SET_REG32(NFI_PAGEFMT_REG32,
+							  (spare_bit << PAGEFMT_SPARE_SHIFT) | PAGEFMT_4K);
+				else
+					NFI_SET_REG32(NFI_PAGEFMT_REG32,
+							  (spare_bit << PAGEFMT_SPARE_SHIFT) | PAGEFMT_4K_1KS);
+				nand->cmdfunc = mtk_nand_command_bp;
+			} else if (2048 == mtd->writesize) {
+				if (MLC_DEVICE == FALSE)
+					NFI_SET_REG32(NFI_PAGEFMT_REG32,
+							  (spare_bit << PAGEFMT_SPARE_SHIFT) | PAGEFMT_2K);
+				else
+					NFI_SET_REG32(NFI_PAGEFMT_REG32,
+							  (spare_bit << PAGEFMT_SPARE_SHIFT) | PAGEFMT_2K_1KS);
+				nand->cmdfunc = mtk_nand_command_bp;
+			}
+		} else {
+			pr_err("[mtk_nand_select_chip] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+				mtk_nfi_dev_comp->chip_ver);
 		}
 		ecc_threshold = ecc_bit * 4 / 5;
 		ECC_Config(hw, ecc_bit);
@@ -5609,7 +5733,14 @@ static void mtk_nand_init_hw(struct mtk_nand_host *host)
 	/* Set default NFI access timing control */
 	DRV_WriteReg32(NFI_ACCCON_REG32, hw->nfi_access_timing);
 	DRV_WriteReg16(NFI_CNFG_REG16, 0);
-	DRV_WriteReg32(NFI_PAGEFMT_REG32, 4);
+	if (mtk_nfi_dev_comp->chip_ver == 1) {
+		DRV_WriteReg16(NFI_PAGEFMT_REG16, 4);
+	} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+		DRV_WriteReg32(NFI_PAGEFMT_REG32, 4);
+	} else {
+		pr_err("[mtk_nand_init_hw] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+			mtk_nfi_dev_comp->chip_ver);
+	}
 	DRV_WriteReg32(NFI_ENMPTY_THRESH_REG32, 40);
 
 	/* Reset the state machine and data FIFO, because flushing FIFO */
@@ -5939,8 +6070,10 @@ static void mtk_nand_gpio_init(void)
 		NFI_GPIO_SET_FIELD(GPIO_BASE + 0xc60, 0xf, 0x0a);	/* TDSEL change value to 0x0a */
 		NFI_GPIO_SET_FIELD(GPIO_BASE + 0xc60, 0x3f0, 0x0c);	/* RDSEL change value to 0x0c */
 
-		NFI_GPIO_SET_FIELD(GPIO_BASE + 0xe20, 0xf000, 0x5);	/* BIAS CTRL0 */
-		NFI_GPIO_SET_FIELD(GPIO_BASE + 0xe20, 0x000f, 0x5);
+		if (mtk_nfi_dev_comp->chip_ver == 2) {
+			NFI_GPIO_SET_FIELD(GPIO_BASE + 0xe20, 0xf000, 0x5);	/* BIAS CTRL0 */
+			NFI_GPIO_SET_FIELD(GPIO_BASE + 0xe20, 0x000f, 0x5);
+		}
 	} else {		/* 1.8v */
 
 		pr_debug("1.8V\n");
@@ -5954,6 +6087,8 @@ static void mtk_nand_gpio_init(void)
 	NFI_GPIO_SET_FIELD(GPIO_BASE + 0xc10, 0x7, 0x3);	/* set CMD driving more than 4mA */
 	NFI_GPIO_SET_FIELD(GPIO_BASE + 0xc20, 0x7, 0x3);	/* set DAT driving more than 4mA */
 	NFI_GPIO_SET_FIELD(GPIO_BASE + 0xb50, 0x7, 0x3);	/* set NFI_PAD driving more than 4mA */
+	if (mtk_nfi_dev_comp->chip_ver == 1)
+		DRV_WriteReg32(GPIO_BASE+0xe20, DRV_Reg32(GPIO_BASE+0xe20) | 0x5 | (0x5 << 12));
 	/* DRV_WriteReg32(GPIO_BASE+0x180, 0x7FFF); */
 	/* DRV_WriteReg32(GPIO_BASE+0x280, 0x7FDF); */
 }
@@ -6186,12 +6321,22 @@ static int mtk_nand_probe(struct platform_device *pdev)
 #endif
 
 #ifdef CONFIG_OF
+	const struct of_device_id *of_id;
+
+	of_id = of_match_node(mtk_nfi_of_match, pdev->dev.of_node);
+	if (!of_id)
+		return -EINVAL;
+
+	mtk_nfi_dev_comp = of_id->data;
 	/* dt modify */
 	mtk_nfi_base = of_iomap(pdev->dev.of_node, 0);
 	pr_debug("of_iomap for nfi base @ 0x%p\n", mtk_nfi_base);
 
 	if (mtk_nfiecc_node == NULL) {
-		mtk_nfiecc_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8163-nfiecc");
+		if (mtk_nfi_dev_comp->chip_ver == 1)
+			mtk_nfiecc_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8127-nfiecc");
+		else if (mtk_nfi_dev_comp->chip_ver == 2)
+			mtk_nfiecc_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8163-nfiecc");
 		mtk_nfiecc_base = of_iomap(mtk_nfiecc_node, 0);
 		pr_debug("of_iomap for nfiecc base @ 0x%p\n", mtk_nfiecc_base);
 	}
@@ -6199,7 +6344,10 @@ static int mtk_nand_probe(struct platform_device *pdev)
 
 	if (mtk_gpio_node == NULL) {
 		/* mtk_gpio_node = of_find_compatible_node(NULL, NULL, "mediatek,GPIO"); */
-		mtk_gpio_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8163-pctl-a-syscfg");
+		if (mtk_nfi_dev_comp->chip_ver == 1)
+			mtk_gpio_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8127-pctl-a-syscfg");
+		else if (mtk_nfi_dev_comp->chip_ver == 2)
+			mtk_gpio_node = of_find_compatible_node(NULL, NULL, "mediatek,mt8163-pctl-a-syscfg");
 		mtk_gpio_base = of_iomap(mtk_gpio_node, 0);
 		pr_debug("of_iomap for gpio base @ 0x%p\n", mtk_gpio_base);
 	}
@@ -6222,28 +6370,39 @@ static int mtk_nand_probe(struct platform_device *pdev)
 #endif
 
 #if !defined(CONFIG_MTK_LEGACY)
-	nfi_clock = devm_clk_get(&pdev->dev, "infra_nfi");
-	BUG_ON(IS_ERR(nfi_clock));
-	nfi_ecc_clock = devm_clk_get(&pdev->dev, "infra_nfi_ecc");
-	BUG_ON(IS_ERR(nfi_ecc_clock));
-	nfi_bclk_clock = devm_clk_get(&pdev->dev, "infra_nfi_bclk");
-	BUG_ON(IS_ERR(nfi_bclk_clock));
-	onfi_sel_clock = devm_clk_get(&pdev->dev, "onfi_sel");
-	BUG_ON(IS_ERR(onfi_sel_clock));
-	onfi_26m_clock = devm_clk_get(&pdev->dev, "onfi_clk26m");
-	BUG_ON(IS_ERR(onfi_26m_clock));
-	syspll2_d2_clock = devm_clk_get(&pdev->dev, "syspll2_d2");
-	BUG_ON(IS_ERR(syspll2_d2_clock));
-	syspll_d7_clock = devm_clk_get(&pdev->dev, "syspll_d7");
-	BUG_ON(IS_ERR(syspll_d7_clock));
-	infra_nfi_sel_clock = devm_clk_get(&pdev->dev, "infra_nfi_sel");
-	BUG_ON(IS_ERR(infra_nfi_sel_clock));
-	axi_sel_clock = devm_clk_get(&pdev->dev, "axi_sel");
-	BUG_ON(IS_ERR(axi_sel_clock));
-	onfi_d2_clock = devm_clk_get(&pdev->dev, "onfi_d2");
-	BUG_ON(IS_ERR(onfi_d2_clock));
-	mtk_nand_regulator = devm_regulator_get(&pdev->dev, "vmch");
-	BUG_ON(IS_ERR(mtk_nand_regulator));
+	if (mtk_nfi_dev_comp->chip_ver == 1) {
+		nfi_clock = devm_clk_get(&pdev->dev, "nfi_ck");
+		BUG_ON(IS_ERR(nfi_clock));
+		nfi_ecc_clock = devm_clk_get(&pdev->dev, "nfi_ecc_ck");
+		BUG_ON(IS_ERR(nfi_ecc_clock));
+		nfi_bclk_clock = devm_clk_get(&pdev->dev, "nfi_pad_ck");
+		BUG_ON(IS_ERR(nfi_bclk_clock));
+		mtk_nand_regulator = devm_regulator_get(&pdev->dev, "vmch");
+		BUG_ON(IS_ERR(mtk_nand_regulator));
+	} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+		nfi_clock = devm_clk_get(&pdev->dev, "infra_nfi");
+		BUG_ON(IS_ERR(nfi_clock));
+		nfi_ecc_clock = devm_clk_get(&pdev->dev, "infra_nfi_ecc");
+		BUG_ON(IS_ERR(nfi_ecc_clock));
+		nfi_bclk_clock = devm_clk_get(&pdev->dev, "infra_nfi_bclk");
+		BUG_ON(IS_ERR(nfi_bclk_clock));
+		onfi_sel_clock = devm_clk_get(&pdev->dev, "onfi_sel");
+		BUG_ON(IS_ERR(onfi_sel_clock));
+		onfi_26m_clock = devm_clk_get(&pdev->dev, "onfi_clk26m");
+		BUG_ON(IS_ERR(onfi_26m_clock));
+		syspll2_d2_clock = devm_clk_get(&pdev->dev, "syspll2_d2");
+		BUG_ON(IS_ERR(syspll2_d2_clock));
+		syspll_d7_clock = devm_clk_get(&pdev->dev, "syspll_d7");
+		BUG_ON(IS_ERR(syspll_d7_clock));
+		infra_nfi_sel_clock = devm_clk_get(&pdev->dev, "infra_nfi_sel");
+		BUG_ON(IS_ERR(infra_nfi_sel_clock));
+		axi_sel_clock = devm_clk_get(&pdev->dev, "axi_sel");
+		BUG_ON(IS_ERR(axi_sel_clock));
+		onfi_d2_clock = devm_clk_get(&pdev->dev, "onfi_d2");
+		BUG_ON(IS_ERR(onfi_d2_clock));
+		mtk_nand_regulator = devm_regulator_get(&pdev->dev, "vmch");
+		BUG_ON(IS_ERR(mtk_nand_regulator));
+	}
 #endif
 
 #if defined(CONFIG_MTK_LEGACY)
@@ -6419,7 +6578,14 @@ static int mtk_nand_probe(struct platform_device *pdev)
 		sector_size = 1024;
 		hw->nand_sec_shift = 10;
 		hw->nand_sec_size = 1024;
-		NFI_CLN_REG32(NFI_PAGEFMT_REG32, PAGEFMT_SECTOR_SEL);
+		if (mtk_nfi_dev_comp->chip_ver == 1) {
+			NFI_CLN_REG16(NFI_PAGEFMT_REG16, PAGEFMT_SECTOR_SEL);
+		} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+			NFI_CLN_REG32(NFI_PAGEFMT_REG32, PAGEFMT_SECTOR_SEL);
+		} else {
+			pr_err("[mtk_nand_init_hw] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+				mtk_nfi_dev_comp->chip_ver);
+		}
 	}
 	if (devinfo.pagesize <= 4096) {
 		nand_chip->ecc.layout->eccbytes =
@@ -6593,8 +6759,16 @@ static int mtk_nand_probe(struct platform_device *pdev)
 #endif
 	platform_set_drvdata(pdev, host);
 
-	if (hw->nfi_bus_width == 16)
-		NFI_SET_REG32(NFI_PAGEFMT_REG32, PAGEFMT_DBYTE_EN);
+	if (hw->nfi_bus_width == 16) {
+		if (mtk_nfi_dev_comp->chip_ver == 1) {
+			NFI_SET_REG16(NFI_PAGEFMT_REG16, PAGEFMT_DBYTE_EN);
+		} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+			NFI_SET_REG32(NFI_PAGEFMT_REG32, PAGEFMT_DBYTE_EN);
+		} else {
+			pr_err("[mtk_nand_init_hw] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+				mtk_nfi_dev_comp->chip_ver);
+		}
+	}
 
 	nand_chip->select_chip(mtd, 0);
 #if defined(MTK_COMBO_NAND_SUPPORT)
@@ -6759,7 +6933,14 @@ static int mtk_nand_suspend(struct platform_device *pdev, pm_message_t state)
 		nand_enable_clock();
 		/* Save NFI register */
 		host->saved_para.sNFI_CNFG_REG16 = DRV_Reg16(NFI_CNFG_REG16);
-		host->saved_para.sNFI_PAGEFMT_REG32 = DRV_Reg32(NFI_PAGEFMT_REG32);
+		if (mtk_nfi_dev_comp->chip_ver == 1) {
+			host->saved_para.sNFI_PAGEFMT_REG16 = DRV_Reg16(NFI_PAGEFMT_REG16);
+		} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+			host->saved_para.sNFI_PAGEFMT_REG32 = DRV_Reg32(NFI_PAGEFMT_REG32);
+		} else {
+			pr_err("[mtk_nand_init_hw] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+				mtk_nfi_dev_comp->chip_ver);
+		}
 		host->saved_para.sNFI_CON_REG16 = DRV_Reg32(NFI_CON_REG16);
 		host->saved_para.sNFI_ACCCON_REG32 = DRV_Reg32(NFI_ACCCON_REG32);
 		host->saved_para.sNFI_INTR_EN_REG16 = DRV_Reg16(NFI_INTR_EN_REG16);
@@ -6851,7 +7032,14 @@ static int mtk_nand_resume(struct platform_device *pdev)
 		nand_prepare_clock();
 		nand_enable_clock();
 		DRV_WriteReg16(NFI_CNFG_REG16, host->saved_para.sNFI_CNFG_REG16);
-		DRV_WriteReg32(NFI_PAGEFMT_REG32, host->saved_para.sNFI_PAGEFMT_REG32);
+		if (mtk_nfi_dev_comp->chip_ver == 1) {
+			DRV_WriteReg16(NFI_PAGEFMT_REG16, host->saved_para.sNFI_PAGEFMT_REG16);
+		} else if (mtk_nfi_dev_comp->chip_ver == 2) {
+			DRV_WriteReg32(NFI_PAGEFMT_REG32, host->saved_para.sNFI_PAGEFMT_REG32);
+		} else {
+			pr_err("[mtk_nand_resume] ERROR, mtk_nfi_dev_comp->chip_ver=%d\n",
+				mtk_nfi_dev_comp->chip_ver);
+		}
 		DRV_WriteReg32(NFI_CON_REG16, host->saved_para.sNFI_CON_REG16);
 		DRV_WriteReg32(NFI_ACCCON_REG32, host->saved_para.sNFI_ACCCON_REG32);
 		DRV_WriteReg16(NFI_IOCON_REG16, host->saved_para.sNFI_IOCON_REG16);
@@ -7339,12 +7527,6 @@ static struct miscdevice nand_otp_dev = {
 /******************************************************************************
 Device driver structure
 ******************************************************************************/
-#ifdef CONFIG_OF
-static const struct of_device_id mtk_nand_of_ids[] = {
-	{.compatible = "mediatek,mt8163-nfi",},
-	{}
-};
-#endif
 
 static struct platform_driver mtk_nand_driver = {
 	.probe = mtk_nand_probe,
@@ -7355,7 +7537,7 @@ static struct platform_driver mtk_nand_driver = {
 		   .name = "mtk-nand",
 		   .owner = THIS_MODULE,
 #ifdef CONFIG_OF
-		   .of_match_table = mtk_nand_of_ids,
+		   .of_match_table = mtk_nfi_of_match,
 #endif
 		   },
 };
