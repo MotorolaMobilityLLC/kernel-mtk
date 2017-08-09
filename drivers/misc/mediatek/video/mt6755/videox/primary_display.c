@@ -3452,7 +3452,8 @@ int primary_display_suspend(void)
 	}
 	primary_display_idlemgr_kick((char *)__func__, 0);
 
-	if (pgc->session_mode == DISP_SESSION_RDMA_MODE) {
+	if (pgc->session_mode == DISP_SESSION_RDMA_MODE
+	   || pgc->session_mode == DISP_SESSION_DECOUPLE_MODE) {
 		/* switch back to DL mode before suspend */
 		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
 					pgc->session_id, 0, NULL, 1);
