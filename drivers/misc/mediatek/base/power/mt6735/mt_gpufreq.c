@@ -445,7 +445,7 @@ static void _mt_gpufreq_input_event(struct input_handle *handle, unsigned int ty
 				    unsigned int code, int value)
 {
 	if (mt_gpufreq_ready == false) {
-		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
+		gpufreq_dbg("@%s: GPU DVFS not ready!\n", __func__);
 		return;
 	}
 
@@ -614,7 +614,7 @@ static void _mt_update_gpufreqs_power_table(void)
 	unsigned int freq, volt;
 
 	if (mt_gpufreq_ready == false) {
-		gpufreq_warn("@%s: GPU DVFS not ready\n", __func__);
+		gpufreq_dbg("@%s: GPU DVFS not ready\n", __func__);
 		return;
 	}
 
@@ -1080,7 +1080,7 @@ void mt_gpufreq_oc_callback(BATTERY_OC_LEVEL oc_level)
 	gpufreq_dbg("@%s: oc_level = %d\n", __func__, oc_level);
 
 	if (mt_gpufreq_ready == false) {
-		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
+		gpufreq_dbg("@%s: GPU DVFS not ready!\n", __func__);
 		return;
 	}
 
@@ -1129,7 +1129,7 @@ void mt_gpufreq_low_batt_volume_callback(BATTERY_PERCENT_LEVEL low_battery_volum
 	gpufreq_dbg("@%s: low_battery_volume = %d\n", __func__, low_battery_volume);
 
 	if (mt_gpufreq_ready == false) {
-		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
+		gpufreq_dbg("@%s: GPU DVFS not ready!\n", __func__);
 		return;
 	}
 
@@ -1184,7 +1184,7 @@ void mt_gpufreq_low_batt_volt_callback(LOW_BATTERY_LEVEL low_battery_level)
 	gpufreq_dbg("@%s: low_battery_level = %d\n", __func__, low_battery_level);
 
 	if (mt_gpufreq_ready == false) {
-		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
+		gpufreq_dbg("@%s: GPU DVFS not ready!\n", __func__);
 		return;
 	}
 
@@ -1262,7 +1262,7 @@ void mt_gpufreq_thermal_protect(unsigned int limited_power)
 	mutex_lock(&mt_gpufreq_power_lock);
 
 	if (mt_gpufreq_ready == false) {
-		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
+		gpufreq_dbg("@%s: GPU DVFS not ready!\n", __func__);
 		mutex_unlock(&mt_gpufreq_power_lock);
 		return;
 	}
@@ -1336,7 +1336,7 @@ void mt_gpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 	mutex_lock(&mt_gpufreq_power_lock);
 
 	if (mt_gpufreq_ready == false) {
-		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
+		gpufreq_dbg("@%s: GPU DVFS not ready!\n", __func__);
 		mutex_unlock(&mt_gpufreq_power_lock);
 		return;
 	}
@@ -1451,7 +1451,7 @@ int mt_gpufreq_target(unsigned int idx)
 	mutex_lock(&mt_gpufreq_lock);
 
 	if (mt_gpufreq_ready == false) {
-		gpufreq_warn("GPU DVFS not ready!\n");
+		gpufreq_dbg("GPU DVFS not ready!\n");
 		mutex_unlock(&mt_gpufreq_lock);
 		return -ENOSYS;
 	}
@@ -1625,7 +1625,7 @@ int mt_gpufreq_voltage_enable_set(unsigned int enable)
 	mutex_lock(&mt_gpufreq_lock);
 
 	if (mt_gpufreq_ready == false) {
-		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
+		gpufreq_dbg("@%s: GPU DVFS not ready!\n", __func__);
 		mutex_unlock(&mt_gpufreq_lock);
 		return -ENOSYS;
 	}
@@ -1713,7 +1713,7 @@ EXPORT_SYMBOL(mt_gpufreq_get_dvfs_table_num);
 unsigned int mt_gpufreq_get_freq_by_idx(unsigned int idx)
 {
 	if (mt_gpufreq_ready == false) {
-		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
+		gpufreq_dbg("@%s: GPU DVFS not ready!\n", __func__);
 		return -ENOSYS;
 	}
 
