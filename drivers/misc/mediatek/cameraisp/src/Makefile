@@ -26,6 +26,10 @@ endif
 #  obj-y += $(CONFIG_MTK_PLATFORM)/
 #endif
 
+ifeq ($(CONFIG_ARCH_MT8127),y)
+  obj-y += $(CONFIG_MTK_PLATFORM)/
+endif
+
 ifeq ($(CONFIG_ARCH_MT8163),y)
   obj-y += $(CONFIG_MTK_PLATFORM)/
 endif
