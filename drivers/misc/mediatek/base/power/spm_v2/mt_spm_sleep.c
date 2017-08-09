@@ -133,6 +133,7 @@ struct wake_status spm_wakesta; /* record last wakesta */
 	WAKE_SRC_R12_EINT_EVENT_B | \
 	WAKE_SRC_R12_CONN_WDT_IRQ_B | \
 	WAKE_SRC_R12_CCIF0_EVENT_B | \
+	WAKE_SRC_R12_MD32_SPM_IRQ_B | \
 	WAKE_SRC_R12_USB_CDSC_B | \
 	WAKE_SRC_R12_USB_POWERDWN_B | \
 	WAKE_SRC_R12_C2K_WDT_IRQ_B | \
