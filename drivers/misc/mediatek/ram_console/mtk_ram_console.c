@@ -445,10 +445,12 @@ void aee_sram_fiq_log(const char *msg)
 {
 	unsigned int count = strlen(msg);
 	int delay = 100;
+#ifndef CONFIG_PSTORE
 	unsigned int ram_console_buffer_size = ram_console_size();
 
 	if (FIQ_log_size + count > ram_console_buffer_size)
 		return;
+#endif
 
 	atomic_set(&rc_in_fiq, 1);
 
