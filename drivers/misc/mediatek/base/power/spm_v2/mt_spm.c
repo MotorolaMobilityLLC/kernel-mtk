@@ -1095,7 +1095,7 @@ int spm_golden_setting_cmp(bool en)
 /* for PMIC power settings */
 #define VCORE_VOSEL_SLEEP_0P6	0x00	/* 7'b0000110 */
 #define VCORE_VOSEL_SLEEP_0P7	0x10	/* 7'b0010000 */
-#define VCORE_VOSEL_SLEEP_0P8	0x20	/* 7'b0100000 */
+#define VCORE_VOSEL_SLEEP_0P77	0x1C	/* 7'b0011100 */
 #define VCORE_VOSEL_SLEEP_0P9	0x30	/* 7'b0110000 */
 static void spm_pmic_set_vcore(int vcore, int lock)
 {
@@ -1211,7 +1211,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P9, lock);
 #elif defined(CONFIG_ARCH_MT6797)
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P8, lock);
+		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
 #endif
 		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN2, lock);
@@ -1235,7 +1235,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P9, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN_NA, lock);
 #elif defined(CONFIG_ARCH_MT6797)
-		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P8, lock);
+		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P77, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 #endif
 		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
