@@ -5271,7 +5271,7 @@ static int modem_sdio_probe(struct sdio_func *func,
 #ifdef CONFIG_EVDO_DT_VIA_SUPPORT
 	ret = via_sdio_probe_func(modem, func);
 #else
-	/*c2k_sdio_install_eirq();*/
+	c2k_sdio_install_eirq();
 	ret = c2k_sdio_probe_func(modem, func);
 #endif
 
@@ -5356,7 +5356,7 @@ static void modem_sdio_remove(struct sdio_func *func)
 	LOGPRT(LOG_INFO, "modem_sdio_remove from %ps\n",
 	       __builtin_return_address(0));
 #ifndef CONFIG_EVDO_DT_VIA_SUPPORT
-	/*c2k_sdio_uninstall_eirq();*/
+	c2k_sdio_uninstall_eirq();
 #endif
 	LOGPRT(LOG_NOTICE, "%s %d: Leave.\n", __func__, __LINE__);
 }
