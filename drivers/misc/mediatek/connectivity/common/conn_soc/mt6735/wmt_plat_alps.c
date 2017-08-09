@@ -1051,3 +1051,7 @@ INT32 wmt_plat_get_tdm_antsel_index(VOID)
 }
 EXPORT_SYMBOL(wmt_plat_get_tdm_antsel_index);
 #endif
+INT32 wmt_plat_set_dbg_mode(UINT32 flag)
+{
+	return mtk_wcn_consys_set_dbg_mode(flag);
+}

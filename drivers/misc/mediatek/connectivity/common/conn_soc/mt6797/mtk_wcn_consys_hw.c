@@ -1176,3 +1176,22 @@ struct pinctrl *mtk_wcn_consys_get_pinctrl()
 	return consys_pinctrl;
 }
 #endif
+INT32 mtk_wcn_consys_set_dbg_mode(UINT32 flag)
+{
+	INT32 ret = -1;
+	PUINT8 vir_addr = NULL;
+
+	vir_addr = mtk_wcn_consys_emi_virt_addr_get(EXP_APMEM_CTRL_CHIP_FW_DBGLOG_MODE);
+	if (!vir_addr) {
+		WMT_PLAT_ERR_FUNC("get vir address fail\n");
+		return -2;
+	}
+	if (flag) {
+		ret = 0;
+		CONSYS_REG_WRITE(vir_addr, 0x1);
+	} else {
+		CONSYS_REG_WRITE(vir_addr, 0x0);
+	}
+	WMT_PLAT_ERR_FUNC("fw dbg mode register value(0x%08x)\n", CONSYS_REG_READ(vir_addr));
+	return ret;
+}

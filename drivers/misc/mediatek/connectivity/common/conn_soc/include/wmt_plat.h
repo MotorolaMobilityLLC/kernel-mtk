@@ -282,6 +282,7 @@ UINT32 wmt_plat_force_trigger_assert(ENUM_FORCE_TRG_ASSERT_T type);
 INT32 wmt_plat_update_host_sync_num(VOID);
 INT32 wmt_plat_get_dump_info(UINT32 offset);
 UINT32 wmt_plat_get_soc_chipid(VOID);
+INT32 wmt_plat_set_dbg_mode(UINT32 flag);
 #if CFG_WMT_LTE_COEX_HANDLING
 INT32 wmt_plat_get_tdm_antsel_index(VOID);
 #endif

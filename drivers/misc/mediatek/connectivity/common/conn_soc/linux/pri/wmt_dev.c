@@ -86,6 +86,7 @@
 #define WMT_IOCTL_WMT_COREDUMP_CTRL     _IOW(WMT_IOC_MAGIC, 24, int)
 #define WMT_IOCTL_SEND_BGW_DS_CMD		_IOW(WMT_IOC_MAGIC, 25, char*)
 #define WMT_IOCTL_ADIE_LPBK_TEST		_IOWR(WMT_IOC_MAGIC, 26, char*)
+#define WMT_IOCTL_FW_DBGLOG_CTRL		_IOR(WMT_IOC_MAGIC, 29, int)
 
 #define MTK_WMT_VERSION  "SOC Consys WMT Driver - v1.0"
 #define MTK_WMT_DATE     "2013/01/20"
@@ -2205,6 +2206,13 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 		} while (0);
 
+		break;
+	case WMT_IOCTL_FW_DBGLOG_CTRL:
+		{
+			iRet = wmt_plat_set_dbg_mode(arg);
+			if (iRet == 0)
+				wmt_dbg_fwinfor_from_emi(0, 1, 0);
+		}
 		break;
 	default:
 		iRet = -EINVAL;
