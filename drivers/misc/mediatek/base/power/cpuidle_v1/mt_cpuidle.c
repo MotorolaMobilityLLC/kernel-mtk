@@ -853,8 +853,6 @@ int mt_cpu_dormant(unsigned long flags)
 
 	DORMANT_LOG(clusterid * MAX_CORES + cpuid, 0x102);
 
-	DORMANT_LOG(clusterid * MAX_CORES + cpuid, 0x103);
-
 #if !defined(CONFIG_ARM64) && !defined(CONFIG_ARCH_MT6580)
 	ret = cpu_suspend(flags, mt_cpu_dormant_psci);
 #elif !defined(CONFIG_ARCH_MT6580)
