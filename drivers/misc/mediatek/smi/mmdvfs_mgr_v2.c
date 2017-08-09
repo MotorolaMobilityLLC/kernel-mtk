@@ -54,13 +54,12 @@ typedef enum {
 	MMDVFS_LCD_SIZE_HD, MMDVFS_LCD_SIZE_FHD, MMDVFS_LCD_SIZE_WQHD, MMDVFS_LCD_SIZE_END_OF_ENUM
 } mmdvfs_lcd_size_enum;
 
-#if defined(MMDVFS_E1) && defined(SMI_J)
-/* For UT only */
-#define KIR_MM (KIR_MM_16MCAM)
-#define mt_dfs_general_pll(a, b) {}
-#endif /* defined(MMDVFS_E1) && defined(SMI_J) */
+#if defined(MMDVFS_E1)
+	#define MMDVFS_PIXEL_NUM_SENSOR_FULL (MMDVFS_PIXEL_NUM_16M)
+#else
+	#define MMDVFS_PIXEL_NUM_SENSOR_FULL (MMDVFS_PIXEL_NUM_13M)
+#endif /* defined(MMDVFS_E1) */
 
-#define MMDVFS_PIXEL_NUM_SENSOR_FULL (MMDVFS_PIXEL_NUM_13M)
 
 /* mmdvfs display sizes */
 #define MMDVFS_DISPLAY_SIZE_FHD	(1920 * 1216)
@@ -759,13 +758,11 @@ int mmdvfs_set_step_with_mmsys_clk(MTK_SMI_BWC_SCEN smi_scenario, mmdvfs_voltage
 	}
 #endif /* MMDVFS_ENABLE */
 
-	/* For log message reduction */
-	if (scenario != MMDVFS_CAM_MON_SCEN)
-		MMDVFSMSG("Set vol scen:%d,step:%d,final:%d(0x%x),CMD(%d,%d,0x%x),INFO(%d,%d),CLK:%d\n",
-	scenario, step, final_step, concurrency,
-	g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode,
-	g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1],
-	current_mmsys_clk);
+	MMDVFSMSG("Set vol scen:%d,step:%d,final:%d(0x%x),CMD(%d,%d,0x%x),INFO(%d,%d),CLK:%d\n",
+		scenario, step, final_step, concurrency,
+		g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps, g_mmdvfs_cmd.camera_mode,
+		g_mmdvfs_info->video_record_size[0], g_mmdvfs_info->video_record_size[1],
+		current_mmsys_clk);
 
 
 	return 0;
