@@ -90,11 +90,15 @@ void mtktspmic_cali_prepare(void)
 	/* g_adc_cali_en=0;//FIX ME */
 
 	if (g_adc_cali_en == 0) {	/* no calibration */
-		g_o_vts = 896;
+		g_o_vts = 1600;
 		g_degc_cali = 50;
 		g_o_slope = 0;
 		g_o_slope_sign = 0;
 	}
+
+	/*SW workaround patch for Jade E2*/
+	if (g_degc_cali < 38 || g_degc_cali > 60)
+		g_degc_cali = 53;
 
 	mtktspmic_info("g_o_vts = 0x%x\n", g_o_vts);
 	mtktspmic_info("g_degc_cali    = 0x%x\n", g_degc_cali);

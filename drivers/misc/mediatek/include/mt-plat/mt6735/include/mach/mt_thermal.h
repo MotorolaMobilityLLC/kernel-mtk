@@ -351,10 +351,19 @@ extern void mtkts_battery_cancel_thermal_timer(void);
 extern void mtkts_battery_start_thermal_timer(void);
 extern void mtkts_pa_cancel_thermal_timer(void);
 extern void mtkts_pa_start_thermal_timer(void);
-extern void mtkts_allts_cancel_thermal_timer(void);
-extern void mtkts_allts_start_thermal_timer(void);
 extern void mtkts_wmt_cancel_thermal_timer(void);
 extern void mtkts_wmt_start_thermal_timer(void);
+
+extern void mtkts_allts_cancel_ts1_timer(void);
+extern void mtkts_allts_start_ts1_timer(void);
+extern void mtkts_allts_cancel_ts2_timer(void);
+extern void mtkts_allts_start_ts2_timer(void);
+extern void mtkts_allts_cancel_ts3_timer(void);
+extern void mtkts_allts_start_ts3_timer(void);
+extern void mtkts_allts_cancel_ts4_timer(void);
+extern void mtkts_allts_start_ts4_timer(void);
+extern void mtkts_allts_cancel_ts5_timer(void);
+extern void mtkts_allts_start_ts5_timer(void);
 
 extern int mtkts_bts_get_hw_temp(void);
 
@@ -379,4 +388,7 @@ extern int get_cpu_target_offset(void);
 
 extern int mtk_mdm_get_md_info(struct md_info **p_inf, int *size);
 extern int mtk_gpufreq_register(struct mt_gpufreq_power_table_info *freqs, int num);
+
+extern int get_target_tj(void);
+
 #endif

@@ -1,3 +1,4 @@
+#include "mt_gpufreq.h"
 /*=============================================================
  * Genernal
  *=============================================================*/
@@ -9,6 +10,7 @@
 /*=============================================================
  * CONFIG (SW related)
  *=============================================================*/
+#define THERMAL_GET_AHB_BUS_CLOCK		    (0)
 #define THERMAL_PERFORMANCE_PROFILE         (0)
 
 /* 1: turn on GPIO toggle monitor; 0: turn off */
@@ -118,6 +120,24 @@ they means one reading is a avg of X samples */
 
 #define TS_MS_TO_NS(x) (x * 1000 * 1000)
 
+#if THERMAL_GET_AHB_BUS_CLOCK
+#define THERMAL_MODULE_SW_CG_SET	(therm_clk_infracfg_ao_base + 0x88)
+#define THERMAL_MODULE_SW_CG_CLR	(therm_clk_infracfg_ao_base + 0x8C)
+#define THERMAL_MODULE_SW_CG_STA	(therm_clk_infracfg_ao_base + 0x94)
+
+#define THERMAL_CG	(therm_clk_infracfg_ao_base + 0x80)
+#define THERMAL_DCM	(therm_clk_infracfg_ao_base + 0x70)
+#endif
+
+#if THERMAL_GET_AHB_BUS_CLOCK
+#define THERMAL_MODULE_SW_CG_SET	(therm_clk_infracfg_ao_base + 0x88)
+#define THERMAL_MODULE_SW_CG_CLR	(therm_clk_infracfg_ao_base + 0x8C)
+#define THERMAL_MODULE_SW_CG_STA	(therm_clk_infracfg_ao_base + 0x94)
+
+#define THERMAL_CG	(therm_clk_infracfg_ao_base + 0x80)
+#define THERMAL_DCM	(therm_clk_infracfg_ao_base + 0x70)
+#endif
+
 /*=============================================================
  *LOG
  *=============================================================*/
@@ -130,6 +150,7 @@ they means one reading is a avg of X samples */
 	} while (0)
 
 #define tscpu_printk(fmt, args...)   pr_debug("[Power/CPU_Thermal]" fmt, ##args)
+#define tscpu_warn(fmt, args...)  pr_warn("[Power/CPU_Thermal]" fmt, ##args)
 
 /*=============================================================
  * Structures
@@ -169,11 +190,6 @@ struct mtk_cpu_power_info {
 	unsigned int cpufreq_ncpu;
 	unsigned int cpufreq_power;
 };
-struct mtk_gpu_power_info {
-	unsigned int gpufreq_khz;
-	unsigned int gpufreq_volt;
-	unsigned int gpufreq_power;
-};
 
 /*=============================================================
  * Shared variables
@@ -200,7 +216,7 @@ extern int tscpu_next_fp_factor;
 
 /*In common/thermal_zones/mtk_ts_cpu.c*/
 extern int Num_of_GPU_OPP;
-extern struct mtk_gpu_power_info *mtk_gpu_power;
+extern struct mt_gpufreq_power_table_info *mtk_gpu_power;
 extern int tscpu_read_curr_temp;
 #if MTKTSCPU_FAST_POLLING
 extern int tscpu_cur_fp_factor;
@@ -237,6 +253,7 @@ extern char *adaptive_cooler_name;
 extern unsigned int adaptive_cpu_power_limit;
 extern unsigned int adaptive_gpu_power_limit;
 extern int TARGET_TJS[MAX_CPT_ADAPTIVE_COOLERS];
+extern unsigned int get_adaptive_power_limit(int type);
 
 /*common/coolers/mtk_cooler_dtm.c*/
 extern unsigned int static_cpu_power_limit;

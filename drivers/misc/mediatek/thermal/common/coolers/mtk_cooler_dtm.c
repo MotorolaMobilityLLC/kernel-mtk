@@ -9,7 +9,6 @@
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
-#include "mt_gpufreq.h"
 #include <mach/mt_clkmgr.h>
 #include <mt_ptp.h>
 #include <mach/wd_api.h>

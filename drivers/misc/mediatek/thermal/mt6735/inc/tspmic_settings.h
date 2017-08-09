@@ -6,12 +6,12 @@
 #define mtktspmic_TEMP_CRIT 150000 /* 150.000 degree Celsius */
 #define y_pmic_repeat_times	1
 
-#define mtktspmic_info(fmt, args...) pr_notice("Power/PMIC_Thermal" fmt, ##args)
+#define mtktspmic_info(fmt, args...) pr_debug("Power/PMIC_Thermal" fmt, ##args)
 
 #define mtktspmic_dprintk(fmt, args...)   \
 do {									\
 	if (mtktspmic_debug_log) {				\
-		pr_notice("Power/PMIC_Thermal" fmt, ##args); \
+		pr_debug("Power/PMIC_Thermal" fmt, ##args); \
 	}								   \
 } while (0)
 

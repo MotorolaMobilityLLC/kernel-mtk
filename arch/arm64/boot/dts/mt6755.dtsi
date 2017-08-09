@@ -1437,8 +1437,8 @@
 			compatible = "mediatek,mt6755-therm_ctrl";
 			reg = <0x1100b000 0x1000>;
 			interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&infrasys INFRA_THERM>;
-			clock-names = "therm-main";
+			clocks = <&infrasys INFRA_THERM>, <&infrasys INFRA_AUXADC>;
+			clock-names = "therm-main", "therm-auxadc";
 		};
 
 		btif@1100c000 {

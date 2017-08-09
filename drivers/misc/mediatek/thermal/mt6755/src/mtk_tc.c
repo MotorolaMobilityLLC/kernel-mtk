@@ -1,3 +1,4 @@
+#define DEBUG 1
 #include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -16,7 +17,6 @@
 #include <linux/slab.h>
 #include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
-#include "mt_gpufreq.h"
 
 #if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mt_clkmgr.h>

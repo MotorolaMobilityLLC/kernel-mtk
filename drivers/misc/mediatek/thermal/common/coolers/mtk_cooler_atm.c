@@ -8,7 +8,6 @@
 #include "mt-plat/mtk_thermal_monitor.h"
 #include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
-#include "mt_gpufreq.h"
 #include <mach/mt_clkmgr.h>
 #include <mt_ptp.h>
 #include <mach/wd_api.h>
@@ -19,6 +18,11 @@
 #include <linux/uidgid.h>
 
 #if defined(CONFIG_ARCH_MT6755)
+/*	TODO: use PPM's kconfig instead */
+#define ATM_USES_PPM	(1)
+#endif
+
+#ifdef ATM_USES_PPM
 #include "mach/mt_ppm_api.h"
 #else
 #include "mt_cpufreq.h"
@@ -31,7 +35,8 @@ static kgid_t gid = KGIDT_INIT(1000);
 unsigned int adaptive_cpu_power_limit = 0x7FFFFFFF;
 unsigned int adaptive_gpu_power_limit = 0x7FFFFFFF;
 static unsigned int prv_adp_cpu_pwr_lim;
-
+unsigned int gv_cpu_power_limit = 0x7FFFFFFF;
+unsigned int gv_gpu_power_limit = 0x7FFFFFFF;
 #if CPT_ADAPTIVE_AP_COOLER
 static int TARGET_TJ = 65000;
 static int cpu_target_tj = 65000;
@@ -124,7 +129,7 @@ static void set_adaptive_gpu_power_limit(unsigned int limit);
 /*=============================================================
  *Weak functions
  *=============================================================*/
-#if defined(CONFIG_ARCH_MT6755)
+#ifdef ATM_USES_PPM
 void __attribute__ ((weak))
 mt_ppm_cpu_thermal_protect(unsigned int limited_power)
 {
@@ -171,6 +176,16 @@ mt_gpufreq_get_max_power(void)
    static int step9_mask[11] = {0,0,0,0,0,0,0,0,0,1,1};
    static int step10_mask[11]= {0,0,0,0,0,0,0,0,0,0,1};
  */
+int mtk_thermal_get_tpcb_target(void)
+{
+	return STEADY_TARGET_TPCB;
+}
+EXPORT_SYMBOL(mtk_thermal_get_tpcb_target);
+
+int get_target_tj(void)
+{
+	return TARGET_TJ;
+}
 
 static void set_adaptive_cpu_power_limit(unsigned int limit)
 {
@@ -185,7 +200,7 @@ static void set_adaptive_cpu_power_limit(unsigned int limit)
 			     (final_limit != 0x7FFFFFFF) ? final_limit : 0);
 		tscpu_print_all_temperature(0);
 
-	#if defined(CONFIG_ARCH_MT6755)
+	#ifdef ATM_USES_PPM
 		mt_ppm_cpu_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);
 	#else
 		mt_cpufreq_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);
@@ -202,6 +217,15 @@ static void set_adaptive_gpu_power_limit(unsigned int limit)
 	tscpu_printk("set_adaptive_gpu_power_limit %d\n",
 		     (final_limit != 0x7FFFFFFF) ? final_limit : 0);
 	mt_gpufreq_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);
+}
+
+unsigned int get_adaptive_power_limit(int type)
+{
+
+	if (type == 0)
+		return gv_cpu_power_limit;
+
+	return gv_gpu_power_limit;
 }
 
 #if CPT_ADAPTIVE_AP_COOLER
