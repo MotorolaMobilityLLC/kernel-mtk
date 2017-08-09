@@ -162,6 +162,7 @@ static int mtk_pcm_dl1_stop(struct snd_pcm_substream *substream)
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I06,
 			      Soc_Aud_InterConnectionOutput_O29);
 
+	ClearMemBlock(Soc_Aud_Digital_Block_MEM_DL1);
 	return 0;
 }
 
