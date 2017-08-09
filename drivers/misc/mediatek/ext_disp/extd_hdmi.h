@@ -202,4 +202,6 @@ void hdmi_power_on(void);
 void hdmi_power_off(void);
 
 int hdmi_wait_vsync_debug(int enable);
+
+extern void Extd_DBG_Init(void);
 #endif

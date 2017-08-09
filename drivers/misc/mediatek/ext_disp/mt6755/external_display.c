@@ -33,7 +33,6 @@
 #include "extd_hdmi_types.h"
 #include "external_display.h"
 
-#include "primary_display.h"
 #include "disp_session.h"
 #include "display_recorder.h"
 #include "extd_info.h"
@@ -280,6 +279,7 @@ static int _init_vsync_fake_monitor(int fps)
 static int _build_path_direct_link(void)
 {
 	int ret = 0;
+	M4U_PORT_STRUCT sPort;
 
 	DISP_MODULE_ENUM dst_module = 0;
 
@@ -297,25 +297,20 @@ static int _build_path_direct_link(void)
 	dst_module = DISP_MODULE_DPI;
 	dpmgr_path_set_dst_module(pgc->dpmgr_handle, dst_module);
 	/* EXT_DISP_LOG("dpmgr set dst module FINISHED(%s)\n", ddp_get_module_name(dst_module)); */
-	/*
-	{
-		M4U_PORT_STRUCT sPort;
-		sPort.ePortID = M4U_PORT_DISP_OVL1;
-		sPort.Virtuality = ext_disp_use_m4u;
-		sPort.Security = 0;
-		sPort.Distance = 1;
-		sPort.Direction = 0;
-		ret = m4u_config_port(&sPort);
-		if (ret == 0) {
-			EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n",
-				ddp_get_module_name(M4U_PORT_DISP_OVL1), ext_disp_use_m4u ? "virtual" : "physical");
-		} else {
-			EXT_DISP_LOG("config M4U Port %s to %s FAIL(ret=%d)\n", ddp_get_module_name(M4U_PORT_DISP_OVL1),
-				ext_disp_use_m4u ? "virtual" : "physical", ret);
-			return -1;
-		}
+	sPort.ePortID = M4U_PORT_DISP_OVL1;
+	sPort.Virtuality = ext_disp_use_m4u;
+	sPort.Security = 0;
+	sPort.Distance = 1;
+	sPort.Direction = 0;
+	ret = m4u_config_port(&sPort);
+	if (ret == 0) {
+		EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n",
+			ddp_get_module_name(DISP_MODULE_OVL1), ext_disp_use_m4u ? "virtual" : "physical");
+	} else {
+		EXT_DISP_LOG("config M4U Port %s to %s FAIL(ret=%d)\n", ddp_get_module_name(M4U_PORT_DISP_OVL1),
+			ext_disp_use_m4u ? "virtual" : "physical", ret);
+		return -1;
 	}
-	*/
 
 	dpmgr_set_lcm_utils(pgc->dpmgr_handle, NULL);
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
@@ -339,6 +334,7 @@ static int _build_path_single_layer(void)
 static int _build_path_rdma_dpi(void)
 {
 	int ret = 0;
+	M4U_PORT_STRUCT sPort;
 
 	DISP_MODULE_ENUM dst_module = 0;
 
@@ -356,25 +352,19 @@ static int _build_path_rdma_dpi(void)
 	dpmgr_path_set_dst_module(pgc->dpmgr_handle, dst_module);
 	EXT_DISP_LOG("dpmgr set dst module FINISHED(%s)\n", ddp_get_module_name(dst_module));
 
-	{
-#ifdef MTK_FB_RDMA1_SUPPORT
-		M4U_PORT_STRUCT sPort;
-
-		sPort.ePortID = M4U_PORT_DISP_RDMA1;
-		sPort.Virtuality = ext_disp_use_m4u;
-		sPort.Security = 0;
-		sPort.Distance = 1;
-		sPort.Direction = 0;
-		ret = m4u_config_port(&sPort);
-		if (ret == 0) {
-			EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n", ddp_get_module_name(DISP_MODULE_RDMA1),
-				ext_disp_use_m4u ? "virtual" : "physical");
-		} else {
-			EXT_DISP_LOG("config M4U Port %s to %s FAIL(ret=%d)\n", ddp_get_module_name(DISP_MODULE_RDMA1),
-				ext_disp_use_m4u ? "virtual" : "physical", ret);
-			return -1;
-		}
-#endif
+	sPort.ePortID = M4U_PORT_DISP_RDMA1;
+	sPort.Virtuality = ext_disp_use_m4u;
+	sPort.Security = 0;
+	sPort.Distance = 1;
+	sPort.Direction = 0;
+	ret = m4u_config_port(&sPort);
+	if (ret == 0) {
+		EXT_DISP_LOG("config M4U Port %s to %s SUCCESS\n", ddp_get_module_name(DISP_MODULE_RDMA1),
+			ext_disp_use_m4u ? "virtual" : "physical");
+	} else {
+		EXT_DISP_LOG("config M4U Port %s to %s FAIL(ret=%d)\n", ddp_get_module_name(DISP_MODULE_RDMA1),
+			ext_disp_use_m4u ? "virtual" : "physical", ret);
+		return -1;
 	}
 
 	dpmgr_set_lcm_utils(pgc->dpmgr_handle, NULL);
@@ -399,14 +389,14 @@ static void _cmdq_build_trigger_loop(void)
 				dpmgr_path_get_mutex(pgc->dpmgr_handle) + CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 		/* for some module(like COLOR) to read hw register to GPR after frame done */
-		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_AFTER_STREAM_EOF);
+		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_AFTER_STREAM_EOF, 0);
 	} else {
 		/* DSI command mode doesn't have mutex_stream_eof, need use CMDQ token instead */
 		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
 
 		/* ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_MDP_DSI0_TE_SOF); */
 		/* for operations before frame transfer, such as waiting for DSI TE */
-		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_BEFORE_STREAM_SOF);
+		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_BEFORE_STREAM_SOF, 0);
 
 		/* cleat frame done token, now the config thread will not allowed to config registers. */
 		/* remember that config thread's priority is higher than trigger thread*/
@@ -422,15 +412,15 @@ static void _cmdq_build_trigger_loop(void)
 		/* so need to let dpmanager help to decide which event to wait */
 		/* most time we wait rdmax frame done event. */
 		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA1_EOF);
-		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_WAIT_STREAM_EOF_EVENT);
+		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_WAIT_STREAM_EOF_EVENT, 0);
 
 		/* dsi is not idle rightly after rdma frame done, */
 		/* so we need to polling about 1us for dsi returns to idle */
 		/* do not polling dsi idle directly which will decrease CMDQ performance */
-		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_CHECK_IDLE_AFTER_STREAM_EOF);
+		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_CHECK_IDLE_AFTER_STREAM_EOF, 0);
 
 		/* for some module(like COLOR) to read hw register to GPR after frame done */
-		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_AFTER_STREAM_EOF);
+		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_AFTER_STREAM_EOF, 0);
 
 		/* polling DSI idle */
 		/* ret = cmdqRecPoll(pgc->cmdq_handle_trigger, 0x1401b00c, 0, 0x80000000); */
@@ -524,36 +514,63 @@ static void _cmdq_insert_wait_frame_done_token(int clear_event)
 	/* /dprec_event_op(DPREC_EVENT_CMDQ_WAIT_STREAM_EOF); */
 }
 
-static int _convert_disp_input_to_rdma(RDMA_CONFIG_STRUCT *dst, disp_input_config *src)
+static int _convert_disp_input_to_rdma(RDMA_CONFIG_STRUCT *dst, disp_input_config *src,
+	unsigned int screen_w, unsigned int screen_h)
 {
-	int ret = 0;
+/*	int right_edge = 0;
+	int bottom_edge = 0;*/
 	unsigned int Bpp = 0;
-	unsigned int bpp = 0;
+	unsigned long mva_offset = 0;
+	enum UNIFIED_COLOR_FMT tmp_fmt;
 
 	if (!src || !dst) {
-		EXT_DISP_ERR("%s src(0x%p) or dst(0x%p) is null\n",
-			       __func__, src, dst);
+		EXT_DISP_ERR("%s src(0x%p) or dst(0x%p) is null\n", __func__, src, dst);
 		return -1;
 	}
 
-	ret = disp_fmt_to_hw_fmt(src->src_fmt, &(dst->inputFormat), &Bpp, &bpp);
-	dst->address = (unsigned long)src->src_phy_addr;
-	dst->width = src->src_width;
-	dst->height = src->src_height;
+	dst->idx = src->next_buff_idx;
+
+	tmp_fmt = disp_fmt_to_unified_fmt(src->src_fmt);
+	ufmt_disable_X_channel(tmp_fmt, &dst->inputFormat);
+
+	Bpp = UFMT_GET_Bpp(dst->inputFormat);
+	mva_offset = (src->src_offset_x + src->src_offset_y * src->src_pitch) * Bpp;
+
+	dst->address = (unsigned long)src->src_phy_addr + mva_offset;
 	dst->pitch = src->src_pitch * Bpp;
 
-	return ret;
+	dst->width  = min(src->src_width, src->tgt_width);
+	dst->height = min(src->src_height, src->tgt_height);
+	dst->security  = src->security;
+	dst->yuv_range = src->yuv_range;
+
+	dst->dst_y = src->tgt_offset_y;
+	dst->dst_x = src->tgt_offset_x;
+	dst->dst_h = screen_h;
+	dst->dst_w = screen_w;
+	/*
+	right_edge  = screen_w - src->tgt_offset_x - dst->width;
+	bottom_edge = screen_h - src->tgt_offset_y - dst->height;
+
+	if (right_edge >= 0 && bottom_edge >= 0) {
+		dst->bg_ctrl.left   = src->tgt_offset_x;
+		dst->bg_ctrl.right  = right_edge;
+		dst->bg_ctrl.top    = src->tgt_offset_y;
+		dst->bg_ctrl.bottom = bottom_edge;
+	} else
+		EXT_DISP_ERR("%s right edge:%d, bottom edge:%d\n", __func__, right_edge, bottom_edge);
+	*/
+	return 0;
 }
 
 static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config *src)
 {
-	int ret;
+	int force_disable_alpha = 0;
+	enum UNIFIED_COLOR_FMT tmp_fmt;
 	unsigned int Bpp = 0;
-	unsigned int bpp = 0;
 
 	if (!src || !dst) {
-		EXT_DISP_ERR("%s src(0x%p) or dst(0x%p) is null\n",
-			       __func__, src, dst);
+		EXT_DISP_ERR("%s src(0x%p) or dst(0x%p) is null\n", __func__, src, dst);
 		return -1;
 	}
 
@@ -566,8 +583,14 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config 
 	if (!src->layer_enable)
 		return 0;
 
-	ret = disp_fmt_to_hw_fmt(src->src_fmt, (unsigned int *)(&(dst->fmt)),
-				(unsigned int *)(&Bpp), (unsigned int *)(&bpp));
+	tmp_fmt = disp_fmt_to_unified_fmt(src->src_fmt);
+	/* display don't support X channel, like XRGB8888
+	 * we need to disable alpha channel*/
+	ufmt_disable_X_channel(tmp_fmt, &dst->fmt);
+	if (tmp_fmt != dst->fmt)
+		force_disable_alpha = 1;
+
+	Bpp = UFMT_GET_Bpp(dst->fmt);
 
 	dst->addr = (unsigned long)src->src_phy_addr;
 	dst->vaddr = (unsigned long)src->src_base_addr;
@@ -580,35 +603,18 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config 
 	dst->dst_y = src->tgt_offset_y;
 
 	/* dst W/H should <= src W/H */
-	if (src->buffer_source != DISP_BUFFER_ALPHA) {
-		dst->dst_w = min(src->src_width, src->tgt_width);
-		dst->dst_h = min(src->src_height, src->tgt_height);
-	} else {
-		dst->dst_w = src->tgt_width;
-		dst->dst_h = src->tgt_height;
-	}
+	dst->dst_w = min(src->src_width, src->tgt_width);
+	dst->dst_h = min(src->src_height, src->tgt_height);
 
 	dst->keyEn = src->src_use_color_key;
 	dst->key = src->src_color_key;
 
+	dst->aen = force_disable_alpha ? 0 : src->alpha_enable;
+	dst->sur_aen = force_disable_alpha ? 0 : src->sur_aen;
 
-	dst->aen = src->alpha_enable;
 	dst->alpha = src->alpha;
-	dst->sur_aen = src->sur_aen;
 	dst->src_alpha = src->src_alpha;
 	dst->dst_alpha = src->dst_alpha;
-
-#ifdef DISP_DISABLE_X_CHANNEL_ALPHA
-	if (DISP_FORMAT_ARGB8888 == src->src_fmt ||
-	    DISP_FORMAT_ABGR8888 == src->src_fmt ||
-	    DISP_FORMAT_RGBA8888 == src->src_fmt ||
-	    DISP_FORMAT_BGRA8888 == src->src_fmt || src->buffer_source == DISP_BUFFER_ALPHA) {
-		/* nothing */
-	} else {
-		dst->aen = FALSE;
-		dst->sur_aen = FALSE;
-	}
-#endif
 
 	dst->identity = src->identity;
 	dst->connected_type = src->connected_type;
@@ -624,13 +630,12 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config 
 		dst->source = OVL_LAYER_SOURCE_MEM;
 	}
 
-	return ret;
+	return 0;
 }
 
 static int _ext_disp_trigger(int blocking, void *callback, unsigned int userdata)
 {
 	bool reg_flush = false;
-	disp_session_vsync_config vsync_config;
 
 	EXT_DISP_FUNC();
 
@@ -654,11 +659,6 @@ static int _ext_disp_trigger(int blocking, void *callback, unsigned int userdata
 	if (_should_flush_cmdq_config_handle()) {
 		if (reg_flush)
 			MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagPulse, Trigger, 2);
-
-		if (_should_start_path()) {
-			EXT_DISP_LOG("Wait Main Display Vsync\n");
-			primary_display_wait_for_vsync(&vsync_config);
-		}
 
 		_cmdq_flush_config_handle(blocking, callback, userdata);
 	}
@@ -796,7 +796,7 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, ext_disp_is_video_mode());
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
 
-	data_config = vmalloc(sizeof(disp_ddp_path_config));
+	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	if (data_config) {
 		memset((void *)data_config, 0, sizeof(disp_ddp_path_config));
 		memcpy(&(data_config->dispif_config), &extd_lcm_params, sizeof(LCM_PARAMS));
@@ -811,17 +811,15 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 		EXT_DISP_LOG("allocate buffer failed!!!\n");
 
 	/* this will be set to always enable cmdq later */
-/*
 	if (ext_disp_is_video_mode())
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_DPI_VSYNC);
-*/
 
 	if (ext_disp_use_cmdq == CMDQ_ENABLE)
 		_cmdq_reset_config_handle();
 
 	mutex_init(&(pgc->vsync_lock));
 	pgc->state = EXTD_INIT;
-
+	pgc->ovl_req_state = EXTD_OVL_NO_REQ;
  done:
 
 	_ext_disp_path_unlock();
@@ -875,14 +873,14 @@ int ext_disp_wait_for_vsync(void *config, unsigned int session)
 	_ext_disp_path_unlock();
 
 	_ext_disp_vsync_lock(session);
-	ret = dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
+	ret = dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, 50);
 
 	if (ret == -2) {
 		EXT_DISP_LOG("vsync for ext display path not enabled yet\n");
 		_ext_disp_vsync_unlock(session);
 		return -1;
 	}
-	EXT_DISP_LOG("ext_disp_wait_for_vsync - vsync signaled\n");
+	/*EXT_DISP_LOG("ext_disp_wait_for_vsync - vsync signaled\n");*/
 	c->vsync_ts = get_current_time_us();
 	c->vsync_cnt++;
 
@@ -991,7 +989,7 @@ int ext_disp_trigger(int blocking, void *callback, unsigned int userdata, unsign
 
 	pgc->state = EXTD_RESUME;
 	_ext_disp_path_unlock();
-	EXT_DISP_LOG("ext_disp_trigger done\n");
+	/*EXT_DISP_LOG("ext_disp_trigger done\n");*/
 
 	return ret;
 }
@@ -1044,14 +1042,51 @@ int ext_disp_suspend_trigger(void *callback, unsigned int userdata, unsigned int
 	return ret;
 }
 
+/*
+static int extl_disp_dynamic_debug(unsigned int mva, unsigned int pitch, unsigned int w, unsigned int h,
+				unsigned int pixels, unsigned int lines)
+{
+	unsigned int real_mva, real_size, map_size;
+	unsigned long map_va;
+	int ret;
+
+	ret = m4u_query_mva_info(mva, 0, &real_mva, &real_size);
+	if (ret) {
+		pr_err("%s error to query mva = 0x%x\n", __func__, mva);
+		return -1;
+	}
+	ret = m4u_mva_map_kernel(real_mva, real_size, &map_va, &map_size);
+	if (ret) {
+		pr_err("%s error to map mva = 0x%x\n", __func__, real_mva);
+		return -1;
+	}
+	pr_err("Donglei - %s mva0x%x, real_mva:0x%x\n", __func__, mva, real_mva);
+	unsigned char *buf_va = map_va + (mva - real_mva);
+	int x, y;
+
+	for (y = 0; y < lines; y++) {
+		for (x = 0; x < pixels; x++) {
+			buf_va[3*x + y * pitch] = 255;
+			buf_va[3*x + 1 + y * pitch] = 0;
+			buf_va[3*x + 2 + y * pitch] = 0;
+			buf_va[w - 3*x - 1 + y * pitch] = 255;
+			buf_va[w - 3*x - 1 - 1 + y * pitch] = 255;
+			buf_va[w - 3*x - 2 - 1 + y * pitch] = 255;
+		}
+	}
+
+	m4u_mva_unmap_kernel(real_mva, real_size, map_va);
+
+	return 0;
+}
+*/
 int ext_disp_config_input_multiple(disp_session_input_config *input, int idx, unsigned int session)
 {
 	int ret = 0;
 	int i = 0;
+	int layer_cnt = 0;
 	int config_layer_id = 0;
-#ifdef MTK_FB_RDMA1_SUPPORT
 	M4U_PORT_STRUCT sPort;
-#endif
 
 	/* /EXT_DISP_FUNC(); */
 
@@ -1061,6 +1096,41 @@ int ext_disp_config_input_multiple(disp_session_input_config *input, int idx, un
 		EXT_DISP_LOG("config ext disp is already slept, state:%d\n", pgc->state);
 		MMProfileLogEx(ddp_mmp_get_events()->Extd_ErrorInfo, MMProfileFlagPulse, Config, idx);
 		return -2;
+	}
+
+	for (i = 0; i < input->config_layer_num; i++) {
+		if (input->config[i].layer_enable)
+			layer_cnt++;
+	}
+
+	if (layer_cnt == 1) {
+		ext_disp_path_change(EXTD_OVL_REMOVE_REQ, session);
+		if (ext_disp_get_ovl_req_status(session) == EXTD_OVL_REMOVE_REQ) {
+			EXT_DISP_LOG("config M4U Port DISP_MODULE_RDMA1\n");
+			sPort.ePortID = M4U_PORT_DISP_RDMA1;
+			sPort.Virtuality = 1;
+			sPort.Security = 0;
+			sPort.Distance = 1;
+			sPort.Direction = 0;
+			ret = m4u_config_port(&sPort);
+			if (ret != 0)
+				EXT_DISP_LOG("config M4U Port DISP_MODULE_RDMA1 FAIL\n");
+
+			pgc->ovl_req_state = EXTD_OVL_REMOVING;
+		}
+	} else if (layer_cnt > 1) {
+		ext_disp_path_change(EXTD_OVL_INSERT_REQ, session);
+		if (ext_disp_get_ovl_req_status(session) == EXTD_OVL_INSERT_REQ) {
+			EXT_DISP_LOG("config M4U Port DISP_MODULE_RDMA1\n");
+			sPort.ePortID = M4U_PORT_DISP_OVL1;
+			sPort.Virtuality = 1;
+			sPort.Security = 0;
+			sPort.Distance = 1;
+			sPort.Direction = 0;
+			ret = m4u_config_port(&sPort);
+			if (ret != 0)
+				EXT_DISP_LOG("config M4U Port DISP_MODULE_OVL1 FAIL\n");
+		}
 	}
 
 	_ext_disp_path_lock();
@@ -1091,29 +1161,14 @@ int ext_disp_config_input_multiple(disp_session_input_config *input, int idx, un
 		}
 	} else {
 		OVL_CONFIG_STRUCT ovl_config;
+		_convert_disp_input_to_ovl(&ovl_config, &(input->config[0]));
+		dprec_mmp_dump_ovl_layer(&ovl_config, input->config[0].layer_id, 2);
 
-		_convert_disp_input_to_ovl(&ovl_config, &(input->config[i]));
-		dprec_mmp_dump_ovl_layer(&ovl_config, input->config[i].layer_id, 2);
-
-		ret = _convert_disp_input_to_rdma(&(data_config->rdma_config), &(input->config[i]));
+		ret = _convert_disp_input_to_rdma(&(data_config->rdma_config), &(input->config[0]),
+						extd_lcm_params.dpi.width, extd_lcm_params.dpi.height);
 		if (data_config->rdma_config.address) {
 			data_config->rdma_dirty = 1;
 			pgc->need_trigger_overlay = 1;
-		}
-
-		if (pgc->ovl_req_state == EXTD_OVL_REMOVE_REQ) {
-			EXT_DISP_LOG("config M4U Port DISP_MODULE_RDMA1\n");
-#ifdef MTK_FB_RDMA1_SUPPORT
-			sPort.ePortID = M4U_PORT_DISP_RDMA1;
-			sPort.Virtuality = 1;
-			sPort.Security = 0;
-			sPort.Distance = 1;
-			sPort.Direction = 0;
-			ret = m4u_config_port(&sPort);
-			if (ret != 0)
-				EXT_DISP_LOG("config M4U Port DISP_MODULE_RDMA1 FAIL\n");
-#endif
-			pgc->ovl_req_state = EXTD_OVL_REMOVING;
 		}
 	}
 
@@ -1239,7 +1294,7 @@ int ext_disp_get_handle(disp_path_handle *dp_handle, cmdqRecHandle *pHandle)
 
 int ext_disp_set_ovl1_status(int status)
 {
-	dpmgr_set_ovl1_status(status);
+/*	dpmgr_set_ovl1_status(status);*/
 	return 0;
 }
 
@@ -1264,40 +1319,35 @@ enum EXTD_OVL_REQ_STATUS ext_disp_get_ovl_req_status(unsigned int session)
 
 int ext_disp_path_change(enum EXTD_OVL_REQ_STATUS action, unsigned int session)
 {
-	EXT_DISP_FUNC();
-/* if(pgc->state == EXTD_DEINIT) */
-/* { */
-/* EXT_DISP_LOG("external display do not init!\n"); */
-/* return -1; */
-/* } */
+/*	EXT_DISP_FUNC();*/
 
 	if (EXTD_OVERLAY_CNT > 0) {
 		_ext_disp_path_lock();
 		switch (action) {
 		case EXTD_OVL_NO_REQ:
-			if (pgc->ovl_req_state == EXTD_OVL_REMOVED) {
+/*			if (pgc->ovl_req_state == EXTD_OVL_REMOVED) {*/
 				/* 0 - DDP_OVL1_STATUS_IDLE */
-				dpmgr_set_ovl1_status(0);
+/*				dpmgr_set_ovl1_status(0);
 			}
 			pgc->ovl_req_state = EXTD_OVL_NO_REQ;
-			break;
+*/			break;
 		case EXTD_OVL_REQUSTING_REQ:
-			if (ovl_get_status() == DDP_OVL1_STATUS_PRIMARY) {
+/*			if (ovl_get_status() == DDP_OVL1_STATUS_PRIMARY) {*/
 				/* 1 - DDP_OVL1_STATUS_SUB_REQUESTING */
-				dpmgr_set_ovl1_status(DDP_OVL1_STATUS_SUB_REQUESTING);
+/*				dpmgr_set_ovl1_status(DDP_OVL1_STATUS_SUB_REQUESTING);
 			}
-			break;
+*/			break;
 		case EXTD_OVL_IDLE_REQ:
-			if (ovl_get_status() == DDP_OVL1_STATUS_SUB) {
+/*			if (ovl_get_status() == DDP_OVL1_STATUS_SUB) {*/
 				/* 1 - DDP_OVL1_STATUS_SUB_REQUESTING */
-				dpmgr_set_ovl1_status(DDP_OVL1_STATUS_IDLE);
+/*				dpmgr_set_ovl1_status(DDP_OVL1_STATUS_IDLE);
 			}
-			break;
+*/			break;
 		case EXTD_OVL_SUB_REQ:
-			pgc->ovl_req_state = EXTD_OVL_SUB_REQ;
+/*			pgc->ovl_req_state = EXTD_OVL_SUB_REQ;*/
 			break;
 		case EXTD_OVL_REMOVE_REQ:
-			if (DISP_SESSION_DEV(session) != DEV_EINK + 1) {
+			if (ext_disp_mode != EXTD_RDMA_DPI_MODE) {
 				dpmgr_remove_ovl1_sub(pgc->dpmgr_handle, pgc->cmdq_handle_config);
 				ext_disp_path_set_mode(EXTD_RDMA_DPI_MODE, session);
 				pgc->ovl_req_state = EXTD_OVL_REMOVE_REQ;
@@ -1344,9 +1394,9 @@ int ext_disp_wait_ovl_available(int ovl_num)
 bool ext_disp_path_source_is_RDMA(unsigned int session)
 {
 	bool is_rdma = false;
-
-	if ((ext_disp_mode == EXTD_RDMA_DPI_MODE) && (pgc->ovl_req_state != EXTD_OVL_REMOVE_REQ)
-	    && (pgc->ovl_req_state != EXTD_OVL_REMOVING)) {
+	if ((ext_disp_mode == EXTD_RDMA_DPI_MODE && pgc->ovl_req_state != EXTD_OVL_REMOVE_REQ
+	    && pgc->ovl_req_state != EXTD_OVL_REMOVING)
+	    || (ext_disp_mode == EXTD_DIRECT_LINK_MODE && pgc->ovl_req_state == EXTD_OVL_INSERT_REQ)) {
 		/* path source module is RDMA */
 		is_rdma = true;
 	}

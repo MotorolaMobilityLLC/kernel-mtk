@@ -2,8 +2,6 @@
 #ifndef _EXTD_HDMI_TYPES_H_
 #define     _EXTD_HDMI_TYPES_H_
 
-/*#include <linux/mmprofile.h>*/
-#include "ion_drv.h"
 #include <linux/list.h>
 #include <asm/atomic.h>
 
@@ -114,8 +112,6 @@ struct _t_hdmi_context {
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~the definition~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 #define HDMI_DEVNAME "hdmitx"
-
-/*#define HW_OVERLAY_COUNT (4)*/
 
 #define HDMI_DPI(suffix)        DPI  ## suffix
 #define HMID_DEST_DPI           DISP_MODULE_DPI

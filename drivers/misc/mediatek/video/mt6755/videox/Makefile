@@ -11,6 +11,7 @@ obj-y += mtkfb_console.o        \
 		disp_lcm.o             \
 		disp_utils.o           \
 		mtk_disp_mgr.o         \
+		mtk_ovl.o              \
 		compat_mtk_disp_mgr.o \
 		mtk_mira.o             \
 		disp_helper.o          \

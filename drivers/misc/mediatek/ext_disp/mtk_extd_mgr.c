@@ -16,14 +16,12 @@
 
 #include <asm/uaccess.h>
 #include <asm/atomic.h>
-/*#include "mach/mt_typedefs.h"*/
 #include <linux/types.h>
 
 #include "extd_log.h"
 #include "extd_utils.h"
 #include "extd_factory.h"
 #include "mtk_extd_mgr.h"
-/*#include <linux/earlysuspend.h>*/
 #include <linux/suspend.h>
 
 
@@ -216,7 +214,7 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		{
 			EXT_MGR_LOG("[EXTD]hdmi_set_audio_enable, arg = %lu\n", arg);
 			if (extd_driver[DEV_MHL] && extd_driver[DEV_MHL]->set_audio_enable)
-				r = extd_driver[DEV_MHL]->set_audio_enable((arg & 0x0FF));
+				extd_driver[DEV_MHL]->set_audio_enable((arg & 0x0FF));
 
 			break;
 		}
@@ -226,6 +224,10 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		}
 	case MTK_HDMI_AUDIO_CONFIG:
 		{
+			EXT_MGR_LOG("[EXTD]hdmi_audio_format, arg = %lu\n", arg);
+			if (extd_driver[DEV_MHL] && extd_driver[DEV_MHL]->set_audio_format)
+				extd_driver[DEV_MHL]->set_audio_format(arg);
+
 			break;
 		}
 	case MTK_HDMI_IS_FORCE_AWAKE:

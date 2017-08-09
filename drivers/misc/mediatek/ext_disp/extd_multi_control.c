@@ -33,11 +33,10 @@ static int extd_recompute_bg(int src_w, int src_h, unsigned int session)
 	int ret = 0;
 	int device_id = (session & 0x0FF) - 1;
 
-	if (device_id == DEV_MHL && extd_driver[DEV_MHL]->ioctl) {
+	if (device_id == DEV_MHL && extd_driver[DEV_MHL]->ioctl)
 		ret = extd_driver[DEV_MHL]->ioctl(RECOMPUTE_BG_CMD, src_w, src_h, NULL);
-	} else if (device_id == DEV_EINK && extd_driver[DEV_EINK]->ioctl) {
+	else if (device_id == DEV_EINK && extd_driver[DEV_EINK]->ioctl)
 		ret = extd_driver[DEV_EINK]->ioctl(RECOMPUTE_BG_CMD, src_w, src_h, NULL);
-	}
 
 	return ret;
 }
@@ -56,7 +55,7 @@ static int extd_get_device_type(unsigned int session)
 		ret = extd_driver[DEV_EINK]->ioctl(GET_DEV_TYPE_CMD, 0, 0, NULL);
 	}
 
-	MULTI_COTRL_LOG("device type is:%d", ret);
+	MULTI_COTRL_LOG("device type is:%d\n", ret);
 	return ret;
 }
 
@@ -106,8 +105,6 @@ static int create_external_display_path(unsigned int session, int mode)
 		extd_type = extd_get_device_type(session);
 
 		if (path_info.old_session[device_id] == DISP_SESSION_EXTERNAL) {
-			ext_disp_resume(session);
-
 			if (EXTD_OVERLAY_CNT < 1) {
 				/*external display has no OVL to use, so no actions for mode switch */
 				return ret;
@@ -152,14 +149,23 @@ static int create_external_display_path(unsigned int session, int mode)
 
 static void destroy_external_display_path(unsigned int session, int mode)
 {
-	int device_id = DISP_SESSION_DEV(session) - 1;
+	int device_id = 0;
 
 	MULTI_COTRL_LOG("destroy_external_display_path session:%08x\n", session);
+	if (DISP_SESSION_TYPE(session) == DISP_SESSION_MEMORY) {
+		/*virtual device id*/
+		device_id = DISP_SESSION_DEV(session);
+	} else {
+		/*external device id*/
+		device_id = DISP_SESSION_DEV(session) - 1;
+	}
 
 	if ((path_info.old_session[device_id] == DISP_SESSION_PRIMARY)
 	|| (path_info.old_session[device_id] == DISP_SESSION_MEMORY
 	&& path_info.old_mode[device_id] >= DISP_SESSION_DIRECT_LINK_MIRROR_MODE)) {
 		/*discard for memory session in mirror mode*/
+		MULTI_COTRL_LOG("no need destroy path for session:0x%08x, mode:%d\n", path_info.old_session[device_id],
+										path_info.old_mode[device_id]);
 		return;
 	}
 
@@ -207,6 +213,7 @@ static int disp_switch_mode_kthread(void *data)
 	return 0;
 }
 
+#ifndef OVL_CASCADE_SUPPORT
 static int path_change_without_cascade(DISP_MODE mode, unsigned int session_id, unsigned int device_id)
 {
 	int ret = -1;
@@ -248,17 +255,21 @@ static int path_change_without_cascade(DISP_MODE mode, unsigned int session_id, 
 
 	return 0;
 }
-
-/*
+#else
 static int path_change_with_cascade(DISP_MODE mode, unsigned int session_id, unsigned int device_id)
 {
 	int disp_type = 0;
 	unsigned int session = 0;
 
+	/*MULTI_COTRL_FUNC();*/
+
+	/*destroy external display path*/
 	if (session_id == 0 && path_info.old_session[device_id] != DISP_SESSION_PRIMARY) {
 		if (device_id == DEV_WFD) {
+			/*make memory session for WFD*/
 			session = MAKE_DISP_SESSION(DISP_SESSION_MEMORY, device_id);
 		} else {
+			/*make external session*/
 			session = MAKE_DISP_SESSION(DISP_SESSION_EXTERNAL, device_id + 1);
 		}
 
@@ -271,16 +282,21 @@ static int path_change_with_cascade(DISP_MODE mode, unsigned int session_id, uns
 		return 1;
 	}
 
+	/*create path or change path*/
 	if ((session_id > 0 && path_info.old_session[device_id] == DISP_SESSION_PRIMARY)
 	|| (mode != path_info.old_mode[device_id] && path_info.old_session[device_id] != DISP_SESSION_PRIMARY)) {
+		/* the case will use OVL */
 		disp_type = extd_get_device_type(session_id);
 		if (disp_type != DISP_IF_EPD
 		&& (mode < DISP_SESSION_DIRECT_LINK_MIRROR_MODE || disp_type == DISP_IF_HDMI_SMARTBOOK)) {
+			/*request OVL*/
 			ext_disp_path_change(EXTD_OVL_REQUSTING_REQ, session_id);
 		}
 
+		/*workaroud for HWC, get layers and set input layers not match*/
 		if (path_info.old_session[device_id] == DISP_SESSION_EXTERNAL
 		&& mode >= DISP_SESSION_DIRECT_LINK_MIRROR_MODE) {
+			/*1 layer cab be used, it is to say that the path is RDMA-DPI*/
 			extd_set_layer_num(1, session_id);
 		}
 
@@ -296,7 +312,7 @@ static int path_change_with_cascade(DISP_MODE mode, unsigned int session_id, uns
 
 	return 0;
 }
-*/
+#endif
 
 void external_display_control_init(void)
 {

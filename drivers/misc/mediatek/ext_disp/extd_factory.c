@@ -11,7 +11,6 @@
 #if defined(CONFIG_MTK_HDMI_SUPPORT)
 static struct HDMI_DRIVER *hdmi_tx_drv;
 static int is_context_inited;
-#endif
 
 disp_ddp_path_config hdmi_factory_dpi_params;
 struct DPI_PARAM_CONTEXT DPI_Params_Context;
@@ -36,7 +35,6 @@ static hdmi_factory_context *_get_context(void)
 
 #define pgc	_get_context()
 
-#if defined(CONFIG_MTK_HDMI_SUPPORT)
 static void hdmi_factory_callback(enum HDMI_STATE state)
 {
 	EXTD_FACTORY_LOG("[hdmi]hdmi_factory_callback, state: %d\n", state);
@@ -215,6 +213,7 @@ int hdmi_factory_mode_test(enum HDMI_FACTORY_TEST test_step, void *info)
 		{
 			EXTD_FACTORY_LOG("[hdmi] STEP1_CHIP_INIT\n");
 			hdmi_tx_drv->power_on();
+			hdmi_tx_drv->audio_enable(1);
 			break;
 		}
 	case STEP2_JUDGE_CALLBACK:

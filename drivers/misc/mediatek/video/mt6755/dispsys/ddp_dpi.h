@@ -108,6 +108,8 @@ enum DPI_RGB_ORDER {
 
 enum DPI_CLK_FREQ {
 	DPI_CLK_480p = 27027,
+	DPI_CLK_EINK_85  = 34989,
+	DPI_CLK_EINK_100 = 41164,
 	DPI_CLK_480p_3D = 27027 * 2,
 	DPI_CLK_720p = 74250,
 	DPI_CLK_1080p = 148500
@@ -139,14 +141,11 @@ int ddp_dpi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config,
 		   void *cmdq_handle);
 int ddp_dpi_trigger(DISP_MODULE_ENUM module, void *cmdq);
 int ddp_dpi_reset(DISP_MODULE_ENUM module, void *cmdq_handle);
-int ddp_dpi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl_cmd,
-		  unsigned long *params);
+int ddp_dpi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, DDP_IOCTL_NAME ioctl_cmd,
+		  void *params);
 
 int _Enable_Interrupt(void);
 
-enum AviColorSpace_e {
-	acsRGB = 0, acsYCbCr422 = 1, acsYCbCr444 = 2, acsFuture = 3
-};
 #ifdef __cplusplus
 }
 #endif

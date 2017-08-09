@@ -2,8 +2,9 @@
 # Makefile for external display driver.
 #
 #include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/  \
+ifeq ($(CONFIG_MTK_HDMI_SUPPORT), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/ \
+             -I$(srctree)/drivers/misc/mediatek/ext_disp/  \
              -I$(srctree)/drivers/misc/mediatek/ext_disp/common/test/ \
              -I$(srctree)/drivers/misc/mediatek/video/     \
              -I$(srctree)/drivers/misc/mediatek/video/common/     \
@@ -54,3 +55,7 @@ obj-y :=  \
     ./../extd_epd.o \
     ./../extd_multi_control.o \
     ./../extd_factory.o
+
+else
+obj-y := dummy.o
+endif

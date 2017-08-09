@@ -18,8 +18,7 @@
 #include "disp_session.h"
 #include "primary_display.h"
 
-#include <mach/m4u.h>
-#include <mach/m4u_port.h>
+#include "m4u.h"
 #include "cmdq_def.h"
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
@@ -49,7 +48,7 @@ typedef struct {
 	cmdqRecHandle cmdq_handle_config;
 	cmdqRecHandle cmdq_handle_trigger;
 	disp_path_handle dpmgr_handle;
-	char *mutex_locker;
+	const char *mutex_locker;
 } ovl2mem_path_context;
 
 atomic_t g_trigger_ticket = ATOMIC_INIT(1);
@@ -74,7 +73,7 @@ CMDQ_SWITCH ovl2mem_cmdq_enabled(void)
 {
 	return ovl2mem_use_cmdq;
 }
-
+/*
 static unsigned int cmdqDdpClockOn(uint64_t engineFlag)
 {
 	return 0;
@@ -82,7 +81,6 @@ static unsigned int cmdqDdpClockOn(uint64_t engineFlag)
 
 static unsigned int cmdqDdpResetEng(uint64_t engineFlag)
 {
-	/* DISP_LOG_I("cmdqDdpResetEng\n"); */
 	return 0;
 }
 
@@ -99,7 +97,7 @@ static unsigned int cmdqDdpDumpInfo(uint64_t engineFlag, char *pOutBuf, unsigned
 
 	return 0;
 }
-
+*/
 static void _ovl2mem_path_lock(const char *caller)
 {
 	dprec_logger_start(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
@@ -148,6 +146,7 @@ int ovl2mem_get_info(void *info)
 
 	dispif_info->isConnected = 1;
 
+	return 0;
 }
 
 
@@ -157,7 +156,6 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config 
 	int force_disable_alpha = 0;
 	enum UNIFIED_COLOR_FMT tmp_fmt;
 	unsigned int Bpp = 0;
-	unsigned int bpp = 0;
 
 	if (!src || !dst) {
 		DISPERR("%s src(0x%p) or dst(0x%p) is null\n", __func__, src, dst);
@@ -183,7 +181,7 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config 
 	Bpp = UFMT_GET_Bpp(dst->fmt);
 
 	dst->addr = (unsigned long)src->src_phy_addr;
-	dst->vaddr = src->src_base_addr;
+	dst->vaddr = (unsigned long)src->src_base_addr;
 	dst->src_x = src->src_offset_x;
 	dst->src_y = src->src_offset_y;
 	dst->src_w = src->src_width;
@@ -270,6 +268,7 @@ int get_ovl2mem_ticket(void)
 int ovl2mem_init(unsigned int session)
 {
 	int ret = -1;
+	M4U_PORT_STRUCT sPort;
 
 	DISPMSG("ovl2mem_init\n");
 	dpmgr_init();
@@ -296,8 +295,6 @@ int ovl2mem_init(unsigned int session)
 		DISPERR("dpmgr create path FAIL\n");
 		goto Exit;
 	}
-
-	M4U_PORT_STRUCT sPort;
 
 	sPort.ePortID = M4U_PORT_DISP_OVL1;
 	sPort.Virtuality = ovl2mem_use_m4u;
@@ -350,6 +347,7 @@ int ovl2mem_input_config(disp_session_input_config *input)
 	int ret = -1;
 	int i = 0;
 	int config_layer_id = 0;
+	disp_ddp_path_config *data_config;
 
 	DISPFUNC();
 	_ovl2mem_path_lock(__func__);
@@ -359,8 +357,6 @@ int ovl2mem_input_config(disp_session_input_config *input)
 		_ovl2mem_path_unlock(__func__);
 		return 0;
 	}
-
-	disp_ddp_path_config *data_config;
 
 	/* all dirty should be cleared in dpmgr_path_get_last_config() */
 	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
@@ -372,7 +368,7 @@ int ovl2mem_input_config(disp_session_input_config *input)
 	for (i = 0; i < input->config_layer_num; i++) {
 		dprec_logger_start(DPREC_LOGGER_PRIMARY_CONFIG,
 				   input->config[i].layer_id | (input->config[i].layer_enable << 16),
-				   input->config[i].src_phy_addr);
+				   0/*input->config[i].src_phy_addr*/);
 
 		config_layer_id = input->config[i].layer_id;
 		_convert_disp_input_to_ovl(&(data_config->ovl_config[config_layer_id]), &(input->config[i]));
@@ -396,13 +392,11 @@ int ovl2mem_input_config(disp_session_input_config *input)
 int ovl2mem_output_config(disp_mem_output_config *out)
 {
 	int ret = -1;
-	int i = 0;
+	disp_ddp_path_config *data_config;
 
 	/* /DISPFUNC(); */
 
 	_ovl2mem_path_lock(__func__);
-
-	disp_ddp_path_config *data_config;
 
 	/* all dirty should be cleared in dpmgr_path_get_last_config() */
 	data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
@@ -455,9 +449,7 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 	if (pgc->need_trigger_path == 0) {
 		DISPMSG("ovl2mem_trigger do not trigger\n");
 		if ((atomic_read(&g_trigger_ticket) - atomic_read(&g_release_ticket)) == 1) {
-			DISPERR(
-				"ovl2mem_trigger(%x), configue input,
-				but does not config output!!\n", pgc->session);
+			DISPERR("ovl2mem_trigger(%x), configue input,but does not config output!!\n", pgc->session);
 			for (layid = 0; layid < (MEMORY_SESSION_INPUT_LAYER_COUNT + 1); layid++) {
 				fence_idx = mtkfb_query_idx_by_ticket(pgc->session, layid,
 					atomic_read(&g_trigger_ticket));
@@ -478,7 +470,7 @@ int ovl2mem_trigger(int blocking, void *callback, unsigned int userdata)
 
 	/* /cmdqRecDumpCommand(pgc->cmdq_handle_config); */
 
-	cmdqRecFlushAsyncCallback(pgc->cmdq_handle_config, ovl2mem_callback,
+	cmdqRecFlushAsyncCallback(pgc->cmdq_handle_config, (CmdqAsyncFlushCB)ovl2mem_callback,
 				  atomic_read(&g_trigger_ticket));
 
 	cmdqRecReset(pgc->cmdq_handle_config);

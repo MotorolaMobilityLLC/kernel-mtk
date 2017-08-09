@@ -386,6 +386,39 @@ struct DPI_REG_MATRIX_POSTADD_SET1 {
 	unsigned rsv_13:19;
 };
 
+struct DPI_REG_MATRIX_SET {
+	unsigned INT_MATRIX_SEL     :5;
+	unsigned rsv_3              :3;
+	unsigned MATRIX_BIT         :2;
+	unsigned rsv_2              :2;
+	unsigned EXT_MATRIX_EN      :1;
+	unsigned rsv_19             :19;
+};
+
+struct DPI_REG_MATRIX_COEF {
+	unsigned MATRIX_COFEF_00     :13;
+	unsigned rsv_13              :3;
+	unsigned MATRIX_COFEF_01     :13;
+	unsigned rsv_29              :3;
+};
+
+struct DPI_REG_MATRIX_COEF_ONE {
+	unsigned MATRIX_COFEF_00     :13;
+	unsigned rsv_19              :19;
+};
+
+
+struct DPI_REG_MATRIX_OFFSET {
+	unsigned MATRIX_OFFSET_0    :13;
+	unsigned rsv_3              :3;
+	unsigned MATRIX_OFFSET_1    :13;
+	unsigned rsv              :3;
+};
+
+struct DPI_REG_MATRIX_OFFSET_ONE {
+	unsigned MATRIX_OFFSET_0    :13;
+	unsigned rsv_19             :19;
+};
 
 struct DPI_REGS {
 	struct DPI_REG_EN DPI_EN;	/*0000*/
@@ -435,7 +468,22 @@ struct DPI_REGS {
 	struct DPI_REG_ESAV_CODE_SET0 ESAV_CODE_SET0;	/*00A8*/
 	struct DPI_REG_ESAV_CODE_SET1 ESAV_CODE_SET1;	/*00AC*/
 
+	unsigned  rsv_4;       /* 00B0*/
+
+	struct DPI_REG_MATRIX_SET  MATRIX_SET;          /*00B4*/
+	struct DPI_REG_MATRIX_COEF MATRIX_COEF_00;      /*00B8*/
+	struct DPI_REG_MATRIX_COEF MATRIX_COEF_02;      /*00BC*/
+	struct DPI_REG_MATRIX_COEF MATRIX_COEF_11;      /*00C0*/
+	struct DPI_REG_MATRIX_COEF MATRIX_COEF_20;      /*00C4*/
+	struct DPI_REG_MATRIX_COEF_ONE   MATRIX_COEF_22;      /*00C8*/
+	struct DPI_REG_MATRIX_OFFSET     MATRIX_IN_OFFSET_0;  /*00CC*/
+	struct DPI_REG_MATRIX_OFFSET_ONE MATRIX_IN_OFFSET_2;  /*00D0*/
+	struct DPI_REG_MATRIX_OFFSET     MATRIX_OUT_OFFSET_0; /*00D4*/
+	struct DPI_REG_MATRIX_OFFSET_ONE MATRIX_OUT_OFFSET_2; /*00D8*/
+
 };
+
+extern struct DPI_REGS *DPI_REG;
 
 /*
 STATIC_ASSERT((offsetof(struct DPI_REGS, SIZE) == 0x0018));

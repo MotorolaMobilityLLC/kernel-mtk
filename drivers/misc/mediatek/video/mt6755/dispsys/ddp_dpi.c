@@ -13,20 +13,24 @@
 #endif
 #include <debug.h>
 
-/*#include "mach/mt_typedefs.h"*/
 #include <linux/types.h>
 
 /*#include <mach/sync_write.h>*/
 #include <mt-plat/sync_write.h>
 
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
+#else
+#include "ddp_clkmgr.h"
 #endif
 #include <mach/irqs.h>
 
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 #include <linux/wait.h>
+
+#include <linux/of.h>
+#include <linux/of_address.h>
 
 #include "mtkfb.h"
 #include "ddp_drv.h"
@@ -37,19 +41,24 @@
 #include "ddp_reg.h"
 #include "ddp_log.h"
 
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-/*#include <mach/eint.h>*/
-
 #ifndef LOG_TAG
 #define LOG_TAG "DPI"
 #endif
 
 #define ENABLE_DPI_INTERRUPT        0
-/*#define DISABLE_CLOCK_API */
 
-#define K2_SMT
+#ifndef CONFIG_MTK_CLKMGR
+static void __iomem	*clk_apmixed_base;
+#ifndef TVDPLL_CON0
+#define TVDPLL_CON0             (clk_apmixed_base + 0x270)
+#endif
+#ifndef TVDPLL_CON1
+#define TVDPLL_CON1             (clk_apmixed_base + 0x274)
+#endif
+#endif
+
+#define DPI_SMT
+static int cache_bg_parameter;
 
 #undef LCD_BASE
 #define LCD_BASE (0xF4024000)
@@ -77,20 +86,9 @@
 
 #define DPI_MASKREG32(cmdq, REG, MASK, VALUE)           DISP_REG_MASK((cmdq), (REG), (VALUE), (MASK))
 
-#if !defined(CONFIG_MTK_LEGACY)
-/*static void __iomem *clk_apmixed_base;*/
-#ifndef TVDPLL_CON0
-#define TVDPLL_CON0             ((void *)NULL)
-#endif
-#ifndef TVDPLL_CON1
-#define TVDPLL_CON1             ((void *)NULL)
-#endif
-#endif
-
-static int cache_bg_parameter;
-static unsigned char s_isDpiPowerOn;
-static unsigned char s_isDpiStart;
-static unsigned char s_isDpiConfig;
+static int s_isDpiPowerOn = FALSE;
+static int s_isDpiStart = FALSE;
+static int s_isDpiConfig = FALSE;
 
 static int dpi_vsync_irq_count;
 static int dpi_undflow_irq_count;
@@ -139,21 +137,21 @@ static void lcm_mdelay(unsigned ms)
 
 static void lcm_set_reset_pin(unsigned value)
 {
-#ifndef K2_SMT
+#ifndef DPI_SMT
 	DPI_OUTREG32(0, MMSYS_CONFIG_BASE + 0x150, value);
 #endif
 }
 
 static void lcm_send_cmd(unsigned cmd)
 {
-#ifndef K2_SMT
+#ifndef DPI_SMT
 	DPI_OUTREG32(0, LCD_BASE + 0x0F80, cmd);
 #endif
 }
 
 static void lcm_send_data(unsigned data)
 {
-#ifndef K2_SMT
+#ifndef DPI_SMT
 	DPI_OUTREG32(0, LCD_BASE + 0x0F90, data);
 #endif
 }
@@ -189,91 +187,97 @@ static void _RestoreDPIRegisters(void)
 enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enum DPI_POLARITY polarity)
 {
 	unsigned clksrc = 0;
-	unsigned prediv = 0x8316D89D;
+	unsigned prediv = 0x8016D89E;
+	unsigned con0 = 0xC0000121;
 	struct DPI_REG_OUTPUT_SETTING ctrl = DPI_REG->OUTPUT_SETTING;
-	unsigned permission = INREG32(DISPSYS_EFUSE_PERMISSION);
+	struct device_node *node;
 
 	switch (clk_req) {
 	case DPI_CLK_480p:
 		{
-#if defined(CONFIG_MTK_LEGACY)
-			clksrc = 4;
+#ifdef CONFIG_MTK_CLKMGR
+			clksrc = 2;
 #else
-			/*clksrc = DPI_CK;*/
+			clksrc = TVDPLL_D4;
 #endif
-			prediv = 0x83109D89;	/*54M*/
+			prediv = 0x8010A1EB;
+			con0 = 0xC0000131;
 			break;
 		}
-	case DPI_CLK_480p_3D:
+	case DPI_CLK_EINK_85:
 		{
-			pr_warn("DISP/DPI " "DPI_CLK_480p_3D\n");
-#if defined(CONFIG_MTK_LEGACY)
-			clksrc = 4;
+#ifdef CONFIG_MTK_CLKMGR
+			clksrc = 1;
 #else
-			/*clksrc = DPI_CK;*/
+			clksrc = TVDPLL_D2;
 #endif
-			prediv = 0x83109D89;	/*54M*/
+			prediv = 0x800AC40E;
+			con0 = 0xC0000131;
+			break;
+		}
+	case DPI_CLK_EINK_100:
+		{
+#ifdef CONFIG_MTK_CLKMGR
+			clksrc = 1;
+#else
+			clksrc = TVDPLL_D2;
+#endif
+			prediv = 0x800CAA74;
+			con0 = 0xC0000131;
 			break;
 		}
 	case DPI_CLK_720p:
 		{
-#if defined(CONFIG_MTK_LEGACY)
-			clksrc = 2;	        /*148M*/
+#ifdef CONFIG_MTK_CLKMGR
+			clksrc = 2;
 #else
-			/*clksrc = TVDPLL_D2;*/
+			clksrc = TVDPLL_D4;
 #endif
 			break;
 		}
 	case DPI_CLK_1080p:
 		{
-#if defined(CONFIG_MTK_LEGACY)
-			clksrc = 1;	        /*296M*/
+#ifdef CONFIG_MTK_CLKMGR
+			clksrc = 1;
 #else
-			/*clksrc = TVDPLL_CK;*/
+			clksrc = TVDPLL_D2;
 #endif
+			break;
+		}
+	default:
+		{
+			DDPERR("[DPI]unknown clock frequency: %d\n", clk_req);
 			break;
 		}
 	}
 
-	pr_warn("DISP/DPI,TVDPLL clock setting clk %d, clksrc: %d\n", clk_req, clksrc);
+	DDPMSG("[DPI]TVDPLL clock setting clk %d, clksrc: %d\n", clk_req, clksrc);
 
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 	clkmux_sel(MT_MUX_DPI0, clksrc, "DPI");
 #else
-/*
 	ddp_clk_enable(MUX_DPI0);
 	ddp_clk_set_parent(MUX_DPI0, clksrc);
 	ddp_clk_disable(MUX_DPI0);
-*/
-#endif
-	DPI_OUTREG32(NULL, TVDPLL_CON0, 0xc0000101);	/*TVDPLL enable*/
-	DPI_OUTREG32(NULL, TVDPLL_CON1, prediv);	/*set TVDPLL output clock frequency*/
-	pr_warn("DISP/DPI,TVDPLL_CON0: 0x%x, TVDPLL_CON1: 0x%x\n", INREG32(TVDPLL_CON0), INREG32(TVDPLL_CON1));
 
-	/*IO driving setting */
+		/* apmixed */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
+	if (!node)
+		pr_debug("[CLK_APMIXED] find node failed\n");
 
-	/*data 8ma, vs/hs/de/ck*/
-	DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING1, 0x6000, 0x2 << 13);
-	DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0600, 0x3 << 9);
-	DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0060, 0x3 << 5);
-	DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0006, 0x3 << 1);
-	DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING3, 0x0006, 0x3 << 1);
-
-	pr_warn("DISP/DPI,DISPSYS_EFUSE: 0x%x\n", INREG32(DISPSYS_EFUSE));
-	pr_warn("DISP/DPI,DISPSYS_EFUSE_PERMISSION: 0x%x\n", permission);
-
-	if ((permission & 0xC0000000) == 0) {
-		DPI_OUTREG32(NULL, DISPSYS_EFUSE_KEY, 0xFD885CAE);
-		DPI_OUTREG32(NULL, DISPSYS_EFUSE, 0x3600000);
-
-		pr_warn("DISP/DPI,DISPSYS_EFUSE_KEY: 0x%x, DISPSYS_EFUSE: 0x%x\n",
-			INREG32(DISPSYS_EFUSE_KEY), INREG32(DISPSYS_EFUSE));
+	clk_apmixed_base = of_iomap(node, 0);
+	if (!clk_apmixed_base)
+		pr_debug("[CLK_APMIXED] base failed\n");
+	else {
+		DPI_OUTREG32(NULL, clk_apmixed_base + 0x270, con0);	/* TVDPLL enable */
+		DPI_OUTREG32(NULL, clk_apmixed_base + 0x274, prediv);	/* set TVDPLL output clock frequency */
 	}
+#endif
 
-	pr_warn
-	    ("DISP/DPI,DISPSYS_IO_DRIVING1: 0x%x, DISPSYS_IO_DRIVING2: 0x%x, DISPSYS_IO_DRIVING3: 0x%x\n",
-	     INREG32(DISPSYS_IO_DRIVING1), INREG32(DISPSYS_IO_DRIVING2),
-	     INREG32(DISPSYS_IO_DRIVING3));
+	/*DPI_OUTREG32(NULL, TVDPLL_CON0, con0);*//* TVDPLL enable */
+	/*DPI_OUTREG32(NULL, TVDPLL_CON1, prediv);	*//* set TVDPLL output clock frequency */
+	/*IO driving setting */
+	/*DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING, 0x3C00, 0x0);*/
 
 	/*DPI output clock polarity */
 	ctrl.CLK_POL = (DPI_POLARITY_FALLING == polarity) ? 1 : 0;
@@ -428,26 +432,40 @@ enum DPI_STATUS ddp_dpi_EnableColorBar(void)
 	return DPI_STATUS_OK;
 }
 
+enum DPI_STATUS ddp_dpi_EnableINT(cmdqRecHandle cmdq, unsigned irq_bit, unsigned value)
+{
+	struct DPI_REG_INTERRUPT enInt = DPI_REG->INT_ENABLE;
+
+	if (irq_bit&0x1) {
+		enInt.VSYNC = value;
+		DPI_OUTREGBIT(cmdq, struct DPI_REG_INTERRUPT, DPI_REG->INT_ENABLE, VSYNC, enInt.VSYNC);
+	}
+
+	if (irq_bit & 0x2) {
+		enInt.VDE = value;
+		DPI_OUTREGBIT(cmdq, struct DPI_REG_INTERRUPT, DPI_REG->INT_ENABLE, VDE, enInt.VDE);
+	}
+
+	return DPI_STATUS_OK;
+}
+
 int ddp_dpi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	int ret = 0;
 
-	pr_warn("DISP/DPI,ddp_dpi_power_on, s_isDpiPowerOn %d\n", s_isDpiPowerOn);
+	DDPMSG("[DPI]ddp_dpi_power_on, s_isDpiPowerOn %d\n", s_isDpiPowerOn);
 	if (!s_isDpiPowerOn) {
-#ifndef DISABLE_CLOCK_API
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
 		ret += enable_clock(MT_CG_DISP1_DPI_PIXEL, "DPI");
 		ret += enable_clock(MT_CG_DISP1_DPI_ENGINE, "DPI");
 #else
-/*
 		ret += ddp_clk_enable(DISP1_DPI_PIXEL);
-		ret += ddp_clk_enable(DISP1_DPI_ENGINE);
-*/
-#endif
+		/*ret += ddp_clk_enable(DISP1_DPI_ENGINE);*/
 #endif
 		if (ret > 0)
-			pr_err("DISP/DPI,power manager API return FALSE\n");
-		/*_RestoreDPIRegisters();*/
+			DDPERR("[DPI]power manager API return FALSE\n");
+
+		/* _RestoreDPIRegisters(); */
 		s_isDpiPowerOn = TRUE;
 	}
 
@@ -458,22 +476,19 @@ int ddp_dpi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	int ret = 0;
 
-	pr_warn("DISP/DPI,ddp_dpi_power_off, s_isDpiPowerOn %d\n", s_isDpiPowerOn);
+	DDPMSG("[DPI]ddp_dpi_power_off, s_isDpiPowerOn %d\n", s_isDpiPowerOn);
 	if (s_isDpiPowerOn) {
-#ifndef DISABLE_CLOCK_API
-		/*_BackupDPIRegisters();*/
-#if defined(CONFIG_MTK_LEGACY)
+#ifdef CONFIG_MTK_CLKMGR
+		/* _BackupDPIRegisters(); */
 		ret += disable_clock(MT_CG_DISP1_DPI_PIXEL, "DPI");
 		ret += disable_clock(MT_CG_DISP1_DPI_ENGINE, "DPI");
 #else
-/*
 		ddp_clk_disable(DISP1_DPI_PIXEL);
-		ddp_clk_disable(DISP1_DPI_ENGINE);
-*/
-#endif
+		/*ddp_clk_disable(DISP1_DPI_ENGINE);*/
 #endif
 		if (ret > 0)
-			pr_err("DISP/DPI,power manager API return FALSE\n");
+			DDPERR("[DPI]power manager API return FALSE\n");
+
 		s_isDpiPowerOn = FALSE;
 	}
 
@@ -486,14 +501,14 @@ int ddp_dpi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 	if (s_isDpiConfig == FALSE) {
 		LCM_DPI_PARAMS *dpi_config = &(config->dispif_config.dpi);
 
-		pr_warn("DISP/DPI,ddp_dpi_config DPI status:%x, cmdq:%p\n", INREG32(&DPI_REG->STATUS), cmdq_handle);
+		DDPMSG("[DPI]ddp_dpi_config DPI status:%x, width:%d, height:%d\n", INREG32(&DPI_REG->STATUS),
+			dpi_config->width, dpi_config->height);
 
 		ddp_dpi_ConfigPclk(cmdq_handle, dpi_config->dpi_clock, dpi_config->clk_pol);
 		ddp_dpi_ConfigSize(cmdq_handle, dpi_config->width, dpi_config->height);
-		ddp_dpi_ConfigBG(cmdq_handle, true, dpi_config->bg_width, dpi_config->bg_height);
+		/*ddp_dpi_ConfigBG(cmdq_handle, true, dpi_config->bg_width, dpi_config->bg_height);*/
 		cache_bg_parameter = dpi_config->bg_width << 16 | dpi_config->bg_height;
-		pr_warn("DISP/DPI,dpi_config->bg_width: %d, dpi_config->bg_height: %d\n",
-			dpi_config->bg_width, dpi_config->bg_height);
+		DDPMSG("[DPI]bg_width: %d, bg_height: %d\n", dpi_config->bg_width, dpi_config->bg_height);
 
 		ddp_dpi_ConfigDE(cmdq_handle, dpi_config->de_pol);
 		ddp_dpi_ConfigVsync(cmdq_handle, dpi_config->vsync_pol,
@@ -506,18 +521,17 @@ int ddp_dpi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 		ddp_dpi_ConfigDualEdge(cmdq_handle, dpi_config->i2x_en, dpi_config->i2x_edge);
 
 		s_isDpiConfig = TRUE;
-		pr_warn("DISP/DPI,ddp_dpi_config done\n");
+		DDPDBG("[DPI]ddp_dpi_config done\n");
 	}
 
 	if (s_isDpiConfig == TRUE) {
 		LCM_DPI_PARAMS *dpi_config = &(config->dispif_config.dpi);
 		int now_bg_parameters = dpi_config->bg_width << 16 | dpi_config->bg_height;
-
-		pr_warn("DISP/DPI,now_bg_parameters: 0x%x, cache_bg_parameter: 0x%x\n",
-			now_bg_parameters, cache_bg_parameter);
+		DDPDBG("[DPI]now_bg_parameters: 0x%x, cache_bg_parameter: 0x%x\n", now_bg_parameters,
+			cache_bg_parameter);
 
 		if (now_bg_parameters != cache_bg_parameter) {
-			pr_warn("DISP/DPI,Need to rechange DPI BG\n");
+			DDPMSG("[DPI]Need to rechange DPI BG\n");
 
 
 			ddp_dpi_ConfigSize(cmdq_handle, dpi_config->width, dpi_config->height);
@@ -535,7 +549,7 @@ int ddp_dpi_reset(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	struct DPI_REG_RST reset;
 
-	pr_warn("DISP/DPI,ddp_dpi_reset\n");
+	DDPDBG("[DPI]ddp_dpi_reset\n");
 
 	reset = DPI_REG->DPI_RST;
 	reset.RST = 1;
@@ -556,12 +570,13 @@ int ddp_dpi_start(DISP_MODULE_ENUM module, void *cmdq)
 int ddp_dpi_trigger(DISP_MODULE_ENUM module, void *cmdq)
 {
 	if (s_isDpiStart == FALSE) {
-		pr_warn("DISP/DPI,ddp_dpi_start\n");
+		DDPMSG("[DPI]ddp_dpi_start\n");
+		/*enable vsync interrupt*/
+		ddp_dpi_EnableINT(cmdq, 1, 1);
 		ddp_dpi_reset(module, cmdq);
 		/*enable DPI */
 		DPI_OUTREG32(cmdq, DISPSYS_DPI_BASE, 0x00000001);
 
-		ddp_dpi_dump(module, 1);
 		s_isDpiStart = TRUE;
 	}
 	return 0;
@@ -569,14 +584,11 @@ int ddp_dpi_trigger(DISP_MODULE_ENUM module, void *cmdq)
 
 int ddp_dpi_stop(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
-	pr_warn("DISP/DPI,ddp_dpi_stop\n");
+	DDPMSG("[DPI]ddp_dpi_stop\n");
 
 	/*disable DPI and background, and reset DPI */
-
-	pr_warn("DISP/DPI,DISPSYS_DPI_BASE: 0x%x\n", INREG32(DISPSYS_DPI_BASE));
+	ddp_dpi_EnableINT(cmdq_handle, 1, 0);
 	DPI_OUTREG32(cmdq_handle, DISPSYS_DPI_BASE, 0x00000000);
-	pr_warn("DISP/DPI,DISPSYS_DPI_BASE: 0x%x\n", INREG32(DISPSYS_DPI_BASE));
-
 
 	ddp_dpi_ConfigBG(cmdq_handle, false, 0, 0);
 	ddp_dpi_reset(module, cmdq_handle);
@@ -626,52 +638,68 @@ irqreturn_t _DPI_InterruptHandler(int irq, void *dev_id)
 
 int ddp_dpi_init(DISP_MODULE_ENUM module, void *cmdq)
 {
-	pr_warn("DISP/DPI,ddp_dpi_init- %p\n", cmdq);
+	struct device_node *node;
 
-	/*_BackupDPIRegisters();*/
+	DDPMSG("[DPI]ddp_dpi_init +\n");
+
+#if 0				/* /def MTKFB_FPGA_ONLY */
+
+	DPI_OUTREG32(cmdq, MMSYS_CONFIG_BASE + 0x108, 0xffffffff);
+	DPI_OUTREG32(cmdq, MMSYS_CONFIG_BASE + 0x118, 0xffffffff);
+	/* DPI_OUTREG32(cmdq,  MMSYS_CONFIG_BASE+0xC08, 0xffffffff); */
+
+	DPI_OUTREG32(cmdq, LCD_BASE + 0x001C, 0x00ffffff);
+	DPI_OUTREG32(cmdq, LCD_BASE + 0x0028, 0x010000C0);
+	DPI_OUTREG32(cmdq, LCD_BASE + 0x002C, 0x1);
+	DPI_OUTREG32(cmdq, LCD_BASE + 0x002C, 0x0);
+
+	DPI_OUTREG32(cmdq, DISPSYS_DPI_BASE + 0x14, 0x00000000);
+	DPI_OUTREG32(cmdq, DISPSYS_DPI_BASE + 0x1C, 0x00000005);
+
+	DPI_OUTREG32(cmdq, DISPSYS_DPI_BASE + 0x20, 0x0000001A);
+	DPI_OUTREG32(cmdq, DISPSYS_DPI_BASE + 0x24, 0x001A001A);
+	DPI_OUTREG32(cmdq, DISPSYS_DPI_BASE + 0x28, 0x0000000A);
+	DPI_OUTREG32(cmdq, DISPSYS_DPI_BASE + 0x2C, 0x000A000A);
+	DPI_OUTREG32(cmdq, DISPSYS_DPI_BASE + 0x08, 0x00000007);
+
+	DPI_OUTREG32(cmdq, DISPSYS_DPI_BASE + 0x00, 0x00000000);
+#else
+	/* /_BackupDPIRegisters(); */
 	ddp_dpi_power_on(DISP_MODULE_DPI, cmdq);
+#endif
 
 #if ENABLE_DPI_INTERRUPT
-/*
-	if (request_irq(DPI0_IRQ_BIT_ID, _DPI_InterruptHandler, IRQF_TRIGGER_LOW, "mtkdpi", NULL) < 0)
-	{
-		pr_info("DISP/DPI " "[ERROR] fail to request DPI irq\n");
+	if (request_irq(DPI0_IRQ_BIT_ID,
+			_DPI_InterruptHandler, IRQF_TRIGGER_LOW, "mtkdpi", NULL) < 0) {
+		DDPERR("[DPI]fail to request DPI irq\n");
 		return DPI_STATUS_ERROR;
 	}
-*/
 
-/*
 	struct DPI_REG_INTERRUPT enInt = DPI_REG->INT_ENABLE;
+
 	enInt.VSYNC = 1;
 	DPI_OUTREGBIT(cmdq, struct DPI_REG_INTERRUPT, DPI_REG->INT_ENABLE, VSYNC, enInt.VSYNC);
-
-	enInt.VDE = 1;
-	DPI_OUTREGBIT(cmdq, struct DPI_REG_INTERRUPT, DPI_REG->INT_ENABLE, VDE, enInt.VDE);
-
-	enInt.UNDERFLOW = 1;
-	DPI_OUTREGBIT(cmdq, struct DPI_REG_INTERRUPT, DPI_REG->INT_ENABLE, UNDERFLOW, enInt.UNDERFLOW);
-*/
 #endif
-/*
-#if !defined(CONFIG_MTK_LEGACY)
-	struct device_node *node;
+
+#ifndef CONFIG_MTK_CLKMGR
+	/* apmixed */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,APMIXED");
 	if (!node)
 		pr_debug("[CLK_APMIXED] find node failed\n");
+
 	clk_apmixed_base = of_iomap(node, 0);
 	if (!clk_apmixed_base)
 		pr_debug("[CLK_APMIXED] base failed\n");
 #endif
-*/
-	_Enable_Interrupt();
-	pr_warn("DISP/DPI,ddp_dpi_init done %p\n", cmdq);
+
+	DDPDBG("[DPI]ddp_dpi_init done\n");
 
 	return 0;
 }
 
 int ddp_dpi_deinit(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
-	pr_warn("DISP/DPI,ddp_dpi_deinit- %p\n", cmdq_handle);
+	DDPMSG("[DPI]ddp_dpi_deinit +\n");
 	ddp_dpi_stop(DISP_MODULE_DPI, cmdq_handle);
 	ddp_dpi_power_off(DISP_MODULE_DPI, cmdq_handle);
 
@@ -684,7 +712,7 @@ int ddp_dpi_set_lcm_utils(DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 
 	DISPFUNC();
 	if (lcm_drv == NULL) {
-		pr_err("DISP/DPI,lcm_drv is null!\n");
+		DDPERR("[DPI]lcm_drv is null !\n");
 		return -1;
 	}
 
@@ -712,114 +740,37 @@ int ddp_dpi_dump(DISP_MODULE_ENUM module, int level)
 
 	for (i = 0; i <= 0x50; i += 4)
 		DDPDUMP("DPI+%04x : 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
-	for (i = 0x68; i <= 0xd8; i += 4)
+
+	for (i = 0x68; i <= 0x7C; i += 4)
 		DDPDUMP("DPI+%04x : 0x%08x\n", i, INREG32(DISPSYS_DPI_BASE + i));
 
-	DDPDUMP("DPI+Color Bar : %04x : 0x%08x\n", 0xF00, INREG32(DISPSYS_DPI_BASE + 0xF00));
-/*
-	DDPDUMP("DPI TVDPLL CON0 : 0x%08x\n",  INREG32(DDP_REG_TVDPLL_CON0));
-	DDPDUMP("DPI TVDPLL CON1 : 0x%08x\n",  INREG32(DDP_REG_TVDPLL_CON1));
-	DDPDUMP("DPI TVDPLL CON6 : 0x%08x\n",  INREG32(DDP_REG_TVDPLL_CON6));
-*/
+	DDPDUMP("DPI+Color Bar : 0x%04x : 0x%08x\n", 0xF00, INREG32(DISPSYS_DPI_BASE + 0xF00));
+	/*DDPDUMP("DPI Addr IO Driving : 0x%08x\n", INREG32(DISPSYS_IO_DRIVING));*/
+	/*DDPDUMP("DPI TVDPLL CON0 : 0x%08x\n", INREG32(DDP_REG_TVDPLL_CON0));*/
+	/*DDPDUMP("DPI TVDPLL CON1 : 0x%08x\n", INREG32(DDP_REG_TVDPLL_CON1));*/
+	/*DDPDUMP("DPI TVDPLL CON6 : 0x%08x\n", INREG32(DDP_REG_TVDPLL_CON6));*/
 	DDPDUMP("DPI MMSYS_CG_CON1:0x%08x\n", INREG32(DISP_REG_CONFIG_MMSYS_CG_CON1));
-	DDPDUMP("io_driving1:0x:%08x\n", INREG32(DISPSYS_IO_DRIVING1));
-	DDPDUMP("io_driving2:0x:%08x\n", INREG32(DISPSYS_IO_DRIVING2));
 	return 0;
 }
 
-void ddp_dpi_change_io_driving(LCM_DRIVING_CURRENT io_driving)
-{
-	LCM_DRIVING_CURRENT vsync_io_driving = (io_driving >> 8) & 0xFF;
-	LCM_DRIVING_CURRENT data_io_driving = io_driving & 0xFF;
 
-	DDPDUMP("vsync_io_driving: 0x%x, data_io_driving: 0x%x\n", vsync_io_driving,
-		data_io_driving);
-
-	switch (data_io_driving) {
-	case 2:
-		/*
-		 *    D[11,9] 4mA, D[8,4] 4mA, D[3,0] 4mA
-		 */
-		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING1, 0x6000, 0x0 << 13);
-		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0600, 0x0 << 9);
-		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0060, 0x0 << 5);
-		break;
-	case 4:
-		/*
-		 *       D[11,9] 8mA, D[8,4] 8mA, D[3,0] 8mA
-		 */
-		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING1, 0x6000, 0x1 << 13);
-		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0600, 0x1 << 9);
-		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0060, 0x1 << 5);
-		break;
-	case 8:
-		/*
-		 *       D[11,9] 16mA, D[8,4] 16mA, D[3,0] 16mA
-		 */
-		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING1, 0x6000, 0x3 << 13);
-		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0600, 0x3 << 9);
-		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0060, 0x3 << 5);
-		break;
-	default:
-		break;
-	}
-
-	switch (vsync_io_driving) {
-	case 2:
-		/*
-		 *    First VS/HS/DE/CK 4mA
-		 */
-		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0006, 0x0 << 1);
-		break;
-	case 4:
-		/*
-		 *    First VS/HS/DE/CK 8mA
-		 */
-		DPI_MASKREG32(NULL, DISPSYS_IO_DRIVING2, 0x0006, 0x1 << 1);
-		break;
-	default:
-		break;
-	}
-
-	pr_warn
-	    ("DISP/DPI,DISPSYS_IO_DRIVING1: 0x%x, DISPSYS_IO_DRIVING2: 0x%x, DISPSYS_IO_DRIVING3: 0x%x\n",
-	     INREG32(DISPSYS_IO_DRIVING1), INREG32(DISPSYS_IO_DRIVING2),
-	     INREG32(DISPSYS_IO_DRIVING3));
-
-}
-
-int ddp_dpi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl_cmd,
-		  unsigned long *params)
+int ddp_dpi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, DDP_IOCTL_NAME ioctl_cmd,
+		  void *params)
 {
 	int ret = 0;
-	DDP_IOCTL_NAME ioctl = (DDP_IOCTL_NAME) ioctl_cmd;
 
-	switch (ioctl) {
+	DDPDBG("[DPI]DPI ioctl :  % d\n", ioctl_cmd);
+
+	switch (ioctl_cmd) {
 	case DDP_DPI_FACTORY_TEST:
 		{
 			disp_ddp_path_config *config_info = (disp_ddp_path_config *) params;
 
+			ddp_path_top_clock_on();
 			ddp_dpi_power_on(module, NULL);
 			ddp_dpi_stop(module, NULL);
 			ddp_dpi_config(module, config_info, NULL);
 			ddp_dpi_EnableColorBar();
-
-			pr_warn
-			    ("DISP/DPI,Before: DRIVING1: 0x%x, DRIVING2: 0x%x, DRIVING3: 0x%x\n",
-			     INREG32(DISPSYS_IO_DRIVING1), INREG32(DISPSYS_IO_DRIVING2),
-			     INREG32(DISPSYS_IO_DRIVING3));
-
-			if (config_info->dispif_config.dpi.io_driving_current !=
-			    LCM_DRIVING_CURRENT_DEFAULT) {
-				pr_warn
-				    ("DISP/DPI,Before: DRIVING1: 0x%x, DRIVING2: 0x%x, DRIVING3: 0x%x\n",
-				     INREG32(DISPSYS_IO_DRIVING1), INREG32(DISPSYS_IO_DRIVING2),
-				     INREG32(DISPSYS_IO_DRIVING3));
-				pr_debug("DISP/DPI,Change IO Driving: 0x%x\n",
-					 config_info->dispif_config.dpi.io_driving_current);
-				ddp_dpi_change_io_driving(config_info->dispif_config.dpi.
-							  io_driving_current);
-			}
 
 			ddp_dpi_trigger(module, NULL);
 			ddp_dpi_start(module, NULL);
@@ -852,98 +803,3 @@ DDP_MODULE_DRIVER ddp_driver_dpi = {
 	.ioctl = ddp_dpi_ioctl
 };
 
-/*****************************DPI DVT Case Start********************************/
-enum DPI_STATUS DPI_EnableColorBar(unsigned int pattern)
-{
-	/*OUTREG32(DISPSYS_DPI_BASE + 0xF00, 0x41);*/
-	OUTREG32(DISPSYS_DPI_BASE + 0xF00, pattern);
-
-	return DPI_STATUS_OK;
-}
-
-enum DPI_STATUS DPI_DisableColorBar(void)
-{
-	OUTREG32(DISPSYS_DPI_BASE + 0xF00, 0);
-
-	return DPI_STATUS_OK;
-}
-
-enum DPI_STATUS ddp_dpi_EnableColorBar_16(void)
-{
-	/*enable internal pattern - color bar */
-	DPI_OUTREG32(0, DISPSYS_DPI_BASE + 0xF00, 0x10101051);
-
-	return DPI_STATUS_OK;
-}
-
-enum DPI_STATUS ddp_dpi_EnableColorBar_0(void)
-{
-	/*enable internal pattern - color bar */
-	DPI_OUTREG32(0, DISPSYS_DPI_BASE + 0xF00, 0x51);
-
-	return DPI_STATUS_OK;
-}
-
-/****************************Platform IRQ*****************************/
-#if ENABLE_DPI_INTERRUPT
-static int dpi_irq;		/*dpi  IRQ*/
-int get_eint_dpi_irq(void)
-{
-	dpi_irq = 0;
-	if (dpi_irq < 1) {
-		struct device_node *node;
-
-		node = of_find_compatible_node(NULL, NULL, "mediatek,DPI0");
-		if (node) {
-			/*this step will set irq feature by dtsi*/
-			dpi_irq = irq_of_parse_and_map(node, 0);
-			if (!dpi_irq) {
-				pr_warn("can't irq_of_parse_and_map!\n");
-				dpi_irq = 0;
-			} else {
-				pr_warn("DISP/DPI,DPI Irq Num: %d\n", dpi_irq);
-			}
-		} else {
-			pr_warn("DISP/DPI,mediatek,DPI0 not find\n");
-		}
-	}
-
-	return dpi_irq;
-}
-#endif
-
-int _Enable_Interrupt(void)
-{
-#if ENABLE_DPI_INTERRUPT
-	int ret;
-	int dpi_irq_num = get_eint_dpi_irq();
-
-	if (dpi_irq_num > 0) {
-		ret =
-		    request_irq(dpi_irq_num, &_DPI_InterruptHandler, IRQF_TRIGGER_NONE,
-				"mediatek,DPI0", NULL);
-		if (ret > 0)
-			pr_warn("eint irq %d not available\n", dpi_irq_num);
-	} else {
-		pr_warn("%s,%d Error: DPI intr is not defined\n", __func__, __LINE__);
-	}
-#else
-/*
-	if (request_irq(DPI0_IRQ_BIT_ID,
-		_DPI_InterruptHandler, IRQF_TRIGGER_LOW, "mtkdpi", NULL) < 0)
-	{
-		pr_info("DISP/DPI " "[ERROR] fail to request DPI irq\n");
-		return DPI_STATUS_ERROR;
-	}
-*/
-#endif
-
-	struct DPI_REG_INTERRUPT enInt = DPI_REG->INT_ENABLE;
-
-	enInt.VSYNC = 1;
-	enInt.VDE = 1;
-	enInt.UNDERFLOW = 1;
-	OUTREG32(&DPI_REG->INT_ENABLE, AS_UINT32(&enInt));
-
-	return 0;
-}

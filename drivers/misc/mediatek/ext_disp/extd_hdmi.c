@@ -11,11 +11,9 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
-/*#include <linux/earlysuspend.h>*/
 #include <linux/kthread.h>
 /*#include <linux/rtpm_prio.h>*/
 #include <linux/vmalloc.h>
-/*#include <linux/disp_assert_layer.h>*/
 #include <linux/miscdevice.h>
 #include <linux/fs.h>
 #include <linux/file.h>
@@ -24,27 +22,22 @@
 #include <linux/module.h>
 #include <linux/list.h>
 #include <linux/switch.h>
-/*#include <linux/mmprofile.h>*/
-
+#include <linux/types.h>
 #include <linux/uaccess.h>
 #include <linux/atomic.h>
-#include <asm/cacheflush.h>
 #include <linux/io.h>
-/*#include <mach/dma.h>*/
+
 #include <mach/irqs.h>
+#include <mach/mt_clkmgr.h>
+#include "mach/irqs.h"
+
+#include <asm/cacheflush.h>
 #include <asm/tlbflush.h>
 #include <asm/page.h>
 
 #include "m4u.h"
-/*#include <mach/mt_typedefs.h>*/
-#include <linux/types.h>
 
-/*#include <mach/mt_reg_base.h>*/
-#include <mach/mt_clkmgr.h>
-/*#include <mach/mt_boot.h>*/
-/*#include "mach/eint.h"*/
-#include "mach/irqs.h"
-
+#include "mt-plat/mt_boot.h"
 #include "mtkfb_info.h"
 #include "mtkfb.h"
 
@@ -75,9 +68,14 @@
 #include "tmbslTDA9989_local.h"
 #endif
 
+#ifdef MHL_DYNAMIC_VSYNC_OFFSET
+#include "ged_dvfs.h"
+#endif
+
 /* ~~~~~~~~~~~~~~~~~~~~~~~the static variable~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 /*the following declare is for debug*/
-static int hdmi_force_to_on;
+/*static int hdmi_force_to_on;
+static int mhl_forcr_on_cnt;*/
 static atomic_t hdmi_fake_in = ATOMIC_INIT(false);
 
 static int first_frame_done;
@@ -151,17 +149,17 @@ struct task_struct *hdmi_wait_vsync_task = NULL;
 /* --------------------------------------------------------------------------- */
 /* Information Dump Routines */
 /* --------------------------------------------------------------------------- */
-static int mhl_forcr_on_cnt;
+
 void hdmi_force_on(int from_uart_drv)
 {
-	if ((hdmi_force_to_on > 0) && (from_uart_drv > 0))
+/*	if ((hdmi_force_to_on > 0) && (from_uart_drv > 0))
 		return;
 
 	HDMI_LOG("hdmi_force_on %d force on %d, cnt %d\n", from_uart_drv, hdmi_force_to_on, mhl_forcr_on_cnt);
 	mhl_forcr_on_cnt++;
 	hdmi_force_to_on = 1;
 	if (hdmi_drv && hdmi_drv->force_on)
-		hdmi_drv->force_on(from_uart_drv);
+		hdmi_drv->force_on(from_uart_drv);*/
 }
 
 /* <--for debug */
@@ -285,6 +283,18 @@ int hdmi_wait_vsync_debug(int enable)
 
 /* -->for debug */
 
+#ifdef MM_MHL_DVFS
+#include "mmdvfs_mgr.h"
+static void hdmi_enable_dvfs(int enable)
+{
+	mmdvfs_mhl_enable(enable);
+}
+#else
+static void hdmi_enable_dvfs(int enable)
+{
+}
+#endif
+
 bool is_hdmi_active(void)
 {
 	bool active = IS_HDMI_ON() && p->is_clock_on;
@@ -361,7 +371,6 @@ enum HDMI_VIDEO_OUTPUT_FORMAT vout)
 		return 0;
 
 	HDMI_LOG("hdmi_video_config video_on=%d\n", p->is_mhl_video_on);
-	/*RETIF(IS_HDMI_NOT_ON(), 0);*/
 	if (IS_HDMI_NOT_ON()) {
 		HDMI_LOG("return in %d\n", __LINE__);
 		return 0;
@@ -376,7 +385,7 @@ enum HDMI_VIDEO_OUTPUT_FORMAT vout)
 }
 
 /* Configure audio attribute, will be called by audio driver */
-int hdmi_audio_config(unsigned int format)
+int hdmi_audio_config(int format)
 {
 	enum HDMI_AUDIO_FORMAT audio_format = HDMI_AUDIO_44K_2CH;
 	unsigned int channel_count = format & 0x0F;
@@ -419,7 +428,6 @@ int hdmi_audio_config(unsigned int format)
 	} else
 		HDMI_LOG("audio format is not supported\n");
 
-	/*RETIF(!p->is_enabled, 0);*/
 	if (!p->is_enabled) {
 		HDMI_LOG("return in %d\n", __LINE__);
 		return 0;
@@ -432,7 +440,6 @@ int hdmi_audio_config(unsigned int format)
 
 static void _hdmi_rdma_irq_handler(DISP_MODULE_ENUM module, unsigned int param)
 {
-	/*RET_VOID_IF_NOLOG(!is_hdmi_active());*/
 	if (!is_hdmi_active())
 		return;
 
@@ -564,10 +571,12 @@ static void hdmi_state_reset(void)
 
 	if (hdmi_drv->get_state() == HDMI_STATE_ACTIVE) {
 		switch_set_state(&hdmi_switch_data, HDMI_STATE_ACTIVE);
+		hdmi_enable_dvfs(true);
 		hdmi_reschange = HDMI_VIDEO_RESOLUTION_NUM;
 	} else {
 		switch_set_state(&hdmi_switch_data, HDMI_STATE_NO_DEVICE);
 		switch_set_state(&hdmires_switch_data, 0);
+		hdmi_enable_dvfs(false);
 	}
 }
 
@@ -577,7 +586,6 @@ static void hdmi_state_reset(void)
 	int session_id = 0;
 
 	HDMI_FUNC();
-	/*RET_VOID_IF(IS_HDMI_NOT_ON());*/
 	if (IS_HDMI_NOT_ON())
 		return;
 
@@ -608,7 +616,6 @@ static void hdmi_state_reset(void)
 /*static*/ void hdmi_resume(void)
 {
 	HDMI_LOG("p->state is %d,(0:off, 1:on, 2:standby)\n", atomic_read(&p->state));
-	/*RET_VOID_IF(IS_HDMI_NOT_STANDBY());*/
 	if (IS_HDMI_NOT_STANDBY())
 		return;
 
@@ -631,7 +638,6 @@ static void hdmi_state_reset(void)
 {
 	HDMI_FUNC();
 
-	/*RET_VOID_IF(IS_HDMI_NOT_OFF());*/
 	if (IS_HDMI_NOT_OFF())
 		return;
 
@@ -666,7 +672,6 @@ static void hdmi_state_reset(void)
 /*static*/ void hdmi_power_off(void)
 {
 	HDMI_FUNC();
-	/*RET_VOID_IF(IS_HDMI_OFF());*/
 	if (IS_HDMI_OFF())
 		return;
 
@@ -804,17 +809,19 @@ int hdmi_recompute_bg(int src_w, int src_h)
 void hdmi_state_callback(enum HDMI_STATE state)
 {
 	HDMI_LOG("[hdmi]%s, state = %d\n", __func__, state);
-	/*RET_VOID_IF((p->is_force_disable == true));*/
-	/*RET_VOID_IF(IS_HDMI_FAKE_PLUG_IN());*/
 	if ((p->is_force_disable == true) || (IS_HDMI_FAKE_PLUG_IN()))
 		return;
 
 	switch (state) {
 	case HDMI_STATE_NO_DEVICE:
 		{
+#ifdef MHL_DYNAMIC_VSYNC_OFFSET
+			ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL_EVENT, false);
+#endif
 			hdmi_suspend();
 			switch_set_state(&hdmi_switch_data, HDMI_STATE_NO_DEVICE);
 			switch_set_state(&hdmires_switch_data, 0);
+			hdmi_enable_dvfs(false);
 
 #if defined(CONFIG_MTK_SMARTBOOK_SUPPORT) && defined(CONFIG_HAS_SBSUSPEND)
 			if (hdmi_params->cabletype == MHL_SMB_CABLE)
@@ -836,10 +843,14 @@ void hdmi_state_callback(enum HDMI_STATE state)
 			if (atomic_read(&p->state) > HDMI_POWER_STATE_OFF) {
 				hdmi_reschange = HDMI_VIDEO_RESOLUTION_NUM;
 				switch_set_state(&hdmi_switch_data, HDMI_STATE_ACTIVE);
+				hdmi_enable_dvfs(true);
 			}
 #if defined(CONFIG_MTK_SMARTBOOK_SUPPORT) && defined(CONFIG_HAS_SBSUSPEND)
 			if (hdmi_params->cabletype == MHL_SMB_CABLE)
 				sb_plug_in();
+#endif
+#ifdef MHL_DYNAMIC_VSYNC_OFFSET
+			ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_MHL_EVENT, true);
 #endif
 			HDMI_LOG("[hdmi]%s, state = %d out!\n", __func__, state);
 			break;
@@ -894,14 +905,12 @@ int hdmi_enable(int enable)
 int hdmi_power_enable(int enable)
 {
 	HDMI_FUNC();
-	/*RETIF(!p->is_enabled, 0);*/
 	if (!p->is_enabled) {
 		HDMI_LOG("return in %d\n", __LINE__);
 		return 0;
 	}
 
 	if (enable) {
-		/*RETIF(otg_enable_status, 0);*/
 		if (otg_enable_status) {
 			HDMI_LOG("return in %d\n", __LINE__);
 			return 0;
@@ -918,10 +927,6 @@ int hdmi_power_enable(int enable)
 void hdmi_force_disable(int enable)
 {
 	HDMI_FUNC();
-/*
-	RETIF(!p->is_enabled, 0);
-	RETIF(IS_HDMI_OFF(), 0);
-*/
 	if (!p->is_enabled) {
 		HDMI_LOG("return in %d\n", __LINE__);
 		return;
@@ -960,10 +965,6 @@ void hdmi_force_disable(int enable)
 void hdmi_set_USBOTG_status(int status)
 {
 	HDMI_LOG("MTK_HDMI_USBOTG_STATUS, arg=%d, enable %d\n", status, p->is_enabled);
-/*
-	RETIF(!p->is_enabled, 0);
-	RETIF((hdmi_params->cabletype != MHL_CABLE), 0);
-*/
 	if (!p->is_enabled) {
 		HDMI_LOG("return in %d\n", __LINE__);
 		return;
@@ -977,7 +978,6 @@ void hdmi_set_USBOTG_status(int status)
 		otg_enable_status = true;
 	else {
 		otg_enable_status = false;
-		/*RETIF(p->is_force_disable, 0);*/
 		if (p->is_force_disable) {
 			HDMI_LOG("return in %d\n", __LINE__);
 			return;
@@ -988,7 +988,6 @@ void hdmi_set_USBOTG_status(int status)
 
 int hdmi_set_audio_enable(int enable)
 {
-	/*RETIF(!p->is_enabled, 0);*/
 	if (!p->is_enabled) {
 		HDMI_LOG("return in %d\n", __LINE__);
 		return 0;
@@ -1000,7 +999,6 @@ int hdmi_set_audio_enable(int enable)
 
 void hdmi_set_video_enable(int enable)
 {
-	/*RETIF(!p->is_enabled, 0);*/
 	if (!p->is_enabled) {
 		HDMI_LOG("return in %d\n", __LINE__);
 		return;
@@ -1017,7 +1015,6 @@ int hdmi_set_resolution(int res)
 
 	HDMI_LOG("video resolution configuration, res:%d, old res:%ld, video_on:%d\n",
 		res, hdmi_reschange, p->is_mhl_video_on);
-	/*RETIF(!p->is_enabled, 0);*/
 	if (!p->is_enabled) {
 		HDMI_LOG("return in %d\n", __LINE__);
 		return 0;
@@ -1276,14 +1273,14 @@ int hdmi_init(void)
 
 int hdmi_post_init(void)
 {
-	/*int boot_mode = 0;*/
-	/*struct EXTD_DRIVER *extd_factory_driver = NULL;*/
+	int boot_mode = 0;
+	const struct EXTD_DRIVER *extd_factory_driver = NULL;
+
 	static const struct HDMI_UTIL_FUNCS hdmi_utils = {
 		.udelay = hdmi_udelay,
 		.mdelay = hdmi_mdelay,
 		.state_callback = hdmi_state_callback,
 	};
-	HDMI_ERR(" start\n");
 
 	hdmi_drv = (struct HDMI_DRIVER *) HDMI_GetDriver();
 
@@ -1299,15 +1296,13 @@ int hdmi_post_init(void)
 
 	hdmi_drv->init();	/* need to remove to power on function Donglei */
 	if (hdmi_drv->register_callback != NULL) {
-		/*
-		boot_mode = get_boot_mode();
+		boot_mode = (int)get_boot_mode();
 		if (boot_mode == FACTORY_BOOT || boot_mode == ATE_FACTORY_BOOT) {
 			extd_factory_driver = EXTD_Factory_HDMI_Driver();
 			if (extd_factory_driver)
 				extd_factory_driver->init();
 		} else
-		*/
-		HDMI_ERR("[hdmi} register_callback\n");
+
 		hdmi_drv->register_callback(hdmi_state_callback);
 	}
 
@@ -1321,8 +1316,7 @@ int hdmi_post_init(void)
 	init_waitqueue_head(&hdmi_fence_release_wq);
 	init_waitqueue_head(&hdmi_vsync_wq);
 
-	/*Extd_DBG_Init();*/
-	HDMI_ERR(" done\n");
+	Extd_DBG_Init();
 	return 0;
 }
 #endif
@@ -1337,6 +1331,7 @@ const struct EXTD_DRIVER *EXTD_HDMI_Driver(void)
 		.enable =            hdmi_enable,
 		.power_enable =      hdmi_power_enable,
 		.set_audio_enable =  hdmi_set_audio_enable,
+		.set_audio_format =  hdmi_audio_config,
 		.set_resolution =    hdmi_set_resolution,
 		.get_dev_info =      hdmi_get_dev_info,
 		.get_capability =    hdmi_get_capability,

@@ -86,9 +86,7 @@ obj-$(CONFIG_MTK_CHIP) += chip/
 obj-$(CONFIG_MTK_DEVAPC_DRIVER) += devapc/
 obj-$(CONFIG_MTK_DEVINFO_DRIVER) += devinfo/
 obj-$(CONFIG_MTK_LCM) += lcm/
-ifneq ($(CONFIG_MTK_HDMI_SUPPORT)_$(CONFIG_MTK_EPD_SUPPORT), _)
 obj-y += ext_disp/
-endif
 obj-$(CONFIG_MTK_HDMI_SUPPORT) += hdmi/
 obj-$(CONFIG_MTK_FB) += video/
 obj-$(CONFIG_MTK_GPU_SUPPORT) += gpu/

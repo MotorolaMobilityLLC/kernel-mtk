@@ -264,7 +264,7 @@ DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	&ddp_driver_pwm,	/* DISP_MODULE_PWM0   , */
 	&ddp_driver_wdma,	/* DISP_MODULE_WDMA1 , */
 	&ddp_driver_dsi0,	/* DISP_MODULE_DSI0  , */
-	0,	/* DISP_MODULE_DPI   , */
+	&ddp_driver_dpi,	/* DISP_MODULE_DPI   , */
 	0,			/* DISP_MODULE_SMI, */
 	0,			/* DISP_MODULE_CONFIG, */
 	0,			/* DISP_MODULE_CMDQ, */

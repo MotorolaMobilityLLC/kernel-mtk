@@ -721,7 +721,7 @@ static int __init disp_probe_1(void)
 	/* mipi tx reg map here */
 	dsi_reg_va = dispsys_reg[DISP_REG_DSI0];
 	mipi_tx_reg = dispsys_reg[DISP_REG_MIPI];
-/*	DPI_REG = (PDPI_REGS)dispsys_reg[DISP_REG_DPI0];*/
+	DPI_REG = (struct DPI_REGS *)dispsys_reg[DISP_REG_DPI0];
 
 	/* //// power on MMSYS for early porting */
 #ifdef CONFIG_MTK_FPGA
