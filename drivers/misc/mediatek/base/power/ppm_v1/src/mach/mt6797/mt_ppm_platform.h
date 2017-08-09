@@ -27,8 +27,8 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
-#define DLPT_MAX_REAL_POWER_FY	(11546)
-#define DLPT_MAX_REAL_POWER_SB	(13763)
+#define DLPT_MAX_REAL_POWER_FY	(12504)
+#define DLPT_MAX_REAL_POWER_SB	(18381)
 
 #define	LCMOFF_MIN_FREQ		(598000)	/* TODO: check this */
 #define	PTPOD_FREQ_IDX_FY	(7)
