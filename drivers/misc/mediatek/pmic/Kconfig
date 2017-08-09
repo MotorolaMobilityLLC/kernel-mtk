@@ -3,20 +3,31 @@
 #
 
 config MTK_PMIC_NEW_ARCH
-	tristate "MediaTek Power Management Unit driver"
+	tristate "MediaTek Power Management New Arch driver"
 	default n
 	---help---
-	  This selects for MediaTek(R) PMIC driver.
+	  This selects for MediaTek(R) PMIC New Arch driver.
+          Separate pmic feature form Power folder that also have battery and charging feature.
 	  Select y to support MTK PMIC NEW ARCH.
 	  If so, you should choose the corresponding main chip to follow.
 
 	  Select n to support MTK PMIC LEGACY ARCH.
 
 config MTK_PMIC_CHIP_MT6353
-	bool "MediaTek PMIC MT6353"
+	tristate "MediaTek PMIC MT6353 Driver"
 	default n
 	---help---
-	  Mediatek PMIC MT6353
+	  This selects for MediaTek(R) PMIC MT6353 driver.
+	  It's main chip type.
+	  Set y to support this driver.
+	  Set n and choose other chip.
+
+config MTK_PMIC_CHIP_MT6335
+	tristate "MediaTek Power MT6335 Driver"
+	default n
+	---help---
+	  This selects for MediaTek(R) PMIC MT6335 driver.
+	  It's main chip type.
 	  Set y to support this driver.
 	  Set n and choose other chip.
 
