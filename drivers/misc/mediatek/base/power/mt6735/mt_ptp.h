@@ -52,12 +52,16 @@ struct devinfo_ptp_tag {
 #define PTP_AGECOUNT	    (PTP_BASEADDR + 0x27C)
 #define PTP_SMSTATE0        (PTP_BASEADDR + 0x280)
 #define PTP_SMSTATE1        (PTP_BASEADDR + 0x284)
+#define VDESIGN30           (PTP_BASEADDR + 0x26C)
+#define VDESIGN74           (PTP_BASEADDR + 0x270)
+/* #define TEMPADCENADDR       (PTP_BASEADDR + 0x074) */
 
 #define PTP_PTPCORESEL      (PTP_BASEADDR + 0x400)
 /* #define APBSEL              3:0 */
 
 #define PTP_THERMINTST      (PTP_BASEADDR + 0x404)
 #define PTP_PTPODINTST      (PTP_BASEADDR + 0x408)
+
 #define PTP_THSTAGE0ST      (PTP_BASEADDR + 0x40C)
 #define PTP_THSTAGE1ST      (PTP_BASEADDR + 0x410)
 #define PTP_THSTAGE2ST      (PTP_BASEADDR + 0x414)
@@ -165,15 +169,11 @@ struct PTP_INIT_T {
 
 typedef enum {
 	PTP_CTRL_CPU = 0,
-	PTP_CTRL_SOC = 1,
-	PTP_CTRL_LTE = 2,
 	NR_PTP_CTRL,
 } ptp_ctrl_id;
 
 typedef enum {
 	PTP_DET_CPU = PTP_CTRL_CPU,
-	PTP_DET_SOC = PTP_CTRL_SOC,
-	PTP_DET_LTE = PTP_CTRL_LTE,
 	NR_PTP_DET,
 } ptp_det_id;
 
@@ -187,20 +187,5 @@ extern int mt_ptp_status(ptp_det_id id);
 extern int get_ptpod_status(void);
 extern unsigned int get_vcore_ptp_volt(int uv);
 extern unsigned int is_have_550(void);
-
-#ifdef CONFIG_PTP_AEE_RR_REC
-extern void aee_rr_rec_ptp_cpu_big_volt(u64 val);
-extern void aee_rr_rec_ptp_cpu_little_volt(u64 val);
-extern void aee_rr_rec_ptp_gpu_volt(u64 val);
-extern void aee_rr_rec_ptp_temp(u64 val);
-extern void aee_rr_rec_ptp_status(u8 val);
-
-extern u64 aee_rr_curr_ptp_cpu_big_volt(void);
-extern u64 aee_rr_curr_ptp_cpu_little_volt(void);
-extern u64 aee_rr_curr_ptp_gpu_volt(void);
-extern u64 aee_rr_curr_ptp_temp(void);
-extern u8 aee_rr_curr_ptp_status(void);
-#endif
-
 
 #endif
