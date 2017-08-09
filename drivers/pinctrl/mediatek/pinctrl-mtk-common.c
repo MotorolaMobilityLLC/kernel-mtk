@@ -1204,11 +1204,13 @@ static int mtk_eint_set_type(struct irq_data *d,
 static int mtk_eint_irq_set_wake(struct irq_data *d, unsigned int on)
 {
 	struct mtk_pinctrl *pctl = irq_data_get_irq_chip_data(d);
+	int shift = d->hwirq & 0x1f;
+	int reg = d->hwirq >> 5;
 
 	if (on)
-		set_bit(d->hwirq, (unsigned long *)pctl->wake_mask);
+		pctl->wake_mask[reg] |= BIT(shift);
 	else
-		clear_bit(d->hwirq, (unsigned long *)pctl->wake_mask);
+		pctl->wake_mask[reg] &= ~BIT(shift);
 
 	return 0;
 }
@@ -1227,7 +1229,7 @@ static void mtk_eint_chip_write_mask(const struct mtk_eint_offsets *chip,
 }
 
 static void mtk_eint_chip_read_mask(const struct mtk_eint_offsets *chip,
-	void __iomem *eint_reg_base, u32 *buf)
+		void __iomem *eint_reg_base, u32 *buf)
 {
 	int port;
 	void __iomem *reg;
@@ -1235,16 +1237,16 @@ static void mtk_eint_chip_read_mask(const struct mtk_eint_offsets *chip,
 	for (port = 0; port < chip->ports; port++) {
 		reg = eint_reg_base + chip->mask + (port << 2);
 		buf[port] = ~readl_relaxed(reg);
+		/* Mask is 0 when irq is enabled, and 1 when disabled. */
 	}
 }
 
 static int mtk_eint_suspend(struct device *device)
 {
 	void __iomem *reg;
-	struct platform_device *pdev = to_platform_device(device);
-	struct mtk_pinctrl *pctl = platform_get_drvdata(pdev);
+	struct mtk_pinctrl *pctl = dev_get_drvdata(device);
 	const struct mtk_eint_offsets *eint_offsets =
-		&pctl->devdata->eint_offsets;
+			&pctl->devdata->eint_offsets;
 
 	reg = pctl->eint_reg_base;
 	mtk_eint_chip_read_mask(eint_offsets, reg, pctl->cur_mask);
@@ -1255,13 +1257,12 @@ static int mtk_eint_suspend(struct device *device)
 
 static int mtk_eint_resume(struct device *device)
 {
-	struct platform_device *pdev = to_platform_device(device);
-	struct mtk_pinctrl *pctl = platform_get_drvdata(pdev);
+	struct mtk_pinctrl *pctl = dev_get_drvdata(device);
 	const struct mtk_eint_offsets *eint_offsets =
-		&pctl->devdata->eint_offsets;
+			&pctl->devdata->eint_offsets;
 
 	mtk_eint_chip_write_mask(eint_offsets,
-		pctl->eint_reg_base, pctl->cur_mask);
+			pctl->eint_reg_base, pctl->cur_mask);
 
 	return 0;
 }
@@ -1536,16 +1537,20 @@ int mtk_pctrl_init(struct platform_device *pdev,
 		goto chip_error;
 	}
 
-	ports_buf = ALIGN(pctl->devdata->eint_offsets.ports,
-			sizeof(long)/sizeof(u32));
-	pctl->wake_mask = devm_kcalloc(&pdev->dev, ports_buf * 2,
+	ports_buf = pctl->devdata->eint_offsets.ports;
+	pctl->wake_mask = devm_kcalloc(&pdev->dev, ports_buf,
 					sizeof(*pctl->wake_mask), GFP_KERNEL);
 	if (!pctl->wake_mask) {
 		ret = -ENOMEM;
 		goto chip_error;
 	}
 
-	pctl->cur_mask = pctl->wake_mask + ports_buf;
+	pctl->cur_mask = devm_kcalloc(&pdev->dev, ports_buf,
+					sizeof(*pctl->cur_mask), GFP_KERNEL);
+	if (!pctl->cur_mask) {
+		ret = -ENOMEM;
+		goto chip_error;
+	}
 
 	pctl->eint_dual_edges = devm_kcalloc(&pdev->dev, pctl->devdata->ap_num,
 					     sizeof(int), GFP_KERNEL);
