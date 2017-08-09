@@ -387,7 +387,7 @@ static long cam_cal_drv_compat_ioctl(struct file *filp, unsigned int cmd, unsign
 		ret = filp->f_op->unlocked_ioctl(filp, CAM_CALIOC_S_WRITE,
 						 (unsigned long)data);
 		/*err = compat_put_cal_info_struct(data32, data);*/
-		/*LukeHu--Write Don't need*/
+		/*LukeHu--151122=write won't need*/
 
 		if (err != 0)
 			CAM_CALERR("compat_put_acdk_sensor_getinfo_struct failed\n");
@@ -397,7 +397,6 @@ static long cam_cal_drv_compat_ioctl(struct file *filp, unsigned int cmd, unsign
 	default:
 		return -ENOIOCTLCMD;
 	}
-	CAM_CALDB("cam_cal_drv_compat_ioctl End!\n");
 
 }
 
@@ -425,14 +424,11 @@ static long cam_cal_drv_ioctl(
 	stCAM_CAL_INFO_STRUCT *ptempbuf = NULL;
 	stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
 
-
 #ifdef CAM_CALGETDLT_DEBUG
 	struct timeval ktv1, ktv2;
 	unsigned long TimeIntervalUS;
 #endif
 
-	/*if (_IOC_NONE == _IOC_DIR(a_u4Command)) {
-	} else {*/
 	if (_IOC_NONE != _IOC_DIR(a_u4Command)) {
 		pBuff = kmalloc(sizeof(stCAM_CAL_INFO_STRUCT), GFP_KERNEL);
 		if (NULL == pBuff) {
@@ -457,7 +453,7 @@ static long cam_cal_drv_ioctl(
 		CAM_CALDB("ioctl allocate mem failed\n");
 		return -ENOMEM;
 	}
-	CAM_CALDB(" init Working buffer address=0x%p, length=%d, command=0x%x, sensorID=%x\n",
+	CAM_CALDB("init Working buffer address=0x%p, length=%d, command=0x%x, sensorID=%x\n",
 		pu1Params, ptempbuf->u4Length, a_u4Command, ptempbuf->sensorID);
 
 	if (copy_from_user((u8 *)pu1Params, (u8 *)ptempbuf->pu1Params, ptempbuf->u4Length)) {
@@ -555,8 +551,7 @@ static long cam_cal_drv_ioctl(
 
 	if (_IOC_READ & _IOC_DIR(a_u4Command)) {
 		/*copy data to user space buffer, keep other input paremeter unchange.*/
-		CAM_CALDB("to user length %d\n", ptempbuf->u4Length);
-		CAM_CALDB("to user Working buffer address 0x%p\n", pu1Params);
+		CAM_CALDB("to user length %d, Working buffer address 0x%p\n", ptempbuf->u4Length, pu1Params);
 		if (copy_to_user((u8 __user *) ptempbuf->pu1Params , (u8 *)pu1Params , ptempbuf->u4Length)) {
 			kfree(pBuff);
 			kfree(pu1Params);
