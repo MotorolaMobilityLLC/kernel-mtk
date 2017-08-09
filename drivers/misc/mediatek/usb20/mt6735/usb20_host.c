@@ -90,8 +90,6 @@ void mt_usb_set_vbus(struct musb *musb, int is_on)
 		fan5405_set_opa_mode(1);
 		fan5405_set_otg_pl(1);
 		fan5405_set_otg_en(1);
-	#elif defined(CONFIG_MTK_NCP1851_SUPPORT) || defined(CONFIG_MTK_BQ24196_SUPPORT)
-		tbl_charger_otg_vbus((work_busy(&musb->id_pin_work.work) << 8) | 1);
 	#elif defined(CONFIG_MTK_BQ24261_SUPPORT)
 		bq24261_set_en_boost(1);
 	#elif defined(CONFIG_MTK_BQ24296_SUPPORT)
@@ -99,6 +97,9 @@ void mt_usb_set_vbus(struct musb *musb, int is_on)
 		bq24296_set_boostv(0x7); /* boost voltage 4.998V */
 		bq24296_set_boost_lim(0x1); /* 1.5A on VBUS */
 		bq24296_set_en_hiz(0x0);
+	#elif defined(CONFIG_MTK_BQ24196_SUPPORT)
+		bq24196_set_otg_config(0x01);	/* OTG */
+		bq24196_set_boost_lim(0x01);	/* 1.3A on VBUS */
 	#elif defined(CONFIG_MTK_NCP1854_SUPPORT)
 		ncp1854_set_otg_en(0);
 		ncp1854_set_chg_en(0);
@@ -122,14 +123,28 @@ void mt_usb_set_vbus(struct musb *musb, int is_on)
 	#ifdef CONFIG_MTK_FAN5405_SUPPORT
 		fan5405_reg_config_interface(0x01, 0x30);
 		fan5405_reg_config_interface(0x02, 0x8e);
-	#elif defined(CONFIG_MTK_NCP1851_SUPPORT) || defined(CONFIG_MTK_BQ24196_SUPPORT)
-		tbl_charger_otg_vbus((work_busy(&musb->id_pin_work.work) << 8) | 0);
 	#elif defined(CONFIG_MTK_BQ24261_SUPPORT)
 		bq24261_set_en_boost(0);
 	#elif defined(CONFIG_MTK_BQ24296_SUPPORT)
 		bq24296_set_otg_config(0);
+	#elif defined(CONFIG_MTK_BQ24196_SUPPORT)
+		bq24196_set_otg_config(0x0);	/* OTG disabled */
 	#elif defined(CONFIG_MTK_NCP1854_SUPPORT)
 		ncp1854_set_otg_en(0x0);
+
+		/*for DRVVBUS gpio issue*/
+		#ifdef CONFIG_OF
+		#if defined(CONFIG_MTK_LEGACY)
+		mt_set_gpio_mode(drvvbus_pin, drvvbus_pin_mode);
+		mt_set_gpio_out(drvvbus_pin, GPIO_OUT_ZERO);
+		#else
+		pr_debug("****%s:%d NCP1854 Drive VBUS LOW KS!!!!!\n", __func__, __LINE__);
+		pinctrl_select_state(pinctrl, pinctrl_drvvbus_low);
+		#endif
+		#else
+		mt_set_gpio_mode(GPIO_OTG_DRVVBUS_PIN, GPIO_OTG_DRVVBUS_PIN_M_GPIO);
+		mt_set_gpio_out(GPIO_OTG_DRVVBUS_PIN, GPIO_OUT_ZERO);
+		#endif
 	#else
 		#ifdef CONFIG_OF
 		#if defined(CONFIG_MTK_LEGACY)
