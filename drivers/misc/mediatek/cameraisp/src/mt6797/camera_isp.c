@@ -784,7 +784,7 @@ typedef enum _eChannel {
 		cnt;                                                \
 	})
 
-#define nDMA_ERR_CAM    (9)
+#define nDMA_ERR_CAM    (10)
 #define nDMA_ERR_UNI    (5)
 #define nDMA_ERR    (nDMA_ERR_CAM + nDMA_ERR_UNI)
 
@@ -3331,12 +3331,14 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 	dmaerr[6] = (MUINT32)ISP_RD32(CAM_REG_BPCI_ERR_STAT(module));
 	dmaerr[7] = (MUINT32)ISP_RD32(CAM_REG_CACI_ERR_STAT(module));
 	dmaerr[8] = (MUINT32)ISP_RD32(CAM_REG_LSCI_ERR_STAT(module));
+	dmaerr[9] = (MUINT32)ISP_RD32(CAM_REG_PDO_ERR_STAT(module));
 
-	dmaerr[9] = (MUINT32)ISP_RD32(CAM_UNI_REG_EISO_ERR_STAT(ISP_UNI_A_IDX));
-	dmaerr[10] = (MUINT32)ISP_RD32(CAM_UNI_REG_FLKO_ERR_STAT(ISP_UNI_A_IDX));
-	dmaerr[11] = (MUINT32)ISP_RD32(CAM_UNI_REG_RSSO_A_ERR_STAT(ISP_UNI_A_IDX));
-	dmaerr[12] = (MUINT32)ISP_RD32(CAM_UNI_REG_RSSO_B_ERR_STAT(ISP_UNI_A_IDX));
-	dmaerr[13] = (MUINT32)ISP_RD32(CAM_UNI_REG_RAWI_ERR_STAT(ISP_UNI_A_IDX));
+
+	dmaerr[10] = (MUINT32)ISP_RD32(CAM_UNI_REG_EISO_ERR_STAT(ISP_UNI_A_IDX));
+	dmaerr[11] = (MUINT32)ISP_RD32(CAM_UNI_REG_FLKO_ERR_STAT(ISP_UNI_A_IDX));
+	dmaerr[12] = (MUINT32)ISP_RD32(CAM_UNI_REG_RSSO_A_ERR_STAT(ISP_UNI_A_IDX));
+	dmaerr[13] = (MUINT32)ISP_RD32(CAM_UNI_REG_RSSO_B_ERR_STAT(ISP_UNI_A_IDX));
+	dmaerr[14] = (MUINT32)ISP_RD32(CAM_UNI_REG_RAWI_ERR_STAT(ISP_UNI_A_IDX));
 
 	IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
 		"mmsys:0x%x, imgsys:0x%x, camsys:0x%x", ISP_RD32(ISP_MMSYS_CONFIG_BASE + 0x100),
@@ -3348,7 +3350,7 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 	switch (module) {
 	case ISP_CAM_A_IDX:
 		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
-		"CAM_A:IMGO:0x%x,RRZO:0x%x,AAO=0x%x,AFO=0x%x,LCSO=0x%x,UFEO=0x%x,BPCI:0x%x,CACI:0x%x,LSCI=0x%x\n",
+		"CAM_A:IMGO:0x%x,RRZO:0x%x,AAO=0x%x,AFO=0x%x,LCSO=0x%x,UFEO=0x%x,BPCI:0x%x,CACI:0x%x,LSCI=0x%x,PDO=0x%x\n",
 			dmaerr[0], \
 			dmaerr[1], \
 			dmaerr[2], \
@@ -3357,20 +3359,21 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 			dmaerr[5], \
 			dmaerr[6], \
 			dmaerr[7], \
-			dmaerr[8]);
+			dmaerr[8], \
+			dmaerr[9]);
 		if (flk2_sel == 0) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
-				"CAM_A+UNI: FLKO:0x%x, RAWI:0x%x\n", dmaerr[10], dmaerr[13]);
+				"CAM_A+UNI: FLKO:0x%x, RAWI:0x%x\n", dmaerr[11], dmaerr[14]);
 		}
 		if (hds2_sel == 0) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
 				"CAM_A+UNI: EISO:0x%x, RSSO_A:0x%x, RAWI:0x%x\n",
-				dmaerr[9], dmaerr[11], dmaerr[13]);
+				dmaerr[10], dmaerr[12], dmaerr[14]);
 		}
 		break;
 	case ISP_CAM_B_IDX:
 		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
-		"CAM_B:IMGO:0x%x,RRZO:0x%x,AAO=0x%x,AFO=0x%x,LCSO=0x%x,UFEO=0x%x,BPCI:0x%x,CACI:0x%x,LSCI=0x%x\n",
+		"CAM_B:IMGO:0x%x,RRZO:0x%x,AAO=0x%x,AFO=0x%x,LCSO=0x%x,UFEO=0x%x,BPCI:0x%x,CACI:0x%x,LSCI=0x%x,PDO=0x%x\n",
 			dmaerr[0], \
 			dmaerr[1], \
 			dmaerr[2], \
@@ -3379,15 +3382,16 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 			dmaerr[5], \
 			dmaerr[6], \
 			dmaerr[7], \
-			dmaerr[8]);
+			dmaerr[8], \
+			dmaerr[9]);
 		if (flk2_sel == 1) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
-				"CAM_B+UNI: FLKO:0x%x, RAWI:0x%x\n", dmaerr[10], dmaerr[13]);
+				"CAM_B+UNI: FLKO:0x%x, RAWI:0x%x\n", dmaerr[11], dmaerr[14]);
 		}
 		if (hds2_sel == 1) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_ERR,
 				"CAM_B+UNI: EISO:0x%x, RSSO_A:0x%x, RAWI:0x%x\n",
-				dmaerr[9], dmaerr[11], dmaerr[13]);
+				dmaerr[10], dmaerr[12], dmaerr[14]);
 		}
 		break;
 	default:
@@ -3422,6 +3426,7 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 	g_DmaErr_CAM[module][11] |= dmaerr[11];
 	g_DmaErr_CAM[module][12] |= dmaerr[12];
 	g_DmaErr_CAM[module][13] |= dmaerr[13];
+	g_DmaErr_CAM[module][14] |= dmaerr[14];
 }
 
 
