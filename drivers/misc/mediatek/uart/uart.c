@@ -2734,6 +2734,7 @@ static const struct of_device_id apuart_of_ids[] = {
 #endif
 #endif
 	{.compatible = "mediatek,mt6735-uart",},
+	{.compatible = "mediatek,mt6755-uart",},
 	{}
 };
 #endif

@@ -4,10 +4,9 @@
 #include <asm/irq.h>
 #include <linux/irq.h>
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
-#include <linux/pinctrl/consumer.h>
-#endif				/* !defined(CONFIG_MTK_LEGACY) */
+#endif				/* !defined(CONFIG_MTK_CLKMGR) */
 
 /******************************************************************************
  * Function Configuration
@@ -42,19 +41,10 @@
 /*---------------------------------------------------------------------------*/
 #define UART_MAJOR                  204
 #define UART_MINOR                  209
-
-#ifdef CONFIG_ARCH_MT6735M
-#define  CONFIG_VERSION_D2
-#endif				/* CONFIG_ARCH_MT6735M */
-
 #if defined(CONFIG_MTK_FPGA)
 #define UART_NR                     2
 #else
-#ifndef CONFIG_VERSION_D2
-#define UART_NR                     5
-#else				/* CONFIG_DENALI_2 */
-#define UART_NR                     4
-#endif				/* CONFIG_DENALI_2 */
+#define UART_NR                     2
 #endif
 
 #ifndef FALSE
@@ -75,9 +65,6 @@
 #define UART2_IRQ_ID	UART1_IRQ_BIT_ID
 #define UART3_IRQ_ID	UART2_IRQ_BIT_ID
 #define UART4_IRQ_ID	UART3_IRQ_BIT_ID
-#ifndef CONFIG_VERSION_D2
-#define UART5_IRQ_ID	UART4_IRQ_BIT_ID
-#endif				/* CONFIG_DENALI_2 */
 
 #define UART1_VFF_TX_IRQ_ID  AP_DMA_UART0_TX_IRQ_BIT_ID
 #define UART1_VFF_RX_IRQ_ID  AP_DMA_UART0_RX_IRQ_BIT_ID
@@ -85,25 +72,17 @@
 #define UART2_VFF_RX_IRQ_ID  AP_DMA_UART1_RX_IRQ_BIT_ID
 #define UART3_VFF_TX_IRQ_ID  AP_DMA_UART2_TX_IRQ_BIT_ID
 #define UART3_VFF_RX_IRQ_ID  AP_DMA_UART2_RX_IRQ_BIT_ID
-#define UART4_VFF_TX_IRQ_ID  AP_DMA_UART3_TX_IRQ_BIT_ID
-#define UART4_VFF_RX_IRQ_ID  AP_DMA_UART3_RX_IRQ_BIT_ID
-#ifndef CONFIG_VERSION_D2
-#define UART5_VFF_TX_IRQ_ID  AP_DMA_UART4_TX_IRQ_BIT_ID
-#define UART5_VFF_RX_IRQ_ID  AP_DMA_UART4_RX_IRQ_BIT_ID
-#endif				/* CONFIG_DENALI_2 */
 #endif
 /*------ PDN Section -----------------------*/
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
-#define PDN_FOR_UART1	MT_CG_PERI_UART0
-#define PDN_FOR_UART2	MT_CG_PERI_UART1
-#define PDN_FOR_UART3	MT_CG_PERI_UART2
-#define PDN_FOR_UART4	MT_CG_PERI_UART3
-#ifndef CONFIG_VERSION_D2
-#define PDN_FOR_UART5	MT_CG_PERI_UART4
-#endif				/* CONFIG_DENALI_2 */
-#endif				/* defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
-
-#define PDN_FOR_DMA     MT_CG_PERI_APDMA
+#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
+#define PDN_FOR_UART1   MT_CG_INFRA_UART0
+#define PDN_FOR_UART2   MT_CG_INFRA_UART1
+/*
+#define PDN_FOR_UART3   MT_CG_INFRA_UART2
+#define PDN_FOR_UART4   MT_CG_INFRA_UART3
+*/
+#define PDN_FOR_DMA     MT_CG_INFRA_APDMA
+#endif
 
 #if (defined(CONFIG_FIQ_DEBUGGER_CONSOLE) && defined(CONFIG_FIQ_DEBUGGER))
 #define DEFAULT_FIQ_UART_PORT           (3)
@@ -124,33 +103,25 @@
 #define MTK_SYSCLK_3072          30720000
 #define MTK_SYSCLK_1536          15360000
 /*---------------------------------------------------------------------------*/
-/* FIXME: MT6593 FPGA porting*/
+/*FIXME: MT6593 FPGA porting*/
 #ifdef CONFIG_MTK_FPGA
-#ifdef FIX_TO_26M
-#define UART_SYSCLK                 MTK_SYSCLK_26
-#else
 #define UART_SYSCLK                 12000000
-#endif
 #else
 #define UART_SYSCLK                 MTK_SYSCLK_26
 #endif
 
 /*---------------------------------------------------------------------------*/
-#define ISWEXT          (0x80000000)	/* extended bit in c_iflag */
+#define ISWEXT          (0x80000000)	/*extended bit in c_iflag */
 /*---------------------------------------------------------------------------*/
-/* the size definition of VFF */
-#define C_UART1_VFF_TX_SIZE (1024)	/* the size must be 8-byte alignment */
-#define C_UART1_VFF_RX_SIZE (1024)	/* the size must be 8-byte alignment */
-#define C_UART2_VFF_TX_SIZE (8192)	/* the size must be 8-byte alignment */
-#define C_UART2_VFF_RX_SIZE (8192)	/* the size must be 8-byte alignment */
-#define C_UART3_VFF_TX_SIZE (8192)	/* the size must be 8-byte alignment */
-#define C_UART3_VFF_RX_SIZE (8192)	/* the size must be 8-byte alignment */
-#define C_UART4_VFF_TX_SIZE (1024)	/* the size must be 8-byte alignment */
-#define C_UART4_VFF_RX_SIZE (1024)	/* the size must be 8-byte alignment */
-#ifndef CONFIG_VERSION_D2
-#define C_UART5_VFF_TX_SIZE (1024)	/* the size must be 8-byte alignment */
-#define C_UART5_VFF_RX_SIZE (1024)	/* the size must be 8-byte alignment */
-#endif				/* CONFIG_DENALI_2 */
+/*the size definition of VFF*/
+#define C_UART1_VFF_TX_SIZE (1024)	/*the size must be 8-byte alignment */
+#define C_UART1_VFF_RX_SIZE (1024)	/*the size must be 8-byte alignment */
+#define C_UART2_VFF_TX_SIZE (8192)	/*the size must be 8-byte alignment */
+#define C_UART2_VFF_RX_SIZE (8192)	/*the size must be 8-byte alignment */
+#define C_UART3_VFF_TX_SIZE (8192)	/*the size must be 8-byte alignment */
+#define C_UART3_VFF_RX_SIZE (8192)	/*the size must be 8-byte alignment */
+#define C_UART4_VFF_TX_SIZE (1024)	/*the size must be 8-byte alignment */
+#define C_UART4_VFF_RX_SIZE (1024)	/*the size must be 8-byte alignment */
 /******************************************************************************
  * LOG SETTING
 ******************************************************************************/
@@ -177,14 +148,14 @@ do { \
 		pr_err("  [UART%d]:%c:%4d: " fmt , \
 		   uart->nport, s[0], __LINE__, ##args); \
 	else \
-		pr_notice("  [UART%d]:%c: " fmt , uart->nport, s[0], ##args); \
+		pr_debug("  [UART%d]:%c: " fmt , uart->nport, s[0], ##args); \
 	} \
 } while (0)
 /*---------------------------------------------------------------------------*/
 #define UART_DEBUG_EVT(evt)    ((evt) & uart->evt_mask)
 /*---------------------------------------------------------------------------*/
 #define MSG_FUNC_ENTRY(f)       MSG(FUC, "%s\n", __func__)
-#define MSG_RAW                 pr_notice
+#define MSG_RAW                 pr_debug
 /*---------------------------------------------------------------------------*/
 #else				/* release mode: only enable error log */
 #define MSG(evt, fmt, args...)  MSG##evt(fmt, ##args)
@@ -199,8 +170,8 @@ do { \
 #define MSG_FUNC_ENTRY(f)       do {} while (0)
 #endif /**/
 #define MSG_ERR(fmt, args...)   pr_err("[UARTX]:E:%4d: " fmt, __LINE__, ##args)
-#define MSG_TRC(fmt, args...)   pr_notice("[UARTX]:T: " fmt, ##args)
-#define DEV_TRC(fmt, args...)   pr_notice("[UART%d]:T: " fmt, uart->nport, ##args)
+#define MSG_TRC(fmt, args...)   pr_debug("[UARTX]:T: " fmt, ##args)
+#define DEV_TRC(fmt, args...)   pr_debug("[UART%d]:T: " fmt, uart->nport, ##args)
 #define DEV_ERR(fmt, args...)   pr_err("[UART%d]:E: " fmt, uart->nport, ##args)
 /*---------------------------------------------------------------------------*/
 #define DRV_NAME                "mtk-uart"
@@ -214,9 +185,6 @@ enum {
 	UART_PORT1,
 	UART_PORT2,
 	UART_PORT3,
-#ifndef CONFIG_VERSION_D2
-	UART_PORT4,
-#endif				/* CONFIG_DENALI_2 */
 	UART_PORT_NUM,
 };
 /*---------------------------------------------------------------------------*/
@@ -390,7 +358,7 @@ enum {
 #define UART_AUTORATE_FIX_13M       (1 << 1)
 #define UART_FREQ_SEL_13M           (1 << 2)
 #define UART_RATE_FIX_ALL_13M       (UART_RATE_FIX_13M|UART_AUTORATE_FIX_13M| \
-					UART_FREQ_SEL_13M)
+				     UART_FREQ_SEL_13M)
 
 #define UART_RATE_FIX_26M           (0 << 0)	/* means UARTclk = APBclk / 2 */
 #define UART_AUTORATE_FIX_26M       (0 << 1)
@@ -404,7 +372,7 @@ enum {
 #define UART_AUTOBADUSAM_13M         7
 #define UART_AUTOBADUSAM_26M        15
 #define UART_AUTOBADUSAM_52M        31
-/* #define UART_AUTOBADUSAM_52M        29 */ /* CHECKME! 28 or 29 ? */
+/* #define UART_AUTOBADUSAM_52M        29   CHECKME! 28 or 29 ? */
 #define UART_AUTOBAUDSAM_58_5M      31	/* CHECKME! 31 or 32 ? */
 /*---------------------------------------------------------------------------*/
 /* DMA enable */
@@ -477,7 +445,7 @@ typedef struct {
 #define VFF_FLUSH_B             (1 << 0)
 #define VFF_FLUSH_CLR_B         (0 << 0)
 
-#define VFF_TX_THRE(n)          ((n)*7/8)	/* tx_vff_left_size >= tx_vff_thrs */
+#define VFF_TX_THRE(n)          ((n)*7/8)	/*tx_vff_left_size >= tx_vff_thrs */
 #define VFF_RX_THRE(n)          ((n)*3/4)	/* trigger level of rx vfifo */
 /*---------------------------------------------------------------------------*/
 #endif				/* MTK_UART_H */

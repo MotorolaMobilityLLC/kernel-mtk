@@ -1,10 +1,10 @@
-/* mediatek/platform/mt6735/kernel/drivers/uart/uart.c
+/* mediatek/platform/mt6755/kernel/drivers/uart/uart.c
  *
  * (C) Copyright 2008
  * MediaTek <www.mediatek.com>
  * MingHsien Hsieh <minghsien.hsieh@mediatek.com>
  *
- * MT6735 UART Driver
+ * MT6755 UART Driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,13 +24,13 @@
 
 #if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 #include <mach/mt_clkmgr.h>
-#endif /* defined(CONFIG_MTK_CLKMGR) && !defined (CONFIG_MTK_FPGA)*/
+#endif				/* defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)*/
 
 #if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 #include <mach/mt_idle.h>
 #include "mach/mt_gpio.h"
 #include <cust_gpio_usage.h>
-#endif /* defined(CONFIG_MTK_LEGACY) && !defined (CONFIG_MTK_FPGA)*/
+#endif				/* defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)*/
 
 #include <linux/delay.h>
 #include "include/mtk_uart.h"
@@ -39,6 +39,8 @@
 #include <linux/of_address.h>
 
 #if !defined(CONFIG_MTK_LEGACY)
+/* #include <mach/mt_typedefs.h> */
+
 struct pinctrl *ppinctrl_uart[UART_NR];
 /* pinctrl-names from dtsi.GPIO operations: rx set, rx clear, tx set, tx clear */
 char *uart_gpio_cmds[UART_NR][4] = {
@@ -59,7 +61,7 @@ void set_uart_pinctrl(int idx, struct pinctrl *ppinctrl)
 }
 #endif				/* !defined(CONFIG_MTK_LEGACY) */
 
-#if !defined(CONFIG_MTK_CLKMGR)
+#if !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_CLKMGR)
 /* struct clk *clk_uart_main; */
 struct clk *clk_uart_dma;
 void set_uart_dma_clk(int idx, struct clk *dma_clk)
@@ -67,7 +69,7 @@ void set_uart_dma_clk(int idx, struct clk *dma_clk)
 	pr_debug("[UART%d][CCF]enabled clk_uart%d_dma:%p\n", idx, idx, dma_clk);
 	clk_uart_dma = dma_clk;
 }
-#endif				/* !defined(CONFIG_MTK_CLKMGR) */
+#endif		/* !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_CLKMGR) */
 
 #ifdef ENABLE_RAW_DATA_DUMP
 static void save_tx_raw_data(struct mtk_uart *uart, void *addr);
@@ -90,13 +92,15 @@ unsigned int uart_rx_history_cnt[RECORD_NUMBER];
 /*---------------------------------------------------------------------------*/
 static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	{
+	 /* .tx_mode = UART_NON_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0, */
 	 .tx_mode = UART_TX_VFIFO_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0,
+	 /* .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0, */
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART0_BASE, .irq_num = UART0_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART1, .clr_bit = PDN_FOR_UART1, .pll_id = PDN_FOR_UART1,
-#endif
+#endif	/* defined(CONFIG_MTK_CLKMGR) || defined(CONFIG_MTK_FPGA) */
 	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
 	 },
 	{
@@ -104,19 +108,18 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART1_BASE, .irq_num = UART1_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART2, .clr_bit = PDN_FOR_UART2, .pll_id = PDN_FOR_UART2,
-#endif
+#endif	/* defined(CONFIG_MTK_CLKMGR) || defined(CONFIG_MTK_FPGA) */
 	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
 	 },
+#if 0
 	{
 	 .tx_mode = UART_TX_VFIFO_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0,
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART2_BASE, .irq_num = UART2_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART3, .clr_bit = PDN_FOR_UART3, .pll_id = PDN_FOR_UART3,
-#endif
 	 .sysrq = FALSE, .hw_flow = FALSE, .vff = TRUE,	/* UART3 */
 	 },
 	{
@@ -124,23 +127,10 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART3_BASE, .irq_num = UART3_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART4, .clr_bit = PDN_FOR_UART4, .pll_id = PDN_FOR_UART4,
-#endif
 	 .sysrq = FALSE, .hw_flow = FALSE, .vff = FALSE,	/* UART4 */
 	 },
-#ifndef CONFIG_VERSION_D2
-	{
-	 .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
-	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
-
-	 /* .uart_base = AP_UART4_BASE, .irq_num = UART3_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
-	 .set_bit = PDN_FOR_UART5, .clr_bit = PDN_FOR_UART5, .pll_id = PDN_FOR_UART5,
 #endif
-	 .sysrq = FALSE, .hw_flow = FALSE, .vff = FALSE,	/* UART5 */
-	 },
-#endif				/* CONFIG_DENALI_2 */
 };
 
 /*---------------------------------------------------------------------------*/
@@ -149,9 +139,6 @@ static unsigned long mtk_uart_evt_mask[] = {
 	DBG_EVT_NONE,
 	DBG_EVT_NONE,
 	DBG_EVT_NONE,
-#ifndef CONFIG_VERSION_D2
-	DBG_EVT_NONE,
-#endif				/* CONFIG_DENALI_2 */
 };
 
 /*---------------------------------------------------------------------------*/
@@ -160,20 +147,13 @@ static unsigned long mtk_uart_lsr_status[] = {
 	0,			/* UART2 */
 	0,			/* UART3 */
 	0,			/* UART4 */
-#ifndef CONFIG_VERSION_D2
-	0,			/* UART5 */
-#endif				/* CONFIG_DENALI_2 */
 };
 
 /*---------------------------------------------------------------------------*/
 #if defined(CONFIG_MTK_SERIAL_MODEM_TEST)
     /* #define HW_MISC     (CONFIG_BASE+0x0020)    // mtk does NOT has this register */
     /* unsigned char mask[UART_NR] = { 1 << 3, 1 << 4, 1 << 5, 1 << 6}; */
-static unsigned int modem_uart[UART_NR] = { 1, 0, 0, 1
-#ifndef CONFIG_VERSION_D2
-	    , 1
-#endif				/* CONFIG_DENALI_2 */
-};
+static unsigned int modem_uart[UART_NR] = { 1, 0, 0, 1};
 #endif
 /*---------------------------------------------------------------------------*/
 /* uart control blocks */
@@ -204,11 +184,6 @@ void set_uart_default_settings(int idx)
 	case 3:
 		node = of_find_node_by_name(NULL, "apuart3");
 		break;
-#ifndef CONFIG_VERSION_D2
-	case 4:
-		node = of_find_node_by_name(NULL, "apuart4");
-		break;
-#endif				/* CONFIG_VERSION_2 */
 	default:
 		break;
 	}
@@ -272,12 +247,6 @@ unsigned int get_uart_vfifo_irq_id(int idx)
 	case 7:
 		node = of_find_node_by_name(NULL, "apuart3");
 		break;
-#ifndef CONFIG_VERSION_D2
-	case 8:
-	case 9:
-		node = of_find_node_by_name(NULL, "apuart4");
-		break;
-#endif				/* CONFIG_VERSION_2 */
 	default:
 		break;
 	}
@@ -480,20 +449,21 @@ int mtk_uart_vfifo_enable(struct mtk_uart *uart, struct mtk_uart_vfifo *vfifo)
 		MSG(ERR, "unknown type: %d\n", vfifo->type);
 		return -EINVAL;
 	}
-	/*
-	 * NOTE: For FCR is a read only register reason,
-	 *       special read/write/set/clr function need to use
-	 */
-	/*UART_SET_BITS(UART_FCR_FIFO_INIT, UART_FCR);
-	   UART_CLR_BITS(UART_FCR_DMA1, UART_FCR); */
-	__set_fcr_register(uart, UART_FCR_FIFO_INIT);
-	__clr_fcr_register(uart, UART_FCR_DMA1);
+		/*
+		 * NOTE: For FCR is a read only register reason,
+		 *       special read/write/set/clr function need to use
+		 */
+		/*UART_SET_BITS(UART_FCR_FIFO_INIT, UART_FCR);
+		   UART_CLR_BITS(UART_FCR_DMA1, UART_FCR); */
+		__set_fcr_register(uart, UART_FCR_FIFO_INIT);
+		__clr_fcr_register(uart, UART_FCR_DMA1);
 
-	if (vfifo->type == UART_RX_VFIFO)
-		UART_SET_BITS(UART_RX_DMA_EN | UART_TO_CNT_AUTORST, UART_DMA_EN);
-	else if (vfifo->type == UART_TX_VFIFO)
-		UART_SET_BITS(UART_TX_DMA_EN, UART_DMA_EN);
-	mb();
+		if (vfifo->type == UART_RX_VFIFO)
+			UART_SET_BITS(UART_RX_DMA_EN | UART_TO_CNT_AUTORST, UART_DMA_EN);
+		else if (vfifo->type == UART_TX_VFIFO)
+			UART_SET_BITS(UART_TX_DMA_EN, UART_DMA_EN);
+		mb();
+
 	return 0;
 }
 
@@ -1194,12 +1164,11 @@ int mtk_uart_dma_start(struct mtk_uart *uart, struct mtk_uart_dma *dma)
 void mtk_uart_stop_dma(struct mtk_uart_dma *dma)
 {
 	int polling_cnt = 0;
-	struct mtk_uart *uart;
+	struct mtk_uart *uart = dma->uart;
 	void *base;
 
 	if (!dma)
 		return;
-	uart = dma->uart;
 	if (dma->mode == UART_RX_VFIFO_DMA || dma->mode == UART_TX_VFIFO_DMA) {
 		MSG(DMA, "stop dma (%d)\n", dma->mode);
 		if (!dma->vfifo) {
@@ -1242,12 +1211,11 @@ void mtk_uart_stop_dma(struct mtk_uart_dma *dma)
 /*---------------------------------------------------------------------------*/
 void mtk_uart_reset_dma(struct mtk_uart_dma *dma)
 {
-	struct mtk_uart *uart;
+	struct mtk_uart *uart = dma->uart;
 	void *base;
 
 	if (!dma)
 		return;
-	uart = dma->uart;
 
 	if (dma->mode == UART_RX_VFIFO_DMA || dma->mode == UART_TX_VFIFO_DMA) {
 		if (!dma->vfifo) {
@@ -1511,7 +1479,7 @@ void mtk_uart_baud_setting(struct mtk_uart *uart, int baudrate)
 	else
 		mtk_uart_cal_baud(uart, baudrate, 3);
 #endif				/* End of UART_DCM_CONFIG */
-#endif              /* defined (CONFIG_MTK_FPGA) */
+#endif
 }
 
 /*---------------------------------------------------------------------------*/
@@ -2060,7 +2028,6 @@ void mtk_uart_init_debug_spinlock(void)
 void reset_tx_raw_data(struct mtk_uart *uart)
 {
 	unsigned long flags;
-
 	if (uart->nport == 2) {
 		spin_lock_irqsave(&tx_history_lock, flags);
 		if (!stop_update) {
@@ -2080,7 +2047,6 @@ void reset_tx_raw_data(struct mtk_uart *uart)
 static void save_tx_raw_data(struct mtk_uart *uart, void *addr)
 {
 	unsigned long flags;
-
 	if (uart->nport == 2) {
 		spin_lock_irqsave(&tx_history_lock, flags);
 		if (!stop_update) {
@@ -2097,7 +2063,6 @@ static void save_tx_raw_data(struct mtk_uart *uart, void *addr)
 static void reset_rx_raw_data(struct mtk_uart *uart)
 {
 	unsigned long flags;
-
 	if (uart->nport == 2) {
 		spin_lock_irqsave(&rx_history_lock, flags);
 		if (!stop_update) {
@@ -2118,7 +2083,6 @@ static void save_rx_raw_data(struct mtk_uart *uart, const unsigned char *chars, 
 {
 	unsigned long flags;
 	int i;
-
 	if (uart->nport == 2) {
 		spin_lock_irqsave(&rx_history_lock, flags);
 		if (!stop_update) {
@@ -2281,7 +2245,7 @@ void mtk_uart_restore(void)
 #endif
 }
 
-#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
 void switch_uart_gpio(int uartport, int gpioopid)
 {
 	struct pinctrl *ppinctrl = NULL;
@@ -2315,22 +2279,22 @@ void switch_uart_gpio(int uartport, int gpioopid)
 
 	pr_debug("[UART%d][PinC]%s(%d, %d)- Succeeded!\n", uartport, __func__, uartport, gpioopid);
 }
-#endif /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
+#endif  /* !defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
 
 void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 {
 #if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY)
 	int uart_gpio_op = 0;	/* URAT RX SET */
-#endif
+#endif /* defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY) */
 	int uartport = uart->nport;
-
 	pr_warn("[UART]%s port:0x%x\n", __func__, uartport);
 
 	if (uartport > 3) {
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
-#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA)
+#ifdef CONFIG_PM
+#ifndef CONFIG_MTK_FPGA
 #if defined(CONFIG_MTK_LEGACY)
 	switch (uart->nport) {
 	case 0:
@@ -2368,10 +2332,13 @@ void mtk_uart_switch_tx_to_gpio(struct mtk_uart *uart)
 	default:
 		break;
 	}
-#else /* defined(CONFIG_MTK_LEGACY)*/
+
+#else				/* defined(CONFIG_MTK_LEGACY) */
 	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
 	switch_uart_gpio(uartport, uart_gpio_op);
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif				/* defined(CONFIG_MTK_LEGACY) */
+
+#endif
 #endif
 }
 
@@ -2380,16 +2347,16 @@ void mtk_uart_switch_to_tx(struct mtk_uart *uart)
 {
 #if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY)
 	int uart_gpio_op = 0;	/* URAT RX SET */
-#endif
+#endif /* defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY) */
 	int uartport = uart->nport;
-
 	pr_debug("[UART]%s port:0x%x\n", __func__, uartport);
 
 	if (uartport > 3) {
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
-#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA)
+#ifdef CONFIG_PM
+#ifndef CONFIG_MTK_FPGA
 #if defined(CONFIG_MTK_LEGACY)
 	switch (uart->nport) {
 	case 0:
@@ -2423,10 +2390,12 @@ void mtk_uart_switch_to_tx(struct mtk_uart *uart)
 	default:
 		break;
 	}
-#else /* defined(CONFIG_MTK_LEGACY) */
+
+#else				/* defined(CONFIG_MTK_LEGACY) */
 	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
 	switch_uart_gpio(uartport, uart_gpio_op);
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif				/* defined(CONFIG_MTK_LEGACY) */
+#endif
 #endif
 }
 
@@ -2435,16 +2404,16 @@ void mtk_uart_switch_rx_to_gpio(struct mtk_uart *uart)
 {
 #if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY)
 	int uart_gpio_op = 1;	/* URAT RX Clear */
-#endif
+#endif /* !defined(CONFIG_MTK_LEGACY) */
 	int uartport = uart->nport;
-
 	pr_debug("[UART]%s port:0x%x\n", __func__, uartport);
 
 	if (uartport > 3) {
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
-#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA)
+#ifdef CONFIG_PM
+#ifndef CONFIG_MTK_FPGA
 #if defined(CONFIG_MTK_LEGACY)
 	switch (uart->nport) {
 	case 0:
@@ -2478,10 +2447,13 @@ void mtk_uart_switch_rx_to_gpio(struct mtk_uart *uart)
 	default:
 		break;
 	}
-#else /* defined(CONFIG_MTK_LEGACY) */
+
+#else				/* defined(CONFIG_MTK_LEGACY) */
 	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
 	switch_uart_gpio(uartport, uart_gpio_op);
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif				/* defined(CONFIG_MTK_LEGACY) */
+
+#endif
 #endif
 }
 
@@ -2490,16 +2462,16 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 {
 #if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA) && !defined(CONFIG_MTK_LEGACY)
 	int uart_gpio_op = 0;	/* URAT RX SET */
-#endif
+#endif  /* !defined(CONFIG_MTK_LEGACY) */
 	int uartport = uart->nport;
-
 	pr_debug("[UART]%s port:0x%x\n", __func__, uartport);
 
 	if (uartport > 3) {
 		pr_err("[UART%d] %s fail!! port:%d", uartport, __func__, uartport);
 		return;
 	}
-#if defined(CONFIG_PM) && !defined(CONFIG_MTK_FPGA)
+#ifdef CONFIG_PM
+#ifndef CONFIG_MTK_FPGA
 #if defined(CONFIG_MTK_LEGACY)
 	switch (uartport) {
 	case 0:
@@ -2536,10 +2508,12 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 	default:
 		break;
 	}
-#else /* defined(CONFIG_MTK_LEGACY) */
+
+#else				/* defined(CONFIG_MTK_LEGACY) */
 	pr_debug("[UART%d][PinC]%s call switch_uart_gpio(%d, %d)\n", uartport, __func__, uartport, uart_gpio_op);
 	switch_uart_gpio(uartport, uart_gpio_op);
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif				/* defined(CONFIG_MTK_LEGACY) */
+#endif
 #endif
 }
 
@@ -2547,9 +2521,11 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 void mtk_uart_enable_dpidle(struct mtk_uart *uart)
 {
 /* FIX-ME early porting */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_MTK_CLKMGR)
 	enable_dpidle_by_bit(uart->setting->pll_id);
 	enable_soidle_by_bit(uart->setting->pll_id);
+#endif
 #endif
 }
 
@@ -2557,9 +2533,11 @@ void mtk_uart_enable_dpidle(struct mtk_uart *uart)
 void mtk_uart_disable_dpidle(struct mtk_uart *uart)
 {
 /* FIX-ME early porting */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_MTK_CLKMGR)
 	disable_dpidle_by_bit(uart->setting->pll_id);
 	disable_soidle_by_bit(uart->setting->pll_id);
+#endif
 #endif
 }
 
