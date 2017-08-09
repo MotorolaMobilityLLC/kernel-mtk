@@ -50,7 +50,11 @@
 #include <linux/proc_fs.h>
 #include <asm/uaccess.h>
 
+#ifdef CONFIG_MTK_I2C_EXTENSION
 #define TPD_SUPPORT_I2C_DMA         1	/* if gt9l, better enable it if hardware platform supported*/
+#else
+#define TPD_SUPPORT_I2C_DMA         0
+#endif
 
 #if defined(CONFIG_MTK_LEGACY)
 #define TPD_POWER_SOURCE_CUSTOM	MT6328_POWER_LDO_VGP1

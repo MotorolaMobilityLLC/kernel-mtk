@@ -191,8 +191,12 @@ static s32 i2c_write_mtk(u16 addr, u8 *buffer, s32 len)
 
 	struct i2c_msg msg = {
 		.flags = 0,
+#ifdef CONFIG_MTK_I2C_EXTENSION
 		.addr = (gt1x_i2c_client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG),	/*remain*/
 		.timing = I2C_MASTER_CLOCK,
+#else
+		.addr = gt1x_i2c_client->addr,  /*remain*/
+#endif
 	};
 
 	ret = _do_i2c_write(&msg, addr, buffer, len);
@@ -206,16 +210,24 @@ static s32 i2c_read_mtk(u16 addr, u8 *buffer, s32 len)
 
 	struct i2c_msg msgs[2] = {
 		{
+#ifdef CONFIG_MTK_I2C_EXTENSION
 		 .addr = ((gt1x_i2c_client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG)),
+		 .timing = I2C_MASTER_CLOCK,
+#else
+		 .addr = gt1x_i2c_client->addr,
+#endif
 		 .flags = 0,
 		 .buf = addr_buf,
 		 .len = GTP_ADDR_LENGTH,
-		 .timing = I2C_MASTER_CLOCK,
 		},
 		{
+#ifdef CONFIG_MTK_I2C_EXTENSION
 		 .addr = ((gt1x_i2c_client->addr & I2C_MASK_FLAG) | (I2C_ENEXT_FLAG)),
-		 .flags = I2C_M_RD,
 		 .timing = I2C_MASTER_CLOCK,
+#else
+		 .addr = gt1x_i2c_client->addr,
+#endif
+		 .flags = I2C_M_RD,
 		},
 	};
 
