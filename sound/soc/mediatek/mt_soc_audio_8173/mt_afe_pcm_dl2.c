@@ -32,8 +32,10 @@ struct mt_pcm_dl2_priv {
 	bool enable_mtk_interface;
 	bool enable_i2s0;
 	bool enable_i2s0_low_jitter;
+	bool enable_i2s1_low_jitter;
 	unsigned int playback_mux;
 	unsigned int i2s0_clock_mode;
+	unsigned int i2s1_clock_mode;
 };
 
 
@@ -182,6 +184,16 @@ static int mt_pcm_dl2_prestart(struct snd_pcm_substream *substream)
 	mt_afe_set_memif_fetch_format(MT_AFE_DIGITAL_BLOCK_MEM_DL2, MT_AFE_MEMIF_16_BIT);
 
 	if (priv->playback_mux == MTK_INTERFACE || priv->playback_mux == MTK_INTERFACE_AND_I2S0) {
+		if (priv->i2s1_clock_mode == MT_AFE_LOW_JITTER_CLOCK) {
+			mt_afe_enable_apll(runtime->rate);
+			mt_afe_enable_apll_tuner(runtime->rate);
+			mt_afe_set_mclk(MT_AFE_I2S1, runtime->rate);
+			mt_afe_set_mclk(MT_AFE_ENGEN, runtime->rate);
+			mt_afe_enable_apll_div_power(MT_AFE_I2S1, runtime->rate);
+			mt_afe_enable_apll_div_power(MT_AFE_ENGEN, runtime->rate);
+			priv->enable_i2s1_low_jitter = true;
+		}
+
 		mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O03);
 		mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O04);
 		mt_afe_set_connection(INTER_CONNECT, INTER_CONN_I07, INTER_CONN_O03);
@@ -317,6 +329,14 @@ static int mt_pcm_dl2_post_stop(struct snd_pcm_substream *substream)
 		mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I07, INTER_CONN_O03);
 		mt_afe_set_connection(INTER_DISCONNECT, INTER_CONN_I08, INTER_CONN_O04);
 		priv->enable_mtk_interface = false;
+
+		if (priv->enable_i2s1_low_jitter) {
+			mt_afe_disable_apll_div_power(MT_AFE_I2S1, runtime->rate);
+			mt_afe_disable_apll_div_power(MT_AFE_ENGEN, runtime->rate);
+			mt_afe_disable_apll_tuner(runtime->rate);
+			mt_afe_disable_apll(runtime->rate);
+			priv->enable_i2s1_low_jitter = false;
+		}
 	}
 
 	if (priv->enable_i2s0) {
@@ -421,6 +441,23 @@ static int dl2_i2s0_clock_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 	return 0;
 }
 
+static int dl2_i2s1_clock_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt_pcm_dl2_priv *priv = snd_soc_component_get_drvdata(component);
+
+	ucontrol->value.integer.value[0] = priv->i2s1_clock_mode;
+	return 0;
+}
+
+static int dl2_i2s1_clock_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt_pcm_dl2_priv *priv = snd_soc_component_get_drvdata(component);
+
+	priv->i2s1_clock_mode = ucontrol->value.integer.value[0];
+	return 0;
+}
 
 static const struct soc_enum mt_pcm_dl2_control_enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(mt_pcm_dl2_playback_mux_function),
@@ -434,6 +471,8 @@ static const struct snd_kcontrol_new mt_pcm_dl2_controls[] = {
 		dl2_playback_mux_get, dl2_playback_mux_set),
 	SOC_ENUM_EXT("DL2_I2S0_Clock", mt_pcm_dl2_control_enum[1],
 		dl2_i2s0_clock_get, dl2_i2s0_clock_set),
+	SOC_ENUM_EXT("DL2_I2S1_Clock", mt_pcm_dl2_control_enum[1],
+		dl2_i2s1_clock_get, dl2_i2s1_clock_set),
 };
 
 static int mt_pcm_dl2_probe(struct snd_soc_platform *platform)
