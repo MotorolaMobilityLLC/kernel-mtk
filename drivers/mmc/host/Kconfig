@@ -15,7 +15,7 @@ config MMC_MTK
 
 config MTK_EMMC_SUPPORT
 	bool "MTK_EMMC_SUPPORT"
-	depends on MTK_MMC
+	depends on MMC_MTK
 	help
 	  This enables using embedded Multimedia card (eMMC) as booting
 	  device on MTK platform. Say Y if you turns on MTK_EMMC and want to

@@ -3498,6 +3498,7 @@ static void msdc_pm(pm_message_t state, void *data)
 }
 #endif
 
+#if 0 /* weiping fix reserve */
 static u64 msdc_get_user_capacity(struct msdc_host *host)
 {
 	u64 device_capacity = 0;
@@ -3525,7 +3526,7 @@ static u64 msdc_get_user_capacity(struct msdc_host *host)
 	}
 	return device_capacity;
 }
-
+#endif
 struct msdc_host *msdc_get_host(int host_function, bool boot, bool secondary)
 {
 	int host_index = 0;
@@ -3553,6 +3554,7 @@ struct msdc_host *msdc_get_host(int host_function, bool boot, bool secondary)
 EXPORT_SYMBOL(msdc_get_host);
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT
+# if 0 /* weiping fix reserve */
 u8 ext_csd[512];
 EXPORT_SYMBOL(ext_csd);
 
@@ -3576,7 +3578,8 @@ static int msdc_get_data(u8 *dst, struct mmc_data *data, int dma_xfer)
 	}
 	return 0;
 }
-
+#endif /* weiping fix reserve */
+#if 0 /* weiping fix cache */
 #ifdef MTK_MSDC_USE_CACHE
 unsigned long long g_cache_part_start;
 unsigned long long g_cache_part_end;
@@ -3735,7 +3738,9 @@ int msdc_get_cache_region(void)
 
 }
 EXPORT_SYMBOL(msdc_get_cache_region);
+#endif /* weiping fix cache */
 
+#if 0 /* weiping fix reserve */
 #ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
 /* parse part_info struct, support otp & mtk reserve */
 #ifndef CONFIG_MTK_GPT_SCHEME_SUPPORT
@@ -3851,8 +3856,9 @@ static bool msdc_cal_offset(struct msdc_host *host)
 	return true;
 }
 #endif
+#endif /* weiping fix reserve */
 #endif
-
+#if 0 /* weiping fix reserve */
 u64 msdc_get_capacity(int get_emmc_total)
 {
 	u64 user_size = 0;
@@ -3877,7 +3883,7 @@ u64 msdc_get_capacity(int get_emmc_total)
 	return total_size / 512;
 }
 EXPORT_SYMBOL(msdc_get_capacity);
-
+#endif
 /*--------------------------------------------------------------------------*/
 /* mmc_host_ops members                                                     */
 /*--------------------------------------------------------------------------*/
@@ -4677,6 +4683,7 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 		if (msdc_do_command(host, cmd, 0, CMD_TIMEOUT))
 			goto done;
+#if 0 /* weipng fix sd-boot ?*/
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 		if (host->hw->host_function == MSDC_EMMC &&
 		    host->hw->boot == MSDC_BOOT_EN &&
@@ -4684,7 +4691,7 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		    && (((cmd->arg >> 16) & 0xFF) == EXT_CSD_PART_CONFIG))
 			partition_access = (char)((cmd->arg >> 8) & 0x07);
 #endif
-
+#endif
 #ifdef MTK_EMMC_ETT_TO_DRIVER
 		if ((host->hw->host_function == MSDC_EMMC)
 			&& (cmd->opcode == MMC_ALL_SEND_CID)) {
@@ -5015,9 +5022,11 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 				dma_unmap_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
 			}
 		}
+#if 0 /* weiping fix reserve */
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 		if (cmd->opcode == MMC_SEND_EXT_CSD)
 			msdc_get_data(ext_csd, data, host->dma_xfer);
+#endif
 #endif
 		host->blksz = 0;
 
@@ -8566,6 +8575,7 @@ static void msdc_init_dma_latest_address(void)
 }
 #endif
 
+#if 0 /*weiping fix emmc_proc */
 struct gendisk *mmc_get_disk(struct mmc_card *card)
 {
 	struct mmc_blk_data *md;
@@ -8647,7 +8657,7 @@ static const struct file_operations proc_emmc_fops = {
 };
 
 #endif				/* CONFIG_MTK_EMMC_SUPPORT && CONFIG_PROC_FS */
-
+#endif /*weiping fix emmc_proc */
 
 /* This is called by run_timer_softirq */
 static void msdc_timer_pm(unsigned long data)
@@ -9530,7 +9540,7 @@ static int __init mt_msdc_init(void)
 		pr_err(DRV_NAME ": Can't register driver");
 		return ret;
 	}
-/* weiping fix */
+/* weiping fix emmc_proc */
 #if 0
 #if defined(CONFIG_MTK_EMMC_SUPPORT) && defined(CONFIG_PROC_FS)
 	proc_emmc = proc_create("emmc", 0, NULL, &proc_emmc_fops);
@@ -9556,8 +9566,10 @@ static void __exit mt_msdc_exit(void)
 
 module_init(mt_msdc_init);
 module_exit(mt_msdc_exit);
+#if 0 /* weiping fix cache*/
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 late_initcall_sync(msdc_get_cache_region);
+#endif
 #endif
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MediaTek SD/MMC Card Driver");
