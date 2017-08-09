@@ -26,7 +26,6 @@
 #include <linux/clk.h>
 #include <mt-plat/sync_write.h>
 
-/* MSDC_SWITCH_MODE_WHEN_ERROR */
 #define TUNE_NONE                (0)        /* No need tune */
 #define TUNE_ASYNC_CMD           (0x1 << 0) /* async transfer cmd crc */
 #define TUNE_ASYNC_DATA_WRITE    (0x1 << 1) /* async transfer data crc */
@@ -55,8 +54,8 @@
 #endif
 #endif
 
-#define HOST_MAX_NUM                    (4)
-#define MAX_REQ_SZ                      (4 * 1024 * 1024)
+#define HOST_MAX_NUM                    (3)
+#define MAX_REQ_SZ                      (512 * 1024)
 
 #ifdef FPGA_PLATFORM
 #define HOST_MAX_MCLK			(200000000)
@@ -84,10 +83,6 @@
 /*#define ONLINE_TUNING_DVTTEST*/
 
 /*#define MTK_MSDC_DUMP_FIFO*/
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-#define CONFIG_CMDQ_CMD_DAT_PARALLEL
-#endif
 
 #define CID_MANFID_SANDISK		0x2
 #define CID_MANFID_TOSHIBA		0x11
@@ -407,8 +402,7 @@ struct msdc_host {
 	struct mmc_command      *cmd;
 	struct mmc_data         *data;
 	struct mmc_request      *mrq;
-	int		        err_cmd;
-	ulong                   *pio_kaddr;
+	int		                err_cmd;
 	int                     cmd_rsp;
 	int                     cmd_rsp_done;
 	int                     cmd_r1b_done;
@@ -432,8 +426,8 @@ struct msdc_host {
 	u32                     xfer_size;      /* total transferred size */
 
 	struct msdc_dma         dma;            /* dma channel */
-	u32                     dma_addr;       /* dma transfer address */
 	u64                     dma_mask;
+	u32                     dma_addr;       /* dma transfer address */
 	u32                     dma_left_size;  /* dma transfer left size */
 	u32                     dma_xfer_size;  /* dma transfer size in bytes */
 	int                     dma_xfer;       /* dma transfer mode */
@@ -611,18 +605,6 @@ static inline unsigned int uffs(unsigned int x)
 #define sdc_is_busy()		(MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY)
 #define sdc_is_cmd_busy()	(MSDC_READ32(SDC_STS) & SDC_STS_CMDBUSY)
 
-#ifdef CONFIG_CMDQ_CMD_DAT_PARALLEL
-#define sdc_send_cmdq_cmd(opcode, arg) \
-	do { \
-		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG0_CMDQ_EN, (1)); \
-		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG0_CMDQ_NUM, (opcode)); \
-		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG0_CMDQ_RSPTYP, (1)); \
-		MSDC_SET_FIELD(EMMC51_CFG0, MSDC_EMMC51_CFG0_CMDQ_DTYPE, (0)); \
-		MSDC_WRITE32(SDC_ARG, (arg)); \
-		MSDC_WRITE32(SDC_CMD, (0x0)); \
-	} while (0)
-#endif
-
 #define sdc_send_cmd(cmd, arg) \
 	do { \
 		MSDC_WRITE32(SDC_ARG, (arg)); \
@@ -730,24 +712,6 @@ extern u8 g_emmc_id;
 #define check_mmc_cmd1825(opcode) \
 	((opcode == MMC_READ_MULTIPLE_BLOCK) || \
 	 (opcode == MMC_WRITE_MULTIPLE_BLOCK))
-#define check_mmc_cmd01213(opcode) \
-	((opcode == MMC_GO_IDLE_STATE) || \
-	(opcode == MMC_STOP_TRANSMISSION) || \
-	(opcode == MMC_SEND_STATUS))
-#define check_mmc_cmd4445(opcode) \
-	((opcode == MMC_SET_QUEUE_CONTEXT) || \
-	 (opcode == MMC_QUEUE_READ_ADDRESS))
-#define check_mmc_cmd4647(opcode) \
-	((opcode == MMC_READ_REQUESTED_QUEUE) || \
-	 (opcode == MMC_WRITE_REQUESTED_QUEUE))
-#define check_mmc_cmd48(opcode) \
-	(opcode == MMC_CMDQ_TASK_MGMT)
-#define check_mmc_cmd44(x) \
-	((x) && \
-	 ((x)->opcode == MMC_SET_QUEUE_CONTEXT))
-#define check_mmc_cmd13_sqs(x) \
-	(((x)->opcode == MMC_SEND_STATUS) && \
-	 ((x)->arg & (1 << 15)))
 
 struct gendisk *mmc_get_disk(struct mmc_card *card);
 int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
@@ -784,14 +748,6 @@ int msdc_switch_part(struct msdc_host *host, char part_id);
 int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
 int sdcard_reset_tuning(struct mmc_host *mmc);
 int emmc_reinit_tuning(struct mmc_host *mmc);
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-unsigned int msdc_do_cmdq_command(struct msdc_host	 *host,
-	struct mmc_command *cmd,
-	int tune,
-	unsigned long timeout);
-#endif
-
 /* Function provided by msdc_partition.c */
 void msdc_proc_emmc_create(void);
 int msdc_can_apply_cache(unsigned long long start_addr,

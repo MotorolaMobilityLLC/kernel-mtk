@@ -56,4 +56,5 @@ void msdc_save_timing_setting(struct msdc_host *host, u32 init_hw,
 	u32 emmc_suspend, u32 sdio_suspend, u32 power_tuning, u32 power_off);
 void msdc_restore_timing_setting(struct msdc_host *host);
 
+void msdc_set_bad_card_and_remove(struct msdc_host *host);
 #endif /* end of _MSDC_TUNE_H_ */

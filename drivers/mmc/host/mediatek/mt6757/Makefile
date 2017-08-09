@@ -30,7 +30,7 @@ obj-$(CONFIG_MMC_MTK) += msdc_partition.o
 obj-$(CONFIG_MMC_MTK) += msdc_io.o
 obj-$(CONFIG_MMC_MTK) += autok.o
 
-ifeq ($(CONFIG_MTK_FPGA),y)
+ifeq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-$(CONFIG_MMC_MTK) += msdc_fpga_io.o
 endif
 

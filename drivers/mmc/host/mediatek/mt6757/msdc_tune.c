@@ -152,6 +152,46 @@ void msdc_save_timing_setting(struct msdc_host *host, u32 init_hw,
 	host->saved_para.pb2 = MSDC_READ32(MSDC_PATCH_BIT2);
 	/*msdc_dump_register(host);*/
 }
+
+void msdc_set_bad_card_and_remove(struct msdc_host *host)
+{
+	unsigned long flags;
+
+	if (host == NULL) {
+		pr_err("WARN: host is NULL");
+		return;
+	}
+	host->card_inserted = 0;
+
+	if ((host->mmc == NULL) || (host->mmc->card == NULL)) {
+		ERR_MSG("WARN: mmc or card is NULL");
+		return;
+	}
+
+	if (host->mmc->card) {
+		spin_lock_irqsave(&host->remove_bad_card, flags);
+		host->block_bad_card = 1;
+
+		mmc_card_set_removed(host->mmc->card);
+		spin_unlock_irqrestore(&host->remove_bad_card, flags);
+
+#if !defined(FPGA_PLATFORM)
+		if (!(host->mmc->caps & MMC_CAP_NONREMOVABLE)
+		 && (host->hw->cd_level == __gpio_get_value(cd_gpio))) {
+			/* do nothing */
+			/*tasklet_hi_schedule(&host->card_tasklet);*/
+		} else {
+			mmc_remove_card(host->mmc->card);
+			host->mmc->card = NULL;
+			mmc_detach_bus(host->mmc);
+			mmc_power_off(host->mmc);
+		}
+#endif
+		ERR_MSG("Remove the bad card, block_bad_card=%d, card_inserted=%d",
+			host->block_bad_card, host->card_inserted);
+	}
+}
+
 /*  HS400 can not lower frequence
  *  1. Change to HS200 mode, reinit
  *  2. Lower frequence
@@ -164,10 +204,7 @@ int emmc_reinit_tuning(struct mmc_host *mmc)
 	u32 mode = 0;
 	unsigned int caps_hw_reset = 0;
 
-	if (mmc->card == NULL) {
-		pr_err("msdc%d emmc is under init, don't reset\n", host->id);
-		return -EINVAL;
-	}
+	BUG_ON(!mmc->card);
 	if (mmc->card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS400) {
 		mmc->card->mmc_avail_type &= ~EXT_CSD_CARD_TYPE_HS400;
 		pr_err("msdc%d: witch to HS200 mode,reinit card\n", host->id);
@@ -195,7 +232,7 @@ int emmc_reinit_tuning(struct mmc_host *mmc)
 		div += 1;
 		if (div > EMMC_MAX_FREQ_DIV) {
 			pr_err("msdc%d: max lower freq dev: %d\n", host->id, div);
-			return -EINVAL;
+			return 1;
 		}
 		msdc_clk_stable(host, mode, div, 1);
 		host->sclk = (div == 0) ? host->hclk / 4 : host->hclk / (4 * div);
@@ -214,10 +251,7 @@ int sdcard_reset_tuning(struct mmc_host *mmc)
 	struct msdc_host *host = mmc_priv(mmc);
 	int ret = 0;
 
-	if (mmc->card == NULL) {
-		pr_err("msdc%d sdcard is under init, don't reset\n", host->id);
-		return -EINVAL;
-	}
+	BUG_ON(!mmc->card);
 
 	if (mmc->card->sw_caps.sd3_bus_mode & SD_MODE_UHS_SDR104) {
 		mmc->card->sw_caps.sd3_bus_mode &= ~SD_MODE_UHS_SDR104;
@@ -360,7 +394,6 @@ void msdc_init_tune_setting(struct msdc_host *host)
 	struct msdc_hw *hw = host->hw;
 	void __iomem *base = host->base;
 
-	/* pr_err("msdc_init_tune_setting\n"); */
 	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY,
 		MSDC_CLKTXDLY);
 	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_DATWRDLY,
@@ -375,7 +408,8 @@ void msdc_init_tune_setting(struct msdc_host *host)
 	MSDC_WRITE32(MSDC_DAT_RDDLY0, 0x00000000);
 	MSDC_WRITE32(MSDC_DAT_RDDLY1, 0x00000000);
 
-	MSDC_WRITE32(MSDC_PATCH_BIT1, 0xFFFE00C9);
+	MSDC_WRITE32(MSDC_PATCH_BIT0, 0x403C0006);
+	MSDC_WRITE32(MSDC_PATCH_BIT1, 0xFFE208C9);
 
 	/* 64T + 48T cmd <-> resp */
 	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPWAITCNT, 3);

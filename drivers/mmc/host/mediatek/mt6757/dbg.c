@@ -49,10 +49,6 @@
 #include <mach/mt_pmic_wrap.h>
 #endif
 
-#ifdef CONFIG_MT_ENG_BUILD
-#define MTK_EMMC_CQ_DEBUG
-#endif
-
 #ifdef MTK_IO_PERFORMANCE_DEBUG
 unsigned int g_mtk_mmc_perf_dbg = 0;
 unsigned int g_mtk_mmc_dbg_range = 0;
@@ -371,230 +367,6 @@ skip_sdio_tune_reg:
 skip_emmc50_reg:
 	return;
 }
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-#ifdef MTK_EMMC_CQ_DEBUG
-#define dbg_max_cnt (500)
-struct dbg_run_host_log {
-	unsigned long long time_sec;
-	unsigned long long time_usec;
-	int type;
-	int cmd;
-	int arg;
-};
-static struct dbg_run_host_log dbg_run_host_log_dat[dbg_max_cnt];
-static int dbg_host_cnt;
-static int is_lock_init;
-static spinlock_t cmd_dump_lock;
-
-static unsigned int printk_cpu_test = UINT_MAX;
-struct timeval cur_tv;
-
-static void init_lock(void)
-{
-	if (!is_lock_init) {
-		spin_lock_init(&cmd_dump_lock);
-		is_lock_init = 1;
-	}
-}
-
-void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg)
-{
-	unsigned long long t;
-	unsigned long long nanosec_rem;
-	unsigned long flags;
-
-	init_lock();
-
-	spin_lock_irqsave(&cmd_dump_lock, flags);
-	t = cpu_clock(printk_cpu_test);
-	nanosec_rem = do_div(t, 1000000000)/1000;
-	do_gettimeofday(&cur_tv);
-	dbg_run_host_log_dat[dbg_host_cnt].time_sec = t;
-	dbg_run_host_log_dat[dbg_host_cnt].time_usec = nanosec_rem;
-	dbg_run_host_log_dat[dbg_host_cnt].type = type;
-	dbg_run_host_log_dat[dbg_host_cnt].cmd = cmd;
-	dbg_run_host_log_dat[dbg_host_cnt].arg = arg;
-	dbg_host_cnt++;
-	if (dbg_host_cnt >= dbg_max_cnt)
-		dbg_host_cnt = 0;
-	spin_unlock_irqrestore(&cmd_dump_lock, flags);
-}
-
-void mmc_cmd_dump(struct mmc_host *host)
-{
-	int i;
-	int tag = -1;
-	unsigned long flags;
-
-	init_lock();
-
-	pr_err("-------------------------------------------------------------------------------\n");
-	spin_lock_irqsave(&cmd_dump_lock, flags);
-	for (i = dbg_host_cnt; i < dbg_max_cnt; i++) {
-		if (dbg_run_host_log_dat[i].cmd == 44
-			&& (dbg_run_host_log_dat[i].type == 0)) {
-			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d type=%s %s %s\n", i,
-				dbg_run_host_log_dat[i].time_sec,
-				dbg_run_host_log_dat[i].time_usec,
-				dbg_run_host_log_dat[i].type,
-				dbg_run_host_log_dat[i].cmd,
-				dbg_run_host_log_dat[i].arg, tag,
-				((dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write",
-				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
-				((dbg_run_host_log_dat[i].arg >> 31) & 0x1) ? "rel" : NULL,
-				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
-				((dbg_run_host_log_dat[i].arg >> 24) & 0x1) ? "fprg" : NULL
-				);
-		} else if ((dbg_run_host_log_dat[i].cmd == 46
-			|| dbg_run_host_log_dat[i].cmd == 47)
-			&& !dbg_run_host_log_dat[i].type) {
-			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d\n", i,
-				dbg_run_host_log_dat[i].time_sec,
-				dbg_run_host_log_dat[i].time_usec,
-				dbg_run_host_log_dat[i].type,
-				dbg_run_host_log_dat[i].cmd,
-				dbg_run_host_log_dat[i].arg, tag);
-		} else
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x\n", i,
-			dbg_run_host_log_dat[i].time_sec,
-			dbg_run_host_log_dat[i].time_usec,
-			dbg_run_host_log_dat[i].type,
-			dbg_run_host_log_dat[i].cmd,
-			dbg_run_host_log_dat[i].arg);
-	}
-
-	for (i = 0; i < dbg_host_cnt; i++) {
-		if (dbg_run_host_log_dat[i].cmd == 44
-			&& !dbg_run_host_log_dat[i].type) {
-			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d type=%s %s %s\n", i,
-				dbg_run_host_log_dat[i].time_sec,
-				dbg_run_host_log_dat[i].time_usec,
-				dbg_run_host_log_dat[i].type,
-				dbg_run_host_log_dat[i].cmd,
-				dbg_run_host_log_dat[i].arg, tag,
-				((dbg_run_host_log_dat[i].arg >> 30) & 0x1) ? "read" : "write",
-				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
-				((dbg_run_host_log_dat[i].arg >> 31) & 0x1) ? "rel" : NULL,
-				!((dbg_run_host_log_dat[i].arg >> 30) & 0x1) &&
-				((dbg_run_host_log_dat[i].arg >> 24) & 0x1) ? "fprg" : NULL
-				);
-		} else if ((dbg_run_host_log_dat[i].cmd == 46
-			|| dbg_run_host_log_dat[i].cmd == 47)
-			&& !dbg_run_host_log_dat[i].type) {
-			tag = (dbg_run_host_log_dat[i].arg >> 16) & 0xf;
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x tag=%d\n", i,
-				dbg_run_host_log_dat[i].time_sec,
-				dbg_run_host_log_dat[i].time_usec,
-				dbg_run_host_log_dat[i].type,
-				dbg_run_host_log_dat[i].cmd,
-				dbg_run_host_log_dat[i].arg, tag);
-		} else
-			pr_err("%d [%5llu.%06llu]%2d %2d 0x%08x\n", i,
-			dbg_run_host_log_dat[i].time_sec,
-			dbg_run_host_log_dat[i].time_usec,
-			dbg_run_host_log_dat[i].type,
-			dbg_run_host_log_dat[i].cmd,
-			dbg_run_host_log_dat[i].arg);
-	}
-	spin_unlock_irqrestore(&cmd_dump_lock, flags);
-}
-
-#else
-
-void dbg_add_host_log(struct mmc_host *host, int type, int cmd, int arg) { }
-
-void mmc_cmd_dump(struct mmc_host *host) { }
-
-#endif
-
-#endif
-
-void msdc_cmdq_status_print(struct msdc_host *host)
-{
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	struct mmc_host *mmc = host->mmc;
-
-	if (!mmc)
-		return;
-
-	pr_err("===============================\n");
-	pr_err("cmdq support : %s\n",
-		mmc->card->ext_csd.cmdq_support ? "yes":"no");
-	pr_err("cmdq mode    : %s\n",
-		mmc->card->ext_csd.cmdq_mode_en ? "enable" : "disable");
-	pr_err("cmdq depth   : %d\n",
-		mmc->card->ext_csd.cmdq_depth);
-	pr_err("===============================\n");
-	pr_err("task_id_index: %08lx\n",
-		mmc->task_id_index);
-	pr_err("cq_wait_rdy  : %d\n",
-		atomic_read(&mmc->cq_wait_rdy));
-	pr_err("cq_tuning_now: %d\n",
-		atomic_read(&mmc->cq_tuning_now));
-
-#else
-	pr_err("driver not supported\n");
-#endif
-}
-
-void msdc_cmdq_func(struct msdc_host *host, const int num)
-{
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	void __iomem *base = host->base;
-	int a, b;
-#endif
-
-	if (!host || !host->mmc || !host->mmc->card)
-		return;
-
-	switch (num) {
-	case 0:
-		msdc_cmdq_status_print(host);
-		break;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	case 1:
-		pr_err("force enable cmdq\n");
-		host->mmc->card->ext_csd.cmdq_support = 1;
-		host->mmc->cmdq_support_changed = 1;
-		break;
-	case 2:
-		mmc_cmd_dump(host->mmc);
-		break;
-	case 3:
-		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a);
-		MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, a+1);
-		MSDC_GET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CMDRDLY, b);
-		pr_err("force MSDC_PAD_TUNE0_CMDRDLY %d -> %d\n", a, b);
-		break;
-	case 4:
-		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, a);
-		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, a+1);
-		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, b);
-		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY1 %d -> %d\n", a, b);
-		break;
-	case 5:
-		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, a);
-		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, a+1);
-		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY2, b);
-		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY2 %d -> %d\n", a, b);
-		break;
-	case 6:
-		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, a);
-		MSDC_SET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, a+1);
-		MSDC_GET_FIELD(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY3, b);
-		pr_err("force MSDC_EMMC50_PAD_DS_TUNE_DLY3  %d -> %d\n", a, b);
-		break;
-#endif
-	default:
-		pr_err("unknown function id %d\n", num);
-		break;
-	}
-}
-
 void msdc_set_host_mode_speed(struct seq_file *m, struct msdc_host *host,
 		int spd_mode, int cmdq)
 {
@@ -687,22 +459,10 @@ void msdc_set_host_mode_speed(struct seq_file *m, struct msdc_host *host,
 			spd_mode);
 		break;
 	}
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (cmdq) {
+	if (cmdq)
 		seq_puts(m, "[SD_Debug] enable command queue feature\n");
-		host->mmc->card->ext_csd.cmdq_support = 1;
-		host->mmc->cmdq_support_changed = 1;
-	} else {
+	else
 		seq_puts(m, "[SD_Debug] disable command queue feature\n");
-		host->mmc->card->ext_csd.cmdq_support = 0;
-		host->mmc->cmdq_support_changed = 1;
-		host->mmc->card->ext_csd.cmdq_mode_en = 0;
-	}
-#else
-	seq_puts(m, "[SD_Debug] not support command queue feature yet\n");
-#endif
-
 	/*
 	 * support hw reset operation
 	 */
@@ -714,7 +474,7 @@ void msdc_set_host_mode_speed(struct seq_file *m, struct msdc_host *host,
 	 * CMD1 will timeout
 	 */
 	host->mmc->ios.timing = MMC_TIMING_LEGACY;
-	host->mmc->ios.clock = 26000;
+	host->mmc->ios.clock = 260000;
 	if (mmc_hw_reset(host->mmc))
 		seq_puts(m, "[SD_Debug] Reinit card failed, Can not switch speed mode\n");
 	mmc_release_host(host->mmc);
@@ -1593,7 +1353,7 @@ static int rwThread(void *data)
 	int id = p & 0x3;
 	int mode = (p >> 4) & 0x3;
 	int read;
-	uint type, address;
+	uint type = 0, address = 0;
 
 	pr_err("[****SD_rwThread****]id=%d, mode=%d\n", id, mode);
 
@@ -1635,6 +1395,7 @@ static int rwThread(void *data)
 	pr_err("[SD_Debug]rwThread exit\n");
 	return 0;
 }
+
 void msdc_dump_gpd_bd(int id)
 {
 	struct msdc_host *host;
@@ -1657,7 +1418,8 @@ void msdc_dump_gpd_bd(int id)
 	if (gpd == NULL) {
 		pr_err("GPD is NULL\n");
 	} else {
-		pr_err("gpd addr:0x%lx\n", (ulong)(host->dma.gpd_addr));
+		pr_err("gpd high addr:0x%lx\n", (ulong)(host->dma.gpd_addr >> 32));
+		pr_err("gpd low addr:0x%lx\n", (ulong)(host->dma.gpd_addr & 0xFFFFFFFFUL));
 		pr_err("hwo:0x%x, bdp:0x%x, rsv0:0x%x, chksum:0x%x,intr:0x%x,rsv1:0x%x,nexth4:0x%x,ptrh4:0x%x\n",
 			gpd->hwo, gpd->bdp, gpd->rsv0, gpd->chksum,
 			gpd->intr, gpd->rsv1, (unsigned int)gpd->nexth4,
@@ -1671,7 +1433,8 @@ void msdc_dump_gpd_bd(int id)
 	if (bd == NULL) {
 		pr_err("BD is NULL\n");
 	} else {
-		pr_err("bd addr:0x%lx\n", (ulong)(host->dma.bd_addr));
+		pr_err("bd high addr:0x%lx\n", (ulong)(host->dma.bd_addr >> 32));
+		pr_err("bd low addr:0x%lx\n", (ulong)(host->dma.bd_addr & 0xFFFFFFFFUL));
 		for (i = 0; i < host->dma.sglen; i++) {
 			pr_err("the %d BD\n", i);
 			pr_err("        eol:0x%x, rsv0:0x%x, chksum:0x%x, rsv1:0x%x,blkpad:0x%x,dwpad:0x%x,rsv2:0x%x\n",
@@ -1684,6 +1447,7 @@ void msdc_dump_gpd_bd(int id)
 		}
 	}
 }
+
 static void msdc_dump_csd(struct seq_file *m, struct msdc_host *host)
 {
 	struct mmc_csd *csd = &host->mmc->card->csd;
@@ -1735,7 +1499,7 @@ static void msdc_dump_csd(struct seq_file *m, struct msdc_host *host)
 
 void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host)
 {
-
+#ifndef FPGA_PLATFORM
 	if (topckgen_reg_base) {
 		/* CLK_CFG_3 control msdc clock source PLL */
 		seq_printf(m, " CLK_CFG_3 register address is 0x%p\n\n",
@@ -1770,7 +1534,9 @@ void dbg_msdc_dump_clock_sts(struct seq_file *m, struct msdc_host *host)
 		seq_printf(m, " Read value is       0x%x\n",
 			MSDC_READ32(apmixed_reg_base + MSDCPLL_PWR_CON0_OFFSET));
 	}
+#endif
 }
+
 void msdc_dump_ext_csd(struct seq_file *m, struct msdc_host *host)
 {
 	u8 ext_csd[512];
@@ -1952,6 +1718,7 @@ void msdc_dump_ext_csd(struct seq_file *m, struct msdc_host *host)
 	seq_printf(m, "[EXT_CSD] Bad block mgmt mode: %xh\n", ext_csd[EXT_CSD_BADBLK_MGMT]); */
 	seq_puts(m, "===========================================================\n");
 }
+
 static void msdc_check_emmc_cache_status(struct seq_file *m,
 		struct msdc_host *host)
 {
@@ -1970,7 +1737,6 @@ static void msdc_check_emmc_cache_status(struct seq_file *m,
 		host->mmc->card->ext_csd.cache_ctrl ? "Enable" : "Disable",
 		host->mmc->card->ext_csd.cache_size/8);
 }
-
 
 static void msdc_enable_emmc_cache(struct seq_file *m,
 		struct msdc_host *host, int enable)
@@ -1998,6 +1764,7 @@ static void msdc_enable_emmc_cache(struct seq_file *m,
 	}
 	mmc_put_card(host->mmc->card);
 }
+
 #ifdef MTK_MSDC_ERROR_TUNE_DEBUG
 #define MTK_MSDC_ERROR_NONE	(0)
 #define MTK_MSDC_ERROR_CMD_TMO	(0x1)
@@ -2151,6 +1918,7 @@ void msdc_error_tune_debug3(struct msdc_host *host,
 	}
 }
 #endif /*ifdef MTK_MSDC_ERROR_TUNE_DEBUG*/
+
 int g_count = 0;
 /* ========== driver proc interface =========== */
 static int msdc_debug_proc_show(struct seq_file *m, void *v)
@@ -2743,14 +2511,6 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		#endif
 		mmc_release_host(host->mmc);
 		break;
-	case MMC_CMDQ_STATUS:
-		seq_puts(m, "==== eMMC CMDQ Feature ====\n");
-		id = p1;
-		if (id >= HOST_MAX_NUM || id < 0)
-			goto invalid_host_id;
-		host = mtk_msdc_host[id];
-		msdc_cmdq_func(host, p2);
-		break;
 	default:
 		seq_puts(m, "[SD_Debug]: Invalid Command\n");
 		break;
@@ -2760,6 +2520,7 @@ invalid_host_id:
 	seq_printf(m, "[SD_Debug]invalid host id: %d\n", id);
 	return 1;
 }
+
 static ssize_t msdc_debug_proc_write(struct file *file, const char *buf,
 	size_t count, loff_t *data)
 {

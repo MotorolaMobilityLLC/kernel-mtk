@@ -89,7 +89,6 @@ u64 msdc_get_user_capacity(struct msdc_host *host)
 	return capacity;
 }
 
-
 int offset = 0;
 
 #ifdef MTK_MSDC_USE_CACHE

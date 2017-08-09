@@ -58,7 +58,7 @@ void msdc_fpga_pwr_init(void)
 			BUG_ON(1);
 		}
 		fpga_pwr_gpio_eo = fpga_pwr_gpio + 0x4;
-		pr_err("FPAG PWR_GPIO, PWR_GPIO_EO address 0x%p, 0x%p\n",
+		pr_err("FPGA PWR_GPIO, PWR_GPIO_EO address 0x%p, 0x%p\n",
 				fpga_pwr_gpio, fpga_pwr_gpio_eo);
 	}
 	msdc_set_pwr_gpio_dir(fpga_pwr_gpio, fpga_pwr_gpio_eo);
@@ -69,7 +69,7 @@ bool hwPowerOn_fpga(void)
 	volatile u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO);
-#ifdef MTK_EMMC_SUPPORT
+#ifdef CONFIG_MTK_EMMC_SUPPORT
 	MSDC_WRITE16(PWR_GPIO, (l_val | PWR_MASK_VOL_18 | PWR_MASK_CARD));
 		/* | PWR_GPIO_L4_DIR)); */
 #else
@@ -102,7 +102,7 @@ bool hwPowerDown_fpga(void)
 	volatile u16 l_val;
 
 	l_val = MSDC_READ16(PWR_GPIO);
-#ifdef MTK_EMMC_SUPPORT
+#ifdef CONFIG_MTK_EMMC_SUPPORT
 	MSDC_WRITE16(PWR_GPIO,
 		(l_val & ~(PWR_MASK_VOL_18 | PWR_MASK_CARD)));
 #else
