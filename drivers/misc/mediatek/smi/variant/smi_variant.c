@@ -12,6 +12,8 @@
 #include <linux/slab.h>
 #include <linux/clk.h>
 #include <linux/io.h>
+#include <linux/fb.h>
+#include <linux/notifier.h>
 
 #include <linux/ioctl.h>
 #include <linux/fs.h>
@@ -1159,6 +1161,77 @@ static int mtk_smi_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int mtk_smi_larb_fb_suspend(void)
+{
+	int i;
+
+	if (!smi_data || !smi_data->larb_nr) {
+		SMIMSG("smi fb suspend, smi or smi larb did not probed\n");
+		return 0;
+	}
+
+	for (i = 0; i < smi_data->larb_nr; i++) {
+		mtk_smi_larb_clock_on(i, true);
+		larb_reg_backup(i);
+		mtk_smi_larb_clock_off(i, true);
+	}
+
+	SMIMSG("mtk_smi_larb fb suspended\n");
+	return 0;
+}
+
+static int mtk_smi_larb_fb_resume(void)
+{
+	int i;
+
+	if (!smi_data || !smi_data->larb_nr) {
+		SMIMSG("smi fb resume, smi or smi larb did not probed\n");
+		return 0;
+	}
+
+	for (i = 0; i < smi_data->larb_nr; i++) {
+		mtk_smi_larb_clock_on(i, true);
+		larb_reg_restore(i);
+		mtk_smi_larb_clock_off(i, true);
+	}
+
+	SMIMSG("mtk_smi_larb fb resume\n");
+	return 0;
+
+}
+
+static int mtk_smi_variant_event_notify(struct notifier_block *self,
+				unsigned long action, void *data)
+{
+	if (action != FB_EARLY_EVENT_BLANK)
+		return 0;
+
+	{
+		struct fb_event *event = data;
+		int blank_mode = *((int *)event->data);
+
+		switch (blank_mode) {
+		case FB_BLANK_UNBLANK:
+		case FB_BLANK_NORMAL:
+			mtk_smi_larb_fb_resume();
+			break;
+		case FB_BLANK_VSYNC_SUSPEND:
+		case FB_BLANK_HSYNC_SUSPEND:
+			break;
+		case FB_BLANK_POWERDOWN:
+			mtk_smi_larb_fb_suspend();
+			break;
+		default:
+			return -EINVAL;
+		}
+	}
+	return 0;
+}
+
+
+static struct notifier_block mtk_smi_variant_event_notifier = {
+	.notifier_call  = mtk_smi_variant_event_notify,
+};
 
 static int __init smi_init(void)
 {
@@ -1192,7 +1265,7 @@ static int __init smi_init(void)
 	spin_lock_init(&g_SMIInfo.SMI_lock);
 
 	SMI_DBG_Init();
-
+	fb_register_client(&mtk_smi_variant_event_notifier);
 	SMIMSG("smi_init done\n");
 
 	return 0;
