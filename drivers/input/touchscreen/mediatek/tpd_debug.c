@@ -135,7 +135,7 @@ void tpd_up_debug_track(int x, int y)
 
 #define BUFFER_SIZE 128
 
-int tpd_em_log = 1;
+int tpd_em_log = 0;
 module_param(tpd_em_log, int, 0664);
 
 void tpd_enable_em_log(int enable)
