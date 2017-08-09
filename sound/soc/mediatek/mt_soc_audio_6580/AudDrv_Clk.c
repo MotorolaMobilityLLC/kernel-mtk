@@ -138,7 +138,7 @@ void AudDrv_Clk_On(void)
 	PRINTK_AUD_CLK("+AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	if (Aud_AFE_Clk_cntr == 0) {
-		pr_err("-----------AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+		pr_debug("-----------AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 #ifdef PM_MANAGER_API
 
 		/* for Infra power */
@@ -157,7 +157,7 @@ void AudDrv_Clk_On(void)
 		/* pr_warn("is MT_CG_AUD_PDN_DAC_EN on:%x, AUDIO_TOP_CON0=%x\n",clock_is_on(MT_CG_AUD_PDN_DAC_EN),
 			Afe_Get_Reg(AUDIO_TOP_CON0)); */
 
-		pr_warn("AudDrv_Clk_On, in  PM_MANAGER_API\n");
+		PRINTK_AUD_CLK("AudDrv_Clk_On, in  PM_MANAGER_API\n");
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x60004000, 0x60004000);	/* for bringup test, need to modify */
 		pr_warn(" AudDrv_Clk_On done, AUDIO_TOP_CON0=%x\n", Afe_Get_Reg(AUDIO_TOP_CON0));
 #else
@@ -166,7 +166,7 @@ void AudDrv_Clk_On(void)
 		/* bit 25=0, without 133m master and 66m slave bus clock cg gating */
 #endif
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x4000, 0x06004044);
-		pr_warn("AudDrv_Clk_On, not in PM_MANAGER_API\n");
+		PRINTK_AUD_CLK("AudDrv_Clk_On, not in PM_MANAGER_API\n");
 		Afe_Set_Reg(AUDIO_TOP_CON0, 0x60004000, 0x60004000);
 #endif
 	}
@@ -186,7 +186,7 @@ void AudDrv_Clk_Off(void)
 
 	Aud_AFE_Clk_cntr--;
 	if (Aud_AFE_Clk_cntr == 0) {
-		pr_err("------------AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+		pr_debug("------------AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 		{
 			/* Disable AFE clock */
 #ifdef PM_MANAGER_API
@@ -205,7 +205,7 @@ void AudDrv_Clk_Off(void)
 			/* pr_warn("AudDrv_Clk_Off is MT_CG_AUDIO_SW_CG on:%x, AUDIO_TOP_CON0=%x\n",
 				clock_is_on(MT_CG_AUDIO_SW_CG),Afe_Get_Reg(AUDIO_TOP_CON0)); */
 
-			pr_warn("AudDrv_Clk_Off, in PM_MANAGER_API\n");
+			PRINTK_AUD_CLK("AudDrv_Clk_Off, in PM_MANAGER_API\n");
 			Afe_Set_Reg(AUDIO_TOP_CON0, 0x80004000, 0xf0004000);	/* for bringup test, need to modify */
 #else
 			Afe_Set_Reg(AUDIO_TOP_CON0, 0x06000044, 0x06000044);
