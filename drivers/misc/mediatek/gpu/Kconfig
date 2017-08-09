@@ -1,0 +1,5 @@
+config MTK_GPU_SUPPORT
+	bool CONFIG_MTK_GPU_SUPPORT
+	default n
+	help
+	  CONFIG_MTK_GPU_SUPPORT define if the gpu driver should be built in or not
