@@ -618,6 +618,7 @@ void ovl_get_info(DISP_MODULE_ENUM module, void *data)
 	unsigned long layer_off = 0;
 	unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + ovl_base);
 	OVL_BASIC_STRUCT *p = NULL;
+
 	for (i = 0; i < ovl_layer_num(module); i++) {
 		layer_off = i * OVL_LAYER_OFFSET + ovl_base;
 		p = &pdata[i];
