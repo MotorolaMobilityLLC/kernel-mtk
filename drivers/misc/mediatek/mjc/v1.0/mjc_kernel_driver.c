@@ -86,6 +86,7 @@ static struct clk *clk_MJC_TOP_CLK_0;
 static struct clk *clk_MJC_TOP_CLK_1;
 static struct clk *clk_MJC_TOP_CLK_2;
 static struct clk *clk_MJC_LARB4_ASIF;
+static struct clk *clk_SCP_SYS_DIS;
 static struct clk *clk_SCP_SYS_MJC;
 static struct clk *clk_TOP_MUX_MJC;
 static struct clk *clk_TOP_IMGPLL_CK;
@@ -349,6 +350,12 @@ static int mjc_open(struct inode *pInode, struct file *pFile)
 	enable_clock(MT_CG_MJC_TOP_GROUP2, "mjc");
 	enable_clock(MT_CG_MJC_LARB4_AXI_ASIF, "mjc");
 #else
+	ret = clk_prepare_enable(clk_SCP_SYS_DIS);
+	if (ret) {
+		/* print error log & error handling */
+		MJCMSG("[ERROR] mjc_open() clk_SCP_SYS_DIS is not enabled, ret = %d\n", ret);
+	}
+
 	ret = clk_prepare_enable(clk_SCP_SYS_MJC);
 	if (ret) {
 		/* print error log & error handling */
@@ -470,6 +477,7 @@ static int mjc_release(struct inode *pInode, struct file *pFile)
 	clk_disable_unprepare(clk_MJC_TOP_CLK_2);
 	clk_disable_unprepare(clk_MJC_LARB4_ASIF);
 	clk_disable_unprepare(clk_SCP_SYS_MJC);
+	clk_disable_unprepare(clk_SCP_SYS_DIS);
 #endif
 	return 0;
 }
@@ -974,6 +982,12 @@ static int mjc_probe(struct platform_device *pDev)
 	if (IS_ERR(clk_MJC_LARB4_ASIF)) {
 		MJCMSG("[ERROR] Unable to devm_clk_get MJC_LARB4_ASIF\n");
 		return PTR_ERR(clk_MJC_LARB4_ASIF);
+	}
+
+	clk_SCP_SYS_DIS = devm_clk_get(&pDev->dev, "mtcmos-dis");
+	if (IS_ERR(clk_SCP_SYS_DIS)) {
+		MJCMSG("[ERROR] Unable to devm_clk_get SCP_SYS_DIS\n");
+		return PTR_ERR(clk_SCP_SYS_DIS);
 	}
 
 	clk_SCP_SYS_MJC = devm_clk_get(&pDev->dev, "mtcmos-mjc");
