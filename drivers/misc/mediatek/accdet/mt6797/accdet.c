@@ -22,7 +22,7 @@ int accdet_irq;
 unsigned int gpiopin, headsetdebounce;
 unsigned int accdet_eint_type;
 struct headset_mode_settings *cust_headset_settings;
-#define ACCDET_DEBUG(format, args...) pr_warn(format, ##args)
+#define ACCDET_DEBUG(format, args...) pr_debug(format, ##args)
 #define ACCDET_INFO(format, args...) pr_warn(format, ##args)
 #define ACCDET_ERROR(format, args...) pr_err(format, ##args)
 static struct switch_dev accdet_data;
@@ -79,6 +79,10 @@ static struct workqueue_struct *accdet_disable_workqueue;
 #else
 /*static int g_accdet_working_in_suspend =0;*/
 #endif/*end CONFIG_ACCDET_EINT*/
+#ifndef CONFIG_ACCDET_EINT_IRQ
+struct pinctrl *accdet_pinctrl1;
+struct pinctrl_state *pins_eint_int;
+#endif
 #ifdef DEBUG_THREAD
 #endif
 static u32 pmic_pwrap_read(u32 addr);
@@ -440,7 +444,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 	} else {
 /*EINT_PIN_PLUG_OUT*/
 /*Disable ACCDET*/
-		ACCDET_DEBUG("[Accdet]DCC EINT func :plug-in, cur_eint_state = %d\n", cur_eint_state);
+		ACCDET_DEBUG("[Accdet]DCC EINT func :plug-out, cur_eint_state = %d\n", cur_eint_state);
 		mutex_lock(&accdet_eint_irq_sync_mutex);
 		eint_accdet_sync_flag = 0;
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
@@ -490,7 +494,6 @@ static irqreturn_t accdet_eint_func(int irq, void *data)
 		pmic_pwrap_write(ACCDET_DEBOUNCE3, cust_headset_settings->debounce3);
 
 #else
-		gpio_request(gpiopin, "accdet");
 		gpio_set_debounce(gpiopin, headsetdebounce);
 #endif
 
@@ -513,7 +516,6 @@ static irqreturn_t accdet_eint_func(int irq, void *data)
 		/*debounce=16ms*/
 		pmic_pwrap_write(ACCDET_EINT_CTL, pmic_pwrap_read(ACCDET_EINT_CTL) | EINT_IRQ_DE_OUT);
 #else
-		gpio_request(gpiopin, "accdet");
 		gpio_set_debounce(gpiopin, accdet_dts_data.accdet_plugout_debounce * 1000);
 #endif
 		/* update the eint status */
@@ -530,50 +532,48 @@ static irqreturn_t accdet_eint_func(int irq, void *data)
 	return IRQ_HANDLED;
 }
 #ifndef CONFIG_ACCDET_EINT_IRQ
-static inline int accdet_setup_eint(void)
+static inline int accdet_setup_eint(struct platform_device *accdet_device)
 {
 	int ret;
 	u32 ints[2] = { 0, 0 };
 	u32 ints1[2] = { 0, 0 };
-	struct device_node *node;
-	struct pinctrl *pinctrl1;
-	struct pinctrl_state *pins_default, *pins_eint_int;
+	struct device_node *node = NULL;
+	struct pinctrl_state *pins_default;
 
 	/*configure to GPIO function, external interrupt */
 	ACCDET_INFO("[Accdet]accdet_setup_eint\n");
-	pinctrl1 = devm_pinctrl_get(&accdet_device.dev);
-	if (IS_ERR(pinctrl1)) {
-		ret = PTR_ERR(pinctrl1);
-		dev_err(&accdet_device.dev, "fwq Cannot find accdet pinctrl1!\n");
+	accdet_pinctrl1 = devm_pinctrl_get(&accdet_device->dev);
+	if (IS_ERR(accdet_pinctrl1)) {
+		ret = PTR_ERR(accdet_pinctrl1);
+		dev_err(&accdet_device->dev, "fwq Cannot find accdet accdet_pinctrl1!\n");
 		return ret;
 	}
 
-	pins_default = pinctrl_lookup_state(pinctrl1, "default");
+	pins_default = pinctrl_lookup_state(accdet_pinctrl1, "default");
 	if (IS_ERR(pins_default)) {
 		ret = PTR_ERR(pins_default);
-		dev_err(&accdet_device.dev, "fwq Cannot find accdet pinctrl default!\n");
+		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl default!\n");
 	}
 
-	pins_eint_int = pinctrl_lookup_state(pinctrl1, "state_eint_int");
+	pins_eint_int = pinctrl_lookup_state(accdet_pinctrl1, "state_eint_as_int");
 	if (IS_ERR(pins_eint_int)) {
 		ret = PTR_ERR(pins_eint_int);
-		dev_err(&accdet_device.dev, "fwq Cannot find accdet pinctrl state_eint_int!\n");
+		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl state_eint_int!\n");
 		return ret;
 	}
-	pinctrl_select_state(pinctrl1, pins_eint_int);
+	pinctrl_select_state(accdet_pinctrl1, pins_eint_int);
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek, accdet-eint");
+	node = of_find_matching_node(node, accdet_of_match);
 	if (node) {
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 		of_property_read_u32_array(node, "interrupts", ints1, ARRAY_SIZE(ints1));
 		gpiopin = ints[0];
 		headsetdebounce = ints[1];
 		accdet_eint_type = ints1[1];
-		gpio_request(gpiopin, "accdet");
 		gpio_set_debounce(gpiopin, headsetdebounce);
 		accdet_irq = irq_of_parse_and_map(node, 0);
-		ret = request_irq(accdet_irq, accdet_eint_func, IRQF_TRIGGER_NONE, "ACCDET-eint", NULL);
-		if (ret > 0) {
+		ret = request_irq(accdet_irq, accdet_eint_func, IRQF_TRIGGER_NONE, "accdet-eint", NULL);
+		if (ret != 0) {
 			ACCDET_ERROR("[Accdet]EINT IRQ LINE NOT AVAILABLE\n");
 		} else {
 			ACCDET_ERROR("[Accdet]accdet set EINT finished, accdet_irq=%d, headsetdebounce=%d\n",
@@ -1453,7 +1453,7 @@ void accdet_eint_int_handler(void)
 		ACCDET_DEBUG("[accdet_int_handler] don't finished\n");
 }
 
-int mt_accdet_probe(void)
+int mt_accdet_probe(struct platform_device *dev)
 {
 	int ret = 0;
 
@@ -1558,7 +1558,7 @@ int mt_accdet_probe(void)
 		INIT_WORK(&accdet_disable_work, disable_micbias_callback);
 		accdet_eint_workqueue = create_singlethread_workqueue("accdet_eint");
 		INIT_WORK(&accdet_eint_work, accdet_eint_work_callback);
-		accdet_setup_eint();
+		accdet_setup_eint(dev);
 #endif
 		g_accdet_first = 0;
 	}
