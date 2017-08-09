@@ -17,12 +17,39 @@ config MTK_INFRACFG
 	  directly associated to any device.
 	  INFRACFG controller is needed by SCPSYS driver.
 
-config MTK_SCPSYS
-	bool "MediaTek SCPSYS Support"
+config MTK_SCPSYS_MT8173
+	bool "SCPSYS Support for MediaTek MT8173"
 	depends on MTK_INFRACFG
 	select SOC_MEDIATEK
 	select REGMAP
 	select PM_GENERIC_DOMAINS
+	default y if ARCH_MT8173
+	help
+	  Say yes here to add support for the MediaTek SCPSYS power domain
+	  driver.
+	  The System Control Processor System (SCPSYS) has several power
+	  management related tasks in the system.
+
+config MTK_SCPSYS_MT8163
+	bool "SCPSYS Support MediaTek MT8163"
+	depends on MTK_INFRACFG
+	select SOC_MEDIATEK
+	select REGMAP
+	select PM_GENERIC_DOMAINS
+	default y if ARCH_MT8163
+	help
+	  Say yes here to add support for the MediaTek SCPSYS power domain
+	  driver.
+	  The System Control Processor System (SCPSYS) has several power
+	  management related tasks in the system.
+
+config MTK_SCPSYS_MT2701
+	bool "SCPSYS Support MediaTek MT2701"
+	depends on MTK_INFRACFG
+	select SOC_MEDIATEK
+	select REGMAP
+	select PM_GENERIC_DOMAINS
+	default y if MACH_MT2701
 	help
 	  Say yes here to add support for the MediaTek SCPSYS power domain
 	  driver.
