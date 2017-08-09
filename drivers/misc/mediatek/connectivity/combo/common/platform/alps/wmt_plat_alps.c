@@ -570,18 +570,15 @@ INT32 wmt_plat_ldo_ctrl(ENUM_PIN_STATE state)
 			/*set to gpio output low, disable pull */
 			pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
 					gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_state[GPIO_PULL_DIS]);
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num,
-					0);
+			gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num, 0);
 			WMT_DBG_FUNC("WMT-PLAT:LDO init (out 0)\n");
 			break;
 		case PIN_STA_OUT_H:
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num,
-					1);
+			gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num, 1);
 			WMT_DBG_FUNC("WMT-PLAT:LDO (out 1)\n");
 			break;
 		case PIN_STA_OUT_L:
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num,
-					0);
+			gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num, 0);
 			WMT_DBG_FUNC("WMT-PLAT:LDO (out 0)\n");
 			break;
 		case PIN_STA_IN_L:
@@ -608,29 +605,26 @@ INT32 wmt_plat_pmu_ctrl(ENUM_PIN_STATE state)
 		/*set to gpio output low, disable pull */
 		pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_state[GPIO_PULL_DIS]);
-		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num, 0);
+		gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num, 0);
 		if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num) {
 			pinctrl_select_state(gpio_ctrl_info.pinctrl_info, gpio_ctrl_info.
 					gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_state[GPIO_PULL_DIS]);
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num,
-					0);
+			gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num, 0);
 		}
 		WMT_DBG_FUNC("WMT-PLAT:PMU init (out 0)\n");
 		break;
 
 	case PIN_STA_OUT_H:
-		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num, 1);
+		gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num, 1);
 		if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num)
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num,
-					1);
+			gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num, 1);
 		WMT_DBG_FUNC("WMT-PLAT:PMU (out 1)\n");
 		break;
 
 	case PIN_STA_OUT_L:
-		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num, 0);
+		gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num, 0);
 		if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num)
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num,
-					0);
+			gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num, 0);
 		WMT_DBG_FUNC("WMT-PLAT:PMU (out 0)\n");
 		break;
 
@@ -647,8 +641,7 @@ INT32 wmt_plat_pmu_ctrl(ENUM_PIN_STATE state)
 	case PIN_STA_SHOW:
 		WMT_INFO_FUNC("WMT-PLAT:PMU PIN_STA_SHOW start\n");
 		WMT_INFO_FUNC("WMT-PLAT:PMU out(%d)\n",
-				__gpio_get_value(gpio_ctrl_info.
-					gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num));
+				gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num));
 		WMT_INFO_FUNC("WMT-PLAT:PMU PIN_STA_SHOW end\n");
 		break;
 	default:
@@ -688,17 +681,17 @@ INT32 wmt_plat_rst_ctrl(ENUM_PIN_STATE state)
 		/*set to gpio output low, disable pull */
 		pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_state[GPIO_PULL_DIS]);
-		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num, 0);
+		gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num, 0);
 		WMT_DBG_FUNC("WMT-PLAT:RST init (out 0)\n");
 		break;
 
 	case PIN_STA_OUT_H:
-		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num, 1);
+		gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num, 1);
 		WMT_DBG_FUNC("WMT-PLAT:RST (out 1)\n");
 		break;
 
 	case PIN_STA_OUT_L:
-		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num, 0);
+		gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num, 0);
 		WMT_DBG_FUNC("WMT-PLAT:RST (out 0)\n");
 		break;
 
@@ -712,7 +705,7 @@ INT32 wmt_plat_rst_ctrl(ENUM_PIN_STATE state)
 	case PIN_STA_SHOW:
 		WMT_INFO_FUNC("WMT-PLAT:RST PIN_STA_SHOW start\n");
 		WMT_INFO_FUNC("WMT-PLAT:RST out(%d)\n",
-				__gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num));
+				gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num));
 		WMT_INFO_FUNC("WMT-PLAT:RST PIN_STA_SHOW end\n");
 		break;
 
@@ -841,8 +834,8 @@ INT32 wmt_plat_uart_ctrl(ENUM_PIN_STATE state)
 		break;
 	case PIN_STA_IN_L:
 	case PIN_STA_DEINIT:
-		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num, 0);
-		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_UTXD_PIN].gpio_num, 0);
+		gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num, 0);
+		gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_UTXD_PIN].gpio_num, 0);
 		WMT_DBG_FUNC("WMT-PLAT:UART deinit (out 0)\n");
 		break;
 	case PIN_STA_IN_PU:
@@ -980,12 +973,9 @@ INT32 wmt_plat_i2s_ctrl(ENUM_PIN_STATE state)
 				break;
 			case PIN_STA_IN_L:
 			case PIN_STA_DEINIT:
-				gpio_direction_output(gpio_ctrl_info.
-						gpio_ctrl_state[GPIO_COMBO_I2S_CK_PIN].gpio_num, 0);
-				gpio_direction_output(gpio_ctrl_info.
-						gpio_ctrl_state[GPIO_COMBO_I2S_WS_PIN].gpio_num, 0);
-				gpio_direction_output(gpio_ctrl_info.
-						gpio_ctrl_state[GPIO_COMBO_I2S_DAT_PIN].gpio_num, 0);
+				gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_CK_PIN].gpio_num, 0);
+				gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_WS_PIN].gpio_num, 0);
+				gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_DAT_PIN].gpio_num, 0);
 				WMT_DBG_FUNC("WMT-PLAT:<Merge IF>I2S deinit (out 0)\n");
 				break;
 			default:
@@ -1022,12 +1012,9 @@ INT32 wmt_plat_i2s_ctrl(ENUM_PIN_STATE state)
 				break;
 			case PIN_STA_IN_L:
 			case PIN_STA_DEINIT:
-				gpio_direction_output(gpio_ctrl_info.
-						gpio_ctrl_state[GPIO_COMBO_I2S_CK_PIN].gpio_num, 0);
-				gpio_direction_output(gpio_ctrl_info.
-						gpio_ctrl_state[GPIO_COMBO_I2S_WS_PIN].gpio_num, 0);
-				gpio_direction_output(gpio_ctrl_info.
-						gpio_ctrl_state[GPIO_COMBO_I2S_DAT_PIN].gpio_num, 0);
+				gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_CK_PIN].gpio_num, 0);
+				gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_WS_PIN].gpio_num, 0);
+				gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_DAT_PIN].gpio_num, 0);
 				WMT_DBG_FUNC("WMT-PLAT:<I2S IF>I2S deinit (out 0)\n");
 				break;
 			default:
@@ -1126,7 +1113,7 @@ static INT32 wmt_plat_gps_sync_ctrl(ENUM_PIN_STATE state)
 		case PIN_STA_DEINIT:
 			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
 					gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_state[GPIO_PULL_DIS]);
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_num, 0);
+			gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_num, 0);
 			break;
 		case PIN_STA_MUX:
 			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
@@ -1149,13 +1136,13 @@ static INT32 wmt_plat_gps_lna_ctrl(ENUM_PIN_STATE state)
 		case PIN_STA_DEINIT:
 			pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
 					gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_LNA_PIN].gpio_state[GPIO_PULL_DIS]);
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_LNA_PIN].gpio_num, 0);
+			gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_LNA_PIN].gpio_num, 0);
 			break;
 		case PIN_STA_OUT_H:
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_LNA_PIN].gpio_num, 1);
+			gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_LNA_PIN].gpio_num, 1);
 			break;
 		case PIN_STA_OUT_L:
-			gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_LNA_PIN].gpio_num, 0);
+			gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_LNA_PIN].gpio_num, 0);
 			break;
 		default:
 			WMT_WARN_FUNC("%d mode not defined for  gps lna pin !!!\n", state);
@@ -1209,7 +1196,7 @@ static INT32 wmt_plat_uart_rx_ctrl(ENUM_PIN_STATE state)
 	case PIN_STA_DEINIT:
 		pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_state[GPIO_PULL_DIS]);
-		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num, 0);
+		gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num, 0);
 		WMT_DBG_FUNC("WMT-PLAT:UART Rx deinit (out 0)\n");
 		break;
 	case PIN_STA_IN_NP:
@@ -1218,7 +1205,7 @@ static INT32 wmt_plat_uart_rx_ctrl(ENUM_PIN_STATE state)
 		WMT_DBG_FUNC("WMT-PLAT:UART Rx input pull none\n");
 		break;
 	case PIN_STA_OUT_H:
-		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num, 1);
+		gpio_set_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num, 1);
 		WMT_DBG_FUNC("WMT-PLAT:UART Rx output high\n");
 		break;
 	default:
