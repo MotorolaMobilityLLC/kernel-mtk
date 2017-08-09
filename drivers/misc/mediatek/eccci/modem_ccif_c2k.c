@@ -1454,7 +1454,7 @@ static int md_ccif_ring_buf_init(struct ccci_modem *md)
 		    tx_queue_buffer_size[i];
 		if (md_ctrl->total_smem_size + bufsize >
 		    md->mem_layout.smem_region_size - CCCI_SMEM_OFFSET_CCIF_SMEM) {
-			CCCI_ERR_MSG(md->index, TAG,
+			CCCI_ERROR_LOG(md->index, TAG,
 				     "share memory too small,please check configure,smem_size=%d, exception_smem=%d\n",
 				     md->mem_layout.smem_region_size,
 				     md->smem_layout.ccci_exp_smem_size);

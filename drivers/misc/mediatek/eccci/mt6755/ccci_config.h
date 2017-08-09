@@ -126,5 +126,5 @@
 
 #define IPC_L4C_MSG_ID_LEN   (0x40)
 
-#define CCCI_LOG_LEVEL  (0)
+#define CCCI_LOG_LEVEL  (4)
 #endif

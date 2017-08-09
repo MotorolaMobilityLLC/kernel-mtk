@@ -1924,7 +1924,7 @@ static void md_cd_ccif_work(struct work_struct *work)
 		struct ccci_port *port;
 		int i;
 
-		CCCI_INF_MSG(md->index, TAG, "CCB wakeup\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "CCB wakeup\n");
 		for (i = 0; i < md->port_number; i++) {
 			port = md->ports + i;
 			if (port->rx_ch == CCCI_SMEM_CH)
@@ -3327,7 +3327,7 @@ static int md_cd_ee_callback(struct ccci_modem *md, MODEM_EE_FLAG flag)
 
 static int md_cd_send_ccb_tx_notify(struct ccci_modem *md, int core_id)
 {
-	CCCI_INF_MSG(md->index, TAG, "ccb tx notify to core %d\n", core_id);
+	CCCI_NORMAL_LOG(md->index, TAG, "ccb tx notify to core %d\n", core_id);
 	switch (core_id) {
 	case P_CORE:
 		md_cd_ccif_send(md, AP_MD_CCB_WAKEUP);

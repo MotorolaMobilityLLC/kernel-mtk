@@ -969,7 +969,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			unsigned int data;
 
 			if (copy_from_user(&data, (void __user *)arg, sizeof(unsigned int))) {
-				CCCI_INF_MSG(md->index, CHAR, "smem tx notify fail: copy_from_user fail!\n");
+				CCCI_NORMAL_LOG(md->index, CHAR, "smem tx notify fail: copy_from_user fail!\n");
 				ret = -EFAULT;
 			} else {
 				ret = port_smem_tx_nofity(port, data);
@@ -990,7 +990,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			unsigned int data;
 
 			if (copy_from_user(&data, (void __user *)arg, sizeof(unsigned int))) {
-				CCCI_INF_MSG(md->index, CHAR, "smem set state fail: copy_from_user fail!\n");
+				CCCI_NORMAL_LOG(md->index, CHAR, "smem set state fail: copy_from_user fail!\n");
 				ret = -EFAULT;
 			} else {
 				smem_port->state = data;
@@ -1107,14 +1107,14 @@ static int dev_char_mmap(struct file *fp, struct vm_area_struct *vma)
 	struct ccci_smem_port *smem_port = (struct ccci_smem_port *)port->private_data;
 	int pfn, len, ret;
 
-	CCCI_DBG_MSG(port->modem->index, CHAR, "mmap on %s\n", port->name);
+	CCCI_DEBUG_LOG(port->modem->index, CHAR, "mmap on %s\n", port->name);
 	if (port->rx_ch != CCCI_SMEM_CH)
 		return -EPERM;
 
-	CCCI_INF_MSG(port->modem->index, CHAR, "remap addr:0x%llx len:%d  map-len:%lu\n",
+	CCCI_NORMAL_LOG(port->modem->index, CHAR, "remap addr:0x%llx len:%d  map-len:%lu\n",
 			(unsigned long long)smem_port->addr_phy, smem_port->length, vma->vm_end - vma->vm_start);
 	if ((vma->vm_end - vma->vm_start) > smem_port->length) {
-		CCCI_ERR_MSG(port->modem->index, CHAR,
+		CCCI_ERROR_LOG(port->modem->index, CHAR,
 			     "invalid mm size request from %s\n", port->name);
 		return -EINVAL;
 	}
@@ -1130,7 +1130,7 @@ static int dev_char_mmap(struct file *fp, struct vm_area_struct *vma)
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 	ret = remap_pfn_range(vma, vma->vm_start, pfn, len, vma->vm_page_prot);
 	if (ret) {
-		CCCI_ERR_MSG(port->modem->index, CHAR, "remap failed %d/%x, 0x%llx -> 0x%llx\n", ret, pfn,
+		CCCI_ERROR_LOG(port->modem->index, CHAR, "remap failed %d/%x, 0x%llx -> 0x%llx\n", ret, pfn,
 			(unsigned long long)smem_port->addr_phy, (unsigned long long)vma->vm_start);
 		return -EAGAIN;
 	}
