@@ -1498,9 +1498,11 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		{
 			MMProfile_MetaLog_t MetaLog;
 			MMProfile_MetaLog_t __user *pMetaLogUser = (MMProfile_MetaLog_t __user *)arg;
+			MMP_MetaData_t MetaData;
 
 			retn = copy_from_user(&MetaLog, pMetaLogUser, sizeof(MMProfile_MetaLog_t));
-			MMProfileLogMetaInt(MetaLog.id, MetaLog.type, &(MetaLog.meta_data), 1);
+			retn = copy_from_user(&MetaData, &(pMetaLogUser->meta_data), sizeof(MMP_MetaData_t));
+			MMProfileLogMetaInt(MetaLog.id, MetaLog.type, &MetaData, 1);
 		}
 		break;
 	case MMP_IOC_DUMPMETADATA:
