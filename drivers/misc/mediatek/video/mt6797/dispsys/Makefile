@@ -52,7 +52,7 @@ obj-y += ddp_pwm_mux.o
 #obj-y += data_rgb888_64x64_golden.o
 
 obj-y += ddp_mmp.o
-#obj-y += ddp_met.o
+obj-y += ddp_met.o
 
 #should remove
 #obj-y += ddp_misc.o
