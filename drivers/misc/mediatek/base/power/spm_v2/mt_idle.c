@@ -135,9 +135,14 @@ enum {
 
 enum {
 	UNIV_PLL = 0,
-	MM_PLL,
+	MFG_PLL,
 	MSDC_PLL,
-	VENC_PLL,
+	IMG_PLL,
+	TVD_PLL,
+	M_PLL,
+	CODEC_PLL,
+	MD_PLL,
+	VDEC_PLL,
 	NR_PLLS,
 };
 
@@ -549,10 +554,16 @@ static unsigned int dpidle_condition_mask[NR_GRPS] = {
 
 static unsigned int soidle3_pll_condition_mask[NR_PLLS] = {
 	1, /* UNIVPLL */
-	0, /* MMPLL */
+	0, /* MFGPLL */
 	1, /* MSDCPLL */
-	0, /* VENCPLL */
+	0, /* IMGPLL */
+	0, /* TVDPLL*/
+	0, /* MPLL*/
+	0, /* CODECPLL*/
+	0, /* MDPLL*/
+	0, /* VENCPLL*/
 };
+
 
 static unsigned int soidle3_condition_mask[NR_GRPS] = {
 	0x02640C02, /* INFRA0: */
@@ -1173,9 +1184,12 @@ bool cg_i2c3_check_idle_can_enter(unsigned int *block_mask)
 	return true;
 }
 
+
 static void __iomem  *apmixed_base_in_idle;
 #define APMIXEDSYS(offset)	(apmixed_base_in_idle + offset)
-#define ARMCA15PLL_BASE		APMIXEDSYS(0x200)
+
+#if defined(CONFIG_ARCH_MT6755)
+#define ARMCA15PLL_BASE				APMIXEDSYS(0x200)
 #define ARMCA15PLL_CON0				APMIXEDSYS(0x0200)
 #define ARMCA7PLL_CON0				APMIXEDSYS(0x0210)
 #define MAINPLL_CON0				APMIXEDSYS(0x0220)
@@ -1205,6 +1219,50 @@ int is_pll_on(int id)
 {
 	return clk_readl(APMIXEDSYS(0x230 + id * 0x10)) & 0x1;
 }
+
+#elif defined(CONFIG_ARCH_MT6797)
+
+#define MAINPLL_CON0	APMIXEDSYS(0x0220)
+#define UNIVPLL_CON0	APMIXEDSYS(0x0230)
+#define MFGPLL_CON0		APMIXEDSYS(0x0240)
+#define MSDCPLL_CON0	APMIXEDSYS(0x0250)
+#define IMGPLL_CON0		APMIXEDSYS(0x0260)
+#define TVDPLL_CON0		APMIXEDSYS(0x0270)
+#define MPLL_CON0		APMIXEDSYS(0x0280)
+#define CODECPLL_CON0	APMIXEDSYS(0x0290)
+#define APLL1_CON0		APMIXEDSYS(0x02a0)
+#define APLL2_CON0		APMIXEDSYS(0x02b4)
+#define MDPLL1_CON0		APMIXEDSYS(0x02c8)
+#define VDECPLL_CON0	APMIXEDSYS(0x02e4)
+
+#define clk_readl(addr)		DRV_Reg32(addr)
+
+struct{
+	const unsigned int offset;
+	const char name[10];
+} pll_info[NR_PLLS] = {
+	{0x230, "UNIVPLL"},
+	{0x240, "MFGPLL"},
+	{0x250, "MSDCPLL"},
+	{0x260, "IMGPLL"},
+	{0x270, "TVDPLL"},
+	{0x280, "MPLL"},
+	{0x290, "CODECPLL"},
+	{0x2c8, "MDPLL"},
+	{0x2e4, "VENCPLL"},
+};
+
+const char *pll_grp_get_name(int id)
+{
+	return pll_info[id].name;
+}
+
+int is_pll_on(int id)
+{
+	return clk_readl(APMIXEDSYS(pll_info[id].offset)) & 0x1;
+}
+#endif
+
 
 bool pll_check_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask)
 {
@@ -3294,16 +3352,25 @@ static ssize_t reg_dump_read(struct file *filp, char __user *userbuf, size_t cou
 
 	/* PLL */
 	p += sprintf(p, "=== PLL ====\n");
-	p += sprintf(p, "ARMCA15PLL_CON0 = 0x%08x\n", idle_readl(ARMCA15PLL_CON0));
-	p += sprintf(p, "ARMCA7PLL_CON0 = 0x%08x\n", idle_readl(ARMCA7PLL_CON0));
 	p += sprintf(p, "MAINPLL_CON0 = 0x%08x\n", idle_readl(MAINPLL_CON0));
 	p += sprintf(p, "UNIVPLL_CON0 = 0x%08x\n", idle_readl(UNIVPLL_CON0));
-	p += sprintf(p, "MMPLL_CON0 = 0x%08x\n", idle_readl(MMPLL_CON0));
 	p += sprintf(p, "MSDCPLL_CON0 = 0x%08x\n", idle_readl(MSDCPLL_CON0));
-	p += sprintf(p, "VENCPLL_CON0 = 0x%08x\n", idle_readl(VENCPLL_CON0));
 	p += sprintf(p, "TVDPLL_CON0 = 0x%08x\n", idle_readl(TVDPLL_CON0));
 	p += sprintf(p, "APLL1_CON0 = 0x%08x\n", idle_readl(APLL1_CON0));
 	p += sprintf(p, "APLL2_CON0 = 0x%08x\n", idle_readl(APLL2_CON0));
+#if defined(CONFIG_ARCH_MT6755)
+	p += sprintf(p, "ARMCA15PLL_CON0 = 0x%08x\n", idle_readl(ARMCA15PLL_CON0));
+	p += sprintf(p, "ARMCA7PLL_CON0 = 0x%08x\n", idle_readl(ARMCA7PLL_CON0));
+	p += sprintf(p, "MMPLL_CON0 = 0x%08x\n", idle_readl(MMPLL_CON0));
+	p += sprintf(p, "VENCPLL_CON0 = 0x%08x\n", idle_readl(VENCPLL_CON0));
+#elif defined(CONFIG_ARCH_MT6797)
+	p += sprintf(p, "MFGPLL_CON0 = 0x%08x\n", idle_readl(MFGPLL_CON0));
+	p += sprintf(p, "IMGPLL_CON0 = 0x%08x\n", idle_readl(IMGPLL_CON0));
+	p += sprintf(p, "MPLL_CON0 = 0x%08x\n", idle_readl(MPLL_CON0));
+	p += sprintf(p, "CODECPLL_CON0 = 0x%08x\n", idle_readl(CODECPLL_CON0));
+	p += sprintf(p, "MDPLL1_CON0 = 0x%08x\n", idle_readl(MDPLL1_CON0));
+	p += sprintf(p, "VDECPLL_CON0 = 0x%08x\n", idle_readl(VDECPLL_CON0));
+#endif
 
 	/* MTCMOS */
 	p += sprintf(p, "=== MTCMOS ====\n");

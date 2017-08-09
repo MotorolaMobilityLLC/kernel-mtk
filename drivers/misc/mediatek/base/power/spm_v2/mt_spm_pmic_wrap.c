@@ -2,7 +2,6 @@
 #include <linux/module.h>
 #include <linux/delay.h>
 
-
 #include <mt-plat/mt_typedefs.h>
 #include "pwrap_hal.h"
 #include "mt_spm_pmic_wrap.h"
@@ -64,6 +63,8 @@ struct pmic_wrap_setting {
 	} set[NR_PMIC_WRAP_PHASE];
 };
 
+#if defined(CONFIG_ARCH_MT6755)
+
 static struct pmic_wrap_setting pw = {
 	.phase = NR_PMIC_WRAP_PHASE,	/* invalid setting for init */
 	.addr = {{0, 0} },
@@ -101,6 +102,41 @@ static struct pmic_wrap_setting pw = {
 		.nr_idx = NR_IDX_DI,
 	},
 };
+#elif defined(CONFIG_ARCH_MT6797)
+static struct pmic_wrap_setting pw = {
+	.phase = NR_PMIC_WRAP_PHASE,	/* invalid setting for init */
+	.addr = {{0, 0} },
+
+	.set[PMIC_WRAP_PHASE_NORMAL] = {
+		._[IDX_NM_VCORE_HPM] = { MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(100000),},
+		._[IDX_NM_VCORE_LPM] = { MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(90000),},
+		._[IDX_NM_VCORE_TRANS2] = { MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(96250),},
+		._[IDX_NM_VCORE_TRANS1] = { MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(93125),},
+		.nr_idx = NR_IDX_NM,
+	},
+
+	.set[PMIC_WRAP_PHASE_SUSPEND] = {
+		._[IDX_SP_VCORE_HPM] = { MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(100000),},
+		._[IDX_SP_VCORE_LPM] = { MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(90000),},
+		._[IDX_SP_VCORE_TRANS2] = { MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(96250),},
+		._[IDX_SP_VCORE_TRANS1] = { MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(93125),},
+		.nr_idx = NR_IDX_SP,
+	},
+
+	.set[PMIC_WRAP_PHASE_DEEPIDLE] = {
+		._[IDX_DI_VCORE_HPM] = { MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(100000),},
+		._[IDX_DI_VCORE_LPM] = { MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(90000),},
+		._[IDX_DI_VCORE_TRANS2] = { MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(96250),},
+		._[IDX_DI_VCORE_TRANS1] = { MT6351_PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(93125),},
+		._[IDX_DI_SRCCLKEN_IN2_NORMAL] = {MT6351_PMIC_RG_SRCLKEN_IN2_EN_ADDR, _BITS_(3:3, 1),},
+		._[IDX_DI_SRCCLKEN_IN2_SLEEP] = {MT6351_PMIC_RG_SRCLKEN_IN2_EN_ADDR, _BITS_(3:3, 0),},
+		.nr_idx = NR_IDX_DI,
+	},
+};
+#else
+#error "Does not support!"
+#endif
+
 
 static DEFINE_SPINLOCK(pmic_wrap_lock);
 #define pmic_wrap_lock(flags) spin_lock_irqsave(&pmic_wrap_lock, flags)

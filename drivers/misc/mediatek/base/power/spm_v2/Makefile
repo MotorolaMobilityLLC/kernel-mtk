@@ -43,5 +43,6 @@ obj-y += mt_spm_sleep.o
 obj-y += mt_sleep.o
 obj-y += mt_spm_internal.o
 obj-y += mt_spm_dpidle.o
-
+obj-y += mt_spm_sodi.o
+obj-y += mt_spm_sodi3p0.o
 endif

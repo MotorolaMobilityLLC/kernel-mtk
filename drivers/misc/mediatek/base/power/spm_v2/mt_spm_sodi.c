@@ -11,16 +11,21 @@
 #endif
 
 #include <mach/irqs.h>
-#include <mach/mt_cirq.h>
-#include <mach/mt_spm_idle.h>
-#include <mach/mt_cpuidle.h>
 #include <mach/mt_gpt.h>
-#include <mach/mt_boot.h>
-#include <mach/mt_spm_misc.h>
-#include <mach/upmu_common.h>
+#include <mach/mt_secure_api.h>
+
+#include <mt-plat/mt_boot.h>
+#include <mt-plat/mt_cirq.h>
+#include <mt-plat/upmu_common.h>
+#include <mt-plat/mt_io.h>
+
+#include <mt_spm_idle.h>
+#include <mt_cpuidle.h>
+#include <mt_spm_misc.h>
 
 #include "mt_spm_internal.h"
 #include "mt_spm_pmic_wrap.h"
+
 
 
 /**************************************
@@ -41,38 +46,38 @@
 #endif
 
 #if defined(CONFIG_ARCH_MT6755)
-#define WAKE_SRC_FOR_SODI								\
-	(WAKE_SRC_R12_KP_IRQ_B |							\
-	WAKE_SRC_R12_APXGPT1_EVENT_B |						\
-	WAKE_SRC_R12_EINT_EVENT_B |							\
-	WAKE_SRC_R12_CCIF0_EVENT_B |						\
-	WAKE_SRC_R12_USB_CDSC_B |							\
-	WAKE_SRC_R12_USB_POWERDWN_B |						\
-	WAKE_SRC_R12_C2K_WDT_IRQ_B |						\
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B |					\
-	WAKE_SRC_R12_CCIF1_EVENT_B |						\
-	WAKE_SRC_R12_AFE_IRQ_MCU_B |						\
-	WAKE_SRC_R12_SYS_CIRQ_IRQ_B |						\
-	WAKE_SRC_R12_CSYSPWREQ_B |							\
-	WAKE_SRC_R12_MD1_WDT_B |							\
-	WAKE_SRC_R12_CLDMA_EVENT_B |						\
+#define WAKE_SRC_FOR_SODI \
+	(WAKE_SRC_R12_KP_IRQ_B | \
+	WAKE_SRC_R12_APXGPT1_EVENT_B | \
+	WAKE_SRC_R12_EINT_EVENT_B | \
+	WAKE_SRC_R12_CCIF0_EVENT_B | \
+	WAKE_SRC_R12_USB_CDSC_B | \
+	WAKE_SRC_R12_USB_POWERDWN_B | \
+	WAKE_SRC_R12_C2K_WDT_IRQ_B | \
+	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
+	WAKE_SRC_R12_CCIF1_EVENT_B | \
+	WAKE_SRC_R12_AFE_IRQ_MCU_B | \
+	WAKE_SRC_R12_SYS_CIRQ_IRQ_B | \
+	WAKE_SRC_R12_CSYSPWREQ_B | \
+	WAKE_SRC_R12_MD1_WDT_B | \
+	WAKE_SRC_R12_CLDMA_EVENT_B | \
 	WAKE_SRC_R12_SEJ_WDT_GPT_B)
 #elif defined(CONFIG_ARCH_MT6797)
-#define WAKE_SRC_FOR_SODI								\
-	(WAKE_SRC_R12_KP_IRQ_B |							\
-	WAKE_SRC_R12_APXGPT1_EVENT_B |						\
-	WAKE_SRC_R12_EINT_EVENT_B |							\
-	WAKE_SRC_R12_CCIF0_EVENT_B |						\
-	WAKE_SRC_R12_USB0_CDSC_B_AND_USB1_CSDC_B |			\
-	WAKE_SRC_R12_USB0_POWERDWN_B_AND_USB1_POWERDWN_B |	\
-	WAKE_SRC_R12_C2K_WDT_IRQ_B |						\
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B |					\
-	WAKE_SRC_R12_CCIF1_EVENT_B |						\
-	WAKE_SRC_R12_AFE_IRQ_MCU_B |						\
-	WAKE_SRC_R12_SYS_CIRQ_IRQ_B |						\
-	WAKE_SRC_R12_CSYSPWREQ_B |							\
-	WAKE_SRC_R12_MD1_WDT_B |							\
-	WAKE_SRC_R12_CLDMA_EVENT_B |						\
+#define WAKE_SRC_FOR_SODI \
+	(WAKE_SRC_R12_KP_IRQ_B | \
+	WAKE_SRC_R12_APXGPT1_EVENT_B | \
+	WAKE_SRC_R12_EINT_EVENT_B | \
+	WAKE_SRC_R12_CCIF0_EVENT_B | \
+	WAKE_SRC_R12_USB0_CDSC_B_AND_USB1_CSDC_B | \
+	WAKE_SRC_R12_USB0_POWERDWN_B_AND_USB1_POWERDWN_B | \
+	WAKE_SRC_R12_C2K_WDT_IRQ_B | \
+	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
+	WAKE_SRC_R12_CCIF1_EVENT_B | \
+	WAKE_SRC_R12_AFE_IRQ_MCU_B | \
+	WAKE_SRC_R12_SYS_CIRQ_IRQ_B | \
+	WAKE_SRC_R12_CSYSPWREQ_B | \
+	WAKE_SRC_R12_MD1_WDT_B | \
+	WAKE_SRC_R12_CLDMA_EVENT_B | \
 	WAKE_SRC_R12_SEJ_WDT_B_AND_SEJ_GPT_B)
 #else
 #error "Does not support!"
@@ -139,6 +144,16 @@ enum spm_sodi_step {
 	SPM_SODI_ENTER_UART_AWAKE,
 	SPM_SODI_LEAVE,
 };
+
+void __attribute__((weak)) aee_rr_rec_sodi3_val(u32 val)
+{
+}
+
+u32 __attribute__((weak)) aee_rr_curr_sodi3_val(void)
+{
+	return 0;
+}
+
 #endif
 
 static struct pwr_ctrl sodi_ctrl = {
@@ -157,11 +172,11 @@ static struct pwr_ctrl sodi_ctrl = {
 	.md_ddr_dbc_en = 0,
 	.md1_req_mask_b = 1,
 	.md2_req_mask_b = 0, /* bit 20 */
-	#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755)
 	.scp_req_mask_b = 0, /* bit 21 */
-	#elif defined(CONFIG_ARCH_MT6797)
+#elif defined(CONFIG_ARCH_MT6797)
 	.scp_req_mask_b = 1, /* bit 21 */
-	#endif
+#endif
 	.lte_mask_b = 0,
 	.md_apsrc1_sel = 0, /* bit 24, set to be 1 for SODI CG mode */
 	.md_apsrc0_sel = 0, /* bit 25, set to be 1 for SODI CG mode */
@@ -216,11 +231,11 @@ static struct pwr_ctrl sodi_ctrl = {
 	.conn_ddr_en_mask_b = 1,
 	.disp_req_mask_b = 1, /* bit 17, set to be 1 for SODI */
 	.disp1_req_mask_b = 1, /* bit 18, set to be 1 for SODI */
-	#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755)
 	.mfg_req_mask_b = 0, /* bit 19 */
-	#elif defined(CONFIG_ARCH_MT6797)
+#elif defined(CONFIG_ARCH_MT6797)
 	.mfg_req_mask_b = 1, /* bit 19, set to be 1 for SODI */
-	#endif
+#endif
 	.c2k_ps_rccif_wake_mask_b = 1,
 	.c2k_l1_rccif_wake_mask_b = 1,
 	.ps_c2k_rccif_wake_mask_b = 1,
@@ -228,9 +243,9 @@ static struct pwr_ctrl sodi_ctrl = {
 	.sdio_on_dvfs_req_mask_b = 0,
 	.emi_boost_dvfs_req_mask_b = 0,
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
-	#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797)
 	.disp_od_req_mask_b = 1, /* bit 27, set to be 1 for SODI */
-	#endif
+#endif
 	/* SPM_CLK_CON */
 	.srclkenai_mask = 1,
 
@@ -264,6 +279,16 @@ static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi_cnt;
 static unsigned int logout_selfrefresh_cnt;
 #endif
+
+void __attribute__((weak)) mt_spm_pmic_wrap_set_phase(enum pmic_wrap_phase_id phase)
+{
+}
+
+int __attribute__((weak)) mt_cpu_dormant(unsigned long flags)
+{
+	wfi_with_sync();
+	return 0;
+}
 
 #if REDUCE_SODI_LOG
 static long int idle_get_current_time_ms(void)
@@ -308,15 +333,17 @@ static void spm_trigger_wfi_for_sodi(struct pwr_ctrl *pwrctrl)
 static u32 mmu_smi_async_cfg;
 static void spm_sodi_pre_process(void)
 {
-	u32 val;
-
 	__spm_pmic_pg_force_on();
 
 	mmu_smi_async_cfg = reg_read(MMU_SMI_ASYNC_CFG);
 	reg_write(MMU_SMI_ASYNC_CFG, mmu_smi_async_cfg | SMI_COMMON_ASYNC_DCM);
 
 	spm_bypass_boost_gpio_set();
+
 #if defined(CONFIG_ARCH_MT6755)
+	{
+	u32 val;
+
 	pmic_read_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_ADDR,
 					&val,
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
@@ -330,7 +357,9 @@ static void spm_sodi_pre_process(void)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_SLEEP,
 					val & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+	}
 #endif
+
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);
 
@@ -414,7 +443,8 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	__spm_check_md_pdn_power_control(pwrctrl);
 
-	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
+	/* FIXME: fix build error for early porting*/
+	/*__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);*/
 
 	if (spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) {
 		/* the following masks set to be 1 only for SODI CG mode */
@@ -551,7 +581,8 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 				}
 				for (i = 1; i < 32; i++) {
 					if (wakesta.r12 & (1U << i)) {
-						strcat(buf, wakesrc_str[i]);
+						/* FIXME: fix build error for early porting*/
+						/*strcat(buf, wakesrc_str[i]);*/
 						wr = WR_WAKE_SRC;
 					}
 				}

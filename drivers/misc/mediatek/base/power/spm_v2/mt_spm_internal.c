@@ -238,7 +238,9 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 			(!!pwrctrl->ccif0_to_md_mask_b << 1));
 
 	spm_write(SPM_SRC2_MASK,
+#if defined(CONFIG_ARCH_MT6797)
 			(!!pwrctrl->disp_od_req_mask_b << 27) |
+#endif
 			(!!pwrctrl->cpu_md_emi_dvfs_req_prot_dis << 26) |
 			(!!pwrctrl->emi_boost_dvfs_req_mask_b << 25) |
 			(!!pwrctrl->sdio_on_dvfs_req_mask_b << 24) |
