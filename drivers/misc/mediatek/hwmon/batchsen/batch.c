@@ -112,7 +112,7 @@ static int get_fifo_data(struct batch_context *obj)
 				}
 			} else if (fifo_len >= 0) {
 			#ifdef CONFIG_PM_WAKELOCKS
-				__pm_stay_awake(&(batch_context_obj->read_data_wake_lock));
+				/*__pm_stay_awake(&(batch_context_obj->read_data_wake_lock));*/
 			#else
 				wake_lock(&(batch_context_obj->read_data_wake_lock));
 			#endif
@@ -257,7 +257,7 @@ static ssize_t batch_store_active(struct device *dev, struct device_attribute *a
 	if (res != 2)
 		BATCH_ERR(" batch_store_active param error: res = %d\n", res);
 
-	BATCH_LOG(" batch_store_active handle=%d ,en=%d\n", handle, en);
+	BATCH_ERR(" batch_store_active handle=%d ,en=%d\n", handle, en);
 
 	if (handle < 0 || ID_SENSOR_MAX_HANDLE < handle) {
 		cxt->batch_result = -1;
@@ -324,7 +324,7 @@ static ssize_t batch_store_active(struct device *dev, struct device_attribute *a
 	mutex_unlock(&batch_hw_mutex);
 
 	delay = batch_update_polling_rate();
-	BATCH_LOG("batch_update_polling_rate = %d\n", delay);
+	BATCH_ERR("batch_update_polling_rate = %d\n", delay);
 	if (delay > 0) {
 		cxt->is_polling_run = true;
 		atomic_set(&cxt->delay, delay);
@@ -334,7 +334,7 @@ static ssize_t batch_store_active(struct device *dev, struct device_attribute *a
 		del_timer_sync(&cxt->timer);
 		cancel_work_sync(&cxt->report);
 	}
-
+	BATCH_ERR("batch_active done\n");
 	return count;
 }
 /*----------------------------------------------------------------------------*/
@@ -357,7 +357,7 @@ static ssize_t batch_show_active(struct device *dev,
 static ssize_t batch_store_delay(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
-	BATCH_LOG(" batch_store_delay not support now\n");
+	BATCH_ERR(" batch_store_delay not support now\n");
 	return count;
 }
 
@@ -385,7 +385,7 @@ static ssize_t batch_store_batch(struct device *dev, struct device_attribute *at
 
 	cxt = batch_context_obj;
 
-	BATCH_LOG("write value: buf = %s\n", buf);
+	BATCH_ERR("write value: buf = %s\n", buf);
 	res = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flags, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (res != 4)
 		BATCH_ERR("batch_store_delay param error: res = %d\n", res);
@@ -488,7 +488,7 @@ static ssize_t batch_store_batch(struct device *dev, struct device_attribute *at
 	}
 
 	cxt->batch_result = 0;
-
+	BATCH_ERR("batch_store_batch done\n");
 	return count;
 }
 
@@ -511,7 +511,7 @@ static ssize_t batch_store_flush(struct device *dev, struct device_attribute *at
 	int handle;
 	int ret;
 
-	BATCH_LOG("fwq  flush_store_delay +++\n");
+	BATCH_ERR("fwq  flush_store_delay +++\n");
 	cxt = batch_context_obj;
 
 	ret = kstrtoint(buf, 10, &handle);
@@ -529,7 +529,7 @@ static ssize_t batch_store_flush(struct device *dev, struct device_attribute *at
 
 	report_data_once(handle);/* handle need to use of this function */
 
-	BATCH_LOG("flush_store_delay success------\n");
+	BATCH_ERR("flush_store_delay success------\n");
 	return count;
 }
 
@@ -639,7 +639,7 @@ static long batch_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lon
 
 		if (batch_context_obj->numOfDataLeft == 0) {
 		#ifdef CONFIG_PM_WAKELOCKS
-			__pm_relax(&(batch_context_obj->read_data_wake_lock));
+			/*__pm_relax(&(batch_context_obj->read_data_wake_lock));*/
 		#else
 			wake_unlock(&(batch_context_obj->read_data_wake_lock));
 		#endif
