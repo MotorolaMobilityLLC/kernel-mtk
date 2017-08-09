@@ -775,7 +775,7 @@ int mt_cpu_dormant_reset(unsigned long flags)
 
 	read_id(&cpuid, &clusterid);
 
-	disable_dcache_safe();
+	disable_dcache_safe(!!IS_DORMANT_INNER_OFF(flags));
 
 	if ((unlikely(IS_DORMANT_BREAK_CHECK(flags)) &&
 	     unlikely(SPM_IS_CPU_IRQ_OCCUR(SPM_CORE_ID())))) {

@@ -96,7 +96,7 @@ extern void mt_goto_cpu_resume(void (*cpu_resume_phys));
 extern int mt_get_data_nommu(int data, unsigned long pva);
 extern void smp(void);
 extern void amp(void);
-extern void disable_dcache_safe(void);
+extern void disable_dcache_safe(bool is_inner_off);
 extern void cpu_wake_up_errata_802022(void);
 extern unsigned *copy_words(volatile unsigned *destination,
 			    volatile unsigned *source, unsigned num_words);

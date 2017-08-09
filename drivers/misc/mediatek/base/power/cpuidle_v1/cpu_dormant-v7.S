@@ -134,58 +134,58 @@ amp:
 	.global disable_dcache_safe
 disable_dcache_safe:
 	.func
-	mrc	p15, 0, r0, c1, c0, 0
+	mrc	p15, 0, r1, c1, c0, 0
 	dsb
-	bic	r0, r0, #4
-	mcr	p15, 0, r0, c1, c0, 0
+	bic	r1, r1, #4
+	mcr	p15, 0, r1, c1, c0, 0
 	dsb
 	isb
 
-	mcr	p15, 0, r0, c8, c7, 1
+	mcr	p15, 0, r1, c8, c7, 1
 	dsb
 
 	@ flush LOUIS
-	mrc	p15, 1, r0, c0, c0, 1		@ read clidr
-	ands    r3, r0, #0x7000000		@ extract loc from clidr
-	mov	r3, r3, lsr #23			@ left align loc bit field
+	mrc	p15, 1, r1, c0, c0, 1		@ read clidr
+	ands    r4, r1, #0x7000000		@ extract loc from clidr
+	mov	r4, r4, lsr #23			@ left align loc bit field
 	beq	L1_finished			@ if loc is 0, then no need to clean
 	mov	r10, #0				@ start clean at cache level 1
 L1_loop1:
-	add	r2, r10, r10, lsr #1		@ work out 3x current cache level
-	mov	r1, r0, lsr r2			@ extract cache type bits from clidr
-	and	r1, r1, #7			@ mask of the bits for current cache only
-	cmp	r1, #2				@ see what cache we have at this level
+	add	r3, r10, r10, lsr #1		@ work out 3x current cache level
+	mov	r2, r1, lsr r3			@ extract cache type bits from clidr
+	and	r2, r2, #7			@ mask of the bits for current cache only
+	cmp	r2, #2				@ see what cache we have at this level
 	blt	L1_skip				@ skip if no cache, or just i-cache
 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
 	isb					@ isb to sych the new cssr&csidr
-	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
-	and	r2, r1, #7			@ extract the length of the cache lines
-	add	r2, r2, #4			@ add 4 (line length offset)
-	@ldr	r4, =0x3ff
-	mov	r4, #0x400
-	sub	r4, #1
-	ands	r4, r4, r1, lsr #3		@ find maximum number on the way size
-	clz	r5, r4				@ find bit position of way size increment
-	@ldr	r7, =0x7fff
-	mov	r7, #0x8000
-	sub	r7, #1
-	ands	r7, r7, r1, lsr #13		@ extract max number of the index size
+	mrc	p15, 1, r2, c0, c0, 0		@ read the new csidr
+	and	r3, r2, #7			@ extract the length of the cache lines
+	add	r3, r3, #4			@ add 4 (line length offset)
+	@ldr	r5, =0x3ff
+	mov	r5, #0x400
+	sub	r5, #1
+	ands	r5, r5, r2, lsr #3		@ find maximum number on the way size
+	clz	r6, r5				@ find bit position of way size increment
+	@ldr	r8, =0x7fff
+	mov	r8, #0x8000
+	sub	r8, #1
+	ands	r8, r8, r2, lsr #13		@ extract max number of the index size
 L1_loop2:
-	mov	r9, r4				@ create working copy of max way size
+	mov	r9, r5				@ create working copy of max way size
 L1_loop3:
-	orr	r6, r10, r9, lsl r5		@ factor way and cache number into r6
-	orr	r6, r6, r7, lsl r2		@ factor index number into r6
-	mcr	p15, 0, r6, c7, c14, 2		@ clean & invalidate by set/way
-	@mcr	p15, 0, r6, c7, c10, 2		@ clean by set/way
-	@mcr	p15, 0, r6, c7, c6, 2		@  invalidate by set/way
+	orr	r7, r10, r9, lsl r6		@ factor way and cache number into r7
+	orr	r7, r7, r8, lsl r3		@ factor index number into r7
+	mcr	p15, 0, r7, c7, c14, 2		@ clean & invalidate by set/way
+	@mcr	p15, 0, r7, c7, c10, 2		@ clean by set/way
+	@mcr	p15, 0, r7, c7, c6, 2		@  invalidate by set/way
 
 	subs	r9, r9, #1			@ decrement the way
 	bge	L1_loop3
-	subs	r7, r7, #1			@ decrement the index
+	subs	r8, r8, #1			@ decrement the index
 	bge	L1_loop2
 L1_skip:
 	@add	r10, r10, #2			@ increment cache number
-	@cmp	r3, r10
+	@cmp	r4, r10
 	@bgt	L1_loop1
 L1_finished:
 	mov	r10, #0				@ swith back to cache level
@@ -194,49 +194,49 @@ L1_finished:
 	isb
 
 	@clean or flush L2
-	mrc	p15, 1, r0, c0, c0, 1		@ read clidr
+	mrc	p15, 1, r1, c0, c0, 1		@ read clidr
 	isb
-	ands	r3, r0, #0x7000000		@ extract loc from clidr
-	mov	r3, r3, lsr #23			@ left align loc bit field
+	ands	r4, r1, #0x7000000		@ extract loc from clidr
+	mov	r4, r4, lsr #23			@ left align loc bit field
 	beq	L2_cl_finished			@ if loc is 0, then no need to clean
 	mov	r10, #2				@ start clean at cache level 2
 L2_cl_loop1:
-	add	r2, r10, r10, lsr #1		@ work out 3x current cache level
-	mov	r1, r0, lsr r2			@ extract cache type bits from clidr
-	and	r1, r1, #7			@ mask of the bits for current cache only
-	cmp	r1, #2				@ see what cache we have at this level
+	add	r3, r10, r10, lsr #1		@ work out 3x current cache level
+	mov	r2, r1, lsr r3			@ extract cache type bits from clidr
+	and	r2, r2, #7			@ mask of the bits for current cache only
+	cmp	r2, #2				@ see what cache we have at this level
 	blt	L2_cl_skip			@ skip if no cache, or just i-cache
 	mcr	p15, 2, r10, c0, c0, 0		@ select current cache level in cssr
 	isb					@ isb to sych the new cssr&csidr
-	mrc	p15, 1, r1, c0, c0, 0		@ read the new csidr
+	mrc	p15, 1, r2, c0, c0, 0		@ read the new csidr
 	isb
-	and	r2, r1, #7			@ extract the length of the cache lines
-	add	r2, r2, #4			@ add 4 (line length offset)
-	@ldr	r4, =0x3ff
-	mov	r4, #0x400
-	sub	r4, #1
-	ands	r4, r4, r1, lsr #3		@ find maximum number on the way size
-	clz	r5, r4				@ find bit position of way size increment
-	@ldr	r7, =0x7fff
-	mov	r7, #0x8000
-	sub	r7, #1
-	ands	r7, r7, r1, lsr #13		@ extract max number of the index size
+	and	r3, r2, #7			@ extract the length of the cache lines
+	add	r3, r3, #4			@ add 4 (line length offset)
+	@ldr	r5, =0x3ff
+	mov	r5, #0x400
+	sub	r5, #1
+	ands	r5, r5, r2, lsr #3		@ find maximum number on the way size
+	clz	r6, r5				@ find bit position of way size increment
+	@ldr	r8, =0x7fff
+	mov	r8, #0x8000
+	sub	r8, #1
+	ands	r8, r8, r2, lsr #13		@ extract max number of the index size
 L2_cl_loop2:
-	mov	r9, r4				@ create working copy of max way size
+	mov	r9, r5				@ create working copy of max way size
 L2_cl_loop3:
-	orr	r6, r10, r9, lsl r5		@ factor way and cache number into r6
-	orr	r6, r6, r7, lsl r2		@ factor index number into r6
-	@teq	%0, #0
-	@mcreq	p15, 0, r6, c7, c10, 2		@ clean by set/way
-	mcrne	p15, 0, r6, c7, c14, 2		@ flush by set/way
+	orr	r7, r10, r9, lsl r6		@ factor way and cache number into r7
+	orr	r7, r7, r8, lsl r3		@ factor index number into r7
+	teq	r0, #0
+	mcreq	p15, 0, r7, c7, c10, 2		@ clean by set/way
+	mcrne	p15, 0, r7, c7, c14, 2		@ flush by set/way
 
 	subs	r9, r9, #1			@ decrement the way
 	bge	L2_cl_loop3
-	subs	r7, r7, #1			@ decrement the index
+	subs	r8, r8, #1			@ decrement the index
 	bge	L2_cl_loop2
 L2_cl_skip:
 	@add	r10, r10, #2			@ increment cache number
-	@cmp	r3, r10
+	@cmp	r4, r10
 	@bgt	L2_cl_loop1
 L2_cl_finished:
 	mov	r10, #0				@ swith back to cache level 0
