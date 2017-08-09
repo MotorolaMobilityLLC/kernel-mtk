@@ -47,6 +47,7 @@ obj-$(CONFIG_ARCH_MT6797)	+= cpuxgpt_mt6797.o gpt_mt6797.o arch_timer_mt6797.o
 obj-$(CONFIG_ARCH_MT6755)	+= mtk_cpuxgpt_mt6755.o mtk_timer_mt6755.o arm_arch_timer_mt6755.o
 obj-$(CONFIG_ARCH_MT8173)	+= cpuxgpt_mt8173.o
 obj-$(CONFIG_ARCH_MT8163)	+= cpuxgpt_mt8163.o
+obj-$(CONFIG_ARCH_MT8127)	+= arch_timer_mt8127.o
 
 ifneq (,$(filter $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6755) $(CONFIG_ARCH_MT6797) $(CONFIG_ARCH_MT6580), y))
 else
