@@ -70,7 +70,7 @@
  *   - MS-Windows drivers sometimes emit undocumented requests.
  */
 
-static unsigned int rndis_dl_max_pkt_per_xfer = 3;
+static unsigned int rndis_dl_max_pkt_per_xfer = 10;
 module_param(rndis_dl_max_pkt_per_xfer, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(rndis_dl_max_pkt_per_xfer,
 	"Maximum packets per transfer for DL aggregation");
@@ -511,6 +511,8 @@ static void rndis_command_complete(struct usb_ep *ep, struct usb_request *req)
 		if (buf->MaxTransferSize > 2048){
 			rndis->port.multi_pkt_xfer = 1;
 			rndis->port.dl_max_transfer_len = buf->MaxTransferSize;
+			gether_update_dl_max_xfer_size(&rndis->port,
+					rndis->port.dl_max_transfer_len);
 		}else{
 			rndis->port.multi_pkt_xfer = 0;
 		}		
