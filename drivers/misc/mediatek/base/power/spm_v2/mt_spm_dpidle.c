@@ -55,6 +55,8 @@
 #define DPIDLE_TAG     "[DP] "
 #define dpidle_dbg(fmt, args...)	pr_debug(DPIDLE_TAG fmt, ##args)
 
+#define SPM_PWAKE_EN            1
+#define SPM_PCMWDT_EN           1
 #define SPM_BYPASS_SYSPWREQ     0
 
 #define WAKE_SRC_FOR_MD32  0
@@ -730,10 +732,8 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	spm_dpidle_before_wfi(cpu);
 
-#if 0
 #if SPM_PWAKE_EN
-	sec = spm_get_wake_period(-1 /* FIXME */, last_wr);
-#endif
+	sec = _spm_get_wake_period(-1, last_wr);
 #endif
 	pwrctrl->timer_val = sec * 32768;
 
@@ -752,9 +752,10 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
-
-	spm_crit2("sleep_deepidle, sec = %u, wakesrc = 0x%x [%u]\n",
-			  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags));
+	spm_crit2("sleep_deepidle, sec = %u, wakesrc = 0x%x [%u][%u]\n",
+		sec, pwrctrl->wake_src,
+		is_cpu_pdn(pwrctrl->pcm_flags),
+		is_infra_pdn(pwrctrl->pcm_flags));
 
 	if (request_uart_to_sleep()) {
 		last_wr = WR_UART_BUSY;
@@ -783,6 +784,10 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 	spm_dpidle_pre_process();
 
+#if SPM_PCMWDT_EN
+	__spm_set_pcm_wdt(1);
+#endif
+
 	__spm_kick_pcm_to_run(pwrctrl);
 
 	spm_trigger_wfi_for_dpidle(pwrctrl);
@@ -790,6 +795,10 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	spm_dpidle_post_process();
 
 	__spm_get_wakeup_status(&wakesta);
+
+#if SPM_PCMWDT_EN
+	__spm_set_pcm_wdt(0);
+#endif
 
 	__spm_clean_after_wakeup();
 

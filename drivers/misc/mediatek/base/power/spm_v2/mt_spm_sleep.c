@@ -97,7 +97,6 @@ struct wake_status spm_wakesta; /* record last wakesta */
 
 #define WAIT_UART_ACK_TIMES     10	/* 10 * 10us */
 
-#define SPM_WAKE_PERIOD         600	/* sec */
 #if defined(CONFIG_ARCH_MT6755)
 
 #if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
@@ -189,13 +188,6 @@ struct wake_status spm_wakesta; /* record last wakesta */
 int __attribute__ ((weak)) mt_cpu_dormant(unsigned long flags)
 {
 	return 0;
-}
-
-/* FIXME: check charger for get_dynamic_period */
-int __attribute__ ((weak)) get_dynamic_period(int first_use, int first_wakeup_time,
-					      int battery_capacity_level)
-{
-	return 60;
 }
 
 #if defined(CONFIG_ARCH_MT6797)
@@ -442,29 +434,14 @@ static void spm_kick_pcm_to_run(struct pwr_ctrl *pwrctrl)
 {
 	/* enable PCM WDT (normal mode) to start count if needed */
 #if SPM_PCMWDT_EN
-	if (!pwrctrl->wdt_disable) {
-		u32 con1;
-
-		con1 = spm_read(PCM_CON1) & ~(PCM_WDT_WAKE_MODE_LSB | PCM_WDT_EN_LSB);
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | con1);
-
-		if (spm_read(PCM_TIMER_VAL) > PCM_TIMER_MAX)
-			spm_write(PCM_TIMER_VAL, PCM_TIMER_MAX);
-		spm_write(PCM_WDT_VAL, spm_read(PCM_TIMER_VAL) + PCM_WDT_TIMEOUT);
-		spm_write(PCM_CON1, con1 | SPM_REGWR_CFG_KEY | PCM_WDT_EN_LSB);
-	}
+	if (!pwrctrl->wdt_disable)
+		__spm_set_pcm_wdt(1);
 #endif
 
 #if defined(CONFIG_ARCH_MT6797)
 	if (spm_save_thermal_adc())
 		pwrctrl->pcm_flags = pwrctrl->pcm_flags | 0x80000;
 #endif
-
-#if 0
-	/* make MD32 work in suspend: fscp_ck = CLK26M */
-	clkmux_sel(MT_MUX_SCP, 0, "SPM-Sleep");
-#endif
-
 	__spm_kick_pcm_to_run(pwrctrl);
 }
 
@@ -509,15 +486,10 @@ static void spm_clean_after_wakeup(void)
 {
 	/* disable PCM WDT to stop count if needed */
 #if SPM_PCMWDT_EN
-	spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_WDT_EN_LSB));
+		__spm_set_pcm_wdt(0);
 #endif
 
 	__spm_clean_after_wakeup();
-
-#if 0
-	/* restore clock mux: fscp_ck = SYSPLL1_D2 */
-	clkmux_sel(MT_MUX_SCP, 1, "SPM-Sleep");
-#endif
 }
 
 static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int vcore_status)
@@ -582,30 +554,6 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 #endif
 	return wr;
 }
-
-#if SPM_PWAKE_EN
-static u32 spm_get_wake_period(int pwake_time, wake_reason_t last_wr)
-{
-	int period = SPM_WAKE_PERIOD;
-
-	if (pwake_time < 0) {
-		/* use FG to get the period of 1% battery decrease */
-		period = get_dynamic_period(last_wr != WR_PCM_TIMER ? 1 : 0, SPM_WAKE_PERIOD, 1);
-		if (period <= 0) {
-			spm_warn("CANNOT GET PERIOD FROM FUEL GAUGE\n");
-			period = SPM_WAKE_PERIOD;
-		}
-	} else {
-		period = pwake_time;
-		spm_crit2("pwake = %d\n", pwake_time);
-	}
-
-	if (period > 36 * 3600)	/* max period is 36.4 hours */
-		period = 36 * 3600;
-
-	return period;
-}
-#endif
 
 /*
  * wakesrc: WAKE_SRC_XXX
@@ -708,7 +656,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	set_pwrctrl_pcm_data(pwrctrl, spm_data);
 
 #if SPM_PWAKE_EN
-	sec = spm_get_wake_period(-1 /* FIXME */, last_wr);
+	sec = _spm_get_wake_period(-1 /* FIXME */, last_wr);
 #endif
 	pwrctrl->timer_val = sec * 32768;
 

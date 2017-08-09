@@ -42,6 +42,8 @@ int __attribute__((weak)) check_scp_resource(void)
  **************************************/
 #define LOG_BUF_SIZE		256
 
+#define SPM_WAKE_PERIOD         600	/* sec */
+
 #if defined(CONFIG_ARCH_MT6755)
 /* CPU_PWR_STATUS */
 /* CPU_PWR_STATUS_2ND */
@@ -1181,5 +1183,55 @@ void __spm_pmic_low_iq_mode(int en)
 	}
 #endif
 }
+
+void __spm_set_pcm_wdt(int en)
+{
+	/* enable PCM WDT (normal mode) to start count if needed */
+	if (en) {
+		u32 con1;
+
+		con1 = spm_read(PCM_CON1) & ~(PCM_WDT_WAKE_MODE_LSB | PCM_WDT_EN_LSB);
+		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | con1);
+
+		if (spm_read(PCM_TIMER_VAL) > PCM_TIMER_MAX)
+			spm_write(PCM_TIMER_VAL, PCM_TIMER_MAX);
+		spm_write(PCM_WDT_VAL, spm_read(PCM_TIMER_VAL) + PCM_WDT_TIMEOUT);
+		spm_write(PCM_CON1, con1 | SPM_REGWR_CFG_KEY | PCM_WDT_EN_LSB);
+	} else {
+		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) &
+		~PCM_WDT_EN_LSB));
+	}
+
+}
+
+/* FIXME: check charger for get_dynamic_period */
+int __attribute__ ((weak)) get_dynamic_period(int first_use, int first_wakeup_time,
+					      int battery_capacity_level)
+{
+	return 60;
+}
+
+u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr)
+{
+	int period = SPM_WAKE_PERIOD;
+
+	if (pwake_time < 0) {
+		/* use FG to get the period of 1% battery decrease */
+		period = get_dynamic_period(last_wr != WR_PCM_TIMER ? 1 : 0, SPM_WAKE_PERIOD, 1);
+		if (period <= 0) {
+			spm_warn("CANNOT GET PERIOD FROM FUEL GAUGE\n");
+			period = SPM_WAKE_PERIOD;
+		}
+	} else {
+		period = pwake_time;
+		spm_crit2("pwake = %d\n", pwake_time);
+	}
+
+	if (period > 36 * 3600)	/* max period is 36.4 hours */
+		period = 36 * 3600;
+
+	return period;
+}
+
 
 MODULE_DESCRIPTION("SPM-Internal Driver v0.1");

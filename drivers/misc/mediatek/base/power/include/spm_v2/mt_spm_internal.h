@@ -410,6 +410,8 @@ extern void __spm_bsi_top_init_setting(void);
 extern void __spm_pmic_pg_force_on(void);
 extern void __spm_pmic_pg_force_off(void);
 extern void __spm_pmic_low_iq_mode(int en);
+extern void __spm_set_pcm_wdt(int en);
+extern u32 _spm_get_wake_period(int pwake_time, wake_reason_t last_wr);
 extern struct dram_info *g_dram_info_dummy_read;
 
 #if defined(CONFIG_ARCH_MT6797)
