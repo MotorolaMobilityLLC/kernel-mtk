@@ -3908,6 +3908,13 @@ int primary_display_resume(void)
 		dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 
 		dpmgr_path_connect(pgc->dpmgr_handle, CMDQ_DISABLE);
+		if (primary_display_is_decouple_mode()) {
+			if (pgc->ovl2mem_path_handle)
+				dpmgr_path_connect(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
+			else
+				DISPERR("in decouple_mode but no ovl2mem_path_handle\n");
+		}
+
 		MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 1, 2);
 		lcm_param = disp_lcm_get_params(pgc->plcm);
 
