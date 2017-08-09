@@ -1166,6 +1166,7 @@ static void spm_pmic_set_ldo(u32 addr, int on_ctrl, int en, int mode_ctrl,
 	}
 }
 
+#define PMIC_BUCK_SRCLKEN_NA	-1
 #define PMIC_BUCK_SRCLKEN0	0
 #define PMIC_BUCK_SRCLKEN2	4
 
@@ -1205,7 +1206,11 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		break;
 	case PMIC_PWR_SODI3:
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P9, lock);
+#if defined(CONFIG_ARCH_MT6755)
+		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN_NA, lock);
+#elif defined(CONFIG_ARCH_MT6797)
 		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
+#endif
 		spm_pmic_set_buck(MT6351_BUCK_VS1_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VS2_CON0, 0, 1, 1, PMIC_BUCK_SRCLKEN0, lock);
 
