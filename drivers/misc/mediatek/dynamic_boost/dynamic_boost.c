@@ -346,7 +346,7 @@ static int dboost_input_connect(struct input_handler *handler,
 	in->handle.name = "dynamic_boost";
 
 	/* TODO: the following parameters should be configured through platform data */
-	in->prio_mode = PRIO_TWO_LITTLES_MAX_FREQ;
+	in->prio_mode = PRIO_TWO_BIGS_TWO_LITTLES_MAX_FREQ;
 	in->duration = 150;
 
 	error = input_register_handle(&in->handle);
