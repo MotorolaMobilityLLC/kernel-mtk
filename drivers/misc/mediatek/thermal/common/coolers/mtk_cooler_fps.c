@@ -89,7 +89,7 @@ static struct thermal_cooling_device *cl_adp_fps_dev;
 static unsigned int cl_adp_fps_state;
 static int cl_adp_fps_limit = MAX_FPS_LIMIT;
 
-#define GPU_LOADING_THRESHOLD	30
+#define GPU_LOADING_THRESHOLD	50
 /* in percentage */
 #if FPS_DEBUGFS
 static int gpu_loading_threshold = GPU_LOADING_THRESHOLD;
