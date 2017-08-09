@@ -330,7 +330,7 @@ typedef struct {
 	unsigned int regDecDumpEn;
 	unsigned int totalMCU;	/* OK */
 	unsigned int comp0_DU;
-	unsigned int membershipList;	/* OK */   /* { GRAY, gmcEn, DU9, DU8,..., DU1, DU0} */
+	unsigned int membershipList;	/* OK  { GRAY, gmcEn, DU9, DU8,..., DU1, DU0} */
 
 	    /* for BRZ  (0): 1, (1): 1/2, (2): 1/4, (3): 1/8 */
 	unsigned char lumaHorDecimate;	/* OK */
@@ -343,7 +343,7 @@ typedef struct {
 	unsigned int srcStreamAddrWritePtr;	/* OK */
 
 	unsigned int outputBuffer0[3];	/* OK */
-	unsigned int outputBuffer1[3];	/*OK*/ /*nouse in full frame mode, only use in PauseResume/DirectCouple mode */
+	unsigned int outputBuffer1[3];	/*OK /*nouse in full frame mode, only use in PauseResume/DirectCouple mode */
 
 	    /* JPEG component information */
 	unsigned int componentNum;	/* OK */

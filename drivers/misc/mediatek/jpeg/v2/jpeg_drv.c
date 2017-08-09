@@ -122,7 +122,7 @@ static struct JpegDeviceStruct *gJpegqDevs;
 static int nrJpegDevs;
 
 static const struct of_device_id jpeg_of_ids[] = {
-	{.compatible = "mediatek,JPGENC",},
+	{.compatible = "mediatek,jpgenc",},
 	{}
 };
 #endif
@@ -425,7 +425,7 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 	switch (cmd) {
 		/* initial and reset JPEG encoder */
 	case JPEG_DEC_IOCTL_INIT:	/* OT:OK */
-		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Init!!\n");
+		/*JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Init!!\n");*/
 		if (jpeg_drv_dec_init() == 0)
 			*pStatus = JPEG_DEC_PROCESS;
 		break;
@@ -436,7 +436,7 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		break;
 
 	case JPEG_DEC_IOCTL_CONFIG:
-		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Configration!!\n");
+		/* JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Configration!!\n"); */
 		if (*pStatus != JPEG_DEC_PROCESS) {
 			JPEG_MSG
 			    ("[JPEGDRV]Permission Denied! This process can not access decoder\n");
@@ -553,7 +553,7 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		break;
 
 	case JPEG_DEC_IOCTL_START:	/* OT:OK */
-		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Start!!\n");
+		/*JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Start!!\n");*/
 
 		jpeg_drv_dec_start();
 		break;
@@ -599,9 +599,9 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 			/* JPEG_MSG("wait JPEG irq\n"); */
 			wait_event_interruptible_timeout(dec_wait_queue, _jpeg_dec_int_status,
 							 timeout_jiff);
-			JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Enter IRQ Wait Done!!\n");
+			/*JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Enter IRQ Wait Done!!\n");*/
 		} else {
-			JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Enter IRQ Wait Already Done!!\n");
+			/*JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Enter IRQ Wait Already Done!!\n");*/
 		}
 #endif
 
@@ -637,7 +637,7 @@ static int jpeg_dec_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		break;
 
 	case JPEG_DEC_IOCTL_DEINIT:
-		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Deinit !!\n");
+		/*JPEG_MSG("[JPEGDRV][IOCTL] JPEG Decoder Deinit !!\n");*/
 		/* copy input parameters */
 		if (*pStatus != JPEG_DEC_PROCESS) {
 			JPEG_ERR("Permission Denied! This process can not access encoder");
@@ -693,7 +693,7 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 
 		/* initial and reset JPEG encoder */
 	case JPEG_ENC_IOCTL_INIT:
-		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Encoder Init!!\n");
+		/*JPEG_MSG("[JPEGDRV][IOCTL] JPEG Encoder Init!!\n");*/
 
 		retValue = jpeg_drv_enc_init();
 
@@ -713,7 +713,7 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 
 		/* configure the register */
 	case JPEG_ENC_IOCTL_CONFIG:
-		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Encoder Configure Hardware\n");
+		/*JPEG_MSG("[JPEGDRV][IOCTL] JPEG Encoder Configure Hardware\n");*/
 		if (*pStatus != JPEG_ENC_PROCESS) {
 			JPEG_WRN("Permission Denied! This process can not access encoder");
 			return -EFAULT;
@@ -816,7 +816,7 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		break;
 
 	case JPEG_ENC_IOCTL_START:
-		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Encoder Start!!\n");
+		/*JPEG_MSG("[JPEGDRV][IOCTL] JPEG Encoder Start!!\n");*/
 		if (*pStatus != JPEG_ENC_PROCESS) {
 			JPEG_WRN("Permission Denied! This process can not access encoder");
 			return -EFAULT;
@@ -830,7 +830,7 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		break;
 
 	case JPEG_ENC_IOCTL_WAIT:
-		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Encoder Wait!!\n");
+		/*JPEG_MSG("[JPEGDRV][IOCTL] JPEG Encoder Wait!!\n");*/
 		if (*pStatus != JPEG_ENC_PROCESS) {
 			JPEG_WRN("Permission Denied! This process can not access encoder");
 			return -EFAULT;
@@ -906,7 +906,7 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		break;
 
 	case JPEG_ENC_IOCTL_DEINIT:
-		JPEG_MSG("[JPEGDRV][IOCTL] JPEG Encoder Deinit!!\n");
+		/*JPEG_MSG("[JPEGDRV][IOCTL] JPEG Encoder Deinit!!\n");*/
 		/* copy input parameters */
 		if (*pStatus != JPEG_ENC_PROCESS) {
 			JPEG_WRN("Permission Denied! This process can not access encoder");
@@ -1246,7 +1246,7 @@ static int jpeg_probe(struct platform_device *pdev)
 
 	memset(&gJpegqDev, 0x0, sizeof(JpegDeviceStruct));
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,JPGENC");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,jpgenc");
 	jpegDev->encRegBaseVA = (unsigned long)of_iomap(node, 0);
 	jpegDev->encIrqId = irq_of_parse_and_map(node, 0);
 #ifdef CONFIG_MTK_CLKMGR
@@ -1268,7 +1268,7 @@ static int jpeg_probe(struct platform_device *pdev)
 		JPEG_ERR("get jpgEnc clk error!");
 #endif
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,JPGDEC");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,jpgdec");
 	jpegDev->decRegBaseVA = (unsigned long)of_iomap(node, 0);
 	jpegDev->decIrqId = irq_of_parse_and_map(node, 0);
 #ifdef CONFIG_MTK_CLKMGR
