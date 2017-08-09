@@ -103,6 +103,8 @@ unsigned int v_cc2topoff_threshold;	/* = V_CC2TOPOFF_THRES; */
 CHR_CURRENT_ENUM ulc_cv_charging_current;	/* = AC_CHARGER_CURRENT; */
 kal_bool ulc_cv_charging_current_flag = KAL_FALSE;
 static bool usb_unlimited;
+BATTERY_VOLTAGE_ENUM cv_voltage = BATTERY_VOLT_04_200000_V;
+
 
   /* ///////////////////////////////////////////////////////////////////////////////////////// */
   /* // JEITA */
@@ -130,19 +132,17 @@ kal_bool is_ta_connect = KAL_FALSE;
 #endif
 
 
- /* ============================================================ // */
- /* function prototype */
- /* ============================================================ // */
 
 
- /* ============================================================ // */
- /* extern variable */
- /* ============================================================ // */
-/*extern int g_platform_boot_mode; moved to battery_common.h*/
+BATTERY_VOLTAGE_ENUM battery_get_cv_voltage(void)
+{
+	return cv_voltage;
+}
 
- /* ============================================================ // */
- /* extern function */
- /* ============================================================ // */
+void battery_set_cv_voltage(BATTERY_VOLTAGE_ENUM cv)
+{
+	cv_voltage = cv;
+}
 
 
  /* ============================================================ // */

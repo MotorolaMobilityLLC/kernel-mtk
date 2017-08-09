@@ -3,6 +3,9 @@
 
 #include <linux/platform_device.h>
 #include <mach/mt_battery_meter.h>
+#include <mt-plat/charging.h>
+
+
 /* ============================================================ */
 /* define */
 /* ============================================================ */
@@ -30,7 +33,8 @@ enum {
 	FG_MAIN = 1,
 	FG_SUSPEND = 2,
 	FG_RESUME = 4,
-	FG_CHARGER = 8
+	FG_CHARGER = 8,
+	FG_INIT = 16
 };
 
 enum {
@@ -131,6 +135,97 @@ struct battery_meter_custom_data {
 	int rbat_pull_up_volt;
 
 };
+#else
+
+struct battery_meter_custom_data {
+
+	/* cust_battery_meter.h */
+	int soc_flow;
+
+	int hw_fg_force_use_sw_ocv;
+
+	/* ADC resister */
+	int r_bat_sense;
+	int r_i_sense;
+	int r_charger_1;
+	int r_charger_2;
+
+	int temperature_t0;
+	int temperature_t1;
+	int temperature_t2;
+	int temperature_t3;
+	int temperature_t;
+
+	int fg_meter_resistance;
+
+	/* Qmax for battery  */
+	int q_max_pos_50;
+	int q_max_pos_25;
+	int q_max_pos_0;
+	int q_max_neg_10;
+	int q_max_pos_50_h_current;
+	int q_max_pos_25_h_current;
+	int q_max_pos_0_h_current;
+	int q_max_neg_10_h_current;
+
+	int oam_d5; /* 1 : D5,   0: D2 */
+
+	int change_tracking_point;
+	int cust_tracking_point;
+	int cust_r_sense;
+	int cust_hw_cc;
+	int aging_tuning_value;
+	int cust_r_fg_offset;
+	int ocv_board_compesate;
+	int r_fg_board_base;
+	int r_fg_board_slope;
+	int car_tune_value;
+
+	/* HW Fuel gague  */
+	int current_detect_r_fg;
+	int minerroroffset;
+	int fg_vbat_average_size;
+	int r_fg_value;
+	int difference_hwocv_rtc;
+	int difference_hwocv_swocv;
+	int difference_swocv_rtc;
+	int max_swocv;
+
+	int max_hwocv;
+	int max_vbat;
+	int difference_hwocv_vbat;
+
+	int suspend_current_threshold;
+	int ocv_check_time;
+	int shutdown_system_voltage;
+	int recharge_tolerance;
+	int fixed_tbat_25;
+
+	int batterypseudo100;
+	int batterypseudo1;
+
+	/* Dynamic change wake up period of battery thread when suspend*/
+	int vbat_normal_wakeup;
+	int vbat_low_power_wakeup;
+	int normal_wakeup_period;
+	int low_power_wakeup_period;
+	int close_poweroff_wakeup_period;
+
+	int init_soc_by_sw_soc;
+	int sync_ui_soc_imm;                  /*3. ui soc sync to fg soc immediately*/
+	int mtk_enable_aging_algorithm; /*6. q_max aging algorithm*/
+	int md_sleep_current_check;     /*5. gauge adjust by ocv 9. md sleep current check*/
+	int q_max_by_current;           /*7. qmax variant by current loading.*/
+	int q_max_sys_voltage;		/*8. qmax variant by sys voltage.*/
+
+	int shutdown_gauge0;
+	int shutdown_gauge1_xmins;
+	int shutdown_gauge1_mins;
+
+
+
+};
+
 #endif
 
 struct battery_custom_data {
@@ -292,6 +387,7 @@ typedef enum {
 	FG_DAEMON_CMD_SET_INIT_FLAG,
 	FG_DAEMON_CMD_SET_DAEMON_PID,
 	FG_DAEMON_CMD_NOTIFY_DAEMON,
+	FG_DAEMON_CMD_CHECK_FG_DAEMON_VERSION,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 } FG_DAEMON_CTRL_CMD_FROM_USER;
@@ -310,12 +406,31 @@ extern struct battery_meter_custom_data batt_meter_cust_data;
 extern struct battery_meter_table_custom_data batt_meter_table_cust_data;
 #endif
 
+#if !defined(CONFIG_MTK_HAFG_20)
 #ifdef MTK_ENABLE_AGING_ALGORITHM
 extern unsigned int suspend_time;
 #endif
-extern BOOL bat_spm_timeout;
+#endif
 extern unsigned int _g_bat_sleep_total_time;
 
+#if !defined(CONFIG_MTK_HAFG_20)
+extern BOOL bat_spm_timeout;
+#else
+extern bool bat_spm_timeout;
+extern unsigned int sleep_total_time;
+#endif
+
+
+extern char *saved_command_line;
+extern BATTERY_VOLTAGE_ENUM cv_voltage;
+
+extern unsigned int battery_tracking_time;
+extern unsigned int wake_up_smooth_time;
+extern kal_bool g_battery_soc_ready;
+extern void bat_update_thread_wakeup(void);
+#ifdef MTK_MULTI_BAT_PROFILE_SUPPORT
+extern int IMM_GetOneChannelValue_Cali(int Channel, int *voltage);
+#endif
 
 /* ============================================================ */
 /* External function */
@@ -359,5 +474,13 @@ extern unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, 
 extern unsigned int get_pmic_mt6325_cid(void);
 #endif
 #endif
+
+extern void fgauge_algo_run_get_init_data(void);
+extern void battery_meter_set_init_flag(kal_bool flag);
+
+
+extern BATTERY_VOLTAGE_ENUM battery_get_cv_voltage(void);
+extern void battery_set_cv_voltage(BATTERY_VOLTAGE_ENUM cv);
+
 
 #endif /* #ifndef _BATTERY_METER_H */

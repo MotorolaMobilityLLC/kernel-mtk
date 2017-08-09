@@ -2,7 +2,7 @@
 #define BATTERY_COMMON_H
 
 #include <linux/ioctl.h>
-#include "charging.h"
+#include <mt-plat/charging.h>
 #include <linux/time.h>
 
 /*****************************************************************************
@@ -31,7 +31,7 @@
 #define MAX_PreCC_CHARGING_TIME		(1*30*60)/* 0.5hr */
 
 /* #define MAX_CV_CHARGING_TIME                  1*30*60         // 0.5hr */
-#define MAX_CV_CHARGING_TIME			(3*60*6)/* 3hr */
+#define MAX_CV_CHARGING_TIME			(3*60*60)/* 3hr */
 
 
 #define MUTEX_TIMEOUT                       (5000)
@@ -224,6 +224,8 @@ extern kal_bool is_ta_connect;
 extern struct wake_lock TA_charger_suspend_lock;
 #endif
 
+extern PMU_ChargerStruct BMT_status;
+
 
 /*****************************************************************************
  *  Extern Function
@@ -288,5 +290,19 @@ void check_battery_exist(void);
 extern kal_bool is_usb_rdy(void);
 #endif
 extern unsigned int upmu_get_reg_value(unsigned int reg);
+
+
+/* usb header */
+extern bool mt_usb_is_device(void);
+#if defined(CONFIG_USB_MTK_HDRC) || defined(CONFIG_USB_MU3D_DRV)
+extern void mt_usb_connect(void);
+extern void mt_usb_disconnect(void);
+#else
+#define mt_usb_connect() do { } while (0)
+#define mt_usb_disconnect() do { } while (0)
+#endif
+
+
+
 
 #endif				/* #ifndef BATTERY_COMMON_H */

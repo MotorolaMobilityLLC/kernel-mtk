@@ -6,7 +6,7 @@
 // ============================================================*/
 /*#define SOC_BY_AUXADC*/
 #define SOC_BY_HW_FG
-#define HW_FG_FORCE_USE_SW_OCV
+/*#define HW_FG_FORCE_USE_SW_OCV*/
 /*#define SOC_BY_SW_FG*/
 
 /*
@@ -28,10 +28,10 @@
 #define FG_METER_RESISTANCE 0
 
 /* Qmax for battery  */
-#define Q_MAX_POS_50 1523
-#define Q_MAX_POS_25 1489
-#define Q_MAX_POS_0 1272
-#define Q_MAX_NEG_10 1189
+#define Q_MAX_POS_50 1463
+#define Q_MAX_POS_25 1437
+#define Q_MAX_POS_0 1220
+#define Q_MAX_NEG_10 1137
 
 #define Q_MAX_POS_50_H_CURRENT 1511
 #define Q_MAX_POS_25_H_CURRENT 1462
@@ -58,7 +58,7 @@
 #define OCV_BOARD_COMPESATE	0 /*mV */
 #define R_FG_BOARD_BASE 1000
 #define R_FG_BOARD_SLOPE 1000 /*slope*/
-#define CAR_TUNE_VALUE 86 /*1.00*/
+#define CAR_TUNE_VALUE 101 /*1.00*/
 
 
 /* HW Fuel gague  */

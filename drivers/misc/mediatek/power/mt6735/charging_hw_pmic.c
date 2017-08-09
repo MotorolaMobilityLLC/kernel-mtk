@@ -296,39 +296,7 @@ static unsigned int charging_set_cv_voltage(void *data)
 	    charging_parameter_to_value(VBAT_CV_VTH, GETARRAYNUM(VBAT_CV_VTH),
 					*(unsigned int *) (data));
 
-/*
-    #if 0
-    mt6325_upmu_set_rg_vbat_cv_vth(register_value);
-    #else
-    //PCB workaround
-    if(mt6325_upmu_get_swcid() == PMIC6325_E1_CID_CODE)
-    {
-	pmic_config_interface(0xEFE,0x0,0xF,1); // [4:1]: RG_VBAT_OV_VTH; Set charger OV=3.9V
-	pmic_config_interface(0xEF8,0x3,0x3F,0); // [5:0]: RG_VBAT_CV_VTH; Set charger CV=3.8V
-	battery_log(BAT_LOG_CRTI,"[charging_set_cv_voltage] set low CV by 6325 E1\n");
-    }
-    else
-    {
-	if(is_mt6311_exist())
-	{
-	    if(mt6311_get_chip_id()==PMIC6311_E1_CID_CODE)
-	    {
-		pmic_config_interface(0xEFE,0x0,0xF,1); // [4:1]: RG_VBAT_OV_VTH; Set charger OV=3.9V
-		pmic_config_interface(0xEF8,0x3,0x3F,0); // [5:0]: RG_VBAT_CV_VTH; Set charger CV=3.8V
-		battery_log(BAT_LOG_CRTI,"[charging_set_cv_voltage] set low CV by 6311 E1\n");
-	    }
-	    else
-	    {
-		mt6325_upmu_set_rg_vbat_cv_vth(register_value);
-	    }
-	}
-	else
-	{
-	    mt6325_upmu_set_rg_vbat_cv_vth(register_value);
-	}
-    }
-    #endif
-*/
+	battery_set_cv_voltage(*(unsigned int *) (data));
 
 	pmic_set_register_value(PMIC_RG_VBAT_CV_VTH, register_value);
 
