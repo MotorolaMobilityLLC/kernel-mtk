@@ -112,6 +112,10 @@ SECTIONS
 			ARM_CPU_KEEP(PROC_INFO)
 	}
 
+#ifdef CONFIG_MTK_AEE_MRDUMP
+	.mrdump ALIGN (0x400): {
+	}
+#endif
 	RO_DATA(PAGE_SIZE)
 
 	. = ALIGN(4);
