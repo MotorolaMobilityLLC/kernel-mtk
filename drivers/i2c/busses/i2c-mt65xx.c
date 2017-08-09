@@ -555,6 +555,10 @@ static irqreturn_t mtk_i2c_irq(int irqno, void *dev_id)
 	if (i2c->dev_comp->auto_restart)
 		restart_flag = I2C_RS_TRANSFER;
 
+	/* Clear interrupt mask */
+	writew(~(restart_flag | I2C_HS_NACKERR | I2C_ACKERR
+		| I2C_TRANSAC_COMP), i2c->base + OFFSET_INTR_MASK);
+
 	i2c->irq_stat = readw(i2c->base + OFFSET_INTR_STAT);
 	writew(restart_flag | I2C_HS_NACKERR | I2C_ACKERR
 		| I2C_TRANSAC_COMP, i2c->base + OFFSET_INTR_STAT);
