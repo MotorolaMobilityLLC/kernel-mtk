@@ -31,6 +31,13 @@ config MT_SND_SOC_6797
 		Must enable this to use medatek audio driver.
 		The default value is y for MT6797.
 		It's recommended no to change this.
+
+config MT_SND_SOC_CODEC
+	string "String for Mediatek audio codec"
+	help
+	  Specify Mediatek audio codec.
+	  Say "mt6351" if you have mt6351 audio codec.
+
 config MT_SND_SOC_8163
     bool "MT_SND_SOC_8163"
 	default n
@@ -137,3 +144,9 @@ config MTK_BTCVSD_ALSA
 	default n
 	help
         If you say Y, enable MTK_BTCVSD_ALSA.
+
+config MTK_SND_SOC_NEW_ARCH
+	bool "Support new audio architecture"
+	help
+	  If you say Y, enable MTK_SND_SOC_NEW_ARCH.
+	  Only enable this when you use refactored audio driver architecture.
