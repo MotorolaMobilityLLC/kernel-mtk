@@ -3126,8 +3126,8 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case Get_META_BAT_CAR_TUNE_VALUE:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
-		battery_log(BAT_LOG_CRTI, "Get_BAT_CAR_TUNE_VALUE\n");
-		adc_out_data[1] = 117;	/* Todo: change this line to get current/impedance/... */
+		adc_out_data[0] = batt_meter_cust_data.car_tune_value;
+		battery_log(BAT_LOG_CRTI, "Get_BAT_CAR_TUNE_VALUE, res=%d\n", adc_out_data[0]);
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 
 		break;
@@ -3135,8 +3135,9 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case Set_META_BAT_CAR_TUNE_VALUE:
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
-		battery_log(BAT_LOG_CRTI, "Set_BAT_CAR_TUNE_VALUE:%d\n", adc_in_data[1]);
-		adc_out_data[1] = adc_in_data[1];
+		batt_meter_cust_data.car_tune_value = adc_in_data[1];
+		adc_out_data[0] = batt_meter_cust_data.car_tune_value;
+		battery_log(BAT_LOG_CRTI, "Set_BAT_CAR_TUNE_VALUE[%d], res=%d\n", adc_in_data[1], adc_out_data[0]);
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 
 		break;
