@@ -1,13 +1,8 @@
 #
 # TRUSTONIC TEE configuration
 #
-config HAVE_TRUSTONIC_TEE_SUPPORT
-	bool "Enable MTK TRUSTONIC TEE Solution"
-	default n
-
 config TRUSTONIC_TEE_SUPPORT
 	bool "Enable Trustonic TEE Support"
-	depends on HAVE_TRUSTONIC_TEE_SUPPORT
 	default n
 	---help---
 	  Enable Trustonic TEE Support
