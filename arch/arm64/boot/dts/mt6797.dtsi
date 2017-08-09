@@ -774,12 +774,6 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			status = "disabled";
 		};
 
-		irq_nfc: irq_nfc@ {
-			compatible = "mediatek,mt6797-irq_nfc";
-			status = "disabled";
-		};
-
-
 		touch: touch@ {
 			compatible = "mediatek,mt6797-touch";
 		};
@@ -1460,6 +1454,19 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 						<&infrasys INFRA_I2C3_ARB>;
 			clock-names = "main", "dma", "arb";
 			clock-div = <10>;
+		};
+
+		nfc:nfcC@0 {
+			compatible = "mediatek,nfc-gpio-v2";
+			gpio-ven = <60>;
+			gpio-rst = <59>;
+			gpio-eint = <57>;
+			gpio-irq = <58>;
+		};
+
+		irq_nfc: irq_nfc@ {
+			compatible = "mediatek,irq_nfc-eint";
+			status = "disabled";
 		};
 
 		ccci_util_cfg {
