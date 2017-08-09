@@ -2155,6 +2155,7 @@ struct clk *mt_clk_register_power_gate(const char *name,
 #define mfg_sel			"mfg_sel"
 #define	infra_audio_26m	"infra_audio_26m"
 #define mfg_52m_sel        "mfg_52m_sel"
+#define mjc_sel			"mjc_sel"
 
 /* FIXME: set correct value: E */
 
@@ -2187,8 +2188,8 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_MFG_CORE2, pg_mfg_core2, pg_mfg, mfg_52m_sel, SYS_MFG_CORE2),
 	PGATE(SCP_SYS_MFG_CORE1, pg_mfg_core1, pg_mfg, mfg_52m_sel, SYS_MFG_CORE1),
 	PGATE(SCP_SYS_MFG_CORE0, pg_mfg_core0, pg_mfg, mfg_52m_sel, SYS_MFG_CORE0),
-	PGATE(SCP_SYS_MJC, pg_mjc, NULL, mm_sel, SYS_MJC),
-	PGATE(SCP_SYS_VEN, pg_ven, NULL, mm_sel, SYS_VEN),
+	PGATE(SCP_SYS_MJC, pg_mjc, NULL, mjc_sel, SYS_MJC),
+	PGATE(SCP_SYS_VEN, pg_ven, NULL, venc_sel, SYS_VEN),
 	PGATE(SCP_SYS_AUDIO, pg_audio, NULL, infra_audio_26m, SYS_AUDIO),
 	PGATE(SCP_SYS_C2K, pg_c2k, NULL, NULL, SYS_C2K),
 };
