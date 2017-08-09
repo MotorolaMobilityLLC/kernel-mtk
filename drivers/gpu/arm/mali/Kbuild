@@ -26,12 +26,16 @@ MALI_ENABLE_CPU_CYCLES ?= 0
 # Include the mapping between TARGET_PLATFORM and KDIR + MALI_PLATFORM
 ifeq ($(CONFIG_MEDIATEK_SOLUTION),y)
     TARGET_PLATFORM = $(subst ",,$(CONFIG_MTK_PLATFORM))
-endif
+    MALI_PLATFORM = $(TARGET_PLATFORM)
+    EXTRA_DEFINES += -DMALI_FAKE_PLATFORM_DEVICE=1
+    MALI_PLATFORM_FILES = $(subst $(srctree)/$(src)/,,$(wildcard $(srctree)/$(src)/platform/$(TARGET_PLATFORM)/*.c))
+    ccflags-y += -Iinclude/soc/mediatek -I$(srctree)/drivers/misc/mediatek/base/power/$(TARGET_PLATFORM)
 
-MALI_PLATFORM = $(TARGET_PLATFORM)
-EXTRA_DEFINES += -DMALI_FAKE_PLATFORM_DEVICE=1
-MALI_PLATFORM_FILES = $(subst $(srctree)/$(src)/,,$(wildcard $(srctree)/$(src)/platform/$(TARGET_PLATFORM)/*.c))
-ccflags-y += -Iinclude/soc/mediatek
+    ifndef CONFIG_MALI_DVFS
+        override USING_GPU_UTILIZATION = 1
+        EXTRA_DEFINES += -DMTK_GPU_DVFS_POLICY
+    endif
+endif
 # Mediatek
 
 # For customer releases the Linux Device Drivers will be provided as ARM proprietary and GPL releases:
