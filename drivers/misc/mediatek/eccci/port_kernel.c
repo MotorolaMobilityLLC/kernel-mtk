@@ -990,6 +990,7 @@ int get_eint_attr_DTSVal(char *name, unsigned int name_len, unsigned int type, c
 {
 	int i, sim_value;
 	int *sim_info = (int *)result;
+	int covert_AP_to_MD_unit = 1000; /*unit of AP eint is us, but unit of MD eint is ms. So need covertion here.*/
 
 	if ((name == NULL) || (result == NULL) || (len == NULL))
 		return ERR_SIM_HOT_PLUG_NULL_POINTER;
@@ -1001,12 +1002,12 @@ int get_eint_attr_DTSVal(char *name, unsigned int name_len, unsigned int type, c
 	for (i = 0; i < MD_SIM_MAX; i++) {
 		if (eint_node_prop.ExistFlag & (1 << i)) {
 			if (!(strncmp(name, eint_node_prop.name[i].node_name, name_len))) {
-				sim_value = eint_node_prop.eint_value[type].value_sim[i];
+				sim_value = eint_node_prop.eint_value[type].value_sim[i]/covert_AP_to_MD_unit;
 				*len = sizeof(sim_value);
 				memcpy(sim_info, &sim_value, *len);
-				/* CCCI_NORMAL_LOG(-1, RPC, "get_eint_value type name:%s,
-				   sizeof: %d, sim_info: %d, %d\n", eint_node_prop.eint_value[type].property,
-				   *len, *sim_info, eint_node_prop.eint_value[type].value_sim[i]); */
+				CCCI_NORMAL_LOG(-1, RPC, "md_eint:%s, sizeof: %d, sim_info: %d, %d\n",
+						eint_node_prop.eint_value[type].property,
+						*len, *sim_info, eint_node_prop.eint_value[type].value_sim[i]);
 				return 0;
 			}
 		}
