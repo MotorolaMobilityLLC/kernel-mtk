@@ -233,6 +233,35 @@ config ARCH_MT6753
 	  support for k53v1_64 related project
 	  support for k53v1_64_op02 project
 
+config ARCH_MT6755
+	bool "MediaTek MT6755"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select MTK_SYSTRACKER
+	select MTK_SYS_CIRQ
+	select MTK_EIC
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select PINCTRL
+	select PINCTRL_MT6735
+	select MFD_SYSCON
+	select MTK_BASE_POWER
+	select MTK_GIC
+	help
+	  This enables support for MediaTek MT6755
+	  Support for aarch64/aarch32 Architecture
+	  Support for evb6755 related projects
+	  Support for k55 related projects
+
 config ARCH_MT8163
 	bool "MediaTek MT8163"
 	select ARCH_MEDIATEK
