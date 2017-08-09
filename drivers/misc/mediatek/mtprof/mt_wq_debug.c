@@ -10,35 +10,37 @@
 struct pool_workqueue;
 #include <trace/events/workqueue.h>
 
-#define WQ_VERBOSE_DEBUG 0
-
 #define WQ_DUMP_QUEUE_WORK   0x1
 #define WQ_DUMP_ACTIVE_WORK  0x2
 #define WQ_DUMP_EXECUTE_WORK 0x4
 
 #include "internal.h"
 
-static int wq_tracing;
+static unsigned int wq_tracing;
 
-static void mttrace_workqueue_execute_work(void *ignore, struct work_struct *work)
+static void probe_execute_work(void *ignore, struct work_struct *work)
 {
-	pr_debug("execute work=%p\n", (void *)work);
+	pr_debug("execute start work=%p func=%pf\n",
+		 (void *)work, (void *)work->func);
 }
 
-static void mttrace_workqueue_execute_end(void *ignore, struct work_struct *work)
+static void probe_execute_end(void *ignore, struct work_struct *work)
 {
-	pr_debug("execute end work=%p\n", (void *)work);
+	pr_debug("execute end work=%p func=%pf\n",
+		 (void *)work, (void *)work->func);
 }
 
-static void mttrace_workqueue_activate_work(void *ignore, struct work_struct *work)
+static void probe_activate_work(void *ignore, struct work_struct *work)
 {
-	pr_debug("activate work=%p\n", (void *)work);
+	pr_debug("activate work=%p func=%pf\n",
+		 (void *)work, (void *)work->func);
 }
 
-static void mttrace_workqueue_queue_work(void *ignore, unsigned int req_cpu, struct pool_workqueue *pwq,
-					 struct work_struct *work)
+static void
+probe_queue_work(void *ignore, unsigned int req_cpu, struct pool_workqueue *pwq,
+		 struct work_struct *work)
 {
-	pr_debug("queue work=%p function=%pf req_cpu=%u\n",
+	pr_debug("queue work=%p func=%pf req_cpu=%u\n",
 		 (void *)work, (void *)work->func, req_cpu);
 }
 
@@ -48,19 +50,15 @@ static void print_help(struct seq_file *m)
 	if (m != NULL) {
 		SEQ_printf(m, "\n*** Usage ***\n");
 		SEQ_printf(m, "commands to enable logs\n");
-		SEQ_printf(m,
-			   "  echo [queue work] [activate work] [execute work] > wq_enable_logs\n");
-		SEQ_printf(m, "  ex. echo 1 1 1 > wq_enable_logs, to enable all logs\n");
-		SEQ_printf(m,
-			   "  ex. echo 1 0 0 > wq_enable_logs, to enable \"queue work\" & \"wq debug\" logs\n");
+		SEQ_printf(m, "  echo [queue] [activate] [execute] > wq_enable_logs\n");
+		SEQ_printf(m, "  ex. 1 1 1 to enable all logs\n");
+		SEQ_printf(m, "  ex. 1 0 0 to enable queue logs\n");
 	} else {
 		pr_err("\n*** Usage ***\n");
 		pr_err("commands to enable logs\n");
-		pr_err
-		    ("  echo [queue work] [activate work] [execute work] > wq_enable_logs\n");
-		pr_err("  ex. echo 1 1 1 > wq_enable_logs, to enable all logs\n");
-		pr_err
-		    ("  ex. echo 1 0 0 > wq_enable_logs, to enable \"queue work\" logs\n");
+		pr_err("  echo [queue work] [activate work] [execute work] > wq_enable_logs\n");
+		pr_err("  ex. 1 1 1 to enable all logs\n");
+		pr_err("  ex. 1 0 0 to enable queue logs\n");
 	}
 }
 
@@ -80,9 +78,15 @@ static int mt_wq_log_show(struct seq_file *m, void *v)
 	return 0;
 }
 
-static ssize_t mt_wq_log_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
+static ssize_t
+mt_wq_log_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
 {
-	int log_queue_work = 0, log_activate_work = 0, log_execute_work = 0;
+	unsigned int queue = (0 != (wq_tracing & WQ_DUMP_QUEUE_WORK));
+	unsigned int activate = (0 != (wq_tracing & WQ_DUMP_ACTIVE_WORK));
+	unsigned int execute = (0 != (wq_tracing & WQ_DUMP_EXECUTE_WORK));
+	unsigned int toggle;
+	int ret;
+	int input[3];
 	char buf[64];
 
 	if (cnt >= sizeof(buf))
@@ -92,49 +96,42 @@ static ssize_t mt_wq_log_write(struct file *filp, const char *ubuf, size_t cnt, 
 		return -EFAULT;
 
 	buf[cnt] = '\0';
+	memset(input, 0, sizeof(input));
+	ret = sscanf(buf, "%d %d %d", &input[0], &input[1], &input[2]);
 
-	if (sscanf
-	    (buf, "%d %d %d", &log_queue_work, &log_activate_work, &log_execute_work) == 3) {
-
-		if (!!log_queue_work ^ ((wq_tracing & WQ_DUMP_QUEUE_WORK) != 0)) {
-			if (!(wq_tracing & WQ_DUMP_QUEUE_WORK)) {
-				register_trace_workqueue_queue_work(mttrace_workqueue_queue_work,
-								    NULL);
-				wq_tracing |= WQ_DUMP_QUEUE_WORK;
-			} else {
-				unregister_trace_workqueue_queue_work(mttrace_workqueue_queue_work,
-								    NULL);
-				wq_tracing &= ~WQ_DUMP_QUEUE_WORK;
-			}
-		}
-		if (!!log_activate_work ^ ((wq_tracing & WQ_DUMP_ACTIVE_WORK) != 0)) {
-			if (!(wq_tracing & WQ_DUMP_ACTIVE_WORK)) {
-				register_trace_workqueue_activate_work(mttrace_workqueue_activate_work,
-								    NULL);
-				wq_tracing |= WQ_DUMP_ACTIVE_WORK;
-			} else {
-				unregister_trace_workqueue_activate_work(mttrace_workqueue_activate_work,
-								    NULL);
-				wq_tracing &= ~WQ_DUMP_ACTIVE_WORK;
-			}
-		}
-		if (!!log_execute_work ^ ((wq_tracing & WQ_DUMP_EXECUTE_WORK) != 0)) {
-			if (!(wq_tracing & WQ_DUMP_EXECUTE_WORK)) {
-				register_trace_workqueue_execute_start(mttrace_workqueue_execute_work,
-								    NULL);
-				register_trace_workqueue_execute_end(mttrace_workqueue_execute_end,
-								    NULL);
-				wq_tracing |= WQ_DUMP_EXECUTE_WORK;
-			} else {
-				unregister_trace_workqueue_execute_start(mttrace_workqueue_execute_work,
-								    NULL);
-				unregister_trace_workqueue_execute_end(mttrace_workqueue_execute_end,
-								    NULL);
-				wq_tracing &= ~WQ_DUMP_EXECUTE_WORK;
-			}
-		}
-	} else
+	if (ret != 3) {
 		print_help(NULL);
+		return cnt;
+	}
+
+	toggle = (!!input[0] ^ queue);
+	if (toggle && !queue) {
+		register_trace_workqueue_queue_work(probe_queue_work, NULL);
+		wq_tracing |= WQ_DUMP_QUEUE_WORK;
+	} else if (toggle && queue) {
+		unregister_trace_workqueue_queue_work(probe_queue_work, NULL);
+		wq_tracing &= ~WQ_DUMP_QUEUE_WORK;
+	}
+
+	toggle = (!!input[1] ^ activate);
+	if (toggle && !activate) {
+		register_trace_workqueue_activate_work(probe_activate_work, NULL);
+		wq_tracing |= WQ_DUMP_ACTIVE_WORK;
+	} else if (toggle && activate) {
+		unregister_trace_workqueue_activate_work(probe_activate_work, NULL);
+		wq_tracing &= ~WQ_DUMP_ACTIVE_WORK;
+	}
+
+	toggle = (!!input[2] ^ execute);
+	if (toggle && !execute) {
+		register_trace_workqueue_execute_start(probe_execute_work, NULL);
+		register_trace_workqueue_execute_end(probe_execute_end, NULL);
+		wq_tracing |= WQ_DUMP_EXECUTE_WORK;
+	} else if (toggle && execute) {
+		unregister_trace_workqueue_execute_start(probe_execute_work, NULL);
+		unregister_trace_workqueue_execute_end(probe_execute_end, NULL);
+		wq_tracing &= ~WQ_DUMP_EXECUTE_WORK;
+	}
 
 	return cnt;
 }
