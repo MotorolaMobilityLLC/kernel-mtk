@@ -82,7 +82,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	code = mt_get_chip_hw_code();
 
 	mt_gpufreq_voltage_enable_set(1);
-#ifndef ENABLE_COMMON_DVFS
+#ifdef ENABLE_COMMON_DVFS
     ged_dvfs_gpu_clock_switch_notify(1);
 #endif
 	
@@ -281,7 +281,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	}
 
 	mt_gpufreq_voltage_enable_set(0);
-#ifndef ENABLE_COMMON_DVFS
+#ifdef ENABLE_COMMON_DVFS
     ged_dvfs_gpu_clock_switch_notify(0);
 #endif
 #endif
