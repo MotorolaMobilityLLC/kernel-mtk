@@ -49,9 +49,10 @@
 #include "AudDrv_Common.h"
 #include "AudDrv_Def.h"
 #include "AudDrv_Afe.h"
-#include "AudDrv_Ana.h"
 #include "AudDrv_Gpio.h"
 #include "AudDrv_Clk.h"
+#include "mt_soc_afe_control.h"
+#include "mt_soc_codec_63xx.h"
 #include "mt_soc_pcm_common.h"
 #include <linux/mutex.h>
 #include <linux/wakelock.h>
@@ -266,34 +267,6 @@ error:
 
 }
 
-void vRegWriteBits(uint32 addr, uint32 value, uint8 bits, uint8 len)
-{
-	uint32 u4TargetBitField = ((0x1 << len) - 1) << bits;
-	uint32 u4TargetValue = (value << bits) & u4TargetBitField;
-	uint32 u4CurrValue;
-
-	u4CurrValue = Afe_Get_Reg(addr);
-	Afe_Set_Reg(addr, ((u4CurrValue & (~u4TargetBitField)) | u4TargetValue),
-			0xFFFFFFFF);
-}
-
-void vRegSetBit(uint32 addr, uint32 bit)
-{
-	uint32 u4CurrValue, u4Mask;
-
-	u4Mask = 1 << bit;
-	u4CurrValue = Afe_Get_Reg(addr);
-	Afe_Set_Reg(addr, (u4CurrValue | u4Mask), 0xFFFFFFFF);
-}
-
-void vRegResetBit(uint32 addr, uint32 bit)
-{
-	uint32 u4CurrValue, u4Mask;
-
-	u4Mask = 1 << bit;
-	u4CurrValue = Afe_Get_Reg(addr);
-	Afe_Set_Reg(addr, (u4CurrValue & (~u4Mask)), 0xFFFFFFFF);
-}
 
 #define IRQ3_FS_POS		 16
 #define IRQ3_FS_LEN		 4
@@ -312,36 +285,19 @@ void get_io_remap(void)
 	MD32_DTCM_VIRTUAL_ADDR = ioremap_nocache(ANC_MD32_DTCM, MD32_DTCM_SIZE);
 }
 
-void pmic_select_dl(void)
+void setDebugDump(bool enable)
 {
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 4,
-			0x1 << 4); /* dac_hp_anc_ch1_sel(0: dl, 1: anc) */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 5,
-			0x1 << 5); /* dac_hp_anc_ch2_7el(0: dl, 1: anc) */
-}
-
-void pmic_select_dl_and_anc(void)
-{
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 4,
-			0x1 << 4); /* dac_hp_anc_ch1_sel(0: dl, 1: anc) */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 5,
-			0x1 << 5); /* dac_hp_anc_ch2_7el(0: dl, 1: anc) */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 6,
-			0x1 << 6); /* hp_anc_fpga_de bug_ch1(0: add dl, 1: pure anc) */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 7,
-			0x1 << 7); /* hp_anc_fpga_de bug_ch2(0: add dl, 1: pure anc) */
-}
-
-void pmic_select_anc_only(void)
-{
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 4,
-			0x1 << 4); /* dac_hp_anc_ch1_sel(0: dl, 1: anc) */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 5,
-			0x1 << 5); /* dac_hp_anc_ch2_7el(0: dl, 1: anc) */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 6,
-			0x1 << 6); /* hp_anc_fpga_de bug_ch1(0: add dl, 1: pure anc) */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 7,
-			0x1 << 7); /* hp_anc_fpga_de bug_ch2(0: add dl, 1: pure anc) */
+	if (enable) {
+		/* bConnect IO_0/1 to O21/22 */
+		Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x1 << 11, 0x1 << 11);
+		/* bConnect IO_2/3 to O5/6 */
+		Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x1 << 12, 0x1 << 12);
+	} else {
+		/* bConnect IO_0/1 to O21/22 */
+		Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x0 << 11, 0x1 << 11);
+		/* bConnect IO_2/3 to O5/6 */
+		Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x0 << 12, 0x1 << 12);
+	}
 }
 
 void preset(void)
@@ -359,196 +315,45 @@ void preset(void)
 	*AFE_Register |= 0x00330000L;
 	/* AFE_Register |= 0x0003000DL; */
 
-	AudDrv_ANC_Clk_On();
 	get_io_remap();
 
-	/* bConnect IO_2/3 to O5/6 */
-	vRegSetBit(AFE_ADDA2_TOP_CON0, 11);
+	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x0 , 0x3 << 1);
+	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x0, 0x7 << 4); /* adda2_anc_dl_input_mode:260k */
+	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x1 << 3, 0x1 << 3); /* afe adda2_dl_src_on */
+	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x1 << 7, 0x1 << 7); /* ul_dn25_sel */
 
-	/*
-	Afe_Set_Reg(AFE_SGEN_CON0, 0x04741741,0xFFFFFFFF);
-	vRegWriteBits(AFE_ADDA2_TOP_CON0, 3, 1, 2); anc_loopback_sine_ch1,2 use sgen
+    /* anc_up8x_rxif_adc_voice_mode:8: time slot1 = 78, time slot2 = 24 @ 260K interval */
+	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x8 << 28, 0xf << 28);
 
-	vRegSetBit(AFE_ADDA2_TOP_CON0, 1);
-	vRegSetBit(AFE_ADDA2_TOP_CON0, 2);
-	*/
+	Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0x3f << ADDA_afe_ul_dl_con0_reserved_POS,
+				((2^ADDA_afe_ul_dl_con0_reserved_LEN)-1) << ADDA_afe_ul_dl_con0_reserved_POS);
 
-	vRegWriteBits(AFE_ADDA2_TOP_CON0, 0, 1, 2); /* use md32, not sgen */
-
-
-	vRegWriteBits(AFE_ADDA2_TOP_CON0, 0, 4, 3);
-	vRegSetBit(AFE_ADDA_UL_DL_CON0, 0);
-	vRegSetBit(AFE_ADDA2_TOP_CON0, 3);  /* afe tx */
-
-	vRegSetBit(AFE_ADDA2_TOP_CON0, 7);
-
-	/* pmic rx */
-	Ana_Set_Reg(AFE_ADDA2_PMIC_NEWIF_CFG1, 0x1 << 13, 0x1 << 13);
-
-	vRegWriteBits(AFE_ADDA_NEWIF_CFG2, 8, 28, 4);
-	vRegSetBit(AFE_ADDA_UL_SRC_CON0, 0);
-
-	vRegWriteBits(AFE_ADDA_UL_DL_CON0, 0x1, ADDA_adda_afe_on_POS,
-			  ADDA_adda_afe_on_LEN);
-	vRegWriteBits(AFE_ADDA_UL_DL_CON0, 0x3f, ADDA_afe_ul_dl_con0_reserved_POS,
-			  ADDA_afe_ul_dl_con0_reserved_LEN);
-
-	/* HPANC */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 8, 0x1 << 8); /* sgen mux(0:ap, 1:sgen) */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 2,
-			0x1 << 2); /* hp_anc_dl_src_ on(0:off, 1:on) */
-
-	/* adjust_fifo(2);  */
+	SetADDAEnable(true); /* adda_afe_on:  1: enable */
 
 	AudDrv_GPIO_Request(true, Soc_Aud_Digital_Block_ADDA_ANC);
 
 	pr_debug("ANCService_ioctl test(after) AFE_Register: %x", *AFE_Register);
 }
 
-
-void ap_sgen_mux_md32(void)
-{
-	vRegWriteBits(AFE_ADDA2_TOP_CON0, 0, 1, 2); /*  anc_loopback_sine_ch1,2 use sgen */
-}
-
-void mute_ap_sgen(void)
-{
-	vRegSetBit(AFE_SGEN_CON0, 24);
-	vRegSetBit(AFE_SGEN_CON0, 25);
-}
-
-void unmute_ap_sgen(void)
-{
-	vRegResetBit(AFE_SGEN_CON0, 24);
-	vRegResetBit(AFE_SGEN_CON0, 25);
-}
-
-void enable_ap_sgen(void)	/* USE AP SGEN */
-{
-	Afe_Set_Reg(AFE_SGEN_CON0, 0x04761761, 0xFFFFFFFF);
-	vRegWriteBits(AFE_ADDA2_TOP_CON0, 3, 1,
-			  2); /* anc_loopback_sine_ch1,2 use sgen */
-	/* ====sgen only===== */
-	vRegSetBit(AFE_ADDA2_TOP_CON0, 1);
-	vRegSetBit(AFE_ADDA2_TOP_CON0, 2);
-	unmute_ap_sgen();
-}
-
-void pmic_uplink_mux_adc(void)
-{
-	Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0 << 1, 0x1 << 1);  /* mux select adc */
-}
-
-void enable_pmic_uplink_sgen(void)
-{
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 1, 0x1 << 1);  /* mux select sgen */
-
-	Ana_Set_Reg(AFE_SGEN_CFG1, 0x1, 0x1F);
-	Ana_Set_Reg(AFE_SGEN_CFG0, 0x0, 0xF << 12);
-	Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x1 << 1, 0x1 << 1);
-	Ana_Set_Reg(AFE_SGEN_CFG0, 0x0 << 6, 0x1 << 6); /* unmute */
-}
-
-void mute_pmic_uplink_sgen(void)
-{
-	Ana_Set_Reg(AFE_SGEN_CFG0, 0x1 << 6, 0x1 << 6);
-}
-
-void enable_pmic_downlink_sgen(void)
-{
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 8, 0x1 << 8);  /* mux select sgen */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 10, 0x7 << 10);
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 13, 0x7 << 13);
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 9, 0x1 << 9); /* unmute */
-}
-
-void mute_pmic_downlink_sgen(void)
-{
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 9, 0x1 << 9);
-}
-
-void pmic_downlink_mux_ap(void)
-{
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 8, 0x1 << 8);  /* mux select ap */
-}
-
-void toggle_anc_cic(void)
-{
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 2, 0x1 << 2);
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 2, 0x1 << 2);
-}
-
-void enable_loopback1(void)
-{
-	vRegSetBit(AFE_ADDA2_TOP_CON0, 0);	/* loopback1 */
-}
-
-void disable_loopback1(void)
-{
-	vRegResetBit(AFE_ADDA2_TOP_CON0, 0);	/* loopback1); */
-}
-
-void enable_loopback3(void)
-{
-	Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x1 << 12, 0x1 << 12);
-}
-
-void disable_loopback3(void)
-{
-	Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0 << 12, 0x1 << 12);
-}
-
 void enable_uplink_path(void)
 {
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 0, 0x1 << 0); /* ANC on */
+	/* mtkif rx rg_voice mode set to 260k */
+	Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, 0x8 << 28, 0xf << 28);
 
-	vRegWriteBits(AFE_ADDA_NEWIF_CFG2, 8, 28,
-			  4);   /* mtkif rx rg_voice mode set to 260k */
-	vRegSetBit(AFE_ADDA_UL_SRC_CON0,
-		   0);	/* UL SRC on which will enable mtk if rx */
-	vRegSetBit(AFE_ADDA2_TOP_CON0, 1);	 /* anc_tx on */
+	SetULSrcEnable(true); /* UL SRC on which will enable mtk if rx */
 
-	/* vRegWriteBits(AFE_ADDA_UL_SRC_CON0 , 0, 0, 1); */
-	/* vRegWriteBits(AFE_ADDA_UL_SRC_CON0 , 1, 0, 1); */
+	/* anc_tx on */
+	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x1 << 1, 0x1 << 1);
 
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 1, 0x1 << 1); /* uplink src path */
+	AudDrv_ADC_Clk_On();
 }
 
 void disable_uplink_path(void)
 {
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 0, 0x1 << 0); /* ANC off */
-	vRegResetBit(AFE_ADDA2_TOP_CON0, 1);	 /* anc_tx off */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 1, 0x1 << 1); /* uplink src path */
-}
-
-void enable_audio_irq(void)	 /* enable audio irq */
-{
-	vRegWriteBits(AFE_IRQ_MCU_CNT3, 1, 0, 17);
-	vRegWriteBits(AFE_IRQ_MCU_CON, 15, IRQ3_FS_POS, IRQ3_FS_LEN);   /* 260K */
-	vRegSetBit(AFE_IRQ_MCU_CON, IRQ3_ON);
-}
-
-void pmic_sgen(void)	/* 6351 SGEN ENABLE */
-{
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 8, 0x1 << 8); /* sgen mux(0:ap, 1:sgen) */
-	/* Ana_Set_Reg(AFE_HPANC_CFG0, 0x0, 0x7<<8);	SGEN AMP */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 10,
-			0x1 << 10); /* hp_anc_sinegen _en (0:disable, 1:enable) */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0,
-			0x1 << 9);  /* hp_anc_sinegen _mute  (0 :unmute) */
-}
-
-void gpio_set_driving(int d)
-{
-	unsigned int old, oldsetting;
-	void *GPIOREG = ioremap_nocache(0x100028F0, 0x10);
-
-	old = *(volatile unsigned int *)(GPIOREG);
-	oldsetting = (old >> 22) & 0x3;
-	*(volatile unsigned int *)(GPIOREG) = (old & ~(0x3 << 22)) | (d << 22);
-
-	pr_debug("ANC gpio_set_driving oldsetting=%d 0x%x=>0x%x", oldsetting, old,
-		   *(volatile unsigned int *)(GPIOREG));
+	AudDrv_ADC_Clk_Off();
+	SetULSrcEnable(false);
+	/* anc_tx off */
+	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, 0x0 << 1, 0x1 << 1);
 }
 
 void md32_write_processed(void)
@@ -574,59 +379,6 @@ void md32_write_seq_data(void)
 void md32_write_silence(void)
 {
 	MD32_GENERAL_REG0 = 0x4;
-}
-
-
-void md32_short_silence(void)
-{
-	md32_write_silence();
-	msleep(1000);
-	toggle_anc_cic();
-	msleep(1000);
-	md32_write_mic_data();
-}
-
-void reset_anc_rx_timing(void)
-{
-	pmic_select_dl();
-	Ana_Set_Reg(AFE_ADDA2_PMIC_NEWIF_CFG1, 0x0 << 13,
-			0x1 << 13); /* disable anc rx timing */
-	msleep(20);
-	toggle_anc_cic();
-	msleep(20);
-	Ana_Set_Reg(AFE_ADDA2_PMIC_NEWIF_CFG1, 0x1 << 13,
-			0x1 << 13); /* enalbe anc rx timing */
-	pmic_select_dl_and_anc();
-}
-
-void mtk_interface_sclk_inverese(void)
-{
-	Ana_Set_Reg(AFE_ADDA2_PMIC_NEWIF_CFG2, 0x1 << 15,
-			0x1 << 15); /* mtkif sclk invert */
-}
-
-void mtk_interface_sclk_normal(void)
-{
-	Ana_Set_Reg(AFE_ADDA2_PMIC_NEWIF_CFG2, 0x0 << 15,
-			0x1 << 15); /* mtkif sclk invert clear */
-}
-
-void bypass_anc_uplink(void)
-{
-	Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x1 << 4, 0x1 << 4); /* use cic1 out */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 1, 0x1 << 1); /* hp_anc_ul_src_on */
-}
-
-void adjust_fifo(int v)
-{
-	Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, v << 24, 0x7 << 24); /* use cic1 out */
-	Ana_Set_Reg(AFE_ADDA2_PMIC_NEWIF_CFG1, v << 5, 0x7 << 5); /* hp_anc_ul_src_on */
-}
-
-void use_anc_uplink(void)
-{
-	Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x0 << 4, 0x1 << 4); /* use cic1 out */
-	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 1, 0x1 << 1); /* hp_anc_ul_src_on */
 }
 
 void download_md32_binary(void)
@@ -658,7 +410,6 @@ void download_md32_binary(void)
 		upload_coef();
 		MD32_BASE_REG = 0x1;
 		pr_debug("[ANC_MD32] MD32 download success and bootup\n");
-		mtk_interface_sclk_inverese();
 		return;
 
 	} while (0);
@@ -908,13 +659,6 @@ void on_md32_ipc_trigger(void)
 	}
 }
 
-void dl_sgen_freq(int freq_idx)
-{
-	Afe_Set_Reg(AFE_SGEN_CON0, freq_idx << 12, 31 << 12);
-	Afe_Set_Reg(AFE_SGEN_CON0, freq_idx << 0, 31 << 0);
-	Ana_Set_Reg(AFE_HPANC_CFG0, freq_idx << 10, 31 << 10);
-}
-
 static long ANCService_ioctl(struct file *fp, unsigned int cmd,
 				 unsigned long arg)
 {
@@ -932,58 +676,6 @@ static long ANCService_ioctl(struct file *fp, unsigned int cmd,
 		case 2:
 			download_md32_binary();
 			break;
-		case 3:
-			enable_uplink_path();
-			break;
-		case 4:
-			ap_sgen_mux_md32();
-			break;
-		case 5:
-			mute_ap_sgen();
-			break;
-		case 6:
-			unmute_ap_sgen();
-			break;
-		case 7:
-			enable_ap_sgen();
-			break;
-		case 8:
-			pmic_uplink_mux_adc();
-			break;
-		case 9:
-			enable_pmic_uplink_sgen();
-			break;
-		case 10:
-			mute_pmic_uplink_sgen();
-			break;
-		case 11:
-			enable_pmic_downlink_sgen();
-			break;
-		case 12:
-			mute_pmic_downlink_sgen();
-			break;
-		case 13:
-			pmic_downlink_mux_ap();
-			break;
-		case 14:
-			toggle_anc_cic();
-			break;
-		case 15:
-			enable_loopback1();
-			break;
-		case 16:
-			disable_loopback1();
-			break;
-		case 17:
-			enable_loopback3();
-			break;
-		case 18:
-			disable_loopback3();
-			break;
-
-		case 29:
-			md32_short_silence();
-			break;
 		case 30:
 			md32_write_processed();
 			break;
@@ -999,91 +691,30 @@ static long ANCService_ioctl(struct file *fp, unsigned int cmd,
 		case 35:
 			md32_write_mic_data();
 			break;
-		case 36:
-			bypass_anc_uplink();
-			break;
-		case 37:
-			use_anc_uplink();
-			break;
-
 		case 40:
 			Afe_Log_Print();
 			break;
-		case 41:
-			reset_anc_rx_timing();
-			break;
-		case 42:
-			mtk_interface_sclk_inverese();
-			break;
-		case 43:
-			mtk_interface_sclk_normal();
-			break;
-		case 44:
-			dump_analog = 1;
-			break;
-		case 45:
-			dump_analog = 0;
-			break;
-
-		case 50:	/* dl sgen set to 8k */
-			dl_sgen_freq(2);
-			break;
-		case 51:	/* dl sgen set to 16k */
-			dl_sgen_freq(4);
-			break;
-		case 52:	/* dl sgen set to 20k */
-			dl_sgen_freq(5);
-			break;
-
-		case 53:	/* gpiodriving 2ma */
-			gpio_set_driving(0);
-			break;
-		case 54:	/* gpiodriving 4ma */
-			gpio_set_driving(1);
-			break;
-		case 55:	/* gpiodriving 6ma */
-			gpio_set_driving(2);
-			break;
-		case 56:	/* gpiodriving 8ma */
-			gpio_set_driving(3);
-			break;
-
-		case 57:	/* fifo quick */
-			adjust_fifo(1);
-			break;
-		case 58:	/* fifo ok */
-			adjust_fifo(2);
-			break;
-		case 59:	/* fifo slow */
-			adjust_fifo(3);
-			break;
-
 		case 81:
 			AudDrv_Clk_On();
-			pmic_select_dl();
-			Afe_Set_Reg(AFE_DAC_CON0, 0x1, 0x1);
+			AudDrv_ANC_Clk_On();
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_ANC, true);
+			EnableAfe(true);
 			preset();
 			download_md32_binary();
 			enable_uplink_path();
-			ap_sgen_mux_md32();
-			reset_anc_rx_timing();
 			break;
 		case 82:
-			pmic_select_dl();
+			SetADDAEnable(false);
+			SetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_ANC, false);
+			EnableAfe(false);
+			AudDrv_GPIO_Request(false, Soc_Aud_Digital_Block_ADDA_ANC);
 			disable_uplink_path();
 			AudDrv_ANC_Clk_Off();
-			Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 4,
-					0x1 << 4); /* dac_hp_anc_ch1_sel(0: dl, 1: anc) */
-			Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 5,
-					0x1 << 5); /* dac_hp_anc_ch2_7el(0: dl, 1: anc) */
 			AudDrv_Clk_Off();
 			break;
-
 		case 91:
 			update_coef();
 			break;
-
-
 		case 21:
 			pr_debug("send ipc from ap to md32");
 			trigger_ipc_l();

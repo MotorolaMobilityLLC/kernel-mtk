@@ -86,6 +86,9 @@ bool Set2ndI2SOutEnable(bool benable);
 bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S);
 bool setDmicPath(bool _enable);
 
+void SetULSrcEnable(bool bEnable);
+void SetADDAEnable(bool bEnable);
+
 bool SetExtI2SAdcIn(AudioDigtalI2S *DigtalI2S);
 bool SetExtI2SAdcInEnable(bool bEnable);
 

@@ -2889,6 +2889,95 @@ static int Aud_Clk_Buf_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	return 0;
 }
 
+void enable_anc_loopback3(void)
+{
+	Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x1 << 12, 0x1 << 12);
+}
+
+void disable_anc_loopback3(void)
+{
+	Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0 << 12, 0x1 << 12);
+}
+
+static int ANC_enabled;
+
+void pmic_select_dl_only(void)
+{
+	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 4,
+			0x1 << 4); /* dac_hp_anc_ch1_sel(0: dl, 1: anc) */
+	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 5,
+			0x1 << 5); /* dac_hp_anc_ch2_7el(0: dl, 1: anc) */
+	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 6,
+			0x1 << 6); /* hp_anc_fpga_de bug_ch1(0: add dl, 1: pure anc) */
+	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 7,
+			0x1 << 7); /* hp_anc_fpga_de bug_ch2(0: add dl, 1: pure anc) */
+}
+
+void pmic_select_dl_and_anc(void)
+{
+	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 4,
+			0x1 << 4); /* dac_hp_anc_ch1_sel(0: dl, 1: anc) */
+	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 5,
+			0x1 << 5); /* dac_hp_anc_ch2_7el(0: dl, 1: anc) */
+	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 6,
+			0x1 << 6); /* hp_anc_fpga_de bug_ch1(0: add dl, 1: pure anc) */
+	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 7,
+			0x1 << 7); /* hp_anc_fpga_de bug_ch2(0: add dl, 1: pure anc) */
+}
+
+void pmic_select_anc_only(void)
+{
+	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 4,
+			0x1 << 4); /* dac_hp_anc_ch1_sel(0: dl, 1: anc) */
+	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 5,
+			0x1 << 5); /* dac_hp_anc_ch2_7el(0: dl, 1: anc) */
+	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 6,
+			0x1 << 6); /* hp_anc_fpga_de bug_ch1(0: add dl, 1: pure anc) */
+	Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 7,
+			0x1 << 7); /* hp_anc_fpga_de bug_ch2(0: add dl, 1: pure anc) */
+}
+static int Set_ANC_Enable(bool enable)
+{
+	pr_aud("%s(), value = %d\n", __func__, enable ? 1 : 0);
+	ANC_enabled = enable;
+	if (enable == true) {
+		pmic_select_dl_only();
+
+		/* mtkif sclk invert */
+		Ana_Set_Reg(AFE_ADDA2_PMIC_NEWIF_CFG2, 0x1 << 15, 0x1 << 15);
+
+		/* reset timing workaround */
+		Ana_Set_Reg(AFE_ADDA2_PMIC_NEWIF_CFG1, 0x0 << 13, 0x1 << 13); /* pmic rx */
+		msleep(20);
+		Ana_Set_Reg(AFE_HPANC_CFG0, 0x1 << 2, 0x1 << 2); /* toggle cic */
+		Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 2, 0x1 << 2);
+		Ana_Set_Reg(AFE_ADDA2_PMIC_NEWIF_CFG1, 0x1 << 13, 0x1 << 13); /* pmic rx */
+		msleep(20);
+		pmic_select_dl_and_anc();
+	} else {
+		pmic_select_dl_only();
+	}
+	return 0;
+}
+
+static int Audio_ANC_Get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	pr_aud("%s(), value = %d\n", __func__);
+	ucontrol->value.integer.value[0] = ANC_enabled;
+	return 0;
+}
+
+static int Audio_ANC_Set(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	pr_aud("%s(), value = %d\n", __func__);
+	if (ucontrol->value.integer.value[0])
+		Set_ANC_Enable(true);
+	else
+		Set_ANC_Enable(false);
+	return 0;
+}
 
 static const struct soc_enum Audio_DL_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
@@ -2947,6 +3036,7 @@ static const struct snd_kcontrol_new mt6331_snd_controls[] = {
 		       Audio_Hp_Impedance_Get,
 		       Audio_Hp_Impedance_Set),
 	SOC_ENUM_EXT("PMIC_REG_CLEAR", Audio_DL_Enum[12], PMIC_REG_CLEAR_Get, PMIC_REG_CLEAR_Set),
+	SOC_ENUM_EXT("Audio_ANC_Switch", Audio_DL_Enum[0], Audio_ANC_Get, Audio_ANC_Set),
 };
 
 static const struct snd_kcontrol_new mt6331_Voice_Switch[] = {
@@ -5274,6 +5364,8 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 
 	if (mInitCodec == true)
 		return 0;
+
+	ANC_enabled = 0;
 
 #ifdef MT6755_AW8736_REWORK
 	int data[4];

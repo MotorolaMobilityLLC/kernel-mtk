@@ -341,7 +341,9 @@ void SetOffloadSWMode(bool bEnable)
 
 bool ConditionEnterSuspend(void)
 {
-	if ((mFMEnable == true) || (mOffloadEnable == true))
+	if ((mFMEnable == true) ||
+	    (mOffloadEnable == true) ||
+	    (GetMemoryPathEnable(Soc_Aud_Digital_Block_ADDA_ANC) == true))
 		return false;
 
 	return true;
@@ -1428,7 +1430,7 @@ bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S)
 		afeAddaUlSrcCon0 |= 0x1 << 20;
 	}
 
-	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, afeAddaUlSrcCon0, MASK_ALL);
+	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, afeAddaUlSrcCon0, MASK_ALL & ~(0x1));
 
 	return true;
 }
@@ -1642,16 +1644,10 @@ bool Set2ndI2SAdcEnable(bool bEnable)
 
 bool SetI2SAdcEnable(bool bEnable)
 {
-	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, bEnable ? 1 : 0, 0x1);
 	mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState = bEnable;
 
-	if (bEnable == true) {
-		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0x1, 0x1);
-	} else if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false &&
-		   mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false &&
-		   mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC_2]->mState == false) {
-		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0, 0x1);
-	}
+	SetULSrcEnable(bEnable);
+	SetADDAEnable(bEnable);
 
 	if (bEnable == false) {
 		if (mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate > 48000) {
@@ -2125,6 +2121,64 @@ bool GetMemoryPathEnable(uint32 Aud_block)
 	return false;
 }
 
+void SetULSrcEnable(bool bEnable)
+{
+	unsigned long flags;
+
+	pr_debug("%s bEnable = %d\n", __func__, bEnable);
+
+	spin_lock_irqsave(&afe_control_lock, flags);
+	if (bEnable == true) {
+		Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, 0x1, 0x1);
+	} else {
+		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false &&
+		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC_2]->mState == false &&
+		    mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_ANC]->mState == false) {
+			Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, 0x0, 0x1);
+		}
+	}
+	spin_unlock_irqrestore(&afe_control_lock, flags);
+}
+
+void SetADDAEnable(bool bEnable)
+{
+	unsigned long flags;
+
+	pr_debug("%s bEnable = %d\n", __func__, bEnable);
+
+	spin_lock_irqsave(&afe_control_lock, flags);
+	if (bEnable == true) {
+		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0x1, 0x1);
+	} else {
+		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false &&
+		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false &&
+		    mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC_2]->mState == false &&
+		    mAudioMEMIF[Soc_Aud_Digital_Block_ADDA_ANC]->mState == false) {
+			Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0x0, 0x1);
+		}
+	}
+
+/*
+	if (bEnable == true) {
+		if (ADDA_enable_counter == 0) {
+			Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0x1, 0x1);
+		}
+		ADDA_enable_counter++;
+	} else {
+		ADDA_enable_counter--;
+		if (ADDA_enable_counter == 0) {
+			Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0x0, 0x1);
+		}
+		if (ADDA_enable_counter < 0) {
+			pr_warn("anc_clk_counter < 0 = %d\n",
+				ADDA_enable_counter);
+			ADDA_enable_counter = 0;
+		}
+	}
+*/
+	spin_unlock_irqrestore(&afe_control_lock, flags);
+}
+
 bool SetI2SDacEnable(bool bEnable)
 {
 	pr_aud("%s bEnable = %d", __func__, bEnable);
@@ -2132,15 +2186,12 @@ bool SetI2SDacEnable(bool bEnable)
 	if (bEnable) {
 		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
 		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
-		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
+		SetADDAEnable(true);
 	} else {
 		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
 		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
 
-		if (mAudioMEMIF[Soc_Aud_Digital_Block_I2S_OUT_DAC]->mState == false
-		    && mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC]->mState == false) {
-			Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, bEnable, 0x0001);
-		}
+		SetADDAEnable(false);
 
 		AudDrv_AUD_Sel(0);
 #ifdef CONFIG_FPGA_EARLY_PORTING
