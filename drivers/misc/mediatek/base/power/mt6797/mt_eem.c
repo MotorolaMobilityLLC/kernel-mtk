@@ -3406,27 +3406,27 @@ static inline void handle_mon_err_isr(struct eem_det *det)
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
 	/* EEM Monitor mode error handler */
-	eem_isr_info("====================================================\n");
-	eem_isr_info("EEM mon err: EEMEN(%p) = 0x%08X, EEMINTSTS(%p) = 0x%08X\n",
+	eem_error("====================================================\n");
+	eem_error("EEM mon err: EEMEN(%p) = 0x%08X, EEMINTSTS(%p) = 0x%08X\n",
 		     EEMEN, eem_read(EEMEN),
 		     EEMINTSTS, eem_read(EEMINTSTS));
-	eem_isr_info("EEM_SMSTATE0 (%p) = 0x%08X\n",
+	eem_error("EEM_SMSTATE0 (%p) = 0x%08X\n",
 		     EEM_SMSTATE0, eem_read(EEM_SMSTATE0));
-	eem_isr_info("EEM_SMSTATE1 (%p) = 0x%08X\n",
+	eem_error("EEM_SMSTATE1 (%p) = 0x%08X\n",
 		     EEM_SMSTATE1, eem_read(EEM_SMSTATE1));
-	eem_isr_info("TEMP (%p) = 0x%08X\n",
+	eem_error("TEMP (%p) = 0x%08X\n",
 		     TEMP, eem_read(TEMP));
-	eem_isr_info("EEM_TEMPMSR0 (%p) = 0x%08X\n",
+	eem_error("EEM_TEMPMSR0 (%p) = 0x%08X\n",
 		     EEM_TEMPMSR0, eem_read(EEM_TEMPMSR0));
-	eem_isr_info("EEM_TEMPMSR1 (%p) = 0x%08X\n",
+	eem_error("EEM_TEMPMSR1 (%p) = 0x%08X\n",
 		     EEM_TEMPMSR1, eem_read(EEM_TEMPMSR1));
-	eem_isr_info("EEM_TEMPMSR2 (%p) = 0x%08X\n",
+	eem_error("EEM_TEMPMSR2 (%p) = 0x%08X\n",
 		     EEM_TEMPMSR2, eem_read(EEM_TEMPMSR2));
-	eem_isr_info("EEM_TEMPMONCTL0 (%p) = 0x%08X\n",
+	eem_error("EEM_TEMPMONCTL0 (%p) = 0x%08X\n",
 		     EEM_TEMPMONCTL0, eem_read(EEM_TEMPMONCTL0));
-	eem_isr_info("EEM_TEMPMSRCTL1 (%p) = 0x%08X\n",
+	eem_error("EEM_TEMPMSRCTL1 (%p) = 0x%08X\n",
 		     EEM_TEMPMSRCTL1, eem_read(EEM_TEMPMSRCTL1));
-	eem_isr_info("====================================================\n");
+	eem_error("====================================================\n");
 
 #ifdef __KERNEL__
 	aee_kernel_warning("mt_eem", "@%s():%d, get_volt(%s) = 0x%08X\n", __func__, __LINE__, det->name, det->VBOOT);
