@@ -51,6 +51,12 @@
 #define idle_clrl(addr, val) \
 	mt65xx_reg_sync_writel(idle_readl(addr) & ~(val), addr)
 
+enum mt_idle_mode {
+	MT_DPIDLE = 0,
+	MT_SOIDLE,
+	MT_SLIDLE,
+};
+
 enum {
 	CG_INFRA   = 0,
 	CG_PERI    = 1,
@@ -443,19 +449,22 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 }
 
 bool cg_check_idle_can_enter(
-	unsigned int *condition_mask, unsigned int *block_mask)
+	unsigned int *condition_mask, unsigned int *block_mask, enum mt_idle_mode mode)
 {
 	int i;
 	unsigned int sd_mask = 0;
 	u32 clks[NR_GRPS];
 	u32 r = 0;
+	unsigned int sta;
 
+	/* SD status */
 	msdc_clk_status(&sd_mask);
 	if (sd_mask) {
 		block_mask[CG_PERI] |= sd_mask;
 		return false;
 	}
 
+	/* CG status */
 	get_all_clock_state(clks);
 
 	for (i = 0; i < NR_GRPS; i++) {
@@ -463,7 +472,27 @@ bool cg_check_idle_can_enter(
 		r |= block_mask[i];
 	}
 
-	return r == 0;
+	if (!(r == 0))
+		return false;
+
+	/* MTCMOS status */
+	sta = idle_readl(SPM_PWR_STATUS);
+	if (mode == MT_DPIDLE) {
+		if (sta & (MFG_PWR_STA_MASK |
+					ISP_PWR_STA_MASK |
+					VDE_PWR_STA_MASK |
+					VEN_PWR_STA_MASK |
+					DIS_PWR_STA_MASK))
+			return false;
+	} else if (mode == MT_SOIDLE) {
+		if (sta & (MFG_PWR_STA_MASK |
+					ISP_PWR_STA_MASK |
+					VDE_PWR_STA_MASK |
+					VEN_PWR_STA_MASK))
+			return false;
+	}
+
+	return true;
 }
 
 static unsigned int clk_cfg_4;
@@ -608,7 +637,7 @@ static bool soidle_can_enter(int cpu)
 
 	if (soidle_by_pass_cg == 0) {
 		memset(soidle_block_mask, 0, NR_GRPS * sizeof(unsigned int));
-		if (!cg_check_idle_can_enter(soidle_condition_mask, soidle_block_mask)) {
+		if (!cg_check_idle_can_enter(soidle_condition_mask, soidle_block_mask, MT_SOIDLE)) {
 			reason = BY_CLK;
 			goto out;
 		}
@@ -773,7 +802,7 @@ static bool dpidle_can_enter(void)
 
 	if (dpidle_by_pass_cg == 0) {
 		memset(dpidle_block_mask, 0, NR_GRPS * sizeof(unsigned int));
-		if (!cg_check_idle_can_enter(dpidle_condition_mask, dpidle_block_mask)) {
+		if (!cg_check_idle_can_enter(dpidle_condition_mask, dpidle_block_mask, MT_DPIDLE)) {
 			reason = BY_CLK;
 			goto out;
 		}
@@ -934,7 +963,7 @@ static bool slidle_can_enter(void)
 	}
 
 	memset(slidle_block_mask, 0, NR_GRPS * sizeof(unsigned int));
-	if (!cg_check_idle_can_enter(slidle_condition_mask, slidle_block_mask)) {
+	if (!cg_check_idle_can_enter(slidle_condition_mask, slidle_block_mask, MT_SLIDLE)) {
 		reason = BY_CLK;
 		goto out;
 	}

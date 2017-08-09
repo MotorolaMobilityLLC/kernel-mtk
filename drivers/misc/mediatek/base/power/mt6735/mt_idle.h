@@ -14,7 +14,4 @@ extern void disable_dpidle_by_bit(int id);
 extern void enable_soidle_by_bit(int id);
 extern void disable_soidle_by_bit(int id);
 
-extern bool cg_check_idle_can_enter(
-	unsigned int *condition_mask, unsigned int *block_mask);
-
 #endif
