@@ -714,7 +714,6 @@ bool EnableSideToneFilter(bool stf_on);
 bool CleanPreDistortion(void);
 bool SetDLSrc2(uint32 SampleRate);
 
-bool SetChipI2SAdcIn(AudioDigtalI2S *DigtalI2S);
 bool setChipDmicPath(bool _enable, uint32 sample_rate);
 
 bool SetSampleRate(uint32 Aud_block, uint32 SampleRate);

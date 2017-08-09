@@ -119,29 +119,32 @@ bool Set2ndI2SInEnable(bool bEnable);
 bool checkDllinkMEMIfStatus(void);
 bool checkUplinkMEMIfStatus(void);
 bool SetMemIfFetchFormatPerSample(uint32 InterfaceType, uint32 eFetchFormat);
+bool SetMemIfFormatReg(uint32 InterfaceType, uint32 eFetchFormat);
 bool SetoutputConnectionFormat(uint32 ConnectionFormat, uint32 Output);
 
-bool SetHDMIApLL(uint32 ApllSource);
-uint32 GetHDMIApLLSource(void);
+bool SetChipI2SAdcIn(AudioDigtalI2S *DigtalI2S, bool audioAdcI2SStatus);
+bool setChipDmicPath(bool _enable, uint32 sample_rate);
+
+/*
 bool SetHDMIMCLK(void);
 bool SetHDMIBCLK(void);
+uint32 GetHDMIApLLSource(void);
+bool SetHDMIApLL(uint32 ApllSource);
 bool SetHDMIdatalength(uint32 length);
 bool SetHDMIsamplerate(uint32 samplerate);
-bool SetHDMIConnection(uint32 ConnectionState, uint32 Input, uint32 Output);
 bool SetHDMIChannels(uint32 Channels);
 bool SetHDMIEnable(bool bEnable);
+bool SetHDMIConnection(uint32 ConnectionState, uint32 Input, uint32 Output);
 
 bool SetTDMLrckWidth(uint32 cycles);
 bool SetTDMbckcycle(uint32 cycles);
 bool SetTDMChannelsSdata(uint32 channels);
-
-/* Soc_Aud_I2S_WLEN_WLEN_16BITS or Soc_Aud_I2S_WLEN_WLEN_32BITS */
-
 bool SetTDMDatalength(uint32 length);
 bool SetTDMI2Smode(uint32 mode);
 bool SetTDMLrckInverse(bool enable);
 bool SetTDMBckInverse(bool enable);
 bool SetTDMEnable(bool enable);
+*/
 
 /* Sample Rate Transform */
 uint32 SampleRateTransform(uint32 sampleRate, Soc_Aud_Digital_Block audBlock);
@@ -238,6 +241,9 @@ int irq_update_user(const void *_user,
 
 /* IRQ Manager */
 
+/* SetIrqMcuCounterReg */
+bool SetIrqMcuCounterReg(uint32 Irqmode, uint32 Counter);
+
 bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram);
 
 /* GetEnableAudioBlockRegOffset */
@@ -259,5 +265,8 @@ bool GetFmI2sInPathEnable(void);
 bool SetFmI2sInPathEnable(bool bEnable);
 bool SetFmI2sAsrcEnable(bool bEnable);
 bool SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate);
+
+/* ANC AP Dependent */
+bool SetAncRecordReg(uint32 value, uint32 mask);
 
 #endif

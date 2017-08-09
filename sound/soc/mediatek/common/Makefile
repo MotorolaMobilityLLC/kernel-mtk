@@ -31,12 +31,15 @@ endif
 
 # Common object
 obj-y += AudDrv_Afe.o AudDrv_Gpio.o
-obj-y += mt_soc_afe_control.o mt_soc_pcm_common.o mt_soc_offload_common.o
+obj-y += mt_soc_afe_control.o mt_soc_pcm_common.o
+#obj-y += mt_soc_offload_common.o
 obj-y += mt_soc_pcm_capture.o mt_soc_pcm_dl1.o mt_soc_pcm_dummy.o mt_soc_pcm_routing.o mt_soc_pcm_capture2.o mt_soc_pcm_i2s2_adc2.o
 obj-y += mt_soc_pcm_voice_md1.o mt_soc_pcm_voice_md2.o mt_soc_pcm_voice_md1_bt.o mt_soc_pcm_voice_md2_bt.o
-obj-y += mt_soc_pcm_hdmi.o mt_soc_pcm_dl1_i2s0.o mt_soc_pcm_dl1_i2s0Dl1.o mt_soc_pcm_i2s0_awb.o
+obj-y += mt_soc_pcm_dl1_i2s0.o mt_soc_pcm_dl1_i2s0Dl1.o mt_soc_pcm_i2s0_awb.o
+#obj-y += mt_soc_pcm_hdmi.o
 obj-y += mt_soc_pcm_uldlloopback.o mt_soc_pcm_dl2.o mt_soc_pcm_mod_dai.o
-obj-y += mt_soc_pcm_anc.o mt_soc_pcm_voice_ultra.o
+#obj-y += mt_soc_pcm_anc.o
+#obj-y += mt_soc_pcm_voice_ultra.o
 obj-y += mt_soc_pcm_mrgrx.o mt_soc_pcm_mrgrx_awb.o mt_soc_pcm_fm_i2s.o mt_soc_pcm_fm_i2s_awb.o
 obj-y += mt_soc_pcm_dl1_awb.o mt_soc_pcm_dl1_bt.o mt_soc_pcm_bt_dai.o
 obj-y += mt_soc_dai_stub.o mt_soc_dai_routing.o mt_soc_codec_dummy.o mt_soc_pcm_fmtx.o mt_soc_tdm_capture.o

@@ -779,7 +779,36 @@ bool SetDLSrc2(uint32 SampleRate)
 
 }
 
-bool SetChipI2SAdcIn(AudioDigtalI2S *DigtalI2S)
+bool SetIrqMcuCounterReg(uint32 Irqmode, uint32 Counter)
+{
+	pr_aud("%s(), Irqmode %d, Counter %d\n", __func__, Irqmode, Counter);
+	switch (Irqmode) {
+	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CNT1, Counter, 0x0003ffff);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CNT2, Counter, 0x0003ffff);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CNT3, Counter, 0x0003ffff);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CNT4, Counter, 0x0003ffff);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CNT5, Counter, 0x0003ffff);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CNT7, Counter, 0x0003ffff);
+		break;
+	default:
+		return false;
+	}
+
+	return true;
+}
+
+bool SetChipI2SAdcIn(AudioDigtalI2S *DigtalI2S, bool audioAdcI2SStatus)
 {
 	uint32 dVoiceModeSelect = 0;
 	uint32 afeAddaUlSrcCon0 = 0;	/* default value */
@@ -948,6 +977,73 @@ uint32 GetEnableAudioBlockRegAddr(uint32 Aud_block)
 uint32 GetEnableAudioBlockRegOffset(uint32 Aud_block)
 {
 	return GetEnableAudioBlockRegInfo(Aud_block, MEM_BLOCK_ENABLE_REG_INDEX_OFFSET);
+}
+
+bool SetMemIfFormatReg(uint32 InterfaceType, uint32 eFetchFormat)
+{
+	uint32 isAlign = eFetchFormat == AFE_WLEN_32_BIT_ALIGN_24BIT_DATA_8BIT_0 ? 1 : 0;
+	uint32 isHD = eFetchFormat == AFE_WLEN_16_BIT ? 0 : 1;
+	/*
+	   pr_debug("+%s(), InterfaceType = %d, eFetchFormat = %d,
+	   mAudioMEMIF[InterfaceType].mFetchFormatPerSample = %d\n", __FUNCTION__
+	   , InterfaceType, eFetchFormat, mAudioMEMIF[InterfaceType]->mFetchFormatPerSample); */
+
+	/* force all memif use normal mode */	/* TODO: KC: change to better place, handle when 16bit or dram */
+	Afe_Set_Reg(AFE_MEMIF_HDALIGN, 0x7ff << 16, 0x7ff << 16);
+	/* force cpu use normal mode when access sram data */
+	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 23, 0 << 23);	/* TODO: KC: force cpu only use normal mode */
+	/* force cpu use 8_24 format when writing 32bit data */
+	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 22, 0 << 22);	/* TODO: KC: force use 8_24 format */
+
+	switch (InterfaceType) {
+	case Soc_Aud_Digital_Block_MEM_DL1:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 0, 1 << 0);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 0, 3 << 0);
+			break;
+	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 1, 1 << 1);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 2, 3 << 2);
+			break;
+	case Soc_Aud_Digital_Block_MEM_DL2:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 2, 1 << 2);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 4, 3 << 4);
+			break;
+	case Soc_Aud_Digital_Block_MEM_DL3:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 3, 1 << 3);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 6, 3 << 6);
+			break;
+	case Soc_Aud_Digital_Block_MEM_I2S:
+			pr_debug("Unsupport MEM_I2S");
+			return false;
+	case Soc_Aud_Digital_Block_MEM_AWB:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 4, 1 << 4);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 8, 3 << 8);
+			break;
+	case Soc_Aud_Digital_Block_MEM_VUL:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 5, 1 << 5);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 10, 3 << 10);
+			break;
+	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 6, 1 << 6);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 12, 3 << 12);
+			break;
+	case Soc_Aud_Digital_Block_MEM_DAI:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 8, 1 << 8);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 16, 3 << 16);
+			break;
+	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 9, 1 << 9);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 18, 3 << 18);
+			break;
+	case Soc_Aud_Digital_Block_MEM_HDMI:
+			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 10, 1 << 10);
+			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 20, 3 << 20);
+			break;
+	default:
+		return false;
+	}
+
+	return true;
 }
 
 ssize_t AudDrv_Reg_Dump(char *buffer, int size)
@@ -1372,5 +1468,11 @@ bool SetFmI2sAsrcEnable(bool bEnable)
 bool SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate)
 {
 	return SetI2SASRCConfig(bIsUseASRC, dToSampleRate);
+}
+
+bool SetAncRecordReg(uint32 value, uint32 mask)
+{
+	Afe_Set_Reg(AFE_ADDA2_TOP_CON0, value, mask);
+	return true;
 }
 

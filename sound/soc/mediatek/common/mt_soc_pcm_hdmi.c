@@ -255,8 +255,6 @@ static uint32 table_sgen_8ch_golden_values[] = {
 	0xF6CF0000, 0x80FDBBB6, 0xF6CF035E, 0x80FDBBB6,
 };
 
-
-
 static void copysinewavetohdmi(unsigned int channels)
 {
 	unsigned char *Bufferaddr = HDMI_dma_buf->area;

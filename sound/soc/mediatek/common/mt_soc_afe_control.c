@@ -317,8 +317,8 @@ bool get_internalmd_status(void)
 	bool ret = (get_voice_bt_status() ||
 		    get_voice_status() ||
 		    get_voice_md2_status() ||
-		    get_voice_md2_bt_status() ||
-		    get_voice_ultra_status());
+		    get_voice_md2_bt_status());
+		    /*get_voice_ultra_status());*/
 
 	return (mExternalModemStatus == true) ? false : ret;
 }
@@ -1012,7 +1012,7 @@ bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S)
 	mtk_dais[Soc_Aud_Digital_Block_ADDA_UL].sample_rate =
 		DigtalI2S->mI2S_SAMPLERATE;
 
-	return SetChipI2SAdcIn(DigtalI2S);
+	return SetChipI2SAdcIn(DigtalI2S, AudioAdcI2SStatus);
 }
 
 bool setDmicPath(bool _enable)
@@ -1524,300 +1524,7 @@ bool checkUplinkMEMIfStatus(void)
 		mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL_DATA2]->mState;
 }
 
-
-bool SetHDMIChannels(uint32 Channels)
-{
-	pr_warn("+%s(), Channels = %d\n", __func__, Channels);
-	mHDMIOutput->mChannels = Channels;
-	Afe_Set_Reg(AFE_HDMI_OUT_CON0, (Channels << 4), 0x00f0);
-
-	/*Afe_Set_Reg(AFE_HDMI_OUT_CON0, 0, 0x0100); */
-
-	return true;
-}
-
-
-bool SetHDMIEnable(bool bEnable)
-{
-	pr_warn("+%s(), bEnable = %d\n", __func__, bEnable);
-	Afe_Set_Reg(AFE_HDMI_OUT_CON0, bEnable, 0x0001);
-
-	return true;
-}
-
-
-bool SetHDMIConnection(uint32 ConnectionState, uint32 Input, uint32 Output)
-{
-	pr_warn("+%s(), Input = %d, Output = %d\n", __func__, Input, Output);
-	switch (Output) {
-	case Soc_Aud_InterConnectionOutput_O30:
-		Afe_Set_Reg(AFE_HDMI_CONN0, Input, 0x0007);
-		break;
-	case Soc_Aud_InterConnectionOutput_O31:
-		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 3), (0x0007 << 3));
-		break;
-	case Soc_Aud_InterConnectionOutput_O32:
-		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 6), (0x0007 << 6));
-		break;
-	case Soc_Aud_InterConnectionOutput_O33:
-		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 9), (0x0007 << 9));
-		break;
-	case Soc_Aud_InterConnectionOutput_O34:
-		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 12), (0x0007 << 12));
-		break;
-	case Soc_Aud_InterConnectionOutput_O35:
-		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 15), (0x0007 << 15));
-		break;
-	case Soc_Aud_InterConnectionOutput_O36:
-		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 18), (0x0007 << 18));
-		break;
-	case Soc_Aud_InterConnectionOutput_O37:
-		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 21), (0x0007 << 21));
-		break;
-	default:
-		break;
-	}
-	return true;
-}
-
-
-bool SetConnection(uint32 ConnectionState, uint32 Input, uint32 Output)
-{
-	return SetConnectionState(ConnectionState, Input, Output);
-}
-
-bool SetConnectionFormat(uint32 ConnectionFormat, uint32 Aud_block)
-{
-	return SetIntfConnectionFormat(ConnectionFormat, Aud_block);
-}
-
-bool SetIntfConnection(uint32 ConnectionState, uint32 Aud_block_In, uint32 Aud_block_Out)
-{
-	return SetIntfConnectionState(ConnectionState, Aud_block_In, Aud_block_Out);
-}
-
-
-static bool SetIrqEnable(uint32 Irqmode, bool bEnable)
-{
-	pr_aud("%s(), Irqmode %d, bEnable %d\n", __func__, Irqmode, bEnable);
-	switch (Irqmode) {
-	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
-	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
-	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
-		/* irq 4 default send to cm4 */
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << 12), (1 << 12));
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << 14), (1 << 14));
-		Afe_Set_Reg(AFE_IRQ_MCU_EN, (0 << 6), (1 << 6));
-		Afe_Set_Reg(AFE_IRQ_MCU_EN, (bEnable << 22), (1 << 22));
-		break;
-	default:
-		pr_err("%s(), error, not supported IRQ %d", __func__, Irqmode);
-		break;
-	}
-
-	/* clear irq status */
-	if (bEnable == false) {
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, (1 << Irqmode), (1 << Irqmode));
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, (1 << (Irqmode + 8)),
-			    (1 << (Irqmode + 8)));
-	}
-
-	return true;
-}
-
-
-static bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate)
-{
-	uint32 SRIdx = SampleRateTransform(SampleRate, 0);
-
-	pr_aud("%s(), Irqmode %d, SampleRate %d\n",
-		__func__, Irqmode, SampleRate);
-	switch (Irqmode) {
-	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 4, 0xf << 4);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 8, 0xf << 8);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 16, 0xf << 16);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 20, 0xf << 20);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:
-		/* set by HDMI */
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 24, 0xf << 24);
-		break;
-	default:
-		return false;
-	}
-
-	return true;
-}
-
-static bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter)
-{
-	pr_aud("%s(), Irqmode %d, Counter %d\n", __func__, Irqmode, Counter);
-	switch (Irqmode) {
-	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CNT1, Counter, 0x0003ffff);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CNT2, Counter, 0x0003ffff);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CNT3, Counter, 0x0003ffff);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CNT4, Counter, 0x0003ffff);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CNT5, Counter, 0x0003ffff);
-		break;
-	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:
-		Afe_Set_Reg(AFE_IRQ_MCU_CNT7, Counter, 0x0003ffff);
-		break;
-	default:
-		return false;
-	}
-
-	return true;
-}
-
-bool Set2ndI2SInConfig(unsigned int sampleRate, bool bIsSlaveMode)
-{
-	AudioDigtalI2S I2S2ndIn_attribute;
-
-	memset((void *)&I2S2ndIn_attribute, 0, sizeof(I2S2ndIn_attribute));
-	I2S2ndIn_attribute.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
-	I2S2ndIn_attribute.mI2S_SLAVE = bIsSlaveMode;
-	I2S2ndIn_attribute.mI2S_SAMPLERATE = sampleRate;
-	I2S2ndIn_attribute.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
-	I2S2ndIn_attribute.mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
-	I2S2ndIn_attribute.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_16BITS;
-	Set2ndI2SIn(&I2S2ndIn_attribute);
-
-	return true;
-}
-
-bool Set2ndI2SIn(AudioDigtalI2S *mDigitalI2S)
-{
-	uint32 Audio_I2S_Adc = 0;
-
-	memcpy((void *)m2ndI2S, (void *)mDigitalI2S, sizeof(AudioDigtalI2S));
-
-	if (!m2ndI2S->mI2S_SLAVE) {	/* Master setting SampleRate only */
-		SetSampleRate(Soc_Aud_Digital_Block_MEM_I2S, m2ndI2S->mI2S_SAMPLERATE);
-	}
-
-	Audio_I2S_Adc |= (m2ndI2S->mINV_LRCK << 5);
-	Audio_I2S_Adc |= (m2ndI2S->mI2S_FMT << 3);
-	Audio_I2S_Adc |= (m2ndI2S->mI2S_SLAVE << 2);
-	Audio_I2S_Adc |= (m2ndI2S->mI2S_WLEN << 1);
-	Audio_I2S_Adc |= (m2ndI2S->mI2S_IN_PAD_SEL << 28);
-	pr_debug("Set2ndI2SIn Audio_I2S_Adc= 0x%x", Audio_I2S_Adc);
-	Afe_Set_Reg(AFE_I2S_CON, Audio_I2S_Adc, 0xfffffffe);
-
-	return true;
-}
-
-bool Set2ndI2SInEnable(bool bEnable)
-{
-	pr_warn("Set2ndI2SInEnable bEnable = %d", bEnable);
-	m2ndI2S->mI2S_EN = bEnable;
-	Afe_Set_Reg(AFE_I2S_CON, bEnable, 0x1);
-	mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_2]->mState = bEnable;
-
-	return true;
-}
-
-bool SetMemIfFetchFormatPerSample(uint32 InterfaceType, uint32 eFetchFormat)
-{
-	uint32 isAlign = eFetchFormat == AFE_WLEN_32_BIT_ALIGN_24BIT_DATA_8BIT_0 ? 1 : 0;
-	uint32 isHD = eFetchFormat == AFE_WLEN_16_BIT ? 0 : 1;
-
-	mAudioMEMIF[InterfaceType]->mFetchFormatPerSample = eFetchFormat;
-
-	/*
-	   pr_debug("+%s(), InterfaceType = %d, eFetchFormat = %d,
-	   mAudioMEMIF[InterfaceType].mFetchFormatPerSample = %d\n", __FUNCTION__
-	   , InterfaceType, eFetchFormat, mAudioMEMIF[InterfaceType]->mFetchFormatPerSample); */
-
-	/* force all memif use normal mode */	/* TODO: KC: change to better place, handle when 16bit or dram */
-	Afe_Set_Reg(AFE_MEMIF_HDALIGN, 0x7ff << 16, 0x7ff << 16);
-	/* force cpu use normal mode when access sram data */
-	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 23, 0 << 23);	/* TODO: KC: force cpu only use normal mode */
-	/* force cpu use 8_24 format when writing 32bit data */
-	Afe_Set_Reg(AFE_MEMIF_MSB, 0 << 22, 0 << 22);	/* TODO: KC: force use 8_24 format */
-
-	switch (InterfaceType) {
-	case Soc_Aud_Digital_Block_MEM_DL1:
-			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 0, 1 << 0);
-			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 0, 3 << 0);
-			break;
-	case Soc_Aud_Digital_Block_MEM_DL1_DATA2:
-			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 1, 1 << 1);
-			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 2, 3 << 2);
-			break;
-	case Soc_Aud_Digital_Block_MEM_DL2:
-			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 2, 1 << 2);
-			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 4, 3 << 4);
-			break;
-	case Soc_Aud_Digital_Block_MEM_DL3:
-			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 3, 1 << 3);
-			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 6, 3 << 6);
-			break;
-	case Soc_Aud_Digital_Block_MEM_I2S:
-			pr_debug("Unsupport MEM_I2S");
-			return false;
-	case Soc_Aud_Digital_Block_MEM_AWB:
-			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 4, 1 << 4);
-			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 8, 3 << 8);
-			break;
-	case Soc_Aud_Digital_Block_MEM_VUL:
-			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 5, 1 << 5);
-			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 10, 3 << 10);
-			break;
-	case Soc_Aud_Digital_Block_MEM_VUL_DATA2:
-			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 6, 1 << 6);
-			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 12, 3 << 12);
-			break;
-	case Soc_Aud_Digital_Block_MEM_DAI:
-			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 8, 1 << 8);
-			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 16, 3 << 16);
-			break;
-	case Soc_Aud_Digital_Block_MEM_MOD_DAI:
-			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 9, 1 << 9);
-			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 18, 3 << 18);
-			break;
-	case Soc_Aud_Digital_Block_MEM_HDMI:
-			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 10, 1 << 10);
-			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 20, 3 << 20);
-			break;
-	default:
-		return false;
-	}
-
-	return true;
-}
-
-bool SetoutputConnectionFormat(uint32 ConnectionFormat, uint32 Output)
-{
-	Afe_Set_Reg(AFE_CONN_24BIT, (ConnectionFormat << Output), (1 << Output));
-	return true;
-}
-
+/*
 bool SetHDMIMCLK(void)
 {
 	uint32 mclksamplerate = mHDMIOutput->mSampleRate * 256;
@@ -2001,7 +1708,7 @@ bool SetTDMI2Smode(uint32 mode)
 	else if (mode == Soc_Aud_I2S_FORMAT_I2S)
 		Afe_Set_Reg(AFE_TDM_CON1, 1 << 3, 1 << 3);
 
-	Afe_Set_Reg(AFE_TDM_CON1, 1 << 4, 1 << 4);	/* LEFT_ALIGN */
+	Afe_Set_Reg(AFE_TDM_CON1, 1 << 4, 1 << 4);
 	return true;
 }
 
@@ -2071,6 +1778,208 @@ bool SetTDMtoI2SEnable(bool enable)
 	else
 		Afe_Set_Reg(AFE_TDM_CON2, 0, 1 << 20);
 
+	return true;
+}
+
+bool SetHDMIChannels(uint32 Channels)
+{
+	pr_warn("+%s(), Channels = %d\n", __func__, Channels);
+	mHDMIOutput->mChannels = Channels;
+	Afe_Set_Reg(AFE_HDMI_OUT_CON0, (Channels << 4), 0x00f0);
+
+	return true;
+}
+
+bool SetHDMIEnable(bool bEnable)
+{
+	pr_warn("+%s(), bEnable = %d\n", __func__, bEnable);
+	Afe_Set_Reg(AFE_HDMI_OUT_CON0, bEnable, 0x0001);
+
+	return true;
+}
+
+
+bool SetHDMIConnection(uint32 ConnectionState, uint32 Input, uint32 Output)
+{
+	pr_warn("+%s(), Input = %d, Output = %d\n", __func__, Input, Output);
+	switch (Output) {
+	case Soc_Aud_InterConnectionOutput_O30:
+		Afe_Set_Reg(AFE_HDMI_CONN0, Input, 0x0007);
+		break;
+	case Soc_Aud_InterConnectionOutput_O31:
+		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 3), (0x0007 << 3));
+		break;
+	case Soc_Aud_InterConnectionOutput_O32:
+		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 6), (0x0007 << 6));
+		break;
+	case Soc_Aud_InterConnectionOutput_O33:
+		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 9), (0x0007 << 9));
+		break;
+	case Soc_Aud_InterConnectionOutput_O34:
+		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 12), (0x0007 << 12));
+		break;
+	case Soc_Aud_InterConnectionOutput_O35:
+		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 15), (0x0007 << 15));
+		break;
+	case Soc_Aud_InterConnectionOutput_O36:
+		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 18), (0x0007 << 18));
+		break;
+	case Soc_Aud_InterConnectionOutput_O37:
+		Afe_Set_Reg(AFE_HDMI_CONN0, (Input << 21), (0x0007 << 21));
+		break;
+	default:
+		break;
+	}
+	return true;
+}
+*/
+
+bool SetConnection(uint32 ConnectionState, uint32 Input, uint32 Output)
+{
+	return SetConnectionState(ConnectionState, Input, Output);
+}
+
+bool SetConnectionFormat(uint32 ConnectionFormat, uint32 Aud_block)
+{
+	return SetIntfConnectionFormat(ConnectionFormat, Aud_block);
+}
+
+bool SetIntfConnection(uint32 ConnectionState, uint32 Aud_block_In, uint32 Aud_block_Out)
+{
+	return SetIntfConnectionState(ConnectionState, Aud_block_In, Aud_block_Out);
+}
+
+
+static bool SetIrqEnable(uint32 Irqmode, bool bEnable)
+{
+	pr_aud("%s(), Irqmode %d, bEnable %d\n", __func__, Irqmode, bEnable);
+	switch (Irqmode) {
+	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
+	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
+	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
+		/* irq 4 default send to cm4 */
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << 12), (1 << 12));
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << 14), (1 << 14));
+		Afe_Set_Reg(AFE_IRQ_MCU_EN, (0 << 6), (1 << 6));
+		Afe_Set_Reg(AFE_IRQ_MCU_EN, (bEnable << 22), (1 << 22));
+		break;
+	default:
+		pr_err("%s(), error, not supported IRQ %d", __func__, Irqmode);
+		break;
+	}
+
+	/* clear irq status */
+	if (bEnable == false) {
+		Afe_Set_Reg(AFE_IRQ_MCU_CLR, (1 << Irqmode), (1 << Irqmode));
+		Afe_Set_Reg(AFE_IRQ_MCU_CLR, (1 << (Irqmode + 8)),
+			    (1 << (Irqmode + 8)));
+	}
+
+	return true;
+}
+
+
+static bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate)
+{
+	uint32 SRIdx = SampleRateTransform(SampleRate, 0);
+
+	pr_aud("%s(), Irqmode %d, SampleRate %d\n",
+		__func__, Irqmode, SampleRate);
+	switch (Irqmode) {
+	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 4, 0xf << 4);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 8, 0xf << 8);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ3_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 16, 0xf << 16);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ4_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 20, 0xf << 20);
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE:
+		/* set by HDMI */
+		break;
+	case Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE:
+		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 24, 0xf << 24);
+		break;
+	default:
+		return false;
+	}
+
+	return true;
+}
+
+static bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter)
+{
+	return SetIrqMcuCounterReg(Irqmode, Counter);
+}
+
+bool Set2ndI2SInConfig(unsigned int sampleRate, bool bIsSlaveMode)
+{
+	AudioDigtalI2S I2S2ndIn_attribute;
+
+	memset((void *)&I2S2ndIn_attribute, 0, sizeof(I2S2ndIn_attribute));
+	I2S2ndIn_attribute.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
+	I2S2ndIn_attribute.mI2S_SLAVE = bIsSlaveMode;
+	I2S2ndIn_attribute.mI2S_SAMPLERATE = sampleRate;
+	I2S2ndIn_attribute.mINV_LRCK = Soc_Aud_INV_LRCK_NO_INVERSE;
+	I2S2ndIn_attribute.mI2S_FMT = Soc_Aud_I2S_FORMAT_I2S;
+	I2S2ndIn_attribute.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_16BITS;
+	Set2ndI2SIn(&I2S2ndIn_attribute);
+
+	return true;
+}
+
+bool Set2ndI2SIn(AudioDigtalI2S *mDigitalI2S)
+{
+	uint32 Audio_I2S_Adc = 0;
+
+	memcpy((void *)m2ndI2S, (void *)mDigitalI2S, sizeof(AudioDigtalI2S));
+
+	if (!m2ndI2S->mI2S_SLAVE) {	/* Master setting SampleRate only */
+		SetSampleRate(Soc_Aud_Digital_Block_MEM_I2S, m2ndI2S->mI2S_SAMPLERATE);
+	}
+
+	Audio_I2S_Adc |= (m2ndI2S->mINV_LRCK << 5);
+	Audio_I2S_Adc |= (m2ndI2S->mI2S_FMT << 3);
+	Audio_I2S_Adc |= (m2ndI2S->mI2S_SLAVE << 2);
+	Audio_I2S_Adc |= (m2ndI2S->mI2S_WLEN << 1);
+	Audio_I2S_Adc |= (m2ndI2S->mI2S_IN_PAD_SEL << 28);
+	pr_debug("Set2ndI2SIn Audio_I2S_Adc= 0x%x", Audio_I2S_Adc);
+	Afe_Set_Reg(AFE_I2S_CON, Audio_I2S_Adc, 0xfffffffe);
+
+	return true;
+}
+
+bool Set2ndI2SInEnable(bool bEnable)
+{
+	pr_warn("Set2ndI2SInEnable bEnable = %d", bEnable);
+	m2ndI2S->mI2S_EN = bEnable;
+	Afe_Set_Reg(AFE_I2S_CON, bEnable, 0x1);
+	mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_2]->mState = bEnable;
+
+	return true;
+}
+
+bool SetMemIfFetchFormatPerSample(uint32 InterfaceType, uint32 eFetchFormat)
+{
+	mAudioMEMIF[InterfaceType]->mFetchFormatPerSample = eFetchFormat;
+	return SetMemIfFormatReg(InterfaceType, eFetchFormat);
+}
+
+bool SetoutputConnectionFormat(uint32 ConnectionFormat, uint32 Output)
+{
+	Afe_Set_Reg(AFE_CONN_24BIT, (ConnectionFormat << Output), (1 << Output));
 	return true;
 }
 
@@ -2342,94 +2251,8 @@ void Auddrv_UL2_Spinlock_unlock(void)
 
 void Auddrv_HDMI_Interrupt_Handler(void)
 {
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI];
-	kal_int32 Afe_consumed_bytes = 0;
-	kal_int32 HW_memory_index = 0;
-	kal_int32 HW_Cur_ReadIdx = 0;
-	unsigned long flags;
-	AFE_BLOCK_T *Afe_Block = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI]->rBlock);
-
-	if (Mem_Block == NULL) {
-		pr_warn("-%s()Mem_Block == NULL\n", __func__);
-		return;
-	}
-
-	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI) == false) {
-		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
-		return;
-	}
-
-	HW_Cur_ReadIdx = Afe_Get_Reg(AFE_HDMI_CUR);
-	if (HW_Cur_ReadIdx == 0) {
-		PRINTK_AUDDRV("[Auddrv_HDMI_Interrupt] HW_Cur_ReadIdx ==0\n");
-		HW_Cur_ReadIdx = Afe_Block->pucPhysBufAddr;
-	}
-	HW_memory_index = (HW_Cur_ReadIdx - Afe_Block->pucPhysBufAddr);
-
-	PRINTK_AUD_HDMI
-	    ("[Auddrv_HDMI_Interrupt]0 HW_Cur_ReadIdx=0x%x HW_memory_index = 0x%x Afe_Block->pucPhysBufAddr = 0x%x\n",
-	     HW_Cur_ReadIdx, HW_memory_index, Afe_Block->pucPhysBufAddr);
-
-	/* get hw consume bytes */
-	if (HW_memory_index > Afe_Block->u4DMAReadIdx) {
-		Afe_consumed_bytes = HW_memory_index - Afe_Block->u4DMAReadIdx;
-	} else {
-		Afe_consumed_bytes =
-		    Afe_Block->u4BufferSize + HW_memory_index - Afe_Block->u4DMAReadIdx;
-	}
-
-	if ((Afe_consumed_bytes & 0x1f) != 0)
-		pr_warn("[Auddrv_HDMI_Interrupt] DMA address is not aligned 32 bytes\n");
-
-	PRINTK_AUD_HDMI
-	    ("+[HDMI_Interrupt]1 ReadIdx:%x WriteIdx:%x, DataRemained:%x, Afe_consumed_bytes:%x index = %x\n",
-	     Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx, Afe_Block->u4DataRemained,
-	     Afe_consumed_bytes, HW_memory_index);
-
-	if (Afe_Block->u4DataRemained < Afe_consumed_bytes || Afe_Block->u4DataRemained <= 0
-	    || Afe_Block->u4DataRemained > Afe_Block->u4BufferSize) {
-		/* buffer underflow --> clear  whole buffer */
-		/* memset(Afe_Block->pucVirtBufAddr, 0, Afe_Block->u4BufferSize); */
-
-		PRINTK_AUD_HDMI
-		    ("+[HDMI_Interrupt]2 underflow ReadIdx:%x WriteIdx:%x, Remained:%x,bytes:%x index = 0x%x\n",
-		     Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx, Afe_Block->u4DataRemained,
-		     Afe_consumed_bytes, HW_memory_index);
-		Afe_Block->u4DMAReadIdx = HW_memory_index;
-		Afe_Block->u4WriteIdx = Afe_Block->u4DMAReadIdx;
-		Afe_Block->u4DataRemained = Afe_Block->u4BufferSize;
-
-		PRINTK_AUD_HDMI
-		    ("-[HDMI_Interrupt]2 underflow ReadIdx:%x WriteIdx:%x, DataRemained:%x, bytes %x\n",
-		     Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx, Afe_Block->u4DataRemained,
-		     Afe_consumed_bytes);
-	} else {
-
-		PRINTK_AUD_HDMI
-		    ("+[Auddrv_HDMI_Interrupt]3 normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-		     Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained, Afe_Block->u4WriteIdx);
-		Afe_Block->u4DataRemained -= Afe_consumed_bytes;
-		Afe_Block->u4DMAReadIdx += Afe_consumed_bytes;
-		Afe_Block->u4DMAReadIdx %= Afe_Block->u4BufferSize;
-
-		PRINTK_AUD_HDMI
-		    ("-[Auddrv_HDMI_Interrupt]3 normal ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-		     Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained, Afe_Block->u4WriteIdx);
-	}
-	AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI]->interruptTrigger = 1;
-
-	if (Mem_Block->substreamL != NULL) {
-		if (Mem_Block->substreamL->substream != NULL) {
-			spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
-			snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
-			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
-		}
-	}
-	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
-
-	PRINTK_AUD_HDMI("-[Auddrv_HDMI_Interrupt]4 ReadIdx:%x ,DataRemained:%x, WriteIdx:%x\n",
-			Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained, Afe_Block->u4WriteIdx);
+	/* irq5 ISR handler */
+	/* Wait for HDMI refactor */
 }
 
 void Auddrv_AWB_Interrupt_Handler(void)

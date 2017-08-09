@@ -819,7 +819,7 @@ static ssize_t ANCService_read(struct file *fp,  char __user *data,
 		cur += sprintf((char *)cur, "MD32_GENERAL_REG1  = 0x%x\n", MD32_GENERAL_REG1);
 		cur += sprintf((char *)cur, "MD32_GENERAL_REG2  = 0x%x\n", MD32_GENERAL_REG2);
 		cur += sprintf((char *)cur, "MD32_GENERAL_REG3  = 0x%x\n", MD32_GENERAL_REG3);
-
+/*
 		cur += sprintf((char *)cur, "AFE_GENERAL_REG0 = 0x%x\n",
 				   Afe_Get_Reg(AFE_GENERAL_REG0));
 		cur += sprintf((char *)cur, "AFE_GENERAL_REG1 = 0x%x\n",
@@ -840,7 +840,7 @@ static ssize_t ANCService_read(struct file *fp,  char __user *data,
 				   Afe_Get_Reg(AFE_GENERAL_REG8));
 		cur += sprintf((char *)cur, "AFE_GENERAL_REG9 = 0x%x\n",
 				   Afe_Get_Reg(AFE_GENERAL_REG9));
-
+*/
 		cur += sprintf((char *)cur, "AFE_Register(SPM)  = 0x%x\n", *AFE_Register);
 
 		cur += sprintf((char *)cur, "MD32_Coef:\n");
