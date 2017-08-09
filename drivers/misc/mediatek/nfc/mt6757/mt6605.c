@@ -125,10 +125,6 @@ struct pinctrl_state *st_eint_h = NULL;
 struct pinctrl_state *st_eint_l = NULL;
 struct pinctrl_state *st_irq_init = NULL;
 struct pinctrl_state *st_osc_init = NULL;
-struct pinctrl_state *st_cs_low = NULL;
-struct pinctrl_state *st_mo_low = NULL;
-struct pinctrl_state *st_mi_low = NULL;
-struct pinctrl_state *st_sck_low = NULL;
 #endif
 
 /* static struct i2c_board_info nfc_board_info __initdata = */
@@ -436,7 +432,7 @@ static int mt6605_probe(struct i2c_client *client,
 	/*                   0); */
 
 	/*  NFC IRQ settings     */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,irq_nfc-eint");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,nfc-gpio-v2");
 
 	if (node) {
 
@@ -580,6 +576,7 @@ static ssize_t mt6605_dev_read(struct file *filp, char __user *buf,
 {
 	struct mt6605_dev *mt6605_dev = filp->private_data;
 	int ret = 0;
+	int read_retry = 5;
 
 	if (count > MAX_BUFFER_SIZE)
 		count = MAX_BUFFER_SIZE;
@@ -653,19 +650,30 @@ static ssize_t mt6605_dev_read(struct file *filp, char __user *buf,
 			    count);
 
 	#else
-	ret =
-	    i2c_master_recv(mt6605_dev->client,
-			    (unsigned char *)(uintptr_t) I2CDMAReadBuf,
-			    count);
+	while (read_retry) {
+		ret =
+		    i2c_master_recv(mt6605_dev->client,
+				    (unsigned char *)(uintptr_t) I2CDMAReadBuf,
+				    count);
+
+		/* mutex_unlock(&mt6605_dev->read_mutex); */
+
+		/*pr_debug("%s : i2c_master_recv returned=%d, irq status=%d\n", __func__,
+			 ret, mt_nfc_get_gpio_value(mt6605_dev->irq_gpio));*/
+
+		if (ret < 0) {
+			pr_debug("%s: i2c_master_recv failed: %d, read_retry: %d\n",
+				__func__, ret, read_retry);
+			read_retry--;
+			usleep_range(900, 1000);
+			continue;
+		}
+		break;
+	}
 	#endif
-
-	/* mutex_unlock(&mt6605_dev->read_mutex); */
-
-	/*pr_debug("%s : i2c_master_recv returned=%d, irq status=%d\n", __func__,
-		 ret, mt_nfc_get_gpio_value(mt6605_dev->irq_gpio));*/
-
 	if (ret < 0) {
-		pr_debug("%s: i2c_master_recv returned %d\n", __func__, ret);
+		pr_err("%s: i2c_master_recv failed: %d, read_retry: %d\n",
+			__func__, ret, read_retry);
 		return ret;
 	}
 
@@ -686,7 +694,7 @@ static ssize_t mt6605_dev_read(struct file *filp, char __user *buf,
 
 fail:
 	/* mutex_unlock(&mt6605_dev->read_mutex); */
-	pr_debug("%s: return,fail,%d\n", __func__, ret);
+	pr_debug("%s: return, fail: %d\n", __func__, ret);
 	return ret;
 
 }
@@ -827,7 +835,7 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 		/*  NFC IRQ settings */
 		node =
 		    of_find_compatible_node(NULL, NULL,
-					    "mediatek,irq_nfc-eint");
+					    "mediatek,nfc-gpio-v2");
 
 		if (node) {
 
@@ -1154,46 +1162,6 @@ static int mt_nfc_pinctrl_init(struct platform_device *pdev)
 		goto end;
 	}
 
-	st_cs_low = pinctrl_lookup_state(gpctrl, "cs_low");
-	if (IS_ERR(st_cs_low)) {
-		ret = PTR_ERR(st_cs_low);
-		pr_debug("%s : pinctrl err, st_cs_low\n", __func__);
-	}
-	if (NULL == st_cs_low) {
-		pr_err("%s : st_cs_low is NULL\n", __func__);
-		goto end;
-	}
-
-	st_mo_low = pinctrl_lookup_state(gpctrl, "mo_low");
-	if (IS_ERR(st_mo_low)) {
-		ret = PTR_ERR(st_mo_low);
-		pr_debug("%s : pinctrl err, st_mo_low\n", __func__);
-	}
-	if (NULL == st_mo_low) {
-		pr_err("%s : st_mo_low is NULL\n", __func__);
-		goto end;
-	}
-
-	st_mi_low = pinctrl_lookup_state(gpctrl, "mi_low");
-	if (IS_ERR(st_mi_low)) {
-		ret = PTR_ERR(st_mi_low);
-		pr_debug("%s : pinctrl err, st_mi_low\n", __func__);
-	}
-	if (NULL == st_mi_low) {
-		pr_err("%s : st_mi_low is NULL\n", __func__);
-		goto end;
-	}
-
-	st_sck_low = pinctrl_lookup_state(gpctrl, "sck_low");
-	if (IS_ERR(st_sck_low)) {
-		ret = PTR_ERR(st_sck_low);
-		pr_debug("%s : pinctrl err, st_sck_low\n", __func__);
-	}
-	if (NULL == st_sck_low) {
-		pr_err("%s : st_sck_low is NULL\n", __func__);
-		goto end;
-	}
-
 	/* select state */
 	ret = mt_nfc_pinctrl_select(gpctrl, st_osc_init);
 	usleep_range(900, 1000);
@@ -1208,12 +1176,6 @@ static int mt_nfc_pinctrl_init(struct platform_device *pdev)
 	usleep_range(900, 1000);
 
 	ret = mt_nfc_pinctrl_select(gpctrl, st_eint_l);
-
-	ret = mt_nfc_pinctrl_select(gpctrl, st_cs_low);
-	usleep_range(900, 1000);
-	ret = mt_nfc_pinctrl_select(gpctrl, st_mo_low);
-	ret = mt_nfc_pinctrl_select(gpctrl, st_mi_low);
-	ret = mt_nfc_pinctrl_select(gpctrl, st_sck_low);
 
 end:
 

@@ -2324,6 +2324,19 @@
 		compatible = "mediatek,mt_soc_pcm_voice_ultra";
 	};
 
+	nfc:nfc@0 {
+		compatible = "mediatek,nfc-gpio-v2";
+		gpio-ven = <15>;
+		gpio-rst = <25>;
+		gpio-eint = <14>;
+		gpio-irq = <13>;
+		gpio-osc = <99>;
+	};
+
+	irq_nfc: irq_nfc@ {
+		compatible = "mediatek,irq_nfc-eint";
+	};
+
 	rf_clock_buffer_ctrl:rf_clock_buffer {
 		compatible = "mediatek,rf_clock_buffer";
 		mediatek,clkbuf-quantity = <4>;
