@@ -662,6 +662,9 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 static void port_net_md_state_notice(struct ccci_port *port, MD_STATE state)
 {
 #ifdef CCMNI_U
+	if (((state == TX_IRQ) && ((port->flags & PORT_F_RX_FULLED) == 0)) ||
+		((state == TX_FULL) && (port->flags & PORT_F_RX_FULLED)))
+		return;
 	ccmni_ops.md_state_callback(port->modem->index, port->rx_ch, state);
 	switch (state) {
 	case TX_IRQ:
@@ -678,6 +681,9 @@ static void port_net_md_state_notice(struct ccci_port *port, MD_STATE state)
 	struct net_device *dev = nent->ndev;
 
 	/* CCCI_INF_MSG(port->modem->index, NET, "port_net_md_state_notice: %s, md_sta=%d\n", port->name, state); */
+	if (((state == TX_IRQ) && ((port->flags & PORT_F_RX_FULLED) == 0)) ||
+		((state == TX_FULL) && (port->flags & PORT_F_RX_FULLED)))
+		return;
 	switch (state) {
 	case RX_IRQ:
 		mod_timer(&nent->polling_timer, jiffies + HZ);

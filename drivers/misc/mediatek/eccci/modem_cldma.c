@@ -855,7 +855,7 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 		req->skb = NULL;
 		/* step forward */
 		queue->tr_done = cldma_ring_step_forward(queue->tr_ring, req);
-		if (likely(md->capability & MODEM_CAP_TXBUSY_STOP) && (count == 1))
+		if (likely(md->capability & MODEM_CAP_TXBUSY_STOP))
 			cldma_queue_broadcast_state(md, TX_IRQ, OUT, queue->index);
 		spin_unlock_irqrestore(&queue->ring_lock, flags);
 		count++;
@@ -919,7 +919,7 @@ static int cldma_gpd_tx_collect(struct md_cd_queue *queue, int budget, int block
 		req->skb = NULL;
 		/* step forward */
 		queue->tr_done = cldma_ring_step_forward(queue->tr_ring, req);
-		if (likely(md->capability & MODEM_CAP_TXBUSY_STOP) && (count == 1))
+		if (likely(md->capability & MODEM_CAP_TXBUSY_STOP))
 			cldma_queue_broadcast_state(md, TX_IRQ, OUT, queue->index);
 		spin_unlock_irqrestore(&queue->ring_lock, flags);
 		count++;
