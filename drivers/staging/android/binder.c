@@ -1165,7 +1165,7 @@ static void binder_print_buf(struct binder_buffer *buffer, char *dest, int succe
 	}
 	pr_debug("%s", str);
 	if (dest != NULL)
-		strncat(dest, str, sizeof(str));
+		strncat(dest, str, sizeof(str) - strlen(dest) - 1);
 }
 
 /**
@@ -4866,9 +4866,9 @@ static void print_binder_transaction(struct seq_file *m, const char *prefix,
 	seq_printf(m, " size %zd:%zd data %p auf %d start %lu.%06lu",
 		   t->buffer->data_size, t->buffer->offsets_size,
 		   t->buffer->data, t->buffer->allow_user_free,
-		   (unsigned long)t->timestamp.tv_sec);
+		   (unsigned long)t->timestamp.tv_sec,
+		   (t->timestamp.tv_nsec / NSEC_PER_USEC));
 	seq_printf(m, " android %d-%02d-%02d %02d:%02d:%02d.%03lu\n",
-		   (t->timestamp.tv_nsec / NSEC_PER_USEC),
 		   (tm.tm_year + 1900), (tm.tm_mon + 1), tm.tm_mday,
 		   tm.tm_hour, tm.tm_min, tm.tm_sec,
 		   (unsigned long)(t->tv.tv_usec / USEC_PER_MSEC));
