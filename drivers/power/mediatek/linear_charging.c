@@ -833,11 +833,11 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 			g_temp_CC_value = CHARGE_CURRENT_450_00_MA;
 
 		if (BMT_status.charger_type == STANDARD_HOST)
-			if (current_limit >= CHARGE_CURRENT_500_00_MA) {
+			if ((current_limit * 100) >= CHARGE_CURRENT_500_00_MA) {
 				g_temp_CC_value = USB_CHARGER_CURRENT;
 				battery_log(BAT_LOG_CRTI,
 		"[BATTERY] set_bat_charging_current_limit over usb spec(%d,%d)\r\n",
-				current_limit, g_temp_CC_value);
+				current_limit * 100, g_temp_CC_value);
 			}
 
 
