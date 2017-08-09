@@ -2632,6 +2632,7 @@ static int __init mtk_m4u_late_init(void)
 
 #if !defined(CONFIG_MTK_CLKMGR)
 	smi_common_clock_off();
+	smi_larb0_clock_off();
 #endif
 
 	return 0;

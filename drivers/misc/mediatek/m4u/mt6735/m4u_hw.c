@@ -975,6 +975,20 @@ void smi_common_clock_on(void)
 		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[SMI_COMMON_CLK]);
 #endif
 }
+
+void smi_larb0_clock_on(void)
+{
+#if defined(CONFIG_MTK_CLKMGR)
+	enable_clock(MT_CG_DISP0_SMI_LARB0, "smi_larb0");
+	/* m4uHw_set_field_by_mask(0, 0xf4000108, 0x1, 0x1); */
+#else
+	int ret = clk_prepare_enable(gM4uDev->smi_clk[DISP0_SMI_LARB0_CLK]);
+
+	if (ret)
+		M4UMSG("error: prepare clk %s fail!.\n", smi_clk_name[DISP0_SMI_LARB0_CLK]);
+#endif
+}
+
 EXPORT_SYMBOL(smi_common_clock_on);
 
 void smi_common_clock_off(void)
@@ -986,6 +1000,17 @@ void smi_common_clock_off(void)
 	clk_disable_unprepare(gM4uDev->smi_clk[SMI_COMMON_CLK]);
 #endif
 }
+
+void smi_larb0_clock_off(void)
+{
+#if defined(CONFIG_MTK_CLKMGR)
+	disable_clock(MT_CG_DISP0_SMI_LARB0, "smi_larb0");
+	/* m4uHw_set_field_by_mask(0, 0xf4000108, 0x1, 0x0); */
+#else
+	clk_disable_unprepare(gM4uDev->smi_clk[DISP0_SMI_LARB0_CLK]);
+#endif
+}
+
 EXPORT_SYMBOL(smi_common_clock_off);
 
 
@@ -2129,6 +2154,7 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 		}
 	}
 	smi_common_clock_on();
+	smi_larb0_clock_on();
 #endif
 
 	gM4UBaseAddr[m4u_id] = m4u_dev->m4u_base[m4u_id];
@@ -2173,7 +2199,6 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 	/* mau_start_monitor(0, 0, 2, 0, 0, 0, 0, 0x0, 0x1000, 0xffffffff, 0xffffffff); */
 
 	/* config MDP related port default use M4U */
-
 	if (0 == m4u_id) {
 		M4U_PORT_STRUCT port;
 
@@ -2192,7 +2217,6 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 		port.ePortID = M4U_PORT_MDP_WROT;
 		m4u_config_port(&port);
 	}
-
 	return 0;
 }
 

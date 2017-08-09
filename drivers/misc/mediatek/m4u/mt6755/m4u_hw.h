@@ -178,6 +178,10 @@ int m4u_dump_reg(int m4u_index, unsigned int start);
 void smi_common_clock_on(void);
 void smi_common_clock_off(void);
 
+/* For build while larb0 clk has not been implemented.*/
+static inline void smi_larb0_clock_on(void) {}
+static inline void smi_larb0_clock_off(void) {}
+
 extern struct m4u_device *gM4uDev;
 
 #if !defined(CONFIG_MTK_LEGACY)
