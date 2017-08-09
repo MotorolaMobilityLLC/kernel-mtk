@@ -41,5 +41,4 @@ long disp_dts_gpio_select_state(DTS_GPIO_STATE s);
 #define disp_dts_gpio_init_repo(x)  (disp_dts_gpio_init(x))
 #endif
 
-
 #endif/*__DISP_DTS_GPIO_H__ */

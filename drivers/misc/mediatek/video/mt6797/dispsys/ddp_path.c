@@ -47,7 +47,7 @@ typedef struct selection_s {
 	unsigned int reg_val;
 } sel_t;
 
-#define DDP_ENING_NUM    (15)
+#define DDP_ENING_NUM    (16)
 
 #define DDP_MOUT_NUM     5
 #define DDP_SEL_OUT_NUM  5
@@ -67,71 +67,71 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 	 DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0_VIRTUAL,
 	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA,
 	 DISP_MODULE_OD, DISP_MODULE_DITHER, DISP_MODULE_RDMA0, DISP_PATH0,
-	 DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1},
+	 DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1},
 
 	/*PRIMARY_RDMA0_COLOR0_DISP */
 	{
 	 DISP_MODULE_RDMA0, DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL,
 	 DISP_MODULE_GAMMA, DISP_MODULE_OD, DISP_MODULE_DITHER, DISP_MODULE_UFOE,
-	 DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1, -1},
+	 DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1, -1, -1},
 
 	/*PRIMARY_RDMA0_DISP */
 	{
-	 DISP_MODULE_RDMA0, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+	 DISP_MODULE_RDMA0, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 
 	/*PRIMARY_BYPASS_RDMA */
 	{
 	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
 	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA,
 	 DISP_MODULE_DITHER,
-	 DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1},
+	 DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1, -1},
 
 	/*PRIMARY_OVL_MEMOUT */
 	{
 	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
-	 DISP_MODULE_WDMA0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+	 DISP_MODULE_WDMA0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 
 	/*PRIMARY_DITHER_MEMOUT */
 	{
 	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
 	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA,
-	 DISP_MODULE_DITHER, DISP_MODULE_WDMA0, -1, -1, -1, -1, -1},
+	 DISP_MODULE_DITHER, DISP_MODULE_WDMA0, -1, -1, -1, -1, -1, -1},
 	/*PRIMARY_UFOE_MEMOUT */
 	{
 	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
 	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA, DISP_MODULE_OD,
-	 DISP_MODULE_DITHER, DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_WDMA0, -1, -1},
+	 DISP_MODULE_DITHER, DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_WDMA0, -1, -1, -1},
 	/*SUB_DISP */
 	{
 	 DISP_MODULE_OVL1, DISP_MODULE_RDMA1, DISP_MODULE_DPI, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	 -1, -1, -1},
+	 -1, -1, -1, -1},
 	/*SUB_RDMA1_DISP */
 	{
-	 DISP_MODULE_RDMA1, DISP_MODULE_DPI, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+	 DISP_MODULE_RDMA1, DISP_MODULE_DPI, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	/*SUB_OVL_MEMOUT */
 	{
-	 DISP_MODULE_OVL1, DISP_MODULE_WDMA1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+	 DISP_MODULE_OVL1, DISP_MODULE_WDMA1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	/*PRIMARY_DISP ALL*/
 	{
 	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL, DISP_MODULE_WDMA0,
 	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA, DISP_MODULE_OD,
-	 DISP_MODULE_DITHER, DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0},
+	 DISP_MODULE_DITHER, DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1},
 	/*SUB_ALL */
 	{
 	 DISP_MODULE_OVL1, DISP_MODULE_WDMA1, DISP_MODULE_RDMA1, DISP_MODULE_DPI, -1, -1, -1, -1,
-	 -1, -1, -1, -1, -1, -1, -1},
+	 -1, -1, -1, -1, -1, -1, -1, -1},
 	/*DDP_SCENARIO_DITHER_1TO2*/
 	{
 	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
 	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA, DISP_MODULE_OD,
 	 DISP_MODULE_DITHER, DISP_MODULE_WDMA0, DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_PWM0,
-	 DISP_MODULE_DSI0},
+	 DISP_MODULE_DSI0, -1},
 	/*DDP_SCENARIO_UFOE_1TO2*/
 	{
 	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
 	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA, DISP_MODULE_OD,
 	 DISP_MODULE_DITHER, DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_WDMA0, DISP_MODULE_PWM0,
-	 DISP_MODULE_DSI0},
+	 DISP_MODULE_DSI0, -1},
 };
 
 /* 1st para is mout's input, 2nd para is mout's output */
@@ -831,14 +831,16 @@ static void ddp_print_scenario(DDP_SCENARIO_ENUM scenario)
 	int i = 0;
 	char path[512] = { '\0' };
 	int num = ddp_get_module_num(scenario);
+
 	for (i = 0; i < num; i++)
-		strcat(path, ddp_get_module_name(module_list_scenario[scenario][i]));
+		strncat(path, ddp_get_module_name(module_list_scenario[scenario][i]), sizeof(path));
 	DDPMSG("scenario %s have modules: %s\n", ddp_get_scenario_name(scenario), path);
 }
 
 static int ddp_find_module_index(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM module)
 {
 	int i = 0;
+
 	for (i = 0; i < DDP_ENING_NUM; i++) {
 		if (module_list_scenario[ddp_scenario][i] == module)
 			return i;
@@ -853,6 +855,7 @@ static int ddp_find_module_index(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENU
 int ddp_set_dst_module(DDP_SCENARIO_ENUM scenario, DISP_MODULE_ENUM dst_module)
 {
 	int i = 0;
+
 	DDPMSG("ddp_set_dst_module, scenario=%s, dst_module=%s\n",
 	       ddp_get_scenario_name(scenario), ddp_get_module_name(dst_module));
 	if (ddp_find_module_index(scenario, dst_module) > 0) {
@@ -898,9 +901,6 @@ DISP_MODULE_ENUM ddp_get_dst_module(DDP_SCENARIO_ENUM ddp_scenario)
 	int module_num = ddp_get_module_num_l(module_list_scenario[ddp_scenario]) - 1;
 	if (module_num >= 0)
 		module_name = module_list_scenario[ddp_scenario][module_num];
-
-	DDPMSG("ddp_get_dst_module, scneario=%s, dst_module=%s\n",
-	       ddp_get_scenario_name(ddp_scenario), ddp_get_module_name(module_name));
 
 	return module_name;
 }
@@ -1232,13 +1232,11 @@ int ddp_insert_config_dirty_rec(void *handle)
 	if (handle == NULL)
 		ASSERT(0);
 
-	if (primary_display_is_video_mode())
-		/* TODO: modify this */
-	{
-		/* do nothing */
-	} else {
+	if (primary_display_is_video_mode()) /* TODO: modify this */
+		;/* do nothing */
+	else
 		ret = cmdqRecSetEventToken(handle, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
-	}
+
 	return ret;
 }
 

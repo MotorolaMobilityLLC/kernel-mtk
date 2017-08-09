@@ -39,6 +39,12 @@ typedef enum disp_clk_id {
 	TVDPLL_D8,
 	TVDPLL_D16,
 	DPI_CK,
+	MUX_DISPPWM,
+	OSC_D2,
+	OSC_D8,
+	MUX_MM,
+	MM_VENCPLL,
+	SYSPLL2_D2,
 	MAX_DISP_CLK_CNT
 } eDDP_CLK_ID;
 

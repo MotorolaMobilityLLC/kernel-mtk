@@ -6,7 +6,7 @@
 #include <linux/types.h>
 #include "disp_session.h"
 #include "disp_lcm.h"
-
+#include "disp_helper.h"
 typedef enum {
 	DIRECT_LINK_MODE,
 	DECOUPLE_MODE,
@@ -70,7 +70,8 @@ typedef enum {
 
 typedef enum {
 	DISP_ALIVE = 0xf0,
-	DISP_SLEPT
+	DISP_SLEPT,
+	DISP_BLANK
 } DISP_POWER_STATE;
 
 typedef enum {
@@ -169,6 +170,11 @@ typedef struct {
 	DISP_FRM_SEQ_STATE state;
 } disp_frm_seq_info;
 
+typedef struct _opt_backup {
+	DISP_HELPER_OPT option;
+	int value;
+} OPT_BACKUP;
+
 typedef int (*PRIMARY_DISPLAY_CALLBACK) (unsigned int user_data);
 
 int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited);
@@ -190,10 +196,8 @@ int primary_display_is_alive(void);
 int primary_display_is_sleepd(void);
 int primary_display_wait_for_vsync(void *config);
 unsigned int primary_display_get_ticket(void);
-int primary_display_config_input(primary_disp_input_config *input);
 int primary_display_user_cmd(unsigned int cmd, unsigned long arg);
 int primary_display_trigger(int blocking, void *callback, int need_merge);
-int primary_display_config_output(disp_mem_output_config *output);
 int primary_display_switch_mode(int sess_mode, unsigned int session, int force);
 int primary_display_diagnose(void);
 
@@ -228,8 +232,10 @@ void primary_display_set_max_layer(int maxlayer);
 void primary_display_reset(void);
 void primary_display_esd_check_enable(int enable);
 int primary_display_config_input_multiple(disp_session_input_config *session_input);
+int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg);
 int primary_display_force_set_vsync_fps(unsigned int fps);
 unsigned int primary_display_get_fps(void);
+unsigned int primary_display_get_fps_nolock(void);
 int primary_display_get_original_width(void);
 int primary_display_get_original_height(void);
 int primary_display_lcm_ATA(void);
@@ -250,12 +256,17 @@ int primary_display_cmdq_set_reg(unsigned int addr, unsigned int val);
 int primary_display_vsync_switch(int method);
 int primary_display_setlcm_cmd(unsigned int *lcm_cmd, unsigned int *lcm_count,
 			       unsigned int *lcm_value);
+int primary_display_mipi_clk_change(unsigned int clk_value);
 
 void _cmdq_insert_wait_frame_done_token_mira(void *handle);
 int primary_display_get_max_layer(void);
-long primary_display_wait_resume(long timeout);
+long primary_display_wait_state(DISP_POWER_STATE state, long timeout);
 int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need_lock,
 					cmdqRecHandle handle, int block);
+int primary_display_check_test(void);
+void _primary_path_switch_dst_lock(void);
+void _primary_path_switch_dst_unlock(void);
+
 /* legancy */
 LCM_PARAMS *DISP_GetLcmPara(void);
 LCM_DRIVER *DISP_GetLcmDrv(void);
@@ -289,5 +300,8 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes
 /* FIXME: set backlight in kernel */
 extern int disp_bls_set_backlight(int level_1024);
 #endif
+
+int display_enter_tui(void);
+int display_exit_tui(void);
 
 #endif

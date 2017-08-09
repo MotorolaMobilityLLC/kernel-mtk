@@ -51,6 +51,8 @@
 #include "disp_helper.h"
 #include "compat_mtkfb.h"
 #include "disp_dts_gpio.h"
+#include "disp_recovery.h"
+#include "ddp_clkmgr.h"
 
 /* static variable */
 static u32 MTK_FB_XRES;
@@ -258,6 +260,7 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 	case FB_BLANK_NORMAL:
+		DISPCHECK("mtkfb_blank mtkfb_late_resume\n");
 		mtkfb_late_resume();
 		if (!lcd_fps)
 			msleep(30);
@@ -268,6 +271,7 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 	case FB_BLANK_HSYNC_SUSPEND:
 		break;
 	case FB_BLANK_POWERDOWN:
+		DISPCHECK("mtkfb_blank mtkfb_early_suspend\n");
 		mtkfb_early_suspend();
 		break;
 	default:
@@ -281,9 +285,9 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 int mtkfb_set_backlight_level(unsigned int level)
 {
 	MTKFB_FUNC();
-	DISPMSG("mtkfb_set_backlight_level:%d Start\n", level);
+	DISPDBG("mtkfb_set_backlight_level:%d Start\n", level);
 	primary_display_setbacklight(level);
-	DISPMSG("mtkfb_set_backlight_level End\n");
+	DISPDBG("mtkfb_set_backlight_level End\n");
 	return 0;
 }
 EXPORT_SYMBOL(mtkfb_set_backlight_level);
@@ -292,12 +296,12 @@ int mtkfb_set_backlight_mode(unsigned int mode)
 {
 	MTKFB_FUNC();
 	if (down_interruptible(&sem_flipping)) {
-		DISPMSG("[FB Driver] can't get semaphore:%d\n", __LINE__);
+		DISPERR("[FB Driver] can't get semaphore:%d\n", __LINE__);
 		return -ERESTARTSYS;
 	}
 	sem_flipping_cnt--;
 	if (down_interruptible(&sem_early_suspend)) {
-		DISPMSG("[FB Driver] can't get semaphore:%d\n", __LINE__);
+		DISPERR("[FB Driver] can't get semaphore:%d\n", __LINE__);
 		sem_flipping_cnt++;
 		up(&sem_flipping);
 		return -ERESTARTSYS;
@@ -321,12 +325,12 @@ int mtkfb_set_backlight_pwm(int div)
 {
 	MTKFB_FUNC();
 	if (down_interruptible(&sem_flipping)) {
-		DISPMSG("[FB Driver] can't get semaphore:%d\n", __LINE__);
+		DISPERR("[FB Driver] can't get semaphore:%d\n", __LINE__);
 		return -ERESTARTSYS;
 	}
 	sem_flipping_cnt--;
 	if (down_interruptible(&sem_early_suspend)) {
-		DISPMSG("[FB Driver] can't get semaphore:%d\n", __LINE__);
+		DISPERR("[FB Driver] can't get semaphore:%d\n", __LINE__);
 		sem_flipping_cnt++;
 		up(&sem_flipping);
 		return -ERESTARTSYS;
@@ -619,7 +623,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	/* int wait_ret = 0; */
 	/* unsigned int layerpitch = 0; */
 	unsigned int src_pitch = 0;
-	disp_session_input_config session_input;
+	disp_session_input_config *session_input;
 	disp_input_config *input;
 
 	/* DISPFUNC(); */
@@ -639,10 +643,12 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	vaStart = info->screen_base + offset;
 	vaEnd = vaStart + info->var.yres * info->fix.line_length;
 
-	memset((void *)&session_input, 0, sizeof(session_input));
+	session_input = kzalloc(sizeof(*session_input), GFP_KERNEL);
+	if (!session_input)
+		BUG();
 
 	/* pan display use layer 0 */
-	input = &session_input.config[0];
+	input = &session_input->config[0];
 	input->layer_id = 0;
 	input->src_phy_addr = (void *)((unsigned long)paStart);
 	input->src_base_addr = (void *)((unsigned long)vaStart);
@@ -671,6 +677,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 		break;
 	default:
 		DISPERR("Invalid color format bpp: 0x%d\n", var->bits_per_pixel);
+		kfree(session_input);
 		return -1;
 	}
 	input->alpha_enable = FALSE;
@@ -680,18 +687,19 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 	src_pitch = ALIGN_TO(var->xres, MTK_FB_ALIGNMENT);
 	input->src_pitch = src_pitch;
 
-	session_input.config_layer_num++;
+	session_input->config_layer_num++;
 
 	if (!is_DAL_Enabled()) {
 		/* disable font layer(layer3) drawed in lk */
-		session_input.config[1].layer_id = primary_display_get_option("ASSERT_LAYER");
-		session_input.config[1].next_buff_idx = -1;
-		session_input.config[1].layer_enable = 0;
-		session_input.config_layer_num++;
+		session_input->config[1].layer_id = primary_display_get_option("ASSERT_LAYER");
+		session_input->config[1].next_buff_idx = -1;
+		session_input->config[1].layer_enable = 0;
+		session_input->config_layer_num++;
 	}
-	ret = primary_display_config_input_multiple(&session_input);
+	ret = primary_display_config_input_multiple(session_input);
 	ret = primary_display_trigger(TRUE, NULL, 0);
 
+	kfree(session_input);
 	return ret;
 }
 
@@ -806,7 +814,7 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 	if (var->yres + var->yoffset > var->yres_virtual)
 		var->yoffset = var->yres_virtual - var->yres;
 
-	DISPDBG("mtkfb_check_var,xres=%u,yres=%u,x_virt=%u,y_virt=%u,xoffset=%u,yoffset=%u,bits_per_pixel=%u)\n",
+	DISPMSG("mtkfb_check_var,xres=%u,yres=%u,x_virt=%u,y_virt=%u,xoffset=%u,yoffset=%u,bits_per_pixel=%u)\n",
 		var->xres, var->yres, var->xres_virtual, var->yres_virtual,
 		var->xoffset, var->yoffset, var->bits_per_pixel);
 
@@ -878,7 +886,7 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	struct mtkfb_device *fbdev = (struct mtkfb_device *)fbi->par;
 	struct fb_overlay_layer fb_layer;
 	u32 bpp = var->bits_per_pixel;
-	disp_session_input_config session_input;
+	disp_session_input_config *session_input;
 	disp_input_config *input;
 
 
@@ -933,26 +941,30 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	fb_layer.layer_type = LAYER_2D;
 	DISPDBG("mtkfb_set_par, fb_layer.src_fmt=%x\n", fb_layer.src_fmt);
 
-	memset((void *)&session_input, 0, sizeof(session_input));
-	session_input.config_layer_num = 0;
+	session_input = kzalloc(sizeof(*session_input), GFP_KERNEL);
+	if (!session_input)
+		goto out;
+
+	session_input->config_layer_num = 0;
 
 	if (!is_DAL_Enabled()) {
 		DISPCHECK("AEE is not enabled, will disable layer 3\n");
-		input = &session_input.config[session_input.config_layer_num++];
+		input = &session_input->config[session_input->config_layer_num++];
 		input->layer_id = primary_display_get_option("ASSERT_LAYER");
 		input->layer_enable = 0;
 	} else {
 		DISPCHECK("AEE is enabled, should not disable layer 3\n");
 	}
 
-	input = &session_input.config[session_input.config_layer_num++];
+	input = &session_input->config[session_input->config_layer_num++];
 	_convert_fb_layer_to_disp_input(&fb_layer, input);
-	primary_display_config_input_multiple(&session_input);
+	primary_display_config_input_multiple(session_input);
+	kfree(session_input);
 
+out:
 	/* backup fb_layer information. */
 	memcpy(&fb_layer_context, &fb_layer, sizeof(fb_layer));
 
-/* Done: */
 	MSG_FUNC_LEAVE();
 	return 0;
 }
@@ -1032,7 +1044,7 @@ unsigned int mtkfb_fm_auto_test(void)
 	result = primary_display_lcm_ATA();
 
 	if (result == 0)
-		DISPMSG("ATA LCM failed\n");
+		DISPERR("ATA LCM failed\n");
 	else
 		DISPMSG("ATA LCM passed\n");
 
@@ -1050,7 +1062,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 	DISPFUNC();
 	/* / M: dump debug mmprofile log info */
-	DISPMSG("mtkfb_ioctl, info=%p, cmd nr=0x%08x, cmd size=0x%08x\n", info,
+	DISPDBG("mtkfb_ioctl, info=%p, cmd nr=0x%08x, cmd size=0x%08x\n", info,
 		(unsigned int)_IOC_NR(cmd), (unsigned int)_IOC_SIZE(cmd));
 
 	switch (cmd) {
@@ -1236,9 +1248,13 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 		}
 	case MTKFB_SET_OVERLAY_LAYER:
 		{		/* no function */
-			struct fb_overlay_layer layerInfo;
+			struct fb_overlay_layer *layerInfo;
 
-			if (copy_from_user(&layerInfo, (void __user *)arg, sizeof(layerInfo))) {
+			layerInfo = kmalloc(sizeof(*layerInfo), GFP_KERNEL);
+			if (!layerInfo)
+				return -ENOMEM;
+
+			if (copy_from_user(layerInfo, (void __user *)arg, sizeof(*layerInfo))) {
 				MTKFB_LOG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 				r = -EFAULT;
 			} else {
@@ -1254,11 +1270,12 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				memset((void *)&session_input, 0, sizeof(session_input));
 				input = &session_input.config[session_input.config_layer_num++];
 
-				_convert_fb_layer_to_disp_input(&layerInfo, input);
+				_convert_fb_layer_to_disp_input(layerInfo, input);
 				primary_display_config_input_multiple(&session_input);
 				primary_display_trigger(1, NULL, 0);
 			}
 
+			kfree(layerInfo);
 			return r;
 		}
 
@@ -1287,11 +1304,15 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				struct fb_overlay_layer Layer3;
 			};
 
-			struct fb_overlay_layer layerInfo[VIDEO_LAYER_COUNT];
-
+			struct fb_overlay_layer *layerInfo;
+			int layerInfo_size = sizeof(struct fb_overlay_layer) * VIDEO_LAYER_COUNT;
 			MTKFB_LOG(" mtkfb_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
 
-			if (copy_from_user(&layerInfo, (void __user *)arg, sizeof(layerInfo))) {
+			layerInfo = kmalloc(layerInfo_size, GFP_KERNEL);
+			if (!layerInfo)
+				return -ENOMEM;
+
+			if (copy_from_user(layerInfo, (void __user *)arg, layerInfo_size)) {
 				MTKFB_LOG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 				r = -EFAULT;
 			} else {
@@ -1315,6 +1336,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				primary_display_config_input_multiple(&session_input);
 				primary_display_trigger(1, NULL, 0);
 			}
+			kfree(layerInfo);
 
 			return r;
 		}
@@ -1605,63 +1627,78 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 		}
 
 	case COMPAT_MTKFB_SET_OVERLAY_LAYER:
-		{
-			struct compat_fb_overlay_layer compat_layerInfo;
+	{
+		struct compat_fb_overlay_layer *compat_layerInfo;
 
-			MTKFB_LOG(" mtkfb_compat_ioctl():MTKFB_SET_OVERLAY_LAYER\n");
+		compat_layerInfo = kmalloc(sizeof(*compat_layerInfo), GFP_KERNEL);
+		if (!compat_layerInfo)
+			return -ENOMEM;
 
-			arg = (unsigned long)compat_ptr(arg);
-			if (copy_from_user(&compat_layerInfo, (void __user *)arg, sizeof(compat_layerInfo))) {
-				MTKFB_LOG("[FB Driver]: copy_from_user failed! line:%d\n",
-					  __LINE__);
-				ret = -EFAULT;
-			} else {
-				disp_input_config *input;
+		MTKFB_LOG(" mtkfb_compat_ioctl():MTKFB_SET_OVERLAY_LAYER\n");
 
-				compat_convert(&compat_layerInfo, &layerInfo);
+		arg = (unsigned long)compat_ptr(arg);
+		if (copy_from_user(compat_layerInfo, (void __user *)arg, sizeof(*compat_layerInfo))) {
+			MTKFB_LOG("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
+			ret = -EFAULT;
+		} else {
+			disp_input_config *input;
 
-				/* in early suspend mode ,will not update buffer index, info SF by return value */
-				if (primary_display_is_sleepd()) {
-					pr_err("[FB Driver] error, set overlay in early suspend ,skip!\n");
-					return MTKFB_ERROR_IS_EARLY_SUSPEND;
-				}
+			compat_convert(compat_layerInfo, &layerInfo);
 
-				memset((void *)&session_input, 0, sizeof(session_input));
-				input = &session_input.config[session_input.config_layer_num++];
-
-				_convert_fb_layer_to_disp_input(&layerInfo, input);
-				primary_display_config_input_multiple(&session_input);
-				/* primary_display_trigger(1, NULL, 0); */
+			/* in early suspend mode ,will not update buffer index, info SF by return value */
+			if (primary_display_is_sleepd()) {
+				pr_debug("[FB Driver] error, set overlay in early suspend ,skip!\n");
+				return MTKFB_ERROR_IS_EARLY_SUSPEND;
 			}
+			memset((void *)&session_input, 0, sizeof(session_input));
+			input = &session_input.config[session_input.config_layer_num++];
 
+			_convert_fb_layer_to_disp_input(&layerInfo, input);
+			primary_display_config_input_multiple(&session_input);
+			/* primary_display_trigger(1, NULL, 0); */
 		}
+		kfree(compat_layerInfo);
+	}
 		break;
 
 	case COMPAT_MTKFB_SET_VIDEO_LAYERS:
-		{
-			struct compat_fb_overlay_layer compat_layerInfo[VIDEO_LAYER_COUNT];
+	{
+		struct compat_fb_overlay_layer *compat_layerInfo;
+		int compat_layerInfo_size = sizeof(struct compat_fb_overlay_layer) * VIDEO_LAYER_COUNT;
 
-			MTKFB_LOG(" mtkfb_compat_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
+		compat_layerInfo = kmalloc(compat_layerInfo_size, GFP_KERNEL);
+		if (!compat_layerInfo)
+			return -ENOMEM;
 
-			if (copy_from_user(&compat_layerInfo, (void __user *)arg, sizeof(compat_layerInfo))) {
-				MTKFB_LOG("[FB Driver]: copy_from_user failed! line:%d\n",
-					  __LINE__);
-				ret = -EFAULT;
-			} else {
-				int32_t i;
-				disp_input_config *input;
+		MTKFB_LOG(" mtkfb_compat_ioctl():MTKFB_SET_VIDEO_LAYERS\n");
 
-				memset((void *)&session_input, 0, sizeof(session_input));
+		if (copy_from_user(compat_layerInfo, (void __user *)arg, compat_layerInfo_size)) {
+			MTKFB_LOG("[FB Driver]: copy_from_user failed! line:%d\n", __LINE__);
+			ret = -EFAULT;
+		} else {
+			int32_t i;
+			/* mutex_lock(&OverlaySettingMutex); */
+			disp_input_config *input;
 
-				for (i = 0; i < VIDEO_LAYER_COUNT; ++i) {
-					compat_convert(&compat_layerInfo[i], &layerInfo);
-					input =
-					    &session_input.config[session_input.config_layer_num++];
-					_convert_fb_layer_to_disp_input(&layerInfo, input);
-				}
-				/* primary_display_trigger(1, NULL, 0); */
+			memset((void *)&session_input, 0, sizeof(session_input));
+
+			for (i = 0; i < VIDEO_LAYER_COUNT; ++i) {
+				compat_convert(&compat_layerInfo[i], &layerInfo);
+				input =
+				    &session_input.config[session_input.config_layer_num++];
+				_convert_fb_layer_to_disp_input(&layerInfo, input);
 			}
+			/* is_ipoh_bootup = false; */
+			/* atomic_set(&OverlaySettingDirtyFlag, 1); */
+			/* atomic_set(&OverlaySettingApplied, 0); */
+			/* mutex_unlock(&OverlaySettingMutex); */
+			/* MMProfileLogStructure(MTKFB_MMP_Events.SetOverlayLayers, MMProfileFlagEnd,
+						 layerInfo, struct mmp_fb_overlay_layers); */
+			primary_display_config_input_multiple(&session_input);
+			/* primary_display_trigger(1, NULL, 0); */
 		}
+		kfree(compat_layerInfo);
+	}
 		break;
 	case COMPAT_MTKFB_AEE_LAYER_EXIST:
 		{
@@ -2437,9 +2474,15 @@ EXPORT_SYMBOL(mtkfb_is_suspend);
 int mtkfb_ipoh_restore(struct notifier_block *nb, unsigned long val, void *ign)
 {
 	switch (val) {
+	case PM_HIBERNATION_PREPARE:
+		DISPCHECK("[FB Driver] mtkfb_ipoh_restore PM_HIBERNATION_PREPARE\n");
+		return NOTIFY_DONE;
 	case PM_RESTORE_PREPARE:
 		primary_display_ipoh_restore();
-		pr_debug("[FB Driver] mtkfb_ipoh_restore PM_RESTORE_PREPARE\n");
+		DISPCHECK("[FB Driver] mtkfb_ipoh_restore PM_RESTORE_PREPARE\n");
+		return NOTIFY_DONE;
+	case PM_POST_HIBERNATION:
+		DISPCHECK("[FB Driver] mtkfb_ipoh_restore PM_POST_HIBERNATION\n");
 		return NOTIFY_DONE;
 	}
 	return NOTIFY_OK;
@@ -2564,8 +2607,18 @@ int mtkfb_pm_freeze(struct device *device)
 int mtkfb_pm_restore_noirq(struct device *device)
 {
 	/* disphal_pm_restore_noirq(device); */
-
+	DISPCHECK("%s: %d\n", __func__, __LINE__);
 	is_ipoh_bootup = true;
+#if 0
+	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
+		ddp_clk_prepare_enable(MM_VENCPLL);
+	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
+	ddp_clk_prepare_enable(DISP0_SMI_COMMON);
+	ddp_clk_prepare_enable(DISP0_SMI_LARB0);
+#else
+	dpmgr_path_power_on(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+#endif
+	DISPCHECK("%s: %d\n", __func__, __LINE__);
 	return 0;
 
 }

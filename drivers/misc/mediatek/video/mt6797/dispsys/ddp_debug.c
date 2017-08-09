@@ -35,7 +35,7 @@
 #include "ddp_met.h"
 #include "display_recorder.h"
 #include "disp_session.h"
-
+#include "disp_lowpower.h"
 
 static struct dentry *debugfs;
 static struct dentry *debugDir;
@@ -73,7 +73,26 @@ static char STR_HELP[] =
 /* --------------------------------------------------------------------------- */
 /* Command Processor */
 /* --------------------------------------------------------------------------- */
+static int low_power_cust_mode = LP_CUST_DISABLE;
+static unsigned int vfp_backup;
+
+int get_lp_cust_mode(void)
+{
+	return low_power_cust_mode;
+}
+
+void backup_vfp_for_lp_cust(unsigned int vfp)
+{
+	vfp_backup = vfp;
+}
+
+unsigned int get_backup_vfp(void)
+{
+	return vfp_backup;
+}
+
 static char dbg_buf[2048];
+
 static unsigned int is_reg_addr_valid(unsigned int isVa, unsigned long addr)
 {
 	unsigned int i = 0;
@@ -353,6 +372,18 @@ static void process_dbg_opt(const char *opt)
 		}
 	} else if (0 == strncmp(opt, "mmp", 3)) {
 		init_ddp_mmp_events();
+	} else if (0 == strncmp(opt, "low_power_mode:", 15)) {
+		char *p = (char *)opt + 15;
+		unsigned int mode;
+
+		ret = kstrtouint(p, 0, &mode);
+		if (ret) {
+			snprintf(buf, 50, "error to parse cmd %s\n", opt);
+			return;
+		}
+
+		low_power_cust_mode = mode;
+
 	} else {
 		dbg_buf[0] = '\0';
 		goto Error;
@@ -426,15 +457,45 @@ static const struct file_operations debug_fops = {
 	.open = debug_open,
 };
 
+static ssize_t lp_cust_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+{
+	char *mode0 = "low power mode(1)\n";
+	char *mode1 = "just make mode(2)\n";
+	char *mode2 = "performance mode(3)\n";
+	char *mode4 = "unknown mode(n)\n";
+
+	switch (low_power_cust_mode) {
+	case LOW_POWER_MODE:
+		return simple_read_from_buffer(ubuf, count, ppos, mode0, strlen(mode0));
+	case JUST_MAKE_MODE:
+		return simple_read_from_buffer(ubuf, count, ppos, mode1, strlen(mode1));
+	case PERFORMANC_MODE:
+		return simple_read_from_buffer(ubuf, count, ppos, mode2, strlen(mode2));
+	default:
+		return simple_read_from_buffer(ubuf, count, ppos, mode4, strlen(mode4));
+
+
+	}
+
+}
+
+static const struct file_operations low_power_cust_fops = {
+	.read = lp_cust_read,
+};
+
 static ssize_t debug_dump_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
 {
+	char *str = "idlemgr disable mtcmos now, all the regs may 0x00000000\n";
 
 	dprec_logger_dump_reset();
 	dump_to_buffer = 1;
 	/* dump all */
 	dpmgr_debug_path_status(-1);
 	dump_to_buffer = 0;
-	return simple_read_from_buffer(buf, size, ppos, dprec_logger_get_dump_addr(),
+	if (is_mipi_enterulps())
+		return simple_read_from_buffer(buf, size, ppos, str, strlen(str));
+	else
+		return simple_read_from_buffer(buf, size, ppos, dprec_logger_get_dump_addr(),
 				       dprec_logger_get_dump_len());
 }
 
@@ -445,6 +506,8 @@ static const struct file_operations debug_fops_dump = {
 
 void ddp_debug_init(void)
 {
+	struct dentry *d;
+
 	if (!debug_init) {
 		debug_init = 1;
 		debugfs = debugfs_create_file("dispsys",
@@ -457,6 +520,12 @@ void ddp_debug_init(void)
 			debugfs_dump = debugfs_create_file("dump",
 							   S_IFREG | S_IRUGO, debugDir, NULL,
 							   &debug_fops_dump);
+			d = debugfs_create_file("lowpowermode", S_IFREG | S_IRUGO, debugDir, NULL,
+						&low_power_cust_fops);
+			/*
+			if (!d)
+				return -ENOMEM;
+			*/
 		}
 	}
 }
