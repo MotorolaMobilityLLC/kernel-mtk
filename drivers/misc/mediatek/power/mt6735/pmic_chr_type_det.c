@@ -33,18 +33,14 @@
 #endif
 /*#include <mach/mtk_rtc.h> TBD*/
 #include <mach/mt_spm_mtcmos.h>
-
-/*#include <mach/battery_common.h> TBD*/
+#if defined(CONFIG_MTK_SMART_BATTERY)
+#include <mt-plat/battery_common.h>
+#endif
 #include <linux/time.h>
 
-/*
- * extern function
- */
-/*
-extern unsigned int upmu_get_reg_value(unsigned int reg);
-extern void Charger_Detect_Init(void);
-extern void Charger_Detect_Release(void);
-*/
+/* ============================================================ // */
+/* extern function */
+/* ============================================================ // */
 bool is_dcp_type = false;
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_MTK_FPGA)
 
@@ -121,7 +117,6 @@ static unsigned int hw_bc11_DCD(void)
 		battery_log(BAT_LOG_FULL, "hw_bc11_DCD() \r\n");
 		hw_bc11_dump_register();
 	}
-
 	/* RG_bc11_IPU_EN[1.0] = 00 */
 	bc11_set_register_value(PMIC_RG_BC11_IPU_EN, 0x0);
 	/* RG_bc11_IPD_EN[1.0] = 00 */
@@ -156,7 +151,6 @@ static unsigned int hw_bc11_stepA1(void)
 		battery_log(BAT_LOG_FULL, "hw_bc11_stepA1() \r\n");
 		hw_bc11_dump_register();
 	}
-
 	/* RG_bc11_IPD_EN[1.0] = 00 */
 	bc11_set_register_value(PMIC_RG_BC11_IPD_EN, 0x0);
 	/* RG_bc11_CMP_EN[1.0] = 00 */
@@ -188,7 +182,6 @@ static unsigned int hw_bc11_stepA2(void)
 		battery_log(BAT_LOG_FULL, "hw_bc11_stepA2() \r\n");
 		hw_bc11_dump_register();
 	}
-
 	/* RG_bc11_VSRC_EN[1:0]=00 */
 	bc11_set_register_value(PMIC_RG_BC11_VSRC_EN, 0x0);
 	/* RG_bc11_IPD_EN[1.0] = 00 */
