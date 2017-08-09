@@ -1984,3 +1984,4 @@
 };
 /*CLDMA end*/
 
+#include <trusty.dtsi>

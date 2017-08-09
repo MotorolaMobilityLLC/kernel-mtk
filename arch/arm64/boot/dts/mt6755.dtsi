@@ -3299,3 +3299,5 @@
 	};
 };
 /*/include/ "cust_pmic.dtsi"*/
+
+#include <trusty.dtsi>
