@@ -617,8 +617,8 @@
 				0x10B10000 0x1000>;
 		};
 
-		AP_DMA@0x11000000 {
-			compatible = "mediatek,AP_DMA";
+		ap_dma:dma@11000000 {
+			compatible = "mediatek,ap_dma";
 			reg = <0x11000000 0x1000>;
 			interrupts = <0 97 0x8>;
 		};
@@ -654,38 +654,41 @@
 			#gpio-cells = <2>;
 		};
 
-		i2c0:I2C0@0x11007000 {
-			compatible = "mediatek,I2C0";
+		i2c0:i2c@11007000 {
+			compatible = "mediatek,mt6735m-i2c";
 			cell-index = <0>;
 			reg = <0x11007000 0x1000>;
-			interrupts = <0 84 0x8>,
-									 <0 99 0x8>;
+			interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_LOW>,
+						<GIC_SPI 99 IRQ_TYPE_LEVEL_LOW>;
+			def_speed = <100>;
 		};
 
-		i2c1:I2C1@0x11008000 {
-			compatible = "mediatek,I2C1";
+		i2c1:i2c@11008000 {
+			compatible = "mediatek,mt6735m-i2c";
 			cell-index = <1>;
 			reg = <0x11008000 0x1000>;
-			interrupts = <0 85 0x8>,
-									 <0 100 0x8>;
+			interrupts = <GIC_SPI 85 IRQ_TYPE_LEVEL_LOW>,
+						<GIC_SPI 100 IRQ_TYPE_LEVEL_LOW>;
+			def_speed = <100>;
 		};
 
-		i2c2:I2C2@0x11009000 {
-			compatible = "mediatek,I2C2";
+		i2c2:i2c@11009000 {
+			compatible = "mediatek,mt6735m-i2c";
 			cell-index = <2>;
 			reg = <0x11009000 0x1000>;
-			interrupts = <0 86 0x8>,
-									 <0 101 0x8>;
+			interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_LOW>,
+						<GIC_SPI 101 IRQ_TYPE_LEVEL_LOW>;
+			def_speed = <100>;
 		};
 
-		i2c3:I2C3@0x1100F000 {
-			compatible = "mediatek,I2C3";
+		i2c3:i2c@1100f000 {
+			compatible = "mediatek,mt6735m-i2c";
 			cell-index = <3>;
-			reg = <0x1100F000 0x1000>;
-			interrupts = <0 87 0x8>,
-									 <0 102 0x8>;
+			reg = <0x1100f000 0x1000>;
+			interrupts = <GIC_SPI 87 IRQ_TYPE_LEVEL_LOW>,
+						<GIC_SPI 102 IRQ_TYPE_LEVEL_LOW>;
+			def_speed = <100>;
 		};
-
 
 				G3D_CONFIG@0x13000000 {
 						compatible = "mediatek,G3D_CONFIG";

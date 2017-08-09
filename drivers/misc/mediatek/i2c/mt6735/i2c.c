@@ -1641,13 +1641,9 @@ static s32 mt_i2c_resume(struct platform_device *pdev)
 #endif
 
 static const struct of_device_id mt_i2c_of_match[] = {
-	{.compatible = "mediatek,I2C0",},
-	{.compatible = "mediatek,I2C1",},
-	{.compatible = "mediatek,I2C2",},
-	{.compatible = "mediatek,I2C3",},
-#ifdef CONFIG_ARCH_MT6753
-	{.compatible = "mediatek,I2C4",},
-#endif
+	{.compatible = "mediatek,mt6735-i2c",},
+	{.compatible = "mediatek,mt6735m-i2c",},
+	{.compatible = "mediatek,mt6753-i2c",},
 	{ /* sentinel */ },
 };
 
@@ -1675,7 +1671,7 @@ static s32 __init mt_i2c_init(void)
 	I2CLOG(" mt_i2c_init  driver us DT\n");
 
 	/* ioremap the AP_DMA base and use offset get the I2C DMA base */
-	ap_dma_node = of_find_compatible_node(NULL, NULL, "mediatek,AP_DMA");
+	ap_dma_node = of_find_compatible_node(NULL, NULL, "mediatek,ap_dma");
 	if (!ap_dma_node) {
 		I2CERR("Cannot find AP_DMA node\n");
 		return -ENODEV;

@@ -83,7 +83,7 @@ int i2c_trans_data(int bus_id, int address, char *buf, int count, unsigned int e
 	/* msg.flags = ((ext_flag & 0x80000000)?I2C_M_RD:0); */
 	msg.len = count;
 	msg.buf = (char *)buf;
-#ifdef USE_I2C_MTK_EXT
+#ifdef CONFIG_MTK_I2C_EXTENSION
 	msg.timing = timing;
 	msg.ext_flag = ext_flag;
 #endif
