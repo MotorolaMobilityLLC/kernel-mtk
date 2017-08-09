@@ -3052,7 +3052,9 @@ static int battery_probe(struct platform_device *pdev)
 	 */
 	atomic_set(&bat_thread_wakeup, 0);
 
-	g_bat.irq = platform_get_irq(pdev, 0);
+	/* TODO: hard code chr_det irq temporarily. */
+	/* g_bat.irq = platform_get_irq(pdev, 0); */
+	g_bat.irq = 322 + 14;
 	if (g_bat.irq <= 0)
 		return -EINVAL;
 
