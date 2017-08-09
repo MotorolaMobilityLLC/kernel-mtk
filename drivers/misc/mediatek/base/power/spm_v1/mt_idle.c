@@ -21,7 +21,11 @@
 #include <mt-plat/sync_write.h>
 #include "mt_dcm.h"
 #include <mach/mt_gpt.h>
+
+#if !defined(CONFIG_ARCH_MT6580)
 #include <mach/mt_cpuxgpt.h>
+#endif
+
 #include <mach/mt_spm_mtcmos_internal.h>
 #include "hotplug.h"
 #include "mt_cpufreq.h"
@@ -61,6 +65,7 @@ enum mt_idle_mode {
 };
 
 enum {
+#if !defined(CONFIG_ARCH_MT6580)
 	CG_INFRA   = 0,
 	CG_PERI    = 1,
 	CG_DISP0   = 2,
@@ -72,6 +77,21 @@ enum {
 	CG_VDEC1   = 8,
 	CG_VENC    = 9,
 	NR_GRPS    = 10,
+#else
+	CG_MIXED	= 0,
+	CG_MPLL		= 1,
+	CG_UPLL		= 2,
+	CG_CTRL0	= 3,
+	CG_CTRL1	= 4,
+	CG_CTRL2	= 5,
+	CG_MMSYS0	= 6,
+	CG_MMSYS1	= 7,
+	CG_IMGSYS	= 8,
+	CG_MFGSYS	= 9,
+	CG_AUDIO	= 10,
+	CG_INFRA_AO	= 11,
+	NR_GRPS,
+#endif
 };
 
 static unsigned long rgidle_cnt[NR_CPUS] = {0};
@@ -372,6 +392,56 @@ static unsigned int slidle_condition_mask[NR_GRPS] = {
 	0x00000000, /* VDEC1: */
 	0x00000000, /* VENC: */
 };
+#elif defined(CONFIG_ARCH_MT6580)
+/*Idle handler on/off*/
+static int idle_switch[NR_TYPES] = {
+	0,  /* dpidle switch */
+	0,  /* soidle switch */
+	0,  /* slidle switch */
+	1,  /* rgidle switch */
+};
+
+static unsigned int dpidle_condition_mask[NR_GRPS] = {
+	0x00000000, /* CG_MIXED: */
+	0x00000000, /* CG_MPLL: */
+	0x00000000, /* CG_INFRA_AO: */
+	0x00000037, /* CG_CTRL0: */
+	0x8089B2FC, /* CG_CTRL1: */
+	0x00003F16, /* CG_CTRL2: */
+	0x0007EFFF, /* CG_MMSYS0: */
+	0x0000000C, /* CG_MMSYS1: */
+	0x000003E1, /* CG_IMGSYS: */
+	0x00000001, /* CG_MFGSYS: */
+	0x00000000, /* CG_AUDIO: */
+};
+
+static unsigned int soidle_condition_mask[NR_GRPS] = {
+	0x00000000, /* CG_MIXED: */
+	0x00000000, /* CG_MPLL: */
+	0x00000000, /* CG_INFRA_AO: */
+	0x00000026, /* CG_CTRL0: */
+	0x8089B2F8, /* CG_CTRL1: */
+	0x00003F06, /* CG_CTRL2: */
+	0x00000200, /* CG_MMSYS0: */
+	0x00000000, /* CG_MMSYS1: */
+	0x000003E1, /* CG_IMGSYS: */
+	0x00000001, /* CG_MFGSYS: */
+	0x00000000, /* CG_AUDIO: */
+};
+
+static unsigned int slidle_condition_mask[NR_GRPS] = {
+	0xFFFFFFFF, /* CG_MIXED: */
+	0xFFFFFFFF, /* CG_MPLL: */
+	0xFFFFFFFF, /* CG_INFRA_AO: */
+	0xFFFFFFFF, /* CG_CTRL0: */
+	0xFFFFFFFF, /* CG_CTRL1: */
+	0xFFFFFFFF, /* CG_CTRL2: */
+	0xFFFFFFFF, /* CG_MMSYS0: */
+	0xFFFFFFFF, /* CG_MMSYS1: */
+	0xFFFFFFFF, /* CG_IMGSYS: */
+	0xFFFFFFFF, /* CG_MFGSYS: */
+	0xFFFFFFFF, /* CG_AUDIO: */
+};
 #else
 #error "Does not support!"
 #endif
@@ -493,6 +563,7 @@ enum subsys_id {
 	NR_SYSS__,
 };
 
+#if !defined(CONFIG_ARCH_MT6580)
 static int sys_is_on(enum subsys_id id)
 {
 	u32 pwr_sta_mask[] = {
@@ -509,6 +580,7 @@ static int sys_is_on(enum subsys_id id)
 
 	return (sta & mask) && (sta_s & mask);
 }
+#endif
 
 static void get_all_clock_state(u32 clks[NR_GRPS])
 {
@@ -516,7 +588,7 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 
 	for (i = 0; i < NR_GRPS; i++)
 		clks[i] = 0;
-
+#if !defined(CONFIG_ARCH_MT6580)
 	clks[CG_INFRA] = ~idle_readl(INFRA_PDN_STA); /* INFRA */
 
 	clks[CG_PERI] = ~idle_readl(PERI_PDN0_STA); /* PERI */
@@ -541,6 +613,9 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 
 	if (sys_is_on(SYS_VEN))
 		clks[CG_VENC] = idle_readl(VENC_CG_CON); /* VENC_JPEG */
+#else
+	/* TODO */
+#endif
 }
 
 bool cg_check_idle_can_enter(
@@ -555,7 +630,11 @@ bool cg_check_idle_can_enter(
 	/* SD status */
 	msdc_clk_status(&sd_mask);
 	if (sd_mask) {
+#if !defined(CONFIG_ARCH_MT6580)
 		block_mask[CG_PERI] |= sd_mask;
+#else
+		/* TODO */
+#endif
 		return false;
 	}
 
@@ -1073,13 +1152,21 @@ out:
 
 static void slidle_before_wfi(int cpu)
 {
+#if !defined(CONFIG_ARCH_MT6580)
 	mt_dcm_topckg_enable();
+#else
+	/*TBD*/
+#endif
 }
 
 static void slidle_after_wfi(int cpu)
 {
+#if !defined(CONFIG_ARCH_MT6580)
 	mt_dcm_topckg_disable();
 	slidle_cnt[cpu]++;
+#else
+	/*TBD*/
+#endif
 }
 
 static void go_to_slidle(int cpu)
@@ -1706,7 +1793,9 @@ static int mt_cpuidle_debugfs_init(void)
 void mt_cpuidle_framework_init(void)
 {
 	int err = 0;
+#if !defined(CONFIG_ARCH_MT6580)
 	int i = 0;
+#endif
 
 	idle_ver("[%s]entry!!\n", __func__);
 
@@ -1717,8 +1806,12 @@ void mt_cpuidle_framework_init(void)
 
 	err = 0;
 
+#if !defined(CONFIG_ARCH_MT6580)
 	for (i = 0; i < num_possible_cpus(); i++)
 		err |= cpu_xgpt_register_timer(i, NULL);
+#else
+	/* TODO: cpu_xgpt_register_timer() has not been ported to mach/mt_cpuxgpt.h */
+#endif
 
 	if (err)
 		idle_info("[%s]fail to request cpuxgpt\n", __func__);

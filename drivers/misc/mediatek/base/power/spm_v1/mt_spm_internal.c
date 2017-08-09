@@ -6,10 +6,13 @@
 #include <linux/string.h>
 #include <linux/of_fdt.h>
 #include <uapi/asm/setup.h>
-#include "mt_vcore_dvfs.h"
 #include <mt-plat/upmu_common.h>
 
 #include "mt_spm_internal.h"
+
+#if !defined(CONFIG_ARCH_MT6580)
+#include "mt_vcore_dvfs.h"
+#endif
 
 void __weak aee_sram_printk(const char *fmt, ...)
 {
@@ -32,6 +35,7 @@ int __weak is_ext_buck_exist(void)
 DEFINE_SPINLOCK(__spm_lock);
 atomic_t __spm_mainpll_req = ATOMIC_INIT(0);
 
+#if !defined(CONFIG_ARCH_MT6580)
 static const char *wakesrc_str[32] = {
 	[0] = "SPM_MERGE",
 	[1] = "LTE_PTP",
@@ -66,6 +70,42 @@ static const char *wakesrc_str[32] = {
 	[30] = "APSRC_WAKE",
 	[31] = "APSRC_SLEEP",
 };
+#else /* CONFIG_ARCH_MT6580 */
+static const char *wakesrc_str[32] = {
+	[0] = "SPM_MERGE",
+	[1] = "AUDIO_REQ",
+	[2] = "KP",
+	[3] = "WDT",
+	[4] = "GPT",
+	[5] = "EINT",
+	[6] = "CONN_WDT",
+	[7] = "GCE",
+	[8] = "CCIF0_MD",
+	[9] = "LOW_BAT",
+	[10] = "CONN2AP",
+	[11] = "F26M_WAKE",
+	[12] = "F26M_SLEE",
+	[13] = "PCM_WDT",
+	[14] = "USB_CD ",
+	[15] = "USB_PDN",
+	[16] = "MD1_VRF18_WAKE",
+	[17] = "MD1_VRF18_SLEEP",
+	[18] = "DBGSYS",
+	[19] = "UART0",
+	[20] = "AFE",
+	[21] = "THERM",
+	[22] = "CIRQ",
+	[23] = "SEJ",
+	[24] = "SYSPWREQ",
+	[25] = "MD1_WDT",
+	[26] = "CPU0_IRQ",
+	[27] = "CPU1_IRQ",
+	[28] = "CPU2_IRQ",
+	[29] = "CPU3_IRQ",
+	[30] = "APSRC_WAKE",
+	[31] = "APSRC_SLEEP",
+};
+#endif
 
 unsigned int __attribute__((weak))
 	pmic_read_interface_nolock(unsigned int RegNum,
@@ -171,7 +211,11 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 	/* set other SYS request mask */
 	spm_write(SPM_AP_STANBY_CON, (!pwrctrl->md_vrf18_req_mask_b << 29) |
 		  (!pwrctrl->lte_mask << 26) |
+#if !defined(CONFIG_ARCH_MT6580)
 		  (spm_read(SPM_AP_STANBY_CON) & ASC_SRCCLKENI_MASK) |
+#else
+		  (!pwrctrl->srclkenai_mask << 25) |
+#endif
 		  (!!pwrctrl->md2_apsrc_sel << 24) |
 		  (!pwrctrl->conn_mask << 23) |
 		  (!!pwrctrl->md_apsrc_sel << 22) |
@@ -268,7 +312,11 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 	wakesta->assert_pc = spm_read(SPM_PCM_REG_DATA_INI);
 
 	/* get wakeup event */
+#if !defined(CONFIG_ARCH_MT6580)
 	wakesta->r12 = spm_read(SPM_PCM_RESERVE3);
+#else
+	wakesta->r12 = spm_read(SPM_PCM_REG12_DATA);
+#endif
 
 	wakesta->raw_sta = spm_read(SPM_SLEEP_ISR_RAW_STA);
 	wakesta->wake_misc = spm_read(SPM_SLEEP_WAKEUP_MISC);
@@ -284,7 +332,11 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 	wakesta->debug_flag = spm_read(SPM_PCM_RESERVE4);
 
 	/* get special pattern (0xf0000 or 0x10000) if sleep abort */
+#if !defined(CONFIG_ARCH_MT6580)
 	wakesta->event_reg = spm_read(SPM_PCM_PASR_DPD_2);
+#else
+	wakesta->event_reg = spm_read(SPM_PCM_EVENT_REG_STA);
+#endif
 
 	/* get ISR status */
 	wakesta->isr = spm_read(SPM_SLEEP_ISR_STATUS);
@@ -351,7 +403,9 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 			wr = WR_WAKE_SRC;
 		}
 	}
+#if !defined(CONFIG_ARCH_MT6580)
 	BUG_ON(strlen(buf) >= LOG_BUF_SIZE);
+#endif
 
 	spm_print(suspend, "wake up by%s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
 		  buf, wakesta->timer_out, wakesta->r13, wakesta->debug_flag);
@@ -382,6 +436,7 @@ void __spm_dbgout_md_ddr_en(bool enable)
 	spm_write(SPM_PCM_DEBUG_CON, !!enable);
 }
 
+#if !defined(CONFIG_ARCH_MT6580)
 u32 __spm_dpidle_sodi_set_pmic_setting(void)
 {
 	u32 vsram_vosel_on_lb = 0;
@@ -517,5 +572,6 @@ bool spm_set_pcm_init_flag(void)
 
 	return true;
 }
+#endif /* !defined(CONFIG_ARCH_MT6580) */
 
 MODULE_DESCRIPTION("SPM-Internal Driver v0.1");
