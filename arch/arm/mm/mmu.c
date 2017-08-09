@@ -1370,7 +1370,6 @@ static void __init map_lowmem(void)
 		phys_addr_t end = start + reg->size;
 		struct map_desc map;
 
-		last_end = end;
 		MTK_MEMCFG_LOG_AND_PRINTK("[PHY layout]kernel   :   0x%08llx - 0x%08llx (0x%08llx)\n",
 						(unsigned long long)start,
 						(unsigned long long)end - 1,
@@ -1380,6 +1379,8 @@ static void __init map_lowmem(void)
 			end = arm_lowmem_limit;
 		if (start >= end)
 			continue;
+
+		last_end = end;
 
 		if (end < kernel_x_start) {
 			map.pfn = __phys_to_pfn(start);
