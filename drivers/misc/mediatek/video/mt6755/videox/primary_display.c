@@ -4356,10 +4356,6 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	disp_path_handle disp_handle;
 	cmdqRecHandle cmdq_handle;
 
-	if (pgc->state == DISP_SLEPT) {
-		DISPERR("%s, skip because primary dipslay is slept\n", __func__);
-		goto done;
-	}
 	primary_display_idlemgr_kick((char *)__func__, 0);
 
 	if (primary_display_is_decouple_mode()) {
@@ -4368,6 +4364,22 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 	} else {
 		disp_handle = pgc->dpmgr_handle;
 		cmdq_handle = pgc->cmdq_handle_config;
+	}
+
+	if (pgc->state == DISP_SLEPT) {
+		DISPERR("%s, skip because primary dipslay is slept\n", __func__);
+
+		if (is_DAL_Enabled() &&
+			cfg->setter == SESSION_USER_AEE &&
+			cfg->input_cfg[0].layer_id == primary_display_get_option("ASSERT_LAYER")) {
+			disp_ddp_path_config *data_config = dpmgr_path_get_last_config(disp_handle);
+			int layer = cfg->input_cfg[0].layer_id;
+
+			ret = _convert_disp_input_to_ovl(&(data_config->ovl_config[layer]),
+					&cfg->input_cfg[0]);
+		}
+
+		goto done;
 	}
 
 	fps_ctx_update(&primary_fps_ctx);
