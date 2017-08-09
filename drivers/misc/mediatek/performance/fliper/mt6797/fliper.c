@@ -81,10 +81,10 @@ int cg_set_threshold(int bw1, int bw2)
 			return 0;
 		}
 		if (ddr_perf == ddr_curr) {
-			setCG(0x210080 | (hpm_threshold << 8));
+			setCG(0x830080 | (hpm_threshold << 8));
 			pr_debug(TAG"ddr high, Configure CG: 0x%08x\n", getCGConfiguration());
 		} else {
-			setCG(0x210080 | (lpm_threshold << 8));
+			setCG(0x830080 | (lpm_threshold << 8));
 			pr_debug(TAG"ddr low, Configure CG: 0x%08x\n", getCGConfiguration());
 		}
 		vcorefs_set_perform_bw_threshold(lpm_threshold, hpm_threshold);
