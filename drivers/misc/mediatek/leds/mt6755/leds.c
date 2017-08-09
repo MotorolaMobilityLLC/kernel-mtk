@@ -329,7 +329,7 @@ static int find_time_index(int time)
 
 int mt_led_set_pwm(int pwm_num, struct nled_setting *led)
 {
-	struct pwm_spec_config pwm_setting;
+	struct pwm_spec_config pwm_setting = { .pwm_no = pwm_num};
 	int time_index = 0;
 
 	pwm_setting.pwm_no = pwm_num;
@@ -584,7 +584,7 @@ int mt_led_blink_pmic(enum mt65xx_led_pmic pmic_type, struct nled_setting *led)
 int mt_backlight_set_pwm(int pwm_num, u32 level, u32 div,
 			 struct PWM_config *config_data)
 {
-	struct pwm_spec_config pwm_setting;
+	struct pwm_spec_config pwm_setting = { .pwm_no = pwm_num};
 	unsigned int BacklightLevelSupport =
 	    Cust_GetBacklightLevelSupport_byPWM();
 	pwm_setting.pwm_no = pwm_num;
