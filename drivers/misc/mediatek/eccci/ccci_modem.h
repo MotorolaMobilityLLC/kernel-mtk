@@ -457,7 +457,11 @@ static inline unsigned long long *ccci_md_get_net_rx_profile(struct ccci_modem *
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 static inline int ccci_md_scp_ipi_send(struct ccci_modem *md, int op_id, void *data)
 {
-	return ccci_scp_ipi_send(md->index, CCCI_OP_SHM_INIT, data);
+	return ccci_scp_ipi_send(md->index, op_id, data);
+}
+static inline void ccci_md_scp_state_sync(struct ccci_modem *md)
+{
+	schedule_work(&md->scp_md_state_sync_work);
 }
 #endif
 /****************************************************************************************************************/

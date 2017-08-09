@@ -69,8 +69,10 @@ static int c2k_msg_handler(struct ccci_port *port, struct sk_buff *skb)
 			port_proxy_set_dtr_state(port->port_proxy, 1);
 		else		/*disconnect */
 			port_proxy_set_dtr_state(port->port_proxy, 0);
+#ifdef FEATURE_SCP_CCCI_SUPPORT
 	} else if (ccci_h->data[1] == C2K_CCISM_SHM_INIT_ACK) {
 		port_proxy_ccism_shm_init_ack_hdlr(port->port_proxy, 0);
+#endif
 	} else if (ccci_h->data[1] == C2K_FLOW_CTRL_MSG) {
 		CCCI_NORMAL_LOG(md_id, KERN, "flow ctrl msg: queue = 0x%x\n", ccci_h->reserved);
 		port_proxy_wake_up_tx_queue(port->port_proxy, ccci_h->reserved);
@@ -113,7 +115,9 @@ static void control_msg_handler(struct ccci_port *port, struct sk_buff *skb)
 		CCCI_ERROR_LOG(port->md_id, KERN, "receive unknown data from CCCI_CONTROL_RX = %d\n", ccci_h->data[1]);
 		break;
 	}
-
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+	port_proxy_md_scp_state_sync(port->port_proxy);
+#endif
 	if (ret != 2)
 		ccci_free_skb(skb);
 }

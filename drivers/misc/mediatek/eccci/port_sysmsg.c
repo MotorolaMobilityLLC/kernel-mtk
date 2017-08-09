@@ -141,9 +141,11 @@ static void sys_msg_handler(struct ccci_port *port, struct sk_buff *skb)
 		port_sys_echo_test_l1core(port, ccci_h->reserved);
 		break;
 #endif
+#ifdef FEATURE_SCP_CCCI_SUPPORT
 	case CCISM_SHM_INIT_ACK:
 		port_proxy_ccism_shm_init_ack_hdlr(port->port_proxy, 0);
 		break;
+#endif
 	case MD_TX_POWER:
 		/* Fall through */
 	case MD_RF_TEMPERATURE:

@@ -1351,16 +1351,21 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 	return ret;
 }
 
+#ifdef FEATURE_SCP_CCCI_SUPPORT
 int port_proxy_ccism_shm_init_ack_hdlr(struct port_proxy *proxy_p, unsigned int data)
 {
-#ifdef FEATURE_SCP_CCCI_SUPPORT
 	struct ccci_smem_layout *smem_layout = ccci_md_get_smem(proxy_p->md_obj);
 
 	memset_io(smem_layout->ccci_ccism_smem_base_vir, 0, smem_layout->ccci_ccism_smem_size);
 	ccci_md_scp_ipi_send(proxy_p->md_obj, CCCI_OP_SHM_INIT, &smem_layout->ccci_ccism_smem_base_phy);
-#endif
 	return 0;
 }
+
+void port_proxy_md_scp_state_sync(struct port_proxy *proxy_p)
+{
+	ccci_md_scp_state_sync(proxy_p->md_obj);
+}
+#endif
 
 static int port_proxy_get_no_response_assert_type(struct port_proxy *proxy_p, u64 latest_poll_start_time)
 {
@@ -1446,12 +1451,13 @@ void port_proxy_md_hs2_msg_notify(struct port_proxy *proxy_p, struct sk_buff *sk
 			ccci_md_get_state(proxy_p->md_obj));
 		return;
 	}
-	ccci_md_stop_bootup_timer(proxy_p->md_obj);
 	/* service of uplayer sync with modem need maybe 10s */
 	port_proxy_start_wake_lock(proxy_p, 10);
 	/* update this first, otherwise send message on HS2 may fail */
 	ccci_md_broadcast_state(proxy_p->md_obj, READY);
 	port_proxy_send_msg_to_user(proxy_p, CCCI_MONITOR_CH, CCCI_MD_MSG_BOOT_READY, 0);
+	/* stop timer at last to avoid race condition against starting timer in FS char dev */
+	ccci_md_stop_bootup_timer(proxy_p->md_obj);
 }
 
 void port_proxy_md_no_repsone_notify(struct port_proxy *proxy_p)
