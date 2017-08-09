@@ -812,6 +812,7 @@ config ARCH_MT6735
 	select MTK_BASE_POWER
 	select KERNEL_MODE_NEON
 	select CRYPTO_AES_ARM32_CE
+	select ARM_ERRATA_836870
 	help
 	  This enable support for MediaTek MT6735
 
@@ -1404,6 +1405,30 @@ config ARM_ERRATA_773022
 	  (up to r0p4) erratum. In certain rare sequences of code, the
 	  loop buffer may deliver incorrect instructions. This
 	  workaround disables the loop buffer to avoid the erratum.
+
+config ARM_ERRATA_836870
+        bool "Cortex-A53: 836870: Non-allocating reads might prevent a store exclusive from passing"
+        depends on ARM
+        help
+          This option enables the workaround for erratum 836870
+          affecting Cortex-A53 MPCore with two or more processors (r0p0..r0p3).
+          If a Cortex-A53 processor is executing a load and store exclusive instruction in a loop then there are certain conditions
+          that are allowed to cause the store exclusive instruction to repeatedly fail. This includes another processor repeatedly
+          writing to the same cache line. In addition to these allowed conditions, a non-allocating load from another processor migh
+          also cause the store exclusive instruction to repeatedly fail.
+
+          This walkaournd is to ensure system do not use non-allocating load. For 32 bit ATF and 64 bit project,
+          master cpu's DTAH bit is set to 1 at preloader stage and set to 1 again after suspend through
+          dormant driver in ATF. Slave cpus's DTAH bit is set to 1 at dormant driver in ATF stage.
+          For 32 bit non-ATF project, Master cpu's DTAH bit is set to 1 at preloader stage and
+          set to 1 again after suspend through dormant driver in kernel. Slave cpus's DTAH bit is set to 1
+          by hotplug driver in kernel.
+
+          This Kernel option only control the behavior of kernel dormant driver. this config should be enabled with
+          the other parts of patch in ATF and preloader at the same time.
+
+          ATF and Preloader are already enable this patch in default in 32-bit and 64 bit project, so
+          we could enable this kernel config in default.
 
 endmenu
 
