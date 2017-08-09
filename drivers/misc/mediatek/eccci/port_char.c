@@ -524,10 +524,10 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 			if (port->rx_ch == CCCI_IPC_RX)
 				port_ipc_tx_wait(port);
 #endif
-			if (port->rx_ch == CCCI_FS_RX && port->modem->boot_stage != MD_BOOT_STAGE_2
-					&& port->modem->boot_stage != MD_BOOT_STAGE_EXCEPTION
+			if (port->rx_ch == CCCI_FS_RX && port->modem->boot_stage == MD_BOOT_STAGE_1
 					&& !MD_IN_DEBUG(port->modem))
 				mod_timer(&port->modem->bootup_timer, jiffies + BOOT_TIMER_HS2 * HZ);
+
 		}
 		return actual_count;
 
