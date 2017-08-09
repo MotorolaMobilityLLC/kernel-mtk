@@ -36,8 +36,8 @@ struct kicker_config {
 #define FDDR_S0_KHZ		1600000
 #define FDDR_S1_KHZ		1270000
 
-#define FAXI_S0_KHZ		158000
-#define FAXI_S1_KHZ		138000
+#define FAXI_S0_KHZ		156000
+#define FAXI_S1_KHZ		136500
 
 enum vcore_trans {
 	TRANS1,
@@ -122,6 +122,9 @@ extern int governor_debug_store(const char *);
 extern int vcorefs_late_init_dvfs(void);
 extern int kick_dvfs_by_opp_index(struct kicker_config *krconf);
 extern char *governor_get_dvfs_info(char *p);
+
+/* AXI API */
+extern unsigned int ckgen_meter(int ID);
 
 /* EMIBW API */
 extern int vcorefs_enable_perform_bw(bool enable);

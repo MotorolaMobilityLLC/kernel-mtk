@@ -389,9 +389,10 @@ char *vcorefs_get_opp_table_info(char *p)
 	int i;
 
 	for (i = 0; i < NUM_OPP; i++) {
-		p += sprintf(p, "[OPP_%d] vcore_uv:    %d (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
+		p += sprintf(p, "[OPP_%d] vcore_uv: %d (0x%x)\n", i, opp_ctrl_table[i].vcore_uv,
 			     vcore_uv_to_pmic(opp_ctrl_table[i].vcore_uv));
-		p += sprintf(p, "[OPP_%d] ddr_khz:     %d\n", i, opp_ctrl_table[i].ddr_khz);
+		p += sprintf(p, "[OPP_%d] ddr_khz : %d\n", i, opp_ctrl_table[i].ddr_khz);
+		p += sprintf(p, "[OPP_%d] axi_khz : %d\n", i, opp_ctrl_table[i].axi_khz);
 		p += sprintf(p, "\n");
 	}
 
@@ -652,7 +653,7 @@ char *governor_get_dvfs_info(char *p)
 
 	p += sprintf(p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
 	p += sprintf(p, "[ddr  ] khz: %u\n", vcorefs_get_curr_ddr());
-	p += sprintf(p, "[axi  ] khz: %u\n", gvrctrl->curr_axi_khz);
+	p += sprintf(p, "[axi  ] khz: %u\n", ckgen_meter(1));
 	p += sprintf(p, "\n");
 
 	p += sprintf(p, "[perf_bw_en]: %d\n", gvrctrl->perform_bw_enable);
@@ -744,6 +745,8 @@ static int set_freq_with_opp(struct kicker_config *krconf)
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct opp_profile *opp_ctrl_table = opp_table;
 	int r = 0;
+
+	gvrctrl->curr_axi_khz = ckgen_meter(1);
 
 	vcorefs_crit("opp: %d, faxi: %u(%u), screen_on: %u %s\n",
 		     krconf->dvfs_opp,
@@ -1017,6 +1020,7 @@ static int init_vcorefs_cmd_table(void)
 	/* BUG_ON(gvrctrl->curr_vcore_uv == 0); */
 
 	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
+	gvrctrl->curr_axi_khz = ckgen_meter(1);
 
 	for (opp = 0; opp < NUM_OPP; opp++) {
 		switch (opp) {
