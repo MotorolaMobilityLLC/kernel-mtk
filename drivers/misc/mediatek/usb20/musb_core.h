@@ -59,6 +59,24 @@ typedef enum {
 #endif
 typedef unsigned int    kal_uint32;
 
+/* data type and MACRO used from mt_typdefs.h for UART USB SWITCH */
+typedef unsigned char   UINT8;
+typedef unsigned int    UINT32;
+
+#define WRITE_REGISTER_UINT32(reg, val)	((*(volatile UINT32 * const)(reg)) = (val))
+#define READ_REGISTER_UINT8(reg)	((*(volatile UINT8 * const)(reg)))
+#define WRITE_REGISTER_UINT8(reg, val)	((*(volatile UINT8 * const)(reg)) = (val))
+
+#define INREG8(x)           READ_REGISTER_UINT8((UINT8 *)((void *)(x)))
+#define OUTREG8(x, y)       WRITE_REGISTER_UINT8((UINT8 *)((void *)(x)), (UINT8)(y))
+#define OUTREG32(x, y)      WRITE_REGISTER_UINT32((UINT32 *)((void *)(x)), (UINT32)(y))
+
+#define DRV_Reg8(addr)              INREG8(addr)
+#define DRV_WriteReg8(addr, data)   OUTREG8(addr, data)
+#define DRV_WriteReg32(addr, data)  OUTREG32(addr, data)
+
+
+
 #ifdef MUSB_QMU_SUPPORT
 #include "mtk_qmu.h"
 #endif
