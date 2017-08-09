@@ -575,12 +575,15 @@ int mtk_uart_vfifo_get_counts(struct mtk_uart_vfifo *vfifo)
 /*---------------------------------------------------------------------------*/
 void mtk_uart_tx_vfifo_flush(struct mtk_uart *uart, int timeout)
 {
-	struct mtk_uart_dma *dma = &uart->dma_tx;
-	struct mtk_uart_vfifo *vfifo = dma->vfifo;
-	void *base = vfifo->base;
+	struct mtk_uart_dma *dma;
+	struct mtk_uart_vfifo *vfifo;
+	void *base;
 
 #ifdef ENABE_HRTIMER_FLUSH
-	if (dma && uart) {
+	if (uart) {
+		dma = &uart->dma_tx;
+		vfifo  = dma->vfifo;
+		base = vfifo->base;
 		if (UART_READ32(VFF_FLUSH(base)) == 0) {
 			reg_sync_writel(VFF_FLUSH_B, VFF_FLUSH(base));
 			if (!timeout)
@@ -606,17 +609,20 @@ void mtk_uart_tx_vfifo_flush(struct mtk_uart *uart, int timeout)
 #endif
 		}
 	} else {
-		MSG(ERR, "%p, %p\n", dma, uart);
+		MSG(ERR, "%s dma or uart ptr is null\n", __func__);
 		/* del_timer(&dma->vfifo->timer); */
 	}
 #else
-	if (dma && uart) {
+	if (uart) {
+		dma = &uart->dma_tx;
+		vfifo  = dma->vfifo;
+		base = vfifo->base;
 		if (UART_READ32(VFF_FLUSH(base)) == 0) {
 			reg_sync_writel(VFF_FLUSH_B, VFF_FLUSH(base));
 			MSG(MSC, "flush [%5X.%5X]\n", UART_READ32(VFF_RPT(base)), UART_READ32(VFF_WPT(base)));
 		}
 	} else {
-		MSG(ERR, "%p, %p\n", dma, uart);
+		MSG(ERR, "%s dma or uart ptr is null\n", __func__);
 	}
 #endif				/* ENABE_HRTIMER_FLUSH */
 }
@@ -811,7 +817,7 @@ void mtk_uart_dma_vfifo_tx_tasklet(unsigned long arg)
 	unsigned long flags;
 
 	spin_lock_irqsave(&vfifo->iolock, flags);
-	if (atomic_inc_and_test(&vfifo->entry) > 1) {
+	if (atomic_inc_return(&vfifo->entry) > 1) {
 		MSG(ERR, "tx entry!!\n");
 		tasklet_schedule(&vfifo->dma->tasklet);
 	} else {
@@ -1088,7 +1094,7 @@ void mtk_uart_dma_vfifo_rx_tasklet(unsigned long arg)
 
 	MSG(DMA, "%d, %x, %x\n", uart->read_allow(uart), UART_READ32(VFF_VALID_SIZE(vfifo->base)), vfifo->trig);
 	spin_lock_irqsave(&vfifo->iolock, flags);
-	if (atomic_inc_and_test(&vfifo->entry) > 1) {
+	if (atomic_inc_return(&vfifo->entry) > 1) {
 		MSG(ERR, "rx entry!!\n");
 		tasklet_schedule(&vfifo->dma->tasklet);
 	} else {
@@ -1569,10 +1575,10 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 	int clk_en_ret = 0;
 #endif				/* !defined(CONFIG_MTK_CLKMGR) */
 
-	setting = uart->setting;
-
 	if (!uart || uart->nport >= UART_NR)
 		return;
+
+	setting = uart->setting;
 
 	if (uart->poweron_count > 0) {
 		MSG(FUC, "%s(%d)\n", __func__, uart->poweron_count);
@@ -1622,10 +1628,10 @@ void mtk_uart_power_down(struct mtk_uart *uart)
 #ifndef CONFIG_MTK_FPGA
 	struct mtk_uart_setting *setting;
 
-	setting = uart->setting;
-
 	if (!uart || uart->nport >= UART_NR)
 		return;
+
+	setting = uart->setting;
 
 	if (uart->poweron_count == 0) {
 		MSG(FUC, "%s(%d)\n", __func__, uart->poweron_count);

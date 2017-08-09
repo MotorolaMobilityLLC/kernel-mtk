@@ -1185,14 +1185,15 @@ static struct mtk_uart_vfifo *mtk_uart_vfifo_alloc(struct mtk_uart *uart, UART_V
 
 	MSG(INFO, "(%d, %d)", uart->nport, type);
 
-	if ((uart->nport >= UART_NR) || (type >= UART_VFIFO_NUM))
+	if ((uart->nport >= (ARRAY_SIZE(mtk_uart_vfifo_port) / 2)) || (type >= UART_VFIFO_NUM))
 		vfifo = NULL;
 	else
 		vfifo = &mtk_uart_vfifo_port[2 * uart->nport + type];
 
 	if (vfifo && vfifo->addr == NULL)
 		vfifo = NULL;
-	MSG(INFO, "alloc vfifo-%d[%d](%p)\n", uart->nport, vfifo->size, vfifo->addr);
+	if (vfifo)
+		MSG(INFO, "alloc vfifo-%d[%d](%p)\n", uart->nport, vfifo->size, vfifo->addr);
 
 	spin_unlock_irqrestore(&mtk_uart_vfifo_port_lock, flags);
 	return vfifo;
@@ -2547,7 +2548,7 @@ static int mtk_uart_pm_restore_noirq(struct device *device)
 
 	uart = dev_get_drvdata(device);
 	if (!uart || !uart->setting) {
-		pr_warn("[%s] uart (%p) or uart->setting (%p) is null!!\n", __func__, uart, uart->setting);
+		pr_warn("[%s] uart or uart->setting is null!!\n", __func__);
 		return 0;
 	}
 	mtk_uart_fifo_set_trig(uart, uart->tx_trig, uart->rx_trig);

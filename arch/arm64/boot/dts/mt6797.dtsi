@@ -1246,12 +1246,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts =	<GIC_SPI 91 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
 					<GIC_SPI 108 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
 					<GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-			/*
 			clock-frequency = <26000000>;
 			clock-div = <1>;
 			clocks = <&infrasys INFRA_UART0>, <&infrasys INFRA_AP_DMA>;
 			clock-names = "uart0-main", "uart-apdma";
-			*/
 		};
 
 		apuart1: apuart1@11003000 {
@@ -1263,12 +1261,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts =	<GIC_SPI 92 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
 					<GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
 					<GIC_SPI 111 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-			/*
 			clock-frequency = <26000000>;
 			clock-div = <1>;
 			clocks = <&infrasys INFRA_UART1>;
 			clock-names = "uart1-main";
-			*/
 		};
 
 		apuart2: apuart2@11004000 {
@@ -1280,12 +1276,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts =	<GIC_SPI 93 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
 					<GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
 					<GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-			/*
 			clock-frequency = <26000000>;
 			clock-div = <1>;
 			clocks = <&infrasys INFRA_UART2>;
 			clock-names = "uart2-main";
-			*/
 		};
 
 		apuart3: apuart3@11005000 {
@@ -1297,12 +1291,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts =	<GIC_SPI 94 IRQ_TYPE_LEVEL_LOW>, /* UART IRQ */
 					<GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>, /* DMA Tx IRQ */
 					<GIC_SPI 115 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
-			/*
 			clock-frequency = <26000000>;
 			clock-div = <1>;
 			clocks = <&infrasys INFRA_UART3>;
 			clock-names = "uart3-main";
-			*/
 		};
 
 		pwm@11006000 {
