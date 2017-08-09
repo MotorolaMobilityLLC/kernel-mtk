@@ -173,6 +173,8 @@ obj-$(CONFIG_MTK_DYNAMIC_BOOST) += dynamic_boost/
 
 obj-$(CONFIG_MTK_RRC)	+= rrc/
 
+# Crypto performance tools (disable by default)
+obj-n += crypto/
 
 #widevine drm
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secwidevine/
