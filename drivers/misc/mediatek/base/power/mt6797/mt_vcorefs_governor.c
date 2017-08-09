@@ -798,9 +798,11 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
 
+#ifdef BUILD_ERROR
 	#ifndef CONFIG_MTK_FPGA
 	r = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->screen_on);
 	#endif
+#endif
 
 	if (r) {
 		vcorefs_err("FAILED: SET VCORE DVFS FAIL\n");

@@ -369,10 +369,11 @@ static ssize_t vcore_debug_show(struct kobject *kobj, struct kobj_attribute *att
 	p += sprintf(p, "\n");
 #endif
 
+#ifdef BUILD_ERROR
 #ifndef CONFIG_MTK_FPGA
 	p = spm_vcorefs_dump_dvfs_regs(p);
 #endif
-
+#endif
 	return p - buf;
 }
 
