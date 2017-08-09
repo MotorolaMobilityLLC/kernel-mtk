@@ -84,7 +84,7 @@ static u32 strobe_Res;
 static u32 strobe_Timeus;
 static BOOL g_strobe_On;
 
-static int g_duty = -1;
+static int gDuty = -1;
 static int g_timeOutTimeMs;
 
 static DEFINE_MUTEX(g_strobeSem);
@@ -305,7 +305,7 @@ int readReg(int reg)
 
 	int val;
 
-	val = LM3642_read_reg(LM3642_i2c_client, reg);
+	val = RT4505_read_reg(RT4505_i2c_client, reg);
 	return (int)val;
 }
 
@@ -418,7 +418,7 @@ static int constant_flashlight_ioctl(unsigned int cmd, unsigned long arg)
 	iow_shift = cmd - (_IOW(FLASHLIGHT_MAGIC, 0, int));
 	iowr_shift = cmd - (_IOWR(FLASHLIGHT_MAGIC, 0, int));
 /*	PK_DBG
-	    ("LM3642 constant_flashlight_ioctl() line=%d ior_shift=%d, iow_shift=%d iowr_shift=%d arg=%d\n",
+	    ("RT4505 constant_flashlight_ioctl() line=%d ior_shift=%d, iow_shift=%d iowr_shift=%d arg=%d\n",
 	     __LINE__, ior_shift, iow_shift, iowr_shift, (int)arg);
 */
 	switch (cmd) {
@@ -446,7 +446,7 @@ static int constant_flashlight_ioctl(unsigned int cmd, unsigned long arg)
 			if (g_timeOutTimeMs != 0) {
 				ktime_t ktime;
 
-				ktime = ktime_set(s, ms * 1000000);
+				ktime = ktime_set(0, g_timeOutTimeMs * 1000000);
 				hrtimer_start(&g_timeOutTimer, ktime, HRTIMER_MODE_REL);
 			}
 			FL_Enable();
