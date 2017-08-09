@@ -18,7 +18,7 @@
 
 /* local includes */
 #include "mt_hotplug_strategy_internal.h"
-
+#include "mt_ptp.h"
 /* forward references */
 
 /*============================================================================*/
@@ -297,8 +297,10 @@ void hps_algo_main(void)
 			}
 		}
 	}
-	if (hps_algo_heavytsk_det())
-		hps_sys.action_id = 0xE1;
+	if (infoIdvfs != 0x55) {
+		if (hps_algo_heavytsk_det())
+			hps_sys.action_id = 0xE1;
+	}
 	/*
 	 * algo - end
 	 */

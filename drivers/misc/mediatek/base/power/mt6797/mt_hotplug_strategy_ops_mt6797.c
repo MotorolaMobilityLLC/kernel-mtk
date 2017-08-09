@@ -13,7 +13,7 @@
 /* local includes */
 #include "mt_hotplug_strategy_internal.h"
 #include "mt_hotplug_strategy.h"
-
+#include "mt_ptp.h"
 /* forward references */
 
 /*============================================================================*/
@@ -97,7 +97,8 @@ static int hps_algo_rush_boost(void)
 		hps_cal_core_num(&hps_sys, val, base_val);
 
 		/*Disable rush boost in big cluster */
-		/*hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;*/
+		if (infoIdvfs == 0x55)
+			hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;
 		return 1;
 	} else
 		return 0;
@@ -141,7 +142,8 @@ static int hps_algo_up(void)
 				hps_cal_core_num(&hps_sys, val, base_val);
 
 				/*Disable operation of in big cluster */
-				/*hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;*/
+				if (infoIdvfs == 0x55)
+					hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;
 				return 1;
 			}
 		}		/* if (hps_ctxt.up_loads_count >= hps_ctxt.up_times) */
@@ -190,7 +192,8 @@ static int hps_algo_down(void)
 			hps_cal_core_num(&hps_sys, val, base_val);
 
 			/*Disable operation of  big cluster */
-			/*hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;*/
+			if (infoIdvfs == 0x55)
+				hps_sys.cluster_info[HPS_BIG_CLUSTER_ID].target_core_num = 0;
 			return 1;
 		}		/* if (hps_ctxt.down_loads_count >= hps_ctxt.down_times) */
 	}
