@@ -8135,73 +8135,17 @@ tune:
 static void msdc_check_write_timeout(struct work_struct *work)
 {
 	struct msdc_host *host = container_of(work, struct msdc_host, write_timeout.work);
-
-	struct mmc_data  *data = host->data;
 	struct mmc_request *mrq = host->mrq;
-	struct mmc_host *mmc = host->mmc;
 
-	u32 status = 0;
-	u32 state = 0;
-	u32 err = 0;
-	unsigned long tmo;
 
-	if (!data || !mrq || !mmc)
+	if (!mrq)
 		return;
 
 	pr_err("[%s]: XXX DMA Data Write Busy Timeout: %u ms, CMD<%d>",
 		__func__, host->write_timeout_ms, mrq->cmd->opcode);
+	msdc_dump_info(host->id);
 
-	if (msdc_async_use_dma(data->host_cookie) && (host->tune == 0)) {
-		msdc_dump_info(host->id);
-
-		msdc_dma_stop(host);
-		msdc_dma_clear(host);
-		msdc_reset_hw(host->id);
-
-		tmo = jiffies + POLLING_BUSY;
-
-		spin_lock(&host->lock);
-		do {
-			err = msdc_get_card_status(mmc, host, &status);
-			if (err) {
-				ERR_MSG("CMD13 ERR<%d>", err);
-				break;
-			}
-
-			state = R1_CURRENT_STATE(status);
-			ERR_MSG("check card state<%d>", state);
-			if (state == R1_STATE_DATA || state == R1_STATE_RCV) {
-				ERR_MSG("state<%d> need cmd12 to stop", state);
-				msdc_send_stop(host);
-			} else if (state == R1_STATE_PRG) {
-				ERR_MSG("state<%d> card is busy", state);
-				spin_unlock(&host->lock);
-				msleep(100);
-				spin_lock(&host->lock);
-			}
-
-			if (time_after(jiffies, tmo)) {
-				ERR_MSG("abort timeout. Card stuck in %d state, bad card! remove it!" , state);
-				spin_unlock(&host->lock);
-				/*	if (MSDC_SD == host->hw->host_function)
-					msdc_set_bad_card_and_remove(host);*/
-				spin_lock(&host->lock);
-				break;
-			}
-		} while (state != R1_STATE_TRAN);
-		spin_unlock(&host->lock);
-
-		data->error = (unsigned int)-ETIMEDOUT;
-		host->sw_timeout++;
-
-		if (mrq->done)
-			mrq->done(mrq);
-
-		msdc_gate_clock(host, 1);
-		host->error |= REQ_DAT_ERR;
-	}
 }
-
 /* called by msdc_drv_probe */
 
 static void msdc_init_hw(struct msdc_host *host)

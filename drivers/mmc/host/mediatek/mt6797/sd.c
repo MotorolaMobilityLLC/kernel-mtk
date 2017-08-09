@@ -669,7 +669,7 @@ void msdc_set_smpl_all(struct msdc_host *host, u8 HS400)
 /*sd card change voltage wait time= (1/freq) * SDC_VOL_CHG_CNT(default 0x145)*/
 #define msdc_set_vol_change_wait_count(count) \
 	MSDC_SET_FIELD(SDC_VOL_CHG, SDC_VOL_CHG_CNT, (count))
-
+#if 0
 static void msdc_set_bad_card_and_remove(struct msdc_host *host)
 {
 	int got_polarity = 0;
@@ -707,6 +707,7 @@ static void msdc_set_bad_card_and_remove(struct msdc_host *host)
 			host->block_bad_card, host->card_inserted);
 	}
 }
+#endif
 /*
 unsigned int msdc_do_command(struct msdc_host *host,
 	struct mmc_command *cmd, int tune, unsigned long timeout);
@@ -4711,81 +4712,17 @@ tune:   /* DMA DATA transfer crc error */
  * It may occur when write crc revice, but busy over data->timeout_ns   */
 static void msdc_check_write_timeout(struct work_struct *work)
 {
-	struct msdc_host *host = container_of(work, struct msdc_host,
-			write_timeout.work);
-	void __iomem *base = host->base;
-
-	struct mmc_data  *data = host->data;
+	struct msdc_host *host = container_of(work, struct msdc_host, write_timeout.work);
 	struct mmc_request *mrq = host->mrq;
-	struct mmc_host *mmc = host->mmc;
 
-	u32 status = 0;
-	u32 state = 0;
-	u32 err = 0;
-	unsigned long tmo;
 
-	if (!data || !mrq || !mmc)
+	if (!mrq)
 		return;
 
 	pr_err("[%s]: XXX DMA Data Write Busy Timeout: %u ms, CMD<%d>",
 		__func__, host->write_timeout_ms, mrq->cmd->opcode);
+	msdc_dump_info(host->id);
 
-	if (msdc_use_async_dma(data->host_cookie) && (host->tune == 0)) {
-		msdc_dump_info(host->id);
-
-		msdc_dma_stop(host);
-		msdc_dma_clear(host);
-		msdc_reset_hw(host->id);
-
-		tmo = jiffies + POLLING_BUSY;
-
-		/* check the card state, try to bring back to trans state */
-		spin_lock(&host->lock);
-		do {
-			/* if anything goes wrong,
-			 * let block driver do the error handling.
-			 */
-			err = msdc_get_card_status(mmc, host, &status);
-			if (err) {
-				ERR_MSG("CMD13 ERR<%d>", err);
-				break;
-			}
-
-			state = R1_CURRENT_STATE(status);
-			ERR_MSG("check card state<%d>", state);
-			if (state == R1_STATE_DATA || state == R1_STATE_RCV) {
-				ERR_MSG("state<%d> need cmd12 to stop", state);
-				msdc_send_stop(host);
-			} else if (state == R1_STATE_PRG) {
-				ERR_MSG("state<%d> card is busy", state);
-				spin_unlock(&host->lock);
-				msleep(100);
-				spin_lock(&host->lock);
-			}
-
-			if (time_after(jiffies, tmo)) {
-				ERR_MSG("abort timeout. Card stuck in %d state, remove it!", state);
-				spin_unlock(&host->lock);
-				msdc_set_bad_card_and_remove(host);
-				spin_lock(&host->lock);
-				break;
-			}
-		} while (state != R1_STATE_TRAN);
-		spin_unlock(&host->lock);
-
-		data->error = (unsigned int)-ETIMEDOUT;
-		host->sw_timeout++;
-
-		if (mrq->done)
-			mrq->done(mrq);
-
-		msdc_gate_clock(host, 1);
-		host->error |= REQ_DAT_ERR;
-	} else {
-		;
-		/* do nothing, since legacy mode & async tuning has it own timeout. */
-		/* complete(&host->xfer_done); */
-	}
 }
 /* called by msdc_ops_set_ios */
 static void msdc_init_hw(struct msdc_host *host)
