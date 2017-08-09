@@ -13,7 +13,7 @@
 /*--------------DEFAULT SETTING-------------------*/
 
 #define TARGET_CORE (3)
-#define TARGET_FREQ (858000)
+#define TARGET_FREQ (819000)
 
 /*-----------------------------------------------*/
 
