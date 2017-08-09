@@ -15,6 +15,14 @@
 //#define CONFIG_DIS_CHECK_BATTERY
 //#define FIXED_TBAT_25
 */
+
+#if defined(CONFIG_MTK_BQ24196_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+#define SWCHR_POWER_PATH
+#define EXTERNAL_SWCHR_SUPPORT
+#endif
+
 /* ADC resistor  */
 #define R_BAT_SENSE 4
 #define R_I_SENSE 4
@@ -142,6 +150,14 @@
 //#define CONFIG_DIS_CHECK_BATTERY
 //#define FIXED_TBAT_25
 */
+
+#if defined(CONFIG_MTK_BQ24196_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+#define SWCHR_POWER_PATH
+#define EXTERNAL_SWCHR_SUPPORT
+#endif
+
 /* ADC resistor  */
 #define R_BAT_SENSE 4
 #define R_I_SENSE 4
@@ -271,6 +287,14 @@
 //#define CONFIG_DIS_CHECK_BATTERY
 //#define FIXED_TBAT_25
 */
+
+#if defined(CONFIG_MTK_BQ24196_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24296_SUPPORT) \
+	|| defined(CONFIG_MTK_BQ24261_SUPPORT)
+#define SWCHR_POWER_PATH
+#define EXTERNAL_SWCHR_SUPPORT
+#endif
+
 /* ADC resistor  */
 #define R_BAT_SENSE 4
 #define R_I_SENSE 4

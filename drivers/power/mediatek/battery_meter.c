@@ -477,6 +477,12 @@ int __batt_meter_init_cust_data_from_cust_header(void)
 	batt_meter_cust_data.close_poweroff_wakeup_period = CLOSE_POWEROFF_WAKEUP_PERIOD;
 #endif
 
+#if defined(IS_BATTERY_REMOVE_BY_PMIC)
+	batt_meter_cust_data.vbat_remove_detection = 1;
+#else	/* #if defined(IS_BATTERY_REMOVE_BY_PMIC) */
+	batt_meter_cust_data.vbat_remove_detection = 0;
+#endif	/* #if defined(IS_BATTERY_REMOVE_BY_PMIC) */
+
 	return 0;
 }
 
@@ -757,6 +763,9 @@ int __batt_meter_init_cust_data_from_dt(void)
 
 	__batt_meter_parse_node(np, "close_poweroff_wakeup_period",
 		&batt_meter_cust_data.close_poweroff_wakeup_period);
+
+	__batt_meter_parse_node(np, "vbat_remove_detection",
+		&batt_meter_cust_data.vbat_remove_detection);
 
 	of_node_put(np);
 
@@ -1985,7 +1994,8 @@ void dod_init(void)
 
 
 #if defined(IS_BATTERY_REMOVE_BY_PMIC)
-	if (is_battery_remove_pmic() == 0 && (g_rtc_fg_soc != 0)) {
+	if (is_battery_remove_pmic() == 0 && (g_rtc_fg_soc != 0)
+		&& batt_meter_cust_data.vbat_remove_detection) {
 		bm_print(BM_LOG_CRTI, "[FGADC]is_battery_remove()==0 , use rtc_fg_soc%d\n",
 			 g_rtc_fg_soc);
 		gFG_capacity_by_v = g_rtc_fg_soc;

@@ -121,6 +121,7 @@ struct battery_meter_custom_data {
 	int cust_poweron_delta_hw_sw_ocv_capacity_tolrance;
 
 	int fixed_tbat_25;
+	int vbat_remove_detection;
 
 	/* Dynamic change wake up period of battery thread when suspend */
 	int vbat_normal_wakeup;
