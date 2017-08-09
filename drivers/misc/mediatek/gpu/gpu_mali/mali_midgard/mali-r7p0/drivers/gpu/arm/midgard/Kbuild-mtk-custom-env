@@ -44,13 +44,8 @@ ccflags-y += \
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/gpu/ged/include
 
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6797")
-$(info "GPU COMMON_DVFS disable")
-else
-$(info "GPU COMMON_DVFS enable")
 ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
 ccflags-y += -DENABLE_COMMON_DVFS
-endif
 endif
 
 VER := $(if $(filter eng,$(TARGET_BUILD_VARIANT)),eng,user)
