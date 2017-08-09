@@ -207,9 +207,14 @@ int __attribute__((weak)) localtimer_set_next_event(unsigned long evt)
 	return 0;
 }
 
-void __attribute__((weak)) hp_enable_timer(int enable)
+int __attribute__((weak)) hps_del_timer(void)
 {
+	return 0;
+}
 
+int __attribute__((weak)) hps_restart_timer(void)
+{
+	return 0;
 }
 
 void __attribute__((weak)) MMProfileEnable(int enable)
@@ -1344,6 +1349,7 @@ static noinline void go_to_rgidle(int cpu)
  */
 static inline void soidle_pre_handler(void)
 {
+	hps_del_timer();
 #ifdef CONFIG_THERMAL
 	/* cancel thermal hrtimer for power saving */
 	tscpu_cancel_thermal_timer();
@@ -1360,6 +1366,7 @@ static inline void soidle_pre_handler(void)
 
 static inline void soidle_post_handler(void)
 {
+	hps_restart_timer();
 #ifdef CONFIG_THERMAL
 	/* restart thermal hrtimer for update temp info */
 	tscpu_start_thermal_timer();
@@ -1384,6 +1391,7 @@ u32 slp_spm_deepidle_flags = {
 
 static inline void dpidle_pre_handler(void)
 {
+	hps_del_timer();
 #ifdef CONFIG_THERMAL
 	/* cancel thermal hrtimer for power saving */
 	tscpu_cancel_thermal_timer();
@@ -1398,6 +1406,7 @@ static inline void dpidle_pre_handler(void)
 }
 static inline void dpidle_post_handler(void)
 {
+	hps_restart_timer();
 #ifdef CONFIG_THERMAL
 	/* restart thermal hrtimer for update temp info */
 	tscpu_start_thermal_timer();
