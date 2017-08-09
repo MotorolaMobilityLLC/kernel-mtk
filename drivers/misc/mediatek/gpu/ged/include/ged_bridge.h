@@ -18,6 +18,7 @@
 #include "ged_log.h"
 #include "ged_type.h"
 
+
 typedef struct _GED_BRIDGE_PACKAGE
 {
     unsigned int    ui32FunctionID;
@@ -54,6 +55,7 @@ typedef enum
     GED_BRIDGE_COMMAND_NOTIFY_VSYNC,
     GED_BRIDGE_COMMAND_DVFS_PROBE,
     GED_BRIDGE_COMMAND_DVFS_UM_RETURN,
+	GED_BRIDGE_COMMAND_EVENT_NOTIFY,
 } GED_BRIDGE_COMMAND_ID;
 
 #define GED_BRIDGE_IO_LOG_BUF_GET			GED_IOWR(GED_BRIDGE_COMMAND_LOG_BUF_GET)
@@ -65,6 +67,7 @@ typedef enum
 #define GED_BRIDGE_IO_NOTIFY_VSYNC       GED_IOWR(GED_BRIDGE_COMMAND_NOTIFY_VSYNC)
 #define GED_BRIDGE_IO_DVFS_PROBE       GED_IOWR(GED_BRIDGE_COMMAND_DVFS_PROBE)
 #define GED_BRIDGE_IO_DVFS_UM_RETURN GED_IOWR(GED_BRIDGE_COMMAND_DVFS_UM_RETURN)
+#define GED_BRIDGE_IO_EVENT_NOTIFY GED_IOWR(GED_BRIDGE_COMMAND_EVENT_NOTIFY)
 
 /*****************************************************************************
  *  LOG_BUF_GET
@@ -224,6 +227,23 @@ typedef struct GED_BRIDGE_OUT_DVFS_UM_RETURN_TAG
 } GED_BRIDGE_OUT_DVFS_UM_RETURN;
 
 /*****************************************************************************
+ *  EVENT NOTIFY
+ *****************************************************************************/
+
+/* Bridge in structure for EVENT_NOTIFY */
+typedef struct GED_BRIDGE_IN_EVENT_NOTIFY_TAG
+{
+   GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent; 
+   bool bSwitch;
+} GED_BRIDGE_IN_EVENT_NOTIFY;
+
+/* Bridge out structure for EVENT_NOTIFY */
+typedef struct GED_BRIDGE_OUT_EVENT_NOTIFY_TAG
+{
+    GED_ERROR eError;
+} GED_BRIDGE_OUT_EVENT_NOTIFY;
+
+/*****************************************************************************
  *  BRIDGE FUNCTIONS
  *****************************************************************************/
 
@@ -262,5 +282,9 @@ int ged_bridge_dvfs_probe(
 int ged_bridge_dvfs_um_retrun(
     GED_BRIDGE_IN_DVFS_UM_RETURN *psDVFS_UM_returnINT, 
     GED_BRIDGE_OUT_DVFS_UM_RETURN *psDVFS_UM_returnOUT);
+
+int ged_bridge_event_notify(
+		GED_BRIDGE_IN_EVENT_NOTIFY *psEVENT_NOTIFYINT, 
+		GED_BRIDGE_OUT_EVENT_NOTIFY *psEVENT_NOTIFYOUT);
 
 #endif

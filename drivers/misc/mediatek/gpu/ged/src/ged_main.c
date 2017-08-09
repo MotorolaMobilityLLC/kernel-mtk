@@ -141,6 +141,9 @@ static long ged_dispatch(GED_BRIDGE_PACKAGE *psBridgePackageKM)
 			case GED_BRIDGE_COMMAND_DVFS_UM_RETURN:
 				pFunc = (ged_bridge_func_type*)ged_bridge_dvfs_um_retrun;
 				break;
+			case GED_BRIDGE_COMMAND_EVENT_NOTIFY:
+				pFunc = (ged_bridge_func_type*)ged_bridge_event_notify;
+				break;
 			default:
 				GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));
 				break;

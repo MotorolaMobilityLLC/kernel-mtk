@@ -291,15 +291,16 @@ GED_DVFS_TUNING_MODE ged_dvfs_get_tuning_mode()
 
 
 
-void ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent, bool bSwitch)
+GED_ERROR ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent, bool bSwitch)
 {
 	unsigned int  ui32BeforeSwitchInterpret;
 	unsigned int  ui32BeforeDebugInterpret;
+	GED_ERROR ret=GED_OK;
 	mutex_lock(&gsVSyncOffsetLock);
 
 	ui32BeforeSwitchInterpret = g_ui32EventStatus;
 	ui32BeforeDebugInterpret = g_ui32EventDebugStatus;
-
+	
 	switch(eEvent)
 	{
 		case GED_DVFS_VSYNC_OFFSET_FORCE_ON:
@@ -333,18 +334,30 @@ void ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent,
 		case GED_DVFS_VSYNC_OFFSET_GAS_EVENT:
 			(bSwitch)? (g_ui32EventStatus|=GED_EVENT_GAS): (g_ui32EventStatus&= (~GED_EVENT_GAS));
 			ged_monitor_3D_fence_set_enable(!bSwitch);
-			ged_dvfs_probe_signal(GED_GAS_SIGNAL_EVENT);
+			ret = ged_dvfs_probe_signal(GED_GAS_SIGNAL_EVENT);
 			break;
 		case GED_DVFS_VSYNC_OFFSET_LOW_POWER_MODE_EVENT:
 			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_LOW_POWER_MODE) : (g_ui32EventStatus &= (~GED_EVENT_LOW_POWER_MODE));
-			ged_dvfs_probe_signal(GED_LOW_POWER_MODE_SIGNAL_EVENT);
+			ret = ged_dvfs_probe_signal(GED_LOW_POWER_MODE_SIGNAL_EVENT);
 			break;
 		case GED_DVFS_VSYNC_OFFSET_MHL4K_VID_EVENT:
 			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_MHL4K_VID) : (g_ui32EventStatus &= (~GED_EVENT_MHL4K_VID));
-			ged_dvfs_probe_signal(GED_MHL4K_VID_SIGNAL_EVENT);
+			ret = ged_dvfs_probe_signal(GED_MHL4K_VID_SIGNAL_EVENT);
 			break;
+		case GED_DVFS_BOOST_HOST_EVENT:
+			if(bSwitch)
+			{
+				g_ui32EventStatus|=GED_EVENT_BOOST_HOST;
+				ret = ged_dvfs_probe_signal(GED_SIGNAL_BOOST_HOST_EVENT);
+			}
+			else
+			{
+				g_ui32EventStatus&= (~GED_EVENT_BOOST_HOST);
+			}
+			goto CHECK_OUT;
 		default:
 			GED_LOGE("%s: not acceptable event:%u \n", __func__,  eEvent); 
+			ret = GED_ERROR_INVALID_PARAMS;
 			goto CHECK_OUT;
 	}
 
@@ -353,11 +366,12 @@ void ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eEvent,
 	{
 		ged_log_trace_counter("vsync-offset event",g_ui32EventStatus);
 		ged_log_trace_counter("vsync-offset debug",g_ui32EventDebugStatus);
-		ged_dvfs_probe_signal(GED_DVFS_VSYNC_OFFSET_SIGNAL_EVENT);
+		ret = ged_dvfs_probe_signal(GED_DVFS_VSYNC_OFFSET_SIGNAL_EVENT);
 	}
 
 CHECK_OUT:    
 	mutex_unlock(&gsVSyncOffsetLock);
+	return ret;
 }
 
 void ged_dvfs_vsync_offset_level_set(int i32level)
@@ -897,7 +911,7 @@ void ged_dvfs_get_gpu_pre_freq(GED_DVFS_FREQ_DATA* psData)
 
 
 
-void ged_dvfs_probe_signal(int signo)
+GED_ERROR ged_dvfs_probe_signal(int signo)
 {
 	int cache_pid=GED_NO_UM_SERVICE;
 	struct task_struct *t=NULL;
@@ -921,11 +935,13 @@ void ged_dvfs_probe_signal(int signo)
 	{
 		send_sig_info(signo, &info, t);
 		ged_log_buf_print(ghLogBuf_ged_srv, "[GED_K] send signo %d to ged_srv [%d]",signo, g_probe_pid);
+		return GED_OK;
 	}
 	else
 	{
 		g_probe_pid = GED_NO_UM_SERVICE;
 		ged_log_buf_print(ghLogBuf_ged_srv, "[GED_K] ged_srv not running");
+		return GED_ERROR_INVALID_PARAMS;
 	}
 
 

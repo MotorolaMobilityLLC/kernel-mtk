@@ -131,4 +131,13 @@ int ged_bridge_dvfs_um_retrun(
 	return 0;
 }
 
-
+//-----------------------------------------------------------------------------
+int ged_bridge_event_notify(
+		GED_BRIDGE_IN_EVENT_NOTIFY *psEVENT_NOTIFYINT, 
+		GED_BRIDGE_OUT_EVENT_NOTIFY *psEVENT_NOTIFYOUT)
+{
+	psEVENT_NOTIFYOUT->eError = 
+		ged_dvfs_vsync_offset_event_switch(psEVENT_NOTIFYINT->eEvent, 
+											psEVENT_NOTIFYINT->bSwitch);
+	return 0;
+}
