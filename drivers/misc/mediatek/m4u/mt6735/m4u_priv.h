@@ -7,7 +7,6 @@
 #include <linux/platform_device.h>
 #include <linux/miscdevice.h>
 
-/* #include <linux/mmprofile.h> */
 #include "m4u.h"
 #include "m4u_reg.h"
 #include "m4u_pgtable.h"
@@ -28,7 +27,7 @@
 /* #define M4U_PROFILE */
 
 #ifndef M4U_PROFILE
-#define MMProfileLogEx(...)
+/* #define MMProfileLogEx(...) */
 #define MMProfileEnable(...)
 #define MMProfileStart(...)
 #endif
@@ -323,5 +322,8 @@ int m4u_larb_restore_sec(unsigned int larb_idx);
 int m4u_config_port_array_tee(unsigned char *port_array);
 int m4u_sec_init(void);
 #endif
+
+#include <mmprofile.h>
+extern MMP_Event M4U_MMP_Events[M4U_MMP_MAX];
 
 #endif

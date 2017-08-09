@@ -33,8 +33,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
-/* #include <linux/mmprofile.h> */
-
 #ifdef M4U_TEE_SERVICE_ENABLE
 
 #include "mobicore_driver_api.h"
