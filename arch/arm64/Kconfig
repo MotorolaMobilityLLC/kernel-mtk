@@ -421,6 +421,7 @@ config ARCH_ELBRUS
         select CPU_IDLE
         select MTK_BASE_POWER
         select MTK_TIMER
+	select MTK_GIC_V3_EXT
 
         help
           This enables support for MediaTek Elbrus
