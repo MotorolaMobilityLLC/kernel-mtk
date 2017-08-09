@@ -41,9 +41,11 @@ struct kicker_config {
 
 /* Vcore 1.0 <=> trans1 <=> trans2 <=> Vcore 0.9 (SPM control) */
 enum vcore_trans {
-	TRANS1,
+	TRANS4,
+	TRANS3,
 	TRANS2,
-	NUM_TRANS
+	TRANS1,
+	NUM_TRANS,
 };
 
 enum dvfs_kicker {
@@ -67,7 +69,7 @@ enum dvfs_opp {
 	OPP_OFF = -1,
 	OPP_0 = 0,
 	OPP_1,
-	NUM_OPP
+	NUM_OPP,
 };
 
 #define OPPI_PERF OPP_0

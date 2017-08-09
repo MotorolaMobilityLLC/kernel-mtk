@@ -585,14 +585,14 @@ int spm_module_init(void)
 	}
 #elif defined(CONFIG_ARCH_MT6797)
 	if (spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR) == 0)
-		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) | SPM_SCREEN_ON_HPM);
+		spm_write(PCM_REG6_DATA, (spm_read(SPM_SW_RSV_5) & ~(SPM_VCORE_STA_REG)) | SPM_SCREEN_ON_HPM);
 	else if (spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR) == 1)
-		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) | SPM_SCREEN_ON_LPM);
+		spm_write(PCM_REG6_DATA, (spm_read(SPM_SW_RSV_5) & ~(SPM_VCORE_STA_REG)) | SPM_SCREEN_ON_LPM);
 	else
-		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) | SPM_SCREEN_OFF_LPM);
+		spm_write(PCM_REG6_DATA, (spm_read(SPM_SW_RSV_5) & ~(SPM_VCORE_STA_REG)) | SPM_SCREEN_OFF_LPM);
 
-	spm_crit2("[VcoreFS] SPM_SW_RSV_5: 0x%x, dramc shuf addr: %p, val: 0x%x\n",
-							spm_read(SPM_SW_RSV_5),
+	spm_crit2("[VcoreFS] PCM_REG6_DATA: 0x%x, dramc shuf addr: %p, val: 0x%x\n",
+							spm_read(PCM_REG6_DATA),
 							spm_ddrphy_base + SPM_SHUFFLE_ADDR,
 							spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR));
 #endif

@@ -24,17 +24,18 @@
 #define SPM_SCREEN_SETTING_DONE		0xB
 #define SPM_OFFLOAD			0xF
 
-/*
- * SPM_SW_RSV_5[1:0]: F/W do DVFS target state
- * 0x0:1600, 0x1:1270, 0x2:1066
- */
-#define SPM_SCREEN_ON_HPM	0x3	/* 1.0/1600 */
-#define SPM_SCREEN_ON_LPM	0x2	/* 0.9/1270 */
-#define SPM_SCREEN_OFF_HPM	0x1	/* 0.9/1270 */
-#define SPM_SCREEN_OFF_LPM	0x0	/* 0.9/1066 */
+/* PCM_REG6_DATA[24:23]: F/W do DVFS target state */
+#define SPM_VCORE_STA_REG	((1 << 23) | (1 << 24))
+#define SPM_SCREEN_ON_HPM	(0x3 << 23)
+#define SPM_SCREEN_ON_LPM	(0x2 << 23)
+#define SPM_SCREEN_OFF_HPM	(0x1 << 23)
+#define SPM_SCREEN_OFF_LPM	(0x0 << 23)
 
 /* read shuffle value for mapping ddr freq */
 #define SPM_SHUFFLE_ADDR	0x63c
+
+#define SPM_FLAG_DVFS_ACTIVE	(1 << 22)
+#define MASK_MD_DVFS_REQ	0x0
 
 /* load fw for boot up */
 extern void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data, bool screen_on, u32 cpu_dvfs_req);
