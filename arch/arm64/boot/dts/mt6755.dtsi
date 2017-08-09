@@ -1224,9 +1224,12 @@
 		};
 
 		dvfsp@10227000 {
-			compatible = "mediatek,dvfsp";
-			reg = <0x10227000 0x1000>;
+			compatible = "mediatek,mt6755-dvfsp";
+			reg = <0x10227000 0x1000>,
+			      <0x0011c000 0xf80>;
 			interrupts = <GIC_SPI 152 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&infrasys INFRA_I2C3>;
+			clock-names = "i2c";
 		};
 
 		met_cci400@10390000 {
