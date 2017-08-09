@@ -43,7 +43,7 @@
 
 #include "mach/mt_freqhopping.h"
 
-/* #define STATIC_PWR_READY2USE */
+#define STATIC_PWR_READY2USE
 #ifdef STATIC_PWR_READY2USE
 #include "mt_static_power.h"
 #endif
