@@ -8,6 +8,12 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 
+/* Remove me for phone, temporal for EVB boot up */
+#define CONFIG_MTK_CLKMGR
+#define enable_clock(...)
+#define disable_clock(...)
+/* End */
+
 static m4u_domain_t gM4uDomain;
 
 static unsigned long gM4UBaseAddr[TOTAL_M4U_NUM];
