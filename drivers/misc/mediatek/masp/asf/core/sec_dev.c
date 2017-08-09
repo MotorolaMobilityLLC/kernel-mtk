@@ -222,14 +222,13 @@ void sec_dev_find_parts(void)
 	/* open proc device           */
 	/* -------------------------- */
 #if defined(CONFIG_MTK_GPT_SCHEME_SUPPORT)
-
+#if defined(CONFIG_MTK_EMMC_SUPPORT)
 	/* -------------------------- */
-	/* open proc/partinfo         */
+	/* open proc/emmc             */
 	/* -------------------------- */
-	SMSG(TRUE, "[%s] open /proc/partinfo\n", MOD);
-	fd = ASF_OPEN("/proc/partinfo");
-
-
+	SMSG(TRUE, "[%s] open /proc/emmc\n", MOD);
+	fd = ASF_OPEN("/proc/emmc");
+#endif
 #else
 
 	if (TRUE == sec_usif_enabled()) {
@@ -267,7 +266,7 @@ void sec_dev_find_parts(void)
 #if defined(CONFIG_MTK_GPT_SCHEME_SUPPORT)
 		int m_num;
 		unsigned long long m_sz, m_off;
-		char m_name[16];
+		char m_name[16], m_part[16];
 
 		m_name[0] = '\0';
 		m_num = -1;
@@ -275,9 +274,14 @@ void sec_dev_find_parts(void)
 		m_num++;
 
 		/* -------------------------- */
-		/* parsing proc/parinfo  */
+		/* parsing proc/emmc          */
 		/* -------------------------- */
-		cnt = sscanf(pmtdbufp, "%15s %llx %llx", m_name, &m_off, &m_sz);
+		cnt = sscanf(pmtdbufp, "%15s %llx %llx \"%15s", m_part, &m_off, &m_sz, m_name);
+		m_off *= 512;
+		m_sz *= 512;
+		if (m_name[strlen(m_name)-1] == '\"')
+			m_name[strlen(m_name)-1] = '\0';
+
 		/* SMSG(TRUE,"[%s] find parts %s, off 0x%llx, size 0x%llx\n",MOD,m_name,m_off,m_sz); */
 
 
@@ -546,7 +550,7 @@ int sec_dev_read_rom_info(void)
 	/* ------------------------ */
 #if defined(CONFIG_MTK_GPT_SCHEME_SUPPORT)
 
-	/* in GPT case, preloader is not in /proc/partinfo */
+	/* in GPT case, preloader is not in /proc/emmc */
 	for (search_offset = ROM_INFO_SEARCH_START;
 	     search_offset < (search_len + ROM_INFO_SEARCH_START);
 	     search_offset += ROM_INFO_SEARCH_REGION) {
