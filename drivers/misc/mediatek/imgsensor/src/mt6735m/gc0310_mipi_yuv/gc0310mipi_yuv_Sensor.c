@@ -335,7 +335,7 @@ void GC0310_set_brightness(UINT16 para)
         case ISP_BRIGHT_LOW:
 		//case AE_EV_COMP_n13:
 			GC0310_write_cmos_sensor(0xd5, 0xc0);
-			Sleep(200);
+			Sleep(5);
 			
 		//	GC0310_SET_PAGE1;
 		//	GC0310_write_cmos_sensor(0x13, 0x30);
@@ -344,7 +344,7 @@ void GC0310_set_brightness(UINT16 para)
         case ISP_BRIGHT_HIGH:
 		//case AE_EV_COMP_13:
 			GC0310_write_cmos_sensor(0xd5, 0x70);
-			Sleep(200);
+			Sleep(5);
 		//	GC0310_SET_PAGE1;
 		//	GC0310_write_cmos_sensor(0x13, 0x90);
 		//	GC0310_SET_PAGE0;
@@ -353,7 +353,7 @@ void GC0310_set_brightness(UINT16 para)
         default:
 		//case AE_EV_COMP_00:
 			GC0310_write_cmos_sensor(0xd5, 0x40);
-			Sleep(200);
+			Sleep(5);
 		//	GC0310_SET_PAGE1;
 		//	GC0310_write_cmos_sensor(0x13, 0x60);
 		//	GC0310_SET_PAGE0;
@@ -1802,22 +1802,22 @@ BOOL GC0310_set_param_banding(UINT16 para)
 		case AE_FLICKER_MODE_60HZ:
 			GC0310_write_cmos_sensor(0xfe, 0x00); 
 			GC0310_write_cmos_sensor(0x05, 0x01); 	
-			GC0310_write_cmos_sensor(0x06, 0x13); 
+			GC0310_write_cmos_sensor(0x06, 0x58); 
 			GC0310_write_cmos_sensor(0x07, 0x00);
-			GC0310_write_cmos_sensor(0x08, 0x10);
+			GC0310_write_cmos_sensor(0x08, 0x32);
 			
 			GC0310_write_cmos_sensor(0xfe, 0x01);
 			GC0310_write_cmos_sensor(0x25, 0x00);   //anti-flicker step [11:8]
-			GC0310_write_cmos_sensor(0x26, 0x81);	//anti-flicker step [7:0]
+			GC0310_write_cmos_sensor(0x26, 0xd0);	//anti-flicker step [7:0]
 			
-			GC0310_write_cmos_sensor(0x27, 0x01);	//exp level 0  30fps
-			GC0310_write_cmos_sensor(0x28, 0x83); 
-			GC0310_write_cmos_sensor(0x29, 0x04);	//exp level 1  15fps
-			GC0310_write_cmos_sensor(0x2a, 0x08); 
-			GC0310_write_cmos_sensor(0x2b, 0x06);	//exp level 2  10fps
-			GC0310_write_cmos_sensor(0x2c, 0x0c); 
-			GC0310_write_cmos_sensor(0x2d, 0x09);	//exp level 3 8fps
-			GC0310_write_cmos_sensor(0x2e, 0x93);	
+			GC0310_write_cmos_sensor(0x27, 0x04);	//exp level 0  30fps
+			GC0310_write_cmos_sensor(0x28, 0xe0); 
+			GC0310_write_cmos_sensor(0x29, 0x06);	//exp level 1  15fps
+			GC0310_write_cmos_sensor(0x2a, 0x80); 
+			GC0310_write_cmos_sensor(0x2b, 0x08);	//exp level 2  10fps
+			GC0310_write_cmos_sensor(0x2c, 0x20); 
+			GC0310_write_cmos_sensor(0x2d, 0x0b);	//exp level 3 8fps
+			GC0310_write_cmos_sensor(0x2e, 0x60);	
 			GC0310_write_cmos_sensor(0xfe, 0x00);
 
 		break;
@@ -1831,7 +1831,7 @@ BOOL GC0310_set_param_banding(UINT16 para)
 
 BOOL GC0310_set_param_exposure(UINT16 para)
 {
-
+	SENSORDB("GC0310_set_param_exposure: para is %d!!\n", para);
 	switch (para)
 	{
 	
@@ -1911,6 +1911,7 @@ UINT32 GC0310YUVSetVideoMode(UINT16 u2FrameRate)    // lanking add
 
 UINT32 GC0310YUVSensorSetting(FEATURE_ID iCmd, UINT16 iPara)
 {
+	SENSORDB("GC0310YUVSensorSetting: icmd is  %d and para is %d!!\n", iCmd, iPara);
     switch (iCmd) {
     case FID_AWB_MODE:
         GC0310_set_param_wb(iPara);
