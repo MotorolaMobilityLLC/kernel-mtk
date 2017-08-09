@@ -2172,6 +2172,9 @@ static int set_cur_volt_sram_l(struct mt_cpu_dvfs *p, unsigned int volt)
 	/* Make sure 8 LDO is enable */
 	cpufreq_write_mask(CPULDO_CTRL_0, 7 : 0, 0xFF);
 
+	if ((volt / 2500) * 2500 != volt)
+		volt = ((volt / 2500) + 1) * 2500;
+
 	switch (volt) {
 	case 60000:
 		rdata = 1;
@@ -2180,6 +2183,8 @@ static int set_cur_volt_sram_l(struct mt_cpu_dvfs *p, unsigned int volt)
 		rdata = 2;
 		break;
 	default:
+		if (volt < 90000)
+			volt = 90000;
 		rdata = VOLT_TO_PMIC_VAL(volt);
 		break;
 	};
