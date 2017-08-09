@@ -176,7 +176,15 @@
 			size = <0 0x200000>;
 			alignment = <0 0x200000>;
 			};
+		ram_console-reserved-memory@44400000 {
+			compatible = "mediatek,ram_console";
+			reg = <0 0x44400000 0 0x10000>;
+		};
 
+		minirdump-reserved-memory@444f0000 {
+			compatible = "mediatek, minirdump";
+			reg = <0 0x444f0000 0 0x10000>;
+		};
 	};
 
 	gic: interrupt-controller@0x10230000 {

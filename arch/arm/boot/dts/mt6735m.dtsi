@@ -153,21 +153,30 @@
 						alignment = <0 0x200000>;
 				};
 
-		mrdump-reserved-memory@41F00000{
-			compatible = "mediatek,mrdump-V2";
-			reg = <0 0x41F00000 0 0x2000>;
-		};
+				mrdump-reserved-memory@41f00000{
+						compatible = "mediatek,mrdump-V2";
+						reg = <0 0x41f00000 0 0x2000>;
+				};
 
-		preloader-reserved-memory {
-			compatible = "mrdump-reserved-memory";
-			reg = <0 0x42000000 0 0x200000>;
-		};
+				preloader-reserved-memory@42000000 {
+						compatible = "mediatek,preloader";
+						reg = <0 0x42000000 0 0x200000>;
+				};
 
-		lk-reserved-memory {
-			compatible = "mrdump-reserved-memory";
-			reg = <0 0x41E00000 0 0x100000>;
-		};
+				lk-reserved-memory@41e00000 {
+						compatible = "mediatek,lk";
+						reg = <0 0x41e00000 0 0x100000>;
+				};
 
+				ram_console-reserved-memory@43f00000 {
+						compatible = "mediatek,ram_console";
+						reg = <0 0x43f00000 0 0x10000>;
+				};
+
+				minirdump-reserved-memory@43ff0000 {
+						compatible = "mediatek, minirdump";
+						reg = <0 0x43ff0000 0 0x10000>;
+				};
 		};
 
 		gic: interrupt-controller@0x10220000 {
