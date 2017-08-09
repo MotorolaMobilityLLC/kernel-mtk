@@ -803,14 +803,14 @@ static void __clear_emi_mpu_vio(unsigned int first)
 	u32 dbg_s, dbg_t;
 	/* clear violation status */
 
-	writel(0x00FFF3FF, EMI_MPUP);
-	writel(0x00FFF3FF, EMI_MPUQ);
-	writel(0x00FFF3FF, EMI_MPUR);
-	writel(0x00FFF3FF, EMI_MPUY);
-	writel(0x00FFF3FF, EMI_MPUP2);
-	writel(0x00FFF3FF, EMI_MPUQ2);
-	writel(0x00FFF3FF, EMI_MPUR2);
-	mt_reg_sync_writel(0x00FFF3FF, EMI_MPUY2);
+	writel(0x0FFFF3FF, EMI_MPUP);
+	writel(0x0FFFF3FF, EMI_MPUQ);
+	writel(0x0FFFF3FF, EMI_MPUR);
+	writel(0x0FFFF3FF, EMI_MPUY);
+	writel(0x0FFFF3FF, EMI_MPUP2);
+	writel(0x0FFFF3FF, EMI_MPUQ2);
+	writel(0x0FFFF3FF, EMI_MPUR2);
+	mt_reg_sync_writel(0x0FFFF3FF, EMI_MPUY2);
 
 	/* clear debug info */
 	mt_reg_sync_writel(0x80000000 , EMI_MPUS);
