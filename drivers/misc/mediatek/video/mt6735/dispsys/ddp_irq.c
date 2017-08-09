@@ -15,6 +15,8 @@
 #include "ddp_irq.h"
 #include "ddp_aal.h"
 #include "ddp_drv.h"
+#include "ddp_rdma.h"
+#include "ddp_rdma_ex.h"
 #include "primary_display.h"
 
 /* IRQ log print kthread */
@@ -29,8 +31,8 @@ static unsigned int cnt_rdma_abnormal[2];
 /*static unsigned int cnt_ovl_underflow[2];*/
 static unsigned int cnt_wdma_underflow[2];
 
-unsigned long long rdma_start_time[2] = { 0 };
-unsigned long long rdma_end_time[2] = { 0 };
+unsigned long long rdma_start_time[RDMA_INSTANCES] = { 0 };
+unsigned long long rdma_end_time[RDMA_INSTANCES] = { 0 };
 
 #define DISP_MAX_IRQ_CALLBACK   10
 
@@ -243,10 +245,10 @@ static char *disp_irq_module(unsigned int irq)
 }
 
 /* TODO:  move each irq to module driver */
-unsigned int rdma_start_irq_cnt[2] = { 0, 0 };
-unsigned int rdma_done_irq_cnt[2] = { 0, 0 };
-unsigned int rdma_underflow_irq_cnt[2] = { 0, 0 };
-unsigned int rdma_targetline_irq_cnt[2] = { 0, 0 };
+unsigned int rdma_start_irq_cnt[RDMA_INSTANCES];
+unsigned int rdma_done_irq_cnt[RDMA_INSTANCES];
+unsigned int rdma_underflow_irq_cnt[RDMA_INSTANCES];
+unsigned int rdma_targetline_irq_cnt[RDMA_INSTANCES];
 unsigned int ovl_complete_irq_cnt[2] = { 0, 0 };
 unsigned int mutex_start_irq_cnt = 0;
 unsigned int mutex_done_irq_cnt = 0;

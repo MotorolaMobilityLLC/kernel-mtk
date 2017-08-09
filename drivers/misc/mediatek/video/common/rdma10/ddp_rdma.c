@@ -29,6 +29,7 @@ unsigned int rdma_index(DISP_MODULE_ENUM module)
 		DDPERR("invalid rdma module=%d\n", module);	/* invalid module */
 		ASSERT(0);
 	}
+	ASSERT((idx >= 0) && (idx < RDMA_INSTANCES));
 	return idx;
 }
 

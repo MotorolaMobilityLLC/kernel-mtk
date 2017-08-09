@@ -228,8 +228,6 @@ int rdma_enable_irq(DISP_MODULE_ENUM module, void *handle, DDP_IRQ_LEVEL irq_lev
 {
 	unsigned int idx = rdma_index(module);
 
-	ASSERT(idx <= RDMA_INSTANCES);
-
 	switch (irq_level) {
 	case DDP_IRQ_LEVEL_ALL:
 		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, 0x1E);
@@ -252,8 +250,6 @@ int rdma_start(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = rdma_index(module);
 
-	ASSERT(idx <= RDMA_INSTANCES);
-
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, 0x3E);
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_ENGINE_EN,
 			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 1);
@@ -264,8 +260,6 @@ int rdma_start(DISP_MODULE_ENUM module, void *handle)
 int rdma_stop(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = rdma_index(module);
-
-	ASSERT(idx <= RDMA_INSTANCES);
 
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_ENGINE_EN,
 			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 0);
@@ -279,8 +273,6 @@ int rdma_reset(DISP_MODULE_ENUM module, void *handle)
 	unsigned int delay_cnt = 0;
 	int ret = 0;
 	unsigned int idx = rdma_index(module);
-
-	ASSERT(idx <= RDMA_INSTANCES);
 
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_SOFT_RESET,
 			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 1);
@@ -451,7 +443,6 @@ static int rdma_config(DISP_MODULE_ENUM module,
 	DDPDBG("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
 		idx, mode, address, rdma_intput_format_name(inputFormat, input_swap), pitch, width, height, sec);
 #endif
-	ASSERT(idx <= RDMA_INSTANCES);
 	if ((width > RDMA_MAX_WIDTH) || (height > RDMA_MAX_HEIGHT))
 		DDPERR("RDMA input overflow, w=%d, h=%d, max_w=%d, max_h=%d\n",
 		       width, height, RDMA_MAX_WIDTH, RDMA_MAX_HEIGHT);
@@ -529,6 +520,7 @@ static int rdma_config(DISP_MODULE_ENUM module,
 int rdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = rdma_index(module);
+
 #ifdef ENABLE_CLK_MGR
 	if (idx == 0) {
 #ifdef CONFIG_MTK_CLKMGR
@@ -551,6 +543,7 @@ int rdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 int rdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned int idx = rdma_index(module);
+
 #ifdef ENABLE_CLK_MGR
 	if (idx == 0) {
 #ifdef CONFIG_MTK_CLKMGR
@@ -706,7 +699,7 @@ static int do_rdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConf
 
 static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *handle)
 {
-	static int rdma_is_sec[2];
+	static int rdma_is_sec[RDMA_INSTANCES];
 	CMDQ_ENG_ENUM cmdq_engine;
 	int rdma_idx = rdma_index(module);
 	DISP_BUFFER_TYPE security = pConfig->rdma_config.security;
