@@ -58,10 +58,6 @@
 #include "mt_soc_pcm_common.h"
 #include "AudDrv_Common_func.h"
 
-#ifdef MTK_AURISYS_PHONE_CALL_SUPPORT
-#include <audio_messenger_ipi.h>
-#include <mt_spm_sleep.h>
-#endif
 /*
  *    function implementation
  */
@@ -242,38 +238,17 @@ static int mtk_voice_close(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-#ifdef MTK_AURISYS_PHONE_CALL_SUPPORT
-static void task_phone_call_recv_message(struct ipi_msg_t *ipi_msg)
-{
-	AUD_LOG_V("%s(), get msg id 0x%x\n", __func__, ipi_msg->msg_id);
-}
-#endif
-
 
 static int mtk_voice_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	pr_warn("mtk_voice_trigger cmd = %d\n", cmd);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
-#ifdef MTK_AURISYS_PHONE_CALL_SUPPORT
-		spm_ap_mdsrc_req(1);
-		audio_send_ipi_msg(
-			TASK_SCENE_PHONE_CALL,
-			AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
-			0x2f20, true, 0, NULL);
 		break;
-#endif
 	case SNDRV_PCM_TRIGGER_RESUME:
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
-#ifdef MTK_AURISYS_PHONE_CALL_SUPPORT
-		audio_send_ipi_msg(
-			TASK_SCENE_PHONE_CALL,
-			AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
-			0x2f21, false, 0, NULL);
-		spm_ap_mdsrc_req(0);
 		break;
-#endif
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 		break;
 	}
@@ -511,11 +486,6 @@ static int __init mtk_soc_voice_platform_init(void)
 		platform_device_put(soc_mtk_voice_dev);
 		return ret;
 	}
-#endif
-
-#ifdef MTK_AURISYS_PHONE_CALL_SUPPORT
-	audio_ipi_init();
-	audio_reg_recv_message(TASK_SCENE_PHONE_CALL, task_phone_call_recv_message);
 #endif
 
 	ret = platform_driver_register(&mtk_voice_driver);

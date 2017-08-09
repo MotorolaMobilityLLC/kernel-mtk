@@ -33,7 +33,7 @@ typedef enum {
 typedef enum {
 	AUDIO_IPI_MSG_ONLY, /* param1: defined by user,       param2: defined by user */
 	AUDIO_IPI_PAYLOAD,  /* param1: payload length (<=32), param2: 0xffffffff */
-	AUDIO_IPI_DMA,      /* param1: dma data length,       param2: dma address */
+	AUDIO_IPI_DMA,      /* param1: dma data length,       param2: 0xffffffff */
 } audio_ipi_msg_data_t;
 
 
@@ -54,7 +54,10 @@ typedef struct ipi_msg_t {
 	uint16_t msg_id;     /* defined by user */
 	uint32_t param1;     /* see audio_ipi_msg_data_t */
 	uint32_t param2;     /* see audio_ipi_msg_data_t */
-	char     payload[MAX_IPI_MSG_PAYLOAD_SIZE];
+	union {
+		char payload[MAX_IPI_MSG_PAYLOAD_SIZE];
+		char *dma_addr;  /* for AUDIO_IPI_DMA only */
+	};
 } ipi_msg_t;
 
 
@@ -64,9 +67,16 @@ typedef void (*recv_message_t)(struct ipi_msg_t *ipi_msg);
  *                     public functions - declaration
  *============================================================================*/
 
-void audio_ipi_init(void);
+void audio_messenger_ipi_init(void);
 
 void audio_reg_recv_message(uint8_t task_scene, recv_message_t recv_message);
+
+uint16_t get_message_buf_size(const ipi_msg_t *ipi_msg);
+
+void dump_msg(const ipi_msg_t *ipi_msg);
+
+void check_msg_format(const ipi_msg_t *ipi_msg, unsigned int len);
+
 
 void audio_send_ipi_msg(
 	task_scene_t task_scene,
@@ -76,6 +86,8 @@ void audio_send_ipi_msg(
 	uint32_t param1,
 	uint32_t param2,
 	char    *payload);
+
+void audio_send_ipi_msg_to_scp(const ipi_msg_t *ipi_msg);
 
 void audio_send_ipi_msg_ack_back(const ipi_msg_t *ipi_msg);
 

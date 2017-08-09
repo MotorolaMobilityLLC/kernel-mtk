@@ -77,12 +77,13 @@ enum SEMAPHORE_FLAG {
 };
 /* reserve memory ID */
 typedef enum {
-	VOW_MEM_ID	= 0,
-	SENS_MEM_ID	= 1,
-	MP3_MEM_ID	= 2,
-	FLP_MEM_ID	= 3,
-	RTOS_MEM_ID	= 4,
-	NUMS_MEM_ID	= 5,
+	VOW_MEM_ID      = 0,
+	SENS_MEM_ID     = 1,
+	MP3_MEM_ID      = 2,
+	FLP_MEM_ID      = 3,
+	RTOS_MEM_ID     = 4,
+	OPENDSP_MEM_ID  = 5,
+	NUMS_MEM_ID     = 6,
 } scp_reserve_mem_id_t;
 typedef struct {
 	scp_reserve_mem_id_t num;

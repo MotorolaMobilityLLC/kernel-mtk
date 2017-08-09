@@ -18,7 +18,6 @@
 /* DEBUG FLAGS */
 /*#define ENABLE_DUMP_IPI_MSG*/
 
-
 /*==============================================================================
  *                     private global members
  *============================================================================*/
@@ -38,15 +37,8 @@ recv_message_t recv_message_array[TASK_SCENE_SIZE];
 /* queue related */
 static ipi_msg_t *getIpiMsg(task_scene_t task_scene);
 
-/* msg related */
-inline uint16_t get_message_buf_size(const ipi_msg_t *ipi_msg);
-
-static void dump_msg(const ipi_msg_t *ipi_msg);
-static void check_msg_format(const ipi_msg_t *ipi_msg, unsigned int len);
-
 static void audio_ipi_msg_dispatcher(int id, void *data, unsigned int len);
 static uint16_t current_idx;
-static uint8_t init_flag;
 
 
 /*==============================================================================
@@ -87,23 +79,24 @@ static ipi_msg_t *getIpiMsg(task_scene_t task_scene)
 
 uint16_t get_message_buf_size(const ipi_msg_t *ipi_msg)
 {
-	if (ipi_msg->data_type == AUDIO_IPI_MSG_ONLY ||
-	    ipi_msg->data_type == AUDIO_IPI_DMA)
+	if (ipi_msg->data_type == AUDIO_IPI_MSG_ONLY)
 		return IPI_MSG_HEADER_SIZE;
 	else if (ipi_msg->data_type == AUDIO_IPI_PAYLOAD)
 		return (IPI_MSG_HEADER_SIZE + ipi_msg->param1);
+	else if (ipi_msg->data_type == AUDIO_IPI_DMA)
+		return (IPI_MSG_HEADER_SIZE + sizeof(uint32_t)); /* sizeof(char *) */
 	else
 		return 0;
 }
 
 
-static void dump_msg(const ipi_msg_t *ipi_msg)
+void dump_msg(const ipi_msg_t *ipi_msg)
 {
 #ifdef ENABLE_DUMP_IPI_MSG
 	int i = 0;
 	int payload_size = 0;
 
-	AUD_LOG_D("%s(), sizeof(ipi_msg_t) = %d\n", __func__, sizeof(ipi_msg_t));
+	AUD_LOG_D("%s(), sizeof(ipi_msg_t) = %lu\n", __func__, sizeof(ipi_msg_t));
 
 	AUD_LOG_D("%s(), magic = 0x%x\n", __func__, ipi_msg->magic);
 	AUD_LOG_D("%s(), task_scene = 0x%x\n", __func__, ipi_msg->task_scene);
@@ -118,12 +111,13 @@ static void dump_msg(const ipi_msg_t *ipi_msg)
 		payload_size = ipi_msg->param1;
 		for (i = 0; i < payload_size; i++)
 			AUD_LOG_D("%s(), payload[%d] = 0x%x\n", __func__, i, ipi_msg->payload[i]);
-	}
+	} else if (ipi_msg->data_type == AUDIO_IPI_DMA)
+		AUD_LOG_D("%s(), dma_addr = %p\n", __func__, ipi_msg->dma_addr);
 #endif
 }
 
 
-static void check_msg_format(const ipi_msg_t *ipi_msg, unsigned int len)
+void check_msg_format(const ipi_msg_t *ipi_msg, unsigned int len)
 {
 	dump_msg(ipi_msg); /* TODO: remove it later */
 
@@ -165,14 +159,10 @@ static void audio_ipi_msg_dispatcher(int id, void *data, unsigned int len)
  *                     public functions - implementation
  *============================================================================*/
 
-void audio_ipi_init(void)
+void audio_messenger_ipi_init(void)
 {
 	int i = 0;
 	ipi_status retval = ERROR;
-
-	if (init_flag != 0)
-		return;
-	init_flag = 1;
 
 	current_idx = 0;
 
@@ -203,8 +193,6 @@ void audio_send_ipi_msg(
 	uint32_t param2,
 	char    *payload)
 {
-	ipi_status send_status = ERROR;
-
 	ipi_msg_t *ipi_msg = NULL;
 	uint32_t ipi_msg_len = 0;
 
@@ -213,6 +201,8 @@ void audio_send_ipi_msg(
 		AUD_LOG_E("%s(), ipi_msg = NULL, return\n", __func__);
 		return;
 	}
+
+	memset_io(&ipi_msg, 0, MAX_IPI_MSG_BUF_SIZE);
 
 	ipi_msg->magic      = IPI_MSG_MAGIC_NUMBER;
 	ipi_msg->task_scene = task_scene;
@@ -237,6 +227,14 @@ void audio_send_ipi_msg(
 
 	ipi_msg_len = get_message_buf_size(ipi_msg);
 	check_msg_format(ipi_msg, ipi_msg_len);
+
+	audio_send_ipi_msg_to_scp(ipi_msg);
+}
+
+
+void audio_send_ipi_msg_to_scp(const ipi_msg_t *ipi_msg)
+{
+	ipi_status send_status = ERROR;
 
 	send_status = scp_ipi_send(
 			      IPI_AUDIO,

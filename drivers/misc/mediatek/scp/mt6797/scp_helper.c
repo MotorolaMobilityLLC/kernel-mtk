@@ -103,6 +103,12 @@ static scp_reserve_mblock_t scp_reserve_mblock[] = {
 		.start_virt = 0x0,
 		.size = 0x100000,/*1MB*/
 	},
+	{
+		.num = OPENDSP_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x200000,/*2MB*/
+	},
 };
 void memcpy_to_scp(void __iomem *trg, const void *src, int size)
 {

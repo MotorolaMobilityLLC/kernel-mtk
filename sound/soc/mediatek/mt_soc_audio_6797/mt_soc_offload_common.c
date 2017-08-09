@@ -525,7 +525,6 @@ static int mtk_compr_offload_open(void)
 	OffloadService_SetDrain(false, afe_offload_block.drain_state);
 	/* register received ipi function */
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT
-	audio_ipi_init();
 	audio_reg_recv_message(TASK_SCENE_PLAYBACK_MP3, OffloadService_IPICmd_Received);
 #endif
 
