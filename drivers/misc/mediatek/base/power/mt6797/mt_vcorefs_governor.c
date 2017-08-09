@@ -30,6 +30,7 @@
 #define AUTOK_EMMC	1
 #define	AUTOK_SDIO	0
 
+#define GATING_AUTO_SAVE 0
 /*
  * __nosavedata will not be restored after IPO-H boot
  */
@@ -610,7 +611,22 @@ int governor_debug_store(const char *buf)
 			vcorefs_reload_spm_firmware(val);
 		else if (!strcmp(cmd, "dvfs_cnt"))
 			clean_dvfs_counter(val);
-		else
+		else if (!strcmp(cmd, "screen")) {
+			if (!is_vcorefs_feature_enable() || !gvrctrl->plat_init_done)
+				return 0;
+
+			if (val == 1) {
+				mutex_lock(&governor_mutex);
+				spm_vcorefs_screen_on_setting();
+				gvrctrl->screen_on = 1;
+				mutex_unlock(&governor_mutex);
+			} else if (val == 0) {
+				mutex_lock(&governor_mutex);
+				spm_vcorefs_screen_off_setting(gvrctrl->md_dvfs_req);
+				gvrctrl->screen_on = 0;
+				mutex_unlock(&governor_mutex);
+			}
+		} else
 			r = -EPERM;
 	} else {
 		r = -EPERM;
@@ -713,6 +729,11 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
+
+#if GATING_AUTO_SAVE
+	DVFS_gating_auto_save();
+	vcorefs_crit("DVFS_gating_auto_save end...\n");
+#endif
 
 	timer = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->screen_on);
 
