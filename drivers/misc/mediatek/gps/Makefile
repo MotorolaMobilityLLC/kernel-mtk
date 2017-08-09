@@ -11,8 +11,6 @@
  * published by the Free Software Foundation.
  */
 
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
-
 obj-$(CONFIG_MTK_GPS)		+= gps.o
 
 # EOF
