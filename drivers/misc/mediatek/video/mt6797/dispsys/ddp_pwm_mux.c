@@ -43,7 +43,7 @@ eDDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 
 	switch (clk_req) {
 	case 0:
-		clkid = ULPOSC_D8; /* ULPOSC 29M */
+		clkid = -1; /* ULPOSC 29M */
 		break;
 	case 1:
 		clkid = ULPOSC_D2; /* ULPOSC 117M */
