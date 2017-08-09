@@ -345,6 +345,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 10);
 	disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
+	disp_helper_set_option(DISP_OPT_HRT, 1);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

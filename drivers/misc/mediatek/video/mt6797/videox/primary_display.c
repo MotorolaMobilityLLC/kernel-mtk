@@ -71,6 +71,7 @@
 #include "disp_recovery.h"
 #include "mt_spm_sodi_cmdq.h"
 #include "ddp_od.h"
+#include "mtk_hrt.h"
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
@@ -2626,16 +2627,16 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	int i = 0;
 	unsigned int addr = 0;
 	int ret = 0;
-	int real_overlap_layers = 0;
+	int real_hrt_level = 0;
 	MMProfileLogEx(ddp_mmp_get_events()->session_release, MMProfileFlagStart, 1, userdata);
 
 	/* check overlap layer */
-	cmdqBackupReadSlot(pgc->subtractor_when_free, i, &real_overlap_layers);
-	real_overlap_layers >>= 16;
+	cmdqBackupReadSlot(pgc->subtractor_when_free, i, &real_hrt_level);
+	real_hrt_level >>= 16;
 
 	_primary_path_lock(__func__);
 
-	if (real_overlap_layers > DISP_HW_HRT_LYAERS_FOR_LOW_POWER &&
+	if (real_hrt_level > HRT_LEVEL_LOW &&
 		primary_display_is_directlink_mode()) {
 
 		_request_dvfs_perf(OPPI_PERF);
@@ -4324,7 +4325,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	disp_ddp_path_config *data_config = NULL;
 	int max_layer_id_configed = 0;
 	int bypass, bypass_layer_id = 0;
-	int overlap_layers;
+	int hrt_level;
 
 #ifdef DEBUG_OVL_CONFIG_TIME
 	cmdqRecBackupRegisterToSlot(cmdq_handle, pgc->ovl_config_time, 0, 0x10008028);
@@ -4366,13 +4367,13 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		data_config->ovl_layer_dirty |= (1 << i);
 	}
 
-	overlap_layers = cfg->overlap_layer_num;
-	data_config->overlap_layer_num = overlap_layers;
+	hrt_level = cfg->overlap_layer_num;
+	data_config->overlap_layer_num = hrt_level;
 
-	if (overlap_layers > DISP_HW_HRT_LYAERS_FOR_HI_PERF)
-		DISPCHECK("overlayed layer num is %d > %d\n", overlap_layers, DISP_HW_HRT_LYAERS_FOR_HI_PERF);
+	if (hrt_level > HRT_LEVEL_HIGH)
+		DISPCHECK("overlayed layer num is %d > %d\n", hrt_level, DISP_HW_HRT_LYAERS_FOR_HI_PERF);
 
-	if (overlap_layers > DISP_HW_HRT_LYAERS_FOR_LOW_POWER &&
+	if (hrt_level > HRT_LEVEL_LOW &&
 		primary_display_is_directlink_mode()) {
 		_request_dvfs_perf(OPPI_PERF);
 		dvfs_last_ovl_req = OPPI_PERF;
@@ -4393,7 +4394,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
 		char msg[10];
 
-		snprintf(msg, sizeof(msg), "HRT=%d,", overlap_layers);
+		snprintf(msg, sizeof(msg), "HRT=%d,", hrt_level);
 		screen_logger_add_message("HRT", MESSAGE_REPLACE, msg);
 	}
 
@@ -4475,7 +4476,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 		/* store overlap layer to layer0's subtractor_when_free : bit[31:16] */
 		if (layer == 0)
-			sub |= overlap_layers << 16;
+			sub |= hrt_level << 16;
 		cmdqRecBackupUpdateSlot(cmdq_handle, pgc->subtractor_when_free, layer, sub);
 	}
 	if (primary_display_is_video_mode() && !primary_display_is_decouple_mode()) {

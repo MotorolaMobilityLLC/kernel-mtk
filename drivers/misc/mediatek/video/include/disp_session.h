@@ -367,7 +367,6 @@ typedef struct disp_session_buf_t {
 } disp_session_buf_info;
 
 typedef struct layer_config_t {
-	unsigned int layer_id;
 	unsigned int ovl_id;
 	DISP_FORMAT src_fmt;
 	unsigned int dst_offset_x, dst_offset_y;
