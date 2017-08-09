@@ -3728,14 +3728,12 @@ static int battery_meter_dts_probe(struct platform_device *dev)
 {
 	int ret = 0;
 
-	battery_xlog_printk(BAT_LOG_CRTI, "******** battery_meter_dts_probe!! ********\n");
+	bm_err("******** battery_meter_dts_probe!! ********\n");
 
 	battery_meter_device.dev.of_node = dev->dev.of_node;
 	ret = platform_device_register(&battery_meter_device);
 	if (ret) {
-		battery_xlog_printk(BAT_LOG_CRTI,
-				    "****[battery_meter_dts_probe] Unable to register device (%d)\n",
-				    ret);
+		bm_err("****[battery_meter_dts_probe] Unable to register device (%d)\n", ret);
 		return ret;
 	}
 	return 0;

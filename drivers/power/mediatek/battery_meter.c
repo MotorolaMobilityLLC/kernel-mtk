@@ -581,7 +581,6 @@ int __batt_meter_init_cust_data_from_dt(void)
 	/* check customer setting */
 	np = of_find_compatible_node(NULL, NULL, "mediatek,bat_meter");
 	if (!np) {
-		/* printk(KERN_ERR "(E) Failed to find device-tree node: %s\n", path); */
 		battery_log(BAT_LOG_CRTI, "Failed to find device-tree node: bat_meter\n");
 		return -ENODEV;
 	}
@@ -2181,7 +2180,7 @@ void oam_run(void)
 	bm_print(BM_LOG_CRTI, "[oam_run_time] delta time=%d\n", delta_time);
 
 #if defined(SW_OAM_INIT_V2)
-	printk(bootbuf);
+	bm_print(BM_LOG_CRTI, "[oam_run_time] bootbuf[%s]", bootbuf);
 #endif
 
 	last_oam_run_time = now_time;
