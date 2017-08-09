@@ -97,6 +97,8 @@ struct governor_profile {
 	int curr_ddr_khz;
 	int curr_axi_khz;
 
+	int screen_off_vol;
+
 	u32 active_autok_kir;
 	u32 autok_kir_group;
 	u32 md_dvfs_req;
@@ -127,6 +129,8 @@ static struct governor_profile governor_ctrl = {
 	.curr_vcore_uv = VCORE_1_P_00_UV,
 	.curr_ddr_khz = FDDR_S0_KHZ,
 	.curr_axi_khz = FAXI_S0_KHZ,
+
+	.screen_off_vol = VCORE_0_P_90_UV,
 
 	.perform_bw_enable = 0,
 	.perform_bw_lpm_threshold = 0,
@@ -170,6 +174,7 @@ static char *kicker_name[] = {
  */
 static void update_vcore_pwrap_cmd(struct opp_profile *opp_ctrl_table)
 {
+	struct governor_profile *gvrctrl = &governor_ctrl;
 	u32 diff;
 	u32 hpm, trans4, trans3, lpm, trans2, trans1, screen_off_mode;
 
@@ -177,9 +182,9 @@ static void update_vcore_pwrap_cmd(struct opp_profile *opp_ctrl_table)
 	trans[TRANS4] = opp_ctrl_table[OPPI_LOW_PWR].vcore_uv + (diff / 3) * 2;
 	trans[TRANS3] = opp_ctrl_table[OPPI_LOW_PWR].vcore_uv + (diff / 3) * 1;
 
-	diff = opp_ctrl_table[OPPI_LOW_PWR].vcore_uv - VCORE_0_P_90_UV;
-	trans[TRANS2] = VCORE_0_P_90_UV + (diff / 3) * 2;
-	trans[TRANS1] = VCORE_0_P_90_UV + (diff / 3) * 1;
+	diff = opp_ctrl_table[OPPI_LOW_PWR].vcore_uv - gvrctrl->screen_off_vol;
+	trans[TRANS2] = gvrctrl->screen_off_vol + (diff / 3) * 2;
+	trans[TRANS1] = gvrctrl->screen_off_vol + (diff / 3) * 1;
 
 	hpm		= vcore_uv_to_pmic(opp_ctrl_table[OPPI_PERF].vcore_uv);
 	trans4		= vcore_uv_to_pmic(trans[TRANS4]);
@@ -187,7 +192,7 @@ static void update_vcore_pwrap_cmd(struct opp_profile *opp_ctrl_table)
 	lpm		= vcore_uv_to_pmic(opp_ctrl_table[OPPI_LOW_PWR].vcore_uv);
 	trans2		= vcore_uv_to_pmic(trans[TRANS2]);
 	trans1		= vcore_uv_to_pmic(trans[TRANS1]);
-	screen_off_mode = vcore_uv_to_pmic(VCORE_0_P_90_UV);
+	screen_off_mode = vcore_uv_to_pmic(gvrctrl->screen_off_vol);
 
 	/* PMIC_WRAP_PHASE_NORMAL */
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_HPM, hpm);
@@ -222,11 +227,12 @@ static void update_vcore_pwrap_cmd(struct opp_profile *opp_ctrl_table)
 	vcorefs_crit("LPM   : %u (0x%x)\n", opp_ctrl_table[OPPI_LOW_PWR].vcore_uv, lpm);
 	vcorefs_crit("TRANS2: %u (0x%x)\n", trans[TRANS2], trans2);
 	vcorefs_crit("TRANS1: %u (0x%x)\n", trans[TRANS1], trans1);
-	vcorefs_crit("SCREEN_OFF_MODE: %u (0x%x)\n", VCORE_0_P_90_UV, screen_off_mode);
+	vcorefs_crit("SOFFM: %u (0x%x)\n", gvrctrl->screen_off_vol, screen_off_mode);
 }
 
 void vcorefs_update_opp_table(char *cmd, int val)
 {
+	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct opp_profile *opp_ctrl_table = opp_table;
 	int uv = vcore_pmic_to_uv(val);
 
@@ -236,8 +242,13 @@ void vcorefs_update_opp_table(char *cmd, int val)
 			update_vcore_pwrap_cmd(opp_ctrl_table);
 		}
 	} else if (!strcmp(cmd, "LPM") && val < VCORE_INVALID) {
-		if (uv <= opp_ctrl_table[OPPI_PERF].vcore_uv) {
+		if (uv <= opp_ctrl_table[OPPI_PERF].vcore_uv && uv >= gvrctrl->screen_off_vol) {
 			opp_ctrl_table[OPPI_LOW_PWR].vcore_uv = uv;
+			update_vcore_pwrap_cmd(opp_ctrl_table);
+		}
+	} else if (!strcmp(cmd, "SOFFM") && val < VCORE_INVALID) {
+		if (uv <= opp_ctrl_table[OPPI_LOW_PWR].vcore_uv) {
+			gvrctrl->screen_off_vol = uv;
 			update_vcore_pwrap_cmd(opp_ctrl_table);
 		}
 	}
@@ -339,6 +350,7 @@ char *governor_get_kicker_name(int id)
 
 char *vcorefs_get_opp_table_info(char *p)
 {
+	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct opp_profile *opp_ctrl_table = opp_table;
 	int i;
 
@@ -350,9 +362,13 @@ char *vcorefs_get_opp_table_info(char *p)
 		p += sprintf(p, "\n");
 	}
 
-	for (i = 0; i < NUM_TRANS; i++)
-		p += sprintf(p, "[TRANS%d] vcore_uv: %d (0x%x)\n", i + 1, trans[i],
-			     vcore_uv_to_pmic(trans[i]));
+	p += sprintf(p, "HPM   : %u\n", opp_ctrl_table[OPPI_PERF].vcore_uv);
+	p += sprintf(p, "TRANS4: %u\n", trans[TRANS4]);
+	p += sprintf(p, "TRANS3: %u\n", trans[TRANS3]);
+	p += sprintf(p, "LPM   : %u\n", opp_ctrl_table[OPPI_LOW_PWR].vcore_uv);
+	p += sprintf(p, "TRANS2: %u\n", trans[TRANS2]);
+	p += sprintf(p, "TRANS1: %u\n", trans[TRANS1]);
+	p += sprintf(p, "SOFFM : %u\n", gvrctrl->screen_off_vol);
 
 	return p;
 }
@@ -1038,6 +1054,8 @@ static int init_vcorefs_cmd_table(void)
 			opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
 			opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);
 			opp_ctrl_table[opp].axi_khz = FAXI_S1_KHZ;
+
+			gvrctrl->screen_off_vol = vcorefs_get_vcore_by_steps(opp);
 			break;
 		default:
 			break;
