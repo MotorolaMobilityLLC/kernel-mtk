@@ -273,6 +273,10 @@ extern int CL1OCPCaptureRawLkgStatus(int *TopRawLkg, int *CPU0RawLkg,
 extern int LittleOCPAvgPwr(int Cluster, int EnDis, int Count);
 extern int LittleOCPAvgPwrGet(int Cluster, unsigned long long *AvgLkg, unsigned long long *AvgAct);
 extern int LittleOCPMAFAct(int Cluster, unsigned int *CapMAFAct);
+extern void Cluster2_OCP_ON(void);
+extern void Cluster0_OCP_ON(void);
+extern void Cluster1_OCP_ON(void);
+
 /* DREQ + SRAMLDO */
 extern int BigSRAMLDOEnable(int mVolts);
 extern int BigDREQHWEn(int VthHi, int VthLo);

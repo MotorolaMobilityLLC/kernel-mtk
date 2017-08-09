@@ -57,14 +57,18 @@ struct cpu_info {
 };
 
 /* adb command list
-echo 6 0 > /proc/ocp/dvt_test //disable AUXPUMX
-echo 6 1 > /proc/ocp/dvt_test //enable  AUXPUMX(L/LL Sram LDO only)
+echo 6 0 1 > /proc/ocp/dvt_test //enable AUXPUMX for L/LL
+echo 6 0 0 > /proc/ocp/dvt_test //disable AUXPUMX for L/LL
+echo 6 1 1 > /proc/ocp/dvt_test //enable AUXPUMX for Big
+echo 6 1 0 > /proc/ocp/dvt_test //disable AUXPUMX for Big
+echo 6 2 1 > /proc/ocp/dvt_test //enable AUXPUMX for GPU
+echo 6 2 0 > /proc/ocp/dvt_test //disable AUXPUMX for GPU
 
 echo 7 > 1000 1100 /proc/ocp/dvt_test // L,LL Vproc, Vsram
-echo 8 > 1000 1100 /proc/ocp/dvt_test // L,LL Vproc, Vsram
+echo 8 > 1000 1100 /proc/ocp/dvt_test // Big Vproc, Vsram
 
 echo 9 7 7 > /proc/ocp/dvt_test // LL, L oppidx freq
-echo 10 7 > /proc/ocp/dvt_test // big oppidx freq
+echo 10 7 > /proc/ocp/dvt_test // Big oppidx freq
 */
 
 const unsigned int big_opp[] = { 2288, 2093, 1495, 1001, 897, 806, 750, 350 };
@@ -105,7 +109,7 @@ static unsigned int ocp_cluster2_enable;
 static unsigned int big_dreq_enable;
 static unsigned int little_dreq_enable;
 static unsigned int dvt_test_on;
-
+static unsigned int hqa_test;
 
 
 
@@ -202,6 +206,9 @@ static struct OCP_STAT ocp_status[3] = {
 	.CPU3RawLkg = 0,
 },
 };
+
+/* for HQA buffer */
+static struct OCP_STAT ocp_hqa[3][10000];
 
 /* BIG CPU */
 int BigOCPConfig(int VOffInmV, int VStepInuV)
@@ -1113,6 +1120,31 @@ if (Cluster == OCP_LL) {
 	}
 	}
 return 0;
+}
+
+/* Big OCP init API */
+void Cluster2_OCP_ON(void)
+{
+	BigOCPConfig(300, 10000);
+	BigOCPSetTarget(3, 127000);
+	BigOCPEnable(3, 1, 625, 0);
+}
+
+/* Little OCP init API */
+void Cluster0_OCP_ON(void)
+{
+LittleOCPConfig(0, 300, 10000);
+LittleOCPSetTarget(0, 127000);
+LittleOCPDVFSSet(0, 897, 1000);
+LittleOCPEnable(0, 1, 625);
+}
+
+void Cluster1_OCP_ON(void)
+{
+LittleOCPConfig(1, 300, 10000);
+LittleOCPSetTarget(1, 127000);
+LittleOCPDVFSSet(1, 1274, 1000);
+LittleOCPEnable(1, 1, 625);
 }
 
 
@@ -2686,12 +2718,12 @@ if ((oppidx_ll >= 8) || (oppidx_l >= 8))
 ocp_write(0x1001A200, 0xF0000101);
 ocp_write(0x1001A204, (opp_info_LL[oppidx_ll].pll | (opp_info_LL[oppidx_ll].postdiv << 24)));
 /* LL bit 9:5, defautl use all 0  */
-ocp_write_field(0x1001A274, 9:5, 0x0);
+ocp_write_field(0x1001A274, 9:5, 0x8);
 
 ocp_write(0x1001A210, 0xF0000101);
 ocp_write(0x1001A214, (opp_info_L[oppidx_l].pll | (opp_info_L[oppidx_l].postdiv << 24)));
 /* L bit 14:10, defautl use all 0 */
-ocp_write_field(0x1001A274, 14:10, 0x0);
+ocp_write_field(0x1001A274, 14:10, 0x8);
 
 ocp_write(0x1001A274, (ocp_read(0x1001A274) & 0xffff83ff));
 
@@ -3631,14 +3663,27 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			} else if (val[0] == 1) {
 				if (val[1] == 0) {
 					/* disable pinmux */
-					/* L/LL CPU AGPIO prob out volt disable */
+					/* BIG CPU AGPIO prob out volt disable */
 					ocp_write_field(0x10002890, 6:6, 0x1);
 					ocp_write_field(0x102222b0, 31:31, 0x0);
 				} else if (val[1] == 1) {
 					/* enable pinmux */
-					/* L/LL CPU AGPIO enable */
+					/* BIG CPU AGPIO enable */
 					ocp_write_field(0x10002890, 6:6, 0x0);
 					ocp_write_field(0x102222b0, 31:31, 0x1);
+				}
+			} else if (val[0] == 2) {
+				if (val[1] == 0) {
+					/* disable pinmux */
+					ocp_write_field(0x10002120, 30:30, 0x1);
+					/* GPU AGPIO prob out volt disable */
+					ocp_write(0x10001fd4, 0x000000ff);
+				} else if (val[1] == 1) {
+					/* enable pinmux */
+					/* GPU AGPIO enable */
+					ocp_write_field(0x10002120, 30:30, 0x0);
+					/* GPU AGPIO prob out volt enable */
+					ocp_write(0x10001fd4, 0x0000ff00);
 				}
 			}
 		}
@@ -3680,7 +3725,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 		}
 		break;
 	case 9:
-		/* LL, L , Big freq, opp idx */
+		/* LL, L , opp idx */
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
 			set_cpu_opp(val[0], val[1]);
 
@@ -3736,6 +3781,10 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				default:
 					break;
 			}
+	case 12: /* set OCdtKi */
+		if (sscanf(buf, "%d %x", &function_id, &val[0]) == 2)
+			ocp_write_field(0x10222580, 19:0, val[0]);
+		break;
 	default:
 		break;
 	}
@@ -3744,7 +3793,145 @@ free_page((unsigned long)buf);
 return count;
 }
 
+/* hqa_test*/
+static int hqa_test_proc_show(struct seq_file *m, void *v)
+{
+int i;
 
+	for (i = 0; i < hqa_test; i++) {
+		if (ocp_cluster0_enable == 1) {
+			seq_printf(m, "Cluster 0 AvgActValid  = %d\n", ocp_hqa[0][i].CGAvgValid);
+			seq_printf(m, "Cluster 0 AvgAct       = %llu mA\n", ocp_hqa[0][i].CGAvg);
+			seq_printf(m, "Cluster 0 AvgLkg       = %llu mA\n", ocp_hqa[0][i].AvgLkg);
+			seq_printf(m, "Cluster 0 TopRawLkg    = %d * 1.5uA\n", ocp_hqa[0][i].TopRawLkg);
+			seq_printf(m, "Cluster 0 CPU0RawLkg   = %d * 1.5uA\n", ocp_hqa[0][i].CPU0RawLkg);
+		}
+		if (ocp_cluster1_enable == 1) {
+			seq_printf(m, "Cluster 1 AvgActValid  = %d\n", ocp_hqa[1][i].CGAvgValid);
+			seq_printf(m, "Cluster 1 AvgAct       = %llu mA\n", ocp_hqa[1][i].CGAvg);
+			seq_printf(m, "Cluster 1 AvgLkg       = %llu mA\n", ocp_hqa[1][i].AvgLkg);
+			seq_printf(m, "Cluster 1 TopRawLkg    = %d * 1.5uA\n", ocp_hqa[1][i].TopRawLkg);
+			seq_printf(m, "Cluster 1 CPU0RawLkg   = %d * 1.5uA\n", ocp_hqa[1][i].CPU0RawLkg);
+		}
+		if (ocp_cluster2_enable == 1) {
+			seq_printf(m, "Cluster 2 CapToLkg     = %d mA(mW)\n", ocp_hqa[2][i].CapToLkg);
+			seq_printf(m, "Cluster 2 CapOCCGPct   = %d %%\n", ocp_hqa[2][i].CapOCCGPct);
+			seq_printf(m, "Cluster 2 CaptureValid = %d\n", ocp_hqa[2][i].CaptureValid);
+			seq_printf(m, "Cluster 2 CapTotAct    = %d mA(mW)\n", ocp_hqa[2][i].CapTotAct);
+			seq_printf(m, "Cluster 2 CapMAFAct    = %d mA(mW)\n", ocp_hqa[2][i].CapMAFAct);
+			seq_printf(m, "Cluster 2 CGAvgValid   = %d\n", ocp_hqa[2][i].CGAvgValid);
+			seq_printf(m, "Cluster 2 CGAvg        = %llu %%\n", ocp_hqa[2][i].CGAvg);
+			seq_printf(m, "Cluster 2 TopRawLkg    = %d * 1.5uA\n", ocp_hqa[2][i].TopRawLkg);
+			seq_printf(m, "Cluster 2 CPU0RawLkg   = %d * 1.5uA\n", ocp_hqa[2][i].CPU0RawLkg);
+		}
+	}
+	return 0;
+}
+
+static ssize_t hqa_test_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
+{
+int i, j, function_id, val[4];
+int Leakage, Total, ClkPct, CapMAFAct, CGAvg;
+unsigned long long AvgAct, AvgLkg;
+int TopRawLkg, CPU0RawLkg, CPU1RawLkg, CPU2RawLkg, CPU3RawLkg;
+char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
+		switch (function_id) {
+		case 1:
+				/* LL/L workload calibration */
+				if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) == 4) {
+					hqa_test = val[0];
+					if (hqa_test > 10000)
+						hqa_test = 10000;
+
+					i = 0;
+					while (i < hqa_test) {
+						LittleOCPCapture(0, 1, 1, 0, 15);
+						LittleOCPCapture(1, 1, 1, 0, 15);
+						LittleOCPAvgPwr(0, 1, val[1]);
+						LittleOCPAvgPwr(1, 1, val[1]);
+						mdelay(val[2]);
+
+						CL0OCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg,
+								&CPU1RawLkg, &CPU2RawLkg, &CPU3RawLkg);
+						ocp_hqa[0][i].TopRawLkg = TopRawLkg;
+						ocp_hqa[0][i].CPU0RawLkg = CPU0RawLkg;
+						ocp_hqa[0][i].CPU1RawLkg = CPU1RawLkg;
+						ocp_hqa[0][i].CPU2RawLkg = CPU2RawLkg;
+						ocp_hqa[0][i].CPU3RawLkg = CPU3RawLkg;
+						ocp_hqa[0][i].CaptureValid = ocp_read_field(MP0_OCP_CAP_STATUS00, 0:0);
+
+						CL1OCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg,
+								&CPU1RawLkg, &CPU2RawLkg, &CPU3RawLkg);
+						ocp_hqa[1][i].TopRawLkg = TopRawLkg;
+						ocp_hqa[1][i].CPU0RawLkg = CPU0RawLkg;
+						ocp_hqa[1][i].CPU1RawLkg = CPU1RawLkg;
+						ocp_hqa[1][i].CPU2RawLkg = CPU2RawLkg;
+						ocp_hqa[1][i].CPU3RawLkg = CPU3RawLkg;
+						ocp_hqa[1][i].CaptureValid = ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0);
+
+						LittleOCPAvgPwrGet(0, &AvgLkg, &AvgAct);
+						ocp_hqa[0][i].CGAvgValid = ocp_read_field(MP0_OCP_DBG_STAT, 31:31);
+						ocp_hqa[0][i].CGAvg = AvgAct;
+						ocp_hqa[0][i].AvgLkg = AvgLkg;
+
+						LittleOCPAvgPwrGet(1, &AvgLkg, &AvgAct);
+						ocp_hqa[1][i].CGAvgValid = ocp_read_field(MP1_OCP_DBG_STAT, 31:31);
+						ocp_hqa[1][i].CGAvg = AvgAct;
+						ocp_hqa[1][i].AvgLkg = AvgLkg;
+
+						i++;
+					}
+				}
+				break;
+		case 2:
+				if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) == 4) {
+					hqa_test = val[0];
+					if (hqa_test > 10000)
+						hqa_test = 10000;
+
+					j = 0;
+					BigOCPClkAvg(1, val[1]);
+					while (j < hqa_test) {
+						BigOCPCapture(1, 1, 0, 15);
+
+						mdelay(val[2]);
+
+						BigOCPCaptureStatus(&Leakage, &Total, &ClkPct);
+						ocp_hqa[2][j].CapToLkg = Leakage;
+						ocp_hqa[2][j].CapTotAct = Total;
+						ocp_hqa[2][j].CapOCCGPct = ClkPct;
+						ocp_hqa[2][j].CaptureValid = ocp_read_field(OCPAPBSTATUS01, 0:0);
+
+						BigOCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg, &CPU1RawLkg);
+						ocp_hqa[2][j].TopRawLkg = TopRawLkg;
+						ocp_hqa[2][j].CPU0RawLkg = CPU0RawLkg;
+						ocp_hqa[2][j].CPU1RawLkg = CPU1RawLkg;
+						ocp_hqa[2][j].CaptureValid = ocp_read_field(OCPAPBSTATUS01, 0:0);
+
+						BigOCPMAFAct(&CapMAFAct);
+						ocp_hqa[2][j].CapMAFAct = CapMAFAct;
+						ocp_hqa[2][j].CaptureValid = ocp_read_field(OCPAPBSTATUS01, 0:0);
+
+						BigOCPClkAvgStatus(&CGAvg);
+						ocp_hqa[2][j].CGAvgValid = ocp_read_field(OCPAPBSTATUS04, 27:27);
+						ocp_hqa[2][j].CGAvg = (unsigned long long)CGAvg;
+
+						j++;
+					}
+				}
+				break;
+		default:
+				break;
+		}
+}
+	free_page((unsigned long)buf);
+	return count;
+}
 
 
 
@@ -3814,6 +4001,7 @@ PROC_FOPS_RW(ocp_cluster1_capture);
 PROC_FOPS_RW(ocp_debug);
 PROC_FOPS_RW(dreq_function_test);
 PROC_FOPS_RW(dvt_test);
+PROC_FOPS_RW(hqa_test);
 
 static int _create_procfs(void)
 {
@@ -3838,7 +4026,7 @@ PROC_ENTRY(ocp_cluster1_capture),
 PROC_ENTRY(ocp_debug),
 PROC_ENTRY(dreq_function_test),
 PROC_ENTRY(dvt_test),
-
+PROC_ENTRY(hqa_test),
 };
 
 dir = proc_mkdir("ocp", NULL);
@@ -3903,10 +4091,10 @@ if (err) {
 here to turn on OCP
 set Enable=1
 BigiDVFSEnable(2500, 110000, 120000);	idvfs enable 2500MHz, Vproc_x100mv, Vsram_x100mv
-BigiDVFSChannel(1, 1);					ocp channel enable
 BigOCPConfig(300, 10000);				cluster 2 Voffset=0.3v_x1000, Vstep=10mv_x1000000
 BigOCPSetTarget(3, 127000);				cluster 2 set OCPI/FPI, Target=127 W
 BigOCPEnable(3,1,625,0);				cluster 2 set OCPI/FPI, Target_unit=mW, CG=6.25%_x100
+BigiDVFSChannel(1, 1);					ocp channel enable
 LittleOCPConfig(0, 300, 10000);			cluster 0 Voffset=0.5v_x1000, Vstep=6.25mv_x1000000
 LittleOCPConfig(1, 300, 10000);			cluster 1 Voffset=0.5v_x1000, Vstep=6.25mv_x1000000
 LittleOCPSetTarget(0, 127000);			cluster 0 Target=127W_x1000
