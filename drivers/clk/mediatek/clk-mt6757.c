@@ -28,7 +28,11 @@
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	0
+#ifdef CONFIG_FPGA_EARLY_PORTING
+#define MT_CCF_BRINGUP	0
+#else
 #define MT_CCF_BRINGUP	1
+#endif
 #endif
 
 
@@ -1267,7 +1271,7 @@ void __iomem *camsys_base;
 #define MM_DUMMY_CG_SET1            (mmsys_config_base + 0x8ac)
 #define VDEC_CKEN_CLR           (vdec_gcon_base + 0x0004)
 #define LARB_CKEN_CLR           (vdec_gcon_base + 0x000C)
-#define VENC_CG_CON             (venc_gcon_base + 0x8)
+#define VENC_CG_CLR				(venc_gcon_base + 0x8)
 #define AUDIO_TOP_CON0          (audio_base + 0x0000)
 #define CAMSYS_CG_SET			(camsys_base + 0x0004)
 
@@ -1308,7 +1312,7 @@ void __iomem *camsys_base;
 #define VENC_CG    0x00001111	/*set */
 #define CAM_CG	   0x00000FC1
 
-#define CG_BOOTUP_PDN 1
+#define CG_BOOTUP_PDN 0
 
 static void __init init_factors(struct mtk_fixed_factor *clks, int num,
 				struct clk_onecell_data *clk_data)
@@ -1832,7 +1836,7 @@ static void __init mt_vencsys_init(struct device_node *node)
 	clk_clrl(VENC_CG_SET, VENC_DISABLE_CG);
 #endif
 #if CG_BOOTUP_PDN
-	clk_clrl(VENC_CG_CON, VENC_CG);
+	clk_clrl(VENC_CG_CLR, VENC_CG);
 #endif
 
 }
