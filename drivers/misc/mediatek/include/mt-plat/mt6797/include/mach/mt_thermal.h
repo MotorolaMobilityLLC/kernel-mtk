@@ -11,9 +11,7 @@
 #include <asm/uaccess.h>
 
 #include "mt-plat/sync_write.h"
-#include "mach/mt_reg_base.h"
 #include "mtk_thermal_typedefs.h"
-#include "mach/mtk_mdm_monitor.h"
 /* #include "mach/mt6575_auxadc_hw.h" */
 
 #if !defined(CONFIG_MTK_LEGACY)
@@ -377,5 +375,5 @@ extern int is_cpu_power_min(void);	/* in mtk_ts_cpu.c */
 extern int get_cpu_target_tj(void);
 extern int get_cpu_target_offset(void);
 
-extern int mtk_mdm_get_md_info(struct md_info **p_inf, int *size);
+/* extern int mtk_mdm_get_md_info(struct md_info **p_inf, int *size); */
 #endif

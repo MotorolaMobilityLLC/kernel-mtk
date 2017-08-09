@@ -1153,7 +1153,7 @@ unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 {
 	return 0;
 }
-
+#ifndef DISABLE_PBM_FEATURE
 static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 {
 #if 0
@@ -1179,6 +1179,7 @@ static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 	mt_ppm_dlpt_kick_PBM(ppm_data, (unsigned int)arch_get_nr_clusters());
 #endif
 }
+#endif
 /* for PBM End */
 
 /* Frequency API */

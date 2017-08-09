@@ -8,6 +8,11 @@
 #define DISABLE_PBM_FEATURE
 #endif
 
+#define MD1_MAX_PW	3000	/* mW */
+#define MD3_MAX_PW	2500	/* mW */
+#define POWER_FLASH	3500	/* mW */
+#define GUARDING_PATTERN	0
+
 struct pbm {
 	u8 feature_en;
 	u8 pbm_drv_done;
@@ -58,6 +63,9 @@ enum pbm_kicker {
 	KR_GPU,			/* 4 */
 	KR_FLASH		/* 5 */
 };
+
+#define MD_POWER_METER_ENABLE 0
+/* #define TEST_MD_POWER */
 
 #define SECTION_LEN	0xFFFFFFFF	/* total 4 byte, 6 section =  11 11111 11111 11111 11111 11111 11111 */
 #define SECTION_VALUE	0x1F		/* each section is 0x1F = bit(11111) */

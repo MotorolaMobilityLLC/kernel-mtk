@@ -23,14 +23,14 @@
 #include <mt_cpufreq.h>
 #include <mt_gpufreq.h>
 #include <mach/mt_thermal.h>
-/*#include <mach/mt_ppm_api.h>*/
-/*#include <mach/mt_spm_vcore_dvfs.h>*/
-/*#include <mach/mt_ccci_common.h>*/
+#include <mach/mt_ppm_api.h>
+
+#if MD_POWER_METER_ENABLE
+#include <mach/mt_spm_vcore_dvfs.h>
+#include <mach/mt_ccci_common.h>
+#endif
 
 #ifndef DISABLE_PBM_FEATURE
-
-#define MD_POWER_METER_ENABLE 1
-/* #define TEST_MD_POWER */
 
 /* reference PMIC */
 /* extern kal_uint32 PMIC_IMM_GetOneChannelValue(kal_uint8 dwChannel, int deCount, int trimd); */
@@ -61,11 +61,6 @@ static bool mt_pbm_debug;
 
 #define BIT_CHECK(a, b) ((a) & (1<<(b)))
 
-#define MD1_MAX_PW	3000	/* mW */
-#define MD3_MAX_PW	2500	/* mW */
-#define POWER_FLASH	3500	/* mW */
-#define GUARDING_PATTERN	0
-
 static struct hpf hpf_ctrl = {
 	.switch_md1 = 1,
 	.switch_md3 = 0,
@@ -95,6 +90,7 @@ static struct pbm pbm_ctrl = {
 	.hpf_en = 63,		/* bin: 111111 (Flash, GPU, CPU, MD3, MD1, DLPT) */
 };
 
+#if MD_POWER_METER_ENABLE
 static int section_level[SECTION_NUM+1] = { GUARDING_PATTERN,
 					    BIT_SECTION_1,
 					    BIT_SECTION_2,
@@ -185,6 +181,7 @@ static int md3_pa_pwr[SECTION_NUM+1] = { GUARDING_PATTERN,
 					 PW_MD3_PA_SECTION_4,
 					 PW_MD3_PA_SECTION_5,
 					 PW_MD3_PA_SECTION_6 };
+#endif
 
 int g_dlpt_need_do = 1;
 static DEFINE_MUTEX(pbm_mutex);
@@ -283,6 +280,7 @@ unsigned long hpf_get_power_dlpt(void)
 	return hpfmgr->loading_dlpt;
 }
 
+#if MD_POWER_METER_ENABLE
 static void init_md1_section_level(void)
 {
 	u32 *share_mem;
@@ -355,7 +353,6 @@ void init_md_section_level(enum pbm_kicker kicker)
 	pbm_crit("MD section level init, MD1: %d, MD3: %d\n", hpfmgr->md1_ccci_ready, hpfmgr->md3_ccci_ready);
 }
 
-#if MD_POWER_METER_ENABLE
 static int get_md1_scenario(void)
 {
 #ifndef TEST_MD_POWER
@@ -603,6 +600,11 @@ static int get_md1_dBm_power(int scenario)
 
 	return dbm_power;
 }
+#else
+void init_md_section_level(enum pbm_kicker kicker)
+{
+	pbm_crit("MD_POWER_METER_ENABLE:0\n");
+}
 #endif
 
 #ifdef TEST_MD_POWER
@@ -633,8 +635,11 @@ static void test_md_dbm_power(void)
 unsigned long hpf_get_power_md1(void)
 {
 	struct hpf *hpfmgr = &hpf_ctrl;
+
+#if MD_POWER_METER_ENABLE
 	u32 pw_scenario, pw_dBm;
 	int scenario;
+#endif
 
 	if (hpfmgr->switch_md1) {
 #if MD_POWER_METER_ENABLE
@@ -664,7 +669,10 @@ unsigned long hpf_get_power_md1(void)
 unsigned long hpf_get_power_md3(void)
 {
 	struct hpf *hpfmgr = &hpf_ctrl;
+
+#if MD_POWER_METER_ENABLE
 	u32 pw_scenario, pw_dBm;
+#endif
 
 	if (hpfmgr->switch_md3) {
 #if MD_POWER_METER_ENABLE
