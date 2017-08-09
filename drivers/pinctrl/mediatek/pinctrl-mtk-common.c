@@ -1,7 +1,9 @@
 /*
  * mt65xx pinctrl driver based on Allwinner A1X pinctrl driver.
  * Copyright (c) 2014 MediaTek Inc.
- * Author: Hongzhou.Yang <hongzhou.yang@mediatek.com>
+ * Author:
+ *  Hongzhou.Yang <hongzhou.yang@mediatek.com>
+ *  Maoguang.Meng <maoguang.meng@mediatek.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -1116,6 +1118,8 @@ static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
 	if (!mtk_eint_get_mask(pctl, eint_num)) {
 		mtk_eint_mask(d);
 		unmask = 1;
+	} else {
+		unmask = 0;
 	}
 
 	clr_bit = 0xff << eint_offset;
@@ -1196,6 +1200,16 @@ static int mtk_eint_set_type(struct irq_data *d,
 	return 0;
 }
 
+static int mtk_eint_irq_set_wake(struct irq_data *d, unsigned int on)
+{
+	if (on)
+		d->chip->flags |= IRQF_NO_SUSPEND;
+	else
+		d->chip->flags &= ~IRQF_NO_SUSPEND;
+
+	return 0;
+}
+
 static void mtk_eint_ack(struct irq_data *d)
 {
 	struct mtk_pinctrl *pctl = irq_data_get_irq_chip_data(d);
@@ -1210,10 +1224,12 @@ static void mtk_eint_ack(struct irq_data *d)
 
 static struct irq_chip mtk_pinctrl_irq_chip = {
 	.name = "mtk-eint",
+	.irq_disable = mtk_eint_mask,
 	.irq_mask = mtk_eint_mask,
 	.irq_unmask = mtk_eint_unmask,
 	.irq_ack = mtk_eint_ack,
 	.irq_set_type = mtk_eint_set_type,
+	.irq_set_wake = mtk_eint_irq_set_wake,
 	.irq_request_resources = mtk_pinctrl_irq_request_resources,
 	.irq_release_resources = mtk_pinctrl_irq_release_resources,
 };
