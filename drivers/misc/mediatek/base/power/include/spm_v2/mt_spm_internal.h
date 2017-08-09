@@ -230,6 +230,7 @@ struct pwr_ctrl {
 	u8 sdio_on_dvfs_req_mask_b;
 	u8 emi_boost_dvfs_req_mask_b;
 	u8 cpu_md_emi_dvfs_req_prot_dis;
+	u8 disp_od_req_mask_b;
 
 	/* for CONN */
 	u8 conn_mask_b;

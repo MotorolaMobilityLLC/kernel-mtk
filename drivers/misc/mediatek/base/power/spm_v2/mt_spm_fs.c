@@ -167,6 +167,12 @@ static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 	p += sprintf(p, "syspwreq_mask = %u\n", pwrctrl->syspwreq_mask);
 	p += sprintf(p, "srclkenai_mask = %u\n", pwrctrl->srclkenai_mask);
 
+	p += sprintf(p, "gce_req_mask_b = %u\n", pwrctrl->gce_req_mask_b);
+	p += sprintf(p, "disp_req_mask_b = %u\n", pwrctrl->disp_req_mask_b);
+	p += sprintf(p, "disp1_req_mask_b = %u\n", pwrctrl->disp1_req_mask_b);
+	p += sprintf(p, "mfg_req_mask_b = %u\n", pwrctrl->mfg_req_mask_b);
+	p += sprintf(p, "disp_od_req_mask_b = %u\n", pwrctrl->disp_od_req_mask_b);
+
 	p += sprintf(p, "param1 = 0x%x\n", pwrctrl->param1);
 	p += sprintf(p, "param2 = 0x%x\n", pwrctrl->param2);
 	p += sprintf(p, "param3 = 0x%x\n", pwrctrl->param3);
@@ -433,6 +439,8 @@ static ssize_t store_pwr_ctrl(struct pwr_ctrl *pwrctrl, const char *buf, size_t 
 		pwrctrl->emi_boost_dvfs_req_mask_b = val;
 	else if (!strcmp(cmd, "cpu_md_emi_dvfs_req_prot_dis"))
 		pwrctrl->cpu_md_emi_dvfs_req_prot_dis = val;
+	else if (!strcmp(cmd, "disp_od_req_mask_b"))
+		pwrctrl->disp_od_req_mask_b = val;
 
 	else if (!strcmp(cmd, "conn_mask_b"))
 		pwrctrl->conn_mask_b = val;

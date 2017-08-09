@@ -40,23 +40,44 @@
 #define SODI_LOGOUT_TIMEOUT_CRITERA 20
 #endif
 
-
-#define WAKE_SRC_FOR_SODI	\
-	(WAKE_SRC_R12_KP_IRQ_B |		\
-	WAKE_SRC_R12_APXGPT1_EVENT_B |		\
-	WAKE_SRC_R12_EINT_EVENT_B |	\
-	WAKE_SRC_R12_CCIF0_EVENT_B |	\
-	WAKE_SRC_R12_USB_CDSC_B |	\
-	WAKE_SRC_R12_USB_POWERDWN_B |	\
-	WAKE_SRC_R12_C2K_WDT_IRQ_B |	\
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B |	\
-	WAKE_SRC_R12_CCIF1_EVENT_B |	\
-	WAKE_SRC_R12_AFE_IRQ_MCU_B | \
-	WAKE_SRC_R12_SYS_CIRQ_IRQ_B |	\
-	WAKE_SRC_R12_CSYSPWREQ_B |	\
-	WAKE_SRC_R12_MD1_WDT_B |	\
-	WAKE_SRC_R12_CLDMA_EVENT_B |	\
+#if defined(CONFIG_ARCH_MT6755)
+#define WAKE_SRC_FOR_SODI								\
+	(WAKE_SRC_R12_KP_IRQ_B |							\
+	WAKE_SRC_R12_APXGPT1_EVENT_B |						\
+	WAKE_SRC_R12_EINT_EVENT_B |							\
+	WAKE_SRC_R12_CCIF0_EVENT_B |						\
+	WAKE_SRC_R12_USB_CDSC_B |							\
+	WAKE_SRC_R12_USB_POWERDWN_B |						\
+	WAKE_SRC_R12_C2K_WDT_IRQ_B |						\
+	WAKE_SRC_R12_EINT_EVENT_SECURE_B |					\
+	WAKE_SRC_R12_CCIF1_EVENT_B |						\
+	WAKE_SRC_R12_AFE_IRQ_MCU_B |						\
+	WAKE_SRC_R12_SYS_CIRQ_IRQ_B |						\
+	WAKE_SRC_R12_CSYSPWREQ_B |							\
+	WAKE_SRC_R12_MD1_WDT_B |							\
+	WAKE_SRC_R12_CLDMA_EVENT_B |						\
 	WAKE_SRC_R12_SEJ_WDT_GPT_B)
+#elif defined(CONFIG_ARCH_MT6797)
+#define WAKE_SRC_FOR_SODI								\
+	(WAKE_SRC_R12_KP_IRQ_B |							\
+	WAKE_SRC_R12_APXGPT1_EVENT_B |						\
+	WAKE_SRC_R12_EINT_EVENT_B |							\
+	WAKE_SRC_R12_CCIF0_EVENT_B |						\
+	WAKE_SRC_R12_USB0_CDSC_B_AND_USB1_CSDC_B |			\
+	WAKE_SRC_R12_USB0_POWERDWN_B_AND_USB1_POWERDWN_B |	\
+	WAKE_SRC_R12_C2K_WDT_IRQ_B |						\
+	WAKE_SRC_R12_EINT_EVENT_SECURE_B |					\
+	WAKE_SRC_R12_CCIF1_EVENT_B |						\
+	WAKE_SRC_R12_AFE_IRQ_MCU_B |						\
+	WAKE_SRC_R12_SYS_CIRQ_IRQ_B |						\
+	WAKE_SRC_R12_CSYSPWREQ_B |							\
+	WAKE_SRC_R12_MD1_WDT_B |							\
+	WAKE_SRC_R12_CLDMA_EVENT_B |						\
+	WAKE_SRC_R12_SEJ_WDT_B_AND_SEJ_GPT_B)
+#else
+#error "Does not support!"
+#endif
+
 
 #define WAKE_SRC_FOR_MD32  0
 
@@ -136,7 +157,11 @@ static struct pwr_ctrl sodi_ctrl = {
 	.md_ddr_dbc_en = 0,
 	.md1_req_mask_b = 1,
 	.md2_req_mask_b = 0, /* bit 20 */
+	#if defined(CONFIG_ARCH_MT6755)
 	.scp_req_mask_b = 0, /* bit 21 */
+	#elif defined(CONFIG_ARCH_MT6797)
+	.scp_req_mask_b = 1, /* bit 21 */
+	#endif
 	.lte_mask_b = 0,
 	.md_apsrc1_sel = 0, /* bit 24, set to be 1 for SODI CG mode */
 	.md_apsrc0_sel = 0, /* bit 25, set to be 1 for SODI CG mode */
@@ -191,7 +216,11 @@ static struct pwr_ctrl sodi_ctrl = {
 	.conn_ddr_en_mask_b = 1,
 	.disp_req_mask_b = 1, /* bit 17, set to be 1 for SODI */
 	.disp1_req_mask_b = 1, /* bit 18, set to be 1 for SODI */
+	#if defined(CONFIG_ARCH_MT6755)
 	.mfg_req_mask_b = 0, /* bit 19 */
+	#elif defined(CONFIG_ARCH_MT6797)
+	.mfg_req_mask_b = 1, /* bit 19, set to be 1 for SODI */
+	#endif
 	.c2k_ps_rccif_wake_mask_b = 1,
 	.c2k_l1_rccif_wake_mask_b = 1,
 	.ps_c2k_rccif_wake_mask_b = 1,
@@ -199,7 +228,9 @@ static struct pwr_ctrl sodi_ctrl = {
 	.sdio_on_dvfs_req_mask_b = 0,
 	.emi_boost_dvfs_req_mask_b = 0,
 	.cpu_md_emi_dvfs_req_prot_dis = 0,
-
+	#if defined(CONFIG_ARCH_MT6797)
+	.disp_od_req_mask_b = 1, /* bit 27, set to be 1 for SODI */
+	#endif
 	/* SPM_CLK_CON */
 	.srclkenai_mask = 1,
 
@@ -285,7 +316,7 @@ static void spm_sodi_pre_process(void)
 	reg_write(MMU_SMI_ASYNC_CFG, mmu_smi_async_cfg | SMI_COMMON_ASYNC_DCM);
 
 	spm_bypass_boost_gpio_set();
-
+#if defined(CONFIG_ARCH_MT6755)
 	pmic_read_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_ADDR,
 					&val,
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
@@ -299,7 +330,7 @@ static void spm_sodi_pre_process(void)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_SLEEP,
 					val & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
-
+#endif
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);
 
@@ -333,12 +364,11 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	int need_log_out = 0;
 #endif
 
-	if (dyna_load_pcm[DYNA_LOAD_PCM_SODI + cpu / 4].ready) {
-		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SODI + cpu / 4].desc);
-	} else {
+	if (!dyna_load_pcm[DYNA_LOAD_PCM_SODI + cpu / 4].ready) {
 		sodi_err("error: load firmware fail\n");
 		BUG();
 	}
+	pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SODI + cpu / 4].desc);
 
 #if SPM_AEE_RR_REC
 	aee_rr_rec_sodi_val(1 << SPM_SODI_ENTER);
