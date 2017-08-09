@@ -350,6 +350,8 @@ config ARCH_MT8163
 	bool "MediaTek MT8163"
 	select ARCH_MEDIATEK
 	select MTK_BASE_POWER
+	select MTK_SYS_CIRQ
+	select MTK_GIC_EXT
 	help
 	  This enable support for MediaTek MT8163. If you need support
 	  for MediaTek MT8163, say Y here.
