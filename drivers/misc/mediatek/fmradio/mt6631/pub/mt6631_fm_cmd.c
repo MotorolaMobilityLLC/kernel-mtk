@@ -213,9 +213,6 @@ fm_s32 mt6631_pwrup_clock_on(fm_u8 *buf, fm_s32 buf_size)
 	/* A7. Deemphasis setting: Set 0 for 50us, Set 1 for 75us */
 	pkt_size += fm_bop_modify(0x61, ~DE_EMPHASIS, (de_emphasis << 12), &buf[pkt_size], buf_size - pkt_size);
 
-	/* A8. Read back HWVER code for sanity check for register access */
-	/* pkt_size += fm_bop_rd_until(0x62, ...); */
-
 	buf[2] = (fm_u8) ((pkt_size - 4) & 0x00FF);
 	buf[3] = (fm_u8) (((pkt_size - 4) >> 8) & 0x00FF);
 

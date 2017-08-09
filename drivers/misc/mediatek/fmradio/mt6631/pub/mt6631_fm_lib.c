@@ -302,6 +302,7 @@ static fm_s32 mt6631_Mute(fm_bool mute)
 static fm_s32 mt6631_RampDown(void)
 {
 	fm_s32 ret = 0;
+	fm_u32 tem;
 	fm_u16 pkt_size;
 	/* fm_u16 tmp; */
 
@@ -327,6 +328,11 @@ static fm_s32 mt6631_RampDown(void)
 		return ret;
 	}
 
+	/* switch SPI clock to 26MHz */
+	mt6631_host_read(0x81026004, &tem);   /* Set 0x81026004[0] = 0x0 */
+	tem = tem & 0xFFFFFFFE;
+	mt6631_host_write(0x81026004, tem);
+
 	/* A0.0 Host control RF register */
 	ret = mt6631_set_bits(0x60, 0x0007, 0xFFF0);  /*Set 0x60 [D3:D0] = 0x7*/
 	if (ret) {
@@ -347,6 +353,22 @@ static fm_s32 mt6631_RampDown(void)
 		WCN_DBG(FM_ERR | CHIP, "ramp down Host control RF registerwr top 0x60 failed\n");
 		return ret;
 	}
+	/*Clear dsp state*/
+	ret = mt6631_set_bits(0x63, 0x0000, 0xFFF0);
+	if (ret) {
+		WCN_DBG(FM_ERR | CHIP, "ramp down Host control RF registerwr top 0x63 failed\n");
+		return ret;
+	}
+	/* Set DSP ramp down state*/
+	ret = mt6631_set_bits(0x63, 0x0010, 0xFFEF);
+	if (ret) {
+		WCN_DBG(FM_ERR | CHIP, "ramp down Host control RF registerwr top 0x63 failed\n");
+		return ret;
+	}
+
+	ret = mt6631_write(FM_MAIN_INTRMASK, 0x0000);
+	if (ret)
+		WCN_DBG(FM_ERR | CHIP, "ramp down clean FM_MAIN_INTRMASK failed\n");
 
 	ret = mt6631_write(FM_MAIN_EXTINTRMASK, 0x0000);
 	if (ret) {
@@ -354,9 +376,6 @@ static fm_s32 mt6631_RampDown(void)
 		return ret;
 	}
 
-	ret = mt6631_write(FM_MAIN_INTRMASK, 0x0000);
-	if (ret)
-		WCN_DBG(FM_ERR | CHIP, "ramp down clean FM_MAIN_INTRMASK failed\n");
 
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
@@ -408,7 +427,7 @@ static fm_s32 mt6631_get_rom_version(void)
 		if (ret)
 			return ret;
 
-		WCN_DBG(FM_DBG | CHIP, "0x84=%x\n", flag_Romcode);
+		WCN_DBG(FM_DBG | CHIP, "ROM_CODE_READY flag 0x84=%x\n", flag_Romcode);
 	} while (flag_Romcode != ROM_CODE_READY);
 
 
@@ -507,29 +526,6 @@ static fm_s32 mt6631_DspPatch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type)
 	WCN_DBG(FM_DBG | CHIP, "binary len:%d, seg num:%d\n", len, seg_num);
 
 	switch (type) {
-#if 0
-	case IMG_ROM:
-
-		for (seg_id = 0; seg_id < seg_num; seg_id++) {
-			seg_len = ((seg_id + 1) < seg_num) ? PATCH_SEG_LEN : (len % PATCH_SEG_LEN);
-			WCN_DBG(FM_NTC | CHIP, "rom, [seg_id:%d], [seg_len:%d]\n", seg_id, seg_len);
-			if (FM_LOCK(cmd_buf_lock))
-				return -FM_ELOCK;
-			pkt_size =
-				mt6631_rom_download(cmd_buf, TX_BUF_SIZE, seg_num, seg_id,
-						&img[seg_id * PATCH_SEG_LEN], seg_len);
-			WCN_DBG(FM_NTC | CHIP, "pkt_size:%d\n", (fm_s32) pkt_size);
-			ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_ROM, SW_RETRY_CNT, ROM_TIMEOUT, NULL);
-			FM_UNLOCK(cmd_buf_lock);
-
-			if (ret) {
-				WCN_DBG(FM_ALT | CHIP, "mt6631_rom_download failed\n");
-				return ret;
-			}
-		}
-
-		break;
-#endif
 	case IMG_PATCH:
 
 		for (seg_id = 0; seg_id < seg_num; seg_id++) {
@@ -551,29 +547,7 @@ static fm_s32 mt6631_DspPatch(const fm_u8 *img, fm_s32 len, enum IMG_TYPE type)
 		}
 
 		break;
-#if 0
-	case IMG_HW_COEFFICIENT:
 
-		for (seg_id = 0; seg_id < seg_num; seg_id++) {
-			seg_len = ((seg_id + 1) < seg_num) ? PATCH_SEG_LEN : (len % PATCH_SEG_LEN);
-			WCN_DBG(FM_NTC | CHIP, "hwcoeff, [seg_id:%d], [seg_len:%d]\n", seg_id, seg_len);
-			if (FM_LOCK(cmd_buf_lock))
-				return -FM_ELOCK;
-			pkt_size =
-				mt6631_hwcoeff_download(cmd_buf, TX_BUF_SIZE, seg_num, seg_id,
-							&img[seg_id * PATCH_SEG_LEN], seg_len);
-			WCN_DBG(FM_NTC | CHIP, "pkt_size:%d\n", (fm_s32) pkt_size);
-			ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_HWCOEFF, SW_RETRY_CNT, HWCOEFF_TIMEOUT, NULL);
-			FM_UNLOCK(cmd_buf_lock);
-
-			if (ret) {
-				WCN_DBG(FM_ALT | CHIP, "mt6631_hwcoeff_download failed\n");
-				return ret;
-			}
-		}
-
-		break;
-#endif
 	case IMG_COEFFICIENT:
 
 		for (seg_id = 0; seg_id < seg_num; seg_id++) {
@@ -637,6 +611,11 @@ static fm_s32 mt6631_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 	mt6631_host_read(0x81024030, &tem);   /* Set 0x81024030[1] = 0x1 */
 	tem = tem | 0x00000002;
 	mt6631_host_write(0x81024030, tem);
+
+	/* Disable 26M crystal sleep */
+	mt6631_host_read(0x81021200, &tem);   /* Set 0x81021200[31] = 0x1 */
+	tem = tem | 0x80000000;
+	mt6631_host_write(0x81021200, tem);
 
 	/* turn on RG_TOP_BGLDO */
 	ret = mt6631_top_read(0x00c0, &host_reg);
@@ -768,7 +747,7 @@ static fm_s32 mt6631_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 	/* Enable connsys FM 2 wire RX */
 	mt6631_write(0x9B, 0xF9AB);				/* G2: Set audio output i2s TX mode */
 	mt6631_host_write(0x81024064, 0x00000014); /* G3: Enable aon_osc_clk_cg */
-	mt6631_host_write(0x81024058, 0x888100D3); /* G4: Enable FMAUD trigger */
+	mt6631_host_write(0x81024058, 0x888100E3); /* G4: Enable FMAUD trigger */
 	mt6631_host_write(0x81024054, 0x00000100); /* G5: Release fmsys memory power down*/
 
 	WCN_DBG(FM_NTC | CHIP, "pwr on seq ok\n");
@@ -779,26 +758,11 @@ static fm_s32 mt6631_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 static fm_s32 mt6631_PowerDown(void)
 {
 	fm_s32 ret = 0;
+	fm_u32 tem;
 	fm_u16 pkt_size;
-	fm_u16 dataRead;
 	fm_u32 host_reg = 0;
 
 	WCN_DBG(FM_DBG | CHIP, "pwr down seq\n");
-	/*SW work around for MCUFA issue.
-	*if interrupt happen before doing rampdown, DSP can't switch MCUFA back well.
-	* In case read interrupt, and clean if interrupt found before rampdown.
-	*/
-	mt6631_read(FM_MAIN_INTR, &dataRead);
-
-	if (dataRead & 0x1)
-		mt6631_write(FM_MAIN_INTR, dataRead);	/* clear status flag */
-
-	/* mt6631_RampDown(); */
-
-/* #ifdef FM_DIGITAL_INPUT */
-/* mt6631_I2s_Setting(MT6631_I2S_OFF, MT6631_I2S_SLAVE, MT6631_I2S_44K); */
-/* #endif */
-	/* pwer up sequence 0425 */
 
 	/* A0.1. Disable aon_osc_clk_cg */
 	ret = mt6631_host_write(0x81024064, 0x00000004);
@@ -819,6 +783,10 @@ static fm_s32 mt6631_PowerDown(void)
 		WCN_DBG(FM_ALT | CHIP, " Issue fmsys memory powr down failed\n");
 		return ret;
 	}
+	/* Enable 26M crystal sleep */
+	mt6631_host_read(0x81021200, &tem);   /* Set 0x81021200[31] = 0x0 */
+	tem = tem & 0x7FFFFFFF;
+	mt6631_host_write(0x81021200, tem);
 
 	/* A0:set audio output I2X Rx mode: */
 	if (FM_LOCK(cmd_buf_lock))
@@ -912,7 +880,7 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 	}
 
 	/* A0.3 Host control RF register */
-	ret = mt6631_set_bits(0x60, 0x000F, 0xFF00);	/* Set 0x60 [D3:D0] = 0x0F*/
+	ret = mt6631_set_bits(0x60, 0x000F, 0xFFF0);	/* Set 0x60 [D3:D0] = 0x0F*/
 	if (ret)
 		WCN_DBG(FM_ERR | CHIP, "Set 0x60 [D3:D0] = 0x0F failed\n");
 
@@ -934,10 +902,16 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 		return fm_false;
 	}
 
+	ret = mt6631_set_bits(0x65, (chan_para << 12), 0x0FFF);
+	if (ret) {
+		WCN_DBG(FM_ERR | CHIP, "set freq wr 0x65 failed\n");
+		return fm_false;
+	}
+
 	/* A1.1 enable aon_osc_clk_cg */
 	mt6631_host_write(0x81024064, 0x00000014); /* G3: Enable aon_osc_clk_cg */
 	/* A1.1 enable FMAUD trigger */
-	mt6631_host_write(0x81024058, 0x888100D3); /* G4: Enable FMAUD trigger */
+	mt6631_host_write(0x81024058, 0x888100E3); /* G4: Enable FMAUD trigger */
 	/* A1.1 release fmsys memory power down */
 	mt6631_host_write(0x81024054, 0x00000100); /* G5: Release fmsys memory power down*/
 
@@ -1632,26 +1606,17 @@ fm_s32 MT6631fm_low_ops_unregister(struct fm_lowlevel_ops *ops)
 	return ret;
 }
 
-/* static struct fm_pub pub; */
-/* static struct fm_pub_cb *pub_cb = &pub.pub_tbl; */
-
-static const fm_u16 mt6631_mcu_dese_list[] = {
-	7630, 7800, 7940, 8320, 9260, 9600, 9710, 9920, 10400, 10410
-};
-
-static const fm_u16 mt6631_gps_dese_list[] = {
-	7850, 7860
-};
 
 static const fm_s8 mt6631_chan_para_map[] = {
-	0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0,	/* 6500~6595 */
+ /* 0,  X,  1,  X,  2,  X,  3,  X,  4,  X,  5,  X,  6,  X,  7,  X,  8,  X,  9, X*/
+	0, 0, 2, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 6500~6595 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 6600~6695 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0,	/* 6700~6795 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 6800~6895 */
 	0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 6900~6995 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 7000~7095 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 7100~7195 */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 7200~7295 */
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0,	/* 7200~7295 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 7300~7395 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,	/* 7400~7495 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 7500~7595 */
@@ -1678,7 +1643,7 @@ static const fm_s8 mt6631_chan_para_map[] = {
 	3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 9600~9695 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 9700~9795 */
 	0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 9800~9895 */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0,	/* 9900~9995 */
+	0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0,	/* 9900~9995 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 10000~10095 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 10100~10195 */
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0,	/* 10200~10295 */
@@ -1690,9 +1655,12 @@ static const fm_s8 mt6631_chan_para_map[] = {
 	0			/* 10800 */
 };
 static const fm_u16 mt6631_scan_dese_list[] = {
-	6910, 6920, 7680, 8450, 9210, 9220, 9600, 9980, 9990, 10400, 10750, 10760
+	6910, 7680, 7800, 9210, 9220, 9230, 9600, 9980, 9990, 10400, 10750, 10760
 };
 
+static const fm_u16 mt6631_SPI_hopping_list[] = {
+	6510, 6520, 7790, 7800, 7810, 9090, 9100, 9110, 9120, 10400, 10410
+};
 
 static const fm_u16 mt6631_I2S_hopping_list[] = {
 	6550, 6760, 6960, 6970, 7170, 7370, 7580, 7780, 7990, 8810, 9210, 9220, 10240
