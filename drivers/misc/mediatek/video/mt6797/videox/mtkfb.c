@@ -2014,13 +2014,15 @@ static int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h
 	/* this is for debug, used in bring up day */
 	unsigned int i = 0;
 	unsigned int color = 0;
-	int _internal_test_block_size = 120;
+	/* int _internal_test_block_size = 120; */
+	int _internal_test_block_size = 40;
 
 	for (i = 0; i < w * h / _internal_test_block_size / _internal_test_block_size; i++) {
-		color = (i & 0x1) * 0xff;
+		/* color = (i & 0x1) * 0xff; */
 		/* color += ((i&0x2)>>1)*0xff00; */
 		/* color += ((i&0x4)>>2)*0xff0000; */
-		color += 0xff000000U;
+		/* color += 0xff000000U; */
+		color = 0xff000000U;
 		_mtkfb_draw_block(va,
 				  i % (w / _internal_test_block_size) * _internal_test_block_size,
 				  i / (w / _internal_test_block_size) * _internal_test_block_size,
@@ -2418,7 +2420,7 @@ static int mtkfb_probe(struct device *dev)
 	wake_up_process(test_task);
 #endif
 
-/*	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) */
+	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		primary_display_diagnose();
 
 
