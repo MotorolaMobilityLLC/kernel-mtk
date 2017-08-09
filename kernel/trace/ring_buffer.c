@@ -517,9 +517,7 @@ struct ring_buffer {
 
 struct ring_buffer_iter {
 	struct ring_buffer_per_cpu	*cpu_buffer;
-	unsigned long			pre_guard; /* for debug only */
 	unsigned long			head;
-	unsigned long			rear_guard; /* for debug only */
 	struct buffer_page		*head_page;
 	struct buffer_page		*cache_reader_page;
 	unsigned long			cache_read;
@@ -1990,80 +1988,6 @@ static void rb_reset_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
 	cpu_buffer->reader_page->read = 0;
 }
 
-/* for debug only */
-#if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_ARCH_MT6735)
-#define FTRACE_KE_DEBUG_ENABLE
-#endif
-
-#ifdef FTRACE_KE_DEBUG_ENABLE /* for debug only */
-#include <mt-plat/hw_watchpoint.h>
-
-static struct wp_event wp_event[4];
-
-static int my_wp_handler_0(unsigned long addr)
-{
-	int wp_err;
-
-	pr_err("[LCH_DEBUG] my_wp_handler_0 access from 0x%lx, call bug\n", addr);
-	dump_stack();
-	BUG();
-	return 0;
-}
-
-static int my_wp_handler_1(unsigned long addr)
-{
-	int wp_err;
-
-	pr_err("[LCH_DEBUG] my_wp_handler_1 access from 0x%lx, call bug\n", addr);
-	dump_stack();
-	BUG();
-	return 0;
-}
-
-static int my_wp_handler_2(unsigned long addr)
-{
-	int wp_err;
-
-	pr_err("[LCH_DEBUG] my_wp_handler_2 access from 0x%lx, call bug\n", addr);
-	dump_stack();
-	BUG();
-	return 0;
-}
-
-static int my_wp_handler_3(unsigned long addr)
-{
-	int wp_err;
-
-	pr_err("[LCH_DEBUG] my_wp_handler_3 access from 0x%lx, call bug\n", addr);
-	dump_stack();
-	BUG();
-	return 0;
-}
-
-typedef int (*my_wp_handler_ptr)(unsigned long);
-
-static my_wp_handler_ptr my_wp_handler[4] =	{my_wp_handler_0, my_wp_handler_1, my_wp_handler_2, my_wp_handler_3};
-
-static struct ring_buffer_iter g_ring_buffer_iter[CONFIG_NR_CPUS];
-
-static __init int lch_enable_ring_buffer_hw_watchpoint(void)
-{
-	int wp_err, i;
-
-	for (i = 0; i < 3; i++) { /* total 4 HW watchpoint, left 1 for others */
-		init_wp_event(&wp_event[i], &g_ring_buffer_iter[i].pre_guard, &g_ring_buffer_iter[i].pre_guard,
-			WP_EVENT_TYPE_WRITE, my_wp_handler[i]);
-		wp_err = add_hw_watchpoint(&wp_event[i]);
-		if (wp_err)
-			pr_err("[LCH_DEBUG]watchpoint init fail\n");
-		else
-			pr_err("[LCH_DEBUG]watchpoint init for 0x%p\n", &g_ring_buffer_iter[i].pre_guard);
-	}
-	return 0;
-}
-late_initcall(lch_enable_ring_buffer_hw_watchpoint);
-#endif
-
 static void rb_inc_iter(struct ring_buffer_iter *iter)
 {
 	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
@@ -2081,13 +2005,6 @@ static void rb_inc_iter(struct ring_buffer_iter *iter)
 
 	iter->read_stamp = iter->head_page->page->time_stamp;
 	iter->head = 0;
-#ifdef FTRACE_KE_DEBUG_ENABLE /* for debug only */
-	if (iter->head > PAGE_SIZE) {
-		pr_err("[LCH_DEBUG]rb_iter_reset iter->head %ld over PAGE_SIZE, call bug\n", iter->head);
-		dump_stack();
-		BUG();
-	}
-#endif
 }
 
 /* Slow path, do not inline */
@@ -3496,13 +3413,6 @@ static void rb_iter_reset(struct ring_buffer_iter *iter)
 	/* Iterator usage is expected to have record disabled */
 	iter->head_page = cpu_buffer->reader_page;
 	iter->head = cpu_buffer->reader_page->read;
-#ifdef FTRACE_KE_DEBUG_ENABLE /* for debug only */
-	if (iter->head > PAGE_SIZE) {
-		pr_err("[LCH_DEBUG]rb_iter_reset iter->head %ld over PAGE_SIZE, call bug\n", iter->head);
-		dump_stack();
-		BUG();
-	}
-#endif
 
 	iter->cache_reader_page = iter->head_page;
 	iter->cache_read = cpu_buffer->read;
@@ -3800,13 +3710,6 @@ static void rb_advance_iter(struct ring_buffer_iter *iter)
 	rb_update_iter_read_stamp(iter, event);
 
 	iter->head += length;
-#ifdef FTRACE_KE_DEBUG_ENABLE /* for debug only */
-	if (iter->head > PAGE_SIZE) {
-		pr_err("[LCH_DEBUG]rb_advance_iter iter->head %ld over PAGE_SIZE, call bug\n", iter->head);
-		dump_stack();
-		BUG();
-	}
-#endif
 
 	/* check for end of page padding */
 	if ((iter->head >= rb_page_size(iter->head_page)) &&
@@ -4129,11 +4032,7 @@ ring_buffer_read_prepare(struct ring_buffer *buffer, int cpu)
 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
 		return NULL;
 
-#ifdef FTRACE_KE_DEBUG_ENABLE /* for debug only */
-	iter = &g_ring_buffer_iter[cpu];
-#else
 	iter = kmalloc(sizeof(*iter), GFP_KERNEL);
-#endif
 	if (!iter)
 		return NULL;
 
@@ -4217,11 +4116,7 @@ ring_buffer_read_finish(struct ring_buffer_iter *iter)
 
 	atomic_dec(&cpu_buffer->record_disabled);
 	atomic_dec(&cpu_buffer->buffer->resize_disabled);
-#ifdef FTRACE_KE_DEBUG_ENABLE /* for debug only */
-	pr_debug("[LCH_DEBUG]%s bypass kfree\n", __func__);
-#else
 	kfree(iter);
-#endif
 }
 EXPORT_SYMBOL_GPL(ring_buffer_read_finish);
 
