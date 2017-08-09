@@ -66,6 +66,7 @@ obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
 obj-$(CONFIG_TEGRA_WATCHDOG) += tegra_wdt.o
 obj-$(CONFIG_MESON_WATCHDOG) += meson_wdt.o
 obj-$(CONFIG_MEDIATEK_WATCHDOG) += mtk_wdt.o
+obj-$(CONFIG_MEDIATEK_WATCHDOG) += mediatek/wdk/
 
 # AVR32 Architecture
 obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
@@ -189,4 +190,6 @@ obj-$(CONFIG_SOFT_WATCHDOG) += softdog.o
 obj-$(CONFIG_MENF21BMC_WATCHDOG) += menf21bmc_wdt.o
 
 # mediatek
-obj-$(CONFIG_MEDIATEK_SOLUTION)	+= mediatek/
+ifneq ($(CONFIG_MEDIATEK_WATCHDOG), y)
+obj-$(CONFIG_MEDIATEK_SOLUTION) += mediatek/
+endif
