@@ -18,6 +18,9 @@ typedef signed char MINT8;
 typedef signed short MINT16;
 typedef signed int MINT32;
 #endif
+typedef unsigned char u8;
+typedef unsigned short u16;
+
 
 enum {
 	e_Max_Strobe_Num_Per_Dev = 2,
