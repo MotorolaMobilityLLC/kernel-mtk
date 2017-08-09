@@ -37,6 +37,7 @@ static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 
 static unsigned int g_SelectEEPROM;
+unsigned int g_LC898212_SearchDir;
 
 #define Min_Pos		0
 #define Max_Pos		1023
@@ -152,6 +153,7 @@ static void LC898212XD_init(void)
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F69, &val1);
 		s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F70, &val2);
 		Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+		g_LC898212_SearchDir = 1;
 
 	} else {
 
@@ -172,8 +174,17 @@ static void LC898212XD_init(void)
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F69, &val1);
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F70, &val2);
 		Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+		g_LC898212_SearchDir = 0;
 	}
 
+
+	if (!(0 <= Hall_Max && Hall_Max <= 0x7FFF)) {
+		signed short Temp;
+
+		Temp = Hall_Min;
+		Hall_Min = Hall_Max;
+		Hall_Max = Temp;
+	}
 
 	LOG_INF("=====LC898212XD:=init=hall_max:0x%x==hall_min:0x%x====halloff:0x%x, hallbias:0x%x===\n",
 	     Hall_Max, Hall_Min, Hall_Off, Hall_Bias);
@@ -195,14 +206,26 @@ static unsigned short AF_convert(int position)
 	else if(position == 1023)
 		return 0x6FFF;
 
-#if 1 /* 1: INF -> Macro =  0x8001 -> 0x7FFF */
+#if 1
+	if (g_LC898212_SearchDir == 0) {
+		return (((position - Min_Pos) * (unsigned short)(Hall_Max - Hall_Min) / (Max_Pos -
+											 Min_Pos)) +
+			Hall_Min) & 0xFFFF;
+	} else {
+		return (((Max_Pos - position) * (unsigned short)(Hall_Max - Hall_Min) / (Max_Pos -
+											 Min_Pos)) +
+			Hall_Min) & 0xFFFF;
+	}
+#else
+#if 1	/* 1: INF -> Macro =  0x8001 -> 0x7FFF */ /* OV23850 */
 	return (((position - Min_Pos) * (unsigned short)(Hall_Max - Hall_Min) / (Max_Pos -
 										 Min_Pos)) +
 		Hall_Min) & 0xFFFF;
-#else				/* 0: INF -> Macro =  0x7FFF -> 0x8001 */
+#else	/* 0: INF -> Macro =  0x7FFF -> 0x8001 */ /* IMX258 */
 	return (((Max_Pos - position) * (unsigned short)(Hall_Max - Hall_Min) / (Max_Pos -
 										 Min_Pos)) +
 		Hall_Min) & 0xFFFF;
+#endif
 #endif
 }
 
@@ -317,6 +340,17 @@ static inline int getAFCalPos(__user stAF_MotorCalPos * pstMotorCalPos)
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F69, &val1);
 		s4EEPROM_ReadReg_LC898212XDAF_OV23850(0x0F70, &val2);
 		Hall_Max = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
+
+		if (0 <= Hall_Max && Hall_Max <= 0x7FFF) {
+			g_LC898212_SearchDir = 0;
+		} else {
+			signed short Temp;
+
+			Temp = Hall_Min;
+			Hall_Min = Hall_Max;
+			Hall_Max = Temp;
+			g_LC898212_SearchDir = 1;
+		}
 
 		if (AF_Marco > 1023 || AF_Infi > 1023 || AF_Infi > AF_Marco) {
 			u4AF_CalibData_INF = convertAF_DAC(AF_Infi);
