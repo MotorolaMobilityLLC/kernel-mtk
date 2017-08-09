@@ -11,32 +11,24 @@
 #if defined(CONFIG_MTK_LEGACY)
 #include <cust_clk_buf.h>
 #endif
-#if 0
-#define GPIO53 53
-#define GPIO54 54
-#define GPIO55 55
-#define GPIO56 56
-#define GPIO57 57
-#endif
 
-#if 1 /* TODO, need add Pad name@DCT tool */
+#if 0 /*TODO: need add Pad name@DCT tool */ /*Everest early porting*/
 #ifndef GPIO_RFIC0_BSI_CS
-#define GPIO_RFIC0_BSI_CS         (GPIO110|0x80000000)    /* RFIC0_BSI_CS = GPIO53 */
+#define GPIO_RFIC0_BSI_CS         (GPIO159 | 0x80000000)   /* RFIC0_BSI_CS = GPIO159 */
 #endif
 #ifndef GPIO_RFIC0_BSI_CK
-#define GPIO_RFIC0_BSI_CK         (GPIO111|0x80000000)    /* RFIC0_BSI_CK = GPIO54 */
+#define GPIO_RFIC0_BSI_CK         (GPIO160 | 0x80000000)   /* RFIC0_BSI_CK = GPIO160 */
 #endif
 #ifndef GPIO_RFIC0_BSI_D0
-#define GPIO_RFIC0_BSI_D0         (GPIO114|0x80000000)    /* RFIC0_BSI_D0 = GPIO55 */
+#define GPIO_RFIC0_BSI_D0         (GPIO69  | 0x80000000)    /* RFIC0_BSI_D0 = GPIO69 */
 #endif
 #ifndef GPIO_RFIC0_BSI_D1
-#define GPIO_RFIC0_BSI_D1         (GPIO113|0x80000000)    /* RFIC0_BSI_D1 = GPIO56 */
+#define GPIO_RFIC0_BSI_D1         (GPIO68  | 0x80000000)    /* RFIC0_BSI_D1 = GPIO68 */
 #endif
 #ifndef GPIO_RFIC0_BSI_D2
-#define GPIO_RFIC0_BSI_D2         (GPIO112|0x80000000)    /* RFIC0_BSI_D2 = GPIO57 */
+#define GPIO_RFIC0_BSI_D2         (GPIO67  | 0x80000000)    /* RFIC0_BSI_D2 = GPIO67 */
 #endif
 #endif
-
 
 enum clk_buf_id {
 	CLK_BUF_BB_MD		= 0,
@@ -45,18 +37,29 @@ enum clk_buf_id {
 	CLK_BUF_AUDIO		= 3,
 	CLK_BUF_INVALID		= 4,
 };
+
+enum pmic_clk_buf_id {
+	PMIC_CLK_BUF_BB_MD		= 0,
+	PMIC_CLK_BUF_CONN		= 1,
+	PMIC_CLK_BUF_NFC		= 2,
+	PMIC_CLK_BUF_RF			= 3,
+	PMIC_CLK_BUF_INVALID	= 4
+};
+
 #if !defined(CONFIG_MTK_LEGACY)
 typedef enum {
 	CLK_BUF_DISABLE	= 0,
-	CLOCK_BUFFER_SW_CONTROL	= 1,
-	CLOCK_BUFFER_HW_CONTROL	= 2,
+	CLOCK_BUFFER_SW_CONTROL = 1,
+	CLOCK_BUFFER_HW_CONTROL = 2,
 } CLK_BUF_STATUS;
 #endif
+
 typedef enum {
 	CLK_BUF_SW_DISABLE = 0,
 	CLK_BUF_SW_ENABLE  = 1,
 } CLK_BUF_SWCTRL_STATUS_T;
-#define CLKBUF_NUM         4
+
+#define CLKBUF_NUM      4
 
 #define STA_CLK_ON      1
 #define STA_CLK_OFF     0
@@ -64,6 +67,7 @@ typedef enum {
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff);
 void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status);
 bool clk_buf_init(void);
+bool is_clk_buf_from_pmic(void);
 
 extern struct mutex clk_buf_ctrl_lock;
 extern struct kobject *power_kobj;

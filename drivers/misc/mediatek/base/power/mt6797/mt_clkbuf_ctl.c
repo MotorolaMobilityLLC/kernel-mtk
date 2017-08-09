@@ -22,21 +22,23 @@
 #include <linux/string.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/ratelimit.h>
 
 #include <mt-plat/sync_write.h>
-#include <mt_spm.h>	/* /drivers/misc/mediatek/base/power/include/mt_spm.h */
-#include <mt_clkmgr.h>
-#include <mt_spm_sleep.h> /* /drivers/misc/mediatek/base/power/include/mt_spm_sleep.h */
+#include <mt_spm.h>
+#include <mach/mt_clkmgr.h>
+#include <mt_spm_sleep.h>
 /* #include <mach/mt_gpio.h> */
 /* #include <mach/mt_gpio_core.h> */
 #include <mt_clkbuf_ctl.h>
 #include <mt-plat/upmu_common.h>
 
-#define CLK_BUF_TAG     "[Power/clkbuf]"
+#define TAG     "[Power/clkbuf]"
 
-#define clk_buf_err(fmt, args...)	pr_err(CLK_BUF_TAG fmt, ##args)
-#define clk_buf_warn(fmt, args...)	pr_warn(CLK_BUF_TAG fmt, ##args)
-#define clk_buf_dbg(fmt, args...)	pr_debug(CLK_BUF_TAG fmt, ##args)
+#define clk_buf_err(fmt, args...)		pr_err(TAG fmt, ##args)
+#define clk_buf_warn(fmt, args...)		pr_warn(TAG fmt, ##args)
+#define clk_buf_warn_limit(fmt, args...)	pr_warn_ratelimited(TAG fmt, ##args)
+#define clk_buf_dbg(fmt, args...)		pr_debug(TAG fmt, ##args)
 
 /*
  * LOCK
@@ -359,10 +361,10 @@ static struct attribute_group spm_attr_group = {
 	.attrs	= clk_buf_attrs,
 };
 
-#if 0 /*everest early porting: used for PMIC clockbuf*/
-static bool is_clk_buf_from_pmic(void)
-{
 
+bool is_clk_buf_from_pmic(void)
+{
+#if 0 /*everest early porting: used for PMIC clockbuf*/
 	unsigned int reg = 0;
 
 	/* switch to debug mode */
@@ -380,15 +382,17 @@ static bool is_clk_buf_from_pmic(void)
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_MASK,
 			      PMIC_CW15_DCXO_STATIC_AUXOUT_EN_SHIFT);
 	if ((reg & 0x200) == 0x200) {
-		clk_buf_warn("clkbuf is from RF, PMIC_CW00_ADDR=0x%x\n", reg);
+		clk_buf_warn_limit("clkbuf is from RF, CW00=0x%x\n", reg);
 		return false;
 	}
-
-	clk_buf_warn("clkbuf is from PMIC, PMIC_CW00_ADDR=0x%x\n", reg);
+	clk_buf_warn_limit("clkbuf is from PMIC, PMIC_CW00_ADDR=0x%x\n", reg);
 	return true;
-
+#else
+	return false;
+#endif /*everest early porting: used for PMIC clockbuf*/
 };
 
+#if 0 /*everest early porting: used for PMIC clockbuf*/
 static void clk_buf_pmic_wrap_init(void)
 {
 	u32 conn_conf = 0, nfc_conf = 0, pmic_cw13 = 0;
@@ -440,7 +444,6 @@ static void clk_buf_pmic_wrap_init(void)
 }
 #endif /*everest early porting*/
 
-
 static int clk_buf_fs_init(void)
 {
 	int r = 0;
@@ -460,8 +463,6 @@ bool clk_buf_init(void)
 	struct device_node *node;
 	u32 vals[4];
 
-	if (clk_buf_fs_init())
-		return false;
 
 #if !defined(CONFIG_MTK_LEGACY)
 #if 1 /* for kernel 3.18 */
@@ -513,6 +514,8 @@ bool clk_buf_init(void)
 	}
 #endif /* for kernel 3.18 */
 #endif /* CONFIG_MTK_LEGACY */
+	if (clk_buf_fs_init())
+		return false;
 
 #if 0 /*everest early porting*/
 	/* Co-TSX @PMIC */
