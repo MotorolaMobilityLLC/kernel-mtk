@@ -2793,6 +2793,9 @@ bailout:
 	} while (FALSE);
 
 	if (i4Status == WLAN_STATUS_SUCCESS) {
+		wlanCfgSetSwCtrl(prGlueInfo->prAdapter);
+		wlanCfgSetChip(prGlueInfo->prAdapter);
+		wlanCfgSetCountryCode(prGlueInfo->prAdapter);
 		/* Init performance monitor structure */
 		kalPerMonInit(prGlueInfo);
 		kalFbNotifierReg(prGlueInfo);
@@ -2851,13 +2854,6 @@ bailout:
 			break;
 		}
 	}
-
-	wlanCfgSetSwCtrl(prGlueInfo->prAdapter);
-
-	wlanCfgSetChip(prGlueInfo->prAdapter);
-
-	wlanCfgSetCountryCode(prGlueInfo->prAdapter);
-
 	return i4Status;
 }				/* end of wlanProbe() */
 
