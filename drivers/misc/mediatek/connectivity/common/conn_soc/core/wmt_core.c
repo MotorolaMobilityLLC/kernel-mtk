@@ -664,7 +664,7 @@ static INT32 wmt_core_stp_init(VOID)
 		co_clock_type = (pWmtGenConf->co_clock_flag & 0x0f);
 		(*(pctx->p_ic_ops->co_clock_ctrl)) (co_clock_type == 0 ? WMT_CO_CLOCK_DIS : WMT_CO_CLOCK_EN);
 	} else {
-		WMT_INFO_FUNC("pctx->p_ic_ops->co_clock_ctrl(0x%x), pWmtGenConf(0x%x)\n", pctx->p_ic_ops->co_clock_ctrl,
+		WMT_WARN_FUNC("pctx->p_ic_ops->co_clock_ctrl(0x%x), pWmtGenConf(0x%x)\n", pctx->p_ic_ops->co_clock_ctrl,
 			      pWmtGenConf);
 	}
 	osal_assert(NULL != pctx->p_ic_ops->sw_init);
@@ -727,7 +727,7 @@ deinit_ic_ops_done:
 
 static VOID wmt_core_dump_func_state(PINT8 pSource)
 {
-	WMT_INFO_FUNC("[%s]status(b:%d f:%d g:%d w:%d lpbk:%d coredump:%d wmt:%d stp:%d)\n",
+	WMT_WARN_FUNC("[%s]status(b:%d f:%d g:%d w:%d lpbk:%d coredump:%d wmt:%d stp:%d)\n",
 		      (pSource == NULL ? (PINT8) "CORE" : pSource),
 		      gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_BT],
 		      gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_FM],
@@ -765,7 +765,7 @@ static INT32 wmt_core_hw_check(VOID)
 		WMT_ERR_FUNC("get hwcode (chip id) fail (%d)\n", iret);
 		return -2;
 	}
-	WMT_INFO_FUNC("get hwcode (chip id) (0x%x)\n", chipid);
+	WMT_WARN_FUNC("get hwcode (chip id) (0x%x)\n", chipid);
 
 	/* TODO:[ChangeFeature][George]: use a better way to select a correct ops table based on chip id */
 	switch (chipid) {
@@ -1759,7 +1759,7 @@ static INT32 opfunc_hw_rst(P_WMT_OP pWmtOp)
 	iRet = wmt_core_ctrl(WMT_CTRL_HW_RST, &ctrlPa1, &ctrlPa2);
 	if (iRet)
 		WMT_ERR_FUNC("WMT-CORE: -->[HW RST] fail iRet(%d)\n", iRet);
-	WMT_INFO_FUNC("WMT-CORE: -->[HW RST] ok\n");
+	WMT_WARN_FUNC("WMT-CORE: -->[HW RST] ok\n");
 
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT] = DRV_STS_POWER_ON;
 

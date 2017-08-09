@@ -166,7 +166,7 @@ static void wmt_dev_early_suspend(struct early_suspend *h)
 	g_es_lr_flag_for_lpbk_onoff = 0;
 	osal_unlock_sleepable_lock(&g_es_lr_lock);
 
-	WMT_INFO_FUNC("@@@@@@@@@@wmt enter early suspend@@@@@@@@@@@@@@\n");
+	WMT_WARN_FUNC("@@@@@@@@@@wmt enter early suspend@@@@@@@@@@@@@@\n");
 
 	schedule_work(&gPwrOnOffWork);
 }
@@ -178,7 +178,7 @@ static void wmt_dev_late_resume(struct early_suspend *h)
 	g_es_lr_flag_for_lpbk_onoff = 1;
 	osal_unlock_sleepable_lock(&g_es_lr_lock);
 
-	WMT_INFO_FUNC("@@@@@@@@@@wmt enter late resume@@@@@@@@@@@@@@\n");
+	WMT_WARN_FUNC("@@@@@@@@@@wmt enter late resume@@@@@@@@@@@@@@\n");
 
 	schedule_work(&gPwrOnOffWork);
 
@@ -212,7 +212,7 @@ static int wmt_fb_notifier_callback(struct notifier_block *self, unsigned long e
 		g_es_lr_flag_for_quick_sleep = 0;
 		g_es_lr_flag_for_lpbk_onoff = 1;
 		osal_unlock_sleepable_lock(&g_es_lr_lock);
-		WMT_INFO_FUNC("@@@@@@@@@@wmt enter UNBLANK @@@@@@@@@@@@@@\n");
+		WMT_WARN_FUNC("@@@@@@@@@@wmt enter UNBLANK @@@@@@@@@@@@@@\n");
 		schedule_work(&gPwrOnOffWork);
 		break;
 	case FB_BLANK_POWERDOWN:
@@ -220,7 +220,7 @@ static int wmt_fb_notifier_callback(struct notifier_block *self, unsigned long e
 		g_es_lr_flag_for_quick_sleep = 1;
 		g_es_lr_flag_for_lpbk_onoff = 0;
 		osal_unlock_sleepable_lock(&g_es_lr_lock);
-		WMT_INFO_FUNC("@@@@@@@@@@wmt enter early POWERDOWN @@@@@@@@@@@@@@\n");
+		WMT_WARN_FUNC("@@@@@@@@@@wmt enter early POWERDOWN @@@@@@@@@@@@@@\n");
 		schedule_work(&gPwrOnOffWork);
 		break;
 	default:
@@ -317,7 +317,7 @@ INT32 wmt_dbg_psm_ctrl(INT32 par1, INT32 par2, INT32 par3)
 		par2 = (1 > par2 || 20000 < par2) ? STP_PSM_IDLE_TIME_SLEEP : par2;
 		wmt_lib_ps_set_idle_time(par2);
 		wmt_lib_ps_ctrl(1);
-		WMT_INFO_FUNC("enable PSM, idle to sleep time = %d ms\n", par2);
+		WMT_WARN_FUNC("enable PSM, idle to sleep time = %d ms\n", par2);
 	}
 #else
 	WMT_INFO_FUNC("WMT PS not supported\n");
@@ -332,7 +332,7 @@ INT32 wmt_dbg_quick_sleep_ctrl(INT32 par1, INT32 par2, INT32 par3)
 
 	wmt_lib_quick_sleep_ctrl(en_flag);
 #else
-	WMT_INFO_FUNC("WMT PS not supported\n");
+	WMT_WARN_FUNC("WMT PS not supported\n");
 #endif
 	return 0;
 }
@@ -713,7 +713,7 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 	if (len > 1024 * 4)
 		len = 1024 * 4;
 
-	WMT_INFO_FUNC("get fw infor from emi at offset(0x%x),len(0x%x)\n", offset, len);
+	WMT_WARN_FUNC("get fw infor from emi at offset(0x%x),len(0x%x)\n", offset, len);
 
 	osal_memset(&gEmiBuf[0], 0, WMT_EMI_DEBUG_BUF_SIZE);
 	wmt_lib_get_fwinfor_from_emi(1, offset, &gEmiBuf[0], len);
@@ -1249,7 +1249,7 @@ static ssize_t wmt_dev_dbg_write(struct file *filp, const char __user *buffer, s
 
 	}
 
-	WMT_INFO_FUNC("x(0x%08x), y(0x%08x), z(0x%08x)\n\r", x, y, z);
+	WMT_WARN_FUNC("x(0x%08x), y(0x%08x), z(0x%08x)\n\r", x, y, z);
 
 	if (osal_array_size(wmt_dev_dbg_func) > x && NULL != wmt_dev_dbg_func[x])
 		(*wmt_dev_dbg_func[x]) (x, y, z);
@@ -2103,7 +2103,7 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	case WMT_IOCTL_SET_PATCH_NUM:{
 			pAtchNum = arg;
-			WMT_INFO_FUNC(" get patch num from launcher = %d\n", pAtchNum);
+			WMT_WARN_FUNC(" get patch num from launcher = %d\n", pAtchNum);
 			wmt_lib_set_patch_num(pAtchNum);
 			pPatchInfo = kcalloc(pAtchNum, sizeof(WMT_PATCH_INFO), GFP_ATOMIC);
 			if (!pPatchInfo) {
@@ -2153,7 +2153,7 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case WMT_IOCTL_WMT_QUERY_CHIPID:
 		{
 			iRet = mtk_wcn_wmt_chipid_query();
-			WMT_INFO_FUNC("chipid = 0x%x\n", iRet);
+			WMT_WARN_FUNC("chipid = 0x%x\n", iRet);
 		}
 		break;
 	case WMT_IOCTL_SEND_BGW_DS_CMD:

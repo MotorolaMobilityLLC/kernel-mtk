@@ -915,7 +915,7 @@ static INT32 wmt_ctrl_evt_err_trg_assert(P_WMT_CTRL_DATA pWmtCtrlData)
 
 	drv_type = pWmtCtrlData->au4CtrlData[0];
 	reason = pWmtCtrlData->au4CtrlData[1];
-	WMT_INFO_FUNC("wmt-ctrl:drv_type(%d),reason(%d)\n", drv_type, reason);
+	WMT_WARN_FUNC("wmt-ctrl:drv_type(%d),reason(%d)\n", drv_type, reason);
 
 	if (0 == mtk_wcn_stp_get_wmt_evt_err_trg_assert()) {
 		mtk_wcn_stp_set_wmt_evt_err_trg_assert(1);

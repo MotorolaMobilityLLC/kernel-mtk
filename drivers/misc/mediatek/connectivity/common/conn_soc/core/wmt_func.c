@@ -645,13 +645,13 @@ INT32 wmt_func_wifi_on(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 
 	if (NULL != mtk_wcn_wlan_probe) {
 
-		WMT_INFO_FUNC("WMT-FUNC: wmt wlan func on before wlan probe\n");
+		WMT_WARN_FUNC("WMT-FUNC: wmt wlan func on before wlan probe\n");
 		iRet = (*mtk_wcn_wlan_probe) ();
 		if (iRet) {
 			WMT_ERR_FUNC("WMT-FUNC: wmt call wlan probe fail(%d)\n", iRet);
 			iRet = -1;
 		} else {
-			WMT_INFO_FUNC("WMT-FUNC: wmt call wlan probe ok\n");
+			WMT_WARN_FUNC("WMT-FUNC: wmt call wlan probe ok\n");
 		}
 	} else {
 		WMT_ERR_FUNC("WMT-FUNC: null pointer mtk_wcn_wlan_probe\n");
@@ -683,13 +683,13 @@ INT32 wmt_func_wifi_off(P_WMT_IC_OPS pOps, P_WMT_GEN_CONF pConf)
 
 	if (NULL != mtk_wcn_wlan_remove) {
 
-		WMT_INFO_FUNC("WMT-FUNC: wmt wlan func on before wlan remove\n");
+		WMT_WARN_FUNC("WMT-FUNC: wmt wlan func on before wlan remove\n");
 		iRet = (*mtk_wcn_wlan_remove) ();
 		if (iRet) {
 			WMT_ERR_FUNC("WMT-FUNC: wmt call wlan remove fail(%d)\n", iRet);
 			iRet = -1;
 		} else {
-			WMT_INFO_FUNC("WMT-FUNC: wmt call wlan remove ok\n");
+			WMT_WARN_FUNC("WMT-FUNC: wmt call wlan remove ok\n");
 		}
 	} else {
 		WMT_ERR_FUNC("WMT-FUNC: null pointer mtk_wcn_wlan_remove\n");

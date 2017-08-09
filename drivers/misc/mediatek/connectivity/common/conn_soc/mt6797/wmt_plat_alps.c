@@ -1031,7 +1031,7 @@ INT32 wmt_plat_get_dump_info(UINT32 offset)
 		WMT_PLAT_ERR_FUNC("get virtual address fail\n");
 		return -1;
 	}
-	WMT_PLAT_INFO_FUNC("connsys_reg_read (0x%x), (0x%p), (0x%x)\n", CONSYS_REG_READ(p_virtual_addr), p_virtual_addr,
+	WMT_PLAT_WARN_FUNC("connsys_reg_read (0x%x), (0x%p), (0x%x)\n", CONSYS_REG_READ(p_virtual_addr), p_virtual_addr,
 			   offset);
 	return CONSYS_REG_READ(p_virtual_addr);
 }

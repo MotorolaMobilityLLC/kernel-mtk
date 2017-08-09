@@ -424,7 +424,7 @@ INT32 wmt_lib_set_hif(unsigned long hifconf)
 		return -2;
 	}
 
-	WMT_INFO_FUNC("new hifType: %d, fm:%d\n", pHif->hifType, pHif->au4StrapConf[0]);
+	WMT_WARN_FUNC("new hifType: %d, fm:%d\n", pHif->hifType, pHif->au4StrapConf[0]);
 	return 0;
 }
 
@@ -1688,7 +1688,7 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 
 	if (bRet == MTK_WCN_BOOL_FALSE) {
 		rstMsg = WMTRSTMSG_RESET_END_FAIL;
-		WMT_INFO_FUNC("[whole chip reset] fail! retries = %d\n", RETRYTIMES - retries);
+		WMT_WARN_FUNC("[whole chip reset] fail! retries = %d\n", RETRYTIMES - retries);
 	} else {
 		rstMsg = WMTRSTMSG_RESET_END;
 		WMT_INFO_FUNC("[whole chip reset] ok! retries = %d\n", RETRYTIMES - retries);
@@ -1706,7 +1706,7 @@ ENUM_WMTRSTRET_TYPE_T wmt_lib_cmb_rst(ENUM_WMTRSTSRC_TYPE_T src)
 	mtk_wcn_stp_set_wmt_evt_err_trg_assert(0);
 rstDone:
 	if (osal_test_and_clear_bit(WMT_STAT_RST_ON, &pDevWmt->state))
-		WMT_INFO_FUNC("[whole chip reset] retval = %d\n", retval);
+		WMT_WARN_FUNC("[whole chip reset] retval = %d\n", retval);
 
 	return retval;
 }
@@ -1918,7 +1918,7 @@ INT8 wmt_lib_co_clock_get(void)
 #if CFG_WMT_PS_SUPPORT
 UINT32 wmt_lib_quick_sleep_ctrl(UINT32 en)
 {
-	WMT_INFO_FUNC("%s quick sleep mode\n", en ? "enable" : "disable");
+	WMT_WARN_FUNC("%s quick sleep mode\n", en ? "enable" : "disable");
 	g_quick_sleep_ctrl = en;
 	return 0;
 }

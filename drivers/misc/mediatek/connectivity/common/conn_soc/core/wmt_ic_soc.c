@@ -1111,7 +1111,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 			return -11;
 		}
 	} else {
-		WMT_INFO_FUNC("co-clock disabled.\n");
+		WMT_WARN_FUNC("co-clock disabled.\n");
 	}
 #if (MTK_WCN_CMB_MERGE_INTERFACE_SUPPORT)
 	iRet = wmt_core_init_script(merge_pcm_table, osal_array_size(merge_pcm_table));
@@ -1511,7 +1511,7 @@ static INT32 mtk_wcn_soc_ver_check(VOID)
 		WMT_ERR_FUNC("0x%x: hw_ver(0x%x) find wmt ic info fail\n", wmt_ic_ops_soc.icId);
 		return -3;
 	}
-	WMT_INFO_FUNC("0x%x: ic info: %s.%s (0x%x/0x%x, WMTHWVER:%d, patch_ext:%s)\n",
+	WMT_WARN_FUNC("0x%x: ic info: %s.%s (0x%x/0x%x, WMTHWVER:%d, patch_ext:%s)\n",
 		      wmt_ic_ops_soc.icId, p_info->cChipName, p_info->cChipVersion,
 		      hw_ver, fw_ver, p_info->eWmtHwVer, p_info->cPatchNameExt);
 
@@ -1973,12 +1973,12 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 	cDataTime[15] = '\0';
 	if (index == 0) {
 		WMT_INFO_FUNC("===========================================\n");
-		WMT_INFO_FUNC("[Consys Patch] Built Time = %s\n", cDataTime);
+		WMT_WARN_FUNC("[Consys Patch] Built Time = %s\n", cDataTime);
 		WMT_INFO_FUNC("[Consys Patch] Hw Ver = 0x%x\n", ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8));
 		WMT_INFO_FUNC("[Consys Patch] Sw Ver = 0x%x\n", ((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8));
 		WMT_INFO_FUNC("[Consys Patch] Ph Ver = 0x%04x\n",
 			      ((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16));
-		WMT_INFO_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
+		WMT_WARN_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
 			      patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
 		WMT_INFO_FUNC("===========================================\n");
 	}
@@ -2142,7 +2142,7 @@ static INT32 mtk_wcn_soc_patch_dwn(UINT32 index)
 		++fragSeq;
 	}
 
-	WMT_INFO_FUNC("wmt_core: patch dwn:%d frag(%d, %d) %s\n",
+	WMT_WARN_FUNC("wmt_core: patch dwn:%d frag(%d, %d) %s\n",
 		      iRet, fragSeq, fragSize, (!iRet && (fragSeq == fragNum)) ? "ok" : "fail");
 
 	if (fragSeq != fragNum)
@@ -2229,12 +2229,12 @@ static INT32 mtk_wcn_soc_patch_dwn(VOID)
 
 	cDataTime[15] = '\0';
 	WMT_INFO_FUNC("===========================================\n");
-	WMT_INFO_FUNC("[Consys Patch] Built Time = %s\n", cDataTime);
+	WMT_WARN_FUNC("[Consys Patch] Built Time = %s\n", cDataTime);
 	WMT_INFO_FUNC("[Consys Patch] Hw Ver = 0x%x\n", ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8));
 	WMT_INFO_FUNC("[Consys Patch] Sw Ver = 0x%x\n", ((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8));
 	WMT_INFO_FUNC("[Consys Patch] Ph Ver = 0x%04x\n",
 		      ((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16));
-	WMT_INFO_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
+	WMT_WARN_FUNC("[Consys Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0], patchHdr->ucPLat[1],
 		      patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
 	WMT_INFO_FUNC("===========================================\n");
 
@@ -2323,7 +2323,7 @@ static INT32 mtk_wcn_soc_patch_dwn(VOID)
 		++fragSeq;
 	}
 
-	WMT_INFO_FUNC("wmt_core: patch dwn:%d frag(%d, %d) %s\n",
+	WMT_WARN_FUNC("wmt_core: patch dwn:%d frag(%d, %d) %s\n",
 		      iRet, fragSeq, fragSize, (!iRet && (fragSeq == fragNum)) ? "ok" : "fail");
 
 	if (fragSeq != fragNum)

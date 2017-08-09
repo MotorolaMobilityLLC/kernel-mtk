@@ -331,7 +331,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 	UINT32 retry = 10;
 	UINT32 consysHwChipId = 0;
 
-	WMT_PLAT_DBG_FUNC("CONSYS-HW-REG-CTRL(0x%08x),start\n", on);
+	WMT_PLAT_WARN_FUNC("CONSYS-HW-REG-CTRL(0x%08x),start\n", on);
 
 	if (on) {
 		WMT_PLAT_DBG_FUNC("++\n");
@@ -758,7 +758,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 #endif
 
 	}
-	WMT_PLAT_DBG_FUNC("CONSYS-HW-REG-CTRL(0x%08x),finish\n", on);
+	WMT_PLAT_WARN_FUNC("CONSYS-HW-REG-CTRL(0x%08x),finish\n", on);
 	return 0;
 }
 

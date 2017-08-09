@@ -118,7 +118,7 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 	if (MTK_WCN_BOOL_FALSE == bRet)
 		WMT_WARN_FUNC("OPID(%d) type(%d) fail\n", pOp->op.opId, pOp->op.au4OpData[0]);
 	else
-		WMT_INFO_FUNC("OPID(%d) type(%d) ok\n", pOp->op.opId, pOp->op.au4OpData[0]);
+		WMT_WARN_FUNC("OPID(%d) type(%d) ok\n", pOp->op.opId, pOp->op.au4OpData[0]);
 
 	return bRet;
 }

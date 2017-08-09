@@ -331,7 +331,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 	UINT32 retry = 10;
 	UINT32 consysHwChipId = 0;
 
-	WMT_PLAT_DBG_FUNC("CONSYS-HW-REG-CTRL(0x%08x),start\n", on);
+	WMT_PLAT_WARN_FUNC("CONSYS-HW-REG-CTRL(0x%08x),start\n", on);
 
 	if (on) {
 		WMT_PLAT_DBG_FUNC("++\n");
@@ -763,7 +763,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 #endif
 
 	}
-	WMT_PLAT_DBG_FUNC("CONSYS-HW-REG-CTRL(0x%08x),finish\n", on);
+	WMT_PLAT_WARN_FUNC("CONSYS-HW-REG-CTRL(0x%08x),finish\n", on);
 	return 0;
 }
 
@@ -1072,7 +1072,7 @@ INT32 mtk_wcn_consys_hw_restore(struct device *device)
 		pEmibaseaddr = ioremap_nocache(CONSYS_EMI_AP_PHY_BASE, CONSYS_EMI_MEM_SIZE);
 #endif
 		if (pEmibaseaddr) {
-			WMT_PLAT_INFO_FUNC("EMI mapping OK(0x%p)\n", pEmibaseaddr);
+			WMT_PLAT_WARN_FUNC("EMI mapping OK(0x%p)\n", pEmibaseaddr);
 			memset_io(pEmibaseaddr, 0, CONSYS_EMI_MEM_SIZE);
 		} else {
 			WMT_PLAT_ERR_FUNC("EMI mapping fail\n");
