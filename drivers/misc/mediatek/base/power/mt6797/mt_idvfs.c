@@ -426,6 +426,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 		idvfs_ver("[****]iDVFS Start Enable: empty ptp1 eFuse, disable iDVFS.\n");
 		/* swithc eFuse enable ptp finish */
 		/* infoIdvfs = 0xff; */
+		return -5;
 	} else {
 		idvfs_ver("iDVFS not enable and wait ptp1 enable, infoIdvfs = 0x%x.\n", infoIdvfs);
 		return -5;
@@ -504,8 +505,8 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	/* ...... */
 
 	/* DREQ ON */
-	BigiDVFSSRAMLDOSet(105000);
-	BigDREQHWEn(1090, 920);
+	BigiDVFSSRAMLDOSet(118000);
+	BigDREQHWEn(1060, 1020);
 #else
 	/* DREQ off */
 	BigiDVFSSRAMLDOSet(118000);
