@@ -830,7 +830,7 @@ static void downstream_complete(struct usb_ep *ep, struct usb_request *req)
 	dump_data(transfer, "downstream", t->buffer, req->actual);
 
 	spin_lock(&transfer->modem_block_lock);
-	if (!!transfer->sdio_block)
+	if (!!transfer->sdio_block) {
 		spin_unlock(&transfer->modem_block_lock);
 
 		spin_lock(&transfer->usb_down_lock);
@@ -838,10 +838,10 @@ static void downstream_complete(struct usb_ep *ep, struct usb_request *req)
 		spin_unlock(&transfer->usb_down_lock);
 		transfer->repush2modem.ntrans++;
 		transfer->downstream.ntrans--;
-		return;
-
+	} else {
 		spin_unlock(&transfer->modem_block_lock);
 		start_downstream(t);
+	}
 }
 
 static void downstream_delayed_work(struct work_struct *work)
@@ -1021,7 +1021,7 @@ int rawbulk_start_transactions(int transfer_id, int nups, int ndowns, int upsz, 
 failto_start_downstream:
 	spin_lock_irqsave(&transfer->usb_down_lock, flags);
 	list_for_each_entry(downstream, &transfer->downstream.transactions, tlist)
-		stop_downstream(downstream);
+			stop_downstream(downstream);
 	spin_unlock_irqrestore(&transfer->usb_down_lock, flags);
 failto_alloc_up_sdiobuf:
 	free_upstream_sdio_buf(transfer);

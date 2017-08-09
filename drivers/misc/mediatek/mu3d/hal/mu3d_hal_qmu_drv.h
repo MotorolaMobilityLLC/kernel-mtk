@@ -77,7 +77,7 @@ struct qmu_desc_map {
 #define AT_GPD_EXT_LEN 0
 #endif
 #define AT_BD_EXT_LEN		0
-#define MAX_GPD_NUM		32
+#define MAX_GPD_NUM		40
 #define MAX_BD_NUM		0
 /* DVT+ */
 #define STRESS_IOC_TH		8

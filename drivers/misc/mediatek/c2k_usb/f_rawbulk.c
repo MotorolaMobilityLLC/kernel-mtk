@@ -158,9 +158,8 @@ static void rawbulk_auto_reconnect(int transfer_id)
 		C2K_ERR("start %s again automatically.\n", fn->longname);
 		rc = rawbulk_start_transactions(transfer_id, fn->nups,
 						fn->ndowns, fn->upsz, fn->downsz);
-		if (rc < 0) {
+		if (rc < 0)
 			rawbulk_disable_function(fn);
-		}
 	}
 }
 
@@ -301,6 +300,7 @@ static void do_activate(struct work_struct *data)
 			/* set_enable_state(fn, 0); */
 			wake_unlock(&fn->keep_awake);
 		}
+
 
 		usb_ep_disable(fn->bulk_out);
 		usb_ep_disable(fn->bulk_in);
