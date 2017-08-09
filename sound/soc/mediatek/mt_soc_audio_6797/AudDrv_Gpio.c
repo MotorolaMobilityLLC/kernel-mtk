@@ -52,6 +52,9 @@
 #include <mt-plat/mt_gpio.h>
 #endif
 
+/* for check E2/E1 chip */
+#include <mt-plat/mt_chip.h>
+
 #ifdef CONFIG_PINCTRL_MT6797
 struct pinctrl *pinctrlaud;
 
@@ -140,6 +143,20 @@ void AudDrv_GPIO_probe(void *dev)
 		ret = PTR_ERR(pinctrlaud);
 		pr_err("Cannot find pinctrlaud!\n");
 		return;
+	}
+
+	/* update hpdepop gpio by chip version */
+	if (mt_get_chip_hw_ver() == 0xCA01) { /* is e2 */
+		struct audio_gpio_attr gpio_hpdepop_high = {"hpdepop-pullhigh_e2", false, NULL};
+		struct audio_gpio_attr gpio_hpdepop_low = {"hpdepop-pullhigh_e2", false, NULL};
+
+		aud_gpios[GPIO_HPDEPOP_HIGH] = gpio_hpdepop_high;
+		aud_gpios[GPIO_HPDEPOP_LOW] = gpio_hpdepop_low;
+
+		pr_warn("%s(), e2 chip, update gpio name, high = %s, low = %s\n",
+			__func__,
+			aud_gpios[GPIO_HPDEPOP_HIGH].name,
+			aud_gpios[GPIO_HPDEPOP_LOW].name);
 	}
 
 	for (i = 0; i < ARRAY_SIZE(aud_gpios); i++) {

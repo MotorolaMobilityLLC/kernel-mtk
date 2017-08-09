@@ -708,7 +708,9 @@
 			"vow_clk_miso_off",
 			"vow_clk_miso_on",
 			"anc_dat_mosi_off",
-			"anc_dat_mosi_on";
+			"anc_dat_mosi_on",
+			"hpdepop-pullhigh_e2",
+			"hpdepop-pulllow_e2";
 	pinctrl-0 = <&aud_clk_mosi_off>;
 	pinctrl-1 = <&aud_clk_mosi_on>;
 	pinctrl-2 = <&aud_pins_smartpa_mode0>;
@@ -728,6 +730,8 @@
 	pinctrl-16 = <&vow_clk_miso_on>;
 	pinctrl-17 = <&anc_dat_mosi_off>;
 	pinctrl-18 = <&anc_dat_mosi_on>;
+	pinctrl-19 = <&aud_pins_hpdepop_high_e2>;
+	pinctrl-20 = <&aud_pins_hpdepop_low_e2>;
 	status = "okay";
 };
 
@@ -824,6 +828,22 @@
 	aud_pins_hpdepop_low: audhpdepoplow {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO111__FUNC_GPIO111>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	aud_pins_hpdepop_high_e2: audhpdepophigh_e2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO139__FUNC_GPIO139>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	aud_pins_hpdepop_low_e2: audhpdepoplow_e2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO139__FUNC_GPIO139>;
 			slew-rate = <1>;
 			output-low;
 		};
