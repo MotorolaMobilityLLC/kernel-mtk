@@ -115,7 +115,8 @@ static void insert_buffer(struct page *page, int bound)
 
 	cma_aligned_pages[bound] = page;
 
-	sort(cma_aligned_pages, bound, sizeof(struct page *),
+	/* The number for sorting is "bound + 1" */
+	sort(cma_aligned_pages, bound + 1, sizeof(struct page *),
 			inser_buffer_cmp, NULL);
 }
 
