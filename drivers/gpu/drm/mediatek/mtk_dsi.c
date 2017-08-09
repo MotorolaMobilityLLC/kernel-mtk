@@ -373,6 +373,9 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
 	struct device *dev = dsi->dev;
 	int ret = 0;
 
+	if (++dsi->refcount != 1)
+		return 0;
+
 	if (dsi->poweron)
 		return ret;
 
@@ -407,6 +410,7 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
 err_digital_clk:
 	clk_disable_unprepare(dsi->engine_clk);
 err_engine_clk:
+	dsi->refcount--;
 	return ret;
 }
 
@@ -753,8 +757,34 @@ static void mtk_dsi_switch_to_cmd_mode(struct mtk_dsi *dsi)
 
 static void mtk_dsi_poweroff(struct mtk_dsi *dsi)
 {
+	if (WARN_ON(dsi->refcount == 0))
+		return;
+
+	if (--dsi->refcount != 0)
+		return;
+
 	if (!dsi->poweron)
 		return;
+
+	mtk_dsi_switch_to_cmd_mode(dsi);
+
+	if (dsi->panel) {
+		if (drm_panel_unprepare(dsi->panel)) {
+			DRM_ERROR("failed to prepare the panel\n");
+			return;
+		}
+
+		if (drm_panel_disable(dsi->panel)) {
+			DRM_ERROR("failed to disable the panel\n");
+			return;
+		}
+	}
+
+	mtk_dsi_reset_engine(dsi);
+	mtk_dsi_lane0_ulp_mode_enter(dsi);
+	mtk_dsi_clk_ulp_mode_enter(dsi);
+
+	mtk_dsi_disable(dsi);
 
 	clk_disable_unprepare(dsi->engine_clk);
 	clk_disable_unprepare(dsi->digital_clk);
@@ -815,28 +845,7 @@ static void mtk_output_dsi_disable(struct mtk_dsi *dsi)
 	if (!dsi->enabled)
 		return;
 
-	mtk_dsi_switch_to_cmd_mode(dsi);
-
-	if (dsi->panel) {
-		if (drm_panel_unprepare(dsi->panel)) {
-			DRM_ERROR("failed to prepare the panel\n");
-			return;
-		}
-	}
-
-	if (dsi->panel) {
-		if (drm_panel_disable(dsi->panel)) {
-			DRM_ERROR("failed to disable the panel\n");
-			return;
-		}
-	}
-
-	mtk_dsi_reset_engine(dsi);
-	mtk_dsi_lane0_ulp_mode_enter(dsi);
-	mtk_dsi_clk_ulp_mode_enter(dsi);
-
 	mtk_dsi_stop(dsi);
-	mtk_dsi_disable(dsi);
 
 	mtk_dsi_poweroff(dsi);
 
