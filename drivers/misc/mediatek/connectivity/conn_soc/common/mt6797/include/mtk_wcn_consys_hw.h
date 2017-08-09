@@ -31,6 +31,9 @@
 #define CONSYS_USE_PLATFORM_WRITE       1
 #define CONSYS_PWR_ON_OFF_API_AVAILABLE 1
 #define CONSYS_CLOCK_BUF_CTRL           1
+#if defined(CONFIG_MTK_LEGACY)
+#define CONFIG_MTK_PMIC_LEGACY			1
+#endif
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -281,7 +284,7 @@ extern UINT8 *mtk_wcn_consys_emi_virt_addr_get(UINT32 ctrl_state_offset);
 extern UINT32 mtk_wcn_consys_jtag_flag_ctrl(UINT32 en);
 #endif
 extern UINT32 mtk_wcn_consys_soc_chipid(VOID);
-#if !defined(CONFIG_MTK_CLKMGR)
+#if !defined(CONFIG_MTK_GPIO_LEGACY)
 extern struct pinctrl *mtk_wcn_consys_get_pinctrl(VOID);
 #endif
 #endif /* _MTK_WCN_CMB_HW_H_ */

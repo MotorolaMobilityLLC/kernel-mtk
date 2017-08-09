@@ -9,6 +9,9 @@ ifneq ($(KERNELRELEASE),)
 		-I$(srctree)/drivers/misc/mediatek/connectivity/conn_soc/common/linux/include
 
   subdir-ccflags-y += -D MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
+  ifeq ($(CONFIG_MTK_CLKMGR),y)
+  	ccflags-y +=	-I$(srctree)/drivers/misc/mediatek/include/mt-plat/mt6797/include/mach
+  	endif
   ifeq ($(CONFIG_MTK_CONN_LTE_IDC_SUPPORT),y)
 	subdir-ccflags-y += -DWMT_IDC_SUPPORT=1
 	else

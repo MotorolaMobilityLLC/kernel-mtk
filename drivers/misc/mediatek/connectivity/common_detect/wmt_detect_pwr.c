@@ -13,7 +13,7 @@
 */
 
 /*#include <mtk_rtc.h>*/
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_GPIO_LEGACY)
 #include <mt_gpio.h>
 #include <cust_gpio_usage.h>
 #endif
@@ -94,7 +94,7 @@ static int wmt_detect_dump_pin_conf(void)
 {
 	WMT_DETECT_INFO_FUNC("[WMT-DETECT]=>dump wmt pin configuration start<=\n");
 
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_GPIO_LEGACY)
 #ifdef GPIO_COMBO_6620_LDO_EN_PIN
 	WMT_DETECT_INFO_FUNC("LDO(GPIO%d)\n", GPIO_COMBO_6620_LDO_EN_PIN);
 #else
@@ -142,14 +142,14 @@ static int wmt_detect_dump_pin_conf(void)
 #else
 	WMT_DETECT_INFO_FUNC("WIFI_EINT_NUM(not defined)\n");
 #endif
-#endif /* #if defined(CONFIG_MTK_CLKMGR) */
+#endif /* #if defined(CONFIG_MTK_GPIO_LEGACY) */
 	WMT_DETECT_INFO_FUNC("[WMT-PLAT]=>dump wmt pin configuration emds<=\n");
 	return 0;
 }
 
 int _wmt_detect_set_output_mode(unsigned int id)
 {
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_GPIO_LEGACY)
 	mt_set_gpio_pull_enable(id, GPIO_PULL_DISABLE);
 	mt_set_gpio_dir(id, GPIO_DIR_OUT);
 	mt_set_gpio_mode(id, GPIO_MODE_GPIO);
@@ -160,7 +160,7 @@ int _wmt_detect_set_output_mode(unsigned int id)
 
 int _wmt_detect_set_input_mode(unsigned int id)
 {
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_GPIO_LEGACY)
 	mt_set_gpio_pull_enable(id, GPIO_PULL_DISABLE);
 	mt_set_gpio_dir(id, GPIO_DIR_IN);
 	mt_set_gpio_mode(id, GPIO_MODE_GPIO);
@@ -171,7 +171,7 @@ int _wmt_detect_set_input_mode(unsigned int id)
 
 int _wmt_detect_output_low(unsigned int id)
 {
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_GPIO_LEGACY)
 	/*_wmt_detect_set_output_mode(id);*/
 	mt_set_gpio_out(id, GPIO_OUT_ZERO);
 	WMT_DETECT_DBG_FUNC("WMT-DETECT: set GPIO%d to output 0\n", id);
@@ -181,7 +181,7 @@ int _wmt_detect_output_low(unsigned int id)
 
 int _wmt_detect_output_high(unsigned int id)
 {
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_GPIO_LEGACY)
 	/*_wmt_detect_set_output_mode(id);*/
 	mt_set_gpio_out(id, GPIO_OUT_ONE);
 	WMT_DETECT_DBG_FUNC("WMT-DETECT: set GPIO%d to output 0\n", id);
@@ -194,7 +194,7 @@ int _wmt_detect_read_gpio_input(unsigned int id)
 	int retval = 0;
 
 	_wmt_detect_set_input_mode(id);
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_GPIO_LEGACY)
 	retval = mt_get_gpio_in(id);
 	WMT_DETECT_DBG_FUNC("WMT-DETECT: set GPIO%d to output 0\n", id);
 #endif

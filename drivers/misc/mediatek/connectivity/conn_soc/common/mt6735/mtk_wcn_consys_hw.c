@@ -104,7 +104,7 @@ static struct platform_driver mtk_wmt_dev_drv = {
 
 /* PMIC part */
 #if CONSYS_PMIC_CTRL_ENABLE
-#if !defined(CONFIG_MTK_CLKMGR)
+#if !defined(CONFIG_MTK_PMIC_LEGACY)
 struct regulator *reg_VCN18;
 struct regulator *reg_VCN28;
 struct regulator *reg_VCN33_BT;
@@ -113,7 +113,7 @@ struct regulator *reg_VCN33_WIFI;
 #endif
 
 /* GPIO part */
-#if !defined(CONFIG_MTK_CLKMGR)
+#if !defined(CONFIG_MTK_GPIO_LEGACY)
 struct pinctrl *consys_pinctrl = NULL;
 #endif
 
@@ -289,7 +289,7 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 #endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 #if CONSYS_PMIC_CTRL_ENABLE
-#if !defined(CONFIG_MTK_CLKMGR)
+#if !defined(CONFIG_MTK_PMIC_LEGACY)
 	reg_VCN18 = regulator_get(&pdev->dev, "vcn18");
 	if (!reg_VCN18)
 		WMT_PLAT_ERR_FUNC("Regulator_get VCN_1V8 fail\n");
@@ -305,13 +305,13 @@ static INT32 mtk_wmt_probe(struct platform_device *pdev)
 #endif
 #endif
 
-#if !defined(CONFIG_MTK_CLKMGR)
+#if !defined(CONFIG_MTK_GPIO_LEGACY)
 	consys_pinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(consys_pinctrl)) {
 		WMT_PLAT_ERR_FUNC("cannot find consys pinctrl.\n");
 		return PTR_ERR(consys_pinctrl);
 	}
-#endif /* !defined(CONFIG_MTK_CLKMGR) */
+#endif /* !defined(CONFIG_MTK_GPIO_LEGACY) */
 
 	return 0;
 }
@@ -341,7 +341,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		/*1.AP power on VCN_1V8 LDO (with PMIC_WRAP API) VCN_1V8  */
 		pmic_set_register_value(PMIC_RG_VCN18_ON_CTRL, 0);
 		/* VOL_DEFAULT, VOL_1200, VOL_1300, VOL_1500, VOL_1800... */
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 		hwPowerOn(MT6328_POWER_LDO_VCN18, VOL_1800, "wcn_drv");
 #else
 		if (reg_VCN18) {
@@ -370,7 +370,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 			pmic_set_register_value(PMIC_RG_VCN28_ON_CTRL, 1);
 			/*2.2.turn on VCN28 LDO (with PMIC_WRAP API)" */
 			/*fix vcn28 not balance warning */
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 			hwPowerOn(MT6328_POWER_LDO_VCN28, VOL_2800, "wcn_drv");
 #else
 			if (reg_VCN28) {
@@ -735,7 +735,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		} else {
 			pmic_set_register_value(PMIC_RG_VCN28_ON_CTRL, 0);
 			/*turn off VCN28 LDO (with PMIC_WRAP API)" */
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 			hwPowerDown(MT6328_POWER_LDO_VCN28, "wcn_drv");
 #else
 			if (reg_VCN28) {
@@ -749,7 +749,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 
 		/*AP power off MT6625L VCN_1V8 LDO */
 		pmic_set_register_value(PMIC_RG_VCN18_ON_CTRL, 0);
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 		hwPowerDown(MT6328_POWER_LDO_VCN18, "wcn_drv");
 #else
 		if (reg_VCN18) {
@@ -911,7 +911,7 @@ INT32 mtk_wcn_consys_hw_bt_paldo_ctrl(UINT32 enable)
 		/*switch BT PALDO control from SW mode to HW mode:0x416[5]-->0x1 */
 #if CONSYS_PMIC_CTRL_ENABLE
 		/* VOL_DEFAULT, VOL_3300, VOL_3400, VOL_3500, VOL_3600 */
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 		hwPowerOn(MT6328_POWER_LDO_VCN33_BT, VOL_3300, "wcn_drv");
 #else
 		if (reg_VCN33_BT) {
@@ -929,7 +929,7 @@ INT32 mtk_wcn_consys_hw_bt_paldo_ctrl(UINT32 enable)
 		/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
 		pmic_set_register_value(PMIC_RG_VCN33_ON_CTRL_BT, 0);
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 		hwPowerDown(MT6328_POWER_LDO_VCN33_BT, "wcn_drv");
 #else
 		if (reg_VCN33_BT)
@@ -950,7 +950,7 @@ INT32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT32 enable)
 		/*do WIFI PMIC on,depenency PMIC API ready */
 		/*switch WIFI PALDO control from SW mode to HW mode:0x418[14]-->0x1 */
 #if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 		hwPowerOn(MT6328_POWER_LDO_VCN33_WIFI, VOL_3300, "wcn_drv");
 #else
 		if (reg_VCN33_WIFI) {
@@ -967,7 +967,7 @@ INT32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT32 enable)
 		/*switch WIFI PALDO control from HW mode to SW mode:0x418[14]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
 		pmic_set_register_value(PMIC_RG_VCN33_ON_CTRL_WIFI, 0);
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 		hwPowerDown(MT6328_POWER_LDO_VCN33_WIFI, "wcn_drv");
 #else
 		if (reg_VCN33_WIFI)
@@ -988,7 +988,7 @@ INT32 mtk_wcn_consys_hw_vcn28_ctrl(UINT32 enable)
 	if (enable) {
 		/*in co-clock mode,need to turn on vcn28 when fm on */
 #if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 		hwPowerOn(MT6328_POWER_LDO_VCN28, VOL_2800, "wcn_drv");
 #else
 		if (reg_VCN28) {
@@ -1002,7 +1002,7 @@ INT32 mtk_wcn_consys_hw_vcn28_ctrl(UINT32 enable)
 	} else {
 		/*in co-clock mode,need to turn off vcn28 when fm off */
 #if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 		hwPowerDown(MT6328_POWER_LDO_VCN28, "wcn_drv");
 #else
 		if (reg_VCN28)
@@ -1225,7 +1225,7 @@ UINT32 mtk_wcn_consys_soc_chipid(void)
 	return PLATFORM_SOC_CHIP;
 }
 
-#if !defined(CONFIG_MTK_CLKMGR)
+#if !defined(CONFIG_MTK_GPIO_LEGACY)
 struct pinctrl *mtk_wcn_consys_get_pinctrl()
 {
 	return consys_pinctrl;

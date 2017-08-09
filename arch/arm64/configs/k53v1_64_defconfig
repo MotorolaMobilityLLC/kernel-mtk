@@ -1207,6 +1207,18 @@ CONFIG_MTK_CONN_LTE_IDC_SUPPORT=y
 # CONFIG_MTK_NFC is not set
 
 #
+#Connectivity related configuration start
+#
+CONFIG_MTK_BTIF=y
+CONFIG_MTK_COMBO=y
+CONFIG_MTK_COMBO_CHIP_CONSYS_6735=y
+CONFIG_MTK_COMBO_CHIP="CONSYS_6735"
+CONFIG_MTK_COMBO_PLAT_PATH=""
+#
+#Connectivity related configuration end
+#
+
+#
 # SCSI device support
 #
 CONFIG_SCSI_MOD=y
