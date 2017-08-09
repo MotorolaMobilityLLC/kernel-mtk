@@ -1,8 +1,10 @@
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/irq/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6755/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
 
 obj-y += mt_pm_init.o
 #obj-y += mt_sleep.o
@@ -40,6 +42,7 @@ obj-$(CONFIG_ARCH_MT6753) += mt_spm_vcore_dvfs_3.o
 #obj-y += mt_ptp.o
 #obj-y += mt_static_power.o
 obj-y += mt_cpufreq.o
+obj-y += mt_cpufreq_hybrid.o
 #obj-y += mt_gpufreq.o
 
 obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
