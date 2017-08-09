@@ -163,7 +163,22 @@ struct std_msg_struct {
 };
 #endif
 
+struct fdrv_call_struct {
+        int fdrv_call_type;
+        int fdrv_call_buff_size;
+        int retVal;
+};
 
+
+#define CAPI_CALL       0x01
+#define FDRV_CALL       0x02
+#define BDRV_CALL       0x03
+#define SCHED_CALL      0x04
+
+#define FP_SYS_NO       100
+
+#define VFS_SYS_NO      0x08
+#define REETIME_SYS_NO  0x07 
 
 unsigned long cpu_notify_flag = 0;
 static  int current_cpu_id = 0x00;
@@ -222,6 +237,10 @@ struct tlog_struct {
 static int sub_pid;
 #else
 static struct task_struct *teei_fastcall_task;
+static struct task_struct *teei_switch_task;
+
+DEFINE_KTHREAD_WORKER(ut_fastcall_worker);
+
 #endif
 static 	struct cpumask mask = { CPU_BITS_NONE };
 
@@ -241,6 +260,7 @@ unsigned int soter_error_flag = 0;
 DECLARE_COMPLETION(global_down_lock);
 EXPORT_SYMBOL_GPL(global_down_lock);
 
+extern int add_work_entry(int work_type, unsigned long buff);
 /*
  * structures and MACROs for NQ buffer
  */
@@ -259,6 +279,7 @@ EXPORT_SYMBOL_GPL(global_down_lock);
 
 static DEFINE_MUTEX(nt_t_NQ_lock);
 static DEFINE_MUTEX(t_nt_NQ_lock);
+
 
 struct semaphore smc_lock;
 //struct semaphore global_down_lock;
@@ -402,18 +423,31 @@ static void secondary_nt_sched_t(void *info)
 }
 
 
-static void nt_sched_t_call(void)
+void nt_sched_t_call(void)
 {
 #if 0
 	nt_sched_t();
 #else
 	int cpu_id = 0;
 
+
+#if 0
 	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_nt_sched_t, NULL, 1);
 	put_online_cpus();
+#else
+	int retVal = 0;
+
+        retVal = add_work_entry(SCHED_CALL, NULL);
+        if (retVal != 0) {
+                printk("[%s][%d] add_work_entry function failed!\n", __func__, __LINE__);
+        }
 #endif
+
+#endif
+
+	return;
 }
 
 
@@ -892,6 +926,8 @@ int teei_smc_call(u32 teei_cmd_type,
 		struct semaphore *psema)
 {
 	int cpu_id = 0;
+	int retVal = 0;
+
 	struct teei_smc_cmd *local_smc_cmd = (struct teei_smc_cmd *)tz_malloc_shared_mem(sizeof(struct teei_smc_cmd), GFP_KERNEL);
 	if (local_smc_cmd == NULL) {
 		printk("[%s][%d] tz_malloc_shared_mem failed!\n", __func__, __LINE__);
@@ -924,11 +960,19 @@ int teei_smc_call(u32 teei_cmd_type,
 
 	/* with a wmb() */
 	wmb();
-
+#if 0
 	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_teei_smc_call, (void *)(&smc_call_entry), 1);
 	put_online_cpus();
+#else
+	Flush_Dcache_By_Area((unsigned long)&smc_call_entry, (unsigned long)&smc_call_entry + sizeof(smc_call_entry));
+	retVal = add_work_entry(CAPI_CALL, (unsigned long)&smc_call_entry);
+        if (retVal != 0) {
+                tz_free_shared_mem(local_smc_cmd, sizeof(struct teei_smc_cmd));
+                return retVal;
+        }
+#endif
 
 	down(psema);
 
@@ -3415,6 +3459,8 @@ static void secondary_send_fp_command(void *info)
 int send_fp_command(unsigned long share_memory_size)
 {
 	int cpu_id = 0;
+	int retVal = 0;
+	struct fdrv_call_struct fdrv_ent;
 
 	down(&fp_lock);
 	mutex_lock(&pm_mutex);
@@ -3426,23 +3472,38 @@ int send_fp_command(unsigned long share_memory_size)
 	down(&smc_lock);
 	down(&boot_sema);
 
+#if 0
 	fp_command_entry.mem_size = share_memory_size;
-
+#else
+	fdrv_ent.fdrv_call_type = FP_SYS_NO;
+	fdrv_ent.fdrv_call_buff_size = share_memory_size;
+#endif
 	/* with a wmb() */
 	wmb();
 
+#if 0
 	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_send_fp_command, (void *)(&fp_command_entry), 1);
 	put_online_cpus();
+#else
+	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
+	retVal = add_work_entry(FDRV_CALL, (unsigned long)&fdrv_ent);
+        if (retVal != 0) {
+                mutex_unlock(&pm_mutex);
+                up(&fp_lock);
+                return retVal;
+        }
 
+#endif
 	down(&boot_sema);
 	up(&boot_sema);
 
 	rmb();
 	mutex_unlock(&pm_mutex);
 	up(&fp_lock);
-	return fp_command_entry.retVal;
+
+	return fdrv_ent.retVal;
 }
 
 struct boot_stage1_struct {
@@ -3678,13 +3739,17 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 						}
 						current_cpu_id = i;
 					}
-#if 0
+#if 1
 					printk("[%s][%d]brefore cpumask set cpu\n", __func__, __LINE__);
 					cpumask_set_cpu(current_cpu_id, &mtee_mask);
 					/*cpumask_set_cpu(current_cpu_id, &mask);*/
 					printk("[%s][%d]after cpumask set cpu\n", __func__, __LINE__);
+#if 0
 					if (sched_setaffinity(sub_pid, &mtee_mask) == -1)
 						printk("warning: could not set CPU affinity, continuing...\n");
+#endif
+
+					set_cpus_allowed(teei_switch_task, mtee_mask);
 #endif
 					/* TODO smc_call to notify ATF to switch the CPU*/
 					/* NT_switch_T(current_cpu_id);*/
@@ -3786,15 +3851,15 @@ static int teei_client_init(void)
 	sub_pid = kernel_thread(global_fn, NULL, CLONE_KERNEL);
 	retVal = sys_setpriority(PRIO_PROCESS, sub_pid, -3);
 #else
-	struct sched_param param = {.sched_priority = -20 };
+	//struct sched_param param = {.sched_priority = -20 };
 	teei_fastcall_task = kthread_create(global_fn, NULL, "teei_fastcall_thread");
 	if (IS_ERR(teei_fastcall_task)) {
 		printk("create fastcall thread failed: %d\n", PTR_ERR(teei_fastcall_task));
 		goto fastcall_thread_fail;
 	}
 
-	sched_setscheduler_nocheck(teei_fastcall_task, SCHED_NORMAL, &param);
-	get_task_struct(teei_fastcall_task);
+	//sched_setscheduler_nocheck(teei_fastcall_task, SCHED_NORMAL, &param);
+	//get_task_struct(teei_fastcall_task);
 	wake_up_process(teei_fastcall_task);
 #endif
 	printk("create the sub_thread successfully!\n");
@@ -3805,6 +3870,24 @@ static int teei_client_init(void)
 	if (retVal != 0)
 		printk("warning: could not set CPU affinity, retVal = [%l] continuing...\n",  retVal);
 #endif
+
+	/* create the switch thread */
+        teei_switch_task = kthread_create(kthread_worker_fn, &ut_fastcall_worker, "teei_switch_thread");
+        if (IS_ERR(teei_switch_task)) {
+                printk("create switch thread failed: %ld\n", PTR_ERR(teei_switch_task));
+		teei_switch_task = NULL;
+                goto fastcall_thread_fail;
+        }
+
+        //sched_setscheduler_nocheck(teei_switch_task, SCHED_NORMAL, &param);
+        //get_task_struct(teei_switch_task);
+        wake_up_process(teei_switch_task);
+
+
+	cpumask_set_cpu(get_current_cpuid(), &mask);
+        set_cpus_allowed(teei_switch_task, mask);
+
+
 	register_cpu_notifier(&tz_driver_cpu_notifer);
 	printk("after  register cpu notify\n");
 	teei_config_init();

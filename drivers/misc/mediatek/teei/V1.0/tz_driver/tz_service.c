@@ -79,6 +79,18 @@
 #define START_STATUS		(0)
 #define END_STATUS		(1)
 #define VFS_SIZE		(512 * 1024)
+
+
+#define CAPI_CALL       0x01
+#define FDRV_CALL       0x02
+#define BDRV_CALL       0x03
+#define SCHED_CALL      0x04
+
+#define FP_SYS_NO       100
+
+#define VFS_SYS_NO      0x08
+#define REETIME_SYS_NO  0x07 
+
 unsigned long message_buff = 0;
 unsigned long fdrv_message_buff = 0;
 unsigned long bdrv_message_buff = 0;
@@ -269,6 +281,15 @@ struct timeval etime;
 int vfs_write_flag = 0;
 unsigned long teei_vfs_flag = 0;
 
+
+struct bdrv_call_struct {
+        int bdrv_call_type;
+        struct service_handler *handler;
+        int retVal;
+};
+
+extern int add_work_entry(int work_type, unsigned long buff);
+
 #define printk(fmt, args...) printk("\033[;34m[TEEI][TZDriver]"fmt"\033[0m", ##args)
 /*add by microtrust*/
 static unsigned int get_master_cpu_id(unsigned int gic_irqs)
@@ -439,7 +460,7 @@ static void reetime_deinit(struct service_handler *handler)
 	return;
 }
 
-static int  __reetime_handle(struct service_handler *handler)
+int  __reetime_handle(struct service_handler *handler)
 {
 	struct timeval tv;
 	void *ptr = NULL;
@@ -482,19 +503,39 @@ static void secondary_reetime_handle(void *info)
 static int reetime_handle(struct service_handler *handler)
 {
 	int cpu_id = 0;
-	down(&smc_lock);
-	reetime_handle_entry.handler = handler;
+	int retVal = 0;
+	struct bdrv_call_struct *reetime_bdrv_ent = NULL;
 
+	down(&smc_lock);
+
+#if 0
+	reetime_handle_entry.handler = handler;
+#else
+	reetime_bdrv_ent = (struct bdrv_call_struct *)kmalloc(sizeof(struct bdrv_call_struct), GFP_KERNEL);
+	reetime_bdrv_ent->handler = handler;
+	reetime_bdrv_ent->bdrv_call_type = REETIME_SYS_NO;
+#endif
 	/* with a wmb() */
 	wmb();
-	
+
+#if 0
 	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_reetime_handle, (void *)(&reetime_handle_entry), 1);
 	put_online_cpus();
-
+#else
+	retVal = add_work_entry(BDRV_CALL, (unsigned long)reetime_bdrv_ent);
+        if (retVal != 0) {
+                up(&smc_lock);
+                return retVal;
+        }
+#endif
 	rmb();
+#if 0
 	return reetime_handle_entry.retVal;
+#else
+	return 0;
+#endif 
 }
 
 
@@ -586,7 +627,7 @@ static void vfs_deinit(struct service_handler *handler) /*! stop service  */
 }
 
 
-static int __vfs_handle(struct service_handler *handler) /*! invoke handler */
+int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 {
 	/* vfs_thread_function(handler->param_buf, para_vaddr, buff_vaddr); */
 
@@ -620,21 +661,42 @@ static void secondary_vfs_handle(void *info)
 static int vfs_handle(struct service_handler *handler)
 {
 	int cpu_id = 0;
+	int retVal = 0;
+	struct bdrv_call_struct *vfs_bdrv_ent = NULL;
+
 	vfs_thread_function(handler->param_buf, para_vaddr, buff_vaddr);
 	down(&smc_lock);
 
+#if 0
 	vfs_handle_entry.handler = handler;
-
+#else
+	vfs_bdrv_ent = (struct bdrv_call_struct *)kmalloc(sizeof(struct bdrv_call_struct), GFP_KERNEL);
+	vfs_bdrv_ent->handler = handler;
+	vfs_bdrv_ent->bdrv_call_type = VFS_SYS_NO;
+#endif
 	/* with a wmb() */
 	wmb();
 
+#if 0
 	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_vfs_handle, (void *)(&vfs_handle_entry), 1);
 	put_online_cpus();
-	
+#else
+	Flush_Dcache_By_Area((unsigned long)vfs_bdrv_ent, (unsigned long)vfs_bdrv_ent + sizeof(struct bdrv_call_struct));
+	retVal = add_work_entry(BDRV_CALL, (unsigned long)vfs_bdrv_ent);
+        if (retVal != 0) {
+                up(&smc_lock);
+                return retVal;
+        }
+#endif	
 	rmb();
+
+#if 0
 	return vfs_handle_entry.retVal;
+#else
+	return 0;
+#endif
 }
 
 /**********************************************************************
