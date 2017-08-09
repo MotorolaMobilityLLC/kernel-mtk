@@ -4487,7 +4487,7 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 	/* Disable CLKSQ 26MHz */
 	Ana_Set_Reg(AUDDEC_ANA_CON9, 0x1000, 0x1000);
 	/* disable AUDGLB */
-	Ana_Set_Reg(TOP_CKPDN_CON0_SET, 0x3800, 0x3800);
+	Ana_Set_Reg(TOP_CKPDN_CON0_SET, 0x7000, 0x7000);
 	/* Turn off AUDNCP_CLKDIV engine clock,Turn off AUD 26M */
 	Ana_Set_Reg(AUDDEC_ANA_CON0, 0xe000, 0xe000);
 	/* Disable HeadphoneL/HeadphoneR/voice short circuit protection */
