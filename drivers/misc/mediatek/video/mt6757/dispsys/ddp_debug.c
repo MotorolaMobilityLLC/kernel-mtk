@@ -292,9 +292,10 @@ static void process_dbg_opt(const char *opt)
 			rdma_color_pre pre = { 0 };
 			rdma_color_post post = { 255, 0, 0 };
 
-			ret = sscanf(opt, "%d,%d,%d\n", &red, &green, &blue);
+			ret = sscanf(opt, "rdma_color:on,%d,%d,%d\n", &red, &green, &blue);
 			if (ret != 3) {
 				snprintf(buf, 50, "error to parse cmd %s\n", opt);
+				pr_err("error to parse cmd %s\n", opt);
 				return;
 			}
 

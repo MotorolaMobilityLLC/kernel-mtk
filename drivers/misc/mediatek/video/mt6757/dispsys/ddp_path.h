@@ -49,6 +49,9 @@ int ddp_mutex_set(int mutex_id, DDP_SCENARIO_ENUM scenario, DDP_MODE mode, void 
 int ddp_mutex_clear(int mutex_id, void *handle);
 int ddp_mutex_enable(int mutex_id, DDP_SCENARIO_ENUM scenario, void *handle);
 int ddp_mutex_disable(int mutex_id, DDP_SCENARIO_ENUM scenario, void *handle);
+int ddp_mutex_get(int mutex_id, DDP_SCENARIO_ENUM scenario, void *handle);
+int ddp_mutex_release(int mutex_id, DDP_SCENARIO_ENUM scenario, void *handle);
+
 void ddp_check_mutex(int mutex_id, DDP_SCENARIO_ENUM scenario, DDP_MODE mode);
 int ddp_mutex_reset(int mutex_id, void *handle);
 int ddp_mutex_set_sof_wait(int mutex_id, cmdqRecHandle handle, int wait);

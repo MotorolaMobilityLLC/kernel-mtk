@@ -210,6 +210,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (disp_irq_esd_cust_get() == 1)
 			reg_temp_val = reg_val & 0xfffe;
 		DISP_CPU_REG_SET(dsi_reg_va[index] + 0xC, ~reg_temp_val);
+		DDPIRQ("DSI irq=%d, regval=0x%x\n", irq, reg_val);
 	} else if (irq == dispsys_irq[DISP_REG_OVL0] ||
 		   irq == dispsys_irq[DISP_REG_OVL1] ||
 		   irq == dispsys_irq[DISP_REG_OVL0_2L] || irq == dispsys_irq[DISP_REG_OVL1_2L]) {
@@ -363,14 +364,14 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			MMProfileLogEx(ddp_mmp_get_events()->ddp_abnormal_irq, MMProfileFlagPulse,
 				       (rdma_underflow_irq_cnt[index] << 24) | (index << 16) | reg_val, module);
 
-	} else if (irq == dispsys_irq[DISP_REG_COLOR]) {
+	} else if (irq == dispsys_irq[DISP_REG_COLOR0]) {
 		DDPERR("color irq happens!! %d\n", irq);
 	} else if (irq == dispsys_irq[DISP_REG_MUTEX]) {
 		/* mutex0: perimary disp */
 		/* mutex1: sub disp */
 		/* mutex2: aal */
 		module = DISP_MODULE_MUTEX;
-		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA) & 0x7C1F;
+		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA) & DISP_MUTEX_INT_MSK;
 		for (mutexID = 0; mutexID < 5; mutexID++) {
 			if (reg_val & (0x1 << mutexID)) {
 				DDPIRQ("IRQ: mutex%d sof!\n", mutexID);
@@ -384,8 +385,8 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			}
 		}
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, ~reg_val);
-	} else if (irq == dispsys_irq[DISP_REG_AAL]) {
-		module = DISP_MODULE_AAL;
+	} else if (irq == dispsys_irq[DISP_REG_AAL0]) {
+		module = DISP_MODULE_AAL0;
 		reg_val = DISP_REG_GET(DISP_AAL_INTSTA);
 		disp_aal_on_end_of_frame();
 	} else if (irq == dispsys_irq[DISP_REG_CONFIG]) {	/* MMSYS error intr */

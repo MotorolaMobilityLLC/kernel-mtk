@@ -36,7 +36,7 @@
 
 /* CONFIG_MTK_FPGA is used in linux kernel for early porting. */
 /* if the macro name changed, please modify the code here too. */
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 static unsigned int disp_global_stage = MAGIC_CODE | DISP_HELPER_STAGE_EARLY_PORTING;
 #else
 /* please change this to DISP_HELPER_STAGE_NORMAL after bring up done */
@@ -131,6 +131,8 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_PARTIAL_UPDATE",
 	"DISP_OPT_CV_BYSUSPEND",
 	"DISP_OPT_DELAYED_TRIGGER",
+	"DISP_OPT_SHADOW_REGISTER",
+	"DISP_OPT_SHADOW_MODE",
 };
 
 const char *disp_helper_option_spy(DISP_HELPER_OPT option)
@@ -326,20 +328,20 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_OVL_WARM_RESET, 0);
 
 	/* ===================Begin: lowpower option setting==================== */
-	disp_helper_set_option(DISP_OPT_SODI_SUPPORT,			1);
-	disp_helper_set_option(DISP_OPT_IDLE_MGR,			1);
+	disp_helper_set_option(DISP_OPT_SODI_SUPPORT,			0);
+	disp_helper_set_option(DISP_OPT_IDLE_MGR,			0);
 
 	/* 1. vdo mode + screen idle(need idlemgr) */
-	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,		1);
-	disp_helper_set_option(DISP_OPT_SHARE_SRAM,			1);
-	disp_helper_set_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ,	1);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,		0);
+	disp_helper_set_option(DISP_OPT_SHARE_SRAM,			0);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ,	0);
 
 	/* 2. cmd mode + screen idle(need idlemgr) */
-	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS,		1);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS,		0);
 
 	/* 3. cmd mode + vdo mode */
-	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK,	1);
-	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING,	1);
+	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK,	0);
+	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING,	0);
 
 	disp_helper_set_option(DISP_OPT_MET_LOG,			0);
 	/* ===================End: lowpower option setting==================== */
@@ -352,22 +354,25 @@ void disp_helper_option_init(void)
 	/* use RGB565 format for decouple mode intermediate buffer */
 	disp_helper_set_option(DISP_OPT_DECOUPLE_MODE_USE_RGB565, 0);
 
-	disp_helper_set_option(DISP_OPT_BYPASS_PQ, 0);
+	disp_helper_set_option(DISP_OPT_BYPASS_PQ, 1);
 	disp_helper_set_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 0);
-	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 1);
+	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 0);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 0);
 
-	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 1);
-	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 30);
-	disp_helper_set_option(DISP_OPT_SMART_OVL, 1);
+	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 0);
+	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 10);
+	disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
-	disp_helper_set_option(DISP_OPT_HRT, 1);
+	disp_helper_set_option(DISP_OPT_HRT, 0);
 	/* display partial update */
 #ifdef CONFIG_MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT
-	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 1);
+	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 0);
 #endif
 	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 0);
 	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 1);
+	disp_helper_set_option(DISP_OPT_SHADOW_REGISTER, 1);
+	disp_helper_set_option(DISP_OPT_SHADOW_MODE, 1);
+
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

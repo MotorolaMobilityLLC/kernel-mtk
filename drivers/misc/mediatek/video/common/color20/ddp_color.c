@@ -1889,7 +1889,8 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 	switch (reg_id) {
 	case SWREG_COLOR_BASE_ADDRESS:
 		{
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795) || defined(CONFIG_ARCH_ELBRUS) \
+	|| defined(CONFIG_ARCH_MT6757)
 			ret = ddp_reg_pa_base[DISP_REG_COLOR0];
 #else
 			ret = ddp_reg_pa_base[DISP_REG_COLOR];
@@ -1899,20 +1900,32 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 
 	case SWREG_GAMMA_BASE_ADDRESS:
 		{
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+			ret = ddp_reg_pa_base[DISP_REG_GAMMA0];
+#else
 			ret = ddp_reg_pa_base[DISP_REG_GAMMA];
+#endif
 			break;
 		}
 
 	case SWREG_AAL_BASE_ADDRESS:
 		{
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+			ret = ddp_reg_pa_base[DISP_REG_AAL0];
+#else
 			ret = ddp_reg_pa_base[DISP_REG_AAL];
+#endif
 			break;
 		}
 
 #if defined(CCORR_SUPPORT)
 	case SWREG_CCORR_BASE_ADDRESS:
 		{
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+			ret = ddp_reg_pa_base[DISP_REG_CCORR0];
+#else
 			ret = ddp_reg_pa_base[DISP_REG_CCORR];
+#endif
 			break;
 		}
 #endif
@@ -2738,7 +2751,8 @@ static int _color_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle,
 
 	/* only get COLOR HIST on primary display */
 	if ((module == DISP_MODULE_COLOR0) && (state == CMDQ_AFTER_STREAM_EOF)) {
-#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795) || defined(CONFIG_ARCH_ELBRUS) \
+	|| defined(CONFIG_ARCH_MT6757)
 		ret =
 		    cmdqRecReadToDataRegister(cmdq_trigger_handle,
 					      ddp_reg_pa_base[DISP_REG_COLOR0] +

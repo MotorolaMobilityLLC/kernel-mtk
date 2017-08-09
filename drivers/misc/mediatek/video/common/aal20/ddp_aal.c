@@ -103,6 +103,7 @@ static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *c
 
 static void disp_aal_trigger_refresh(int latency)
 {
+
 	if (g_ddp_notify != NULL) {
 		DISP_PATH_EVENT trigger_method = DISP_PATH_EVENT_TRIGGER;
 
@@ -110,7 +111,12 @@ static void disp_aal_trigger_refresh(int latency)
 		if (latency == AAL_REFRESH_33MS)
 			trigger_method = DISP_PATH_EVENT_DELAYED_TRIGGER_33ms;
 #endif
+
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+		g_ddp_notify(DISP_MODULE_AAL0, trigger_method);
+#else
 		g_ddp_notify(DISP_MODULE_AAL, trigger_method);
+#endif
 	}
 }
 
@@ -567,7 +573,7 @@ static void ddp_aal_restore(void *cmq_handle)
 
 static int aal_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 {
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
 	/* aal is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
@@ -586,7 +592,7 @@ static int aal_clock_on(DISP_MODULE_ENUM module, void *cmq_handle)
 static int aal_clock_off(DISP_MODULE_ENUM module, void *cmq_handle)
 {
 	ddp_aal_backup();
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
 	/* aal is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
@@ -864,7 +870,11 @@ void aal_test(const char *cmd, char *debug_output)
 	} else if (strncmp(cmd, "bypass:", 7) == 0) {
 		int bypass = (cmd[7] == '1');
 
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+		aal_bypass(DISP_MODULE_AAL0, bypass);
+#else
 		aal_bypass(DISP_MODULE_AAL, bypass);
+#endif
 	} else if (strncmp(cmd, "ut:", 3) == 0) { /* debug command for UT */
 		aal_ut_cmd(cmd + 3);
 	}

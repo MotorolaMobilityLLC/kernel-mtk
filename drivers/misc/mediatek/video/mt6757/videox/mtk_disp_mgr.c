@@ -629,7 +629,7 @@ static int set_memory_buffer(disp_session_input_config *input)
 	int i = 0;
 	int layer_id = 0;
 	unsigned int dst_size = 0;
-	unsigned int dst_mva = 0;
+	unsigned long dst_mva = 0;
 	unsigned int session_id = 0;
 	disp_session_sync_info *session_info;
 
@@ -656,12 +656,12 @@ static int set_memory_buffer(disp_session_input_config *input)
 				input->config[i].security = DISP_NORMAL_BUFFER;
 			}
 			if (input->config[i].src_phy_addr) {
-				dst_mva = (phys_addr_t)(input->config[i].src_phy_addr);
+				dst_mva = (unsigned long)input->config[i].src_phy_addr;
 			} else {
 				disp_sync_query_buf_info(session_id, layer_id,
 							 (unsigned int)(input->config[i].next_buff_idx),
 							 (unsigned long *)&dst_mva, &dst_size);
-				input->config[i].src_phy_addr = (void *)(phys_addr_t)dst_mva;
+				input->config[i].src_phy_addr = (void *)dst_mva;
 			}
 
 			if (dst_mva == 0)
@@ -669,7 +669,7 @@ static int set_memory_buffer(disp_session_input_config *input)
 
 
 			DISPPR_FENCE
-			    ("S+/ML%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%x/t%d/sec%d\n",
+			    ("S+/ML%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%lx/t%d/sec%d\n",
 			     input->config[i].layer_id, input->config[i].layer_enable,
 			     input->config[i].next_buff_idx, input->config[i].src_width,
 			     input->config[i].src_height, input->config[i].src_offset_x,
@@ -713,7 +713,7 @@ static int set_external_buffer(disp_session_input_config *input)
 	int ret = 0;
 	int layer_id = 0;
 	unsigned int dst_size = 0;
-	unsigned int dst_mva = 0;
+	unsigned long dst_mva = 0;
 	unsigned int session_id = 0;
 	unsigned int mva_offset = 0;
 	disp_session_sync_info *session_info;
@@ -740,12 +740,12 @@ static int set_external_buffer(disp_session_input_config *input)
 				input->config[i].security = DISP_NORMAL_BUFFER;
 			}
 			if (input->config[i].src_phy_addr) {
-				dst_mva = (phys_addr_t)(input->config[i].src_phy_addr);
+				dst_mva = (unsigned long)input->config[i].src_phy_addr;
 			} else {
 				disp_sync_query_buf_info(session_id, layer_id,
 							(unsigned int)input->config[i].next_buff_idx,
 							(unsigned long *)&dst_mva, &dst_size);
-				input->config[i].src_phy_addr = (void *)((phys_addr_t)dst_mva);
+				input->config[i].src_phy_addr = (void*)dst_mva;
 			}
 
 			if (dst_mva == 0)
@@ -753,7 +753,7 @@ static int set_external_buffer(disp_session_input_config *input)
 
 
 			DISPPR_FENCE
-			    ("S+/EL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%08x\n",
+			    ("S+/EL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%lx\n",
 			     input->config[i].layer_id, input->config[i].layer_enable,
 			     input->config[i].next_buff_idx, input->config[i].src_width,
 			     input->config[i].src_height, input->config[i].src_offset_x,
@@ -807,7 +807,7 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 	int i = 0;
 	int layer_id = 0;
 	unsigned int dst_size = 0;
-	unsigned int dst_mva = 0;
+	unsigned long dst_mva = 0;
 	unsigned int session_id = 0;
 	unsigned int mva_offset = 0;
 	disp_session_sync_info *session_info;
@@ -849,19 +849,19 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 				cfg->input_cfg[i].security = DISP_NORMAL_BUFFER;
 			}
 			if (cfg->input_cfg[i].src_phy_addr) {
-				dst_mva = (unsigned long)(cfg->input_cfg[i].src_phy_addr);
+				dst_mva = (unsigned long)cfg->input_cfg[i].src_phy_addr;
 			} else {
 				disp_sync_query_buf_info(session_id, layer_id,
 						(unsigned int)cfg->input_cfg[i].next_buff_idx,
 						(unsigned long *)&dst_mva, &dst_size);
 			}
 
-			cfg->input_cfg[i].src_phy_addr = (void *)(phys_addr_t)dst_mva;
+			cfg->input_cfg[i].src_phy_addr = (void*)dst_mva;
 
 			if (dst_mva == 0) {
 				DISPPR_ERROR("disable layer %d because of no valid mva\n",
 					     cfg->input_cfg[i].layer_id);
-				DISPERR("S+/PL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%08x/sec%d/s%d\n",
+				DISPERR("S+/PL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%lx/sec%d/s%d\n",
 				     cfg->input_cfg[i].layer_id, cfg->input_cfg[i].layer_enable,
 				     cfg->input_cfg[i].next_buff_idx, cfg->input_cfg[i].src_width,
 				     cfg->input_cfg[i].src_height, cfg->input_cfg[i].src_offset_x,
@@ -884,7 +884,7 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 					      cfg->input_cfg[i].next_buff_idx, mva_offset,
 					      cfg->input_cfg[i].frm_sequence);
 
-			DISPPR_FENCE("S+/PL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%08x/sec%d\n",
+			DISPPR_FENCE("S+/PL%d/e%d/id%d/%dx%d(%d,%d)(%d,%d)/%s/%d/0x%p/mva0x%lx/sec%d\n",
 			     cfg->input_cfg[i].layer_id, cfg->input_cfg[i].layer_enable,
 			     cfg->input_cfg[i].next_buff_idx, cfg->input_cfg[i].src_width,
 			     cfg->input_cfg[i].src_height, cfg->input_cfg[i].src_offset_x,
@@ -969,7 +969,7 @@ static int _sync_convert_fb_layer_to_disp_output(unsigned int session_id, disp_o
 {
 	dst->fmt = disp_fmt_to_unified_fmt(src->fmt);
 
-	dst->vaddr = (phys_addr_t)(src->va);
+	dst->vaddr = (unsigned long)(src->va);
 	dst->security = src->security;
 	dst->w = src->width;
 	dst->h = src->height;
@@ -997,19 +997,19 @@ static int _sync_convert_fb_layer_to_disp_output(unsigned int session_id, disp_o
 static int output_config_preprocess(struct disp_frame_cfg_t *cfg)
 {
 	unsigned int session_id = 0;
-	unsigned int dst_mva = 0;
+	unsigned long dst_mva = 0;
 	disp_session_sync_info *session_info;
 
 	session_id = cfg->session_id;
 	session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	if (cfg->output_cfg.pa) {
-		dst_mva = (unsigned long)(cfg->output_cfg.pa);
+		dst_mva = (unsigned long)cfg->output_cfg.pa;
 	} else {
 		dst_mva = mtkfb_query_buf_mva(session_id, disp_sync_get_output_timeline_id(),
 						cfg->output_cfg.buff_idx);
 	}
-	cfg->output_cfg.pa = (void *)(phys_addr_t)dst_mva;
+	cfg->output_cfg.pa = (void*)dst_mva;
 
 	if (!dst_mva) {
 		DISPERR("%s output mva=0!!, skip it\n", __func__);
@@ -1028,7 +1028,7 @@ static int output_config_preprocess(struct disp_frame_cfg_t *cfg)
 				cfg->output_cfg.buff_idx, 1, dst_mva);
 	}
 
-	DISPPR_FENCE("S+O/%s%d/L%d(id%d)/L%d(id%d)/%dx%d(%d,%d)/%s/%d/0x%08x/mva0x%08x/sec%d\n",
+	DISPPR_FENCE("S+O/%s%d/L%d(id%d)/L%d(id%d)/%dx%d(%d,%d)/%s/%d/0x%08x/mva0x%08lx/sec%d\n",
 	     disp_session_mode_spy(session_id), DISP_SESSION_DEV(session_id),
 	     disp_sync_get_output_timeline_id(), cfg->output_cfg.buff_idx,
 	     disp_sync_get_output_interface_timeline_id(),
@@ -1046,7 +1046,7 @@ static int output_config_preprocess(struct disp_frame_cfg_t *cfg)
 		dprec_submit(&session_info->event_setoutput, cfg->output_cfg.buff_idx,
 			     dst_mva);
 	}
-	DISPDBG("_ioctl_set_output_buffer done idx 0x%x, mva %x, fmt %x, w %x, h %x (%x %x), p %x\n",
+	DISPDBG("_ioctl_set_output_buffer done idx 0x%x, mva %lx, fmt %x, w %x, h %x (%x %x), p %x\n",
 	     cfg->output_cfg.buff_idx, dst_mva, cfg->output_cfg.fmt,
 	     cfg->output_cfg.width, cfg->output_cfg.height,
 	     cfg->output_cfg.x, cfg->output_cfg.y, cfg->output_cfg.pitch);
@@ -1057,7 +1057,7 @@ out:
 static int __set_output(disp_session_output_config *session_output)
 {
 	unsigned int session_id = 0;
-	unsigned int dst_mva = 0;
+	unsigned long dst_mva = 0;
 	disp_session_sync_info *session_info;
 
 	session_id = session_output->session_id;
@@ -1074,7 +1074,7 @@ static int __set_output(disp_session_output_config *session_output)
 
 		memset((void *)&primary_output, 0, sizeof(primary_output));
 		if (session_output->config.pa) {
-			dst_mva = (unsigned long)(session_output->config.pa);
+			dst_mva = (unsigned long)session_output->config.pa;
 		} else {
 			dst_mva = mtkfb_query_buf_mva(session_id, disp_sync_get_output_timeline_id(),
 						      (unsigned int)(session_output->config.buff_idx));
@@ -1087,7 +1087,7 @@ static int __set_output(disp_session_output_config *session_output)
 						      dst_mva);
 		primary_output.dirty = 1;
 
-		DISPPR_FENCE("S+/%s%d/L%d/id%d/%dx%d(%d,%d)/%s/%d/%d/0x%p/mva0x%x/t%d/sec%d(%d)\n",
+		DISPPR_FENCE("S+/%s%d/L%d/id%d/%dx%d(%d,%d)/%s/%d/%d/0x%p/mva0x%lx/t%d/sec%d(%d)\n",
 			     disp_session_mode_spy(session_id), DISP_SESSION_DEV(session_id),
 			     disp_sync_get_output_timeline_id(),
 			     session_output->config.buff_idx,
@@ -1114,7 +1114,7 @@ static int __set_output(disp_session_output_config *session_output)
 		if (session_info)
 			dprec_submit(&session_info->event_setoutput, session_output->config.buff_idx, dst_mva);
 
-		DISPDBG("_ioctl_set_output_buffer done idx 0x%x, mva %x, fmt %x, w %x, h %x, p %x\n",
+		DISPDBG("_ioctl_set_output_buffer done idx 0x%x, mva %lx, fmt %x, w %x, h %x, p %x\n",
 		     session_output->config.buff_idx, dst_mva, session_output->config.fmt,
 		     session_output->config.width, session_output->config.height,
 		     session_output->config.pitch);

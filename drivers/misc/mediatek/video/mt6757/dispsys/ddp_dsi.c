@@ -599,6 +599,8 @@ void DSI_clk_HS_mode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enter)
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (enter) {
+			DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_PHY_PCPAT, 0x55);
+			DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_PHY_LCCON, 0);
 			DSI_OUTREGBIT(cmdq, DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
 				      LC_HS_TX_EN, 1);
 		} else if (!enter) {
@@ -1199,17 +1201,16 @@ unsigned int dsi_phy_get_clk(DISP_MODULE_ENUM module)
 {
 	int i = 0;
 	int j = 0;
-	unsigned int pcw = (DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2.RG_DSI_MPPLL_SDM_PCW >> 24) & 0x7f;
+	unsigned int pcw = DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2.RG_DSI0_MPPLL_SDM_PCW_H;
 	unsigned int prediv = (1 << (DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0.RG_DSI0_MPPLL_PREDIV));
 	unsigned int posdiv = (1 << (DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0.RG_DSI0_MPPLL_POSDIV));
-	unsigned int S2Qdiv = (1 << (DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0.RG_DSI_MPPLL_S2QDIV));
-
-	DISPMSG("%s, pcw: %d, prediv: %d, posdiv: %d, S2Qdiv: %d\n", __func__, pcw,
-		prediv, posdiv, S2Qdiv);
-	j = prediv * posdiv * S2Qdiv;
+	unsigned int txdiv0 = (1 << (DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0.RG_DSI0_MPPLL_TXDIV0));
+	unsigned int txdiv1 = (1 << (DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0.RG_DSI0_MPPLL_TXDIV1));
+	DISPMSG("%s, pcw: %d, prediv: %d, posdiv: %d, txdiv0: %d, txdiv1: %d\n", __func__, pcw,
+		prediv, posdiv, txdiv0, txdiv1);
+	j = prediv * 4 * txdiv0 * txdiv1;
 	if (j > 0)
 		return 26 * pcw / j;
-
 	return 0;
 }
 
@@ -1218,12 +1219,9 @@ void DSI_PHY_clk_change(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PAR
 	int i = 0;
 	unsigned int j = 0;
 	unsigned int data_Rate = dsi_params->PLL_CLOCK*2;
-
-	unsigned int pcw_ratio = 0;
-	unsigned int S2Qdiv    = 0;
-	unsigned int posdiv    = 0;
-	unsigned int prediv    = 0;
-
+	unsigned int txdiv = 0;
+	unsigned int txdiv0 = 0;
+	unsigned int txdiv1 = 0;
 	unsigned int pcw = 0;
 	unsigned int delta1 = 5;
 	/*Delta1 is SSC range, default is 0%~-5%*/
@@ -1234,101 +1232,97 @@ void DSI_PHY_clk_change(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PAR
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		if (0 != data_Rate) {
-			unsigned int tmp = 0;
-
 			if (data_Rate > 1250) {
 				DISPCHECK("mipitx Data Rate exceed limitation(%d)\n", data_Rate);
 				ASSERT(0);
 			} else if (data_Rate >= 500) {
-				pcw_ratio = 1;
-				S2Qdiv    = 2;
-				posdiv    = 0;
-				prediv    = 0;
+				txdiv = 1;
+				txdiv0 = 0;
+				txdiv1 = 0;
 			} else if (data_Rate >= 250) {
-				pcw_ratio = 2;
-				S2Qdiv    = 2;
-				posdiv    = 1;
-				prediv    = 0;
+				txdiv = 2;
+				txdiv0 = 1;
+				txdiv1 = 0;
 			} else if (data_Rate >= 125) {
-				pcw_ratio = 4;
-				S2Qdiv    = 2;
-				posdiv    = 2;
-				prediv    = 0;
+				txdiv = 4;
+				txdiv0 = 2;
+				txdiv1 = 0;
 			} else if (data_Rate > 62) {
-				pcw_ratio = 8;
-				S2Qdiv    = 2;
-				posdiv    = 3;
-				prediv    = 0;
+				txdiv = 8;
+				txdiv0 = 2;
+				txdiv1 = 1;
 			} else if (data_Rate >= 50) {
-				pcw_ratio = 16;
-				S2Qdiv    = 2;
-				posdiv    = 4;
-				prediv    = 0;
-			} else {
+				txdiv = 16;
+				txdiv0 = 2;
+				txdiv1 = 2;
+			} else	{
 				DISPCHECK("dataRate is too low(%d)\n", data_Rate);
 				ASSERT(0);
 			}
 
 			/*1. PLL TXDIV Config*/
 			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
-					RG_DSI_MPPLL_S2QDIV, S2Qdiv);
+					RG_DSI0_MPPLL_TXDIV0, txdiv0);
 			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
-					RG_DSI0_MPPLL_POSDIV, posdiv);
+					RG_DSI0_MPPLL_TXDIV1, txdiv1);
 			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
-					RG_DSI0_MPPLL_PREDIV, prediv);
+					RG_DSI0_MPPLL_PREDIV, 0);
 
 			/* 2. PLL PCW Config */
-			/**
-			 * PCW bit 24~30 = floor(pcw)
-			 * PCW bit 16~23 = (pcw - floor(pcw))*256
-			 * PCW bit 8~15 = (pcw*256 - floor(pcw)*256)*256
-			 * PCW bit 8~15 = (pcw*256*256 - floor(pcw)*256*256)*256
-			 */
+			/*
+			PCW bit 24~30 = floor(pcw)
+			PCW bit 16~23 = (pcw - floor(pcw))*256
+			PCW bit 8~15 = (pcw*256 - floor(pcw)*256)*256
+			PCW bit 8~15 = (pcw*256*256 - floor(pcw)*256*256)*256
+			*/
 			/* pcw = data_Rate*4*txdiv/(26*2);//Post DIV =4, so need data_Rate*4*/
-			pcw = data_Rate * pcw_ratio / 13;
+			pcw = data_Rate*txdiv/13;
 
-			tmp = ((pcw & 0x7F) << 24) | (((256 * (data_Rate * pcw_ratio % 13) / 13) & 0xFF) << 16) |
-				(((256 * (256 * (data_Rate * pcw_ratio % 13) % 13) / 13) & 0xFF) << 8) |
-				((256 * (256 * (256 * (data_Rate * pcw_ratio % 13) % 13) % 13) / 13) & 0xFF);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
-					 RG_DSI_MPPLL_SDM_PCW, tmp);
+			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+						RG_DSI0_MPPLL_SDM_PCW_H, (pcw & 0x7F));
+			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+						RG_DSI0_MPPLL_SDM_PCW_16_23, ((256*(data_Rate*txdiv%13)/13) & 0xFF));
+			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+						RG_DSI0_MPPLL_SDM_PCW_8_15,
+						((256*(256*(data_Rate*txdiv%13)%13)/13) & 0xFF));
+			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+						RG_DSI0_MPPLL_SDM_PCW_0_7,
+						((256*(256*(256*(data_Rate*txdiv%13)%13)%13)/13) & 0xFF));
 
 			/*3. SSC Config*/
 			if (1 != dsi_params->ssc_disable) {
 				DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
-					      RG_DSI0_MPPLL_SDM_SSC_PH_INIT, 1);
+							RG_DSI0_MPPLL_SDM_SSC_PH_INIT, 1);
 				DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
-					      RG_DSI0_MPPLL_SDM_SSC_PRD, 0x1B1);/*//PRD=ROUND(pmod) = 433;*/
-
+							RG_DSI0_MPPLL_SDM_SSC_PRD, 0x1B1);/*//PRD=ROUND(pmod) = 433;*/
 				if (0 != dsi_params->ssc_range)
 					delta1 = dsi_params->ssc_range;
-
 				ASSERT(delta1 <= 8);
-				pdelta1 = (delta1 * data_Rate * pcw_ratio * 262144 + 281664) / 563329;
+				pdelta1 = (delta1*data_Rate*txdiv*262144+281664)/563329;
 				DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON3_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
-					      RG_DSI0_MPPLL_SDM_SSC_DELTA, pdelta1);
+							RG_DSI0_MPPLL_SDM_SSC_DELTA, pdelta1);
 				DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON3_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
-					      RG_DSI0_MPPLL_SDM_SSC_DELTA1, pdelta1);
-				DISPMSG("PLL config:data_rate=%d,pcw_ratio=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
-					data_Rate, pcw_ratio, DSI_INREG32(PMIPITX_DSI_PLL_CON2_REG,
-					&DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2), delta1, pdelta1);
+							RG_DSI0_MPPLL_SDM_SSC_DELTA1, pdelta1);
+				DISPMSG("PLL config:data_rate=%d,txdiv=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
+					data_Rate, txdiv, DSI_INREG32(PMIPITX_DSI_PLL_CON2_REG,
+					&DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2),
+					delta1, pdelta1);
 			}
 		} else {/*not use*/
-			unsigned int tmp = 0;
-
 			/*1. PLL TXDIV Config*/
 			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
-				      RG_DSI_MPPLL_S2QDIV, dsi_params->pll_s2qdiv);
+						RG_DSI0_MPPLL_TXDIV0, dsi_params->pll_div1);
 			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
-				      RG_DSI0_MPPLL_POSDIV, dsi_params->pll_posdiv);
-			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
-				      RG_DSI0_MPPLL_PREDIV, dsi_params->pll_prediv);
+						RG_DSI0_MPPLL_TXDIV1, dsi_params->pll_div2);
 			/*2. PLL PCW Config*/
-			tmp = ((dsi_params->fbk_div) << 2) << 24;
-
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
-					 RG_DSI_MPPLL_SDM_PCW, tmp);
-
+			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+				RG_DSI0_MPPLL_SDM_PCW_H, ((dsi_params->fbk_div) << 2));
+			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+				RG_DSI0_MPPLL_SDM_PCW_16_23, 0);
+			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+				RG_DSI0_MPPLL_SDM_PCW_8_15, 0);
+			DSI_OUTREGBIT(cmdq, MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+				RG_DSI0_MPPLL_SDM_PCW_0_7, 0);
 			/*3. SSC Config*/
 			/*why no ssc config*/
 		}
@@ -1339,10 +1333,10 @@ void DSI_PHY_clk_change(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PAR
 			/*for(j = 0; j < 10; j++) */
 			/*//DSI_OUTREG32(cmdq,&DSI_CMDQ_REG[0]->data[127],1);*/
 			/*// 5. DSI_PLL_CHG = 0 */
-		DSI_OUTREG32(cmdq, &DSI_PHY_REG[i]->MIPITX_DSI_PLL_CHG, 0);
+	    DSI_OUTREG32(cmdq, &DSI_PHY_REG[i]->MIPITX_DSI_PLL_CHG, 0);
 		/*6. delay >20us , need check*/
 		for (j = 0; j < 250; j++)
-			DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[0]->data[126], 1);
+				DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[0]->data[126], 1);
 
 		/*7. DSI_PLL_CHG = 1 */
 		DSI_OUTREG32(cmdq, &DSI_PHY_REG[i]->MIPITX_DSI_PLL_CHG, 1);
@@ -1367,88 +1361,57 @@ void DSI_Exit_ULPS(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 
 void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PARAMS *dsi_params)
 {
-	int i = 0;
+	int i;
 	unsigned int data_Rate = dsi_params->PLL_CLOCK * 2;
-
-	unsigned int pcw_ratio = 0;
-	unsigned int S2Qdiv    = 0;
-	unsigned int posdiv    = 0;
-	unsigned int prediv    = 0;
-
+	unsigned int txdiv = 0;
+	unsigned int txdiv0 = 0;
+	unsigned int txdiv1 = 0;
 	unsigned int pcw = 0;
 	/* unsigned int fmod = 30;//Fmod = 30KHz by default */
-	unsigned int delta1 = 5; /* Delta1 is SSC range, default is 0%~-5% */
+	unsigned int delta1 = 5;	/* Delta1 is SSC range, default is 0%~-5% */
 	unsigned int pdelta1 = 0;
-
-	DISPFUNC();
-
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		/* step 0 MIPITX lane swap setting */
-		if (dsi_params->lane_swap_en) {
-			DISPMSG("MIPITX Lane Swap Enabled for DSI Port %d\n", i);
-			DISPMSG("MIPITX Lane Swap mapping: %d|%d|%d|%d|%d|%d\n",
-				dsi_params->lane_swap[i][MIPITX_PHY_LANE_0],
-				dsi_params->lane_swap[i][MIPITX_PHY_LANE_1],
-				dsi_params->lane_swap[i][MIPITX_PHY_LANE_2],
-				dsi_params->lane_swap[i][MIPITX_PHY_LANE_3],
-				dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK],
-				dsi_params->lane_swap[i][MIPITX_PHY_LANE_RX]);
-
-			MIPITX_OUTREGBIT(MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
-					 MIPI_TX_PHY0_SEL, dsi_params->lane_swap[i][MIPITX_PHY_LANE_0]);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
-					 MIPI_TX_PHY1_SEL, dsi_params->lane_swap[i][MIPITX_PHY_LANE_1]);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
-					 MIPI_TX_PHY2_SEL, dsi_params->lane_swap[i][MIPITX_PHY_LANE_2]);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
-					 MIPI_TX_PHY3_SEL, dsi_params->lane_swap[i][MIPITX_PHY_LANE_3]);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
-					 MIPI_TX_PHYC_SEL, dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK]);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PHY_SEL_REG, DSI_PHY_REG[i]->MIPITX_DSI_PHY_SEL,
-					 MIPI_TX_LPRX_SEL, dsi_params->lane_swap[i][MIPITX_PHY_LANE_RX]);
-		}
-	}
+	i = 0;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		/* step 0 */
 		MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
-				 RG_DSI_LNTC_RT_CODE, ((clock_lane[i] >> 8) & 0xf));
+						RG_DSI_LNTC_RT_CODE, (clock_lane[i]>>8) & 0xf);
 		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
-				 RG_DSI_LNT3_RT_CODE, ((data_lane3[i] >> 8) & 0xf));
+						RG_DSI_LNT3_RT_CODE, (data_lane3[i]>>8) & 0xf);
 		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
-				 RG_DSI_LNT2_RT_CODE, ((data_lane2[i] >> 8) & 0xf));
+						RG_DSI_LNT2_RT_CODE, (data_lane2[i]>>8) & 0xf);
 		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
-				 RG_DSI_LNT1_RT_CODE, ((data_lane1[i] >> 8) & 0xf));
+						RG_DSI_LNT1_RT_CODE, (data_lane1[i]>>8) & 0xf);
 		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
-				 RG_DSI_LNT0_RT_CODE, ((data_lane0[i] >> 8) & 0xf));
+						RG_DSI_LNT0_RT_CODE, (data_lane0[i]>>8) & 0xf);
 
-		DISPMSG("mipi_tx%d: clk=0x%x,lan0=0x%x,lan1=0x%x,lan2=0x%x,lan3=0x%x\n",
-			i, INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3));
-
+		DISPMSG("PLL config: clk=0x%x,lan3=0x%x,lan2=0x%x,lan1=0x%x,lan0=0x%x\n",
+		INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE),
+		INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3),
+		INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2),
+		INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1),
+		INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0));
 		/* step 1 */
 		/* MIPITX_MASKREG32(APMIXED_BASE+0x00, (0x1<<6), 1); */
 
 		/* step 2 */
 		MIPITX_OUTREGBIT(MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
 				 RG_DSI_BG_CORE_EN, 1);
-		/* MIPITX_OUTREGBIT(MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON, RG_DSI_BG_CKEN, 1); */
+		MIPITX_OUTREGBIT(MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
+				 RG_DSI_BG_CKEN, 1);
 
 		/* step 3 */
 		mdelay(1);
 
 		/* step 4 */
-		/* MIPITX_OUTREGBIT(MIPITX_DSI_TOP_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_TOP_CON,
-		 * RG_DSI_LNT_HS_BIAS_EN, 1); */
+		MIPITX_OUTREGBIT(MIPITX_DSI_TOP_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_TOP_CON,
+				 RG_DSI_LNT_HS_BIAS_EN, 1);
 
 		/* step 5 */
 		MIPITX_OUTREGBIT(MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
-				 RG_DSI_LDOCORE_EN, 1);
-		MIPITX_OUTREGBIT(MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
 				 RG_DSI_CKG_LDOOUT_EN, 1);
+		MIPITX_OUTREGBIT(MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
+				 RG_DSI_LDOCORE_EN, 1);
 
 		/* step 6 */
 		MIPITX_OUTREGBIT(MIPITX_DSI_PLL_PWR_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_PWR,
@@ -1459,37 +1422,30 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 				 DA_DSI_MPPLL_SDM_ISO_EN, 0);
 		mdelay(1);
 
-		if (data_Rate != 0) {
-			unsigned int tmp = 0;
-
+		if (0 != data_Rate) {
 			if (data_Rate > 1250) {
 				DISPCHECK("mipitx Data Rate exceed limitation(%d)\n", data_Rate);
 				ASSERT(0);
 			} else if (data_Rate >= 500) {
-				pcw_ratio = 1;
-				S2Qdiv    = 2;
-				posdiv    = 0;
-				prediv    = 0;
+				txdiv = 1;
+				txdiv0 = 0;
+				txdiv1 = 0;
 			} else if (data_Rate >= 250) {
-				pcw_ratio = 2;
-				S2Qdiv    = 2;
-				posdiv    = 1;
-				prediv    = 0;
+				txdiv = 2;
+				txdiv0 = 1;
+				txdiv1 = 0;
 			} else if (data_Rate >= 125) {
-				pcw_ratio = 4;
-				S2Qdiv    = 2;
-				posdiv    = 2;
-				prediv    = 0;
+				txdiv = 4;
+				txdiv0 = 2;
+				txdiv1 = 0;
 			} else if (data_Rate > 62) {
-				pcw_ratio = 8;
-				S2Qdiv    = 2;
-				posdiv    = 3;
-				prediv    = 0;
+				txdiv = 8;
+				txdiv0 = 2;
+				txdiv1 = 1;
 			} else if (data_Rate >= 50) {
-				pcw_ratio = 16;
-				S2Qdiv    = 2;
-				posdiv    = 4;
-				prediv    = 0;
+				txdiv = 16;
+				txdiv0 = 2;
+				txdiv1 = 2;
 			} else {
 				DISPCHECK("dataRate is too low(%d)\n", data_Rate);
 				ASSERT(0);
@@ -1497,56 +1453,71 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 
 			/* step 8 */
 			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
-					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI_MPPLL_S2QDIV,
-					 S2Qdiv);
+					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_TXDIV0,
+					 txdiv0);
 			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
-					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_POSDIV,
-					 posdiv);
+					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_TXDIV1,
+					 txdiv1);
 			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_PREDIV,
-					 prediv);
+					 0);
+
 
 			/* step 10 */
 			/* PLL PCW config */
-			/**
-			 * PCW bit 24~30 = floor(pcw)
-			 * PCW bit 16~23 = (pcw - floor(pcw))*256
-			 * PCW bit 8~15 = (pcw*256 - floor(pcw)*256)*256
-			 * PCW bit 8~15 = (pcw*256*256 - floor(pcw)*256*256)*256
+			/*
+			   PCW bit 24~30 = floor(pcw)
+			   PCW bit 16~23 = (pcw - floor(pcw))*256
+			   PCW bit 8~15 = (pcw*256 - floor(pcw)*256)*256
+			   PCW bit 8~15 = (pcw*256*256 - floor(pcw)*256*256)*256
 			 */
 			/* pcw = data_Rate*4*txdiv/(26*2);//Post DIV =4, so need data_Rate*4 */
+			pcw = data_Rate * txdiv / 13;
 
-			pcw = data_Rate * pcw_ratio / 13;
+			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON2_REG,
+					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+					 RG_DSI0_MPPLL_SDM_PCW_H, (pcw & 0x7F));
+			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON2_REG,
+					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+					 RG_DSI0_MPPLL_SDM_PCW_16_23,
+					 ((256 * (data_Rate * txdiv % 13) / 13) & 0xFF));
+			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON2_REG,
+					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+					 RG_DSI0_MPPLL_SDM_PCW_8_15,
+					 ((256 * (256 * (data_Rate * txdiv % 13) % 13) /
+					   13) & 0xFF));
+			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON2_REG,
+					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
+					 RG_DSI0_MPPLL_SDM_PCW_0_7,
+					 ((256 *
+					   (256 * (256 * (data_Rate * txdiv % 13) % 13) % 13) /
+					   13) & 0xFF));
 
-			tmp = ((pcw & 0x7F) << 24) | (((256 * (data_Rate * pcw_ratio % 13) / 13) & 0xFF) << 16) |
-				(((256 * (256 * (data_Rate * pcw_ratio % 13) % 13) / 13) & 0xFF) << 8) |
-				((256 * (256 * (256 * (data_Rate * pcw_ratio % 13) % 13) % 13) / 13) & 0xFF);
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON2_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2,
-					 RG_DSI_MPPLL_SDM_PCW, tmp);
-
-			if (dsi_params->ssc_disable != 1) {
+			if (1 != dsi_params->ssc_disable) {
 				MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON1_REG,
 						 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 						 RG_DSI0_MPPLL_SDM_SSC_PH_INIT, 1);
 				MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
-						 RG_DSI0_MPPLL_SDM_SSC_PRD, 0x1B1); /* PRD=ROUND(pmod) = 433; */
-				if (dsi_params->ssc_range != 0)
+					RG_DSI0_MPPLL_SDM_SSC_PRD, 0x1B1);	/* PRD=ROUND(pmod) = 433; */
+				if (0 != dsi_params->ssc_range)
 					delta1 = dsi_params->ssc_range;
 				ASSERT(delta1 <= 8);
-				pdelta1 = (delta1 * data_Rate * pcw_ratio * 262144 + 281664) / 563329;
+				pdelta1 = (delta1 * data_Rate * txdiv * 262144 + 281664) / 563329;
 				MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON3_REG,
 						 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
 						 RG_DSI0_MPPLL_SDM_SSC_DELTA, pdelta1);
 				MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON3_REG,
 						 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON3,
 						 RG_DSI0_MPPLL_SDM_SSC_DELTA1, pdelta1);
-				DISPMSG("PLL config:data_rate=%d,pcw_ratio=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
-					data_Rate, pcw_ratio, DSI_INREG32(PMIPITX_DSI_PLL_CON2_REG,
-									  &DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON2),
-					delta1, pdelta1);
+				DISPMSG
+				    ("PLL config:data_rate=%d,txdiv=%d,pcw=%d,delta1=%d,pdelta1=0x%x\n",
+				     data_Rate, txdiv, DSI_INREG32(PMIPITX_DSI_PLL_CON2_REG,
+								   &DSI_PHY_REG[i]->
+								   MIPITX_DSI_PLL_CON2), delta1,
+				     pdelta1);
 			}
 		} else {
-			DISPERR("PLL clock should not be 0!!!\n");
+			DISPERR("[dsi_dsi.c] PLL clock should not be 0!!!\n");
 			ASSERT(0);
 		}
 
@@ -1557,76 +1528,30 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 		MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
 				 RG_DSI_LNTC_LDOOUT_EN, 1);
 
-		if (dsi_params->lane_swap_en) {
-			if (dsi_params->lane_swap[i][MIPITX_PHY_LANE_CK] == MIPITX_PHY_LANE_CK)
-				MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
-						 RG_DSI_LNTC_CKLANE_EN, 1);
-			else
-				MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
-						 RG_DSI_LNTC_CKLANE_EN, 0);
-		}
-
 		/* step 12 */
 		if (dsi_params->LANE_NUM > 0) {
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
+			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG,
+					 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
 					 RG_DSI_LNT0_LDOOUT_EN, 1);
-			if (dsi_params->lane_swap_en) {
-				if (dsi_params->lane_swap[i][MIPITX_PHY_LANE_0] == MIPITX_PHY_LANE_CK)
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG,
-							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
-							 RG_DSI_LNT0_CKLANE_EN, 1);
-				else
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG,
-							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
-							 RG_DSI_LNT0_CKLANE_EN, 0);
-			}
 		}
 		/* step 13 */
 		if (dsi_params->LANE_NUM > 1) {
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
+			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG,
+					 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
 					 RG_DSI_LNT1_LDOOUT_EN, 1);
-			if (dsi_params->lane_swap_en) {
-				if (dsi_params->lane_swap[i][MIPITX_PHY_LANE_1] == MIPITX_PHY_LANE_CK)
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG,
-							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
-							 RG_DSI_LNT1_CKLANE_EN, 1);
-				else
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG,
-							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
-							 RG_DSI_LNT1_CKLANE_EN, 0);
-			}
 		}
 		/* step 14 */
 		if (dsi_params->LANE_NUM > 2) {
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
+			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG,
+					 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
 					 RG_DSI_LNT2_LDOOUT_EN, 1);
-			if (dsi_params->lane_swap_en) {
-				if (dsi_params->lane_swap[i][MIPITX_PHY_LANE_2] == MIPITX_PHY_LANE_CK)
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG,
-							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
-							 RG_DSI_LNT2_CKLANE_EN, 1);
-				else
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG,
-							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
-							 RG_DSI_LNT2_CKLANE_EN, 0);
-			}
 		}
 		/* step 15 */
 		if (dsi_params->LANE_NUM > 3) {
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
+			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG,
+					 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
 					 RG_DSI_LNT3_LDOOUT_EN, 1);
-			if (dsi_params->lane_swap_en) {
-				if (dsi_params->lane_swap[i][MIPITX_PHY_LANE_3] == MIPITX_PHY_LANE_CK)
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG,
-							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
-							 RG_DSI_LNT3_CKLANE_EN, 1);
-				else
-					MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG,
-							 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
-							 RG_DSI_LNT3_CKLANE_EN, 0);
-			}
 		}
-
 		/* step 16 */
 		MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
 				 RG_DSI0_MPPLL_PLL_EN, 1);
@@ -1661,22 +1586,12 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 
 void DSI_PHY_TIMCONFIG(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PARAMS *dsi_params)
 {
-	int i = 0;
 	DSI_PHY_TIMCON0_REG timcon0;
 	DSI_PHY_TIMCON1_REG timcon1;
 	DSI_PHY_TIMCON2_REG timcon2;
 	DSI_PHY_TIMCON3_REG timcon3;
-#if 0
-	unsigned int div1 = 0;
-	unsigned int div2 = 0;
-	unsigned int pre_div = 0;
-	unsigned int post_div = 0;
-	unsigned int fbk_sel = 0;
-	unsigned int fbk_div = 0;
-#endif
-	unsigned int lane_no = dsi_params->LANE_NUM;
-
-	/* unsigned int div2_real; */
+	int i = 0;
+	unsigned int lane_no;
 	unsigned int cycle_time;
 	unsigned int ui;
 	unsigned int hs_trail_m, hs_trail_n;
@@ -1695,7 +1610,7 @@ void DSI_PHY_TIMCONFIG(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PARA
 	}
 	return;
 #endif
-
+	lane_no = dsi_params->LANE_NUM;
 	if (0 != dsi_params->PLL_CLOCK) {
 		ui = 1000 / (dsi_params->PLL_CLOCK * 2) + 0x01;
 		cycle_time = 8000 / (dsi_params->PLL_CLOCK * 2) + 0x01;
@@ -1858,42 +1773,31 @@ void DSI_PHY_clk_switch(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, int on)
 					 DA_DSI_MPPLL_SDM_ISO_EN, 1);
 			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_PWR_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_PWR,
 					 DA_DSI_MPPLL_SDM_PWR_ON, 0);
-
-			/* MIPITX_OUTREGBIT(MIPITX_DSI_TOP_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_TOP_CON,
-					    RG_DSI_LNT_HS_BIAS_EN, 0);
-			 */
+			MIPITX_OUTREGBIT(MIPITX_DSI_TOP_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_TOP_CON,
+					 RG_DSI_LNT_HS_BIAS_EN, 0);
 
 			MIPITX_OUTREGBIT(MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
 					 RG_DSI_CKG_LDOOUT_EN, 0);
 			MIPITX_OUTREGBIT(MIPITX_DSI_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_CON,
 					 RG_DSI_LDOCORE_EN, 0);
 
-			/* MIPITX_OUTREGBIT(MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
-					    RG_DSI_BG_CKEN, 0);
-			*/
-
+			MIPITX_OUTREGBIT(MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
+					 RG_DSI_BG_CKEN, 0);
 			MIPITX_OUTREGBIT(MIPITX_DSI_BG_CON_REG, DSI_PHY_REG[i]->MIPITX_DSI_BG_CON,
 					 RG_DSI_BG_CORE_EN, 0);
 
 			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_PREDIV,
 					 0);
-
-			/*
 			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_TXDIV0,
 					 0);
 			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_TXDIV1,
 					 0);
-			*/
-			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
-					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI_MPPLL_S2QDIV,
-					 2);
-
 			MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG,
 					 DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_POSDIV,
-					 1);
+					 0);
 
 
 			MIPITX_OUTREG32(&DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1, 0x00000000);
@@ -3268,11 +3172,14 @@ int ddp_dsi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 	} else
 #endif
 	{
+#ifndef CONFIG_FPGA_EARLY_PORTING
+
 		DISPCHECK("MIPITX is not inited, will config mipitx clock now\n");
 		DISPCHECK("===>Pmaster:CLK SETTING??==> clk:%d\n",
 			  _dsi_context[0].dsi_params.PLL_CLOCK);
 		DSI_PHY_clk_switch(module, NULL, false);
 		DSI_PHY_clk_setting(module, NULL, dsi_config);
+#endif
 
 #if defined(MTK_NO_DISP_IN_LK)
 		s_isDsiPowerOn = 1;
@@ -3329,6 +3236,18 @@ int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq)
 	int g_lcm_y = disp_helper_get_option(DISP_OPT_FAKE_LCM_Y);
 
 	DISPFUNC();
+
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+				/* force commit */
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[i]->DSI_SHADOW_DBG, FORCE_COMMIT, 1);
+			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
+				/* bypass shadow */
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[i]->DSI_SHADOW_DBG, BYPASS_SHADOW, 1);
+			}
+		}
+	}
 
 	if (module == DISP_MODULE_DSIDUAL) {
 		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
@@ -3846,7 +3765,8 @@ int ddp_dsi_trigger(DISP_MODULE_ENUM module, void *cmdq)
 	if (module == DISP_MODULE_DSIDUAL && _dsi_context[i].dsi_params.mode == CMD_MODE) {
 		/* Reading one reg is only used for delay in order to pull down DSI_DUAL_EN. */
 		if (cmdq)
-			cmdqRecBackupRegisterToSlot(cmdq, _h_intstat, 0, 0x1401c00c);
+			cmdqRecBackupRegisterToSlot(cmdq, _h_intstat, 0,
+				disp_addr_convert((unsigned long)(&DSI_REG[0]->DSI_INTSTA)));
 		else
 			INREG32(&DSI_REG[0]->DSI_INTSTA);
 
@@ -3867,9 +3787,10 @@ int ddp_dsi_reset(DISP_MODULE_ENUM module, void *cmdq_handle)
 
 int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
+#ifdef ENABLE_CLK_MGR
 	int ret = 0;
 	int i = 0;
-
+#endif
 	DISPFUNC();
 
 	/* DSI_DumpRegisters(module,1); */
@@ -3958,8 +3879,10 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	int i = 0;
+#ifdef ENABLE_CLK_MGR
 	int ret = 0;
 	unsigned int value = 0;
+#endif
 	DISPFUNC();
 	/* DSI_DumpRegisters(module,1); */
 
@@ -4074,7 +3997,9 @@ void dsi_analysis(DISP_MODULE_ENUM module)
 
 	DDPDUMP("== DISP DSI ANALYSIS ==\n");
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		DDPDUMP("MIPITX Clock: %d\n", dsi_phy_get_clk(module));
+#endif
 		DDPDUMP("DSI%d Start:%x, Busy:%d, DSI_DUAL_EN:%d, MODE:%s, High Speed:%d, FSM State:%s\n",
 			i, DSI_REG[i]->DSI_START.DSI_START, DSI_REG[i]->DSI_INTSTA.BUSY,
 			DSI_REG[i]->DSI_COM_CTRL.DSI_DUAL_EN, dsi_mode_spy(DSI_REG[i]->DSI_MODE_CTRL.MODE),

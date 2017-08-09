@@ -108,6 +108,16 @@ int rdma_start(DISP_MODULE_ENUM module, void *handle)
 	    REG_FLD_VAL(INT_STATUS_FLD_TARGET_LINE_INT_FLAG, 0) |
 	    REG_FLD_VAL(INT_STATUS_FLD_FIFO_EMPTY_INT_FLAG, 0);
 
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+			/* force commit */
+			DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SHADOW_UPDATE, 0x1);
+
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
+			/* bypass shadow */
+			DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SHADOW_UPDATE, 0x2);
+		}
+	}
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, regval);
 	DISP_REG_SET_FIELD(handle, GLOBAL_CON_FLD_ENGINE_EN,
 			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_GLOBAL_CON, 1);
@@ -269,6 +279,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 	golden_setting_context temp_golden_setting;
 	unsigned int frame_rate;
 	long long temp;
+	long long temp_for_div;
 
 	if (p_golden_setting == NULL) {
 		DDPDUMP("[disp_lowpower]p_golden_setting is NULL\n");
@@ -342,16 +353,18 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 	else
 		fill_rate = 960*mmsysclk*3/16; /* FIFO depth / us  */
 
-	if (idx == 0)
-		consume_rate = rdma_golden_setting->dst_width * rdma_golden_setting->dst_height;
-	else {
-		consume_rate = rdma_golden_setting->ext_dst_width
-		* rdma_golden_setting->ext_dst_height;
-	}
+	if (idx == 0) {
+		consume_rate = rdma_golden_setting->dst_width * rdma_golden_setting->dst_height
+				*frame_rate * bpp;
+		do_div(consume_rate, 8*1000);
 
-	consume_rate /= (8*1000);
-	consume_rate *= frame_rate * bpp;
-	consume_rate = 1200*consume_rate/(16*1000);
+	} else {
+		consume_rate = rdma_golden_setting->ext_dst_width
+				* rdma_golden_setting->ext_dst_height*frame_rate*bpp;
+		do_div(consume_rate, 8*1000);
+	}
+	consume_rate *= 1200;
+	do_div(consume_rate, 16*1000);
 
 	preultra_low = preultra_low_us * consume_rate;
 	if (preultra_low%1000)
@@ -385,21 +398,22 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 
 
 	issue_req_threshold = (fifo_valid_size - preultra_low) < 255  ? (fifo_valid_size - preultra_low) : 255;
-	temp = rdma_golden_setting->rdma_width * rdma_golden_setting->rdma_height * bpp / (16*8) - 1;
+	temp = rdma_golden_setting->rdma_width * rdma_golden_setting->rdma_height * bpp;
+	do_div(temp, 16*8);
+	temp -= 1;
+
 	output_valid_fifo_threshold = preultra_low < temp ? preultra_low : temp;
-#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
-	if (frame_rate	== 120)
-		output_valid_fifo_threshold = ultra_low;
-#endif
-	temp = fifo_valid_size - 1200 * (fill_rate - consume_rate)/1000000;
+
+	temp_for_div = 1200 * (fill_rate - consume_rate);
+	do_div(temp_for_div, 1000000);
+	temp = fifo_valid_size - temp_for_div;
 	if (temp < 0)
 		sodi_threshold_high = preultra_high;
 	else
-		sodi_threshold_high = preultra_high > (fifo_valid_size - 1200 * (fill_rate - consume_rate)/1000000)
-			? preultra_high : (fifo_valid_size - 1200 * (fill_rate - consume_rate)/1000000);
+		sodi_threshold_high = preultra_high > temp ? preultra_high : temp;
 
-
-	sodi_threshold_low = (ultra_low_us*10 + 4) * consume_rate / 10;
+	sodi_threshold_low = (ultra_low_us*10 + 4) * consume_rate;
+	sodi_threshold_low /= 10;
 	if (sodi_threshold_low % 1000)
 		sodi_threshold_low = sodi_threshold_low/1000 + 1;
 	else
@@ -931,8 +945,8 @@ void rdma_disable_color_transform(DISP_MODULE_ENUM module)
 	unsigned int idx = rdma_index(module);
 	UINT32 value = DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx);
 
-	value = value | REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_EXT_MTX_EN), 0) |
-		REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_ENABLE), 0);
+	value = value & ~(REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_EXT_MTX_EN), 1) |
+		REG_FLD_VAL((SIZE_CON_0_FLD_MATRIX_ENABLE), 1));
 	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0, value);
 }
 

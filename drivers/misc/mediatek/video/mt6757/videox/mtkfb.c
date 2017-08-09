@@ -375,7 +375,7 @@ void mtkfb_waitVsync(void)
 		return;
 	}
 	vsync_cnt++;
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 	msleep(20);
 #else
 	primary_display_wait_for_vsync(NULL);
@@ -1465,11 +1465,11 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 			input = &session_input.config[0];
 			input->layer_id = 0;
-			input->src_phy_addr = (void *)(fbdev->fb_pa_base);
+			input->src_phy_addr = (void *)(unsigned long)(fbdev->fb_pa_base);
 
 			input = &session_input.config[1];
 			input->layer_id = 3;
-			input->src_phy_addr = (void *)(fbdev->fb_pa_base +
+			input->src_phy_addr = (void *)(unsigned long)(fbdev->fb_pa_base +
 						       (ALIGN_TO(MTK_FB_XRES, MTK_FB_ALIGNMENT) *
 							ALIGN_TO(MTK_FB_YRES, MTK_FB_ALIGNMENT) * 4));
 
@@ -1892,47 +1892,13 @@ static void mtkfb_fbinfo_cleanup(struct mtkfb_device *fbdev)
 	MSG_FUNC_LEAVE();
 }
 
-
-
-
-
-
-/* fast memset for hw test tool */
-void DISP_memset_io(volatile void __iomem *dst, int c, size_t count)
-{
-	u64 qc = (u8)c;
-
-	qc |= qc << 8;
-	qc |= qc << 16;
-	qc |= qc << 32;
-
-	while (count && !IS_ALIGNED((unsigned long)dst, 8)) {
-		__raw_writeb(c, dst);
-		dst++;
-		count--;
-	}
-	while (count >= 8) {
-		__raw_writeq(qc, dst);
-		dst += 8;
-		count -= 8;
-	}
-
-	while (count) {
-		__raw_writeb(c, dst);
-		dst++;
-		count--;
-	}
-}
-
 /* Init frame buffer content as 3 R/G/B color bars for debug */
 static int init_framebuffer(struct fb_info *info)
 {
 	void *buffer = info->screen_base + info->var.yoffset * info->fix.line_length;
 	int size = info->var.xres_virtual * info->var.yres * info->var.bits_per_pixel/8;
 
-	DISP_memset_io(buffer, 0, size);
-
-
+	memset_io(buffer, 0, size);
 	return 0;
 }
 
@@ -1959,7 +1925,7 @@ static void mtkfb_free_resources(struct mtkfb_device *fbdev, int state)
 		/* DISP_CHECK_RET(DISP_Deinit()); */
 		/* lint -fallthrough */
 	case 2:
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		dma_free_coherent(0, fbdev->fb_size_in_byte, fbdev->fb_va_base, fbdev->fb_pa_base);
 #endif
 		/* lint -fallthrough */
@@ -2042,67 +2008,22 @@ char *mtkfb_find_lcm_driver(void)
 	return mtkfb_lcm_name;
 }
 
-
-#if 0 /* defined but not used */
-static long int get_current_time_us(void)
-{
-	struct timeval t;
-	do_gettimeofday(&t);
-	return (t.tv_sec & 0xFFF) * 1000000 + t.tv_usec;
-}
-#endif
-
-
-static int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h)
+int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h)
 {
 	/* this is for debug, used in bring up day */
 	unsigned int i = 0;
 	unsigned int color = 0;
-	/* int _internal_test_block_size = 120; */
-	int _internal_test_block_size = 40;
+	int _internal_test_block_size = 120;
 
-	for (i = 0; i < w * h / _internal_test_block_size / _internal_test_block_size; i++) {
-		/* color = (i & 0x1) * 0xff; */
-		/* color += ((i&0x2)>>1)*0xff00; */
-		/* color += ((i&0x4)>>2)*0xff0000; */
-		/* color += 0xff000000U; */
-		color = 0xff000000U;
-		_mtkfb_draw_block(va,
-				  i % (w / _internal_test_block_size) * _internal_test_block_size,
-				  i / (w / _internal_test_block_size) * _internal_test_block_size,
-				  _internal_test_block_size, _internal_test_block_size, color);
-	}
-	/* unsigned long ttt = get_current_time_us(); */
-	/* for(i=0;i<1000;i++) */
-
-	primary_display_trigger(1, NULL, 0);
-
-	/* ttt = get_current_time_us()-ttt; */
-	return 0;
-
-	_internal_test_block_size = 20;
 	for (i = 0; i < w * h / _internal_test_block_size / _internal_test_block_size; i++) {
 		color = (i & 0x1) * 0xff;
-		color += ((i & 0x2) >> 1) * 0xff00;
-		color += ((i & 0x4) >> 2) * 0xff0000;
 		color += 0xff000000U;
 		_mtkfb_draw_block(va,
 				  i % (w / _internal_test_block_size) * _internal_test_block_size,
 				  i / (w / _internal_test_block_size) * _internal_test_block_size,
 				  _internal_test_block_size, _internal_test_block_size, color);
 	}
-	primary_display_trigger(1, NULL, 0);
-	_internal_test_block_size = 30;
-	for (i = 0; i < w * h / _internal_test_block_size / _internal_test_block_size; i++) {
-		color = (i & 0x1) * 0xff;
-		color += ((i & 0x2) >> 1) * 0xff00;
-		color += ((i & 0x4) >> 2) * 0xff0000;
-		color += 0xff000000U;
-		_mtkfb_draw_block(va,
-				  i % (w / _internal_test_block_size) * _internal_test_block_size,
-				  i / (w / _internal_test_block_size) * _internal_test_block_size,
-				  _internal_test_block_size, _internal_test_block_size, color);
-	}
+
 	primary_display_trigger(1, NULL, 0);
 
 	return 0;
@@ -2391,7 +2312,7 @@ static int mtkfb_probe(struct device *dev)
 	fbdev->dev = dev;
 	dev_set_drvdata(dev, fbdev);
 
-	DISPCHECK("mtkfb_probe: fb_pa = 0x%p\n", &fb_base);
+	DISPCHECK("mtkfb_probe: fb_pa = %pa\n", &fb_base);
 
 	disp_hal_allocate_framebuffer(fb_base, (fb_base + vramsize - 1),
 				      (unsigned long *)(&fbdev->fb_va_base), &fb_pa);
@@ -2445,7 +2366,6 @@ static int mtkfb_probe(struct device *dev)
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		_mtkfb_internal_test((unsigned long)(fbdev->fb_va_base), MTK_FB_XRES, MTK_FB_YRES);
-
 
 	r = mtkfb_register_sysfs(fbdev);
 	if (r) {
@@ -2661,7 +2581,7 @@ int mtkfb_pm_restore_noirq(struct device *device)
 	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
 	ddp_clk_prepare_enable(DISP0_SMI_COMMON);
 	ddp_clk_prepare_enable(DISP0_SMI_LARB0);
-	ddp_clk_prepare_enable(DISP0_SMI_LARB5);
+	ddp_clk_prepare_enable(DISP0_SMI_LARB4);
 #else
 	dpmgr_path_power_on(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 #endif

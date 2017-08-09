@@ -20,7 +20,7 @@
 #define OVL_MAX_WIDTH  (4095)
 #define OVL_MAX_HEIGHT (4095)
 
-#define TOTAL_OVL_LAYER_NUM	(12)
+#define TOTAL_OVL_LAYER_NUM	(10)
 #define OVL_NUM			(4)
 #define PRIMARY_THREE_OVL_CASCADE
 

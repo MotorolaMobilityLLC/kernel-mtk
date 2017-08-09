@@ -72,7 +72,7 @@ static unsigned char kick_string_buffer_analysize[kick_dump_max_length] = { 0 };
 static unsigned int kick_buf_length;
 static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
 
-/*#define NO_SPM*/
+#define NO_SPM
 
 /* wait for mmdvfs_mgr.h ready */
 #define mmdvfs_notify_mmclk_switch_request(...)
@@ -726,7 +726,7 @@ void _vdo_mode_enter_idle(void)
 
 	/* Enable sodi - need wait golden setting done ??? */
 #if 0
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #ifndef NO_SPM
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT)) {
 		/* set power down mode forbidden */
@@ -943,14 +943,15 @@ unsigned int get_mipi_clk(void)
 
 void primary_display_sodi_enable(int flag)
 {
+#ifndef NO_SPM
 	spm_enable_sodi(flag);
+#endif
 }
 
 /* for met - end */
 void primary_display_sodi_rule_init(void)
 {
 	/* enable sodi when display driver is ready */
-#ifndef CONFIG_MTK_FPGA
 #ifndef NO_SPM
 	if (primary_display_is_video_mode()) {
 		spm_sodi_set_vdo_mode(1);
@@ -961,7 +962,6 @@ void primary_display_sodi_rule_init(void)
 		spm_enable_sodi3(1);
 		spm_enable_sodi(1);
 	}
-#endif
 #endif
 }
 
@@ -1036,6 +1036,21 @@ void enter_pd_by_cmdq(cmdqRecHandle handler)
 	cmdqRecWrite(handler, 0x100062B0, 0x0, 0x2);
 }
 #endif
+
+#if 1
+void exit_pd_by_cmdq(cmdqRecHandle handler)
+{
+	#ifndef CONFIG_FPGA_EARLY_PORTING
+	error, this should be fixed
+	#endif
+}
+
+void enter_pd_by_cmdq(cmdqRecHandle handler)
+{
+
+}
+#endif
+
 
 void enter_share_sram(CMDQ_EVENT_ENUM resourceEvent)
 {

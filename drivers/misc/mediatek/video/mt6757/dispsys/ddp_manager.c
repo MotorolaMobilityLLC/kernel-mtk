@@ -594,7 +594,7 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle, DISP_MODULE_ENUM engine, v
 		handle->scenario = DDP_SCENARIO_PRIMARY_ALL;
 	} else if (engine == DISP_MODULE_OVL1) {
 		handle->scenario = DDP_SCENARIO_SUB_ALL;
-	} else if (engine == DISP_MODULE_DITHER) {
+	} else if (engine == DISP_MODULE_DITHER0) {
 		handle->scenario = DDP_SCENARIO_DITHER_1TO2;
 	} else if (engine == DISP_MODULE_UFOE) {
 		handle->scenario = DDP_SCENARIO_UFOE_1TO2;
@@ -1083,10 +1083,10 @@ static unsigned int dpmgr_is_PQ(DISP_MODULE_ENUM module)
 
 	switch (module) {
 	case DISP_MODULE_COLOR0:
-	case DISP_MODULE_CCORR:
-	case DISP_MODULE_AAL:
-	case DISP_MODULE_GAMMA:
-	case DISP_MODULE_DITHER:
+	case DISP_MODULE_CCORR0:
+	case DISP_MODULE_AAL0:
+	case DISP_MODULE_GAMMA0:
+	case DISP_MODULE_DITHER0:
 		/* case DISP_MODULE_PWM0  : */
 		isPQ = 1;
 		break;
@@ -1240,6 +1240,16 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle, in
 									 trigger_loop_handle);
 			}
 		}
+	}
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+		ddp_mutex_get(handle->hwmutexid, handle->scenario, trigger_loop_handle);
+		/* polling internal mutex is taken by sw */
+		/*DISP_REG_CMDQ_POLLING(handle, DISP_REG_CONFIG_MUTEX_GET(handle->hwmutexid),
+				REG_FLD_VAL(GET_FLD_INT_MUTEX0_EN, 1), REG_FLD_MASK(GET_FLD_INT_MUTEX0_EN));*/
+		ddp_mutex_release(handle->hwmutexid, handle->scenario, trigger_loop_handle);
+		/* polling internal mutex is released */
+		/*DISP_REG_CMDQ_POLLING(handle, DISP_REG_CONFIG_MUTEX_GET(handle->hwmutexid),
+						REG_FLD_VAL(GET_FLD_INT_MUTEX0_EN, 1), REG_FLD_MASK(GET_FLD_INT_MUTEX0_EN));*/
 	}
 	return 0;
 }
@@ -1401,25 +1411,25 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 	case DISP_IOCTL_AAL_SET_PARAM:
 		/* TODO: just for verify rootcause, will be removed soon */
 #ifndef CONFIG_FOR_SOURCE_PQ
-		if (is_module_in_path(DISP_MODULE_AAL, handle)) {
-			if (ddp_modules_driver[DISP_MODULE_AAL]->cmd != NULL)
+		if (is_module_in_path(DISP_MODULE_AAL0, handle)) {
+			if (ddp_modules_driver[DISP_MODULE_AAL0]->cmd != NULL)
 				ret =
-				    ddp_modules_driver[DISP_MODULE_AAL]->cmd(DISP_MODULE_AAL, msg,
+				    ddp_modules_driver[DISP_MODULE_AAL0]->cmd(DISP_MODULE_AAL0, msg,
 									     arg, cmdqhandle);
 
 		}
 #endif
 		break;
 	case DISP_IOCTL_SET_GAMMALUT:
-		if (ddp_modules_driver[DISP_MODULE_GAMMA]->cmd != NULL)
+		if (ddp_modules_driver[DISP_MODULE_GAMMA0]->cmd != NULL)
 			ret =
-			    ddp_modules_driver[DISP_MODULE_GAMMA]->cmd(DISP_MODULE_GAMMA, msg, arg,
+			    ddp_modules_driver[DISP_MODULE_GAMMA0]->cmd(DISP_MODULE_GAMMA0, msg, arg,
 								       cmdqhandle);
 		break;
 	case DISP_IOCTL_SET_CCORR:
-		if (ddp_modules_driver[DISP_MODULE_CCORR]->cmd != NULL)
+		if (ddp_modules_driver[DISP_MODULE_CCORR0]->cmd != NULL)
 			ret =
-			    ddp_modules_driver[DISP_MODULE_CCORR]->cmd(DISP_MODULE_CCORR, msg, arg,
+			    ddp_modules_driver[DISP_MODULE_CCORR0]->cmd(DISP_MODULE_CCORR0, msg, arg,
 								       cmdqhandle);
 		break;
 
@@ -1716,7 +1726,7 @@ int dpmgr_wait_event_timeout(disp_path_handle dp_handle, DISP_PATH_EVENT event, 
 	wq_handle = &handle->wq_list[event];
 
 	if (wq_handle->init) {
-		cur_time = sched_clock();
+		cur_time = ktime_to_ns(ktime_get());
 
 		ret = wait_event_interruptible_timeout(wq_handle->wq, cur_time < wq_handle->data,
 						       timeout);
@@ -1757,7 +1767,7 @@ int _dpmgr_wait_event(disp_path_handle dp_handle, DISP_PATH_EVENT event, unsigne
 		return -2;
 	}
 
-	cur_time = sched_clock();
+	cur_time = ktime_to_ns(ktime_get());
 
 	ret = wait_event_interruptible(wq_handle->wq, cur_time < wq_handle->data);
 	if (ret < 0) {
@@ -1791,7 +1801,7 @@ int dpmgr_signal_event(disp_path_handle dp_handle, DISP_PATH_EVENT event)
 	wq_handle = &handle->wq_list[event];
 
 	if (handle->wq_list[event].init) {
-		wq_handle->data = sched_clock();
+		wq_handle->data = ktime_to_ns(ktime_get());
 		wake_up_interruptible(&(handle->wq_list[event].wq));
 	}
 	return 0;
@@ -1818,7 +1828,7 @@ static void dpmgr_irq_handler(DISP_MODULE_ENUM module, unsigned int regvalue)
 				if (handle->wq_list[j].init
 				    && irq_bit == handle->irq_event_map[j].irq_bit) {
 					dprec_stub_event(j);
-					handle->wq_list[j].data = sched_clock();
+					handle->wq_list[j].data = ktime_to_ns(ktime_get());
 
 					DDPIRQ("irq signal event %s on cycle %llu on scenario %s\n",
 					       path_event_name(j), handle->wq_list[j].data,

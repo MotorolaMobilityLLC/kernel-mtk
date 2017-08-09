@@ -694,13 +694,21 @@ void disp_od_hwc_force(int allow_enabled)
 
 void disp_od_set_smi_clock(int enabled)
 {
+	eDDP_CLK_ID larb_clk;
+
 	ODDBG(OD_LOG_ALWAYS, "disp_od_set_smi_clock(%d), od_enabled=%d", enabled, g_od_is_enabled);
+
+#if defined(CONFIG_ARCH_MT6757)
+	larb_clk = DISP0_SMI_LARB4;
+#else
+	larb_clk = DISP0_SMI_LARB5;
+#endif
 
 	if (enabled) {
 		ddp_clk_prepare_enable(DISP0_SMI_COMMON);
-		ddp_clk_prepare_enable(DISP0_SMI_LARB5);
+		ddp_clk_prepare_enable(larb_clk);
 	} else {
-		ddp_clk_disable_unprepare(DISP0_SMI_LARB5);
+		ddp_clk_disable_unprepare(larb_clk);
 		ddp_clk_disable_unprepare(DISP0_SMI_COMMON);
 	}
 }

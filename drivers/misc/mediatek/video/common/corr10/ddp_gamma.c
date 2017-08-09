@@ -78,8 +78,13 @@ static int disp_gamma_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pCon
 
 static void disp_gamma_trigger_refresh(disp_gamma_id_t id)
 {
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+	if (g_gamma_ddp_notify != NULL)
+		g_gamma_ddp_notify(DISP_MODULE_GAMMA0, DISP_PATH_EVENT_TRIGGER);
+#else
 	if (g_gamma_ddp_notify != NULL)
 		g_gamma_ddp_notify(DISP_MODULE_GAMMA, DISP_PATH_EVENT_TRIGGER);
+#endif
 }
 
 
@@ -241,7 +246,7 @@ static int disp_gamma_bypass(DISP_MODULE_ENUM module, int bypass)
 
 static int disp_gamma_power_on(DISP_MODULE_ENUM module, void *handle)
 {
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
 	/* gamma is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
@@ -259,7 +264,7 @@ static int disp_gamma_power_on(DISP_MODULE_ENUM module, void *handle)
 
 static int disp_gamma_power_off(DISP_MODULE_ENUM module, void *handle)
 {
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
 	/* gamma is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
@@ -328,7 +333,11 @@ static int disp_ccorr_start(DISP_MODULE_ENUM module, void *cmdq)
 
 static int disp_ccorr_write_coef_reg(cmdqRecHandle cmdq, disp_ccorr_id_t id, int lock)
 {
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+	const unsigned long ccorr_base = DISPSYS_CCORR0_BASE;
+#else
 	const unsigned long ccorr_base = DISPSYS_CCORR_BASE;
+#endif
 	int ret = 0;
 	DISP_CCORR_COEF_T *ccorr;
 
@@ -367,8 +376,14 @@ ccorr_write_coef_unlock:
 
 static void disp_ccorr_trigger_refresh(disp_ccorr_id_t id)
 {
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+	if (g_ccorr_ddp_notify != NULL)
+		g_ccorr_ddp_notify(DISP_MODULE_CCORR0, DISP_PATH_EVENT_TRIGGER);
+#else
 	if (g_ccorr_ddp_notify != NULL)
 		g_ccorr_ddp_notify(DISP_MODULE_CCORR, DISP_PATH_EVENT_TRIGGER);
+
+#endif
 }
 
 
@@ -661,7 +676,11 @@ static int ccorr_parse_triple(const char *cmd, unsigned long *offset, unsigned l
 
 static void ccorr_dump_reg(void)
 {
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+	const unsigned long reg_base = DISPSYS_CCORR0_BASE;
+#else
 	const unsigned long reg_base = DISPSYS_CCORR_BASE;
+#endif
 	int offset;
 
 	CCORR_DBG("[DUMP] Base = 0x%lx", reg_base);
@@ -691,10 +710,18 @@ void ccorr_test(const char *cmd, char *debug_output)
 	if (strncmp(cmd, "set:", 4) == 0) {
 		int count = ccorr_parse_triple(cmd + 4, &offset, &value, &mask);
 
-		if (count == 3)
+		if (count == 3) {
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+			DISP_REG_MASK(NULL, DISPSYS_CCORR0_BASE + offset, value, mask);
+#else
 			DISP_REG_MASK(NULL, DISPSYS_CCORR_BASE + offset, value, mask);
-		else if (count == 2) {
+#endif
+		} else if (count == 2) {
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+			DISP_REG_SET(NULL, DISPSYS_CCORR0_BASE + offset, value);
+#else
 			DISP_REG_SET(NULL, DISPSYS_CCORR_BASE + offset, value);
+#endif
 			mask = 0xffffffff;
 		}
 
@@ -712,6 +739,15 @@ void ccorr_test(const char *cmd, char *debug_output)
 	} else if (strncmp(cmd, "en:", 3) == 0) {
 		int enabled = (cmd[3] == '1' ? 1 : 0);
 
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+		if (enabled == 1) {
+			DISP_REG_MASK(NULL, DISPSYS_CCORR0_BASE, 0x1, 0x1);
+			DISP_REG_MASK(NULL, DISPSYS_CCORR0_BASE + 0x20, 0x2, 0x3);
+		} else {
+			DISP_REG_MASK(NULL, DISPSYS_CCORR0_BASE, 0x0, 0x1);
+			DISP_REG_MASK(NULL, DISPSYS_CCORR0_BASE + 0x20, 0x1, 0x3);
+		}
+#else
 		if (enabled == 1) {
 			DISP_REG_MASK(NULL, DISPSYS_CCORR_BASE, 0x1, 0x1);
 			DISP_REG_MASK(NULL, DISPSYS_CCORR_BASE + 0x20, 0x2, 0x3);
@@ -719,6 +755,8 @@ void ccorr_test(const char *cmd, char *debug_output)
 			DISP_REG_MASK(NULL, DISPSYS_CCORR_BASE, 0x0, 0x1);
 			DISP_REG_MASK(NULL, DISPSYS_CCORR_BASE + 0x20, 0x1, 0x3);
 		}
+
+#endif
 
 	} else if (strncmp(cmd, "dbg:", 4) == 0) {
 		corr_dbg_en = cmd[4] - '0';

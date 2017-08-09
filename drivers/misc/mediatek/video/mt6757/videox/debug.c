@@ -55,7 +55,7 @@
 #include "disp_partial.h"
 
 static struct dentry *mtkfb_dbgfs;
-unsigned int g_mobilelog;
+unsigned int g_mobilelog = 1;
 
 static int draw_buffer(char *va, int w, int h,
 		       enum UNIFIED_COLOR_FMT ufmt, char r, char g, char b, char a)
@@ -326,7 +326,7 @@ static void process_dbg_opt(const char *opt)
 
 		for (i = 0; i < 1200; i++) {
 			primary_display_wait_for_vsync(&vsync_config);
-			dpmgr_module_notify(DISP_MODULE_AAL, DISP_PATH_EVENT_TRIGGER);
+			dpmgr_module_notify(DISP_MODULE_AAL0, DISP_PATH_EVENT_TRIGGER);
 		}
 #ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
 	} else if (0 == strncmp(opt, "odbypass:", 9)) {

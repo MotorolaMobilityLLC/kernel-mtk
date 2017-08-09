@@ -83,7 +83,7 @@ static inline unsigned long ovl_layer_num(DISP_MODULE_ENUM module)
 	case DISP_MODULE_OVL0:
 		return 4;
 	case DISP_MODULE_OVL1:
-		return 4;
+		return 2; /* Olympus only */
 	case DISP_MODULE_OVL0_2L:
 		return 2;
 	case DISP_MODULE_OVL1_2L:
@@ -103,7 +103,7 @@ static inline unsigned long ovl_to_m4u_port(DISP_MODULE_ENUM module)
 	case DISP_MODULE_OVL1:
 		return M4U_PORT_DISP_OVL1;
 	case DISP_MODULE_OVL0_2L:
-		return M4U_PORT_DISP_2L_OVL0_LARB5;
+		return M4U_PORT_DISP_2L_OVL0_LARB4;
 	case DISP_MODULE_OVL1_2L:
 		return M4U_PORT_DISP_2L_OVL1;
 	default:
@@ -177,7 +177,20 @@ int ovl_start(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned long ovl_base = ovl_base_addr(module);
 
-	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_EN, 0x01);
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+			/* force commit */
+			DISP_REG_SET_FIELD(handle, EN_FLD_FORCE_COMMIT,
+					ovl_base + DISP_REG_OVL_EN, 0x1);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+			/* bypass shadow */
+			DISP_REG_SET_FIELD(handle, EN_FLD_BYPASS_SHADOW,
+					ovl_base + DISP_REG_OVL_EN, 0x1);
+		}
+	}
+	DISP_REG_SET_FIELD(handle, EN_FLD_OVL_EN,
+			   ovl_base + DISP_REG_OVL_EN, 0x1);
+
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_INTEN,
 		     0x1E | REG_FLD_VAL(INTEN_FLD_ABNORMAL_SOF, 1));
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_LAYER_SMI_ID_EN,
@@ -190,7 +203,8 @@ int ovl_stop(DISP_MODULE_ENUM module, void *handle)
 	unsigned long ovl_base = ovl_base_addr(module);
 
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_INTEN, 0x00);
-	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_EN, 0x00);
+	DISP_REG_SET_FIELD(handle, EN_FLD_OVL_EN,
+			   ovl_base + DISP_REG_OVL_EN, 0x0);
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_INTSTA, 0x00);
 
 	return 0;
@@ -1184,7 +1198,7 @@ static int ovl_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst_
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_OSTD_GREQ_NUM, 0xff);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_GREQ_DIS_CNT, 1);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_IOBUF_FLUSH_PREULTRA, 1);
-	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_GREQ_STOP_EN, 0);
+	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_STOP_EN, 0);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_GRP_BRK_STOP, 1);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_IOBUF_FLUSH_ULTRA, 0);
 	DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMA_GREQ_NUM, regval);

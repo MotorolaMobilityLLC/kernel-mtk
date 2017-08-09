@@ -82,7 +82,7 @@ do {\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, fmt, ##args);	\
 		if (g_mobilelog)					\
-			pr_debug("[DDP/"LOG_TAG"]"fmt, ##args);		\
+			pr_warn("[DDP/"LOG_TAG"]"fmt, ##args);		\
 	} while (0)
 
 #define DISP_LOG_V(fmt, args...)					\
@@ -94,7 +94,7 @@ do {\
 
 #define DISP_LOG_D(fmt, args...)					\
 	do {								\
-		if (ddp_debug_dbg_log_level()) {			\
+		if (1/*ddp_debug_dbg_log_level()*/) {			\
 			DISP_LOG_I(fmt, ##args);			\
 		}							\
 	} while (0)
@@ -134,7 +134,7 @@ do {\
 		} else {						\
 			dprec_logger_pr(DPREC_LOGGER_DUMP, fmt, ##__VA_ARGS__);	\
 			if (g_mobilelog)				\
-				pr_debug("[DDP/"LOG_TAG"]"fmt, ##__VA_ARGS__);	\
+				pr_warn("[DDP/"LOG_TAG"]"fmt, ##__VA_ARGS__);	\
 		}							\
 	} while (0)
 

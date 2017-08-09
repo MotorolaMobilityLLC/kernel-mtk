@@ -200,9 +200,9 @@ static int wdma_config(DISP_MODULE_ENUM module,
 
 static int wdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
-#ifdef ENABLE_CLK_MGR
 	unsigned int idx = wdma_index(module);
 	/* DDPMSG("wmda%d_clock_on\n",idx); */
+#ifdef ENABLE_CLK_MGR
 #ifdef CONFIG_MTK_CLKMGR
 	if (idx == 0)
 		enable_clock(MT_CG_DISP0_DISP_WDMA0, "WDMA0");

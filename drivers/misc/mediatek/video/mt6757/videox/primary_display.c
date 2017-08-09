@@ -495,7 +495,7 @@ static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 		}
 	}
 
-	dynamic_debug_msg_print((phys_addr_t)cfg->input_cfg[dst_layer_id].src_phy_addr,
+	dynamic_debug_msg_print((unsigned long)cfg->input_cfg[dst_layer_id].src_phy_addr,
 				cfg->input_cfg[dst_layer_id].tgt_width,
 				cfg->input_cfg[dst_layer_id].tgt_height,
 				cfg->input_cfg[dst_layer_id].src_pitch,
@@ -1198,7 +1198,7 @@ static void _cmdq_build_trigger_loop(void)
 		}
 		/* ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_MDP_DSI0_TE_SOF); */
 		/* for operations before frame transfer, such as waiting for DSI TE */
-#ifndef CONFIG_MTK_FPGA		/* fpga has no TE signal */
+#ifndef CONFIG_FPGA_EARLY_PORTING		/* fpga has no TE signal */
 		if (islcmconnected)
 			dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_WAIT_LCM_TE, 0);
 #endif
@@ -2050,7 +2050,15 @@ static int config_display_m4u_port(void)
 		return -1;
 	}
 
-	sPort.ePortID = M4U_PORT_DISP_2L_OVL0_LARB5;
+	sPort.ePortID = M4U_PORT_DISP_2L_OVL0_LARB4;
+	ret = m4u_config_port(&sPort);
+	if (ret) {
+		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
+			  ddp_get_module_name(DISP_MODULE_OVL0_2L), m4u_usage, ret);
+		return -1;
+	}
+
+	sPort.ePortID = M4U_PORT_DISP_2L_OVL0_LARB0;
 	ret = m4u_config_port(&sPort);
 	if (ret) {
 		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",
@@ -2329,9 +2337,10 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 		dpmgr_path_start(pgc->dpmgr_handle, primary_display_cmdq_enabled());
 
 	if (_should_trigger_path()) {
+#ifndef CONFIG_FPGA_EARLY_PORTING	/* fpga has no vsync */
 		if (islcmconnected)
 			dpmgr_wait_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
-
+#endif
 		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, primary_display_cmdq_enabled());
 	}
 
@@ -3279,23 +3288,27 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
 	gset_arg.is_decouple_mode = 0;
 	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
-
-	dpmgr_path_start(pgc->dpmgr_handle, use_cmdq);
-
 	if (use_cmdq) {
-		_cmdq_flush_config_handle(0, NULL, 0);
+		_cmdq_flush_config_handle(1, NULL, 0);
+		_cmdq_reset_config_handle();
+		if (is_lcm_inited)
+			_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
+	}
+
+	/* no need lcm power on if lcm is inited in lk */
+	ret = disp_lcm_init(pgc->plcm, !is_lcm_inited);
+
+	/* path start must after lcm init for video mode, because dsi_start will set mode */
+	dpmgr_path_start(pgc->dpmgr_handle, use_cmdq);
+	if (use_cmdq) {
+		_cmdq_flush_config_handle(1, NULL, 0);
 		_cmdq_reset_config_handle();
 		_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 	}
 
-	if (is_lcm_inited) {
-		ret = disp_lcm_init(pgc->plcm, 0);	/* no need lcm power on,because lk power on lcm */
-	} else {
-		ret = disp_lcm_init(pgc->plcm, 1);
 
-		if (primary_display_is_video_mode())
-			dpmgr_path_trigger(pgc->dpmgr_handle, NULL, 0);
-	}
+	if (!is_lcm_inited && primary_display_is_video_mode())
+		dpmgr_path_trigger(pgc->dpmgr_handle, NULL, 0);
 
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
 		set_enterulps(0);
@@ -3700,7 +3713,7 @@ int primary_display_wait_for_vsync(void *config)
 	/* kick idle manager here to ensure sodi is disabled when screen update begin(not 100% ensure) */
 	primary_display_idlemgr_kick(__func__, 1);
 
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 	if (!primary_display_is_video_mode())
 		has_vsync = 0;	/* fpga has no TE signal */
 #endif
@@ -5818,11 +5831,10 @@ int primary_display_setbacklight(unsigned int level)
 		return 0;
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
-#ifndef CONFIG_MTK_AAL_SUPPORT
+
 	_primary_path_switch_dst_lock();
 
 	_primary_path_lock(__func__);
-#endif
 	if (pgc->state == DISP_SLEPT) {
 		DISPERR("Sleep State set backlight invald\n");
 	} else {
@@ -5841,11 +5853,9 @@ int primary_display_setbacklight(unsigned int level)
 		}
 		last_level = level;
 	}
-#ifndef CONFIG_MTK_AAL_SUPPORT
 	_primary_path_unlock(__func__);
 
 	_primary_path_switch_dst_unlock();
-#endif
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagEnd, 0, 0);
 	return ret;
@@ -6230,7 +6240,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf, enum UNIFIED_COL
 	if (tmp == 0)
 		after_eng = DISP_MODULE_OVL0;
 	else if (tmp == 1)
-		after_eng = DISP_MODULE_DITHER;
+		after_eng = DISP_MODULE_DITHER0;
 	else if (tmp == 2)
 		after_eng = DISP_MODULE_UFOE;
 
@@ -6658,10 +6668,11 @@ int primary_display_switch_dst_mode(int mode)
 		set_is_dc(0);
 	}
 
+#ifndef CONFIG_FPGA_EARLY_PORTING /* just to fix build error, please remove me. */
 	/* set power down mode forbidden */
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		spm_sodi_mempll_pwr_mode(1);
-
+#endif
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_switch_dst_mode,
 		MMProfileFlagPulse, 4, 0);
 	_cmdq_reset_config_handle();

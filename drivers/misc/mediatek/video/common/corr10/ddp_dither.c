@@ -35,7 +35,11 @@ int dither_dbg_en = 0;
 void disp_dither_init(disp_dither_id_t id, int width, int height,
 			     unsigned int dither_bpp, void *cmdq)
 {
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+	unsigned long reg_base = DISPSYS_DITHER0_BASE;
+#else
 	unsigned long reg_base = DISPSYS_DITHER_BASE;
+#endif
 	unsigned int enable;
 
 	DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 5), 0x00000000, ~0);
@@ -183,7 +187,11 @@ DDP_MODULE_DRIVER ddp_driver_dither = {
 
 void disp_dither_select(unsigned int dither_bpp, void *cmdq)
 {
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+	unsigned long reg_base = DISPSYS_DITHER0_BASE;
+#else
 	unsigned long reg_base = DISPSYS_DITHER_BASE;
+#endif
 	unsigned int enable;
 
 	DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 5), 0x00000000, ~0);
