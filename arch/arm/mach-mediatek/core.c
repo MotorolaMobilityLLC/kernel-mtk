@@ -16,6 +16,7 @@
 #ifdef CONFIG_OF
 static const char *mt_dt_match[] __initconst = {
 	"mediatek,mt6735",
+	"mediatek,MT6580",
 	NULL
 };
 
