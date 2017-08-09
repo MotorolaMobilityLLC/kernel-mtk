@@ -71,10 +71,6 @@ mtk_stp_bt-objs		:= linux/stp_chrdev_bt.o
 obj-$(CONFIG_MTK_COMBO_ANT) += mtk_stp_ant.o
 mtk_stp_ant-objs	:= linux/stp_chrdev_ant.o
 
-obj-$(CONFIG_MTK_COMBO_GPS) += mtk_stp_gps.o
-mtk_stp_gps-objs	:= linux/stp_chrdev_gps.o
-
-
 obj-$(CONFIG_MTK_COMBO_WIFI) += mtk_wmt_wifi.o
 mtk_wmt_wifi-objs	:= linux/wmt_chrdev_wifi.o
 endif

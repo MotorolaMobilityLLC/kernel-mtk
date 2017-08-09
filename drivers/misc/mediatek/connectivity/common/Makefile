@@ -1,17 +1,6 @@
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
-ifeq ($(CONFIG_MTK_CONN_LTE_IDC_SUPPORT),y)
-subdir-ccflags-y += -D WMT_IDC_SUPPORT=1
-else
-subdir-ccflags-y += -D WMT_IDC_SUPPORT=0
-endif
-subdir-ccflags-y += -D MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
-subdir-ccflags-y += -D MTK_WCN_REMOVE_KERNEL_MODULE
-ifeq ($(CONFIG_ARM64), y)
-subdir-ccflags-y += -D CONFIG_MTK_WCN_ARM64
-endif
-
 ifneq ($(filter "MT6620E3",$(CONFIG_MTK_COMBO_CHIP)),)
 	obj-y   +=  combo/
 endif

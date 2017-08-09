@@ -20,7 +20,6 @@ endif
 obj-y += osal.o \
          bgw_desense.o \
          wmt_idc.o
-obj-$(CONFIG_MTK_COMBO_GPS)		+= stp_chrdev_gps.o
 obj-$(CONFIG_MTK_COMBO_BT)		+= stp_chrdev_bt.o
 obj-$(CONFIG_MTK_COMBO_WIFI)	+= wmt_chrdev_wifi.o
 
