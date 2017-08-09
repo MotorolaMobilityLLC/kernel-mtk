@@ -1226,11 +1226,11 @@ static int pmic_mt_cust_probe(struct platform_device *pdev)
 #ifdef non_ks
 	const struct of_device_id *match;
 #endif
-	int i, ret;
-	unsigned int default_on;
+	int ret;
+	unsigned int i = 0, default_on;
 
-	PMICLOG("[PMIC]pmic_mt_cust_probe %s %s\n", pdev->name, pdev->id_entry->name);
 #ifdef non_ks
+	PMICLOG("[PMIC]pmic_mt_cust_probe %s %s\n", pdev->name, pdev->id_entry->name);
 	/* check if device_id is matched */
 	match = of_match_device(pmic_cust_of_ids, &pdev->dev);
 	if (!match) {
@@ -1298,6 +1298,7 @@ static int pmic_mt_cust_probe(struct platform_device *pdev)
 	PMICLOG("[PMIC]pmic_mt_cust_probe done\n");
 	return 0;
 #else
+	PMICLOG("[PMIC]pmic_mt_cust_probe %s %s\n", pdev->name, pdev->id_entry->name);
 	nproot = of_find_compatible_node(NULL, NULL, "mediatek,mt_pmic");
 	if (nproot == NULL) {
 		pr_info("[PMIC]pmic_mt_cust_probe get node failed\n");
