@@ -2438,7 +2438,8 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 	CCCI_EXP_INF_MSG(md->index, KERN, "Dump MD layout struct\n");
 	ccci_mem_dump(md->index, &md->mem_layout, sizeof(struct ccci_mem_layout));
 	/* Dump MD register */
-	md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
+	if (debug_info->more_info == MD_EE_CASE_NO_RESPONSE) /* temp solution for debug mode KE */
+		md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
 err_exit:
 	ccci_update_md_boot_stage(md, MD_BOOT_STAGE_EXCEPTION);
 	/* update here to maintain handshake stage info during exception handling */

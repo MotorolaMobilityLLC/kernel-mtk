@@ -246,7 +246,7 @@ void md_cd_lock_modem_clock_src(int locked)
 
 void md_cd_dump_debug_register(struct ccci_modem *md)
 {
-#if 0 /* MD no need dump because of bus hang happened - open for debug */
+#if 1 /* MD no need dump because of bus hang happened - open for debug */
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 #if 1
 	unsigned int reg_value;
@@ -257,17 +257,33 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	if (md->boot_stage == MD_BOOT_STAGE_0)
 		return;
 
-	md_cd_lock_modem_clock_src(1);
+	CCCI_EXP_INF_MSG(md->index, TAG, "Dump subsys_if_on\n");
+	subsys_if_on();
 
+	md_cd_lock_modem_clock_src(1);
 #if 1
 	/* 1. shared memory */
 	/* 2. TO PSM */
 	CCCI_EXP_INF_MSG(md->index, TAG, "Dump MD TOPSM status 0x%x\n", MD_TOPSM_STATUS_BASE);
-	ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action */
+	ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action: permission */
 	ccci_mem_dump(md->index, md_ctrl->md_topsm_status, MD_TOPSM_STATUS_LENGTH);
 
 	/* 3. PC Monitor */
 	CCCI_EXP_INF_MSG(md->index, TAG, "Dump MD PC monitor 0x%x\n", (MD_PC_MONITOR_BASE + 0x100));
+	/* pre-action: Open Dbgsys clock */
+	md_addr = md_reg->md_ect_0;
+	reg_value = ccci_read32(md_addr, 4);
+	reg_value |= (0x1 << 3);
+	CCCI_EXP_INF_MSG(md->index, TAG, "[pre-action]write: %p=0x%x\n", (md_addr + 4), reg_value);
+	ccci_write32(md_addr, 4, reg_value);	/* clear bit[29] */
+	reg_value = ccci_read32(md_addr, 4);
+	CCCI_EXP_INF_MSG(md->index, TAG, "[pre-action] read: %p=0x%x\n", (md_addr + 4), reg_value);
+	reg_value = ccci_read32(md_addr, 0x20);
+	CCCI_EXP_INF_MSG(md->index, TAG, "[pre-action] before %p=0x%x\n", (md_addr + 0x20), reg_value);
+	while (!(ccci_read32(md_addr, 0x20)&(1<<3)))
+		;
+	CCCI_EXP_INF_MSG(md->index, TAG, "[pre-action]after 0x%x\n", reg_value);
+
 	ccci_write32(md_reg->md_pc_mon1, 4, 0x80000000); /* stop MD PCMon */
 	ccci_mem_dump(md->index, md_reg->md_pc_mon1, 0x48);
 	ccci_mem_dump(md->index, (md_reg->md_pc_mon1 + 0x100), 0x280);
@@ -282,16 +298,16 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 
 	/* 4. MD RGU */
 	CCCI_EXP_INF_MSG(md->index, TAG, "Dump MD RGU 0x%x\n", MD_RGU_BASE);
-	ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action */
+	/* ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5); *//* pre-action */
 	ccci_mem_dump(md->index, md_ctrl->md_rgu_base, 0x8B);
 	ccci_mem_dump(md->index, (md_ctrl->md_rgu_base + 0x200), 0x60);
 	/* 5 OST */
 	CCCI_EXP_INF_MSG(md->index, TAG, "Dump MD OST status %x\n", MD_OST_STATUS_BASE);
-	ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);/* pre-action */
+	/*ccci_write32(md_reg->md_busreg1, 0x94, 0xE7C5);*//* pre-action */
 	ccci_mem_dump(md->index, md_ctrl->md_ost_status, MD_OST_STATUS_LENGTH);
 	/* 6. Bus status */
 	CCCI_EXP_INF_MSG(md->index, TAG, "Dump MD Bus status %x\n", MD_BUS_STATUS_BASE);
-	ccci_write32(md_reg->md_busreg1, 0x9C, 0x65);/* pre-action */
+	ccci_write32(md_reg->md_busreg1, 0x9C, 0x65);/* pre-action: permission */
 	ccci_mem_dump(md->index, md_ctrl->md_bus_status, 0x38);
 	ccci_mem_dump(md->index, (md_ctrl->md_bus_status + 0x100), 0x30);
 	ccci_mem_dump(md->index, md_reg->md_busreg1, MD_BUSREG_DUMP_LEN1);
@@ -324,15 +340,15 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 	md_addr = md_reg->md_ect_0;
 	reg_value = ccci_read32(md_addr, 4);
 	reg_value |= (0x1 << 3);
-	CCCI_EXP_INF_MSG(md->index, TAG, "Dump MD ECT write: %p=0x%x\n", (md_addr + 4), reg_value);
+	CCCI_EXP_INF_MSG(md->index, TAG, "[pre-action] write: %p=0x%x\n", (md_addr + 4), reg_value);
 	ccci_write32(md_addr, 4, reg_value);	/* clear bit[29] */
 	reg_value = ccci_read32(md_addr, 4);
-	CCCI_EXP_INF_MSG(md->index, TAG, "Dump MD ECT read: %p=0x%x\n", (md_addr + 4), reg_value);
+	CCCI_EXP_INF_MSG(md->index, TAG, "[pre-action] read: %p=0x%x\n", (md_addr + 4), reg_value);
 	reg_value = ccci_read32(md_addr, 0x20);
-	CCCI_EXP_INF_MSG(md->index, TAG, "Dump MD ECT before %p=0x%x\n", (md_addr + 0x20), reg_value);
+	CCCI_EXP_INF_MSG(md->index, TAG, "[pre-action] before %p=0x%x\n", (md_addr + 0x20), reg_value);
 	while (!(ccci_read32(md_addr, 0x20)&(1<<3)))
 		;
-	CCCI_EXP_INF_MSG(md->index, TAG, "Dump MD ECT after 0x%x\n", reg_value);
+	CCCI_EXP_INF_MSG(md->index, TAG, "[pre-action] after 0x%x\n", reg_value);
 
 	ccci_mem_dump(md->index, md_reg->md_ect_1, MD_ECT_DUMP_LEN1);
 	ccci_mem_dump(md->index, md_reg->md_ect_2, MD_ECT_DUMP_LEN2);

@@ -294,4 +294,5 @@ void md_cd_check_md_DCM(struct ccci_modem *md);
 
 extern unsigned long infra_ao_base;
 extern void ccci_mem_dump(int md_id, void *start_addr, int len);
+extern void subsys_if_on(void);
 #endif				/* __CLDMA_PLATFORM_H__ */
