@@ -2560,6 +2560,8 @@ static void mt_battery_charger_detect_check(void)
 	if (upmu_is_chr_det() == KAL_TRUE) {
 		wake_lock(&battery_suspend_lock);
 
+	BMT_status.charger_vol = battery_meter_get_charger_voltage();
+
 #if !defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
 		BMT_status.charger_exist = KAL_TRUE;
 #endif
@@ -2620,6 +2622,8 @@ static void mt_battery_charger_detect_check(void)
 		BMT_status.CC_charging_time = 0;
 		BMT_status.TOPOFF_charging_time = 0;
 		BMT_status.POSTFULL_charging_time = 0;
+
+		BMT_status.charger_vol = 0;
 
 		battery_log(BAT_LOG_CRTI, "[BAT_thread]Cable out \r\n");
 
