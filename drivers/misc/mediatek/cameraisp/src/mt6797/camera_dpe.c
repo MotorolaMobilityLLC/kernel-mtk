@@ -3677,7 +3677,7 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					Ret = -EFAULT;
 				}
 			} else {
-				LOG_ERR("DPE_CMD_DVE_DEQUE_REQ copy_from_user failed\n");
+				LOG_ERR("DPE_CMD_WMFE_DEQUE_REQ copy_from_user failed\n");
 				Ret = -EFAULT;
 			}
 
@@ -3765,6 +3765,35 @@ static int compat_put_DPE_dve_enque_req_data(compat_DPE_DVERequest __user *data3
 }
 
 
+static int compat_get_DPE_dve_deque_req_data(compat_DPE_DVERequest __user *data32,
+					     DPE_DVERequest __user *data)
+{
+	compat_uint_t count;
+	compat_uptr_t uptr;
+	int err = 0;
+
+	err = get_user(uptr, &data32->m_pDpeConfig);
+	err |= put_user(compat_ptr(uptr), &data->m_pDpeConfig);
+	err |= get_user(count, &data32->m_ReqNum);
+	err |= put_user(count, &data->m_ReqNum);
+	return err;
+}
+
+
+static int compat_put_DPE_dve_deque_req_data(compat_DPE_DVERequest __user *data32,
+					     DPE_DVERequest __user *data)
+{
+	compat_uint_t count;
+	/*compat_uptr_t uptr;*/
+	int err = 0;
+	/* Assume data pointer is unchanged. */
+	/* err = get_user(compat_ptr(uptr), &data->m_pDpeConfig); */
+	/* err |= put_user(uptr, &data32->m_pDpeConfig); */
+	err |= get_user(count, &data->m_ReqNum);
+	err |= put_user(count, &data32->m_ReqNum);
+	return err;
+}
+
 static int compat_get_DPE_wmfe_enque_req_data(compat_DPE_WMFERequest __user *data32,
 					      DPE_WMFERequest __user *data)
 {
@@ -3795,13 +3824,44 @@ static int compat_put_DPE_wmfe_enque_req_data(compat_DPE_WMFERequest __user *dat
 }
 
 
+static int compat_get_DPE_wmfe_deque_req_data(compat_DPE_WMFERequest __user *data32,
+					      DPE_WMFERequest __user *data)
+{
+	compat_uint_t count;
+	compat_uptr_t uptr;
+	int err = 0;
+
+	err = get_user(uptr, &data32->m_pWmfeConfig);
+	err |= put_user(compat_ptr(uptr), &data->m_pWmfeConfig);
+	err |= get_user(count, &data32->m_ReqNum);
+	err |= put_user(count, &data->m_ReqNum);
+	return err;
+}
+
+
+static int compat_put_DPE_wmfe_deque_req_data(compat_DPE_WMFERequest __user *data32,
+					      DPE_WMFERequest __user *data)
+{
+	compat_uint_t count;
+	/*compat_uptr_t uptr;*/
+	int err = 0;
+	/* Assume data pointer is unchanged. */
+	/* err = get_user(compat_ptr(uptr), &data->m_pDpeConfig); */
+	/* err |= put_user(uptr, &data32->m_pDpeConfig); */
+	err |= get_user(count, &data->m_ReqNum);
+	err |= put_user(count, &data32->m_ReqNum);
+	return err;
+}
+
 static long DPE_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	long ret;
 
-	if (!filp->f_op || !filp->f_op->unlocked_ioctl)
-		return -ENOTTY;
 
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		LOG_ERR("no f_op !!!\n");
+		return -ENOTTY;
+	}
 	switch (cmd) {
 	case COMPAT_DPE_READ_REGISTER:
 		{
@@ -3876,6 +3936,33 @@ static long DPE_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 			}
 			return ret;
 		}
+	case COMPAT_DPE_DVE_DEQUE_REQ:
+		{
+			compat_DPE_DVERequest __user *data32;
+			DPE_DVERequest __user *data;
+			int err;
+
+			data32 = compat_ptr(arg);
+			data = compat_alloc_user_space(sizeof(*data));
+			if (data == NULL)
+				return -EFAULT;
+
+			err = compat_get_DPE_dve_deque_req_data(data32, data);
+			if (err) {
+				LOG_INF("COMPAT_DPE_DVE_DEQUE_REQ error!!!\n");
+				return err;
+			}
+			ret =
+			    filp->f_op->unlocked_ioctl(filp, DPE_DVE_DEQUE_REQ,
+						       (unsigned long)data);
+			err = compat_put_DPE_dve_deque_req_data(data32, data);
+			if (err) {
+				LOG_INF("COMPAT_DPE_DVE_DEQUE_REQ error!!!\n");
+				return err;
+			}
+			return ret;
+		}
+
 	case COMPAT_DPE_WMFE_ENQUE_REQ:
 		{
 			compat_DPE_WMFERequest __user *data32;
@@ -3902,6 +3989,33 @@ static long DPE_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 			}
 			return ret;
 		}
+	case COMPAT_DPE_WMFE_DEQUE_REQ:
+		{
+			compat_DPE_WMFERequest __user *data32;
+			DPE_WMFERequest __user *data;
+			int err;
+
+			data32 = compat_ptr(arg);
+			data = compat_alloc_user_space(sizeof(*data));
+			if (data == NULL)
+				return -EFAULT;
+
+			err = compat_get_DPE_wmfe_deque_req_data(data32, data);
+			if (err) {
+				LOG_INF("COMPAT_DPE_WMFE_DEQUE_REQ error!!!\n");
+				return err;
+			}
+			ret =
+			    filp->f_op->unlocked_ioctl(filp, DPE_WMFE_DEQUE_REQ,
+						       (unsigned long)data);
+			err = compat_put_DPE_wmfe_deque_req_data(data32, data);
+			if (err) {
+				LOG_INF("COMPAT_DPE_WMFE_DEQUE_REQ error!!!\n");
+				return err;
+			}
+			return ret;
+		}
+
 	case DPE_WAIT_IRQ:
 	case DPE_CLEAR_IRQ:	/* structure (no pointer) */
 	case DPE_DVE_ENQNUE_NUM:
