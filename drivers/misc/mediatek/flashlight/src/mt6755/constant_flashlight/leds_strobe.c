@@ -54,23 +54,13 @@
 #define TAG_NAME "[leds_strobe.c]"
 #define PK_DBG_NONE(fmt, arg...)    do {} while (0)
 #define PK_DBG_FUNC(fmt, arg...)    pr_debug(TAG_NAME "%s: " fmt, __func__ , ##arg)
-#define PK_WARN(fmt, arg...)        pr_warn(TAG_NAME "%s: " fmt, __func__ , ##arg)
-#define PK_NOTICE(fmt, arg...)      pr_notice(TAG_NAME "%s: " fmt, __func__ , ##arg)
-#define PK_INFO(fmt, arg...)        pr_info(TAG_NAME "%s: " fmt, __func__ , ##arg)
-#define PK_TRC_FUNC(f)              pr_debug(TAG_NAME "<%s>\n", __func__)
-#define PK_TRC_VERBOSE(fmt, arg...) pr_debug(TAG_NAME fmt, ##arg)
-#define PK_ERROR(fmt, arg...)       pr_err(TAG_NAME "%s: " fmt, __func__ , ##arg)
 
 
-#define DEBUG_LEDS_STROBE
+/*#define DEBUG_LEDS_STROBE*/
 #ifdef DEBUG_LEDS_STROBE
 #define PK_DBG PK_DBG_FUNC
-#define PK_VER PK_TRC_VERBOSE
-#define PK_ERR PK_ERROR
 #else
 #define PK_DBG(a, ...)
-#define PK_VER(a, ...)
-#define PK_ERR(a, ...)
 #endif
 
 /******************************************************************************
@@ -140,26 +130,6 @@ struct RT4505_chip_data {
 	u8 no_pdata;
 };
 
-/* i2c access*/
-/*
-static int RT4505_read_reg(struct i2c_client *client, u8 reg,u8 *val)
-{
-	int ret;
-	struct RT4505_chip_data *chip = i2c_get_clientdata(client);
-
-	mutex_lock(&chip->lock);
-	ret = i2c_smbus_read_byte_data(client, reg);
-	mutex_unlock(&chip->lock);
-
-	if (ret < 0) {
-		PK_ERR("failed reading at 0x%02x error %d\n",reg, ret);
-		return ret;
-	}
-	*val = ret&0xff;
-
-	return 0;
-}*/
-
 static int RT4505_write_reg(struct i2c_client *client, u8 reg, u8 val)
 {
 	int ret = 0;
@@ -170,7 +140,7 @@ static int RT4505_write_reg(struct i2c_client *client, u8 reg, u8 val)
 	mutex_unlock(&chip->lock);
 
 	if (ret < 0)
-		PK_ERR("failed writing at 0x%02x\n", reg);
+		PK_DBG("failed writing at 0x%02x\n", reg);
 	return ret;
 }
 
@@ -212,7 +182,7 @@ static int RT4505_probe(struct i2c_client *client, const struct i2c_device_id *i
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		err = -ENODEV;
-		PK_ERR("RT4505 i2c functionality check fail.\n");
+		PK_DBG("RT4505 i2c functionality check fail.\n");
 		return err;
 	}
 
@@ -223,7 +193,7 @@ static int RT4505_probe(struct i2c_client *client, const struct i2c_device_id *i
 	i2c_set_clientdata(client, chip);
 
 	if (pdata == NULL) {	/* values are set to Zero. */
-		PK_ERR("RT4505 Platform data does not exist\n");
+		PK_DBG("RT4505 Platform data does not exist\n");
 		pdata = kzalloc(sizeof(struct RT4505_platform_data), GFP_KERNEL);
 		chip->pdata = pdata;
 		chip->no_pdata = 1;
@@ -241,7 +211,7 @@ static int RT4505_probe(struct i2c_client *client, const struct i2c_device_id *i
 err_chip_init:
 	i2c_set_clientdata(client, NULL);
 	kfree(chip);
-	PK_ERR("RT4505 probe is failed\n");
+	PK_DBG("RT4505 probe is failed\n");
 	return -ENODEV;
 }
 
@@ -481,7 +451,7 @@ static int constant_flashlight_open(void *pArg)
 
 
 	if (strobe_Res) {
-		PK_ERR(" busy!\n");
+		PK_DBG(" busy!\n");
 		i4RetValue = -EBUSY;
 	} else {
 		strobe_Res += 1;

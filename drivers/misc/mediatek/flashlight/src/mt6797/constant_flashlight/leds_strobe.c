@@ -36,7 +36,7 @@
 #define TAG_NAME "[leds_strobe.c]"
 #define PK_DBG_FUNC(fmt, arg...)    pr_debug(TAG_NAME "%s: " fmt, __func__ , ##arg)
 
-#define DEBUG_LEDS_STROBE
+/*#define DEBUG_LEDS_STROBE*/
 #ifdef DEBUG_LEDS_STROBE
 	#define PK_DBG PK_DBG_FUNC
 #else
