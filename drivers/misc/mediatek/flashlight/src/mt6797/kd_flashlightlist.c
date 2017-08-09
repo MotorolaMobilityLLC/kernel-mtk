@@ -524,7 +524,8 @@ static long flashlight_ioctl_core(struct file *file, unsigned int cmd, unsigned 
 			int isLow = 0;
 #if POWER_THROTTLING
 			if (gLowPowerPer != BATTERY_PERCENT_LEVEL_0
-			|| gLowPowerVbat != LOW_BATTERY_LEVEL_0)
+			|| gLowPowerVbat != LOW_BATTERY_LEVEL_0
+			|| gLowPowerOc != BATTERY_OC_LEVEL_0)
 				isLow = 1;
 			logI("FLASH_IOC_IS_LOW_POWER %d %d %d", gLowPowerPer, gLowPowerVbat, isLow);
 #endif
