@@ -1,7 +1,7 @@
 #ifndef _AUTOK_DVFS_H_
 #define _AUTOK_DVFS_H_
 
-/*#include <mach/mt_vcorefs_manager.h>*/
+#include <mt_vcorefs_manager.h>
 #include "autok.h"
 
 #define SDIO_DVFS_TIMEOUT       (HZ/100 * 5)    /* 10ms x5 */

@@ -179,17 +179,14 @@ int sdio_version(struct msdc_host *host)
 
 void sdio_unreq_vcore(struct work_struct *work)
 {
-#if 0 /* Left for Peter to fix */
 	if (vcorefs_request_dvfs_opp(KIR_SDIO, OPPI_UNREQ) == 0)
 		pr_debug("unrequest vcore pass\n");
 	else
 		pr_err("unrequest vcore fail\n");
-#endif
 }
 
 void sdio_set_vcore_performance(struct msdc_host *host, u32 enable)
 {
-#if 0 /* Left for Peter to fix */
 	if (enable) {
 		if (cancel_delayed_work_sync(&(host->set_vcore_workq)) == 0) {
 			/* true if dwork was pending, false otherwise */
@@ -207,12 +204,10 @@ void sdio_set_vcore_performance(struct msdc_host *host, u32 enable)
 	} else {
 		schedule_delayed_work(&(host->set_vcore_workq), SDIO_DVFS_TIMEOUT);
 	}
-#endif
 }
 
 void sdio_set_vcorefs_sram(int vcore, int done, struct msdc_host *host)
 {
-#if 0 /* Left for Peter to fix */
 	void __iomem *base = host->base;
 
 	if (vcore >= AUTOK_VCORE_HIGH) {
@@ -242,7 +237,6 @@ void sdio_set_vcorefs_sram(int vcore, int done, struct msdc_host *host)
 	/* SPM see 0x0x55AA55AA then SDIO para apply for HPM/LPM transisiton */
 	if (done)
 		vcorefs_set_sram_data(0, 0x55AA55AA);
-#endif
 }
 
 /* For backward compatible, remove later */
@@ -255,7 +249,6 @@ EXPORT_SYMBOL(wait_sdio_autok_ready);
 
 void sdio_autok_wait_dvfs_ready(void)
 {
-#if 0 /* Left for Peter to fix */
 	int dvfs;
 
 	dvfs = is_vcorefs_can_work();
@@ -272,7 +265,6 @@ void sdio_autok_wait_dvfs_ready(void)
 
 	if (dvfs == 1)
 		pr_err("DVFS ready\n");
-#endif
 }
 
 int emmc_autok(void)

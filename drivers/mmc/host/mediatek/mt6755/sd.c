@@ -4223,7 +4223,6 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 		}
 	} else if (host->hw->host_function == MSDC_SDIO) {
 		/* Default autok result is not exist, always excute tuning */
-		#if 0 /* Comment out temporarily since mrq_tune is not defined */
 		if (sdio_autok_res_apply(host, AUTOK_VCORE_HIGH) != 0) {
 			pr_err("sdio autok result not exist!, excute tuning\n");
 			if (host->is_autok_done == 0) {
@@ -4295,7 +4294,6 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 				complete(&host->autok_done);
 			}
 		}
-		#endif
 	}
 	host->legacy_tuning_in_progress = false;
 	host->legacy_tuning_done = true;
