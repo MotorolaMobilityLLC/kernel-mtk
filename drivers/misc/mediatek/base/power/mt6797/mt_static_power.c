@@ -583,9 +583,9 @@ int mt_spower_init(void)
 	gpu = (devinfo_1 >> 8) & 0xff;
 	devinfo_2 = (int)get_devinfo_with_index(DEVINFO_IDX2); /* P_OD5 */
 	vcore	= (devinfo_2 >> 8) & 0xff;
+	cpull = (devinfo_2 >> 24) & 0xff;
 	devinfo_3 = (int)get_devinfo_with_index(DEVINFO_IDX3); /* P_OD7 */
 	cpul	= (devinfo_3 >> 8) & 0xff;
-	cpull = cpul;
 	devinfo_4 = (int)get_devinfo_with_index(DEVINFO_IDX4); /* P_OD12 */
 	modem	= (devinfo_4 >> 8) & 0xff;
 	vmd1	= (devinfo_4) & 0xff;
@@ -610,18 +610,18 @@ int mt_spower_init(void)
 	if (devinfo_2 != 0) {
 		vcore	= (int)devinfo_table[vcore];
 		vcore	= (int)(vcore*V_OF_FUSE/1000);
+		cpull	= (int)devinfo_table[cpull];
+		cpull	= (int)(cpull*V_OF_FUSE/1000);
 	} else {
 		vcore = DEF_VCORE_LEAKAGE;
+		cpull = DEF_CPULL_LEAKAGE;
 	}
 
 	if (devinfo_3 != 0) {
 		cpul	= (int)devinfo_table[cpul];
-		cpull	= (int)devinfo_table[cpull];
 		cpul	= (int)(cpul*V_OF_FUSE/1000);
-		cpull	= (int)(cpull*V_OF_FUSE/1000);
 	} else {
 		cpul = DEF_CPUL_LEAKAGE;
-		cpull = DEF_CPULL_LEAKAGE;
 	}
 
 	if (devinfo_4 != 0) {
