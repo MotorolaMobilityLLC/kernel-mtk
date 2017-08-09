@@ -42,6 +42,8 @@
 #include <mt_ocp.h>
 #include <mt6797/mt_wdt.h>
 #include <ext_wd_drv.h>
+
+#include <mach/mt_secure_api.h>
 #endif
 
 #ifdef MTK_IRQ_NEW_DESIGN
@@ -509,9 +511,15 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	writel_relaxed((readl(reg_base + 0x218) | (1 << 0)), reg_base + 0x218);
 	iounmap(reg_base);
 
+	if (mt_secure_call(MTK_SIP_KERNEL_DAPC_LOCK, 65, 3, 0))
+		BUG_ON(1);
+
 	reg_base = ioremap(MT6797_IDVFS_BASE_ADDR, 0x1000);	/* 0x102224a0 */
 	temp = readl(reg_base + 0x4a0); /* dummy read */
 	iounmap(reg_base);
+
+	if (mt_secure_call(MTK_SIP_KERNEL_DAPC_UNLOCK, 65, 0, 0))
+		BUG_ON(1);
 
 	/* latch RESET */
 	mtk_wdt_swsysret_config(MTK_WDT_SWSYS_RST_PWRAP_SPI_CTL_RST, 1);
