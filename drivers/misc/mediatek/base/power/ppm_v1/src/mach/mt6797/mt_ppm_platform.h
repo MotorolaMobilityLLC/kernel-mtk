@@ -57,6 +57,7 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #ifdef PPM_THERMAL_ENHANCEMENT
 #define LITTLE_MIN_FREQ_IDX		(10)
 #define BIG_MIN_FREQ_IDX		(12)
+#define SKIP_ADVISE_BOUNDARY		(300)
 #endif
 
 #define PPM_OUTPUT_TRANS_LOG_TO_UART	(1)

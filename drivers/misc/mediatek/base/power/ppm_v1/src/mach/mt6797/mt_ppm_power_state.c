@@ -1490,6 +1490,14 @@ static void ppm_gen_sorted_table(void)
 		for (j = 0; j < pwr_tbl->size; j++) {
 			idx_in_pwr_tbl = pwr_tbl->sorted_tbl[j].index;
 
+#ifdef PPM_THERMAL_ENHANCEMENT
+			/* Ignore perf_idx check(decided by power budget) */
+			if (pwr_tbl->sorted_tbl[j].value <= SKIP_ADVISE_BOUNDARY) {
+				pwr_tbl->sorted_tbl[j].advise_index = idx_in_pwr_tbl;
+				continue;
+			}
+#endif
+
 			/* find best perf_idx item
 			   idx_in_pwr_tbl > idx_in_perf_tbl: lower pwr_idx but higher perf_idx
 			   idx_in_pwr_tbl == idx_in_perf_tbl: itself is the best one
