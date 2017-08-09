@@ -9,6 +9,11 @@ config MTK_I2C
 	  If unsure, say N.
 
 
+config MTK_I2C_EXTENSION
+	def_bool y if (ARCH_MT6735 || ARCH_MT6735M)
+	help
+	  Select this if your platform need MTK i2c extension.
+
 config MTK_AP_TO_SCP_I2C
 	def_bool y if (ARCH_MT6752 || ARCH_MT8163)
 	---help---

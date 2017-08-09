@@ -2188,10 +2188,10 @@ int i2c_master_send(const struct i2c_client *client, const char *buf, int count)
 	msg.flags = client->flags & I2C_M_TEN;
 	msg.len = count;
 	msg.buf = (char *)buf;
-	#ifdef USE_I2C_MTK_EXT
+#ifdef CONFIG_MTK_I2C_EXTENSION
 	msg.timing = client->timing;
 	msg.ext_flag = client->ext_flag;
-	#endif
+#endif
 
 	ret = i2c_transfer(adap, &msg, 1);
 
@@ -2222,10 +2222,10 @@ int i2c_master_recv(const struct i2c_client *client, char *buf, int count)
 	msg.flags |= I2C_M_RD;
 	msg.len = count;
 	msg.buf = buf;
-	#ifdef USE_I2C_MTK_EXT
+#ifdef CONFIG_MTK_I2C_EXTENSION
 	msg.timing = client->timing;
 	msg.ext_flag = client->ext_flag;
-	#endif
+#endif
 
 	ret = i2c_transfer(adap, &msg, 1);
 
