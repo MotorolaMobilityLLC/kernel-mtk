@@ -24,11 +24,11 @@
 #include <mt-plat/sync_write.h>
 /* #include <mach/dma.h> */
 /* #include <mach/mt_reg_base.h> */
-/* #include <mach/mt_cpufreq_hybrid.h> */
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #endif
 #include <mt_i2c.h>
+#include <mt_cpufreq_hybrid.h>
 
 #define TAG     "MT_I2C"
 
@@ -146,7 +146,6 @@ static DEVICE_ATTR(debug, S_IRUGO | S_IWUSR, show_config, set_config);
 /***********************************common API********************************************************/
 static int i2c_get_semaphore(struct mt_i2c_t *i2c)
 {
-#if 0 /* TODO */
 	if (i2c->id != 3)
 		return 0;
 
@@ -158,18 +157,17 @@ static int i2c_get_semaphore(struct mt_i2c_t *i2c)
 			return -EBUSY;
 		}
 	}
-#endif
+
 	return 0;
 }
 
 static int i2c_release_semaphore(struct mt_i2c_t *i2c)
 {
-#if 0 /* TODO */
 	if (i2c->id != 3)
 		return 0;
 
 	cpuhvfs_release_dvfsp_semaphore(SEMA_I2C_DRV);
-#endif
+
 	return 0;
 }
 
