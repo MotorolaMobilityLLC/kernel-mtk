@@ -180,6 +180,30 @@ static int memory_ssvp_init(struct reserved_mem *rmem)
 RESERVEDMEM_OF_DECLARE(memory_ssvp, "mediatek,memory-ssvp",
 			memory_ssvp_init);
 
+/*
+ * Check whether memory_lowpower is initialized
+ */
+bool memory_ssvp_inited(void)
+{
+	return (ssvp_cma.cma != NULL);
+}
+
+/*
+ * memory_lowpower_cma_base - query the cma's base
+ */
+phys_addr_t memory_ssvp_cma_base(void)
+{
+	return cma_get_base(ssvp_cma.cma);
+}
+
+/*
+ * memory_lowpower_cma_size - query the cma's size
+ */
+unsigned long memory_ssvp_cma_size(void)
+{
+	return cma_get_size(ssvp_cma.cma);
+}
+
 int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 {
 	struct page *page;
