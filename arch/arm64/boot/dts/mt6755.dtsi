@@ -277,9 +277,17 @@
 		reserve-memory-ccci_md1 {
 			compatible = "mediatek,reserve-memory-ccci_md1";
 			no-map;
-			size = <0 0xA100000>; /* md_size+smem_size */
+			size = <0 0xa100000>; /* md_size+smem_size */
 			alignment = <0 0x2000000>;
-			alloc-ranges = <0 0x40000000 0 0xC0000000>;
+			alloc-ranges = <0 0x40000000 0 0xc0000000>;
+		};
+
+		reserve-memory-ccci_share {
+			compatible = "mediatek,reserve-memory-ccci_share";
+			no-map;
+			size = <0 0x600000>; /* md_size+smem_size */
+			alignment = <0 0x4000000>;
+			alloc-ranges = <0 0x40000000 0 0xc0000000>;
 		};
 
 		consys-reserve-memory {
@@ -935,14 +943,14 @@
 			reg = <0x10011000 0x1000>;
 		};
 
-		mdcldma:mdcldma@10014800 {
+		mdcldma:mdcldma@10014000 {
 			compatible = "mediatek,mdcldma";
-			reg =	<0x10014800 0x1e00>, /*AP_CLDMA_AO*/
-				<0x10015800 0x1e00>, /*MD_CLDMA_AO*/
-				<0x1021B000 0x1e00>, /*AP_CLDMA_PDN*/
-				<0x1021C000 0x1e00>, /*MD_CLDMA_PDN*/
+			reg =	<0x10014000 0x1e00>, /*AP_CLDMA_AO*/
+				<0x10015000 0x1e00>, /*MD_CLDMA_AO*/
+				<0x1021b000 0x1e00>, /*AP_CLDMA_PDN*/
+				<0x1021c000 0x1e00>, /*MD_CLDMA_PDN*/
 				<0x10209000 0x1000>, /*AP_CCIF_BASE*/
-				<0x1020A000 0x1000>; /*MD_CCIF_BASE*/
+				<0x1020a000 0x1000>; /*MD_CCIF_BASE*/
 			interrupts = <GIC_SPI 222 IRQ_TYPE_LEVEL_HIGH>, /*IRQ_CLDMA*/
 				     <GIC_SPI 139 IRQ_TYPE_LEVEL_LOW>, /*IRQ_CCIF*/
 				     <GIC_SPI 223 IRQ_TYPE_EDGE_FALLING>; /*IRQ_MDWDT*/
@@ -1065,6 +1073,12 @@
 		md_ccif0@1020a000 {
 			compatible = "mediatek,md_ccif0";
 			reg = <0x1020a000 0x1000>;
+		};
+
+		ap_ccif1@1020b000 {
+			compatible = "mediatek,ap_ccif1";
+			reg = <0x1020b000 0x1000>;
+			interrupts = <GIC_SPI 141 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		ap2c2k_ccif@1020b000 {
@@ -2363,6 +2377,14 @@
 			compatible = "mediatek,ccci_off";
 			clocks = <&scpsys SCP_SYS_MD1>;
 			clock-names = "scp-sys-md1-main";
+		};
+
+		ccci_util_cfg {
+			compatible = "mediatek,ccci_util_cfg";
+			mediatek,md1-smem-size = <0x200000>;
+			mediatek,md3-smem-size = <0x200000>;
+			mediatek,md1md3-smem-size = <0x200000>;
+			mediatek,version = <0x1>;
 		};
 
 		gps {
