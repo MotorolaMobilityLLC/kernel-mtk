@@ -1752,6 +1752,22 @@ static void pin_init(void)
 	}
 }
 
+unsigned int mt_gpio_to_eint(unsigned int gpio)
+{
+	struct pin_node *p;
+
+	if (mapping_table_entry > 0) {
+		p = pin_search(gpio);
+		if (p == NULL)
+			return -EINVAL;
+		else
+			return p->eint_pin;
+	} else {
+		return gpio;
+	}
+}
+EXPORT_SYMBOL(mt_gpio_to_eint);
+
 unsigned int mt_gpio_to_irq(unsigned int gpio)
 {
 	struct pin_node *p;
