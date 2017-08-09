@@ -2207,37 +2207,40 @@ void aee_rr_show_idvfs_ctrl_reg(struct seq_file *m)
 
 void aee_rr_show_idvfs_enable_cnt(struct seq_file *m)
 {
-	seq_printf(m, "idvfs_enable_cnt = %d\n", LAST_RRR_VAL(idvfs_enable_cnt));
+	seq_printf(m, "idvfs_enable_cnt = %u\n", LAST_RRR_VAL(idvfs_enable_cnt));
 }
 
 void aee_rr_show_idvfs_swreq_cnt(struct seq_file *m)
 {
-	seq_printf(m, "idvfs_swreq_cnt = %d\n", LAST_RRR_VAL(idvfs_swreq_cnt));
+	seq_printf(m, "idvfs_swreq_cnt = %u\n", LAST_RRR_VAL(idvfs_swreq_cnt));
 }
 
 void aee_rr_show_idvfs_curr_volt(struct seq_file *m)
 {
-	seq_printf(m, "idvfs_curr_volt = %d\n", LAST_RRR_VAL(idvfs_curr_volt));
+	seq_printf(m, "idvfs_curr_volt = %umv\n", LAST_RRR_VAL(idvfs_curr_volt));
 }
 
 void aee_rr_show_idvfs_swavg_curr_pct_x100(struct seq_file *m)
 {
-	seq_printf(m, "idvfs_swavg_curr_pct_x100 = %d\n", LAST_RRR_VAL(idvfs_swavg_curr_pct_x100));
+	seq_printf(m, "idvfs_swavg_curr_pct_x100 = %u, %uMHz\n",
+		LAST_RRR_VAL(idvfs_swavg_curr_pct_x100), (LAST_RRR_VAL(idvfs_swavg_curr_pct_x100) / 4));
 }
 
 void aee_rr_show_idvfs_swreq_curr_pct_x100(struct seq_file *m)
 {
-	seq_printf(m, "idvfs_swreq_curr_pct_x100 = %d\n", LAST_RRR_VAL(idvfs_swreq_curr_pct_x100));
+	seq_printf(m, "idvfs_swreq_curr_pct_x100 = %u, %uMHz\n",
+		LAST_RRR_VAL(idvfs_swreq_curr_pct_x100), (LAST_RRR_VAL(idvfs_swreq_curr_pct_x100) / 4));
 }
 
 void aee_rr_show_idvfs_swreq_next_pct_x100(struct seq_file *m)
 {
-	seq_printf(m, "idvfs_swreq_next_pct_x100 = %d\n", LAST_RRR_VAL(idvfs_swreq_next_pct_x100));
+	seq_printf(m, "idvfs_swreq_next_pct_x100 = %u, %uMHz\n",
+		LAST_RRR_VAL(idvfs_swreq_next_pct_x100), (LAST_RRR_VAL(idvfs_swreq_next_pct_x100) / 4));
 }
 
 void aee_rr_show_idvfs_sram_ldo(struct seq_file *m)
 {
-	seq_printf(m, "idvfs_sram_ldo = %dmv\n", LAST_RRR_VAL(idvfs_sram_ldo));
+	seq_printf(m, "idvfs_sram_ldo = %umv\n", LAST_RRR_VAL(idvfs_sram_ldo));
 }
 
 void aee_rr_show_idvfs_state_manchine(struct seq_file *m)
@@ -2274,7 +2277,7 @@ void aee_rr_show_idvfs_state_manchine(struct seq_file *m)
 		seq_puts(m, "idvfs state = 6: SWREQ finish can into disable\n");
 		break;
 	default:
-		seq_printf(m, "idvfs state = %d, unknown state manchine\n", LAST_RRR_VAL(idvfs_state_manchine));
+		seq_printf(m, "idvfs state = %u, unknown state manchine\n", LAST_RRR_VAL(idvfs_state_manchine));
 		break;
 	}
 }
