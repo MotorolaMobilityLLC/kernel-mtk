@@ -1883,11 +1883,6 @@ INT32 mtk_wcn_stp_parser_data(PUINT8 buffer, UINT32 length)
 						0,
 						PKT_DIR_RX,
 						stp_core_ctx.rx_buf, stp_core_ctx.rx_counter);
-				if (stp_core_ctx.parser.type == WMT_TASK_INDX) {
-					stp_core_ctx.parser.wmtsubtype = stp_core_ctx.rx_buf[1];
-					STP_DBG_FUNC("wmt sub type (%d)\n",
-						     stp_core_ctx.parser.wmtsubtype);
-				}
 				stp_sdio_process_packet();
 
 				/* STP_DBG_FUNC("[STP] crc2->sync\n"); */
@@ -2339,11 +2334,6 @@ INT32 mtk_wcn_stp_parser_data(PUINT8 buffer, UINT32 length)
 			case MTKSTP_CRC2:
 				stp_change_rx_state(MTKSTP_SYNC);
 				stp_core_ctx.parser.crc += (*p_data) << 8;
-				if (stp_core_ctx.parser.type == WMT_TASK_INDX) {
-					stp_core_ctx.parser.wmtsubtype = stp_core_ctx.rx_buf[1];
-					STP_DBG_FUNC("wmt sub type (%d)\n",
-						     stp_core_ctx.parser.wmtsubtype);
-				}
 				if (stp_check_crc
 				    (stp_core_ctx.rx_buf, stp_core_ctx.rx_counter,
 				     stp_core_ctx.parser.crc) == MTK_WCN_BOOL_TRUE) {
