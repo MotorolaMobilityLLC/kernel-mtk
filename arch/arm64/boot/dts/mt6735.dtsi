@@ -973,6 +973,16 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "scp-sys-md1-main";
 		};
 
+		mdc2k@0 {
+			compatible = "mediatek,mdc2k";
+			reg = <0x3a00b01c 0x10>, // C2K CHIP ID
+				  <0x1021C800 0x300>, // MD1 PCCIF
+				  <0x1021D800 0x300>; // MD3 PCCIF
+			interrupts = <0 229 0x2>; // WDT
+			clocks = <&scpsys SCP_SYS_MD2>;
+			clock-names = "scp-sys-md2-main";
+		};
+
 		dbgapb_base@1011A000{
 			compatible = "mediatek,dbgapb_base";
 			reg = <0x1011A000 0x100>;/* MD debug register */

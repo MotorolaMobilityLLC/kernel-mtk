@@ -51,6 +51,7 @@ static int modem_detect_host(const char *host_id)
 	 *Do you know more elegant way how to enumerate mmc_hosts?
 	 */
 	struct mmc_host *mmc = NULL;
+	struct mmc_host *host = NULL;
 	struct class_dev_iter iter;
 	struct device *dev;
 	int ret = -1;
@@ -73,9 +74,7 @@ static int modem_detect_host(const char *host_id)
 			LOGPRT(LOG_ERR, "%s: %d\n", __func__, __LINE__);
 			break;
 		}
-		struct mmc_host *host = container_of(dev,
-						     struct mmc_host,
-						     class_dev);
+		host = container_of(dev, struct mmc_host, class_dev);
 		if (dev_name(&host->class_dev)
 		    && strcmp(dev_name(&host->class_dev), host_id))
 			continue;

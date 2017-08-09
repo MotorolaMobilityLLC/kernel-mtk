@@ -103,7 +103,7 @@ static unsigned long c2k_iram_base_seg2[2] = { 0 };
 #define c2k_read8(b, a)      ioread8((void __iomem *)((b)+(a)))
 
 #ifdef CONFIG_OF_RESERVED_MEM
-#define CCCI_MD3_MEM_RESERVED_KEY "reserve-memory-ccci_md3"
+#define CCCI_MD3_MEM_RESERVED_KEY "mediatek,reserve-memory-ccci_md3"
 /*C2K reserved memory: total 11M */
 #define MD3_MEM_RESERVED_SIZE (MD3_ROM_SIZE + MD3_RAM_SIZE_BOTTOM + MD3_RAM_SIZE_TOP + MD3_SHARE_MEM_SIZE)
 #define MD3_MEM_RAM_ROM		(MD3_ROM_SIZE + MD3_RAM_SIZE_BOTTOM + MD3_RAM_SIZE_TOP)
@@ -128,8 +128,7 @@ void c2k_platform_restore_first_init(void)
 	first_init = 1;
 }
 
-int modem_sdio_reserve_mem_of_init(struct reserved_mem *rmem,
-				   unsigned long node, const char *uname)
+int modem_sdio_reserve_mem_of_init(struct reserved_mem *rmem)
 {
 	phys_addr_t rptr = 0;
 	unsigned int rsize = 0;
@@ -141,7 +140,7 @@ int modem_sdio_reserve_mem_of_init(struct reserved_mem *rmem,
 				  __func__, rmem->name,
 				  (unsigned long long)rptr, rsize);
 
-	if (strcmp(uname, CCCI_MD3_MEM_RESERVED_KEY) == 0) {
+	if (strstr(CCCI_MD3_MEM_RESERVED_KEY, rmem->name) == 0) {
 		if (rsize < MD3_MEM_RAM_ROM) {
 			MTK_MEMCFG_LOG_AND_PRINTK(KERN_ERR
 						  "%s: reserve size=0x%x != 0x%x\n",
@@ -181,10 +180,10 @@ static void c2k_hw_info_init(void)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,SLEEP");
 	sleep_base = (unsigned long)of_iomap(node, 0);
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,TOPRGU");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-rgu");
 	toprgu_base = (unsigned long)of_iomap(node, 0);
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,MDC2K");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdc2k");
 	c2k_chip_id_base = (unsigned long)of_iomap(node, 0);
 	md1_pccif_base = (unsigned long)of_iomap(node, 1);
 	md3_pccif_base = (unsigned long)of_iomap(node, 2);
