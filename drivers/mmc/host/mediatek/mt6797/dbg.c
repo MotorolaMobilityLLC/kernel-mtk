@@ -123,7 +123,7 @@ struct sdio_profile {
 #define CAPS_SPEED_NULL ((EMMC_HS400) + 1)
 #define CAPS_DRIVE_NULL ((DRIVER_TYPE_D) + 1)
 static char cmd_buf[256];
-
+struct task_struct *rw_thread = NULL;
 int sdio_cd_result = 1;
 
 /* for driver profile */
@@ -760,7 +760,7 @@ u8 read_write_state = 0;	/* 0:stop, 1:read, 2:write */
   * @read, bit0: 1:read/0:write; bit1: 0:compare/1:not compare
 */
 static int multi_rw_compare_core(int host_num, int read, uint address,
-	uint type)
+	uint type, uint compare)
 {
 	struct scatterlist msdc_sg;
 	struct mmc_data msdc_data;
@@ -904,16 +904,11 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 
 	mmc_set_data_timeout(&msdc_data, mmc->card);
 	mmc_wait_for_req(mmc, &msdc_mrq);
+
+	if (compare == 0 || !read)
+		goto skip_check;
 	/* compare */
-	if ((!read || g_ett_tune) && (type == MMC_TYPE_MMC))
-		goto skip_check;
-	if ((!read) && (type == MMC_TYPE_SD))
-		goto skip_check;
 	for (forIndex = 0; forIndex < MSDC_MULTI_BUF_LEN; forIndex++) {
-		/*
-		pr_err("index[%d]\tW_buffer[0x%x]\tR_buffer[0x%x]\t\n",
-			forIndex, wData[forIndex%wData_len], rPtr[forIndex]);
-		*/
 		if (rPtr[forIndex] != wData[forIndex % wData_len]) {
 			pr_err("index[%d]\tW_buffer[0x%x]\tR_buffer[0x%x]\tfailed\n",
 				forIndex, wData[forIndex % wData_len],
@@ -959,7 +954,7 @@ int multi_rw_compare(struct seq_file *m, int host_num,
 
 		mutex_lock(rw_mutex);
 		/* write */
-		error = multi_rw_compare_core(host_num, 0, address, type);
+		error = multi_rw_compare_core(host_num, 0, address, type, 0);
 		if (error) {
 			if (!multi_thread)
 				seq_printf(m, "[%s]: failed to write data, error=%d\n",
@@ -974,7 +969,7 @@ int multi_rw_compare(struct seq_file *m, int host_num,
 		/* read */
 		for (j = 0; j < 1; j++) {
 			error = multi_rw_compare_core(host_num, 1, address,
-				type);
+				type, 1);
 			if (error) {
 				if (!multi_thread)
 					seq_printf(m, "[%s]: failed to read data, error=%d\n",
@@ -1368,7 +1363,7 @@ static int rwThread(void *data)
 			address = COMPARE_ADDRESS_SD;
 		}
 
-		error = multi_rw_compare_core(id, read, address, type);
+		error = multi_rw_compare_core(id, read, address, type, 0);
 		if (error) {
 			pr_err("[%s]: failed data id0, error=%d\n",
 				__func__, error);
@@ -1885,7 +1880,6 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 	struct dma_addr *dma_address, *p_dma_address;
 #endif
 	int dma_status;
-	struct task_struct *rw_thread = NULL;
 
 	p1 = p2 = p3 = p4 = p5 = p6 = p7 = p8 = -1;
 
@@ -2156,6 +2150,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		seq_printf(m, "[SD_Debug]: host id: %d, mode: %d.\n", id, mode);
 		if ((mode == 0) && (rw_thread)) {
 			kthread_stop(rw_thread);
+			rw_thread = NULL;
 			seq_puts(m, "[SD_Debug]: stop read/write thread\n");
 		} else {
 			seq_puts(m, "[SD_Debug]: start read/write thread\n");
