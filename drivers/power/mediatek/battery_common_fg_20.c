@@ -433,7 +433,7 @@ EXPORT_SYMBOL(upmu_is_chr_det);
 
 void wake_up_bat(void)
 {
-	battery_log(BAT_LOG_CRTI, "[BATTERY] wake_up_bat. \r\n");
+	battery_log(BAT_LOG_FULL, "[BATTERY] wake_up_bat. \r\n");
 
 	chr_wake_up_bat = KAL_TRUE;
 	bat_routine_thread_timeout = KAL_TRUE;
@@ -1689,7 +1689,6 @@ static void battery_update(struct battery_data *bat_data)
 
 		if (cnt == 0xff)
 			cnt = 0;
-		battery_log(BAT_LOG_CRTI, "[DLPT_POWER_OFF_EN] run\n");
 
 		if (dlpt_check_power_off() == 1) {
 			bat_data->BAT_CAPACITY = 0;
@@ -2612,7 +2611,7 @@ static void mt_battery_charger_detect_check(void)
 		is_ta_connect = KAL_FALSE;
 		ta_check_chr_type = KAL_TRUE;
 		ta_cable_out_occur = KAL_TRUE;
-		battery_log(BAT_LOG_CRTI, "[PE+] Cable OUT\n");
+		battery_log(BAT_LOG_FULL, "[PE+] Cable OUT\n");
 #endif
 
 #ifdef CONFIG_MTK_BQ25896_SUPPORT
@@ -2778,7 +2777,7 @@ void BAT_thread(void)
 		battery_meter_initilized = KAL_TRUE;
 	}
 
-	battery_log(BAT_LOG_CRTI, "[fg2.0]CUST_TRACKING_POINT: %d.\n", CUST_TRACKING_POINT);
+
 	mt_battery_update_time(&batteryThreadRunTime, BATTERY_THREAD_TIME);
 
 	if (fg_ipoh_reset) {
@@ -2831,7 +2830,7 @@ int bat_routine_thread(void *x)
 		mutex_unlock(&bat_mutex);
 		wake_unlock(&battery_meter_lock);
 
-		battery_log(BAT_LOG_CRTI, "wait event 1\n");
+		battery_log(BAT_LOG_FULL, "wait event 1\n");
 
 		wait_event(bat_routine_wq, (bat_routine_thread_timeout == KAL_TRUE));
 
@@ -2876,7 +2875,7 @@ int bat_update_thread(void *x)
 		mt_battery_update_status();
 		mutex_unlock(&bat_update_mutex);
 
-		battery_log(BAT_LOG_CRTI, "wait event 2\n");
+		battery_log(BAT_LOG_FULL, "wait event 2\n");
 		wait_event(bat_update_wq, (bat_update_thread_timeout == KAL_TRUE));
 
 		bat_update_thread_timeout = KAL_FALSE;
