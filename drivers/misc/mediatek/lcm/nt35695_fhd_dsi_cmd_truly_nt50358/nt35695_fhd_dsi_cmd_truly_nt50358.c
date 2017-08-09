@@ -1047,7 +1047,9 @@ static void lcm_init(void)
 #ifdef BUILD_LK
 	ret = TPS65132_write_byte(cmd, data);
 #else
+#if !defined(CONFIG_ARCH_MT6797)
 	ret = tps65132_write_bytes(cmd, data);
+#endif
 #endif
 
 	if (ret < 0)
@@ -1061,7 +1063,9 @@ static void lcm_init(void)
 #ifdef BUILD_LK
 	ret = TPS65132_write_byte(cmd, data);
 #else
+#if !defined(CONFIG_ARCH_MT6797)
 	ret = tps65132_write_bytes(cmd, data);
+#endif
 #endif
 
 	if (ret < 0)

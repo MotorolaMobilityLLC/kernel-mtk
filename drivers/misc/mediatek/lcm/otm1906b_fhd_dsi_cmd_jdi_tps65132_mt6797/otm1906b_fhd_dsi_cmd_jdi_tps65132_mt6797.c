@@ -657,32 +657,36 @@ static void lcm_init(void)
 
 #ifdef BUILD_LK
 	ret = TPS65132_write_byte(cmd, data);
-if (ret)
-	dprintf(0, "[LK]nt35595----tps6132----cmd=%0x--i2c write error----\n", cmd);
+	if (ret)
+		dprintf(0, "[LK]nt35595----tps6132----cmd=%0x--i2c write error----\n", cmd);
 	else
-	dprintf(0, "[LK]nt35595----tps6132----cmd=%0x--i2c write success----\n", cmd);
+		dprintf(0, "[LK]nt35595----tps6132----cmd=%0x--i2c write success----\n", cmd);
 #else
+#if !defined(CONFIG_ARCH_MT6797)
 	ret = tps65132_write_bytes(cmd, data);
-if (ret < 0)
-	pr_debug("[KERNEL]nt35595----tps6132---cmd=%0x-- i2c write error-----\n", cmd);
+	if (ret < 0)
+		pr_debug("[KERNEL]nt35595----tps6132---cmd=%0x-- i2c write error-----\n", cmd);
 	else
-	pr_debug("[KERNEL]nt35595----tps6132---cmd=%0x-- i2c write success-----\n", cmd);
+		pr_debug("[KERNEL]nt35595----tps6132---cmd=%0x-- i2c write success-----\n", cmd);
+#endif
 #endif
 
 	cmd = 0x01;
 	data = 0x0E;
 #ifdef BUILD_LK
 	ret = TPS65132_write_byte(cmd, data);
-if (ret)
-	dprintf(0, "[LK]nt35595----tps6132----cmd=%0x--i2c write error----\n", cmd);
+	if (ret)
+		dprintf(0, "[LK]nt35595----tps6132----cmd=%0x--i2c write error----\n", cmd);
 	else
 		dprintf(0, "[LK]nt35595----tps6132----cmd=%0x--i2c write success----\n", cmd);
 #else
+#if !defined(CONFIG_ARCH_MT6797)
 	ret = tps65132_write_bytes(cmd, data);
-if (ret < 0)
-	pr_debug("[KERNEL]nt35595----tps6132---cmd=%0x-- i2c write error-----\n", cmd);
+	if (ret < 0)
+		pr_debug("[KERNEL]nt35595----tps6132---cmd=%0x-- i2c write error-----\n", cmd);
 	else
-	pr_debug("[KERNEL]nt35595----tps6132---cmd=%0x-- i2c write success-----\n", cmd);
+		pr_debug("[KERNEL]nt35595----tps6132---cmd=%0x-- i2c write success-----\n", cmd);
+#endif
 #endif
 
 #endif
