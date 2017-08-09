@@ -636,8 +636,11 @@ unsigned int mtkfb_query_buf_info(unsigned int session_id, unsigned int layer_id
 	list_for_each_entry(buf, &layer_info->buf_list, list) {
 		DISPMSG("mva updatenn layer%d, idx=0x%x, mva=0x%08lx-%x py %lx\n", layer_id,
 				buf->idx, buf->mva, buf->layer_type, phy_addr);
-		if ((buf->mva + buf->mva_offset) == phy_addr)
+		if ((buf->mva + buf->mva_offset) == phy_addr) {
 			query_info = buf->layer_type;
+			mutex_unlock(&layer_info->sync_lock);
+			return query_info;
+		}
 	}
 	mutex_unlock(&layer_info->sync_lock);
 
