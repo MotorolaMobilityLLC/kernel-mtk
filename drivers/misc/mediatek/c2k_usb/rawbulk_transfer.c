@@ -44,12 +44,12 @@
 #include <linux/spinlock.h>
 #include <linux/workqueue.h>
 #include <linux/moduleparam.h>
-#include <mach/mt_ccci_common.h>
+#include <mt-plat/mt_ccci_common.h>
 #include "viatel_rawbulk.h"
 /* #include "modem_sdio.h" */
 
 #ifdef CONFIG_MTK_ECCCI_C2K
-#include <mach/mt_ccci_common.h>
+#include <mt-plat/mt_ccci_common.h>
 #endif
 
 #define terr(t, fmt, args...) pr_err("Rawbulk [%s]:" fmt "\n", t->name,  ##args)
@@ -330,10 +330,7 @@ static void start_upstream(struct work_struct *work)
 	struct cache_buf *c;
 	int length;
 	char *buffer;
-	int part1_sz, part2_sz;
-	int stop, retry = 0;
-	int flag, temp;
-	int i;
+	int retry = 0;
 	struct usb_request *req;
 
 	C2K_DBG("%s\n", __func__);

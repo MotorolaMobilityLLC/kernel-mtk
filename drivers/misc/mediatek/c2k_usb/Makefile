@@ -1,4 +1,3 @@
-include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
 ifeq ($(CONFIG_MTK_ECCCI_C2K), y)
 
