@@ -1383,6 +1383,21 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			mediatek,md_smem_size = <0x10000>; /* md share memory size */
 		};
 
+		mdc2k@3a00b01c {
+			compatible = "mediatek,mdc2k";
+			reg =	<0x3a00b01c 0x10>, /*C2K CHIP ID*/
+				<0x1021c800 0x300>, /*MD1 PCCIF*/
+				<0x1021d800 0x300>; /*MD3 PCCIF*/
+			interrupts = <GIC_SPI 221 IRQ_TYPE_EDGE_FALLING>; /*WDT*/
+			clocks = <&scpsys SCP_SYS_MD2>;
+			clock-names = "scp-sys-md2-main";
+		};
+
+		c2k_sdio@0 {
+			compatible = "mediatek,mt6735-c2k_sdio";
+			interrupts = <GIC_SPI 230 IRQ_TYPE_LEVEL_LOW>;
+		};
+
 		dbgapb_base@1011A000{
 			compatible = "mediatek,dbgapb_base";
 			reg = <0x1011A000 0x100>;/* MD debug register */
