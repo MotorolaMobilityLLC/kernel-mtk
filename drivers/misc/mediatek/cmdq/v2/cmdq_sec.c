@@ -781,6 +781,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 				CMDQ_AEE("CMDQ", "%s", longMsg);
 			}
 			cmdq_core_turnon_first_dump(pTask);
+			cmdq_core_dump_secure_task_status();
 			CMDQ_ERR("%s", longMsg);
 		}
 	} else if (0 > status) {

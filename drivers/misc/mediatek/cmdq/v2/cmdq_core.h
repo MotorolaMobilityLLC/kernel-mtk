@@ -909,6 +909,9 @@ extern "C" {
 	/* Command Buffer Dump */
 	void cmdq_core_set_command_buffer_dump(int32_t scenario, int32_t bufferSize);
 
+	/* Dump secure task status */
+	void cmdq_core_dump_secure_task_status(void);
+
 	/* test case initialization */
 	void cmdq_test_init_setting(void);
 

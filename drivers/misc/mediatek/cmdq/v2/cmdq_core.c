@@ -668,6 +668,35 @@ int32_t cmdq_core_get_secure_thread_exec_counter(const int32_t thread)
 
 }
 
+void cmdq_core_dump_secure_task_status(void)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	const uint32_t task_va_offset = CMDQ_SEC_SHARED_TASK_VA_OFFSET;
+	const uint32_t task_op_offset = CMDQ_SEC_SHARED_OP_OFFSET;
+
+	uint32_t *pVA;
+	int32_t va_value_lo, va_value_hi, op_value;
+
+	if (NULL == gCmdqContext.hSecSharedMem) {
+		CMDQ_ERR("%s, shared memory is not created\n", __func__);
+		return;
+	}
+
+	pVA = (uint32_t *) (gCmdqContext.hSecSharedMem->pVABase + task_va_offset);
+	va_value_lo = *pVA;
+
+	pVA = (uint32_t *) (gCmdqContext.hSecSharedMem->pVABase + task_va_offset + sizeof(uint32_t));
+	va_value_hi = *pVA;
+
+	pVA = (uint32_t *) (gCmdqContext.hSecSharedMem->pVABase + task_op_offset);
+	op_value = *pVA;
+
+	CMDQ_ERR("[shared_op_status]task VA:0x%04x%04x, op:%d\n", va_value_hi, va_value_lo, op_value);
+#else
+	CMDQ_ERR("func:%s failed since CMDQ secure path not support in this proj\n", __func__);
+#endif
+}
+
 int32_t cmdq_core_thread_exec_counter(const int32_t thread)
 {
 	return (false == cmdq_get_func()->isSecureThread(thread)) ?

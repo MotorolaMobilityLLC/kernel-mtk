@@ -17,6 +17,8 @@
 /* shared DRAM */
 #define CMDQ_SEC_SHARED_IRQ_RAISED_OFFSET    (0x0) /* bit x = 1 means thread x raise IRQ */
 #define CMDQ_SEC_SHARED_THR_CNT_OFFSET (0x100)
+#define CMDQ_SEC_SHARED_TASK_VA_OFFSET (0x200)
+#define CMDQ_SEC_SHARED_OP_OFFSET (0x300)
 
 /* commanad buffer & metadata */
 #define CMDQ_TZ_CMD_BLOCK_SIZE	 (32 * 1024)
