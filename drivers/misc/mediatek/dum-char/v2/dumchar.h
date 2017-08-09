@@ -91,6 +91,7 @@ extern void msdc_get_cache_region(void);
 
 #ifdef CONFIG_MTK_MTD_NAND
 extern struct mtd_info *__mtd_next_device(int i);
+extern void env_init(loff_t env_part_addr, int mtd_number);
 #endif
 
 #endif /*__DUMCHAR_H__ */

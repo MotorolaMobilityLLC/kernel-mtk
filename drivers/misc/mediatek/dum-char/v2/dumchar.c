@@ -22,6 +22,7 @@
 #include <linux/syscalls.h>
 #include <generated/autoconf.h>
 #include <linux/sched.h>	/* show_stack(current,NULL) */
+#include <env.h>
 
 #include <linux/genhd.h>
 #include <linux/mmc/host.h>
@@ -40,7 +41,8 @@ struct device;
 
 static struct class *dumchar_class;
 static struct device *dumchar_device[PART_MAX_COUNT];
-static struct dumchar_dev *dumchar_devices;	/* store all dum char info,  allocated in dumchar_init */
+/* store all dum char info,  allocated in dumchar_init */
+static struct dumchar_dev *dumchar_devices;
 
 /* struct excel_info *PartInfo; */
 struct excel_info PartInfo[PART_MAX_COUNT];
@@ -56,7 +58,6 @@ int IsEmmc(void)
 #endif
 }
 EXPORT_SYMBOL(IsEmmc);
-
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 int eMMC_rw_x(loff_t addr, u32 *buffer, int host_num, int iswrite, u32 totalsize, int transtype,
@@ -210,7 +211,8 @@ static int init_sd_cmd(struct msdc_ioctl *cmd, loff_t addr,
 
 /*
 	pr_debug("*****************************\nDumCharDebug:in init_sd_cmd:\n");
-	pr_debug("cmd->opcode=%d MSDC_SINGLE_READ_WRITE =(2) MSDC_MULTIPLE_READ_WRITE =(3)\n",cmd->opcode);
+	pr_debug("cmd->opcode=%d MSDC_SINGLE_READ_WRITE =(2) MSDC_MULTIPLE_READ_WRITE =(3)\n",
+		cmd->opcode);
 	pr_debug("cmd->host_num=%d supose=1\n",cmd->host_num);
 	pr_debug("cmd->iswrite=%d write=1 read=0\n",cmd->iswrite);
 	pr_debug("cmd->trans_type=%d\n",cmd->trans_type);
@@ -764,7 +766,8 @@ int dumchar_open(struct inode *inode, struct file *filp)
 			dev = &(dumchar_devices[i]);
 			fo->index = i;
 			found = 1;
-			/* pr_debug( "DumChar: find dev %s index=%d\n",dumchar_devices[i].dumname,i); */
+			/* pr_debug( "DumChar: find dev %s index=%d\n",
+				dumchar_devices[i].dumname,i); */
 			break;
 		}
 	}
@@ -848,8 +851,10 @@ int dumchar_probe(struct platform_device *dev)
 {
 	int result, i, m, l;
 	dev_t devno;
+	loff_t misc_addr = 0;
 #ifdef CONFIG_MTK_MTD_NAND
 	struct mtd_info *mtd;
+	int mtd_num = 0;
 #endif
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT
@@ -915,7 +920,8 @@ int dumchar_probe(struct platform_device *dev)
 #ifdef CONFIG_MTK_NEW_COMBO_EMMC_SUPPORT
 				dumchar_devices[i].start_address = PartInfo[i].start_address;
 #else
-				dumchar_devices[i].start_address = PartInfo[i].start_address - MBR_START_ADDRESS_BYTE;
+				dumchar_devices[i].start_address =
+					PartInfo[i].start_address - MBR_START_ADDRESS_BYTE;
 #endif
 				break;
 			default:
@@ -958,13 +964,17 @@ int dumchar_probe(struct platform_device *dev)
 			if (!strcmp(dumchar_devices[i].dumname, "usrdata"))
 				mtdname = "userdata";
 
+			if (!strcmp(dumchar_devices[i].dumname, "misc"))
+				mtd_num = i;
+
 			mtd_for_each_device(mtd) {
 				if (!strcmp(mtd->name, mtdname)) {
 					dumchar_devices[i].mtd_index = mtd->index;
 					sprintf(dumchar_devices[i].actname, "/dev/mtd/mtd%d",
 						mtd->index);
 					dumchar_devices[i].size = mtd->size;
-					dumchar_devices[i].start_address = mtd_partition_start_address(mtd);
+					dumchar_devices[i].start_address =
+						mtd_partition_start_address(mtd);
 					break;
 				}
 			}
@@ -981,11 +991,14 @@ int dumchar_probe(struct platform_device *dev)
 
 	for (l = 0; l < PART_NUM; l++) {
 		if (!strcmp(dumchar_devices[l].dumname, "otp")) {
-			dumchar_device[l] = device_create(dumchar_class, NULL, MKDEV(major, l), NULL, "otp_bak");
+			dumchar_device[l] = device_create(dumchar_class, NULL,
+				MKDEV(major, l), NULL, "otp_bak");
 		} else {
-			dumchar_device[l] = device_create(dumchar_class, NULL, MKDEV(major, l), NULL,
-					  dumchar_devices[l].dumname);
+			dumchar_device[l] = device_create(dumchar_class, NULL,
+				MKDEV(major, l), NULL, dumchar_devices[l].dumname);
 		}
+		if (!strcmp(dumchar_devices[l].dumname, "misc"))
+			misc_addr = dumchar_devices[l].start_address;
 		if (IS_ERR(dumchar_device[l])) {
 			result = PTR_ERR(dumchar_device[l]);
 			pr_err("DumChar: fail in device_create name = %s  minor = %d\n",
@@ -1000,6 +1013,7 @@ int dumchar_probe(struct platform_device *dev)
 #endif
 
 #ifdef CONFIG_MTK_MTD_NAND
+	env_init(misc_addr, mtd_num);
 	mtd_create_symlink();
 #endif
 
@@ -1194,7 +1208,8 @@ static int __init dumchar_init(void)
 
 	pr_debug("dumchar_int\n");
 
-	dumchar_proc_entry = proc_create("dumchar_info", S_IFREG | S_IRUGO, NULL, &dumchar_proc_ops);
+	dumchar_proc_entry = proc_create("dumchar_info",
+		S_IFREG | S_IRUGO, NULL, &dumchar_proc_ops);
 	if (dumchar_proc_entry) {
 		pr_debug("dumchar: register /proc/dumchar_info success\n");
 	} else {

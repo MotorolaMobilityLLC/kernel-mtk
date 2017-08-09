@@ -1,2 +1,2 @@
 
-obj-y :=  dumchar.o
+obj-y :=  dumchar.o env.o
