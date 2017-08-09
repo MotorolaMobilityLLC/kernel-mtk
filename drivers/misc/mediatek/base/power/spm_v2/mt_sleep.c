@@ -265,6 +265,12 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
+
+	if (!spm_load_firmware_status()) {
+		slp_error("SPM FIRMWARE IS NOT READY\n");
+		ret = -EPERM;
+		goto LEAVE_SLEEP;
+	}
 #if defined(CONFIG_ARCH_MT6755)
 #if SLP_SLEEP_DPIDLE_EN
 #ifdef CONFIG_MT_SND_SOC_6755
