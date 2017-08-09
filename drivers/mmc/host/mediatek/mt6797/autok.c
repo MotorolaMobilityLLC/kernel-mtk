@@ -15,7 +15,7 @@
 #include <linux/scatterlist.h>
 
 #define HS400_ONE_CYCLE                 (50)
-#define HS400_ACTUAL_CYCLE              (50 - 4 * 2)
+#define HS400_ACTUAL_CYCLE              (50 - 10 * 2)
 #define MSDC_FIFO_THD_1K                (1024)
 #define TUNE_TX_CNT                     (100)
 #define TUNE_DATA_TX_ADDR               (0x358000)
@@ -2075,9 +2075,30 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	opcode = MMC_READ_SINGLE_BLOCK;
 #endif
 	autok_tuning_parameter_init(host, p_autok_tune_res);
+	/* tune data pad delay , find data pad boundary */
+	for (j = 0; j < 32; j++) {
+		msdc_autok_adjust_paddly(host, &j, DAT_PAD_RDLY);
+		for (k = 0; k < AUTOK_CMD_TIMES / 4; k++) {
+			ret = autok_send_tune_cmd(host, opcode, TUNE_DATA);
+			if ((ret & (E_RESULT_CMD_TMO | E_RESULT_RSP_CRC)) != 0) {
+				AUTOK_RAWPRINT
+				    ("[AUTOK]Error Autok CMD Failed while tune DATA PAD Delay\r\n");
+				return -1;
+			} else if ((ret & (E_RESULT_DAT_CRC | E_RESULT_DAT_TMO)) != 0)
+				break;
+		}
+		if ((ret & (E_RESULT_DAT_CRC | E_RESULT_DAT_TMO)) != 0) {
+			p_autok_tune_res[DAT_RD_D_DLY1] = j;
+			if (j)
+				p_autok_tune_res[DAT_RD_D_DLY1_SEL] = 1;
+			break;
+		}
+	}
+	autok_tuning_parameter_init(host, p_autok_tune_res);
 	memset(&uCmdDatInfo, 0, sizeof(struct AUTOK_REF_INFO));
 	pBdInfo = (struct AUTOK_SCAN_RES *)&(uCmdDatInfo.scan_info[0]);
 	RawData64 = 0LL;
+	/* tune DS delay , base on data pad boundary */
 	for (j = 0; j < 32; j++) {
 		msdc_autok_adjust_paddly(host, &j, DS_PAD_RDLY);
 		for (k = 0; k < AUTOK_CMD_TIMES / 4; k++) {
