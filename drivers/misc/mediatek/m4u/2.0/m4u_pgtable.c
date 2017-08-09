@@ -88,7 +88,7 @@ static inline unsigned int m4u_get_pt_type_size(int type)
 
 /***********************************************************/
 /** print pte info to log or sequncial file
-    if data is NULL, info is out put to kernel log by printk
+    if data is NULL, info is out put to kernel log by pr log
     if pte is valid, we will print like va->pgd->pte->pa
     if pte is invalid, we print as many info as we can.
 * @return NULL
