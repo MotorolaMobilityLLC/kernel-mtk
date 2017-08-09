@@ -105,7 +105,11 @@
 /*---------------------------------------------------------------------------*/
 /*FIXME: MT6593 FPGA porting*/
 #ifdef CONFIG_MTK_FPGA
+#ifdef FIX_TO_26M
+#define UART_SYSCLK                 MTK_SYSCLK_26
+#else
 #define UART_SYSCLK                 12000000
+#endif
 #else
 #define UART_SYSCLK                 MTK_SYSCLK_26
 #endif
