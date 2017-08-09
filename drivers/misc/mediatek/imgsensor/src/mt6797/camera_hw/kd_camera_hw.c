@@ -18,8 +18,9 @@
 #include <linux/cdev.h>
 #include <linux/uaccess.h>
 #include <linux/fs.h>
+#include <linux/of.h>
+#include <linux/of_fdt.h>
 #include <asm/atomic.h>
-#include <mt_chip.h>
 
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
@@ -56,6 +57,8 @@ extern void ISP_MCLK1_EN(BOOL En);
 extern void ISP_MCLK2_EN(BOOL En);
 extern void ISP_MCLK3_EN(BOOL En);
 
+// ext. buck fan53526 use gpio 110 which may be used by camera ldo control.  
+static u32 extbuck_fan53526_exist = 0; 
 
 u32 pinSetIdx = 0;		/* default main sensor */
 u32 pinSet[3][8] = {
@@ -365,7 +368,6 @@ struct pinctrl_state *cam_ldo_main2_vcamd_l = NULL;
 int mtkcam_gpio_init(struct platform_device *pdev)
 {
 	int ret = 0;
-	int ver = 0;
 
 	camctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(camctrl)) {
@@ -465,9 +467,8 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		PK_ERR("%s : pinctrl err, cam_ldo_vcama_l\n", __func__);
 	}
     /*E1:GPIO 110, E2:GPIO 140*/
-	ver = mt_get_chip_hw_ver();
-	if (0xCA01 == ver) {
-		 // do something for chips for E2
+	if (extbuck_fan53526_exist) {
+		 // do something for E2 phone PCB
 		cam_ldo_vcamd_h = pinctrl_lookup_state(camctrl, "cam_ldo_vcamd2_1");
 		if (IS_ERR(cam_ldo_vcamd_h)) {
 			ret = PTR_ERR(cam_ldo_vcamd_h);
@@ -480,7 +481,7 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 			PK_ERR("%s : pinctrl err, cam_ldo_vcamd_l\n", __func__);
 		}
 	} else {
-		 // do something for chips for E1
+		 // do something for E1 phone PCB
 		cam_ldo_vcamd_h = pinctrl_lookup_state(camctrl, "cam_ldo_vcamd_1");
 		if (IS_ERR(cam_ldo_vcamd_h)) {
 			ret = PTR_ERR(cam_ldo_vcamd_h);
@@ -1321,7 +1322,36 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 _kdCISModulePowerOn_exit_:
 	return -EIO;
 }
+static int __init dt_get_extbuck_info(unsigned long node, const char *uname, int depth, void *data)
+{
+        struct devinfo_extbuck_tag {
+                u32 size;
+                u32 tag;
+                u32 extbuck_fan53526_exist;
+	} *tags;
+        unsigned int size = 0;
 
+        if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
+                return 0;
+
+        tags = (struct devinfo_extbuck_tag *) of_get_flat_dt_prop(node, "atag,extbuck_fan53526", &size);
+
+        if (tags) {
+                extbuck_fan53526_exist = tags->extbuck_fan53526_exist;
+                PK_INFO("[Camera] fan53526_exist = %d\n",
+                        extbuck_fan53526_exist);
+        }
+	return 0;
+}
+
+static int __init kd_camera_hw_init(void)
+{
+        of_scan_flat_dt(dt_get_extbuck_info, NULL);
+
+        return 0;
+}
+
+arch_initcall(kd_camera_hw_init);
 EXPORT_SYMBOL(kdCISModulePowerOn);
 
 /* !-- */
