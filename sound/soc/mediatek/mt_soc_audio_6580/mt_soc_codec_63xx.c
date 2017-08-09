@@ -125,8 +125,8 @@ static uint32 RG_AUDHPLTRIM_VAUDP15, RG_AUDHPRTRIM_VAUDP15, RG_AUDHPLFINETRIM_VA
 	RG_AUDHPLFINETRIM_VAUDP15_SPKHP, RG_AUDHPRFINETRIM_VAUDP15_SPKHP;
 #endif
 
+static int Speaker_mode = AUDIO_SPEAKER_MODE_D;	/* default use type D on 82 */
 #ifdef CONFIG_MTK_SPEAKER
-static int Speaker_mode = AUDIO_SPEAKER_MODE_D;	/* AUDIO_SPEAKER_MODE_AB; //default use type D on 82 */
 static unsigned int Speaker_pga_gain = 1;	/* default 0Db. */
 static bool mSpeaker_Ocflag;
 #endif
