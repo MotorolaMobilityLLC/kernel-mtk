@@ -3054,7 +3054,7 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 	}
 
 	if (cur_khz != get_turbo_freq(p->cpu_id, target_khz)) {
-		if (log)
+		if (log || do_dvfs_stress_test)
 			cpufreq_dbg
 				("@%s(), %s:(%d,%d): freq=%d(%d), volt =%d(%d), on=%d, cur=%d, cci(%d,%d)\n",
 				 __func__, cpu_dvfs_get_name(p), p->idx_opp_ppm_base, p->idx_opp_ppm_limit,
