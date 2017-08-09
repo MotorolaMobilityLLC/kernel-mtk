@@ -58,7 +58,6 @@
 #include "AudDrv_Kernel.h"
 #include "mt_soc_afe_control.h"
 
-/* #include <mach/mt_clkbuf_ctl.h> */
 
 #include <linux/kernel.h>
 #include <linux/module.h>

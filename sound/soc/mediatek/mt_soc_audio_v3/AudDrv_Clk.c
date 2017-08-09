@@ -53,7 +53,7 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
-/*#define _MT_IDLE_H*/
+/*#define _MT_IDLE_HEADER*/
 
 /*#include <mach/mt_pm_ldo.h>*/
 #include <mt-plat/upmu_common.h>
@@ -67,8 +67,9 @@
 #include "AudDrv_Afe.h"
 #include <linux/spinlock.h>
 #include <linux/delay.h>
-#ifdef _MT_IDLE_H
+#ifdef _MT_IDLE_HEADER
 #include "mt_idle.h"
+#include "mt_clk_id.h"
 #endif
 #include <linux/err.h>
 #include <linux/platform_device.h>
@@ -1865,7 +1866,7 @@ void AudDrv_Emi_Clk_On(void)
 	mutex_lock(&auddrv_pmic_mutex);
 	if (Aud_EMI_cntr == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING	/* george early porting disable */
-#ifdef _MT_IDLE_H
+#ifdef _MT_IDLE_HEADER
 		disable_dpidle_by_bit(MT_CG_AUDIO_AFE);
 		disable_soidle_by_bit(MT_CG_AUDIO_AFE);
 #endif
@@ -1881,7 +1882,7 @@ void AudDrv_Emi_Clk_Off(void)
 	Aud_EMI_cntr--;
 	if (Aud_EMI_cntr == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING	/* george early porting disable */
-#ifdef _MT_IDLE_H
+#ifdef _MT_IDLE_HEADER
 		enable_dpidle_by_bit(MT_CG_AUDIO_AFE);
 		enable_soidle_by_bit(MT_CG_AUDIO_AFE);
 #endif

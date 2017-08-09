@@ -68,7 +68,7 @@
 #include "AudDrv_Clk.h"
 #include "mt_soc_analog_type.h"
 #ifdef _GIT318_READY
-#include <mach/mt_clkbuf_ctl.h>
+#include "mt_clkbuf_ctl.h"
 #endif
 #include <mt-plat/mt_chip.h>
 #ifdef _VOW_ENABLE
@@ -2424,7 +2424,7 @@ static const struct snd_kcontrol_new mt6331_snd_Speaker_controls[] = {
 
 int Audio_AuxAdcData_Get_ext(void)
 {
-#ifdef _GIT318_READY
+#ifdef _GIT318_PMIC_READY
 	int dRetValue = PMIC_IMM_GetOneChannelValue(AUX_ICLASSAB_AP, 1, 0);
 
 	pr_warn("%s dRetValue 0x%x\n", __func__, dRetValue);
