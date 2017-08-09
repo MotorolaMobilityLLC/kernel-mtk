@@ -905,8 +905,11 @@ static int debug_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-
+#if defined(CONFIG_MT_ENG_BUILD)
 static char debug_buffer[4096 + 30 * 16 * 1024];
+#else
+static char debug_buffer[10240];
+#endif
 
 void debug_info_dump_to_printk(char *buf, int buf_len)
 {
