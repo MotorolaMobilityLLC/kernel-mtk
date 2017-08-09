@@ -58,16 +58,15 @@ static int mt_i2c_clock_enable(struct mt_i2c *i2c)
 	if (ret)
 		return ret;
 
-	if (i2c->id != 6) {		/* the clock of i2c6 will always on */
-		if (i2c->clk_arb != NULL) {
-			ret = clk_prepare_enable(i2c->clk_arb);
-			if (ret)
-				return ret;
-		}
-		clk_prepare_enable(i2c->clk_main);
+	if (i2c->clk_arb != NULL) {
+		ret = clk_prepare_enable(i2c->clk_arb);
 		if (ret)
-			goto err_main;
+			return ret;
 	}
+	ret = clk_prepare_enable(i2c->clk_main);
+	if (ret)
+		goto err_main;
+
 	if (i2c->have_pmic) {
 		ret = clk_prepare_enable(i2c->clk_pmic);
 		if (ret)
@@ -86,11 +85,11 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 {
 	if (i2c->have_pmic)
 		clk_disable_unprepare(i2c->clk_pmic);
-	if (i2c->id != 6) {		/* the clock of i2c6 will always on */
-		clk_disable_unprepare(i2c->clk_main);
-		if (i2c->clk_arb != NULL)
-			clk_disable_unprepare(i2c->clk_arb);
-	}
+
+	clk_disable_unprepare(i2c->clk_main);
+	if (i2c->clk_arb != NULL)
+		clk_disable_unprepare(i2c->clk_arb);
+
 	clk_disable_unprepare(i2c->clk_dma);
 }
 
