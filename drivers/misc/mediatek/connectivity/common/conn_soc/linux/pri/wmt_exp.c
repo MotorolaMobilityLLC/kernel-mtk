@@ -599,8 +599,8 @@ EXPORT_SYMBOL(mtk_wcn_wmt_ant_ram_ctrl);
 #endif
 
 #endif
-VOID mtk_wcn_set_wifi_ver(UINT32 Value)
+VOID mtk_wcn_wmt_set_wifi_ver(UINT32 Value)
 {
 	wmt_lib_soc_set_wifiver(Value);
 }
-EXPORT_SYMBOL(mtk_wcn_set_wifi_ver);
+EXPORT_SYMBOL(mtk_wcn_wmt_set_wifi_ver);

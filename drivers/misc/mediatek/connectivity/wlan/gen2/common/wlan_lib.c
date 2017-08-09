@@ -4027,7 +4027,7 @@ WLAN_STATUS wlanQueryNicCapability(IN P_ADAPTER_T prAdapter)
 	prAdapter->fgIsEmbbededMacAddrValid = (BOOLEAN) prEventNicCapability->ucMacAddrValid;
 
 	u4FwIDVersion = (prAdapter->rVerInfo.u2FwProductID << 16) | (prAdapter->rVerInfo.u2FwOwnVersion);
-	mtk_wcn_set_wifi_ver(u4FwIDVersion);
+	mtk_wcn_wmt_set_wifi_ver(u4FwIDVersion);
 #if (CFG_SUPPORT_TDLS == 1)
 	if (prEventNicCapability->ucFeatureSet & (1 << FEATURE_SET_OFFSET_TDLS))
 		prAdapter->fgTdlsIsSup = TRUE;

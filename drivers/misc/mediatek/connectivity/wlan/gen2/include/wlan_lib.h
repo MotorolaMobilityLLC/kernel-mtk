@@ -996,6 +996,6 @@ WLAN_STATUS wlanCfgInit(IN P_ADAPTER_T prAdapter, PUINT_8 pucConfigBuf, UINT_32 
 VOID wlanCfgApply(IN P_ADAPTER_T prAdapter);
 #endif /* CFG_SUPPORT_CFG_FILE */
 
-extern VOID mtk_wcn_set_wifi_ver(UINT_32 Value);
+extern VOID mtk_wcn_wmt_set_wifi_ver(UINT_32 Value);
 
 #endif /* _WLAN_LIB_H */
