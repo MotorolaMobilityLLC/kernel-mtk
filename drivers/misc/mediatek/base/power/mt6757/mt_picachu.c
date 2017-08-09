@@ -245,7 +245,7 @@ static ssize_t picachu_offset_proc_write(struct file *file,
 		ret = 0;
 		if (picachu_data != NULL) {
 			picachu_data->offset = offset;
-			eem_set_pi_offset(EEM_CTRL_LITTLE, offset);
+			eem_set_pi_offset(EEM_CTRL_2LITTLE, offset);
 			eem_set_pi_offset(EEM_CTRL_BIG, offset);
 		}
 	}
@@ -404,7 +404,7 @@ static int __init picachu_init(void)
 		picachu_info("pi_off = %d\n", picachu_data->offset);
 	}
 
-	eem_set_pi_offset(EEM_CTRL_LITTLE, offset);
+	eem_set_pi_offset(EEM_CTRL_2LITTLE, offset);
 	eem_set_pi_offset(EEM_CTRL_BIG, offset);
 
 	create_procfs();
