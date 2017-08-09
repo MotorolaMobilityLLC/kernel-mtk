@@ -255,7 +255,7 @@ static int mtk_iommu_probe(struct platform_device *pdev)
 
 	ret = devm_request_irq(piommu->dev, piommu->irq,
 			       piommu->imucfg->iommu_isr, IRQF_TRIGGER_NONE,
-			       dev_name(piommu->dev), (void *)piommu);
+			       dev_name(piommu->dev), (void *)mtk_domain);
 	if (ret) {
 		dev_err(piommu->dev, "IRQ request %d failed\n",
 			piommu->irq);
