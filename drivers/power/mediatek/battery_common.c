@@ -2791,7 +2791,7 @@ static void mt_battery_charger_detect_check(void)
 * Compile option is not limited to CONFIG_MTK_BQ25896_SUPPORT.
 * PowerDown = 0
 */
-		kal_uint32 pwr;
+		unsigned int pwr;
 #endif
 	if (upmu_is_chr_det() == KAL_TRUE) {
 		wake_lock(&battery_suspend_lock);
