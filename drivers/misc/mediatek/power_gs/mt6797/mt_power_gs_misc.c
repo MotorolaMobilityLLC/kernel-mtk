@@ -11,6 +11,7 @@
 
 #include "mt_clkmgr.h"
 #include "mt_power_gs_misc.h"
+#include "mt_freqhopping_drv.h"
 
 #define DEBUG_MSG_ON 0
 /************************************************
@@ -53,8 +54,64 @@ static void mt_power_gs_dump_value(struct seq_file *m, const unsigned int pBaseA
 	}
 }
 
+static void mt_power_gs_ctCheck_for_VA_protect(struct seq_file *m)
+{
+	unsigned int value, mask, golden;
+
+	/*0x1A27C, 0xFFFFFFFF, 0xFFFFFFFF, armpll_debug_out */
+	value = mt6797_0x1001AXXX_reg_read(0x27C);
+	mask = 0xFFFFFFFF;
+	golden = 0xFFFFFFFF;
+	if ((value & mask) != golden)
+		seq_printf(m, "0x%x - 0x%04x - 0x%04x - 0x%04x - Caution\n",
+				0x1001A27C, value, mask, golden);
+	else
+		seq_printf(m, "0x%x - 0x%04x - 0x%04x - 0x%04x\n",
+				0x1001A27C, value, mask, golden);
+
+	/*0x1A284, 0xFFFFFFFF, 0x00000000, armpll_debug_out*/
+	value = mt6797_0x1001AXXX_reg_read(0x284);
+	mask = 0xFFFFFFFF;
+	golden = 0x0;
+	if ((value & mask) != golden)
+		seq_printf(m, "0x%x - 0x%04x - 0x%04x - 0x%04x - Caution\n",
+				0x1001A284, value, mask, golden);
+	else
+		seq_printf(m, "0x%x - 0x%04x - 0x%04x - 0x%04x\n",
+				0x1001A284, value, mask, golden);
+}
+
+static void mt_power_gs_misc_iomap(void)
+{
+	struct device_node *node;
+
+#if DEBUG_MSG_ON
+	pr_err("[power_gs_misc] Begin %s\n", __func__);
+#endif
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-power_gs");
+	if (!node)
+		pr_err("[power_gs_misc] find node failed %d\n", __LINE__);
+
+	gs_clockTop_infra_base = of_iomap(node, 0);
+	if (!gs_clockTop_infra_base)
+		pr_err("[power_gs_misc] get base failed %d\n", __LINE__);
+
+	gs_others_base = of_iomap(node, 1);
+	if (!gs_others_base)
+		pr_err("[power_gs_misc] get base failed %d\n", __LINE__);
+
+	/*pr_err("[power_gs_misc] End %s\n", __func__);*/
+}
+
+static void mt_power_gs_misc_iounmap(void)
+{
+	iounmap(gs_clockTop_infra_base);
+	iounmap(gs_others_base);
+}
+
 static int mt_power_gs_misc_read(struct seq_file *m, void *v)
 {
+	mt_power_gs_misc_iomap();
 
 #if DEBUG_MSG_ON
 	pr_err("[power_gs_misc] Begin %s\n", __func__);
@@ -112,7 +169,8 @@ static int mt_power_gs_misc_read(struct seq_file *m, void *v)
 	seq_puts(m, "Clock top\n");
 	seq_puts(m, "Addr  - Value  - Mask   - Golden\n");
 	mt_power_gs_dump_value(m, 0x10000000, gs_clockTop_array_ptr, gs_clockTop_array_len);
-
+	mt_power_gs_ctCheck_for_VA_protect(m);
+	mt_power_gs_misc_iounmap();
 	/*pr_err("[power_gs_misc] End %s\n", __func__);*/
 	return 0;
 }
@@ -130,28 +188,6 @@ static const struct file_operations mt_power_gs_misc_fops = {
 	.release = single_release,
 };
 
-static void mt_power_gs_misc_iomap(void)
-{
-	struct device_node *node;
-
-#if DEBUG_MSG_ON
-	pr_err("[power_gs_misc] Begin %s\n", __func__);
-#endif
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-power_gs");
-	if (!node)
-		pr_err("[power_gs_misc] find node failed %d\n", __LINE__);
-
-	gs_clockTop_infra_base = of_iomap(node, 0);
-	if (!gs_clockTop_infra_base)
-		pr_err("[power_gs_misc] get base failed %d\n", __LINE__);
-
-	gs_others_base = of_iomap(node, 1);
-	if (!gs_others_base)
-		pr_err("[power_gs_misc] get base failed %d\n", __LINE__);
-
-	/*pr_err("[power_gs_misc] End %s\n", __func__);*/
-}
-
 static int __init mt_power_gs_misc_init(void)
 {
 
@@ -163,8 +199,6 @@ static int __init mt_power_gs_misc_init(void)
 		pr_err("[power_gs_misc] [%s]: mkdir /proc/mt_power_gs failed\n", __func__);
 
 	proc_create("gs_misc", S_IRUGO, mt_power_gs_dir, &mt_power_gs_misc_fops);
-
-	mt_power_gs_misc_iomap();
 
 	/*pr_err("[power_gs_misc] End %s\n", __func__);*/
 	return 0;

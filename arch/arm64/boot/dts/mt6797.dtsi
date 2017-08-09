@@ -771,7 +771,7 @@
 
 		power_gs@10000000 {
 			compatible = "mediatek,mt6797-power_gs";
-			reg = <0x10000000 0x20000>,    /*clock top and infra*/
+			reg = <0x10000000 0x11001>,    /*clock top and infra*/
 			      <0x12000000 0x8001011>;  /*MDP, DISP, SMI, IMG, and VDEC */
 		};
 

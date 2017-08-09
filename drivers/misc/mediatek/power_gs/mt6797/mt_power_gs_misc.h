@@ -114,12 +114,10 @@ const unsigned int gs_clockTop_array[] = {
 	0x00220, 0xFFFFFFFF, 0x00000000,	/* fqmtr_en (topckgen) */
 	0x00104, 0xFFFFFFFF, 0xFFFF0000,	/* fqmtr_en (topckgen) */
 	0x00108, 0xFFFFFFFF, 0xFFFF0000,	/* fqmtr_en (topckgen) */
-	0x1A27C, 0xFFFFFFFF, 0xFFFFFFFF,	/* armpll_debug_out */
-	0x1A284, 0xFFFFFFFF, 0x00000000,	/* armpll_debug_out*/
 	0x01500, 0xFFFFFFFF, 0x00000001,	/* top debug mux */
 	0x01504, 0xFFFFFFFF, 0x00000001,	/* top debug mux */
 	0x01098, 0xFFFFFFFF, 0x00004C70,	/* top debug mux */
 	0x11000, 0xFFFFFFFF, 0x030C0000	/* top debug mux */
 };
 const unsigned int *gs_clockTop_array_ptr = gs_clockTop_array;
-unsigned int gs_clockTop_array_len = 36;
+unsigned int gs_clockTop_array_len = 30;
