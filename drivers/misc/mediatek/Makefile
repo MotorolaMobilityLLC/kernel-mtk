@@ -152,6 +152,7 @@ obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secmem/
 obj-$(CONFIG_MICROTRUST_TEE_SUPPORT) += teei/
 obj-$(CONFIG_MTK_DEBUG_LATCH)	+= debug_latch/
+obj-$(CONFIG_MTK_DEBUG_TRACER)	+= debug_tracer/
 obj-$(CONFIG_MTK_WATCHPOINT) += watchpoint/
 obj-$(CONFIG_MTK_SYSTRACKER)   += systracker/
 obj-$(CONFIG_MTK_RAM_CONSOLE)	+= ram_console/

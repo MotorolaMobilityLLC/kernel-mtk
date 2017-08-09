@@ -104,6 +104,15 @@ static int systracker_platform_probe_default(struct platform_device *pdev)
 		is_systracker_irq_registered = 1;
 	}
 #endif
+
+#ifdef CONFIG_MTK_BUS_TRACER
+	pr_debug("register systracker_isr for bus tracer...\n");
+	if (request_irq(systracker_irq, (irq_handler_t)systracker_isr, IRQF_TRIGGER_NONE, "SYSTRACKER", NULL)) {
+		pr_err("SYSTRACKER IRQ LINE NOT AVAILABLE!!\n");
+		return -1;
+	}
+#endif
+
 	/* save entry info */
 	save_entry();
 
