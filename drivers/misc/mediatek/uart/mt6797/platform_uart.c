@@ -1,10 +1,9 @@
-/* mediatek/platform/mt6797/kernel/drivers/uart/uart.c
- *
+/*
  * (C) Copyright 2008
  * MediaTek <www.mediatek.com>
  * MingHsien Hsieh <minghsien.hsieh@mediatek.com>
  *
- * MT6797 UART Driver
+ * MTK UART Driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,7 +89,7 @@ unsigned int uart_rx_history_cnt[RECORD_NUMBER];
 /*---------------------------------------------------------------------------*/
 static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	{
-	 .tx_mode = UART_TX_VFIFO_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0,
+	 .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART0_BASE, .irq_num = UART0_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
@@ -100,7 +99,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
 	 },
 	{
-	 .tx_mode = UART_TX_VFIFO_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0,
+	 .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART1_BASE, .irq_num = UART1_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
@@ -110,7 +109,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
 	 },
 	{
-	 .tx_mode = UART_TX_VFIFO_DMA, .rx_mode = UART_RX_VFIFO_DMA, .dma_mode = UART_DMA_MODE_0,
+	 .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART2_BASE, .irq_num = UART2_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
@@ -129,18 +128,6 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 #endif
 	 .sysrq = FALSE, .hw_flow = FALSE, .vff = FALSE,	/* UART4 */
 	 },
-#ifndef CONFIG_VERSION_D2
-	{
-	 .tx_mode = UART_NON_DMA, .rx_mode = UART_NON_DMA, .dma_mode = UART_DMA_MODE_0,
-	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
-
-	 /* .uart_base = AP_UART4_BASE, .irq_num = UART3_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
-	 .set_bit = PDN_FOR_UART5, .clr_bit = PDN_FOR_UART5, .pll_id = PDN_FOR_UART5,
-#endif
-	 .sysrq = FALSE, .hw_flow = FALSE, .vff = FALSE,	/* UART5 */
-	 },
-#endif				/* CONFIG_DENALI_2 */
 };
 
 /*---------------------------------------------------------------------------*/
@@ -149,9 +136,6 @@ static unsigned long mtk_uart_evt_mask[] = {
 	DBG_EVT_NONE,
 	DBG_EVT_NONE,
 	DBG_EVT_NONE,
-#ifndef CONFIG_VERSION_D2
-	DBG_EVT_NONE,
-#endif				/* CONFIG_DENALI_2 */
 };
 
 /*---------------------------------------------------------------------------*/
@@ -160,20 +144,13 @@ static unsigned long mtk_uart_lsr_status[] = {
 	0,			/* UART2 */
 	0,			/* UART3 */
 	0,			/* UART4 */
-#ifndef CONFIG_VERSION_D2
-	0,			/* UART5 */
-#endif				/* CONFIG_DENALI_2 */
 };
 
 /*---------------------------------------------------------------------------*/
 #if defined(CONFIG_MTK_SERIAL_MODEM_TEST)
     /* #define HW_MISC     (CONFIG_BASE+0x0020)    // mtk does NOT has this register */
     /* unsigned char mask[UART_NR] = { 1 << 3, 1 << 4, 1 << 5, 1 << 6}; */
-static unsigned int modem_uart[UART_NR] = { 1, 0, 0, 1
-#ifndef CONFIG_VERSION_D2
-	    , 1
-#endif				/* CONFIG_DENALI_2 */
-};
+static unsigned int modem_uart[UART_NR] = { 1, 0, 0, 1 };
 #endif
 /*---------------------------------------------------------------------------*/
 /* uart control blocks */
@@ -204,11 +181,6 @@ void set_uart_default_settings(int idx)
 	case 3:
 		node = of_find_node_by_name(NULL, "apuart3");
 		break;
-#ifndef CONFIG_VERSION_D2
-	case 4:
-		node = of_find_node_by_name(NULL, "apuart4");
-		break;
-#endif				/* CONFIG_VERSION_2 */
 	default:
 		break;
 	}
@@ -272,12 +244,6 @@ unsigned int get_uart_vfifo_irq_id(int idx)
 	case 7:
 		node = of_find_node_by_name(NULL, "apuart3");
 		break;
-#ifndef CONFIG_VERSION_D2
-	case 8:
-	case 9:
-		node = of_find_node_by_name(NULL, "apuart4");
-		break;
-#endif				/* CONFIG_VERSION_2 */
 	default:
 		break;
 	}

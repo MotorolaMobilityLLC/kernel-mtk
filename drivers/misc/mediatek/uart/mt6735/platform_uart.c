@@ -1,10 +1,9 @@
-/* mediatek/platform/mt6735/kernel/drivers/uart/uart.c
- *
+/*
  * (C) Copyright 2008
  * MediaTek <www.mediatek.com>
  * MingHsien Hsieh <minghsien.hsieh@mediatek.com>
  *
- * MT6735 UART Driver
+ * MTK UART Driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -140,7 +139,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 #endif
 	 .sysrq = FALSE, .hw_flow = FALSE, .vff = FALSE,	/* UART5 */
 	 },
-#endif				/* CONFIG_DENALI_2 */
+#endif				/* CONFIG_VERSION_D2 */
 };
 
 /*---------------------------------------------------------------------------*/
@@ -151,7 +150,7 @@ static unsigned long mtk_uart_evt_mask[] = {
 	DBG_EVT_NONE,
 #ifndef CONFIG_VERSION_D2
 	DBG_EVT_NONE,
-#endif				/* CONFIG_DENALI_2 */
+#endif				/* CONFIG_VERSION_D2 */
 };
 
 /*---------------------------------------------------------------------------*/
@@ -162,7 +161,7 @@ static unsigned long mtk_uart_lsr_status[] = {
 	0,			/* UART4 */
 #ifndef CONFIG_VERSION_D2
 	0,			/* UART5 */
-#endif				/* CONFIG_DENALI_2 */
+#endif				/* CONFIG_VERSION_D2 */
 };
 
 /*---------------------------------------------------------------------------*/
@@ -172,7 +171,7 @@ static unsigned long mtk_uart_lsr_status[] = {
 static unsigned int modem_uart[UART_NR] = { 1, 0, 0, 1
 #ifndef CONFIG_VERSION_D2
 	    , 1
-#endif				/* CONFIG_DENALI_2 */
+#endif				/* CONFIG_VERSION_D2 */
 };
 #endif
 /*---------------------------------------------------------------------------*/

@@ -52,9 +52,9 @@
 #else
 #ifndef CONFIG_VERSION_D2
 #define UART_NR                     5
-#else				/* CONFIG_DENALI_2 */
+#else				/* CONFIG_VERSION_D2 */
 #define UART_NR                     4
-#endif				/* CONFIG_DENALI_2 */
+#endif				/* CONFIG_VERSION_D2 */
 #endif
 
 #ifndef FALSE
@@ -77,7 +77,7 @@
 #define UART4_IRQ_ID	UART3_IRQ_BIT_ID
 #ifndef CONFIG_VERSION_D2
 #define UART5_IRQ_ID	UART4_IRQ_BIT_ID
-#endif				/* CONFIG_DENALI_2 */
+#endif				/* CONFIG_VERSION_D2 */
 
 #define UART1_VFF_TX_IRQ_ID  AP_DMA_UART0_TX_IRQ_BIT_ID
 #define UART1_VFF_RX_IRQ_ID  AP_DMA_UART0_RX_IRQ_BIT_ID
@@ -90,7 +90,7 @@
 #ifndef CONFIG_VERSION_D2
 #define UART5_VFF_TX_IRQ_ID  AP_DMA_UART4_TX_IRQ_BIT_ID
 #define UART5_VFF_RX_IRQ_ID  AP_DMA_UART4_RX_IRQ_BIT_ID
-#endif				/* CONFIG_DENALI_2 */
+#endif				/* CONFIG_VERSION_D2 */
 #endif
 /*------ PDN Section -----------------------*/
 #if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
@@ -100,7 +100,7 @@
 #define PDN_FOR_UART4	MT_CG_PERI_UART3
 #ifndef CONFIG_VERSION_D2
 #define PDN_FOR_UART5	MT_CG_PERI_UART4
-#endif				/* CONFIG_DENALI_2 */
+#endif				/* CONFIG_VERSION_D2 */
 #endif				/* defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
 
 #define PDN_FOR_DMA     MT_CG_PERI_APDMA
@@ -150,7 +150,7 @@
 #ifndef CONFIG_VERSION_D2
 #define C_UART5_VFF_TX_SIZE (1024)	/* the size must be 8-byte alignment */
 #define C_UART5_VFF_RX_SIZE (1024)	/* the size must be 8-byte alignment */
-#endif				/* CONFIG_DENALI_2 */
+#endif				/* CONFIG_VERSION_D2 */
 /******************************************************************************
  * LOG SETTING
 ******************************************************************************/
@@ -216,7 +216,7 @@ enum {
 	UART_PORT3,
 #ifndef CONFIG_VERSION_D2
 	UART_PORT4,
-#endif				/* CONFIG_DENALI_2 */
+#endif				/* CONFIG_VERSION_D2 */
 	UART_PORT_NUM,
 };
 /*---------------------------------------------------------------------------*/

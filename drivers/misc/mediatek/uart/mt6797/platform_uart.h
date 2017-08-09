@@ -13,7 +13,7 @@
  * Function Configuration
 ******************************************************************************/
 #define ENABLE_DEBUG
-#define ENABLE_VFIFO
+/* #define ENABLE_VFIFO */
 /* Fix-me: marked for early porting */
 #define POWER_FEATURE		/*control power-on/power-off */
 #define ENABLE_FRACTIONAL
@@ -43,18 +43,10 @@
 #define UART_MAJOR                  204
 #define UART_MINOR                  209
 
-#ifdef CONFIG_ARCH_MT6797M
-#define  CONFIG_VERSION_D2
-#endif				/* CONFIG_ARCH_MT6797M */
-
 #if defined(CONFIG_MTK_FPGA)
 #define UART_NR                     2
 #else
-#ifndef CONFIG_VERSION_D2
-#define UART_NR                     5
-#else				/* CONFIG_DENALI_2 */
 #define UART_NR                     4
-#endif				/* CONFIG_DENALI_2 */
 #endif
 
 #ifndef FALSE
@@ -75,9 +67,6 @@
 #define UART2_IRQ_ID	UART1_IRQ_BIT_ID
 #define UART3_IRQ_ID	UART2_IRQ_BIT_ID
 #define UART4_IRQ_ID	UART3_IRQ_BIT_ID
-#ifndef CONFIG_VERSION_D2
-#define UART5_IRQ_ID	UART4_IRQ_BIT_ID
-#endif				/* CONFIG_DENALI_2 */
 
 #define UART1_VFF_TX_IRQ_ID  AP_DMA_UART0_TX_IRQ_BIT_ID
 #define UART1_VFF_RX_IRQ_ID  AP_DMA_UART0_RX_IRQ_BIT_ID
@@ -87,10 +76,6 @@
 #define UART3_VFF_RX_IRQ_ID  AP_DMA_UART2_RX_IRQ_BIT_ID
 #define UART4_VFF_TX_IRQ_ID  AP_DMA_UART3_TX_IRQ_BIT_ID
 #define UART4_VFF_RX_IRQ_ID  AP_DMA_UART3_RX_IRQ_BIT_ID
-#ifndef CONFIG_VERSION_D2
-#define UART5_VFF_TX_IRQ_ID  AP_DMA_UART4_TX_IRQ_BIT_ID
-#define UART5_VFF_RX_IRQ_ID  AP_DMA_UART4_RX_IRQ_BIT_ID
-#endif				/* CONFIG_DENALI_2 */
 #endif
 /*------ PDN Section -----------------------*/
 #if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
@@ -98,9 +83,6 @@
 #define PDN_FOR_UART2	MT_CG_PERI_UART1
 #define PDN_FOR_UART3	MT_CG_PERI_UART2
 #define PDN_FOR_UART4	MT_CG_PERI_UART3
-#ifndef CONFIG_VERSION_D2
-#define PDN_FOR_UART5	MT_CG_PERI_UART4
-#endif				/* CONFIG_DENALI_2 */
 #endif				/* defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA) */
 
 #define PDN_FOR_DMA     MT_CG_PERI_APDMA
@@ -147,10 +129,6 @@
 #define C_UART3_VFF_RX_SIZE (8192)	/* the size must be 8-byte alignment */
 #define C_UART4_VFF_TX_SIZE (1024)	/* the size must be 8-byte alignment */
 #define C_UART4_VFF_RX_SIZE (1024)	/* the size must be 8-byte alignment */
-#ifndef CONFIG_VERSION_D2
-#define C_UART5_VFF_TX_SIZE (1024)	/* the size must be 8-byte alignment */
-#define C_UART5_VFF_RX_SIZE (1024)	/* the size must be 8-byte alignment */
-#endif				/* CONFIG_DENALI_2 */
 /******************************************************************************
  * LOG SETTING
 ******************************************************************************/
@@ -214,9 +192,6 @@ enum {
 	UART_PORT1,
 	UART_PORT2,
 	UART_PORT3,
-#ifndef CONFIG_VERSION_D2
-	UART_PORT4,
-#endif				/* CONFIG_DENALI_2 */
 	UART_PORT_NUM,
 };
 /*---------------------------------------------------------------------------*/
