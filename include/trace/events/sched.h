@@ -1093,6 +1093,99 @@ TRACE_EVENT(sched_hmp_stats,
 );
 
 /*
+ * Tracepoint for cfs task enqueue event
+ */
+TRACE_EVENT(sched_cfs_enqueue_task,
+
+	TP_PROTO(struct task_struct *tsk, int tsk_load, int cpu_id),
+
+	TP_ARGS(tsk, tsk_load, cpu_id),
+
+	TP_STRUCT__entry(
+		__array(char, comm, TASK_COMM_LEN)
+		__field(pid_t, tsk_pid)
+		__field(int, tsk_load)
+		__field(int, cpu_id)
+	),
+
+	TP_fast_assign(
+		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
+		__entry->tsk_pid = tsk->pid;
+		__entry->tsk_load = tsk_load;
+		__entry->cpu_id = cpu_id;
+	),
+
+	TP_printk("cpu-id=%d task-pid=%4d task-load=%4d comm=%s",
+			__entry->cpu_id,
+			__entry->tsk_pid,
+			__entry->tsk_load,
+			__entry->comm)
+);
+
+/*
+ * Tracepoint for cfs task dequeue event
+ */
+TRACE_EVENT(sched_cfs_dequeue_task,
+
+	TP_PROTO(struct task_struct *tsk, int tsk_load, int cpu_id),
+
+	TP_ARGS(tsk, tsk_load, cpu_id),
+
+	TP_STRUCT__entry(
+		__array(char, comm, TASK_COMM_LEN)
+		__field(pid_t, tsk_pid)
+		__field(int, tsk_load)
+		__field(int, cpu_id)
+	),
+
+	TP_fast_assign(
+		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
+		__entry->tsk_pid = tsk->pid;
+		__entry->tsk_load = tsk_load;
+		__entry->cpu_id = cpu_id;
+	),
+
+	TP_printk("cpu-id=%d task-pid=%4d task-load=%4d comm=%s",
+			__entry->cpu_id,
+			__entry->tsk_pid,
+			__entry->tsk_load,
+			__entry->comm)
+);
+
+/*
+ * Tracepoint for cfs runqueue load ratio update
+ */
+TRACE_EVENT(sched_cfs_load_update,
+
+	TP_PROTO(struct task_struct *tsk, int tsk_load, int tsk_delta, int cpu_id),
+
+	TP_ARGS(tsk, tsk_load, tsk_delta, cpu_id),
+
+	TP_STRUCT__entry(
+		__array(char, comm, TASK_COMM_LEN)
+		__field(pid_t, tsk_pid)
+		__field(int, tsk_load)
+		__field(int, tsk_delta)
+		__field(int, cpu_id)
+	),
+
+	TP_fast_assign(
+		memcpy(__entry->comm, tsk->comm, TASK_COMM_LEN);
+		__entry->tsk_pid = tsk->pid;
+		__entry->tsk_load = tsk_load;
+		__entry->tsk_delta = tsk_delta;
+		__entry->cpu_id = cpu_id;
+	),
+
+	TP_printk("cpu-id=%d task-pid=%4d task-load=%4d(%d) comm=%s",
+			__entry->cpu_id,
+			__entry->tsk_pid,
+			__entry->tsk_load,
+			__entry->tsk_delta,
+			__entry->comm)
+);
+
+/*
  * Tracepoint for showing tracked cfs runqueue runnable load.
  */
 TRACE_EVENT(sched_cfs_runnable_load,
@@ -1119,6 +1212,50 @@ TRACE_EVENT(sched_cfs_runnable_load,
 			__entry->cpu_ntask)
 );
 
+/*
+ * Tracepoint for profiling runqueue length
+ */
+TRACE_EVENT(sched_runqueue_length,
+
+	TP_PROTO(int cpu, int length),
+
+	TP_ARGS(cpu, length),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(int, length)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->length = length;
+	),
+
+	TP_printk("cpu=%d rq-length=%2d",
+			__entry->cpu,
+			__entry->length)
+);
+
+TRACE_EVENT(sched_cfs_length,
+
+	TP_PROTO(int cpu, int length),
+
+	TP_ARGS(cpu, length),
+
+	TP_STRUCT__entry(
+		__field(int, cpu)
+		__field(int, length)
+	),
+
+	TP_fast_assign(
+		__entry->cpu = cpu;
+		__entry->length = length;
+	),
+
+	TP_printk("cpu=%d cfs-length=%2d",
+			__entry->cpu,
+			__entry->length)
+);
 #endif /* CONFIG_HMP_TRACER */
 
 /*

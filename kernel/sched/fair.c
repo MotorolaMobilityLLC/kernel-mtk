@@ -2798,6 +2798,9 @@ static inline void update_entity_load_avg(struct sched_entity *se,
 #ifdef CONFIG_MTK_SCHED_CMP_TGS
 		update_tg_info(cfs_rq, se, contrib_delta);
 #endif
+#ifdef CONFIG_HMP_TRACER
+		trace_sched_cfs_load_update(task_of(se), se_load(se), utilization_delta, cpu);
+#endif /* CONFIG_HMP_TRACER */
 	} else {
 		subtract_blocked_load_contrib(cfs_rq, -contrib_delta);
 		subtract_utilization_blocked_contrib(cfs_rq,
@@ -2896,11 +2899,14 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
 #ifdef CONFIG_SCHED_HMP
 		cfs_nr_pending(cpu) = 0;
 		cfs_pending_load(cpu) = 0;
-#endif
 #ifdef CONFIG_SCHED_HMP_PRIO_FILTER
 		if (!task_low_priority(task_of(se)->prio))
 			cfs_nr_normal_prio(cpu)++;
 #endif
+#ifdef CONFIG_HMP_TRACER
+		trace_sched_cfs_enqueue_task(task_of(se), se_load(se), cpu);
+#endif
+#endif /* CONFIG_SCHED_HMP */
 	}
 	/* we force update consideration on load-balancer moves */
 	update_cfs_rq_blocked_load(cfs_rq, !wakeup);
@@ -2915,7 +2921,7 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
 						  struct sched_entity *se,
 						  int sleep)
 {
-#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
+#ifdef CONFIG_SCHED_HMP
 	int cpu = cfs_rq->rq->cpu;
 #endif
 
@@ -2935,13 +2941,18 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
 		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
 	} /* migrations, e.g. sleep=0 leave decay_count == 0 */
 
-#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
 	if (sched_feat(SCHED_HMP) && entity_is_task(se)) {
+#ifdef CONFIG_SCHED_HMP
+#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
 		cfs_reset_nr_dequeuing_low_prio(cpu);
 		if (!task_low_priority(task_of(se)->prio))
 			cfs_nr_normal_prio(cpu)--;
-	}
 #endif
+#ifdef CONFIG_HMP_TRACER
+		trace_sched_cfs_dequeue_task(task_of(se), se_load(se), cpu);
+#endif
+#endif /* CONFIG_SCHED_HMP */
+	}
 }
 
 /*
@@ -4715,6 +4726,10 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 #ifdef CONFIG_MTK_SCHED_CMP_TGS
 	sched_tg_enqueue_fair(rq, p);
 #endif
+#ifdef CONFIG_HMP_TRACER
+	trace_sched_runqueue_length(rq->cpu, rq->nr_running);
+	trace_sched_cfs_length(rq->cpu, rq->cfs.h_nr_running);
+#endif
 }
 
 static void set_next_buddy(struct sched_entity *se);
@@ -4781,6 +4796,10 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 	hrtick_update(rq);
 #ifdef CONFIG_MTK_SCHED_CMP_TGS
 	sched_tg_dequeue_fair(rq, p);
+#endif
+#ifdef CONFIG_HMP_TRACER
+	trace_sched_runqueue_length(rq->cpu, rq->nr_running);
+	trace_sched_cfs_length(rq->cpu, rq->cfs.h_nr_running);
 #endif
 }
 
