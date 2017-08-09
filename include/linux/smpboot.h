@@ -42,11 +42,13 @@ struct smp_hotplug_thread {
 	void				(*unpark)(unsigned int cpu);
 	void				(*pre_unpark)(unsigned int cpu);
 	bool				selfparking;
+	cpumask_var_t cpumask;
 	const char			*thread_comm;
 };
 
 int smpboot_register_percpu_thread(struct smp_hotplug_thread *plug_thread);
 void smpboot_unregister_percpu_thread(struct smp_hotplug_thread *plug_thread);
 int smpboot_thread_schedule(void);
-
+int smpboot_update_cpumask_percpu_thread(struct smp_hotplug_thread *plug_thread,
+					 const struct cpumask *);
 #endif
