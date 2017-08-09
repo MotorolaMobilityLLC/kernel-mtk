@@ -544,6 +544,13 @@ void update_av_info_edid(bool audio_video, unsigned int param1, unsigned int par
             case 0x2:
             	pal_resulution |= SINK_480P;
             	break;
+	    case HDMI_4k24_DSC:
+	  	pal_resulution |= SINK_2160p24;
+	  	break;
+	    case HDMI_4k30_DSC:
+		///pal_resulution |= SINK_2160p30;
+		break;
+
 	    default:
 		MHL_DBG("param1: %x\n", param1);
     	}
@@ -595,6 +602,9 @@ void hdmi_GetEdidInfo(void *pv_get_info)
 		}
 #endif
 
+	if(ptr->ui4_pal_resolution & SINK_2160p30)
+		ptr->ui4_pal_resolution &= (~SINK_2160p24);
+	
     if(si_dev_context)
     {
         MHL_DBG("MHL hdmi_GetEdidInfo ntsc 0x%x,pal: 0x%x, packed: %d, parsed 0x%x\n", ptr->ui4_ntsc_resolution  , 

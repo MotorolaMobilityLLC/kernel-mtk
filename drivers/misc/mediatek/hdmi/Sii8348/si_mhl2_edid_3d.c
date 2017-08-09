@@ -2106,6 +2106,7 @@ uint8_t  Samplebit;
 uint8_t  Cap_MAX_channel;
 uint8_t  Cap_Samplebit;
 uint16_t Cap_SampleRate;
+extern void update_av_info_edid(bool audio_video, unsigned int param1, unsigned int param2);
 static uint8_t parse_861_short_descriptors (
 				  edid_3d_data_p mhl_edid_3d_data
 			  	, uint8_t *p_EDID_block_data)
@@ -2443,6 +2444,8 @@ static uint8_t parse_861_short_descriptors (
                     {
                     P_vsdb_t p_vsdb = (P_vsdb_t) p_data_u.puc_data_block;
                     uint8_t *puc_next_db = ((uint8_t *)&p_vsdb->header) + sizeof(p_vsdb->header) + data_block_length;
+                    uint8_t MHL_4k_VIC[5] ={ 0}; 
+                    uint8_t i=0;
                     extern bool MHL_3D_Support;
                     MHL_3D_Support = false;
 		    // TODO: FD, TBI, any chance of MHL OUI here? 0x030C00 is HDMI OUI
@@ -2478,6 +2481,17 @@ static uint8_t parse_861_short_descriptors (
 			    } else {
 				    mhl_edid_3d_data->parse_data._3D_supported = false;
 				    MHL_3D_Support= false;
+			    }
+
+				 if  (mhl_edid_3d_data->parse_data.p_byte_13_through_byte_15->byte14.HDMI_VIC_len) {
+				 	for(i = 0; i < mhl_edid_3d_data->parse_data.p_byte_13_through_byte_15->byte14.HDMI_VIC_len && i < 5; i++){
+				   		MHL_4k_VIC[i]= mhl_edid_3d_data->parse_data.p_byte_13_through_byte_15->vicList[i];
+				   		if(MHL_4k_VIC[i] == 1)
+				   			update_av_info_edid(true, HDMI_4k30_DSC, 0);
+				   		else if( (MHL_4k_VIC[i] == 3) || (MHL_4k_VIC[i] == 4))	
+				   			update_av_info_edid(true, HDMI_4k24_DSC, 0);
+						printk("MHL_4k_VIC[%d]=%d\n", i, MHL_4k_VIC[i]);
+					}
 			    }
 
 			    MHL_TX_EDID_INFO(mhl_edid_3d_data->dev_context,

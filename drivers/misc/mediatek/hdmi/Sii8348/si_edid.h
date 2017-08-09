@@ -247,7 +247,7 @@ typedef struct SI_PACK_THIS_STRUCT _VSDB_byte_13_through_byte_15_t
 {
     HDMI_LLC_Byte13_t    byte13;
     HDMI_LLC_Byte14_t    byte14;
-    uint8_t vicList[1]; // variable length list base on HDMI_VIC_len
+    uint8_t vicList[5]; // variable length list base on HDMI_VIC_len
 }VSDB_byte_13_through_byte_15_t,*PVSDB_byte_13_through_byte_15_t;
 
 typedef struct SI_PACK_THIS_STRUCT _VSDB_all_fields_byte_9_through_byte15_t

@@ -106,6 +106,8 @@ struct _t_hdmi_context {
 	enum HDMI_VIDEO_RESOLUTION output_video_resolution;
 	enum HDMI_AUDIO_FORMAT output_audio_format;
 	enum HDMI_OUTPUT_MODE output_mode;
+	enum HDMI_VIDEO_INPUT_FORMAT vin;
+	enum HDMI_VIDEO_OUTPUT_FORMAT vout;
 };
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
