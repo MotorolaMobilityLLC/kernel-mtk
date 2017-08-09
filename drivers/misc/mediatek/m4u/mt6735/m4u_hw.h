@@ -155,7 +155,7 @@ extern m4u_port_t gM4uPort[];
 extern struct m4u_device *gM4uDev;
 
 #if !defined(CONFIG_MTK_LEGACY)
-extern char *smi_clk_name[];
+extern const char *smi_clk_name[];
 #endif
 
 #ifdef M4U_TEE_SERVICE_ENABLE

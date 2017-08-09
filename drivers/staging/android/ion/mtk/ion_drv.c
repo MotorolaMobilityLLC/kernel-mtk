@@ -304,6 +304,7 @@ static long ion_sys_ioctl(struct ion_client *client, unsigned int cmd,
 		ret = ion_sys_cache_sync(client, &Param.cache_sync_param, from_kernel);
 		break;
 	case ION_SYS_GET_PHYS:
+	{
 		struct ion_handle *kernel_handle;
 
 		kernel_handle = ion_drv_get_handle(client, Param.get_phys_param.handle,
@@ -323,7 +324,8 @@ static long ion_sys_ioctl(struct ion_client *client, unsigned int cmd,
 			ret = -EFAULT;
 		}
 		ion_drv_put_kernel_handle(kernel_handle);
-		break;
+	}
+	break;
 	case ION_SYS_GET_CLIENT:
 		Param.get_client_param.client = (unsigned long) client;
 		break;

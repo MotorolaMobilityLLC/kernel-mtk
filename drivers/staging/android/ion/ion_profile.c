@@ -1,5 +1,7 @@
 #include "ion_profile.h"
 
+MMP_Event ION_MMP_Events[PROFILE_MAX];
+
 void ion_profile_init(void)
 {
 	MMP_Event ION_Event;

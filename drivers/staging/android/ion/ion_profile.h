@@ -30,8 +30,6 @@ typedef enum {
 #define MMProfileStart(...)
 #endif
 
-extern MMP_Event ION_MMP_Events[PROFILE_MAX];
-
 extern void MMProfileEnable(int enable);
 extern void MMProfileStart(int start);
 

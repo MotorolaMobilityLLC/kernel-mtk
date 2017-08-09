@@ -309,6 +309,7 @@ int config_mau(M4U_MAU_STRUCT mau)
 	if (free_id == -1) {
 		if (mau.force == 0)
 			return -1;
+		}
 	else {
 		free_id = gMAU_candidate_id;
 		if (0 == gMAU_candidate_id)
@@ -640,25 +641,25 @@ int m4u_confirm_main_range_invalidated(int m4u_index, int m4u_slave_id, unsigned
 					tag_e = tag_s + MMU_LARGE_PAGE_SIZE - 1;
 				else
 					tag_e = tag_s + PAGE_SIZE - 1;
-			}
 
-			if (!((tag_e < sa) || (tag_s > ea))) {
-				M4UERR("main: i=%d, idx=0x%x, MVAStart=0x%x, MVAEnd=0x%x, RegValue=0x%x\n",
+				if (!((tag_e < sa) || (tag_s > ea))) {
+					M4UERR("main: i=%d, idx=0x%x, MVAStart=0x%x, MVAEnd=0x%x, RegValue=0x%x\n",
 						i, m4u_index, MVAStart, MVAEnd, regval);
-				return -1;
-			}
-	    } else {
-		if (large)
-			tag_e = tag_s + MMU_SUPERSECTION_SIZE - 1;
-		else
-			tag_e = tag_s + MMU_SECTION_SIZE - 1;
+					return -1;
+				}
+			} else {
+				if (large)
+					tag_e = tag_s + MMU_SUPERSECTION_SIZE - 1;
+				else
+					tag_e = tag_s + MMU_SECTION_SIZE - 1;
 
-		if ((tag_s >= sa) && (tag_e <= ea)) {
-			M4UERR("main: i=%d, idx=0x%x, MVAStart=0x%x, MVAEnd=0x%x, RegValue=0x%x\n",
-				i, m4u_index, MVAStart, MVAEnd, regval);
-			return -1;
+				if ((tag_s >= sa) && (tag_e <= ea)) {
+					M4UERR("main: i=%d, idx=0x%x, MVAStart=0x%x, MVAEnd=0x%x, RegValue=0x%x\n",
+						i, m4u_index, MVAStart, MVAEnd, regval);
+					return -1;
+				}
+			}
 		}
-	    }
 	}
 	return 0;
 }
@@ -1828,109 +1829,111 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 		else
 			m4u_clear_intr(m4u_index);
 		return 0;
-	}
 
-	/* read error info from registers */
-	fault_mva = M4U_ReadReg32(m4u_base, REG_MMU_FAULT_VA(m4u_slave_id));
-	layer = !!(fault_mva & F_MMU_FAULT_VA_LAYER_BIT);
-	write = !!(fault_mva & F_MMU_FAULT_VA_WRITE_BIT);
-	fault_mva &= F_MMU_FAULT_VA_MSK;
-	fault_pa = M4U_ReadReg32(m4u_base, REG_MMU_INVLD_PA(m4u_slave_id));
-	regval = M4U_ReadReg32(m4u_base, REG_MMU_INT_ID(m4u_slave_id));
-	m4u_port = m4u_get_port_by_tf_id(m4u_index, regval);
+		/* read error info from registers */
+		fault_mva = M4U_ReadReg32(m4u_base, REG_MMU_FAULT_VA(m4u_slave_id));
+		layer = !!(fault_mva & F_MMU_FAULT_VA_LAYER_BIT);
+		write = !!(fault_mva & F_MMU_FAULT_VA_WRITE_BIT);
+		fault_mva &= F_MMU_FAULT_VA_MSK;
+		fault_pa = M4U_ReadReg32(m4u_base, REG_MMU_INVLD_PA(m4u_slave_id));
+		regval = M4U_ReadReg32(m4u_base, REG_MMU_INT_ID(m4u_slave_id));
+		m4u_port = m4u_get_port_by_tf_id(m4u_index, regval);
 
-	/* dump something quickly */
-	m4u_dump_rs_info(m4u_index, m4u_slave_id);
-	m4u_dump_invalid_main_tlb(m4u_index, m4u_slave_id);
-	m4u_dump_main_tlb(m4u_index, 0);
-	m4u_dump_pfh_tlb(m4u_index);
+		/* dump something quickly */
+		m4u_dump_rs_info(m4u_index, m4u_slave_id);
+		m4u_dump_invalid_main_tlb(m4u_index, m4u_slave_id);
+		m4u_dump_main_tlb(m4u_index, 0);
+		m4u_dump_pfh_tlb(m4u_index);
 
-	if (IntrSrc & F_INT_TRANSLATION_FAULT(m4u_slave_id)) {
-		int bypass_DISP_TF = 0;
+		if (IntrSrc & F_INT_TRANSLATION_FAULT(m4u_slave_id)) {
+			int bypass_DISP_TF = 0;
 
-		MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_TRANSLATION_FAULT(m4u_slave_id));
-		M4UMSG("fault: port=%s, mva=0x%x, pa=0x%x, layer=%d, wr=%d, 0x%x\n",
+			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_TRANSLATION_FAULT(m4u_slave_id));
+			M4UMSG("fault: port=%s, mva=0x%x, pa=0x%x, layer=%d, wr=%d, 0x%x\n",
 				m4u_get_port_name(m4u_port), fault_mva, fault_pa, layer, write, regval);
 
-		if (M4U_PORT_DISP_OVL0 == m4u_port
+			if (M4U_PORT_DISP_OVL0 == m4u_port
 #if defined(CONFIG_ARCH_MT6753)
 				|| M4U_PORT_DISP_OVL1 == m4u_port
 #endif
-		) {
-			unsigned int valid_mva = 0;
-			unsigned int valid_size = 0;
-			unsigned int valid_mva_end = 0;
+			) {
+				unsigned int valid_mva = 0;
+				unsigned int valid_size = 0;
+				unsigned int valid_mva_end = 0;
 
-			m4u_query_mva_info(fault_mva-1, 0, &valid_mva, &valid_size);
-			if (0 != valid_mva && 0 != valid_size)
-				valid_mva_end = valid_mva+valid_size;
+				m4u_query_mva_info(fault_mva-1, 0, &valid_mva, &valid_size);
+				if (0 != valid_mva && 0 != valid_size)
+					valid_mva_end = valid_mva+valid_size;
 
-			if (0 != valid_mva_end && fault_mva < valid_mva_end+SZ_4K) {
-				M4UMSG("bypass disp TF, valid mva=0x%x, size=0x%x, mva_end=0x%x\n",
+				if (0 != valid_mva_end && fault_mva < valid_mva_end+SZ_4K) {
+					M4UMSG("bypass disp TF, valid mva=0x%x, size=0x%x, mva_end=0x%x\n",
 						valid_mva, valid_size, valid_mva_end);
-				bypass_DISP_TF = 1;
+					bypass_DISP_TF = 1;
+				}
 			}
-	    }
 
-		if (gM4uPort[m4u_port].enable_tf == 1 && bypass_DISP_TF == 0) {
-			m4u_dump_pte_nolock(m4u_get_domain_by_port(m4u_port), fault_mva);
+			if (gM4uPort[m4u_port].enable_tf == 1 && bypass_DISP_TF == 0) {
+				m4u_dump_pte_nolock(m4u_get_domain_by_port(m4u_port), fault_mva);
 
-			m4u_print_port_status(NULL, 1);
+				m4u_print_port_status(NULL, 1);
 
-			/* call user's callback to dump user registers */
-			if (m4u_port < M4U_PORT_UNKNOWN && gM4uPort[m4u_port].fault_fn)
-				gM4uPort[m4u_port].fault_fn(m4u_port, fault_mva, gM4uPort[m4u_port].fault_data);
+				/* call user's callback to dump user registers */
+				if (m4u_port < M4U_PORT_UNKNOWN && gM4uPort[m4u_port].fault_fn)
+					gM4uPort[m4u_port].fault_fn(m4u_port, fault_mva, gM4uPort[m4u_port].fault_data);
 
-			m4u_dump_buf_info(NULL);
-			m4u_aee_print("\nCRDISPATCH_KEY:M4U_%s\ntranslation fault: port=%s, mva=0x%x, pa=0x%x\n",
+				m4u_dump_buf_info(NULL);
+				m4u_aee_print(
+					"\nCRDISPATCH_KEY:M4U_%s\ntranslation fault: port=%s, mva=0x%x, pa=0x%x\n",
 					m4u_get_port_name(m4u_port), m4u_get_port_name(m4u_port),
 					fault_mva, fault_pa);
+			}
+
+			MMProfileLogEx(M4U_MMP_Events[M4U_MMP_M4U_ERROR], MMProfileFlagPulse, m4u_port, fault_mva);
 		}
 
-		MMProfileLogEx(M4U_MMP_Events[M4U_MMP_M4U_ERROR], MMProfileFlagPulse, m4u_port, fault_mva);
+		if (IntrSrc & F_INT_MAIN_MULTI_HIT_FAULT(m4u_slave_id))
+			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAIN_MULTI_HIT_FAULT(m4u_slave_id));
+
+		if (IntrSrc & F_INT_INVALID_PHYSICAL_ADDRESS_FAULT(m4u_slave_id))
+			if (!(IntrSrc & F_INT_TRANSLATION_FAULT(m4u_slave_id)))
+				MMU_INT_REPORT(m4u_index, m4u_slave_id,
+				F_INT_INVALID_PHYSICAL_ADDRESS_FAULT(m4u_slave_id));
+
+		if (IntrSrc & F_INT_ENTRY_REPLACEMENT_FAULT(m4u_slave_id))
+			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_ENTRY_REPLACEMENT_FAULT(m4u_slave_id));
+
+		if (IntrSrc & F_INT_TLB_MISS_FAULT(m4u_slave_id))
+			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_TLB_MISS_FAULT(m4u_slave_id));
+
+		if (IntrSrc & F_INT_MISS_FIFO_ERR(m4u_slave_id))
+			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MISS_FIFO_ERR(m4u_slave_id));
+
+		if (IntrSrc & F_INT_PFH_FIFO_ERR(m4u_slave_id))
+			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_PFH_FIFO_ERR(m4u_slave_id));
+
+		if (IntrSrc & F_INT_MAU(m4u_slave_id, 0)) {
+			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAU(m4u_slave_id, 0));
+			__mau_dump_status(m4u_index, m4u_slave_id, 0);
+		}
+
+		if (IntrSrc & F_INT_MAU(m4u_slave_id, 1)) {
+			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAU(m4u_slave_id, 1));
+			__mau_dump_status(m4u_index, m4u_slave_id, 1);
+		}
+
+		if (IntrSrc & F_INT_MAU(m4u_slave_id, 2)) {
+			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAU(m4u_slave_id, 2));
+			__mau_dump_status(m4u_index, m4u_slave_id, 2);
+		}
+
+		if (IntrSrc & F_INT_MAU(m4u_slave_id, 3)) {
+			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAU(m4u_slave_id, 3));
+			__mau_dump_status(m4u_index, m4u_slave_id, 3);
+		}
+
+		m4u_clear_intr(m4u_index);
+		m4u_isr_record();
 	}
-
-	if (IntrSrc & F_INT_MAIN_MULTI_HIT_FAULT(m4u_slave_id))
-		MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAIN_MULTI_HIT_FAULT(m4u_slave_id));
-
-	if (IntrSrc & F_INT_INVALID_PHYSICAL_ADDRESS_FAULT(m4u_slave_id))
-		if (!(IntrSrc & F_INT_TRANSLATION_FAULT(m4u_slave_id)))
-			MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_INVALID_PHYSICAL_ADDRESS_FAULT(m4u_slave_id));
-
-	if (IntrSrc & F_INT_ENTRY_REPLACEMENT_FAULT(m4u_slave_id))
-		MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_ENTRY_REPLACEMENT_FAULT(m4u_slave_id));
-
-	if (IntrSrc & F_INT_TLB_MISS_FAULT(m4u_slave_id))
-		MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_TLB_MISS_FAULT(m4u_slave_id));
-
-	if (IntrSrc & F_INT_MISS_FIFO_ERR(m4u_slave_id))
-		MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MISS_FIFO_ERR(m4u_slave_id));
-
-	if (IntrSrc & F_INT_PFH_FIFO_ERR(m4u_slave_id))
-		MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_PFH_FIFO_ERR(m4u_slave_id));
-
-	if (IntrSrc & F_INT_MAU(m4u_slave_id, 0)) {
-		MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAU(m4u_slave_id, 0));
-		__mau_dump_status(m4u_index, m4u_slave_id, 0);
-	}
-
-	if (IntrSrc & F_INT_MAU(m4u_slave_id, 1)) {
-		MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAU(m4u_slave_id, 1));
-		__mau_dump_status(m4u_index, m4u_slave_id, 1);
-	}
-
-	if (IntrSrc & F_INT_MAU(m4u_slave_id, 2)) {
-		MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAU(m4u_slave_id, 2));
-		__mau_dump_status(m4u_index, m4u_slave_id, 2);
-	}
-
-	if (IntrSrc & F_INT_MAU(m4u_slave_id, 3)) {
-		MMU_INT_REPORT(m4u_index, m4u_slave_id, F_INT_MAU(m4u_slave_id, 3));
-		__mau_dump_status(m4u_index, m4u_slave_id, 3);
-	}
-
-	m4u_clear_intr(m4u_index);
-	m4u_isr_record();
 
 	return IRQ_HANDLED;
 }

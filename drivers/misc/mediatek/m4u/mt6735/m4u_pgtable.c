@@ -435,6 +435,7 @@ int m4u_alloc_pte(m4u_domain_t *domain, imu_pgd_t *pgd, unsigned int pgprot)
 		M4ULOG_MID("%s: pgd: 0x%p, pte_va:0x%p, pte_pa: 0x%pa, value: 0x%x\n",
 				__func__, pgd, pte_new_va, &pte_new, (unsigned int)(pte_new) | pgprot);
 		return 0;
+	}
 
 	/* allocated by other thread */
 	/* kfree(__va(pte_new)); */

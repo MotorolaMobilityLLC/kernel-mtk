@@ -545,9 +545,9 @@ int ion_mm_heap_for_each_pool(int (*fn)(int high, int order, int cache,
 static int write_mm_page_pool(int high, int order, int cache, size_t size)
 {
 	if (cache)
-		ION_PRINT_LOG_OR_SEQ("%s order_%u in cached_pool = %zu total\n", high ? "high" : "low", order, size);
+		IONMSG("%s order_%u in cached_pool = %zu total\n", high ? "high" : "low", order, size);
 	else
-		ION_PRINT_LOG_OR_SEQ("%s order_%u in pool = %zu total\n", high ? "high" : "low", order, size);
+		IONMSG("%s order_%u in pool = %zu total\n", high ? "high" : "low", order, size);
 
 	return 0;
 }
@@ -830,6 +830,7 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 		}
 		break;
 	case ION_MM_SET_DEBUG_INFO:
+	{
 		struct ion_buffer *buffer;
 
 		if (Param.buf_debug_info_param.handle) {
@@ -866,8 +867,10 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 			IONMSG("[ion_heap]: Error. set dbg buffer with invalid handle.\n");
 			ret = -EFAULT;
 		}
-		break;
+	}
+	break;
 	case ION_MM_GET_DEBUG_INFO:
+	{
 		struct ion_buffer *buffer;
 
 		if (Param.buf_debug_info_param.handle) {
@@ -903,8 +906,10 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 			IONMSG("[ion_heap]: Error. get dbg buffer with invalid handle.\n");
 			ret = -EFAULT;
 		}
-		break;
+	}
+	break;
 	case ION_MM_SET_SF_BUF_INFO:
+	{
 		struct ion_buffer *buffer;
 
 		if (Param.sf_buf_info_param.handle) {
@@ -941,8 +946,10 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 			IONMSG("[ion_heap]: Error. set sf_buf_info buffer with invalid handle.\n");
 			ret = -EFAULT;
 		}
-		break;
-	case ION_MM_GET_SF_BUF_INFO: {
+	}
+	break;
+	case ION_MM_GET_SF_BUF_INFO:
+	{
 		struct ion_buffer *buffer;
 
 		if (Param.sf_buf_info_param.handle) {
@@ -978,7 +985,8 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 			IONMSG("[ion_heap]: Error. get sf_buf_info buffer with invalid handle.\n");
 			ret = -EFAULT;
 		}
-		break;
+	}
+	break;
 	default:
 		IONMSG("[ion_heap]: Error. Invalid command.\n");
 		ret = -EFAULT;

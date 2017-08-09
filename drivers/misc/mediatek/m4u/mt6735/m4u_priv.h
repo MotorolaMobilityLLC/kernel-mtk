@@ -136,7 +136,7 @@ void m4u_mvaGraph_init(void *priv_reserve);
 void m4u_mvaGraph_dump_raw(void);
 void m4u_mvaGraph_dump(void);
 void *mva_get_priv_ext(unsigned int mva);
-int mva_for_each_priv(mva_buf_fn_t *fn, void *data);
+int mva_foreach_priv(mva_buf_fn_t *fn, void *data);
 void *mva_get_priv(unsigned int mva);
 unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv);
 unsigned int m4u_do_mva_alloc_fix(unsigned int mva, unsigned int size, void *priv);
@@ -231,10 +231,10 @@ extern int gM4U_log_to_uart;
 #define m4u_aee_print(string, args...) do {\
 	char m4u_name[100];\
 	snprintf(m4u_name, 100, "[M4U]"string, ##args); \
-	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_MMPROFILE_BUFFER, \
-		m4u_name, "[M4U] error"string, ##args); \
 	pr_err("M4U error: "string, ##args);  \
 } while (0)
+/*aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_MMPROFILE_BUFFER,
+		m4u_name, "[M4U] error"string, ##args);*/
 /*aee_kernel_warning(m4u_name, "[M4U] error:"string,##args); */
 
 #define M4U_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \

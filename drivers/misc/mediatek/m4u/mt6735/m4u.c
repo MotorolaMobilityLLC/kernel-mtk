@@ -87,7 +87,7 @@ int m4u_dump_buf_info(struct seq_file *seq)
 	M4U_PRINT_LOG_OR_SEQ(seq,
 			"mva_start   mva_end          va       size     prot   module   flags   debug1  debug2\n");
 
-	mva_for_each_priv((void *) m4u_buf_show, seq);
+	mva_foreach_priv((void *) m4u_buf_show, seq);
 
 	M4U_PRINT_LOG_OR_SEQ(seq, " dump mva allocated info done ========>\n");
 	return 0;
