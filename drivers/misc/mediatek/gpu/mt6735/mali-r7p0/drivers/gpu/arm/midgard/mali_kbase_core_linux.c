@@ -3788,6 +3788,13 @@ static int kbase_common_device_init(struct kbase_device *kbdev)
 	inited |= inited_devfreq;
 #endif /* CONFIG_MALI_DEVFREQ */
 
+	mtk_get_gpu_memory_usage_fp = kbase_report_gpu_memory_usage;
+	
+//	mtk_dump_gpu_memory_usage_fp = kbase_dump_gpu_memory_usage;
+
+#ifdef CONFIG_PROC_FS
+	proc_mali_register();
+#endif
 	err = kbase_device_debugfs_init(kbdev);
 	if (err)
 		goto out_partial;
@@ -3815,6 +3822,7 @@ static int kbase_common_device_init(struct kbase_device *kbdev)
 	}
 
 	dev_info(kbdev->dev, "Probed as %s\n", dev_name(kbdev->mdev.this_device));
+
 
 	return 0;
 
@@ -3860,13 +3868,7 @@ out_partial:
 	if (inited & inited_backend_early)
 		kbase_backend_early_term(kbdev);		
 		
-	mtk_get_gpu_memory_usage_fp = kbase_report_gpu_memory_usage;
-	
-	mtk_dump_gpu_memory_usage_fp = kbase_dump_gpu_memory_usage;
 
-#ifdef CONFIG_PROC_FS
-   proc_mali_register();
-#endif
 
 	return err;
 }
