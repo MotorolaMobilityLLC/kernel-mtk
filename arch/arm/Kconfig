@@ -211,6 +211,15 @@ config GENERIC_ISA_DMA
 config FIQ
 	bool
 
+config MTK_KERNEL_IN_SECURE_MODE
+	bool
+	depends on (!TRUSTY) && (!TRUSTONIC_TEE_SUPPORT)
+	default y
+
+config MTK_NO_ATF
+	bool
+	default n
+
 config NEED_RET_TO_USER
 	bool
 
@@ -905,7 +914,7 @@ config ARCH_MT6580
 	select ARCH_HAS_CPUFREQ
 	select ARM_AMBA
 	select CPU_V7
-	select FIQ_GLUE if (!TRUSTONIC_TEE_SUPPORT && !TRUSTY)
+	select FIQ_GLUE if (!TRUSTONIC_TEE_SUPPORT)
 	select HAVE_SMP
 	select NEED_MACH_MEMORY_H
 	select IRQ_DOMAIN
@@ -934,6 +943,7 @@ config ARCH_MT6580
 	select MTK_CPU_STRESS
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
+	select MTK_NO_ATF
 	help
 	  This enable support for MediaTek MT6580
 

@@ -38,9 +38,8 @@ config TRUSTY_INTERRUPT_MAP
 	depends on TRUSTY
 	default n
 
-config TRUSTY_INTERRUPT_FIQ_ONLY
-	tristate "Trusty interrupt fiq support"
-	depends on TRUSTY && MTK_GIC_V3_EXT
+config TRUSTY_WDT_FIQ_ARMV7_SUPPORT
+	tristate "Trusty WDT FIQ for arm"
+	depends on TRUSTY && MTK_NO_ATF && !MTK_KERNEL_IN_SECURE_MODE
 	default y
-
 endmenu

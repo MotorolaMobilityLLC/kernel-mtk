@@ -76,6 +76,16 @@ static inline ulong smc(ulong r0, ulong r1, ulong r2, ulong r3)
 	return _r0;
 }
 
+#ifdef CONFIG_TRUSTY_WDT_FIQ_ARMV7_SUPPORT
+s32 trusty_fast_call32_nodev(u32 smcnr, u32 a0, u32 a1, u32 a2)
+{
+	BUG_ON(!SMC_IS_FASTCALL(smcnr));
+	BUG_ON(SMC_IS_SMC64(smcnr));
+
+	return smc(smcnr, a0, a1, a2);
+}
+#endif
+
 s32 trusty_fast_call32(struct device *dev, u32 smcnr, u32 a0, u32 a1, u32 a2)
 {
 	struct trusty_state *s = platform_get_drvdata(to_platform_device(dev));

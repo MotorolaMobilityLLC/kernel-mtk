@@ -256,6 +256,8 @@ void aee_stop_nested_panic(struct pt_regs *regs);
 void aee_wdt_dump_info(void);
 void aee_wdt_printf(const char *fmt, ...);
 
+void aee_fiq_ipi_cpu_stop(void *arg, void *regs, void *svc_sp);
+
 #if defined(CONFIG_MTK_AEE_DRAM_CONSOLE)
 void aee_dram_console_reserve_memory(void);
 #else

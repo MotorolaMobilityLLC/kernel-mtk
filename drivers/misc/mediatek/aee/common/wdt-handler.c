@@ -359,7 +359,9 @@ void aee_smp_send_stop(void)
 	cpu = get_HW_cpuid();
 	cpumask_clear_cpu(cpu, &mask);
 	/* mt_fiq_printf("\n fiq_smp_call_function\n"); */
+#ifndef CONFIG_TRUSTY_WDT_FIQ_ARMV7_SUPPORT
 	fiq_smp_call_function(aee_fiq_ipi_cpu_stop, NULL, 0);
+#endif
 
 	/* Wait up to one second for other CPUs to stop */
 	timeout = USEC_PER_SEC;
