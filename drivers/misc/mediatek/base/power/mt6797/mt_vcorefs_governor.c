@@ -486,6 +486,21 @@ static void vcorefs_set_cpu_dvfs_req(u32 value)
 	mutex_unlock(&governor_mutex);
 }
 
+static int vcorefs_check_feature_enable(void)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+	int flag;
+
+	flag = SPM_FLAG_RUN_COMMON_SCENARIO;
+
+	if (!gvrctrl->vcore_dvs)
+		flag |= SPM_FLAG_DIS_VCORE_DVS;
+	if (!gvrctrl->ddr_dfs)
+		flag |= SPM_FLAG_DIS_VCORE_DFS;
+
+	return flag;
+}
+
 static int vcorefs_enable_vcore(bool enable)
 {
 
@@ -879,7 +894,7 @@ static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned lo
 		spin_unlock_irqrestore(&governor_spinlock, flags);
 
 		gvrctrl->screen_on = 1;
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(vcorefs_check_feature_enable(), 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
 
 		if (vcorefs_get_curr_opp() == OPPI_PERF) {
 			krconf.dvfs_opp = OPP_0;
@@ -1072,13 +1087,7 @@ int vcorefs_late_init_dvfs(void)
 
 	if (is_vcorefs_feature_enable()) {
 
-		flag = SPM_FLAG_RUN_COMMON_SCENARIO;
-
-		if (!gvrctrl->vcore_dvs)
-			flag |= SPM_FLAG_DIS_VCORE_DVS;
-		if (!gvrctrl->ddr_dfs)
-			flag |= SPM_FLAG_DIS_VCORE_DFS;
-
+		flag = vcorefs_check_feature_enable();
 		vcorefs_crit("[%s] vcore_dvs: %d, ddr_dfs: %d, freq_dfs: %d, pcm_flag: 0x%x\n", __func__,
 						gvrctrl->vcore_dvs, gvrctrl->ddr_dfs, gvrctrl->freq_dfs, flag);
 		spm_go_to_vcore_dvfs(flag, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
