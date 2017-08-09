@@ -34,10 +34,11 @@
 #define MTK_JPEG_MAX_WIDTH	8192
 #define MTK_JPEG_MAX_HEIGHT	8192
 
-#define MTK_V4L2_BENCHMARK	0
+#define MTK_JPEG_BENCHMARK	1
 
 enum mtk_jpeg_ctx_state {
-	MTK_JPEG_RUNNING = 0,
+	MTK_JPEG_INIT = 0,
+	MTK_JPEG_RUNNING,
 	MTK_JPEG_SOURCE_CHANGE,
 };
 
@@ -126,17 +127,15 @@ struct mtk_jpeg_ctx {
 	struct mtk_jpeg_q_data		out_q;
 	struct mtk_jpeg_q_data		cap_q;
 	struct v4l2_fh			fh;
-	struct mtk_jpeg_dec_param	*dec_param;
 	u32				dec_irq_ret;
 	enum mtk_jpeg_ctx_state		state;
-	bool				header_valid;
-#if MTK_V4L2_BENCHMARK
-	uint64_t			total_enc_dec_cnt;
-	uint64_t			total_enc_dec_time;
-	uint64_t			total_parse_cnt;
-	uint64_t			total_parse_time;
+#if MTK_JPEG_BENCHMARK
+	struct timeval			jpeg_enc_dec_start;
+	uint32_t			total_enc_dec_cnt;
+	uint32_t			total_enc_dec_time;
+	uint32_t			total_parse_cnt;
+	uint32_t			total_parse_time;
 #endif
 };
-
 
 #endif /* _MTK_JPEG_CORE_H */

@@ -185,7 +185,6 @@ config VIDEO_MEDIATEK_JPEG
 	tristate "MEDIATEK JPEG Codec support"
 	depends on VIDEO_DEV && VIDEO_V4L2 && ARCH_MEDIATEK
 	select VIDEOBUF2_DMA_CONTIG
-	select VIDEOBUF2_VMALLOC
 	select V4L2_MEM2MEM_DEV
 	---help---
 	   This driver provides jpeg hw codec for V4L2.

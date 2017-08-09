@@ -16,6 +16,9 @@
 #ifndef _MTK_JPEG_HW_H
 #define _MTK_JPEG_HW_H
 
+#include <media/videobuf2-core.h>
+
+#include "mtk_jpeg_core.h"
 #include "mtk_jpeg_reg.h"
 
 enum {
@@ -28,10 +31,6 @@ enum {
 };
 
 struct mtk_jpeg_dec_param {
-	u32 src_addr;
-	u32 src_size;
-	u32 src_end;
-	u32 dst_addr[MTK_JPEG_COMP_MAX];
 	u32 pic_w;
 	u32 pic_h;
 	u32 dec_w;
@@ -68,11 +67,31 @@ static inline u32 mtk_jpeg_align(u32 val, u32 align)
 	return (val + align - 1) & ~(align - 1);
 }
 
+struct mtk_jpeg_src_buf {
+	struct vb2_buffer b;
+	struct list_head list;
+
+	struct mtk_jpeg_dec_param dec_param;
+};
+
+struct mtk_jpeg_bs {
+	dma_addr_t	str_addr;
+	dma_addr_t	end_addr;
+	size_t		size;
+};
+
+struct mtk_jpeg_fb {
+	dma_addr_t	plane_addr[MTK_JPEG_COMP_MAX];
+	size_t		size;
+};
+
 int mtk_jpeg_dec_fill_param(struct mtk_jpeg_dec_param *param);
 u32 mtk_jpeg_dec_get_int_status(void __iomem *dec_reg_base);
 u32 mtk_jpeg_dec_enum_result(u32 irq_result);
-void mtk_jpeg_dec_set_config(void __iomem *dec_reg_base,
-			     struct mtk_jpeg_dec_param *config);
+void mtk_jpeg_dec_set_config(void __iomem *base,
+			     struct mtk_jpeg_dec_param *config,
+			     struct mtk_jpeg_bs *bs,
+			     struct mtk_jpeg_fb *fb);
 void mtk_jpeg_dec_reset(void __iomem *dec_reg_base);
 void mtk_jpeg_dec_start(void __iomem *dec_reg_base);
 

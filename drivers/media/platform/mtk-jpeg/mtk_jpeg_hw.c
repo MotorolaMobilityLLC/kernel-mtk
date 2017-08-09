@@ -380,14 +380,16 @@ static void mtk_jpeg_dec_set_sampling_factor(void __iomem *base, u32 comp_num,
 }
 
 void mtk_jpeg_dec_set_config(void __iomem *base,
-			     struct mtk_jpeg_dec_param *config)
+				  struct mtk_jpeg_dec_param *config,
+				  struct mtk_jpeg_bs *bs,
+				  struct mtk_jpeg_fb *fb)
 {
 	mtk_jpeg_dec_set_brz_factor(base, 0, 0, config->uv_brz_w, 0);
 	mtk_jpeg_dec_set_dec_mode(base, 0);
 	mtk_jpeg_dec_set_comp0_du(base, config->unit_num);
 	mtk_jpeg_dec_set_total_mcu(base, config->total_mcu);
-	mtk_jpeg_dec_set_bs_info(base, config->src_addr, config->src_size);
-	mtk_jpeg_dec_set_bs_write_ptr(base, config->src_end);
+	mtk_jpeg_dec_set_bs_info(base, bs->str_addr, bs->size);
+	mtk_jpeg_dec_set_bs_write_ptr(base, bs->end_addr);
 	mtk_jpeg_dec_set_du_membership(base, config->membership, 1,
 				       (config->comp_num == 1) ? 1 : 0);
 	mtk_jpeg_dec_set_comp_id(base, config->comp_id[0], config->comp_id[1],
@@ -402,8 +404,8 @@ void mtk_jpeg_dec_set_config(void __iomem *base,
 				    config->mem_stride[1]);
 	mtk_jpeg_dec_set_img_stride(base, config->img_stride[0],
 				    config->img_stride[1]);
-	mtk_jpeg_dec_set_dst_bank0(base, config->dst_addr[0],
-				   config->dst_addr[1], config->dst_addr[2]);
+	mtk_jpeg_dec_set_dst_bank0(base, fb->plane_addr[0],
+				   fb->plane_addr[1], fb->plane_addr[2]);
 	mtk_jpeg_dec_set_dst_bank1(base, 0, 0, 0);
 	mtk_jpeg_dec_set_dma_group(base, config->dma_mcu, config->dma_group,
 				   config->dma_last_mcu);
