@@ -9,6 +9,7 @@
 #include <mach/mt_pmic.h>
 #include "bq25890.h"
 #include <mach/mt_sleep.h>
+#include <mt-plat/mt_gpio.h>
 /* ============================================================ // */
 /* Define */
 /* ============================================================ // */
@@ -721,6 +722,7 @@ static unsigned int charging_hw_init(void *data)
 /*K.S. way here*/
 #endif
 #endif
+	mt_set_gpio_dir((254 | 0x80000000), 1);
 	return status;
 }
 
