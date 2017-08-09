@@ -134,6 +134,17 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 	return i4RetValue;
 }
 
+#ifdef CONFIG_COMPAT
+static long AF_Ioctl_Compat(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
+{
+	long i4RetValue = 0;
+
+	i4RetValue = AF_Ioctl(a_pstFile, a_u4Command, (unsigned long)compat_ptr(a_u4Param));
+
+	return i4RetValue;
+}
+#endif
+
 /* Main jobs: */
 /* 1.check for device-specified errors, device not ready. */
 /* 2.Initialize the device if it is opened for the first time. */
@@ -187,7 +198,7 @@ static const struct file_operations g_stAF_fops = {
 	.release = AF_Release,
 	.unlocked_ioctl = AF_Ioctl,
 #ifdef CONFIG_COMPAT
-	.compat_ioctl = AF_Ioctl,
+	.compat_ioctl = AF_Ioctl_Compat,
 #endif
 };
 
