@@ -5710,8 +5710,11 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 		prPerMonitor->u4TarPerfLevel = 1;
 	else if (prPerMonitor->ulThroughput < THROUGHPUT_L3_THRESHOLD)
 		prPerMonitor->u4TarPerfLevel = 2;
-	else
+	else if (prPerMonitor->ulThroughput < THROUGHPUT_L4_THRESHOLD)
 		prPerMonitor->u4TarPerfLevel = 3;
+	else
+		prPerMonitor->u4TarPerfLevel = 9;
+
 	if (prPerMonitor->u4TarPerfLevel != prPerMonitor->u4CurrPerfLevel) {
 		if (0 == prPerMonitor->u4TarPerfLevel) {
 			/*cancel CPU performance mode request*/
