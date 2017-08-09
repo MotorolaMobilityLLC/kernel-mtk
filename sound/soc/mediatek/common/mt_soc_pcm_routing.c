@@ -569,7 +569,7 @@ static int Audio_Mode_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 }
 
 /* static struct snd_dma_buffer *Dl1_Playback_dma_buf  = NULL; */
-
+#ifndef CONFIG_FPGA_EARLY_PORTING
 static int GetAudioTrimOffsetAverage(int *buffer_value, int trim_num)
 {
 	int i , j, tmp;
@@ -591,6 +591,7 @@ static int GetAudioTrimOffsetAverage(int *buffer_value, int trim_num)
 	tmp = (tmp + 2) / 4;
 	return tmp;
 }
+#endif
 
 #ifdef AUDIO_DL2_ISR_COPY_SUPPORT
 

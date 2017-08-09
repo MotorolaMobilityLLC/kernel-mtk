@@ -48,14 +48,16 @@
 #include <linux/gpio.h>
 #include <linux/pinctrl/consumer.h>
 #include "AudDrv_Gpio.h"
-#ifndef CONFIG_PINCTRL_MT6797
+//#ifndef CONFIG_PINCTRL_MT6797
+#if 0
 #include <mt-plat/mt_gpio.h>
 #endif
 
 #include <linux/of.h>
 #include <linux/of_fdt.h>
 
-#ifdef CONFIG_PINCTRL_MT6797
+//#ifdef CONFIG_PINCTRL_MT6797
+#if 1
 struct pinctrl *pinctrlaud;
 
 enum audio_system_gpio_type {
@@ -133,7 +135,8 @@ static unsigned int extbuck_fan53526_exist;
 
 void AudDrv_GPIO_probe(void *dev)
 {
-#ifdef CONFIG_PINCTRL_MT6797
+//#ifdef CONFIG_PINCTRL_MT6797
+#if 1
 	int ret;
 	int i = 0;
 
@@ -309,7 +312,8 @@ int AudDrv_GPIO_SMARTPA_Select(int mode)
 {
 	int retval = 0;
 
-#ifndef CONFIG_PINCTRL_MT6797
+//#ifndef CONFIG_PINCTRL_MT6797
+#if 0
 	switch (mode) {
 	case 0:
 		mt_set_gpio_mode(69 | 0x80000000, GPIO_MODE_00);
@@ -359,7 +363,8 @@ int AudDrv_GPIO_TDM_Select(int mode)
 {
 	int retval = 0;
 
-#ifndef CONFIG_PINCTRL_MT6797
+//#ifndef CONFIG_PINCTRL_MT6797
+#if 0
 	switch (mode) {
 	case 0:
 		mt_set_gpio_mode(135 | 0x80000000, GPIO_MODE_00);
