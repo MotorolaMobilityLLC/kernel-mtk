@@ -1844,6 +1844,7 @@ static int atm_get_timeout_time(int curr_temp)
 static enum hrtimer_restart atm_loop(struct hrtimer *timer)
 {
 	ktime_t ktime;
+	int temp;
 
 	atm_prev_maxtj = atm_curr_maxtj;
 	atm_curr_maxtj = tscpu_get_curr_temp();
@@ -1858,6 +1859,26 @@ static enum hrtimer_restart atm_loop(struct hrtimer *timer)
 			atm_curr_maxtj, atm_prev_maxtj, adaptive_cpu_power_limit,
 			get_immediate_big_wrap(), get_immediate_cpuL_wrap(),
 			get_immediate_cpuLL_wrap());
+#ifdef ENALBE_UART_LIMIT
+#if ENALBE_UART_LIMIT
+	temp = atm_curr_maxtj;
+	if ((TEMP_DIS_UART - TEMP_TOLERANCE) < temp) {
+		/**************************************************
+			Disable UART log
+		**************************************************/
+		if (mt_get_uartlog_status())
+			set_uartlog_status(FALSE);
+	}
+
+	if (temp < (TEMP_EN_UART + TEMP_TOLERANCE)) {
+		/**************************************************
+			Enable UART log
+		**************************************************/
+		if (!mt_get_uartlog_status())
+			set_uartlog_status(TRUE);
+	}
+#endif
+#endif
 
 	wake_up_process(krtatm_thread_handle);
 

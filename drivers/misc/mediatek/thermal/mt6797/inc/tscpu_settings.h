@@ -50,6 +50,11 @@
 /*=============================================================
  * CONFIG (SW related)
  *=============================================================*/
+#define ENALBE_UART_LIMIT		(1)
+#define TEMP_EN_UART			(80000)
+#define TEMP_DIS_UART			(85000)
+#define TEMP_TOLERANCE			(0)
+
 #define ENALBE_SW_FILTER		(0)
 #define ATM_USES_PPM	(1)
 
@@ -251,6 +256,9 @@ struct mtk_cpu_power_info {
  * Shared variables
  *=============================================================*/
 /*In src/mtk_tc.c*/
+extern int temp_eUART;
+extern int temp_dUART;
+
 extern int tscpu_debug_log;
 extern const struct of_device_id mt_thermal_of_match[2];
 extern int tscpu_bank_ts[THERMAL_BANK_NUM][ENUM_MAX];
@@ -336,6 +344,7 @@ extern int tscpu_cpu_dmips[CPU_COOLER_NUM];
  * Shared functions
  *=============================================================*/
 /*In common/thermal_zones/mtk_ts_cpu.c*/
+extern void thermal_init_interrupt_for_UART(int temp_e, int temp_d);
 extern void tscpu_print_all_temperature(int isDprint);
 extern void tscpu_update_tempinfo(void);
 #if THERMAL_GPIO_OUT_TOGGLE
