@@ -2877,7 +2877,7 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 	/* insert update ovl status slot command */
 	if (primary_display_is_video_mode() == 1) {
 		cmdqRecBackupRegisterToSlot(pgc->cmdq_handle_config, pgc->ovl_status_info,
-			0, DISP_REG_OVL_FLOW_CTRL_DBG);
+			0, DISP_REG_OVL0_STATE_PA);
 		cmdqRecBackupRegisterToSlot(pgc->cmdq_handle_config, pgc->ovl_status_info,
 			1, DISP_REG_OVL0_STATUS_PA);
 	}
