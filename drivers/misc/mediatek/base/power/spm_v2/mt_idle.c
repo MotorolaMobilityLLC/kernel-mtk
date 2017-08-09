@@ -755,7 +755,7 @@ bool soidle3_can_enter(int cpu)
 #endif
 
 	if (soidle3_by_pass_en == 0) {
-		if ((spm_get_sodi_en() == 0) || (spm_get_sodi3_en() == 0)) {
+		if ((spm_get_sodi_en() == 0) || (spm_get_sodi3_en() == 0) || (spm_get_sodi_mempll() == true)) {
 			/* if SODI is disabled, SODI3 is also disabled */
 			reason = BY_OTH;
 			goto out;

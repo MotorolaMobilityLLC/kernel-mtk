@@ -71,6 +71,9 @@ obj-y += mt_idle.o
 obj-y += mt_idle_mt6757.o
 obj-y += mt_spm_dpidle.o
 obj-y += mt_spm_dpidle_mt6757.o
+obj-y += mt_spm_sodi.o
+obj-y += mt_spm_sodi3p0.o
+obj-y += mt_spm_sodi_cmdq.o
 endif
 
 ifeq ($(CONFIG_ARCH_MT6797), y)

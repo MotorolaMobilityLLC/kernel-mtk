@@ -1037,19 +1037,17 @@ void enter_pd_by_cmdq(cmdqRecHandle handler)
 }
 #endif
 
-#if 1
-void exit_pd_by_cmdq(cmdqRecHandle handler)
+void __attribute__((weak)) exit_pd_by_cmdq(cmdqRecHandle handler)
 {
 	#ifndef CONFIG_FPGA_EARLY_PORTING
 	error, this should be fixed
 	#endif
 }
 
-void enter_pd_by_cmdq(cmdqRecHandle handler)
+void __attribute__((weak)) enter_pd_by_cmdq(cmdqRecHandle handler)
 {
 
 }
-#endif
 
 
 void enter_share_sram(CMDQ_EVENT_ENUM resourceEvent)

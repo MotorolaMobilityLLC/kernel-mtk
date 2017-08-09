@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+ 
 #include "mt_spm_sodi_cmdq.h"
 
 void exit_pd_by_cmdq(cmdqRecHandle handler)
@@ -13,3 +26,4 @@ void enter_pd_by_cmdq(cmdqRecHandle handler)
 	/* Switch to PD mode */
 	cmdqRecWrite(handler, 0x100062B0, 0x0, 0x2);
 }
+

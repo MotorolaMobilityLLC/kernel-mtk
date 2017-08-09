@@ -1,7 +1,7 @@
 #ifndef __MT_SPM_SODI_CMDQ_H__
 #define __MT_SPM_SODI_CMDQ_H__
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 #include "spm_v2/mt_spm_sodi_cmdq.h"
 #endif
 
