@@ -103,7 +103,11 @@ static struct pwr_ctrl sodi_ctrl = {
 	.conn_apsrc_sel = 0, /* bit 27 */
 
 	/* SPM_SRC_REQ */
+#if defined(CONFIG_ARCH_MT6755)
+	.spm_apsrc_req = 0,
+#elif defined(CONFIG_ARCH_MT6797)
 	.spm_apsrc_req = 1,
+#endif
 	.spm_f26m_req = 0,
 	.spm_lte_req = 0,
 	.spm_infra_req = 0,
