@@ -1,25 +1,38 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef _GPIO_CONST_H_
 #define _GPIO_CONST_H_
 
+/* #include <mach/mt_reg_base.h> */
+
 #define GPIO_MODE_BITS                 4
-#define MAX_GPIO_PIN                   261
 #define MAX_GPIO_MODE_PER_REG          8
 #define MAX_GPIO_REG_BITS              32
 
-
-#define GPIO_BASE                  gpio_vbase.gpio_regs
-#define IOCFG_L_BASE                 gpio_vbase.IOCFG_L_regs
-#define IOCFG_B_BASE                gpio_vbase.IOCFG_B_regs
-#define IOCFG_R_BASE                 gpio_vbase.IOCFG_R_regs
-#define IOCFG_T_BASE                  gpio_vbase.IOCFG_T_regs
-#define MIPI_TX0_BASE                  gpio_vbase.MIPI_TX0_regs
-#define MIPI_TX1_BASE                 gpio_vbase.MIPI_RX_CSI0_regs
-#define MIPI_RX_ANA_BASE              gpio_vbase.MIPI_RX_CSI1_regs
-
-
+#define GPIO_BASE                      gpio_vbase.gpio_regs
+#define IOCFG_BASE                      gpio_vbase.iocfg_regs
+#define IOCFG_L_BASE_1                   gpio_vbase.IOCFG_L_regs
+#define IOCFG_B_BASE_1                   gpio_vbase.IOCFG_B_regs
+#define IOCFG_R_BASE_1                   gpio_vbase.IOCFG_R_regs
+#define IOCFG_T_BASE_1                   gpio_vbase.IOCFG_T_regs
+#define MIPI_TX0_BASE_1                  gpio_vbase.MIPI_TX0_regs
+#define MIPI_RX_ANA_CSI0_BASE_1          gpio_vbase.MIPI_RX_CSI0_regs
+#define MIPI_RX_ANA_CSI1_BASE_1          gpio_vbase.MIPI_RX_CSI1_regs
 
 struct mt_gpio_vbase {
 	void __iomem *gpio_regs;
+	void __iomem *iocfg_regs;
 	void __iomem *IOCFG_L_regs;
 	void __iomem *IOCFG_B_regs;
 	void __iomem *IOCFG_R_regs;
@@ -34,9 +47,9 @@ extern struct mt_gpio_vbase gpio_vbase;
 /******************************************************************************
 * Enumeration for GPIO pin
 ******************************************************************************/
-
 typedef enum GPIO_PIN {
 	GPIO_UNSUPPORTED = -1,
+
 	GPIO0  , GPIO1  , GPIO2  , GPIO3  , GPIO4  , GPIO5  , GPIO6  , GPIO7  ,
 	GPIO8  , GPIO9  , GPIO10 , GPIO11 , GPIO12 , GPIO13 , GPIO14 , GPIO15 ,
 	GPIO16 , GPIO17 , GPIO18 , GPIO19 , GPIO20 , GPIO21 , GPIO22 , GPIO23 ,
@@ -60,18 +73,8 @@ typedef enum GPIO_PIN {
 	GPIO160, GPIO161, GPIO162, GPIO163, GPIO164, GPIO165, GPIO166, GPIO167,
 	GPIO168, GPIO169, GPIO170, GPIO171, GPIO172, GPIO173, GPIO174, GPIO175,
 	GPIO176, GPIO177, GPIO178, GPIO179, GPIO180, GPIO181, GPIO182, GPIO183,
-	GPIO184, GPIO185, GPIO186, GPIO187, GPIO188, GPIO189, GPIO190, GPIO191,
-	GPIO192, GPIO193, GPIO194, GPIO195, GPIO196, GPIO197, GPIO198, GPIO199,
-	GPIO200, GPIO201, GPIO202, GPIO203, GPIO204, GPIO205, GPIO206, GPIO207,
-	GPIO208, GPIO209, GPIO210, GPIO211, GPIO212, GPIO213, GPIO214, GPIO215,
-	GPIO216, GPIO217, GPIO218, GPIO219, GPIO220, GPIO221, GPIO222, GPIO223,
-	GPIO224, GPIO225, GPIO226, GPIO227, GPIO228, GPIO229, GPIO230, GPIO231,
-	GPIO232, GPIO233, GPIO234, GPIO235, GPIO236, GPIO237, GPIO238, GPIO239,
-	GPIO240, GPIO241, GPIO242, GPIO243, GPIO244, GPIO245, GPIO246, GPIO247,
-	GPIO248, GPIO249, GPIO250, GPIO251, GPIO252, GPIO253, GPIO254, GPIO255,
-	GPIO256, GPIO257, GPIO258, GPIO259, GPIO260, GPIO261, MT_GPIO_BASE_MAX
+	GPIO184, GPIO185, GPIO186, GPIO187, GPIO188, GPIO189, GPIO190, GPIO191, GPIO192, GPIO193, MT_GPIO_BASE_MAX
 } GPIO_PIN;
-
 #define MT_GPIO_BASE_START GPIO0
 #define MT_GPIO_EXT_START  MT_GPIO_BASE_MAX
 
@@ -80,4 +83,4 @@ typedef enum GPIO_PIN_EXT {
 } GPIO_PIN_EXT;
 #define MT_GPIO_MAX_PIN MT_GPIO_EXT_MAX
 
-#endif /* _GPIO_CONST_H_ */
+#endif				/* _GPIO_CONST_H_ */

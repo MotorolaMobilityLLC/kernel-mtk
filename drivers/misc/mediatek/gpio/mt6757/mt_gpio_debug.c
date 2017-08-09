@@ -9,14 +9,15 @@
  ******************************************************************************/
 
 #include <linux/slab.h>
-#include <6797_gpio.h>
+#include <6757_gpio.h>
 #include <mt-plat/mt_gpio.h>
 #include <mt-plat/mt_gpio_core.h>
+/*#include <gpio_cfg.h>*/
 
 typedef struct {
 	/*FIXME: check GPIO spec */
 	unsigned int no:16;
-	unsigned int mode:3;
+	unsigned int mode:4;
 	unsigned int pullsel:1;
 	unsigned int din:1;
 	unsigned int dout:1;
@@ -29,7 +30,7 @@ typedef struct {
 
 /* #define MAX_GPIO_REG_BITS      16 */
 /* #define MAX_GPIO_MODE_PER_REG  5 */
-/* #define GPIO_MODE_BITS         3 */
+/* #define GPIO_MODE_BITS         4 */
 /******************************************************************************
 *clock out module
 *******************************************************************************/
@@ -221,7 +222,9 @@ void mt_gpio_load_base(GPIO_REGS *regs)
 		regs->din[idx].val = __raw_readl(&pReg->din[idx]);
 }
 
-
+/* EXPORT_SYMBOL(mt_gpio_load_base); */
+/*----------------------------------------------------------------------------
+----------------------------------------------------------------------------*/
 void mt_gpio_dump_base(GPIO_REGS *regs)
 {
 	GPIO_REGS *cur = NULL;
@@ -327,63 +330,16 @@ void mt_gpio_dump(void)
 /*----------------------------------------------------------------------------*/
 void gpio_dump_regs(void)
 {
-	int i = 0;
-	int *pGPIO_BASE = GPIO_BASE;
-	int *pIOCFG_L_BASE = IOCFG_L_BASE;
-	int *pIOCFG_B_BASE = IOCFG_B_BASE;
-	int *pIOCFG_R_BASE = IOCFG_R_BASE;
-	int *pIOCFG_T_BASE = IOCFG_T_BASE;
+	int idx = 0;
 
-	GPIOMSG("GPIO_BASE : 0x%08x .\n", 0x10005000);
-	GPIOMSG("  %16s :   %8s   %8s   %8s   %8s\n", "GPIO_Addr", "+0x00", "+0x10",
-			"+0x20", "+0x30");
-	for (i = 0; i < 28; i++) {
-		GPIOMSG("0x%16p : 0x%08x 0x%08x 0x%08x 0x%08x\n",
-			pGPIO_BASE, GPIO_RD32(pGPIO_BASE), GPIO_RD32(pGPIO_BASE + 4),
-			GPIO_RD32(pGPIO_BASE + 8), GPIO_RD32(pGPIO_BASE + 12));
-		pGPIO_BASE += 0x10;
+	GPIOMSG("PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [IES]\n");
+	for (idx = MT_GPIO_BASE_START; idx < MT_GPIO_BASE_MAX; idx++) {
+		pr_debug("idx = %3d: %d %d %d %d %d %d %d\n",
+		       idx, mt_get_gpio_mode_base(idx), mt_get_gpio_pull_select_base(idx),
+		       mt_get_gpio_in_base(idx), mt_get_gpio_out_base(idx),
+		       mt_get_gpio_pull_enable_base(idx), mt_get_gpio_dir_base(idx),
+		       mt_get_gpio_ies_base(idx));
 	}
-
-	GPIOMSG("\nIOCFG_L_BASE : 0x%08x .\n", 0x10002000);
-	GPIOMSG("  %16s :   %8s   %8s   %8s   %8s\n", "IOCFG_L_Addr", "+0x00", "+0x10",
-			"+0x20", "+0x30");
-	for (i = 0; i < 8; i++) {
-		GPIOMSG("0x%16p : 0x%08x 0x%08x 0x%08x 0x%08x\n",
-			pIOCFG_L_BASE, GPIO_RD32(pIOCFG_L_BASE), GPIO_RD32(pIOCFG_L_BASE + 4),
-			GPIO_RD32(pIOCFG_L_BASE + 8), GPIO_RD32(pIOCFG_L_BASE + 12));
-		pIOCFG_L_BASE += 0x10;
-	}
-
-	GPIOMSG("\nIOCFG_B_BASE : 0x%08x .\n", 0x10002400);
-	GPIOMSG("  %16s :   %8s   %8s   %8s   %8s\n", "IOCFG_B_Addr", "+0x00", "+0x10",
-			"+0x20", "+0x30");
-	for (i = 0; i < 8; i++) {
-		GPIOMSG("0x%16p : 0x%08x 0x%08x 0x%08x 0x%08x\n",
-			pIOCFG_B_BASE, GPIO_RD32(pIOCFG_B_BASE), GPIO_RD32(pIOCFG_B_BASE + 4),
-			GPIO_RD32(pIOCFG_B_BASE + 8), GPIO_RD32(pIOCFG_B_BASE + 12));
-		pIOCFG_B_BASE += 0x10;
-	}
-
-	GPIOMSG("\nIOCFG_R_BASE : 0x%08x .\n", 0x10002800);
-	GPIOMSG("  %16s :   %8s   %8s   %8s   %8s\n", "IOCFG_R_Addr", "+0x00", "+0x10",
-			"+0x20", "+0x30");
-	for (i = 0; i < 8; i++) {
-		GPIOMSG("0x%16p : 0x%08x 0x%08x 0x%08x 0x%08x\n",
-			pIOCFG_R_BASE, GPIO_RD32(pIOCFG_R_BASE), GPIO_RD32(pIOCFG_R_BASE + 4),
-			GPIO_RD32(pIOCFG_R_BASE + 8), GPIO_RD32(pIOCFG_R_BASE + 12));
-		pIOCFG_R_BASE += 0x10;
-	}
-
-	GPIOMSG("\nIOCFG_T_BASE : 0x%08x .\n", 0x10002c00);
-	GPIOMSG("  %16s :   %8s   %8s   %8s   %8s\n", "IOCFG_T_Addr", "+0x00", "+0x10",
-			"+0x20", "+0x30");
-	for (i = 0; i < 8; i++) {
-		GPIOMSG("0x%16p : 0x%08x 0x%08x 0x%08x 0x%08x\n",
-			pIOCFG_T_BASE, GPIO_RD32(pIOCFG_T_BASE), GPIO_RD32(pIOCFG_T_BASE + 4),
-			GPIO_RD32(pIOCFG_T_BASE + 8), GPIO_RD32(pIOCFG_T_BASE + 12));
-		pIOCFG_T_BASE += 0x10;
-	}
-
 }
 
 /* EXPORT_SYMBOL(gpio_dump_regs); */
@@ -444,6 +400,22 @@ static ssize_t mt_gpio_dump_addr_base(void)
 	for (idx = 0; idx < sizeof(reg->dir) / sizeof(reg->dir[0]); idx++)
 		GPIOMSG("val[%2d] %p\nset[%2d] %p\nrst[%2d] %p\n", idx, &reg->dir[idx].val, idx,
 			&reg->dir[idx].set, idx, &reg->dir[idx].rst);
+	/* GPIOMSG("# ies\n"); */
+	/* for (idx = 0; idx < sizeof(reg->ies)/sizeof(reg->ies[0]); idx++) */
+	/* GPIOMSG("val[%2d] %p\nset[%2d] %p\nrst[%2d] %p\n", idx, &reg->ies[idx].val,
+idx, &reg->ies[idx].set, idx, &reg->ies[idx].rst); */
+	/* GPIOMSG("# pull enable\n"); */
+	/* for (idx = 0; idx < sizeof(reg->pullen)/sizeof(reg->pullen[0]); idx++) */
+	/* GPIOMSG("val[%2d] %p\nset[%2d] %p\nrst[%2d] %p\n", idx, &reg->pullen[idx].val,
+idx, &reg->pullen[idx].set, idx, &reg->pullen[idx].rst); */
+	/* GPIOMSG("# pull select\n"); */
+	/* for (idx = 0; idx < sizeof(reg->pullsel)/sizeof(reg->pullsel[0]); idx++) */
+	/* GPIOMSG("val[%2d] %p\nset[%2d] %p\nrst[%2d] %p\n", idx, &reg->pullsel[idx].val,
+idx, &reg->pullsel[idx].set, idx, &reg->pullsel[idx].rst); */
+	/* GPIOMSG("# data inversion\n"); */
+	/* for (idx = 0; idx < sizeof(reg->dinv)/sizeof(reg->dinv[0]); idx++) */
+	/* GPIOMSG("val[%2d] %p\nset[%2d] %p\nrst[%2d] %p\n", idx, &reg->dinv[idx].val,
+idx, &reg->dinv[idx].set, idx, &reg->dinv[idx].rst); */
 	GPIOMSG("# data output\n");
 	for (idx = 0; idx < sizeof(reg->dout) / sizeof(reg->dout[0]); idx++)
 		GPIOMSG("val[%2d] %p\nset[%2d] %p\nrst[%2d] %p\n", idx, &reg->dout[idx].val, idx,
@@ -537,18 +509,34 @@ static ssize_t mt_gpio_compare_base(void)
 static ssize_t mt_gpio_dump_regs(char *buf, ssize_t bufLen)
 {
 	int idx = 0, len = 0;
+#ifdef CONFIG_MTK_FPGA
+	char tmp[] = "PIN: [DIN] [DOUT] [DIR]\n";
 
+	len += snprintf(buf + len, bufLen - len, "%s", tmp);
+	for (idx = MT_GPIO_BASE_START; idx < MT_GPIO_BASE_MAX; idx++) {
+		len += snprintf(buf + len, bufLen - len, "%3d:%d%d%d\n",
+				idx, mt_get_gpio_in_base(idx), mt_get_gpio_out_base(idx),
+				mt_get_gpio_dir_base(idx));
+	}
+#else
 	/*char tmp[]="PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [INV] [IES]\n"; */
 	char tmp[] = "PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [IES] [SMT]\n";
 
 	len += snprintf(buf + len, bufLen - len, "%s", tmp);
 	for (idx = MT_GPIO_BASE_START; idx < MT_GPIO_BASE_MAX; idx++) {
-		len += snprintf(buf + len, bufLen - len, "%3d:%x%d%d%d%d%d%d%d\n",
+		len += snprintf(buf + len, bufLen - len, "%3d:%d%d%d%d%d%d%d%d\n",
 				idx, mt_get_gpio_mode_base(idx), mt_get_gpio_pull_select_base(idx),
 				mt_get_gpio_in_base(idx), mt_get_gpio_out_base(idx),
 				mt_get_gpio_pull_enable_base(idx), mt_get_gpio_dir_base(idx),
 				mt_get_gpio_ies_base(idx), mt_get_gpio_smt_base(idx));
+		/* printk("%3d:%d%d%d%d%d%d%d%d\n",idx, */
+		/* mt_get_gpio_mode_base(idx), mt_get_gpio_pull_select_base(idx),
+mt_get_gpio_in_base(idx),mt_get_gpio_out_base(idx), */
+		/* mt_get_gpio_pull_enable_base(idx),mt_get_gpio_dir_base(idx),
+mt_get_gpio_inversion_base(idx),mt_get_gpio_ies_base(idx)); */
+
 	}
+#endif
 
 	return len;
 }
@@ -558,134 +546,6 @@ ssize_t mt_gpio_show_pin(struct device *dev, struct device_attribute *attr, char
 {
 	return mt_gpio_dump_regs(buf, PAGE_SIZE);
 }
-
-
-ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
-{
-	int pin;
-	int ret;
-
-#ifdef MTK_MT6306_SUPPORT
-	int group, on;
-#endif
-	int mode, pullsel, dout, pullen, dir, ies, smt;
-	u32 num, src, div;
-	char md_str[128] = "GPIO_MD_TEST";
-	/* struct mt_gpio_obj *obj = (struct mt_gpio_obj*)dev_get_drvdata(dev); */
-	if (!strncmp(buf, "-h", 2)) {
-		GPIOMSG("cat pin  #show all pin setting\n");
-		GPIOMSG("echo -wmode num x > pin #num:pin,x:the mode 0~7\n");
-		GPIOMSG("echo -wpsel num x > pin #x: 1,pull-up; 0,pull-down\n");
-		GPIOMSG("echo -wdout num x > pin #x: 1,high; 0, low\n");
-		GPIOMSG("echo -wpen num x > pin  #x: 1,pull enable; 0 pull disable\n");
-		GPIOMSG("echo -wies num x > pin  #x: 1,ies enable; 0 ies disable\n");
-		GPIOMSG("echo -wdir num x > pin  #x: 1, output; 0, input\n");
-		/*GPIOMSG("echo -wdinv num x > pin #x: 1, inversion enable; 0, disable\n"); */
-		GPIOMSG("echo -w=num x x x x x x > pin #set all property one time\n");
-		GPIOMSG("PIN: [MODE] [PSEL] [DIN] [DOUT] [PEN] [DIR] [IES]\n");
-	} else if (!strncmp(buf, "-r0", 3) && (1 == sscanf(buf + 3, "%d", &pin))) {
-		GPIO_CFG cfg = {.no = pin };
-		/*if pmic */
-		mt_gpio_read_pin_base(&cfg, 0);
-		GPIOMSG("%3d: %d %d %d %d %d %d\n", cfg.no, cfg.mode, cfg.pullsel,
-			cfg.din, cfg.dout, cfg.pullen, cfg.dir);
-	} else if (!strncmp(buf, "-r1", 3) && (1 == sscanf(buf + 3, "%d", &pin))) {
-		GPIO_CFG cfg = {.no = pin };
-
-		mt_gpio_read_pin_base(&cfg, 1);
-		GPIOMSG("%3d: %d %d %d %d %d %d %d\n", cfg.no, cfg.mode, cfg.pullsel,
-			cfg.din, cfg.dout, cfg.pullen, cfg.dir, cfg.ies);
-	} else if (!strncmp(buf, "-w", 2)) {
-		buf += 2;
-		if (!strncmp(buf, "mode", 4) && (2 == sscanf(buf + 4, "%d %d", &pin, &mode)))
-			GPIOMSG("set mode(%3d, %d)=%d\n", pin, mode, mt_set_gpio_mode(pin, mode));
-		else if (!strncmp(buf, "psel", 4)
-			 && (2 == sscanf(buf + 4, "%d %d", &pin, &pullsel)))
-			GPIOMSG("set psel(%3d, %d)=%d\n", pin, pullsel,
-				mt_set_gpio_pull_select(pin, pullsel));
-		else if (!strncmp(buf, "dout", 4) && (2 == sscanf(buf + 4, "%d %d", &pin, &dout)))
-			GPIOMSG("set dout(%3d, %d)=%d\n", pin, dout, mt_set_gpio_out(pin, dout));
-		else if (!strncmp(buf, "pen", 3) && (2 == sscanf(buf + 3, "%d %d", &pin, &pullen)))
-			GPIOMSG("set pen (%3d, %d)=%d\n", pin, pullen,
-				mt_set_gpio_pull_enable(pin, pullen));
-		else if (!strncmp(buf, "ies", 3) && (2 == sscanf(buf + 3, "%d %d", &pin, &ies)))
-			GPIOMSG("set ies (%3d, %d)=%d\n", pin, ies, mt_set_gpio_ies(pin, ies));
-		else if (!strncmp(buf, "dir", 3) && (2 == sscanf(buf + 3, "%d %d", &pin, &dir)))
-			GPIOMSG("set dir (%3d, %d)=%d\n", pin, dir, mt_set_gpio_dir(pin, dir));
-		/* else if (!strncmp(buf, "dinv", 4) && (2 == sscanf(buf+4, "%d %d", &pin, &dinv))) */
-		/* GPIOMSG("set dinv(%3d, %d)=%d\n", pin, dinv, mt_set_gpio_inversion(pin, dinv)); */
-		else if (8 == sscanf(buf, "=%d:%d %d %d %d %d %d %d", &pin, &mode, &pullsel, &dout,
-				&pullen, &dir, &ies, &smt)) {
-			GPIOMSG("set mode(%3d, %d)=%d\n", pin, mode, mt_set_gpio_mode(pin, mode));
-			GPIOMSG("set psel(%3d, %d)=%d\n", pin, pullsel,
-				mt_set_gpio_pull_select(pin, pullsel));
-			GPIOMSG("set dout(%3d, %d)=%d\n", pin, dout, mt_set_gpio_out(pin, dout));
-			GPIOMSG("set pen (%3d, %d)=%d\n", pin, pullen,
-				mt_set_gpio_pull_enable(pin, pullen));
-			GPIOMSG("set dir (%3d, %d)=%d\n", pin, dir, mt_set_gpio_dir(pin, dir));
-			/* GPIOMSG("set dinv(%3d, %d)=%d\n", pin, dinv, mt_set_gpio_inversion(pin, dinv)); */
-			GPIOMSG("set ies (%3d, %d)=%d\n", pin, ies, mt_set_gpio_ies(pin, ies));
-			GPIOMSG("set smt (%3d, %d)=%d\n", pin, smt, mt_set_gpio_smt(pin, smt));
-
-		} else
-			GPIOMSG("invalid format: '%s'", buf);
-	} else if (!strncmp(buf, "ww", 2)) {
-		/*
-		   //MT6306 GPIO
-		   buf += 2;
-		   if (3 == sscanf(buf, "=%d:%d %d", &pin, &dout, &dir)) {
-		   GPIOMSG("[MT6306] set dout(%3d, %d)=%d\n", pin, dout, mt6306_set_gpio_out(pin, dout));
-		   GPIOMSG("[MT6306] set dir (%3d, %d)=%d\n", pin, dir, mt6306_set_gpio_dir(pin, dir));
-		   } else
-		   GPIOMSG("invalid format: '%s'", buf);
-		 */
-#ifdef MTK_MT6306_SUPPORT
-	} else if (!strncmp(buf, "wy", 2)) {
-		/* MT6306 GPIO */
-		buf += 2;
-		if (2 == sscanf(buf, "=%d:%d", &group, &on)) {
-			GPIOMSG("[MT6306] set pin group vccen (%3d, %d)=%d\n", group, on,
-				mt6306_set_GPIO_pin_group_power(group, on));
-			GPIOMSG("[MT6306] set pin group vccen (%3d, %d)=%d\n", group, on,
-				mt6306_set_GPIO_pin_group_power(group, on));
-		} else
-			GPIOMSG("invalid format: '%s'", buf);
-#endif
-	} else if (!strncmp(buf, "-t", 2)) {
-		mt_gpio_self_test();
-	} else if (!strncmp(buf, "-c", 2)) {
-		mt_gpio_compare_base();
-		/* mt_gpio_compare_ext(); */
-	} else if (!strncmp(buf, "-da", 3)) {
-		mt_gpio_dump_addr_base();
-		/* mt_gpio_dump_addr_ext(); */
-	} else if (!strncmp(buf, "-dp", 3)) {
-		gpio_dump_regs();
-	} else if (!strncmp(buf, "-d", 2)) {
-		mt_gpio_dump();
-	} else if (!strncmp(buf, "tt", 2)) {
-		/* GPIOMSG("gpio reg test for next chip!\n"); */
-		/* mt_reg_test(); */
-	} else if (!strncmp(buf, "-md", 3)) {
-		buf += 3;
-		ret = sscanf(buf, "%s", md_str);
-		mt_get_md_gpio_debug(md_str);
-	} else if (!strncmp(buf, "-k", 2)) {
-		buf += 2;
-		if (!strncmp(buf, "s", 1) && (3 == sscanf(buf + 1, "%d %d %d", &num, &src, &div)))
-			GPIOMSG("set num(%d, %d, %d)=%d\n", num, src, div,
-				mt_set_clock_output(num, src, div));
-	} else if (!strncmp(buf, "g", 1) && (1 == sscanf(buf + 1, "%d", &num))) {
-			/* ret = mt_get_clock_output(num, &src,&div); */
-			/* GPIOMSG("get num(%ld, %ld, %ld)=%d\n", num, src, div,ret); */
-	} else if (!strncmp(buf, "-ut", 3)) {
-			/* ret = mt_get_clock_output(num, &src,&div); */
-	} else {
-		GPIOMSG("invalid format: '%s'", buf);
-	}
-	return count;
-}
-
 
 /******************************************************************************
 *MD convert gpio-name to gpio-number
@@ -733,11 +593,26 @@ static struct mt_gpio_modem_info mt_gpio_info[] = {
 #ifdef GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN
 	{"GPIO_FDD_Band_Support_Detection_3", GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN},
 #endif
+#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_4TH_PIN
+	{"GPIO_FDD_Band_Support_Detection_4", GPIO_FDD_BAND_SUPPORT_DETECT_4TH_PIN},
+#endif
+#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_5TH_PIN
+	{"GPIO_FDD_Band_Support_Detection_5", GPIO_FDD_BAND_SUPPORT_DETECT_5TH_PIN},
+#endif
+#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_6TH_PIN
+	{"GPIO_FDD_Band_Support_Detection_6", GPIO_FDD_BAND_SUPPORT_DETECT_6TH_PIN},
+#endif
 #ifdef GPIO_SIM_SWITCH_CLK_PIN
 	{"GPIO_SIM_SWITCH_CLK", GPIO_SIM_SWITCH_CLK_PIN},
 #endif
 #ifdef GPIO_SIM_SWITCH_DAT_PIN
 	{"GPIO_SIM_SWITCH_DAT", GPIO_SIM_SWITCH_DAT_PIN},
+#endif
+#ifdef GPIO_SIM1_HOT_PLUG
+	{"GPIO_SIM1_INT", GPIO_SIM1_HOT_PLUG},
+#endif
+#ifdef GPIO_SIM2_HOT_PLUG
+	{"GPIO_SIM2_INT", GPIO_SIM2_HOT_PLUG},
 #endif
 /*if you have new GPIO pin add bellow*/
 
@@ -767,7 +642,141 @@ void mt_get_md_gpio_debug(char *str)
 
 		for (i = 0; i < ARRAY_SIZE(mt_gpio_info); i++)
 			GPIOMSG("GPIO number=%d,%s\n", mt_gpio_info[i].num, mt_gpio_info[i].name);
+
 	} else {
 		GPIOMSG("GPIO number=%d,%s\n", mt_get_md_gpio(str, strlen(str)), str);
 	}
+
 }
+/*---------------------------------------------------------------------------*/
+ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr,
+			  const char *buf, size_t count)
+{
+	int pin;
+#ifdef MTK_MT6306_SUPPORT
+	int group, on;
+#endif
+	int mode, pullsel, dout, pullen, dir, ies, smt;
+	u32 num, src, div;
+	/*char md_str[128] = "GPIO_MD_TEST";*/
+	/* struct mt_gpio_obj *obj = (struct mt_gpio_obj*)dev_get_drvdata(dev); */
+	if (!strncmp(buf, "-h", 2)) {
+		GPIOMSG("cat pin  #show all pin setting\n");
+		GPIOMSG("echo -wmode num x > pin #num:pin,x:the mode 0~7\n");
+		GPIOMSG("echo -wpsel num x > pin #x: 1,pull-up; 0,pull-down\n");
+		GPIOMSG("echo -wdout num x > pin #x: 1,high; 0, low\n");
+		GPIOMSG("echo -wpen num x > pin  #x: 1,pull enable; 0 pull disable\n");
+		GPIOMSG("echo -wies num x > pin  #x: 1,ies enable; 0 ies disable\n");
+		GPIOMSG("echo -wdir num x > pin  #x: 1, output; 0, input\n");
+		/*GPIOMSG("echo -wdinv num x > pin #x: 1, inversion enable; 0, disable\n"); */
+		GPIOMSG("echo -w=num x x x x x x > pin #set all property one time\n");
+		GPIOMSG("PIN: [MODE] [PSEL] [DIN] [DOUT] [PEN] [DIR] [IES]\n");
+	} else if (!strncmp(buf, "-r0", 3) && (1 == sscanf(buf + 3, "%d", &pin))) {
+		GPIO_CFG cfg = {.no = pin };
+		/*if pmic */
+		mt_gpio_read_pin_base(&cfg, 0);
+		GPIOMSG("%3d: %d %d %d %d %d %d\n", cfg.no, cfg.mode, cfg.pullsel,
+			cfg.din, cfg.dout, cfg.pullen, cfg.dir);
+	} else if (!strncmp(buf, "-r1", 3) && (1 == sscanf(buf + 3, "%d", &pin))) {
+		GPIO_CFG cfg = {.no = pin };
+
+		mt_gpio_read_pin_base(&cfg, 1);
+		GPIOMSG("%3d: %d %d %d %d %d %d %d\n", cfg.no, cfg.mode, cfg.pullsel,
+			cfg.din, cfg.dout, cfg.pullen, cfg.dir, cfg.ies);
+	} else if (!strncmp(buf, "-w", 2)) {
+		buf += 2;
+		if (!strncmp(buf, "mode", 4) && (2 == sscanf(buf + 4, "%d %d", &pin, &mode)))
+			GPIOMSG("set mode(%3d, %d)=%d\n", pin, mode, mt_set_gpio_mode(pin, mode));
+		else if (!strncmp(buf, "psel", 4)
+			 && (2 == sscanf(buf + 4, "%d %d", &pin, &pullsel)))
+			GPIOMSG("set psel(%3d, %d)=%d\n", pin, pullsel,
+				mt_set_gpio_pull_select(pin, pullsel));
+		else if (!strncmp(buf, "dout", 4) && (2 == sscanf(buf + 4, "%d %d", &pin, &dout)))
+			GPIOMSG("set dout(%3d, %d)=%d\n", pin, dout, mt_set_gpio_out(pin, dout));
+		else if (!strncmp(buf, "pen", 3) && (2 == sscanf(buf + 3, "%d %d", &pin, &pullen)))
+			GPIOMSG("set pen (%3d, %d)=%d\n", pin, pullen,
+				mt_set_gpio_pull_enable(pin, pullen));
+		else if (!strncmp(buf, "ies", 3) && (2 == sscanf(buf + 3, "%d %d", &pin, &ies)))
+			GPIOMSG("set ies (%3d, %d)=%d\n", pin, ies, mt_set_gpio_ies(pin, ies));
+		else if (!strncmp(buf, "dir", 3) && (2 == sscanf(buf + 3, "%d %d", &pin, &dir)))
+			GPIOMSG("set dir (%3d, %d)=%d\n", pin, dir, mt_set_gpio_dir(pin, dir));
+		/* else if (!strncmp(buf, "dinv", 4) && (2 == sscanf(buf+4, "%d %d", &pin, &dinv))) */
+		/* GPIOMSG("set dinv(%3d, %d)=%d\n", pin, dinv, mt_set_gpio_inversion(pin, dinv)); */
+#ifdef CONFIG_MTK_FPGA
+		else if (3 == sscanf(buf, "=%d:%d %d", &pin, &dout, &dir)) {
+			GPIOMSG("set dout(%3d, %d)=%d\n", pin, dout, mt_set_gpio_out(pin, dout));
+			GPIOMSG("set dir (%3d, %d)=%d\n", pin, dir, mt_set_gpio_dir(pin, dir));
+#else
+		else if (8 == sscanf(buf, "=%d:%d %d %d %d %d %d %d", &pin, &mode, &pullsel, &dout,
+				&pullen, &dir, &ies, &smt)) {
+			GPIOMSG("set mode(%3d, %d)=%d\n", pin, mode, mt_set_gpio_mode(pin, mode));
+			GPIOMSG("set psel(%3d, %d)=%d\n", pin, pullsel,
+				mt_set_gpio_pull_select(pin, pullsel));
+			GPIOMSG("set dout(%3d, %d)=%d\n", pin, dout, mt_set_gpio_out(pin, dout));
+			GPIOMSG("set pen (%3d, %d)=%d\n", pin, pullen,
+				mt_set_gpio_pull_enable(pin, pullen));
+			GPIOMSG("set dir (%3d, %d)=%d\n", pin, dir, mt_set_gpio_dir(pin, dir));
+			/* GPIOMSG("set dinv(%3d, %d)=%d\n", pin, dinv, mt_set_gpio_inversion(pin, dinv)); */
+			GPIOMSG("set ies (%3d, %d)=%d\n", pin, ies, mt_set_gpio_ies(pin, ies));
+			GPIOMSG("set smt (%3d, %d)=%d\n", pin, smt, mt_set_gpio_smt(pin, smt));
+#endif
+		} else
+			GPIOMSG("invalid format: '%s'", buf);
+#ifdef MTK_MT6306_SUPPORT
+	} else if (!strncmp(buf, "ww", 2)) {
+		/* MT6306 GPIO */
+		   buf += 2;
+		   if (3 == sscanf(buf, "=%d:%d %d", &pin, &dout, &dir)) {
+			GPIOMSG("[MT6306] set dout(%3d, %d)=%d\n", pin, dout,
+				mt6306_set_gpio_out(pin, dout));
+			GPIOMSG("[MT6306] set dir (%3d, %d)=%d\n", pin, dir,
+				mt6306_set_gpio_dir(pin, dir));
+		   } else
+		   GPIOMSG("invalid format: '%s'", buf);
+	} else if (!strncmp(buf, "wy", 2)) {
+		/* MT6306 GPIO */
+		buf += 2;
+		if (2 == sscanf(buf, "=%d:%d", &group, &on)) {
+			GPIOMSG("[MT6306] set pin group vccen (%3d, %d)=%d\n", group, on,
+				mt6306_set_GPIO_pin_group_power(group, on));
+			GPIOMSG("[MT6306] set pin group vccen (%3d, %d)=%d\n", group, on,
+				mt6306_set_GPIO_pin_group_power(group, on));
+		} else
+			GPIOMSG("invalid format: '%s'", buf);
+#endif
+	} else if (!strncmp(buf, "-t", 2)) {
+		mt_gpio_self_test();
+	} else if (!strncmp(buf, "-c", 2)) {
+		mt_gpio_compare_base();
+		/* mt_gpio_compare_ext(); */
+	} else if (!strncmp(buf, "-da", 3)) {
+		mt_gpio_dump_addr_base();
+		/* mt_gpio_dump_addr_ext(); */
+	} else if (!strncmp(buf, "-dp", 3)) {
+		gpio_dump_regs();
+	} else if (!strncmp(buf, "-d", 2)) {
+		mt_gpio_dump();
+	} else if (!strncmp(buf, "tt", 2)) {
+		/* GPIOMSG("gpio reg test for next chip!\n"); */
+		/* mt_reg_test(); */
+	} else if (!strncmp(buf, "-md", 3)) {
+		/* buf +=3; */
+		/* sscanf(buf,"%s",md_str); */
+		/* mt_get_md_gpio_debug(md_str); */
+	} else if (!strncmp(buf, "-k", 2)) {
+		buf += 2;
+		if (!strncmp(buf, "s", 1) && (3 == sscanf(buf + 1, "%d %d %d", &num, &src, &div)))
+			GPIOMSG("set num(%d, %d, %d)=%d\n", num, src, div,
+				mt_set_clock_output(num, src, div));
+	} else if (!strncmp(buf, "g", 1) && (1 == sscanf(buf + 1, "%d", &num))) {
+			/* ret = mt_get_clock_output(num, &src,&div); */
+			/* GPIOMSG("get num(%ld, %ld, %ld)=%d\n", num, src, div,ret); */
+	} else {
+		GPIOMSG("invalid format: '%s'", buf);
+	}
+	return count;
+}
+
+
+
+

@@ -8,6 +8,8 @@
  *
  ******************************************************************************/
 
+/*#include <mach/mt_reg_base.h>
+#include <mach/mt_pmic_wrap.h>*/
 #include <mt-plat/mt_gpio.h>
 #include <mt-plat/mt_gpio_core.h>
 #include <mt_gpio_ext.h>
