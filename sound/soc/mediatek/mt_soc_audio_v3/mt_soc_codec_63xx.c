@@ -70,6 +70,9 @@
 #ifdef _GIT318_READY
 #include "mt_clkbuf_ctl.h"
 #endif
+#ifdef _GIT318_PMIC_READY
+#include <mach/mt_pmic.h>
+#endif
 #include <mt-plat/mt_chip.h>
 #ifdef _VOW_ENABLE
 #include <mt-plat/vow_api.h>

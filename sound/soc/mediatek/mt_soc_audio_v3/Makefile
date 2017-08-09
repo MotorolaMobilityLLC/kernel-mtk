@@ -5,7 +5,7 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y += -D_GIT318_READY
-
+ccflags-y += -D_GIT318_PMIC_READY
 EXTRA_CFLAGS := -I$(src)/../common
 obj-$(CONFIG_MT_SND_SOC_V3) += AudDrv_Afe.o AudDrv_Ana.o AudDrv_Clk.o AudDrv_Gpio.o
 obj-$(CONFIG_MT_SND_SOC_V3) += mt_soc_afe_control.o mt_soc_afe_connection.o mt_soc_pcm_common.o mt_soc_offload_gdma.o mt_soc_offload_common.o
