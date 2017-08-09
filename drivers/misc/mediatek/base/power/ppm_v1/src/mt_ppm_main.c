@@ -507,6 +507,8 @@ skip_pwr_check:
 	return final_state;
 }
 
+#define LOG_BUF_SIZE	128
+
 int mt_ppm_main(void)
 {
 	struct ppm_policy_data *pos;
@@ -563,18 +565,19 @@ int mt_ppm_main(void)
 	/* notify client and print debug message if limits are changed */
 	if (memcmp(c_req->cpu_limit, last_req->cpu_limit,
 		ppm_main_info.cluster_num * sizeof(*c_req->cpu_limit))) {
-		char buf[128];
+		char buf[LOG_BUF_SIZE];
 		char *ptr = buf;
 
 		/* print debug message */
 		if (prev_state != next_state)
-			ptr += sprintf(ptr, "[%s]->[%s]: ", ppm_get_power_state_name(prev_state),
+			ptr += snprintf(ptr, LOG_BUF_SIZE, "[%s]->[%s]: ",
+						ppm_get_power_state_name(prev_state),
 						ppm_get_power_state_name(next_state));
 		else
-			ptr += sprintf(ptr, "[%s]: ", ppm_get_power_state_name(next_state));
+			ptr += snprintf(ptr, LOG_BUF_SIZE, "[%s]: ", ppm_get_power_state_name(next_state));
 
 		for (i = 0; i < c_req->cluster_num; i++) {
-			ptr += sprintf(ptr, "(%d)(%d)(%d)(%d) ",
+			ptr += snprintf(ptr, LOG_BUF_SIZE, "(%d)(%d)(%d)(%d) ",
 				c_req->cpu_limit[i].min_cpufreq_idx,
 				c_req->cpu_limit[i].max_cpufreq_idx,
 				c_req->cpu_limit[i].min_cpu_core,
@@ -582,7 +585,7 @@ int mt_ppm_main(void)
 			);
 
 			if (c_req->cpu_limit[i].has_advise_freq || c_req->cpu_limit[i].has_advise_core)
-				ptr += sprintf(ptr, "[(%d)(%d)(%d)(%d)] ",
+				ptr += snprintf(ptr, LOG_BUF_SIZE, "[(%d)(%d)(%d)(%d)] ",
 					c_req->cpu_limit[i].has_advise_freq,
 					c_req->cpu_limit[i].advise_cpufreq_idx,
 					c_req->cpu_limit[i].has_advise_core,
