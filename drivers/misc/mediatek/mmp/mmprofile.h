@@ -100,26 +100,76 @@ long MMProfileLogMetaBitmap(MMP_Event event, MMP_LogType type, MMP_MetaDataBitma
 }
 
 /*
-* if in kernel config CONFIG_MMPROFILE is not set, and the kernel makefile had define
-* obj-$(CONFIG_MMPROFILE) += mmp/
-* , the mmp/ driver is compiled but not built-in. Put dummy API implementation here.
-* use MARCO defines, and make sure each module (which uses mmp) can build pass.
-*/
+ * if in kernel config CONFIG_MMPROFILE is not set, and the kernel makefile had define
+ * obj-$(CONFIG_MMPROFILE) += mmp/
+ * , the mmp/ driver is compiled but not built-in. Put dummy API implementation here.
+ */
 #ifndef CUSTOM_KERNEL_MMPROFILE
-#define MMProfileRegisterEvent(...) (0)
-#define MMProfileFindEvent(...) (0)
-#define MMProfileEnableEvent(...)
-#define MMProfileEnableEventRecursive(...)
-#define MMProfileEnableFTraceEvent(...)
-#define MMProfileEnableFTraceEventRecursive(...)
-#define MMProfileQueryEnable(...)  (0)
-#define MMProfileLogEx(...)
-#define MMProfileLog(...)
-#define MMProfileLogMeta(...)  (0)
-#define MMProfileLogMetaStructure(...)  (0)
-#define MMProfileLogMetaStringEx(...)  (0)
-#define MMProfileLogMetaString(...)  (0)
-#define MMProfileLogMetaBitmap(...)  (0)
+static inline MMP_Event MMProfileRegisterEvent(MMP_Event parent, const char *name)
+{
+	return 0;
+}
+
+static inline MMP_Event MMProfileFindEvent(MMP_Event parent, const char *name)
+{
+	return 0;
+}
+
+static inline void MMProfileEnableEvent(MMP_Event event, long enable)
+{
+}
+
+static inline void MMProfileEnableEventRecursive(MMP_Event event, long enable)
+{
+}
+
+static inline void MMProfileEnableFTraceEvent(MMP_Event event, long enable, long ftrace)
+{
+}
+
+static inline void MMProfileEnableFTraceEventRecursive(MMP_Event event, long enable, long ftrace)
+{
+}
+
+static inline long MMProfileQueryEnable(MMP_Event event)
+{
+	return 0;
+}
+
+static inline void MMProfileLogEx(MMP_Event event, MMP_LogType type, unsigned long data1, unsigned long data2)
+{
+}
+
+static inline void MMProfileLog(MMP_Event event, MMP_LogType type)
+{
+}
+
+static inline long MMProfileLogMeta(MMP_Event event, MMP_LogType type, MMP_MetaData_t *pMetaData)
+{
+	return 0;
+}
+
+static inline long MMProfileLogMetaStructure(MMP_Event event, MMP_LogType type,
+				MMP_MetaDataStructure_t *pMetaData)
+{
+	return 0;
+}
+
+static inline long MMProfileLogMetaStringEx(MMP_Event event, MMP_LogType type, unsigned long data1,
+				unsigned long data2, const char *str)
+{
+	return 0;
+}
+
+static inline long MMProfileLogMetaString(MMP_Event event, MMP_LogType type, const char *str)
+{
+	return 0;
+}
+
+static inline long MMProfileLogMetaBitmap(MMP_Event event, MMP_LogType type, MMP_MetaDataBitmap_t *pMetaData)
+{
+	return 0;
+}
 #endif
 
 #ifdef __cplusplus
