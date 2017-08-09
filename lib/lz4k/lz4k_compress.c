@@ -177,7 +177,7 @@ break_literal_1:
 			m_pos++, ip++;
 			while (__builtin_expect(!!(ip < (in_end-1)), 1)
 				&& *(unsigned short *)m_pos == *(unsigned short *)ip)
-			m_pos += 2, ip += 2;
+				m_pos += 2, ip += 2;
 			if (__builtin_expect(!!(ip < in_end), 1) && *m_pos == *ip)
 				m_pos += 1, ip += 1;
 		}
@@ -219,7 +219,7 @@ break_literal_1:
 
 		ii = ip;
 		if (__builtin_expect(!!(ip >= ip_end), 0))
-			 break;
+			break;
 	}
 
 	if ((in_end - ii) > 0) {
