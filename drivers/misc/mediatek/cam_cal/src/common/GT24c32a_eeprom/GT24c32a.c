@@ -41,6 +41,11 @@
 #define EEPROMDB(x, ...)
 #endif
 
+#ifdef CONFIG_COMPAT
+/* 64 bit */
+#include <linux/fs.h>
+#include <linux/compat.h>
+#endif
 
 static DEFINE_SPINLOCK(g_EEPROMLock); /* for SMP */
 #define EEPROM_I2C_BUSNUM 1
@@ -362,6 +367,84 @@ int iReadData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigned char 
 	/* EEPROMDB("[S24EEPORM] iReadData done\n" ); */
 	return 0;
 }
+
+#ifdef CONFIG_COMPAT
+static int compat_put_cal_info_struct(
+	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,
+	stCAM_CAL_INFO_STRUCT __user *data)
+{
+	compat_uptr_t p;
+	compat_uint_t i;
+	int err;
+
+	err = get_user(i, &data->u4Offset);
+	err |= put_user(i, &data32->u4Offset);
+	err |= get_user(i, &data->u4Length);
+	err |= put_user(i, &data32->u4Length);
+	/* Assume pointer is not change */
+#if 1
+	err |= get_user(p, &data->pu1Params);
+	err |= put_user(p, &data32->pu1Params);
+#endif
+	return err;
+}
+static int compat_get_cal_info_struct(
+	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,
+	stCAM_CAL_INFO_STRUCT __user *data)
+{
+	compat_uptr_t p;
+	compat_uint_t i;
+	int err;
+
+	err = get_user(i, &data32->u4Offset);
+	err |= put_user(i, &data->u4Offset);
+	err |= get_user(i, &data32->u4Length);
+	err |= put_user(i, &data->u4Length);
+	err |= get_user(p, &data32->pu1Params);
+	err |= put_user(compat_ptr(p), &data->pu1Params);
+
+	return err;
+}
+
+static long CAM_CAL_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	long ret;
+	int err;
+
+	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32;
+	stCAM_CAL_INFO_STRUCT __user *data;
+
+	CAM_CALDB("[CAMERA SENSOR] CAM_CAL_Ioctl_Compat,%p %p %x ioc size %d\n",
+	filp->f_op , filp->f_op->unlocked_ioctl, cmd, _IOC_SIZE(cmd));
+
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl)
+		return -ENOTTY;
+
+	switch (cmd) {
+
+	case COMPAT_CAM_CALIOC_G_READ: {
+		data32 = compat_ptr(arg);
+		data = compat_alloc_user_space(sizeof(*data));
+		if (data == NULL)
+			return -EFAULT;
+
+		err = compat_get_cal_info_struct(data32, data);
+		if (err)
+			return err;
+
+		ret = filp->f_op->unlocked_ioctl(filp, CAM_CALIOC_G_READ, (unsigned long)data);
+		err = compat_put_cal_info_struct(data32, data);
+
+
+		if (err != 0)
+			CAM_CALERR("[CAMERA SENSOR] compat_put_acdk_sensor_getinfo_struct failed\n");
+		return ret;
+	}
+	default:
+		return -ENOIOCTLCMD;
+	}
+}
+#endif
 
 
 /*******************************************************************************
