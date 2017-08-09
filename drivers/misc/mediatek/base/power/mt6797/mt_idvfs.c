@@ -19,6 +19,7 @@
 #include <linux/uaccess.h>
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
+#include <linux/suspend.h>	/* for suspend,resume */
 #include <linux/clk.h>
 #include <linux/cpu.h>		/* cpu_online */
 #ifdef CONFIG_OF
@@ -301,9 +302,10 @@ static int iDVFSAPB_pmic_manual_big(int	volt_mv) /* it's only for DA9214 PMIC  *
 
 int iDVFSAPB_init(void) /* it's only for DA9214 PMIC, return 0: 400K, 1:3.4M */
 {
-	unsigned char i2c_spd_reg;
+	/* unsigned char i2c_spd_reg; */
 
 	/* check PMIC support I2C speed when first init */
+#if 0
 	if (idvfs_init_opt.i2c_speed == 0) {
 		/* check DA9214 i2c speed */
 		/* bit 6 R/W PM_IF_HSM Enables continuous */
@@ -315,6 +317,10 @@ int iDVFSAPB_init(void) /* it's only for DA9214 PMIC, return 0: 400K, 1:3.4M */
 		idvfs_ver("iDVFSAPB: First init to get DA9214 HSM mode reg = 0x%x, Speed = %dKHz.\n",
 				i2c_spd_reg, idvfs_init_opt.i2c_speed);
 	}
+#else
+	/* due to preloader alread setting speed, and don't switch page when kernel initial */
+	idvfs_init_opt.i2c_speed = 3400;
+#endif
 
 	/* PMIC i2c pseed and set iDVFSAPB ctrl 3.4M = 0x1001, 400K = 0x1303 */
 	iDVFSAPB_Write(0xa0, ((idvfs_init_opt.i2c_speed == 3400) ? 0x1001 : 0x1303));
@@ -1436,7 +1442,7 @@ static ssize_t dvt_test_proc_write(struct file *file, const char __user *buffer,
 		case 9:
 			/* reserve for ptp1, don't remove case 9, when ptp1 enable then unrun this command */
 			/* if (err == 1) */
-				/* eem_init_det_tmp(); */
+			/*	eem_init_det_tmp(); */
 			rc = 0;
 			break;
 		case 10:
