@@ -21,6 +21,7 @@
 #define LCM_GPIO_MODE_05	5
 #define LCM_GPIO_MODE_06	6
 #define LCM_GPIO_MODE_07	7
+#define MAX_LCM_GPIO_MODE	8
 
 /* LCM_GPIO_DIR_DATA */
 #define LCM_GPIO_DIR_IN	0

@@ -954,6 +954,10 @@ unsigned char lcm_name_list[][128] = {
 #if defined(OTM9608_QHD_DSI_VDO)
 	"otm9608a_qhd_dsi_vdo",
 #endif
+
+#if defined(R63417_FHD_DSI_CMD_TRULY_NT50358)
+	"r63417_fhd_dsi_cmd_truly_nt50358_drv",
+#endif
 };
 #endif
 

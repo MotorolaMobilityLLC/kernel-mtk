@@ -2,6 +2,7 @@
 /dts-v1/;
 
 #include "mt6753.dtsi"
+#include <dt-bindings/lcm/r63417_fhd_dsi_cmd_truly_nt50358.dtsi>
 
 / {
 memory@00000000 {
@@ -666,3 +667,78 @@ memory@00000000 {
 	status = "okay";
 };
 /* USB GPIO Kernal Standardization end */
+
+/* LCM GPIO Kernal Standardization start */
+&pio {
+	lcm_mode_default: lcm_mode_default {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO80__FUNC_GPIO80>;
+		};
+	};
+
+	lcm_mode_00: lcm_mode@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO80__FUNC_GPIO80>;
+		};
+	};
+
+	lcm_mode_01: lcm_mode@1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO80__FUNC_I2S0_BCK>;
+		};
+	};
+
+	lcm_mode_02: lcm_mode@2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO80__FUNC_PCM1_CLK_1>;
+		};
+	};
+
+	lcm_mode_03: lcm_mode@3 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO80__FUNC_I2S3_BCK>;
+		};
+	};
+
+	lcm_mode_04: lcm_mode@4 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO80__FUNC_I2S1_BCK>;
+		};
+	};
+
+	lcm_mode_05: lcm_mode@5 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO80__FUNC_PWM4>;
+		};
+	};
+
+	lcm_mode_06: lcm_mode@6 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO80__FUNC_I2S2_BCK>;
+		};
+	};
+
+	lcm_mode_07: lcm_mode@7 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO80__FUNC_DBG_MON_A28>;
+		};
+	};
+};
+
+&lcm_mode {
+	pinctrl-names = "default", "lcm_mode_00", "lcm_mode_01", "lcm_mode_02", "lcm_mode_03", "lcm_mode_04",
+	 "lcm_mode_05", "lcm_mode_06", "lcm_mode_07";
+	pinctrl-0 = <&lcm_mode_default>;
+	pinctrl-1 = <&lcm_mode_00>;
+	pinctrl-2 = <&lcm_mode_01>;
+	pinctrl-3 = <&lcm_mode_02>;
+	pinctrl-4 = <&lcm_mode_03>;
+	pinctrl-5 = <&lcm_mode_04>;
+	pinctrl-6 = <&lcm_mode_05>;
+	pinctrl-7 = <&lcm_mode_06>;
+	pinctrl-8 = <&lcm_mode_07>;
+	lcm_power_gpio = <&pio 80 0>;
+	lcm_bl_gpio = <&pio 129 0>;
+	status = "okay";
+};
+/* LCM GPIO Kernal Standardization end */

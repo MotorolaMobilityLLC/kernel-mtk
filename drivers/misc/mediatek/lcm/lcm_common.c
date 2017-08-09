@@ -787,6 +787,14 @@ void lcm_common_suspend(void)
 		for (i = 0; i < _LCM_DTS.suspend_size; i++) {
 			suspend = &(_LCM_DTS.suspend[i]);
 			switch (suspend->func) {
+			case LCM_FUNC_GPIO:
+				lcm_gpio_set_data(suspend->type, &suspend->data_t1);
+				break;
+
+			case LCM_FUNC_I2C:
+				lcm_i2c_set_data(suspend->type, &suspend->data_t2);
+				break;
+
 			case LCM_FUNC_UTIL:
 				lcm_util_set_data(&lcm_util, suspend->type, &suspend->data_t1);
 				break;
@@ -920,12 +928,25 @@ void lcm_common_setbacklight(unsigned int level)
 			backlight_data_t3 = &(backlight->data_t3);
 			backlight_data_t3->data[0] = mapped_level;
 			switch (backlight->func) {
+			case LCM_FUNC_GPIO:
+				lcm_gpio_set_data(backlight->type, &backlight->data_t1);
+				break;
+
+			case LCM_FUNC_I2C:
+				lcm_i2c_set_data(backlight->type, &backlight->data_t2);
+				break;
+
 			case LCM_FUNC_UTIL:
 				lcm_util_set_data(&lcm_util, backlight->type, &backlight->data_t1);
 				break;
 
 			case LCM_FUNC_CMD:
 				switch (backlight->type) {
+				case LCM_UTIL_WRITE_CMD_V1:
+					lcm_util_set_write_cmd_v1(&lcm_util, &backlight->data_t5,
+								  1);
+					break;
+
 				case LCM_UTIL_WRITE_CMD_V2:
 					lcm_util_set_write_cmd_v2(&lcm_util, &backlight->data_t3,
 								  1);
@@ -970,6 +991,14 @@ unsigned int lcm_common_compare_id(void)
 		for (i = 0; i < _LCM_DTS.compare_id_size; i++) {
 			compare_id = &(_LCM_DTS.compare_id[i]);
 			switch (compare_id->func) {
+			case LCM_FUNC_GPIO:
+				lcm_gpio_set_data(compare_id->type, &compare_id->data_t1);
+				break;
+
+			case LCM_FUNC_I2C:
+				lcm_i2c_set_data(compare_id->type, &compare_id->data_t2);
+				break;
+
 			case LCM_FUNC_UTIL:
 				lcm_util_set_data(&lcm_util, compare_id->type,
 						  &compare_id->data_t1);
