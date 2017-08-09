@@ -46,7 +46,6 @@
 #include "AudDrv_Common.h"
 #include "AudDrv_Def.h"
 #include "AudDrv_Afe.h"
-#include "AudDrv_Ana.h"
 #include "AudDrv_Clk.h"
 #include "AudDrv_Kernel.h"
 #include "mt_soc_afe_control.h"
@@ -67,9 +66,9 @@
 static int8   OffloadService_name[]         = "offloadserivce_driver_device";
 
 #define USE_PERIODS_MAX        8192
-#define OFFLOAD_SIZE_MB        2
-#define OFFLOAD_SIZE_BYTES     (OFFLOAD_SIZE_MB<<21) /* 4M */
-#define FILL_BUFFERING         (OFFLOAD_SIZE_BYTES>>5) /* 64K */
+#define OFFLOAD_SIZE_BYTES         (USE_PERIODS_MAX << 9) /* 4M */
+#define FILL_BUFFERING             (USE_PERIODS_MAX << 3) /* 64K */
+#define RESERVE_DRAMPLAYBACKSIZE   (USE_PERIODS_MAX << 2) /* 32 K*/
 #if 0
 static struct snd_pcm_hardware mtk_pcm_dl3_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP |
@@ -131,7 +130,8 @@ static unsigned int mPlaybackDramState;
 static bool mPrepareDone;
 static struct snd_dma_buffer *Dl3_Playback_dma_buf;
 OFFLOAD_WRITE_T *params = NULL;
-/* #define use_wake_lock */
+static bool irq7_user;
+#define use_wake_lock
 #ifdef use_wake_lock
 static DEFINE_SPINLOCK(offload_lock);
 struct wake_lock Offload_suspend_lock;
@@ -144,6 +144,9 @@ static void OffloadService_IPICmd_Send(audio_ipi_msg_data_t data_type,
 					audio_ipi_msg_ack_t ack_type, uint16_t msg_id, uint32_t param1,
 					uint32_t param2, char *payload);
 static void OffloadService_IPICmd_Received(ipi_msg_t *ipi_msg);
+#endif
+#ifdef use_wake_lock
+static void mtk_compr_offload_int_wakelock(bool enable);
 #endif
 /*
 ============================================================================================
@@ -240,28 +243,6 @@ void OffloadService_SetDrain(bool enable, int draintype)
 /*****************************************************************************
 * DL3 init
 ****************************************************************************/
-#if 0
-static int mtk_offload_dl3_open(void)
-{
-	pr_debug("mtk_offload_dl3_open\n");
-	AfeControlSramLock();
-	if (GetSramState() == SRAM_STATE_FREE) {
-		mtk_pcm_dl3_hardware.buffer_bytes_max = GetPLaybackSramFullSize();
-		mPlaybackSramState = SRAM_STATE_PLAYBACKFULL;
-		SetSramState(mPlaybackSramState);
-	} else {
-		mtk_pcm_dl3_hardware.buffer_bytes_max = GetPLaybackDramSize();
-		mPlaybackSramState = SRAM_STATE_PLAYBACKDRAM;
-		mPlaybackUseSram = false;
-	}
-	AfeControlSramUnLock();
-	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
-		AudDrv_Emi_Clk_On();
-	AudDrv_Clk_On();
-	pMemControl = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DL3);
-	return 0;
-}
-#endif
 
 static int mtk_offload_dl3_prepare(void)
 {
@@ -297,6 +278,19 @@ static int mtk_offload_dl3_prepare(void)
 			SetI2SDacEnable(true);
 		} else
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
+#if 0
+		if (afe_offload_block.samplerate == 48000) {
+			Ana_Set_Reg(AFE_PMIC_NEWIF_CFG0, 8 << 12 | 0x330,
+				0xffffffff);  /* 48k sample rate */
+			Ana_Set_Reg(AFE_DL_SRC2_CON0_H, 8 << 12 | 0x300,
+				0xffffffff);   /* 48k sample rate */
+		} else {
+			Ana_Set_Reg(AFE_PMIC_NEWIF_CFG0, 7 << 12 | 0x330,
+				0xffffffff);  /* 44k sample rate */
+			Ana_Set_Reg(AFE_DL_SRC2_CON0_H, 7 << 12 | 0x300,
+				0xffffffff);   /* 44k sample rate */
+		}
+#endif
 		EnableAfe(true);
 		mPrepareDone = true;
 	}
@@ -314,10 +308,13 @@ static int mtk_offload_dl3_start(void)
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I24,
 			Soc_Aud_InterConnectionOutput_O04);
 	/*set IRQ info, only to Cm4*/
-	irq_add_user(&afe_offload_block,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
-		     afe_offload_block.samplerate,
-		     afe_offload_block.period_size);
+	if (!irq7_user) {
+		irq_add_user(&irq7_user,
+			Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
+			afe_offload_block.samplerate,
+			afe_offload_block.period_size);
+		irq7_user = true;
+	}
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3,  afe_offload_block.samplerate);
 	SetChannels(Soc_Aud_Digital_Block_MEM_DL3, afe_offload_block.channels);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, true);
@@ -328,8 +325,10 @@ static int mtk_offload_dl3_start(void)
 static int mtk_offload_dl3_stop(void)
 {
 	pr_debug("%s\n", __func__);
-	irq_remove_user(&afe_offload_block, Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE);
-
+	if (irq7_user) {
+		irq_remove_user(&irq7_user, Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE);
+		irq7_user = false;
+	}
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, false);
 	/* here start digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I23,
@@ -377,7 +376,8 @@ static void SetDL3Buffer(void)
 	pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr); */
 	/* set dram address top hardware */
 	Afe_Set_Reg(AFE_DL3_BASE , pblock->pucPhysBufAddr , 0xffffffff);
-	Afe_Set_Reg(AFE_DL3_END  , pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
+	Afe_Set_Reg(AFE_DL3_END  , pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1),
+		    0xffffffff);
 	memset_io(pblock->pucVirtBufAddr, 0, pblock->u4BufferSize);
 }
 
@@ -389,7 +389,7 @@ static void SetDL3Buffer(void)
 ============================================================================================================
 */
 #ifdef use_wake_lock
-void mtk_compr_offload_int_wakelock(bool enable)
+static void mtk_compr_offload_int_wakelock(bool enable)
 {
 	spin_lock(&offload_lock);
 	if (enable ^ afe_offload_block.wakelock) {
@@ -498,24 +498,28 @@ static void mtk_compr_offload_drain(bool enable, int draintype)
 static int mtk_compr_offload_open(void)
 {
 	scp_reserve_mblock_t MP3DRAM;
-
-	mPlaybackDramState = false;
 	MP3DRAM.num = MP3_MEM_ID;
 	/* 1. Get DRAM */
 	afe_offload_block.buf.u4BufferSize = 0;
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	MP3DRAM.start_phys = get_reserve_mem_phys(MP3DRAM.num);
 	MP3DRAM.start_virt = get_reserve_mem_virt(MP3DRAM.num);
-	MP3DRAM.size = get_reserve_mem_size(MP3DRAM.num);
+	MP3DRAM.size = get_reserve_mem_size(MP3DRAM.num) - RESERVE_DRAMPLAYBACKSIZE;
+#endif
+	irq7_user = false;
+	mPlaybackDramState = false;
 	afe_offload_block.buf.pucPhysBufAddr = (kal_uint32)MP3DRAM.start_phys;
 	afe_offload_block.buf.pucVirtBufAddr = (kal_uint8 *) MP3DRAM.start_virt;
 	afe_offload_block.buf.u4BufferSize = (kal_uint32)MP3DRAM.size;
-	memset_io((void *)afe_offload_block.buf.pucVirtBufAddr, 0, afe_offload_block.buf.u4BufferSize);
+	memset_io((void *)afe_offload_block.buf.pucVirtBufAddr, 0,
+		  afe_offload_block.buf.u4BufferSize);
 	afe_offload_block.hw_buffer_size = GetPLaybackSramFullSize();
 	if (params == NULL)
 		params = kmalloc(sizeof(*params), GFP_KERNEL);
 	/* allocate dram */
 	AudDrv_Clk_On();
-	AudDrv_Allocate_mem_Buffer(&offloaddev, Soc_Aud_Digital_Block_MEM_DL3, Dl3_MAX_BUFFER_SIZE);
+	AudDrv_Allocate_mem_Buffer(&offloaddev, Soc_Aud_Digital_Block_MEM_DL3,
+				   Dl3_MAX_BUFFER_SIZE);
 	Dl3_Playback_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DL3);
 	pMemControl = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DL3);
 	/* 3. Init Var & callback */
@@ -525,9 +529,13 @@ static int mtk_compr_offload_open(void)
 	OffloadService_SetDrain(false, afe_offload_block.drain_state);
 	/* register received ipi function */
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT
+	audio_messenger_ipi_init();
 	audio_reg_recv_message(TASK_SCENE_PLAYBACK_MP3, OffloadService_IPICmd_Received);
 #endif
-
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	register_feature(OPEN_DSP_FEATURE_ID);
+	request_freq();
+#endif
 #ifdef use_wake_lock
 	wake_lock_init(&Offload_suspend_lock, WAKE_LOCK_SUSPEND, "Offload wakelock");
 	mtk_compr_offload_int_wakelock(true);
@@ -549,8 +557,14 @@ static void mtk_compr_offload_free(void)
 	/* memset_io((void *)afe_offload_block.hw_buffer_area, 0, afe_offload_block.hw_buffer_size); */
 	SetOffloadEnableFlag(false);
 #ifdef use_wake_lock
-	mtk_compr_offload_int_wakelock(false);
-	wake_lock_destroy(&Offload_suspend_lock);
+	if (afe_offload_block.wakelock) {
+		mtk_compr_offload_int_wakelock(false);
+		wake_lock_destroy(&Offload_suspend_lock);
+	}
+#endif
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	deregister_feature(OPEN_DSP_FEATURE_ID);
+	request_freq();
 #endif
 }
 
@@ -809,10 +823,14 @@ static int mtk_compr_offload_pointer(void __user *arg)
 	int ret = 0;
 	struct OFFLOAD_TIMESTAMP_T timestamp;
 
-	/* if (afe_offload_block.state == OFFLOAD_STATE_RUNNING) {
-	OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK, MP3_TSTAMP, 0, 0, NULL);
-	ret = OffloadService_IPICmd_Wait(MP3_TSTAMP);
-	} */
+	if (afe_offload_block.state == OFFLOAD_STATE_RUNNING && !afe_offload_service.ipiwait) {
+#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+		OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
+					   MP3_TSTAMP, 0, 0, NULL);
+#endif
+
+		afe_offload_service.ipiwait = true;
+	}
 	if (afe_offload_block.state == OFFLOAD_STATE_INIT ||
 		afe_offload_block.state == OFFLOAD_STATE_IDLE ||
 		afe_offload_block.state == OFFLOAD_STATE_PREPARE) {
@@ -877,11 +895,14 @@ static void mtk_compr_offload_start(void)
 static void mtk_compr_offload_resume(void)
 {
 	pr_debug("%s\n", __func__);
-	afe_offload_block.state = afe_offload_block.pre_state;
-	irq_add_user(&afe_offload_block,
-		     Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
-		     afe_offload_block.samplerate,
-		     afe_offload_block.period_size);
+	afe_offload_block.state = OFFLOAD_STATE_RUNNING;
+	if (!irq7_user) {
+		irq_add_user(&irq7_user,
+			Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
+			afe_offload_block.samplerate,
+			afe_offload_block.period_size);
+		irq7_user = true;
+	}
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3, afe_offload_block.samplerate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, true);
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT
@@ -895,11 +916,16 @@ static void mtk_compr_offload_resume(void)
 static void mtk_compr_offload_pause(void)
 {
 	pr_debug("%s\n", __func__);
-	afe_offload_block.pre_state = afe_offload_block.state;
 	afe_offload_block.state = OFFLOAD_STATE_PAUSED;
-	irq_remove_user(&afe_offload_block, Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE);
+	if (irq7_user) {
+		irq7_user = false;
+		irq_remove_user(&irq7_user, Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE);
+	}
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL3, afe_offload_block.samplerate);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL3, false);
+#ifdef use_wake_lock
+	mtk_compr_offload_int_wakelock(false);
+#endif
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT
 	OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 				MP3_PAUSE, 0, 0, NULL);
@@ -913,11 +939,6 @@ static int mtk_compr_offload_stop(void)
 
 	afe_offload_block.state = OFFLOAD_STATE_IDLE;
 	pr_debug("%s\n", __func__);
-#ifdef MTK_AUDIO_TUNNELING_SUPPORT
-	OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
-				MP3_CLOSE, 0, 0, NULL);
-#endif
-	/* ret = OffloadService_IPICmd_Wait(MSG_DECODER_ON); */
 	SetOffloadEnableFlag(false);
 	/* stop hw */
 	mtk_offload_dl3_stop();
@@ -930,6 +951,14 @@ static int mtk_compr_offload_stop(void)
 	memset_io((void *)afe_offload_block.buf.pucVirtBufAddr, 0,
 		afe_offload_block.buf.u4BufferSize);
 	OffloadService_SetWriteblocked(false);
+
+#ifdef MTK_AUDIO_TUNNELING_SUPPORT
+	OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
+				MP3_CLOSE, 0, 0, NULL);
+#endif
+#ifdef use_wake_lock
+	mtk_compr_offload_int_wakelock(false);
+#endif
 	OffloadService_SetDrain(false, afe_offload_block.drain_state);
 	OffloadService_ReleaseWriteblocked();
 	return ret;
@@ -951,9 +980,6 @@ static int OffloadService_open(struct inode *inode, struct file *fp)
 static int OffloadService_release(struct inode *inode, struct file *fp)
 {
 	pr_warn("%s inode:%p, file:%p\n", __func__, inode, fp);
-	mtk_compr_offload_free();
-	if (!(fp->f_mode & FMODE_WRITE || fp->f_mode & FMODE_READ))
-		return -ENODEV;
 	return 0;
 }
 
@@ -1021,6 +1047,7 @@ static ssize_t OffloadService_read(struct file *fp,  char __user *data,
 static int OffloadService_flush(struct file *flip, fl_owner_t id)
 {
 	pr_warn("%s\n", __func__);
+	mtk_compr_offload_free();
 	return 0;
 }
 
