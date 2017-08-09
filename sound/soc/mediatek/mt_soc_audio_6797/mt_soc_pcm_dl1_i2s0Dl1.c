@@ -446,7 +446,7 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 		/* I2S out Setting */
 		u32AudioI2S = SampleRateTransform(runtime->rate, Soc_Aud_Digital_Block_I2S_OUT_2) << 8;
 		u32AudioI2S |= Soc_Aud_I2S_FORMAT_I2S << 3; /* us3 I2s format */
-		u32AudioI2S |= Soc_Aud_I2S_WLEN_WLEN_32BITS << 1; /* 32bit */	/* TODO: KC: why? */
+		u32AudioI2S |= mI2SWLen << 1;
 
 		if (mI2S0dl1_hdoutput_control == true) {
 			pr_warn("%s mI2S0dl1_hdoutput_control == %d\n", __func__,

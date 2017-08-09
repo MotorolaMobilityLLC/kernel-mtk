@@ -426,13 +426,6 @@ typedef struct {
 /*#define AUDIO_CLK_AUDDIV_0 (0x00120)*/
 /*#define AUDIO_CLK_AUDDIV_1 (0x00124)*/
 
-/* TODO: KC: fixed this, check if the following is necessary */
-/*#ifdef AUDIO_TOP_CON0
-#undef AUDIO_TOP_CON0
-#define AUDIO_TOP_CON0  (AFE_BASE + 0x0000)
-#endif
-#define AUDIO_TOP_CON0  (AFE_BASE + 0x0000)
-*/
 #define AUDIO_TOP_CON0            (AFE_BASE + 0x0000)
 #define AUDIO_TOP_CON1            (AFE_BASE + 0x0004)
 #define AUDIO_TOP_CON3            (AFE_BASE + 0x000c)

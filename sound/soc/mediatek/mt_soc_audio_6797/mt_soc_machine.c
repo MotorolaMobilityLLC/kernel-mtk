@@ -668,8 +668,12 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 			Afe_Get_Reg(AFE_CONN8));
 	n += scnprintf(buffer + n, size - n, "AFE_CONN9			   = 0x%x\n",
 			Afe_Get_Reg(AFE_CONN9));
-	n += scnprintf(buffer + n, size - n, "AFE_CONN10			   = 0x%x\n",
+	n += scnprintf(buffer + n, size - n, "AFE_CONN10		   = 0x%x\n",
 			Afe_Get_Reg(AFE_CONN10));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN28		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN28));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN29		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN29));
 	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON0		   = 0x%x\n",
 			Afe_Get_Reg(AFE_ASRC_CON0));
 	n += scnprintf(buffer + n, size - n, "AFE_ASRC_CON1		   = 0x%x\n",
@@ -1213,6 +1217,26 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 		.stream_name = MT_SOC_FMPLAYBACK_EXTSPEAKER_STREAM_NAME,
 		.cpu_dai_name   = MT_SOC_FM_PLAYBACK_EXTSPKDAI_NAME,
 		.platform_name  = MT_SOC_FM_I2S_PCM,
+		.codec_dai_name = "max98926-aif1",
+		.codec_name = "MAX98926_MT",
+		.init = mt_soc_audio_init,
+		.ops = &mt_machine_audio_ops,
+	},
+	{
+		.name = "ULDLOOPBACK_Speaker",
+		.stream_name = MT_SOC_ULDLLOOPBACK_SPEAKER_STREAM_NAME,
+		.cpu_dai_name = MT_SOC_ULDLLOOPBACK_SPK_DAI_NAME,
+		.platform_name = MT_SOC_ULDLLOOPBACK_PCM,
+		.codec_dai_name = "max98926-aif1",
+		.codec_name = "MAX98926_MT",
+		.init = mt_soc_audio_init,
+		.ops = &mt_machine_audio_ops,
+	},
+	{
+		.name = "MultiMedia_DL2_Speaker",
+		.stream_name = MT_SOC_DL2_SPEAKER_STREAM_NAME,
+		.cpu_dai_name	= MT_SOC_DL2DAI_SPK_NAME,
+		.platform_name	= MT_SOC_DL2_PCM,
 		.codec_dai_name = "max98926-aif1",
 		.codec_name = "MAX98926_MT",
 		.init = mt_soc_audio_init,

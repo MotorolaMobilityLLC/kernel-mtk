@@ -153,8 +153,7 @@
 #define AFE_VOW_PERIODIC_MON1        ((UINT32)(PMIC_REG_BASE + 0x2000 + 0x00d2))
 
 
-/* TODO: 6328 analog part */
-/* TODO: KC: not used */
+/* not used */
 #define STRUP_CON0  ((UINT32)(PMIC_REG_BASE + 0x0000))
 #define STRUP_CON1  ((UINT32)(PMIC_REG_BASE + 0x0002))
 #define STRUP_CON2  ((UINT32)(PMIC_REG_BASE + 0x0004))
@@ -181,7 +180,7 @@
 #define STRUP_CON23 ((UINT32)(PMIC_REG_BASE + 0x002e))
 #define STRUP_ANA_CON0      ((UINT32)(PMIC_REG_BASE+0x0030))
 #define STRUP_ANA_CON1      ((UINT32)(PMIC_REG_BASE+0x0032))
-/* TODO: KC: not used end */
+/* not used end */
 
 #define HWCID               ((UINT32)(PMIC_REG_BASE+0x0200))
 #define SWCID               ((UINT32)(PMIC_REG_BASE+0x0202))

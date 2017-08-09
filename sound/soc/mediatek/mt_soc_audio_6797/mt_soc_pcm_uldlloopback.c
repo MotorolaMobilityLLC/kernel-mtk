@@ -286,6 +286,7 @@ static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 	/* uint32 dVoiceModeSelect = 0; */
 	/* uint32 Audio_I2S_Dac = 0; */
 	uint32 u32AudioI2S = 0;
+	bool mI2SWLen;
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_err("%s  with mtk_uldlloopback_pcm_prepare\n", __func__);
@@ -313,6 +314,7 @@ static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 					  Soc_Aud_InterConnectionOutput_O28);
 		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
 					  Soc_Aud_InterConnectionOutput_O29);
+		mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_32BITS;
 	} else {
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL1, AFE_WLEN_16_BIT);
 		SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL2, AFE_WLEN_16_BIT);
@@ -328,6 +330,7 @@ static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 					  Soc_Aud_InterConnectionOutput_O28);
 		SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
 					  Soc_Aud_InterConnectionOutput_O29);
+		mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_16BITS;
 	}
 
 	/* interconnection setting */
@@ -359,14 +362,14 @@ static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 	u32AudioI2S |= Soc_Aud_LOW_JITTER_CLOCK << 12; /* Low jitter mode */
 	u32AudioI2S |= SampleRateTransform(runtime->rate, Soc_Aud_Digital_Block_I2S_OUT_2) << 8;
 	u32AudioI2S |= Soc_Aud_I2S_FORMAT_I2S << 3; /* us3 I2s format */
-	u32AudioI2S |= Soc_Aud_I2S_WLEN_WLEN_32BITS << 1; /* 32 BITS */
+	u32AudioI2S |= mI2SWLen << 1;
 	pr_warn("u32AudioI2S= 0x%x\n", u32AudioI2S);
 	Afe_Set_Reg(AFE_I2S_CON3, u32AudioI2S | 1, AFE_MASK_ALL);
 
 	/* start I2S DAC out */
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC) == false) {
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
-		SetI2SDacOut(substream->runtime->rate, false, Soc_Aud_I2S_WLEN_WLEN_32BITS);
+		SetI2SDacOut(substream->runtime->rate, false, mI2SWLen);
 		SetI2SDacEnable(true);
 	} else
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, true);
