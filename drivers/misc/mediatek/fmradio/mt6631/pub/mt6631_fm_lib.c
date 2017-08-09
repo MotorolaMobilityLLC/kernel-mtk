@@ -330,10 +330,24 @@ static fm_s32 mt6631_RampDown(void)
 	}
 
 	/* switch SPI clock to 26MHz */
-	mt6631_host_read(0x81026004, &tem);   /* Set 0x81026004[0] = 0x0 */
+	ret = mt6631_host_read(0x81026004, &tem);   /* Set 0x81026004[0] = 0x0 */
 	tem = tem & 0xFFFFFFFE;
-	mt6631_host_write(0x81026004, tem);
-	WCN_DBG(FM_DBG | CHIP, "Switch SPI clock to 26MHz\n");
+	ret = mt6631_host_write(0x81026004, tem);
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, "RampDown Switch SPI clock to 26MHz failed\n");
+		return ret;
+	}
+	WCN_DBG(FM_DBG | CHIP, "RampDown Switch SPI clock to 26MHz\n");
+
+	/* Rlease TOP2/64M sleep */
+	ret = mt6631_host_read(0x81021138, &tem);   /* Set 0x81021138[7] = 0x0 */
+	tem = tem & 0xFFFFFF7F;
+	ret = mt6631_host_write(0x81021138, tem);
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, "RampDown Rlease TOP2/64M sleep failed\n");
+		return ret;
+	}
+	WCN_DBG(FM_DBG | CHIP, "RampDown Rlease TOP2/64M sleep\n");
 
 	/* A0.0 Host control RF register */
 	ret = mt6631_set_bits(0x60, 0x0007, 0xFFF0);  /*Set 0x60 [D3:D0] = 0x7*/
@@ -615,9 +629,9 @@ static fm_s32 mt6631_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 	mt6631_host_write(0x81024030, tem);
 
 	/* Disable 26M crystal sleep */
-	mt6631_host_read(0x81021200, &tem);   /* Set 0x81021200[31] = 0x1 */
-	tem = tem | 0x80000000;
-	mt6631_host_write(0x81021200, tem);
+	mt6631_host_read(0x81021234, &tem);   /* Set 0x81021234[7] = 0x1 */
+	tem = tem | 0x00000080;
+	mt6631_host_write(0x81021234, tem);
 
 	/* turn on RG_TOP_BGLDO */
 	ret = mt6631_top_read(0x00c0, &host_reg);
@@ -785,10 +799,30 @@ static fm_s32 mt6631_PowerDown(void)
 		WCN_DBG(FM_ALT | CHIP, " Issue fmsys memory powr down failed\n");
 		return ret;
 	}
+
+	/*switch SPI clock to 26M*/
+	WCN_DBG(FM_DBG | CHIP, "PowerDown: switch SPI clock to 26M\n");
+	ret = mt6631_host_read(0x81026004, &tem);
+	tem = tem & 0xFFFFFFFE;
+	ret = mt6631_host_write(0x81026004, tem);
+	if (ret)
+		WCN_DBG(FM_ALT | CHIP, "PowerDown: switch SPI clock to 26M failed\n");
+
+	/*Release TOP2/64M sleep*/
+	WCN_DBG(FM_DBG | CHIP, "PowerDown: Release TOP2/64M sleep\n");
+	ret = mt6631_host_read(0x81021138, &tem);
+	tem = tem & 0xFFFFFF7F;
+	ret = mt6631_host_write(0x81021138, tem);
+	if (ret)
+		WCN_DBG(FM_ALT | CHIP, "PowerDown: Release TOP2/64M sleep failed\n");
+
 	/* Enable 26M crystal sleep */
-	mt6631_host_read(0x81021200, &tem);   /* Set 0x81021200[31] = 0x0 */
-	tem = tem & 0x7FFFFFFF;
-	mt6631_host_write(0x81021200, tem);
+	WCN_DBG(FM_DBG | CHIP, "PowerDown: Enable 26M crystal sleep,Set 0x81021234[7] = 0x0\n");
+	ret = mt6631_host_read(0x81021234, &tem);   /* Set 0x81021234[7] = 0x0 */
+	tem = tem & 0xFFFFFF7F;
+	ret = mt6631_host_write(0x81021234, tem);
+	if (ret)
+		WCN_DBG(FM_ALT | CHIP, "PowerDown: Enable 26M crystal sleep,Set 0x81021234[7] = 0x0 failed\n");
 
 	/* A0:set audio output I2X Rx mode: */
 	if (FM_LOCK(cmd_buf_lock))
@@ -916,7 +950,14 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 	if (mt6631_SPI_hopping_check(freq)) {
 
 		WCN_DBG(FM_NTC | CHIP, "%s: freq:%d is SPI hopping channel,turn on 64M PLL\n", __func__, (fm_s32) freq);
-
+		/*Disable TOP2/64M sleep*/
+		ret = mt6631_host_read(0x81021138, &reg_val);
+		if (ret)
+			WCN_DBG(FM_ERR | CHIP, "%s: read 64M reg 0x81021138 failed\n", __func__);
+		reg_val |= 0x00000080;
+		ret = mt6631_host_write(0x81021138, reg_val);
+		if (ret)
+			WCN_DBG(FM_ERR | CHIP, "%s: disable 64M sleep failed\n", __func__);
 		/*Turn on 64M PLL wr 0x81021110[28] 0x1	D28 */
 		ret = mt6631_host_read(0x81021110, &reg_val);
 		if (ret)
@@ -924,7 +965,7 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 		reg_val |= 0x10000000;
 		ret = mt6631_host_write(0x81021110, reg_val);
 		if (ret)
-			WCN_DBG(FM_ERR | CHIP, "%s: write 0x81021110 failed\n", __func__);
+			WCN_DBG(FM_ERR | CHIP, "%s: Turn on 64M pll write 0x81021110 failed\n", __func__);
 
 		for (i = 0; i < 100; i++) { /*rd 0x8002110C until D27 ==1*/
 
@@ -932,7 +973,7 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 
 			if (reg_val & 0x08000000) {
 				flag_spi_hopping = fm_true;
-				WCN_DBG(FM_DBG | CHIP, "%s: rd 0x8002110C[27] ==0x1 success !\n", __func__);
+				WCN_DBG(FM_NTC | CHIP, "%s: POLLING PLL_RDY success !\n", __func__);
 				/* switch SPI clock to 64MHz */
 				ret = mt6631_host_read(0x81026004, &reg_val); /* wr 0x81026004[0] 0x1	D0 */
 				reg_val |= 0x00000001;
@@ -1438,7 +1479,14 @@ static fm_s32 mt6631_soft_mute_tune(fm_u16 freq, fm_s32 *rssi, fm_bool *valid)
 	if (mt6631_SPI_hopping_check(freq)) {
 
 		WCN_DBG(FM_NTC | CHIP, "%s: freq:%d is SPI hopping channel,turn on 64M PLL\n", __func__, (fm_s32) freq);
-
+		/*Disable TOP2/64M sleep*/
+		ret = mt6631_host_read(0x81021138, &reg_val);
+		if (ret)
+			WCN_DBG(FM_ERR | CHIP, "%s: read 64M reg 0x81021138 failed\n", __func__);
+		reg_val |= 0x00000080;
+		ret = mt6631_host_write(0x81021138, reg_val);
+		if (ret)
+			WCN_DBG(FM_ERR | CHIP, "%s: disable 64M sleep failed\n", __func__);
 		/*Turn on 64M PLL wr 0x81021110[28] 0x1	D28 */
 		ret = mt6631_host_read(0x81021110, &reg_val);
 		if (ret)
@@ -1446,7 +1494,7 @@ static fm_s32 mt6631_soft_mute_tune(fm_u16 freq, fm_s32 *rssi, fm_bool *valid)
 		reg_val |= 0x10000000;
 		ret = mt6631_host_write(0x81021110, reg_val);
 		if (ret)
-			WCN_DBG(FM_ERR | CHIP, "%s: write 0x81021110 failed\n", __func__);
+			WCN_DBG(FM_ERR | CHIP, "%s: Turn on 64M pll write 0x81021110 failed\n", __func__);
 
 		for (i = 0; i < 100; i++) { /*rd 0x8002110C until D27 ==1*/
 
@@ -1454,7 +1502,7 @@ static fm_s32 mt6631_soft_mute_tune(fm_u16 freq, fm_s32 *rssi, fm_bool *valid)
 
 			if (reg_val & 0x08000000) {
 				flag_spi_hopping = fm_true;
-				WCN_DBG(FM_DBG | CHIP, "%s: rd 0x8002110C[27] ==0x1 success !\n", __func__);
+				WCN_DBG(FM_NTC | CHIP, "%s: POLLING PLL_RDY success !\n", __func__);
 				/* switch SPI clock to 64MHz */
 				ret = mt6631_host_read(0x81026004, &reg_val); /* wr 0x81026004[0] 0x1	D0 */
 				reg_val |= 0x00000001;
