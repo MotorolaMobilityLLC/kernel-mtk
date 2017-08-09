@@ -24,6 +24,7 @@
 #include <linux/of_irq.h>
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
+#include <linux/switch.h>
 
 #include "disp_drv_platform.h"
 #include "ion_drv.h"
@@ -291,6 +292,46 @@ static void _primary_path_unlock(const char *caller)
 	dprec_logger_done(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 }
 
+static DECLARE_WAIT_QUEUE_HEAD(display_state_wait_queue);
+
+static DISP_POWER_STATE primary_get_state(void)
+{
+	return pgc->state;
+}
+static DISP_POWER_STATE primary_set_state(DISP_POWER_STATE new_state)
+{
+	DISP_POWER_STATE old_state = pgc->state;
+
+	pgc->state = new_state;
+	DISPMSG("%s %d to %d\n", __func__, old_state, new_state);
+	wake_up(&display_state_wait_queue);
+	return old_state;
+}
+
+/* use MAX_SCHEDULE_TIMEOUT to wait for ever
+ * NOTES: primary_path_lock should NOT be held when call this func !!!!!!!!
+ */
+#define __primary_display_wait_state(condition, timeout)                       \
+({                                                                     \
+	wait_event_timeout(display_state_wait_queue, condition, timeout);\
+})
+
+long primary_display_wait_state(DISP_POWER_STATE state, long timeout)
+{
+	long ret;
+
+	ret = __primary_display_wait_state(primary_get_state() == state, timeout);
+	return ret;
+}
+
+long primary_display_wait_not_state(DISP_POWER_STATE state, long timeout)
+{
+	long ret;
+
+	ret = __primary_display_wait_state(primary_get_state() != state, timeout);
+	return ret;
+}
+
 static void _primary_path_vsync_lock(void)
 {
 	mutex_lock(&(pgc->vsync_lock));
@@ -433,7 +474,7 @@ int primary_display_save_power_for_idle(int enter, unsigned int need_primary_loc
 	if (need_primary_lock)	/* if outer api has add primary lock, do not have to lock again */
 		_primary_path_lock(__func__);
 
-	if (pgc->state == DISP_SLEPT) {
+	if (primary_get_state() == DISP_SLEPT) {
 		DISPMSG("suspend mode can not enable low power.\n");
 		goto end;
 	}
@@ -609,7 +650,7 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 			continue;
 
 		_primary_path_lock(__func__);
-		if (pgc->state == DISP_SLEPT) {
+		if (primary_get_state() != DISP_ALIVE) {
 			MMProfileLogEx(ddp_mmp_get_events()->esd_check_t, MMProfileFlagPulse, 1, 0);
 			/* DISPCHECK("[ddp_idle]primary display path is slept?? -- skip ddp_idle\n"); */
 			_primary_path_unlock(__func__);
@@ -3754,7 +3795,7 @@ static int _disp_primary_path_check_trigger(void *data)
 			       MMProfileFlagPulse, 0, 0);
 
 		_primary_path_lock(__func__);
-		if (pgc->state != DISP_SLEPT) {
+		if (primary_get_state() == DISP_ALIVE) {
 #ifdef MTK_DISP_IDLE_LP
 			last_primary_trigger_time = sched_clock();
 			_disp_primary_path_exit_idle(__func__, 0);
@@ -4249,6 +4290,9 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 	    && (userdata == DISP_SESSION_DECOUPLE_MODE || userdata == 5)) {
 		static cmdqRecHandle cmdq_handle;
 		unsigned int rdma_pitch_sec, rdma_fmt;
+
+		if (primary_get_state() != DISP_ALIVE)
+			return 0;
 
 		if (cmdq_handle == NULL)
 			ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
@@ -5051,6 +5095,13 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps)
 
 	pgc->state = DISP_ALIVE;
 
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+	disp_switch_data.name = "disp";
+	disp_switch_data.index = 0;
+	disp_switch_data.state = DISP_ALIVE;
+	ret = switch_dev_register(&disp_switch_data);
+#endif
+
 	primary_display_sodi_rule_init();
 
 #ifdef MTK_DISP_IDLE_LP
@@ -5256,6 +5307,26 @@ int primary_suspend_release_fence(void)
 	return 0;
 }
 
+static void primary_display_suspend_wait_tui(void)
+{
+	while (primary_get_state() == DISP_BLANK) {
+		_primary_path_vsync_unlock();
+		_primary_path_unlock(__func__);
+		_primary_path_esd_check_unlock();
+		disp_sw_mutex_unlock(&(pgc->capture_lock));
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+		switch_set_state(&disp_switch_data, DISP_SLEPT);
+#endif
+		primary_display_wait_state(DISP_ALIVE, MAX_SCHEDULE_TIMEOUT);
+
+		disp_sw_mutex_lock(&(pgc->capture_lock));
+		_primary_path_esd_check_lock();
+		_primary_path_lock(__func__);
+		_primary_path_vsync_lock();
+		DISPCHECK("primary_display_suspend wait tui done stat=%d\n", primary_get_state());
+	}
+}
+
 int primary_display_suspend(void)
 {
 	DISP_STATUS ret = DISP_STATUS_OK;
@@ -5269,6 +5340,11 @@ int primary_display_suspend(void)
 	_primary_path_esd_check_lock();
 	_primary_path_lock(__func__);
 	_primary_path_vsync_lock();
+
+	DISPCHECK("wait tui finish[begin]\n");
+	primary_display_suspend_wait_tui();
+	DISPCHECK("wait tui finish[end]\n");
+
 	if (pgc->state == DISP_SLEPT) {
 		DISPCHECK("primary display path is already sleep, skip\n");
 		goto done;
@@ -5630,6 +5706,9 @@ int primary_display_resume(void)
 	DISPCHECK("[POWER]wakeup aal/od trigger process[end]\n");
 #endif
 	pgc->state = DISP_ALIVE;
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+	switch_set_state(&disp_switch_data, DISP_ALIVE);
+#endif
 
 done:
 	_primary_path_unlock(__func__);
@@ -6475,7 +6554,7 @@ int primary_display_config_input_multiple(disp_session_input_config *session_inp
 
 	_primary_path_lock(__func__);
 
-	if (pgc->state == DISP_SLEPT && DISP_SESSION_TYPE(session_input->session_id) != DISP_SESSION_MEMORY) {
+	if (primary_get_state() == DISP_SLEPT && DISP_SESSION_TYPE(session_input->session_id) != DISP_SESSION_MEMORY) {
 		DISPMSG("%s, skip because primary dipslay is sleep\n", __func__);
 #ifdef CONFIG_SINGLE_PANEL_OUTPUT
 		primary_suspend_release_ovl_fence(session_input);
@@ -6655,6 +6734,9 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagStart,
 		       pgc->session_mode, sess_mode);
+
+	if (primary_get_state() == DISP_BLANK)
+		sess_mode = DISP_SESSION_DECOUPLE_MODE;
 
 	if (pgc->session_mode == sess_mode)
 		goto done;
@@ -8826,4 +8908,70 @@ done:
 	_primary_path_unlock(__func__);
 	DISPCHECK("[display_test]Display test[End]\n");
 	return ret;
+}
+
+static DISP_POWER_STATE tui_power_stat_backup;
+static int tui_session_mode_backup;
+
+int display_enter_tui(void)
+{
+	msleep(500);
+	DISPMSG("TDDP: %s\n", __func__);
+
+	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagStart, 0, 0);
+
+	_primary_path_lock(__func__);
+
+	if (primary_get_state() != DISP_ALIVE) {
+		DISPERR("Can't enter tui: current_stat=%d is not alive\n", primary_get_state());
+		goto err0;
+	}
+
+	tui_power_stat_backup = primary_set_state(DISP_BLANK);
+
+	if (primary_display_is_mirror_mode()) {
+		DISPERR("Can't enter tui: current_mode=%s\n", session_mode_spy(pgc->session_mode));
+		goto err1;
+	}
+
+#ifdef MTK_DISP_IDLE_LP
+	_disp_primary_path_exit_idle(__func__, 0);
+#endif
+	tui_session_mode_backup = pgc->session_mode;
+	primary_display_switch_mode_nolock(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0);
+
+	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagPulse, 0, 1);
+	_primary_path_unlock(__func__);
+	return 0;
+
+err1:
+	primary_set_state(tui_power_stat_backup);
+
+err0:
+	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagEnd, 0, 0);
+	_primary_path_unlock(__func__);
+
+	return -1;
+}
+
+int display_exit_tui(void)
+{
+	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagPulse, 1, 1);
+
+	_primary_path_lock(__func__);
+
+	primary_set_state(tui_power_stat_backup);
+
+	/* trigger rdma to display last normal buffer
+	_decouple_update_rdma_config_nolock();*/
+	/* workaround: wait until this frame triggered to lcm */
+	msleep(32);
+	primary_display_switch_mode_nolock(tui_session_mode_backup, pgc->session_id, 0);
+
+	_primary_path_unlock(__func__);
+
+	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagEnd, 0, 0);
+	DISPMSG("TDDP: %s\n", __func__);
+
+	return 0;
 }
