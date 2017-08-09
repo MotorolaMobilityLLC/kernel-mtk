@@ -1167,6 +1167,16 @@
 			interrupts = <0 90 0x8>;
 		};
 
+		/* NFC start */
+		nfc:nfc@0 {
+			compatible = "mediatek,nfc-gpio-v2";
+			gpio-ven = <4>;
+			gpio-rst = <3>;
+			gpio-eint = <1>;
+			gpio-irq = <2>;
+		};
+		/* NFC end */
+
 		gps {
 			compatible = "mediatek,mt3326-gps";
 		};
