@@ -29,6 +29,8 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #define DYNAMIC_TABLE2REAL_PERCENTAGE	(58)
 #endif
 
+#define DISABLE_CLUSTER_MIGRATION	(1)
+
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
 #define DLPT_MAX_REAL_POWER_FY	(12504)
