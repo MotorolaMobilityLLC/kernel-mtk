@@ -623,7 +623,7 @@ static int md_ccif_op_reset(struct ccci_modem *md)
 	disable_irq_nosync(md_ctrl->md_wdt_irq_id);
 	md->ops->broadcast_state(md, RESET);	/* to block char's write operation */
 	del_timer(&md->bootup_timer);
-	md->boot_stage = MD_BOOT_STAGE_0;
+	ccci_update_md_boot_stage(md, MD_BOOT_STAGE_0);
 	return 0;
 }
 

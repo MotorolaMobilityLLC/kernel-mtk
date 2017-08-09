@@ -494,7 +494,6 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 			CCCI_ERR_MSG(md->index, KERN, "receive invalid MD_EX\n");
 		} else {
 			spin_lock_irqsave(&md->ctrl_lock, flags);
-			/* md->boot_stage = MD_BOOT_STAGE_EXCEPTION; */
 			md->ee_info_flag |= ((1 << MD_EE_FLOW_START) | (1 << MD_EE_MSG_GET) | (1 << MD_STATE_UPDATE) |
 					     (1 << MD_EE_TIME_OUT_SET));
 			md->config.setting |= MD_SETTING_RELOAD;
@@ -521,7 +520,6 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 			if ((md->ee_info_flag & (1 << MD_STATE_UPDATE)) == 0) {
 				md->ee_info_flag |= (1 << MD_STATE_UPDATE);
 				md->ee_info_flag &= ~(1 << MD_EE_TIME_OUT_SET);
-				/* md->boot_stage = MD_BOOT_STAGE_EXCEPTION; */
 				md->config.setting |= MD_SETTING_RELOAD;
 				need_update_state = 1;
 			}
@@ -2971,7 +2969,7 @@ err_exit:
 		if (debug_info->more_info == MD_EE_CASE_NO_RESPONSE)
 			dump_flag |= CCCI_AED_DUMP_CCIF_REG;
 	}
-	md->boot_stage = MD_BOOT_STAGE_EXCEPTION;
+	ccci_update_md_boot_stage(md, MD_BOOT_STAGE_EXCEPTION);
 	/* update here to maintain handshake stage info during exception handling */
 	if (debug_info->type == MD_EX_TYPE_C2K_ERROR && debug_info->fatal_error.err_code1 == MD_EX_C2K_FATAL_ERROR)
 		CCCI_INF_MSG(md->index, KERN, "C2K EE, No need trigger DB\n");
@@ -3209,7 +3207,6 @@ void md_ex_monitor_func(unsigned long data)
 	}
 
 	if (need_update_state) {
-		/* md->boot_stage = MD_BOOT_STAGE_EXCEPTION; */
 		md->config.setting |= MD_SETTING_RELOAD;
 		md->ops->broadcast_state(md, EXCEPTION);
 	}
