@@ -200,7 +200,7 @@ static P_OSAL_OP _stp_psm_get_op(MTKSTP_PSM_T *stp_psm, P_OSAL_OP_Q pOpQ)
 		STP_PSM_DBG_FUNC("last_active_opId(%d)\n", stp_psm->last_active_opId);
 
 	if (!pOp)
-		STP_PSM_WARN_FUNC("RB_GET fail\n");
+		STP_PSM_DBG_FUNC("RB_GET fail\n");
 
 	return pOp;
 }
@@ -708,7 +708,7 @@ static inline INT32 _stp_psm_notify_wmt_host_awake_wq(MTKSTP_PSM_T *stp_psm)
 		return STP_PSM_OPERATION_FAIL;
 	pOp = _stp_psm_get_free_op(stp_psm);
 	if (!pOp) {
-		STP_PSM_WARN_FUNC("get_free_lxop fail\n");
+			STP_PSM_DBG_FUNC("get_free_lxop fail\n");
 		return -1;	/* break; */
 	}
 	pOp->op.opId = STP_OPID_PSM_HOST_AWAKE;
@@ -729,7 +729,7 @@ static inline INT32 _stp_psm_notify_wmt_wakeup_wq(MTKSTP_PSM_T *stp_psm)
 		return STP_PSM_OPERATION_FAIL;
 	pOp = _stp_psm_get_free_op(stp_psm);
 	if (!pOp) {
-		STP_PSM_WARN_FUNC("get_free_lxop fail\n");
+			STP_PSM_DBG_FUNC("get_free_lxop fail\n");
 		return -1;	/* break; */
 	}
 	pOp->op.opId = STP_OPID_PSM_WAKEUP;
@@ -761,7 +761,7 @@ static inline INT32 _stp_psm_notify_wmt_sleep_wq(MTKSTP_PSM_T *stp_psm)
 		return 0;
 	pOp = _stp_psm_get_free_op(stp_psm);
 	if (!pOp) {
-		STP_PSM_WARN_FUNC("get_free_lxop fail\n");
+			STP_PSM_DBG_FUNC("get_free_lxop fail\n");
 		return -1;	/* break; */
 	}
 	pOp->op.opId = STP_OPID_PSM_SLEEP;
@@ -1042,7 +1042,8 @@ static inline INT32 _stp_psm_notify_wmt(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 						 osal_wake_lock_count(&stp_psm->wake_lock));
 
 				STP_PSM_DBG_FUNC("mt_combo_plt_exit_deep_idle++\n");
-				mt_combo_plt_exit_deep_idle(COMBO_IF_UART);
+				mt_combo_plt_exit_deep_idle
+				 (MTK_WCN_BOOL_TRUE == mtk_wcn_stp_is_sdio_mode() ? COMBO_IF_MSDC : COMBO_IF_UART);
 				STP_PSM_DBG_FUNC("mt_combo_plt_exit_deep_idle--\n");
 
 				stp_psm->wmt_notify(WAKEUP);
@@ -1062,7 +1063,8 @@ static inline INT32 _stp_psm_notify_wmt(MTKSTP_PSM_T *stp_psm, const MTKSTP_PSM_
 						 osal_wake_lock_count(&stp_psm->wake_lock));
 
 				STP_PSM_DBG_FUNC("mt_combo_plt_exit_deep_idle++\n");
-				mt_combo_plt_exit_deep_idle(COMBO_IF_UART);
+				mt_combo_plt_exit_deep_idle
+				 (MTK_WCN_BOOL_TRUE == mtk_wcn_stp_is_sdio_mode() ? COMBO_IF_MSDC : COMBO_IF_UART);
 				STP_PSM_DBG_FUNC("mt_combo_plt_exit_deep_idle--\n");
 
 				stp_psm->wmt_notify(HOST_AWAKE);

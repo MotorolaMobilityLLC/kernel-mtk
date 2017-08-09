@@ -837,6 +837,8 @@ INT32 wmt_plat_all_eint_ctrl(ENUM_PIN_STATE state)
 
 INT32 wmt_plat_uart_ctrl(ENUM_PIN_STATE state)
 {
+#ifdef GPIO_COMBO_URXD_PIN
+#ifdef GPIO_COMBO_UTXD_PIN
 	switch (state) {
 	case PIN_STA_MUX:
 	case PIN_STA_INIT:
@@ -859,6 +861,12 @@ INT32 wmt_plat_uart_ctrl(ENUM_PIN_STATE state)
 		WMT_WARN_FUNC("WMT-PLAT:Warnning, invalid state(%d) on UART Group\n", state);
 		break;
 	}
+#else
+	WMT_WARN_FUNC("WMT-PLAT:Warnning, GPIO_COMBO_UTXD_PIN is not define\n");
+#endif
+#else
+	WMT_WARN_FUNC("WMT-PLAT:Warnning, GPIO_COMBO_URXD_PIN is not define\n");
+#endif
 
 	return 0;
 }
@@ -1223,6 +1231,11 @@ static INT32 wmt_plat_uart_rx_ctrl(ENUM_PIN_STATE state)
 		pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_state[GPIO_IN_PULL_DIS]);
 		WMT_DBG_FUNC("WMT-PLAT:UART Rx input pull none\n");
+		break;
+	case PIN_STA_IN_H:
+		pinctrl_select_state(gpio_ctrl_info.pinctrl_info,
+				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_state[GPIO_IN_PULLUP]);
+		WMT_DBG_FUNC("WMT-PLAT:UART Rx input pull high\n");
 		break;
 	case PIN_STA_OUT_H:
 		gpio_direction_output(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num, 1);

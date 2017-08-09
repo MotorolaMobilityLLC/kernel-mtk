@@ -187,7 +187,7 @@ INT32 wmt_dbg_cmd_test_api(ENUM_WMTDRV_CMD_T cmd)
 
 	pOp = wmt_lib_get_free_op();
 	if (!pOp) {
-		WMT_WARN_FUNC("get_free_lxop fail\n");
+		WMT_DBG_FUNC("get_free_lxop fail\n");
 		return MTK_WCN_BOOL_FALSE;
 	}
 

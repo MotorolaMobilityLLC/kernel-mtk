@@ -73,6 +73,7 @@ typedef struct mtk_stp_btm {
 	OSAL_OP_Q rFreeOpQ;	/* free op queue */
 	OSAL_OP_Q rActiveOpQ;	/* active op queue */
 	OSAL_OP arQue[STP_BTM_OP_BUF_SIZE];	/* real op instances */
+	P_OSAL_OP pCurOP;	/* current op */
 
 	/*wmt_notify */
 	 INT32 (*wmt_notify)(MTKSTP_BTM_WMT_OP_T);
@@ -109,7 +110,8 @@ INT32 stp_notify_btm_handle_wmt_lte_coex(MTKSTP_BTM_T *stp_btm);
 extern void dump_uart_history(void);
 #endif
 INT32 wmt_btm_trigger_reset(VOID);
-
+INT32 stp_btm_set_current_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP pOp);
+P_OSAL_OP stp_btm_get_current_op(MTKSTP_BTM_T *stp_btm);
 
 MTKSTP_BTM_T *stp_btm_init(VOID);
 

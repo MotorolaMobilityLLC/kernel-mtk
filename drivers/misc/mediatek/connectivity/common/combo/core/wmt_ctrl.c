@@ -778,7 +778,7 @@ INT32 wmt_ctrl_sdio_func(P_WMT_CTRL_DATA pWmtCtrlData)
 					break;
 				}
 			}
-			if (!retry || iRet)
+			if (!retry && iRet)
 				WMT_ERR_FUNC
 				    ("mtk_wcn_hif_sdio_wmt_control(%d, TRUE) fail(%d) retry(%d)\n",
 				     sdioFuncType, iRet, retry);

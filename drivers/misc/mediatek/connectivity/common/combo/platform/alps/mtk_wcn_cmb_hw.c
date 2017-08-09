@@ -169,7 +169,7 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 			iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_OUT_H);
 			break;
 		case STP_SDIO_IF_TX:
-			iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_IN_NP);
+				iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_IN_L);
 			break;
 		default:
 			WMT_ERR_FUNC("not supported common interface\n");
@@ -191,7 +191,7 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 
 	/*set UART Tx/Rx to UART mode */
 	if (0x6630 == mtk_wcn_wmt_chipid_query())
-		iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_MUX);
+			iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_IN_H);
 
 
 	/*7. set audio interface to CMB_STUB_AIF_1, BT PCM ON, I2S OFF */
@@ -231,7 +231,7 @@ INT32 mtk_wcn_cmb_hw_rst(VOID)
 			iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_OUT_H);
 			break;
 		case STP_SDIO_IF_TX:
-			iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_IN_NP);
+				iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_IN_L);
 			break;
 		default:
 			WMT_ERR_FUNC("not supported common interface\n");
@@ -254,7 +254,7 @@ INT32 mtk_wcn_cmb_hw_rst(VOID)
 
 	/*set UART Tx/Rx to UART mode */
 	if (0x6630 == mtk_wcn_wmt_chipid_query())
-		iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_MUX);
+			iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_IN_H);
 
 	WMT_INFO_FUNC("CMB-HW, hw_rst finish, eirq should be enabled after this step\n");
 	return 0;

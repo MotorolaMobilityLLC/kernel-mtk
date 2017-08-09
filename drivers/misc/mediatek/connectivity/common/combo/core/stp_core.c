@@ -566,10 +566,8 @@ static void stp_tx_timeout_handler(unsigned long data)
 {
 	STP_WARN_FUNC("call retry btm retry wq ...\n");
 	/*shorten the softirq lattency */
-#if 0
 	if (mtk_wcn_stp_is_uart_mand_mode() || mtk_wcn_stp_is_uart_fullset_mode())
 		stop_log();
-#endif
 	stp_btm_notify_stp_retry_wq(STP_BTM_CORE(stp_core_ctx));
 	STP_WARN_FUNC("call retry btm retry wq ...#\n");
 }
@@ -635,10 +633,8 @@ VOID stp_do_tx_timeout(VOID)
 
 			STP_ERR_FUNC("TX retry limit = %d\n", MTKSTP_RETRY_LIMIT);
 			osal_assert(0);
-#if 0
 			if (mtk_wcn_stp_is_uart_mand_mode() || mtk_wcn_stp_is_uart_fullset_mode())
 				stop_log();
-#endif
 			mtk_wcn_stp_dbg_dump_package();
 			stp_notify_btm_dump(STP_BTM_CORE(stp_core_ctx));
 
@@ -1940,10 +1936,8 @@ INT32 mtk_wcn_stp_parser_data(PUINT8 buffer, UINT32 length)
 					continue;
 				}
 				if (STP_IS_READY(stp_core_ctx)) {
-#if 0
 					if (mtk_wcn_stp_is_uart_mand_mode() || mtk_wcn_stp_is_uart_fullset_mode())
 						stop_log();
-#endif
 					mtk_wcn_stp_dbg_dump_package();
 					stp_notify_btm_dump(STP_BTM_CORE(stp_core_ctx));
 				}
@@ -2011,10 +2005,10 @@ INT32 mtk_wcn_stp_parser_data(PUINT8 buffer, UINT32 length)
 					/*STP packet 4-bytes alignment */
 					/*Discard padding bytes , otherwise make parser state machine disorder */
 					if (0 == i)
-						STP_INFO_FUNC
+						STP_DBG_FUNC
 						    ("\n[STP]FW_EVENT========= no padding byte =========\n");
 					else if (i <= 4) {
-						STP_INFO_FUNC
+						STP_DBG_FUNC
 						    ("\n[STP]FW_EVENT========= block padding %d bytes =========\n",
 						     i);
 						p_data += i;
@@ -2026,7 +2020,7 @@ INT32 mtk_wcn_stp_parser_data(PUINT8 buffer, UINT32 length)
 						       6) & 0x03)) & 0x03;
 						p_data += padding_len;
 						i -= padding_len;
-						STP_INFO_FUNC
+						STP_DBG_FUNC
 						    ("\n[STP]FW_EVENT========= STP Agg padding %d bytes =========\n",
 						     padding_len);
 					}
@@ -2095,7 +2089,7 @@ INT32 mtk_wcn_stp_parser_data(PUINT8 buffer, UINT32 length)
 					/*STP packet 4-bytes alignment */
 					/*Discard padding bytes , otherwise make parser state machine disorder */
 					if (i <= 4) {
-						STP_INFO_FUNC
+						STP_DBG_FUNC
 						    ("\n[STP]FW_EVENT========= block padding %d bytes =========\n",
 						     i - 1);
 						p_data += (i - 1);
@@ -2107,7 +2101,7 @@ INT32 mtk_wcn_stp_parser_data(PUINT8 buffer, UINT32 length)
 						       6) & 0x03)) & 0x03;
 						p_data += padding_len;
 						i -= padding_len;
-						STP_INFO_FUNC
+						STP_DBG_FUNC
 						    ("\n[STP]FW_EVENT========= STP Agg padding %d bytes =========\n",
 						     padding_len);
 					}
@@ -2378,7 +2372,7 @@ INT32 mtk_wcn_stp_parser_data(PUINT8 buffer, UINT32 length)
 			case MTKSTP_FW_MSG:
 				i_ret = -2;
 				if (0 == stp_core_ctx.parser.length) {
-					STP_INFO_FUNC("FW Assert len = 0, ignore this pkg\n");
+					STP_DBG_FUNC("FW Assert len = 0, ignore this pkg\n");
 					/*discard CRC */
 					if (i > 2) {
 						STP_DBG_FUNC("crc discard.. i = %d\n", i);
@@ -2391,10 +2385,8 @@ INT32 mtk_wcn_stp_parser_data(PUINT8 buffer, UINT32 length)
 					continue;
 				}
 				if (STP_IS_READY(stp_core_ctx)) {
-#if 0
 					if (mtk_wcn_stp_is_uart_mand_mode() || mtk_wcn_stp_is_uart_fullset_mode())
 						stop_log();
-#endif
 					mtk_wcn_stp_dbg_dump_package();
 					stp_notify_btm_dump(STP_BTM_CORE(stp_core_ctx));
 				}

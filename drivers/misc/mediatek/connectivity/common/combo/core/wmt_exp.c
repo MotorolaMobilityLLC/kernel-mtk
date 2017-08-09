@@ -72,7 +72,7 @@ static MTK_WCN_BOOL mtk_wcn_wmt_func_ctrl(ENUM_WMTDRV_TYPE_T type, ENUM_WMT_OPID
 
 	pOp = wmt_lib_get_free_op();
 	if (!pOp) {
-		WMT_WARN_FUNC("get_free_lxop fail\n");
+		WMT_DBG_FUNC("get_free_lxop fail\n");
 		return MTK_WCN_BOOL_FALSE;
 	}
 
@@ -191,7 +191,7 @@ INT8 mtk_wcn_wmt_therm_ctrl(ENUM_WMTTHERM_TYPE_T eType)
 
 	pOp = wmt_lib_get_free_op();
 	if (!pOp) {
-		WMT_WARN_FUNC("get_free_lxop fail\n");
+		WMT_DBG_FUNC("get_free_lxop fail\n");
 		return MTK_WCN_BOOL_FALSE;
 	}
 
@@ -282,7 +282,7 @@ MTK_WCN_BOOL mtk_wcn_wmt_dsns_ctrl(ENUM_WMTDSNS_TYPE_T eType)
 
 	pOp = wmt_lib_get_free_op();
 	if (!pOp) {
-		WMT_WARN_FUNC("get_free_lxop fail\n");
+		WMT_DBG_FUNC("get_free_lxop fail\n");
 		return MTK_WCN_BOOL_FALSE;
 	}
 
@@ -380,7 +380,7 @@ MTK_WCN_BOOL mtk_wcn_wmt_assert_timeout(ENUM_WMTDRV_TYPE_T type, UINT32 reason, 
 
 	pOp = wmt_lib_get_free_op();
 	if (!pOp) {
-		WMT_WARN_FUNC("get_free_lxop fail\n");
+		WMT_DBG_FUNC("get_free_lxop fail\n");
 		return MTK_WCN_BOOL_FALSE;
 	}
 	wmt_lib_set_host_assert_info(type, reason, 1);
@@ -388,7 +388,7 @@ MTK_WCN_BOOL mtk_wcn_wmt_assert_timeout(ENUM_WMTDRV_TYPE_T type, UINT32 reason, 
 	pSignal = &pOp->signal;
 
 	pOp->op.opId = WMT_OPID_TRIGGER_STP_ASSERT;
-	pSignal->timeoutValue = MAX_EACH_WMT_CMD;
+	pSignal->timeoutValue = timeout;
 	/*this test command should be run with usb cable connected, so no host awake is needed */
 	/* wmt_lib_host_awake_get(); */
 	pOp->op.au4OpData[0] = 0;
@@ -414,7 +414,7 @@ MTK_WCN_BOOL mtk_wcn_wmt_assert_timeout(ENUM_WMTDRV_TYPE_T type, UINT32 reason, 
 
 	pOp = wmt_lib_get_free_op();
 	if (!pOp) {
-		WMT_WARN_FUNC("get_free_lxop fail\n");
+		WMT_DBG_FUNC("get_free_lxop fail\n");
 		return MTK_WCN_BOOL_FALSE;
 	}
 	wmt_lib_set_host_assert_info(type, reason, 1);
@@ -545,7 +545,7 @@ ENUM_WMT_ANT_RAM_STATUS mtk_wcn_wmt_ant_ram_ctrl(ENUM_WMT_ANT_RAM_CTRL ctrlId, P
 	/*get WMT opId */
 	pOp = wmt_lib_get_free_op();
 	if (!pOp) {
-		WMT_WARN_FUNC("get_free_lxop fail\n");
+		WMT_DBG_FUNC("get_free_lxop fail\n");
 		return MTK_WCN_BOOL_FALSE;
 	}
 

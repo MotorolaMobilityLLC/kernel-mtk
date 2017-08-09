@@ -265,7 +265,7 @@ extern int stp_dbg_deinit(MTKSTP_DBG_T *stp_dbg);
 extern int stp_dbg_dmp_out_ex(PINT8 buf, PINT32 len);
 extern int stp_dbg_dmp_out(MTKSTP_DBG_T *stp_dbg, PINT8 buf, PINT32 len);
 extern int stp_dbg_dmp_print(MTKSTP_DBG_T *stp_dbg);
-extern char stp_dbg_nl_send(PINT8 aucMsg, UINT8 cmd);
+extern INT32 stp_dbg_nl_send(PINT8 aucMsg, UINT8 cmd, INT32 len);
 
 extern INT32 stp_dbg_aee_send(PUINT8 aucMsg, INT32 len, INT32 cmd);
 
