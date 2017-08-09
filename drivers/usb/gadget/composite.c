@@ -543,7 +543,8 @@ static int bos_desc(struct usb_composite_dev *cdev)
 	usb_ext->bDescriptorType = USB_DT_DEVICE_CAPABILITY;
 	usb_ext->bDevCapabilityType = USB_CAP_TYPE_EXT;
 #ifdef CONFIG_USBIF_COMPLIANCE
-	usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT) | cpu_to_le32(USB_BESL_SUPPORT) ; 
+	usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT) |
+					cpu_to_le32(USB_BESL_SUPPORT);
 #else
 	usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT);
 #endif
@@ -878,13 +879,10 @@ void usb_remove_config(struct usb_composite_dev *cdev,
 
 
 	if(config->cdev != NULL)
-	{
 		list_del(&config->list);
-	}else
-  	{
-        DBG(cdev, "%s: config->list has been delete!! \n", __func__);
-  	}
-  	
+	else
+		DBG(cdev, "%s: config->list has been delete!!\n", __func__);
+
 	spin_unlock_irqrestore(&cdev->lock, flags);
 
 	unbind_config(cdev, config);
@@ -1264,7 +1262,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 	if (!(ctrl->bRequest == USB_REQ_GET_STATUS
 			|| ctrl->bRequest == USB_REQ_CLEAR_FEATURE
 			|| ctrl->bRequest == USB_REQ_SET_FEATURE))
-		INFO(cdev, "%s bRequest=0x%X\n", __func__, ctrl->bRequest);
+		VDBG(cdev, "%s bRequest=0x%X\n", __func__, ctrl->bRequest);
 
 	/* partial re-init of the response message; the function or the
 	 * gadget might need to intercept e.g. a control-OUT completion
@@ -1284,14 +1282,13 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		switch (w_value >> 8) {
 #ifdef CONFIG_USBIF_COMPLIANCE
 		case USB_DT_OTG:
-            {
-            struct usb_otg_descriptor *otg_desc = req->buf;
-            otg_desc->bLength = sizeof(*otg_desc);
-            otg_desc->bDescriptorType = USB_DT_OTG;
-            otg_desc->bmAttributes = USB_OTG_SRP | USB_OTG_HNP;
-            otg_desc->bcdOTG = cpu_to_le16(0x0200);
+			struct usb_otg_descriptor *otg_desc = req->buf;
+
+			otg_desc->bLength = sizeof(*otg_desc);
+			otg_desc->bDescriptorType = USB_DT_OTG;
+			otg_desc->bmAttributes = USB_OTG_SRP | USB_OTG_HNP;
+			otg_desc->bcdOTG = cpu_to_le16(0x0200);
 			value = min_t(int, w_length,sizeof(struct usb_otg_descriptor));
-            }
 			break;
 #endif
 		case USB_DT_DEVICE:
@@ -1310,9 +1307,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 
 			value = min(w_length, (u16) sizeof cdev->desc);
 			memcpy(req->buf, &cdev->desc, value);
-			/*shrink log*/
-			/*INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
-							"USB_DT_DEVICE, value=%d\n",value);*/
+			INFO(cdev, "[COM]GET_DESCRIPTOR-DEVICE %d\n", value);
 			break;
 		case USB_DT_DEVICE_QUALIFIER:
 			if (!gadget_is_dualspeed(gadget) ||
@@ -1337,9 +1332,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 			value = config_desc(cdev, w_value);
 			if (value >= 0)
 				value = min(w_length, (u16) value);
-			/*shrink log*/
-			/*INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
-							"USB_DT_CONFIG, value=%d\n",value);*/
+			INFO(cdev, "[COM]GET_DESCRIPTOR-CONFIG %d\n", value);
 			break;
 		case USB_DT_STRING:
 			value = get_string(cdev, req->buf,

@@ -2579,10 +2579,6 @@ android_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *c)
 	struct android_usb_function	*f;
 	int value = -EOPNOTSUPP;
 	unsigned long flags;
-	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
-
-	if (__ratelimit(&ratelimit))
-		pr_notice("[USB][ratelimit]%s,\n", __func__);
 
 	req->zero = 0;
 	req->complete = composite_setup_complete;
