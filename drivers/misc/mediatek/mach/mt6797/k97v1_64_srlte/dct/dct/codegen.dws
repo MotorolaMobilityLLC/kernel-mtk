@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <dct_cfg>
-    <general proj="Everest" chip="MT6797">
+    <general chip="MT6797" proj="Everest">
         <module name="adc" count="6">
             <adc0>
                 <varName>TEMPERATURE</varName>
@@ -94,6 +94,13 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
             </eint15>
+            <eint16>
+                <varName>MRDUMP_EXT_RST</varName>
+                <debounce_time>512</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint16>
             <eint46>
                 <varName>IRQ_NFC</varName>
                 <debounce_time>0</debounce_time>
@@ -4188,7 +4195,7 @@
                 <socketType>0</socketType>
             </eint1>
         </module>
-        <module name="pmic" count="8" chip="PMIC_MT6351PMUMP">
+        <module name="pmic" chip="PMIC_MT6351PMUMP" count="8">
             <pmic0>
                 <ldoVar>VCAMA</ldoVar>
                 <defEn>OFF</defEn>
@@ -4231,7 +4238,7 @@
                 <varName1>SUB_CAMERA_POWER_IO</varName1>
             </pmic7>
         </module>
-        <module column="9" row="8" name="kpd">
+        <module row="8" name="kpd" column="9">
             <keyMatrix>VOLUMEDOWN NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
 				NC NC NC NC NC NC NC NC NC
