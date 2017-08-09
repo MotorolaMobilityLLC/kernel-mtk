@@ -31,9 +31,7 @@
 #include "mt_idle.h"
 #include <mach/mt_spm_mtcmos_internal.h>
 #include "mt_spm_reg.h"
-#ifdef CONFIG_HYBRID_CPU_DVFS
-#include <mach/mt_cpufreq_hybrid.h>
-#endif
+#include "mt_cpufreq_hybrid.h"
 
 #include <asm/uaccess.h>
 
@@ -365,9 +363,9 @@ enum {
 
 /*Idle handler on/off*/
 static int idle_switch[NR_TYPES] = {
-	1,	/* dpidle switch */
+	0,	/* dpidle switch */
 	0,	/* soidle3 switch */
-	1,	/* soidle switch */
+	0,	/* soidle switch */
 #ifdef CONFIG_CPU_ISOLATION
 	1,	/* mcidle switch */
 #else
@@ -654,6 +652,7 @@ static void __iomem *vencsys_base;
 #define	INFRA_SW_CG_1_STA   INFRA_REG(0x0090)
 #define	INFRA_SW_CG_2_STA   INFRA_REG(0x00AC)
 #define DISP_CG_CON0        MM_REG(0x100)
+#define DISP_CG_CON1        MM_REG(0x110)
 
 #define SPM_PWR_STATUS      SPM_REG(0x0180)
 #define SPM_PWR_STATUS_2ND  SPM_REG(0x0184)
@@ -837,6 +836,8 @@ bool cg_i2c3_check_idle_can_enter(unsigned int *block_mask)
 static void __iomem  *apmixed_base;
 #define APMIXEDSYS(offset)	(apmixed_base + offset)
 #define ARMCA15PLL_BASE		APMIXEDSYS(0x200)
+#define ARMCA15PLL_CON0				APMIXEDSYS(0x0200)
+#define ARMCA7PLL_CON0				APMIXEDSYS(0x0210)
 #define MAINPLL_CON0				APMIXEDSYS(0x0220)
 #define UNIVPLL_CON0				APMIXEDSYS(0x0230)
 #define MMPLL_CON0					APMIXEDSYS(0x0240)
@@ -1935,11 +1936,17 @@ static inline void soidle_post_handler(void)
 static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_ENABLE_SODI3 |
 	SPM_FLAG_DIS_SYSRAM_SLEEP |
+	#ifdef CONFIG_MTK_ICUSB_SUPPORT
+	SPM_FLAG_DIS_INFRA_PDN |
+	#endif
 	SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL
 };
 
 static u32 slp_spm_SODI_flags = {
 	SPM_FLAG_DIS_SYSRAM_SLEEP |
+	#ifdef CONFIG_MTK_ICUSB_SUPPORT
+	SPM_FLAG_DIS_INFRA_PDN |
+	#endif
 	SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL
 };
 
@@ -1947,8 +1954,14 @@ static u32 slp_spm_SODI_flags = {
 u32 slp_spm_deepidle_flags = {
 #if LEGACY_SLEEP
 	SPM_FLAG_DIS_CPU_PDN |
+	#ifdef CONFIG_MTK_ICUSB_SUPPORT
+	SPM_FLAG_DIS_INFRA_PDN |
+	#endif
 	SPM_FLAG_DIS_VPROC_VSRAM_DVS
 #else
+	#ifdef CONFIG_MTK_ICUSB_SUPPORT
+	SPM_FLAG_DIS_INFRA_PDN |
+	#endif
 	SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL
 #endif
 };
@@ -2930,6 +2943,7 @@ static ssize_t reg_dump_read(struct file *filp, char __user *userbuf, size_t cou
 	p += sprintf(p, "SPM_VEN_PWR_CON = 0x%08x\n", idle_readl(SPM_VEN_PWR_CON));
 
 	p += sprintf(p, "DISP_CG_CON0 = 0x%08x\n", idle_readl(DISP_CG_CON0));
+	p += sprintf(p, "DISP_CG_CON1 = 0x%08x\n", idle_readl(DISP_CG_CON1));
 	p += sprintf(p, "MFG_CG_CON = 0x%08x\n", idle_readl(MFG_CG_CON));
 	p += sprintf(p, "IMG_CG_CON = 0x%08x\n", idle_readl(IMG_CG_CON));
 	p += sprintf(p, "VDEC_CG_CON_0 = 0x%08x\n", idle_readl(VDEC_CG_CON_0));
@@ -2943,6 +2957,8 @@ static ssize_t reg_dump_read(struct file *filp, char __user *userbuf, size_t cou
 
 	/* PLL */
 	p += sprintf(p, "=== PLL ====\n");
+	p += sprintf(p, "ARMCA15PLL_CON0 = 0x%08x\n", idle_readl(ARMCA15PLL_CON0));
+	p += sprintf(p, "ARMCA7PLL_CON0 = 0x%08x\n", idle_readl(ARMCA7PLL_CON0));
 	p += sprintf(p, "MAINPLL_CON0 = 0x%08x\n", idle_readl(MAINPLL_CON0));
 	p += sprintf(p, "UNIVPLL_CON0 = 0x%08x\n", idle_readl(UNIVPLL_CON0));
 	p += sprintf(p, "MMPLL_CON0 = 0x%08x\n", idle_readl(MMPLL_CON0));
