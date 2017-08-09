@@ -17,3 +17,4 @@ config MTK_AUTO_DETECT_ALSPS
 
 source "drivers/misc/mediatek/alsps/cm36652-new/Kconfig"
 source "drivers/misc/mediatek/alsps/APDS9930-new/Kconfig"
+source "drivers/misc/mediatek/alsps/EPL2182-new/Kconfig"
