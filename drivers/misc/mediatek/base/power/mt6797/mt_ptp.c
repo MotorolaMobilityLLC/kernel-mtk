@@ -1872,7 +1872,7 @@ static void get_freq_table_cpu(struct eem_det *det)
 	FUNC_ENTER(FUNC_LV_HELP);
 	for (i = 0; i < NR_FREQ; i++) {
 		/* det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx(cpu, i), det->max_freq_khz); */
-		binLevel = 0; /* GET_BITS_VAL(31:28, get_devinfo_with_index(28)); */
+		binLevel = GET_BITS_VAL(3:0, get_devinfo_with_index(22));
 		if (binLevel == 0) {
 			det->freq_tbl[i] =
 				PERCENT((det_to_id(det) == EEM_DET_BIG) ? bigFreq_FY[i] :
@@ -4551,7 +4551,7 @@ static int __init eem_conf(void)
 		return -ENOMEM;
 
 	/* read E-fuse for segment selection */
-	binLevel =  0; /* GET_BITS_VAL(31:28, get_devinfo_with_index(28)); */
+	binLevel = GET_BITS_VAL(3:0, get_devinfo_with_index(22));
 	if (binLevel == 0) {
 		recordTbl = &fyTbl[0][0];
 		eem_error("@The table ----->(fyTbl)\n");
