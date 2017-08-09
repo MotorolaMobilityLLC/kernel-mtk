@@ -76,6 +76,16 @@ u32 pinSet[3][8] = {
 	 GPIO_OUT_ONE,
 	 GPIO_OUT_ZERO,
 	 },
+	/* for main2 sensor */
+	{CAMERA_CMRST2_PIN,
+	 CAMERA_CMRST2_PIN_M_GPIO,
+	 GPIO_OUT_ONE,
+	 GPIO_OUT_ZERO,
+	 CAMERA_CMPDN2_PIN,
+	 CAMERA_CMPDN2_PIN_M_GPIO,
+	 GPIO_OUT_ONE,
+	 GPIO_OUT_ZERO,
+	 },
 };
 #ifndef CONFIG_MTK_LEGACY
 #define CUST_AVDD AVDD - AVDD
@@ -248,11 +258,16 @@ struct pinctrl_state *cam_ldo_sub_vcamd_h = NULL;/* for SUB_DVDD */
 struct pinctrl_state *cam_ldo_sub_vcamd_l = NULL;
 struct pinctrl_state *cam_ldo_main2_vcamd_h = NULL;/* for MAIN2_DVDD */
 struct pinctrl_state *cam_ldo_main2_vcamd_l = NULL;
-
+struct pinctrl_state *cam_mipi_switch_en_h = NULL;/* for mipi switch enable */
+struct pinctrl_state *cam_mipi_switch_en_l = NULL;
+struct pinctrl_state *cam_mipi_switch_sel_h = NULL;/* for mipi switch select */
+struct pinctrl_state *cam_mipi_switch_sel_l = NULL;
+int has_mipi_switch = 0;
 
 int mtkcam_gpio_init(struct platform_device *pdev)
 {
 	int ret = 0;
+	has_mipi_switch = 1;
 
 	camctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(camctrl)) {
@@ -411,6 +426,32 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		PK_DBG("%s : pinctrl err, cam_ldo_main2_vcamd_l\n", __func__);
 	}
 
+	cam_mipi_switch_en_h = pinctrl_lookup_state(camctrl, "cam_mipi_switch_en_1");
+	if (IS_ERR(cam_mipi_switch_en_h)) {
+		has_mipi_switch = 0;
+		ret = PTR_ERR(cam_mipi_switch_en_h);
+		PK_DBG("%s : pinctrl err, cam_mipi_switch_en_h\n", __func__);
+	}
+
+	cam_mipi_switch_en_l = pinctrl_lookup_state(camctrl, "cam_mipi_switch_en_0");
+	if (IS_ERR(cam_mipi_switch_en_l)) {
+		has_mipi_switch = 0;
+		ret = PTR_ERR(cam_mipi_switch_en_l);
+		PK_DBG("%s : pinctrl err, cam_mipi_switch_en_l\n", __func__);
+	}
+	cam_mipi_switch_sel_h = pinctrl_lookup_state(camctrl, "cam_mipi_switch_sel_1");
+	if (IS_ERR(cam_mipi_switch_sel_h)) {
+		has_mipi_switch = 0;
+		ret = PTR_ERR(cam_mipi_switch_sel_h);
+		PK_DBG("%s : pinctrl err, cam_mipi_switch_sel_h\n", __func__);
+	}
+
+	cam_mipi_switch_sel_l = pinctrl_lookup_state(camctrl, "cam_mipi_switch_sel_0");
+	if (IS_ERR(cam_mipi_switch_sel_l)) {
+		has_mipi_switch = 0;
+		ret = PTR_ERR(cam_mipi_switch_sel_l);
+		PK_DBG("%s : pinctrl err, cam_mipi_switch_sel_l\n", __func__);
+	}
 	return ret;
 }
 
@@ -828,6 +869,20 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 		PK_DBG("kdCISModulePowerOn -on:currSensorName=%s\n", currSensorName);
 		PK_DBG("kdCISModulePowerOn -on:pinSetIdx=%d\n", pinSetIdx);
 
+    /* MIPI SWITCH */
+	if(has_mipi_switch){
+		if (DUAL_CAMERA_MAIN_SENSOR == SensorIdx) {
+			pinctrl_select_state(camctrl, cam_mipi_switch_en_h);
+		} else if (DUAL_CAMERA_SUB_SENSOR == SensorIdx) {
+			pinctrl_select_state(camctrl, cam_mipi_switch_en_l);
+			pinctrl_select_state(camctrl, cam_mipi_switch_sel_h);
+
+		} else if (DUAL_CAMERA_MAIN_2_SENSOR == SensorIdx) {
+			pinctrl_select_state(camctrl, cam_mipi_switch_en_l);
+			pinctrl_select_state(camctrl, cam_mipi_switch_sel_l);
+		}
+	}
+
 		for (pwListIdx = 0; pwListIdx < 16; pwListIdx++) {
 			if (currSensorName && (PowerOnList.PowerSeq[pwListIdx].SensorName != NULL)
 			    && (0 ==
@@ -1056,6 +1111,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 		 */
  #endif
 	} else {		/* power OFF */
+		if(has_mipi_switch){
+			pinctrl_select_state(camctrl, cam_mipi_switch_en_h);
+		}
 		for (pwListIdx = 0; pwListIdx < 16; pwListIdx++) {
 			if (currSensorName && (PowerOnList.PowerSeq[pwListIdx].SensorName != NULL)
 			    && (0 ==

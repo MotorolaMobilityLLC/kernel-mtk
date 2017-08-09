@@ -143,6 +143,11 @@ typedef enum {
 #define CAMERA_CMPDN1_PIN           0
 #define CAMERA_CMPDN1_PIN_M_GPIO    0
 
+#define CAMERA_CMRST2_PIN           0
+#define CAMERA_CMRST2_PIN_M_GPIO    0
+#define CAMERA_CMPDN2_PIN           0
+#define CAMERA_CMPDN2_PIN_M_GPIO    0
+
 #define GPIO_OUT_ONE 1
 #define GPIO_OUT_ZERO 0
 #define GPIO_UNSUPPORTED 0xff
