@@ -46,18 +46,17 @@
 /* --------------------------------------------------------------------------- */
 UINT32 MFC_Get_Cursor_Offset(MFC_HANDLE handle)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *) handle;
+	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
 
-	UINT32 offset =
-	    ctxt->cursor_col * MFC_FONT_WIDTH * MFC_BPP +
-	    ctxt->cursor_row * MFC_FONT_HEIGHT * MFC_PITCH;
+	UINT32 offset = ctxt->cursor_col * MFC_FONT_WIDTH * MFC_BPP +
+			ctxt->cursor_row * MFC_FONT_HEIGHT * MFC_PITCH;
 
 	return offset;
 }
 
 static void _MFC_DrawChar(MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 {
-	BYTE ch = *((BYTE *) &c);
+	BYTE ch = *((BYTE *)&c);
 	const BYTE *cdat;
 	BYTE *dest;
 	INT32 rows, cols, offset;
@@ -82,10 +81,10 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH) {
 			BYTE bits = *cdat++;
 
-			((UINT32 *) dest)[0] = font_draw_table16[bits >> 6];
-			((UINT32 *) dest)[1] = font_draw_table16[bits >> 4 & 3];
-			((UINT32 *) dest)[2] = font_draw_table16[bits >> 2 & 3];
-			((UINT32 *) dest)[3] = font_draw_table16[bits & 3];
+			((UINT32 *)dest)[0] = font_draw_table16[bits >> 6];
+			((UINT32 *)dest)[1] = font_draw_table16[bits >> 4 & 3];
+			((UINT32 *)dest)[2] = font_draw_table16[bits >> 2 & 3];
+			((UINT32 *)dest)[3] = font_draw_table16[bits & 3];
 		}
 		break;
 	case 3:
@@ -124,12 +123,11 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, UINT32 x, UINT32 y, char c)
 	}
 }
 
-
 static void _MFC_ScrollUp(MFC_CONTEXT *ctxt)
 {
 	const UINT32 BG_COLOR = MAKE_TWO_RGB565_COLOR(MFC_BG_COLOR, MFC_BG_COLOR);
 
-	UINT32 *ptr = (UINT32 *) MFC_ROW_LAST;
+	UINT32 *ptr = (UINT32 *)MFC_ROW_LAST;
 	int i = MFC_ROW_SIZE / sizeof(UINT32);
 
 	memcpy(MFC_ROW_FIRST, MFC_ROW_SECOND, MFC_SCROLL_SIZE);
@@ -138,10 +136,9 @@ static void _MFC_ScrollUp(MFC_CONTEXT *ctxt)
 		*ptr++ = BG_COLOR;
 }
 
-
 static void _MFC_Newline(MFC_CONTEXT *ctxt)
 {
-	/* /Bin:add for filling the color for the blank of this column */
+	/* Bin:add for filling the color for the blank of this column */
 	while (ctxt->cursor_col < ctxt->cols) {
 		_MFC_DrawChar(ctxt,
 			      ctxt->cursor_col * MFC_FONT_WIDTH,
@@ -162,11 +159,10 @@ static void _MFC_Newline(MFC_CONTEXT *ctxt)
 	}
 }
 
-
-#define CHECK_NEWLINE()                     \
-do {                                    \
-	if (ctxt->cursor_col >= ctxt->cols) \
-		_MFC_Newline(ctxt);             \
+#define CHECK_NEWLINE()				\
+do {						\
+	if (ctxt->cursor_col >= ctxt->cols)	\
+		_MFC_Newline(ctxt);		\
 } while (0)
 
 static void _MFC_Putc(MFC_CONTEXT *ctxt, const char c)
@@ -217,7 +213,7 @@ MFC_STATUS MFC_Open(MFC_HANDLE *handle,
 	if (!ctxt)
 		return MFC_STATUS_OUT_OF_MEMORY;
 
-/* init_MUTEX(&ctxt->sem); */
+	/* init_MUTEX(&ctxt->sem); */
 	sema_init(&ctxt->sem, 1);
 	ctxt->fb_addr = fb_addr;
 	ctxt->fb_width = fb_width;
@@ -249,13 +245,13 @@ MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
 		return MFC_STATUS_INVALID_ARGUMENT;
 
 	if (fb_bpp != 2)
-		return MFC_STATUS_NOT_IMPLEMENTED;	/* only support RGB565 */
+		return MFC_STATUS_NOT_IMPLEMENTED; /* only support RGB565 */
 
 	ctxt = kzalloc(sizeof(MFC_CONTEXT), GFP_KERNEL);
 	if (!ctxt)
 		return MFC_STATUS_OUT_OF_MEMORY;
 
-/* init_MUTEX(&ctxt->sem); */
+	/* init_MUTEX(&ctxt->sem); */
 	sema_init(&ctxt->sem, 1);
 	ctxt->fb_addr = fb_addr;
 	ctxt->fb_width = fb_pitch;
@@ -274,7 +270,6 @@ MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle,
 
 }
 
-
 MFC_STATUS MFC_Close(MFC_HANDLE handle)
 {
 	if (!handle)
@@ -285,10 +280,9 @@ MFC_STATUS MFC_Close(MFC_HANDLE handle)
 	return MFC_STATUS_OK;
 }
 
-
 MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color, unsigned int bg_color)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *) handle;
+	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
 
 	if (!ctxt)
 		return MFC_STATUS_INVALID_ARGUMENT;
@@ -306,10 +300,9 @@ MFC_STATUS MFC_SetColor(MFC_HANDLE handle, unsigned int fg_color, unsigned int b
 	return MFC_STATUS_OK;
 }
 
-
 MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *) handle;
+	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
 
 	if (!ctxt)
 		return MFC_STATUS_INVALID_ARGUMENT;
@@ -326,10 +319,9 @@ MFC_STATUS MFC_ResetCursor(MFC_HANDLE handle)
 	return MFC_STATUS_OK;
 }
 
-
 MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *) handle;
+	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
 	int count = 0;
 
 	if (!ctxt || !str)
@@ -353,7 +345,7 @@ MFC_STATUS MFC_Print(MFC_HANDLE handle, const char *str)
 
 MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *) handle;
+	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
 	int count = 0;
 	int i, j;
 	UINT32 *ptr;
@@ -384,7 +376,7 @@ MFC_STATUS MFC_SetMem(MFC_HANDLE handle, const char *str, UINT32 color)
 MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_color,
 				UINT32 bg_color)
 {
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *) handle;
+	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)handle;
 	int count = 0;
 	unsigned int col, row, fg_color_mfc, bg_color_mfc;
 
@@ -398,7 +390,7 @@ MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_co
 	}
 
 	count = strlen(str);
-/* //store cursor_col and row for printf low memory char temply */
+	/* store cursor_col and row for printf low memory char temply */
 	row = ctxt->cursor_row;
 	col = ctxt->cursor_col;
 	ctxt->cursor_row = 0;
@@ -406,19 +398,18 @@ MFC_STATUS MFC_LowMemory_Printf(MFC_HANDLE handle, const char *str, UINT32 fg_co
 	fg_color_mfc = ctxt->fg_color;
 	bg_color_mfc = ctxt->bg_color;
 
-/* ///////// */
+	/* ///////// */
 	ctxt->fg_color = fg_color;
 	ctxt->bg_color = bg_color;
 	while (count--)
 		_MFC_Putc(ctxt, *str++);
 
-/* //restore cursor_col and row for printf low memory char temply */
+	/* restore cursor_col and row for printf low memory char temply */
 	ctxt->cursor_row = row;
 	ctxt->cursor_col = col;
 	ctxt->fg_color = fg_color_mfc;
 	ctxt->bg_color = bg_color_mfc;
-/* ///////// */
-
+	/* ///////// */
 
 	up(&ctxt->sem);
 

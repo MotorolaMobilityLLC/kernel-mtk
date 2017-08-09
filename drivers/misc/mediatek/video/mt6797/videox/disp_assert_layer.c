@@ -49,11 +49,11 @@
 #define MAKE_TWO_RGB565_COLOR(high, low)  (((low) << 16) | (high))
 
 DEFINE_SEMAPHORE(dal_sem);
+
 inline DAL_STATUS DAL_LOCK(void)
 {
 	if (down_interruptible(&dal_sem)) {
-		DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL", "Can't get semaphore in %s()\n",
-		__func__);
+		DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL", "Can't get semaphore in %s()\n", __func__);
 		return DAL_STATUS_LOCK_FAIL;
 	}
 	return DAL_STATUS_OK;
@@ -61,15 +61,14 @@ inline DAL_STATUS DAL_LOCK(void)
 
 #define DAL_UNLOCK() up(&dal_sem)
 
-
 inline MFC_STATUS DAL_CHECK_MFC_RET(MFC_STATUS expr)
 {
 	MFC_STATUS ret = expr;
 
 	if (MFC_STATUS_OK != ret) {
 		DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL",
-		"Warning: call MFC_XXX function failed in %s(), line: %d, ret: %x\n",
-		__func__, __LINE__, ret);
+			       "Warning: call MFC_XXX function failed in %s(), line: %d, ret: %d\n",
+			       __func__, __LINE__, ret);
 		return ret;
 	}
 	return MFC_STATUS_OK;
@@ -82,15 +81,14 @@ inline DISP_STATUS DAL_CHECK_DISP_RET(DISP_STATUS expr)
 
 	if (DISP_STATUS_OK != ret) {
 		DISP_LOG_PRINT(ANDROID_LOG_WARN, "DAL",
-		"Warning: call DISP_XXX function failed in %s(), line: %d, ret: %x\n",
-		__func__, __LINE__, ret);
+			       "Warning: call DISP_XXX function failed in %s(), line: %d, ret: %d\n",
+			       __func__, __LINE__, ret);
 		return ret;
 	}
 	return DISP_STATUS_OK;
 }
 
-#define DAL_LOG(fmt, arg...) \
-	DISP_LOG_PRINT(ANDROID_LOG_INFO, "DAL", fmt, ##arg)
+#define DAL_LOG(fmt, arg...) DISP_LOG_PRINT(ANDROID_LOG_INFO, "DAL", fmt, ##arg)
 /* --------------------------------------------------------------------------- */
 
 static MFC_HANDLE mfc_handle;
@@ -114,6 +112,7 @@ uint32_t DAL_GetLayerSize(void)
 	/* avoid lcdc read buffersize+1 issue */
 	return DAL_WIDTH * DAL_HEIGHT * DAL_BPP + 4096;
 }
+
 /*
 static DAL_STATUS DAL_SetRedScreen(uint32_t *addr)
 {
@@ -125,6 +124,7 @@ static DAL_STATUS DAL_SetRedScreen(uint32_t *addr)
 	return DAL_STATUS_OK;
 }
 */
+
 DAL_STATUS DAL_SetScreenColor(DAL_COLOR color)
 {
 	uint32_t i;
@@ -136,7 +136,7 @@ DAL_STATUS DAL_SetScreenColor(DAL_COLOR color)
 	color = RGB888_To_RGB565(color);
 	BG_COLOR = MAKE_TWO_RGB565_COLOR(color, color);
 
-	ctxt = (MFC_CONTEXT *) mfc_handle;
+	ctxt = (MFC_CONTEXT *)mfc_handle;
 	if (!ctxt)
 		return DAL_STATUS_FATAL_ERROR;
 	if (ctxt->screen_color == color)
@@ -186,6 +186,7 @@ DAL_STATUS DAL_Dynamic_Change_FB_Layer(unsigned int isAEEEnabled)
 {
 	return DAL_STATUS_OK;
 }
+
 static int show_dal_layer(int enable)
 {
 	disp_session_input_config *session_input;
@@ -224,14 +225,13 @@ static int show_dal_layer(int enable)
 	return ret;
 }
 
-
 DAL_STATUS DAL_Clean(void)
 {
 	/* const uint32_t BG_COLOR = MAKE_TWO_RGB565_COLOR(DAL_BG_COLOR, DAL_BG_COLOR); */
 	DAL_STATUS ret = DAL_STATUS_OK;
 
 	static int dal_clean_cnt;
-	MFC_CONTEXT *ctxt = (MFC_CONTEXT *) mfc_handle;
+	MFC_CONTEXT *ctxt = (MFC_CONTEXT *)mfc_handle;
 	pr_err("[MTKFB_DAL] DAL_Clean\n");
 	if (NULL == mfc_handle)
 		return DAL_STATUS_NOT_READY;
@@ -251,16 +251,15 @@ DAL_STATUS DAL_Clean(void)
 	if (isAEEEnabled == 1) {
 		show_dal_layer(0);
 		/* DAL disable, switch UI layer to default layer 3 */
-		pr_err("[DDP]* isAEEEnabled from 1 to 0, %d\n", dal_clean_cnt++);
+		pr_err("[DDP] isAEEEnabled from 1 to 0, %d\n", dal_clean_cnt++);
 		isAEEEnabled = 0;
-		DAL_Dynamic_Change_FB_Layer(isAEEEnabled);	/* restore UI layer to DEFAULT_UI_LAYER */
+		DAL_Dynamic_Change_FB_Layer(isAEEEnabled); /* restore UI layer to DEFAULT_UI_LAYER */
 	}
 
 	dal_shown = false;
 	dal_disable_when_resume = false;
 
 	primary_display_trigger(0, NULL, 0);
-
 
 End:
 	DAL_UNLOCK();
@@ -296,15 +295,12 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 	MMProfileLogEx(ddp_mmp_get_events()->dal_printf, MMProfileFlagStart, 0, 0);
 	DAL_LOCK();
 	if (isAEEEnabled == 0) {
-		pr_err("[DDP] isAEEEnabled from 0 to 1, ASSERT_LAYER=%d, dal_fb_pa %lx\n",
+		pr_err("[DDP] isAEEEnabled from 0 to 1, ASSERT_LAYER=%d, dal_fb_pa 0x%lx\n",
 		       primary_display_get_option("ASSERT_LAYER"), dal_fb_pa);
 
 		isAEEEnabled = 1;
-		DAL_Dynamic_Change_FB_Layer(isAEEEnabled);	/* default_ui_ layer coniig to changed_ui_layer */
+		DAL_Dynamic_Change_FB_Layer(isAEEEnabled); /* default_ui_layer config to changed_ui_layer */
 
-		DAL_CHECK_MFC_RET(MFC_Open(&mfc_handle, dal_fb_addr,
-					   DAL_WIDTH, DAL_HEIGHT, DAL_BPP,
-					   DAL_FG_COLOR, DAL_BG_COLOR));
 		show_dal_layer(1);
 	}
 	va_start(args, fmt);
@@ -329,7 +325,6 @@ DAL_STATUS DAL_Printf(const char *fmt, ...)
 	return ret;
 }
 EXPORT_SYMBOL(DAL_Printf);
-
 
 DAL_STATUS DAL_OnDispPowerOn(void)
 {
@@ -396,4 +391,4 @@ int is_DAL_Enabled(void)
 	return 0;
 }
 
-#endif				/* CONFIG_MTK_FB_SUPPORT_ASSERTION_LAYER */
+#endif /* CONFIG_MTK_FB_SUPPORT_ASSERTION_LAYER */
