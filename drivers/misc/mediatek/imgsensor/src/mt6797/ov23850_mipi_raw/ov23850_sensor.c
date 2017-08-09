@@ -553,6 +553,15 @@ static void write_shutter(kal_uint16 shutter)
 			//write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
 			LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
 		}
+                else if(realtime_fps >= 197 && realtime_fps <= 200){
+            set_max_framerate(196,0);
+                        imgsensor.frame_length = (imgsensor.frame_length>>1)<<1;
+                        //write_cmos_sensor(0x380c, imgsensor.line_length >> 8);
+                        //write_cmos_sensor(0x380d, imgsensor.line_length & 0xFF);
+                        //write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
+                        //write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
+                        LOG_INF("dummyline = %d, dummypixels = %d \n", imgsensor.dummy_line, imgsensor.dummy_pixel);
+                }
         else
         {
             //write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
