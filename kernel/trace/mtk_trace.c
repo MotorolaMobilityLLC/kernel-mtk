@@ -205,10 +205,13 @@ static void ftrace_events_enable(int enable)
 static __init int boot_ftrace(void)
 {
 	struct trace_array *tr;
+	int ret;
 
 	if (boot_trace) {
 		tr = top_trace_array();
-		tracing_update_buffers();
+		ret = tracing_update_buffers();
+		if (ret != 0)
+			pr_debug("unable to expand buffer, ret=%d\n", ret);
 		ftrace_events_enable(1);
 		set_tracer_flag(tr, TRACE_ITER_OVERWRITE, 0);
 		pr_debug("[ftrace]boot-time profiling...\n");
@@ -220,14 +223,20 @@ core_initcall(boot_ftrace);
 #ifdef CONFIG_MTK_FTRACE_DEFAULT_ENABLE
 static __init int enable_ftrace(void)
 {
+	int ret;
+
 	if (!boot_trace) {
 		/* enable ftrace facilities */
 		ftrace_events_enable(1);
 
 		/* only update buffer eariler if we want to collect boot-time ftrace
 		to avoid the boot time impacted by early-expanded ring buffer */
-		tracing_update_buffers();
-		pr_debug("[ftrace]ftrace ready...\n");
+		ret = tracing_update_buffers();
+		if (ret != 0)
+			pr_debug("fail to update buffer, ret=%d\n",
+				 ret);
+		else
+			pr_debug("[ftrace]ftrace ready...\n");
 	}
 	return 0;
 }
@@ -252,8 +261,8 @@ static int hotplug_event_notify(struct notifier_block *self, unsigned long actio
 		trace_cpu_hotplug(cpu, 1, per_cpu(last_event_ts, cpu));
 		per_cpu(last_event_ts, cpu) = ns2usecs(ftrace_now(cpu));
 		break;
-	case CPU_DEAD:
-	case CPU_DEAD_FROZEN:
+	case CPU_DYING:
+	case CPU_DYING_FROZEN:
 		trace_cpu_hotplug(cpu, 0, per_cpu(last_event_ts, cpu));
 		per_cpu(last_event_ts, cpu) = ns2usecs(ftrace_now(cpu));
 		break;
