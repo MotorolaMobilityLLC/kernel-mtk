@@ -382,7 +382,7 @@ static unsigned int *recordTbl;
 	#include "upmu_common.h"
 	/* #include "mt6311.h" */
 	#ifndef EARLY_PORTING
-		#include "gpu_dvfs.h"
+		/* #include "gpu_dvfs.h" */
 		#include "thermal.h"
 		/* #include "gpio_const.h" */
 	#endif
@@ -1537,6 +1537,9 @@ static void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 		break;
 	}
 
+	#if defined(__MTK_SLT_)
+		mdelay(5);
+	#endif
 	/* mt_ptp_unlock(&flags); */
 
 	FUNC_EXIT(FUNC_LV_HELP);
@@ -2543,10 +2546,12 @@ static void eem_set_eem_volt(struct eem_det *det)
 		default:
 			break;
 		}
-		eem_debug("eem_set_eem_volt, [%s].volt_tbl[%d] = 0x%X ----- volt_tbl_pmic[%d] = 0x%X (%d)\n",
+		/*
+		eem_debug("[%s].volt_tbl[%d] = 0x%X ----- volt_tbl_pmic[%d] = 0x%X (%d)\n",
 			det->name,
 			i, det->volt_tbl[i],
 			i, det->volt_tbl_pmic[i], det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
+		*/
 	}
 
 	#if defined(__MTK_SLT_)
@@ -2710,8 +2715,10 @@ static unsigned int interpolate(unsigned int y1, unsigned int y0,
 
 	ratio = (((y1 - y0) * 100) + (x1 - x0 - 1)) / (x1 - x0);
 	result =  (x1 - ((((y1 - ym) * 10000) + ratio - 1) / ratio) / 100);
+	/*
 	eem_debug("y1(%d), y0(%d), x1(%d), x0(%d), ym(%d), ratio(%d), rtn(%d)\n",
 		y1, y0, x1, x0, ym, ratio, result);
+	*/
 
 	return result;
 }
@@ -3259,9 +3266,6 @@ void eem_init02(void)
 			unsigned long flag;
 			mt_ptp_lock(&flag);
 			det->ops->init02(det);
-			#if defined(__MTK_SLT_)
-				mdelay(5);
-			#endif
 			mt_ptp_unlock(&flag);
 		}
 	}
@@ -3724,7 +3728,7 @@ void eem_init01_ctp(unsigned int id)
 			else if ((EEM_CTRL_CCI == det->ctrl_id) && (1 == det->eem_eemEn[EEM_PHASE_INIT01]))
 				out |= BIT(EEM_CTRL_CCI);
 		}
-		if ((0x3B == out) || (300 == timeout)) {
+		if ((0x3B == out) || (1000 == timeout)) {
 			eem_error("init01 finish time is %d\n", timeout);
 			break;
 		}
