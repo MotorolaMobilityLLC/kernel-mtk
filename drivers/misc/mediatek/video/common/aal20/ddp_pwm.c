@@ -519,6 +519,10 @@ static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 #endif
 #else /* Common Clock Framework */
 		ddp_clk_disable(DISP_PWM);
+#if defined(CONFIG_ARCH_MT6755)
+		disp_pwm_osc_off();
+#endif
+
 #endif
 	}
 #endif

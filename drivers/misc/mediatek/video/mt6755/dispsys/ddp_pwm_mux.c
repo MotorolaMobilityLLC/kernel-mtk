@@ -143,3 +143,29 @@ int disp_pwm_osc_on(void)
 
 }
 
+int disp_pwm_osc_off(void)
+{
+	unsigned int regosc;
+
+	if (disp_pwm_get_oscbase() == -1)
+		return -1;
+
+	regosc = clk_readl(OSC_ULPOSC_ADDR);
+
+	/* OSC CG_EN = 0 */
+	regosc = regosc & (~0x4);
+	clk_writel(OSC_ULPOSC_ADDR, regosc);
+	regosc = clk_readl(OSC_ULPOSC_ADDR);
+	PWM_MSG("ULPOSC config : 0x%08x after cg_en", regosc);
+
+	udelay(40);
+
+	/* OSC EN = 0 */
+	regosc = regosc & (~0x1);
+	clk_writel(OSC_ULPOSC_ADDR, regosc);
+	regosc = clk_readl(OSC_ULPOSC_ADDR);
+	PWM_MSG("ULPOSC config : 0x%08x after en", regosc);
+
+	return 0;
+}
+
