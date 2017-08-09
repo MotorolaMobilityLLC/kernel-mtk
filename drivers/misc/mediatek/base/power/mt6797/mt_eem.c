@@ -4207,7 +4207,6 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 					((tTbl[3] & 0x7) << 4) |
 					(tTbl[4] & 0xF);
 				mb(); /* SRAM writing */
-				eem_set_eem_volt(det);
 				mt_ptp_unlock(&flags);
 			} else {
 				if (eem_log_en)
@@ -4233,7 +4232,6 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 					((*(recordTbl + (48 * 8) + 3) & 0x7) << 4) |
 					(*(recordTbl + (48 * 8) + 4) & 0xF);
 				mb(); /* SRAM writing */
-				eem_set_eem_volt(det);
 				mt_ptp_unlock(&flags);
 			} else {
 				if (eem_log_en)
@@ -4256,7 +4254,6 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 					((tTbl[3] & 0x7) << 4) |
 					(tTbl[4] & 0xF);
 				mb(); /* SRAM writing */
-				eem_set_eem_volt(det);
 				mt_ptp_unlock(&flags);
 			} else if ((1 == ITurboRun) && (ITURBO_CPU_NUM == big_cpus) && (MT_EEM_CPU_B == cluster_id)) {
 				if (eem_log_en)
@@ -4273,7 +4270,6 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 					((*(recordTbl + (48 * 8) + 3) & 0x7) << 4) |
 					(*(recordTbl + (48 * 8) + 4) & 0xF);
 				mb(); /* SRAM writing */
-				eem_set_eem_volt(det);
 				mt_ptp_unlock(&flags);
 			} else {
 				if (eem_log_en)

@@ -68,6 +68,7 @@
 #include "mt_cpufreq.h"
 #include "mt_idvfs.h"
 #include "mt_cpufreq_hybrid.h"
+#include "mt_ptp.h"
 
 #define DCM_ENABLE 1
 #ifdef DCM_ENABLE
@@ -3730,7 +3731,7 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 		    (p->ops->get_cur_vsram(p) / 100), p->name, p->ops->get_cur_phy_freq(p));
 
 		/* trigger exception if freq/volt not correct during stress */
-		if (do_dvfs_stress_test && !p->dvfs_disable_by_suspend
+		if (do_dvfs_stress_test && !p->dvfs_disable_by_suspend && !get_turbo_status()
 #ifdef CONFIG_HYBRID_CPU_DVFS
 		    && (!enable_cpuhvfs || cur_khz != target_khz)
 #endif
