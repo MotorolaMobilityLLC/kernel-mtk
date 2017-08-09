@@ -20,13 +20,13 @@
 #include "mt_sched_mon.h"
 #include "internal.h"
 
-static int WARN_ISR_DUR;
-static int WARN_SOFTIRQ_DUR;
-static int WARN_TASKLET_DUR;
-static int WARN_HRTIMER_DUR;
-static int WARN_STIMER_DUR;
-static int WARN_BURST_IRQ_DETECT;
-static int WARN_PREEMPT_DUR;
+static unsigned int WARN_ISR_DUR;
+static unsigned int WARN_SOFTIRQ_DUR;
+static unsigned int WARN_TASKLET_DUR;
+static unsigned int WARN_HRTIMER_DUR;
+static unsigned int WARN_STIMER_DUR;
+static unsigned int WARN_BURST_IRQ_DETECT;
+static unsigned int WARN_PREEMPT_DUR;
 
 
 enum mt_event_type {
@@ -721,7 +721,7 @@ static ssize_t mt_sched_monitor_write(struct file *filp, const char *ubuf,
 				      size_t cnt, loff_t *data)
 {
 	char buf[64];
-	int val;
+	unsigned long val;
 	int ret;
 
 	if (cnt >= sizeof(buf))
@@ -732,7 +732,7 @@ static ssize_t mt_sched_monitor_write(struct file *filp, const char *ubuf,
 
 	buf[cnt] = 0;
 
-	ret = kstrtoul(buf, 10, (unsigned long *)&val);
+	ret = kstrtoul(buf, 10, &val);
 	if (ret < 0)
 		return ret;
 	/* 0: off, 1:on */
@@ -742,7 +742,7 @@ static ssize_t mt_sched_monitor_write(struct file *filp, const char *ubuf,
 	if (val == 18)		/* 0x12 */
 		mt_dump_irq_off_traces();
 	mt_sched_monitor_switch(val);
-	pr_err(" to %d\n", val);
+	pr_err(" to %lu\n", val);
 	return cnt;
 }
 
@@ -765,7 +765,7 @@ static ssize_t mt_sched_monitor_##param##_write(			\
 	size_t cnt, loff_t *data)				\
 {											\
 	char buf[64];							\
-	int val;								\
+	unsigned long val;								\
 	int ret;								\
 											\
 	if (cnt >= sizeof(buf))					\
@@ -775,11 +775,11 @@ static ssize_t mt_sched_monitor_##param##_write(			\
 		return -EFAULT;						\
 											\
 	buf[cnt] = 0;							\
-	ret = kstrtoul(buf, 10, (unsigned long *)&val);	\
+	ret = kstrtoul(buf, 10, &val);			\
 	if (ret < 0)							\
 		return ret;							\
 											\
-	warn_dur = val;					\
+	warn_dur = val;							\
 											\
 	return cnt;								\
 											\

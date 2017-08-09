@@ -332,7 +332,7 @@ void end_mt_rt_mon_info(struct task_struct *p)
 {
 	struct mt_rt_mon_struct *tmp;
 	unsigned long irq_flags;
-	int find;
+	int find = 0;
 
 	spin_lock_irqsave(&mt_rt_mon_lock, irq_flags);
 
