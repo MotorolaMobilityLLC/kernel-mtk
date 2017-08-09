@@ -26,7 +26,20 @@
 
 static void *ion_page_pool_alloc_pages(struct ion_page_pool *pool)
 {
-	struct page *page = alloc_pages(pool->gfp_mask, pool->order);
+	unsigned long long start, end;
+	struct page *page;
+
+	start = sched_clock();
+	page = alloc_pages(pool->gfp_mask, pool->order);
+	end = sched_clock();
+
+	if (end - start > 10000000ULL)	{ /* unit is ns, 10ms */
+		trace_printk("warn: ion page pool alloc pages order: %d time: %lld ns\n",
+			     pool->order, end - start);
+		IONMSG("warn: ion page pool alloc pages order: %d time: %lld ns\n", pool->order,
+		       end - start);
+		show_free_areas(0);
+	}
 
 	if (!page)
 		return NULL;

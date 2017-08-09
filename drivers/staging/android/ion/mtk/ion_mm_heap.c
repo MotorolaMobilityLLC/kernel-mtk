@@ -184,6 +184,7 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 	unsigned long size_remaining = PAGE_ALIGN(size);
 	unsigned int max_order = orders[0];
 	ion_mm_buffer_info *pBufferInfo = NULL;
+	unsigned long long start, end;
 
 	if (align > PAGE_SIZE) {
 		IONMSG("%s align %lu is larger than PAGE_SIZE.\n", __func__, align);
@@ -196,6 +197,7 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 	}
 
 	INIT_LIST_HEAD(&pages);
+	start = sched_clock();
 	while (size_remaining > 0) {
 		info = alloc_largest_available(sys_heap, buffer, size_remaining,
 				max_order);
@@ -207,6 +209,14 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 		size_remaining -= (1 << info->order) * PAGE_SIZE;
 		max_order = info->order;
 		i++;
+	}
+	end = sched_clock();
+
+	if (end - start > 10000000ULL)	{ /* unit is ns, 10ms */
+		trace_printk("warn: ion mm heap allocate buffer size: %lu time: %lld ns\n",
+			     size, end - start);
+		IONMSG("warn: ion mm heap allocate buffer size: %lu time: %lld ns\n", size,
+		       end - start);
 	}
 	table = kzalloc(sizeof(struct sg_table), GFP_KERNEL);
 	if (!table) {
