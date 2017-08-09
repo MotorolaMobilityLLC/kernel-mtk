@@ -65,11 +65,11 @@
 #define CKSW_DIV_SEL_O	16
 
 typedef enum {
-	IN_DEBUG_IDLE = 0,
-	ENTERING_SLEEP,
-	IN_SLEEP,
-	ENTERING_ACTIVE,
-	IN_ACTIVE,
+	IN_DEBUG_IDLE = 1,
+	ENTERING_SLEEP = 2,
+	IN_SLEEP = 4,
+	ENTERING_ACTIVE = 8,
+	IN_ACTIVE = 16,
 } scp_state_enum;
 static bool mt_scp_dvfs_debug = true;
 
@@ -109,6 +109,7 @@ typedef enum  {
 	CLK_112M,
 	CLK_224M,
 	CLK_354M,
+	CLK_32K,
 } clk_enum;
 
 typedef enum {
@@ -290,6 +291,8 @@ clk_enum get_cur_clk(void)
 		return CLK_224M;
 	else if (cur_clk == CLK_SEL_HIGH && cur_div == CLK_DIV_2 && (clk_enable & (1 << CLK_HIGH_EN_BIT)) != 0)
 		return CLK_112M;
+	else if (cur_clk == CLK_SEL_32K)
+		return CLK_32K;
 
 	scp_dvfs_err("clk setting error (%d, %d)\n", cur_clk, cur_div);
 	return CLK_UNKNOWN;
@@ -419,8 +422,10 @@ static int mt_scp_dvfs_cur_opp_proc_show(struct seq_file *m, void *v)
 
 	cur_clk = get_cur_clk();
 	seq_printf(m, "current opp = %s\n",
-		(cur_clk == CLK_112M) ? "CLK 112M, Voltage = 0.8V" : (cur_clk == CLK_224M) ?
-		"CLK_224M, Voltage = 0.9V" : (cur_clk == CLK_354M) ? "CLK_354M, Volt = 1.0V"
+		(cur_clk == CLK_112M) ? "CLK 112M, Voltage = 0.8V"
+		: (cur_clk == CLK_224M) ? "CLK_224M, Voltage = 0.9V"
+		: (cur_clk == CLK_354M) ? "CLK_354M, Volt = 1.0V"
+		: (cur_clk == CLK_32K) ? "CLK_32K, Volt = 0.6V"
 		: "state error");
 	return 0;
 }
@@ -535,9 +540,11 @@ static int mt_scp_dvfs_state_proc_show(struct seq_file *m, void *v)
 
 	scp_state = SLEEP_DEBUG;
 	seq_printf(m, "scp status is in %s\n",
-		(scp_state == IN_DEBUG_IDLE) ? "idle mode" : (scp_state == ENTERING_SLEEP) ? "enter sleep"
-		: (scp_state == IN_SLEEP) ? "sleep mode" : (scp_state == ENTERING_ACTIVE) ? "enter active"
-		: (scp_state == IN_ACTIVE) ? "active mode" : "none of state");
+		((scp_state & IN_DEBUG_IDLE) == IN_DEBUG_IDLE) ? "idle mode"
+		: ((scp_state & ENTERING_SLEEP) == ENTERING_SLEEP) ? "enter sleep"
+		: ((scp_state & IN_SLEEP) == IN_SLEEP) ? "sleep mode"
+		: ((scp_state & ENTERING_ACTIVE) == ENTERING_ACTIVE) ? "enter active"
+		: ((scp_state & IN_ACTIVE) == IN_ACTIVE) ? "active mode" : "none of state");
 	return 0;
 }
 
