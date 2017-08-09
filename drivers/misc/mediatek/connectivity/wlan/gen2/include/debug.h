@@ -262,7 +262,7 @@ typedef enum _ENUM_DBG_MODULE_T {
 	do { \
 		if ((aucDebugModule[DBG_##_Module##_IDX] & DBG_CLASS_##_Class) == 0) \
 			break; \
-		LOG_FUNC("[wlan]%s:(" #_Module " " #_Class ")"_Fmt, __func__, ##__VA_ARGS__); \
+		LOG_FUNC("%s:(" #_Module " " #_Class ")"_Fmt, __func__, ##__VA_ARGS__); \
 	} while (0)
 #else
 #define DBGLOG(_Module, _Class, _Fmt)

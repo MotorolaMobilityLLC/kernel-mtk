@@ -939,7 +939,7 @@ kalP2PIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 		prChannelEntry = kalP2pFuncGetChannelEntry(prGlueP2pInfo, prChannelInfo);
 
 		if (prChannelEntry == NULL) {
-			DBGLOG(P2P, TRACE, "Unknown channel info\n");
+			DBGLOG(P2P, WARN, "Unknown channel info\n");
 			break;
 		}
 		/* rChannelInfo.center_freq = nicChannelNum2Freq((UINT_32)prChannelInfo->ucChannelNum) / 1000; */
@@ -949,8 +949,14 @@ kalP2PIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 							  prBcnProbeRspFrame, u4BufLen, i4SignalStrength, GFP_KERNEL);
 
 		/* Return this structure. */
-		cfg80211_put_bss(prGlueP2pInfo->prWdev->wiphy, prCfg80211Bss);
-		DBGLOG(REQ, INFO, "indicate ok 0x%p\n", prCfg80211Bss);
+		if (!prCfg80211Bss) {
+			DBGLOG(P2P, WARN, "inform bss to cfg80211 failed, bss channel %d, rcpi %d\n",
+					prChannelInfo->ucChannelNum, i4SignalStrength);
+		} else {
+			cfg80211_put_bss(prGlueP2pInfo->prWdev->wiphy, prCfg80211Bss);
+			DBGLOG(P2P, TRACE, "inform bss to cfg80211, bss channel %d, rcpi %d\n",
+					prChannelInfo->ucChannelNum, i4SignalStrength);
+		}
 	} while (FALSE);
 
 }				/* kalP2PIndicateBssInfo */
