@@ -370,7 +370,6 @@ static struct mt_gpufreq_clk_t *mt_gpufreq_clk;
 /* static struct mt_gpufreq_power_table_info *mt_gpufreqs_default_power; */
 
 static bool mt_gpufreq_ptpod_disable;
-
 static int mt_gpufreq_ptpod_disable_idx;
 
 #ifdef MT_GPUFREQ_LOW_BATT_VOLUME_POLLING_TIMER
@@ -654,6 +653,8 @@ static void mt_gpufreq_power_calculation(unsigned int idx, unsigned int freq,
 #ifdef STATIC_PWR_READY2USE
 	p_leakage =
 	    mt_spower_get_leakage(MT_SPOWER_GPU, (volt / 100), temp);
+	if (p_leakage < 0)
+		p_leakage = 0;
 #else
 	p_leakage = 71;
 #endif
@@ -942,6 +943,7 @@ EXPORT_SYMBOL(mt_gpufreq_voltage_enable_set);
 /************************************************
  * DVFS enable API for PTPOD
  *************************************************/
+
 void mt_gpufreq_enable_by_ptpod(void)
 {
 	mt_gpufreq_ptpod_disable = false;
@@ -2236,6 +2238,7 @@ unsigned int mt_gpufreq_get_leakage_mw(void)
 	int temp = 0;
 #ifdef STATIC_PWR_READY2USE
 	unsigned int cur_vcore = _mt_gpufreq_get_cur_volt() / 100;
+	unsigned int leak_power;
 #endif
 
 #ifdef CONFIG_THERMAL
@@ -2245,7 +2248,11 @@ unsigned int mt_gpufreq_get_leakage_mw(void)
 #endif
 
 #ifdef STATIC_PWR_READY2USE
-	return mt_spower_get_leakage(MT_SPOWER_GPU, cur_vcore, temp);
+	leak_power = mt_spower_get_leakage(MT_SPOWER_GPU, cur_vcore, temp);
+	if (leak_power > 0)
+		return leak_power;
+	else
+		return 0;
 #else
 	return 130;
 #endif
