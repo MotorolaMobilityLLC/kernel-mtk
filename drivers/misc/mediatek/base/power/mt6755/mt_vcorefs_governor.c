@@ -966,8 +966,14 @@ int vcorefs_late_init_dvfs(void)
 	bool plat_init_done = true;
 	int plat_init_opp;
 
-	if (DISP_GetScreenWidth() * DISP_GetScreenHeight() < 1080 * 1920)
+	if (DISP_GetScreenWidth() * DISP_GetScreenHeight() < 1080 * 1920) {
 		gvrctrl->is_fhd_segment = false;
+		gvrctrl->cpu_dvfs_req = 0;
+	} else {
+		gvrctrl->is_fhd_segment = true;
+		gvrctrl->cpu_dvfs_req = (1 << MD_CAT6_CA_DATALINK | (1 << MD_Position));
+	}
+	spm_vcorefs_set_cpu_dvfs_req(gvrctrl->cpu_dvfs_req, 0xFFFF);
 
 	vcorefs_init_sram_debug();
 
@@ -1017,8 +1023,6 @@ static int init_vcorefs_config(void)
 	gvrctrl->curr_vcore_uv = vcorefs_get_curr_vcore();
 	BUG_ON(gvrctrl->curr_vcore_uv == 0);
 	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
-
-	spm_vcorefs_set_cpu_dvfs_req(gvrctrl->cpu_dvfs_req, 0xFFFF);
 
 	for (opp = 0; opp < NUM_OPP; opp++) {
 		opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
