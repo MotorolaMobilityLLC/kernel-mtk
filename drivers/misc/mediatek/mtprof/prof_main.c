@@ -388,9 +388,12 @@ static ssize_t mt_pid_write(struct file *filp, const char *ubuf,
 	char buf[10];
 	unsigned long val;
 	int ret;
+	struct task_struct *tsk;
 
-	if (cnt >= sizeof(buf))
+	if (cnt >= sizeof(buf)) {
+		pr_debug("mt_pid input stream size to large.\n");
 		return -EINVAL;
+	}
 
 	if (copy_from_user(&buf, ubuf, cnt))
 		return -EFAULT;
@@ -399,10 +402,17 @@ static ssize_t mt_pid_write(struct file *filp, const char *ubuf,
 
 	reboot_pid = val;
 	if (reboot_pid > PID_MAX_DEFAULT) {
+		pr_debug("get reboot pid error %d.\n", reboot_pid);
 		reboot_pid = 0;
 		return -EFAULT;
 	}
 	pr_debug("get reboot pid: %d.\n", reboot_pid);
+
+	if (reboot_pid > 1) {
+		tsk = find_task_by_vpid(reboot_pid);
+		if (tsk != NULL)
+			pr_crit("Reboot Process(%s:%d).\n", tsk->comm, tsk->pid);
+	}
 
 	return cnt;
 
