@@ -175,7 +175,7 @@ static int mtk_voice_pcm_open(struct snd_pcm_substream *substream)
 		/* pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_voice_constraints\n"); */
 		runtime->rate = 16000;
 	} else {
-		/* pr_warn("SNDRV_PCM_STREAM_CAPTURE mtkalsa_voice_constraints\n"); */
+		pr_warn("SNDRV_PCM_STREAM_CAPTURE mtkalsa_voice_constraints\n");
 		runtime->rate = 16000;
 	}
 

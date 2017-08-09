@@ -1921,7 +1921,7 @@ bool EnableSideToneFilter(bool stf_on)
 				if (new_write_ready == old_write_ready) { /* flip => ok */
 					udelay(3);
 					if (try_cnt == 9) {
-						BUG_ON(new_write_ready == old_write_ready);
+						pr_err("%s, ERROR in writing filter coefficients\n", __func__);
 						AudDrv_Clk_Off();
 						return false;
 					}
