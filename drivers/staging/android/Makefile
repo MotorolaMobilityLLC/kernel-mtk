@@ -1,6 +1,7 @@
 ccflags-y += -I$(src)			# needed for trace events
 ccflags-y += -I$(srctree)/drivers/staging/android/ion
 MTK_PLATFORM:= $(subst ",,$(CONFIG_MTK_PLATFORM))
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/
 
 obj-$(CONFIG_ION)			+= ion/
