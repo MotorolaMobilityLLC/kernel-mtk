@@ -59,18 +59,18 @@ static int tsda9214_get_temp(struct thermal_zone_device *thermal, unsigned long 
 	unsigned char val = 0;
 
 	tsda9214_dprintk("[tsda9214_get_temp]\n");
-	if (da9214_read_interface(0x51, &val, 0x11, 2) == 1) {
+	if (da9214_read_interface(0x51, &val, 3, 2) == 1) {
 		switch (val) {
-		case 0x00:
+		case 0:
 			/* < 125 */
 			*t = 60000;
 			break;
-		case 0x01:
+		case 1:
 			/* 125 ~ 140 */
 			*t = 125000;
 			break;
-		case 0x10:
-		case 0x11:
+		case 2:
+		case 3:
 			/* 140 ~ 150 */
 			*t = 140000;
 			break;
