@@ -233,10 +233,12 @@ ret = pmic_config_interface(0x282, 0x0, 0x1, 11);
 ret = pmic_config_interface(0x28E, 0x0, 0x1, 4);
 ret = pmic_config_interface(0x410, 0x8, 0x3F, 8);
 ret = pmic_config_interface(0x414, 0x3, 0x3, 4);
-ret = pmic_config_interface(0x416, 0x20, 0x7F, 0);
+ret = pmic_config_interface(0x416, 0x1C, 0x7F, 0);
 ret = pmic_config_interface(0x41A, 0x40, 0x7F, 0);
-ret = pmic_config_interface(0x41C, 0x1, 0x1, 0);
-ret = pmic_config_interface(0x41C, 0x1, 0x1, 1);
+if (pmic_get_register_value(PMIC_HWCID) == 0x5120) {
+	ret = pmic_config_interface(0x41C, 0x1, 0x1, 0);
+	ret = pmic_config_interface(0x41C, 0x1, 0x1, 1);
+}
 ret = pmic_config_interface(0x422, 0x1, 0x1, 0);
 ret = pmic_config_interface(0x422, 0x1, 0x1, 2);
 ret = pmic_config_interface(0x422, 0x1, 0x1, 3);
@@ -257,7 +259,6 @@ ret = pmic_config_interface(0x464, 0x0, 0x7, 0);
 ret = pmic_config_interface(0x464, 0xF, 0xF, 11);
 ret = pmic_config_interface(0x466, 0x1, 0x1, 3);
 ret = pmic_config_interface(0x466, 0x5, 0x7, 9);
-ret = pmic_config_interface(0x46A, 0x1, 0x1, 7);
 ret = pmic_config_interface(0x46C, 0x1, 0x7, 4);
 ret = pmic_config_interface(0x472, 0x400, 0xFFFF, 0);
 ret = pmic_config_interface(0x478, 0xF, 0xF, 11);
@@ -418,10 +419,9 @@ if (pmic_get_register_value(PMIC_HWCID) == 0x5140) {
 	ret = pmic_config_interface(0x26A, 0x1, 0x1, 4);
 	ret = pmic_config_interface(0x26A, 0x1, 0x1, 7);
 	ret = pmic_config_interface(0x6A0, 0x1, 0x1, 1);
-	pr_err("[PMIC] 6351 VOW 0x%x, 0x%x, 0x%x 0x%x\n", pmic_get_register_value(PMIC_HWCID),
-					pmic_get_register_value(PMIC_RG_VOWEN_MODE),
-					pmic_get_register_value(PMIC_RG_SRCVOLTEN_MODE),
-					pmic_get_register_value(PMIC_BUCK_VSRAM_PROC_VOSEL_CTRL));
+	ret = pmic_config_interface(0x6AC, 0x10, 0x7F, 0);
+	ret = pmic_config_interface(0x6B2, 0x1, 0x1, 8);
+	ret = pmic_config_interface(0xA5E, 0x1, 0x1, 2);
 }
 if (pmic_get_register_value(PMIC_HWCID) == 0x5120) {
 	pr_err("[PMIC] 6351 VOW 0x%x, 0x%x, 0x%x 0x%x\n", pmic_get_register_value(PMIC_HWCID),
