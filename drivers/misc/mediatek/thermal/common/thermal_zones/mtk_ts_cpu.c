@@ -1058,6 +1058,7 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 	};
 
 	struct mtktscpu_data *ptr_mtktscpu_data = kmalloc(sizeof(*ptr_mtktscpu_data), GFP_KERNEL);
+
 	if (ptr_mtktscpu_data == NULL) {
 		pr_warn("[%s] kmalloc fail\n\n", __func__);
 		return -ENOMEM;
@@ -1069,6 +1070,9 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 		return 0;
 	}
 
+#if defined(CONFIG_ARCH_MT6797)
+		mt_ppm_cpu_thermal_protect(1000);
+#endif
 
 	ptr_mtktscpu_data->desc[len] = '\0';
 
@@ -1554,6 +1558,7 @@ static int ktp_thread(void *arg)
 			msleep(20 * 1000);
 		} else if ((temp_ktp_limited > -275000) && (max_temp < temp_ktp_limited)) {
 			unsigned int final_limit;
+
 			final_limit = MIN(static_cpu_power_limit, adaptive_cpu_power_limit);
 			tscpu_dprintk("ktp_thread unlimit cpu=%d\n", final_limit);
 
