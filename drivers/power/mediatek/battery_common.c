@@ -76,7 +76,7 @@
 
 
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
-#include <mach/diso.h>
+#include <mt-plat/diso.h>
 #endif
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)

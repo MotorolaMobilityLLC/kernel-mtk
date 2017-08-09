@@ -49,7 +49,7 @@
 #endif
 
 #ifdef CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT
-#include <mach/diso.h>
+#include <mt-plat/diso.h>
 #endif
 
 
@@ -709,8 +709,8 @@ bool get_usb_current_unlimited(void)
 void set_usb_current_unlimited(bool enable)
 {
 	unsigned int en;
-	usb_unlimited = enable;
 
+	usb_unlimited = enable;
 	if (enable == true)
 		en = 1;
 	else
