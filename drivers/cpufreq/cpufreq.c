@@ -202,7 +202,7 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
 	struct cpufreq_policy *policy = NULL;
 	unsigned long flags;
 
-	if (cpufreq_disabled() || (cpu >= nr_cpu_ids))
+	if (cpufreq_disabled() || (cpu >= nr_cpu_ids) || cpu_is_offline(cpu))
 		return NULL;
 
 	if (!down_read_trylock(&cpufreq_rwsem))
@@ -214,10 +214,22 @@ struct cpufreq_policy *cpufreq_cpu_get(unsigned int cpu)
 	if (cpufreq_driver) {
 		/* get the CPU */
 		policy = per_cpu(cpufreq_cpu_data, cpu);
+		#if 0
 		if (policy)
 			kobject_get(&policy->kobj);
+		#else
+		if (!policy)
+			goto out;
+		if (policy->cpu != cpu) {
+			policy = NULL;
+			goto out;
+		}
+
+		kobject_get(&policy->kobj);
+		#endif
 	}
 
+out:
 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
 
 	if (!policy)
@@ -1101,12 +1113,14 @@ static int update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu,
 	if (WARN_ON(cpu == policy->cpu))
 		return 0;
 
+	#if 0
 	/* Move kobject to the new policy->cpu */
 	ret = kobject_move(&policy->kobj, &cpu_dev->kobj);
 	if (ret) {
 		pr_err("%s: Failed to move kobj: %d\n", __func__, ret);
 		return ret;
 	}
+	#endif
 
 	down_write(&policy->rwsem);
 
@@ -1114,6 +1128,13 @@ static int update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu,
 	policy->cpu = cpu;
 
 	up_write(&policy->rwsem);
+
+	/* Move kobject to the new policy->cpu */
+	ret = kobject_move(&policy->kobj, &cpu_dev->kobj);
+	if (ret) {
+		pr_err("%s: Failed to move kobj: %d\n", __func__, ret);
+		return ret;
+	}
 
 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
 			CPUFREQ_UPDATE_POLICY_CPU, policy);
