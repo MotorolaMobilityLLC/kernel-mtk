@@ -143,6 +143,9 @@ static bool clkbuf_debug;
 /* false: rf_clkbuf, true: pmic_clkbuf */
 static bool is_pmic_clkbuf;
 
+static unsigned int afcdac_val = 0x2A80008; /* afc_default=4096 */
+static bool is_clkbuf_afcdac_updated;
+
 static unsigned int g_pmic_cw13_rg_val = PMIC_CW13_DEFAULT_VAL;
 /* FIXME: Before MP, using suggested driving current to test. */
 #define TEST_SUGGEST_DRIVING_CURR_BEFORE_MP
@@ -340,6 +343,35 @@ void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status)
 	}
 }
 
+/* Called by ccci driver to keep afcdac value sent from modem */
+void clk_buf_save_afc_val(unsigned int afcdac)
+{
+	if (is_pmic_clkbuf)
+		return;
+
+	afcdac_val = afcdac;
+
+	if (!is_clkbuf_afcdac_updated) {
+		spm_write(SPM_BSI_EN_SR, afcdac_val);
+		is_clkbuf_afcdac_updated = true;
+	}
+
+	clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x\n", __func__,
+		     afcdac_val, spm_read(SPM_BSI_EN_SR));
+}
+
+/* Called by suspend driver to write afcdac into SPM register */
+void clk_buf_write_afcdac(void)
+{
+	if (is_pmic_clkbuf)
+		return;
+
+	spm_write(SPM_BSI_EN_SR, afcdac_val);
+	clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x, afcdac_updated=%d\n",
+		     __func__, afcdac_val, spm_read(SPM_BSI_EN_SR),
+		     is_clkbuf_afcdac_updated);
+}
+
 static ssize_t clk_buf_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				  const char *buf, size_t count)
 {
@@ -416,7 +448,11 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	p += sprintf(p, "\n********** clock buffer command help **********\n");
 	p += sprintf(p, "BSI  switch on/off: echo bsi en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
 	p += sprintf(p, "PMIC switch on/off: echo pmic en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
-	p += sprintf(p, "g_pmic_cw13_rg_val=0x%x\n", g_pmic_cw13_rg_val);
+	if (is_pmic_clkbuf)
+		p += sprintf(p, "g_pmic_cw13_rg_val=0x%x\n", g_pmic_cw13_rg_val);
+	else
+		p += sprintf(p, "afcdac=0x%x, is_afcdac_updated=%d\n",
+			     afcdac_val, is_clkbuf_afcdac_updated);
 
 	len = p - buf;
 
@@ -705,6 +741,10 @@ bool clk_buf_init(void)
 
 		clk_buf_pmic_wrap_init();
 		clk_buf_clear_rf_setting();
+	} else { /* VCTCXO @RF */
+		spm_write(SPM_BSI_EN_SR, afcdac_val);
+		clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x\n", __func__,
+			     afcdac_val, spm_read(SPM_BSI_EN_SR));
 	}
 
 	is_clkbuf_initiated = true;
