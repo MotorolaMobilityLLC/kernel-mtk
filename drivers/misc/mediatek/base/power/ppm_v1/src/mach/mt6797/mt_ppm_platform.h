@@ -20,7 +20,7 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #endif
 #ifdef ENABLE_IDVFS
 #include "mt_ocp.h"
-#define PPM_HW_OCP_SUPPORT		(1)
+#define PPM_HW_OCP_SUPPORT		(0)
 #else
 #define PPM_HW_OCP_SUPPORT		(0)
 #endif
