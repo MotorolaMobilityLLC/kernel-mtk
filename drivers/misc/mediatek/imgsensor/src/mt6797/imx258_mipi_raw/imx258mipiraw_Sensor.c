@@ -598,7 +598,7 @@ static void set_shutter(kal_uint16 shutter)
 }    /*    set_shutter */
 
 
-static void set_shutter_frame_time(kal_uint16 shutter, kal_uint16 frame_time)
+static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
 {
     unsigned long flags;
     kal_uint16 realtime_fps = 0;
@@ -615,9 +615,7 @@ static void set_shutter_frame_time(kal_uint16 shutter, kal_uint16 frame_time)
 	// if shutter bigger than frame_length, should extend frame length first
     spin_lock(&imgsensor_drv_lock);
     /*Change frame time*/
-	//imgsensor.dummy_line = (frame_time > imgsensor.frame_length) ? (frame_time - imgsensor.frame_length) : 0;
-	//imgsensor.frame_length = imgsensor.frame_length + imgsensor.dummy_line;
-	dummy_line = frame_time - imgsensor.frame_length;
+	dummy_line = frame_length - imgsensor.frame_length;
 	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
 	imgsensor.min_frame_length = imgsensor.frame_length;
     //
@@ -3030,7 +3028,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			imgsensor.pdaf_mode= *feature_data_16;
 			break;
 		case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
-			set_shutter_frame_time((UINT16)*feature_data,(UINT16)*(feature_data+1));
+			set_shutter_frame_length((UINT16)*feature_data,(UINT16)*(feature_data+1));
 			break;
 		default:
 			break;
