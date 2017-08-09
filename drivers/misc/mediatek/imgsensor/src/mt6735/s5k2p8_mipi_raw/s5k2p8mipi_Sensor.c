@@ -258,10 +258,10 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 };
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
-{   
+{
     kal_uint16 get_byte=0;
-    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     char pusendcmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
+    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     iReadRegI2C(pusendcmd , 2, (u8*)&get_byte, 2, imgsensor.i2c_write_id);
     return ((get_byte<<8)&0xff00)|((get_byte>>8)&0x00ff);
 }
@@ -269,31 +269,31 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 
 static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 {
-    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para >> 8),(char)(para & 0xFF)};
+    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     iWriteRegI2C(pusendcmd , 4, imgsensor.i2c_write_id);
 }
 
 static kal_uint16 read_cmos_sensor_8(kal_uint16 addr)
 {
-    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     kal_uint16 get_byte=0;
     char pusendcmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
+    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     iReadRegI2C(pusendcmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
     return get_byte;
 }
 
 static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 {
-    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para & 0xFF)};
+    kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
     iWriteRegI2C(pusendcmd , 3, imgsensor.i2c_write_id);
 }
 
 
 static void set_dummy(void)
 {
-	 LOG_INF("dummyline = %d, dummypixels = %d ", imgsensor.dummy_line, imgsensor.dummy_pixel);
+	  LOG_INF("dummyline = %d, dummypixels = %d ", imgsensor.dummy_line, imgsensor.dummy_pixel);
     write_cmos_sensor_8(0x0104, 0x01);
     write_cmos_sensor(0x0340, imgsensor.frame_length);
     write_cmos_sensor(0x0342, imgsensor.line_length);

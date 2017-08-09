@@ -413,7 +413,7 @@ static void set_shutter(kal_uint16 shutter)
 {
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
-	kal_uint32 frame_length = 0;
+	//kal_uint32 frame_length = 0;
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
@@ -560,7 +560,7 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 
 #if 0
 static void set_mirror_flip(kal_uint8 image_mirror)
-{        
+{
 	kal_uint8  iTemp;
 	LOG_INF("image_mirror = %d\n", image_mirror);
 	/********************************************************
