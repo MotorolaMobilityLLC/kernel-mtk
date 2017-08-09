@@ -787,8 +787,6 @@ RESERVEDMEM_OF_DECLARE(reserve_memory_ram_console, "mediatek,ram_console",
 		if ((((volatile struct ram_console_buffer *)ram_console_buffer)->off_linux) != 0x140) \
 			pr_err("thrid time ram_console_buffer->off_linux=0x%x\n",	\
 				((volatile struct ram_console_buffer *)ram_console_buffer)->off_linux); \
-		if ((((volatile struct ram_console_buffer *)ram_console_buffer)->off_linux) != 0x140) \
-			BUG();\
 		(RR_LINUX->rr_item = value); \
 	} while (0)
 
