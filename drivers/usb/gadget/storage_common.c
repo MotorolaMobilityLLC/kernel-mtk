@@ -768,6 +768,13 @@ static ssize_t fsg_store_file(struct device *dev, struct device_attribute *attr,
 	printk("fsg_store_file file=%s, count=%d, curlun->cdrom=%d\n", buf, (int)count, curlun->cdrom);
 
 	/*
+	 * WORKAROUND:VOLD would clean the file path after switching to bicr.
+	 * So when the lun is being a CD-ROM a.k.a. BICR. Dont clean the file path to empty.
+	 */
+	if (curlun->cdrom == 1 && count == 1)
+		return count;
+
+	/*
 	 * WORKAROUND:Should be closed the fsg lun for virtual cd-rom, when switch to
 	 * other usb functions. Use the special keyword "off", because the init can
 	 * not parse the char '\n' in rc file and write into the sysfs.
