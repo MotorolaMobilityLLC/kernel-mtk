@@ -368,11 +368,12 @@ static struct kobj_type ccci_md_ktype = {
 
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 #include <scp_ipi.h>
-static struct ccci_ipi_msg scp_ipi_tx_msg;
-static struct ccci_ipi_msg scp_ipi_rx_msg;
-static struct mutex scp_ipi_tx_mutex;
 static MD_BOOT_STAGE scp_state;
-static struct work_struct scp_ipi_work;
+static struct ccci_ipi_msg scp_ipi_tx_msg;
+static struct mutex scp_ipi_tx_mutex;
+static struct work_struct scp_ipi_rx_work;
+static wait_queue_head_t scp_ipi_rx_wq;
+static struct ccci_skb_queue scp_ipi_rx_skb_list;
 
 static void scp_md_state_sync_work(struct work_struct *work)
 {
@@ -392,38 +393,48 @@ static void scp_md_state_sync_work(struct work_struct *work)
 	};
 }
 
-static void ccci_scp_ipi_work(struct work_struct *work)
+static void ccci_scp_ipi_rx_work(struct work_struct *work)
 {
-	struct ccci_ipi_msg *ipi_msg_ptr = &scp_ipi_rx_msg;
-	struct ccci_modem *md = ccci_get_modem_by_id(ipi_msg_ptr->md_id);
+	struct ccci_ipi_msg *ipi_msg_ptr;
+	struct ccci_modem *md;
+	struct sk_buff *skb = NULL;
 	int data;
 
-	switch (ipi_msg_ptr->op_id) {
-	case CCCI_OP_SCP_STATE:
-		switch (ipi_msg_ptr->data[0]) {
-		case SCP_CCCI_STATE_BOOTING:
-			if (scp_state == MD_BOOT_STAGE_2) {
-				CCCI_INF_MSG(md->index, CORE, "SCP reset detected\n");
-				ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT, 0, 1);
-			}
-			/* too early to init share memory here, EMI MPU may not be ready yet */
-			break;
-		case SCP_CCCI_STATE_RBREADY:
-			ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT_DONE, 0, 1);
-			data = md->boot_stage;
-			ccci_scp_ipi_send(md->index, CCCI_OP_MD_STATE, &data);
-			break;
-		default:
+	while (!skb_queue_empty(&scp_ipi_rx_skb_list.skb_list)) {
+		skb = ccci_skb_dequeue(&scp_ipi_rx_skb_list);
+		ipi_msg_ptr = (struct ccci_ipi_msg *)skb->data;
+		md = ccci_get_modem_by_id(ipi_msg_ptr->md_id);
+		switch (ipi_msg_ptr->op_id) {
+		case CCCI_OP_SCP_STATE:
+			switch (ipi_msg_ptr->data[0]) {
+			case SCP_CCCI_STATE_BOOTING:
+				if (scp_state == MD_BOOT_STAGE_2) {
+					CCCI_INF_MSG(md->index, CORE, "SCP reset detected\n");
+					ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT, 0, 1);
+				} else {
+					CCCI_INF_MSG(md->index, CORE, "SCP boot up\n");
+				}
+				/* too early to init share memory here, EMI MPU may not be ready yet */
+				break;
+			case SCP_CCCI_STATE_RBREADY:
+				ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT_DONE, 0, 1);
+				data = md->boot_stage;
+				ccci_scp_ipi_send(md->index, CCCI_OP_MD_STATE, &data);
+				break;
+			default:
+				break;
+			};
+			scp_state = ipi_msg_ptr->data[0];
 			break;
 		};
-		scp_state = ipi_msg_ptr->data[0];
-		break;
-	};
+		ccci_free_skb(skb, FREE);
+	}
 }
 
 static void ccci_scp_ipi_handler(int id, void *data, unsigned int len)
 {
 	struct ccci_ipi_msg *ipi_msg_ptr = (struct ccci_ipi_msg *)data;
+	struct sk_buff *skb = NULL;
 
 	if (len != sizeof(struct ccci_ipi_msg)) {
 		CCCI_ERR_MSG(-1, CORE, "IPI handler, data length wrong %d vs. %ld\n", len, sizeof(struct ccci_ipi_msg));
@@ -431,9 +442,13 @@ static void ccci_scp_ipi_handler(int id, void *data, unsigned int len)
 	}
 	CCCI_INF_MSG(ipi_msg_ptr->md_id, CORE, "IPI handler %d/0x%x, %d\n",
 				ipi_msg_ptr->op_id, ipi_msg_ptr->data[0], len);
-	/* TODO: skb queue */
-	memcpy(&scp_ipi_rx_msg, data, len);
-	schedule_work(&scp_ipi_work); /* ipi_send use mutex, can not be called from ISR context */
+
+	skb = ccci_alloc_skb(len, 0, 0);
+	if (!skb)
+		return;
+	memcpy(skb_put(skb, len), data, len);
+	ccci_skb_enqueue(&scp_ipi_rx_skb_list, skb);
+	schedule_work(&scp_ipi_rx_work); /* ipi_send use mutex, can not be called from ISR context */
 }
 
 static void ccci_scp_init(void)
@@ -443,7 +458,9 @@ static void ccci_scp_init(void)
 	mutex_init(&scp_ipi_tx_mutex);
 	ret = scp_ipi_registration(IPI_APCCCI, ccci_scp_ipi_handler, "AP CCCI");
 	CCCI_INF_MSG(-1, CORE, "register IPI %d %d\n", IPI_APCCCI, ret);
-	INIT_WORK(&scp_ipi_work, ccci_scp_ipi_work);
+	INIT_WORK(&scp_ipi_rx_work, ccci_scp_ipi_rx_work);
+	init_waitqueue_head(&scp_ipi_rx_wq);
+	ccci_skb_queue_init(&scp_ipi_rx_skb_list, 16, 16, 0);
 }
 
 int ccci_scp_ipi_send(int md_id, int op_id, void *data)

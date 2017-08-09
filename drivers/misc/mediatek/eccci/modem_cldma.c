@@ -3432,12 +3432,20 @@ static ssize_t md_cd_control_store(struct ccci_modem *md, const char *buf, size_
 		ccci_scp_ipi_send(md->index, CCCI_OP_LOG_LEVEL, &data);
 		CCCI_INF_MSG(md->index, TAG, "IPI log level=1\n");
 	}
+	size = strlen("scp_msgrcv");
+	if (strncmp(buf, "scp_msgrcv", size) == 0) {
+		void __iomem *gipc_in_3 = ioremap_nocache(0x100A0038, 0x4);
+
+		ccci_write32(gipc_in_3, 0, ccci_read32(gipc_in_3, 0) | 0x1);
+		CCCI_INF_MSG(md->index, TAG, "IPI SCP test msg recv\n");
+		iounmap(gipc_in_3);
+	}
 	size = strlen("scp_msgsnd");
 	if (strncmp(buf, "scp_msgsnd", size) == 0) {
 		int data = 0;
 
 		ccci_scp_ipi_send(md->index, CCCI_OP_MSGSND_TEST, &data);
-		CCCI_INF_MSG(md->index, TAG, "IPI send test msg\n");
+		CCCI_INF_MSG(md->index, TAG, "IPI send test msg send\n");
 	}
 	size = strlen("scp_assert");
 	if (strncmp(buf, "scp_assert", size) == 0) {
