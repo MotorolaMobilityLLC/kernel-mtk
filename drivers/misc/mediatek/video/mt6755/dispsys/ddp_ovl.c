@@ -1156,8 +1156,8 @@ static int ovl_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst_
 	for (i = 0; i < layer_num; i++)
 		DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMAn_BUF_LOW(i), regval);
 
-	/* DISP_REG_OVL_FUNC_DCM1 */
-	DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_FUNC_DCM1, 0x10);
+	/* DISP_REG_OVL_FUNC_DCM1 -- no need anymore, because we set it @ovl_clock_on()*/
+	/* DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_FUNC_DCM1, 0x10); */
 
 	return 0;
 }
