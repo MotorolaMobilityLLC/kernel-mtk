@@ -383,10 +383,11 @@ static ssize_t gyro_store_batch(struct device *dev, struct device_attribute *att
 {
 	struct gyro_context *cxt = NULL;
 
-	GYRO_LOG("gyro_store_batch buf=%s\n", buf);
+	/* GYRO_LOG("gyro_store_batch buf=%s\n", buf); */
 	mutex_lock(&gyro_context_obj->gyro_op_mutex);
 	cxt = gyro_context_obj;
 	if (cxt->gyro_ctl.is_support_batch) {
+		GYRO_LOG("gyro_store_batch buf=%s\n", buf);
 		if (!strncmp(buf, "1", 1)) {
 			cxt->is_batch_enable = true;
 			if (true == cxt->is_polling_run) {
@@ -413,7 +414,7 @@ static ssize_t gyro_store_batch(struct device *dev, struct device_attribute *att
 		GYRO_LOG(" gyro_store_batch not support\n");
 
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
-	GYRO_LOG(" gyro_store_batch done: %d\n", cxt->is_batch_enable);
+	/* GYRO_LOG(" gyro_store_batch done: %d\n", cxt->is_batch_enable); */
 
 	return count;
 }

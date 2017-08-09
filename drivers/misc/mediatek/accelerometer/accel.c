@@ -406,10 +406,11 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 {
 	struct acc_context *cxt = NULL;
 
-	ACC_LOG("acc_store_batch buf=%s\n", buf);
+	/* ACC_LOG("acc_store_batch buf=%s\n", buf); */
 	mutex_lock(&acc_context_obj->acc_op_mutex);
 	cxt = acc_context_obj;
 	if (cxt->acc_ctl.is_support_batch) {
+		ACC_LOG("acc_store_batch buf=%s\n", buf);
 		if (!strncmp(buf, "1", 1)) {
 			cxt->is_batch_enable = true;
 			if (true == cxt->is_polling_run) {
@@ -436,7 +437,7 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 		ACC_LOG(" acc_store_batch mot supported\n");
 
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
-	ACC_LOG(" acc_store_batch done: %d\n", cxt->is_batch_enable);
+	/* ACC_LOG(" acc_store_batch done: %d\n", cxt->is_batch_enable); */
 	return count;
 
 }
