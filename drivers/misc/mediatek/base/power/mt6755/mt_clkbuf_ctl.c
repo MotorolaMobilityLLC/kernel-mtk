@@ -882,6 +882,7 @@ static void clk_buf_pmic_wrap_init(void)
 		     clkbuf_readl(DCXO_NFC_WDATA1));
 }
 
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353 /* only for MT6750 */
 static void rf_clk_buf_pmic_wrap_init(void)
 {
 	u32 ldo_vcn28_con0 = 0;
@@ -923,6 +924,7 @@ static void rf_clk_buf_pmic_wrap_init(void)
 		     clkbuf_readl(DCXO_ENABLE),
 		     clkbuf_readl(HARB_SLEEP_GATED_CTRL));
 }
+#endif
 
 static int clk_buf_fs_init(void)
 {
@@ -1075,7 +1077,9 @@ bool clk_buf_init(void)
 		clk_buf_pmic_wrap_init();
 		clk_buf_clear_rf_setting();
 	} else { /* VCTCXO @RF */
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353 /* only for MT6750 */
 		rf_clk_buf_pmic_wrap_init();
+#endif
 
 		spm_write(SPM_BSI_EN_SR, afcdac_val);
 		clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x\n", __func__,
