@@ -1514,6 +1514,16 @@ static void destroy_device(struct zram *zram)
 	blk_cleanup_queue(zram->queue);
 }
 
+unsigned long zram_mlog(void)
+{
+#define P2K(x) (((unsigned long)x) << (PAGE_SHIFT - 10))
+	if (num_devices == 1 && init_done(zram_devices))
+		return P2K(zs_get_total_pages(zram_devices->meta->mem_pool));
+#undef P2K
+
+	return 0;
+}
+
 #ifdef CONFIG_PROC_FS
 static int zraminfo_proc_show(struct seq_file *m, void *v)
 {

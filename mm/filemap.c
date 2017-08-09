@@ -1897,6 +1897,7 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 		/* mlog */
 		count_vm_event(PGFMFAULT);
+		current->fm_flt++;
 
 		count_vm_event(PGMAJFAULT);
 		mem_cgroup_count_vm_event(vma->vm_mm, PGMAJFAULT);

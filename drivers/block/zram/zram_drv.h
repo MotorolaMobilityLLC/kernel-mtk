@@ -155,4 +155,7 @@ struct zram {
 	char compressor[10];
 };
 
+/* mlog */
+unsigned long zram_mlog(void);
+
 #endif

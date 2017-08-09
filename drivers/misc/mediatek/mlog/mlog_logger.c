@@ -16,18 +16,10 @@
 #include <asm/uaccess.h>
 #include <linux/version.h>
 
-/*#define COLLECT_GPU_MEMINFO*/
+#define COLLECT_GPU_MEMINFO
 
 #ifdef COLLECT_GPU_MEMINFO
-#include <linux/mtk_gpu_utility.h>
-#endif
-
-#ifdef CONFIG_ZSMALLOC
-#include <linux/zsmalloc.h>
-#endif
-
-#ifdef CONFIG_ZRAM
-#undef CONFIG_ZRAM
+#include <mt-plat/mtk_gpu_utility.h>
 #endif
 
 #ifdef CONFIG_ZRAM
@@ -371,9 +363,8 @@ static void mlog_meminfo(void)
 #endif
 
 	mlock = P2K(global_page_state(NR_MLOCK));
-#if defined(CONFIG_ZRAM) & defined(CONFIG_ZSMALLOC)
-	zram = (zram_devices && zram_devices->init_done && zram_devices->meta) ?
-	    B2K(zs_get_total_size_bytes(zram_devices->meta->mem_pool)) : 0;
+#if defined(CONFIG_ZRAM) && defined(CONFIG_ZSMALLOC)
+	zram = zram_mlog();
 #else
 	zram = 0;
 #endif
@@ -584,8 +575,9 @@ collect_proc_mem_info:
 		do {
 			/* min_flt += t->min_flt; */
 			/* maj_flt += t->maj_flt; */
-#ifdef CONFIG_ZRAM
+
 			fm_flt += t->fm_flt;
+#ifdef CONFIG_SWAP
 			swap_in += t->swap_in;
 			swap_out += t->swap_out;
 #endif
