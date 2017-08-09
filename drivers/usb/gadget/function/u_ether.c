@@ -77,6 +77,7 @@ struct eth_dev {
 	unsigned		header_len;
 	unsigned		ul_max_pkts_per_xfer;
 	unsigned		dl_max_pkts_per_xfer;
+	uint32_t		dl_max_xfer_size;
 	struct sk_buff		*(*wrap)(struct gether *, struct sk_buff *skb);
 	int			(*unwrap)(struct gether *,
 						struct sk_buff *skb,
@@ -103,6 +104,10 @@ struct eth_dev {
 static unsigned tx_wakeup_threshold = 13;
 module_param(tx_wakeup_threshold, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(tx_wakeup_threshold, "tx wakeup threshold value");
+
+#define U_ETHER_RX_PENDING_TSHOLD 100
+static unsigned int u_ether_rx_pending_thld = U_ETHER_RX_PENDING_TSHOLD;
+module_param(u_ether_rx_pending_thld, uint, S_IRUGO | S_IWUSR);
 
 /* for dual-speed hardware, use deeper queues at high/super speed */
 static inline int qlen(struct usb_gadget *gadget, unsigned qmult)
@@ -344,9 +349,17 @@ quiesce:
 	}
 
 clean:
-	spin_lock(&dev->reqrx_lock);
-	list_add(&req->list, &dev->rx_reqs);
-	spin_unlock(&dev->reqrx_lock);
+	if (queue && dev->rx_frames.qlen <= u_ether_rx_pending_thld) {
+		if (rx_submit(dev, req, GFP_ATOMIC) < 0) {
+			spin_lock(&dev->reqrx_lock);
+			list_add(&req->list, &dev->rx_reqs);
+			spin_unlock(&dev->reqrx_lock);
+		}
+	} else {
+		spin_lock(&dev->reqrx_lock);
+		list_add(&req->list, &dev->rx_reqs);
+		spin_unlock(&dev->reqrx_lock);
+	}
 
 	if (queue) {
 		queue_work(uether_wq, &dev->rx_work);
@@ -709,12 +722,14 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 	struct usb_ep		*in = NULL;
 	u16			cdc_filter = 0;
 	bool			multi_pkt_xfer = false;
+	uint32_t		max_size = 0;
 
 	spin_lock_irqsave(&dev->lock, flags);
 	if (dev->port_usb) {
 		in = dev->port_usb->in_ep;
 		cdc_filter = dev->port_usb->cdc_filter;
 		multi_pkt_xfer = dev->port_usb->multi_pkt_xfer;
+		max_size = dev->dl_max_xfer_size;
 	}
 	spin_unlock_irqrestore(&dev->lock, flags);
 
@@ -816,7 +831,7 @@ static netdev_tx_t eth_start_xmit(struct sk_buff *skb,
 		dev->tx_skb_hold_count++;
 		/* if (dev->tx_skb_hold_count < dev->dl_max_pkts_per_xfer) { */
 		if ((dev->tx_skb_hold_count < dev->dl_max_pkts_per_xfer)
-				&& (length < (dev->port_usb->dl_max_transfer_len - dev->net->mtu))) {
+				&& (length < (max_size - dev->net->mtu))) {
 
 			if (dev->no_tx_req_used > TX_REQ_THRESHOLD) {
 				list_add(&req->list, &dev->tx_reqs);
@@ -1298,6 +1313,16 @@ int gether_get_ifname(struct net_device *net, char *name, int len)
 }
 EXPORT_SYMBOL_GPL(gether_get_ifname);
 
+void gether_update_dl_max_xfer_size(struct gether *link, uint32_t s)
+{
+	struct eth_dev		*dev = link->ioport;
+	unsigned long flags;
+
+	spin_lock_irqsave(&dev->lock, flags);
+	dev->dl_max_xfer_size = s;
+	spin_unlock_irqrestore(&dev->lock, flags);
+}
+
 /**
  * gether_cleanup - remove Ethernet-over-USB device
  * Context: may sleep
@@ -1374,6 +1399,7 @@ struct net_device *gether_connect(struct gether *link)
 		dev->wrap = link->wrap;
 		dev->ul_max_pkts_per_xfer = link->ul_max_pkts_per_xfer;
 		dev->dl_max_pkts_per_xfer = link->dl_max_pkts_per_xfer;
+		dev->dl_max_xfer_size = link->dl_max_transfer_len;
 
 		spin_lock(&dev->lock);
 		dev->tx_skb_hold_count = 0;
