@@ -552,16 +552,18 @@ void fd_show_open_files(pid_t pid, struct files_struct *files, struct fdtable *f
 			break;
 
 		lentry = list_entry((&fd_listhead)->next, struct over_fd_entry, fd_link);
-		num_of_entry = lentry->num_of_fd;
-		if (lentry != NULL && lentry->name != NULL)
-			pr_err("[FDLEAK]OverAllocFDError(PID:%d fileName:%s Num:%d)\n",
-					pid, lentry->name, num_of_entry);
-		else
-			pr_err("[FDLEAK]OverAllocFDError(PID:%d fileName:%s Num:%d)\n",
-					pid, "NULL", num_of_entry);
-		list_del((&fd_listhead)->next);
-		fd_delete(lentry->hash);
-		kfree(lentry);
+		if (lentry != NULL) {
+			num_of_entry = lentry->num_of_fd;
+			if (lentry->name != NULL)
+				pr_err("[FDLEAK]OverAllocFDError(PID:%d fileName:%s Num:%d)\n",
+						pid, lentry->name, num_of_entry);
+			else
+				pr_err("[FDLEAK]OverAllocFDError(PID:%d fileName:%s Num:%d)\n",
+						pid, "NULL", num_of_entry);
+			list_del((&fd_listhead)->next);
+			fd_delete(lentry->hash);
+			kfree(lentry);
+		}
 	}
 
 	if (sum_fds_of_pid)
@@ -631,11 +633,13 @@ out:
 	spin_unlock(&files->file_lock);
 #ifdef FD_OVER_CHECK
 	if (error == -EMFILE && !dump_current_open_files) {
-		if (strcmp(current->comm, "Backbone") != 0) { /*add Backbone into FD white list for skype*/
-			dump_current_open_files = 0x1;
-			pr_err("[FDLEAK](PID:%d)fd over RLIMIT_NOFILE:%ld\n", current->pid, rlimit(RLIMIT_NOFILE));
-			fd_show_open_files(current->pid, files, fdt);
-		}
+		/*add Backbone into FD white list for skype*/
+		/*if (strcmp(current->comm, "Backbone") != 0) {*/
+		dump_current_open_files = 0x1;
+		pr_err("[FDLEAK][%d:%s]fd over RLIMIT_NOFILE:%ld\n",
+			current->pid, current->comm, rlimit(RLIMIT_NOFILE));
+		fd_show_open_files(current->pid, files, fdt);
+		/*}*/
 	}
 #endif
 	return error;
