@@ -4,9 +4,7 @@
 
 #define MAX_LCM_NUMBER	2
 
-#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 extern unsigned char lcm_name_list[][128];
-#endif
 
 
 typedef struct {

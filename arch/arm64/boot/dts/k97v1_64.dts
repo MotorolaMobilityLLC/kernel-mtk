@@ -1,6 +1,7 @@
 /dts-v1/;
 
 #include "mt6797.dtsi"
+#include <dt-bindings/lcm/r63419_wqhd_truly_phantom_2k_cmd_ok_mt6797.dtsi>
 
 / {
 	memory@40000000 {
@@ -1377,3 +1378,71 @@
 };
 
 /* USB XHCI GPIO start */
+
+/* LCM GPIO Kernal Standardization start */
+&lcm_mode {
+	pinctrl-names = "default", "lcm_mode_00", "lcm_mode_01", "lcm_mode_02", "lcm_mode_03", "lcm_mode_04",
+	 "lcm_mode_05", "lcm_mode_07";
+	pinctrl-0 = <&lcm_mode_default>;
+	pinctrl-1 = <&lcm_mode_00>;
+	pinctrl-2 = <&lcm_mode_01>;
+	pinctrl-3 = <&lcm_mode_02>;
+	pinctrl-4 = <&lcm_mode_03>;
+	pinctrl-5 = <&lcm_mode_04>;
+	pinctrl-6 = <&lcm_mode_05>;
+	pinctrl-8 = <&lcm_mode_07>;
+	lcm_power_gpio = <&pio 65 0>;
+	lcm_bl_gpio = <&pio 62 0>;
+	status = "okay";
+};
+
+&pio {
+	lcm_mode_default: lcm_mode_default {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO65__FUNC_GPIO65>;
+		};
+	};
+
+	lcm_mode_00: lcm_mode@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO65__FUNC_GPIO65>;
+		};
+	};
+
+	lcm_mode_01: lcm_mode@1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO65__FUNC_EINT4>;
+		};
+	};
+
+	lcm_mode_02: lcm_mode@2 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO65__FUNC_CLKM0>;
+		};
+	};
+
+	lcm_mode_03: lcm_mode@3 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO65__FUNC_SPI5_CLK_B>;
+		};
+	};
+
+	lcm_mode_04: lcm_mode@4 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO65__FUNC_I2S1_LRCK>;
+		};
+	};
+
+	lcm_mode_05: lcm_mode@5 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO65__FUNC_PWM_A>;
+		};
+	};
+
+	lcm_mode_07: lcm_mode@7 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO65__FUNC_C2K_DM_EINT2>;
+		};
+	};
+};
+/* LCM GPIO Kernal Standardization end */

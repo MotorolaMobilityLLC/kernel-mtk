@@ -815,11 +815,23 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&r63419_wqhd_truly_phantom_cmd_lcm_drv,
 #endif
 
+#if defined(R63419_WQHD_TRULY_PHANTOM_2K_CMD_OK_MT6797)
+	&r63419_wqhd_truly_phantom_cmd_lcm_drv,
+#endif
+
 #if defined(R63419_WQHD_TRULY_PHANTOM_2K_VDO_OK)
 	&r63419_wqhd_truly_phantom_vdo_lcm_drv,
 #endif
 
+#if defined(R63419_WQHD_TRULY_PHANTOM_2K_VDO_OK_MT6797)
+	&r63419_wqhd_truly_phantom_vdo_lcm_drv,
+#endif
+
 #if defined(R63419_FHD_TRULY_PHANTOM_2K_CMD_OK)
+	&r63419_fhd_truly_phantom_lcm_drv,
+#endif
+
+#if defined(R63419_FHD_TRULY_PHANTOM_2K_CMD_OK_MT6797)
 	&r63419_fhd_truly_phantom_lcm_drv,
 #endif
 
@@ -937,7 +949,6 @@ LCM_DRIVER *lcm_driver_list[] = {
 #endif
 };
 
-#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 unsigned char lcm_name_list[][128] = {
 #if defined(HX8392A_DSI_CMD)
 	"hx8392a_dsi_cmd",
@@ -962,8 +973,11 @@ unsigned char lcm_name_list[][128] = {
 #if defined(R63417_FHD_DSI_CMD_TRULY_NT50358)
 	"r63417_fhd_dsi_cmd_truly_nt50358_drv",
 #endif
-};
+
+#if defined(R63419_WQHD_TRULY_PHANTOM_2K_CMD_OK_MT6797)
+	"r63419_wqhd_truly_phantom_2k_cmd_ok",
 #endif
+};
 
 #define LCM_COMPILE_ASSERT(condition) LCM_COMPILE_ASSERT_X(condition, __LINE__)
 #define LCM_COMPILE_ASSERT_X(condition, line) LCM_COMPILE_ASSERT_XX(condition, line)

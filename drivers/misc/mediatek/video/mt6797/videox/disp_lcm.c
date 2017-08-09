@@ -1,10 +1,27 @@
 #include <linux/slab.h>
 
+#include <linux/types.h>
 #include "disp_drv_log.h"
 #include "lcm_drv.h"
+#include "lcm_define.h"
 #include "disp_drv_platform.h"
 #include "ddp_manager.h"
 #include "disp_lcm.h"
+
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
+#include <linux/of.h>
+
+#define MAX_INIT_CNT 256
+#define REGFLAG_DELAY 0xFE
+
+#ifndef MAX
+#define MAX(x, y)   (((x) >= (y)) ? (x) : (y))
+#endif				/* MAX */
+
+#ifndef MIN
+#define MIN(x, y)   (((x) <= (y)) ? (x) : (y))
+#endif				/* MIN */
+#endif
 
 /* This macro and arrya is designed for multiple LCM support */
 /* for multiple LCM, we should assign I/F Port id in lcm driver, such as DPI0, DSI0/1 */
@@ -151,6 +168,609 @@ void _dump_lcm_info(disp_lcm_handle *plcm)
 	return;
 }
 
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
+#define INIT_SIZE			(sizeof(LCM_DATA)*256)
+#define COMPARE_ID_SIZE	(sizeof(LCM_DATA)*32)
+#define SUSPEND_SIZE		(sizeof(LCM_DATA)*32)
+#define BACKLIGHT_SIZE		(sizeof(LCM_DATA)*32)
+#define MAX_SIZE			(MAX(MAX(MAX(INIT_SIZE, COMPARE_ID_SIZE), SUSPEND_SIZE), BACKLIGHT_SIZE))
+
+static unsigned char dts[MAX_SIZE];
+static LCM_DTS lcm_dts;
+
+int disp_of_getprop_u32(const struct device_node *np, const char *propname, u32 *out_value)
+{
+	unsigned int i;
+	int ret = 0;
+	unsigned int len = 0;
+	const unsigned int *prop = NULL;
+
+	/* Get the interrupts property */
+	prop = of_get_property(np, propname, &len);
+	if (prop == NULL)
+		ret = -1;
+
+	if (ret)
+		*out_value = 0;
+	else {
+		len /= sizeof(*prop);
+		for (i = 0; i < len; i++)
+			*(out_value + i) = be32_to_cpup(prop++);
+	}
+
+	return len;
+}
+
+int disp_of_getprop_u8(const struct device_node *np, const char *propname, u8 *out_value)
+{
+	unsigned int i;
+	int ret = 0;
+	unsigned int len = 0;
+	const unsigned int *prop = NULL;
+
+	/* Get the interrupts property */
+	prop = of_get_property(np, propname, &len);
+	if (prop == NULL)
+		ret = -1;
+
+	if (ret)
+		*out_value = 0;
+	else {
+		len /= sizeof(*prop);
+		for (i = 0; i < len; i++)
+			*(out_value + i) = (unsigned char)((be32_to_cpup(prop++)) & 0xFF);
+	}
+
+	return len;
+}
+
+void parse_lcm_params_dt_node(struct device_node *np, LCM_PARAMS *lcm_params)
+{
+	if (!lcm_params) {
+		pr_err("%s:%d, ERROR: Error access to LCM_PARAMS(NULL)\n", __FILE__, __LINE__);
+		return;
+	}
+
+	memset(lcm_params, 0x0, sizeof(LCM_PARAMS));
+
+	disp_of_getprop_u32(np, "lcm_params-types", &lcm_params->type);
+	disp_of_getprop_u32(np, "lcm_params-resolution", &lcm_params->width);
+	disp_of_getprop_u32(np, "lcm_params-io_select_mode", &lcm_params->io_select_mode);
+
+	disp_of_getprop_u32(np, "lcm_params-dbi-port", &lcm_params->dbi.port);
+	disp_of_getprop_u32(np, "lcm_params-dbi-clock_freq", &lcm_params->dbi.clock_freq);
+	disp_of_getprop_u32(np, "lcm_params-dbi-data_width", &lcm_params->dbi.data_width);
+	disp_of_getprop_u32(np, "lcm_params-dbi-data_format",
+			    (u32 *) (&lcm_params->dbi.data_format));
+	disp_of_getprop_u32(np, "lcm_params-dbi-cpu_write_bits", &lcm_params->dbi.cpu_write_bits);
+	disp_of_getprop_u32(np, "lcm_params-dbi-io_driving_current",
+			    &lcm_params->dbi.io_driving_current);
+	disp_of_getprop_u32(np, "lcm_params-dbi-msb_io_driving_current",
+			    &lcm_params->dbi.msb_io_driving_current);
+	disp_of_getprop_u32(np, "lcm_params-dbi-ctrl_io_driving_current",
+			    &lcm_params->dbi.ctrl_io_driving_current);
+
+	disp_of_getprop_u32(np, "lcm_params-dbi-te_mode", &lcm_params->dbi.te_mode);
+	disp_of_getprop_u32(np, "lcm_params-dbi-te_edge_polarity",
+			    &lcm_params->dbi.te_edge_polarity);
+	disp_of_getprop_u32(np, "lcm_params-dbi-te_hs_delay_cnt", &lcm_params->dbi.te_hs_delay_cnt);
+	disp_of_getprop_u32(np, "lcm_params-dbi-te_vs_width_cnt", &lcm_params->dbi.te_vs_width_cnt);
+	disp_of_getprop_u32(np, "lcm_params-dbi-te_vs_width_cnt_div",
+			    &lcm_params->dbi.te_vs_width_cnt_div);
+
+	disp_of_getprop_u32(np, "lcm_params-dbi-serial-params0",
+			    &lcm_params->dbi.serial.cs_polarity);
+	disp_of_getprop_u32(np, "lcm_params-dbi-serial-params1", &lcm_params->dbi.serial.css);
+	disp_of_getprop_u32(np, "lcm_params-dbi-serial-params2", &lcm_params->dbi.serial.sif_3wire);
+	disp_of_getprop_u32(np, "lcm_params-dbi-parallel-params0",
+			    &lcm_params->dbi.parallel.write_setup);
+	disp_of_getprop_u32(np, "lcm_params-dbi-parallel-params1",
+			    &lcm_params->dbi.parallel.read_hold);
+
+	disp_of_getprop_u32(np, "lcm_params-dpi-mipi_pll_clk_ref",
+			    &lcm_params->dpi.mipi_pll_clk_ref);
+	disp_of_getprop_u32(np, "lcm_params-dpi-mipi_pll_clk_div1",
+			    &lcm_params->dpi.mipi_pll_clk_div1);
+	disp_of_getprop_u32(np, "lcm_params-dpi-mipi_pll_clk_div2",
+			    &lcm_params->dpi.mipi_pll_clk_div2);
+	disp_of_getprop_u32(np, "lcm_params-dpi-mipi_pll_clk_fbk_div",
+			    &lcm_params->dpi.mipi_pll_clk_fbk_div);
+
+	disp_of_getprop_u32(np, "lcm_params-dpi-dpi_clk_div", &lcm_params->dpi.dpi_clk_div);
+	disp_of_getprop_u32(np, "lcm_params-dpi-dpi_clk_duty", &lcm_params->dpi.dpi_clk_duty);
+	disp_of_getprop_u32(np, "lcm_params-dpi-PLL_CLOCK", &lcm_params->dpi.PLL_CLOCK);
+	disp_of_getprop_u32(np, "lcm_params-dpi-dpi_clock", &lcm_params->dpi.dpi_clock);
+	disp_of_getprop_u32(np, "lcm_params-dpi-ssc_disable", &lcm_params->dpi.ssc_disable);
+	disp_of_getprop_u32(np, "lcm_params-dpi-ssc_range", &lcm_params->dpi.ssc_range);
+
+	disp_of_getprop_u32(np, "lcm_params-dpi-width", &lcm_params->dpi.width);
+	disp_of_getprop_u32(np, "lcm_params-dpi-height", &lcm_params->dpi.height);
+	disp_of_getprop_u32(np, "lcm_params-dpi-bg_width", &lcm_params->dpi.bg_width);
+	disp_of_getprop_u32(np, "lcm_params-dpi-bg_height", &lcm_params->dpi.bg_height);
+
+	disp_of_getprop_u32(np, "lcm_params-dpi-clk_pol", &lcm_params->dpi.clk_pol);
+	disp_of_getprop_u32(np, "lcm_params-dpi-de_pol", &lcm_params->dpi.de_pol);
+	disp_of_getprop_u32(np, "lcm_params-dpi-vsync_pol", &lcm_params->dpi.vsync_pol);
+	disp_of_getprop_u32(np, "lcm_params-dpi-hsync_pol", &lcm_params->dpi.hsync_pol);
+	disp_of_getprop_u32(np, "lcm_params-dpi-hsync_pulse_width",
+			    &lcm_params->dpi.hsync_pulse_width);
+	disp_of_getprop_u32(np, "lcm_params-dpi-hsync_back_porch",
+			    &lcm_params->dpi.hsync_back_porch);
+	disp_of_getprop_u32(np, "lcm_params-dpi-hsync_front_porch",
+			    &lcm_params->dpi.hsync_front_porch);
+	disp_of_getprop_u32(np, "lcm_params-dpi-vsync_pulse_width",
+			    &lcm_params->dpi.vsync_pulse_width);
+	disp_of_getprop_u32(np, "lcm_params-dpi-vsync_back_porch",
+			    &lcm_params->dpi.vsync_back_porch);
+	disp_of_getprop_u32(np, "lcm_params-dpi-vsync_front_porch",
+			    &lcm_params->dpi.vsync_front_porch);
+
+	disp_of_getprop_u32(np, "lcm_params-dpi-format", &lcm_params->dpi.format);
+	disp_of_getprop_u32(np, "lcm_params-dpi-rgb_order", &lcm_params->dpi.rgb_order);
+	disp_of_getprop_u32(np, "lcm_params-dpi-is_serial_output",
+			    &lcm_params->dpi.is_serial_output);
+	disp_of_getprop_u32(np, "lcm_params-dpi-i2x_en", &lcm_params->dpi.i2x_en);
+	disp_of_getprop_u32(np, "lcm_params-dpi-i2x_edge", &lcm_params->dpi.i2x_edge);
+	disp_of_getprop_u32(np, "lcm_params-dpi-embsync", &lcm_params->dpi.embsync);
+	disp_of_getprop_u32(np, "lcm_params-dpi-lvds_tx_en", &lcm_params->dpi.lvds_tx_en);
+	disp_of_getprop_u32(np, "lcm_params-dpi-bit_swap", &lcm_params->dpi.bit_swap);
+	disp_of_getprop_u32(np, "lcm_params-dpi-intermediat_buffer_num",
+			    &lcm_params->dpi.intermediat_buffer_num);
+	disp_of_getprop_u32(np, "lcm_params-dpi-io_driving_current",
+			    &lcm_params->dpi.io_driving_current);
+	disp_of_getprop_u32(np, "lcm_params-dpi-lsb_io_driving_current",
+			    &lcm_params->dpi.lsb_io_driving_current);
+
+	disp_of_getprop_u32(np, "lcm_params-dsi-mode", &lcm_params->dsi.mode);
+	disp_of_getprop_u32(np, "lcm_params-dsi-switch_mode", &lcm_params->dsi.switch_mode);
+	disp_of_getprop_u32(np, "lcm_params-dsi-DSI_WMEM_CONTI", &lcm_params->dsi.DSI_WMEM_CONTI);
+	disp_of_getprop_u32(np, "lcm_params-dsi-DSI_RMEM_CONTI", &lcm_params->dsi.DSI_RMEM_CONTI);
+	disp_of_getprop_u32(np, "lcm_params-dsi-VC_NUM", &lcm_params->dsi.VC_NUM);
+	disp_of_getprop_u32(np, "lcm_params-dsi-lane_num", &lcm_params->dsi.LANE_NUM);
+	disp_of_getprop_u32(np, "lcm_params-dsi-data_format",
+			    (u32 *) (&lcm_params->dsi.data_format));
+	disp_of_getprop_u32(np, "lcm_params-dsi-intermediat_buffer_num",
+			    &lcm_params->dsi.intermediat_buffer_num);
+	disp_of_getprop_u32(np, "lcm_params-dsi-ps", &lcm_params->dsi.PS);
+	disp_of_getprop_u32(np, "lcm_params-dsi-word_count", &lcm_params->dsi.word_count);
+	disp_of_getprop_u32(np, "lcm_params-dsi-packet_size", &lcm_params->dsi.packet_size);
+
+	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_sync_active",
+			    &lcm_params->dsi.vertical_sync_active);
+	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_backporch",
+			    &lcm_params->dsi.vertical_backporch);
+	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_frontporch",
+			    &lcm_params->dsi.vertical_frontporch);
+	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_frontporch_for_low_power",
+			    &lcm_params->dsi.vertical_frontporch_for_low_power);
+	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_active_line",
+			    &lcm_params->dsi.vertical_active_line);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_sync_active",
+			    &lcm_params->dsi.horizontal_sync_active);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_backporch",
+			    &lcm_params->dsi.horizontal_backporch);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_frontporch",
+			    &lcm_params->dsi.horizontal_frontporch);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_blanking_pixel",
+			    &lcm_params->dsi.horizontal_blanking_pixel);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_active_pixel",
+			    &lcm_params->dsi.horizontal_active_pixel);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_bllp", &lcm_params->dsi.horizontal_bllp);
+	disp_of_getprop_u32(np, "lcm_params-dsi-line_byte", &lcm_params->dsi.line_byte);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_sync_active_byte",
+			    &lcm_params->dsi.horizontal_sync_active_byte);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_backportch_byte",
+			    &lcm_params->dsi.horizontal_backporch_byte);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_frontporch_byte",
+			    &lcm_params->dsi.horizontal_frontporch_byte);
+	disp_of_getprop_u32(np, "lcm_params-dsi-rgb_byte", &lcm_params->dsi.rgb_byte);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_sync_active_word_count",
+			    &lcm_params->dsi.horizontal_sync_active_word_count);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_backporch_word_count",
+			    &lcm_params->dsi.horizontal_backporch_word_count);
+	disp_of_getprop_u32(np, "lcm_params-dsi-horizontal_frontporch_word_count",
+			    &lcm_params->dsi.horizontal_frontporch_word_count);
+
+	disp_of_getprop_u8(np, "lcm_params-dsi-HS_TRAIL", &lcm_params->dsi.HS_TRAIL);
+	disp_of_getprop_u8(np, "lcm_params-dsi-ZERO", &lcm_params->dsi.HS_ZERO);
+	disp_of_getprop_u8(np, "lcm_params-dsi-HS_PRPR", &lcm_params->dsi.HS_PRPR);
+	disp_of_getprop_u8(np, "lcm_params-dsi-LPX", &lcm_params->dsi.LPX);
+	disp_of_getprop_u8(np, "lcm_params-dsi-TA_SACK", &lcm_params->dsi.TA_SACK);
+	disp_of_getprop_u8(np, "lcm_params-dsi-TA_GET", &lcm_params->dsi.TA_GET);
+	disp_of_getprop_u8(np, "lcm_params-dsi-TA_SURE", &lcm_params->dsi.TA_SURE);
+	disp_of_getprop_u8(np, "lcm_params-dsi-TA_GO", &lcm_params->dsi.TA_GO);
+	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_TRAIL", &lcm_params->dsi.CLK_TRAIL);
+	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_ZERO", &lcm_params->dsi.CLK_ZERO);
+	disp_of_getprop_u8(np, "lcm_params-dsi-LPX_WAIT", &lcm_params->dsi.LPX_WAIT);
+	disp_of_getprop_u8(np, "lcm_params-dsi-CONT_DET", &lcm_params->dsi.CONT_DET);
+	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_HS_PRPR", &lcm_params->dsi.CLK_HS_PRPR);
+	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_HS_POST", &lcm_params->dsi.CLK_HS_POST);
+	disp_of_getprop_u8(np, "lcm_params-dsi-DA_HS_EXIT", &lcm_params->dsi.DA_HS_EXIT);
+	disp_of_getprop_u8(np, "lcm_params-dsi-CLK_HS_EXIT", &lcm_params->dsi.CLK_HS_EXIT);
+
+	disp_of_getprop_u32(np, "lcm_params-dsi-pll_select", &lcm_params->dsi.pll_select);
+	disp_of_getprop_u32(np, "lcm_params-dsi-pll_div1", &lcm_params->dsi.pll_div1);
+	disp_of_getprop_u32(np, "lcm_params-dsi-pll_div2", &lcm_params->dsi.pll_div2);
+	disp_of_getprop_u32(np, "lcm_params-dsi-fbk_div", &lcm_params->dsi.fbk_div);
+	disp_of_getprop_u32(np, "lcm_params-dsi-fbk_sel", &lcm_params->dsi.fbk_sel);
+	disp_of_getprop_u32(np, "lcm_params-dsi-rg_bir", &lcm_params->dsi.rg_bir);
+	disp_of_getprop_u32(np, "lcm_params-dsi-rg_bic", &lcm_params->dsi.rg_bic);
+	disp_of_getprop_u32(np, "lcm_params-dsi-rg_bp", &lcm_params->dsi.rg_bp);
+	disp_of_getprop_u32(np, "lcm_params-dsi-pll_clock", &lcm_params->dsi.PLL_CLOCK);
+	disp_of_getprop_u32(np, "lcm_params-dsi-dsi_clock", &lcm_params->dsi.dsi_clock);
+	disp_of_getprop_u32(np, "lcm_params-dsi-ssc_disable", &lcm_params->dsi.ssc_disable);
+	disp_of_getprop_u32(np, "lcm_params-dsi-ssc_range", &lcm_params->dsi.ssc_range);
+	disp_of_getprop_u32(np, "lcm_params-dsi-compatibility_for_nvk",
+			    &lcm_params->dsi.compatibility_for_nvk);
+	disp_of_getprop_u32(np, "lcm_params-dsi-cont_clock", &lcm_params->dsi.cont_clock);
+
+	disp_of_getprop_u32(np, "lcm_params-dsi-ufoe_enable", &lcm_params->dsi.ufoe_enable);
+	disp_of_getprop_u32(np, "lcm_params-dsi-ufoe_params",
+			    (u32 *) (&lcm_params->dsi.ufoe_params));
+	disp_of_getprop_u32(np, "lcm_params-dsi-edp_panel", &lcm_params->dsi.edp_panel);
+
+	disp_of_getprop_u32(np, "lcm_params-dsi-customization_esd_check_enable",
+			    &lcm_params->dsi.customization_esd_check_enable);
+	disp_of_getprop_u32(np, "lcm_params-dsi-esd_check_enable",
+			    &lcm_params->dsi.esd_check_enable);
+
+	disp_of_getprop_u32(np, "lcm_params-dsi-lcm_int_te_monitor",
+			    &lcm_params->dsi.lcm_int_te_monitor);
+	disp_of_getprop_u32(np, "lcm_params-dsi-lcm_int_te_period",
+			    &lcm_params->dsi.lcm_int_te_period);
+	disp_of_getprop_u32(np, "lcm_params-dsi-lcm_ext_te_monitor",
+			    &lcm_params->dsi.lcm_ext_te_monitor);
+	disp_of_getprop_u32(np, "lcm_params-dsi-lcm_ext_te_enable",
+			    &lcm_params->dsi.lcm_ext_te_enable);
+
+	disp_of_getprop_u32(np, "lcm_params-dsi-noncont_clock", &lcm_params->dsi.noncont_clock);
+	disp_of_getprop_u32(np, "lcm_params-dsi-noncont_clock_period",
+			    &lcm_params->dsi.noncont_clock_period);
+	disp_of_getprop_u32(np, "lcm_params-dsi-clk_lp_per_line_enable",
+			    &lcm_params->dsi.clk_lp_per_line_enable);
+
+	disp_of_getprop_u8(np, "lcm_params-dsi-lcm_esd_check_table0",
+			   (u8 *) (&(lcm_params->dsi.lcm_esd_check_table[0])));
+	disp_of_getprop_u8(np, "lcm_params-dsi-lcm_esd_check_table1",
+			   (u8 *) (&(lcm_params->dsi.lcm_esd_check_table[1])));
+	disp_of_getprop_u8(np, "lcm_params-dsi-lcm_esd_check_table2",
+			   (u8 *) (&(lcm_params->dsi.lcm_esd_check_table[2])));
+
+	disp_of_getprop_u32(np, "lcm_params-dsi-switch_mode_enable",
+			    &lcm_params->dsi.switch_mode_enable);
+	disp_of_getprop_u32(np, "lcm_params-dsi-dual_dsi_type", &lcm_params->dsi.dual_dsi_type);
+	disp_of_getprop_u32(np, "lcm_params-dsi-lane_swap_en", &lcm_params->dsi.lane_swap_en);
+	disp_of_getprop_u32(np, "lcm_params-dsi-lane_swap0",
+			    (u32 *) (&(lcm_params->dsi.lane_swap[0][0])));
+	disp_of_getprop_u32(np, "lcm_params-dsi-lane_swap1",
+			    (u32 *) (&(lcm_params->dsi.lane_swap[1][0])));
+	disp_of_getprop_u32(np, "lcm_params-dsi-vertical_vfp_lp", &lcm_params->dsi.vertical_vfp_lp);
+	disp_of_getprop_u32(np, "lcm_params-physical_width", &lcm_params->physical_width);
+	disp_of_getprop_u32(np, "lcm_params-physical_height", &lcm_params->physical_height);
+	disp_of_getprop_u32(np, "lcm_params-od_table_size", &lcm_params->od_table_size);
+	disp_of_getprop_u32(np, "lcm_params-od_table", (u32 *) (&lcm_params->od_table));
+}
+
+void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned char *dts)
+{
+	unsigned int i;
+	unsigned char *tmp;
+	int len = 0;
+	int tmp_len;
+
+	if (!lcm_dts) {
+		pr_err("%s:%d, ERROR: Error access to LCM_PARAMS(NULL)\n", __FILE__, __LINE__);
+		return;
+	}
+	/* parse LCM init table */
+	len = disp_of_getprop_u8(np, "init", dts);
+	if (len <= 0) {
+		pr_err("%s:%d: Cannot find LCM init table, cannot skip it!\n", __FILE__, __LINE__);
+		return;
+	}
+	if (len > INIT_SIZE) {
+		pr_err("%s:%d: LCM init table overflow: %d\n", __FILE__, __LINE__, len);
+		return;
+	}
+	pr_debug("%s:%d: len: %d\n", __FILE__, __LINE__, len);
+
+	tmp = dts;
+	for (i = 0; i < 256; i++) {
+		lcm_dts->init[i].func = (*tmp) & 0xFF;
+		lcm_dts->init[i].type = (*(tmp + 1)) & 0xFF;
+		lcm_dts->init[i].size = (*(tmp + 2)) & 0xFF;
+		tmp_len = 3;
+
+		pr_debug("%s:%d: dts: %d, %d, %d\n", __FILE__, __LINE__, *tmp, *(tmp + 1), i);
+		switch (lcm_dts->init[i].func) {
+		case LCM_FUNC_GPIO:
+			memcpy(&(lcm_dts->init[i].data_t1), tmp + 3, lcm_dts->init[i].size);
+			break;
+
+		case LCM_FUNC_I2C:
+			memcpy(&(lcm_dts->init[i].data_t2), tmp + 3, lcm_dts->init[i].size);
+			break;
+
+		case LCM_FUNC_UTIL:
+			memcpy(&(lcm_dts->init[i].data_t1), tmp + 3, lcm_dts->init[i].size);
+			break;
+
+		case LCM_FUNC_CMD:
+			switch (lcm_dts->init[i].type) {
+			case LCM_UTIL_WRITE_CMD_V1:
+				memcpy(&(lcm_dts->init[i].data_t5), tmp + 3, lcm_dts->init[i].size);
+				break;
+
+			case LCM_UTIL_WRITE_CMD_V2:
+				memcpy(&(lcm_dts->init[i].data_t3), tmp + 3, lcm_dts->init[i].size);
+				break;
+
+			default:
+				pr_err("%s/%d: %d\n", __FILE__, __LINE__, lcm_dts->init[i].type);
+				return;
+			}
+			break;
+
+		default:
+			pr_err("%s/%d: %d\n", __FILE__, __LINE__, lcm_dts->init[i].func);
+			return;
+		}
+		tmp_len = tmp_len + lcm_dts->init[i].size;
+
+		if (tmp_len < len) {
+			tmp = tmp + tmp_len;
+			len = len - tmp_len;
+		} else {
+			lcm_dts->init_size = i + 1;
+			break;
+		}
+	}
+
+	/* parse LCM compare_id table */
+	len = disp_of_getprop_u8(np, "compare_id", dts);
+	if (len <= 0) {
+		pr_warn("%s:%d: Cannot find LCM compare_id table, skip it!\n", __FILE__, __LINE__);
+	} else {
+		if (len > COMPARE_ID_SIZE) {
+			pr_err("%s:%d: LCM compare_id table overflow: %d\n", __FILE__, __LINE__,
+			       len);
+			return;
+		}
+
+		tmp = dts;
+		for (i = 0; i < 32; i++) {
+			lcm_dts->compare_id[i].func = (*tmp) & 0xFF;
+			lcm_dts->compare_id[i].type = (*(tmp + 1)) & 0xFF;
+			lcm_dts->compare_id[i].size = (*(tmp + 2)) & 0xFF;
+			tmp_len = 3;
+
+			switch (lcm_dts->compare_id[i].func) {
+			case LCM_FUNC_GPIO:
+				memcpy(&(lcm_dts->compare_id[i].data_t1), tmp + 3, lcm_dts->compare_id[i].size);
+				break;
+
+			case LCM_FUNC_I2C:
+				memcpy(&(lcm_dts->compare_id[i].data_t2), tmp + 3, lcm_dts->compare_id[i].size);
+				break;
+
+			case LCM_FUNC_UTIL:
+				memcpy(&(lcm_dts->compare_id[i].data_t1), tmp + 3,
+				       lcm_dts->compare_id[i].size);
+				break;
+
+			case LCM_FUNC_CMD:
+				switch (lcm_dts->compare_id[i].type) {
+				case LCM_UTIL_WRITE_CMD_V1:
+					memcpy(&(lcm_dts->compare_id[i].data_t5), tmp + 3,
+					       lcm_dts->compare_id[i].size);
+					break;
+
+				case LCM_UTIL_WRITE_CMD_V2:
+					memcpy(&(lcm_dts->compare_id[i].data_t3), tmp + 3,
+					       lcm_dts->compare_id[i].size);
+					break;
+
+				case LCM_UTIL_READ_CMD_V2:
+					memcpy(&(lcm_dts->compare_id[i].data_t4), tmp + 3,
+					       lcm_dts->compare_id[i].size);
+					break;
+
+				default:
+					pr_err("%s:%d: %d\n", __FILE__, __LINE__,
+					       (unsigned int)lcm_dts->compare_id[i].type);
+					return;
+				}
+				break;
+
+			default:
+				pr_err("%s:%d: %d\n", __FILE__, __LINE__,
+				       (unsigned int)lcm_dts->compare_id[i].func);
+				return;
+			}
+			tmp_len = tmp_len + lcm_dts->compare_id[i].size;
+
+			if (tmp_len < len) {
+				tmp = tmp + tmp_len;
+				len = len - tmp_len;
+			} else {
+				lcm_dts->compare_id_size = i + 1;
+				break;
+			}
+		}
+	}
+
+	/* parse LCM suspend table */
+	len = disp_of_getprop_u8(np, "suspend", dts);
+	if (len <= 0) {
+		pr_err("%s:%d: Cannot find LCM suspend table, cannot skip it!\n", __FILE__,
+		       __LINE__);
+		return;
+	}
+	if (len > SUSPEND_SIZE) {
+		pr_err("%s:%d: LCM suspend table overflow: %d\n", __FILE__, __LINE__, len);
+		return;
+	}
+
+	tmp = dts;
+	for (i = 0; i < 32; i++) {
+		lcm_dts->suspend[i].func = (*tmp) & 0xFF;
+		lcm_dts->suspend[i].type = (*(tmp + 1)) & 0xFF;
+		lcm_dts->suspend[i].size = (*(tmp + 2)) & 0xFF;
+		tmp_len = 3;
+
+		switch (lcm_dts->suspend[i].func) {
+		case LCM_FUNC_GPIO:
+			memcpy(&(lcm_dts->suspend[i].data_t1), tmp + 3, lcm_dts->suspend[i].size);
+			break;
+
+		case LCM_FUNC_I2C:
+			memcpy(&(lcm_dts->suspend[i].data_t2), tmp + 3, lcm_dts->suspend[i].size);
+			break;
+
+		case LCM_FUNC_UTIL:
+			memcpy(&(lcm_dts->suspend[i].data_t1), tmp + 3, lcm_dts->suspend[i].size);
+			break;
+
+		case LCM_FUNC_CMD:
+			switch (lcm_dts->suspend[i].type) {
+			case LCM_UTIL_WRITE_CMD_V1:
+				memcpy(&(lcm_dts->suspend[i].data_t5), tmp + 3,
+				       lcm_dts->suspend[i].size);
+				break;
+
+			case LCM_UTIL_WRITE_CMD_V2:
+				memcpy(&(lcm_dts->suspend[i].data_t3), tmp + 3,
+				       lcm_dts->suspend[i].size);
+				break;
+
+			default:
+				pr_err("%s:%d: %d\n", __FILE__, __LINE__, lcm_dts->suspend[i].type);
+				return;
+			}
+			break;
+
+		default:
+			pr_err("%s:%d: %d\n", __FILE__, __LINE__,
+			       (unsigned int)lcm_dts->suspend[i].func);
+			return;
+		}
+		tmp_len = tmp_len + lcm_dts->suspend[i].size;
+
+		if (tmp_len < len) {
+			tmp = tmp + tmp_len;
+			len = len - tmp_len;
+		} else {
+			lcm_dts->suspend_size = i + 1;
+			break;
+		}
+	}
+
+	/* parse LCM backlight table */
+	len = disp_of_getprop_u8(np, "backlight", dts);
+	if (len <= 0) {
+		pr_err("%s:%d: Cannot find LCM backlight table, skip it!\n", __FILE__, __LINE__);
+	} else {
+		if (len > BACKLIGHT_SIZE) {
+			pr_err("%s:%d: LCM backlight table overflow: %d\n", __FILE__, __LINE__,
+			       len);
+			return;
+		}
+
+		tmp = dts;
+		for (i = 0; i < 32; i++) {
+			lcm_dts->backlight[i].func = (*tmp) & 0xFF;
+			lcm_dts->backlight[i].type = (*(tmp + 1)) & 0xFF;
+			lcm_dts->backlight[i].size = (*(tmp + 2)) & 0xFF;
+			tmp_len = 3;
+
+			switch (lcm_dts->backlight[i].func) {
+			case LCM_FUNC_GPIO:
+				memcpy(&(lcm_dts->backlight[i].data_t1), tmp + 3, lcm_dts->backlight[i].size);
+				break;
+
+			case LCM_FUNC_I2C:
+				memcpy(&(lcm_dts->backlight[i].data_t2), tmp + 3, lcm_dts->backlight[i].size);
+				break;
+
+			case LCM_FUNC_UTIL:
+				memcpy(&(lcm_dts->backlight[i].data_t1), tmp + 3,
+				       lcm_dts->backlight[i].size);
+				break;
+
+			case LCM_FUNC_CMD:
+				switch (lcm_dts->backlight[i].type) {
+				case LCM_UTIL_WRITE_CMD_V2:
+					memcpy(&(lcm_dts->backlight[i].data_t3), tmp + 3,
+					       lcm_dts->backlight[i].size);
+					break;
+
+				default:
+					pr_err("%s:%d: %d\n", __FILE__, __LINE__,
+					       lcm_dts->backlight[i].type);
+					return;
+				}
+				break;
+
+			default:
+				pr_err("%s:%d: %d\n", __FILE__, __LINE__,
+				       (unsigned int)lcm_dts->backlight[i].func);
+				return;
+			}
+			tmp_len = tmp_len + lcm_dts->backlight[i].size;
+
+			if (tmp_len < len) {
+				tmp = tmp + tmp_len;
+				len = len - tmp_len;
+			} else {
+				lcm_dts->backlight_size = i + 1;
+				break;
+			}
+		}
+	}
+}
+
+void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
+{
+	char dts_params[128] = { 0 };
+	char dts_ops[128] = { 0 };
+	struct device_node *np = NULL;
+	unsigned char *tmp_dts = dts;
+	LCM_DTS *parse_dts = &lcm_dts;
+
+	if (!lcm_drv) {
+		pr_err("%s:%d: Error access to LCM_DRIVER(NULL)\n", __FILE__, __LINE__);
+		return;
+	}
+
+	memset((unsigned char *)parse_dts, 0x0, sizeof(LCM_DTS));
+
+	sprintf(dts_params, "mediatek,lcm_params-%s", lcm_name_list[0]);
+	pr_debug("LCM PARAMS DT compatible: %s\n", dts_params);
+
+	/* Load LCM parameters from DT */
+	np = of_find_compatible_node(NULL, NULL, dts_params);
+	if (!np)
+		pr_err("LCM PARAMS DT node: Not found\n");
+	else
+		parse_lcm_params_dt_node(np, &(parse_dts->params));
+
+	sprintf(dts_ops, "mediatek,lcm_ops-%s", lcm_name_list[0]);
+	pr_debug("LCM OPS DT compatible: %s\n", dts_ops);
+
+	/* Load LCM parameters from DT */
+	np = of_find_compatible_node(NULL, NULL, dts_ops);
+	if (!np)
+		pr_err("LCM OPS DT node: Not found\n");
+	else
+		parse_lcm_ops_dt_node(np, parse_dts, tmp_dts);
+
+	if (lcm_drv->parse_dts)
+		lcm_drv->parse_dts(parse_dts, 1);
+	else
+		pr_err("LCM set_params not implemented!!!\n");
+}
+#endif
+
 disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is_lcm_inited)
 {
 	int lcmindex = 0;
@@ -175,6 +795,9 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is
 			DISPCHECK("LCM Name NULL\n");
 		} else {
 			lcm_drv = lcm_driver_list[0];
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
+			lcm_drv->name = lcm_name_list[0];
+#endif
 			if (strcmp(lcm_drv->name, plcm_name)) {
 				DISPERR
 				    ("FATAL ERROR!!!LCM Driver defined in kernel(%s) is different with LK(%s)\n",
@@ -200,6 +823,9 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is
 			int i = 0;
 			for (i = 0; i < _lcm_count(); i++) {
 				lcm_drv = lcm_driver_list[i];
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
+				lcm_drv->name = lcm_name_list[i];
+#endif
 				if (!strcmp(lcm_drv->name, plcm_name)) {
 					isLCMFound = true;
 					isLCMInited = true;
@@ -235,6 +861,10 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is
 		DISPERR("FATAL ERROR!!!kzalloc plcm and plcm->params failed\n");
 		goto FAIL;
 	}
+
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
+	load_lcm_resources_from_DT(plcm->drv);
+#endif
 
 	{
 		plcm->drv->get_params(plcm->params);

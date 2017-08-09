@@ -4,6 +4,9 @@
 
 #define MAX_LCM_NUMBER	2
 
+extern unsigned char lcm_name_list[][128];
+
+
 typedef struct {
 	LCM_PARAMS *params;
 	LCM_DRIVER *drv;

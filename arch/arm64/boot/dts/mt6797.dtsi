@@ -2954,6 +2954,10 @@
 			clock-names = "CAM_MDP";
 		};
 
+		lcm_mode: lcm_mode {
+			compatible = "mediatek,lcm_mode";
+		};
+
 		dispsys: dispsys@14000000 {
 			compatible = "mediatek,mt6797-dispsys";
 			reg = <0x14000000 0x1000>,  /*disp_sys		*/
