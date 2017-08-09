@@ -140,7 +140,7 @@ int count_ss_bw(int is_in, int ep_type, int maxp, int interval, int burst,
 				ep_repeat = cur_sch_ep->repeat;
 				ep_mult = cur_sch_ep->mult;
 				for (k = 0; k <= ep_mult; k++) {
-					cur_ep_offset = ep_offset + (k * ep_mult);
+					cur_ep_offset = ep_offset + (k * ep_repeat);
 					if (ep_interval >= interval) {
 						tmp_offset = cur_ep_offset + ep_interval - offset;
 						tmp_interval = interval;
