@@ -159,7 +159,7 @@ void cmdq_core_unlock_resource(struct work_struct *workItem)
 		/* delay time is reached and unlock resource */
 		if (NULL == pResource->availableCB) {
 			/* print error message */
-			CMDQ_ERR("[Res]: available CB func is NULL, event:%d\n", pResource->lockEvent);
+			CMDQ_LOG("[Res]: available CB func is NULL, event:%d\n", pResource->lockEvent);
 		} else {
 			/* before call callback, release lock at first */
 			mutex_unlock(&gCmdqResourceMutex);
@@ -1574,6 +1574,7 @@ void cmdq_core_reset_hw_events(void)
 	/* However, CMDQ_SYNC_RESOURCE are resource flags, */
 	/* by default they should be 1. */
 	cmdqCoreSetEvent(CMDQ_SYNC_RESOURCE_WROT0);
+	cmdqCoreSetEvent(CMDQ_SYNC_RESOURCE_WROT1);
 	/* However, CMDQ_SYNC_RESOURCE are WSM lock flags, */
 	/* by default they should be 1. */
 	cmdqCoreSetEvent(CMDQ_SYNC_SECURE_WSM_LOCK);
@@ -7968,7 +7969,7 @@ void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify)
 				pResource->used = true;
 				CMDQ_MSG("[Res] Callback to release\n");
 				if (NULL == pResource->releaseCB) {
-					CMDQ_ERR("[Res]: release CB func is NULL, event:%d\n",
+					CMDQ_LOG("[Res]: release CB func is NULL, event:%d\n",
 						pResource->lockEvent);
 				} else {
 					/* release mutex before callback */
