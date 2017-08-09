@@ -1,10 +1,14 @@
-MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
-subdir-ccflags-y += -Werror
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
-subdir-ccflags-y += -I$(srctree)/drivers/spi/mediatek/$(MTK_PLATFORM)
-obj-y := fpc1020_main.o fpc1020_common.o fpc1020_input.o fpc1020_capture.o
+#
+# Makefile for all kinds of Fingerprint
+#
 
+obj-$(CONFIG_FINGERPRINT_GOODIX_GF_TEE) += goodix/
+obj-$(FPC_FINGERPRINT) += FPC/
 
+#ifeq ($(CONFIG_FINGERPRINT_GOODIX_GF_TEE),y)
+#obj-y	+=  goodix/
+#endif
 
+#ifeq ($(FPC_FINGERPRINT),y)
+#obj-y	+=  FPC/
+#endif

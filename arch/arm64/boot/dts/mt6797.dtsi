@@ -4037,6 +4037,10 @@
 			status = "disabled";
 		};
 
+		fingerprint: fingerprint_gf@ {
+			compatible = "mediatek,goodix-fp";
+		};
+
 		ccci_off {
 			compatible = "mediatek,mt6797-ccci_off";
 			clocks = <&scpsys SCP_SYS_MD1>;
