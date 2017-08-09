@@ -206,7 +206,7 @@ wait_queue_head_t screen_update_wq;
  *  mtkfb_set_lcm_inited() will be called in mt6516_board_init()
  * ---------------------------------------------------------------------------
  */
-static bool is_lcm_inited;
+bool is_lcm_inited;
 void mtkfb_set_lcm_inited(bool inited)
 {
 	is_lcm_inited = inited;

@@ -742,10 +742,37 @@ void parse_lcm_ops_dt_node(struct device_node *np, LCM_DTS *lcm_dts, unsigned ch
 	}
 }
 
+int check_lcm_node_from_DT(void)
+{
+	char lcm_node[128] = { 0 };
+	struct device_node *np = NULL;
+
+	sprintf(lcm_node, "mediatek,lcm_params-%s", lcm_name_list[0]);
+	pr_debug("LCM PARAMS DT compatible: %s\n", lcm_node);
+
+	/* Load LCM parameters from DT */
+	np = of_find_compatible_node(NULL, NULL, lcm_node);
+	if (!np) {
+		pr_err("LCM PARAMS DT node: Not found\n");
+		return -1;
+	}
+
+	sprintf(lcm_node, "mediatek,lcm_ops-%s", lcm_name_list[0]);
+	pr_debug("LCM OPS DT compatible: %s\n", lcm_node);
+
+	/* Load LCM parameters from DT */
+	np = of_find_compatible_node(NULL, NULL, lcm_node);
+	if (!np) {
+		pr_err("LCM OPS DT node: Not found\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
 {
-	char dts_params[128] = { 0 };
-	char dts_ops[128] = { 0 };
+	char lcm_node[128] = { 0 };
 	struct device_node *np = NULL;
 	unsigned char *tmp_dts = dts;
 	LCM_DTS *parse_dts = &lcm_dts;
@@ -757,22 +784,22 @@ void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
 
 	memset((unsigned char *)parse_dts, 0x0, sizeof(LCM_DTS));
 
-	sprintf(dts_params, "mediatek,lcm_params-%s", lcm_name_list[0]);
-	pr_debug("LCM PARAMS DT compatible: %s\n", dts_params);
+	sprintf(lcm_node, "mediatek,lcm_params-%s", lcm_name_list[0]);
+	pr_warn("LCM PARAMS DT compatible: %s\n", lcm_node);
 
 	/* Load LCM parameters from DT */
-	np = of_find_compatible_node(NULL, NULL, dts_params);
+	np = of_find_compatible_node(NULL, NULL, lcm_node);
 	if (!np) {
 		pr_err("LCM PARAMS DT node: Not found\n");
 	} else {
 		parse_lcm_params_dt_node(np, &(parse_dts->params));
 	}
 
-	sprintf(dts_ops, "mediatek,lcm_ops-%s", lcm_name_list[0]);
-	pr_debug("LCM OPS DT compatible: %s\n", dts_ops);
+	sprintf(lcm_node, "mediatek,lcm_ops-%s", lcm_name_list[0]);
+	pr_warn("LCM OPS DT compatible: %s\n", lcm_node);
 
 	/* Load LCM parameters from DT */
-	np = of_find_compatible_node(NULL, NULL, dts_ops);
+	np = of_find_compatible_node(NULL, NULL, lcm_node);
 	if (!np) {
 		pr_err("LCM OPS DT node: Not found\n");
 	} else {
@@ -794,9 +821,37 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id)
 	LCM_DRIVER *lcm_drv = NULL;
 	LCM_PARAMS *lcm_param = NULL;
 	disp_lcm_handle *plcm = NULL;
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
+	bool isLCMDtFound = false;
+#endif
 
 	DISPPRINT("%s\n", __func__);
 	DISPCHECK("plcm_name=%s\n", plcm_name);
+
+#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
+	if (check_lcm_node_from_DT() == 0) {
+		lcm_drv = &lcm_common_drv;
+		lcm_drv->name = lcm_name_list[0];
+		if (strcmp(lcm_drv->name, plcm_name)) {
+			DISPERR
+			("FATAL ERROR!!!LCM Driver defined in kernel(%s) is different with LK(%s)\n",
+			lcm_drv->name, plcm_name);
+			return NULL;
+		}
+
+		isLCMInited = true;
+		isLCMFound = true;
+		isLCMDtFound = true;
+
+		if (!is_lcm_inited) {
+			isLCMFound = true;
+			isLCMInited = false;
+			DISPCHECK("LCM not init\n");
+		}
+
+		lcmindex = 0;
+	} else
+#endif
 	if (_lcm_count() == 0) {
 		DISPERR("no lcm driver defined in linux kernel driver\n");
 		return NULL;
@@ -808,9 +863,6 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id)
 			isLCMInited = false;
 		} else {
 			lcm_drv = lcm_driver_list[0];
-#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
-			lcm_drv->name = lcm_name_list[0];
-#endif
 			if (strcmp(lcm_drv->name, plcm_name)) {
 				DISPERR
 				    ("FATAL ERROR!!!LCM Driver defined in kernel is different with LK\n");
@@ -829,9 +881,6 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id)
 
 			for (i = 0; i < _lcm_count(); i++) {
 				lcm_drv = lcm_driver_list[i];
-#if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
-				lcm_drv->name = lcm_name_list[i];
-#endif
 				if (!strcmp(lcm_drv->name, plcm_name)) {
 					isLCMFound = true;
 					isLCMInited = true;
@@ -864,7 +913,8 @@ disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id)
 	}
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
-	load_lcm_resources_from_DT(plcm->drv);
+	if (isLCMDtFound == true)
+		load_lcm_resources_from_DT(plcm->drv);
 #endif
 
 	{
