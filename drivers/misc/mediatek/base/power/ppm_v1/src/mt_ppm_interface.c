@@ -182,6 +182,32 @@ static int ppm_dump_power_table_proc_show(struct seq_file *m, void *v)
 		);
 	}
 
+#ifdef PPM_THERMAL_ENHANCEMENT
+	{
+		struct ppm_power_tbl_data tlp3_power_table = ppm_get_tlp3_power_table();
+
+		seq_puts(m, "\n==========================================\n");
+		seq_puts(m, "TLP3 power table ");
+		seq_puts(m, "\n==========================================\n");
+
+		for_each_pwr_tbl_entry(i, tlp3_power_table) {
+			seq_printf(m, "[%d]\t= ", tlp3_power_table.power_tbl[i].index);
+
+			for_each_ppm_clusters(j) {
+				seq_printf(m, "%d,\t%d,\t",
+					tlp3_power_table.power_tbl[i].cluster_cfg[j].opp_lv,
+					tlp3_power_table.power_tbl[i].cluster_cfg[j].core_num
+					);
+			}
+
+			seq_printf(m, "%d,\t%d\n",
+				tlp3_power_table.power_tbl[i].perf_idx,
+				tlp3_power_table.power_tbl[i].power_idx
+			);
+		}
+	}
+#endif
+
 	/* dump sorted tables */
 	if (ppm_debug > 0) {
 		for_each_ppm_power_state(i) {

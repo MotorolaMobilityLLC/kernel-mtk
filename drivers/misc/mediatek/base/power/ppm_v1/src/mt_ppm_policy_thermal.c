@@ -61,7 +61,7 @@ void mt_ppm_cpu_thermal_protect(unsigned int limited_power)
 	thermal_policy.is_activated = (limited_power) ? true : false;
 	ppm_unlock(&thermal_policy.lock);
 
-#ifdef PPM_FAST_ATM_SUPPORT
+#ifdef PPM_THERMAL_ENHANCEMENT
 	if (mutex_is_locked(&ppm_main_info.lock))
 		goto end;
 #endif
@@ -112,7 +112,7 @@ unsigned int mt_ppm_thermal_get_cur_power(void)
 		if (!cluster_status[i].core_num)
 			cluster_status[i].freq_idx = -1;
 		else
-#ifdef PPM_FAST_ATM_SUPPORT
+#ifdef PPM_THERMAL_ENHANCEMENT
 			cluster_status[i].freq_idx = ppm_main_freq_to_idx(i,
 					mt_cpufreq_get_cur_phy_freq_no_lock(i), CPUFREQ_RELATION_L);
 #else

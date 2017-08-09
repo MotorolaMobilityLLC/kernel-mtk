@@ -87,10 +87,27 @@ struct ppm_data ppm_main_info = {
 
 void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_policy_req *req)
 {
-	struct ppm_power_tbl_data power_table = ppm_get_power_table();
 	int index, i;
+#ifdef PPM_THERMAL_ENHANCEMENT
+	struct ppm_power_tbl_data power_table;
+
+	if (ppm_is_need_to_check_tlp3_table(new_state, req->power_budget)) {
+		index = ppm_get_tlp3_table_idx_by_pwr(new_state, req->power_budget);
+		if (index != -1) {
+			power_table = ppm_get_tlp3_power_table();
+			goto tbl_lookup_done;
+		}
+	}
+
+	power_table = ppm_get_power_table();
+	index = ppm_get_table_idx_by_pwr(new_state, req->power_budget);
+
+tbl_lookup_done:
+#else
+	struct ppm_power_tbl_data power_table = ppm_get_power_table();
 
 	index = ppm_get_table_idx_by_pwr(new_state, req->power_budget);
+#endif
 	if (index != -1) {
 		for (i = 0; i < req->cluster_num; i++) {
 			req->limit[i].max_cpu_core =
@@ -601,7 +618,7 @@ int mt_ppm_main(void)
 #endif
 		trace_ppm_update(policy_mask, ppm_main_info.min_power_budget, c_req->root_cluster, buf);
 
-#ifdef PPM_FAST_ATM_SUPPORT
+#ifdef PPM_THERMAL_ENHANCEMENT
 		{
 			bool notify_hps = false, notify_dvfs = false;
 
@@ -684,7 +701,7 @@ int mt_ppm_main(void)
 			}
 		}
 
-#ifdef PPM_FAST_ATM_SUPPORT
+#ifdef PPM_THERMAL_ENHANCEMENT
 nofity_end:
 #endif
 		memcpy(last_req->cpu_limit, c_req->cpu_limit,

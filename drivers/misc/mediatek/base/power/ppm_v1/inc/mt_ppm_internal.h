@@ -360,8 +360,6 @@ extern int ppm_procfs_init(void);
 extern char *ppm_copy_from_user_for_proc(const char __user *buffer, size_t count);
 
 /* hica */
-extern int ppm_get_table_idx_by_perf(enum ppm_power_state state, unsigned int perf_idx);
-extern int ppm_get_table_idx_by_pwr(enum ppm_power_state state, unsigned int pwr_idx);
 extern void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,
 					struct ppm_policy_data *policy);
 extern enum ppm_power_state ppm_hica_get_state_by_perf_idx(enum ppm_power_state state, unsigned int perf_idx);
@@ -376,8 +374,15 @@ extern bool ppm_lcmoff_is_policy_activated(void);
 extern struct ppm_power_state_data *ppm_get_power_state_info(void);
 #ifdef PPM_POWER_TABLE_CALIBRATION
 extern struct ppm_power_tbl_data ppm_get_power_table(void);
+#ifdef PPM_THERMAL_ENHANCEMENT
+extern struct ppm_power_tbl_data ppm_get_tlp3_power_table(void);
+#endif
+extern void ppm_main_pwr_tbl_calibration(void);
 #else
 extern const struct ppm_power_tbl_data ppm_get_power_table(void);
+#ifdef PPM_THERMAL_ENHANCEMENT
+extern const struct ppm_power_tbl_data ppm_get_tlp3_power_table(void);
+#endif
 #endif
 extern const char *ppm_get_power_state_name(enum ppm_power_state state);
 extern enum ppm_power_state ppm_change_state_with_fix_root_cluster(
@@ -390,6 +395,12 @@ extern enum ppm_power_state ppm_judge_state_by_user_limit(enum ppm_power_state c
 extern void ppm_limit_check_for_user_limit(enum ppm_power_state cur_state, struct ppm_policy_req *req,
 			struct ppm_userlimit_data user_limit);
 extern unsigned int ppm_get_root_cluster_by_state(enum ppm_power_state cur_state);
+extern int ppm_get_table_idx_by_perf(enum ppm_power_state state, unsigned int perf_idx);
+extern int ppm_get_table_idx_by_pwr(enum ppm_power_state state, unsigned int pwr_idx);
+#ifdef PPM_THERMAL_ENHANCEMENT
+extern int ppm_get_tlp3_table_idx_by_pwr(enum ppm_power_state state, unsigned int pwr_idx);
+extern bool ppm_is_need_to_check_tlp3_table(enum ppm_power_state state, unsigned int pwr_idx);
+#endif
 
 /* main */
 extern void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_policy_req *req);

@@ -53,8 +53,8 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #define BIG_LKG_EFUSE_FF		(421)
 #endif
 
-#define PPM_FAST_ATM_SUPPORT		(1)
-#ifdef PPM_FAST_ATM_SUPPORT
+#define PPM_THERMAL_ENHANCEMENT		(1)
+#ifdef PPM_THERMAL_ENHANCEMENT
 #define BIG_MIN_FREQ_IDX		(12)
 #endif
 
@@ -145,7 +145,7 @@ struct ppm_power_tbl {
 
 struct ppm_power_tbl_data {
 	struct ppm_power_tbl *power_tbl;
-	const unsigned int nr_power_tbl;
+	unsigned int nr_power_tbl;
 };
 
 struct ppm_pwr_idx_ref_tbl {
@@ -210,9 +210,7 @@ extern unsigned int ppm_calc_total_power_by_ocp(struct ppm_cluster_status *clust
 extern unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status,
 					unsigned int cluster_num, unsigned int percentage);
 #endif
-#ifdef PPM_POWER_TABLE_CALIBRATION
-extern void ppm_main_pwr_tbl_calibration(void);
-#endif
+
 
 #ifdef __cplusplus
 }
