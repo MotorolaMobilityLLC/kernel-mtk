@@ -33,6 +33,8 @@
 #include <linux/log2.h>
 #include <linux/cma.h>
 #include <linux/highmem.h>
+#include <linux/debugfs.h>
+#include <linux/seq_file.h>
 
 struct cma {
 	unsigned long	base_pfn;
@@ -45,6 +47,7 @@ struct cma {
 static struct cma cma_areas[MAX_CMA_AREAS];
 static unsigned cma_area_count;
 static DEFINE_MUTEX(cma_mutex);
+static unsigned long cma_usage;
 
 phys_addr_t cma_get_base(struct cma *cma)
 {
@@ -379,6 +382,11 @@ struct page *cma_alloc(struct cma *cma, int count, unsigned int align)
 		ret = alloc_contig_range(pfn, pfn + count, MIGRATE_CMA);
 		mutex_unlock(&cma_mutex);
 		if (ret == 0) {
+
+			mutex_lock(&cma_mutex);
+			cma_usage += count;
+			mutex_unlock(&cma_mutex);
+
 			page = pfn_to_page(pfn);
 			break;
 		}
@@ -426,5 +434,51 @@ bool cma_release(struct cma *cma, struct page *pages, int count)
 	free_contig_range(pfn, count);
 	cma_clear_bitmap(cma, pfn, count);
 
+	mutex_lock(&cma_mutex);
+	cma_usage -= count;
+	mutex_unlock(&cma_mutex);
+
 	return true;
 }
+
+static int cma_usage_show(struct seq_file *m, void *v)
+{
+	unsigned char *fmt = "%-10s: %10lu kB\n";
+
+	seq_printf(m, fmt, "CMA usage", cma_usage*4);
+
+	return 0;
+}
+
+static int cma_usage_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, &cma_usage_show, NULL);
+}
+
+static const struct file_operations memory_ssvp_fops = {
+	.open		= cma_usage_open,
+	.read		= seq_read,
+	.release	= single_release,
+};
+
+/**
+ * Provide CMA memory allocation usage
+ * cat /sys/kernel/debug/cmainfo
+ */
+static int __init cma_debug_init(void)
+{
+	int ret = 0;
+
+	struct dentry *dentry;
+
+	dentry = debugfs_create_file("cmainfo", S_IRUGO, NULL, NULL,
+					&memory_ssvp_fops);
+	if (!dentry)
+		pr_warn("Failed to create debugfs cmainfo file\n");
+	else
+		pr_info("cma usage create success.");
+
+	return ret;
+}
+
+late_initcall(cma_debug_init);

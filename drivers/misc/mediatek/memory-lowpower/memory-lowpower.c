@@ -36,6 +36,8 @@ static struct cma *cma;
 static struct page *cma_pages;
 static DEFINE_MUTEX(memory_lowpower_mutex);
 
+static unsigned long cma_usage_count;
+
 /*
  * Check whether memory_lowpower is initialized
  */
@@ -77,6 +79,8 @@ int get_memory_lowpower_cma_aligned(int count, unsigned int align, struct page *
 	if (*pages == NULL) {
 		pr_alert("lowpower cma allocation failed\n");
 		ret = -1;
+	} else {
+		cma_usage_count += count;
 	}
 
 	mutex_unlock(&memory_lowpower_mutex);
@@ -103,6 +107,8 @@ int put_memory_lowpower_cma_aligned(int count, struct page *pages)
 					__func__,
 					pages, page_to_pfn(pages));
 			return -EINVAL;
+		} else {
+			cma_usage_count -= count;
 		}
 	}
 
@@ -128,9 +134,10 @@ int get_memory_lowpower_cma(void)
 
 	cma_pages = cma_alloc(cma, count, 0);
 
-	if (cma_pages)
+	if (cma_pages) {
 		pr_debug("%s:%d ok\n", __func__, __LINE__);
-	else
+		cma_usage_count += count;
+	} else
 		pr_alert("lowpower cma allocation failed\n");
 
 	mutex_unlock(&memory_lowpower_mutex);
@@ -158,6 +165,8 @@ int put_memory_lowpower_cma(void)
 					__func__,
 					cma_pages, page_to_pfn(cma_pages));
 			return -EINVAL;
+		} else {
+			cma_usage_count -= count;
 		}
 		cma_pages = 0;
 	}
@@ -172,8 +181,8 @@ static int memory_lowpower_init(struct reserved_mem *rmem)
 	int ret;
 
 	pr_alert("%s, name: %s, base: 0x%pa, size: 0x%pa\n",
-		 __func__, rmem->name,
-		 &rmem->base, &rmem->size);
+			__func__, rmem->name,
+			&rmem->base, &rmem->size);
 
 	/* init cma area */
 	ret = cma_init_reserved_mem(rmem->base, rmem->size , 0, &cma);
@@ -187,7 +196,7 @@ static int memory_lowpower_init(struct reserved_mem *rmem)
 }
 
 RESERVEDMEM_OF_DECLARE(memory_lowpower, "mediatek,memory-lowpower",
-			memory_lowpower_init);
+		memory_lowpower_init);
 
 #ifdef CONFIG_ZONE_MOVABLE_CMA
 static int __init memory_lowpower_sanity_test(void)
@@ -216,6 +225,7 @@ static int memory_lowpower_show(struct seq_file *m, void *v)
 	seq_printf(m, "cma info: [%pa-%pa] (0x%lx)\n",
 			&cma_base, &cma_end,
 			cma_get_size(cma));
+	seq_printf(m, "cma usage: %lu\n", cma_usage_count);
 
 	return 0;
 }
@@ -226,7 +236,7 @@ static int memory_lowpower_open(struct inode *inode, struct file *file)
 }
 
 static ssize_t memory_lowpower_write(struct file *file, const char __user *buffer,
-					size_t count, loff_t *ppos)
+		size_t count, loff_t *ppos)
 {
 	static char state;
 
@@ -264,7 +274,7 @@ static int __init memory_lowpower_debug_init(void)
 	}
 
 	dentry = debugfs_create_file("memory-lowpower", S_IRUGO, NULL, NULL,
-					&memory_lowpower_fops);
+			&memory_lowpower_fops);
 	if (!dentry)
 		pr_warn("Failed to create debugfs memory_lowpower_debug_init file\n");
 

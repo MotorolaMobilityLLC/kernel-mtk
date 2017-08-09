@@ -36,6 +36,7 @@ static struct page *cma_pages;
 #endif
 
 static DEFINE_MUTEX(memory_ssvp_mutex);
+static unsigned long svp_usage_count;
 
 #ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
 static struct page *wrap_cma_pages;
@@ -237,6 +238,9 @@ int tui_region_offline(phys_addr_t *pa, unsigned long *size)
 		page = cma_alloc(
 				ssvp_cma.cma,
 				_svpregs[SSVP_SUB_TUI].count, 0);
+		if (page) {
+			svp_usage_count += _svpregs[SSVP_SUB_TUI].count;
+		}
 #endif
 
 		if (page) {
@@ -283,7 +287,10 @@ int tui_region_online(void)
 /*		retb = dma_release_from_contiguous(cma_dev,
 			_svpregs[SSVP_SUB_TUI].page, _svpregs[SSVP_SUB_TUI].count);
 */
-		retb = cma_release(cma, _svpregs[SSVP_SUB_TUI].page, _svpregs[SSVP_SUB_TUI].count);
+		retb = cma_release(ssvp_cma.cma, _svpregs[SSVP_SUB_TUI].page, _svpregs[SSVP_SUB_TUI].count);
+		if (retb == true) {
+			svp_usage_count -= _svpregs[SSVP_SUB_TUI].count;
+		}
 #endif
 
 		if (retb == true) {
@@ -355,7 +362,10 @@ static int __svp_region_online(void)
 /*		retb = dma_release_from_contiguous(cma_dev,
 			_svpregs[SSVP_SUB_SVP].page, _svpregs[SSVP_SUB_SVP].count);
 */
-		retb = cma_release(cma, _svpregs[SSVP_SUB_SVP].page, _svpregs[SSVP_SUB_SVP].count);
+		retb = cma_release(ssvp_cma.cma, _svpregs[SSVP_SUB_SVP].page, _svpregs[SSVP_SUB_SVP].count);
+		if (retb == true) {
+			svp_usage_count -= _svpregs[SSVP_SUB_SVP].count;
+		}
 #endif
 
 		if (retb == true) {
@@ -596,6 +606,9 @@ int svp_region_offline(phys_addr_t *pa, unsigned long *size)
 					_svpregs[SSVP_SUB_SVP].start, _svpregs[SSVP_SUB_SVP].count, 0);*/
 		page = cma_alloc(ssvp_cma.cma,
 					_svpregs[SSVP_SUB_SVP].count, 0);
+		if (page) {
+			svp_usage_count += _svpregs[SSVP_SUB_SVP].count;
+		}
 #endif
 
 		if (page) {
@@ -850,6 +863,8 @@ static int memory_ssvp_show(struct seq_file *m, void *v)
 			_svpregs[SSVP_SUB_TUI].count,
 			_svpregs[SSVP_SUB_TUI].state);
 
+	seq_printf(m, "cma usage: %lu\n", svp_usage_count);
+
 	return 0;
 }
 
@@ -904,8 +919,11 @@ static int __init memory_ssvp_debug_init(void)
 #ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
 	wrap_cma_pages = cma_alloc(ssvp_cma.cma, ssvp_cma.count, 0);
 
-	if (!wrap_cma_pages)
+	if (!wrap_cma_pages) {
 		pr_err("wrap_cma_pages is not inited\n");
+	} else {
+		svp_usage_count = ssvp_cma.count;
+	}
 #endif
 
 	dentry = debugfs_create_file("memory-ssvp", S_IRUGO, NULL, NULL,
