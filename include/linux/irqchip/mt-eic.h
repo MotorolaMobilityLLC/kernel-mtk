@@ -94,7 +94,7 @@ void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int ms);
 void mt_eint_set_polarity(unsigned int eint_num, unsigned int pol);
 unsigned int mt_eint_set_sens(unsigned int eint_num, unsigned int sens);
 void mt_eint_virq_soft_clr(unsigned int virq);
-
+extern void dump_eint_trigger_history(void);
 /* used to access the gic device tree resource */
 extern int mt_get_supported_irq_num(void);
 

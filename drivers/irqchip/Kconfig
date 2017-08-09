@@ -145,6 +145,19 @@ config MTK_INTPOL
 	help
 	  Support for MediaTek intpol used on mt65xx/mt81xx
 
+
+config MTK_EIC_HISTORY_DUMP
+	bool "Enable MTK EIC HISTORY Debugger"
+	def_bool n
+	depends on MTK_EIC
+	---help---
+	  This option is used to collect last eint
+	  interupts and its property before WDT TIMEOUT.
+	  with thie option, we could know which
+	  eint interrupt is triggered too often to cause system
+	  watchdog timeout.
+
+
 config MTK_IRQ_NEW_DESIGN
 	bool
 	help

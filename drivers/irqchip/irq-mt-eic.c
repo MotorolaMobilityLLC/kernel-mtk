@@ -20,7 +20,7 @@
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mt_io.h>
 #include <mt-plat/mt_gpio.h>
-
+#include <linux/printk.h>
 #define EINT_DEBUG 0
 #if (EINT_DEBUG == 1)
 #define dbgmsg printk
@@ -72,6 +72,39 @@ struct eint_func {
 	struct timer_list *eint_sw_deb_timer;
 	unsigned int *count;
 };
+
+#ifdef CONFIG_MTK_EIC_HISTORY_DUMP
+#define EINT_ENTITY_NUM 60
+struct eint_trigger_entity {
+	unsigned char valid;
+	unsigned int cpu;
+	unsigned long long ts;
+	unsigned int eint_num;
+	unsigned int irq_num;
+	unsigned int arch;
+	unsigned int irq_status;
+	unsigned int pol;
+	unsigned int sen;
+	unsigned int ack_retry;
+};
+unsigned int eint_history_dump_enable;
+
+#define BUFFER_EMPTY 0x0
+#define BUFFER_FULL 0x2
+#define BUFFER_OVERLAPED 0x4
+
+struct eint_trigger_history {
+	unsigned int wp;
+	unsigned int rp;
+	unsigned ring_buf_status;
+	struct eint_trigger_entity entities[EINT_ENTITY_NUM];
+};
+
+
+struct eint_trigger_history eint_tri_his;
+
+
+#endif
 
 struct builtin_eint {
 	unsigned int gpio;
@@ -679,6 +712,30 @@ static unsigned int mt_eint_read_status(unsigned int eint_num)
 }
 
 /*
+ * mt_eint_read_status: To read the interrupt status
+ * @eint_num: the EINT number to set
+ */
+static unsigned int mt_eint_read_raw_status(unsigned int eint_num)
+{
+	unsigned long base;
+	unsigned int st;
+	unsigned int bit = 1 << (eint_num % 32);
+
+	if (eint_num < EINT_MAX_CHANNEL) {
+		base = (eint_num / 32) * 4 + EINT_RAW_STA_BASE;
+	} else {
+		dbgmsg
+		("Error in %s [EINT] num:%d is larger than EINT_MAX_CHANNEL\n",
+			__func__, eint_num);
+		return 0;
+	}
+	st = readl(IOMEM(base));
+	return (st&bit) >> (eint_num % 32);
+}
+
+
+
+/*
  * mt_eint_get_status: To get the interrupt status
  * @eint_num: the EINT number to get
  */
@@ -897,6 +954,114 @@ static void mt_eint_set_timer_event(unsigned int eint_num)
 	}
 }
 
+#ifdef CONFIG_MTK_EIC_HISTORY_DUMP
+
+static void eint_trigger_history_init(void)
+{
+	memset(&eint_tri_his, 0, sizeof(struct eint_trigger_history));
+	eint_history_dump_enable = 0;
+}
+
+static DEFINE_SPINLOCK(eint_dump);
+static void insert_trigger_entity(unsigned int eint, unsigned char arch, unsigned long long ts_trigger)
+{
+	unsigned int rb_status;
+	unsigned int cur_cpu = smp_processor_id();
+	unsigned int cur_wp = eint_tri_his.wp;
+	unsigned int cur_rp = eint_tri_his.rp;
+	unsigned long flags;
+
+	if (eint_history_dump_enable != 1)
+		return;
+	spin_lock_irqsave(&eint_dump, flags);
+	rb_status = eint_tri_his.ring_buf_status;
+	pr_debug("[EINT DEBUG] insert entity, wp:%d, rp:%d\n", cur_wp, cur_rp);
+	if ((rb_status & BUFFER_FULL) && (cur_wp == cur_rp))
+		eint_tri_his.ring_buf_status |= BUFFER_OVERLAPED;
+
+	eint_tri_his.entities[cur_wp].valid = 1;
+	eint_tri_his.entities[cur_wp].cpu = cur_cpu;
+	eint_tri_his.entities[cur_wp].ts = ts_trigger;
+	eint_tri_his.entities[cur_wp].eint_num =  eint;
+	eint_tri_his.entities[cur_wp].irq_num =  EINT_IRQ(eint);
+	eint_tri_his.entities[cur_wp].irq_status = mt_eint_read_raw_status(eint);
+	eint_tri_his.entities[cur_wp].pol = mt_eint_get_polarity(eint);
+	eint_tri_his.entities[cur_wp].sen = mt_eint_get_sens(eint);
+	if (eint_tri_his.wp == (EINT_ENTITY_NUM - 1))
+		eint_tri_his.ring_buf_status |= BUFFER_FULL;
+	eint_tri_his.wp = (eint_tri_his.wp + 1) % EINT_ENTITY_NUM;
+	spin_unlock_irqrestore(&eint_dump, flags);
+}
+
+void dump_eint_trigger_history(void)
+{
+	unsigned int rb_status;
+	unsigned int i;
+	unsigned int cur_wp;
+	unsigned int cur_rp;
+	unsigned long flags;
+
+	if (eint_history_dump_enable != 1)
+		return;
+	rb_status = eint_tri_his.ring_buf_status;
+	cur_wp = eint_tri_his.wp;
+	cur_rp = eint_tri_his.rp;
+	if (rb_status & BUFFER_OVERLAPED) {
+		pr_err("[EINT DEBUG] Buffer full\n");
+		for (i = cur_wp; i != cur_wp - 1; i = (i + 1) % EINT_ENTITY_NUM) {
+			pr_err("[EINT DEBUG] cpu:%d,num:%d,ts:%lld,eint:%u,irq:%u,pol:0x%x,sen:0x%x,status:0x%x\n",
+				eint_tri_his.entities[i].cpu,
+				i,
+				eint_tri_his.entities[i].ts,
+				eint_tri_his.entities[i].eint_num,
+				eint_tri_his.entities[i].irq_num,
+				eint_tri_his.entities[i].pol,
+				eint_tri_his.entities[i].sen,
+				eint_tri_his.entities[i].irq_status
+			);
+		}
+		eint_tri_his.ring_buf_status = BUFFER_EMPTY;
+		eint_tri_his.rp = cur_wp;
+	} else{
+		pr_err("[EINT DEBUG] Buffer not full\n");
+		for (i = cur_rp; i < cur_wp;  i = (i + 1) % EINT_ENTITY_NUM) {
+			pr_err("[EINT DEBUG] cpu:%d,num:%d,ts:%lld,eint:%u,irq:%u,pol:0x%x,sen:0x%x,status:0x%x\n",
+				eint_tri_his.entities[i].cpu,
+				i,
+				eint_tri_his.entities[i].ts,
+				eint_tri_his.entities[i].eint_num,
+				eint_tri_his.entities[i].irq_num,
+				eint_tri_his.entities[i].pol,
+				eint_tri_his.entities[i].sen,
+				eint_tri_his.entities[i].irq_status
+			);
+		}
+		eint_tri_his.ring_buf_status = BUFFER_EMPTY;
+		eint_tri_his.rp = cur_wp;
+	}
+}
+
+static ssize_t eint_dump_history_show(struct device_driver *driver, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "History Dump:%s\n", eint_history_dump_enable == 1 ? "Enable" : "Disable");
+}
+
+static ssize_t eint_dump_history_store(struct device_driver *driver, const char *buf, size_t count)
+{
+	char *p = (char *)buf;
+	unsigned long num;
+
+	if (kstrtoul(p, 10, &num) != 0) {
+		pr_err("[EIC] can not kstrtoul for %s\n", p);
+		return -1;
+	}
+	eint_history_dump_enable = num;
+	return count;
+}
+DRIVER_ATTR(eint_history, 0644, eint_dump_history_show, eint_dump_history_store);
+
+#endif
+
 /*
  * mt_eint_isr: EINT interrupt service routine.
  * @irq: EINT IRQ number
@@ -910,7 +1075,8 @@ static irqreturn_t mt_eint_demux(unsigned irq, struct irq_desc *desc)
 	unsigned int status = 0;
 	unsigned int status_check;
 	unsigned int reg_base, offset;
-	unsigned long long t1, t2;
+	unsigned long long t1 = 0;
+	unsigned long long t2 = 0;
 	int mask_status = 0;
 	struct irq_chip *chip = irq_get_chip(irq);
 	struct eint_chip *eint_chip = irq_get_handler_data(irq);
@@ -988,6 +1154,9 @@ static irqreturn_t mt_eint_demux(unsigned irq, struct irq_desc *desc)
 			if (eint_chip->dual_edges[index])
 				mt_eint_flip_edge(eint_chip, index);
 		}
+#ifdef CONFIG_MTK_EIC_HISTORY_DUMP
+		insert_trigger_entity(index, 1, t1);
+#endif
 	}
 
 	dbgmsg("EINT Module - %s ISR END\n", __func__);
@@ -1565,6 +1734,18 @@ void mt_eint_virq_soft_clr(unsigned int virq)
 }
 EXPORT_SYMBOL(mt_eint_virq_soft_clr);
 
+
+#if defined(CONFIG_MTK_EIC_HISTORY_DUMP)
+static struct platform_driver eint_driver = {
+	.driver = {
+		.name = "eint",
+		.bus = &platform_bus_type,
+		.owner = THIS_MODULE,
+		}
+};
+#endif
+
+
 static int __init mt_eint_init(void)
 {
 	unsigned int i, irq;
@@ -1573,6 +1754,10 @@ static int __init mt_eint_init(void)
 	struct device_node *node;
 	const __be32 *spec;
 	u32 len;
+
+#if defined(CONFIG_MTK_EIC_HISTORY_DUMP)
+	int ret;
+#endif
 
 	/* DTS version */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt-eic");
@@ -1742,6 +1927,19 @@ static int __init mt_eint_init(void)
 
 	irq_set_chained_handler(irq, (irq_flow_handler_t) mt_eint_demux);
 	irq_set_handler_data(irq, mt_eint_chip);
+
+#if defined(CONFIG_MTK_EIC_HISTORY_DUMP)
+	ret = platform_driver_register(&eint_driver);
+	if (ret)
+		pr_err("Fail to register eint_driver");
+
+	ret |= driver_create_file(&eint_driver.driver, &driver_attr_eint_history);
+
+	if (ret)
+		pr_err("Fail to create eint_driver sysfs files");
+
+	eint_trigger_history_init();
+#endif
 
 	return 0;
 }
