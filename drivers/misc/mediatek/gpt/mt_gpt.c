@@ -16,6 +16,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/clk.h>
 
 #include <linux/slab.h>
 #include <linux/sched_clock.h>
@@ -554,23 +555,31 @@ static void __init mt_gpt_init(struct device_node *node)
 {
 	int i;
 	u32 freq;
+	struct clk *clk_bus, *clk_13m;
 	unsigned long save_flags;
 
 	gpt_update_lock(save_flags);
-
-	/* freq=SYS_CLK_RATE */
-	if (of_property_read_u32(node, "clock-frequency", &freq))
-		pr_err("clock-frequency not set in the .dts file");
-
-#ifdef CONFIG_MTK_FPGA
-	freq = (freq / 13 * 6);	/* 13M would be 6M on FPGA */
-#endif
 
 	/* Setup IO addresses */
 	xgpt_timers.tmr_regs = of_iomap(node, 0);
 
 	/* Setup IRQ numbers */
 	xgpt_timers.tmr_irq = irq_of_parse_and_map(node, 0);
+
+	clk_bus = of_clk_get_by_name(node, "bus");
+	if (!IS_ERR(clk_bus))
+		clk_prepare_enable(clk_bus);
+
+	clk_13m = of_clk_get_by_name(node, "clk13m");
+	if (IS_ERR(clk_13m)) {
+		pr_err("mt_gpt_init Can't get clk_13m\n");
+		goto err_irq;
+	}
+
+	freq = clk_get_rate(clk_13m);
+#ifdef CONFIG_MTK_FPGA
+	freq = (freq / 13 * 6);	/* 13M would be 6M on FPGA */
+#endif
 
 	boot_time_value = xgpt_boot_up_time();	/*record the time when init GPT */
 
@@ -589,6 +598,12 @@ static void __init mt_gpt_init(struct device_node *node)
 	/* use cpuxgpt as syscnt */
 	setup_syscnt();
 
+	gpt_update_unlock(save_flags);
+
+	return;
+
+err_irq:
+	irq_dispose_mapping(xgpt_timers.tmr_irq);
 	gpt_update_unlock(save_flags);
 }
 
