@@ -62,24 +62,24 @@ static imgsensor_info_struct imgsensor_info = {
 	},
 	.cap = {
 		.pclk = 720000000,
-		.linelength = 7500,
+		.linelength = 6240,
 		.framelength = 4806,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 6240,
-		.grabwindow_height = 4806,
+		.grabwindow_width = 5632,
+		.grabwindow_height = 4224,
 		.mipi_data_lp2hs_settle_dc = 14, //check
 		.max_framerate = 240,
 	},
 	/*same as capture*/
 	.cap1 = {
 		.pclk = 720000000,
-		.linelength = 7500,
+		.linelength = 6240,
 		.framelength = 4806,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 6240,
-		.grabwindow_height = 4806,
+		.grabwindow_width = 5632,
+		.grabwindow_height = 4224,
 		.mipi_data_lp2hs_settle_dc = 14, //check
 		.max_framerate = 240,
 	},
