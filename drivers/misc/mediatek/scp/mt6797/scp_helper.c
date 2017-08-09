@@ -46,7 +46,7 @@
 #include <mt-plat/mtk_memcfg.h>
 #endif
 
-#define ENABLE_SCP_EMI_PROTECTION       (0)
+#define ENABLE_SCP_EMI_PROTECTION       (1)
 #if ENABLE_SCP_EMI_PROTECTION
 #include <emi_mpu.h>
 #endif
@@ -587,7 +587,7 @@ void set_scp_mpu(void)
 		     shr_mem_mpu_attr;
 	shr_mem_mpu_id = MPU_REGION_ID_SCP_SMEM;
 	shr_mem_phy_start = scp_mem_base_phys;
-	shr_mem_phy_end = scp_mem_size - 0x1;
+	shr_mem_phy_end = scp_mem_base_phys + scp_mem_size - 0x1;
 	shr_mem_mpu_attr =
 		SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 				NO_PROTECTION, FORBIDDEN, FORBIDDEN,
