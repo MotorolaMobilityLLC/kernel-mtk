@@ -240,4 +240,24 @@ int irq_update_user(const void *_user,
 
 bool SetHighAddr(Soc_Aud_Digital_Block MemBlock, bool usingdram);
 
+/* GetEnableAudioBlockRegOffset */
+enum MEM_BLOCK_ENABLE_REG_INDEX {
+	MEM_BLOCK_ENABLE_REG_INDEX_AUDIO_BLOCK = 0,
+	MEM_BLOCK_ENABLE_REG_INDEX_REG,
+	MEM_BLOCK_ENABLE_REG_INDEX_OFFSET,
+	MEM_BLOCK_ENABLE_REG_INDEX_NUM
+};
+uint32 GetEnableAudioBlockRegOffset(uint32 Aud_block);
+uint32 GetEnableAudioBlockRegAddr(uint32 Aud_block);
+
+/* FM AP Dependent */
+bool SetFmI2sConnection(uint32 ConnectionState);
+bool SetFmAwbConnection(uint32 ConnectionState);
+bool SetFmI2sInEnable(bool bEnable);
+bool SetFmI2sIn(AudioDigtalI2S *mDigitalI2S);
+bool GetFmI2sInPathEnable(void);
+bool SetFmI2sInPathEnable(bool bEnable);
+bool SetFmI2sAsrcEnable(bool bEnable);
+bool SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate);
+
 #endif

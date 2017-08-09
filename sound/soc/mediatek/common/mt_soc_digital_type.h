@@ -81,6 +81,8 @@ typedef enum {
 	/* 2nd I2S */
 	Soc_Aud_Digital_Block_I2S_OUT_2,
 	Soc_Aud_Digital_Block_I2S_IN_2,
+	/* CONNSYS I2S */
+	Soc_Aud_Digital_Block_I2S_IN_CONNSYS,
 	/* HW gain contorl */
 	Soc_Aud_Digital_Block_HW_GAIN1,
 	Soc_Aud_Digital_Block_HW_GAIN2,

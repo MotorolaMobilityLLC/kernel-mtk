@@ -1359,6 +1359,19 @@ bool SetModemPcmEnable(int modem_index, bool modem_pcm_on)
 	return ret;
 }
 
+bool SetMemoryPathEnableReg(uint32 Aud_block, bool bEnable)
+{
+	uint32 offset = GetEnableAudioBlockRegOffset(Aud_block);
+	uint32 reg = GetEnableAudioBlockRegAddr(Aud_block);
+
+	if (0 == reg) {
+		pr_err("%s(), no such memory path enable bit!!", __func__);
+		return false;
+	}
+	Afe_Set_Reg(reg, bEnable << offset, 1 << offset);
+	return true;
+}
+
 bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable)
 {
 	pr_aud("%s Aud_block = %d bEnable = %d\n", __func__, Aud_block, bEnable);
@@ -1389,9 +1402,9 @@ bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable)
 		return true;
 
 	if ((bEnable == true) && (mAudioMEMIF[Aud_block]->mUserCount == 1))
-		Afe_Set_Reg(AFE_DAC_CON0, bEnable << (Aud_block + 1), 1 << (Aud_block + 1));
+		SetMemoryPathEnableReg(Aud_block, bEnable);
 	else if ((bEnable == false) && (mAudioMEMIF[Aud_block]->mUserCount == 0))
-		Afe_Set_Reg(AFE_DAC_CON0, bEnable << (Aud_block + 1), 1 << (Aud_block + 1));
+		SetMemoryPathEnableReg(Aud_block, bEnable);
 
 	return true;
 }

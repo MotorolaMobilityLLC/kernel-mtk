@@ -176,7 +176,21 @@ static const uint32 mMemDuplicateWrite[Soc_Aud_Digital_Block_MEM_I2S+1][3] = { /
 	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_VUL_DATA2 */
 	{AUDIO_TOP_CON0+0xffff, 0, 0x0}, /* Soc_Aud_Digital_Block_MEM_I2S */
 };
+
+static const uint32 mMemAudioBlockEnableReg[][MEM_BLOCK_ENABLE_REG_INDEX_NUM] = { /* audio block, reg, bit position */
+	{Soc_Aud_Digital_Block_MEM_DL1, AFE_DAC_CON0, 1},
+	{Soc_Aud_Digital_Block_MEM_DL2, AFE_DAC_CON0, 2},
+	{Soc_Aud_Digital_Block_MEM_VUL, AFE_DAC_CON0, 3},
+	{Soc_Aud_Digital_Block_MEM_DAI, AFE_DAC_CON0, 4},
+	{Soc_Aud_Digital_Block_MEM_DL3, AFE_DAC_CON0, 5},
+	{Soc_Aud_Digital_Block_MEM_AWB, AFE_DAC_CON0, 6},
+	{Soc_Aud_Digital_Block_MEM_MOD_DAI, AFE_DAC_CON0, 7},
+	{Soc_Aud_Digital_Block_MEM_DL1_DATA2, AFE_DAC_CON0, 8},
+	{Soc_Aud_Digital_Block_MEM_VUL_DATA2, AFE_DAC_CON0, 9},
+};
 /*  Above structures may vary with chips!!!! */
+
+static const int MEM_BLOCK_ENABLE_REG_NUM = sizeof(mMemAudioBlockEnableReg) / sizeof(mMemAudioBlockEnableReg[0]);
 
 void Afe_Log_Print(void)
 {
@@ -915,6 +929,27 @@ bool SetMemDuplicateWrite(uint32 InterfaceType, int dupwrite)
 	return true;
 }
 
+uint32 GetEnableAudioBlockRegInfo(uint32 Aud_block, int index)
+{
+	int i = 0;
+
+	for (i = 0; i < MEM_BLOCK_ENABLE_REG_NUM; i++) {
+		if (mMemAudioBlockEnableReg[i][MEM_BLOCK_ENABLE_REG_INDEX_AUDIO_BLOCK] == Aud_block)
+			return mMemAudioBlockEnableReg[i][index];
+	}
+	return 0; /* 0: no such bit */
+}
+
+uint32 GetEnableAudioBlockRegAddr(uint32 Aud_block)
+{
+	return GetEnableAudioBlockRegInfo(Aud_block, MEM_BLOCK_ENABLE_REG_INDEX_REG);
+}
+
+uint32 GetEnableAudioBlockRegOffset(uint32 Aud_block)
+{
+	return GetEnableAudioBlockRegInfo(Aud_block, MEM_BLOCK_ENABLE_REG_INDEX_OFFSET);
+}
+
 ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 {
 	int n = 0;
@@ -1291,5 +1326,51 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 	return n;
 }
 
+bool SetFmI2sConnection(uint32 ConnectionState)
+{
+	SetIntfConnection(ConnectionState,
+			Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_HW_GAIN1_OUT);
+	SetIntfConnection(ConnectionState,
+			Soc_Aud_AFE_IO_Block_HW_GAIN1_IN, Soc_Aud_AFE_IO_Block_I2S1_DAC);
+	SetIntfConnection(ConnectionState,
+			Soc_Aud_AFE_IO_Block_HW_GAIN1_IN, Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+	return true;
+}
 
+bool SetFmAwbConnection(uint32 ConnectionState)
+{
+	SetIntfConnection(ConnectionState,
+			Soc_Aud_AFE_IO_Block_I2S0, Soc_Aud_AFE_IO_Block_MEM_AWB);
+	return true;
+}
+
+bool SetFmI2sInEnable(bool bEnable)
+{
+	return Set2ndI2SInEnable(bEnable);
+}
+
+bool SetFmI2sIn(AudioDigtalI2S *mDigitalI2S)
+{
+	return Set2ndI2SIn(mDigitalI2S);
+}
+
+bool GetFmI2sInPathEnable(void)
+{
+	return GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2);
+}
+
+bool SetFmI2sInPathEnable(bool bEnable)
+{
+	return SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, bEnable);
+}
+
+bool SetFmI2sAsrcEnable(bool bEnable)
+{
+	return SetI2SASRCEnable(bEnable);
+}
+
+bool SetFmI2sAsrcConfig(bool bIsUseASRC, unsigned int dToSampleRate)
+{
+	return SetI2SASRCConfig(bIsUseASRC, dToSampleRate);
+}
 
