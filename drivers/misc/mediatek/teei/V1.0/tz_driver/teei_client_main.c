@@ -398,8 +398,9 @@ static void secondary_nt_sched_t(void *info)
 
 static void nt_sched_t_call(void)
 {
-	nt_sched_t();
 #if 0
+	nt_sched_t();
+#else
 	int cpu_id = 0;
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_nt_sched_t, NULL, 1);
@@ -3756,8 +3757,9 @@ static int teei_client_init(void)
 
 	cpumask_set_cpu(get_current_cpuid(), &mask);
 
-	if (sched_setaffinity(sub_pid, &mask) == -1)
-		printk("warning: could not set CPU affinity, continuing...\n");
+	retVal = sched_setaffinity(sub_pid, &mask);
+	if (retVal != 0)
+		printk("warning: could not set CPU affinity, retVal = [%l] continuing...\n", retVal);
 
 	register_cpu_notifier(&tz_driver_cpu_notifer);
 	printk("after  register cpu notify\n");
