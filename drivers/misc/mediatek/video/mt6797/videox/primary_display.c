@@ -23,6 +23,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/slab.h>
+#include <linux/switch.h>
 #include "mt_idle.h"
 #include "mt_spm.h"	/* for sodi reg addr define */
 #include "mt_spm_idle.h"
@@ -107,6 +108,9 @@ static unsigned int gPresentFenceIndex;
 unsigned int gTriggerDispMode = 0; /* 0: normal, 1: lcd only, 2: none of lcd and lcm */
 static unsigned int g_keep;
 static unsigned int g_skip;
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+static struct switch_dev disp_switch_data;
+#endif
 
 #if 0
 /* global variable for idle manager */
@@ -3382,7 +3386,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		disp_partial_check_support(pgc->plcm);
 
 	pgc->state = DISP_ALIVE;
-
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+	disp_switch_data.name = "disp";
+	disp_switch_data.index = 0;
+	disp_switch_data.state = DISP_ALIVE;
+	ret = switch_dev_register(&disp_switch_data);
+#endif
 /*
 	primary_display_sodi_rule_init();
 
@@ -3821,6 +3830,9 @@ int primary_display_suspend(void)
 	while (primary_get_state() == DISP_BLANK) {
 		_primary_path_unlock(__func__);
 		DISPCHECK("primary_display_suspend wait tui finish!!\n");
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+		switch_set_state(&disp_switch_data, DISP_SLEPT);
+#endif
 		primary_display_wait_state(DISP_ALIVE, MAX_SCHEDULE_TIMEOUT);
 		_primary_path_lock(__func__);
 		DISPCHECK("primary_display_suspend wait tui done stat=%d\n", primary_get_state());
@@ -4176,6 +4188,9 @@ int primary_display_resume(void)
 
 done:
 	primary_set_state(DISP_ALIVE);
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+	switch_set_state(&disp_switch_data, DISP_ALIVE);
+#endif
 	_primary_path_unlock(__func__);
 
 	aee_kernel_wdt_kick_Powkey_api("mtkfb_late_resume", WDT_SETBY_Display);
