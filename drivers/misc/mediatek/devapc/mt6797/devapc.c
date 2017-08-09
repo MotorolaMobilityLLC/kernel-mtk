@@ -691,9 +691,9 @@ static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
 
 	dbg0 = readl(DEVAPC0_VIO_DBG0);
 	dbg1 = readl(DEVAPC0_VIO_DBG1);
-	master_id = dbg0 & VIO_DBG_MSTID;
-	domain_id = dbg0 & VIO_DBG_DMNID;
-	r_w_violation = dbg0 & VIO_DBG_RW;
+	master_id = (dbg0 & VIO_DBG_MSTID) >> 0;
+	domain_id = (dbg0 & VIO_DBG_DMNID) >> 13;
+	r_w_violation = (dbg0 & VIO_DBG_W) >> 28;
 
 	/* violation information improvement */
 	if (1 == r_w_violation) {

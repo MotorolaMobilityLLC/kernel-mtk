@@ -43,7 +43,7 @@
 
 #define VIO_DBG_MSTID 0x00001FFF
 #define VIO_DBG_DMNID 0x0001E000
-#define VIO_DBG_RW    0x10000000
+#define VIO_DBG_W     0x10000000
 #define VIO_DBG_CLR   0x80000000
 
 /******************************************************************************
