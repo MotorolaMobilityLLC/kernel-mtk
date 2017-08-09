@@ -93,6 +93,7 @@ extern LCM_DRIVER hx8392a_dsi_cmd_wvga_lcm_drv;
 extern LCM_DRIVER hx8392a_dsi_cmd_fwvga_lcm_drv;
 extern LCM_DRIVER hx8392a_dsi_cmd_qhd_lcm_drv;
 extern LCM_DRIVER hx8392a_dsi_vdo_lcm_drv;
+extern LCM_DRIVER hx8392a_dsi_vdo_2lane_lcm_drv;
 extern LCM_DRIVER hx8392a_dsi_vdo_3lane_lcm_drv;
 extern LCM_DRIVER nt35590_hd720_dsi_vdo_truly_lcm_drv;
 extern LCM_DRIVER ssd2075_hd720_dsi_vdo_truly_lcm_drv;

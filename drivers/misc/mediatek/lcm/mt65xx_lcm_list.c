@@ -452,6 +452,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&hx8392a_dsi_vdo_lcm_drv,
 #endif
 
+#if defined(HX8392A_DSI_VDO_2LANE)
+	&hx8392a_dsi_vdo_2lane_lcm_drv,
+#endif
+
 #if defined(HX8392A_DSI_VDO_3LANE)
 	&hx8392a_dsi_vdo_3lane_lcm_drv,
 #endif
