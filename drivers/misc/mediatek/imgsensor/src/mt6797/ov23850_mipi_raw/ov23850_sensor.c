@@ -3318,7 +3318,7 @@ static void capture_setting(kal_uint16 currefps)
 	//Deskew
 	ov23850_setting_Deskew(1);
 #endif
-	mdelay(30);
+	mdelay(40);
 	write_cmos_sensor(0x0100, 0x01);
 }
 
