@@ -52,8 +52,8 @@ static uint32_t in_lowmem;
 #include <linux/highmem.h>
 #endif
 
-#ifdef CONFIG_ION_MTK
-#include <linux/ion_drv.h>
+#ifdef CONFIG_MTK_ION
+#include "mtk/ion_drv.h"
 #endif
 
 #ifdef CONFIG_MTK_GPU_SUPPORT
@@ -447,7 +447,7 @@ log_again:
 		if (output_expect(enable_candidate_log)) {
 			if (print_extra_info) {
 				show_free_areas(0);
-			#ifdef CONFIG_ION_MTK
+			#ifdef CONFIG_MTK_ION
 				/* Show ION status */
 				ion_mm_heap_memory_detail();
 			#endif
