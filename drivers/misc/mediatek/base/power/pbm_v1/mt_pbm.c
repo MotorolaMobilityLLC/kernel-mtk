@@ -26,8 +26,8 @@
 #include <mach/mt_ppm_api.h>
 
 #if MD_POWER_METER_ENABLE
-#include <mach/mt_spm_vcore_dvfs.h>
-#include <mach/mt_ccci_common.h>
+#include "mt_spm_vcore_dvfs.h"
+#include "mt_ccci_common.h"
 #endif
 
 #ifndef DISABLE_PBM_FEATURE
