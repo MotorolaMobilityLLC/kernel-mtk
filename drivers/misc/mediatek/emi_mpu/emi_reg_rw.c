@@ -15,7 +15,6 @@
 
 #include <mt-plat/mt_device_apc.h>
 #include <mt-plat/sync_write.h>
-#include "mach/irqs.h"
 #include <mt-plat/dma.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
@@ -23,13 +22,16 @@
 #include "mach/emi_mpu.h"
 #include "mach/mt_secure_api.h"
 
+
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 static int is_emi_mpu_reg(unsigned int offset)
 {
 	if ((offset >= EMI_MPU_START) && (offset <= EMI_MPU_END))
 		return 1;
 
-return 0;
+	return 0;
 }
+#endif
 
 void mt_emi_reg_write(unsigned int data, unsigned int offset)
 {
