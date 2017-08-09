@@ -1813,7 +1813,7 @@ static void tscpu_cooler_create_fs(void)
 #endif
 
 #if CONTINUOUS_TM
-		entry = proc_create("clctm", S_IRUGO | S_IWUSR, mtktscpu_dir, &mtktscpu_ctm_fops);
+		entry = proc_create("clctm", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir, &mtktscpu_ctm_fops);
 		if (entry)
 			proc_set_user(entry, uid, gid);
 #endif
