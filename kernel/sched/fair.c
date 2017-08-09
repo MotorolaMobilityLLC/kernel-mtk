@@ -4529,8 +4529,6 @@ static void adj_threshold(struct clb_env *clbenv)
 #define POSITIVE(x) ((int)(x) < 0 ? 0 : (x))
 
 	unsigned long b_cap = 0, l_cap = 0;
-	unsigned long b_load = 0, l_load = 0;
-	unsigned long b_task = 0, l_task = 0;
 	int b_nacap, l_nacap, b_natask, l_natask;
 
 	b_cap = clbenv->bstats.cpu_power;
@@ -4547,10 +4545,9 @@ static void adj_threshold(struct clb_env *clbenv)
 	clbenv->lstats.threshold = HMP_MAX_LOAD * l_nacap * l_natask /
 	    ((b_nacap + l_nacap) * (b_natask + l_natask) + 1);
 
-	mt_sched_printf(sched_log, "[%s]\tup/dl:%4d/%4d L(%d:%4lu,%4lu/%4lu) b(%d:%4lu,%4lu/%4lu)\n", __func__,
+	mt_sched_printf(sched_log, "[%s]\tup/dl:%4d/%4d L(%d:%4lu) b(%d:%4lu)\n", __func__,
 					clbenv->bstats.threshold, clbenv->lstats.threshold,
-					clbenv->ltarget, l_load, l_task, l_cap,
-					clbenv->btarget, b_load, b_task, b_cap);
+					clbenv->ltarget, l_cap,	clbenv->btarget, b_cap);
 }
 
 static void sched_update_clbstats(struct clb_env *clbenv)
