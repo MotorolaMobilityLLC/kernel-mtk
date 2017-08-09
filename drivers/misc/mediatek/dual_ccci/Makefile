@@ -46,7 +46,7 @@ ccflags-y  += -DCCCI_DEBUG_ON  -DCCCI_MD_DEBUG_ON  #-save-temps
 #ccflags-y  += -DENCRYPT_DEBUG -DCCCI_RPC_DEBUG_ON
 endif
 ccflags-y  += -D__CCCI_LOG__
-
+obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 else
 obj- :=dummy.o
 

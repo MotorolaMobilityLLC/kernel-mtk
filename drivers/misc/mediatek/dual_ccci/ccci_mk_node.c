@@ -283,7 +283,7 @@ struct attribute *ccci_default_attrs[] = {
 	NULL
 };
 
-const struct kobj_type ccci_ktype = {
+struct kobj_type ccci_ktype = {
 	.release = ccci_attr_release,
 	.sysfs_ops = &ccci_sysfs_ops,
 	.default_attrs = ccci_default_attrs
