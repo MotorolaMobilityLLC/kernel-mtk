@@ -1,0 +1,5 @@
+config MTK_PERFMGR
+	tristate "Performance manager kernel driver"
+	default n
+	help
+	  kernel driver of performance manager
