@@ -2993,7 +2993,7 @@ out:
 }
 static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned int target_khz,
 			       struct cpufreq_policy *policy, unsigned int cur_cci_khz, unsigned int target_cci_khz,
-				   unsigned int target_volt_vproc1)
+				   unsigned int target_volt_vproc1, int log)
 {
 	int ret = -1;
 	unsigned int target_volt;
@@ -3026,12 +3026,20 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 	}
 
 	if (cur_khz != get_turbo_freq(p->cpu_id, target_khz)) {
-		cpufreq_dbg
-		    ("@%s(), %s: (%d, %d): freq = %d(%d), volt = %d(%d), cpus = %d, cur = %d, cci(%d, %d)\n",
-		     __func__, cpu_dvfs_get_name(p), p->idx_opp_ppm_base, p->idx_opp_ppm_limit,
-			 target_khz, get_turbo_freq(p->cpu_id, target_khz), target_volt,
-		     get_turbo_volt(p->cpu_id, target_volt), num_online_cpus(), cur_khz,
-			 cur_cci_khz, target_cci_khz);
+		if (log)
+			cpufreq_dbg
+				("@%s(), %s:(%d,%d): freq=%d(%d), volt =%d(%d), on=%d, cur=%d, cci(%d,%d)\n",
+				 __func__, cpu_dvfs_get_name(p), p->idx_opp_ppm_base, p->idx_opp_ppm_limit,
+				 target_khz, get_turbo_freq(p->cpu_id, target_khz), target_volt,
+				 get_turbo_volt(p->cpu_id, target_volt), num_online_cpus(), cur_khz,
+				 cur_cci_khz, target_cci_khz);
+		else
+			cpufreq_ver
+				("@%s(), %s:(%d,%d): freq=%d(%d), volt =%d(%d), on=%d, cur=%d, cci(%d,%d)\n",
+				 __func__, cpu_dvfs_get_name(p), p->idx_opp_ppm_base, p->idx_opp_ppm_limit,
+				 target_khz, get_turbo_freq(p->cpu_id, target_khz), target_volt,
+				 get_turbo_volt(p->cpu_id, target_volt), num_online_cpus(), cur_khz,
+				 cur_cci_khz, target_cci_khz);
 	}
 
 	target_volt = get_turbo_volt(p->cpu_id, target_volt);
@@ -3150,6 +3158,7 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	struct mt_cpu_dvfs *p_ll, *p_l, *p_b;
 	int ret = -1;
 	unsigned int target_volt_vpro1 = 0;
+	int log = 1;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
@@ -3173,8 +3182,10 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	}
 
 	/* get current idx here to avoid idx synchronization issue */
-	if (new_opp_idx == -1)
+	if (new_opp_idx == -1) {
 		new_opp_idx = p->idx_opp_tbl;
+		log = 0;
+	}
 
 	if (do_dvfs_stress_test) {
 		new_opp_idx = jiffies & 0xF;
@@ -3197,6 +3208,10 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	} else
 		new_opp_idx = _calc_new_opp_idx(id_to_cpu_dvfs(id), new_opp_idx);
 
+	if (abs(new_opp_idx - p->idx_opp_tbl) < 5 && new_opp_idx != 0 &&
+		new_opp_idx != p->nr_opp_tbl - 1)
+		log = 0;
+
 	/* Get cci opp idx */
 	new_cci_opp_idx = _calc_new_cci_opp_idx(id_to_cpu_dvfs(id), new_opp_idx);
 
@@ -3210,9 +3225,11 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	now[SET_DVFS] = ktime_get();
 
 #ifdef CONFIG_CPU_FREQ
-	ret = _cpufreq_set_locked(p, cur_freq, target_freq, policy, cur_cci_freq, target_cci_freq, target_volt_vpro1);
+	ret = _cpufreq_set_locked(p, cur_freq, target_freq, policy, cur_cci_freq, target_cci_freq,
+		target_volt_vpro1, log);
 #else
-	ret = _cpufreq_set_locked(p, cur_freq, target_freq, NULL, cur_cci_freq, target_cci_freq, target_volt_vpro1);
+	ret = _cpufreq_set_locked(p, cur_freq, target_freq, NULL, cur_cci_freq, target_cci_freq,
+		target_volt_vpro1, log);
 #endif
 
 	delta[SET_DVFS] = ktime_sub(ktime_get(), now[SET_DVFS]);
@@ -3408,7 +3425,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #ifdef CONFIG_CPU_FREQ
 					policy = cpufreq_cpu_get(cpu);
 					_cpufreq_set_locked(p, cur_freq, target_freq, policy,
-						cur_cci_freq, target_cci_freq, target_volt_vpro1);
+						cur_cci_freq, target_cci_freq, target_volt_vpro1, 0);
 					cpufreq_cpu_put(policy);
 #endif
 					p->idx_opp_tbl = new_opp_idx;
@@ -3474,7 +3491,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #ifdef CONFIG_CPU_FREQ
 						policy = cpufreq_cpu_get(cpu);
 						_cpufreq_set_locked(p, cur_freq, target_freq, policy,
-							cur_cci_freq, target_cci_freq, target_volt_vpro1);
+							cur_cci_freq, target_cci_freq, target_volt_vpro1, 0);
 						cpufreq_cpu_put(policy);
 #endif
 						p->idx_opp_tbl = new_opp_idx;
@@ -3522,7 +3539,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #ifdef CONFIG_CPU_FREQ
 					policy = cpufreq_cpu_get(cpu);
 					_cpufreq_set_locked(p, cur_freq, target_freq, policy,
-						cur_cci_freq, target_cci_freq, target_volt_vpro1);
+						cur_cci_freq, target_cci_freq, target_volt_vpro1, 0);
 					cpufreq_cpu_put(policy);
 #endif
 					p->idx_opp_tbl = new_opp_idx;
