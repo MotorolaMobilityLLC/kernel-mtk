@@ -37,7 +37,7 @@
 #include <mt-plat/mt_gpio_core.h>
 #ifdef FEATURE_RF_CLK_BUF
 #include <linux/gpio.h>
-#include <mach/mt_clkbuf_ctl.h>
+#include <mt_clkbuf_ctl.h>
 #endif
 #ifdef FEATURE_GET_MD_GPIO_VAL
 #include <linux/gpio.h>
@@ -1596,24 +1596,21 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				memset(&clkbuf->CLKBuf_Status, 0, sizeof(clkbuf->CLKBuf_Status));
 			} else {
 #if !defined(CONFIG_MTK_LEGACY)
-				unsigned int CLK_BUF1_STATUS, CLK_BUF2_STATUS, CLK_BUF3_STATUS, CLK_BUF4_STATUS;
 				struct device_node *node;
+				u32 vals[4] = {0, 0, 0, 0};
 
 				node = of_find_compatible_node(NULL, NULL, "mediatek, rf_clock_buffer");
 				if (node) {
-					of_property_read_u32(node, "buffer1", (u32 *)&CLK_BUF1_STATUS);
-					of_property_read_u32(node, "buffer2", (u32 *)&CLK_BUF2_STATUS);
-					of_property_read_u32(node, "buffer3", (u32 *)&CLK_BUF3_STATUS);
-					of_property_read_u32(node, "buffer4", (u32 *)&CLK_BUF4_STATUS);
+					of_property_read_u32_array(node, "mediatek,clkbuf-config", vals, 4);
 				} else {
 					CCCI_ERR_MSG(md->index, RPC, "%s can't find compatible node\n", __func__);
 				}
 #endif
 				clkbuf->CLKBuf_Count = CLKBUF_MAX_COUNT;
-				clkbuf->CLKBuf_Status[0] = CLK_BUF1_STATUS;
-				clkbuf->CLKBuf_Status[1] = CLK_BUF2_STATUS;
-				clkbuf->CLKBuf_Status[2] = CLK_BUF3_STATUS;
-				clkbuf->CLKBuf_Status[3] = CLK_BUF4_STATUS;
+				clkbuf->CLKBuf_Status[0] = vals[0];
+				clkbuf->CLKBuf_Status[1] = vals[1];
+				clkbuf->CLKBuf_Status[2] = vals[2];
+				clkbuf->CLKBuf_Status[3] = vals[3];
 				clk_buf_get_swctrl_status(swctrl_status);
 				clkbuf->CLKBuf_SWCtrl_Status[0] = swctrl_status[0];
 				clkbuf->CLKBuf_SWCtrl_Status[1] = swctrl_status[1];
