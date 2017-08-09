@@ -41,7 +41,10 @@
 
 #include "mt_spm_dpidle.h"
 #include "mt_spm_internal.h"
+
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include "mt_spm_pmic_wrap.h"
+#endif
 
 #include <mt-plat/mt_io.h>
 
@@ -293,6 +296,105 @@ static struct pcm_desc dpidle_pcm = {
 };
 #endif
 
+#if defined(CONFIG_ARCH_MT6757)
+static struct pwr_ctrl dpidle_ctrl = {
+	.wake_src			= WAKE_SRC_FOR_DPIDLE,
+	.wake_src_md32		= WAKE_SRC_FOR_MD32,
+	.r0_ctrl_en			= 1,
+	.r7_ctrl_en			= 1,
+	.infra_dcm_lock		= 1,
+	.wfi_op				= WFI_OP_AND,
+
+	/* SPM_AP_STANDBY_CON */
+	.mp0_cputop_idle_mask = 0,
+	.mp1_cputop_idle_mask = 0,
+	.mcusys_idle_mask = 0,
+	.md_ddr_en_dbc_en = 0,
+	.md_mask_b = 1,
+	.scp_mask_b = 0,
+	.lte_mask_b = 0,
+	.md_apsrc_1_sel = 0,
+	.md_apsrc_0_sel = 0,
+	.conn_mask_b = 1,
+	.conn_apsrc_sel = 0,
+
+	/* SPM_SRC_REQ */
+	.spm_apsrc_req = 0,
+	.spm_f26m_req = 0,
+	.spm_lte_req = 0,
+	.spm_infra_req = 0,
+	.spm_vrf18_req = 0,
+	.spm_dvfs_req = 0,
+	.spm_dvfs_force_down = 0,
+	.spm_ddren_req = 0,
+	.cpu_md_dvfs_sop_force_on = 0,
+
+	/* SPM_SRC_MASK */
+	.ccif0_md_event_mask_b = 1,
+	.ccif0_ap_event_mask_b = 1,
+	.ccif1_md_event_mask_b = 1,
+	.ccif1_ap_event_mask_b = 1,
+	.ccifmd_md1_event_mask_b = 1,
+	.ccifmd_md2_event_mask_b = 1,
+	.dsi0_vsync_mask_b = 0,
+	.dsi1_vsync_mask_b = 0,
+	.dpi_vsync_mask_b = 0,
+	.isp0_vsync_mask_b = 0,
+	.isp1_vsync_mask_b = 0,
+	.md_srcclkena_0_infra_mask_b = 0,
+	.md_srcclkena_1_infra_mask_b = 0,
+	.conn_srcclkena_infra_mask_b = 0,
+	.md32_srcclkena_infra_mask_b = 0,
+	.srcclkeni_infra_mask_b = 0,
+	.md_apsrc_req_0_infra_mask_b = 1,
+	.md_apsrc_req_1_infra_mask_b = 0,
+	.conn_apsrcreq_infra_mask_b = 1,
+	.md32_apsrcreq_infra_mask_b = 0,
+	.md_ddr_en_0_mask_b = 1,
+	.md_ddr_en_1_mask_b = 0,
+	.md_vrf18_req_0_mask_b = 1,
+	.md_vrf18_req_1_mask_b = 0,
+	.emi_bw_dvfs_req_mask = 1,
+	.md_srcclkena_0_dvfs_req_mask_b = 0,
+	.md_srcclkena_1_dvfs_req_mask_b = 0,
+	.conn_srcclkena_dvfs_req_mask_b = 0,
+
+	/* SPM_SRC2_MASK */
+	.dvfs_halt_mask_b = 0x1f,	/* 5bit */
+	.vdec_req_mask_b = 0,
+	.gce_req_mask_b = 0,
+	.cpu_md_dvfs_req_merge_mask_b = 0,
+	.md_ddr_en_dvfs_halt_mask_b = 0,
+	.dsi0_vsync_dvfs_halt_mask_b = 0,	/* 5bit */
+	.conn_ddr_en_mask_b = 1,
+	.disp_req_mask_b = 0,
+	.disp1_req_mask_b = 0,
+	.mfg_req_mask_b = 0,
+	.c2k_ps_rccif_wake_mask_b = 1,
+	.c2k_l1_rccif_wake_mask_b = 1,
+	.ps_c2k_rccif_wake_mask_b = 1,
+	.l1_c2k_rccif_wake_mask_b = 1,
+	.sdio_on_dvfs_req_mask_b = 0,
+	.emi_boost_dvfs_req_mask_b = 0,
+	.cpu_md_emi_dvfs_req_prot_dis = 0,
+
+	/* SPM_CLK_CON */
+	.srclkenai_mask = 1,
+
+	.mp1_cpu0_wfi_en	= 1,
+	.mp1_cpu1_wfi_en	= 1,
+	.mp1_cpu2_wfi_en	= 1,
+	.mp1_cpu3_wfi_en	= 1,
+	.mp0_cpu0_wfi_en	= 1,
+	.mp0_cpu1_wfi_en	= 1,
+	.mp0_cpu2_wfi_en	= 1,
+	.mp0_cpu3_wfi_en	= 1,
+
+#if SPM_BYPASS_SYSPWREQ
+	.syspwreq_mask = 1,
+#endif
+};
+#else
 static struct pwr_ctrl dpidle_ctrl = {
 	.wake_src			= WAKE_SRC_FOR_DPIDLE,
 	.wake_src_md32		= WAKE_SRC_FOR_MD32,
@@ -399,6 +501,7 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.syspwreq_mask = 1,
 #endif
 };
+#endif
 
 struct spm_lp_scen __spm_dpidle = {
 /*	.pcmdesc	= &dpidle_pcm, */
@@ -416,7 +519,9 @@ static void spm_trigger_wfi_for_dpidle(struct pwr_ctrl *pwrctrl)
 #endif
 
 	if (is_cpu_pdn(pwrctrl->pcm_flags)) {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 		mt_cpu_dormant(CPU_DEEPIDLE_MODE);
+#endif
 	} else {
 		/* backup MPx_AXI_CONFIG */
 		v0 = reg_read(MP0_AXI_CONFIG);
@@ -600,6 +705,8 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
 #endif
+#elif defined(CONFIG_ARCH_MT6757)
+/* TBD */
 #endif
 
 #if SPM_AEE_RR_REC
@@ -623,6 +730,8 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 
 #if defined(CONFIG_ARCH_MT6755)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
+#elif defined(CONFIG_ARCH_MT6757)
+	/* TBD */
 #elif defined(CONFIG_ARCH_MT6797)
 	pwrctrl->pcm_flags &= ~SPM_FLAG_RUN_COMMON_SCENARIO;
 	pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
@@ -675,6 +784,8 @@ RESTORE_IRQ:
 	mt_cirq_flush();
 	mt_cirq_disable();
 #endif
+#elif defined(CONFIG_ARCH_MT6757)
+/* TBD */
 #endif
 	mt_irq_mask_restore(&mask);
 	spin_unlock_irqrestore(&__spm_lock, flags);
@@ -772,6 +883,8 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 
 #if defined(CONFIG_ARCH_MT6755)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
+#elif defined(CONFIG_ARCH_MT6757)
+/* TBD */
 #elif defined(CONFIG_ARCH_MT6797)
 	pwrctrl->pcm_flags &= ~SPM_FLAG_RUN_COMMON_SCENARIO;
 	pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;

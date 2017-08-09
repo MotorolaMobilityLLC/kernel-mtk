@@ -68,7 +68,9 @@
 #endif
 
 #ifndef USING_STD_TIMER_OPS
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #define FEATURE_ENABLE_F26MSLEEP
+#endif
 /*
 * MCDI DVT IPI Test and GPT test
 * GPT need to modify mt_idle.c and mt_spm_mcdi.c
@@ -132,7 +134,6 @@ static bool mt_dvfsp_paused_by_idle;
 #define DBG_BUF_LEN		4096
 
 /* FIXME: early porting */
-#if 1
 void __attribute__((weak))
 bus_dcm_enable(void)
 {
@@ -363,6 +364,59 @@ int __attribute__((weak)) is_teei_ready(void)
 	return 1;
 }
 
+#if defined(CONFIG_ARCH_MT6757)
+int __attribute__((weak)) gpt_check_and_ack_irq(unsigned int id)
+{
+	return 0;
+}
+
+int __attribute__((weak)) gpt_get_cmp(unsigned int id, unsigned int *ptr)
+{
+	return 0;
+}
+
+int __attribute__((weak)) gpt_get_cnt(unsigned int id, unsigned int *ptr)
+{
+	return 0;
+}
+
+int __attribute__((weak)) gpt_set_cmp(unsigned int id, unsigned int val)
+{
+	return 0;
+}
+
+int __attribute__((weak)) request_gpt(unsigned int id, unsigned int mode,
+		unsigned int clksrc, unsigned int clkdiv, unsigned int cmp,
+		void (*func)(unsigned long), unsigned int flags)
+{
+	return 0;
+}
+
+int __attribute__((weak)) start_gpt(unsigned int id)
+{
+	return 0;
+}
+
+int __attribute__((weak)) stop_gpt(unsigned int id)
+{
+	return 0;
+}
+
+u64 __attribute__((weak)) localtimer_get_phy_count(void)
+{
+	return 0;
+}
+
+unsigned int __attribute__((weak)) cpu_xgpt_irq_dis(int cpuxgpt_num)
+{
+	return 0;
+}
+
+int __attribute__((weak)) cpu_xgpt_register_timer(unsigned int id,
+				irqreturn_t (*func)(int irq, void *dev_id))
+{
+	return 0;
+}
 #endif
 
 static char log_buf[LOG_BUF_LEN];
@@ -481,7 +535,9 @@ static unsigned int     dpidle_run_once;
 static unsigned int mcidle_time_critera = 3000;	/* 3ms */
 #else
 static unsigned int mcidle_timer_left[NR_CPUS];
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static unsigned int mcidle_timer_left2[NR_CPUS];
+#endif
 static unsigned int mcidle_time_critera = 39000;	/* 3ms */
 #endif
 static unsigned long mcidle_cnt[NR_CPUS] = { 0 };
@@ -597,7 +653,7 @@ void disable_soidle3_by_bit(int id)
 }
 EXPORT_SYMBOL(disable_soidle3_by_bit);
 
-#define clk_readl(addr)			DRV_Reg32(addr)
+#define clk_readl(addr)			readl(addr)    /* DRV_Reg32(addr) */
 #define clk_writel(addr, val)	mt_reg_sync_writel(val, addr)
 
 static unsigned int clk_cfg_4;
@@ -623,7 +679,7 @@ static bool mt_idle_cpu_criteria(void)
 
 	return ((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4)) ? true : false;
 }
-#elif defined(CONFIG_ARCH_MT6797)
+#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 static bool mt_idle_cpu_criteria(void)
 {
 	return ((atomic_read(&is_in_hotplug) == 1) || (num_online_cpus() != 1)) ? false : true;
@@ -1312,6 +1368,7 @@ bool spm_mcdi_xgpt_timeout[NR_CPUS];
 
 void mcidle_before_wfi(int cpu)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifndef USING_STD_TIMER_OPS
 #if (!MCDI_DVT_IPI)
 	u64 set_count = 0;
@@ -1335,11 +1392,13 @@ void mcidle_before_wfi(int cpu)
 /* printk("delay local timer next event"); */
 #endif
 #endif
+#endif
 }
 
 int mcdi_xgpt_wakeup_cnt[NR_CPUS];
 void mcidle_after_wfi(int cpu)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifndef USING_STD_TIMER_OPS
 #if (!MCDI_DVT_IPI)
 	u64 cmp;
@@ -1352,6 +1411,7 @@ void mcidle_after_wfi(int cpu)
 		localtimer_set_next_event(mcidle_timer_left2[cpu] - cmp);
 	else
 		localtimer_set_next_event(1);
+#endif
 #endif
 #endif
 #endif
@@ -1601,7 +1661,7 @@ out:
 
 void spm_dpidle_before_wfi(int cpu)
 {
-	if (TRUE == mt_dpidle_chk_golden) {
+	if (mt_dpidle_chk_golden) {
 		/* FIXME: */
 #if 0
 		mt_power_gs_dump_dpidle();
@@ -2976,11 +3036,13 @@ static ssize_t soidle_state_write(struct file *filp,
 			sodi_flags = param;
 			idle_dbg("sodi_flags = 0x%x\n", sodi_flags);
 		} else if (!strcmp(cmd, "spmtwam")) {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 			idle_dbg("spmtwam_event = %d\n", param);
 			if (param >= 0)
 				spm_sodi_twam_enable((u32)param);
 			else
 				spm_sodi_twam_disable();
+#endif
 		}
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
@@ -3130,6 +3192,8 @@ static ssize_t reg_dump_read(struct file *filp, char __user *userbuf, size_t cou
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "ARMCA7PLL_CON0 = 0x%08x\n", idle_readl(ARMCA7PLL_CON0));
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MMPLL_CON0 = 0x%08x\n", idle_readl(MMPLL_CON0));
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "VENCPLL_CON0 = 0x%08x\n", idle_readl(VENCPLL_CON0));
+#elif defined(CONFIG_ARCH_MT6757)
+	/* TBD */
 #elif defined(CONFIG_ARCH_MT6797)
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "MFGPLL_CON0 = 0x%08x\n", idle_readl(MFGPLL_CON0));
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "IMGPLL_CON0 = 0x%08x\n", idle_readl(IMGPLL_CON0));

@@ -383,12 +383,12 @@ static ssize_t suspend_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 	return show_pwr_ctrl(__spm_suspend.pwrctrl, buf);
 }
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t dpidle_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	return show_pwr_ctrl(__spm_dpidle.pwrctrl, buf);
 }
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t sodi3_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	return show_pwr_ctrl(__spm_sodi3.pwrctrl, buf);
@@ -877,13 +877,13 @@ static ssize_t suspend_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 	return store_pwr_ctrl(__spm_suspend.pwrctrl, buf, count);
 }
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t dpidle_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				 const char *buf, size_t count)
 {
 	return store_pwr_ctrl(__spm_dpidle.pwrctrl, buf, count);
 }
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t sodi3_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -1048,8 +1048,8 @@ static ssize_t auto_suspend_resume_store(struct kobject *kobj, struct kobj_attri
 /* DEFINE_ATTR_RO(ddrdfs_pcm); */
 
 DEFINE_ATTR_RW(suspend_ctrl);
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 DEFINE_ATTR_RW(dpidle_ctrl);
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 DEFINE_ATTR_RW(sodi3_ctrl);
 DEFINE_ATTR_RW(sodi_ctrl);
 DEFINE_ATTR_RW(mcdi_ctrl);
@@ -1074,8 +1074,8 @@ static struct attribute *spm_attrs[] = {
 
 	/* for spm_lp_scen.pwrctrl */
 	__ATTR_OF(suspend_ctrl),
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	__ATTR_OF(dpidle_ctrl),
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	__ATTR_OF(sodi3_ctrl),
 	__ATTR_OF(sodi_ctrl),
 	__ATTR_OF(mcdi_ctrl),

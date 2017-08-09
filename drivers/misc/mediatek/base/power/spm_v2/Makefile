@@ -67,6 +67,10 @@ obj-y += mt_spm.o
 obj-y += mt_spm_internal.o
 obj-y += mt_spm_sleep.o
 obj-y += mt_spm_fs.o
+obj-y += mt_idle.o
+obj-y += mt_idle_mt6757.o
+obj-y += mt_spm_dpidle.o
+obj-y += mt_spm_dpidle_mt6757.o
 endif
 
 ifeq ($(CONFIG_ARCH_MT6797), y)
