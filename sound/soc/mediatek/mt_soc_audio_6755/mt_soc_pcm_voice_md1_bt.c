@@ -264,7 +264,7 @@ static int mtk_voice_bt1_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtimeStream = substream->runtime;
 
-	pr_warn("mtk_alsa_prepare rate = %d  channels = %d period_size = %lu\n",
+	pr_warn("mtk_voice_bt1_prepare rate = %d  channels = %d period_size = %lu\n",
 	       runtimeStream->rate, runtimeStream->channels, runtimeStream->period_size);
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
