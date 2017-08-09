@@ -367,6 +367,7 @@ static unsigned int *recordTbl;
 	#include "mach/mt_ppm_api.h"
 	#include "mt_gpufreq.h"
 	#include "../../../power/mt6797/da9214.h"
+	#include "../../../power/mt6797/fan53555.h"
 #else
 	#include "mach/mt_ptpslt.h"
 	#include "kernel2ctp.h"
@@ -3434,6 +3435,9 @@ static int eem_probe(struct platform_device *pdev)
 	da9214_config_interface(0xD1, 0x2, 0x3, 0); /* Enable Buck A PWM Mode */
 	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
 	da9214_config_interface(0xD2, 0x2, 0x3, 0); /* Enable Buck B PWM Mode */
+	/* set PWM mode for FAN5355 */
+	fan53555_config_interface(0x00, 0x01, 0x01, 6); /* Set PWM mode for GPU */
+
 	/* for slow idle */
 	ptp_data[0] = 0xffffffff;
 
@@ -3460,6 +3464,9 @@ static int eem_probe(struct platform_device *pdev)
 	da9214_config_interface(0xD1, 0x0, 0x3, 0); /* Disable Buck A PWM Mode */
 	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
 	da9214_config_interface(0xD2, 0x0, 0x3, 0); /* Disable Buck B PWM Mode */
+	/* set PWM mode for FAN5355 */
+	fan53555_config_interface(0x0, 0x0, 0x0, 6); /* Set PWM mode for GPU */
+
 	#ifdef __KERNEL__
 		#ifndef EARLY_PORTING
 			#if !defined(CONFIG_MTK_CLKMGR)
