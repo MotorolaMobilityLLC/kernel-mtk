@@ -320,8 +320,10 @@ void ccci_free_req(struct ccci_request *req)
 {
 	CCCI_DBG_MSG(-1, BM, "%ps free req=%p, policy=%d, skb=%p\n", __builtin_return_address(0),
 		     req, req->policy, req->skb);
-	if (req->skb)
+	if (req->skb) {
 		ccci_free_skb(req->skb, req->policy);
+		req->skb = NULL;
+	}
 	if (req->entry.next != LIST_POISON1 || req->entry.prev != LIST_POISON2) {
 		CCCI_ERR_MSG(-1, BM, "req %p entry not deleted yet, from %ps\n", req, __builtin_return_address(0));
 		list_del(&req->entry);

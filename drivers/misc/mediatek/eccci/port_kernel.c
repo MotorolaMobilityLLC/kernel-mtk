@@ -261,10 +261,10 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 #if defined(ENABLE_32K_CLK_LESS)
 	if (crystal_exist_status()) {
 		CCCI_DBG_MSG(md->index, KERN, "MISC_32K_LESS no support, crystal_exist_status 1\n");
-		ap_side_md_feature->feature_set[MISC_INFO_RTC_32K_LESS].support_mask = CCCI_FEATURE_MUST_SUPPORT;
+		ap_side_md_feature->feature_set[MISC_INFO_RTC_32K_LESS].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 	} else {
 		CCCI_DBG_MSG(md->index, KERN, "MISC_32K_LESS support\n");
-		ap_side_md_feature->feature_set[MISC_INFO_RTC_32K_LESS].support_mask = CCCI_FEATURE_NOT_SUPPORT;
+		ap_side_md_feature->feature_set[MISC_INFO_RTC_32K_LESS].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 	}
 #else
 	CCCI_DBG_MSG(md->index, KERN, "ENABLE_32K_CLK_LESS disabled\n");
@@ -315,6 +315,8 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 	    md_feature->tail_pattern != MD_FEATURE_QUERY_PATTERN) {
 		CCCI_ERR_MSG(md->index, KERN, "md_feature pattern is wrong: head 0x%x, tail 0x%x\n",
 			     md_feature->head_pattern, md_feature->tail_pattern);
+		if (md->index == MD_SYS3)
+			md->ops->dump_info(md, DUMP_FLAG_CCIF, NULL, 0);
 		return -1;
 	}
 
@@ -329,9 +331,9 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 			return -1;
 		}
 
-		CCCI_INF_MSG(md->index, KERN, "md_query_ap_feature %u mask %u, version %u\n",
-			     rt_feature.feature_id, md_feature->feature_set[i].support_mask,
-			     md_feature->feature_set[i].version);
+		CCCI_DBG_MSG(md->index, KERN, "md_query_ap_feature %u mask %u, version %u\n",
+				rt_feature.feature_id, md_feature->feature_set[i].support_mask,
+				md_feature->feature_set[i].version);
 
 		if (md_feature->feature_set[i].support_mask == CCCI_FEATURE_NOT_EXIST) {
 			rt_feature.support_info = md_feature->feature_set[i];
@@ -479,7 +481,7 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 	}
 
 	total_len = rt_data - (char *)md->smem_layout.ccci_rt_smem_base_vir;
-	ccci_mem_dump(md->index, md->smem_layout.ccci_rt_smem_base_vir, total_len);
+	/*ccci_mem_dump(md->index, md->smem_layout.ccci_rt_smem_base_vir, total_len);*/
 
 	return 0;
 }
