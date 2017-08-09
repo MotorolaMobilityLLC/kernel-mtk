@@ -24,7 +24,7 @@ extern unsigned int spm_get_cpu_pwr_status(void);
  */
 void spm_deepidle_init(void);
 void spm_dpidle_before_wfi(int cpu);		 /* can be redefined */
-void spm_dpidle_after_wfi(int cpu);		 /* can be redefined */
+void spm_dpidle_after_wfi(int cpu, u32 spm_debug_flag);		 /* can be redefined */
 wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log);
 wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data);
 int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace);

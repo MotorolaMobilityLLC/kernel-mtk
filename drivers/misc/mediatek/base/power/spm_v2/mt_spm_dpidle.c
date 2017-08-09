@@ -588,7 +588,7 @@ RESTORE_IRQ:
 	mt_irq_mask_restore(&mask);
 	spin_unlock_irqrestore(&__spm_lock, flags);
 	lockdep_on();
-	spm_dpidle_after_wfi(cpu);
+	spm_dpidle_after_wfi(cpu, wakesta.debug_flag);
 
 #if SPM_AEE_RR_REC
 	aee_rr_rec_deepidle_val(0);
@@ -708,7 +708,7 @@ RESTORE_IRQ:
 		wd_api->wd_resume_notify();
 #endif
 
-	spm_dpidle_after_wfi(cpu);
+	spm_dpidle_after_wfi(cpu, wakesta.debug_flag);
 
 	/* restore original dpidle setting */
 	pwrctrl->timer_val = dpidle_timer_val;

@@ -372,6 +372,7 @@ static unsigned int     dpidle_timer_cmp;
 static unsigned int     dpidle_time_critera = 26000;
 static unsigned int     dpidle_block_time_critera = 30000; /* default 30sec */
 static unsigned long    dpidle_cnt[NR_CPUS] = {0};
+static unsigned long    dpidle_f26m_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long dpidle_block_prev_time;
 static bool             dpidle_by_pass_cg;
@@ -1420,7 +1421,7 @@ void spm_dpidle_before_wfi(int cpu)
 #endif
 }
 
-void spm_dpidle_after_wfi(int cpu)
+void spm_dpidle_after_wfi(int cpu, u32 spm_debug_flag)
 {
 #ifdef CONFIG_SMP
 	/* if (gpt_check_irq(GPT4)) { */
@@ -1457,6 +1458,9 @@ void spm_dpidle_after_wfi(int cpu)
 #endif
 
 	dpidle_cnt[cpu]++;
+	if ((spm_debug_flag & (SPM_DBG_DEBUG_IDX_26M_WAKE | SPM_DBG_DEBUG_IDX_26M_SLEEP))
+			== (SPM_DBG_DEBUG_IDX_26M_WAKE | SPM_DBG_DEBUG_IDX_26M_SLEEP))
+		dpidle_f26m_cnt[cpu]++;
 }
 
 /************************************************
@@ -2067,8 +2071,8 @@ static ssize_t idle_state_read(struct file *filp,
 	p += sprintf(p, "********** idle state dump **********\n");
 
 	for (i = 0; i < nr_cpu_ids; i++) {
-		p += sprintf(p, "dpidle_cnt[%d]=%lu, soidle3_cnt[%d]=%lu, soidle_cnt[%d]=%lu, ",
-				i, dpidle_cnt[i], i, soidle3_cnt[i], i, soidle_cnt[i]);
+		p += sprintf(p, "dpidle_cnt[%d]=%lu, dpidle_26m[%d]=%lu, soidle3_cnt[%d]=%lu, soidle_cnt[%d]=%lu, ",
+				i, dpidle_cnt[i], i, dpidle_f26m_cnt[i], i, soidle3_cnt[i], i, soidle_cnt[i]);
 		p += sprintf(p, "mcidle_cnt[%d]=%lu, slidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n",
 				i, mcidle_cnt[i], i, slidle_cnt[i], i, rgidle_cnt[i]);
 	}
