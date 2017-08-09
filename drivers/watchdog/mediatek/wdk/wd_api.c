@@ -378,7 +378,9 @@ static int wd_cpu_hot_plug_off_notify(int cpu)
 static int wd_sw_reset(int type)
 {
 	pr_debug("dummy wd_sw_reset");
+	#ifndef CONFIG_MEDIATEK_WATCHDOG
 	wdt_arch_reset(type);
+	#endif
 	return 0;
 }
 
@@ -566,6 +568,7 @@ int get_wd_api(struct wd_api **obj)
 	return res;
 }
 
+#ifndef CONFIG_MEDIATEK_WATCHDOG
 /*register restart notify and own by debug start-------
 *
 */
@@ -629,3 +632,4 @@ pure_initcall(mtk_arch_reset_init);
 /*register restart notify and own by debug end+++++
 *
 */
+#endif

@@ -4,5 +4,8 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 
 obj-$(CONFIG_MTK_WATCHDOG)		+= wdk/
+
+ifneq ($(CONFIG_MEDIATEK_WATCHDOG), y)
 obj-$(CONFIG_MTK_WATCHDOG)		+= wdt/
+endif
 
