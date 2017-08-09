@@ -272,7 +272,7 @@ static void free_upstream_transaction(struct rawbulk_transfer *transfer)
 {
 	struct list_head *p, *n;
 
-	C2K_NOTE("%s\n", __func__);
+	C2K_DBG("%s\n", __func__);
 
 	mutex_lock(&transfer->usb_up_mutex);
 	list_for_each_safe(p, n, &transfer->upstream.transactions) {
@@ -294,7 +294,7 @@ static void free_upstream_sdio_buf(struct rawbulk_transfer *transfer)
 {
 	struct list_head *p, *n;
 
-	C2K_NOTE("%s\n", __func__);
+	C2K_DBG("%s\n", __func__);
 
 	mutex_lock(&transfer->modem_up_mutex);
 	list_for_each_safe(p, n, &transfer->cache_buf_lists.transactions) {
@@ -408,7 +408,7 @@ static void upstream_complete(struct usb_ep *ep, struct usb_request *req)
 		   return;
 		   else
 		   terr(t, "req status %d", req->status); */
-		C2K_NOTE(" %s: req status %d\n", __func__, req->status);
+		C2K_DBG(" %s: req status %d\n", __func__, req->status);
 		return;
 	}
 
@@ -434,7 +434,7 @@ static void stop_upstream(struct upstream_transaction *t)
 {
 	struct rawbulk_transfer *transfer = t->transfer;
 
-	C2K_NOTE("%s, %p, %p\n", __func__, transfer->upstream.ep, t->req);
+	C2K_DBG("%s, %p, %p\n", __func__, transfer->upstream.ep, t->req);
 
 	if (t->state == UPSTREAM_STAT_UPLOADING) {
 		C2K_NOTE("%s\n", __func__);
@@ -726,7 +726,7 @@ static void downstream_complete(struct usb_ep *ep, struct usb_request *req)
 		   return;
 		   else
 		   terr(t, "req status %d", req->status); */
-		C2K_WARN("req status %d\n", req->status);
+		C2K_DBG("req status %d\n", req->status);
 		return;
 	}
 #ifdef C2K_USB_UT
@@ -968,7 +968,6 @@ failto_alloc_upstream:
 	return rc;
 }
 EXPORT_SYMBOL_GPL(rawbulk_start_transactions);
-
 void rawbulk_stop_transactions(int transfer_id)
 {
 	unsigned long flags;
@@ -1001,7 +1000,7 @@ void rawbulk_stop_transactions(int transfer_id)
 
 	mutex_lock(&transfer->usb_up_mutex);
 	list_for_each_entry(upstream, &transfer->upstream.transactions, tlist) {
-		C2K_NOTE("t-%d,upstresm<%p>\n", transfer_id, upstream);
+		C2K_DBG("t-%d,upstresm<%p>\n", transfer_id, upstream);
 		stop_upstream(upstream);
 	}
 	mutex_unlock(&transfer->usb_up_mutex);

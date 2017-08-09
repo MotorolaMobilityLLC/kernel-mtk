@@ -2165,7 +2165,7 @@ static int musb_gadget_dequeue(struct usb_ep *ep, struct usb_request *request)
 		musb_g_giveback(musb_ep, request, -ECONNRESET);
 #ifdef MUSB_QMU_SUPPORT
 	else {
-		QMU_WARN("dequeue req(%p), ep(%d), swep(%d)\n", request, musb_ep->hw_ep->epnum,
+		QMU_DBG("dequeue req(%p), ep(%d), swep(%d)\n", request, musb_ep->hw_ep->epnum,
 			 ep->address);
 		musb_flush_qmu(musb_ep->hw_ep->epnum, (musb_ep->is_in ? TXQ : RXQ));
 		musb_g_giveback(musb_ep, request, -ECONNRESET);

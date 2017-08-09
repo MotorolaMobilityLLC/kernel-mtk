@@ -119,14 +119,14 @@ irqreturn_t musb_q_irq(struct musb *musb)
 
 void musb_flush_qmu(u32 ep_num, u8 isRx)
 {
-	QMU_WARN("flush %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
+	QMU_DBG("flush %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
 	mtk_qmu_stop(ep_num, isRx);
 	qmu_reset_gpd_pool(ep_num, isRx);
 }
 
 void musb_restart_qmu(struct musb *musb, u32 ep_num, u8 isRx)
 {
-	QMU_WARN("restart %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
+	QMU_DBG("restart %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
 	flush_ep_csr(musb, ep_num, isRx);
 	mtk_qmu_enable(musb, ep_num, isRx);
 }
