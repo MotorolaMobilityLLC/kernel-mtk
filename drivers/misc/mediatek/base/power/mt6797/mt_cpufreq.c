@@ -1058,9 +1058,9 @@ static void aee_record_cpu_volt(struct mt_cpu_dvfs *p, unsigned int volt)
 {
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
-		aee_rr_rec_cpu_dvfs_vproc_big(VOLT_TO_PMIC_VAL(volt));
+		aee_rr_rec_cpu_dvfs_vproc_big(VOLT_TO_EXTBUCK_VAL(volt));
 	else
-		aee_rr_rec_cpu_dvfs_vproc_little(VOLT_TO_PMIC_VAL(volt));
+		aee_rr_rec_cpu_dvfs_vproc_little(VOLT_TO_EXTBUCK_VAL(volt));
 #endif
 }
 
@@ -3201,7 +3201,6 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 					cpu_dvfs_get_name(p));
 				cpufreq_lock(flags);
 				p->armpll_is_available = 0;
-
 				if (!cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
 #ifdef CONFIG_CPU_FREQ
 					policy = cpufreq_cpu_get(cpu);
@@ -3247,7 +3246,6 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 					if (enable_cpuhvfs)
 						cpuhvfs_notify_cluster_off(cpu_dvfs_to_cluster(p));
 #endif
-
 #if 0
 					if (!disable_idvfs_flag)
 						BigiDVFSDisable_hp();
@@ -3812,6 +3810,7 @@ static void __set_cpuhvfs_init_sta(struct init_sta *sta)
 		sta->opp[i] = p->idx_opp_tbl;
 		sta->freq[i] = p->ops->get_cur_phy_freq(p);
 		sta->volt[i] = VOLT_TO_EXTBUCK_VAL(volt);
+		sta->vsram[i] = VOLT_TO_PMIC_VAL(p->ops->get_cur_vsram(p));
 		sta->is_on[i] = (p->armpll_is_available ? true : false);
 	}
 }
@@ -3838,6 +3837,7 @@ static void _mt_cpufreq_syscore_resume(void)
 			sta.opp[i] = OPP_AT_SUSPEND;
 			sta.freq[i] = p->ops->get_cur_phy_freq(p);
 			sta.volt[i] = VOLT_AT_SUSPEND;
+			sta.vsram[i] = VSRAM_AT_SUSPEND;
 		}
 
 		cpuhvfs_dvfsp_resume(id_to_cluster(id), &sta);

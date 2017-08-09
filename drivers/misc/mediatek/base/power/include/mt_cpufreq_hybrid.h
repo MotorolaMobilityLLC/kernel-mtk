@@ -53,6 +53,7 @@ enum cpu_cluster {
  **************************************/
 #define OPP_AT_SUSPEND		UINT_MAX
 #define VOLT_AT_SUSPEND		UINT_MAX
+#define VSRAM_AT_SUSPEND	UINT_MAX
 #define CEILING_AT_SUSPEND	UINT_MAX
 #define FLOOR_AT_SUSPEND	UINT_MAX
 
@@ -73,7 +74,8 @@ enum pause_src {
 struct init_sta {
 	unsigned int opp[NUM_CPU_CLUSTER];	/* SW index */
 	unsigned int freq[NUM_CPU_CLUSTER];	/* KHz */
-	unsigned int volt[NUM_CPU_CLUSTER];	/* PMIC value */
+	unsigned int volt[NUM_CPU_CLUSTER];	/* Vproc PMIC value */
+	unsigned int vsram[NUM_CPU_CLUSTER];	/* Vsram PMIC value */
 	unsigned int ceiling[NUM_CPU_CLUSTER];	/* SW index */
 	unsigned int floor[NUM_CPU_CLUSTER];	/* SW index */
 	bool is_on[NUM_CPU_CLUSTER];		/* on/off */

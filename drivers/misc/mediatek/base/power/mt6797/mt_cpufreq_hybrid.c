@@ -40,12 +40,13 @@
 #define OFFS_INIT_OPP		0x02e0
 #define OFFS_INIT_FREQ		0x02f0
 #define OFFS_INIT_VOLT		0x0300
-#define OFFS_SW_RSV0		0x0310
-#define OFFS_SW_RSV1		0x0314
-#define OFFS_SW_RSV2		0x0318
-#define OFFS_PAUSE_SRC		0x0320
-#define OFFS_DVFS_WAIT		0x0324
-#define OFFS_FUNC_ENTER		0x0328
+#define OFFS_INIT_VSRAM		0x0310
+#define OFFS_SW_RSV0		0x0320
+#define OFFS_SW_RSV1		0x0324
+#define OFFS_SW_RSV2		0x0328
+#define OFFS_PAUSE_SRC		0x0330
+#define OFFS_DVFS_WAIT		0x0334
+#define OFFS_FUNC_ENTER		0x0338
 #define OFFS_LOG_S		0x03d0
 #define OFFS_LOG_E		0x2ff8
 
@@ -412,9 +413,11 @@
 #define F_CURR(val)		(((val) & 0xf) << 0)
 #define V_CURR(val)		(((val) & 0x7f) << 8)
 #define FW_DONE			(1U << 15)
+#define VS_CURR(val)		(((val) & 0x7f) << 16)
 
 #define F_CURR_MASK		(0xf << 0)
 #define V_CURR_MASK		(0x7f << 8)
+#define VS_CURR_MASK		(0x7f << 16)
 
 /* pause source flag */
 #define PSF_PAUSE_INIT		(1U << PAUSE_INIT)
@@ -535,6 +538,7 @@ static u32 cspm_probe_done;
 static struct init_sta suspend_sta = {
 	.opp	= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
 	.volt	= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
+	.vsram	= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
 };
 
 /**
@@ -654,6 +658,7 @@ do {								\
 
 #define cspm_curr_freq(reg)		((cspm_read(reg) & F_CURR_MASK) >> 0)
 #define cspm_curr_volt(reg)		((cspm_read(reg) & V_CURR_MASK) >> 8)
+#define cspm_curr_vsram(reg)		((cspm_read(reg) & VS_CURR_MASK) >> 16)
 #define cspm_is_done(reg)		(!!(cspm_read(reg) & FW_DONE))
 
 #define cspm_is_fw_all_done()		(cspm_is_done(CSPM_SW_RSV3) &&	\
@@ -904,44 +909,44 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	u32 con0;
 
 	/* init register to match FW expectation */
-	cspm_write(CSPM_M0_REC12, 0x1001af34);
-	cspm_write(CSPM_M0_REC13, 0x1001af38);
-	cspm_write(CSPM_M0_REC14, 0x1001af3c);
-	cspm_write(CSPM_M0_REC15, 0x1001af40);
-	cspm_write(CSPM_M0_REC16, 0x1001af44);
-	cspm_write(CSPM_M0_REC17, 0x1001a204);
-	cspm_write(CSPM_M0_REC18, 0x1);
-	cspm_write(CSPM_M0_REC19, 0x20000);
-	cspm_write(CSPM_M1_REC0,  0xffc1ffff);
-	cspm_write(CSPM_M1_REC1,  0x4);
-	cspm_write(CSPM_M1_REC2,  0x8);
-	cspm_write(CSPM_M1_REC3,  0xfffffff3);
+	cspm_write(CSPM_M0_REC13, 0x1001af34);
+	cspm_write(CSPM_M0_REC14, 0x1001af38);
+	cspm_write(CSPM_M0_REC15, 0x1001af3c);
+	cspm_write(CSPM_M0_REC16, 0x1001af40);
+	cspm_write(CSPM_M0_REC17, 0x1001af44);
+	cspm_write(CSPM_M0_REC18, 0x1001a204);
+	cspm_write(CSPM_M0_REC19, 0x1);
+	cspm_write(CSPM_M1_REC0,  0x20000);
+	cspm_write(CSPM_M1_REC1,  0xffc1ffff);
+	cspm_write(CSPM_M1_REC2,  0x4);
+	cspm_write(CSPM_M1_REC3,  0x8);
+	cspm_write(CSPM_M1_REC4,  0xfffffff3);
 
-	cspm_write(CSPM_M1_REC4,  0x1001af48);
-	cspm_write(CSPM_M1_REC5,  0x1001af4c);
-	cspm_write(CSPM_M1_REC6,  0x1001af50);
-	cspm_write(CSPM_M1_REC7,  0x1001af54);
-	cspm_write(CSPM_M1_REC8,  0x1001af58);
-	cspm_write(CSPM_M1_REC9,  0x1001a214);
-	cspm_write(CSPM_M1_REC10, 0x2);
-	cspm_write(CSPM_M1_REC11, 0x200);
-	cspm_write(CSPM_M1_REC12, 0xffffc1ff);
-	cspm_write(CSPM_M1_REC13, 0x10);
-	cspm_write(CSPM_M1_REC14, 0x20);
-	cspm_write(CSPM_M1_REC15, 0xffffffcf);
+	cspm_write(CSPM_M1_REC5,  0x1001af48);
+	cspm_write(CSPM_M1_REC6,  0x1001af4c);
+	cspm_write(CSPM_M1_REC7,  0x1001af50);
+	cspm_write(CSPM_M1_REC8,  0x1001af54);
+	cspm_write(CSPM_M1_REC9,  0x1001af58);
+	cspm_write(CSPM_M1_REC10, 0x1001a214);
+	cspm_write(CSPM_M1_REC11, 0x2);
+	cspm_write(CSPM_M1_REC12, 0x200);
+	cspm_write(CSPM_M1_REC13, 0xffffc1ff);
+	cspm_write(CSPM_M1_REC14, 0x10);
+	cspm_write(CSPM_M1_REC15, 0x20);
+	cspm_write(CSPM_M1_REC16, 0xffffffcf);
 
-	cspm_write(CSPM_M1_REC16, 0x1001af5c);
-	cspm_write(CSPM_M1_REC17, 0x1001af60);
-	cspm_write(CSPM_M1_REC18, 0x1001af64);
-	cspm_write(CSPM_M1_REC19, 0x1001af68);
-	cspm_write(CSPM_M2_REC0,  0x1001af6c);
-	cspm_write(CSPM_M2_REC1,  0x1001a224);
-	cspm_write(CSPM_M2_REC2,  0x8);
-	cspm_write(CSPM_M2_REC3,  0x2);
-	cspm_write(CSPM_M2_REC4,  0xffffffc1);
-	cspm_write(CSPM_M2_REC5,  0x40);
-	cspm_write(CSPM_M2_REC6,  0x80);
-	cspm_write(CSPM_M2_REC7,  0xffffff3f);
+	cspm_write(CSPM_M1_REC17, 0x1001af5c);
+	cspm_write(CSPM_M1_REC18, 0x1001af60);
+	cspm_write(CSPM_M1_REC19, 0x1001af64);
+	cspm_write(CSPM_M2_REC0,  0x1001af68);
+	cspm_write(CSPM_M2_REC1,  0x1001af6c);
+	cspm_write(CSPM_M2_REC2,  0x1001a224);
+	cspm_write(CSPM_M2_REC3,  0x8);
+	cspm_write(CSPM_M2_REC4,  0x2);
+	cspm_write(CSPM_M2_REC5,  0xffffffc1);
+	cspm_write(CSPM_M2_REC6,  0x40);
+	cspm_write(CSPM_M2_REC7,  0x80);
+	cspm_write(CSPM_M2_REC8,  0xffffff3f);
 
 	for (i = 0; i < NUM_PHY_CLUSTER; i++) {
 		cspm_write(swctrl_reg[i], SW_F_MAX(NUM_CPU_OPP - 1) |
@@ -952,7 +957,8 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 
 	for (i = 0; i < NUM_CPU_CLUSTER; i++) {
 		cspm_write(hwsta_reg[i], F_CURR(opp_sw_to_fw(sta->opp[i])) |
-					 V_CURR(sta->volt[i]));
+					 V_CURR(sta->volt[i]) |
+					 VS_CURR(sta->vsram[i]));
 		csram_write(hwsta_offs[i], cspm_read(hwsta_reg[i]));
 	}
 
@@ -979,6 +985,7 @@ static void __cspm_save_curr_sta(struct init_sta *sta)
 	for (i = 0; i < NUM_CPU_CLUSTER; i++) {
 		sta->opp[i] = opp_fw_to_sw(cspm_curr_freq(hwsta_reg[i]));
 		sta->volt[i] = cspm_curr_volt(hwsta_reg[i]);
+		sta->vsram[i] = cspm_curr_vsram(hwsta_reg[i]);
 	}
 }
 
@@ -1380,13 +1387,20 @@ static void __cspm_check_and_update_sta(struct init_sta *sta)
 			sta->volt[i] = suspend_sta.volt[i];
 			suspend_sta.volt[i] = UINT_MAX;
 		}
+		if (sta->vsram[i] == VSRAM_AT_SUSPEND) {
+			BUG_ON(suspend_sta.vsram[i] == UINT_MAX);	/* without suspend */
+
+			sta->vsram[i] = suspend_sta.vsram[i];
+			suspend_sta.vsram[i] = UINT_MAX;
+		}
 
 		csram_write(OFFS_INIT_OPP + i * sizeof(u32), sta->opp[i]);
 		csram_write(OFFS_INIT_FREQ + i * sizeof(u32), sta->freq[i]);
 		csram_write(OFFS_INIT_VOLT + i * sizeof(u32), sta->volt[i]);
+		csram_write(OFFS_INIT_VSRAM + i * sizeof(u32), sta->vsram[i]);
 
-		cspm_dbgx(KICK, "cluster%d: opp = %u, freq = %u, volt = 0x%x\n",
-				i, sta->opp[i], sta->freq[i], sta->volt[i]);
+		cspm_dbgx(KICK, "cluster%d: opp = %u, freq = %u, volt = 0x%x, vsram = 0x%x\n",
+				i, sta->opp[i], sta->freq[i], sta->volt[i], sta->vsram[i]);
 	}
 }
 
