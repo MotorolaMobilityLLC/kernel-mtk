@@ -77,7 +77,7 @@
  * Disable using CMDQ in display driver.
  * The registers and system event would be processed by CPU.
  */
-#define MTK_FB_CMDQ_DISABLE
+/* #define MTK_FB_CMDQ_DISABLE */
 
 /**
  * Bypass ALL display PQ engine.
