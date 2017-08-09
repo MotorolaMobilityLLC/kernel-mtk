@@ -19,9 +19,10 @@
 #include <linux/module.h>
 #include <linux/poll.h>
 
-void __weak spm_is_md1_sleep(void)
+bool __weak spm_is_md1_sleep(void)
 {
 	pr_err("[ccci/dummy] %s is not supported!\n", __func__);
+	return 0;
 }
 
 void __weak spm_ap_mdsrc_req(u8 lock)
