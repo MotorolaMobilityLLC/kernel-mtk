@@ -1,6 +1,8 @@
 #include <linux/module.h>
 #include <linux/kallsyms.h>
 #include <linux/slab.h>
+#include <linux/of_fdt.h>
+#include <linux/of.h>
 #include <asm/io.h>
 #include <mt-plat/mt_io.h>
 
@@ -9,126 +11,134 @@
 struct lastpc_imp {
 	struct lastpc_plt plt;
 	void __iomem *toprgu_reg;
+	int is_from_loader;
+	u64 pc[10];
+	u64 fp[10];
+	u64 sp[10];
 };
 
 #define to_lastpc_imp(p)	container_of((p), struct lastpc_imp, plt)
-/*
-#define LASTPC                                0X20
-#define LASTSP                                0X24
-#define LASTFP                                0X28
-#define MUX_CONTOL_C0_REG             (base + 0x140)
-#define MUX_READ_C0_REG                       (base + 0x144)
-#define MUX_CONTOL_C1_REG             (base + 0x21C)
-#define MUX_READ_C1_REG                       (base + 0x25C)
 
-static unsigned int LASTPC_MAGIC_NUM[] = {0x3, 0xB, 0x33, 0x43};
-*/
+static char *pc_name[10] = {
+	"core0,pc",
+	"core1,pc",
+	"core2,pc",
+	"core3,pc",
+	"core4,pc",
+	"core5,pc",
+	"core6,pc",
+	"core7,pc",
+	"core8,pc",
+	"core9,pc",
+};
+
+static char *fp_name[10] = {
+	"core0,fp",
+	"core1,fp",
+	"core2,fp",
+	"core3,fp",
+	"core4,fp",
+	"core5,fp",
+	"core6,fp",
+	"core7,fp",
+	"core8,fp",
+	"core9,fp",
+};
+
+static char *sp_name[10] = {
+	"core0,sp",
+	"core1,sp",
+	"core2,sp",
+	"core3,sp",
+	"core4,sp",
+	"core5,sp",
+	"core6,sp",
+	"core7,sp",
+	"core8,sp",
+	"core9,sp",
+};
+static int __init set_lastpc_from_loader(struct lastpc_imp *drv,
+					unsigned long node)
+{
+	const void *prop;
+	int total_cpu = num_possible_cpus();
+	int i = 0;
+
+	for (i = 0; i < total_cpu ; ++i) {
+		prop = of_get_flat_dt_prop(node, pc_name[i], NULL);
+		if (!prop)
+			return -1;
+		drv->pc[i] = of_read_number(prop, 2);
+
+		prop = of_get_flat_dt_prop(node, fp_name[i], NULL);
+		if (!prop)
+			return -1;
+		drv->fp[i] = of_read_number(prop, 2);
+
+		prop = of_get_flat_dt_prop(node, sp_name[i], NULL);
+		if (!prop)
+			return -1;
+		drv->sp[i] = of_read_number(prop, 2);
+	}
+
+	return 0;
+}
+
+static int __init fdt_get_chosen(unsigned long node,
+				const char *uname,
+				int depth,
+				void *data)
+{
+	if (depth != 1 ||
+		(strcmp(uname, "chosen") != 0 &&
+			strcmp(uname, "chosen@0") != 0))
+		return 0;
+
+	*(unsigned long *)data = node;
+	return 1;
+}
 
 static int lastpc_plt_start(struct lastpc_plt *plt)
 {
+	struct lastpc_imp *drv = to_lastpc_imp(plt);
+	unsigned long node;
+	int ret;
+
+	ret = of_scan_flat_dt(fdt_get_chosen, &node);
+	if (node) {
+		drv->is_from_loader = 1;
+		set_lastpc_from_loader(drv, node);
+	} else {
+		drv->is_from_loader = 0;
+		pr_err("[LASTPC] sadly, lastpc might be invalid\n");
+	}
+
 	return 0;
 }
 
 static int lastpc_plt_dump(struct lastpc_plt *plt, char *buf, int len)
 {
-	void __iomem *mcu_base = plt->common->base + 0x410;
-	/* we only deal with L & LL cluster so that # of core is 8 at max */
-	int ret = -1, cnt = 8;
-	char *ptr = buf;
-	unsigned long pc_value;
-	unsigned long fp_value;
-	unsigned long sp_value;
-#ifdef CONFIG_ARM64
-	unsigned long pc_value_h;
-	unsigned long fp_value_h;
-	unsigned long sp_value_h;
-#endif
+	struct lastpc_imp *drv = to_lastpc_imp(plt);
+	int total_cpu = num_possible_cpus();
+	char symbol[KSYM_SYMBOL_LEN];
 	unsigned long size = 0;
 	unsigned long offset = 0;
-	char str[KSYM_SYMBOL_LEN];
-	int i;
-	int cluster, cpu_in_cluster;
+	char *ptr = buf;
+	int i = 0;
 
-	if (cnt < 0)
-		return ret;
+	if (!drv->is_from_loader) {
+		pr_err("[LASTPC] sadly, no valid lastpc");
+		ptr += sprintf(ptr, "[LASTPC] sadly, no valid lastpc\n");
+		return 0;
+	}
 
-#ifdef CONFIG_ARM64
-	/* Get PC, FP, SP and save to buf */
-	for (i = 0; i < cnt; i++) {
-		cluster = i / 4;
-		cpu_in_cluster = i % 4;
-		pc_value_h =
-		    readl(IOMEM((mcu_base + 0x4) + (cpu_in_cluster << 5) + (0x100 * cluster)));
-		pc_value =
-		    (pc_value_h << 32) |
-		    readl(IOMEM((mcu_base + 0x0) + (cpu_in_cluster << 5) + (0x100 * cluster)));
-		fp_value_h =
-		    readl(IOMEM((mcu_base + 0x14) + (cpu_in_cluster << 5) + (0x100 * cluster)));
-		fp_value =
-		    (fp_value_h << 32) |
-		    readl(IOMEM((mcu_base + 0x10) + (cpu_in_cluster << 5) + (0x100 * cluster)));
-		sp_value_h =
-		    readl(IOMEM((mcu_base + 0x1c) + (cpu_in_cluster << 5) + (0x100 * cluster)));
-		sp_value =
-		    (sp_value_h << 32) |
-		    readl(IOMEM((mcu_base + 0x18) + (cpu_in_cluster << 5) + (0x100 * cluster)));
-		kallsyms_lookup(pc_value, &size, &offset, NULL, str);
-		ptr +=
-		    sprintf(ptr,
-			    "[LAST PC] CORE_%d PC = 0x%lx(%s + 0x%lx), FP = 0x%lx, SP = 0x%lx\n", i,
-			    pc_value, str, offset, fp_value, sp_value);
-		pr_err("[LAST PC] CORE_%d PC = 0x%lx(%s), FP = 0x%lx, SP = 0x%lx\n", i, pc_value,
-			  str, fp_value, sp_value);
+	for (i = 0; i < total_cpu; ++i) {
+		kallsyms_lookup(drv->pc[i], &size, &offset, NULL, symbol);
+		ptr += sprintf(ptr, "CPU%d PC=0x%llx(%s+0x%lx)",
+				i, drv->pc[i], symbol, offset);
+		ptr += sprintf(ptr, ", FP=0x%llx, SP=0x%llx\n",
+				drv->fp[i], drv->sp[i]);
 	}
-#else
-	/* Get PC, FP, SP and save to buf */
-	for (i = 0; i < cnt; i++) {
-		cluster = i / 4;
-		cpu_in_cluster = i % 4;
-		pc_value =
-		    readl(IOMEM((mcu_base + 0x0) + (cpu_in_cluster << 5) + (0x100 * cluster)));
-		fp_value =
-		    readl(IOMEM((mcu_base + 0x8) + (cpu_in_cluster << 5) + (0x100 * cluster)));
-		sp_value =
-		    readl(IOMEM((mcu_base + 0xc) + (cpu_in_cluster << 5) + (0x100 * cluster)));
-		kallsyms_lookup((unsigned long)pc_value, &size, &offset, NULL, str);
-		ptr +=
-		    sprintf(ptr,
-			    "[LAST PC] CORE_%d PC = 0x%lx(%s + 0x%lx), FP = 0x%lx, SP = 0x%lx\n", i,
-			    pc_value, str, offset, fp_value, sp_value);
-		pr_err("[LAST PC] CORE_%d PC = 0x%lx(%s), FP = 0x%lx, SP = 0x%lx\n", i, pc_value,
-			  str, fp_value, sp_value);
-	}
-#endif
-
-#if 0
-	/* Get PC, FP, SP and save to buf */
-	for (i = 0; i < cnt; i++) {
-		/* this calculation assumes that we have 4 cores in the first cluster, and 2 clusters in the system */
-		cluster = i / 4;
-		cpu_in_cluster = i % 4;
-		if (cluster == 0) {
-			writel(LASTPC + i, MUX_CONTOL_C0_REG);
-			pc_value = readl(MUX_READ_C0_REG);
-			writel(LASTSP + i, MUX_CONTOL_C0_REG);
-			sp_value = readl(MUX_READ_C0_REG);
-			writel(LASTFP + i, MUX_CONTOL_C0_REG);
-			fp_value = readl(MUX_READ_C0_REG);
-			kallsyms_lookup((unsigned long)pc_value, &size, &offset, NULL, str);
-			ptr +=
-			    sprintf(ptr, "CORE_%d PC = 0x%x(%s + 0x%lx), FP = 0x%x, SP = 0x%x\n", i,
-				    pc_value, str, offset, fp_value, sp_value);
-		} else {
-			writel(LASTPC_MAGIC_NUM[cpu_in_cluster], MUX_CONTOL_C1_REG);
-			pc_value = readl(MUX_READ_C1_REG);
-			writel(LASTPC_MAGIC_NUM[cpu_in_cluster] + 1, MUX_CONTOL_C1_REG);
-			pc_i1_value = readl(MUX_READ_C1_REG);
-			ptr +=
-			    sprintf(ptr, "CORE_%d PC_i0 = 0x%x, PC_i1 = 0x%x\n", i, pc_value,
-				    pc_i1_value);
-		}
-	}
-#endif
 
 	return 0;
 }
@@ -154,12 +164,13 @@ static int __init lastpc_init(void)
 		return -ENOMEM;
 
 	drv->plt.ops = &lastpc_ops;
-	drv->plt.chip_code = 0x6735;
-	drv->plt.min_buf_len = 2048;	/* TODO: can calculate the len by how many levels of bt we want */
+	drv->plt.chip_code = 0x6797;
+	drv->plt.min_buf_len = 2048;
 
 	ret = lastpc_register(&drv->plt);
 	if (ret) {
-		pr_err("%s:%d: lastpc_register failed\n", __func__, __LINE__);
+		pr_err("%s:%d: lastpc_register failed\n",
+			__func__, __LINE__);
 		goto register_lastpc_err;
 	}
 
