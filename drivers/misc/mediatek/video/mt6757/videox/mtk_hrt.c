@@ -1100,8 +1100,13 @@ static int set_hrt_bound(void)
 	if (disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER)) {
 		primary_max_input_layer_num = PRIMARY_HW_OVL_LAYER_NUM + PRIMARY_HW_OVL_2L_LAYER_NUM +
 			DISP_HW_OVL_EXT_LAYER_NUM * 2;
+#if 0
+		/* external and memory session no need more than 4 layers now */
 		secondary_max_input_layer_num = EXTERNAL_HW_OVL_LAYER_NUM + EXTERNAL_HW_OVL_2L_LAYER_NUM +
 			DISP_HW_OVL_EXT_LAYER_NUM * 2;
+#else
+		secondary_max_input_layer_num = EXTERNAL_HW_OVL_LAYER_NUM + EXTERNAL_HW_OVL_2L_LAYER_NUM;
+#endif
 	} else {
 		primary_max_input_layer_num = PRIMARY_HW_OVL_LAYER_NUM + PRIMARY_HW_OVL_2L_LAYER_NUM;
 		secondary_max_input_layer_num = EXTERNAL_HW_OVL_LAYER_NUM + EXTERNAL_HW_OVL_2L_LAYER_NUM;

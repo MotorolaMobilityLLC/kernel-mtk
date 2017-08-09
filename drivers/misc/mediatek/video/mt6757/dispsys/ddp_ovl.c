@@ -403,10 +403,10 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 
 	/* ext layer control */
 	if (is_ext_layer)
-		value = 0x1 << layer | cfg->ext_sel_layer<<(16+layer*4);
+		value = 0x1 << layer | cfg->ext_sel_layer<<(16 + layer * 4);
 	else
 		value = 0;
-	DISP_REG_SET(handle, DISP_REG_OVL_DATAPATH_EXT_CON, value);
+	DISP_REG_SET(handle, DISP_REG_OVL_DATAPATH_EXT_CON + layer_offset, value);
 
 	value = (REG_FLD_VAL((L_CON_FLD_LARC), (cfg->source)) |
 		 REG_FLD_VAL((L_CON_FLD_CFMT), (input_fmt)) |
