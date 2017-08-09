@@ -1147,13 +1147,13 @@ static int set_memory_buffer(disp_session_input_config *input)
 				     (input->config[i].src_fmt << 12) | input->config[i].layer_enable);
 
 #if !defined(OVL_TIME_SHARING)
-		ovl2mem_input_config(&input_params);
+		ovl2mem_input_config((ovl2mem_in_config *)&input_params);
 #endif
 
 	}
 
 #if !defined(OVL_TIME_SHARING)
-	ovl2mem_input_config(&input_params);
+	ovl2mem_input_config((ovl2mem_in_config *)&input_params);
 #endif
 
 	return 0;
@@ -1634,7 +1634,7 @@ int _ioctl_set_output_buffer(unsigned long arg)
 		mutex_unlock(&session_config_mutex);
 #else
 		if (dst_mva)
-			ovl2mem_output_config(&primary_output);
+			ovl2mem_output_config((disp_mem_output_config *)&primary_output);
 		else
 			DISPERR("error buffer idx 0x%x\n", session_output.config.buff_idx);
 #endif
