@@ -1398,3 +1398,4 @@
 };
 
 /include/ "cust_eint.dtsi"
+/include/ "cust_kpd.dtsi"
