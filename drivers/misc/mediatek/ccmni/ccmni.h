@@ -66,7 +66,7 @@ typedef struct ccmni_instance {
 	unsigned int       flags;
 	spinlock_t	       spinlock;
 	ccmni_ctl_block_t  *ctlb;
-	unsigned long      tx_busy_cnt;
+	unsigned long      tx_busy_cnt[2];
 	void               *priv_data;
 } ccmni_instance_t;
 

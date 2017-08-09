@@ -12,5 +12,4 @@ config MTK_IRAT_SUPPORT
 
 config MTK_C2K_SLOT2_SUPPORT
 	bool "MTK_C2K_SLOT2_SUPPORT"
-	depends on MTK_IRAT_SUPPORT
 	default n
