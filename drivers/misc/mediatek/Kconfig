@@ -108,3 +108,4 @@ source "drivers/misc/mediatek/exm/Kconfig"
 
 source "drivers/misc/mediatek/sched/Kconfig"
 source "drivers/misc/mediatek/trustzone/Kconfig"
+source "drivers/misc/mediatek/fmradio/Kconfig"
