@@ -746,6 +746,15 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			mapping_table_entry = <0>;
 		};
 
+		SLEEP@0x10006000 {
+			compatible = "mediatek,SLEEP";
+			reg = <0x10006000 0x1000>;
+			interrupts = <0 165 0x8>,
+				<0 166 0x8>,
+				<0 167 0x8>,
+				<0 168 0x8>;
+		};
+
 		DRAMC0@0x10214000 {
 			compatible = "mediatek,DRAMC0";
 			reg = <0x10214000 0x1000>;
@@ -1003,7 +1012,8 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <0 212 0x8>, <0 211 0x8>, <0 210 0x8>;
 			interrupt-names = "JOB", "MMU", "GPU";
 			clock-frequency = <450000000>;
-			clocks = <&mfgsys MFG_BG3D>, <&mmsys MM_DISP0_SMI_COMMON>, <&scpsys SCP_SYS_MFG>, <&scpsys SCP_SYS_DIS>;
+			clocks = <&mfgsys MFG_BG3D>, <&mmsys MM_DISP0_SMI_COMMON>,
+				<&scpsys SCP_SYS_MFG>, <&scpsys SCP_SYS_DIS>;
 			clock-names = "mfg-main", "mfg-smi-common", "mtcmos-mfg", "mtcmos-display";
 		};
 
