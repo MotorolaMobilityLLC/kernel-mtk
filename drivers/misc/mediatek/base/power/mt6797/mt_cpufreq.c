@@ -761,11 +761,11 @@ static void _mt_cpufreq_aee_init(void)
 /*
  * PMIC_WRAP
  */
-#define VOLT_TO_PMIC_VAL(volt)  ((((volt) - 90000) / 2500) + 3)
+#define VOLT_TO_PMIC_VAL(volt)  (((((volt) - 90000) + 2499) / 2500) + 3)
 #define PMIC_VAL_TO_VOLT(val)  (((val - 3) * 2500) + 90000)
 
 /* DA9214 */
-#define VOLT_TO_EXTBUCK_VAL(volt) (((((volt) - 30000) + 900) / 1000) & 0x7F)
+#define VOLT_TO_EXTBUCK_VAL(volt) (((((volt) - 30000) + 999) / 1000) & 0x7F)
 #define EXTBUCK_VAL_TO_VOLT(val)  (30000 + ((val) & 0x7F) * 1000)
 /*#define VOLT_TO_EXTBUCK_VAL(volt) (((((volt) - 300) + 9) / 10) & 0x7F)
 #define EXTBUCK_VAL_TO_VOLT(val)  (300 + ((val) & 0x7F) * 10)*/
@@ -3236,6 +3236,7 @@ DFS_DONE:
 	return ret;
 }
 
+#define SINGLE_CORE_BOUNDARY_CPU_NUM 1
 static unsigned int num_online_cpus_delta;
 static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 					void *hcpu)
@@ -3279,6 +3280,31 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 	, __func__, __LINE__, cpu, action, p->idx_opp_tbl, online_cpus);
 
 	dev = get_cpu_device(cpu);
+
+	/* Pull up frequency when single core */
+	if (dev) {
+		if ((SINGLE_CORE_BOUNDARY_CPU_NUM == online_cpus) && cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
+			switch (action) {
+			case CPU_UP_PREPARE:
+			case CPU_UP_PREPARE_FROZEN:
+				num_online_cpus_delta = 1;
+
+			case CPU_DEAD:
+			case CPU_DEAD_FROZEN:
+				/* _mt_cpufreq_set(MT_CPU_DVFS_LITTLE, -1); */
+				break;
+			}
+		} else {
+			switch (action) {
+			case CPU_ONLINE:
+			case CPU_ONLINE_FROZEN:
+			case CPU_UP_CANCELED:
+			case CPU_UP_CANCELED_FROZEN:
+				num_online_cpus_delta = 0;
+				break;
+			}
+		}
+	}
 
 	if (dev) {
 		switch (action & ~CPU_TASKS_FROZEN) {
@@ -3561,14 +3587,24 @@ static int _mt_cpufreq_setup_freqs_table(struct cpufreq_policy *policy,
 	return 0;
 }
 
+#define SIGLE_CORE_IDX 10
 static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 {
+	unsigned int online_cpus;
+
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	BUG_ON(NULL == p);
 
 	cpufreq_ver("new_opp_idx = %d, idx_opp_ppm_base = %d, idx_opp_ppm_limit = %d\n",
 		new_opp_idx , p->idx_opp_ppm_base, p->idx_opp_ppm_limit);
+
+	if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
+		online_cpus = num_online_cpus() + num_online_cpus_delta;
+
+		if (online_cpus == 1 && (new_opp_idx > SIGLE_CORE_IDX))
+			new_opp_idx = SIGLE_CORE_IDX;
+	}
 
 	if ((p->idx_opp_ppm_limit != -1) && (new_opp_idx < p->idx_opp_ppm_limit))
 		new_opp_idx = p->idx_opp_ppm_limit;

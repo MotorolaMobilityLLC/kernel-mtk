@@ -363,9 +363,13 @@ static void cpufreq_interactive_timer(unsigned long data)
 	u64 max_fvtime;
 
 #if (defined CONFIG_ARCH_MT6755) || (defined CONFIG_ARCH_MT6797)
-	int ppb_idx;
+#ifdef CONFIG_ARCH_MT6797
 	/* Default, low power, just make, performance */
+	int freq_idx[4] = {7, 11, 8, 0};
+#else
 	int freq_idx[4] = {2, 6, 4, 0};
+#endif
+	int ppb_idx;
 	int min_sample_t[4] = {80, 20, 20, 80};
 #endif
 
