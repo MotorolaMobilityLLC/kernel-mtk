@@ -66,3 +66,4 @@ source "drivers/misc/mediatek/gpu/Kconfig"
 source "drivers/misc/mediatek/lcm/Kconfig"
 source "drivers/misc/mediatek/videox/Kconfig"
 source "drivers/misc/mediatek/sync/Kconfig"
+
