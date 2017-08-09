@@ -141,6 +141,8 @@ enum hp_depop_flow {
 };
 static unsigned int mUseHpDepopFlow;
 
+static unsigned int mUseUl260kFlow;
+
 static int ANC_enabled;
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -584,6 +586,11 @@ bool hasHp33Ohm(void)
 {
 	return mUseHpDepopFlow == HP_DEPOP_FLOW_33OHM ||
 	       mUseHpDepopFlow == HP_DEPOP_FLOW_DEPOP_HW_33OHM;
+}
+
+bool useUl260k(void)
+{
+	return 1 <= mUseUl260kFlow;
 }
 
 #ifdef CONFIG_MTK_VOW_SUPPORT
@@ -3328,7 +3335,7 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 			/* UL sample rate and mode configure */
 
 			/* fixed 260k path for 8/16/32/48 */
-			if (SampleRate_VUL1 <= 48000) {
+			if (useUl260k() && SampleRate_VUL1 <= 48000) {
 				/* anc ul path src on */
 				anc_ul_src_enable(true);
 				/* ANC clk pdn release */
@@ -3489,12 +3496,14 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			/* 2-wire dmic mode, ch1 and ch2 digital mic ON */
 
 			/* use 260k/130/65k@18bit mt6797:LP uplink */
-			if (SampleRate_VUL1 <= 48000) {
-				/* use cic out */
-				Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x1 << 4, 0x1 << 4);
-			} else {	/* hires */
-				/* use 4.33MHz mode */
-				Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x1 << 6, 0x1 << 6);
+			if (useUl260k()) {
+				if (SampleRate_VUL1 <= 48000) {
+					/* use cic out */
+					Ana_Set_Reg(AFE_UL_SRC_CON0_H, 0x1 << 4, 0x1 << 4);
+				} else {	/* hires */
+					/* use 4.33MHz mode */
+					Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x1 << 6, 0x1 << 6);
+				}
 			}
 
 			Ana_Set_Reg(AFE_UL_SRC_CON0_L, 0x0003, 0xffBf);
@@ -3712,7 +3721,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			/* UL sample rate and mode configure */
 
 			/* fixed 260k path for 8/16/32/48 */
-			if (SampleRate_VUL1 <= 48000) {
+			if (useUl260k() && SampleRate_VUL1 <= 48000) {
 				/* anc ul path src on */
 				anc_ul_src_enable(true);
 				/* ANC clk pdn release */
@@ -5598,9 +5607,15 @@ static int mtk_mt6331_codec_dev_probe(struct platform_device *pdev)
 		of_property_read_u32(pdev->dev.of_node,
 				     "use_hp_depop_flow",
 				     &mUseHpDepopFlow);
-		pr_warn("%s(), use_hp_depop_flow = %d\n",
-			__func__,
-			mUseHpDepopFlow);
+
+		/* check if use UL 260k flow */
+		of_property_read_u32(pdev->dev.of_node,
+				     "use_ul_260k",
+				     &mUseUl260kFlow);
+
+		pr_warn("%s(), use_hp_depop_flow = %d, use_ul_260k = %d\n",
+			__func__, mUseHpDepopFlow, mUseUl260kFlow);
+
 	} else {
 		pr_warn("%s(), pdev->dev.of_node = NULL!!!\n", __func__);
 	}

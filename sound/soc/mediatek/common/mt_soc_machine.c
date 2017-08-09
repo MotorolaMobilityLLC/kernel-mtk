@@ -332,6 +332,7 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_dai_name = MT_SOC_CODEC_VOICE_MD1DAI_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
+#ifdef _NON_COMMON_FEATURE_READY
 	{
 		.name = "HDMI_OUT",
 		.stream_name = MT_SOC_HDMI_STREAM_NAME,
@@ -340,6 +341,7 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_dai_name = MT_SOC_CODEC_HDMI_DUMMY_DAI_NAME,
 		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
 	},
+#endif
 	{
 		.name = "ULDLOOPBACK",
 		.stream_name = MT_SOC_ULDLLOOPBACK_STREAM_NAME,
@@ -534,6 +536,7 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_dai_name = MT_SOC_CODEC_OFFLOAD_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
+#ifdef _NON_COMMON_FEATURE_READY
 	{
 		.name = "PCM_ANC",
 		.stream_name = MT_SOC_ANC_STREAM_NAME,
@@ -542,6 +545,7 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_dai_name = MT_SOC_CODEC_ANC_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
+#endif
 	{
 		.name = "ANC_RECORD",
 		.stream_name = MT_SOC_ANC_RECORD_STREAM_NAME,
@@ -551,6 +555,7 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
 		.ops = &mt_machine_audio_ops,
 	},
+#ifdef _NON_COMMON_FEATURE_READY
 	{
 		.name = "Voice_Ultrasound",
 		.stream_name = MT_SOC_VOICE_ULTRA_STREAM_NAME,
@@ -559,6 +564,7 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_dai_name = MT_SOC_CODEC_VOICE_ULTRADAI_NAME,
 		.codec_name = MT_SOC_CODEC_NAME,
 	},
+#endif
 };
 
 static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
