@@ -305,7 +305,8 @@ void vow_ipi_handler(int id, void *data, unsigned int len)
 		break;
 	case SCP_IPIMSG_VOW_DATAREADY:
 		/*pr_debug("MD32_IPIMSG_VOW_DATAREADY\n");*/
-		vow_service_getVoiceData();
+		if (vowserv.recording_flag)
+			vow_service_getVoiceData();
 		break;
 	case SCP_IPIMSG_VOW_RECOGNIZE_OK:
 		pr_debug("SCP_IPIMSG_VOW_RECOGNIZE_OK\n");
@@ -810,12 +811,13 @@ static bool vow_service_Disable(void)
 	while (vow_ipi_sendmsg(AP_IPIMSG_VOW_DISABLE, (void *)0, 0, 0, 1) == false)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_VOW_DISABLE);
-	vow_service_getVoiceData();
 	if (vowserv.suspend_lock == 1) {
 		vowserv.suspend_lock = 0;
 		wake_unlock(&VOW_suspend_lock); /* Let AP will suspend */
 		PRINTK_VOWDRV("==DEBUG MODE STOP==\n");
 	}
+	if (vowserv.recording_flag)
+		vow_service_getVoiceData();
 	return ret;
 }
 
@@ -1081,8 +1083,9 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		case VOWControlCmd_DisableDebug:
 			pr_debug("VOW_SET_CONTROL VOWControlCmd_DisableDebug");
 			VowDrv_SetFlag(VOW_FLAG_DEBUG, false);
+			if (vowserv.recording_flag)
+				vow_service_getVoiceData();
 			vowserv.recording_flag = false;
-			vow_service_getVoiceData();
 			break;
 		default:
 			pr_debug("VOW_SET_CONTROL no such command = %lu", arg);
