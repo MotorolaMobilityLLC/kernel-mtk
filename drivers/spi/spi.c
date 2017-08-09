@@ -45,6 +45,9 @@
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/spi.h>
+#if defined(CONFIG_ARCH_MT6797)
+#include <mt_vcorefs_manager.h>
+#endif
 
 static void spidev_release(struct device *dev)
 {
@@ -2119,7 +2122,10 @@ static int __spi_sync(struct spi_device *spi, struct spi_message *message,
 
 	message->complete = spi_complete;
 	message->context = &done;
-
+#if defined(CONFIG_ARCH_MT6797)
+	if (master->bus_num == 1)
+		vcorefs_request_dvfs_opp(KIR_REESPI, OPPI_PERF);
+#endif
 	if (!bus_locked)
 		mutex_lock(&master->bus_lock_mutex);
 
@@ -2133,6 +2139,10 @@ static int __spi_sync(struct spi_device *spi, struct spi_message *message,
 		status = message->status;
 	}
 	message->context = NULL;
+#if defined(CONFIG_ARCH_MT6797)
+	if (master->bus_num == 1)
+		vcorefs_request_dvfs_opp(KIR_REESPI, OPPI_UNREQ);
+#endif
 	return status;
 }
 
