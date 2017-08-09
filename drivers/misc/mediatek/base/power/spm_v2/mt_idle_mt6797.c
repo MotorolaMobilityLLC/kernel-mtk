@@ -284,10 +284,14 @@ static int __init get_base_from_node(
 
 	if (!node) {
 		idle_err("node '%s' not found!\n", cmp);
-		return -1;
+		/* TODO: BUG() */
 	}
 
 	*pbase = of_iomap(node, idx);
+	if (!(*pbase)) {
+		idle_err("node '%s' cannot iomap!\n", cmp);
+		/* TODO: BUG() */
+	}
 
 	return 0;
 }
@@ -295,11 +299,11 @@ static int __init get_base_from_node(
 void __init iomap_init(void)
 {
 	get_base_from_node("mediatek,infracfg_ao", &infrasys_base, 0);
-	get_base_from_node("mediatek,mediatek,mmsys_config", &mmsys_base, 0);
+	get_base_from_node("mediatek,mmsys_config", &mmsys_base, 0);
 	get_base_from_node("mediatek,sleep", &sleepsys_base, 0);
 	get_base_from_node("mediatek,topckgen", &topcksys_base, 0);
 	get_base_from_node("mediatek,apmixed", &apmixed_base_in_idle, 0);
-	get_base_from_node("mediatek,mediatek,g3d_config", &mfgsys_base, 0);
+	get_base_from_node("mediatek,g3d_config", &mfgsys_base, 0);
 	get_base_from_node("mediatek,imgsys_config", &imgsys_base, 0);
 	get_base_from_node("mediatek,mt6797-vdec_gcon", &vdecsys_base, 0);
 	get_base_from_node("mediatek,mt6797-venc_gcon", &vencsys_base, 0);
