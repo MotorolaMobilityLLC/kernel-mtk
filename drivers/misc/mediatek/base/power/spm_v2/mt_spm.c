@@ -1411,7 +1411,7 @@ void set_vcorefs_fw_mode(void)
 {
 	int ddr_khz;
 
-	ddr_khz = vcorefs_get_curr_ddr();
+	ddr_khz = vcorefs_get_ddr_by_steps(OPP_0);
 
 	switch (ddr_khz) {
 	case 1600000:
