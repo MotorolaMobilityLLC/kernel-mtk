@@ -393,11 +393,7 @@ static int ddp_pwm_power_on(DISP_MODULE_ENUM module, void *handle)
 		enable_clock(MT_CG_PERI_DISP_PWM, "DISP_PWM");
 #endif
 #else /* Common Clock Framework */
-#if defined(CONFIG_ARCH_MT6755)
-		/* ddp_clk_enable(DISP_PWM); */
-#else
 		ddp_clk_enable(DISP_PWM);
-#endif
 #endif
 	}
 #endif
@@ -421,11 +417,7 @@ static int ddp_pwm_power_off(DISP_MODULE_ENUM module, void *handle)
 		disable_clock(MT_CG_PERI_DISP_PWM, "DISP_PWM");
 #endif
 #else /* Common Clock Framework */
-#if defined(CONFIG_ARCH_MT6755)
-		/* ddp_clk_disable(DISP_PWM); */
-#else
 		ddp_clk_disable(DISP_PWM);
-#endif
 #endif
 	}
 #endif
