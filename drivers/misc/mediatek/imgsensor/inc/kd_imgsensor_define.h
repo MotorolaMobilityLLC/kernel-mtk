@@ -271,7 +271,8 @@ typedef enum {
 
 typedef enum {
 	MIPI_OPHY_NCSI2 = 0,
-	MIPI_OPHY_CSI2 = 1,
+	MIPI_OPHY_CSI2  = 1,
+	MIPI_CPHY       = 2,
 } SENSOR_MIPI_TYPE_ENUM;
 
 typedef enum {
