@@ -334,7 +334,7 @@ void msdc_init_tune_setting(struct msdc_host *host)
 	struct msdc_hw *hw = host->hw;
 	void __iomem *base = host->base;
 
-	pr_err("msdc_init_tune_setting\n");
+	/* pr_err("msdc_init_tune_setting\n"); */
 	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_CLKTXDLY,
 		MSDC_CLKTXDLY);
 	MSDC_SET_FIELD(MSDC_PAD_TUNE0, MSDC_PAD_TUNE0_DATWRDLY,

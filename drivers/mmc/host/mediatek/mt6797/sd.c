@@ -373,7 +373,7 @@ void msdc_dump_info(u32 id)
 		return;
 	/* when detect card, cmd13 will be sent which timeout log is not needed */
 	if (!sd_register_zone[id]) {
-		pr_err("msdc host<%d> is timeout when detect, so don't dump register\n", id);
+		/* pr_err("msdc host<%d> is timeout when detect, so don't dump register\n", id); */
 		return;
 	}
 	base = host->base;
@@ -890,7 +890,7 @@ void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 	u32 hs400_src = 0;
 
 	if (!hz) { /* set mmc system clock to 0*/
-		pr_err("msdc%d -> !!! set<0 HZ>", host->id);
+		/* pr_err("msdc%d -> !!! set<0 HZ>", host->id); */
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
 			host->saved_para.hz = hz;
 #ifdef SDIO_ERROR_BYPASS
@@ -1567,7 +1567,7 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	case MMC_SELECT_CARD:
 		resp = (cmd->arg != 0) ? RESP_R1 : RESP_NONE;
 		host->app_cmd_arg = cmd->arg;
-		pr_warn("msdc%d select card<0x%.8x>", host->id, cmd->arg);
+		/* pr_warn("msdc%d select card<0x%.8x>", host->id, cmd->arg); */
 		break;
 	case SD_IO_RW_DIRECT:
 	case SD_IO_RW_EXTENDED:
@@ -3341,15 +3341,13 @@ static void msdc_dump_trans_error(struct msdc_host   *host,
 	if ((cmd->opcode == 52) && (cmd->arg == 0x80000c08))
 		return;
 
-	if (!(is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ))) {
-		/* by pass the SDIO CMD TO for SD/eMMC */
-		if ((host->hw->host_function == MSDC_SD) &&
-		    (cmd->opcode == 5))
+	/* SDcard bypass SDIO init CMD5 command*/
+	if ((host->hw->host_function == MSDC_SD) && (cmd->opcode == 5))
+		return;
+	/* eMMC bypss SDIO init command, SDcard init command */
+	if (host->hw->host_function == MSDC_EMMC)
+		if ((cmd->opcode == 5) || (cmd->opcode == 55))
 			return;
-	} else {
-		if (cmd->opcode == 8)
-			return;
-	}
 
 	ERR_MSG("XXX CMD<%d><0x%x> Error<%d> Resp<0x%x>", cmd->opcode, cmd->arg,
 		cmd->error, cmd->resp[0]);
@@ -4934,8 +4932,8 @@ static void msdc_init_hw(struct msdc_host *host)
 	/*msdc_set_ies(host, 1);*/
 	msdc_set_tdsel(host, 0, 0);
 
-	INIT_MSG("msdc drving<clk %d,cmd %d,dat %d>",
-		hw->clk_drv, hw->cmd_drv, hw->dat_drv);
+	/* INIT_MSG("msdc drving<clk %d,cmd %d,dat %d>",
+		hw->clk_drv, hw->cmd_drv, hw->dat_drv); */
 
 	/* write crc timeout detection */
 	MSDC_SET_FIELD(MSDC_PATCH_BIT0, 1 << 30, 1);
@@ -5027,7 +5025,7 @@ static void msdc_set_host_power_control(struct msdc_host *host)
 			MT6351_PMIC_RG_VMCH_CAL_SHIFT
 			);
 
-		pr_err("msdc1, 0xACE=%x\n", val);
+		/* pr_err("msdc1, 0xACE=%x\n", val); */
 
 		if (5 > val)
 			val = 0x20 + val - 5;
@@ -5038,7 +5036,7 @@ static void msdc_set_host_power_control(struct msdc_host *host)
 			MT6351_PMIC_RG_VMCH_CAL_MASK,
 			MT6351_PMIC_RG_VMCH_CAL_SHIFT
 			);
-		pr_err("msdc1, 0xACE=%x\n", val);
+		/* pr_err("msdc1, 0xACE=%x\n", val); */
 
 		/* VMC calibration default not +100mv. We use 3.0V */
 		pmic_read_interface(0xAE2, &val,
@@ -5046,14 +5044,14 @@ static void msdc_set_host_power_control(struct msdc_host *host)
 			MT6351_PMIC_RG_VMC_CAL_SHIFT
 			);
 
-		pr_err("msdc1, 0xAE2=%x\n", val);
+		/* pr_err("msdc1, 0xAE2=%x\n", val); */
 
 		if (0x1b > val)
 			val = 0x20 + val - 0x1b;
 		else
 			val = val - 0x1b;
 
-		pr_err("msdc1, 0xAE2=%x\n", val);
+		/* pr_err("msdc1, 0xAE2=%x\n", val); */
 
 		host->vmc_cal_default = val;
 		pmic_config_interface(0xAE2, val,

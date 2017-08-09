@@ -45,18 +45,18 @@ struct mmc_blk_data {
 	unsigned int read_only;
 };
 
-static u64 msdc_get_user_capacity(struct msdc_host *host)
+u64 msdc_get_user_capacity(struct msdc_host *host)
 {
 	u64 capacity = 0;
 	u32 legacy_capacity = 0;
-	struct mmc_host *mmc = NULL;
 	struct mmc_card *card;
 
-	BUG_ON(!host);
-	BUG_ON(!host->mmc);
-	BUG_ON(!host->mmc->card);
-	mmc = host->mmc;
-	card = mmc->card;
+	if ((host != NULL) && (host->mmc != NULL) && (host->mmc->card != NULL))
+		card = host->mmc->card;
+	else
+		return 0;
+
+	card = host->mmc->card;
 	if (mmc_card_mmc(card)) {
 		if (card->csd.read_blkbits) {
 			legacy_capacity =
@@ -75,6 +75,7 @@ static u64 msdc_get_user_capacity(struct msdc_host *host)
 	}
 	return capacity;
 }
+
 
 int offset = 0;
 
@@ -153,30 +154,25 @@ static int __init init_get_cache_work(void)
 }
 #endif
 
-static u32 msdc_get_other_capacity(struct msdc_host *host)
+u32 msdc_get_other_capacity(struct msdc_host *host, char *name)
 {
 	u32 device_other_capacity = 0;
-	u8 ext_csd[512];
+	int i;
+	struct mmc_card *card;
 
-	mmc_claim_host(host->mmc);
-	mmc_send_ext_csd(host->mmc->card, ext_csd);
-	mmc_release_host(host->mmc);
+	if ((host != NULL) && (host->mmc != NULL) && (host->mmc->card != NULL))
+		card = host->mmc->card;
+	else
+		return 0;
 
-	device_other_capacity = ext_csd[EXT_CSD_BOOT_MULT] * 128 * 1024
-		+ ext_csd[EXT_CSD_BOOT_MULT] * 128 * 1024
-		+ ext_csd[EXT_CSD_RPMB_MULT] * 128 * 1024
-		+ ext_csd[EXT_CSD_GP_SIZE_MULT + 2] * 256 * 256
-		+ ext_csd[EXT_CSD_GP_SIZE_MULT + 1] * 256
-		+ ext_csd[EXT_CSD_GP_SIZE_MULT + 0]
-		+ ext_csd[EXT_CSD_GP_SIZE_MULT + 5] * 256 * 256
-		+ ext_csd[EXT_CSD_GP_SIZE_MULT + 4] * 256
-		+ ext_csd[EXT_CSD_GP_SIZE_MULT + 3]
-		+ ext_csd[EXT_CSD_GP_SIZE_MULT + 8] * 256 * 256
-		+ ext_csd[EXT_CSD_GP_SIZE_MULT + 7] * 256
-		+ ext_csd[EXT_CSD_GP_SIZE_MULT + 6]
-		+ ext_csd[EXT_CSD_GP_SIZE_MULT + 11] * 256 * 256
-		+ ext_csd[EXT_CSD_GP_SIZE_MULT + 10] * 256
-		+ ext_csd[EXT_CSD_GP_SIZE_MULT + 9];
+	for (i = 0; i < card->nr_parts; i++) {
+		if (!name) {
+			device_other_capacity += card->part[i].size;
+		} else if (strcmp(name, card->part[i].name) == 0) {
+			device_other_capacity = card->part[i].size;
+			break;
+		}
+	}
 
 	return device_other_capacity;
 }
@@ -204,8 +200,9 @@ u64 msdc_get_capacity(int get_emmc_total)
 		if ((host != NULL) && (host->hw->boot)) {
 			user_size = msdc_get_user_capacity(host);
 #ifdef CONFIG_MTK_EMMC_SUPPORT
-			if ((get_emmc_total) && (mmc_card_mmc(host->mmc->card)))
-				other_size = msdc_get_other_capacity(host);
+			if (get_emmc_total)
+				other_size =
+					msdc_get_other_capacity(host, NULL);
 #endif
 			break;
 		}

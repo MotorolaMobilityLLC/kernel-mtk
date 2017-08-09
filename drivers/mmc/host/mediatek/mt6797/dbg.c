@@ -3244,51 +3244,39 @@ int msdc_debug_proc_init(void)
 
 	prEntry = proc_create("msdc_debug", PROC_PERM, NULL, &msdc_proc_fops);
 
-	if (prEntry) {
-		pr_err("[%s]: create /proc/msdc_debug\n", __func__);
+	if (prEntry)
 		proc_set_user(prEntry, uid, gid);
-	} else {
+	else
 		pr_err("[%s]: failed to create /proc/msdc_debug\n", __func__);
-	}
 
 	prEntry = proc_create("msdc_help", PROC_PERM, NULL, &msdc_help_fops);
 
-	if (prEntry)
-		pr_err("[%s]: create /proc/msdc_help\n", __func__);
-	else
+	if (!prEntry)
 		pr_err("[%s]: failed to create /proc/msdc_help\n", __func__);
 
 	prEntry = proc_create("msdc_FT", PROC_PERM, NULL, &msdc_FT_fops);
 
-	if (prEntry)
-		pr_err("[%s]: create /proc/msdc_FT\n", __func__);
-	else
+	if (!prEntry)
 		pr_err("[%s]: failed to create /proc/msdc_FT\n", __func__);
 
 #ifdef ONLINE_TUNING_DVTTEST
 	prEntry = proc_create("msdc_DVT", PROC_PERM, NULL, &msdc_DVT_fops);
 
-	if (prEntry)
-		pr_err("[%s]: create /proc/msdc_DVT\n", __func__);
-	else
+	if (!prEntry)
 		pr_err("[%s]: failed to create /proc/msdc_DVT\n", __func__);
 #endif  /* ONLINE_TUNING_DVTTEST*/
 
 	tune = proc_create("msdc_tune", PROC_PERM, NULL, &msdc_tune_fops);
 
-	if (tune) {
+	if (tune)
 		proc_set_user(tune, uid, gid);
-		pr_err("[%s]: create /proc/msdc_tune\n", __func__);
-	} else {
+	else
 		pr_err("[%s]: failed to create /proc/msdc_tune\n", __func__);
-	}
 
 	tune_flag = proc_create("msdc_tune_flag", PROC_PERM, NULL,
 		&msdc_tune_flag_fops);
 
-	if (tune_flag)
-		pr_err("[%s]: create /proc/msdc_tune_flag\n", __func__);
-	else
+	if (!tune_flag)
 		pr_err("[%s]: failed to create /proc/msdc_tune_flag\n",
 			__func__);
 
@@ -3296,14 +3284,11 @@ int msdc_debug_proc_init(void)
 	voltage_flag = proc_create("msdc_voltage_flag", PROC_PERM, NULL,
 		&msdc_voltage_flag_fops);
 
-	if (voltage_flag) {
+	if (voltage_flag)
 		proc_set_user(voltage_flag, uid, gid);
-		pr_err("[%s]: create /proc/msdc_voltage_flag\n",
-			__func__);
-	} else {
+	else
 		pr_err("[%s]: failed to create /proc/msdc_voltage_flag\n",
 			__func__);
-	}
 #endif
 
 #ifdef MSDC_DMA_ADDR_DEBUG

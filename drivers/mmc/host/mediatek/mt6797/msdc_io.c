@@ -82,7 +82,7 @@ bool msdc_hwPowerOn(unsigned int powerId, int powerVolt, char *mode_name)
 		pr_err("msdc regulator_enable failed: %d\n", ret);
 		return false;
 	}
-	pr_err("msdc_hwPoweron:%d: name:%s", powerId, mode_name);
+	/* pr_err("msdc_hwPoweron:%d: name:%s", powerId, mode_name); */
 	return true;
 }
 
@@ -110,7 +110,7 @@ bool msdc_hwPowerDown(unsigned int powerId, char *mode_name)
 	}
 	/* New API voltage use micro V */
 	regulator_disable(reg);
-	pr_err("msdc_hwPowerOff:%d: name:%s", powerId, mode_name);
+	/* pr_err("msdc_hwPowerOff:%d: name:%s", powerId, mode_name); */
 
 	return true;
 }
@@ -121,8 +121,8 @@ u32 msdc_ldo_power(u32 on, unsigned int powerId, int voltage_mv,
 
 	if (on) { /* want to power on */
 		if (*status == 0) {  /* can power on */
-			pr_err("msdc LDO<%d> power on<%d>\n", powerId,
-				voltage_uv);
+			/* pr_err("msdc LDO<%d> power on<%d>\n", powerId,
+				voltage_uv); */
 			msdc_hwPowerOn(powerId, voltage_uv, "msdc");
 			*status = voltage_uv;
 		} else if (*status == voltage_uv) {
@@ -542,7 +542,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 			host->id, host->irq);
 		BUG_ON(1);
 	}
-	pr_err("[msdc%d] get irq # %d\n", host->id, host->irq);
+	/* pr_err("[msdc%d] get irq # %d\n", host->id, host->irq); */
 
 	/* get clk_src */
 	if (of_property_read_u8(np, "clk_src", &host->hw->clk_src)) {

@@ -785,7 +785,9 @@ void mmc_remove_card(struct mmc_card *card);
 void msdc_set_bad_card_and_remove(struct msdc_host *host);
 /* Function provided by drivers/irqchip/irq-mt-eic.c */
 int mt_eint_get_polarity_external(unsigned int irq_num);
-
+u64 msdc_get_capacity(int get_emmc_total);
+u64 msdc_get_user_capacity(struct msdc_host *host);
+u32 msdc_get_other_capacity(struct msdc_host *host, char *name);
 int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	u32 *status);
 
