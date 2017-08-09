@@ -30,7 +30,8 @@
 /*
  * CONFIG - compile time
  */
-#define HPS_TASK_PRIORITY                   (-20)
+#define HPS_TASK_RT_PRIORITY                (MAX_RT_PRIO - 3)
+#define HPS_TASK_NORMAL_PRIORITY            (MIN_NICE)
 #define HPS_TIMER_INTERVAL_MS               (40)
 
 #define HPS_PERIODICAL_BY_WAIT_QUEUE        (1)
