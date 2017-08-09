@@ -50,6 +50,7 @@
 #include "AudDrv_Def.h"
 #include <linux/types.h>
 
+static DEFINE_SPINLOCK(afe_set_reg_lock);
 /*****************************************************************************
  *                         D A T A   T Y P E S
  *****************************************************************************/
@@ -121,6 +122,7 @@ void Afe_Set_Reg(uint32 offset, uint32 value, uint32 mask)
 	volatile long address;
 	volatile uint32 *AFE_Register;
 	volatile uint32 val_tmp;
+	unsigned long flags = 0;
 
 	if (CheckOffset(offset) == false)
 		return;
@@ -135,10 +137,12 @@ void Afe_Set_Reg(uint32 offset, uint32 value, uint32 mask)
 	AFE_Register = (volatile uint32 *)address;
 
 	/* PRINTK_AFE_REG("Afe_Set_Reg offset=%x, value=%x, mask=%x\n",offset,value,mask); */
+	spin_lock_irqsave(&afe_set_reg_lock, flags);
 	val_tmp = Afe_Get_Reg(offset);
 	val_tmp &= (~mask);
 	val_tmp |= (value & mask);
 	mt_reg_sync_writel(val_tmp, AFE_Register);
+	spin_unlock_irqrestore(&afe_set_reg_lock, flags);
 }
 EXPORT_SYMBOL(Afe_Set_Reg);
 
