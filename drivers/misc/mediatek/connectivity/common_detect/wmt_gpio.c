@@ -243,6 +243,8 @@ INT32 wmt_gpio_init(struct platform_device *pdev)
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,connectivity-combo");
 	if (!node) {
+		for (i = 0; i < GPIO_PIN_ID_MAX; i++)
+			gpio_ctrl_info.gpio_ctrl_state[i].gpio_num = DEFAULT_PIN_ID;
 		pr_err("wmt_gpio:can't find device tree node!\n");
 		iret = -1;
 		goto err;

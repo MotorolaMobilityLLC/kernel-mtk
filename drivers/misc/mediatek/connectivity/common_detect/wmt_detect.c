@@ -156,22 +156,31 @@ int wmt_detect_ext_chip_pwr_on(void)
 {
 	/*pre power on external chip */
 	/* wmt_plat_pwr_ctrl(FUNC_ON); */
+#ifdef MTK_WCN_COMBO_CHIP_SUPPORT
 	WMT_DETECT_INFO_FUNC("++\n");
 	if (0 != wmt_detect_chip_pwr_ctrl(1))
 		return -1;
 	if (0 != wmt_detect_sdio_pwr_ctrl(1))
 		return -2;
-
 	return 0;
+#else
+	WMT_DETECT_INFO_FUNC("combo chip is not supported\n");
+	return -1;
+#endif
 }
 
 int wmt_detect_ext_chip_pwr_off(void)
 {
 	/*pre power off external chip */
 	/* wmt_plat_pwr_ctrl(FUNC_OFF); */
+#ifdef MTK_WCN_COMBO_CHIP_SUPPORT
 	WMT_DETECT_INFO_FUNC("--\n");
 	wmt_detect_sdio_pwr_ctrl(0);
 	return wmt_detect_chip_pwr_ctrl(0);
+#else
+	WMT_DETECT_INFO_FUNC("combo chip is not supported\n");
+	return 0;
+#endif
 }
 
 int wmt_detect_ext_chip_detect(void)
