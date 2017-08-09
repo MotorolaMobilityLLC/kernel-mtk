@@ -77,7 +77,7 @@ static const char longname[] = "Gadget Android";
 #include <mt-plat/mt_boot_common.h>
 #define KPOC_USB_FUNC "hid"
 #define KPOC_USB_VENDOR_ID 0x0E8D
-#define KPOC_USB_PRODUCT_ID 0xFFFF
+#define KPOC_USB_PRODUCT_ID 0x20FF
 #endif
 
 #ifdef CONFIG_SND_RAWMIDI
