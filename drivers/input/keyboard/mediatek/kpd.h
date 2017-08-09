@@ -30,6 +30,7 @@
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
+#include <linux/gpio.h>
 #include <mt-plat/aee.h>
 #ifdef CONFIG_MTK_SMARTBOOK_SUPPORT
 #include <linux/sbsuspend.h>	/* smartbook */

@@ -90,3 +90,11 @@ config KPD_PWRKEY_USE_PMIC
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called kpd_pmic_pwrkey_hal.
+
+
+config MTK_MRDUMP_KEY
+	bool "MediaTek mrdump reset key support"
+	default n
+	help
+	  Say Y if you want to enable mrdump key SMT item support.
+	  If you don't know what to do here, say N.

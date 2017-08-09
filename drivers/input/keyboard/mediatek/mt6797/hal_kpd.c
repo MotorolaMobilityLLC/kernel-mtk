@@ -23,7 +23,9 @@ static u8 kpd_pwrkey_state = !KPD_PWRKEY_POLARITY;
 
 static int kpd_show_hw_keycode = 1;
 #ifndef EVB_PLATFORM
+#ifdef CONFIG_MTK_PMIC /*for pmic not ready*/
 static int kpd_enable_lprst = 1;
+#endif
 #endif
 static u16 kpd_keymap_state[KPD_NUM_MEMS] = {
 	0xffff, 0xffff, 0xffff, 0xffff, 0x00ff
@@ -196,6 +198,7 @@ void kpd_auto_test_for_factorymode(void)
 
 	kpd_factory_mode_handler();
 	kpd_print("begin kpd_auto_test_for_factorymode!\n");
+#ifdef CONFIG_MTK_PMIC
 	if (pmic_get_register_value(PMIC_PWRKEY_DEB) == 1) {
 		kpd_print("power key release\n");
 		/*kpd_pwrkey_pmic_handler(1);*/
@@ -207,7 +210,7 @@ void kpd_auto_test_for_factorymode(void)
 		/*mdelay(time);*/
 		/*kpd_pwrkey_pmic_handler(0);*/
 	}
-
+#endif
 #ifdef KPD_PMIC_RSTKEY_MAP
 	if (pmic_get_register_value(PMIC_HOMEKEY_DEB) == 1) {
 		/*kpd_print("home key release\n");*/
@@ -226,6 +229,7 @@ void kpd_auto_test_for_factorymode(void)
 /********************************************************************/
 void long_press_reboot_function_setting(void)
 {
+#ifdef CONFIG_MTK_PMIC /*for pmic not ready*/
 #ifndef EVB_PLATFORM
 	if (kpd_enable_lprst && get_boot_mode() == NORMAL_BOOT) {
 		kpd_info("Normal Boot long press reboot selection\n");
@@ -272,6 +276,7 @@ void long_press_reboot_function_setting(void)
 #else
 	pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x00);
 	pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
+#endif
 #endif
 }
 
@@ -391,13 +396,49 @@ void kpd_pwrkey_handler_hal(unsigned long data)
 #endif
 }
 
+#ifdef CONFIG_MTK_MRDUMP_KEY
+static int mrdump_eint_state;
+static int mrdump_ext_rst_irq;
+static irqreturn_t mrdump_rst_eint_handler(int irq, void *data)
+{
+	/* bool pressed; */
+
+	if (mrdump_eint_state == 0) {
+		irq_set_irq_type(mrdump_ext_rst_irq, IRQ_TYPE_LEVEL_HIGH);
+		mrdump_eint_state = 1;
+	} else {
+		irq_set_irq_type(mrdump_ext_rst_irq, IRQ_TYPE_LEVEL_LOW);
+		mrdump_eint_state = 0;
+	}
+
+	input_report_key(kpd_input_dev, KEY_RESTART, mrdump_eint_state);
+	input_sync(kpd_input_dev);
+
+	return IRQ_HANDLED;
+}
+#endif
 /***********************************************************************/
 void mt_eint_register(void)
 {
-#ifdef CONFIG_KPD_PWRKEY_USE_EINT
-	mt_eint_set_sens(KPD_PWRKEY_EINT, KPD_PWRKEY_SENSITIVE);
-	mt_eint_set_hw_debounce(KPD_PWRKEY_EINT, KPD_PWRKEY_DEBOUNCE);
-	mt_eint_registration(KPD_PWRKEY_EINT, true, KPD_PWRKEY_POLARITY, kpd_pwrkey_eint_handler, false);
+#ifdef CONFIG_MTK_MRDUMP_KEY
+	int ints[2] = {0, 0};
+	int ret;
+	struct device_node *node;
+
+	/* register EINT handler for MRDUMP_EXT_RST key */
+	node = of_find_compatible_node(NULL, NULL, "mediatek, mrdump_ext_rst-eint");
+	if (!node)
+		kpd_print("can't find compatible node\n");
+	else {
+		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
+		gpio_set_debounce(ints[0], ints[1]);
+
+		mrdump_ext_rst_irq = irq_of_parse_and_map(node, 0);
+		ret = request_irq(mrdump_ext_rst_irq, mrdump_rst_eint_handler,
+				  IRQF_TRIGGER_NONE, "mrdump_ext_rst-eint", NULL);
+		if (ret > 0)
+			kpd_print("EINT IRQ LINE NOT AVAILABLE\n");
+	}
 #endif
 }
 

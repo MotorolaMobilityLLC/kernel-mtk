@@ -824,6 +824,9 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 #ifdef KPD_KEY_MAP
 	__set_bit(KPD_KEY_MAP, kpd_input_dev->keybit);
 #endif
+#ifdef CONFIG_MTK_MRDUMP_KEY
+		__set_bit(KEY_RESTART, kpd_input_dev->keybit);
+#endif
 	kpd_input_dev->dev.parent = &pdev->dev;
 	r = input_register_device(kpd_input_dev);
 	if (r) {
