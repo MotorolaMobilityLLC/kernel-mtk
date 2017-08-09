@@ -595,8 +595,13 @@ static void _i2c_write_reg(struct mt_i2c_t *i2c)
 		i2c_writel(i2c, OFFSET_INTR_MASK, i2c_readl(i2c, OFFSET_INTR_MASK) |
 			(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP));	/*Enable interrupt */
 	/*Set transfer len */
-	i2c_writel(i2c, OFFSET_TRANSFER_LEN, i2c->trans_data.trans_len & 0xFFFF);
-	i2c_writel(i2c, OFFSET_TRANSFER_LEN_AUX, i2c->trans_data.trans_auxlen & 0xFFFF);
+	if (i2c->id != 6) {
+		i2c_writel(i2c, OFFSET_TRANSFER_LEN, i2c->trans_data.trans_len & 0xFFFF);
+		i2c_writel(i2c, OFFSET_TRANSFER_LEN_AUX, i2c->trans_data.trans_auxlen & 0xFFFF);
+	} else {
+		i2c_writel(i2c, OFFSET_TRANSFER_LEN, (i2c->trans_data.trans_len & 0xFF) |
+			((i2c->trans_data.trans_auxlen<<8) & 0x1F00));
+	}
 	/*Set transaction len */
 	i2c_writel(i2c, OFFSET_TRANSAC_LEN, i2c->trans_data.trans_num & 0xFF);
 
