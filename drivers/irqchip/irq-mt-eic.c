@@ -958,8 +958,6 @@ static void mt_eint_timer_event_handler(unsigned long eint_num)
 static void mt_eint_set_timer_event(unsigned int eint_num)
 {
 	struct timer_list *eint_timer = &EINT_FUNC.eint_sw_deb_timer[eint_num];
-	/* assign this handler to execute on core 0 */
-	int cpu = 0;
 
 	/* register timer for this sw debounce eint */
 	eint_timer->expires =
@@ -972,7 +970,7 @@ static void mt_eint_set_timer_event(unsigned int eint_num)
 	eint_timer->function = &mt_eint_timer_event_handler;
 	if (!timer_pending(eint_timer)) {
 		init_timer(eint_timer);
-		add_timer_on(eint_timer, cpu);
+		add_timer(eint_timer);
 	}
 }
 
