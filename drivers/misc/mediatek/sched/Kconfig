@@ -104,9 +104,19 @@ config MT_DEBUG_PREEMPT
 endmenu
 
 menu "MTK Cluster MultiProcessor Scheduler"
+config MTK_CPU_TOPOLOGY
+        bool "MTK cpu topology infrastructure"
+	depends on (64BIT && OF && SMP) || (ARM_CPU_TOPOLOGY && OF)
+	default n
+        help
+          Say N if you want to build up another wheel
+          sched_init -> cmp_cputopo_domain_seutp()
+          rest_init -> fork kernel_init -> kernel_init_freeable ... -> parse_dt_topology
+          we focus to build up cpu topology and domain before scheduler runs.
+
 config MTK_SCHED_CMP
 	bool "Enable CMP scheduler"
-	depends on SMP && SCHED_MC
+	depends on SMP && SCHED_MC && MTK_CPU_TOPOLOGY
 	default n
 	help
 	   CMP Scheduler Enhancement for MTK SoC.

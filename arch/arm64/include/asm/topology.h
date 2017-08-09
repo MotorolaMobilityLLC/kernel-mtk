@@ -58,6 +58,10 @@ static inline void arch_get_cluster_cpus(struct cpumask *cpus, int cluster_id)
 
 #endif /* CONFIG_ARM_CPU_TOPOLOGY */
 
+#ifdef CONFIG_MTK_CPU_TOPOLOGY
+void arch_build_cpu_topology_domain(void);
+#endif
+
 #include <asm-generic/topology.h>
 
 #endif /* _ASM_ARM_TOPOLOGY_H */

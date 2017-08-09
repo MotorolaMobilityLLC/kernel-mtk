@@ -877,6 +877,9 @@ enum cpu_idle_type {
 #define SD_PREFER_SIBLING	0x1000	/* Prefer to place tasks in a sibling domain */
 #define SD_OVERLAP		0x2000	/* sched_domains of this level overlap */
 #define SD_NUMA			0x4000	/* cross-node balancing */
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+#define SD_BALANCE_TG		0x8000  /* Balance for thread group */
+#endif
 
 #ifdef CONFIG_SCHED_SMT
 static inline int cpu_smt_flags(void)
@@ -1004,6 +1007,20 @@ cpumask_var_t *alloc_sched_domains(unsigned int ndoms);
 void free_sched_domains(cpumask_var_t doms[], unsigned int ndoms);
 
 bool cpus_share_cache(int this_cpu, int that_cpu);
+
+#ifdef CONFIG_MTK_SCHED_CMP
+struct clb_stats {
+	int ncpu;                     /* The number of CPU */
+	int ntask;                    /* The number of tasks */
+	int load_avg;                 /* Arithmetic average of task load ratio */
+	int cpu_capacity;             /* Current CPU capacity */
+	int cpu_power;                /* Max CPU capacity */
+	int acap;                     /* Available CPU capacity */
+	int scaled_acap;              /* Scaled available CPU capacity */
+	int scaled_atask;             /* Scaled available task */
+	int threshold;                /* Dynamic threshold */
+};
+#endif
 
 typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
 typedef int (*sched_domain_flags_f)(void);
@@ -1265,6 +1282,18 @@ enum perf_event_task_context {
 	perf_nr_task_contexts,
 };
 
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+struct thread_group_info_t {
+	/* # of cfs threas in the thread group per cluster*/
+	unsigned long cfs_nr_running;
+	/* # of threads in the thread group per cluster */
+	unsigned long nr_running;
+	/* runnable contrib of the thread group per cluster */
+	unsigned long load_avg_contrib;
+};
+
+#endif
+
 #ifdef CONFIG_MT_SCHED_TRACE
 #ifdef CONFIG_MT_SCHED_DEBUG
 #define mt_sched_printf(event, x...) \
@@ -1402,6 +1431,11 @@ struct task_struct {
 	struct list_head children;	/* list of my children */
 	struct list_head sibling;	/* linkage in my parent's children list */
 	struct task_struct *group_leader;	/* threadgroup leader */
+
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+	raw_spinlock_t thread_group_info_lock;
+	struct thread_group_info_t *thread_group_info;
+#endif
 
 	/*
 	 * ptraced is the list of tasks this task is using ptrace on.

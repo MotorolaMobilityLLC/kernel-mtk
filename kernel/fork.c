@@ -90,6 +90,9 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/task.h>
 
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+#include <linux/sched.h>
+#endif
 #define WARN_FORK_DUR 1000000000
 
 /*
@@ -188,6 +191,24 @@ void thread_info_cache_init(void)
 # endif
 #endif
 
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+/*
+  current does not support NUMA, reserve node parameter for future usage.
+ */
+static inline struct thread_group_info_t *alloc_thread_group_info_node(struct task_struct *tsk, int node)
+{
+	int num_cluster;
+
+	num_cluster = arch_get_nr_clusters();
+	return kmalloc(sizeof(struct thread_group_info_t) * num_cluster, GFP_KERNEL);
+}
+
+static inline void free_thread_group_info(struct thread_group_info_t *tg)
+{
+	kfree(tg);
+}
+#endif
+
 /* SLAB cache for signal_struct structures (tsk->signal) */
 static struct kmem_cache *signal_cachep;
 
@@ -225,6 +246,9 @@ void free_task(struct task_struct *tsk)
 	ftrace_graph_exit_task(tsk);
 	put_seccomp_filter(tsk);
 	arch_release_task_struct(tsk);
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+	free_thread_group_info(tsk->thread_group_info);
+#endif
 	free_task_struct(tsk);
 }
 EXPORT_SYMBOL(free_task);
@@ -329,6 +353,9 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
 	struct thread_info *ti;
 	int node = tsk_fork_get_node(orig);
 	int err;
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+	struct thread_group_info_t *tg;
+#endif
 
 	tsk = alloc_task_struct_node(node);
 	if (!tsk) {
@@ -350,6 +377,17 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
 		goto free_ti;
 	}
 	tsk->stack = ti;
+
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+	tg = alloc_thread_group_info_node(tsk, node);
+	if (!tg) {
+		pr_err("[%d:%s] fork fail at alloc_thread_group_info_node, please check kmalloc\n",
+			current->pid, current->comm);
+		goto free_tg;
+	}
+	tsk->thread_group_info = tg;
+#endif
+
 #ifdef CONFIG_SECCOMP
 	/*
 	 * We must handle setting up seccomp filters once we're under
@@ -384,6 +422,10 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
 
 	return tsk;
 
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+free_tg:
+	free_thread_group_info(tg);
+#endif
 free_ti:
 	free_thread_info(ti);
 free_tsk:
@@ -1200,6 +1242,23 @@ init_task_pid(struct task_struct *task, enum pid_type type, struct pid *pid)
 	 task->pids[type].pid = pid;
 }
 
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+static void mt_init_thread_group(struct task_struct *p)
+{
+	int i, num_cluster;
+
+	raw_spin_lock_init(&p->thread_group_info_lock);
+	num_cluster = arch_get_nr_clusters();
+
+	for (i = 0; i < num_cluster; i++) {
+		p->thread_group_info[i].cfs_nr_running = 0;
+		p->thread_group_info[i].nr_running = 0;
+		p->thread_group_info[i].load_avg_contrib = 0;
+	}
+
+}
+#endif
+
 /*
  * This creates a new process as a copy of the old one,
  * but does not actually start it yet.
@@ -1499,6 +1558,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 
 	p->pdeath_signal = 0;
 	INIT_LIST_HEAD(&p->thread_group);
+#ifdef CONFIG_MTK_SCHED_CMP_TGS
+	mt_init_thread_group(p);
+#endif
 	p->task_works = NULL;
 
 	/*

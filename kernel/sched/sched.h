@@ -1187,6 +1187,15 @@ static inline void idle_exit_fair(struct rq *rq) { }
 
 #endif
 
+# ifdef CONFIG_MTK_SCHED_CMP_TGS
+extern int group_leader_is_empty(struct task_struct *p);
+# endif /* CONFIG_MTK_SCHED_CMP_TGS */
+
+# ifdef CONFIG_MTK_SCHED_CMP
+extern void get_cluster_cpus(struct cpumask *cpus, int cluster_id, bool exclusive_offline);
+extern int get_cluster_id(unsigned int cpu);
+# endif /* CONFIG_MTK_SCHED_CMP */
+
 #ifdef CONFIG_CPU_IDLE
 static inline void idle_set_state(struct rq *rq,
 				  struct cpuidle_state *idle_state)

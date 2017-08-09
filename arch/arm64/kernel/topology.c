@@ -455,7 +455,11 @@ static void __init reset_cpu_topology(void)
 	}
 }
 
-void __init init_cpu_topology(void)
+
+/*
+ * return 1 while every cpu is recognizible
+ */
+void build_cpu_topology(void)
 {
 	reset_cpu_topology();
 
@@ -467,7 +471,28 @@ void __init init_cpu_topology(void)
 		reset_cpu_topology();
 
 	parse_dt_cpu_capacity();
+
 }
+
+#ifndef CONFIG_MTK_CPU_TOPOLOGY
+/*
+ * init_cpu_topology is called at boot when only one cpu is running
+ * which prevent simultaneous write access to cpu_topology array
+ */
+void __init init_cpu_topology(void)
+{
+	build_cpu_topology();
+}
+#else
+void __init init_cpu_topology(void)
+{
+}
+
+void arch_build_cpu_topology_domain(void)
+{
+	build_cpu_topology();
+}
+#endif
 
 /*
  * Extras of CPU & Cluster functions
@@ -516,8 +541,9 @@ int arch_get_nr_clusters(void)
 	int max_id = 0;
 	unsigned int cpu;
 
-	if (__arch_nr_clusters != -1)
+	if (__arch_nr_clusters != -1) {
 		return __arch_nr_clusters;
+	}
 
 	/* assume socket id is monotonic increasing without gap. */
 	for_each_possible_cpu(cpu) {
