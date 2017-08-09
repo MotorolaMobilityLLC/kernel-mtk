@@ -735,7 +735,9 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 
 int spm_load_pcm_firmware_nodev(void)
 {
-	spm_load_pcm_firmware(pspmdev);
+	/* for 4GB mode */
+	if (!enable_4G())
+		spm_load_pcm_firmware(pspmdev);
 	return 0;
 }
 
