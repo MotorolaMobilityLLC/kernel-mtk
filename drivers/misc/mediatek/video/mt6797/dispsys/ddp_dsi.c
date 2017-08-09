@@ -350,7 +350,7 @@ static void _DSI_INTERNAL_IRQ_Handler(DISP_MODULE_ENUM module, unsigned int para
 	DSI_TXRX_CTRL_REG txrx_ctrl;
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		status = *(PDSI_INT_STATUS_REG) & param;
+		status = *(PDSI_INT_STATUS_REG)(&param);
 		if (status.RD_RDY) {
 			/* /write clear RD_RDY interrupt */
 
@@ -689,19 +689,20 @@ DSI_STATUS DSI_Wakeup(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 		wait_sleep_out_done = false;
 		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 0);
 		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 1);
-		do {
-			cnt++;
-			ret =
-			    wait_event_interruptible_timeout(_dsi_wait_sleep_out_done_queue[i],
-							     wait_sleep_out_done, 2 * HZ);
-		} while (ret <= 0 && cnt <= 2);
-
+		if (i == 0) { /* kernel only listens DSI0's IRQ */
+			do {
+				cnt++;
+				ret =
+					wait_event_interruptible_timeout(_dsi_wait_sleep_out_done_queue[i],
+							wait_sleep_out_done, 2 * HZ);
+			} while (ret <= 0 && cnt <= 2);
+		}
 		if (ret == 0) {
-			DISPERR("dsi wait sleep out timeout\n");
+			DISPERR("dsi %d  wait sleep out timeout\n", i);
 			DSI_DumpRegisters(module, 2);
 			DSI_Reset(module, NULL);
 		} else if (ret < 0) {
-			DISPERR("dsi wait sleep out weake up by signal ret %d\n", ret);
+			DISPERR("dsi %d wait sleep out weake up by signal ret %d\n", i, ret);
 			mdelay(5);
 		}
 		DSI_OUTREGBIT(cmdq, DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 0);
@@ -3197,6 +3198,21 @@ int ddp_dsi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 		DISPCHECK("===>Pmaster:CLK SETTING??==> clk:%d\n",
 			  _dsi_context[0].dsi_params.PLL_CLOCK);
 		DSI_PHY_clk_setting(module, NULL, dsi_config);
+
+#if defined(MTK_NO_DISP_IN_LK)
+		s_isDsiPowerOn = 1;
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, CMD_DONE, 1);
+			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, RD_RDY, 1);
+			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
+			/* enable te_rdy when need, not here (both cmd mode & vdo mode) */
+			/* DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG,DSI_REG[i]->DSI_INTEN,TE_RDY,1); */
+			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_CMD_DONE, 1);
+			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, SLEEPOUT_DONE, 1);
+			/* DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG,DSI_REG[i]->DSI_INTEN,FRAME_DONE_INT_EN,0); */
+			DSI_BackupRegisters(module, NULL);
+		}
+#endif
 	}
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -3555,6 +3571,7 @@ int ddp_dsi_reset(DISP_MODULE_ENUM module, void *cmdq_handle)
 int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	int ret = 0;
+	int i = 0;
 
 	DISPFUNC();
 
@@ -3620,10 +3637,10 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 		DSI_SleepOut(module, NULL);
 
 		/* restore lane_num */
-		{
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 			DSI_REGS *regs = NULL;
-			regs = &(_dsi_context[0].regBackup);
-			DSI_OUTREG32(NULL, &DSI_REG[0]->DSI_TXRX_CTRL,
+			regs = &(_dsi_context[i].regBackup);
+			DSI_OUTREG32(NULL, &DSI_REG[i]->DSI_TXRX_CTRL,
 				     AS_UINT32(&regs->DSI_TXRX_CTRL));
 		}
 		/* enter wakeup */
@@ -3671,7 +3688,9 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 			DDPMSG("dsi not in ulps mode, try again...\n");
 		}
 		/* clear lane_num when enter ulps */
-		DSI_OUTREGBIT(NULL, DSI_TXRX_CTRL_REG, DSI_REG[0]->DSI_TXRX_CTRL, LANE_NUM, 0);
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++)
+			DSI_OUTREGBIT(NULL, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, LANE_NUM, 0);
+
 		/* disable clock */
 		DSI_DisableClk(module, NULL);
 
