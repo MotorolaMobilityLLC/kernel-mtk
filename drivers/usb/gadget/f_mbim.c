@@ -1009,9 +1009,10 @@ static int mbim_unwrap_ntb(struct mbim_gether *port,
 			skb2 = skb;
 		} else {
 			skb2 = skb_clone(skb, GFP_ATOMIC);
-			if (skb2 == NULL)
+			if (skb2 == NULL) {
 				pr_notice("clone error\n");
 				goto err;
+			}
 		}
 
 		/* NDP is located behind datagram */
@@ -2566,6 +2567,13 @@ static long mbim_ioctl(struct file *fp, unsigned cmd, unsigned long arg)
 			ret = -EFAULT;
 			break;
 		}
+
+		if (sid_ifid.ifid > MAX_SESSION_NUM) {
+			pr_err("Out of sessionID =%d\n", sid_ifid.ifid);
+			ret = -EFAULT;
+			break;
+		}
+
 		mbim->ethid_to_sid_tbl[sid_ifid.ifid] = sid_ifid.sid;
 		pr_err("mbim->ethid_to_sid_tbl[%d] = %d\n", sid_ifid.ifid, sid_ifid.sid);
 #ifdef CONFIG_MTK_NET_CCMNI
