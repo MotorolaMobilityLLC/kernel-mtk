@@ -541,6 +541,25 @@ void ncp1854_read_register(int i)
 	battery_log(BAT_LOG_FULL, "[ncp1854_read_register] Reg[0x%X]=0x%X\n", i, ncp1854_reg[i]);
 }
 
+static void ncp1854_parse_customer_setting(void)
+{
+#ifdef CONFIG_OF
+	unsigned int val;
+	struct device_node *np;
+
+	/* check customer setting */
+	np = of_find_compatible_node(NULL, NULL, "mediatek,battery");
+	if (np) {
+		if (of_property_read_u32(np, "disable_ncp1854_fctry_mod", &val) == 0) {
+			if (val)
+				ncp1854_set_fctry_mode(0x0);
+
+			battery_log(BAT_LOG_FULL, "%s: disable factory mode, %d\n", __func__, val);
+		}
+	}
+#endif
+}
+
 static int ncp1854_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int err = 0;
@@ -558,6 +577,8 @@ static int ncp1854_driver_probe(struct i2c_client *client, const struct i2c_devi
 	new_client = client;
 
 	chargin_hw_init_done = KAL_TRUE;
+
+	ncp1854_parse_customer_setting();
 
 	return 0;
 
