@@ -50,6 +50,9 @@ static DEFINE_SPINLOCK(g_CAM_CALLock); /* for SMP */
 ********************************************************************************/
 #define CAM_CAL_DRVNAME "CAM_CAL_DRV"
 #define CAM_CAL_I2C_GROUP_ID 0
+#define CATC24C16_DEVICE_ID		0xA0
+#define CAM_CAL_DEV_MAJOR_NUMBER 226
+
 /*******************************************************************************
 *
 ********************************************************************************/
