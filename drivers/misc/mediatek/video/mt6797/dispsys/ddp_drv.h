@@ -41,7 +41,7 @@ typedef struct DISP_EXEC_COMMAND {
 #define COLOR_TUNING_INDEX 19
 #define THSHP_TUNING_INDEX 12
 #define THSHP_PARAM_MAX 83
-
+#define PARTIAL_Y_INDEX 10
 
 #define GLOBAL_SAT_SIZE 10
 #define CONTRAST_SIZE 10
@@ -59,6 +59,7 @@ typedef struct DISP_EXEC_COMMAND {
 typedef struct {
 	unsigned int u4SHPGain;	/* 0 : min , 9 : max. */
 	unsigned int u4SatGain;	/* 0 : min , 9 : max. */
+	unsigned int u4PartialY; /* 0 : min , 9 : max. */
 	unsigned int u4HueAdj[PQ_HUE_ADJ_PHASE_CNT];
 	unsigned int u4SatAdj[PQ_SAT_ADJ_PHASE_CNT];
 	unsigned int u4Contrast;	/* 0 : min , 9 : max. */
@@ -81,11 +82,27 @@ typedef struct {
 } DISP_PQ_MAPPING_PARAM;
 
 typedef struct {
+	unsigned int en;
+	unsigned int pos_x;
+	unsigned int pos_y;
+} MDP_COLOR_CAP;
+
+typedef struct {
+	unsigned int TDS_GAIN_MID;
+	unsigned int TDS_GAIN_HIGH;
+	unsigned int TDS_COR_GAIN;
+	unsigned int TDS_COR_THR;
+	unsigned int TDS_COR_ZERO;
+	unsigned int TDS_GAIN;
+	unsigned int TDS_COR_VALUE;
+} MDP_TDSHP_REG;
+
+typedef struct {
 
 	unsigned short GLOBAL_SAT[GLOBAL_SAT_SIZE];
 	unsigned short CONTRAST[CONTRAST_SIZE];
 	unsigned short BRIGHTNESS[BRIGHTNESS_SIZE];
-	unsigned char PARTIAL_Y[PARTIAL_Y_SIZE];
+	unsigned char PARTIAL_Y[PARTIAL_Y_INDEX][PARTIAL_Y_SIZE];
 	unsigned char PURP_TONE_S[COLOR_TUNING_INDEX][PQ_PARTIALS_CONTROL][PURP_TONE_SIZE];
 	unsigned char SKIN_TONE_S[COLOR_TUNING_INDEX][PQ_PARTIALS_CONTROL][SKIN_TONE_SIZE];
 	unsigned char GRASS_TONE_S[COLOR_TUNING_INDEX][PQ_PARTIALS_CONTROL][GRASS_TONE_SIZE];
@@ -104,6 +121,39 @@ typedef struct {
 
 } DISPLAY_TDSHP_T;
 
+typedef enum {
+	DS_en = 0,
+	iUpSlope,
+	iUpThreshold,
+	iDownSlope,
+	iDownThreshold,
+	iISO_en,
+	iISO_thr1,
+	iISO_thr0,
+	iISO_thr3,
+	iISO_thr2,
+	iISO_IIR_alpha,
+	iCorZero_clip2,
+	iCorZero_clip1,
+	iCorZero_clip0,
+	iCorThr_clip2,
+	iCorThr_clip1,
+	iCorThr_clip0,
+	iCorGain_clip2,
+	iCorGain_clip1,
+	iCorGain_clip0,
+	iGain_clip2,
+	iGain_clip1,
+	iGain_clip0,
+	PQ_DS_INDEX_MAX
+} PQ_DS_index_t;
+
+
+typedef struct {
+
+	int param[PQ_DS_INDEX_MAX];
+
+} DISP_PQ_DS_PARAM;
 
 typedef enum {
 	BlackEffectEnable = 0,
@@ -263,6 +313,11 @@ struct device *disp_get_device(void);
 /* OVL */
 #define DISP_IOCTL_OVL_ENABLE_CASCADE  _IOW(DISP_IOCTL_MAGIC, 90 , int)
 #define DISP_IOCTL_OVL_DISABLE_CASCADE  _IOW(DISP_IOCTL_MAGIC, 91 , int)
+
+/*PQ setting*/
+#define DISP_IOCTL_PQ_GET_DS_PARAM      _IOR(DISP_IOCTL_MAGIC, 100, DISP_PQ_DS_PARAM)
+#define DISP_IOCTL_PQ_GET_MDP_COLOR_CAP _IOR(DISP_IOCTL_MAGIC, 101, MDP_COLOR_CAP)
+#define DISP_IOCTL_PQ_GET_MDP_TDSHP_REG _IOR(DISP_IOCTL_MAGIC, 102, MDP_TDSHP_REG)
 
 /*secure video path implementation: the handle value*/
 #define DISP_IOCTL_SET_TPLAY_HANDLE    _IOW(DISP_IOCTL_MAGIC, 200, unsigned int)

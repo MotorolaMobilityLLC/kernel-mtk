@@ -82,14 +82,21 @@ enum {
 #define MIRAVISION_SW_VERSION       (1)	/* 1:Android Lollipop */
 #define MIRAVISION_SW_FEATURE_VIDEO_DC  (0x1)
 #define MIRAVISION_SW_FEATURE_AAL       (0x2)
+#define MIRAVISION_SW_FEATURE_PQDS       (0x4)
+
 #define MIRAVISION_VERSION          ((MIRAVISION_HW_VERSION << MIRAVISION_HW_VERSION_SHIFT) |   \
 				     (MIRAVISION_SW_VERSION << MIRAVISION_SW_VERSION_SHIFT) |   \
 				     MIRAVISION_SW_FEATURE_VIDEO_DC |   \
-				     MIRAVISION_SW_FEATURE_AAL)
+				     MIRAVISION_SW_FEATURE_AAL |   \
+				     MIRAVISION_SW_FEATURE_PQDS)
 
 #define SW_VERSION_VIDEO_DC         (1)
 #define SW_VERSION_AAL              (1)
-
+#if defined(CONFIG_ARCH_MT6755)
+#define SW_VERSION_PQDS             (2)
+#else
+#define SW_VERSION_PQDS             (1)
+#endif
 
 #if defined(DISP_COLOR_ON)
 #define COLOR_MODE			(1)
@@ -102,11 +109,13 @@ enum {
 #endif
 
 
-#define DISP_COLOR_SWREG_START      (0xFFFF0000)
-#define DISP_COLOR_SWREG_COLOR_BASE (DISP_COLOR_SWREG_START)	/* 0xFFFF0000 */
-#define DISP_COLOR_SWREG_TDSHP_BASE (DISP_COLOR_SWREG_COLOR_BASE + 0x1000)	/* 0xFFFF1000 */
-#define DISP_COLOR_SWREG_PQDC_BASE  (DISP_COLOR_SWREG_TDSHP_BASE + 0x1000)	/* 0xFFFF2000 */
-#define DISP_COLOR_SWREG_END        (DISP_COLOR_SWREG_PQDC_BASE + 0x1000)	/* 0xFFFF3000 */
+#define DISP_COLOR_SWREG_START              (0xFFFF0000)
+#define DISP_COLOR_SWREG_COLOR_BASE         (DISP_COLOR_SWREG_START)	/* 0xFFFF0000 */
+#define DISP_COLOR_SWREG_TDSHP_BASE         (DISP_COLOR_SWREG_COLOR_BASE + 0x1000)	/* 0xFFFF1000 */
+#define DISP_COLOR_SWREG_PQDC_BASE          (DISP_COLOR_SWREG_TDSHP_BASE + 0x1000)	/* 0xFFFF2000 */
+#define DISP_COLOR_SWREG_PQDS_BASE          (DISP_COLOR_SWREG_PQDC_BASE + 0x1000)	/* 0xFFFF3000 */
+#define DISP_COLOR_SWREG_MDP_COLOR_BASE     (DISP_COLOR_SWREG_PQDS_BASE + 0x1000)	/* 0xFFFF4000 */
+#define DISP_COLOR_SWREG_END                (DISP_COLOR_SWREG_MDP_COLOR_BASE + 0x1000)	/* 0xFFFF5000 */
 
 #define SWREG_COLOR_BASE_ADDRESS            (DISP_COLOR_SWREG_COLOR_BASE + 0x0000)
 #define SWREG_GAMMA_BASE_ADDRESS            (DISP_COLOR_SWREG_COLOR_BASE + 0x0001)
@@ -121,6 +130,13 @@ enum {
 
 
 #define SWREG_TDSHP_TUNING_MODE             (DISP_COLOR_SWREG_TDSHP_BASE + 0x0000)
+#define SWREG_TDSHP_GAIN_MID	            (DISP_COLOR_SWREG_TDSHP_BASE + 0x0001)
+#define SWREG_TDSHP_GAIN_HIGH	            (DISP_COLOR_SWREG_TDSHP_BASE + 0x0002)
+#define SWREG_TDSHP_COR_GAIN	            (DISP_COLOR_SWREG_TDSHP_BASE + 0x0003)
+#define SWREG_TDSHP_COR_THR                 (DISP_COLOR_SWREG_TDSHP_BASE + 0x0004)
+#define SWREG_TDSHP_COR_ZERO	            (DISP_COLOR_SWREG_TDSHP_BASE + 0x0005)
+#define SWREG_TDSHP_GAIN                    (DISP_COLOR_SWREG_TDSHP_BASE + 0x0006)
+#define SWREG_TDSHP_COR_VALUE	            (DISP_COLOR_SWREG_TDSHP_BASE + 0x0007)
 
 #define SWREG_PQDC_BLACK_EFFECT_ENABLE      (DISP_COLOR_SWREG_PQDC_BASE + BlackEffectEnable)
 #define SWREG_PQDC_WHITE_EFFECT_ENABLE      (DISP_COLOR_SWREG_PQDC_BASE + WhiteEffectEnable)
@@ -163,10 +179,38 @@ enum {
 #define SWREG_PQDC_PROTECT_REGION_WEIGHT    (DISP_COLOR_SWREG_PQDC_BASE + ProtectRegionWeight)
 #define SWREG_PQDC_DC_ENABLE                (DISP_COLOR_SWREG_PQDC_BASE + DCEnable)
 
+#define SWREG_PQDS_DS_EN                    (DISP_COLOR_SWREG_PQDS_BASE + DS_en)
+#define SWREG_PQDS_UP_SLOPE                 (DISP_COLOR_SWREG_PQDS_BASE + iUpSlope)
+#define SWREG_PQDS_UP_THR                   (DISP_COLOR_SWREG_PQDS_BASE + iUpThreshold)
+#define SWREG_PQDS_DOWN_SLOPE               (DISP_COLOR_SWREG_PQDS_BASE + iDownSlope)
+#define SWREG_PQDS_DOWN_THR                 (DISP_COLOR_SWREG_PQDS_BASE + iDownThreshold)
+#define SWREG_PQDS_ISO_EN                   (DISP_COLOR_SWREG_PQDS_BASE + iISO_en)
+#define SWREG_PQDS_ISO_THR1                 (DISP_COLOR_SWREG_PQDS_BASE + iISO_thr1)
+#define SWREG_PQDS_ISO_THR0                 (DISP_COLOR_SWREG_PQDS_BASE + iISO_thr0)
+#define SWREG_PQDS_ISO_THR3                 (DISP_COLOR_SWREG_PQDS_BASE + iISO_thr3)
+#define SWREG_PQDS_ISO_THR2                 (DISP_COLOR_SWREG_PQDS_BASE + iISO_thr2)
+#define SWREG_PQDS_ISO_IIR                  (DISP_COLOR_SWREG_PQDS_BASE + iISO_IIR_alpha)
+#define SWREG_PQDS_COR_ZERO_2               (DISP_COLOR_SWREG_PQDS_BASE + iCorZero_clip2)
+#define SWREG_PQDS_COR_ZERO_1               (DISP_COLOR_SWREG_PQDS_BASE + iCorZero_clip1)
+#define SWREG_PQDS_COR_ZERO_0               (DISP_COLOR_SWREG_PQDS_BASE + iCorZero_clip0)
+#define SWREG_PQDS_COR_THR_2                (DISP_COLOR_SWREG_PQDS_BASE + iCorThr_clip2)
+#define SWREG_PQDS_COR_THR_1                (DISP_COLOR_SWREG_PQDS_BASE + iCorThr_clip1)
+#define SWREG_PQDS_COR_THR_0                (DISP_COLOR_SWREG_PQDS_BASE + iCorThr_clip0)
+#define SWREG_PQDS_COR_GAIN_2               (DISP_COLOR_SWREG_PQDS_BASE + iCorGain_clip2)
+#define SWREG_PQDS_COR_GAIN_1               (DISP_COLOR_SWREG_PQDS_BASE + iCorGain_clip1)
+#define SWREG_PQDS_COR_GAIN_0               (DISP_COLOR_SWREG_PQDS_BASE + iCorGain_clip0)
+#define SWREG_PQDS_GAIN_2                   (DISP_COLOR_SWREG_PQDS_BASE + iGain_clip2)
+#define SWREG_PQDS_GAIN_1                   (DISP_COLOR_SWREG_PQDS_BASE + iGain_clip1)
+#define SWREG_PQDS_GAIN_0                   (DISP_COLOR_SWREG_PQDS_BASE + iGain_clip0)
+#define SWREG_PQDS_END                      (DISP_COLOR_SWREG_PQDS_BASE + PQ_DS_INDEX_MAX)
+
+#define SWREG_MDP_COLOR_CAPTURE_EN          (DISP_COLOR_SWREG_MDP_COLOR_BASE + 0x0000)
+#define SWREG_MDP_COLOR_CAPTURE_POS_X       (DISP_COLOR_SWREG_MDP_COLOR_BASE + 0x0001)
+#define SWREG_MDP_COLOR_CAPTURE_POS_Y       (DISP_COLOR_SWREG_MDP_COLOR_BASE + 0x0002)
+
+
 /* --------------------------------------------------------------------------- */
-void DpEngine_COLORonInit(DISP_MODULE_ENUM module, void *__cmdq);
-void DpEngine_COLORonConfig(DISP_MODULE_ENUM module, unsigned int srcWidth, unsigned int srcHeight,
-			    void *__cmdq);
+
 
 DISP_PQ_PARAM *get_Color_config(int id);
 DISP_PQ_PARAM *get_Color_Cam_config(void);
@@ -176,5 +220,4 @@ extern DISPLAY_TDSHP_T *get_TDSHP_index(void);
 
 void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
 			   unsigned int hue_upper, unsigned int hue_lower);
-
 #endif

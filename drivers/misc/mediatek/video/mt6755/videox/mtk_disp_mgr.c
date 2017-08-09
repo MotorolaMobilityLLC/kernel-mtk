@@ -1543,6 +1543,9 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_PQ_SET_TDSHP_FLAG:
 	case DISP_IOCTL_PQ_GET_DC_PARAM:
 	case DISP_IOCTL_PQ_SET_DC_PARAM:
+	case DISP_IOCTL_PQ_GET_DS_PARAM:
+	case DISP_IOCTL_PQ_GET_MDP_COLOR_CAP:
+	case DISP_IOCTL_PQ_GET_MDP_TDSHP_REG:
 	case DISP_IOCTL_WRITE_SW_REG:
 	case DISP_IOCTL_READ_SW_REG:
 	{
@@ -1676,6 +1679,37 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsi
 			data32 = compat_ptr(arg);
 			ret = file->f_op->unlocked_ioctl(file, cmd, (unsigned long)data32);
 			return ret;
+		}
+	case DISP_IOCTL_SET_GAMMALUT:
+	case DISP_IOCTL_SET_CCORR:
+	case DISP_IOCTL_SET_PQPARAM:
+	case DISP_IOCTL_GET_PQPARAM:
+	case DISP_IOCTL_SET_PQINDEX:
+	case DISP_IOCTL_GET_PQINDEX:
+	case DISP_IOCTL_SET_TDSHPINDEX:
+	case DISP_IOCTL_GET_TDSHPINDEX:
+	case DISP_IOCTL_SET_PQ_CAM_PARAM:
+	case DISP_IOCTL_GET_PQ_CAM_PARAM:
+	case DISP_IOCTL_SET_PQ_GAL_PARAM:
+	case DISP_IOCTL_GET_PQ_GAL_PARAM:
+	case DISP_IOCTL_PQ_SET_BYPASS_COLOR:
+	case DISP_IOCTL_PQ_SET_WINDOW:
+	case DISP_IOCTL_OD_CTL:
+	case DISP_IOCTL_WRITE_REG:
+	case DISP_IOCTL_READ_REG:
+	case DISP_IOCTL_MUTEX_CONTROL:
+	case DISP_IOCTL_PQ_GET_TDSHP_FLAG:
+	case DISP_IOCTL_PQ_SET_TDSHP_FLAG:
+	case DISP_IOCTL_PQ_GET_DC_PARAM:
+	case DISP_IOCTL_PQ_GET_DS_PARAM:
+	case DISP_IOCTL_PQ_SET_DC_PARAM:
+	case DISP_IOCTL_PQ_GET_MDP_COLOR_CAP:
+	case DISP_IOCTL_PQ_GET_MDP_TDSHP_REG:
+	case DISP_IOCTL_WRITE_SW_REG:
+	case DISP_IOCTL_READ_SW_REG:
+		{
+			ret = primary_display_user_cmd(cmd, arg);
+			break;
 		}
 	default:
 		{

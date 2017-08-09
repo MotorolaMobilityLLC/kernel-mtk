@@ -1302,6 +1302,9 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 	case DISP_IOCTL_PQ_SET_TDSHP_FLAG:
 	case DISP_IOCTL_PQ_GET_DC_PARAM:
 	case DISP_IOCTL_PQ_SET_DC_PARAM:
+	case DISP_IOCTL_PQ_GET_DS_PARAM:
+	case DISP_IOCTL_PQ_GET_MDP_COLOR_CAP:
+	case DISP_IOCTL_PQ_GET_MDP_TDSHP_REG:
 	case DISP_IOCTL_WRITE_SW_REG:
 	case DISP_IOCTL_READ_SW_REG:
 		if (is_module_in_path(DISP_MODULE_COLOR0, handle))

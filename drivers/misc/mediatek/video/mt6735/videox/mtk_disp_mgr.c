@@ -2047,6 +2047,9 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_PQ_SET_TDSHP_FLAG:
 	case DISP_IOCTL_PQ_GET_DC_PARAM:
 	case DISP_IOCTL_PQ_SET_DC_PARAM:
+	case DISP_IOCTL_PQ_GET_DS_PARAM:
+	case DISP_IOCTL_PQ_GET_MDP_COLOR_CAP:
+	case DISP_IOCTL_PQ_GET_MDP_TDSHP_REG:
 	case DISP_IOCTL_WRITE_SW_REG:
 	case DISP_IOCTL_READ_SW_REG:
 		ret = primary_display_user_cmd(cmd, arg);
