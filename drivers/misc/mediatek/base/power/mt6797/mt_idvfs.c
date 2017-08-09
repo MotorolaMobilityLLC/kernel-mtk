@@ -130,8 +130,10 @@ static int func_lv_mask_idvfs = 100;
 
 #if CONFIG_IDVFS_AEE_RR_REC
 #define AEE_RR_REC(name, value)		aee_rr_rec_##name(value)
+#define AEE_RR_CURR(name)			aee_rr_curr_##name()
 #else
 #define AEE_RR_REC(name, value)
+#define AEE_RR_CURR()
 #endif
 
 #if 1
@@ -519,7 +521,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	return -1;
 #else /* ENABLE_IDVFS */
 
-	unsigned char ret_volt = 0;
+	unsigned char ret_val = 0;
 	unsigned int cur_vproc_mv_x100, cur_vsram_mv_x100;
 
 	/* for back legacy DVFS mode debug */
@@ -590,8 +592,14 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	iDVFSAPB_init();
 
 	/* get current vproc volt */
-	da9214_read_interface(0xd9, &ret_volt, 0x7f, 0);
-	cur_vproc_mv_x100 = ((DA9214_STEP_TO_MV(ret_volt & 0x7f)) * 100);
+	da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
+	cur_vproc_mv_x100 = ((DA9214_STEP_TO_MV(ret_val & 0x7f)) * 100);
+
+	/* before BigiDVFS enable aee pmic status */
+	/* da9214_read_interface(0xd9, &ret_val, 0x7f, 0); */ /* due to before read */
+	AEE_RR_REC(idvfs_curr_volt, ((AEE_RR_CURR(idvfs_curr_volt) & 0xff00) | ret_val));
+	da9214_read_interface(0x5e, &ret_val, 0xff, 0);
+	AEE_RR_REC(idvfs_curr_volt, ((AEE_RR_CURR(idvfs_curr_volt) & 0x00ff) | (ret_val << 8)));
 
 	/* fix sarm = 1180mv */
 	BigiDVFSSRAMLDOSet(118000);
@@ -672,7 +680,7 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	return -1;
 #else
 	int i;
-	/* unsigned char ret_val = 0; */
+	unsigned char ret_val = 0;
 
 	/* for back legacy DVFS mode debug */
 	if (disable_idvfs_flag)
@@ -709,6 +717,12 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 		idvfs_init_opt.idvfs_status = 3;
 		AEE_RR_REC(idvfs_state_manchine, 3);
 	}
+
+	/* before BigiDVFS disable aee pmic status */
+	da9214_read_interface(0xd9, &ret_val, 0x7f, 0);
+	AEE_RR_REC(idvfs_curr_volt, ((AEE_RR_CURR(idvfs_curr_volt) & 0xff00) | ret_val));
+	da9214_read_interface(0x5e, &ret_val, 0xff, 0);
+	AEE_RR_REC(idvfs_curr_volt, ((AEE_RR_CURR(idvfs_curr_volt) & 0x00ff) | (ret_val << 8)));
 
 	idvfs_ver("[****]iDVFS start disable.\n");
 	/* idvfs_ver("iDVFS disable OCP/OTP channel.\n"); */
@@ -785,18 +799,23 @@ int BigiDVFSChannel(unsigned int Channelm, unsigned int EnDis)
 	case 0:
 		/* SW channel, bit[1] */
 		SEC_BIGIDVFS_WRITE(0x10222470, (SEC_BIGIDVFS_READ(0x10222470) & 0xfffffffd) | (EnDis << 1));
+		AEE_RR_REC(idvfs_ctrl_reg, ((AEE_RR_CURR(idvfs_ctrl_reg) & 0xfffffffd) | (EnDis << 1)));
 		break;
 
 	case 1:
 		/* OCP channel, bit[2] */
-		if (idvfs_init_opt.ocp_endis)
+		if (idvfs_init_opt.ocp_endis) {
 			SEC_BIGIDVFS_WRITE(0x10222470, (SEC_BIGIDVFS_READ(0x10222470) & 0xfffffffb) | (EnDis << 2));
+			AEE_RR_REC(idvfs_ctrl_reg, ((AEE_RR_CURR(idvfs_ctrl_reg) & 0xfffffffb) | (EnDis << 1)));
+		}
 		break;
 
 	case 2:
 		/* OTP channel, bit[3] */
-		if (idvfs_init_opt.otp_endis)
+		if (idvfs_init_opt.otp_endis) {
 			SEC_BIGIDVFS_WRITE(0x10222470, (SEC_BIGIDVFS_READ(0x10222470) & 0xfffffff7) | (EnDis << 3));
+			AEE_RR_REC(idvfs_ctrl_reg, ((AEE_RR_CURR(idvfs_ctrl_reg) & 0xfffffff7) | (EnDis << 1)));
+		}
 		break;
 	}
 	/* setting struct */
@@ -887,7 +906,8 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	}
 
 	/* for ram console printf */
-	AEE_RR_REC(idvfs_curr_volt, ((((SEC_BIGIDVFS_READ(0x102224c8) & 0xff00) >> 8) * 10) + 300));
+	AEE_RR_REC(idvfs_curr_volt,
+		((AEE_RR_CURR(idvfs_curr_volt) & 0xff00) | ((SEC_BIGIDVFS_READ(0x102224c8) & 0xff00) >> 8)));
 
 	/* leave lower 505MHz */
 	if ((Freqpct_x100 >= 2000) && (idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage < 2000)) {
@@ -1110,7 +1130,7 @@ int BigiDVFSSRAMLDOSet(unsigned int mVolts_x100)
 
 	rc = SEC_BIGIDVFSSRAMLDOSET(mVolts_x100);
 	/* due to iDVFS fix don't need recoder */
-	/* AEE_RR_REC(idvfs_sram_ldo, (mVolts_x100 / 100)); */
+	AEE_RR_REC(idvfs_sram_ldo, mVolts_x100);
 
 	if (rc >= 0)
 		idvfs_ver("SRAM LDO setting = %u(x100mv) success.\n", mVolts_x100);

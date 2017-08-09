@@ -143,10 +143,10 @@ struct last_reboot_reason {
 	uint32_t idvfs_enable_cnt;
 	uint32_t idvfs_swreq_cnt;
 	uint16_t idvfs_curr_volt;
+	uint16_t idvfs_sram_ldo;
 	uint16_t idvfs_swavg_curr_pct_x100;
 	uint16_t idvfs_swreq_curr_pct_x100;
 	uint16_t idvfs_swreq_next_pct_x100;
-	uint16_t idvfs_sram_ldo;
 	uint8_t idvfs_state_manchine;
 
 	uint32_t ocp_2_target_limit;
@@ -1468,6 +1468,13 @@ void aee_rr_rec_idvfs_curr_volt(u16 val)
 	LAST_RR_SET(idvfs_curr_volt, val);
 }
 
+void aee_rr_rec_idvfs_sram_ldo(u16 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(idvfs_sram_ldo, val);
+}
+
 void aee_rr_rec_idvfs_swavg_curr_pct_x100(u16 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -1487,13 +1494,6 @@ void aee_rr_rec_idvfs_swreq_next_pct_x100(u16 val)
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
 	LAST_RR_SET(idvfs_swreq_next_pct_x100, val);
-}
-
-void aee_rr_rec_idvfs_sram_ldo(u16 val)
-{
-	if (!ram_console_init_done || !ram_console_buffer)
-		return;
-	LAST_RR_SET(idvfs_sram_ldo, val);
 }
 
 void aee_rr_rec_idvfs_state_manchine(u8 val)
@@ -1757,6 +1757,11 @@ u16 aee_rr_curr_idvfs_curr_volt(void)
 	return LAST_RR_VAL(idvfs_curr_volt);
 }
 
+u16 aee_rr_curr_idvfs_sram_ldo(void)
+{
+	return LAST_RR_VAL(idvfs_sram_ldo);
+}
+
 u16 aee_rr_curr_idvfs_swavg_curr_pct_x100(void)
 {
 	return LAST_RR_VAL(idvfs_swavg_curr_pct_x100);
@@ -1770,11 +1775,6 @@ u16 aee_rr_curr_idvfs_swreq_curr_pct_x100(void)
 u16 aee_rr_curr_idvfs_swreq_next_pct_x100(void)
 {
 	return LAST_RR_VAL(idvfs_swreq_next_pct_x100);
-}
-
-u16 aee_rr_curr_idvfs_sram_ldo(void)
-{
-	return LAST_RR_VAL(idvfs_sram_ldo);
 }
 
 u8 aee_rr_curr_idvfs_state_manchine(void)
@@ -2297,7 +2297,7 @@ void aee_rr_show_eem_pi_offset(struct seq_file *m)
 void aee_rr_show_idvfs_ctrl_reg(struct seq_file *m)
 {
 	seq_printf(m, "idvfs_ctrl_reg = 0x%x\n", LAST_RRR_VAL(idvfs_ctrl_reg));
-	seq_printf(m, "idvfs_endis = %s\n", (LAST_RRR_VAL(idvfs_ctrl_reg) & 0x1) ? "Enable" : "Disable");
+	seq_printf(m, "idvfs_Endis = %s\n", (LAST_RRR_VAL(idvfs_ctrl_reg) & 0x1) ? "Enable" : "Disable");
 	seq_printf(m, "idvfs_SWP_Endis = %s\n", (LAST_RRR_VAL(idvfs_ctrl_reg) & 0x2) ? "Enable" : "Disable");
 	seq_printf(m, "idvfs_OCP_Endis = %s\n", (LAST_RRR_VAL(idvfs_ctrl_reg) & 0x4) ? "Enable" : "Disable");
 	seq_printf(m, "idvfs_OTP_Endis = %s\n", (LAST_RRR_VAL(idvfs_ctrl_reg) & 0x8) ? "Enable" : "Disable");
@@ -2315,7 +2315,13 @@ void aee_rr_show_idvfs_swreq_cnt(struct seq_file *m)
 
 void aee_rr_show_idvfs_curr_volt(struct seq_file *m)
 {
-	seq_printf(m, "idvfs_curr_volt = %umv\n", LAST_RRR_VAL(idvfs_curr_volt));
+	seq_printf(m, "idvfs_curr_volt = %umv, 0x5e = 0x%x\n",
+		((LAST_RRR_VAL(idvfs_curr_volt) * 10) + 300), (LAST_RRR_VAL(idvfs_curr_volt) >> 8));
+}
+
+void aee_rr_show_idvfs_sram_ldo(struct seq_file *m)
+{
+	seq_printf(m, "idvfs_sram_ldo = %umv_x100\n", LAST_RRR_VAL(idvfs_sram_ldo));
 }
 
 void aee_rr_show_idvfs_swavg_curr_pct_x100(struct seq_file *m)
@@ -2334,11 +2340,6 @@ void aee_rr_show_idvfs_swreq_next_pct_x100(struct seq_file *m)
 {
 	seq_printf(m, "idvfs_swreq_next_pct_x100 = %u, %uMHz\n",
 		LAST_RRR_VAL(idvfs_swreq_next_pct_x100), (LAST_RRR_VAL(idvfs_swreq_next_pct_x100) / 4));
-}
-
-void aee_rr_show_idvfs_sram_ldo(struct seq_file *m)
-{
-	seq_printf(m, "idvfs_sram_ldo = %umv\n", LAST_RRR_VAL(idvfs_sram_ldo));
 }
 
 void aee_rr_show_idvfs_state_manchine(struct seq_file *m)
@@ -2562,10 +2563,10 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_idvfs_enable_cnt,
 	aee_rr_show_idvfs_swreq_cnt,
 	aee_rr_show_idvfs_curr_volt,
+	aee_rr_show_idvfs_sram_ldo,
 	aee_rr_show_idvfs_swavg_curr_pct_x100,
 	aee_rr_show_idvfs_swreq_curr_pct_x100,
 	aee_rr_show_idvfs_swreq_next_pct_x100,
-	aee_rr_show_idvfs_sram_ldo,
 	aee_rr_show_idvfs_state_manchine,
 	aee_rr_show_ocp_2_target_limit,
 	aee_rr_show_ocp_2_enable,
