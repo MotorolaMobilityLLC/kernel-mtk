@@ -307,10 +307,59 @@ static const struct file_operations kbasep_gpu_dvfs_enable_debugfs_fops = {
 	.release = single_release,
 };
 
+/// gpu AEE
+static int g_gpu_aee_enabled = 0;
+
+static int mtk_kbase_is_gpu_aee_enabled(void)
+{
+	return g_gpu_aee_enabled;
+}
+
+static int proc_gpu_aee_enabled_show(struct seq_file *m, void *v)
+{
+	int gpu_aee_enabled;
+	gpu_aee_enabled = mtk_kbase_is_gpu_aee_enabled();
+	seq_printf(m, "gpu_add_enabled: %d\n", gpu_aee_enabled);
+	return 0;
+}
+
+static int kbasep_gpu_aee_enable_debugfs_open(struct inode *in, struct file *file)
+{
+	return single_open(file, proc_gpu_aee_enabled_show , NULL);
+}
+
+static ssize_t kbasep_gpu_aee_enable_write(struct file *file, const char __user *buffer,
+		size_t count, loff_t *data)
+{
+	char desc[32];
+	int len = 0;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len)) {
+		return 0;
+	}
+	desc[len] = '\0';
+
+	if(!strncmp(desc, "1", 1))
+		g_gpu_aee_enabled = 1;
+	else
+		g_gpu_aee_enabled = 0;
+
+	return count;
+}
+
+static const struct file_operations kbasep_gpu_aee_enable_debugfs_fops = {
+	.open    = kbasep_gpu_aee_enable_debugfs_open,
+	.read    = seq_read,
+	.write   = kbasep_gpu_aee_enable_write,
+	.release = single_release,
+};
+
 static struct proc_dir_entry *mali_pentry;
 
 static struct workqueue_struct     *g_aee_workqueue = NULL;
 static struct work_struct          g_aee_work;
+static int g_aee_called = 0;
 static void aee_Handle(struct work_struct *_psWork)
 {
     /* avoid the build warnning */
@@ -321,18 +370,22 @@ static void aee_Handle(struct work_struct *_psWork)
         void mtk_debug_dump_registers(void);
         mtk_debug_dump_registers();
     }
-    aee_kernel_exception("gpulog", "aee dump gpulog");
 #endif
+
+	if (mtk_kbase_is_gpu_aee_enabled())
+	{
+		aee_kernel_exception("gpulog", "aee dump gpulog");
+		g_aee_called = 0;
+	}
 }
 void mtk_trigger_aee_report(const char *msg)
 {
-    static int called = 0;
-    MTK_err("trigger aee: %s (aee warnning once)", msg);
-    if (called == 0)
+    MTK_err("trigger aee: %s (aee warnning)", msg);
+    if (g_aee_called == 0)
     {
         if (g_aee_workqueue)
         {
-            called = 1;
+			g_aee_called = 1;
             queue_work(g_aee_workqueue, &g_aee_work);
         }
     }
@@ -342,10 +395,18 @@ static struct work_struct          g_pa_work;
 static u64 g_pa;
 static void pa_Handle(struct work_struct *_psWork)
 {
-    bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa);
     /* avoid the build warnning */
     _psWork = _psWork;
-    kbase_debug_gpu_mem_mapping_check_pa(g_pa);
+
+	if (mtk_kbase_is_gpu_aee_enabled())
+	{
+#if 0
+		bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa);
+		kbase_debug_gpu_mem_mapping_check_pa(g_pa);
+#else
+		mtk_trigger_aee_report("mpu");
+#endif
+	}
 }
 void mtk_trigger_emi_report(u64 pa)
 {
@@ -376,6 +437,7 @@ void proc_mali_register(void)
     proc_create("utilization", 0, mali_pentry, &kbasep_gpu_utilization_debugfs_fops);
     proc_create("frequency", 0, mali_pentry, &kbasep_gpu_frequency_debugfs_fops);
     proc_create("dvfs_enable", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_enable_debugfs_fops);
+    proc_create("aee_enable", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_aee_enable_debugfs_fops);
     //    proc_create("input_boost", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_input_boost_debugfs_fops);
     //    proc_create("dvfs_freq", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_freq_debugfs_fops);
     //    proc_create("dvfs_threshold", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_threshold_debugfs_fops);
