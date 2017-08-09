@@ -109,14 +109,10 @@ static unsigned int abist_meter(int ID)
 	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;
 	unsigned int temp2 = 0, temp1 = 0;
 
-	mt6797_0x1001AXXX_lock();
-	temp1 = pminit_read(ARMPLLDIV_ARM_K1);
-	temp2 = pminit_read(ARMPLLDIV_MON_EN);
-	pminit_write(ARMPLLDIV_ARM_K1, 0);
-	ndelay(200);
-	pminit_write(ARMPLLDIV_MON_EN, 0xFFFFFFFF);
-	ndelay(200);
-	mt6797_0x1001AXXX_unlock();
+	temp1 = mt6797_0x1001AXXX_reg_read(ARMPLLDIV_ARM_K1);
+	temp2 = mt6797_0x1001AXXX_reg_read(ARMPLLDIV_MON_EN);
+	mt6797_0x1001AXXX_reg_write(ARMPLLDIV_ARM_K1, 0);
+	mt6797_0x1001AXXX_reg_write(ARMPLLDIV_MON_EN, 0xFFFFFFFF);
 
 	clk26cali_0 = pminit_read(CLK26CALI_0);
 
@@ -159,12 +155,8 @@ static unsigned int abist_meter(int ID)
 	pminit_write(CLK26CALI_0, 0x1000);
 	pminit_write(CLK26CALI_0, 0x0000);
 
-	mt6797_0x1001AXXX_lock();
-	pminit_write(ARMPLLDIV_MON_EN, temp2);
-	ndelay(200);
-	pminit_write(ARMPLLDIV_ARM_K1, temp1);
-	ndelay(200);
-	mt6797_0x1001AXXX_unlock();
+	mt6797_0x1001AXXX_reg_write(ARMPLLDIV_MON_EN, temp2);
+	mt6797_0x1001AXXX_reg_write(ARMPLLDIV_ARM_K1, temp1);
 
 	if (i > 10)
 		return 0;

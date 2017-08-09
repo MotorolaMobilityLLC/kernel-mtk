@@ -47,7 +47,7 @@ void __iomem *clk_imgsys_base;
 void __iomem *clk_vdec_gcon_base;
 void __iomem *clk_mjc_config_base;
 void __iomem *clk_venc_gcon_base;
-void __iomem *clk_mcumixed_base;
+/*void __iomem *clk_mcumixed_base;*/
 void __iomem *clk_camsys_base;
 void __iomem *clk_topmics_base;
 #endif
@@ -231,97 +231,69 @@ int pll_is_on(int id)
 EXPORT_SYMBOL(pll_is_on);
 void enable_armpll_ll(void)
 {
-	mt6797_0x1001AXXX_lock();
-	clk_writel(ARMCAXPLL0_PWR_CON0, (clk_readl(ARMCAXPLL0_PWR_CON0) | 0x01));
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL0_PWR_CON0, (mt6797_0x1001AXXX_reg_read(ARMCAXPLL0_PWR_CON0) | 0x01));
 	udelay(1);
-	clk_writel(ARMCAXPLL0_PWR_CON0, (clk_readl(ARMCAXPLL0_PWR_CON0) & 0xfffffffd));
-	ndelay(200);
-	clk_writel(ARMCAXPLL0_CON1, (clk_readl(ARMCAXPLL0_CON1) | 0xC0000000));
-	ndelay(200);
-	clk_writel(ARMCAXPLL0_CON0, (clk_readl(ARMCAXPLL0_CON0) | 0x01));
-	ndelay(200);
-	mt6797_0x1001AXXX_unlock();
-
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL0_PWR_CON0,
+		(mt6797_0x1001AXXX_reg_read(ARMCAXPLL0_PWR_CON0) & 0xfffffffd));
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL0_CON1, (mt6797_0x1001AXXX_reg_read(ARMCAXPLL0_CON1) | 0xC0000000));
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL0_CON0, (mt6797_0x1001AXXX_reg_read(ARMCAXPLL0_CON0) | 0x01));
 	udelay(200);
 }
 EXPORT_SYMBOL(enable_armpll_ll);
 void disable_armpll_ll(void)
 {
-	mt6797_0x1001AXXX_lock();
-	clk_writel(ARMCAXPLL0_CON0, (clk_readl(ARMCAXPLL0_CON0) & 0xfffffffe));
-	ndelay(200);
-	clk_writel(ARMCAXPLL0_PWR_CON0, (clk_readl(ARMCAXPLL0_PWR_CON0) | 0x00000002));
-	ndelay(200);
-	clk_writel(ARMCAXPLL0_PWR_CON0, (clk_readl(ARMCAXPLL0_PWR_CON0) & 0xfffffffe));
-	ndelay(200);
-	mt6797_0x1001AXXX_unlock();
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL0_CON0, (mt6797_0x1001AXXX_reg_read(ARMCAXPLL0_CON0) & 0xfffffffe));
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL0_PWR_CON0,
+		(mt6797_0x1001AXXX_reg_read(ARMCAXPLL0_PWR_CON0) | 0x00000002));
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL0_PWR_CON0,
+		(mt6797_0x1001AXXX_reg_read(ARMCAXPLL0_PWR_CON0) & 0xfffffffe));
 }
 EXPORT_SYMBOL(disable_armpll_ll);
 
 void enable_armpll_l(void)
 {
-	mt6797_0x1001AXXX_lock();
-	clk_writel(ARMCAXPLL1_PWR_CON0, (clk_readl(ARMCAXPLL1_PWR_CON0) | 0x01));
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL1_PWR_CON0, (mt6797_0x1001AXXX_reg_read(ARMCAXPLL1_PWR_CON0) | 0x01));
 	udelay(1);
-	clk_writel(ARMCAXPLL1_PWR_CON0, (clk_readl(ARMCAXPLL1_PWR_CON0) & 0xfffffffd));
-	ndelay(200);
-	clk_writel(ARMCAXPLL1_CON1, (clk_readl(ARMCAXPLL1_CON1) | 0xC0000000));
-	ndelay(200);
-	clk_writel(ARMCAXPLL1_CON0, (clk_readl(ARMCAXPLL1_CON0) | 0x01));
-	ndelay(200);
-	mt6797_0x1001AXXX_unlock();
-
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL1_PWR_CON0,
+		(mt6797_0x1001AXXX_reg_read(ARMCAXPLL1_PWR_CON0) & 0xfffffffd));
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL1_CON1, (mt6797_0x1001AXXX_reg_read(ARMCAXPLL1_CON1) | 0xC0000000));
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL1_CON0, (mt6797_0x1001AXXX_reg_read(ARMCAXPLL1_CON0) | 0x01));
 	udelay(200);
 }
 EXPORT_SYMBOL(enable_armpll_l);
 void disable_armpll_l(void)
 {
-	mt6797_0x1001AXXX_lock();
-	clk_writel(ARMCAXPLL1_CON0, (clk_readl(ARMCAXPLL1_CON0) & 0xfffffffe));
-	ndelay(200);
-	clk_writel(ARMCAXPLL1_PWR_CON0, (clk_readl(ARMCAXPLL1_PWR_CON0) | 0x00000002));
-	ndelay(200);
-	clk_writel(ARMCAXPLL1_PWR_CON0, (clk_readl(ARMCAXPLL1_PWR_CON0) & 0xfffffffe));
-	ndelay(200);
-	mt6797_0x1001AXXX_unlock();
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL1_CON0, (mt6797_0x1001AXXX_reg_read(ARMCAXPLL1_CON0) & 0xfffffffe));
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL1_PWR_CON0,
+		(mt6797_0x1001AXXX_reg_read(ARMCAXPLL1_PWR_CON0) | 0x00000002));
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL1_PWR_CON0,
+		(mt6797_0x1001AXXX_reg_read(ARMCAXPLL1_PWR_CON0) & 0xfffffffe));
 }
 EXPORT_SYMBOL(disable_armpll_l);
 void switch_armpll_l_hwmode(int enable)
 {
 	/* ARM CA15*/
-	mt6797_0x1001AXXX_lock();
 	if (enable == 1) {
-		clk_writel(MCU_PLL_CON0, (clk_readl(MCU_PLL_CON0) & 0xffffdddd));
-		ndelay(200);
-		clk_writel(MCU_PLL_CON1, (clk_readl(MCU_PLL_CON1) & 0xffffffdd));
-		ndelay(200);
+		mt6797_0x1001AXXX_reg_write(MCU_PLL_CON0, (mt6797_0x1001AXXX_reg_read(MCU_PLL_CON0) & 0xffffdddd));
+		mt6797_0x1001AXXX_reg_write(MCU_PLL_CON1, (mt6797_0x1001AXXX_reg_read(MCU_PLL_CON1) & 0xffffffdd));
 
 	} else{
-		clk_writel(MCU_PLL_CON0, (clk_readl(MCU_PLL_CON0) | 0x00002222));
-		ndelay(200);
-		clk_writel(MCU_PLL_CON1, (clk_readl(MCU_PLL_CON1) | 0x00000022));
-		ndelay(200);
+		mt6797_0x1001AXXX_reg_write(MCU_PLL_CON0, (mt6797_0x1001AXXX_reg_read(MCU_PLL_CON0) | 0x00002222));
+		mt6797_0x1001AXXX_reg_write(MCU_PLL_CON1, (mt6797_0x1001AXXX_reg_read(MCU_PLL_CON1) | 0x00000022));
 	}
-	mt6797_0x1001AXXX_unlock();
 }
 EXPORT_SYMBOL(switch_armpll_l_hwmode);
 
 void switch_armpll_ll_hwmode(int enable)
 {
 	/* ARM CA7*/
-	mt6797_0x1001AXXX_lock();
 	if (enable == 1) {
-		clk_writel(MCU_PLL_CON0, (clk_readl(MCU_PLL_CON0) & 0xffffeeee));
-		ndelay(200);
-		clk_writel(MCU_PLL_CON1, (clk_readl(MCU_PLL_CON1) & 0xffffffee));
-		ndelay(200);
+		mt6797_0x1001AXXX_reg_write(MCU_PLL_CON0, (mt6797_0x1001AXXX_reg_read(MCU_PLL_CON0) & 0xffffeeee));
+		mt6797_0x1001AXXX_reg_write(MCU_PLL_CON1, (mt6797_0x1001AXXX_reg_read(MCU_PLL_CON1) & 0xffffffee));
 	} else {
-		clk_writel(MCU_PLL_CON0, (clk_readl(MCU_PLL_CON0) | 0x00001111));
-		ndelay(200);
-		clk_writel(MCU_PLL_CON1, (clk_readl(MCU_PLL_CON1) | 0x00000011));
-		ndelay(200);
+		mt6797_0x1001AXXX_reg_write(MCU_PLL_CON0, (mt6797_0x1001AXXX_reg_read(MCU_PLL_CON0) | 0x00001111));
+		mt6797_0x1001AXXX_reg_write(MCU_PLL_CON1, (mt6797_0x1001AXXX_reg_read(MCU_PLL_CON1) | 0x00000011));
 	}
-	mt6797_0x1001AXXX_unlock();
 }
 EXPORT_SYMBOL(switch_armpll_ll_hwmode);
 /************************************************
@@ -585,16 +557,11 @@ static void pll_force_off(void)
 {
 	unsigned int temp;
 
-	mt6797_0x1001AXXX_lock();
-	temp = clk_readl(ARMCAXPLL1_PWR_CON0);
-	clk_writel(ARMCAXPLL1_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
-	ndelay(200);
+	temp = mt6797_0x1001AXXX_reg_read(ARMCAXPLL1_PWR_CON0);
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL1_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
 
-	temp = clk_readl(ARMCAXPLL3_PWR_CON0);
-	clk_writel(ARMCAXPLL3_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
-	ndelay(200);
-	mt6797_0x1001AXXX_unlock();
-
+	temp = mt6797_0x1001AXXX_reg_read(ARMCAXPLL3_PWR_CON0);
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL3_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
 
 	temp = clk_readl(UNIVPLL_PWR_CON0);
 	clk_writel(UNIVPLL_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
@@ -627,15 +594,11 @@ static void pll_force_off(void)
     /***********************
       * xPLL Frequency Enable
       ************************/
-	mt6797_0x1001AXXX_lock();
-	temp = clk_readl(ARMCAXPLL1_CON0);
-	clk_writel(ARMCAXPLL1_CON0, PLL_CON0_VALUE);
-	ndelay(200);
+	temp = mt6797_0x1001AXXX_reg_read(ARMCAXPLL1_CON0);
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL1_CON0, PLL_CON0_VALUE);
 
-	temp = clk_readl(ARMCAXPLL3_CON0);
-	clk_writel(ARMCAXPLL3_CON0, PLL_CON0_VALUE);
-	ndelay(200);
-	mt6797_0x1001AXXX_unlock();
+	temp = mt6797_0x1001AXXX_reg_read(ARMCAXPLL3_CON0);
+	mt6797_0x1001AXXX_reg_write(ARMCAXPLL3_CON0, PLL_CON0_VALUE);
 
 	temp = clk_readl(UNIVPLL_CON0);
 	clk_writel(UNIVPLL_CON0, PLL_CON0_VALUE);
@@ -905,27 +868,24 @@ static ssize_t armlpll_fsel_write(struct file *file, const char __user *buffer,
 	desc[len] = '\0';
 
 	if (sscanf(desc, "%d %x", &div, &value) == 2) {
-		mt6797_0x1001AXXX_lock();
-		ctrl_value = clk_readl(ARMCAXPLL1_CON1);
+		ctrl_value = mt6797_0x1001AXXX_reg_read(ARMCAXPLL1_CON1);
 		ctrl_value &= ~(SDM_PLL_N_INFO_MASK | ARMPLL_POSDIV_MASK);
 		ctrl_value |= value & (SDM_PLL_N_INFO_MASK | ARMPLL_POSDIV_MASK);
 		ctrl_value |= SDM_PLL_N_INFO_CHG;
-		clk_writel(ARMCAXPLL1_CON1, ctrl_value);
+		mt6797_0x1001AXXX_reg_write(ARMCAXPLL1_CON1, ctrl_value);
 		udelay(20);
 		if (div == 4)
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_L_DIV_MASK_) |
+			mt6797_0x1001AXXX_reg_write(ARMPLLDIV_CKDIV,
+				   (mt6797_0x1001AXXX_reg_read(ARMPLLDIV_CKDIV) & _ARMPLL_L_DIV_MASK_) |
 				   _ARMPLL_DIV_4_ << _ARMPLL_L_DIV_BIT_);
 		else if (div == 2)
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_L_DIV_MASK_) |
+			mt6797_0x1001AXXX_reg_write(ARMPLLDIV_CKDIV,
+				   (mt6797_0x1001AXXX_reg_read(ARMPLLDIV_CKDIV) & _ARMPLL_L_DIV_MASK_) |
 				   _ARMPLL_DIV_2_ << _ARMPLL_L_DIV_BIT_);
 		else		/*1 */
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_L_DIV_MASK_) |
+			mt6797_0x1001AXXX_reg_write(ARMPLLDIV_CKDIV,
+				   (mt6797_0x1001AXXX_reg_read(ARMPLLDIV_CKDIV) & _ARMPLL_L_DIV_MASK_) |
 				   _ARMPLL_DIV_1_ << _ARMPLL_L_DIV_BIT_);
-		ndelay(200);
-		mt6797_0x1001AXXX_unlock();
 	}
 	return count;
 }
@@ -945,27 +905,24 @@ static ssize_t armllpll_fsel_write(struct file *file, const char __user *buffer,
 	desc[len] = '\0';
 
 	if (sscanf(desc, "%d %x", &div, &value) == 2) {
-		mt6797_0x1001AXXX_lock();
-		ctrl_value = clk_readl(ARMCAXPLL0_CON1);
+		ctrl_value = mt6797_0x1001AXXX_reg_read(ARMCAXPLL0_CON1);
 		ctrl_value &= ~(SDM_PLL_N_INFO_MASK | ARMPLL_POSDIV_MASK);
 		ctrl_value |= value & (SDM_PLL_N_INFO_MASK | ARMPLL_POSDIV_MASK);
 		ctrl_value |= SDM_PLL_N_INFO_CHG;
-		clk_writel(ARMCAXPLL0_CON1, ctrl_value);
+		mt6797_0x1001AXXX_reg_write(ARMCAXPLL0_CON1, ctrl_value);
 		udelay(20);
 		if (div == 4)
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_LL_DIV_MASK_) |
+			mt6797_0x1001AXXX_reg_write(ARMPLLDIV_CKDIV,
+				   (mt6797_0x1001AXXX_reg_read(ARMPLLDIV_CKDIV) & _ARMPLL_LL_DIV_MASK_) |
 				   _ARMPLL_DIV_4_ << _ARMPLL_LL_DIV_BIT_);
 		else if (div == 2)
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_LL_DIV_MASK_) |
+			mt6797_0x1001AXXX_reg_write(ARMPLLDIV_CKDIV,
+				   (mt6797_0x1001AXXX_reg_read(ARMPLLDIV_CKDIV) & _ARMPLL_LL_DIV_MASK_) |
 				   _ARMPLL_DIV_2_ << _ARMPLL_LL_DIV_BIT_);
 		else		/*1 */
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_LL_DIV_MASK_) |
+			mt6797_0x1001AXXX_reg_write(ARMPLLDIV_CKDIV,
+				   (mt6797_0x1001AXXX_reg_read(ARMPLLDIV_CKDIV) & _ARMPLL_LL_DIV_MASK_) |
 				   _ARMPLL_DIV_1_ << _ARMPLL_LL_DIV_BIT_);
-		ndelay(200);
-		mt6797_0x1001AXXX_unlock();
 	}
 	return count;
 }
@@ -985,27 +942,24 @@ static ssize_t armccipll_fsel_write(struct file *file, const char __user *buffer
 	desc[len] = '\0';
 
 	if (sscanf(desc, "%d %x", &div, &value) == 2) {
-		mt6797_0x1001AXXX_lock();
-		ctrl_value = clk_readl(ARMCAXPLL2_CON1);
+		ctrl_value = mt6797_0x1001AXXX_reg_read(ARMCAXPLL2_CON1);
 		ctrl_value &= ~(SDM_PLL_N_INFO_MASK | ARMPLL_POSDIV_MASK);
 		ctrl_value |= value & (SDM_PLL_N_INFO_MASK | ARMPLL_POSDIV_MASK);
 		ctrl_value |= SDM_PLL_N_INFO_CHG;
-		clk_writel(ARMCAXPLL2_CON1, ctrl_value);
+		mt6797_0x1001AXXX_reg_write(ARMCAXPLL2_CON1, ctrl_value);
 		udelay(20);
 		if (div == 4)
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_CCI_DIV_MASK_) |
+			mt6797_0x1001AXXX_reg_write(ARMPLLDIV_CKDIV,
+				   (mt6797_0x1001AXXX_reg_read(ARMPLLDIV_CKDIV) & _ARMPLL_CCI_DIV_MASK_) |
 				   _ARMPLL_DIV_4_ << _ARMPLL_CCI_DIV_BIT_);
 		else if (div == 2)
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_CCI_DIV_MASK_) |
+			mt6797_0x1001AXXX_reg_write(ARMPLLDIV_CKDIV,
+				   (mt6797_0x1001AXXX_reg_read(ARMPLLDIV_CKDIV) & _ARMPLL_CCI_DIV_MASK_) |
 				   _ARMPLL_DIV_2_ << _ARMPLL_CCI_DIV_BIT_);
 		else		/*1 */
-			clk_writel(ARMPLLDIV_CKDIV,
-				   (clk_readl(ARMPLLDIV_CKDIV) & _ARMPLL_CCI_DIV_MASK_) |
+			mt6797_0x1001AXXX_reg_write(ARMPLLDIV_CKDIV,
+				   (mt6797_0x1001AXXX_reg_read(ARMPLLDIV_CKDIV) & _ARMPLL_CCI_DIV_MASK_) |
 				   _ARMPLL_DIV_1_ << _ARMPLL_CCI_DIV_BIT_);
-		ndelay(200);
-		mt6797_0x1001AXXX_unlock();
 	}
 	return count;
 
@@ -1309,13 +1263,14 @@ void iomap(void)
 		clk_dbg("[CLK_VENC_GCON] base failed\n");
 
 /*mcumixed*/
+#if 0
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mcumixed");
 	if (!node)
 		clk_dbg("[CLK_MCUMIXED] find node failed\n");
 	clk_mcumixed_base = of_iomap(node, 0);
 	if (!clk_mcumixed_base)
 		clk_dbg("[CLK_MCUMIXED] base failed\n");
-
+#endif
 /*cam*/
 	node = of_find_compatible_node(NULL, NULL, "mediatek,camsys_config");
 	if (!node)
@@ -1350,12 +1305,8 @@ void mt_disable_dbg_clk(void)
 	clk_writel(CLK_MISC_CFG_0, clk_readl(CLK_MISC_CFG_0) | 0xFFFF0000);
 	clk_writel(CLK_MISC_CFG_1, clk_readl(CLK_MISC_CFG_1) | 0xFFFF0000);
 
-	mt6797_0x1001AXXX_lock();
-	clk_writel(ARMPLLDIV_ARM_K1, 0xFFFFFFFF);
-	ndelay(200);
-	clk_writel(ARMPLLDIV_MON_EN, 0);
-	ndelay(200);
-	mt6797_0x1001AXXX_unlock();
+	mt6797_0x1001AXXX_reg_write(ARMPLLDIV_ARM_K1, 0xFFFFFFFF);
+	mt6797_0x1001AXXX_reg_write(ARMPLLDIV_MON_EN, 0);
 
 	clk_writel(INFRA_AO_DBG_CON0, 1);
 	clk_writel(INFRA_AO_DBG_CON1, 1);

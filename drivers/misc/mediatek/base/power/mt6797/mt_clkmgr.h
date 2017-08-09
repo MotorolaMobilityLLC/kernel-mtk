@@ -18,7 +18,7 @@ extern void __iomem  *clk_imgsys_base;
 extern void __iomem  *clk_vdec_gcon_base;
 extern void __iomem  *clk_mjc_config_base;
 extern void __iomem  *clk_venc_gcon_base;
-extern void __iomem  *clk_mcumixed_base;
+/*extern void __iomem  *clk_mcumixed_base;*/
 extern void __iomem	*clk_camsys_base;
 extern void __iomem	*clk_topmics_base;
 #endif
@@ -82,34 +82,35 @@ extern void __iomem	*clk_topmics_base;
 #define VDECPLL_PWR_CON0          (clk_apmixed_base + 0x2F0)
 
 /* MCUMIXEDSYS Register */
-#define MCU_PLL_CON0            (clk_mcumixed_base + 0x000)
-#define MCU_PLL_CON1            (clk_mcumixed_base + 0x004)
-#define MCU_PLL_CON2            (clk_mcumixed_base + 0x008)
+/* base addr will be add in freq hopping */
+#define MCU_PLL_CON0            (0x000)
+#define MCU_PLL_CON1            (0x004)
+#define MCU_PLL_CON2            (0x008)
 
-#define ARMCAXPLL0_CON0         (clk_mcumixed_base + 0x200)
-#define ARMCAXPLL0_CON1         (clk_mcumixed_base + 0x204)
-#define ARMCAXPLL0_CON2         (clk_mcumixed_base + 0x208)
-#define ARMCAXPLL0_PWR_CON0      (clk_mcumixed_base + 0x20c)
+#define ARMCAXPLL0_CON0         (0x200)
+#define ARMCAXPLL0_CON1         (0x204)
+#define ARMCAXPLL0_CON2         (0x208)
+#define ARMCAXPLL0_PWR_CON0      (0x20c)
 
-#define ARMCAXPLL1_CON0         (clk_mcumixed_base + 0x210)
-#define ARMCAXPLL1_CON1         (clk_mcumixed_base + 0x214)
-#define ARMCAXPLL1_CON2         (clk_mcumixed_base + 0x218)
-#define ARMCAXPLL1_PWR_CON0      (clk_mcumixed_base + 0x21c)
+#define ARMCAXPLL1_CON0         (0x210)
+#define ARMCAXPLL1_CON1         (0x214)
+#define ARMCAXPLL1_CON2         (0x218)
+#define ARMCAXPLL1_PWR_CON0      (0x21c)
 
-#define ARMCAXPLL2_CON0         (clk_mcumixed_base + 0x220)
-#define ARMCAXPLL2_CON1         (clk_mcumixed_base + 0x224)
-#define ARMCAXPLL2_CON2         (clk_mcumixed_base + 0x228)
-#define ARMCAXPLL2_PWR_CON0      (clk_mcumixed_base + 0x22c)
+#define ARMCAXPLL2_CON0         (0x220)
+#define ARMCAXPLL2_CON1         (0x224)
+#define ARMCAXPLL2_CON2         (0x228)
+#define ARMCAXPLL2_PWR_CON0      (0x22c)
 
-#define ARMCAXPLL3_CON0         (clk_mcumixed_base + 0x230)
-#define ARMCAXPLL3_CON1         (clk_mcumixed_base + 0x234)
-#define ARMCAXPLL3_CON2         (clk_mcumixed_base + 0x238)
-#define ARMCAXPLL3_PWR_CON0     (clk_mcumixed_base + 0x23c)
+#define ARMCAXPLL3_CON0         (0x230)
+#define ARMCAXPLL3_CON1         (0x234)
+#define ARMCAXPLL3_CON2         (0x238)
+#define ARMCAXPLL3_PWR_CON0     (0x23c)
 
-#define ARMPLLDIV_MUXSEL        (clk_mcumixed_base + 0x270)
-#define ARMPLLDIV_CKDIV         (clk_mcumixed_base + 0x274)
-#define ARMPLLDIV_ARM_K1		(clk_mcumixed_base + 0x27C)
-#define ARMPLLDIV_MON_EN        (clk_mcumixed_base + 0x284)
+#define ARMPLLDIV_MUXSEL        (0x270)
+#define ARMPLLDIV_CKDIV         (0x274)
+#define ARMPLLDIV_ARM_K1		(0x27C)
+#define ARMPLLDIV_MON_EN        (0x284)
 
 /*TOPMICS Register*/
 #define TOPMISC_TEST_MODE_CFG	(clk_topmics_base + 0)
