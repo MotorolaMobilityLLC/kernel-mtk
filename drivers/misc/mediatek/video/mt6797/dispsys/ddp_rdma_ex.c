@@ -315,7 +315,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 		frame_rate = 60;
 
 		if ((rdma_golden_setting->ext_dst_width == 3840) &&
-				(rdma_golden_setting->ext_dst_width == 2160))
+				(rdma_golden_setting->ext_dst_height == 2160))
 			frame_rate = 30;
 	}
 
