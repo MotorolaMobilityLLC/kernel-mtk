@@ -876,16 +876,64 @@ static int smi_dev_register(void)
 	return 0;
 }
 
+static int mtk_smi_disp_clk_prepare(struct mtk_smi_data *smi_data)
+{
+	struct mtk_smi_larb *larbpriv = dev_get_drvdata(smi_data->larb[0]);
+	int ret;
+
+	ret = clk_prepare(larbpriv->clk_apb);
+	if (ret)
+		return ret;
+	ret = clk_prepare(larbpriv->clk_smi);
+	if (ret) {
+		clk_unprepare(larbpriv->clk_apb);
+		return ret;
+	}
+
+	larbpriv = dev_get_drvdata(smi_data->larb[4]);
+	ret = clk_prepare(larbpriv->clk_apb);
+	if (ret)
+		goto err_larb0_unparepare;
+	ret = clk_prepare(larbpriv->clk_smi);
+	if (ret) {
+		clk_unprepare(larbpriv->clk_apb);
+		goto err_larb0_unparepare;
+	}
+
+	return 0;
+
+err_larb0_unparepare:
+	larbpriv = dev_get_drvdata(smi_data->larb[0]);
+	clk_unprepare(larbpriv->clk_smi);
+	clk_unprepare(larbpriv->clk_apb);
+	return ret;
+}
+
+static void mtk_smi_disp_clk_unprepare(struct mtk_smi_data *smi_data)
+{
+	struct mtk_smi_larb *larbpriv = dev_get_drvdata(smi_data->larb[4]);
+
+	clk_unprepare(larbpriv->clk_smi);
+	clk_unprepare(larbpriv->clk_apb);
+
+	larbpriv = dev_get_drvdata(smi_data->larb[0]);
+	clk_unprepare(larbpriv->clk_smi);
+	clk_unprepare(larbpriv->clk_apb);
+}
 
 static int mtk_smi_common_get(struct device *smidev, bool pm)
 {
 	struct mtk_smi_common *smipriv = dev_get_drvdata(smidev);
 	int ret;
 
+	ret = mtk_smi_disp_clk_prepare(smi_data);
+	if (ret)
+		return ret;
+
 	if (pm) {
 		ret = pm_runtime_get_sync(smidev);
 		if (ret < 0)
-			return ret;
+			goto err_unprepare_disp;
 	}
 
 	ret = clk_prepare_enable(smipriv->clk_apb);
@@ -905,6 +953,8 @@ err_disable_apb:
 err_put_pm:
 	if (pm)
 		pm_runtime_put(smidev);
+err_unprepare_disp:
+	mtk_smi_disp_clk_unprepare(smi_data);
 	return ret;
 }
 
@@ -916,6 +966,7 @@ static void mtk_smi_common_put(struct device *smidev, bool pm)
 		pm_runtime_put(smidev);
 	clk_disable_unprepare(smipriv->clk_smi);
 	clk_disable_unprepare(smipriv->clk_apb);
+	mtk_smi_disp_clk_unprepare(smi_data);
 }
 
 static int _mtk_smi_larb_get(struct device *larbdev, bool pm)
@@ -995,7 +1046,7 @@ static int mtk_smi_larb_runtime_suspend(struct device *dev)
 	ret = clk_enable(larbpriv->clk_apb);
 	ret |= clk_enable(larbpriv->clk_smi);
 	if (ret) {
-		dev_warn(dev, "runtime suspend clk fail %d\n", ret);
+		dev_warn(dev, "runtime suspend clk fail %d(larb%d)\n", ret, idx);
 		return 0;
 	}
 	larb_reg_backup(idx);
@@ -1050,6 +1101,9 @@ static int mtk_smi_larb_probe(struct platform_device *pdev)
 	struct platform_device *smi_pdev;
 	int ret, larbid;
 
+	if (!dev->pm_domain)
+		return -EPROBE_DEFER;
+
 	larbpriv = devm_kzalloc(dev, sizeof(*larbpriv), GFP_KERNEL);
 	if (!larbpriv)
 		return -ENOMEM;
@@ -1088,7 +1142,7 @@ static int mtk_smi_larb_probe(struct platform_device *pdev)
 	smi_data->larb[larbid] = dev;
 	smi_data->larb_nr++;
 
-	dev_info(dev, "larb %d-cnt %d probe done\n", larbid, smi_data->larb_nr);
+	SMIMSG("larb %d-cnt %d probe done\n", larbid, smi_data->larb_nr);
 
 	pm_runtime_enable(dev);
 	dev_set_drvdata(dev, larbpriv);
@@ -1123,6 +1177,9 @@ static int mtk_smi_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct mtk_smi_common *smipriv;
 	struct resource *res;
+
+	if (!dev->pm_domain)
+		return -EPROBE_DEFER;
 
 	smipriv = devm_kzalloc(dev, sizeof(*smipriv), GFP_KERNEL);
 	if (!smipriv)
@@ -1173,22 +1230,11 @@ static int __init smi_init(void)
 {
 	int ret;
 
-	SMIMSG("smi_init\n");
-
-	ret = smi_dev_register();
-	if (ret) {
-		SMIMSG("register dev/smi failed\n");
-		return ret;
-	}
-
 	smi_data = kzalloc(sizeof(*smi_data), GFP_KERNEL);
 	if (smi_data == NULL) {
 		SMIERR("Unable to allocate memory for smi driver");
 		return -ENOMEM;
 	}
-
-	memset(g_SMIInfo.pu4ConcurrencyTable, 0, SMI_BWC_SCEN_CNT * sizeof(unsigned int));
-	spin_lock_init(&g_SMIInfo.SMI_lock);
 
 	ret = platform_driver_register(&mtk_smi_driver);
 	if (ret != 0) {
@@ -1202,12 +1248,19 @@ static int __init smi_init(void)
 		return ret;
 	}
 
+	ret = smi_dev_register();
+	if (ret) {
+		SMIMSG("register dev/smi failed\n");
+		return ret;
+	}
+
+	memset(g_SMIInfo.pu4ConcurrencyTable, 0, SMI_BWC_SCEN_CNT * sizeof(unsigned int));
+	spin_lock_init(&g_SMIInfo.SMI_lock);
+
 	SMI_DBG_Init();
 
 	#if defined MT73
 	smi_data->smi_priv = &smi_mt8173_priv;
-	if (SMI_LARB_NR != smi_data->larb_nr)
-		SMIMSG("larb nr fail %d(6 ok)\n", smi_data->larb_nr);
 	#endif
 
 	SMIMSG("smi_init done\n");
