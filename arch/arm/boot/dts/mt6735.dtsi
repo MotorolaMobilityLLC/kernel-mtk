@@ -744,6 +744,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,mt6735-pinctrl";
 			reg = <0 10211000 0 1000>;
 			mediatek,pctl-regmap = <&syscfg_pctl_a>;
+			pins-are-numbered;
 			gpio-controller;
 			#gpio-cells = <2>;
 			interrupt-controller;
