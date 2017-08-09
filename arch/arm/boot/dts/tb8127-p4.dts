@@ -34,6 +34,12 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
+		pmicmt6323: pmicmt6323 {
+			compatible = "mediatek,mt6323-pmic";
+			interrupt-parent = <&pio>;
+			interrupts = <24 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
 		mt6323regulator: mt6323regulator{
 			compatible = "mediatek,mt6323-regulator";
 
