@@ -2353,6 +2353,7 @@ static MINT32 ISP_WriteReg(ISP_REG_IO_STRUCT *pRegIo)
 			LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)",
 				current->comm, current->pid, current->tgid);
 			Ret = -ENOMEM;
+			goto EXIT;
 		}
 		if (copy_from_user
 		    (pData, (void __user *)(pRegIo->pData),
