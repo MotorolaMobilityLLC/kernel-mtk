@@ -1,14 +1,12 @@
 #if ((defined(D1) || defined(D2) || defined(D3)) && !IS_ENABLED(CONFIG_FPGA_EARLY_PORTING))
-#define MMDVFS_ENABLE 0
+#define MMDVFS_ENABLE 1
 #endif
 
 #include <linux/uaccess.h>
 #include <aee.h>
 
 #include <mt_smi.h>
-#if MMDVFS_ENABLE
-#include <mtk_gpu_utility.h>
-#endif
+
 #include <linux/timer.h>
 #include <linux/jiffies.h>
 #include <linux/workqueue.h>
