@@ -121,6 +121,14 @@ void enable_total_fliper(int enable)
 	}
 }
 
+int disable_cg_fliper(void)
+{
+	fliper_debug = 1;
+	enable_cg_fliper(0);
+
+	return 0;
+}
+
 int cg_set_threshold(int bw1, int bw2)
 {
 	int lpm_threshold, hpm_threshold;

@@ -31,7 +31,7 @@
 #include <mt_vcorefs_manager.h>
 
 #include <mach/mt_emi_bm.h>
-#include "mt_cpufreq.h"
+#include <mach/mt_ppm_api.h>
 
 #define SEQ_printf(m, x...)\
 	do {\
@@ -93,12 +93,15 @@ static unsigned int emi_polling(unsigned int *__restrict__ emi_value)
 /******* FLIPER SETTING *********/
 static void enable_fliper_polling(void)
 {
+	l_boost_flag = 0;
+	mt_ppm_sysboost_freq(BOOST_BY_PERFSERV, 0);
 	pr_debug(TAG"fliper polling start\n");
 	mod_timer(&mt_pp_transfer_timer, jiffies + msecs_to_jiffies(X_ms));
 }
 
 static void disable_fliper_polling(void)
 {
+	mt_ppm_sysboost_freq(BOOST_BY_PERFSERV, 0);
 	pr_crit("fliper polling disable ---\n");
 	del_timer(&mt_pp_transfer_timer);
 }
@@ -254,6 +257,7 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 			if (arg1 == Default) {
 				pr_debug(TAG"POWER_MODE: default\n");
 				enable_cg_fliper(1);
+				enable_fliper_polling();
 				cg_set_threshold(CG_DEFAULT_LPM, CG_DEFAULT_HPM);
 				vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
 			} else if (arg1 == Low_Power_Mode) {
@@ -264,16 +268,19 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 				vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
 #else
 				enable_cg_fliper(0);
+				disable_fliper_polling();
 				vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
 #endif
 			} else if (arg1 == Just_Make_Mode) {
 				pr_debug(TAG"POWER_MODE: JUST_MAKE\n");
 				enable_cg_fliper(1);
+				enable_fliper_polling();
 				cg_set_threshold(CG_JUST_MAKE_LPM, CG_JUST_MAKE_HPM);
 				vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
 			} else if (arg1 == Performance_Mode) {
 				pr_debug(TAG"POWER_MODE: PERFORMANCE\n");
 				enable_cg_fliper(1);
+				enable_fliper_polling();
 #if 0
 				cg_set_threshold(CG_PERFORMANCE_LPM, CG_PERFORMANCE_HPM);
 #else
@@ -381,15 +388,17 @@ static void mt_power_pef_transfer_work(void)
 		cg_set_threshold(cg_lpm_bw_threshold, cg_hpm_bw_threshold);
 		step = Y_steps;
 		l_boost_flag = 1;
+		mt_ppm_sysboost_freq(BOOST_BY_PERFSERV, 1066000);
 	}
 	if (count > 26 && cg_lpm_bw_threshold >= MIN_DEFAULT_LPM)
 		step = Y_steps;
 
 	if (count <= 26)
 		step--;
-	if (step <= 0) {
+	if (step <= 0 && l_boost_flag == 1) {
 		cg_restore_threshold();
 		l_boost_flag = 0;
+		mt_ppm_sysboost_freq(BOOST_BY_PERFSERV, 0);
 	}
 }
 /*--------------------INIT------------------------*/

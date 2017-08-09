@@ -32,7 +32,7 @@ enum {
 	Performance_Mode = 3,
 };
 
-
+int disable_cg_fliper(void);
 void enable_cg_fliper(int);
 void enable_total_fliper(int);
 int cg_set_threshold(int, int);
