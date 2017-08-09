@@ -1943,6 +1943,7 @@ static int ubifs_remount_fs(struct super_block *sb, int *flags, char *data)
 			return -EROFS;
 		}
 		ubifs_remount_ro(c);
+		ubi_flush_all(c->ubi);
 	}
 
 	if (c->bulk_read == 1)

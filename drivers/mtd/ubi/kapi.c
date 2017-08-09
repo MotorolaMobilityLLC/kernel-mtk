@@ -749,6 +749,17 @@ EXPORT_SYMBOL_GPL(ubi_sync);
  * eraseblock numbers. It returns zero in case of success and a negative error
  * code in case of failure.
  */
+int ubi_flush_all(struct ubi_volume_desc *desc)
+{
+	struct ubi_volume *vol = desc->vol;
+	struct ubi_device *ubi = vol->ubi;
+	int err = 0;
+
+	err = ubi_wl_flush(ubi, vol->vol_id, UBI_ALL);
+	return err;
+}
+EXPORT_SYMBOL_GPL(ubi_flush_all);
+
 int ubi_flush(int ubi_num, int vol_id, int lnum)
 {
 	struct ubi_device *ubi;
