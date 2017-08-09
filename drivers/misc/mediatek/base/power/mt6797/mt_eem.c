@@ -4013,6 +4013,7 @@ static int eem_resume(struct platform_device *pdev)
 	}
 	*/
 	FUNC_ENTER(FUNC_LV_MODULE);
+	mt_cpufreq_eem_resume();
 	eem_init02();
 	FUNC_EXIT(FUNC_LV_MODULE);
 
