@@ -9739,13 +9739,14 @@ static int move_specific_task(struct lb_env *env, struct task_struct *pm)
 static int hmp_active_task_migration_cpu_stop(void *data)
 {
 	struct rq *busiest_rq = data;
-	struct task_struct *p = busiest_rq->migrate_task;
+	struct task_struct *p = NULL;
 	int busiest_cpu = cpu_of(busiest_rq);
 	int target_cpu = busiest_rq->push_cpu;
 	struct rq *target_rq = cpu_rq(target_cpu);
 	struct sched_domain *sd;
 
 	raw_spin_lock_irq(&busiest_rq->lock);
+	p = busiest_rq->migrate_task;
 	/* make sure the requested cpu hasn't gone down in the meantime */
 	if (unlikely(busiest_cpu != smp_processor_id() ||
 		!busiest_rq->active_balance)) {
@@ -9755,7 +9756,7 @@ static int hmp_active_task_migration_cpu_stop(void *data)
 	if (busiest_rq->nr_running <= 1)
 		goto out_unlock;
 	/* Task has migrated meanwhile, abort forced migration */
-	if (task_rq(p) != busiest_rq)
+	if ((!p) || (task_rq(p) != busiest_rq))
 		goto out_unlock;
 	/*
 	 * This condition is "impossible", if it occurs
