@@ -1438,6 +1438,7 @@ static void init_cmdbuf(unsigned long phy_address, unsigned long fdrv_phy_addres
 	init_cmdbuf_entry.phy_addr = phy_address;
 	init_cmdbuf_entry.fdrv_phy_addr = fdrv_phy_address;
 	init_cmdbuf_entry.bdrv_phy_addr = bdrv_phy_address;
+	init_cmdbuf_entry.tlog_phy_addr = tlog_phy_address;
 
 	/* with a wmb() */
 	wmb();

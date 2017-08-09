@@ -1175,7 +1175,7 @@ static int teei_client_session_open(void *private_data, void *argp)
 		tz_free_shared_mem(ses_open, sizeof(struct ser_ses_id));
 		return -EFAULT;
 	}
-print_context();
+	/* print_context(); */
 	/* Search the teei_context structure */
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
@@ -1300,7 +1300,7 @@ static int teei_client_session_close(void *private_data, void *argp)
 	}
 
 	down_read(&(teei_contexts_head.teei_contexts_sem));
-	print_context();
+	/* print_context(); */
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
 			list_for_each_entry(temp_ses, &temp_cont->sess_link, link) {
@@ -1532,7 +1532,7 @@ static int teei_client_context_init(void *private_data, void *argp)
 		(unsigned long)name+sizeof(ctx.name));
 
 	down_write(&(teei_contexts_head.teei_contexts_sem));
-print_context();
+	/* print_context(); */
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 		if (temp_cont->cont_id == dev_file_id) {
 			dev_found = 1;
@@ -1579,7 +1579,7 @@ static int teei_client_context_close(void *private_data, void *argp)
 	}
 
 	down_write(&(teei_contexts_head.teei_contexts_sem));
-	print_context();
+	/* print_context(); */
 	list_for_each_entry(temp_cont, &teei_contexts_head.context_list, link) {
 	printk("cont_id = %ld =======\n", temp_cont->cont_id);
 		if (temp_cont->cont_id == dev_file_id) {
@@ -3069,6 +3069,7 @@ irqreturn_t tlog_handler(void)
 	if (-1 != pos) {
 		memset(tlog_ent[pos].context, 0, TLOG_CONTEXT_LEN);
 		memcpy(tlog_ent[pos].context, (char *)tlog_message_buff, TLOG_CONTEXT_LEN);
+		/* printk("handler:%s\n", (char *)tlog_message_buff); */
 		Flush_Dcache_By_Area((unsigned long)tlog_message_buff, (unsigned long)tlog_message_buff + TLOG_CONTEXT_LEN);
 		INIT_WORK(&(tlog_ent[pos].work), tlog_func);
 		queue_work(secure_wq, &(tlog_ent[pos].work));
