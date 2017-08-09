@@ -798,10 +798,9 @@ int DSI_WaitVMDone(DISP_MODULE_ENUM module)
 static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 {
 		int i = 0;
-#if defined(MTK_NO_DISP_IN_LK)
 		unsigned int count = 0;
 		unsigned int tmp = 0;
-#endif
+
 		static const long WAIT_TIMEOUT = 2 * HZ;	/* 2 sec */
 		int ret = 0;
 
@@ -843,10 +842,20 @@ static void DSI_WaitForNotBusy(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 			    wait_event_interruptible_timeout(_dsi_cmd_done_wait_queue[i],
 							     !(DSI_REG[i]->DSI_INTSTA.BUSY),
 							     WAIT_TIMEOUT);
-			if (0 == ret) {
-				DISPERR("dsi wait not busy timeout\n");
-				DSI_DumpRegisters(module, 1);
-				DSI_Reset(module, NULL);
+			if (ret <= 0) {
+				i = DSI_MODULE_BEGIN(module);
+				while (1) {
+					tmp = INREG32(&DSI_REG[i]->DSI_INTSTA);
+					if (!(tmp & 0x80000000))
+						break;
+
+					if (count++ > 1000000000) {
+						DISPERR("dsi wait not busy timeout\n");
+						DSI_DumpRegisters(module, 1);
+						DSI_Reset(module, NULL);
+						break;
+					}
+				}
 			}
 		}
 #endif
