@@ -29,7 +29,7 @@
 /*#include <mach/eint.h> TBD*/
 #include <mach/mt_pmic_wrap.h>
 #if defined CONFIG_MTK_LEGACY
-/*#include <mach/mt_gpio.h> TBD*/
+#include <mt-plat/mt_gpio.h>
 #endif
 /*#include <mach/mtk_rtc.h> TBD*/
 #include <mach/mt_spm_mtcmos.h>
@@ -39,8 +39,8 @@
 /*#include <mach/pmic_mt6328_sw.h>*/
 /*#include <mach/battery_meter.h> TBD*/
 
-/*#include <cust_pmic.h> TBD*/
-/*#include <cust_battery_meter.h> TBD*/
+#include <mach/mt_pmic.h>
+#include <mach/mt_battery_meter.h>
 
 
 /*

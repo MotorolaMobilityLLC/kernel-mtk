@@ -67,12 +67,11 @@
 /*#include <mach/eint.h> TBD*/
 #include <mach/mt_pmic_wrap.h>
 #if defined CONFIG_MTK_LEGACY
-/*#include <mach/mt_gpio.h> TBD*/
+#include <mt-plat/mt_gpio.h>
 #endif
 /*#include <mach/mtk_rtc.h> TBD*/
 #include <mach/mt_spm_mtcmos.h>
 
-/*#include <mach/battery_common.h> TBD*/
 #include <linux/time.h>
 
 #include "pmic_dvt.h"
@@ -83,11 +82,13 @@
 #include "mach/mt_gpt.h"
 #endif
 
+/*#include <mach/battery_common.h> TBD*/
 /*#include <mach/battery_meter.h> TBD*/
-#include <mt6311.h>
-/*#include <cust_pmic.h> TBD*/
+#include <mach/mt_battery_meter.h>
 
-/*#include <cust_battery_meter.h> TBD*/
+#include <mt6311.h>
+#include <mach/mt_pmic.h>
+
 
 /*#define non_ks*/
 
@@ -1672,7 +1673,7 @@ EXPORT_SYMBOL(hwPowerSetVoltage);
  */
 #define LBCB_NUM 16
 
-#if 0 /*ndef DISABLE_LOW_BATTERY_PROTECT TBD*/
+#ifndef DISABLE_LOW_BATTERY_PROTECT
 #define LOW_BATTERY_PROTECT
 #endif
 
