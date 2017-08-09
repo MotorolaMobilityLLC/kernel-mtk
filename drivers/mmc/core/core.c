@@ -2883,6 +2883,7 @@ int mmc_pm_notify(struct notifier_block *notify_block,
 	switch (mode) {
 	case PM_HIBERNATION_PREPARE:
 	case PM_SUSPEND_PREPARE:
+	case PM_RESTORE_PREPARE:
 #ifdef MTK_BKOPS_IDLE_MAYA
 		if (host->card && mmc_card_mmc(host->card)) {
 			mmc_claim_host(host);
