@@ -243,6 +243,12 @@ void wdt_arch_reset(char mode)
 
 }
 
+int mtk_rgu_dram_reserved(int enable)
+{
+	pr_debug("mtk_rgu_dram_reserved:MTK_WDT_MODE(0x%x)\n", __raw_readl(MTK_WDT_MODE));
+	return 0;
+}
+
 int mtk_wdt_swsysret_config(int bit, int set_value)
 {
 	unsigned int wdt_sys_val;
@@ -355,6 +361,7 @@ void wdt_dump_reg(void){}
 int mtk_wdt_swsysret_config(int bit, int set_value) { return 0; }
 int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode) {return 0; }
 int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en) {return 0; }
+int mtk_rgu_dram_reserved(int enable) {return 0; }
 
 #endif				/* #ifndef __USING_DUMMY_WDT_DRV__ */
 
