@@ -69,6 +69,8 @@
 #include "mt_vcorefs_manager.h" /* FIXME: this header file copied to dispsys tmp */
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
+#include "mt_spm_sodi_cmdq.h"
+
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
 #define MMSYS_CLK_MEDIUM (2)

@@ -52,6 +52,7 @@ obj-y += mt_spm_dpidle_mt6797.o
 obj-y += mt_spm_fs.o
 obj-y += mt_spm_sodi.o
 obj-y += mt_spm_sodi3p0.o
+obj-y += mt_spm_sodi_cmdq.o
 obj-y += mt_spm_pmic_wrap.o
 obj-y += mt_spm_vcorefs_mt6797.o
 

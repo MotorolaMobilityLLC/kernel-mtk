@@ -986,6 +986,7 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 		primary_display_manual_unlock();
 }
 
+#if 0
 void exit_pd_by_cmdq(cmdqRecHandle handler)
 {
 	/* Enable SPM CG Mode(Force 30+ times to ensure write success, need find root cause and fix later) */
@@ -998,7 +999,7 @@ void enter_pd_by_cmdq(cmdqRecHandle handler)
 {
 	cmdqRecWrite(handler, 0x100062B0, 0x0, 0x2);
 }
-
+#endif
 
 void enter_share_sram(CMDQ_EVENT_ENUM resourceEvent)
 {
