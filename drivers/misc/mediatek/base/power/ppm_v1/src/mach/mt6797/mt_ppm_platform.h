@@ -16,8 +16,10 @@ extern "C" {
 #define PPM_HW_OCP_SUPPORT		(1)
 
 /* DLPT mode */
-#define PPM_DLPT_DEFAULT_MODE		(HYBRID_MODE)
-#define PPM_OCP_MAX_POWER_RATIO		(120 / 100)
+#define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)
+#define DLPT_MAX_REAL_POWER_FY	(3890)		/* TODO: check this */
+#define DLPT_MAX_REAL_POWER_SB	(4992)		/* TODO: check this */
+#define PPM_OCP_MAX_POWER_RATIO	(120 / 100)
 
 #define	LCMOFF_MIN_FREQ		(598000)	/* TODO: check this */
 #define	PTPOD_FREQ_IDX		(3)		/* TODO: check this */

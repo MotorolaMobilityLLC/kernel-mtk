@@ -17,10 +17,14 @@ enum PPM_DLPT_MODE {
 	HW_MODE,	/* use HW OCP only */
 };
 
+static unsigned int ppm_dlpt_calc_trans_precentage(void);
+static unsigned int ppm_dlpt_pwr_budget_preprocess(unsigned int budget);
+static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget);
 static void ppm_dlpt_update_limit_cb(enum ppm_power_state new_state);
 static void ppm_dlpt_status_change_cb(bool enable);
 static void ppm_dlpt_mode_change_cb(enum ppm_mode mode);
 
+static unsigned int dlpt_percentage_to_real_power;
 static enum PPM_DLPT_MODE dlpt_mode;
 
 /* other members will init by ppm_main */
@@ -39,13 +43,14 @@ void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned in
 	int power_idx;
 	unsigned int total_core = 0;
 	unsigned int max_volt = 0;
+	unsigned int budget;
 	int i;
 
 	FUNC_ENTER(FUNC_LV_POLICY);
 
 	/* find power budget in table, skip this round if idx not found in table */
 	power_idx = ppm_find_pwr_idx(cluster_status);
-	if (power_idx == -1)
+	if (power_idx < 0)
 		goto end;
 
 	for (i = 0; i < cluster_num; i++) {
@@ -53,10 +58,13 @@ void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned in
 		max_volt = MAX(max_volt, cluster_status[i].volt);
 	}
 
-	ppm_ver("total_core = %d, max_volt = %d\n", total_core, max_volt);
+	budget = ppm_dlpt_pwr_budget_postprocess((unsigned int)power_idx);
 
+	ppm_ver("budget = %d(%d), total_core = %d, max_volt = %d\n",
+		budget, power_idx, total_core, max_volt);
 #ifndef DISABLE_PBM_FEATURE
-	kicker_pbm_by_cpu((unsigned int)power_idx, total_core, max_volt);
+
+	kicker_pbm_by_cpu(budget, total_core, max_volt);
 #endif
 
 end:
@@ -65,9 +73,13 @@ end:
 
 void mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power)
 {
+	unsigned int budget;
+
 	FUNC_ENTER(FUNC_LV_POLICY);
 
-	ppm_ver("Get PBM notifier => limited_power = %d\n", limited_power);
+	budget = ppm_dlpt_pwr_budget_preprocess(limited_power);
+
+	ppm_ver("Get PBM notifier => budget = %d(%d)\n", budget, limited_power);
 
 	ppm_lock(&dlpt_policy.lock);
 
@@ -76,13 +88,13 @@ void mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power)
 	case HYBRID_MODE:
 #if PPM_HW_OCP_SUPPORT
 		dlpt_policy.req.power_budget = (dlpt_mode == SW_MODE)
-			? limited_power : ppm_set_ocp(limited_power);
+			? budget : ppm_set_ocp(budget);
 #else
-		dlpt_policy.req.power_budget = limited_power;
+		dlpt_policy.req.power_budget = budget;
 #endif
 
 		if (dlpt_policy.is_enabled) {
-			dlpt_policy.is_activated = (limited_power) ? true : false;
+			dlpt_policy.is_activated = (budget) ? true : false;
 			ppm_unlock(&dlpt_policy.lock);
 			ppm_task_wakeup();
 		} else
@@ -95,6 +107,43 @@ void mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power)
 	}
 
 	FUNC_EXIT(FUNC_LV_POLICY);
+}
+
+static unsigned int ppm_dlpt_calc_trans_precentage(void)
+{
+	struct ppm_power_tbl_data power_table = ppm_get_power_table();
+	unsigned int max_pwr_idx = power_table.power_tbl[0].power_idx;
+
+	/* dvfs table is null means ppm doesn't know chip type now */
+	/* return 100 to make default ratio is 1 and check real ratio next time */
+	if (!ppm_main_info.cluster_info[0].dvfs_tbl)
+		return 100;
+
+	dlpt_percentage_to_real_power = (ppm_main_info.dvfs_tbl_type == DVFS_TABLE_TYPE_FY)
+		? (max_pwr_idx * 100 + (DLPT_MAX_REAL_POWER_FY - 1)) / DLPT_MAX_REAL_POWER_FY
+		: (max_pwr_idx * 100 + (DLPT_MAX_REAL_POWER_SB - 1)) / DLPT_MAX_REAL_POWER_SB;
+
+	return dlpt_percentage_to_real_power;
+}
+
+static unsigned int ppm_dlpt_pwr_budget_preprocess(unsigned int budget)
+{
+	unsigned int percentage = dlpt_percentage_to_real_power;
+
+	if (!percentage)
+		percentage = ppm_dlpt_calc_trans_precentage();
+
+	return (budget * percentage + (100 - 1)) / 100;
+}
+
+static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget)
+{
+	unsigned int percentage = dlpt_percentage_to_real_power;
+
+	if (!percentage)
+		percentage = ppm_dlpt_calc_trans_precentage();
+
+	return (budget * 100 + (percentage - 1)) / percentage;
 }
 
 static void ppm_dlpt_update_limit_cb(enum ppm_power_state new_state)
@@ -157,7 +206,38 @@ static ssize_t ppm_dlpt_limit_proc_write(struct file *file, const char __user *b
 	return count;
 }
 
+static int ppm_dlpt_budget_trans_percentage_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "trans_percentage = %d\n", dlpt_percentage_to_real_power);
+	seq_printf(m, "PPM DLPT activate = %d\n", dlpt_policy.is_activated);
+
+	return 0;
+}
+
+static ssize_t ppm_dlpt_budget_trans_percentage_proc_write(struct file *file, const char __user *buffer,
+					size_t count, loff_t *pos)
+{
+	unsigned int percentage;
+
+	char *buf = ppm_copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	if (!kstrtouint(buf, 10, &percentage)) {
+		if (!percentage)
+			ppm_err("@%s: percentage should not be 0!\n", __func__);
+		else
+			dlpt_percentage_to_real_power = percentage;
+	} else
+		ppm_err("@%s: Invalid input!\n", __func__);
+
+	free_page((unsigned long)buf);
+	return count;
+}
+
 PROC_FOPS_RW(dlpt_limit);
+PROC_FOPS_RW(dlpt_budget_trans_percentage);
 
 static int __init ppm_dlpt_policy_init(void)
 {
@@ -170,6 +250,7 @@ static int __init ppm_dlpt_policy_init(void)
 
 	const struct pentry entries[] = {
 		PROC_ENTRY(dlpt_limit),
+		PROC_ENTRY(dlpt_budget_trans_percentage),
 	};
 
 	FUNC_ENTER(FUNC_LV_POLICY);

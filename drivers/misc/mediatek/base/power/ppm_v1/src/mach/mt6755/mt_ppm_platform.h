@@ -15,8 +15,10 @@ extern "C" {
 #define PPM_UPDATE_STATE_DIRECT_TO_MET  (1)
 #define PPM_HW_OCP_SUPPORT		(0)
 
-/* DLPT mode */
-#define PPM_DLPT_DEFAULT_MODE		(SW_MODE)
+/* DLPT */
+#define PPM_DLPT_DEFAULT_MODE	(SW_MODE)
+#define DLPT_MAX_REAL_POWER_FY	(3890)
+#define DLPT_MAX_REAL_POWER_SB	(4992)
 
 #define	LCMOFF_MIN_FREQ		(598000)
 #define	PTPOD_FREQ_IDX		(3)
