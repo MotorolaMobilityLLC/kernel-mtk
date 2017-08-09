@@ -112,7 +112,7 @@ static unsigned int ocp_cluster2_enable;
 static unsigned int big_dreq_enable;
 static unsigned int dvt_test_on;
 static unsigned int hqa_test;
-
+static unsigned int do_ocp_stress_test;
 
 
 /* OCP ADDR */
@@ -3813,7 +3813,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 		ocp_write(0x10005400, 0x04414440);
 		break;
 	case 6:
-		/* AUXPMUX swithc */
+		/* AUXPMUX switch */
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3) {
 			if (val[0] == 0) {
 				if (val[1] == 0) {
@@ -4168,6 +4168,101 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 }
 
 
+static int ocp_stress_test_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", do_ocp_stress_test);
+
+	return 0;
+}
+
+static ssize_t ocp_stress_test_proc_write(struct file *file, const char __user *buffer,
+					size_t count, loff_t *pos)
+{
+	unsigned int do_stress, freq_L, volt_L, freq_LL, volt_LL, LL_pwr_limit, L_pwr_limit, big_pwr_limit;
+	int rc, i;
+	unsigned long long count1;
+	char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+	rc = kstrtoint(buf, 10, &do_stress);
+	if (rc < 0)
+		ocp_err("echo 0/1 > /proc/ocp/ocp_stress_test\n");
+	else
+		do_ocp_stress_test = do_stress;
+
+	if (do_ocp_stress_test == 0) {
+		if (ocp_cluster0_enable == 1) {
+			freq_LL = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000;
+			volt_LL = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100;
+			LittleOCPDVFSSet(0, freq_LL, volt_LL);
+			LittleOCPSetTarget(0, 127000);
+		}
+		if (ocp_cluster1_enable == 1) {
+			freq_L = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000;
+			volt_L = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100;
+			LittleOCPDVFSSet(1, freq_L, volt_L);
+			LittleOCPSetTarget(1, 127000);
+		}
+		if (ocp_cluster2_enable == 1)
+			BigOCPSetTarget(3, 127000);
+
+		ocp_info("stress test: stop\n");
+	}
+
+count1 = 0;
+
+while (do_ocp_stress_test == 1) {
+	if (ocp_cluster0_enable == 1) {
+		freq_LL = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000;
+		volt_LL = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100;
+		LittleOCPDVFSSet(0, freq_LL, volt_LL);
+		LL_pwr_limit = jiffies % 2000;
+		LittleOCPSetTarget(0, LL_pwr_limit);
+
+		ocp_info("stress test: LL_freq=%u Mhz, LL_volt=%u mV, L_power limit=%u\n",
+				freq_LL, volt_LL, LL_pwr_limit);
+	} else
+		ocp_info("stress test: cluster 0 (LL) is off\n");
+
+	if (ocp_cluster1_enable == 1) {
+		freq_L = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000;
+		volt_L = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100;
+		LittleOCPDVFSSet(1, freq_L, volt_L);
+		L_pwr_limit = jiffies % 4000;
+		LittleOCPSetTarget(1, L_pwr_limit);
+		ocp_info("stress test: L_freq=%u Mhz, L_volt=%u mV, LL_power limit=%u\n",
+				freq_L, volt_L, L_pwr_limit);
+	} else
+		ocp_info("stress test: cluster 1 (L) is off\n");
+
+	if (ocp_cluster2_enable == 1) {
+		big_pwr_limit = jiffies % 5000;
+		BigOCPSetTarget(3, big_pwr_limit);
+		ocp_info("stress test: big power limit=%u\n", big_pwr_limit);
+	} else
+		ocp_info("stress test: cluster 2 (Big) is off\n");
+
+for (i = 0; i < 2000; i++) {
+	if (ocp_cluster0_enable == 1) {
+		freq_LL = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000;
+		volt_LL = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100;
+		LittleOCPDVFSSet(0, freq_LL, volt_LL);
+	}
+	if (ocp_cluster1_enable == 1) {
+		freq_L = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000;
+		volt_L = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100;
+		LittleOCPDVFSSet(1, freq_L, volt_L);
+	}
+		mdelay(1);
+}
+		ocp_info("stress test: count = %llu\n", count1++);
+	}
+
+	free_page((unsigned long)buf);
+	return count;
+}
+
 
 
 /* ocp_debug */
@@ -4236,6 +4331,7 @@ PROC_FOPS_RW(ocp_debug);
 PROC_FOPS_RW(dreq_function_test);
 PROC_FOPS_RW(dvt_test);
 PROC_FOPS_RW(hqa_test);
+PROC_FOPS_RW(ocp_stress_test);
 
 static int _create_procfs(void)
 {
@@ -4261,6 +4357,7 @@ PROC_ENTRY(ocp_debug),
 PROC_ENTRY(dreq_function_test),
 PROC_ENTRY(dvt_test),
 PROC_ENTRY(hqa_test),
+PROC_ENTRY(ocp_stress_test),
 };
 
 dir = proc_mkdir("ocp", NULL);
