@@ -1080,7 +1080,7 @@ DDP_MODULE_DRIVER ddp_driver_od = {
 // Will not be linked into user build.
 // --------------------------------------------------------------------*/
 
-#define OD_TLOG(fmt, arg...) pr_notice("[OD] " fmt "\n", ##arg)
+#define OD_TLOG(fmt, arg...) pr_warn("[OD] " fmt "\n", ##arg)
 
 /*
  * A replacement of obsolete simple_strtoul(). The user must be restricted
