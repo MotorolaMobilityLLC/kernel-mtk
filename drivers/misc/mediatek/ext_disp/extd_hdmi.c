@@ -1101,7 +1101,11 @@ int hdmi_get_dev_info(int is_sf, void *info)
 			hdmi_info.displayType = HDMI;
 
 		hdmi_info.isHwVsyncAvailable = HW_DPI_VSYNC_SUPPORT;
-		hdmi_info.vsyncFPS = 60;
+
+		if (hdmi_reschange == HDMI_VIDEO_1920x1080p_30Hz)
+			hdmi_info.vsyncFPS = 30;
+		else
+			hdmi_info.vsyncFPS = 60;
 
 		if (copy_to_user(info, &hdmi_info, sizeof(hdmi_info))) {
 			MMProfileLogEx(ddp_mmp_get_events()->Extd_ErrorInfo, MMProfileFlagPulse, Devinfo, 1);
@@ -1118,11 +1122,6 @@ int hdmi_get_dev_info(int is_sf, void *info)
 		memset((void *)dispif_info, 0, sizeof(disp_session_info));
 
 		dispif_info->isOVLDisabled = (hdmi_layer_num == 1) ? 1 : 0;
-/* if(ext_disp_path_get_mode() == EXTD_RDMA_DPI_MODE) */
-/* { */
-/* dispif_info->isOVLDisabled = 0; */
-/* } */
-
 		dispif_info->maxLayerNum = hdmi_layer_num;
 		dispif_info->displayFormat = DISPIF_FORMAT_RGB888;
 		dispif_info->displayHeight = p->hdmi_height;
@@ -1139,7 +1138,11 @@ int hdmi_get_dev_info(int is_sf, void *info)
 			dispif_info->displayType = DISP_IF_HDMI;
 
 		dispif_info->isHwVsyncAvailable = HW_DPI_VSYNC_SUPPORT;
-		dispif_info->vsyncFPS = 60;
+
+		if (hdmi_reschange == HDMI_VIDEO_1920x1080p_30Hz)
+			hdmi_info.vsyncFPS = 30;
+		else
+			hdmi_info.vsyncFPS = 60;
 
 		if (dispif_info->displayWidth * dispif_info->displayHeight <= 240 * 432)
 			dispif_info->physicalHeight = dispif_info->physicalWidth = 0;
