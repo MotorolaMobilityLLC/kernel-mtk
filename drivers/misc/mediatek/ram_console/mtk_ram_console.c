@@ -68,6 +68,7 @@ struct last_reboot_reason {
 	uint8_t cpu_dvfs_vproc_big;
 	uint8_t cpu_dvfs_vproc_little;
 	uint8_t cpu_dvfs_oppidx;
+	uint8_t cpu_dvfs_cci_oppidx;
 	uint8_t cpu_dvfs_status;
 
 	uint8_t gpu_dvfs_vgpu;
@@ -990,9 +991,21 @@ void aee_rr_rec_cpu_dvfs_oppidx(u8 val)
 	LAST_RR_SET(cpu_dvfs_oppidx, val);
 }
 
+void aee_rr_rec_cpu_dvfs_cci_oppidx(u8 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(cpu_dvfs_cci_oppidx, val);
+}
+
 u8 aee_rr_curr_cpu_dvfs_oppidx(void)
 {
 	return LAST_RR_VAL(cpu_dvfs_oppidx);
+}
+
+u8 aee_rr_curr_cpu_dvfs_cci_oppidx(void)
+{
+	return LAST_RR_VAL(cpu_dvfs_cci_oppidx);
 }
 
 void aee_rr_rec_cpu_dvfs_status(u8 val)
@@ -1542,6 +1555,11 @@ void aee_rr_show_cpu_dvfs_oppidx(struct seq_file *m)
 	seq_printf(m, "cpu_dvfs_oppidx: big = 0x%x\n", (LAST_RRR_VAL(cpu_dvfs_oppidx) >> 4) & 0xF);
 }
 
+void aee_rr_show_cpu_dvfs_cci_oppidx(struct seq_file *m)
+{
+	seq_printf(m, "cpu_dvfs_oppidx: cci = 0x%x\n", LAST_RRR_VAL(cpu_dvfs_cci_oppidx) & 0xF);
+}
+
 void aee_rr_show_cpu_dvfs_status(struct seq_file *m)
 {
 	seq_printf(m, "cpu_dvfs_status: 0x%x\n", LAST_RRR_VAL(cpu_dvfs_status));
@@ -1876,6 +1894,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_cpu_dvfs_vproc_big,
 	aee_rr_show_cpu_dvfs_vproc_little,
 	aee_rr_show_cpu_dvfs_oppidx,
+	aee_rr_show_cpu_dvfs_cci_oppidx,
 	aee_rr_show_cpu_dvfs_status,
 	aee_rr_show_gpu_dvfs_vgpu,
 	aee_rr_show_gpu_dvfs_oppidx,

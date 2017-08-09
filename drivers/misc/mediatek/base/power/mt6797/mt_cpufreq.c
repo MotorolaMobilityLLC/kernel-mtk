@@ -560,7 +560,7 @@ ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_VOLT14_VPROC2_M    (85000)	/* 10MV */
 #define CPU_DVFS_VOLT15_VPROC2_M    (84000)	/* 10MV */
 
-#define CPUFREQ_LAST_FREQ_LEVEL    (CPU_DVFS_FREQ15_LL_SB)
+#define CPUFREQ_LAST_FREQ_LEVEL    (CPU_DVFS_FREQ15_CCI_FY)
 
 /* Debugging */
 #undef TAG
@@ -3644,6 +3644,9 @@ static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx
 	cpufreq_ver("DVFS: MCSI: Final Result, target_cci_volt = %d, target_cci_freq = %d\n",
 		target_cci_volt, cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx));
 
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_rr_rec_cpu_dvfs_cci_oppidx((aee_rr_curr_cpu_dvfs_cci_oppidx() & 0xF0) | new_cci_opp_idx);
+#endif
 	return new_cci_opp_idx;
 }
 
