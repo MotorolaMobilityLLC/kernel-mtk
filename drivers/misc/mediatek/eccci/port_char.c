@@ -695,9 +695,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case CCCI_IOC_ENTER_DEEP_FLIGHT:
 		CCCI_NOTICE_LOG(md->index, CHAR, "enter MD flight mode ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: enter MD flight mode ioctl called by %s\n", md->index, current->comm);
-#ifdef MD_UMOLY_EE_SUPPORT
 		md->flight_mode = MD_FIGHT_MODE_ENTER; /* enter flight mode */
-#endif
 		ret = md->ops->reset(md);
 		if (ret == 0) {
 			md->ops->stop(md, 1000);
@@ -708,9 +706,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		CCCI_NOTICE_LOG(md->index, CHAR, "leave MD flight mode ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: leave MD flight mode ioctl called by %s\n", md->index, current->comm);
 		wake_lock_timeout(&md->md_wake_lock, 10 * HZ);
-#ifdef MD_UMOLY_EE_SUPPORT
 		md->flight_mode = MD_FIGHT_MODE_LEAVE; /* leave flight mode */
-#endif
 		ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_LEAVE_FLIGHT_MODE, 0);
 		break;
 

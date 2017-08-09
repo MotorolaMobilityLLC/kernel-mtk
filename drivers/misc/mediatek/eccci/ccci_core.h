@@ -36,6 +36,11 @@
 #define C2K_MD_LOG_TX_Q		3
 #define C2K_MD_LOG_RX_Q		3
 
+#define EX_TIMER_SWINT 10
+#define EX_TIMER_MD_EX 5
+#define EX_TIMER_MD_EX_REC_OK 10
+#define EX_EE_WHOLE_TIMEOUT  (EX_TIMER_SWINT + EX_TIMER_MD_EX + EX_TIMER_MD_EX_REC_OK + 2) /* 2s is buffer */
+
 struct ccci_log {
 	struct ccci_header msg;
 	u64 tv;
@@ -104,12 +109,13 @@ typedef enum {
 
 #ifdef MD_UMOLY_EE_SUPPORT
 #define MD_HS1_FAIL_DUMP_SIZE  (2048)
+#endif
+
 typedef enum {
 	MD_FIGHT_MODE_NONE = 0,
 	MD_FIGHT_MODE_ENTER = 1,
 	MD_FIGHT_MODE_LEAVE = 2
 } FLIGHT_STAGE;		/* for other module */
-#endif
 
 /* MODEM MAUI Exception header (4 bytes)*/
 typedef struct _exception_record_header_t {
@@ -863,8 +869,8 @@ struct ccci_modem {
 #ifdef MD_UMOLY_EE_SUPPORT
 	DEBUG_INFO_T debug_info1[MD_CORE_NUM - 1];
 	unsigned char ex_core_num;
-	unsigned char flight_mode;
 #endif
+	unsigned char flight_mode;
 	unsigned char ex_type;
 	EX_LOG_T ex_info;
 #ifdef MD_UMOLY_EE_SUPPORT

@@ -71,9 +71,6 @@ static void ccci_aed(struct ccci_modem *md, unsigned int dump_flag, char *aed_st
 static void status_msg_handler(struct ccci_port *port, struct ccci_request *req);
 
 #define MAX_QUEUE_LENGTH 16
-#define EX_TIMER_SWINT 10
-#define EX_TIMER_MD_EX 5
-#define EX_TIMER_MD_EX_REC_OK 10
 #define EX_TIMER_MD_HANG 5
 
 #if defined(FEATURE_GET_MD_GPIO_NUM)
@@ -506,9 +503,7 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 	    && ccci_h->reserved == MD_INIT_CHK_ID && md->boot_stage == MD_BOOT_STAGE_0) {
 		del_timer(&md->bootup_timer);
 		ccci_update_md_boot_stage(md, MD_BOOT_STAGE_1);
-#ifdef MD_UMOLY_EE_SUPPORT
 		md->flight_mode = MD_FIGHT_MODE_NONE; /* leave flight mode */
-#endif
 		/*
 		if (get_booting_start_id(md) | META_BOOT_ID) {
 			mod_timer(&md->md_status_poller, jiffies + 10 * HZ);
@@ -2582,7 +2577,8 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 	CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD layout struct\n");
 	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, &md->mem_layout, sizeof(struct ccci_mem_layout));
 	/* Dump MD register */
-	if (debug_info->more_info == MD_EE_CASE_NO_RESPONSE) /* temp solution for debug mode KE */
+	if (debug_info->more_info == MD_EE_CASE_NO_RESPONSE ||
+		debug_info->more_info == MD_EE_CASE_WDT) /* temp solution for debug mode KE */
 		md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
 err_exit:
 	ccci_update_md_boot_stage(md, MD_BOOT_STAGE_EXCEPTION);
@@ -3500,7 +3496,10 @@ void md_bootup_timeout_func(unsigned long data)
 
 	if (md->boot_stage == MD_BOOT_STAGE_0) {
 		/* Handshake 1 fail */
-#ifdef MD_UMOLY_EE_SUPPORT
+#ifndef MD_UMOLY_EE_SUPPORT
+		if (md->flight_mode)
+			md->flight_mode = MD_FIGHT_MODE_NONE;
+#else
 		if (md->flight_mode) {
 			md->flight_mode = MD_FIGHT_MODE_NONE;
 			ccci_aed(md, CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_MD_IMG_MEM | CCCI_AED_DUMP_EX_MEM,

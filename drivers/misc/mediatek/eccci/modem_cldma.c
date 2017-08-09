@@ -2384,12 +2384,36 @@ static void md_cldma_clear(struct ccci_modem *md)
 static int md_cd_reset(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+	int count = 0;
 
 	/* 1. mutex check */
 	if (atomic_add_return(1, &md_ctrl->reset_on_going) > 1) {
 		CCCI_NORMAL_LOG(md->index, TAG, "One reset flow is on-going\n");
 		return -CCCI_ERR_MD_IN_RESET;
 	}
+
+	if (md->flight_mode != MD_FIGHT_MODE_ENTER && md->md_state == EXCEPTION &&
+		md->boot_stage != MD_BOOT_STAGE_EXCEPTION && md->ex_stage != EX_INIT_DONE) {
+
+		CCCI_NORMAL_LOG(md->index, TAG, "Will reset after MD exception!\n");
+		while (++count < (EX_EE_WHOLE_TIMEOUT * 50)) {
+			if (unlikely(in_interrupt())) {
+				CCCI_ERR_MSG(md->index, TAG, "calling Reset from IRQ\n");
+				break;/* return -CCCI_ERR_ASSERT_ERR; */
+			}
+			if ((md->md_state != EXCEPTION) ||
+				(md->boot_stage == MD_BOOT_STAGE_EXCEPTION && md->ex_stage == EX_INIT_DONE)) {
+				/* EXCEPTION for modem state change: maybe reset by another md ccci directly;
+					MD_BOOT_STAGE_EXCEPTION: boot changed to exception at last;
+					EX_INIT_DONE: CCIF HS had Done */
+				CCCI_NORMAL_LOG(md->index, TAG, "Reset when MD exception!%d, %d, %d\n",
+					md->md_state, md->boot_stage, md->ex_stage);
+				break;
+			}
+			msleep(20);
+		}
+	}
+
 	CCCI_NORMAL_LOG(md->index, TAG, "md_cd_reset:CLDMA modem is resetting\n");
 	/* 2. disable WDT IRQ */
 	wdt_disable_irq(md_ctrl);

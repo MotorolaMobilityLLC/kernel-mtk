@@ -1027,12 +1027,36 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
 static int md_ccif_op_reset(struct ccci_modem *md)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+	int count = 0;
 
 	/*1. mutex check */
 	if (atomic_inc_return(&md_ctrl->reset_on_going) > 1) {
 		CCCI_NORMAL_LOG(md->index, TAG, "One reset flow is on-going\n");
 		return -CCCI_ERR_MD_IN_RESET;
 	}
+
+	if (md->flight_mode != MD_FIGHT_MODE_ENTER && md->md_state == EXCEPTION &&
+		md->boot_stage != MD_BOOT_STAGE_EXCEPTION && md->ex_stage != EX_INIT_DONE) {
+
+		CCCI_NORMAL_LOG(md->index, TAG, "Will reset after MD exception!\n");
+		while (++count < (EX_EE_WHOLE_TIMEOUT * 50)) {
+			if (unlikely(in_interrupt())) {
+				CCCI_ERR_MSG(md->index, TAG, "calling Reset from IRQ\n");
+				break;/* return -CCCI_ERR_ASSERT_ERR; */
+			}
+			if ((md->md_state != EXCEPTION) ||
+				(md->boot_stage == MD_BOOT_STAGE_EXCEPTION && md->ex_stage == EX_INIT_DONE)) {
+				/* EXCEPTION for modem state change: maybe reset by another md ccci directly;
+					MD_BOOT_STAGE_EXCEPTION: boot changed to exception at last;
+					EX_INIT_DONE: CCIF HS had Done */
+				CCCI_NORMAL_LOG(md->index, TAG, "Reset when MD exception!%d, %d, %d\n",
+					md->md_state, md->boot_stage, md->ex_stage);
+				break;
+			}
+			msleep(20);
+		}
+	}
+
 	CCCI_NORMAL_LOG(md->index, TAG, "ccif modem is resetting\n");
 	/*2. disable IRQ (use nosync) */
 	disable_irq_nosync(md_ctrl->md_wdt_irq_id);
