@@ -189,18 +189,18 @@ static int memory_lowpower_init(struct reserved_mem *rmem)
 RESERVEDMEM_OF_DECLARE(memory_lowpower, "mediatek,memory-lowpower",
 			memory_lowpower_init);
 
+#ifdef CONFIG_ZONE_MOVABLE_CMA
 static int __init memory_lowpower_sanity_test(void)
 {
 	phys_addr_t end = memory_lowpower_cma_base() +
 		memory_lowpower_cma_size();
 
-#ifdef CONFIG_ZONE_MOVABLE_CMA
 	/* test if this cma is at the end of DRAM */
 	BUG_ON(memblock_end_of_DRAM() != end);
-#endif
 	return 0;
 }
 late_initcall(memory_lowpower_sanity_test);
+#endif
 
 #ifdef CONFIG_MTK_MEMORY_LOWPOWER_DEBUG
 static int memory_lowpower_show(struct seq_file *m, void *v)
