@@ -373,6 +373,8 @@ typedef struct {
 #define AUDIO_INFRA_BASE (0x10001000L)
 #define AUDIO_HW_VIRTUAL_BASE   (0xF1220000L)
 
+#define APMIXEDSYS_BASE (0x1000C000L)
+
 #ifdef AUDIO_MEM_IOREMAP
 #define AFE_BASE                (0L)
 #else
@@ -404,9 +406,21 @@ typedef struct {
 #define AUDIO_CLK_CFG_4 (0x0080)
 #define AUDIO_CLK_CFG_6 (0x00A0)
 #define AUDIO_CLK_CFG_7 (0x00B0)
+#define AUDIO_CLK_CFG_8 (0x00C0)
 #define AUDIO_CG_SET (0x88)
 #define AUDIO_CG_CLR (0x8c)
 #define AUDIO_CG_STATUS (0x94)
+
+/* apmixed sys */
+#define APLL1_CON0 0x02a0
+#define APLL1_CON1 0x02a4
+#define APLL1_CON2 0x02a8
+#define APLL1_CON3 0x02ac
+
+#define APLL2_CON0 0x02b4
+#define APLL2_CON1 0x02b8
+#define APLL2_CON2 0x02bc
+#define APLL2_CON3 0x02c0
 
 /* 6752 add */
 /*#define AUDIO_CLK_AUDDIV_0 (0x00120)*/
@@ -688,6 +702,10 @@ void SetInfraCfg(uint32 offset, uint32 value, uint32 mask);
 /* function to Set pll */
 uint32 GetpllCfg(uint32 offset);
 void SetpllCfg(uint32 offset, uint32 value, uint32 mask);
+
+/* function to apmixed */
+uint32 GetApmixedCfg(uint32 offset);
+void SetApmixedCfg(uint32 offset, uint32 value, uint32 mask);
 
 
 /* for debug usage */

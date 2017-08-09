@@ -59,6 +59,43 @@
  *    function implementation
  */
 
+static int m_input_use_lch;
+
+static const char const *switch_texts[] = {"Off", "On"};
+
+static const struct soc_enum input_use_lch_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(switch_texts), switch_texts),
+};
+
+
+static int lpbk_in_use_lch_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("Audio_AmpR_Get = %d\n", m_input_use_lch);
+	ucontrol->value.integer.value[0] = m_input_use_lch;
+	return 0;
+}
+
+static int lpbk_in_use_lch_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s()\n", __func__);
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(switch_texts)) {
+		pr_warn("return -EINVAL\n");
+		return -EINVAL;
+	}
+
+	m_input_use_lch = ucontrol->value.integer.value[0];
+
+	return 0;
+}
+
+
+static const struct snd_kcontrol_new lpbk_controls[] = {
+	SOC_ENUM_EXT("LPBK_IN_USE_LCH", input_use_lch_enum[0],
+		lpbk_in_use_lch_get, lpbk_in_use_lch_set),
+};
+
 static int mtk_uldlloopback_probe(struct platform_device *pdev);
 static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream);
 static int mtk_asoc_uldlloopbackpcm_new(struct snd_soc_pcm_runtime *rtd);
@@ -154,6 +191,13 @@ static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream)
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I03,
 		      Soc_Aud_InterConnectionOutput_O28);
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I04,
+		      Soc_Aud_InterConnectionOutput_O29);
+
+	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I03,
+		      Soc_Aud_InterConnectionOutput_O01);
+	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I03,
+		      Soc_Aud_InterConnectionOutput_O04);
+	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I03,
 		      Soc_Aud_InterConnectionOutput_O29);
 
 
@@ -289,16 +333,26 @@ static int mtk_uldlloopback_pcm_prepare(struct snd_pcm_substream *substream)
 	/* interconnection setting */
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I03,
 		      Soc_Aud_InterConnectionOutput_O00);
-	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I04,
-		      Soc_Aud_InterConnectionOutput_O01);
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I03,
 		      Soc_Aud_InterConnectionOutput_O03);
-	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I04,
-		      Soc_Aud_InterConnectionOutput_O04);
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I03,
 		      Soc_Aud_InterConnectionOutput_O28);
-	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I04,
-		      Soc_Aud_InterConnectionOutput_O29);
+
+	if (m_input_use_lch == 1) {
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I03,
+			      Soc_Aud_InterConnectionOutput_O01);
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I03,
+			      Soc_Aud_InterConnectionOutput_O04);
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I03,
+			      Soc_Aud_InterConnectionOutput_O29);
+	} else {
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I04,
+			      Soc_Aud_InterConnectionOutput_O01);
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I04,
+			      Soc_Aud_InterConnectionOutput_O04);
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I04,
+			      Soc_Aud_InterConnectionOutput_O29);
+	}
 
 	Afe_Set_Reg(AFE_ADDA_TOP_CON0, 0, 0x1); /* Using Internal ADC */
 
@@ -393,6 +447,9 @@ static int mtk_asoc_uldlloopbackpcm_new(struct snd_soc_pcm_runtime *rtd)
 static int mtk_afe_uldlloopback_probe(struct snd_soc_platform *platform)
 {
 	pr_warn("mtk_afe_uldlloopback_probe\n");
+
+	snd_soc_add_platform_controls(platform, lpbk_controls,
+			      ARRAY_SIZE(lpbk_controls));
 	return 0;
 }
 

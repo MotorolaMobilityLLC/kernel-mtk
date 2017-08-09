@@ -734,6 +734,35 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 	n += scnprintf(buffer + n, size - n, "FPGA_CFG0  = 0x%x\n",
 		       Afe_Get_Reg(FPGA_CFG0));
 #endif
+	n += scnprintf(buffer + n, size - n, "CLK_CFG_4  = 0x%x\n",
+			GetClkCfg(AUDIO_CLK_CFG_4));
+	n += scnprintf(buffer + n, size - n, "CLK_CFG_6  = 0x%x\n",
+			GetClkCfg(AUDIO_CLK_CFG_6));
+	n += scnprintf(buffer + n, size - n, "CLK_CFG_8  = 0x%x\n",
+			GetClkCfg(AUDIO_CLK_CFG_8));
+
+	n += scnprintf(buffer + n, size - n, "APLL1_CON0  = 0x%x\n",
+			GetApmixedCfg(APLL1_CON0));
+	n += scnprintf(buffer + n, size - n, "APLL1_CON1  = 0x%x\n",
+			GetApmixedCfg(APLL1_CON1));
+	n += scnprintf(buffer + n, size - n, "APLL1_CON2  = 0x%x\n",
+			GetApmixedCfg(APLL1_CON2));
+	n += scnprintf(buffer + n, size - n, "APLL1_CON3  = 0x%x\n",
+			GetApmixedCfg(APLL1_CON3));
+
+	n += scnprintf(buffer + n, size - n, "APLL2_CON0  = 0x%x\n",
+			GetApmixedCfg(APLL2_CON0));
+	n += scnprintf(buffer + n, size - n, "APLL2_CON1  = 0x%x\n",
+			GetApmixedCfg(APLL2_CON1));
+	n += scnprintf(buffer + n, size - n, "APLL2_CON2  = 0x%x\n",
+			GetApmixedCfg(APLL2_CON2));
+	n += scnprintf(buffer + n, size - n, "APLL2_CON3  = 0x%x\n",
+			GetApmixedCfg(APLL2_CON3));
+
+	n += scnprintf(buffer + n, size - n, "0x1f8  = 0x%x\n",
+			Afe_Get_Reg(AFE_BASE + 0x1f8));
+
+
 	pr_debug("mt_soc_debug_read len = %d\n", n);
 	AudDrv_Clk_Off();
 

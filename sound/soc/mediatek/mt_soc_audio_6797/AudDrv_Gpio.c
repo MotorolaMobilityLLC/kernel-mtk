@@ -85,9 +85,9 @@ struct audio_gpio_attr {
 static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 	[GPIO_PMIC_MODE0] = {"audpmic_mode0", false, NULL},
 	[GPIO_PMIC_MODE1] = {"audpmic_mode1", false, NULL},
-	[GPIO_SMARTPA_MODE0] = {"aud_smartpa-mode0", false, NULL},
-	[GPIO_SMARTPA_MODE1] = {"aud_smartpa-mode1", false, NULL},
-	[GPIO_SMARTPA_MODE3] = {"aud_smartpa-mode3", false, NULL},
+	[GPIO_SMARTPA_MODE0] = {"aud_smartpa_mode0", false, NULL},
+	[GPIO_SMARTPA_MODE1] = {"aud_smartpa_mode1", false, NULL},
+	[GPIO_SMARTPA_MODE3] = {"aud_smartpa_mode3", false, NULL},
 	[GPIO_TDM_MODE0] = {"aud_tdm_mode0", false, NULL},
 	[GPIO_TDM_MODE1] = {"aud_tdm_mode1", false, NULL},
 

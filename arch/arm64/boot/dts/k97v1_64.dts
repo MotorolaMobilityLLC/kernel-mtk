@@ -463,9 +463,9 @@
 &audgpio {
 	pinctrl-names = "audpmic_mode0",
 			"audpmic_mode1",
-			"aud_smartpa-mode0",
-			"aud_smartpa-mode1",
-			"aud_smartpa-mode3",
+			"aud_smartpa_mode0",
+			"aud_smartpa_mode1",
+			"aud_smartpa_mode3",
 			"aud_tdm_mode0",
 			"aud_tdm_mode1";
 	pinctrl-0 = <&aud_pins_pmicclk_mode0>;

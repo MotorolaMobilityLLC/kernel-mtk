@@ -800,7 +800,7 @@ static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
 		     Audio_SineGen_SampleRate_Get, Audio_SineGen_SampleRate_Set),
 	SOC_ENUM_EXT("Audio_SineGen_Amplitude", Audio_Routing_Enum[2],
 		     Audio_SineGen_Amplitude_Get, Audio_SineGen_Amplitude_Set),
-	SOC_ENUM_EXT("Audio_STF_Switch", Audio_Routing_Enum[3],
+	SOC_ENUM_EXT("Audio_Sidetone_Switch", Audio_Routing_Enum[3],
 		     Audio_STF_Get, Audio_STF_Set),
 	SOC_ENUM_EXT("Audio_Mode_Switch", Audio_Routing_Enum[4],
 		     Audio_Mode_Get, Audio_Mode_Set),

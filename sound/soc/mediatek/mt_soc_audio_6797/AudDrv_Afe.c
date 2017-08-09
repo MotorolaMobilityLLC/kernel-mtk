@@ -93,6 +93,7 @@ void *AFE_TOP_ADDRESS = 0;
 void *AFE_CLK_ADDRESS = 0;
 void *AFE_INFRA_ADDRESS = 0;
 void *APLL_BASE_ADDRESS = 0;
+void *APMIXEDSYS_ADDRESS = 0;
 
 void Auddrv_Reg_map(void)
 {
@@ -111,6 +112,8 @@ void Auddrv_Reg_map(void)
 
 	/* temp for hardawre code  set pll cfg */
 	APLL_BASE_ADDRESS = ioremap_nocache(APLL_PHYSICAL_BASE, 0x1000);
+
+	APMIXEDSYS_ADDRESS = ioremap_nocache(APMIXEDSYS_BASE, 0x1000);
 }
 
 dma_addr_t Get_Afe_Sram_Phys_Addr(void)
@@ -268,6 +271,29 @@ void SetpllCfg(uint32 offset, uint32 value, uint32 mask)
 	volatile uint32 val_tmp;
 	/* pr_debug("SetpllCfg offset=%x, value=%x, mask=%x\n",offset,value,mask); */
 	val_tmp = GetpllCfg(offset);
+	val_tmp &= (~mask);
+	val_tmp |= (value & mask);
+	mt_reg_sync_writel(val_tmp, AFE_Register);
+}
+
+/* function to access apmixed sys */
+uint32 GetApmixedCfg(uint32 offset)
+{
+	volatile long address = (long)((char *)APMIXEDSYS_ADDRESS + offset);
+	volatile uint32 *value;
+
+	value = (volatile uint32 *)(address);
+	/* pr_debug("GetClkCfg offset=%x address = %x value = 0x%x\n", offset, address, *value); */
+	return *value;
+}
+
+void SetApmixedCfg(uint32 offset, uint32 value, uint32 mask)
+{
+	volatile long address = (long)((char *)APMIXEDSYS_ADDRESS + offset);
+	volatile uint32 *AFE_Register = (volatile uint32 *)address;
+	volatile uint32 val_tmp;
+	/* pr_debug("SetpllCfg offset=%x, value=%x, mask=%x\n",offset,value,mask); */
+	val_tmp = GetApmixedCfg(offset);
 	val_tmp &= (~mask);
 	val_tmp |= (value & mask);
 	mt_reg_sync_writel(val_tmp, AFE_Register);

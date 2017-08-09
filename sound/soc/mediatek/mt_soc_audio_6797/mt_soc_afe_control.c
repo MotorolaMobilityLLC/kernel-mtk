@@ -1067,14 +1067,14 @@ uint32 ADDAULSampleRateTransform(uint32 sampleRate)
 	case 32000:
 		return Soc_Aud_ADDA_UL_SAMPLERATE_32K;
 	case 48000:
-		return Soc_Aud_ADDA_UL_SAMPLERATE_48K_HD;	/* use HD(24bit format) for 48k */
+		return Soc_Aud_ADDA_UL_SAMPLERATE_48K;
 	case 96000:
 		return Soc_Aud_ADDA_UL_SAMPLERATE_96K;
 	case 192000:
 		return Soc_Aud_ADDA_UL_SAMPLERATE_192K;
 	default:
 		pr_warn("[AudioWarn] %s() sampleRate(%d) is invalid, use 48kHz(24bit)!!!\n", __func__, sampleRate);
-		return Soc_Aud_ADDA_UL_SAMPLERATE_48K_HD;
+		return Soc_Aud_ADDA_UL_SAMPLERATE_48K;
 	}
 }
 
@@ -1364,11 +1364,19 @@ bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S)
 
 		/* TODO: KC: is this necessary, will this affect playback? */
 		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x03F87201, 0xFFFFFFFF);	/* up8x txif sat on */
-		if (dVoiceModeSelect >= Soc_Aud_ADDA_UL_SAMPLERATE_96K)
-			Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x1 << 5, 0x1 << 5);	/* use hires format [1 0 23] */
 
-		/*Afe_Set_Reg(AFE_ADDA_NEWIF_CFG1, ((dVoiceModeSelect < 3) ? 1 : 3) << 10, 0x3 << 10);*/
-		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, dVoiceModeSelect << 28, 0xf << 28);
+		if (dVoiceModeSelect >= Soc_Aud_ADDA_UL_SAMPLERATE_96K) {	/* hires */
+			if (dVoiceModeSelect >= Soc_Aud_ADDA_UL_SAMPLERATE_96K)
+				Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x1 << 5, 0x1 << 5);	/* use hires format [1 0 23] */
+
+			/*Afe_Set_Reg(AFE_ADDA_NEWIF_CFG1, ((dVoiceModeSelect < 3) ? 1 : 3) << 10, 0x3 << 10);*/
+			Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, dVoiceModeSelect << 28, 0xf << 28);
+		} else {	/* normal 8~48k */
+			/* use fixed 260k anc path */
+			Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, 8 << 28, 0xf << 28);
+			/* ul_use_cic_out */
+			Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, 0x1 << 20, 0x1 << 20);
+		}
 
 	} else {
 		uint32 Audio_I2S_Adc = 0;

@@ -121,5 +121,7 @@ void AudDrv_APLL2Tuner_Clk_Off(void);
 void AudDrv_Emi_Clk_On(void);
 void AudDrv_Emi_Clk_Off(void);
 
+void AudDrv_ANC_Clk_On(void);
+void AudDrv_ANC_Clk_Off(void);
 
 #endif
