@@ -459,6 +459,8 @@ void __iomem *ISP_SENINF1_BASE;
 void __iomem *ISP_SENINF2_BASE;
 void __iomem *ISP_SENINF3_BASE;
 
+void __iomem *CLOCK_CELL_BASE;
+
 void __iomem *ISP_MMSYS_CONFIG_BASE;
 
 
@@ -3370,6 +3372,8 @@ static MINT32 ISP_DumpReg(void)
 	LOG_INF("seninf: 1a043d00(0x%x)-1a043d08(0x%x)-1a043d14(0x%x)-1a043d18(0x%x)\n", \
 		ISP_RD32(ISP_SENINF3_BASE + 0x0d00), ISP_RD32(ISP_SENINF3_BASE + 0x0d08), \
 		ISP_RD32(ISP_SENINF3_BASE + 0x0d14), ISP_RD32(ISP_SENINF3_BASE + 0x0d18));
+	/* IMGPLL frequency */
+	LOG_INF("IMGPLL frequency(0x%x)[HPM:0x114EC5, LPM:0xC8000]", ISP_RD32(CLOCK_CELL_BASE + 0x0264));
 #if 0
 	/*  */
 	/* spin_lock_irqsave(&(IspInfo.SpinLock), flags); */
@@ -9713,6 +9717,23 @@ static MINT32 __init ISP_Init(void)
 		return -ENODEV;
 	}
 	LOG_DBG("ISP_SENINF3_BASE: %p\n", ISP_SENINF3_BASE);
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mmsys_config");
+	if (!node) {
+		LOG_ERR("find mmsys_config node failed!!!\n");
+		return -ENODEV;
+	}
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
+	if (!node) {
+		LOG_ERR("find mediatek,apmixed node failed!!!\n");
+		return -ENODEV;
+	}
+	CLOCK_CELL_BASE = of_iomap(node, 0);
+	if (!CLOCK_CELL_BASE) {
+		LOG_ERR("unable to map CLOCK_CELL_BASE registers!!!\n");
+		return -ENODEV;
+	}
+	LOG_DBG("CLOCK_CELL_BASE: %p\n", CLOCK_CELL_BASE);
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mmsys_config");
 	if (!node) {
 		LOG_ERR("find mmsys_config node failed!!!\n");
