@@ -272,6 +272,7 @@ typedef struct _MTK_WCN_HIF_DMA_CONF {
 */
 
 #ifndef MODULE_AHB_DMA
+VOID HifDumpEnhanceModeData(P_ADAPTER_T prAdapter);
 
 VOID HifRegDump(P_ADAPTER_T prAdapter);
 
