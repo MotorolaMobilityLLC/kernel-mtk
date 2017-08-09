@@ -533,7 +533,7 @@ static int mcube_write_log_data(struct i2c_client *client, u8 data[0x3f])
 	n += sprintf(_pszBuffer+n, "G-sensor RAW X = %d  Y = %d  Z = %d\n", raw_data[0] , raw_data[1] , raw_data[2]);
 	n += sprintf(_pszBuffer+n, "G-sensor RBM X = %d  Y = %d  Z = %d\n", rbm_data[0] , rbm_data[1] , rbm_data[2]);
 
-	for (i = 0; i < 64; i++)
+	for (i = 0; i < 63; i++)
 		n += sprintf(_pszBuffer+n, "mCube register map Register[%x] = 0x%x\n", i, data[i]);
 
 	mdelay(50);
@@ -851,6 +851,7 @@ static int MC3XXX_ReadData_RBM(struct i2c_client *client, int data[MC3XXX_AXES_N
 	u8 rbm_buf[MC3XXX_DATA_LEN] = {0};
 	int err = 0;
 	int _nTemp = 0;
+
 	if (NULL == client) {
 		err = -EINVAL;
 		return err;
@@ -3611,4 +3612,3 @@ MODULE_DESCRIPTION("mc3XXX G-Sensor Driver");
 MODULE_AUTHOR("Mediatek");
 MODULE_LICENSE("GPL");
 MODULE_VERSION(MC3XXX_DEV_DRIVER_VERSION);
-
