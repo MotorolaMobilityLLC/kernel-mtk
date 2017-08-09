@@ -622,7 +622,6 @@ static int mtk_pcm_hdmi_open(struct snd_pcm_substream *substream)
 {
 
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	int err = 0;
 	int ret = 0;
 
 	PRINTK_AUD_HDMI("mtk_pcm_hdmi_open\n");
@@ -643,9 +642,6 @@ static int mtk_pcm_hdmi_open(struct snd_pcm_substream *substream)
 	if (ret < 0)
 		PRINTK_AUD_HDMI("snd_pcm_hw_constraint_integer failed\n");
 
-	if (err < 0)
-		return err;
-
 	/* print for hw pcm information */
 	PRINTK_AUD_HDMI
 	    ("mtk_pcm_hdmi_open runtime rate = %d channels = %d substream->pcm->device = %d\n",
@@ -657,11 +653,6 @@ static int mtk_pcm_hdmi_open(struct snd_pcm_substream *substream)
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 		PRINTK_AUD_HDMI("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_hdmi_playback_constraints\n");
 
-	if (err < 0) {
-		PRINTK_AUD_HDMI("mtk_pcm_hdmi_close\n");
-		mtk_pcm_hdmi_close(substream);
-		return err;
-	}
 	PRINTK_AUD_HDMI("mtk_pcm_hdmi_open return\n");
 	return 0;
 }
