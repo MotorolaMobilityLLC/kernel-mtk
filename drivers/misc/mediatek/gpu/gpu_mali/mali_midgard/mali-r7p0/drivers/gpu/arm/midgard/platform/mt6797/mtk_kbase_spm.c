@@ -8,6 +8,7 @@
 #include <linux/delay.h>
 
 #include <mt_gpufreq.h>
+#include <mt-plat/mt_lpae.h>
 
 void mtk_kbase_dpm_setup(int *dfp_weights)
 {
@@ -54,6 +55,7 @@ void mtk_kbase_spm_release(void)
 
 void mtk_kbase_spm_kick(struct pcm_desc *pd)
 {
+	dma_addr_t pa;
 	uint32_t tmp;
 
 	spm_acquire();
@@ -78,7 +80,9 @@ void mtk_kbase_spm_kick(struct pcm_desc *pd)
 	DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x000000);
 
 	/* IM base */
-	DVFS_GPU_write32(DVFS_GPU_PCM_IM_PTR, (uint32_t)virt_to_phys(pd->base));
+	pa = __pa(pd->base);
+	MAPPING_DRAM_ACCESS_ADDR(pa);
+	DVFS_GPU_write32(DVFS_GPU_PCM_IM_PTR, (uint32_t)pa);
 	DVFS_GPU_write32(DVFS_GPU_PCM_IM_LEN, pd->size);
 	DVFS_GPU_write32(DVFS_GPU_PCM_CON1, SPM_PROJECT_CODE | CON1_PCM_TIMER_EN | CON1_FIX_SC_CK_DIS | CON1_RF_SYNC);
 	DVFS_GPU_write32(DVFS_GPU_PCM_CON1, SPM_PROJECT_CODE | CON1_PCM_TIMER_EN | CON1_FIX_SC_CK_DIS | CON1_MIF_APBEN | CON1_IM_NONRP_EN);
