@@ -12,12 +12,12 @@
 	#include <platform/mt_pmic.h>
 	#include <string.h>
 #elif defined(BUILD_UBOOT)
-    #include <asm/arch/mt_gpio.h>
+#include <asm/arch/mt_gpio.h>
 #else
 
 #ifdef CONFIG_MTK_LEGACY
-	#include <mach/mt_pm_ldo.h>
-    #include <mach/mt_gpio.h>
+#include <mach/mt_pm_ldo.h>
+#include <mach/mt_gpio.h>
 #endif
 
 #endif
@@ -112,6 +112,9 @@ static struct i2c_driver tps65132_iic_driver = {
 	.driver		= {
 		.owner	= THIS_MODULE,
 		.name	= "tps65132",
+#if !defined(CONFIG_MTK_LEGACY)
+		.of_match_table = lcm_of_match,
+#endif
 	},
 
 };
