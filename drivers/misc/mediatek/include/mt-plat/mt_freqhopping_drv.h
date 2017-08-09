@@ -58,7 +58,7 @@ struct mt_fh_hal_driver {
 	int (*mt_dram_overclock)(int);
 	int (*mt_get_dramc)(void);
 	void (*mt_fh_default_conf)(void);
-
+	int (*mt_dfs_general_pll)(unsigned int, unsigned int);
 	void (*ioctl)(unsigned int ctlid, void *);
 };
 
@@ -72,6 +72,7 @@ enum FH_DEVCTL_CMD_ID {
 	FH_DCTL_CMD_DVFS_SSC_DISABLE = 0x1003,
 	FH_DCTL_CMD_SSC_ENABLE = 0x1004,
 	FH_DCTL_CMD_SSC_DISABLE = 0x1005,
+	FH_DCTL_CMD_GENERAL_DFS = 0x1006,
 	FH_DCTL_CMD_MAX
 };
 

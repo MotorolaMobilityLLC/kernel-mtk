@@ -91,19 +91,19 @@ static const int g_pll_ssc_init_tbl[FH_PLL_NUM] = {
 	 *  [FH_SSC_DEF_DISABLE]: Default SSC disable,
 	 *  [FH_SSC_DEF_ENABLE_SSC]: Default enable SSC.
 	 */
-	FH_SSC_DEF_DISABLE, /* MCUFHCTL PLL0 */
-	FH_SSC_DEF_DISABLE, /* MCUFHCTL PLL1 */
-	FH_SSC_DEF_DISABLE, /* MCUFHCTL PLL2 */
-	FH_SSC_DEF_DISABLE, /* MCUFHCTL PLL3 */
-	FH_SSC_DEF_DISABLE, /* FHCTL PLL0 */
-	FH_SSC_DEF_ENABLE_SSC, /* FHCTL PLL1 */
-	FH_SSC_DEF_DISABLE, /* FHCTL PLL2 */
-	FH_SSC_DEF_DISABLE, /* FHCTL PLL3 */
-	FH_SSC_DEF_DISABLE, /* FHCTL PLL4 */
-	FH_SSC_DEF_DISABLE, /* FHCTL PLL5 */
-	FH_SSC_DEF_DISABLE, /* FHCTL PLL6 */
-	FH_SSC_DEF_DISABLE, /* FHCTL PLL7 */
-	FH_SSC_DEF_DISABLE, /* FHCTL PLL8 */
+	FH_SSC_DEF_DISABLE,	/* MCUFHCTL PLL0 */
+	FH_SSC_DEF_DISABLE,	/* MCUFHCTL PLL1 */
+	FH_SSC_DEF_DISABLE,	/* MCUFHCTL PLL2 */
+	FH_SSC_DEF_DISABLE,	/* MCUFHCTL PLL3 */
+	FH_SSC_DEF_DISABLE,	/* FHCTL PLL0 */
+	FH_SSC_DEF_ENABLE_SSC,	/* FHCTL PLL1 */
+	FH_SSC_DEF_DISABLE,	/* FHCTL PLL2 */
+	FH_SSC_DEF_DISABLE,	/* FHCTL PLL3 */
+	FH_SSC_DEF_DISABLE,	/* FHCTL PLL4 */
+	FH_SSC_DEF_DISABLE,	/* FHCTL PLL5 */
+	FH_SSC_DEF_DISABLE,	/* FHCTL PLL6 */
+	FH_SSC_DEF_DISABLE,	/* FHCTL PLL7 */
+	FH_SSC_DEF_DISABLE,	/* FHCTL PLL8 */
 };
 
 /* [For Everest] */
@@ -488,10 +488,10 @@ static void wait_dds_stable(unsigned int target_dds, unsigned long reg_mon, unsi
 
 /* Please add lock between the API for protecting FHCLT register atomic operation.
  *     spin_lock(&g_fh_lock);
- *     mt_fh_hal_dvfs();
+ *     mt_fh_hal_hopping();
  *     spin_unlock(&g_fh_lock);
  */
-static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
+static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 {
 	/* unsigned long flags = 0; */
 
@@ -625,7 +625,7 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
 	fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
 
-	mt_fh_hal_dvfs(pll, dds);
+	mt_fh_hal_hopping(pll, dds);
 
 	fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
 	fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
@@ -680,7 +680,7 @@ static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
 
 
 	FH_MSG("target dds: 0x%x", target_dds);
-	mt_fh_hal_dvfs(pll_id, target_dds);
+	mt_fh_hal_hopping(pll_id, target_dds);
 
 	if (g_fh_pll[pll_id].fh_status == FH_FH_ENABLE_SSC) {
 		const struct freqhopping_ssc *p_setting =
@@ -744,6 +744,99 @@ static int mt_fh_hal_get_dramc(void)
 {
 	FH_BUG_ON(1);
 	return 0;
+}
+
+/* General purpose PLL hopping and SSC enable API. */
+static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id, unsigned int target_dds)
+{
+	const unsigned long reg_cfg = g_reg_cfg[pll_id];
+
+	VALIDATE_PLLID(pll_id);
+
+	if (g_initialize == 0) {
+		FH_MSG("(Warning) %s FHCTL isn't ready. ", __func__);
+		return -1;
+	}
+
+	if (target_dds > MAX_DDS) {
+		FH_MSG("[ERROR] Overflow! [%s] [pll_id]:%d [dds]:0x%x", __func__, pll_id,
+		       target_dds);
+		/* Check dds overflow (21 bit) */
+		BUG_ON(1);
+	}
+
+	/* [Everest Only] All new platform should confirm again!!! */
+	switch (pll_id) {
+	case MCU_FH_PLL0:	/* MCU */
+	case MCU_FH_PLL1:
+	case MCU_FH_PLL2:
+	case MCU_FH_PLL3:
+	case FH_PLL1:		/* MPLL for DRAMC */
+	case FH_PLL3:		/* MEMPLL */
+		FH_MSG("ERROR! The [PLL_ID]:%d was forbidden hopping by Everest FHCTL.", pll_id);
+		BUG_ON(1);
+		break;
+	default:
+		break;
+	}
+
+	FH_MSG("%s, [Pll_ID]:%d [current dds(CON1)]:0x%x, [target dds]:%d",
+	       __func__, pll_id, (fh_read32(g_reg_pll_con1[pll_id]) & MASK21b), target_dds);
+
+	spin_lock(&g_fh_lock);
+
+	if (g_fh_pll[pll_id].fh_status == FH_FH_ENABLE_SSC) {
+		unsigned int pll_dds = 0;
+		unsigned int fh_dds = 0;
+
+		/* only when SSC is enable, turn off MEMPLL hopping */
+		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
+		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
+
+		pll_dds = (fh_read32(g_reg_dds[pll_id])) & MASK21b;
+		fh_dds = (fh_read32(g_reg_mon[pll_id])) & MASK21b;
+
+		/* FH_MSG(">p:f< %x:%x", pll_dds, fh_dds); */
+
+		wait_dds_stable(pll_dds, g_reg_mon[pll_id], 100);
+	}
+
+	mt_fh_hal_hopping(pll_id, target_dds);
+
+	if (g_fh_pll[pll_id].fh_status == FH_FH_ENABLE_SSC) {
+		const struct freqhopping_ssc *p_setting =
+		    &g_pll_ssc_setting_tbl[pll_id][PLL_SETTING_IDX__DEF];
+
+		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
+		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
+
+		fh_sync_ncpo_to_fhctl_dds(pll_id);
+
+		/* FH_MSG("Enable PLL SSC mode"); */
+		/* FH_MSG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id]) & MASK21b)); */
+
+		fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p_setting->df);
+		fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p_setting->dt);
+
+		fh_write32(g_reg_updnlmt[pll_id],
+			   (PERCENT_TO_DDSLMT
+			    ((fh_read32(g_reg_dds[pll_id]) & MASK21b), p_setting->lowbnd) << 16));
+		/* FH_MSG("UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[pll_id])); */
+
+		fh_switch2fhctl(pll_id, 1);
+
+		fh_set_field(reg_cfg, FH_FRDDSX_EN, 1);	/* enable SSC mode */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 1);	/* enable hopping control */
+
+		/* FH_MSG("CFG: 0x%08x", fh_read32(reg_cfg)); */
+
+	}
+	spin_unlock(&g_fh_lock);
+
+	return 0;
+
 }
 
 static void mt_fh_hal_popod_save(void)
@@ -911,7 +1004,7 @@ static int fh_dvfs_proc_write(struct file *file, const char *buffer, unsigned lo
 		break;
 	default:
 		spin_lock(&g_fh_lock);
-		mt_fh_hal_dvfs(p1, p2);
+		mt_fh_hal_hopping(p1, p2);
 		spin_unlock(&g_fh_lock);
 		break;
 	};
@@ -1268,7 +1361,7 @@ static int fh_ioctl_dvfs_ssc(unsigned int ctlid, void *arg)
 	case FH_DCTL_CMD_DVFS:	/* < PLL DVFS */
 		{
 			spin_lock(&g_fh_lock);
-			mt_fh_hal_dvfs(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
+			mt_fh_hal_hopping(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
 			spin_unlock(&g_fh_lock);
 		}
 		break;
@@ -1276,7 +1369,7 @@ static int fh_ioctl_dvfs_ssc(unsigned int ctlid, void *arg)
 		{
 			__disable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
 			spin_lock(&g_fh_lock);
-			mt_fh_hal_dvfs(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
+			mt_fh_hal_hopping(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
 			spin_unlock(&g_fh_lock);
 			__enable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
 		}
@@ -1285,7 +1378,7 @@ static int fh_ioctl_dvfs_ssc(unsigned int ctlid, void *arg)
 		{
 			__disable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
 			spin_lock(&g_fh_lock);
-			mt_fh_hal_dvfs(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
+			mt_fh_hal_hopping(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
 			spin_unlock(&g_fh_lock);
 		}
 		break;
@@ -1297,6 +1390,11 @@ static int fh_ioctl_dvfs_ssc(unsigned int ctlid, void *arg)
 	case FH_DCTL_CMD_SSC_DISABLE:	/* SSC disable */
 		{
 			__disable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
+		}
+		break;
+	case FH_DCTL_CMD_GENERAL_DFS:
+		{
+			mt_fh_hal_general_pll_dfs(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
 		}
 		break;
 	default:
@@ -1322,6 +1420,7 @@ static void __ioctl(unsigned int ctlid, void *arg)
 	case FH_DCTL_CMD_DVFS_SSC_DISABLE:	/* PLL DVFS and disable SSC */
 	case FH_DCTL_CMD_SSC_ENABLE:	/* SSC enable */
 	case FH_DCTL_CMD_SSC_DISABLE:	/* SSC disable */
+	case FH_DCTL_CMD_GENERAL_DFS:
 		{
 			fh_ioctl_dvfs_ssc(ctlid, arg);
 		}
@@ -1358,6 +1457,7 @@ static struct mt_fh_hal_driver g_fh_hal_drv = {
 	.mt_dram_overclock = mt_fh_hal_dram_overclock,
 	.mt_get_dramc = mt_fh_hal_get_dramc,
 	.mt_fh_default_conf = mt_fh_hal_default_conf,
+	.mt_dfs_general_pll = mt_fh_hal_general_pll_dfs,
 	.ioctl = __ioctl
 };
 
