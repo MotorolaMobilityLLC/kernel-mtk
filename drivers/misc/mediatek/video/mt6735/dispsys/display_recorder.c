@@ -478,20 +478,26 @@ static inline void __mt_update_tracing_mark_write_addr(void)
 static inline void mmp_kernel_trace_begin(char *name)
 {
 	__mt_update_tracing_mark_write_addr();
+	preempt_disable();
 	event_trace_printk(tracing_mark_write_addr, "B|%d|%s\n", current->tgid, name);
+	preempt_enable();
 }
 
 static inline void mmp_kernel_trace_counter(char *name, int count)
 {
 	__mt_update_tracing_mark_write_addr();
+	preempt_disable();
 	event_trace_printk(tracing_mark_write_addr, "C|%d|%s|%d\n",
 			   in_interrupt() ? -1 : current->tgid, name, count);
+	preempt_enable();
 }
 
 static inline void mmp_kernel_trace_end(void)
 {
 	__mt_update_tracing_mark_write_addr();
+	preempt_disable();
 	event_trace_printk(tracing_mark_write_addr, "E\n");
+	preempt_enable();
 }
 
 
@@ -508,8 +514,10 @@ void dprec_logger_frame_seq_begin(unsigned int session_id, unsigned frm_sequence
 
 	if (dprec_met_info[device_type].begin_frm_seq != frm_sequence) {
 		__mt_update_tracing_mark_write_addr();
+		preempt_disable();
 		event_trace_printk(tracing_mark_write_addr, "S|%d|%s|%d\n", current->tgid,
 				   dprec_met_info[device_type].log_name, frm_sequence);
+		preempt_enable();
 		dprec_met_info[device_type].begin_frm_seq = frm_sequence;
 	}
 }
@@ -527,8 +535,10 @@ void dprec_logger_frame_seq_end(unsigned int session_id, unsigned frm_sequence)
 
 	if (dprec_met_info[device_type].end_frm_seq != frm_sequence) {
 		__mt_update_tracing_mark_write_addr();
+		preempt_disable();
 		event_trace_printk(tracing_mark_write_addr, "F|%d|%s|%d\n", current->tgid,
 				   dprec_met_info[device_type].log_name, frm_sequence);
+		preempt_enable();
 		dprec_met_info[device_type].end_frm_seq = frm_sequence;
 	}
 }
