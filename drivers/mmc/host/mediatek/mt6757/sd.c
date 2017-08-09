@@ -84,6 +84,7 @@
 #include "dbg.h"
 #include "msdc_tune.h"
 #include "autok.h"
+#include "autok_dvfs.h"
 
 
 #define CAPACITY_2G             (2 * 1024 * 1024 * 1024ULL)
@@ -154,7 +155,6 @@ struct msdc_host *mtk_msdc_host[] = { NULL, NULL, NULL};
 EXPORT_SYMBOL(mtk_msdc_host);
 int g_dma_debug[HOST_MAX_NUM] = { 0, 0, 0};
 u32 latest_int_status[HOST_MAX_NUM] = { 0, 0, 0};
-u8 sd_autok_res[TUNING_PARAM_COUNT];
 
 unsigned int msdc_latest_transfer_mode[HOST_MAX_NUM] = {
 	/* 0 for PIO; 1 for DMA; 2 for nothing */
@@ -1313,6 +1313,11 @@ end:
 	}
 	if (host->hw->host_function == MSDC_EMMC)
 		emmc_do_sleep_awake = 0;
+
+	if (host->hw->host_function == MSDC_SDIO) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->rescan_entered = 0;
+	}
 }
 #endif
 
@@ -3693,16 +3698,94 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	case MSDC_SD:
 		if (host->is_autok_done == 0) {
 			pr_err("[AUTOK]SDcard autok\n");
-			ret = autok_execute_tuning(host, sd_autok_res);
+			ret = autok_execute_tuning(host, sd_autok_res[AUTOK_VCORE_HIGH]);
 			host->is_autok_done = 1;
 		} else {
 			pr_err("[AUTOK] apply parameter, don't tune\n");
 			autok_init_sdr104(host);
-			autok_tuning_parameter_init(host, sd_autok_res);
+			autok_tuning_parameter_init(host, sd_autok_res[AUTOK_VCORE_HIGH]);
 		}
 		break;
 	case MSDC_SDIO:
-		pr_err("SDIO autok is not portted\n");
+		/* Default autok result is not exist, always excute tuning */
+		if (sdio_autok_res_apply(host, AUTOK_VCORE_HIGH) != 0) {
+			pr_err("sdio autok result not exist!, excute tuning\n");
+			if (host->is_autok_done == 0) {
+				pr_err("[AUTOK]SDIO SDR104 Tune\n");
+				/* Wait DFVS ready for excute autok here */
+				sdio_autok_wait_dvfs_ready();
+
+				/* Performance mode, return 0 pass */
+				if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_PERF) != 0)
+					pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
+				autok_execute_tuning(host, sdio_autok_res[AUTOK_VCORE_HIGH]);
+
+			#ifdef SDIO_FIX_VCORE_CONDITIONAL
+				/* Low power mode, return 0 pass */
+				if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_LOW_PWR) != 0)
+					pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
+				autok_execute_tuning(host, sdio_autok_res[AUTOK_VCORE_LOW]);
+
+				if (autok_res_check(sdio_autok_res[AUTOK_VCORE_HIGH], sdio_autok_res[AUTOK_VCORE_LOW])
+					== 0) {
+					pr_err("[AUTOK] No need change para when dvfs\n");
+				} else {
+					pr_err("[AUTOK] Need change para when dvfs or lock dvfs\n");
+
+					/* Use HW DVFS */
+					sdio_set_hw_dvfs(AUTOK_VCORE_HIGH, 0, host);
+					/* Low power mode, return 0 pass */
+					if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_LOW_PWR) != 0)
+						pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
+					autok_execute_tuning(host, sdio_autok_res[AUTOK_VCORE_LOW]);
+					sdio_set_hw_dvfs(AUTOK_VCORE_LOW, 1, host);
+				}
+			#else
+				/* Use HW DVFS */
+				sdio_set_hw_dvfs(AUTOK_VCORE_HIGH, 0, host);
+				/* Low power mode, return 0 pass */
+				if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_LOW_PWR) != 0)
+					pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
+				autok_execute_tuning(host, sdio_autok_res[AUTOK_VCORE_LOW]);
+				sdio_set_hw_dvfs(AUTOK_VCORE_LOW, 1, host);
+			#endif
+
+				/* Un-request, return 0 pass */
+				if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_UNREQ) != 0)
+					pr_err("vcorefs_request_dvfs_opp@OPPI_UNREQ fail!\n");
+
+				host->is_autok_done = 1;
+				complete(&host->autok_done);
+			} else {
+				autok_init_sdr104(host);
+				autok_tuning_parameter_init(host, sdio_autok_res[AUTOK_VCORE_HIGH]);
+			}
+		} else {
+			autok_init_sdr104(host);
+
+		#ifdef SDIO_FIX_VCORE_CONDITIONAL
+			if (autok_res_check(sdio_autok_res[AUTOK_VCORE_HIGH], sdio_autok_res[AUTOK_VCORE_LOW]) == 0) {
+				pr_err("[AUTOK] No need change para when dvfs\n");
+			} else {
+				pr_err("[AUTOK] Need change para when dvfs\n");
+
+				/* Use HW DVFS */
+				sdio_set_hw_dvfs(AUTOK_VCORE_HIGH, 0, host);
+				if (sdio_autok_res_apply(host, AUTOK_VCORE_LOW) == 0)
+					sdio_set_hw_dvfs(AUTOK_VCORE_LOW, 1, host);
+			}
+		#else
+			/* Use HW DVFS */
+			sdio_set_hw_dvfs(AUTOK_VCORE_HIGH, 0, host);
+			if (sdio_autok_res_apply(host, AUTOK_VCORE_LOW) == 0)
+				sdio_set_hw_dvfs(AUTOK_VCORE_LOW, 1, host);
+		#endif
+
+			if (host->is_autok_done == 0) {
+				host->is_autok_done = 1;
+				complete(&host->autok_done);
+			}
+		}
 		break;
 	default:
 		pr_err("Invalid msdc host function: %d\n",
@@ -4940,6 +5023,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	/* for re-autok */
 	host->tuning_in_progress = false;
+	init_completion(&host->autok_done);
 	host->is_autok_done = 0;
 	host->need_tune	= TUNE_NONE;
 	host->reautok_times = 0;
@@ -5158,6 +5242,12 @@ static int msdc_drv_resume(struct platform_device *pdev)
 		/* will set for card;
 		   WIFI not controller by PM */
 		msdc_pm(state, (void *)host);
+	}
+
+	/* This mean WIFI not controller by PM */
+	if (host->hw->host_function == MSDC_SDIO) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->rescan_entered = 0;
 	}
 
 	return 0;

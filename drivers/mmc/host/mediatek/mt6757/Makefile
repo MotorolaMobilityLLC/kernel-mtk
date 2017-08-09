@@ -29,6 +29,7 @@ obj-$(CONFIG_MMC_MTK) += msdc_tune.o
 obj-$(CONFIG_MMC_MTK) += msdc_partition.o
 obj-$(CONFIG_MMC_MTK) += msdc_io.o
 obj-$(CONFIG_MMC_MTK) += autok.o
+obj-$(CONFIG_MMC_MTK) += autok_dvfs.o
 
 ifeq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-$(CONFIG_MMC_MTK) += msdc_fpga_io.o

@@ -29,6 +29,7 @@
 #include "mt_sd.h"
 #include "dbg.h"
 #include "autok.h"
+#include "autok_dvfs.h"
 
 
 int g_ett_tune = 0;	  /* enable or disable the ETT tune */
@@ -341,6 +342,14 @@ void msdc_restore_timing_setting(struct msdc_host *host)
 			host->saved_para.ckgen_msdc_dly_sel);
 		MSDC_SET_FIELD(MSDC_INTEN, MSDC_INT_SDIOIRQ,
 			host->saved_para.inten_sdio_irq);
+
+		/* Init low, need check which vcore to init later@Peter */
+		autok_init_sdr104(host);
+		autok_tuning_parameter_init(host, sdio_autok_res[AUTOK_VCORE_LOW]);
+		sdio_dvfs_reg_restore(host);
+
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->rescan_entered = 0;
 	}
 
 	if (emmc) {

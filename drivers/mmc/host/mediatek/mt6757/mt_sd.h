@@ -440,7 +440,7 @@ struct msdc_host {
 	int                     irq;            /* host interrupt */
 
 	struct tasklet_struct   card_tasklet;
-	atomic_t                sdio_stopping;
+	struct completion       autok_done;
 
 	struct completion       cmd_done;
 	struct completion       xfer_done;
