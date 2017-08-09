@@ -17,7 +17,7 @@
 /* #include <asm/mach/map.h> */
 #include <mt-plat/sync_write.h>
 #include <mach/mt_clkmgr.h>
-#include <irq.h>
+#include <linux/irq.h>
 #include <asm/cacheflush.h>
 /* #include <asm/system.h> */
 #include <linux/mm.h>
@@ -2294,8 +2294,7 @@ static int m4u_pm_restore_noirq(struct device *device)
 	int i;
 
 	for (i = 0; i < TOTAL_M4U_NUM; i++) {
-		mt_irq_set_sens(gM4uDev->irq_num[i], MT_LEVEL_SENSITIVE);
-		mt_irq_set_polarity(gM4uDev->irq_num[i], MT_POLARITY_LOW);
+		irq_set_irq_type(gM4uDev->irq_num[i], IRQ_TYPE_LEVEL_LOW);
 	}
 
 	return 0;
