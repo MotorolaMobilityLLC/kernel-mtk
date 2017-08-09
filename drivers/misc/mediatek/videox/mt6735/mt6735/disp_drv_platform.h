@@ -103,7 +103,7 @@
 /**
  * FB alignment byte.
  */
-#ifdef CONFIG_FPGA_EARLY_PORTING
+#if defined(CONFIG_FPGA_EARLY_PORTING) || !defined(CONFIG_MTK_GPU_SUPPORT)
 #define MTK_FB_ALIGNMENT 16
 #else
 #define MTK_FB_ALIGNMENT 32
