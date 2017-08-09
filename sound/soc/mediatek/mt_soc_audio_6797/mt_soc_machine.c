@@ -274,21 +274,9 @@ static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
 	n += scnprintf(buffer + n, size - n, "AFE_VOW_TGEN_CFG0  = 0x%x\n", Ana_Get_Reg(AFE_VOW_TGEN_CFG0));
 
 	n += scnprintf(buffer + n, size - n, "BUCK_VOW_CON0 = 0x%x\n", Ana_Get_Reg(0x416));
-	n += scnprintf(buffer + n, size - n, "BUCK_VOW_CON1 = 0x%x\n", Ana_Get_Reg(0x418));
-	n += scnprintf(buffer + n, size - n, "BUCK_VOW_CON2 = 0x%x\n", Ana_Get_Reg(0x41A));
 	n += scnprintf(buffer + n, size - n, "BUCK_VOW_CON3 = 0x%x\n", Ana_Get_Reg(0x41C));
 	n += scnprintf(buffer + n, size - n, "TOP_CKSEL_CON2 = 0x%x\n", Ana_Get_Reg(0x26A));
 	n += scnprintf(buffer + n, size - n, "BUCK_VCORE_CON8 = 0x%x\n", Ana_Get_Reg(0x610));
-	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON0 = 0x%x\n", Ana_Get_Reg(0x650));
-	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON1 = 0x%x\n", Ana_Get_Reg(0x652));
-	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON2 = 0x%x\n", Ana_Get_Reg(0x654));
-	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON3 = 0x%x\n", Ana_Get_Reg(0x656));
-	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON4 = 0x%x\n", Ana_Get_Reg(0x658));
-	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON5 = 0x%x\n", Ana_Get_Reg(0x65A));
-	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON6 = 0x%x\n", Ana_Get_Reg(0x65C));
-	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON7 = 0x%x\n", Ana_Get_Reg(0x65E));
-	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON8 = 0x%x\n", Ana_Get_Reg(0x660));
-	n += scnprintf(buffer + n, size - n, "BUCK_VSRAM_MD_CON9 = 0x%x\n", Ana_Get_Reg(0x662));
 
 	n += scnprintf(buffer + n, size - n, "AFE_DCCLK_CFG0  = 0x%x\n",
 		       Ana_Get_Reg(AFE_DCCLK_CFG0));
@@ -445,6 +433,31 @@ static ssize_t mt_soc_ana_debug_read(struct file *file, char __user *buf,
 		       Ana_Get_Reg(GPIO_MODE3));
 	n += scnprintf(buffer + n, size - n, "DRV_CON2  = 0x%x\n",
 		       Ana_Get_Reg(DRV_CON2));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_CFG0  = 0x%x\n",
+		       Ana_Get_Reg(AFE_VOW_PERIODIC_CFG0));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_CFG2  = 0x%x\n",
+		       Ana_Get_Reg(AFE_VOW_PERIODIC_CFG2));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_CFG4  = 0x%x\n",
+		       Ana_Get_Reg(AFE_VOW_PERIODIC_CFG4));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_CFG6  = 0x%x\n",
+		       Ana_Get_Reg(AFE_VOW_PERIODIC_CFG6));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_CFG7  = 0x%x\n",
+		       Ana_Get_Reg(AFE_VOW_PERIODIC_CFG7));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_CFG8  = 0x%x\n",
+		       Ana_Get_Reg(AFE_VOW_PERIODIC_CFG8));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_CFG9  = 0x%x\n",
+		       Ana_Get_Reg(AFE_VOW_PERIODIC_CFG9));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_CFG10  = 0x%x\n",
+		       Ana_Get_Reg(AFE_VOW_PERIODIC_CFG10));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_CFG11  = 0x%x\n",
+		       Ana_Get_Reg(AFE_VOW_PERIODIC_CFG11));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_CFG12  = 0x%x\n",
+		       Ana_Get_Reg(AFE_VOW_PERIODIC_CFG12));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_MON0  = 0x%x\n",
+		       Ana_Get_Reg(AFE_VOW_PERIODIC_MON0));
+	n += scnprintf(buffer + n, size - n, "AFE_VOW_PERIODIC_MON1  = 0x%x\n",
+		       Ana_Get_Reg(AFE_VOW_PERIODIC_MON1));
+
 	pr_debug("mt_soc_ana_debug_read len = %d\n", n);
 
 	audckbufEnable(false);

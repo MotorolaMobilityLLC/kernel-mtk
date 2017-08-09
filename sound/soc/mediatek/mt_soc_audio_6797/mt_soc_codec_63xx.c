@@ -97,7 +97,7 @@ static void TurnOnDacPower(void);
 static void SetDcCompenSation(void);
 static void Voice_Amp_Change(bool enable);
 static void Speaker_Amp_Change(bool enable);
-static bool TurnOnVOWADcPowerACC(int MicType, bool enable);
+static bool TurnOnVOWADcPower(int MicType, bool enable);
 
 /* extern int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd); */
 /* extern kal_uint32 PMIC_IMM_GetOneChannelValue(mt6328_adc_ch_list_enum dwChannel,
@@ -151,12 +151,13 @@ static const int mDcOffsetTrimChannel = 9;
 static bool mInitCodec;
 static uint32 MicbiasRef, GetMicbias;
 
-static int reg_AFE_VOW_CFG0 = 0x0000;	/* VOW AMPREF Setting */
-static int reg_AFE_VOW_CFG1 = 0x0000;	/* VOW A,B timeout initial value (timer) */
-static int reg_AFE_VOW_CFG2 = 0x2222;	/* VOW A,B value setting (BABA) */
-static int reg_AFE_VOW_CFG3 = 0x8767;	/* alhpa and beta K value setting (beta_rise,fall,alpha_rise,fall) */
-static int reg_AFE_VOW_CFG4 = 0x006E;	/* gamma K value setting (gamma), bit4:8 should not modify */
-static int reg_AFE_VOW_CFG5 = 0x0001;	/* N mini value setting (Nmin) */
+static int reg_AFE_VOW_CFG0 = 0x0000;		/* VOW AMPREF Setting */
+static int reg_AFE_VOW_CFG1 = 0x0000;		/* VOW A,B timeout initial value (timer) */
+static int reg_AFE_VOW_CFG2 = 0x2222;		/* VOW A,B value setting (BABA) */
+static int reg_AFE_VOW_CFG3 = 0x8767;		/* alhpa and beta K value setting (beta_rise,fall,alpha_rise,fall) */
+static int reg_AFE_VOW_CFG4 = 0x006E;		/* gamma K value setting (gamma), bit4:8 should not modify */
+static int reg_AFE_VOW_CFG5 = 0x0001;		/* N mini value setting (Nmin) */
+static int reg_AFE_VOW_PERIODIC = 0x0000;	/* Periodic On/Off setting (On percent)*/
 static bool mIsVOWOn;
 
 /* VOW using */
@@ -168,8 +169,108 @@ typedef enum {
 	AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC,	/* DCC mems */
 	AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC,
 	AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM,	/* DCC ECM, dual differential */
-	AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM	/* DCC ECM, signal differential */
+	AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM,	/* DCC ECM, signal differential */
+	AUDIO_VOW_MIC_TYPE_SUM
 } AUDIO_VOW_MIC_TYPE;
+
+
+/* AUDIO_VOW_MIC_TYPE_Headset_MIC */
+static uint16 Headset_MIC_PeriodicOnOff[7][22] = {
+	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
+	{0x8000, 0x0000, 0x81AA, 0x0000, 0x0000, 0x0000, 0x0000, 0x8000, 0x0000, 0x81EC, 0x0000,
+	 0x1917, 0x0000, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x0000, 0x18F6, 0x0000},/* 90% */
+	{0x8148, 0x0000, 0x82F2, 0x0000, 0x0000, 0x0000, 0x80A4, 0x8148, 0xC0A4, 0x8333, 0x0000,
+	 0x17CF, 0x0000, 0x17CF, 0x0000, 0x0000, 0x0000, 0x17CF, 0x17CF, 0x17CF, 0x17AE, 0x0000},/* 80% */
+	{0x828F, 0x0000, 0x8439, 0x0000, 0x0000, 0x0000, 0x81EC, 0x828F, 0xC1EC, 0x847B, 0x0000,
+	 0x1687, 0x0000, 0x1687, 0x0000, 0x0000, 0x0000, 0x1687, 0x1687, 0x1687, 0x1666, 0x0000},/* 70% */
+	{0x83D7, 0x0000, 0x8581, 0x0000, 0x0000, 0x0000, 0x8333, 0x83D7, 0xC333, 0x85C3, 0x0000,
+	 0x153F, 0x0000, 0x153F, 0x0000, 0x0000, 0x0000, 0x153F, 0x153F, 0x153F, 0x151F, 0x0000},/* 60% */
+	{0x851F, 0x0000, 0x86C9, 0x0000, 0x0000, 0x0000, 0x847B, 0x851F, 0xC47B, 0x870A, 0x0000,
+	 0x13F8, 0x0000, 0x13F8, 0x0000, 0x0000, 0x0000, 0x13F8, 0x13F8, 0x13F8, 0x13D7, 0x0000},/* 50% */
+	{0x8666, 0x0000, 0x8810, 0x0000, 0x0000, 0x0000, 0x85C3, 0x8666, 0xC5C3, 0x8852, 0x0000,
+	 0x12B0, 0x0000, 0x12B0, 0x0000, 0x0000, 0x0000, 0x12B0, 0x12B0, 0x12B0, 0x128F, 0x0000},/* 40% */
+	{0x87AE, 0x0000, 0x8958, 0x0000, 0x0000, 0x0000, 0x870A, 0x87AE, 0xC70A, 0x899A, 0x0000,
+	 0x1168, 0x0000, 0x1168, 0x0000, 0x0000, 0x0000, 0x1168, 0x1168, 0x1168, 0x1148, 0x0000},/* 30% */
+};
+
+/* AUDIO_VOW_MIC_TYPE_Handset_DMIC */
+/* AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K */
+static uint16 Handset_DMIC_PeriodicOnOff[7][22] = {
+	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
+	{0x0000, 0x0000, 0x0000, 0x0000, 0x8000, 0x0000, 0x0000, 0x8000, 0x0000, 0x81EC, 0x81AA,
+	 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x0000, 0x0000, 0x1917, 0x0000, 0x18F6, 0x1917},/* 90% */
+	{0x0000, 0x0000, 0x0000, 0x0000, 0x8148, 0x80A4, 0x0000, 0x8148, 0xC0A4, 0x8333, 0x82F2,
+	 0x0000, 0x0000, 0x0000, 0x0000, 0x17CF, 0x17CF, 0x0000, 0x17CF, 0x17CF, 0x17AE, 0x17CF},/* 80% */
+	{0x0000, 0x0000, 0x0000, 0x0000, 0x828F, 0x81EC, 0x0000, 0x828F, 0xC1EC, 0x847B, 0x8439,
+	 0x0000, 0x0000, 0x0000, 0x0000, 0x1687, 0x1687, 0x0000, 0x1687, 0x1687, 0x1666, 0x1687},/* 70% */
+	{0x0000, 0x0000, 0x0000, 0x0000, 0x83D7, 0x8333, 0x0000, 0x83D7, 0xC333, 0x85C3, 0x8581,
+	 0x0000, 0x0000, 0x0000, 0x0000, 0x153F, 0x153F, 0x0000, 0x153F, 0x153F, 0x151F, 0x153F},/* 60% */
+	{0x0000, 0x0000, 0x0000, 0x0000, 0x851F, 0x847B, 0x0000, 0x851F, 0xC47B, 0x870A, 0x86C9,
+	 0x0000, 0x0000, 0x0000, 0x0000, 0x13F8, 0x13F8, 0x0000, 0x13F8, 0x13F8, 0x13D7, 0x13F8},/* 50% */
+	{0x0000, 0x0000, 0x0000, 0x0000, 0x8666, 0x85C3, 0x0000, 0x8666, 0xC5C3, 0x8852, 0x8810,
+	 0x0000, 0x0000, 0x0000, 0x0000, 0x12B0, 0x12B0, 0x0000, 0x12B0, 0x12B0, 0x128F, 0x12B0},/* 40% */
+	{0x0000, 0x0000, 0x0000, 0x0000, 0x87AE, 0x870A, 0x0000, 0x87AE, 0xC70A, 0x899A, 0x8958,
+	 0x0000, 0x0000, 0x0000, 0x0000, 0x1168, 0x1168, 0x0000, 0x1168, 0x1168, 0x1148, 0x1168},/* 30% */
+};
+
+/* AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC */
+/* AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM */
+static uint16 Handset_AMIC_DCC_PeriodicOnOff[7][22] = {
+	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
+	{0x8000, 0x8000, 0x81AA, 0x0000, 0x0000, 0x0000, 0x0000, 0x8000, 0x0000, 0x81EC, 0x0000,
+	 0x1917, 0x8021, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x0000, 0x18F6, 0x0000},/* 90% */
+	{0x8148, 0x8148, 0x82F2, 0x0000, 0x0000, 0x80A4, 0x0000, 0x8148, 0xC0A4, 0x8333, 0x0000,
+	 0x17CF, 0x8168, 0x17CF, 0x0000, 0x0000, 0x17CF, 0x0000, 0x17CF, 0x17CF, 0x17AE, 0x0000},/* 80% */
+	{0x828F, 0x828F, 0x8439, 0x0000, 0x0000, 0x81EC, 0x0000, 0x828F, 0xC1EC, 0x847B, 0x0000,
+	 0x1687, 0x82B0, 0x1687, 0x0000, 0x0000, 0x1687, 0x0000, 0x1687, 0x1687, 0x1666, 0x0000},/* 70% */
+	{0x83D7, 0x83D7, 0x8581, 0x0000, 0x0000, 0x8333, 0x0000, 0x83D7, 0xC333, 0x85C3, 0x0000,
+	 0x153F, 0x83F8, 0x153F, 0x0000, 0x0000, 0x153F, 0x0000, 0x153F, 0x153F, 0x151F, 0x0000},/* 60% */
+	{0x851F, 0x851F, 0x86C9, 0x0000, 0x0000, 0x847B, 0x0000, 0x851F, 0xC47B, 0x870A, 0x0000,
+	 0x13F8, 0x853F, 0x13F8, 0x0000, 0x0000, 0x13F8, 0x0000, 0x13F8, 0x13F8, 0x13D7, 0x0000},/* 50% */
+	{0x8666, 0x8666, 0x8810, 0x0000, 0x0000, 0x85C3, 0x0000, 0x8666, 0xC5C3, 0x8852, 0x0000,
+	 0x12B0, 0x8687, 0x12B0, 0x0000, 0x0000, 0x12B0, 0x0000, 0x12B0, 0x12B0, 0x128F, 0x0000},/* 40% */
+	{0x87AE, 0x87AE, 0x8958, 0x0000, 0x0000, 0x870A, 0x0000, 0x87AE, 0xC70A, 0x899A, 0x0000,
+	 0x1168, 0x87CF, 0x1168, 0x0000, 0x0000, 0x1168, 0x0000, 0x1168, 0x1168, 0x1148, 0x0000} /* 30% */
+};
+
+/* AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC */
+/* AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM */
+static uint16 Headset_MIC_DCC_PeriodicOnOff[7][22] = {
+	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
+	{0x8000, 0x8000, 0x81AA, 0x0000, 0x0000, 0x0000, 0x0000, 0x8000, 0x0000, 0x81EC, 0x0000,
+	 0x1917, 0x8021, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x0000, 0x18F6, 0x0000},/* 90% */
+	{0x8148, 0x8148, 0x82F2, 0x0000, 0x0000, 0x0000, 0x80A4, 0x8148, 0xC0A4, 0x8333, 0x0000,
+	 0x17CF, 0x8168, 0x17CF, 0x0000, 0x0000, 0x0000, 0x17CF, 0x17CF, 0x17CF, 0x17AE, 0x0000},/* 80% */
+	{0x828F, 0x828F, 0x8439, 0x0000, 0x0000, 0x0000, 0x81EC, 0x828F, 0xC1EC, 0x847B, 0x0000,
+	 0x1687, 0x82B0, 0x1687, 0x0000, 0x0000, 0x0000, 0x1687, 0x1687, 0x1687, 0x1666, 0x0000},/* 70% */
+	{0x83D7, 0x83D7, 0x8581, 0x0000, 0x0000, 0x0000, 0x8333, 0x83D7, 0xC333, 0x85C3, 0x0000,
+	 0x153F, 0x83F8, 0x153F, 0x0000, 0x0000, 0x0000, 0x153F, 0x153F, 0x153F, 0x151F, 0x0000},/* 60% */
+	{0x851F, 0x851F, 0x86C9, 0x0000, 0x0000, 0x0000, 0x847B, 0x851F, 0xC47B, 0x870A, 0x0000,
+	 0x13F8, 0x853F, 0x13F8, 0x0000, 0x0000, 0x0000, 0x13F8, 0x13F8, 0x13F8, 0x13D7, 0x0000},/* 50% */
+	{0x8666, 0x8666, 0x8810, 0x0000, 0x0000, 0x0000, 0x85C3, 0x8666, 0xC5C3, 0x8852, 0x0000,
+	 0x12B0, 0x8687, 0x12B0, 0x0000, 0x0000, 0x0000, 0x12B0, 0x12B0, 0x12B0, 0x128F, 0x0000},/* 40% */
+	{0x87AE, 0x87AE, 0x8958, 0x0000, 0x0000, 0x0000, 0x870A, 0x87AE, 0xC70A, 0x899A, 0x0000,
+	 0x1168, 0x87CF, 0x1168, 0x0000, 0x0000, 0x0000, 0x1168, 0x1168, 0x1168, 0x1148, 0x0000} /* 30% */
+};
+
+/* AUDIO_VOW_MIC_TYPE_Handset_AMIC */
+static uint16 Handset_AMIC_PeriodicOnOff[7][22] = {
+	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
+	{0x8000, 0x0000, 0x81AA, 0x0000, 0x0000, 0x0000, 0x0000, 0x8000, 0x0000, 0x81EC, 0x0000,
+	 0x1917, 0x0000, 0x1917, 0x0000, 0x0000, 0x0000, 0x0000, 0x1917, 0x0000, 0x18F6, 0x0000},/* 90% */
+	{0x8148, 0x0000, 0x82F2, 0x0000, 0x0000, 0x80A4, 0x0000, 0x8148, 0xC0A4, 0x8333, 0x0000,
+	 0x17CF, 0x0000, 0x17CF, 0x0000, 0x0000, 0x17CF, 0x0000, 0x17CF, 0x17CF, 0x17AE, 0x0000},/* 80% */
+	{0x828F, 0x0000, 0x8439, 0x0000, 0x0000, 0x81EC, 0x0000, 0x828F, 0xC1EC, 0x847B, 0x0000,
+	 0x1687, 0x0000, 0x1687, 0x0000, 0x0000, 0x1687, 0x0000, 0x1687, 0x1687, 0x1666, 0x0000},/* 70% */
+	{0x83D7, 0x0000, 0x8581, 0x0000, 0x0000, 0x8333, 0x0000, 0x83D7, 0xC333, 0x85C3, 0x0000,
+	 0x153F, 0x0000, 0x153F, 0x0000, 0x0000, 0x153F, 0x0000, 0x153F, 0x153F, 0x151F, 0x0000},/* 60% */
+	{0x851F, 0x0000, 0x86C9, 0x0000, 0x0000, 0x847B, 0x0000, 0x851F, 0xC47B, 0x870A, 0x0000,
+	 0x13F8, 0x0000, 0x13F8, 0x0000, 0x0000, 0x13F8, 0x0000, 0x13F8, 0x13F8, 0x13D7, 0x0000},/* 50% */
+	{0x8666, 0x0000, 0x8810, 0x0000, 0x0000, 0x85C3, 0x0000, 0x8666, 0xC5C3, 0x8852, 0x0000,
+	 0x12B0, 0x0000, 0x12B0, 0x0000, 0x0000, 0x12B0, 0x0000, 0x12B0, 0x12B0, 0x128F, 0x0000},/* 40% */
+	{0x87AE, 0x0000, 0x8958, 0x0000, 0x0000, 0x870A, 0x0000, 0x87AE, 0xC70A, 0x899A, 0x0000,
+	 0x1168, 0x0000, 0x1168, 0x0000, 0x0000, 0x1168, 0x0000, 0x1168, 0x1168, 0x1148, 0x0000},/* 30% */
+};
 
 static int mAudio_VOW_Mic_type = AUDIO_VOW_MIC_TYPE_Handset_AMIC;
 static void Audio_Amp_Change(int channels, bool enable);
@@ -443,6 +544,7 @@ bool hasHpDepopHw(void)
 
 #ifdef CONFIG_MTK_VOW_SUPPORT
 static int VOW12MCKCount;
+static int VOW32KCKCount;
 #endif
 
 #ifdef CONFIG_MTK_VOW_SUPPORT
@@ -467,17 +569,39 @@ static void VOW12MCK_Enable(bool enable)
 			VOW12MCKCount = 0;
 		}
 	}
-mutex_unlock(&Ana_Clk_Mutex);
+	mutex_unlock(&Ana_Clk_Mutex);
+}
+
+static void VOW32KCK_Enable(bool enable)
+{
+	pr_warn("VOW32KCK_Enable VOW32KCKCount == %d enable = %d\n", VOW32KCKCount, enable);
+	mutex_lock(&Ana_Clk_Mutex);
+	if (enable == true) {
+		if (VOW32KCKCount == 0)
+			Ana_Set_Reg(TOP_CKPDN_CON5_CLR, 0x0040, 0x0040);
+		/* Enable  TOP_CKPDN_CON5 bit6 for enable VOW 32k clock (for periodic on/off use)*/
+		VOW32KCKCount++;
+	} else {
+		VOW32KCKCount--;
+		if (VOW32KCKCount == 0)
+			Ana_Set_Reg(TOP_CKPDN_CON5_SET, 0x0040, 0x0040);
+		/* disable TOP_CKPDN_CON5 bit6 for enable VOW 32k clock */
+
+		if (VOW32KCKCount < 0) {
+			pr_warn("VOW32KCKCount <0 =%d\n ", VOW32KCKCount);
+			VOW32KCKCount = 0;
+		}
+	}
+	mutex_unlock(&Ana_Clk_Mutex);
 }
 #endif
-
 
 void vow_irq_handler(void)
 {
 #ifdef CONFIG_MTK_VOW_SUPPORT
 
 	pr_warn("vow_irq_handler,audio irq event....\n");
-	/* TurnOnVOWADcPowerACC(AUDIO_ANALOG_DEVICE_IN_ADC1, false); */
+	/* TurnOnVOWADcPower(AUDIO_ANALOG_DEVICE_IN_ADC1, false); */
 	/* TurnOnVOWDigitalHW(false); */
 #if defined(VOW_TONE_TEST)
 	EnableSineGen(Soc_Aud_InterConnectionOutput_O03, Soc_Aud_MemIF_Direction_DIRECTION_OUTPUT, true);
@@ -3492,12 +3616,277 @@ static bool TurnOnVOWDigitalHW(bool enable)
 	return true;
 }
 
-static bool TurnOnVOWADcPowerACC(int MicType, bool enable)
+static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
+{
+	int i = 0;
+	uint16 (*pBuf)[22];
+
+	if (enable == 0) {
+		pr_warn("%s, enable:%d\n", __func__, enable);
+
+		VOW32KCK_Enable(false);
+		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG13, 0x8000, 0x8000);
+		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG14, 0x0000, 0x8000);
+		for (i = 0; i < 22; i++)
+			Ana_Set_Reg(AFE_VOW_PERIODIC_CFG2 + (i<<1), 0x0000, 0xFFFF);
+
+		/* Set Period */
+		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG0, 0x0000, 0xFFFF);
+
+	} else {
+		pr_warn("%s, MicType:%d, On_period:%d, enable:%d\n", __func__, MicType, 100 - (On_period * 10), enable);
+
+		VOW32KCK_Enable(true);
+		switch (MicType) {
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC:
+			pBuf = Headset_MIC_PeriodicOnOff;
+			break;
+
+		case AUDIO_VOW_MIC_TYPE_Handset_DMIC:
+		case AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K:
+			pBuf = Handset_DMIC_PeriodicOnOff;
+			break;
+
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC:
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM:
+			pBuf = Handset_AMIC_DCC_PeriodicOnOff;
+			break;
+
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC:
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM:
+			pBuf = Headset_MIC_DCC_PeriodicOnOff;
+			break;
+
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC:
+		default:
+			pBuf = Handset_AMIC_PeriodicOnOff;
+			break;
+		}
+		if (On_period > 0) {
+			/*  <Periodic ON>  */
+			/* 32k_switch, [15]=0 */
+			/* vow_pwrapper_write_bits(AFE_VOW_PERIODIC_CFG13, 0, 15, 1); */
+			Ana_Set_Reg(AFE_VOW_PERIODIC_CFG13, 0x0000, 0x8000);
+			/* vow_snrdet_periodic_cfg  = 1 */
+			Ana_Set_Reg(AFE_VOW_PERIODIC_CFG14, 0x8000, 0x8000);
+			for (i = 0; i < 22; i++) {
+				Ana_Set_Reg(AFE_VOW_PERIODIC_CFG2 + (i<<1), pBuf[On_period - 1][i], 0xFFFF);
+				pr_aud("Addr:%x, Value:%x\n",
+					AFE_VOW_PERIODIC_CFG2 + (i<<1), pBuf[On_period - 1][i]);
+			}
+		} else {
+			Ana_Set_Reg(AFE_VOW_PERIODIC_CFG13, 0x8000, 0x8000);
+			Ana_Set_Reg(AFE_VOW_PERIODIC_CFG14, 0x0000, 0x8000);
+			for (i = 0; i < 22; i++)
+				Ana_Set_Reg(AFE_VOW_PERIODIC_CFG2 + (i<<1), 0x0000, 0xFFFF);
+		}
+		/* Set Period */
+		Ana_Set_Reg(AFE_VOW_PERIODIC_CFG0, 0x999A, 0xFFFF);
+		pr_warn("AFE_VOW_PERIODIC_CFG0:%x\n", Ana_Get_Reg(AFE_VOW_PERIODIC_CFG0));
+	}
+}
+
+static void VOW_GPIO_Enable(bool enable)
+{
+	if (enable == true) {
+		/* set AP side GPIO */
+		/*Enable VOW_CLK_MISO*/
+		/*Enable VOW_DAT_MISO*/
+		AudDrv_GPIO_Request(true, Soc_Aud_Digital_Block_ADDA_VOW);
+		/*set PMIC side GPIO*/
+		Ana_Set_Reg(GPIO_MODE3, 0x1252, 0x0007); /* 0x60D0 GPIO Set to VOW data */
+	} else {
+		/* set AP side GPIO */
+		/*Disable VOW_CLK_MISO*/
+		/*Disable VOW_DAT_MISO*/
+		AudDrv_GPIO_Request(false, Soc_Aud_Digital_Block_ADDA_VOW);
+		/*set PMIC GPIO*/
+		Ana_Set_Reg(GPIO_MODE3, 0x1249, 0x0007); /* 0x60D0 GPIO Set to VOW data */
+	}
+}
+
+static void VOW_Pwr_Enable(int MicType, bool enable)
+{
+	if (enable == true) {
+		/* 0x0D06 Enable Globe bias VOW LPW mode */
+		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0400, 0x0400);
+
+		NvregEnable(true); /* 0x0D04 Enable audio globe bias */
+
+		if ((MicType != AUDIO_VOW_MIC_TYPE_Handset_DMIC)
+		 && (MicType != AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)) {
+			/* 0x0D0C Enable audio uplink LPW mode, Enable Audio ADC 1st, 2nd & 3rd Stage LPW,
+			Enable Audio ADC flash Audio ADC flash */
+			Ana_Set_Reg(AUDENC_ANA_CON2,  0x0039, 0x0039);
+		}
+
+		/* 0x0D26 set PLL VCOBAND */
+		Ana_Set_Reg(AUDENC_ANA_CON15, 0x0023, 0x0038);
+		/* 0x0D24 PLL low power */
+		Ana_Set_Reg(AUDENC_ANA_CON14, 0x8180, 0x8000);
+		/* 0x0D22 PLL devider ratio, Enable fbdiv relatch, Set DCKO = 1/4 F_PLL, Enable VOWPLL CLK */
+		Ana_Set_Reg(AUDENC_ANA_CON13, 0x06F8, 0x07FC);
+		/* 0x0D22 PLL devider ratio, Enable fbdiv relatch, Set DCKO = 1/4 F_PLL, Enable VOWPLL CLK */
+		Ana_Set_Reg(AUDENC_ANA_CON13, 0x06F9, 0x0001);
+	} else {
+		Ana_Set_Reg(AUDENC_ANA_CON13, 0x06F8, 0x0001); /*0x0D22*/
+		Ana_Set_Reg(AUDENC_ANA_CON13, 0x0310, 0x07FC); /*0x0D22*/
+		Ana_Set_Reg(AUDENC_ANA_CON14, 0x0180, 0x8000); /*0x0D24*/
+		Ana_Set_Reg(AUDENC_ANA_CON15, 0x0013, 0x0038); /*0x0D26*/
+		if ((MicType != AUDIO_VOW_MIC_TYPE_Handset_DMIC)
+		 && (MicType != AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)) {
+			/* 0x0D0C Disable audio uplink LPW mode, Disable Audio ADC 1st, 2nd & 3rd Stage LPW,
+			Disable Audio ADC flash Audio ADC flash */
+			Ana_Set_Reg(AUDENC_ANA_CON2,  0x0000, 0x0039);
+		}
+
+		NvregEnable(false); /* 0x0D04 Disable audio globe bias */
+
+		Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0400); /*0x0D06*/
+	}
+}
+
+static void VOW_DCC_CLK_Enable(bool enable)
+{
+	if (enable == true) {
+		VOW12MCK_Enable(true); /* 0x0258 VOW12M_CK power on */
+
+		/* 0x2070 VOW source clock power on, vow_1p6m_800k_sel=1.6m */
+		Ana_Set_Reg(AFE_VOW_TOP,      0x4000, 0x8000);
+		/* 0x2090 PGA DCC CLK = 13M, PGA DCC CLK reference select: 01_vow 12.854M,
+		PGA DCC CLK power down gating release, Enable PGA DCC CLK */
+		Ana_Set_Reg(AFE_DCCLK_CFG0,   0x2064, 0xFFEE);
+		/* 0x2090 PGA DCC CLK = 13M, PGA DCC CLK reference select: 01_vow 12.854M,
+		PGA DCC CLK power down gating release, Enable PGA DCC CLK */
+		Ana_Set_Reg(AFE_DCCLK_CFG0,   0x2065, 0x0001);
+	} else {
+		Ana_Set_Reg(AFE_DCCLK_CFG0,   0x2064, 0x0001); /*0x2090*/
+		Ana_Set_Reg(AFE_DCCLK_CFG0,   0x0FE2, 0xFFEE); /*0x2090*/
+		Ana_Set_Reg(AFE_VOW_TOP,      0xC000, 0x8000); /*0x2070*/
+
+		VOW12MCK_Enable(false); /*VOW clock power down enable*/
+	}
+}
+
+static void VOW_MIC_DCC_Enable(int MicType, bool enable)
+{
+	if (enable == true) {
+		/* 0x0D0E ADC CLK from: 10_12.58MHz from 32KHz PLL, Enable Audio ADC FBDAC 0.25FS LPW */
+		Ana_Set_Reg(AUDENC_ANA_CON3, 0x0009, 0x000D);
+
+		switch (MicType) {
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC:
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM:
+			/* 0x0D1A MIC Bias 0 LowPower enable, MISBIAS0 = 1.9V, Enable MICBIAS0 */
+			Ana_Set_Reg(AUDENC_ANA_CON9, 0x00A1, 0x00F1);
+			if (MicType == AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM)
+				Ana_Set_Reg(AUDENC_ANA_CON9, 0x000E, 0x000E); /* ECM diff mode */
+			else
+				Ana_Set_Reg(AUDENC_ANA_CON9, 0x0000, 0x000E); /* normal mode */
+
+			/* 0x0D08 Enable audio L PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x03D7, 0x07F7);
+			break;
+
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC:
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM:
+		default:
+			/* 0x0D1C MIC Bias 1 LowPower: 0_Normal, 1_LPW, MISBIAS1 = 2P7V, Enable MICBIAS1 */
+			Ana_Set_Reg(AUDENC_ANA_CON10, 0x00F1, 0x00F1);
+			if (MicType == AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM)
+				Ana_Set_Reg(AUDENC_ANA_CON10, 0x0002, 0x0006); /* ECM single mode */
+			else
+				Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0x0006); /* normal mode */
+
+			/* 0x0D08 Enable audio L PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x03E7, 0x07F7);
+			break;
+		}
+		/* 0x0D08 Audio L ADC input sel : L PGA, Enable audio L ADC */
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x5000, 0x7000);
+
+		msleep(20);/* delay */
+
+		/* 0x0D08 Audio L PGA DCC precharge off */
+		Ana_Set_Reg(AUDENC_ANA_CON0, 0x0000, 0x0004);
+	} else {
+
+		switch (MicType) {
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC:
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM:
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x03D3, 0x7000); /*0x0D08*/
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x0000, 0x07F7); /*0x0D08*/
+			Ana_Set_Reg(AUDENC_ANA_CON9,  0x0000, 0x00FF); /*0x0D1A*/
+			Ana_Set_Reg(AUDENC_ANA_CON3,  0x0000, 0x000D); /*0x0D0E*/
+			break;
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC:
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM:
+		default:
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x03E3, 0x7000); /*0x0D08*/
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x0000, 0x07F7); /*0x0D08*/
+			Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0x00F7); /*0x0D1C*/
+			Ana_Set_Reg(AUDENC_ANA_CON3,  0x0000, 0x000D); /*0x0D0E*/
+			break;
+		}
+	}
+}
+
+static void VOW_MIC_ACC_Enable(int MicType, bool enable)
+{
+	if (enable == true) {
+		/* 0x0D0E ADC CLK from: 10_12.58MHz from 32KHz PLL, Enable Audio ADC FBDAC 0.25FS LPW */
+		Ana_Set_Reg(AUDENC_ANA_CON3, 0x0009, 0x000D);
+
+		switch (MicType) {
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC:
+			/* 0x0D1A MIC Bias 0 LowPower: 0_Normal, 1_LPW, MISBIAS1 = 2P7V, Enable MICBIAS1 */
+			Ana_Set_Reg(AUDENC_ANA_CON9, 0x00A1, 0x00F1);
+			/* 0x0D08 Audio L PGA precharge off, Audio L PGA mode: 0_ACC,
+			Audio L preamplifier input sel : AIN0, Audio L PGA 18 dB gain, Enable audio L PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON0, 0x0311, 0x0737);
+			break;
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC:
+		default:
+			/* 0x0D1C MIC Bias 1 LowPower: 0_Normal, 1_LPW, MISBIAS1 = 2P7V, Enable MICBIAS1 */
+			Ana_Set_Reg(AUDENC_ANA_CON10, 0x00F1, 0x00F1);
+			/* 0x0D08 Audio L PGA precharge off, Audio L PGA mode: 0_ACC,
+			Audio L preamplifier input sel : AIN1, Audio L PGA 18 dB gain, Enable audio L PGA */
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x0321, 0x0737);
+			break;
+		}
+
+		/* 0x0D08 Audio L ADC input sel : L PGA, Enable audio L ADC */
+		Ana_Set_Reg(AUDENC_ANA_CON0,  0x5000, 0x7000);
+	} else {
+		switch (MicType) {
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC:
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x0311, 0x7000); /*0x0D08*/
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x0000, 0x0737); /*0x0D08*/
+			Ana_Set_Reg(AUDENC_ANA_CON9,  0x0000, 0x00F1); /*0x0D1A*/
+			Ana_Set_Reg(AUDENC_ANA_CON3,  0x0000, 0x000D); /*0x0D0E*/
+			break;
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC:
+		default:
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x0321, 0x7000); /*0x0D08*/
+			Ana_Set_Reg(AUDENC_ANA_CON0,  0x0000, 0x0737); /*0x0D08*/
+			Ana_Set_Reg(AUDENC_ANA_CON10, 0x0000, 0x00F1); /*0x0D1C*/
+			Ana_Set_Reg(AUDENC_ANA_CON3,  0x0000, 0x000D); /*0x0D0E*/
+			break;
+		}
+	}
+}
+
+static bool TurnOnVOWADcPower(int MicType, bool enable)
 {
 #ifdef CONFIG_MTK_VOW_SUPPORT
-	/*int ret;*/
 	pr_warn("%s MicType = %d enable = %d, mIsVOWOn=%d, mAudio_VOW_Mic_type=%d\n",
 		__func__, MicType, enable, mIsVOWOn, mAudio_VOW_Mic_type);
+
+	if (MicType >= AUDIO_VOW_MIC_TYPE_SUM) {
+		pr_warn("Not support this Mic Type\n");
+		return false;
+	}
+
 	/*already on, no need to set again*/
 	if (enable == mIsVOWOn)
 		return true;
@@ -3505,13 +3894,6 @@ static bool TurnOnVOWADcPowerACC(int MicType, bool enable)
 	if (enable) {
 		mIsVOWOn = true;
 		SetVOWStatus(mIsVOWOn);
-#if defined(VOW_TONE_TEST)
-		OpenAfeDigitaldl1(false);
-		OpenAnalogHeadphone(false);
-		EnableSideGenHw(Soc_Aud_InterConnectionOutput_O03, Soc_Aud_InterConnectionOutput_Num_Output, false);
-		AudDrv_Clk_Off();
-#endif /* #if defined(VOW_TONE_TEST) */
-		/*uint32 ULIndex = GetULFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC]);*/
 
 		if (GetMicbias == 0) {
 			/* save current micbias ref set by accdet */
@@ -3520,246 +3902,130 @@ static bool TurnOnVOWADcPowerACC(int MicType, bool enable)
 			GetMicbias = 1;
 		}
 
+		VOW_Pwr_Enable(MicType, true);
+
 		switch (MicType) {
-		case AUDIO_VOW_MIC_TYPE_Headset_MIC:
-			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Headset_MIC\n", __func__);
+		/* for ACC Mic */
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC:  /* AMIC_ACC */
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC: /* Earphone_ACC */
+			VOW_MIC_ACC_Enable(MicType, true);
 			break;
-		case AUDIO_VOW_MIC_TYPE_Handset_DMIC:
-		case AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K:
-			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Handset_DMIC\n", __func__);
-			break;
-		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC:
+		/* for DCC Mic */
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC:  /* AMIC_DCC */
 		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM:
-			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC\n", __func__);
-			/*analog part*/
-			/* 0x0D06 Enable Globe bias VOW LPW mode */
-			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0400, 0x0400);
-			/* 0x0D04 Enable audio globe bias */
-			/*Ana_Set_Reg(AUDDEC_ANA_CON9,  0x0155, 0x1000);*/
-			NvregEnable(true);
-			/* 0x0D0C Enable audio uplink LPW mode, Enable Audio ADC 1st, 2nd & 3rd Stage LPW,
-			Enable Audio ADC flash Audio ADC flash */
-			Ana_Set_Reg(AUDENC_ANA_CON2,  0x0039, 0x0039);
-			/* 0x0D26 set PLL VCOBAND */
-			Ana_Set_Reg(AUDENC_ANA_CON15, 0x0023, 0x0038);
-			/* 0x0D24 PLL low power */
-			Ana_Set_Reg(AUDENC_ANA_CON14, 0x8180, 0x8000);
-			/* 0x0D22 PLL devider ratio, Enable fbdiv relatch, Set DCKO = 1/4 F_PLL, Enable VOWPLL CLK */
-			Ana_Set_Reg(AUDENC_ANA_CON13, 0x06F8, 0x07FC);
-			/* 0x0D22 PLL devider ratio, Enable fbdiv relatch, Set DCKO = 1/4 F_PLL, Enable VOWPLL CLK */
-			Ana_Set_Reg(AUDENC_ANA_CON13, 0x06F9, 0x0001);
-			/* 0x0258 VOW12M_CK power on */
-			VOW12MCK_Enable(true);
-			/* 0x2070 VOW source clock power on, vow_1p6m_800k_sel=1.6m */
-			Ana_Set_Reg(AFE_VOW_TOP,      0x4000, 0x8000);
-			/* 0x2090 PGA DCC CLK = 13M, PGA DCC CLK reference select: 01_vow 12.854M,
-			PGA DCC CLK power down gating release, Enable PGA DCC CLK */
-			Ana_Set_Reg(AFE_DCCLK_CFG0,   0x2064, 0xFFEE);
-			/* 0x2090 PGA DCC CLK = 13M, PGA DCC CLK reference select: 01_vow 12.854M,
-			PGA DCC CLK power down gating release, Enable PGA DCC CLK */
-			Ana_Set_Reg(AFE_DCCLK_CFG0,   0x2065, 0x0001);
-			/* 0x0D0E ADC CLK from: 10_12.58MHz from 32KHz PLL,
-			Enable Audio ADC FBDAC 0.25FS LPW  @@@@ 0x000D */
-			Ana_Set_Reg(AUDENC_ANA_CON3,  0x0009, 0x000D);
-			/* 0x0D1A MIC Bias 0 LowPower enable, MISBIAS0 = 1.9V, Enable MICBIAS0 */
-			Ana_Set_Reg(AUDENC_ANA_CON9,  0x00A1, 0x00F1);
-			/* 0x0D08 Enable audio L PGA */
-			Ana_Set_Reg(AUDENC_ANA_CON0,  0x03D7, 0x07F7);
-			/* 0x0D08 Audio L ADC input sel : L PGA, Enable audio L ADC */
-			Ana_Set_Reg(AUDENC_ANA_CON0,  0x53D7, 0x7000);
-			/* delay 100us */
-			msleep(20);
-			/* 0x0D08 Audio L PGA DCC precharge off */
-			Ana_Set_Reg(AUDENC_ANA_CON0,  0x53D3, 0x0004);
-
-			/* ----- Digital ----- */
-			/* Ana_Set_Reg(TOP_CLKSQ_SET,      0x0000, 0xFFFF);*/
-			/* pr_warn("TOP_CLKSQ_SET: %x\n", Ana_Get_Reg(TOP_CLKSQ_SET));*/
-			/* Ana_Set_Reg(TOP_CKPDN_CON5_CLR, 0x01c0, 0xFFFF);*/
-			/* pr_warn("TOP_CKPDN_CON5: %x\n", Ana_Get_Reg(TOP_CKPDN_CON5));*/
-			/* Ana_Set_Reg(0x02C2,             0x0000, 0xFFFF);*/
-			/* pr_warn("INT_CON0: %x\n", Ana_Get_Reg(0x02C2));*/
-
-			/* set GPIO */
-			/* AP side */
-#ifdef CONFIG_MTK_VOW_SUPPORT
-#ifdef CONFIG_OF
-			pr_warn("GPIO SET:CONFIG_OF\n");
-			/*Enable VOW_CLK_MISO*/
-			/*Enable VOW_DAT_MISO*/
-			/*AudDrv_GPIO_VOWIF_Select(true);*/
-			AudDrv_GPIO_Request(true, Soc_Aud_Digital_Block_ADDA_VOW);
-#else
-			pr_warn("GPIO SET:ELSE\n");
-			/*Enable VOW_CLK_MISO*/
-			mt_set_gpio_mode(149 | 0x80000000, GPIO_MODE_01);
-			/*Enable VOW_DAT_MISO*/
-			mt_set_gpio_mode(147 | 0x80000000, GPIO_MODE_03);
-#endif /* #ifdef CONFIG_OF */
-#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
-
-			/*set PMIC GPIO*/
-			Ana_Set_Reg(GPIO_MODE3, 0x1252, 0x0007); /*0x60D0 GPIO Set to VOW data*/
-			pr_warn("GPIO_MODE: %x\n", Ana_Get_Reg(GPIO_MODE3));
-			break;
-
-		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC:
+		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC:   /* Earphone_DCC */
 		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM:
-			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC\n", __func__);
+			VOW_DCC_CLK_Enable(true);
+			VOW_MIC_DCC_Enable(MicType, true);
 			break;
-
-		case AUDIO_VOW_MIC_TYPE_Handset_AMIC:
+		/* for Digital Mic */
+		case AUDIO_VOW_MIC_TYPE_Handset_DMIC:  /* DMIC */
+		case AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K:
+			/* 0x0D1A MIC Bias 0 LowPower: 1_LPW, MISBIAS0 = 1P9V, Enable MICBIAS0 */
+			Ana_Set_Reg(AUDENC_ANA_CON9,  0x00A1, 0x00F1);
+			Ana_Set_Reg(AUDENC_ANA_CON8,  0x0005, 0x0007); /* 0xD18 Enable DMIC*/
+			break;
 		default:
-			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Handset_AMIC\n", __func__);
 			break;
 		}
 
-		/*[Todo]Enable VOW INT (has alredy done in pmic.c)*/
-		/*enable VOW INT in pmic driver*/
+		VOW_GPIO_Enable(true);
 
-#if 0
 		/* VOW AMPREF Setting, set by MD32 after DC calibration */
-		Ana_Set_Reg(AFE_VOW_CFG0, reg_AFE_VOW_CFG0, 0xffff);
-
-		Ana_Set_Reg(AFE_VOW_CFG1, reg_AFE_VOW_CFG1, 0xffff);   /*VOW A,B timeout initial value*/
-		if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC)
-			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0B00, 0xffff);/* 1.6m */
-		else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)
-			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0B08, 0xffff);
-
-		Ana_Set_Reg(AFE_VOW_CFG2, reg_AFE_VOW_CFG2, 0xffff);   /*VOW A,B value setting*/
-		Ana_Set_Reg(AFE_VOW_CFG3, reg_AFE_VOW_CFG3, 0xffff);   /*alhpa and beta K value setting*/
-		Ana_Set_Reg(AFE_VOW_CFG4, reg_AFE_VOW_CFG4, 0xffff);   /*gamma K value setting*/
-		Ana_Set_Reg(AFE_VOW_CFG5, reg_AFE_VOW_CFG5, 0xffff);   /*N mini value setting*/
-#endif
 		Ana_Set_Reg(AFE_VOW_CFG0, 0xffff, 0xffff);
-		pr_warn("AFE_VOW_CFG0: %x\n", Ana_Get_Reg(AFE_VOW_CFG0));
-		Ana_Set_Reg(AFE_VOW_CFG1, 0x0200, 0xffff);
-		pr_warn("AFE_VOW_CFG1: %x\n", Ana_Get_Reg(AFE_VOW_CFG1));
-		Ana_Set_Reg(AFE_VOW_CFG2, 0x2424, 0xffff); /* VOW A,B value setting */
-		pr_warn("AFE_VOW_CFG2: %x\n", Ana_Get_Reg(AFE_VOW_CFG2));
-		Ana_Set_Reg(AFE_VOW_CFG3, 0xDBAC, 0xffff); /* alhpa and beta K value setting */
-		pr_warn("AFE_VOW_CFG3: %x\n", Ana_Get_Reg(AFE_VOW_CFG3));
-		Ana_Set_Reg(AFE_VOW_CFG5, 0x0000, 0xffff); /* N mini value setting */
-		pr_warn("AFE_VOW_CFG5: %x\n", Ana_Get_Reg(AFE_VOW_CFG5));
-		Ana_Set_Reg(AFE_VOW_CFG4, 0x029E, 0xffff); /* gamma K value setting    16K*/
-		pr_warn("AFE_VOW_CFG4: %x\n", Ana_Get_Reg(AFE_VOW_CFG4));
+
+		Ana_Set_Reg(AFE_VOW_CFG1, 0x0200, 0xffff);   /*VOW A,B timeout initial value*/
+#if 0
+		if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC)
+			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C00, 0xffff);/* 1.6m */
+		else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K)
+			Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C08, 0xffff);
+#endif
+		Ana_Set_Reg(AFE_VOW_CFG2, 0x2424, 0xffff);   /*VOW A,B value setting*/
+		Ana_Set_Reg(AFE_VOW_CFG3, 0xDBAC, 0xffff);   /*alhpa and beta K value setting*/
+		Ana_Set_Reg(AFE_VOW_CFG4, 0x029E, 0x000f);   /*gamma K value setting*/
+		Ana_Set_Reg(AFE_VOW_CFG5, 0x0000, 0xffff);   /*N mini value setting*/
+
+		/* 16K */
+		Ana_Set_Reg(AFE_VOW_CFG4, 0x029E, 0xfff0); /* 16k */
 		Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x0C00, 0xffff); /* 16K */
-		pr_warn("AFE_VOW_POSDIV_CFG0: %x\n", Ana_Get_Reg(AFE_VOW_POSDIV_CFG0));
-		/*Ana_Set_Reg(AFE_VOW_CFG4, 0x022E, 0xffff);   //gamma K value setting    32K*/
+
+		/* 32K */
+		/*Ana_Set_Reg(AFE_VOW_CFG4, 0x022E, 0xfff0); //32K*/
 		/*Ana_Set_Reg(AFE_VOW_POSDIV_CFG0, 0x2C0A, 0xffff); // 32K*/
+
+		TurnOnVOWPeriodicOnOff(MicType, reg_AFE_VOW_PERIODIC, true);
 
 #ifndef VOW_STANDALONE_CONTROL
 		if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC) {
 			/*digital MIC need to config bit13 and bit6, (bit7 need to check)  0x6840*/
-			/*Ana_Set_Reg(AFE_VOW_TOP, 0x2040, 0x2040);   //VOW enable*/
-#ifdef CONFIG_MTK_VOW_SUPPORT
+
 			VowDrv_SetDmicLowPower(false);
-#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
+
 			Ana_Set_Reg(AFE_VOW_TOP, 0x20C0, 0x20C0);   /*VOW enable, with bit7*/
 		} else if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K) {
-#ifdef CONFIG_MTK_VOW_SUPPORT
+
 			VowDrv_SetDmicLowPower(true);
-#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
+
 			Ana_Set_Reg(AFE_VOW_TOP, 0x20C0, 0x20C0);   /*VOW enable, with bit7*/
 		} else {
-		/*others setting will do at VOW driver 0x4800*/
-#ifdef CONFIG_MTK_VOW_SUPPORT
-		VowDrv_SetDmicLowPower(false);
-#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
-		/*Ana_Set_Reg(AFE_VOW_TOP, 0x4810, 0xffff);   //VOW enable*/
+			/* Normal */
+			VowDrv_SetDmicLowPower(false);
 		}
 #endif /* #ifndef VOW_STANDALONE_CONTROL */
 
-#ifdef CONFIG_MTK_VOW_SUPPORT
+
 		/*VOW enable, set AFE_VOW_TOP in VOW kernel driver*/
 		/*need to inform VOW driver mic type*/
 		VowDrv_EnableHW(true);
 		pr_warn("%s, VowDrv_ChangeStatus set\n", __func__);
 		VowDrv_ChangeStatus();
-#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
-
-#if defined(VOW_TONE_TEST)
-		/*test output*/
-		AudDrv_Clk_On();
-		OpenAfeDigitaldl1(true);
-		OpenAnalogHeadphone(true);
-#endif /* #if defined(VOW_TONE_TEST) */
 
 	} else { /* disable VOW */
 
-#ifdef CONFIG_MTK_VOW_SUPPORT
+		TurnOnVOWPeriodicOnOff(MicType, reg_AFE_VOW_PERIODIC, false);
+
 		/*Set VOW driver disable, vow driver will do close all digital part setting*/
 		VowDrv_EnableHW(false);
 		pr_warn("%s, VowDrv_ChangeStatus set\n", __func__);
 		VowDrv_ChangeStatus();
 		msleep(20);
-#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
+
+		VOW_GPIO_Enable(false);
+
 		switch (MicType) {
+		/* for ACC Mic */
+		case AUDIO_VOW_MIC_TYPE_Handset_AMIC:
 		case AUDIO_VOW_MIC_TYPE_Headset_MIC:
-			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Headset_MIC close\n", __func__);
+			/*turn off analog part*/
+			VOW_MIC_ACC_Enable(MicType, false);
 			break;
-		case AUDIO_VOW_MIC_TYPE_Handset_DMIC:
-		case AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K:
-			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Handset_DMIC close\n", __func__);
-			break;
+		/* for DCC Mic */
 		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC:
 		case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCCECM:
-			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Handset_AMIC_DCC close\n", __func__);
-			/* turn off digital first, move to vow driver*/
-			/*#ifdef VOW_STANDALONE_CONTROL*/
-#if 1
-			/*disable VOW interrupt here or when digital power off*/
-
-#ifdef CONFIG_MTK_VOW_SUPPORT
-#ifdef CONFIG_OF
-			/*Enable VOW_CLK_MISO*/
-			/*Enable VOW_DAT_MISO*/
-			AudDrv_GPIO_Request(false, Soc_Aud_Digital_Block_ADDA_VOW);
-#else
-			pr_warn("GPIO SET:ELSE\n");
-			/*GPIO set to back to normal record*/
-			/*Disable VOW_CLK_MISO*/
-			mt_set_gpio_mode(149 | 0x80000000, GPIO_MODE_00);
-			/*Disable VOW_DAT_MISO*/
-			mt_set_gpio_mode(147 | 0x80000000, GPIO_MODE_00);
-#endif /* #ifdef CONFIG_OF */
-#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
-			/*set PMIC GPIO*/
-			Ana_Set_Reg(GPIO_MODE3, 0x1249, 0x0007); /*GPIO Set to VOW data*/
-#endif /* #if 1 */
-			/*turn off analog part*/
-			Ana_Set_Reg(AUDENC_ANA_CON0,  0x03D3, 0x7000); /*0x0D08*/
-			Ana_Set_Reg(AUDENC_ANA_CON0,  0x0000, 0x07F7); /*0x0D08*/
-			Ana_Set_Reg(AUDENC_ANA_CON9,  0x0000, 0x00F1); /*0x0D1A*/
-			Ana_Set_Reg(AUDENC_ANA_CON3,  0x0000, 0x000D); /*0x0D0E*/
-			Ana_Set_Reg(AFE_DCCLK_CFG0,   0x2064, 0x0001); /*0x2090*/
-			Ana_Set_Reg(AFE_DCCLK_CFG0,   0x0FE2, 0xFFEE); /*0x2090*/
-			Ana_Set_Reg(AFE_VOW_TOP,      0xC000, 0x8000); /*0x2070*/
-			VOW12MCK_Enable(false); /*VOW clock power down enable*/
-			Ana_Set_Reg(AUDENC_ANA_CON13, 0x06F8, 0x0001); /*0x0D22*/
-			Ana_Set_Reg(AUDENC_ANA_CON13, 0x0310, 0x07FC); /*0x0D22*/
-			Ana_Set_Reg(AUDENC_ANA_CON14, 0x0180, 0x8000); /*0x0D24*/
-			Ana_Set_Reg(AUDENC_ANA_CON15, 0x0013, 0x0038); /*0x0D26*/
-			Ana_Set_Reg(AUDENC_ANA_CON2,  0x0000, 0x0039); /*0x0D0C*/
-			/*Ana_Set_Reg(AUDDEC_ANA_CON9,  0x1155, 0x1000); */
-			NvregEnable(false);
-			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x0000, 0x0400); /*0x0D06*/
-			break;
 		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC:
 		case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCCECM:
-			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Headset_MIC_DCC close\n", __func__);
+			/*turn off analog part*/
+			VOW_MIC_DCC_Enable(MicType, false);
+			VOW_DCC_CLK_Enable(false);
 			break;
-		case AUDIO_VOW_MIC_TYPE_Handset_AMIC:
+		/* for Digital Mic */
+		case AUDIO_VOW_MIC_TYPE_Handset_DMIC:
+		case AUDIO_VOW_MIC_TYPE_Handset_DMIC_800K:
+			Ana_Set_Reg(AUDENC_ANA_CON8,  0x0004, 0x0007); /*0x0D08*/
+			Ana_Set_Reg(AUDENC_ANA_CON9,  0x0000, 0x00F1); /*0x0D1A*/
+			break;
 		default:
-			pr_warn("%s, case AUDIO_VOW_MIC_TYPE_Handset_AMIC close\n", __func__);
 			break;
 		}
+
+		VOW_Pwr_Enable(MicType, false);
+
 		mIsVOWOn = false;
 		SetVOWStatus(mIsVOWOn);
 		GetMicbias = 0;
 	}
-#endif
+#endif /* #ifdef CONFIG_MTK_VOW_SUPPORT */
 	return true;
 }
 
@@ -4379,9 +4645,9 @@ static int Audio_Vow_ADC_Func_Switch_Set(struct snd_kcontrol *kcontrol,
 	}
 
 	if (ucontrol->value.integer.value[0])
-		TurnOnVOWADcPowerACC(mAudio_VOW_Mic_type, true);
+		TurnOnVOWADcPower(mAudio_VOW_Mic_type, true);
 	else
-		TurnOnVOWADcPowerACC(mAudio_VOW_Mic_type, false);
+		TurnOnVOWADcPower(mAudio_VOW_Mic_type, false);
 
 
 	mAudio_Vow_Analog_Func_Enable = ucontrol->value.integer.value[0];
@@ -4557,6 +4823,23 @@ static int Audio_Vow_State_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_ele
 {
 	/* pr_warn("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]); */
 	/* reg_AFE_VOW_CFG5 = ucontrol->value.integer.value[0]; */
+	return 0;
+}
+
+static int Audio_Vow_Periodic_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	int value = /*Ana_Get_Reg(AFE_VOW_CFG5) */ reg_AFE_VOW_PERIODIC;
+
+	pr_warn("%s()  = %d\n", __func__, value);
+	ucontrol->value.integer.value[0] = value;
+	return 0;
+}
+
+static int Audio_Vow_Periodic_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s()  = %ld\n", __func__, ucontrol->value.integer.value[0]);
+	/* Ana_Set_Reg(AFE_VOW_CFG5, ucontrol->value.integer.value[0], 0xffff); */
+	reg_AFE_VOW_PERIODIC = ucontrol->value.integer.value[0];
 	return 0;
 }
 
@@ -4859,6 +5142,9 @@ static const struct snd_kcontrol_new mt6331_UL_Codec_controls[] = {
 	SOC_SINGLE_EXT("Audio_VOW_State", SND_SOC_NOPM, 0, 0x80000, 0,
 		       Audio_Vow_State_Get,
 		       Audio_Vow_State_Set),
+	SOC_SINGLE_EXT("Audio_VOW_Periodic", SND_SOC_NOPM, 0, 0x80000, 0,
+		       Audio_Vow_Periodic_Get,
+		       Audio_Vow_Periodic_Set),
 	SOC_ENUM_EXT("Audio_UL_LR_Swap", Audio_UL_Enum[26],
 		     Audio_UL_LR_Swap_Get,
 		     Audio_UL_LR_Swap_Set),
