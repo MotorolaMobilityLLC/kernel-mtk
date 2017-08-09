@@ -9,6 +9,7 @@
 /* #include <dt-bindings/mmc/mt67xx-msdc.h> */
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
+#include "mt6735-pinfunc.h"
 
 / {
 	model = "MT6753";
