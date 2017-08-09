@@ -60,7 +60,4 @@ extern u32 spm_vcorefs_get_MD_status(void);
 extern void aee_rr_rec_vcore_dvfs_status(u32 val);
 extern u32 aee_rr_curr_vcore_dvfs_status(void);
 
-/* SCP debug */
-extern void scp_dump_regs(void);
-
 #endif	/* _MT_SPM_VCORE_DVFS_H */
