@@ -507,6 +507,7 @@
 			pins = <PINMUX_GPIO245__FUNC_GPIO245>;
 			slew-rate = <1>;
 			output-low;
+			input-disable;
 		};
 	};
 
@@ -515,6 +516,7 @@
 			pins = <PINMUX_GPIO244__FUNC_GPIO244>;
 			slew-rate = <1>;
 			output-low;
+			input-disable;
 		};
 	};
 
@@ -523,6 +525,7 @@
 			pins = <PINMUX_GPIO243__FUNC_GPIO243>;
 			slew-rate = <1>;
 			output-low;
+			input-disable;
 		};
 	};
 
@@ -531,6 +534,7 @@
 			pins = <PINMUX_GPIO242__FUNC_GPIO242>;
 			slew-rate = <1>;
 			output-low;
+			input-disable;
 		};
 	};
 };
