@@ -5,8 +5,9 @@
 
 #include "mt_idle_internal.h"
 
-#define IDLE_TAG     "Power/swap"
+#define IDLE_TAG     "Power/swap "
 #define idle_err(fmt, args...)		pr_err(IDLE_TAG fmt, ##args)
+#define idle_dbg(fmt, args...)		pr_debug(IDLE_TAG fmt, ##args)
 
 enum subsys_id {
 	SYS_DIS,
@@ -405,7 +406,7 @@ bool is_disp_pwm_rosc(void)
 bool is_auxadc_released(void)
 {
 	if (~idle_readl(INFRA_SW_CG_0_STA) & AUXADC_CG_STA) {
-		idle_err("AUXADC CG does not be released\n");
+		idle_dbg("AUXADC CG does not be released\n");
 		return false;
 	}
 	return true;

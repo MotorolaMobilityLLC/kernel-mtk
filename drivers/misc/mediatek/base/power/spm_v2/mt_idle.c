@@ -59,7 +59,7 @@
 #include <linux/delay.h>
 #endif
 
-#define IDLE_TAG     "Power/swap"
+#define IDLE_TAG     "Power/swap "
 #define spm_emerg(fmt, args...)		pr_emerg(IDLE_TAG fmt, ##args)
 #define spm_alert(fmt, args...)		pr_alert(IDLE_TAG fmt, ##args)
 #define spm_crit(fmt, args...)		pr_crit(IDLE_TAG fmt, ##args)
@@ -2514,7 +2514,7 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	p += sprintf(p, "sodi3_flags=0x%x\n", sodi3_flags);
 
 	p += sprintf(p, "\n*********** soidle3 command help  ************\n");
-	p += sprintf(p, "soidle3 help:   cat /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += sprintf(p, "soidle3 help:  cat /sys/kernel/debug/cpuidle/soidle3_state\n");
 	p += sprintf(p, "switch on/off: echo [soidle3] 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	p += sprintf(p, "cpupdn on/off: echo cpupdn 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	p += sprintf(p, "en_dp_by_bit:  echo enable id > /sys/kernel/debug/cpuidle/soidle3_state\n");
@@ -2523,7 +2523,7 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	p += sprintf(p, "bypass pll:    echo bypass_pll 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	p += sprintf(p, "bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	p += sprintf(p, "bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
-
+	p += sprintf(p, "sodi3 flags:   echo sodi3_flags value > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	len = p - dbg_buf;
 
 	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
@@ -2636,6 +2636,7 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	p += sprintf(p, "modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle_state\n");
 	p += sprintf(p, "bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	p += sprintf(p, "bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += sprintf(p, "sodi flags:	echo sodi_flags value > /sys/kernel/debug/cpuidle/soidle3_state\n");
 
 	len = p - dbg_buf;
 

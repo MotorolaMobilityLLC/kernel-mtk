@@ -222,9 +222,9 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 	int need_log_out = 0;
 
 	if (sodi3_flags&SODI_FLAG_NO_LOG) {
-		if (wakesta->assert_pc != 0) {
-			sodi3_err("PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x\n",
-					wakesta->assert_pc, pcmdesc->version, wakesta->r13, wakesta->debug_flag);
+		if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
+			sodi3_err("PCM ASSERT AT SPM_PC = 0x%0x (%s), R12 = 0x%x, R13 = 0x%x, DEBUG_FLAG = 0x%x\n",
+				wakesta->assert_pc, pcmdesc->version, wakesta->r12, wakesta->r13, wakesta->debug_flag);
 			wr = WR_PCM_ASSERT;
 		}
 	} else if (!(sodi3_flags&SODI_FLAG_REDUCE_LOG) || (sodi3_flags & SODI_FLAG_RESIDENCY)) {
@@ -279,18 +279,19 @@ spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int 
 		if (need_log_out == 1) {
 			sodi3_logout_prev_time = sodi3_logout_curr_time;
 
-			if (wakesta->assert_pc != 0) {
-				sodi3_err("SPM ASSERT AT %u, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
-						wakesta->assert_pc, vcore_status, spm_read(SPM_PASR_DPD_0),
-						spm_read(SPM_SW_FLAG), spm_read(DUMMY1_PWR_CON), pcmdesc->version);
+			if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
+				sodi3_err("WAKE UP BY ASSERT, VCORE_STATUS = %d, SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, %s\n",
+						vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
 
-				sodi3_err("sodi3_cnt = %d, self_refresh_cnt = 0x%x, spm_pc = 0x%0x, r13 = 0x%x, debug_flag = 0x%x\n",
+				sodi3_err("SODI3_CNT = %d, SELF_REFRESH_CNT = 0x%x, SPM_PC = 0x%0x, R13 = 0x%x, DEBUG_FLAG = 0x%x\n",
 						logout_sodi3_cnt, logout_selfrefresh_cnt,
 						wakesta->assert_pc, wakesta->r13, wakesta->debug_flag);
 
-				sodi3_err("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
+				sodi3_err("R12 = 0x%x, R12_E = 0x%x, RAW_STA = 0x%x, IDLE_STA = 0x%x, EVENT_REG = 0x%x, ISR = 0x%x\n",
 						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 						wakesta->event_reg, wakesta->isr);
+				wr = WR_PCM_ASSERT;
 			} else {
 				char buf[LOG_BUF_SIZE] = { 0 };
 				int i;
@@ -360,7 +361,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 #endif
 
 	if (!dyna_load_pcm[sodi_idx].ready) {
-		sodi3_err("error: load firmware fail\n");
+		sodi3_err("ERROR: LOAD FIRMWARE FAIL\n");
 		BUG();
 	}
 	pcmdesc = &(dyna_load_pcm[sodi_idx].desc);
