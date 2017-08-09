@@ -15,7 +15,7 @@
 #include <linux/module.h>
 /*#include <mach/mt_typedefs.h>*/
 #include <linux/timer.h>
-#include <mach/mt_pmic_wrap.h>
+#include <mt_pmic_wrap.h>
 #include <linux/syscore_ops.h>
 
 #define PMIC_WRAP_DEVICE "pmic_wrap"
