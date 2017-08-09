@@ -77,13 +77,13 @@
 #define    OFFLOAD_STATE_DRAIN        0x6
 
 
-struct AFE_OFFLOAD_T {		/* doug */
+struct AFE_OFFLOAD_T {          /* doug */
 	kal_uint32 data_buffer_size;
 	void *data_buffer_area;
 	kal_uint32 temp_buffer_size;
 	kal_int8 *temp_buffer_area;
-	kal_int32 u4WriteIdx;	/* Previous Write Index. */
-	kal_int32 u4ReadIdx;	/* Previous Write Index. */
+	kal_int32 u4WriteIdx;   /* Previous Write Index. */
+	kal_int32 u4ReadIdx;    /* Previous Write Index. */
 	kal_uint32 length;
 	kal_uint32 state;
 	kal_uint32 pre_state;
@@ -94,8 +94,8 @@ struct AFE_OFFLOAD_T {		/* doug */
 	struct snd_compr_stream *compr_stream;
 	struct snd_pcm_substream *pcm_stream;
 	kal_uint32 hw_buffer_size;
-	kal_uint32 hw_buffer_addr;	/* physical address */
-	kal_int8 *hw_buffer_area;	/* virtual pointer */
+	kal_uint32 hw_buffer_addr;      /* physical address */
+	kal_int8 *hw_buffer_area;       /* virtual pointer */
 	kal_uint64 copied_total;
 	kal_uint64 transferred;
 	kal_uint64 copied;
@@ -120,7 +120,7 @@ enum {
 
 void OffloadService_SetWriteblocked(bool flag);
 void OffloadService_ReleaseWriteblocked(void);
-void OffloadService_SetVolumeCbk(void (*setVol) (int vol));
+void OffloadService_SetVolumeCbk(void (*setVol)(int vol));
 int OffloadService_GetOffloadMode(void);
 void OffloadService_SetEnable(bool enable);
 bool OffloadService_GetEnable(void);

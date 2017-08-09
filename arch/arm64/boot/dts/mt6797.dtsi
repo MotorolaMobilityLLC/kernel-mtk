@@ -2787,10 +2787,6 @@
 			compatible = "mediatek,mt_soc_dai_stub";
 		};
 
-		mt_soc_offload_gdma@11220000 {
-			compatible = "mediatek,mt_soc_pcm_offload_gdma";
-		};
-
 		mt_soc_dl2_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_dl2";
 		};

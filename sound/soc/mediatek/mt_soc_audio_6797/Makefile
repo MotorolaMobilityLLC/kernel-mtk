@@ -6,6 +6,7 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/scp/mt6797/
 # flags for not ready feature, uncomment after ready
 ccflags-y += -D_GIT318_READY
 ccflags-y += -D_GIT318_PMIC_READY
@@ -14,7 +15,7 @@ ccflags-y += -D_MT_IDLE_HEADER
 #
 EXTRA_CFLAGS := -I$(src)/../common
 obj-$(CONFIG_MT_SND_SOC_6797) += AudDrv_Afe.o AudDrv_Ana.o AudDrv_Clk.o AudDrv_Gpio.o
-obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_afe_control.o mt_soc_afe_connection.o mt_soc_pcm_common.o mt_soc_offload_gdma.o mt_soc_offload_common.o
+obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_afe_control.o mt_soc_afe_connection.o mt_soc_pcm_common.o mt_soc_offload_common.o
 obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_pcm_capture.o mt_soc_pcm_dl1.o mt_soc_pcm_dummy.o mt_soc_pcm_routing.o mt_soc_pcm_capture2.o mt_soc_pcm_i2s2_adc2.o
 obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_pcm_voice_md1.o mt_soc_pcm_voice_md2.o mt_soc_pcm_voice_md1_bt.o mt_soc_pcm_voice_md2_bt.o
 obj-$(CONFIG_MT_SND_SOC_6797) += mt_soc_pcm_hdmi.o mt_soc_pcm_dl1_i2s0.o mt_soc_pcm_dl1_i2s0Dl1.o mt_soc_pcm_i2s0_awb.o

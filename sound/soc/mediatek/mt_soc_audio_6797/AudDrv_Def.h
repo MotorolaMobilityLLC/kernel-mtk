@@ -222,7 +222,6 @@
 #define MT_SOC_HP_IMPEDANCE_NAME "mt-soc-hpimpedancedai-driver"
 #define MT_SOC_FM_I2S_NAME "mt-soc-fmi2S-driver"
 #define MT_SOC_FM_I2S_CAPTURE_NAME "mt-soc-fmi2Scapturedai-driver"
-#define MT_SOC_OFFLOAD_GDMA_NAME "mt-soc-offload-gdma-driver"
 #define MT_SOC_BTCVSD_RX_DAI_NAME "mt-soc-btcvsd-rx-dai-driver"
 #define MT_SOC_BTCVSD_TX_DAI_NAME "mt-soc-btcvsd-tx-dai-driver"
 
@@ -261,7 +260,6 @@
 #define MT_SOC_IO2_DAI_PCM "mt-soc-io2dai-pcm"
 #define MT_SOC_FM_I2S_PCM  "mt-soc-fm-i2s-pcm"
 #define MT_SOC_FM_I2S_AWB_PCM  "mt-soc-fm-i2s-awb-pcm"
-#define MT_SOC_OFFLOAD_GDMA_PCM "mt-soc-offload-gdma-pcm"
 #define MT_SOC_BTCVSD_RX_PCM   "mt-soc-btcvsd-rx-pcm"
 #define MT_SOC_BTCVSD_TX_PCM   "mt-soc-btcvsd-tx-pcm"
 
@@ -303,7 +301,6 @@
 #define MT_SOC_CODEC_IO2DAI_DUMMY_DAI_NAME "mt-soc-io2dai-dummy-dai-codec"
 #define MT_SOC_CODEC_FM_I2S_DUMMY_DAI_NAME "mt-soc-fm-i2s-dummy-dai-codec"
 #define MT_SOC_CODEC_FM_I2S_DAI_NAME "mt-soc-fm-i2s-dai-codec"
-#define MT_SOC_CODEC_OFFLOAD_GDMA_DAI_NAME "mt-soc-offload-gdma-dai-codec"
 #define MT_SOC_CODEC_BTCVSD_RX_DAI_NAME "mt-soc-codec-btcvsd-rx-dai"
 #define MT_SOC_CODEC_BTCVSD_TX_DAI_NAME "mt-soc-codec-btcvsd-tx-dai"
 
@@ -343,7 +340,6 @@
 #define MT_SOC_IO2DAI_STREAM_NAME "ANC_Debug_Record_IO2"
 #define MT_SOC_FM_I2S_PLAYBACK_STREAM_NAME "FM_I2S_Playback"
 #define MT_SOC_FM_I2S_CAPTURE_STREAM_NAME "FM_I2S_Capture"
-#define MT_SOC_OFFLOAD_GDMA_STREAM_NAME "OFFLOAD_GDMA_Playback"
 #define MT_SOC_BTCVSD_CAPTURE_STREAM_NAME "BTCVSD_Capture"
 #define MT_SOC_BTCVSD_PLAYBACK_STREAM_NAME "BTCVSD_Playback"
 

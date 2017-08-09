@@ -173,6 +173,8 @@ void Auddrv_Dl1_Spinlock_lock(void);
 void Auddrv_Dl1_Spinlock_unlock(void);
 void Auddrv_Dl2_Spinlock_lock(void);
 void Auddrv_Dl2_Spinlock_unlock(void);
+void Auddrv_Dl3_Spinlock_lock(void);
+void Auddrv_Dl3_Spinlock_unlock(void);
 
 void Auddrv_DL1_Interrupt_Handler(void);
 void Auddrv_DL2_Interrupt_Handler(void);
@@ -222,8 +224,6 @@ void SetFMEnableFlag(bool bEnable);
 void SetOffloadEnableFlag(bool bEnable);
 void SetOffloadSWMode(bool bEnable);
 
-bool SetOffloadCbk(Soc_Aud_Digital_Block block, void *offloadstream, void (*offloadCbk) (void *stream));
-bool ClrOffloadCbk(Soc_Aud_Digital_Block block, void *offloadstream);
 
 bool UpdateAndCheckIrqStatus(int irq_num, bool bEnable);
 

@@ -164,6 +164,7 @@ static struct mtk_dai mtk_dais[Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK];
 static DEFINE_MUTEX(afe_control_mutex);
 static DEFINE_SPINLOCK(auddrv_dl1_lock);
 static DEFINE_SPINLOCK(auddrv_dl2_lock);
+static DEFINE_SPINLOCK(auddrv_dl3_lock);
 static DEFINE_SPINLOCK(auddrv_ul1_lock);
 
 
@@ -634,11 +635,11 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 			Auddrv_HDMI_Interrupt_Handler();
 	}
 
-	if (u4RegValue & (0x1 << Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE)) {
+	/*if (u4RegValue & (0x1 << Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE)) {
 		if ((mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL2]->mState == true)
 		    && (mOffloadSWMode == true))
 			Auddrv_DL2_Interrupt_Handler();
-	}
+	}*/
 
 	/* clear irq */
 	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, 0x5f);
@@ -2098,6 +2099,9 @@ bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable)
 
 	if (Aud_block >= Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE)
 		return true;
+	/*Let DSP enable DL3*/
+	if (Aud_block == Soc_Aud_Digital_Block_MEM_DL3)
+		return true;
 
 	if ((bEnable == true) && (mAudioMEMIF[Aud_block]->mUserCount == 1))
 		Afe_Set_Reg(AFE_DAC_CON0, bEnable << (Aud_block + 1), 1 << (Aud_block + 1));
@@ -2276,6 +2280,8 @@ bool SetIrqEnable(uint32 Irqmode, bool bEnable)
 			/* no need to set IRQ_MCU_EN, it's default on for irq7 */
 			/*Afe_Set_Reg(AFE_IRQ_MCU_EN, (bEnable << Irqmode), (1 << Irqmode));*/
 			Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << 14), (1 << 14));
+			Afe_Set_Reg(AFE_IRQ_MCU_EN, (0 << 6), (1 << 6));
+			Afe_Set_Reg(AFE_IRQ_MCU_EN, (bEnable << 22), (1 << 22));
 			break;
 		}
 	default:
@@ -3065,6 +3071,16 @@ void Auddrv_Dl2_Spinlock_unlock(void)
 	spin_unlock_irqrestore(&auddrv_dl2_lock, dl2_flags);
 }
 
+static unsigned long dl3_flags;
+void Auddrv_Dl3_Spinlock_lock(void)
+{
+	spin_lock_irqsave(&auddrv_dl3_lock, dl3_flags);
+}
+
+void Auddrv_Dl3_Spinlock_unlock(void)
+{
+	spin_unlock_irqrestore(&auddrv_dl3_lock, dl3_flags);
+}
 static unsigned long ul1_flags;
 
 void Auddrv_UL1_Spinlock_lock(void)
@@ -3551,11 +3567,6 @@ void Auddrv_DL2_Interrupt_Handler(void)
 	}
 
 	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
-
-	if (AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2]->offloadstream) {
-		AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2]->offloadCbk
-		    (AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2]->offloadstream);
-	}
 }
 
 struct snd_dma_buffer *Get_Mem_Buffer(Soc_Aud_Digital_Block MemBlock)
@@ -4065,34 +4076,6 @@ bool UpdateAndCheckIrqStatus(int irq_num, bool bEnable)
 	}
 
 	return IrqStatus;
-}
-
-bool SetOffloadCbk(Soc_Aud_Digital_Block block, void *offloadstream,
-		   void (*offloadCbk)(void *stream))
-{
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[block];
-
-	Mem_Block->offloadCbk = offloadCbk;
-	Mem_Block->offloadstream = offloadstream;
-	pr_debug("%s stream:%p, callback:%p\n", __func__, offloadstream, offloadCbk);
-
-	return true;
-}
-
-bool ClrOffloadCbk(Soc_Aud_Digital_Block block, void *offloadstream)
-{
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[block];
-
-	if (Mem_Block->offloadstream != offloadstream) {
-		pr_err("%s fail, original:%p, specified:%p\n", __func__, Mem_Block->offloadstream,
-		       offloadstream);
-
-		return false;
-	}
-	pr_debug("%s %p\n", __func__, offloadstream);
-	Mem_Block->offloadstream = NULL;
-
-	return true;
 }
 
 void Enable4pin_I2S0_I2S3(uint32 SampleRate, uint32 wLenBit)

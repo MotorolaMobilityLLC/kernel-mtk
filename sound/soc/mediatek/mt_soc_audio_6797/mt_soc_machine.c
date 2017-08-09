@@ -122,15 +122,6 @@ static struct snd_soc_ops mt_machine_audio_ops = {
 	.prepare = mtmachine_prepare,
 };
 
-static int mtmachine_compr_startup(struct snd_compr_stream *stream)
-{
-	return 0;
-}
-
-static struct snd_soc_compr_ops mt_machine_audio_compr_ops = {
-	.startup = mtmachine_compr_startup,
-};
-
 static int mtmachine_startupmedia2(struct snd_pcm_substream *substream)
 {
 	/* printk("mtmachine_startupmedia2\n"); */
@@ -1176,7 +1167,7 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.init = mt_soc_audio_init,
 		.ops = &mt_machine_audio_ops,
 	},
-	{
+	/*{
 		.name = "OFFLOAD_GDMA_OUT",
 		.stream_name = MT_SOC_OFFLOAD_GDMA_STREAM_NAME,
 		.cpu_dai_name   = MT_SOC_OFFLOAD_GDMA_NAME,
@@ -1184,9 +1175,9 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 		.codec_dai_name = MT_SOC_CODEC_OFFLOAD_GDMA_DAI_NAME,
 		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
 		.init = mt_soc_audio_init,
-		/* .ops = &mt_machine_audio_ops, */
+		 .ops = &mt_machine_audio_ops,/
 		.compr_ops = &mt_machine_audio_compr_ops,
-	},
+	},*/
 	{
 		.name = "MultiMedia_DL2",
 		.stream_name = MT_SOC_DL2_STREAM_NAME,

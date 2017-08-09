@@ -88,8 +88,6 @@ typedef struct {
 	kal_uint32 MemIfNum;
 	bool interruptTrigger;
 	spinlock_t substream_lock;
-	void (*offloadCbk)(void *stream);
-	void *offloadstream;
 } AFE_MEM_CONTROL_T;
 
 struct pcm_afe_info {
