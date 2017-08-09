@@ -790,6 +790,11 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	/* __spm_get_wakeup_status(&wakesta); */
 	__spm_get_wakeup_status(&spm_wakesta);
 
+#if defined(CONFIG_ARCH_MT6797)
+	spm_wakesta.timer_out += (spm_read(SPM_SCP_MAILBOX) - 1) *
+		(1 << SPM_THERMAL_TIMER);
+#endif
+
 	spm_clean_after_wakeup();
 
 	request_uart_to_wakeup();

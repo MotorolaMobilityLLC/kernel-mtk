@@ -702,10 +702,7 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 
 	/* get sleep time */
 	wakesta->timer_out = spm_read(SPM_BSI_D1_SR);	/* backup of PCM_TIMER_OUT */
-#if defined(CONFIG_ARCH_MT6797)
-	wakesta->timer_out += (spm_read(SPM_SCP_MAILBOX) - 1) *
-		(1 << SPM_THERMAL_TIMER);
-#endif
+
 	/* get other SYS and co-clock status */
 	wakesta->r13 = spm_read(PCM_REG13_DATA);
 	wakesta->idle_sta = spm_read(SUBSYS_IDLE_STA);
