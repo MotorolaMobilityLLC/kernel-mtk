@@ -463,8 +463,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	/* Highly depends on LCD driver capability. */
 	params->dsi.packet_size = 256;
-	params->dsi.ssc_disable = 1;
-	/* params->dsi.ssc_range = 3; */
+	params->dsi.ssc_disable = 0;
+	params->dsi.ssc_range = 3;
 	/* video mode timing */
 
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
@@ -612,9 +612,7 @@ static void lcm_init(void)
 	else
 		dprintf(0, "[LK]r63419----tps6132----cmd=%0x--i2c write success----\n", cmd);
 #else
-#if !defined(CONFIG_ARCH_MT6797)
 	ret = tps65132_write_bytes(cmd, data);
-#endif
 	if (ret < 0)
 		pr_debug("[KERNEL]r63419----tps6132---cmd=%0x-- i2c write error-----\n", cmd);
 	else
@@ -630,9 +628,7 @@ static void lcm_init(void)
 	else
 		dprintf(0, "[LK]r63419----tps6132----cmd=%0x--i2c write success----\n", cmd);
 #else
-#if !defined(CONFIG_ARCH_MT6797)
 	ret = tps65132_write_bytes(cmd, data);
-#endif
 	if (ret < 0)
 		pr_debug("[KERNEL]r63419----tps6132---cmd=%0x-- i2c write error-----\n", cmd);
 	else
