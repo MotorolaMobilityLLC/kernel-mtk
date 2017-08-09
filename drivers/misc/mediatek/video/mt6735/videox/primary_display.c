@@ -80,6 +80,7 @@
 
 typedef void (*fence_release_callback) (unsigned int data);
 unsigned int is_hwc_enabled = 0;
+static int is_hwc_update_frame;
 unsigned int gEnableLowPowerFeature = 0;
 /* int _trigger_display_interface(int blocking, void *callback, unsigned int userdata); */
 
@@ -626,7 +627,8 @@ static int _disp_primary_path_idle_detect_thread(void *data)
 		msleep(idle_time); /* 0.5s trigger once */
 		/* DISPMSG("[ddp_idle]_disp_primary_path_idle_detect start 1\n"); */
 
-		if (gSkipIdleDetect || atomic_read(&isDdp_Idle) == 1) /* skip is already in idle mode */
+		if (gSkipIdleDetect || atomic_read(&isDdp_Idle) == 1 ||
+			is_hwc_update_frame == 0) /* skip is already in idle mode */
 			continue;
 
 		_primary_path_lock(__func__);
@@ -6315,8 +6317,10 @@ static int _config_ovl_input(disp_session_input_config *session_input,
 #endif
 
 	update_debug_fps_meter(data_config);
-	if (DISP_SESSION_TYPE(session_input->session_id) == DISP_SESSION_PRIMARY)
+	if (DISP_SESSION_TYPE(session_input->session_id) == DISP_SESSION_PRIMARY) {
 		last_primary_config = *data_config;
+		is_hwc_update_frame = 1;
+	}
 
 	return ret;
 }
