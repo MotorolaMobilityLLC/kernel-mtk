@@ -1487,6 +1487,12 @@ INT32 _stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
 			return -3;
 		}
 
+		if (NULL == pTemp) {
+			STP_DBG_ERR_FUNC("delimiter( ) is not found,substring(%s)\n",
+					 parser_sub_string[type]);
+			return -4;
+		}
+
 		len = pTemp - pDtr;
 		osal_memcpy(&g_stp_dbg_cpupcr->assert_info[0], "assert@", osal_strlen("assert@"));
 		osal_memcpy(&g_stp_dbg_cpupcr->assert_info[osal_strlen("assert@")], pDtr, len);
@@ -1515,6 +1521,12 @@ INT32 _stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
 			return -3;
 		}
 
+		if (NULL == pTemp) {
+			STP_DBG_ERR_FUNC("delimiter( ) is not found,substring(%s)\n",
+					 parser_sub_string[type]);
+			return -4;
+		}
+
 		len = pTemp - pDtr;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
@@ -1534,6 +1546,12 @@ INT32 _stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
 			STP_DBG_ERR_FUNC("parser str is NULL,substring(%s)\n",
 					 parser_sub_string[type]);
 			return -3;
+		}
+
+		if (NULL == pTemp) {
+			STP_DBG_ERR_FUNC("delimiter(,) is not found,substring(%s)\n",
+					 parser_sub_string[type]);
+			return -4;
 		}
 
 		len = pTemp - pDtr;
@@ -1558,6 +1576,12 @@ INT32 _stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
 			return -3;
 		}
 
+		if (NULL == pTemp) {
+			STP_DBG_ERR_FUNC("delimiter(,) is not found,substring(%s)\n",
+					 parser_sub_string[type]);
+			return -4;
+		}
+
 		len = pTemp - pDtr;
 		osal_memcpy(&tempBuf[0], pDtr, len);
 		tempBuf[len] = '\0';
@@ -1577,6 +1601,12 @@ INT32 _stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
 			STP_DBG_ERR_FUNC("parser str is NULL,substring(%s)\n",
 					 parser_sub_string[type]);
 			return -3;
+		}
+
+		if (NULL == pTemp) {
+			STP_DBG_ERR_FUNC("delimiter(,) is not found,substring(%s)\n",
+					 parser_sub_string[type]);
+			return -4;
 		}
 
 		len = pTemp - pDtr;
@@ -1601,7 +1631,7 @@ INT32 _stp_dbg_parser_assert_str(PINT8 str, ENUM_ASSERT_INFO_PARSER_TYPE type)
 				pTemp = osal_strchr(pDtr, ')');
 			} else {
 				STP_DBG_ERR_FUNC("parser str is NULL,substring(RB_FULL()\n");
-				return -4;
+				return -5;
 			}
 
 			len = pTemp - pDtr;
