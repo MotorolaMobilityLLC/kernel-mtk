@@ -1,6 +1,7 @@
 # Makefile for the Linux device tree
 
 subdir-ccflags-y += -Werror
+ccflags-y += -Idrivers/misc/mediatek/mtprof/
 
 obj-y			:= component.o core.o bus.o dd.o syscore.o \
 			   driver.o class.o platform.o \

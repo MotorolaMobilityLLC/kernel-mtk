@@ -19,6 +19,7 @@
 #include <linux/moduleparam.h>
 #include <asm/uaccess.h>
 #include <linux/printk.h>
+#include <linux/platform_device.h>
 #include <log_store_kernel.h>
 
 #include "internal.h"
@@ -33,7 +34,8 @@
 
 struct boot_log_struct {
 	/* task cmdline for first 16 bytes
-	 * and boot event for the rest if TRACK_TASK_COMM is on */
+	 * and boot event for the rest
+	 * if TRACK_TASK_COMM is on */
 	char *comm_event;
 #ifdef TRACK_TASK_COMM
 	pid_t pid;
@@ -50,6 +52,8 @@ int boot_finish = 0;
 
 module_param_named(pl_t, bootprof_pl_t, int, S_IRUGO | S_IWUSR);
 module_param_named(lk_t, bootprof_lk_t, int, S_IRUGO | S_IWUSR);
+
+#define MSG_SIZE 128
 
 void log_boot(char *str)
 {
@@ -86,6 +90,56 @@ void log_boot(char *str)
 	boot_log_count++;
 out:
 	mutex_unlock(&mt_bootprof_lock);
+}
+
+void bootprof_initcall(initcall_t fn, unsigned long long ts)
+{
+#define INITCALL_THRESHOLD 15000000
+	/* log more than 15ms initcalls */
+	unsigned long msec_rem;
+	char msgbuf[MSG_SIZE];
+
+	if (ts > INITCALL_THRESHOLD) {
+		msec_rem = do_div(ts, NSEC_PER_MSEC);
+		snprintf(msgbuf, MSG_SIZE, "initcall: %pf %5llu.%06lums",
+			 fn, ts, msec_rem);
+		log_boot(msgbuf);
+	}
+}
+
+void bootprof_probe(unsigned long long ts, struct device *dev,
+			   struct device_driver *drv, unsigned long probe)
+{
+#define PROBE_THRESHOLD 15000000
+	/* log more than 15ms probes*/
+	unsigned long msec_rem;
+	char msgbuf[MSG_SIZE];
+
+	if (ts <= PROBE_THRESHOLD)
+		return;
+	msec_rem = do_div(ts, NSEC_PER_MSEC);
+	snprintf(msgbuf, MSG_SIZE, "probe:%s%s(%p)%s%s(%p) probe=%pf %5llu.%06lums",
+		 drv ? " drv=" : "",
+		 drv->name ? drv->name : "", (void *)drv,
+		 dev ? " dev=" : "",
+		 dev->init_name ? dev->init_name : "", (void *)dev,
+		 (void *)probe, ts, msec_rem);
+	log_boot(msgbuf);
+}
+
+void bootprof_pdev_register(unsigned long long ts, struct platform_device *pdev)
+{
+#define PROBE_THRESHOLD 15000000
+	/* log more than 15ms probes*/
+	unsigned long msec_rem;
+	char msgbuf[MSG_SIZE];
+
+	if (ts <= PROBE_THRESHOLD)
+		return;
+	msec_rem = do_div(ts, NSEC_PER_MSEC);
+	snprintf(msgbuf, MSG_SIZE, "probe: pdev=%s(%p) %5llu.%06lums",
+		 pdev->name, (void *)pdev, ts, msec_rem);
+	log_boot(msgbuf);
 }
 
 static void bootup_finish(void)

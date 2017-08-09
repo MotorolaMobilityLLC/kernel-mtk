@@ -85,9 +85,6 @@
 #include <asm/setup.h>
 #include <asm/sections.h>
 #include <asm/cacheflush.h>
-#ifdef CONFIG_MTPROF
-#include "bootprof.h"
-#endif
 
 #ifdef CONFIG_X86_LOCAL_APIC
 #include <asm/smp.h>
@@ -783,26 +780,35 @@ static int __init_or_module do_one_initcall_debug(initcall_t fn)
 	return ret;
 }
 
+#ifdef CONFIG_MTPROF
+#include "bootprof.h"
+#else
+#define TIME_LOG_START()
+#define TIME_LOG_END()
+#define bootprof_initcall(fn, ts)
+#endif
+
 int __init_or_module do_one_initcall(initcall_t fn)
 {
-	unsigned long long ts = 0;
-	unsigned long msec_rem;
 	int count = preempt_count();
 	int ret;
 	char msgbuf[64];
+#ifdef CONFIG_MTPROF
+	unsigned long long ts = 0;
+#endif
 
 	if (initcall_blacklisted(fn))
 		return -EPERM;
+	TIME_LOG_START();
 #if defined(CONFIG_MT_ENG_BUILD)
 	ret = do_one_initcall_debug(fn);
 #else
-	ts = sched_clock();
 	if (initcall_debug)
 		ret = do_one_initcall_debug(fn);
 	else
 		ret = fn();
-	ts = sched_clock() - ts;
 #endif
+	TIME_LOG_END();
 	msgbuf[0] = 0;
 
 	if (preempt_count() != count) {
@@ -814,14 +820,7 @@ int __init_or_module do_one_initcall(initcall_t fn)
 		local_irq_enable();
 	}
 	WARN(msgbuf[0], "initcall %pF returned with %s\n", fn, msgbuf);
-	if (ts > 15000000) {
-		/* log more than 15ms initcalls */
-		msec_rem = do_div(ts, NSEC_PER_MSEC);
-		snprintf(msgbuf, 64, "%pf %5llu.%06lums", fn, ts, msec_rem);
-#ifdef CONFIG_MTPROF
-		log_boot(msgbuf);
-#endif
-	}
+	bootprof_initcall(fn, ts);
 
 	return ret;
 }
