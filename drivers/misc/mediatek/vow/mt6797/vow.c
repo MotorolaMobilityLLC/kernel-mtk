@@ -138,6 +138,7 @@ static struct
 	VOW_EINT_STATUS      eint_status;
 	VOW_PWR_STATUS       pwr_status;
 	int                  send_ipi_count;
+	bool                 suspend_lock;
 } vowserv;
 
 static struct device dev = {
@@ -363,6 +364,7 @@ static void vow_service_Init(void)
 		vowserv.ipi_fail_result   = false;
 		vowserv.md32_command_flag = false;
 		vowserv.recording_flag    = false;
+		vowserv.suspend_lock      = 0;
 		vowserv.pwr_status        = VOW_PWR_OFF;
 		vowserv.eint_status       = VOW_EINT_DISABLE;
 		vowserv.vow_init_model    = NULL;
@@ -786,6 +788,11 @@ static bool vow_service_Enable(void)
 	bool ret;
 
 	PRINTK_VOWDRV("vow_service_Enable\n");
+	if ((vowserv.recording_flag) && (vowserv.suspend_lock == 0)) {
+		vowserv.suspend_lock = 1;
+		wake_lock(&VOW_suspend_lock); /* Let AP will not suspend */
+		PRINTK_VOWDRV("==DEBUG MODE START==\n");
+	}
 	vowserv.ipimsgwait = true;
 	while (vow_ipi_sendmsg(AP_IPIMSG_VOW_ENABLE, (void *)0, 0, 0, 1) == false)
 		;
@@ -804,6 +811,11 @@ static bool vow_service_Disable(void)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_VOW_DISABLE);
 	vow_service_getVoiceData();
+	if (vowserv.suspend_lock == 1) {
+		vowserv.suspend_lock = 0;
+		wake_unlock(&VOW_suspend_lock); /* Let AP will suspend */
+		PRINTK_VOWDRV("==DEBUG MODE STOP==\n");
+	}
 	return ret;
 }
 
@@ -1063,6 +1075,7 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 			pr_debug("VOW_SET_CONTROL VOWControlCmd_EnableDebug");
 			vowserv.voicedata_idx = 0;
 			vowserv.recording_flag = true;
+			vowserv.suspend_lock = 0;
 			VowDrv_SetFlag(VOW_FLAG_DEBUG, true);
 			break;
 		case VOWControlCmd_DisableDebug:
@@ -1214,7 +1227,8 @@ static ssize_t VowDrv_read(struct file *fp,  char __user *data, size_t count, lo
 			if (vowserv.md32_command_flag) {
 				VowDrv_SetVowEINTStatus(VOW_EINT_PASS);
 				pr_debug("Wakeup by MD32\n");
-				wake_lock_timeout(&VOW_suspend_lock, HZ / 2);
+				if (vowserv.suspend_lock == 0)
+					wake_lock_timeout(&VOW_suspend_lock, HZ / 2);
 				vowserv.md32_command_flag = false;
 			} else {
 				pr_debug("Wakeup by other signal(%d,%d)\n",
