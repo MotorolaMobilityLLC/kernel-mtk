@@ -3939,7 +3939,7 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	struct cpumask cpu_mask;
 	unsigned int cluster_num;
 	int i;
-
+	return 0;
 	FUNC_ENTER(FUNC_LV_MODULE);
 
 	debug_vsram = get_cur_vsram(NULL);
