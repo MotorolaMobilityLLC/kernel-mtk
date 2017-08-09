@@ -1,6 +1,8 @@
 
 #include <mach/mt_c2k_sdio.h>
 #include <linux/interrupt.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
 
 static pm_callback_t via_sdio_pm_cb;
 static void *via_sdio_pm_data;
@@ -61,13 +63,26 @@ void c2k_sdio_request_eirq(sdio_irq_handler_t irq_handler, void *data)
 
 void c2k_sdio_install_eirq(void)
 {
-	int ret = request_irq(c2k_sdio_eirq_num, c2k_sdio_eirq_handler_stub, IRQF_TRIGGER_LOW, "C2K_CCCI", NULL);
+	int ret, irq_num;
+	struct device_node *node = NULL;
+
+	node = of_find_node_by_name(NULL, "c2k_sdio");
+	if (node) {
+		/* get IRQ ID */
+		irq_num = irq_of_parse_and_map(node, 0);
+	} else {
+		pr_err("c2k no device node\n");
+		return;
+	}
+	atomic_set(&irq_installed, 1);
+	pr_info("[C2K] interrupt install start from %ps, irq num = %d\n", __builtin_return_address(0), irq_num);
+	ret = request_irq(irq_num, c2k_sdio_eirq_handler_stub, 0, "C2K_CCCI", NULL);
 
 	pr_info("[C2K] interrupt install(%d) from %ps\n", ret, __builtin_return_address(0));
-	if (!ret) {
+	if (!ret)
 		disable_irq(c2k_sdio_eirq_num);
-		atomic_set(&irq_installed, 1);
-	}
+	else
+		atomic_set(&irq_installed, 0);
 }
 
 void c2k_sdio_uninstall_eirq(void)
@@ -76,7 +91,15 @@ void c2k_sdio_uninstall_eirq(void)
 	atomic_set(&irq_installed, 0);
 	free_irq(c2k_sdio_eirq_num, NULL);
 }
-
+#else
+void c2k_sdio_install_eirq(void)
+{
+	pr_info("[C2K] skip install: not eirq\n");
+}
+void c2k_sdio_uninstall_eirq(void)
+{
+	pr_info("[C2K] skip uninstall: not eirq\n");
+}
 #endif
 
 void via_sdio_on(int sdio_port_num)

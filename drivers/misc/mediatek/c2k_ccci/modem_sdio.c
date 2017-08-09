@@ -343,14 +343,15 @@ static int check_port(struct sdio_modem_port *port)
 			LOGPRT(LOG_ERR, "%s %d: port%d func NULL\n", __func__,
 			       __LINE__, port->index);
 			ret = -ENODEV;
-		}
-		if (modem->status == MD_OFF) {
+		} else if (modem->status == MD_OFF) {
 			LOGPRT(LOG_ERR, "%s %d: modem is off now.(%d)\n",
 			       __func__, __LINE__, port->index);
-			return -ENODEV;
+			ret = -ENODEV;
 		}
 	}
 	/*WARN_ON(!port->port.count); */
+	LOGPRT(LOG_INFO, "%s %d: check port OK.(%d)\n",
+			       __func__, __LINE__, port->index);
 	return 0;
 }
 

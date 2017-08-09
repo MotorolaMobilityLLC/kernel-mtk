@@ -1152,15 +1152,12 @@ static int __init modem_init(void)
 		c2k_gpio_irq_mask(GPIO_C2K_MDM_RST_IND);
 #endif
 		c2k_gpio_direction_input_for_irq(GPIO_C2K_MDM_RST_IND);
-		c2k_gpio_set_irq_type(GPIO_C2K_MDM_RST_IND,
-				      IRQF_TRIGGER_RISING |
-				      IRQF_TRIGGER_FALLING);
+		c2k_gpio_set_irq_type(GPIO_C2K_MDM_RST_IND, IRQF_TRIGGER_FALLING);
 
 		ret =
 		    c2k_gpio_request_irq(GPIO_C2K_MDM_RST_IND,
 					 modem_reset_indication_irq,
 					 IRQF_SHARED | IRQF_NO_SUSPEND |
-					 IRQF_TRIGGER_RISING |
 					 IRQF_TRIGGER_FALLING, "mdm_reset_ind",
 					 cmdata);
 #if defined(CONFIG_MTK_LEGACY)
