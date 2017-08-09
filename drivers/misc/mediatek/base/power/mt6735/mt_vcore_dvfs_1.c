@@ -27,9 +27,11 @@
 #include <linux/of_address.h>
 #endif
 
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#if defined(CONFIG_MTK_CLKMGR)
+/* mt_clkmgr */
 #include <mach/mt_clkmgr.h>
 #else
+/* CCF */
 #include <linux/clk.h>
 #endif
 
@@ -212,7 +214,7 @@ struct kicker_profile {
 static DEFINE_MUTEX(vcorefs_mutex);
 static DEFINE_MUTEX(func_check_mutex);
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#if !defined(CONFIG_MTK_CLKMGR)
 struct clk *clk_axi_sel;
 struct clk *clk_syspll_d5;
 struct clk *clk_syspll1_d4;
@@ -406,7 +408,7 @@ static int set_freq_with_opp(enum dvfs_kicker kicker, unsigned int opp)
 		opp_ctrl_table[opp].venc_khz == pwrctrl->curr_venc_khz)
 		return PASS;
 
-	#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+	#if defined(CONFIG_MTK_CLKMGR)
 	switch (opp) {
 	case OPP_0:
 		r = mt_dfs_vencpll(0x1713B1);		/* 300MHz */
@@ -1131,7 +1133,7 @@ static struct platform_driver vcorefs_driver = {
 
 static int vcorefs_probe(struct platform_device *pdev)
 {
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#if !defined(CONFIG_MTK_CLKMGR)
 
 #ifdef CONFIG_OF
 	/* pericfg_base */
