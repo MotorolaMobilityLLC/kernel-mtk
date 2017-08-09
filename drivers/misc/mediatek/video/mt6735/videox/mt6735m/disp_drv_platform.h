@@ -30,7 +30,7 @@
 /**
  * SODI enable.
  */
-/* #define MTK_FB_SODI_SUPPORT */
+#define MTK_FB_SODI_SUPPORT
 
 /**
  * ESD recovery support.

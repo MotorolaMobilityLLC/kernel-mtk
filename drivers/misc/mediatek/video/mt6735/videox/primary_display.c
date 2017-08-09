@@ -19,11 +19,9 @@
 #include "m4u.h"
 
 #include "mt_idle.h"
-/* #include "mt_spm_idle.h" */
+#include "mt_spm_idle.h"
 #include "mt_spm.h" /* for sodi reg addr define */
 #define mt_eint_set_hw_debounce(eint_num, ms) (void)0
-#define spm_enable_sodi(bool) (void)0
-
 
 /* #include <linux/rtpm_prio.h> */
 /* #include "mach/eint.h" */
@@ -900,18 +898,6 @@ static void _idlemgr_update_last_kick_time(void)
 #endif
 
 #if 0
-#if 0
-/**
- * Defined but not used, avoid build warning. (2015.1.30 Rynn Wu)
- */
-void primary_display_idlemgr_kick(char *source)
-{
-	_idlemgr_update_last_kick_time();
-	primary_display_idlemgr_leave_idle();
-	_idlemgr_wakeup();
-}
-#endif
-
 void primary_display_idlemgr_enter_idle(void)
 {
 	MMProfileLogEx(ddp_mmp_get_events()->idlemgr_enter_idle, MMProfileFlagPulse, 0, 0);
@@ -1471,71 +1457,6 @@ int _init_vsync_fake_monitor(int fps)
 	DISPMSG("fake timer, init\n");
 	return 0;
 }
-
-#if 0
-static int _build_path_direct_link(void)
-{
-	int ret = 0;
-
-	DISP_MODULE_ENUM dst_module = 0;
-
-	DISPFUNC();
-	pgc->mode = DIRECT_LINK_MODE;
-
-	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_PRIMARY_DISP, pgc->cmdq_handle_config);
-	if (pgc->dpmgr_handle) {
-		DISPCHECK("dpmgr create path SUCCESS(0x%08x)\n", pgc->dpmgr_handle);
-	} else {
-		DISPCHECK("dpmgr create path FAIL\n");
-		return -1;
-	}
-
-	dst_module = _get_dst_module_by_lcm(pgc->plcm);
-	dpmgr_path_set_dst_module(pgc->dpmgr_handle, dst_module);
-	DISPCHECK("dpmgr set dst module FINISHED(%s)\n", ddp_get_module_name(dst_module));
-#ifndef MTKFB_NO_M4U
-	{
-		M4U_PORT_STRUCT sPort;
-
-		sPort.ePortID = M4U_PORT_DISP_OVL0;
-		sPort.Virtuality = primary_display_use_m4u;
-		sPort.Security = 0;
-		sPort.Distance = 1;
-		sPort.Direction = 0;
-		ret = m4u_config_port(&sPort);
-		if (ret == 0) {
-			DISPCHECK("config M4U Port %s to %s SUCCESS\n",
-				  ddp_get_module_name(DISP_MODULE_OVL0),
-				  primary_display_use_m4u ? "virtual" : "physical");
-		} else {
-			DISPCHECK("config M4U Port %s to %s FAIL(ret=%d)\n",
-				  ddp_get_module_name(DISP_MODULE_OVL0),
-				  primary_display_use_m4u ? "virtual" : "physical", ret);
-			return -1;
-		}
-#ifdef OVL_CASCADE_SUPPORT
-		sPort.ePortID = M4U_PORT_DISP_OVL1;
-		ret = m4u_config_port(&sPort);
-		if (ret) {
-			DISPCHECK("config M4U Port %s to %s FAIL(ret=%d)\n",
-				  ddp_get_module_name(DISP_MODULE_OVL1),
-				  primary_display_use_m4u ? "virtual" : "physical", ret);
-			return -1;
-		}
-#endif
-
-	}
-#endif
-
-	dpmgr_set_lcm_utils(pgc->dpmgr_handle, pgc->plcm->drv);
-
-	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
-	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE);
-	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
-
-	return ret;
-}
-#endif
 
 #define DISP_REG_SODI_PA 0x10006b0c
 /* extern unsigned int gEnableSODIControl; */
