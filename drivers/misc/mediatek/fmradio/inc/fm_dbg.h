@@ -49,7 +49,7 @@ extern fm_u32 g_dbg_level;
 #define WCN_DBG(flag, fmt, args...) \
 	do { \
 		if ((((flag)&0x0000000f) <= (g_dbg_level&0x0000000f)) && ((flag)&0xfffffff0) & g_dbg_level) { \
-			pr_notice("[" #flag "]" fmt, ## args); \
+			pr_err("[" #flag "]" fmt, ## args); \
 		} \
 	} while (0)
 
@@ -63,14 +63,14 @@ extern fm_u32 g_dbg_level;
 #define FM_LOG_INF(flag, fmt, args...) \
 	do { \
 		if ((FM_INF <= (g_dbg_level&0x0000000f)) && ((flag)&0xfffffff0) & g_dbg_level) { \
-			pr_info("[" #flag "]" fmt, ## args); \
+			pr_err("[" #flag "]" fmt, ## args); \
 		} \
 	} while (0)
 
 #define FM_LOG_NTC(flag, fmt, args...) \
 	do { \
 		if ((FM_NTC <= (g_dbg_level&0x0000000f)) && ((flag)&0xfffffff0) & g_dbg_level) { \
-			pr_notice("[" #flag "]" fmt, ## args); \
+			pr_err("[" #flag "]" fmt, ## args); \
 		} \
 	} while (0)
 
