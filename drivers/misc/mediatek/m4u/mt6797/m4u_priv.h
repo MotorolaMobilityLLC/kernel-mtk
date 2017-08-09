@@ -74,9 +74,12 @@ extern void show_pte(struct mm_struct *mm, unsigned long addr);
 #define outer_flush_all(...)
 #endif
 
-#ifdef M4U_FPGAPORTING
+#ifndef CONFIG_MTK_CLKMGR
 #define enable_clock(...)
 #define disable_clock(...)
+#endif
+
+#ifdef M4U_FPGAPORTING
 #define smp_inner_dcache_flush_all(...)
 /* #define register_larb_monitor(...) */
 #if 0
