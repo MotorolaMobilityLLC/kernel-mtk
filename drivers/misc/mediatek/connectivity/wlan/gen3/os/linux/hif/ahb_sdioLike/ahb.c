@@ -929,10 +929,15 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			ASSERT(0);
 		}
 	} else { /* DMA/PIO byte mode */
-		if (func->use_dma)
+		if (func->use_dma && (Port != MCR_WHISR)) /* safe for reading 4 bytes WHISR */
 			count = ((Size + 7) & ~7u); /* if DMA mode, RX 8 bytes alignment is required */
 		info.field.block_mode = SDIO_GEN3_BYTE_MODE;
 		info.field.count = count;
+		if (count > MaxBufSize) {
+			DBGLOG(RX, ERROR, "byte mode rx count 0x%x exceed 0x%x!\n", count, MaxBufSize);
+			DBGLOG(RX, ERROR, "byte mode orig size is 0x%x\n", Size);
+			ASSERT(0);
+		}
 	}
 
 	info.field.op_mode = SDIO_GEN3_FIXED_PORT_MODE; /* fix mode */
