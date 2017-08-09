@@ -38,7 +38,10 @@ MTK_WCN_HIF_SDIO_CHIP_INFO gChipInfoArray[] = {
 	/* MT6630 *//* SDIO1: Wi-Fi, SDIO2: BGF */
 	{{SDIO_DEVICE(0x037A, 0x6630)}, 0x6630},
 
-	/* MT6632 *//* SDIO1: Wi-Fi, SDIO2: BGF */
+	/* MT6632 *//* SDIO1: Wi-Fi */
+	{{SDIO_DEVICE(0x037A, 0x6602)}, 0x6632},
+
+	/* MT6632 *//* SDIO2: BGF */
 	{{SDIO_DEVICE(0x037A, 0x6632)}, 0x6632},
 
 };
@@ -67,7 +70,10 @@ static const struct sdio_device_id mtk_sdio_id_tbl[] = {
 	/* MT6630 *//* SDIO1: Wi-Fi, SDIO2: BGF */
 	{SDIO_DEVICE(0x037A, 0x6630)},
 
-	/* MT6632 *//* SDIO1: Wi-Fi, SDIO2: BGF */
+	/* MT6632 *//* SDIO1: Wi-Fi */
+	{SDIO_DEVICE(0x037A, 0x6602)},
+
+	/* MT6632 *//* SDIO2: BGF */
 	{SDIO_DEVICE(0x037A, 0x6632)},
 	{ /* end: all zeroes */ },
 };

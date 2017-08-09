@@ -143,7 +143,10 @@ static const struct sdio_device_id mtk_sdio_id_tbl[] = {
 	/* MT6630 *//* SDIO1: Wi-Fi, SDIO2: BGF */
 	{SDIO_DEVICE(0x037A, 0x6630)},
 
-	/* MT6632 *//* SDIO1: Wi-Fi, SDIO2: BGF */
+	/* MT6632 *//* SDIO1: Wi-Fi */
+	{SDIO_DEVICE(0x037A, 0x6602)},
+
+	/* MT6632 *//* SDIO2: BGF */
 	{SDIO_DEVICE(0x037A, 0x6632)},
 
 	{ /* end: all zeroes */ },
@@ -2314,7 +2317,7 @@ INT32 hif_sdio_wifi_on(VOID)
 		goto wifi_on_exist;
 	}
 	/* MT6632 */
-	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6632, 1);
+	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6602, 1);
 	 if (probe_index >= 0) {
 		sdio_autok_flag = 1;
 		chip_id = 0x6632;
@@ -2455,7 +2458,7 @@ INT32 hif_sdio_wifi_off(VOID)
 		goto wifi_off_exist;
 	}
 	/* MT6632 */
-	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6632, 1);
+	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6602, 1);
 	if (probe_index >= 0) {
 		chip_id = 0x6632;
 		func_num = 1;
