@@ -13,7 +13,7 @@
 
 //#define MTK_GPU_DPM
 //#define MTK_GPU_SPM
-//#define MTK_GPU_APM
+#define MTK_GPU_APM
 //#define MTK_GPU_OCP
 
 #ifdef MTK_GPU_DPM
@@ -92,15 +92,32 @@ volatile void *g_TOPCK_base;
 
 static void mt6797_gpu_set_power(int on)
 {
+	if (on)
+	{
+		/* LDO: VSRAM_GPU */
+		base_write32(g_ldo_base+0xfc0, 0x0f0f0f0f);
+		base_write32(g_ldo_base+0xfc4, 0x0f0f0f0f);
+		base_write32(g_ldo_base+0xfbc, 0xff);
+
+		/* FAN53555: VGPU */
+		fan53555_config_interface(0x0, on, 1, 7);
+	}
+	else
+	{
+		/* FAN53555: VGPU */
+		fan53555_config_interface(0x0, on, 1, 7);
+
+		/* LDO: VSRAM_GPU */
+		base_write32(g_ldo_base+0xfbc, 0x0);
+	}
 }
 
-
 #define MTKCLK_prepare_enable(clk) \
-    if (config->clk && clk_prepare_enable(config->clk)) \
-        pr_alert("MALI: clk_prepare_enable failed when enabling " #clk );
+	if (config->clk) { if (clk_prepare_enable(config->clk)) \
+		pr_alert("MALI: clk_prepare_enable failed when enabling " #clk ); }
 
 #define MTKCLK_disable_unprepare(clk) \
-    if (config->clk) clk_disable_unprepare(config->clk);
+	if (config->clk) { clk_disable_unprepare(config->clk); }
 
 static void mtk_init_registers_once(void)
 {
@@ -108,21 +125,6 @@ static void mtk_init_registers_once(void)
 
 	if (init == 1) return;
 	init = 1;
-
-#ifdef MTK_GPU_APM
-	/* enable GPU hot-plug */
-	MFG_write32(0x400, MFG_read32(0x400) | 0x1);
-	MFG_write32(0x418, MFG_read32(0x418) | 0x1);
-	MFG_write32(0x430, MFG_read32(0x430) | 0x1);
-	MFG_write32(0x448, MFG_read32(0x448) | 0x1);
-#endif
-
-	/* enable PMU */
-	MFG_write32(0x3e0, 0xffffffff);
-	MFG_write32(0x3e4, 0xffffffff);
-	MFG_write32(0x3e8, 0xffffffff);
-	MFG_write32(0x3ec, 0xffffffff);
-	MFG_write32(0x3f0, 0xffffffff);
 
 #ifdef MTK_GPU_DPM
 	DFP_write32(CLK_MISC_CFG_0, DFP_read32(CLK_MISC_CFG_0) & 0xfffffffe);
@@ -139,34 +141,6 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 
 	mt6797_gpu_set_power(1);
 
-	{ 	/* init VGPU power once */
-		static int init = 0;
-
-		if (init == 0)
-		{
-			unsigned char x0 = 0, x1;
-
-			/* LDO: VSRAM_GPU */
-			base_write32(g_ldo_base+0xfc0, 0x0f0f0f0f);
-			base_write32(g_ldo_base+0xfc4, 0x0f0f0f0f);
-			base_write32(g_ldo_base+0xfbc, 0xff);
-
-			/* FAN53555: VGPU */
-			fan53555_read_interface(0x0, &x0, 0xff, 0x0);
-			fan53555_read_interface(0x1, &x1, 0xff, 0x0);
-			dev_err(kbdev->dev, "xxxx vgpu:0x00:0x%02x, 0x01:0x%02x\n", x0, x1);
-
-			fan53555_config_interface(0x0, 0x1, 0x1, 0x7);
-			fan53555_config_interface(0x1, 0x1, 0x1, 0x7);
-
-			fan53555_read_interface(0x0, &x0, 0xff, 0x0);
-			fan53555_read_interface(0x1, &x1, 0xff, 0x0);
-			dev_err(kbdev->dev, "xxxx vgpu:0x00:0x%02x, 0x01:0x%02x\n", x0, x1);
-
-			init = 1;
-		}
-	}
-
 	MTKCLK_prepare_enable(clk_mfg_async);
 	MTKCLK_prepare_enable(clk_mfg);
 #ifndef MTK_GPU_APM
@@ -182,6 +156,21 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	MTKCLK_prepare_enable(clk_gpupm);
 	MTKCLK_prepare_enable(clk_ap_dma);
 #endif
+
+#ifdef MTK_GPU_APM
+	/* enable GPU hot-plug */
+	MFG_write32(0x400, MFG_read32(0x400) | 0x1);
+	MFG_write32(0x418, MFG_read32(0x418) | 0x1);
+	MFG_write32(0x430, MFG_read32(0x430) | 0x1);
+	MFG_write32(0x448, MFG_read32(0x448) | 0x1);
+#endif
+
+	/* enable PMU */
+	MFG_write32(0x3e0, 0xffffffff);
+	MFG_write32(0x3e4, 0xffffffff);
+	MFG_write32(0x3e8, 0xffffffff);
+	MFG_write32(0x3ec, 0xffffffff);
+	MFG_write32(0x3f0, 0xffffffff);
 
 	mtk_init_registers_once();
 
@@ -264,7 +253,7 @@ ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *att
 	ssize_t ret = 0;
 
 	struct mtk_config *config = g_config;
-	uint32_t dvfs_gpu_bases[] = {0x0, 0x300, 0x350, 0x3A0, 0x800};
+	uint32_t dvfs_gpu_bases[] = {0x0, 0x300, 0x350, 0x3A0, 0x600, 0x800};
 
 	{
 		unsigned char x = 0;

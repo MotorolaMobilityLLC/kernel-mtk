@@ -1878,12 +1878,12 @@ int allow[NR_SYSS] = {
 1,	/*SYS_DIS = 2,*/
 1,	/*SYS_ISP = 3,*/
 1,	/*SYS_VDE = 4,*/
-0,	/*SYS_MFG_CORE3 = 5,*/
-0,	/*SYS_MFG_CORE2 = 6,*/
-0,	/*SYS_MFG_CORE1 = 7,*/
-0,	/*SYS_MFG_CORE0 = 8,*/
-0,	/*SYS_MFG = 9,*/
-0,	/*SYS_MFG_ASYNC = 10,*/
+1,	/*SYS_MFG_CORE3 = 5,*/
+1,	/*SYS_MFG_CORE2 = 6,*/
+1,	/*SYS_MFG_CORE1 = 7,*/
+1,	/*SYS_MFG_CORE0 = 8,*/
+1,	/*SYS_MFG = 9,*/
+1,	/*SYS_MFG_ASYNC = 10,*/
 1,	/*SYS_MJC = 11,*/
 1,	/*SYS_VEN = 12,*/
 1,	/*SYS_AUDIO = 13,*/
@@ -2146,6 +2146,7 @@ struct clk *mt_clk_register_power_gate(const char *name,
 #define venc_sel		"venc_sel"
 #define mfg_sel			"mfg_sel"
 #define	infra_audio_26m	"infra_audio_26m"
+#define mfg_52m_sel        "mfg_52m_sel"
 
 /* FIXME: set correct value: E */
 
@@ -2172,12 +2173,12 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_DIS, pg_dis, NULL, mm_sel, SYS_DIS),
 	PGATE(SCP_SYS_ISP, pg_isp, NULL, mm_sel, SYS_ISP),
 	PGATE(SCP_SYS_VDE, pg_vde, NULL, vdec_sel, SYS_VDE),
-	PGATE(SCP_SYS_MFG_ASYNC, pg_mfg_async, NULL, NULL, SYS_MFG_ASYNC),
-	PGATE(SCP_SYS_MFG, pg_mfg, pg_mfg_async, mfg_sel, SYS_MFG),
-	PGATE(SCP_SYS_MFG_CORE3, pg_mfg_core3, pg_mfg, NULL, SYS_MFG_CORE3),
-	PGATE(SCP_SYS_MFG_CORE2, pg_mfg_core2, pg_mfg, NULL, SYS_MFG_CORE2),
-	PGATE(SCP_SYS_MFG_CORE1, pg_mfg_core1, pg_mfg, NULL, SYS_MFG_CORE1),
-	PGATE(SCP_SYS_MFG_CORE0, pg_mfg_core0, pg_mfg, NULL, SYS_MFG_CORE0),
+	PGATE(SCP_SYS_MFG_ASYNC, pg_mfg_async, NULL, mfg_52m_sel, SYS_MFG_ASYNC),
+	PGATE(SCP_SYS_MFG, pg_mfg, pg_mfg_async, mfg_52m_sel, SYS_MFG),
+	PGATE(SCP_SYS_MFG_CORE3, pg_mfg_core3, pg_mfg, mfg_52m_sel, SYS_MFG_CORE3),
+	PGATE(SCP_SYS_MFG_CORE2, pg_mfg_core2, pg_mfg, mfg_52m_sel, SYS_MFG_CORE2),
+	PGATE(SCP_SYS_MFG_CORE1, pg_mfg_core1, pg_mfg, mfg_52m_sel, SYS_MFG_CORE1),
+	PGATE(SCP_SYS_MFG_CORE0, pg_mfg_core0, pg_mfg, mfg_52m_sel, SYS_MFG_CORE0),
 	PGATE(SCP_SYS_MJC, pg_mjc, NULL, mm_sel, SYS_MJC),
 	PGATE(SCP_SYS_VEN, pg_ven, NULL, mm_sel, SYS_VEN),
 	PGATE(SCP_SYS_AUDIO, pg_audio, NULL, infra_audio_26m, SYS_AUDIO),
@@ -2300,14 +2301,6 @@ static void __init mt_scpsys_init(struct device_node *node)
 	/* subsys init: per modem owner request, disable modem power first */
 	disable_subsys(SYS_MD1);
 	disable_subsys(SYS_C2K);
-
-	spm_mtcmos_ctrl_mfg_async(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg_core0(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg_core1(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg_core2(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg_core3(STA_POWER_ON);
-
 #else				/*power on all subsys for bring up */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	spm_mtcmos_ctrl_mfg_async(STA_POWER_ON);
