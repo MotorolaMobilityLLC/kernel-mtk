@@ -460,6 +460,9 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 #ifdef CONFIG_MTK_C2K_OM_SOLUTION1
 							   | (1 << 3)
 #endif
+#ifdef CONFIG_MTK_CT6M_SUPPORT
+							   | (1 << 4)
+#endif
 				    );
 #endif
 				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
