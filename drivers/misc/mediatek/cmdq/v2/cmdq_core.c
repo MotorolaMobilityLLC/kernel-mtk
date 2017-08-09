@@ -1833,9 +1833,6 @@ static void cmdq_core_release_task_in_queue(struct work_struct *workItem)
 
 	pTask = container_of(workItem, struct TaskStruct, autoReleaseWork);
 
-	if (NULL == pTask)
-		return;
-
 	CMDQ_MSG("-->Work QUEUE: TASK: Release task structure 0x%p begin\n", pTask);
 
 	pTask->taskState = TASK_STATE_IDLE;
@@ -6765,16 +6762,16 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 		if (CMDQ_INVALID_THREAD == thread) {
 			/* have to wait, remain in wait list */
 			CMDQ_MSG("<--THREAD: acquire thread fail, need to wait\n");
-			if (false == needLog)
-				continue;
+			if (true == needLog) {
+				/* task wait too long */
+				CMDQ_ERR("acquire thread fail, task(0x%p), thread_prio(%d), flag(0x%llx)\n",
+						   pTask, thread_prio, pTask->engineFlag);
 
-			/* task wait too long */
-			CMDQ_ERR("acquire thread fail, task: 0x%p, thread_prio: %d, task_prio: %d, flag: 0x%llx\n",
-					   pTask, thread_prio, pTask->priority, pTask->engineFlag);
-
-			dumpTriggerLoop =
-			    (CMDQ_SCENARIO_PRIMARY_DISP == pTask->scenario) ?
-			    (true) : (dumpTriggerLoop);
+				dumpTriggerLoop =
+				    (CMDQ_SCENARIO_PRIMARY_DISP == pTask->scenario) ?
+				    (true) : (dumpTriggerLoop);
+			}
+			continue;
 		}
 
 		pThread = &gCmdqContext.thread[thread];
