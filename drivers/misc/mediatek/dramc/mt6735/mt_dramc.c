@@ -997,12 +997,24 @@ int dram_do_dfs_by_fh(unsigned int freq)
 	case 1280000:
 		target_dds = 0x136885;	/* ///< 1280Mbps */
 		break;
+	case 1313000:
+		target_dds = 0x127C92;	/* ///< 1313Mbps */
+		break;
+	case 1466000:
+		target_dds = 0x14A40B;	/* ///< 1466Mbps */
+		break;
 #elif defined(CONFIG_ARCH_MT6735M)
 	case 800000:
 		target_dds = 0xe55ee;	/* ///< 800Mbps */
 		break;
+	case 938000:
+		target_dds = 0xe38fe;	/* ///< 938Mbps for LPDDR3 */
+		break;
 	case 1066000:
 		target_dds = 0x131A2D;	/* ///< 1066Mbps */
+		break;
+	case 1280000:
+		target_dds = 0x136885;	/* ///< 1280Mbps */
 		break;
 #elif defined(CONFIG_ARCH_MT6753)
 	case 1313000:
