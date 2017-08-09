@@ -987,11 +987,6 @@ static int MPU6515_SMTReadSensorData(struct i2c_client *client, s16 *buf, int bu
 
 	GYRO_FUN();
 
-	MPU6515_SetPWR_MGMT_2(client, true);
-	if (sensor_power == false)
-		MPU6515_SetPowerMode(client, true);
-
-
 	if (NULL == buf)
 		return -1;
 
@@ -999,6 +994,11 @@ static int MPU6515_SMTReadSensorData(struct i2c_client *client, s16 *buf, int bu
 		*buf = 0;
 		return -2;
 	}
+
+	MPU6515_SetPWR_MGMT_2(client, true);
+	if (sensor_power == false)
+		MPU6515_SetPowerMode(client, true);
+
 
 	for (i = 0; i < MPU6515_AXES_NUM; i++) {
 		res = MPU6515_FIFOConfig(client, (i + 1));
