@@ -1558,7 +1558,6 @@ BOOLEAN scnFsmPSCNSetParam(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_PARAM pr
 	DBGLOG(SCN, INFO, "scnFsmPSCNSetParam\n");
 	ASSERT(prAdapter);
 
-	prCmdPscnParam->u4BasePeriod = prCmdPscnParam->u4BasePeriod;
 #if 1
 	DBGLOG(SCN, INFO,
 			"rCmdPscnParam.rCmdGscnParam : u4BasePeriod[%u], ucNumScnToCache[%u],  u4BufferThreshold[%u], u4NumBuckets[%u],fgGSCN[%d] fgNLO[%d] fgBatch[%d]\n",
