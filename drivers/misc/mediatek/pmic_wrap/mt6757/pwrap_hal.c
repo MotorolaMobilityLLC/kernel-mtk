@@ -778,7 +778,6 @@ static s32 _pwrap_init_cipher(void)
 		return return_value;
 	}
 #endif
-	mdelay(1);
 	PWRAPLOG("mt_pwrap_init---- debug8.3\n");
 
 	/* wait for cipher mode idle */
@@ -870,13 +869,12 @@ static void _pwrap_starve_set(void)
 	WRAP_WR32(PMIC_WRAP_STARV_COUNTER_10, 0x0563);
 	WRAP_WR32(PMIC_WRAP_STARV_COUNTER_11, 0x047C);
 	WRAP_WR32(PMIC_WRAP_STARV_COUNTER_12, 0x0740);
-	WRAP_WR32(PMIC_WRAP_STARV_COUNTER_13, 0x0740);
 
 }
 
 static void _pwrap_enable(void)
 {
-	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, 0x03fff);
+	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, 0x01fff);
 	WRAP_WR32(PMIC_WRAP_WACS0_EN, 0x1);
 	WRAP_WR32(PMIC_WRAP_WACS1_EN, 0x1);
 	WRAP_WR32(PMIC_WRAP_WACS3_EN, 0x1);
@@ -899,95 +897,74 @@ static s32 _pwrap_init_sistrobe(void)
 {
 	u32 arb_en_backup = 0;
 	u32 rdata = 0;
-	u32 i = 0;
 	s32 ind = 0;
-	u32 tmp1 = 0;
-	u32 tmp2 = 0;
 	u32 result_faulty = 0;
-	u32 result[2] = { 0, 0 };
-	s32 leading_one[2] = { -1, -1 };
-	s32 tailing_one[2] = { -1, -1 };
+	u64 result = 0, tmp1 = 0, tmp2 = 0;
+	s32 leading_one = 0;
+	s32 tailing_one = 0;
 
 	arb_en_backup = WRAP_RD32(PMIC_WRAP_HIPRIO_ARB_EN);
-	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, WACS2);
+	WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, WACS2);	/* only WACS2 */
 
-	/* Scan all possible input strobe by READ_TEST. 24 sampling clock edge */
-	for (ind = 0; ind < 24; ind++) {
+	/* --------------------------------------------------------------------- */
+	/* Scan all possible input strobe by READ_TEST */
+	/* --------------------------------------------------------------------- */
+	for (ind = 0; ind < 24; ind++) {	/* 24 sampling clock edge */
 		WRAP_WR32(PMIC_WRAP_SI_CK_CON, (ind >> 2) & 0x7);
 		WRAP_WR32(PMIC_WRAP_SIDLY, 0x3 - (ind & 0x3));
-
 #ifdef SLV_6351
 		_pwrap_wacs2_nochk(0, MT6351_DEW_READ_TEST, 0, &rdata);
 		if (rdata == MT6351_DEFAULT_VALUE_READ_TEST) {
-			PWRAPLOG("_pwrap_init_sistrobe [Read Test of %s] pass,index=%d rdata=%x\n",
-				 PMIC_CHIP_VERSION, ind, rdata);
-			result[0] |= (0x1 << ind);
+			PWRAPERR("_pwrap_init_sistrobe [Read Test of MT6351] pass,index=%d rdata=%x\n", ind, rdata);
+			result |= (0x1 << ind);
 		} else {
-			PWRAPLOG
-			    ("_pwrap_init_sistrobe [Read Test of %s] tuning,index=%d rdata=%x\n",
-			     PMIC_CHIP_VERSION, ind, rdata);
+			PWRAPERR("_pwrap_init_sistrobe [Read Test of MT6351] tuning,index=%d rdata=%x\n", ind, rdata);
 		}
 #endif
 	}
 
-#ifdef SLV_6351
-	result[1] = result[0];
-#endif
-
+	/* --------------------------------------------------------------------- */
 	/* Locate the leading one and trailing one of PMIC 1/2 */
+	/* --------------------------------------------------------------------- */
 	for (ind = 23; ind >= 0; ind--) {
-		if ((result[0] & (0x1 << ind)) && leading_one[0] == -1)
-			leading_one[0] = ind;
-		if (leading_one[0] > 0)
+		if (result & (0x1 << ind))
 			break;
-	}
-	for (ind = 23; ind >= 0; ind--) {
-		if ((result[1] & (0x1 << ind)) && leading_one[1] == -1)
-			leading_one[1] = ind;
-		if (leading_one[1] > 0)
-			break;
-	}
-	for (ind = 0; ind < 24; ind++) {
-		if ((result[0] & (0x1 << ind)) && tailing_one[0] == -1)
-			tailing_one[0] = ind;
-		if (tailing_one[0] > 0)
-			break;
-	}
-	for (ind = 0; ind < 24; ind++) {
-		if ((result[1] & (0x1 << ind)) && tailing_one[1] == -1)
-			tailing_one[1] = ind;
 
-		if (tailing_one[1] > 0)
+	}
+	leading_one = ind;
+
+	for (ind = 0; ind < 24; ind++) {
+		if (result & (0x1 << ind))
 			break;
 	}
+	tailing_one = ind;
+
+	/* --------------------------------------------------------------------- */
 	/* Check the continuity of pass range */
-	for (i = 0; i < 2; i++) {
-		tmp1 = (0x1 << (leading_one[i] + 1)) - 1;
-		tmp2 = (0x1 << tailing_one[i]) - 1;
-		if ((tmp1 - tmp2) != result[i]) {
-			PWRAPERR
-			    ("_pwrap_init_sistrobe Fail at PMIC %d, result = %x, leading_one:%d, tailing_one:%d\n",
-			     i + 1, result[i], leading_one[i], tailing_one[i]);
+	/* --------------------------------------------------------------------- */
+	tmp1 = (0x1 << (leading_one + 1)) - 1;
+	tmp2 = (0x1 << tailing_one) - 1;
+	if ((tmp1 - tmp2) != result) {
+		PWRAPERR("_pwrap_init_sistrobe Fail, result = %llx, leading_one:%d, tailing_one:%d\n",
+				result, leading_one, tailing_one);
 			result_faulty = 0x1;
 		}
-	}
-
+	/* --------------------------------------------------------------------- */
 	/* Config SICK and SIDLY to the middle point of pass range */
+	/* --------------------------------------------------------------------- */
 	if (result_faulty == 0) {
-		/* choose the best point in the interaction of PMIC1's pass range and PMIC2's pass range */
-		ind =
-		    ((leading_one[0] + tailing_one[0]) / 2 +
-		     (leading_one[1] + tailing_one[1]) / 2) / 2;
-		/*TINFO = "The best point in the interaction area is %d, ind" */
+		ind = (leading_one + tailing_one) / 2;
 		WRAP_WR32(PMIC_WRAP_SI_CK_CON, (ind >> 2) & 0x7);
 		WRAP_WR32(PMIC_WRAP_SIDLY, 0x3 - (ind & 0x3));
-
+		/* --------------------------------------------------------------------- */
 		/* Restore */
+		/* --------------------------------------------------------------------- */
 		WRAP_WR32(PMIC_WRAP_HIPRIO_ARB_EN, arb_en_backup);
 		return 0;
+	} else {
+		PWRAPERR("_pwrap_init_sistrobe Fail,result_faulty=%x\n", result_faulty);
+		return result_faulty;
 	}
-	PWRAPERR("_pwrap_init_sistrobe Fail,result_faulty=%x\n", result_faulty);
-	return result_faulty;
 }
 
 /******************************************************
@@ -1039,7 +1016,7 @@ static s32 _pwrap_init_reg_clock(u32 regck_sel)
 	pwrap_write_nochk(MT6351_DEW_RDDMY_NO, 0x8);
 #endif
 
-	WRAP_WR32(PMIC_WRAP_RDDMY, 0x88);
+	WRAP_WR32(PMIC_WRAP_RDDMY, 0x8);
 
 	/* Config SPI Waveform according to reg clk */
 	if (regck_sel == 1) {
@@ -1075,12 +1052,6 @@ s32 pwrap_init(void)
 #endif
 
 	PWRAPLOG("kernel pwrap_init start!!!!!!!!!!!!!\n");
-	/* For trapping function, pull PWRAP_SPI0_MO pin from high to low*/
-	mt_set_gpio_pull_enable((143 | 0x80000000), 1);
-	mt_set_gpio_pull_select((143 | 0x80000000), 0);
-	PWRAPLOG("Dump GPIO143 pull_en=0x%x,pull_down=0x%x\n", mt_get_gpio_pull_enable(143|0x80000000),
-			mt_get_gpio_pull_select(143 | 0x80000000));
-
 
 	/* toggle PMIC_WRAP and pwrap_spictl reset */
 	__pwrap_soft_reset();
@@ -1187,15 +1158,6 @@ s32 pwrap_init(void)
 	WRAP_WR32(PMIC_WRAP_INIT_DONE1, 0x1);
 	WRAP_WR32(PMIC_WRAP_INIT_DONE2, 0x1);
 	WRAP_WR32(PMIC_WRAP_INIT_DONE3, 0x1);
-
-	rdata = WRAP_RD32(0x100A4030);
-	rdata |= 0x40; /*open CG:bit[6]*/
-	WRAP_WR32(0x100A4030, rdata);
-	udelay(100);
-	WRAP_WR32(PMIC_WRAP_WACS_P2P_EN, 0x1);
-	PWRAPLOG(" kernel PMIC_WRAP_WACS_P2P_EN=%x\n", WRAP_RD32(PMIC_WRAP_WACS_P2P_EN));
-	WRAP_WR32(PMIC_WRAP_INIT_DONE_P2P, 0x1);
-	PWRAPLOG(" kernel PMIC_WRAP_INIT_DONE_P2P=%x\n", WRAP_RD32(PMIC_WRAP_INIT_DONE_P2P));
 
 	PWRAPLOG("kernel pwrap_init Done!!!!!!!!!\n");
 
