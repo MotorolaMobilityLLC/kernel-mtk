@@ -178,6 +178,8 @@ do {	\
 #endif
 u8 ecc_threshold;
 #define PMT_POOL_SIZE	(2)
+bool g_b2Die_CS;
+
 /*******************************************************************************
  * Gloable Varible Definition
  *******************************************************************************/
@@ -5642,7 +5644,7 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	dbg_inf[0].cmd.address[1] = 0xFF;
 	dbg_inf[0].cmd.address[2] = 0xFF;
 #endif
-
+	g_b2Die_CS = FALSE;
 #if 1
 	MSG(INIT, "Enable NFI and NFIECC Clock\n");
 	enable_clock(MT_CG_NFI_BUS_SW_CG, "NFI");
