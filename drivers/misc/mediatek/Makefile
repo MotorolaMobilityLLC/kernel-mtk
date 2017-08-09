@@ -163,3 +163,4 @@ obj-$(CONFIG_MTK_DUM_CHAR) += dum-char/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += secwidevine/
 obj-$(CONFIG_MTK_POWER_GS)      += power_gs/
 obj-$(CONFIG_MTK_TINYSYS_SCP_SUPPORT) += scp/
+obj-$(CONFIG_MTK_CPU_STRESS)	+= cpu_stress/

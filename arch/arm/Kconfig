@@ -816,6 +816,7 @@ config ARCH_MT6735
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
 	select MTK_POWER_GS
+	select MTK_CPU_STRESS
 	help
 	  This enable support for MediaTek MT6735
 
@@ -847,6 +848,7 @@ config ARCH_MT6735M
 	select CRYPTO_AES_ARM32_CE
 	select ARM_ERRATA_836870
 	select MTK_POWER_GS
+	select MTK_CPU_STRESS
 	help
 	  This enables support for MediaTek MT6735M
 	  Support for k35mv1
@@ -881,6 +883,7 @@ config ARCH_MT6753
 	select MTK_BASE_POWER
 	select ARM_ERRATA_836870
 	select MTK_POWER_GS
+	select MTK_CPU_STRESS
 	help
 	  This enable support for MediaTek MT6753
 	  To enable related drivers
@@ -903,7 +906,6 @@ config ARCH_MT6580
 	select GENERIC_SCHED_CLOCK
 	select VFP_OPT
 	select ARCH_REQUIRE_GPIOLIB
-	select MTK_CPU_STRESS
 	select KERNEL_MODE_NEON
 	select CRYPTO_AES_ARM_BS
 	select MTK_SYS_CIRQ
