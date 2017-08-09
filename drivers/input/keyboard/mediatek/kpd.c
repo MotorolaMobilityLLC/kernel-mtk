@@ -36,7 +36,7 @@ struct wake_lock kpd_suspend_lock;	/* For suspend usage */
 /*for kpd_memory_setting() function*/
 static u16 kpd_keymap[KPD_NUM_KEYS];
 static u16 kpd_keymap_state[KPD_NUM_MEMS];
-#ifdef CONFIG_ARCH_MT8173
+#if (defined(CONFIG_ARCH_MT8173) || defined(CONFIG_ARCH_MT8163))
 static struct wake_lock pwrkey_lock;
 #endif
 /***********************************/
@@ -355,7 +355,7 @@ void kpd_pwrkey_pmic_handler(unsigned long pressed)
 		return;
 	}
 	kpd_pmic_pwrkey_hal(pressed);
-#ifdef CONFIG_ARCH_MT8173
+#if (defined(CONFIG_ARCH_MT8173) || defined(CONFIG_ARCH_MT8163))
 	if (pressed) /* keep the lock while the button in held pushed */
 		wake_lock(&pwrkey_lock);
 	else /* keep the lock for extra 500ms after the button is released */
@@ -820,7 +820,7 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 
 	kpd_get_dts_info(pdev->dev.of_node);
 
-#ifdef CONFIG_ARCH_MT8173
+#if (defined(CONFIG_ARCH_MT8173) || defined(CONFIG_ARCH_MT8163))
 	wake_lock_init(&pwrkey_lock, WAKE_LOCK_SUSPEND, "PWRKEY");
 #endif
 
