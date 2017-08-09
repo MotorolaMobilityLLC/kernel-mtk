@@ -615,13 +615,15 @@ static void backup_larb_smi(int index)
 {
 	int port_index = 0;
 	unsigned short int *backup_ptr = NULL;
-	unsigned long larb_base = gLarbBaseAddr[index];
+	unsigned long larb_base = 0;
 	unsigned long larb_offset = 0x200;
 	int total_port_num = 0;
 
 	/* boundary check for larb_port_num and larb_port_backup access */
 	if (index < 0 || index >= SMI_LARB_NR)
 		return;
+
+	larb_base = gLarbBaseAddr[index];
 
 	total_port_num = larb_port_num[index];
 	backup_ptr = larb_port_backup[index];
@@ -646,7 +648,7 @@ static void restore_larb_smi(int index)
 {
 	int port_index = 0;
 	unsigned short int *backup_ptr = NULL;
-	unsigned long larb_base = gLarbBaseAddr[index];
+	unsigned long larb_base = 0;
 	unsigned long larb_offset = 0x200;
 	unsigned int backup_value = 0;
 	int total_port_num = 0;
@@ -654,6 +656,8 @@ static void restore_larb_smi(int index)
 	/* boundary check for larb_port_num and larb_port_backup access */
 	if (index < 0 || index >= SMI_LARB_NR)
 		return;
+
+	larb_base = gLarbBaseAddr[index];
 
 	total_port_num = larb_port_num[index];
 	backup_ptr = larb_port_backup[index];
@@ -2759,7 +2763,8 @@ int smi_debug_bus_hanging_detect_ext(unsigned int larbs, int show_dump, int outp
 			if (SMI_DGB_LARB_SELECT(larbs, i)) {
 				/* larb i has been selected */
 				/* Get status code */
-				get_status_code(smi_larb_clk_status[i], smi_larb_busy_count[i], smi_common_busy_count);
+				status_code = get_status_code(smi_larb_clk_status[i],
+					smi_larb_busy_count[i], smi_common_busy_count);
 
 				/* Send the debug message according to the final result */
 				switch (status_code) {
