@@ -49,7 +49,7 @@
 
 static DEFINE_MUTEX(FGADC_mutex);
 
-int Enable_FGADC_LOG = 2;
+int Enable_FGADC_LOG = 0;
 
 /* ============================================================ // */
 /* global variable */
@@ -3129,26 +3129,15 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 	static signed int last_time;
 
 	signed int ret_val = -1;
-	int check_fglog = 0;
 	signed int I_sleep = 0;
 	signed int new_time = 0;
 	signed int vbat_val = 0;
 	int ret = 0;
 
-	check_fglog = Enable_FGADC_LOG;
-	if (check_fglog == 0)
-		/* Enable_FGADC_LOG=1; */
-
-
-
 	vbat_val = g_sw_vbat_temp;
 
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &current_instant);
-
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CAR, &car_instant);
-
-	if (check_fglog == 0)
-		/* Enable_FGADC_LOG=0; */
 
 	if (car_instant < 0)
 		car_instant = car_instant - (car_instant * 2);
@@ -3168,16 +3157,8 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 		I_sleep = ((car_wakeup - car_sleep) * 3600) / last_time;	/* unit: second */
 
 		if (I_sleep == 0) {
-			/*if (check_fglog == 0)*/
-				/* Enable_FGADC_LOG=1; */
-
-
 			ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CURRENT, &I_sleep);
-
 			I_sleep = I_sleep / 10;
-			/*if (check_fglog == 0)*/
-				/* Enable_FGADC_LOG=0; */
-
 		}
 
 		if (I_sleep == 0) {
@@ -3774,10 +3755,10 @@ static ssize_t fgadc_log_write(struct file *filp, const char __user *buff,
 
 	if (proc_fgadc_data[0] == '1') {
 		bm_print(BM_LOG_CRTI, "enable FGADC driver log system\n");
-		Enable_FGADC_LOG = 1;
+		Enable_FGADC_LOG = BM_LOG_CRTI;
 	} else if (proc_fgadc_data[0] == '2') {
 		bm_print(BM_LOG_CRTI, "enable FGADC driver log system:2\n");
-		Enable_FGADC_LOG = 2;
+		Enable_FGADC_LOG = BM_LOG_FULL;
 	} else {
 		bm_print(BM_LOG_CRTI, "Disable FGADC driver log system\n");
 		Enable_FGADC_LOG = 0;
