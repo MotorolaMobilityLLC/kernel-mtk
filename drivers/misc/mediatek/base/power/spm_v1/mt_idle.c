@@ -25,6 +25,8 @@
 
 #if !defined(CONFIG_ARCH_MT6580)
 #include <mach/mt_cpuxgpt.h>
+#else
+#include <mach/mt_clkmgr.h>
 #endif
 
 #include <mach/mt_spm_mtcmos_internal.h>
@@ -65,8 +67,8 @@ enum mt_idle_mode {
 	MT_SLIDLE,
 };
 
-enum {
 #if !defined(CONFIG_ARCH_MT6580)
+enum {
 	CG_INFRA   = 0,
 	CG_PERI    = 1,
 	CG_DISP0   = 2,
@@ -78,22 +80,8 @@ enum {
 	CG_VDEC1   = 8,
 	CG_VENC    = 9,
 	NR_GRPS    = 10,
-#else
-	CG_MIXED	= 0,
-	CG_MPLL		= 1,
-	CG_UPLL		= 2,
-	CG_CTRL0	= 3,
-	CG_CTRL1	= 4,
-	CG_CTRL2	= 5,
-	CG_MMSYS0	= 6,
-	CG_MMSYS1	= 7,
-	CG_IMGSYS	= 8,
-	CG_MFGSYS	= 9,
-	CG_AUDIO	= 10,
-	CG_INFRA_AO	= 11,
-	NR_GRPS,
-#endif
 };
+#endif
 
 static unsigned long rgidle_cnt[NR_CPUS] = {0};
 static bool mt_idle_chk_golden;
@@ -471,6 +459,7 @@ static const char *reason_name[NR_REASONS] = {
 };
 
 char cg_group_name[][NR_GRPS] = {
+#if !defined(CONFIG_ARCH_MT6580)
 	"INFRA",
 	"PERI",
 	"DISP0",
@@ -481,6 +470,19 @@ char cg_group_name[][NR_GRPS] = {
 	"VDEC0",
 	"VDEC1",
 	"VENC",
+#else
+	"MIXED",
+	"MPLL",
+	"INFRA_AO",
+	"CTRL0",
+	"CTRL1",
+	"CTRL2",
+	"MMSYS0",
+	"MMSYS1",
+	"IMGSYS",
+	"MFGSYS",
+	"AUDIO",
+#endif
 };
 
 /* Slow Idle */
@@ -523,6 +525,7 @@ static unsigned int		idle_spm_lock;
 
 #define clk_writel(addr, val)	mt_reg_sync_writel(val, addr)
 
+#if !defined(CONFIG_ARCH_MT6580)
 static void __iomem *infrasys_base;
 static void __iomem *perisys_base;
 static void __iomem *audiosys_base;
@@ -574,7 +577,6 @@ enum subsys_id {
 	NR_SYSS__,
 };
 
-#if !defined(CONFIG_ARCH_MT6580)
 static int sys_is_on(enum subsys_id id)
 {
 	u32 pwr_sta_mask[] = {
@@ -591,7 +593,6 @@ static int sys_is_on(enum subsys_id id)
 
 	return (sta & mask) && (sta_s & mask);
 }
-#endif
 
 static void get_all_clock_state(u32 clks[NR_GRPS])
 {
@@ -599,7 +600,7 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 
 	for (i = 0; i < NR_GRPS; i++)
 		clks[i] = 0;
-#if !defined(CONFIG_ARCH_MT6580)
+
 	clks[CG_INFRA] = ~idle_readl(INFRA_PDN_STA); /* INFRA */
 
 	clks[CG_PERI] = ~idle_readl(PERI_PDN0_STA); /* PERI */
@@ -625,9 +626,6 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	if (sys_is_on(SYS_VEN))
 		clks[CG_VENC] = idle_readl(VENC_CG_CON); /* VENC_JPEG */
 #endif
-#else
-	/* TODO */
-#endif
 }
 
 bool cg_check_idle_can_enter(
@@ -642,11 +640,8 @@ bool cg_check_idle_can_enter(
 	/* SD status */
 	msdc_clk_status(&sd_mask);
 	if (sd_mask) {
-#if !defined(CONFIG_ARCH_MT6580)
 		block_mask[CG_PERI] |= sd_mask;
-#else
-		/* TODO */
-#endif
+
 		return false;
 	}
 
@@ -779,6 +774,7 @@ static void __init iomap_init(void)
 #endif
 	get_base_from_node(cksys_ids, &cksys_base, 0, "cksys");
 }
+#endif /*!defined(CONFIG_ARCH_MT6580)*/
 
 const char *cg_grp_get_name(int id)
 {
@@ -879,7 +875,11 @@ static bool soidle_can_enter(int cpu)
 
 	if (soidle_by_pass_cg == 0) {
 		memset(soidle_block_mask, 0, NR_GRPS * sizeof(unsigned int));
+#if !defined(CONFIG_ARCH_MT6580)
 		if (!cg_check_idle_can_enter(soidle_condition_mask, soidle_block_mask, MT_SOIDLE)) {
+#else
+	if (!clkmgr_idle_can_enter(soidle_condition_mask, soidle_block_mask)) {
+#endif
 			reason = BY_CLK;
 			goto out;
 		}
@@ -1044,7 +1044,11 @@ static bool dpidle_can_enter(void)
 
 	if (dpidle_by_pass_cg == 0) {
 		memset(dpidle_block_mask, 0, NR_GRPS * sizeof(unsigned int));
+#if !defined(CONFIG_ARCH_MT6580)
 		if (!cg_check_idle_can_enter(dpidle_condition_mask, dpidle_block_mask, MT_DPIDLE)) {
+#else
+		if (!clkmgr_idle_can_enter(dpidle_condition_mask, dpidle_block_mask)) {
+#endif
 			reason = BY_CLK;
 			goto out;
 		}
@@ -1107,7 +1111,11 @@ void spm_dpidle_before_wfi(void)
 {
 	bus_dcm_enable();
 
+#if !defined(CONFIG_ARCH_MT6580)
 	faudintbus_pll2sq();
+#else
+	clkmgr_faudintbus_pll2sq();
+#endif
 
 #ifdef CONFIG_SMP
 	dpidle_timer_left2 = localtimer_get_counter();
@@ -1148,7 +1156,11 @@ void spm_dpidle_after_wfi(void)
 	}
 #endif
 
+#if !defined(CONFIG_ARCH_MT6580)
 	faudintbus_sq2pll();
+#else
+	clkmgr_faudintbus_sq2pll();
+#endif
 
 	bus_dcm_disable();
 
@@ -1205,7 +1217,11 @@ static bool slidle_can_enter(void)
 	}
 
 	memset(slidle_block_mask, 0, NR_GRPS * sizeof(unsigned int));
+#if !defined(CONFIG_ARCH_MT6580)
 	if (!cg_check_idle_can_enter(slidle_condition_mask, slidle_block_mask, MT_SLIDLE)) {
+#else
+	if (!clkmgr_idle_can_enter(slidle_condition_mask, slidle_block_mask)) {
+#endif
 		reason = BY_CLK;
 		goto out;
 	}
@@ -1888,7 +1904,10 @@ void mt_cpuidle_framework_init(void)
 	if (err)
 		idle_info("[%s]fail to request cpuxgpt\n", __func__);
 
+#if !defined(CONFIG_ARCH_MT6580)
 	iomap_init();
+#endif
+
 	mt_cpuidle_debugfs_init();
 }
 EXPORT_SYMBOL(mt_cpuidle_framework_init);
