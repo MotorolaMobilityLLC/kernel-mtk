@@ -2073,6 +2073,7 @@ scnCombineParamsIntoPSCN(IN P_ADAPTER_T prAdapter,
 
 	memcpy(prScanInfo->prPscnParam, prCmdPscnParam, sizeof(CMD_SET_PSCAN_PARAM));
 	DBGLOG(INIT, TRACE, "scnCombineParamsIntoPSCN <----\n");
+	kalMemFree(prCmdPscnParam, VIR_MEM_TYPE, sizeof(CMD_SET_PSCAN_PARAM));
 
 	return TRUE;
 
