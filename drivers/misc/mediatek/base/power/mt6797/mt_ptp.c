@@ -130,7 +130,7 @@ unsigned int gpuFreq_MB[16] = {
 /* L */
 unsigned int L_Freq_FY[16] = {
 	1950000, 1872000, 1794000, 1716000, 1573000, 1495000, 1352000, 1274000,
-	1144000, 1014000, 871000, 780000, 689000, 589000, 494000, 338000};
+	1144000, 1014000, 871000, 780000, 689000, 598000, 494000, 338000};
 
 unsigned int L_Freq_SB[16] = {
 	2197000, 2132000, 2041000, 1963000, 1885000, 1807000, 1716000, 1573000,
@@ -3660,13 +3660,13 @@ void get_devinfo(struct eem_devinfo *p)
 
 	for (i = 0; i < 12; i++) {
 		if (0 == val[i]) {
-			/* ctrl_EEM_Enable = 0; */
-			/* infoIdvfs = 0x55; */
-			eem_error("No EEM EFUSE available, will apply fake E-Fuse !!\n");
+			ctrl_EEM_Enable = 0;
+			infoIdvfs = 0x55;
+			eem_error("No EEM EFUSE available, will turn off EEM !!\n");
 			break;
 		}
 	}
-
+	/*
 	if (i < 12) {
 		val[0] = 0x1410595E;
 		val[1] = 0x004C0003;
@@ -3681,7 +3681,7 @@ void get_devinfo(struct eem_devinfo *p)
 		val[10] = 0x00000047;
 		val[11] = 0x0D2B365A;
 	}
-
+	*/
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
