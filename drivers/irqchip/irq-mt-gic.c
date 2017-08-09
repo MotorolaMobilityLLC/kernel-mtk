@@ -204,7 +204,7 @@ void mt_irq_set_polarity(unsigned int irq, unsigned int polarity)
 	raw_spin_unlock(&irq_controller_lock);
 	*/
 }
-EXPORT_SYMBOL(mt_irq_set_polarity);
+/* EXPORT_SYMBOL(mt_irq_set_polarity); */
 
 static int gic_set_type(struct irq_data *d, unsigned int type)
 {
@@ -1083,7 +1083,7 @@ void mt_irq_set_sens(unsigned int irq, unsigned int sens)
 
 	mb();
 }
-EXPORT_SYMBOL(mt_irq_set_sens);
+/* EXPORT_SYMBOL(mt_irq_set_sens); */
 
 void mt_irq_dump_status(int irq)
 {
