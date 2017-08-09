@@ -566,12 +566,12 @@
 
 	mdcldma:mdcldma@10014000 {
 		compatible = "mediatek,mdcldma";
-		reg =	<0x10014000 0x1000>, /*AP_CLDMA_AO*/
-			<0x10015000 0x1000>, /*MD_CLDMA_AO*/
-			<0x1021b000 0x1000>, /*AP_CLDMA_PDN*/
-			<0x1021c000 0x1000>, /*MD_CLDMA_PDN*/
-			<0x10209000 0x1000>, /*AP_CCIF_BASE*/
-			<0x1020a000 0x1000>; /*MD_CCIF_BASE*/
+		reg =	<0 0x10014000 0 0x1000>, /*AP_CLDMA_AO*/
+			<0 0x10015000 0 0x1000>, /*MD_CLDMA_AO*/
+			<0 0x1021b000 0 0x1000>, /*AP_CLDMA_PDN*/
+			<0 0x1021c000 0 0x1000>, /*MD_CLDMA_PDN*/
+			<0 0x10209000 0 0x1000>, /*AP_CCIF_BASE*/
+			<0 0x1020a000 0 0x1000>; /*MD_CCIF_BASE*/
 		interrupts = <GIC_SPI 251 IRQ_TYPE_LEVEL_HIGH>, /*IRQ_CLDMA*/
 			     <GIC_SPI 171 IRQ_TYPE_LEVEL_LOW>, /*IRQ_CCIF*/
 			     <GIC_SPI 252 IRQ_TYPE_EDGE_FALLING>; /*IRQ_MDWDT*/
@@ -618,7 +618,7 @@
 
 	dbgapb_base@1011a000{
 		compatible = "mediatek,dbgapb_base";
-		reg = <0x1011a000 0x100>;/* MD debug register */
+		reg = <0 0x1011a000 0 0x100>;/* MD debug register */
 	};
 
 	mcucfg@10200000 {
@@ -667,9 +667,9 @@
 
 	ap2c2k_ccif@1020b000 {
 		compatible = "mediatek,ap2c2k_ccif";
-		reg = <0x1020b000 0x1000>, //CCIF
-		<0x10211000 0x300>, // MD1 PCCIF
-		<0x10213000 0x300>; // MD3 PCCIF
+		reg = <0 0x1020b000 0 0x1000>, //CCIF
+		<0 0x10211000 0 0x300>, // MD1 PCCIF
+		<0 0x10213000 0 0x300>; // MD3 PCCIF
 		interrupts = <GIC_SPI 141 IRQ_TYPE_LEVEL_LOW>, // C2K_CCIF
 				<GIC_SPI 249 IRQ_TYPE_EDGE_FALLING>; // C2K_WDT
 		cell-index = <2>;
