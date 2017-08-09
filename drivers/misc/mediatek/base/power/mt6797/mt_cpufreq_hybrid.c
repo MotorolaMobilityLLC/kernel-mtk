@@ -22,6 +22,11 @@
 #include <linux/debugfs.h>
 #include <linux/delay.h>
 #include <linux/wait.h>
+#include <linux/hrtimer.h>
+#include <linux/kthread.h>
+#include <linux/sched/rt.h>
+#include <linux/atomic.h>
+#include <linux/mutex.h>
 
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mt_lpae.h>
@@ -61,12 +66,16 @@ static u32 wa_get_emi_sema = 1;
 #define OFFS_PAUSE_SRC		0x0330
 #define OFFS_DVFS_WAIT		0x0334
 #define OFFS_FUNC_ENTER		0x0338
+#define OFFS_NXLOG_OFFS		0x033c
 #define OFFS_LOG_S		0x03d0
 #define OFFS_LOG_E		0x2ff8
 
 #define DVFS_TIMEOUT		3000		/* us */
 #define SEMA_GET_TIMEOUT	1500		/* us */
 #define PAUSE_TIMEOUT		1500		/* us */
+
+#define DVFS_NOTIFY_INTV	20		/* ms */
+#define MAX_LOG_FETCH		20
 
 
 /**************************************
@@ -438,6 +447,10 @@ static u32 wa_get_emi_sema = 1;
 #define V_CURR_MASK		(0x7f << 8)
 #define VS_CURR_MASK		(0x7f << 16)
 
+#define LOG_V_MASK		(0x7f << 0)
+#define LOG_F_MASK		(0xf << 7)
+#define LOG_VS_MASK		(0x3f << 26)	/* only 6 bits */
+
 /* pause source flag */
 #define PSF_PAUSE_INIT		(1U << PAUSE_INIT)
 #define PSF_PAUSE_I2CDRV	(1U << PAUSE_I2CDRV)
@@ -452,6 +465,7 @@ static u32 wa_get_emi_sema = 1;
 #define DLF_PAUSE		(1U << 4)
 #define DLF_STOP		(1U << 5)
 #define DLF_LIMIT		(1U << 6)
+#define DLF_NOTIFY		(1U << 7)
 
 /* function enter flag */
 #define FEF_DVFS		(1U << 0)
@@ -512,6 +526,8 @@ struct cpuhvfs_dvfsp {
 
 	void (*set_limit)(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster, unsigned int ceiling,
 			  unsigned int floor);
+
+	void (*set_notify)(struct cpuhvfs_dvfsp *dvfsp, dvfs_notify_t callback);
 
 	int (*get_sema)(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user);
 	void (*release_sema)(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user);
@@ -584,6 +600,7 @@ static u32 pause_log_en = PSF_PAUSE_SUSPEND |
  * dbgx_log_en[31:16]: show on MobileLog
  */
 static u32 dbgx_log_en = /*(DLF_DVFS << 16) |*/
+			 /*DLF_NOTIFY |*/
 			 /*DLF_LIMIT |*/
 			 DLF_STOP |
 			 DLF_PAUSE |
@@ -605,6 +622,22 @@ static u32 pause_fail_ke;
 static DEFINE_SPINLOCK(dvfs_lock);
 
 static DECLARE_WAIT_QUEUE_HEAD(dvfs_wait);
+
+#ifdef CPUHVFS_HW_GOVERNOR
+static struct hrtimer nfy_trig_timer;
+
+static struct task_struct *dvfs_nfy_task;
+static atomic_t dvfs_nfy_req = ATOMIC_INIT(0);
+
+/* log_box[MAX_LOG_FETCH] is also used to save last log entry */
+static struct dvfs_log log_box[1 + MAX_LOG_FETCH];
+static unsigned int next_log_offs = OFFS_LOG_S;
+
+static dvfs_notify_t notify_dvfs_change_cb;
+static DEFINE_MUTEX(notify_mutex);
+
+static void cspm_set_dvfs_notify(struct cpuhvfs_dvfsp *dvfsp, dvfs_notify_t callback);
+#endif
 
 static int cspm_module_init(struct cpuhvfs_dvfsp *dvfsp);
 static int cspm_go_to_dvfs(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta);
@@ -637,6 +670,11 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
 static struct cpuhvfs_dvfsp g_dvfsp = {
 	.pcmdesc	= &dvfs_pcm,
 	.pwrctrl	= &dvfs_ctrl,
+
+#ifdef CPUHVFS_HW_GOVERNOR
+	.hw_gov_en	= 1,
+	.set_notify	= cspm_set_dvfs_notify,
+#endif
 
 	.init_dvfsp	= cspm_module_init,
 	.kick_dvfsp	= cspm_go_to_dvfs,
@@ -703,6 +741,11 @@ do {								\
 					 cspm_is_done(CSPM_SW_RSV4) &&	\
 					 cspm_is_done(CSPM_SW_RSV5))
 
+#define log_time_curr_offs()		(cspm_read(CSPM_SW_RSV7) - 0xa000)
+
+#define log_get_volt(log)		(((log) & LOG_V_MASK) >> 0)
+#define log_get_freq(log)		(((log) & LOG_F_MASK) >> 7)
+
 #define cspm_err(fmt, args...)		pr_err("[CPUHVFS] " fmt, ##args)
 #define cspm_warn(fmt, args...)		pr_warn("[CPUHVFS] " fmt, ##args)
 #define cspm_debug(fmt, args...)	pr_debug("[CPUHVFS] " fmt, ##args)
@@ -750,6 +793,24 @@ static inline unsigned int opp_fw_to_sw(u32 freq)
 {
 	return freq < NUM_CPU_OPP ? (NUM_CPU_OPP - 1) - freq : 0 /* highest frequency */;
 }
+
+#ifdef CPUHVFS_HW_GOVERNOR
+static inline void start_notify_trigger_timer(u32 intv_ms)
+{
+	hrtimer_start(&nfy_trig_timer, ms_to_ktime(intv_ms), HRTIMER_MODE_REL);
+}
+
+static inline void stop_notify_trigger_timer(void)
+{
+	hrtimer_cancel(&nfy_trig_timer);
+}
+
+static inline void kick_kthread_to_notify(void)
+{
+	atomic_inc(&dvfs_nfy_req);
+	wake_up_process(dvfs_nfy_task);
+}
+#endif
 
 
 /**************************************
@@ -1044,8 +1105,15 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 		csram_write(hwsta_offs[i], cspm_read(hwsta_reg[i]));
 	}
 
+	/* init variable to match FW state */
 	pause_src_map |= PSF_PAUSE_INIT;
 	csram_write(OFFS_PAUSE_SRC, pause_src_map);
+
+#ifdef CPUHVFS_HW_GOVERNOR
+	log_box[MAX_LOG_FETCH].time = 0;
+	next_log_offs = OFFS_LOG_S;
+	csram_write(OFFS_NXLOG_OFFS, next_log_offs);
+#endif
 
 	/* enable r7 to control power */
 	cspm_write(CSPM_PCM_PWR_IO_EN, pwrctrl->r7_ctrl_en ? PCM_PWRIO_EN_R7 : 0);
@@ -1178,6 +1246,11 @@ static int __cspm_pause_pcm_running(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 		if (r >= 0) {	/* pause done */
 			r = 0;
 			clk_disable(i2c_clk);
+
+#ifdef CPUHVFS_HW_GOVERNOR
+			if (dvfsp->hw_gov_en)
+				stop_notify_trigger_timer();
+#endif
 		}
 	}
 
@@ -1226,6 +1299,11 @@ static void __cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 
 			wake_up(&dvfs_wait);	/* for set_target_opp */
 			csram_write(OFFS_DVFS_WAIT, 0);
+
+#ifdef CPUHVFS_HW_GOVERNOR
+			if (dvfsp->hw_gov_en)
+				start_notify_trigger_timer(DVFS_NOTIFY_INTV);
+#endif
 		} else {
 			cspm_err("FAILED TO ENABLE I2C CLOCK (%d)\n", r);
 			BUG();
@@ -1327,6 +1405,15 @@ static void cspm_release_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user u
 		BUG_ON(cspm_read(sema_reg[user]) & 0x1);	/* semaphore release failed */
 	}
 }
+
+#ifdef CPUHVFS_HW_GOVERNOR
+static void cspm_set_dvfs_notify(struct cpuhvfs_dvfsp *dvfsp, dvfs_notify_t callback)
+{
+	mutex_lock(&notify_mutex);
+	notify_dvfs_change_cb = callback;
+	mutex_unlock(&notify_mutex);
+}
+#endif
 
 static void cspm_set_opp_limit(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster,
 			       unsigned int ceiling, unsigned int floor)
@@ -1584,6 +1671,107 @@ static int cspm_go_to_dvfs(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta)
 	return 0;
 }
 
+#ifdef CPUHVFS_HW_GOVERNOR
+static void fetch_dvfs_log_and_notify(struct cpuhvfs_dvfsp *dvfsp)
+{
+	int i, j;
+	u32 log;
+
+	spin_lock(&dvfs_lock);
+	if (!dvfsp->hw_gov_en || (log_box[MAX_LOG_FETCH].time == 0 &&
+					log_time_curr_offs() <= OFFS_LOG_S)) {
+		spin_unlock(&dvfs_lock);
+		return;
+	}
+
+	log_box[0] = log_box[MAX_LOG_FETCH];
+
+	for (i = 1; i <= MAX_LOG_FETCH; i++) {
+		log_box[i].time = csram_read(next_log_offs);
+		if (log_box[i].time <= log_box[i - 1].time)
+			break;
+
+		next_log_offs += 4;
+		for (j = 0; j < NUM_CPU_CLUSTER; j++) {
+			log = csram_read(next_log_offs);
+			log_box[i].opp[j] = opp_fw_to_sw(log_get_freq(log));
+			next_log_offs += 4;
+		}
+
+		next_log_offs += 4;	/* skip UE log */
+		if (next_log_offs >= OFFS_LOG_E)
+			next_log_offs = OFFS_LOG_S;
+		csram_write(OFFS_NXLOG_OFFS, next_log_offs);
+
+		cspm_dbgx(NOTIFY, "[%08x] log%d opp = (%u %u %u %u), offs = 0x%x (0x%x)\n",
+				  log_box[i].time, i, log_box[i].opp[0], log_box[i].opp[1],
+				  log_box[i].opp[2], log_box[i].opp[3],
+				  next_log_offs, log_time_curr_offs());
+	}
+
+	if (log_box[0].time == 0 && i >= 2)
+		log_box[0] = log_box[1];
+
+	if (i >= 2 && i <= MAX_LOG_FETCH)
+		log_box[MAX_LOG_FETCH] = log_box[i - 1];
+	spin_unlock(&dvfs_lock);
+
+	mutex_lock(&notify_mutex);
+	if (notify_dvfs_change_cb && log_box[0].time > 0)
+		notify_dvfs_change_cb(log_box, i);
+	mutex_unlock(&notify_mutex);
+}
+
+static int dvfs_nfy_task_fn(void *data)
+{
+	struct cpuhvfs_dvfsp *dvfsp = data;
+
+	while (1) {
+		set_current_state(TASK_UNINTERRUPTIBLE);
+
+		if (atomic_read(&dvfs_nfy_req) <= 0) {
+			schedule();
+			continue;
+		}
+
+		__set_current_state(TASK_RUNNING);
+
+		fetch_dvfs_log_and_notify(dvfsp);
+		atomic_dec(&dvfs_nfy_req);
+	}
+
+	return 0;
+}
+
+static enum hrtimer_restart nfy_trig_timer_fn(struct hrtimer *timer)
+{
+	kick_kthread_to_notify();
+
+	hrtimer_forward_now(timer, ms_to_ktime(DVFS_NOTIFY_INTV));
+
+	return HRTIMER_RESTART;
+}
+
+static int create_resource_for_dvfs_notify(struct cpuhvfs_dvfsp *dvfsp)
+{
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 2 };	/* lower than WDK */
+
+	/* init hrtimer */
+	hrtimer_init(&nfy_trig_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	nfy_trig_timer.function = nfy_trig_timer_fn;
+
+	/* create kthread */
+	dvfs_nfy_task = kthread_create(dvfs_nfy_task_fn, dvfsp, "dvfs_nfy");
+	if (IS_ERR(dvfs_nfy_task))
+		return PTR_ERR(dvfs_nfy_task);
+
+	sched_setscheduler_nocheck(dvfs_nfy_task, SCHED_FIFO, &param);
+	get_task_struct(dvfs_nfy_task);
+
+	return 0;
+}
+#endif
+
 static int cspm_probe(struct platform_device *pdev)
 {
 	int r;
@@ -1669,6 +1857,14 @@ static int cspm_module_init(struct cpuhvfs_dvfsp *dvfsp)
 		cspm_err("FAILED TO PROBE CSPM DEVICE\n");
 		return -ENODEV;
 	}
+
+#ifdef CPUHVFS_HW_GOVERNOR
+	r = create_resource_for_dvfs_notify(dvfsp);
+	if (r) {
+		cspm_err("FAILED TO CREATE RESOURCE FOR NOTIFY (%d)\n", r);
+		return r;
+	}
+#endif
 
 	dvfsp->log_repo = csram_base;
 
@@ -1961,6 +2157,15 @@ void cpuhvfs_release_dvfsp_semaphore(enum sema_user user)
 	dvfsp->release_sema(dvfsp, user);
 }
 
+#ifdef CPUHVFS_HW_GOVERNOR
+void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback)
+{
+	struct cpuhvfs_dvfsp *dvfsp = g_cpuhvfs.dvfsp;
+
+	dvfsp->set_notify(dvfsp, callback);
+}
+#endif
+
 void cpuhvfs_set_opp_limit(unsigned int cluster, unsigned int ceiling, unsigned int floor)
 {
 	struct cpuhvfs_dvfsp *dvfsp = g_cpuhvfs.dvfsp;
@@ -2105,4 +2310,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.4");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.5");

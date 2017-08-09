@@ -97,6 +97,13 @@ struct init_sta {
 	bool is_on[NUM_CPU_CLUSTER];		/* on/off */
 };
 
+struct dvfs_log {
+	unsigned int time;			/* (1/32768)s */
+	unsigned int opp[NUM_CPU_CLUSTER];	/* SW index */
+};
+
+typedef void (*dvfs_notify_t)(struct dvfs_log *log_box, int num_log);
+
 
 /**************************************
  * [Hybrid DVFS] Macro / Inline
@@ -141,6 +148,10 @@ extern unsigned int cpuhvfs_get_curr_volt(unsigned int cluster);
 
 extern void cpuhvfs_set_opp_limit(unsigned int cluster, unsigned int ceiling, unsigned int floor);
 
+#ifdef CPUHVFS_HW_GOVERNOR
+extern void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback);
+#endif
+
 extern int cpuhvfs_get_dvfsp_semaphore(enum sema_user user);
 extern void cpuhvfs_release_dvfsp_semaphore(enum sema_user user);
 
@@ -167,6 +178,8 @@ static inline unsigned int cpuhvfs_get_curr_volt(unsigned int cluster)	{ return 
 
 static inline void cpuhvfs_set_opp_limit(unsigned int cluster, unsigned int ceiling,
 					 unsigned int floor)		{}
+
+static inline void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback)	{}
 
 static inline int cpuhvfs_get_dvfsp_semaphore(enum sema_user user)	{ return 0; }
 static inline void cpuhvfs_release_dvfsp_semaphore(enum sema_user user)	{}
