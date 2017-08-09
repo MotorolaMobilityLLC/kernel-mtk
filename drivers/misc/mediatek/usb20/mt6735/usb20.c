@@ -482,7 +482,7 @@ void do_connection_work(struct work_struct *data)
 		cmode_effect_on = true;
 
 	/* revert cmode_effect for this case to make CDP connect */
-	if (cable_mode == CABLE_MODE_HOST_ONLY && charger_type == CHARGING_HOST)
+	if (musb_skip_charge_detect || (cable_mode == CABLE_MODE_HOST_ONLY && charger_type == CHARGING_HOST))
 		cmode_effect_on = false;
 
 	if (!mtk_musb->power && ((usb_in == true) && !cmode_effect_on)) {
@@ -565,6 +565,11 @@ bool usb_cable_connected(void)
 		schedule_delayed_work(&connection_work, msecs_to_jiffies(delay_time));
 		DBG(0, "issue work on is_ready end, delay_time:%d ms\n", delay_time);
 
+	}
+
+	if (musb_fake_disc) {
+		DBG(0, "musb_fake_disc is set\n");
+		return false;
 	}
 	if (charger_type == STANDARD_HOST || charger_type == CHARGING_HOST) {
 		return true;
@@ -738,10 +743,14 @@ static ssize_t mt_usb_store_cmode(struct device *dev, struct device_attribute *a
 			if (cmode == CABLE_MODE_CHRG_ONLY) {	/* IPO shutdown, disable USB */
 				if (mtk_musb)
 					mtk_musb->in_ipo_off = true;
+				musb_fake_disc = 1;
+				DBG(0, "musb_fake_disc is set\n");
 
 			} else {	/* IPO bootup, enable USB */
 				if (mtk_musb)
 					mtk_musb->in_ipo_off = false;
+				musb_fake_disc = 0;
+				DBG(0, "musb_fake_disc is clr\n");
 			}
 
 			mt_usb_disconnect();

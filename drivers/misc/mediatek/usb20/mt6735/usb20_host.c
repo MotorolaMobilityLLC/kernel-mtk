@@ -393,6 +393,7 @@ static void musb_id_pin_work(struct work_struct *data)
 		MUSB_HST_MODE(mtk_musb);
 		switch_int_to_device(mtk_musb);
 	} else {
+		spin_lock_irqsave(&mtk_musb->lock, flags);
 		DBG(0, "devctl is %x\n", musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, 0);
 		if (wake_lock_active(&mtk_musb->usb_lock))
@@ -413,6 +414,7 @@ static void musb_id_pin_work(struct work_struct *data)
 		mtk_musb->xceiv->state = OTG_STATE_B_IDLE;
 		MUSB_DEV_MODE(mtk_musb);
 		switch_int_to_host(mtk_musb);
+		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 	}
 out:
 	DBG(0, "work end, is_host=%d\n", mtk_musb->is_host);

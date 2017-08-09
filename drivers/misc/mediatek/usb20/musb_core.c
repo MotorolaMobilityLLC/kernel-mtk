@@ -117,11 +117,13 @@ struct device_node *dts_np;
 #endif
 
 int musb_connect_legacy = 1;
-module_param(musb_connect_legacy, int, 0644);
 int musb_is_shutting = 0;
+int musb_fake_disc = 0;
 int musb_skip_charge_detect = 0;
 int musb_removed = 0;
+module_param(musb_connect_legacy, int, 0644);
 module_param(musb_is_shutting, int, 0644);
+module_param(musb_fake_disc, int, 0644);
 module_param(musb_skip_charge_detect, int, 0644);
 module_param(musb_removed, int, 0644);
 #ifdef MUSB_QMU_SUPPORT
@@ -1360,9 +1362,9 @@ void musb_stop(struct musb *musb)
 {
 	/* stop IRQs, timers, ... */
 	musb_generic_disable(musb);
-	gadget_stop(musb);
 	musb_platform_disable(musb);
 	musb->is_active = 0;
+	gadget_stop(musb);
 	DBG(0, "HDRC disabled\n");
 
 	/* FIXME
@@ -1853,6 +1855,10 @@ irqreturn_t musb_interrupt(struct musb *musb)
 		else
 			retval |= musb_g_ep0_irq(musb);
 	}
+
+	if (unlikely(!musb->power))
+		return IRQ_HANDLED;
+
 #ifdef MUSB_QMU_SUPPORT
 	/* process generic queue interrupt */
 	if (musb->int_queue) {
