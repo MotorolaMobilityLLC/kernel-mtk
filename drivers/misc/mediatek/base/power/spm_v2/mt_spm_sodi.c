@@ -305,12 +305,21 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 				spm_read(DUMMY1_PWR_CON), pcmdesc->version);
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
 	} else {
+		/*
+		 * Log reduction mechanism, print debug information criteria :
+		 * 1. SPM assert
+		 * 2. Not wakeup by GPT
+		 * 3. Residency is less than 20ms
+		 * 4. Enter/no emi self-refresh change
+		 * 5. Time from the last output log is larger than 5 sec
+		 * 6. No wakeup event
+		 * 7. CG/PD mode change
+		*/
 		sodi_logout_curr_time = spm_get_current_time_ms();
 
 		if (wakesta->assert_pc != 0) {
 			need_log_out = 1;
 		} else if ((wakesta->r12 & (0x1 << 4)) == 0) {
-			/* not wakeup by GPT */
 			need_log_out = 1;
 		} else if (wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) {
 			need_log_out = 1;
@@ -318,13 +327,12 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 				(spm_read(SPM_PASR_DPD_0) > 0 && pre_emi_refresh_cnt == 0)) {
 			need_log_out = 1;
 		} else if ((sodi_logout_curr_time - sodi_logout_prev_time) > SODI_LOGOUT_INTERVAL_CRITERIA) {
-			/* previous logout time > SODI_LOGOUT_INTERVAL_CRITERIA */
+			need_log_out = 1;
+		} else if (wakesta->r12 == 0) {
 			need_log_out = 1;
 		} else {
-			/* check CG/pwrdn status is changed */
 			int mem_status = 0;
 
-			/* check mempll CG/pwrdn status change */
 			if (((spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) != 0) ||
 				((spm_read(DUMMY1_PWR_CON) & DUMMY1_PWR_ISO_LSB) != 0))
 				mem_status = 1;
@@ -343,9 +351,9 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 			sodi_logout_prev_time = sodi_logout_curr_time;
 
 			if (wakesta->assert_pc != 0) {
-				sodi_err("wake up by SPM assert, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
-						vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
+				sodi_err("SPM ASSERT AT %u, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
+						wakesta->assert_pc, vcore_status, spm_read(SPM_PASR_DPD_0),
+						spm_read(SPM_SW_FLAG), spm_read(DUMMY1_PWR_CON), pcmdesc->version);
 
 				sodi_err("sodi_cnt = %d, self_refresh_cnt = 0x%x, spm_pc = 0x%0x, r13 = 0x%x, debug_flag = 0x%x\n",
 						logout_sodi_cnt, logout_selfrefresh_cnt,
