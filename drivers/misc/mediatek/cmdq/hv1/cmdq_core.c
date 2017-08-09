@@ -17,7 +17,6 @@
 #include <linux/met_drv.h>
 #endif
 #include <linux/seq_file.h>
-#include "cmdq_fs.h"
 #include "cmdq_core.h"
 #include "cmdq_reg.h"
 #include "cmdq_struct.h"
@@ -3491,29 +3490,6 @@ void cmdq_core_dump_instructions(uint64_t *pInstrBuffer, uint32_t bufferSize)
 		CMDQ_LOG("index:%05d,INST:0x%016llx    ----->      %s\n", i, *pBuffer, textBuffer);
 		pBuffer++;
 	}
-}
-
-
-void cmdq_core_dump_instructions_to_file(uint64_t *pInstrBuffer, uint32_t bufferSize,
-					 const char *fileName)
-{
-	uint64_t *pBuffer = pInstrBuffer;
-	char textBuffer[100];
-	int i = 0;
-	struct fs_struct fs;
-
-	init_fs_struct(&fs);
-	fs.fs_create(&fs, fileName);
-
-	while (pBuffer <= (uint64_t *) ((uint8_t *) (pInstrBuffer) + bufferSize)) {
-		memset(textBuffer, 0, 100);
-		cmdq_core_parse_instruction((uint32_t *) pBuffer, textBuffer, 99);
-		fs_printf(fs, "index:%05d,INST:0x%016llx    ----->      %s\n", i, *pBuffer,
-			  textBuffer);
-		pBuffer++;
-	}
-
-	fs.fs_close(&fs);
 }
 
 

@@ -717,8 +717,6 @@ int32_t cmdq_core_release_sec_metadata(struct TaskStruct *pTask);
 #if 1
 bool cmdq_core_verfiy_command_end(const struct TaskStruct *pTask);
 bool cmdq_core_verfiy_command_desc_end(struct cmdqCommandStruct *pCommandDesc);
-void cmdq_core_dump_instructions_to_file(uint64_t *pInstrBuffer, uint32_t bufferSize,
-					 const char *fileName);
 struct ThreadStruct *cmdq_core_getThreadStruct(int threadID);
 #endif
 

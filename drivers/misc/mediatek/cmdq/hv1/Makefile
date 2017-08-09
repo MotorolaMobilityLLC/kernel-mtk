@@ -33,7 +33,6 @@ ccflags-y += -DDEBUG_INFO
 
 obj-y += cmdq_record.o
 obj-y += cmdq_core.o
-obj-y += cmdq_fs.o
 obj-y += cmdq_driver.o
 obj-y += cmdq_mmp.o
 obj-y += cmdq_mdp_common.o
