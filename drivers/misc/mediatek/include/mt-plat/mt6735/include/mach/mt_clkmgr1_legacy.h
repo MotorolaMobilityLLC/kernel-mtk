@@ -510,10 +510,10 @@ extern void register_larb_monitor(struct larb_monitor *handler);
 extern void unregister_larb_monitor(struct larb_monitor *handler);
 
 /* clock API */
-extern int enable_clock(enum cg_clk_id id, char *mod_name);
-extern int disable_clock(enum cg_clk_id id, char *mod_name);
-extern int mt_enable_clock(enum cg_clk_id id, char *mod_name);
-extern int mt_disable_clock(enum cg_clk_id id, char *mod_name);
+extern int enable_clock(int id, char *mod_name);
+extern int disable_clock(int id, char *mod_name);
+extern int mt_enable_clock(int id, char *mod_name);
+extern int mt_disable_clock(int id, char *mod_name);
 
 extern int enable_clock_ext_locked(int id, char *mod_name);
 extern int disable_clock_ext_locked(int id, char *mod_name);

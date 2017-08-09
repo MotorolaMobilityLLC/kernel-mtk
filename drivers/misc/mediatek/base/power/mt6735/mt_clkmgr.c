@@ -3175,7 +3175,7 @@ static int get_clk_state_locked(struct cg_clk *clk)
 		return clk->ops->get_state(clk);
 }
 
-int mt_enable_clock(enum cg_clk_id id, char *name)
+int mt_enable_clock(int id, char *name)
 {
 	int err;
 	unsigned long flags;
@@ -3208,7 +3208,7 @@ int mt_enable_clock(enum cg_clk_id id, char *name)
 EXPORT_SYMBOL(mt_enable_clock);
 
 
-int mt_disable_clock(enum cg_clk_id id, char *name)
+int mt_disable_clock(int id, char *name)
 {
 	int err;
 	unsigned long flags;

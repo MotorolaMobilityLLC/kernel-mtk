@@ -9,7 +9,7 @@
 
 #include <mach/mt_clkmgr.h>
 
-int enable_clock(enum cg_clk_id id, char *name)
+int enable_clock(int id, char *name)
 {
 	int err;
 
@@ -20,7 +20,7 @@ int enable_clock(enum cg_clk_id id, char *name)
 EXPORT_SYMBOL(enable_clock);
 
 
-int disable_clock(enum cg_clk_id id, char *name)
+int disable_clock(int id, char *name)
 {
 	int err;
 
