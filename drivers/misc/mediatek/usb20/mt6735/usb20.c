@@ -741,12 +741,14 @@ static ssize_t mt_usb_store_cmode(struct device *dev, struct device_attribute *a
 				  const char *buf, size_t count)
 {
 	unsigned int cmode;
+	long tmp_val;
 
 	if (!dev) {
 		DBG(0, "dev is null!!\n");
 		return count;
 	/* } else if (1 == sscanf(buf, "%d", &cmode)) { */
-	} else if (kstrtol(buf, 10, (long *)&cmode) == 0) {
+	} else if (kstrtol(buf, 10, (long *)&tmp_val) == 0) {
+		cmode = tmp_val;
 		DBG(0, "cmode=%d, cable_mode=%d\n", cmode, cable_mode);
 		if (cmode >= CABLE_MODE_MAX)
 			cmode = CABLE_MODE_NORMAL;
@@ -819,12 +821,14 @@ static ssize_t mt_usb_store_saving_mode(struct device *dev, struct device_attrib
 					const char *buf, size_t count)
 {
 	int saving;
+	long tmp_val;
 
 	if (!dev) {
 		DBG(0, "dev is null!!\n");
 		return count;
 	/* } else if (1 == sscanf(buf, "%d", &saving)) { */
-	} else if (kstrtol(buf, 10, (long *)&saving) == 0) {
+	} else if (kstrtol(buf, 10, (long *)&tmp_val) == 0) {
+		saving = tmp_val;
 		DBG(0, "old=%d new=%d\n", saving, saving_mode);
 		if (saving_mode == (!saving))
 			saving_mode = !saving_mode;

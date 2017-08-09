@@ -171,7 +171,7 @@ static int usb_driving_capability_show(struct seq_file *s, void *unused)
 {
 	u8 val;
 	char str[16];
-	u8 combined_val, tmp_val;
+	u8 combined_val, tmp_val = 0xff;
 
 	val = usb20_phy_debugfs_read_val(OFFSET_RG_USB20_TERM_VREF_SEL, SHFT_RG_USB20_TERM_VREF_SEL,
 					 MSK_RG_USB20_TERM_VREF_SEL, BIT_WIDTH_3, str);

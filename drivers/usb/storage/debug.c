@@ -183,12 +183,11 @@ int usb_stor_dbg(const struct us_data *us, const char *fmt, ...)
 {
 	/* limit debug mechanism to avoid printk too much */
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+	va_list args;
+	int r;
 
 	if (!(__ratelimit(&ratelimit)))
 		return 1;
-
-	va_list args;
-	int r;
 
 	va_start(args, fmt);
 
