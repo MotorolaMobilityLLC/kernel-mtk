@@ -104,6 +104,16 @@ config SND_SOC_MT7623_RFB
 	  The driver is based on MT_SND_SOC_2701.
 	  Select Y if you have such device.
 
+config SND_SOC_MT7623_WM8960
+	bool "SND_SOC_MT7623_WM8960"
+	select MT_SND_SOC_2701
+	select SND_SOC_WM8960
+	help
+	  This adds ASoC driver for Mediatek MT7623 RFB boards
+	  with WS2408(WM8960) audio daughter board.
+	  The driver is based on MT_SND_SOC_2701.
+	  Select Y if you have such device.
+
 config MTK_SPKGPIO_REWORK
     bool "MTK_SPKGPIO_REWORK"
 	default n
