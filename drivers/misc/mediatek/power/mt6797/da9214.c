@@ -711,6 +711,9 @@ static int __init da9214_init(void)
 
 static void __exit da9214_exit(void)
 {
+	if (new_client != NULL)
+		kfree(new_client);
+
 	i2c_del_driver(&da9214_driver);
 }
 module_init(da9214_init);
