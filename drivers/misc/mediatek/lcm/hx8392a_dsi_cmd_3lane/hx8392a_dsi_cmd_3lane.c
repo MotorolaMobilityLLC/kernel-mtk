@@ -346,26 +346,9 @@ static void lcm_suspend(void)
 
 static void lcm_resume(void)
 {
-	int resume_count = 5;
-	char buffer[4];
-	int recv_cnt;
-
-	do {
-		MDELAY(10);
-		lcm_init();
-		MDELAY(10);
-		/* atomic_set(&ESDCheck_byCPU, 1); */
-		recv_cnt = read_reg_v2(0x0A, buffer, 1);
-		/* atomic_set(&ESDCheck_byCPU, 0); */
-		if (buffer[0] != 0x0)
-			return;
-		pr_debug("DDP/LCM resume fail, resume again\n");
-		resume_count--;
-	} while (resume_count >= 0);
-
-	/* try over 'resume_count' times, assert fail */
-	ASSERT(0);
-
+	MDELAY(10);
+	lcm_init();
+	MDELAY(10);
 }
 
 
