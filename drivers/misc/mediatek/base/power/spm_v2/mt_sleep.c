@@ -130,10 +130,6 @@ static int slp_suspend_ops_prepare(void)
 	slp_crit2("Chip_pm_prepare\n");
 	slp_notice("@@@@@@@@@@@@@@@@@@@@\n");
 
-#ifndef CONFIG_MTK_FPGA
-	if (slp_chk_golden)
-		mt_power_gs_dump_suspend();
-#endif
 	return 0;
 }
 
