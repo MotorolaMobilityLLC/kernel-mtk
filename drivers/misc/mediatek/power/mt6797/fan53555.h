@@ -31,5 +31,7 @@ extern unsigned int fan53555_config_interface(unsigned char RegNum, unsigned cha
 					      unsigned char MASK, unsigned char SHIFT);
 extern int fan53555_vosel(unsigned long val);
 extern unsigned int fan53555_read_byte(unsigned char cmd, unsigned char *returnData);
+extern int is_fan53555_sw_ready(void);
+extern int get_fan53555_i2c_ch_num(void);
 
 #endif				/* _fan53555_SW_H_ */

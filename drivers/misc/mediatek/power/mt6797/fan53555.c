@@ -13,7 +13,7 @@
 #include <linux/module.h>
 
 #include "fan53555.h"
-
+#include "mt_gpufreq.h"
 #define PMIC_DEBUG_PR_DBG
 /**********************************************************
   *
@@ -424,7 +424,7 @@ static int fan53555_driver_probe(struct i2c_client *client, const struct i2c_dev
 		PMICLOG1("[fan53555_driver_probe] return err\n");
 		return err;
 	}
-
+	mt_gpufreq_fan53555_init();
 	return 0;
 
 exit:
