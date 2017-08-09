@@ -2128,7 +2128,7 @@ int sync_dcm_set_cpu_div(unsigned int cci, unsigned int mp0, unsigned int mp1)
 	return 0;
 }
 
-#if 0
+#if 1
 int sync_dcm_set_cci_freq(unsigned int cci)
 {
 	mt_dcm_init();

@@ -55,6 +55,11 @@
 #include "mt_idvfs.h"
 #include "mt_cpufreq_hybrid.h"
 
+#define DCM_ENABLE 1
+#ifdef DCM_ENABLE
+#include "mt_dcm.h"
+#endif
+
 /*=============================================================*/
 /* Macro definition                                            */
 /*=============================================================*/
@@ -125,7 +130,6 @@ static unsigned long mcumixed_base;
 /*
  * CONFIG
  */
-/* #define DCM_ENABLE 1 */
 #define CONFIG_CPU_DVFS_SHOWLOG 1
 /* #define CONFIG_CPU_DVFS_BRINGUP 1 */
 #ifdef CONFIG_MTK_RAM_CONSOLE
@@ -866,26 +870,6 @@ static int idvfs_set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt);
 static int idvfs_set_cur_volt_sram_b(struct mt_cpu_dvfs *p, unsigned int volt);	/* volt: mv * 100 */
 #endif
 
-#ifndef DCM_ENABLE
-/* DCM */
-int sync_dcm_set_cci_freq(unsigned int cci_hz)
-{
-	return 0;
-}
-int sync_dcm_set_mp0_freq(unsigned int mp0_hz)
-{
-	return 0;
-}
-int sync_dcm_set_mp1_freq(unsigned int mp1_hz)
-{
-	return 0;
-}
-int sync_dcm_set_mp2_freq(unsigned int mp2_hz)
-{
-	return 0;
-}
-#endif
-
 static int _search_available_freq_idx_under_v(struct mt_cpu_dvfs *p, unsigned int volt);
 
 /* CPU callback */
@@ -921,7 +905,7 @@ static struct mt_cpu_dvfs_ops idvfs_ops_B = {
 	.set_cur_volt = idvfs_set_cur_volt_extbuck,
 	.get_cur_vsram = get_cur_volt_sram_b,
 	.set_cur_vsram = idvfs_set_cur_volt_sram_b,
-	.set_sync_dcm = NULL,
+	.set_sync_dcm = idvfs_sync_dcm_set_mp2_freq,
 };
 #endif
 
@@ -1915,6 +1899,13 @@ static unsigned int _cpu_freq_calc(unsigned int con1, unsigned int ckdiv1)
 
 	return freq;
 }
+
+#ifdef ENABLE_IDVFS
+int idvfs_sync_dcm_set_mp2_freq(unsigned int mp2)
+{
+	return 0;
+}
+#endif
 
 #ifdef ENABLE_IDVFS
 static unsigned int idvfs_get_cur_phy_freq_b(struct mt_cpu_dvfs *p)

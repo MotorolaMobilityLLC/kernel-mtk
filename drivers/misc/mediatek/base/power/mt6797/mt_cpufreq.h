@@ -64,14 +64,6 @@ extern unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id);
 /* PPM */
 extern unsigned int mt_cpufreq_get_cur_phy_freq(enum mt_cpu_dvfs_id id);
 
-/* DCM */
-#ifdef DCM_ENABLE
-extern int sync_dcm_set_cci_freq(unsigned int cci_mhz);
-extern int sync_dcm_set_mp0_freq(unsigned int mp0_mhz);
-extern int sync_dcm_set_mp1_freq(unsigned int mp1_mhz);
-extern int sync_dcm_set_mp2_freq(unsigned int mp2_mhz);
-#endif
-
 /* Generic */
 extern int mt_cpufreq_state_set(int enabled);
 extern int mt_cpufreq_clock_switch(enum mt_cpu_dvfs_id id, enum top_ckmuxsel sel);
