@@ -3040,9 +3040,7 @@ static int _cpufreq_set_locked_cci(unsigned int cur_cci_khz, unsigned int target
 	id = MT_CPU_DVFS_CCI;
 	p_cci = id_to_cpu_dvfs(id);
 
-	if (cur_cci_khz == target_cci_khz)
-		goto out;
-	else
+	if (cur_cci_khz != target_cci_khz)
 		cpufreq_ver
 		    ("@%s(), %s: cur_cci_khz = %d, target_cci_khz = %d\n",
 		     __func__, cpu_dvfs_get_name(p_cci), cur_cci_khz, target_cci_khz);
