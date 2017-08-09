@@ -497,7 +497,7 @@ static int __init mt_power_management_init(void)
 	mt_cpu_dormant_init();
 
 	spm_module_init();
-	/* slp_module_init(); */
+	slp_module_init();
 	mt_freqhopping_init();
 	/* mt_clkmgr_init(); */
 
