@@ -1356,8 +1356,8 @@ int port_proxy_ccism_shm_init_ack_hdlr(struct port_proxy *proxy_p, unsigned int 
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 	struct ccci_smem_layout *smem_layout = ccci_md_get_smem(proxy_p->md_obj);
 
-	memset_io(smem_layout.ccci_ccism_smem_base_vir, 0, smem_layout.ccci_ccism_smem_size);
-	ccci_md_scp_ipi_send(proxy_p->md_id, CCCI_OP_SHM_INIT, &smem_layout->ccci_ccism_smem_base_phy);
+	memset_io(smem_layout->ccci_ccism_smem_base_vir, 0, smem_layout->ccci_ccism_smem_size);
+	ccci_md_scp_ipi_send(proxy_p->md_obj, CCCI_OP_SHM_INIT, &smem_layout->ccci_ccism_smem_base_phy);
 #endif
 	return 0;
 }

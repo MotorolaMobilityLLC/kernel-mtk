@@ -448,7 +448,7 @@ static inline int ccci_md_napi_check_and_notice(struct ccci_modem *md, int qno)
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 static inline int ccci_md_scp_ipi_send(struct ccci_modem *md, int op_id, void *data)
 {
-	ccci_scp_ipi_send(md->index, CCCI_OP_SHM_INIT, data);
+	return ccci_scp_ipi_send(md->index, CCCI_OP_SHM_INIT, data);
 }
 #endif
 /****************************************************************************************************************/
