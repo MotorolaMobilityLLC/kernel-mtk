@@ -718,6 +718,10 @@ static void Apply_Speaker_Gain(void)
 #else
 static void Apply_Speaker_Gain(void)
 {
+	Ana_Set_Reg(ZCD_CON1,
+		    (mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTR] << 7) |
+		    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTL],
+		    0x0f9f);
 }
 #endif
 
@@ -2006,7 +2010,7 @@ static void Speaker_Amp_Change(bool enable)
 		Ana_Set_Reg(ZCD_CON1, 0x0F89, 0xffff);
 		/* Set LOL gain as 0dB */
 
-		/* Apply_Speaker_Gain(); */
+		Apply_Speaker_Gain();
 	} else {
 		/* pr_warn("turn off Speaker_Amp_Change\n"); */
 #ifdef CONFIG_MTK_SPEAKER
@@ -2681,58 +2685,58 @@ static const char *const DAC_DL_PGA_Speaker_GAIN[] = {
 
 static int Lineout_PGAL_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("Speaker_PGA_Get = %d\n", mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKL]);
-	ucontrol->value.integer.value[0] = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKL];
+	pr_aud("Speaker_PGA_Get = %d\n",
+		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTL]);
+	ucontrol->value.integer.value[0] =
+		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTL];
 	return 0;
 }
 
 static int Lineout_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int index = 0;
+	int index = ucontrol->value.integer.value[0];
 
-	pr_aud("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	pr_aud("%s(), index = %d\n", __func__, index);
 
-	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN)) {
+	if (index >= ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN)) {
 		pr_warn("return -EINVAL\n");
 		return -EINVAL;
 	}
 
-	index = ucontrol->value.integer.value[0];
-
-	if (ucontrol->value.enumerated.item[0] == (ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN) - 1))
+	if (index == (ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN) - 1))
 		index = 0x1f;
 
 	Ana_Set_Reg(ZCD_CON1, index, 0x001f);
 
-	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKL] = ucontrol->value.integer.value[0];
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTL] = index;
 	return 0;
 }
 
 static int Lineout_PGAR_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("%s  = %d\n", __func__, mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKR]);
-	ucontrol->value.integer.value[0] = mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKR];
+	pr_aud("%s  = %d\n", __func__,
+		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTR]);
+	ucontrol->value.integer.value[0] =
+		mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTR];
 	return 0;
 }
 
 static int Lineout_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int index = 0;
+	int index = ucontrol->value.integer.value[0];
 
-	pr_aud("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	pr_aud("%s(), index = %d\n", __func__, index);
 
-	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN)) {
+	if (index >= ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN)) {
 		pr_warn("return -EINVAL\n");
 		return -EINVAL;
 	}
 
-	index = ucontrol->value.integer.value[0];
-
-	if (ucontrol->value.enumerated.item[0] == (ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN) - 1))
+	if (index == (ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN) - 1))
 		index = 0x1f;
 
 	Ana_Set_Reg(ZCD_CON1, index << 7, 0x0f10);
-	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_SPKR] = ucontrol->value.integer.value[0];
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTR] = index;
 	return 0;
 }
 
@@ -2747,23 +2751,21 @@ static int Handset_PGA_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 
 static int Handset_PGA_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int index = 0;
+	int index = ucontrol->value.integer.value[0];
 
-	pr_aud("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	pr_aud("%s(), index = %d\n", __func__, index);
 
-	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Handset_GAIN)) {
+	if (index >= ARRAY_SIZE(DAC_DL_PGA_Handset_GAIN)) {
 		pr_warn("return -EINVAL\n");
 		return -EINVAL;
 	}
-	index = ucontrol->value.integer.value[0];
 
-	if (ucontrol->value.enumerated.item[0] == (ARRAY_SIZE(DAC_DL_PGA_Handset_GAIN) - 1))
+	if (index == (ARRAY_SIZE(DAC_DL_PGA_Handset_GAIN) - 1))
 		index = 0x1f;
 
 	Ana_Set_Reg(ZCD_CON3, index, 0x001f);
 
-	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL] =
-	    ucontrol->value.integer.value[0];
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HSOUTL] = index;
 	return 0;
 }
 
@@ -2778,25 +2780,21 @@ static int Headset_PGAL_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 static int Headset_PGAL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
-	int index = 0;
+	int index = ucontrol->value.integer.value[0];
 
 	/* pr_warn("%s(), index = %d arraysize = %d\n", __func__,
-	ucontrol->value.enumerated.item[0], ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)); //mark for 64bit build fail */
+	index, ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)); //mark for 64bit build fail */
 
-	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)) {
+	if (index >= ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 
-	index = ucontrol->value.integer.value[0];
-
-	if (ucontrol->value.enumerated.item[0] == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
+	if (index == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
 		index = 0x1f;
 
 	Ana_Set_Reg(ZCD_CON2, index, 0x001f);
-	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] =
-	    ucontrol->value.integer.value[0];
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTL] = index;
 	return 0;
 }
 
@@ -2812,22 +2810,20 @@ static int Headset_PGAR_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 
 static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	int index = 0;
+	int index = ucontrol->value.integer.value[0];
 
-	pr_aud("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	pr_aud("%s(), index = %d\n", __func__, index);
 
-	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)) {
+	if (index >= ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
-	index = ucontrol->value.integer.value[0];
 
-	if (ucontrol->value.enumerated.item[0] == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
+	if (index == (ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN) - 1))
 		index = 0x1f;
 
 	Ana_Set_Reg(ZCD_CON2, index << 7, 0x0f80);
-	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] =
-	    ucontrol->value.integer.value[0];
+	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_HPOUTR] = index;
 	return 0;
 }
 
