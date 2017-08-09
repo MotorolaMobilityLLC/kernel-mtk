@@ -166,8 +166,8 @@ static unsigned int get_constant_voltage(void)
 {
 	unsigned int cv;
 #ifdef CONFIG_MTK_BIF_SUPPORT
-	unsigned int vbat_bif;
-	unsigned int vbat_auxadc;
+	unsigned int vbat_bif = 0;
+	unsigned int vbat_auxadc = 0;
 	unsigned int vbat, bif_ok;
 	int i;
 #endif
