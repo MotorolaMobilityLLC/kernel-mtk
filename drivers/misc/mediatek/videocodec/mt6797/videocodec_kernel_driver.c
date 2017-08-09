@@ -230,10 +230,14 @@ void SendDvfsRequest(int level)
 
 	if (level == MMDVFS_VOLTAGE_LOW) {
 		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW)");
-		/* ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW); */
+#ifdef CONFIG_MTK_SMI_EXT
+		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW);
+#endif
 	} else if (level == MMDVFS_VOLTAGE_HIGH) {
 		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_HIGH)");
-		/* ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_HIGH); */
+#ifdef CONFIG_MTK_SMI_EXT
+		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_HIGH);
+#endif
 	} else {
 		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] OOPS: level = %d\n", level);
 	}
