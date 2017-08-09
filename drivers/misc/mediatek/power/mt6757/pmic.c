@@ -122,7 +122,10 @@ unsigned int g_pmic_pad_vbif28_vol = 1;
  ******************************************************************************/
 static DEFINE_MUTEX(pmic_lock_mutex);
 #define PMIC_EINT_SERVICE
-
+/*****************************************************************************
+ * TBD: DEFINE FOR MD1 CONTROL
+ ******************************************************************************/
+#define MD_Option1
 /*****************************************************************************
  * PMIC read/write APIs
  ******************************************************************************/
@@ -156,25 +159,44 @@ static bool pmic_suspend_state;
 
 void vmd1_pmic_setting_on(void)
 {
-	/* VSRAM_MD on */
-	pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_EN, 1); /* 0x0654[0]=0, 0:Disable, 1:Enable */
-	pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VSLEEP_EN, 1); /* 0x0662[8]=0, 0:SW control, 1:HW control */
+	/*---Configure Modem Related Buck        ---*/
+	/*---Configure V_MD1 as 0.7V and HW mode ---*/
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_VOSEL_CTRL, 1);
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_EN, 1);
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_VOSEL_ON, 0x10);
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_VSLEEP_EN, 1);
 
-	/* VMD1 on */
-	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_EN, 1); /* 0x0640[0]=0, 0:Disable, 1:Enable */
-	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_VSLEEP_EN, 1); /* 0x064E[8]=0, 0:SW control, 1:HW control */
+	/*---configure V_MODEM as 0.8V and HW mode---*/
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VOSEL_CTRL, 1);
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_EN, 1);
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VOSEL_ON, 0x20);
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VSLEEP_EN, 1);
 
-	/* VMODEM on */
-	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_EN, 1); /* 0x062C[0]=0, 0:Disable, 1:Enable */
-	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VSLEEP_EN, 1); /* 0x063A[8]=0, 0:SW control, 1:HW control */
+#ifdef MD_Option1
+	/*---[Debug Purpose] Help to confirm VSRAM_MD’s voltage setting---*/
+	PMICLOG("[MD_POWER_ON_VSRAM_MD_DEBUG] EN =0x%x, VOSEL_CTRL=0x%x, VOSEL_ON=0x%x, VSLEEP_EN=0x%x\n",
+		pmic_get_register_value(MT6351_PMIC_BUCK_VSRAM_MD_EN),
+		pmic_get_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_CTRL),
+		pmic_get_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_ON),
+		pmic_get_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VSLEEP_EN));
+#elif defined MD_Option2
+/*---TBD: Need to control VSRAM_MD from EXT buck---*/
+#endif
 
-	pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_ON, 0x50);/*E1 1.0V; offset:0x65A */
-	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VOSEL_ON, 0x40);/* 1.0V; offset: 0x632 */
-	udelay(300);
+}
 
-	pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_CTRL, 1);/* HW mode, bit[1]; offset: 0x650 */
-	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_VOSEL_CTRL, 1);/* HW mode, bit[1]; offset: 0x63C */
-	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VOSEL_CTRL, 1);/* HW mode, bit[1]; offset: 0x628 */
+void vmd1_pmic_setting_off(void)
+{
+#ifdef MD_Option1
+	/*---TBD: set voltage to sleep voltage for VMODEM and VMD1---*/
+#elif defined MD_Option2
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_EN, 0);
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_VSLEEP_EN, 0);
+
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_EN, 0);
+	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VSLEEP_EN, 0);
+	/*---TBD: Need to control VSRAM_MD from EXT buck---*/
+#endif  /*--option2--*/
 }
 
 unsigned int pmic_read_vbif28_volt(unsigned int *val)

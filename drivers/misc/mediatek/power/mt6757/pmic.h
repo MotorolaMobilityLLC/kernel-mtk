@@ -120,6 +120,8 @@ extern int batt_init_cust_data(void);
 
 extern unsigned int mt_gpio_to_irq(unsigned int gpio);
 extern int mt_gpio_set_debounce(unsigned gpio, unsigned debounce);
+extern void vmd1_pmic_setting_on(void);
+extern void vmd1_pmic_setting_off(void);
 /*---------------------------------------------------*/
 
 /* controllable voltage , not fixed step */
