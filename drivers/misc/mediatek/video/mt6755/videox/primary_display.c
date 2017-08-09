@@ -2589,7 +2589,26 @@ static int decouple_update_rdma_config(void)
 	_primary_path_unlock(__func__);
 	return ret;
 }
+/*
+static int _requestCondition(int overlap_layers)
+{
+	int ret = 0;
+	int w = 0;
 
+	w = primary_display_get_virtual_width();
+	if (0 == w)
+		w = DISP_GetScreenWidth();
+	if ((720 == w) && (overlap_layers <= DISP_HW_HRT_720P_LYAERS_FOR_HI_PERF))
+		return -1;
+	if (overlap_layers > DISP_HW_HRT_LYAERS_FOR_HI_PERF) {
+		DISPWARN("overlayed layer num is %d > %d\n", overlap_layers,
+		DISP_HW_HRT_LYAERS_FOR_HI_PERF);
+	}
+	if ((1080 == w) && (overlap_layers <= DISP_HW_HRT_LYAERS_FOR_LOW_POWER))
+		return -1;
+	return ret;
+}
+*/
 static int _request_dvfs_perf(int req)
 {
 	if (is_vcorefs_can_work() != 1)
@@ -3560,9 +3579,10 @@ int primary_display_resume(void)
 			}
 			DSI_ForceConfig(1);
 			lcm_param_cv->dsi.mode = lcm_dsi_mode;
+			MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, lcm_mode_status);
 			lcm_mode_status = 0;
 		}
-		DISPCHECK("lcm_mode_status=%d, lcm_dsi_mode=%d\n", lcm_mode_status, lcm_dsi_mode);
+		DISPDBG("lcm_mode_status=%d, lcm_dsi_mode=%d\n", lcm_mode_status, lcm_dsi_mode);
 	}
 	/* c/v switch by suspend end*/
 	DISPDBG("dpmanager path power on[begin]\n");
@@ -3587,7 +3607,7 @@ int primary_display_resume(void)
 		 * BUT session mode may change in primary_display_switch_mode() */
 		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_ALL, NULL);
 		ddp_disconnect_path(DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP, NULL);
-		DISPCHECK("cmd/video mode=%d\n", primary_display_is_video_mode());
+		DISPDBG("cmd/video mode=%d\n", primary_display_is_video_mode());
 		dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 
 		dpmgr_path_connect(pgc->dpmgr_handle, CMDQ_DISABLE);
@@ -3645,7 +3665,7 @@ int primary_display_resume(void)
 	}
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 5);
-	DISPCHECK("[POWER]dpmgr path start[begin]\n");
+	DISPDBG("[POWER]dpmgr path start[begin]\n");
 	dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
 
 	if (primary_display_is_decouple_mode())
@@ -3664,8 +3684,7 @@ int primary_display_resume(void)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 7);
 
 	if (use_cmdq) {
-
-		DISPCHECK("[POWER]build cmdq trigger loop[begin]\n");
+		DISPDBG("[POWER]build cmdq trigger loop[begin]\n");
 		_cmdq_build_trigger_loop();
 		DISPCHECK("[POWER]build cmdq trigger loop[end]\n");
 	}
@@ -3695,7 +3714,7 @@ int primary_display_resume(void)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 10);
 
 	if (!primary_display_is_video_mode()) {
-		DISPCHECK("[POWER]triggger cmdq[begin] cmd mode\n");
+		DISPDBG("[POWER]triggger cmdq[begin] cmd mode\n");
 		if (_should_reset_cmdq_config_handle())
 			_cmdq_reset_config_handle();
 		if (_should_insert_wait_frame_done_token())

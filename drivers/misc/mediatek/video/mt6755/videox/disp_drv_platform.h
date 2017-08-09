@@ -50,6 +50,6 @@ typedef enum {
 /* macros for display path hardware */
 #define DISP_HW_HRT_LYAERS_FOR_LOW_POWER	4
 #define DISP_HW_HRT_LYAERS_FOR_HI_PERF		6
-
+#define DISP_HW_HRT_720P_LYAERS_FOR_HI_PERF 8
 
 #endif				/* __DISP_DRV_PLATFORM_H__ */
