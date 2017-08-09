@@ -51,7 +51,7 @@ statsInfoEnvRequest(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4SetBuffer
 UINT_64 u8DrvOwnStart, u8DrvOwnEnd;
 UINT32 u4DrvOwnMax = 0;
 #define CFG_USER_LOAD 0
-static UINT_16 su2TxDoneCfg = CFG_ARP | CFG_DHCP | CFG_DNS | CFG_ICMP | CFG_EAPOL;
+static UINT_16 su2TxDoneCfg = CFG_DHCP | CFG_DNS | CFG_ICMP | CFG_EAPOL;
 /*******************************************************************************
 *						P R I V A T E  F U N C T I O N S
 ********************************************************************************
