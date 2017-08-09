@@ -2700,7 +2700,6 @@ static u32 msdc_status_verify_case1(struct msdc_host *host,
 		}
 
 		state = R1_CURRENT_STATE(status);
-		ERR_MSG("check card state<%d>", state);
 		if (state == 5 || state == 6) {
 			ERR_MSG("state<%d> need cmd12 to stop", state);
 			msdc_send_stop(host);	/* don't tuning */
@@ -6480,9 +6479,9 @@ int msdc_tune_read(struct msdc_host *host)
 	sdr_get_field(MSDC_IOCON, MSDC_IOCON_R_D_SMPL, orig_dsmpl);
 	cur_rxdly0 = sdr_read32(MSDC_DAT_RDDLY0);
 	cur_rxdly1 = sdr_read32(MSDC_DAT_RDDLY1);
-	pr_err("msdc%d TUNE_READ: dsmpl<%d> rxdly0<0x%x> rxdly1<0x%x>;"
+	/*pr_err("msdc%d TUNE_READ: dsmpl<%d> rxdly0<0x%x> rxdly1<0x%x>;"
 		"dsel<%d> dl_cksel<%d> sfreq.<%d>", host->id, orig_dsmpl, cur_rxdly0,
-		cur_rxdly1, orig_dsel, orig_dl_cksel, host->sclk);
+		cur_rxdly1, orig_dsel, orig_dl_cksel, host->sclk);*/
 
 	return result;
 }
@@ -6714,32 +6713,18 @@ static void msdc_dump_trans_error(struct msdc_host *host,
 	}
 #endif
 
-	ERR_MSG("XXX CMD<%d><0x%x> Error<%d> Resp<0x%x>",
-		cmd->opcode, cmd->arg, cmd->error, cmd->resp[0]);
-
-	if (data) {
-		if (host->suspend == 1)
-			ERR_MSG("XXX DAT block<%d> Error<%d>", data->blocks, data->error);
+	if (cmd->error)
+		ERR_MSG("XXX CMD<%d><0x%x> Error<%d> Resp<0x%x> block<%d>",
+			cmd->opcode, cmd->arg, cmd->error, cmd->resp[0], (data == NULL) ? 0 : data->blocks);
+	else {
+		if (host->autocmd & MSDC_AUTOCMD23)
+			ERR_MSG("XXX DAT CMD<%d><0x%x> block<%d> Error<%d> SBC<%d><0x%x> Error<%d> Resp<0x%x>",
+				cmd->opcode, cmd->arg, data->blocks, data->error,
+					sbc->opcode, sbc->arg, sbc->error, sbc->resp[0]);
 		else
-			pr_debug("msdc%d XXX DAT block<%d> Error<%d>\n",
-				host->id, data->blocks, data->error);
-	}
-	if (stop) {
-		if (host->suspend == 1)
-			ERR_MSG("XXX STOP<%d><0x%x> Error<%d> Resp<0x%x>",
-				stop->opcode, stop->arg, stop->error, stop->resp[0]);
-		else
-			pr_debug("msdc%d XXX STOP<%d><0x%x> Error<%d> Resp<0x%x>\n",
-				host->id, stop->opcode, stop->arg, stop->error, stop->resp[0]);
-	}
-
-	if (sbc) {
-		if (host->suspend == 1)
-			ERR_MSG("XXX SBC<%d><0x%x> Error<%d> Resp<0x%x>",
-				sbc->opcode, sbc->arg, sbc->error, sbc->resp[0]);
-		else
-			pr_debug("msdc%d XXX SBC<%d><0x%x> Error<%d> Resp<0x%x>\n",
-				host->id, sbc->opcode, sbc->arg, sbc->error, sbc->resp[0]);
+			ERR_MSG("XXX DAT CMD<%d><0x%x> block<%d> Error<%d> STOP<%d><0x%x> Error<%d> Resp<0x%x>",
+				cmd->opcode, cmd->arg, data->blocks, data->error, stop->opcode,
+					stop->arg, stop->error, stop->resp[0]);
 	}
 #ifdef MTK_SDIO30_ONLINE_TUNING_SUPPORT
 	if ((host->hw->host_function == MSDC_SDIO) && (cmd) && (data) &&
@@ -7932,7 +7917,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 					intsts = MSDC_INT_DATCRCERR;
 					g_err_tune_dbg_count--;
 				}
-				pr_err("%s:make error cmd:%d,arg=%d,error type=%d,count=%d\n"
+				pr_err("%s:make error cmd:%d,arg=%d,error type=%d,count=%d\n",
 					__func__, g_err_tune_dbg_cmd, g_err_tune_dbg_arg,
 					g_err_tune_dbg_error, g_err_tune_dbg_count);
 			}
@@ -7976,9 +7961,9 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 					host->mrq->cmd->opcode, host->mrq->cmd->arg);
 			} else if (intsts & MSDC_INT_DATCRCERR) {
 				data->error = (unsigned int)-EIO;
-				ERR_MSG("XXX CMD<%d> Arg<0x%.8x> MSDC_INT_DATCRCERR,SDC_DCRC_STS<0x%x>",
+				/*ERR_MSG("XXX CMD<%d> Arg<0x%.8x> MSDC_INT_DATCRCERR,SDC_DCRC_STS<0x%x>",
 					host->mrq->cmd->opcode,	host->mrq->cmd->arg,
-					sdr_read32(SDC_DCRC_STS));
+					sdr_read32(SDC_DCRC_STS));*/
 			}
 			goto tune;
 		}
