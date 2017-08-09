@@ -163,7 +163,7 @@ typedef bool                    MBOOL;
 /*******************************************************************************
 *
 ********************************************************************************/
-
+#define DUMP_GCE_TPIPE  0
 
 
 /**
@@ -10132,135 +10132,24 @@ int32_t ISP_MDPClockOffCallback(uint64_t engineFlag)
 }
 
 
-static uint32_t *addressToDump[] = {
+#define ISP_IMGSYS_BASE_PHY_KK 0x15022000
 
-#if 0    /*     QQ */
-#ifdef CONFIG_OF
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4018),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x401C),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4024),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4030),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x403C),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4040),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4080),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4084),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4088),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x40A0),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x40A4),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x40A8),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48A0),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48A4),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48A8),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48AC),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48B0),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48B4),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48B8),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48BC),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48C0),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48C4),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48C8),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48CC),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48D0),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48D4),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48D8),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48DC),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48E0),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48E4),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x48E8),
-	/*  */
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4948),
-	/*  */
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B00),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B04),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B08),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B0C),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B10),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B14),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B18),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B1C),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B20),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B24),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B28),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B2C),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B30),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B34),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x4B38),
-	/*  */
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x7204),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x7208),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x720C),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x7230),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x7240),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x7288),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x72a4),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x7300),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x7320),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x7440),
-	(uint32_t *)(ISP_IMGSYS_BASE_PHY + 0x7460)
-
-#else
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4018),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x401C),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4024),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4030),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x403C),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4040),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4080),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4084),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4088),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x40A0),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x40A4),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x40A8),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48A0),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48A4),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48A8),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48AC),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48B0),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48B4),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48B8),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48BC),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48C0),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48C4),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48C8),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48CC),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48D0),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48D4),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48D8),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48DC),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48E0),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48E4),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x48E8),
-	/*  */
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4948),
-	/*  */
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B00),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B04),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B08),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B0C),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B10),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B14),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B18),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B1C),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B20),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B24),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B28),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B2C),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B30),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B34),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x4B38),
-	/*  */
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x7204),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x7208),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x720C),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x7230),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x7240),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x7288),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x72a4),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x7300),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x7320),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x7440),
-	(uint32_t *)IO_VIRT_TO_PHYS(ISP_IMGSYS_BASE + 0x7460)
-#endif
+static uint32_t addressToDump[] = {
+#if 1
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x000),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x004),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x008),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x00C),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x010),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x014),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x018),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x204),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x208),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x20C),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x400),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x408),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x410),
+(uint32_t)(ISP_IMGSYS_BASE_PHY_KK + 0x414),
 #endif
 };
 
@@ -10278,11 +10167,20 @@ int32_t ISP_BeginGCECallback(uint32_t taskID, uint32_t *regCount, uint32_t **reg
 
 int32_t ISP_EndGCECallback(uint32_t taskID, uint32_t regCount, uint32_t *regValues)
 {
-#define PER_LINE_LOG_SIZE   10
+	#define PER_LINE_LOG_SIZE   10
 	int32_t i, j, pos;
 	/* uint32_t add[PER_LINE_LOG_SIZE]; */
-	uint32_t *add[PER_LINE_LOG_SIZE];
+	uint32_t add[PER_LINE_LOG_SIZE];
 	uint32_t val[PER_LINE_LOG_SIZE];
+
+#if DUMP_GCE_TPIPE
+	int32_t tpipePA;
+	int32_t ctlStart;
+	unsigned long map_va = 0;
+	uint32_t map_size;
+	int32_t *pMapVa;
+	#define TPIPE_DUMP_SIZE    200
+#endif
 
 	LOG_DBG("End taskID(%d),regCount(%d)", taskID, regCount);
 
@@ -10296,11 +10194,38 @@ int32_t ISP_EndGCECallback(uint32_t taskID, uint32_t regCount, uint32_t *regValu
 			}
 		}
 
-		/* LOG_DBG("[0x%04x,0x%08x][0x%04x,0x%08x][0x%04x,0x%08x][0x%04x,0x%08x][0x%04x,0x%08x][0x%04x,0x%08x][0x%04x,0x%08x][0x%04x,0x%08x][0x%04x,0x%08x][0x%04x,0x%08x]\n", \ */
-		/* add[0],val[0],add[1],val[1],add[2],val[2],add[3],val[3],add[4],val[4],add[5],val[5],add[6],val[6],add[7],val[7],add[8],val[8],add[9],val[9]); */
-		LOG_DBG("[0x%p,0x%08x][0x%p,0x%08x][0x%p,0x%08x][0x%p,0x%08x][0x%p,0x%08x][0x%p,0x%08x][0x%p,0x%08x][0x%p,0x%08x][0x%p,0x%08x][0x%p,0x%08x]\n", \
-			add[0], val[0], add[1], val[1], add[2], val[2], add[3], val[3], add[4], val[4], add[5], val[5], add[6], val[6], add[7], val[7], add[8], val[8], add[9], val[9]);
+		LOG_DBG("[0x%08x,0x%08x][0x%08x,0x%08x][0x%08x,0x%08x][0x%08x,0x%08x][0x%08x,0x%08x]\n",
+			add[0], val[0], add[1], val[1], add[2], val[2], add[3], val[3], add[4], val[4]);
+		LOG_DBG("[0x%08x,0x%08x][0x%08x,0x%08x][0x%08x,0x%08x][0x%08x,0x%08x][0x%08x,0x%08x]\n",
+			add[5], val[5], add[6], val[6], add[7], val[7], add[8], val[8], add[9], val[9]);
 	}
+
+#if DUMP_GCE_TPIPE
+	/* tpipePA = ISP_RD32(ISP_IMGSYS_BASE_PHY_KK + 0x204); */
+	tpipePA = val[7];
+	/* ctlStart = ISP_RD32(ISP_IMGSYS_BASE_PHY_KK + 0x000); */
+	ctlStart = val[0];
+
+	LOG_DBG("kk:tpipePA(0x%x), ctlStart(0x%x)", tpipePA, ctlStart);
+
+	if ((tpipePA)) {
+		tpipePA = tpipePA&0xfffff000;
+		map_va = 0;
+		m4u_mva_map_kernel(tpipePA, TPIPE_DUMP_SIZE, &map_va, &map_size);
+		pMapVa = (int *)map_va;
+		LOG_DBG("map_size(0x%x)", map_size);
+		LOG_DBG("ctlStart(0x%x),tpipePA(0x%x)", ctlStart, tpipePA);
+
+		if (pMapVa) {
+			for (i = 0; i < TPIPE_DUMP_SIZE; i += 10) {
+				LOG_DBG("[idx(%d)]%08X-%08X-%08X-%08X-%08X-%08X-%08X-%08X-%08X-%08X",
+					i, pMapVa[i], pMapVa[i+1], pMapVa[i+2], pMapVa[i+3], pMapVa[i+4],
+					pMapVa[i+5], pMapVa[i+6], pMapVa[i+7], pMapVa[i+8], pMapVa[i+9]);
+			}
+		}
+		m4u_mva_unmap_kernel(tpipePA, map_size, map_va);
+	}
+#endif
 
 	return 0;
 }
