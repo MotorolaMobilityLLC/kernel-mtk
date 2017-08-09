@@ -11,7 +11,6 @@
 #include <linux/sched_clock.h>
 #include <linux/vmalloc.h>
 #include <linux/dma-mapping.h>
-#include <board-custom.h>
 
 #define MET_USER_EVENT_SUPPORT
 /* Pending on MET to check in
