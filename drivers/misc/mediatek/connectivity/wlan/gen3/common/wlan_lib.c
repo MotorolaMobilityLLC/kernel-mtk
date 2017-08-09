@@ -6376,7 +6376,7 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	 * Note: For VHT STA, BW 80Mhz is a must!
 	 */
 	prWifiVar->ucStaBandwidth = (UINT_8) wlanCfgGetUint32(prAdapter, "StaBw", MAX_BW_80MHZ);
-	prWifiVar->ucSta2gBandwidth = (UINT_8) wlanCfgGetUint32(prAdapter, "Sta2gBw", MAX_BW_40MHZ);
+	prWifiVar->ucSta2gBandwidth = (UINT_8) wlanCfgGetUint32(prAdapter, "Sta2gBw", MAX_BW_20MHZ);
 	prWifiVar->ucSta5gBandwidth = (UINT_8) wlanCfgGetUint32(prAdapter, "Sta5gBw", MAX_BW_80MHZ);
 	prWifiVar->ucAp2gBandwidth = (UINT_8) wlanCfgGetUint32(prAdapter, "Ap2gBw", MAX_BW_20MHZ);
 	prWifiVar->ucAp5gBandwidth = (UINT_8) wlanCfgGetUint32(prAdapter, "Ap5gBw", MAX_BW_40MHZ);
