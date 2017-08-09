@@ -14,13 +14,9 @@
 /* ccyeh #define MSDC_HQA */
 
 #define MTK_MSDC_USE_CMD23
-/* weiping fix */
-/* #if defined(CONFIG_MTK_EMMC_CACHE) && defined(MTK_MSDC_USE_CMD23) */
-#if 0
+#if defined(CONFIG_MTK_EMMC_CACHE) && defined(MTK_MSDC_USE_CMD23)
 #define MTK_MSDC_USE_CACHE
-#define MTK_MSDC_USE_EDC_EMMC_CACHE (1)
-#else
-#define MTK_MSDC_USE_EDC_EMMC_CACHE (0)
+extern unsigned int g_emmc_cache_size;
 #endif
 
 #ifdef MTK_MSDC_USE_CMD23
@@ -1536,6 +1532,8 @@ extern int mmc_flush_cache(struct mmc_card *card);
 #ifdef CONFIG_MTK_HIBERNATION
 extern unsigned int mt_eint_get_polarity_external(unsigned int eint_num);
 #endif
+extern int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
+	u32 *status);
 /* weiping fix */
 #if defined(CFG_DEV_MSDC0)
 extern struct msdc_hw msdc0_hw;

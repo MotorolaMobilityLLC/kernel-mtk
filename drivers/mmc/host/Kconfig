@@ -23,6 +23,17 @@ config MTK_EMMC_SUPPORT
 
 	  If unsure, say N.
 
+config MTK_EMMC_CACHE
+	tristate "MediaTek eMMC card cache support"
+	depends on MTK_EMMC_SUPPORT
+        default n
+	help
+	  This enables eMMC cache scheme designed by MTK.
+          Say Y if you turns on MTK_EMMC_SUPPORT and want to use MTK eMMC
+          cacheas scheme.
+
+	  If unsure, say N.
+
 config MTK_EMMC_SUPPORT_OTP
 	tristate "MediaTek eMMC Card OTP support"
 	depends on MTK_EMMC_SUPPORT

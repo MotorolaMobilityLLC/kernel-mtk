@@ -1745,12 +1745,10 @@ static int msdc_help_proc_show(struct seq_file *m, void *v)
 	seq_printf(m,
 		   "            [error]            0: disable error tune debug, 1: cmd timeout, 2: cmd crc, 4: dat timeout, 8: dat crc, 16: acmd timeout, 32: acmd crc\n");
 	seq_puts(m, "            [count]            error count\n");
-#if MTK_MSDC_USE_EDC_EMMC_CACHE
 	seq_printf(m, "\n   eMMC Cache Control: echo %x [host_id] [action_id] > /proc/msdc_debug\n",
 		   MMC_EDC_EMMC_CACHE);
 	seq_printf(m,
 		   "            [action_id]        0:Disable cache 1:Enable cache 2:check cache status\n");
-#endif
 	seq_printf(m, "\n   eMMC Dump GPD/BD:      echo %x [host_id] > /proc/msdc_debug\n",
 		   MMC_DUMP_GPD);
 	seq_printf(m,
@@ -1912,89 +1910,56 @@ static int rwThread(void *data)
 	return 0;
 }
 
-#if MTK_MSDC_USE_EDC_EMMC_CACHE
 static int msdc_check_emmc_cache_status(struct msdc_host *host)
 {
-	struct mmc_card *card = host->mmc->card;
+	BUG_ON(!host);
+	BUG_ON(!host->mmc);
+	BUG_ON(!host->mmc->card);
 
-	msdc_get_cache_region_func(host);
-	mmc_claim_host(host->mmc);
-	if (card && !mmc_card_mmc(card)) {
-		pr_err("host:%d is not a eMMC card...\n", host->id);
-		goto exit;
-	} else {
-		if (0 == host->mmc->card->ext_csd.cache_size) {
-			pr_err("card don't support cache feature...\n");
-			goto unsupport;
-		} else {
-			pr_err("card cache size:%dKB...\n",
-			       host->mmc->card->ext_csd.cache_size / 8);
-		}
+	if (!mmc_card_mmc(host->mmc->card)) {
+		pr_err("msdc%d: is not a eMMC card\n", host->id);
+		return -1;
 	}
-	if (host->mmc->card->ext_csd.cache_ctrl)
-		pr_err("Current Cache status: Enable...\n");
-	else
-		pr_err("Current Cache status: Disable...\n");
-	mmc_release_host(host->mmc);
+	if (0 == host->mmc->card->ext_csd.cache_size) {
+		pr_err("msdc%d:card don't support cache feature\n", host->id);
+		return -1;
+	}
+	pr_err("msdc%d: Current eMMC Cache status: %s, Cache size:%dKB\n", host->id,
+		host->mmc->card->ext_csd.cache_ctrl ? "Enable" : "Disable",
+		host->mmc->card->ext_csd.cache_size/8);
 
 	return host->mmc->card->ext_csd.cache_ctrl;
-
-exit:
-	return -2;
-unsupport:
-	return -1;
 }
-
 static int msdc_enable_emmc_cache(struct msdc_host *host, int enable)
 {
-	u32 err;
+	int err;
 	u8 c_ctrl;
-	struct mmc_card *card = host->mmc->card;
-
-	mmc_claim_host(host->mmc);
-	if (card && !mmc_card_mmc(card)) {
-		pr_err("host:%d is not a eMMC card...\n", host->id);
-		goto exit;
-	}
-	msdc_get_cache_region_func(host);
 
 	err = msdc_check_emmc_cache_status(host);
-
 	if (err < 0)
-		goto exit;
+		goto out;
+
+	mmc_get_card(host->mmc->card);
+
 	c_ctrl = host->mmc->card->ext_csd.cache_ctrl;
 
-	if (c_ctrl && enable) {
-		pr_err("cache has already been in enable status, don't need enable it...\n");
-	} else if (c_ctrl && !enable) {
-		err = mmc_cache_ctrl(host->mmc, enable);
-		if (err) {
-			pr_warn("%s: Cache is supported, but failed to turn off (%d)\n",
-				mmc_hostname(host->mmc), err);
-		} else {
-			pr_err("disable cache successfully...\n");
-			host->mmc->caps2 &= ~MMC_CAP2_CACHE_CTRL;
-		}
-	} else if (!c_ctrl && enable) {
-		host->mmc->caps2 |= MMC_CAP2_CACHE_CTRL;
-		err = mmc_cache_ctrl(host->mmc, enable);
-		if (err) {
-			pr_warn("%s: Cache is supported, but failed to turn on (%d)\n",
-				mmc_hostname(host->mmc), err);
-		} else {
-			pr_err("enable cache successfully...\n");
-		}
-	} else if (!c_ctrl && !enable) {
-		pr_err("cache has already been in disable status, don't need disable it...\n");
+	if (c_ctrl == enable)
+		pr_err("msdc%d:cache has already been %s state,\n", host->id,
+			enable ? "enable" : "disable");
+	else {
+		err = msdc_cache_ctrl(host, enable, NULL);
+		if (err)
+			pr_err("msdc%d: Cache is supported, but %s failed\n", host->id,
+				enable ? "enable" : "disable");
+		else
+			pr_err("msdc%d: %s cache successfully\n", host->id,
+				enable ? "enable" : "disable");
 	}
 
-	mmc_release_host(host->mmc);
-
-	return 0;
-exit:
-	return -1;
+out:
+	mmc_put_card(host->mmc->card);
+	return err;
 }
-#endif
 
 static ssize_t msdc_debug_proc_write(struct file *file, const char *buf, size_t count,
 				     loff_t *data)
@@ -2766,8 +2731,6 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf, size_t 
 		}
 	}
 #endif
-
-#if MTK_MSDC_USE_EDC_EMMC_CACHE
 	else if (cmd == MMC_EDC_EMMC_CACHE) {
 		pr_err
 		    ("==========================MSDC Cache Feature Test ==============================\n");
@@ -2791,9 +2754,7 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf, size_t 
 				break;
 			}
 		}
-	}
-#endif
-	else if (cmd == MMC_DUMP_GPD) {
+	} else if (cmd == MMC_DUMP_GPD) {
 		pr_err
 		    ("==========================MSDC DUMP GPD/BD ==============================\n");
 		id = p1;

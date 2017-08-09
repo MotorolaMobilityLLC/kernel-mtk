@@ -57,16 +57,16 @@
 
 #include <queue.h>
 
-#ifdef MTK_MSDC_USE_CACHE
-#include <mach/mt_boot.h>
-#endif
+#include <mt-plat/mt_boot.h>
+#include <mt-plat/partition.h>
+
 #ifdef CONFIG_MTK_HIBERNATION
 #include "mach/mtk_hibernate_dpm.h"
 #endif
 
 #include "mt_sd.h"
 #include "msdc_hw_ett.h"
-
+#include "dbg.h"
 #define MET_USER_EVENT_SUPPORT
 
 #include<mt-plat/upmu_common.h>
@@ -95,7 +95,7 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#include <dt-bindings/clock/mt6735-clk.h>
+#include <mt_clk_id.h>
 struct clk *g_msdc0_pll_sel = NULL;
 struct clk *g_msdc0_pll_800m = NULL;
 struct clk *g_msdc0_pll_400m = NULL;
@@ -190,6 +190,22 @@ static unsigned int g_cache_status = CACHE_UN_FLUSHED;
 static unsigned long long g_flush_data_size;
 static unsigned int g_flush_error_count;
 static int g_flush_error_happend;
+static int g_bypass_flush;
+unsigned long long g_cache_part_start;
+unsigned long long g_cache_part_end;
+unsigned long long g_usrdata_part_start;
+unsigned long long g_usrdata_part_end;
+
+unsigned int g_emmc_cache_size = 0;
+/* if disable cache by vendor fill CID.MID to g_emmc_cache_quirk[i] */
+unsigned char g_emmc_cache_quirk[256];
+#define CID_MANFID_SANDISK		0x2
+#define CID_MANFID_TOSHIBA		0x11
+#define CID_MANFID_MICRON		0x13
+#define CID_MANFID_SAMSUNG		0x15
+#define CID_MANFID_SANDISK_NEW	0x45
+#define CID_MANFID_HYNIX		0x90
+#define CID_MANFID_KSI			0x70
 #endif
 
 unsigned long long msdc_print_start_time;
@@ -2069,11 +2085,7 @@ void msdc_clk_status(int *status)
 		spin_lock_irqsave(&mtk_msdc_host[i]->clk_gate_lock, flags);
 		if (mtk_msdc_host[i]->clk_gate_count > 0)
 #ifndef FPGA_PLATFORM
-#ifdef CONFIG_MTK_CLKMGR
 			g_clk_gate |= 1 << ((i) + MT_CG_PERI_MSDC30_0);
-#else
-			g_clk_gate |= 1 << ((i) + PERI_MSDC30_0);
-#endif
 #endif
 		spin_unlock_irqrestore(&mtk_msdc_host[i]->clk_gate_lock, flags);
 	}
@@ -3477,110 +3489,79 @@ struct msdc_host *msdc_get_host(int host_function, bool boot, bool secondary)
 EXPORT_SYMBOL(msdc_get_host);
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT
-# if 0 /* weiping fix reserve */
+
 u8 ext_csd[512];
 EXPORT_SYMBOL(ext_csd);
 
 int offset = 0;
 char partition_access = 0;
 
-static int msdc_get_data(u8 *dst, struct mmc_data *data, int dma_xfer)
+static int msdc_get_ext_csd(u8 *dst, struct mmc_data *data,
+	struct msdc_host *host)
 {
-	int left;
 	u8 *ptr;
-	struct scatterlist *sg = data->sg;
-	int num = data->sg_len;
+	int i;
+#ifdef MTK_MSDC_USE_CACHE
+	enum boot_mode_t mode;
+#endif
+	struct scatterlist *sg;
 
-	while (num) {
-		left = msdc_sg_len(sg, dma_xfer);
-		ptr = (u8 *) sg_virt(sg);
-		memcpy(dst, ptr, left);
-		sg = sg_next(sg);
-		dst += left;
-		num--;
+	sg = data->sg;
+	ptr = (u8 *) sg_virt(sg);
+#ifdef MTK_MSDC_USE_CACHE
+	g_emmc_cache_size = (*(ptr + 252) << 24) +
+						(*(ptr + 251) << 16) +
+						(*(ptr + 250) << 8) +
+						(*(ptr + 249) << 0);
+	/*
+	 * only enable the emmc cache feature for normal boot up,
+	 * alarm boot up, and sw reboot
+	 */
+	mode = get_boot_mode();
+	if ((mode == NORMAL_BOOT) || (mode == ALARM_BOOT) || (mode == SW_REBOOT)) {
+		for (i = 0; i < sizeof(g_emmc_cache_quirk); i++) {
+			if (g_emmc_cache_quirk[i] == emmc_id)
+				*(ptr + 252) = *(ptr + 251) = *(ptr + 250) = *(ptr + 249) = 0;
+		}
 	}
+#else
+	*(ptr + 252) = *(ptr + 251) = *(ptr + 250) = *(ptr + 249) = 0;
+#endif
+	memcpy(dst, ptr, msdc_sg_len(sg, host->dma_xfer));
+
 	return 0;
 }
-#endif /* weiping fix reserve */
-#if 0 /* weiping fix cache */
+
 #ifdef MTK_MSDC_USE_CACHE
-unsigned long long g_cache_part_start;
-unsigned long long g_cache_part_end;
-unsigned long long g_usrdata_part_start;
-unsigned long long g_usrdata_part_end;
-
-void msdc_get_cache_region_func(struct msdc_host *host)
+static void msdc_set_cache_quirk(struct msdc_host *host)
 {
-#ifndef CONFIG_MTK_GPT_SCHEME_SUPPORT
-	int i = 0;
+	/*
+	 * if need disable emmc cache feature for some vendor, plese add quirk here
+	 * exmple:
+	 * g_emmc_cache_quirk[0] = CID_MANFID_HYNIX;
+	 * g_emmc_cache_quirk[1] = CID_MANFID_SAMSUNG;
+	 */
+	int i;
 
-	if (PartInfo == NULL)
-		return;
-
-	for (i = 0; i < PART_NUM; i++) {
-		if (0 == strcmp("cache", PartInfo[i].name)) {
-			if (mmc_card_blockaddr(host->mmc->card)) {
-				g_cache_part_start = PartInfo[i].start_address / 512;
-				g_cache_part_end = (PartInfo[i].start_address
-					+ PartInfo[i].size) / 512;
-			} else {
-				g_cache_part_start = PartInfo[i].start_address;
-				g_cache_part_end = PartInfo[i].start_address
-					+ PartInfo[i].size;
-			}
+	for (i = 0; i < sizeof(g_emmc_cache_quirk); i++) {
+		if (g_emmc_cache_quirk[i] == 0) {
+			pr_debug("msdc%d total emmc cache quirk count=%d\n", host->id, i);
+			break;
 		}
-		if (0 == strcmp("usrdata", PartInfo[i].name)) {
-			if (mmc_card_blockaddr(host->mmc->card)) {
-				g_usrdata_part_start = PartInfo[i].start_address / 512;
-				g_usrdata_part_end = (PartInfo[i].start_address
-					+ PartInfo[i].size) / 512;
-			} else {
-				g_usrdata_part_start = PartInfo[i].start_address;
-				g_usrdata_part_end = PartInfo[i].start_address
-					+ PartInfo[i].size;
-			}
-		}
-	}
-
-	N_MSG(CHE, "cache(0x%lld~0x%lld), usrdata(0x%lld~0x%lld)",
-		g_cache_part_start, g_cache_part_end,
-		g_usrdata_part_start, g_usrdata_part_end);
-#else
-
-	struct hd_struct *lp_hd_struct = NULL;
-
-	lp_hd_struct = get_part("cache");
-	if (likely(lp_hd_struct)) {
-		g_cache_part_start = lp_hd_struct->start_sect;
-		g_cache_part_end = g_cache_part_start + lp_hd_struct->nr_sects;
-		put_part(lp_hd_struct);
-	} else {
-		g_cache_part_start = (sector_t) (-1);
-		g_cache_part_end = (sector_t) (-1);
-		pr_err("There is no cache info\n");
-	}
-
-	lp_hd_struct = NULL;
-	lp_hd_struct = get_part("userdata");
-	if (likely(lp_hd_struct)) {
-		g_usrdata_part_start = lp_hd_struct->start_sect;
-		g_usrdata_part_end = g_usrdata_part_start + lp_hd_struct->nr_sects;
-		put_part(lp_hd_struct);
-	} else {
-		g_usrdata_part_start = (sector_t) (-1);
-		g_usrdata_part_end = (sector_t) (-1);
-		pr_debug("There is no userdata info\n");
-	}
-
-	pr_err("cache(0x%llX~0x%llX, usrdata(0x%llX~0x%llX)\n",
-		g_cache_part_start, g_cache_part_end,
-		g_usrdata_part_start, g_usrdata_part_end);
-#endif
+		pr_debug("msdc%d,add emmc cache quirk[%d]=0x%x\n",
+			host->id, i, g_emmc_cache_quirk[i]);
+	 }
 }
+
+
 
 static int msdc_can_apply_cache(unsigned long long start_addr,
 			unsigned int size)
 {
+	if (!g_cache_part_start && !g_cache_part_end &&
+		!g_usrdata_part_start && !g_usrdata_part_end)
+		return 0;
+
 	/* since cache, userdata partition are connected,
 	 * so check it as an area, else do check them separately
 	 */
@@ -3600,8 +3581,9 @@ static int msdc_can_apply_cache(unsigned long long start_addr,
 
 	return 1;
 }
+#endif
 
-static int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
+int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 			u32 *status)
 {
 	struct mmc_command cmd;
@@ -3634,34 +3616,46 @@ static int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 
 	return err;
 }
-#endif
 
 int msdc_get_cache_region(void)
 {
 #ifdef MTK_MSDC_USE_CACHE
-	struct msdc_host *host = NULL;
+	struct msdc_host *host;
 
 	host = msdc_get_host(MSDC_EMMC, MSDC_BOOT_EN, 0);
 
-	if ((host != NULL) && (host->mmc != NULL)) {
-		if (!(host->mmc->caps2 & MMC_CAP2_CACHE_CTRL))
-			return 0;
+	struct hd_struct *lp_hd_struct = NULL;
 
-		mmc_claim_host(host->mmc);
-		if (!mmc_cache_ctrl(host->mmc, 1))
-			pr_debug("[%s]: cache_size=%dKB, cache_ctrl=%d\n", __func__,
-				(host->mmc->card->ext_csd.cache_size / 8),
-				host->mmc->card->ext_csd.cache_ctrl);
-		mmc_release_host(host->mmc);
+	lp_hd_struct = get_part("cache");
+	if (likely(lp_hd_struct)) {
+		g_cache_part_start = lp_hd_struct->start_sect;
+		g_cache_part_end = g_cache_part_start + lp_hd_struct->nr_sects;
+		put_part(lp_hd_struct);
+	} else {
+		g_cache_part_start = (sector_t) (-1);
+		g_cache_part_end = (sector_t) (-1);
+		pr_err("There is no cache info\n");
 	}
 
-	msdc_get_cache_region_func(host);
-#endif
-	return 0;
+	lp_hd_struct = NULL;
+	lp_hd_struct = get_part("userdata");
+	if (likely(lp_hd_struct)) {
+		g_usrdata_part_start = lp_hd_struct->start_sect;
+		g_usrdata_part_end = g_usrdata_part_start + lp_hd_struct->nr_sects;
+		put_part(lp_hd_struct);
+	} else {
+		g_usrdata_part_start = (sector_t) (-1);
+		g_usrdata_part_end = (sector_t) (-1);
+		pr_debug("There is no userdata info\n");
+	}
 
+	pr_debug("msdc0:cache(0x%lld~0x%lld), usrdata(0x%lld~0x%lld)\n",
+		g_cache_part_start, g_cache_part_end,
+		g_usrdata_part_start, g_usrdata_part_end);
+#endif
+		return 0;
 }
 EXPORT_SYMBOL(msdc_get_cache_region);
-#endif /* weiping fix cache */
 
 #if 0 /* weiping fix reserve */
 #ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
@@ -4932,6 +4926,63 @@ static void msdc_restore_info(struct msdc_host *host)
 	sdr_write32(MSDC_IOCON, host->saved_para.iocon);
 }
 
+static void msdc_update_cahce_status(struct msdc_host *host,
+									struct mmc_request *mrq)
+{
+#ifdef MTK_MSDC_USE_CACHE
+	struct mmc_command *cmd;
+	struct mmc_data *data;
+
+	cmd = mrq->cmd;
+	if ((host->hw->host_function == MSDC_EMMC)
+		&& host->mmc->card && (host->mmc->card->ext_csd.cache_ctrl & 0x1)) {
+		if (cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK) {
+			data = mrq->cmd->data;
+			if ((host->error == 0) && mrq->sbc
+			    && (((mrq->sbc->arg >> 24) & 0x1)
+			    || ((mrq->sbc->arg >> 31) & 0x1))) {
+				/* if reliable write, or force prg write emmc device success,
+				 * do set cache flushed status.
+				 */
+				if (g_cache_status == CACHE_UN_FLUSHED) {
+					g_cache_status = CACHE_FLUSHED;
+					g_flush_data_size = 0;
+				}
+			} else if (host->error == 0) {
+				/* if normal write emmc device successfully,
+				 * do clear the cache flushed status
+				 */
+				if (g_cache_status == CACHE_FLUSHED) {
+					g_cache_status = CACHE_UN_FLUSHED;
+					N_MSG(CHE, "normal write happen,update g_cache_status = %d",
+						g_cache_status);
+				}
+				g_flush_data_size += data->blocks;
+			} else if (host->error) {
+				g_flush_data_size += data->blocks;
+				ERR_MSG("write error happend, g_flush_data_size=%lld",
+					g_flush_data_size);
+			}
+		} else if ((cmd->opcode == MMC_SWITCH)
+		   && (((cmd->arg >> 16) & 0xFF) == EXT_CSD_FLUSH_CACHE)
+		   && (((cmd->arg >> 8) & 0x1)) && !g_bypass_flush) {
+			if (host->error == 0) {
+				/* if flush cache of emmc device successfully,
+				 * do set the cache flushed status
+				 */
+				g_cache_status = CACHE_FLUSHED;
+				N_MSG(CHE, "flush happend, update g_cache_status = %d;"
+					"g_flush_data_size=%lld", g_cache_status,
+					g_flush_data_size);
+				g_flush_data_size = 0;
+			} else {
+				g_flush_error_happend = 1;
+			}
+		}
+	}
+#endif
+}
+
 static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -4941,14 +4992,15 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 #ifdef MTK_MSDC_USE_CMD23
 	u32 l_card_no_cmd23 = 0;
 #endif
-#ifdef MTK_MSDC_USE_CACHE
-	u32 l_force_prg = 0;
-	u32 l_bypass_flush = 0;
-#endif
 	void __iomem *base = host->base;
 	/* u32 intsts = 0; */
 	int dma = 0, read = 1, dir = DMA_FROM_DEVICE, send_type = 0;
 	u32 map_sg = 0;
+#ifdef MTK_MSDC_USE_CACHE
+	u32 l_force_prg = 0;
+
+	g_bypass_flush = 0;
+#endif
 	unsigned long pio_tmo;
 	unsigned int left = 0;
 
@@ -5013,12 +5065,12 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 #ifdef MTK_MSDC_USE_CACHE
 		if ((host->hw->host_function == MSDC_EMMC)
 			&& (cmd->opcode == MMC_SWITCH)
-			&& (((cmd->arg >> 16) & 0xFF) == EXT_CSD_CACHE_FLUSH)
+			&& (((cmd->arg >> 16) & 0xFF) == EXT_CSD_FLUSH_CACHE)
 			&& (((cmd->arg >> 8) & 0x1))) {
 			if (g_cache_status == CACHE_FLUSHED) {
 				N_MSG(CHE, "bypass flush command, g_cache_status=%d",
 					g_cache_status);
-				l_bypass_flush = 1;
+				g_bypass_flush = 1;
 				goto done;
 			}
 		}
@@ -5026,7 +5078,7 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 		if (msdc_do_command(host, cmd, 0, CMD_TIMEOUT))
 			goto done;
-#if 0 /* weipng fix sd-boot ?*/
+
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 		if (host->hw->host_function == MSDC_EMMC &&
 		    host->hw->boot == MSDC_BOOT_EN &&
@@ -5034,7 +5086,10 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		    && (((cmd->arg >> 16) & 0xFF) == EXT_CSD_PART_CONFIG))
 			partition_access = (char)((cmd->arg >> 8) & 0x07);
 #endif
-#endif
+		if ((host->hw->host_function == MSDC_EMMC) &&
+			(cmd->opcode == MMC_ALL_SEND_CID))
+			emmc_id = UNSTUFF_BITS(cmd->resp, 120, 8);
+
 #ifdef MTK_EMMC_ETT_TO_DRIVER
 		if ((host->hw->host_function == MSDC_EMMC)
 			&& (cmd->opcode == MMC_ALL_SEND_CID)) {
@@ -5056,8 +5111,7 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 #ifdef MTK_MSDC_USE_CACHE
 		if ((host->hw->host_function == MSDC_EMMC) && host->mmc->card
 		    && (host->mmc->card->ext_csd.cache_ctrl & 0x1)
-		    && (cmd->opcode == MMC_WRITE_BLOCK
-		    || cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK))
+		    && (cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK))
 			l_force_prg = !msdc_can_apply_cache(cmd->arg, data->blocks);
 #endif
 
@@ -5360,12 +5414,10 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 				dma_unmap_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
 			}
 		}
-#if 0 /* weiping fix reserve */
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-		if (cmd->opcode == MMC_SEND_EXT_CSD)
-			msdc_get_data(ext_csd, data, host->dma_xfer);
-#endif
-#endif
+		if ((cmd->opcode == MMC_SEND_EXT_CSD) &&
+			(host->hw->host_function == MSDC_EMMC))
+			msdc_get_ext_csd(ext_csd, data, host);
+
 		host->blksz = 0;
 
 		N_MSG(OPS, "CMD<%d> data<%s %s> blksz<%d> block<%d> error<%d>",
@@ -5456,72 +5508,7 @@ static int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		host->sdio_error = 0;
 #endif
 
-#ifdef MTK_MSDC_USE_CACHE
-	if ((host->hw->host_function == MSDC_EMMC) && host->mmc->card) {
-		if (host->mmc->card->ext_csd.cache_ctrl & 0x1) {
-			if ((cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK)
-			    || (cmd->opcode == MMC_WRITE_BLOCK)) {
-				if ((host->error == 0) && mrq->sbc
-					&& (((mrq->sbc->arg >> 24) & 0x1)
-					|| ((mrq->sbc->arg >> 31) & 0x1))) {
-					/* if reliable write, or force prg write success
-					 * do set cache flushed status
-					 */
-					if (g_cache_status == CACHE_UN_FLUSHED) {
-						g_cache_status = CACHE_FLUSHED;
-						N_MSG(CHE, "reliable / foce prg happend;"
-							"update g_cache_status = %d,g_flush_data_size=%lld"
-							, g_cache_status, g_flush_data_size);
-						g_flush_data_size = 0;
-					}
-				} else if (host->error == 0) {
-					/* if normal write emmc device successfully,
-					 * do clear the cache flushed status
-					 */
-					if (g_cache_status == CACHE_FLUSHED) {
-						g_cache_status = CACHE_UN_FLUSHED;
-						N_MSG(CHE, "normal write,update g_cache_status=%d",
-						      g_cache_status);
-					}
-					g_flush_data_size += data->blocks;
-				} else if (host->error) {
-					g_flush_data_size += data->blocks;
-					ERR_MSG("write error, g_flush_data_size=%lld",
-						g_flush_data_size);
-				}
-			} else if ((cmd->opcode == MMC_SWITCH)
-				   && (((cmd->arg >> 16) & 0xFF) == EXT_CSD_CACHE_FLUSH)
-				   && (((cmd->arg >> 8) & 0x1)) && !l_bypass_flush) {
-				if (host->error == 0) {
-					/* if flush cache of emmc device successfully,
-					 * do set the cache flushed status
-					 */
-					g_cache_status = CACHE_FLUSHED;
-					N_MSG(CHE, "flush happend, update g_cache_status = %d;"
-						"g_flush_data_size=%lld", g_cache_status,
-						g_flush_data_size);
-					g_flush_data_size = 0;
-				} else {
-					g_flush_error_happend = 1;
-				}
-			}
-		}
-#if 0
-		if ((cmd->opcode == MMC_SWITCH)
-			&& (((cmd->arg >> 16) & 0xFF) == EXT_CSD_CACHE_CTRL)
-		    && (host->error == 0)) {
-			if ((cmd->arg >> 8) & 0x1) {
-				host->autocmd &= ~MSDC_AUTOCMD23;
-				N_MSG(CHE, "disable AUTO_CMD23 cause Cache feature is enabled");
-			} else {
-				host->autocmd |= MSDC_AUTOCMD23;
-				N_MSG(CHE, "enable AUTO_CMD23 cause Cache feature is disabled");
-			}
-		}
-#endif
-	}
-#endif
-
+	msdc_update_cahce_status(host, mrq);
 	return host->error;
 }
 
@@ -5868,8 +5855,7 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 #ifdef MTK_MSDC_USE_CACHE
 	if ((host->hw->host_function == MSDC_EMMC)
 		&& host->mmc->card && (host->mmc->card->ext_csd.cache_ctrl & 0x1)
-	    && (cmd->opcode == MMC_WRITE_BLOCK
-	    || cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK))
+	    && (cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK))
 		l_force_prg = !msdc_can_apply_cache(cmd->arg, data->blocks);
 #endif
 
@@ -5973,41 +5959,7 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 		}
 	}
 #endif
-
-#ifdef MTK_MSDC_USE_CACHE
-	if ((host->hw->host_function == MSDC_EMMC)
-		&& host->mmc->card && (host->mmc->card->ext_csd.cache_ctrl & 0x1)) {
-		if ((cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK)
-			|| (cmd->opcode == MMC_WRITE_BLOCK)) {
-			if ((host->error == 0) && mrq->sbc
-			    && (((mrq->sbc->arg >> 24) & 0x1)
-			    || ((mrq->sbc->arg >> 31) & 0x1))) {
-				/* if reliable write, or force prg write emmc device success,
-				 * do set cache flushed status.
-				 */
-				if (g_cache_status == CACHE_UN_FLUSHED) {
-					g_cache_status = CACHE_FLUSHED;
-					g_flush_data_size = 0;
-				}
-			} else if (host->error == 0) {
-				/* if normal write emmc device successfully,
-				 * do clear the cache flushed status
-				 */
-				if (g_cache_status == CACHE_FLUSHED) {
-					g_cache_status = CACHE_UN_FLUSHED;
-					N_MSG(CHE, "normal write happen,update g_cache_status = %d",
-						g_cache_status);
-				}
-				g_flush_data_size += data->blocks;
-			} else if (host->error) {
-				g_flush_data_size += data->blocks;
-				ERR_MSG("write error happend, g_flush_data_size=%lld",
-					g_flush_data_size);
-			}
-		}
-	}
-#endif
-
+	msdc_update_cahce_status(host, mrq);
 	return 0;
 
  stop:
@@ -6102,38 +6054,7 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 		host->error |= REQ_STOP_EIO;
 	if (mrq->stop && (mrq->stop->error == (unsigned int)-ETIMEDOUT))
 		host->error |= REQ_STOP_TMO;
-
-#ifdef MTK_MSDC_USE_CACHE
-	if ((host->hw->host_function == MSDC_EMMC) && host->mmc->card
-		&& (host->mmc->card->ext_csd.cache_ctrl & 0x1)) {
-		if ((cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK)
-			|| (cmd->opcode == MMC_WRITE_BLOCK)) {
-			if ((host->error == 0) && mrq->sbc && (((mrq->sbc->arg >> 24) & 0x1)
-				|| ((mrq->sbc->arg >> 31) & 0x1))) {
-				/* if reliable write, or force prg write emmc device success,
-				 * do set cache flushed status
-				 */
-				if (g_cache_status == CACHE_UN_FLUSHED) {
-					g_cache_status = CACHE_FLUSHED;
-					g_flush_data_size = 0;
-				}
-			} else if (host->error == 0) {
-				/* if normal write emmc device success, clear flushed status */
-				if (g_cache_status == CACHE_FLUSHED) {
-					g_cache_status = CACHE_UN_FLUSHED;
-					N_MSG(CHE, "normal write happen, update g_cache_status = %d"
-						, g_cache_status);
-				}
-				g_flush_data_size += data->blocks;
-			} else if (host->error) {
-				g_flush_data_size += data->blocks;
-				ERR_MSG("write error happend, g_flush_data_size=%lld",
-					g_flush_data_size);
-			}
-		}
-	}
-#endif
-
+	msdc_update_cahce_status(host, mrq);
 	msdc_gate_clock(host, 1);
 	spin_unlock(&host->lock);
 	return host->error;
@@ -7449,20 +7370,25 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	if (g_flush_error_happend && (host->hw->host_function == MSDC_EMMC)
 		&& host->mmc->card && (host->mmc->card->ext_csd.cache_ctrl & 0x1)) {
 		if ((cmd->opcode == MMC_SWITCH)
-		    && (((cmd->arg >> 16) & 0xFF) == EXT_CSD_CACHE_FLUSH)
+		    && (((cmd->arg >> 16) & 0xFF) == EXT_CSD_FLUSH_CACHE)
 		    && (((cmd->arg >> 8) & 0x1))) {
 			g_flush_error_count++;
 			g_flush_error_happend = 0;
 			ERR_MSG("the %d time flush error happned, g_flush_data_size=%lld",
 				g_flush_error_count, g_flush_data_size);
+			/*
+			 * if reinit emmc at resume,cache should not be enabled
+			 * because too much flush error. so add cache quirk for this emmmc.
+			 * if awake emmc at resume,cache should not be enabled
+			 * because too much flush error, so force set cache_size=0
+			 */
 			if (g_flush_error_count >= MSDC_MAX_FLUSH_COUNT) {
-				if (!msdc_cache_ctrl(host, 0, NULL))
-					host->mmc->caps2 &= ~MMC_CAP2_CACHE_CTRL;
-				ERR_MSG
-				    ("flush fail %d times, exceed the max flush error time %d;"
-				    "disable cache feature, cache_ctrl=%d",
-				     g_flush_error_count, MSDC_MAX_FLUSH_COUNT,
-				      host->mmc->card->ext_csd.cache_ctrl);
+				if (!msdc_cache_ctrl(host, 0, NULL)) {
+					g_emmc_cache_quirk[0] = emmc_id;
+					host->mmc->card->ext_csd.cache_size = 0;
+				}
+				pr_err("msdc%d:flush cache error count=%d,Disable cache\n",
+					host->id, g_flush_error_count);
 			}
 		}
 	}
@@ -9201,9 +9127,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	unsigned int msdc_custom[1];
 	struct device_node *msdc_cust_node = NULL;
 	unsigned int host_id = 0;
-#ifdef MTK_MSDC_USE_CACHE
-	BOOTMODE boot_mode;
-#endif
 #ifdef FPGA_PLATFORM
 	u16 l_val;
 #endif
@@ -9467,18 +9390,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	mmc->caps |= MMC_CAP_ERASE;
 #endif
 	mmc->max_busy_timeout = 0;
-#ifdef MTK_MSDC_USE_CACHE
-	/* only enable the emmc cache feature for normal boot up,
-	 * alarm boot up, and sw reboot
-	 */
-	boot_mode = get_boot_mode();
-
-	if ((hw->host_function == MSDC_EMMC) && (hw->flags & MSDC_CACHE) &&
-	    ((boot_mode == NORMAL_BOOT) || (boot_mode == ALARM_BOOT)
-	    || (boot_mode == SW_REBOOT)))
-		mmc->caps2 |= MMC_CAP2_CACHE_CTRL;
-#endif
-
 	/* MMC core transfer sizes tunable parameters */
 	mmc->max_segs = MAX_HW_SGMTS;
 	if (hw->host_function == MSDC_SDIO)
@@ -9563,7 +9474,10 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		host->autocmd &= ~MSDC_AUTOCMD12;
 	}
 #endif				/* end of MTK_MSDC_USE_CMD23 */
-
+#ifdef MTK_MSDC_USE_CACHE
+	if (host->hw->host_function == MSDC_EMMC)
+		msdc_set_cache_quirk(host);
+#endif
 	host->mrq = NULL;
 	/* init_MUTEX(&host->sem); */
 	/* we don't need to support multiple threads access */
@@ -9930,7 +9844,7 @@ static int __init mt_msdc_init(void)
 #endif
 	pr_debug(DRV_NAME ": MediaTek MSDC Driver\n");
 
-	/* msdc_debug_proc_init(); */
+	msdc_debug_proc_init();
 #ifdef MSDC_DMA_ADDR_DEBUG
 	msdc_init_dma_latest_address();
 #endif
@@ -9948,10 +9862,8 @@ static void __exit mt_msdc_exit(void)
 
 module_init(mt_msdc_init);
 module_exit(mt_msdc_exit);
-#if 0 /* weiping fix cache*/
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 late_initcall_sync(msdc_get_cache_region);
-#endif
 #endif
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MediaTek SD/MMC Card Driver");

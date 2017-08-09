@@ -1,6 +1,7 @@
 #ifndef __MT_MSDC_DEUBG__
 #define __MT_MSDC_DEUBG__
 #include "mt_sd.h"
+#include<mt-plat/upmu_common.h>
 
 /* ========================== */
 extern u32 sdio_pro_enable;
@@ -36,15 +37,8 @@ extern void ettagent_exit(void);
 
 extern int mmc_send_ext_csd(struct mmc_card *card, u8 *ext_csd);
 
-extern void pmic_config_interface(unsigned int, unsigned int, unsigned int, unsigned int);
-extern void pmic_read_interface(unsigned int, unsigned int *, unsigned int, unsigned int);
-
 #ifdef MSDC_HQA
 extern void pmic_config_interface(unsigned int, unsigned int, unsigned int, unsigned int);
-#endif
-
-#if MTK_MSDC_USE_EDC_EMMC_CACHE
-extern void msdc_get_cache_region_func(struct msdc_host *host);
 #endif
 
 #ifdef ONLINE_TUNING_DVTTEST
@@ -119,9 +113,7 @@ typedef enum {
 	MMC_REGISTER_WRITE = 19,
 	MSDC_READ_WRITE = 20,
 	MMC_ERROR_TUNE = 21,
-#if MTK_MSDC_USE_EDC_EMMC_CACHE
 	MMC_EDC_EMMC_CACHE = 22,
-#endif
 	MMC_DUMP_GPD = 23,
 	MMC_ETT_TUNE = 24,
 	MMC_CRC_STRESS = 25,
