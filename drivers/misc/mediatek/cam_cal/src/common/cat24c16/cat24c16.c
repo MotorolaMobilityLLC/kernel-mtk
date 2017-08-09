@@ -39,7 +39,15 @@
 #define BUFF_SIZE 8
 
 static DEFINE_SPINLOCK(g_CAM_CALLock); /* for SMP */
-#define CAM_CAL_I2C_BUSNUM 0
+#define CAM_CAL_I2C_BUSNUM 2
+
+#define CAM_CAL_DEV_MAJOR_NUMBER 226
+
+/* CAM_CAL READ/WRITE ID */
+#define CATC24C16_DEVICE_ID							0xA0
+/*#define I2C_UNIT_SIZE                                  1 //in byte*/
+/*#define OTP_START_ADDR                            0x0A04*/
+/*#define OTP_SIZE                                      24*/
 
 /*******************************************************************************
 *
@@ -74,8 +82,6 @@ static atomic_t g_CAM_CALatomic;
 /* spin_unlock(&kdcam_cal_drv_lock); */
 
 
-
-
 #define EEPROM_I2C_SPEED 100
 /* #define LSCOTPDATASIZE 0x03c4 //964 */
 /* static kal_uint8 lscotpdata[LSCOTPDATASIZE]; */
@@ -99,12 +105,12 @@ static int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u1
 	spin_unlock(&g_CAM_CALLock);
 	i4RetValue = i2c_master_send(g_pstI2Cclient, a_pSendData, a_sizeSendData);
 	if (i4RetValue != a_sizeSendData) {
-		CAM_CALERR(" I2C send failed!!, Addr = 0x%x\n", a_pSendData[0]);
+		CAM_CALERR("I2C send failed!!, Addr = 0x%x\n", a_pSendData[0]);
 		return -1;
 	}
 	i4RetValue = i2c_master_recv(g_pstI2Cclient, (char *)a_pRecvData, a_sizeRecvData);
 	if (i4RetValue != a_sizeRecvData) {
-		CAM_CALERR(" I2C read failed!!\n");
+		CAM_CALERR("I2C read failed!!\n");
 		return -1;
 	}
 	return 0;
@@ -158,13 +164,12 @@ static int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId)
 }
 #endif
 
-bool selective_read_byte(u32 addr, BYTE *data, u16 i2c_id)
+static bool selective_read_byte(u32 addr, BYTE *data, u16 i2c_id)
 {
 	/* CAM_CALDB("selective_read_byte\n"); */
 
 	u8 page = addr / PAGE_SIZE_; /* size of page was 256 */
 	u8 offset = addr % PAGE_SIZE_;
-
 	kdSetI2CSpeed(EEPROM_I2C_SPEED);
 
 	if (iReadRegI2C(&offset, 1, (u8 *)data, 1, i2c_id + (page << 1)) < 0) {
@@ -177,9 +182,9 @@ bool selective_read_byte(u32 addr, BYTE *data, u16 i2c_id)
 	return true;
 }
 
-int selective_read_region(u32 addr, BYTE *data, u16 i2c_id, u32 size)
+static int selective_read_region(u32 addr, BYTE *data, u16 i2c_id, u32 size)
 {
-	/* u32 page = addr/PAGE_SIZE; /* size of page was 256 */ */
+	/* u32 page = addr/PAGE_SIZE; /* size of page was 256 */
 	/* u32 offset = addr%PAGE_SIZE; */
 	BYTE *buff = data;
 	u32 size_to_read = size;
@@ -187,7 +192,7 @@ int selective_read_region(u32 addr, BYTE *data, u16 i2c_id, u32 size)
 	int ret = 0;
 
 	while (size_to_read > 0) {
-		if (selective_read_byte(addr, (u8 *)buff, CATC24C16_DEVICE_ID)) {
+		if (selective_read_byte(addr, (u8 *)buff, i2c_id)) {
 			addr += 1;
 			buff += 1;
 			size_to_read -= 1;
@@ -221,8 +226,6 @@ int selective_read_region(u32 addr, BYTE *data, u16 i2c_id, u32 size)
 }
 
 
-
-
 /* Burst Write Data */
 static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigned char *pinputdata)
 {
@@ -230,9 +233,20 @@ static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length, unsign
 	return 0;
 }
 
+unsigned int cat24c16_selective_read_region(struct i2c_client *client, unsigned int addr,
+	unsigned char *data, unsigned int size)
+{
+	g_pstI2Cclient = client;
+	if (selective_read_region(addr, data, g_pstI2Cclient->addr, size) == 0)
+		return size;
+	else
+		return 0;
+
+}
 
 
-
+/*#define CAT24C16_DRIVER_ON 0*/
+#ifdef CAT24C16_DRIVER_ON
 #ifdef CONFIG_COMPAT
 static int compat_put_cal_info_struct(
 	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,
@@ -274,11 +288,9 @@ static int compat_get_cal_info_struct(
 static long cat24c16_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	long ret;
-	int err;
-
 	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32;
 	stCAM_CAL_INFO_STRUCT __user *data;
-
+	int err;
 	CAM_CALDB("[CAMERA SENSOR] cat24c16_Ioctl_Compat,%p %p %x ioc size %d\n",
 	filp->f_op , filp->f_op->unlocked_ioctl, cmd, _IOC_SIZE(cmd));
 
@@ -335,7 +347,6 @@ static long CAM_CAL_Ioctl(
 	u8 *pBuff = NULL;
 	u8 *pu1Params = NULL;
 	stCAM_CAL_INFO_STRUCT *ptempbuf;
-
 	CAM_CALDB("[S24CAM_CAL] ioctl\n");
 
 #ifdef CAM_CALGETDLT_DEBUG
@@ -455,8 +466,7 @@ static int CAM_CAL_Open(struct inode *a_pstInode, struct file *a_pstFile)
 		spin_unlock(&g_CAM_CALLock);
 		CAM_CALDB("[S24CAM_CAL] Opened, return -EBUSY\n");
 		return -EBUSY;
-	} /*else {*//*LukeHu--150720=For check patch*/
-	if (!g_u4Opened) {/*LukeHu--150720=For check patch*/
+	} else {
 		g_u4Opened = 1;
 		atomic_set(&g_CAM_CALatomic, 0);
 	}
@@ -541,7 +551,6 @@ static inline int RegisterCAM_CALCharDrv(void)
 	CAM_CAL_class = class_create(THIS_MODULE, "CAM_CALdrv");
 	if (IS_ERR(CAM_CAL_class)) {
 		int ret = PTR_ERR(CAM_CAL_class);
-
 		CAM_CALDB("Unable to create class, err = %d\n", ret);
 		return ret;
 	}
@@ -594,7 +603,6 @@ static int CAM_CAL_i2c_detect(struct i2c_client *client, int kind, struct i2c_bo
 static int CAM_CAL_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int i4RetValue = 0;
-
 	CAM_CALDB("[S24CAM_CAL] Attach I2C\n");
 	/* spin_lock_init(&g_CAM_CALLock); */
 
@@ -679,5 +687,7 @@ module_exit(CAM_CAL_i2C_exit);
 MODULE_DESCRIPTION("CAM_CAL driver");
 MODULE_AUTHOR("Sean Lin <Sean.Lin@Mediatek.com>");
 MODULE_LICENSE("GPL");
+
+#endif
 
 

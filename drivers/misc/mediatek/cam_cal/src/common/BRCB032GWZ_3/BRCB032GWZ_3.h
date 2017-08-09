@@ -18,13 +18,13 @@
  *   Ronnie Lai (MTK01420)
  *
  *============================================================================*/
-#ifndef __CAM_CAL_H
-#define __CAM_CAL_H
+#ifndef __BRCB032GWZ_3_H
+#define __BRCB032GWZ_3_H
+#include <linux/i2c.h>
 
-#define CAM_CAL_DEV_MAJOR_NUMBER 226
+unsigned int brcb032gwz_selective_read_region(struct i2c_client *client, unsigned int addr,
+	unsigned char *data, unsigned int size);
 
-/* CAM_CAL READ/WRITE ID */
-#define BRCB032GWZ_3_DEVICE_ID							0xA0
 
 #endif /* __CAM_CAL_H */
 

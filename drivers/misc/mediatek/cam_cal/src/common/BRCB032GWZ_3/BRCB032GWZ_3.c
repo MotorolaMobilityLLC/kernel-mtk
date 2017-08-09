@@ -15,13 +15,7 @@
 #include "cam_cal.h"
 #include "cam_cal_define.h"
 #include "BRCB032GWZ_3.h"
-#include <asm/system.h>  /* for SMP */
-#ifdef CONFIG_COMPAT
-/* 64 bit */
-#include <linux/fs.h>
-#include <linux/compat.h>
-#endif
-
+/*#include <asm/system.h>//for SMP */
 
 /* #define CAM_CALGETDLT_DEBUG */
 #define CAM_CAL_DEBUG
@@ -35,9 +29,13 @@
 static DEFINE_SPINLOCK(g_CAM_CALLock); /* for SMP */
 /* #define CAM_CAL_I2C_BUSNUM 1 */
 #define CAM_CAL_I2C_BUSNUM 3
+#define CAM_CAL_DEV_MAJOR_NUMBER 226
 
-/* for init.rc static struct i2c_board_info __initdata kd_cam_cal_dev=
-{ I2C_BOARD_INFO("CAM_CAL_S24CS64A", 0xAA>>1)}; */
+/* CAM_CAL READ/WRITE ID */
+#define BRCB032GWZ_3_DEVICE_ID							0xA0
+
+
+/* for init.rc static struct i2c_board_info __initdata kd_cam_cal_dev={ I2C_BOARD_INFO("CAM_CAL_S24CS64A", 0xAA>>1)}; */
 
 /*******************************************************************************
 *
@@ -72,7 +70,7 @@ static atomic_t g_CAM_CALatomic;
 *
 ********************************************************************************/
 /* maximun read length is limited at "I2C_FIFO_SIZE" in I2c-mt65xx.c which is 8 bytes */
-int iWriteCAM_CAL(u16 a_u2Addr  , u32 a_u4Bytes, u8 *puDataInBytes)
+static int iWriteCAM_CAL(u16 a_u2Addr  , u32 a_u4Bytes, u8 *puDataInBytes)
 {
 	int  i4RetValue = 0;
 	u32 u4Index = 0;
@@ -80,7 +78,7 @@ int iWriteCAM_CAL(u16 a_u2Addr  , u32 a_u4Bytes, u8 *puDataInBytes)
 			     0, 0, 0, 0, 0, 0
 			    };
 	if (a_u4Bytes + 2 > 8) {
-		CAM_CALDB("[S24CAM_CAL] exceed I2c-mt65xx.c 8 bytes limitation (include address 2 Byte)\n");
+		CAM_CALDB("[BRCB032GWZ] exceed I2c-mt65xx.c 8 bytes limitation (include address 2 Byte)\n");
 		return -1;
 	}
 
@@ -89,7 +87,7 @@ int iWriteCAM_CAL(u16 a_u2Addr  , u32 a_u4Bytes, u8 *puDataInBytes)
 
 	i4RetValue = i2c_master_send(g_pstI2Cclient, puSendCmd, (a_u4Bytes + 2));
 	if (i4RetValue != (a_u4Bytes + 2)) {
-		CAM_CALDB("[S24CAM_CAL] I2C write  failed!!\n");
+		CAM_CALDB("[BRCB032GWZ] I2C write  failed!!\n");
 		return -1;
 	}
 	mdelay(10); /* for tWR singnal --> write data form buffer to memory. */
@@ -100,7 +98,7 @@ int iWriteCAM_CAL(u16 a_u2Addr  , u32 a_u4Bytes, u8 *puDataInBytes)
 
 
 /* maximun read length is limited at "I2C_FIFO_SIZE" in I2c-mt65xx.c which is 8 bytes */
-int iReadCAM_CAL(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
+static int iReadCAM_CAL(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
 {
 	int  i4RetValue = 0;
 	char puReadCmd[2] = {(char)(a_u2Addr >> 8) , (char)(a_u2Addr & 0xFF)};
@@ -108,7 +106,7 @@ int iReadCAM_CAL(u16 a_u2Addr, u32 ui4_length, u8 *a_puBuff)
 	/* CAM_CALDB("[CAM_CAL] iReadCAM_CAL!!\n"); */
 
 	if (ui4_length > 8) {
-		CAM_CALDB("[S24CAM_CAL] exceed I2c-mt65xx.c 8 bytes limitation\n");
+		CAM_CALDB("[BRCB032GWZ] exceed I2c-mt65xx.c 8 bytes limitation\n");
 		return -1;
 	}
 	spin_lock(&g_CAM_CALLock); /* for SMP */
@@ -145,10 +143,10 @@ static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length, unsign
 	u32 u4CurrentOffset;
 	u8 *pBuff;
 
-	CAM_CALDB("[S24CAM_CAL] iWriteData\n");
+	CAM_CALDB("[BRCB032GWZ] iWriteData\n");
 
 	if (ui4_offset + ui4_length >= 0x2000) {
-		CAM_CALDB("[S24CAM_CAL] Write Error!! S-24CS64A not supprt address >= 0x2000!!\n");
+		CAM_CALDB("[BRCB032GWZ] Write Error!! BRCB032GWZ not supprt address >= 0x2000!!\n");
 		return -1;
 	}
 
@@ -156,7 +154,7 @@ static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length, unsign
 	u4CurrentOffset = ui4_offset;
 	pBuff = pinputdata;
 
-	CAM_CALDB("[S24CAM_CAL] iWriteData u4CurrentOffset is %d\n", u4CurrentOffset);
+	CAM_CALDB("[BRCB032GWZ] iWriteData u4CurrentOffset is %d\n", u4CurrentOffset);
 
 	do {
 		if (i4ResidueDataLength >= 6) {
@@ -182,7 +180,7 @@ static int iWriteData(unsigned int  ui4_offset, unsigned int  ui4_length, unsign
 			/* break; */
 		}
 	} while (i4ResidueDataLength > 0);
-	CAM_CALDB("[S24CAM_CAL] iWriteData done\n");
+	CAM_CALDB("[BRCB032GWZ] iWriteData done\n");
 
 	return 0;
 }
@@ -198,8 +196,7 @@ static int iReadData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigne
 	/* CAM_CALDB("[S24EEPORM] iReadData\n" ); */
 
 	if (ui4_offset + ui4_length >= 0x2000) {
-		CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] Read Error!! S-BRCB032GWZ_3_CAM_CAL not supprt
-		 address >= 0x2000!!\n");
+		CAM_CALDB("[BRCB032GWZ] Read Error!! BRCB032GWZ not supprt address >= 0x2000!!\n");
 		return -1;
 	}
 
@@ -210,7 +207,7 @@ static int iReadData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigne
 		if (i4ResidueDataLength >= 8) {
 			i4RetValue = iReadCAM_CAL((u16)u4CurrentOffset, 8, pBuff);
 			if (i4RetValue != 0) {
-				CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] I2C iReadData failed!!\n");
+				CAM_CALDB("[BRCB032GWZ] I2C iReadData failed!!\n");
 				return -1;
 			}
 			u4IncOffset += 8;
@@ -220,7 +217,7 @@ static int iReadData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigne
 		} else {
 			i4RetValue = iReadCAM_CAL((u16)u4CurrentOffset, i4ResidueDataLength, pBuff);
 			if (i4RetValue != 0) {
-				CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] I2C iReadData failed!!\n");
+				CAM_CALDB("[BRCB032GWZ] I2C iReadData failed!!\n");
 				return -1;
 			}
 			u4IncOffset += 8;
@@ -230,90 +227,25 @@ static int iReadData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigne
 			/* break; */
 		}
 	} while (i4ResidueDataLength > 0);
-	/* CAM_CALDB("[S24EEPORM] iReadData finial address is %d length is %d buffer address
-	is 0x%x\n",u4CurrentOffset, i4ResidueDataLength, pBuff); */
+	/* CAM_CALDB("[S24EEPORM] iReadData finial address is %d length is %d buffer address is
+	0x%x\n",u4CurrentOffset, i4ResidueDataLength, pBuff); */
 	/* CAM_CALDB("[S24EEPORM] iReadData done\n" ); */
 	return 0;
 }
 
-
-#ifdef CONFIG_COMPAT
-static int compat_put_cal_info_struct(
-	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,
-	stCAM_CAL_INFO_STRUCT __user *data)
+unsigned int brcb032gwz_selective_read_region(struct i2c_client *client, unsigned int addr,
+	unsigned char *data, unsigned int size)
 {
-	compat_uptr_t p;
-	compat_uint_t i;
-	int err;
-
-	err = get_user(i, &data->u4Offset);
-	err |= put_user(i, &data32->u4Offset);
-	err |= get_user(i, &data->u4Length);
-	err |= put_user(i, &data32->u4Length);
-	/* Assume pointer is not change */
-#if 1
-	err |= get_user(p, &data->pu1Params);
-	err |= put_user(p, &data32->pu1Params);
-#endif
-	return err;
-}
-static int compat_get_cal_info_struct(
-	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,
-	stCAM_CAL_INFO_STRUCT __user *data)
-{
-	compat_uptr_t p;
-	compat_uint_t i;
-	int err;
-
-	err = get_user(i, &data32->u4Offset);
-	err |= put_user(i, &data->u4Offset);
-	err |= get_user(i, &data32->u4Length);
-	err |= put_user(i, &data->u4Length);
-	err |= get_user(p, &data32->pu1Params);
-	err |= put_user(compat_ptr(p), &data->pu1Params);
-
-	return err;
+	g_pstI2Cclient = client;
+	if (iReadData(addr, size, data) == 0)
+		return size;
+	else
+		return 0;
 }
 
-static long CAM_CAL_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned long arg)
-{
-	long ret;
-	int err;
 
-	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32;
-	stCAM_CAL_INFO_STRUCT __user *data;
-
-	CAM_CALDB("[CAMERA SENSOR] CAM_CAL_Ioctl_Compat,%p %p %x ioc size %d\n",
-	filp->f_op , filp->f_op->unlocked_ioctl, cmd, _IOC_SIZE(cmd));
-
-	if (!filp->f_op || !filp->f_op->unlocked_ioctl)
-		return -ENOTTY;
-
-	switch (cmd) {
-
-	case COMPAT_CAM_CALIOC_G_READ: {
-		data32 = compat_ptr(arg);
-		data = compat_alloc_user_space(sizeof(*data));
-		if (data == NULL)
-			return -EFAULT;
-
-		err = compat_get_cal_info_struct(data32, data);
-		if (err)
-			return err;
-
-		ret = filp->f_op->unlocked_ioctl(filp, CAM_CALIOC_G_READ, (unsigned long)data);
-		err = compat_put_cal_info_struct(data32, data);
-
-
-		if (err != 0)
-			CAM_CALERR("[CAMERA SENSOR] compat_put_acdk_sensor_getinfo_struct failed\n");
-		return ret;
-	}
-	default:
-		return -ENOIOCTLCMD;
-	}
-}
-#endif
+/*#define BRCB032GWZ_DRIVER_ON*/
+#ifdef BRCB032GWZ_DRIVER_ON
 
 /*******************************************************************************
 *
@@ -349,7 +281,7 @@ static long CAM_CAL_Ioctl(
 		pBuff = kmalloc(sizeof(stCAM_CAL_INFO_STRUCT), GFP_KERNEL);
 
 		if (NULL == pBuff) {
-			CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] ioctl allocate mem failed\n");
+			CAM_CALDB("[BRCB032GWZ] ioctl allocate mem failed\n");
 			return -ENOMEM;
 		}
 
@@ -357,7 +289,7 @@ static long CAM_CAL_Ioctl(
 			if (copy_from_user((u8 *) pBuff , (u8 *) a_u4Param, sizeof(stCAM_CAL_INFO_STRUCT))) {
 				/* get input structure address */
 				kfree(pBuff);
-				CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] ioctl copy from user failed\n");
+				CAM_CALDB("[BRCB032GWZ] ioctl copy from user failed\n");
 				return -EFAULT;
 			}
 		}
@@ -367,23 +299,23 @@ static long CAM_CAL_Ioctl(
 	pWorkingBuff = kmalloc(ptempbuf->u4Length, GFP_KERNEL);
 	if (NULL == pWorkingBuff) {
 		kfree(pBuff);
-		CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] ioctl allocate mem failed\n");
+		CAM_CALDB("[BRCB032GWZ] ioctl allocate mem failed\n");
 		return -ENOMEM;
 	}
-	CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] init Working buffer address 0x%8x  command is 0x%8x\n",
+	CAM_CALDB("[BRCB032GWZ] init Working buffer address 0x%8x  command is 0x%8x\n",
 	(u32)pWorkingBuff, (u32)a_u4Command);
 
 
 	if (copy_from_user((u8 *)pWorkingBuff , (u8 *)ptempbuf->pu1Params, ptempbuf->u4Length)) {
 		kfree(pBuff);
 		kfree(pWorkingBuff);
-		CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] ioctl copy from user failed\n");
+		CAM_CALDB("[BRCB032GWZ] ioctl copy from user failed\n");
 		return -EFAULT;
 	}
 
 	switch (a_u4Command) {
 	case CAM_CALIOC_S_WRITE:
-		CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] Write CMD\n");
+		CAM_CALDB("[BRCB032GWZ] Write CMD\n");
 #ifdef CAM_CALGETDLT_DEBUG
 		do_gettimeofday(&ktv1);
 #endif
@@ -399,14 +331,13 @@ static long CAM_CAL_Ioctl(
 #endif
 		break;
 	case CAM_CALIOC_G_READ:
-		CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] Read CMD\n");
+		CAM_CALDB("[BRCB032GWZ] Read CMD\n");
 #ifdef CAM_CALGETDLT_DEBUG
 		do_gettimeofday(&ktv1);
 #endif
-		CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] offset %d\n", ptempbuf->u4Offset);
-		CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] length %d\n", ptempbuf->u4Length);
-		CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] Before read Working buffer address 0x%8x\n",
-		(u32)pWorkingBuff);
+		CAM_CALDB("[BRCB032GWZ] offset %d\n", ptempbuf->u4Offset);
+		CAM_CALDB("[BRCB032GWZ] length %d\n", ptempbuf->u4Length);
+		CAM_CALDB("[BRCB032GWZ] Before read Working buffer address 0x%8x\n", (u32)pWorkingBuff);
 
 		/* i4RetValue = iReadData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pWorkingBuff); */
 		CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] After read Working buffer data  0x%4x\n", *pWorkingBuff);
@@ -423,31 +354,33 @@ static long CAM_CAL_Ioctl(
 
 			puSendCmd[0] = 0x7E;
 			/* iReadRegI2C(puSendCmd , 1, pWorkingBuff,2, (0x53<<1) ); */
-			CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] Shading CheckSum MSB=> %x %x\n", pWorkingBuff[0],
+			CAM_CALDB("[BRCB032GWZ] Shading CheckSum MSB=> %x %x\n", pWorkingBuff[0],
 			pWorkingBuff[1]);
 		} else {
-			/* i4RetValue = iReadData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pWorkingBuff); */
-
-			/* i4RetValue =  iReadDataFromM24C08F((u16)ptempbuf->u4Offset, ptempbuf->u4Length,
+			/* i4RetValue = iReadData((u16)ptempbuf->u4Offset, ptempbuf->u4Length,
 			pWorkingBuff); */
+
+			/* i4RetValue =  iReadDataFromM24C08F((u16)ptempbuf->u4Offset,
+			ptempbuf->u4Length, pWorkingBuff); */
 			readTryagain = 3;
 			test_retry = 2;
 			while (0 < readTryagain) {
-				/* i4RetValue =  iReadDataFromGT24c32a((u16)ptempbuf->u4Offset, ptempbuf->u4Length,
-				pWorkingBuff); */
-				/* i4RetValue =  iReadDataFromM24C08F((u16)ptempbuf->u4Offset, ptempbuf->u4Length,
-				pWorkingBuff); */
-				i4RetValue = iReadData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pWorkingBuff);
+				/* i4RetValue =  iReadDataFromGT24c32a((u16)ptempbuf->u4Offset,
+				ptempbuf->u4Length, pWorkingBuff); */
+				/* i4RetValue =  iReadDataFromM24C08F((u16)ptempbuf->u4Offset,
+				ptempbuf->u4Length, pWorkingBuff); */
+				i4RetValue = iReadData((u16)ptempbuf->u4Offset, ptempbuf->u4Length,
+				pWorkingBuff);
 #if 0
 				if (0 < test_retry) {
-					CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] Test error (%d) Read retry (%d)\n",
+					CAM_CALDB("[BRCB032GWZ] Test error (%d) Read retry (%d)\n",
 					test_retry, i4RetValue);
 					i4RetValue = -1;
 					test_retry--;
 				}
 #endif
-				CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] error (%d) Read retry (%d)\n",
-				i4RetValue, readTryagain);
+				CAM_CALDB("[BRCB032GWZ] error (%d) Read retry (%d)\n", i4RetValue,
+				readTryagain);
 				if (i4RetValue != 0)
 					readTryagain--;
 				else
@@ -466,14 +399,16 @@ static long CAM_CAL_Ioctl(
 			/* iReadReg(0x0000 ,(u8*)&get_byte,0xA0); */
 			iReadCAM_CAL((u16)0x0000, 1, (u8 *)&get_byte);
 
-			CAM_CALDB("[EEPROM]enter EEPROM_test function%d (%x)%x\n", ++loop, 0x0000, get_byte);
+			CAM_CALDB("[BRCB032GWZ]enter EEPROM_test function%d (%x)%x\n", ++loop,
+			0x0000, get_byte);
 
 			get_byte = 0;
 
 			/* iReadReg(0x0001 ,(u8*)&get_byte,0xA0); */
 			iReadCAM_CAL((u16)0x0001, 1, (u8 *)&get_byte);
 
-			CAM_CALDB("[EEPROM]enter EEPROM_test function%d (%x)%x\n", ++loop, 0x0001, get_byte);
+			CAM_CALDB("[BRCB032GWZ]enter EEPROM_test function%d (%x)%x\n", ++loop,
+			0x0001, get_byte);
 
 
 			get_byte = 0;
@@ -482,14 +417,16 @@ static long CAM_CAL_Ioctl(
 			iReadCAM_CAL((u16)0x0380, 1, (u8 *)&get_byte);
 
 
-			CAM_CALDB("[EEPROM]enter EEPROM_test function%d (%x)%x\n", ++loop, 0x0380, get_byte);
+			CAM_CALDB("[BRCB032GWZ]enter EEPROM_test function%d (%x)%x\n", ++loop,
+			0x0380, get_byte);
 
 			get_byte = 0;
 
 			/* iReadReg(0x0381 ,(u8*)&get_byte,0xA0); */
 			iReadCAM_CAL((u16)0x0381, 1, (u8 *)&get_byte);
 
-			CAM_CALDB("[EEPROM]enter EEPROM_test function%d (%x)%x\n", ++loop, 0x0381, get_byte);
+			CAM_CALDB("[BRCB032GWZ]enter EEPROM_test function%d (%x)%x\n", ++loop,
+			0x0381, get_byte);
 
 
 			get_byte = 0;
@@ -497,42 +434,48 @@ static long CAM_CAL_Ioctl(
 			/* iReadReg(0x0703 ,(u8*)&get_byte,0xA0); */
 			iReadCAM_CAL((u16)0x0703, 1, (u8 *)&get_byte);
 
-			CAM_CALDB("[EEPROM]enter EEPROM_test function%d (%x)%x\n", ++loop, 0x0703, get_byte);
+			CAM_CALDB("[BRCB032GWZ]enter EEPROM_test function%d (%x)%x\n", ++loop,
+			0x0703, get_byte);
 
 			get_byte = 0;
 
 			/* iReadReg(0x0704 ,(u8*)&get_byte,0xA0); */
 			iReadCAM_CAL((u16)0x0704, 1, (u8 *)&get_byte);
 
-			CAM_CALDB("[EEPROM]enter EEPROM_test function%d (%x)%x\n", ++loop, 0x0704, get_byte);
+			CAM_CALDB("[BRCB032GWZ]enter EEPROM_test function%d (%x)%x\n", ++loop,
+			0x0704, get_byte);
 
 			get_byte = 0;
 
 			/* iReadReg(0x0705 ,(u8*)&get_byte,0xA0); */
 			iReadCAM_CAL((u16)0x0705, 1, (u8 *)&get_byte);
 
-			CAM_CALDB("[EEPROM]enter EEPROM_test function%d (%x)%x\n", ++loop, 0x0705, get_byte);
+			CAM_CALDB("[BRCB032GWZ]enter EEPROM_test function%d (%x)%x\n", ++loop,
+			0x0705, get_byte);
 
 			get_byte = 0;
 
 			/* iReadReg(0x0706 ,(u8*)&get_byte,0xA0); */
 			iReadCAM_CAL((u16)0x0706, 1, (u8 *)&get_byte);
 
-			CAM_CALDB("[EEPROM]enter EEPROM_test function%d (%x)%x\n", ++loop, 0x0706, get_byte);
+			CAM_CALDB("[BRCB032GWZ]enter EEPROM_test function%d (%x)%x\n", ++loop,
+			0x0706, get_byte);
 
 			get_byte = 0;
 
 			/* iReadReg(0x07fc ,(u8*)&get_byte,0xA0); */
 			iReadCAM_CAL((u16)0x07fc, 1, (u8 *)&get_byte);
 
-			CAM_CALDB("[EEPROM]enter EEPROM_test function%d (%x)%x\n", ++loop, 0x07fc, get_byte);
+			CAM_CALDB("[BRCB032GWZ]enter EEPROM_test function%d (%x)%x\n", ++loop,
+			0x07fc, get_byte);
 
 			get_byte = 0;
 
 			/* iReadReg(0x07fd ,(u8*)&get_byte,0xA0); */
 			iReadCAM_CAL((u16)0x07fd, 1, (u8 *)&get_byte);
 
-			CAM_CALDB("[EEPROM]enter EEPROM_test function%d (%x)%x\n", ++loop, 0x05, get_byte);
+			CAM_CALDB("[BRCB032GWZ]enter EEPROM_test function%d (%x)%x\n", ++loop,
+			0x05, get_byte);
 
 			get_byte = 0;
 
@@ -540,14 +483,16 @@ static long CAM_CAL_Ioctl(
 			iReadCAM_CAL((u16)0x07fe, 1, (u8 *)&get_byte);
 
 
-			CAM_CALDB("[EEPROM]enter EEPROM_test function%d (%x)%x\n", ++loop, 0x05, get_byte);
+			CAM_CALDB("[BRCB032GWZ]enter EEPROM_test function%d (%x)%x\n", ++loop,
+			0x05, get_byte);
 
 			get_byte = 0;
 
 			/* iReadReg(0x07ff ,(u8*)&get_byte,0xA0); */
 			iReadCAM_CAL((u16)0x07fe, 1, (u8 *)&get_byte);
 
-			CAM_CALDB("[EEPROM]enter EEPROM_test function%d (%x)%x\n", ++loop, 0x05, get_byte);
+			CAM_CALDB("[BRCB032GWZ]enter EEPROM_test function%d (%x)%x\n", ++loop,
+			0x05, get_byte);
 
 			get_byte = 0;
 
@@ -568,20 +513,20 @@ static long CAM_CAL_Ioctl(
 
 		break;
 	default:
-		CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] No CMD\n");
+		CAM_CALDB("[BRCB032GWZ] No CMD\n");
 		i4RetValue = -EPERM;
 		break;
 	}
 
 	if (_IOC_READ & _IOC_DIR(a_u4Command)) {
 		/* copy data to user space buffer, keep other input paremeter unchange. */
-		CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] to user length %d\n", ptempbuf->u4Length);
-		CAM_CALDB("[BRCB032GWZ_3_CAM_CAL] to user  Working buffer address 0x%8x\n", (u32)pWorkingBuff);
+		CAM_CALDB("[BRCB032GWZ] to user length %d\n", ptempbuf->u4Length);
+		CAM_CALDB("[BRCB032GWZ] to user  Working buffer address 0x%8x\n", (u32)pWorkingBuff);
 		if (copy_to_user((u8 __user *) ptempbuf->pu1Params , (u8 *)pWorkingBuff ,
 			ptempbuf->u4Length)) {
 			kfree(pBuff);
 			kfree(pWorkingBuff);
-			CAM_CALDB("[S24CAM_CAL] ioctl copy to user failed\n");
+			CAM_CALDB("[BRCB032GWZ] ioctl copy to user failed\n");
 			return -EFAULT;
 		}
 	}
@@ -604,8 +549,7 @@ static int CAM_CAL_Open(struct inode *a_pstInode, struct file *a_pstFile)
 	if (g_u4Opened) {
 		spin_unlock(&g_CAM_CALLock);
 		return -EBUSY;
-	} /*else {*//*LukeHu--150720=For check fo*/
-	if (!g_u4Opened) {/*LukeHu++150720=For check fo*/
+	} else {
 		g_u4Opened = 1;
 		atomic_set(&g_CAM_CALatomic, 0);
 	}
@@ -613,7 +557,7 @@ static int CAM_CAL_Open(struct inode *a_pstInode, struct file *a_pstFile)
 
 #if 0
 	if (TRUE != hwPowerOn(MT65XX_POWER_LDO_VCAMA, VOL_2800, "S24CS64A")) {
-		CAM_CALDB("[S24CAM_CAL] Fail to enable analog gain\n");
+		CAM_CALDB("[BRCB032GWZ] Fail to enable analog gain\n");
 		return -EIO;
 	}
 #endif
@@ -643,9 +587,6 @@ static const struct file_operations g_stCAM_CAL_fops = {
 	.open = CAM_CAL_Open,
 	.release = CAM_CAL_Release,
 	/* .ioctl = CAM_CAL_Ioctl */
-#ifdef CONFIG_COMPAT
-	.compat_ioctl = CAM_CAL_Ioctl_Compat,
-#endif
 	.unlocked_ioctl = CAM_CAL_Ioctl
 };
 
@@ -694,6 +635,7 @@ static inline int RegisterCAM_CALCharDrv(void)
 	}
 
 	CAM_CAL_class = class_create(THIS_MODULE, "CAM_CALdrv");
+
 	if (IS_ERR(CAM_CAL_class)) {
 		int ret = PTR_ERR(CAM_CAL_class);
 
@@ -729,8 +671,7 @@ static int CAM_CAL_i2c_remove(struct i2c_client *);
 
 static const struct i2c_device_id CAM_CAL_i2c_id[] = {{CAM_CAL_DRVNAME, 0}, {} };
 #if 0 /* test110314 Please use the same I2C Group ID as Sensor */
-static unsigned short force[] = {CAM_CAL_I2C_GROUP_ID, S24CS64A_DEVICE_ID, I2C_CLIENT_END,
-	I2C_CLIENT_END};
+static unsigned short force[] = {CAM_CAL_I2C_GROUP_ID, S24CS64A_DEVICE_ID, I2C_CLIENT_END, I2C_CLIENT_END};
 #else
 /* static unsigned short force[] = {IMG_SENSOR_I2C_GROUP_ID, S24CS64A_DEVICE_ID, I2C_CLIENT_END,
 I2C_CLIENT_END}; */
@@ -842,3 +783,6 @@ module_exit(CAM_CAL_i2C_exit);
 MODULE_DESCRIPTION("CAM_CAL driver");
 MODULE_AUTHOR("Sean Lin <Sean.Lin@Mediatek.com>");
 MODULE_LICENSE("GPL");
+
+#endif
+

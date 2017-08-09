@@ -3829,6 +3829,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,orientation";
 	};
 /* sensor end */
+	cam_cal_drv{
+		compatible = "mediatek,cam_cal_drv";
+		main_bus = <2>;
+		sub_bus = <3>;
+	};
 };
 
 #include "cust.dtsi"

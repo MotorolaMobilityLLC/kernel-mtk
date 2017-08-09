@@ -26,19 +26,12 @@
 #define CAM_CALDB(x, ...)
 #endif
 
-#ifdef CONFIG_COMPAT
-/* 64 bit */
-#include <linux/fs.h>
-#include <linux/compat.h>
-#endif
-
 
 static DEFINE_SPINLOCK(g_CAM_CALLock); /* for SMP */
 
 #define CAM_CAL_I2C_BUSNUM 1
-static struct i2c_board_info kd_cam_cal_dev __initdata = {
-	I2C_BOARD_INFO("dummy_cam_cal", 0xAB >> 1)
-};/* make dummy_eeprom co-exist */
+static struct i2c_board_info kd_cam_cal_dev __initdata = { I2C_BOARD_INFO("dummy_cam_cal", 0xAB >> 1)};
+/* make dummy_eeprom co-exist */
 
 /*******************************************************************************
 *
@@ -194,7 +187,6 @@ static int iReadData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigne
 	u32 u4IncOffset = 0;
 	u32 u4CurrentOffset;
 	u8 *pBuff;
-
 	CAM_CALDB("[CAM_CAL] iReadData\n");
 
 	if (ui4_offset + ui4_length >= 0x2000) {
@@ -229,90 +221,11 @@ static int iReadData(unsigned int  ui4_offset, unsigned int  ui4_length, unsigne
 			/* break; */
 		}
 	} while (i4ResidueDataLength > 0);
-	/* fix warning MSG   CAM_CALDB("[CAM_CAL] iReadData finial address is %d length is %d
-	buffer address is 0x%x\n",u4CurrentOffset, i4ResidueDataLength, pBuff); */
+	/* fix warning MSG   CAM_CALDB("[CAM_CAL] iReadData finial address is %d length is %d buffer
+	 address is 0x%x\n",u4CurrentOffset, i4ResidueDataLength, pBuff); */
 	CAM_CALDB("[CAM_CAL] iReadData done\n");
 	return 0;
 }
-
-
-#ifdef CONFIG_COMPAT
-static int compat_put_cal_info_struct(
-	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,
-	stCAM_CAL_INFO_STRUCT __user *data)
-{
-	compat_uptr_t p;
-	compat_uint_t i;
-	int err;
-
-	err = get_user(i, &data->u4Offset);
-	err |= put_user(i, &data32->u4Offset);
-	err |= get_user(i, &data->u4Length);
-	err |= put_user(i, &data32->u4Length);
-	/* Assume pointer is not change */
-#if 1
-	err |= get_user(p, &data->pu1Params);
-	err |= put_user(p, &data32->pu1Params);
-#endif
-	return err;
-}
-static int compat_get_cal_info_struct(
-	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32,
-	stCAM_CAL_INFO_STRUCT __user *data)
-{
-	compat_uptr_t p;
-	compat_uint_t i;
-	int err;
-
-	err = get_user(i, &data32->u4Offset);
-	err |= put_user(i, &data->u4Offset);
-	err |= get_user(i, &data32->u4Length);
-	err |= put_user(i, &data->u4Length);
-	err |= get_user(p, &data32->pu1Params);
-	err |= put_user(compat_ptr(p), &data->pu1Params);
-
-	return err;
-}
-
-static long CAM_CAL_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned long arg)
-{
-	long ret;
-	int err;
-
-	COMPAT_stCAM_CAL_INFO_STRUCT __user *data32;
-	stCAM_CAL_INFO_STRUCT __user *data;
-
-	CAM_CALDB("[CAMERA SENSOR] CAM_CAL_Ioctl_Compat,%p %p %x ioc size %d\n",
-	filp->f_op , filp->f_op->unlocked_ioctl, cmd, _IOC_SIZE(cmd));
-
-	if (!filp->f_op || !filp->f_op->unlocked_ioctl)
-		return -ENOTTY;
-
-	switch (cmd) {
-
-	case COMPAT_CAM_CALIOC_G_READ: {
-		data32 = compat_ptr(arg);
-		data = compat_alloc_user_space(sizeof(*data));
-		if (data == NULL)
-			return -EFAULT;
-
-		err = compat_get_cal_info_struct(data32, data);
-		if (err)
-			return err;
-
-		ret = filp->f_op->unlocked_ioctl(filp, CAM_CALIOC_G_READ, (unsigned long)data);
-		err = compat_put_cal_info_struct(data32, data);
-
-
-		if (err != 0)
-			CAM_CALERR("[CAMERA SENSOR] compat_put_acdk_sensor_getinfo_struct failed\n");
-		return ret;
-	}
-	default:
-		return -ENOIOCTLCMD;
-	}
-}
-#endif
 
 
 /*******************************************************************************
@@ -370,9 +283,8 @@ static long CAM_CAL_Ioctl(
 		CAM_CALDB("[CAM_CAL] ioctl allocate mem failed\n");
 		return -ENOMEM;
 	}
-	/* fix warning MSG     CAM_CALDB("[CAM_CAL] init Working buffer address 0x%x  command is
-	0x%08x\n", pWorkingBuff, a_u4Command); */
-
+	/* fix warning MSG     CAM_CALDB("[CAM_CAL] init Working buffer address 0x%x  command is 0x%08x\n",
+	pWorkingBuff, a_u4Command); */
 
 	if (copy_from_user((u8 *)pWorkingBuff , (u8 *)ptempbuf->pu1Params, ptempbuf->u4Length)) {
 		kfree(pBuff);
@@ -406,11 +318,11 @@ static long CAM_CAL_Ioctl(
 		CAM_CALDB("[CAM_CAL] offset %d\n", ptempbuf->u4Offset);
 		CAM_CALDB("[CAM_CAL] length %d\n", ptempbuf->u4Length);
 		/* fix warning MSG            CAM_CALDB("[CAM_CAL] Before read Working buffer address
-		0x%x\n", pWorkingBuff); */
+		 0x%x\n", pWorkingBuff); */
 
 		i4RetValue = iReadData((u16)ptempbuf->u4Offset, ptempbuf->u4Length, pWorkingBuff);
 		/* fix warning MSG            CAM_CALDB("[CAM_CAL] After read Working buffer address
-		0x%x\n", pWorkingBuff); */
+		 0x%x\n", pWorkingBuff); */
 
 
 #ifdef CAM_CALGETDLT_DEBUG
@@ -461,9 +373,7 @@ static int CAM_CAL_Open(struct inode *a_pstInode, struct file *a_pstFile)
 	if (g_u4Opened) {
 		spin_unlock(&g_CAM_CALLock);
 		return -EBUSY;
-	} /*else {*//*LukeHu--150720=For check fo*/
-
-	if (!g_u4Opened) {/*LukeHu++150720=For check fo*/
+	} else {
 		g_u4Opened = 1;
 		atomic_set(&g_CAM_CALatomic, 0);
 	}
@@ -504,9 +414,6 @@ static const struct file_operations g_stCAM_CAL_fops = {
 	.owner = THIS_MODULE,
 	.open = CAM_CAL_Open,
 	.release = CAM_CAL_Release,
-#ifdef CONFIG_COMPAT
-	.compat_ioctl = CAM_CAL_Ioctl_Compat,
-#endif
 	/* .ioctl = CAM_CAL_Ioctl */
 	.unlocked_ioctl = CAM_CAL_Ioctl
 };
@@ -558,7 +465,6 @@ static inline int RegisterCAM_CALCharDrv(void)
 	CAM_CAL_class = class_create(THIS_MODULE, "CAM_CALdrv");
 	if (IS_ERR(CAM_CAL_class)) {
 		int ret = PTR_ERR(CAM_CAL_class);
-
 		CAM_CALDB("Unable to create class, err = %d\n", ret);
 		return ret;
 	}
@@ -591,11 +497,9 @@ static int CAM_CAL_i2c_remove(struct i2c_client *);
 
 static const struct i2c_device_id CAM_CAL_i2c_id[] = {{CAM_CAL_DRVNAME, 0}, {} };
 #if 0 /* test110314 Please use the same I2C Group ID as Sensor */
-static unsigned short force[] = {CAM_CAL_I2C_GROUP_ID, S24CS64A_DEVICE_ID, I2C_CLIENT_END,
-	I2C_CLIENT_END};
+static unsigned short force[] = {CAM_CAL_I2C_GROUP_ID, S24CS64A_DEVICE_ID, I2C_CLIENT_END, I2C_CLIENT_END};
 #else
-/* static unsigned short force[] = {CAM_CAL_I2C_GROUP_ID, S24CS64A_DEVICE_ID, I2C_CLIENT_END,
-I2C_CLIENT_END}; */
+/* static unsigned short force[] = {CAM_CAL_I2C_GROUP_ID, S24CS64A_DEVICE_ID, I2C_CLIENT_END, I2C_CLIENT_END}; */
 #endif
 /* static const unsigned short * const forces[] = { force, NULL }; */
 /* static struct i2c_client_address_data addr_data = { .forces = forces,}; */
@@ -619,7 +523,6 @@ static int CAM_CAL_i2c_detect(struct i2c_client *client, int kind, struct i2c_bo
 static int CAM_CAL_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int i4RetValue = 0;
-
 	CAM_CALDB("[CAM_CAL] Attach I2C\n");
 	/* spin_lock_init(&g_CAM_CALLock); */
 
@@ -704,4 +607,5 @@ module_exit(CAM_CAL_i2C_exit);
 MODULE_DESCRIPTION("CAM_CAL driver");
 MODULE_AUTHOR("Sean Lin <Sean.Lin@Mediatek.com>");
 MODULE_LICENSE("GPL");
+
 
