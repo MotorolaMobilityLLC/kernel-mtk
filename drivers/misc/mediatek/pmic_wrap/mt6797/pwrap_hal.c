@@ -249,7 +249,7 @@ static inline void pwrap_dump_ap_register(void)
 		reg_addr = (PMIC_WRAP_BASE + i * 4);
 		reg_value = WRAP_RD32(((unsigned int *) (PMIC_WRAP_BASE + i * 4)));
 
-		PWRAPREG("reg_addr:0x%x = 0x%x\n", *reg_addr, reg_value);
+		PWRAPREG("reg_addr:0x%p = 0x%x\n", reg_addr, reg_value);
 	}
 }
 
