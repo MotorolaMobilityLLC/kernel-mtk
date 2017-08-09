@@ -9,7 +9,7 @@
 
 #define SMI_DGB_LARB_SELECT(smi_dbg_larb, n) ((smi_dbg_larb) & (1<<n))
 
-#ifndef CONFIG_MTK_SMI
+#ifndef CONFIG_MTK_SMI_EXT
 #define smi_debug_bus_hanging_detect(larbs, show_dump) {}
 #define smi_debug_bus_hanging_detect_ext(larbs, show_dump, output_gce_buffer) {}
 #else

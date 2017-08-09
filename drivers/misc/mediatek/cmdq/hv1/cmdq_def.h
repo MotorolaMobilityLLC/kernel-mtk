@@ -19,7 +19,7 @@
 #endif
 #include "cmdq_sec_iwc_common.h"
 
-#ifdef CONFIG_MTK_SMI
+#ifdef CONFIG_MTK_SMI_EXT
 /* #define CMDQ_CONFIG_SMI (1) */
 #endif
 

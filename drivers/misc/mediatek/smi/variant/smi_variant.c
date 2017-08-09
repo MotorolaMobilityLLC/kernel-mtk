@@ -1379,7 +1379,7 @@ void smi_dumpDebugMsg(void)
 
 int smi_debug_bus_hanging_detect(unsigned int larbs, int show_dump)
 {
-#ifdef CONFIG_MTK_SMI
+#ifdef CONFIG_MTK_SMI_EXT
 	int i = 0;
 	int dump_time = 0;
 	int is_smi_issue = 0;
