@@ -1322,15 +1322,15 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_e3[] = {
 	FP(CPU_DVFS_FREQ1_LL_M,		1,	1),
 	FP(CPU_DVFS_FREQ2_LL_M,		1,	1),
 	FP(CPU_DVFS_FREQ3_LL_M,		1,	1),
-	FP(CPU_DVFS_FREQ4_LL_M,		1,	1),
-	FP(CPU_DVFS_FREQ5_LL_M,		1,	1),
-	FP(CPU_DVFS_FREQ6_LL_M,		1,	1),
+	FP(CPU_DVFS_FREQ4_LL_M,		2,	1),
+	FP(CPU_DVFS_FREQ5_LL_M,		2,	1),
+	FP(CPU_DVFS_FREQ6_LL_M,		2,	1),
 	FP(CPU_DVFS_FREQ7_LL_M,		2,	1),
 	FP(CPU_DVFS_FREQ8_LL_M,		2,	1),
 	FP(CPU_DVFS_FREQ9_LL_M,		2,	1),
 	FP(CPU_DVFS_FREQ10_LL_M,	2,	1),
-	FP(CPU_DVFS_FREQ11_LL_M,	2,	1),
-	FP(CPU_DVFS_FREQ12_LL_M,	2,	1),
+	FP(CPU_DVFS_FREQ11_LL_M,	2,	2),
+	FP(CPU_DVFS_FREQ12_LL_M,	2,	2),
 	FP(CPU_DVFS_FREQ13_LL_M,	2,	2),
 	FP(CPU_DVFS_FREQ14_LL_M,	2,	2),
 	FP(CPU_DVFS_FREQ15_LL_M,	2,	4),
@@ -1346,12 +1346,12 @@ static struct mt_cpu_freq_method opp_tbl_method_L_e3[] = {
 	FP(CPU_DVFS_FREQ5_L_M,		1,	1),
 	FP(CPU_DVFS_FREQ6_L_M,		1,	1),
 	FP(CPU_DVFS_FREQ7_L_M,		1,	1),
-	FP(CPU_DVFS_FREQ8_L_M,		1,	1),
-	FP(CPU_DVFS_FREQ9_L_M,		1,	1),
+	FP(CPU_DVFS_FREQ8_L_M,		2,	1),
+	FP(CPU_DVFS_FREQ9_L_M,		2,	1),
 	FP(CPU_DVFS_FREQ10_L_M,		2,	1),
 	FP(CPU_DVFS_FREQ11_L_M,		2,	1),
 	FP(CPU_DVFS_FREQ12_L_M,		2,	1),
-	FP(CPU_DVFS_FREQ13_L_M,		2,	1),
+	FP(CPU_DVFS_FREQ13_L_M,		2,	2),
 	FP(CPU_DVFS_FREQ14_L_M,		2,	2),
 	FP(CPU_DVFS_FREQ15_L_M,		2,	2),
 };
@@ -1366,8 +1366,8 @@ static struct mt_cpu_freq_method opp_tbl_method_CCI_e3[] = {
 	FP(CPU_DVFS_FREQ5_CCI_M,	2,	1),
 	FP(CPU_DVFS_FREQ6_CCI_M,	2,	1),
 	FP(CPU_DVFS_FREQ7_CCI_M,	2,	1),
-	FP(CPU_DVFS_FREQ8_CCI_M,	2,	1),
-	FP(CPU_DVFS_FREQ9_CCI_M,	2,	1),
+	FP(CPU_DVFS_FREQ8_CCI_M,	2,	2),
+	FP(CPU_DVFS_FREQ9_CCI_M,	2,	2),
 	FP(CPU_DVFS_FREQ10_CCI_M,	2,	2),
 	FP(CPU_DVFS_FREQ11_CCI_M,	2,	2),
 	FP(CPU_DVFS_FREQ12_CCI_M,	2,	2),
@@ -1387,12 +1387,12 @@ static struct mt_cpu_freq_method opp_tbl_method_B_e3[] = {
 	FP(CPU_DVFS_FREQ6_B_M,		1,	1),
 	FP(CPU_DVFS_FREQ7_B_M,		1,	1),
 	FP(CPU_DVFS_FREQ8_B_M,		1,	1),
-	FP(CPU_DVFS_FREQ9_B_M,		1,	1),
-	FP(CPU_DVFS_FREQ10_B_M,		1,	1),
+	FP(CPU_DVFS_FREQ9_B_M,		2,	1),
+	FP(CPU_DVFS_FREQ10_B_M,		2,	1),
 	FP(CPU_DVFS_FREQ11_B_M,		2,	1),
 	FP(CPU_DVFS_FREQ12_B_M,		2,	1),
 	FP(CPU_DVFS_FREQ13_B_M,		2,	1),
-	FP(CPU_DVFS_FREQ14_B_M,		2,	1),
+	FP(CPU_DVFS_FREQ14_B_M,		2,	2),
 	FP(CPU_DVFS_FREQ15_B_M,		2,	2),
 };
 
@@ -3387,10 +3387,6 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 				cpufreq_lock(flags);
 				p->armpll_is_available = 1;
 				if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && (action == CPU_DOWN_FAILED)) {
-#ifdef CONFIG_HYBRID_CPU_DVFS	/* after BigiDVFSEnable */
-					if (enable_cpuhvfs)
-						cpuhvfs_notify_cluster_on(cpu_dvfs_to_cluster(p));
-#endif
 					new_opp_idx = BOOST_B_FREQ_IDX;
 					/* Get cci opp idx */
 					new_cci_opp_idx = _calc_new_cci_opp_idx(p, new_opp_idx);
