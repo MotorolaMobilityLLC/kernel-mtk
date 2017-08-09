@@ -497,6 +497,7 @@ static unsigned int ctrl_EEM_Enable = 1;
 #endif
 
 static unsigned int checkEfuse;
+static unsigned int informGpuEEMisReady;
 
 /* Global variable for slow idle*/
 volatile unsigned int ptp_data[3] = {0, 0, 0};
@@ -3677,6 +3678,8 @@ void eem_init01(void)
 		#endif
 	#endif
 
+	informGpuEEMisReady = 1;
+
 	/* This patch is waiting for whole bank finish the init01 then go
 	 * next. Due to LL/L use same bulk PMIC, LL voltage table change
 	 * will impact L to process init01 stage, because L require a
@@ -4897,6 +4900,11 @@ unsigned int get_efuse_status(void)
 	return checkEfuse;
 }
 
+unsigned int get_eem_status_for_gpu(void)
+{
+	return informGpuEEMisReady;
+}
+
 #ifdef __KERNEL__
 static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int depth, void *data)
 {
@@ -5187,6 +5195,7 @@ int __init eem_init(void)
 
 	/* process_voltage_bin(&eem_devinfo); */ /* LTE voltage bin use I-Chang */
 	if (0 == ctrl_EEM_Enable) {
+		informGpuEEMisReady = 1;
 		eem_error("ctrl_EEM_Enable = 0x%X\n", ctrl_EEM_Enable);
 		FUNC_EXIT(FUNC_LV_MODULE);
 		return 0;
