@@ -6323,6 +6323,11 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	prWifiVar->ucStaHtBfee = (UINT_8) wlanCfgGetUint32(prAdapter, "StaHTBfee", FEATURE_DISABLED);
 	prWifiVar->ucStaVhtBfee = (UINT_8) wlanCfgGetUint32(prAdapter, "StaVHTBfee", FEATURE_ENABLED);
 	prWifiVar->ucStaBfer = (UINT_8) wlanCfgGetUint32(prAdapter, "StaBfer", FEATURE_DISABLED);
+#ifdef MT6630
+	prWifiVar->ucStaVhtMuBfee = (UINT_8) wlanCfgGetUint32(prAdapter, "StaVHTMuBfee", FEATURE_DISABLED);
+#else
+	prWifiVar->ucStaVhtMuBfee = (UINT_8) wlanCfgGetUint32(prAdapter, "StaVHTMuBfee", FEATURE_ENABLED);
+#endif
 
 	prWifiVar->ucApWpsMode = (UINT_8) wlanCfgGetUint32(prAdapter, "ApWpsMode", 0);
 	DBGLOG(INIT, LOUD, "ucApWpsMode = %u\n", prWifiVar->ucApWpsMode);

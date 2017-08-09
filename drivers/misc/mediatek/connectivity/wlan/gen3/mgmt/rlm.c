@@ -1178,8 +1178,11 @@ static VOID rlmFillVhtCapIE(P_ADAPTER_T prAdapter, P_BSS_INFO_T prBssInfo, P_MSD
 	prVhtCap->ucLength = sizeof(IE_VHT_CAP_T) - ELEM_HDR_LEN;
 	prVhtCap->u4VhtCapInfo = VHT_CAP_INFO_DEFAULT_VAL;
 
-	if (IS_FEATURE_ENABLED(prAdapter->rWifiVar.ucStaVhtBfee))
+	if (IS_FEATURE_ENABLED(prAdapter->rWifiVar.ucStaVhtBfee)) {
 		prVhtCap->u4VhtCapInfo |= FIELD_VHT_CAP_INFO_BF;
+		if (IS_FEATURE_ENABLED(prAdapter->rWifiVar.ucStaVhtMuBfee))
+			prVhtCap->u4VhtCapInfo |= VHT_CAP_INFO_MU_BEAMFOMEE_CAPABLE;
+	}
 
 	if (IS_FEATURE_ENABLED(prAdapter->rWifiVar.ucRxShortGI))
 		prVhtCap->u4VhtCapInfo |= VHT_CAP_INFO_SHORT_GI_80;
