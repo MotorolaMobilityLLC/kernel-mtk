@@ -487,6 +487,8 @@ static void ccci_scp_init(void)
 
 int ccci_scp_ipi_send(int md_id, int op_id, void *data)
 {
+	int ret = 0;
+
 	mutex_lock(&scp_ipi_tx_mutex);
 	memset(&scp_ipi_tx_msg, 0, sizeof(scp_ipi_tx_msg));
 	scp_ipi_tx_msg.md_id = md_id;
@@ -494,10 +496,12 @@ int ccci_scp_ipi_send(int md_id, int op_id, void *data)
 	scp_ipi_tx_msg.data[0] = *((u32 *)data);
 	CCCI_INF_MSG(scp_ipi_tx_msg.md_id, CORE, "IPI send %d/0x%x, %ld\n",
 				scp_ipi_tx_msg.op_id, scp_ipi_tx_msg.data[0], sizeof(struct ccci_ipi_msg));
-	while (scp_ipi_send(IPI_APCCCI, &scp_ipi_tx_msg, sizeof(scp_ipi_tx_msg), 1) != DONE)
-		;
+	if (scp_ipi_send(IPI_APCCCI, &scp_ipi_tx_msg, sizeof(scp_ipi_tx_msg), 1) != DONE) {
+		CCCI_ERR_MSG(md_id, CORE, "IPI send fail!\n");
+		ret = -CCCI_ERR_MD_NOT_READY;
+	}
 	mutex_unlock(&scp_ipi_tx_mutex);
-	return 0;
+	return ret;
 }
 #endif
 
