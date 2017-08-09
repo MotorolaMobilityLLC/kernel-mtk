@@ -5226,6 +5226,7 @@ static void migrate_tasks(unsigned int dead_cpu)
 	 * value of rq->clock[_task]
 	 */
 	update_rq_clock(rq);
+	unthrottle_offline_rt_rqs(rq);
 
 	for ( ; ; ) {
 		/*

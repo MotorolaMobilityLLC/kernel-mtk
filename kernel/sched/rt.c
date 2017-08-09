@@ -841,7 +841,6 @@ balanced:
 			u64 rt_time_pre;
 
 			rt_time_pre = rt_rq->rt_time;
-			rt_rq->rt_time = 0;
 			rt_rq->rt_throttled = 0;
 			printk_deferred("sched: disable_runtime: RT throttling inactivated, cpu=%d\n",
 				rq->cpu);
@@ -2249,6 +2248,19 @@ static void rq_offline_rt(struct rq *rq)
 	cpupri_set(&rq->rd->cpupri, rq->cpu, CPUPRI_INVALID);
 }
 
+void unthrottle_offline_rt_rqs(struct rq *rq)
+{
+	rt_rq_iter_t iter;
+	struct rt_rq *rt_rq;
+
+	for_each_rt_rq(rt_rq, iter, rq) {
+		if (rt_rq_throttled(rt_rq)) {
+			rt_rq->rt_throttled = 0;
+			printk_deferred("sched: migrate_tasks: RT throttling inactivated\n");
+		}
+		sched_rt_rq_enqueue(rt_rq);
+	}
+}
 /*
  * When switch from the rt queue, we bring ourselves to a position
  * that we might want to pull RT tasks from other runqueues.
