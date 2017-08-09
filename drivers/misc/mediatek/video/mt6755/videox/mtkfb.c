@@ -1491,6 +1491,7 @@ static void compat_convert(struct compat_fb_overlay_layer *compat_info,
 	info->src_width = compat_info->src_width;
 	info->src_height = compat_info->src_height;
 	info->tgt_offset_x = compat_info->tgt_offset_x;
+	info->tgt_offset_y = compat_info->tgt_offset_y;
 	info->tgt_width = compat_info->tgt_width;
 	info->tgt_height = compat_info->tgt_height;
 	info->layer_rotation = compat_info->layer_rotation;
