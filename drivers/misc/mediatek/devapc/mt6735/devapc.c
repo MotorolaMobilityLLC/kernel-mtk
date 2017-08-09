@@ -36,10 +36,7 @@
 #include "mt_io.h"
 #include "sync_write.h"
 
-#if 0
-/*<Disable> Device APC driver temporarily and wait for EMI MPU driver*/
 #include <mach/mt_secure_api.h>
-#endif
 
 #include "devapc.h"
 
@@ -66,21 +63,15 @@
 	} while (0)
 
 
-#if 0
-/*<Disable> Device APC driver temporarily and wait for EMI MPU driver*/
 #ifndef CONFIG_MTK_CLKMGR
 /* CCF */
 static struct clk *dapc_clk;
-#endif
 #endif
 
 static struct cdev *g_devapc_ctrl;
 static unsigned int devapc_irq;
 static void __iomem *devapc_ao_base;
 static void __iomem *devapc_pd_base;
-
-#if 0
-/*<Disable> Device APC driver temporarily and wait for EMI MPU driver*/
 
 #if defined(CONFIG_ARCH_MT6735)
 
@@ -530,15 +521,10 @@ static struct DEVICE_INFO devapc_devices[] = {
 
 #endif
 
-#endif
-
 /*****************************************************************************
 *FUNCTION DEFINITION
 *****************************************************************************/
-#if 0
-/*<Disable> Device APC driver temporarily and wait for EMI MPU driver*/
 static int clear_vio_status(unsigned int module);
-#endif
 
 static int devapc_ioremap(void);
 /**************************************************************************
@@ -677,8 +663,6 @@ static int devapc_pm_restore_noirq(struct device *device)
 }
 #endif
 
-#if 0
-/*<Disable> Device APC driver temporarily and wait for EMI MPU driver*/
 #if defined(CONFIG_ARCH_MT6753)
 static int check_vio_status(unsigned int module)
 {
@@ -715,13 +699,10 @@ static int check_vio_status(unsigned int module)
 	return 0;
 }
 #endif
-#endif
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) || defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 /* ATF or TEE runs this path */
 
-#if 0
-/*<Disable> Device APC driver temporarily and wait for EMI MPU driver*/
 static void start_devapc(void)
 {
 
@@ -733,7 +714,6 @@ static void start_devapc(void)
 	mt_secure_call(MTK_SIP_KERNEL_DAPC_INIT, 0, 0, 0);
 
 }
-#endif
 
 #else
 
@@ -749,9 +729,6 @@ static void start_devapc(void)
  * @domain_num: domain index number (AP or MD domain)
  * no return value.
  */
-
-#if 0
-	/*<Disable> Device APC driver temporarily and wait for EMI MPU driver*/
 static int clear_vio_status(unsigned int module)
 {
 
@@ -783,10 +760,7 @@ static int clear_vio_status(unsigned int module)
 
 	return 0;
 }
-#endif
 
-#if 0
-	/*<Disable> Device APC driver temporarily and wait for EMI MPU driver*/
 static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
 {
 	unsigned int dbg0 = 0, dbg1 = 0;
@@ -859,21 +833,14 @@ static irqreturn_t devapc_violation_irq(int irq, void *dev_id)
 
 	return IRQ_HANDLED;
 }
-#endif
 
 static int devapc_probe(struct platform_device *dev)
 {
-#if 0
-	/*<Disable> Device APC driver temporarily and wait for EMI MPU driver*/
 	int ret;
-#endif
 
 	DEVAPC_MSG("[DEVAPC] module probe.\n");
 	/*IO remap*/
 	devapc_ioremap();
-
-#if 0
-	/*<Disable> Device APC driver temporarily and wait for EMI MPU driver*/
 
 	/*
 	* Interrupts of vilation (including SPC in SMI, or EMI MPU) are triggered by the device APC.
@@ -904,8 +871,6 @@ static int devapc_probe(struct platform_device *dev)
 #endif
 
 	start_devapc();
-
-#endif
 
 	return 0;
 }
