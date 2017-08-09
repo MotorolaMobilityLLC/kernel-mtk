@@ -38,3 +38,11 @@ config MTK_OTG_OC_DETECTOR
 	Say Y here if your system has this OC detect function.
 	If unsure, say N.
 
+config MTK_TEST_XHCI
+	tristate "MediaTek U3 TEST XHCI driver support"
+	default n
+	---help---
+	  Enables support Mediatek U3 XHCI test driver kernel framework.
+	  Say Y if you would like to do verification program.
+	  If unsure, say N.
+
