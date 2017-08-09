@@ -14,23 +14,23 @@ if INPUT_TOUCHSCREEN
 config TOUCHSCREEN_MTK
 	bool "MediaTek Touch Panel Driver"
 	help
-	Say Y here if you have MediaTek touch panel.
+	  Say Y here if you have MediaTek touch panel.
 
-	If unsure, say N.
+	  If unsure, say N.
 
-	To compile this dirver as a module, choose M here: the
-	module will be called.
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
 
 config TOUCHSCREEN_MTK_GT1151
 	bool "GT1151 for Mediatek package"
 	default n
 	help
-	Say Y here if you have GT1151 touch panel.
+	  Say Y here if you have GT1151 touch panel.
 
-	If unsure, say N.
+	  If unsure, say N.
 
-	To compile this dirver as a module, choose M here: the
-	module will be called.
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
 
 source "drivers/input/touchscreen/mediatek/GT1151/Kconfig"
 
@@ -45,12 +45,12 @@ config TOUCHSCREEN_MTK_GT9XXTB_HOTKNOT
 	bool "GT9XXTB hotknot for Mediatek package"
 	default n
 	help
-	Say Y here if you have GT9xx touch panel.
+	  Say Y here if you have GT9xx touch panel.
 
-	If unsure, say N.
+	  If unsure, say N.
 
-	To compile this dirver as a module, choose M here: the
-	module will be called.
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
 
 source "drivers/input/touchscreen/mediatek/GT9XXTB_hotknot/Kconfig"
 
@@ -72,25 +72,26 @@ config TOUCHSCREEN_MTK_GT910
 	bool "GT910 for Mediatek package"
 	default n
 	help
-	Say Y here if you have GT910 touch panel.
+	  Say Y here if you have GT910 touch panel.
 
-	If unsure, say N.
+	  If unsure, say N.
 
-	To compile this dirver as a module, choose M here: the
-	module will be called.
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
 
 source "drivers/input/touchscreen/mediatek/GT910/Kconfig"
 
-config TOUCHSCREEN_MTK_GT911
-	bool "GT1151 for Mediatek package"
+config TOUCHSCREEN_MTK_GT9XX_HOTKNOT_SCP
+	bool "GT9XX_HOTKNOT_SCP for Mediatek package"
 	default n
 	help
-	Say Y here if you have GT911 touch panel.
+	  Say Y here if you have GT9XX_HOTKNOT_SCP touch panel.
 
-	If unsure, say N.
+	  If unsure, say N.
 
-	To compile this dirver as a module, choose M here: the
-	module will be called.
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
 
-source "drivers/input/touchscreen/mediatek/GT911/Kconfig"
+source "drivers/input/touchscreen/mediatek/GT9XX_hotknot_scp/Kconfig"
+
 endif
