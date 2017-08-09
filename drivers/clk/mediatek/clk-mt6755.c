@@ -21,6 +21,11 @@
 #include "clk-gate-v1.h"
 #include "clk-mt6755-pll.h"
 
+#define _MUX_UPDS_
+#ifdef _MUX_UPDS_
+#include "clk-mux.h"
+static DEFINE_SPINLOCK(mt6755_clk_lock);
+#endif
 #include <dt-bindings/clock/mt6755-clk.h>
 
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
@@ -877,7 +882,7 @@ static const char *dvfsp_parents[] __initconst = {
 
 
 
-
+#ifndef _MUX_UPDS_
 struct mtk_mux {
 	int id;
 	const char *name;
@@ -944,7 +949,63 @@ static struct mtk_mux top_muxes[] __initdata = {
 	MUX(TOP_MUX_I2C, i2c_sel, i2c_parents, 0x00c0, 16, 2, INVALID_MUX_GATE_BIT),
 	MUX(TOP_MUX_DVFSP, dvfsp_sel, dvfsp_parents, 0x00c0, 24, 1, 31),
 };
+#else
 
+#define _UPDATE_REG 0x04
+#define _UPDATE1_REG 0x08
+#define INVALID_UPDATE_REG 0xFFFFFFFF
+#define INVALID_UPDATE_SHIFT -1
+#define INVALID_MUX_GATE -1
+static struct mtk_mux_upd top_muxes[] __initdata = {
+	/* CLK_CFG_0 */
+	MUX_UPD(TOP_MUX_AXI, axi_sel, axi_parents, 0x0040, 0, 2, INVALID_MUX_GATE, _UPDATE_REG, 0),
+	MUX_UPD(TOP_MUX_MEM, mem_sel, mem_parents, 0x0040, 8, 2, INVALID_MUX_GATE, _UPDATE_REG, 1),
+	/*why not 23 pdn bit*/
+	MUX_UPD(TOP_MUX_DDRPHY, ddrphycfg_sel, ddrphycfg_parents, 0x0040, 16, 1, INVALID_MUX_GATE, _UPDATE_REG, 2),
+	MUX_UPD(TOP_MUX_MM, mm_sel, mm_parents, 0x0040, 24, 3, INVALID_MUX_GATE, _UPDATE_REG, 3),
+	/* CLK_CFG_1 */
+	MUX_UPD(TOP_MUX_PWM, pwm_sel, pwm_parents, 0x0050, 0, 2, INVALID_MUX_GATE, _UPDATE_REG, 4),
+	MUX_UPD(TOP_MUX_VDEC, vdec_sel, vdec_parents, 0x0050, 8, 3, INVALID_MUX_GATE, _UPDATE_REG, 5),
+	MUX_UPD(TOP_MUX_MFG, mfg_sel, mfg_parents, 0x0050, 24, 2, INVALID_MUX_GATE, _UPDATE_REG, 7),
+	/* CLK_CFG_2 */
+	MUX_UPD(TOP_MUX_CAMTG, camtg_sel, camtg_parents, 0x0060, 0, 2, INVALID_MUX_GATE, _UPDATE_REG, 8),
+	MUX_UPD(TOP_MUX_UART, uart_sel, uart_parents, 0x0060, 8, 1, INVALID_MUX_GATE, _UPDATE_REG, 9),
+	MUX_UPD(TOP_MUX_SPI, spi_sel, spi_parents, 0x0060, 16, 2, INVALID_MUX_GATE, _UPDATE_REG, 10),
+	/* CLK_CFG_3 */
+	MUX_UPD(TOP_MUX_MSDC50_0_HCLK, msdc50_0_hclk_sel, msdc50_0_hclk_parents,
+		0x0070, 8, 2, INVALID_MUX_GATE, _UPDATE_REG, 12),
+	MUX_UPD(TOP_MUX_MSDC50_0, msdc50_0_sel, msdc50_0_parents, 0x0070, 16, 4, INVALID_MUX_GATE, _UPDATE_REG, 13),
+	MUX_UPD(TOP_MUX_MSDC30_1, msdc30_1_sel, msdc30_1_parents, 0x0070, 24, 4, INVALID_MUX_GATE, _UPDATE_REG, 14),
+	/* CLK_CFG_4 */
+	MUX_UPD(TOP_MUX_MSDC30_2, msdc30_2_sel, msdc30_2_parents, 0x0080, 0, 4, INVALID_MUX_GATE, _UPDATE_REG, 15),
+	MUX_UPD(TOP_MUX_MSDC30_3, msdc30_3_sel, msdc30_3_parents, 0x0080, 8, 4, INVALID_MUX_GATE, _UPDATE_REG, 16),
+	MUX_UPD(TOP_MUX_AUDIO, audio_sel, audio_parents, 0x0080, 16, 2, INVALID_MUX_GATE, _UPDATE_REG, 17),
+	MUX_UPD(TOP_MUX_AUDINTBUS, aud_intbus_sel, aud_intbus_parents,
+		0x0080, 24, 2, INVALID_MUX_GATE, _UPDATE_REG, 18),
+	/* CLK_CFG_5 */
+	MUX_UPD(TOP_MUX_PMICSPI, pmicspi_sel, pmicspi_parents, 0x0090, 0, 2, INVALID_MUX_GATE, _UPDATE_REG, 19),
+	/*MUX(TOP_MUX_SCP, scp_sel, scp_parents, 0x0090, 8, 2, 15),*/
+	MUX_UPD(TOP_MUX_ATB, atb_sel, atb_parents, 0x0090, 16, 2, INVALID_MUX_GATE, _UPDATE_REG, 21),
+	/*MUX(TOP_MUX_MJC, mjc_sel, mjc_parents, 0x0090, 24, 2, 31),*/
+	/* CLK_CFG_6 */
+	MUX_UPD(TOP_MUX_DPI0, dpi0_sel, dpi0_parents, 0x00a0, 0, 3, INVALID_MUX_GATE, _UPDATE_REG, 23),
+	MUX_UPD(TOP_MUX_SCAM, scam_sel, scam_parents, 0x00a0, 8, 1, INVALID_MUX_GATE, _UPDATE_REG, 24),
+	MUX_UPD(TOP_MUX_AUD1, aud_1_sel, aud_1_parents, 0x00a0, 16, 1, INVALID_MUX_GATE, _UPDATE_REG, 25),
+	MUX_UPD(TOP_MUX_AUD2, aud_2_sel, aud_2_parents, 0x00a0, 24, 1, INVALID_MUX_GATE, _UPDATE_REG, 26),
+	/* CLK_CFG_7 */
+	MUX_UPD(TOP_MUX_DISPPWM, disppwm_sel, disppwm_parents, 0x00b0, 0, 2, INVALID_MUX_GATE, _UPDATE_REG, 27),
+	MUX_UPD(TOP_MUX_SSUSBTOPSYS, ssusb_top_sys_sel, ssusb_top_sys_parents,
+		0x00b0, 8, 1, INVALID_MUX_GATE, _UPDATE_REG, 28),
+	MUX_UPD(TOP_MUX_USBTOP, usb_top_sel, usb_top_parents, 0x00b0, 24, 1, INVALID_MUX_GATE, _UPDATE_REG, 30),
+	/* CLK_CFG_8 */
+	MUX_UPD(TOP_MUX_SPM, spm_sel, spm_parents, 0x00c0, 0, 1, INVALID_MUX_GATE, _UPDATE_REG, 31),
+	MUX_UPD(TOP_MUX_BSISPI, bsi_spi_sel, bsi_spi_parents, 0x00c0, 8, 2, INVALID_MUX_GATE, _UPDATE1_REG, 0),
+	MUX_UPD(TOP_MUX_I2C, i2c_sel, i2c_parents, 0x00c0, 16, 2, INVALID_MUX_GATE, _UPDATE1_REG, 1),
+	MUX_UPD(TOP_MUX_DVFSP, dvfsp_sel, dvfsp_parents, 0x00c0, 24, 1, INVALID_MUX_GATE, _UPDATE1_REG, 2),
+};
+#endif
+
+#ifndef _MUX_UPDS_
 static void __init init_clk_topckgen(void __iomem *top_base,
 		struct clk_onecell_data *clk_data)
 {
@@ -972,7 +1033,7 @@ static void __init init_clk_topckgen(void __iomem *top_base,
 #endif /* MT_CCF_DEBUG */
 	}
 }
-
+#endif
 struct mtk_pll {
 	int id;
 	const char *name;
@@ -1545,7 +1606,12 @@ static void __init mt_topckgen_init(struct device_node *node)
 
 	init_clk_root_alias(clk_data);
 	init_clk_top_div(clk_data);
+#ifndef _MUX_UPDS_
 	init_clk_topckgen(base, clk_data);
+#else
+	mtk_clk_register_mux_upds(top_muxes, ARRAY_SIZE(top_muxes), base,
+				  &mt6755_clk_lock, clk_data);
+#endif
 
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
