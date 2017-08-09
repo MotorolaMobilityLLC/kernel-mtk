@@ -217,6 +217,49 @@ static unsigned long g_reg_pll_con1[FH_PLL_NUM];
 /* Function */
 /*****************************************************************************/
 
+
+static int fh_dumpregs_read(void)
+{
+	int i = 0;
+
+	if (g_initialize != 1) {
+		FH_MSG("[ERROR] %s fhctl didn't init. Please check!!!", __func__);
+		return -1;
+	}
+
+	FH_MSG("FHCTL dumpregs: %s", __func__);
+
+	for (i = 0; i < FH_PLL_NUM; ++i) {
+		const unsigned int mon = fh_read32(g_reg_mon[i]);
+		/*const unsigned int dds = mon & MASK21b;*/
+
+		FH_MSG("FHCTL%d CFG, UPDNLMT, DVFS, DDS, MON\r\n", i);
+		FH_MSG("0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\r\n",
+			   fh_read32(g_reg_cfg[i]), fh_read32(g_reg_updnlmt[i]),
+			   fh_read32(g_reg_dvfs[i]), fh_read32(g_reg_dds[i]), mon);
+
+	}
+
+	FH_MSG("\r\nFHCTL_HP_EN:\r\n0x%08x\r\n", fh_read32(REG_FHCTL_HP_EN));
+	FH_MSG("\r\nFHCTL_CLK_CON:\r\n0x%08x\r\n", fh_read32(REG_FHCTL_CLK_CON));
+
+	FH_MSG("\r\nMCU_FHCTL_HP_EN:\r\n0x%08x\r\n", fh_read32(REG_MCU_FHCTL_HP_EN));
+	FH_MSG("\r\nMCU_FHCTL_CLK_CON:\r\n0x%08x\r\n", fh_read32(REG_MCU_FHCTL_CLK_CON));
+
+	FH_MSG("\r\nPLL_CON0 :\r\n");
+	for (i = 0; i < FH_PLL_NUM; ++i)
+		FH_MSG("PLL%d;0x%08x ", i, fh_read32(g_reg_pll_con0[i]));
+
+
+	FH_MSG("\r\nPLL_CON1 :\r\n");
+	for (i = 0; i < FH_PLL_NUM; ++i)
+		FH_MSG("PLL%d;0x%08x ", i, fh_read32(g_reg_pll_con1[i]));
+
+
+	return 0;
+}
+
+
 static void mt_fh_hal_default_conf(void)
 {
 	int id;
@@ -480,9 +523,11 @@ static void wait_dds_stable(unsigned int target_dds, unsigned long reg_mon, unsi
 		++i;
 	}
 	if (i >= wait_count) {
-		/* Has something wrong during hopping */
+		/* Something wrong during hopping */
 		FH_MSG("[Warning]wait_dds_stable()  target_dds = 0x%x, fh_dds = 0x%x, i = %d",
 		       target_dds, fh_dds, i);
+		fh_dumpregs_read();
+		WARN_ON(1);
 	}
 }
 
@@ -1065,6 +1110,7 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 
 	return 0;
 }
+
 
 static void __reg_tbl_init(void)
 {
