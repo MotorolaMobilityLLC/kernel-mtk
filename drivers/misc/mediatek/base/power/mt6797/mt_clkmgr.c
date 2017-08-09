@@ -48,6 +48,7 @@ void __iomem *clk_mjc_config_base;
 void __iomem *clk_venc_gcon_base;
 void __iomem *clk_mcumixed_base;
 void __iomem *clk_camsys_base;
+void __iomem *clk_topmics_base;
 #endif
 
 #define Bring_Up
@@ -1281,8 +1282,30 @@ void iomap(void)
 	if (!clk_mjc_config_base)
 		clk_dbg("[CLK_MJC] base failed\n");
 
+/*topmics*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,topmisc");
+	if (!node)
+		clk_dbg("[CLK_TOPMISC] find node failed\n");
+	clk_topmics_base = of_iomap(node, 0);
+	if (!clk_topmics_base)
+		clk_dbg("[CLK_TOPMISC] base failed\n");
+
 }
 #endif
+
+#define FMETER_EN_BIT (1<<12)
+void mt_disable_dbg_clk(void)
+{
+	clk_writel(CLK26CALI_0, clk_readl(CLK26CALI_0) & ~FMETER_EN_BIT);
+	clk_writel(CLK_MISC_CFG_0, clk_readl(CLK_MISC_CFG_0) | 0xFFFF0000);
+	clk_writel(CLK_MISC_CFG_1, clk_readl(CLK_MISC_CFG_1) | 0xFFFF0000);
+	clk_writel(ARMPLLDIV_ARM_K1, 0xFFFFFFFF);
+	clk_writel(ARMPLLDIV_MON_EN, 0);
+	clk_writel(INFRA_AO_DBG_CON0, 1);
+	clk_writel(INFRA_AO_DBG_CON1, 1);
+	clk_writel(INFRA_MODULE_CLK_SEL, 0x00004c70);
+	clk_writel(TOPMISC_TEST_MODE_CFG, 0x030c0000);
+}
 
 void mt_clkmgr_init(void)
 {
@@ -1290,6 +1313,7 @@ void mt_clkmgr_init(void)
 	BUG_ON(initialized);
 	mt_plls_init();
 	mt_subsys_init();
+	mt_disable_dbg_clk();
 }
 
 static int mt_clkmgr_debug_module_init(void)

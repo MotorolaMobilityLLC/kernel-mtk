@@ -19,7 +19,8 @@ extern void __iomem  *clk_vdec_gcon_base;
 extern void __iomem  *clk_mjc_config_base;
 extern void __iomem  *clk_venc_gcon_base;
 extern void __iomem  *clk_mcumixed_base;
-extern void __iomem *clk_camsys_base;
+extern void __iomem	*clk_camsys_base;
+extern void __iomem	*clk_topmics_base;
 #endif
 
 
@@ -107,8 +108,11 @@ extern void __iomem *clk_camsys_base;
 
 #define ARMPLLDIV_MUXSEL        (clk_mcumixed_base + 0x270)
 #define ARMPLLDIV_CKDIV         (clk_mcumixed_base + 0x274)
+#define ARMPLLDIV_ARM_K1		(clk_mcumixed_base + 0x27C)
 #define ARMPLLDIV_MON_EN        (clk_mcumixed_base + 0x284)
 
+/*TOPMICS Register*/
+#define TOPMISC_TEST_MODE_CFG	(clk_topmics_base + 0)
 
 /* TOPCKGEN Register */
 #define CLK_MODE                (clk_cksys_base + 0x000)
@@ -133,7 +137,7 @@ extern void __iomem *clk_camsys_base;
 #endif
 
 #define CLK_MISC_CFG_0          (clk_cksys_base + 0x104)
-/*#define CLK_MISC_CFG_1          (clk_cksys_base + 0x108)*/
+#define CLK_MISC_CFG_1          (clk_cksys_base + 0x108)
 #define CLK_DBG_CFG             (clk_cksys_base + 0x10C)
 #define CLK_SCP_CFG_0           (clk_cksys_base + 0x200)
 #define CLK_SCP_CFG_1           (clk_cksys_base + 0x204)
@@ -161,16 +165,19 @@ extern void __iomem *clk_camsys_base;
 #define INFRA_SW_CG1_CLR          (clk_infracfg_ao_base + 0x8C)
 #define INFRA_SW_CG0_STA          (clk_infracfg_ao_base + 0x90)
 #define INFRA_SW_CG1_STA          (clk_infracfg_ao_base + 0x94)
+#define INFRA_MODULE_CLK_SEL      (clk_infracfg_ao_base + 0x98)
 #define INFRA_SW_CG2_SET          (clk_infracfg_ao_base + 0xA8)
 #define INFRA_SW_CG2_CLR          (clk_infracfg_ao_base + 0xAC)
 #define INFRA_SW_CG2_STA          (clk_infracfg_ao_base + 0xB0)
+#define INFRA_I2C_DBTOOL_MISC     (clk_infracfg_ao_base + 0x100)
 #define TOPAXI_PROT_EN           (clk_infracfg_ao_base + 0x0220)
 #define TOPAXI_PROT_STA1         (clk_infracfg_ao_base + 0x0228)
 #define INFRA_TOPAXI_PROTECTEN   (clk_infracfg_ao_base + 0x0220)
 #define INFRA_TOPAXI_PROTECTSTA0 (clk_infracfg_ao_base + 0x0224)
 #define INFRA_TOPAXI_PROTECTSTA1 (clk_infracfg_ao_base + 0x0228)
 #define INFRA_PLL_ULPOSC_CON0          (clk_infracfg_ao_base + 0xB00)
-
+#define INFRA_AO_DBG_CON0	(clk_infracfg_ao_base + 0x500)
+#define INFRA_AO_DBG_CON1	(clk_infracfg_ao_base + 0x504)
 #define INFRA_PDN_STA0          (clk_infracfg_ao_base + 0x0090)
 
 /* Audio Register*/

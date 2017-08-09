@@ -94,6 +94,7 @@ unsigned int ckgen_meter(int ID)
 	pminit_write(CLK26CALI_0, 0x1010);
 	mdelay(10);
 	pminit_write(CLK26CALI_0, 0x1000);
+	pminit_write(CLK26CALI_0, 0x0000);
 	if (i > 10)
 		return 0;
 	else
@@ -105,6 +106,12 @@ static unsigned int abist_meter(int ID)
 {
 	int output = 0, i = 0;
 	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;
+	unsigned int temp2 = 0, temp1 = 0;
+
+	temp1 = pminit_read(ARMPLLDIV_ARM_K1);
+	temp2 = pminit_read(ARMPLLDIV_MON_EN);
+	pminit_write(ARMPLLDIV_ARM_K1, 0);
+	pminit_write(ARMPLLDIV_MON_EN, 0xFFFFFFFF);
 
 	clk26cali_0 = pminit_read(CLK26CALI_0);
 
@@ -145,6 +152,11 @@ static unsigned int abist_meter(int ID)
 	pminit_write(CLK26CALI_0, 0x1010);
 	mdelay(10);
 	pminit_write(CLK26CALI_0, 0x1000);
+	pminit_write(CLK26CALI_0, 0x0000);
+
+	pminit_write(ARMPLLDIV_MON_EN, temp2);
+	pminit_write(ARMPLLDIV_ARM_K1, temp1);
+
 	if (i > 10)
 		return 0;
 	else
@@ -465,10 +477,7 @@ static int cpu_div_info(int cpu)
 
 static int cpu_speed_dump_read(struct seq_file *m, void *v)
 {
-	unsigned int temp = 0;
-	/*unsigned int BDiv = 0, LLDiv = 0, LDiv=0, CCIDiv=0; */
-	temp = pminit_read(ARMPLLDIV_MON_EN);
-	pminit_write(ARMPLLDIV_MON_EN, 0xFFFFFFFF);
+
 #if 0
 	seq_printf(m, "%s(LL):  %d Khz, CKDIV: %d\n", ckgen_abist_array[41], abist_meter(42),
 		   cpu_div_info(ARMPLL_LL));
@@ -484,7 +493,6 @@ static int cpu_speed_dump_read(struct seq_file *m, void *v)
 	seq_printf(m, "%s(CCI): %d Khz\n", ckgen_abist_array[43], abist_meter(36));
 	seq_printf(m, "%s(BIG): %d Khz\n", ckgen_abist_array[45], abist_meter(37));
 #endif
-	pminit_write(ARMPLLDIV_MON_EN, temp);
 	return 0;
 }
 
