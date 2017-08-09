@@ -433,6 +433,40 @@ out_release:
 	return err;
 }
 
+#ifdef CONFIG_PROFILE_CPU
+static int _cpu_down_profile(unsigned int cpu, int tasks_frozen, bool debug)
+{
+	int err;
+	ktime_t kt1, kt2;
+	u64 latency;
+
+	kt1 = ktime_get();
+
+	err = _cpu_down(cpu, 0);
+
+	kt2 = ktime_get();
+	latency = (u64) ktime_to_us(ktime_sub(kt2, kt1));
+
+	if (debug) {
+		pr_info("%s(%d): %lld\n", __func__, cpu, latency);
+	} else {
+		cpu_stats[cpu].hotplug_down_time += 1;
+		cpu_stats[cpu].hotplug_down_lat_us += latency;
+		if (cpu_stats[cpu].hotplug_down_lat_max == 0)
+			cpu_stats[cpu].hotplug_down_lat_max = latency;
+		else if (latency > cpu_stats[cpu].hotplug_down_lat_max)
+			cpu_stats[cpu].hotplug_down_lat_max = latency;
+
+		if (cpu_stats[cpu].hotplug_down_lat_min == 0)
+			cpu_stats[cpu].hotplug_down_lat_min = latency;
+		else if (latency < cpu_stats[cpu].hotplug_down_lat_min)
+			cpu_stats[cpu].hotplug_down_lat_min = latency;
+	}
+
+	return err;
+}
+#endif
+
 int __ref cpu_down(unsigned int cpu)
 {
 	int err;
@@ -444,7 +478,11 @@ int __ref cpu_down(unsigned int cpu)
 		goto out;
 	}
 
+#ifdef CONFIG_PROFILE_CPU
+	err = _cpu_down_profile(cpu, 0, 0);
+#else
 	err = _cpu_down(cpu, 0);
+#endif
 
 out:
 	cpu_maps_update_done();
@@ -539,6 +577,42 @@ out:
 	return ret;
 }
 
+#ifdef CONFIG_PROFILE_CPU
+static int _cpu_up_profile(unsigned int cpu, int tasks_frozen, bool debug)
+{
+	int err;
+	ktime_t kt1, kt2;
+	u64 latency;
+
+	kt1 = ktime_get();
+
+	err = _cpu_up(cpu, 0);
+
+	kt2 = ktime_get();
+	latency = (u64) ktime_to_us(ktime_sub(kt2, kt1));
+
+	if (debug) {
+		pr_info("%s(%d): %lld\n", __func__, cpu, latency);
+	} else {
+		if (cpu_online(cpu)) {
+			cpu_stats[cpu].hotplug_up_time += 1;
+			cpu_stats[cpu].hotplug_up_lat_us += latency;
+			if (cpu_stats[cpu].hotplug_up_lat_max == 0)
+				cpu_stats[cpu].hotplug_up_lat_max = latency;
+			else if (latency > cpu_stats[cpu].hotplug_up_lat_max)
+				cpu_stats[cpu].hotplug_up_lat_max = latency;
+
+			if (cpu_stats[cpu].hotplug_up_lat_min == 0)
+				cpu_stats[cpu].hotplug_up_lat_min = latency;
+			else if (latency < cpu_stats[cpu].hotplug_up_lat_min)
+				cpu_stats[cpu].hotplug_up_lat_min = latency;
+		}
+	}
+
+	return err;
+}
+#endif
+
 int cpu_up(unsigned int cpu)
 {
 	int err = 0;
@@ -563,7 +637,11 @@ int cpu_up(unsigned int cpu)
 		goto out;
 	}
 
+#ifdef CONFIG_PROFILE_CPU
+	err = _cpu_up_profile(cpu, 0, 0);
+#else
 	err = _cpu_up(cpu, 0);
+#endif
 
 out:
 	cpu_maps_update_done();
