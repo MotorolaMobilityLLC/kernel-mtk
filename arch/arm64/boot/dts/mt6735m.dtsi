@@ -5,6 +5,8 @@
  *              http://www.mediatek.com
  *
  */
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/interrupt-controller/irq.h>
 / {
 	model = "MT6735M";
 	compatible = "mediatek,MT6735M";
@@ -229,50 +231,52 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 
 		};
 
-		CPUXGPT@0x10200000 {
-				compatible = "mediatek,CPUXGPT";
-				reg = <0 0x10200000 0 0x1000>;
-				interrupts = <0 64 0x4>,
-											 <0 65 0x4>,
-											 <0 66 0x4>,
-											 <0 67 0x4>,
-											 <0 68 0x4>,
-											 <0 69 0x4>,
-											 <0 70 0x4>,
-											 <0 71 0x4>;
-		};
-
-		APXGPT@0x10004000 {
-				compatible = "mediatek,APXGPT";
-				reg = <0 0x10004000 0 0x1000>;
-				interrupts = <0 152 0x8>;
-				clock-frequency = <13000000>;
-		};
-
-		timer {
-		compatible = "arm,armv8-timer";
-		interrupts = <1 13 0x8>, /*Secure Physical Timer Event*/
-								 <1 14 0x8>, /*Non-Secure Physical Timer Event*/
-								 <1 11 0x8>, /*Virtual Timer Event*/
-								 <1 10 0x8>; /*Hypervisor Timer Event*/
-		clock-frequency = <13000000>;
-	};
-
 	soc {
 		compatible = "simple-bus";
 		#address-cells = <1>;
 		#size-cells = <1>;
 		ranges;
 
+		cpuxgpt: cpuxgpt@10200000 {
+			compatible = "mediatek,mt6735-cpuxgpt";
+			reg = <0x10200000 0x1000>;
+			interrupts = <GIC_SPI 64 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 66 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 67 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 68 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 69 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
+		apxgpt: apxgpt@10004000 {
+			compatible = "mediatek,mt6735-apxgpt";
+			reg = <0x10004000 0x1000>;
+			interrupts = <GIC_SPI 152 IRQ_TYPE_LEVEL_LOW>;
+			clock-frequency = <13000000>;
+		};
+
+		timer {
+			compatible = "arm,armv8-timer";
+			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_LOW>, /*Secure Physical Timer Event*/
+				<GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>, /*Non-Secure Physical Timer Event*/
+				<GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>, /*Virtual Timer Event*/
+				<GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>; /*Hypervisor Timer Event*/
+				clock-frequency = <13000000>;
+		};
+
+		toprgu: toprgu@10212000 {
+			compatible = "mediatek,mt6735-rgu";
+			reg = <0x10212000 0x1000>;
+			interrupts = <GIC_SPI 128 IRQ_TYPE_EDGE_FALLING>;
+		};
+
 		mcu_biu: mcu_biu@10300000 {
 			compatible = "mediatek,mt6735m-mcu_biu";
 			reg = <0x10300000 0x8000>;
 		};
 
-		gpio: gpio@10211000 {
-			compatible = "mediatek,gpio";
-			reg = <0x10211000 0x1000>;
-		};
 	};
 
 	bus {
@@ -484,12 +488,6 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 		CKSYS@0x10210000 {
 			compatible = "mediatek,CKSYS";
 			reg = <0x10210000 0x1000>;
-		};
-
-		TOPRGU@0x10212000 {
-			compatible = "mediatek,TOPRGU";
-			reg = <0x10212000 0x1000>;
-			interrupts = <0 128 0x2>;
 		};
 
 		DDRPHY@0x10213000 {
