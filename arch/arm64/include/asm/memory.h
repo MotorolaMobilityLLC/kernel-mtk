@@ -25,6 +25,7 @@
 #include <linux/const.h>
 #include <linux/types.h>
 #include <asm/sizes.h>
+#include <asm/page.h>
 
 /*
  * Allow for constants defined here to be used from assembly code
@@ -60,8 +61,8 @@
 
 #define TASK_UNMAPPED_BASE	(PAGE_ALIGN(TASK_SIZE / 4))
 
-#if TASK_SIZE_64 > MODULES_VADDR
-#error Top of 64-bit user space clashes with start of module space
+#if (TASK_SIZE_64 + 0x10000) > FIXADDR_TOP
+#error Top of 64-bit user space clashes with start of fixaddr space
 #endif
 
 /*
