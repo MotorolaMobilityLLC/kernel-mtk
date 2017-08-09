@@ -94,8 +94,27 @@ static void ppm_perfserv_update_limit_cb(enum ppm_power_state new_state)
 				if (perfserv_policy.req.limit[i].min_cpufreq_idx == -1)
 					perfserv_policy.req.limit[i].max_cpufreq_idx = -1;
 			}
-		} else
-			ppm_dbg(MAIN, "@%s: index not found!", __func__);
+		} else {
+			struct ppm_power_state_data *state_info;
+#ifdef PPM_POWER_TABLE_CALIBRATION
+			struct ppm_state_sorted_pwr_tbl_data *tbl;
+#else
+			const struct ppm_state_sorted_pwr_tbl_data *tbl;
+#endif
+			state_info = ppm_get_power_state_info();
+			tbl = state_info[new_state].perf_sorted_tbl;
+
+			if (perfserv_policy.req.perf_idx >= tbl->sorted_tbl[0].value) {
+				/* set min = max */
+				for (i = 0; i < perfserv_policy.req.cluster_num; i++) {
+					perfserv_policy.req.limit[i].min_cpu_core =
+						perfserv_policy.req.limit[i].max_cpu_core;
+					perfserv_policy.req.limit[i].min_cpufreq_idx =
+						perfserv_policy.req.limit[i].max_cpufreq_idx;
+				}
+			} else
+				ppm_ver("@%s: no need to boost, use state default limit!\n", __func__);
+		}
 	}
 
 	FUNC_EXIT(FUNC_LV_POLICY);
@@ -137,6 +156,8 @@ static ssize_t ppm_perfserv_perf_idx_proc_write(struct file *file, const char __
 		return -EINVAL;
 
 	if (!kstrtouint(buf, 10, &perf_idx)) {
+		ppm_info("@%s: get perf_idx = %d\n", __func__, perf_idx);
+
 		ppm_lock(&perfserv_policy.lock);
 
 		if (!perfserv_policy.is_enabled) {
