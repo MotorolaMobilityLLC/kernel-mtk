@@ -89,7 +89,28 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 		return ERROR;
 	}
 
+	if (in_interrupt()) {
+		if (wait) {
+			pr_err("scp_ipi_send: cannot wait in isr context\n");
+			return ERROR;
+		}
+	}
+
+	if (SCP_SLEEP_DEBUG_REG & 0xE) {
+		/* bit:
+		 * [4]IN_ACTIVE
+		 * [3]ENTERING_ACTIVE
+		 * [2]IN_SLEEP
+		 * [1]ENTERING_SLEEP
+		 * [0]IN_DEBUG_IDLE
+		 * */
+		pr_err("scp_ipi_send: scp state = %x\n", SCP_SLEEP_DEBUG_REG);
+		pr_err("scp_ipi_send: scp is not in [4]IN_ACTIVE or [0]IN_DEBUG_IDLE, it should not access scp\n");
+		return ERROR;
+	}
+
 	if (id < SCP_NR_IPI) {
+		pr_debug("scp_ipi_send: id = %d\n", id);
 		if (len > sizeof(scp_send_obj->share_buf) || buf == NULL) {
 			pr_err("scp_ipi_send: buffer is error\n");
 			return ERROR;
@@ -108,10 +129,13 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 
 		memcpy(scp_send_buff, buf, len);
 
+		pr_debug("scp_ipi_send: memory copy to scp sram\n");
 		memcpy_to_scp((void *)scp_send_obj->share_buf, scp_send_buff, len);
 		scp_send_obj->len = len;
 		scp_send_obj->id = id;
 		dsb(SY);
+
+		pr_debug("scp_ipi_send: send host to scp ipi\n");
 		ipi_host2scp();
 
 		if (wait)
@@ -124,7 +148,7 @@ ipi_status scp_ipi_send(ipi_id id, void *buf, unsigned int  len, unsigned int wa
 		return ERROR;
 	}
 
-	pr_debug("scp_ipi_send: done\n");
+	pr_debug("scp_ipi_send: id = %d done\n", id);
 	return DONE;
 }
 EXPORT_SYMBOL_GPL(scp_ipi_send);
