@@ -25,9 +25,9 @@ config PINCTRL_MT6755
 	select PINCTRL_MTK_COMMON
 
 config PINCTRL_MT2701
-	bool "Mediatek MT2701 pin control" if COMPILE_TEST && !MACH_MT2701
+	bool "Mediatek MT2701 pin control" if COMPILE_TEST && !(MACH_MT2701 && ARCH_MT7623)
 	depends on OF
-	default MACH_MT2701
+	default MACH_MT2701 || ARCH_MT7623
 	select PINCTRL_MTK_COMMON
 
 config PINCTRL_MT8127
