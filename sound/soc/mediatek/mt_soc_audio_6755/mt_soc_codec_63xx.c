@@ -881,7 +881,7 @@ static void SetHprOffset(int OffsetTrimming)
 	unsigned short RegValue = 0;
 
 	DCoffsetValue = (OffsetTrimming * 11250 + 2048) / 4096;
-	pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue);
+	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
 	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
@@ -895,7 +895,7 @@ static void SetHplOffset(int OffsetTrimming)
 	unsigned short RegValue = 0;
 
 	DCoffsetValue = (OffsetTrimming * 11250 + 2048) / 4096;
-	pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue);
+	/* pr_warn("%s DCoffsetValue = %d\n", __func__, DCoffsetValue); */
 	Dccompsentation = DCoffsetValue;
 	RegValue = Dccompsentation;
 	/* pr_warn("%s RegValue = 0x%x\n", __func__, RegValue); */
@@ -1610,7 +1610,7 @@ static int Audio_AmpL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	mutex_lock(&Ana_Ctrl_Mutex);
 
-	pr_warn("%s() gain = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	/* pr_warn("%s() gain = %ld\n ", __func__, ucontrol->value.integer.value[0]); */
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false)) {
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true);

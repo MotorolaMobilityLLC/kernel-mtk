@@ -74,9 +74,10 @@ void Ana_Set_Reg(uint32 offset, uint32 value, uint32 mask)
 	Reg_Value |= (value & mask);
 	ret = pwrap_write(offset, Reg_Value);
 	Reg_Value = Ana_Get_Reg(offset);
+
 	if ((Reg_Value & mask) != (value & mask))
-		pr_debug("Ana_Set_Reg  mask = 0x%x ret = %d Reg_Value = 0x%x\n", mask, ret,
-			 Reg_Value);
+		pr_debug("Ana_Set_Reg  mask: 0x%x ret: %d off: 0x%x val: 0x%x Reg: 0x%x\n",
+			mask, ret, offset, value, Reg_Value);
 #endif
 }
 EXPORT_SYMBOL(Ana_Set_Reg);

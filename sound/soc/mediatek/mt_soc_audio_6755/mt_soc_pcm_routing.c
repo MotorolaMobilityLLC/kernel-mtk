@@ -595,7 +595,7 @@ static int Audio_Mode_Set(struct snd_kcontrol *kcontrol,
 static int Audio_Irqcnt1_Get(struct snd_kcontrol *kcontrol,
 			     struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Audio_Irqcnt1_Get\n");
+	/* pr_warn("Audio_Irqcnt1_Get\n"); */
 	AudDrv_Clk_On();
 	ucontrol->value.integer.value[0] = Afe_Get_Reg(AFE_IRQ_MCU_CNT1);
 	AudDrv_Clk_Off();
@@ -607,7 +607,7 @@ static int Audio_Irqcnt1_Set(struct snd_kcontrol *kcontrol,
 {
 	uint32 irq1_cnt = ucontrol->value.integer.value[0];
 
-	pr_warn("%s()\n", __func__);
+	/* pr_warn("%s()\n", __func__); */
 	AudDrv_Clk_On();
 	Afe_Set_Reg(AFE_IRQ_MCU_CNT1, irq1_cnt, 0xffffffff);
 	AudDrv_Clk_Off();
@@ -617,7 +617,7 @@ static int Audio_Irqcnt1_Set(struct snd_kcontrol *kcontrol,
 static int Audio_Irqcnt2_Get(struct snd_kcontrol *kcontrol,
 			     struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("Audio_Irqcnt2_Get\n");
+	/* pr_warn("Audio_Irqcnt2_Get\n"); */
 	AudDrv_Clk_On();
 	ucontrol->value.integer.value[0] = Afe_Get_Reg(AFE_IRQ_MCU_CNT2);
 	AudDrv_Clk_Off();
@@ -629,7 +629,7 @@ static int Audio_Irqcnt2_Set(struct snd_kcontrol *kcontrol,
 {
 	uint32 irq1_cnt = ucontrol->value.integer.value[0];
 
-	pr_warn("%s()\n", __func__);
+	/* pr_warn("%s()\n", __func__); */
 	AudDrv_Clk_On();
 	Afe_Set_Reg(AFE_IRQ_MCU_CNT2, irq1_cnt, 0xffffffff);
 	AudDrv_Clk_Off();

@@ -1956,7 +1956,7 @@ bool GetMemoryPathEnable(uint32 Aud_block)
 
 bool SetI2SDacEnable(bool bEnable)
 {
-	pr_warn("%s bEnable = %d", __func__, bEnable);
+	/* pr_warn("%s bEnable = %d", __func__, bEnable); */
 
 	if (bEnable) {
 		Afe_Set_Reg(AFE_ADDA_DL_SRC2_CON0, bEnable, 0x01);
@@ -2667,7 +2667,8 @@ bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream 
 	substreamList *temp = NULL;
 	unsigned long flags;
 
-	pr_debug("+%s MemBlock = %d substream = %p\n ", __func__, MemBlock, substream);
+	/* pr_debug("+%s MemBlock = %d substream = %p\n ",
+		__func__, MemBlock, substream); */
 	spin_lock_irqsave(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
 	if (head == NULL) {	/* frst item is NULL */
