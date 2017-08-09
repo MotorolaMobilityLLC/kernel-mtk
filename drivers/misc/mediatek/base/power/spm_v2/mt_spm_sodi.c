@@ -324,7 +324,7 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 		*/
 		sodi_logout_curr_time = spm_get_current_time_ms();
 
-		if (wakesta->assert_pc != 0) {
+		if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
 			need_log_out = 1;
 		} else if ((wakesta->r12 & (0x1 << 4)) == 0) {
 #if defined(CONFIG_ARCH_MT6755)
@@ -372,6 +372,14 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 			sodi_logout_prev_time = sodi_logout_curr_time;
 
 			if ((wakesta->assert_pc != 0) || (wakesta->r12 == 0)) {
+				if (wakesta->assert_pc != 0) {
+					sodi_err("Warning: wakeup reason is WR_PCM_ASSERT!\n");
+					wr = WR_PCM_ASSERT;
+				} else if (wakesta->r12 == 0) {
+					sodi_err("Warning: wakeup reason is WR_UNKNOWN!\n");
+					wr = WR_UNKNOWN;
+				}
+
 				sodi_err("WAKE UP BY ASSERT, VCORE_STATUS = %d, SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, %s\n",
 						vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
 						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
@@ -383,7 +391,6 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 				sodi_err("R12 = 0x%x, R12_E = 0x%x, RAW_STA = 0x%x, IDLE_STA = 0x%x, EVENT_REG = 0x%x, ISR = 0x%x\n",
 						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 						wakesta->event_reg, wakesta->isr);
-				wr = WR_PCM_ASSERT;
 			} else {
 				char buf[LOG_BUF_SIZE] = { 0 };
 				int i;
