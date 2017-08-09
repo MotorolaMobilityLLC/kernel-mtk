@@ -193,14 +193,14 @@ u64 mtk_timer_get_cnt(u8 timer)
 	u32 val[2];
 	u64 cnt;
 
-	val[1] = readl(mtk_evt->gpt_base + TIMER_CNT_REG(timer));
+	val[0] = readl(mtk_evt->gpt_base + TIMER_CNT_REG(timer));
 	if (timer == 6) {
-		val[2] = readl(mtk_evt->gpt_base + TIMER_CNT_REG_H(timer));
-		cnt = (((u64)val[2]<<32) | (u64)val[1]);
+		val[1] = readl(mtk_evt->gpt_base + TIMER_CNT_REG_H(timer));
+		cnt = (((u64)val[1]<<32) | (u64)val[0]);
 		return cnt;
 	}
 
-	cnt = ((u64)val[1])&0x00000000FFFFFFFF;
+	cnt = ((u64)val[0])&0x00000000FFFFFFFF;
 	return cnt;
 }
 
