@@ -739,20 +739,6 @@ static void aee_record_cpu_dvfs_step(unsigned int step)
 #endif
 }
 
-#define LOG_BUF_SIZE	256
-static void aee_record_cpu_dvfs_step_dump(void)
-{
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	int i;
-	char buf[LOG_BUF_SIZE];
-	char *ptr = buf;
-
-	for (i = 0; i < 16; i++)
-		ptr += snprintf(ptr, LOG_BUF_SIZE, "[%d]:%lld->", i, ktime_to_us(dvfs_step_delta[i]));
-	cpufreq_err("dvfs_step = %s\n", buf);
-#endif
-}
-
 static void aee_record_cpu_dvfs_pbm_step(unsigned int step)
 {
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
@@ -789,19 +775,6 @@ static void aee_record_cpu_dvfs_cb(unsigned int step)
 		aee_rr_rec_cpu_dvfs_cb((aee_rr_curr_cpu_dvfs_cb() & 0x0) | (step));
 		dvfs_cb_step_delta[step] = ktime_sub(ktime_get(), start_ktime_dvfs_cb);
 	}
-#endif
-}
-
-static void aee_record_cpu_dvfs_cb_dump(void)
-{
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	int i;
-	char buf[LOG_BUF_SIZE];
-	char *ptr = buf;
-
-	for (i = 0; i < 16; i++)
-		ptr += snprintf(ptr, LOG_BUF_SIZE, "[%d]:%lld->", i, ktime_to_us(dvfs_cb_step_delta[i]));
-	cpufreq_err("cb_step = %s\n", buf);
 #endif
 }
 
@@ -2763,41 +2736,6 @@ static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx
 
 	return new_cci_opp_idx;
 }
-#define PPM_DVFS_LATENCY_DEBUG 1
-
-#ifdef PPM_DVFS_LATENCY_DEBUG
-#include <linux/time.h>
-#include <linux/hrtimer.h>
-
-#define DVFS_LATENCY_TIMEOUT	(250)
-#define MS_TO_NS(x)		(x * 1E6L)
-
-static struct hrtimer ppm_hrtimer;
-
-static void ppm_main_start_hrtimer(void)
-{
-	ktime_t ktime = ktime_set(0, MS_TO_NS(DVFS_LATENCY_TIMEOUT));
-
-	hrtimer_start(&ppm_hrtimer, ktime, HRTIMER_MODE_REL);
-}
-
-static void ppm_main_cancel_hrtimer(void)
-{
-	hrtimer_cancel(&ppm_hrtimer);
-}
-
-static enum hrtimer_restart ppm_hrtimer_cb(struct hrtimer *timer)
-{
-	cpufreq_dbg("PPM callback over %d ms(cur:%lld), cpu_dvfs_step = 0x%x, cpu_dvfs_cb = 0x%x, pbm step = 0x%x\n",
-		DVFS_LATENCY_TIMEOUT, ktime_to_us(ktime_get()), aee_rr_curr_cpu_dvfs_step(),
-		aee_rr_curr_cpu_dvfs_cb(), aee_rr_curr_cpu_dvfs_pbm_step());
-	aee_record_cpu_dvfs_step_dump();
-	aee_record_cpu_dvfs_cb_dump();
-	/* BUG(); */
-
-	return HRTIMER_NORESTART;
-}
-#endif
 
 #if 1
 static void ppm_limit_callback(struct ppm_client_req req)
@@ -2813,8 +2751,6 @@ static void ppm_limit_callback(struct ppm_client_req req)
 		return;
 
 	cpufreq_ver("get feedback from PPM module\n");
-
-	ppm_main_start_hrtimer();
 
 	cpufreq_lock();
 	for (i = 0; i < ppm->cluster_num; i++) {
@@ -2874,8 +2810,6 @@ static void ppm_limit_callback(struct ppm_client_req req)
 		}
 
 	cpufreq_unlock();
-
-	ppm_main_cancel_hrtimer();
 
 	if (!p->dvfs_disable_by_suspend && kick)
 		_kick_PBM_by_cpu(p);
@@ -3058,7 +2992,6 @@ static void __set_cpuhvfs_init_sta(struct init_sta *sta)
 		sta->opp[i] = p->idx_opp_tbl;
 		sta->freq[i] = p->ops->get_cur_phy_freq(p);
 		sta->volt[i] = VOLT_TO_EXTBUCK_VAL(volt);
-		sta->vsram[i] = VOLT_TO_PMIC_VAL(p->ops->get_cur_vsram(p));
 		sta->ceiling[i] = opp_limit_to_ceiling(p->idx_opp_ppm_limit);
 		sta->floor[i] = opp_limit_to_floor(p->idx_opp_ppm_base);
 		sta->is_on[i] = (p->armpll_is_available ? true : false);
@@ -3373,11 +3306,6 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	register_hotcpu_notifier(&_mt_cpufreq_cpu_notifier);
 	mt_ppm_register_client(PPM_CLIENT_DVFS, &ppm_limit_callback);
 
-#ifdef PPM_DVFS_LATENCY_DEBUG
-	hrtimer_init(&ppm_hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	ppm_hrtimer.function = ppm_hrtimer_cb;
-#endif
-
 	pm_notifier(_mt_cpufreq_pm_callback, 0);
 
 	return 0;
@@ -3385,10 +3313,6 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 
 static int _mt_cpufreq_pdrv_remove(struct platform_device *pdev)
 {
-#ifdef PPM_DVFS_LATENCY_DEBUG
-	hrtimer_cancel(&ppm_hrtimer);
-#endif
-
 	unregister_hotcpu_notifier(&_mt_cpufreq_cpu_notifier);
 
 #ifdef CONFIG_CPU_FREQ
