@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--dct_version="2.1" buid_sn="151028" dws_modification_time="10.30.2015.13:40:19"-->
 <dct_cfg>
     <general chip="MT6797">
         <proj>Everest</proj>
         <module name="adc">
-            <count>6</count>
+            <count>5</count>
             <adc0>
                 <varName>TEMPERATURE</varName>
             </adc0>
             <adc1>
                 <varName>TEMPERATURE1</varName>
             </adc1>
-            <adc12>
-                <varName>ADC_FDD_RF_PARAMS_DYNAMIC_CUSTOM_CH</varName>
-            </adc12>
         </module>
         <module name="clk">
             <count>4</count>
@@ -98,13 +96,6 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
             </eint15>
-            <eint16>
-                <varName>MRDUMP_EXT_RST</varName>
-                <debounce_time>512</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
-            </eint16>
             <eint46>
                 <varName>IRQ_NFC</varName>
                 <debounce_time>0</debounce_time>
@@ -1512,8 +1503,8 @@
             </gpio92>
             <gpio93>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
-                <mode_arr>11000000</mode_arr>
+                <def_mode>5</def_mode>
+                <mode_arr>11000100</mode_arr>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
@@ -4188,7 +4179,7 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
                 <dedicated_en>Disable</dedicated_en>
-                <srcPin>PAD_EINT16</srcPin>
+                <srcPin>GPIO93::PAD_EINT16</srcPin>
                 <socketType>0</socketType>
             </eint0>
         </module>
