@@ -17,10 +17,3 @@ extern CHARGER_TYPE mt_get_charger_type(void);
 
 extern int read_tbat_value(void);
 
-/*	TODO: temp extern functions from switching charger, use header files and correct kconfig
-*/
-#ifdef CONFIG_MTK_BQ25896_SUPPORT
-#include "mtk_thermal_typedefs.h"
-extern kal_uint32 set_chr_input_current_limit(int current_limit);
-#endif
-

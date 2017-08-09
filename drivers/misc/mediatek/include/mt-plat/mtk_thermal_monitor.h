@@ -19,6 +19,10 @@
 
 #else
 
+struct thermal_cooling_device_ops_extra {
+	int (*set_cur_temp)(struct thermal_cooling_device *, unsigned long);
+};
+
 extern
 struct thermal_zone_device *mtk_thermal_zone_device_register_wrapper
 (char *type, int trips, void *devdata, const struct thermal_zone_device_ops *ops,
@@ -30,6 +34,11 @@ void mtk_thermal_zone_device_unregister_wrapper(struct thermal_zone_device *tz);
 extern
 struct thermal_cooling_device *mtk_thermal_cooling_device_register_wrapper
 (char *type, void *devdata, const struct thermal_cooling_device_ops *ops);
+
+extern
+struct thermal_cooling_device *mtk_thermal_cooling_device_register_wrapper_extra
+(char *type, void *devdata, const struct thermal_cooling_device_ops *ops,
+const struct thermal_cooling_device_ops_extra *ops_ext);
 
 extern
 void mtk_thermal_cooling_device_unregister_wrapper(struct thermal_cooling_device *cdev);
