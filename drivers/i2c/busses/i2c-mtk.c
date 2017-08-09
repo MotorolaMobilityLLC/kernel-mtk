@@ -79,6 +79,41 @@ void dump_cg_regs(void)
 		readw(infra_base + 0xb0));
 }
 
+void __iomem *dma_base;
+
+s32 map_dma_regs(void)
+{
+	struct device_node *dma_node;
+
+	dma_node = of_find_compatible_node(NULL, NULL, "mediatek,ap_dma");
+	if (!dma_node) {
+		pr_err("Cannot find dma_node\n");
+		return -ENODEV;
+	}
+	dma_base = of_iomap(dma_node, 0);
+	if (!dma_base) {
+		pr_err("dma_base iomap failed\n");
+		return -ENOMEM;
+	}
+	return 0;
+}
+
+void dump_dma_regs(void)
+{
+	int status;
+	int i;
+
+	status =  readl(dma_base + 8);
+	pr_err("DMA RUNNING STATUS : 0x%x .\n", status);
+	for	(i = 0; i < 21 ; i++) {
+		if (status & (0x1 << i))
+			pr_err("DMA[%d] CONTROL REG : 0x%x, DEBUG : 0x%x .\n", i,
+				readl(dma_base + 0x80 + 0x80 * i + 0x18),
+				readl(dma_base + 0x80 + 0x80 * i + 0x50));
+	}
+
+}
+
 static inline void i2c_writel_dma(u32 value, struct mt_i2c *i2c, u8 offset)
 {
 	writel(value, i2c->pdmabase + offset);
@@ -232,8 +267,11 @@ static inline void mt_i2c_init_hw(struct mt_i2c *i2c)
 	/* DMA warm reset, and waits for EN to become 0 */
 	i2c_writel_dma(I2C_DMA_WARM_RST, i2c, OFFSET_RST);
 	udelay(5);
-	while (i2c_readl_dma(i2c, OFFSET_EN) != 0)
+	if (i2c_readl_dma(i2c, OFFSET_EN) != 0) {
 		dev_err(i2c->dev, "DMA bus hang .\n");
+		dump_dma_regs();
+		BUG_ON(1);
+	}
 }
 
 /* calculate i2c port speed */
@@ -1132,6 +1170,8 @@ static s32 __init mt_i2c_init(void)
 	if (!map_cg_regs())
 		pr_warn("Mapp cg regs successfully.\n");
 
+	if (!map_dma_regs())
+		pr_warn("Mapp dma regs successfully.\n");
 	pr_err(" mt_i2c_init driver as platform device\n");
 	return platform_driver_register(&mt_i2c_driver);
 }
