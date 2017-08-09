@@ -437,7 +437,7 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 			if (Val == 0 && !IS_ERR(cam2_rst_l))
 				pinctrl_select_state(camctrl, cam2_rst_l);
 			else if (Val == 1 && !IS_ERR(cam2_rst_h))
-				pinctrl_select_state(cam2_rst_h, cam2_rst_h);
+				pinctrl_select_state(camctrl, cam2_rst_h);
 		}
 		break;
 	case PDN:
