@@ -55,7 +55,7 @@ void __iomem *clk_venc_gcon_base;
 #define PLL_LOG
 
 #if !defined(CONFIG_MTK_CLKMGR)
-#define MT_CCF_DEBUG	1
+#define MT_CCF_DEBUG	0
 #define MT_CCF_BRINGUP	0
 #define Bring_Up
 #else
@@ -3393,28 +3393,36 @@ const char *grp_get_name(int id)
 
 void print_grp_regs(void)
 {
-	int i, j, cnt;
+	int i, cnt;
 	unsigned int value[3] = {0, 0, 0};
 	const char *name;
 	struct pll *pll;
-	int state;
-	unsigned int val_subsys = 0, sta, sta_s;
+	unsigned int sta, sta_s;
+#if MT_CCF_DEBUG
+	int state, j;
+	unsigned int val_subsys = 0;
+#endif
 
-	clk_info("********** cg register dump *********\n");
+	/* clk_info("********** cg register dump *********\n"); */
 	for (i = 0; i < NR_GRPS; i++) {
 		name = grp_get_name(i);
 		cnt = grp_dump_regs(i, value);
 		if (cnt == 1) {
-			clk_info("[%02d][%-8s]=[0x%08x]\n", i, name, value[0]);
+			if ((slp_chk_mtcmos_pll_stat == 0) || value[0])
+				clk_info("[%02d][%-8s]=[0x%08x]\n",
+					 i, name, value[0]);
 		} else if (cnt == 2) {
-			clk_info("[%02d][%-8s]=[0x%08x][0x%08x]\n", i, name, value[0],
-			value[1]);
+			if ((slp_chk_mtcmos_pll_stat == 0) || value[0] || value[1])
+				clk_info("[%02d][%-8s]=[0x%08x][0x%08x]\n",
+					 i, name, value[0], value[1]);
 		} else {
-			clk_info("[%02d][%-8s]=[0x%08x][0x%08x][0x%08x]\n", i, name,
-			value[0], value[1], value[2]);
+			if ((slp_chk_mtcmos_pll_stat == 0) || value[0] || value[1] || value[2])
+				clk_info("[%02d][%-8s]=[0x%08x][0x%08x][0x%08x]\n",
+					 i, name, value[0], value[1], value[2]);
 		}
 	}
 
+#if MT_CCF_DEBUG
 	clk_info("********** mux register dump *********\n");
 	clk_info("[CLK_CFG_0]=0x%08x\n", clk_readl(CLK_CFG_0));
 	clk_info("[CLK_CFG_1]=0x%08x\n", clk_readl(CLK_CFG_1));
@@ -3424,27 +3432,34 @@ void print_grp_regs(void)
 	clk_info("[CLK_CFG_5]=0x%08x\n", clk_readl(CLK_CFG_5));
 	clk_info("[CLK_CFG_6]=0x%08x\n", clk_readl(CLK_CFG_6));
 	clk_info("[CLK_CFG_7]=0x%08x\n", clk_readl(CLK_CFG_7));
+#endif
 
-	clk_info("********** pll register dump **********\n");
-	for (i = 0; i < NR_PLLS; i++) {
+	/* clk_info("********** pll register dump **********\n"); */
+	for (i = 2; i < NR_PLLS; i++) {
 		name = pll_get_name(i);
 		cnt = pll_dump_regs(i, value);
 		pll = &plls[i];
 		pll->state = pll->ops->get_state(pll);
-		clk_info("pll->name=%s, pll->state=%d\n", pll->name, pll->state);
+		if ((slp_chk_mtcmos_pll_stat == 0) || pll->state)
+			clk_info("pll->name=%s, pll->state=%d\n",
+				 pll->name, pll->state);
+#if MT_CCF_DEBUG
 		for (j = 0; j < cnt; j++)
 			clk_info("[%d][%-7s reg%d]=[0x%08x]\n", i, name, j, value[j]);
+#endif
 	}
 
-	clk_info("********** subsys register dump **********\n");
+	/* clk_info("********** subsys register dump **********\n"); */
 	sta = clk_readl(SPM_PWR_STATUS);
 	sta_s = clk_readl(SPM_PWR_STATUS_2ND);
+#if MT_CCF_DEBUG
 	for (i = 0; i < NR_SYSS; i++) {
 		name = subsys_get_name(i);
 		state = subsys_is_on(i);
 		subsys_dump_regs(i, &val_subsys);
 		clk_info("[%d][%-7s]=[0x%08x], state(%u)\n", i, name, val_subsys, state);
 	}
+#endif
 	clk_info("SPM_PWR_STATUS=0x%08x, SPM_PWR_STATUS_2ND=0x%08x\n", sta, sta_s);
 }
 EXPORT_SYMBOL(print_grp_regs);
@@ -4415,12 +4430,14 @@ static void clk_stat_bug(void)
 void slp_check_pm_mtcmos_pll(void)
 {
 	int i;
+
+	slp_chk_mtcmos_pll_stat = 1;
 #if !defined(CONFIG_MTK_CLKMGR)
 	print_grp_regs();
+
 	return;
 #endif /* !defined(CONFIG_MTK_CLKMGR) */
 
-	slp_chk_mtcmos_pll_stat = 1;
 	clk_info("[%s]\n", __func__);
 	for (i = 3; i < NR_PLLS; i++) {
 		if (i == 8)
