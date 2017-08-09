@@ -1352,23 +1352,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x10008000 0x1000>;
 			interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
 		};
-	};
-
-	vcorefs {
-		compatible = "mediatek,mt6735-vcorefs";
-		clocks = <&topckgen TOP_MUX_AXI>,
-			 <&topckgen TOP_SYSPLL_D5>,
-			 <&topckgen TOP_SYSPLL1_D4>;
-		clock-names = "mux_axi",
-			      "syspll_d5",
-			      "syspll1_d4";
-	};
-
-	bus {
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <1>;
-		ranges = <0 0 0 0xffffffff>;
 
 		eintc: eintc@0x10005000 {
 			compatible = "mtk,mt-eic";
@@ -2439,13 +2422,14 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			    385 2910 340 2904 353 2897 358 2891 365 2881 385 2873 320 2876 >;
 					};
 
-				BAT_NOTIFY {
-					compatible = "mediatek,bat_notify";
-				};
+		BAT_NOTIFY {
+			compatible = "mediatek,bat_notify";
+		};
 
-				BATTERY {
-					compatible = "mediatek,battery";
-				};
+		BATTERY {
+			compatible = "mediatek,battery";
+		};
+
 
 		APMIXED@0x10209000 {
 			compatible = "mediatek,APMIXED";
@@ -2778,6 +2762,16 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		};
 	};
 
+	vcorefs {
+		compatible = "mediatek,mt6735-vcorefs";
+		clocks = <&topckgen TOP_MUX_AXI>,
+			 <&topckgen TOP_SYSPLL_D5>,
+			 <&topckgen TOP_SYSPLL1_D4>;
+		clock-names = "mux_axi",
+			      "syspll_d5",
+			      "syspll1_d4";
+	};
+
 	rf_clock_buffer_ctrl:rf_clock_buffer {
 		compatible = "mediatek,rf_clock_buffer";
 		mediatek,clkbuf-quantity = <4>;
@@ -2785,54 +2779,54 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 	};
 
 /* sensor part */
-		hwmsensor {
-			compatible = "mediatek,hwmsensor";
-		};
-		gsensor {
-			compatible = "mediatek,gsensor";
-		};
-		als_ps {
-			compatible = "mediatek,als_ps";
-		};
-		m_acc_pl {
-			compatible = "mediatek,m_acc_pl";
-		};
-
-		alsps:m_alsps_pl {
-			compatible = "mediatek,m_alsps_pl";
-		};
-
-		m_batch_pl {
-			compatible = "mediatek,m_batch_pl";
-		};
-		batchsensor {
-			compatible = "mediatek,batchsensor";
-		};
-		gyroscope {
-			compatible = "mediatek,gyroscope";
-		};
-		gyro:m_gyro_pl {
-			compatible = "mediatek,m_gyro_pl";
-		};
-		barometer {
-			compatible = "mediatek,barometer";
+	hwmsensor {
+		compatible = "mediatek,hwmsensor";
 	};
-		m_baro_pl {
-			compatible = "mediatek,m_baro_pl";
-		};
-		msensor {
-			compatible = "mediatek,msensor";
-		};
-		m_mag_pl {
-			compatible = "mediatek,m_mag_pl";
-		};
-		orientation {
-			compatible = "mediatek,orientation";
+	gsensor {
+		compatible = "mediatek,gsensor";
+	};
+	als_ps {
+		compatible = "mediatek,als_ps";
+	};
+	m_acc_pl {
+		compatible = "mediatek,m_acc_pl";
 	};
 
-		als: als {
-			compatible = "mediatek, als-eint";
-		};
+	alsps:m_alsps_pl {
+		compatible = "mediatek,m_alsps_pl";
+	};
+
+	m_batch_pl {
+		compatible = "mediatek,m_batch_pl";
+	};
+	batchsensor {
+		compatible = "mediatek,batchsensor";
+	};
+	gyroscope {
+		compatible = "mediatek,gyroscope";
+	};
+	gyro:m_gyro_pl {
+		compatible = "mediatek,m_gyro_pl";
+	};
+	barometer {
+		compatible = "mediatek,barometer";
+	};
+	m_baro_pl {
+		compatible = "mediatek,m_baro_pl";
+	};
+	msensor {
+		compatible = "mediatek,msensor";
+	};
+	m_mag_pl {
+		compatible = "mediatek,m_mag_pl";
+	};
+	orientation {
+		compatible = "mediatek,orientation";
+	};
+
+	als: als {
+		compatible = "mediatek, als-eint";
+	};
 
 /* sensor end */
 
@@ -2853,6 +2847,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 
 	multibridge {
 		compatible = "mediatek,multibridge";
+	};
+
+	mtkfb:mtkfb@7e000000 {
+		compatible = "mediatek,mtkfb";
+		reg = <0x7e000000 0x1000000>;
 	};
 };
 
