@@ -4026,6 +4026,9 @@
 			compatible = "mediatek,step_counter";
 	};
 /* sensor end */
+	shf{
+			compatible = "mediatek,shf";
+	};
 	cam_cal_drv{
 		compatible = "mediatek,cam_cal_drv";
 		main_bus = <2>;

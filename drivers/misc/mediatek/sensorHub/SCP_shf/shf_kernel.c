@@ -1,15 +1,10 @@
 #include <asm/atomic.h>
 #include <asm/uaccess.h>
 
-#include <cust_acc.h>
 
-#include <mach/md32_ipi.h>
-#include <mach/mt_gpio.h>
-#include <mach/mt_pm_ldo.h>
-#include <mach/mt_typedefs.h>
+#include <scp_ipi.h>
 
 #include <linux/delay.h>
-#include <linux/earlysuspend.h>
 #include <linux/i2c.h>
 #include <linux/input.h>
 #include <linux/interrupt.h>
@@ -17,6 +12,7 @@
 #include <linux/irq.h>
 #include <linux/kobject.h>
 #include <linux/miscdevice.h>
+#include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/platform_device.h>
 #include <linux/sched.h>
@@ -192,9 +188,11 @@ static int shf_release(struct inode *inode, struct file *file)
 
 /*----------------------------------------------------------------------------*/
 /*
-static void shf_print_bytes(void* buffer, size_t size) {
+static void shf_print_bytes(void* buffer, size_t size)
+{
     uint8_t* data;
     int i;
+
     if (!buffer) {
 	SHF_ERR("print: null\n");
 	return;
@@ -207,6 +205,7 @@ static void shf_print_bytes(void* buffer, size_t size) {
     SHF_LOG("\n");
 }
 */
+
 /*----------------------------------------------------------------------------*/
 static long shf_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -245,7 +244,7 @@ static long shf_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		}
 		/* shf_print_bytes(in_data.data, in_data.size); */
 		do {
-			status = md32_ipi_send(IPI_SHF, in_data.data, in_data.size, 0);
+			status = scp_ipi_send(IPI_SHF, in_data.data, in_data.size, 0);
 			if (status != pre_status || DONE == pre_status)
 				SHF_LOG("SHF_IPI_SEND: size=%zu, status=%d\n", in_data.size,
 					status);
@@ -282,9 +281,9 @@ static long shf_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		break;
 	case SHF_GESTURE_ENABLE:
 		/* SHF_LOG("IOCTL: SHF_GESTURE_ENABLE. enable=%d\n", arg); */
-#ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
-		tpd_scp_wakeup_enable(arg);
-#endif
+/* #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT */
+		/* tpd_scp_wakeup_enable(arg); */
+/* #endif */
 		break;
 	default:
 		SHF_ERR("unknown IOCTL: 0x%08x\n", cmd);
@@ -313,6 +312,7 @@ static struct miscdevice shf_device = {
 /*----------------------------------------------------------------------------*/
 static void shf_ipi_receive_handler(int id, void *data, uint size)
 {
+	pr_debug("shf_kernel,shf_ipi_receive_handler,id=%d\n", id);
 	if (id == IPI_SHF) {
 		/* shf_print_bytes(data, size); */
 		SHF_LOG("IPI_SHF\n");
@@ -337,7 +337,7 @@ static int shf_driver_probe(struct platform_device *pdev)
 		SHF_ERR("create attribute err=%d\n", err);
 		goto exit_create_attr_failed;
 	}
-	err = md32_ipi_registration(IPI_SHF, shf_ipi_receive_handler, "shf_ipi_receive_handler");
+	err = scp_ipi_registration(IPI_SHF, shf_ipi_receive_handler, "shf_ipi_receive_handler");
 	if (DONE != err)
 		goto exit_ipi_receive_register_failed;
 	shf_init_flag = 0;
@@ -366,7 +366,7 @@ static int shf_driver_remove(struct platform_device *pdev)
 	err = misc_deregister(&shf_device);
 	if (err != 0)
 		SHF_ERR("misc_deregister shf_device fail: %d\n", err);
-	md32_ipi_registration(IPI_SHF, NULL, NULL);
+	scp_ipi_registration(IPI_SHF, NULL, NULL);
 	event_destroy();	/* destroy event for wait/notify */
 	return 0;
 }
