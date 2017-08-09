@@ -15,3 +15,9 @@ config LIGHTNESS_MAPPING_VALUE
 
 config BACKLIGHT_SUPPORT_LP8557
 	bool "Support backlight lp8557 board"
+
+config BACKLIGHT_SUPPORT_LM3697
+	bool "LM3697(DW8832) Support"
+	default n
+ 	---help---
+	  charge pump driver for external backlight
