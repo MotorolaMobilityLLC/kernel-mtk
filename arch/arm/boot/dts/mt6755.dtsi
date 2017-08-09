@@ -345,6 +345,14 @@ clocks {
 			#clock-cells = <1>;
 		};
 
+		cqdma: cqdma@10212c00 {
+			compatible = "mediatek,mt6755-cqdma";
+			reg = <0x10212c00 0x100>,
+			      <0x10212d00 0x100>;
+			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>,
+				     <GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>;
+		};
+
 		scpsys: scpsys@0x10001000 {
 			compatible = "mediatek,mt6755-scpsys";
 			reg = <0x10001000 0x1000>, <0x10006000 0x1000>;
@@ -780,15 +788,6 @@ clocks {
 			compatible = "mediatek,DRAMC0";
 			reg = <0x10004000 0x1000>;
 			interrupts = <0 149 0x2>;
-		};
-
-		CQDMA@0x10212C00 {
-			compatible = "mediatek,CQDMA";
-			reg = <0x10212C00 0x100>;
-			      /*<0x10212D00 0x100>;*/
-			interrupts = <0 113 0x8>;
-				     /*<0 114 0x8>;*/
-			nr_channel = <1>;
 		};
 
 		GPIO@0x10005000 {

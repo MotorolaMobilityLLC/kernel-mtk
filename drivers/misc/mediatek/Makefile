@@ -58,6 +58,7 @@ obj-$(CONFIG_MTK_HDMI_SUPPORT) += hdmi/
 obj-$(CONFIG_MTK_FB) += video/
 obj-$(CONFIG_MTK_GPU_SUPPORT) += gpu/
 obj-$(CONFIG_MTK_SMI)	+= smi/
+obj-$(CONFIG_MTK_CQDMA) += cqdma/
 obj-$(CONFIG_MTK_DRAMC) += dramc/
 obj-$(CONFIG_MTK_SYNC) += sync/
 obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
