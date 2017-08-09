@@ -286,7 +286,7 @@ static void restore_edge_gic_spm_irq(unsigned long gic_distributor_address)
 	id->control = backup;
 }
 
-#if !defined(CONFIG_ARM_PSCI) && !defined(CONFIG_MTK_PSCI)
+#if defined(CONFIG_ARCH_MT6580)
 
 struct cpu_interface {
 	volatile unsigned int control;			/* 0x00 */
@@ -318,7 +318,7 @@ struct gic_cpu_context gic_data[1];
  * Saves the GIC CPU interface context
  * Requires 3 words of memory
  */
-static void save_gic_interface(u32 *pointer, unsigned gic_interface_address)
+static void save_gic_interface(u32 *pointer, unsigned long gic_interface_address)
 {
 	struct cpu_interface *ci = (struct cpu_interface *) gic_interface_address;
 
@@ -335,7 +335,7 @@ static void save_gic_interface(u32 *pointer, unsigned gic_interface_address)
  * Requires 19 words of memory
  */
 static void save_gic_distributor_private(u32 *pointer,
-					 unsigned gic_distributor_address)
+					 unsigned long gic_distributor_address)
 {
 	struct interrupt_distributor *id =
 	    (struct interrupt_distributor *) gic_distributor_address;
@@ -384,7 +384,7 @@ static void save_gic_distributor_private(u32 *pointer,
  * Returns non-zero if an SPI interrupt is pending (after saving all required context)
  */
 static void save_gic_distributor_shared(u32 *pointer,
-					unsigned gic_distributor_address)
+					unsigned long gic_distributor_address)
 {
 	struct interrupt_distributor *id =
 	    (struct interrupt_distributor *) gic_distributor_address;
@@ -417,7 +417,7 @@ static void save_gic_distributor_shared(u32 *pointer,
 	*pointer = id->control;
 }
 
-static void restore_gic_interface(u32 *pointer, unsigned gic_interface_address)
+static void restore_gic_interface(u32 *pointer, unsigned long gic_interface_address)
 {
 	struct cpu_interface *ci = (struct cpu_interface *) gic_interface_address;
 
@@ -432,7 +432,7 @@ static void restore_gic_interface(u32 *pointer, unsigned gic_interface_address)
 }
 
 static void restore_gic_distributor_private(u32 *pointer,
-					    unsigned gic_distributor_address)
+					    unsigned long gic_distributor_address)
 {
 	struct interrupt_distributor *id =
 	    (struct interrupt_distributor *) gic_distributor_address;
@@ -477,7 +477,7 @@ static void restore_gic_distributor_private(u32 *pointer,
 }
 
 static void restore_gic_distributor_shared(u32 *pointer,
-					   unsigned gic_distributor_address)
+					   unsigned long gic_distributor_address)
 {
 	struct interrupt_distributor *id = (struct interrupt_distributor *) gic_distributor_address;
 	unsigned num_spis;
@@ -648,7 +648,7 @@ static void mt_cluster_restore(int flags)
 	biu_reconfig();
 #endif
 
-#if !defined(CONFIG_ARM_PSCI) && !defined(CONFIG_MTK_PSCI)
+#if defined(CONFIG_ARCH_MT6580)
 	if (read_cluster_id() == 0)
 		mp0_l2rstdisable_restore(flags);
 	else
@@ -715,7 +715,7 @@ void mt_platform_save_context(int flags)
 {
 	mt_cpu_save();
 
-#if !defined(CONFIG_ARM_PSCI) && !defined(CONFIG_MTK_PSCI)
+#if defined(CONFIG_ARCH_MT6580)
 	mt_cluster_save(flags);
 
 	if (IS_DORMANT_GIC_OFF(flags)) {
@@ -731,7 +731,7 @@ void mt_platform_restore_context(int flags)
 	mt_cpu_restore();
 
 
-#if !defined(CONFIG_ARM_PSCI) && !defined(CONFIG_MTK_PSCI)
+#if defined(CONFIG_ARCH_MT6580)
 	if (IS_DORMANT_GIC_OFF(flags)) {
 		gic_dist_restore();
 		gic_cpu_restore();
@@ -742,7 +742,7 @@ void mt_platform_restore_context(int flags)
 #endif
 }
 
-#ifdef CONFIG_ARM_PSCI
+#if !defined(CONFIG_ARM64) && !defined(CONFIG_ARCH_MT6580)
 int mt_cpu_dormant_psci(unsigned long flags)
 {
 	int ret = 1;
@@ -766,7 +766,7 @@ int mt_cpu_dormant_psci(unsigned long flags)
 }
 #endif
 
-#if !defined(CONFIG_ARM_PSCI) && !defined(CONFIG_MTK_PSCI)
+#if defined(CONFIG_ARCH_MT6580)
 int mt_cpu_dormant_reset(unsigned long flags)
 {
 	int ret = 1; /* dormant abort */
@@ -838,7 +838,7 @@ __naked void cpu_resume_wrapper(void)
 
 static int mt_cpu_dormant_abort(unsigned long index)
 {
-#if !defined(CONFIG_ARM_PSCI) && !defined(CONFIG_MTK_PSCI)
+#if defined(CONFIG_ARCH_MT6580)
 	int cpuid, clusterid;
 
 	read_id(&cpuid, &clusterid);
@@ -904,9 +904,9 @@ int mt_cpu_dormant(unsigned long flags)
 
 	DORMANT_LOG(clusterid * MAX_CORES + cpuid, 0x103);
 
-#ifdef CONFIG_ARM_PSCI
+#if !defined(CONFIG_ARM64) && !defined(CONFIG_ARCH_MT6580)
 	ret = cpu_suspend(flags, mt_cpu_dormant_psci);
-#elif defined(CONFIG_MTK_PSCI)
+#elif !defined(CONFIG_ARCH_MT6580)
 	ret = cpu_suspend(2);
 #else
 	dormant_data[0].poc.cpu_resume_phys = (void (*)(void))(long)virt_to_phys(cpu_resume);
@@ -921,7 +921,7 @@ int mt_cpu_dormant(unsigned long flags)
 #endif
 	DORMANT_LOG(clusterid * MAX_CORES + cpuid, 0x601);
 
-#if !defined(CONFIG_ARM_PSCI) && !defined(CONFIG_MTK_PSCI)
+#if defined(CONFIG_ARCH_MT6580)
 	if (IS_DORMANT_INNER_OFF(flags)) {
 		reg_write(DMT_BOOTROM_BOOT_ADDR, virt_to_phys(cpu_wake_up_errata_802022));
 
@@ -1125,7 +1125,7 @@ int mt_cpu_dormant_init(void)
 
 	mt_dormant_dts_map();
 
-#if !defined(CONFIG_ARM_PSCI) && !defined(CONFIG_MTK_PSCI)
+#if defined(CONFIG_ARCH_MT6580)
 	/* enable bootrom power down mode */
 	reg_write(DMT_BOOTROM_PWR_CTRL, reg_read(DMT_BOOTROM_PWR_CTRL) | SW_ROM_PD);
 
@@ -1138,8 +1138,10 @@ int mt_cpu_dormant_init(void)
 
 	BUG_ON(!sleep_aee_rec_cpu_dormant_va || !sleep_aee_rec_cpu_dormant_pa);
 
+#if !defined(CONFIG_ARCH_MT6580)
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 	kernel_smc_msg(0, 2, (long) sleep_aee_rec_cpu_dormant_pa);
+#endif
 #endif
 
 	dormant_debug("init aee_rec_cpu_dormant: va:%p pa:%p\n",
