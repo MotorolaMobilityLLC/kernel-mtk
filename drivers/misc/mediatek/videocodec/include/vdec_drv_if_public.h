@@ -447,6 +447,19 @@ typedef enum __VDEC_DRV_MRESULT_T {
 	VDEC_DRV_MRESULT_MAX = 0x0FFFFFFF               /* /< Max Value */
 } VDEC_DRV_MRESULT_T;
 
+typedef enum _VDEC_DRV_COLOR_PRIMARIES_E {
+	COLOR_PRIMARIES_NO_INFO = 0,
+	COLOR_PRIMARIES_BT601,
+	COLOR_PRIMARIES_BT709,
+	COLOR_PRIMARIES_BT2020
+} VDEC_DRV_COLOR_PRIMARIES_E;
+
+typedef struct __VDEC_DRV_COLOR_PRIMARIES_INFO_T {
+	VAL_BOOL_T  bVideoRangeExist;           /* 0: not exist; 1: exist */
+	VAL_UINT32_T u4VideoRange;                 /* 0: narrow; 1: full  */
+	VAL_BOOL_T  bColourPrimariesExist;   /* 0: not exist; 1: exist */
+	VDEC_DRV_COLOR_PRIMARIES_E eColourPrimaries;         /* VDEC_DRV_COLOR_PRIMARIES_E */
+} VDEC_DRV_COLOR_PRIMARIES_INFO_T;
 
 /**
  * @par Structure
@@ -511,6 +524,7 @@ typedef struct __VDEC_DRV_FRAMEBUF_T {
 
 	/* /< [IN/OUT] share handle of rBaseAddr.u4VA (for UT only)  // MTK_SEC_VIDEO_PATH_SUPPORT */
 	VAL_UINT32_T    rFrameBufVaShareHandle;
+	VDEC_DRV_COLOR_PRIMARIES_INFO_T rColorPriInfo;
 } VDEC_DRV_FRAMEBUF_T;
 
 /**
