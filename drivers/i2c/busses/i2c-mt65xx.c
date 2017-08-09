@@ -538,6 +538,8 @@ static int mtk_i2c_transfer(struct i2c_adapter *adap,
 			}
 		}
 
+		mtk_i2c_init_hw(i2c);
+
 		/* always use DMA mode. */
 		ret = mtk_i2c_do_transfer(i2c, msgs, num, left_num);
 		if (ret < 0)
