@@ -260,6 +260,10 @@ bool usb_cable_connected(void)
 	if (upmu_get_rgs_chrdet() && (chg_type == STANDARD_HOST))
 		return true;
 #else
+	/* IPO shutdown, disable USB and send HWDISCONNECT uevent */
+	if (cable_mode == CABLE_MODE_CHRG_ONLY)
+		return false;
+
 	if (upmu_is_chr_det()) {
 		chg_type = mt_get_charger_type();
 		os_printk(K_INFO, "%s type=%d\n", __func__, chg_type);
