@@ -127,6 +127,94 @@ typedef enum MT65XX_POWER_VOL_TAG {
 	VOL_3600 = 3600
 } MT65XX_POWER_VOLTAGE;
 
+typedef enum {
+	INT_PWRKEY,
+	INT_HOMEKEY,
+	INT_PWRKEY_R,
+	INT_HOMEKEY_R,
+	INT_NI_LBAT_INT,
+	INT_CHRDET,
+	INT_CHRDET_EDGE,
+	INT_BATON_LV,
+	INT_BATON_HV,
+	INT_BATON_BAT_IN,
+	INT_BATON_BAT_OUT,
+	INT_RTC,
+	INT_BIF,
+	INT_VCDT_HV_DET,
+	INT_THR_H,
+	INT_THR_L,
+	INT_BAT_H,
+	INT_BAT_L,
+	INT_BAT2_H,
+	INT_BAT2_L,
+	INT_BAT_TEMP_H,
+	INT_BAT_TEMP_L,
+	INT_AUXADC_IMP,
+	INT_NAG_C_DLTV,
+	INT_JEITA_HOT,
+	INT_JEITA_WARM,
+	INT_JEITA_COOL,
+	INT_JEITA_COLD,
+	INT_VCORE_OC,
+	INT_VMD1_OC,
+	INT_VMODEM_OC,
+	INT_VS1_OC,
+	INT_VS2_OC,
+	INT_VDRAM_OC,
+	INT_VPA1_OC,
+	INT_VPA2_OC,
+	INT_VCORE_PREOC,
+	INT_VA10_OC,
+	INT_VA12_OC,
+	INT_VA18_OC,
+	INT_VBIF28_OC,
+	INT_VCAMA1_OC,
+	INT_VCAMA2_OC,
+	INT_VCAMAF_OC,
+	INT_VCAMD1_OC,
+	INT_VCAMD2_OC,
+	INT_VCAMIO_OC,
+	INT_VCN18_OC,
+	INT_VCN28_OC,
+	INT_VCN33_OC,
+	INT_VEFUSE_OC,
+	INT_VEMC_OC,
+	INT_VFE28_OC,
+	INT_VGP3_OC,
+	INT_VIBR_OC,
+	INT_VIO18_OC,
+	INT_VIO28_OC,
+	INT_VMC_OC,
+	INT_VMCH_OC,
+	INT_VMIPI_OC,
+	INT_VRF12_OC,
+	INT_VRF18_1_OC,
+	INT_VRF18_2_OC,
+	INT_VSIM1_OC,
+	INT_VSIM2_OC,
+	INT_VSRAM_CORE_OC,
+	INT_VSRAM_DVFS1_OC,
+	INT_VSRAM_DVFS2_OC,
+	INT_VSRAM_GPU_OC,
+	INT_VSRAM_MD_OC,
+	INT_VUFS18_OC,
+	INT_VUSB33_OC,
+	INT_VXO22_OC,
+	INT_FG_BAT0_H,
+	INT_FG_BAT0_L,
+	INT_FG_CUR_H,
+	INT_FG_CUR_L,
+	INT_FG_ZCV ,
+	INT_FG_BAT1_H,
+	INT_FG_BAT1_L,
+	INT_FG_N_CHARGE_L ,
+	INT_FG_IAVG_H,
+	INT_FG_IAVG_L,
+	INT_FG_TIME_H,
+	INT_FG_DISCHARGE ,
+	INT_FG_CHARGE
+} PMIC_IRQ_ENUM;
 
 typedef struct {
 	unsigned long dwPowerCount;
@@ -167,8 +255,10 @@ extern unsigned int upmu_get_reg_value(unsigned int reg);
 extern void pmic_lock(void);
 extern void pmic_unlock(void);
 
-extern void pmic_enable_interrupt(unsigned int intNo, unsigned int en, char *str);
-extern void pmic_register_interrupt_callback(unsigned int intNo, void (EINT_FUNC_PTR) (void));
+extern void pmic_enable_interrupt(PMIC_IRQ_ENUM intNo, unsigned int en, char *str);
+extern void pmic_mask_interrupt(PMIC_IRQ_ENUM intNo, char *str);
+extern void pmic_unmask_interrupt(PMIC_IRQ_ENUM intNo, char *str);
+extern void pmic_register_interrupt_callback(PMIC_IRQ_ENUM intNo, void (EINT_FUNC_PTR) (void));
 extern unsigned short is_battery_remove_pmic(void);
 
 extern signed int PMIC_IMM_GetCurrent(void);
