@@ -989,7 +989,7 @@ static int snd_pcm_oss_change_params(struct snd_pcm_substream *substream)
 		goto failure;
 	}
 
-	memset_io(sw_params, 0, sizeof(*sw_params));
+	memset(sw_params, 0, sizeof(*sw_params));
 	if (runtime->oss.trigger) {
 		sw_params->start_threshold = 1;
 	} else {
@@ -1664,7 +1664,7 @@ static int snd_pcm_oss_sync(struct snd_pcm_oss_file *pcm_oss_file)
 				}
 			} else if (runtime->access == SNDRV_PCM_ACCESS_RW_NONINTERLEAVED) {
 				void __user *buffers[runtime->channels];
-				memset_io(buffers, 0, runtime->channels * sizeof(void *));
+				memset(buffers, 0, runtime->channels * sizeof(void *));
 				snd_pcm_lib_writev(substream, buffers, size);
 			}
 		}
