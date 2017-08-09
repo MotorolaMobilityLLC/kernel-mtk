@@ -1,4 +1,4 @@
-menu "MTK runqueue statistic calculation"
+menu "MTK runqueue statistic calculation and CPU affinity"
 
 config MTK_SCHED_RQAVG_KS
 	bool "Enable runqueue statistic calculation used in kernel space operation"
@@ -14,5 +14,13 @@ config MTK_SCHED_RQAVG_US
 	depends on SMP && HIGH_RES_TIMERS
 	help
 	  TLP estimation for user space CPUfreq governors
+
+config MT_CPU_AFFINITY
+	bool "Enhance CPU affinity in hotplug"
+	depends on HOTPLUG_CPU
+	help
+	  The CPU affinity library for Hotplug enhancement is to achieve set CPU
+	  affinity without take care kernel behavior and to avoid affect the original
+	  Linux design.
 
 endmenu
