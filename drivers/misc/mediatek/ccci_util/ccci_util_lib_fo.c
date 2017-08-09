@@ -773,6 +773,10 @@ static void cal_md_settings_v2(struct device_node *node)
 
 int modem_run_env_ready(int md_id)
 {
+	if (md_id == MD_SYS3) {
+		CCCI_UTIL_ERR_MSG("notice: need reload md3 img!!\n");
+		return 0;
+	}
 	return md_env_rdy_flag & (1<<md_id);
 }
 
