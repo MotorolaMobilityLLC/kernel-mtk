@@ -1237,16 +1237,12 @@ reset_proc:
 	msleep(20);
 
 #ifdef TPD_POWER_SOURCE_CUSTOM
-#ifdef CONFIG_ARCH_MT6580
 	ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/* set 2.8v */
 	if (ret)
 		GTP_DEBUG("regulator_set_voltage() failed!\n");
 	ret = regulator_enable(tpd->reg);	/* enable regulator */
 	if (ret)
 		GTP_DEBUG("regulator_enable() failed!\n");
-#else
-	hwPowerOn(TPD_POWER_SOURCE_CUSTOM, VOL_2800, "TP");
-#endif
 #else
 	hwPowerOn(MT65XX_POWER_LDO_VGP2, VOL_2800, "TP");
 #endif
@@ -1680,8 +1676,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 
 	msleep(50);
 
-	node = of_find_compatible_node(NULL, NULL,
-				       "mediatek, TOUCH_PANEL-eint");
+	node = of_find_matching_node(NULL, touch_of_match);
 	if (node) {
 		touch_irq = irq_of_parse_and_map(node, 0);
 		ret = request_irq(touch_irq,
@@ -1763,13 +1758,9 @@ void force_reset_guitar(void)
 
 	/* Power off TP */
 #ifdef TPD_POWER_SOURCE_CUSTOM
-#ifdef CONFIG_ARCH_MT6580
 	ret = regulator_disable(tpd->reg);
 	if (ret)
 		GTP_DEBUG("regulator_disable() failed!\n");
-#else
-	hwPowerDown(TPD_POWER_SOURCE_CUSTOM, "TP");
-#endif
 #else
 	hwPowerDown(MT65XX_POWER_LDO_VGP2, "TP");
 #endif
@@ -1780,7 +1771,6 @@ void force_reset_guitar(void)
 
 	/* Power on TP */
 #ifdef TPD_POWER_SOURCE_CUSTOM
-#ifdef CONFIG_ARCH_MT6580
 	ret = regulator_set_voltage(tpd->reg,
 				    2800000, 2800000);
 	if (ret)
@@ -1788,9 +1778,6 @@ void force_reset_guitar(void)
 	ret = regulator_enable(tpd->reg);	/* enable regulator */
 	if (ret)
 		GTP_DEBUG("regulator_enable() failed!\n");
-#else
-	hwPowerOn(TPD_POWER_SOURCE_CUSTOM, VOL_2800, "TP");
-#endif
 #else
 	hwPowerOn(MT65XX_POWER_LDO_VGP2, VOL_2800, "TP");
 #endif
@@ -2498,11 +2485,9 @@ exit_work_func:
 static int tpd_local_init(void)
 {
 #ifdef TPD_POWER_SOURCE_CUSTOM
-#ifdef CONFIG_ARCH_MT6580
-	tpd->reg = regulator_get(tpd->tpd_dev, TPD_POWER_SOURCE_CUSTOM);
+	tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
 	if (IS_ERR(tpd->reg))
 		GTP_ERROR("regulator_get() failed!\n");
-#endif
 #endif
 
 #if defined(CONFIG_GTP_ESD_PROTECT)
@@ -2623,9 +2608,7 @@ Output:
 *******************************************************/
 static s8 gtp_enter_sleep(struct i2c_client *client)
 {
-#ifdef CONFIG_ARCH_MT6580
 	int ret = 0;
-#endif
 
 #if defined(CONFIG_GTP_COMPATIBLE_MODE)
 	if (CHIP_TYPE_GT9F == gtp_chip_type) {
@@ -2656,13 +2639,9 @@ static s8 gtp_enter_sleep(struct i2c_client *client)
 #endif
 
 #ifdef TPD_POWER_SOURCE_CUSTOM
-#ifdef CONFIG_ARCH_MT6580
 	ret = regulator_disable(tpd->reg);	/* disable regulator */
 	if (ret)
 		GTP_DEBUG("regulator_disable() failed!\n");
-#else
-	hwPowerDown(TPD_POWER_SOURCE_CUSTOM, "TP");
-#endif
 #else
 	hwPowerDown(MT65XX_POWER_LDO_VGP2, "TP");
 #endif
@@ -2960,15 +2939,11 @@ static struct tpd_driver_t tpd_device_driver = {
 static void tpd_off(void)
 {
 #ifdef TPD_POWER_SOURCE_CUSTOM
-#ifdef CONFIG_ARCH_MT6580
 	int ret = 0;
 
 	ret = regulator_disable(tpd->reg);	/* disable regulator */
 	if (ret)
 		GTP_DEBUG("regulator_disable() failed!\n");
-#else
-	hwPowerDown(TPD_POWER_SOURCE_CUSTOM, "TP");
-#endif
 #else
 	hwPowerDown(MT65XX_POWER_LDO_VGP2, "TP");
 #endif
