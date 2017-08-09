@@ -46,15 +46,12 @@ struct clk *musb_clk;
 static int usb_rdy = 1;
 #else
 /* default value 0 */
-/* static int usb_rdy; */
-/* GIT K318 WORKAROUND */
-static int usb_rdy = 1;
+static int usb_rdy;
 void set_usb_rdy(void)
 {
 	DBG(0, "set usb_rdy, wake up bat\n");
 	usb_rdy = 1;
-	/* GIT K318 WORKAROUND */
-	/* wake_up_bat(); */
+	wake_up_bat();
 }
 #endif
 static int first_connect;	/* default value 0 */
@@ -418,9 +415,6 @@ bool mt_usb_is_device(void)
 
 void mt_usb_connect(void)
 {
-	/* GIT K318 WORKAROUND */
-	DBG(0, "WORKAROUND, return\n");
-	return;
 
 	if (mtk_musb) {
 		DBG(0, "is ready %d is_host %d power %d\n", mtk_musb->is_ready, mtk_musb->is_host,
@@ -491,9 +485,6 @@ void mt_usb_connect(void)
 
 void mt_usb_disconnect(void)
 {
-	/* GIT K318 WORKAROUND */
-	DBG(0, "WORKAROUND, return\n");
-	return;
 
 	if (mtk_musb) {
 		DBG(0, "is ready %d is_host %d power %d\n", mtk_musb->is_ready, mtk_musb->is_host,
@@ -569,9 +560,6 @@ bool usb_cable_connected(void)
 	return true;
 #else
 	int charger_type;
-	/* GIT K318 WORKAROUND */
-	DBG(0, "WORKAROUND, return\n");
-	return true;
 
 #ifdef CONFIG_USB_MTK_OTG
 	/* ALPS00775710 */
@@ -668,9 +656,6 @@ void pmic_chrdet_int_en(int is_on)
 void musb_sync_with_bat(struct musb *musb, int usb_state)
 {
 #ifndef FPGA_PLATFORM
-	/* GIT K318 WORKAROUND */
-	DBG(0, "WORKAROUND, return\n");
-	return;
 
 	DBG(0, "BATTERY_SetUSBState, state=%d\n", usb_state);
 	BATTERY_SetUSBState(usb_state);
