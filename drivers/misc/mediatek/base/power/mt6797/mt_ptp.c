@@ -3281,7 +3281,7 @@ unsigned int leakage_sram1;
 void get_devinfo(struct eem_devinfo *p)
 {
 	int *val = (int *)p;
-
+	int i;
 	FUNC_ENTER(FUNC_LV_HELP);
 
 #ifndef EARLY_PORTING
@@ -3341,6 +3341,13 @@ void get_devinfo(struct eem_devinfo *p)
 	eem_debug("M_HW_RES15 = 0x%X\n", val[10]);
 	eem_debug("M_HW_RES16 = 0x%X\n", val[11]);
 
+	for (i = 0; i < 12; i++) {
+		if (0 == val[i]) {
+			ctrl_EEM_Enable = 0;
+			infoIdvfs = 0x55;
+			break;
+		}
+	}
 	FUNC_EXIT(FUNC_LV_HELP);
 }
 
