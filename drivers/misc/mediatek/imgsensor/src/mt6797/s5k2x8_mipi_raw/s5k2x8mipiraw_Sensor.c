@@ -2013,7 +2013,7 @@ write_cmos_sensor_twobyte(0x6F12,0x0000);	// DTP
 // Mixer
 write_cmos_sensor_twobyte(0x602A,0xA8C8);
 write_cmos_sensor_twobyte(0x6F12,0x0001);	//[15:8] N/A, [7:0]  Misc_Bypass_DisableMixer
-//WRITE #smiaRegs_vendor_psp_psp_config_info_removePedestalMode 0000   // r566 version¿¡´ {¿?�°�?!!!
+//WRITE #smiaRegs_vendor_psp_psp_config_info_removePedestalMode 0000   // r566 version¿¡´ {¿?°?!!!
 write_cmos_sensor_twobyte(0x602A,0x0320);
 write_cmos_sensor_twobyte(0x6F12,0x0000);
 
@@ -7538,7 +7538,11 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
     sensor_info->IHDR_Support = imgsensor_info.ihdr_support;
     sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
     sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
-	sensor_info->PDAF_Support = 1;
+    sensor_info->PDAF_Support = 1;
+
+    /*0: no support, 1: G0,R0.B0, 2: G0,R0.B1, 3: G0,R1.B0, 4: G0,R1.B1*/
+    /*                    5: G1,R0.B0, 6: G1,R0.B1, 7: G1,R1.B0, 8: G1,R1.B1*/
+    sensor_info->ZHDR_MODE = 7; 
 
     sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
     sensor_info->SensorClockFreq = imgsensor_info.mclk;
