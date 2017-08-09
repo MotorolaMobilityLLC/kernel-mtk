@@ -48,22 +48,20 @@ struct mrp {
 
 enum pbm_kicker {
 	KR_DLPT,		/* 0 */
-	KR_MD,			/* 1 */
-	KR_CPU,			/* 2 */
-	KR_GPU,			/* 3 */
-	KR_FLASH		/* 4 */
-};
-
-enum md_id {
-	MD1,
-	MD2
+	KR_MD1,			/* 1 */
+	KR_MD3,			/* 2 */
+	KR_CPU,			/* 3 */
+	KR_GPU,			/* 4 */
+	KR_FLASH		/* 5 */
 };
 
 extern void kicker_pbm_by_dlpt(unsigned int i_max);
-extern void kicker_pbm_by_md(enum md_id id, bool status);
+extern void kicker_pbm_by_md(enum pbm_kicker kicker, bool status);
 extern void kicker_pbm_by_cpu(unsigned int loading, int core, int voltage);
 extern void kicker_pbm_by_gpu(bool status, unsigned int loading, int voltage);
 extern void kicker_pbm_by_flash(bool status);
+
+extern void init_md_section_level(enum pbm_kicker);
 
 #ifndef DISABLE_PBM_FEATURE
 extern int g_dlpt_stop;

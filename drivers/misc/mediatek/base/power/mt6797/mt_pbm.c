@@ -553,7 +553,7 @@ void kicker_pbm_by_dlpt(unsigned int i_max)
 {
 }
 
-void kicker_pbm_by_md(enum md_id id, bool status)
+void kicker_pbm_by_md(enum pbm_kicker kicker, bool status)
 {
 }
 
@@ -566,6 +566,10 @@ void kicker_pbm_by_gpu(bool status, unsigned int loading, int voltage)
 }
 
 void kicker_pbm_by_flash(bool status)
+{
+}
+
+void init_md_section_level(enum pbm_kicker kicker)
 {
 }
 
