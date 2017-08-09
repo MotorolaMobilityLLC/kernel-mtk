@@ -193,7 +193,7 @@ static void ssspm_update_loading(void)
 	rem = do_div(diff, 1000000); // ms
 
 	// update loading if > n ms
-	if (diff >= 4)
+	if (diff >= 16)
 	{
 		MTKCalGpuUtilization(&glo.loading, &glo.block, &glo.idle);
 		lasttime = now;
