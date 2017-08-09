@@ -380,8 +380,7 @@ static void clkbuf_delayed_worker(struct work_struct *work)
 {
 	bool srcclkena_o1 = false;
 
-	srcclkena_o1 = (spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ)
-			&& R13_MD1_VRF18_REQ;
+	srcclkena_o1 = !!(spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ);
 	clk_buf_warn("%s: g_is_flightmode_on=%d, srcclkena_o1=%u, pcm_reg13=0x%x\n",
 		     __func__, g_is_flightmode_on, srcclkena_o1,
 		     spm_read(PCM_REG13_DATA));
@@ -407,8 +406,7 @@ void clk_buf_set_by_flightmode(bool is_flightmode_on)
 {
 	bool srcclkena_o1 = false;
 
-	srcclkena_o1 = (spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ)
-			&& R13_MD1_VRF18_REQ;
+	srcclkena_o1 = !!(spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ);
 	clk_buf_warn("%s: g/is_flightmode_on=%d->%d, srcclkena_o1=%u, pcm_reg13=0x%x\n",
 		     __func__, g_is_flightmode_on, is_flightmode_on,
 		     srcclkena_o1, spm_read(PCM_REG13_DATA));
@@ -651,8 +649,7 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 		     PMIC_CLK_BUF6_DRIVING_CURR,
 		     PMIC_CLK_BUF7_DRIVING_CURR,
 		     PMIC_CLK_BUF8_DRIVING_CURR);
-	srcclkena_o1 = (spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ)
-			&& R13_MD1_VRF18_REQ;
+	srcclkena_o1 = !!(spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ);
 	p += sprintf(p, "srcclkena_o1=%u, pcm_reg13=0x%x, MD1_PWR_CON=0x%x, C2K_PWR_CON=0x%x\n",
 		     srcclkena_o1, spm_read(PCM_REG13_DATA),
 		     spm_read(MD1_PWR_CON), spm_read(C2K_PWR_CON));
