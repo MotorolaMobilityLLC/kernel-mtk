@@ -78,7 +78,7 @@ int ccci_get_ccmni_channel(int md_id, int ccmni_idx, struct ccmni_ch *channel)
 		channel->tx_ack = 0xFF;
 		break;
 	default:
-		CCCI_ERR_MSG(md_id, NET, "invalid ccmni index=%d\n", ccmni_idx);
+		CCCI_ERROR_LOG(md_id, NET, "invalid ccmni index=%d\n", ccmni_idx);
 		ret = -1;
 		break;
 	}
@@ -123,7 +123,7 @@ int ccmni_send_pkt(int md_id, int tx_ch, void *data)
 	get_port_time = sched_clock() - get_port_time;
 #endif
 	if (!port) {
-		CCCI_ERR_MSG(0, NET, "port==NULL\n");
+		CCCI_ERROR_LOG(0, NET, "port==NULL\n");
 		return CCMNI_ERR_TX_INVAL;
 	}
 	/* req_alloc_time=sched_clock(); */
@@ -149,7 +149,7 @@ int ccmni_send_pkt(int md_id, int tx_ch, void *data)
 /* #else */
 	ccci_h->reserved = 0;
 /* #endif */
-	CCCI_DBG_MSG(md_id, NET, "port %s send txq=%d: %08X, %08X, %08X, %08X\n", port->name, tx_queue,
+	CCCI_DEBUG_LOG(md_id, NET, "port %s send txq=%d: %08X, %08X, %08X, %08X\n", port->name, tx_queue,
 		     ccci_h->data[0], ccci_h->data[1], ccci_h->channel, ccci_h->reserved);
 #ifdef PORT_NET_TRACE
 	send_time = sched_clock();
@@ -237,8 +237,8 @@ static int ccmni_open(struct net_device *dev)
 	struct netdev_entity *nent = (struct netdev_entity *)port->private_data;
 
 	atomic_inc(&port->usage_cnt);
-	CCCI_INF_MSG(port->modem->index, NET, "port %s open %d cap=0x%X\n", port->name, atomic_read(&port->usage_cnt),
-		     port->modem->capability);
+	CCCI_NORMAL_LOG(port->modem->index, NET, "port %s open %d cap=0x%X\n",
+					port->name, atomic_read(&port->usage_cnt), port->modem->capability);
 	netif_start_queue(dev);
 	if (likely(port->modem->capability & MODEM_CAP_NAPI)) {
 		napi_enable(&nent->napi);
@@ -252,7 +252,7 @@ static int ccmni_close(struct net_device *dev)
 	struct ccci_port *port = *((struct ccci_port **)netdev_priv(dev));
 
 	atomic_dec(&port->usage_cnt);
-	CCCI_INF_MSG(port->modem->index, NET, "port %s close %d\n", port->name, atomic_read(&port->usage_cnt));
+	CCCI_NORMAL_LOG(port->modem->index, NET, "port %s close %d\n", port->name, atomic_read(&port->usage_cnt));
 	netif_stop_queue(dev);
 	if (likely(port->modem->capability & MODEM_CAP_NAPI))
 		napi_disable(&((struct netdev_entity *)port->private_data)->napi);
@@ -313,21 +313,23 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
 #ifndef FEATURE_SEQ_CHECK_EN
 	struct netdev_entity *nent = (struct netdev_entity *)port->private_data;
 
-	CCCI_DBG_MSG(port->modem->index, NET, "write on %s, len=%d/%d, curr_seq=%d\n",
+	CCCI_DEBUG_LOG(port->modem->index, NET, "write on %s, len=%d/%d, curr_seq=%d\n",
 		     port->name, skb_headroom(skb), skb->len, nent->tx_seq_num);
 #else
-	CCCI_DBG_MSG(port->modem->index, NET, "write on %s, len=%d/%d\n", port->name, skb_headroom(skb), skb->len);
+	CCCI_DEBUG_LOG(port->modem->index, NET, "write on %s, len=%d/%d\n", port->name, skb_headroom(skb), skb->len);
 #endif
 
 	if (unlikely(skb->len > CCCI_NET_MTU)) {
-		CCCI_ERR_MSG(port->modem->index, NET, "exceeds MTU(%d) with %d/%d\n", CCCI_NET_MTU, dev->mtu, skb->len);
+		CCCI_ERROR_LOG(port->modem->index, NET, "exceeds MTU(%d) with %d/%d\n",
+						CCCI_NET_MTU, dev->mtu, skb->len);
 		dev_kfree_skb(skb);
 		dev->stats.tx_dropped++;
 		return NETDEV_TX_OK;
 	}
 	if (unlikely(skb_headroom(skb) < sizeof(struct ccci_header))) {
-		CCCI_ERR_MSG(port->modem->index, NET, "not enough header room on %s, len=%d header=%d hard_header=%d\n",
-			     port->name, skb->len, skb_headroom(skb), dev->hard_header_len);
+		CCCI_ERROR_LOG(port->modem->index, NET,
+				"not enough header room on %s, len=%d header=%d hard_header=%d\n",
+				port->name, skb->len, skb_headroom(skb), dev->hard_header_len);
 		dev_kfree_skb(skb);
 		dev->stats.tx_dropped++;
 		return NETDEV_TX_OK;
@@ -386,7 +388,7 @@ static int ccmni_start_xmit(struct sk_buff *skb, struct net_device *dev)
  tx_busy:
 	if (unlikely(!(port->modem->capability & MODEM_CAP_TXBUSY_STOP))) {
 		if ((tx_busy_retry_cnt) % 20000 == 0)
-			CCCI_INF_MSG(port->modem->index, NET, "%s TX busy: retry_times=%d\n", port->name,
+			CCCI_NORMAL_LOG(port->modem->index, NET, "%s TX busy: retry_times=%d\n", port->name,
 				     tx_busy_retry_cnt);
 		tx_busy_retry_cnt++;
 	} else {
@@ -436,11 +438,11 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 				atomic_inc(&port->usage_cnt);
 			}
 		}
-		CCCI_INF_MSG(port->modem->index, NET, "SIOCSTXQSTATE request=%d on %s %d\n", ifr->ifr_ifru.ifru_ivalue,
-			     port->name, atomic_read(&port->usage_cnt));
+		CCCI_NORMAL_LOG(port->modem->index, NET, "SIOCSTXQSTATE request=%d on %s %d\n",
+						ifr->ifr_ifru.ifru_ivalue, port->name, atomic_read(&port->usage_cnt));
 		break;
 	default:
-		CCCI_INF_MSG(port->modem->index, NET, "unknown ioctl cmd=%d on %s\n", cmd, port->name);
+		CCCI_NORMAL_LOG(port->modem->index, NET, "unknown ioctl cmd=%d on %s\n", cmd, port->name);
 		break;
 	}
 
@@ -476,7 +478,7 @@ static void napi_polling_timer_func(unsigned long data)
 {
 	struct ccci_port *port = (struct ccci_port *)data;
 
-	CCCI_ERR_MSG(port->modem->index, NET, "lost NAPI polling on %s\n", port->name);
+	CCCI_ERROR_LOG(port->modem->index, NET, "lost NAPI polling on %s\n", port->name);
 }
 
 static void ccmni_make_etherframe(void *_eth_hdr, unsigned char *mac_addr, unsigned int packet_type)
@@ -512,7 +514,7 @@ static int port_net_init(struct ccci_port *port)
 	struct net_device *dev = NULL;
 	struct netdev_entity *nent = NULL;
 
-	CCCI_DBG_MSG(port->modem->index, NET, "network port is initializing\n");
+	CCCI_DEBUG_LOG(port->modem->index, NET, "network port is initializing\n");
 	dev = alloc_etherdev(sizeof(struct ccci_port *));
 	dev->header_ops = NULL;
 	dev->mtu = CCCI_NET_MTU;
@@ -548,7 +550,7 @@ static int port_net_init(struct ccci_port *port)
 	nent->polling_timer.function = napi_polling_timer_func;
 	nent->polling_timer.data = (unsigned long)port;
 	register_netdev(dev);
-	CCCI_DBG_MSG(port->modem->index, NET, "network device %s hard_header_len=%d\n", dev->name,
+	CCCI_DEBUG_LOG(port->modem->index, NET, "network device %s hard_header_len=%d\n", dev->name,
 		     dev->hard_header_len);
 	return 0;
 #endif
@@ -565,7 +567,7 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 	total_time = sched_clock();
 #endif
 	skb_pull(skb, sizeof(struct ccci_header));
-	CCCI_DBG_MSG(port->modem->index, NET, "[RX]: 0x%08X, 0x%08X, %08X, 0x%08X\n",
+	CCCI_DEBUG_LOG(port->modem->index, NET, "[RX]: 0x%08X, 0x%08X, %08X, 0x%08X\n",
 		     ccci_h->data[0], ccci_h->data[1], ccci_h->channel, ccci_h->reserved);
 #ifdef PORT_NET_TRACE
 	rx_cb_time = sched_clock();
@@ -593,14 +595,14 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 	total_time = sched_clock();
 #endif
 #ifndef FEATURE_SEQ_CHECK_EN
-	CCCI_DBG_MSG(md->index, NET, "recv on %s, curr_seq=%d\n", port->name, ccci_h->reserved);
+	CCCI_DEBUG_LOG(md->index, NET, "recv on %s, curr_seq=%d\n", port->name, ccci_h->reserved);
 	if (unlikely(nent->rx_seq_num != 0 && (ccci_h->reserved - nent->rx_seq_num) != 1)) {
-		CCCI_ERR_MSG(md->index, NET, "possible packet lost on %s %d->%d\n",
+		CCCI_ERROR_LOG(md->index, NET, "possible packet lost on %s %d->%d\n",
 			     port->name, nent->rx_seq_num, ccci_h->reserved);
 	}
 	nent->rx_seq_num = ccci_h->reserved;
 #else
-	CCCI_DBG_MSG(md->index, NET, "recv on %s\n", port->name);
+	CCCI_DEBUG_LOG(md->index, NET, "recv on %s\n", port->name);
 #endif
 
 	skb_pull(skb, sizeof(struct ccci_header));
@@ -680,7 +682,7 @@ static void port_net_md_state_notice(struct ccci_port *port, MD_STATE state)
 	struct netdev_entity *nent = (struct netdev_entity *)port->private_data;
 	struct net_device *dev = nent->ndev;
 
-	/* CCCI_INF_MSG(port->modem->index, NET, "port_net_md_state_notice: %s, md_sta=%d\n", port->name, state); */
+	/* CCCI_NORMAL_LOG(port->modem->index, NET, "port_net_md_state_notice: %s, md_sta=%d\n", port->name, state); */
 	if (((state == TX_IRQ) && ((port->flags & PORT_F_RX_FULLED) == 0)) ||
 		((state == TX_FULL) && (port->flags & PORT_F_RX_FULLED)))
 		return;
@@ -720,15 +722,15 @@ void port_net_md_dump_info(struct ccci_port *port, unsigned int flag)
 {
 #ifdef CCMNI_U
 	if (port == NULL) {
-		CCCI_ERR_MSG(0, NET, "port_net_md_dump_info: port==NULL\n");
+		CCCI_ERROR_LOG(0, NET, "port_net_md_dump_info: port==NULL\n");
 		return;
 	}
 	if (port->modem == NULL) {
-		CCCI_ERR_MSG(0, NET, "port_net_md_dump_info: port->modem == null\n");
+		CCCI_ERROR_LOG(0, NET, "port_net_md_dump_info: port->modem == null\n");
 		return;
 	}
 	if (ccmni_ops.dump == NULL) {
-		CCCI_ERR_MSG(0, NET, "port_net_md_dump_info: ccmni_ops.dump== null\n");
+		CCCI_ERROR_LOG(0, NET, "port_net_md_dump_info: ccmni_ops.dump== null\n");
 		return;
 	}
 	ccmni_ops.dump(port->modem->index, port->rx_ch, 0);

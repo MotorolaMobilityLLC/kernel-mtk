@@ -45,16 +45,16 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 
 #ifdef CONFIG_OF
 	if (dev_ptr->dev.of_node == NULL) {
-		CCCI_ERR_MSG(dev_cfg->index, TAG, "modem OF node NULL\n");
+		CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem OF node NULL\n");
 		return -1;
 	}
 
 	of_property_read_u32(dev_ptr->dev.of_node, "cell-index",
 			     &dev_cfg->index);
-	CCCI_INF_MSG(dev_cfg->index, TAG, "modem hw info get idx:%d\n",
+	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "modem hw info get idx:%d\n",
 		     dev_cfg->index);
 	if (!get_modem_is_enabled(dev_cfg->index)) {
-		CCCI_ERR_MSG(dev_cfg->index, TAG, "modem %d not enable, exit\n",
+		CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d not enable, exit\n",
 			     dev_cfg->index + 1);
 		return -1;
 	}
@@ -63,10 +63,10 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 	    (struct ccci_dev_cfg *)dev->dev.platform_data;
 	dev_cfg->index = dev_cfg_ptr->index;
 
-	CCCI_INF_MSG(dev_cfg->index, TAG, "modem hw info get idx:%d\n",
+	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "modem hw info get idx:%d\n",
 		     dev_cfg->index);
 	if (!get_modem_is_enabled(dev_cfg->index)) {
-		CCCI_ERR_MSG(dev_cfg->index, TAG, "modem %d not enable, exit\n",
+		CCCI_ERROR_LOG(dev_cfg->index, TAG, "modem %d not enable, exit\n",
 			     dev_cfg->index + 1);
 		return -1;
 	}
@@ -107,7 +107,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 		clk_scp_sys_md2_main =
 		    devm_clk_get(&dev_ptr->dev, "scp-sys-md2-main");
 		if (IS_ERR(clk_scp_sys_md2_main)) {
-			CCCI_ERR_MSG(dev_cfg->index, TAG,
+			CCCI_ERROR_LOG(dev_cfg->index, TAG,
 				     "modem %d get scp-sys-md2-main failed\n",
 				     dev_cfg->index + 1);
 			return -1;
@@ -152,7 +152,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 		node = of_find_compatible_node(NULL, NULL, "mediatek,TOPRGU");
 		hw_info->toprgu_base = (unsigned long)of_iomap(node, 0);
 
-		CCCI_INF_MSG(dev_cfg->index, TAG,
+		CCCI_NORMAL_LOG(dev_cfg->index, TAG,
 			     "infra_ao_base=0x%lx, sleep_base=0x%lx, toprgu_base=0x%lx\n",
 			     hw_info->infra_ao_base, hw_info->sleep_base,
 			     hw_info->toprgu_base);
@@ -165,7 +165,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 		clk_scp_sys_md3_main =
 		    devm_clk_get(&dev_ptr->dev, "scp-sys-md2-main");
 		if (IS_ERR(clk_scp_sys_md3_main)) {
-			CCCI_ERR_MSG(dev_cfg->index, TAG,
+			CCCI_ERROR_LOG(dev_cfg->index, TAG,
 				     "modem %d get scp-sys-md2-main failed\n",
 				     dev_cfg->index + 1);
 			return -1;
@@ -183,20 +183,20 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 		return -1;
 	}
 
-	CCCI_INF_MSG(dev_cfg->index, TAG,
+	CCCI_NORMAL_LOG(dev_cfg->index, TAG,
 		     "modem ccif of node get dev_major:%d\n", dev_cfg->major);
-	CCCI_INF_MSG(dev_cfg->index, TAG,
+	CCCI_NORMAL_LOG(dev_cfg->index, TAG,
 		     "modem ccif of node get minor_base:%d\n",
 		     dev_cfg->minor_base);
-	CCCI_INF_MSG(dev_cfg->index, TAG,
+	CCCI_NORMAL_LOG(dev_cfg->index, TAG,
 		     "modem ccif of node get capability:%d\n",
 		     dev_cfg->capability);
 
-	CCCI_INF_MSG(dev_cfg->index, TAG, "ap_ccif_base:0x%p\n",
+	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "ap_ccif_base:0x%p\n",
 		     (void *)hw_info->ap_ccif_base);
-	CCCI_INF_MSG(dev_cfg->index, TAG, "ccif_irq_id:%d\n",
+	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "ccif_irq_id:%d\n",
 		     hw_info->ap_ccif_irq_id);
-	CCCI_INF_MSG(dev_cfg->index, TAG, "md_wdt_irq_id:%d\n",
+	CCCI_NORMAL_LOG(dev_cfg->index, TAG, "md_wdt_irq_id:%d\n",
 		     hw_info->md_wdt_irq_id);
 
 	return 0;
@@ -230,10 +230,10 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
 	if (MD_IN_DEBUG(md)) {
-		CCCI_INF_MSG(md->index, TAG, "DBG_FLAG_JTAG is set\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "DBG_FLAG_JTAG is set\n");
 		return -1;
 	}
-	CCCI_INF_MSG(md->index, TAG, "md_ccif_let_md_go\n");
+	CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_let_md_go\n");
 	switch (md->index) {
 	case MD_SYS2:
 		/*set the start address to let modem to run */
@@ -260,7 +260,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			      (md_ctrl->hw_info->infra_ao_base,
 			       INFRA_AO_C2K_CONFIG) & (~(0x7 << 8))) | (0x5 <<
 									8));
-		CCCI_INF_MSG(md->index, TAG, "C2K_CONFIG = 0x%x\n",
+		CCCI_NORMAL_LOG(md->index, TAG, "C2K_CONFIG = 0x%x\n",
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
 					 INFRA_AO_C2K_CONFIG));
 		/*step 2: config srcclkena selection mask */
@@ -273,7 +273,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			     INFRA_AO_C2K_SPM_CTRL,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
 					 INFRA_AO_C2K_SPM_CTRL) | (0x2 << 4));
-		CCCI_INF_MSG(md->index, TAG, "C2K_SPM_CTRL = 0x%x\n",
+		CCCI_NORMAL_LOG(md->index, TAG, "C2K_SPM_CTRL = 0x%x\n",
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
 					 INFRA_AO_C2K_SPM_CTRL));
 		ccif_write32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON,
@@ -288,7 +288,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		ccif_write32(md_ctrl->hw_info->sleep_base, SLEEP_CLK_CON,
 			     ccif_read32(md_ctrl->hw_info->sleep_base,
 					 SLEEP_CLK_CON) | (0x1 << 27));
-		CCCI_INF_MSG(md->index, TAG, "SLEEP_CLK_CON = 0x%x\n",
+		CCCI_NORMAL_LOG(md->index, TAG, "SLEEP_CLK_CON = 0x%x\n",
 			     ccif_read32(md_ctrl->hw_info->sleep_base,
 					 SLEEP_CLK_CON));
 
@@ -305,7 +305,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 #else
 		mtk_wdt_set_c2k_sysrst(1);
 #endif
-		CCCI_INF_MSG(md->index, TAG,
+		CCCI_NORMAL_LOG(md->index, TAG,
 			     "[C2K] TOP_RGU_WDT_SWSYSRST = 0x%x\n",
 			     ccif_read32(md_ctrl->hw_info->toprgu_base,
 					 TOP_RGU_WDT_SWSYSRST));
@@ -320,7 +320,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 		       ((ccif_read32
 			 (md_ctrl->hw_info->infra_ao_base,
 			  INFRA_AO_C2K_STATUS) >> 1) & 0x1)) {
-			CCCI_INF_MSG(md->index, TAG,
+			CCCI_NORMAL_LOG(md->index, TAG,
 				     "[C2K] C2K_STATUS = 0x%x\n",
 				     ccif_read32(md_ctrl->hw_info->
 						 infra_ao_base,
@@ -330,7 +330,7 @@ int md_ccif_let_md_go(struct ccci_modem *md)
 			     INFRA_AO_C2K_SPM_CTRL,
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
 					 INFRA_AO_C2K_SPM_CTRL) & (~0x1));
-		CCCI_INF_MSG(md->index, TAG,
+		CCCI_NORMAL_LOG(md->index, TAG,
 			     "[C2K] C2K_SPM_CTRL = 0x%x, C2K_STATUS = 0x%x\n",
 			     ccif_read32(md_ctrl->hw_info->infra_ao_base,
 					 INFRA_AO_C2K_SPM_CTRL),
@@ -349,33 +349,33 @@ int md_ccif_power_on(struct ccci_modem *md)
 	switch (md->index) {
 	case MD_SYS2:
 #if defined(CONFIG_MTK_LEGACY)
-		CCCI_INF_MSG(md->index, TAG, "Call start md_power_on()\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "Call start md_power_on()\n");
 		ret = md_power_on(SYS_MD2);
-		CCCI_INF_MSG(md->index, TAG, "Call end md_power_on() ret=%d\n",
+		CCCI_NORMAL_LOG(md->index, TAG, "Call end md_power_on() ret=%d\n",
 			     ret);
 #else
-		CCCI_INF_MSG(md->index, TAG,
+		CCCI_NORMAL_LOG(md->index, TAG,
 			     "Call start clk_prepare_enable()\n");
 		clk_prepare_enable(clk_scp_sys_md2_main);
-		CCCI_INF_MSG(md->index, TAG, "Call end clk_prepare_enable()\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable()\n");
 #endif
 		break;
 	case MD_SYS3:
 #if defined(CONFIG_MTK_LEGACY)
-		CCCI_INF_MSG(md->index, TAG, "Call start md_power_on()\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "Call start md_power_on()\n");
 		ret = md_power_on(SYS_MD2);
-		CCCI_INF_MSG(md->index, TAG, "Call end md_power_on() ret=%d\n",
+		CCCI_NORMAL_LOG(md->index, TAG, "Call end md_power_on() ret=%d\n",
 			     ret);
 #else
-		CCCI_INF_MSG(md->index, TAG,
+		CCCI_NORMAL_LOG(md->index, TAG,
 			     "Call start clk_prepare_enable()\n");
 		clk_prepare_enable(clk_scp_sys_md3_main);
-		CCCI_INF_MSG(md->index, TAG, "Call end clk_prepare_enable()\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "Call end clk_prepare_enable()\n");
 #endif
 
 		break;
 	}
-	CCCI_INF_MSG(md->index, TAG, "md_ccif_power_on:ret=%d\n", ret);
+	CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_power_on:ret=%d\n", ret);
 	if (ret == 0 && md->index != MD_SYS3) {
 		/*disable MD WDT */
 		ccif_write32(md_ctrl->md_rgu_base, WDT_MD_MODE,
@@ -404,7 +404,7 @@ int md_ccif_power_off(struct ccci_modem *md, unsigned int timeout)
 #endif
 		break;
 	}
-	CCCI_INF_MSG(md->index, TAG, "md_ccif_power_off:ret=%d\n", ret);
+	CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_power_off:ret=%d\n", ret);
 	return ret;
 }
 

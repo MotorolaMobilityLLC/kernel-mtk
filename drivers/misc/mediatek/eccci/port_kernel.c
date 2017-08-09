@@ -95,7 +95,7 @@ int modem_dtr_set(int on, int low_latency)
 	else
 		c2k_ctl_msg.option &= 0xFB;
 
-	CCCI_INF_MSG(md->index, KERN, "usb bypass dtr set(%d)(0x%x)\n", on, (u32) (*((u32 *)&c2k_ctl_msg)));
+	CCCI_NORMAL_LOG(md->index, KERN, "usb bypass dtr set(%d)(0x%x)\n", on, (u32) (*((u32 *)&c2k_ctl_msg)));
 	ccci_send_msg_to_md(md, CCCI_CONTROL_TX, C2K_STATUS_IND_MSG, (u32) (*((u32 *)&c2k_ctl_msg)), 1);
 
 	return ret;
@@ -116,7 +116,7 @@ int modem_dcd_state(void)
 	c2k_ctl_msg.id_low = C2K_STATUS_QUERY_MSG & 0xFF;
 	c2k_ctl_msg.option = 0;
 
-	CCCI_INF_MSG(md->index, KERN, "usb bypass query state(0x%x)\n", (u32) (*((u32 *)&c2k_ctl_msg)));
+	CCCI_NORMAL_LOG(md->index, KERN, "usb bypass query state(0x%x)\n", (u32) (*((u32 *)&c2k_ctl_msg)));
 	ret = ccci_send_msg_to_md(md, CCCI_CONTROL_TX, C2K_STATUS_QUERY_MSG, (u32) (*((u32 *)&c2k_ctl_msg)), 1);
 	if (ret == -CCCI_ERR_MD_NOT_READY)
 		dcd_state = 0;
@@ -130,7 +130,7 @@ int modem_dcd_state(void)
 
 static inline void append_runtime_feature(char **p_rt_data, struct ccci_runtime_feature *rt_feature, void *data)
 {
-	CCCI_DBG_MSG(-1, KERN, "append rt_data %p, feature %u len %u\n",
+	CCCI_DEBUG_LOG(-1, KERN, "append rt_data %p, feature %u len %u\n",
 		     *p_rt_data, rt_feature->feature_id, rt_feature->data_len);
 	memcpy(*p_rt_data, rt_feature, sizeof(struct ccci_runtime_feature));
 	*p_rt_data += sizeof(struct ccci_runtime_feature);
@@ -189,14 +189,14 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 
 #if defined(ENABLE_32K_CLK_LESS)
 	if (crystal_exist_status()) {
-		CCCI_DBG_MSG(md->index, KERN, "MISC_32K_LESS no support, crystal_exist_status 1\n");
+		CCCI_DEBUG_LOG(md->index, KERN, "MISC_32K_LESS no support, crystal_exist_status 1\n");
 		ap_side_md_feature->feature_set[MISC_INFO_RTC_32K_LESS].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 	} else {
-		CCCI_DBG_MSG(md->index, KERN, "MISC_32K_LESS support\n");
+		CCCI_DEBUG_LOG(md->index, KERN, "MISC_32K_LESS support\n");
 		ap_side_md_feature->feature_set[MISC_INFO_RTC_32K_LESS].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 	}
 #else
-	CCCI_DBG_MSG(md->index, KERN, "ENABLE_32K_CLK_LESS disabled\n");
+	CCCI_DEBUG_LOG(md->index, KERN, "ENABLE_32K_CLK_LESS disabled\n");
 	ap_side_md_feature->feature_set[MISC_INFO_RTC_32K_LESS].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 #endif
 	ap_side_md_feature->feature_set[MISC_INFO_RANDOM_SEED_NUM].support_mask = CCCI_FEATURE_MUST_SUPPORT;
@@ -235,7 +235,7 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 	unsigned int random_seed = 0;
 	struct timeval t;
 
-	CCCI_NOTICE_MSG(md->index, KERN, "prepare_runtime_data  AP total %u features\n", RUNTIME_FEATURE_ID_MAX);
+	CCCI_BOOTUP_LOG(md->index, KERN, "prepare_runtime_data  AP total %u features\n", RUNTIME_FEATURE_ID_MAX);
 
 	memset(&md_feature_ap, 0, sizeof(struct md_query_ap_feature));
 	config_ap_side_feature(md, &md_feature_ap);
@@ -244,7 +244,7 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 
 	if (md_feature->head_pattern != MD_FEATURE_QUERY_PATTERN ||
 	    md_feature->tail_pattern != MD_FEATURE_QUERY_PATTERN) {
-		CCCI_ERR_MSG(md->index, KERN, "md_feature pattern is wrong: head 0x%x, tail 0x%x\n",
+		CCCI_BOOTUP_LOG(md->index, KERN, "md_feature pattern is wrong: head 0x%x, tail 0x%x\n",
 			     md_feature->head_pattern, md_feature->tail_pattern);
 		if (md->index == MD_SYS3)
 			md->ops->dump_info(md, DUMP_FLAG_CCIF, NULL, 0);
@@ -258,11 +258,11 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 		rt_feature.feature_id = i;
 		if (md_feature->feature_set[i].support_mask == CCCI_FEATURE_MUST_SUPPORT &&
 		    md_feature_ap.feature_set[i].support_mask < CCCI_FEATURE_MUST_SUPPORT) {
-			CCCI_ERR_MSG(md->index, KERN, "feature %u not support for AP\n", rt_feature.feature_id);
+			CCCI_BOOTUP_LOG(md->index, KERN, "feature %u not support for AP\n", rt_feature.feature_id);
 			return -1;
 		}
 
-		CCCI_DBG_MSG(md->index, KERN, "md_query_ap_feature %u mask %u, version %u\n",
+		CCCI_BOOTUP_DUMP_LOG(md->index, KERN, "ftr %u mask %u, ver %u\n",
 				rt_feature.feature_id, md_feature->feature_set[i].support_mask,
 				md_feature->feature_set[i].version);
 
@@ -423,7 +423,7 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 	}
 
 	total_len = rt_data - (char *)md->smem_layout.ccci_rt_smem_base_vir;
-	/*ccci_mem_dump(md->index, md->smem_layout.ccci_rt_smem_base_vir, total_len);*/
+	ccci_util_mem_dump(md->index, CCCI_DUMP_BOOTUP, md->smem_layout.ccci_rt_smem_base_vir, total_len);
 
 	return 0;
 }
@@ -440,7 +440,8 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 	struct c2k_ctrl_port_msg *c2k_ctl_msg = NULL;
 	char need_update_state = 0;
 
-	CCCI_INF_MSG(md->index, KERN, "control message 0x%X,0x%X\n", ccci_h->data[1], ccci_h->reserved);
+	CCCI_NORMAL_LOG(md->index, KERN, "control message 0x%X,0x%X\n", ccci_h->data[1], ccci_h->reserved);
+	ccci_event_log("md%d: control message 0x%X,0x%X\n", md->index, ccci_h->data[1], ccci_h->reserved);
 	if (ccci_h->data[1] == MD_INIT_START_BOOT
 	    && ccci_h->reserved == MD_INIT_CHK_ID && md->boot_stage == MD_BOOT_STAGE_0) {
 		del_timer(&md->bootup_timer);
@@ -451,15 +452,15 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 		/*
 		if (get_booting_start_id(md) | META_BOOT_ID) {
 			mod_timer(&md->md_status_poller, jiffies + 10 * HZ);
-			CCCI_NOTICE_MSG(md->index, KERN, "start md_status_poller in meta mode\n");
+			CCCI_NORMAL_LOG(md->index, KERN, "start md_status_poller in meta mode\n");
 		}
 		*/
 		if (req->skb->len == sizeof(struct md_query_ap_feature) + sizeof(struct ccci_header))
 			prepare_runtime_data(md, req);
 		else if (req->skb->len == sizeof(struct ccci_header))
-			CCCI_INF_MSG(md->index, KERN, "get old handshake message\n");
+			CCCI_NORMAL_LOG(md->index, KERN, "get old handshake message\n");
 		else
-			CCCI_ERR_MSG(md->index, KERN, "get invalid MD_QUERY_MSG, skb->len =%u\n", req->skb->len);
+			CCCI_ERROR_LOG(md->index, KERN, "get invalid MD_QUERY_MSG, skb->len =%u\n", req->skb->len);
 
 #ifdef SET_EMI_STEP_BY_STAGE
 		ccci_set_mem_access_protection_second_stage(md);
@@ -472,7 +473,7 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_BOOT_READY, 0);
 	} else if (ccci_h->data[1] == MD_EX) {
 		if (unlikely(ccci_h->reserved != MD_EX_CHK_ID)) {
-			CCCI_ERR_MSG(md->index, KERN, "receive invalid MD_EX\n");
+			CCCI_ERROR_LOG(md->index, KERN, "receive invalid MD_EX\n");
 		} else {
 			spin_lock_irqsave(&md->ctrl_lock, flags);
 			md->ee_info_flag |= ((1 << MD_EE_FLOW_START) | (1 << MD_EE_MSG_GET) | (1 << MD_STATE_UPDATE) |
@@ -486,14 +487,14 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 			ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_EXCEPTION, 0);
 			ccci_send_msg_to_md(md, CCCI_CONTROL_TX, MD_EX, MD_EX_CHK_ID, 1);
 
-			CCCI_INF_MSG(md->index, KERN, "Disable WDT at exception enter.");
+			CCCI_NORMAL_LOG(md->index, KERN, "Disable WDT at exception enter.\n");
 			md->ops->ee_callback(md, EE_FLAG_DISABLE_WDT);
 		}
 	} else if (ccci_h->data[1] == MD_EX_REC_OK) {
 		if (unlikely
 		    (ccci_h->reserved != MD_EX_REC_OK_CHK_ID
 		     || req->skb->len < (sizeof(struct ccci_header) + sizeof(EX_LOG_T)))) {
-			CCCI_ERR_MSG(md->index, KERN, "receive invalid MD_EX_REC_OK, resv=%x, len=%d\n",
+			CCCI_ERROR_LOG(md->index, KERN, "receive invalid MD_EX_REC_OK, resv=%x, len=%d\n",
 				     ccci_h->reserved, req->skb->len);
 		} else {
 			spin_lock_irqsave(&md->ctrl_lock, flags);
@@ -506,7 +507,7 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 			}
 			spin_unlock_irqrestore(&md->ctrl_lock, flags);
 			if (need_update_state) {
-				CCCI_ERR_MSG(md->index, KERN, "get MD_EX_REC_OK without exception MD_EX\n");
+				CCCI_ERROR_LOG(md->index, KERN, "get MD_EX_REC_OK without exception MD_EX\n");
 				del_timer(&md->bootup_timer);
 				md->ops->broadcast_state(md, EXCEPTION);
 			}
@@ -527,7 +528,7 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 	} else if (ccci_h->data[1] == MD_INIT_START_BOOT
 		   && ccci_h->reserved == MD_INIT_CHK_ID && !(md->config.setting & MD_SETTING_FIRST_BOOT)) {
 		ccci_update_md_boot_stage(md, MD_BOOT_STAGE_0);
-		CCCI_ERR_MSG(md->index, KERN, "MD second bootup detected!\n");
+		CCCI_ERROR_LOG(md->index, KERN, "MD second bootup detected!\n");
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
 	} else if (ccci_h->data[1] == MD_EX_RESUME) {
 		memset(&md->debug_info, 0, sizeof(md->debug_info));
@@ -537,23 +538,23 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 		md->ex_type = MD_EX_TYPE_EMI_CHECK;
 		ccci_ee_info_dump(md);
 	} else if (ccci_h->data[1] == CCCI_DRV_VER_ERROR) {
-		CCCI_ERR_MSG(md->index, KERN, "AP CCCI driver version mis-match to MD!!\n");
+		CCCI_ERROR_LOG(md->index, KERN, "AP CCCI driver version mis-match to MD!!\n");
 		md->config.setting |= MD_SETTING_STOP_RETRY_BOOT;
 		ccci_aed(md, 0, "AP/MD driver version mis-match\n", DB_OPT_DEFAULT);
 	} else if (md->index == MD_SYS3 && ccci_h->data[1] == C2K_HB_MSG) {
 		status_msg_handler(port, req);
-		CCCI_INF_MSG(md->index, KERN, "heart beat msg received\n");
+		CCCI_NORMAL_LOG(md->index, KERN, "heart beat msg received\n");
 		return;
 	} else if (ccci_h->data[1] == C2K_STATUS_IND_MSG && md->index == MD_SYS3) {
 		c2k_ctl_msg = (struct c2k_ctrl_port_msg *)&ccci_h->reserved;
-		CCCI_INF_MSG(md->index, KERN, "c2k status ind 0x%02x\n", c2k_ctl_msg->option);
+		CCCI_NORMAL_LOG(md->index, KERN, "c2k status ind 0x%02x\n", c2k_ctl_msg->option);
 		if (c2k_ctl_msg->option & 0x80)	/*connect */
 			md->dtr_state = 1;
 		else		/*disconnect */
 			md->dtr_state = 0;
 	} else if (ccci_h->data[1] == C2K_STATUS_QUERY_MSG && md->index == MD_SYS3) {
 		c2k_ctl_msg = (struct c2k_ctrl_port_msg *)&ccci_h->reserved;
-		CCCI_INF_MSG(md->index, KERN, "c2k status query 0x%02x\n", c2k_ctl_msg->option);
+		CCCI_NORMAL_LOG(md->index, KERN, "c2k status query 0x%02x\n", c2k_ctl_msg->option);
 		if (c2k_ctl_msg->option & 0x80)	/*connect */
 			md->dtr_state = 1;
 		else		/*disconnect */
@@ -561,7 +562,7 @@ static void control_msg_handler(struct ccci_port *port, struct ccci_request *req
 	} else if (ccci_h->data[1] == C2K_CCISM_SHM_INIT_ACK && md->index == MD_SYS3) {
 		ccci_update_md_boot_stage(md, MD_ACK_SCP_INIT);
 	} else {
-		CCCI_ERR_MSG(md->index, KERN, "receive unknown data from CCCI_CONTROL_RX = %d\n", ccci_h->data[1]);
+		CCCI_ERROR_LOG(md->index, KERN, "receive unknown data from CCCI_CONTROL_RX = %d\n", ccci_h->data[1]);
 	}
 	req->policy = RECYCLE;
 	ccci_free_req(req);
@@ -581,7 +582,7 @@ int ccci_notify_md_by_sys_msg(int md_id, unsigned int msg, unsigned int data)
 
 int ccci_sysmsg_echo_test(int md_id, int data)
 {
-	CCCI_DBG_MSG(md_id, KERN, "system message: Enter ccci_sysmsg_echo_test data= %08x", data);
+	CCCI_DEBUG_LOG(md_id, KERN, "system message: Enter ccci_sysmsg_echo_test data= %08x", data);
 	ccci_notify_md_by_sys_msg(md_id, TEST_MSG_ID_AP2MD, data);
 	return 0;
 }
@@ -589,7 +590,7 @@ EXPORT_SYMBOL(ccci_sysmsg_echo_test);
 
 int ccci_sysmsg_echo_test_l1core(int md_id, int data)
 {
-	CCCI_DBG_MSG(md_id, KERN, "system message: Enter ccci_sysmsg_echo_test_l1core data= %08x", data);
+	CCCI_DEBUG_LOG(md_id, KERN, "system message: Enter ccci_sysmsg_echo_test_l1core data= %08x", data);
 	ccci_notify_md_by_sys_msg(md_id, TEST_MSG_ID_L1CORE_AP2MD, data);
 	return 0;
 }
@@ -605,7 +606,7 @@ int register_ccci_sys_call_back(int md_id, unsigned int id, ccci_sys_cb_func_t f
 	ccci_sys_cb_func_info_t *info_ptr;
 
 	if (md_id >= MAX_MD_NUM) {
-		CCCI_ERR_MSG(md_id, KERN, "register_sys_call_back fail: invalid md id\n");
+		CCCI_ERROR_LOG(md_id, KERN, "register_sys_call_back fail: invalid md id\n");
 		return -EINVAL;
 	}
 
@@ -614,7 +615,7 @@ int register_ccci_sys_call_back(int md_id, unsigned int id, ccci_sys_cb_func_t f
 	} else if ((id >= 0x1000) && ((id - 0x1000) < MAX_KERN_API)) {
 		info_ptr = &(ccci_sys_cb_table_1000[md_id][id - 0x1000]);
 	} else {
-		CCCI_ERR_MSG(md_id, KERN, "register_sys_call_back fail: invalid func id(0x%x)\n", id);
+		CCCI_ERROR_LOG(md_id, KERN, "register_sys_call_back fail: invalid func id(0x%x)\n", id);
 		return -EINVAL;
 	}
 
@@ -622,7 +623,7 @@ int register_ccci_sys_call_back(int md_id, unsigned int id, ccci_sys_cb_func_t f
 		info_ptr->id = id;
 		info_ptr->func = func;
 	} else {
-		CCCI_ERR_MSG(md_id, KERN, "register_sys_call_back fail: func(0x%x) registered!\n", id);
+		CCCI_ERROR_LOG(md_id, KERN, "register_sys_call_back fail: func(0x%x) registered!\n", id);
 	}
 
 	return ret;
@@ -635,13 +636,13 @@ void exec_ccci_sys_call_back(int md_id, int cb_id, int data)
 	ccci_sys_cb_func_info_t *curr_table;
 
 	if (md_id >= MAX_MD_NUM) {
-		CCCI_ERR_MSG(md_id, KERN, "exec_sys_cb fail: invalid md id\n");
+		CCCI_ERROR_LOG(md_id, KERN, "exec_sys_cb fail: invalid md id\n");
 		return;
 	}
 
 	id = cb_id & 0xFF;
 	if (id >= MAX_KERN_API) {
-		CCCI_ERR_MSG(md_id, KERN, "exec_sys_cb fail: invalid func id(0x%x)\n", cb_id);
+		CCCI_ERROR_LOG(md_id, KERN, "exec_sys_cb fail: invalid func id(0x%x)\n", cb_id);
 		return;
 	}
 
@@ -650,7 +651,7 @@ void exec_ccci_sys_call_back(int md_id, int cb_id, int data)
 	} else if ((cb_id & (0x1000 | 0x100)) == 0x100) {
 		curr_table = ccci_sys_cb_table_100[md_id];
 	} else {
-		CCCI_ERR_MSG(md_id, KERN, "exec_sys_cb fail: invalid func id(0x%x)\n", cb_id);
+		CCCI_ERROR_LOG(md_id, KERN, "exec_sys_cb fail: invalid func id(0x%x)\n", cb_id);
 		return;
 	}
 
@@ -658,7 +659,7 @@ void exec_ccci_sys_call_back(int md_id, int cb_id, int data)
 	if (func != NULL)
 		func(md_id, data);
 	else
-		CCCI_ERR_MSG(md_id, KERN, "exec_sys_cb fail: func id(0x%x) not register!\n", cb_id);
+		CCCI_ERROR_LOG(md_id, KERN, "exec_sys_cb fail: func id(0x%x) not register!\n", cb_id);
 }
 
 static void system_msg_handler(struct ccci_port *port, struct ccci_request *req)
@@ -666,7 +667,7 @@ static void system_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	struct ccci_modem *md = port->modem;
 	struct ccci_header *ccci_h = (struct ccci_header *)req->skb->data;
 
-	CCCI_INF_MSG(md->index, KERN, "system message (%x %x %x %x)\n", ccci_h->data[0], ccci_h->data[1],
+	CCCI_NORMAL_LOG(md->index, KERN, "system message (%x %x %x %x)\n", ccci_h->data[0], ccci_h->data[1],
 		     ccci_h->channel, ccci_h->reserved);
 	switch (ccci_h->data[1]) {
 	case MD_GET_BATTERY_INFO:
@@ -677,7 +678,7 @@ static void system_msg_handler(struct ccci_port *port, struct ccci_request *req)
 		break;
 	case MD_SIM_TYPE:
 		md->sim_type = ccci_h->reserved;
-		CCCI_INF_MSG(md->index, KERN, "MD send sys msg sim type(0x%x)\n", md->sim_type);
+		CCCI_NORMAL_LOG(md->index, KERN, "MD send sys msg sim type(0x%x)\n", md->sim_type);
 		break;
 	case MD_TX_POWER:
 	case MD_RF_TEMPERATURE:
@@ -726,14 +727,14 @@ static int get_md_adc_val(unsigned int num)
 	int val = 0;
 	int ret = 0;
 
-	CCCI_DBG_MSG(0, RPC, "FEATURE_GET_MD_ADC_VAL\n");
+	CCCI_DEBUG_LOG(0, RPC, "FEATURE_GET_MD_ADC_VAL\n");
 	ret = IMM_GetOneChannelValue(num, data, &val);
 	if (ret == 0)
 		return val;
 	else
 		return ret;
 #elif defined(FEATURE_GET_MD_PMIC_ADC_VAL)
-	CCCI_DBG_MSG(0, RPC, "FEATURE_GET_MD_PMIC_ADC_VAL\n");
+	CCCI_DEBUG_LOG(0, RPC, "FEATURE_GET_MD_PMIC_ADC_VAL\n");
 	return PMIC_IMM_GetOneChannelValue(num, 1, 0);
 #else
 	return -1;
@@ -752,10 +753,10 @@ static int get_td_eint_info(char *eint_name, unsigned int len)
 static int get_md_adc_info(char *adc_name, unsigned int len)
 {
 #if defined(FEATURE_GET_MD_ADC_NUM)
-	CCCI_DBG_MSG(0, RPC, "FEATURE_GET_MD_ADC_NUM\n");
+	CCCI_DEBUG_LOG(0, RPC, "FEATURE_GET_MD_ADC_NUM\n");
 	return IMM_get_adc_channel_num(adc_name, len);
 #elif defined(FEATURE_GET_MD_PMIC_ADC_NUM)
-	CCCI_DBG_MSG(0, RPC, "FEATURE_GET_MD_PMIC_ADC_NUM\n");
+	CCCI_DEBUG_LOG(0, RPC, "FEATURE_GET_MD_PMIC_ADC_NUM\n");
 	return PMIC_IMM_get_adc_channel_num(adc_name, len);
 #else
 	return -1;
@@ -770,15 +771,16 @@ static int get_md_gpio_info(char *gpio_name, unsigned int len)
 	int gpio_id = -1;
 
 	if (!node) {
-		CCCI_INF_MSG(0, RPC, "MD_USE_GPIO is not set in device tree,need to check?\n");
+		CCCI_NORMAL_LOG(0, RPC, "MD_USE_GPIO is not set in device tree,need to check?\n");
 		return gpio_id;
 	}
 
-	CCCI_INF_MSG(0, RPC, "looking for %s id, len %d\n", gpio_name, len);
+	CCCI_BOOTUP_LOG(0, RPC, "looking for %s id, len %d\n", gpio_name, len);
 	for (i = 0; i < ARRAY_SIZE(gpio_mapping_table); i++) {
-		CCCI_DBG_MSG(0, RPC, "compare with %s\n", gpio_mapping_table[i].gpio_name_from_md);
+		CCCI_DEBUG_LOG(0, RPC, "compare with %s\n", gpio_mapping_table[i].gpio_name_from_md);
 		if (!strncmp(gpio_name, gpio_mapping_table[i].gpio_name_from_md, len)) {
-			CCCI_INF_MSG(0, RPC, "searching %s in device tree\n", gpio_mapping_table[i].gpio_name_from_dts);
+			CCCI_BOOTUP_LOG(0, RPC, "searching %s in device tree\n",
+							gpio_mapping_table[i].gpio_name_from_dts);
 			of_property_read_u32(node, gpio_mapping_table[i].gpio_name_from_dts, &gpio_id);
 			break;
 		}
@@ -789,11 +791,11 @@ static int get_md_gpio_info(char *gpio_name, unsigned int len)
 	   so try read directly from device tree here.
 	*/
 	if (gpio_id < 0) {
-		CCCI_INF_MSG(0, RPC, "try directly get id from device tree\n");
+		CCCI_BOOTUP_LOG(0, RPC, "try directly get id from device tree\n");
 		of_property_read_u32(node, gpio_name, &gpio_id);
 	}
 
-	CCCI_INF_MSG(0, RPC, "%s id %d\n", gpio_name, gpio_id);
+	CCCI_BOOTUP_LOG(0, RPC, "%s id %d\n", gpio_name, gpio_id);
 	return gpio_id;
 
 #else
@@ -876,10 +878,10 @@ static int get_eint_attr_val(struct device_node *node, int index)
 				default:	/* invalid */
 					md_eint_struct[SIM_HOT_PLUG_EINT_POLARITY].value_sim[index] = -1;
 					md_eint_struct[SIM_HOT_PLUG_EINT_SENSITIVITY].value_sim[index] = -1;
-					CCCI_ERR_MSG(-1, RPC, "invalid value, please check dtsi!\n");
+					CCCI_ERROR_LOG(-1, RPC, "invalid value, please check dtsi!\n");
 					break;
 				}
-				/* CCCI_INF_MSG(-1, RPC, "%s:  --- %d_%d_%d\n", md_eint_struct[type].property,
+				/* CCCI_NORMAL_LOG(-1, RPC, "%s:  --- %d_%d_%d\n", md_eint_struct[type].property,
 				   md_eint_struct[type].index,
 				   md_eint_struct[SIM_HOT_PLUG_EINT_POLARITY].value_sim[index],
 				   md_eint_struct[SIM_HOT_PLUG_EINT_SENSITIVITY].value_sim[index]); */
@@ -887,12 +889,12 @@ static int get_eint_attr_val(struct device_node *node, int index)
 			} /* special case: polarity's position == sensitivity's end] */
 			else {
 				md_eint_struct[type].value_sim[index] = value;
-				/* CCCI_INF_MSG(-1, RPC, "%s: --- %d_%d\n", md_eint_struct[type].property,
+				/* CCCI_NORMAL_LOG(-1, RPC, "%s: --- %d_%d\n", md_eint_struct[type].property,
 				   md_eint_struct[type].index, md_eint_struct[type].value_sim[index]); */
 			}
 		} else {
 			md_eint_struct[type].value_sim[index] = ERR_SIM_HOT_PLUG_QUERY_TYPE;
-			CCCI_INF_MSG(-1, RPC, "%s:  not found\n", md_eint_struct[type].property);
+			CCCI_NORMAL_LOG(-1, RPC, "%s:  not found\n", md_eint_struct[type].property);
 			return ERR_SIM_HOT_PLUG_QUERY_TYPE;
 		}
 	}
@@ -906,22 +908,24 @@ void get_dtsi_eint_node(void)
 
 	for (i = 0; i < MD_SIM_MAX; i++) {
 		if (eint_node_prop.name[i].node_name != NULL) {
-			/* CCCI_INF_MSG(-1, TAG, "node_%d__ %d\n", i,
+			/* CCCI_NORMAL_LOG(-1, TAG, "node_%d__ %d\n", i,
 			   (int)(strlen(eint_node_prop.name[i].node_name))); */
 			if (strlen(eint_node_prop.name[i].node_name) > 0) {
-				/* CCCI_INF_MSG(-1, TAG, "found %s: node %d\n", eint_node_prop.name[i].node_name, i); */
+				/* CCCI_NORMAL_LOG(-1, TAG, "found %s: node %d\n",
+									eint_node_prop.name[i].node_name, i); */
 				node = of_find_node_by_name(NULL, eint_node_prop.name[i].node_name);
 				if (node != NULL) {
 					eint_node_prop.ExistFlag |= (1 << i);
 					get_eint_attr_val(node, i);
-					/* CCCI_INF_MSG(-1, TAG, "%s: node %d found\n", eint_node_prop.name[i], i); */
+					/* CCCI_NORMAL_LOG(-1, TAG, "%s: node %d found\n",
+										eint_node_prop.name[i], i); */
 				} else {
-					CCCI_INF_MSG(-1, RPC, "%s: node %d no found\n",
+					CCCI_INIT_LOG(-1, RPC, "%s: node %d no found\n",
 						     eint_node_prop.name[i].node_name, i);
 				}
 			}
 		} else {
-			CCCI_INF_MSG(-1, RPC, "node %d is NULL\n", i);
+			CCCI_INIT_LOG(-1, RPC, "node %d is NULL\n", i);
 			break;
 		}
 	}
@@ -934,18 +938,18 @@ int get_eint_attr_DTSVal(char *name, unsigned int name_len, unsigned int type, c
 
 	if ((name == NULL) || (result == NULL) || (len == NULL))
 		return ERR_SIM_HOT_PLUG_NULL_POINTER;
-	/* CCCI_INF_MSG(-1, KERN, "get_eint_value: %s\n", name); */
+	/* CCCI_NORMAL_LOG(-1, KERN, "get_eint_value: %s\n", name); */
 	if (type >= SIM_HOT_PLUG_EINT_MAX)
 		return ERR_SIM_HOT_PLUG_QUERY_TYPE;
 
-	/* CCCI_INF_MSG(-1, RPC, "get_eint_value:%s, %d\n", name, eint_node_prop.ExistFlag); */
+	/* CCCI_NORMAL_LOG(-1, RPC, "get_eint_value:%s, %d\n", name, eint_node_prop.ExistFlag); */
 	for (i = 0; i < MD_SIM_MAX; i++) {
 		if (eint_node_prop.ExistFlag & (1 << i)) {
 			if (!(strncmp(name, eint_node_prop.name[i].node_name, name_len))) {
 				sim_value = eint_node_prop.eint_value[type].value_sim[i];
 				*len = sizeof(sim_value);
 				memcpy(sim_info, &sim_value, *len);
-				/* CCCI_INF_MSG(-1, RPC, "get_eint_value type name:%s,
+				/* CCCI_NORMAL_LOG(-1, RPC, "get_eint_value type name:%s,
 				   sizeof: %d, sim_info: %d, %d\n", eint_node_prop.eint_value[type].property,
 				   *len, *sim_info, eint_node_prop.eint_value[type].value_sim[i]); */
 				return 0;
@@ -1099,7 +1103,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 	   after this function return, be careful with the size! */
 	int pkt_num = p_rpc_buf->para_num;
 
-	CCCI_DBG_MSG(md->index, RPC, "ccci_rpc_work_helper++ %d\n", p_rpc_buf->para_num);
+	CCCI_DEBUG_LOG(md->index, RPC, "ccci_rpc_work_helper++ %d\n", p_rpc_buf->para_num);
 	tmp_data[0] = 0;
 	switch (p_rpc_buf->op_id) {
 	case IPC_RPC_CPSVC_SECURE_ALGO_OP:
@@ -1114,7 +1118,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			unsigned int i __always_unused;
 
 			if (pkt_num < 4 || pkt_num >= RPC_MAX_ARG_NUM) {
-				CCCI_ERR_MSG(md->index, RPC, "invalid pkt_num %d for RPC_SECURE_ALGO_OP!\n", pkt_num);
+				CCCI_ERROR_LOG(md->index, RPC, "invalid pkt_num %d for RPC_SECURE_ALGO_OP!\n", pkt_num);
 				tmp_data[0] = FS_PARAM_ERROR;
 				pkt_num = 0;
 				pkt[pkt_num].len = sizeof(unsigned int);
@@ -1124,12 +1128,12 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 
 			Direction = *(unsigned char *)pkt[0].buf;
 			ContentAddr = (unsigned long)pkt[1].buf;
-			CCCI_DBG_MSG(md->index, RPC,
+			CCCI_DEBUG_LOG(md->index, RPC,
 				     "RPC_SECURE_ALGO_OP: Content_Addr = 0x%p, RPC_Base = 0x%p, RPC_Len = 0x%zu\n",
 				     (void *)ContentAddr, p_rpc_buf, sizeof(unsigned int) + RPC_MAX_BUF_SIZE);
 			if (ContentAddr < (unsigned long)p_rpc_buf
 			    || ContentAddr > ((unsigned long)p_rpc_buf + sizeof(unsigned int) + RPC_MAX_BUF_SIZE)) {
-				CCCI_ERR_MSG(md->index, RPC, "invalid ContentAdddr[0x%p] for RPC_SECURE_ALGO_OP!\n",
+				CCCI_ERROR_LOG(md->index, RPC, "invalid ContentAdddr[0x%p] for RPC_SECURE_ALGO_OP!\n",
 					     (void *)ContentAddr);
 				tmp_data[0] = FS_PARAM_ERROR;
 				pkt[pkt_num].len = sizeof(unsigned int);
@@ -1146,34 +1150,34 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			int curr;
 
 			if (Direction == TRUE)
-				CCCI_DBG_MSG(md->index, RPC, "HACC_S: EnCrypt_src:\n");
+				CCCI_DEBUG_LOG(md->index, RPC, "HACC_S: EnCrypt_src:\n");
 			else
-				CCCI_DBG_MSG(md->index, RPC, "HACC_S: DeCrypt_src:\n");
+				CCCI_DEBUG_LOG(md->index, RPC, "HACC_S: DeCrypt_src:\n");
 			for (i = 0; i < ContentLen; i++) {
 				if (i % 16 == 0) {
 					if (i != 0)
-						CCCI_INF_MSG(md->index, RPC, "%s\n", log_buf);
+						CCCI_NORMAL_LOG(md->index, RPC, "%s\n", log_buf);
 					curr = 0;
 					curr += snprintf(log_buf, sizeof(log_buf) - curr, "HACC_S: ");
 				}
-				/* CCCI_INF_MSG(md->index, RPC, "0x%02X ", *(unsigned char*)(ContentAddr+i)); */
+				/* CCCI_NORMAL_LOG(md->index, RPC, "0x%02X ", *(unsigned char*)(ContentAddr+i)); */
 				curr +=
 				    snprintf(&log_buf[curr], sizeof(log_buf) - curr, "0x%02X ",
 					     *(unsigned char *)(ContentAddr + i));
 				/* sleep(1); */
 			}
-			CCCI_INF_MSG(md->index, RPC, "%s\n", log_buf);
+			CCCI_NORMAL_LOG(md->index, RPC, "%s\n", log_buf);
 
 			RawText = kmalloc(ContentLen, GFP_KERNEL);
 			if (RawText == NULL)
-				CCCI_ERR_MSG(md->index, RPC, "Fail alloc Mem for RPC_SECURE_ALGO_OP!\n");
+				CCCI_ERROR_LOG(md->index, RPC, "Fail alloc Mem for RPC_SECURE_ALGO_OP!\n");
 			else
 				memcpy(RawText, (unsigned char *)ContentAddr, ContentLen);
 #endif
 
 			ResText = kmalloc(ContentLen, GFP_KERNEL);
 			if (ResText == NULL) {
-				CCCI_ERR_MSG(md->index, RPC, "Fail alloc Mem for RPC_SECURE_ALGO_OP!\n");
+				CCCI_ERROR_LOG(md->index, RPC, "Fail alloc Mem for RPC_SECURE_ALGO_OP!\n");
 				tmp_data[0] = FS_PARAM_ERROR;
 				pkt[pkt_num].len = sizeof(unsigned int);
 				pkt[pkt_num++].buf = (void *)&tmp_data[0];
@@ -1181,17 +1185,17 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			}
 #if (defined(ENABLE_MD_IMG_SECURITY_FEATURE) && defined(MTK_SEC_MODEM_NVRAM_ANTI_CLONE))
 			if (!masp_secure_algo_init()) {
-				CCCI_ERR_MSG(md->index, RPC, "masp_secure_algo_init fail!\n");
+				CCCI_ERROR_LOG(md->index, RPC, "masp_secure_algo_init fail!\n");
 				BUG_ON(1);
 			}
 
-			CCCI_DBG_MSG(md->index, RPC,
+			CCCI_DEBUG_LOG(md->index, RPC,
 				     "RPC_SECURE_ALGO_OP: Dir=0x%08X, Addr=0x%08lX, Len=0x%08X, Seed=0x%016llX\n",
 				     Direction, ContentAddr, ContentLen, *(long long *)CustomSeed.sed);
 			masp_secure_algo(Direction, (unsigned char *)ContentAddr, ContentLen, CustomSeed.sed, ResText);
 
 			if (!masp_secure_algo_deinit())
-				CCCI_ERR_MSG(md->index, RPC, "masp_secure_algo_deinit fail!\n");
+				CCCI_ERROR_LOG(md->index, RPC, "masp_secure_algo_deinit fail!\n");
 #endif
 
 			pkt_num = 0;
@@ -1201,30 +1205,30 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 
 #if (defined(ENABLE_MD_IMG_SECURITY_FEATURE) && defined(MTK_SEC_MODEM_NVRAM_ANTI_CLONE))
 			memcpy(pkt[pkt_num++].buf, ResText, ContentLen);
-			CCCI_DBG_MSG(md->index, RPC, "RPC_Secure memory copy OK: %d!", ContentLen);
+			CCCI_DEBUG_LOG(md->index, RPC, "RPC_Secure memory copy OK: %d!", ContentLen);
 #else
 			memcpy(pkt[pkt_num++].buf, (void *)ContentAddr, ContentLen);
-			CCCI_DBG_MSG(md->index, RPC, "RPC_NORMAL memory copy OK: %d!", ContentLen);
+			CCCI_DEBUG_LOG(md->index, RPC, "RPC_NORMAL memory copy OK: %d!", ContentLen);
 #endif
 
 #ifdef ENCRYPT_DEBUG
 			if (Direction == TRUE)
-				CCCI_DBG_MSG(md->index, RPC, "HACC_D: EnCrypt_dst:\n");
+				CCCI_DEBUG_LOG(md->index, RPC, "HACC_D: EnCrypt_dst:\n");
 			else
-				CCCI_DBG_MSG(md->index, RPC, "HACC_D: DeCrypt_dst:\n");
+				CCCI_DEBUG_LOG(md->index, RPC, "HACC_D: DeCrypt_dst:\n");
 			for (i = 0; i < ContentLen; i++) {
 				if (i % 16 == 0) {
 					if (i != 0)
-						CCCI_DBG_MSG(md->index, RPC, "%s\n", log_buf);
+						CCCI_DEBUG_LOG(md->index, RPC, "%s\n", log_buf);
 					curr = 0;
 					curr += snprintf(&log_buf[curr], sizeof(log_buf) - curr, "HACC_D: ");
 				}
-				/* CCCI_INF_MSG(md->index, RPC, "%02X ", *(ResText+i)); */
+				/* CCCI_NORMAL_LOG(md->index, RPC, "%02X ", *(ResText+i)); */
 				curr += snprintf(&log_buf[curr], sizeof(log_buf) - curr, "0x%02X ", *(ResText + i));
 				/* sleep(1); */
 			}
 
-			CCCI_DBG_MSG(md->index, RPC, "%s\n", log_buf);
+			CCCI_DEBUG_LOG(md->index, RPC, "%s\n", log_buf);
 			kfree(RawText);
 #endif
 
@@ -1244,7 +1248,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			unsigned int req_len = 0;
 
 			if (pkt_num != 1) {
-				CCCI_ERR_MSG(md->index, RPC, "RPC_GET_SECRO_OP: invalid parameter: pkt_num=%d\n",
+				CCCI_ERROR_LOG(md->index, RPC, "RPC_GET_SECRO_OP: invalid parameter: pkt_num=%d\n",
 					     pkt_num);
 				tmp_data[0] = FS_PARAM_ERROR;
 				pkt_num = 0;
@@ -1270,7 +1274,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 					/* /pkt[pkt_num].len = sizeof(unsigned int); */
 					tmp_data[1] = img_len;
 					pkt[pkt_num++].buf = (void *)&tmp_data[1];
-					CCCI_ERR_MSG(md->index, RPC,
+					CCCI_ERROR_LOG(md->index, RPC,
 						     "RPC_GET_SECRO_OP: md request length is larger than rpc memory: (%d, %d)\n",
 						     req_len, img_len);
 					break;
@@ -1286,7 +1290,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 					/* /pkt[pkt_num].len = sizeof(unsigned int); */
 					tmp_data[1] = img_len;
 					pkt[pkt_num++].buf = (void *)&tmp_data[1];
-					CCCI_ERR_MSG(md->index, RPC,
+					CCCI_ERROR_LOG(md->index, RPC,
 						     "RPC_GET_SECRO_OP: AP mis-match MD request length: (%d, %d)\n",
 						     req_len, img_len);
 					break;
@@ -1294,7 +1298,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 
 				/* TODO : please check it */
 				/* save original modem secro length */
-				CCCI_DBG_MSG(md->index, RPC, "<rpc>RPC_GET_SECRO_OP: save MD SECRO length: (%d)\n",
+				CCCI_DEBUG_LOG(md->index, RPC, "<rpc>RPC_GET_SECRO_OP: save MD SECRO length: (%d)\n",
 					     img_len);
 				img_len_bak = img_len;
 
@@ -1314,11 +1318,11 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				/* restore original modem secro length */
 				img_len = img_len_bak;
 
-				CCCI_DBG_MSG(md->index, RPC, "<rpc>RPC_GET_SECRO_OP: restore MD SECRO length: (%d)\n",
+				CCCI_DEBUG_LOG(md->index, RPC, "<rpc>RPC_GET_SECRO_OP: restore MD SECRO length: (%d)\n",
 					     img_len);
 
 				if (tmp_data[0] != 0) {
-					CCCI_ERR_MSG(md->index, RPC, "RPC_GET_SECRO_OP: get data fail:%d\n",
+					CCCI_ERROR_LOG(md->index, RPC, "RPC_GET_SECRO_OP: get data fail:%d\n",
 						     tmp_data[0]);
 					pkt_num = 0;
 					pkt[pkt_num].len = sizeof(unsigned int);
@@ -1327,8 +1331,8 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 					tmp_data[1] = img_len;
 					pkt[pkt_num++].buf = (void *)&tmp_data[1];
 				} else {
-					CCCI_DBG_MSG(md->index, RPC, "RPC_GET_SECRO_OP: get data OK: %d,%d\n", img_len,
-						     tmp_data[0]);
+					CCCI_DEBUG_LOG(md->index, RPC, "RPC_GET_SECRO_OP: get data OK: %d,%d\n",
+									img_len, tmp_data[0]);
 					pkt_num = 0;
 					pkt[pkt_num].len = sizeof(unsigned int);
 					/* pkt[pkt_num++].buf = (void*) &img_len; */
@@ -1340,7 +1344,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 					/* pkt[pkt_num++].buf = (void*) &tmp_data[2]; */
 				}
 			} else {
-				CCCI_DBG_MSG(md->index, RPC, "RPC_GET_SECRO_OP: secro disable\n");
+				CCCI_DEBUG_LOG(md->index, RPC, "RPC_GET_SECRO_OP: secro disable\n");
 				tmp_data[0] = FS_NO_FEATURE;
 				pkt_num = 0;
 				pkt[pkt_num].len = sizeof(unsigned int);
@@ -1364,22 +1368,23 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			unsigned int length = 0;
 
 			if (pkt_num < 2 || pkt_num > RPC_MAX_ARG_NUM) {
-				CCCI_ERR_MSG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
+				CCCI_ERROR_LOG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
 					     p_rpc_buf->op_id, pkt_num);
 				tmp_data[0] = FS_PARAM_ERROR;
 				goto err1;
 			}
 			length = pkt[0].len;
 			if (length < 1) {
-				CCCI_ERR_MSG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d, name_len=%d!\n",
-					     p_rpc_buf->op_id, pkt_num, length);
+				CCCI_ERROR_LOG(md->index, RPC,
+								"invalid parameter for [0x%X]: pkt_num=%d, name_len=%d!\n",
+								p_rpc_buf->op_id, pkt_num, length);
 				tmp_data[0] = FS_PARAM_ERROR;
 				goto err1;
 			}
 
 			name = kmalloc(length, GFP_KERNEL);
 			if (name == NULL) {
-				CCCI_ERR_MSG(md->index, RPC, "Fail alloc Mem for [0x%X]!\n", p_rpc_buf->op_id);
+				CCCI_ERROR_LOG(md->index, RPC, "Fail alloc Mem for [0x%X]!\n", p_rpc_buf->op_id);
 				tmp_data[0] = FS_ERROR_RESERVED;
 				goto err1;
 			} else {
@@ -1399,7 +1404,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 						get_num = FS_FUNC_FAIL;
 				}
 
-				CCCI_INF_MSG(md->index, RPC, "[0x%08X]: name:%s, len=%d, get_num:%d\n",
+				CCCI_NORMAL_LOG(md->index, RPC, "[0x%08X]: name:%s, len=%d, get_num:%d\n",
 					     p_rpc_buf->op_id, name, length, get_num);
 				pkt_num = 0;
 
@@ -1429,7 +1434,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			int dram_clk = 0;
 
 			if (pkt_num != 0) {
-				CCCI_ERR_MSG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
+				CCCI_ERROR_LOG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
 					     p_rpc_buf->op_id, pkt_num);
 				tmp_data[0] = FS_PARAM_ERROR;
 				goto err2;
@@ -1440,7 +1445,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				goto err2;
 			} else {
 				tmp_data[0] = 0;
-				CCCI_INF_MSG(md->index, RPC, "[0x%08X]: dram_clk: %d, dram_type:%d\n",
+				CCCI_NORMAL_LOG(md->index, RPC, "[0x%08X]: dram_clk: %d, dram_type:%d\n",
 					     p_rpc_buf->op_id, dram_clk, dram_type);
 			}
 
@@ -1477,22 +1482,23 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			int ret = 0;
 
 			if (pkt_num < 3 || pkt_num > RPC_MAX_ARG_NUM) {
-				CCCI_ERR_MSG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
+				CCCI_ERROR_LOG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
 					     p_rpc_buf->op_id, pkt_num);
 				tmp_data[0] = FS_PARAM_ERROR;
 				goto err3;
 			}
 			name_len = pkt[0].len;
 			if (name_len < 1) {
-				CCCI_ERR_MSG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d, name_len=%d!\n",
-					     p_rpc_buf->op_id, pkt_num, name_len);
+				CCCI_ERROR_LOG(md->index, RPC,
+								"invalid parameter for [0x%X]: pkt_num=%d, name_len=%d!\n",
+								p_rpc_buf->op_id, pkt_num, name_len);
 				tmp_data[0] = FS_PARAM_ERROR;
 				goto err3;
 			}
 
 			eint_name = kmalloc(name_len, GFP_KERNEL);
 			if (eint_name == NULL) {
-				CCCI_ERR_MSG(md->index, RPC, "Fail alloc Mem for [0x%X]!\n", p_rpc_buf->op_id);
+				CCCI_ERROR_LOG(md->index, RPC, "Fail alloc Mem for [0x%X]!\n", p_rpc_buf->op_id);
 				tmp_data[0] = FS_ERROR_RESERVED;
 				goto err3;
 			} else {
@@ -1509,13 +1515,13 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				pkt[pkt_num++].buf = (void *)&tmp_data[0];
 				pkt[pkt_num].len = res_len;
 				pkt[pkt_num++].buf = (void *)res;
-				CCCI_DBG_MSG(md->index, RPC,
+				CCCI_DEBUG_LOG(md->index, RPC,
 					     "[0x%08X] OK: name:%s, len:%d, type:%d, res:%d, res_len:%d\n",
 					     p_rpc_buf->op_id, eint_name, name_len, type, *res, res_len);
 				kfree(eint_name);
 			} else {
 				tmp_data[0] = ret;
-				CCCI_DBG_MSG(md->index, RPC, "[0x%08X] fail: name:%s, len:%d, type:%d, ret:%d\n",
+				CCCI_DEBUG_LOG(md->index, RPC, "[0x%08X] fail: name:%s, len:%d, type:%d, ret:%d\n",
 					     p_rpc_buf->op_id, eint_name, name_len, type, ret);
 				kfree(eint_name);
 				goto err3;
@@ -1542,7 +1548,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 #endif
 
 			if (pkt_num != 1) {
-				CCCI_ERR_MSG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
+				CCCI_ERROR_LOG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
 					     p_rpc_buf->op_id, pkt_num);
 				tmp_data[0] = FS_PARAM_ERROR;
 				pkt_num = 0;
@@ -1567,7 +1573,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			pkt[pkt_num++].buf = (void *)&tmp_data[1];
 			clkbuf = (struct ccci_rpc_clkbuf_result *)&tmp_data[1];
 			if (count != CLKBUF_MAX_COUNT) {
-				CCCI_ERR_MSG(md->index, RPC, "IPC_RPC_GET_RF_CLK_BUF, wrong count %d/%d\n", count,
+				CCCI_ERROR_LOG(md->index, RPC, "IPC_RPC_GET_RF_CLK_BUF, wrong count %d/%d\n", count,
 					     CLKBUF_MAX_COUNT);
 				clkbuf->CLKBuf_Count = 0xFF;
 				memset(&clkbuf->CLKBuf_Status, 0, sizeof(clkbuf->CLKBuf_Status));
@@ -1591,7 +1597,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 					of_property_read_u32_array(node, "mediatek,clkbuf-config", vals,
 						CLKBUF_MAX_COUNT);
 				} else {
-					CCCI_ERR_MSG(md->index, RPC, "%s can't find compatible node\n", __func__);
+					CCCI_ERROR_LOG(md->index, RPC, "%s can't find compatible node\n", __func__);
 				}
 #else
 				u32 vals[4] = {CLK_BUF1_STATUS, CLK_BUF2_STATUS, CLK_BUF3_STATUS, CLK_BUF4_STATUS};
@@ -1619,7 +1625,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 					vals_drv[0], vals_drv[1], vals_drv[2], vals_drv[3], AfcDac);
 #endif
 			}
-			CCCI_DBG_MSG(md->index, RPC, "IPC_RPC_GET_RF_CLK_BUF count=%x\n", clkbuf->CLKBuf_Count);
+			CCCI_DEBUG_LOG(md->index, RPC, "IPC_RPC_GET_RF_CLK_BUF count=%x\n", clkbuf->CLKBuf_Count);
 			break;
 		}
 #endif
@@ -1630,7 +1636,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			int val = 0;
 
 			if (pkt_num != 1) {
-				CCCI_ERR_MSG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
+				CCCI_ERROR_LOG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
 					     p_rpc_buf->op_id, pkt_num);
 				tmp_data[0] = FS_PARAM_ERROR;
 				goto err4;
@@ -1642,7 +1648,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			else if (p_rpc_buf->op_id == IPC_RPC_GET_ADC_VAL_OP)
 				val = get_md_adc_val(num);
 			tmp_data[0] = val;
-			CCCI_DBG_MSG(md->index, RPC, "[0x%X]: num=%d, val=%d!\n", p_rpc_buf->op_id, num, val);
+			CCCI_DEBUG_LOG(md->index, RPC, "[0x%X]: num=%d, val=%d!\n", p_rpc_buf->op_id, num, val);
 
  err4:
 			pkt_num = 0;
@@ -1662,7 +1668,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			unsigned int pkt_size;
 
 			if (pkt_num != 1) {
-				CCCI_ERR_MSG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
+				CCCI_ERROR_LOG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
 					     p_rpc_buf->op_id, pkt_num);
 				tmp_data[0] = FS_PARAM_ERROR;
 				pkt_num = 0;
@@ -1683,7 +1689,8 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				pkt[pkt_num++].buf = (void *)&tmp_data[1];
 				output = (struct ccci_rpc_gpio_adc_output *)&tmp_data[1];
 				memset(output, 0xF, sizeof(struct ccci_rpc_gpio_adc_output));	/* 0xF for failure */
-				CCCI_DBG_MSG(md->index, KERN, "IPC_RPC_GET_GPIO_ADC_OP request=%x\n", input->reqMask);
+				CCCI_BOOTUP_LOG(md->index, KERN, "IPC_RPC_GET_GPIO_ADC_OP request=%x\n",
+								input->reqMask);
 				ccci_rpc_get_gpio_adc(input, output);
 			} else if (pkt_size == sizeof(struct ccci_rpc_gpio_adc_intput_v2)) {
 				input_v2 = (struct ccci_rpc_gpio_adc_intput_v2 *)(pkt[0].buf);
@@ -1696,11 +1703,11 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				output_v2 = (struct ccci_rpc_gpio_adc_output_v2 *)&tmp_data[1];
 				/* 0xF for failure */
 				memset(output_v2, 0xF, sizeof(struct ccci_rpc_gpio_adc_output_v2));
-				CCCI_INF_MSG(md->index, KERN, "IPC_RPC_GET_GPIO_ADC_OP request=%x\n",
+				CCCI_BOOTUP_LOG(md->index, KERN, "IPC_RPC_GET_GPIO_ADC_OP request=%x\n",
 					     input_v2->reqMask);
 				ccci_rpc_get_gpio_adc_v2(input_v2, output_v2);
 			} else {
-				CCCI_ERR_MSG(md->index, RPC, "can't recognize pkt size%d!\n", pkt_size);
+				CCCI_ERROR_LOG(md->index, RPC, "can't recognize pkt size%d!\n", pkt_size);
 				tmp_data[0] = FS_PARAM_ERROR;
 				pkt_num = 0;
 				pkt[pkt_num].len = sizeof(unsigned int);
@@ -1716,7 +1723,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			struct ccci_rpc_dsp_emi_mpu_input *input, *output;
 
 			if (pkt_num != 1) {
-				CCCI_ERR_MSG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
+				CCCI_ERROR_LOG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
 					     p_rpc_buf->op_id, pkt_num);
 				tmp_data[0] = FS_PARAM_ERROR;
 				pkt_num = 0;
@@ -1735,7 +1742,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			pkt[pkt_num++].buf = (void *)&tmp_data[1];
 			output = (struct ccci_rpc_dsp_emi_mpu_input *)&tmp_data[1];
 			output->request = 0;
-			CCCI_INF_MSG(md->index, KERN, "IPC_RPC_DSP_EMI_MPU_SETTING request=%x\n", input->request);
+			CCCI_NORMAL_LOG(md->index, KERN, "IPC_RPC_DSP_EMI_MPU_SETTING request=%x\n", input->request);
 			if (md->mem_layout.dsp_region_phy != 0)
 				ccci_set_dsp_region_protection(md, 1);
 			break;
@@ -1747,7 +1754,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			struct ccci_rpc_usim2nfs *input, *output;
 
 			if (pkt_num != 1) {
-				CCCI_ERR_MSG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
+				CCCI_ERROR_LOG(md->index, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
 					     p_rpc_buf->op_id, pkt_num);
 				tmp_data[0] = FS_PARAM_ERROR;
 				pkt_num = 0;
@@ -1766,7 +1773,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 			pkt[pkt_num++].buf = (void *)&tmp_data[1];
 			output = (struct ccci_rpc_usim2nfs *)&tmp_data[1];
 			output->lock_vsim1 = input->lock_vsim1;
-			CCCI_DBG_MSG(md->index, KERN, "IPC_RPC_USIM2NFC_OP request=%x\n", input->lock_vsim1);
+			CCCI_DEBUG_LOG(md->index, KERN, "IPC_RPC_USIM2NFC_OP request=%x\n", input->lock_vsim1);
 			/* lock_vsim1==1, NFC not power VSIM; lock_vsim==0, NFC power VSIM */
 			inform_nfc_vsim_change(md->index, 1, input->lock_vsim1);
 			break;
@@ -1777,29 +1784,29 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 		{
 			int i;
 
-			CCCI_INF_MSG(md->index, RPC, "[RPCIT] enter IT operation in ccci_rpc_work\n");
+			CCCI_NORMAL_LOG(md->index, RPC, "[RPCIT] enter IT operation in ccci_rpc_work\n");
 			/* exam input parameters in pkt */
 			for (i = 0; i < pkt_num; i++) {
-				CCCI_INF_MSG(md->index, RPC, "len=%d val=%X\n", pkt[i].len,
+				CCCI_NORMAL_LOG(md->index, RPC, "len=%d val=%X\n", pkt[i].len,
 					     *((unsigned int *)pkt[i].buf));
 			}
 			tmp_data[0] = 1;
 			tmp_data[1] = 0xA5A5;
 			pkt_num = 0;
-			CCCI_INF_MSG(md->index, RPC, "[RPCIT] prepare output parameters\n");
+			CCCI_NORMAL_LOG(md->index, RPC, "[RPCIT] prepare output parameters\n");
 			pkt[pkt_num].len = sizeof(unsigned int);
 			pkt[pkt_num++].buf = (void *)&tmp_data[0];
-			CCCI_INF_MSG(md->index, RPC, "[RPCIT] LV[%d]  len= 0x%08X, value= 0x%08X\n", 0, pkt[0].len,
+			CCCI_NORMAL_LOG(md->index, RPC, "[RPCIT] LV[%d]  len= 0x%08X, value= 0x%08X\n", 0, pkt[0].len,
 				     *((unsigned int *)pkt[0].buf));
 			pkt[pkt_num].len = sizeof(unsigned int);
 			pkt[pkt_num++].buf = (void *)&tmp_data[1];
-			CCCI_INF_MSG(md->index, RPC, "[RPCIT] LV[%d]  len= 0x%08X, value= 0x%08X\n", 1, pkt[1].len,
+			CCCI_NORMAL_LOG(md->index, RPC, "[RPCIT] LV[%d]  len= 0x%08X, value= 0x%08X\n", 1, pkt[1].len,
 				     *((unsigned int *)pkt[1].buf));
 			break;
 		}
 
 	default:
-		CCCI_INF_MSG(md->index, RPC, "[Error]Unknown Operation ID (0x%08X)\n", p_rpc_buf->op_id);
+		CCCI_NORMAL_LOG(md->index, RPC, "[Error]Unknown Operation ID (0x%08X)\n", p_rpc_buf->op_id);
 		tmp_data[0] = FS_NO_OP;
 		pkt_num = 0;
 		pkt[pkt_num].len = sizeof(int);
@@ -1808,7 +1815,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 	}
 
 	p_rpc_buf->para_num = pkt_num;
-	CCCI_DBG_MSG(md->index, RPC, "ccci_rpc_work_helper-- %d\n", p_rpc_buf->para_num);
+	CCCI_DEBUG_LOG(md->index, RPC, "ccci_rpc_work_helper-- %d\n", p_rpc_buf->para_num);
 }
 
 static void rpc_msg_handler(struct ccci_port *port, struct ccci_request *req)
@@ -1822,13 +1829,14 @@ static void rpc_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	unsigned int *tmp_data = kmalloc(128*sizeof(unsigned int), GFP_ATOMIC);
 
 	if (tmp_data == NULL) {
-		CCCI_ERR_MSG(md->index, RPC, "RPC request buffer fail 128*sizeof(unsigned int)\n");
+		CCCI_ERROR_LOG(md->index, RPC, "RPC request buffer fail 128*sizeof(unsigned int)\n");
 		goto err_out;
 	}
 	/* sanity check */
 	if (rpc_buf->header.reserved < 0 || rpc_buf->header.reserved > RPC_REQ_BUFFER_NUM ||
 	    rpc_buf->para_num < 0 || rpc_buf->para_num > RPC_MAX_ARG_NUM) {
-		CCCI_ERR_MSG(md->index, RPC, "invalid RPC index %d/%d\n", rpc_buf->header.reserved, rpc_buf->para_num);
+		CCCI_ERROR_LOG(md->index, RPC, "invalid RPC index %d/%d\n", rpc_buf->header.reserved,
+						rpc_buf->para_num);
 		goto err_out;
 	}
 	/* parse buffer */
@@ -1840,7 +1848,7 @@ static void rpc_msg_handler(struct ccci_port *port, struct ccci_request *req)
 		ptr += ((pkt[i].len + 3) >> 2) << 2;	/* 4byte align */
 	}
 	if ((ptr - ptr_base) > RPC_MAX_BUF_SIZE) {
-		CCCI_ERR_MSG(md->index, RPC, "RPC overflow in parse 0x%p\n", (void *)(ptr - ptr_base));
+		CCCI_ERROR_LOG(md->index, RPC, "RPC overflow in parse 0x%p\n", (void *)(ptr - ptr_base));
 		goto err_out;
 	}
 	/* handle RPC request */
@@ -1852,7 +1860,7 @@ static void rpc_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	ptr = rpc_buf->buffer;
 	for (i = 0; i < rpc_buf->para_num; i++) {
 		if ((data_len + sizeof(pkt[i].len) + pkt[i].len) > RPC_MAX_BUF_SIZE) {
-			CCCI_ERR_MSG(md->index, RPC, "RPC overflow in write %zu\n",
+			CCCI_ERROR_LOG(md->index, RPC, "RPC overflow in write %zu\n",
 				     data_len + sizeof(pkt[i].len) + pkt[i].len);
 			goto err_out;
 		}
@@ -1867,7 +1875,7 @@ static void rpc_msg_handler(struct ccci_port *port, struct ccci_request *req)
 		if (ptr != pkt[i].buf)
 			memcpy(ptr, pkt[i].buf, pkt[i].len);
 		else
-			CCCI_DBG_MSG(md->index, RPC, "same addr, no copy, op_id=0x%x\n", rpc_buf->op_id);
+			CCCI_DEBUG_LOG(md->index, RPC, "same addr, no copy, op_id=0x%x\n", rpc_buf->op_id);
 
 		ptr += AlignLength;
 	}
@@ -1880,7 +1888,7 @@ static void rpc_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	/* update CCCI header */
 	rpc_buf->header.channel = CCCI_RPC_TX;
 	rpc_buf->header.data[1] = data_len;
-	CCCI_DBG_MSG(md->index, RPC, "Write %d/%d, %08X, %08X, %08X, %08X, op_id=0x%x\n", req->skb->len, data_len,
+	CCCI_DEBUG_LOG(md->index, RPC, "Write %d/%d, %08X, %08X, %08X, %08X, op_id=0x%x\n", req->skb->len, data_len,
 		     rpc_buf->header.data[0], rpc_buf->header.data[1], rpc_buf->header.channel,
 		     rpc_buf->header.reserved, rpc_buf->op_id);
 	/* switch to Tx request */
@@ -1904,8 +1912,8 @@ static void status_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	struct ccci_header *ccci_h = (struct ccci_header *)req->skb->data;
 
 	del_timer(&port->modem->md_status_timeout);
-	CCCI_INF_MSG(port->modem->index, KERN, "modem status info seq=0x%X\n", *(((u32 *) ccci_h) + 2));
-	ccci_cmpt_mem_dump(md->index, req->skb->data, req->skb->len);
+	CCCI_REPEAT_LOG(port->modem->index, KERN, "modem status info seq=0x%X\n", *(((u32 *) ccci_h) + 2));
+	ccci_util_cmpt_mem_dump(md->index, CCCI_DUMP_REPEAT, req->skb->data, req->skb->len);
 	req->policy = RECYCLE;
 	ccci_free_req(req);
 	if (port->modem->md_state == READY)
@@ -1919,10 +1927,10 @@ void md_status_poller_func(unsigned long data)
 
 	mod_timer(&md->md_status_timeout, jiffies + 5 * HZ);
 	ret = ccci_send_msg_to_md(md, CCCI_STATUS_TX, 0, 0, 0);
-	CCCI_INF_MSG(md->index, KERN, "poll modem status %d seq=0x%X\n", ret, md->seq_nums[OUT][CCCI_STATUS_TX]);
+	CCCI_REPEAT_LOG(md->index, KERN, "poll modem status %d seq=0x%X\n", ret, md->seq_nums[OUT][CCCI_STATUS_TX]);
 
 	if (ret) {
-		CCCI_ERR_MSG(md->index, KERN, "fail to send modem status polling msg ret=%d\n", ret);
+		CCCI_ERROR_LOG(md->index, KERN, "fail to send modem status polling msg ret=%d\n", ret);
 		del_timer(&md->md_status_timeout);
 		if ((ret == -EBUSY || (ret == -CCCI_ERR_ALLOCATE_MEMORY_FAIL)) && md->md_state == READY) {
 
@@ -1946,10 +1954,10 @@ void md_status_timeout_func(unsigned long data)
 	struct ccci_modem *md = (struct ccci_modem *)data;
 
 	if (md->md_status_poller_flag & MD_STATUS_ASSERTED) {
-		CCCI_ERR_MSG(md->index, KERN, "modem status polling timeout, assert fail\n");
+		CCCI_ERROR_LOG(md->index, KERN, "modem status polling timeout, assert fail\n");
 		ccci_md_exception_notify(md, MD_NO_RESPONSE);
 	} else {
-		CCCI_ERR_MSG(md->index, KERN, "modem status polling timeout, force assert\n");
+		CCCI_ERROR_LOG(md->index, KERN, "modem status polling timeout, force assert\n");
 		md->md_status_poller_flag |= MD_STATUS_ASSERTED;
 		md->ops->dump_info(md, DUMP_FLAG_QUEUE_0, NULL, 0);
 		mod_timer(&md->md_status_timeout, jiffies + 5 * HZ);
@@ -1966,7 +1974,7 @@ static int port_kernel_thread(void *arg)
 	unsigned long flags;
 	int ret;
 
-	CCCI_DBG_MSG(port->modem->index, KERN, "port %s's thread running\n", port->name);
+	CCCI_DEBUG_LOG(port->modem->index, KERN, "port %s's thread running\n", port->name);
 	/* sched_setscheduler(current, SCHED_FIFO, &param); */
 
 	while (1) {
@@ -1977,7 +1985,7 @@ static int port_kernel_thread(void *arg)
 		}
 		if (kthread_should_stop())
 			break;
-		CCCI_DBG_MSG(port->modem->index, KERN, "read on %s\n", port->name);
+		CCCI_DEBUG_LOG(port->modem->index, KERN, "read on %s\n", port->name);
 		/* 1. dequeue */
 		spin_lock_irqsave(&port->rx_req_lock, flags);
 		req = list_first_entry(&port->rx_req_list, struct ccci_request, entry);
@@ -1996,7 +2004,7 @@ static int port_kernel_thread(void *arg)
 			break;
 		case CCCI_RPC_RX:
 			rpc_msg_handler(port, req);
-			CCCI_DBG_MSG(port->modem->index, KERN, "rpc done %s\n", port->name);
+			CCCI_DEBUG_LOG(port->modem->index, KERN, "rpc done %s\n", port->name);
 			break;
 		case CCCI_STATUS_RX:
 			status_msg_handler(port, req);
@@ -2009,7 +2017,7 @@ static int port_kernel_thread(void *arg)
 
 int port_kernel_init(struct ccci_port *port)
 {
-	CCCI_DBG_MSG(port->modem->index, KERN, "kernel port %s is initializing\n", port->name);
+	CCCI_DEBUG_LOG(port->modem->index, KERN, "kernel port %s is initializing\n", port->name);
 	port->private_data = kthread_run(port_kernel_thread, port, "%s", port->name);
 	port->rx_length_th = MAX_QUEUE_LENGTH;
 	return 0;
@@ -2020,7 +2028,7 @@ int port_kernel_recv_req(struct ccci_port *port, struct ccci_request *req)
 	unsigned long flags;
 
 	spin_lock_irqsave(&port->rx_req_lock, flags);
-	CCCI_DBG_MSG(port->modem->index, IPC, "recv on %s, len=%d\n", port->name, port->rx_length);
+	CCCI_DEBUG_LOG(port->modem->index, IPC, "recv on %s, len=%d\n", port->name, port->rx_length);
 	if (port->rx_length < port->rx_length_th) {
 		port->flags &= ~PORT_F_RX_FULLED;
 		port->rx_length++;
@@ -2035,7 +2043,7 @@ int port_kernel_recv_req(struct ccci_port *port, struct ccci_request *req)
 	port->flags |= PORT_F_RX_FULLED;
 	spin_unlock_irqrestore(&port->rx_req_lock, flags);
 	if (port->flags & PORT_F_ALLOW_DROP/* || !(port->flags&PORT_F_RX_EXCLUSIVE) */) {
-		CCCI_INF_MSG(port->modem->index, KERN, "port %s Rx full, drop packet\n", port->name);
+		CCCI_NORMAL_LOG(port->modem->index, KERN, "port %s Rx full, drop packet\n", port->name);
 		goto drop;
 	} else {
 		return -CCCI_ERR_PORT_RX_FULL;
@@ -2043,7 +2051,7 @@ int port_kernel_recv_req(struct ccci_port *port, struct ccci_request *req)
 
  drop:
 	/* drop this packet */
-	CCCI_INF_MSG(port->modem->index, KERN, "drop on %s, len=%d\n", port->name, port->rx_length);
+	CCCI_NORMAL_LOG(port->modem->index, KERN, "drop on %s, len=%d\n", port->name, port->rx_length);
 	list_del(&req->entry);
 	req->policy = RECYCLE;
 	ccci_free_req(req);
@@ -2078,12 +2086,12 @@ int port_kernel_req_match(struct ccci_port *port, struct ccci_request *req)
 		case RPC_CCCI_LGE_FAC_VERIFY_UNLOCK_CODE:
 		case RPC_CCCI_LGE_FAC_WRITE_NETWORK_CODE:
 		case RPC_CCCI_LGE_FAC_INIT_SIM_LOCK_DATA:
-			CCCI_DBG_MSG(port->modem->index, KERN, "userspace rpc msg 0x%x on %s\n",
+			CCCI_DEBUG_LOG(port->modem->index, KERN, "userspace rpc msg 0x%x on %s\n",
 						rpc_buf->op_id, port->name);
 			return 0;
 #endif
 		default:
-			CCCI_DBG_MSG(port->modem->index, KERN, "kernelspace rpc msg 0x%x on %s\n",
+			CCCI_DEBUG_LOG(port->modem->index, KERN, "kernelspace rpc msg 0x%x on %s\n",
 						rpc_buf->op_id, port->name);
 			return 1;
 		}
@@ -2125,7 +2133,7 @@ void ccci_md_exception_notify(struct ccci_modem *md, MD_EX_STAGE stage)
 	unsigned long flags;
 
 	spin_lock_irqsave(&md->ctrl_lock, flags);
-	CCCI_NOTICE_MSG(md->index, KERN, "MD exception logical %d->%d\n", md->ex_stage, stage);
+	CCCI_NORMAL_LOG(md->index, KERN, "MD exception logical %d->%d\n", md->ex_stage, stage);
 	md->ex_stage = stage;
 	switch (md->ex_stage) {
 	case EX_INIT:
@@ -2146,7 +2154,7 @@ void ccci_md_exception_notify(struct ccci_modem *md, MD_EX_STAGE stage)
 	case MD_NO_RESPONSE:
 		/* don't broadcast exception state, only dump */
 		del_timer(&md->md_status_timeout);
-		CCCI_ERR_MSG(md->index, KERN, "MD long time no response, flag=%x\n", md->md_status_poller_flag);
+		CCCI_ERROR_LOG(md->index, KERN, "MD long time no response, flag=%x\n", md->md_status_poller_flag);
 		md->ee_info_flag |= ((1 << MD_EE_FLOW_START) | (1 << MD_EE_PENDING_TOO_LONG) | (1 << MD_STATE_UPDATE));
 		mod_timer(&md->ex_monitor, jiffies);
 		break;
@@ -2176,7 +2184,7 @@ static void ccci_aed(struct ccci_modem *md, unsigned int dump_flag, char *aed_st
 
 	buff = kmalloc(AED_STR_LEN, GFP_ATOMIC);
 	if (buff == NULL) {
-		CCCI_EXP_MSG(md->index, KERN, "Fail alloc Mem for buff!\n");
+		CCCI_ERROR_LOG(md->index, KERN, "Fail alloc Mem for buff!\n");
 		goto err_exit1;
 	}
 	img_inf = ccci_get_md_info_str(md->index);
@@ -2246,12 +2254,12 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 
 	ex_info = kmalloc(EE_BUF_LEN_UMOLY, GFP_ATOMIC);
 	if (ex_info == NULL) {
-		CCCI_EXP_MSG(md->index, KERN, "Fail alloc Mem for ex_info!\n");
+		CCCI_ERROR_LOG(md->index, KERN, "Fail alloc Mem for ex_info!\n");
 		goto err_exit;
 	}
 	ex_info_temp = kmalloc(EE_BUF_LEN_UMOLY, GFP_ATOMIC);
 	if (ex_info_temp == NULL) {
-		CCCI_EXP_MSG(md->index, KERN, "Fail alloc Mem for ex_info_temp!\n");
+		CCCI_ERROR_LOG(md->index, KERN, "Fail alloc Mem for ex_info_temp!\n");
 		goto err_exit;
 	}
 
@@ -2260,7 +2268,7 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 	rtc_time_to_tm(tv.tv_sec, &tm);
 	tv_android.tv_sec -= sys_tz.tz_minuteswest * 60;
 	rtc_time_to_tm(tv_android.tv_sec, &tm_android);
-	CCCI_EXP_INF_MSG(md->index, KERN, "Sync:%d%02d%02d %02d:%02d:%02d.%u(%02d:%02d:%02d.%03d(TZone))\n",
+	CCCI_ERROR_LOG(md->index, KERN, "Sync:%d%02d%02d %02d:%02d:%02d.%u(%02d:%02d:%02d.%03d(TZone))\n",
 		     tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 		     tm.tm_hour, tm.tm_min, tm.tm_sec,
 		     (unsigned int)tv.tv_usec,
@@ -2273,14 +2281,14 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 			snprintf(ex_info_temp, EE_BUF_LEN_UMOLY, "%smd%d:%s", ex_info_temp, md->index + 1, ex_info);
 			debug_info = &md->debug_info1[core_id - 1];
 		}
-		CCCI_ERR_MSG(md->index, KERN, "exception type(%d):%s\n", debug_info->type,
+		CCCI_ERROR_LOG(md->index, KERN, "exception type(%d):%s\n", debug_info->type,
 			     debug_info->name ? : "Unknown");
 
 		switch (debug_info->type) {
 		case MD_EX_DUMP_ASSERT:
-			CCCI_EXP_MSG(md->index, KERN, "filename = %s\n", debug_info->assert.file_name);
-			CCCI_EXP_MSG(md->index, KERN, "line = %d\n", debug_info->assert.line_num);
-			CCCI_EXP_MSG(md->index, KERN, "para0 = %d, para1 = %d, para2 = %d\n",
+			CCCI_ERROR_LOG(md->index, KERN, "filename = %s\n", debug_info->assert.file_name);
+			CCCI_ERROR_LOG(md->index, KERN, "line = %d\n", debug_info->assert.line_num);
+			CCCI_ERROR_LOG(md->index, KERN, "para0 = %d, para1 = %d, para2 = %d\n",
 				     debug_info->assert.parameters[0],
 				     debug_info->assert.parameters[1], debug_info->assert.parameters[2]);
 			snprintf(ex_info, EE_BUF_LEN_UMOLY,
@@ -2294,13 +2302,13 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 			break;
 		case MD_EX_DUMP_3P_EX:
 		case MD_EX_CC_C2K_EXCEPTION:
-			CCCI_EXP_MSG(md->index, KERN, "fatal error code 1 = 0x%08X\n",
+			CCCI_ERROR_LOG(md->index, KERN, "fatal error code 1 = 0x%08X\n",
 				     debug_info->fatal_error.err_code1);
-			CCCI_EXP_MSG(md->index, KERN, "fatal error code 2 = 0x%08X\n",
+			CCCI_ERROR_LOG(md->index, KERN, "fatal error code 2 = 0x%08X\n",
 				     debug_info->fatal_error.err_code2);
-			CCCI_EXP_MSG(md->index, KERN, "fatal error code 3 = 0x%08X\n",
+			CCCI_ERROR_LOG(md->index, KERN, "fatal error code 3 = 0x%08X\n",
 				     debug_info->fatal_error.err_code3);
-			CCCI_EXP_MSG(md->index, KERN, "fatal error offender %s\n", debug_info->fatal_error.offender);
+			CCCI_ERROR_LOG(md->index, KERN, "fatal error offender %s\n", debug_info->fatal_error.offender);
 			if (debug_info->fatal_error.offender[0] != '\0') {
 				snprintf(ex_info, EE_BUF_LEN_UMOLY,
 					 "%s\n[%s] err_code1:0x%08X err_code2:0x%08X erro_code3:0x%08X\nMD Offender:%s\n%s\n",
@@ -2316,9 +2324,9 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 			}
 			break;
 		case MD_EX_DUMP_2P_EX:
-			CCCI_EXP_MSG(md->index, KERN, "fatal error code 1 = 0x%08X\n\n",
+			CCCI_ERROR_LOG(md->index, KERN, "fatal error code 1 = 0x%08X\n\n",
 				     debug_info->fatal_error.err_code1);
-			CCCI_EXP_MSG(md->index, KERN, "fatal error code 2 = 0x%08X\n\n",
+			CCCI_ERROR_LOG(md->index, KERN, "fatal error code 2 = 0x%08X\n\n",
 				     debug_info->fatal_error.err_code2);
 
 			snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s\n[%s] err_code1:0x%08X err_code2:0x%08X\n\n",
@@ -2326,7 +2334,7 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 				 debug_info->fatal_error.err_code2);
 			break;
 		case MD_EX_DUMP_EMI_CHECK:
-			CCCI_EXP_MSG(md->index, KERN, "md_emi_check: 0x%08X, 0x%08X, %02d, 0x%08X\n\n",
+			CCCI_ERROR_LOG(md->index, KERN, "md_emi_check: 0x%08X, 0x%08X, %02d, 0x%08X\n\n",
 				     debug_info->data.data0, debug_info->data.data1,
 				     debug_info->data.channel, debug_info->data.reserved);
 			snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s\n[emi_chk] 0x%08X, 0x%08X, %02d, 0x%08X\n\n",
@@ -2340,14 +2348,14 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 		}
 	}
 	if (md->ex_core_num > 1) {
-		CCCI_EXP_INF_MSG(md->index, KERN, "%s+++++++%s", ex_info_temp, ex_info);
+		CCCI_NORMAL_LOG(md->index, KERN, "%s+++++++%s", ex_info_temp, ex_info);
 		snprintf(ex_info_temp, EE_BUF_LEN_UMOLY, "%smd%d:%s", ex_info_temp, md->index + 1, ex_info);
 		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s", ex_info_temp);
 
 		debug_info = &md->debug_info;
-		/*CCCI_INF_MSG(md->index, KERN, "=======***==================\n");
-		   CCCI_INF_MSG(md->index, KERN, "Core Id(%d/%lu):%s", core_id, sizeof(ex_info_temp), ex_info);
-		   CCCI_INF_MSG(md->index, KERN, "===========================\n"); */
+		/*CCCI_NORMAL_LOG(md->index, KERN, "=======***==================\n");
+		   CCCI_NORMAL_LOG(md->index, KERN, "Core Id(%d/%lu):%s", core_id, sizeof(ex_info_temp), ex_info);
+		   CCCI_NORMAL_LOG(md->index, KERN, "===========================\n"); */
 	} else if (md->ex_core_num == 0)
 		snprintf(ex_info, EE_BUF_LEN_UMOLY, "\n");
 	/* Add additional info */
@@ -2367,7 +2375,7 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 	case MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG:
 		i_bit_ex_info = kmalloc(EE_BUF_LEN_UMOLY, GFP_ATOMIC);
 		if (i_bit_ex_info == NULL) {
-			CCCI_EXP_MSG(md->index, KERN, "Fail alloc Mem for i_bit_ex_info!\n");
+			CCCI_ERROR_LOG(md->index, KERN, "Fail alloc Mem for i_bit_ex_info!\n");
 			break;
 		}
 		snprintf(i_bit_ex_info, EE_BUF_LEN_UMOLY, "\n[Others] May I-Bit dis too long\n");
@@ -2392,7 +2400,7 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 
 	/* get ELM_status field from MD side */
 	c = ex_pl_info->envinfo.ELM_status;
-	CCCI_EXP_INF_MSG(md->index, KERN, "ELM_status: %x\n", c);
+	CCCI_NORMAL_LOG(md->index, KERN, "ELM_status: %x\n", c);
 	switch (c) {
 	case 0xFF:
 		strcat(ex_info, "\nno ELM info\n");
@@ -2411,17 +2419,19 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 	}
 
 	/* Dump MD EE info */
-	CCCI_EXP_INF_MSG(md->index, KERN, "Dump MD EX log, 0x%x, 0x%x\n", debug_info->more_info,
+	CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD EX log, 0x%x, 0x%x\n", debug_info->more_info,
 			(unsigned int)md->boot_stage);
 	if (debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0 &&
-		md->flight_mode == MD_FIGHT_MODE_NONE) {
-		ccci_mem_dump(md->index, md->ex_pl_info, MD_HS1_FAIL_DUMP_SIZE/*sizeof(EX_PL_LOG_T)*/);
+		md->flight_mode == MD_FIGHT_MODE_NONE) {/*sizeof(EX_PL_LOG_T)*/
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md->ex_pl_info, MD_HS1_FAIL_DUMP_SIZE);
 		/* MD will not fill in share memory before we send runtime data */
 		dump_flag = CCCI_AED_DUMP_EX_PKT;
 	} else {
 #if 1
-		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, (2048 + 512));
-		ccci_mem_dump(md->index, (md->smem_layout.ccci_exp_smem_mdss_debug_vir + 6 * 1024), 2048);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
+					md->smem_layout.ccci_exp_smem_base_vir, (2048 + 512));
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
+					(md->smem_layout.ccci_exp_smem_mdss_debug_vir + 6 * 1024), 2048);
 #else
 		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
 #endif
@@ -2432,11 +2442,11 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 			dump_flag |= CCCI_AED_DUMP_CCIF_REG;
 	}
 	/* Dump MD image memory */
-	CCCI_EXP_INF_MSG(md->index, KERN, "Dump MD image memory\n");
-	ccci_mem_dump(md->index, (void *)md->mem_layout.md_region_vir, MD_IMG_DUMP_SIZE);
+	CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD image memory\n");
+	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (void *)md->mem_layout.md_region_vir, MD_IMG_DUMP_SIZE);
 	/* Dump MD memory layout */
-	CCCI_EXP_INF_MSG(md->index, KERN, "Dump MD layout struct\n");
-	ccci_mem_dump(md->index, &md->mem_layout, sizeof(struct ccci_mem_layout));
+	CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD layout struct\n");
+	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, &md->mem_layout, sizeof(struct ccci_mem_layout));
 	/* Dump MD register */
 	if (debug_info->more_info == MD_EE_CASE_NO_RESPONSE) /* temp solution for debug mode KE */
 		md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
@@ -2444,9 +2454,9 @@ err_exit:
 	ccci_update_md_boot_stage(md, MD_BOOT_STAGE_EXCEPTION);
 	/* update here to maintain handshake stage info during exception handling */
 	if (debug_info->type == MD_EX_TYPE_C2K_ERROR)
-		CCCI_EXP_INF_MSG(md->index, KERN, "C2K EE, No need trigger DB\n");
+		CCCI_NORMAL_LOG(md->index, KERN, "C2K EE, No need trigger DB\n");
 	else if ((debug_info->type == MD_EX_DUMP_EMI_CHECK) && (Is_MD_EMI_voilation() == 0))
-		CCCI_EXP_INF_MSG(md->index, KERN, "Not MD EMI violation, No need trigger DB\n");
+		CCCI_NORMAL_LOG(md->index, KERN, "Not MD EMI violation, No need trigger DB\n");
 	else if (ex_info == NULL)
 		ccci_aed(md, dump_flag, buf_fail, db_opt);
 	else
@@ -2497,7 +2507,7 @@ void strmncopy(char *src, char *dst, int src_len, int dst_len)
 		if (dst[temp_i] == 0x00)
 			break;
 	}
-	CCCI_DBG_MSG(-1, KERN, "copy str(%d) %s\n", temp_i, dst);
+	CCCI_DEBUG_LOG(-1, KERN, "copy str(%d) %s\n", temp_i, dst);
 }
 
 /* todo: copy error code can convert a mini function */
@@ -2518,7 +2528,7 @@ static void ccci_md_exp_change(struct ccci_modem *md)
 
 	if (debug_info == NULL)
 		return;
-	CCCI_EXP_INF_MSG(md->index, KERN, "ccci_md_exp_change, ee_case(0x%x)\n", debug_info->more_info);
+	CCCI_NORMAL_LOG(md->index, KERN, "ccci_md_exp_change, ee_case(0x%x)\n", debug_info->more_info);
 
 	ee_case = debug_info->more_info;
 	memset(debug_info, 0, sizeof(DEBUG_INFO_T));
@@ -2536,7 +2546,7 @@ static void ccci_md_exp_change(struct ccci_modem *md)
 	}
 
 	for (core_id = 0; core_id < MD_CORE_NUM; core_id++) {
-		CCCI_DBG_MSG(md->index, KERN, "core_id(%x/%x): offset=%x, if_offender=%d, %s\n", (core_id + 1),
+		CCCI_DEBUG_LOG(md->index, KERN, "core_id(%x/%x): offset=%x, if_offender=%d, %s\n", (core_id + 1),
 			     ex_overview->core_num, ex_overview->main_reson[core_id].core_offset,
 			     ex_overview->main_reson[core_id].is_offender, ex_overview->main_reson[core_id].core_name);
 		if (ex_overview->main_reson[core_id].is_offender) {
@@ -2551,7 +2561,7 @@ static void ccci_md_exp_change(struct ccci_modem *md)
 			}
 			debug_info->core_name[temp_i++] = ')';
 			debug_info->core_name[temp_i] = '\0';
-			CCCI_EXP_INF_MSG(md->index, KERN, "core_id(0x%x/%d), %s\n", core_id, off_core_num,
+			CCCI_NORMAL_LOG(md->index, KERN, "core_id(0x%x/%d), %s\n", core_id, off_core_num,
 				     debug_info->core_name);
 			ex_pl_info->envinfo.ELM_status = 0;
 			switch (core_id) {
@@ -2565,7 +2575,7 @@ PL_CORE_PROC:
 				ee_type = ex_PLloginfo->header.ex_type;
 				debug_info->type = ee_type;
 				ee_case = ee_type;
-				CCCI_EXP_INF_MSG(md->index, KERN, "PL ex type(0x%x)\n", ee_type);
+				CCCI_NORMAL_LOG(md->index, KERN, "PL ex type(0x%x)\n", ee_type);
 				switch (ee_type) {
 				case MD_EX_PL_INVALID:
 					debug_info->name = "INVALID";
@@ -2616,7 +2626,7 @@ PL_CORE_PROC:
 							debug_info->fatal_error.offender,
 							sizeof(ex_PLloginfo->content.fatalerr.ex_analy.owner),
 							sizeof(debug_info->fatal_error.offender));
-						CCCI_INF_MSG(md->index, KERN, "offender: %s\n",
+						CCCI_NORMAL_LOG(md->index, KERN, "offender: %s\n",
 							     debug_info->fatal_error.offender);
 					}
 					debug_info->fatal_error.err_code1 =
@@ -2637,13 +2647,13 @@ PL_CORE_PROC:
 				case MD_EX_PL_ASSERT_NATIVE:
 					debug_info->type = MD_EX_DUMP_ASSERT;/* = MD_EX_TYPE_ASSERT; */
 					debug_info->name = "ASSERT";
-					CCCI_DBG_MSG(md->index, KERN, "p filename1(%s)\n",
+					CCCI_DEBUG_LOG(md->index, KERN, "p filename1(%s)\n",
 						ex_PLloginfo->content.assert.filepath);
 					strmncopy(ex_PLloginfo->content.assert.filepath,
 						debug_info->assert.file_name,
 						sizeof(ex_PLloginfo->content.assert.filepath),
 						sizeof(debug_info->assert.file_name));
-					CCCI_DBG_MSG(md->index, KERN,
+					CCCI_DEBUG_LOG(md->index, KERN,
 						"p filename2:(%s)\n", debug_info->assert.file_name);
 					debug_info->assert.line_num = ex_PLloginfo->content.assert.linenumber;
 					debug_info->assert.parameters[0] = ex_PLloginfo->content.assert.para[0];
@@ -2679,7 +2689,7 @@ PL_CORE_PROC:
 				    (EX_CS_LOG_T *) ((char *)ex_overview +
 						     ex_overview->main_reson[core_id].core_offset);
 				ee_type = ex_csLogInfo->except_type;
-				CCCI_EXP_INF_MSG(md->index, KERN, "cs ex type(0x%x)\n", ee_type);
+				CCCI_NORMAL_LOG(md->index, KERN, "cs ex type(0x%x)\n", ee_type);
 				switch (ee_type) {
 				case CS_EXCEPTION_ASSERTION:
 					debug_info->type = MD_EX_DUMP_ASSERT;
@@ -2724,7 +2734,7 @@ PL_CORE_PROC:
 				ex_md32LogInfo = (EX_MD32_LOG_T *) ((char *)ex_overview +
 						       ex_overview->main_reson[core_id].core_offset);
 				ee_type = ex_md32LogInfo->except_type;
-				CCCI_EXP_INF_MSG(md->index, KERN, "md32 ex type(0x%x), name: %s\n", ee_type,
+				CCCI_NORMAL_LOG(md->index, KERN, "md32 ex type(0x%x), name: %s\n", ee_type,
 					     ex_md32LogInfo->except_content.assert.file_name);
 				switch (ex_md32LogInfo->md32_active_mode) {
 				case 1:
@@ -2801,7 +2811,7 @@ PL_CORE_PROC:
 		goto PL_CORE_PROC;
 	}
 	md->ex_core_num = off_core_num;
-	CCCI_EXP_INF_MSG(md->index, KERN, "core_ex_num(%d/%d)\n", off_core_num, md->ex_core_num);
+	CCCI_NORMAL_LOG(md->index, KERN, "core_ex_num(%d/%d)\n", off_core_num, md->ex_core_num);
 }
 #endif
 
@@ -2825,7 +2835,7 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 	rtc_time_to_tm(tv.tv_sec, &tm);
 	tv_android.tv_sec -= sys_tz.tz_minuteswest * 60;
 	rtc_time_to_tm(tv_android.tv_sec, &tm_android);
-	CCCI_INF_MSG(md->index, KERN, "Sync:%d%02d%02d %02d:%02d:%02d.%u(%02d:%02d:%02d.%03d(TZone))\n",
+	CCCI_NORMAL_LOG(md->index, KERN, "Sync:%d%02d%02d %02d:%02d:%02d.%u(%02d:%02d:%02d.%03d(TZone))\n",
 		     tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 		     tm.tm_hour, tm.tm_min, tm.tm_sec,
 		     (unsigned int)tv.tv_usec,
@@ -2833,18 +2843,18 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 
 	ex_info = kmalloc(EE_BUF_LEN, GFP_ATOMIC);
 	if (ex_info == NULL) {
-		CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for ex_info!\n");
+		CCCI_ERROR_LOG(md->index, KERN, "Fail alloc Mem for ex_info!\n");
 		goto err_exit;
 	}
-	CCCI_INF_MSG(md->index, KERN, "exception type(%d):%s\n", debug_info->type, debug_info->name ? : "Unknown");
+	CCCI_NORMAL_LOG(md->index, KERN, "exception type(%d):%s\n", debug_info->type, debug_info->name ? : "Unknown");
 
 	switch (debug_info->type) {
 	case MD_EX_TYPE_ASSERT_DUMP:
 		/* Fall through */
 	case MD_EX_TYPE_ASSERT:
-		CCCI_INF_MSG(md->index, KERN, "filename = %s\n", debug_info->assert.file_name);
-		CCCI_INF_MSG(md->index, KERN, "line = %d\n", debug_info->assert.line_num);
-		CCCI_INF_MSG(md->index, KERN, "para0 = %d, para1 = %d, para2 = %d\n",
+		CCCI_NORMAL_LOG(md->index, KERN, "filename = %s\n", debug_info->assert.file_name);
+		CCCI_NORMAL_LOG(md->index, KERN, "line = %d\n", debug_info->assert.line_num);
+		CCCI_NORMAL_LOG(md->index, KERN, "para0 = %d, para1 = %d, para2 = %d\n",
 			     debug_info->assert.parameters[0],
 			     debug_info->assert.parameters[1], debug_info->assert.parameters[2]);
 		snprintf(ex_info, EE_BUF_LEN, "\n[%s] file:%s line:%d\np1:0x%08x\np2:0x%08x\np3:0x%08x\n",
@@ -2867,9 +2877,9 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 	case MD_EX_TYPE_FATALERR_TASK:
 		/* Fall through */
 	case MD_EX_TYPE_C2K_ERROR:
-		CCCI_INF_MSG(md->index, KERN, "fatal error code 1 = %d\n", debug_info->fatal_error.err_code1);
-		CCCI_INF_MSG(md->index, KERN, "fatal error code 2 = %d\n", debug_info->fatal_error.err_code2);
-		CCCI_INF_MSG(md->index, KERN, "fatal error offender %s\n", debug_info->fatal_error.offender);
+		CCCI_NORMAL_LOG(md->index, KERN, "fatal error code 1 = %d\n", debug_info->fatal_error.err_code1);
+		CCCI_NORMAL_LOG(md->index, KERN, "fatal error code 2 = %d\n", debug_info->fatal_error.err_code2);
+		CCCI_NORMAL_LOG(md->index, KERN, "fatal error offender %s\n", debug_info->fatal_error.offender);
 		if (debug_info->fatal_error.offender[0] != '\0') {
 			snprintf(ex_info, EE_BUF_LEN, "\n[%s] err_code1:%d err_code2:%d\nMD Offender:%s\n",
 				 debug_info->name, debug_info->fatal_error.err_code1, debug_info->fatal_error.err_code2,
@@ -2880,13 +2890,13 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 		}
 		break;
 	case CC_MD1_EXCEPTION:
-		CCCI_INF_MSG(md->index, KERN, "fatal error code 1 = %d\n", debug_info->fatal_error.err_code1);
-		CCCI_INF_MSG(md->index, KERN, "fatal error code 2 = %d\n", debug_info->fatal_error.err_code2);
+		CCCI_NORMAL_LOG(md->index, KERN, "fatal error code 1 = %d\n", debug_info->fatal_error.err_code1);
+		CCCI_NORMAL_LOG(md->index, KERN, "fatal error code 2 = %d\n", debug_info->fatal_error.err_code2);
 		snprintf(ex_info, EE_BUF_LEN, "\n[%s] err_code1:%d err_code2:%d\n", debug_info->name,
 				debug_info->fatal_error.err_code1, debug_info->fatal_error.err_code2);
 		break;
 	case MD_EX_TYPE_EMI_CHECK:
-		CCCI_INF_MSG(md->index, KERN, "md_emi_check: %08X, %08X, %02d, %08X\n",
+		CCCI_NORMAL_LOG(md->index, KERN, "md_emi_check: %08X, %08X, %02d, %08X\n",
 			     debug_info->data.data0, debug_info->data.data1,
 			     debug_info->data.channel, debug_info->data.reserved);
 		snprintf(ex_info, EE_BUF_LEN, "\n[emi_chk] %08X, %08X, %02d, %08X\n",
@@ -2894,10 +2904,10 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 			 debug_info->data.channel, debug_info->data.reserved);
 		break;
 	case DSP_EX_TYPE_ASSERT:
-		CCCI_INF_MSG(md->index, KERN, "filename = %s\n", debug_info->dsp_assert.file_name);
-		CCCI_INF_MSG(md->index, KERN, "line = %d\n", debug_info->dsp_assert.line_num);
-		CCCI_INF_MSG(md->index, KERN, "exec unit = %s\n", debug_info->dsp_assert.execution_unit);
-		CCCI_INF_MSG(md->index, KERN, "para0 = %d, para1 = %d, para2 = %d\n",
+		CCCI_NORMAL_LOG(md->index, KERN, "filename = %s\n", debug_info->dsp_assert.file_name);
+		CCCI_NORMAL_LOG(md->index, KERN, "line = %d\n", debug_info->dsp_assert.line_num);
+		CCCI_NORMAL_LOG(md->index, KERN, "exec unit = %s\n", debug_info->dsp_assert.execution_unit);
+		CCCI_NORMAL_LOG(md->index, KERN, "para0 = %d, para1 = %d, para2 = %d\n",
 			     debug_info->dsp_assert.parameters[0],
 			     debug_info->dsp_assert.parameters[1], debug_info->dsp_assert.parameters[2]);
 		snprintf(ex_info, EE_BUF_LEN, "\n[%s] file:%s line:%d\nexec:%s\np1:%d\np2:%d\np3:%d\n",
@@ -2907,14 +2917,14 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 			 debug_info->dsp_assert.parameters[1], debug_info->dsp_assert.parameters[2]);
 		break;
 	case DSP_EX_TYPE_EXCEPTION:
-		CCCI_INF_MSG(md->index, KERN, "exec unit = %s, code1:0x%08x\n",
+		CCCI_NORMAL_LOG(md->index, KERN, "exec unit = %s, code1:0x%08x\n",
 			     debug_info->dsp_exception.execution_unit, debug_info->dsp_exception.code1);
 		snprintf(ex_info, EE_BUF_LEN, "\n[%s] exec:%s code1:0x%08x\n", debug_info->name,
 			 debug_info->dsp_exception.execution_unit, debug_info->dsp_exception.code1);
 		break;
 	case DSP_EX_FATAL_ERROR:
-		CCCI_INF_MSG(md->index, KERN, "exec unit = %s\n", debug_info->dsp_fatal_err.execution_unit);
-		CCCI_INF_MSG(md->index, KERN, "err_code0 = 0x%08x, err_code1 = 0x%08x\n",
+		CCCI_NORMAL_LOG(md->index, KERN, "exec unit = %s\n", debug_info->dsp_fatal_err.execution_unit);
+		CCCI_NORMAL_LOG(md->index, KERN, "err_code0 = 0x%08x, err_code1 = 0x%08x\n",
 			     debug_info->dsp_fatal_err.err_code[0], debug_info->dsp_fatal_err.err_code[1]);
 
 		snprintf(ex_info, EE_BUF_LEN, "\n[%s] exec:%s err_code1:0x%08x err_code2:0x%08x\n",
@@ -2944,7 +2954,7 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 	case MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG:
 		i_bit_ex_info = kmalloc(EE_BUF_LEN, GFP_ATOMIC);
 		if (i_bit_ex_info == NULL) {
-			CCCI_ERR_MSG(md->index, KERN, "Fail alloc Mem for i_bit_ex_info!\n");
+			CCCI_ERROR_LOG(md->index, KERN, "Fail alloc Mem for i_bit_ex_info!\n");
 			break;
 		}
 		snprintf(i_bit_ex_info, EE_BUF_LEN, "\n[Others] May I-Bit dis too long\n");
@@ -2970,7 +2980,7 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 
 	/* get ELM_status field from MD side */
 	c = md->ex_info.envinfo.ELM_status;
-	CCCI_INF_MSG(md->index, KERN, "ELM_status: %x\n", c);
+	CCCI_NORMAL_LOG(md->index, KERN, "ELM_status: %x\n", c);
 	switch (c) {
 	case 0xFF:
 		strcat(ex_info, "\nno ELM info\n");
@@ -2989,17 +2999,17 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 	}
 err_exit:
 	/* Dump MD EE info */
-	CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
+	CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD EX log\n");
 	if ((md->index == MD_SYS3) || (debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0))
-		ccci_mem_dump(md->index, &md->ex_info, sizeof(EX_LOG_T));
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, &md->ex_info, sizeof(EX_LOG_T));
 	else
 		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
 	/* Dump MD image memory */
-	CCCI_INF_MSG(md->index, KERN, "Dump MD image memory\n");
-	ccci_mem_dump(md->index, (void *)md->mem_layout.md_region_vir, MD_IMG_DUMP_SIZE);
+	CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD image memory\n");
+	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (void *)md->mem_layout.md_region_vir, MD_IMG_DUMP_SIZE);
 	/* Dump MD memory layout */
-	CCCI_INF_MSG(md->index, KERN, "Dump MD layout struct\n");
-	ccci_mem_dump(md->index, &md->mem_layout, sizeof(struct ccci_mem_layout));
+	CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD layout struct\n");
+	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, &md->mem_layout, sizeof(struct ccci_mem_layout));
 	/* Dump MD register */
 	md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
 
@@ -3015,9 +3025,9 @@ err_exit:
 	ccci_update_md_boot_stage(md, MD_BOOT_STAGE_EXCEPTION);
 	/* update here to maintain handshake stage info during exception handling */
 	if (debug_info->type == MD_EX_TYPE_C2K_ERROR && debug_info->fatal_error.err_code1 == MD_EX_C2K_FATAL_ERROR)
-		CCCI_INF_MSG(md->index, KERN, "C2K EE, No need trigger DB\n");
+		CCCI_NORMAL_LOG(md->index, KERN, "C2K EE, No need trigger DB\n");
 	else if (debug_info->type == CC_MD1_EXCEPTION)
-		CCCI_INF_MSG(md->index, KERN, "MD1 EE, No need trigger DB\n");
+		CCCI_NORMAL_LOG(md->index, KERN, "MD1 EE, No need trigger DB\n");
 	else if (ex_info == NULL)
 		ccci_aed(md, dump_flag, buf_fail, db_opt);
 	else
@@ -3044,10 +3054,10 @@ static void ccci_md_exception(struct ccci_modem *md)
 	if ((md->index == MD_SYS3) ||
 	(debug_info->more_info == MD_EE_CASE_NORMAL && md->boot_stage == MD_BOOT_STAGE_0)) {
 		ex_info = &md->ex_info;
-		CCCI_DBG_MSG(md->index, KERN, "Parse ex info from ccci packages\n");
+		CCCI_DEBUG_LOG(md->index, KERN, "Parse ex info from ccci packages\n");
 	} else {
 		ex_info = (EX_LOG_T *) md->smem_layout.ccci_exp_smem_mdss_debug_vir;
-		CCCI_DBG_MSG(md->index, KERN, "Parse ex info from shared memory\n");
+		CCCI_DEBUG_LOG(md->index, KERN, "Parse ex info from shared memory\n");
 	}
 	ee_case = debug_info->more_info;
 
@@ -3183,10 +3193,10 @@ void md_ex_monitor_func(unsigned long data)
 	unsigned int ee_info_flag = 0;
 	struct ccci_modem *md = (struct ccci_modem *)data;
 #if defined(CONFIG_MTK_AEE_FEATURE)
-	CCCI_NOTICE_MSG(md->index, KERN, "MD exception timer 1:disable tracing\n");
+	CCCI_NORMAL_LOG(md->index, KERN, "MD exception timer 1:disable tracing\n");
 	tracing_off();
 #endif
-	CCCI_EXP_MSG(md->index, KERN, "MD exception timer 1! ee=%x\n", md->ee_info_flag);
+	CCCI_MEM_LOG_TAG(md->index, KERN, "MD exception timer 1! ee=%x\n", md->ee_info_flag);
 	spin_lock_irqsave(&md->ctrl_lock, flags);
 	if ((1 << MD_EE_DUMP_ON_GOING) & md->ee_info_flag) {
 		ee_on_going = 1;
@@ -3202,26 +3212,26 @@ void md_ex_monitor_func(unsigned long data)
 	if ((ee_info_flag & ((1 << MD_EE_MSG_GET) | (1 << MD_EE_OK_MSG_GET) | (1 << MD_EE_SWINT_GET))) ==
 	    ((1 << MD_EE_MSG_GET) | (1 << MD_EE_OK_MSG_GET) | (1 << MD_EE_SWINT_GET))) {
 		ee_case = MD_EE_CASE_NORMAL;
-		CCCI_DBG_MSG(md->index, KERN, "Recv SWINT & MD_EX & MD_EX_REC_OK\n");
+		CCCI_DEBUG_LOG(md->index, KERN, "Recv SWINT & MD_EX & MD_EX_REC_OK\n");
 		if (ee_info_flag & (1 << MD_EE_AP_MASK_I_BIT_TOO_LONG))
 			ee_case = MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG;
 	} else if (!(ee_info_flag & (1 << MD_EE_SWINT_GET))
 		   && (ee_info_flag & ((1 << MD_EE_MSG_GET) | (1 << MD_EE_OK_MSG_GET)))) {
 		ee_case = MD_EE_CASE_SWINT_MISSING;
-		CCCI_EXP_INF_MSG(md->index, KERN, "SWINT missing, ee_info_flag=%x\n", ee_info_flag);
+		CCCI_NORMAL_LOG(md->index, KERN, "SWINT missing, ee_info_flag=%x\n", ee_info_flag);
 	} else if ((ee_info_flag & ((1 << MD_EE_MSG_GET) | (1 << MD_EE_SWINT_GET))) & (1 << MD_EE_MSG_GET)) {
 		ee_case = MD_EE_CASE_ONLY_EX;
-		CCCI_EXP_INF_MSG(md->index, KERN, "Only recv SWINT & MD_EX.\n");
+		CCCI_NORMAL_LOG(md->index, KERN, "Only recv SWINT & MD_EX.\n");
 		if (ee_info_flag & (1 << MD_EE_AP_MASK_I_BIT_TOO_LONG))
 			ee_case = MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG;
 	} else if ((ee_info_flag & ((1 << MD_EE_OK_MSG_GET) | (1 << MD_EE_SWINT_GET))) & (1 << MD_EE_OK_MSG_GET)) {
 		ee_case = MD_EE_CASE_ONLY_EX_OK;
-		CCCI_EXP_INF_MSG(md->index, KERN, "Only recv SWINT & MD_EX_OK\n");
+		CCCI_NORMAL_LOG(md->index, KERN, "Only recv SWINT & MD_EX_OK\n");
 		if (ee_info_flag & (1 << MD_EE_AP_MASK_I_BIT_TOO_LONG))
 			ee_case = MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG;
 	} else if (ee_info_flag & (1 << MD_EE_SWINT_GET)) {
 		ee_case = MD_EE_CASE_ONLY_SWINT;
-		CCCI_EXP_INF_MSG(md->index, KERN, "Only recv SWINT.\n");
+		CCCI_NORMAL_LOG(md->index, KERN, "Only recv SWINT.\n");
 		if ((ee_info_flag & (1 << MD_STATE_UPDATE)) == 0)
 			need_update_state = 1;
 	} else if (ee_info_flag & (1 << MD_EE_AP_MASK_I_BIT_TOO_LONG)) {
@@ -3245,7 +3255,7 @@ void md_ex_monitor_func(unsigned long data)
 		if ((ee_info_flag & (1 << MD_STATE_UPDATE)) == 0)
 			need_update_state = 1;
 	} else {
-		CCCI_EXP_MSG(md->index, KERN, "Invalid MD_EX, ee_info=%x\n", ee_info_flag);
+		CCCI_ERROR_LOG(md->index, KERN, "Invalid MD_EX, ee_info=%x\n", ee_info_flag);
 		goto _dump_done;
 	}
 
@@ -3260,14 +3270,17 @@ void md_ex_monitor_func(unsigned long data)
 	/* ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_NOTIFY, ee_case); // unsafe in timer context */
 	md->debug_info.more_info = ee_case;
 	/* Dump MD EE info */
-	CCCI_EXP_INF_MSG(md->index, KERN, "Dump MD EX log\n");
+	CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD EX log\n");
 #ifdef MD_UMOLY_EE_SUPPORT
 	if (md->index == MD_SYS1) {
-		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_mdss_debug_vir, (2048 + 512));
-		ccci_mem_dump(md->index, (md->smem_layout.ccci_exp_smem_mdss_debug_vir + 6 * 1024), 2048);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
+					md->smem_layout.ccci_exp_smem_mdss_debug_vir, (2048 + 512));
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
+					(md->smem_layout.ccci_exp_smem_mdss_debug_vir + 6 * 1024), 2048);
 	} else
 #endif
-		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP,
+					md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
 	/* Dump MD register */
 	md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
 	mod_timer(&md->ex_monitor2, jiffies + EX_TIMER_MD_EX_REC_OK * HZ);
@@ -3284,7 +3297,8 @@ void md_ex_monitor2_func(unsigned long data)
 
 	int ee_on_going = 0;
 
-	CCCI_EXP_MSG(md->index, KERN, "MD exception timer 2! ee=%x\n", md->ee_info_flag);
+	CCCI_ERROR_LOG(md->index, KERN, "MD exception timer 2! ee=%x\n", md->ee_info_flag);
+	CCCI_MEM_LOG_TAG(md->index, KERN, "MD exception timer 2!\n");
 
 	spin_lock_irqsave(&md->ctrl_lock, flags);
 	if ((1 << MD_EE_TIMER2_DUMP_ON_GOING) & md->ee_info_flag)
@@ -3314,7 +3328,7 @@ void md_ex_monitor2_func(unsigned long data)
 				   clear flag for reset MD later */
 	spin_unlock_irqrestore(&md->ctrl_lock, flags);
 
-	CCCI_INF_MSG(md->index, KERN, "Enable WDT at exception exit.");
+	CCCI_NORMAL_LOG(md->index, KERN, "Enable WDT at exception exit.\n");
 	md->ops->ee_callback(md, EE_FLAG_ENABLE_WDT);
 }
 EXPORT_SYMBOL(md_ex_monitor2_func);
@@ -3324,16 +3338,16 @@ void md_bootup_timeout_func(unsigned long data)
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	char ex_info[EE_BUF_LEN] = "";
 
-	CCCI_ERR_MSG(md->index, KERN, "MD_BOOT_HS%d_FAIL!\n", (md->boot_stage + 1));
+	CCCI_ERROR_LOG(md->index, KERN, "MD_BOOT_HS%d_FAIL!\n", (md->boot_stage + 1));
 	md->ops->broadcast_state(md, BOOT_FAIL);
 	if (md->config.setting & MD_SETTING_STOP_RETRY_BOOT)
 		return;
 
 	/* ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_BOOT_TIMEOUT, 0); */
 	snprintf(ex_info, EE_BUF_LEN, "\n[Others] MD_BOOT_UP_FAIL(HS%d)\n", (md->boot_stage + 1));
-	CCCI_INF_MSG(md->index, KERN, "Dump MD image memory\n");
+	CCCI_NORMAL_LOG(md->index, KERN, "Dump MD image memory\n");
 	ccci_mem_dump(md->index, (void *)md->mem_layout.md_region_vir, MD_IMG_DUMP_SIZE);
-	CCCI_INF_MSG(md->index, KERN, "Dump MD layout struct\n");
+	CCCI_NORMAL_LOG(md->index, KERN, "Dump MD layout struct\n");
 	ccci_mem_dump(md->index, &md->mem_layout, sizeof(struct ccci_mem_layout));
 	md->ops->dump_info(md, DUMP_FLAG_QUEUE_0_1, NULL, 0);
 
@@ -3349,8 +3363,9 @@ void md_bootup_timeout_func(unsigned long data)
 			ccci_aed(md, CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_MD_IMG_MEM, ex_info, DB_OPT_DEFAULT);
 	} else if (md->boot_stage == MD_BOOT_STAGE_1) {
 		/* Handshake 2 fail */
-		CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
-		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
+		CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
+		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
+						md->smem_layout.ccci_exp_dump_size);
 
 		ccci_aed(md, CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_EX_MEM, ex_info, DB_OPT_FTRACE);
 	}

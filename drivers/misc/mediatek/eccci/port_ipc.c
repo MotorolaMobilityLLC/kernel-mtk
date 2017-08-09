@@ -97,7 +97,7 @@ int port_ipc_req_match(struct ccci_port *port, struct ccci_request *req)
 	if (port->rx_ch != CCCI_IPC_RX)
 		return 1;
 
-	CCCI_DBG_MSG(port->modem->index, IPC, "task_id matching: (%x/%x)\n", ipc_ctrl->task_id, ccci_h->reserved);
+	CCCI_DEBUG_LOG(port->modem->index, IPC, "task_id matching: (%x/%x)\n", ipc_ctrl->task_id, ccci_h->reserved);
 	id_map = unify_AP_id_2_local_id(ccci_h->reserved);
 	if (id_map == NULL)
 		return 0;
@@ -163,22 +163,22 @@ int port_ipc_ioctl(struct ccci_port *port, unsigned int cmd, unsigned long arg)
 
 	case CCCI_IPC_UPDATE_TIME:
 #ifdef FEATURE_MD_GET_CLIB_TIME
-		CCCI_DBG_MSG(port->modem->index, IPC, "CCCI_IPC_UPDATE_TIME 0x%x\n", (unsigned int)arg);
+		CCCI_DEBUG_LOG(port->modem->index, IPC, "CCCI_IPC_UPDATE_TIME 0x%x\n", (unsigned int)arg);
 		current_time_zone = (int)arg;
 		ret = send_new_time_to_md((int)arg);
 #else
-		CCCI_INF_MSG(port->modem->index, IPC, "CCCI_IPC_UPDATE_TIME 0x%x(dummy)\n", (unsigned int)arg);
+		CCCI_REPEAT_LOG(port->modem->index, IPC, "CCCI_IPC_UPDATE_TIME 0x%x(dummy)\n", (unsigned int)arg);
 #endif
 		break;
 
 	case CCCI_IPC_WAIT_TIME_UPDATE:
-		CCCI_DBG_MSG(port->modem->index, IPC, "CCCI_IPC_WAIT_TIME_UPDATE\n");
+		CCCI_DEBUG_LOG(port->modem->index, IPC, "CCCI_IPC_WAIT_TIME_UPDATE\n");
 		ret = wait_time_update_notify();
-		CCCI_INF_MSG(port->modem->index, IPC, "CCCI_IPC_WAIT_TIME_UPDATE wakeup\n");
+		CCCI_REPEAT_LOG(port->modem->index, IPC, "CCCI_IPC_WAIT_TIME_UPDATE wakeup\n");
 		break;
 
 	case CCCI_IPC_UPDATE_TIMEZONE:
-		CCCI_INF_MSG(port->modem->index, IPC, "CCCI_IPC_UPDATE_TIMEZONE keep 0x%x\n", (unsigned int)arg);
+		CCCI_REPEAT_LOG(port->modem->index, IPC, "CCCI_IPC_UPDATE_TIMEZONE keep 0x%x\n", (unsigned int)arg);
 		current_time_zone = (int)arg;
 		break;
 	};
@@ -206,7 +206,7 @@ int port_ipc_write_check_id(struct ccci_port *port, struct ccci_request *req)
 
 	id_map = local_MD_id_2_unify_id(ilm->dest_mod_id);
 	if (id_map == NULL) {
-		CCCI_ERR_MSG(port->modem->index, IPC, "Invalid Dest MD ID (%d)\n", ilm->dest_mod_id);
+		CCCI_ERROR_LOG(port->modem->index, IPC, "Invalid Dest MD ID (%d)\n", ilm->dest_mod_id);
 		return -CCCI_ERR_IPC_ID_ERROR;
 	}
 	return id_map->extq_id;
@@ -262,7 +262,7 @@ static int port_ipc_parse_gf_port(GF_IP_TYPE ip_type, GF_PROTOCOL_TYPE prot_type
 	* For kernel security issue, remove filp_open file code
 	* if really need, please find suitable net interface to get opened port list
 	*/
-	CCCI_INF_MSG(-1, IPC, "IP:%d Protocol:%d port number:%d\n", ip_type, prot_type, port_number);
+	CCCI_NORMAL_LOG(-1, IPC, "IP:%d Protocol:%d port number:%d\n", ip_type, prot_type, port_number);
 	return port_number;
 }
 
@@ -297,7 +297,7 @@ int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg)
 		ret = port_ipc_parse_gf_port(GF_IPV6, GF_UDP, gf_port_list + count, GF_PORT_LIST_MAX - count);
 		if (ret > 0)
 			count += ret;
-		CCCI_INF_MSG(md->index, IPC, "register garbage filer port number %d\n", count);
+		CCCI_NORMAL_LOG(md->index, IPC, "register garbage filer port number %d\n", count);
 		gf_header.filter_set_id = 0;
 		gf_header.filter_cnt = count;
 	} else {
@@ -314,7 +314,7 @@ int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg)
 			gf_header.filter_cnt = -1;	/* de-register all */
 		else
 			gf_header.filter_cnt = count;
-		CCCI_INF_MSG(md->index, IPC, "unregister garbage filer port number %d\n", count);
+		CCCI_NORMAL_LOG(md->index, IPC, "unregister garbage filer port number %d\n", count);
 	}
 	gf_header.uplink = 0;
 
@@ -362,7 +362,7 @@ int ccci_ipc_set_garbage_filter(struct ccci_modem *md, int reg)
 			memcpy(skb_put(req->skb, garbage_length), gf_port_list, garbage_length);
 		else
 			memcpy(skb_put(req->skb, garbage_length), gf_port_list_unreg, garbage_length);
-		CCCI_INF_MSG(md->index, IPC, "garbage filer data length %d/%d\n", garbage_length, actual_count);
+		CCCI_NORMAL_LOG(md->index, IPC, "garbage filer data length %d/%d\n", garbage_length, actual_count);
 		ccci_mem_dump(md->index, req->skb->data, req->skb->len);
 		/* send packet */
 		ret = port_ipc_write_check_id(port, req);
@@ -396,11 +396,11 @@ static int port_ipc_kernel_write(ipc_ilm_t *in_ilm)
 	/* src module id check */
 	task_id = in_ilm->src_mod_id & (~AP_UNIFY_ID_FLAG);
 	if (task_id >= ARRAY_SIZE(ipc_task_ctrl)) {
-		CCCI_ERR_MSG(-1, IPC, "invalid task ID %x\n", in_ilm->src_mod_id);
+		CCCI_ERROR_LOG(-1, IPC, "invalid task ID %x\n", in_ilm->src_mod_id);
 		return -1;
 	}
 	if (in_ilm->local_para_ptr == NULL) {
-		CCCI_ERR_MSG(-1, IPC, "invalid ILM local parameter pointer %p for task %d\n", in_ilm, task_id);
+		CCCI_ERROR_LOG(-1, IPC, "invalid ILM local parameter pointer %p for task %d\n", in_ilm, task_id);
 		return -2;
 	}
 
@@ -410,11 +410,11 @@ static int port_ipc_kernel_write(ipc_ilm_t *in_ilm)
 
 	count = sizeof(struct ccci_ipc_ilm) + in_ilm->local_para_ptr->msg_len;
 	if (count > CCCI_MTU) {
-		CCCI_ERR_MSG(port->modem->index, IPC, "reject packet(size=%d ), lager than MTU on %s\n", count,
+		CCCI_ERROR_LOG(port->modem->index, IPC, "reject packet(size=%d ), lager than MTU on %s\n", count,
 			     port->name);
 		return -ENOMEM;
 	}
-	CCCI_DBG_MSG(port->modem->index, IPC, "write on %s for %d\n", port->name, in_ilm->local_para_ptr->msg_len);
+	CCCI_DEBUG_LOG(port->modem->index, IPC, "write on %s for %d\n", port->name, in_ilm->local_para_ptr->msg_len);
 
 	actual_count = count + sizeof(struct ccci_header);
 	req = ccci_alloc_req(OUT, actual_count, 1, 1);
@@ -462,7 +462,7 @@ static int port_ipc_kernel_recv_req(struct ccci_port *port, struct ccci_request 
 	unsigned long flags;
 
 	spin_lock_irqsave(&port->rx_req_lock, flags);
-	CCCI_DBG_MSG(port->modem->index, IPC, "recv on %s, len=%d\n", port->name, port->rx_length);
+	CCCI_DEBUG_LOG(port->modem->index, IPC, "recv on %s, len=%d\n", port->name, port->rx_length);
 	if (port->rx_length < port->rx_length_th) {
 		port->flags &= ~PORT_F_RX_FULLED;
 		port->rx_length++;
@@ -476,7 +476,7 @@ static int port_ipc_kernel_recv_req(struct ccci_port *port, struct ccci_request 
 	port->flags |= PORT_F_RX_FULLED;
 	spin_unlock_irqrestore(&port->rx_req_lock, flags);
 	if (port->flags & PORT_F_ALLOW_DROP /* || !(port->flags&PORT_F_RX_EXCLUSIVE) */) {
-		CCCI_INF_MSG(port->modem->index, IPC, "port %s Rx full, drop packet\n", port->name);
+		CCCI_NORMAL_LOG(port->modem->index, IPC, "port %s Rx full, drop packet\n", port->name);
 		goto drop;
 	} else {
 		return -CCCI_ERR_PORT_RX_FULL;
@@ -484,7 +484,7 @@ static int port_ipc_kernel_recv_req(struct ccci_port *port, struct ccci_request 
 
  drop:
 	/* drop this packet */
-	CCCI_INF_MSG(port->modem->index, IPC, "drop on %s, len=%d\n", port->name, port->rx_length);
+	CCCI_NORMAL_LOG(port->modem->index, IPC, "drop on %s, len=%d\n", port->name, port->rx_length);
 	list_del(&req->entry);
 	req->policy = RECYCLE;
 	ccci_free_req(req);
@@ -501,7 +501,7 @@ static int port_ipc_kernel_thread(void *arg)
 	struct ccci_ipc_ilm *ilm;
 	ipc_ilm_t out_ilm;
 
-	CCCI_DBG_MSG(port->modem->index, IPC, "port %s's thread running\n", port->name);
+	CCCI_DEBUG_LOG(port->modem->index, IPC, "port %s's thread running\n", port->name);
 
 	while (1) {
 		if (list_empty(&port->rx_req_list)) {
@@ -511,7 +511,7 @@ static int port_ipc_kernel_thread(void *arg)
 		}
 		if (kthread_should_stop())
 			break;
-		CCCI_DBG_MSG(port->modem->index, IPC, "read on %s\n", port->name);
+		CCCI_DEBUG_LOG(port->modem->index, IPC, "read on %s\n", port->name);
 		/* 1. dequeue */
 		spin_lock_irqsave(&port->rx_req_lock, flags);
 		req = list_first_entry(&port->rx_req_list, struct ccci_request, entry);
@@ -537,7 +537,7 @@ static int port_ipc_kernel_thread(void *arg)
 		mtk_conn_md_bridge_send_msg(&out_ilm);
 #endif
 		port->rx_length--;
-		CCCI_DBG_MSG(port->modem->index, IPC, "read done on %s l=%d\n", port->name,
+		CCCI_DEBUG_LOG(port->modem->index, IPC, "read done on %s l=%d\n", port->name,
 			     out_ilm.local_para_ptr->msg_len);
 		req->policy = RECYCLE;
 		ccci_free_req(req);
@@ -549,7 +549,7 @@ static int port_ipc_kernel_init(struct ccci_port *port)
 {
 	struct ccci_ipc_ctrl *ipc_ctrl;
 
-	CCCI_DBG_MSG(port->modem->index, IPC, "IPC kernel port %s is initializing\n", port->name);
+	CCCI_DEBUG_LOG(port->modem->index, IPC, "IPC kernel port %s is initializing\n", port->name);
 	port->private_data = kthread_run(port_ipc_kernel_thread, port, "%s", port->name);
 	port->rx_length_th = MAX_QUEUE_LENGTH;
 
@@ -595,14 +595,14 @@ int send_new_time_to_md(int tz)
 	in_ilm.local_para_ptr->msg_len = 20;
 	memcpy(in_ilm.local_para_ptr->data, timeinfo, 16);
 
-	CCCI_DBG_MSG(-1, IPC, "Update time(R): [sec=0x%lx][timezone=0x%08x][des=0x%08x]\n", tv.tv_sec,
+	CCCI_DEBUG_LOG(-1, IPC, "Update time(R): [sec=0x%lx][timezone=0x%08x][des=0x%08x]\n", tv.tv_sec,
 		     sys_tz.tz_minuteswest, sys_tz.tz_dsttime);
-	CCCI_DBG_MSG(-1, IPC, "Update time(A): [L:0x%08x][H:0x%08x][0x%08x][0x%08x]\n", timeinfo[0], timeinfo[1],
+	CCCI_DEBUG_LOG(-1, IPC, "Update time(A): [L:0x%08x][H:0x%08x][0x%08x][0x%08x]\n", timeinfo[0], timeinfo[1],
 		     timeinfo[2], timeinfo[3]);
 	if (port_ipc_kernel_write(&in_ilm) < 0) {
-		CCCI_INF_MSG(-1, IPC, "Update fail\n");
+		CCCI_NORMAL_LOG(-1, IPC, "Update fail\n");
 		return -1;
 	}
-	CCCI_INF_MSG(-1, IPC, "Update success\n");
+	CCCI_REPEAT_LOG(-1, IPC, "Update success\n");
 	return 0;
 }

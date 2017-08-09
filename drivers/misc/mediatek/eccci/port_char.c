@@ -52,21 +52,26 @@ static int dev_char_close_check(struct ccci_port *port)
 		port->modem->critical_user_active[2] = 0;
 	if (port->rx_ch == CCCI_UART1_RX && !atomic_read(&port->usage_cnt))
 		port->modem->critical_user_active[3] = 0;
-	CCCI_INF_MSG(port->modem->index, CHAR, "dev close check: %d %d %d %d\n", port->modem->critical_user_active[0],
-		     port->modem->critical_user_active[1], port->modem->critical_user_active[2],
-		     port->modem->critical_user_active[3]);
+	CCCI_NORMAL_LOG(port->modem->index, CHAR, "dev close check: %d %d %d %d\n",
+				port->modem->critical_user_active[0],
+				port->modem->critical_user_active[1], port->modem->critical_user_active[2],
+				port->modem->critical_user_active[3]);
+	ccci_event_log("md%d: dev close check: %d %d %d %d\n", port->modem->index,
+				port->modem->critical_user_active[0],
+				port->modem->critical_user_active[1], port->modem->critical_user_active[2],
+				port->modem->critical_user_active[3]);
 
 	if (port->modem->critical_user_active[0] == 0 && port->modem->critical_user_active[1] == 0) {
 		if (is_meta_mode() || is_advanced_meta_mode()) {
 			if (port->modem->critical_user_active[3] == 0) {
-				CCCI_INF_MSG(port->modem->index, CHAR, "ready to reset MD in META mode\n");
+				CCCI_NORMAL_LOG(port->modem->index, CHAR, "ready to reset MD in META mode\n");
 				return 0;
 			}
 			/* this should never happen */
-			CCCI_ERR_MSG(port->modem->index, CHAR, "DHL ctrl is still open in META mode\n");
+			CCCI_ERROR_LOG(port->modem->index, CHAR, "DHL ctrl is still open in META mode\n");
 		} else {
 			if (port->modem->critical_user_active[2] == 0 && port->modem->critical_user_active[3] == 0) {
-				CCCI_INF_MSG(port->modem->index, CHAR, "ready to reset MD in normal mode\n");
+				CCCI_NORMAL_LOG(port->modem->index, CHAR, "ready to reset MD in normal mode\n");
 				return 0;
 			}
 		}
@@ -83,7 +88,7 @@ static int dev_char_open(struct inode *inode, struct file *file)
 	port = ccci_get_port_for_node(major, minor);
 	if (atomic_read(&port->usage_cnt))
 		return -EBUSY;
-	CCCI_INF_MSG(port->modem->index, CHAR, "port %s open with flag %X by %s\n", port->name, file->f_flags,
+	CCCI_NORMAL_LOG(port->modem->index, CHAR, "port %s open with flag %X by %s\n", port->name, file->f_flags,
 		     current->comm);
 	atomic_inc(&port->usage_cnt);
 	file->private_data = port;
@@ -118,7 +123,9 @@ static int dev_char_close(struct inode *inode, struct file *file)
 	/* 1.3 flush Rx */
 	ccci_port_ask_more_request(port);
 	spin_unlock_irqrestore(&port->rx_req_lock, flags);
-	CCCI_INF_MSG(port->modem->index, CHAR, "port %s close rx_len=%d empty=%d\n", port->name,
+	CCCI_NORMAL_LOG(port->modem->index, CHAR, "port %s close rx_len=%d empty=%d\n", port->name,
+		     port->rx_length, list_empty(&port->rx_req_list));
+	ccci_event_log("md%d: port %s close rx_len=%d empty=%d\n", port->modem->index, port->name,
 		     port->rx_length, list_empty(&port->rx_req_list));
 	/* 2. check critical nodes for reset, run close check first,
 	      as mdlogger is killed before we gated MD when IPO shutdown */
@@ -152,7 +159,7 @@ static void port_ch_dump(int md_id, char *str, void *msg_buf, int len)
 		}
 	}
 	buf[j] = '\0';
-	CCCI_INF_MSG(md_id, CHAR, "%s %d>%s\n", str, len, buf);
+	CCCI_NORMAL_LOG(md_id, CHAR, "%s %d>%s\n", str, len, buf);
 #endif
 }
 
@@ -177,7 +184,7 @@ static ssize_t dev_char_read(struct file *file, char *buf, size_t count, loff_t 
 			goto exit;
 		}
 	}
-	CCCI_DBG_MSG(port->modem->index, CHAR, "read on %s for %zu\n", port->name, count);
+	CCCI_DEBUG_LOG(port->modem->index, CHAR, "read on %s for %zu\n", port->name, count);
 	spin_lock_irqsave(&port->rx_req_lock, flags);
 	req = list_first_entry(&port->rx_req_list, struct ccci_request, entry);
 	/* 2. caculate available data */
@@ -223,12 +230,12 @@ static ssize_t dev_char_read(struct file *file, char *buf, size_t count, loff_t 
 		port_ch_dump(port->modem->index, "chr_read", req->skb->data, read_len);
 	/* 3. copy to user */
 	if (copy_to_user(buf, req->skb->data, read_len)) {
-		CCCI_ERR_MSG(port->modem->index, CHAR, "read on %s, copy to user failed, %d/%zu\n", port->name,
+		CCCI_ERROR_LOG(port->modem->index, CHAR, "read on %s, copy to user failed, %d/%zu\n", port->name,
 			     read_len, count);
 		ret = -EFAULT;
 	}
 	skb_pull(req->skb, read_len);
-	/* CCCI_DBG_MSG(port->modem->index, CHAR,
+	/* CCCI_DEBUG_LOG(port->modem->index, CHAR,
 	"read done on %s l=%d r=%d pr=%d\n", port->name, read_len, ret, (req->state==PARTIAL_READ)); */
 	/* 4. free request */
 	if (full_req_done) {
@@ -271,7 +278,7 @@ int ccci_c2k_rawbulk_intercept(int ch_id, unsigned int interception)
 		ch_id_rx = CCCI_MD_LOG_RX;
 	} else {
 		ret = -ENODEV;
-		CCCI_ERR_MSG(MD_SYS3, CHAR, "Err: wrong ch_id(%d) from usb bypass\n", ch_id);
+		CCCI_ERROR_LOG(MD_SYS3, CHAR, "Err: wrong ch_id(%d) from usb bypass\n", ch_id);
 		return ret;
 	}
 
@@ -291,13 +298,13 @@ int ccci_c2k_rawbulk_intercept(int ch_id, unsigned int interception)
 			if (ch_id == CCCI_C2K_PPP_DATA)
 				md->data_usb_bypass = !!interception;
 			ret = 0;
-			CCCI_INF_MSG(md->index, CHAR, "port(%s) ch(%d) interception(%d) set\n",
+			CCCI_NORMAL_LOG(md->index, CHAR, "port(%s) ch(%d) interception(%d) set\n",
 				port->name, ch_id, interception);
 		}
 	}
 	if (!matched) {
 		ret = -ENODEV;
-		CCCI_ERR_MSG(md->index, CHAR, "Err: no port found when setting interception(%d,%d)\n",
+		CCCI_ERROR_LOG(md->index, CHAR, "Err: no port found when setting interception(%d,%d)\n",
 			ch_id, interception);
 	}
 
@@ -334,14 +341,14 @@ int ccci_c2k_buffer_push(int ch_id, void *buf, int count)
 		ch_id_rx = CCCI_MD_LOG_RX;
 	} else {
 		ret = -ENODEV;
-		CCCI_ERR_MSG(MD_SYS3, CHAR, "Err: wrong ch_id(%d) from usb bypass\n", ch_id);
+		CCCI_ERROR_LOG(MD_SYS3, CHAR, "Err: wrong ch_id(%d) from usb bypass\n", ch_id);
 		return ret;
 	}
 
 	/* only md3 can usb bypass */
 	md = ccci_get_modem_by_id(MD_SYS3);
 
-	CCCI_INF_MSG(md->index, CHAR, "data from usb bypass (ch%d)(%d)\n", ch_id, count);
+	CCCI_NORMAL_LOG(md->index, CHAR, "data from usb bypass (ch%d)(%d)\n", ch_id, count);
 
 	actual_count = count > CCCI_MTU ? CCCI_MTU : count;
 
@@ -398,11 +405,11 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 		return -EPERM;
 
 	if (port->tx_ch == CCCI_IPC_UART_TX)
-		CCCI_DBG_MSG(port->modem->index, CHAR,
+		CCCI_DEBUG_LOG(port->modem->index, CHAR,
 		"port %s write: md_state=%d\n", port->name, port->modem->md_state);
 
 	if (port->modem->md_state == BOOTING && port->tx_ch != CCCI_FS_TX && port->tx_ch != CCCI_RPC_TX) {
-		CCCI_INF_MSG(port->modem->index, CHAR, "port %s ch%d write fail when md_state=%d\n", port->name,
+		CCCI_NORMAL_LOG(port->modem->index, CHAR, "port %s ch%d write fail when md_state=%d\n", port->name,
 			     port->tx_ch, port->modem->md_state);
 		return -ENODEV;
 	}
@@ -415,7 +422,7 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	header_len = sizeof(struct ccci_header) + (port->rx_ch == CCCI_FS_RX ? sizeof(unsigned int) : 0);
 	if (port->flags & PORT_F_USER_HEADER) {
 		if (count > (CCCI_MTU + header_len)) {
-			CCCI_ERR_MSG(port->modem->index, CHAR, "reject packet(size=%zu ), larger than MTU on %s\n",
+			CCCI_ERROR_LOG(port->modem->index, CHAR, "reject packet(size=%zu ), larger than MTU on %s\n",
 				     count, port->name);
 			return -ENOMEM;
 		}
@@ -428,7 +435,7 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 		actual_count = count > CCCI_MTU ? CCCI_MTU : count;
 
 	/*if (CCCI_FS_TX != port->tx_ch)
-		CCCI_INF_MSG(port->modem->index, CHAR, "write on %s for %zu of %zu, md_s=%d\n",
+		CCCI_NORMAL_LOG(port->modem->index, CHAR, "write on %s for %zu of %zu, md_s=%d\n",
 			port->name, actual_count, count, port->modem->md_state); */
 
 	req = ccci_alloc_req(OUT, actual_count, blocking, blocking);
@@ -474,7 +481,7 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 		ret = ccci_port_send_request(port, req);
 			/* do NOT reference request after called this, modem may have freed it, unless you get -EBUSY */
 		if (ccci_h && ccci_h->channel == CCCI_UART2_TX) {
-			/* CCCI_INF_MSG(port->modem->index, CHAR,
+			/* CCCI_NORMAL_LOG(port->modem->index, CHAR,
 				"write done on %s, l=%zu r=%d\n", port->name, actual_count, ret); */
 		}
 
@@ -491,7 +498,7 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 		return actual_count;
 
  err_out:
-		CCCI_INF_MSG(port->modem->index, CHAR, "write error done on %s, l=%zu r=%d\n",
+		CCCI_NORMAL_LOG(port->modem->index, CHAR, "write error done on %s, l=%zu r=%d\n",
 			 port->name, actual_count, ret);
 		ccci_free_req(req);
 		return ret;
@@ -524,10 +531,10 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			char md_protol[] = "DHL";
 			unsigned int data_size = sizeof(md_protol) / sizeof(char);
 
-			CCCI_ERR_MSG(md->index, CHAR, "Call CCCI_IOC_GET_MD_PROTOCOL_TYPE!\n");
+			CCCI_ERROR_LOG(md->index, CHAR, "Call CCCI_IOC_GET_MD_PROTOCOL_TYPE!\n");
 
 			if (copy_to_user((void __user *)arg, md_protol, data_size)) {
-				CCCI_ERR_MSG(md->index, CHAR, "copy_to_user MD_PROTOCOL failed !!\n");
+				CCCI_ERROR_LOG(md->index, CHAR, "copy_to_user MD_PROTOCOL failed !!\n");
 
 				return -EFAULT;
 			}
@@ -547,16 +554,17 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 
 		if (md_status_show_count[md->index] == 0) {
-			CCCI_INF_MSG(md->index, CHAR, "MD state %ld, %d\n", state, md->md_state);
+			CCCI_NORMAL_LOG(md->index, CHAR, "MD state %ld, %d\n", state, md->md_state);
+			ccci_event_log("md%d: MD state %ld, %d\n", md->index, state, md->md_state);
 			md_status_show_count[md->index]++;
 		}
 
 		if (state >= 0) {
-			/* CCCI_DBG_MSG(md->index, CHAR, "MD state %ld\n", state); */
+			/* CCCI_DEBUG_LOG(md->index, CHAR, "MD state %ld\n", state); */
 			/* state+='0'; // convert number to character */
 			ret = put_user((unsigned int)state, (unsigned int __user *)arg);
 		} else {
-			CCCI_ERR_MSG(md->index, CHAR, "Get MD state fail: %ld\n", state);
+			CCCI_ERROR_LOG(md->index, CHAR, "Get MD state fail: %ld\n", state);
 			ret = state;
 		}
 		break;
@@ -566,7 +574,8 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		/* deprecated, share memory operation */
 		break;
 	case CCCI_IOC_MD_RESET:
-		CCCI_INF_MSG(md->index, CHAR, "MD reset ioctl(%d) called by %s\n", ch, current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "MD reset ioctl(%d) called by %s\n", ch, current->comm);
+		ccci_event_log("md%d: MD reset ioctl(%d) called by %s\n", md->index, ch, current->comm);
 		ret = md->ops->reset(md);
 		if (ret == 0) {
 			ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
@@ -583,7 +592,8 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 		break;
 	case CCCI_IOC_FORCE_MD_ASSERT:
-		CCCI_NOTICE_MSG(md->index, CHAR, "Force MD assert ioctl(%d) called by %s\n", ch, current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "Force MD assert ioctl(%d) called by %s\n", ch, current->comm);
+		ccci_event_log("md%d: Force MD assert ioctl(%d) called by %s\n", md->index, ch, current->comm);
 		if (md->index == MD_SYS3)
 			/* MD3 use interrupt to force assert */
 			ret = md->ops->force_assert(md, CCIF_INTERRUPT);
@@ -594,7 +604,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		if (ch == CCCI_MONITOR_CH) {
 			ret = md->ops->send_runtime_data(md, md->sbp_code);
 		} else {
-			CCCI_INF_MSG(md->index, CHAR, "Set runtime by invalid user(%u) called by %s\n", ch,
+			CCCI_NORMAL_LOG(md->index, CHAR, "Set runtime by invalid user(%u) called by %s\n", ch,
 				     current->comm);
 			ret = -1;
 		}
@@ -605,10 +615,11 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 	case CCCI_IOC_GET_MD_EX_TYPE:
 		ret = put_user((unsigned int)md->ex_type, (unsigned int __user *)arg);
-		CCCI_INF_MSG(md->index, CHAR, "get modem exception type=%d ret=%ld\n", md->ex_type, ret);
+		CCCI_NORMAL_LOG(md->index, CHAR, "get modem exception type=%d ret=%ld\n", md->ex_type, ret);
 		break;
 	case CCCI_IOC_SEND_STOP_MD_REQUEST:
-		CCCI_INF_MSG(md->index, CHAR, "stop MD request ioctl called by %s\n", current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "stop MD request ioctl called by %s\n", current->comm);
+		ccci_event_log("md%d: stop MD request ioctl called by %s\n", md->index, current->comm);
 		ret = md->ops->reset(md);
 		if (ret == 0) {
 			md->ops->stop(md, 0);
@@ -626,17 +637,19 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 		break;
 	case CCCI_IOC_SET_BOOT_DATA:
-			CCCI_INF_MSG(md->index, CHAR, "set MD boot env data called by %s\n",
+			CCCI_NORMAL_LOG(md->index, CHAR, "set MD boot env data called by %s\n",
+					 current->comm);
+			ccci_event_log("md%d: set MD boot env data called by %s\n", md->index,
 					 current->comm);
 			if (copy_from_user
 				(&md_boot_data, (void __user *)arg, sizeof(md_boot_data))) {
-				CCCI_INF_MSG(md->index, CHAR,
+				CCCI_NORMAL_LOG(md->index, CHAR,
 					 "CCCI_IOC_SET_BOOT_DATA: copy_from_user fail!\n");
 				ret = -EFAULT;
 			} else {
 				ret = ccci_set_md_boot_data(md, md_boot_data, ARRAY_SIZE(md_boot_data));
 				if (ret < 0) {
-					CCCI_INF_MSG(md->index, CHAR,
+					CCCI_NORMAL_LOG(md->index, CHAR,
 					"ccci_set_md_boot_data return fail!\n");
 					ret = -EFAULT;
 				}
@@ -644,19 +657,23 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			break;
 
 	case CCCI_IOC_SEND_START_MD_REQUEST:
-		CCCI_INF_MSG(md->index, CHAR, "start MD request ioctl called by %s\n", current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "start MD request ioctl called by %s\n", current->comm);
+		ccci_event_log("md%d: start MD request ioctl called by %s\n", md->index, current->comm);
 		ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_START_MD_REQUEST, 0);
 		break;
 	case CCCI_IOC_DO_START_MD:
-		CCCI_INF_MSG(md->index, CHAR, "start MD ioctl called by %s\n", current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "start MD ioctl called by %s\n", current->comm);
+		ccci_event_log("md%d: start MD ioctl called by %s\n", md->index, current->comm);
 		ret = md->ops->start(md);
 		break;
 	case CCCI_IOC_DO_STOP_MD:
-		CCCI_INF_MSG(md->index, CHAR, "stop MD ioctl called by %s\n", current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "stop MD ioctl called by %s\n", current->comm);
+		ccci_event_log("md%d: stop MD ioctl called by %s\n", md->index, current->comm);
 		ret = md->ops->stop(md, 0);
 		break;
 	case CCCI_IOC_ENTER_DEEP_FLIGHT:
-		CCCI_INF_MSG(md->index, CHAR, "enter MD flight mode ioctl called by %s\n", current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "enter MD flight mode ioctl called by %s\n", current->comm);
+		ccci_event_log("md%d: enter MD flight mode ioctl called by %s\n", md->index, current->comm);
 #ifdef MD_UMOLY_EE_SUPPORT
 		md->flight_mode = MD_FIGHT_MODE_ENTER; /* enter flight mode */
 #endif
@@ -667,7 +684,8 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 		break;
 	case CCCI_IOC_LEAVE_DEEP_FLIGHT:
-		CCCI_INF_MSG(md->index, CHAR, "leave MD flight mode ioctl called by %s\n", current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "leave MD flight mode ioctl called by %s\n", current->comm);
+		ccci_event_log("md%d: leave MD flight mode ioctl called by %s\n", md->index, current->comm);
 #ifdef MD_UMOLY_EE_SUPPORT
 		md->flight_mode = MD_FIGHT_MODE_LEAVE; /* leave flight mode */
 #endif
@@ -675,62 +693,64 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 
 	case CCCI_IOC_POWER_ON_MD_REQUEST:
-		CCCI_INF_MSG(md->index, CHAR, "Power on MD request ioctl called by %s\n", current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "Power on MD request ioctl called by %s\n", current->comm);
 		ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_POWER_ON_REQUEST, 0);
 		break;
 
 	case CCCI_IOC_POWER_OFF_MD_REQUEST:
-		CCCI_INF_MSG(md->index, CHAR, "Power off MD request ioctl called by %s\n", current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "Power off MD request ioctl called by %s\n", current->comm);
 		ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_POWER_OFF_REQUEST, 0);
 		break;
 	case CCCI_IOC_POWER_ON_MD:
 	case CCCI_IOC_POWER_OFF_MD:
 		/* abandoned */
-		CCCI_INF_MSG(md->index, CHAR, "Power on/off MD by user(%d) called by %s\n", ch, current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "Power on/off MD by user(%d) called by %s\n", ch, current->comm);
 		ret = -1;
 		break;
 	case CCCI_IOC_SIM_SWITCH:
 		if (copy_from_user(&sim_mode, (void __user *)arg, sizeof(unsigned int))) {
-			CCCI_INF_MSG(md->index, CHAR, "IOC_SIM_SWITCH: copy_from_user fail!\n");
+			CCCI_BOOTUP_LOG(md->index, CHAR, "IOC_SIM_SWITCH: copy_from_user fail!\n");
 			ret = -EFAULT;
 		} else {
 			switch_sim_mode(md->index, (char *)&sim_mode, sizeof(sim_mode));
-			CCCI_INF_MSG(md->index, CHAR, "IOC_SIM_SWITCH(%x): %ld\n", sim_mode, ret);
+			CCCI_BOOTUP_LOG(md->index, CHAR, "IOC_SIM_SWITCH(%x): %ld\n", sim_mode, ret);
 		}
 		break;
 	case CCCI_IOC_SIM_SWITCH_TYPE:
 		sim_switch_type = get_sim_switch_type();
-		CCCI_INF_MSG(md->index, KERN, "CCCI_IOC_SIM_SWITCH_TYPE:sim type(0x%x)", sim_switch_type);
+		CCCI_BOOTUP_LOG(md->index, KERN, "CCCI_IOC_SIM_SWITCH_TYPE:sim type(0x%x)\n", sim_switch_type);
 		ret = put_user(sim_switch_type, (unsigned int __user *)arg);
 		break;
 	case CCCI_IOC_GET_SIM_TYPE:
 		if (md->sim_type == 0xEEEEEEEE)
-			CCCI_ERR_MSG(md->index, KERN, "md has not send sim type yet(0x%x)", md->sim_type);
+			CCCI_BOOTUP_LOG(md->index, KERN, "md has not send sim type yet(0x%x)", md->sim_type);
 		else
-			CCCI_INF_MSG(md->index, KERN, "md has send sim type(0x%x)", md->sim_type);
+			CCCI_BOOTUP_LOG(md->index, KERN, "md has send sim type(0x%x)", md->sim_type);
 		ret = put_user(md->sim_type, (unsigned int __user *)arg);
 		break;
 	case CCCI_IOC_ENABLE_GET_SIM_TYPE:
 		if (copy_from_user(&enable_sim_type, (void __user *)arg, sizeof(unsigned int))) {
-			CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_ENABLE_GET_SIM_TYPE: copy_from_user fail!\n");
+			CCCI_NORMAL_LOG(md->index, CHAR, "CCCI_IOC_ENABLE_GET_SIM_TYPE: copy_from_user fail!\n");
 			ret = -EFAULT;
 		} else {
-			CCCI_INF_MSG(md->index, KERN, "CCCI_IOC_ENABLE_GET_SIM_TYPE: sim type(0x%x)", enable_sim_type);
+			CCCI_NORMAL_LOG(md->index, KERN, "CCCI_IOC_ENABLE_GET_SIM_TYPE: sim type(0x%x)",
+								enable_sim_type);
 			ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, MD_SIM_TYPE, enable_sim_type, 1);
 		}
 		break;
 	case CCCI_IOC_SEND_BATTERY_INFO:
 		bat_info = (unsigned int)BAT_Get_Battery_Voltage(0);
-		CCCI_INF_MSG(md->index, CHAR, "get bat voltage %d\n", bat_info);
+		CCCI_NORMAL_LOG(md->index, CHAR, "get bat voltage %d\n", bat_info);
 		ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, MD_GET_BATTERY_INFO, bat_info, 1);
 		break;
 	case CCCI_IOC_RELOAD_MD_TYPE:
 		state = 0;
 		if (copy_from_user(&state, (void __user *)arg, sizeof(unsigned int))) {
-			CCCI_INF_MSG(md->index, CHAR, "IOC_RELOAD_MD_TYPE: copy_from_user fail!\n");
+			CCCI_NORMAL_LOG(md->index, CHAR, "IOC_RELOAD_MD_TYPE: copy_from_user fail!\n");
 			ret = -EFAULT;
 		} else {
-			CCCI_INF_MSG(md->index, CHAR, "IOC_RELOAD_MD_TYPE: storing md type(%ld)!\n", state);
+			CCCI_NORMAL_LOG(md->index, CHAR, "IOC_RELOAD_MD_TYPE: storing md type(%ld)!\n", state);
+			ccci_event_log("md%d: IOC_RELOAD_MD_TYPE: storing md type(%ld)!\n", md->index, state);
 			if ((state >= modem_ultg) && (state <= MAX_IMG_NUM) && (md->index == MD_SYS1)) {
 				if (md_capability(MD_SYS1, state, 0))
 					ccci_reload_md_type(md, state);
@@ -743,12 +763,12 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case CCCI_IOC_SET_MD_IMG_EXIST:
 		if (copy_from_user
 		    (&md->md_img_exist, (void __user *)arg, sizeof(md->md_img_exist))) {
-			CCCI_INF_MSG(md->index, CHAR,
+			CCCI_BOOTUP_LOG(md->index, CHAR,
 				     "CCCI_IOC_SET_MD_IMG_EXIST: copy_from_user fail!\n");
 			ret = -EFAULT;
 		}
 		md->md_img_type_is_set = 1;
-		CCCI_INF_MSG(md->index, CHAR,
+		CCCI_BOOTUP_LOG(md->index, CHAR,
 			"CCCI_IOC_SET_MD_IMG_EXIST: set done!\n");
 		break;
 
@@ -757,17 +777,17 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		if (md_type) {
 			memset(&md->md_img_exist, 0, sizeof(md->md_img_exist));
 			md->md_img_exist[0] = md_type;
-			CCCI_INF_MSG(md->index, CHAR, "lk md_type: %d, image num:1\n", md_type);
+			CCCI_BOOTUP_LOG(md->index, CHAR, "lk md_type: %d, image num:1\n", md_type);
 		} else {
-			CCCI_INF_MSG(md->index, CHAR,
+			CCCI_BOOTUP_LOG(md->index, CHAR,
 				"CCCI_IOC_GET_MD_IMG_EXIST: waiting set\n");
 			while (md->md_img_type_is_set == 0)
 				msleep(200);
 		}
-		CCCI_INF_MSG(md->index, CHAR,
+		CCCI_BOOTUP_LOG(md->index, CHAR,
 			"CCCI_IOC_GET_MD_IMG_EXIST: waiting set done!\n");
 		if (copy_to_user((void __user *)arg, &md->md_img_exist, sizeof(md->md_img_exist))) {
-			CCCI_INF_MSG(md->index, CHAR,
+			CCCI_BOOTUP_LOG(md->index, CHAR,
 				     "CCCI_IOC_GET_MD_IMG_EXIST: copy_to_user fail!\n");
 			ret = -EFAULT;
 		}
@@ -778,20 +798,22 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 	case CCCI_IOC_STORE_MD_TYPE:
 		if (copy_from_user(&md->config.load_type_saving, (void __user *)arg, sizeof(unsigned int))) {
-			CCCI_INF_MSG(md->index, CHAR, "store md type fail: copy_from_user fail!\n");
+			CCCI_BOOTUP_LOG(md->index, CHAR, "store md type fail: copy_from_user fail!\n");
 			ret = -EFAULT;
 		} else {
-			CCCI_INF_MSG(md->index, CHAR, "storing md type(%d) in kernel space!\n",
+			CCCI_BOOTUP_LOG(md->index, CHAR, "storing md type(%d) in kernel space!\n",
+				     md->config.load_type_saving);
+			ccci_event_log("md%d: storing md type(%d) in kernel space!\n", md->index,
 				     md->config.load_type_saving);
 			if (md->config.load_type_saving >= 1 && md->config.load_type_saving <= MAX_IMG_NUM) {
 				if (md->config.load_type_saving != md->config.load_type)
-					CCCI_INF_MSG(md->index, CHAR,
+					CCCI_BOOTUP_LOG(md->index, CHAR,
 						     "Maybe Wrong: md type storing not equal with current setting!(%d %d)\n",
 						     md->config.load_type_saving, md->config.load_type);
 				/* Notify md_init daemon to store md type in nvram */
 				ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_STORE_NVRAM_MD_TYPE, 0);
 			} else {
-				CCCI_INF_MSG(md->index, CHAR, "store md type fail: invalid md type(0x%x)\n",
+				CCCI_BOOTUP_LOG(md->index, CHAR, "store md type fail: invalid md type(0x%x)\n",
 					     md->config.load_type_saving);
 			}
 		}
@@ -809,13 +831,13 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 	case CCCI_IOC_GET_EXT_MD_POST_FIX:
 		if (copy_to_user((void __user *)arg, md->post_fix, IMG_POSTFIX_LEN)) {
-			CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_GET_EXT_MD_POST_FIX: copy_to_user fail\n");
+			CCCI_BOOTUP_LOG(md->index, CHAR, "CCCI_IOC_GET_EXT_MD_POST_FIX: copy_to_user fail\n");
 			ret = -EFAULT;
 		}
 		break;
 	case CCCI_IOC_SEND_ICUSB_NOTIFY:
 		if (copy_from_user(&sim_id, (void __user *)arg, sizeof(unsigned int))) {
-			CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_SEND_ICUSB_NOTIFY: copy_from_user fail!\n");
+			CCCI_NORMAL_LOG(md->index, CHAR, "CCCI_IOC_SEND_ICUSB_NOTIFY: copy_from_user fail!\n");
 			ret = -EFAULT;
 		} else {
 			ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, MD_ICUSB_NOTIFY, sim_id, 1);
@@ -823,7 +845,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 	case CCCI_IOC_DL_TRAFFIC_CONTROL:
 		if (copy_from_user(&traffic_control, (void __user *)arg, sizeof(unsigned int)))
-			CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_DL_TRAFFIC_CONTROL: copy_from_user fail\n");
+			CCCI_NORMAL_LOG(md->index, CHAR, "CCCI_IOC_DL_TRAFFIC_CONTROL: copy_from_user fail\n");
 		if (traffic_control == 1)
 			;/* turn off downlink queue */
 		else if (traffic_control == 0)
@@ -834,13 +856,13 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 	case CCCI_IOC_UPDATE_SIM_SLOT_CFG:
 		if (copy_from_user(&sim_slot_cfg, (void __user *)arg, sizeof(sim_slot_cfg))) {
-			CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_UPDATE_SIM_SLOT_CFG: copy_from_user fail!\n");
+			CCCI_NORMAL_LOG(md->index, CHAR, "CCCI_IOC_UPDATE_SIM_SLOT_CFG: copy_from_user fail!\n");
 			ret = -EFAULT;
 		} else {
 			int need_update;
 
 			sim_switch_type = get_sim_switch_type();
-			CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_UPDATE_SIM_SLOT_CFG get s0:%d s1:%d s2:%d s3:%d\n",
+			CCCI_NORMAL_LOG(md->index, CHAR, "CCCI_IOC_UPDATE_SIM_SLOT_CFG get s0:%d s1:%d s2:%d s3:%d\n",
 				     sim_slot_cfg[0], sim_slot_cfg[1], sim_slot_cfg[2], sim_slot_cfg[3]);
 			ccci_setting = ccci_get_common_setting(md->index);
 			need_update = sim_slot_cfg[0];
@@ -855,23 +877,23 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 	case CCCI_IOC_STORE_SIM_MODE:
 		if (copy_from_user(&sim_mode, (void __user *)arg, sizeof(unsigned int))) {
-			CCCI_INF_MSG(md->index, CHAR, "store sim mode fail: copy_from_user fail!\n");
+			CCCI_NORMAL_LOG(md->index, CHAR, "store sim mode fail: copy_from_user fail!\n");
 			ret = -EFAULT;
 		} else {
-			CCCI_INF_MSG(md->index, CHAR, "store sim mode(%x) in kernel space!\n", sim_mode);
+			CCCI_NORMAL_LOG(md->index, CHAR, "store sim mode(%x) in kernel space!\n", sim_mode);
 			exec_ccci_kern_func_by_md_id(0, ID_STORE_SIM_SWITCH_MODE, (char *)&sim_mode,
 						     sizeof(unsigned int));
 		}
 		break;
 	case CCCI_IOC_GET_SIM_MODE:
-		CCCI_INF_MSG(md->index, CHAR, "get sim mode ioctl called by %s\n", current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "get sim mode ioctl called by %s\n", current->comm);
 		exec_ccci_kern_func_by_md_id(0, ID_GET_SIM_SWITCH_MODE, (char *)&sim_mode, sizeof(unsigned int));
 		ret = put_user(sim_mode, (unsigned int __user *)arg);
 		break;
 	case CCCI_IOC_GET_CFG_SETTING:
 		ccci_setting = ccci_get_common_setting(md->index);
 		if (copy_to_user((void __user *)arg, ccci_setting, sizeof(struct ccci_setting))) {
-			CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_GET_CFG_SETTING: copy_to_user fail\n");
+			CCCI_NORMAL_LOG(md->index, CHAR, "CCCI_IOC_GET_CFG_SETTING: copy_to_user fail\n");
 			ret = -EFAULT;
 		}
 		break;
@@ -897,15 +919,15 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 				sbp_custom_value = "";
 			ret = kstrtouint(sbp_custom_value, 0, &md->sbp_code_default);
 			if (!ret) {
-				CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_GET_MD_SBP_CFG: get config sbp code:%d!\n",
+				CCCI_BOOTUP_LOG(md->index, CHAR, "CCCI_IOC_GET_MD_SBP_CFG: get config sbp code:%d!\n",
 					     md->sbp_code_default);
 			} else {
-				CCCI_INF_MSG(md->index, CHAR,
+				CCCI_BOOTUP_LOG(md->index, CHAR,
 					     "CCCI_IOC_GET_MD_SBP_CFG: get config sbp code fail! ret:%ld, Config val:%s\n",
 					     ret, sbp_custom_value);
 			}
 		} else {
-			CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_GET_MD_SBP_CFG: config sbp code:%d!\n",
+			CCCI_BOOTUP_LOG(md->index, CHAR, "CCCI_IOC_GET_MD_SBP_CFG: config sbp code:%d!\n",
 				     md->sbp_code_default);
 		}
 		ret = put_user(md->sbp_code_default, (unsigned int __user *)arg);
@@ -913,10 +935,11 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 	case CCCI_IOC_SET_MD_SBP_CFG:
 		if (copy_from_user(&md->sbp_code, (void __user *)arg, sizeof(unsigned int))) {
-			CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_SET_MD_SBP_CFG: copy_from_user fail!\n");
+			CCCI_BOOTUP_LOG(md->index, CHAR, "CCCI_IOC_SET_MD_SBP_CFG: copy_from_user fail!\n");
 			ret = -EFAULT;
 		} else {
-			CCCI_INF_MSG(md->index, CHAR, "CCCI_IOC_SET_MD_SBP_CFG: set md sbp code:0x%x!\n", md->sbp_code);
+			CCCI_BOOTUP_LOG(md->index, CHAR, "CCCI_IOC_SET_MD_SBP_CFG: set md sbp code:0x%x!\n",
+							md->sbp_code);
 		}
 		break;
 
@@ -929,7 +952,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 	case CCCI_IOC_SEND_SIGNAL_TO_USER:
 		if (copy_from_user(&sig_pid, (void __user *)arg, sizeof(unsigned int))) {
-			CCCI_INF_MSG(md->index, CHAR, "signal to rild fail: copy_from_user fail!\n");
+			CCCI_NORMAL_LOG(md->index, CHAR, "signal to rild fail: copy_from_user fail!\n");
 			ret = -EFAULT;
 		} else {
 			unsigned int sig = (sig_pid >> 16) & 0xFFFF;
@@ -940,12 +963,12 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			sig_info.si_pid = current->pid;
 			sig_info.si_uid = __kuid_val(current->cred->uid);
 			ret = kill_proc_info(SIGUSR2, &sig_info, pid);
-			CCCI_INF_MSG(md->index, CHAR, "send signal %d to rild %d ret=%ld\n", sig, pid, ret);
+			CCCI_NORMAL_LOG(md->index, CHAR, "send signal %d to rild %d ret=%ld\n", sig, pid, ret);
 		}
 		break;
 	case CCCI_IOC_RESET_MD1_MD3_PCCIF:
 #ifdef CONFIG_MTK_ECCCI_C2K
-		CCCI_INF_MSG(md->index, CHAR, "reset md1/md3 pccif ioctl called by %s\n", current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "reset md1/md3 pccif ioctl called by %s\n", current->comm);
 		reset_md1_md3_pccif(md);
 #endif
 		break;
@@ -964,7 +987,7 @@ static long dev_char_compat_ioctl(struct file *filp, unsigned int cmd, unsigned 
 	struct ccci_modem *md = port->modem;
 
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
-		CCCI_ERR_MSG(md->index, CHAR, "dev_char_compat_ioctl(!filp->f_op || !filp->f_op->unlocked_ioctl)\n");
+		CCCI_ERROR_LOG(md->index, CHAR, "dev_char_compat_ioctl(!filp->f_op || !filp->f_op->unlocked_ioctl)\n");
 		return -ENOTTY;
 	}
 	switch (cmd) {
@@ -975,7 +998,7 @@ static long dev_char_compat_ioctl(struct file *filp, unsigned int cmd, unsigned 
 	case CCCI_IOC_AP_ENG_BUILD:
 	case CCCI_IOC_GET_MD_MEM_SIZE:
 		{
-			CCCI_ERR_MSG(md->index, CHAR, "dev_char_compat_ioctl deprecated cmd(%d)\n", cmd);
+			CCCI_ERROR_LOG(md->index, CHAR, "dev_char_compat_ioctl deprecated cmd(%d)\n", cmd);
 			return 0;
 		}
 	default:
@@ -990,7 +1013,7 @@ unsigned int dev_char_poll(struct file *fp, struct poll_table_struct *poll)
 	struct ccci_port *port = fp->private_data;
 	unsigned int mask = 0;
 
-	CCCI_DBG_MSG(port->modem->index, CHAR, "poll on %s\n", port->name);
+	CCCI_DEBUG_LOG(port->modem->index, CHAR, "poll on %s\n", port->name);
 	if (port->rx_ch == CCCI_IPC_RX) {
 		mask = port_ipc_poll(fp, poll);
 	} else {
@@ -1003,7 +1026,7 @@ unsigned int dev_char_poll(struct file *fp, struct poll_table_struct *poll)
 		if (port->rx_ch == CCCI_UART1_RX &&
 		    port->modem->md_state != READY && port->modem->md_state != EXCEPTION) {
 			mask |= POLLERR;	/* notify MD logger to save its log before md_init kills it */
-			CCCI_INF_MSG(port->modem->index, CHAR, "poll error for MD logger at state %d,mask=%d\n",
+			CCCI_NORMAL_LOG(port->modem->index, CHAR, "poll error for MD logger at state %d,mask=%d\n",
 				     port->modem->md_state, mask);
 		}
 	}
@@ -1029,7 +1052,7 @@ static int port_char_init(struct ccci_port *port)
 	struct cdev *dev;
 	int ret = 0;
 
-	CCCI_DBG_MSG(port->modem->index, CHAR, "char port %s is initializing\n", port->name);
+	CCCI_DEBUG_LOG(port->modem->index, CHAR, "char port %s is initializing\n", port->name);
 	dev = kmalloc(sizeof(struct cdev), GFP_KERNEL);
 	cdev_init(dev, &char_dev_fops);
 	dev->owner = THIS_MODULE;
@@ -1060,7 +1083,7 @@ static int c2k_req_push_to_usb(struct ccci_port *port, struct ccci_request *req)
 		c2k_ch_id = MDLOG_CH_C2K-2;
 	else {
 		ret = -ENODEV;
-		CCCI_ERR_MSG(port->modem->index, CHAR, "Err: wrong ch_id(%d) from usb bypass\n", port->rx_ch);
+		CCCI_ERROR_LOG(port->modem->index, CHAR, "Err: wrong ch_id(%d) from usb bypass\n", port->rx_ch);
 		return ret;
 	}
 
@@ -1073,7 +1096,7 @@ static int c2k_req_push_to_usb(struct ccci_port *port, struct ccci_request *req)
 retry_push:
 	/* push to usb */
 	read_count = rawbulk_push_upstream_buffer(c2k_ch_id, req->skb->data, read_len);
-	CCCI_DBG_MSG(port->modem->index, CHAR, "data push to usb bypass (ch%d)(%d)\n", port->rx_ch, read_count);
+	CCCI_DEBUG_LOG(port->modem->index, CHAR, "data push to usb bypass (ch%d)(%d)\n", port->rx_ch, read_count);
 
 	if (read_count > 0) {
 		skb_pull(req->skb, read_count);
@@ -1084,9 +1107,9 @@ retry_push:
 			req->policy = RECYCLE;
 			ccci_free_req(req);
 		} else if (read_len < 0)
-			CCCI_ERR_MSG(port->modem->index, CHAR, "read_len error, check why come here\n");
+			CCCI_ERROR_LOG(port->modem->index, CHAR, "read_len error, check why come here\n");
 	} else {
-		CCCI_INF_MSG(port->modem->index, CHAR, "usb buf full\n");
+		CCCI_NORMAL_LOG(port->modem->index, CHAR, "usb buf full\n");
 		msleep(20);
 		goto retry_push;
 	}
@@ -1113,7 +1136,7 @@ static int port_char_recv_req(struct ccci_port *port, struct ccci_request *req)
 	}
 #endif
 
-	CCCI_DBG_MSG(port->modem->index, CHAR, "recv on %s, len=%d\n", port->name, port->rx_length);
+	CCCI_DEBUG_LOG(port->modem->index, CHAR, "recv on %s, len=%d\n", port->name, port->rx_length);
 	spin_lock_irqsave(&port->rx_req_lock, flags);
 	if (port->rx_length < port->rx_length_th) {
 		port->flags &= ~PORT_F_RX_FULLED;
@@ -1128,14 +1151,14 @@ static int port_char_recv_req(struct ccci_port *port, struct ccci_request *req)
 	port->flags |= PORT_F_RX_FULLED;
 	spin_unlock_irqrestore(&port->rx_req_lock, flags);
 	if ((port->flags & PORT_F_ALLOW_DROP) /* || !(port->flags&PORT_F_RX_EXCLUSIVE) */) {
-		CCCI_INF_MSG(port->modem->index, CHAR, "port %s Rx full, drop packet\n", port->name);
+		CCCI_NORMAL_LOG(port->modem->index, CHAR, "port %s Rx full, drop packet\n", port->name);
 		goto drop;
 	} else
 		return -CCCI_ERR_PORT_RX_FULL;
 
  drop:
 	/* drop this packet */
-	CCCI_DBG_MSG(port->modem->index, CHAR, "drop on %s, len=%d\n", port->name, port->rx_length);
+	CCCI_DEBUG_LOG(port->modem->index, CHAR, "drop on %s, len=%d\n", port->name, port->rx_length);
 	list_del(&req->entry);
 	req->policy = RECYCLE;
 	ccci_free_req(req);
@@ -1182,7 +1205,7 @@ int ccci_subsys_char_init(struct ccci_modem *md)
 	} else {
 		ret = alloc_chrdev_region(&dev, md->minor_base, 120, CCCI_DEV_NAME);
 		if (ret)
-			CCCI_ERR_MSG(md->index, CHAR, "alloc_chrdev_region fail,ret=%d\n", ret);
+			CCCI_ERROR_LOG(md->index, CHAR, "alloc_chrdev_region fail,ret=%d\n", ret);
 		md->major = MAJOR(dev);
 	}
 	/* as IPC minor starts from 100 */

@@ -54,7 +54,7 @@ int boot_md_store(int md_id)
 	struct ccci_modem *md;
 
 	list_for_each_entry(md, &modem_list, entry) {
-		CCCI_INF_MSG(md_id, CORE, "ccci core boot md%d, md_state=%d\n", md_id + 1, md->md_state);
+		CCCI_BOOTUP_LOG(md_id, CORE, "ccci core boot md%d, md_state=%d\n", md_id + 1, md->md_state);
 		if (md->index == md_id && md->md_state == GATED) {
 			md->ops->start(md);
 			return 0;
@@ -113,7 +113,7 @@ int ccci_port_recv_request(struct ccci_modem *md, struct ccci_request *req, stru
 			} else if (req && port->ops->recv_request) {
 				ret = port->ops->recv_request(port, req);
 			} else {
-				CCCI_ERR_MSG(md->index, CORE, "port->ops->recv_request is null\n");
+				CCCI_ERROR_LOG(md->index, CORE, "port->ops->recv_request is null\n");
 				ret = -CCCI_ERR_CHANNEL_NUM_MIS_MATCH;
 				goto err_exit;
 			}
@@ -125,7 +125,7 @@ int ccci_port_recv_request(struct ccci_modem *md, struct ccci_request *req, stru
 
  err_exit:
 	if (ret == -CCCI_ERR_CHANNEL_NUM_MIS_MATCH || ret == -CCCI_ERR_HIF_NOT_POWER_ON) {
-		/* CCCI_ERR_MSG(md->index, CORE, "drop on channel %d\n", ccci_h->channel); */ /* Fix me, mask temp */
+		/* CCCI_ERROR_LOG(md->index, CORE, "drop on channel %d\n", ccci_h->channel); */ /* Fix me, mask temp */
 		if (req) {
 			list_del(&req->entry);
 			req->policy = RECYCLE;
@@ -147,11 +147,11 @@ static void ccci_dump_log_rec(struct ccci_modem *md, struct ccci_log *log)
 		return;
 	rem_nsec = do_div(ts_nsec, 1000000000);
 	if (!log->droped) {
-		CCCI_INF_MSG(md->index, CORE, "%08X %08X %08X %08X  %5lu.%06lu\n",
+		CCCI_MEM_LOG(md->index, CORE, "%08X %08X %08X %08X  %5lu.%06lu\n",
 		       log->msg.data[0], log->msg.data[1], *(((u32 *)&log->msg) + 2),
 		       log->msg.reserved, (unsigned long)ts_nsec, rem_nsec / 1000);
 	} else {
-		CCCI_INF_MSG(md->index, CORE, "%08X %08X %08X %08X  %5lu.%06lu -\n",
+		CCCI_MEM_LOG(md->index, CORE, "%08X %08X %08X %08X  %5lu.%06lu -\n",
 		       log->msg.data[0], log->msg.data[1], *(((u32 *)&log->msg) + 2),
 		       log->msg.reserved, (unsigned long)ts_nsec, rem_nsec / 1000);
 	}
@@ -186,23 +186,23 @@ void ccci_dump_log_history(struct ccci_modem *md, int dump_multi_rec, int tx_que
 
 	if (dump_multi_rec) {
 		for (i = 0; i < ((tx_queue_num <= MAX_TXQ_NUM) ? tx_queue_num : MAX_TXQ_NUM); i++) {
-			CCCI_INF_MSG(md->index, CORE, "dump txq%d packet history, ptr=%d\n", i,
+			CCCI_MEM_LOG_TAG(md->index, CORE, "dump txq%d packet history, ptr=%d\n", i,
 			       md->tx_history_ptr[i]);
 			for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
 				ccci_dump_log_rec(md, &md->tx_history[i][j]);
 		}
 		for (i = 0; i < ((rx_queue_num <= MAX_RXQ_NUM) ? rx_queue_num : MAX_RXQ_NUM); i++) {
-			CCCI_INF_MSG(md->index, CORE, "dump rxq%d packet history, ptr=%d\n", i,
+			CCCI_MEM_LOG_TAG(md->index, CORE, "dump rxq%d packet history, ptr=%d\n", i,
 			       md->rx_history_ptr[i]);
 			for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
 				ccci_dump_log_rec(md, &md->rx_history[i][j]);
 		}
 	} else {
-		CCCI_INF_MSG(md->index, CORE, "dump txq%d packet history, ptr=%d\n", tx_queue_num,
+		CCCI_MEM_LOG_TAG(md->index, CORE, "dump txq%d packet history, ptr=%d\n", tx_queue_num,
 		       md->tx_history_ptr[tx_queue_num]);
 		for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
 			ccci_dump_log_rec(md, &md->tx_history[tx_queue_num][j]);
-		CCCI_INF_MSG(md->index, CORE, "dump rxq%d packet history, ptr=%d\n", rx_queue_num,
+		CCCI_MEM_LOG_TAG(md->index, CORE, "dump rxq%d packet history, ptr=%d\n", rx_queue_num,
 		       md->rx_history_ptr[rx_queue_num]);
 		for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
 			ccci_dump_log_rec(md, &md->rx_history[rx_queue_num][j]);
@@ -326,7 +326,7 @@ static void ccci_md_obj_release(struct kobject *kobj)
 {
 	struct ccci_modem *md = container_of(kobj, struct ccci_modem, kobj);
 
-	CCCI_DBG_MSG(md->index, SYSFS, "md kobject release\n");
+	CCCI_DEBUG_LOG(md->index, SYSFS, "md kobject release\n");
 }
 
 static ssize_t ccci_md_attr_show(struct kobject *kobj, struct attribute *attr, char *buf)
@@ -412,7 +412,7 @@ static void ccci_scp_ipi_rx_work(struct work_struct *work)
 		ipi_msg_ptr = (struct ccci_ipi_msg *)skb->data;
 		md = ccci_get_modem_by_id(ipi_msg_ptr->md_id);
 		if (!md) {
-			CCCI_ERR_MSG(ipi_msg_ptr->md_id, CORE, "MD not exist\n");
+			CCCI_ERROR_LOG(ipi_msg_ptr->md_id, CORE, "MD not exist\n");
 			return;
 		}
 		switch (ipi_msg_ptr->op_id) {
@@ -420,14 +420,14 @@ static void ccci_scp_ipi_rx_work(struct work_struct *work)
 			switch (ipi_msg_ptr->data[0]) {
 			case SCP_CCCI_STATE_BOOTING:
 				if (scp_state == MD_BOOT_STAGE_2) {
-					CCCI_INF_MSG(md->index, CORE, "SCP reset detected\n");
+					CCCI_NORMAL_LOG(md->index, CORE, "SCP reset detected\n");
 					ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT, 0, 1);
 					md3 = ccci_get_modem_by_id(MD_SYS3);
 					if (md3)
 						ccci_send_msg_to_md(md3, CCCI_CONTROL_TX,
 									C2K_CCISM_SHM_INIT, 0, 1);
 				} else {
-					CCCI_INF_MSG(md->index, CORE, "SCP boot up\n");
+					CCCI_NORMAL_LOG(md->index, CORE, "SCP boot up\n");
 				}
 				/* too early to init share memory here, EMI MPU may not be ready yet */
 				break;
@@ -459,10 +459,11 @@ static void ccci_scp_ipi_handler(int id, void *data, unsigned int len)
 	struct sk_buff *skb = NULL;
 
 	if (len != sizeof(struct ccci_ipi_msg)) {
-		CCCI_ERR_MSG(-1, CORE, "IPI handler, data length wrong %d vs. %ld\n", len, sizeof(struct ccci_ipi_msg));
+		CCCI_ERROR_LOG(-1, CORE, "IPI handler, data length wrong %d vs. %ld\n", len,
+						sizeof(struct ccci_ipi_msg));
 		return;
 	}
-	CCCI_INF_MSG(ipi_msg_ptr->md_id, CORE, "IPI handler %d/0x%x, %d\n",
+	CCCI_NORMAL_LOG(ipi_msg_ptr->md_id, CORE, "IPI handler %d/0x%x, %d\n",
 				ipi_msg_ptr->op_id, ipi_msg_ptr->data[0], len);
 
 	skb = ccci_alloc_skb(len, 0, 0);
@@ -479,7 +480,7 @@ static void ccci_scp_init(void)
 
 	mutex_init(&scp_ipi_tx_mutex);
 	ret = scp_ipi_registration(IPI_APCCCI, ccci_scp_ipi_handler, "AP CCCI");
-	CCCI_INF_MSG(-1, CORE, "register IPI %d %d\n", IPI_APCCCI, ret);
+	CCCI_INIT_LOG(-1, CORE, "register IPI %d %d\n", IPI_APCCCI, ret);
 	INIT_WORK(&scp_ipi_rx_work, ccci_scp_ipi_rx_work);
 	init_waitqueue_head(&scp_ipi_rx_wq);
 	ccci_skb_queue_init(&scp_ipi_rx_skb_list, 16, 16, 0);
@@ -494,7 +495,7 @@ int ccci_scp_ipi_send(int md_id, int op_id, void *data)
 	scp_ipi_tx_msg.md_id = md_id;
 	scp_ipi_tx_msg.op_id = op_id;
 	scp_ipi_tx_msg.data[0] = *((u32 *)data);
-	CCCI_INF_MSG(scp_ipi_tx_msg.md_id, CORE, "IPI send %d/0x%x, %ld\n",
+	CCCI_NORMAL_LOG(scp_ipi_tx_msg.md_id, CORE, "IPI send %d/0x%x, %ld\n",
 				scp_ipi_tx_msg.op_id, scp_ipi_tx_msg.data[0], sizeof(struct ccci_ipi_msg));
 	if (scp_ipi_send(IPI_APCCCI, &scp_ipi_tx_msg, sizeof(scp_ipi_tx_msg), 1) != DONE) {
 		CCCI_ERR_MSG(md_id, CORE, "IPI send fail!\n");
@@ -535,7 +536,7 @@ void ccci_update_md_boot_stage(struct ccci_modem *md, MD_BOOT_STAGE stage)
 /* ------------------------------------------------------------------------- */
 static int __init ccci_init(void)
 {
-	CCCI_INF_MSG(-1, CORE, "ccci core init\n");
+	CCCI_INIT_LOG(-1, CORE, "ccci core init\n");
 	dev_class = class_create(THIS_MODULE, "ccci_node");
 	/* init common sub-system */
 	/* ccci_subsys_sysfs_init(); */
@@ -555,7 +556,7 @@ struct ccci_modem *ccci_allocate_modem(int private_size)
 	int i;
 
 	if (!md) {
-		CCCI_ERR_MSG(-1, CORE, "fail to allocate memory for modem structure\n");
+		CCCI_ERROR_LOG(-1, CORE, "fail to allocate memory for modem structure\n");
 		goto out;
 	}
 
@@ -604,7 +605,7 @@ int ccci_register_modem(struct ccci_modem *modem)
 	int ret;
 	/* init per-modem sub-system */
 	ccci_subsys_char_init(modem);
-	CCCI_INF_MSG(modem->index, CORE, "register modem %d\n", modem->major);
+	CCCI_INIT_LOG(modem->index, CORE, "register modem %d\n", modem->major);
 	md_port_cfg(modem);
 	/* init modem */
 	/* TODO: check modem->ops for all must-have functions */
@@ -655,7 +656,7 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 	if (!ret)
 		return -CCCI_ERR_MD_INDEX_NOT_FOUND;
 
-	CCCI_DBG_MSG(md->index, CORE, "%ps execuste function %d\n", __builtin_return_address(0), id);
+	CCCI_DEBUG_LOG(md->index, CORE, "%ps execuste function %d\n", __builtin_return_address(0), id);
 	switch (id) {
 	case ID_GET_MD_WAKEUP_SRC:
 		atomic_set(&md->wakeup_src, 1);
@@ -669,7 +670,7 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 			ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, MD_RF_TEMPERATURE_3G, 0, 0);
 		break;
 	case ID_FORCE_MD_ASSERT:
-		CCCI_NOTICE_MSG(md->index, CHAR, "Force MD assert called by %s\n", current->comm);
+		CCCI_NORMAL_LOG(md->index, CHAR, "Force MD assert called by %s\n", current->comm);
 		ret = md->ops->force_assert(md, CCIF_INTERRUPT);
 		break;
 	case ID_PAUSE_LTE:
@@ -719,7 +720,7 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 		break;
 #endif
 	case ID_RESET_MD:
-		CCCI_INF_MSG(md->index, CHAR, "MD reset API called by %ps\n", __builtin_return_address(0));
+		CCCI_NORMAL_LOG(md->index, CHAR, "MD reset API called by %ps\n", __builtin_return_address(0));
 		ret = md->ops->reset(md);
 		if (ret == 0)
 			ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
@@ -848,11 +849,11 @@ int ccci_send_virtual_md_msg(struct ccci_modem *md, CCCI_CH ch, CCCI_MD_MSG msg,
 	int ret = 0, count = 0;
 
 	if (unlikely(ch != CCCI_MONITOR_CH)) {
-		CCCI_ERR_MSG(md->index, CORE, "invalid channel %x for sending virtual msg\n", ch);
+		CCCI_ERROR_LOG(md->index, CORE, "invalid channel %x for sending virtual msg\n", ch);
 		return -CCCI_ERR_INVALID_LOGIC_CHANNEL_ID;
 	}
 	if (unlikely(in_interrupt())) {
-		CCCI_ERR_MSG(md->index, CORE, "sending virtual msg from IRQ context %ps\n",
+		CCCI_ERROR_LOG(md->index, CORE, "sending virtual msg from IRQ context %ps\n",
 			     __builtin_return_address(0));
 		return -CCCI_ERR_ASSERT_ERR;
 	}
@@ -876,7 +877,7 @@ int ccci_send_virtual_md_msg(struct ccci_modem *md, CCCI_CH ch, CCCI_MD_MSG msg,
 	if (count++ < 20) {
 		goto retry;
 	} else {
-		CCCI_ERR_MSG(md->index, CORE, "fail to send virtual msg %x for %ps\n", msg,
+		CCCI_ERROR_LOG(md->index, CORE, "fail to send virtual msg %x for %ps\n", msg,
 			     __builtin_return_address(0));
 		list_del(&req->entry);
 		req->policy = RECYCLE;
@@ -899,7 +900,7 @@ static int switch_Tx_Power(int md_id, unsigned int mode)
 #endif
 	pr_debug("[swtp] switch_MD%d_Tx_Power(%d): ret[%d]\n", md_id + 1, resv, ret);
 
-	CCCI_DBG_MSG(md_id, "ctl", "switch_MD%d_Tx_Power(%d): %d\n", md_id + 1, resv, ret);
+	CCCI_DEBUG_LOG(md_id, "ctl", "switch_MD%d_Tx_Power(%d): %d\n", md_id + 1, resv, ret);
 
 	return ret;
 }
@@ -931,15 +932,15 @@ int register_smem_sub_region_mem_func(int md_id, smem_sub_region_cb_t pfunc, int
 	if (ret) {
 		if (region_id < SMEM_SUB_REGION_MAX) {
 			md->sub_region_cb_tbl[region_id] = pfunc;
-			CCCI_INF_MSG(md_id, CORE, "region%d call back %p register success\n", region_id, pfunc);
+			CCCI_INIT_LOG(md_id, CORE, "region%d call back %p register success\n", region_id, pfunc);
 			return 0;
 		}
 
-		CCCI_INF_MSG(md_id, CORE, "sub_region invalid %d\n", region_id);
+		CCCI_INIT_LOG(md_id, CORE, "sub_region invalid %d\n", region_id);
 		return -2;
 	}
 
-	CCCI_INF_MSG(md_id, CORE, "md id invalid %d\n", md_id);
+	CCCI_INIT_LOG(md_id, CORE, "md id invalid %d\n", md_id);
 	return -1;
 }
 
@@ -956,17 +957,17 @@ void __iomem *get_smem_start_addr(int md_id, int region_id, int *size_o)
 	}
 
 	if (!ret) {
-		CCCI_INF_MSG(md_id, CORE, "md%d not support\n", md_id+1);
+		CCCI_INIT_LOG(md_id, CORE, "md%d not support\n", md_id+1);
 		return NULL;
 	}
 
 	if (region_id >= SMEM_SUB_REGION_MAX) {
-		CCCI_INF_MSG(md_id, CORE, "region id%d not support\n", region_id);
+		CCCI_INIT_LOG(md_id, CORE, "region id%d not support\n", region_id);
 		return NULL;
 	}
 
 	if (md->sub_region_cb_tbl[region_id] == NULL) {
-		CCCI_INF_MSG(md_id, CORE, "region%d call back not register\n", region_id);
+		CCCI_INIT_LOG(md_id, CORE, "region%d call back not register\n", region_id);
 		return NULL;
 	}
 

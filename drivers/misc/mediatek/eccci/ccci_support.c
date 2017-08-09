@@ -35,7 +35,7 @@ int ccci_store_sim_switch_mode(struct ccci_modem *md, int simmode)
 		ccci_cfg_setting.sim_mode = simmode;
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_CFG_UPDATE, 1);
 	} else {
-		CCCI_INF_MSG(md->index, CORE, "same sim mode as last time(0x%x)\n", simmode);
+		CCCI_NORMAL_LOG(md->index, CORE, "same sim mode as last time(0x%x)\n", simmode);
 	}
 	return 0;
 }

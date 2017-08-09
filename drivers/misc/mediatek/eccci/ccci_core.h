@@ -891,7 +891,7 @@ static inline void ccci_setup_channel_mapping(struct ccci_modem *md)
 	for (i = 0; i < ARRAY_SIZE(md->rx_ch_ports); i++) {
 		if (!list_empty(&md->rx_ch_ports[i])) {
 			list_for_each_entry(port, &md->rx_ch_ports[i], entry) {
-				CCCI_DBG_MSG(md->index, CORE, "CH%d ports:%s(%d/%d)\n",
+				CCCI_DEBUG_LOG(md->index, CORE, "CH%d ports:%s(%d/%d)\n",
 					i, port->name, port->rx_ch, port->tx_ch);
 			}
 		}
@@ -911,7 +911,7 @@ static inline void ccci_inc_tx_seq_num(struct ccci_modem *md, struct ccci_header
 {
 #ifdef FEATURE_SEQ_CHECK_EN
 	if (ccci_h->channel >= ARRAY_SIZE(md->seq_nums[OUT]) || ccci_h->channel < 0) {
-		CCCI_INF_MSG(md->index, CORE, "ignore seq inc on channel %x\n", *(((u32 *) ccci_h) + 2));
+		CCCI_NORMAL_LOG(md->index, CORE, "ignore seq inc on channel %x\n", *(((u32 *) ccci_h) + 2));
 		return;		/* for force assert channel, etc. */
 	}
 	ccci_h->seq_num = md->seq_nums[OUT][ccci_h->channel]++;
@@ -935,12 +935,12 @@ static inline void ccci_chk_rx_seq_num(struct ccci_modem *md, struct ccci_header
 	assert_bit = ccci_h->assert_bit;
 
 	if (assert_bit && md->seq_nums[IN][channel] != 0 && ((seq_num - md->seq_nums[IN][channel]) & 0x7FFF) != 1) {
-		CCCI_ERR_MSG(md->index, CORE, "channel %d seq number out-of-order %d->%d\n",
+		CCCI_ERROR_LOG(md->index, CORE, "channel %d seq number out-of-order %d->%d\n",
 			     channel, seq_num, md->seq_nums[IN][channel]);
 		md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, qno);
 		md->ops->force_assert(md, CCIF_INTR_SEQ);
 	} else {
-		/* CCCI_INF_MSG(md->index, CORE, "ch %d seq %d->%d %d\n",
+		/* CCCI_NORMAL_LOG(md->index, CORE, "ch %d seq %d->%d %d\n",
 			channel, md->seq_nums[IN][channel], seq_num, assert_bit); */
 		md->seq_nums[IN][channel] = seq_num;
 	}
@@ -955,13 +955,13 @@ static inline void ccci_channel_update_packet_counter(struct ccci_modem *md, str
 
 static inline void ccci_channel_dump_packet_counter(struct ccci_modem *md)
 {
-	CCCI_INF_MSG(md->index, CORE, "traffic(ch): tx:[%d]%ld, [%d]%ld, [%d]%ld rx:[%d]%ld, [%d]%ld, [%d]%ld\n",
+	CCCI_REPEAT_LOG(md->index, CORE, "traffic(ch): tx:[%d]%ld, [%d]%ld, [%d]%ld rx:[%d]%ld, [%d]%ld, [%d]%ld\n",
 		     CCCI_PCM_TX, md->logic_ch_pkt_cnt[CCCI_PCM_TX],
 		     CCCI_UART2_TX, md->logic_ch_pkt_cnt[CCCI_UART2_TX],
 		     CCCI_FS_TX, md->logic_ch_pkt_cnt[CCCI_FS_TX],
 		     CCCI_PCM_RX, md->logic_ch_pkt_cnt[CCCI_PCM_RX],
 		     CCCI_UART2_RX, md->logic_ch_pkt_cnt[CCCI_UART2_RX], CCCI_FS_RX, md->logic_ch_pkt_cnt[CCCI_FS_RX]);
-	CCCI_INF_MSG(md->index, CORE,
+	CCCI_REPEAT_LOG(md->index, CORE,
 		     "traffic(net): tx: [%d]%ld %ld, [%d]%ld %ld, [%d]%ld %ld, rx:[%d]%ld, [%d]%ld, [%d]%ld\n",
 		     CCCI_CCMNI1_TX, md->logic_ch_pkt_pre_cnt[CCCI_CCMNI1_TX], md->logic_ch_pkt_cnt[CCCI_CCMNI1_TX],
 		     CCCI_CCMNI2_TX, md->logic_ch_pkt_pre_cnt[CCCI_CCMNI2_TX], md->logic_ch_pkt_cnt[CCCI_CCMNI2_TX],

@@ -116,26 +116,26 @@ static void cldma_dump_gpd_queue(struct ccci_modem *md, unsigned int qno)
 #endif
 
 	/* use request's link head to traverse */
-	CCCI_INF_MSG(md->index, TAG, " dump txq %d request\n", qno);
+	CCCI_NORMAL_LOG(md->index, TAG, " dump txq %d request\n", qno);
 	list_for_each_entry(req, &md_ctrl->txq[qno].tr_ring->gpd_ring, entry) {
 		tmp = (unsigned int *)req->gpd;
-		CCCI_INF_MSG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->gpd,
+		CCCI_NORMAL_LOG(md->index, TAG, " 0x%p: %X %X %X %X\n", req->gpd,
 			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
 #ifdef CLDMA_DUMP_BD
 		list_for_each_entry(req_bd, &req->bd, entry) {
 			tmp = (unsigned int *)req_bd->gpd;
-			CCCI_INF_MSG(md->index, TAG, "-0x%p: %X %X %X %X\n", req_bd->gpd,
+			CCCI_NORMAL_LOG(md->index, TAG, "-0x%p: %X %X %X %X\n", req_bd->gpd,
 				   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
 		}
 #endif
 	}
 
 	/* use request's link head to traverse */
-	CCCI_INF_MSG(md->index, TAG, " dump rxq %d, tr_ring=%p -> gpd_ring=0x%p\n", qno, md_ctrl->rxq[qno].tr_ring,
+	CCCI_NORMAL_LOG(md->index, TAG, " dump rxq %d, tr_ring=%p -> gpd_ring=0x%p\n", qno, md_ctrl->rxq[qno].tr_ring,
 		&md_ctrl->rxq[qno].tr_ring->gpd_ring);
 	list_for_each_entry(req, &md_ctrl->rxq[qno].tr_ring->gpd_ring, entry) {
 		tmp = (unsigned int *)req->gpd;
-		CCCI_INF_MSG(md->index, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
+		CCCI_NORMAL_LOG(md->index, TAG, " 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
 			   *tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
 	}
 }
@@ -163,7 +163,7 @@ void md_cd_traffic_monitor_func(unsigned long data)
 		if (port->flags & PORT_F_RX_FULLED)
 			port_full |= (1 << i);
 		if (port->tx_busy_count != 0 || port->rx_busy_count != 0) {
-			CCCI_INF_MSG(md->index, TAG, "port %s busy count %d/%d\n", port->name,
+			CCCI_REPEAT_LOG(md->index, TAG, "port %s busy count %d/%d\n", port->name,
 				     port->tx_busy_count, port->rx_busy_count);
 			port->tx_busy_count = 0;
 			port->rx_busy_count = 0;
@@ -173,18 +173,18 @@ void md_cd_traffic_monitor_func(unsigned long data)
 	}
 	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
 		if (md_ctrl->txq[i].busy_count != 0) {
-			CCCI_INF_MSG(md->index, TAG, "Txq%d busy count %d\n", i, md_ctrl->txq[i].busy_count);
+			CCCI_REPEAT_LOG(md->index, TAG, "Txq%d busy count %d\n", i, md_ctrl->txq[i].busy_count);
 			md_ctrl->txq[i].busy_count = 0;
 		}
 	}
 #ifdef ENABLE_CLDMA_TIMER
-	CCCI_INF_MSG(md->index, TAG, "traffic(tx_timer): [3]%llu %llu, [4]%llu %llu, [5]%llu %llu\n",
+	CCCI_REPEAT_LOG(md->index, TAG, "traffic(tx_timer): [3]%llu %llu, [4]%llu %llu, [5]%llu %llu\n",
 		     md_ctrl->txq[3].timeout_start, md_ctrl->txq[3].timeout_end,
 		     md_ctrl->txq[4].timeout_start, md_ctrl->txq[4].timeout_end,
 		     md_ctrl->txq[5].timeout_start, md_ctrl->txq[5].timeout_end);
 
 	md_cd_lock_cldma_clock_src(1);
-	CCCI_INF_MSG(md->index, TAG,
+	CCCI_REPEAT_LOG(md->index, TAG,
 		     "traffic(tx_done_timer): CLDMA_AP_L2TIMR0=0x%x   [3]%d %llu, [4]%d %llu, [5]%d %llu\n",
 		     cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TIMR0),
 		     md_ctrl->tx_done_last_count[3], md_ctrl->tx_done_last_start_time[3],
@@ -194,7 +194,7 @@ void md_cd_traffic_monitor_func(unsigned long data)
 	md_cd_lock_cldma_clock_src(0);
 #endif
 
-	CCCI_INF_MSG(md->index, TAG,
+	CCCI_REPEAT_LOG(md->index, TAG,
 		     "traffic(%d/%llx):Tx(%x)%d-%d,%d-%d,%d-%d,%d-%d,%d-%d,%d-%d,%d-%d,%d-%d:Rx(%x)%d,%d,%d,%d,%d,%d,%d,%d\n",
 			md->md_state, port_full,
 			md_ctrl->txq_active,
@@ -211,7 +211,7 @@ void md_cd_traffic_monitor_func(unsigned long data)
 			md_ctrl->rx_traffic_monitor[2], md_ctrl->rx_traffic_monitor[3],
 			md_ctrl->rx_traffic_monitor[4], md_ctrl->rx_traffic_monitor[5],
 			md_ctrl->rx_traffic_monitor[6], md_ctrl->rx_traffic_monitor[7]);
-	CCCI_INF_MSG(md->index, TAG, "net Rx skb queue:%u %u %u / %u %u %u\n",
+	CCCI_REPEAT_LOG(md->index, TAG, "net Rx skb queue:%u %u %u / %u %u %u\n",
 			 md_ctrl->rxq[3].skb_list.max_history, md_ctrl->rxq[4].skb_list.max_history,
 			 md_ctrl->rxq[5].skb_list.max_history, md_ctrl->rxq[3].skb_list.skb_list.qlen,
 			 md_ctrl->rxq[4].skb_list.skb_list.qlen, md_ctrl->rxq[5].skb_list.skb_list.qlen);
@@ -226,12 +226,12 @@ static void cldma_dump_packet_history(struct ccci_modem *md)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
 	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
-		CCCI_INF_MSG(md->index, TAG, "Current txq%d pos: tr_done=%x, tx_xmit=%x\n", i,
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Current txq%d pos: tr_done=%x, tx_xmit=%x\n", i,
 		       (unsigned int)md_ctrl->txq[i].tr_done->gpd_addr,
 		       (unsigned int)md_ctrl->txq[i].tx_xmit->gpd_addr);
 	}
 	for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++) {
-		CCCI_INF_MSG(md->index, TAG, "Current rxq%d pos: tr_done=%x, rx_refill=%x\n", i,
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Current rxq%d pos: tr_done=%x, rx_refill=%x\n", i,
 		       (unsigned int)md_ctrl->rxq[i].tr_done->gpd_addr,
 		       (unsigned int)md_ctrl->rxq[i].rx_refill->gpd_addr);
 	}
@@ -242,9 +242,9 @@ static void cldma_dump_queue_history(struct ccci_modem *md, unsigned int qno)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
-	CCCI_INF_MSG(md->index, TAG, "Current txq%d pos: tr_done=%x, tx_xmit=%x\n", qno,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Current txq%d pos: tr_done=%x, tx_xmit=%x\n", qno,
 	       (unsigned int)md_ctrl->txq[qno].tr_done->gpd_addr, (unsigned int)md_ctrl->txq[qno].tx_xmit->gpd_addr);
-	CCCI_INF_MSG(md->index, TAG, "Current rxq%d pos: tr_done=%x, rx_refill=%x\n", qno,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Current rxq%d pos: tr_done=%x, rx_refill=%x\n", qno,
 	       (unsigned int)md_ctrl->rxq[qno].tr_done->gpd_addr, (unsigned int)md_ctrl->rxq[qno].rx_refill->gpd_addr);
 	ccci_dump_log_history(md, 0, qno, qno);
 }
@@ -298,12 +298,12 @@ static void cldma_timeout_timer_func(unsigned long data)
 		if (port->flags & PORT_F_RX_FULLED)
 			port_full |= (1 << i);
 	}
-	CCCI_ERR_MSG(md->index, TAG, "CLDMA txq%d no response for %d seconds, ports=%llx\n", queue->index,
+	CCCI_ERROR_LOG(md->index, TAG, "CLDMA txq%d no response for %d seconds, ports=%llx\n", queue->index,
 		     CLDMA_ACTIVE_T, port_full);
 	md_cd_traffic_monitor_func((unsigned long)md);
 	md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, queue->index);
 
-	CCCI_ERR_MSG(md->index, TAG, "CLDMA no response, force assert md by CCIF_INTERRUPT\n");
+	CCCI_ERROR_LOG(md->index, TAG, "CLDMA no response, force assert md by CCIF_INTERRUPT\n");
 	md->ops->force_assert(md, CCIF_INTERRUPT);
 }
 #endif
@@ -348,7 +348,7 @@ static int cldma_gpd_rx_refill(struct md_cd_queue *queue)
 			queue->rx_refill = cldma_ring_step_forward(queue->tr_ring, req);
 			count++;
 		} else {
-			CCCI_ERR_MSG(md->index, TAG, "alloc skb fail on q%d\n", queue->index);
+			CCCI_ERROR_LOG(md->index, TAG, "alloc skb fail on q%d\n", queue->index);
 #ifdef CLDMA_TRACE
 			trace_cldma_error(queue->index, 0, NO_SKB, __LINE__);
 #endif
@@ -403,10 +403,12 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 		ccci_h = *((struct ccci_header *)skb->data);
 		/* check wakeup source */
 		if (atomic_cmpxchg(&md->wakeup_src, 1, 0) == 1)
-			CCCI_INF_MSG(md->index, TAG, "CLDMA_MD wakeup source:(%d/%d)\n", queue->index, ccci_h.channel);
-		CCCI_DBG_MSG(md->index, TAG, "recv Rx msg (%x %x %x %x) rxq=%d len=%d\n",
-			     ccci_h.data[0], ccci_h.data[1], *(((u32 *)&ccci_h) + 2), ccci_h.reserved, queue->index,
-			     rgpd->data_buff_len);
+			CCCI_NORMAL_LOG(md->index, TAG, "CLDMA_MD wakeup source:(%d/%d)\n",
+							queue->index, ccci_h.channel);
+			CCCI_DEBUG_LOG(md->index, TAG, "recv Rx msg (%x %x %x %x) rxq=%d len=%d\n",
+							ccci_h.data[0], ccci_h.data[1], *(((u32 *)&ccci_h) + 2),
+							ccci_h.reserved, queue->index,
+							rgpd->data_buff_len);
 		/*
 		 * allocate a new wrapper, do nothing if this failed, just wait someone to collect this queue again,
 		 * if lucky enough. for network queue, no wrapper is used, here we assume CCMNI port must can
@@ -421,7 +423,7 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 		req_alloc_time = port_recv_time - req_alloc_time;
 #endif
 		if (unlikely(!new_req)) {
-			CCCI_ERR_MSG(md->index, TAG, "alloc req fail on q%d\n", queue->index);
+			CCCI_ERROR_LOG(md->index, TAG, "alloc req fail on q%d\n", queue->index);
 			*result = NO_REQ;
 #ifdef CLDMA_TRACE
 			trace_cldma_error(queue->index, ccci_h.channel, NO_REQ, __LINE__);
@@ -434,7 +436,7 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 #ifdef CLDMA_TRACE
 		port_recv_time = (sched_clock() - port_recv_time);
 #endif
-		CCCI_DBG_MSG(md->index, TAG, "Rx port recv req ret=%d\n", ret);
+		CCCI_DEBUG_LOG(md->index, TAG, "Rx port recv req ret=%d\n", ret);
 		spin_lock_irqsave(&queue->ring_lock, flags);
 		if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
 			/* mark cldma_request as available */
@@ -499,7 +501,7 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue, int budget, int block
 	 * resume after all RGPD handled also makes budget useless when it is less than ring buffer length.
 	 */
 	/* if result == 0, that means all skb have been handled */
-	CCCI_DBG_MSG(md->index, TAG, "CLDMA Rxq%d collected, result=%d, count=%d\n", queue->index, *result, count);
+	CCCI_DEBUG_LOG(md->index, TAG, "CLDMA Rxq%d collected, result=%d, count=%d\n", queue->index, *result, count);
 	return count;
 }
 
@@ -584,7 +586,7 @@ static int cldma_gpd_net_rx_collect(struct md_cd_queue *queue, int budget, int b
 				queue->rx_refill = cldma_ring_step_forward(queue->tr_ring, req);
 			} else {
 				*result = NO_SKB;
-				CCCI_ERR_MSG(md->index, TAG, "alloc skb fail on q%d\n", queue->index);
+				CCCI_ERROR_LOG(md->index, TAG, "alloc skb fail on q%d\n", queue->index);
 			}
 		}
 #ifdef CLDMA_TRACE
@@ -641,10 +643,12 @@ static int cldma_net_rx_push_thread(void *arg)
 		ccci_h = (struct ccci_header *)skb->data;
 		/* check wakeup source */
 		if (atomic_cmpxchg(&md->wakeup_src, 1, 0) == 1)
-			CCCI_INF_MSG(md->index, TAG, "CLDMA_MD wakeup source:(%d/%d)\n", queue->index, ccci_h->channel);
-		CCCI_DBG_MSG(md->index, TAG, "recv Rx msg (%x %x %x %x) rxq=%d len=%d\n",
-			     ccci_h->data[0], ccci_h->data[1], *(((u32 *)ccci_h) + 2), ccci_h->reserved, queue->index,
-			     skb->len);
+			CCCI_NORMAL_LOG(md->index, TAG, "CLDMA_MD wakeup source:(%d/%d)\n",
+							queue->index, ccci_h->channel);
+			CCCI_DEBUG_LOG(md->index, TAG, "recv Rx msg (%x %x %x %x) rxq=%d len=%d\n",
+							ccci_h->data[0], ccci_h->data[1], *(((u32 *)ccci_h) + 2),
+							ccci_h->reserved, queue->index,
+							skb->len);
 		/* update log */
 #if TRAFFIC_MONITOR_INTERVAL
 		md_ctrl->rx_traffic_monitor[queue->index]++;
@@ -675,7 +679,7 @@ static void cldma_rx_refill(struct work_struct *work)
 #endif
 
 	count = queue->tr_ring->handle_rx_refill(queue);
-	CCCI_DBG_MSG(md->index, TAG, "CLDMA Rxq%d refilled, count=%d\n", queue->index, count);
+	CCCI_DEBUG_LOG(md->index, TAG, "CLDMA Rxq%d refilled, count=%d\n", queue->index, count);
 
 	md_cd_lock_cldma_clock_src(1);
 	spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
@@ -818,7 +822,7 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue, int budget, int bl
 		count++;
 
 		ccci_h = (struct ccci_header *)skb_free->data;
-		CCCI_DBG_MSG(md->index, TAG, "harvest Tx msg (%x %x %x %x) txq=%d len=%d\n",
+		CCCI_DEBUG_LOG(md->index, TAG, "harvest Tx msg (%x %x %x %x) txq=%d len=%d\n",
 			     ccci_h->data[0], ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, queue->index,
 			     tgpd->data_buff_len);
 		ccci_channel_update_packet_counter(md, ccci_h);
@@ -861,8 +865,9 @@ static int cldma_gpd_tx_collect(struct md_cd_queue *queue, int budget, int block
 				tgpd->gpd_flags |= 0x80;
 			else
 				tgpd->gpd_flags &= 0x7F;
-			CCCI_INF_MSG(md->index, TAG, "TX_collect: qno%d, req->ioc_override=0x%x,tgpd->gpd_flags=0x%x\n",
-				     queue->index, req->ioc_override, tgpd->gpd_flags);
+			CCCI_NORMAL_LOG(md->index, TAG,
+						"TX_collect: qno%d, req->ioc_override=0x%x,tgpd->gpd_flags=0x%x\n",
+						queue->index, req->ioc_override, tgpd->gpd_flags);
 		}
 		tgpd->non_used = 2;
 		/* update counter */
@@ -893,7 +898,7 @@ static int cldma_gpd_tx_collect(struct md_cd_queue *queue, int budget, int block
 		 */
 		dma_unmap_single(&md->plat_dev->dev, dma_free, dma_len, DMA_TO_DEVICE);
 		ccci_h = (struct ccci_header *)skb_free->data;
-		CCCI_DBG_MSG(md->index, TAG, "harvest Tx msg (%x %x %x %x) txq=%d len=%d\n",
+		CCCI_DEBUG_LOG(md->index, TAG, "harvest Tx msg (%x %x %x %x) txq=%d len=%d\n",
 			     ccci_h->data[0], ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, queue->index,
 			     skb_free->len);
 		ccci_channel_update_packet_counter(md, ccci_h);
@@ -1057,7 +1062,7 @@ static void cldma_tx_ring_init(struct ccci_modem *md, struct cldma_ring *ring)
 			bd->bd_flags |= 0x1;	/* EOL */
 		}
 		gpd->next_gpd_ptr = first_item->gpd_addr;
-		CCCI_INF_MSG(md->index, TAG, "ring=%p -> gpd_ring=%p\n", ring, &ring->gpd_ring);
+		CCCI_NORMAL_LOG(md->index, TAG, "ring=%p -> gpd_ring=%p\n", ring, &ring->gpd_ring);
 	}
 }
 
@@ -1099,7 +1104,7 @@ static void cldma_queue_switch_ring(struct md_cd_queue *queue)
 	/* work should be flushed by then */
 	INIT_WORK(&queue->cldma_rx_work, cldma_rx_done);
 	INIT_WORK(&queue->cldma_refill_work, cldma_rx_refill);
-	CCCI_DBG_MSG(md->index, TAG, "queue %d/%d switch ring to %p\n", queue->index, queue->dir, queue->tr_ring);
+	CCCI_DEBUG_LOG(md->index, TAG, "queue %d/%d switch ring to %p\n", queue->index, queue->dir, queue->tr_ring);
 }
 
 static void cldma_rx_queue_init(struct md_cd_queue *queue)
@@ -1127,7 +1132,7 @@ static void cldma_rx_queue_init(struct md_cd_queue *queue)
 	init_waitqueue_head(&queue->rx_wq);
 	if (IS_NET_QUE(md, queue->index))
 		queue->rx_thread = kthread_run(cldma_net_rx_push_thread, queue, "cldma_rxq%d", queue->index);
-	CCCI_DBG_MSG(md->index, TAG, "rxq%d work=%p\n", queue->index, &queue->cldma_rx_work);
+	CCCI_DEBUG_LOG(md->index, TAG, "rxq%d work=%p\n", queue->index, &queue->cldma_rx_work);
 }
 
 static void cldma_tx_queue_init(struct md_cd_queue *queue)
@@ -1139,7 +1144,7 @@ static void cldma_tx_queue_init(struct md_cd_queue *queue)
 	    alloc_workqueue("md%d_tx%d_worker", WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1, md->index + 1,
 			    queue->index);
 	INIT_DELAYED_WORK(&queue->cldma_tx_work, cldma_tx_done);
-	CCCI_DBG_MSG(md->index, TAG, "txq%d work=%p\n", queue->index, &queue->cldma_tx_work);
+	CCCI_DEBUG_LOG(md->index, TAG, "txq%d work=%p\n", queue->index, &queue->cldma_tx_work);
 #ifdef ENABLE_CLDMA_TIMER
 	init_timer(&queue->timeout_timer);
 	queue->timeout_timer.function = cldma_timeout_timer_func;
@@ -1171,11 +1176,11 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 	L3RIMR0 = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L3RIMR0);
 
 	if (atomic_read(&md->wakeup_src) == 1)
-		CCCI_INF_MSG(md->index, TAG, "wake up by CLDMA_MD L2(%x/%x) L3(%x/%x)!\n", L2TISAR0, L2RISAR0, L3TISAR0,
-			     L3RISAR0);
+		CCCI_NORMAL_LOG(md->index, TAG, "wake up by CLDMA_MD L2(%x/%x) L3(%x/%x)!\n",
+						L2TISAR0, L2RISAR0, L3TISAR0, L3RISAR0);
 	else
-		CCCI_DBG_MSG(md->index, TAG, "CLDMA IRQ L2(%x/%x) L3(%x/%x)!\n", L2TISAR0, L2RISAR0, L3TISAR0,
-			     L3RISAR0);
+		CCCI_DEBUG_LOG(md->index, TAG, "CLDMA IRQ L2(%x/%x) L3(%x/%x)!\n",
+						L2TISAR0, L2RISAR0, L3TISAR0, L3RISAR0);
 
 #ifndef CLDMA_NO_TX_IRQ
 	L2TISAR0 &= (~L2TIMR0);
@@ -1191,7 +1196,7 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 	if (unlikely(!(L2RISAR0 & CLDMA_BM_INT_DONE) && !(L2TISAR0 & CLDMA_BM_INT_DONE))) {
 		coda_version = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_CODA_VERSION);
 		if (unlikely(coda_version == 0)) {
-			CCCI_ERR_MSG(md->index, TAG,
+			CCCI_ERROR_LOG(md->index, TAG,
 			     "no Tx or Rx, L2TISAR0=%X, L3TISAR0=%X, L2RISAR0=%X, L3RISAR0=%X, L2TIMR0=%X, L2RIMR0=%X, CODA_VERSION=%X\n",
 			     cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TISAR0),
 			     cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L3TISAR0),
@@ -1215,7 +1220,7 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 				if (IS_NET_QUE(md, i)) {
 					md_ctrl->txq[i].timeout_end = local_clock();
 					ret = del_timer(&md_ctrl->txq[i].timeout_timer);
-					CCCI_DBG_MSG(md->index, TAG, "qno%d del_timer %d ptr=0x%p\n", i, ret,
+					CCCI_DEBUG_LOG(md->index, TAG, "qno%d del_timer %d ptr=0x%p\n", i, ret,
 						     &md_ctrl->txq[i].timeout_timer);
 				}
 #endif
@@ -1224,7 +1229,7 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 					      CLDMA_BM_ALL_QUEUE & (1 << i));
 				ret = queue_delayed_work(md_ctrl->txq[i].worker, &md_ctrl->txq[i].cldma_tx_work,
 							 msecs_to_jiffies(10));
-				CCCI_DBG_MSG(md->index, TAG, "qno%d queue_delayed_work=%d\n", i, ret);
+				CCCI_DEBUG_LOG(md->index, TAG, "qno%d queue_delayed_work=%d\n", i, ret);
 			}
 		}
 	}
@@ -1274,7 +1279,7 @@ static irqreturn_t cldma_isr(int irq, void *data)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 #endif
 
-	CCCI_DBG_MSG(md->index, TAG, "CLDMA IRQ!\n");
+	CCCI_DEBUG_LOG(md->index, TAG, "CLDMA IRQ!\n");
 #ifdef ENABLE_CLDMA_AP_SIDE
 	cldma_irq_work_cb(md);
 #else
@@ -1301,7 +1306,7 @@ static inline void cldma_stop(struct ccci_modem *md)
 	int qno;
 #endif
 
-	CCCI_INF_MSG(md->index, TAG, "%s from %ps\n", __func__, __builtin_return_address(0));
+	CCCI_NORMAL_LOG(md->index, TAG, "%s from %ps\n", __func__, __builtin_return_address(0));
 	spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 	/* stop all Tx and Rx queues */
 	count = 0;
@@ -1311,11 +1316,11 @@ static inline void cldma_stop(struct ccci_modem *md)
 		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STOP_CMD);	/* dummy read */
 		ret = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS);
 		if ((++count) % 100000 == 0) {
-			CCCI_INF_MSG(md->index, TAG, "stop Tx CLDMA, status=%x, count=%d\n", ret, count);
+			CCCI_NORMAL_LOG(md->index, TAG, "stop Tx CLDMA, status=%x, count=%d\n", ret, count);
 #if defined(CONFIG_MTK_AEE_FEATURE)
 			aee_kernel_dal_show("stop Tx CLDMA failed.\n");
 #endif
-			CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
+			CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
@@ -1329,11 +1334,11 @@ static inline void cldma_stop(struct ccci_modem *md)
 		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_STOP_CMD);	/* dummy read */
 		ret = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS);
 		if ((++count) % 100000 == 0) {
-			CCCI_INF_MSG(md->index, TAG, "stop Rx CLDMA, status=%x, count=%d\n", ret, count);
+			CCCI_NORMAL_LOG(md->index, TAG, "stop Rx CLDMA, status=%x, count=%d\n", ret, count);
 #if defined(CONFIG_MTK_AEE_FEATURE)
 			aee_kernel_dal_show("stop Rx CLDMA failed.\n");
 #endif
-			CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
+			CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
@@ -1386,7 +1391,7 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 	int ret, count;
 	unsigned long flags;
 
-	CCCI_INF_MSG(md->index, TAG, "%s from %ps\n", __func__, __builtin_return_address(0));
+	CCCI_NORMAL_LOG(md->index, TAG, "%s from %ps\n", __func__, __builtin_return_address(0));
 	spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 	/* stop all Tx and Rx queues, but non-stop Rx ones */
 	count = 0;
@@ -1396,11 +1401,11 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STOP_CMD);	/* dummy read */
 		ret = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS);
 		if ((++count) % 100000 == 0) {
-			CCCI_INF_MSG(md->index, TAG, "stop Tx CLDMA E, status=%x, count=%d\n", ret, count);
+			CCCI_NORMAL_LOG(md->index, TAG, "stop Tx CLDMA E, status=%x, count=%d\n", ret, count);
 #if defined(CONFIG_MTK_AEE_FEATURE)
 			aee_kernel_dal_show("stop Tx CLDMA failed for EE.\n");
 #endif
-			CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
+			CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
@@ -1416,11 +1421,11 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 		cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_STOP_CMD);	/* dummy read */
 		ret = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS) & NONSTOP_QUEUE_MASK;
 		if ((++count) % 100000 == 0) {
-			CCCI_INF_MSG(md->index, TAG, "stop Rx CLDMA E, status=%x, count=%d\n", ret, count);
+			CCCI_NORMAL_LOG(md->index, TAG, "stop Rx CLDMA E, status=%x, count=%d\n", ret, count);
 #if defined(CONFIG_MTK_AEE_FEATURE)
 			aee_kernel_dal_show("stop Rx CLDMA failed for EE.\n");
 #endif
-			CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
+			CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
@@ -1455,7 +1460,7 @@ static inline void cldma_reset(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
-	CCCI_INF_MSG(md->index, TAG, "%s from %ps\n", __func__, __builtin_return_address(0));
+	CCCI_NORMAL_LOG(md->index, TAG, "%s from %ps\n", __func__, __builtin_return_address(0));
 	/* enable OUT DMA & wait RGPD write transaction repsonse */
 	cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG,
 		      cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG) | 0x5);
@@ -1500,7 +1505,7 @@ static inline void cldma_start(struct ccci_modem *md)
 	int i;
 	unsigned long flags;
 
-	CCCI_INF_MSG(md->index, TAG, "%s from %ps\n", __func__, __builtin_return_address(0));
+	CCCI_NORMAL_LOG(md->index, TAG, "%s from %ps\n", __func__, __builtin_return_address(0));
 	enable_irq(md_ctrl->cldma_irq_id);
 	spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 	/* set start address */
@@ -1603,7 +1608,7 @@ static void md_cd_clear_all_queue(struct ccci_modem *md, DIRECTION dir)
 				if (req->skb == NULL) {
 					struct md_cd_queue *queue = &md_ctrl->rxq[i];
 					/*which queue*/
-					CCCI_INF_MSG(md->index, TAG, "skb NULL in Rx queue %d/%d\n",
+					CCCI_NORMAL_LOG(md->index, TAG, "skb NULL in Rx queue %d/%d\n",
 							i, queue->index);
 					/*if ((1 << queue->index) & NET_TX_QUEUE_MASK)
 						req->skb = ccci_alloc_skb(queue->tr_ring->pkt_size, 0, 1);
@@ -1643,7 +1648,7 @@ static int md_cd_stop_queue(struct ccci_modem *md, unsigned char qno, DIRECTION 
 				      CLDMA_BM_ALL_QUEUE & (1 << qno));
 			cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_STOP_CMD);	/* dummy read */
 			ret = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS) & (1 << qno);
-			CCCI_INF_MSG(md->index, TAG, "stop Rx CLDMA queue %d, status=%x, count=%d\n", qno, ret,
+			CCCI_NORMAL_LOG(md->index, TAG, "stop Rx CLDMA queue %d, status=%x, count=%d\n", qno, ret,
 				     count++);
 		} while (ret != 0);
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
@@ -1704,7 +1709,7 @@ static void md_cd_wdt_work(struct work_struct *work)
 	int ret = 0;
 #if 0
 	/* 1. dump RGU reg */
-	CCCI_INF_MSG(md->index, TAG, "Dump MD RGU registers\n");
+	CCCI_NORMAL_LOG(md->index, TAG, "Dump MD RGU registers\n");
 	md_cd_lock_modem_clock_src(1);
 #ifdef BASE_ADDR_MDRSTCTL
 	ccci_write32(md_ctrl->md_pll_base->md_busreg1, 0x94, 0xE7C5);/* pre-action */
@@ -1716,7 +1721,7 @@ static void md_cd_wdt_work(struct work_struct *work)
 	md_cd_lock_modem_clock_src(0);
 #endif
 	if (md->md_state == INVALID) {
-		CCCI_ERR_MSG(md->index, TAG, "md_cd_wdt_work: md_state is INVALID\n");
+		CCCI_ERROR_LOG(md->index, TAG, "md_cd_wdt_work: md_state is INVALID\n");
 		return;
 	}
 	/* 2. wakelock */
@@ -1731,7 +1736,7 @@ static void md_cd_wdt_work(struct work_struct *work)
 #endif
 		/* 3. reset */
 		ret = md->ops->reset(md);
-		CCCI_INF_MSG(md->index, TAG, "reset MD after SW WDT %d\n", ret);
+		CCCI_NORMAL_LOG(md->index, TAG, "reset MD after SW WDT %d\n", ret);
 		/* 4. send message, only reset MD on non-eng load */
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
 
@@ -1746,7 +1751,7 @@ static void md_cd_wdt_work(struct work_struct *work)
 	} else {
 		if (md->critical_user_active[2] == 0) {
 			ret = md->ops->reset(md);
-			CCCI_INF_MSG(md->index, TAG, "mdlogger closed,reset MD after WDT %d\n", ret);
+			CCCI_NORMAL_LOG(md->index, TAG, "mdlogger closed,reset MD after WDT %d\n", ret);
 			/* 4. send message, only reset MD on non-eng load */
 			ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
 		} else {
@@ -1762,7 +1767,8 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
-	CCCI_ERR_MSG(md->index, TAG, "MD WDT IRQ\n");
+	CCCI_ERROR_LOG(md->index, TAG, "MD WDT IRQ\n");
+	ccci_event_log("md%d: MD WDT IRQ\n", md->index);
 #ifndef DISABLE_MD_WDT_PROCESS
 #ifdef ENABLE_DSP_SMEM_SHARE_MPU_REGION
 	ccci_set_exp_region_protection(md);
@@ -1774,11 +1780,11 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 
 	state = cldma_read32(md_ctrl->md_rgu_base, WDT_MD_STA);
 	cldma_write32(md_ctrl->md_rgu_base, WDT_MD_MODE, WDT_MD_MODE_KEY);
-	CCCI_INF_MSG(md->index, TAG, "WDT IRQ disabled for debug, state=%X\n", state);
+	CCCI_NORMAL_LOG(md->index, TAG, "WDT IRQ disabled for debug, state=%X\n", state);
 #ifdef L1_BASE_ADDR_L1RGU
 	state = cldma_read32(md_ctrl->l1_rgu_base, REG_L1RSTCTL_WDT_STA);
 	cldma_write32(md_ctrl->l1_rgu_base, REG_L1RSTCTL_WDT_MODE, L1_WDT_MD_MODE_KEY);
-	CCCI_INF_MSG(md->index, TAG, "WDT IRQ disabled for debug, L1 state=%X\n", state);
+	CCCI_NORMAL_LOG(md->index, TAG, "WDT IRQ disabled for debug, L1 state=%X\n", state);
 #endif
 #endif
 	/* 2. start a work queue to do the reset, because we used flush_work which is not designed for ISR */
@@ -1792,7 +1798,7 @@ void md_cd_ap2md_bus_timeout_timer_func(unsigned long data)
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
-	CCCI_INF_MSG(md->index, TAG, "MD bus timeout but no WDT IRQ\n");
+	CCCI_NORMAL_LOG(md->index, TAG, "MD bus timeout but no WDT IRQ\n");
 	/* same as WDT ISR */
 	schedule_work(&md_ctrl->wdt_work);
 }
@@ -1803,7 +1809,7 @@ static irqreturn_t md_cd_ap2md_bus_timeout_isr(int irq, void *data)
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
-	CCCI_INF_MSG(md->index, TAG, "MD bus timeout IRQ\n");
+	CCCI_NORMAL_LOG(md->index, TAG, "MD bus timeout IRQ\n");
 	mod_timer(&md_ctrl->bus_timeout_timer, jiffies + 5 * HZ);
 	return IRQ_HANDLED;
 }
@@ -1826,7 +1832,8 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	volatile unsigned int SO_CFG;
 
-	CCCI_ERR_MSG(md->index, TAG, "MD exception HIF %d\n", stage);
+	CCCI_ERROR_LOG(md->index, TAG, "MD exception HIF %d\n", stage);
+	ccci_event_log("md%d:MD exception HIF %d\n", md->index, stage);
 	/* in exception mode, MD won't sleep, so we do not need to request MD resource first */
 	switch (stage) {
 	case HIF_EX_INIT:
@@ -1834,7 +1841,7 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 		ccci_set_exp_region_protection(md);
 #endif
 		if (*((int *)(md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_SEQERR)) != 0) {
-			CCCI_ERR_MSG(md->index, KERN, "MD found wrong sequence number\n");
+			CCCI_ERROR_LOG(md->index, KERN, "MD found wrong sequence number\n");
 			md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, -1);
 		}
 		wake_lock_timeout(&md_ctrl->trm_wake_lock, 10 * HZ);
@@ -1862,7 +1869,7 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 
 		SO_CFG = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG);
 		if ((SO_CFG & 0x1) == 0) {	/* write function didn't work */
-			CCCI_ERR_MSG(md->index, TAG,
+			CCCI_ERROR_LOG(md->index, TAG,
 				     "Enable AP OUTCLDMA failed. Register can't be wrote. SO_CFG=0x%x\n", SO_CFG);
 			cldma_dump_register(md);
 			cldma_write32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_CFG,
@@ -1891,7 +1898,7 @@ static void md_cd_ccif_delayed_work(struct work_struct *work)
 	md_cd_clear_all_queue(md, IN);
 	/* tell MD to reset CLDMA */
 	md_cd_ccif_send(md, H2D_EXCEPTION_CLEARQ_ACK);
-	CCCI_INF_MSG(md->index, TAG, "send clearq_ack to MD\n");
+	CCCI_NORMAL_LOG(md->index, TAG, "send clearq_ack to MD\n");
 }
 
 static void md_cd_ccif_work(struct work_struct *work)
@@ -1910,7 +1917,7 @@ static void md_cd_ccif_work(struct work_struct *work)
 	if (md_ctrl->channel_id & (1 << AP_MD_PEER_WAKEUP))
 		wake_lock_timeout(&md_ctrl->peer_wake_lock, HZ);
 	if (md_ctrl->channel_id & (1 << AP_MD_SEQ_ERROR)) {
-		CCCI_ERR_MSG(md->index, TAG, "MD check seq fail\n");
+		CCCI_ERROR_LOG(md->index, TAG, "MD check seq fail\n");
 		md->ops->dump_info(md, DUMP_FLAG_CCIF, NULL, 0);
 	}
 }
@@ -1922,7 +1929,7 @@ static irqreturn_t md_cd_ccif_isr(int irq, void *data)
 
 	/* must ack first, otherwise IRQ will rush in */
 	md_ctrl->channel_id = cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM);
-	CCCI_DBG_MSG(md->index, TAG, "MD CCIF IRQ 0x%X\n", md_ctrl->channel_id);
+	CCCI_DEBUG_LOG(md->index, TAG, "MD CCIF IRQ 0x%X\n", md_ctrl->channel_id);
 	cldma_write32(md_ctrl->ap_ccif_base, APCCIF_ACK, md_ctrl->channel_id);
 
 #if 0				/* workqueue is too slow */
@@ -1953,7 +1960,7 @@ static inline int cldma_sw_init(struct ccci_modem *md)
 	/* request IRQ */
 	ret = request_irq(md_ctrl->hw_info->cldma_irq_id, cldma_isr, md_ctrl->hw_info->cldma_irq_flags, "CLDMA_AP", md);
 	if (ret) {
-		CCCI_ERR_MSG(md->index, TAG, "request CLDMA_AP IRQ(%d) error %d\n", md_ctrl->hw_info->cldma_irq_id,
+		CCCI_ERROR_LOG(md->index, TAG, "request CLDMA_AP IRQ(%d) error %d\n", md_ctrl->hw_info->cldma_irq_id,
 			     ret);
 		return ret;
 	}
@@ -1963,7 +1970,8 @@ static inline int cldma_sw_init(struct ccci_modem *md)
 	    request_irq(md_ctrl->hw_info->md_wdt_irq_id, md_cd_wdt_isr, md_ctrl->hw_info->md_wdt_irq_flags, "MD_WDT",
 			md);
 	if (ret) {
-		CCCI_ERR_MSG(md->index, TAG, "request MD_WDT IRQ(%d) error %d\n", md_ctrl->hw_info->md_wdt_irq_id, ret);
+		CCCI_ERROR_LOG(md->index, TAG, "request MD_WDT IRQ(%d) error %d\n",
+						md_ctrl->hw_info->md_wdt_irq_id, ret);
 		return ret;
 	}
 	atomic_inc(&md_ctrl->wdt_enabled);
@@ -1972,7 +1980,7 @@ static inline int cldma_sw_init(struct ccci_modem *md)
 	    request_irq(md_ctrl->hw_info->ap_ccif_irq_id, md_cd_ccif_isr, md_ctrl->hw_info->ap_ccif_irq_flags,
 			"CCIF0_AP", md);
 	if (ret) {
-		CCCI_ERR_MSG(md->index, TAG, "request CCIF0_AP IRQ(%d) error %d\n", md_ctrl->hw_info->ap_ccif_irq_id,
+		CCCI_ERROR_LOG(md->index, TAG, "request CCIF0_AP IRQ(%d) error %d\n", md_ctrl->hw_info->ap_ccif_irq_id,
 			     ret);
 		return ret;
 	}
@@ -2000,7 +2008,7 @@ static int md_cd_broadcast_state(struct ccci_modem *md, MD_STATE state)
 	case RX_IRQ:
 	case TX_IRQ:
 	case TX_FULL:
-		CCCI_ERR_MSG(md->index, TAG, "%ps broadcast %d to ports!\n", __builtin_return_address(0), state);
+		CCCI_ERROR_LOG(md->index, TAG, "%ps broadcast %d to ports!\n", __builtin_return_address(0), state);
 		return 0;
 	default:
 		break;
@@ -2024,7 +2032,7 @@ static int md_cd_init(struct ccci_modem *md)
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	struct ccci_port *port = NULL;
 
-	CCCI_INF_MSG(md->index, TAG, "CLDMA modem is initializing\n");
+	CCCI_INIT_LOG(md->index, TAG, "CLDMA modem is initializing\n");
 	/* init CLMDA, must before queue init as we set start address there */
 	cldma_sw_init(md);
 	/* init queue */
@@ -2044,7 +2052,7 @@ static int md_cd_init(struct ccci_modem *md)
 		if ((port->flags & PORT_F_RX_EXCLUSIVE) && (port->modem->capability & MODEM_CAP_NAPI) &&
 		    ((1 << port->rxq_index) & NAPI_QUEUE_MASK) && port->rxq_index != 0xFF) {
 			md_ctrl->rxq[port->rxq_index].napi_port = port;
-			CCCI_DBG_MSG(md->index, TAG, "queue%d add NAPI port %s\n", port->rxq_index, port->name);
+			CCCI_DEBUG_LOG(md->index, TAG, "queue%d add NAPI port %s\n", port->rxq_index, port->name);
 		}
 		/* be careful, port->rxq_index may be 0xFF! */
 	}
@@ -2095,16 +2103,16 @@ static int md_cd_start(struct ccci_modem *md)
 	/* 0. init security, as security depends on dummy_char, which is ready very late. */
 	ccci_init_security();
 
-	CCCI_NOTICE_MSG(md->index, TAG, "CLDMA modem is starting\n");
+	CCCI_BOOTUP_LOG(md->index, TAG, "CLDMA modem is starting\n");
 	/* 1. load modem image */
 	if (!modem_run_env_ready(md->index)) {
-		CCCI_INF_MSG(md->index, TAG, "CLDMA modem is not ready, load it\n");
+		CCCI_BOOTUP_LOG(md->index, TAG, "CLDMA modem is not ready, load it\n");
 		ccci_clear_md_region_protection(md);
 		ccci_clear_dsp_region_protection(md);
 		ret = ccci_load_firmware(md->index, &md->img_info[IMG_MD], img_err_str,
 				md->post_fix, &md->plat_dev->dev);
 		if (ret < 0) {
-			CCCI_ERR_MSG(md->index, TAG, "load MD firmware fail, %s\n", img_err_str);
+			CCCI_BOOTUP_LOG(md->index, TAG, "load MD firmware fail, %s\n", img_err_str);
 			goto out;
 		}
 		if (md->img_info[IMG_MD].dsp_size != 0 && md->img_info[IMG_MD].dsp_offset != 0xCDCDCDAA) {
@@ -2112,11 +2120,11 @@ static int md_cd_start(struct ccci_modem *md)
 			ret = ccci_load_firmware(md->index, &md->img_info[IMG_DSP], img_err_str,
 				md->post_fix, &md->plat_dev->dev);
 			if (ret < 0) {
-				CCCI_ERR_MSG(md->index, TAG, "load DSP firmware fail, %s\n", img_err_str);
+				CCCI_BOOTUP_LOG(md->index, TAG, "load DSP firmware fail, %s\n", img_err_str);
 				goto out;
 			}
 			if (md->img_info[IMG_DSP].size > md->img_info[IMG_MD].dsp_size) {
-				CCCI_ERR_MSG(md->index, TAG, "DSP image real size too large %d\n",
+				CCCI_BOOTUP_LOG(md->index, TAG, "DSP image real size too large %d\n",
 					     md->img_info[IMG_DSP].size);
 				goto out;
 			}
@@ -2124,18 +2132,18 @@ static int md_cd_start(struct ccci_modem *md)
 			md->mem_layout.dsp_region_vir = md->mem_layout.md_region_vir + md->img_info[IMG_MD].dsp_offset;
 			md->mem_layout.dsp_region_size = ret;
 		}
-		CCCI_ERR_MSG(md->index, TAG, "load ARMV7 firmware begin[0x%x]<0x%x>\n",
+		CCCI_BOOTUP_LOG(md->index, TAG, "load ARMV7 firmware begin[0x%x]<0x%x>\n",
 			md->img_info[IMG_MD].arm7_size, md->img_info[IMG_MD].arm7_offset);
 		if ((md->img_info[IMG_MD].arm7_size != 0) && (md->img_info[IMG_MD].arm7_offset != 0)) {
 			md->img_info[IMG_ARMV7].address = md->img_info[IMG_MD].address+md->img_info[IMG_MD].arm7_offset;
 			ret = ccci_load_firmware(md->index, &md->img_info[IMG_ARMV7], img_err_str,
 				md->post_fix, &md->plat_dev->dev);
 			if (ret < 0) {
-				CCCI_ERR_MSG(md->index, TAG, "load ARMV7 firmware fail, %s\n", img_err_str);
+				CCCI_BOOTUP_LOG(md->index, TAG, "load ARMV7 firmware fail, %s\n", img_err_str);
 				goto out;
 			}
 			if (md->img_info[IMG_ARMV7].size > md->img_info[IMG_MD].arm7_size) {
-				CCCI_ERR_MSG(md->index, TAG, "ARMV7 image real size too large %d\n",
+				CCCI_BOOTUP_LOG(md->index, TAG, "ARMV7 image real size too large %d\n",
 					     md->img_info[IMG_ARMV7].size);
 				goto out;
 			}
@@ -2143,13 +2151,13 @@ static int md_cd_start(struct ccci_modem *md)
 		ret = 0;	/* load_std_firmware returns MD image size */
 		md->config.setting &= ~MD_SETTING_RELOAD;
 	} else {
-		CCCI_INF_MSG(md->index, TAG, "CLDMA modem image ready, bypass load\n");
+		CCCI_BOOTUP_LOG(md->index, TAG, "CLDMA modem image ready, bypass load\n");
 		ret = ccci_get_md_check_hdr_inf(md->index, &md->img_info[IMG_MD], md->post_fix);
 		if (ret < 0) {
-			CCCI_INF_MSG(md->index, TAG, "partition read fail(%d)\n", ret);
+			CCCI_BOOTUP_LOG(md->index, TAG, "partition read fail(%d)\n", ret);
 			/* goto out; */
 		} else
-			CCCI_INF_MSG(md->index, TAG, "partition read success\n");
+			CCCI_BOOTUP_LOG(md->index, TAG, "partition read success\n");
 	}
 	/* 2. clear share memory and ring buffer */
 #if 0				/* no need now, MD will clear share memory itself */
@@ -2169,7 +2177,7 @@ static int md_cd_start(struct ccci_modem *md)
 #if defined(CONFIG_MTK_LEGACY)
 #ifndef NO_POWER_OFF_ON_STARTMD
 		ret = md_cd_power_off(md, 0);
-		CCCI_INF_MSG(md->index, TAG, "power off MD first %d\n", ret);
+		CCCI_BOOTUP_LOG(md->index, TAG, "power off MD first %d\n", ret);
 #endif
 #endif
 		md->config.setting &= ~MD_SETTING_FIRST_BOOT;
@@ -2183,7 +2191,7 @@ static int md_cd_start(struct ccci_modem *md)
 #endif
 	ret = md_cd_power_on(md);
 	if (ret) {
-		CCCI_ERR_MSG(md->index, TAG, "power on MD fail %d\n", ret);
+		CCCI_BOOTUP_LOG(md->index, TAG, "power on MD fail %d\n", ret);
 		goto out;
 	}
 #ifdef SET_EMI_STEP_BY_STAGE
@@ -2199,24 +2207,24 @@ static int md_cd_start(struct ccci_modem *md)
 	wdt_enable_irq(md_ctrl);
 	/* 8. start CLDMA */
 #ifdef ENABLE_CLDMA_AP_SIDE
-	CCCI_INF_MSG(md->index, TAG, "CLDMA AP side clock is always on\n");
+	CCCI_BOOTUP_LOG(md->index, TAG, "CLDMA AP side clock is always on\n");
 #else
 	retry = CLDMA_CG_POLL;
 	while (retry-- > 0) {
 		if (!(ccci_read32(md_ctrl->md_global_con0, 0) & (1 << MD_GLOBAL_CON0_CLDMA_BIT))) {
-			CCCI_INF_MSG(md->index, TAG, "CLDMA clock is on, retry=%d\n", retry);
+			CCCI_BOOTUP_LOG(md->index, TAG, "CLDMA clock is on, retry=%d\n", retry);
 			cldma_on = 1;
 			break;
 		}
-		CCCI_INF_MSG(md->index, TAG, "CLDMA clock is still off, retry=%d\n", retry);
+		CCCI_BOOTUP_LOG(md->index, TAG, "CLDMA clock is still off, retry=%d\n", retry);
 		mdelay(1000);
 
-		CCCI_INF_MSG(md->index, TAG, "CLDMA clock is still off, retry=%d\n", retry);
+		CCCI_BOOTUP_LOG(md->index, TAG, "CLDMA clock is still off, retry=%d\n", retry);
 		mdelay(1000);
 	}
 	if (!cldma_on) {
 		ret = -CCCI_ERR_HIF_NOT_POWER_ON;
-		CCCI_ERR_MSG(md->index, TAG, "CLDMA clock is off, retry=%d\n", retry);
+		CCCI_BOOTUP_LOG(md->index, TAG, "CLDMA clock is off, retry=%d\n", retry);
 		goto out;
 	}
 #endif
@@ -2227,7 +2235,7 @@ static int md_cd_start(struct ccci_modem *md)
 	cldma_start(md);
 
  out:
-	CCCI_NOTICE_MSG(md->index, TAG, "CLDMA modem started %d\n", ret);
+	CCCI_BOOTUP_LOG(md->index, TAG, "CLDMA modem started %d\n", ret);
 	/* used for throttling feature - start */
 	ccci_modem_boot_count[md->index]++;
 	/* used for throttling feature - end */
@@ -2247,7 +2255,7 @@ static void md_cldma_clear(struct ccci_modem *md)
 	ret = cldma_read32(md_ctrl->cldma_md_pdn_base, CLDMA_AP_UL_STATUS);
 	for (i = 0; (CLDMA_BM_ALL_QUEUE & ret) && i < QUEUE_LEN(md_ctrl->rxq); i++) {
 		if ((CLDMA_BM_ALL_QUEUE & ret) & (1 << i)) {
-			CCCI_INF_MSG(md->index, TAG, "MD CLDMA txq=%d is active, need AP rx collect!", i);
+			CCCI_NORMAL_LOG(md->index, TAG, "MD CLDMA txq=%d is active, need AP rx collect!", i);
 			md->ops->give_more(md, i);
 		}
 	}
@@ -2255,7 +2263,7 @@ static void md_cldma_clear(struct ccci_modem *md)
 		ret = cldma_read32(md_ctrl->cldma_md_pdn_base, CLDMA_AP_UL_STATUS);
 		if ((CLDMA_BM_ALL_QUEUE & ret) == 0
 		    && cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY) == 0) {
-			CCCI_INF_MSG(md->index, TAG,
+			CCCI_NORMAL_LOG(md->index, TAG,
 				     "MD CLDMA tx status is off, retry=%d, AP_CLDMA_IP_BUSY=0x%x, MD_TX_STATUS=0x%x, AP_RX_STATUS=0x%x\n",
 				     retry, cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY),
 				     cldma_read32(md_ctrl->cldma_md_pdn_base, CLDMA_AP_UL_STATUS),
@@ -2263,7 +2271,7 @@ static void md_cldma_clear(struct ccci_modem *md)
 			break;
 		}
 		if ((retry % 10) == 0)
-			CCCI_INF_MSG(md->index, TAG,
+			CCCI_NORMAL_LOG(md->index, TAG,
 				     "MD CLDMA tx is active, retry=%d, AP_CLDMA_IP_BUSY=0x%x, MD_TX_STATUS=0x%x, AP_RX_STATUS=0x%x\n",
 				     retry, cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY),
 				     cldma_read32(md_ctrl->cldma_md_pdn_base, CLDMA_AP_UL_STATUS),
@@ -2272,11 +2280,11 @@ static void md_cldma_clear(struct ccci_modem *md)
 		retry--;
 	}
 	if (retry == 0 && cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_CLDMA_IP_BUSY) != 0) {
-		CCCI_ERR_MSG(md->index, TAG, "md_cldma_clear: wait md tx done failed.\n");
+		CCCI_ERROR_LOG(md->index, TAG, "md_cldma_clear: wait md tx done failed.\n");
 		md_cd_traffic_monitor_func((unsigned long)md);
 		cldma_dump_register(md);
 	} else {
-		CCCI_INF_MSG(md->index, TAG, "md_cldma_clear: md tx done\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "md_cldma_clear: md tx done\n");
 	}
 #endif
 
@@ -2311,10 +2319,10 @@ static int md_cd_reset(struct ccci_modem *md)
 
 	/* 1. mutex check */
 	if (atomic_add_return(1, &md_ctrl->reset_on_going) > 1) {
-		CCCI_INF_MSG(md->index, TAG, "One reset flow is on-going\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "One reset flow is on-going\n");
 		return -CCCI_ERR_MD_IN_RESET;
 	}
-	CCCI_INF_MSG(md->index, TAG, "md_cd_reset:CLDMA modem is resetting\n");
+	CCCI_NORMAL_LOG(md->index, TAG, "md_cd_reset:CLDMA modem is resetting\n");
 	/* 2. disable WDT IRQ */
 	wdt_disable_irq(md_ctrl);
 
@@ -2335,12 +2343,12 @@ static int check_power_off_en(struct ccci_modem *md)
 		return 1;
 
 	smem_val = *((int *)((long)md->mem_layout.smem_region_vir + 8*1024+31*4));
-	CCCI_INF_MSG(md->index, TAG, "share for power off:%x\n", smem_val);
+	CCCI_NORMAL_LOG(md->index, TAG, "share for power off:%x\n", smem_val);
 	if (smem_val != 0) {
-			CCCI_INF_MSG(md->index, TAG, "[ccci]enable power off check\n");
+			CCCI_NORMAL_LOG(md->index, TAG, "[ccci]enable power off check\n");
 			return 1;
 	}
-	CCCI_INF_MSG(md->index, TAG, "disable power off check\n");
+	CCCI_NORMAL_LOG(md->index, TAG, "disable power off check\n");
 	return 0;
 	#else
 	return 1;
@@ -2354,7 +2362,7 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 	u32 pending;
 	int en_power_check;
 
-	CCCI_INF_MSG(md->index, TAG, "CLDMA modem is power off, timeout=%d\n", timeout);
+	CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem is power off, timeout=%d\n", timeout);
 	md->sim_type = 0xEEEEEEEE;	/* reset sim_type(MCC/MNC) to 0xEEEEEEEE */
 
 	md_cd_check_emi_state(md, 1);	/* Check EMI before */
@@ -2366,8 +2374,8 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 			count--;
 			if (count == 0) {
 				if (en_power_check) {
-					CCCI_INF_MSG(md->index, TAG, "MD is not in sleep mode, dump md status!\n");
-					CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
+					CCCI_NORMAL_LOG(md->index, TAG, "MD is not in sleep mode, dump md status!\n");
+					CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
 					ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 						      md->smem_layout.ccci_exp_dump_size);
 
@@ -2396,8 +2404,8 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 		}
 		pending = mt_irq_get_pending(md_ctrl->hw_info->md_wdt_irq_id);
 		if (pending) {
-			CCCI_INF_MSG(md->index, TAG, "WDT IRQ occur.");
-			CCCI_INF_MSG(md->index, KERN, "Dump MD EX log\n");
+			CCCI_NORMAL_LOG(md->index, TAG, "WDT IRQ occur.");
+			CCCI_NORMAL_LOG(md->index, KERN, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 
@@ -2413,7 +2421,7 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int timeout)
 #endif
 	/* power off MD */
 	ret = md_cd_power_off(md, timeout);
-	CCCI_INF_MSG(md->index, TAG, "CLDMA modem is power off done, %d\n", ret);
+	CCCI_NORMAL_LOG(md->index, TAG, "CLDMA modem is power off done, %d\n", ret);
 	md->ops->broadcast_state(md, GATED);
 
 #ifdef ENABLE_CLDMA_AP_SIDE
@@ -2448,7 +2456,7 @@ static int cldma_gpd_bd_handle_tx_request(struct md_cd_queue *queue, struct cldm
 	struct cldma_request *tx_req_bd;
 
 	/* network does not has IOC override needs */
-	CCCI_DBG_MSG(queue->modem->index, TAG, "SGIO, GPD=%p, frags=%d, len=%d, headlen=%d\n", tx_req->gpd,
+	CCCI_DEBUG_LOG(queue->modem->index, TAG, "SGIO, GPD=%p, frags=%d, len=%d, headlen=%d\n", tx_req->gpd,
 		     info->nr_frags, skb->len, skb_headlen(skb));
 	/* link firt BD to skb's data */
 	tx_req_bd = list_first_entry(&tx_req->bd, struct cldma_request, entry);
@@ -2467,7 +2475,7 @@ static int cldma_gpd_bd_handle_tx_request(struct md_cd_queue *queue, struct cldm
 			frag_addr = skb_frag_address(frag);
 		}
 		tbd = tx_req_bd->gpd;
-		CCCI_DBG_MSG(queue->modem->index, TAG, "SGIO, BD=%p, frag%d, frag_len=%d\n", tbd, cur_frag, frag_len);
+		CCCI_DEBUG_LOG(queue->modem->index, TAG, "SGIO, BD=%p, frag%d, frag_len=%d\n", tbd, cur_frag, frag_len);
 		/* update BD */
 		tx_req_bd->data_buffer_ptr_saved =
 		    dma_map_single(&queue->modem->plat_dev->dev, frag_addr, frag_len, DMA_TO_DEVICE);
@@ -2598,7 +2606,7 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
  retry:
 	spin_lock_irqsave(&queue->ring_lock, flags);
 		/* we use irqsave as network require a lock in softirq, cause a potential deadlock */
-	CCCI_DBG_MSG(md->index, TAG, "get a Tx req on q%d free=%d, tx_bytes = %X\n", qno, queue->budget, tx_bytes);
+	CCCI_DEBUG_LOG(md->index, TAG, "get a Tx req on q%d free=%d, tx_bytes = %X\n", qno, queue->budget, tx_bytes);
 	tx_req = queue->tx_xmit;
 	if (tx_req->skb == NULL) {
 		ccci_inc_tx_seq_num(md, (struct ccci_header *)skb->data);
@@ -2626,7 +2634,7 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
 			if (IS_NET_QUE(md, qno)) {
 				queue->timeout_start = local_clock();
 				ret = mod_timer(&queue->timeout_timer, jiffies + CLDMA_ACTIVE_T * HZ);
-				CCCI_DBG_MSG(md->index, TAG, "md_ctrl->txq_active=%d, qno%d ,ch%d, start_timer=%d\n",
+				CCCI_DEBUG_LOG(md->index, TAG, "md_ctrl->txq_active=%d, qno%d ,ch%d, start_timer=%d\n",
 					     md_ctrl->txq_active, qno, ccci_h.channel, ret);
 				ret = 0;
 			}
@@ -2659,8 +2667,9 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
 			* and cldma no need resume again.
 			* This package will be dropped by cldma.
 			*/
-			CCCI_INF_MSG(md->index, TAG, "ch=%d qno=%d cldma maybe stop, this package will be dropped!\n",
-				ccci_h.channel, qno);
+			CCCI_NORMAL_LOG(md->index, TAG,
+							"ch=%d qno=%d cldma maybe stop, this package will be dropped!\n",
+							ccci_h.channel, qno);
 		}
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 		md_cd_lock_cldma_clock_src(0);
@@ -2671,13 +2680,13 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
 		/* check CLDMA status */
 		md_cd_lock_cldma_clock_src(1);
 		if (cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS) & (1 << qno)) {
-			CCCI_DBG_MSG(md->index, TAG, "ch=%d qno=%d free slot 0, CLDMA_AP_UL_STATUS=0x%x\n",
+			CCCI_DEBUG_LOG(md->index, TAG, "ch=%d qno=%d free slot 0, CLDMA_AP_UL_STATUS=0x%x\n",
 				ccci_h.channel, qno, cldma_read32(md_ctrl->cldma_ap_pdn_base,
 				CLDMA_AP_UL_STATUS));
 			queue->busy_count++;
 		} else {
 			if (cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TIMR0) & (1 << qno))
-				CCCI_RATE_LIMIT_MSG(md->index, TAG, "ch=%d qno=%d free slot 0, CLDMA_AP_L2TIMR0=0x%x\n",
+				CCCI_REPEAT_LOG(md->index, TAG, "ch=%d qno=%d free slot 0, CLDMA_AP_L2TIMR0=0x%x\n",
 					ccci_h.channel, qno, cldma_read32(md_ctrl->cldma_ap_pdn_base,
 					CLDMA_AP_L2TIMR0));
 		}
@@ -2709,7 +2718,7 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
 	}
 #ifdef CLDMA_TRACE
 	if (unlikely(ret)) {
-		CCCI_DBG_MSG(md->index, TAG, "txq_active=%d, qno=%d is 0,drop ch%d package,ret=%d\n",
+		CCCI_DEBUG_LOG(md->index, TAG, "txq_active=%d, qno=%d is 0,drop ch%d package,ret=%d\n",
 			     md_ctrl->txq_active, qno, ccci_h.channel, ret);
 		trace_cldma_error(qno, ccci_h.channel, ret, __LINE__);
 	} else {
@@ -2737,7 +2746,7 @@ static int md_cd_give_more(struct ccci_modem *md, unsigned char qno)
 
 	if (qno >= QUEUE_LEN(md_ctrl->rxq))
 		return -CCCI_ERR_INVALID_QUEUE_INDEX;
-	CCCI_DBG_MSG(md->index, TAG, "give more on queue %d work %p\n", qno, &md_ctrl->rxq[qno].cldma_rx_work);
+	CCCI_DEBUG_LOG(md->index, TAG, "give more on queue %d work %p\n", qno, &md_ctrl->rxq[qno].cldma_rx_work);
 	ret = queue_work(md_ctrl->rxq[qno].worker, &md_ctrl->rxq[qno].cldma_rx_work);
 	return 0;
 }
@@ -2785,7 +2794,7 @@ static int md_cd_napi_poll(struct ccci_modem *md, unsigned char qno, struct napi
 	spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 	md_cd_lock_cldma_clock_src(0);
 
-	CCCI_DBG_MSG(md->index, TAG, "NAPI poll on queue %d, %d->%d->%d\n", qno, weight, ret, all_clr);
+	CCCI_DEBUG_LOG(md->index, TAG, "NAPI poll on queue %d, %d->%d->%d\n", qno, weight, ret, all_clr);
 	return ret;
 }
 
@@ -2819,20 +2828,20 @@ static void dump_runtime_data_v2(struct ccci_modem *md, struct ap_query_md_featu
 {
 	u8 i = 0;
 
-	CCCI_INF_MSG(md->index, KERN, "head_pattern 0x%x\n", ap_feature->head_pattern);
+	CCCI_BOOTUP_LOG(md->index, KERN, "head_pattern 0x%x\n", ap_feature->head_pattern);
 
 	for (i = BOOT_INFO; i < AP_RUNTIME_FEATURE_ID_MAX; i++) {
-		CCCI_NOTICE_MSG(md->index, KERN, "feature %u: mask %u, version %u\n",
+		CCCI_BOOTUP_LOG(md->index, KERN, "feature %u: mask %u, version %u\n",
 				i, ap_feature->feature_set[i].support_mask, ap_feature->feature_set[i].version);
 	}
-	CCCI_INF_MSG(md->index, KERN, "share_memory_support 0x%x\n", ap_feature->share_memory_support);
-	CCCI_INF_MSG(md->index, KERN, "ap_runtime_data_addr 0x%x\n", ap_feature->ap_runtime_data_addr);
-	CCCI_INF_MSG(md->index, KERN, "ap_runtime_data_size 0x%x\n", ap_feature->ap_runtime_data_size);
-	CCCI_INF_MSG(md->index, KERN, "md_runtime_data_addr 0x%x\n", ap_feature->md_runtime_data_addr);
-	CCCI_INF_MSG(md->index, KERN, "md_runtime_data_size 0x%x\n", ap_feature->md_runtime_data_size);
-	CCCI_INF_MSG(md->index, KERN, "set_md_mpu_start_addr 0x%x\n", ap_feature->set_md_mpu_start_addr);
-	CCCI_INF_MSG(md->index, KERN, "set_md_mpu_total_size 0x%x\n", ap_feature->set_md_mpu_total_size);
-	CCCI_INF_MSG(md->index, KERN, "tail_pattern 0x%x\n", ap_feature->tail_pattern);
+	CCCI_BOOTUP_LOG(md->index, KERN, "share_memory_support 0x%x\n", ap_feature->share_memory_support);
+	CCCI_BOOTUP_LOG(md->index, KERN, "ap_runtime_data_addr 0x%x\n", ap_feature->ap_runtime_data_addr);
+	CCCI_BOOTUP_LOG(md->index, KERN, "ap_runtime_data_size 0x%x\n", ap_feature->ap_runtime_data_size);
+	CCCI_BOOTUP_LOG(md->index, KERN, "md_runtime_data_addr 0x%x\n", ap_feature->md_runtime_data_addr);
+	CCCI_BOOTUP_LOG(md->index, KERN, "md_runtime_data_size 0x%x\n", ap_feature->md_runtime_data_size);
+	CCCI_BOOTUP_LOG(md->index, KERN, "set_md_mpu_start_addr 0x%x\n", ap_feature->set_md_mpu_start_addr);
+	CCCI_BOOTUP_LOG(md->index, KERN, "set_md_mpu_total_size 0x%x\n", ap_feature->set_md_mpu_total_size);
+	CCCI_BOOTUP_LOG(md->index, KERN, "tail_pattern 0x%x\n", ap_feature->tail_pattern);
 }
 
 static void dump_runtime_data(struct ccci_modem *md, struct modem_runtime *runtime)
@@ -2847,62 +2856,62 @@ static void dump_runtime_data(struct ccci_modem *md, struct modem_runtime *runti
 	p++;
 	*p = runtime->Platform_H;
 
-	CCCI_INF_MSG(md->index, TAG, "**********************************************\n");
-	CCCI_INF_MSG(md->index, TAG, "Prefix					  %c%c%c%c\n", ctmp[0], ctmp[1],
+	CCCI_NORMAL_LOG(md->index, TAG, "**********************************************\n");
+	CCCI_NORMAL_LOG(md->index, TAG, "Prefix               %c%c%c%c\n", ctmp[0], ctmp[1],
 		     ctmp[2], ctmp[3]);
-	CCCI_INF_MSG(md->index, TAG, "Platform_L				  %c%c%c%c\n", ctmp[4], ctmp[5],
+	CCCI_NORMAL_LOG(md->index, TAG, "Platform_L           %c%c%c%c\n", ctmp[4], ctmp[5],
 		     ctmp[6], ctmp[7]);
-	CCCI_INF_MSG(md->index, TAG, "Platform_H				  %c%c%c%c\n", ctmp[8], ctmp[9],
+	CCCI_NORMAL_LOG(md->index, TAG, "Platform_H           %c%c%c%c\n", ctmp[8], ctmp[9],
 		     ctmp[10], ctmp[11]);
-	CCCI_INF_MSG(md->index, TAG, "DriverVersion			   0x%x\n", runtime->DriverVersion);
-	CCCI_INF_MSG(md->index, TAG, "BootChannel				 %d\n", runtime->BootChannel);
-	CCCI_INF_MSG(md->index, TAG, "BootingStartID(Mode)		0x%x\n", runtime->BootingStartID);
-	CCCI_INF_MSG(md->index, TAG, "BootAttributes			  %d\n", runtime->BootAttributes);
-	CCCI_INF_MSG(md->index, TAG, "BootReadyID				 %d\n", runtime->BootReadyID);
+	CCCI_NORMAL_LOG(md->index, TAG, "DriverVersion        0x%x\n", runtime->DriverVersion);
+	CCCI_NORMAL_LOG(md->index, TAG, "BootChannel          %d\n", runtime->BootChannel);
+	CCCI_NORMAL_LOG(md->index, TAG, "BootingStartID(Mode) 0x%x\n", runtime->BootingStartID);
+	CCCI_NORMAL_LOG(md->index, TAG, "BootAttributes       %d\n", runtime->BootAttributes);
+	CCCI_NORMAL_LOG(md->index, TAG, "BootReadyID          %d\n", runtime->BootReadyID);
 
-	CCCI_INF_MSG(md->index, TAG, "ExceShareMemBase			0x%x\n", runtime->ExceShareMemBase);
-	CCCI_INF_MSG(md->index, TAG, "ExceShareMemSize			0x%x\n", runtime->ExceShareMemSize);
-	CCCI_INF_MSG(md->index, TAG, "TotalShareMemBase		   0x%x\n", runtime->TotalShareMemBase);
-	CCCI_INF_MSG(md->index, TAG, "TotalShareMemSize		   0x%x\n", runtime->TotalShareMemSize);
+	CCCI_NORMAL_LOG(md->index, TAG, "ExceShareMemBase     0x%x\n", runtime->ExceShareMemBase);
+	CCCI_NORMAL_LOG(md->index, TAG, "ExceShareMemSize     0x%x\n", runtime->ExceShareMemSize);
+	CCCI_NORMAL_LOG(md->index, TAG, "TotalShareMemBase    0x%x\n", runtime->TotalShareMemBase);
+	CCCI_NORMAL_LOG(md->index, TAG, "TotalShareMemSize    0x%x\n", runtime->TotalShareMemSize);
 
-	CCCI_INF_MSG(md->index, TAG, "CheckSum					%d\n", runtime->CheckSum);
+	CCCI_NORMAL_LOG(md->index, TAG, "CheckSum             %d\n", runtime->CheckSum);
 
 	p = (int *)ctmp;
 	*p = runtime->Postfix;
-	CCCI_INF_MSG(md->index, TAG, "Postfix					 %c%c%c%c\n", ctmp[0], ctmp[1], ctmp[2],
+	CCCI_NORMAL_LOG(md->index, TAG, "Postfix              %c%c%c%c\n", ctmp[0], ctmp[1], ctmp[2],
 		     ctmp[3]);
-	CCCI_INF_MSG(md->index, TAG, "**********************************************\n");
+	CCCI_NORMAL_LOG(md->index, TAG, "**********************************************\n");
 
 	p = (int *)ctmp;
 	*p = runtime->misc_prefix;
-	CCCI_INF_MSG(md->index, TAG, "Prefix					  %c%c%c%c\n", ctmp[0], ctmp[1],
+	CCCI_NORMAL_LOG(md->index, TAG, "Prefix               %c%c%c%c\n", ctmp[0], ctmp[1],
 		     ctmp[2], ctmp[3]);
-	CCCI_INF_MSG(md->index, TAG, "SupportMask				 0x%x\n", runtime->support_mask);
-	CCCI_INF_MSG(md->index, TAG, "Index					   0x%x\n", runtime->index);
-	CCCI_INF_MSG(md->index, TAG, "Next						0x%x\n", runtime->next);
-	CCCI_INF_MSG(md->index, TAG, "Feature0  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_0_val[0],
+	CCCI_NORMAL_LOG(md->index, TAG, "SupportMask          0x%x\n", runtime->support_mask);
+	CCCI_NORMAL_LOG(md->index, TAG, "Index                0x%x\n", runtime->index);
+	CCCI_NORMAL_LOG(md->index, TAG, "Next                 0x%x\n", runtime->next);
+	CCCI_NORMAL_LOG(md->index, TAG, "Feature0  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_0_val[0],
 		     runtime->feature_0_val[1], runtime->feature_0_val[2], runtime->feature_0_val[3]);
-	CCCI_INF_MSG(md->index, TAG, "Feature1  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_1_val[0],
+	CCCI_NORMAL_LOG(md->index, TAG, "Feature1  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_1_val[0],
 		     runtime->feature_1_val[1], runtime->feature_1_val[2], runtime->feature_1_val[3]);
-	CCCI_INF_MSG(md->index, TAG, "Feature2  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_2_val[0],
+	CCCI_NORMAL_LOG(md->index, TAG, "Feature2  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_2_val[0],
 		     runtime->feature_2_val[1], runtime->feature_2_val[2], runtime->feature_2_val[3]);
-	CCCI_INF_MSG(md->index, TAG, "Feature3  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_3_val[0],
+	CCCI_NORMAL_LOG(md->index, TAG, "Feature3  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_3_val[0],
 		     runtime->feature_3_val[1], runtime->feature_3_val[2], runtime->feature_3_val[3]);
-	CCCI_INF_MSG(md->index, TAG, "Feature4  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_4_val[0],
+	CCCI_NORMAL_LOG(md->index, TAG, "Feature4  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_4_val[0],
 		     runtime->feature_4_val[1], runtime->feature_4_val[2], runtime->feature_4_val[3]);
-	CCCI_INF_MSG(md->index, TAG, "Feature5  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_5_val[0],
+	CCCI_NORMAL_LOG(md->index, TAG, "Feature5  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_5_val[0],
 		     runtime->feature_5_val[1], runtime->feature_5_val[2], runtime->feature_5_val[3]);
-	CCCI_INF_MSG(md->index, TAG, "Feature6  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_6_val[0],
+	CCCI_NORMAL_LOG(md->index, TAG, "Feature6  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_6_val[0],
 		     runtime->feature_6_val[1], runtime->feature_6_val[2], runtime->feature_6_val[3]);
-	CCCI_INF_MSG(md->index, TAG, "Feature7  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_7_val[0],
+	CCCI_NORMAL_LOG(md->index, TAG, "Feature7  0x%x  0x%x  0x%x  0x%x\n", runtime->feature_7_val[0],
 		     runtime->feature_7_val[1], runtime->feature_7_val[2], runtime->feature_7_val[3]);
 
 	p = (int *)ctmp;
 	*p = runtime->misc_postfix;
-	CCCI_INF_MSG(md->index, TAG, "Postfix					 %c%c%c%c\n", ctmp[0], ctmp[1], ctmp[2],
+	CCCI_NORMAL_LOG(md->index, TAG, "Postfix              %c%c%c%c\n", ctmp[0], ctmp[1], ctmp[2],
 		     ctmp[3]);
 
-	CCCI_INF_MSG(md->index, TAG, "----------------------------------------------\n");
+	CCCI_NORMAL_LOG(md->index, TAG, "----------------------------------------------\n");
 }
 
 #ifdef FEATURE_DBM_SUPPORT
@@ -2961,7 +2970,7 @@ static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int sbp_co
 	ccci_h = (struct ccci_header *)req->skb->data;
 	ap_rt_data = (struct ap_query_md_feature *)(req->skb->data + sizeof(struct ccci_header));
 
-	CCCI_NOTICE_MSG(md->index, KERN, "new api for sending rt data, sbp_code %u\n", sbp_code);
+	CCCI_BOOTUP_LOG(md->index, KERN, "new api for sending rt data, sbp_code %u\n", sbp_code);
 
 	ccci_set_ap_region_protection(md);
 	/*header */
@@ -3050,14 +3059,14 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 	/* 32K clock less */
 #if defined(ENABLE_32K_CLK_LESS)
 	if (crystal_exist_status()) {
-		CCCI_DBG_MSG(md->index, TAG, "MISC_32K_LESS no support, crystal_exist_status 1\n");
+		CCCI_DEBUG_LOG(md->index, TAG, "MISC_32K_LESS no support, crystal_exist_status 1\n");
 		runtime->support_mask |= (FEATURE_NOT_SUPPORT << (MISC_32K_LESS * 2));
 	} else {
-		CCCI_DBG_MSG(md->index, TAG, "MISC_32K_LESS support\n");
+		CCCI_DEBUG_LOG(md->index, TAG, "MISC_32K_LESS support\n");
 		runtime->support_mask |= (FEATURE_SUPPORT << (MISC_32K_LESS * 2));
 	}
 #else
-	CCCI_DBG_MSG(md->index, TAG, "ENABLE_32K_CLK_LESS disabled\n");
+	CCCI_DEBUG_LOG(md->index, TAG, "ENABLE_32K_CLK_LESS disabled\n");
 	runtime->support_mask |= (FEATURE_NOT_SUPPORT << (MISC_32K_LESS * 2));
 #endif
 
@@ -3088,7 +3097,7 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 #endif
 
 #ifdef FEATURE_MD_GET_CLIB_TIME
-	CCCI_DBG_MSG(md->index, TAG, "FEATURE_MD_GET_CLIB_TIME is on\n");
+	CCCI_DEBUG_LOG(md->index, TAG, "FEATURE_MD_GET_CLIB_TIME is on\n");
 	runtime->support_mask |= (FEATURE_SUPPORT << (MISC_MD_CLIB_TIME * 2));
 
 	do_gettimeofday(&t);
@@ -3135,7 +3144,7 @@ static int md_cd_force_assert(struct ccci_modem *md, MD_COMM_TYPE type)
 	struct ccci_request *req = NULL;
 	struct ccci_header *ccci_h;
 
-	CCCI_INF_MSG(md->index, TAG, "force assert MD using %d\n", type);
+	CCCI_NORMAL_LOG(md->index, TAG, "force assert MD using %d\n", type);
 	switch (type) {
 	case CCCI_MESSAGE:
 		req = ccci_alloc_req(OUT, sizeof(struct ccci_header), 1, 1);
@@ -3164,29 +3173,29 @@ static void md_cd_dump_ccif_reg(struct ccci_modem *md)
 {
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
-	CCCI_INF_MSG(md->index, TAG, "AP_CON(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_CON,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_CON(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_CON,
 		     cldma_read32(md_ctrl->ap_ccif_base, APCCIF_CON));
-	CCCI_INF_MSG(md->index, TAG, "AP_BUSY(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_BUSY,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_BUSY(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_BUSY,
 		     cldma_read32(md_ctrl->ap_ccif_base, APCCIF_BUSY));
-	CCCI_INF_MSG(md->index, TAG, "AP_START(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_START,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_START(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_START,
 		     cldma_read32(md_ctrl->ap_ccif_base, APCCIF_START));
-	CCCI_INF_MSG(md->index, TAG, "AP_TCHNUM(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_TCHNUM,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_TCHNUM(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_TCHNUM,
 		     cldma_read32(md_ctrl->ap_ccif_base, APCCIF_TCHNUM));
-	CCCI_INF_MSG(md->index, TAG, "AP_RCHNUM(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_RCHNUM,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_RCHNUM(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_RCHNUM,
 		     cldma_read32(md_ctrl->ap_ccif_base, APCCIF_RCHNUM));
-	CCCI_INF_MSG(md->index, TAG, "AP_ACK(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_ACK,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_ACK(%p)=%x\n", md_ctrl->ap_ccif_base + APCCIF_ACK,
 		     cldma_read32(md_ctrl->ap_ccif_base, APCCIF_ACK));
-	CCCI_INF_MSG(md->index, TAG, "MD_CON(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_CON,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_CON(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_CON,
 		     cldma_read32(md_ctrl->md_ccif_base, APCCIF_CON));
-	CCCI_INF_MSG(md->index, TAG, "MD_BUSY(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_BUSY,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_BUSY(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_BUSY,
 		     cldma_read32(md_ctrl->md_ccif_base, APCCIF_BUSY));
-	CCCI_INF_MSG(md->index, TAG, "MD_START(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_START,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_START(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_START,
 		     cldma_read32(md_ctrl->md_ccif_base, APCCIF_START));
-	CCCI_INF_MSG(md->index, TAG, "MD_TCHNUM(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_TCHNUM,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_TCHNUM(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_TCHNUM,
 		     cldma_read32(md_ctrl->md_ccif_base, APCCIF_TCHNUM));
-	CCCI_INF_MSG(md->index, TAG, "MD_RCHNUM(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_RCHNUM,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_RCHNUM(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_RCHNUM,
 		     cldma_read32(md_ctrl->md_ccif_base, APCCIF_RCHNUM));
-	CCCI_INF_MSG(md->index, TAG, "MD_ACK(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_ACK,
+	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_ACK(%p)=%x\n", md_ctrl->md_ccif_base + APCCIF_ACK,
 		     cldma_read32(md_ctrl->md_ccif_base, APCCIF_ACK));
 }
 
@@ -3195,7 +3204,7 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 
 	if (flag & DUMP_FLAG_CCIF_REG) {
-		CCCI_INF_MSG(md->index, TAG, "Dump CCIF REG\n");
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF REG\n");
 		md_cd_dump_ccif_reg(md);
 	}
 	if (flag & DUMP_FLAG_CCIF) {
@@ -3209,7 +3218,7 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 		else
 			dest_buff = (unsigned int *)ccif_sram;
 		if (length < sizeof(ccif_sram) && length > 0) {
-			CCCI_ERR_MSG(md->index, TAG, "dump CCIF SRAM length illegal %d/%zu\n", length,
+			CCCI_ERROR_LOG(md->index, TAG, "dump CCIF SRAM length illegal %d/%zu\n", length,
 				     sizeof(ccif_sram));
 			dest_buff = (unsigned int *)ccif_sram;
 		} else {
@@ -3221,8 +3230,8 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 							APCCIF_CHDATA + (sram_size - length) +
 							i * sizeof(unsigned int));
 		}
-		CCCI_INF_MSG(md->index, TAG, "Dump CCIF SRAM (last 16bytes)\n");
-		ccci_mem_dump(md->index, dest_buff, length);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF SRAM (last 16bytes)\n");
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, dest_buff, length);
 	}
 	if (flag & DUMP_FLAG_CLDMA) {
 		cldma_dump_register(md);
@@ -3238,23 +3247,25 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 	if (flag & DUMP_FLAG_REG)
 		md_cd_dump_debug_register(md);
 	if (flag & DUMP_FLAG_SMEM_EXP) {
-		CCCI_INF_MSG(md->index, TAG, "Dump exception share memory\n");
-		ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir, md->smem_layout.ccci_exp_dump_size);
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump exception share memory\n");
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md->smem_layout.ccci_exp_smem_base_vir,
+							md->smem_layout.ccci_exp_dump_size);
 	}
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 	if (flag & DUMP_FLAG_SMEM_CCISM) {
-		CCCI_INF_MSG(md->index, TAG, "Dump CCISM share memory\n");
-		ccci_mem_dump(md->index, md->smem_layout.ccci_ccism_smem_base_vir,
+		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCISM share memory\n");
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md->smem_layout.ccci_ccism_smem_base_vir,
 								md->smem_layout.ccci_ccism_dump_size);
 	}
 #endif
 	if (flag & DUMP_FLAG_IMAGE) {
-		CCCI_INF_MSG(md->index, KERN, "Dump MD image memory\n");
-		ccci_mem_dump(md->index, (void *)md->mem_layout.md_region_vir, MD_IMG_DUMP_SIZE);
+		CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD image memory\n");
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (void *)md->mem_layout.md_region_vir,
+							MD_IMG_DUMP_SIZE);
 	}
 	if (flag & DUMP_FLAG_LAYOUT) {
-		CCCI_INF_MSG(md->index, KERN, "Dump MD layout struct\n");
-		ccci_mem_dump(md->index, &md->mem_layout, sizeof(struct ccci_mem_layout));
+		CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD layout struct\n");
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, &md->mem_layout, sizeof(struct ccci_mem_layout));
 	}
 	if (flag & DUMP_FLAG_QUEUE_0) {
 		cldma_dump_register(md);
@@ -3273,16 +3284,16 @@ static int md_cd_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *bu
 			md->smem_layout.ccci_exp_smem_sleep_debug_size);
 	}
 	if (flag & DUMP_FLAG_MD_WDT) {
-		CCCI_INF_MSG(md->index, KERN, "Dump MD RGU registers\n");
+		CCCI_MEM_LOG_TAG(md->index, KERN, "Dump MD RGU registers\n");
 		md_cd_lock_modem_clock_src(1);
 #ifdef BASE_ADDR_MDRSTCTL
-		ccci_mem_dump(md->index, md_ctrl->md_rgu_base, 0x88);
-		ccci_mem_dump(md->index, (md_ctrl->md_rgu_base + 0x200), 0x5c);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_rgu_base, 0x88);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, (md_ctrl->md_rgu_base + 0x200), 0x5c);
 #else
-		ccci_mem_dump(md->index, md_ctrl->md_rgu_base, 0x30);
+		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_ctrl->md_rgu_base, 0x30);
 #endif
 		md_cd_lock_modem_clock_src(0);
-		CCCI_INF_MSG(md->index, KERN, "wdt_enabled=%d\n", atomic_read(&md_ctrl->wdt_enabled));
+		CCCI_MEM_LOG_TAG(md->index, KERN, "wdt_enabled=%d\n", atomic_read(&md_ctrl->wdt_enabled));
 		mt_irq_dump_status(md_ctrl->hw_info->md_wdt_irq_id);
 	}
 	return length;
@@ -3363,7 +3374,7 @@ static ssize_t md_cd_control_store(struct ccci_modem *md, const char *buf, size_
 	int size = 0;
 
 	if (strncmp(buf, "cldma_reset", count - 1) == 0) {
-		CCCI_INF_MSG(md->index, TAG, "reset CLDMA\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "reset CLDMA\n");
 		md_cd_lock_cldma_clock_src(1);
 		cldma_stop(md);
 		md_cd_clear_all_queue(md, OUT);
@@ -3373,30 +3384,30 @@ static ssize_t md_cd_control_store(struct ccci_modem *md, const char *buf, size_
 		md_cd_lock_cldma_clock_src(0);
 	}
 	if (strncmp(buf, "cldma_stop", count - 1) == 0) {
-		CCCI_INF_MSG(md->index, TAG, "stop CLDMA\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "stop CLDMA\n");
 		md_cd_lock_cldma_clock_src(1);
 		cldma_stop(md);
 		md_cd_lock_cldma_clock_src(0);
 	}
 	if (strncmp(buf, "ccif_assert", count - 1) == 0) {
-		CCCI_INF_MSG(md->index, TAG, "use CCIF to force MD assert\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "use CCIF to force MD assert\n");
 		md->ops->force_assert(md, CCIF_INTERRUPT);
 	}
 	if (strncmp(buf, "ccci_trm", count - 1) == 0) {
-		CCCI_INF_MSG(md->index, TAG, "TRM triggered\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "TRM triggered\n");
 		md->ops->reset(md);
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
 	}
 	size = strlen("md_type=");
 	if (strncmp(buf, "md_type=", size) == 0) {
 		md->config.load_type_saving = buf[size] - '0';
-		CCCI_INF_MSG(md->index, TAG, "md_type_store %d\n", md->config.load_type_saving);
+		CCCI_NORMAL_LOG(md->index, TAG, "md_type_store %d\n", md->config.load_type_saving);
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_STORE_NVRAM_MD_TYPE, 0);
 	}
 	size = strlen("trace_sample=");
 	if (strncmp(buf, "trace_sample=", size) == 0) {
 		trace_sample_time = (buf[size] - '0') * 100000000;
-		CCCI_INF_MSG(md->index, TAG, "trace_sample_time %u\n", trace_sample_time);
+		CCCI_NORMAL_LOG(md->index, TAG, "trace_sample_time %u\n", trace_sample_time);
 	}
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 	size = strlen("scp_smem");
@@ -3406,21 +3417,21 @@ static ssize_t md_cd_control_store(struct ccci_modem *md, const char *buf, size_
 		unsigned int *magic_test = (unsigned int *)(md->smem_layout.ccci_ccism_smem_base_vir);
 		*magic_test = 0x20150921;
 		ccci_scp_ipi_send(md->index, CCCI_OP_SHM_INIT, &data);
-		CCCI_INF_MSG(md->index, TAG, "IPI test smem address %x\n", data);
+		CCCI_NORMAL_LOG(md->index, TAG, "IPI test smem address %x\n", data);
 	}
 	size = strlen("scp_log");
 	if (strncmp(buf, "scp_log", size) == 0) {
 		int data = 1;
 
 		ccci_scp_ipi_send(md->index, CCCI_OP_LOG_LEVEL, &data);
-		CCCI_INF_MSG(md->index, TAG, "IPI log level=1\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "IPI log level=1\n");
 	}
 	size = strlen("scp_msgrcv");
 	if (strncmp(buf, "scp_msgrcv", size) == 0) {
 		void __iomem *gipc_in_3 = ioremap_nocache(0x100A0038, 0x4);
 
 		ccci_write32(gipc_in_3, 0, ccci_read32(gipc_in_3, 0) | 0x1);
-		CCCI_INF_MSG(md->index, TAG, "IPI SCP test msg recv\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "IPI SCP test msg recv\n");
 		iounmap(gipc_in_3);
 	}
 	size = strlen("scp_msgsnd");
@@ -3428,14 +3439,14 @@ static ssize_t md_cd_control_store(struct ccci_modem *md, const char *buf, size_
 		int data = 0;
 
 		ccci_scp_ipi_send(md->index, CCCI_OP_MSGSND_TEST, &data);
-		CCCI_INF_MSG(md->index, TAG, "IPI send test msg send\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "IPI send test msg send\n");
 	}
 	size = strlen("scp_assert");
 	if (strncmp(buf, "scp_assert", size) == 0) {
 		int data = 1;
 
 		ccci_scp_ipi_send(md->index, CCCI_OP_ASSERT_TEST, &data);
-		CCCI_INF_MSG(md->index, TAG, "IPI SCP force assert\n");
+		CCCI_NORMAL_LOG(md->index, TAG, "IPI SCP force assert\n");
 	}
 #endif
 	return count;
@@ -3472,8 +3483,8 @@ static ssize_t md_cd_filter_store(struct ccci_modem *md, const char *buf, size_t
 
 	temp_valu = sscanf(buf, "%s %d %d%*s", command, &start_id, &end_id);
 	if (temp_valu < 0)
-		CCCI_ERR_MSG(md->index, TAG, "sscanf retrun fail: %d\n", temp_valu);
-	CCCI_INF_MSG(md->index, TAG, "%s from %d to %d\n", command, start_id, end_id);
+		CCCI_ERROR_LOG(md->index, TAG, "sscanf retrun fail: %d\n", temp_valu);
+	CCCI_NORMAL_LOG(md->index, TAG, "%s from %d to %d\n", command, start_id, end_id);
 	if (strncmp(command, "add", sizeof(command)) == 0) {
 		memset(gf_port_list_reg, 0, sizeof(gf_port_list_reg));
 		for (i = 0; i < GF_PORT_LIST_MAX && i <= (end_id - start_id); i++)
@@ -3520,7 +3531,7 @@ static ssize_t md_cd_rxd_store(struct ccci_modem *md, const char *buf, size_t co
 
 	ret = kstrtoint(buf, 10, &md_rxd_switcher);
 	if (ret < 0)
-		CCCI_ERR_MSG(md->index, TAG, "sscanf retrun fail: %d\n", ret);
+		CCCI_ERROR_LOG(md->index, TAG, "sscanf retrun fail: %d\n", ret);
 	return count;
 }
 
@@ -3537,26 +3548,26 @@ static void md_cd_sysfs_init(struct ccci_modem *md)
 	ccci_md_attr_dump.modem = md;
 	ret = sysfs_create_file(&md->kobj, &ccci_md_attr_dump.attr);
 	if (ret)
-		CCCI_ERR_MSG(md->index, TAG, "fail to add sysfs node %s %d\n", ccci_md_attr_dump.attr.name, ret);
+		CCCI_ERROR_LOG(md->index, TAG, "fail to add sysfs node %s %d\n", ccci_md_attr_dump.attr.name, ret);
 
 	ccci_md_attr_control.modem = md;
 	ret = sysfs_create_file(&md->kobj, &ccci_md_attr_control.attr);
 	if (ret)
-		CCCI_ERR_MSG(md->index, TAG, "fail to add sysfs node %s %d\n", ccci_md_attr_control.attr.name, ret);
+		CCCI_ERROR_LOG(md->index, TAG, "fail to add sysfs node %s %d\n", ccci_md_attr_control.attr.name, ret);
 
 	ccci_md_attr_parameter.modem = md;
 	ret = sysfs_create_file(&md->kobj, &ccci_md_attr_parameter.attr);
 	if (ret)
-		CCCI_ERR_MSG(md->index, TAG, "fail to add sysfs node %s %d\n", ccci_md_attr_parameter.attr.name, ret);
+		CCCI_ERROR_LOG(md->index, TAG, "fail to add sysfs node %s %d\n", ccci_md_attr_parameter.attr.name, ret);
 
 	ccci_md_attr_filter.modem = md;
 	ret = sysfs_create_file(&md->kobj, &ccci_md_attr_filter.attr);
 	if (ret)
-		CCCI_ERR_MSG(md->index, TAG, "fail to add sysfs node %s %d\n", ccci_md_attr_filter.attr.name, ret);
+		CCCI_ERROR_LOG(md->index, TAG, "fail to add sysfs node %s %d\n", ccci_md_attr_filter.attr.name, ret);
 	ccci_md_attr_md_rxd.modem = md;
 	ret = sysfs_create_file(&md->kobj, &ccci_md_attr_md_rxd.attr);
 	if (ret)
-		CCCI_ERR_MSG(md->index, TAG, "fail to add sysfs node %s %d\n", ccci_md_attr_md_rxd.attr.name, ret);
+		CCCI_ERROR_LOG(md->index, TAG, "fail to add sysfs node %s %d\n", ccci_md_attr_md_rxd.attr.name, ret);
 
 }
 
@@ -3582,12 +3593,12 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	/* Allocate modem hardware info structure memory */
 	md_hw = kzalloc(sizeof(struct md_hw_info), GFP_KERNEL);
 	if (md_hw == NULL) {
-		CCCI_ERR_MSG(-1, TAG, "md_cldma_probe:alloc md hw mem fail\n");
+		CCCI_ERROR_LOG(-1, TAG, "md_cldma_probe:alloc md hw mem fail\n");
 		return -1;
 	}
 	ret = md_cd_get_modem_hw_info(plat_dev, &dev_cfg, md_hw);
 	if (ret != 0) {
-		CCCI_ERR_MSG(-1, TAG, "md_cldma_probe:get hw info fail(%d)\n", ret);
+		CCCI_ERROR_LOG(-1, TAG, "md_cldma_probe:get hw info fail(%d)\n", ret);
 		kfree(md_hw);
 		md_hw = NULL;
 		return -1;
@@ -3596,7 +3607,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	/* Allocate md ctrl memory and do initialize */
 	md = ccci_allocate_modem(sizeof(struct md_cd_ctrl));
 	if (md == NULL) {
-		CCCI_ERR_MSG(-1, TAG, "md_cldma_probe:alloc modem ctrl mem fail\n");
+		CCCI_ERROR_LOG(-1, TAG, "md_cldma_probe:alloc modem ctrl mem fail\n");
 		kfree(md_hw);
 		md_hw = NULL;
 		return -1;
@@ -3609,7 +3620,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	md->plat_dev->dev.dma_mask = &cldma_dmamask;
 	md->plat_dev->dev.coherent_dma_mask = cldma_dmamask;
 	md->ops = &md_cd_ops;
-	CCCI_INF_MSG(md_id, TAG, "md_cldma_probe:md=%p,md->private_data=%p\n", md, md->private_data);
+	CCCI_INIT_LOG(md_id, TAG, "md_cldma_probe:md=%p,md->private_data=%p\n", md, md->private_data);
 
 	/* init modem private data */
 	md_ctrl = (struct md_cd_ctrl *)md->private_data;
@@ -3642,7 +3653,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 		md_ctrl->net_tx_ring[i].handle_tx_done = &cldma_gpd_tx_collect;
 #endif
 		cldma_tx_ring_init(md, &md_ctrl->net_tx_ring[i]);
-		CCCI_DBG_MSG(md->index, TAG, "net_tx_ring %d: %p\n", i, &md_ctrl->net_tx_ring[i]);
+		CCCI_DEBUG_LOG(md->index, TAG, "net_tx_ring %d: %p\n", i, &md_ctrl->net_tx_ring[i]);
 	}
 	for (i = 0; i < NET_RXQ_NUM; i++) {
 		INIT_LIST_HEAD(&md_ctrl->net_rx_ring[i].gpd_ring);
@@ -3652,7 +3663,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 		md_ctrl->net_rx_ring[i].handle_rx_done = &cldma_gpd_net_rx_collect;
 		md_ctrl->net_rx_ring[i].handle_rx_refill = &cldma_gpd_rx_refill;
 		cldma_rx_ring_init(md, &md_ctrl->net_rx_ring[i]);
-		CCCI_DBG_MSG(md->index, TAG, "net_rx_ring %d: %p\n", i, &md_ctrl->net_rx_ring[i]);
+		CCCI_DEBUG_LOG(md->index, TAG, "net_rx_ring %d: %p\n", i, &md_ctrl->net_rx_ring[i]);
 	}
 	for (i = 0; i < NORMAL_TXQ_NUM; i++) {
 		INIT_LIST_HEAD(&md_ctrl->normal_tx_ring[i].gpd_ring);
@@ -3667,7 +3678,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 		md_ctrl->normal_tx_ring[i].handle_tx_done = &cldma_gpd_tx_collect;
 #endif
 		cldma_tx_ring_init(md, &md_ctrl->normal_tx_ring[i]);
-		CCCI_DBG_MSG(md->index, TAG, "normal_tx_ring %d: %p\n", i, &md_ctrl->normal_tx_ring[i]);
+		CCCI_DEBUG_LOG(md->index, TAG, "normal_tx_ring %d: %p\n", i, &md_ctrl->normal_tx_ring[i]);
 	}
 	for (i = 0; i < NORMAL_RXQ_NUM; i++) {
 		INIT_LIST_HEAD(&md_ctrl->normal_rx_ring[i].gpd_ring);
@@ -3677,7 +3688,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 		md_ctrl->normal_rx_ring[i].handle_rx_done = &cldma_gpd_rx_collect;
 		md_ctrl->normal_rx_ring[i].handle_rx_refill = &cldma_gpd_rx_refill;
 		cldma_rx_ring_init(md, &md_ctrl->normal_rx_ring[i]);
-		CCCI_DBG_MSG(md->index, TAG, "normal_rx_ring %d: %p\n", i, &md_ctrl->normal_rx_ring[i]);
+		CCCI_DEBUG_LOG(md->index, TAG, "normal_rx_ring %d: %p\n", i, &md_ctrl->normal_rx_ring[i]);
 	}
 
 	md_ctrl->cldma_irq_worker =
@@ -3716,25 +3727,25 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	md_cd_clear_all_queue(md, OUT);
 	md_cd_clear_all_queue(md, IN);
 	ccci_reset_seq_num(md);
-	CCCI_INF_MSG(md_id, TAG, "cldma_reset\n");
+	CCCI_NORMAL_LOG(md_id, TAG, "cldma_reset\n");
 	cldma_reset(md);
-	CCCI_INF_MSG(md_id, TAG, "cldma_start\n");
+	CCCI_NORMAL_LOG(md_id, TAG, "cldma_start\n");
 	cldma_start(md);
-	CCCI_INF_MSG(md_id, TAG, "wait md package...\n");
+	CCCI_NORMAL_LOG(md_id, TAG, "wait md package...\n");
 	{
 		struct cldma_tgpd *md_tgpd;
 		struct ccci_header *md_ccci_h;
 		unsigned int md_tgpd_addr;
 
-		CCCI_INF_MSG(md_id, TAG, "Write md check sum\n");
+		CCCI_NORMAL_LOG(md_id, TAG, "Write md check sum\n");
 		cldma_write32(md_ctrl->cldma_md_pdn_base, CLDMA_AP_UL_CHECKSUM_CHANNEL_ENABLE, 0);
 		cldma_write32(md_ctrl->cldma_md_ao_base, CLDMA_AP_SO_CHECKSUM_CHANNEL_ENABLE, 0);
 
-		CCCI_INF_MSG(md_id, TAG, "Build md ccif_header\n");
+		CCCI_NORMAL_LOG(md_id, TAG, "Build md ccif_header\n");
 		md_ccci_h = (struct ccci_header *)md->mem_layout.md_region_vir;
 		memset(md_ccci_h, 0, sizeof(struct ccci_header));
 		md_ccci_h->reserved = MD_INIT_CHK_ID;
-		CCCI_INF_MSG(md_id, TAG, "Build md cldma_tgpd\n");
+		CCCI_NORMAL_LOG(md_id, TAG, "Build md cldma_tgpd\n");
 		md_tgpd = (struct cldma_tgpd *)(md->mem_layout.md_region_vir + sizeof(struct ccci_header));
 		memset(md_tgpd, 0, sizeof(struct cldma_tgpd));
 		/* update GPD */
@@ -3751,12 +3762,12 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 #ifdef ENABLE_CLDMA_AP_SIDE
 		cldma_write32(md_ctrl->cldma_md_ao_base, CLDMA_AP_UL_START_ADDR_BK_0, md_tgpd_addr);
 #endif
-		CCCI_INF_MSG(md_id, TAG, "Start md_tgpd_addr = 0x%x\n",
+		CCCI_INIT_LOG(md_id, TAG, "Start md_tgpd_addr = 0x%x\n",
 			     cldma_read32(md_ctrl->cldma_md_pdn_base, CLDMA_AP_UL_START_ADDR_0));
 		cldma_write32(md_ctrl->cldma_md_pdn_base, CLDMA_AP_UL_START_CMD, CLDMA_BM_ALL_QUEUE & (1 << 0));
-		CCCI_INF_MSG(md_id, TAG, "Start md_tgpd_start cmd = 0x%x\n",
+		CCCI_INIT_LOG(md_id, TAG, "Start md_tgpd_start cmd = 0x%x\n",
 			     cldma_read32(md_ctrl->cldma_md_pdn_base, CLDMA_AP_UL_START_CMD));
-		CCCI_INF_MSG(md_id, TAG, "Start md cldma_tgpd done\n");
+		CCCI_INIT_LOG(md_id, TAG, "Start md cldma_tgpd done\n");
 #ifdef NO_START_ON_SUSPEND_RESUME
 		md_ctrl->txq_started = 1;
 #endif
@@ -3813,7 +3824,7 @@ static int __init modem_cd_init(void)
 #endif
 	ret = platform_driver_register(&modem_cldma_driver);
 	if (ret) {
-		CCCI_ERR_MSG(-1, TAG, "clmda modem platform driver register fail(%d)\n", ret);
+		CCCI_ERROR_LOG(-1, TAG, "clmda modem platform driver register fail(%d)\n", ret);
 		return ret;
 	}
 	return 0;

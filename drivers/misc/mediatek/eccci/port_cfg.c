@@ -160,7 +160,7 @@ int md_port_cfg(struct ccci_modem *md)
 	default:
 		md->ports = NULL;
 		md->port_number = 0;
-		CCCI_ERR_MSG(md->index, TAG, "md_port_cfg:no md enable\n");
+		CCCI_ERROR_LOG(md->index, TAG, "md_port_cfg:no md enable\n");
 		return -1;
 	}
 	return 0;
