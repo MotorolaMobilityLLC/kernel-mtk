@@ -3,12 +3,12 @@
 
 #include <mt-plat/sync_write.h>
 /* INFRA */
-#define INFRA_RST0_REG_PD (0x0150) /*(0x0030)	/* rgu reset cldma reg */
-#define INFRA_RST1_REG_PD (0x0154) /*(0x0034)	/* rgu clear cldma reset reg */
-#define CLDMA_PD_RST_MASK (1<<2)
+#define INFRA_RST0_REG_PD (0x0120)/*(0x0150) (0x0030)*/	/* rgu reset cldma reg */
+#define INFRA_RST1_REG_PD (0x0124)/*(0x0154) (0x0034)*/	/* rgu clear cldma reset reg */
+#define CLDMA_PD_RST_MASK (1<<13)/*(1<<2)*/
 #define INFRA_RST0_REG_AO (0x0140)
 #define INFRA_RST1_REG_AO (0x0144)
-#define CLDMA_AO_RST_MASK (1<<6)
+#define CLDMA_AO_RST_MASK (1<<4)/*(1<<6)*/
 
 #define INFRA_AO_MD_SRCCLKENA    (0xF0C) /* SRC CLK ENA */
 /*===========================CLDMA_AO_INDMA: 10014804-10014844==================================*/

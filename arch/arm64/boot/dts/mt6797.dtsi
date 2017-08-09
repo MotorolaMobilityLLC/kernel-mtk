@@ -634,6 +634,24 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x10011000 0x1000>;
 		};
 
+		mdcldma:mdcldma@10014000 {
+			compatible = "mediatek,mdcldma";
+			reg =	<0x10014000 0x1e00>, /*AP_CLDMA_AO*/
+				<0x10015000 0x1e00>, /*MD_CLDMA_AO*/
+				<0x10219000 0x1e00>, /*AP_CLDMA_PDN*/
+				<0x1021a000 0x1e00>, /*MD_CLDMA_PDN*/
+				<0x10209000 0x1000>, /*AP_CCIF_BASE*/
+				<0x1020a000 0x1000>; /*MD_CCIF_BASE*/
+			interrupts = <GIC_SPI 265 IRQ_TYPE_LEVEL_HIGH>, /*IRQ_CLDMA*/
+				     <GIC_SPI 147 IRQ_TYPE_LEVEL_LOW>, /*IRQ_CCIF*/
+				     <GIC_SPI 266 IRQ_TYPE_EDGE_FALLING>; /*IRQ_MDWDT*/
+			mediatek,md_id = <0>;
+			mediatek,cldma_capability = <6>;
+			mediatek,md_smem_size = <0x100000>; /* md share memory size */
+			/*clocks = <&scpsys SCP_SYS_MD1>;*/
+			clock-names = "scp-sys-md1-main";
+		};
+
 		ddrphy_b@10012000 {
 			compatible = "mediatek,ddrphy_b";
 			reg = <0x10012000 0x1000>;
@@ -642,16 +660,6 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		dramc_conf_b@10013000 {
 			compatible = "mediatek,dramc_conf_b";
 			reg = <0x10013000 0x1000>;
-		};
-
-		cldma_ao_ap@10014000 {
-			compatible = "mediatek,cldma_ao_ap";
-			reg = <0x10014000 0x1000>;
-		};
-
-		cldma_ao_md@10015000 {
-			compatible = "mediatek,cldma_ao_md";
-			reg = <0x10015000 0x1000>;
 		};
 
 		aes_top0@10016000 {
@@ -1204,6 +1212,13 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			interrupts = <GIC_SPI 96 IRQ_TYPE_LEVEL_LOW>;
 		};
 
+		ccci_util_cfg {
+			compatible = "mediatek,ccci_util_cfg";
+			mediatek,md1-smem-size = <0x200000>;
+			mediatek,md3-smem-size = <0x200000>;
+			mediatek,md1md3-smem-size = <0x200000>;
+			mediatek,version = <0x1>;
+		};
 		spi0:spi@1100a000 {
 			compatible = "mediatek,mt6797-spi";
 			cell-index = <0>;

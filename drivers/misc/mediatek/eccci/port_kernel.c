@@ -33,6 +33,8 @@
 #include <mach/mt6605.h>
 #endif
 
+#include <mt-plat/mt_gpio.h>
+#include <mt-plat/mt_gpio_core.h>
 #ifdef FEATURE_RF_CLK_BUF
 #include <linux/gpio.h>
 #include <mach/mt_clkbuf_ctl.h>
@@ -58,6 +60,79 @@ static void status_msg_handler(struct ccci_port *port, struct ccci_request *req)
 #define EX_TIMER_MD_EX 5
 #define EX_TIMER_MD_EX_REC_OK 30
 #define EX_TIMER_MD_HANG 5
+
+
+#ifndef CONFIG_PINCTRL_MT6797
+struct mt_gpio_modem_info {
+	char name[40];
+	int num;
+};
+static struct mt_gpio_modem_info mt_gpio_info[] = {
+	{"GPIO_MD_TEST", 800},
+#ifdef GPIO_AST_CS_PIN
+	{"GPIO_AST_HIF_CS", GPIO_AST_CS_PIN},
+#endif
+#ifdef GPIO_AST_CS_PIN_NCE
+	{"GPIO_AST_HIF_CS_ID", GPIO_AST_CS_PIN_NCE},
+#endif
+#ifdef GPIO_AST_RST_PIN
+	{"GPIO_AST_Reset", GPIO_AST_RST_PIN},
+#endif
+#ifdef GPIO_AST_CLK32K_PIN
+	{"GPIO_AST_CLK_32K", GPIO_AST_CLK32K_PIN},
+#endif
+#ifdef GPIO_AST_CLK32K_PIN_CLK
+	{"GPIO_AST_CLK_32K_CLKM", GPIO_AST_CLK32K_PIN_CLK},
+#endif
+#ifdef GPIO_AST_WAKEUP_PIN
+	{"GPIO_AST_Wakeup", GPIO_AST_WAKEUP_PIN},
+#endif
+#ifdef GPIO_AST_INTR_PIN
+	{"GPIO_AST_INT", GPIO_AST_INTR_PIN},
+#endif
+#ifdef GPIO_AST_WAKEUP_INTR_PIN
+	{"GPIO_AST_WAKEUP_INT", GPIO_AST_WAKEUP_INTR_PIN},
+#endif
+#ifdef GPIO_AST_AFC_SWITCH_PIN
+	{"GPIO_AST_AFC_Switch", GPIO_AST_AFC_SWITCH_PIN},
+#endif
+#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_1ST_PIN
+	{"GPIO_FDD_Band_Support_Detection_1", GPIO_FDD_BAND_SUPPORT_DETECT_1ST_PIN},
+#endif
+#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_2ND_PIN
+	{"GPIO_FDD_Band_Support_Detection_2", GPIO_FDD_BAND_SUPPORT_DETECT_2ND_PIN},
+#endif
+#ifdef GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN
+	{"GPIO_FDD_Band_Support_Detection_3", GPIO_FDD_BAND_SUPPORT_DETECT_3RD_PIN},
+#endif
+#ifdef GPIO_SIM_SWITCH_CLK_PIN
+	{"GPIO_SIM_SWITCH_CLK", GPIO_SIM_SWITCH_CLK_PIN},
+#endif
+#ifdef GPIO_SIM_SWITCH_DAT_PIN
+	{"GPIO_SIM_SWITCH_DAT", GPIO_SIM_SWITCH_DAT_PIN},
+#endif
+/*if you have new GPIO pin add bellow*/
+
+};
+
+static int mt_get_md_gpio(char *gpio_name, int len)
+{
+	unsigned int i;
+	unsigned long number;
+
+	for (i = 0; i < ARRAY_SIZE(mt_gpio_info); i++) {
+		if (!strncmp(gpio_name, mt_gpio_info[i].name, len)) {
+			number = mt_gpio_info[i].num;
+			GPIOMSG("Modern get number=%d, name:%s\n", mt_gpio_info[i].num, gpio_name);
+			mt_gpio_pin_decrypt(&number);
+			return number;
+		}
+	}
+	GPIOERR("Modem gpio name can't match!!!\n");
+	return -1;
+}
+#endif
+
 
 #ifdef CONFIG_MTK_ECCCI_C2K
 int modem_dtr_set(int on, int low_latency)
@@ -737,6 +812,10 @@ static int get_md_gpio_info(char *gpio_name, unsigned int len)
 #if defined(CONFIG_MTK_LEGACY)
 	return mt_get_md_gpio(gpio_name, len);
 #else
+#ifndef CONFIG_PINCTRL_MT6797
+	CCCI_ERR_MSG(-1, KERN, "get_md_gpio old workaround.\n");
+	return mt_get_md_gpio(gpio_name, len);
+#else
 	struct device_node *node = of_find_compatible_node(NULL, NULL, "mediatek,MD_USE_GPIO");
 	int gpio_id = -1;
 
@@ -745,6 +824,7 @@ static int get_md_gpio_info(char *gpio_name, unsigned int len)
 	else
 		CCCI_INF_MSG(0, RPC, "MD_USE_GPIO is not set in device tree,need to check?\n");
 	return gpio_id;
+#endif
 #endif
 #else
 	return -1;

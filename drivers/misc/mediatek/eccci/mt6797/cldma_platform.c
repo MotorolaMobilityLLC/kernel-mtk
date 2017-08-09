@@ -35,8 +35,9 @@
 #if !defined(CONFIG_MTK_CLKMGR)
 static struct clk *clk_scp_sys_md1_main;
 #endif
-
+#if defined(CONFIG_PINCTRL_MT6797)
 static struct pinctrl *mdcldma_pinctrl;
+#endif
 
 #define TAG "mcd"
 void md_cldma_hw_reset(struct ccci_modem *md)
@@ -117,11 +118,15 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr, struct ccci_dev_cfg
 		hw_info->l1_rgu_base = L1_RGU_BASE;
 		hw_info->md_boot_slave_En = MD_BOOT_VECTOR_EN;
 #if !defined(CONFIG_MTK_CLKMGR)
+#if defined(CONFIG_PINCTRL_MT6797)
 		mdcldma_pinctrl = devm_pinctrl_get(&dev_ptr->dev);
 		if (IS_ERR(mdcldma_pinctrl)) {
 			CCCI_ERR_MSG(dev_cfg->index, TAG, "modem %d get mdcldma_pinctrl failed\n", dev_cfg->index + 1);
 			return -1;
 		}
+#else
+		CCCI_ERR_MSG(dev_cfg->index, TAG, "gpio pinctrl is not ready yet, use workaround.\n");
+#endif
 		clk_scp_sys_md1_main = devm_clk_get(&dev_ptr->dev, "scp-sys-md1-main");
 		if (IS_ERR(clk_scp_sys_md1_main)) {
 			CCCI_ERR_MSG(dev_cfg->index, TAG, "modem %d get scp-sys-md1-main failed\n", dev_cfg->index + 1);
@@ -425,7 +430,7 @@ void md1_pll_on(struct ccci_modem *md)
 	map_addr = (void __iomem *)(md_ctrl->hw_info->ap_mixed_base);
 
 	/* reset MDPLL1_CON0 to default value */
-	cldma_write32(map_addr, MDPLL1_CON0, 0x2E8);
+	cldma_write32(map_addr, MDPLL1_CON0, 0x2EE8);
 	CCCI_DBG_MSG(md->index, TAG, "md1_pll_on_reset_value, (0x%p)0x%X\n",
 		map_addr, cldma_read32(map_addr, MDPLL1_CON0));
 

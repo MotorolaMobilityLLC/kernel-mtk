@@ -41,19 +41,20 @@ static int is_4g_memory_size_support(void)
 #define MPU_REGION_ID_TRUSTED_UI        3
 #define MPU_REGION_ID_MD1_SEC_SMEM      4
 
-#define MPU_REGION_ID_MD1_SMEM          5
-#define MPU_REGION_ID_MD3_SMEM          6
-#define MPU_REGION_ID_MD1MD3_SMEM       7
-#define MPU_REGION_ID_MD1_MCURW_HWRW    8
-#define MPU_REGION_ID_MD1_ROM           9  /* contain DSP in Jade */
-#define MPU_REGION_ID_MD1_MCURW_HWRO    10
-#define MPU_REGION_ID_MD1_MCURO_HWRW    11
-#define MPU_REGION_ID_WIFI_EMI_FW       12
-#define MPU_REGION_ID_WMT               13
-#define MPU_REGION_ID_MD1_RW            14
-#define MPU_REGION_ID_MD3_ROM           15
-#define MPU_REGION_ID_MD3_RW            16
-#define MPU_REGION_ID_AP                17
+#define MPU_REGION_ID_MD1_SMEM          6
+#define MPU_REGION_ID_MD3_SMEM          7
+#define MPU_REGION_ID_MD1MD3_SMEM       8
+#define MPU_REGION_ID_MD1_MCURW_HWRW    9
+#define MPU_REGION_ID_MD1_ROM           10  /* contain DSP in Everest */
+#define MPU_REGION_ID_MD1_MCURW_HWRO    11
+#define MPU_REGION_ID_MD1_MCURO_HWRW    12
+#define MPU_REGION_ID_WIFI_EMI_FW       13
+#define MPU_REGION_ID_WMT               14
+#define MPU_REGION_ID_MD1_RW            15
+#define MPU_REGION_ID_MDLOG             16
+#define MPU_REGION_ID_MD3_ROM           17
+#define MPU_REGION_ID_MD3_RW            18
+#define MPU_REGION_ID_AP                19
 #define MPU_REGION_ID_TOTAL_NUM         (MPU_REGION_ID_AP + 1)
 /* ////////////////////////////////////////////////////////////// (D7(MDHW),       D6(MFG), \
 	D5(MD3),        D4(MM),        D3(Resv),      D2(CONN),      D1(MD1),       D0(AP)) */
@@ -62,53 +63,59 @@ static int is_4g_memory_size_support(void)
 /* maybe no use */
 #define MPU_ACCESS_PERMISSON_AP_MD1_RO_ATTR  SET_ACCESS_PERMISSON(FORBIDDEN, NO_PROTECTION, \
 	FORBIDDEN,  NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN,  NO_PROTECTION)
-/* #define MPU_REGION_ID_AP            17 */
+/* #define MPU_REGION_ID_AP            19 */
 #define MPU_ACCESS_PERMISSON_AP_ATTR         SET_ACCESS_PERMISSON(FORBIDDEN,     NO_PROTECTION, \
 	FORBIDDEN,      NO_PROTECTION, FORBIDDEN,     FORBIDDEN,     FORBIDDEN,     NO_PROTECTION)
-/* #define MPU_REGION_ID_MD1_ROM_DSP   9 */
+/* #define MPU_REGION_ID_MD1_ROM_DSP   10 */
 #define MPU_ACCESS_PERMISSON_MD1_ROM_ATTR    SET_ACCESS_PERMISSON(SEC_R_NSEC_R,     FORBIDDEN,     \
 	FORBIDDEN,      FORBIDDEN,     FORBIDDEN,     FORBIDDEN,     SEC_R_NSEC_R,  SEC_R_NSEC_R)
-/* #define MPU_REGION_ID_MD1_RW        14 */
+/* #define MPU_REGION_ID_MD1_RW        15 */
 #define MPU_ACCESS_PERMISSON_MD1_RW_ATTR     SET_ACCESS_PERMISSON(SEC_R_NSEC_R,     FORBIDDEN,     \
 	FORBIDDEN,      FORBIDDEN,     FORBIDDEN,     FORBIDDEN,     NO_PROTECTION, FORBIDDEN)
-/* #define MPU_REGION_ID_MD1_SMEM      5 */
+/* #define MPU_REGION_ID_MD1_SMEM      6 */
 #define MPU_ACCESS_PERMISSON_MD1_SMEM_ATTR   SET_ACCESS_PERMISSON(FORBIDDEN,     FORBIDDEN,     \
 	FORBIDDEN,      FORBIDDEN,     FORBIDDEN,     FORBIDDEN,     NO_PROTECTION, NO_PROTECTION)
-/* #define MPU_REGION_ID_MD3_ROM       15 */
+/* #define MPU_REGION_ID_MD3_ROM       17
+ * note that D3 was set to NO_PROTECTION, but the mpu indicate it be SEC_R_NSEC_R*/
 #define MPU_ACCESS_PERMISSON_MD3_ROM_ATTR    SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
-	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R)
-/* #define MPU_REGION_ID_MD3_RW        16 */
+	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R);
+/* #define MPU_REGION_ID_MD3_RW        18 */
 #define MPU_ACCESS_PERMISSON_MD3_RW_ATTR     SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
-	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R)
-/* #define MPU_REGION_ID_MD3_SMEM      6 */
+	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, SEC_R_NSEC_R);
+/* #define MPU_REGION_ID_MD3_SMEM      7 */
 #define MPU_ACCESS_PERMISSON_MD3_SMEM_ATTR   SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
-	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION)
-/* #define MPU_REGION_ID_MD1MD3_SMEM   7 */
+	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION);
+/* #define MPU_REGION_ID_MD1MD3_SMEM   8, AP need to clear smem, so set it to NO_PROTECTION*/
 #define MPU_ACCESS_PERMISSON_MD1MD3_SMEM_ATTR   SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, \
 	NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, NO_PROTECTION)
+/* #define MPU_REGION_ID_MD1_MCURO_HWRW   11 */
+#define MPU_ACCESS_PERMISSON_MD1RO_HWRW_ATTR   SET_ACCESS_PERMISSON(NO_PROTECTION, FORBIDDEN, \
+	FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, NO_PROTECTION, SEC_R_NSEC_R)
 
 static const unsigned int MPU_ATTR_DEFAULT[MPU_REGION_ID_TOTAL_NUM][MPU_DOMAIN_ID_TOTAL_NUM] = {
 /*===================================================================================================================*/
-/* No |  | D0(AP)    | D1(MD1)      | D2(CONN) | D3(Res)  | D4(MM)       | D5(MD3 )      | D6(MFG)      | D7(MDHW)    |
+/* No |  | D0(AP)    | D1(MD1)      | D2(CONN) | D3(Res)  | D4(MM)       | D5(MD3 )      | D6(MFG)      | D7(MDHW)   */
 /*--------------+----------------------------------------------------------------------------------------------------*/
-/* 0*/{ SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
-/* 1*/{ SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
-/* 2*/{ SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
-/* 3*/{ SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
-/* 4*/{ SEC_R_NSEC_R , NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN    , NO_PROTECTION, FORBIDDEN    , FORBIDDEN},
-/* 5*/{ NO_PROTECTION, NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
-/* 6*/{ NO_PROTECTION, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , NO_PROTECTION, FORBIDDEN    , FORBIDDEN},
-/* 7*/{ SEC_R_NSEC_R , NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN    , NO_PROTECTION, FORBIDDEN    , FORBIDDEN},
-/* 8*/{ SEC_R_NSEC_R , NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, NO_PROTECTION},
-/* 9*/{ SEC_R_NSEC_R , SEC_R_NSEC_R , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, SEC_R_NSEC_R },
-/*10*/{ SEC_R_NSEC_R , NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, SEC_R_NSEC_R },
-/*11*/{ SEC_R_NSEC_R , SEC_R_NSEC_R , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, NO_PROTECTION},
-/*12*/{ FORBIDDEN    , FORBIDDEN    , NO_PROTECTION, FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
-/*13*/{ NO_PROTECTION, FORBIDDEN    , NO_PROTECTION, FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
-/*14*/{ SEC_R_NSEC_R , NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, SEC_R_NSEC_R },
-/*15*/{ SEC_R_NSEC_R , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , SEC_R_NSEC_R , FORBIDDEN    , FORBIDDEN},
-/*16*/{ SEC_R_NSEC_R , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , NO_PROTECTION, FORBIDDEN    , FORBIDDEN},
-/*17*/{ NO_PROTECTION, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, NO_PROTECTION, FORBIDDEN    , NO_PROTECTION, FORBIDDEN},
+{ SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
+{ SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
+{ SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
+{ SEC_RW       , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
+{ SEC_R_NSEC_R , NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN    , NO_PROTECTION, FORBIDDEN    , FORBIDDEN},
+{ SEC_R_NSEC_R , NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN	 , NO_PROTECTION, FORBIDDEN    , FORBIDDEN},
+{ NO_PROTECTION, NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
+{ NO_PROTECTION, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , NO_PROTECTION, FORBIDDEN    , FORBIDDEN},
+{ SEC_R_NSEC_R , NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN    , NO_PROTECTION, FORBIDDEN    , FORBIDDEN},
+{ SEC_R_NSEC_R , NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, NO_PROTECTION},
+{ SEC_R_NSEC_R , SEC_R_NSEC_R , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, SEC_R_NSEC_R },
+{ SEC_R_NSEC_R , NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, SEC_R_NSEC_R },
+{ SEC_R_NSEC_R , SEC_R_NSEC_R , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, NO_PROTECTION},
+{ FORBIDDEN    , FORBIDDEN    , NO_PROTECTION, FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
+{ NO_PROTECTION, FORBIDDEN    , NO_PROTECTION, FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
+{ SEC_R_NSEC_R , NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN	 , FORBIDDEN	, FORBIDDEN, SEC_R_NSEC_R },
+{ SEC_R_NSEC_R , NO_PROTECTION, FORBIDDEN    , FORBIDDEN, FORBIDDEN    , FORBIDDEN    , FORBIDDEN    , FORBIDDEN},
+{ SEC_R_NSEC_R , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , SEC_R_NSEC_R , FORBIDDEN    , FORBIDDEN},
+{ SEC_R_NSEC_R , FORBIDDEN    , FORBIDDEN    , FORBIDDEN, FORBIDDEN    , NO_PROTECTION, FORBIDDEN    , FORBIDDEN},
+{ NO_PROTECTION, FORBIDDEN    , FORBIDDEN    , FORBIDDEN, NO_PROTECTION, FORBIDDEN    , NO_PROTECTION, FORBIDDEN},
 }; /*=================================================================================================================*/
 
 #define MPU_REGION_INFO_ID0    MPU_REGION_ID_MD1_ROM
@@ -152,11 +159,11 @@ unsigned long dbgapb_base;
 #define MD2_BANK4_MAP1 ((unsigned int *)(infra_ao_base+0x31C))
 
 /*-- MD3 Bank 0 */
-#define MD3_BANK0_MAP0 ((unsigned int *)(infra_ao_base+0x320))
-#define MD3_BANK0_MAP1 ((unsigned int *)(infra_ao_base+0x324))
+#define MD3_BANK0_MAP0 ((unsigned int *)(infra_ao_base+0x370))
+#define MD3_BANK0_MAP1 ((unsigned int *)(infra_ao_base+0x374))
 /*-- MD3 Bank 4 */
-#define MD3_BANK4_MAP0 ((unsigned int *)(infra_ao_base+0x330))
-#define MD3_BANK4_MAP1 ((unsigned int *)(infra_ao_base+0x334))
+#define MD3_BANK4_MAP0 ((unsigned int *)(infra_ao_base+0x380))
+#define MD3_BANK4_MAP1 ((unsigned int *)(infra_ao_base+0x384))
 
 void ccci_clear_md_region_protection(struct ccci_modem *md)
 {
@@ -192,12 +199,12 @@ void ccci_clear_md_region_protection(struct ccci_modem *md)
 /*=======================================*/
 /* - Clear HW-related region protection -*/
 /*---------------------------------------*/
-
-	CCCI_INF_MSG(md->index, TAG, "Clear MPU protect HWRW R/W region<%d>\n", MPU_REGION_ID_MD1_MCURW_HWRW);
-	emi_mpu_set_region_protection(0,                       /*START_ADDR*/
-					0,                       /*END_ADDR*/
-					MPU_REGION_ID_MD1_MCURW_HWRW,   /*region*/
-					MPU_ACCESS_PERMISSON_CLEAR);
+	if (md->index == MD_SYS1) {
+		CCCI_INF_MSG(md->index, TAG, "Clear MPU protect HWRW R/W region<%d>\n", MPU_REGION_ID_MD1_MCURW_HWRW);
+		emi_mpu_set_region_protection(0,                       /*START_ADDR*/
+						0,                       /*END_ADDR*/
+						MPU_REGION_ID_MD1_MCURW_HWRW,   /*region*/
+						MPU_ACCESS_PERMISSON_CLEAR);
 
 	CCCI_INF_MSG(md->index, TAG, "Clear MPU protect HWRW ROM region<%d>\n", MPU_REGION_ID_MD1_MCURW_HWRO);
 	emi_mpu_set_region_protection(0,                       /*START_ADDR*/
@@ -205,11 +212,12 @@ void ccci_clear_md_region_protection(struct ccci_modem *md)
 					MPU_REGION_ID_MD1_MCURW_HWRO,   /*region*/
 					MPU_ACCESS_PERMISSON_CLEAR);
 
-	CCCI_INF_MSG(md->index, TAG, "Clear MPU protect HWRO R/W region<%d>\n", MPU_REGION_ID_MD1_MCURO_HWRW);
-	emi_mpu_set_region_protection(0,                       /*START_ADDR*/
-					0,                       /*END_ADDR*/
-					MPU_REGION_ID_MD1_MCURO_HWRW,   /*region*/
-					MPU_ACCESS_PERMISSON_CLEAR);
+		CCCI_INF_MSG(md->index, TAG, "Clear MPU protect HWRO R/W region<%d>\n", MPU_REGION_ID_MD1_MCURO_HWRW);
+		emi_mpu_set_region_protection(0,                       /*START_ADDR*/
+						0,                       /*END_ADDR*/
+						MPU_REGION_ID_MD1_MCURO_HWRW,   /*region*/
+						MPU_ACCESS_PERMISSON_CLEAR);
+	}
 #endif
 
 #endif
@@ -461,16 +469,15 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 		for (region_id = MD_SET_REGION_MD1_MCURW_HWRO; region_id < MPU_REGION_INFO_ID_TOTAL_NUM; region_id++) {
 			/* set 8, 10, 14 region, except 11 */
 			region_mpu_id = MPU_REGION_INFO_ID[region_id];
-			if (region_mpu_id == MPU_REGION_ID_MD1_MCURO_HWRW) {
-				CCCI_INF_MSG(md->index, TAG, "BYPASS region <%d:>\n", region_mpu_id);
-				continue;
-			}
-			region_mpu_attr = CheckHeader_region_attr_paser(md, region_id);
 			region_mpu_start = (unsigned int)md_layout->md_region_phy +
 				img_info->rmpu_info.region_info[region_id].region_offset;
 			region_mpu_end =
 				((region_mpu_start + img_info->rmpu_info.region_info[region_id].region_size
 				+ 0xFFFF)&(~0xFFFF)) - 0x1;
+			if (region_mpu_id == MPU_REGION_ID_MD1_MCURO_HWRW)
+				region_mpu_attr = MPU_ACCESS_PERMISSON_MD1RO_HWRW_ATTR;
+			else
+				region_mpu_attr = CheckHeader_region_attr_paser(md, region_id);
 			/*if ((region_mpu_id == MPU_REGION_ID_MD1_MCURO_HWRW)
 				|| (region_mpu_id == MPU_REGION_ID_MD1_MCURW_HWRW)
 				|| (region_mpu_id == MPU_REGION_ID_MD1_MCURW_HWRO)) {

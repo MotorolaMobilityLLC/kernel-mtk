@@ -2891,7 +2891,7 @@ static void eccci_smem_sub_region_init(struct ccci_modem *md)
 	for (i = 2; i < (10+2); i++)
 		addr[i] = 0x00000000;
 	#endif
-	addr[i] = 0x44444444; /* Guard pattern 1 tail */
+	addr[i++] = 0x44444444; /* Guard pattern 1 tail */
 	addr[i++] = 0x44444444; /* Guard pattern 2 tail */
 
 	/* Notify PBM */
