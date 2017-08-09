@@ -2121,6 +2121,7 @@ EXPORT_SYMBOL(mt_ptp_idle_can_enter);
  */
 static enum hrtimer_restart eem_log_timer_func(struct hrtimer *timer)
 {
+	int i;
 	struct eem_det *det;
 
 	FUNC_ENTER(FUNC_LV_HELP);
@@ -2128,39 +2129,28 @@ static enum hrtimer_restart eem_log_timer_func(struct hrtimer *timer)
 	for_each_det(det) {
 		if (EEM_CTRL_SOC ==  det->ctrl_id)
 			continue;
-		eem_error("Timer Bank = %d (%d) -", det->ctrl_id, det->ops->get_temp(det));
-		eem_error(" (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d) - (0x%x), sts(%d)\n",
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[0]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[1]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[2]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[3]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[4]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[5]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[6]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[7]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[8]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[9]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[10]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[11]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[12]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[13]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[14]),
-			   det->ops->pmic_2_volt(det, det->volt_tbl_pmic[15]),
-			   det->t250,
-			   det->ops->get_status(det)
-			   /*
-			   det->freq_tbl[0],
-			   det->freq_tbl[1],
-			   det->freq_tbl[2],
-			   det->freq_tbl[3],
-			   det->freq_tbl[4],
-			   det->freq_tbl[5],
-			   det->freq_tbl[6],
-			   det->freq_tbl[7],
-			   det->dcvalues[3],
-			   det->freqpct30[3],
-			   det->eem_26c[3],
-			   det->vop30[3]*/);
+
+		eem_error("Timer Bank = %d (%d) - (", det->ctrl_id, det->ops->get_temp(det));
+		for (i = 0; i < det->num_freq_tbl - 1; i++)
+			eem_error("%d, ", det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
+		eem_error("%d) - (0x%x), sts(%d)\n",
+			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]),
+			det->t250,
+			det->ops->get_status(det));
+		/*
+		det->freq_tbl[0],
+		det->freq_tbl[1],
+		det->freq_tbl[2],
+		det->freq_tbl[3],
+		det->freq_tbl[4],
+		det->freq_tbl[5],
+		det->freq_tbl[6],
+		det->freq_tbl[7],
+		det->dcvalues[3],
+		det->freqpct30[3],
+		det->eem_26c[3],
+		det->vop30[3]
+		*/
 	}
 
 	hrtimer_forward_now(timer, ns_to_ktime(LOG_INTERVAL));
@@ -3899,7 +3889,7 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 {
 	struct eem_det *det;
 	int *val = (int *)&eem_devinfo;
-	int i;
+	int i, k;
 	#if DUMP_DATA_TO_DE
 		int j;
 	#endif
@@ -3943,46 +3933,17 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 				);
 
 				if (det->eem_eemEn[i] == 0x5) {
-					seq_printf(m, "EEM_LOG: Bank_number = [%d] (%d) -",
+					seq_printf(m, "EEM_LOG: Bank_number = [%d] (%d) - (",
 					det->ctrl_id, det->ops->get_temp(det));
 
-					seq_printf(m, " (%d, %d, %d, %d, %d, %d, %d, %d, ",
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[0]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[1]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[2]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[3]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[4]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[5]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[6]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[7]));
-					seq_printf(m, "%d, %d, %d, %d, %d, %d, %d, %d) -",
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[8]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[9]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[10]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[11]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[12]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[13]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[14]),
-					det->ops->pmic_2_volt(det, det->volt_tbl_pmic[15]));
+					for (k = 0; k < det->num_freq_tbl - 1; k++)
+						seq_printf(m, "%d, ",
+						det->ops->pmic_2_volt(det, det->volt_tbl_pmic[k]));
+					seq_printf(m, "%d) - (", det->ops->pmic_2_volt(det, det->volt_tbl_pmic[k]));
 
-					seq_printf(m, " (%d, %d, %d, %d, %d, %d, %d, %d, ",
-					det->freq_tbl[0],
-					det->freq_tbl[1],
-					det->freq_tbl[2],
-					det->freq_tbl[3],
-					det->freq_tbl[4],
-					det->freq_tbl[5],
-					det->freq_tbl[6],
-					det->freq_tbl[7]);
-					seq_printf(m, "%d, %d, %d, %d, %d, %d, %d, %d)\n",
-					det->freq_tbl[8],
-					det->freq_tbl[9],
-					det->freq_tbl[10],
-					det->freq_tbl[11],
-					det->freq_tbl[12],
-					det->freq_tbl[13],
-					det->freq_tbl[14],
-					det->freq_tbl[15]);
+					for (k = 0; k < det->num_freq_tbl - 1; k++)
+						seq_printf(m, "%d, ", det->freq_tbl[k]);
+					seq_printf(m, "%d)\n", det->freq_tbl[k]);
 				}
 			}
 			#if DUMP_DATA_TO_DE
