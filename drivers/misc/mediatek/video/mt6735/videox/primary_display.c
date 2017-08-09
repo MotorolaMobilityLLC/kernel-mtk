@@ -2629,7 +2629,7 @@ static int __build_path_direct_link(void)
 #endif
 #ifndef MTK_FB_CMDQ_DISABLE
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_ENABLE);
-	cmdqRecFlush(pgc->cmdq_handle_config);
+/* cmdqRecFlush(pgc->cmdq_handle_config); */
 #else
 	dpmgr_path_init(pgc->dpmgr_handle, CMDQ_DISABLE);
 #endif
@@ -3166,7 +3166,7 @@ int _trigger_display_interface(int blocking, void *callback, unsigned int userda
 			disp_set_sodi(1, pgc->cmdq_handle_config);
 
 		if (primary_display_is_video_mode() == 1)
-			cmdqRecWaitNoClear(pgc->cmdq_handle_config, CMDQ_EVENT_DISP_RDMA0_EOF);
+			cmdqRecWaitNoClear(pgc->cmdq_handle_config, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 		else
 			_cmdq_insert_wait_frame_done_token();
 
@@ -4046,7 +4046,7 @@ static int _disp_primary_path_check_trigger(void *data)
 
 #ifndef MTK_FB_CMDQ_DISABLE
 			if (primary_display_is_video_mode())
-				cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+				cmdqRecWaitNoClear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 			else
 				cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
 #endif
@@ -4106,6 +4106,7 @@ unsigned int cmdqDdpDumpInfo(uint64_t engineFlag, char *pOutBuf, unsigned int bu
 	/* try to set event by CPU to avoid blocking auto test such as Monkey/MTBF */
 	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF);
 	cmdqCoreSetEvent(CMDQ_EVENT_DISP_RDMA0_EOF);
+	cmdqCoreSetEvent(CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 	return 0;
 }
@@ -4482,6 +4483,11 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 		dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
 		if (primary_display_is_video_mode())
 			dpmgr_path_trigger(pgc->dpmgr_handle, NULL, CMDQ_DISABLE);
+
+		/* try to set event by CPU to avoid blocking auto test such as Monkey/MTBF */
+		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF);
+		cmdqCoreSetEvent(CMDQ_EVENT_DISP_RDMA0_EOF);
+		cmdqCoreSetEvent(CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 		DISPERR("disp RESET end, 0x%x\n", disp_reset);
 	}
@@ -6963,7 +6969,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 	cmdqRecReset(handle);
 
 	if (primary_display_is_video_mode())
-		cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+		cmdqRecWaitNoClear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 	else
 		cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
 #endif
