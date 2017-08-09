@@ -25,6 +25,7 @@ endef
 obj-y				+= kd_sensorlist.o
 obj-y				+= camera_hw/kd_camera_hw.o
 
+
 $(foreach drv,$(subst $\",,$(CONFIG_CUSTOM_KERNEL_IMGSENSOR)),$(eval $(call FILTER_PROJECT_DRV,$(drv))))
 custom_kernel_imgsensor := $(addsuffix /, $(shell echo $(platform_drv)))
 obj-y += $(custom_kernel_imgsensor)

@@ -2658,10 +2658,10 @@ static int compat_get_acdk_sensor_resolution_info_struct(
 
 static int compat_put_acdk_sensor_resolution_info_struct(COMPAT_ACDK_SENSOR_PRESOLUTION_STRUCT
 							 __user *data32,
-							 ACDK_SENSOR_RESOLUTION_INFO_STRUCT __user *
+							 ACDK_SENSOR_PRESOLUTION_STRUCT __user *
 							 data)
 {
-	int err;
+	int err = 0;
 	/* err = copy_to_user((void*)data, (void*)data32, sizeof(compat_uptr_t) * 2); */
 	/* err = copy_to_user((void*)data[0], (void*)data32[0], sizeof(ACDK_SENSOR_RESOLUTION_INFO_STRUCT)); */
 	/* err = copy_to_user((void*)data[1], (void*)data32[1], sizeof(ACDK_SENSOR_RESOLUTION_INFO_STRUCT)); */
@@ -2680,12 +2680,10 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
 	switch (cmd) {
 	case COMPAT_KDIMGSENSORIOC_X_GETINFO:
 		{
-			PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_GETINFO E\n");
-
 			COMPAT_ACDK_SENSOR_GETINFO_STRUCT __user *data32;
 			ACDK_SENSOR_GETINFO_STRUCT __user *data;
 			int err;
-
+			PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_GETINFO E\n");
 			data32 = compat_ptr(arg);
 			data = compat_alloc_user_space(sizeof(*data));
 			if (data == NULL)
@@ -2707,11 +2705,10 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
 		}
 	case COMPAT_KDIMGSENSORIOC_X_FEATURECONCTROL:
 		{
-			PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_FEATURECONCTROL\n");
 			COMPAT_ACDK_SENSOR_FEATURECONTROL_STRUCT __user *data32;
 			ACDK_SENSOR_FEATURECONTROL_STRUCT __user *data;
 			int err;
-
+			PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_FEATURECONCTROL\n");
 			data32 = compat_ptr(arg);
 			data = compat_alloc_user_space(sizeof(*data));
 			if (data == NULL)
@@ -2734,11 +2731,10 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
 		}
 	case COMPAT_KDIMGSENSORIOC_X_CONTROL:
 		{
-			PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_CONTROL\n");
 			COMPAT_ACDK_SENSOR_CONTROL_STRUCT __user *data32;
 			ACDK_SENSOR_CONTROL_STRUCT __user *data;
 			int err;
-
+			PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_CONTROL\n");
 			data32 = compat_ptr(arg);
 			data = compat_alloc_user_space(sizeof(*data));
 			if (data == NULL)
@@ -2759,10 +2755,10 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
 		}
 	case COMPAT_KDIMGSENSORIOC_X_GETINFO2:
 		{
-			PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_GETINFO2\n");
 			COMPAT_IMAGESENSOR_GETINFO_STRUCT __user *data32;
 			IMAGESENSOR_GETINFO_STRUCT __user *data;
 			int err;
+			PK_DBG("[CAMERA SENSOR] CAOMPAT_KDIMGSENSORIOC_X_GETINFO2\n");
 
 			data32 = compat_ptr(arg);
 			data = compat_alloc_user_space(sizeof(*data));
@@ -2784,11 +2780,11 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
 		}
 	case COMPAT_KDIMGSENSORIOC_X_GETRESOLUTION2:
 		{
-			PK_DBG("[CAMERA SENSOR] KDIMGSENSORIOC_X_GETRESOLUTION\n");
+
 			COMPAT_ACDK_SENSOR_PRESOLUTION_STRUCT __user *data32;
 			ACDK_SENSOR_PRESOLUTION_STRUCT __user *data;
 			int err;
-
+			PK_DBG("[CAMERA SENSOR] KDIMGSENSORIOC_X_GETRESOLUTION\n");
 			data32 = compat_ptr(arg);
 			data = compat_alloc_user_space(sizeof(data));
 			if (data == NULL)
@@ -3652,7 +3648,7 @@ static ssize_t  CAMERA_HW_DumpReg_To_Proc3(struct file *file, char __user *data,
   * CAMERA_HW_Reg_Debug()
   * Used for sensor register read/write by proc file
   ********************************************************************************/
-static int CAMERA_HW_Reg_Debug(struct file *file, const char *buffer, size_t count, loff_t *data)
+static ssize_t CAMERA_HW_Reg_Debug(struct file *file, const char *buffer, size_t count, loff_t *data)
 {
 	char regBuf[64] = { '\0' };
 	u32 u4CopyBufSize = (count < (sizeof(regBuf) - 1)) ? (count) : (sizeof(regBuf) - 1);
@@ -3711,7 +3707,7 @@ static int CAMERA_HW_Reg_Debug(struct file *file, const char *buffer, size_t cou
 }
 
 
-static int CAMERA_HW_Reg_Debug2(struct file *file, const char *buffer, size_t count, loff_t *data)
+static ssize_t CAMERA_HW_Reg_Debug2(struct file *file, const char *buffer, size_t count, loff_t *data)
 {
 	char regBuf[64] = { '\0' };
 	u32 u4CopyBufSize = (count < (sizeof(regBuf) - 1)) ? (count) : (sizeof(regBuf) - 1);
@@ -3753,7 +3749,7 @@ static int CAMERA_HW_Reg_Debug2(struct file *file, const char *buffer, size_t co
 	return count;
 }
 
-static int CAMERA_HW_Reg_Debug3(struct file *file, const char *buffer, size_t count, loff_t *data)
+static ssize_t CAMERA_HW_Reg_Debug3(struct file *file, const char *buffer, size_t count, loff_t *data)
 {
 	char regBuf[64] = { '\0' };
 	u32 u4CopyBufSize = (count < (sizeof(regBuf) - 1)) ? (count) : (sizeof(regBuf) - 1);
