@@ -20,7 +20,6 @@
 #include <asm/uaccess.h>
 #include <linux/printk.h>
 #include <log_store_kernel.h>
-#include <linux/ftrace_event.h>
 
 #include "internal.h"
 #ifdef CONFIG_MT_SCHED_MON_DEFAULT_ENABLE
@@ -28,27 +27,24 @@
 #endif
 #include <mt_cpufreq.h>
 
-#define BOOT_STR_SIZE 64 /* Before: 128 */
-#ifdef CONFIG_MT_ENG_BUILD
-#define BOOT_LOG_NUM 128
+#define BOOT_STR_SIZE 256 /* Before: 128 */
+#define BOOT_LOG_NUM 192
 /* Memory Usage
  * Before: (128+8)*64 = 8704.
  * Now: (64+8)*128 = 9216 */
-#else
-#define BOOT_LOG_NUM 96
-/* Memory Usage
- * Before: (128+8)*48 = 6528.
- * Now: (64+8)*96 = 6912 */
-#endif
 
 struct boot_log_struct {
 	u64 timestamp;
-	char event[BOOT_STR_SIZE];
+	char *event;
+#ifdef TRACK_TASK_COMM
+	pid_t pid;
+	char comm[TASK_COMM_LEN];
+#endif
 } mt_bootprof[BOOT_LOG_NUM];
 
 static int boot_log_count;
 static DEFINE_MUTEX(mt_bootprof_lock);
-static int mt_bootprof_enabled;
+static bool mt_bootprof_enabled;
 static int bootprof_lk_t, bootprof_pl_t;
 static u64 timestamp_on, timestamp_off;
 int boot_finish = 0;
@@ -59,8 +55,10 @@ module_param_named(lk_t, bootprof_lk_t, int, S_IRUGO | S_IWUSR);
 void log_boot(char *str)
 {
 	unsigned long long ts;
+	struct boot_log_struct *p = &mt_bootprof[boot_log_count];
+	size_t n = strlen(str) + 1;
 
-	if (0 == mt_bootprof_enabled)
+	if (!mt_bootprof_enabled)
 		return;
 	ts = sched_clock();
 	pr_err("BOOTPROF:%10Ld.%06ld:%s\n", nsec_high(ts), nsec_low(ts), str);
@@ -69,9 +67,21 @@ void log_boot(char *str)
 		return;
 	}
 	mutex_lock(&mt_bootprof_lock);
-	mt_bootprof[boot_log_count].timestamp = ts;
-	strcpy((char *)&mt_bootprof[boot_log_count].event, str);
+	p->timestamp = ts;
+#ifdef TRACK_TASK_COMM
+	p->pid = current->pid;
+	memcpy(p->comm, current->comm, TASK_COMM_LEN);
+#endif
+	p->event = kzalloc(n, GFP_ATOMIC | __GFP_NORETRY |
+			   __GFP_NOWARN);
+	if (!p->event) {
+		/* pr_err("log_boot alloc size %zu fail\n", n); */
+		mt_bootprof_enabled = false;
+		goto out;
+	}
+	memcpy(p->event, str, n);
 	boot_log_count++;
+out:
 	mutex_unlock(&mt_bootprof_lock);
 }
 
@@ -114,13 +124,6 @@ static void mt_bootprof_switch(int on)
 	mutex_unlock(&mt_bootprof_lock);
 }
 
-static unsigned long __read_mostly mark_addr;
-static void lookup_addr(void)
-{
-	if (!mark_addr)
-		mark_addr = kallsyms_lookup_name("tracing_mark_write");
-}
-
 static ssize_t
 mt_bootprof_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
 {
@@ -143,13 +146,6 @@ mt_bootprof_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
 
 	buf[copy_size] = 0;
 	log_boot(buf);
-
-	/* also print it into ftrace buffer */
-	if (mark_addr) {
-		preempt_disable();
-		event_trace_printk(mark_addr, "%s\n", buf);
-		preempt_enable();
-	}
 
 	return cnt;
 
@@ -176,9 +172,14 @@ static int mt_bootprof_show(struct seq_file *m, void *v)
 		   nsec_high(timestamp_on), nsec_low(timestamp_on));
 
 	for (i = 0; i < boot_log_count; i++) {
+		if (!mt_bootprof[i].event)
+			continue;
 		SEQ_printf(m, "%10Ld.%06ld : %s\n",
 			   nsec_high(mt_bootprof[i].timestamp),
 			   nsec_low(mt_bootprof[i].timestamp),
+#ifdef TRACK_TASK_COMM
+			   mt_bootprof[i].pid, mt_bootprof[i].comm,
+#endif
 			   mt_bootprof[i].event);
 	}
 
@@ -216,8 +217,6 @@ static int __init init_boot_prof(void)
 static int __init init_bootprof_buf(void)
 {
 	mt_bootprof_switch(1);
-	if (boot_trace)
-		lookup_addr();
 	return 0;
 }
 

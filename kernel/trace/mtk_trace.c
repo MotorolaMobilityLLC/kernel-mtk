@@ -136,9 +136,8 @@ int resize_ring_buffer_for_hibernation(int enable)
 #endif
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
-bool boot_trace;
 static unsigned long buf_size = 25165824UL;
-
+static bool boot_trace;
 static __init int boot_trace_cmdline(char *str)
 {
 	boot_trace = true;
