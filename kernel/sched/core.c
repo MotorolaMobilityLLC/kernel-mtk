@@ -3648,12 +3648,16 @@ recheck:
 		if (policy != SCHED_DEADLINE &&
 				policy != SCHED_FIFO && policy != SCHED_RR &&
 				policy != SCHED_NORMAL && policy != SCHED_BATCH &&
-				policy != SCHED_IDLE)
+				policy != SCHED_IDLE){
+			pr_warn("%s %d:%s policy %d", __func__, p->pid, p->comm, policy);
 			return -EINVAL;
+		}
 	}
 
-	if (attr->sched_flags & ~(SCHED_FLAG_RESET_ON_FORK))
+	if (attr->sched_flags & ~(SCHED_FLAG_RESET_ON_FORK)) {
+		pr_warn("%s %d:%s sched_flags=%llu", __func__, p->pid, p->comm, attr->sched_flags);
 		return -EINVAL;
+	}
 
 	/*
 	 * Valid priorities for SCHED_FIFO and SCHED_RR are
@@ -3661,11 +3665,16 @@ recheck:
 	 * SCHED_BATCH and SCHED_IDLE is 0.
 	 */
 	if ((p->mm && attr->sched_priority > MAX_USER_RT_PRIO-1) ||
-	    (!p->mm && attr->sched_priority > MAX_RT_PRIO-1))
+	    (!p->mm && attr->sched_priority > MAX_RT_PRIO-1)) {
+		pr_warn("%s %d:%s sched_priority=%d", __func__, p->pid, p->comm, attr->sched_priority);
 		return -EINVAL;
+	}
 	if ((dl_policy(policy) && !__checkparam_dl(attr)) ||
-	    (rt_policy(policy) != (attr->sched_priority != 0)))
+	    (rt_policy(policy) != (attr->sched_priority != 0))) {
+		pr_warn("%s %d:%s dl, rt sched_priority=%d",
+			__func__, p->pid, p->comm, attr->sched_priority);
 		return -EINVAL;
+	}
 
 	/*
 	 * Allow unprivileged RT tasks to decrease priority:
@@ -3673,8 +3682,11 @@ recheck:
 	if (user && !capable(CAP_SYS_NICE)) {
 		if (fair_policy(policy)) {
 			if (attr->sched_nice < task_nice(p) &&
-			    !can_nice(p, attr->sched_nice))
+			    !can_nice(p, attr->sched_nice)) {
+				pr_warn("%s %d:%s sched_nice=%d",
+					__func__, p->pid, p->comm, attr->sched_nice);
 				return -EPERM;
+			}
 		}
 
 		if (rt_policy(policy)) {
@@ -3682,13 +3694,19 @@ recheck:
 					task_rlimit(p, RLIMIT_RTPRIO);
 
 			/* can't set/change the rt policy */
-			if (policy != p->policy && !rlim_rtprio)
+			if (policy != p->policy && !rlim_rtprio) {
+				pr_warn("%s %d:%s policy=%d %d %lu",
+					__func__, p->pid, p->comm, policy,  p->policy, rlim_rtprio);
 				return -EPERM;
+			}
 
 			/* can't increase priority */
 			if (attr->sched_priority > p->rt_priority &&
-			    attr->sched_priority > rlim_rtprio)
+			    attr->sched_priority > rlim_rtprio){
+				pr_warn("%s %d:%s policy=%d %d %lu", __func__, p->pid, p->comm,
+					attr->sched_priority, p->rt_priority, rlim_rtprio);
 				return -EPERM;
+			}
 		}
 
 		 /*
@@ -3697,25 +3715,34 @@ recheck:
 		  * unprivileged DL tasks to increase their relative deadline
 		  * or reduce their runtime (both ways reducing utilization)
 		  */
-		if (dl_policy(policy))
+		if (dl_policy(policy)) {
+			pr_warn("%s %d:%s dl policy=%d", __func__, p->pid, p->comm, policy);
 			return -EPERM;
+		}
 
 		/*
 		 * Treat SCHED_IDLE as nice 20. Only allow a switch to
 		 * SCHED_NORMAL if the RLIMIT_NICE would normally permit it.
 		 */
 		if (p->policy == SCHED_IDLE && policy != SCHED_IDLE) {
-			if (!can_nice(p, task_nice(p)))
+			if (!can_nice(p, task_nice(p))) {
+				pr_warn("%s %d:%s dl policy=%d", __func__, p->pid, p->comm, policy);
 				return -EPERM;
+			}
 		}
 
 		/* can't change other user's priorities */
-		if (!check_same_owner(p))
+		if (!check_same_owner(p)) {
+			pr_warn("%s %d:%s check_same_owner", __func__, p->pid, p->comm);
 			return -EPERM;
+		}
 
 		/* Normal users shall not reset the sched_reset_on_fork flag */
-		if (p->sched_reset_on_fork && !reset_on_fork)
+		if (p->sched_reset_on_fork && !reset_on_fork) {
+			pr_warn("%s %d:%s reset_on_fork=%d %d",
+				__func__, p->pid, p->comm, p->sched_reset_on_fork, reset_on_fork);
 			return -EPERM;
+		}
 	}
 
 	if (user) {
@@ -3769,6 +3796,7 @@ change:
 				task_group(p)->rt_bandwidth.rt_runtime == 0 &&
 				!task_group_is_autogroup(task_group(p))) {
 			task_rq_unlock(rq, p, &flags);
+			pr_warn("%s rt_runtime", __func__);
 			return -EPERM;
 		}
 #endif
@@ -3784,6 +3812,7 @@ change:
 			if (!cpumask_subset(span, &p->cpus_allowed) ||
 			    rq->rd->dl_bw.bw == 0) {
 				task_rq_unlock(rq, p, &flags);
+				pr_warn("%s allowed", __func__);
 				return -EPERM;
 			}
 		}
@@ -3804,6 +3833,7 @@ change:
 	 */
 	if ((dl_policy(policy) || dl_task(p)) && dl_overflow(p, policy, attr)) {
 		task_rq_unlock(rq, p, &flags);
+		pr_warn("%s deadline", __func__);
 		return -EBUSY;
 	}
 
