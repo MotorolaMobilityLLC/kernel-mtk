@@ -1467,8 +1467,8 @@ clocks {
 			#size-cells = <0>;
 		};
 
-		accdet: ACCDET@ {
-			compatible = "mediatek, accdet";
+		accdet: accdet@ {
+			compatible = "mediatek,mt6755-accdet";
 		};
 
 		SPI1@0x1100A000 {

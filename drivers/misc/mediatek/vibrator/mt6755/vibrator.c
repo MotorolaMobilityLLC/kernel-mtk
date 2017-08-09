@@ -16,8 +16,8 @@
 #include <linux/slab.h>
 #include <linux/of.h>
 #include <linux/types.h>
-#include <mt-plat/mt_pwm.h>
 #include <mt-plat/upmu_common.h>
+#include <mach/upmu_hw.h>
 #include "vibrator.h"
 
 struct vibrator_hw *pvib_cust = NULL;
@@ -32,22 +32,22 @@ static int debug_enable_vib_hal = 1;
 
 void vibr_Enable_HW(void)
 {
-	pmic_set_register_value(PMIC_RG_VIBR_EN, 1);	/* [bit 1]: VIBR_EN,  1=enable */
+	pmic_set_register_value(MT6351_PMIC_RG_VIBR_EN, 1);	/* [bit 1]: VIBR_EN,  1=enable */
 }
 
 void vibr_Disable_HW(void)
 {
-	pmic_set_register_value(PMIC_RG_VIBR_EN, 0);	/* [bit 1]: VIBR_EN,  1=enable */
+	pmic_set_register_value(MT6351_PMIC_RG_VIBR_EN, 0);	/* [bit 1]: VIBR_EN,  1=enable */
 }
 
 /******************************************
 * Set RG_VIBR_VOSEL	Output voltage select
 *  hw->vib_vol:  Voltage selection
-* 3'b000: 1.3V
-* 3'b001: 1.5V
-* 3'b010: 1.8V
-* 3'b011: 2.0V
-* 3'b100: 2.5V
+* 3'b000: 1.2V
+* 3'b001: 1.3V
+* 3'b010: 1.5V
+* 3'b011: 1.8V
+* 3'b100: 2.0V
 * 3'b101: 2.8V
 * 3'b110: 3.0V
 * 3'b111: 3.3V
@@ -119,7 +119,7 @@ void vibr_power_set(void)
 	struct vibrator_hw *hw = get_cust_vibrator_dtsi();
 
 	VIB_DEBUG("vibr_init: vibrator set voltage = %d\n", hw->vib_vol);
-	pmic_set_register_value(PMIC_RG_VIBR_VOSEL, hw->vib_vol);
+	pmic_set_register_value(MT6351_PMIC_RG_VIBR_VOSEL, hw->vib_vol);
 #endif
 }
 

@@ -10,7 +10,7 @@ enum vib_strength {
 	VOL_1_3,
 	VOL_1_5,
 	VOL_1_8,
-	VOL_2_5,
+	VOL_2_0,
 	VOL_2_8,
 	VOL_3_0,
 	VOL_3_3,

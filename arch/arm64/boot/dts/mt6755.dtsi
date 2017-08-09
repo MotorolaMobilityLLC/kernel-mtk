@@ -1531,8 +1531,8 @@ clocks {
 			/* VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>; */
 		};
 
-		accdet: ACCDET@ {
-			compatible = "mediatek, accdet";
+		accdet: accdet@ {
+			compatible = "mediatek,mt6755-accdet";
 		};
 
 		SPI1@0x1100A000 {

@@ -67,6 +67,7 @@ static int accdet_pm_restore_noirq(struct device *device)
 }
 struct of_device_id accdet_of_match[] = {
 	{ .compatible = "mediatek,mt6735-accdet", },
+	{ .compatible = "mediatek,mt6755-accdet", },
 	{ .compatible = "mediatek,mt6580-accdet", },
 	{ .compatible = "mediatek,mt8173-accdet", },
 	{},
