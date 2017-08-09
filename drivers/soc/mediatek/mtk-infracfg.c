@@ -20,28 +20,21 @@
 
 #define INFRA_TOPAXI_PROTECTEN		0x0220
 #define INFRA_TOPAXI_PROTECTSTA1	0x0228
+#define INFRA_TOPAXI_PROTECTEN1		0x0250
+#define INFRA_TOPAXI_PROTECTSTA3	0x0258
 
-/**
- * mtk_infracfg_set_bus_protection - enable bus protection
- * @regmap: The infracfg regmap
- * @mask: The mask containing the protection bits to be enabled.
- *
- * This function enables the bus protection bits for disabled power
- * domains so that the system does not hanf when some unit accesses the
- * bus while in power down.
- */
-int mtk_infracfg_set_bus_protection(struct regmap *infracfg, u32 mask)
+static int set_bits_wait(struct regmap *reg, u32 mask, u32 en_ofs, u32 sta_ofs)
 {
 	unsigned long expired;
 	u32 val;
 	int ret;
 
-	regmap_update_bits(infracfg, INFRA_TOPAXI_PROTECTEN, mask, mask);
+	regmap_update_bits(reg, en_ofs, mask, mask);
 
 	expired = jiffies + HZ;
 
 	while (1) {
-		ret = regmap_read(infracfg, INFRA_TOPAXI_PROTECTSTA1, &val);
+		ret = regmap_read(reg, sta_ofs, &val);
 		if (ret)
 			return ret;
 
@@ -56,27 +49,18 @@ int mtk_infracfg_set_bus_protection(struct regmap *infracfg, u32 mask)
 	return 0;
 }
 
-/**
- * mtk_infracfg_clear_bus_protection - disable bus protection
- * @regmap: The infracfg regmap
- * @mask: The mask containing the protection bits to be disabled.
- *
- * This function disables the bus protection bits previously enabled with
- * mtk_infracfg_set_bus_protection.
- */
-int mtk_infracfg_clear_bus_protection(struct regmap *infracfg, u32 mask)
+static int clr_bits_wait(struct regmap *reg, u32 mask, u32 en_ofs, u32 sta_ofs)
 {
 	unsigned long expired;
+	u32 val;
 	int ret;
 
-	regmap_update_bits(infracfg, INFRA_TOPAXI_PROTECTEN, mask, 0);
+	regmap_update_bits(reg, en_ofs, mask, 0);
 
 	expired = jiffies + HZ;
 
 	while (1) {
-		u32 val;
-
-		ret = regmap_read(infracfg, INFRA_TOPAXI_PROTECTSTA1, &val);
+		ret = regmap_read(reg, sta_ofs, &val);
 		if (ret)
 			return ret;
 
@@ -90,5 +74,64 @@ int mtk_infracfg_clear_bus_protection(struct regmap *infracfg, u32 mask)
 
 	return 0;
 }
+
+/**
+ * mtk_infracfg_set_bus_protection - enable bus protection
+ * @regmap: The infracfg regmap
+ * @mask: The mask containing the protection bits to be enabled.
+ *
+ * This function enables the bus protection bits for disabled power
+ * domains so that the system does not hanf when some unit accesses the
+ * bus while in power down.
+ */
+int mtk_infracfg_set_bus_protection(struct regmap *infracfg, u32 mask)
+{
+	return set_bits_wait(infracfg, mask,
+			INFRA_TOPAXI_PROTECTEN, INFRA_TOPAXI_PROTECTSTA1);
+}
+
+/**
+ * mtk_infracfg_clear_bus_protection - disable bus protection
+ * @regmap: The infracfg regmap
+ * @mask: The mask containing the protection bits to be disabled.
+ *
+ * This function disables the bus protection bits previously enabled with
+ * mtk_infracfg_set_bus_protection.
+ */
+int mtk_infracfg_clear_bus_protection(struct regmap *infracfg, u32 mask)
+{
+	return clr_bits_wait(infracfg, mask,
+			INFRA_TOPAXI_PROTECTEN, INFRA_TOPAXI_PROTECTSTA1);
+}
+
+/**
+ * mtk_infracfg_set_bus_protection1 - enable bus protection
+ * @regmap: The infracfg regmap
+ * @mask: The mask containing the protection bits to be enabled.
+ *
+ * This function enables the bus protection bits for disabled power
+ * domains so that the system does not hanf when some unit accesses the
+ * bus while in power down.
+ */
+int mtk_infracfg_set_bus_protection1(struct regmap *infracfg, u32 mask)
+{
+	return set_bits_wait(infracfg, mask,
+			INFRA_TOPAXI_PROTECTEN1, INFRA_TOPAXI_PROTECTSTA3);
+}
+
+/**
+ * mtk_infracfg_clear_bus_protection1 - disable bus protection
+ * @regmap: The infracfg regmap
+ * @mask: The mask containing the protection bits to be disabled.
+ *
+ * This function disables the bus protection bits previously enabled with
+ * mtk_infracfg_set_bus_protection.
+ */
+int mtk_infracfg_clear_bus_protection1(struct regmap *infracfg, u32 mask)
+{
+	return clr_bits_wait(infracfg, mask,
+			INFRA_TOPAXI_PROTECTEN1, INFRA_TOPAXI_PROTECTSTA3);
+}
+
 
 MODULE_LICENSE("GPL v2");
