@@ -8633,10 +8633,11 @@ wlanSendSetQueryCmd(IN P_ADAPTER_T prAdapter,
 
 	DEBUGFUNC("wlanSendSetQueryCmd");
 
-	if (!prCmdInfo) {
-		DBGLOG(OID, ERROR, "Allocate CMD_INFO_T ==> FAILED.\n");
+	if (!prCmdInfo || !prAdapter || !prAdapter->prAisBssInfo) {
+		DBGLOG(OID, ERROR, "prCmdInfo, prAdapter or prAisBssInfo is not allocated.\n");
 		return WLAN_STATUS_FAILURE;
 	}
+
 	/* increase command sequence number */
 	ucCmdSeqNum = nicIncreaseCmdSeqNum(prAdapter);
 	DBGLOG(OID, TRACE, "ucCmdSeqNum =%d\n", ucCmdSeqNum);
