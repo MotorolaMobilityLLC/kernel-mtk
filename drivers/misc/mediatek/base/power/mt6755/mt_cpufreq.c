@@ -2958,8 +2958,6 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		else
 			policy->min = cpu_dvfs_get_freq_by_idx(id_to_cpu_dvfs(id), p->idx_opp_ppm_base);
 
-		cpufreq_update_policy(policy->cpu);
-
 		if (_mt_cpufreq_sync_opp_tbl_idx(p) >= 0)
 			if (p->idx_normal_max_opp == -1)
 				p->idx_normal_max_opp = p->idx_opp_tbl;
