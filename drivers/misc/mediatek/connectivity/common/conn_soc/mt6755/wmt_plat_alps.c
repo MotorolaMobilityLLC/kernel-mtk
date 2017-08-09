@@ -523,7 +523,7 @@ INT32 wmt_plat_eirq_ctrl(ENUM_PIN_ID id, ENUM_PIN_STATE state)
 		} else if (PIN_STA_EINT_DIS == state) {
 			spin_lock_irqsave(&gbgfIrqBle.lock, gbgfIrqBle.flags);
 			if (!gbgfIrqBle.counter) {
-				WMT_PLAT_INFO_FUNC("BGF INT has been disabled,counter(%d)\n", gbgfIrqBle.counter);
+				WMT_PLAT_DBG_FUNC("BGF INT has been disabled,counter(%d)\n", gbgfIrqBle.counter);
 			} else {
 				disable_irq_nosync(bgf_irq_num);
 				gbgfIrqBle.counter--;
@@ -711,15 +711,15 @@ static INT32 wmt_plat_gps_lna_ctrl(ENUM_PIN_STATE state)
 	case PIN_STA_INIT:
 	case PIN_STA_DEINIT:
 		pinctrl_select_state(consys_pinctrl, gps_lna_init);
-		WMT_PLAT_INFO_FUNC("set gps lna to init\n");
+		WMT_PLAT_DBG_FUNC("set gps lna to init\n");
 		break;
 	case PIN_STA_OUT_H:
 		pinctrl_select_state(consys_pinctrl, gps_lna_oh);
-		WMT_PLAT_INFO_FUNC("set gps lna to oh\n");
+		WMT_PLAT_DBG_FUNC("set gps lna to oh\n");
 		break;
 	case PIN_STA_OUT_L:
 		pinctrl_select_state(consys_pinctrl, gps_lna_ol);
-		WMT_PLAT_INFO_FUNC("set gps lna to ol\n");
+		WMT_PLAT_DBG_FUNC("set gps lna to ol\n");
 		break;
 
 	default:

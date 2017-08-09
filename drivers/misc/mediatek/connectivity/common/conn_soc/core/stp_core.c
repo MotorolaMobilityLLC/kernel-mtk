@@ -2349,7 +2349,7 @@ INT32 mtk_wcn_stp_ready(INT32 value)
 *****************************************************************************/
 INT32 mtk_wcn_stp_coredump_start_ctrl(UINT32 value)
 {
-	STP_INFO_FUNC("set f/w assert (%d)\n", value);
+	STP_DBG_FUNC("set f/w assert (%d)\n", value);
 
 	STP_SET_FW_COREDUMP_FLAG(stp_core_ctx, value);
 
