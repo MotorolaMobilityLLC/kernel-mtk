@@ -113,8 +113,8 @@ DECLARE_EVENT_CLASS(sched_wakeup_template,
 		  __entry->success, __entry->target_cpu
 #ifdef CONFIG_MTK_SCHED_TRACERS
 		,
-		__entry->state & ~TASK_STATE_MAX ?
-		  __print_flags(__entry->state & ~TASK_STATE_MAX, "|",
+		__entry->state & (~TASK_STATE_MAX) ?
+		  __print_flags(__entry->state & (~TASK_STATE_MAX), "|",
 				{TASK_INTERRUPTIBLE, "S"},
 				{TASK_UNINTERRUPTIBLE, "D"},
 				{__TASK_STOPPED, "T"},
@@ -355,8 +355,8 @@ TRACE_EVENT(sched_migrate_task,
 		  __entry->orig_cpu, __entry->dest_cpu
 #ifdef CONFIG_MTK_SCHED_TRACERS
 		,
-		__entry->state & ~TASK_STATE_MAX ?
-		  __print_flags(__entry->state & ~TASK_STATE_MAX, "|",
+		__entry->state & (~TASK_STATE_MAX) ?
+		  __print_flags(__entry->state & (~TASK_STATE_MAX), "|",
 				{ TASK_INTERRUPTIBLE, "S"},
 				{ TASK_UNINTERRUPTIBLE, "D" },
 				{ __TASK_STOPPED, "T" },
