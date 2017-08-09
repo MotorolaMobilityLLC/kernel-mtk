@@ -34,7 +34,7 @@
 
 #define CMDQ_VERBOSE(string, args...) do {	\
 	if (cmdq_core_should_print_msg(LOG_LEVEL_MSG)) {		\
-		pr_info("[CMDQ][INFO]"string, ##args);	\
+		pr_debug("[CMDQ][INFO]"string, ##args);	\
 	}										\
 } while (0)
 
