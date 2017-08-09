@@ -3467,7 +3467,6 @@ void get_emmc_cache_info(struct work_struct *work)
 		g_usrdata_part_start, g_usrdata_part_end);
 #endif
 }
-EXPORT_SYMBOL(msdc_get_cache_region);
 #endif
 
 static struct delayed_work get_cache_info;
