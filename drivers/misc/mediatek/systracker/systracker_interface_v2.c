@@ -613,9 +613,10 @@ int systracker_set_watchpoint_addr(unsigned int addr)
 static ssize_t set_wp_address_store(struct device_driver *driver, const char *buf, size_t count)
 {
 	unsigned int value;
+	int ret;
 
-	kstrtou32(buf, 16, &value);
-	pr_debug("watch address:0x%x\n", value);
+	ret = kstrtou32(buf, 16, &value);
+	pr_debug("watch address:0x%x, ret = %d\n", value, ret);
 	systracker_set_watchpoint_addr(value);
 
 	return count;

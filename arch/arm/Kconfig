@@ -909,6 +909,7 @@ config ARCH_MT6580
 	select MTK_LASTPC
 	select CPU_IDLE
 	select ARM_MT6735_CPUIDLE
+	select MTK_SYSTRACKER_V2
 	help
 	  This enable support for MediaTek MT6580
 
