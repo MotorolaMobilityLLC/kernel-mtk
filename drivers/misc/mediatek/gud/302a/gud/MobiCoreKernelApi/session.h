@@ -64,6 +64,8 @@ struct session {
 
 	/* Descriptors of additional bulk buffer of a session */
 	struct list_head		bulk_buffer_descriptors;
+	/* lock used to prevent concurrent add/del on the descriptor list */
+	struct mutex			bulk_buffer_descriptors_lock;
 
 	/* Information about session */
 	struct session_information	session_info;

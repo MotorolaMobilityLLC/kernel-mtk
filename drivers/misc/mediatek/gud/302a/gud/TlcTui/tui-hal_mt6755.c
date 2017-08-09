@@ -45,6 +45,8 @@ extern int mt_eint_clr_deint(int eint_num);
 extern int tpd_reregister_from_tui(void);
 extern int tpd_enter_tui(void);
 extern int tpd_exit_tui(void);
+extern int i2c_tui_enable_clock(void);
+extern int i2c_tui_disable_clock(void);
 extern int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle,
 	uint8_t *owner, uint32_t id);
 extern int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id);
@@ -272,15 +274,16 @@ uint32_t hal_tui_deactivate(void)
 	 * This can be done by calling the fb_blank(FB_BLANK_POWERDOWN) function
 	 * on the appropriate framebuffer device
 	 */
-#if 0
+
 	tpd_enter_tui();
-	mt_eint_set_deint(10, 187);
+#if 0
     enable_clock(MT_CG_PERI_I2C0, "i2c");
     enable_clock(MT_CG_PERI_I2C1, "i2c");
     enable_clock(MT_CG_PERI_I2C2, "i2c");
     enable_clock(MT_CG_PERI_I2C3, "i2c");
 	enable_clock(MT_CG_PERI_APDMA, "i2c");
 #endif
+	i2c_tui_enable_clock();
 
 	//gt1x_power_reset();
 
@@ -325,17 +328,16 @@ uint32_t hal_tui_activate(void)
 	 * on the appropriate framebuffer device
 	 */
 	/* Clear linux TUI flag */
-#if 0
-	mt_eint_clr_deint(10);
+
 	tpd_exit_tui();
-	tpd_reregister_from_tui();
-	
+#if 0
     disable_clock(MT_CG_PERI_I2C0, "i2c");
     disable_clock(MT_CG_PERI_I2C1, "i2c");
     disable_clock(MT_CG_PERI_I2C2, "i2c");
     disable_clock(MT_CG_PERI_I2C3, "i2c");	
 	disable_clock(MT_CG_PERI_APDMA, "i2c");
 #endif
+	i2c_tui_disable_clock();
 
 	display_exit_tui();
 
@@ -376,6 +378,16 @@ int __weak display_enter_tui()
 }
 
 int __weak display_exit_tui()
+{
+	return 0;
+}
+
+int __weak i2c_tui_enable_clock()
+{
+	return 0;
+}
+
+int __weak i2c_tui_disable_clock()
 {
 	return 0;
 }

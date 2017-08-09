@@ -29,6 +29,8 @@
 
 /* device list */
 LIST_HEAD(devices);
+/* lock used to prevent concurrent add/delete action on the device list */
+struct mutex device_mutex;
 atomic_t device_usage = ATOMIC_INIT(0);
 
 static struct mcore_device_t *resolve_device_id(uint32_t device_id)
@@ -37,33 +39,45 @@ static struct mcore_device_t *resolve_device_id(uint32_t device_id)
 	struct list_head *pos;
 
 	/* Get mcore_device_t for device_id */
+	mutex_lock(&device_mutex);
 	list_for_each(pos, &devices) {
 		tmp = list_entry(pos, struct mcore_device_t, list);
-		if (tmp->device_id == device_id)
+		if (tmp->device_id == device_id) {
+			mutex_unlock(&device_mutex);
 			return tmp;
+		}
 	}
+	mutex_unlock(&device_mutex);
 	return NULL;
 }
 
 static void add_device(struct mcore_device_t *device)
 {
+	mutex_lock(&device_mutex);
 	list_add_tail(&(device->list), &devices);
+	mutex_unlock(&device_mutex);
 }
 
 static bool remove_device(uint32_t device_id)
 {
-	struct mcore_device_t *tmp;
+	struct mcore_device_t *device, *candidate = NULL;
 	struct list_head *pos, *q;
+	bool found = false;
 
+	mutex_lock(&device_mutex);
 	list_for_each_safe(pos, q, &devices) {
-		tmp = list_entry(pos, struct mcore_device_t, list);
-		if (tmp->device_id == device_id) {
+		device = list_entry(pos, struct mcore_device_t, list);
+		if (device->device_id == device_id) {
 			list_del(pos);
-			mcore_device_cleanup(tmp);
-			return true;
+			candidate = device;
+			found = true;
+			break;
 		}
 	}
-	return false;
+	mutex_unlock(&device_mutex);
+	if (!candidate)
+		mcore_device_cleanup(candidate);
+	return found;
 }
 
 enum mc_result mc_open_device(uint32_t device_id)

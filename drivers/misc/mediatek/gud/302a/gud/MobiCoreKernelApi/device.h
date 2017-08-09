@@ -27,7 +27,11 @@
 
 struct mcore_device_t {
 	/* MobiCore Trustlet session associated with the device */
+	/* lock used to prevent concurrent add/del action on the session list */
+	struct mutex        session_vector_lock;
 	struct list_head	session_vector;
+	/* lock used to prevent concurrent add/del action on the mmu list */
+	struct mutex        wsm_mmu_vector_lock;
 	struct list_head	wsm_mmu_vector; /* WSM L2 or L3 Table  */
 
 	uint32_t		device_id;	/* Device identifier */

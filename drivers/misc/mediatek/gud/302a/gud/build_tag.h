@@ -12,4 +12,4 @@
  * GNU General Public License for more details.
  */
 #define MOBICORE_COMPONENT_BUILD_TAG \
-	"t-base-Mediatek-Armv8-Android-302A-V008-20150716_103446_58"
+	"t-base-Mediatek-Armv8-Android-302A-V010-20150908_113718_68"

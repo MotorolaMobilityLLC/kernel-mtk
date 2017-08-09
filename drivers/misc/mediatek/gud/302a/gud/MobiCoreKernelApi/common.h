@@ -33,6 +33,9 @@ unsigned int mcapi_unique_id(void);
 /* Found in main.c */
 extern struct device *mc_kapi;
 
+/* Found in clientlib.c */
+extern struct mutex device_mutex;
+
 #define MCDRV_ERROR(dev, txt, ...) \
 	dev_err(dev, "%s() ### ERROR: " txt, __func__, ##__VA_ARGS__)
 

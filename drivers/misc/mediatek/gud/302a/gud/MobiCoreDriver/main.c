@@ -1618,8 +1618,8 @@ free_pm:
 #ifdef MC_PM_RUNTIME
 	mc_pm_free();
 free_isr:
-	free_irq(mobicore_irq_id, &ctx);
 #endif
+	free_irq(MC_INTR_SSIQ, &ctx);
 err_req_irq:
 	mc_fastcall_destroy();
 error:

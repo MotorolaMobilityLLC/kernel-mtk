@@ -53,6 +53,7 @@ struct session *session_create(
 	session->session_info.state = SESSION_STATE_INITIAL;
 
 	INIT_LIST_HEAD(&(session->bulk_buffer_descriptors));
+	mutex_init(&(session->bulk_buffer_descriptors_lock));
 	return session;
 }
 
@@ -62,6 +63,7 @@ void session_cleanup(struct session *session)
 	struct list_head *pos, *q;
 
 	/* Unmap still mapped buffers */
+	mutex_lock(&(session->bulk_buffer_descriptors_lock));
 	list_for_each_safe(pos, q, &session->bulk_buffer_descriptors) {
 		bulk_buf_descr =
 			list_entry(pos, struct bulk_buffer_descriptor, list);
@@ -80,6 +82,7 @@ void session_cleanup(struct session *session)
 		list_del(pos);
 		kfree(bulk_buf_descr);
 	}
+	mutex_unlock(&(session->bulk_buffer_descriptors_lock));
 
 	/* Finally delete notification connection */
 	connection_cleanup(session->notification_connection);
@@ -102,17 +105,23 @@ struct bulk_buffer_descriptor *session_add_bulk_buf(struct session *session,
 	struct bulk_buffer_descriptor *bulk_buf_descr = NULL;
 	struct bulk_buffer_descriptor *tmp;
 	struct list_head *pos;
+	int ret = 0;
 
 	/*
 	 * Search bulk buffer descriptors for existing vAddr
 	 * At the moment a virtual address can only be added one time
 	 */
+	mutex_lock(&(session->bulk_buffer_descriptors_lock));
 	list_for_each(pos, &session->bulk_buffer_descriptors) {
 		tmp = list_entry(pos, struct bulk_buffer_descriptor, list);
-		if (tmp->virt_addr == buf)
-			return NULL;
+		if (tmp->virt_addr == buf) {
+			ret = -1;
+			break;
+		}
 	}
-
+	mutex_unlock(&(session->bulk_buffer_descriptors_lock));
+	if (ret == -1)
+		return NULL;
 	do {
 		/*
 		 * Prepare the interface structure for memory registration in
@@ -142,8 +151,10 @@ struct bulk_buffer_descriptor *session_add_bulk_buf(struct session *session,
 		}
 
 		/* Add to vector of descriptors */
+		mutex_lock(&(session->bulk_buffer_descriptors_lock));
 		list_add_tail(&(bulk_buf_descr->list),
 			      &(session->bulk_buffer_descriptors));
+		mutex_unlock(&(session->bulk_buffer_descriptors_lock));
 	} while (0);
 
 	return bulk_buf_descr;
@@ -160,6 +171,7 @@ bool session_remove_bulk_buf(struct session *session, void *virt_addr)
 			  virt_addr);
 
 	/* Search and remove bulk buffer descriptor */
+	mutex_lock(&(session->bulk_buffer_descriptors_lock));
 	list_for_each_safe(pos, q, &session->bulk_buffer_descriptors) {
 		tmp = list_entry(pos, struct bulk_buffer_descriptor, list);
 		if (tmp->virt_addr == virt_addr) {
@@ -168,6 +180,7 @@ bool session_remove_bulk_buf(struct session *session, void *virt_addr)
 			break;
 		}
 	}
+	mutex_unlock(&(session->bulk_buffer_descriptors_lock));
 
 	if (bulk_buf == NULL) {
 		MCDRV_DBG_ERROR(mc_kapi, "Virtual Address not found");
@@ -193,16 +206,20 @@ uint32_t session_find_bulk_buf(struct session *session, void *virt_addr)
 {
 	struct bulk_buffer_descriptor *tmp;
 	struct list_head *pos, *q;
+	uint32_t handle = 0;
 
 	MCDRV_DBG_VERBOSE(mc_kapi, "Virtual Address = 0x%p",
 			  virt_addr);
 
 	/* Search and return buffer descriptor handle */
+	mutex_lock(&(session->bulk_buffer_descriptors_lock));
 	list_for_each_safe(pos, q, &session->bulk_buffer_descriptors) {
 		tmp = list_entry(pos, struct bulk_buffer_descriptor, list);
-		if (tmp->virt_addr == virt_addr)
-			return tmp->handle;
+		if (tmp->virt_addr == virt_addr) {
+			handle = tmp->handle;
+			break;
+		}
 	}
-
-	return 0;
+	mutex_unlock(&(session->bulk_buffer_descriptors_lock));
+		return handle;
 }
