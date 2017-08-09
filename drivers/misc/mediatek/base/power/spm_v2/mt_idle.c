@@ -368,6 +368,7 @@ static unsigned long    soidle3_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle3_block_cnt[NR_REASONS] = {0};
 static unsigned long long soidle3_block_prev_time;
 static bool             soidle3_by_pass_cg;
+static bool             soidle3_by_pass_i2c_appm_cg;
 static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
 static u32				sodi3_flags = SODI_FLAG_REDUCE_LOG|SODI_FLAG_V3;
@@ -388,6 +389,7 @@ static unsigned long    soidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
+static bool             soidle_by_pass_i2c_appm_cg;
 bool                    soidle_by_pass_pg;
 static bool             soidle_by_pass_en;
 static u32				sodi_flags = SODI_FLAG_REDUCE_LOG;
@@ -679,7 +681,7 @@ bool soidle3_can_enter(int cpu)
 	mt_dvfsp_paused_by_idle = true;
 #endif
 
-	if (soidle3_by_pass_cg == 0) {
+	if (soidle3_by_pass_i2c_appm_cg == 0) {
 		/* Check if I2C-appm gated since DVFSP will control it */
 		if (!cg_i2c_appm_check_idle_can_enter(soidle3_block_mask)) {
 #ifdef CONFIG_HYBRID_CPU_DVFS
@@ -964,7 +966,7 @@ bool soidle_can_enter(int cpu)
 	mt_dvfsp_paused_by_idle = true;
 #endif
 
-	if (soidle_by_pass_cg == 0) {
+	if (soidle_by_pass_i2c_appm_cg == 0) {
 		/* Check if I2C-appm gated since DVFSP will control it */
 		if (!cg_i2c_appm_check_idle_can_enter(soidle_block_mask)) {
 #ifdef CONFIG_HYBRID_CPU_DVFS
@@ -2510,6 +2512,7 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 
 	p += sprintf(p, "soidle3_bypass_pll=%u\n", soidle3_by_pass_pll);
 	p += sprintf(p, "soidle3_bypass_cg=%u\n", soidle3_by_pass_cg);
+	p += sprintf(p, "soidle3_by_pass_i2c_appm_cg=%u\n", soidle3_by_pass_i2c_appm_cg);
 	p += sprintf(p, "soidle3_bypass_en=%u\n", soidle3_by_pass_en);
 	p += sprintf(p, "sodi3_flags=0x%x\n", sodi3_flags);
 
@@ -2522,6 +2525,7 @@ static ssize_t soidle3_state_read(struct file *filp, char __user *userbuf, size_
 	p += sprintf(p, "modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	p += sprintf(p, "bypass pll:    echo bypass_pll 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	p += sprintf(p, "bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
+	p += sprintf(p, "bypass appm:   echo bypass_appm 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	p += sprintf(p, "bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	p += sprintf(p, "sodi3 flags:   echo sodi3_flags value > /sys/kernel/debug/cpuidle/soidle3_state\n");
 	len = p - dbg_buf;
@@ -2559,6 +2563,9 @@ static ssize_t soidle3_state_write(struct file *filp,
 		} else if (!strcmp(cmd, "bypass")) {
 			soidle3_by_pass_cg = param;
 			idle_dbg("bypass = %d\n", soidle3_by_pass_cg);
+		} else if (!strcmp(cmd, "bypass_appm")) {
+			soidle3_by_pass_i2c_appm_cg = param;
+			idle_dbg("bypass_appm = %d\n", soidle3_by_pass_i2c_appm_cg);
 		} else if (!strcmp(cmd, "bypass_en")) {
 			soidle3_by_pass_en = param;
 			idle_dbg("bypass_en = %d\n", soidle3_by_pass_en);
@@ -2620,6 +2627,7 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	}
 
 	p += sprintf(p, "soidle_bypass_cg=%u\n", soidle_by_pass_cg);
+	p += sprintf(p, "soidle_by_pass_i2c_appm_cg=%u\n", soidle_by_pass_i2c_appm_cg);
 	p += sprintf(p, "soidle_by_pass_pg=%u\n", soidle_by_pass_pg);
 	p += sprintf(p, "soidle_bypass_en=%u\n", soidle_by_pass_en);
 	p += sprintf(p, "sodi_flags=0x%x\n", sodi_flags);
@@ -2635,6 +2643,7 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 	p += sprintf(p, "dis_dp_by_bit: echo disable id > /sys/kernel/debug/cpuidle/soidle_state\n");
 	p += sprintf(p, "modify tm_cri: echo time value(dec) > /sys/kernel/debug/cpuidle/soidle_state\n");
 	p += sprintf(p, "bypass cg:     echo bypass 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += sprintf(p, "bypass appm:   echo bypass_appm 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	p += sprintf(p, "bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	p += sprintf(p, "sodi flags:	echo sodi_flags value > /sys/kernel/debug/cpuidle/soidle3_state\n");
 
@@ -2670,6 +2679,9 @@ static ssize_t soidle_state_write(struct file *filp,
 		else if (!strcmp(cmd, "bypass")) {
 			soidle_by_pass_cg = param;
 			idle_dbg("bypass = %d\n", soidle_by_pass_cg);
+		} else if (!strcmp(cmd, "bypass_appm")) {
+			soidle_by_pass_i2c_appm_cg = param;
+			idle_dbg("bypass_appm = %d\n", soidle_by_pass_i2c_appm_cg);
 		} else if (!strcmp(cmd, "bypass_pg")) {
 			soidle_by_pass_pg = param;
 			idle_warn("bypass_pg = %d\n", soidle_by_pass_pg);
