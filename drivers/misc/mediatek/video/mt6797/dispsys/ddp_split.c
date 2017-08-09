@@ -142,7 +142,6 @@ static int split_dump(DISP_MODULE_ENUM module, int level)
 	return 0;
 }
 
-
 DDP_MODULE_DRIVER ddp_driver_split = {
 	.init		= split_init,
 	.deinit		= split_deinit,

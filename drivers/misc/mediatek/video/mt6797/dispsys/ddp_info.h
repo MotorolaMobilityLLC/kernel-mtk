@@ -105,6 +105,13 @@ int is_unified_color_fmt_supported(enum UNIFIED_COLOR_FMT ufmt);
 enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(DISP_FORMAT src_fmt);
 int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt, enum UNIFIED_COLOR_FMT *dst_fmt);
 
+struct disp_rect {
+	int x;
+	int y;
+	int width;
+	int height;
+};
+
 typedef struct _OVL_CONFIG_STRUCT {
 	/* unsigned int ovl_index; */
 	unsigned int layer;
@@ -234,6 +241,7 @@ typedef struct {
 typedef struct {
 	/* for ovl */
 	bool ovl_dirty;
+	bool ovl_partial_dirty;
 	bool rdma_dirty;
 	bool wdma_dirty;
 	bool dst_dirty;
@@ -241,6 +249,7 @@ typedef struct {
 	int ovl_layer_scanned;	/*each bit reprsent one layer, used for ovl engines */
 	int overlap_layer_num;
 	OVL_CONFIG_STRUCT ovl_config[TOTAL_OVL_LAYER_NUM];
+	struct disp_rect ovl_partial_roi;
 	RDMA_CONFIG_STRUCT rdma_config;
 	WDMA_CONFIG_STRUCT wdma_config;
 	LCM_PARAMS dispif_config;
@@ -268,6 +277,7 @@ typedef enum {
 	DDP_EXIT_ULPS = 10,
 	DDP_RDMA_GOLDEN_SETTING = 11,
 	DDP_OVL_GOLDEN_SETTING,
+	DDP_PARTIAL_UPDATE,
 } DDP_IOCTL_NAME;
 
 struct ddp_io_golden_setting_arg {

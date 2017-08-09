@@ -12,6 +12,8 @@
 #include "ddp_reg.h"
 
 static bool ufoe_enable;
+static bool lr_mode_en;
+static bool compress_ratio;
 
 static void ufoe_dump(void)
 {
@@ -69,45 +71,48 @@ static int ufoe_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, v
 	LCM_DSI_PARAMS *lcm_config = &(disp_if_config->dsi);
 
 	if (lcm_config->ufoe_enable == 1 && pConfig->dst_dirty) {
-		ufoe_enable = true;
-		DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_BYPASS, DISP_REG_UFO_START, 0);/* disable BYPASS ufoe */
+		ufoe_enable = 1;
+		/* disable BYPASS ufoe */
+		DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_BYPASS, DISP_REG_UFO_START, 0);
 		/* DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_START, DISP_REG_UFO_START, 1); */
 		if (lcm_config->ufoe_params.lr_mode_en == 1) {
+			lr_mode_en = 1;
 			DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_LR_EN, DISP_REG_UFO_START, 1);
 		} else {
 			DISP_REG_SET_FIELD(handle, START_FLD_DISP_UFO_LR_EN, DISP_REG_UFO_START, 0);
+			compress_ratio = lcm_config->ufoe_params.compress_ratio;
 			if (lcm_config->ufoe_params.compress_ratio == 3) {
 				unsigned int internal_width =
-				    disp_if_config->width + disp_if_config->width % 4;
+					disp_if_config->width + disp_if_config->width % 4;
 				DISP_REG_SET_FIELD(handle, CFG_0B_FLD_DISP_UFO_CFG_COM_RATIO,
-						   DISP_REG_UFO_CFG_0B, 1);
+						DISP_REG_UFO_CFG_0B, 1);
 				if (internal_width % 6 != 0) {
 					DISP_REG_SET_FIELD(handle,
-							   CR0P6_PAD_FLD_DISP_UFO_STR_PAD_NUM,
-							   DISP_REG_UFO_CR0P6_PAD,
-							   (((internal_width / 6 + 1) * 6) - internal_width));
+							CR0P6_PAD_FLD_DISP_UFO_STR_PAD_NUM,
+							DISP_REG_UFO_CR0P6_PAD,
+							(((internal_width / 6 + 1) * 6) - internal_width));
 				}
 			} else
 				DISP_REG_SET_FIELD(handle, CFG_0B_FLD_DISP_UFO_CFG_COM_RATIO,
-						   DISP_REG_UFO_CFG_0B, 0);
+						DISP_REG_UFO_CFG_0B, 0);
 
 			if (lcm_config->ufoe_params.vlc_disable) {
 				DISP_REG_SET_FIELD(handle, CFG_0B_FLD_DISP_UFO_CFG_VLC_EN,
-						   DISP_REG_UFO_CFG_0B, 0);
+						DISP_REG_UFO_CFG_0B, 0);
 				DISP_REG_SET(handle, DISP_REG_UFO_CFG_1B, 0x1);
 			} else {
 				DISP_REG_SET_FIELD(handle, CFG_0B_FLD_DISP_UFO_CFG_VLC_EN,
-						   DISP_REG_UFO_CFG_0B, 1);
+						DISP_REG_UFO_CFG_0B, 1);
 				DISP_REG_SET(handle, DISP_REG_UFO_CFG_1B,
-					     (lcm_config->ufoe_params.vlc_config ==
-					      0) ? 5 : lcm_config->ufoe_params.vlc_config);
+						(lcm_config->ufoe_params.vlc_config ==
+						 0) ? 5 : lcm_config->ufoe_params.vlc_config);
 			}
 		}
 		DISP_REG_SET(handle, DISP_REG_UFO_FRAME_WIDTH, pConfig->dst_w);
 		DISP_REG_SET(handle, DISP_REG_UFO_FRAME_HEIGHT, pConfig->dst_h);
 		ufoe_dump();
 	}
-/* ufoe_dump(); */
+	/* ufoe_dump(); */
 	return 0;
 
 }
@@ -142,6 +147,48 @@ static int ufoe_reset(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
+static int _ufoe_partial_update(DISP_MODULE_ENUM module, void *arg, void *handle)
+{
+	struct disp_rect *roi = (struct disp_rect *) arg;
+	int width = roi->width;
+	int height = roi->height;
+
+	if (ufoe_enable) {
+		if (lr_mode_en == 0) {
+			if (compress_ratio == 3) {
+				unsigned int internal_width = width + width % 4;
+
+				if (internal_width % 6 != 0) {
+					DISP_REG_SET_FIELD(handle,
+							CR0P6_PAD_FLD_DISP_UFO_STR_PAD_NUM,
+							DISP_REG_UFO_CR0P6_PAD,
+							(((internal_width / 6 + 1) * 6) - internal_width));
+				}
+			}
+		}
+		DISP_REG_SET(handle, DISP_REG_UFO_FRAME_WIDTH, width);
+		DISP_REG_SET(handle, DISP_REG_UFO_FRAME_HEIGHT, height);
+	}
+	return 0;
+}
+
+int ufoe_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle,
+		unsigned int ioctl_cmd, unsigned long *params)
+{
+	int ret = -1;
+	DDP_IOCTL_NAME ioctl = (DDP_IOCTL_NAME) ioctl_cmd;
+
+	switch (ioctl) {
+	case DDP_PARTIAL_UPDATE:
+		_ufoe_partial_update(module, params, cmdq_handle);
+		ret = 0;
+		break;
+	default:
+		break;
+	}
+	return ret;
+}
+
 /* ufoe */
 DDP_MODULE_DRIVER ddp_driver_ufoe = {
 	.init = ufoe_init,
@@ -159,4 +206,5 @@ DDP_MODULE_DRIVER ddp_driver_ufoe = {
 	.bypass = NULL,
 	.build_cmdq = NULL,
 	.set_lcm_utils = NULL,
+	.ioctl = (int (*)(DISP_MODULE_ENUM, void *, DDP_IOCTL_NAME, void *))ufoe_ioctl,
 };

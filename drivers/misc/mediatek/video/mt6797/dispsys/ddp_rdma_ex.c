@@ -384,10 +384,10 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle, golden_s
 		consume_rate = rdma_golden_setting->dst_width * rdma_golden_setting->dst_height;
 		consume_rate /= (8*1000);
 		consume_rate *= frame_rate * bpp;
-	}
-	else
+	} else {
 		consume_rate = rdma_golden_setting->ext_dst_width
-		*rdma_golden_setting->ext_dst_height*frame_rate*bpp/(8*1000);
+		* rdma_golden_setting->ext_dst_height*frame_rate*bpp/(8*1000);
+	}
 	consume_rate = 1200*consume_rate/(16*1000);
 
 	preultra_low = preultra_low_us * consume_rate;
@@ -982,6 +982,20 @@ void rdma_set_color_matrix(DISP_MODULE_ENUM module,
 	DISP_REG_SET(NULL, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_POST_ADD_2, post->ADD2);
 }
 
+static int _rdma_partial_update(DISP_MODULE_ENUM module, void *arg, void *handle)
+{
+	struct disp_rect *roi = (struct disp_rect *) arg;
+	int width = roi->width;
+	int height = roi->height;
+	unsigned int idx = rdma_index(module);
+
+	DISP_REG_SET_FIELD(handle, SIZE_CON_0_FLD_OUTPUT_FRAME_WIDTH,
+			idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0, width);
+	DISP_REG_SET_FIELD(handle, SIZE_CON_1_FLD_OUTPUT_FRAME_HEIGHT,
+			idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_1, height);
+	return 0;
+}
+
 int rdma_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl_cmd, unsigned long *params)
 {
 	int ret = 0;
@@ -994,6 +1008,9 @@ int rdma_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl_cm
 	switch (ioctl) {
 	case DDP_RDMA_GOLDEN_SETTING:
 		rdma_set_ultra_l(idx, pConfig->lcm_bpp, cmdq_handle, p_golden_setting);
+		break;
+	case DDP_PARTIAL_UPDATE:
+		_rdma_partial_update(module, params, cmdq_handle);
 		break;
 	default:
 		break;

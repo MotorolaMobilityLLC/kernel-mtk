@@ -162,6 +162,29 @@ static int disp_gamma_set_lut(const DISP_GAMMA_LUT_T __user *user_gamma_lut, voi
 	return ret;
 }
 
+#if defined(CONFIG_ARCH_MT6797)
+static int _gamma_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
+{
+	struct disp_rect *roi = (struct disp_rect *) arg;
+	int width = roi->width;
+	int height = roi->height;
+
+	DISP_REG_SET(cmdq, DISP_REG_GAMMA_SIZE, (width << 16) | height);
+	return 0;
+}
+
+static int gamma_ioctl(DISP_MODULE_ENUM module, void *handle,
+		DDP_IOCTL_NAME ioctl_cmd, void *params)
+{
+	int ret = -1;
+
+	if (ioctl_cmd == DDP_PARTIAL_UPDATE) {
+		_gamma_partial_update(module, params, handle);
+		ret = 0;
+	}
+	return ret;
+}
+#endif
 
 static int disp_gamma_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
@@ -247,6 +270,9 @@ DDP_MODULE_DRIVER ddp_driver_gamma = {
 	.deinit = disp_gamma_power_off,
 	.power_on = disp_gamma_power_on,
 	.power_off = disp_gamma_power_off,
+#if defined(CONFIG_ARCH_MT6797)
+	.ioctl = gamma_ioctl,
+#endif
 };
 
 
@@ -376,6 +402,29 @@ static int disp_ccorr_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pCon
 	return 0;
 }
 
+#if defined(CONFIG_ARCH_MT6797)
+static int _ccorr_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
+{
+	struct disp_rect *roi = (struct disp_rect *) arg;
+	int width = roi->width;
+	int height = roi->height;
+
+	DISP_REG_SET(cmdq, DISP_REG_CCORR_SIZE, (width << 16) | height);
+	return 0;
+}
+
+static int ccorr_ioctl(DISP_MODULE_ENUM module, void *handle,
+		DDP_IOCTL_NAME ioctl_cmd, void *params)
+{
+	int ret = -1;
+
+	if (ioctl_cmd == DDP_PARTIAL_UPDATE) {
+		_ccorr_partial_update(module, params, handle);
+		ret = 0;
+	}
+	return ret;
+}
+#endif
 
 static int disp_ccorr_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
@@ -456,6 +505,9 @@ DDP_MODULE_DRIVER ddp_driver_ccorr = {
 	.deinit = disp_ccorr_power_off,
 	.power_on = disp_ccorr_power_on,
 	.power_off = disp_ccorr_power_off,
+#if defined(CONFIG_ARCH_MT6797)
+	.ioctl = ccorr_ioctl,
+#endif
 };
 
 int ccorr_coef_interface(unsigned int ccorr_coef_ref[3][3], void *handle)

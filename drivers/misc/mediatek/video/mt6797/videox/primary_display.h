@@ -298,4 +298,6 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes
 int display_enter_tui(void);
 int display_exit_tui(void);
 
+int primary_display_partial_support(void);
+
 #endif

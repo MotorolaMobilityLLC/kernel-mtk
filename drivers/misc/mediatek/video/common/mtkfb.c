@@ -1213,7 +1213,6 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				input =
 				    &session_input.config[session_input.config_layer_num++];
 				_convert_fb_layer_to_disp_input(&layerInfo[i], input);
-
 			}
 			/* is_ipoh_bootup = false; */
 			/* atomic_set(&OverlaySettingDirtyFlag, 1); */

@@ -3165,6 +3165,17 @@ static void DSI_PHY_CLK_LP_PerLine_config(DISP_MODULE_ENUM module, cmdqRecHandle
 
 }
 
+void ddp_dsi_update_partial(DISP_MODULE_ENUM module, void *cmdq, void *params)
+{
+	struct disp_rect *roi = (struct disp_rect *)params;
+
+	DISPDBG("dsi_partial(%d,%d,%d,%d)\n",
+		roi->x, roi->y, roi->width, roi->height);
+	DSI_PS_Control(module, cmdq, &(_dsi_context[0].dsi_params),
+			roi->width, roi->height);
+	DSI_Send_ROI(module, cmdq, roi->x, roi->y, roi->width, roi->height);
+}
+
 int ddp_dsi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *cmdq)
 {
 	int i = 0;
@@ -3540,6 +3551,11 @@ int ddp_dsi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, unsigned int ioctl
 			DSI_PHY_clk_change(module, cmdq_handle, dsi_params);
 			DSI_EnableClk(module, cmdq_handle);
 			DSI_PHY_TIMCONFIG(module, cmdq_handle, dsi_params);
+			break;
+		}
+	case DDP_PARTIAL_UPDATE:
+		{
+			ddp_dsi_update_partial(module, cmdq_handle, params);
 			break;
 		}
 #if 0

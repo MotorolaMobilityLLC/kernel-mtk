@@ -177,6 +177,13 @@ typedef struct {
 	int lcm_fps;
 } disp_session_vsync_config;
 
+struct layer_dirty_roi {
+	uint16_t dirty_x;
+	uint16_t dirty_y;
+	uint16_t dirty_w;
+	uint16_t dirty_h;
+};
+
 typedef struct disp_input_config_t {
 	void *src_base_addr;
 	void *src_phy_addr;
@@ -195,6 +202,9 @@ typedef struct disp_input_config_t {
 
 	uint32_t src_color_key;
 	uint32_t frm_sequence;
+
+	void *dirty_roi_addr;
+	uint16_t dirty_roi_num;
 
 	uint16_t src_pitch;
 	uint16_t src_offset_x, src_offset_y;
@@ -346,6 +356,7 @@ typedef enum {
 typedef enum {
 	DISP_FEATURE_TIME_SHARING = 0x00000001,
 	DISP_FEATURE_HRT = 0x00000002,
+	DISP_FEATURE_PARTIAL = 0x00000004,
 } DISP_FEATURE;
 
 typedef struct disp_caps_t {

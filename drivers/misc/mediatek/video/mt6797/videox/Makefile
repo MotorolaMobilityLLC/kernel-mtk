@@ -17,6 +17,7 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o        \
 			mtk_ovl.o              \
 			disp_helper.o          \
 			disp_dts_gpio.o        \
+			disp_rect.o            \
 			mtk_hrt.o
 
 #ifneq ($(CONFIG_MTK_FB), y) # already in video/common/

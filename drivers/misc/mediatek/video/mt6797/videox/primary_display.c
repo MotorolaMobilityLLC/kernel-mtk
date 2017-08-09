@@ -72,6 +72,8 @@
 #include "mt_spm_sodi_cmdq.h"
 #include "ddp_od.h"
 #include "mtk_hrt.h"
+#include "disp_rect.h"
+#include "ddp_aal.h"
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
@@ -182,6 +184,7 @@ typedef struct {
 	cmdqBackupSlotHandle dither_status_info;
 
 	int is_primary_sec;
+	int is_partial_support;
 } display_primary_path_context;
 
 #define pgc	_get_context()
@@ -305,6 +308,62 @@ void _primary_path_switch_dst_unlock(void)
 	mutex_unlock(&(pgc->switch_dst_lock));
 }
 
+void display_validate_roi(struct disp_rect *roi)
+{
+	disp_lcm_validate_roi(pgc->plcm, &roi->x,
+		&roi->y, &roi->width, &roi->height);
+}
+
+int _is_partial_support(void)
+{
+	return pgc->is_partial_support;
+}
+
+int primary_display_partial_support(void)
+{
+	return _is_partial_support();
+}
+
+int _is_frame_partial_support(void)
+{
+	return primary_display_is_directlink_mode() && _is_partial_support();
+}
+
+void primary_display_compute_roi(const int x, const int y, const int width,
+	const int height, struct disp_rect *result)
+{
+	if (aal_is_partial_support() && primary_display_is_directlink_mode()) {
+		rect_join_coord(x, y, width, height, result, result);
+	} else {
+		result->x = 0;
+		result->y = 0;
+		result->width = primary_display_get_width();
+		result->height = primary_display_get_height();
+	}
+}
+
+int primary_display_config_full_roi(disp_ddp_path_config *pconfig, disp_path_handle disp_handle,
+	cmdqRecHandle cmdq_handle)
+{
+	struct disp_rect total_dirty_roi = { 0, 0, 0, 0};
+
+	if (_is_partial_support()) {
+		total_dirty_roi.x = 0;
+		total_dirty_roi.y = 0;
+		total_dirty_roi.width = primary_display_get_width();
+		total_dirty_roi.height = primary_display_get_height();
+		if (!rect_equal(&total_dirty_roi, &pconfig->ovl_partial_roi)) {
+			pconfig->ovl_partial_roi = total_dirty_roi;
+			dpmgr_path_update_partial_roi(disp_handle,
+					total_dirty_roi, cmdq_handle);
+
+			/* update ovl to full layer */
+			pconfig->ovl_dirty = 1;
+		}
+	}
+	return 0;
+}
+
 static int _disp_primary_path_switch_dst_mode_thread(void *data)
 {
 	while (1) {
@@ -365,6 +424,7 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes
 	unsigned int real_mva = 0;
 	unsigned long kva = 0;
 	unsigned int real_size = 0, mapped_size = 0;
+
 	static MFC_HANDLE mfc_handle;
 
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
@@ -797,10 +857,9 @@ static DISP_MODULE_ENUM _get_dst_module_by_lcm(disp_lcm_handle *plcm)
 
 	} else if (plcm->params->type == LCM_TYPE_DPI) {
 		return DISP_MODULE_DPI;
-	} else {
-		DISPERR("can't find primary path dst module\n");
-		return DISP_MODULE_UNKNOWN;
 	}
+	DISPERR("can't find primary path dst module\n");
+	return DISP_MODULE_UNKNOWN;
 }
 
 
@@ -843,17 +902,14 @@ int _should_update_lcm(void)
 	if (primary_display_cmdq_enabled()) {
 		if (primary_display_is_video_mode())
 			return 0;
-		else {
-			/* lcm_update can't use cmdq now */
-			return 0;
-		}
-	} else {
-		if (primary_display_is_video_mode())
-			return 0;
-		else
-			return 1;
 
+		/* lcm_update can't use cmdq now */
+		return 0;
 	}
+	if (primary_display_is_video_mode())
+		return 0;
+
+	return 1;
 }
 
 int _should_start_path(void)
@@ -1219,6 +1275,7 @@ static void _cmdq_build_monitor_loop(void)
 {
 	int ret = 0;
 	cmdqRecHandle g_cmdq_handle_monitor;
+
 	cmdqRecCreate(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &(g_cmdq_handle_monitor));
 	DISPMSG("primary path monitor thread cmd handle=%p\n", g_cmdq_handle_monitor);
 
@@ -1249,8 +1306,6 @@ static void _cmdq_build_monitor_loop(void)
 				     0x1401b28C);
 
 	ret = cmdqRecStartLoop(g_cmdq_handle_monitor);
-
-	return;
 }
 #endif
 
@@ -1489,6 +1544,8 @@ static void directlink_path_add_memory(WDMA_CONFIG_STRUCT *p_wdma, DISP_MODULE_E
 		pconfig->wdma_config.outputFormat = UFMT_RGB565;
 		pconfig->wdma_config.dstPitch = pconfig->wdma_config.srcWidth * 2;
 	}
+
+	primary_display_config_full_roi(pconfig, pgc->dpmgr_handle, cmdq_handle);
 
 	pconfig->wdma_dirty = 1;
 	ret = dpmgr_path_config(pgc->dpmgr_handle, pconfig, cmdq_handle);
@@ -2153,6 +2210,66 @@ static int _build_path_direct_link(void)
 	return ret;
 }
 
+void _update_layer_dirty_roi(OVL_CONFIG_STRUCT *dst, disp_input_config *src)
+{
+	if (!_is_partial_support())
+		return;
+
+	/* if layer is disable, we just needs config above params. */
+	if (src->dirty_w == 0 || src->dirty_h == 0) {
+		if (!src->layer_enable) {
+			if (dst->layer_en) {
+					/* layer enable to disable, set full dirty*/
+					DISPMSG("roi layer %d disable, change to full roi", dst->layer);
+					src->dirty_x = dst->dst_x;
+					src->dirty_y = dst->dst_y;
+					src->dirty_w = dst->dst_w;
+					src->dirty_h = dst->dst_h;
+			}
+		} else {
+			if (src->buffer_source == DISP_BUFFER_ALPHA) {
+				/* dim layer, set full dirty*/
+				DISPMSG("roi layer %d buffer change, change to full roi", dst->layer);
+				src->dirty_x = 0;
+				src->dirty_y = 0;
+				src->dirty_w = primary_display_get_width();
+				src->dirty_h = primary_display_get_height();
+			} else if (dst->addr != (unsigned long)src->src_phy_addr) {
+					DISPMSG("roi layer %d buffer change, change to full roi", dst->layer);
+					src->dirty_x = src->tgt_offset_x;
+					src->dirty_y = src->tgt_offset_y;
+					src->dirty_w = src->tgt_width;
+					src->dirty_h = src->tgt_height;
+			}
+		}
+	} else {
+		/*input dirty is picture roi, need re-compute ovl roi */
+		struct disp_rect layer_roi = {0, 0, 0, 0};
+		struct disp_rect pic_roi = {0, 0, 0, 0};
+		struct disp_rect result = {0, 0, 0, 0};
+
+		layer_roi.x = src->src_offset_x;
+		layer_roi.y = src->src_offset_y;
+		layer_roi.width = src->src_width;
+		layer_roi.height = src->src_height;
+
+		pic_roi.x = src->dirty_x;
+		pic_roi.y = src->dirty_y;
+		pic_roi.width = src->dirty_w;
+		pic_roi.height = src->dirty_h;
+
+		rect_intersect(&layer_roi, &pic_roi, &result);
+
+		src->dirty_x = result.x - layer_roi.x + src->tgt_offset_x;
+		src->dirty_y = result.y - layer_roi.y + src->tgt_offset_y;
+		src->dirty_w = result.width;
+		src->dirty_h = result.height;
+
+		DISPMSG("layer %d dirty(%d,%d,%d,%d)->(%d,%d,%d,%d)\n",
+			dst->layer, pic_roi.x, pic_roi.y, pic_roi.width, pic_roi.height,
+						result.x, result.y, result.width, result.height);
+	}
+}
 
 static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config *src)
 {
@@ -2165,6 +2282,7 @@ static int _convert_disp_input_to_ovl(OVL_CONFIG_STRUCT *dst, disp_input_config 
 		disp_aee_print("%s src(0x%p) or dst(0x%p) is null\n", __func__, src, dst);
 		return -1;
 	}
+	_update_layer_dirty_roi(dst, src);
 
 	dst->layer = src->layer_id;
 	dst->isDirty = 1;
@@ -2628,6 +2746,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	unsigned int addr = 0;
 	int ret = 0;
 	int real_hrt_level = 0;
+
 	MMProfileLogEx(ddp_mmp_get_events()->session_release, MMProfileFlagStart, 1, userdata);
 
 	/* check overlap layer */
@@ -2740,13 +2859,12 @@ static void decouple_mirror_irq_callback(DISP_MODULE_ENUM module, unsigned int r
 		}
 	}
 #endif
-
-	return;
 }
 
 static int decouple_mirror_update_rdma_config_thread(void *data)
 {
 	struct sched_param param = {.sched_priority = RTPM_PRIO_SCRN_UPDATE };
+
 	sched_setscheduler(current, SCHED_RR, &param);
 
 	disp_register_module_irq_callback(DISP_MODULE_WDMA0, decouple_mirror_irq_callback);
@@ -3239,6 +3357,10 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	pgc->lcm_refresh_rate = 60;
 	/* keep lowpower init after setting lcm_fps */
 	primary_display_lowpower_init();
+
+	if (disp_lcm_is_partial_support(pgc->plcm) && !disp_lcm_is_video_mode(pgc->plcm) &&
+			disp_helper_get_option(DISP_OPT_PARTIAL_UPDATE))
+		pgc->is_partial_support = 1;
 
 	pgc->state = DISP_ALIVE;
 
@@ -3764,6 +3886,11 @@ int primary_display_resume(void)
 		}
 
 		data_config->fps = pgc->lcm_fps;
+		data_config->ovl_partial_roi.x = 0;
+		data_config->ovl_partial_roi.x = 0;
+		data_config->ovl_partial_roi.y = 0;
+		data_config->ovl_partial_roi.width = primary_display_get_width();
+		data_config->ovl_partial_roi.height = primary_display_get_height();
 		data_config->dst_dirty = 1;
 
 		ret = dpmgr_path_config(pgc->dpmgr_handle, data_config, NULL);
@@ -3896,6 +4023,7 @@ int primary_display_ipoh_restore(void)
 	DISPCHECK("ESD check stop[end]\n");
 	if (NULL != pgc->cmdq_handle_trigger) {
 		struct TaskStruct *pTask = pgc->cmdq_handle_trigger->pRunningTask;
+
 		if (NULL != pTask) {
 			DISPCHECK("[Primary_display]display cmdq trigger loop stop[begin]\n");
 			_cmdq_stop_trigger_loop();
@@ -4326,6 +4454,39 @@ static int can_bypass_ovl(disp_ddp_path_config *data_config, int *bypass_layer_i
 	return 1;
 }
 
+static int _compute_ovl_roi(struct disp_frame_cfg_t *cfg, struct disp_rect *result)
+{
+	int i = 0;
+	int j = 0;
+	struct layer_dirty_roi *layer_roi_addr = NULL;
+	struct disp_rect layer_roi = {0, 0, 0, 0};
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		disp_input_config *input_cfg = &cfg->input_cfg[i];
+
+		if (input_cfg->dirty_roi_num) {
+
+			layer_roi_addr = (struct layer_dirty_roi *) input_cfg->dirty_roi_addr;
+			for (j = 0; j < input_cfg->dirty_roi_num; j++) {
+				layer_roi_addr += j;
+				layer_roi.x = layer_roi_addr->dirty_x;
+				layer_roi.y = layer_roi_addr->dirty_x;
+				layer_roi.width = layer_roi_addr->dirty_w;
+				layer_roi.height = layer_roi_addr->dirty_h;
+				rect_join(&layer_roi, result, result);
+			}
+		} else {
+			/* if layer disable, is it ok to set this ?*/
+			layer_roi.x = input_cfg->tgt_offset_x;
+			layer_roi.y = input_cfg->tgt_offset_y;
+			layer_roi.width = input_cfg->tgt_width;
+			layer_roi.height = input_cfg->tgt_height;
+			rect_join(&layer_roi, result, result);
+		}
+	}
+	return 0;
+}
+
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			     disp_path_handle disp_handle, cmdqRecHandle cmdq_handle)
 {
@@ -4334,12 +4495,17 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	int max_layer_id_configed = 0;
 	int bypass, bypass_layer_id = 0;
 	int hrt_level;
-
+	struct disp_rect total_dirty_roi = {0, 0, 0, 0};
+	struct disp_rect total_dirty_roi2 = {0, 0, 0, 0};
 #ifdef DEBUG_OVL_CONFIG_TIME
 	cmdqRecBackupRegisterToSlot(cmdq_handle, pgc->ovl_config_time, 0, 0x10008028);
 #endif
 	/*=== create new data_config for ovl input ===*/
 	data_config = dpmgr_path_get_last_config(disp_handle);
+
+	if (_is_partial_support())
+		_compute_ovl_roi(cfg, &total_dirty_roi2);
+
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		disp_input_config *input_cfg = &cfg->input_cfg[i];
 		OVL_CONFIG_STRUCT *ovl_cfg;
@@ -4373,6 +4539,14 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			max_layer_id_configed = layer;
 
 		data_config->ovl_layer_dirty |= (1 << i);
+
+		if (_is_partial_support()) {
+			/*update roi */
+			if (input_cfg->dirty_w != 0 && input_cfg->dirty_h != 0) {
+				primary_display_compute_roi(input_cfg->dirty_x, input_cfg->dirty_y,
+					input_cfg->dirty_w, input_cfg->dirty_h, &total_dirty_roi);
+			}
+		}
 	}
 
 	hrt_level = cfg->overlap_layer_num;
@@ -4416,9 +4590,15 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	bypass = can_bypass_ovl(data_config, &bypass_layer_id);
 	if (bypass) {
 		/* switch to rdma mode */
-		if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE)
+		if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE) {
+			total_dirty_roi.x = 0;
+			total_dirty_roi.y = 0;
+			total_dirty_roi.width = primary_display_get_width();
+			total_dirty_roi.height = primary_display_get_height();
+			primary_display_config_full_roi(data_config, disp_handle, cmdq_handle);
 			do_primary_display_switch_mode(DISP_SESSION_RDMA_MODE, pgc->session_id, 0,
 						       cmdq_handle, 0);
+		}
 	} else {
 		if (pgc->session_mode == DISP_SESSION_RDMA_MODE)
 			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0,
@@ -4450,6 +4630,24 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			if (set_one_layer(0))
 				; /* mmdvfs_notify_mmclk_switch_request(MMDVFS_EVENT_OVL_SINGLE_LAYER_EXIT); */
 		}
+	}
+	if (!ddp_debug_get_partial_update()) {
+		total_dirty_roi.x = 0;
+		total_dirty_roi.y = 0;
+		total_dirty_roi.width = primary_display_get_width();
+		total_dirty_roi.height = primary_display_get_height();
+	}
+	if (_is_frame_partial_support()) {
+		display_validate_roi(&total_dirty_roi);
+		if (!rect_equal(&total_dirty_roi, &data_config->ovl_partial_roi)) {
+			dpmgr_path_update_partial_roi(disp_handle, total_dirty_roi, cmdq_handle);
+			data_config->ovl_partial_roi = total_dirty_roi;
+		}
+		if (total_dirty_roi.width == primary_display_get_width() &&
+				total_dirty_roi.height == primary_display_get_height())
+			data_config->ovl_partial_dirty = 0;
+		else
+			data_config->ovl_partial_dirty = 1;
 	}
 
 	ret = dpmgr_path_config(disp_handle, data_config, cmdq_handle);
@@ -4833,7 +5031,7 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 	if (pgc->session_mode == sess_mode)
 		goto done;
 
-	while(primary_get_state()==DISP_BLANK) {
+	while (primary_get_state() == DISP_BLANK) {
 		_primary_path_unlock(__func__);
 		DISPMSG("%s wait for leave TUI\n", __func__);
 		primary_display_wait_not_state(DISP_BLANK, MAX_SCHEDULE_TIMEOUT);
@@ -5542,12 +5740,11 @@ UINT32 DISP_GetActiveHeight(void)
 		return 0;
 	}
 
-	if (pgc->plcm->params) {
+	if (pgc->plcm->params)
 		return pgc->plcm->params->physical_height;
-	} else {
-		DISPERR("lcm_params is null!\n");
-		return 0;
-	}
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
 }
 
 UINT32 DISP_GetActiveWidth(void)
@@ -5557,12 +5754,11 @@ UINT32 DISP_GetActiveWidth(void)
 		return 0;
 	}
 
-	if (pgc->plcm->params) {
+	if (pgc->plcm->params)
 		return pgc->plcm->params->physical_width;
-	} else {
-		DISPERR("lcm_params is null!\n");
-		return 0;
-	}
+
+	DISPERR("lcm_params is null!\n");
+	return 0;
 }
 
 LCM_PARAMS *DISP_GetLcmPara(void)
@@ -5909,6 +6105,7 @@ int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end, unsi
 		m4u_client_t *client;
 
 		struct sg_table *sg_table = &table;
+
 		sg_alloc_table(sg_table, 1, GFP_KERNEL);
 
 		sg_dma_address(sg_table->sgl) = pa_start;
@@ -6166,6 +6363,7 @@ int primary_display_switch_dst_mode(int mode)
 		goto done;
 	} else {
 		int temp_mode = 0;
+
 		if (0 != dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config,
 				     DDP_SWITCH_LCM_MODE, lcm_cmd)) {
 			pr_err("switch lcm mode fail, return directly\n");

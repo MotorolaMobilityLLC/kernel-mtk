@@ -1035,6 +1035,15 @@ static unsigned int dpmgr_is_PQ(DISP_MODULE_ENUM module)
 	return isPQ;
 }
 
+int dpmgr_path_update_partial_roi(disp_path_handle dp_handle,
+		struct disp_rect partial, void *cmdq_handle)
+{
+	DDPMSG("partial roi(%d,%d,%d,%d)\n", partial.x, partial.y,
+			partial.width, partial.height);
+	return dpmgr_path_ioctl(dp_handle, cmdq_handle, DDP_PARTIAL_UPDATE,
+			&partial);
+}
+
 int dpmgr_path_config(disp_path_handle dp_handle, disp_ddp_path_config *config, void *cmdq_handle)
 {
 	int i = 0;
@@ -1087,6 +1096,7 @@ disp_ddp_path_config *dpmgr_path_get_last_config(disp_path_handle dp_handle)
 	handle->last_config.dst_dirty = 0;
 	handle->last_config.ovl_layer_dirty = 0;
 	handle->last_config.ovl_layer_scanned = 0;
+	handle->last_config.ovl_partial_dirty = 0;
 	return &handle->last_config;
 }
 

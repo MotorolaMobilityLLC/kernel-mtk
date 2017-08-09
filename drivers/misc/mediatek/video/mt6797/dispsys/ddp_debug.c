@@ -54,6 +54,7 @@ unsigned char aal_debug_flag = 0;
 static unsigned int dbg_log_level = 2;
 static unsigned int irq_log_level;
 static unsigned int dump_to_buffer;
+static int dbg_partial_on;
 
 unsigned int gUltraEnable = 1;
 static char STR_HELP[] =
@@ -110,10 +111,10 @@ static unsigned int is_reg_addr_valid(unsigned int isVa, unsigned long addr)
 		DDPMSG("addr valid, isVa=0x%x, addr=0x%lx, module=%s!\n", isVa, addr,
 		       ddp_get_reg_module_name(i));
 		return 1;
-	} else {
-		DDPERR("is_reg_addr_valid return fail, isVa=0x%x, addr=0x%lx!\n", isVa, addr);
-		return 0;
 	}
+
+	DDPERR("is_reg_addr_valid return fail, isVa=0x%x, addr=0x%lx!\n", isVa, addr);
+	return 0;
 
 }
 
@@ -136,6 +137,7 @@ static void process_dbg_opt(const char *opt)
 
 		if (is_reg_addr_valid(1, addr) == 1) {
 			unsigned int regVal = DISP_REG_GET(addr);
+
 			DDPMSG("regr: 0x%lx = 0x%08X\n", addr, regVal);
 			sprintf(buf, "regr: 0x%lx = 0x%08X\n", addr, regVal);
 		} else {
@@ -225,6 +227,18 @@ static void process_dbg_opt(const char *opt)
 		} else {
 			goto Error;
 		}
+	} else if (0 == strncmp(opt, "partial:", 8)) {
+		char *p = (char *)opt + 8;
+		unsigned int on;
+
+		ret = kstrtouint(p, 0, &on);
+		if (ret) {
+			snprintf(buf, 50, "error to parse cmd %s\n", opt);
+			return;
+		}
+		dbg_partial_on = on;
+		sprintf(buf, "dbg_partial_on %d\n", dbg_partial_on);
+		DDPMSG("process_dbg_opt, dbg_partial_on=%d\n", dbg_partial_on);
 	} else if (0 == strncmp(opt, "pwm0:", 5) || 0 == strncmp(opt, "pwm1:", 5)) {
 		char *p = (char *)opt + 5;
 		unsigned int level;
@@ -237,6 +251,7 @@ static void process_dbg_opt(const char *opt)
 
 		if (level) {
 			disp_pwm_id_t pwm_id = DISP_PWM0;
+
 			if (opt[3] == '1')
 				pwm_id = DISP_PWM1;
 
@@ -548,6 +563,10 @@ unsigned int ddp_debug_irq_log_level(void)
 	return irq_log_level;
 }
 
+int ddp_debug_get_partial_update(void)
+{
+	return dbg_partial_on;
+}
 
 void ddp_debug_exit(void)
 {

@@ -787,6 +787,7 @@ typedef struct {
 	/* ///////////////////////// */
 
 	int (*adjust_fps)(void *cmdq, int fps, LCM_PARAMS *params);
+	void (*validate_roi)(int *x, int *y, int *width, int *height);
 
 	/* ///////////ESD_RECOVERY////////////////////// */
 	unsigned int (*esd_check)(void);

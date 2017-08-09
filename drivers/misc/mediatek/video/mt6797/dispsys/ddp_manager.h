@@ -223,6 +223,9 @@ int dpmgr_path_reset(disp_path_handle dp_handle, int encmdq);
 int dpmgr_path_config(disp_path_handle dp_handle, disp_ddp_path_config *config, void *cmdq_handle);
 
 
+int dpmgr_path_update_partial_roi(disp_path_handle dp_handle,
+		struct disp_rect partial, void *cmdq_handle);
+
 /* path flush, this will enable mutex
  * return 0.
  * dp_handle: disp path handle.

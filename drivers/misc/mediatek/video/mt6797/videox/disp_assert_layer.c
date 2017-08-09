@@ -204,6 +204,9 @@ static int show_dal_layer(int enable)
 	input->src_pitch = DAL_WIDTH;
 	input->src_fmt = DAL_FORMAT;
 	input->next_buff_idx = -1;
+	input->dirty_roi_num = 0;
+	input->dirty_w = DAL_WIDTH;
+	input->dirty_h = DAL_HEIGHT;
 
 	ret = primary_display_config_input_multiple(session_input);
 	kfree(session_input);

@@ -543,6 +543,35 @@ int aal_bypass(DISP_MODULE_ENUM module, int bypass)
 	return 0;
 }
 
+int aal_is_partial_support(void)
+{
+	return 1;
+}
+
+#if defined(CONFIG_ARCH_MT6797)
+static int _aal_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
+{
+	struct disp_rect *roi = (struct disp_rect *) arg;
+	int width = roi->width;
+	int height = roi->height;
+
+	DISP_REG_SET(cmdq, DISP_AAL_SIZE, (width << 16) | height);
+	return 0;
+}
+
+static int aal_ioctl(DISP_MODULE_ENUM module, void *handle,
+		DDP_IOCTL_NAME ioctl_cmd, void *params)
+{
+	int ret = -1;
+
+	if (ioctl_cmd == DDP_PARTIAL_UPDATE) {
+		_aal_partial_update(module, params, handle);
+		ret = 0;
+	}
+
+	return ret;
+}
+#endif
 static int aal_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
 	int ret = 0;
@@ -613,6 +642,9 @@ DDP_MODULE_DRIVER ddp_driver_aal = {
 	.set_lcm_utils = NULL,
 	.set_listener = aal_set_listener,
 	.cmd = aal_io,
+#if defined(CONFIG_ARCH_MT6797)
+	.ioctl = aal_ioctl,
+#endif
 };
 
 

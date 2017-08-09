@@ -827,6 +827,29 @@ static int disp_od_ioctl_ctlcmd(DISP_MODULE_ENUM module, int msg, unsigned long 
 	return 0;
 }
 
+#if defined(CONFIG_ARCH_MT6797)
+static int _od_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
+{
+	struct disp_rect *roi = (struct disp_rect *) arg;
+	int width = roi->width;
+	int height = roi->height;
+
+	DISP_REG_SET(cmdq, DISP_REG_OD_SIZE, (width << 16) | height);
+	return 0;
+}
+
+static int disp_od_io(DISP_MODULE_ENUM module, void *handle,
+		DDP_IOCTL_NAME ioctl_cmd, void *params)
+{
+	int ret = -1;
+
+	if (ioctl_cmd == DDP_PARTIAL_UPDATE) {
+		_od_partial_update(module, params, handle);
+		ret = 0;
+	}
+	return ret;
+}
+#endif
 
 static int disp_od_ioctl(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
@@ -1122,7 +1145,10 @@ DDP_MODULE_DRIVER ddp_driver_od = {
 	.build_cmdq      = NULL,
 	.set_lcm_utils   = NULL,
 	.cmd             = disp_od_ioctl,
-	.set_listener    = od_set_listener
+	.set_listener    = od_set_listener,
+#if defined(CONFIG_ARCH_MT6797)
+	.ioctl           = disp_od_io
+#endif
 };
 
 

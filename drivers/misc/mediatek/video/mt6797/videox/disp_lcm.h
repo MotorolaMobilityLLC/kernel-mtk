@@ -45,4 +45,6 @@ void *disp_lcm_switch_mode(disp_lcm_handle *plcm, int mode);
 int disp_lcm_set_lcm_cmd(disp_lcm_handle *plcm, void *cmdq_handle, unsigned int *lcm_cmd,
 			 unsigned int *lcm_count, unsigned int *lcm_value);
 
+int disp_lcm_is_partial_support(disp_lcm_handle *plcm);
+int disp_lcm_validate_roi(disp_lcm_handle *plcm, int *x, int *y, int *w, int *h);
 #endif

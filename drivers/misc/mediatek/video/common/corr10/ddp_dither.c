@@ -130,7 +130,29 @@ static int disp_dither_power_off(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
+#if defined(CONFIG_ARCH_MT6797)
+static int _dither_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
+{
+	struct disp_rect *roi = (struct disp_rect *) arg;
+	int width = roi->width;
+	int height = roi->height;
 
+	DISP_REG_SET(cmdq, DISP_REG_DITHER_SIZE, (width << 16) | height);
+	return 0;
+}
+
+static int dither_ioctl(DISP_MODULE_ENUM module, void *handle,
+		DDP_IOCTL_NAME ioctl_cmd, void *params)
+{
+	int ret = -1;
+
+	if (ioctl_cmd == DDP_PARTIAL_UPDATE) {
+		_dither_partial_update(module, params, handle);
+		ret = 0;
+	}
+	return ret;
+}
+#endif
 
 DDP_MODULE_DRIVER ddp_driver_dither = {
 	.config = disp_dither_config,
@@ -139,6 +161,9 @@ DDP_MODULE_DRIVER ddp_driver_dither = {
 	.deinit = disp_dither_power_off,
 	.power_on = disp_dither_power_on,
 	.power_off = disp_dither_power_off,
+#if defined(CONFIG_ARCH_MT6797)
+	.ioctl = dither_ioctl,
+#endif
 };
 
 

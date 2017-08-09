@@ -2060,6 +2060,49 @@ static int _color_set_listener(DISP_MODULE_ENUM module, ddp_module_notify notify
 	return 0;
 }
 
+#if defined(CONFIG_ARCH_MT6797)
+static int _color_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
+{
+	struct disp_rect *roi = (struct disp_rect *) arg;
+	int width = roi->width;
+	int height = roi->height;
+	int offset = C0_OFFSET;
+
+	if (module == DISP_MODULE_COLOR0) {
+		g_color0_dst_w = width;
+		g_color0_dst_h = height;
+	} else {
+		g_color1_dst_w = width;
+		g_color1_dst_h = height;
+#if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
+#ifndef CONFIG_FOR_SOURCE_PQ
+		offset = C1_OFFSET;
+		_color_reg_set(cmdq, DISP_COLOR_INTERNAL_IP_WIDTH + offset, pConfig->dst_w);	/* wrapper width */
+		_color_reg_set(cmdq, DISP_COLOR_INTERNAL_IP_HEIGHT + offset, pConfig->dst_h);	/* wrapper height */
+		return 0;
+#endif
+#endif
+	}
+	_color_reg_set(cmdq, DISP_COLOR_INTERNAL_IP_WIDTH + offset, width);	/* wrapper width */
+	_color_reg_set(cmdq, DISP_COLOR_INTERNAL_IP_HEIGHT + offset, height);	/* wrapper height */
+
+	return 0;
+}
+
+static int color_ioctl(DISP_MODULE_ENUM module, void *handle,
+		DDP_IOCTL_NAME ioctl_cmd, void *params)
+{
+	int ret = -1;
+
+	if (ioctl_cmd == DDP_PARTIAL_UPDATE) {
+		_color_partial_update(module, params, handle);
+		ret = 0;
+	}
+
+	return ret;
+}
+#endif
+
 static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmdq)
 {
 	int ret = 0;
@@ -2588,4 +2631,7 @@ DDP_MODULE_DRIVER ddp_driver_color = {
 	.set_lcm_utils = NULL,
 	.set_listener = _color_set_listener,
 	.cmd = _color_io,
+#if defined(CONFIG_ARCH_MT6797)
+	.ioctl = color_ioctl,
+#endif
 };

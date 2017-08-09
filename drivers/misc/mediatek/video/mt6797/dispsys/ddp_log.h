@@ -76,26 +76,29 @@ do {\
 
 #define DISP_LOG_V(fmt, args...)               \
 	do {                                       \
-		if (ddp_debug_dbg_log_level() >= 2)       \
+		if (ddp_debug_dbg_log_level() >= 3) {       \
 			DISP_LOG_I(fmt, ##args);            \
-		if (g_mobilelog) \
-			pr_debug("[DDP/"LOG_TAG"]"fmt, ##args); \
+			if (g_mobilelog) \
+				pr_debug("[DDP/"LOG_TAG"]"fmt, ##args); \
+		} \
 	} while (0)
 
 #define DDPIRQ(fmt, args...)                   \
 	do {                                       \
-		if (ddp_debug_irq_log_level())          \
+		if (ddp_debug_irq_log_level() >= 2) {         \
 			DISP_LOG_I(fmt, ##args);            \
-		if (g_mobilelog) \
-			pr_debug("[DDP/"LOG_TAG"]"fmt, ##args); \
+			if (g_mobilelog) \
+				pr_debug("[DDP/"LOG_TAG"]"fmt, ##args); \
+		} \
 	} while (0)
 
 #define DDPDBG(fmt, args...)                   \
 	do {                                       \
-		if (ddp_debug_dbg_log_level())          \
+		if (ddp_debug_dbg_log_level()) {          \
 			DISP_LOG_I(fmt, ##args);            \
-		if (g_mobilelog) \
-			pr_debug("[DDP/"LOG_TAG"]"fmt, ##args); \
+			if (g_mobilelog) \
+				pr_debug("[DDP/"LOG_TAG"]"fmt, ##args); \
+		} \
 	} while (0)
 
 #define DDPMSG(fmt, args...)                   \

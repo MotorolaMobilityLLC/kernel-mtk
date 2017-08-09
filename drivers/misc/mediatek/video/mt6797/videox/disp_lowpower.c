@@ -39,7 +39,7 @@
 #include "mt_smi.h"
 #include "disp_drv_log.h"
 #include "disp_lowpower.h"
-
+#include "disp_rect.h"
 
 /* device tree */
 #include <linux/of.h>
@@ -582,6 +582,19 @@ void _primary_display_enable_mmsys_clk(void)
 	data_config->dst_dirty = 1;
 	data_config->ovl_dirty = 1;
 	data_config->rdma_dirty = 1;
+	if (primary_display_partial_support()) {
+		struct disp_rect total_dirty_roi = { 0, 0, 0, 0};
+
+		total_dirty_roi.x = 0;
+		total_dirty_roi.y = 0;
+		total_dirty_roi.width = primary_display_get_width();
+		total_dirty_roi.height = primary_display_get_height();
+		if (!rect_equal(&total_dirty_roi, &data_config->ovl_partial_roi)) {
+			data_config->ovl_partial_roi = total_dirty_roi;
+			dpmgr_path_update_partial_roi(primary_get_dpmgr_handle(),
+					total_dirty_roi, NULL);
+		}
+	}
 	dpmgr_path_config(primary_get_dpmgr_handle(), data_config, NULL);
 
 	if (primary_display_is_decouple_mode()) {
@@ -922,9 +935,9 @@ void primary_display_sodi_rule_init(void)
 		spm_sodi_set_vdo_mode(1);
 		spm_sodi_mempll_pwr_mode(1);
 		spm_enable_sodi(1);
-	}
-	else
+	} else {
 		spm_enable_sodi(1);
+	}
 #endif
 #endif
 }

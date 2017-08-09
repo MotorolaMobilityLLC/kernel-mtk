@@ -35,9 +35,9 @@
 #endif
 
 #ifdef BUILD_LK
-#define LCD_DEBUG(fmt)  dprintf(CRITICAL, fmt)
+#define LCD_DEBUG(fmt, args...)  dprintf(CRITICAL, fmt, ##args)
 #else
-#define LCD_DEBUG(fmt)  pr_debug(fmt)
+#define LCD_DEBUG(fmt, args...)  pr_debug(fmt, ##args)
 #endif
 
 /* static unsigned char lcd_id_pins_value = 0xFF; */
@@ -772,6 +772,51 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 		      sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1); */
 }
 
+static inline int align_to(int value, int n, int lower_align)
+{
+	int x = value;
+
+	value = (((x) + ((n) - 1)) & ~((n) - 1));
+
+	if (lower_align) {
+		if (value > x)
+			value -= n;
+	} else {
+		if (value <= x)
+			value += n;
+	}
+	return value;
+}
+
+static void lcm_validate_roi(int *x, int *y, int *width, int *height)
+{
+	int x1 = 0;
+	/*int x2 = 0;*/
+	int y1 = *y;
+	int y2 = *height + y1 - 1;
+	int w = *width;
+	int h = *height;
+
+	w = FRAME_WIDTH;
+	/*  comfine  SP & EP value */
+	y1 = align_to(y1, 2, 1);
+	y2 = align_to(y2, 2, 0) - 1;
+	if (y2 - y1 < 6) {
+		if (y1 > 6)
+			y1 -= 6;
+		else
+			y2 += 6;
+	}
+	h = y2 - y1 + 1;
+	LCD_DEBUG("roi(%d,%d,%d,%d) to (%d,%d,%d,%d)\n",
+		*x, *y, *width, *height, x1, y1, w, h);
+
+	*x = x1;
+	*y = y1;
+	*width = w;
+	*height = h;
+
+}
 
 LCM_DRIVER r63419_wqhd_truly_phantom_cmd_lcm_drv = {
 	.name		= "r63419_wqhd_truly_phantom_2k_cmd_ok",
@@ -789,6 +834,6 @@ LCM_DRIVER r63419_wqhd_truly_phantom_cmd_lcm_drv = {
 #if (LCM_DSI_CMD_MODE)
 	.update		= lcm_update,
 #endif
-
+	.validate_roi = lcm_validate_roi,
 };
 /* END PN:DTS2013053103858 , Added by d00238048, 2013.05.31*/

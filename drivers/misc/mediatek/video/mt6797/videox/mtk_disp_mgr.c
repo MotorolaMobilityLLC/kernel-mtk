@@ -103,6 +103,7 @@ static int mtk_disp_mgr_mmap(struct file *file, struct vm_area_struct *vma)
 	const unsigned long require_size = vma->vm_end - vma->vm_start;
 	unsigned long pa_start = vma->vm_pgoff << PAGE_SHIFT;
 	unsigned long pa_end = pa_start + require_size;
+
 	DISPDBG("mmap size %ld, vmpg0ff 0x%lx, pastart 0x%lx, paend 0x%lx\n",
 		require_size, vma->vm_pgoff, pa_start, pa_end);
 
@@ -251,6 +252,7 @@ int _ioctl_create_session(unsigned long arg)
 	int ret = 0;
 	void __user *argp = (void __user *)arg;
 	disp_session_config config;
+
 	if (copy_from_user(&config, argp, sizeof(config))) {
 		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
@@ -273,6 +275,7 @@ int _ioctl_destroy_session(unsigned long arg)
 	int ret = 0;
 	void __user *argp = (void __user *)arg;
 	disp_session_config config;
+
 	if (copy_from_user(&config, argp, sizeof(config))) {
 		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
@@ -1046,6 +1049,7 @@ static int __set_output(disp_session_output_config *session_output)
 		BUG();
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
 		disp_mem_output_config primary_output;
+
 		memset((void *)&primary_output, 0, sizeof(primary_output));
 		if (session_output->config.pa) {
 			dst_mva = (unsigned long)(session_output->config.pa);
@@ -1150,12 +1154,49 @@ static int __frame_config_set_output(struct disp_frame_cfg_t *frame_cfg)
 static int __frame_config_trigger(struct disp_frame_cfg_t *frame_cfg)
 {
 	disp_session_config config;
+
 	config.session_id = frame_cfg->session_id;
 	config.need_merge = 0;
 	config.present_fence_idx = frame_cfg->present_fence_idx;
 	config.tigger_mode = frame_cfg->tigger_mode;
 
 	return __trigger_display(&config);
+}
+
+static int allocate_dirty_roi(struct disp_frame_cfg_t *cfg)
+{
+	int i = 0;
+	int num = 0;
+	int size = 0;
+	void __user *roi_addr = NULL;
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		num = cfg->input_cfg[i].dirty_roi_num;
+		roi_addr = cfg->input_cfg[i].dirty_roi_addr;
+		size = num * sizeof(struct layer_dirty_roi);
+		if (num) {
+			void *roi = kmalloc(size, GFP_KERNEL);
+
+			if (roi == NULL || copy_from_user(roi, (void __user *)roi_addr, size)) {
+				pr_err("[drity roi]: copy_from_user failed! line:%d\n", __LINE__);
+				cfg->input_cfg[i].dirty_roi_num = 0;
+			}
+			cfg->input_cfg[i].dirty_roi_addr = roi;
+		} else {
+			cfg->input_cfg[i].dirty_roi_addr = NULL;
+		}
+	}
+	return 0;
+}
+
+static int free_dirty_roi(struct disp_frame_cfg_t *cfg)
+{
+	int i = 0;
+
+	for (i = 0; i < cfg->input_layer_num; i++)
+		kfree(cfg->input_cfg[i].dirty_roi_addr);
+
+	return 0;
 }
 
 int _ioctl_frame_config(unsigned long arg)
@@ -1178,7 +1219,9 @@ int _ioctl_frame_config(unsigned long arg)
 		input_config_preprocess(frame_cfg);
 		if (frame_cfg->output_en)
 			output_config_preprocess(frame_cfg);
+		allocate_dirty_roi(frame_cfg);
 		primary_display_frame_cfg(frame_cfg);
+		free_dirty_roi(frame_cfg);
 	} else {
 		/* set input */
 		__frame_config_set_input(frame_cfg);
@@ -1287,6 +1330,11 @@ int _ioctl_get_display_caps(unsigned long arg)
 	caps_info.is_output_rotated = 1;
 #endif
 
+	if (primary_display_partial_support()) {
+		caps_info.disp_feature |= DISP_FEATURE_PARTIAL;
+		caps_info.partial_support = 1;
+	}
+
 	if (disp_helper_get_option(DISP_OPT_HRT))
 		caps_info.disp_feature |= DISP_FEATURE_HRT;
 
@@ -1386,6 +1434,7 @@ int _ioctl_set_session_mode(unsigned long arg)
 {
 	void __user *argp = (void __user *)arg;
 	disp_session_config config_info;
+
 	if (copy_from_user(&config_info, argp, sizeof(disp_session_config))) {
 		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
 		return -EFAULT;
@@ -1804,7 +1853,7 @@ static int mtk_disp_mgr_remove(struct platform_device *pdev)
 
 static void mtk_disp_mgr_shutdown(struct platform_device *pdev)
 {
-	return;
+
 }
 
 static int mtk_disp_mgr_suspend(struct platform_device *pdev, pm_message_t mesg)

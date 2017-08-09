@@ -12,6 +12,7 @@
 #include "ddp_reg.h"
 #include "ddp_ovl.h"
 #include "primary_display.h"
+#include "disp_rect.h"
 
 #define OVL_REG_BACK_MAX          (40)
 #define OVL_LAYER_OFFSET        (0x20)
@@ -269,6 +270,8 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 		unsigned int layer,
 		unsigned int is_engine_sec,
 		const OVL_CONFIG_STRUCT * const cfg,
+		const struct disp_rect * const ovl_partial_roi,
+		const struct disp_rect * const layer_partial_roi,
 		void *handle)
 {
 	unsigned int value = 0;
@@ -281,11 +284,28 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 	unsigned int offset = 0;
 	enum UNIFIED_COLOR_FMT format = cfg->fmt;
 	unsigned int src_x = cfg->src_x;
+	unsigned int src_y = cfg->src_y;
+	unsigned int dst_x = cfg->dst_x;
+	unsigned int dst_y = cfg->dst_y;
 	unsigned int dst_w = cfg->dst_w;
+	unsigned int dst_h = cfg->dst_h;
 
-	if (cfg->dst_w > OVL_MAX_WIDTH)
+	if (ovl_partial_roi != NULL) {
+		dst_x = layer_partial_roi->x - ovl_partial_roi->x;
+		dst_y = layer_partial_roi->y - ovl_partial_roi->y;
+		dst_w = layer_partial_roi->width;
+		dst_h = layer_partial_roi->height;
+		src_x = cfg->src_x + layer_partial_roi->x - cfg->dst_x;
+		src_y = cfg->src_y + layer_partial_roi->y - cfg->dst_y;
+
+		DDPDBG("layer partial (%d,%d)(%d,%d,%d,%d) to (%d,%d)(%d,%d,%d,%d)\n",
+				cfg->src_x, cfg->src_y, cfg->dst_x, cfg->dst_y, cfg->dst_w, cfg->dst_x,
+				src_x, src_y, dst_x, dst_y, dst_w, src_y);
+	}
+
+	if (dst_w > OVL_MAX_WIDTH)
 		BUG();
-	if (cfg->dst_h > OVL_MAX_HEIGHT)
+	if (dst_h > OVL_MAX_HEIGHT)
 		BUG();
 	if (layer > 3)
 		BUG();
@@ -363,7 +383,7 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_CLR + ovl_base + layer * 4, 0xff000000);
 
-	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRC_SIZE + layer_offset, cfg->dst_h << 16 | dst_w);
+	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRC_SIZE + layer_offset, dst_h << 16 | dst_w);
 
 	if (rotate) {
 		unsigned int bg_h, bg_w;
@@ -372,15 +392,15 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 		bg_w = bg_h & 0xFFFF;
 		bg_h = bg_h >> 16;
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset,
-			     ((bg_h - cfg->dst_h - cfg->dst_y) << 16) | (bg_w - dst_w - cfg->dst_x));
+			     ((bg_h - dst_h - dst_y) << 16) | (bg_w - dst_w - dst_x));
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset,
-			     cfg->addr + cfg->src_pitch * (cfg->dst_h + cfg->src_y - 1) + (src_x + dst_w) * Bpp - 1);
-		offset = (src_x + dst_w) * Bpp + (cfg->src_y + cfg->dst_h - 1) * cfg->src_pitch - 1;
+			     cfg->addr + cfg->src_pitch * (dst_h + src_y - 1) + (src_x + dst_w) * Bpp - 1);
+		offset = (src_x + dst_w) * Bpp + (src_y + dst_h - 1) * cfg->src_pitch - 1;
 	} else {
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset, (cfg->dst_y << 16) | cfg->dst_x);
+		DISP_REG_SET(handle, DISP_REG_OVL_L0_OFFSET + layer_offset, (dst_y << 16) | dst_x);
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset,
-			cfg->addr + src_x * Bpp + cfg->src_y * cfg->src_pitch);
-		offset = src_x * Bpp + cfg->src_y * cfg->src_pitch;
+			cfg->addr + src_x * Bpp + src_y * cfg->src_pitch);
+		offset = src_x * Bpp + src_y * cfg->src_pitch;
 	}
 
 	if (!is_engine_sec) {
@@ -388,7 +408,8 @@ static int ovl_layer_config(DISP_MODULE_ENUM module,
 	} else {
 		unsigned int size;
 		int m4u_port;
-		size = (cfg->dst_h - 1) * cfg->src_pitch + dst_w * Bpp;
+
+		size = (dst_h - 1) * cfg->src_pitch + dst_w * Bpp;
 		m4u_port = ovl_to_m4u_port(module);
 		if (cfg->security != DISP_SECURE_BUFFER) {
 			/* ovl is sec but this layer is non-sec */
@@ -773,10 +794,27 @@ static int ovl_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 		if (ovl_check_input_param(ovl_cfg))
 			continue;
 
-		print_layer_config_args(module, local_layer, ovl_cfg);
-		ovl_layer_config(module, local_layer, has_sec_layer, ovl_cfg, handle);
+		if (pConfig->ovl_partial_dirty) {
+			struct disp_rect layer_roi = {0, 0, 0, 0};
+			struct disp_rect layer_partial_roi = {0, 0, 0, 0};
 
-		enabled_layers |= 1 << local_layer;
+			layer_roi.x = ovl_cfg->dst_x;
+			layer_roi.y = ovl_cfg->dst_y;
+			layer_roi.width = ovl_cfg->dst_w;
+			layer_roi.height = ovl_cfg->dst_h;
+			if (rect_intersect(&layer_roi, &pConfig->ovl_partial_roi, &layer_partial_roi)) {
+				print_layer_config_args(module, local_layer, ovl_cfg);
+				ovl_layer_config(module, local_layer, has_sec_layer, ovl_cfg,
+						&pConfig->ovl_partial_roi, &layer_partial_roi, handle);
+
+				enabled_layers |= 1 << local_layer;
+			}
+		} else {
+			print_layer_config_args(module, local_layer, ovl_cfg);
+			ovl_layer_config(module, local_layer, has_sec_layer, ovl_cfg,
+					NULL, NULL, handle);
+			enabled_layers |= 1 << local_layer;
+		}
 
 	}
 
@@ -1157,6 +1195,21 @@ static int ovl_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst_
 	return 0;
 }
 
+int ovl_partial_update(DISP_MODULE_ENUM module, unsigned int bg_w,
+		unsigned int bg_h, void *handle)
+{
+	unsigned long ovl_base = ovl_base_addr(module);
+
+	if ((bg_w > OVL_MAX_WIDTH) || (bg_h > OVL_MAX_HEIGHT)) {
+		DDPERR("ovl_roi,exceed OVL max size, w=%d, h=%d\n", bg_w, bg_h);
+		ASSERT(0);
+	}
+	DDPDBG("ovl%d partial update\n", module);
+	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_ROI_SIZE, bg_h << 16 | bg_w);
+
+	return 0;
+}
+
 static int ovl_ioctl(DISP_MODULE_ENUM module, void *handle, DDP_IOCTL_NAME ioctl_cmd, void *params)
 {
 	int ret = 0;
@@ -1165,6 +1218,12 @@ static int ovl_ioctl(DISP_MODULE_ENUM module, void *handle, DDP_IOCTL_NAME ioctl
 		struct ddp_io_golden_setting_arg *gset_arg = params;
 
 		ovl_golden_setting(module, gset_arg->dst_mod_type, handle);
+	} else if (ioctl_cmd == DDP_PARTIAL_UPDATE) {
+		struct disp_rect *roi = (struct disp_rect *) params;
+
+		ovl_partial_update(module, roi->width, roi->height, handle);
+	} else {
+		ret = -1;
 	}
 
 	return ret;

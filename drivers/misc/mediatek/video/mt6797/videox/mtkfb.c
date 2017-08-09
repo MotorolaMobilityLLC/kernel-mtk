@@ -377,7 +377,11 @@ static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, disp_in
 {
 
 	dst->layer_id = src->layer_id;
-
+	dst->dirty_roi_num = 0;
+	dst->dirty_x = dst->tgt_offset_x;
+	dst->dirty_y = dst->tgt_offset_y;
+	dst->dirty_w = dst->tgt_width;
+	dst->dirty_h = dst->tgt_height;
 	if (!src->layer_enable) {
 		dst->layer_enable = 0;
 		return 0;
@@ -1331,7 +1335,6 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 					input = &session_input.config[session_input.config_layer_num++];
 					_convert_fb_layer_to_disp_input(&layerInfo[i], input);
-
 				}
 				primary_display_config_input_multiple(&session_input);
 				primary_display_trigger(1, NULL, 0);
@@ -1625,7 +1628,6 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			ret = mtkfb_ioctl(info, MTKFB_META_RESTORE_SCREEN, arg);
 			break;
 		}
-
 	case COMPAT_MTKFB_SET_OVERLAY_LAYER:
 	{
 		struct compat_fb_overlay_layer *compat_layerInfo;

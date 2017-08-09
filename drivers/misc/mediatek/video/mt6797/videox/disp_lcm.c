@@ -1263,3 +1263,32 @@ int disp_lcm_set_lcm_cmd(disp_lcm_handle *plcm, void *cmdq_handle, unsigned int 
 		return -1;
 	}
 }
+
+int disp_lcm_is_partial_support(disp_lcm_handle *plcm)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->validate_roi)
+			return 1;
+	}
+	return 0;
+}
+
+int disp_lcm_validate_roi(disp_lcm_handle *plcm, int *x, int *y, int *w, int *h)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->validate_roi) {
+			lcm_drv->validate_roi(x, y, w, h);
+			return 0;
+		}
+		DISPERR("Not support partial roi\n");
+		return -1;
+	}
+	DISPERR("validate roi lcm_drv is null\n");
+	return -1;
+}
