@@ -166,5 +166,7 @@ int fsg_sysfs_update(struct fsg_common *common, struct device *dev,
 				bool create);
 ssize_t fsg_inquiry_show(struct fsg_common *common, char *buf);
 ssize_t fsg_inquiry_store(struct fsg_common *common, const char *buf, size_t size);
+ssize_t fsg_bicr_show(struct fsg_common *common, char *buf);
+ssize_t fsg_bicr_store(struct fsg_common *common, const char *buf, size_t size);
 
 #endif /* USB_F_MASS_STORAGE_H */
