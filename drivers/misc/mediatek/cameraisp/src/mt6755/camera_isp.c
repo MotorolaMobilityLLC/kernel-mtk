@@ -967,9 +967,11 @@ static MUINT32 g_DmaErr_p1[nDMA_ERR] = { 0 };
 	usec = do_div(sec, 1000000);\
 }
 #if	1
+/* snprintf: avaLen, 1 for null termination*/
 #define	IRQ_LOG_KEEPER(irq,	ppb, logT, fmt,	...) do	{\
 	char *ptr;\
 	char *pDes;\
+	MINT32 avaLen;\
 	MUINT32	*ptr2 =	&gSvLog[irq]._cnt[ppb][logT];\
 	unsigned int str_leng;\
 	if (_LOG_ERR ==	logT) {\
@@ -981,14 +983,19 @@ static MUINT32 g_DmaErr_p1[nDMA_ERR] = { 0 };
 	} else {\
 		str_leng = 0;\
 	} \
-	ptr	= pDes = (char *)&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);	\
-	sprintf((char *)(pDes),	fmt, ##__VA_ARGS__);  \
-	if ('\0' !=	gSvLog[irq]._str[ppb][logT][str_leng - 1]) {\
-		LOG_ERR("log str over flow(%d)", irq);\
+	ptr	= pDes = (char *)&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);\
+	avaLen = str_leng - 1 - gSvLog[irq]._cnt[ppb][logT];\
+	if (avaLen > 1) {\
+		snprintf((char *)(pDes), avaLen, fmt, ##__VA_ARGS__);  \
+		if ('\0' !=	gSvLog[irq]._str[ppb][logT][str_leng - 1]) { \
+			LOG_ERR("(%d)(%d)log str over flow", irq, logT);\
+		} \
+		while (*ptr++ != '\0') {\
+			(*ptr2)++;\
+		} \
+	} else { \
+		LOG_ERR("(%d)(%d)log str avalible=0", irq, logT);\
 	} \
-	while (*ptr++ != '\0') {\
-		(*ptr2)++;\
-	}	  \
 } while	(0)
 #else
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, args...)    pr_warn(IRQTag fmt,  ##args)
@@ -9818,27 +9825,17 @@ static __tcmfunc irqreturn_t ISP_Irq_CAM(MINT32 Irq, void *DeviceId)
 static void ISP_TaskletFunc(unsigned long data)
 {
 	if (MFALSE == bSlowMotion) {
-		if (MTRUE == bRawEn) {
-			/*LOG_INF("tks_%d",
-				(sof_count[_PASS1]) ? (sof_count[_PASS1] -
-						       1) : (sof_count[_PASS1]));*/
-			IRQ_LOG_PRINTER(_IRQ, m_CurrentPPB, _LOG_INF);
-			/*LOG_INF("tke_%d",
-				(sof_count[_PASS1]) ? (sof_count[_PASS1] -
-						       1) : (sof_count[_PASS1]));*/
-		}
-		if (MTRUE == bRawDEn) {
-			/*LOG_INF("dtks_%d",
-				(sof_count[_PASS1_D]) ? (sof_count[_PASS1_D] -
-							 1) : (sof_count[_PASS1_D]));*/
-			IRQ_LOG_PRINTER(_IRQ_D, m_CurrentPPB, _LOG_INF);
-			/*LOG_INF("dtke_%d",
-				(sof_count[_PASS1_D]) ? (sof_count[_PASS1_D] -
-							 1) : (sof_count[_PASS1_D]));*/
-		}
+		IRQ_LOG_PRINTER(_IRQ, m_CurrentPPB, _LOG_INF);
+		IRQ_LOG_PRINTER(_IRQ, m_CurrentPPB, _LOG_ERR);
+
+		IRQ_LOG_PRINTER(_IRQ_D, m_CurrentPPB, _LOG_INF);
+		IRQ_LOG_PRINTER(_IRQ_D, m_CurrentPPB, _LOG_ERR);
 	} else {
 		IRQ_LOG_PRINTER(_IRQ, m_CurrentPPB, _LOG_INF);
+		IRQ_LOG_PRINTER(_IRQ, m_CurrentPPB, _LOG_ERR);
+
 		IRQ_LOG_PRINTER(_IRQ_D, m_CurrentPPB, _LOG_INF);
+		IRQ_LOG_PRINTER(_IRQ_D, m_CurrentPPB, _LOG_ERR);
 	}
 }
 /*******************************************************************************
