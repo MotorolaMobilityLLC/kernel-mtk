@@ -205,7 +205,7 @@ static inline void spi_rec_time(const char *str)
 			rec_msg_count = 0;
 		rec_msg_time[rec_msg_count] = sched_clock();
 		msg_rec[rec_msg_count][0] = '\0';
-		sprintf(tmp, "%s,pid:%4d;", str, sys_getpid());
+		snprintf(tmp, sizeof(tmp), "%s,pid:%4d;", str, sys_getpid());
 		strcat(msg_rec[rec_msg_count], tmp);
 	} else if (strncmp(str, "msgn", 4) == 0) {
 		rec_count++;
@@ -213,12 +213,12 @@ static inline void spi_rec_time(const char *str)
 			rec_count = 0;
 		rec_time = sched_clock();
 		/* msg_rec[rec_count][0] = '\0'; */
-		sprintf(tmp, "%s:%8lld;", str, rec_time - rec_msg_time[rec_count]);
+		snprintf(tmp, sizeof(tmp), "%s:%8lld;", str, rec_time - rec_msg_time[rec_count]);
 		strcat(msg_rec[rec_count], tmp);
-		/* sprintf(msg_rec[rec_count],"msg %3d: ",rec_count); */
+		/* snprintf(msg_rec[rec_count], sizeof(msg_rec[rec_count]), "msg %3d: ", rec_count); */
 		/* if want to spi interrupt action, cancel the comment */
 	}			/* else if(strncmp(str, "irqs", 4) == 0) {
-				   sprintf(tmp,"%s,%5lld:%8lld;",str,
+				   snprintf(tmp, sizeof(tmp), "%s,%5lld:%8lld;",str,
 				   sched_clock() - spi_rec_t0,sched_clock() - rec_time);
 				   if((strlen(tmp) + strlen(msg_rec[rec_count])) < (SPI_REC_STR_LEN - 64)){
 				   strcat(msg_rec[rec_count],tmp);
@@ -227,7 +227,7 @@ static inline void spi_rec_time(const char *str)
 				   }
 				   } */
 	else {
-		sprintf(tmp, "%s:%8lld;", str, sched_clock() - rec_time);
+		snprintf(tmp, sizeof(tmp), "%s:%8lld;", str, sched_clock() - rec_time);
 		if ((strlen(tmp) + strlen(msg_rec[rec_count])) < (SPI_REC_STR_LEN - 64))
 			strcat(msg_rec[rec_count], tmp);
 		else
@@ -944,7 +944,7 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms, struct spi_message *msg)
 		ret = -1;
 		goto fail;
 	}
-	sprintf(xfer_rec, "xfer,%3d", xfer->len);
+	snprintf(xfer_rec, sizeof(xfer_rec), "xfer,%3d", xfer->len);
 	spi_rec_time(xfer_rec);
 
 	ms->running = INPROGRESS;
@@ -1026,9 +1026,9 @@ static void mt_spi_next_message(struct mt_spi_t *ms)
 
 #ifdef SPI_REC_DEBUG
 	spi_speed = SPI_CLOCK_PERIED / (chip_config->low_time + chip_config->high_time);
-	sprintf(msg_addr, "msgn,%4dKHz", spi_speed);
+	snprintf(msg_addr, sizeof(msg_addr), "msgn,%4dKHz", spi_speed);
 #else
-	sprintf(msg_addr, "msgn");
+	snprintf(msg_addr, sizeof(msg_addr), "msgn");
 #endif
 
 	/* t_rec[0] = sched_clock(); */
@@ -1088,7 +1088,7 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 		msg->actual_length = 0;
 		goto out;
 	}
-	sprintf(msg_addr, "msgs:%p", msg);
+	snprintf(msg_addr, sizeof(msg_addr), "msgs:%p", msg);
 	spi_rec_time(msg_addr);
 
 	chip_config = (struct mt_chip_conf *)spidev->controller_data;
