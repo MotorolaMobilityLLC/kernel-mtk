@@ -607,7 +607,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "auxadc-main";
 		};
 
-		audiosys: audiosys@0x11220000 {
+		audiosys: audiosys@11220000 {
 			compatible = "mediatek,mt6735-audiosys";
 			reg = <0x11220000 0x10000>;
 			#clock-cells = <1>;
@@ -1273,6 +1273,182 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "usb-nop-xceiv";
 		};
 
+		audio@11220000 {
+			compatible = "mediatek,audio";
+			reg = <0x11220000 0x10000>;
+			interrupts = <0 144 0x8>;
+		};
+
+		audgpio:mt_soc_dl1_pcm@11220000 {
+			compatible = "mediatek,mt-soc-dl1-pcm";
+			reg = <0x11220000 0x1000>;
+			interrupts = <0 144 0x8>;
+			clocks = <&audiosys AUDIO_AFE>,
+				<&audiosys AUDIO_I2S>,
+				<&audiosys AUDIO_DAC>,
+				<&audiosys AUDIO_DAC_PREDIS>,
+				<&audiosys AUDIO_ADC>,
+				<&audiosys AUDIO_22M>,
+				<&audiosys AUDIO_24M>,
+				<&audiosys AUDIO_APLL_TUNER>,
+				<&audiosys AUDIO_APLL2_TUNER>,
+				<&audiosys AUDIO_TML>,
+				<&infrasys INFRA_AUDIO>,
+				<&topckgen TOP_MUX_AUD1>,
+				<&topckgen TOP_MUX_AUD2>,
+				<&topckgen TOP_AD_APLL1_CK>,
+				<&topckgen TOP_WHPLL_AUDIO_CK>,
+				<&topckgen TOP_MUX_AUDINTBUS>,
+				<&topckgen TOP_SYSPLL1_D4>,
+				<&apmixedsys APMIXED_APLL1>,
+				<&apmixedsys APMIXED_APLL2>,
+				<&clk26m>;
+			clock-names = "aud_afe_clk",
+				"aud_i2s_clk",
+				"aud_dac_clk",
+				"aud_dac_predis_clk",
+				"aud_adc_clk",
+				"aud_apll22m_clk",
+				"aud_apll24m_clk",
+				"aud_apll1_tuner_clk",
+				"aud_apll2_tuner_clk",
+				"aud_tml_clk",
+				"aud_infra_clk",
+				"aud_mux1_clk",
+				"aud_mux2_clk",
+				"top_ad_apll1_clk",
+				"top_whpll_audio_clk",
+				"top_mux_audio_int",
+				"top_sys_pll1_d4",
+				"apmixed_apll1_clk",
+				"apmixed_apll2_clk",
+				"top_clk26m_clk";
+			audclk-gpio = <143 0>;
+			audmiso-gpio = <144 0>;
+			audmosi-gpio = <145 0>;
+			vowclk-gpio = <148 0>;
+			extspkamp-gpio = <117 0>;
+			i2s1clk-gpio = <80 0>;
+			i2s1dat-gpio = <78 0>;
+			i2s1mclk-gpio = <9 0>;
+			i2s1ws-gpio = <79 0>;
+		};
+
+		mt_soc_ul1_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_capture";
+		};
+
+		mt_soc_voice_md1@11220000 {
+			compatible = "mediatek,mt_soc_pcm_voice_md1";
+		};
+
+		mt_soc_hdmi_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_hdmi";
+		};
+
+		mt_soc_uldlloopback_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_uldlloopback";
+		};
+
+		mt_soc_i2s0_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_dl1_i2s0";
+		};
+
+		mt_soc_mrgrx_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_mrgrx";
+		};
+
+		mt_soc_mrgrx_awb_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_mrgrx_awb";
+		};
+
+		mt_soc_fm_i2s_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_fm_i2s";
+		};
+
+		mt_soc_fm_i2s_awb_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_fm_i2s_awb";
+		};
+
+		mt_soc_i2s0dl1_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_dl1_i2s0Dl1";
+		};
+
+		mt_soc_dl1_awb_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_dl1_awb";
+		};
+
+		mt_soc_voice_md1_bt@11220000 {
+			compatible = "mediatek,mt_soc_pcm_voice_md1_bt";
+		};
+
+		mt_soc_voip_bt_out@11220000 {
+			compatible = "mediatek,mt_soc_pcm_dl1_bt";
+		};
+
+		mt_soc_voip_bt_in@11220000 {
+			compatible = "mediatek,mt_soc_pcm_bt_dai";
+		};
+
+		mt_soc_tdmrx_pcm@11220000 {
+			compatible = "mediatek,mt_soc_tdm_capture";
+		};
+
+		mt_soc_fm_mrgtx_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_fmtx";
+		};
+
+		mt_soc_ul2_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_capture2";
+		};
+
+		mt_soc_i2s0_awb_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_i2s0_awb";
+		};
+
+		mt_soc_voice_md2@11220000 {
+			compatible = "mediatek,mt_soc_pcm_voice_md2";
+		};
+
+		mt_soc_routing_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_routing";
+			i2s1clk-gpio = <7 6>;
+			i2s1dat-gpio = <5 6>;
+			i2s1mclk-gpio = <9 6>;
+			i2s1ws-gpio = <6 6>;
+		};
+
+		mt_soc_voice_md2_bt@11220000 {
+			compatible = "mediatek,mt_soc_pcm_voice_md2_bt";
+		};
+
+		mt_soc_hp_impedance_pcm@11220000 {
+			compatible = "mediatek,Mt_soc_pcm_hp_impedance";
+		};
+
+		mt_soc_codec_name@11220000 {
+			compatible = "mediatek,mt_soc_codec_63xx";
+		};
+
+		mt_soc_dummy_pcm@11220000 {
+			compatible = "mediatek,mt_soc_pcm_dummy";
+		};
+
+		mt_soc_codec_dummy_name@11220000 {
+			compatible = "mediatek,mt_soc_codec_dummy";
+		};
+
+		mt_soc_routing_dai_name@11220000 {
+			compatible = "mediatek,mt_soc_dai_routing";
+		};
+
+		mt_soc_dai_name@11220000 {
+			compatible = "mediatek,mt_soc_dai_stub";
+		};
+
+		mt_soc_offload_gdma@11220000 {
+			compatible = "mediatek,mt_soc_pcm_offload_gdma";
+		};
 		pwrap {
 			compatible = "mediatek,PWRAP";
 			reg = <0x10001000 0x1000>;
