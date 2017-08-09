@@ -2023,7 +2023,7 @@ void tscpu_start_thermal_timer(void)
 }
 
 #ifdef CONFIG_OF
-const long tscpu_dev_alloc_module_base_by_name(const char *name)
+long tscpu_dev_alloc_module_base_by_name(const char *name)
 {
 	unsigned long VA;
 	struct device_node *node = NULL;

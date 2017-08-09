@@ -1054,11 +1054,7 @@ static ssize_t mtkts_btsmdpa_param_write(struct file *file, const char __user *b
 			/* check unsupport pin value, if unsupport, set channel = 1 as default setting. */
 			g_RAP_ADC_channel = AUX_IN1_NTC;
 		else {
-			/* check if there is any param input, if not using default g_RAP_ADC_channel:1 */
-			if (adc_channel != 11)
-				g_RAP_ADC_channel = adc_channel;
-			else
-				g_RAP_ADC_channel = AUX_IN1_NTC;
+			g_RAP_ADC_channel = adc_channel;
 		}
 		mtkts_btsmdpa_dprintk("adc_channel=%d\n", adc_channel);
 		mtkts_btsmdpa_dprintk("g_RAP_ADC_channel=%d\n", g_RAP_ADC_channel);

@@ -1156,7 +1156,6 @@ static const struct file_operations mtkts_AP_param_fops = {
 
 static int __init mtkts_bts_init(void)
 {
-	int err = 0;
 	struct proc_dir_entry *entry = NULL;
 	struct proc_dir_entry *mtkts_AP_dir = NULL;
 
@@ -1183,9 +1182,6 @@ static int __init mtkts_bts_init(void)
 	}
 
 	return 0;
-
-	/* mtkts_AP_unregister_cooler(); */
-	return err;
 }
 
 static void __exit mtkts_bts_exit(void)

@@ -756,13 +756,14 @@ static struct thermal_cooling_device_ops *recoveryClientCooler
 static struct thermal_zone_device_ops *getClientZoneOps(struct thermal_zone_device *zdev)
 {
 	struct thermal_zone_device_ops *ret = NULL;
-	struct mtk_thermal_tz_data *tzdata = zdev->devdata;
+	struct mtk_thermal_tz_data *tzdata;
 
 	if ((NULL == zdev) || (NULL == zdev->devdata)) {
 		BUG();
 		return NULL;
 	}
 
+	tzdata = zdev->devdata;
 	mutex_lock(&tzdata->ma_lock);
 	ret = tzdata->ops;
 	mutex_unlock(&tzdata->ma_lock);
@@ -1434,7 +1435,7 @@ static long _mtkthermal_update_and_get_sma(struct mtk_thermal_tz_data *tzdata, l
 
 	if (1 == tzdata->ma_len) {
 		ret = latest_val;
-	} else {
+	} else if (1 < tzdata->ma_len) {
 		int i = 0;
 
 		tzdata->ma[(tzdata->ma_counter) % (tzdata->ma_len)] = latest_val;
@@ -2298,7 +2299,7 @@ static int mtk_cooling_wrapper_set_cur_state
 	/* Recovery client's devdata */
 	ops = recoveryClientCooler(cdev, &mcdata);
 
-	if (ops->get_cur_state)
+	if (ops != NULL && ops->get_cur_state)
 		ret = ops->get_cur_state(cdev, &cur_state);
 
 /* check conditions */
@@ -2320,7 +2321,7 @@ static int mtk_cooling_wrapper_set_cur_state
 	if (0 == state) {
 		int last_temp = 0;
 		unsigned long trip_temp = 0;
-		struct thermal_zone_device_ops *tz_ops = getClientZoneOps(mcdata->tz);
+		struct thermal_zone_device_ops *tz_ops;
 
 		if ((0 < mcdata->exit_threshold) && (mcdata->tz != NULL)) {
 			/* if exit point is set and if this cooler is still bound... */
@@ -2334,6 +2335,8 @@ static int mtk_cooling_wrapper_set_cur_state
 					last_temp = mcdata->tz->temperature;
 
 				THRML_LOG("[.set_cur_state] last_temp:%d\n", last_temp);
+
+				tz_ops = getClientZoneOps(mcdata->tz);
 
 				if (!ops) {
 					THRML_ERROR_LOG("[.set_cur_state]E tz unregistered.\n");
