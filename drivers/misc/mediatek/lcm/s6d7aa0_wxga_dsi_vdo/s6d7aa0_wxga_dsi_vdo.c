@@ -430,7 +430,7 @@ static void lcm_suspend(void)
 
 static void lcm_resume(void)
 {
-	lcm_init();
+	lcm_init_lcm();
 }
 
 LCM_DRIVER s6d7aa0_wxga_dsi_vdo_lcm_drv = {
