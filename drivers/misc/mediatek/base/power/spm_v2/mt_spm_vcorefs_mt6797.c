@@ -22,8 +22,8 @@
 #endif
 
  /* TIMEOUT */
-#define SPM_DVFS_TIMEOUT	1000
-#define SPM_SCREEN_TIMEOUT	1000
+#define SPM_DVFS_TIMEOUT	3000	/* 3ms */
+#define SPM_SCREEN_TIMEOUT	1000	/* 1ms */
 
 /* BW threshold for SPM_SW_RSV_4 */
 #define HPM_THRES_OFFSET	16
