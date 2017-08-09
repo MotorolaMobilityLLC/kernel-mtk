@@ -891,9 +891,9 @@ static void sched_tg_dequeue(struct rq *rq, struct task_struct *p)
 #endif
 
 #ifdef CONFIG_MTK_SCHED_CMP_TGS
+#ifdef CONFIG_MT_SCHED_INFO
 static void tgs_log(struct rq *rq, struct task_struct *p)
 {
-#ifdef CONFIG_MT_SCHED_INFO
 	struct task_struct *tg = p->group_leader;
 	int i, num_cluster;
 
@@ -911,8 +911,8 @@ static void tgs_log(struct rq *rq, struct task_struct *p)
 			tg->thread_group_info[0].cfs_nr_running,
 			tg->thread_group_info[0].load_avg_ratio);
 	}
-#endif
 }
+#endif
 #endif
 
 static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
