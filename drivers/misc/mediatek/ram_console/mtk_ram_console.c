@@ -21,6 +21,7 @@
 #include <linux/pstore.h>
 #include <linux/io.h>
 #include <mach/wd_api.h>
+#include "ram_console.h"
 
 #define RAM_CONSOLE_HEADER_STR_LEN 1024
 
@@ -154,10 +155,11 @@ unsigned int ram_console_size(void)
 
 #ifdef CONFIG_MTK_EMMC_SUPPORT
 #ifdef CONFIG_MTK_AEE_IPANIC
-#include <linux/mmc/sd_misc.h>
+#include <mt-plat/sd_misc.h>
 
 #define EMMC_ADDR 0X700000
 static char *ram_console2_log;
+
 void last_kmsg_store_to_emmc(void)
 {
 	int buff_size;
@@ -416,7 +418,7 @@ void ram_console_enable_console(int enabled)
 
 static int ram_console_check_header(struct ram_console_buffer *buffer)
 {
-	/*int i;*/
+	/*int i; */
 	if (!buffer || (buffer->sz_buffer != ram_console_buffer->sz_buffer)
 	    || buffer->off_pl > buffer->sz_buffer || buffer->off_lk > buffer->sz_buffer
 	    || buffer->off_linux > buffer->sz_buffer || buffer->off_console > buffer->sz_buffer) {
@@ -682,6 +684,7 @@ int ram_console_binary_reserve_memory(struct reserved_mem *rmem)
 		 (unsigned long long)rmem->size);
 	return 0;
 }
+
 RESERVEDMEM_OF_DECLARE(reserve_memory_pstore, "pstore-reserve-memory",
 		       ram_console_pstore_reserve_memory);
 RESERVEDMEM_OF_DECLARE(reserve_memory_ram_console, "ram_console-reserve-memory",
@@ -757,7 +760,7 @@ void aee_rr_rec_last_irq_enter(int cpu, int irq, u64 jiffies)
 		LAST_RR_SET_WITH_ID(last_irq_enter, cpu, irq);
 		LAST_RR_SET_WITH_ID(jiffies_last_irq_enter, cpu, jiffies);
 	}
-	mb();	/*TODO:need add comments*/
+	mb();			/*TODO:need add comments */
 }
 
 void aee_rr_rec_last_irq_exit(int cpu, int irq, u64 jiffies)
@@ -768,7 +771,7 @@ void aee_rr_rec_last_irq_exit(int cpu, int irq, u64 jiffies)
 		LAST_RR_SET_WITH_ID(last_irq_exit, cpu, irq);
 		LAST_RR_SET_WITH_ID(jiffies_last_irq_exit, cpu, jiffies);
 	}
-	mb();	/*TODO:need add comments*/
+	mb();			/*TODO:need add comments */
 }
 
 void aee_rr_rec_last_sched_jiffies(int cpu, u64 jiffies, const char *comm)
@@ -779,7 +782,7 @@ void aee_rr_rec_last_sched_jiffies(int cpu, u64 jiffies, const char *comm)
 		LAST_RR_SET_WITH_ID(jiffies_last_sched, cpu, jiffies);
 		LAST_RR_MEMCPY_WITH_ID(last_sched_comm, cpu, comm, TASK_COMM_LEN);
 	}
-	mb();	/*TODO:need add comments*/
+	mb();			/*TODO:need add comments */
 }
 
 void aee_rr_rec_hoplug(int cpu, u8 data1, u8 data2)
@@ -877,7 +880,7 @@ unsigned int *aee_rr_rec_mcdi_wfi(void)
 	else
 		return NULL;
 #endif
-		return NULL;
+	return NULL;
 }
 
 unsigned long *aee_rr_rec_cpu_dormant(void)

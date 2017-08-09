@@ -1,5 +1,5 @@
-#ifndef __MTK_RAM_CONSOLE_H__
-#define __MTK_RAM_CONSOLE_H__
+#ifndef __RAM_CONSOLE_H__
+#define __RAM_CONSOLE_H__
 extern int card_dump_func_write(unsigned char *buf, unsigned int len, unsigned long long offset,
 				int dev);
 extern int boot_finish;
