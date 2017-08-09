@@ -476,7 +476,8 @@
 	};
 
 	apxgpt@10008000 {
-		compatible = "mediatek,apxgpt";
+		compatible = "mediatek,mt6757-timer",
+			     "mediatek,mt6577-timer";
 		reg = <0 0x10008000 0 0x1000>;
 		interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_LOW>;
 		clock-frequency = <13000000>;

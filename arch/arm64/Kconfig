@@ -366,6 +366,7 @@ config ARCH_MT6757
 	select MTK_CPU_STRESS
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_EIC_HISTORY_DUMP
+	select MTK_TIMER
 	help
 	  This enables support for MediaTek MT6757
 	  Support for aarch64/aarch32 Architecture

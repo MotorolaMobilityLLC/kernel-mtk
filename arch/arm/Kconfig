@@ -1010,6 +1010,7 @@ config ARCH_MT6757
 	select MTK_LM_MODE
 	select MTK_EIC_HISTORY_DUMP
 	select ARM_HAS_SG_CHAIN
+	select MTK_TIMER
 	help
 	  This enables support for MediaTek MT6757
 	  Support for aarch64/aarch32 Architecture
