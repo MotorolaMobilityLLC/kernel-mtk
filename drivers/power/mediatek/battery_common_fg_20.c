@@ -83,7 +83,7 @@
 #endif
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
-#include "cust_pe.h"
+#include <mach/mt_pe.h>
 #endif
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* Battery Logging Entry */
@@ -146,7 +146,7 @@ unsigned int g_batt_temp_status = TEMP_POS_NORMAL;
 
 kal_bool battery_suspended = KAL_FALSE;
 
-unsigned int battery_duration_time[DURATION_NUM] = {0};	/* sec */
+struct timespec battery_duration_time[DURATION_NUM];	/* sec */
 unsigned int wake_up_smooth_time = 0;	/* sec */
 unsigned int battery_tracking_time;
 
@@ -312,53 +312,26 @@ void mt_battery_update_time(struct timespec *pre_time, BATTERY_TIME_ENUM duratio
 	time.tv_sec = 0;
 	time.tv_nsec = 0;
 	get_monotonic_boottime(&time);
-	/* nt = time.tv_sec*1000000000LL+time.tv_nsec; */
-	battery_duration_time[duration_type] = time.tv_sec-pre_time->tv_sec;
+
+	battery_duration_time[duration_type] = timespec_sub(time, *pre_time);
 
 	battery_log(BAT_LOG_CRTI,
-	"[Battery] mt_battery_update_duration_time, last_time=%d current_time=%d duration=%d\n",
-	(int)pre_time->tv_sec, (int)time.tv_sec, battery_duration_time[duration_type]);
+	"[Battery] mt_battery_update_duration_time , last_time=%d current_time=%d duration=%d\n",
+	(int)pre_time->tv_sec, (int)time.tv_sec, (int)battery_duration_time[duration_type].tv_sec);
 
 	pre_time->tv_sec = time.tv_sec;
+	pre_time->tv_nsec = time.tv_nsec;
+
 }
 
 unsigned int mt_battery_get_duration_time(BATTERY_TIME_ENUM duration_type)
 {
-	return battery_duration_time[duration_type];
+	return battery_duration_time[duration_type].tv_sec;
 }
 
-void check_battery_exist(void)
+struct timespec mt_battery_get_duration_time_act(BATTERY_TIME_ENUM duration_type)
 {
-#if defined(CONFIG_DIS_CHECK_BATTERY)
-	battery_log(BAT_LOG_CRTI, "[BATTERY] Disable check battery exist.\n");
-#else
-	unsigned int baton_count = 0;
-	unsigned int charging_enable = KAL_FALSE;
-	unsigned int battery_status;
-	unsigned int i;
-
-	for (i = 0; i < 3; i++) {
-		battery_charging_control(CHARGING_CMD_GET_BATTERY_STATUS, &battery_status);
-		baton_count += battery_status;
-
-	}
-
-	if (baton_count >= 3) {
-		if ((g_platform_boot_mode == META_BOOT) || (g_platform_boot_mode == ADVMETA_BOOT)
-		    || (g_platform_boot_mode == ATE_FACTORY_BOOT)) {
-			battery_log(BAT_LOG_FULL,
-					    "[BATTERY] boot mode = %d, bypass battery check\n",
-					    g_platform_boot_mode);
-		} else {
-			battery_log(BAT_LOG_CRTI,
-					    "[BATTERY] Battery is not exist, power off FAN5405 and system (%d)\n",
-					    baton_count);
-
-			battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
-			battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
-		}
-	}
-#endif
+	return battery_duration_time[duration_type];
 }
 
 void charging_suspend_enable(void)
@@ -458,7 +431,7 @@ void wake_up_bat(void)
 
 	chr_wake_up_bat = KAL_TRUE;
 	bat_routine_thread_timeout = KAL_TRUE;
-	sleep_total_time = 0;
+	battery_meter_reset_sleep_time();
 	wake_up(&bat_routine_wq);
 }
 EXPORT_SYMBOL(wake_up_bat);
@@ -2866,7 +2839,8 @@ void bat_thread_wakeup(void)
 
 	bat_routine_thread_timeout = KAL_TRUE;
 	bat_meter_timeout = KAL_TRUE;
-	sleep_total_time = 0;
+	battery_meter_reset_sleep_time();
+
 	wake_up(&bat_routine_wq);
 }
 
@@ -3101,8 +3075,39 @@ static const struct file_operations adc_cali_fops = {
 	.release = adc_cali_release,
 };
 
+void check_battery_exist(void)
+{
+#if defined(CONFIG_DIS_CHECK_BATTERY)
+	battery_log(BAT_LOG_CRTI, "[BATTERY] Disable check battery exist.\n");
+#else
+	unsigned int baton_count = 0;
+	unsigned int charging_enable = KAL_FALSE;
+	unsigned int battery_status;
+	unsigned int i;
 
+	for (i = 0; i < 3; i++) {
+		battery_charging_control(CHARGING_CMD_GET_BATTERY_STATUS, &battery_status);
+		baton_count += battery_status;
 
+	}
+
+	if (baton_count >= 3) {
+		if ((g_platform_boot_mode == META_BOOT) || (g_platform_boot_mode == ADVMETA_BOOT)
+		    || (g_platform_boot_mode == ATE_FACTORY_BOOT)) {
+			battery_log(BAT_LOG_FULL,
+					    "[BATTERY] boot mode = %d, bypass battery check\n",
+					    g_platform_boot_mode);
+		} else {
+			battery_log(BAT_LOG_CRTI,
+					    "[BATTERY] Battery is not exist, power off FAN5405 and system (%d)\n",
+					    baton_count);
+
+			battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
+			battery_charging_control(CHARGING_CMD_SET_POWER_OFF, NULL);
+		}
+	}
+#endif
+}
 
 
 int charger_hv_detect_sw_thread_handler(void *unused)
@@ -3305,6 +3310,10 @@ static int battery_probe(struct platform_device *dev)
 	battery_log(BAT_LOG_CRTI, "[BAT_probe] adc_cali prepare : done !!\n ");
 
 	get_charging_control();
+
+#if defined(BATTERY_SW_INIT)
+	battery_charging_control(CHARGING_CMD_SW_INIT, NULL);
+#endif
 
 	battery_charging_control(CHARGING_CMD_GET_PLATFORM_BOOT_MODE, &g_platform_boot_mode);
 	battery_log(BAT_LOG_CRTI, "[BAT_probe] g_platform_boot_mode = %d\n ",
@@ -3520,7 +3529,7 @@ static void battery_timer_resume(void)
 	if (is_pcm_timer_trigger == KAL_TRUE || bat_spm_timeout) {
 		mutex_lock(&bat_mutex);
 		bat_spm_timeout = FALSE;
-		sleep_total_time = 0;
+		battery_meter_reset_sleep_time();
 		BAT_thread();
 		mutex_unlock(&bat_mutex);
 	} else {
@@ -3539,6 +3548,26 @@ static void battery_timer_resume(void)
 	/* restore timer */
 	hrtimer_start(&battery_kthread_timer, ktime, HRTIMER_MODE_REL);
 	hrtimer_start(&charger_hv_detect_timer, hvtime, HRTIMER_MODE_REL);
+/*
+	battery_log(BAT_LOG_CRTI,
+		 "[fg reg] current:0x%x 0x%x low:0x%x 0x%x high:0x%x 0x%x\r\n",
+		pmic_get_register_value(MT6351_PMIC_FG_CAR_18_03), pmic_get_register_value(MT6351_PMIC_FG_CAR_34_19),
+		pmic_get_register_value(MT6351_PMIC_FG_BLTR_15_00), pmic_get_register_value(MT6351_PMIC_FG_BLTR_31_16),
+		pmic_get_register_value(MT6351_PMIC_FG_BFTR_15_00), pmic_get_register_value(MT6351_PMIC_FG_BFTR_31_16));
+
+	{
+		signed int cur, low, high;
+
+		cur = (pmic_get_register_value(MT6351_PMIC_FG_CAR_18_03));
+		cur |= ((pmic_get_register_value(MT6351_PMIC_FG_CAR_34_19)) & 0xffff) << 16;
+		low = (pmic_get_register_value(MT6351_PMIC_FG_BLTR_15_00));
+		low |= ((pmic_get_register_value(MT6351_PMIC_FG_BLTR_31_16)) & 0xffff) << 16;
+		high = (pmic_get_register_value(MT6351_PMIC_FG_BFTR_15_00));
+		high |= ((pmic_get_register_value(MT6351_PMIC_FG_BFTR_31_16)) & 0xffff) << 16;
+		battery_log(BAT_LOG_CRTI,
+			 "[fg reg] current:%d low:%d high:%d\r\n", cur, low, high);
+	}
+*/
 
 	battery_suspended = KAL_FALSE;
 	battery_log(BAT_LOG_CRTI, "@bs=0@\n");

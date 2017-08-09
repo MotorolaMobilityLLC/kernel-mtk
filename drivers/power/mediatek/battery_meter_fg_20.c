@@ -78,7 +78,8 @@ kal_bool gFG_Is_Charging_init = KAL_FALSE;
 signed int g_auxadc_solution = 0;
 unsigned int g_spm_timer = 600;
 bool bat_spm_timeout = false;
-unsigned int sleep_total_time = NORMAL_WAKEUP_PERIOD;
+struct timespec g_sleep_total_time;
+
 #ifdef MTK_ENABLE_AGING_ALGORITHM
 unsigned int suspend_total_time = 0;
 #endif
@@ -96,6 +97,12 @@ static kal_bool init_flag;
 void battery_meter_set_init_flag(kal_bool flag)
 {
 	init_flag = flag;
+}
+
+void battery_meter_reset_sleep_time(void)
+{
+	g_sleep_total_time.tv_sec = 0;
+	g_sleep_total_time.tv_nsec = 0;
 }
 
 /* PMIC AUXADC Related Variable */
@@ -1807,6 +1814,10 @@ void fgauge_algo_run_get_init_data(void)
 
 
 #if defined(SOC_BY_SW_FG)
+void update_fg_dbg_tool_value(void)
+{
+}
+
 void fgauge_algo_run_get_init_data(void)
 {
 	int i = 0;
@@ -1863,7 +1874,24 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 
 	return g_spm_timer;
 #else
+#ifdef FG_BAT_INT
 
+	int ret = 0;
+	signed int car_instant = 0;
+
+	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CAR_ACT, &car_instant);
+
+	if (wake_up_smooth_time == 0)
+		g_spm_timer = NORMAL_WAKEUP_PERIOD;
+	else
+		g_spm_timer = wake_up_smooth_time;
+
+bm_print(BM_LOG_CRTI,
+	"[get_dynamic_period] g_spm_timer:%d wake_up_smooth_time:%d vbat:%d car:%d\r\n",
+	g_spm_timer, wake_up_smooth_time, g_sw_vbat_temp, car_instant);
+	return g_spm_timer;
+
+#else
 	signed int car_instant = 0;
 	signed int current_instant = 0;
 	static signed int car_sleep = 0x12345678;
@@ -1943,7 +1971,7 @@ signed int get_dynamic_period(int first_use, int first_wakeup_time, int battery_
 
 	bm_debug("vbat_val=%d, g_spm_timer=%d\n", vbat_val, g_spm_timer);
 	return g_spm_timer;
-
+#endif
 #endif
 }
 
@@ -2843,6 +2871,23 @@ static ssize_t store_FG_g_fg_dbg_percentage(struct device *dev, struct device_at
 static DEVICE_ATTR(FG_g_fg_dbg_percentage, 0664, show_FG_g_fg_dbg_percentage,
 		   store_FG_g_fg_dbg_percentage);
 /* ------------------------------------------------------------------------------------------- */
+static ssize_t show_FG_g_fg_dbg_percentage_uisoc(struct device *dev, struct device_attribute *attr,
+					   char *buf)
+{
+	bm_debug("[FG] g_fg_dbg_percentage :%d\n", BMT_status.UI_SOC);
+	return sprintf(buf, "%d\n", BMT_status.UI_SOC);
+}
+
+static ssize_t store_FG_g_fg_dbg_percentage_uisoc(struct device *dev, struct device_attribute *attr,
+					    const char *buf, size_t size)
+{
+	return size;
+}
+
+static DEVICE_ATTR(FG_g_fg_dbg_percentage_uisoc, 0664, show_FG_g_fg_dbg_percentage_uisoc,
+		   store_FG_g_fg_dbg_percentage_uisoc);
+
+/* ------------------------------------------------------------------------------------------- */
 static ssize_t show_FG_g_fg_dbg_percentage_fg(struct device *dev, struct device_attribute *attr,
 					      char *buf)
 {
@@ -3228,9 +3273,16 @@ static DEVICE_ATTR(FG_daemon_log_level, 0664, show_FG_daemon_log_level, store_FG
 
 #ifdef FG_BAT_INT
 unsigned char reset_fg_bat_int = KAL_TRUE;
+
+signed int fg_bat_int_coulomb_pre;
+signed int fg_bat_int_coulomb;
+
+
 void fg_bat_int_handler(void)
 {
-	battery_log(BAT_LOG_CRTI, "fg_bat_int_handler >>\n");
+	battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CAR_ACT, &fg_bat_int_coulomb);
+	battery_log(BAT_LOG_CRTI, "fg_bat_int_handler %d %d\n", fg_bat_int_coulomb_pre, fg_bat_int_coulomb);
+
 	reset_fg_bat_int = KAL_TRUE;
 	if (bat_is_charger_exist() == KAL_FALSE) {
 		battery_log(BAT_LOG_CRTI, "wake up user space >>\n");
@@ -3284,6 +3336,7 @@ static int battery_meter_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_g_fg_dbg_d1);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_g_fg_dbg_percentage);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_g_fg_dbg_percentage_fg);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_g_fg_dbg_percentage_uisoc);
 	ret_device_file =
 	    device_create_file(&(dev->dev), &dev_attr_FG_g_fg_dbg_percentage_voltmode);
 #ifdef MTK_ENABLE_AGING_ALGORITHM
@@ -3316,8 +3369,8 @@ static int battery_meter_probe(struct platform_device *dev)
 	batt_meter_init_cust_data(dev);
 
 #if defined(FG_BAT_INT)
-		pmic_register_interrupt_callback(41, fg_bat_int_handler);
-		pmic_register_interrupt_callback(40, fg_bat_int_handler);
+		/*pmic_register_interrupt_callback(41, fg_bat_int_handler);*/
+		/*pmic_register_interrupt_callback(40, fg_bat_int_handler);*/
 #endif
 
 
@@ -3349,11 +3402,15 @@ static int battery_meter_suspend(struct platform_device *dev, pm_message_t state
 	#if defined(CONFIG_POWER_EXT)
 	#elif defined(SOC_BY_HW_FG)
 		if (reset_fg_bat_int == KAL_TRUE) {
-			bm_debug("[battery_meter_suspend]enable battery_meter_set_columb_interrupt\n");
-			battery_meter_set_columb_interrupt(gFG_BATT_CAPACITY/100);
+			battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CAR_ACT, &fg_bat_int_coulomb_pre);
+			bm_notice("[battery_meter_suspend]enable battery_meter_set_columb_interrupt %d\n",
+				batt_meter_cust_data.q_max_pos_25);
+			battery_meter_set_columb_interrupt(batt_meter_cust_data.q_max_pos_25/100);
+			/*battery_meter_set_columb_interrupt(1);*/
 			reset_fg_bat_int = KAL_FALSE;
 		} else {
-			bm_debug("[battery_meter_suspend]do not enable battery_meter_set_columb_interrupt\n");
+			bm_notice("[battery_meter_suspend]do not enable battery_meter_set_columb_interrupt %d\n",
+				batt_meter_cust_data.q_max_pos_25);
 			battery_meter_set_columb_interrupt(0x1ffff);
 		}
 	#endif
@@ -3371,15 +3428,16 @@ static int battery_meter_suspend(struct platform_device *dev, pm_message_t state
 
 		mt_battery_update_time(&car_time, CAR_TIME);
 		add_time = mt_battery_get_duration_time(CAR_TIME);
-		if ((sleep_total_time < g_spm_timer) && sleep_total_time != 0) {
+		if ((g_sleep_total_time.tv_sec < g_spm_timer) && g_sleep_total_time.tv_sec != 0) {
 			if (wake_up_smooth_time == 0)
 				return 0;
-			else if (sleep_total_time < wake_up_smooth_time)
+			else if (g_sleep_total_time.tv_sec < wake_up_smooth_time)
 				return 0;
 		}
-		sleep_total_time = 0;
+		battery_meter_reset_sleep_time();
 		battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &g_hw_ocv_before_sleep);
-		bm_info("[battery_meter_suspend]sleep_total_time = %d, last_time = %d\n", sleep_total_time, last_time);
+		bm_info("[battery_meter_suspend]sleep_total_time = %d, last_time = %d\n",
+			(int)g_sleep_total_time.tv_sec, last_time);
 	}
 #endif
 
@@ -3400,23 +3458,23 @@ static int battery_meter_resume(struct platform_device *dev)
 		return 0;
 #endif
 	mt_battery_update_time(&suspend_time, SUSPEND_TIME);
-	duration_time = mt_battery_get_duration_time(SUSPEND_TIME);
-	add_time = duration_time;
-	sleep_total_time += duration_time;
+
+	add_time = mt_battery_get_duration_time_act(SUSPEND_TIME).tv_sec;
+	g_sleep_total_time = timespec_add(g_sleep_total_time, mt_battery_get_duration_time_act(SUSPEND_TIME));
 
 	bm_info("[battery_meter_resume] sleep time = %d, duration_time = %d, wake_up_smooth_time %d, g_spm_timer = %d\n",
-			    sleep_total_time, duration_time, wake_up_smooth_time, g_spm_timer);
+			    (int)g_sleep_total_time.tv_sec, duration_time, wake_up_smooth_time, g_spm_timer);
 
 #if defined(SOC_BY_HW_FG)
 #ifdef MTK_ENABLE_AGING_ALGORITHM
-	if (sleep_total_time < g_spm_timer) {
+	if (g_sleep_total_time.tv_sec < g_spm_timer) {
 		if (wake_up_smooth_time == 0) {
 			if (bat_is_charger_exist() == KAL_FALSE) {
 				/* self_correct_dod_scheme(duration_time); */
 				wakeup_fg_algo(FG_RESUME);
 			}
 			return 0;
-		} else if (sleep_total_time < wake_up_smooth_time) {
+		} else if (g_sleep_total_time.tv_sec < wake_up_smooth_time) {
 			if (bat_is_charger_exist() == KAL_FALSE) {
 				/* self_correct_dod_scheme(duration_time); */
 				wakeup_fg_algo(FG_RESUME);
@@ -3426,12 +3484,16 @@ static int battery_meter_resume(struct platform_device *dev)
 	}
 #endif
 #elif defined(SOC_BY_SW_FG)
-	if (sleep_total_time < g_spm_timer)
+	if (g_sleep_total_time.tv_sec < g_spm_timer)
 		return 0;
 #endif
 	bm_info("* battery_meter_resume!! * suspend_time %d smooth_time %d g_spm_timer %d\n",
-	sleep_total_time, wake_up_smooth_time, g_spm_timer);
+	(int)g_sleep_total_time.tv_sec, wake_up_smooth_time, g_spm_timer);
 	bat_spm_timeout = true;
+
+	if (g_sleep_total_time.tv_sec >= wake_up_smooth_time)
+		wake_up_smooth_time = 0;
+
 #if defined(WY_CHECK)
 	battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_OCV, &hw_ocv_after_sleep);
 	if (sleep_total_time > 3600) {	/* 1hr */
@@ -3441,14 +3503,14 @@ static int battery_meter_resume(struct platform_device *dev)
 			oam_car_1 = 0;
 			oam_car_2 = 0;
 		} else {
-			oam_car_1 = oam_car_1 + (40 * (sleep_total_time)/3600);	/* 0.1mAh */
-			oam_car_2 = oam_car_2 + (40 * (sleep_total_time)/3600);	/* 0.1mAh */
+			oam_car_1 = oam_car_1 + (40 * (g_sleep_total_time.tv_sec)/3600); /*0.1mAh*/
+			oam_car_2 = oam_car_2 + (40 * (g_sleep_total_time.tv_sec)/3600); /*0.1mAh*/
 		}
 	}
     /* FIXME */
 
 	bm_info("sleeptime=(%d)s, be_ocv=(%d), af_ocv=(%d), D0=(%d), car1=(%d), car2=(%d)\n",
-		 sleep_total_time,
+		 g_sleep_total_time.tv_sec,
 		 g_hw_ocv_before_sleep, hw_ocv_after_sleep, oam_d0, oam_car_1, oam_car_2);
 #endif
 #endif
@@ -3576,7 +3638,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			ret_msg->fgd_data_len += sizeof(gFG_current_init);
 			memcpy(ret_msg->fgd_data, &gFG_current_init, sizeof(gFG_current_init));
 
-			bm_debug("[fg_res] fg_current = %d\n", gFG_current_init);
+			bm_debug("[fg_res] init fg_current = %d\n", gFG_current_init);
 			gFG_current = gFG_current_init;
 		}
 		break;
@@ -4056,7 +4118,11 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		{
 			memcpy(&init_flag, &msg->fgd_data[0], sizeof(init_flag));
 
-			bm_debug("[fg_res] init_flag = %d\n", init_flag);
+			bm_notice("[fg_res] init_flag = %d\n", init_flag);
+			if (init_flag == 0) {
+				fgauge_algo_run_get_init_data();
+				bm_notice("[fg_res] init_flag = %d\n", init_flag);
+			}
 		}
 		break;
 

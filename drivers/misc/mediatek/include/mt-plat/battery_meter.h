@@ -372,6 +372,8 @@ extern unsigned int get_pmic_mt6325_cid(void);
 
 extern void fgauge_algo_run_get_init_data(void);
 extern void battery_meter_set_init_flag(kal_bool flag);
+extern void battery_meter_reset_sleep_time(void);
+
 
 #if defined(CONFIG_MTK_HAFG_20)
 unsigned int get_cv_voltage(void);

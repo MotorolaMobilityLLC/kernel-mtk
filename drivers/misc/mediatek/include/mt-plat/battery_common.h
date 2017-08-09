@@ -331,6 +331,10 @@ extern void set_usb_current_unlimited(bool enable);
 extern bool get_usb_current_unlimited(void);
 extern CHARGER_TYPE mt_get_charger_type(void);
 
+#if defined(CONFIG_MTK_HAFG_20)
+extern struct timespec mt_battery_get_duration_time_act(BATTERY_TIME_ENUM duration_type);
+#endif
+
 extern unsigned int mt_battery_get_duration_time(BATTERY_TIME_ENUM duration_type);
 extern void mt_battery_update_time(struct timespec *pre_time, BATTERY_TIME_ENUM duration_type);
 extern unsigned int mt_battery_shutdown_check(void);
