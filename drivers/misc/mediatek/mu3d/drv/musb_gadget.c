@@ -596,7 +596,7 @@ static int musb_gadget_enable(struct usb_ep *ep, const struct usb_endpoint_descr
 	if (!ep || !desc)
 		return -EINVAL;
 
-	os_printk(K_INFO, "musb_gadget_enable %s\n", ep->name);
+	os_printk(K_DEBUG, "musb_gadget_enable %s\n", ep->name);
 
 	musb_ep = to_musb_ep(ep);
 	hw_ep = musb_ep->hw_ep;
@@ -738,10 +738,10 @@ static int musb_gadget_enable(struct usb_ep *ep, const struct usb_endpoint_descr
 	status = 0;
 
 	musb->active_ep++;
-	os_printk(K_INFO, "[U3D]%s active_ep=%d\n", __func__, musb->active_ep);
+	os_printk(K_DEBUG, "[U3D]%s active_ep=%d\n", __func__, musb->active_ep);
 
 	/* pr_debug("%s periph: enabled %s for %s %s, %smaxpacket %d\n", */
-	os_printk(K_INFO, "[U3D]%s periph: enabled %s for %s %s, %smaxpacket %d\n",
+	os_printk(K_DEBUG, "[U3D]%s periph: enabled %s for %s %s, %smaxpacket %d\n",
 		  musb_driver_name, musb_ep->end_point.name, ({
 				char *s;
 

@@ -1129,7 +1129,7 @@ void mu3d_hal_start_qmu(DEV_INT32 Q_num, USB_DIR dir)
 		os_writel(U3D_QEMIESR, os_readl(U3D_QEMIESR) | QMU_TX_EMPTY(Q_num));
 		os_writel(U3D_TQERRIESR0, QMU_TX_LEN_ERR(Q_num) | QMU_TX_CS_ERR(Q_num));
 
-		qmu_printk(K_INFO, "USB_QMU_TQCSR:0x%08X\n", os_readl(USB_QMU_TQCSR(Q_num)));
+		qmu_printk(K_DEBUG, "USB_QMU_TQCSR:0x%08X\n", os_readl(USB_QMU_TQCSR(Q_num)));
 
 		if (os_readl(USB_QMU_TQCSR(Q_num)) & QMU_Q_ACTIVE) {
 			qmu_printk(K_INFO, "Tx %d Active Now!\n", Q_num);
@@ -1138,7 +1138,7 @@ void mu3d_hal_start_qmu(DEV_INT32 Q_num, USB_DIR dir)
 
 		os_writel(USB_QMU_TQCSR(Q_num), QMU_Q_START);
 
-		qmu_printk(K_INFO, "USB_QMU_TQCSR:0x%08X\n", os_readl(USB_QMU_TQCSR(Q_num)));
+		qmu_printk(K_DEBUG, "USB_QMU_TQCSR:0x%08X\n", os_readl(USB_QMU_TQCSR(Q_num)));
 	} else if (dir == USB_RX) {
 		USB_WriteCsr32(U3D_RX1CSR0, Q_num,
 			       USB_ReadCsr32(U3D_RX1CSR0, Q_num) | (RX_DMAREQEN));
@@ -1165,7 +1165,7 @@ void mu3d_hal_start_qmu(DEV_INT32 Q_num, USB_DIR dir)
 		os_writel(U3D_RQERRIESR0, QMU_RX_LEN_ERR(Q_num) | QMU_RX_CS_ERR(Q_num));
 		os_writel(U3D_RQERRIESR1, QMU_RX_EP_ERR(Q_num) | QMU_RX_ZLP_ERR(Q_num));
 
-		qmu_printk(K_INFO, "USB_QMU_RQCSR:0x%08X\n", os_readl(USB_QMU_RQCSR(Q_num)));
+		qmu_printk(K_DEBUG, "USB_QMU_RQCSR:0x%08X\n", os_readl(USB_QMU_RQCSR(Q_num)));
 
 		if (os_readl(USB_QMU_RQCSR(Q_num)) & QMU_Q_ACTIVE) {
 			qmu_printk(K_INFO, "Rx %d Active Now!\n", Q_num);
@@ -1174,7 +1174,7 @@ void mu3d_hal_start_qmu(DEV_INT32 Q_num, USB_DIR dir)
 
 		os_writel(USB_QMU_RQCSR(Q_num), QMU_Q_START);
 
-		qmu_printk(K_INFO, "USB_QMU_RQCSR:0x%08X\n", os_readl(USB_QMU_RQCSR(Q_num)));
+		qmu_printk(K_DEBUG, "USB_QMU_RQCSR:0x%08X\n", os_readl(USB_QMU_RQCSR(Q_num)));
 	}
 #if (CHECKSUM_TYPE == CS_16B)
 	os_writel(U3D_QCR0, os_readl(U3D_QCR0) | CS16B_EN);

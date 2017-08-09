@@ -1311,8 +1311,9 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 
 			value = min(w_length, (u16) sizeof cdev->desc);
 			memcpy(req->buf, &cdev->desc, value);
-			INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
-							"USB_DT_DEVICE, value=%d\n",value);
+			/*shrink log*/
+			/*INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
+							"USB_DT_DEVICE, value=%d\n",value);*/
 			break;
 		case USB_DT_DEVICE_QUALIFIER:
 			if (!gadget_is_dualspeed(gadget) ||
@@ -1321,12 +1322,14 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 			device_qual(cdev);
 			value = min_t(int, w_length,
 				sizeof(struct usb_qualifier_descriptor));
-			INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
-							"USB_DT_DEVICE_QUALIFIER, value=%d\n",value);
+			/*shrink log*/
+			/*INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
+							"USB_DT_DEVICE_QUALIFIER, value=%d\n",value);*/
 			break;
 		case USB_DT_OTHER_SPEED_CONFIG:
-			INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
-							"USB_DT_OTHER_SPEED_CONFIG\n");
+			/*shrink log*/
+			/*INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
+							"USB_DT_OTHER_SPEED_CONFIG\n");*/
 			if (!gadget_is_dualspeed(gadget) ||
 			    gadget->speed >= USB_SPEED_SUPER)
 				break;
@@ -1335,16 +1338,18 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 			value = config_desc(cdev, w_value);
 			if (value >= 0)
 				value = min(w_length, (u16) value);
-			INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
-							"USB_DT_CONFIG, value=%d\n",value);
+			/*shrink log*/
+			/*INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
+							"USB_DT_CONFIG, value=%d\n",value);*/
 			break;
 		case USB_DT_STRING:
 			value = get_string(cdev, req->buf,
 					w_index, w_value & 0xff);
 			if (value >= 0) {
 				value = min(w_length, (u16) value);
-				INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
-						"USB_DT_STRING, value=%d\n" ,value);
+				/*shrink log*/
+				/*INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
+						"USB_DT_STRING, value=%d\n" ,value);*/
 			}
 			break;
 		case USB_DT_BOS:
@@ -1352,8 +1357,9 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 				value = bos_desc(cdev);
 				value = min(w_length, (u16) value);
 			}
-			INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
-						"USB_DT_BOS, value=%d\n",value);
+			/*shrink log*/
+			/*INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR: "
+						"USB_DT_BOS, value=%d\n",value);*/
 			break;
 		default:
 			INFO(cdev, "[COM]USB_REQ_GET_DESCRIPTOR w_value=0x%X\n", w_value);
