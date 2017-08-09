@@ -958,7 +958,10 @@ static void cldma_tx_done(struct work_struct *work)
 #endif
 
 	if (count) {
-		queue_delayed_work(queue->worker, &queue->cldma_tx_work, msecs_to_jiffies(10));
+		if (IS_NET_QUE(md, queue->index))
+			queue_delayed_work(queue->worker, &queue->cldma_tx_work, msecs_to_jiffies(10));
+		else
+			queue_delayed_work(queue->worker, &queue->cldma_tx_work, msecs_to_jiffies(0));
 	} else {
 #ifndef CLDMA_NO_TX_IRQ
 		unsigned long flags;
@@ -1270,8 +1273,12 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 				/* disable TX_DONE interrupt */
 				cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TIMSR0,
 					      CLDMA_BM_ALL_QUEUE & (1 << i));
-				ret = queue_delayed_work(md_ctrl->txq[i].worker, &md_ctrl->txq[i].cldma_tx_work,
+				if (IS_NET_QUE(md, i))
+					ret = queue_delayed_work(md_ctrl->txq[i].worker, &md_ctrl->txq[i].cldma_tx_work,
 							 msecs_to_jiffies(10));
+				else
+					ret = queue_delayed_work(md_ctrl->txq[i].worker, &md_ctrl->txq[i].cldma_tx_work,
+							 msecs_to_jiffies(0));
 				CCCI_DEBUG_LOG(md->index, TAG, "qno%d queue_delayed_work=%d\n", i, ret);
 			}
 		}
