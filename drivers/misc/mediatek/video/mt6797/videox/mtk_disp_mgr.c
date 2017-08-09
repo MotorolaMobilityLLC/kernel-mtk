@@ -67,6 +67,8 @@
 #define DDP_OUTPUT_LAYID 4
 #undef CONFIG_MTK_HDMI_SUPPORT
 
+#define NO_PQ_IOCTL /* FIXME: workaround for RDMA underflow*/
+
 static unsigned int session_config[MAX_SESSION_COUNT];
 static DEFINE_MUTEX(disp_session_lock);
 
@@ -1548,7 +1550,9 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_WRITE_SW_REG:
 	case DISP_IOCTL_READ_SW_REG:
 	{
+#ifndef NO_PQ_IOCTL
 		ret = primary_display_user_cmd(cmd, arg);
+#endif
 		break;
 	}
 	default:
@@ -1676,13 +1680,14 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsi
 	case DISP_IOCTL_AAL_EVENTCTL:
 	case DISP_IOCTL_AAL_INIT_REG:
 	case DISP_IOCTL_AAL_SET_PARAM:
+#ifndef NO_PQ_IOCTL
 		{
 			void __user *data32;
-
 			data32 = compat_ptr(arg);
 			ret = file->f_op->unlocked_ioctl(file, cmd, (unsigned long)data32);
 			return ret;
 		}
+#endif
 	case DISP_IOCTL_SET_GAMMALUT:
 	case DISP_IOCTL_SET_CCORR:
 	case DISP_IOCTL_SET_PQPARAM:
@@ -1711,7 +1716,9 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsi
 	case DISP_IOCTL_WRITE_SW_REG:
 	case DISP_IOCTL_READ_SW_REG:
 		{
+#ifndef NO_PQ_IOCTL
 			ret = primary_display_user_cmd(cmd, arg);
+#endif
 			break;
 		}
 
