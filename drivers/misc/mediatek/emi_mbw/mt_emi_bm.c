@@ -505,6 +505,9 @@ unsigned int DRAMC_GetPageHitCount(const unsigned int CountType)
 {
 	unsigned int iCount;
 
+#if defined(CONFIG_ARCH_MT6797)  /*wait for dramc ready */
+	iCount = 0xF + CountType;  /*wait for dramc ready */
+#else
 	switch (CountType) {
 	case DRAMC_R2R:
 		iCount = ucDram_Register_Read(DRAMC_R2R_PAGE_HIT);
@@ -530,7 +533,7 @@ unsigned int DRAMC_GetPageHitCount(const unsigned int CountType)
 	default:
 		return BM_ERR_WRONG_REQ;
 	}
-
+#endif
 	return iCount;
 }
 
@@ -538,6 +541,9 @@ unsigned int DRAMC_GetPageMissCount(const unsigned int CountType)
 {
 	unsigned int iCount;
 
+#if defined(CONFIG_ARCH_MT6797)  /*wait for dramc ready */
+	iCount = 0xF + CountType;  /*wait for dramc ready */
+#else
 	switch (CountType) {
 	case DRAMC_R2R:
 		iCount = ucDram_Register_Read(DRAMC_R2R_PAGE_MISS);
@@ -563,7 +569,7 @@ unsigned int DRAMC_GetPageMissCount(const unsigned int CountType)
 	default:
 		return BM_ERR_WRONG_REQ;
 	}
-
+#endif
 	return iCount;
 }
 
@@ -571,6 +577,9 @@ unsigned int DRAMC_GetInterbankCount(const unsigned int CountType)
 {
 	unsigned int iCount;
 
+#if defined(CONFIG_ARCH_MT6797)  /*wait for dramc ready */
+	iCount = 0xF + CountType;  /*wait for dramc ready */
+#else
 	switch (CountType) {
 	case DRAMC_R2R:
 		iCount = ucDram_Register_Read(DRAMC_R2R_INTERBANK);
@@ -596,14 +605,17 @@ unsigned int DRAMC_GetInterbankCount(const unsigned int CountType)
 	default:
 		return BM_ERR_WRONG_REQ;
 	}
-
+#endif
 	return iCount;
 }
 
 unsigned int DRAMC_GetIdleCount(void)
 {
+#if defined(CONFIG_ARCH_MT6797)  /*wait for dramc ready */
+	return 0xF;  /*wait for dramc ready */
+#else
 	return ucDram_Register_Read(DRAMC_IDLE_COUNT);
-
+#endif
 }
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 
