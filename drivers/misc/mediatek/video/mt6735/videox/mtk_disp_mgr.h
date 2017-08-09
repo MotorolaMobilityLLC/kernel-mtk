@@ -17,5 +17,6 @@ extern disp_session_input_config *captured_session_input;
 extern disp_session_input_config *cached_session_input;
 extern disp_mem_output_config *captured_session_output;
 extern disp_mem_output_config *cached_session_output;
+extern unsigned int ext_session_id;
 
 #endif

@@ -258,6 +258,7 @@ int disp_create_session(disp_session_config *config)
 		session_cnt[idx] = 1;
 		DISPDBG("New session(0x%x)\n", session);
 #if defined(OVL_TIME_SHARING)
+		ext_session_id = session;
 		if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY, 2))
 			ovl2mem_setlayernum(4);
 #endif
@@ -1154,8 +1155,8 @@ static int set_memory_buffer(disp_session_input_config *input)
 				     (input->config_layer_num << 28) | (input->config[i].layer_id << 24) |
 				     (input->config[i].src_fmt << 12) | input->config[i].layer_enable);
 
-#if !defined(OVL_TIME_SHARING)
-		ovl2mem_input_config((ovl2mem_in_config *)&input_params);
+#if defined(OVL_TIME_SHARING)
+		captured_session_input[DISP_SESSION_MEMORY - 1].config[layer_id] = input->config[i];
 #endif
 
 	}

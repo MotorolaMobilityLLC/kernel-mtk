@@ -4134,6 +4134,40 @@ static void _Interface_fence_release_callback(uint32_t userdata)
 	}
 }
 
+static int _ovl_ext_fence_release_callback(uint32_t userdata)
+{
+	int i = 0;
+	int ret = 0;
+	int fence_idx, layer;
+
+	MMProfileLogEx(ddp_mmp_get_events()->session_release, MMProfileFlagStart, 1, userdata);
+#ifndef MTK_FB_CMDQ_DISABLE
+	for (i = 0; i < PRIMARY_DISPLAY_SESSION_LAYER_COUNT; i++) {
+		int fence_idx  = 0;
+		int subtractor = 0;
+
+		if (i == primary_display_get_option("ASSERT_LAYER") && is_DAL_Enabled()) {
+			mtkfb_release_layer_fence(ext_session_id, i);
+		} else {
+			cmdqBackupReadSlot(pgc->cur_mem_config_fence, i, &fence_idx);
+			cmdqBackupReadSlot(pgc->mem_subtractor_when_free, i, &subtractor);
+			mtkfb_release_fence(ext_session_id, i, fence_idx);
+		}
+		MMProfileLogEx(ddp_mmp_get_events()->primary_ovl_fence_release, MMProfileFlagPulse, i, fence_idx);
+	}
+#endif
+
+	if (userdata == DISP_SESSION_MEMORY) {
+#ifndef MTK_FB_CMDQ_DISABLE
+		layer = disp_sync_get_output_timeline_id();
+		cmdqBackupReadSlot(pgc->cur_mem_config_fence, layer, &fence_idx);
+		mtkfb_release_fence(ext_session_id, layer, fence_idx);
+#endif
+	}
+
+	return ret;
+}
+
 static int _ovl_fence_release_callback(uint32_t userdata)
 {
 	int i = 0;
@@ -5865,13 +5899,13 @@ int primary_display_memory_trigger(int blocking, void *callback, unsigned int us
 	if (pgc->session_mode == DISP_SESSION_DECOUPLE_MODE || pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
 		if (primary_display_is_secure_path(DISP_SESSION_MEMORY)) {
 			_trigger_ovl_to_memory(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config,
-					       (fence_release_callback)_ovl_fence_release_callback,
-					       DISP_SESSION_DECOUPLE_MODE, 1);
-			_ovl_fence_release_callback(DISP_SESSION_DECOUPLE_MODE);
+					       (fence_release_callback)_ovl_ext_fence_release_callback,
+					       DISP_SESSION_MEMORY, 1);
+			_ovl_fence_release_callback(DISP_SESSION_MEMORY);
 		} else {
 			_trigger_ovl_to_memory(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config,
-					       (fence_release_callback)_ovl_fence_release_callback,
-					       DISP_SESSION_DECOUPLE_MODE, 0);
+					       (fence_release_callback)_ovl_ext_fence_release_callback,
+					       DISP_SESSION_MEMORY, 0);
 		}
 	} else {
 		DISPMSG("Not support memory trigger using session_mode:%d\n", pgc->session_mode);
