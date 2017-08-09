@@ -4174,8 +4174,10 @@ UINT32 PanelMaster_get_TE_status(UINT32 dsi_idx)
 UINT32 PanelMaster_get_CC(UINT32 dsi_idx)
 {
 	DSI_TXRX_CTRL_REG tmp_reg;
-
-	DSI_READREG32(PDSI_TXRX_CTRL_REG, &tmp_reg, &DSI_REG[dsi_idx]->DSI_TXRX_CTRL);
+	if ((dsi_idx == PM_DSI0) || (dsi_idx == PM_DSI_DUAL))
+		DSI_READREG32(PDSI_TXRX_CTRL_REG, &tmp_reg, &DSI_REG[0]->DSI_TXRX_CTRL);
+	else if (dsi_idx == PM_DSI1)
+		DSI_READREG32(PDSI_TXRX_CTRL_REG, &tmp_reg, &DSI_REG[1]->DSI_TXRX_CTRL);
 	return tmp_reg.HSTX_CKLP_EN ? 1 : 0;
 }
 

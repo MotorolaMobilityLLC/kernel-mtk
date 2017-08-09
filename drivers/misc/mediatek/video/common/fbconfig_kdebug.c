@@ -206,13 +206,18 @@ static void free_list_memory(void)
 static int fbconfig_open(struct inode *inode, struct file *file)
 {
 	PM_TOOL_T *pm_params;
-
+	/*PM_TOOL_T *pm;*/
 	file->private_data = inode->i_private;
 	pm_params = (PM_TOOL_T *) pm_get_handle();
 	PanelMaster_set_PM_enable(1);
 	pm_params->pLcm_drv = DISP_GetLcmDrv();
 	pm_params->pLcm_params = DISP_GetLcmPara();
 
+	/*pm = (PM_TOOL_T *) pm_get_handle();*/
+	if (pm_params->pLcm_params->lcm_if == LCM_INTERFACE_DSI_DUAL)
+		pm_params->dsi_id = PM_DSI_DUAL;
+	else if (pm_params->pLcm_params->lcm_if == LCM_INTERFACE_DSI1)
+		pm_params->dsi_id = PM_DSI1;
 	return 0;
 }
 
