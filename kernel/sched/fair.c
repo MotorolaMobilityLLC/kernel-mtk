@@ -2847,7 +2847,7 @@ int group_leader_is_empty(struct task_struct *p)
 static inline void update_tg_info(struct cfs_rq *cfs_rq, struct sched_entity *se, long ratio_delta)
 {
 	struct task_struct *p = task_of(se);
-	struct task_struct *tg = p->group_leader;
+	struct task_struct *tg;
 	int id;
 	unsigned long flags;
 
@@ -2856,6 +2856,8 @@ static inline void update_tg_info(struct cfs_rq *cfs_rq, struct sched_entity *se
 
 	if (group_leader_is_empty(p))
 		return;
+
+	tg = p->group_leader;
 
 	id = arch_get_cluster_id(cpu_of(rq_of(cfs_rq)));
 	if (unlikely(WARN_ON(id < 0)))
@@ -2895,7 +2897,8 @@ static inline void update_entity_load_avg(struct sched_entity *se,
 
 	if (!__update_entity_runnable_avg(now, cpu, &se->avg, se->on_rq, cfs_rq->curr == se)) {
 		/* sched: add trace_sched */
-		trace_sched_task_entity_avg(2, task_of(se), &se->avg);
+		if (entity_is_task(se))
+			trace_sched_task_entity_avg(2, task_of(se), &se->avg);
 		return;
 	}
 
