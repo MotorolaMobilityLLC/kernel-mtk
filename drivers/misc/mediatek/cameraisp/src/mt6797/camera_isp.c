@@ -6809,14 +6809,16 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				}
 			}
 			if ((Addr[0] != 0) && (Addr[1] != 0)) {
-				spin_lock(&IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_CAM_A_ST]);
+				unsigned long flags;
+
+				spin_lock_irqsave(&IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_CAM_A_ST], flags);
 				ISP_WR32(CAM_REG_CTL_CD_DONE_SEL(ISP_CAM_A_IDX), 0x1);
 				ISP_WR32(CAM_REG_CTL_UNI_DONE_SEL(ISP_CAM_A_IDX), 0x1);
 				ISP_WR32(CAM_REG_CQ_THR0_BASEADDR(ISP_CAM_A_IDX), Addr[0]);
 				ISP_WR32(CAM_REG_CQ_THR0_BASEADDR(ISP_CAM_B_IDX), Addr[1]);
 				ISP_WR32(CAM_REG_CTL_UNI_DONE_SEL(ISP_CAM_A_IDX), 0x0);
 				Addr[0] = Addr[1] = 0;
-				spin_unlock(&IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_CAM_A_ST]);
+				spin_unlock_irqrestore(&IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_CAM_A_ST], flags);
 			}
 		}
 		break;
