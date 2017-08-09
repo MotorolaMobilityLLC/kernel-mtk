@@ -120,6 +120,7 @@ static struct c2k_port c2k_ports[] = {
 	{AT_CH_C2K, AT_CH_C2K, CCCI_C2K_AT, CCCI_C2K_AT,},	/*AT for rild, new */
 	{AT2_CH_C2K, AT2_CH_C2K, CCCI_C2K_AT2, CCCI_C2K_AT2,},	/*AT2 for rild, new */
 	{AT3_CH_C2K, AT3_CH_C2K, CCCI_C2K_AT3, CCCI_C2K_AT3,},	/*AT3 for rild, new */
+	{AT4_CH_C2K, AT4_CH_C2K, CCCI_C2K_AT4, CCCI_C2K_AT4,},	/*AT4 for rild, new */
 	{AGPS_CH_C2K, AGPS_CH_C2K, CCCI_IPC_UART_TX, CCCI_IPC_UART_RX,},	/*agps channel */
 	{MD2AP_LOOPBACK_C2K, MD2AP_LOOPBACK_C2K, CCCI_C2K_LB_DL, CCCI_C2K_LB_DL,},
 	{LOOPBACK_C2K, LOOPBACK_C2K, CCCI_LB_IT_TX, CCCI_LB_IT_RX,},
@@ -389,6 +390,7 @@ static inline void md_ccif_tx_rx_printk(struct ccci_modem *md, struct sk_buff *s
 	case CCCI_C2K_AT:
 	case CCCI_C2K_AT2:
 	case CCCI_C2K_AT3:
+	case CCCI_C2K_AT4:
 		if (is_tx)
 			CCCI_DEBUG_LOG(md->index, TAG, "TX:OK on Q%d: %x %x %x %x, seq(%d)\n", qno, ccci_h->data[0],
 				ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ccci_h->seq_num);

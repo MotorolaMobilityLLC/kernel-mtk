@@ -600,6 +600,7 @@ typedef enum {
 	CCCI_C2K_AT,	/*rild AT ch for c2k*/
 	CCCI_C2K_AT2,	/*rild AT2 ch for c2k*/
 	CCCI_C2K_AT3,	/*rild AT3 ch for c2k*/
+	CCCI_C2K_AT4,	/*rild AT4 ch for c2k*/
 	CCCI_C2K_LB_DL,	/*downlink loopback*/
 
 	/* virtual channels */
@@ -624,7 +625,7 @@ enum c2k_channel {
 	AT2_CH_C2K = 7,
 	AT3_CH_C2K = 8,
 	MDLOG_CH_C2K = 9,
-
+	AT4_CH_C2K = 10,
 	STATUS_CH_C2K = 11,
 	NET1_CH_C2K = 12,
 	NET2_CH_C2K = 13,	/*need sync with c2k */
