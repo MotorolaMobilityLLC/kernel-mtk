@@ -421,6 +421,7 @@ static void __iomem *g_imgsys_config_base_dase;
 
 void __iomem *ISP_SENINF0_BASE;
 void __iomem *ISP_SENINF1_BASE;
+void __iomem *ISP_SENINF2_BASE;
 
 
 /* TODO: Remove start, Jessy */
@@ -2924,6 +2925,11 @@ CAMSV_REG_CAMSV2_SPARE1    CAMSV_CAMSV2_SPARE1;            //9818
 #define ISP_REG_SW_CTL_SW_RST_P2_STATUS (0x00000020)
 #define ISP_REG_SW_CTL_HW_RST_P2        (0x00000040)
 
+
+/*MCLK counter*/
+static MINT32 mMclk1User;
+static MINT32 mMclk2User;
+static MINT32 mMclk3User;
 
 
 #if 0
@@ -6780,6 +6786,14 @@ static MINT32 ISP_release(
 #if 0 /* _mt6593fpga_dvt_use_ */
     spm_enable_sodi();
 #endif
+	/* Reset MCLK	*/
+	mMclk1User = 0;
+	mMclk2User = 0;
+	mMclk3User = 0;
+	ISP_WR32(ISP_SENINF0_BASE + 0x0600, 0x00000001);
+	ISP_WR32(ISP_SENINF1_BASE + 0x0600, 0x00000001);
+	ISP_WR32(ISP_SENINF2_BASE + 0x0600, 0x00000001);
+	LOG_DBG("ISP_MCLK_EN Release");
 
 EXIT:
 
@@ -6947,9 +6961,10 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 
 #ifdef CONFIG_OF
     struct isp_device *isp_dev;
-    struct device *dev = device_create(pIspClass, NULL, IspDevNo, NULL, ISP_DEV_NAME);
+    struct device *dev = NULL;
 #endif
 
+	nr_isp_devs += 1;
     LOG_INF("- E. ISP driver probe. \n");
 
     /* Get platform_device parameters */
@@ -6960,7 +6975,7 @@ static MINT32 ISP_probe(struct platform_device *pDev)
         return -ENXIO;
     }
 
-    nr_isp_devs += 1;
+
     isp_devs = krealloc(isp_devs, sizeof(struct isp_device) * nr_isp_devs, GFP_KERNEL);
     if (!isp_devs) {
         dev_err(&pDev->dev, "Unable to allocate isp_devs\n");
@@ -7037,6 +7052,7 @@ static MINT32 ISP_probe(struct platform_device *pDev)
         LOG_ERR("Unable to create class, err = %d\n", Ret);
         goto EXIT;
         }
+     	dev = device_create(pIspClass, NULL, IspDevNo, NULL, ISP_DEV_NAME);
 
         if(IS_ERR(dev)) {
             Ret = PTR_ERR(dev);
@@ -7060,6 +7076,7 @@ static MINT32 ISP_probe(struct platform_device *pDev)
         spin_lock_init(&(SpinLockRegScen));
         spin_lock_init(&(SpinLock_UserKey));
 
+#if 0
 #ifdef CONFIG_MTK_CLKMGR
 #else
 	/*CCF: Grab clock pointer (struct clk*) */
@@ -7110,7 +7127,7 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 		return PTR_ERR(isp_clk.CG_IMAGE_LARB2_SMI);
 	}
 #endif
-
+#endif
         /*  */
         init_waitqueue_head(&IspInfo.WaitQueueHead);
 
@@ -8538,13 +8555,13 @@ int ISP_pm_restore_noirq(struct device *device)
  */
 static const struct of_device_id isp_of_ids[] = {
     { .compatible="mediatek,imgsys_config", },
-    { .compatible="mediatek,smi_larb2", },
+    { .compatible="mediatek,smi_larb6", },
     { .compatible="mediatek,dip_a", }, /* Remider: Add this device node manually in .dtsi */
     { .compatible="mediatek,dip_a0", },
     { .compatible="mediatek,dip_a1", },
     { .compatible="mediatek,dip_a_nbc", },
     { .compatible="mediatek,camsys_config", },
-    { .compatible="mediatek,smi_larb6", },
+    { .compatible="mediatek,smi_larb2", },
     { .compatible="mediatek,camtop", },
     { .compatible="mediatek,cama", },
     { .compatible="mediatek,camb", },
@@ -9127,79 +9144,101 @@ static void __exit ISP_Exit(void)
 
 void ISP_MCLK1_EN(BOOL En)
 {
-    static MUINT32 mMclk1User;
     MUINT32 temp = 0;
 
-    if (1 == En)
-    mMclk1User++;
-    else
-    mMclk1User--;
-
-	temp = ISP_RD32(ISP_ADDR + 0x4200);
-	if (En) {
-		if (mMclk1User > 0) {
-			temp |= 0x20000000;
-			ISP_WR32(ISP_ADDR + 0x4200, temp);
-		}
-	} else {
-		if (mMclk1User == 0) {
-			temp &= 0xDFFFFFFF;
-			ISP_WR32(ISP_ADDR + 0x4200, temp);
-		}
+	if (1 == En)
+		mMclk1User++;
+	else{
+		mMclk1User--;
+		if (mMclk1User <= 0)
+			mMclk1User = 0;
 	}
-	temp = ISP_RD32(ISP_ADDR + 0x4200);
-	LOG_INF("ISP_MCLK1_EN(%d), mMclk1User(%d)", temp, mMclk1User);
+
+    temp = ISP_RD32(ISP_SENINF0_BASE + 0x0600);
+    if (En)
+    {
+    	if (mMclk1User > 0)
+	    {
+	        temp |= 0x20000000;
+	        ISP_WR32(ISP_SENINF0_BASE + 0x0600, temp);
+	    }
+    }
+    else
+    {
+	    if (mMclk1User == 0)
+	    {
+	        temp &= 0xDFFFFFFF;
+	        ISP_WR32(ISP_SENINF0_BASE + 0x0600, temp);
+	    }
+    }
+    temp = ISP_RD32(ISP_SENINF0_BASE + 0x0600);
+    LOG_INF("ISP_MCLK1_EN(0x%x), mMclk1User(%d)", temp, mMclk1User);
 
 }
 
 void ISP_MCLK2_EN(BOOL En)
 {
-    static MUINT32 mMclk2User;
     MUINT32 temp = 0;
-
-    if (1 == En)
-    mMclk2User++;
-    else
-    mMclk2User--;
-
-	temp = ISP_RD32(ISP_ADDR + 0x4600);
-	if (En) {
-		if (mMclk2User > 0) {
-			temp |= 0x20000000;
-			ISP_WR32(ISP_ADDR + 0x4600, temp);
-		}
-	} else {
-		if (mMclk2User == 0) {
-			temp &= 0xDFFFFFFF;
-			ISP_WR32(ISP_ADDR + 0x4600, temp);
-		}
+	
+	if (1 == En)
+		mMclk2User++;
+	else{
+		mMclk2User--;
+		if (mMclk2User <= 0)
+			mMclk2User = 0;
 	}
-	LOG_INF("ISP_MCLK2_EN(%d), mMclk2User(%d)", temp, mMclk2User);
+
+    temp = ISP_RD32(ISP_SENINF1_BASE + 0x0600);
+    if (En)
+    {
+	    if (mMclk2User > 0)
+	    {
+	        temp |= 0x20000000;
+	        ISP_WR32(ISP_SENINF1_BASE + 0x0600, temp);
+	    }
+    }
+    else
+    {
+	    if (mMclk2User == 0)
+	    {
+	        temp &= 0xDFFFFFFF;
+	        ISP_WR32(ISP_SENINF1_BASE + 0x0600, temp);
+	    }
+    }
+    LOG_INF("ISP_MCLK2_EN(%x), mMclk2User(%d)", temp, mMclk2User);
 }
 
 void ISP_MCLK3_EN(BOOL En)
 {
-    static MUINT32 mMclk3User;
     MUINT32 temp = 0;
 
-    if (1 == En)
-    mMclk3User++;
-    else
-    mMclk3User--;
-
-	temp = ISP_RD32(ISP_ADDR + 0x4A00);
-	if (En) {
-		if (mMclk3User > 0) {
-			temp |= 0x20000000;
-			ISP_WR32(ISP_ADDR + 0x4A00, temp);
-		}
-	} else {
-		if (mMclk3User == 0) {
-			temp &= 0xDFFFFFFF;
-			ISP_WR32(ISP_ADDR + 0x4A00, temp);
-		}
+	if (1 == En)
+		mMclk3User++;
+	else{
+		mMclk3User--;
+		if (mMclk3User <= 0)
+			mMclk3User = 0;
 	}
-	LOG_INF("ISP_MCLK3_EN(%d), mMclk3User(%d)", temp, mMclk3User);
+
+    temp = ISP_RD32(ISP_SENINF2_BASE + 0x0600);
+    if (En)
+    {
+	    if (mMclk3User > 0)
+	    {
+	        temp |= 0x20000000;
+	        ISP_WR32(ISP_SENINF2_BASE + 0x0600, temp);
+	    }
+    }
+    else
+    {
+	    if (mMclk3User == 0)
+	    {
+	        temp &= 0xDFFFFFFF;
+	        ISP_WR32(ISP_SENINF2_BASE + 0x0600, temp);
+	    }
+    }
+    LOG_INF("ISP_MCLK3_EN(%x), mMclk3User(%d)", temp, mMclk3User);
+
 }
 
 int32_t ISP_MDPClockOnCallback(uint64_t engineFlag)

@@ -4252,7 +4252,7 @@ static MINT32 DPE_probe(struct platform_device *pDev)
 	MINT32 i = 0;
 	MUINT8 n;
 	MUINT32 irq_info[3];	/* Record interrupts info from device tree */
-	struct device *dev = device_create(pDPEClass, NULL, DPEDevNo, NULL, DPE_DEV_NAME);
+	struct device *dev = NULL;
 
 #ifdef CONFIG_OF
 	struct DPE_device *DPE_dev;
@@ -4389,6 +4389,7 @@ static MINT32 DPE_probe(struct platform_device *pDev)
 			goto EXIT;
 		}
 
+		dev = device_create(pDPEClass, NULL, DPEDevNo, NULL, DPE_DEV_NAME);
 
 		if (IS_ERR(dev)) {
 			Ret = PTR_ERR(dev);

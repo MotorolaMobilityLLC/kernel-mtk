@@ -33,13 +33,13 @@
 typedef enum
 {
     ISP_IMGSYS_CONFIG_IDX = 0,
-    ISP_SMI_LARB2_IDX,
+    ISP_SMI_LARB6_IDX,
     ISP_DIP_A_IDX, /* Remider: Add this device node manually in .dtsi */
     ISP_DIP_A0_IDX,
     ISP_DIP_A1_IDX,
     ISP_DIP_A_NBC_IDX,
     ISP_CAMSYS_CONFIG_IDX,
-    ISP_SMI_LARB6_IDX,
+    ISP_SMI_LARB2_IDX,
     ISP_UNI_A_IDX, /* CAMTOP in .dtsi */
     ISP_CAM_A_IDX,
     ISP_CAM_B_IDX,
