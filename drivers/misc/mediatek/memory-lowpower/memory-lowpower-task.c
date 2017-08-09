@@ -170,7 +170,7 @@ static int acquire_memory(void)
 	}
 
 	memory_lowpower_statistics.nr_acquire_memory++;
-	if (i == (get_cma_num - 1))
+	if (i == (get_cma_num))
 		memory_lowpower_statistics.nr_full_acquire++;
 	else if (i > 0)
 		memory_lowpower_statistics.nr_partial_acquire++;
