@@ -121,8 +121,12 @@ static void hps_get_sysinfo(void)
 
 	/*Get heavy task information */
 	/*hps_ctxt.cur_nr_heavy_task = hps_cpu_get_nr_heavy_task(); */
-	for (idx = 0; idx < hps_sys.cluster_num; idx++)
-		hps_sys.cluster_info[idx].hvyTsk_value = sched_get_nr_heavy_task2(idx);
+	for (idx = 0; idx < hps_sys.cluster_num; idx++) {
+		if (hps_ctxt.heavy_task_enabled)
+			hps_sys.cluster_info[idx].hvyTsk_value = sched_get_nr_heavy_task2(idx);
+		else
+			hps_sys.cluster_info[idx].hvyTsk_value = 0;
+	}
 
 	/*Get sys TLP information */
 	hps_cpu_get_tlp(&hps_ctxt.cur_tlp, &hps_ctxt.cur_iowait);
