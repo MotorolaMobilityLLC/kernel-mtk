@@ -138,7 +138,9 @@ INT32 mtk_wcn_stp_register_if_rx(MTK_WCN_STP_IF_RX func)
 
 	return 0;
 }
+#if !STP_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_stp_register_if_rx);
+#endif
 
 VOID mtk_wcn_stp_set_if_tx_type(ENUM_STP_TX_IF_TYPE stp_if_type)
 {
@@ -167,7 +169,9 @@ INT32 mtk_wcn_stp_register_if_tx(ENUM_STP_TX_IF_TYPE stp_if, MTK_WCN_STP_IF_TX f
 
 	return 0;
 }
+#if !STP_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_stp_register_if_tx);
+#endif
 
 #if STP_EXP_HID_API_EXPORT
 INT32 _mtk_wcn_stp_register_event_cb(INT32 type, MTK_WCN_STP_EVENT_CB func)
@@ -185,7 +189,9 @@ INT32 mtk_wcn_stp_register_event_cb(INT32 type, MTK_WCN_STP_EVENT_CB func)
 
 	return 0;
 }
+#if !STP_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_stp_register_event_cb);
+#endif
 
 #if STP_EXP_HID_API_EXPORT
 INT32 _mtk_wcn_stp_register_tx_event_cb(INT32 type, MTK_WCN_STP_EVENT_CB func)
@@ -200,7 +206,9 @@ INT32 mtk_wcn_stp_register_tx_event_cb(INT32 type, MTK_WCN_STP_EVENT_CB func)
 
 	return 0;
 }
+#if !STP_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_stp_register_tx_event_cb);
+#endif
 
 INT32 stp_drv_init(VOID)
 {

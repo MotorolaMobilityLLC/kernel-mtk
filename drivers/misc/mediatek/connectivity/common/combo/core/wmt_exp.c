@@ -137,7 +137,7 @@ INT32 mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL flag)
 
 	return 0;
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_wmt_psm_ctrl);
 #endif
 
@@ -165,7 +165,7 @@ MTK_WCN_BOOL mtk_wcn_wmt_func_off(ENUM_WMTDRV_TYPE_T type)
 
 	return ret;
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_wmt_func_off);
 #endif
 
@@ -187,7 +187,7 @@ MTK_WCN_BOOL mtk_wcn_wmt_func_on(ENUM_WMTDRV_TYPE_T type)
 
 	return ret;
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_wmt_func_on);
 #endif
 
@@ -258,7 +258,7 @@ INT8 mtk_wcn_wmt_therm_ctrl(ENUM_WMTTHERM_TYPE_T eType)
 
 	return (INT8) pOpData->au4OpData[1];
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_wmt_therm_ctrl);
 #endif
 
@@ -273,7 +273,7 @@ ENUM_WMTHWVER_TYPE_T mtk_wcn_wmt_hwver_get(VOID)
 	/* TODO: This way is hard to extend */
 	return wmt_lib_get_icinfo(WMTCHIN_MAPPINGHWVER);
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_wmt_hwver_get);
 #endif
 
@@ -285,7 +285,7 @@ UINT32 mtk_wcn_wmt_ic_info_get(ENUM_WMT_CHIPINFO_TYPE_T type)
 {
 	return wmt_lib_get_icinfo(type);
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_wmt_ic_info_get);
 #endif
 
@@ -346,7 +346,7 @@ MTK_WCN_BOOL mtk_wcn_wmt_dsns_ctrl(ENUM_WMTDSNS_TYPE_T eType)
 
 	return bRet;
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_wmt_dsns_ctrl);
 #endif
 
@@ -358,7 +358,7 @@ INT32 mtk_wcn_wmt_msgcb_reg(ENUM_WMTDRV_TYPE_T eType, PF_WMT_CB pCb)
 {
 	return (INT32) wmt_lib_msgcb_reg(eType, pCb);
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_wmt_msgcb_reg);
 #endif
 
@@ -370,7 +370,7 @@ INT32 mtk_wcn_wmt_msgcb_unreg(ENUM_WMTDRV_TYPE_T eType)
 {
 	return (INT32) wmt_lib_msgcb_unreg(eType);
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_wmt_msgcb_unreg);
 #endif
 
@@ -383,7 +383,7 @@ INT32 mtk_wcn_stp_wmt_sdio_op_reg(PF_WMT_SDIO_PSOP own_cb)
 	wmt_lib_ps_set_sdio_psop(own_cb);
 	return 0;
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_stp_wmt_sdio_op_reg);
 #endif
 
@@ -396,7 +396,7 @@ INT32 mtk_wcn_stp_wmt_sdio_host_awake(VOID)
 	wmt_lib_ps_irq_cb();
 	return 0;
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_stp_wmt_sdio_host_awake);
 #endif
 
@@ -479,7 +479,7 @@ MTK_WCN_BOOL mtk_wcn_wmt_assert_timeout(ENUM_WMTDRV_TYPE_T type, UINT32 reason, 
 
 	return bRet;
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_wmt_assert_timeout);
 #endif
 
@@ -495,7 +495,7 @@ MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason)
 	return mtk_wcn_wmt_assert_timeout(type, reason, MAX_EACH_WMT_CMD)
 #endif
 }
-#if WMT_EXP_HID_API_EXPORT
+#if !WMT_EXP_HID_API_EXPORT
 EXPORT_SYMBOL(mtk_wcn_wmt_assert);
 #endif
 

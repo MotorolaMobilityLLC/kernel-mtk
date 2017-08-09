@@ -1597,13 +1597,13 @@ INT32 mtk_wcn_combo_common_drv_init(VOID)
 	return WMT_init();
 
 }
-EXPORT_SYMBOL(mtk_wcn_combo_common_drv_exit);
 
 INT32 mtk_wcn_combo_common_drv_exit(VOID)
 {
 	return WMT_exit();
 }
 EXPORT_SYMBOL(mtk_wcn_combo_common_drv_init);
+EXPORT_SYMBOL(mtk_wcn_combo_common_drv_exit);
 #else
 module_init(WMT_init);
 module_exit(WMT_exit);
