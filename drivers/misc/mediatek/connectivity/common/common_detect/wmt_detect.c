@@ -26,6 +26,9 @@
 #if MTK_WCN_REMOVE_KO
 #include "conn_drv_init.h"
 #endif
+#ifdef CONFIG_COMPAT
+#include <linux/compat.h>
+#endif
 
 #define WMT_DETECT_MAJOR 154
 #define WMT_DETECT_DEV_NUM 1
@@ -143,13 +146,25 @@ static long wmt_detect_unlocked_ioctl(struct file *filp, unsigned int cmd, unsig
 	}
 	return retval;
 }
+#ifdef CONFIG_COMPAT
+static long WMT_compat_detect_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	long ret;
 
+	WMT_DETECT_INFO_FUNC("cmd (%d)\n", cmd);
+	ret = wmt_detect_unlocked_ioctl(filp, cmd, arg);
+	return ret;
+}
+#endif
 const struct file_operations gWmtDetectFops = {
 	.open = wmt_detect_open,
 	.release = wmt_detect_close,
 	.read = wmt_detect_read,
 	.write = wmt_detect_write,
 	.unlocked_ioctl = wmt_detect_unlocked_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = WMT_compat_detect_ioctl,
+#endif
 };
 
 int wmt_detect_ext_chip_pwr_on(void)
