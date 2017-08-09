@@ -4478,9 +4478,8 @@ static int battery_pm_event(struct notifier_block *notifier, unsigned long pm_ev
 
 	case PM_POST_HIBERNATION:	/* Hibernation finished */
 		pr_warn("[%s] pm_event %lu\n", __func__, pm_event);
-		battery_timer_resume();
-
 		fg_ipoh_reset = 1;
+		battery_timer_resume();
 		if (pending_wake_up_bat) {
 			pr_warn("[%s] PM_POST_HIBERNATION b4r wakeup bat_routine_wq\n", __func__);
 			wake_up(&bat_routine_wq);
