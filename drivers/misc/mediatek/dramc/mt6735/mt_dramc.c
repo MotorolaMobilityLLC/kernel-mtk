@@ -1481,7 +1481,7 @@ static int dram_remove(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id dram_of_ids[] = {
-	{.compatible = "mediatek,DRAMC0",},
+	{.compatible = "mediatek,mt6735-dramc",},
 	{}
 };
 #endif
@@ -1513,7 +1513,7 @@ static int dram_dt_init(void)
 		return -1;
 	}
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,DRAMC0");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-dramc");
 	if (node) {
 		DRAMCAO_BASE_ADDR = of_iomap(node, 0);
 		pr_warn("[DRAMC]get DRAMCAO_BASE_ADDR @ %p\n", DRAMCAO_BASE_ADDR);
@@ -1522,7 +1522,7 @@ static int dram_dt_init(void)
 		return -1;
 	}
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,DDRPHY");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-ddrphy");
 	if (node) {
 		DDRPHY_BASE_ADDR = of_iomap(node, 0);
 		pr_warn("[DRAMC]get DDRPHY_BASE_ADDR @ %p\n", DDRPHY_BASE_ADDR);
@@ -1531,7 +1531,7 @@ static int dram_dt_init(void)
 		return -1;
 	}
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,DRAMC_NAO");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-dramc_nao");
 	if (node) {
 		DRAMCNAO_BASE_ADDR = of_iomap(node, 0);
 		pr_warn("[DRAMC]get DRAMCNAO_BASE_ADDR @ %p\n", DRAMCNAO_BASE_ADDR);
