@@ -1534,13 +1534,6 @@ extern int mmc_flush_cache(struct mmc_card *card);
 #ifdef CONFIG_MTK_HIBERNATION
 extern unsigned int mt_eint_get_polarity_external(unsigned int eint_num);
 #endif
-/* weiping fix */
-#if defined(CFG_DEV_MSDC0)
-extern struct msdc_hw msdc0_hw;
-#endif
-#if defined(CFG_DEV_MSDC1)
-extern struct msdc_hw msdc1_hw;
-#endif
 #if defined(CFG_DEV_MSDC2)
 extern struct msdc_hw msdc2_hw;
 #endif

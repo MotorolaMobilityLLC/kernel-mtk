@@ -8,6 +8,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include "mt6735m-pinfunc.h"
+#include <dt-bindings/mmc/mt67xx-msdc.h>
 / {
 	model = "MT6735M";
 	compatible = "mediatek,MT6735M";
@@ -34,6 +35,19 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 						reg = <0x11230000 0x10000  /* MSDC0_BASE   */
 							0x10000E84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
 						interrupts = <0 79 0x8>;
+						clk_src = /bits/ 8 <MSDC50_CLKSRC_400MHZ>;
+						bus-width = <8>;
+						max-frequency = <200000000>;
+						cap-mmc-highspeed;
+						msdc-sys-suspend;
+						mmc-ddr-1_8v;
+						mmc-hs200-1_8v;
+						mmc-hs400-1_8v;
+						non-removable;
+						pinctl = <&mmc0_pins_default>;
+						register_setting = <&mmc0_register_setting_default>;
+						host_function = /bits/ 8 <MSDC_EMMC>;
+						bootable;
 				};
 
 				MSDC1@0x11240000 {
@@ -41,6 +55,24 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 						reg = <0x11240000 0x10000  /* MSDC1_BASE   */
 							0x10000E84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
 						interrupts = <0 80 0x8>;
+						clk_src = /bits/ 8 <MSDC30_CLKSRC_200MHZ>;
+						bus-width = <4>;
+						max-frequency = <200000000>;
+						msdc-sys-suspend;
+						cap-sd-highspeed;
+						sd-uhs-sdr12;
+						sd-uhs-sdr25;
+						sd-uhs-sdr50;
+						sd-uhs-sdr104;
+						sd-uhs-ddr50;
+						pinctl = <&mmc1_pins_default>;
+						pinctl_sdr104 = <&mmc1_pins_sdr104>;
+						pinctl_sdr50 = <&mmc1_pins_sdr50>;
+						pinctl_ddr50 = <&mmc1_pins_ddr50>;
+						register_setting = <&mmc1_register_setting_default>;
+						host_function = /bits/ 8 <MSDC_SD>;
+						cd_level = /bits/ 8 <MSDC_CD_LOW>;
+						cd-gpios = <&pio 5 0>;
 				};
 
 				MSDC2@0x11250000 {
@@ -56,6 +88,11 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 							0x10000E84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
 						interrupts = <0 82 0x8>;
 				};
+
+	/* only used for old way of DCT, can be removed in new platform */
+	msdc1_ins: default {
+		compatible = "mediatek, msdc1_ins-eint";
+	};
 	};
 
 
@@ -1937,4 +1974,126 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 	};
 };
 /*CLDMA end*/
+
+&pio {
+	mmc0_pins_default: mmc0@default {
+			pins_cmd {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_dat {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_clk {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_rst {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_ds {
+				drive-strength = /bits/ 8 <2>;
+			};
+	};
+
+	mmc0_register_setting_default: mmc0@register_default {
+		dat0rddly      = /bits/ 8 <0>;
+		dat1rddly      = /bits/ 8 <0>;
+		dat2rddly      = /bits/ 8 <0>;
+		dat3rddly      = /bits/ 8 <0>;
+		dat4rddly      = /bits/ 8 <0>;
+		dat5rddly      = /bits/ 8 <0>;
+		dat6rddly      = /bits/ 8 <0>;
+		dat7rddly      = /bits/ 8 <0>;
+		datwrddly      = /bits/ 8 <0>;
+		cmdrrddly      = /bits/ 8 <0>;
+	cmdrddly       = /bits/ 8 <0>;
+	cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+		rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+		wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+
+		ett-hs200-cells = <12>;
+		ett-hs200-default = <OFFSET_MSDC_PATCH_BIT0	MSDC_PB0_INT_DAT_LATCH_CK_SEL 0x0
+				OFFSET_MSDC_PATCH_BIT0		MSDC_PB0_CKGEN_MSDC_DLY_SEL   0x0
+				OFFSET_MSDC_PATCH_BIT1		MSDC_PB1_CMD_RSP_TA_CNTR      0x1
+				OFFSET_MSDC_IOCON		MSDC_IOCON_RSPL               0x0
+				OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_CMDRDLY        0x7
+				OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_CMDRRDLY       0xb
+				OFFSET_MSDC_PATCH_BIT1		MSDC_PB1_WRDAT_CRCS_TA_CNTR   0x1
+				OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_DATWRDLY       0xb
+				OFFSET_MSDC_IOCON		MSDC_IOCON_W_D0SPL            0x0
+				OFFSET_MSDC_DAT_RDDLY0		MSDC_DAT_RDDLY0_D0            0x7
+				OFFSET_MSDC_PAD_TUNE0	MSDC_PAD_TUNE0_DATRRDLY       0x9
+				OFFSET_MSDC_IOCON		MSDC_IOCON_R_D_SMPL           0x0>;
+
+		ett-hs400-cells = <8>;
+		ett-hs400-default = <OFFSET_MSDC_PATCH_BIT0	MSDC_PB0_INT_DAT_LATCH_CK_SEL	0x0
+				OFFSET_MSDC_PATCH_BIT0	MSDC_PB0_CKGEN_MSDC_DLY_SEL		0x0
+				OFFSET_EMMC50_PAD_DS_TUNE	MSDC_EMMC50_PAD_DS_TUNE_DLY1	0x2
+				OFFSET_EMMC50_PAD_DS_TUNE	MSDC_EMMC50_PAD_DS_TUNE_DLY3	0x10
+				OFFSET_MSDC_PATCH_BIT1		MSDC_PB1_CMD_RSP_TA_CNTR	0x1
+				OFFSET_MSDC_IOCON	MSDC_IOCON_RSPL				0x0
+				OFFSET_MSDC_PAD_TUNE0		MSDC_PAD_TUNE0_CMDRDLY		0x6
+				OFFSET_MSDC_PAD_TUNE0		MSDC_PAD_TUNE0_CMDRRDLY	0x6>;
+	};
+
+	mmc1_pins_default: mmc1@default {
+			pins_cmd {
+				drive-strength = /bits/ 8 <3>;
+			};
+			pins_dat {
+				drive-strength = /bits/ 8 <3>;
+			};
+			pins_clk {
+				drive-strength = /bits/ 8 <3>;
+			};
+	};
+
+	mmc1_pins_sdr104: mmc1@sdr104 {
+			pins_cmd {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_dat {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_clk {
+				drive-strength = /bits/ 8 <3>;
+			};
+	};
+
+	mmc1_pins_sdr50: mmc1@sdr50 {
+			pins_cmd {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_dat {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_clk {
+				drive-strength = /bits/ 8 <3>;
+			};
+	};
+
+	mmc1_pins_ddr50: mmc1@ddr50 {
+			pins_cmd {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_dat {
+				drive-strength = /bits/ 8 <2>;
+			};
+			pins_clk {
+				drive-strength = /bits/ 8 <3>;
+			};
+	};
+
+	mmc1_register_setting_default: mmc1@register_default {
+				dat0rddly      = /bits/ 8 <0>;
+				dat1rddly      = /bits/ 8 <0>;
+				dat2rddly      = /bits/ 8 <0>;
+				dat3rddly      = /bits/ 8 <0>;
+				datwrddly      = /bits/ 8 <0>;
+				cmdrrddly      = /bits/ 8 <0>;
+				cmdrddly       = /bits/ 8 <0>;
+				cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+				rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+				wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+	};
+};
 
