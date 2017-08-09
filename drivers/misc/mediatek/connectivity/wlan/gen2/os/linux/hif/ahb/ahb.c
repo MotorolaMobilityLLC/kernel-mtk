@@ -452,7 +452,7 @@ VOID glSetHifInfo(GLUE_INFO_T *GlueInfo, ULONG ulCookie)
 	HifInfo->DmaRegBaseAddr = 0;
 	HifInfo->DmaOps = NULL;
 	of_id = of_match_node(apwifi_of_ids, HifAhbPDev->dev.of_node);
-	if (of_id) {
+	if (of_id && of_id->data) {
 		HifInfo->ChipID = (UINT_32)(unsigned long)of_id->data;
 	} else {
 		/* read chip ID */
