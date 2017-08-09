@@ -479,6 +479,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "uart4-main";
 		};
 
+		GPIO@0x10211000 {
+			compatible = "mediatek,GPIO";
+			reg = <0x10211000 0x1000>;
+		};
+
 		TOPRGU@0x10212000 {
 			compatible = "mediatek,TOPRGU";
 			reg = <0x10212000 0x1000>;
