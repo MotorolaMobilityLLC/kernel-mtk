@@ -1068,7 +1068,8 @@ static s32 gtp_init_panel(struct i2c_client *client)
 			     sensor_id + 1, send_cfg_buf[sensor_id][0], send_cfg_buf[sensor_id][0],
 			     opr_buf[0], opr_buf[0]);
 
-			if (opr_buf[0] < 90) {
+			/* if (opr_buf[0] < 90) { */
+			if (1) {
 				grp_cfg_version = send_cfg_buf[sensor_id][0];	/* backup group config version */
 				send_cfg_buf[sensor_id][0] = 0x00;
 				fixed_config = 0;
