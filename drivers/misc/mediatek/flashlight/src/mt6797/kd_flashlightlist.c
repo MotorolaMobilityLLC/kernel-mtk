@@ -380,6 +380,9 @@ static int setFlashDrv(int sensorDev, int strobeId)
 }
 #if POWER_THROTTLING
 
+static int gLowPowerVbat = LOW_BATTERY_LEVEL_0;
+static int gLowPowerPer = BATTERY_PERCENT_LEVEL_0;
+static int gLowPowerOc = BATTERY_OC_LEVEL_0;
 /*
 static int decFlash(void)
 {
@@ -411,13 +414,10 @@ static int closeFlash(void)
 	int k;
 
 	mutex_lock(&g_mutex);
-	logI("closeFlash ln=%d", __LINE__);
+	logI("closeFlash ln=%d, (%d/%d/%d)", __LINE__, gLowPowerVbat, gLowPowerPer, gLowPowerOc);
 	for (i = 0; i < e_Max_Sensor_Dev_Num; i++) {
-		/* logI("closeFlash ln=%d %d",__LINE__,i); */
 		for (j = 0; j < e_Max_Strobe_Num_Per_Dev; j++) {
-			/* logI("closeFlash ln=%d %d",__LINE__,j); */
 			for (k = 0; k < e_Max_Part_Num_Per_Dev; k++) {
-				/* logI("closeFlash ln=%d %d %d",__LINE__,k, (int)g_pFlashInitFunc[i][j][k]); */
 				if (g_pFlashInitFunc[i][j][k] != 0) {
 					logI("closeFlash i,j,k %d %d %d", i, j, k);
 					g_pFlashInitFunc[i][j][k]->flashlight_ioctl
@@ -430,14 +430,14 @@ static int closeFlash(void)
 	return 0;
 }
 
-static int gLowPowerVbat = LOW_BATTERY_LEVEL_0;
-
 static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
 {
+/*
 	logI("Lbat_protection_powerlimit_flash %d (%d %d %d %d)\n", level, LOW_BATTERY_LEVEL_0,
 	     LOW_BATTERY_LEVEL_1, LOW_BATTERY_LEVEL_2, __LINE__);
 	logI("Lbat_protection_powerlimit_flash %d (%d %d %d %d)\n", level, LOW_BATTERY_LEVEL_0,
 	     LOW_BATTERY_LEVEL_1, LOW_BATTERY_LEVEL_2, __LINE__);
+*/
 	if (level == LOW_BATTERY_LEVEL_0) {
 		gLowPowerVbat = LOW_BATTERY_LEVEL_0;
 	} else if (level == LOW_BATTERY_LEVEL_1) {
@@ -452,36 +452,30 @@ static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
 	}
 }
 
-
-
-static int gLowPowerPer = BATTERY_PERCENT_LEVEL_0;
-
 static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level)
 {
+/*
 	logI("bat_per_protection_powerlimit_flashlight %d (%d %d %d)\n", level,
 	     BATTERY_PERCENT_LEVEL_0, BATTERY_PERCENT_LEVEL_1, __LINE__);
 	logI("bat_per_protection_powerlimit_flashlight %d (%d %d %d)\n", level,
 	     BATTERY_PERCENT_LEVEL_0, BATTERY_PERCENT_LEVEL_1, __LINE__);
+*/
 	if (level == BATTERY_PERCENT_LEVEL_0) {
 		gLowPowerPer = BATTERY_PERCENT_LEVEL_0;
 	} else if (level == BATTERY_PERCENT_LEVEL_1) {
 		closeFlash();
 		gLowPowerPer = BATTERY_PERCENT_LEVEL_1;
 	} else {
-
 		/*unlimit cpu and gpu*/
-
 	}
 }
 
-
-
-static int gLowPowerOc=BATTERY_OC_LEVEL_0;
-
-void bat_oc_protection_powerlimit(BATTERY_OC_LEVEL level)
+static void bat_oc_protection_powerlimit(BATTERY_OC_LEVEL level)
 {
+/*
     logI("bat_oc_protection_powerlimit %d (%d %d %d)\n", level, BATTERY_OC_LEVEL_0, BATTERY_OC_LEVEL_1,__LINE__);
     logI("bat_oc_protection_powerlimit %d (%d %d %d)\n", level, BATTERY_OC_LEVEL_0, BATTERY_OC_LEVEL_1,__LINE__);
+*/
     if (level == BATTERY_OC_LEVEL_1){
 	closeFlash();
 	gLowPowerOc=BATTERY_OC_LEVEL_1;
