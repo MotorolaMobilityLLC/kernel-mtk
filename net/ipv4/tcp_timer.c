@@ -31,9 +31,9 @@ int sysctl_tcp_retries1 __read_mostly = TCP_RETR1;
 int sysctl_tcp_retries2 __read_mostly = TCP_RETR2;
 int sysctl_tcp_orphan_retries __read_mostly;
 int sysctl_tcp_thin_linear_timeouts __read_mostly;
-int sysctl_tcp_rto_min __read_mostly = TCP_RTO_MIN;
+u32 sysctl_tcp_rto_min __read_mostly = TCP_RTO_MIN;
 EXPORT_SYMBOL(sysctl_tcp_rto_min);
-int sysctl_tcp_rto_max __read_mostly = TCP_RTO_MAX;
+u32 sysctl_tcp_rto_max __read_mostly = TCP_RTO_MAX;
 EXPORT_SYMBOL(sysctl_tcp_rto_max);
 static void tcp_write_err(struct sock *sk)
 {
