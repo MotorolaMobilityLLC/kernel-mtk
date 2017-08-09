@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 TRUSTONIC LIMITED
+ * Copyright (c) 2014 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -11,5 +11,18 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-#define MOBICORE_COMPONENT_BUILD_TAG \
-	"t-base-Mediatek-Armv8-Android-302A-V008-20150716_103446_58"
+
+#ifndef _TUI_HAL_H_
+#define _TUI_HAL_H_
+
+#include <linux/types.h>
+
+uint32_t hal_tui_init(void);
+void hal_tui_exit(void);
+uint32_t hal_tui_alloc(tuiAllocBuffer_t allocbuffer[MAX_DCI_BUFFER_NUMBER],
+	size_t allocsize, uint32_t number);
+void hal_tui_free(void);
+uint32_t hal_tui_deactivate(void);
+uint32_t hal_tui_activate(void);
+
+#endif

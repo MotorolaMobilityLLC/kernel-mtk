@@ -11,5 +11,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-#define MOBICORE_COMPONENT_BUILD_TAG \
-	"t-base-Mediatek-Armv8-Android-302A-V008-20150716_103446_58"
+
+#ifndef TLCTUI_H_
+#define TLCTUI_H_
+
+int tlc_wait_cmd(uint32_t *cmd_id);
+int tlc_ack_cmd(struct tlc_tui_response_t *rsp_id);
+bool tlc_notify_event(uint32_t event_type);
+
+#endif /* TLCTUI_H_ */

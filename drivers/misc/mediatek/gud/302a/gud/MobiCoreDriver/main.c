@@ -112,9 +112,11 @@ static struct mc_instance *get_instance(struct file *file)
 
 uint32_t mc_get_new_handle(void)
 {
+	static DEFINE_MUTEX(local_mutex);
 	uint32_t handle;
 	struct mc_buffer *buffer;
-	/* assumption ctx.bufs_lock mutex is locked */
+
+	mutex_lock(&local_mutex);
 retry:
 	handle = atomic_inc_return(&ctx.handle_counter);
 	/* The handle must leave 12 bits (PAGE_SHIFT) for the 12 LSBs to be
@@ -130,6 +132,7 @@ retry:
 		if (buffer->handle == handle)
 			goto retry;
 	}
+	mutex_unlock(&local_mutex);
 
 	return handle;
 }

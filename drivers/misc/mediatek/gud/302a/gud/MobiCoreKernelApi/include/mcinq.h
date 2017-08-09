@@ -38,11 +38,14 @@
 #define MIN_NQ_ELEM	1	/* Minimum notification queue elements. */
 #define MAX_NQ_ELEM	64	/* Maximum notification queue elements. */
 
+/* Compute notification queue size in bytes from its number of elements */
+#define QUEUE_SIZE(a)   (2*(sizeof(notification_queue_header) + (a)*sizeof(notification)) )
+
 /* Minimum notification length (in bytes). */
-#define MIN_NQ_LEN	(MIN_NQ_ELEM * sizeof(notification))
+#define MIN_NQ_LEN	QUEUE_SIZE(MIN_NQ_ELEM)
 
 /* Maximum notification length (in bytes). */
-#define MAX_NQ_LEN	(MAX_NQ_ELEM * sizeof(notification))
+#define MAX_NQ_LEN	QUEUE_SIZE(MAX_NQ_ELEM)
 
 /*
  * MCP session ID is used when directly communicating with the MobiCore
