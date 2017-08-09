@@ -16,7 +16,18 @@
  **************************************/
 #define LOG_BUF_SIZE		256
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6755)
+/* CPU_PWR_STATUS */
+/* CPU_PWR_STATUS_2ND */
+#define MP0_CPU0                (1U <<  9)
+#define MP0_CPU1                (1U << 10)
+#define MP0_CPU2                (1U << 11)
+#define MP0_CPU3                (1U << 12)
+#define MP1_CPU0                (1U << 16)
+#define MP1_CPU1                (1U << 17)
+#define MP1_CPU2                (1U << 18)
+#define MP1_CPU3                (1U << 19)
+#elif defined(CONFIG_ARCH_MT6797)
 /* CPU_PWR_STATUS */
 /* CPU_PWR_STATUS_2ND */
 #define MP0_CPU0                (1U << 15)
@@ -86,23 +97,23 @@ const char *wakesrc_str[32] = {
 #define SPM_CPU_PWR_STATUS_2ND	PWR_STATUS_2ND
 
 unsigned int spm_cpu_bitmask[NR_CPUS] = {
-	CA7_CPU0,
-	CA7_CPU1,
-	CA7_CPU2,
-	CA7_CPU3,
-	CA15_CPU0,
-	CA15_CPU1,
-	CA15_CPU2,
-	CA15_CPU3
+	MP0_CPU0,
+	MP0_CPU1,
+	MP0_CPU2,
+	MP0_CPU3,
+	MP1_CPU0,
+	MP1_CPU1,
+	MP1_CPU2,
+	MP1_CPU3,
 };
 
-unsigned int spm_cpu_bitmask_all = CA15_CPU3 |
-									CA15_CPU2 |
-									CA15_CPU1 |
-									CA15_CPU0 |
-									CA7_CPU3 |
-									CA7_CPU2 |
-									CA7_CPU1 | CA7_CPU0;
+unsigned int spm_cpu_bitmask_all = MP0_CPU0 |
+									MP0_CPU1 |
+									MP0_CPU2 |
+									MP0_CPU3 |
+									MP1_CPU0 |
+									MP1_CPU1 |
+									MP1_CPU2 | MP1_CPU3;
 #elif defined(CONFIG_ARCH_MT6797)
 #define SPM_CPU_PWR_STATUS		CPU_PWR_STATUS
 #define SPM_CPU_PWR_STATUS_2ND	CPU_PWR_STATUS_2ND
