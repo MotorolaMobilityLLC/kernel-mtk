@@ -24,7 +24,8 @@
 /*#include <mt_spm_vcore_dvfs.h>*/
 #include <linux/of.h>
 #include <linux/of_address.h>
-
+#include <linux/of_fdt.h>
+#include <asm/setup.h>
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
@@ -52,9 +53,48 @@ int init_done = 0;
 static char dfs_dummy_buffer[BUFF_LEN] __aligned(PAGE_SIZE);
 static DEFINE_MUTEX(dram_dfs_mutex);
 int org_dram_data_rate = 0;
+static unsigned int enter_pdp_cnt;
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
 #define Reg_Readl(addr) readl(IOMEM(addr))
+
+
+const struct dram_info *g_dram_info_dummy_read = NULL;
+
+static int __init dt_scan_dram_info(unsigned long node, const char *uname, int depth, void *data)
+{
+	char *type = (char *)of_get_flat_dt_prop(node, "device_type", NULL);
+	const __be32 *reg, *endp;
+	unsigned long l;
+
+	/* We are scanning "memory" nodes only */
+	if (type == NULL) {
+		/*
+		* The longtrail doesn't have a device_type on the
+		* /memory node, so look for the node called /memory@0.
+		*/
+		if (depth != 1 || strcmp(uname, "memory@0") != 0)
+			return 0;
+	} else if (strcmp(type, "memory") != 0)
+		return 0;
+
+	reg = (const __be32 *)of_get_flat_dt_prop(node, (const char *)"reg", (int *)&l);
+	if (reg == NULL)
+		return 0;
+
+	endp = reg + (l / sizeof(__be32));
+	if (node) {
+		/* orig_dram_info */
+		g_dram_info_dummy_read = (const struct dram_info *)of_get_flat_dt_prop(node, "orig_dram_info", NULL);
+	}
+
+	pr_debug("[DRAMC] dram info dram rank number = %d\n", g_dram_info_dummy_read->rank_num);
+	pr_debug("[DRAMC] dram info dram rank0 base = 0x%llx\n", g_dram_info_dummy_read->rank_info[0].start);
+	pr_debug("[DRAMC] dram info dram rank1 base = 0x%llx\n",
+			g_dram_info_dummy_read->rank_info[0].start + g_dram_info_dummy_read->rank_info[0].size);
+
+	return node;
+}
 
 static int check_dramc_base_addr(void)
 {
@@ -380,6 +420,89 @@ void spm_dpd_dram_init(void) /*void spm_dpd_dram_init_1(void)*/
 
 	/*Recover MRSRK(0x88[28])=0, MRRRK(0x88[26])=0*/
 	writel(0x00000000, PDEF_DRAMC0_REG_088);
+}
+
+int enter_pasr_dpd_config(unsigned char segment_rank0,
+			   unsigned char segment_rank1)
+{
+	/* for D-3, support run time MRW */
+	unsigned int rank_pasr_segment[2];
+	unsigned int dramc0_spcmd, dramc0_pd_ctrl, dramc0_padctl4;
+	unsigned int i, cnt = 1000;
+
+	rank_pasr_segment[0] = segment_rank0 & 0xFF;	/* for rank0 */
+	rank_pasr_segment[1] = segment_rank1 & 0xFF;	/* for rank1 */
+	pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n", rank_pasr_segment[0], rank_pasr_segment[1]);
+
+	/* backup original data */
+	dramc0_spcmd = readl(PDEF_DRAMC0_REG_1E4);
+	dramc0_pd_ctrl = readl(PDEF_DRAMC0_REG_1DC);
+	dramc0_padctl4 = readl(PDEF_DRAMC0_REG_0E4);
+
+	/* Set MIOCKCTRLOFF(0x1dc[26])=1: not stop to DRAM clock! */
+	writel(dramc0_pd_ctrl | 0x04000000, PDEF_DRAMC0_REG_1DC);
+
+	/* fix CKE */
+	writel(dramc0_padctl4 | 0x00000004, PDEF_DRAMC0_REG_0E4);
+
+	udelay(1);
+
+	for (i = 0; i < 2; i++) {
+		/* set MRS settings include rank number, segment information and MRR17 */
+		writel(((i << 28) | (rank_pasr_segment[i] << 16) | 0x00000011), PDEF_DRAMC0_REG_088);
+		/* Mode register write command enable */
+		writel(0x00000001, PDEF_DRAMC0_REG_1E4);
+
+		/* wait MRW command response */
+		/* wait >1us */
+		/* gpt_busy_wait_us(1); */
+		do {
+			if (cnt-- == 0) {
+				pr_warn("[DRAMC0] PASR MRW fail!\n");
+				return -1;
+			}
+			udelay(1);
+		} while ((readl(PDEF_DRAMC0_REG_3B8) & 0x00000001) == 0x0);
+		mb();
+
+		/* Mode register write command disable */
+		writel(0x0, PDEF_DRAMC0_REG_1E4);
+	}
+
+	/* release fix CKE */
+	writel(dramc0_padctl4, PDEF_DRAMC0_REG_0E4);
+
+	/* recover Set MIOCKCTRLOFF(0x1dc[26]) */
+	/* Set MIOCKCTRLOFF(0x1DC[26])=0: stop to DRAM clock */
+	writel(dramc0_pd_ctrl, PDEF_DRAMC0_REG_1DC);
+
+	/* writel(0x00000004, PDEF_DRAMC0_REG_088); */
+	pr_warn("[DRAMC0] PASR offset 0x88 = 0x%x\n", readl(PDEF_DRAMC0_REG_088));
+	writel(dramc0_spcmd, PDEF_DRAMC0_REG_1E4);
+
+	if (segment_rank1 == 0xFF) {	/*all segments of rank1 are not reserved -> rank1 enter DPD*/
+		enter_pdp_cnt++;
+		spm_dpd_init();
+	}
+
+	return 0;
+
+	/*slp_pasr_en(1, segment_rank0 | (segment_rank1 << 8));*/
+}
+
+int exit_pasr_dpd_config(void)
+{
+	int ret;
+	/*slp_dpd_en(0);*/
+	/*slp_pasr_en(0, 0);*/
+	if (enter_pdp_cnt == 1) {
+		enter_pdp_cnt--;
+		spm_dpd_dram_init();
+	}
+
+	ret = enter_pasr_dpd_config(0, 0);
+
+	return ret;
 }
 
 #define MEM_TEST_SIZE 0x2000
@@ -888,8 +1011,10 @@ unsigned int DRAM_MRR(int MRR_num)
 	unsigned int u4value;
 
 	/* set DQ bit 0, 1, 2, 3, 4, 5, 6, 7 pinmux for LPDDR3*/
-	ucDram_Register_Write(DRAMC_REG_RRRATE_CTL, 0x13121110);
-	ucDram_Register_Write(DRAMC_REG_MRR_CTL, 0x17161514);
+	/*ucDram_Register_Write(DRAMC_REG_RRRATE_CTL, 0x13121110);
+	ucDram_Register_Write(DRAMC_REG_MRR_CTL, 0x17161514);*/
+	ucDram_Register_Write(DRAMC_REG_RRRATE_CTL, 0x15111012);
+	ucDram_Register_Write(DRAMC_REG_MRR_CTL, 0x16231314);
 
 	ucDram_Register_Write(DRAMC_REG_MRS, MRR_num);
 	ucDram_Register_Write(DRAMC_REG_SPCMD, 0x00000002);
@@ -1208,7 +1333,7 @@ static int dram_dt_init(void)
 		DRAMCAO_BASE_ADDR = of_iomap(node, 0);
 		pr_warn("[DRAMC]get DRAMCAO_BASE_ADDR @ %p\n", DRAMCAO_BASE_ADDR);
 	} else {
-		pr_warn("[DRAMC]can't find DRAMC0 compatible node\n");
+		pr_err("[DRAMC]can't find DRAMC0 compatible node\n");
 		return -1;
 	}
 
@@ -1217,7 +1342,7 @@ static int dram_dt_init(void)
 		DDRPHY_BASE_ADDR = of_iomap(node, 0);
 		pr_warn("[DRAMC]get DDRPHY_BASE_ADDR @ %p\n", DDRPHY_BASE_ADDR);
 	} else {
-		pr_warn("[DRAMC]can't find DDRPHY compatible node\n");
+		pr_err("[DRAMC]can't find DDRPHY compatible node\n");
 		return -1;
 	}
 
@@ -1226,27 +1351,26 @@ static int dram_dt_init(void)
 		DRAMCNAO_BASE_ADDR = of_iomap(node, 0);
 		pr_warn("[DRAMC]get DRAMCNAO_BASE_ADDR @ %p\n", DRAMCNAO_BASE_ADDR);
 	} else {
-		pr_warn("[DRAMC]can't find DRAMCNAO compatible node\n");
+		pr_err("[DRAMC]can't find DRAMCNAO compatible node\n");
 		return -1;
 	}
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,TOPCKGEN");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
 	if (node) {
 		TOPCKGEN_BASE_ADDR = of_iomap(node, 0);
 		pr_warn("[DRAMC]get TOPCKGEN_BASE_ADDR @ %p\n", TOPCKGEN_BASE_ADDR);
 	} else {
-		pr_warn("[DRAMC]can't find TOPCKGEN compatible node\n");
+		pr_err("[DRAMC]can't find TOPCKGEN compatible node\n");
 		return -1;
 	}
-	/*
-		 node = of_scan_flat_dt(dt_scan_dram_info, NULL);
-		if (node) {
-			pr_warn("[DRAMC]find dt_scan_dram_info\n");
-		} else {
-			pr_warn("[DRAMC]can't find dt_scan_dram_info\n");
-			return -1;
-		}
-	*/
+
+	if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
+		pr_warn("[DRAMC]find dt_scan_dram_info\n");
+	} else {
+		pr_err("[DRAMC]can't find dt_scan_dram_info\n");
+		return -1;
+	}
+
 	return ret;
 }
 

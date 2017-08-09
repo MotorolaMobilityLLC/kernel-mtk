@@ -13,6 +13,7 @@ Registers define
 #define PDEF_DRAMC0_REG_1E4	IOMEM((DRAMCAO_BASE_ADDR + 0x01e4))
 #define PDEF_DRAMC0_REG_1E8	IOMEM((DRAMCAO_BASE_ADDR + 0x01e8))
 #define PDEF_DRAMC0_REG_1EC	IOMEM((DRAMCAO_BASE_ADDR + 0x01ec))
+#define PDEF_DRAMC0_REG_3B8	IOMEM((DRAMCNAO_BASE_ADDR + 0x03B8))
 #define _CLK_CFG_0_SET		IOMEM((TOPCKGEN_BASE_ADDR + 0x0040))
 
 /*=========================
@@ -86,9 +87,9 @@ DRAM HQA Config
 #define Vdram_NV (RG_VDRAM_VOSEL_1p2V | VDRAM_ANA_CON0_ADD20mV)  /*1.22V*/
 #define Vdram_LV (RG_VDRAM_VOSEL_1p2V | VDRAM_ANA_CON0_SUB40mV)  /*1.16V*/
 
-#define Vcore1_HV	0x50	/*1.1V*/
-#define Vcore1_NV	0x40	/*1.0V*/
-#define Vcore1_LV	0x30	/*0.90V*/
+#define Vcore1_HV	0x48	/*1.05V*/
+#define Vcore1_NV	0x40	/*1.00V*/
+#define Vcore1_LV	0x38	/*0.95V*/
 
 #define Vio18_HV	0x28	/*1.9V*/
 #define Vio18_NV	0x20	/*1.8V*/
@@ -121,7 +122,8 @@ extern void *mt_ddrphy_base_get(void);
 unsigned int ucDram_Register_Read(unsigned int u4reg_addr);
 void ucDram_Register_Write(unsigned int u4reg_addr, unsigned int u4reg_value);
 void dram_HQA_adjust_voltage(void);
-
+int enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_rank1);
+int exit_pasr_dpd_config(void);
 
 enum DDRTYPE {
 	TYPE_DDR1 = 1,
