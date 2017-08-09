@@ -211,8 +211,7 @@ P_CMD_INFO_T cmdBufAllocateCmdInfo(IN P_ADAPTER_T prAdapter, IN UINT_32 u4Length
 		cmdBufDumpCmdQueue(prCmdQue, "waiting Tx CMD queue");
 		cmdBufDumpCmdQueue(prPendingCmdQue, "waiting response CMD queue");
 		DBGLOG(NIC, INFO, "Tc4 number:%d\n", prTc->aucFreeBufferCount[TC4_INDEX]);
-		mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 40);
-		glDumpConnSysCpuInfo(prGlueInfo);
+		glDoChipReset();
 	}
 
 	return prCmdInfo;

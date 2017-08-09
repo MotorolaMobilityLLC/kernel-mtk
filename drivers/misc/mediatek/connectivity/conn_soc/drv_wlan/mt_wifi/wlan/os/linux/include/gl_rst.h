@@ -77,6 +77,15 @@ typedef void (*PF_WMT_CB) (ENUM_WMTDRV_TYPE_T,	/* Source driver type */
 *                    E X T E R N A L   F U N C T I O N S
 ********************************************************************************
 */
+#define glDoChipReset() \
+	do { \
+		if (!kalStrnCmp(current->comm, "mtk_wmtd", 8)) { \
+			DBGLOG(INIT, ERROR, "forbid core dump in mtk_wmtd %s line %d\n", __func__, __LINE__); \
+			break; \
+		} \
+		DBGLOG(INIT, ERROR, "Do core dump and chip reset in %s line %d\n", __func__, __LINE__); \
+		mtk_wcn_wmt_assert(WMTDRV_TYPE_WIFI, 40); \
+	} while (0)
 
 #if CFG_CHIP_RESET_SUPPORT
 extern int mtk_wcn_wmt_msgcb_reg(ENUM_WMTDRV_TYPE_T eType, PF_WMT_CB pCb);
@@ -84,6 +93,7 @@ extern int mtk_wcn_wmt_msgcb_unreg(ENUM_WMTDRV_TYPE_T eType);
 extern int wifi_reset_start(void);
 extern int wifi_reset_end(ENUM_RESET_STATUS_T);
 #endif
+extern MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);
 
 /*******************************************************************************
 *                            P U B L I C   D A T A

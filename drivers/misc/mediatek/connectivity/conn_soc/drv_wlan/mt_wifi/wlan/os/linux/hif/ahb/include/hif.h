@@ -87,9 +87,6 @@
 extern phys_addr_t gConEmiPhyBase;
 extern BOOLEAN fgIsResetting;
 extern UINT_32 IsrCnt, IsrPassCnt;
-
-extern MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason);
-
 extern int kalDevLoopbkThread(IN void *data);
 
 #ifdef CONFIG_MTK_PMIC_MT6397

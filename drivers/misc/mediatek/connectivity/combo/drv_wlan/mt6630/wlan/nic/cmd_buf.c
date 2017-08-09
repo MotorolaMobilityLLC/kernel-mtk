@@ -217,8 +217,8 @@ P_CMD_INFO_T cmdBufAllocateCmdInfo(IN P_ADAPTER_T prAdapter, IN UINT_32 u4Length
 		fgCmdDumpIsDone = TRUE;
 		cmdBufDumpCmdQueue(prCmdQue, "waiting Tx CMD queue");
 		cmdBufDumpCmdQueue(prPendingCmdQue, "waiting response CMD queue");
-		DBGLOG(NIC, INFO, "Tc4 number:%d\n", prTc->aucFreeBufferCount[TC4_INDEX]);
-		glResetTrigger(prAdapter);
+		DBGLOG(NIC, INFO, "Tc4 number:%d\n", prTc->au2FreeBufferCount[TC4_INDEX]);
+		/* glResetTrigger(prAdapter); */
 	}
 
 	if (prCmdInfo) {
