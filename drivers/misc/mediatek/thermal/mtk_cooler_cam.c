@@ -27,7 +27,7 @@
 #include <asm/uaccess.h>
 #include "mt-plat/mtk_thermal_monitor.h"
 
-#define MAX_NUM_INSTANCE_MTK_COOLER_CAM  1
+#define MAX_NUM_INSTANCE_MTK_COOLER_CAM  3
 
 #if 1
 #define mtk_cooler_cam_dprintk(fmt, args...) pr_debug("thermal/cooler/cam " fmt, ##args)
@@ -85,27 +85,34 @@ static const struct file_operations _cl_cam_fops = {
 static int mtk_cl_cam_get_max_state(struct thermal_cooling_device *cdev, unsigned long *state)
 {
 	*state = 1;
-	/* mtk_cooler_cam_dprintk("mtk_cl_cam_get_max_state() %s %d\n", cdev->type, *state); */
 	return 0;
 }
 
 static int mtk_cl_cam_get_cur_state(struct thermal_cooling_device *cdev, unsigned long *state)
 {
 	*state = *((unsigned long *)cdev->devdata);
-	/* mtk_cooler_cam_dprintk("mtk_cl_cam_get_cur_state() %s %d\n", cdev->type, *state); */
 	return 0;
 }
 
 static int mtk_cl_cam_set_cur_state(struct thermal_cooling_device *cdev, unsigned long state)
 {
-	/* mtk_cooler_cam_dprintk("mtk_cl_cam_set_cur_state() %s %d\n", cdev->type, state); */
+	/* mtk_cooler_cam_dprintk("%s %s %d\n", __func__, cdev->type, state); */
 
 	*((unsigned long *)cdev->devdata) = state;
 
 	if (1 == state)
 		_cl_cam = 1;
-	else
-		_cl_cam = 0;
+	else {
+		int i;
+
+		for (i = 0; i < MAX_NUM_INSTANCE_MTK_COOLER_CAM; i++) {
+			if (cl_cam_state[i])
+				break;
+		}
+
+		if (i == MAX_NUM_INSTANCE_MTK_COOLER_CAM)
+			_cl_cam = 0;
+	}
 
 	return 0;
 }
@@ -121,15 +128,15 @@ static int mtk_cooler_cam_register_ltf(void)
 {
 	int i;
 
-	mtk_cooler_cam_dprintk("register ltf\n");
+	/* mtk_cooler_cam_dprintk("%s\n", __func__); */
 
 	for (i = MAX_NUM_INSTANCE_MTK_COOLER_CAM; i-- > 0;) {
 		char temp[20] = { 0 };
 
 		sprintf(temp, "mtk-cl-cam%02d", i);
 		cl_cam_dev[i] = mtk_thermal_cooling_device_register(temp,
-								    (void *)&cl_cam_state[i],
-								    &mtk_cl_cam_ops);
+							(void *)&cl_cam_state[i],
+							&mtk_cl_cam_ops);
 	}
 
 	return 0;
@@ -139,7 +146,7 @@ static void mtk_cooler_cam_unregister_ltf(void)
 {
 	int i;
 
-	mtk_cooler_cam_dprintk("unregister ltf\n");
+	/* mtk_cooler_cam_dprintk("%s\n", __func__); */
 
 	for (i = MAX_NUM_INSTANCE_MTK_COOLER_CAM; i-- > 0;) {
 		if (cl_cam_dev[i]) {
@@ -161,7 +168,7 @@ static int __init mtk_cooler_cam_init(void)
 		cl_cam_state[i] = 0;
 	}
 
-	mtk_cooler_cam_dprintk("init\n");
+	/* mtk_cooler_cam_dprintk("%s\n", __func__); */
 
 	{
 		struct proc_dir_entry *entry;
@@ -191,7 +198,7 @@ static int __init mtk_cooler_cam_init(void)
 
 static void __exit mtk_cooler_cam_exit(void)
 {
-	mtk_cooler_cam_dprintk("exit\n");
+	/* mtk_cooler_cam_dprintk("%s\n", __func__); */
 
 	mtk_cooler_cam_unregister_ltf();
 }
