@@ -173,11 +173,14 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 	} else {
 		dump_pmic_info();
 		spm_vcorefs_info("SPM_SW_FLAG     : 0x%x\n", spm_read(SPM_SW_FLAG));
+		spm_vcorefs_info("SPM_SW_DEBUG    : 0x%x\n", spm_read(SPM_SW_DEBUG));
 		spm_vcorefs_info("MD2SPM_DVFS_CON : 0x%x\n", spm_read(MD2SPM_DVFS_CON));
 		spm_vcorefs_info("CPU_DVFS_REQ    : 0x%x\n", spm_read(CPU_DVFS_REQ));
 		spm_vcorefs_info("SPM_SRC_REQ     : 0x%x\n", spm_read(SPM_SRC_REQ));
 		spm_vcorefs_info("SPM_SRC_MASK    : 0x%x\n", spm_read(SPM_SRC_MASK));
 		spm_vcorefs_info("SPM_SRC2_MASK   : 0x%x\n", spm_read(SPM_SRC2_MASK));
+		spm_vcorefs_info("SPM_SCP_MAILBOX : 0x%x\n", spm_read(SPM_SCP_MAILBOX));
+		spm_vcorefs_info("SPM_SCP_IRQ     : 0x%x\n", spm_read(SPM_SCP_IRQ));
 		spm_vcorefs_info("SPM_SW_RSV_1    : 0x%x\n", spm_read(SPM_SW_RSV_1));
 		spm_vcorefs_info("SPM_SW_RSV_3    : 0x%x\n", spm_read(SPM_SW_RSV_3));
 		spm_vcorefs_info("SPM_SW_RSV_4    : 0x%x\n", spm_read(SPM_SW_RSV_4));
