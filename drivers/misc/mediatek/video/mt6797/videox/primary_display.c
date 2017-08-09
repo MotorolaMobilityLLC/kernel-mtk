@@ -345,6 +345,7 @@ int primary_display_config_full_roi(disp_ddp_path_config *pconfig, disp_path_han
 			}
 			/* update ovl to full layer */
 			pconfig->ovl_dirty = 1;
+			pconfig->ovl_partial_dirty = 0;
 			dpmgr_path_config(disp_handle, pconfig, cmdq_handle);
 			pconfig->ovl_layer_scanned = 0;
 			pconfig->ovl_partial_dirty = 0;
@@ -4421,6 +4422,44 @@ static int can_bypass_ovl(disp_ddp_path_config *data_config, int *bypass_layer_i
 	return 1;
 }
 
+static int evaluate_bandwidth_save(disp_ddp_path_config *cfg)
+{
+	int i = 0;
+	int pixel = 0;
+	int partial_pixel = 0;
+	int save = 0;
+
+	for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++) {
+		int layer_pixel = 0;
+		struct disp_rect layer_roi = {0, 0, 0, 0};
+		struct disp_rect layer_partial_roi = {0, 0, 0, 0};
+		OVL_CONFIG_STRUCT *layer = &cfg->ovl_config[i];
+
+		if (!layer->layer_en)
+			continue;
+
+		layer_pixel = layer->dst_w * layer->dst_h;
+		pixel += layer_pixel;
+		if (cfg->ovl_partial_dirty) {
+			layer_roi.x = layer->dst_x;
+			layer_roi.y = layer->dst_y;
+			layer_roi.width = layer->dst_w;
+			layer_roi.height = layer->dst_h;
+			if (rect_intersect(&layer_roi, &cfg->ovl_partial_roi, &layer_partial_roi))
+				partial_pixel += layer_partial_roi.width * layer_partial_roi.height;
+
+		} else {
+			partial_pixel += layer_pixel;
+		}
+	}
+
+	if (pixel)
+		save = (pixel - partial_pixel) * 100 / pixel;
+	DISPDBG("Partial save:%d, %d, %d\n",
+			pixel, partial_pixel, save);
+	return 0;
+}
+
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			     disp_path_handle disp_handle, cmdqRecHandle cmdq_handle)
 {
@@ -4586,6 +4625,9 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			data_config->ovl_partial_dirty = 0;
 		else
 			data_config->ovl_partial_dirty = 1;
+
+		if (0)
+			evaluate_bandwidth_save(data_config);
 	}
 
 	ret = dpmgr_path_config(disp_handle, data_config, cmdq_handle);
