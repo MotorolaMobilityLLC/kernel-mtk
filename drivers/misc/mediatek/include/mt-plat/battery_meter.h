@@ -223,6 +223,10 @@ struct battery_meter_custom_data {
 	int shutdown_gauge1_xmins;
 	int shutdown_gauge1_mins;
 
+	int min_charging_smooth_time;
+
+	/* SW Fuel gauge */
+	int apsleep_battery_voltage_compensate;
 
 
 };
@@ -289,6 +293,11 @@ typedef enum {
 	FG_DAEMON_CMD_SET_DAEMON_PID,
 	FG_DAEMON_CMD_NOTIFY_DAEMON,
 	FG_DAEMON_CMD_CHECK_FG_DAEMON_VERSION,
+	FG_DAEMON_CMD_SET_OAM_V_OCV,
+	FG_DAEMON_CMD_SET_OAM_R,
+	FG_DAEMON_CMD_GET_SUSPEND_TIME,
+	FG_DAEMON_CMD_GET_SUSPEND_CAR,
+	FG_DAEMON_CMD_IS_HW_OCV_UPDATE,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 } FG_DAEMON_CTRL_CMD_FROM_USER;
@@ -373,7 +382,7 @@ extern unsigned int get_pmic_mt6325_cid(void);
 extern void fgauge_algo_run_get_init_data(void);
 extern void battery_meter_set_init_flag(kal_bool flag);
 extern void battery_meter_reset_sleep_time(void);
-
+extern int battery_meter_get_low_battery_interrupt_status(void);
 
 #if defined(CONFIG_MTK_HAFG_20)
 unsigned int get_cv_voltage(void);

@@ -10,6 +10,10 @@
 #define MTK_PLUG_OUT_DETECTION
 #endif
 
+#define FG_BAT_INT_H_NO 40
+#define FG_BAT_INT_L_NO 41
+
+
 extern void PMIC_INIT_SETTING_V1(void);
 
 /* ============================================================================== */

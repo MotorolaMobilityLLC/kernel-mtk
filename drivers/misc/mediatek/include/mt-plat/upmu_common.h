@@ -177,4 +177,6 @@ extern bool hwPowerDown(MT65XX_POWER powerId, char *mode_name);
 
 extern int get_battery_plug_out_status(void);
 
+extern void pmic_turn_on_clock(unsigned int enable);
+
 #endif				/* _MT_PMIC_COMMON_H_ */

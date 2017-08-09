@@ -941,7 +941,7 @@ static signed int(*bm_func[BATTERY_METER_CMD_NUMBER]) (void *data);
 
 signed int bm_ctrl_cmd(BATTERY_METER_CTRL_CMD cmd, void *data)
 {
-	signed int status = 0;
+	signed int status = STATUS_UNSUPPORTED;
 	static signed int init = -1;
 
 	if (init == -1) {
