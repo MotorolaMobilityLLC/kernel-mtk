@@ -156,6 +156,8 @@ void dump_pmic_info(void)
 
 char *spm_vcorefs_dump_dvfs_regs(char *p)
 {
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
+
 	if (p) {
 		dump_pmic_info();
 		p += sprintf(p, "SPM_SW_FLAG     : 0x%x\n", spm_read(SPM_SW_FLAG));
@@ -202,6 +204,8 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_info("PCM_REG14_DATA  : 0x%x\n", spm_read(PCM_REG14_DATA));
 		spm_vcorefs_info("PCM_REG15_DATA  : %u\n"  , spm_read(PCM_REG15_DATA));
 		spm_vcorefs_info("PCM_IM_PTR      : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
+
+		__check_dvfs_halt_source(pwrctrl->dvfs_halt_src_chk);
 
 		scp_dump_regs();
 		scp_aed_reset(EXCEP_RUNTIME);

@@ -165,9 +165,7 @@ struct pwr_ctrl {
 	u8 r7_ctrl_en;
 	u8 infra_dcm_lock;
 	u8 wdt_disable;
-#if defined(CONFIG_ARCH_MT6755)
 	u8 dvfs_halt_src_chk;
-#endif
 	u8 spm_apsrc_req;
 	u8 spm_f26m_req;
 	u8 spm_lte_req;

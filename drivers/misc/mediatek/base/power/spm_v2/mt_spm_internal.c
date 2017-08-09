@@ -705,8 +705,6 @@ void __spm_backup_vcore_dvfs_dram_shuffle(void)
 #endif
 }
 
-#if defined(SPM_VCORE_EN_MT6755)
-
 #define MM_DVFS_DISP_HALT_MASK 0x3
 #define MM_DVFS_ISP_HALT_MASK  0x4
 #define MM_DVFS_GCE_HALT_MASK  0x10
@@ -768,7 +766,6 @@ int __check_dvfs_halt_source(int enable)
 
 	return 0;
 }
-#endif
 
 void spm_set_dummy_read_addr(void)
 {
