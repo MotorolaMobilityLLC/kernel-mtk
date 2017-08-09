@@ -597,6 +597,7 @@ static void eem_restore_eem_volt(struct eem_det *det);
 #if defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING)
 static void _mt_eem_aee_init(void)
 {
+	aee_rr_rec_ptp_vboot(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_cpu_big_volt(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_cpu_big_volt_1(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_cpu_big_volt_2(0xFFFFFFFFFFFFFFFF);
@@ -3609,6 +3610,15 @@ void eem_init01(void)
 					vboot = det->ops->volt_2_pmic(det, det->ops->get_volt(det));
 				else
 					vboot = det->ops->volt_2_eem(det, det->ops->get_volt(det));
+
+				#if defined(CONFIG_EEM_AEE_RR_REC)
+					aee_rr_rec_ptp_vboot(
+						((unsigned long long)(vboot) << (8 * det->ctrl_id)) |
+						(aee_rr_curr_ptp_vboot() & ~
+							((unsigned long long)(0xFF) << (8 * det->ctrl_id))
+						)
+					);
+				#endif
 			}
 
 			eem_error("%s, vboot = %d, VBOOT = %d\n", ((char *)(det->name) + 8), vboot, det->VBOOT);

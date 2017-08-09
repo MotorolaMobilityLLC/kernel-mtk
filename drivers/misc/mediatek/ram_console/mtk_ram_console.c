@@ -88,6 +88,7 @@ struct last_reboot_reason {
 	uint32_t ptp_8C;
 	uint32_t ptp_9C;
 	uint32_t ptp_A0;
+	uint64_t ptp_vboot;
 	uint64_t ptp_cpu_big_volt;
 	uint64_t ptp_cpu_big_volt_1;
 	uint64_t ptp_cpu_big_volt_2;
@@ -1162,6 +1163,13 @@ void aee_rr_rec_ptp_A0(u32 val)
 	LAST_RR_SET(ptp_A0, val);
 }
 
+void aee_rr_rec_ptp_vboot(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_vboot, val);
+}
+
 void aee_rr_rec_ptp_cpu_big_volt(u64 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -1472,6 +1480,11 @@ u32 aee_rr_curr_ptp_9C(void)
 u32 aee_rr_curr_ptp_A0(void)
 {
 	return LAST_RR_VAL(ptp_A0);
+}
+
+u64 aee_rr_curr_ptp_vboot(void)
+{
+	return LAST_RR_VAL(ptp_vboot);
 }
 
 u64 aee_rr_curr_ptp_cpu_big_volt(void)
@@ -1893,6 +1906,15 @@ void aee_rr_show_ptp_A0(struct seq_file *m)
 	seq_printf(m, "M_HW_RES10 = 0x%X\n", LAST_RRR_VAL(ptp_A0));
 }
 
+void aee_rr_show_ptp_vboot(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_bank_[%d]_vboot = 0x%llx\n", i,
+			   (LAST_RRR_VAL(ptp_vboot) >> (i * 8)) & 0xFF);
+}
+
 void aee_rr_show_ptp_cpu_big_volt(struct seq_file *m)
 {
 	int i;
@@ -2293,6 +2315,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_ptp_8C,
 	aee_rr_show_ptp_9C,
 	aee_rr_show_ptp_A0,
+	aee_rr_show_ptp_vboot,
 	aee_rr_show_ptp_cpu_big_volt,
 	aee_rr_show_ptp_cpu_big_volt_1,
 	aee_rr_show_ptp_cpu_big_volt_2,
