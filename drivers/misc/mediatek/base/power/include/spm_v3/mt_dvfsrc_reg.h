@@ -81,4 +81,14 @@ extern void __iomem *dvfsrc_base;
 #define DVFSRC_RESERVED_3           (DVFSRC_BASE + 0x210)
 #define DVFSRC_RESERVED_3           (DVFSRC_BASE + 0x210)
 
+/* DVFSRC_MD32_LEVEL_MASK (0x10110000+0x034) */
+#define MD32_LEVEL_MASK		((1U << 0) | (1U << 1) | (1U << 2) | (1U << 3))
+
+/* DVFSRC_SPM_LEVEL_MASK (0x10110000+0x038) */
+#define DVFS_REQ_TO_SPM_TIMEOUT	(1U << 17)
+
+/* DVFSRC_DEBUG_EN (0x10110000+0x100) */
+#define RG_REQUEST_VOLT_ONLY	((1U << 4) | (1U << 5))
+
 #endif /* __MT_DVFSRC_REG__H__ */
+

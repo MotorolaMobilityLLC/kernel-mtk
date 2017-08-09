@@ -1035,6 +1035,7 @@ EXPORT_SYMBOL(mt_spm_base_get);
 int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 {
 #define SPM_D_LEN		(13) /* # of cmd + arg0 + arg1 + ... */
+#define SPM_VCOREFS_D_LEN	(4) /* # of cmd + arg0 + arg1 + ... */
 	unsigned int len = SPM_D_LEN;
 	int ack_data;
 	unsigned int ret = 0;
@@ -1177,7 +1178,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_VCORE_DVFS_ENTER:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_VCORE_DVFS, IPI_OPT_LOCK_POLLING, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_VCORE_DVFS, IPI_OPT_LOCK_POLLING, spm_d, SPM_VCOREFS_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1185,9 +1186,9 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 			pr_err("#@# %s(%d) cmd(%d) return %d\n", __func__, __LINE__, cmd, ret);
 		}
 		break;
-	case SPM_PWR_CTRL_VCORE_DVFS:
+	case SPM_PWR_CTRL_MSDC:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_VCORE_DVFS, IPI_OPT_LOCK_POLLING, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_VCORE_DVFS, IPI_OPT_LOCK_POLLING, spm_d, SPM_VCOREFS_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1197,7 +1198,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_VCORE_PWARP_CMD:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_VCORE_DVFS, IPI_OPT_LOCK_POLLING, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_VCORE_DVFS, IPI_OPT_LOCK_POLLING, spm_d, SPM_VCOREFS_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
@@ -1207,7 +1208,7 @@ int spm_to_sspm_command(u32 cmd, struct spm_data *spm_d)
 		break;
 	case SPM_VCORE_DVFS_FWINIT:
 		spm_d->cmd = cmd;
-		ret = sspm_ipi_send_sync(IPI_ID_VCORE_DVFS, IPI_OPT_LOCK_POLLING, spm_d, len, &ack_data);
+		ret = sspm_ipi_send_sync(IPI_ID_VCORE_DVFS, IPI_OPT_LOCK_POLLING, spm_d, SPM_VCOREFS_D_LEN, &ack_data);
 		if (ret != 0) {
 			pr_err("#@# %s(%d) sspm_ipi_send_sync ret %d\n", __func__, __LINE__, ret);
 		} else if (ack_data < 0) {
