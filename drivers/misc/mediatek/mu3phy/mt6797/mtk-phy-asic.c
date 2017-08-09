@@ -28,36 +28,66 @@
 #include <linux/of_address.h>
 #endif
 
-static struct clk *sssub_ref_clk;
+static struct clk *ssusb_bus_clk;
+static struct clk *ssusb_ref_clk;
+static struct clk *ssusb_sys_clk;
 static struct clk *ssusb_top_sys_sel_clk;
 static struct clk *ssusb_univpll3_d2_clk;
+static DEFINE_SPINLOCK(mu3phy_clock_lock);
 
 static bool usb_enable_clock(bool enable)
 {
-	static int init;
+	static int count;
+	unsigned long flags;
 
-	if (!sssub_ref_clk || !ssusb_top_sys_sel_clk || !ssusb_univpll3_d2_clk) {
+	if (!ssusb_ref_clk || !ssusb_bus_clk || !ssusb_sys_clk) {
 		pr_err("clock not ready");
 		return -1;
 	}
 
-	/* need fix - workaround to prvent clock on/off hang */
-	if (init == 1)
-		return 1;
+	spin_lock_irqsave(&mu3phy_clock_lock, flags);
 
-	if (enable) {
-		/* enable ssusb clock 125m*/
-		clk_enable(ssusb_top_sys_sel_clk);
-		clk_set_parent(ssusb_top_sys_sel_clk, ssusb_univpll3_d2_clk);
-		/* enable reference clock 26m*/
-		clk_enable(sssub_ref_clk);
-		init = 1;
-	} else {
-		clk_disable(ssusb_top_sys_sel_clk);
-		clk_disable(sssub_ref_clk);
+	if (enable && count == 0) {
 
+		if (clk_enable(ssusb_ref_clk) == 0)
+			os_printk(K_DEBUG, "ssusb_ref_clk enable done\n");
+		else
+			os_printk(K_ERR, "ssusb_ref_clk enable fail\n");
+
+		if (clk_enable(ssusb_bus_clk) == 0)
+			os_printk(K_DEBUG, "ssusb_bus_clk enable done\n");
+		else
+			os_printk(K_ERR, "ssusb_bus_clk enable fail\n");
+
+
+		if (clk_enable(ssusb_sys_clk) == 0)
+			os_printk(K_DEBUG, "ssusb_sys_clk enable done\n");
+		else
+			os_printk(K_ERR, "ssusb_sys_clk enable fail\n");
+
+	} else if (!enable && count == 1) {
+
+		clk_disable(ssusb_sys_clk);
+		os_printk(K_DEBUG, "ssusb_sys_clk disable done\n");
+
+		clk_disable(ssusb_bus_clk);
+		os_printk(K_DEBUG, "ssusb_bus_clk disable done\n");
+
+		/* need to enable later */
+		#if 0
+		clk_disable(ssusb_ref_clk);
+		os_printk(K_DEBUG, "ssusb_ref_clk disable done\n");
+		#endif
 	}
-	return 1;
+
+	if (enable)
+		count++;
+	else
+		count = (count == 0) ? 0 : (count - 1);
+
+	spin_unlock_irqrestore(&mu3phy_clock_lock, flags);
+
+	return 0;
 }
 
 #ifdef NEVER
@@ -1067,10 +1097,22 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 {
 	int retval = 0;
 
-	sssub_ref_clk = devm_clk_get(&pdev->dev, "sssub_ref_clk");
-	if (IS_ERR(sssub_ref_clk)) {
-		os_printk(K_ERR, "SSUSB cannot get sssub_ref_clk clock\n");
-		return PTR_ERR(sssub_ref_clk);
+	ssusb_bus_clk = devm_clk_get(&pdev->dev, "ssusb_bus_clk");
+	if (IS_ERR(ssusb_bus_clk)) {
+		os_printk(K_ERR, "SSUSB cannot get ssusb_bus_clk clock\n");
+		return PTR_ERR(ssusb_bus_clk);
+	}
+
+	ssusb_sys_clk = devm_clk_get(&pdev->dev, "ssusb_sys_clk");
+	if (IS_ERR(ssusb_sys_clk)) {
+		pr_err("SSUSB cannot get ssusb_sys_clk clock\n");
+		return PTR_ERR(ssusb_sys_clk);
+	}
+
+	ssusb_ref_clk = devm_clk_get(&pdev->dev, "ssusb_ref_clk");
+	if (IS_ERR(ssusb_ref_clk)) {
+		pr_err("SSUSB cannot get ssusb_ref_clk clock\n");
+		return PTR_ERR(ssusb_ref_clk);
 	}
 
 	ssusb_top_sys_sel_clk = devm_clk_get(&pdev->dev, "ssusb_top_sys_sel_clk");
@@ -1087,11 +1129,23 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 		return PTR_ERR(ssusb_univpll3_d2_clk);
 	}
 
-	retval = clk_prepare(sssub_ref_clk);
+	retval = clk_prepare(ssusb_bus_clk);
 	if (retval == 0)
-		os_printk(K_DEBUG, "sssub_ref_clk prepare done\n");
+		os_printk(K_DEBUG, "ssusb_bus_clk prepare done\n");
 	else
-		os_printk(K_ERR, "sssub_ref_clk prepare fail\n");
+		os_printk(K_ERR, "ssusb_bus_clk prepare fail\n");
+
+	retval = clk_prepare(ssusb_sys_clk);
+	if (retval == 0)
+		os_printk(K_DEBUG, "ssusb_sys_clk prepare done\n");
+	else
+		os_printk(K_ERR, "ssusb_sys_clk prepare fail\n");
+
+	retval = clk_prepare(ssusb_ref_clk);
+	if (retval == 0)
+		os_printk(K_DEBUG, "ssusb_ref_clk prepare done\n");
+	else
+		os_printk(K_ERR, "ssusb_ref_clk prepare fail\n");
 
 	retval = clk_prepare(ssusb_top_sys_sel_clk);
 	if (retval == 0)
@@ -1104,7 +1158,9 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 
 static int mt_usb_dts_remove(struct platform_device *pdev)
 {
-	clk_unprepare(sssub_ref_clk);
+	clk_unprepare(ssusb_bus_clk);
+	clk_unprepare(ssusb_sys_clk);
+	clk_unprepare(ssusb_ref_clk);
 	clk_unprepare(ssusb_top_sys_sel_clk);
 	return 0;
 }

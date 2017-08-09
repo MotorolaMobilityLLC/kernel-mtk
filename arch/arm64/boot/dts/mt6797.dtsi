@@ -2812,10 +2812,14 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 		usb3_phy {
 			compatible = "mediatek,usb3_phy";
-			clocks = <&infrasys INFRA_SSUSB_REF>,
+			clocks = <&infrasys INFRA_SSUSB_BUS>,
+				<&infrasys INFRA_SSUSB_SYS>,
+				<&infrasys INFRA_SSUSB_REF>,
 				<&topckgen TOP_MUX_SSUSB_TOP_SYS>,
 				<&topckgen TOP_UNIVPLL3_D2>;
-			clock-names = "sssub_ref_clk",
+			clock-names = "ssusb_bus_clk",
+				"ssusb_sys_clk",
+				"ssusb_ref_clk",
 				"ssusb_top_sys_sel_clk",
 				"ssusb_univpll3_d2_clk";
 		};
