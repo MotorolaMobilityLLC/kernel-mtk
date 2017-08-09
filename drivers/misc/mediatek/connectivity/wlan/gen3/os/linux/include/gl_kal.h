@@ -1604,4 +1604,7 @@ UINT_64 kalGetBootTime(VOID);
 
 int kalMetInitProcfs(IN P_GLUE_INFO_T prGlueInfo);
 int kalMetRemoveProcfs(void);
+#if CFG_SUPPORT_WAKEUP_REASON_DEBUG
+BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter);
+#endif
 #endif /* _GL_KAL_H */

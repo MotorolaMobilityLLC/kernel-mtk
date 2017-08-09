@@ -1669,6 +1669,8 @@ struct _ADAPTER_T {
 	UINT_32 u4FlagBitmap;
 #endif
 
+	ULONG	ulSuspendFlag;
+
 };				/* end of _ADAPTER_T */
 
 /*******************************************************************************
@@ -1685,6 +1687,9 @@ struct _ADAPTER_T {
 *                                 M A C R O S
 ********************************************************************************
 */
+#define SUSPEND_FLAG_FOR_WAKEUP_REASON	(0)
+#define SUSPEND_FLAG_CLEAR_WHEN_RESUME	(1)
+
 /* Macros for argument _BssIndex */
 #define IS_NET_ACTIVE(_prAdapter, _BssIndex) \
 	((_prAdapter)->aprBssInfo[(_BssIndex)]->fgIsNetActive)

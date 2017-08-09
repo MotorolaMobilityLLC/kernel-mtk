@@ -4540,7 +4540,7 @@ VOID aisFsmRunEventRoamingDiscovery(IN P_ADAPTER_T prAdapter, UINT_32 u4ReqScan)
 	prConnSettings->eConnectionPolicy = CONNECT_BY_SSID_BEST_RSSI;
 
 	/* TODO: Stop roaming event in FW */
-#if (CFG_SUPPORT_WFD && 0)
+#if CFG_SUPPORT_WFD
 #if CFG_ENABLE_WIFI_DIRECT
 	{
 		/* Check WFD is running */
@@ -4548,7 +4548,8 @@ VOID aisFsmRunEventRoamingDiscovery(IN P_ADAPTER_T prAdapter, UINT_32 u4ReqScan)
 
 		prWfdCfgSettings = &(prAdapter->rWifiVar.rWfdConfigureSettings);
 		if ((prWfdCfgSettings->ucWfdEnable != 0)) {
-			DBGLOG(ROAMING, INFO, "WFD is running. Stop roaming.\n");
+			DBGLOG(ROAMING, INFO, "WFD is running. Stop roaming[WfdEnable:%u]\n",
+				prWfdCfgSettings->ucWfdEnable);
 			roamingFsmRunEventRoam(prAdapter);
 			roamingFsmRunEventFail(prAdapter, ROAMING_FAIL_REASON_NOCANDIDATE);
 			return;

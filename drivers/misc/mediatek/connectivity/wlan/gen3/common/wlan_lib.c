@@ -1428,7 +1428,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 
 	/* 4 <0.1> reset fgIsBusAccessFailed */
 	fgIsBusAccessFailed = FALSE;
-
+	prAdapter->ulSuspendFlag = 0;
 	do {
 		u4Status = nicAllocateAdapterMemory(prAdapter);
 		if (u4Status != WLAN_STATUS_SUCCESS) {
@@ -2840,6 +2840,9 @@ VOID wlanReleasePendingOid(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 				DBGLOG(INIT, WARN,
 				       "No response from chip for %u times, set NoAck flag!\n",
 					prAdapter->ucOidTimeoutCount);
+#if CFG_CHIP_RESET_SUPPORT
+				glResetTrigger(prAdapter);
+#endif
 			}
 
 			prAdapter->fgIsChipNoAck = TRUE;

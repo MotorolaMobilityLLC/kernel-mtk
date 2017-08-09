@@ -268,7 +268,7 @@
 #define CFG_TX_MAX_CMD_PKT_NUM                  32
 
 /*! Maximum number of associated STAs */
-#define CFG_NUM_OF_STA_RECORD                   20
+#define CFG_NUM_OF_STA_RECORD                   27
 
 /*------------------------------------------------------------------------------
  * Flags and Parameters for RX path
@@ -366,6 +366,8 @@
  */
 #define CFG_ENABLE_FULL_PM                      1
 #define CFG_ENABLE_WAKEUP_ON_LAN                0
+#define CFG_SUPPORT_WAKEUP_REASON_DEBUG		0	/* debug which packet wake up host */
+
 
 #define CFG_INIT_POWER_SAVE_PROF                    ENUM_PSP_FAST_SWITCH
 
