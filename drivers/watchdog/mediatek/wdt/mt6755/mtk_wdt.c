@@ -31,9 +31,10 @@
 #ifdef CONFIG_OF
 void __iomem *toprgu_base = 0;
 int	wdt_irq_id = 0;
+int ext_debugkey_io = -1;
 
 static const struct of_device_id rgu_of_match[] = {
-	{ .compatible = "mediatek,TOPRGU", },
+	{.compatible = "mediatek,toprgu",},
 	{},
 };
 #endif
@@ -376,7 +377,16 @@ int mtk_wdt_swsysret_config(int bit, int set_value)
 int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en)
 {
 	int res = 0;
-	unsigned int tmp;
+	unsigned int tmp, ext_req_con;
+	struct device_node *np_rgu;
+
+	if (!toprgu_base) {
+		np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
+		toprgu_base = of_iomap(np_rgu, 0);
+		if (!toprgu_base)
+			pr_err("RGU iomap failed\n");
+		pr_debug("RGU base: 0x%p  RGU irq: %d\n", toprgu_base, wdt_irq_id);
+	}
 
 	spin_lock(&rgu_reg_operation_spinlock);
 	tmp = __raw_readl(MTK_WDT_REQ_MODE);
@@ -392,6 +402,29 @@ int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en)
 			tmp |= (MTK_WDT_REQ_MODE_SPM_THERMAL);
 		if (WD_REQ_DIS == en)
 			tmp &=  ~(MTK_WDT_REQ_MODE_SPM_THERMAL);
+	} else if (MTK_WDT_REQ_MODE_EINT == mark_bit) {
+		if (WD_REQ_EN == en) {
+			if (ext_debugkey_io != -1) {
+				ext_req_con = (ext_debugkey_io << 4) | 0x01;
+				mt_reg_sync_writel(ext_req_con, MTK_WDT_EXT_REQ_CON);
+				tmp |= (MTK_WDT_REQ_MODE_EINT);
+			} else {
+				tmp &= ~(MTK_WDT_REQ_MODE_EINT);
+				res = -1;
+			}
+		}
+		if (WD_REQ_DIS == en)
+			tmp &= ~(MTK_WDT_REQ_MODE_EINT);
+	} else if (MTK_WDT_REQ_MODE_SYSRST == mark_bit) {
+		/*
+		if (WD_REQ_EN == en) {
+			DRV_WriteReg32(MTK_WDT_SYSDBG_DEG_EN1, MTK_WDT_SYSDBG_DEG_EN1_KEY);
+			DRV_WriteReg32(MTK_WDT_SYSDBG_DEG_EN2, MTK_WDT_SYSDBG_DEG_EN2_KEY);
+			tmp |= (MTK_WDT_REQ_MODE_SYSRST);
+		}
+		if (WD_REQ_DIS == en)
+			tmp &= ~(MTK_WDT_REQ_MODE_SYSRST);
+		*/
 	} else if (MTK_WDT_REQ_MODE_THERMAL == mark_bit) {
 		if (WD_REQ_EN == en)
 			tmp |= (MTK_WDT_REQ_MODE_THERMAL);
@@ -409,6 +442,15 @@ int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode)
 {
 	int res = 0;
 	unsigned int tmp;
+	struct device_node *np_rgu;
+
+	if (!toprgu_base) {
+		np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
+		toprgu_base = of_iomap(np_rgu, 0);
+		if (!toprgu_base)
+			pr_err("RGU iomap failed\n");
+		pr_debug("RGU base: 0x%p  RGU irq: %d\n", toprgu_base, wdt_irq_id);
+	}
 
 	spin_lock(&rgu_reg_operation_spinlock);
 	tmp = __raw_readl(MTK_WDT_REQ_IRQ_EN);
@@ -424,6 +466,18 @@ int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode)
 			tmp |= (MTK_WDT_REQ_IRQ_SPM_THERMAL_EN);
 		if (WD_REQ_RST_MODE == mode)
 			tmp &=  ~(MTK_WDT_REQ_IRQ_SPM_THERMAL_EN);
+	} else if (MTK_WDT_REQ_MODE_EINT == mark_bit) {
+		if (WD_REQ_IRQ_MODE == mode)
+			tmp |= (MTK_WDT_REQ_IRQ_EINT_EN);
+		if (WD_REQ_RST_MODE == mode)
+			tmp &= ~(MTK_WDT_REQ_IRQ_EINT_EN);
+	} else if (MTK_WDT_REQ_MODE_SYSRST == mark_bit) {
+		/*
+		if (WD_REQ_IRQ_MODE == mode)
+			tmp |= (MTK_WDT_REQ_IRQ_SYSRST_EN);
+		if (WD_REQ_RST_MODE == mode)
+			tmp &= ~(MTK_WDT_REQ_IRQ_SYSRST_EN);
+		*/
 	} else if (MTK_WDT_REQ_MODE_THERMAL == mark_bit) {
 		if (WD_REQ_IRQ_MODE == mode)
 			tmp |= (MTK_WDT_REQ_IRQ_THERMAL_EN);
@@ -440,8 +494,7 @@ int mtk_wdt_request_mode_set(int mark_bit, WD_REQ_MODE mode)
 * flag: 1 is to clear;0 is to set
 * shift: which bit need to do set or clear
 */
-#define C2K_SYSRST_SHIFT 15
-void mtk_wdt_set_c2k_sysrst(unsigned int flag)
+void mtk_wdt_set_c2k_sysrst(unsigned int flag, unsigned int shift)
 {
 #ifdef CONFIG_OF
 	struct device_node *np_rgu;
@@ -460,11 +513,11 @@ void mtk_wdt_set_c2k_sysrst(unsigned int flag)
 	spin_lock(&rgu_reg_operation_spinlock);
 	if (1 == flag) {
 		ret = __raw_readl(MTK_WDT_SWSYSRST);
-		ret &= (~(1<<C2K_SYSRST_SHIFT));
+		ret &= (~(1<<shift));
 		mt_reg_sync_writel((ret|MTK_WDT_SWSYS_RST_KEY), MTK_WDT_SWSYSRST);
 	} else { /* means set x bit */
 		ret = __raw_readl(MTK_WDT_SWSYSRST);
-		ret |= ((1<<C2K_SYSRST_SHIFT));
+		ret |= ((1<<shift));
 		mt_reg_sync_writel((ret|MTK_WDT_SWSYS_RST_KEY), MTK_WDT_SWSYSRST);
 	}
 	spin_unlock(&rgu_reg_operation_spinlock);
@@ -563,7 +616,8 @@ static int mtk_wdt_probe(struct platform_device *dev)
 {
 	int ret = 0;
 	unsigned int interval_val;
-	unsigned int nonrst;
+	struct device_node *node;
+	u32 ints[2] = { 0, 0 };
 
 	pr_err("******** MTK WDT driver probe!! ********\n");
 #ifdef CONFIG_OF
@@ -584,22 +638,24 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	pr_debug("RGU base: 0x%p  RGU irq: %d\n", toprgu_base, wdt_irq_id);
 
 #endif
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek, MRDUMP_EXT_RST-eint");
+	if (node) {
+		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
+		ext_debugkey_io = ints[0];
+	}
+	pr_err("mtk_wdt_probe: ext_debugkey_io=%d\n", ext_debugkey_io);
+
 #ifndef __USING_DUMMY_WDT_DRV__ /* FPGA will set this flag */
 
 #ifndef CONFIG_FIQ_GLUE
 	pr_debug("******** MTK WDT register irq ********\n");
-    #ifdef CONFIG_KICK_SPM_WDT
-	ret = spm_wdt_register_irq((irq_handler_t)mtk_wdt_isr);
-    #else
-	ret = request_irq(AP_RGU_WDT_IRQ_ID, (irq_handler_t)mtk_wdt_isr, IRQF_TRIGGER_FALLING, "mt_wdt", NULL);
-    #endif		/* CONFIG_KICK_SPM_WDT */
+	ret =
+	    request_irq(AP_RGU_WDT_IRQ_ID, (irq_handler_t) mtk_wdt_isr, IRQF_TRIGGER_FALLING,
+			"mtk_watchdog", NULL);
 #else
 	pr_debug("******** MTK WDT register fiq ********\n");
-    #ifdef CONFIG_KICK_SPM_WDT
-	ret = spm_wdt_register_fiq(wdt_fiq);
-    #else
 	ret = request_fiq(AP_RGU_WDT_IRQ_ID, wdt_fiq, IRQF_TRIGGER_FALLING, NULL);
-    #endif		/* CONFIG_KICK_SPM_WDT */
 #endif
 
 	if (ret != 0) {
@@ -607,10 +663,6 @@ static int mtk_wdt_probe(struct platform_device *dev)
 		return ret;
 	}
 	pr_debug("mtk_wdt_probe : Success to request irq\n");
-
-    #ifdef CONFIG_KICK_SPM_WDT
-	spm_wdt_init();
-    #endif
 
 	/* Set timeout vale and restart counter */
 	g_last_time_time_out_value = 30;
@@ -642,20 +694,20 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	mtk_wdt_mode_config(FALSE, FALSE, TRUE, FALSE, FALSE);
 	g_wdt_enable = 0;
 	#endif
-	/*
-	* E3 ECO
-       * reset will delay 2ms after set SW_WDT in register
-	*/
-	nonrst = __raw_readl(MTK_WDT_NONRST_REG);
-	nonrst = (nonrst | (1<<29));
-	mt_reg_sync_writel(nonrst, MTK_WDT_NONRST_REG);
-	pr_debug("WDT NONRST=0x%x\n", __raw_readl(MTK_WDT_NONRST_REG));
+
+
 	/* Update interval register value and check reboot flag */
 	interval_val = __raw_readl(MTK_WDT_INTERVAL);
 	interval_val &= ~(MAGIC_NUM_MASK);
 	interval_val |= (KERNEL_MAGIC);
 	/* Write back INTERVAL REG */
 	mt_reg_sync_writel(interval_val, MTK_WDT_INTERVAL);
+
+	/* Reset External debug key */
+	mtk_wdt_request_en_set(MTK_WDT_REQ_MODE_SYSRST, WD_REQ_DIS);
+	mtk_wdt_request_en_set(MTK_WDT_REQ_MODE_EINT, WD_REQ_DIS);
+	mtk_wdt_request_mode_set(MTK_WDT_REQ_MODE_SYSRST, WD_REQ_IRQ_MODE);
+	mtk_wdt_request_mode_set(MTK_WDT_REQ_MODE_EINT, WD_REQ_IRQ_MODE);
 #endif
 	udelay(100);
 	pr_debug("mtk_wdt_probe : done WDT_MODE(%x),MTK_WDT_NONRST_REG(%x)\n",
@@ -827,5 +879,5 @@ postcore_initcall(mtk_wdt_init);
 module_exit(mtk_wdt_exit);
 
 MODULE_AUTHOR("MTK");
-MODULE_DESCRIPTION("MT6582 Watchdog Device Driver");
+MODULE_DESCRIPTION("Watchdog Device Driver");
 MODULE_LICENSE("GPL");

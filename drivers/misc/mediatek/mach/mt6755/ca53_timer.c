@@ -432,15 +432,20 @@ static u64 arch_counter_get_cntvct_mem(void)
  */
 u64 (*arch_timer_read_counter)(void) = arch_counter_get_cntpct; /*need used pct because VCT's OFFSET counter in bootup*/
 
-#if 0
 static cycle_t arch_counter_read(struct clocksource *cs)
 {
-	return arch_timer_read_counter();
+	if (arch_timer_use_virtual)
+		return arch_counter_get_cntvct();
+	else
+		return arch_counter_get_cntpct();
 }
 
 static cycle_t arch_counter_read_cc(const struct cyclecounter *cc)
 {
-	return arch_timer_read_counter();
+	if (arch_timer_use_virtual)
+		return arch_counter_get_cntvct();
+	else
+		return arch_counter_get_cntpct();
 }
 
 static struct clocksource clocksource_counter = {
@@ -448,14 +453,13 @@ static struct clocksource clocksource_counter = {
 	.rating	= 400,
 	.read	= arch_counter_read,
 	.mask	= CLOCKSOURCE_MASK(56),
-	.flags	= CLOCK_SOURCE_IS_CONTINUOUS | CLOCK_SOURCE_SUSPEND_NONSTOP,
+	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
 };
 
 static struct cyclecounter cyclecounter = {
 	.read	= arch_counter_read_cc,
 	.mask	= CLOCKSOURCE_MASK(56),
 };
-#endif
 
 static struct timecounter timecounter;
 
@@ -466,7 +470,7 @@ struct timecounter *arch_timer_get_timecounter(void)
 
 static void __init arch_counter_register(unsigned type)
 {
-	/*u64 start_count*/;
+	u64 start_count;
 
 	/* Register the CP15 based counter if we have one */
 	if (type & ARCH_CP15_TIMER) {
@@ -481,7 +485,7 @@ static void __init arch_counter_register(unsigned type)
 		 */
 		/*clocksource_counter.name = "arch_mem_counter";*/ /*used APXGPT as clocksource, no need this*/
 	}
-#if 0
+#if 1
 	start_count = arch_timer_read_counter();
 	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
 	cyclecounter.mult = clocksource_counter.mult;
@@ -489,7 +493,7 @@ static void __init arch_counter_register(unsigned type)
 	timecounter_init(&timecounter, &cyclecounter, start_count);
 #endif
 	/* 56 bits minimum, so we assume worst case rollover */
-	/*sched_clock_register(arch_timer_read_counter, 56, arch_timer_rate); *//*used MTK APXGPT as clocksource*/
+	sched_clock_register((void *)arch_timer_read_counter, 53, (unsigned long)arch_timer_rate);
 }
 
 static void arch_timer_stop(struct clock_event_device *clk)

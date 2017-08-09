@@ -444,7 +444,8 @@ static inline void setup_clksrc(u32 freq)
 	pr_alert("setup_clksrc1: dev->base_addr=0x%lx GPT2_CON=0x%x\n",
 		(unsigned long)dev->base_addr, __raw_readl(dev->base_addr));
 	cs->mult = clocksource_hz2mult(freq, cs->shift);
-	sched_clock_register(mt_read_sched_clock, 32, freq);
+
+	/* sched_clock_register(mt_read_sched_clock, 32, freq); */
 
 	setup_gpt_dev_locked(dev, GPT_FREE_RUN, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
 		0, NULL, 0);
@@ -484,6 +485,8 @@ static inline void setup_clkevt(u32 freq)
 
 static  void setup_syscnt(void)
 {
+	/* map cpuxgpt address */
+	mt_cpuxgpt_map_base();
    /* set cpuxgpt free run,cpuxgpt always free run & oneshot no need to set */
    /* set cpuxgpt 13Mhz clock */
 	set_cpuxgpt_clk(CLK_DIV2);
@@ -758,5 +761,28 @@ unsigned int gpt_boot_time(void)
 }
 EXPORT_SYMBOL(gpt_boot_time);
 
+int gpt_set_clk(unsigned int id, unsigned int clksrc, unsigned int clkdiv)
+{
+	unsigned long save_flags;
+	struct gpt_device *dev = id_to_dev(id);
+
+	if (!dev)
+		return -EINVAL;
+
+	if (!(dev->flags & GPT_IN_USE)) {
+		pr_err("%s: GPT%d is not in use!\n", __func__, id);
+		return -EBUSY;
+	}
+
+	gpt_update_lock(save_flags);
+	__gpt_stop(dev);
+	__gpt_set_clk(dev, clksrc, clkdiv);
+	__gpt_start(dev);
+	gpt_update_unlock(save_flags);
+
+	return 0;
+}
+EXPORT_SYMBOL(gpt_set_clk);
+
 /************************************************************************************************/
-CLOCKSOURCE_OF_DECLARE(mtk_apxgpt, "mediatek,APXGPT", mt_gpt_init);
+CLOCKSOURCE_OF_DECLARE(mtk_apxgpt, "mediatek,apxgpt", mt_gpt_init);

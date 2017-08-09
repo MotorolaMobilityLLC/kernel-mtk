@@ -49,7 +49,7 @@ static irqreturn_t __cpuxgpt6_irq_handler(int irq, void *dev_id);
 static irqreturn_t __cpuxgpt7_irq_handler(int irq, void *dev_id);
 
 static const struct of_device_id cpuxgpt_addr_ids[] __initconst = {
-	{.compatible = "mediatek,CPUXGPT"},
+	{.compatible = "mediatek,cpuxgpt"},
 	{},
 };
 
@@ -262,6 +262,31 @@ int cpu_xgpt_set_cmp_HL(CPUXGPT_NUM cpuxgpt_num, int countH, int countL)
 	return 0;
 }
 
+void mt_cpuxgpt_map_base(void)
+{
+	unsigned long save_flags;
+	struct device_node *config_node;
+
+	/* Setup IO addresses based on MCUCFG */
+	config_node = of_find_matching_node(NULL, cpuxgpt_addr_ids);
+	if (!config_node)
+		pr_err("No timer");
+	cpuxgpt_regs = of_iomap(config_node, 0);
+
+	save_flags = of_address_to_resource(config_node, 0, &cpuxgpt_r);
+	if (save_flags)
+		pr_err("map phy addr of CPUXGPT fail !!");
+
+	mt_cpuxgpt_base_phys = cpuxgpt_r.start;
+
+	#ifdef CONFIG_ARM64
+	pr_err("cpuxgpt_r.start = 0x%llx\n", mt_cpuxgpt_base_phys);
+	#else
+	pr_err("cpuxgpt_r.start = 0x%x\n", mt_cpuxgpt_base_phys);
+	#endif
+}
+
+
 static void __init mt_cpuxgpt_init(struct device_node *node)
 {
 	int i;
@@ -280,22 +305,25 @@ static void __init mt_cpuxgpt_init(struct device_node *node)
 			cpuxgpt_irq[i] = irq_of_parse_and_map(node, i);
 
 		/* Setup IO addresses based on MCUCFG */
-		config_node = of_find_matching_node(NULL, cpuxgpt_addr_ids);
-		if (!config_node)
-			pr_err("No timer");
-		cpuxgpt_regs = of_iomap(config_node, 0);
+		if (cpuxgpt_regs == NULL) {
+			config_node = of_find_matching_node(NULL, cpuxgpt_addr_ids);
+			if (!config_node)
+				pr_err("No timer");
+			cpuxgpt_regs = of_iomap(config_node, 0);
 
-		save_flags = of_address_to_resource(config_node, 0, &cpuxgpt_r);
-	    if (save_flags)
-			pr_err("map phy addr of CPUXGPT fail !!");
+			save_flags = of_address_to_resource(config_node, 0, &cpuxgpt_r);
+			if (save_flags)
+				pr_err("map phy addr of CPUXGPT fail !!");
 
-		mt_cpuxgpt_base_phys = cpuxgpt_r.start;
+			mt_cpuxgpt_base_phys = cpuxgpt_r.start;
 
-		#ifdef CONFIG_ARM64
-		pr_err("cpuxgpt_r.start = 0x%llx\n", mt_cpuxgpt_base_phys);
-		#else
-		pr_err("cpuxgpt_r.start = 0x%lx\n", (unsigned long)mt_cpuxgpt_base_phys);
-		#endif
+			#ifdef CONFIG_ARM64
+			pr_err("cpuxgpt_r.start = 0x%llx\n", mt_cpuxgpt_base_phys);
+			#else
+			pr_err("cpuxgpt_r.start = 0x%lx\n", (unsigned long)mt_cpuxgpt_base_phys);
+			#endif
+		} else
+			pr_err("cpuxgpt base address had mapped!!\n");
 
 /* pr_alert("mt_cpuxgpt_init: cpuxgpt_regs=0x%x, irq0=%d, irq1=%d, irq2=%d, irq3=%d,
 irq4=%d, irq5=%d, irq6=%d, irq7=%d\n", */
@@ -471,4 +499,4 @@ void cpu_xgpt_halt_on_debug_en(int en)
 }
 EXPORT_SYMBOL(cpu_xgpt_halt_on_debug_en);
 
-CLOCKSOURCE_OF_DECLARE(mtk_cpuxgpt, "mediatek,CPUXGPT", mt_cpuxgpt_init);
+CLOCKSOURCE_OF_DECLARE(mtk_cpuxgpt, "mediatek,cpuxgpt", mt_cpuxgpt_init);

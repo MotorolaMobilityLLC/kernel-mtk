@@ -61,5 +61,6 @@ extern int gpt_get_cnt(unsigned int id, unsigned int *ptr);
 
 extern int gpt_check_irq(unsigned int id);
 extern int gpt_check_and_ack_irq(unsigned int id);
+extern int gpt_set_clk(unsigned int id, unsigned int clksrc, unsigned int clkdiv);
 
 #endif

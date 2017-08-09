@@ -57,5 +57,6 @@ unsigned int cpu_xgpt_irq_dis(int cpuxgpt_num);
 void restore_cpuxgpt(void);
 void save_cpuxgpt(void);
 void generic_timer_backup(void);
+void mt_cpuxgpt_map_base(void);
 
 #endif
