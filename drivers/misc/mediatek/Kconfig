@@ -62,6 +62,9 @@ config MTK_MEMCFG
 config MTK_BASE_POWER
 	bool
 
+config MTK_POWER_GS
+	bool
+
 config MTK_SHARED_SDCARD
 	bool "MTK_SHARED_SDCARD"
 	help

@@ -815,6 +815,7 @@ config ARCH_MT6735
 	select ARM_ERRATA_836870
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
+	select MTK_POWER_GS
 	help
 	  This enable support for MediaTek MT6735
 
@@ -845,6 +846,7 @@ config ARCH_MT6735M
 	select KERNEL_MODE_NEON
 	select CRYPTO_AES_ARM32_CE
 	select ARM_ERRATA_836870
+	select MTK_POWER_GS
 	help
 	  This enables support for MediaTek MT6735M
 	  Support for k35mv1
@@ -878,6 +880,7 @@ config ARCH_MT6753
 	select CRYPTO_AES_ARM32_CE
 	select MTK_BASE_POWER
 	select ARM_ERRATA_836870
+	select MTK_POWER_GS
 	help
 	  This enable support for MediaTek MT6753
 	  To enable related drivers
@@ -917,6 +920,7 @@ config ARCH_MT6580
 	select ARM_MT6735_CPUIDLE
 	select MTK_SYSTRACKER_V2
 	select ARM_ERRATA_814220
+	select MTK_POWER_GS
 	help
 	  This enable support for MediaTek MT6580
 
@@ -946,6 +950,7 @@ config ARCH_MT6755
 	select COMMON_CLK if !MTK_CLKMGR
 	select PINCTRL_MT6735
 	select PINCTRL_MT6755
+	select MTK_POWER_GS
 	help
 	  This enable support for MediaTek MT6755
 

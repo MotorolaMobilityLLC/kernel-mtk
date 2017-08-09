@@ -19,6 +19,7 @@
 /* #include <mach/mtk_ccci_helper.h> */
 #include <mt-plat/mt_ccci_common.h>
 #include "mt_cpufreq.h"
+#include "mt_power_gs-v1.h"
 /* #include <mt-plat/upmu_common.h> */
 /* #include <mt-plat/upmu_sw.h> */
 /* #include <mt-plat/upmu_hw.h> */
@@ -1562,6 +1563,8 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	wd_ret = get_wd_api(&wd_api);
 	if (!wd_ret)
 		wd_api->wd_suspend_notify();
+
+	mt_power_gs_dump_suspend();
 
 	/* spm_suspend_pre_process(pwrctrl); */
 	lockdep_off();
