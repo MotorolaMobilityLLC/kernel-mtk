@@ -279,9 +279,9 @@ static void LC898212XD_init(void)
 				s4EEPROM_ReadReg_LC898212XDAF_IMX258(0x0F66, &val2);
 				Hall_Off = ((val1 << 8) | (val2 & 0x00FF)) & 0xFFFF;
 
-				Hall_Min = HallMinCheck;
+				Hall_Min = 0x8001; /* HallMinCheck; */
 
-				Hall_Max = HallMaxCheck;
+				Hall_Max = 0x7FFF; /* HallMaxCheck; */
 				/* Li define format - Ev IMX258 PDAF - end */
 			} else {
 				/* Li define format - Ev MVHDR */
