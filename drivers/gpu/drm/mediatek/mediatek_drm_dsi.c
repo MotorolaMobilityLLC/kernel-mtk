@@ -351,7 +351,7 @@ static void dsi_phy_clk_switch_off(struct mtk_dsi *dsi)
 static void dsi_phy_clk_setting(struct mtk_dsi *dsi)
 {
 	unsigned int txdiv;
-	u64 pcw, div;
+	u64 pcw;
 	u32 reg;
 
 	mtk_dsi_tx_mask(dsi, MIPITX_DSI_TOP_CON,
@@ -781,7 +781,7 @@ static void mtk_output_dsi_enable(struct mtk_dsi *dsi)
 
 	dsi->enabled = true;
 	DRM_INFO("dsi_reg_base = 0x%x, dsi_tx_reg_base = 0x%x\n",
-		dsi->dsi_reg_base, dsi->dsi_tx_reg_base);
+		(unsigned int *)dsi->dsi_reg_base, (unsigned int *)dsi->dsi_tx_reg_base);
 }
 
 static void mtk_output_dsi_disable(struct mtk_dsi *dsi)
@@ -962,31 +962,6 @@ struct bridge_init {
 	struct device_node *node_dptx;
 };
 
-static int mtk_drm_attach_lcm_bridge(
-		struct drm_bridge *bridge,
-		struct drm_encoder *encoder
-		)
-{
-	int ret;
-
-	if (!bridge || !encoder) {
-		ret = -EFAULT;
-		return ret;
-	}
-
-	encoder->bridge = bridge;
-	bridge->encoder = encoder;
-
-	ret = drm_bridge_attach(encoder->dev, bridge);
-
-	if (ret) {
-		DRM_ERROR("Failed to attach bridge to drm\n");
-		return ret;
-	}
-
-	return 0;
-}
-
 static int mtk_dsi_create_conn_enc(struct mtk_dsi *dsi)
 {
 	int ret;
@@ -1004,11 +979,6 @@ static int mtk_dsi_create_conn_enc(struct mtk_dsi *dsi)
 	drm_encoder_helper_add(&dsi->encoder, &mtk_dsi_encoder_helper_funcs);
 
 	dsi->encoder.possible_crtcs = 1;
-
-	/* Pre-empt DP connector creation if there's a bridge
-	ret = mtk_drm_attach_lcm_bridge(dsi->bridge, &dsi->encoder);
-	if (!ret)
-		return 0;*/
 
 	ret = drm_connector_init(dsi->drm_dev, &dsi->conn,
 				 &mtk_dsi_connector_funcs,
