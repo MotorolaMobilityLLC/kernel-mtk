@@ -374,7 +374,7 @@ static void set_shutter(kal_uint16 shutter)
 		{
 			//LOG_INF("IDX %d,tosend %d addr_last 0x%x,addr 0x%x\n",IDX, tosend, addr_last, addr);
 			if(HW_trig)
-				iBurstWriteReg_HW(puSendCmd , tosend, imgsensor.i2c_write_id, 3);
+				iBurstWriteReg_HW(puSendCmd , tosend, imgsensor.i2c_write_id, 3, 0);
 			else
 				iBurstWriteReg_multi(puSendCmd , tosend, imgsensor.i2c_write_id, 3, 0);
 			tosend = 0;

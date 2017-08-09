@@ -689,10 +689,11 @@ int kdReleaseI2CTriggerLock(void)
 struct i2c_msg msg[MAX_I2C_CMD_LEN];
 
 #if HW_TRIGGER_I2C_SUPPORT
-int iBurstWriteReg_HW(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length){
+int iBurstWriteReg_HW(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing){
 
 	int ret = 0;
 	int i = 0 ;
+	u32 speed_timing = 0;
 	struct i2c_client *pClient = NULL;
 	int trans_num = 0;
 	trans_num =	bytes/transfer_length;
@@ -705,18 +706,23 @@ int iBurstWriteReg_HW(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length){
 		return -1;
 	}
 
+	if((timing > 0) && (timing <= 400)) 
+		speed_timing = timing*1000; /*unit:hz*/
+	else
+		speed_timing = 400000;
+
 	for(i = 0 ; i<trans_num ; i++){
 		msg[i].addr = i2cId >> 1;
 		msg[i].flags = 0;
 		msg[i].len = transfer_length;
 		msg[i].buf = pData+(i*transfer_length);
 	}
-	ret = mtk_i2c_transfer(pClient->adapter, msg, trans_num, I2C_HWTRIG_FLAG, 0);
+	ret = mtk_i2c_transfer(pClient->adapter, msg, trans_num, I2C_HWTRIG_FLAG, speed_timing);
 		//ret = i2c_transfer(pClient->adapter, msg, trans_num);
 	return ret;
 }
 #else
-int iBurstWriteReg_HW(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length){
+int iBurstWriteReg_HW(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing){
 	PK_ERR("plz #define HW_TRIGGER_I2C_SUPPORT 1\n");
         return -1;
 }
@@ -752,7 +758,9 @@ int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u
 		msg[i].buf = pData+(i*transfer_length);
 	}
 	ret = mtk_i2c_transfer(pClient->adapter, msg, trans_num, 0, speed_timing);
-	//PK_ERR("[iBurstWriteReg_multi] I2C send failed (0x%x)! timing(0=%d) \n", ret,speed_timing);
+	if (ret != trans_num) {
+		PK_ERR("[iBurstWriteReg_multi] I2C send failed (0x%x)! timing(0=%d) \n", ret,speed_timing);
+	}
 	return ret;
 #else
     uintptr_t phyAddr;
