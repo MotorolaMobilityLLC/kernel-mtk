@@ -74,12 +74,14 @@ int i2c_trans_data(int bus_id, int address, char *buf, int count, unsigned int e
 		return -1;
 
 	msg.addr = address;
-	if (0 == op)
-		msg.flags = 0;
-	else if (1 == op)
+	switch (op) {
+	case 1:
 		msg.flags = I2C_M_RD;
-	else if (2 == op)
+		break;
+	default:
 		msg.flags = 0;
+		break;
+	}
 	/* msg.flags = ((ext_flag & 0x80000000)?I2C_M_RD:0); */
 	msg.len = count;
 	msg.buf = (char *)buf;
@@ -100,8 +102,8 @@ int i2c_trans_data(int bus_id, int address, char *buf, int count, unsigned int e
 int mt_i2c_test(int id, int addr)
 {
 	int ret = 0;
-	unsigned long flag;
-/* unsigned char buffer[]={0x55}; */
+	unsigned int flag;
+	/* unsigned char buffer[]={0x55}; */
 	if (id > 3)
 		flag = I2C_DIRECTION_FLAG;
 
@@ -230,22 +232,21 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 	void *vir_addr = NULL;
 	/* int status; */
 	int ret = 0;
-
 	unsigned char tmpbuffer[128];
 
 	I2CLOG("%s\n", buf);
-	/* if ( sscanf(buf, "%d %d %d %d %d %d %d %d %d %d %d %d %s",
-			&bus_id, &address, &operation, &trans_mode, &trans_stop,
-			&speed_mode, &pushpull_mode, &query_mode, &timing, &trans_num,
-			&trans_auxlen,&dir, data_buffer) ) { */
-	if (sscanf(buf, "%d %x %d %d %d %d %d %d %d %d %d %s", &bus_id, &address, &operation, &trans_mode,
-		&trans_stop, &speed_mode, &pushpull_mode, &query_mode, &timing, &trans_num,
-		&trans_auxlen, data_buffer) != 0) {
+	/* if (sscanf(buf, "%d %d %d %d %d %d %d %d %d %d %d %d %s", &bus_id, &address,
+	 * &operation, &trans_mode, &trans_stop, &speed_mode, &pushpull_mode,
+	 * &query_mode, &timing, &trans_num, &trans_auxlen,&dir, data_buffer)) {
+	 */
+	if (sscanf(buf, "%d %x %d %d %d %d %d %d %d %d %d %1023s", &bus_id, &address,
+	     &operation, &trans_mode, &trans_stop, &speed_mode, &pushpull_mode,
+	     &query_mode, &timing, &trans_num, &trans_auxlen, data_buffer) == 12) {
 		if ((address != 0) && (operation <= 2)) {
 			length = strlen(data_buffer);
 			if (operation == 0) {
 				ext_flag |= I2C_WR_FLAG;
-				number = (trans_auxlen << 8) | (length >> 1);	/* /TODO:need to confitm 8 Or 16 */
+				number = (trans_auxlen << 8) | (length >> 1);
 			} else if (operation == 1) {
 				/* ext_flag |= 0x80000000; */
 				number = (trans_num << 16) | (length >> 1);
@@ -312,10 +313,8 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 			}
 
 			if (trans_mode == 1) {	/*DMA MODE */
-				/*need GFP_DMA32 flag to confirm DMA alloc PA is 32bit range */
-				vir_addr =
-				    dma_alloc_coherent(dev, length >> 1, &dma_addr,
-						       GFP_KERNEL | GFP_DMA32);
+				vir_addr = dma_alloc_coherent(dev, length >> 1, &dma_addr,
+							      GFP_KERNEL | GFP_DMA32);
 				if (vir_addr == NULL) {
 
 					I2CERR("alloc dma memory failed\n");
@@ -331,8 +330,8 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 			}
 
 			get_hexbuffer(data_buffer, vir_addr);
-			I2CLOG("bus_id:%d,address:%x,count:%x,ext_flag:0x%x,timing:%d\n", bus_id,
-			       address, number, ext_flag, timing);
+			I2CLOG("bus_id:%d,address:%x,count:%x,ext_flag:0x%x,timing:%d\n",
+			       bus_id, address, number, ext_flag, timing);
 			I2CLOG("data_buffer:%s\n", data_buffer);
 
 			if (trans_mode == 1) {
@@ -341,19 +340,16 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 #else
 				pr_info("phys_addr: 0x%x\n", dma_addr);
 #endif
-				ret =
-				    i2c_trans_data(bus_id, address, mt_i2c_bus_to_virt(dma_addr),
-						   number, ext_flag, timing, operation);
+				ret = i2c_trans_data(bus_id, address, (void *)dma_addr,
+						number, ext_flag, timing, operation);
 			} else {
-				ret =
-				    i2c_trans_data(bus_id, address, vir_addr, number, ext_flag,
-						   timing, operation);
+				ret = i2c_trans_data(bus_id, address, vir_addr, number,
+						     ext_flag, timing, operation);
 			}
 
 			/* dealing */
 
 			if (ret >= 0) {
-
 				if (operation == 1) {
 					hex2string(vir_addr, tmpbuffer, length >> 1);
 					sprintf(data_buffer, "1 %s", tmpbuffer);
@@ -367,7 +363,6 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 				}
 				I2CLOG("Actual return Value:%d 0x%p\n", ret, vir_addr);
 			} else if (ret < 0) {
-
 				if (ret == -EINVAL)
 					sprintf(data_buffer, "0 %s", "Invalid Parameter");
 				else if (ret == -ETIMEDOUT)
@@ -379,7 +374,8 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 				I2CLOG("Actual return Value:%d 0x%p\n", ret, vir_addr);
 			}
 
-			if (trans_mode == 1 && vir_addr != NULL) {	/*DMA MODE */
+			if (trans_mode == 1 && vir_addr != NULL) {
+				/*DMA MODE */
 				dma_free_coherent(dev, length >> 1, vir_addr, dma_addr);
 			} else {
 				kfree(vir_addr);
@@ -438,7 +434,7 @@ static DEVICE_ATTR(ut, 0660, show_config, set_config);
 static int i2c_common_probe(struct platform_device *pdev)
 {
 	int ret = 0;
-	/* your code here£¬your should save client in your own way */
+	/* your code here, your should save client in your own way */
 	I2CLOG("i2c_common device probe\n");
 	ret = device_create_file(&pdev->dev, &dev_attr_ut);
 	return ret;
@@ -468,7 +464,7 @@ static struct platform_device i2c_common_device = {
 	.name = "mt-i2cd",
 	.dev = {
 		.coherent_dma_mask = DMA_BIT_MASK(32),
-		},
+	},
 };
 
 static int __init xxx_init(void)

@@ -3,23 +3,22 @@
 #include <linux/types.h>
 #if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
-#endif				/* !defined(CONFIG_MTK_CLKMGR) */
+#endif
 
 #define I2CTAG			"[I2C]"
 /* #define pr_fmt(fmt)		"[I2C]"fmt */
-#define I2CLOG(fmt, arg...)	pr_err(fmt, ##arg)
+#define I2CLOG(fmt, arg...)	pr_debug(fmt, ##arg)
 #define I2CMSG(fmt, arg...)	pr_debug(fmt, ##arg)
 #define I2CERR(fmt, arg...)	pr_err("ERROR,%d: "fmt, __LINE__, ##arg)
 #define I2CFUC(fmt, arg...)	pr_debug("%s\n", __func__)
 
 #define I2C_DRV_NAME		"mt-i2c"
-#define I2C_NR			4
+#define I2C_NR			5
 
 
 #define I2C_DRIVER_IN_KERNEL
 #ifdef I2C_DRIVER_IN_KERNEL
 
-#define I2C_MB() mb()	/* foo */
 /* #define I2C_DEBUG */
 #ifdef I2C_DEBUG
 #define I2C_BUG_ON(a) BUG_ON(a)
@@ -36,6 +35,7 @@
 #define I2C_CLK_DIV	5	/* frequency divider */
 #define I2C_CLK_RATE	(FPGA_CLOCK / I2C_CLK_DIV)	/* kHz for FPGA I2C work frequency */
 #else
+#define I2C_CLK_DIV	10	/* frequency divider */
 #define I2C_CLK_RATE	13600
 #endif
 
@@ -61,11 +61,11 @@
 
 /* enum for different I2C pins */
 enum {
-	I2C0 = 0,
+	I2C0,
 	I2C1,
 	I2C2,
+	I2C_APPM,
 	I2C3,
-	I2C4,
 };
 
 /******************************************register operation***********************************/
@@ -104,7 +104,7 @@ enum I2C_REGS_OFFSET {
 #define MAX_FS_MODE_SPEED	400	/* khz */
 #define MAX_HS_MODE_SPEED	3400	/* khz */
 
-#define MAX_DMA_TRANS_SIZE        65532	/* Max(65535) aligned to 4 bytes = 65532 */
+#define MAX_DMA_TRANS_SIZE	65532	/* Max(65535) aligned to 4 bytes = 65532 */
 #define MAX_DMA_TRANS_NUM	256
 
 #define MAX_SAMPLE_CNT_DIV	8
@@ -114,8 +114,8 @@ enum I2C_REGS_OFFSET {
 #define DMA_ADDRESS_HIGH	(0xC0000000)
 
 /* refer to AP_DMA register address */
-#define DMA_I2C_BASE_CH(id) (AP_DMA_BASE + 0x180 + (0x80 * (id)))
-#define DMA_I2C_BASE(id, base) ((base) + 0x180 + (0x80 * (id)))
+#define DMA_I2C_BASE_CH(id) (AP_DMA_BASE + 0x100 + (0x80 * (id)))
+#define DMA_I2C_BASE(id, base) ((base) + 0x100 + (0x80 * (id)))
 
 enum DMA_REGS_OFFSET {
 	OFFSET_INT_FLAG = 0x0,
@@ -130,11 +130,13 @@ enum DMA_REGS_OFFSET {
 	OFFSET_TX_LEN = 0x24,
 	OFFSET_RX_LEN = 0x28,
 	OFFSET_INT_BUF_SIZE = 0x38,
-	OFFSET_DEBUG_STA = 0x50,
+	OFFSET_DEBUG_STATUS = 0x50,
+	OFFSET_ARHP = 0x54,
+	OFFSET_AWHP = 0x58,
 };
 
 struct i2c_dma_info {
-	unsigned long base;
+	void __iomem *base;
 	unsigned int int_flag;
 	unsigned int int_en;
 	unsigned int en;
@@ -148,6 +150,8 @@ struct i2c_dma_info {
 	unsigned int rx_len;
 	unsigned int int_buf_size;
 	unsigned int debug_sta;
+	unsigned int arhp;
+	unsigned int awhp;
 };
 
 enum i2c_trans_st_rs {
@@ -155,7 +159,7 @@ enum i2c_trans_st_rs {
 	I2C_TRANS_REPEATED_START,
 };
 
-enum {
+enum i2c_speed_mode {
 	ST_MODE,
 	FS_MODE,
 	HS_MODE,
@@ -175,8 +179,8 @@ enum mt_trans_op {
 #define I2C_CONTROL_DIR_CHANGE		(0x1 << 4)
 #define I2C_CONTROL_ACKERR_DET_EN	(0x1 << 5)
 #define I2C_CONTROL_TRANSFER_LEN_CHANGE	(0x1 << 6)
-/***********************************end of register operation****************************************/
-/***********************************I2C Param********************************************************/
+/***********************************end of register operation**************************************/
+/***********************************I2C Param******************************************************/
 struct mt_trans_data {
 	u16 trans_num;
 	u16 data_size;
@@ -196,7 +200,8 @@ struct mt_i2c_t {
 	atomic_t trans_err;	/* i2c transfer error */
 	atomic_t trans_comp;	/* i2c transfer completion */
 	atomic_t trans_stop;	/* i2c transfer stop */
-	spinlock_t lock;	/* for struct mt_i2c_t struct protection */
+	spinlock_t lock;	/* for struct mt_i2c_t protection */
+	struct mutex mutex;	/* protect from different API */
 	wait_queue_head_t wait;	/* i2c transfer wait queue */
 #endif
 	/* ==========set in i2c probe============ */
@@ -214,7 +219,7 @@ struct mt_i2c_t {
 	u16 delay_len;		/* number of half pulse between transfers in a trasaction */
 	u32 msg_len;		/* number of bytes for transaction */
 	u8 *msg_buf;		/* pointer to msg data      */
-	u8 addr;		/* The address of the slave device, 7bit,the value include read/write bit. */
+	u8 addr;		/* The 7-bit address of the slave device */
 	u8 master_code;		/* master code in HS mode */
 	u8 mode;		/* ST/FS/HS mode */
 	/* ==========reserved function============ */
@@ -234,13 +239,13 @@ struct mt_i2c_t {
 	u16 control_reg;
 	u32 last_speed;
 	u8 last_mode;
-	u32 defaul_speed;
+	u32 default_speed;
 	struct mt_trans_data trans_data;
 	struct i2c_dma_buf dma_buf;
 #if !defined(CONFIG_MTK_CLKMGR)
 	struct clk *clk_main;	/* main clock for i2c bus */
 	struct clk *clk_dma;	/* DMA clock for i2c via DMA */
-#endif				/* !defined(CONFIG_MTK_CLKMGR) */
+#endif
 };
 
 struct mt_i2c_msg {
@@ -283,4 +288,4 @@ void _i2c_dump_info(struct mt_i2c_t *i2c);
 void i2c_writel(struct mt_i2c_t *i2c, u8 offset, u16 value);
 u32 i2c_readl(struct mt_i2c_t *i2c, u8 offset);
 
-#endif				/* __MT_I2C_H__ */
+#endif	/* __MT_I2C_H__ */
