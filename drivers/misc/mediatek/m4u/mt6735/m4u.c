@@ -2176,8 +2176,6 @@ static int m4u_probe(struct platform_device *pdev)
 #endif
 	struct device_node *node = pdev->dev.of_node;
 
-	return 0;
-
 	M4UINFO("m4u_probe 0\n");
 
 	if (pdev->dev.of_node) {
