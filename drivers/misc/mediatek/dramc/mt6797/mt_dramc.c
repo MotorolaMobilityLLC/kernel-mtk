@@ -1321,7 +1321,7 @@ static int dram_dt_init(void)
 	int ret = 0;
 	struct device_node *node = NULL;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,dramc_conf");
 	if (node) {
 		DRAMCAO_BASE_ADDR = of_iomap(node, 0);
 		pr_warn("[DRAMC]get DRAMCAO_BASE_ADDR @ %p\n", DRAMCAO_BASE_ADDR);
