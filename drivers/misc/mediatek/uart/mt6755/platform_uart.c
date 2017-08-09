@@ -24,10 +24,10 @@
 
 #if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 #include <mach/mt_clkmgr.h>
+#include <mach/mt_idle.h>
 #endif				/* defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)*/
 
 #if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
-#include <mach/mt_idle.h>
 #include "mach/mt_gpio.h"
 #include <cust_gpio_usage.h>
 #endif				/* defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)*/
@@ -46,10 +46,12 @@ struct pinctrl *ppinctrl_uart[UART_NR];
 char *uart_gpio_cmds[UART_NR][4] = {
 	{"uart0_rx_set", "uart0_rx_clear", "uart0_tx_set", "uart0_tx_clear"},
 	{"uart1_rx_set", "uart1_rx_clear", "uart1_tx_set", "uart1_tx_clear"},
+#if 0
 #if !defined(CONFIG_MTK_FPGA)
 	{"uart2_rx_set", "uart2_rx_clear", "uart2_tx_set", "uart2_tx_clear"},
 	{"uart3_rx_set", "uart3_rx_clear", "uart3_tx_set", "uart3_tx_clear"},
 #endif				/* !defined (CONFIG_MTK_FPGA) */
+#endif
 };
 
 void set_uart_pinctrl(int idx, struct pinctrl *ppinctrl)

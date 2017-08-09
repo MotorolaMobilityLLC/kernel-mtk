@@ -23,12 +23,12 @@
 
 #if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 #include <mach/mt_clkmgr.h>
+#include <mt_idle.h>
 #endif /* defined(CONFIG_MTK_CLKMGR) && !defined (CONFIG_MTK_FPGA)*/
 
 #if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
-#include <mach/mt_idle.h>
-#include "mach/mt_gpio.h"
-#include <cust_gpio_usage.h>
+#include <mt-plat/mt_gpio.h>
+/* #include <cust_gpio_usage.h> */
 #endif /* defined(CONFIG_MTK_LEGACY) && !defined (CONFIG_MTK_FPGA)*/
 
 #include <linux/delay.h>
@@ -58,7 +58,7 @@ void set_uart_pinctrl(int idx, struct pinctrl *ppinctrl)
 }
 #endif				/* !defined(CONFIG_MTK_LEGACY) */
 
-#if !defined(CONFIG_MTK_CLKMGR)
+#if !defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 /* struct clk *clk_uart_main; */
 struct clk *clk_uart_dma;
 void set_uart_dma_clk(int idx, struct clk *dma_clk)
@@ -66,7 +66,7 @@ void set_uart_dma_clk(int idx, struct clk *dma_clk)
 	pr_debug("[UART%d][CCF]enabled clk_uart%d_dma:%p\n", idx, idx, dma_clk);
 	clk_uart_dma = dma_clk;
 }
-#endif				/* !defined(CONFIG_MTK_CLKMGR) */
+#endif /* !defined(CONFIG_MTK_LEGACY) && !defined (CONFIG_MTK_FPGA)*/
 
 #ifdef ENABLE_RAW_DATA_DUMP
 static void save_tx_raw_data(struct mtk_uart *uart, void *addr);
@@ -93,7 +93,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART0_BASE, .irq_num = UART0_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART1, .clr_bit = PDN_FOR_UART1, .pll_id = PDN_FOR_UART1,
 #endif
 	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
@@ -103,7 +103,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART1_BASE, .irq_num = UART1_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART2, .clr_bit = PDN_FOR_UART2, .pll_id = PDN_FOR_UART2,
 #endif
 	 .sysrq = FALSE, .hw_flow = TRUE, .vff = TRUE,
@@ -113,7 +113,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART2_BASE, .irq_num = UART2_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART3, .clr_bit = PDN_FOR_UART3, .pll_id = PDN_FOR_UART3,
 #endif
 	 .sysrq = FALSE, .hw_flow = FALSE, .vff = TRUE,	/* UART3 */
@@ -123,7 +123,7 @@ static struct mtk_uart_setting mtk_uart_default_settings[] = {
 	 .tx_trig = UART_FCR_TXFIFO_1B_TRI, .rx_trig = UART_FCR_RXFIFO_12B_TRI,
 
 	 /* .uart_base = AP_UART3_BASE, .irq_num = UART3_IRQ_BIT_ID, .irq_sen = MT_LEVEL_SENSITIVE, */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 	 .set_bit = PDN_FOR_UART4, .clr_bit = PDN_FOR_UART4, .pll_id = PDN_FOR_UART4,
 #endif
 	 .sysrq = FALSE, .hw_flow = FALSE, .vff = FALSE,	/* UART4 */
@@ -1953,13 +1953,13 @@ unsigned int mtk_uart_get_mctrl(struct uart_port *port)
 void mtk_uart_stop_rx(struct uart_port *port)
 {
 	struct mtk_uart *uart = (struct mtk_uart *)port;
-	struct mtk_uart_dma *dma = &uart->dma_rx;
 
 	MSG_FUNC_ENTRY();
 	if (uart->rx_mode == UART_NON_DMA) {
 		mtk_uart_disable_intrs(uart, UART_IER_ERBFI);
 	} else {
 #if defined(ENABLE_VFIFO)
+		struct mtk_uart_dma *dma = &uart->dma_rx;
 		/* According to serial_core.c, stop_rx is to stop interrupt
 		 * Hence, RX received interrupt and dma interrupt is clear
 		 */
@@ -2513,7 +2513,7 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 void mtk_uart_enable_dpidle(struct mtk_uart *uart)
 {
 /* FIX-ME early porting */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 	enable_dpidle_by_bit(uart->setting->pll_id);
 	enable_soidle_by_bit(uart->setting->pll_id);
 #endif
@@ -2523,7 +2523,7 @@ void mtk_uart_enable_dpidle(struct mtk_uart *uart)
 void mtk_uart_disable_dpidle(struct mtk_uart *uart)
 {
 /* FIX-ME early porting */
-#if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
+#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 	disable_dpidle_by_bit(uart->setting->pll_id);
 	disable_soidle_by_bit(uart->setting->pll_id);
 #endif
