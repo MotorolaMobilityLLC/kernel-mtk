@@ -576,7 +576,7 @@ PVOID cnmMemAlloc(IN P_ADAPTER_T prAdapter, IN ENUM_RAM_TYPE_T eRamType, IN UINT
 	P_BUF_INFO_T prBufInfo;
 	BUF_BITMAP rRequiredBitmap;
 	UINT_32 u4BlockNum;
-	UINT_32 i, u4BlkSzInPower;
+	UINT_32 i, u4BlkSz, u4BlkSzInPower;
 	PVOID pvMemory;
 
 	KAL_SPIN_LOCK_DECLARATION();
@@ -589,9 +589,9 @@ PVOID cnmMemAlloc(IN P_ADAPTER_T prAdapter, IN ENUM_RAM_TYPE_T eRamType, IN UINT
 	if (eRamType == RAM_TYPE_MSG && u4Length <= 256) {
 		prBufInfo = &prAdapter->rMsgBufInfo;
 		u4BlkSzInPower = MSG_BUF_BLOCK_SIZE_IN_POWER_OF_2;
+		u4BlkSz = MSG_BUF_BLOCK_SIZE;
 
-		u4Length += (MSG_BUF_BLOCK_SIZE - 1);
-		u4BlockNum = u4Length >> MSG_BUF_BLOCK_SIZE_IN_POWER_OF_2;
+		u4BlockNum = (u4Length + u4BlkSz - 1) >> u4BlkSzInPower;
 
 		ASSERT(u4BlockNum <= MAX_NUM_OF_BUF_BLOCKS);
 	} else {
@@ -599,9 +599,9 @@ PVOID cnmMemAlloc(IN P_ADAPTER_T prAdapter, IN ENUM_RAM_TYPE_T eRamType, IN UINT
 
 		prBufInfo = &prAdapter->rMgtBufInfo;
 		u4BlkSzInPower = MGT_BUF_BLOCK_SIZE_IN_POWER_OF_2;
+		u4BlkSz = MGT_BUF_BLOCK_SIZE;
 
-		u4Length += (MGT_BUF_BLOCK_SIZE - 1);
-		u4BlockNum = u4Length >> MGT_BUF_BLOCK_SIZE_IN_POWER_OF_2;
+		u4BlockNum = (u4Length + u4BlkSz - 1) >> u4BlkSzInPower;
 
 		ASSERT(u4BlockNum <= MAX_NUM_OF_BUF_BLOCKS);
 	}
@@ -627,12 +627,12 @@ PVOID cnmMemAlloc(IN P_ADAPTER_T prAdapter, IN ENUM_RAM_TYPE_T eRamType, IN UINT
 				prBufInfo->rFreeBlocksBitmap &= ~rRequiredBitmap;
 
 				/* Store how many blocks be allocated */
-				prBufInfo->aucAllocatedBlockNum[i] = (UINT_8) u4BlockNum;
+				prBufInfo->aucAllocatedBlockNum[i] = (UINT_8)u4BlockNum;
 
 				KAL_RELEASE_SPIN_LOCK(prAdapter,
 						      eRamType == RAM_TYPE_MSG ? SPIN_LOCK_MSG_BUF : SPIN_LOCK_MGT_BUF);
 
-				kalMemZero(prBufInfo->pucBuf + (i << u4BlkSzInPower), u4Length);
+				kalMemZero(prBufInfo->pucBuf + (i << u4BlkSzInPower), u4BlockNum*u4BlkSz);
 				/* Return the start address of allocated memory */
 				return (PVOID) (prBufInfo->pucBuf + (i << u4BlkSzInPower));
 
