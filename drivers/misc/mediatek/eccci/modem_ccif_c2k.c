@@ -262,7 +262,6 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
 	struct ccci_header *ccci_h;
 	struct ccci_header ccci_hdr;
 	struct ccci_request *new_req = NULL;
-	struct ccci_request *req;
 	int pkg_size, ret = 0, retry_cnt = 0;
 	/*md_ccif_dump("md_ccif_sram_rx_work",md); */
 #ifdef AP_MD_HS_V2
@@ -318,8 +317,6 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
 			     "md_ccif_sram_rx_work:ccci_port_recv_request ret=%d\n",
 			     ret);
 		ccci_chk_rx_seq_num(md, &ccci_hdr, 0);
-		/*step forward */
-		req = list_entry(req->entry.next, struct ccci_request, entry);
 	} else {
 		if (retry_cnt > 20) {
 			CCCI_ERROR_LOG(md->index, TAG,
@@ -430,7 +427,6 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 	struct ccci_modem *md = queue->modem;
 	struct ccci_ringbuf *rx_buf = queue->ringbuf;
 	struct ccci_request *new_req = NULL;
-	struct ccci_request *req;
 	unsigned char *data_ptr;
 	int ret = 0, count = 0, pkg_size;
 	unsigned long flags;
@@ -536,10 +532,6 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 					     rx_data_cnt, pkg_num);
 			}
 			ret = 0;
-			/*step forward */
-			req =
-			    list_entry(req->entry.next, struct ccci_request,
-				       entry);
 		} else {
 			/*leave package into share memory, and waiting ccci to receive */
 			if (IS_PASS_SKB(md, qno)) {
@@ -1047,8 +1039,10 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 	if (ccci_h->channel == CCCI_C2K_LB_DL)
 		qno = atomic_read(&lb_dl_q);
 
-	if (qno > 7)
+	if (qno > 7) {
 		CCCI_ERROR_LOG(md->index, TAG, "qno error (%d)\n", qno);
+		return -CCCI_ERR_INVALID_QUEUE_INDEX;
+	}
 	queue = &md_ctrl->txq[qno];
  retry:
 	/*we use irqsave as network require a lock in softirq, cause a potential deadlock */

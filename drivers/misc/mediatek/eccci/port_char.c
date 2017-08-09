@@ -1218,7 +1218,7 @@ retry_push:
 		goto retry_push;
 	}
 
-	return ret?ret:read_len;
+	return read_len;
 
 }
 #endif
