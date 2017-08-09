@@ -319,22 +319,19 @@
 /* SCP_SYS */
 #define SCP_SYS_MD1  1
 #define SCP_SYS_CONN  2
-#define SCP_SYS_DPY  3
-#define SCP_SYS_DIS  4
-#define SCP_SYS_ISP  5
-#define SCP_SYS_DPY_CH1 6
-#define SCP_SYS_IFR  7
-#define SCP_SYS_VDE  8
-#define SCP_SYS_MFG_ASYNC  9
-#define SCP_SYS_MFG  10
-#define SCP_SYS_MFG_CORE3  11
-#define SCP_SYS_MFG_CORE2  12
-#define SCP_SYS_MFG_CORE1  13
-#define SCP_SYS_MFG_CORE0  14
-#define SCP_SYS_MJC  15
-#define SCP_SYS_VEN  16
-#define SCP_SYS_AUDIO  17
-#define SCP_SYS_C2K  18
-#define SCP_NR_SYSS  18
+#define SCP_SYS_DIS  3
+#define SCP_SYS_ISP  4
+#define SCP_SYS_VDE  5
+#define SCP_SYS_MFG_ASYNC  6
+#define SCP_SYS_MFG  7
+#define SCP_SYS_MFG_CORE3  8
+#define SCP_SYS_MFG_CORE2  9
+#define SCP_SYS_MFG_CORE1  10
+#define SCP_SYS_MFG_CORE0  11
+#define SCP_SYS_MJC  12
+#define SCP_SYS_VEN  13
+#define SCP_SYS_AUDIO  14
+#define SCP_SYS_C2K  15
+#define SCP_NR_SYSS  16
 
 #endif				/* _DT_BINDINGS_CLK_MT6797_H */

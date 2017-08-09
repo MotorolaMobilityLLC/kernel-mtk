@@ -29,8 +29,6 @@
 #endif
 
 
-#if MT_CCF_BRINGUP
-
 #ifdef CONFIG_ARM64
 #define IOMEM(a)	((void __force __iomem *)((a)))
 #endif
@@ -40,7 +38,6 @@
 		__raw_writel((v), IOMEM(a)); \
 		mb(); } \
 while (0)
-#endif
 
 
 /*
@@ -1385,9 +1382,7 @@ static void __init mt_infrasys_init(struct device_node *node)
 	if (r)
 		pr_err("could not register clock provide\n");
 
-	#if MT_CCF_BRINGUP
 	mt_reg_sync_writel(__raw_readl(base + INFRA_BUS_DCM_CTRL_OFS)|(1<<21) , (base + INFRA_BUS_DCM_CTRL_OFS));
-	#endif
 
 }
 
@@ -1618,8 +1613,8 @@ static void __init mt_audiosys_init(struct device_node *node)
 		pr_err("could not register clock provide\n");
 
 #if MT_CCF_BRINGUP
-	mt_reg_sync_writel(0xF0F3FCFD, base + aud0_cg_regs.set_ofs);
-	mt_reg_sync_writel(0xFFFCFFFF, base + aud1_cg_regs.set_ofs);
+	mt_reg_sync_writel(0x801c4000 , base + aud0_cg_regs.set_ofs);
+	mt_reg_sync_writel(0x00000000 , base + aud1_cg_regs.set_ofs);
 #endif
 
 }

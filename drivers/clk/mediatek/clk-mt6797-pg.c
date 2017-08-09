@@ -92,11 +92,8 @@ struct subsys {
 static struct subsys_ops general_sys_ops;
 static struct subsys_ops MD1_sys_ops;
 static struct subsys_ops CONN_sys_ops;
-static struct subsys_ops DPY_sys_ops;
 static struct subsys_ops DIS_sys_ops;
-static struct subsys_ops DPY_CH1_sys_ops;
 static struct subsys_ops ISP_sys_ops;
-static struct subsys_ops IFR_sys_ops;
 static struct subsys_ops VDE_sys_ops;
 static struct subsys_ops MFG_CORE3_sys_ops;
 static struct subsys_ops MFG_CORE2_sys_ops;
@@ -256,15 +253,6 @@ static struct subsys syss[] =	/* NR_SYSS *//* FIXME: set correct value */
 		      .bus_prot_mask = 0,
 		      .ops = &CONN_sys_ops,
 		      },
-	[SYS_DPY] = {
-		     .name = __stringify(SYS_DPY),
-		     .sta_mask = DPY_PWR_STA_MASK,
-		     /* .ctl_addr = NULL, SPM_CONN_PWR_CON, */
-		     .sram_pdn_bits = 0,
-		     .sram_pdn_ack_bits = 0,
-		     .bus_prot_mask = 0,
-		     .ops = &DPY_sys_ops,
-		     },
 	[SYS_DIS] = {
 		     .name = __stringify(SYS_DIS),
 		     .sta_mask = DIS_PWR_STA_MASK,
@@ -274,15 +262,6 @@ static struct subsys syss[] =	/* NR_SYSS *//* FIXME: set correct value */
 		     .bus_prot_mask = 0,
 		     .ops = &DIS_sys_ops,
 		     },
-	[SYS_DPY_CH1] = {
-			 .name = __stringify(SYS_DPY_CH1),
-			 .sta_mask = DPY_CH1_PWR_STA_MASK,
-			 /* .ctl_addr = NULL, SPM_CONN_PWR_CON, */
-			 .sram_pdn_bits = 0,
-			 .sram_pdn_ack_bits = 0,
-			 .bus_prot_mask = 0,
-			 .ops = &DPY_CH1_sys_ops,
-			 },
 	[SYS_ISP] = {
 		     .name = __stringify(SYS_ISP),
 		     .sta_mask = ISP_PWR_STA_MASK,
@@ -291,15 +270,6 @@ static struct subsys syss[] =	/* NR_SYSS *//* FIXME: set correct value */
 		     .sram_pdn_ack_bits = 0,
 		     .bus_prot_mask = 0,
 		     .ops = &ISP_sys_ops,
-		     },
-	[SYS_IFR] = {
-		     .name = __stringify(SYS_IFR),
-		     .sta_mask = IFR_PWR_STA_MASK,
-		     /*.ctl_addr = 0, SPM_VEN_PWR_CON, */
-		     .sram_pdn_bits = 0,
-		     .sram_pdn_ack_bits = 0,
-		     .bus_prot_mask = 0,
-		     .ops = &IFR_sys_ops,
 		     },
 	[SYS_VDE] = {
 		     .name = __stringify(SYS_VDE),
@@ -564,61 +534,6 @@ static int spm_mtcmos_ctrl_conn(int state)
 	return err;
 }
 
-static int spm_mtcmos_ctrl_dpy(int state)
-{
-	int err = 0;
-
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
-	if (state == STA_POWER_DOWN) {
-		/* TINFO="Start to turn off DPY" */
-		/* TINFO="Set PWR_ISO = 1" */
-		spm_write(DPY_PWR_CON, spm_read(DPY_PWR_CON) | PWR_ISO);
-		/* TINFO="Set PWR_CLK_DIS = 1" */
-		spm_write(DPY_PWR_CON, spm_read(DPY_PWR_CON) | PWR_CLK_DIS);
-		/* TINFO="Set PWR_RST_B = 0" */
-		spm_write(DPY_PWR_CON, spm_read(DPY_PWR_CON) & ~PWR_RST_B);
-		/* TINFO="Set PWR_ON = 0" */
-		spm_write(DPY_PWR_CON, spm_read(DPY_PWR_CON) & ~PWR_ON);
-		/* TINFO="Set PWR_ON_2ND = 0" */
-		spm_write(DPY_PWR_CON, spm_read(DPY_PWR_CON) & ~PWR_ON_2ND);
-
-#ifndef IGNORE_PWR_ACK
-		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & DPY_PWR_STA_MASK)
-		       || (spm_read(PWR_STATUS_2ND) & DPY_PWR_STA_MASK)) {
-			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
-		}
-#endif
-
-		/* TINFO="Finish to turn off DPY" */
-	} else {		/* STA_POWER_ON */
-		/* TINFO="Start to turn on DPY" */
-		/* TINFO="Set PWR_ON = 1" */
-		spm_write(DPY_PWR_CON, spm_read(DPY_PWR_CON) | PWR_ON);
-		/* TINFO="Set PWR_ON_2ND = 1" */
-		spm_write(DPY_PWR_CON, spm_read(DPY_PWR_CON) | PWR_ON_2ND);
-
-#ifndef IGNORE_PWR_ACK
-		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & DPY_PWR_STA_MASK)
-		       || !(spm_read(PWR_STATUS_2ND) & DPY_PWR_STA_MASK)) {
-			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
-		}
-#endif
-
-		/* TINFO="Set PWR_CLK_DIS = 0" */
-		spm_write(DPY_PWR_CON, spm_read(DPY_PWR_CON) & ~PWR_CLK_DIS);
-		/* TINFO="Set PWR_ISO = 0" */
-		spm_write(DPY_PWR_CON, spm_read(DPY_PWR_CON) & ~PWR_ISO);
-		/* TINFO="Set PWR_RST_B = 1" */
-		spm_write(DPY_PWR_CON, spm_read(DPY_PWR_CON) | PWR_RST_B);
-		/* TINFO="Finish to turn on DPY" */
-	}
-	return err;
-}
-
 static int spm_mtcmos_ctrl_dis(int state)
 {
 	int err = 0;
@@ -697,61 +612,6 @@ static int spm_mtcmos_ctrl_dis(int state)
 	return err;
 }
 
-static int spm_mtcmos_ctrl_dpy_ch1(int state)
-{
-	int err = 0;
-
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
-	if (state == STA_POWER_DOWN) {
-		/* TINFO="Start to turn off DPY_CH1" */
-		/* TINFO="Set PWR_ISO = 1" */
-		spm_write(DPY_CH1_PWR_CON, spm_read(DPY_CH1_PWR_CON) | PWR_ISO);
-		/* TINFO="Set PWR_CLK_DIS = 1" */
-		spm_write(DPY_CH1_PWR_CON, spm_read(DPY_CH1_PWR_CON) | PWR_CLK_DIS);
-		/* TINFO="Set PWR_RST_B = 0" */
-		spm_write(DPY_CH1_PWR_CON, spm_read(DPY_CH1_PWR_CON) & ~PWR_RST_B);
-		/* TINFO="Set PWR_ON = 0" */
-		spm_write(DPY_CH1_PWR_CON, spm_read(DPY_CH1_PWR_CON) & ~PWR_ON);
-		/* TINFO="Set PWR_ON_2ND = 0" */
-		spm_write(DPY_CH1_PWR_CON, spm_read(DPY_CH1_PWR_CON) & ~PWR_ON_2ND);
-
-#ifndef IGNORE_PWR_ACK
-		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & DPY_CH1_PWR_STA_MASK)
-		       || (spm_read(PWR_STATUS_2ND) & DPY_CH1_PWR_STA_MASK)) {
-			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
-		}
-#endif
-
-		/* TINFO="Finish to turn off DPY_CH1" */
-	} else {		/* STA_POWER_ON */
-		/* TINFO="Start to turn on DPY_CH1" */
-		/* TINFO="Set PWR_ON = 1" */
-		spm_write(DPY_CH1_PWR_CON, spm_read(DPY_CH1_PWR_CON) | PWR_ON);
-		/* TINFO="Set PWR_ON_2ND = 1" */
-		spm_write(DPY_CH1_PWR_CON, spm_read(DPY_CH1_PWR_CON) | PWR_ON_2ND);
-
-#ifndef IGNORE_PWR_ACK
-		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & DPY_CH1_PWR_STA_MASK)
-		       || !(spm_read(PWR_STATUS_2ND) & DPY_CH1_PWR_STA_MASK)) {
-			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
-		}
-#endif
-
-		/* TINFO="Set PWR_CLK_DIS = 0" */
-		spm_write(DPY_CH1_PWR_CON, spm_read(DPY_CH1_PWR_CON) & ~PWR_CLK_DIS);
-		/* TINFO="Set PWR_ISO = 0" */
-		spm_write(DPY_CH1_PWR_CON, spm_read(DPY_CH1_PWR_CON) & ~PWR_ISO);
-		/* TINFO="Set PWR_RST_B = 1" */
-		spm_write(DPY_CH1_PWR_CON, spm_read(DPY_CH1_PWR_CON) | PWR_RST_B);
-		/* TINFO="Finish to turn on DPY_CH1" */
-	}
-	return err;
-}
-
 static int spm_mtcmos_ctrl_isp(int state)
 {
 	int err = 0;
@@ -814,74 +674,6 @@ static int spm_mtcmos_ctrl_isp(int state)
 		while (spm_read(ISP_PWR_CON) & ISP_SRAM_PDN_ACK)
 			;
 		/* TINFO="Finish to turn on ISP" */
-	}
-	return err;
-}
-
-static int spm_mtcmos_ctrl_ifr(int state)
-{
-	int err = 0;
-
-	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
-
-	if (state == STA_POWER_DOWN) {
-		/* TINFO="Start to turn off IFR" */
-		/* TINFO="Set SRAM_PDN = 1" */
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) | IFR_SRAM_PDN);
-		/* TINFO="Wait until IFR_SRAM_PDN_ACK = 1" */
-		while (!(spm_read(IFR_PWR_CON) & IFR_SRAM_PDN_ACK))
-			;
-		/* TINFO="Set PWR_ISO = 1" */
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) | PWR_ISO);
-		/* TINFO="Set PWR_CLK_DIS = 1" */
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) | PWR_CLK_DIS);
-		/* TINFO="Set PWR_RST_B = 0" */
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) & ~PWR_RST_B);
-		/* TINFO="Set PWR_ON = 0" */
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) & ~PWR_ON);
-		/* TINFO="Set PWR_ON_2ND = 0" */
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) & ~PWR_ON_2ND);
-
-#ifndef IGNORE_PWR_ACK
-		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & IFR_PWR_STA_MASK)
-		       || (spm_read(PWR_STATUS_2ND) & IFR_PWR_STA_MASK)) {
-			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
-		}
-#endif
-
-		/* TINFO="Finish to turn off IFR" */
-	} else {		/* STA_POWER_ON */
-		/* TINFO="Start to turn on IFR" */
-		/* TINFO="Set PWR_ON = 1" */
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) | PWR_ON);
-		/* TINFO="Set PWR_ON_2ND = 1" */
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) | PWR_ON_2ND);
-
-#ifndef IGNORE_PWR_ACK
-		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & IFR_PWR_STA_MASK)
-		       || !(spm_read(PWR_STATUS_2ND) & IFR_PWR_STA_MASK)) {
-			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
-		}
-#endif
-
-		/* TINFO="Set PWR_CLK_DIS = 0" */
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) & ~PWR_CLK_DIS);
-		/* TINFO="Set PWR_ISO = 0" */
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) & ~PWR_ISO);
-		/* TINFO="Set PWR_RST_B = 1" */
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) | PWR_RST_B);
-		/* TINFO="Set SRAM_PDN = 0" */
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) & ~(0x1 << 8));
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) & ~(0x1 << 9));
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) & ~(0x1 << 10));
-		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) & ~(0x1 << 11));
-		/* TINFO="Wait until IFR_SRAM_PDN_ACK = 0" */
-		while (spm_read(IFR_PWR_CON) & IFR_SRAM_PDN_ACK)
-			;
-		/* TINFO="Finish to turn on IFR" */
 	}
 	return err;
 }
@@ -1775,34 +1567,16 @@ static int CONN_sys_enable_op(struct subsys *sys)
 	return spm_mtcmos_ctrl_conn(STA_POWER_ON);
 }
 
-static int DPY_sys_enable_op(struct subsys *sys)
-{
-	/*printk("CONN_sys_enable_op\r\n"); */
-	return spm_mtcmos_ctrl_dpy(STA_POWER_ON);
-}
-
 static int DIS_sys_enable_op(struct subsys *sys)
 {
 	/*printk("DIS_sys_enable_op\r\n"); */
 	return spm_mtcmos_ctrl_dis(STA_POWER_ON);
 }
 
-static int DPY_CH1_sys_enable_op(struct subsys *sys)
-{
-	/*printk("CONN_sys_enable_op\r\n"); */
-	return spm_mtcmos_ctrl_dpy_ch1(STA_POWER_ON);
-}
-
 static int ISP_sys_enable_op(struct subsys *sys)
 {
 	/*printk("ISP_sys_enable_op\r\n"); */
 	return spm_mtcmos_ctrl_isp(STA_POWER_ON);
-}
-
-static int IFR_sys_enable_op(struct subsys *sys)
-{
-	/*printk("IFR_sys_enable_op\r\n"); */
-	return spm_mtcmos_ctrl_ifr(STA_POWER_ON);
 }
 
 static int VDE_sys_enable_op(struct subsys *sys)
@@ -1890,12 +1664,6 @@ static int CONN_sys_disable_op(struct subsys *sys)
 	return spm_mtcmos_ctrl_conn(STA_POWER_DOWN);
 }
 
-static int DPY_sys_disable_op(struct subsys *sys)
-{
-	/*printk("CONN_sys_disable_op\r\n"); */
-	return spm_mtcmos_ctrl_dpy(STA_POWER_DOWN);
-}
-
 static int DIS_sys_disable_op(struct subsys *sys)
 {
 	/*printk("DIS_sys_disable_op bypass\r\n"); */
@@ -1903,22 +1671,10 @@ static int DIS_sys_disable_op(struct subsys *sys)
 	/*return 0; */
 }
 
-static int DPY_CH1_sys_disable_op(struct subsys *sys)
-{
-	/*printk("CONN_sys_disable_op\r\n"); */
-	return spm_mtcmos_ctrl_dpy_ch1(STA_POWER_DOWN);
-}
-
 static int ISP_sys_disable_op(struct subsys *sys)
 {
 	/*printk("ISP_sys_disable_op\r\n"); */
 	return spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
-}
-
-static int IFR_sys_disable_op(struct subsys *sys)
-{
-	/*printk("IFR_sys_disable_op\r\n"); */
-	return spm_mtcmos_ctrl_ifr(STA_POWER_DOWN);
 }
 
 static int VDE_sys_disable_op(struct subsys *sys)
@@ -2015,33 +1771,15 @@ static struct subsys_ops CONN_sys_ops = {
 	.get_state = sys_get_state_op,
 };
 
-static struct subsys_ops DPY_sys_ops = {
-	.enable = DPY_sys_enable_op,
-	.disable = DPY_sys_disable_op,
-	.get_state = sys_get_state_op,
-};
-
 static struct subsys_ops DIS_sys_ops = {
 	.enable = DIS_sys_enable_op,
 	.disable = DIS_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
 
-static struct subsys_ops DPY_CH1_sys_ops = {
-	.enable = DPY_CH1_sys_enable_op,
-	.disable = DPY_CH1_sys_disable_op,
-	.get_state = sys_get_state_op,
-};
-
 static struct subsys_ops ISP_sys_ops = {
 	.enable = ISP_sys_enable_op,
 	.disable = ISP_sys_disable_op,
-	.get_state = sys_get_state_op,
-};
-
-static struct subsys_ops IFR_sys_ops = {
-	.enable = IFR_sys_enable_op,
-	.disable = IFR_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
 
@@ -2342,11 +2080,8 @@ struct clk *mt_clk_register_power_gate(const char *name,
 
 #define pg_md1         "pg_md1"
 #define pg_conn        "pg_conn"
-#define pg_dpy         "pg_dpy"
 #define pg_dis         "pg_dis"
-#define pg_dpy_ch1     "pg_dpy_ch1"
 #define pg_isp         "pg_isp"
-#define pg_ifr         "pg_ifr"
 #define pg_vde         "pg_vde"
 #define pg_mfg_core3   "pg_mfg_core3"
 #define pg_mfg_core2   "pg_mfg_core2"
@@ -2388,11 +2123,8 @@ struct mtk_power_gate {
 struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_MD1, pg_md1, NULL, NULL, SYS_MD1),
 	PGATE(SCP_SYS_CONN, pg_conn, NULL, NULL, SYS_CONN),
-	PGATE(SCP_SYS_DPY, pg_dpy, NULL, NULL, SYS_DPY),
 	PGATE(SCP_SYS_DIS, pg_dis, NULL, mm_sel, SYS_DIS),
-	PGATE(SCP_SYS_DPY_CH1, pg_dpy_ch1, NULL, NULL, SYS_DPY_CH1),
 	PGATE(SCP_SYS_ISP, pg_isp, NULL, NULL, SYS_ISP),
-	PGATE(SCP_SYS_IFR, pg_ifr, NULL, NULL, SYS_IFR),
 	PGATE(SCP_SYS_VDE, pg_vde, NULL, vdec_sel, SYS_VDE),
 	PGATE(SCP_SYS_MFG_ASYNC, pg_mfg_async, NULL, NULL, SYS_MFG_ASYNC),
 	PGATE(SCP_SYS_MFG, pg_mfg, pg_mfg_async, mfg_sel, SYS_MFG),
@@ -2418,11 +2150,8 @@ static void __init init_clk_scpsys(void __iomem *infracfg_reg,
 
 	syss[SYS_MD1].ctl_addr = MD1_PWR_CON;
 	syss[SYS_CONN].ctl_addr = CONN_PWR_CON;
-	syss[SYS_DPY].ctl_addr = DPY_PWR_CON;
 	syss[SYS_DIS].ctl_addr = DIS_PWR_CON;
-	syss[SYS_DPY_CH1].ctl_addr = DPY_CH1_PWR_CON;
 	syss[SYS_ISP].ctl_addr = ISP_PWR_CON;
-	syss[SYS_IFR].ctl_addr = IFR_PWR_CON;
 	syss[SYS_VDE].ctl_addr = VDE_PWR_CON;
 	syss[SYS_MFG_CORE3].ctl_addr = MFG_CORE3_PWR_CON;
 	syss[SYS_MFG_CORE2].ctl_addr = MFG_CORE2_PWR_CON;
