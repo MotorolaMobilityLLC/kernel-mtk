@@ -475,7 +475,7 @@ static unsigned int mt_gpufreq_get_dvfs_table_type(void)
 
 		if (gpu_speed >= 700)
 			type = 0;	/* Segment1: Free */
-		else if (gpu_speed >= 600)
+		else if (gpu_speed >= 550)
 			type = 1;	/* Segment2: 550M */
 #else
 		gpufreq_err("@%s: Cannot get GPU speed from DT!\n", __func__);

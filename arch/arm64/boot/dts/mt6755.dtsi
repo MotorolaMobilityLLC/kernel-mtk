@@ -1782,7 +1782,7 @@
 			reg = <0x13020000 0x1000>;
 		};
 
-		mali@13040000 {
+		mali:mali@13040000 {
 			compatible = "arm,malit860", "arm,mali-t86x", "arm,malit8xx", "arm,mali-midgard";
 			reg = <0x13040000 0x4000>;
 			interrupts = <GIC_SPI 218 IRQ_TYPE_LEVEL_LOW>,
