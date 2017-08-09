@@ -44,7 +44,37 @@
 #include "wmt_dbg.h"
 #include "wmt_idc.h"
 #include "osal.h"
+#ifdef CONFIG_COMPAT
+#include <linux/compat.h>
+#endif
 
+#ifdef CONFIG_COMPAT
+#define COMPAT_WMT_IOCTL_SET_PATCH_NAME		_IOW(WMT_IOC_MAGIC, 4, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_LPBK_TEST			_IOWR(WMT_IOC_MAGIC, 8, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_SET_PATCH_INFO		_IOW(WMT_IOC_MAGIC, 15, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_PORT_NAME			_IOWR(WMT_IOC_MAGIC, 20, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_WMT_CFG_NAME		_IOWR(WMT_IOC_MAGIC, 21, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_SEND_BGW_DS_CMD	_IOW(WMT_IOC_MAGIC, 25, compat_uptr_t)
+#define COMPAT_WMT_IOCTL_ADIE_LPBK_TEST		_IOWR(WMT_IOC_MAGIC, 26, compat_uptr_t)
+#endif
+
+#define WMT_IOC_MAGIC        0xa0
+#define WMT_IOCTL_SET_PATCH_NAME		_IOW(WMT_IOC_MAGIC, 4, char*)
+#define WMT_IOCTL_SET_STP_MODE			_IOW(WMT_IOC_MAGIC, 5, int)
+#define WMT_IOCTL_FUNC_ONOFF_CTRL		_IOW(WMT_IOC_MAGIC, 6, int)
+#define WMT_IOCTL_LPBK_POWER_CTRL		_IOW(WMT_IOC_MAGIC, 7, int)
+#define WMT_IOCTL_LPBK_TEST				_IOWR(WMT_IOC_MAGIC, 8, char*)
+#define WMT_IOCTL_GET_CHIP_INFO			_IOR(WMT_IOC_MAGIC, 12, int)
+#define WMT_IOCTL_SET_LAUNCHER_KILL		_IOW(WMT_IOC_MAGIC, 13, int)
+#define WMT_IOCTL_SET_PATCH_NUM			_IOW(WMT_IOC_MAGIC, 14, int)
+#define WMT_IOCTL_SET_PATCH_INFO		_IOW(WMT_IOC_MAGIC, 15, char*)
+#define WMT_IOCTL_PORT_NAME				_IOWR(WMT_IOC_MAGIC, 20, char*)
+#define WMT_IOCTL_WMT_CFG_NAME			_IOWR(WMT_IOC_MAGIC, 21, char*)
+#define WMT_IOCTL_WMT_QUERY_CHIPID		_IOR(WMT_IOC_MAGIC, 22, int)
+#define WMT_IOCTL_WMT_TELL_CHIPID		_IOW(WMT_IOC_MAGIC, 23, int)
+#define WMT_IOCTL_WMT_COREDUMP_CTRL     _IOW(WMT_IOC_MAGIC, 24, int)
+#define WMT_IOCTL_WMT_STP_ASSERT_CTRL   _IOW(WMT_IOC_MAGIC, 27, int)
+#define WMT_IOCTL_GET_APO_FLAG			_IOR(WMT_IOC_MAGIC, 28, int)
 
 #define MTK_WMT_VERSION  "Combo WMT Driver - v1.0"
 #define MTK_WMT_DATE     "2011/10/04"
@@ -864,26 +894,6 @@ unsigned int WMT_poll(struct file *filp, poll_table *wait)
 /* INT32 WMT_ioctl(struct inode *inode, struct file *filp, UINT32 cmd, unsigned long arg) */
 long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-#define WMT_IOC_MAGIC        0xa0
-#define WMT_IOCTL_SET_PATCH_NAME		_IOW(WMT_IOC_MAGIC, 4, char*)
-#define WMT_IOCTL_SET_STP_MODE			_IOW(WMT_IOC_MAGIC, 5, int)
-#define WMT_IOCTL_FUNC_ONOFF_CTRL		_IOW(WMT_IOC_MAGIC, 6, int)
-#define WMT_IOCTL_LPBK_POWER_CTRL		_IOW(WMT_IOC_MAGIC, 7, int)
-#define WMT_IOCTL_LPBK_TEST				_IOWR(WMT_IOC_MAGIC, 8, char*)
-#define WMT_IOCTL_GET_CHIP_INFO			_IOR(WMT_IOC_MAGIC, 12, int)
-#define WMT_IOCTL_SET_LAUNCHER_KILL		_IOW(WMT_IOC_MAGIC, 13, int)
-#define WMT_IOCTL_SET_PATCH_NUM			_IOW(WMT_IOC_MAGIC, 14, int)
-#define WMT_IOCTL_SET_PATCH_INFO		_IOW(WMT_IOC_MAGIC, 15, char*)
-#define WMT_IOCTL_PORT_NAME			_IOWR(WMT_IOC_MAGIC, 20, char*)
-#define WMT_IOCTL_WMT_CFG_NAME			_IOWR(WMT_IOC_MAGIC, 21, char*)
-#define WMT_IOCTL_WMT_QUERY_CHIPID	_IOR(WMT_IOC_MAGIC, 22, int)
-#define WMT_IOCTL_WMT_TELL_CHIPID	_IOW(WMT_IOC_MAGIC, 23, int)
-#define WMT_IOCTL_WMT_COREDUMP_CTRL     _IOW(WMT_IOC_MAGIC, 24, int)
-#define WMT_IOCTL_WMT_STP_ASSERT_CTRL   _IOW(WMT_IOC_MAGIC, 27, int)
-#define WMT_IOCTL_GET_APO_FLAG			_IOR(WMT_IOC_MAGIC, 28, int)
-
-
-
 	INT32 iRet = 0;
 	UINT8 pBuffer[NAME_MAX + 1];
 
@@ -1268,6 +1278,36 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	return iRet;
 }
 
+#ifdef CONFIG_COMPAT
+long WMT_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	long ret;
+
+	WMT_INFO_FUNC("cmd[0x%x]\n", cmd);
+	switch (cmd) {
+	case COMPAT_WMT_IOCTL_SET_PATCH_NAME:
+		ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_SET_PATCH_NAME, (unsigned long)compat_ptr(arg));
+		break;
+	case COMPAT_WMT_IOCTL_LPBK_TEST:
+		ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_LPBK_TEST, (unsigned long)compat_ptr(arg));
+		break;
+	case COMPAT_WMT_IOCTL_SET_PATCH_INFO:
+		ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_SET_PATCH_INFO, (unsigned long)compat_ptr(arg));
+		break;
+	case COMPAT_WMT_IOCTL_PORT_NAME:
+		ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_PORT_NAME, (unsigned long)compat_ptr(arg));
+		break;
+	case COMPAT_WMT_IOCTL_WMT_CFG_NAME:
+		ret = WMT_unlocked_ioctl(filp, WMT_IOCTL_WMT_CFG_NAME, (unsigned long)compat_ptr(arg));
+		break;
+	default:
+		ret = WMT_unlocked_ioctl(filp, cmd, arg);
+		break;
+	}
+	return ret;
+}
+#endif
+
 static int WMT_open(struct inode *inode, struct file *file)
 {
 	INT32 ret;
@@ -1306,6 +1346,9 @@ const struct file_operations gWmtFops = {
 	.write = WMT_write,
 /* .ioctl = WMT_ioctl, */
 	.unlocked_ioctl = WMT_unlocked_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = WMT_compat_ioctl,
+#endif
 	.poll = WMT_poll,
 };
 
