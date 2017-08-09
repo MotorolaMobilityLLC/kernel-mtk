@@ -502,7 +502,7 @@ static int disp_flush(struct file *file, fl_owner_t a_id)
 /* remap register to user space */
 static int disp_mmap(struct file *file, struct vm_area_struct *a_pstVMArea)
 {
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && (CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	a_pstVMArea->vm_page_prot = pgprot_noncached(a_pstVMArea->vm_page_prot);
 	if (remap_pfn_range(a_pstVMArea,
 			    a_pstVMArea->vm_start,
@@ -599,7 +599,7 @@ struct device *disp_get_device(void)
 	return dispsys_dev->dev;
 }
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && (CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 static struct miscdevice disp_misc_dev;
 #endif
 /* Kernel interface */
@@ -628,7 +628,7 @@ static int disp_probe(struct platform_device *pdev)
 
 	disp_helper_option_init();
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && (CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	disp_misc_dev.minor = MISC_DYNAMIC_MINOR;
 	disp_misc_dev.name = "mtk_disp";
 	disp_misc_dev.fops = &disp_fops;
@@ -636,7 +636,7 @@ static int disp_probe(struct platform_device *pdev)
 	ret = misc_register(&disp_misc_dev);
 	if (ret) {
 		pr_err("disp: fail to create mtk_disp node\n");
-		return ERR_PTR(ret);
+		return (unsigned long)(ERR_PTR(ret));
 	}
 	/* secure video path implementation: a physical address is allocated to place a handle for decryption buffer. */
 	init_tplay_handle(&(pdev->dev));	/* non-zero value for valid VA */
@@ -749,7 +749,7 @@ static int disp_probe(struct platform_device *pdev)
 static int disp_remove(struct platform_device *pdev)
 {
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && (CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	misc_deregister(&disp_misc_dev);
 #endif
 	return 0;
