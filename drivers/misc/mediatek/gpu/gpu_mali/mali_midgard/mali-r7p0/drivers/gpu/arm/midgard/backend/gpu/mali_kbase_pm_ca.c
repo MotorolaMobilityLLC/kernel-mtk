@@ -23,8 +23,12 @@
 #include <mali_kbase_pm.h>
 #include <backend/gpu/mali_kbase_pm_internal.h>
 
+/* MTK random ca */
+extern const struct kbase_pm_ca_policy mtk_kbase_pm_ca_random_policy_ops;
+
 static const struct kbase_pm_ca_policy *const policy_list[] = {
 	&kbase_pm_ca_fixed_policy_ops,
+	&mtk_kbase_pm_ca_random_policy_ops,
 #if !MALI_CUSTOMER_RELEASE
 	&kbase_pm_ca_random_policy_ops
 #endif

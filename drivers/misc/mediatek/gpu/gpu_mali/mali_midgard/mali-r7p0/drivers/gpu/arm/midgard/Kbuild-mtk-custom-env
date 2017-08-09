@@ -44,6 +44,9 @@ ccflags-y += \
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/gpu/ged/include
 
+#include path for AEE
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+
 ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
 ccflags-y += -DENABLE_COMMON_DVFS
 endif

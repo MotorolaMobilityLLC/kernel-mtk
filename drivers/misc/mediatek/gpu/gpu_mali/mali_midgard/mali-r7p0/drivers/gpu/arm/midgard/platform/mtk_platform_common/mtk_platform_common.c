@@ -8,6 +8,9 @@
 #include <mali_kbase_pm_internal.h>
 
 
+#include <linux/workqueue.h>
+#include <mt-plat/aee.h>
+
 #ifdef ENABLE_MTK_MEMINFO
 /*
    Add by mediatek, Hook the memory query function pointer to (*mtk_get_gpu_memory_usage_fp) in order to
@@ -302,7 +305,24 @@ static const struct file_operations kbasep_gpu_dvfs_enable_debugfs_fops = {
 };
 
 
+static struct workqueue_struct     *g_aee_workqueue = NULL;
+static struct work_struct          g_aee_work;
+
 static struct proc_dir_entry *mali_pentry;
+
+static void aee_Handle(struct work_struct *_psWork)
+{
+    /* avoid the build warnning */
+    _psWork = _psWork;
+    aee_kernel_exception("gpulog", "aee dump gpulog");
+}
+void mtk_trigger_aee(void)
+{
+    if (g_aee_workqueue)
+    {
+        queue_work(g_aee_workqueue, &g_aee_work);
+    }
+}
 
 void proc_mali_register(void)
 {
@@ -311,15 +331,18 @@ void proc_mali_register(void)
     if (!mali_pentry)
         return;
 
+    g_aee_workqueue = alloc_ordered_workqueue("mali_aeewp", WQ_FREEZABLE | WQ_MEM_RECLAIM);
+    INIT_WORK(&g_aee_work, aee_Handle);
+
     proc_create("help", 0, mali_pentry, &kbasep_gpu_help_debugfs_fops);
     proc_create("memory_usage", 0, mali_pentry, &kbasep_gpu_memory_usage_debugfs_open);
     proc_create("utilization", 0, mali_pentry, &kbasep_gpu_utilization_debugfs_fops);
     proc_create("frequency", 0, mali_pentry, &kbasep_gpu_frequency_debugfs_fops);
     proc_create("dvfs_enable", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_enable_debugfs_fops);
-//    proc_create("input_boost", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_input_boost_debugfs_fops);
-//    proc_create("dvfs_freq", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_freq_debugfs_fops);
-//    proc_create("dvfs_threshold", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_threshold_debugfs_fops);
-//    proc_create("dvfs_deferred_count", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_deferred_count_debugfs_fops);
+    //    proc_create("input_boost", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_input_boost_debugfs_fops);
+    //    proc_create("dvfs_freq", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_freq_debugfs_fops);
+    //    proc_create("dvfs_threshold", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_threshold_debugfs_fops);
+    //    proc_create("dvfs_deferred_count", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_deferred_count_debugfs_fops);
 }
 
 void proc_mali_unregister(void)
@@ -329,10 +352,10 @@ void proc_mali_unregister(void)
 
     remove_proc_entry("help", mali_pentry);
     remove_proc_entry("memory_usage", mali_pentry);
-//    remove_proc_entry("utilization", mali_pentry);
-//    remove_proc_entry("frequency", mali_pentry);
+    //    remove_proc_entry("utilization", mali_pentry);
+    //    remove_proc_entry("frequency", mali_pentry);
     remove_proc_entry("dvfs_enable", mali_pentry);
-//    remove_proc_entry("mali", NULL);
+    //    remove_proc_entry("mali", NULL);
     mali_pentry = NULL;
 }
 #else
@@ -342,23 +365,23 @@ void proc_mali_unregister(void)
 
 int mtk_get_vgpu_power_on_flag(void)
 {
-	return g_vgpu_power_on_flag;
+    return g_vgpu_power_on_flag;
 }
 
 int mtk_set_vgpu_power_on_flag(int power_on_id)
 {
-	g_vgpu_power_on_flag = power_on_id;
+    g_vgpu_power_on_flag = power_on_id;
 
-	return 0;
+    return 0;
 }
 
 int mtk_set_mt_gpufreq_target(int freq_id)
 {
-	if (MTK_VGPU_POWER_ON == mtk_get_vgpu_power_on_flag()) {
-		return  mt_gpufreq_target(freq_id);
-	} else {
-		///pr_alert("MALI: VGPU power is off, ignore set freq: %d. \n",freq_id);
-	}
+    if (MTK_VGPU_POWER_ON == mtk_get_vgpu_power_on_flag()) {
+        return  mt_gpufreq_target(freq_id);
+    } else {
+        ///pr_alert("MALI: VGPU power is off, ignore set freq: %d. \n",freq_id);
+    }
 
-	return 0;
+    return 0;
 }

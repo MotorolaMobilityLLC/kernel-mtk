@@ -28,6 +28,7 @@
 
 /* MTK */
 #include <ged_log.h>
+#include <platform/mtk_platform_common.h>
 
 static inline u64 lock_region(struct kbase_device *kbdev, u64 pfn,
 		u32 num_pages)
@@ -79,6 +80,14 @@ static int wait_ready(struct kbase_device *kbdev,
 	if (max_loops == 0) {
 		dev_err(kbdev->dev, "AS_ACTIVE bit stuck\n");
 		ged_log_buf_print2(kbdev->mtk_log, GED_LOG_ATTR_TIME, "AS_ACTIVE bit stuck\n");
+		{
+			static int called = 0;
+			if (called == 0)
+			{
+				called = 1;
+				mtk_trigger_aee();
+			}
+		}
 		return -1;
 	}
 
