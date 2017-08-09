@@ -51,6 +51,7 @@ typedef enum CMDQ_TEST_TYPE_ENUM {
 	CMDQ_TEST_TYPE_OPEN_COMMAND_DUMP = 4,
 	CMDQ_TEST_TYPE_DUMP_DTS = 5,
 	CMDQ_TEST_TYPE_FEATURE_CONFIG = 6,
+	CMDQ_TEST_TYPE_MMSYS_PERFORMANCE = 7,
 
 	CMDQ_TEST_TYPE_MAX	/* ALWAYS keep at the end */
 } CMDQ_TEST_TYPE_ENUM;
@@ -3274,6 +3275,243 @@ void testcase_prefetch_from_DTS(void)
 	CMDQ_MSG("%s END\n", __func__);
 }
 
+static void testcase_specific_bus_MMSYS(void)
+{
+	uint32_t i;
+	const uint32_t loop = 1000;
+	const uint32_t pattern = (1 << 0) | (1 << 2) | (1 << 16);
+	uint32_t mmsys_register;
+	cmdqRecHandle handle;
+	cmdqBackupSlotHandle slot_handle;
+	uint32_t start_time, end_time, duration_time;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	cmdqBackupAllocateSlot(&slot_handle, 2);
+
+	cmdqRecCreate(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdqRecReset(handle);
+
+	cmdqRecWait(handle, CMDQ_SYNC_TOKEN_USER_0);
+
+	/* cmdqRecWaitNoClear(handle, CMDQ_EVENT_DSI_TE); */
+	/* cmdqRecWrite(handle, CMDQ_CPUXGPT_WRITE, 0x84, ~0); */
+	cmdqRecBackupRegisterToSlot(handle, slot_handle, 0, CMDQ_APXGPT2_COUNT);
+	for (i = 0; i < loop; i++) {
+		mmsys_register = CMDQ_TEST_MMSYS_DUMMY_PA + (i%2)*0x4;
+		if (i%11 == 10)
+			cmdqRecReadToDataRegister(handle, mmsys_register, CMDQ_DATA_REG_2D_SHARPNESS_1);
+		else
+			cmdqRecWrite(handle, mmsys_register, pattern, ~0);
+	}
+
+	cmdqRecBackupRegisterToSlot(handle, slot_handle, 1, CMDQ_APXGPT2_COUNT);
+	cmdqRecFlush(handle);
+
+	cmdqBackupReadSlot(slot_handle, 0, &start_time);
+	cmdqBackupReadSlot(slot_handle, 1, &end_time);
+	duration_time = (end_time - start_time) * 76;
+	CMDQ_LOG("duration time, %u, ns\n", duration_time);
+	/* cmdqRecDumpCommand(handle); */
+
+	cmdqRecDestroy(handle);
+	cmdqBackupFreeSlot(slot_handle);
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+static void testcase_while_test_mmsys_bus(void)
+{
+	int32_t i;
+	const uint32_t loop = 5000;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	for (i = 0; i < loop; i++) {
+		testcase_specific_bus_MMSYS();
+		msleep_interruptible(100);
+	}
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+static int testcase_set_gce_event(void *data)
+{
+	CMDQ_MSG("%s\n", __func__);
+
+	while (1) {
+		if (kthread_should_stop())
+			break;
+
+		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
+		msleep_interruptible(150);
+	}
+
+	CMDQ_MSG("%s END\n", __func__);
+
+	return 0;
+}
+
+static int testcase_cpu_config_non_mmsys(void *data)
+{
+	CMDQ_MSG("%s\n", __func__);
+
+	while (1) {
+		if (kthread_should_stop())
+			break;
+
+		/* set to 0xFFFFFFFF */
+		CMDQ_REG_SET32(CMDQ_GPR_R32(CMDQ_DATA_REG_JPEG), ~0);
+		/* udelay(1); */
+	}
+
+	CMDQ_MSG("%s END\n", __func__);
+
+	return 0;
+}
+
+static int testcase_cpu_config_mmsys(void *data)
+{
+	unsigned long mmsys_register;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	cmdq_get_func()->enableCommonClockLocked(true);
+
+	while (1) {
+		if (kthread_should_stop())
+			break;
+
+		mmsys_register = CMDQ_TEST_MMSYS_DUMMY_VA + 2*0x4;
+		/* set to 0xFFFFFFFF */
+		CMDQ_REG_SET32(mmsys_register, ~0);
+		/* udelay(1); */
+	}
+
+	CMDQ_MSG("%s END\n", __func__);
+
+	return 0;
+}
+
+#define CMDQ_TEST_MAX_THREAD	(32)
+struct task_struct *set_event_config_th = NULL;
+struct task_struct *busy_mmsys_config_th[CMDQ_TEST_MAX_THREAD] = {NULL};
+struct task_struct *busy_non_mmsys_config_th[CMDQ_TEST_MAX_THREAD] = {NULL};
+
+static void testcase_run_set_gce_event_loop(void)
+{
+	set_event_config_th = kthread_run(testcase_set_gce_event, NULL, "set_cmdq_event_loop");
+	if (IS_ERR(set_event_config_th)) {
+		/* print error log */
+		CMDQ_LOG("%s, init kthread_run failed!\n", __func__);
+		set_event_config_th = NULL;
+	}
+}
+
+static void testcase_stop_set_gce_event_loop(void)
+{
+	if (NULL == set_event_config_th)
+		return;
+
+	kthread_stop(set_event_config_th);
+	set_event_config_th = NULL;
+}
+
+static void testcase_run_busy_non_mmsys_config_loop(void)
+{
+	uint32_t i;
+
+	for (i = 0; i < CMDQ_TEST_MAX_THREAD; i++) {
+		busy_non_mmsys_config_th[i] = kthread_run(testcase_cpu_config_non_mmsys, NULL, "busy_config_non-mm");
+		if (IS_ERR(busy_non_mmsys_config_th[i])) {
+			/* print error log */
+			CMDQ_LOG("%s, thread id: %d, init kthread_run failed!\n", __func__, i);
+			busy_non_mmsys_config_th[i] = NULL;
+		}
+	}
+}
+
+static void testcase_stop_busy_non_mmsys_config_loop(void)
+{
+	uint32_t i;
+
+	for (i = 0; i < CMDQ_TEST_MAX_THREAD; i++) {
+		if (NULL == busy_non_mmsys_config_th[i])
+			continue;
+
+		kthread_stop(busy_non_mmsys_config_th[i]);
+		busy_non_mmsys_config_th[i] = NULL;
+	}
+}
+
+static void testcase_run_busy_mmsys_config_loop(void)
+{
+	uint32_t i;
+
+	for (i = 0; i < CMDQ_TEST_MAX_THREAD; i++) {
+		busy_mmsys_config_th[i] = kthread_run(testcase_cpu_config_mmsys, NULL, "busy_config_mm");
+		if (IS_ERR(busy_mmsys_config_th[i])) {
+			/* print error log */
+			CMDQ_LOG("%s, thread id: %d, init kthread_run failed!\n", __func__, i);
+			busy_mmsys_config_th[i] = NULL;
+		}
+	}
+}
+
+static void testcase_stop_busy_mmsys_config_loop(void)
+{
+	uint32_t i;
+
+	for (i = 0; i < CMDQ_TEST_MAX_THREAD; i++) {
+		if (NULL == busy_mmsys_config_th[i])
+			continue;
+
+		kthread_stop(busy_mmsys_config_th[i]);
+		busy_mmsys_config_th[i] = NULL;
+	}
+}
+
+static void testcase_mmsys_performance(int32_t test_id)
+{
+	switch (test_id) {
+	case 0:
+		/* test GCE config only in bus idle situation */
+		testcase_run_set_gce_event_loop();
+		msleep_interruptible(500);
+		testcase_while_test_mmsys_bus();
+		msleep_interruptible(500);
+		testcase_stop_set_gce_event_loop();
+		break;
+	case 1:
+		/* test GCE config only when CPU busy configure MMSYS situation */
+		testcase_run_set_gce_event_loop();
+		msleep_interruptible(500);
+		testcase_run_busy_mmsys_config_loop();
+		msleep_interruptible(500);
+		testcase_while_test_mmsys_bus();
+		msleep_interruptible(500);
+		testcase_stop_busy_mmsys_config_loop();
+		msleep_interruptible(500);
+		testcase_stop_set_gce_event_loop();
+		break;
+	case 2:
+		/* test GCE config only when CPU busy configure non-MMSYS situation */
+		testcase_run_set_gce_event_loop();
+		msleep_interruptible(500);
+		testcase_run_busy_non_mmsys_config_loop();
+		msleep_interruptible(500);
+		testcase_while_test_mmsys_bus();
+		msleep_interruptible(500);
+		testcase_stop_busy_non_mmsys_config_loop();
+		msleep_interruptible(500);
+		testcase_stop_set_gce_event_loop();
+		break;
+	default:
+		CMDQ_LOG("[TESTCASE] mmsys performance testcase Not Found: test_id: %d\n", test_id);
+		break;
+	}
+}
+
 typedef enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_DEFAULT = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -3566,7 +3804,10 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 			cmdq_core_dump_feature();
 		else
 			cmdq_core_set_feature((int32_t)testParameter[1], (uint32_t)testParameter[2]);
-
+		break;
+	case CMDQ_TEST_TYPE_MMSYS_PERFORMANCE:
+		testcase_mmsys_performance((int32_t)testParameter[1]);
+		break;
 	default:
 		break;
 	}
