@@ -1921,8 +1921,10 @@ VOID nicTxReturnMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfoLi
 			break;
 		}
 
+		/* Reset MSDU_INFO fields */
+		kalMemZero(prMsduInfo, sizeof(MSDU_INFO_T));
+
 		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_MSDU_INFO_LIST);
-		prMsduInfo->fgIsBasicRate = FALSE;
 		QUEUE_INSERT_TAIL(&prTxCtrl->rFreeMsduInfoList, (P_QUE_ENTRY_T) prMsduInfo);
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_MSDU_INFO_LIST);
 		prMsduInfo = prNextMsduInfo;
