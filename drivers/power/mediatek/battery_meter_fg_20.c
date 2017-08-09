@@ -3308,7 +3308,9 @@ signed int battery_meter_set_columb_interrupt(unsigned int val)
 static int battery_meter_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
+#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 	char *temp_strptr;
+#endif
 
 	bm_info("[battery_meter_probe] probe\n");
 	/* select battery meter control method */
