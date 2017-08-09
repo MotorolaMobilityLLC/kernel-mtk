@@ -110,7 +110,7 @@ extern struct clk *i2c3_clk_main;
 #endif
 
 #ifndef CONFIG_MTK_FPGA
-#if 0 /* defined(CONFIG_ARCH_MT6797) */
+#if defined(CONFIG_ARCH_MT6797)
 #define SPM_VCORE_EN_MT6797
 #endif
 #endif

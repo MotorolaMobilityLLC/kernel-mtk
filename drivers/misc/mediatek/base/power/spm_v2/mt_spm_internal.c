@@ -8,6 +8,7 @@
 #include <mach/mt_spm_mtcmos_internal.h>
 #include <asm/setup.h>
 #include "mt_spm_internal.h"
+#include "mt_spm_vcore_dvfs.h"
 #include <mt-plat/upmu_common.h>
 
 /**************************************
@@ -73,7 +74,7 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 		spm_write(SPM_WAKEUP_EVENT_MASK, (con1 & ~(0x1)));
 
 #ifdef SPM_VCORE_EN_MT6797
-		spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xFFFF)) | SPM_OFFLOAD);
+		spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_OFFLOAD);
 #endif
 		spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 

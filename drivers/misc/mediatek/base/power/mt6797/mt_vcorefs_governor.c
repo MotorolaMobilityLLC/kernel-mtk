@@ -110,7 +110,7 @@ struct governor_profile {
 };
 
 static struct governor_profile governor_ctrl = {
-	.plat_feature_en = 1,
+	.plat_feature_en = 0,
 	.vcore_dvs = 0,
 	.ddr_dfs = 0,
 	.freq_dfs = 0,
@@ -449,7 +449,7 @@ static int set_init_opp_index(void)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 
-	if (gvrctrl->plat_feature_en) {
+	if (is_vcorefs_feature_enable()) {
 		if (gvrctrl->init_opp_perf /*|| reserved_condition*/)
 			return OPPI_PERF;
 		else
@@ -618,7 +618,7 @@ int governor_debug_store(const char *buf)
 		   sscanf(buf, "%31s %d", cmd, &val) == 2) {
 
 		if (!strcmp(cmd, "plat_feature_en")) {
-			gvrctrl->plat_feature_en = 1;
+			gvrctrl->plat_feature_en = val;
 			vcorefs_late_init_dvfs();
 		} else if (!strcmp(cmd, "isr_debug"))
 			vcorefs_enable_debug_isr(val);
@@ -654,7 +654,7 @@ char *governor_get_dvfs_info(char *p)
 	p += sprintf(p, "prev_opp: %d\n", vcorefs_prev_opp);
 	p += sprintf(p, "\n");
 
-	p += sprintf(p, "[plat_feature_en]: %d\n", gvrctrl->plat_feature_en);
+	p += sprintf(p, "[plat_feature_en]: %d\n", is_vcorefs_feature_enable());
 	p += sprintf(p, "[vcore_dvs   ]: %d\n", gvrctrl->vcore_dvs);
 	p += sprintf(p, "[ddr_dfs     ]: %d\n", gvrctrl->ddr_dfs);
 	p += sprintf(p, "[freq_dfs    ]: %d\n", gvrctrl->freq_dfs);
@@ -993,8 +993,7 @@ int vcorefs_late_init_dvfs(void)
 
 	if (is_vcorefs_feature_enable())
 		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
-/* if have common bug need default load F/W when Vcore DVFS disable
-	else {
+/*	else {
 		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS, 0,
 						gvrctrl->screen_on, gvrctrl->md_dvfs_req);
 	}
@@ -1002,22 +1001,23 @@ int vcorefs_late_init_dvfs(void)
 	mutex_lock(&governor_mutex);
 	gvrctrl->late_init_opp = set_init_opp_index();
 
-	krconf.kicker = KIR_LATE_INIT;
-	krconf.opp = gvrctrl->late_init_opp;
-	krconf.dvfs_opp = gvrctrl->late_init_opp;
+	if (is_vcorefs_feature_enable()) {
+		krconf.kicker = KIR_LATE_INIT;
+		krconf.opp = gvrctrl->late_init_opp;
+		krconf.dvfs_opp = gvrctrl->late_init_opp;
 
-	if (is_vcorefs_feature_enable())
 		kick_dvfs_by_opp_index(&krconf);
+	}
 
 	vcorefs_curr_opp = gvrctrl->late_init_opp;
 	vcorefs_prev_opp = gvrctrl->late_init_opp;
 	mutex_unlock(&governor_mutex);
 
 	vcorefs_crit("[%s] plat_init_done: %d, plat_feature_en: %d, late_init_opp: %d(%d)(%d)\n", __func__,
-				plat_init_done, gvrctrl->plat_feature_en,
+				plat_init_done, is_vcorefs_feature_enable(),
 				gvrctrl->late_init_opp, vcorefs_curr_opp, vcorefs_prev_opp);
 
-	vcorefs_drv_init(plat_init_done, gvrctrl->plat_feature_en, gvrctrl->late_init_opp);
+	vcorefs_drv_init(plat_init_done, is_vcorefs_feature_enable(), gvrctrl->late_init_opp);
 
 	return 0;
 }
@@ -1037,23 +1037,29 @@ static int init_vcorefs_cmd_table(void)
 	for (opp = 0; opp < NUM_OPP; opp++) {
 		switch (opp) {
 		case OPPI_PERF:
-			/* 1.0v, 1600khz */
 			opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
 			opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);
+			opp_ctrl_table[opp].axi_khz = FAXI_S0_KHZ;
 			break;
 		case OPPI_LOW_PWR:
-			/* 0.9v, 1270khz */
 			opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
 			opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);
+			opp_ctrl_table[opp].axi_khz = FAXI_S1_KHZ;
 			break;
 		default:
 			break;
 		}
-		vcorefs_crit("opp %u: vcore_uv: %u, ddr_khz: %u\n",
-				opp, opp_ctrl_table[opp].vcore_uv, opp_ctrl_table[opp].ddr_khz);
+		vcorefs_crit("opp %u: vcore_uv: %u, ddr_khz: %u, axi_khz: %u\n",
+								opp,
+								opp_ctrl_table[opp].vcore_uv,
+								opp_ctrl_table[opp].ddr_khz,
+								opp_ctrl_table[opp].axi_khz);
 	}
 
-	vcorefs_crit("curr_vcore_uv: %u, curr_ddr_khz: %u\n", gvrctrl->curr_vcore_uv, gvrctrl->curr_ddr_khz);
+	vcorefs_crit("curr_vcore_uv: %u, curr_ddr_khz: %u, curr_axi_khz: %u\n",
+							gvrctrl->curr_vcore_uv,
+							gvrctrl->curr_ddr_khz,
+							gvrctrl->curr_axi_khz);
 
 	update_vcore_pwrap_cmd(opp_ctrl_table);
 	mutex_unlock(&governor_mutex);
