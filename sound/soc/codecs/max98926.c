@@ -961,6 +961,7 @@ static int max_i2c_master_send(const struct i2c_client *client, const char *buf,
     struct i2c_adapter *adap = client->adapter;
     struct i2c_msg msg;
 
+    #ifdef CONFIG_MTK_I2C_EXTENSION
     if (count <= 8)
     {
         msg.addr = client->addr & I2C_MASK_FLAG;
@@ -969,12 +970,13 @@ static int max_i2c_master_send(const struct i2c_client *client, const char *buf,
     {
         msg.addr = client->addr & I2C_MASK_FLAG | I2C_DMA_FLAG;
     }
-
+    #endif
     msg.flags = client->flags & I2C_M_TEN;
-
     msg.len = count;
     msg.buf = (char *)buf;
+    #ifdef CONFIG_MTK_I2C_EXTENSION
     msg.ext_flag = client->ext_flag;
+    #endif
     ret = i2c_transfer(adap, &msg, 1);
 
     /*
@@ -989,8 +991,9 @@ static int max98926_WriteReg(u16 a_u2Addr, u16 a_u2Data)
     pr_err("%s \n", __func__);
     int  i4RetValue = 0;
     char puSendCmd[2] = {(char)a_u2Addr , (char)a_u2Data};
+    #ifdef CONFIG_MTK_I2C_EXTENSION
     new_client->ext_flag = 0;
-
+    #endif
 
     i4RetValue = i2c_master_send(new_client, puSendCmd, 2);
 
@@ -1003,19 +1006,42 @@ static int max98926_WriteReg(u16 a_u2Addr, u16 a_u2Data)
     return 0;
 }
 
+
+
 static int max98926_ReadReg(u16 a_u2Addr, unsigned short *a_pu2Result)
 {
     int  i4RetValue = 0;
     char pBuff;
+    int ret;
+    struct i2c_adapter *adap = new_client->adapter;
+    unsigned short buffer[2] ;
+
+    #ifdef CONFIG_MTK_I2C_EXTENSION
     new_client->ext_flag  = ((new_client->ext_flag) & I2C_MASK_FLAG) | I2C_WR_FLAG | I2C_RS_FLAG;
 
     if (i2c_master_send(new_client, &a_u2Addr, 1 << 8 | 1) != 1)
     {
-        //pr_err("max98926_ReadReg  I2C send failed!! \n");
+        pr_err("max98926_ReadReg  I2C send failed!! \n");
         //return -1;
     }
-
     *a_pu2Result = a_u2Addr;
+
+    #else
+    struct i2c_msg wr_msgs[2];
+    wr_msgs[0].addr = new_client->addr;
+    wr_msgs[0].flags = 0x00;
+    wr_msgs[0].len = 1;
+    wr_msgs[0].buf = &buffer[0];
+
+    wr_msgs[1].addr = new_client->addr;
+    wr_msgs[1].flags |= I2C_M_RD;
+    wr_msgs[1].len = 1;
+    wr_msgs[1].buf = &buffer[1];
+
+    ret = i2c_transfer(adap, &wr_msgs, 2);
+    *a_pu2Result = buffer[1];
+    #endif
+
     return 0;
 }
 
@@ -1025,8 +1051,10 @@ static int max98926_i2c_probe(struct i2c_client *i2c,
 {
     pr_err("%s\n", __func__);
     new_client = i2c;
+    #ifdef CONFIG_MTK_I2C_EXTENSION
     new_client->timing = 100;
     new_client->ext_flag  = ((new_client->ext_flag) & I2C_MASK_FLAG) | I2C_WR_FLAG | I2C_RS_FLAG;
+    #endif
 
     struct snd_soc_codec *codec = NULL;
     int ret, reg;
@@ -1046,6 +1074,7 @@ static int max98926_i2c_probe(struct i2c_client *i2c,
     pr_err("max98926 = %p\n",max98926);
 
     i2c_set_clientdata(i2c, max98926);
+
     /*
     max98926->regmap = devm_regmap_init_i2c(i2c, &max98926_regmap);
     if (IS_ERR(max98926->regmap))
