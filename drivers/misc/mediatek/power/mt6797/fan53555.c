@@ -403,7 +403,7 @@ int fan53555_vosel(unsigned long val)
 	ret = fan53555_config_interface(0x00, reg_val, 0x3F, 0);
 	/* ret = fan53555_config_interface(0x00, 0x1, 0x1, 7); */
 
-	pr_notice("[fan53555_vosel] val=%ld, reg_val=%ld\n", val, reg_val);
+	/* pr_notice("[fan53555_vosel] val=%ld, reg_val=%ld\n", val, reg_val); */
 
 	return ret;
 }
