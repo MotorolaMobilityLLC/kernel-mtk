@@ -212,6 +212,16 @@ config ARCH_MT8163
 	  Please note this also select ARCH_MEDIATEK, so driver depends
 	  on it can be selected.
 
+config ARCH_MT8173
+	bool "MediaTek MT8173"
+	select ARCH_MEDIATEK
+	select MTK_INTPOL
+	help
+	  This enable support for MediaTek MT8173. If you need support
+	  for MediaTek MT8173, say Y here.
+	  Please note this also select ARCH_MEDIATEK, so driver depends
+	  on it can be selected.
+
 config ARCH_MT6735M
 	bool "MediaTek MT6735M"
 	select GENERIC_TIME
