@@ -189,6 +189,7 @@ static DEFINE_SPINLOCK(spm_noncpu_lock);
 #define CONN_PROT_MASK                   ((0x1 << 17)|(0x1 << 18))
 #define DIS_PROT_MASK                    ((0x1 << 1)|(0x1 << 2))
 #define MFG_PROT_MASK                    (0x1 << 21)
+#define C2K_PROT_MASK                    ((0x1 << 13)|(0x1 << 14)|(0x1 << 15))
 /* Define MTCMOS Power Status Mask */
 #define MD1_PWR_STA_MASK                 (0x1 << 0)
 #define CONN_PWR_STA_MASK                (0x1 << 1)
@@ -1615,6 +1616,13 @@ static int spm_mtcmos_ctrl_c2k(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off C2K" */
 		/* TINFO="Set PWR_ISO = 1" */
+		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | C2K_PROT_MASK);
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & C2K_PROT_MASK) != C2K_PROT_MASK) {
+			#ifdef CONFIG_MTK_RAM_CONSOLE
+			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
+			#endif
+		}
+
 		spm_write(C2K_PWR_CON, spm_read(C2K_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
 		spm_write(C2K_PWR_CON, spm_read(C2K_PWR_CON) | PWR_CLK_DIS);
@@ -1663,6 +1671,15 @@ static int spm_mtcmos_ctrl_c2k(int state)
 		spm_write(C2K_PWR_CON, spm_read(C2K_PWR_CON) & ~PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(C2K_PWR_CON, spm_read(C2K_PWR_CON) | PWR_RST_B);
+
+		/* TINFO="Release bus protect" */
+		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~C2K_PROT_MASK);
+		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & C2K_PROT_MASK) {
+			#ifdef CONFIG_MTK_RAM_CONSOLE
+			aee_rr_rec_clk(0, spm_read(INFRA_TOPAXI_PROTECTSTA1));
+			#endif
+		}
+
 		/* TINFO="Finish to turn on C2K" */
 	}
 	#ifdef CONFIG_MTK_RAM_CONSOLE
