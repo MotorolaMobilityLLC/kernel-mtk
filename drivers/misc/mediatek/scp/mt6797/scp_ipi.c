@@ -40,7 +40,7 @@ void scp_ipi_handler(void)
 		memcpy_from_scp(scp_recv_buff, (void *)scp_rcv_obj->share_buf, scp_rcv_obj->len);
 		scp_ipi_desc[scp_rcv_obj->id].handler(scp_rcv_obj->id, scp_recv_buff, scp_rcv_obj->len);
 	}
-	pr_debug("spm_sw_rsv_3:0x%x\n", *(volatile unsigned int*)SPM_SW_RSV_3);
+	/*pr_debug("spm_sw_rsv_3:0x%x\n", *(volatile unsigned int*)SPM_SW_RSV_3);*/
 	if ((*(volatile unsigned int*)SPM_SW_RSV_3 & 0xBABE0000) == 0xBABE0000) {
 		/* clear mailbox when it's a wakeup event from scp ipi
 		 * SPM_SW_RSV_3[31:16] is 0xBABE -> scp wakeup event
@@ -48,7 +48,7 @@ void scp_ipi_handler(void)
 		*(volatile unsigned int*)SPM_SW_RSV_3 &= 0x0000FFFF;
 		SCP_TO_SPM_REG = 0x0;
 	}
-	pr_debug("scp_ipi_handler done\n");
+	/*pr_debug("scp_ipi_handler done\n");*/
 }
 
 /*

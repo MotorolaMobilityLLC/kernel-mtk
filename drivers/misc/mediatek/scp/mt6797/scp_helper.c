@@ -133,7 +133,7 @@ static scp_feature_table_t feature_table[] = {
 	{
 		.feature    = SENS_FEATURE_ID,
 		.freq       = 84,
-		.enable     = 1,
+		.enable     = 0,
 	},
 	{
 		.feature    = MP3_FEATURE_ID,
