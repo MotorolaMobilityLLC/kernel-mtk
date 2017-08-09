@@ -153,48 +153,48 @@ static INT32 mtk_wcn_consys_jtag_set_for_mcu(VOID)
 	INT32 iRet = -1;
 	UINT32 tmp = 0;
 
-	WMT_PLAT_INFO_FUNC("WCN jtag_set_for_mcu start...\n");
+	WMT_PLAT_DBG_FUNC("WCN jtag_set_for_mcu start...\n");
 	jtag_addr1 = ioremap(JTAG_ADDR1_BASE, 0x1000);
 	if (jtag_addr1 == 0) {
 		WMT_PLAT_ERR_FUNC("remap jtag_addr1 fail!\n");
 		return iRet;
 	}
-	WMT_PLAT_INFO_FUNC("jtag_addr1 = 0x%p\n", jtag_addr1);
+	WMT_PLAT_DBG_FUNC("jtag_addr1 = 0x%p\n", jtag_addr1);
 	jtag_addr2 = ioremap(JTAG_ADDR2_BASE, 0x1000);
 	if (jtag_addr2 == 0) {
 		WMT_PLAT_ERR_FUNC("remap jtag_addr2 fail!\n");
 		return iRet;
 	}
-	WMT_PLAT_INFO_FUNC("jtag_addr2 = 0x%p\n", jtag_addr2);
+	WMT_PLAT_DBG_FUNC("jtag_addr2 = 0x%p\n", jtag_addr2);
 
 	tmp = JTAG1_REG_READ(0x10005330);
 	tmp &= 0xff00ffff;
 	tmp |= 0x00550000;
 	JTAG1_REG_WRITE(0x10005330, tmp);
-	WMT_PLAT_INFO_FUNC("JTAG set reg:%x, val:%x\n", 0x10005330, tmp);
+	WMT_PLAT_DBG_FUNC("JTAG set reg:%x, val:%x\n", 0x10005330, tmp);
 
 	tmp = JTAG1_REG_READ(0x10005340);
 	tmp &= 0xfff00000;
 	tmp |= 0x00055555;
 	JTAG1_REG_WRITE(0x10005340, tmp);
-	WMT_PLAT_INFO_FUNC("JTAG set reg:%x, val:%x\n", 0x10005340, tmp);
+	WMT_PLAT_DBG_FUNC("JTAG set reg:%x, val:%x\n", 0x10005340, tmp);
 
 	tmp = JTAG2_REG_READ(0x100020F0);
 	tmp &= 0xfffffc0c;
 	tmp |= 0x000003f3;
 	JTAG2_REG_WRITE(0x100020F0, tmp);
-	WMT_PLAT_INFO_FUNC("JTAG set reg:%x, val:%x\n", 0x100020F0, tmp);
+	WMT_PLAT_DBG_FUNC("JTAG set reg:%x, val:%x\n", 0x100020F0, tmp);
 
 	tmp = JTAG2_REG_READ(0x100020b0);
 	tmp &= 0xfffffe0c;
 	tmp |= 0x00000180;
 	JTAG2_REG_WRITE(0x100020b0, tmp);
-	WMT_PLAT_INFO_FUNC("JTAG set reg:%x, val:%x\n", 0x100020b0, tmp);
+	WMT_PLAT_DBG_FUNC("JTAG set reg:%x, val:%x\n", 0x100020b0, tmp);
 
 	tmp = JTAG2_REG_READ(0x100020d0);
 	tmp &= 0xfffffe0c;
 	JTAG2_REG_WRITE(0x100020d0, tmp);
-	WMT_PLAT_INFO_FUNC("JTAG set reg:%x, val:%x\n", 0x100020d0, tmp);
+	WMT_PLAT_DBG_FUNC("JTAG set reg:%x, val:%x\n", 0x100020d0, tmp);
 
 #endif
 	return 0;
@@ -372,11 +372,11 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		while (CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_TOPAXI_PROT_STA1_OFFSET) & CONSYS_PROT_MASK)
 			NULL;
 #endif
-		WMT_PLAT_INFO_FUNC("reg dump:CONSYS_PWR_CONN_ACK_REG(0x%x)\n",
+		WMT_PLAT_DBG_FUNC("reg dump:CONSYS_PWR_CONN_ACK_REG(0x%x)\n",
 				   CONSYS_REG_READ(conn_reg.spm_base + CONSYS_PWR_CONN_ACK_OFFSET));
-		WMT_PLAT_INFO_FUNC("reg dump:CONSYS_PWR_CONN_ACK_S_REG(0x%x)\n",
+		WMT_PLAT_DBG_FUNC("reg dump:CONSYS_PWR_CONN_ACK_S_REG(0x%x)\n",
 				   CONSYS_REG_READ(conn_reg.spm_base + CONSYS_PWR_CONN_ACK_S_OFFSET));
-		WMT_PLAT_INFO_FUNC("reg dump:CONSYS_TOP1_PWR_CTRL_REG(0x%x)\n",
+		WMT_PLAT_DBG_FUNC("reg dump:CONSYS_TOP1_PWR_CTRL_REG(0x%x)\n",
 				   CONSYS_REG_READ(conn_reg.spm_base + CONSYS_TOP1_PWR_CTRL_OFFSET));
 		/*11.26M is ready now, delay 10us for mem_pd de-assert */
 		udelay(30);
@@ -461,9 +461,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		CONSYS_REG_WRITE(consys_afe_reg_base + CONSYS_AFE_REG_WBG_WF_TX_03_OFFSET,
 				CONSYS_AFE_REG_WBG_TX_03_VALUE);
 #if 1
-		WMT_PLAT_INFO_FUNC("Dump AFE register\n");
+		WMT_PLAT_DBG_FUNC("Dump AFE register\n");
 		for (i = 0; i < 64; i++) {
-			WMT_PLAT_INFO_FUNC("reg:0x%08x|val:0x%08x\n",
+			WMT_PLAT_DBG_FUNC("reg:0x%08x|val:0x%08x\n",
 				CONSYS_AFE_REG_BASE + 4*i, CONSYS_REG_READ(consys_afe_reg_base + 4*i));
 		}
 #endif
