@@ -293,13 +293,6 @@ static int mt6397_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, mt6397);
 
-	mt6397->irq = platform_get_irq(pdev, 0);
-	if (mt6397->irq > 0) {
-		ret = mt6397_irq_init(mt6397);
-		if (ret)
-			return ret;
-	}
-
 	ret = regmap_read(mt6397->regmap, MT6397_CID, &id);
 	if (ret) {
 		dev_err(mt6397->dev, "Failed to read chip id: %d\n", ret);
@@ -330,6 +323,13 @@ static int mt6397_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "unsupported chip: %d\n", id);
 		ret = -ENODEV;
 		break;
+	}
+
+	mt6397->irq = platform_get_irq(pdev, 0);
+	if (mt6397->irq > 0) {
+		ret = mt6397_irq_init(mt6397);
+		if (ret)
+			return ret;
 	}
 
 fail_irq:
