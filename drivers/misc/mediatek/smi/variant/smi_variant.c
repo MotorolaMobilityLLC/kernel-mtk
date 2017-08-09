@@ -129,7 +129,7 @@ static long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned l
 */
 static unsigned long get_larb_base_addr(int larb_id)
 {
-	if (larb_id > smi_data->larb_nr || larb_id < 0 || !smi_data)
+	if (!smi_data || larb_id > smi_data->larb_nr || larb_id < 0)
 		return SMI_ERROR_ADDR;
 	else
 		return smi_data->larb_base[larb_id];
