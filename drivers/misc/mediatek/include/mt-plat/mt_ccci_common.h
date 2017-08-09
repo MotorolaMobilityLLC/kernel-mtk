@@ -224,6 +224,51 @@ struct md_check_header_v5 {
 	unsigned int  size; /* the size of this structure */
 } __packed;
 
+typedef struct _free_padding_block {
+	unsigned int start_offset;
+	unsigned int length;
+} free_padding_block_t;
+
+struct md_check_header_v6 {
+	unsigned char check_header[12]; /* magic number is "CHECK_HEADER"*/
+	unsigned int  header_verno; /* header structure version number */
+	unsigned int  product_ver; /* 0x0:invalid; 0x1:debug version; 0x2:release version */
+	unsigned int  image_type; /* 0x0:invalid; 0x1:2G modem; 0x2: 3G modem */
+	unsigned char platform[16]; /* MT6573_S01 or MT6573_S02 */
+	unsigned char build_time[64]; /* build time string */
+	unsigned char build_ver[64]; /* project version, ex:11A_MD.W11.28 */
+
+	unsigned char bind_sys_id; /* bind to md sys id, MD SYS1: 1, MD SYS2: 2, MD SYS5: 5 */
+	unsigned char ext_attr; /* no shrink: 0, shrink: 1 */
+	unsigned char reserved[2]; /* for reserved */
+
+	unsigned int  mem_size; /* md ROM/RAM image size requested by md */
+	unsigned int  md_img_size; /* md image size, exclude head size */
+	unsigned int  rpc_sec_mem_addr; /* RPC secure memory address */
+
+	unsigned int  dsp_img_offset;
+	unsigned int  dsp_img_size;
+
+	unsigned int  region_num; /* total region number */
+	struct _md_regin_info region_info[8];    /* max support 8 regions */
+	unsigned int  domain_attr[4];    /* max support 4 domain settings, each region has 4 control bits*/
+
+	unsigned int  arm7_img_offset;
+	unsigned int  arm7_img_size;
+
+	free_padding_block_t padding_blk[8];
+
+	unsigned int  ap_md_smem_size;
+	unsigned int  md_to_md_smem_size;
+
+	unsigned int ramdisk_offset;
+	unsigned int ramdisk_size;
+
+	unsigned char reserved_1[144];
+
+	unsigned int  size; /* the size of this structure */
+};
+
 struct md_check_header_struct {
 	unsigned char check_header[12];  /* magic number is "CHECK_HEADER"*/
 	unsigned int  header_verno;	  /* header structure version number */

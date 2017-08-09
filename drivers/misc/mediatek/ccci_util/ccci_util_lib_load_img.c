@@ -89,6 +89,7 @@ static struct md_check_header md_img_header[MAX_MD_NUM];
 /*static struct md_check_header_v3 md_img_header_v3[MAX_MD_NUM];*/
 static struct md_check_header_v4 md_img_header_v4[MAX_MD_NUM];
 static struct md_check_header_v5 md_img_header_v5[MAX_MD_NUM];
+static struct md_check_header_v6 md_img_header_v6[MAX_MD_NUM];
 /*static struct ccci_image_info		img_info[MAX_MD_NUM][IMG_NUM]; */
 char md_img_info_str[MAX_MD_NUM][256];
 
@@ -297,6 +298,7 @@ static int md_check_header_parser(int md_id, void *parse_addr, struct ccci_image
 	struct md_check_header *headv12 = NULL;
 	struct md_check_header_v4 *headv34 = NULL;
 	struct md_check_header_v5 *headv5 = NULL;
+	struct md_check_header_v6 *headv6 = NULL;
 
 	get_md_resv_mem_info(md_id, NULL, &md_size, NULL, NULL);
 
@@ -314,6 +316,13 @@ static int md_check_header_parser(int md_id, void *parse_addr, struct ccci_image
 		headv12 = (struct md_check_header *)headv5;
 		head = (struct md_check_header_struct *)headv5;
 		header_up = 5;
+	} else if (header_size == sizeof(struct md_check_header_v6)) {/* v6 */
+		headv6 = &md_img_header_v6[md_id];
+		headv34 = (struct md_check_header_v4 *)headv6;
+		headv12 = (struct md_check_header *)headv6;
+		headv5 = (struct md_check_header_v5 *)headv6;
+		head = (struct md_check_header_struct *)headv6;
+		header_up = 6;
 	} else { /* Default Load v1/2 */
 		/* if (header_size == sizeof(struct md_check_header)) {*//* v1, v2 */
 		headv12 = &md_img_header[md_id];
@@ -514,6 +523,8 @@ static int check_md_header(int md_id, void *parse_addr, struct ccci_image_info *
 	if (header_size == sizeof(struct md_check_header_v3)) /* v3, v4 */
 		return check_md_header_v3(md_id, parse_addr, image);
 	else if (header_size == sizeof(struct md_check_header_v5))
+		return md_check_header_parser(md_id, parse_addr, image);
+	else if (header_size == sizeof(struct md_check_header_v6))
 		return md_check_header_parser(md_id, parse_addr, image);
 
 	/*memcpy(head, (void*)(parse_addr - sizeof(struct md_check_header)), sizeof(struct md_check_header)); */

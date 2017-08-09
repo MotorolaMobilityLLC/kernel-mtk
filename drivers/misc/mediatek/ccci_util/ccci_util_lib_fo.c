@@ -585,22 +585,23 @@ static int md3_raw_img_size;
 
 static void md_chk_hdr_info_parse(void)
 {
+	int ret;
 	if (s_g_md_usage_case & (1<<MD_SYS1)) {
 		/* The allocated memory will be free after md structure initialized */
-		md1_check_hdr_info = kmalloc(sizeof(struct md_check_header_v5), GFP_KERNEL);
+		md1_check_hdr_info = kmalloc(1024, GFP_KERNEL);
 		if (md1_check_hdr_info == NULL) {
 			CCCI_UTIL_ERR_MSG("allocate check header memory fail for md1\n");
 			s_g_md_env_rdy_flag &= ~(1<<MD_SYS1);
 			goto _check_md3;
 		}
-		if (find_ccci_tag_inf("md1_chk", md1_check_hdr_info,
-				sizeof(struct md_check_header_v5)) != sizeof(struct md_check_header_v5)) {
+		ret = find_ccci_tag_inf("md1_chk", md1_check_hdr_info, 1024);
+		if ((ret != sizeof(struct md_check_header_v5)) && (ret != sizeof(struct md_check_header_v6))) {
 			CCCI_UTIL_ERR_MSG("get md1 chk header info fail\n");
 			s_g_lk_load_img_status |= LK_LOAD_MD_ERR_LK_INFO_FAIL;
 			s_g_md_env_rdy_flag &= ~(1<<MD_SYS1);
 			goto _check_md3;
 		}
-		md1_check_hdr_info_size = sizeof(struct md_check_header_v5);
+		md1_check_hdr_info_size = ret;
 
 		/* Get MD1 raw image size */
 		find_ccci_tag_inf("md1img", (char *)&md1_raw_img_size, sizeof(int));
