@@ -281,7 +281,7 @@
 #define CSPM_SEMA1_M2			(CSPM_BASE + 0x428)	/* EMI SEMA (X) */
 #define CSPM_SEMA2_M0			(CSPM_BASE + 0x430)	/* EMI SEMA (LP SPM) */
 #define CSPM_SEMA2_M1			(CSPM_BASE + 0x434)	/* EMI SEMA (SCP) */
-#define CSPM_SEMA2_M2			(CSPM_BASE + 0x438)	/* EMI SEMA (GPU SPM) */
+#define CSPM_SEMA2_M2			(CSPM_BASE + 0x438)	/* EMI SEMA (X) */
 #define CSPM_SEMA3_M0			(CSPM_BASE + 0x440)	/* MCU SEMA (FH) */
 #define CSPM_SEMA3_M1			(CSPM_BASE + 0x444)	/* MCU SEMA (CPU SPM) */
 #define CSPM_SEMA3_M2			(CSPM_BASE + 0x448)	/* MCU SEMA (ATF) */
@@ -1480,7 +1480,7 @@ UNLOCK:
 static int cspm_disable_hw_governor(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *ret_sta)
 {
 	int i, r = 0;
-	u32 f_curr[NUM_CPU_CLUSTER];
+	u32 f_curr[NUM_CPU_CLUSTER], swctrl;
 
 	spin_lock(&dvfs_lock);
 	cspm_dbgx(HWGOV, "(%u) [%08x] disable hw gov\n", dvfsp->hw_gov_en, cspm_get_timestamp());
@@ -2297,7 +2297,7 @@ int cpuhvfs_enable_hw_governor(struct init_sta *sta)
 		return -EPERM;
 	}
 
-	return dvfsp->enable_hwgov(dvfsp);
+	return dvfsp->enable_hwgov(dvfsp, sta);
 }
 
 /**
