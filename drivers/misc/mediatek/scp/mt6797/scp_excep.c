@@ -12,7 +12,7 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <linux/slab.h>         /* needed by kmalloc */
+#include <linux/vmalloc.h>         /* needed by vmalloc */
 #include <linux/sysfs.h>
 #include <linux/device.h>       /* needed by device_* */
 #include <linux/workqueue.h>
@@ -58,12 +58,12 @@ static struct mutex scp_excep_mutex, scp_excep_dump_mutex;
 static void scp_dump_buffer_set(unsigned char *buf, unsigned int length)
 {
 	if (length == 0) {
-		kfree(buf);
+		vfree(buf);
 		return;
 	}
 
 	mutex_lock(&scp_excep_dump_mutex);
-	kfree(scp_dump_buffer);
+	vfree(scp_dump_buffer);
 
 	scp_dump_buffer = buf;
 	scp_dump_length = length;
@@ -222,7 +222,7 @@ static void scp_prepare_aed(char *aed_str, struct scp_aed_cfg *aed)
 
 	pr_debug("scp_prepare_aed\n");
 
-	detail = kmalloc(SCP_AED_STR_LEN, GFP_KERNEL);
+	detail = vmalloc(SCP_AED_STR_LEN);
 	ptr = detail;
 	memset(detail, 0, SCP_AED_STR_LEN);
 	snprintf(detail, SCP_AED_STR_LEN, "%s\n", aed_str);
@@ -256,11 +256,12 @@ static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed)
 	u32 memory_dump_size;
 	MemoryDump *pMemoryDump = NULL;
 
+
 	pr_debug("scp_prepare_aed_dump: %s\n", aed_str);
 
 	scp_aee_last_reg();
 
-	detail = kmalloc(SCP_AED_STR_LEN, GFP_KERNEL);
+	detail = vmalloc(SCP_AED_STR_LEN);
 	ptr = detail;
 	memset(detail, 0, SCP_AED_STR_LEN);
 	snprintf(detail, SCP_AED_STR_LEN, "%s scp pc=0x%08x, lr=0x%08x, psp=0x%08x, sp=0x%08x\n",
@@ -269,7 +270,7 @@ static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed)
 
 
 	log_size = AED_DUMP_SIZE; /* 16KB */
-	log = kmalloc(log_size, GFP_KERNEL);
+	log = vmalloc(log_size);
 	if (!log) {
 		pr_debug("ap allocate log buffer fail, size=0x%x\n", log_size);
 		log_size = 0;
@@ -282,8 +283,8 @@ static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed)
 		pr_debug("%s", log);
 	}
 
-	phy_size = SCP_AED_PHY_SIZE;
-	phy = kmalloc(phy_size, GFP_KERNEL);
+	phy_size = SCP_AED_PHY_SIZE; /* SCP_CFGREG_SIZE+SCP_TCM_SIZE */
+	phy = vmalloc(phy_size);
 	if (!phy) {
 		pr_debug("ap allocate phy buffer fail, size=0x%x\n", phy_size);
 		phy_size = 0;
@@ -297,7 +298,7 @@ static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed)
 		ptr += SCP_TCM_SIZE;
 	}
 	memory_dump_size = sizeof(*pMemoryDump);
-	ptr = kmalloc(memory_dump_size, GFP_KERNEL);
+	ptr = vmalloc(memory_dump_size);
 	if (!ptr) {
 		pr_debug("ap allocate pMemoryDump buffer fail, size=0x%x\n", memory_dump_size);
 		memory_dump_size = 0;
@@ -360,11 +361,9 @@ void scp_aed(scp_excep_id type)
 
 	/* TODO: apply new scp aed api here */
 	aed_scp_exception_api(aed.log, aed.log_size, aed.phy, aed.phy_size, aed.detail, DB_OPT_DEFAULT);
-
-	kfree(aed.detail);
-	kfree(aed.phy);
-	kfree(aed.log);
-
+	vfree(aed.detail);
+	vfree(aed.log);
+	vfree(aed.phy);
 	pr_debug("[SCP] scp exception dump is done\n");
 
 	mutex_unlock(&scp_excep_mutex);
