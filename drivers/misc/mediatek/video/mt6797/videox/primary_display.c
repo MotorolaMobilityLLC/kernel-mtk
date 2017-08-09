@@ -116,6 +116,7 @@ static struct task_struct *present_fence_release_worker_task;
 static struct task_struct *primary_path_aal_task;
 static struct task_struct *decouple_update_rdma_config_thread;
 static struct task_struct *decouple_trigger_thread;
+static struct task_struct *init_decouple_buffer_thread;
 static struct sg_table table;
 
 static int decouple_mirror_update_rdma_config_thread(void *data);
@@ -1554,6 +1555,10 @@ static int _DL_switch_to_DC_fast(void)
 	unsigned int mva = pgc->dc_buf[pgc->dc_buf_id];	/* mva for 1. ovl->wdma and 2.Rdma->dsi , */
 	struct ddp_io_golden_setting_arg gset_arg;
 
+	if (mva == 0) {
+		DISPERR("%s, dc buffer does not exist\n", __func__);
+		return -1;
+	}
 	wdma_config.dstAddress = mva;
 	wdma_config.security = DISP_NORMAL_BUFFER;
 
@@ -2157,8 +2162,15 @@ static int init_decouple_buffers(void)
 	decouple_wdma_config.dstPitch = width * Bpp;
 	decouple_wdma_config.security = DISP_NORMAL_BUFFER;
 
+	pr_warn("%s done\n", __func__);
 	return 0;
 
+}
+
+static int _init_decouple_buffers_thread(void *data)
+{
+	init_decouple_buffers();
+	return 0;
 }
 
 static int _build_path_direct_link(void)
@@ -3118,7 +3130,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 	config_display_m4u_port();
 	primary_display_set_max_layer(PRIMARY_SESSION_INPUT_LAYER_COUNT);
-	init_decouple_buffers();
+	if (init_decouple_buffer_thread == NULL) {
+		init_decouple_buffer_thread = kthread_create(_init_decouple_buffers_thread,
+								    NULL, "init_decouple_buffer");
+		wake_up_process(init_decouple_buffer_thread);
+	}
+	/* init_decouple_buffers(); */
 
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
 	DISPDBG("primary_display_init->dpmgr_path_init\n");
@@ -4636,6 +4653,11 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		pgc->dc_buf_id++;
 		pgc->dc_buf_id %= DISP_INTERNAL_BUFFER_COUNT;
 		wdma_mva = pgc->dc_buf[pgc->dc_buf_id];
+		if (wdma_mva == 0) {
+			DISPERR("%s, dc buffer does not exist\n", __func__);
+			ret = -1;
+			goto done;
+		}
 		decouple_wdma_config.dstAddress = wdma_mva;
 		_config_wdma_output(&decouple_wdma_config, pgc->ovl2mem_path_handle,
 				    pgc->cmdq_handle_ovl1to2_config);
