@@ -54,10 +54,6 @@ int org_dram_data_rate = 0;
 #define Reg_Sync_Writel(addr, val)   writel(val, addr)
 #define Reg_Readl(addr) readl(IOMEM(addr))
 
-#ifdef DEBUG
-#define pr_debug pr_err
-#endif
-
 #ifdef DRAM_HQA
 void dram_HQA_adjust_voltage(void)
 {

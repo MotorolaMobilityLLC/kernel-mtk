@@ -470,6 +470,15 @@ clocks {
 			interrupts = <0 149 0x2>;
 		};
 
+		CQDMA@0x10212C00 {
+			compatible = "mediatek,CQDMA";
+			reg = <0x10212C00 0x100>;
+			      /*<0x10212D00 0x100>;*/
+			interrupts = <0 113 0x8>;
+				     /*<0 114 0x8>;*/
+			nr_channel = <1>;
+		};
+
 		GPIO@0x10005000 {
 			compatible = "mediatek,GPIO";
 			reg = <0x10005000 0x1000>;
