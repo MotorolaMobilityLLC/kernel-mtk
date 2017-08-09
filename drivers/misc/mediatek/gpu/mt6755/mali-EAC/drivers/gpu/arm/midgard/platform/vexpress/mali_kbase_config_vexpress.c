@@ -133,7 +133,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 			pr_alert("MALI: clk_prepare_enable failed when enabling mfg clock");
 		}
 #endif
-    pr_alert("MALI :[Power on] get GPU ID : 0x%x", kbase_os_reg_read(kbdev, GPU_CONTROL_REG(GPU_ID)) );
+    pr_debug("MALI :[Power on] get GPU ID : 0x%x", kbase_os_reg_read(kbdev, GPU_CONTROL_REG(GPU_ID)) );
 
     mtk_get_touch_boost_flag( &touch_boost_flag, &touch_boost_id);
     if(touch_boost_flag > 0)
