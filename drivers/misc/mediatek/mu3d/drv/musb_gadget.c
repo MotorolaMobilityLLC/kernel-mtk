@@ -94,8 +94,6 @@
 
 /* ----------------------------------------------------------------------- */
 /* GADGET 318, FIXME */
-int usb_add_gadget_udc(struct device *parent, struct usb_gadget *gadget){return 0;}
-void usb_del_gadget_udc(struct usb_gadget *gadget){return;}
 #include <linux/skbuff.h>
 int mbim_start_xmit(struct sk_buff *skb, int ifid){return 0;}
 

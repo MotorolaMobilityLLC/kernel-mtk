@@ -1703,9 +1703,10 @@ static struct config_group *gadgets_make(
 		const char *name)
 {
 	struct gadget_info *gi;
+	/* -Werror=unused-variable
 	struct device_attribute **attrs;
 	struct device_attribute *attr;
-	int err;
+	int err; */
 
 	gi = kzalloc(sizeof(*gi), GFP_KERNEL);
 	if (!gi)
@@ -1768,8 +1769,9 @@ err:
 
 static void gadgets_drop(struct config_group *group, struct config_item *item)
 {
+	/* -Werror=unused-variable
 	struct device_attribute **attrs;
-	struct device_attribute *attr;
+	struct device_attribute *attr; */
 
 	config_item_put(item);
 	android_device_destroy();

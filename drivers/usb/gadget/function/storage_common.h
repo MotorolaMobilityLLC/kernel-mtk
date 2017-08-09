@@ -125,6 +125,10 @@ static inline bool fsg_lun_is_open(struct fsg_lun *curlun)
 /* Maximal number of LUNs supported in mass storage function */
 #define FSG_MAX_LUNS	8
 
+
+#define INQUIRY_MAX_LEN	29
+#define LUN_NAME_LEN	8
+
 enum fsg_buffer_state {
 	BUF_STATE_EMPTY = 0,
 	BUF_STATE_FULL,
