@@ -338,7 +338,7 @@ static void _od_set_dram_buffer_addr(void *cmdq, int manual_comp, int image_widt
 		void *va;
 		dma_addr_t dma_addr;
 
-		va = dma_alloc_coherent(NULL, u4ODDramSize + OD_ADDITIONAL_BUFFER + OD_GUARD_PATTERN_SIZE,
+		va = dma_alloc_coherent(disp_get_device(), u4ODDramSize + OD_ADDITIONAL_BUFFER + OD_GUARD_PATTERN_SIZE,
 			&dma_addr, GFP_KERNEL);
 
 		if (va == NULL) {
@@ -922,7 +922,7 @@ static int disp_od_ioctl(DISP_MODULE_ENUM module, int msg, unsigned long arg, vo
 
 static void ddp_bypass_od(unsigned int width, unsigned int height, void *handle)
 {
-	ODNOTICE("ddp_bypass_od\n");
+	ODNOTICE("ddp_bypass_od");
 	DISP_REG_SET(handle, DISP_REG_OD_SIZE, (width << 16) | height);
 	/* do not use OD relay mode (dither will be bypassed) od_core_en = 0 */
 	DISP_REG_SET(handle, DISP_REG_OD_CFG, 0);
@@ -1215,7 +1215,7 @@ static void od_dump_all(void)
 
 	OD_TLOG("OD reg base = %lx", (unsigned long)(OD_BASE));
 	for (i = 0; i < sizeof(od_addr_all) / sizeof(od_addr_all[0]); i++) {
-		offset = od_addr_all[0];
+		offset = od_addr_all[i];
 		value = DISP_REG_GET((unsigned long)(OD_BASE + offset));
 		OD_TLOG("[+0x%03x] = 0x%08x(%d)", offset, value, value);
 	}

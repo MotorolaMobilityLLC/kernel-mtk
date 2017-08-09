@@ -586,6 +586,12 @@ void disp_m4u_tf_disable(void)
 #endif
 }
 
+
+struct device *disp_get_device(void)
+{
+	return dispsys_dev->dev;
+}
+
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 static struct miscdevice disp_misc_dev;
 #endif

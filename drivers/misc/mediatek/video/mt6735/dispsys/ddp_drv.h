@@ -238,6 +238,8 @@ typedef enum {
 	DISP_INTERLACE_FORMAT_BOTTOM_FIELD
 } DISP_INTERLACE_FORMAT;
 
+struct device *disp_get_device(void);
+
 #define DISP_IOCTL_MAGIC        'x'
 
 #define DISP_IOCTL_WRITE_REG       _IOW(DISP_IOCTL_MAGIC, 1, DISP_WRITE_REG)	/* also defined in atci_pq_cmd.h */
