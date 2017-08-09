@@ -632,7 +632,7 @@ int spm_module_init(void)
 #ifdef ENABLE_DYNA_LOAD_PCM	/* for dyna_load_pcm */
 static char *local_buf;
 static dma_addr_t local_buf_dma;
-struct firmware spm_fw[DYNA_LOAD_PCM_MAX];
+static const struct firmware *spm_fw[DYNA_LOAD_PCM_MAX];
 
 /*Reserved memory by device tree!*/
 int reserve_memory_spm_fn(struct reserved_mem *rmem)
@@ -674,8 +674,7 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		struct pcm_desc *pdesc = &(dyna_load_pcm[i].desc);
 		int j = 0;
 
-		fw = &spm_fw[i];
-
+		spm_fw[i] = NULL;
 		do {
 			j++;
 			pr_debug("try to request_firmware() %s - %d\n", dyna_load_pcm_path[i], j);
@@ -687,6 +686,7 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 			pr_err("Failed to load %s, err = %d.\n", dyna_load_pcm_path[i], err);
 			continue;
 		}
+		spm_fw[i] = fw;
 
 		/* Do whatever it takes to load firmware into device. */
 		/* start of binary size */
@@ -859,6 +859,10 @@ static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 
 	switch (pm_event) {
 	case PM_HIBERNATION_PREPARE:
+		for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++) {
+			if (spm_fw[i])
+				release_firmware(spm_fw[i]);
+		}
 		return NOTIFY_DONE;
 	case PM_RESTORE_PREPARE:
 		return NOTIFY_DONE;
