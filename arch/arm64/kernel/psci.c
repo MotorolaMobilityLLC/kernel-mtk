@@ -736,6 +736,45 @@ static int cpu_kill_pll_buck_ctrl(unsigned int cpu)
 }
 #endif
 
+#ifdef CONFIG_ARCH_MT6797
+unsigned int last_cl0_online_cpus(unsigned int cpu)
+{
+	int ret = 0;
+
+	if (((cpu == 0) && (g_cl0_online == 1)) ||
+	    ((cpu == 1) && (g_cl0_online == 2)) ||
+	    ((cpu == 2) && (g_cl0_online == 4)) ||
+	    ((cpu == 3) && (g_cl0_online == 8)))
+			ret = 1;
+
+	return ret;
+}
+
+unsigned int last_cl1_online_cpus(unsigned int cpu)
+{
+	int ret = 0;
+
+	if (((cpu == 4) && (g_cl1_online == 1)) ||
+	    ((cpu == 5) && (g_cl1_online == 2)) ||
+	    ((cpu == 6) && (g_cl1_online == 4)) ||
+	    ((cpu == 7) && (g_cl1_online == 8)))
+			ret = 1;
+
+	return ret;
+}
+
+unsigned int last_cl2_online_cpus(unsigned int cpu)
+{
+	int ret = 0;
+
+	if (((cpu == 8) && (g_cl2_online == 1)) ||
+	    ((cpu == 9) && (g_cl2_online == 2)))
+			ret = 1;
+
+	return ret;
+}
+#endif
+
 static int cpu_psci_cpu_kill(unsigned int cpu)
 {
 	int err, i;
@@ -749,21 +788,26 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 	 */
 
 	for (i = 0; i < 10; i++) {
+#ifdef CONFIG_ARCH_MT6797
 #ifdef CONFIG_OCP_IDVFS_CTRL
-		if (cpu == 8 && idvfs_init) {
+		if (idvfs_init && last_cl2_online_cpus(cpu)) {
+			pr_info("BigiDVFSDisable_hp()\n");
 			BigiDVFSDisable_hp();
 			idvfs_init = 0;
 		}
 
-		if (cpu == 0 && ocp_cl0_init) {
+		if (ocp_cl0_init && last_cl0_online_cpus(cpu)) {
+			pr_info("LittleOCPDisable(0)\n");
 			LittleOCPDisable(0);
 			ocp_cl0_init = 0;
 		}
 
-		if (cpu == 4 && ocp_cl1_init) {
+		if (ocp_cl1_init && last_cl1_online_cpus(cpu)) {
+			pr_info("LittleOCPDisable(1)\n");
 			LittleOCPDisable(1);
 			ocp_cl1_init = 0;
 		}
+#endif
 #endif
 
 		err = psci_ops.affinity_info(cpu_logical_map(cpu), 0);
