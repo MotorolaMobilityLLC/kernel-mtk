@@ -1125,7 +1125,11 @@ static struct usb_gadget_string_container *copy_gadget_strings(
 	mem += sizeof(void *) * (n_gstrings + 1);
 	mem += sizeof(struct usb_gadget_strings) * n_gstrings;
 	mem += sizeof(struct usb_string) * (n_strings + 1) * (n_gstrings);
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	uc = kmalloc(mem, GFP_KERNEL | GFP_DMA);
+#else
 	uc = kmalloc(mem, GFP_KERNEL);
+#endif
 	if (!uc)
 		return ERR_PTR(-ENOMEM);
 	gs_array = get_containers_gs(uc);
@@ -1906,8 +1910,11 @@ int composite_dev_prepare(struct usb_composite_driver *composite,
 	cdev->req = usb_ep_alloc_request(gadget->ep0, GFP_KERNEL);
 	if (!cdev->req)
 		return -ENOMEM;
-
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	cdev->req->buf = kmalloc(USB_COMP_EP0_BUFSIZ, GFP_KERNEL | GFP_DMA);
+#else
 	cdev->req->buf = kmalloc(USB_COMP_EP0_BUFSIZ, GFP_KERNEL);
+#endif
 	if (!cdev->req->buf)
 		goto fail;
 
@@ -1954,7 +1961,11 @@ int composite_os_desc_req_prepare(struct usb_composite_dev *cdev,
 	}
 
 	/* OS feature descriptor length <= 4kB */
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	cdev->os_desc_req->buf = kmalloc(4096, GFP_KERNEL | GFP_DMA);
+#else
 	cdev->os_desc_req->buf = kmalloc(4096, GFP_KERNEL);
+#endif
 	if (!cdev->os_desc_req->buf) {
 		ret = PTR_ERR(cdev->os_desc_req->buf);
 		kfree(cdev->os_desc_req);

@@ -1073,7 +1073,11 @@ static struct ctrl_pkt *mbim_alloc_ctrl_pkt(unsigned len, gfp_t flags)
 	if (!pkt)
 		return ERR_PTR(-ENOMEM);
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	pkt->buf = kmalloc(len, flags | GFP_DMA);
+#else
 	pkt->buf = kmalloc(len, flags);
+#endif
 	if (!pkt->buf) {
 		kfree(pkt);
 		return ERR_PTR(-ENOMEM);
@@ -1098,7 +1102,11 @@ static struct usb_request *mbim_alloc_req(struct usb_ep *ep, int buffer_size)
 	if (!req)
 		return NULL;
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	req->buf = kmalloc(buffer_size, GFP_ATOMIC | GFP_DMA);
+#else
 	req->buf = kmalloc(buffer_size, GFP_ATOMIC);
+#endif
 	if (!req->buf) {
 		usb_ep_free_request(ep, req);
 		return NULL;

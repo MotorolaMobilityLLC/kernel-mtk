@@ -239,7 +239,11 @@ static struct upstream_transaction *alloc_upstream_transaction(struct rawbulk_tr
 	if (!t)
 		return NULL;
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	t->buffer = (char *)__get_free_page(GFP_KERNEL | GFP_DMA);
+#else
 	t->buffer = (char *)__get_free_page(GFP_KERNEL);
+#endif
 	/* t->buffer = kmalloc(bufsz, GFP_KERNEL); */
 	if (!t->buffer) {
 		kfree(t);
@@ -562,7 +566,11 @@ static struct downstream_transaction *alloc_downstream_transaction(struct rawbul
 	if (!t)
 		return NULL;
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	t->buffer = (char *)__get_free_page(GFP_ATOMIC | GFP_DMA);
+#else
 	t->buffer = (char *)__get_free_page(GFP_ATOMIC);
+#endif
 	/* t->buffer = kmalloc(bufsz, GFP_ATOMIC); */
 	if (!t->buffer) {
 		kfree(t);

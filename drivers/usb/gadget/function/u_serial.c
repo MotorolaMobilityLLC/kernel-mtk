@@ -151,7 +151,11 @@ static struct portmaster {
  */
 static int gs_buf_alloc(struct gs_buf *gb, unsigned size)
 {
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	gb->buf_buf = kmalloc(size, GFP_KERNEL | GFP_DMA);
+#else
 	gb->buf_buf = kmalloc(size, GFP_KERNEL);
+#endif
 	if (gb->buf_buf == NULL)
 		return -ENOMEM;
 
@@ -297,7 +301,11 @@ gs_alloc_req(struct usb_ep *ep, unsigned len, gfp_t kmalloc_flags)
 
 	if (req != NULL) {
 		req->length = len;
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+		req->buf = kmalloc(len, kmalloc_flags | GFP_DMA);
+#else
 		req->buf = kmalloc(len, kmalloc_flags);
+#endif
 		if (req->buf == NULL) {
 			usb_ep_free_request(ep, req);
 			return NULL;

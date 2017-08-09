@@ -496,7 +496,11 @@ static ssize_t ffs_ep0_read(struct file *file, char __user *buf,
 		spin_unlock_irq(&ffs->ev.waitq.lock);
 
 		if (likely(len)) {
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+			data = kmalloc(len, GFP_KERNEL | GFP_DMA);
+#else
 			data = kmalloc(len, GFP_KERNEL);
+#endif
 			if (unlikely(!data)) {
 				ret = -ENOMEM;
 				goto done_mutex;
@@ -780,7 +784,11 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 			   io_data->len;
 		spin_unlock_irq(&epfile->ffs->eps_lock);
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+		data = kmalloc(data_len, GFP_KERNEL | GFP_DMA);
+#else
 		data = kmalloc(data_len, GFP_KERNEL);
+#endif
 		if (unlikely(!data))
 			return -ENOMEM;
 		if (io_data->aio && !io_data->read) {
@@ -2347,7 +2355,11 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
 		vla_item(d, struct usb_string, strings,
 			lang_count*(needed_count+1));
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+		char *vlabuf = kmalloc(vla_group_size(d), GFP_KERNEL | GFP_DMA);
+#else
 		char *vlabuf = kmalloc(vla_group_size(d), GFP_KERNEL);
+#endif
 
 		if (unlikely(!vlabuf)) {
 			kfree(_data);
@@ -2834,7 +2846,11 @@ static int _ffs_func_bind(struct usb_configuration *c,
 		return -ENOTSUPP;
 
 	/* Allocate a single chunk, less management later on */
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	vlabuf = kzalloc(vla_group_size(d), GFP_KERNEL | GFP_DMA);
+#else
 	vlabuf = kzalloc(vla_group_size(d), GFP_KERNEL);
+#endif
 	if (unlikely(!vlabuf))
 		return -ENOMEM;
 
@@ -3527,7 +3543,11 @@ static char *ffs_prepare_buffer(const char __user *buf, size_t len)
 	if (unlikely(!len))
 		return NULL;
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	data = kmalloc(len, GFP_KERNEL | GFP_DMA);
+#else
 	data = kmalloc(len, GFP_KERNEL);
+#endif
 	if (unlikely(!data))
 		return ERR_PTR(-ENOMEM);
 
