@@ -748,7 +748,74 @@ static int simple_mmc_erase_func(unsigned int start, unsigned int size)
 	return 0;
 }
 #endif
+/* These definitiona and functions are coded by reference to
+   mmc_blk_issue_discard_rq()@block.c*/
+#define INAND_CMD38_ARG_EXT_CSD  113
+#define INAND_CMD38_ARG_ERASE    0x00
+#define INAND_CMD38_ARG_TRIM     0x01
+#define INAND_CMD38_ARG_SECERASE 0x80
+#define INAND_CMD38_ARG_SECTRIM1 0x81
+#define INAND_CMD38_ARG_SECTRIM2 0x88
+static int simple_sd_ioctl_erase_selected_area(struct msdc_ioctl *msdc_ctl)
+{
+	struct msdc_host *host_ctl;
+	struct mmc_card *card;
+	struct msdc_host *host;
+	unsigned int from, nr, arg;
+	int err = 0;
 
+	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
+	BUG_ON(!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card);
+
+	card = host_ctl->mmc->card;
+	host = mmc_priv(host_ctl->mmc);
+
+	mmc_claim_host(host_ctl->mmc);
+
+	msdc_switch_part(host, 0);
+
+	if (!mmc_can_erase(card)) {
+		err = -EOPNOTSUPP;
+		goto out;
+	}
+
+	from = msdc_ctl->address;
+	nr = msdc_ctl->total_size;
+
+	if (mmc_can_discard(card))
+		arg = MMC_DISCARD_ARG;
+	else if (mmc_can_trim(card))
+		arg = MMC_TRIM_ARG;
+	else
+		arg = MMC_ERASE_ARG;
+
+#if DEBUG_MMC_IOCTL
+	pr_debug("Erase range %x~%x\n", from, from + nr - 1);
+#endif
+
+	if (mmc_card_mmc(card)) {
+		if (card->quirks & MMC_QUIRK_INAND_CMD38) {
+			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+				 INAND_CMD38_ARG_EXT_CSD,
+				 arg == MMC_TRIM_ARG ?
+				 INAND_CMD38_ARG_TRIM :
+				 INAND_CMD38_ARG_ERASE,
+				 0);
+			if (err)
+				goto out;
+		}
+	}
+
+	err = mmc_erase(card, from, nr, arg);
+out:
+
+	mmc_release_host(host_ctl->mmc);
+
+	msdc_ctl->result = err;
+
+	return msdc_ctl->result;
+
+}
 static int simple_mmc_erase_partition(unsigned char *name)
 {
 #ifdef CONFIG_MTK_EMMC_SUPPORT
@@ -865,6 +932,10 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 	case MSDC_ERASE_PARTITION:
 		msdc_ctl.result =
 			simple_mmc_erase_partition_wrap(&msdc_ctl);
+		break;
+	case MSDC_ERASE_SELECTED_AREA:
+		msdc_ctl.result = simple_sd_ioctl_erase_selected_area(
+			&msdc_ctl);
 		break;
 	case MSDC_SD30_MODE_SWITCH:
 		msdc_ctl.result =

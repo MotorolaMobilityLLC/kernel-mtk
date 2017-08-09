@@ -53,6 +53,18 @@
 #include <mtk_hibernate_dpm.h>
 #endif
 
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
+#include <mach/power_loss_test.h>
+#else
+#define MVG_EMMC_CHECK_BUSY_AND_RESET(...)
+#define MVG_EMMC_SETUP(...)
+#define MVG_EMMC_RESET(...)
+#define MVG_EMMC_WRITE_MATCH(...)
+#define MVG_EMMC_ERASE_MATCH(...)
+#define MVG_EMMC_ERASE_RESET(...)
+#define MVG_EMMC_DECLARE_INT32(...)
+#endif
+
 #include "mt_sd.h"
 #include "dbg.h"
 #include "msdc_tune.h"
@@ -1884,13 +1896,21 @@ unsigned int msdc_do_command(struct msdc_host   *host,
 	int                 tune,
 	unsigned long       timeout)
 {
+	MVG_EMMC_DECLARE_INT32(delay_ns);
+	MVG_EMMC_DECLARE_INT32(delay_us);
+	MVG_EMMC_DECLARE_INT32(delay_ms);
+
 	if ((cmd->opcode == MMC_GO_IDLE_STATE) &&
 	    (host->hw->host_function == MSDC_SD)) {
 		mdelay(10);
 	}
 
+	MVG_EMMC_ERASE_MATCH(host, (u64)cmd->arg, delay_ms, delay_us,
+		delay_ns, cmd->opcode);
 	if (msdc_command_start(host, cmd, tune, timeout))
 		goto end;
+
+	MVG_EMMC_ERASE_RESET(delay_ms, delay_us, cmd->opcode);
 	if (msdc_command_resp_polling(host, cmd, tune, timeout))
 		goto end;
  end:
@@ -3658,6 +3678,13 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 #ifdef MTK_MSDC_USE_CACHE
 	u32 l_force_prg = 0;
 #endif
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	u32 task_id;
+#endif
+
+	MVG_EMMC_DECLARE_INT32(delay_ns);
+	MVG_EMMC_DECLARE_INT32(delay_us);
+	MVG_EMMC_DECLARE_INT32(delay_ms);
 
 	BUG_ON(mrq == NULL);
 
@@ -3750,6 +3777,17 @@ static int msdc_do_request_async(struct mmc_host *mmc, struct mmc_request *mrq)
 	mmc->is_data_dma = 1;
 #endif
 	msdc_dma_start(host);
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (check_mmc_cmd4647(cmd->opcode)) {
+		task_id = (cmd->arg >> 16) & 0x1f;
+		MVG_EMMC_WRITE_MATCH(host,
+			(u64)mmc->areq_que[task_id]->mrq_que->cmd->arg,
+			delay_ms, delay_us, delay_ns,
+			cmd->opcode, host->xfer_size);
+	} else
+#endif
+	MVG_EMMC_WRITE_MATCH(host, (u64)cmd->arg, delay_ms, delay_us, delay_ns,
+		cmd->opcode, host->xfer_size);
 	spin_unlock(&host->lock);
 
 #ifdef CONFIG_CMDQ_CMD_DAT_PARALLEL
@@ -5267,6 +5305,8 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 	ret = request_irq((unsigned int)host->irq, msdc_irq, IRQF_TRIGGER_NONE,
 		DRV_NAME, host);
+
+	MVG_EMMC_SETUP(host);
 	if (ret)
 		goto release;
 	if (host->hw->request_sdio_eirq)
