@@ -41,6 +41,11 @@ config MTK_MEMCFG
 config MTK_BASE_POWER
 	bool
 
+config MTK_SHARED_SDCARD
+	bool "MTK_SHARED_SDCARD"
+	help
+	  sdcard will be a folder of /data
+
 source "drivers/misc/mediatek/uart/Kconfig"
 source "drivers/misc/mediatek/irtx/Kconfig"
 source "drivers/misc/mediatek/irq/Kconfig"
