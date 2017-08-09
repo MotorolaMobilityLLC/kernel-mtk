@@ -70,7 +70,9 @@ static uint32_t in_lowmem;
 
 static short lowmem_debug_adj = CONVERT_ADJ(0);
 #ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_AEE_FEATURE
 static short lowmem_kernel_warn_adj = CONVERT_ADJ(0);
+#endif
 #define output_expect(x) likely(x)
 static uint32_t enable_candidate_log = 1;
 #define LMK_LOG_BUF_SIZE 500
