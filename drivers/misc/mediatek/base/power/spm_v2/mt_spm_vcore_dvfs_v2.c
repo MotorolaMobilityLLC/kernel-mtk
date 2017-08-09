@@ -13,6 +13,12 @@
 #include "mt_spm_internal.h"
 #include "mt_spm_misc.h"
 
+#ifdef CONFIG_MTK_RAM_CONSOLE
+#define VCOREFS_AEE_RR_REC 0
+#else
+#define VCOREFS_AEE_RR_REC 0
+#endif
+
  /* TIMEOUT */
 #define SPM_DVFS_TIMEOUT	1000
 #define SPM_SCREEN_TIMEOUT	1000
@@ -24,12 +30,6 @@
 #define HPM_THRES_OFFSET	16
 #define LPM_THRES_OFFSET	24
 
-#ifdef CONFIG_MTK_RAM_CONSOLE
-#define VCOREFS_AEE_RR_REC 0 /* 1 FIXME */
-#else
-#define VCOREFS_AEE_RR_REC 0
-#endif
-
 /* get Vcore DVFS current state */
 #define get_vcore_sta()		(spm_read(SPM_SW_RSV_5) & 0x3)
 
@@ -37,9 +37,8 @@
 #define is_dvfs_in_progress()	(spm_read(PCM_REG6_DATA) & SPM_FLAG_DVFS_ACTIVE)
 
 /* get F/W screen on/off setting status */
-#define get_screnn_sta()	(spm_read(SPM_SW_RSV_1) & 0xFFFF)
+#define get_screen_sta()	(spm_read(SPM_SW_RSV_1) & 0xFFFF)
 
-#if SPM_AEE_RR_REC
 enum spm_vcorefs_step {
 	SPM_VCOREFS_ENTER = 0,
 	SPM_VCOREFS_B1,
@@ -71,38 +70,20 @@ static struct pcm_desc vcore_dvfs_pcm = {
 	.vec3 = EVENT_VEC(12, 1, 0, 159),	/* FUNC_VCORE_LOW */
 };
 
-void set_aee_vcore_dvfs_status(int state)
-{
-#if VCOREFS_AEE_RR_REC
-	u32 value = aee_rr_curr_vcore_dvfs_status();
-
-	value &= ~(0xFF);
-	value |= (state & 0xFF);
-	aee_rr_rec_vcore_dvfs_status(value);
-#endif
-}
-#else
-void set_aee_vcore_dvfs_status(int state)
-{
-	/* nothing */
-}
-#endif
-
 static struct pwr_ctrl vcore_dvfs_ctrl = {
-#if 1
 	/* default VCORE DVFS is disabled */
 	.pcm_flags = (SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS),
-#endif
+
 	.wake_src = WAKE_SRC_R12_PCM_TIMER,
 	/* SPM general */
 	.r0_ctrl_en = 1,
 	.r7_ctrl_en = 1,
 
 	/* VCORE DVFS Logic pwr_ctrl */
-	.dvfs_halt_mask_b = 0x07,	/* 5 bit, todo: enable for isp/disp, disable gce */
+	.dvfs_halt_mask_b = 0x07,		/* 5 bit, todo: enable for isp/disp, disable gce */
 	.sdio_on_dvfs_req_mask_b = 0,
 
-	.cpu_md_dvfs_erq_merge_mask_b = 1,	/* HPM request by WFD/MHL/MD */
+	.cpu_md_dvfs_erq_merge_mask_b = 1,	/* HPM request by MD */
 
 	.md1_ddr_en_dvfs_halt_mask_b = 0,
 	.md2_ddr_en_dvfs_halt_mask_b = 0,
@@ -111,16 +92,15 @@ static struct pwr_ctrl vcore_dvfs_ctrl = {
 	.md_srcclkena_1_dvfs_req_mask_b = 0,
 	.conn_srcclkena_dvfs_req_mask_b = 0,
 
-	.vsync_dvfs_halt_mask_b = 0x0,	/* 5 bit */
-	.emi_boost_dvfs_req_mask_b = 0,
+	.vsync_dvfs_halt_mask_b = 0x0,		/* 5 bit */
 	.cpu_md_emi_dvfs_req_prot_dis = 1,	/* todo: enable by MD if need check MD_SRCCLKEMA_0 */
 
-	.spm_dvfs_req = 1,	/* set to 1 for keep high after fw loading */
+	.spm_dvfs_req = 1,			/* set to 1 for keep high after fw loading */
 	.spm_dvfs_force_down = 1,
 	.cpu_md_dvfs_sop_force_on = 0,
 
-	.emi_bw_dvfs_req_mask = 1,	/* Total BW default disable */
-	.emi_boost_dvfs_req_mask_b = 0,	/* C+G BW default disable, enable by fliper */
+	.emi_bw_dvfs_req_mask = 1,		/* Total BW default disable */
+	.emi_boost_dvfs_req_mask_b = 0,		/* C+G BW default disable, enable by fliper */
 
 	/* +450 SPM_EMI_BW_MODE */
 	/* [0]EMI_BW_MODE, [1]EMI_BOOST_MODE default is 0 */
@@ -130,6 +110,17 @@ struct spm_lp_scen __spm_vcore_dvfs = {
 	.pcmdesc = &vcore_dvfs_pcm,
 	.pwrctrl = &vcore_dvfs_ctrl,
 };
+
+static void set_aee_vcore_dvfs_status(int state)
+{
+#if VCOREFS_AEE_RR_REC
+	u32 value = aee_rr_curr_vcore_dvfs_status();
+
+	value &= ~(0xFF);
+	value |= (state & 0xFF);
+	aee_rr_rec_vcore_dvfs_status(value);
+#endif
+}
 
 #define wait_spm_complete_by_condition(condition, timeout)	\
 ({							\
@@ -145,45 +136,7 @@ struct spm_lp_scen __spm_vcore_dvfs = {
 	i;						\
 })
 
-static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
-{
-	struct pcm_desc *pcmdesc;
-	struct pwr_ctrl *pwrctrl;
-
-#if 0
-	if (dyna_load_pcm[DYNA_LOAD_PCM_SODI].ready) {
-		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SODI].desc);
-		pwrctrl = __spm_vcore_dvfs.pwrctrl;
-	} else {
-		spm_vcorefs_err("[%s] dyna load pcm fail\n", __func__);
-		BUG();
-	}
-#else
-	pcmdesc = __spm_vcore_dvfs.pcmdesc;
-	pwrctrl = __spm_vcore_dvfs.pwrctrl;
-#endif
-
-	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
-
-	__spm_reset_and_init_pcm(pcmdesc);
-
-	__spm_kick_im_to_fetch(pcmdesc);
-
-	__spm_init_pcm_register();
-
-	__spm_init_event_vector(pcmdesc);
-
-	__spm_set_power_control(pwrctrl);
-
-	__spm_set_wakeup_event(pwrctrl);
-
-	__spm_kick_pcm_to_run(pwrctrl);
-}
-
-/*
- * External Function
- */
-void dump_pmic_info(void)
+static void dump_pmic_info(void)
 {
 	u32 ret, reg_val;
 
@@ -203,7 +156,6 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "MD2SPM_DVFS_CON : 0x%x\n", spm_read(MD2SPM_DVFS_CON));
 		p += sprintf(p, "CPU_DVFS_REQ    : 0x%x\n", spm_read(CPU_DVFS_REQ));
 		p += sprintf(p, "SPM_SRC_REQ     : 0x%x\n", spm_read(SPM_SRC_REQ));
-		p += sprintf(p, "SPM_SRC_MASK    : 0x%x\n", spm_read(SPM_SRC_MASK));
 		p += sprintf(p, "SPM_SRC2_MASK   : 0x%x\n", spm_read(SPM_SRC2_MASK));
 		p += sprintf(p, "SPM_SW_RSV_1    : 0x%x\n", spm_read(SPM_SW_RSV_1));
 		p += sprintf(p, "SPM_SW_RSV_3    : 0x%x\n", spm_read(SPM_SW_RSV_3));
@@ -228,13 +180,13 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_info("SPM_SW_RSV_4    : 0x%x\n", spm_read(SPM_SW_RSV_4));
 		spm_vcorefs_info("SPM_SW_RSV_5    : 0x%x\n", spm_read(SPM_SW_RSV_5));
 		spm_vcorefs_info("PCM_IM_PTR      : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
-		spm_vcorefs_info("PCM_REG6_DATA   : 0x%x\n", spm_read(PCM_REG6_DATA));
 		spm_vcorefs_info("PCM_REG0_DATA   : 0x%x\n", spm_read(PCM_REG0_DATA));
 		spm_vcorefs_info("PCM_REG1_DATA   : 0x%x\n", spm_read(PCM_REG1_DATA));
 		spm_vcorefs_info("PCM_REG2_DATA   : 0x%x\n", spm_read(PCM_REG2_DATA));
 		spm_vcorefs_info("PCM_REG3_DATA   : 0x%x\n", spm_read(PCM_REG3_DATA));
 		spm_vcorefs_info("PCM_REG4_DATA   : 0x%x\n", spm_read(PCM_REG4_DATA));
 		spm_vcorefs_info("PCM_REG5_DATA   : 0x%x\n", spm_read(PCM_REG5_DATA));
+		spm_vcorefs_info("PCM_REG6_DATA   : 0x%x\n", spm_read(PCM_REG6_DATA));
 		spm_vcorefs_info("PCM_REG7_DATA   : 0x%x\n", spm_read(PCM_REG7_DATA));
 		spm_vcorefs_info("PCM_REG8_DATA   : 0x%x\n", spm_read(PCM_REG8_DATA));
 		spm_vcorefs_info("PCM_REG9_DATA   : 0x%x\n", spm_read(PCM_REG9_DATA));
@@ -243,7 +195,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		spm_vcorefs_info("PCM_REG12_DATA  : 0x%x\n", spm_read(PCM_REG12_DATA));
 		spm_vcorefs_info("PCM_REG13_DATA  : 0x%x\n", spm_read(PCM_REG13_DATA));
 		spm_vcorefs_info("PCM_REG14_DATA  : 0x%x\n", spm_read(PCM_REG14_DATA));
-		spm_vcorefs_err("PCM_REG15_DATA   : %u\n", spm_read(PCM_REG15_DATA));
+		spm_vcorefs_info("PCM_REG15_DATA  : %u\n"  , spm_read(PCM_REG15_DATA));
 	}
 
 	return p;
@@ -287,6 +239,9 @@ int spm_vcorefs_set_perform_bw_threshold(u32 lpm_threshold, u32 hpm_threshold)
 	return 0;
 }
 
+/*
+ * SPM DVFS Function
+ */
 int spm_set_vcore_dvfs(int opp, bool screen_on)
 {
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
@@ -384,7 +339,7 @@ int spm_vcorefs_screen_on_setting(void)
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 
-	timer = wait_spm_complete_by_condition(get_screnn_sta() == SPM_SCREEN_SETTING_DONE, SPM_SCREEN_TIMEOUT);
+	timer = wait_spm_complete_by_condition(get_screen_sta() == SPM_SCREEN_SETTING_DONE, SPM_SCREEN_TIMEOUT);
 	if (timer < 0) {
 		spm_vcorefs_err("[%s] CPU waiting F/W ack fail, SPM_SW_RSV_1: 0x%x\n", __func__,
 										spm_read(SPM_SW_RSV_1));
@@ -414,7 +369,7 @@ int spm_vcorefs_screen_off_setting(u32 cpu_dvfs_req)
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 
-	timer = wait_spm_complete_by_condition(get_screnn_sta() == SPM_SCREEN_SETTING_DONE, SPM_SCREEN_TIMEOUT);
+	timer = wait_spm_complete_by_condition(get_screen_sta() == SPM_SCREEN_SETTING_DONE, SPM_SCREEN_TIMEOUT);
 	if (timer < 0) {
 		spm_vcorefs_err("[%s] CPU waiting F/W ack fail, SPM_SW_RSV_1: 0x%x\n", __func__,
 										spm_read(SPM_SW_RSV_1));
@@ -429,6 +384,41 @@ int spm_vcorefs_screen_off_setting(u32 cpu_dvfs_req)
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	return 0;
+}
+
+static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
+{
+	struct pcm_desc *pcmdesc;
+	struct pwr_ctrl *pwrctrl;
+
+#if 0
+	if (dyna_load_pcm[DYNA_LOAD_PCM_SODI].ready) {
+		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SODI].desc);
+		pwrctrl = __spm_vcore_dvfs.pwrctrl;
+	} else {
+		spm_vcorefs_err("[%s] dyna load F/W fail\n", __func__);
+		BUG();
+	}
+#else
+	pcmdesc = __spm_vcore_dvfs.pcmdesc;
+	pwrctrl = __spm_vcore_dvfs.pwrctrl;
+#endif
+
+	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
+
+	__spm_reset_and_init_pcm(pcmdesc);
+
+	__spm_kick_im_to_fetch(pcmdesc);
+
+	__spm_init_pcm_register();
+
+	__spm_init_event_vector(pcmdesc);
+
+	__spm_set_power_control(pwrctrl);
+
+	__spm_set_wakeup_event(pwrctrl);
+
+	__spm_kick_pcm_to_run(pwrctrl);
 }
 
 static void _spm_vcorefs_init_reg(void)
@@ -461,7 +451,6 @@ void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data, bool screen_on, u32 cpu_d
 		spm_vcorefs_screen_on_setting();
 	else
 		spm_vcorefs_screen_off_setting(cpu_dvfs_req);
-
 }
 
 MODULE_DESCRIPTION("SPM-VCORE_DVFS Driver v0.1");
