@@ -103,6 +103,11 @@ static void enable_clk(struct mt_spi_t *ms)
 #endif
 }
 
+void mt_spi_enable_clk(struct mt_spi_t *ms)
+{
+	enable_clk(ms);
+}
+
 static void disable_clk(struct mt_spi_t *ms)
 {
 #if (!defined(CONFIG_MT_SPI_FPGA_ENABLE))
@@ -114,6 +119,12 @@ static void disable_clk(struct mt_spi_t *ms)
 #endif
 
 }
+
+void mt_spi_disable_clk(struct mt_spi_t *ms)
+{
+	disable_clk(ms);
+}
+
 
 #ifdef SPI_DEBUG
 	/*#define SPI_DBG(fmt, args...)  printk(KERN_ALERT "mt-spi.c:%5d: <%s>" fmt, __LINE__, __func__, ##args )*/
@@ -134,7 +145,6 @@ static void spi_dump_reg(struct mt_spi_t *ms)
 	SPI_DBG("rx_d:0x%.8x\n", spi_readl(ms, SPI_RX_DST_REG));
 	SPI_DBG("sta1:0x%.8x\n", spi_readl(ms, SPI_STATUS1_REG));
 	SPI_DBG(":0x%.8x\n", spi_readl(ms, SPI_STATUS1_REG));
-
 	SPI_DBG("||*****************************************||\n");
 
 }
@@ -253,7 +263,7 @@ static inline void spi_rec_time(const char *str)
 
 #endif
 
-
+#if 0
 #if !defined(CONFIG_MTK_LEGACY)
 struct pinctrl *pinctrl_spi;
 struct pinctrl_state *pins_spi_default;
@@ -351,6 +361,7 @@ static int spi_set_gpio_info(struct platform_device *pdev , int spi_pin_mode)
 	return 0;
 }
 
+#endif
 #endif
 static void spi_gpio_set(struct mt_spi_t *ms)
 {
@@ -1144,7 +1155,7 @@ static int mt_do_spi_setup(struct mt_spi_t *ms, struct mt_chip_conf *chip_config
 	reg_val |= (chip_config->deassert << SPI_CMD_DEASSERT_OFFSET);
 	spi_writel(ms, SPI_CMD_REG, reg_val);
 
-	spi_writel(ms, SPI_PAD_SEL_REG, pad_macro);
+/*	spi_writel(ms, SPI_PAD_SEL_REG, pad_macro);*/
 /*
 #if defined(GPIO_SPI_CS_PIN) && defined(GPIO_SPI_SCK_PIN)
 	&&defined(GPIO_SPI_MISO_PIN) && defined(GPIO_SPI_MOSI_PIN)
@@ -1353,8 +1364,10 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	#endif
 
 	}
+#if 0
 #if !defined(CONFIG_MTK_LEGACY)
 	spi_set_gpio_info(pdev, 1);
+#endif
 #endif
 
 #endif
@@ -1466,6 +1479,7 @@ static const struct of_device_id mt_spi_of_match[] = {
 	{.compatible = "mediatek,mt6735-spi",},
 	{.compatible = "mediatek,mt6735m-spi",},
 	{.compatible = "mediatek,mt6753-spi",},
+	{.compatible = "mediatek,mt6797-spi",},
 	{},
 };
 

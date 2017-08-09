@@ -25,7 +25,6 @@
 
 #define SPIDEV_LOG(fmt, args...) pr_debug("[SPI-UT]: [%s]:[%d]" fmt, __func__, __LINE__, ##args)
 #define SPIDEV_MSG(fmt, args...) pr_debug(fmt, ##args)
-#define SPI_DBG(fmt, args...) pr_debug(fmt, ##args)
 
 #define SPI_STRESS_MAX 1
 DECLARE_COMPLETION(mt_spi_done);
@@ -375,12 +374,12 @@ int secspi_session_open(void)
 
 	mutex_lock(&secspi_lock);
 
-	SPI_DBG("secspi_session_open start\n");
+	SPIDEV_MSG("secspi_session_open start\n");
 	do {
 		/* sessions reach max numbers ? */
 
 		if (secspi_session_ref > MAX_OPEN_SESSIONS) {
-			SPI_DBG("secspi_session > 0x%x\n", MAX_OPEN_SESSIONS);
+			SPIDEV_MSG("secspi_session > 0x%x\n", MAX_OPEN_SESSIONS);
 			break;
 		}
 
@@ -392,14 +391,14 @@ int secspi_session_open(void)
 		/* open device */
 		mc_ret = mc_open_device(secspi_devid);
 		if (MC_DRV_OK != mc_ret) {
-			SPI_DBG("mc_open_device failed: %d\n", mc_ret);
+			SPIDEV_MSG("mc_open_device failed: %d\n", mc_ret);
 			break;
 		}
 
 		/* allocating WSM for DCI */
 		mc_ret = mc_malloc_wsm(secspi_devid, 0, sizeof(tciSpiMessage_t), (uint8_t **)&secspi_tci, 0);
 		if (MC_DRV_OK != mc_ret) {
-			SPI_DBG("mc_malloc_wsm failed: %d\n", mc_ret);
+			SPIDEV_MSG("mc_malloc_wsm failed: %d\n", mc_ret);
 			mc_close_device(secspi_devid);
 			break;
 		}
@@ -409,7 +408,7 @@ int secspi_session_open(void)
 		mc_ret = mc_open_session(&secspi_session, &secspi_uuid, (uint8_t *)secspi_tci, sizeof(tciSpiMessage_t));
 
 		if (MC_DRV_OK != mc_ret) {
-			SPI_DBG("secspi_session_open fail: %d\n", mc_ret);
+			SPIDEV_MSG("secspi_session_open fail: %d\n", mc_ret);
 			mc_free_wsm(secspi_devid, (uint8_t *) secspi_tci);
 			mc_close_device(secspi_devid);
 			secspi_tci = NULL;
@@ -419,10 +418,10 @@ int secspi_session_open(void)
 
 	} while (0);
 
-	SPI_DBG("secspi_session_open: ret=%d, ref=%d\n", mc_ret, secspi_session_ref);
+	SPIDEV_MSG("secspi_session_open: ret=%d, ref=%d\n", mc_ret, secspi_session_ref);
 
 	mutex_unlock(&secspi_lock);
-	SPI_DBG("secspi_session_open end\n");
+	SPIDEV_MSG("secspi_session_open end\n");
 
 	if (MC_DRV_OK != mc_ret)
 		return -ENXIO;
@@ -434,18 +433,18 @@ int secspi_execute(u32 cmd, tciSpiMessage_t *param)
 {
 	enum mc_result mc_ret;
 
-	SPI_DBG("secspi_execute\n");
+	SPIDEV_MSG("secspi_execute\n");
 	mutex_lock(&secspi_lock);
 
 	if (NULL == secspi_tci) {
 		mutex_unlock(&secspi_lock);
-		SPI_DBG("secspi_tci not exist\n");
+		SPIDEV_MSG("secspi_tci not exist\n");
 		return -ENODEV;
 	}
 
 	/*set transfer data para */
 	if (NULL == param) {
-		SPI_DBG("secspi_execute parameter is NULL !!\n");
+		SPIDEV_MSG("secspi_execute parameter is NULL !!\n");
 	} else {
 		secspi_tci->tx_buf = param->tx_buf;
 		secspi_tci->rx_buf = param->rx_buf;
@@ -459,7 +458,7 @@ int secspi_execute(u32 cmd, tciSpiMessage_t *param)
 	secspi_tci->cmd_spi.header.commandId = (tciCommandId_t) cmd;
 	secspi_tci->cmd_spi.len = 0;
 
-	SPI_DBG("mc_notify\n");
+	SPIDEV_MSG("mc_notify\n");
 
 	/*enable_clock(MT_CG_PERI_SPI0, "spi"); */
 	/*enable_clk(ms); */
@@ -467,15 +466,15 @@ int secspi_execute(u32 cmd, tciSpiMessage_t *param)
 	mc_ret = mc_notify(&secspi_session);
 
 	if (MC_DRV_OK != mc_ret) {
-		SPI_DBG("mc_notify failed: %d", mc_ret);
+		SPIDEV_MSG("mc_notify failed: %d", mc_ret);
 		goto exit;
 	}
 
-	SPI_DBG("SPI mc_wait_notification\n");
+	SPIDEV_MSG("SPI mc_wait_notification\n");
 	mc_ret = mc_wait_notification(&secspi_session, -1);
 
 	if (MC_DRV_OK != mc_ret) {
-		SPI_DBG("SPI mc_wait_notification failed: %d", mc_ret);
+		SPIDEV_MSG("SPI mc_wait_notification failed: %d", mc_ret);
 		goto exit;
 	}
 
@@ -498,7 +497,7 @@ static int secspi_session_close(void)
 	do {
 		/* session is already closed ? */
 		if (secspi_session_ref == 0) {
-			SPI_DBG("spi_session already closed\n");
+			SPIDEV_MSG("spi_session already closed\n");
 			break;
 		}
 
@@ -510,14 +509,14 @@ static int secspi_session_close(void)
 		/* close session */
 		mc_ret = mc_close_session(&secspi_session);
 		if (MC_DRV_OK != mc_ret) {
-			SPI_DBG("SPI mc_close_session failed: %d\n", mc_ret);
+			SPIDEV_MSG("SPI mc_close_session failed: %d\n", mc_ret);
 			break;
 		}
 
 		/* free WSM for DCI */
 		mc_ret = mc_free_wsm(secspi_devid, (uint8_t *) secspi_tci);
 		if (MC_DRV_OK != mc_ret) {
-			SPI_DBG("SPI mc_free_wsm failed: %d\n", mc_ret);
+			SPIDEV_MSG("SPI mc_free_wsm failed: %d\n", mc_ret);
 			break;
 		}
 		secspi_tci = NULL;
@@ -526,11 +525,11 @@ static int secspi_session_close(void)
 		/* close device */
 		mc_ret = mc_close_device(secspi_devid);
 		if (MC_DRV_OK != mc_ret)
-			SPI_DBG("SPI mc_close_device failed: %d\n", mc_ret);
+			SPIDEV_MSG("SPI mc_close_device failed: %d\n", mc_ret);
 
 	} while (0);
 
-	SPI_DBG("secspi_session_close: ret=%d, ref=%d\n", mc_ret, secspi_session_ref);
+	SPIDEV_MSG("secspi_session_close: ret=%d, ref=%d\n", mc_ret, secspi_session_ref);
 
 	mutex_unlock(&secspi_lock);
 
