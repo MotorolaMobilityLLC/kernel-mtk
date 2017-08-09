@@ -810,30 +810,7 @@ static int larb_clock_unprepare(int larb_id, int enable_mtcmos)
 	return 0;
 }
 
-static void smi_apply_grouping_setting(void)
-{
-#if defined(SMI_EV)
-	larb_clock_prepare(0, 1);
-	larb_clock_enable(0, 1);
 
-	M4U_WriteReg32(LARB0_BASE, 0x100, 0xb);
-	M4U_WriteReg32(LARB0_BASE, 0x104, 0xb);
-	M4U_WriteReg32(LARB0_BASE, 0x108, 0xb);
-
-	larb_clock_disable(0, 1);
-	larb_clock_unprepare(0, 1);
-
-	larb_clock_prepare(5, 1);
-	larb_clock_enable(5, 1);
-
-	M4U_WriteReg32(LARB5_BASE, 0x100, 0xb);
-	M4U_WriteReg32(LARB5_BASE, 0x104, 0xb);
-	M4U_WriteReg32(LARB5_BASE, 0x118, 0xb);
-
-	larb_clock_disable(5, 1);
-	larb_clock_unprepare(5, 1);
-#endif
-}
 static void backup_smi_common(void)
 {
 	int i;
@@ -916,10 +893,6 @@ static void restore_larb_smi(int index)
 		backup_ptr++;
 		larb_offset += 4;
 	}
-
-	/* set grouping */
-	if (index == 0 || index == 5)
-		smi_apply_grouping_setting();
 
 	/* we do not backup 0x20 because it is a fixed setting */
 	M4U_WriteReg32(larb_base, 0x20, smi_vc_setting[index].value);
@@ -1466,7 +1439,6 @@ int smi_common_init(void)
 	smi_bus_optimization(bus_optimization, SMI_BWC_SCEN_NORMAL);
 	smi_bus_optimization_unprepare(bus_optimization);
 
-	smi_apply_grouping_setting();
 
 	/* After clock callback registration, it will restore incorrect value because backup is not called. */
 	smi_first_restore = 0;
