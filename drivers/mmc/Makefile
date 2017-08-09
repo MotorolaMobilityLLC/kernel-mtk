@@ -2,6 +2,7 @@
 # Makefile for the kernel mmc device drivers.
 #
 
+subdir-ccflags-y += -Werror
 subdir-ccflags-$(CONFIG_MMC_DEBUG) := -DDEBUG
 
 obj-$(CONFIG_MMC)		+= core/
