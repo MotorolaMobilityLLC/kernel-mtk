@@ -1399,17 +1399,14 @@ static void restore_record(struct eem_det *det)
 	mb(); /* SRAM writing */
 }
 
-/*
-static int mt_cpufreq_set_ptbl_funcEEM(enum mt_cpu_dvfs_id id, int restore)
+static void mt_cpufreq_set_ptbl_funcEEM(enum mt_cpu_dvfs_id id, int restore)
 {
-	struct eem_det *det = id_to_eem_det((id == MT_CPU_DVFS_LITTLE)? EEM_CTRL_LITTLE: EEM_CTRL_BIG);
+	struct eem_det *det = id_to_eem_det((id == MT_CPU_DVFS_LITTLE) ? EEM_CTRL_LITTLE : EEM_CTRL_BIG);
 	if (restore)
 		restore_record(det);
 	else
 		record(det);
-	return 0;
 }
-*/
 
 /* Will return 10uV */
 static int get_volt_cpu(struct eem_det *det)
@@ -1454,7 +1451,7 @@ static int set_volt_cpu(struct eem_det *det)
 	#else
 		/* I-Chang */
 		#ifdef __KERNEL__
-		record(det);
+		/* record(det); */
 		#endif
 		return mt_cpufreq_update_volt(
 			(det_to_id(det) == EEM_DET_LITTLE) ?
@@ -1470,7 +1467,7 @@ static void restore_default_volt_cpu(struct eem_det *det)
 	#ifndef EARLY_PORTING
 	/* I-Chang */
 	#ifdef __KERNEL__
-	restore_record(det);
+	/* restore_record(det); */
 	#endif
 	mt_cpufreq_restore_default_volt(
 		(det_to_id(det) == EEM_DET_LITTLE) ?
@@ -3063,7 +3060,7 @@ static int eem_probe(struct platform_device *pdev)
 		eem_init_det(det, &eem_devinfo);
 
 	#ifdef __KERNEL__
-		/* mt_cpufreq_set_ptbl_registerCB(mt_cpufreq_set_ptbl_funcEEM); */
+		mt_cpufreq_set_ptbl_registerCB(mt_cpufreq_set_ptbl_funcEEM);
 		eem_init01();
 	#endif
 	ptp_data[0] = 0;
@@ -4160,7 +4157,7 @@ static int __init eem_conf(void)
 
 	recordRef = ioremap_nocache(EEMCONF_S, EEMCONF_SIZE);
 	eem_debug("@(Record)%s----->(%p)\n", __func__, recordRef);
-	memset((u8 *)recordRef, 0x00, EEMCONF_SIZE);
+	memset_io((u8 *)recordRef, 0x00, EEMCONF_SIZE);
 	if (!recordRef)
 		return -ENOMEM;
 

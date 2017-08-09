@@ -7,8 +7,8 @@
 
 #ifdef __KERNEL__
 	#define EEMCONF_S       0x0011c010
-	#define EEMCONF_E       0x0011c12f
-	#define EEMCONF_SIZE    (EEMCONF_E - EEMCONF_S + 1)
+	#define EEMCONF_E       0x0011c210
+	#define EEMCONF_SIZE    (EEMCONF_E - EEMCONF_S)
 
 	extern void __iomem *eem_base;
 	#define EEM_BASEADDR eem_base
