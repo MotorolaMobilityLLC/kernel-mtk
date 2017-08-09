@@ -59,6 +59,16 @@ obj-y += mt_spm_sodi_cmdq.o
 obj-y += mt_spm_vcorefs_mt6755.o
 endif
 
+ifeq ($(CONFIG_ARCH_MT6757), y)
+#ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6757/
+
+obj-y += mt_sleep.o
+obj-y += mt_spm.o
+obj-y += mt_spm_internal.o
+obj-y += mt_spm_sleep.o
+obj-y += mt_spm_fs.o
+endif
+
 ifeq ($(CONFIG_ARCH_MT6797), y)
 
 obj-y += mt_idle.o

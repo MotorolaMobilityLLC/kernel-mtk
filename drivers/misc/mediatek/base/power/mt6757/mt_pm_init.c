@@ -619,7 +619,7 @@ static int __init mt_power_management_init(void)
 
 	pm_power_off = mt_power_off;
 
-#if !defined(CONFIG_MTK_FPGA)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* cpu dormant driver init */
 	mt_cpu_dormant_init();
 
@@ -638,7 +638,9 @@ static int __init mt_power_management_init(void)
 #endif
 
 	spm_module_init();
+#if 0 /* disable it for bring-up */
 	slp_module_init();
+#endif
 	mt_clkmgr_init();
 	mt_freqhopping_init();
 
@@ -677,7 +679,7 @@ arch_initcall(mt_power_management_init);
 #if !defined(MT_DORMANT_UT)
 static int __init mt_pm_late_init(void)
 {
-#ifndef CONFIG_MTK_FPGA
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 /*	mt_idle_init(); */
 	clk_buf_init();
 #endif

@@ -120,6 +120,161 @@ static ssize_t ddrdfs_pcm_show(struct kobject *kobj, struct kobj_attribute *attr
 /**************************************
  * xxx_ctrl_show Function
  **************************************/
+#if defined(CONFIG_ARCH_MT6757)
+static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
+{
+	char *p = buf;
+
+	p += sprintf(p, "pcm_flags = 0x%x\n", pwrctrl->pcm_flags);
+	p += sprintf(p, "pcm_flags_cust = 0x%x\n", pwrctrl->pcm_flags_cust);
+	p += sprintf(p, "pcm_reserve = 0x%x\n", pwrctrl->pcm_reserve);
+	p += sprintf(p, "timer_val = 0x%x\n", pwrctrl->timer_val);
+	p += sprintf(p, "timer_val_cust = 0x%x\n", pwrctrl->timer_val_cust);
+	p += sprintf(p, "timer_val_ramp_en = %d\n", pwrctrl->timer_val_ramp_en);
+	p += sprintf(p, "timer_val_ramp_en_sec = %d\n", pwrctrl->timer_val_ramp_en_sec);
+	p += sprintf(p, "wake_src = 0x%x\n", pwrctrl->wake_src);
+	p += sprintf(p, "wake_src_cust = 0x%x\n", pwrctrl->wake_src_cust);
+	p += sprintf(p, "wake_src_md32 = 0x%x\n", pwrctrl->wake_src_md32);
+	p += sprintf(p, "r0_ctrl_en = %u\n", pwrctrl->r0_ctrl_en);
+	p += sprintf(p, "r7_ctrl_en = %u\n", pwrctrl->r7_ctrl_en);
+	p += sprintf(p, "infra_dcm_lock = %u\n", pwrctrl->infra_dcm_lock);
+	p += sprintf(p, "wdt_disable = %u\n", pwrctrl->wdt_disable);
+
+	/* SPM_AP_STANDBY_CON */
+	p += sprintf(p, "wfi_op = %u\n", pwrctrl->wfi_op);
+	p += sprintf(p, "mp0_cputop_idle_mask = %u\n", pwrctrl->mp0_cputop_idle_mask);
+	p += sprintf(p, "mp1_cputop_idle_mask = %u\n", pwrctrl->mp1_cputop_idle_mask);
+	p += sprintf(p, "mcusys_idle_mask = %u\n", pwrctrl->mcusys_idle_mask);
+	p += sprintf(p, "mm_mask_b = %u\n", pwrctrl->mm_mask_b);
+	p += sprintf(p, "md_ddr_en_dbc_en = %u\n", pwrctrl->md_ddr_en_dbc_en);
+	p += sprintf(p, "md_mask_b = %u\n", pwrctrl->md_mask_b);
+	p += sprintf(p, "scp_mask_b = %u\n", pwrctrl->scp_mask_b);
+	p += sprintf(p, "lte_mask_b = %u\n", pwrctrl->lte_mask_b);
+	p += sprintf(p, "srcclkeni_mask_b = %u\n", pwrctrl->srcclkeni_mask_b);
+	p += sprintf(p, "md_apsrc_1_sel = %u\n", pwrctrl->md_apsrc_1_sel);
+	p += sprintf(p, "md_apsrc_0_sel = %u\n", pwrctrl->md_apsrc_0_sel);
+	p += sprintf(p, "conn_mask_b = %u\n", pwrctrl->conn_mask_b);
+	p += sprintf(p, "conn_apsrc_sel = %u\n", pwrctrl->conn_apsrc_sel);
+
+	/* SPM_SRC_REQ */
+	p += sprintf(p, "spm_apsrc_req = %u\n", pwrctrl->spm_apsrc_req);
+	p += sprintf(p, "spm_f26m_req = %u\n", pwrctrl->spm_f26m_req);
+	p += sprintf(p, "spm_lte_req = %u\n", pwrctrl->spm_lte_req);
+	p += sprintf(p, "spm_infra_req = %u\n", pwrctrl->spm_infra_req);
+	p += sprintf(p, "spm_vrf18_req = %u\n", pwrctrl->spm_vrf18_req);
+	p += sprintf(p, "spm_dvfs_req = %u\n", pwrctrl->spm_dvfs_req);
+	p += sprintf(p, "spm_dvfs_force_down = %u\n", pwrctrl->spm_dvfs_force_down);
+	p += sprintf(p, "spm_ddren_req = %u\n", pwrctrl->spm_ddren_req);
+	p += sprintf(p, "spm_rsv_src_req = %u\n", pwrctrl->spm_rsv_src_req);
+	p += sprintf(p, "cpu_md_dvfs_sop_force_on = %u\n",
+		pwrctrl->cpu_md_dvfs_sop_force_on);
+
+	/* SPM_SRC_MASK */
+	p += sprintf(p, "csyspwreq_mask = %u\n", pwrctrl->csyspwreq_mask);
+	p += sprintf(p, "ccif0_md_event_mask_b = %u\n",
+		pwrctrl->ccif0_md_event_mask_b);
+	p += sprintf(p, "ccif0_ap_event_mask_b = %u\n",
+		pwrctrl->ccif0_ap_event_mask_b);
+	p += sprintf(p, "ccif1_md_event_mask_b = %u\n",
+		pwrctrl->ccif1_md_event_mask_b);
+	p += sprintf(p, "ccif1_ap_event_mask_b = %u\n",
+		pwrctrl->ccif1_ap_event_mask_b);
+	p += sprintf(p, "ccifmd_md1_event_mask_b = %u\n",
+		pwrctrl->ccifmd_md1_event_mask_b);
+	p += sprintf(p, "ccifmd_md2_event_mask_b = %u\n",
+		pwrctrl->ccifmd_md2_event_mask_b);
+	p += sprintf(p, "dsi0_vsync_mask_b = %u\n", pwrctrl->dsi0_vsync_mask_b);
+	p += sprintf(p, "dsi1_vsync_mask_b = %u\n", pwrctrl->dsi1_vsync_mask_b);
+	p += sprintf(p, "dpi_vsync_mask_b = %u\n", pwrctrl->dpi_vsync_mask_b);
+	p += sprintf(p, "isp0_vsync_mask_b = %u\n", pwrctrl->isp0_vsync_mask_b);
+	p += sprintf(p, "isp1_vsync_mask_b = %u\n", pwrctrl->isp1_vsync_mask_b);
+	p += sprintf(p, "md_srcclkena_0_infra_mask_b = %u\n",
+		pwrctrl->md_srcclkena_0_infra_mask_b);
+	p += sprintf(p, "md_srcclkena_1_infra_mask_b = %u\n",
+		pwrctrl->md_srcclkena_1_infra_mask_b);
+	p += sprintf(p, "conn_srcclkena_infra_mask_b = %u\n",
+		pwrctrl->conn_srcclkena_infra_mask_b);
+	p += sprintf(p, "md32_srcclkena_infra_mask_b = %u\n",
+		pwrctrl->md32_srcclkena_infra_mask_b);
+	p += sprintf(p, "srcclkeni_infra_mask_b = %u\n",
+		pwrctrl->srcclkeni_infra_mask_b);
+	p += sprintf(p, "md_apsrc_req_0_infra_mask_b = %u\n",
+		pwrctrl->md_apsrc_req_0_infra_mask_b);
+	p += sprintf(p, "md_apsrc_req_1_infra_mask_b = %u\n",
+		pwrctrl->md_apsrc_req_1_infra_mask_b);
+	p += sprintf(p, "conn_apsrcreq_infra_mask_b = %u\n",
+		pwrctrl->conn_apsrcreq_infra_mask_b);
+	p += sprintf(p, "md32_apsrcreq_infra_mask_b = %u\n",
+		pwrctrl->md32_apsrcreq_infra_mask_b);
+	p += sprintf(p, "md_ddr_en_0_mask_b = %u\n", pwrctrl->md_ddr_en_0_mask_b);
+	p += sprintf(p, "md_ddr_en_1_mask_b = %u\n", pwrctrl->md_ddr_en_1_mask_b);
+	p += sprintf(p, "md_vrf18_req_0_mask_b = %u\n",
+		pwrctrl->md_vrf18_req_0_mask_b);
+	p += sprintf(p, "md_vrf18_req_1_mask_b = %u\n",
+		pwrctrl->md_vrf18_req_1_mask_b);
+	p += sprintf(p, "md1_dvfs_req_mask = %u\n", pwrctrl->md1_dvfs_req_mask);
+	p += sprintf(p, "cpu_dvfs_req_mask = %u\n", pwrctrl->cpu_dvfs_req_mask);
+	p += sprintf(p, "emi_bw_dvfs_req_mask = %u\n", pwrctrl->emi_bw_dvfs_req_mask);
+	p += sprintf(p, "md_srcclkena_0_dvfs_req_mask_b = %u\n",
+		pwrctrl->md_srcclkena_0_dvfs_req_mask_b);
+	p += sprintf(p, "md_srcclkena_1_dvfs_req_mask_b = %u\n",
+		pwrctrl->md_srcclkena_1_dvfs_req_mask_b);
+	p += sprintf(p, "conn_srcclkena_dvfs_req_mask_b = %u\n",
+		pwrctrl->conn_srcclkena_dvfs_req_mask_b);
+
+	/* SPM_SRC2_MASK */
+	p += sprintf(p, "dvfs_halt_mask_b = %u\n", pwrctrl->dvfs_halt_mask_b);
+	p += sprintf(p, "vdec_req_mask_b = %u\n", pwrctrl->vdec_req_mask_b);
+	p += sprintf(p, "gce_req_mask_b = %u\n", pwrctrl->gce_req_mask_b);
+	p += sprintf(p, "cpu_md_dvfs_req_merge_mask_b = %u\n",
+		pwrctrl->cpu_md_dvfs_req_merge_mask_b);
+	p += sprintf(p, "md_ddr_en_dvfs_halt_mask_b = %u\n",
+		pwrctrl->md_ddr_en_dvfs_halt_mask_b);
+	p += sprintf(p, "dsi0_vsync_dvfs_halt_mask_b = %u\n",
+		pwrctrl->dsi0_vsync_dvfs_halt_mask_b);
+	p += sprintf(p, "dsi1_vsync_dvfs_halt_mask_b = %u\n",
+		pwrctrl->dsi1_vsync_dvfs_halt_mask_b);
+	p += sprintf(p, "dpi_vsync_dvfs_halt_mask_b = %u\n",
+		pwrctrl->dpi_vsync_dvfs_halt_mask_b);
+	p += sprintf(p, "isp0_vsync_dvfs_halt_mask_b = %u\n",
+		pwrctrl->isp0_vsync_dvfs_halt_mask_b);
+	p += sprintf(p, "isp1_vsync_dvfs_halt_mask_b = %u\n",
+		pwrctrl->isp1_vsync_dvfs_halt_mask_b);
+	p += sprintf(p, "conn_ddr_en_mask_b = %u\n", pwrctrl->conn_ddr_en_mask_b);
+	p += sprintf(p, "disp_req_mask_b = %u\n", pwrctrl->disp_req_mask_b);
+	p += sprintf(p, "disp1_req_mask_b = %u\n", pwrctrl->disp1_req_mask_b);
+	p += sprintf(p, "mfg_req_mask_b = %u\n", pwrctrl->mfg_req_mask_b);
+	p += sprintf(p, "c2k_ps_rccif_wake_mask_b = %u\n",
+		pwrctrl->c2k_ps_rccif_wake_mask_b);
+	p += sprintf(p, "c2k_l1_rccif_wake_mask_b = %u\n",
+		pwrctrl->c2k_l1_rccif_wake_mask_b);
+	p += sprintf(p, "ps_c2k_rccif_wake_mask_b = %u\n",
+		pwrctrl->ps_c2k_rccif_wake_mask_b);
+	p += sprintf(p, "l1_c2k_rccif_wake_mask_b = %u\n",
+		pwrctrl->l1_c2k_rccif_wake_mask_b);
+	p += sprintf(p, "sdio_on_dvfs_req_mask_b = %u\n",
+		pwrctrl->sdio_on_dvfs_req_mask_b);
+	p += sprintf(p, "emi_boost_dvfs_req_mask_b = %u\n",
+		pwrctrl->emi_boost_dvfs_req_mask_b);
+	p += sprintf(p, "cpu_md_emi_dvfs_req_prot_dis = %u\n",
+		pwrctrl->cpu_md_emi_dvfs_req_prot_dis);
+	p += sprintf(p, "dramc_spcmd_apsrc_req_mask_b = %u\n",
+		pwrctrl->dramc_spcmd_apsrc_req_mask_b);
+
+#if 0
+	/* SPM_WAKEUP_EVENT_MASK */
+	p += sprintf(p, "spm_wakeup_event_mask = %u\n",
+		pwrctrl->spm_wakeup_event_mask);
+
+	/* SPM_WAKEUP_EVENT_EXT_MASK */
+	p += sprintf(p, "spm_wakeup_event_ext_mask = %u\n",
+		pwrctrl->spm_wakeup_event_ext_mask);
+#endif
+
+	BUG_ON(p - buf >= PAGE_SIZE);
+	return p - buf;
+}
+#else
 static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 {
 	char *p = buf;
@@ -221,13 +376,14 @@ static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 	BUG_ON(p - buf >= PAGE_SIZE);
 	return p - buf;
 }
+#endif
 
 static ssize_t suspend_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	return show_pwr_ctrl(__spm_suspend.pwrctrl, buf);
 }
 
-#ifndef CONFIG_MTK_FPGA
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t dpidle_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	return show_pwr_ctrl(__spm_dpidle.pwrctrl, buf);
@@ -259,13 +415,235 @@ static ssize_t talking_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 
 static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	return show_pwr_ctrl(__spm_vcore_dvfs.pwrctrl, buf);
+#else
+	return 0;
+#endif
 }
 
 
 /**************************************
  * xxx_ctrl_store Function
  **************************************/
+#if defined(CONFIG_ARCH_MT6757)
+static ssize_t store_pwr_ctrl(struct pwr_ctrl *pwrctrl, const char *buf, size_t count)
+{
+	u32 val;
+	char cmd[32];
+
+	if (sscanf(buf, "%31s %x", cmd, &val) != 2)
+		return -EPERM;
+
+	spm_debug("pwr_ctrl: cmd = %s, val = 0x%x\n", cmd, val);
+
+	if (!strcmp(cmd, "pcm_flags"))
+		pwrctrl->pcm_flags = val;
+	else if (!strcmp(cmd, "pcm_flags_cust"))
+		pwrctrl->pcm_flags_cust = val;
+	else if (!strcmp(cmd, "pcm_reserve"))
+		pwrctrl->pcm_reserve = val;
+	else if (!strcmp(cmd, "timer_val"))
+		pwrctrl->timer_val = val;
+	else if (!strcmp(cmd, "timer_val_cust"))
+		pwrctrl->timer_val_cust = val;
+	else if (!strcmp(cmd, "timer_val_ramp_en"))
+		pwrctrl->timer_val_ramp_en = val;
+	else if (!strcmp(cmd, "timer_val_ramp_en_sec"))
+		pwrctrl->timer_val_ramp_en_sec = val;
+	else if (!strcmp(cmd, "wake_src"))
+		pwrctrl->wake_src = val;
+	else if (!strcmp(cmd, "wake_src_cust"))
+		pwrctrl->wake_src_cust = val;
+	else if (!strcmp(cmd, "wake_src_md32"))
+		pwrctrl->wake_src_md32 = val;
+	else if (!strcmp(cmd, "r0_ctrl_en"))
+		pwrctrl->r0_ctrl_en = val;
+	else if (!strcmp(cmd, "r7_ctrl_en"))
+		pwrctrl->r7_ctrl_en = val;
+	else if (!strcmp(cmd, "infra_dcm_lock"))
+		pwrctrl->infra_dcm_lock = val;
+	else if (!strcmp(cmd, "wdt_disable"))
+		pwrctrl->wdt_disable = val;
+
+	/* SPM_AP_STANDBY_CON */
+	else if (!strcmp(cmd, "wfi_op"))
+		pwrctrl->wfi_op = val;
+	else if (!strcmp(cmd, "mp0_cputop_idle_mask"))
+		pwrctrl->mp0_cputop_idle_mask = val;
+	else if (!strcmp(cmd, "mp1_cputop_idle_mask"))
+		pwrctrl->mp1_cputop_idle_mask = val;
+	else if (!strcmp(cmd, "mcusys_idle_mask"))
+		pwrctrl->mcusys_idle_mask = val;
+	else if (!strcmp(cmd, "mm_mask_b"))
+		pwrctrl->mm_mask_b = val;
+	else if (!strcmp(cmd, "md_ddr_en_dbc_en"))
+		pwrctrl->md_ddr_en_dbc_en = val;
+	else if (!strcmp(cmd, "md_mask_b"))
+		pwrctrl->md_mask_b = val;
+	else if (!strcmp(cmd, "scp_mask_b"))
+		pwrctrl->scp_mask_b = val;
+	else if (!strcmp(cmd, "lte_mask_b"))
+		pwrctrl->lte_mask_b = val;
+	else if (!strcmp(cmd, "srcclkeni_mask_b"))
+		pwrctrl->srcclkeni_mask_b = val;
+	else if (!strcmp(cmd, "md_apsrc_1_sel"))
+		pwrctrl->md_apsrc_1_sel = val;
+	else if (!strcmp(cmd, "md_apsrc_0_sel"))
+		pwrctrl->md_apsrc_0_sel = val;
+	else if (!strcmp(cmd, "conn_mask_b"))
+		pwrctrl->conn_mask_b = val;
+	else if (!strcmp(cmd, "conn_apsrc_sel"))
+		pwrctrl->conn_apsrc_sel = val;
+
+	/* SPM_SRC_REQ */
+	else if (!strcmp(cmd, "spm_apsrc_req"))
+		pwrctrl->spm_apsrc_req = val;
+	else if (!strcmp(cmd, "spm_f26m_req"))
+		pwrctrl->spm_f26m_req = val;
+	else if (!strcmp(cmd, "spm_lte_req"))
+		pwrctrl->spm_lte_req = val;
+	else if (!strcmp(cmd, "spm_infra_req"))
+		pwrctrl->spm_infra_req = val;
+	else if (!strcmp(cmd, "spm_vrf18_req"))
+		pwrctrl->spm_vrf18_req = val;
+	else if (!strcmp(cmd, "spm_dvfs_req"))
+		pwrctrl->spm_dvfs_req = val;
+	else if (!strcmp(cmd, "spm_dvfs_force_down"))
+		pwrctrl->spm_dvfs_force_down = val;
+	else if (!strcmp(cmd, "spm_ddren_req"))
+		pwrctrl->spm_ddren_req = val;
+	else if (!strcmp(cmd, "spm_rsv_src_req"))
+		pwrctrl->spm_rsv_src_req = val;
+	else if (!strcmp(cmd, "cpu_md_dvfs_sop_force_on"))
+		pwrctrl->cpu_md_dvfs_sop_force_on = val;
+
+	/* SPM_SRC_MASK */
+	else if (!strcmp(cmd, "csyspwreq_mask"))
+		pwrctrl->csyspwreq_mask = val;
+	else if (!strcmp(cmd, "ccif0_md_event_mask_b"))
+		pwrctrl->ccif0_md_event_mask_b = val;
+	else if (!strcmp(cmd, "ccif0_ap_event_mask_b"))
+		pwrctrl->ccif0_ap_event_mask_b = val;
+	else if (!strcmp(cmd, "ccif1_md_event_mask_b"))
+		pwrctrl->ccif1_md_event_mask_b = val;
+	else if (!strcmp(cmd, "ccif1_ap_event_mask_b"))
+		pwrctrl->ccif1_ap_event_mask_b = val;
+	else if (!strcmp(cmd, "ccifmd_md1_event_mask_b"))
+		pwrctrl->ccifmd_md1_event_mask_b = val;
+	else if (!strcmp(cmd, "ccifmd_md2_event_mask_b"))
+		pwrctrl->ccifmd_md2_event_mask_b = val;
+	else if (!strcmp(cmd, "dsi0_vsync_mask_b"))
+		pwrctrl->dsi0_vsync_mask_b = val;
+	else if (!strcmp(cmd, "dsi1_vsync_mask_b"))
+		pwrctrl->dsi1_vsync_mask_b = val;
+	else if (!strcmp(cmd, "dpi_vsync_mask_b"))
+		pwrctrl->dpi_vsync_mask_b = val;
+	else if (!strcmp(cmd, "isp0_vsync_mask_b"))
+		pwrctrl->isp0_vsync_mask_b = val;
+	else if (!strcmp(cmd, "isp1_vsync_mask_b"))
+		pwrctrl->isp1_vsync_mask_b = val;
+	else if (!strcmp(cmd, "md_srcclkena_0_infra_mask_b"))
+		pwrctrl->md_srcclkena_0_infra_mask_b = val;
+	else if (!strcmp(cmd, "md_srcclkena_1_infra_mask_b"))
+		pwrctrl->md_srcclkena_1_infra_mask_b = val;
+	else if (!strcmp(cmd, "conn_srcclkena_infra_mask_b"))
+		pwrctrl->conn_srcclkena_infra_mask_b = val;
+	else if (!strcmp(cmd, "md32_srcclkena_infra_mask_b"))
+		pwrctrl->md32_srcclkena_infra_mask_b = val;
+	else if (!strcmp(cmd, "srcclkeni_infra_mask_b"))
+		pwrctrl->srcclkeni_infra_mask_b = val;
+	else if (!strcmp(cmd, "md_apsrc_req_0_infra_mask_b"))
+		pwrctrl->md_apsrc_req_0_infra_mask_b = val;
+	else if (!strcmp(cmd, "md_apsrc_req_1_infra_mask_b"))
+		pwrctrl->md_apsrc_req_1_infra_mask_b = val;
+	else if (!strcmp(cmd, "conn_apsrcreq_infra_mask_b"))
+		pwrctrl->conn_apsrcreq_infra_mask_b = val;
+	else if (!strcmp(cmd, "md32_apsrcreq_infra_mask_b"))
+		pwrctrl->md32_apsrcreq_infra_mask_b = val;
+	else if (!strcmp(cmd, "md_ddr_en_0_mask_b"))
+		pwrctrl->md_ddr_en_0_mask_b = val;
+	else if (!strcmp(cmd, "md_ddr_en_1_mask_b"))
+		pwrctrl->md_ddr_en_1_mask_b = val;
+	else if (!strcmp(cmd, "md_vrf18_req_0_mask_b"))
+		pwrctrl->md_vrf18_req_0_mask_b = val;
+	else if (!strcmp(cmd, "md_vrf18_req_1_mask_b"))
+		pwrctrl->md_vrf18_req_1_mask_b = val;
+	else if (!strcmp(cmd, "md1_dvfs_req_mask"))
+		pwrctrl->md1_dvfs_req_mask = val;
+	else if (!strcmp(cmd, "cpu_dvfs_req_mask"))
+		pwrctrl->cpu_dvfs_req_mask = val;
+	else if (!strcmp(cmd, "emi_bw_dvfs_req_mask"))
+		pwrctrl->emi_bw_dvfs_req_mask = val;
+	else if (!strcmp(cmd, "md_srcclkena_0_dvfs_req_mask_b"))
+		pwrctrl->md_srcclkena_0_dvfs_req_mask_b = val;
+	else if (!strcmp(cmd, "md_srcclkena_1_dvfs_req_mask_b"))
+		pwrctrl->md_srcclkena_1_dvfs_req_mask_b = val;
+	else if (!strcmp(cmd, "conn_srcclkena_dvfs_req_mask_b"))
+		pwrctrl->conn_srcclkena_dvfs_req_mask_b = val;
+
+	/* SPM_SRC2_MASK */
+	else if (!strcmp(cmd, "dvfs_halt_mask_b"))
+		pwrctrl->dvfs_halt_mask_b = val;
+	else if (!strcmp(cmd, "vdec_req_mask_b"))
+		pwrctrl->vdec_req_mask_b = val;
+	else if (!strcmp(cmd, "gce_req_mask_b"))
+		pwrctrl->gce_req_mask_b = val;
+	else if (!strcmp(cmd, "cpu_md_dvfs_req_merge_mask_b"))
+		pwrctrl->cpu_md_dvfs_req_merge_mask_b = val;
+	else if (!strcmp(cmd, "md_ddr_en_dvfs_halt_mask_b"))
+		pwrctrl->md_ddr_en_dvfs_halt_mask_b = val;
+	else if (!strcmp(cmd, "dsi0_vsync_dvfs_halt_mask_b"))
+		pwrctrl->dsi0_vsync_dvfs_halt_mask_b = val;
+	else if (!strcmp(cmd, "dsi1_vsync_dvfs_halt_mask_b"))
+		pwrctrl->dsi1_vsync_dvfs_halt_mask_b = val;
+	else if (!strcmp(cmd, "dpi_vsync_dvfs_halt_mask_b"))
+		pwrctrl->dpi_vsync_dvfs_halt_mask_b = val;
+	else if (!strcmp(cmd, "isp0_vsync_dvfs_halt_mask_b"))
+		pwrctrl->isp0_vsync_dvfs_halt_mask_b = val;
+	else if (!strcmp(cmd, "isp1_vsync_dvfs_halt_mask_b"))
+		pwrctrl->isp1_vsync_dvfs_halt_mask_b = val;
+	else if (!strcmp(cmd, "conn_ddr_en_mask_b"))
+		pwrctrl->conn_ddr_en_mask_b = val;
+	else if (!strcmp(cmd, "disp_req_mask_b"))
+		pwrctrl->disp_req_mask_b = val;
+	else if (!strcmp(cmd, "disp1_req_mask_b"))
+		pwrctrl->disp1_req_mask_b = val;
+	else if (!strcmp(cmd, "mfg_req_mask_b"))
+		pwrctrl->mfg_req_mask_b = val;
+	else if (!strcmp(cmd, "c2k_ps_rccif_wake_mask_b"))
+		pwrctrl->c2k_ps_rccif_wake_mask_b = val;
+	else if (!strcmp(cmd, "c2k_l1_rccif_wake_mask_b"))
+		pwrctrl->c2k_l1_rccif_wake_mask_b = val;
+	else if (!strcmp(cmd, "ps_c2k_rccif_wake_mask_b"))
+		pwrctrl->ps_c2k_rccif_wake_mask_b = val;
+	else if (!strcmp(cmd, "l1_c2k_rccif_wake_mask_b"))
+		pwrctrl->l1_c2k_rccif_wake_mask_b = val;
+	else if (!strcmp(cmd, "sdio_on_dvfs_req_mask_b"))
+		pwrctrl->sdio_on_dvfs_req_mask_b = val;
+	else if (!strcmp(cmd, "emi_boost_dvfs_req_mask_b"))
+		pwrctrl->emi_boost_dvfs_req_mask_b = val;
+	else if (!strcmp(cmd, "cpu_md_emi_dvfs_req_prot_dis"))
+		pwrctrl->cpu_md_emi_dvfs_req_prot_dis = val;
+	else if (!strcmp(cmd, "dramc_spcmd_apsrc_req_mask_b"))
+		pwrctrl->dramc_spcmd_apsrc_req_mask_b = val;
+
+#if 0
+	/* SPM_WAKEUP_EVENT_MASK */
+	else if (!strcmp(cmd, "spm_wakeup_event_mask"))
+		pwrctrl->spm_wakeup_event_mask = val;
+
+	/* SPM_WAKEUP_EVENT_EXT_MASK */
+	else if (!strcmp(cmd, "spm_wakeup_event_ext_mask"))
+		pwrctrl->spm_wakeup_event_ext_mask = val;
+#endif
+
+	else
+		return -EINVAL;
+
+	return count;
+}
+#else
 static ssize_t store_pwr_ctrl(struct pwr_ctrl *pwrctrl, const char *buf, size_t count)
 {
 	u32 val;
@@ -491,6 +869,7 @@ static ssize_t store_pwr_ctrl(struct pwr_ctrl *pwrctrl, const char *buf, size_t 
 
 	return count;
 }
+#endif
 
 static ssize_t suspend_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				  const char *buf, size_t count)
@@ -498,7 +877,7 @@ static ssize_t suspend_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 	return store_pwr_ctrl(__spm_suspend.pwrctrl, buf, count);
 }
 
-#ifndef CONFIG_MTK_FPGA
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static ssize_t dpidle_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				 const char *buf, size_t count)
 {
@@ -537,7 +916,11 @@ static ssize_t talking_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				     const char *buf, size_t count)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	return store_pwr_ctrl(__spm_vcore_dvfs.pwrctrl, buf, count);
+#else
+	return 0;
+#endif
 }
 
 
@@ -665,7 +1048,7 @@ static ssize_t auto_suspend_resume_store(struct kobject *kobj, struct kobj_attri
 /* DEFINE_ATTR_RO(ddrdfs_pcm); */
 
 DEFINE_ATTR_RW(suspend_ctrl);
-#ifndef CONFIG_MTK_FPGA
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 DEFINE_ATTR_RW(dpidle_ctrl);
 DEFINE_ATTR_RW(sodi3_ctrl);
 DEFINE_ATTR_RW(sodi_ctrl);
@@ -691,7 +1074,7 @@ static struct attribute *spm_attrs[] = {
 
 	/* for spm_lp_scen.pwrctrl */
 	__ATTR_OF(suspend_ctrl),
-#ifndef CONFIG_MTK_FPGA
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	__ATTR_OF(dpidle_ctrl),
 	__ATTR_OF(sodi3_ctrl),
 	__ATTR_OF(sodi_ctrl),

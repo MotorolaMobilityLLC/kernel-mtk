@@ -121,7 +121,7 @@ void __iomem *spm_infracfg_ao_base;
 void __iomem *spm_ddrphy_base;
 void __iomem *spm_cksys_base;
 void __iomem *spm_mcucfg;
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 void __iomem *spm_bsi1cfg;
 #elif defined(CONFIG_ARCH_MT6797)
 void __iomem *spm_efusec;
@@ -129,7 +129,7 @@ void __iomem *spm_thermal_ctrl;
 #endif
 u32 gpio_base_addr;
 struct clk *i2c3_clk_main;
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 u32 spm_irq_0 = 197;
 u32 spm_irq_1 = 198;
 u32 spm_irq_2 = 199;
@@ -229,7 +229,11 @@ static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 	if (isr & ISRS_TWAM)
 		while (ISRS_TWAM & spm_read(SPM_IRQ_STA))
 			;
+#if defined(CONFIG_ARCH_MT6757)
+	spm_write(SPM_SWINT_CLR, PCM_SW_INT0);
+#else
 	spm_write(SPM_SW_INT_CLEAR, PCM_SW_INT0);
+#endif
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	if ((isr & ISRS_TWAM) && spm_twam_handler)
@@ -241,7 +245,7 @@ static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 static irqreturn_t spm_irq_aux_handler(u32 irq_id)
 {
 	u32 isr;
@@ -249,7 +253,11 @@ static irqreturn_t spm_irq_aux_handler(u32 irq_id)
 
 	spin_lock_irqsave(&__spm_lock, flags);
 	isr = spm_read(SPM_IRQ_STA);
+#if defined(CONFIG_ARCH_MT6757)
+	spm_write(SPM_SWINT_CLR, (1U << irq_id));
+#else
 	spm_write(SPM_SW_INT_CLEAR, (1U << irq_id));
+#endif
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	spm_err("IRQ%u HANDLER SHOULD NOT BE EXECUTED (0x%x)\n", irq_id, isr);
@@ -296,7 +304,7 @@ static irqreturn_t spm_irq7_handler(int irq, void *dev_id)
 static int spm_irq_register(void)
 {
 	int i, err, r = 0;
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	struct spm_irq_desc irqdesc[] = {
 		{.irq = 0, .handler = spm_irq0_handler,},
 		{.irq = 0, .handler = spm_irq1_handler,},
@@ -313,7 +321,7 @@ static int spm_irq_register(void)
 	};
 #endif
 	irqdesc[0].irq = SPM_IRQ0_ID;
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	irqdesc[1].irq = SPM_IRQ1_ID;
 	irqdesc[2].irq = SPM_IRQ2_ID;
 	irqdesc[3].irq = SPM_IRQ3_ID;
@@ -382,7 +390,7 @@ static void spm_register_init(void)
 	spm_irq_0 = irq_of_parse_and_map(node, 0);
 	if (!spm_irq_0)
 		spm_err("get spm_irq_0 failed\n");
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	spm_irq_1 = irq_of_parse_and_map(node, 1);
 	if (!spm_irq_1)
 		spm_err("get spm_irq_1 failed\n");
@@ -427,7 +435,7 @@ static void spm_register_init(void)
 	spm_mcucfg = of_iomap(node, 0);
 	if (!spm_mcucfg)
 		spm_err("[MCUCFG] base failed\n");
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	/* bsi1cfg */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,bpi_bsi_slv1");
 	if (!node)
@@ -495,7 +503,7 @@ static void spm_register_init(void)
 		spm_vcorefs_end_irq);
 #endif
 	spm_err("spm_base = %p, spm_irq_0 = %d\n", spm_base, spm_irq_0);
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	spm_err("spm_irq_1 = %d, spm_irq_2 = %d, spm_irq_3 = %d\n",
 		spm_irq_1, spm_irq_2, spm_irq_3);
 	spm_err("spm_irq_4 = %d, spm_irq_5 = %d, spm_irq_6 = %d, spm_irq_7 = %d\n", spm_irq_4,
@@ -564,7 +572,11 @@ static void spm_register_init(void)
 	/* clean ISR status */
 	spm_write(SPM_IRQ_MASK, ISRM_ALL);
 	spm_write(SPM_IRQ_STA, ISRC_ALL);
+#if defined(CONFIG_ARCH_MT6757)
+	spm_write(SPM_SWINT_CLR, PCM_SW_INT_ALL);
+#else
 	spm_write(SPM_SW_INT_CLEAR, PCM_SW_INT_ALL);
+#endif
 
 	/* output md_ddr_en if needed for debug */
 #if SPM_MD_DDR_EN_OUT
@@ -587,8 +599,10 @@ static void spm_register_init(void)
 int spm_module_init(void)
 {
 	int r = 0;
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	u32 reg_val;
+#endif
 #endif
 #if 0
 #ifdef CONFIG_MTK_WD_KICKER
@@ -598,6 +612,7 @@ int spm_module_init(void)
 	spm_register_init();
 	if (spm_irq_register() != 0)
 		r = -EPERM;
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if defined(CONFIG_PM)
 	if (spm_fs_init() != 0)
 		r = -EPERM;
@@ -627,7 +642,7 @@ int spm_module_init(void)
 
 	spm_set_dummy_read_addr();
 
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	/* debug code */
 	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
 	spm_crit("[PMIC]wdtdbg_con1 : 0x%x\n", reg_val);
@@ -639,6 +654,7 @@ int spm_module_init(void)
 	spm_crit("[PMIC]vcore vosel_on=0x%x\n", reg_val);
 	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
 	spm_crit("[PMIC]wdtdbg_con1-after : 0x%x\n", reg_val);
+#endif
 #endif
 /* set Vcore DVFS bootup opp by ddr shuffle opp */
 #if defined(CONFIG_ARCH_MT6755)
@@ -803,7 +819,7 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		spm_fw_count++;
 	}
 
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	/* check addr_2nd */
 	if (spm_fw_count == DYNA_LOAD_PCM_MAX) {
 		for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++) {
@@ -823,7 +839,9 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 #endif
 
 	if (spm_fw_count == DYNA_LOAD_PCM_MAX) {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 		vcorefs_late_init_dvfs();
+#endif
 		dyna_load_pcm_done = 1;
 	}
 
@@ -1294,6 +1312,7 @@ int spm_golden_setting_cmp(bool en)
 
 }
 
+#if !defined(CONFIG_ARCH_MT6757)
 /* for PMIC power settings */
 #define VCORE_VOSEL_SLEEP_0P6	0x00	/* 7'b0000110 */
 #define VCORE_VOSEL_SLEEP_0P7	0x10	/* 7'b0010000 */
@@ -1453,9 +1472,11 @@ static void spm_vcore_overtemp_ctrl(int lock)
 #define PMIC_LDO_SRCLKEN_NA	-1
 #define PMIC_LDO_SRCLKEN0	0
 #define PMIC_LDO_SRCLKEN2	2
+#endif
 
 void spm_pmic_power_mode(int mode, int force, int lock)
 {
+#if !defined(CONFIG_ARCH_MT6757)
 	static int prev_mode = -1;
 
 	if (mode < PMIC_PWR_NORMAL || mode >= PMIC_PWR_NUM) {
@@ -1553,6 +1574,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	}
 
 	prev_mode = mode;
+#endif
 }
 
 void spm_bypass_boost_gpio_set(void)

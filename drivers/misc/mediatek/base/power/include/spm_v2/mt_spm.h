@@ -22,7 +22,7 @@ extern void __iomem *spm_base;
 extern void __iomem *spm_infracfg_ao_base;
 extern void __iomem *spm_cksys_base;
 extern void __iomem *spm_mcucfg;
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 extern void __iomem *spm_bsi1cfg;
 #endif
 extern void __iomem *spm_ddrphy_base;

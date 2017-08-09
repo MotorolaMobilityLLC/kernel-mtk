@@ -163,6 +163,132 @@ struct pcm_desc {
 	u32 vec15;		/* event vector 15 config */
 };
 
+#if defined(CONFIG_ARCH_MT6757)
+struct pwr_ctrl {
+	u32 pcm_flags;
+	u32 pcm_flags_cust;	/* can override pcm_flags */
+	u32 pcm_reserve;
+	u32 timer_val;		/* @ 1T 32K */
+	u32 timer_val_cust;	/* @ 1T 32K, can override timer_val */
+	u32 timer_val_ramp_en;
+	u32 timer_val_ramp_en_sec;
+	u32 wake_src;
+	u32 wake_src_cust;	/* can override wake_src */
+	u32 wake_src_md32;
+	u8 r0_ctrl_en;
+	u8 r7_ctrl_en;
+	u8 infra_dcm_lock;
+	u8 wdt_disable;
+
+	/* SPM_AP_STANDBY_CON */
+	u8 wfi_op;
+	u8 mp0_cputop_idle_mask;
+	u8 mp1_cputop_idle_mask;
+	u8 mcusys_idle_mask;
+	u8 mm_mask_b;
+	u8 md_ddr_en_dbc_en;
+	u8 md_mask_b;
+	u8 scp_mask_b;
+	u8 lte_mask_b;
+	u8 srcclkeni_mask_b;
+	u8 md_apsrc_1_sel;
+	u8 md_apsrc_0_sel;
+	u8 conn_mask_b;
+	u8 conn_apsrc_sel;
+
+	/* SPM_SRC_REQ */
+	u8 spm_apsrc_req;
+	u8 spm_f26m_req;
+	u8 spm_lte_req;
+	u8 spm_infra_req;
+	u8 spm_vrf18_req;
+	u8 spm_dvfs_req;
+	u8 spm_dvfs_force_down;
+	u8 spm_ddren_req;
+	u8 spm_rsv_src_req;
+	u8 cpu_md_dvfs_sop_force_on;
+
+	/* SPM_SRC_MASK */
+	u8 csyspwreq_mask;
+	u8 ccif0_md_event_mask_b;
+	u8 ccif0_ap_event_mask_b;
+	u8 ccif1_md_event_mask_b;
+	u8 ccif1_ap_event_mask_b;
+	u8 ccifmd_md1_event_mask_b;
+	u8 ccifmd_md2_event_mask_b;
+	u8 dsi0_vsync_mask_b;
+	u8 dsi1_vsync_mask_b;
+	u8 dpi_vsync_mask_b;
+	u8 isp0_vsync_mask_b;
+	u8 isp1_vsync_mask_b;
+	u8 md_srcclkena_0_infra_mask_b;
+	u8 md_srcclkena_1_infra_mask_b;
+	u8 conn_srcclkena_infra_mask_b;
+	u8 md32_srcclkena_infra_mask_b;
+	u8 srcclkeni_infra_mask_b;
+	u8 md_apsrc_req_0_infra_mask_b;
+	u8 md_apsrc_req_1_infra_mask_b;
+	u8 conn_apsrcreq_infra_mask_b;
+	u8 md32_apsrcreq_infra_mask_b;
+	u8 md_ddr_en_0_mask_b;
+	u8 md_ddr_en_1_mask_b;
+	u8 md_vrf18_req_0_mask_b;
+	u8 md_vrf18_req_1_mask_b;
+	u8 md1_dvfs_req_mask;
+	u8 cpu_dvfs_req_mask;
+	u8 emi_bw_dvfs_req_mask;
+	u8 md_srcclkena_0_dvfs_req_mask_b;
+	u8 md_srcclkena_1_dvfs_req_mask_b;
+	u8 conn_srcclkena_dvfs_req_mask_b;
+
+	/* SPM_SRC2_MASK */
+	u8 dvfs_halt_mask_b;
+	u8 vdec_req_mask_b;
+	u8 gce_req_mask_b;
+	u8 cpu_md_dvfs_req_merge_mask_b;
+	u8 md_ddr_en_dvfs_halt_mask_b;
+	u8 dsi0_vsync_dvfs_halt_mask_b;
+	u8 dsi1_vsync_dvfs_halt_mask_b;
+	u8 dpi_vsync_dvfs_halt_mask_b;
+	u8 isp0_vsync_dvfs_halt_mask_b;
+	u8 isp1_vsync_dvfs_halt_mask_b;
+	u8 conn_ddr_en_mask_b;
+	u8 disp_req_mask_b;
+	u8 disp1_req_mask_b;
+	u8 mfg_req_mask_b;
+	u8 c2k_ps_rccif_wake_mask_b;
+	u8 c2k_l1_rccif_wake_mask_b;
+	u8 ps_c2k_rccif_wake_mask_b;
+	u8 l1_c2k_rccif_wake_mask_b;
+	u8 sdio_on_dvfs_req_mask_b;
+	u8 emi_boost_dvfs_req_mask_b;
+	u8 cpu_md_emi_dvfs_req_prot_dis;
+	u8 dramc_spcmd_apsrc_req_mask_b;
+
+#if 0
+	/* SPM_WAKEUP_EVENT_MASK */
+	u32 spm_wakeup_event_mask;
+
+	/* SPM_WAKEUP_EVENT_EXT_MASK */
+	u32 spm_wakeup_event_ext_mask;
+#endif
+
+	u8 srclkenai_mask;
+
+	u8 mp1_cpu0_wfi_en;
+	u8 mp1_cpu1_wfi_en;
+	u8 mp1_cpu2_wfi_en;
+	u8 mp1_cpu3_wfi_en;
+	u8 mp0_cpu0_wfi_en;
+	u8 mp0_cpu1_wfi_en;
+	u8 mp0_cpu2_wfi_en;
+	u8 mp0_cpu3_wfi_en;
+
+	u32 param1;
+	u32 param2;
+	u32 param3;
+};
+#else
 struct pwr_ctrl {
 	/* for SPM */
 	u32 pcm_flags;
@@ -295,8 +421,13 @@ struct pwr_ctrl {
 	u32 param2;
 	u32 param3;
 };
+#endif
 
+#if defined(CONFIG_ARCH_MT6757)
+#define PCM_FIRMWARE_SIZE   0x4000 /* 16KB */
+#else
 #define PCM_FIRMWARE_SIZE   0x2000
+#endif
 #define DYNA_LOAD_PCM_PATH_SIZE 128
 #define PCM_FIRMWARE_VERSION_SIZE 128
 

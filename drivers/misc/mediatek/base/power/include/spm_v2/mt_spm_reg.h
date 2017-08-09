@@ -24,6 +24,10 @@
 
 #define WAKE_SRC_CONN2AP R12_CONN2AP_SPM_WAKEUP_B
 
+#elif defined(CONFIG_ARCH_MT6757)
+
+#include "mt_spm_reg_mt6757.h"
+
 #elif defined(CONFIG_ARCH_MT6797)
 
 #include "mt_spm_reg_mt6797.h"
