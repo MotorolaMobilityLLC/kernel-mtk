@@ -42,6 +42,7 @@
 #define EX_TIMER_MD_EX 5
 #define EX_TIMER_MD_EX_REC_OK 10
 #define EX_EE_WHOLE_TIMEOUT  (EX_TIMER_SWINT + EX_TIMER_MD_EX + EX_TIMER_MD_EX_REC_OK + 2) /* 2s is buffer */
+#define BOOT_TIMER_HS2 10
 
 struct ccci_log {
 	struct ccci_header msg;

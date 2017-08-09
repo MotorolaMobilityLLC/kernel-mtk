@@ -3486,6 +3486,12 @@ void md_bootup_timeout_func(unsigned long data)
 	struct ccci_modem *md = (struct ccci_modem *)data;
 	char ex_info[EE_BUF_LEN] = "";
 
+	if (md->boot_stage == MD_BOOT_STAGE_2 ||
+		md->boot_stage == MD_BOOT_STAGE_EXCEPTION) {
+		CCCI_ERROR_LOG(md->index, KERN, "MD bootup timer false alarm!\n");
+		return;
+	}
+
 	CCCI_ERROR_LOG(md->index, KERN, "MD_BOOT_HS%d_FAIL!\n", (md->boot_stage + 1));
 	md->ops->broadcast_state(md, BOOT_FAIL);
 	if (md->config.setting & MD_SETTING_STOP_RETRY_BOOT)

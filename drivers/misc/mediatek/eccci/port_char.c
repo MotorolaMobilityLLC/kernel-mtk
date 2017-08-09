@@ -35,6 +35,7 @@
 #ifdef CONFIG_MTK_ECCCI_C2K
 #include "ccif_c2k_platform.h"
 #endif
+#include "ccci_platform.h"
 
 #ifdef FEATURE_GET_MD_BAT_VOL	/* must be after ccci_config.h */
 #include <mt-plat/battery_common.h>
@@ -509,6 +510,10 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 			if (port->rx_ch == CCCI_IPC_RX)
 				port_ipc_tx_wait(port);
 #endif
+			if (port->rx_ch == CCCI_FS_RX && port->modem->boot_stage != MD_BOOT_STAGE_2
+					&& port->modem->boot_stage != MD_BOOT_STAGE_EXCEPTION
+					&& !MD_IN_DEBUG(port->modem))
+				mod_timer(&port->modem->bootup_timer, jiffies + BOOT_TIMER_HS2 * HZ);
 		}
 		return actual_count;
 
@@ -1301,6 +1306,8 @@ static int port_char_recv_req(struct ccci_port *port, struct ccci_request *req)
 		spin_unlock_irqrestore(&port->rx_req_lock, flags);
 		wake_lock_timeout(&port->rx_wakelock, HZ);
 		wake_up_all(&port->rx_wq);
+		if (port->rx_ch == CCCI_FS_RX && port->modem->boot_stage != MD_BOOT_STAGE_2)
+			del_timer(&port->modem->bootup_timer);
 		return 0;
 	}
 	port->flags |= PORT_F_RX_FULLED;

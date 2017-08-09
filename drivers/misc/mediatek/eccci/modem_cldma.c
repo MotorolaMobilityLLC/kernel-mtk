@@ -110,7 +110,8 @@ static const unsigned char high_priority_queue_mask = 0x00;
 #define CLDMA_CG_POLL 6
 #define CLDMA_ACTIVE_T 20
 
-#define BOOT_TIMER_ON 20/*10*/
+#define BOOT_TIMER_ON 20
+#define BOOT_TIMER_HS1 10
 
 #define LOW_PRIORITY_QUEUE (0x4)
 
@@ -2273,9 +2274,6 @@ static int md_cd_start(struct ccci_modem *md)
 			CCCI_BOOTUP_LOG(md->index, TAG, "partition read success\n");
 	}
 	/* 2. clear share memory and ring buffer */
-#if 0				/* no need now, MD will clear share memory itself */
-	memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
-#endif
 #ifdef FEATURE_DHL_CCB_RAW_SUPPORT
 	memset_io(md->smem_layout.ccci_ccb_dhl_base_vir, 0, md->smem_layout.ccci_ccb_dhl_size);
 	memset_io(md->smem_layout.ccci_raw_dhl_base_vir, 0, md->smem_layout.ccci_raw_dhl_size);
@@ -2291,6 +2289,8 @@ static int md_cd_start(struct ccci_modem *md)
 		ccci_set_dsp_region_protection(md, 0);
 	/* 4. power on modem, do NOT touch MD register before this */
 	if (md->config.setting & MD_SETTING_FIRST_BOOT) {
+		/* MD will clear share memory itself after the first boot */
+		memset_io(md->mem_layout.smem_region_vir, 0, md->mem_layout.smem_region_size);
 #if defined(CONFIG_MTK_LEGACY)
 #ifndef NO_POWER_OFF_ON_STARTMD
 		ret = md_cd_power_off(md, 0);
@@ -3157,6 +3157,8 @@ static int md_cd_send_runtime_data_v2(struct ccci_modem *md, unsigned int sbp_co
 #endif
 	skb_put(req->skb, packet_size);
 	ret = md->ops->send_request(md, 0, req, NULL);	/*hardcode to queue 0 */
+	if (ret == 0 && !MD_IN_DEBUG(md))
+		mod_timer(&md->bootup_timer, jiffies + BOOT_TIMER_HS1 * HZ);
 	return ret;
 }
 
@@ -3304,6 +3306,8 @@ static int md_cd_send_runtime_data(struct ccci_modem *md, unsigned int sbp_code)
 #endif
 	skb_put(req->skb, packet_size);
 	ret = md->ops->send_request(md, 0, req, NULL);	/* hardcode to queue 0 */
+	if (ret == 0 && !MD_IN_DEBUG(md))
+		mod_timer(&md->bootup_timer, jiffies + BOOT_TIMER_HS1 * HZ);
 	return ret;
 }
 
