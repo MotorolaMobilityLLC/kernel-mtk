@@ -513,42 +513,64 @@ clocks {
 			venc_mb_done = <260>;
 			venc_128byte_cnt_done = <261>;
 			apxgpt2_count = <0x10008028>;
+			clocks = <&infrasys INFRA_GCE>;
+			clock-names = "GCE";
 		};
 
 		mdp_rdma@14001000 {
 			compatible = "mediatek,mdp_rdma";
 			reg = <0x14001000 0x1000>;
 			interrupts = <GIC_SPI 178 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_DISP0_MDP_RDMA>;
+			clock-names = "MDP_RDMA";
 		};
 
 		mdp_rsz0@14002000 {
 			compatible = "mediatek,mdp_rsz0";
 			reg = <0x14002000 0x1000>;
 			interrupts = <GIC_SPI 179 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_DISP0_MDP_RSZ0>;
+			clock-names = "MDP_RSZ0";
 		};
 
 		mdp_rsz1@14003000 {
 			compatible = "mediatek,mdp_rsz1";
 			reg = <0x14003000 0x1000>;
 			interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_DISP0_MDP_RSZ1>;
+			clock-names = "MDP_RSZ1";
 		};
 
 		mdp_wdma@14004000 {
 			compatible = "mediatek,mdp_wdma";
 			reg = <0x14004000 0x1000>;
 			interrupts = <GIC_SPI 182 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_DISP0_MDP_WDMA>;
+			clock-names = "MDP_WDMA";
 		};
 
 		mdp_wrot@14005000 {
 			compatible = "mediatek,mdp_wrot";
 			reg = <0x14005000 0x1000>;
 			interrupts = <GIC_SPI 183 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_DISP0_MDP_WROT>;
+			clock-names = "MDP_WROT";
 		};
 
 		mdp_tdshp@14006000 {
 			compatible = "mediatek,mdp_tdshp";
 			reg = <0x14006000 0x1000>;
 			interrupts = <GIC_SPI 181 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_DISP0_MDP_TDSHP>;
+			clock-names = "MDP_TDSHP";
+		};
+
+		mdp_color@0x14007000 {
+			compatible = "mediatek,mdp_color";
+			reg = <0x14007000 0x1000>;
+			interrupts = <GIC_SPI 198 IRQ_TYPE_LEVEL_LOW>;
+			clocks = <&mmsys MM_DISP0_MDP_COLOR>;
+			clock-names = "MDP_COLOR";
 		};
 	};
 	bus {
@@ -1484,12 +1506,6 @@ clocks {
 			compatible = "mediatek,MMSYS_CONFIG";
 			reg = <0x14000000 0x1000>;
 			interrupts = <0 196 0x8>;
-		};
-
-		MDP_COLOR@0x14007000 {
-			compatible = "mediatek,MDP_COLOR";
-			reg = <0x14007000 0x1000>;
-			interrupts = <0 198 0x8>;
 		};
 
 		DISPSYS@0x14008000 {

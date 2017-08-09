@@ -28,10 +28,16 @@ ccflags-y += -D_MTK_USER_
 endif
 
 # Common Clock Framework
-ifneq ($(CONFIG_MTK_LEGACY),y)
-ifeq ($(CONFIG_COMMON_CLK),y)
+ifneq ($(CONFIG_MTK_CLKMGR),y)
+
+ifeq ($(CONFIG_ARCH_MT6735),y)
 ccflags-y += -DCMDQ_USE_CCF
 endif
+
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6755" "mt6797"))
+ccflags-y += -DCMDQ_USE_CCF
+endif
+
 endif
 
 # secure path
