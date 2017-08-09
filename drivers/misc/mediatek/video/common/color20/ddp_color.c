@@ -925,7 +925,12 @@ static unsigned long g_mdp_color_va;
 #endif
 
 #if defined(CONFIG_ARCH_MT6797)
-#define MDP_RSZ_PA_BASE 0x14005000
+#define MDP_RSZ0_PA_BASE 0x14003000
+static unsigned long g_mdp_rsz0_va;
+#define MDP_RSZ1_PA_BASE 0x14004000
+static unsigned long g_mdp_rsz1_va;
+#define MDP_RSZ2_PA_BASE 0x14005000
+static unsigned long g_mdp_rsz2_va;
 #endif
 
 static unsigned long g_tdshp_va;
@@ -1654,6 +1659,44 @@ static unsigned long color_get_MDP_COLOR_VA(void)
 }
 #endif
 
+#if defined(CONFIG_ARCH_MT6797)
+static unsigned long color_get_MDP_RSZ0_VA(void)
+{
+	unsigned long VA;
+	struct device_node *node = NULL;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_rsz0");
+	VA = (unsigned long)of_iomap(node, 0);
+	COLOR_DBG("MDP_RSZ0 VA: 0x%lx\n", VA);
+
+	return VA;
+}
+
+static unsigned long color_get_MDP_RSZ1_VA(void)
+{
+	unsigned long VA;
+	struct device_node *node = NULL;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_rsz1");
+	VA = (unsigned long)of_iomap(node, 0);
+	COLOR_DBG("MDP_RSZ1 VA: 0x%lx\n", VA);
+
+	return VA;
+}
+
+static unsigned long color_get_MDP_RSZ2_VA(void)
+{
+	unsigned long VA;
+	struct device_node *node = NULL;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_rsz2");
+	VA = (unsigned long)of_iomap(node, 0);
+	COLOR_DBG("MDP_RSZ2 VA: 0x%lx\n", VA);
+
+	return VA;
+}
+#endif
+
 static unsigned int color_is_reg_addr_valid(unsigned long addr)
 {
 	unsigned int i = 0;
@@ -1674,6 +1717,21 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "MDP_COLOR");
 		return 2;
 	}
+#endif
+
+
+	/*Check if MDP RSZ base address*/
+#if defined(CONFIG_ARCH_MT6797)
+		if ((addr >= g_mdp_rsz0_va) && (addr < (g_mdp_rsz0_va + 0x1000))) {			/* MDP RSZ0 */
+			COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "MDP_RSZ0");
+			return 2;
+		} else if ((addr >= g_mdp_rsz1_va) && (addr < (g_mdp_rsz1_va + 0x1000))) {	/* MDP RSZ1 */
+			COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "MDP_RSZ1");
+			return 2;
+		} else if ((addr >= g_mdp_rsz2_va) && (addr < (g_mdp_rsz2_va + 0x1000))) {	/* MDP RSZ2 */
+			COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr, "MDP_RSZ2");
+			return 2;
+		}
 #endif
 
 	/* check if TDSHP base address */
@@ -1728,6 +1786,23 @@ static unsigned long color_pa2va(unsigned int addr)
 			  MDP_COLOR_PA_BASE, g_mdp_color_va);
 		return g_mdp_color_va + (addr - MDP_COLOR_PA_BASE);
 	}
+#endif
+
+#if defined(CONFIG_ARCH_MT6797)
+		/* MDP_COLOR */
+		if ((MDP_RSZ0_PA_BASE <= addr) && (addr < (MDP_RSZ0_PA_BASE + 0x1000))) {
+			COLOR_DBG("color_pa2va(), MDP_RSZ0 PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
+				  MDP_RSZ0_PA_BASE, g_mdp_rsz0_va);
+			return g_mdp_rsz0_va + (addr - MDP_RSZ0_PA_BASE);
+		} else if ((MDP_RSZ1_PA_BASE <= addr) && (addr < (MDP_RSZ1_PA_BASE + 0x1000))) {
+			COLOR_DBG("color_pa2va(), MDP_RSZ1 PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
+				  MDP_RSZ1_PA_BASE, g_mdp_rsz1_va);
+			return g_mdp_rsz1_va + (addr - MDP_RSZ1_PA_BASE);
+		} else if ((MDP_RSZ2_PA_BASE <= addr) && (addr < (MDP_RSZ2_PA_BASE + 0x1000))) {
+			COLOR_DBG("color_pa2va(), MDP_RSZ2 PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
+				  MDP_RSZ2_PA_BASE, g_mdp_rsz2_va);
+			return g_mdp_rsz2_va + (addr - MDP_RSZ2_PA_BASE);
+		}
 #endif
 
 	COLOR_ERR("color_pa2va(), NO FOUND VA!! PA:0x%x, PABase[0x%x], VABase[0x%lx]\n", addr,
@@ -1801,7 +1876,7 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 #if defined(CONFIG_ARCH_MT6797)
 	case SWREG_RSZ_BASE_ADDRESS:
 		{
-			ret = MDP_RSZ_PA_BASE;
+			ret = MDP_RSZ0_PA_BASE;
 			break;
 		}
 #endif
@@ -1983,6 +2058,12 @@ static int _color_init(DISP_MODULE_ENUM module, void *cmq_handle)
 #if defined(CONFIG_ARCH_MT6595) || defined(CONFIG_ARCH_MT6795)
 	g_tdshp1_va = color_get_TDSHP1_VA();
 #endif
+#if defined(CONFIG_ARCH_MT6797)
+	g_mdp_rsz0_va = color_get_MDP_RSZ0_VA();
+	g_mdp_rsz1_va = color_get_MDP_RSZ1_VA();
+	g_mdp_rsz2_va = color_get_MDP_RSZ2_VA();
+#endif
+
 	return 0;
 }
 
@@ -2111,7 +2192,7 @@ static int _color_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *
 	DISPLAY_PQ_T *pq_index;
 	DISPLAY_TDSHP_T *tdshp_index;
 
-	COLOR_DBG("_color_io: msg %x\n", msg);
+	COLOR_DBG("_color_io: msg %x", msg);
 	/* COLOR_ERR("_color_io: GET_PQPARAM %lx\n", DISP_IOCTL_GET_PQPARAM); */
 	/* COLOR_ERR("_color_io: SET_PQPARAM %lx\n", DISP_IOCTL_SET_PQPARAM); */
 	/* COLOR_ERR("_color_io: READ_REG %lx\n", DISP_IOCTL_READ_REG); */
