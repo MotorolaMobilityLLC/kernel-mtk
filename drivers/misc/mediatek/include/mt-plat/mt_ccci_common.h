@@ -682,6 +682,8 @@ enum {
 	MODEM_CAP_DATA_ACK_DVD = (1<<17),
 	MODEM_CAP_CCMNI_SEQNO = (1<<18),
 	MODEM_CAP_CCMNI_IRAT = (1<<19),
+	MODEM_CAP_WORLD_PHONE = (1<<20),
+	MODEM_CAP_CCMNI_MQ = (1<<21), /* it must depend on DATA ACK DEVIDE feature */
 };
 
 /* AP<->MD messages on control or system channel */

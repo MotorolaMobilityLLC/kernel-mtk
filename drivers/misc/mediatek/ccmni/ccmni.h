@@ -85,6 +85,7 @@ struct ccmni_dev_ops {
 	void (*md_state_callback)(int md_id, int rx_ch, MD_STATE state);
 	void (*exit)(int md_id);
 	void (*dump)(int md_id, int rx_ch, unsigned int flag);
+	void (*dump_rx_status)(int md_id, int rx_ch, unsigned long long *status);
 };
 
 
@@ -116,6 +117,13 @@ typedef enum {
 	CCMNI_DBG_LEVEL_TX_SKB = (1<<4),
 	CCMNI_DBG_LEVEL_RX_SKB = (1<<5),
 } CCMNI_DBG_LEVEL;
+
+typedef enum {
+	CCMNI_TXQ_NORMAL   = 0,
+	CCMNI_TXQ_FAST     = 1,
+	CCMNI_TXQ_NUM,
+	CCMNI_TXQ_END     = CCMNI_TXQ_NUM
+} CCMNI_TXQ_NO;
 
 /*****************************extern function************************************/
 /* int  ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info); */
