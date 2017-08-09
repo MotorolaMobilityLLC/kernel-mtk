@@ -1233,14 +1233,20 @@ static u32 msdc_ldo_power(u32 on, MT65XX_POWER powerId, int voltage_uv,
 			pr_warn("msdc LDO<%d> power off\n", powerId);
 			hwPowerDown(powerId, "msdc");
 			*status = 0;
-		} else {
+		} else
 			pr_err("LDO<%d> not power on\n", powerId);
-		}
 	}
 
 	return 0;
 }
 #endif
+
+void msdc_sd_power_off(void)
+{
+	pr_err("SD overheat,pmic Eint disable SD power!\n");
+	msdc_ldo_power(0, MT6328_POWER_LDO_VMC, VOL_3000, &g_msdc1_io);
+	msdc_ldo_power(0, MT6328_POWER_LDO_VMCH, VOL_3000, &g_msdc1_flash);
+}
 
 void msdc_set_smt(struct msdc_host *host, int set_smt)
 {
