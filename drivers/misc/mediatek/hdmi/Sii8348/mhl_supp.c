@@ -1114,7 +1114,7 @@ void si_mhl_tx_msc_command_done(struct mhl_dev_context *dev_context, uint8_t dat
 			if (MHL_STATUS_DCAP_RDY & req->reg_data) {
 				dev_context->misc_flags.flags.sent_dcap_rdy = true;
 
-				MHL_TX_DBG_INFO(dev_context, "\n\nSent DCAP_RDY\n");
+				MHL_TX_DBG_INFO(dev_context, " Sent DCAP_RDY\n");
 				si_mhl_tx_set_int(dev_context, MHL_RCHANGE_INT,
 								  MHL_INT_DCAP_CHG, 0);
 			}

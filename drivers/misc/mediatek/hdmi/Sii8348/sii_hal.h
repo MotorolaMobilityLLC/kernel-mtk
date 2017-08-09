@@ -25,7 +25,7 @@ extern "C" {
 #define MEDIA_DATA_TUNNEL_SUPPORT
 #define ENABLE_EDID_INFO_PRINT
 #define ENABLE_EDID_DEBUG_PRINT
-#define ENABLE_DUMP_INFOFRAME
+///#define ENABLE_DUMP_INFOFRAME
 
 #ifdef __cplusplus
 }

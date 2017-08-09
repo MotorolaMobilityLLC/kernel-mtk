@@ -216,7 +216,7 @@ typedef enum
 
 }InfoFrameType_e;
 
-#define ENABLE_DUMP_INFOFRAME
+///#define ENABLE_DUMP_INFOFRAME
 #ifdef ENABLE_DUMP_INFOFRAME //(
 
 void DumpIncomingInfoFrameImpl(char *pszId,char *pszFile,int iLine,info_frame_t *pInfoFrame,uint8_t length);

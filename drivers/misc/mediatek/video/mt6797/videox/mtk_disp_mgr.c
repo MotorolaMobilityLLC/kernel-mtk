@@ -756,10 +756,8 @@ static int set_external_buffer(disp_session_input_config *input)
 			mtkfb_update_buf_info(input->session_id, input->config[i].layer_id,
 					      input->config[i].next_buff_idx, mva_offset,
 					      input->config[i].frm_sequence);
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 			mtkfb_update_buf_info_new(input->session_id, mva_offset,
 						  (disp_input_config *) input->config);
-#endif
 		}
 
 		if (session_info) {

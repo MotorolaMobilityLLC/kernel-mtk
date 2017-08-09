@@ -1359,6 +1359,7 @@ int ext_disp_wait_ovl_available(int ovl_num)
 		/*wait OVL can be used by external display */
 		ret = dpmgr_wait_ovl_available(ovl_num);
 	}
+	ret = 0;
 
 	return ret;
 }

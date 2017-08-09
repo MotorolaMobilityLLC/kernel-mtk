@@ -93,11 +93,9 @@ static struct HDMI_DRIVER *hdmi_drv;
 static struct _t_hdmi_context hdmi_context;
 static struct _t_hdmi_context *p = &hdmi_context;
 
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 struct task_struct *hdmi_3d_config_task = NULL;
 wait_queue_head_t hdmi_3d_config_wq;
 atomic_t hdmi_3d_config_event = ATOMIC_INIT(0);
-#endif
 
 static unsigned int hdmi_layer_num;
 static unsigned long ovl_config_address[EXTD_OVERLAY_CNT];
@@ -388,13 +386,8 @@ int hdmi_get_support_info(void)
 int hdmi_video_config(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_VIDEO_INPUT_FORMAT vin,
 enum HDMI_VIDEO_OUTPUT_FORMAT vout)
 {
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
-	    if (p->is_mhl_video_on == true && (p->vout == vout))
+	if (p->is_mhl_video_on == true && (p->vout == vout))
 		return 0;
-#else
-	if (p->is_mhl_video_on == true || first_frame_done == 0)
-		return 0;
-#endif
 
 	HDMI_LOG("hdmi_video_config video_on=%d\n", p->is_mhl_video_on);
 	if (IS_HDMI_NOT_ON()) {
@@ -402,7 +395,6 @@ enum HDMI_VIDEO_OUTPUT_FORMAT vout)
 		return 0;
 	}
 
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 	if ((p->is_mhl_video_on == true) && (p->vout != vout)) {
 		p->vout = vout;
 		p->vin = vin;
@@ -413,7 +405,6 @@ enum HDMI_VIDEO_OUTPUT_FORMAT vout)
 
 	p->vout = vout;
 	p->vin = vin;
-#endif
 
 	p->is_mhl_video_on = true;
 
@@ -528,10 +519,8 @@ static int hdmi_fence_release_kthread(void *data)
 			ext_disp_get_curr_addr(input_curr_addr, 0);
 			fence_idx = disp_sync_find_fence_idx_by_addr(session_id, 0, input_curr_addr[0]);
 			mtkfb_release_fence(session_id, 0, fence_idx);
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 			if (hdmi_params->is_3d_support)
 				layer_3d_format |= mtkfb_query_buf_info(session_id, layid, input_curr_addr[0], 0);
-#endif
 
 		} else {
 			if (ext_disp_get_ovl_req_status(MHL_SESSION_ID) == EXTD_OVL_INSERTED)
@@ -552,11 +541,9 @@ static int hdmi_fence_release_kthread(void *data)
 
 				mtkfb_release_fence(session_id, layid, fence_idx);
 
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 				if (hdmi_params->is_3d_support)
 					layer_3d_format |= mtkfb_query_buf_info(session_id
 								, layid, input_curr_addr[layid], 0);
-#endif
 			}
 
 			if (ovl_reg_updated == false) {
@@ -569,7 +556,7 @@ static int hdmi_fence_release_kthread(void *data)
 		}
 
 		rdmafpscnt++;
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
+
 		if ((force_reschange > 0xff) && (force_reschange < 0x0fff))
 			layer_3d_format = force_reschange >> 8;
 
@@ -582,9 +569,6 @@ static int hdmi_fence_release_kthread(void *data)
 
 		hdmi_video_config(p->output_video_resolution, HDMI_VIN_FORMAT_RGB888,
 						HDMI_VOUT_FORMAT_RGB888 | layer_3d_format);
-#else
-		hdmi_video_config(p->output_video_resolution, HDMI_VIN_FORMAT_RGB888, HDMI_VOUT_FORMAT_RGB888);
-#endif
 		if (kthread_should_stop())
 			break;
 	}
@@ -592,7 +576,6 @@ static int hdmi_fence_release_kthread(void *data)
 	return 0;
 }
 
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 static int hdmi_3d_config_kthread(void *data)
 {
 	struct sched_param param = { .sched_priority = 94 };
@@ -615,7 +598,6 @@ static int hdmi_3d_config_kthread(void *data)
 
 	return 0;
 }
-#endif
 
 /* Allocate memory, set M4U, LCD, MDP, DPI */
 /* LCD overlay to memory -> MDP resize and rotate to memory -> DPI read to HDMI */
@@ -643,12 +625,10 @@ static enum HDMI_STATUS hdmi_drv_init(void)
 		wake_up_process(hdmi_fence_release_task);
 	}
 
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 	if (!hdmi_3d_config_task) {
 		hdmi_3d_config_task = kthread_create(hdmi_3d_config_kthread, NULL, "hdmi_3d_config_kthread");
 		wake_up_process(hdmi_3d_config_task);
 	}
-#endif
 
 	return HDMI_STATUS_OK;
 }
@@ -1484,9 +1464,7 @@ int hdmi_post_init(void)
 	init_waitqueue_head(&hdmi_fence_release_wq);
 	init_waitqueue_head(&hdmi_vsync_wq);
 
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 	init_waitqueue_head(&hdmi_3d_config_wq);
-#endif
 
 	Extd_DBG_Init();
 	return 0;

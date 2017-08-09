@@ -63,7 +63,7 @@ bool need_reset_usb_switch = true;
 
 #define MHL_DBG(fmt, arg...)  \
 	do { \
-		if (hdmi_log_on) pr_debug("[HDMI_Chip_HAL]%s,%d,", __func__, __LINE__);  \
+		if (1) pr_debug("[HDMI_Chip_HAL]:"fmt, ##arg);  \
 	}while (0)
 
 #define MHL_FUNC()    \
@@ -336,22 +336,22 @@ static int hdmi_drv_video_config(enum HDMI_VIDEO_RESOLUTION vformat, enum HDMI_V
 	}
 	else if(vformat == HDMI_VIDEO_1920x1080p_30Hz)
 	{
-		MHL_DBG("[hdmi_drv]1080p_30 %p\n", si_dev_context);
+		MHL_DBG("[hdmi_drv]1080p_30\n");
 		siHdmiTx_VideoSel(HDMI_1080P30);
 	}
 	else if(vformat == HDMI_VIDEO_1920x1080p_60Hz)
 	{
-		MHL_DBG("[hdmi_drv]1080p_60 %p\n", si_dev_context);
+		MHL_DBG("[hdmi_drv]1080p_60\n");
 		siHdmiTx_VideoSel(HDMI_1080P60);
 	}
 	else if(vformat == HDMI_VIDEO_2160p_DSC_24Hz)
 	{
-		MHL_DBG("[hdmi_drv]2160p_24 %p\n", si_dev_context);
+		MHL_DBG("[hdmi_drv]2160p_24\n");
 		siHdmiTx_VideoSel(HDMI_4k24_DSC);
 	}
 	else if(vformat == HDMI_VIDEO_2160p_DSC_30Hz)
 	{
-		MHL_DBG("[hdmi_drv]2160p_30 %p\n", si_dev_context);
+		MHL_DBG("[hdmi_drv]2160p_30\n");
 		siHdmiTx_VideoSel(HDMI_4k30_DSC);
 	}
 	else

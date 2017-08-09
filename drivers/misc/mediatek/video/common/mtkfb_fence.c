@@ -569,7 +569,6 @@ unsigned int mtkfb_query_idx_by_ticket(unsigned int session_id, unsigned int lay
 	return idx;
 }
 
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 bool mtkfb_update_buf_info_new(unsigned int session_id, unsigned int mva_offset, disp_input_config *buf_info)
 {
 	struct mtkfb_fence_buf_info *buf;
@@ -609,7 +608,6 @@ unsigned int mtkfb_query_buf_info(unsigned int session_id, unsigned int layer_id
 		int query_type)
 {
 	struct mtkfb_fence_buf_info *buf = NULL;
-	struct mtkfb_fence_buf_info *pre_buf = NULL;
 	disp_session_sync_info *session_info;
 	disp_sync_info *layer_info;
 	int query_info = 0;
@@ -632,7 +630,6 @@ unsigned int mtkfb_query_buf_info(unsigned int session_id, unsigned int layer_id
 
 	return query_info;
 }
-#endif
 
 #endif				/* #if defined (MTK_FB_ION_SUPPORT) */
 
@@ -737,9 +734,7 @@ struct mtkfb_fence_buf_info *mtkfb_init_buf_info(struct mtkfb_fence_buf_info *bu
 	buf->idx = 0;
 	buf->mva = 0;
 	buf->cache_sync = 0;
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT
 	buf->layer_type = 0;
-#endif
 	return buf;
 }
 

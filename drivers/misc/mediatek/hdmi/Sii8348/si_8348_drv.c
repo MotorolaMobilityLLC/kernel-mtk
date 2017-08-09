@@ -2360,25 +2360,25 @@ static int int_3_isr(struct drv_hw_context *hw_context, uint8_t int_3_status)
 					hw_context->intr_info->flags |= DRV_INTR_FLAG_MSC_DONE;
 					hw_context->intr_info->msc_done_data =0;
 					hw_context->ready_for_mdt = true;
-					
-					{
-						
-	                    req = dev_context->current_cbus_req;
-						si_mhl_tx_handle_atomic_hw_edid_read_complete(dev_context->edid_parser_context, req);
-						dev_context->edid_parse_done = true;		// TODO: FD, TBC, check carefully
-						dev_context->misc_flags.flags.edid_loop_active = 0;
-						mhl_event_notify(dev_context, MHL_TX_EVENT_EDID_DONE, 0, NULL);
-					    int3Number = 0;
-					    mhl_tx_stop_timer(dev_context, dev_context->cbus_dpi_timer);
-					}
-					
 					//if (true == dev_context->misc_flags.flags.have_complete_devcap)
 					{
 						#ifdef MHL2_ENHANCED_MODE_SUPPORT
 						// Init Enhanced Mode process after both EDID and DEVCAP are processed
-						mhl2_em_query(hw_context);
+						if(0x30 <= si_get_peer_mhl_version(dev_context))
+							mhl2_em_query(hw_context);
 						#endif
 
+					}
+
+					{
+						
+						req = dev_context->current_cbus_req;
+						si_mhl_tx_handle_atomic_hw_edid_read_complete(dev_context->edid_parser_context, req);
+						dev_context->edid_parse_done = true;		// TODO: FD, TBC, check carefully
+						dev_context->misc_flags.flags.edid_loop_active = 0;
+						mhl_event_notify(dev_context, MHL_TX_EVENT_EDID_DONE, 0, NULL);
+						int3Number = 0;
+						mhl_tx_stop_timer(dev_context, dev_context->cbus_dpi_timer);
 					}
 				}
 			} // end of "else if ( 7 == hw_current_edid_request_block_batch )"
@@ -2634,7 +2634,7 @@ static int mhl_cbus_isr(struct drv_hw_context *hw_context, uint8_t cbus_int)
 				hw_context->intr_info->write_stat);
 
 		if(MHL_STATUS_DCAP_RDY & hw_context->intr_info->write_stat[0]) {
-			MHL_TX_DBG_INFO(hw_context, "\n\ngot DCAP_RDY\n\n");
+			MHL_TX_DBG_INFO(hw_context, " got DCAP_RDY\n\n");
 
 			/* Enable EDID interrupt */
 			// TODO: FD, TBC, EDID DDC handling interrupt
@@ -4084,10 +4084,8 @@ void si_mhl_tx_drv_video_3d(struct mhl_dev_context *dev_context, int video_3d)
 	//hw_context->mhl2_em_input = false;
 #ifdef MHL2_ENHANCED_MODE_SUPPORT	
 	if ((MHL2_EM_SM_CAP_QUERIED <= hw_context->mhl2_em_sm)&&(video_data.inputVideoCode > 90))
-	{
 		mhl2_em_request(hw_context, true);
-	}
-	else
+	else if(0x30 <= si_get_peer_mhl_version(dev_context))
 		mhl2_em_request(hw_context, false);
 #endif
 	memset( &vsif, 0, sizeof(vendor_specific_info_frame_t) );
