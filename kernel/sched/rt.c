@@ -1690,7 +1690,7 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
 static struct task_struct *
 pick_next_task_rt(struct rq *rq, struct task_struct *prev)
 {
-	struct task_struct *p = NULL;
+	struct task_struct *p;
 	struct rt_rq *rt_rq = &rq->rt;
 
 	if (need_pull_rt_task(rq, prev)) {
@@ -1712,33 +1712,12 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
 	if (prev->sched_class == &rt_sched_class)
 		update_curr_rt(rq);
 
-	if (!rt_rq->rt_queued) {
-		/*sched: prevent wdt from RT throttle */
-		struct rt_prio_array *array = &rt_rq->active;
-		struct sched_rt_entity *rt_se;
-		int idx = 0, prio = MAX_RT_PRIO - 1 - idx;	/* WDT priority */
-
-		if (test_bit(idx, array->bitmap)) {
-			list_for_each_entry(rt_se, array->queue + idx, run_list) {
-				p = rt_task_of(rt_se);
-				if ((p->rt_priority == prio) && (0 == strncmp(p->comm, "wdtk", 4))) {
-					p->se.exec_start = rq->clock_task;
-					if (prev != p) {
-						printk_deferred("sched: unthrottle %d:%s state=%lu\n",
-							p->pid, p->comm, p->state);
-					}
-					goto found;
-				}
-			}
-		}
-
+	if (!rt_rq->rt_queued)
 		return NULL;
-	}
-found:
+
 	put_prev_task(rq, prev);
 
-	if (NULL == p)
-		p = _pick_next_task_rt(rq);
+	p = _pick_next_task_rt(rq);
 
 	/* The running task is never eligible for pushing */
 	dequeue_pushable_task(rq, p);
