@@ -80,10 +80,10 @@
 #if !defined(CONFIG_MTK_LEGACY)
 /*static void __iomem *clk_apmixed_base;*/
 #ifndef TVDPLL_CON0
-#define TVDPLL_CON0             (clk_apmixed_base + 0x260)
+#define TVDPLL_CON0             ((void *)NULL)
 #endif
 #ifndef TVDPLL_CON1
-#define TVDPLL_CON1             (clk_apmixed_base + 0x264)
+#define TVDPLL_CON1             ((void *)NULL)
 #endif
 #endif
 
