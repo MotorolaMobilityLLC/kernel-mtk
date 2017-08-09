@@ -19,7 +19,7 @@
 #include <drm/drm_atomic_helper.h>
 #include <linux/of_platform.h>
 #include <linux/component.h>
-#include <mtk-smi.h>
+#include <soc/mediatek/smi.h>
 #include <linux/pm_runtime.h>
 #include <drm/mediatek_drm.h>
 
