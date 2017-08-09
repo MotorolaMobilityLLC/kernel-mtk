@@ -768,8 +768,6 @@ static void md_ccif_reset_queue(struct ccci_modem *md)
 
 static void md_ccif_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 {
-	int idx = 0;
-	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
 	CCCI_NORMAL_LOG(md->index, TAG, "MD exception HIF %d\n", stage);
 	switch (stage) {
@@ -782,8 +780,6 @@ static void md_ccif_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 		ccci_md_exception_notify(md, EX_DHL_DL_RDY);
 		break;
 	case HIF_EX_CLEARQ_DONE:
-		for (idx = 0; idx < QUEUE_NUM; idx++)
-			flush_work(&md_ctrl->rxq[idx].qwork);
 		md_ccif_queue_dump(md);
 		md_ccif_reset_queue(md);
 		md_ccif_send(md, H2D_EXCEPTION_CLEARQ_ACK);
