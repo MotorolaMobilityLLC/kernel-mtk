@@ -348,7 +348,7 @@ bool get_internalmd_status(void)
 
 
 
-static void FillDatatoDlmemory(volatile unsigned int *memorypointer, unsigned int fillsize,
+static void FillDatatoDlmemory(unsigned int *memorypointer, unsigned int fillsize,
 			       unsigned short value)
 {
 	int addr = 0;
@@ -379,7 +379,7 @@ static void SetDL1BufferwithBuf(void)
 
 void OpenAfeDigitaldl1(bool bEnable)
 {
-	volatile unsigned int *Sramdata;
+	unsigned int *Sramdata;
 
 	if (bEnable == true) {
 		SetDL1BufferwithBuf();
@@ -548,6 +548,36 @@ bool Register_Aud_Irq(void *dev, uint32 afe_irq_number)
 
 /*****************************************************************************
  * FUNCTION
+ *  AudDrv_IRQ_error_handler / workqueue
+ *
+ */
+#if 0
+static int irqcount;
+static void AudDrv_IRQ_error_handler(struct work_struct *ws)
+{
+	pr_err("AudDrv_IRQ_error_handler : clear all IRQ status\n");
+	AudDrv_Clk_On();
+	Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 6, 0xff);
+	Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1, 0xff);
+	Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 1, 0xff);
+	Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 2, 0xff);
+	Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 3, 0xff);
+	Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 4, 0xff);
+	Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 5, 0xff);
+	irqcount++;
+
+	if (irqcount > AudioInterruptLimiter) {
+		SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, false);
+		SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
+		irqcount = 0;
+	}
+
+	AudDrv_Clk_Off();
+}
+#endif
+
+/*****************************************************************************
+ * FUNCTION
  *  AudDrv_IRQ_handler / AudDrv_magic_tasklet
  *
  * DESCRIPTION
@@ -558,41 +588,21 @@ bool Register_Aud_Irq(void *dev, uint32 afe_irq_number)
 irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 {
 	/* unsigned long flags; */
-	kal_uint32 volatile u4RegValue;
-	kal_uint32 volatile u4tmpValue;
-	kal_uint32 volatile u4tmpValue1;
-	kal_uint32 volatile u4tmpValue2;
+	kal_uint32 u4RegValue;
 
-	AudDrv_Clk_On();
+	/* AudDrv_Clk_On(); */		/* Avoid clk_prepare in IRQ handler */
 	u4RegValue = Afe_Get_Reg(AFE_IRQ_MCU_STATUS);
 	u4RegValue &= 0xff;
-	u4tmpValue = Afe_Get_Reg(AFE_IRQ_MCU_EN);
-	u4tmpValue &= 0xff;
-	u4tmpValue1 = Afe_Get_Reg(AFE_IRQ_CNT5);
-	u4tmpValue1 &= 0x0003ffff;
-	u4tmpValue2 = Afe_Get_Reg(AFE_IRQ_DEBUG);
-	u4tmpValue2 &= 0x0003ffff;
 
-	/* here is error handle , for interrupt is trigger but not status , clear all interrupt with bit 6 */
+	/* here is error handle, for interrupt is trigger but no status, just return*/
 	if (u4RegValue == 0) {
-		pr_debug("u4RegValue == 0 irqcount =0\n");
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 6, 0xff);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1, 0xff);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 1, 0xff);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 2, 0xff);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 3, 0xff);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 4, 0xff);
-		Afe_Set_Reg(AFE_IRQ_MCU_CLR, 1 << 5, 0xff);
-		irqcount++;
-
-		if (irqcount > AudioInterruptLimiter) {
-			SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE, false);
-			SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
-			irqcount = 0;
-		}
+		pr_err("%s : u4RegValue = 0, IRQ_Status is cleared\n", __func__);
 
 		goto AudDrv_IRQ_handler_exit;
 	}
+
+	/* clear irq */
+	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, 0xff);
 
 	if (u4RegValue & INTERRUPT_IRQ1_MCU) {
 		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_DL1]->mState == true)
@@ -616,14 +626,10 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 			Auddrv_DL2_Interrupt_Handler();
 	}
 
-	/* clear irq */
-	Afe_Set_Reg(AFE_IRQ_MCU_CLR, u4RegValue, 0xff);
 AudDrv_IRQ_handler_exit:
-	AudDrv_Clk_Off();
-
+	/* AudDrv_Clk_Off(); */		/* Avoid clk_unprepare in IRQ handler */
 	return IRQ_HANDLED;
 }
-
 
 uint32 GetApllbySampleRate(uint32 SampleRate)
 {
@@ -2055,6 +2061,10 @@ bool SetIrqEnable(uint32 Irqmode, bool bEnable)
 		break;
 	}
 
+	if (bEnable == false) {
+		Afe_Set_Reg(AFE_IRQ_MCU_CLR, (1 << Irqmode), (1 << Irqmode));
+		Afe_Set_Reg(AFE_IRQ_MCU_CLR, (1 << (Irqmode + 8)), (1 << (Irqmode + 8)));
+	}
 	/* pr_debug("-%s(), Irqmode = %d, bEnable = %d\n", __FUNCTION__, Irqmode, bEnable); */
 	return true;
 }

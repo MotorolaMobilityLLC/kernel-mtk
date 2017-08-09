@@ -444,7 +444,7 @@ static void Auddrv_I2S1GpioSet(void)
 #ifdef CONFIG_OF
 #if defined(CONFIG_MTK_LEGACY)
 
-	AUDDRV_I2S_ATTRIBUTE *I2S1Settingws = GetI2SSetting(Auddrv_I2S1_Setting,
+	AUDDRV_I2S_ATTRIBUTE * I2S1Settingws = GetI2SSetting(Auddrv_I2S1_Setting,
 							    Auddrv_I2S_Setting_ws);
 	AUDDRV_I2S_ATTRIBUTE *I2S1Settingbck = GetI2SSetting(Auddrv_I2S1_Setting,
 							     Auddrv_I2S_Setting_bck);
@@ -638,10 +638,35 @@ static int Audio_Irqcnt2_Set(struct snd_kcontrol *kcontrol,
 
 /* static struct snd_dma_buffer *Dl1_Playback_dma_buf  = NULL; */
 
+static int GetAudioTrimOffsetAverage(int *buffer_value, int trim_num)
+{
+	int i , j, tmp;
+
+	for (i = 0; i < trim_num+1; i++) {
+		for (j = i+1; j < trim_num+2; j++) {
+			if (buffer_value[i] > buffer_value[j]) {
+				tmp = buffer_value[i];
+				buffer_value[i] = buffer_value[j];
+				buffer_value[j] = tmp;
+			}
+		}
+	}
+
+	tmp = 0;
+	for (i = 0; i <  trim_num; i++)
+		tmp = tmp + buffer_value[i+1];
+
+	tmp = (tmp + 2) / 4;
+	return tmp;
+}
+
 static void GetAudioTrimOffset(int channels)
 {
-	int Buffer_on_value = 0, Buffer_offl_value = 0, Buffer_offr_value = 0;
+	const int trim_num = 4;
 	const int off_counter = 20, on_counter = 20, Const_DC_OFFSET = 2048;
+	int Buffer_on_value = 0, Buffer_offl_value = 0, Buffer_offr_value = 0;
+	int Buffer_tmp[6];
+	int i;
 
 	pr_warn("%s channels = %d\n", __func__, channels);
 	/* open headphone and digital part */
@@ -668,8 +693,12 @@ static void GetAudioTrimOffset(int channels)
 	EnableTrimbuffer(true);
 	/*msleep(1); */
 	usleep_range(1 * 1000, 20 * 1000);
-	Buffer_offl_value = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, off_counter, 0);
-	pr_warn("Buffer_offl_value = %d\n", Buffer_offl_value);
+	for (i = 0; i < (trim_num + 2); i++) {
+		Buffer_tmp[i] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, off_counter, 0);
+		/* pr_warn("#%d Buffer_off_value_L = %d\n", i, Buffer_tmp[i]); */
+	}
+	Buffer_offl_value = GetAudioTrimOffsetAverage(Buffer_tmp, trim_num);
+	pr_warn("[Average %d times] Buffer_off_value_L = %d\n", trim_num, Buffer_offl_value);
 	EnableTrimbuffer(false);
 
 	/* Get HPR off offset */
@@ -679,8 +708,12 @@ static void GetAudioTrimOffset(int channels)
 	EnableTrimbuffer(true);
 	/*msleep(1); */
 	usleep_range(1 * 1000, 20 * 1000);
-	Buffer_offr_value = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, off_counter, 0);
-	pr_warn("Buffer_offr_value = %d\n", Buffer_offr_value);
+	for (i = 0; i < (trim_num + 2); i++) {
+		Buffer_tmp[i] = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, off_counter, 0);
+		/* pr_warn("#%d Buffer_off_value_R = %d\n", i, Buffer_tmp[i]); */
+	}
+	Buffer_offr_value = GetAudioTrimOffsetAverage(Buffer_tmp, trim_num);
+	pr_warn("[Average %d times] Buffer_off_value_R = %d\n", trim_num, Buffer_offr_value);
 	EnableTrimbuffer(false);
 
 	switch (channels) {
@@ -714,10 +747,14 @@ static void GetAudioTrimOffset(int channels)
 
 	/*msleep(10); */
 	usleep_range(10 * 1000, 20 * 1000);
-	Buffer_on_value = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, on_counter, 0);
-
+	for (i = 0; i < (trim_num + 2); i++) {
+		Buffer_tmp[i]  = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, on_counter, 0);
+		/* pr_warn("#%d Buffer_on_value_L = %d\n", i, Buffer_tmp[i]); */
+	}
+	Buffer_on_value = GetAudioTrimOffsetAverage(Buffer_tmp, trim_num);
+	pr_warn("[Average %d times] Buffer_onL_value = %d\n", trim_num, Buffer_on_value);
 	mHplOffset = Buffer_on_value - Buffer_offl_value + Const_DC_OFFSET;
-	pr_warn("Buffer_on_value = %d Buffer_offl_value = %d mHplOffset = %d\n",
+	pr_warn("Buffer_on_value_L = %d Buffer_off_value_L = %d mHplOffset = %d\n",
 		Buffer_on_value, Buffer_offl_value, mHplOffset);
 
 	EnableTrimbuffer(false);
@@ -728,9 +765,14 @@ static void GetAudioTrimOffset(int channels)
 	EnableTrimbuffer(true);
 	/*msleep(1);    */
 	usleep_range(10 * 1000, 20 * 1000);
-	Buffer_on_value = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, on_counter, 0);
+	for (i = 0; i < (trim_num + 2); i++) {
+		Buffer_tmp[i]  = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, on_counter, 0);
+		/* pr_warn("#%d Buffer_on_value_R = %d\n", i, Buffer_tmp[i]); */
+	}
+	Buffer_on_value = GetAudioTrimOffsetAverage(Buffer_tmp, trim_num);
+	pr_warn("[Average %d times] Buffer_onR_value = %d\n", trim_num, Buffer_on_value);
 	mHprOffset = Buffer_on_value - Buffer_offr_value + Const_DC_OFFSET;
-	pr_warn("Buffer_on_value = %d Buffer_offr_value = %d mHprOffset = %d\n",
+	pr_warn("Buffer_on_value_R = %d Buffer_off_value_R = %d mHprOffset = %d\n",
 		Buffer_on_value, Buffer_offr_value, mHprOffset);
 
 	switch (channels) {
@@ -1068,11 +1110,14 @@ static int mtk_afe_routing_remove(struct platform_device *pdev)
 /* supend and resume function */
 static void SetAudMosiSuspend(bool bEnable)
 {
+#if defined(CONFIG_MTK_LEGACY)
 	int ret;
-#ifdef CONFIG_MTK_LEGACY
 	unsigned int pin_audmosi, pin_mode_audmosi;
+#endif
 
 	if (bEnable == true) {
+#if defined(CONFIG_MTK_LEGACY)
+		ret = GetGPIO_Info(3, &pin_audmosi, &pin_mode_audmosi);
 		if (ret < 0) {
 			pr_err("EnableAfe GetGPIO_Info FAIL3!!!\n");
 			return;
@@ -1081,21 +1126,22 @@ static void SetAudMosiSuspend(bool bEnable)
 		mt_set_gpio_dir(pin_audmosi, GPIO_DIR_IN);
 		mt_set_gpio_pull_select(pin_audmosi, GPIO_PULL_UP);
 		mt_set_gpio_pull_enable(pin_audmosi, GPIO_PULL_ENABLE);
+#else
+		AudDrv_GPIO_PMIC_Select(false);
+#endif
 	} else {
+#if defined(CONFIG_MTK_LEGACY)
 		ret = GetGPIO_Info(3, &pin_audmosi, &pin_mode_audmosi);
 		if (ret < 0) {
 			pr_err("EnableAfe GetGPIO_Info FAIL3!!!\n");
 			return;
 		}
+		mt_set_gpio_pull_enable(pin_audmosi, GPIO_PULL_DISABLE);
 		mt_set_gpio_mode(pin_audmosi, GPIO_MODE_01);
-	}
 #else
-	if (bEnable == true)
-		ret = 0;
-	else
-		ret = 1;
-
+		AudDrv_GPIO_PMIC_Select(true);
 #endif
+	}
 }
 
 static int mtk_routing_pm_ops_suspend(struct device *device)

@@ -312,7 +312,7 @@ static void SetVULBuffer(struct snd_pcm_substream *substream,
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	AFE_BLOCK_T *pblock = &VUL_Control_context->rBlock;
 
-	pr_warn("SetVULBuffer\n");
+	/* pr_warn("SetVULBuffer\n"); */
 	pblock->pucPhysBufAddr = runtime->dma_addr;
 	pblock->pucVirtBufAddr = runtime->dma_area;
 	pblock->u4BufferSize = runtime->dma_bytes;
@@ -337,7 +337,7 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 	int ret = 0;
 
-	pr_warn("mtk_capture_pcm_hw_params\n");
+	/* pr_warn("mtk_capture_pcm_hw_params\n"); */
 
 	dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
 	dma_buf->dev.dev = substream->pcm->card->dev;
@@ -362,9 +362,9 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 
 	SetVULBuffer(substream, hw_params);
 
-	pr_warn("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
+	/* pr_warn("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 		substream->runtime->dma_bytes, substream->runtime->dma_area,
-		(long)substream->runtime->dma_addr);
+		(long)substream->runtime->dma_addr); */
 	return ret;
 }
 
@@ -400,12 +400,12 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 
 #ifndef CAPTURE_FORCE_USE_DRAM
 	if (GetSramState() == SRAM_STATE_FREE) {
-		pr_warn("mtk_capture_pcm_open use sram\n");
+		/* pr_warn("mtk_capture_pcm_open use sram\n"); */
 		mtk_capture_hardware.buffer_bytes_max = GetCaptureSramSize();
 		SetSramState(SRAM_STATE_CAPTURE);
 		mCaptureUseSram = true;
 	} else {
-		pr_warn("mtk_capture_pcm_open use dram\n");
+		/* pr_warn("mtk_capture_pcm_open use dram\n"); */
 		mtk_capture_hardware.buffer_bytes_max = UL1_MAX_BUFFER_SIZE;
 	}
 #else
@@ -437,7 +437,7 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 	if (mCaptureUseSram == false)
 		AudDrv_Emi_Clk_On();
 
-	pr_warn("mtk_capture_pcm_open return\n");
+	/* pr_warn("mtk_capture_pcm_open return\n"); */
 	return 0;
 }
 

@@ -106,7 +106,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
-#ifdef CONFIG_MTK_LEGACY
 static unsigned int pin_extspkamp, pin_extspkamp_2, pin_vowclk, pin_audclk, pin_audmiso,
 	pin_audmosi, pin_i2s1clk, pin_i2s1dat, pin_i2s1mclk, pin_i2s1ws, pin_rcvspkswitch,
 	pin_hpswitchtoground;
@@ -115,7 +114,6 @@ static unsigned int pin_mode_audclk, pin_mode_audmosi, pin_mode_audmiso, pin_mod
 	pin_mode_i2s1ws, pin_mode_rcvspkswitch, pin_mode_hpswitchtoground;
 static unsigned int if_config1, if_config2, if_config3, if_config4, if_config5, if_config6,
 	if_config7, if_config8, if_config9, if_config10, if_config11, if_config12;
-#endif
 #endif
 
 static AFE_MEM_CONTROL_T *pMemControl;
@@ -941,6 +939,9 @@ static int Auddrv_OF_ParseGPIO(void *dev)
 			if_config12 = 0;
 			pr_err("hpswitchtoground-gpio get pin_mode fail!!!\n");
 		}
+		/* Disable hpswitchtoground if pin = 0 */
+		if (pin_hpswitchtoground == 0)
+			if_config12 = 0;
 
 		pr_warn("Auddrv_OF_ParseGPIO pin_audclk=%d, pin_audmiso=%d, pin_audmosi=%d\n",
 			pin_audclk, pin_audmiso, pin_audmosi);
@@ -955,6 +956,7 @@ static int Auddrv_OF_ParseGPIO(void *dev)
 	}
 	return 0;
 }
+#endif
 
 int GetGPIO_Info(int type, int *pin, int *pinmode)
 {
@@ -1063,7 +1065,7 @@ int GetGPIO_Info(int type, int *pin, int *pinmode)
 			*pin = pin_extspkamp_2 | 0x80000000;
 			*pinmode = pin_mode_extspkamp_2;
 		} else {
-			pr_err("GetGPIO_Info type %d fail!!!\n", type);
+			pr_debug("GetGPIO_Info type %d fail!!!\n", type);
 			*pin = -1;
 			*pinmode = -1;
 		}
@@ -1074,7 +1076,7 @@ int GetGPIO_Info(int type, int *pin, int *pinmode)
 			*pin = pin_rcvspkswitch | 0x80000000;
 			*pinmode = pin_mode_rcvspkswitch;
 		} else {
-			pr_err("GetGPIO_Info type %d fail!!!\n", type);
+			pr_debug("GetGPIO_Info type %d fail!!!\n", type);
 			*pin = -1;
 			*pinmode = -1;
 		}
@@ -1085,9 +1087,11 @@ int GetGPIO_Info(int type, int *pin, int *pinmode)
 			*pin = pin_hpswitchtoground | 0x80000000;
 			*pinmode = pin_mode_hpswitchtoground;
 		} else {
-			pr_err("GetGPIO_Info type %d fail!!!\n", type);
+			pr_debug("GetGPIO_Info type %d fail!!!\n", type);
 			*pin = -1;
 			*pinmode = -1;
+
+			return -1;
 		}
 		break;
 
@@ -1101,7 +1105,6 @@ int GetGPIO_Info(int type, int *pin, int *pinmode)
 	return 0;
 }
 EXPORT_SYMBOL(GetGPIO_Info);
-#endif
 
 #endif
 

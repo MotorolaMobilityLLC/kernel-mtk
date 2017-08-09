@@ -150,6 +150,9 @@ static void StartAudioFMI2SAWBHardware(struct snd_pcm_substream *substream)
 		m2ndI2SInAttribute.mI2S_WLEN = Soc_Aud_I2S_WLEN_WLEN_16BITS;
 		Set2ndI2SIn(&m2ndI2SInAttribute);
 
+		if (substream->runtime->rate == 48000)
+			SetI2SASRCConfig(true, 48000);	/* Covert from 32000 Hz to 48000 Hz */
+		else
 		SetI2SASRCConfig(true, 44100);  /* Covert from 32000 Hz to 44100 Hz */
 		SetI2SASRCEnable(true);
 
