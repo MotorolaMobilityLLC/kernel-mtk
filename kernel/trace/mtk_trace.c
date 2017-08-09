@@ -127,23 +127,27 @@ static __init int boot_trace_cmdline(char *str)
 }
 __setup("boot_trace", boot_trace_cmdline);
 
-void print_enabled_events(struct seq_file *m)
+void print_enabled_events(struct trace_buffer *buf, struct seq_file *m)
 {
 	struct ftrace_event_call *call;
 	struct ftrace_event_file *file;
 	struct trace_array *tr;
 
-	seq_puts(m, "# enabled events:");
-	/* mutex_lock(&event_mutex); */
-	list_for_each_entry(tr, &ftrace_trace_arrays, list) {
-		list_for_each_entry(file, &tr->events, list) {
-			call = file->event_call;
-			if (file->flags & FTRACE_EVENT_FL_ENABLED)
-				seq_printf(m, " %s:%s", call->class->system,
-					   ftrace_event_name(call));
-		}
+	if (buf->tr)
+		tr = buf->tr;
+	else
+		return;
+
+	if (tr->name != NULL)
+		seq_printf(m, "# instance: %s, enabled events:", tr->name);
+	else
+		seq_puts(m, "# enabled events:");
+	list_for_each_entry(file, &tr->events, list) {
+		call = file->event_call;
+		if (file->flags & FTRACE_EVENT_FL_ENABLED)
+			seq_printf(m, " %s:%s", call->class->system,
+				   ftrace_event_name(call));
 	}
-	/* mutex_unlock(&event_mutex); */
 	seq_puts(m, "\n");
 }
 

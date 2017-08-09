@@ -25,8 +25,9 @@ ssize_t tracing_resize_ring_buffer(struct trace_array *tr,
 				   unsigned long size, int cpu_id);
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
-void print_enabled_events(struct seq_file *m);
+struct trace_buffer;
+void print_enabled_events(struct trace_buffer *buf, struct seq_file *m);
 #else
-#define print_enabled_events(m)
+#define print_enabled_events(b, m)
 #endif/* CONFIG_TRACING && CONFIG_MTK_SCHED_TRACERS */
 #endif

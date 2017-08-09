@@ -2588,7 +2588,7 @@ static void print_event_info(struct trace_buffer *buf, struct seq_file *m)
 	seq_printf(m, "# entries-in-buffer/entries-written: %lu/%lu   #P:%d\n",
 		   entries, total, num_online_cpus());
 #ifdef CONFIG_MTK_SCHED_TRACERS
-	print_enabled_events(m);
+	print_enabled_events(buf, m);
 #endif
 	seq_puts(m, "#\n");
 }
