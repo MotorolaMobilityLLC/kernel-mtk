@@ -47,7 +47,7 @@ static void __iomem *g_mcumixed_base;
 /* FHCTL PLL Setting ID */
 /*********************************/
 #define PLL_SETTING_IDX__USER	(0x9)	/* Magic number, no any special indication */
-#define PLL_SETTING_IDX__DEF    (0x1)	/* Defaul Setting, Magic number, indicate table position 1. */
+#define PLL_SETTING_IDX__DEF    (0x1)	/* Default Setting, Magic number, indicate table position 1. */
 
 
 /*********************************/
@@ -61,11 +61,32 @@ static fh_pll_t g_fh_pll[FH_PLL_NUM] = { };	/* init during run time. */
 /*********************************/
 #define UNINIT_DDS             0x1FFFFF
 
+/* [For Everest] Should be setting according to HQA de-sense result.  */
+static const int g_pll_ssc_init_tbl[FH_PLL_NUM] = {
+	/*
+	 *  FH_SSC_DEF_DISABLE: Default SSC disable,
+	 *  FH_SSC_DEF_ENABLE_SSC: Default enable SSC.
+	 */
+	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE,
+};
+
 /* [For Everest] */
 static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
 	/* MCU FH PLL0 */
 	{
-	 /* freq, dt, df, upbnd, lowbnd, dds */
+	 /* magic_index, dt, df, upbnd, lowbnd, dds */
 	 {0, 0, 0, 0, 0, 0},	/* Means disable */
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0 ~ -0% */
 	 },
@@ -166,22 +187,24 @@ static unsigned long g_reg_pll_con0[FH_PLL_NUM];
 static unsigned long g_reg_pll_con1[FH_PLL_NUM];
 
 
-
 /*****************************************************************************/
 /* Function */
 /*****************************************************************************/
 
-/* caller: clk mgr */
 static void mt_fh_hal_default_conf(void)
 {
+	int id;
+
 	FH_MSG_DEBUG("%s", __func__);
 
-#if 0
-	/* [For Everest] */
-	freqhopping_config(FH_PLL2, PLL_SETTING_IDX__DEF, true);	/* MAINPLL */
-#endif
 
-
+	/* According to setting to enable PLL SSC during init FHCTL. */
+	for (id = 0; id < FH_PLL_NUM; id++) {
+		if (g_pll_ssc_init_tbl[id] == FH_SSC_DEF_ENABLE_SSC) {
+			FH_MSG("[Default ENABLE SSC] PLL_ID:%d", id);
+			freqhopping_config(id, PLL_SETTING_IDX__DEF, true);	/* MAINPLL */
+		}
+	}
 }
 
 static void fh_switch2fhctl(enum FH_PLL_ID pll_id, int i_control)
@@ -534,9 +557,78 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	return 0;
 }
 
+/* [For Everest] GPU CLK hopping, MFGPLL */
 static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
-{				/* mmpll dfs mode */
-	FH_BUG_ON(1);
+{
+	unsigned long flags = 0;
+	/* [For Everest] MFGPLL, confirmed with GPU CLK owner Owen.Chen */
+	const unsigned int pll_id = FH_PLL5;
+	const unsigned long reg_cfg = g_reg_cfg[pll_id];
+
+	if (g_initialize == 0) {
+		FH_MSG("(Warning) %s FHCTL isn't ready. ", __func__);
+		return -1;
+	}
+
+	FH_MSG("%s, current dds(MMPLL_CON1): 0x%x, target dds %d",
+	       __func__, (fh_read32(g_reg_pll_con1[pll_id]) & MASK21b), target_dds);
+
+	spin_lock_irqsave(&g_fh_lock, flags);
+
+	if (g_fh_pll[pll_id].fh_status == FH_FH_ENABLE_SSC) {
+		unsigned int pll_dds = 0;
+		unsigned int fh_dds = 0;
+
+		/* only when SSC is enable, turn off MEMPLL hopping */
+		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
+		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
+
+		pll_dds = (fh_read32(g_reg_dds[pll_id])) & MASK21b;
+		fh_dds = (fh_read32(g_reg_mon[pll_id])) & MASK21b;
+
+		FH_MSG(">p:f< %x:%x", pll_dds, fh_dds);
+
+		wait_dds_stable(pll_dds, g_reg_mon[pll_id], 100);
+	}
+
+
+	FH_MSG("target dds: 0x%x", target_dds);
+	mt_fh_hal_dvfs(pll_id, target_dds);
+
+	if (g_fh_pll[pll_id].fh_status == FH_FH_ENABLE_SSC) {
+		const struct freqhopping_ssc *p_setting =
+		    &g_pll_ssc_setting_tbl[pll_id][PLL_SETTING_IDX__DEF];
+
+		fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
+		fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
+
+		fh_sync_ncpo_to_fhctl_dds(pll_id);
+
+		FH_MSG("Enable mmpll SSC mode");
+		FH_MSG("DDS: 0x%08x", (fh_read32(g_reg_dds[pll_id]) & MASK21b));
+
+		fh_set_field(reg_cfg, MASK_FRDDSX_DYS, p_setting->df);
+		fh_set_field(reg_cfg, MASK_FRDDSX_DTS, p_setting->dt);
+
+		fh_write32(g_reg_updnlmt[pll_id],
+			   (PERCENT_TO_DDSLMT
+			    ((fh_read32(g_reg_dds[pll_id]) & MASK21b), p_setting->lowbnd) << 16));
+		FH_MSG("UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[pll_id]));
+
+		fh_switch2fhctl(pll_id, 1);
+
+		fh_set_field(reg_cfg, FH_FRDDSX_EN, 1);	/* enable SSC mode */
+		fh_set_field(reg_cfg, FH_FHCTLX_EN, 1);	/* enable hopping control */
+
+		FH_MSG("CFG: 0x%08x", fh_read32(reg_cfg));
+
+	}
+	spin_unlock_irqrestore(&g_fh_lock, flags);
+
+	return 0;
+
 	return 0;
 }
 

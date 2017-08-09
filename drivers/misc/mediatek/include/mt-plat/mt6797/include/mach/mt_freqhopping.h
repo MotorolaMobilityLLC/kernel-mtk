@@ -32,6 +32,12 @@ enum FH_FH_STATUS {
 	FH_FH_ENABLE_SSC,
 };
 
+enum FH_FH_PLL_SSC_DEF_STATUS {
+	FH_SSC_DEF_DISABLE = 0,
+	FH_SSC_DEF_ENABLE_SSC,
+};
+
+
 enum FH_PLL_STATUS {
 	FH_PLL_DISABLE = 0,
 	FH_PLL_ENABLE = 1
@@ -85,7 +91,6 @@ typedef struct {
 
 
 struct freqhopping_ssc {
-	unsigned int freq;	/* useless variable, just a legacy. */
 	unsigned int idx_pattern;
 	unsigned int dt;
 	unsigned int df;

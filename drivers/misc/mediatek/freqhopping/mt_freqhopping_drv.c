@@ -207,7 +207,7 @@ static int freqhopping_userdefine_proc_read(struct seq_file *m, void *v)
 
 	for (i = 0; i < g_drv_pll_count; ++i) {
 		seq_printf(m, "%10d  0x%08x  0x%08x  0x%08x  0x%08x  0x%08x\r\n",
-			   g_fh_drv_usr_def[i].freq, g_fh_drv_usr_def[i].dt, g_fh_drv_usr_def[i].df,
+			   0, g_fh_drv_usr_def[i].dt, g_fh_drv_usr_def[i].df,
 			   g_fh_drv_usr_def[i].upbnd, g_fh_drv_usr_def[i].lowbnd,
 			   g_fh_drv_usr_def[i].dds);
 	}
@@ -250,7 +250,7 @@ static ssize_t freqhopping_userdefine_proc_write(struct file *file, const char *
 	fh_ctl.ssc_setting.upbnd = p5;
 	fh_ctl.ssc_setting.lowbnd = p6;
 	fh_ctl.ssc_setting.dds = p7;
-	fh_ctl.ssc_setting.freq = 0;
+	/* fh_ctl.ssc_setting.freq = 0; */
 
 
 	if (p1 == FH_CMD_ENABLE) {
@@ -381,16 +381,13 @@ static ssize_t freqhopping_debug_proc_write(struct file *file, const char *buffe
 
 	n = sscanf(kbuf, "%x %x %x %x %x %x %x %x", &cmd, &p1, &p2, &p3, &p4, &p5, &p6, &p7);
 
-	/* ccyeh fh_ctl.opcode = p1; */
 	fh_ctl.pll_id = p2;
-	/* ccyeh removed fh_ctl.ssc_setting_id = p3; */
 	fh_ctl.ssc_setting.dds = p3;
 	fh_ctl.ssc_setting.df = p4;
 	fh_ctl.ssc_setting.dt = p5;
 	fh_ctl.ssc_setting.upbnd = p6;
 	fh_ctl.ssc_setting.lowbnd = p7;
-	fh_ctl.ssc_setting.freq = 0;
-
+	/* fh_ctl.ssc_setting.freq = 0; */
 
 	if (cmd < FH_CMD_INTERNAL_MAX_CMD)
 		mt_freqhopping_ioctl(NULL, cmd, (unsigned long)(&fh_ctl));
