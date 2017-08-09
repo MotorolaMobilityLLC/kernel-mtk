@@ -475,7 +475,7 @@ int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_siz
 		else 
 			pClient = g_pstI2Cclient2;
 
-		speed_timing = 400000;
+		speed_timing = 300000;
 		/* PK_DBG("Addr : 0x%x,Val : 0x%x\n",a_u2Addr,a_u4Data); */
 		
 		msg[0].addr = i2cId >> 1;
@@ -553,7 +553,7 @@ int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId)
     char puSendCmd[6] = {(char)(a_u2Addr >> 8) , (char)(a_u2Addr & 0xFF) ,
     0 , 0 , 0 , 0};
 
-/* PK_DBG("Addr : 0x%x,Val : 0x%x\n",a_u2Addr,a_u4Data); */
+	/* PK_DBG("Addr : 0x%x,Val : 0x%x\n",a_u2Addr,a_u4Data); */
 
     /* KD_IMGSENSOR_PROFILE_INIT(); */
     spin_lock(&kdsensor_drv_lock);
@@ -615,41 +615,71 @@ int iWriteReg(u16 a_u2Addr , u32 a_u4Data , u32 a_u4Bytes , u16 i2cId)
 int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId)
 {
     int  i4RetValue = 0;
-    int retry = 3;
-	u32 speed_timing;
+
+	if (g_IsSearchSensor != 1){
+		int retry = 3;
+		u32 speed_timing;
+		
+		struct i2c_client *pClient = NULL;
 	
-	struct i2c_client *pClient = NULL;
-
-	if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1)
-		pClient = g_pstI2Cclient;
-	else 
-		pClient = g_pstI2Cclient2;
-
-	speed_timing = 400000;
-
-    /* PK_DBG("Addr : 0x%x,Val : 0x%x\n",a_u2Addr,a_u4Data); */
-
-	/* KD_IMGSENSOR_PROFILE_INIT(); */
-	spin_lock(&kdsensor_drv_lock);
-	pClient->addr = (i2cId >> 1);
+		if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1)
+			pClient = g_pstI2Cclient;
+		else 
+			pClient = g_pstI2Cclient2;
+	
+		speed_timing = 400000;
+	
+		/* PK_DBG("Addr : 0x%x,Val : 0x%x\n",a_u2Addr,a_u4Data); */
+	
+		/* KD_IMGSENSOR_PROFILE_INIT(); */
+		spin_lock(&kdsensor_drv_lock);
+		pClient->addr = (i2cId >> 1);
 #ifdef CONFIG_MTK_I2C_EXTENSION
-	pClient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_DMA_FLAG);
+		pClient->ext_flag = (g_pstI2Cclient->ext_flag)&(~I2C_DMA_FLAG);
 #endif
-	spin_unlock(&kdsensor_drv_lock);
-	/*	*/
-	do {
-		i4RetValue = i2c_master_send(pClient, a_pSendData, a_sizeSendData);
-		if (i4RetValue != a_sizeSendData) {
-			PK_ERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x, Data = 0x%x\n", a_pSendData[0], a_pSendData[1]);
-			i4RetValue = -1;
+		spin_unlock(&kdsensor_drv_lock);
+		/*	*/
+		do {
+			i4RetValue = i2c_master_send(pClient, a_pSendData, a_sizeSendData);
+			if (i4RetValue != a_sizeSendData) {
+				PK_ERR("[CAMERA SENSOR] I2C send failed!!, Addr = 0x%x, Data = 0x%x\n", a_pSendData[0], a_pSendData[1]);
+				i4RetValue = -1;
+			}
+			else {
+				i4RetValue = 0;
+				break;
+			}
+			uDELAY(50);
+		} while ((retry--) > 0);
+		/* KD_IMGSENSOR_PROFILE("iWriteRegI2C"); */
+	}
+	else
+	{
+		u32 speed_timing;
+		int ret = 0;
+		u16 i2c_msg_size;
+		struct i2c_msg msg[2];
+		struct i2c_client *pClient = NULL;
+		
+		if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1)
+			pClient = g_pstI2Cclient;
+		else 
+			pClient = g_pstI2Cclient2;
+		
+		speed_timing = 300000;
+		
+		/* PK_DBG("Addr : 0x%x,Val : 0x%x\n",a_u2Addr,a_u4Data); */
+		msg[0].addr = i2cId >> 1;
+		msg[0].flags = 0; /*write flag = 0*/
+		msg[0].len = a_sizeSendData;
+		msg[0].buf = a_pSendData;
+		i2c_msg_size = 1;
+		ret = mtk_i2c_transfer(pClient->adapter, msg, i2c_msg_size, I2C_A_FILTER_MSG, speed_timing);
+		if (ret != i2c_msg_size) {
+			PK_ERR("[iWriteRegI2CTiming]I2C failed(0x%x)! Data[0]=0x%x, Data[1]=0x%x,timing(0=%d)\n", 
+				ret, a_pSendData[0], a_pSendData[1],speed_timing);
 		}
-		else {
-			i4RetValue = 0;
-			break;
-		}
-		uDELAY(50);
-	} while ((retry--) > 0);
-	/* KD_IMGSENSOR_PROFILE("iWriteRegI2C"); */
+	}
 
     return i4RetValue;
 }
