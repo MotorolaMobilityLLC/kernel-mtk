@@ -554,6 +554,7 @@ static int tpd_registration(void *client)
 		/* TP resolution == LCD resolution, no need to match resolution when initialized fail */
 		gt1x_abs_x_max = 0;
 		gt1x_abs_y_max = 0;
+		return 0;
 	}
 
 	thread = kthread_run(tpd_event_handler, 0, TPD_DEVICE);
@@ -613,7 +614,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		return err;
 	}
 	GTP_INFO("tpd_i2c_probe start.wait_event_interruptible");
-	wait_event_interruptible(init_waiter, check_flag == true);
+	wait_event_interruptible_timeout(init_waiter, check_flag == true, 5 * HZ);
 	GTP_INFO("tpd_i2c_probe end.wait_event_interruptible");
 /*
 	do {
