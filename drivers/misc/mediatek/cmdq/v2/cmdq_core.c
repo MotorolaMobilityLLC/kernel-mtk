@@ -230,6 +230,14 @@ void cmdq_core_delay_check_unlock(uint64_t engineFlag, const uint64_t enginesNot
 	}
 }
 
+uint32_t cmdq_core_get_thread_prefetch_size(int32_t thread)
+{
+	if (thread < 0 || thread >= CMDQ_MAX_THREAD_COUNT)
+		return 0;
+
+	return g_dts_setting.prefetch_size[thread];
+}
+
 cmdqDTSDataStruct *cmdq_core_get_whole_DTS_Data(void)
 {
 	return &gCmdqDtsData;
@@ -8108,4 +8116,3 @@ bool cmdq_core_is_feature_off(CMDQ_FEATURE_TYPE_ENUM featureOption)
 {
 	return CMDQ_FEATURE_OFF_VALUE == cmdq_core_get_feature(featureOption);
 }
-

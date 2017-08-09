@@ -3251,6 +3251,25 @@ void testcase_prefetch_round(uint32_t loopCount, uint32_t cmdCount, bool withMas
 	CMDQ_MSG("%s END\n", __func__);
 }
 
+void testcase_prefetch_from_DTS(void)
+{
+	int32_t i, j;
+	uint32_t thread_prefetch_size;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	for (i = 0; i < CMDQ_MAX_THREAD_COUNT; i++) {
+		thread_prefetch_size = cmdq_core_get_thread_prefetch_size(i);
+
+		for (j = 100; j <= (thread_prefetch_size + 60); j += 40) {
+			testcase_prefetch_round(1, j, false, true);
+			testcase_prefetch_round(1, j, false, false);
+		}
+	}
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
 typedef enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_ALL = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -3267,12 +3286,7 @@ static void testcase_general_handling(int32_t testID)
 {
 	switch (testID) {
 	case 121:
-		testcase_prefetch_round(1, 100, false, true);
-		testcase_prefetch_round(1, 100, false, false);
-		testcase_prefetch_round(1, 160, false, true);
-		testcase_prefetch_round(1, 160, false, false);
-		testcase_prefetch_round(1, 180, false, true);
-		testcase_prefetch_round(1, 180, false, false);
+		testcase_prefetch_from_DTS();
 		break;
 	case 120:
 		testcase_notify_and_delay_submit(16);

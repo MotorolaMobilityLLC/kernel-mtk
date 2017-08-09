@@ -808,6 +808,7 @@ extern "C" {
  */
 	void cmdq_core_init_DTS_data(void);
 	cmdqDTSDataStruct *cmdq_core_get_whole_DTS_Data(void);
+	uint32_t cmdq_core_get_thread_prefetch_size(int32_t thread);
 
 /**
  * Get and set HW event form device tree

@@ -2043,6 +2043,8 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			seninf_6_fifo_full = <396>;
 			seninf_7_fifo_full = <397>;
 			apxgpt2_count = <0x10008028>;
+			max_prefetch_cnt = <4>;
+			prefetch_size = <280 32 32 32>;
 			sram_share_cnt = <2>;
 			sram_share_engine = <11 12>;
 			sram_share_event = <460 461>;
