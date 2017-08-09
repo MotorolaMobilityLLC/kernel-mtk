@@ -20,6 +20,7 @@ obj-$(CONFIG_ARCH_MT6735) += mt_spm_dpidle.o
 obj-$(CONFIG_ARCH_MT6735M) += mt_spm_dpidle.o
 obj-$(CONFIG_ARCH_MT6735) += mt_spm_fs.o
 obj-$(CONFIG_ARCH_MT6735) += mt_spm_sodi.o
+obj-$(CONFIG_ARCH_MT6735M) += mt_spm_sodi.o
 obj-y += mt_spm_internal.o
 obj-y += mt_spm_mtcmos.o
 obj-y += mt_pbm.o
