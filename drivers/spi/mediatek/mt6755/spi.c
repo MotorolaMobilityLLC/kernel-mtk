@@ -1337,11 +1337,12 @@ static int mt_spi_setup(struct spi_device *spidev)
 
 	struct mt_chip_conf *chip_config = NULL;
 
+	if (!spidev)
+		dev_err(&spidev->dev, "spi device %s: error.\n", dev_name(&spidev->dev));
+
 	master = spidev->master;
 	ms = spi_master_get_devdata(master);
 
-	if (!spidev)
-		dev_err(&spidev->dev, "spi device %s: error.\n", dev_name(&spidev->dev));
 	if (spidev->chip_select >= master->num_chipselect) {
 		dev_err(&spidev->dev, "spi device chip select excesses the number of master's chipselect number.\n");
 		return -EINVAL;
