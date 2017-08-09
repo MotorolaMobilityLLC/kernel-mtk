@@ -25,6 +25,9 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #define PPM_HW_OCP_SUPPORT		(0)
 #endif
 #define PPM_DLPT_ENHANCEMENT		(1)
+#if PPM_DLPT_ENHANCEMENT
+#define DYNAMIC_TABLE2REAL_PERCENTAGE	(58)
+#endif
 
 /* DLPT mode */
 #define PPM_DLPT_DEFAULT_MODE	(HYBRID_MODE)

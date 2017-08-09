@@ -68,7 +68,12 @@ unsigned int mt_ppm_thermal_get_cur_power(void)
 {
 	struct ppm_cluster_status *cluster_status;
 	struct cpumask cluster_cpu, online_cpu;
-	int i, pwr_idx;
+	int i;
+#if PPM_DLPT_ENHANCEMENT
+	unsigned int power;
+#else
+	int power;
+#endif
 
 	cluster_status = kcalloc(ppm_main_info.cluster_num, sizeof(*cluster_status), GFP_KERNEL);
 	if (!cluster_status)
@@ -90,9 +95,13 @@ unsigned int mt_ppm_thermal_get_cur_power(void)
 			i, cluster_status[i].core_num, cluster_status[i].freq_idx);
 	}
 
-	pwr_idx = ppm_find_pwr_idx(cluster_status);
-
-	return (pwr_idx == -1) ? mt_ppm_thermal_get_max_power() : (unsigned int)pwr_idx;
+#if PPM_DLPT_ENHANCEMENT
+	power = ppm_calc_total_power(cluster_status, ppm_main_info.cluster_num, 100);
+	return (power == 0) ? mt_ppm_thermal_get_max_power() : power;
+#else
+	power = ppm_find_pwr_idx(cluster_status);
+	return (power == -1) ? mt_ppm_thermal_get_max_power() : (unsigned int)power;
+#endif
 }
 
 static void ppm_thermal_update_limit_cb(enum ppm_power_state new_state)
