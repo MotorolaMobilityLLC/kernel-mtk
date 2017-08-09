@@ -647,7 +647,8 @@ static ssize_t mt6605_dev_read(struct file *filp, char __user *buf,
 		 ret, mt_nfc_get_gpio_value(mt6605_dev->irq_gpio));*/
 
 	if (ret < 0) {
-		pr_debug("%s: i2c_master_recv returned %d\n", __func__, ret);
+		pr_debug("%s: i2c_master_recv returned %d, irq status=%d\n", __func__,
+			 ret, mt_nfc_get_gpio_value(mt6605_dev->irq_gpio));
 		return ret;
 	}
 
