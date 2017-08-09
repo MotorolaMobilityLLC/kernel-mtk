@@ -20,6 +20,7 @@
 #include "mach/irqs.h"
 #include "mt_ocp.h"
 #include "mt_idvfs.h"
+#include "mt_cpufreq.h"
 
 #define TAG     "[mt_ocp]"
 
@@ -590,6 +591,49 @@ else
 
 return 0;
 }
+
+
+int BigOCPAvgPwrGet(unsigned long long *AvgLkg, unsigned long long *AvgAct, unsigned int Count)
+{
+
+int i, Temp, Leakage, Total;
+
+*AvgLkg = 0;
+*AvgAct = 0;
+Leakage = 0;
+Total = 0;
+
+for (i = 0; i < Count; i++) {
+	mt_secure_call_ocp(MTK_SIP_KERNEL_BIGOCPCAPTURE1, 1, 0, 15);
+
+	if (ocp_read_field(OCPAPBSTATUS01, 0:0) == 1) {
+		Temp = ocp_read(OCPAPBSTATUS01);
+		/* CapTotLkg: shit 8 bit -> Q8.12 -> integer  (mA/mW) */
+		Leakage = (((Temp & 0x0FFFFF00) >> 8) * 1000) >> 12;
+		/* TotScaler */
+		if (ocp_read_field(OCPAPBCFG24, 25:25) == 1)
+			Leakage = Leakage >> (GET_BITS_VAL_OCP(2:0, ~ocp_read_field(OCPAPBCFG24, 24:22)) + 1);
+		else
+			Leakage = Leakage << (ocp_read_field(OCPAPBCFG24, 24:22));
+
+		/* CapTotAct:  Q8.12 -> integer  */
+		Temp = ocp_read(OCPAPBSTATUS02);
+		Total = ((Temp & 0x000FFFFF) * 1000) >> 12;
+
+		if (HW_API_DEBUG_ON)
+			ocp_info("ocp: big total_pwr=%d Lk_pwr=%d\n", Total, Leakage);
+	}
+	*AvgLkg = *AvgLkg + Leakage;
+	*AvgAct = *AvgAct + Total;
+}
+
+*AvgLkg = *AvgLkg/Count;
+*AvgAct = *AvgAct/Count;
+
+return 0;
+}
+
+
 
 /* Little CPU */
 int LittleOCPConfig(int Cluster, int VOffInmV, int VStepInuV)
@@ -3907,8 +3951,13 @@ int i;
 			seq_printf(m, "Cluster 2 CaptureValid = %d\n", ocp_hqa[2][i].CaptureValid);
 			seq_printf(m, "Cluster 2 CapTotAct    = %d mA(mW)\n", ocp_hqa[2][i].CapTotAct);
 			seq_printf(m, "Cluster 2 CapMAFAct    = %d mA(mW)\n", ocp_hqa[2][i].CapMAFAct);
-			seq_printf(m, "Cluster 2 CGAvgValid   = %d\n", ocp_hqa[2][i].CGAvgValid);
-			seq_printf(m, "Cluster 2 CGAvg        = %llu %%\n", ocp_hqa[2][i].CGAvg);
+			if (ocp_hqa[2][i].CGAvgValid == 1) {
+				seq_printf(m, "Cluster 2 CGAvgValid   = %d\n", ocp_hqa[2][i].CGAvgValid);
+				seq_printf(m, "Cluster 2 CGAvg        = %llu %%\n", ocp_hqa[2][i].CGAvg);
+			} else {
+				seq_printf(m, "Cluster 2 AvgAct       = %llu mA(mW)\n", ocp_hqa[2][i].CGAvg);
+				seq_printf(m, "Cluster 2 AvgLkg       = %llu mA\n", ocp_hqa[2][i].AvgLkg);
+			}
 			seq_printf(m, "Cluster 2 TopRawLkg    = %d * 1.5uA\n", ocp_hqa[2][i].TopRawLkg);
 			seq_printf(m, "Cluster 2 CPU0RawLkg   = %d * 1.5uA\n", ocp_hqa[2][i].CPU0RawLkg);
 			seq_printf(m, "Cluster 2 CPU1RawLkg   = %d * 1.5uA\n", ocp_hqa[2][i].CPU1RawLkg);
@@ -3939,6 +3988,11 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 
 					i = 0;
 					while (i < hqa_test) {
+						/* This test must disable PPM*/
+						LittleOCPDVFSSet(0, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000,
+								mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100);
+						LittleOCPDVFSSet(1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000,
+								mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100);
 						LittleOCPCapture(0, 1, 1, 0, 15);
 						LittleOCPCapture(1, 1, 1, 0, 15);
 						LittleOCPAvgPwr(0, 1, val[1]);
@@ -3987,7 +4041,6 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 					BigOCPClkAvg(1, val[1]);
 					while (j < hqa_test) {
 						BigOCPCapture(1, 1, 0, 15);
-
 						mdelay(val[2]);
 
 						BigOCPCaptureStatus(&Leakage, &Total, &ClkPct);
@@ -4014,8 +4067,26 @@ if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) > 0) {
 					}
 				}
 				break;
-		default:
+		case 3:
+				if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) == 4) {
+					hqa_test = val[0];
+					if (hqa_test > 10000)
+						hqa_test = 10000;
+
+					j = 0;
+					while (j < hqa_test) {
+						BigOCPAvgPwrGet(&AvgLkg, &AvgAct, val[1]);
+						ocp_hqa[2][j].CGAvg = AvgAct;
+						ocp_hqa[2][j].AvgLkg = AvgLkg;
+
+						mdelay(val[2]);
+
+						j++;
+					}
+				}
 				break;
+		default:
+			break;
 		}
 }
 	free_page((unsigned long)buf);

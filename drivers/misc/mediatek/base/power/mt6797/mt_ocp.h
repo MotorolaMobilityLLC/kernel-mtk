@@ -260,6 +260,7 @@ extern int BigOCPClkAvg(int EnDis, int CGAvgSel);
 extern int BigOCPClkAvgStatus(unsigned int *CGAvg);
 extern int BigOCPCaptureRawLkgStatus(int *TopRawLkg, int *CPU0RawLkg, int *CPU1RawLkg);
 extern int BigOCPMAFAct(unsigned int *CapMAFAct);
+extern int BigOCPAvgPwrGet(unsigned long long *AvgLkg, unsigned long long *AvgAct, unsigned int Count);
 
 extern int LittleOCPConfig(int Cluster, int VOffInmV, int VStepInuV);
 extern int LittleOCPSetTarget(int Cluster, int Target);
