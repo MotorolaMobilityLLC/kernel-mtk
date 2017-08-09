@@ -1,7 +1,6 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
-#include <linux/rtpm_prio.h>
 #include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
@@ -13,7 +12,6 @@
 #include <linux/string.h>
 #include <linux/uaccess.h>
 #include <linux/spinlock.h>
-#include <linux/rtpm_prio.h>
 #include <linux/rtc.h>
 #include <linux/cpu.h>
 #include <linux/hrtimer.h>
