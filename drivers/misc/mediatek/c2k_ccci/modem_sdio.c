@@ -132,6 +132,8 @@ int sdio_modem_get_ccmni_ch(int md_id, int ccmni_idx, struct ccmni_ch *channel)
 		channel->rx_ack = 0xFF;
 		channel->tx = ccmni_idx;
 		channel->tx_ack = 0xFF;
+		channel->dl_ack = ccmni_idx;
+		channel->multiq = 0;
 	} else {
 		pr_debug("[ccci%d/net] invalid ccmni index=%d\n", md_id,
 			 ccmni_idx);
@@ -1664,7 +1666,7 @@ static void sdio_write_ccmni_work(struct work_struct *work)
 				LOGPRT(LOG_INFO, "ccmni(ch:%d) is resumed.\n",
 				       tx_ch);
 				ccmni_ops.md_state_callback(SDIO_MD_ID, tx_ch,
-							    TX_IRQ);
+							    TX_IRQ, 0);
 				ccmni_port->tx_state = CCMNI_TX_READY;
 			} else {
 				LOGPRT(LOG_INFO,
@@ -5444,7 +5446,7 @@ static struct sdio_driver modem_sdio_driver = {
 
 #if ENABLE_CCMNI
 
-int sdio_modem_ccmni_send_pkt(int md_id, int tx_ch, void *data)
+int sdio_modem_ccmni_send_pkt(int md_id, int ccmni_idx, void *data, int is_ack)
 {
 	struct sdio_modem *modem = NULL;
 	struct sdio_modem_port *ccmni_port = NULL;
@@ -5455,6 +5457,8 @@ int sdio_modem_ccmni_send_pkt(int md_id, int tx_ch, void *data)
 	unsigned int data_len;
 	unsigned int todo;
 	int chars_in_fifo = 0;
+	struct ccmni_ch *channel = ccmni_ops.get_ch(md_id, ccmni_idx);
+	int tx_ch = is_ack ? channel->dl_ack : channel->tx;
 
 	LOGPRT(LOG_DEBUG, "%s: enter...\n", __func__);
 	if (md_id != SDIO_MD_ID) {
@@ -5518,7 +5522,7 @@ int sdio_modem_ccmni_send_pkt(int md_id, int tx_ch, void *data)
 		/* stop tx queue */
 		LOGPRT(LOG_INFO, "ccmni port %d is stopped.\n",
 			       ccmni_port->index);
-		ccmni_ops.md_state_callback(md_id, tx_ch, TX_FULL);
+		ccmni_ops.md_state_callback(md_id, tx_ch, TX_FULL, 0);
 		ccmni_port->tx_state = CCMNI_TX_STOP;
 
 		spin_unlock_irqrestore(&ccmni_port->tx_state_lock, flags);
