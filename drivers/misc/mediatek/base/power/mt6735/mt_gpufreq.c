@@ -36,12 +36,12 @@
 #include <asm/io.h>
 
 #include "mach/mt_clkmgr.h"
+#include "mach/mt_freqhopping.h"
 #include "mt_cpufreq.h"
 #include "mt_gpufreq.h"
 #include "sync_write.h"
 #include "mt_static_power.h"
 #ifndef GPUDVFS_WORKAROUND_FOR_GIT
-#include "mach/mt_freqhopping.h"
 #include "mach/mt_thermal.h"
 #endif
 #include "upmu_common.h"
@@ -50,6 +50,7 @@
 #include "mach/mt_pbm.h"
 #include "mt_vcore_dvfs.h"
 #include "mt_ptp.h"
+#include "mt_devinfo.h"
 
 
 /**************************************************
@@ -322,11 +323,12 @@ static void _mt_gpufreq_aee_init(void)
  ***************************************/
 static unsigned int _mt_gpufreq_get_dvfs_table_type(void)
 {
-#ifdef GPUDVFS_WORKAROUND_FOR_GIT
-	return 1;
-#else
 	unsigned int type = 0;
+#ifdef GPUDVFS_WORKAROUND_FOR_GIT
+	unsigned int gpu_550m_enable = 0;
+#else
 	unsigned int gpu_550m_enable = is_have_550();
+#endif
 
 	mt_gpufreq_dvfs_mmpll_spd_bond = (get_devinfo_with_index(GPUFREQ_EFUSE_INDEX) >> 12) & 0x7;
 
@@ -422,7 +424,6 @@ static unsigned int _mt_gpufreq_get_dvfs_table_type(void)
 	}
 
 	return type;
-#endif
 }
 
 #ifdef MT_GPUFREQ_INPUT_BOOST
@@ -748,6 +749,8 @@ static int _mt_setup_gpufreqs_table(struct mt_gpufreq_table_info *freqs, int num
 #ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		mt_gpufreqs[i].gpufreq_volt =
 		    _mt_gpufreq_pmic_wrap_to_volt(get_vcore_ptp_volt(freqs[i].gpufreq_volt * 10));
+#else
+		 mt_gpufreqs[i].gpufreq_volt = freqs[i].gpufreq_volt;
 #endif
 
 		mt_gpufreqs_default[i].gpufreq_khz = freqs[i].gpufreq_khz;
@@ -1485,7 +1488,9 @@ int mt_gpufreq_target(unsigned int idx)
 	mutex_lock(&mt_gpufreq_lock);
 
 	if (mt_gpufreq_ready == false) {
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		gpufreq_warn("GPU DVFS not ready!\n");
+#endif
 		mutex_unlock(&mt_gpufreq_lock);
 		return -ENOSYS;
 	}
@@ -1659,7 +1664,9 @@ int mt_gpufreq_voltage_enable_set(unsigned int enable)
 	mutex_lock(&mt_gpufreq_lock);
 
 	if (mt_gpufreq_ready == false) {
+#ifndef GPUDVFS_WORKAROUND_FOR_GIT
 		gpufreq_warn("@%s: GPU DVFS not ready!\n", __func__);
+#endif
 		mutex_unlock(&mt_gpufreq_lock);
 		return -ENOSYS;
 	}

@@ -47,14 +47,15 @@
 /* project includes */
 #ifndef CPUDVFS_WORKAROUND_FOR_GIT
 #include "mach/mt_thermal.h"
-#include "mach/mt_freqhopping.h"
 #include "mach/mt_hotplug_strategy.h"
 #endif
 /*#include "mach/mt_spm_idle.h"*/
 #include "mach/mt_clkmgr.h"
+#include "mach/mt_freqhopping.h"
 #include "mt_ptp.h"
 #include "mt_static_power.h"
 #include "mach/mt_pbm.h"
+#include "mt_devinfo.h"
 
 #ifndef __KERNEL__
 #include "freqhop_sw.h"
@@ -63,9 +64,7 @@
 #include "mt_pmic_wrap.h"
 #include "efuse.h"	/* for SLT efuse check */
 #else
-#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 #include "mt_spm.h"
-#endif
 #include "upmu_common.h"
 #include "mach/upmu_sw.h"
 #include "mach/upmu_hw.h"
@@ -907,11 +906,7 @@ static enum mt_cpu_dvfs_id _get_cpu_dvfs_id(unsigned int cpu_id)
 static unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = 0;
-#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 	unsigned int cpu_spd_bond = _GET_BITS_VAL_(2:0, get_devinfo_with_index(CPUFREQ_EFUSE_INDEX));
-#else
-	unsigned int cpu_spd_bond = 0;
-#endif
 
 	cpufreq_info("@%s: efuse cpu_spd_bond = 0x%x\n", __func__, cpu_spd_bond);
 
@@ -1069,7 +1064,6 @@ static void _mt_cpufreq_aee_init(void)
 
 static int _mt_cpufreq_set_spm_dvfs_ctrl_volt(u32 value)
 {
-#ifndef CPUDVFS_WORKAROUND_FOR_GIT
 #define MAX_RETRY_COUNT (100)
 
 	u32 ap_dvfs_con;
@@ -1101,7 +1095,7 @@ static int _mt_cpufreq_set_spm_dvfs_ctrl_volt(u32 value)
 	}
 
 	FUNC_EXIT(FUNC_LV_HELP);
-#endif
+
 	return 0;
 }
 
