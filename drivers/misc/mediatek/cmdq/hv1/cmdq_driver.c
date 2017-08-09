@@ -484,13 +484,13 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 	case CMDQ_IOCTL_LOCK_MUTEX:
 		mutex = cmdqMutexAcquire();
 		if (-1 == mutex)
-			return -EFAULT;
+			return -IOCTL_RET_LOCK_MUTEX_FAIL;
 
 
 		if (copy_to_user((void *)param, &mutex, sizeof(int))) {
 			CMDQ_ERR("Copy mutex number to user failed\n");
 			cmdqMutexRelease(mutex);
-			return -EFAULT;
+			return -IOCTL_RET_COPY_MUTEX_NUM_TO_USER_FAIL;
 		}
 		/* register mutex into file node data */
 		pNode = (struct cmdqFileNodeStruct *)pFile->private_data;
@@ -503,12 +503,12 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 	case CMDQ_IOCTL_UNLOCK_MUTEX:
 		if (copy_from_user(&mutex, (void *)param, sizeof(int))) {
 			CMDQ_ERR("Copy mutex number from user failed\n");
-			return -EFAULT;
+			return -IOCLT_RET_COPY_MUTEX_NUM_FROM_USER_FAIL;
 		}
 
 		status = cmdqMutexRelease(mutex);
 		if (status < 0)
-			return -EFAULT;
+			return -IOCTL_RET_RELEASE_MUTEX_FAIL;
 
 
 		if (-1 != mutex) {
@@ -521,43 +521,43 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		break;
 	case CMDQ_IOCTL_EXEC_COMMAND:
 		if (copy_from_user(&command, (void *)param, sizeof(struct cmdqCommandStruct)))
-			return -EFAULT;
+			return -IOCTL_RET_COPY_EXEC_CMD_FROM_USER_FAIL;
 
 		if (cmdqCoreIsEarlySuspended() && (CMDQ_SCENARIO_USER_MDP == command.scenario))
-			return -EFAULT;
+			return -IOCTL_RET_IS_SUSPEND_WHEN_EXEC_CMD;
 
 
 		/* insert private_data for resource reclaim */
 		command.privateData = (cmdqU32Ptr_t) pFile->private_data;
 
 		if (cmdq_driver_process_command_request(&command))
-			return -EFAULT;
+			return -IOCTL_RET_PROCESS_CMD_REQUEST_FAIL;
 
 
 		break;
 	case CMDQ_IOCTL_QUERY_USAGE:
 		if (cmdqCoreQueryUsage(count))
-			return -EFAULT;
+			return -IOCLT_RET_QUERY_USAGE_FAIL;
 
 
 		if (copy_to_user((void *)param, count, sizeof(int32_t) * CMDQ_MAX_ENGINE_COUNT)) {
 			CMDQ_ERR("CMDQ_IOCTL_QUERY_USAGE copy_to_user failed\n");
-			return -EFAULT;
+			return -IOCTL_RET_COPY_USAGE_TO_USER_FAIL;
 		}
 		break;
 	case CMDQ_IOCTL_ASYNC_JOB_EXEC:
 		if (copy_from_user(&job, (void *)param, sizeof(struct cmdqJobStruct)))
-			return -EFAULT;
+			return -IOCTL_RET_COPY_ASYNC_JOB_EXEC_FROM_USER_FAIL;
 
 		if (cmdqCoreIsEarlySuspended() && (CMDQ_SCENARIO_USER_MDP == job.command.scenario)) {
 			CMDQ_ERR("CMDQ_IOCTL_ASYNC_JOB_EXEC suspended, return\n");
-			return -EFAULT;
+			return -IOCTL_RET_IS_SUSPEND_WHEN_ASYNC_JOB_EXEC;
 		}
 
 		/* not support secure path for async ioctl yet */
 		if (true == job.command.secData.isSecure) {
 			CMDQ_ERR("not support secure path for CMDQ_IOCTL_ASYNC_JOB_EXEC\n");
-			return -EFAULT;
+			return -IOCTL_RET_NOT_SUPPORT_SEC_PATH_FOR_ASYNC_JOB_EXEC;
 		}
 
 		/* backup */
@@ -569,7 +569,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		/* create kernel-space address buffer */
 		status = cmdq_driver_create_reg_address_buffer(&job.command);
 		if (0 != status)
-			return status;
+			return -IOCTL_RET_CREATE_REG_ADDR_BUF_FAIL;
 
 		/* scenario id fixup */
 		if ((CMDQ_SCENARIO_USER_DISP_COLOR == job.command.scenario)
@@ -595,29 +595,28 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			job.hJob = (unsigned long)pTask;
 			if (copy_to_user((void *)param, (void *)&job, sizeof(struct cmdqJobStruct))) {
 				CMDQ_ERR("CMDQ_IOCTL_ASYNC_JOB_EXEC copy_to_user failed\n");
-
-				return -EFAULT;
+				return -IOCLT_RET_COPY_ASYNC_JOB_EXEC_TO_USER_FAIL;
 			}
 		} else {
 			job.hJob = (unsigned long)NULL;
-			return -EFAULT;
+			return -IOCTL_RET_SUBMIT_TASK_ASYNC_FAILED;
 		}
 		break;
 	case CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE:
 		if (copy_from_user(&jobResult, (void *)param, sizeof(jobResult))) {
 			CMDQ_ERR("copy_from_user jobResult fail\n");
-			return -EFAULT;
+			return -IOCTL_RET_COPY_ASYNC_JOB_WAIT_AND_CLOSE_FROM_USER_FAIL;
 		}
 
 		if (cmdqCoreIsEarlySuspended() && (CMDQ_SCENARIO_USER_MDP == job.command.scenario)) {
 			CMDQ_ERR("CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE suspended, return\n");
-			return -EFAULT;
+			return -IOCTL_RET_IS_SUSPEND_WHEN_ASYNC_JOB_WAIT_AND_CLOSE;
 		}
 
 		/* verify job handle */
 		if (!cmdqIsValidTaskPtr((struct TaskStruct *)(unsigned long)jobResult.hJob)) {
 			CMDQ_ERR("invalid task ptr = 0x%llx\n", jobResult.hJob);
-			return -EFAULT;
+			return -IOCTL_RET_INVALID_TASK_PTR;
 		}
 		pTask = (struct TaskStruct *)(unsigned long)jobResult.hJob;
 
@@ -630,17 +629,17 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			jobResult.regValue.count = pTask->regCountUserSpace;
 			if (copy_to_user((void *)param, (void *)&jobResult, sizeof(jobResult))) {
 				CMDQ_ERR("copy_to_user fail, line=%d\n", __LINE__);
-				return -EINVAL;
+				return -IOCTL_RET_COPY_JOB_RESULT_TO_USER1_FAIL;
 			}
 			CMDQ_ERR("insufficient register buffer\n");
-			return -ENOMEM;
+			return -IOCTL_RET_NOT_ENOUGH_REGISTER_BUFFER;
 		}
 		/* inform client the actual read register count */
 		jobResult.regValue.count = pTask->regCountUserSpace;
 		/* update user space before we replace the regValues pointer. */
 		if (copy_to_user((void *)param, (void *)&jobResult, sizeof(jobResult))) {
 			CMDQ_ERR("copy_to_user fail line=%d\n", __LINE__);
-			return -EINVAL;
+			return -IOCTL_RET_COPY_JOB_RESULT_TO_USER2_FAIL;
 		}
 		/* allocate kernel space result buffer */
 		/* which contains kernel + user space requests */
@@ -651,7 +650,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		jobResult.regValue.count = pTask->regCount;
 		if (NULL == CMDQ_U32_PTR(jobResult.regValue.regValues)) {
 			CMDQ_ERR("no reg value buffer\n");
-			return -ENOMEM;
+			return -IOCTL_RET_NO_REG_VAL_BUFFER;
 		}
 		/* backup value after task release */
 		regCount = pTask->regCount;
@@ -667,7 +666,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			CMDQ_ERR("waitResultAndReleaseTask fail=%d\n", status);
 			/* free kernel space result buffer */
 			kfree(CMDQ_U32_PTR(jobResult.regValue.regValues));
-			return status;
+			return -IOCTL_RET_WAIT_RESULT_AND_RELEASE_TASK_FAIL;
 		}
 		/* pTask is released, do not access it any more */
 		pTask = NULL;
@@ -689,7 +688,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		    ((void *)userRegValue, (void *)(unsigned long)jobResult.regValue.regValues,
 		     regCountUserSpace * sizeof(uint32_t))) {
 			CMDQ_ERR("Copy REGVALUE to user space failed\n");
-			return -EFAULT;
+			return -IOCLT_RET_COPY_REG_VALUE_TO_USER_FAIL;
 		}
 
 		if (jobResult.readAddress.count > 0)
@@ -707,14 +706,14 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 			if (copy_from_user(&addrReq, (void *)param, sizeof(addrReq))) {
 				CMDQ_ERR("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS copy_from_user failed\n");
-				return -EFAULT;
+				return -IOCTL_RET_COPY_ALLOC_WRITE_ADDR_FROM_USER_FAIL;
 			}
 
 			status = cmdqCoreAllocWriteAddress(addrReq.count, &paStart);
 			if (0 != status) {
 				CMDQ_ERR
 				    ("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS cmdqCoreAllocWriteAddress() failed\n");
-				return status;
+				return -IOCTL_RET_ALLOC_WRITE_ADDR_FAIL;
 			}
 
 
@@ -723,7 +722,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 			if (copy_to_user((void *)param, &addrReq, sizeof(addrReq))) {
 				CMDQ_ERR("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS copy_to_user failed\n");
-				return -EFAULT;
+				return -IOCTL_RET_COPY_ALLOC_WRITE_ADDR_TO_USER_FAIL;
 			}
 			status = 0;
 		} while (0);
@@ -736,12 +735,12 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 			if (copy_from_user(&freeReq, (void *)param, sizeof(freeReq))) {
 				CMDQ_ERR("CMDQ_IOCTL_FREE_WRITE_ADDRESS copy_from_user failed\n");
-				return -EFAULT;
+				return -IOCTL_RET_COPY_FREE_WRITE_ADDR_FROM_USER_FAIL;
 			}
 
 			status = cmdqCoreFreeWriteAddress(freeReq.startPA);
 			if (0 != status)
-				return status;
+				return -IOCTL_RET_FREE_WRITE_ADDR_FAIL;
 
 			status = 0;
 		} while (0);
@@ -754,7 +753,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 			if (copy_from_user(&readReq, (void *)param, sizeof(readReq))) {
 				CMDQ_ERR("CMDQ_IOCTL_READ_ADDRESS_VALUE copy_from_user failed\n");
-				return -EFAULT;
+				return -IOCTL_RET_COPY_READ_ADDR_VAL_FROM_USER_FAIL;
 			}
 			/* this will copy result to readReq->values buffer */
 			cmdq_driver_process_read_address_request(&readReq);
@@ -775,7 +774,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 			if (copy_to_user((void *)param, &capBits, sizeof(int))) {
 				CMDQ_ERR("Copy capacity bits to user space failed\n");
-				return -EFAULT;
+				return -IOCTL_RET_COPY_CAP_BITS_TO_USER_FAIL;
 			}
 		} while (0);
 		break;
@@ -787,7 +786,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			if (copy_from_user(&syncHandle, (void *)param, sizeof(syncHandle))) {
 				CMDQ_ERR
 				    ("CMDQ_IOCTL_SYNC_BUF_HDCP_VERSION copy_from_user failed\n");
-				return -EFAULT;
+				return -IOCTL_RET_COPY_HDCP_VERSION_FROM_USER_FAIL;
 			}
 			status = cmdq_sec_sync_handle_hdcp_unlock(syncHandle);
 			if (0 != status)
@@ -796,35 +795,37 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		} while (0);
 #else
 		CMDQ_ERR("SVP not supported\n");
-		return -EFAULT;
+		return -IOCTL_RET_SVP_NOT_SUPPORT;
 #endif
 		break;
 	default:
-		CMDQ_LOG("size of  cmdqCommandStruct is %08lx\n", sizeof(struct cmdqCommandStruct));
-		CMDQ_LOG("CMDQ_IOCTL_QUERY_CAP_BITS:0x%08lx\n", CMDQ_IOCTL_QUERY_CAP_BITS);
-		CMDQ_LOG("CMDQ_IOCTL_LOCK_MUTEX:0x%08lx\n", CMDQ_IOCTL_LOCK_MUTEX);
-		CMDQ_LOG(" CMDQ_IOCTL_UNLOCK_MUTEX:0x%08lx\n", CMDQ_IOCTL_UNLOCK_MUTEX);
-		CMDQ_LOG(" CMDQ_IOCTL_EXEC_COMMAND:0x%08lx\t the error code\n",
-			 CMDQ_IOCTL_EXEC_COMMAND);
-		CMDQ_LOG(" CMDQ_IOCTL_QUERY_USAGE:0x%08lx\n", CMDQ_IOCTL_QUERY_USAGE);
-		CMDQ_LOG(" CMDQ_IOCTL_ASYNC_JOB_EXEC:0x%08lx\n", CMDQ_IOCTL_ASYNC_JOB_EXEC);
-		CMDQ_LOG(" CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE:0x%08lx\n",
-			 CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE);
-		CMDQ_LOG(" CMDQ_IOCTL_ALLOC_WRITE_ADDRESS:0x%08lx\n",
-			 CMDQ_IOCTL_ALLOC_WRITE_ADDRESS);
-		CMDQ_LOG(" CMDQ_IOCTL_FREE_WRITE_ADDRESS:0x%08lx\n", CMDQ_IOCTL_FREE_WRITE_ADDRESS);
-		CMDQ_LOG(" CMDQ_IOCTL_READ_ADDRESS_VALUE:0x%08lx\n", CMDQ_IOCTL_READ_ADDRESS_VALUE);
-		CMDQ_LOG(" CMDQ_IOCTL_QUERY_CAP_BITS:0x%08lx\n", CMDQ_IOCTL_QUERY_CAP_BITS);
-		CMDQ_ERR("occur this problem, do nothing,just full build and fix it");
-		CMDQ_ERR("possible reason:DpDriver_Android.cpp file need to rebuild cmdq_driver.h");
-		CMDQ_ERR
-		    ("sizeof(X) is a operator, the return value will be const value when compile this code,");
-		CMDQ_ERR("so if you modify type X's structure,you need to rebuild cmdq_driver.h\n");
 		CMDQ_ERR("unrecognized ioctl 0x%08x\n", code);
-		break;
+		CMDQ_ERR("CMDQ_IOCTL_LOCK_MUTEX:0x%08lx sizeof(int) = %ld\n",
+			CMDQ_IOCTL_LOCK_MUTEX, sizeof(int));
+		CMDQ_ERR("CMDQ_IOCTL_UNLOCK_MUTEX:0x%08lx sizeof(int) = %ld\n",
+			CMDQ_IOCTL_UNLOCK_MUTEX, sizeof(int));
+		CMDQ_ERR("CMDQ_IOCTL_EXEC_COMMAND:0x%08lx sizeof(struct cmdqCommandStruct) = %ld\n",
+			CMDQ_IOCTL_EXEC_COMMAND, sizeof(struct cmdqCommandStruct));
+		CMDQ_ERR("CMDQ_IOCTL_QUERY_USAGE:0x%08lx sizeof(struct cmdqUsageInfoStruct) = %ld\n",
+			CMDQ_IOCTL_QUERY_USAGE, sizeof(struct cmdqUsageInfoStruct));
+		CMDQ_ERR("CMDQ_IOCTL_ASYNC_JOB_EXEC:0x%08lx sizeof(struct cmdqJobStruct) = %ld\n",
+			CMDQ_IOCTL_ASYNC_JOB_EXEC, sizeof(struct cmdqJobStruct));
+		CMDQ_ERR("CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE:0x%08lx sizeof(struct cmdqJobResultStruct) = %ld\n",
+			CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE, sizeof(struct cmdqJobResultStruct));
+		CMDQ_ERR("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS:0x%08lx sizeof(struct cmdqWriteAddressStruct) = %ld\n",
+			CMDQ_IOCTL_ALLOC_WRITE_ADDRESS, sizeof(struct cmdqWriteAddressStruct));
+		CMDQ_ERR("CMDQ_IOCTL_FREE_WRITE_ADDRESS:0x%08lx sizeof(struct cmdqWriteAddressStruct) = %ld\n",
+			CMDQ_IOCTL_FREE_WRITE_ADDRESS, sizeof(struct cmdqWriteAddressStruct));
+		CMDQ_ERR("CMDQ_IOCTL_READ_ADDRESS_VALUE:0x%08lx sizeof(struct cmdqReadAddressStruct) = %ld\n",
+			CMDQ_IOCTL_READ_ADDRESS_VALUE, sizeof(struct cmdqReadAddressStruct));
+		CMDQ_ERR("CMDQ_IOCTL_QUERY_CAP_BITS:0x%08lx sizeof(int) = %ld\n",
+			CMDQ_IOCTL_QUERY_CAP_BITS, sizeof(int));
+		CMDQ_ERR("CMDQ_IOCTL_SYNC_BUF_HDCP_VERSION:0x%08lx sizeof(struct cmdqSyncHandleHdcpStruct) = %ld\n",
+			CMDQ_IOCTL_SYNC_BUF_HDCP_VERSION, sizeof(struct cmdqSyncHandleHdcpStruct));
+		return -IOCTL_RET_UNRECOGNIZED_IOCTL;
 	}
 
-	return 0;
+	return IOCTL_RET_SUCCESS;
 }
 
 static long cmdq_ioctl_compat(struct file *pFile, unsigned int code, unsigned long param)
@@ -842,19 +843,41 @@ static long cmdq_ioctl_compat(struct file *pFile, unsigned int code, unsigned lo
 		/* All ioctl structures should be the same size in 32-bit and 64-bit linux. */
 		return cmdq_ioctl(pFile, code, param);
 	case CMDQ_IOCTL_LOCK_MUTEX:
+		CMDQ_ERR("[COMPAT]deprecated ioctl 0x%08x\n", code);
+		return -IOCTL_RET_DEPRECATE_LOCK_MUTEX;
 	case CMDQ_IOCTL_UNLOCK_MUTEX:
 		CMDQ_ERR("[COMPAT]deprecated ioctl 0x%08x\n", code);
-		return -ENOIOCTLCMD;
+		return -IOCTL_RET_DEPRECATE_UNLOCK_MUTEX;
 	default:
 		CMDQ_ERR("[COMPAT]unrecognized ioctl 0x%08x\n", code);
-		return -ENOIOCTLCMD;
+		CMDQ_ERR("CMDQ_IOCTL_LOCK_MUTEX:0x%08lx sizeof(int) = %ld\n",
+			CMDQ_IOCTL_LOCK_MUTEX, sizeof(int));
+		CMDQ_ERR("CMDQ_IOCTL_UNLOCK_MUTEX:0x%08lx sizeof(int) = %ld\n",
+			CMDQ_IOCTL_UNLOCK_MUTEX, sizeof(int));
+		CMDQ_ERR("CMDQ_IOCTL_EXEC_COMMAND:0x%08lx sizeof(struct cmdqCommandStruct) = %ld\n",
+			CMDQ_IOCTL_EXEC_COMMAND, sizeof(struct cmdqCommandStruct));
+		CMDQ_ERR("CMDQ_IOCTL_QUERY_USAGE:0x%08lx sizeof(struct cmdqUsageInfoStruct) = %ld\n",
+			CMDQ_IOCTL_QUERY_USAGE, sizeof(struct cmdqUsageInfoStruct));
+		CMDQ_ERR("CMDQ_IOCTL_ASYNC_JOB_EXEC:0x%08lx sizeof(struct cmdqJobStruct) = %ld\n",
+			CMDQ_IOCTL_ASYNC_JOB_EXEC, sizeof(struct cmdqJobStruct));
+		CMDQ_ERR("CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE:0x%08lx sizeof(struct cmdqJobResultStruct) = %ld\n",
+			CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE, sizeof(struct cmdqJobResultStruct));
+		CMDQ_ERR("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS:0x%08lx sizeof(struct cmdqWriteAddressStruct) = %ld\n",
+			CMDQ_IOCTL_ALLOC_WRITE_ADDRESS, sizeof(struct cmdqWriteAddressStruct));
+		CMDQ_ERR("CMDQ_IOCTL_FREE_WRITE_ADDRESS:0x%08lx sizeof(struct cmdqWriteAddressStruct) = %ld\n",
+			CMDQ_IOCTL_FREE_WRITE_ADDRESS, sizeof(struct cmdqWriteAddressStruct));
+		CMDQ_ERR("CMDQ_IOCTL_READ_ADDRESS_VALUE:0x%08lx sizeof(struct cmdqReadAddressStruct) = %ld\n",
+			CMDQ_IOCTL_READ_ADDRESS_VALUE, sizeof(struct cmdqReadAddressStruct));
+		CMDQ_ERR("CMDQ_IOCTL_QUERY_CAP_BITS:0x%08lx sizeof(int) = %ld\n",
+			CMDQ_IOCTL_QUERY_CAP_BITS, sizeof(int));
+		CMDQ_ERR("CMDQ_IOCTL_SYNC_BUF_HDCP_VERSION:0x%08lx sizeof(struct cmdqSyncHandleHdcpStruct) = %ld\n",
+			CMDQ_IOCTL_SYNC_BUF_HDCP_VERSION, sizeof(struct cmdqSyncHandleHdcpStruct));
+		return -IOCTL_RET_UNRECOGNIZED_COMPAT_IOCTL;
 	}
 
-	CMDQ_ERR("[COMPAT]unrecognized ioctl 0x%08x\n", code);
-	return -ENOIOCTLCMD;
+#else
+	return -IOCTL_RET_CONFIG_COMPAT_NOT_OPEN;
 #endif
-
-	return -ENOIOCTLCMD;
 }
 
 static const struct file_operations cmdqOP = {
