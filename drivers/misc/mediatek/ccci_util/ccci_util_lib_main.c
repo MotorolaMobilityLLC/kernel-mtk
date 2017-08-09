@@ -36,14 +36,6 @@
 
 #include "ccci_util_lib_main.h"
 
-/*=================================================== */
-/* Dummy function part */
-/*=================================================== */
-int ccci_parse_meta_md_setting(unsigned char args[])
-{
-	return 0;
-}
-
 static int __init ccci_util_init(void)
 {
 	ccci_log_init();
