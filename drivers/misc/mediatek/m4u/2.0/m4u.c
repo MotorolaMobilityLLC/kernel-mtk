@@ -1259,7 +1259,7 @@ int m4u_query_mva_info(unsigned int mva, unsigned int size, unsigned int *real_m
 	if ((!real_mva) || (!real_size))
 		return -1;
 
-	pMvaInfo = mva_get_priv(mva);
+	pMvaInfo = mva_get_priv_ext(mva);
 	if (!pMvaInfo) {
 		M4UMSG("%s cannot find mva: mva=0x%x, size=0x%x\n", __func__, mva, size);
 		*real_mva = 0;
