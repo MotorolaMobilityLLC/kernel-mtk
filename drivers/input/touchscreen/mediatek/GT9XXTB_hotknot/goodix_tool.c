@@ -32,7 +32,7 @@
 #include <linux/miscdevice.h>
 #include <linux/uaccess.h>
 #include <linux/proc_fs.h>	/*proc */
-#include "tpd_custom_gt9xx.h"
+#include "include/tpd_gt9xx_common.h"
 #pragma pack(1)
 struct st_cmd_head {
 	u8 wr;			/* write read flag0:R  1:W  2:PID 3: */

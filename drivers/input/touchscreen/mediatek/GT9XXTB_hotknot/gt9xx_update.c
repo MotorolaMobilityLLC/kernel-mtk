@@ -46,7 +46,7 @@
 #include <linux/mount.h>
 #include <linux/uaccess.h>
 #define GUP_FW_INFO
-#include "tpd_custom_gt9xx.h"
+#include "include/tpd_gt9xx_common.h"
 
 #if ((defined(CONFIG_GTP_AUTO_UPDATE) && defined(CONFIG_GTP_HEADER_FW_UPDATE)) || defined(CONFIG_GTP_COMPATIBLE_MODE))
 #include "gt9xx_firmware.h"

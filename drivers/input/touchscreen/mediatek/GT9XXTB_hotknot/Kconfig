@@ -3,7 +3,11 @@
 #
 if TOUCHSCREEN_MTK_GT9XXTB_HOTKNOT
 
+config GT9XXTB_FIRMWARE
+	string "GT9XXTB_hotknot for Mediatek firmware"
 
+config GT9XXTB_CONFIG
+	string "GT9XXTB_hotknot for Mediatek config"
 config GTP_DBL_CLK_WAKEUP
 	bool "GTP_DBL_CLK_WAKEUP"
 	default n

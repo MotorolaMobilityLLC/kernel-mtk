@@ -1,7 +1,8 @@
 #include "tpd.h"
-#define GUP_FW_INFO
-#include "tpd_custom_gt9xx.h"
 
+#include "gt9xx_config.h"
+#include "include/tpd_gt9xx_common.h"
+#define GUP_FW_INFO
 #if defined(CONFIG_TPD_PROXIMITY)
 #include <linux/hwmsensor.h>
 #include <linux/hwmsen_dev.h>
