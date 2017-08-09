@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.1" buid_sn="151104" dws_modification_time="11.06.2015.10:36:15"-->
+<!--dct_version="2.1" buid_sn="151116" dws_modification_time="11.16.2015.18:22:12"-->
 <dct_cfg>
     <general chip="MT6797">
-        <proj>Everest</proj>
+        <proj>k97v1_64_op01_te_p</proj>
         <module name="adc">
             <count>5</count>
             <adc0>
