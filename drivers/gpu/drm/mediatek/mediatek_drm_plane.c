@@ -28,6 +28,7 @@
 static const uint32_t formats[] = {
 	DRM_FORMAT_XRGB8888,
 	DRM_FORMAT_ARGB8888,
+	DRM_FORMAT_RGB565,
 };
 
 void mediatek_plane_finish_page_flip(struct mtk_drm_crtc *mtk_crtc)

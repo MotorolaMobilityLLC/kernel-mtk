@@ -37,7 +37,7 @@
 #include "drm_legacy.h"
 #include "drm_internal.h"
 
-unsigned int drm_debug = 7;	/* 1 to enable debug output */
+unsigned int drm_debug = 0;	/* 1 to enable debug output */
 EXPORT_SYMBOL(drm_debug);
 
 bool drm_atomic = 0;
