@@ -731,29 +731,37 @@ int mmdvfs_set_step_with_mmsys_clk(MTK_SMI_BWC_SCEN smi_scenario, mmdvfs_voltage
 			mmdvfs_vcorefs_request_dvfs_opp(KIR_MM, OPPI_PERF);
 			mmdfvs_adjust_mmsys_clk_by_hopping(MMSYS_CLK_HIGH);
 		#else
-			if (scenario == MMDVFS_SCEN_MHL)
+			/* Set step for MHL, WFD and 16M kicker */
+			if (g_mmdvfs_scenario_voltage[MMDVFS_SCEN_MHL] == MMDVFS_VOLTAGE_HIGH)
 				mmdvfs_vcorefs_request_dvfs_opp(KIR_MM_MHL, OPPI_PERF);
-			else if (scenario == SMI_BWC_SCEN_WFD)
+			else
+				mmdvfs_vcorefs_request_dvfs_opp(KIR_MM_MHL, OPPI_UNREQ);
+
+			if (g_mmdvfs_scenario_voltage[SMI_BWC_SCEN_WFD] == MMDVFS_VOLTAGE_HIGH)
 				mmdvfs_vcorefs_request_dvfs_opp(KIR_MM_WFD, OPPI_PERF);
-			else {
+			else
+				mmdvfs_vcorefs_request_dvfs_opp(KIR_MM_WFD, OPPI_UNREQ);
+
+			if (concurrency & ~((1 << MMDVFS_SCEN_MHL) | (1 << SMI_BWC_SCEN_WFD)))
 				mmdvfs_vcorefs_request_dvfs_opp(KIR_MM_16MCAM, OPPI_PERF);
-				mmdfvs_adjust_mmsys_clk_by_hopping(mmsys_clk_mode);
-			}
+			else
+				mmdvfs_vcorefs_request_dvfs_opp(KIR_MM_16MCAM, OPPI_UNREQ);
+
+			/* Config MM clocks */
+			if (mmsys_clk_mode == MMSYS_CLK_HIGH)
+				mmdfvs_adjust_mmsys_clk_by_hopping(MMSYS_CLK_HIGH);
+			else
+				mmdfvs_adjust_mmsys_clk_by_hopping(MMSYS_CLK_MEDIUM);
 		#endif /* MMDVFS_E1 */
 	}	else{
 		#ifdef MMDVFS_E1
 			mmdfvs_adjust_mmsys_clk_by_hopping(MMSYS_CLK_MEDIUM);
 			mmdvfs_vcorefs_request_dvfs_opp(KIR_MM, OPPI_UNREQ);
 		#else
-		if (scenario == MMDVFS_SCEN_MHL)
-			mmdvfs_vcorefs_request_dvfs_opp(KIR_MM_MHL, OPPI_UNREQ);
-		else if (scenario == SMI_BWC_SCEN_WFD)
-			mmdvfs_vcorefs_request_dvfs_opp(KIR_MM_WFD, OPPI_UNREQ);
-		else {
-		  /* must lower the mmsys clk before enter LPM mode */
 			mmdfvs_adjust_mmsys_clk_by_hopping(MMSYS_CLK_MEDIUM);
 			mmdvfs_vcorefs_request_dvfs_opp(KIR_MM_16MCAM, OPPI_UNREQ);
-		}
+			mmdvfs_vcorefs_request_dvfs_opp(KIR_MM_MHL, OPPI_UNREQ);
+			mmdvfs_vcorefs_request_dvfs_opp(KIR_MM_WFD, OPPI_UNREQ);
 		#endif /* MMDVFS_E1 */
 	}
 #endif /* MMDVFS_ENABLE */
