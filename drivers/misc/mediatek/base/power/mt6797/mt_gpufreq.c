@@ -1915,8 +1915,8 @@ static int mt_gpufreq_power_throttle_protect(void)
 				limited_index = mt_gpufreq_power_limited_index_array[i];
 		}
 
-		gpufreq_dbg("mt_gpufreq_power_limited_index_array[%d] = %d\n", i,
-			    mt_gpufreq_power_limited_index_array[i]);
+		/*gpufreq_dbg("mt_gpufreq_power_limited_index_array[%d] = %d\n", i,
+			    mt_gpufreq_power_limited_index_array[i]);*/
 	}
 
 	g_limited_max_id = limited_index;
@@ -1924,9 +1924,8 @@ static int mt_gpufreq_power_throttle_protect(void)
 	if (NULL != g_pGpufreq_power_limit_notify)
 		g_pGpufreq_power_limit_notify(g_limited_max_id);
 
-	gpufreq_info("Final limit frequency upper bound to id = %d, frequency = %d\n",
-			g_limited_max_id, mt_gpufreqs[g_limited_max_id].gpufreq_khz);
-
+	/*gpufreq_info("Final limit frequency upper bound to id = %d, frequency = %d\n",
+		g_limited_max_id, mt_gpufreqs[g_limited_max_id].gpufreq_khz);*/
 	return ret;
 }
 
@@ -2177,10 +2176,10 @@ void mt_gpufreq_thermal_protect(unsigned int limited_power)
 
 	if (mt_gpufreq_prev_thermal_limited_freq != limited_freq) {
 		mt_gpufreq_prev_thermal_limited_freq = limited_freq;
-		gpufreq_info("@%s: p %u f %u i %u\n", __func__, limited_power, limited_freq,
-		     mt_gpufreq_power_limited_index_array[IDX_THERMAL_LIMITED]);
-
 		mt_gpufreq_power_throttle_protect();
+		if (limited_freq < GPU_DVFS_FREQ6)
+			gpufreq_info("@%s: p %u f %u i %u\n", __func__, limited_power, limited_freq,
+				mt_gpufreq_power_limited_index_array[IDX_THERMAL_LIMITED]);
 	}
 
 	mutex_unlock(&mt_gpufreq_power_lock);
