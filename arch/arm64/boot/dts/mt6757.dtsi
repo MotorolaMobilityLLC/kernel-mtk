@@ -79,7 +79,7 @@
 			reg = <0x000>;
 			enable-method = "psci";
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1391000000>;
+			clock-frequency = <1638000000>;
 		};
 /*
 		cpu1: cpu@001 {
@@ -88,7 +88,7 @@
 			reg = <0x001>;
 			enable-method = "psci";
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1391000000>;
+			clock-frequency = <1638000000>;
 		};
 
 		cpu2: cpu@002 {
@@ -97,7 +97,7 @@
 			reg = <0x002>;
 			enable-method = "psci";
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1391000000>;
+			clock-frequency = <1638000000>;
 		};
 
 		cpu3: cpu@003 {
@@ -106,7 +106,7 @@
 			reg = <0x003>;
 			enable-method = "psci";
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1391000000>;
+			clock-frequency = <1638000000>;
 		};
 */
 /*
@@ -116,7 +116,7 @@
 			reg = <0x100>;
 			enable-method = "psci";
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1950000000>;
+			clock-frequency = <2301000000>;
 		};
 */
 /*
@@ -126,7 +126,7 @@
 			reg = <0x101>;
 			enable-method = "psci";
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1950000000>;
+			clock-frequency = <2301000000>;
 		};
 
 		cpu6: cpu@102 {
@@ -135,7 +135,7 @@
 			reg = <0x102>;
 			enable-method = "psci";
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1950000000>;
+			clock-frequency = <2301000000>;
 		};
 
 		cpu7: cpu@103 {
@@ -144,7 +144,7 @@
 			reg = <0x103>;
 			enable-method = "psci";
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <1950000000>;
+			clock-frequency = <2301000000>;
 		};
 
 */
@@ -884,8 +884,8 @@
 		reg = <0 0x10227000 0 0x1000>,
 		      <0 0x0011c000 0 0xf80>;
 		interrupts = <GIC_SPI 152 IRQ_TYPE_LEVEL_LOW>;
-		/*clocks = <&infrasys INFRA_I2C4>;
-		clock-names = "i2c";*/
+		clocks = <&infrasys INFRACFG_AO_I2C4_CG>;
+		clock-names = "i2c";
 	};
 
 	dramc_ch0_top0@10228000 {
