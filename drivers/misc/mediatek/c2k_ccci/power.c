@@ -992,7 +992,7 @@ static long misc_modem_ioctl(struct file *file, unsigned int
 	return 0;
 }
 
-#if CONFIG_COMPAT
+#ifdef CONFIG_COMPAT
 static long misc_modem_compat_ioctl(struct file *filp, unsigned int cmd,
 				    unsigned long arg)
 {
@@ -1036,7 +1036,7 @@ static const struct file_operations misc_modem_fops = {
 	.owner = THIS_MODULE,
 	.open = misc_modem_open,
 	.unlocked_ioctl = misc_modem_ioctl,
-#if CONFIG_COMPAT
+#ifdef CONFIG_COMPAT
 	.compat_ioctl = &misc_modem_compat_ioctl,
 #endif
 	.release = misc_modem_release,
