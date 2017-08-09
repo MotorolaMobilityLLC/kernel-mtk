@@ -528,10 +528,11 @@ int mt_ppm_main(void)
 
 		/* check need to notify hps first or not
 		   1. one or more power budget related policy is activate
-		   2. no cluster migration or on/off (state no change)
+		   2. no cluster migration or cluster on
 		   3. Limits change from low freq with more core to high freq with less core
 		*/
-		if (ppm_main_info.min_power_budget != ~0 && prev_state == next_state) {
+		if (ppm_main_info.min_power_budget != ~0 && prev_state >= next_state
+			&& !(prev_state == PPM_POWER_STATE_L_ONLY && next_state == PPM_POWER_STATE_LL_ONLY)) {
 			/* traverse each cluster's limit */
 			for (i = 0; i < c_req->cluster_num; i++) {
 				if ((c_req->cpu_limit[i].max_cpu_core != 0) &&
