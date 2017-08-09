@@ -40,10 +40,12 @@
 #include <mt-plat/sync_write.h>
 #include <mt_spm.h>
 #include <mach/mt_clkmgr.h>
-/* #include <mach/mt_gpio.h> */
 /* #include <mach/mt_gpio_core.h> */
 #include <mt_clkbuf_ctl.h>
 #include <mt-plat/upmu_common.h>
+
+#define RF_BPI_GPIO_NUM 20
+#define MD_JTAG_GPIO_NUM 2
 
 #define TAG     "[Power/clkbuf]"
 
@@ -272,6 +274,10 @@ static CLK_BUF_SWCTRL_STATUS_T  pmic_clk_buf_swctrl[CLKBUF_NUM] = {
 	CLK_BUF_SW_ENABLE
 };
 
+#ifndef CONFIG_MT_ENG_BUILD
+static struct mdjtag_gpio_config GPIO_KPROW1_config, GPIO_KPROW2_config;
+#endif
+
 static void spm_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 {
 	u32 spm_val;
@@ -334,6 +340,101 @@ void clk_buf_control_bblpm(bool on)
 }
 #endif /* ENABLE_PMIC_CLK_BUFFER */
 
+#if 0 /* Fix me: not ready yet */
+/* config rf_bpi gpio as IES=0 when init */
+void clk_buf_config_rfbpi_gpio(void)
+{
+	int idx = 0;
+	int rf_bpi_gpio[RF_BPI_GPIO_NUM] = {
+		192, 193, 198, 199, 200, 201, 202, 203, 204, 205,
+		206, 207, 208, 209, 210, 211, 212, 213, 214, 215};
+
+	unsigned long mt_gpio_index = 0;
+
+	clk_buf_warn("PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [IES] [SMT]\n");
+	for (idx = 0 ; idx < RF_BPI_GPIO_NUM; idx++) {
+		mt_gpio_index = rf_bpi_gpio[idx] + MT_CPIO_INDEX_OFS;
+
+		clk_buf_warn("gpio = %3d: %d %d %d %d %d %d %d %d\n",
+				rf_bpi_gpio[idx],
+				mt_get_gpio_mode(mt_gpio_index), mt_get_gpio_pull_select(mt_gpio_index),
+				mt_get_gpio_in(mt_gpio_index), mt_get_gpio_out(mt_gpio_index),
+				mt_get_gpio_pull_enable(mt_gpio_index), mt_get_gpio_dir(mt_gpio_index),
+				mt_get_gpio_ies(mt_gpio_index), mt_get_gpio_smt(mt_gpio_index));
+
+
+		mt_set_gpio_ies(mt_gpio_index, GPIO_IES_DISABLE);
+
+		clk_buf_warn("gpio = %3d: %d %d %d %d %d %d %d %d\n",
+				rf_bpi_gpio[idx],
+				mt_get_gpio_mode(mt_gpio_index), mt_get_gpio_pull_select(mt_gpio_index),
+				mt_get_gpio_in(mt_gpio_index), mt_get_gpio_out(mt_gpio_index),
+				mt_get_gpio_pull_enable(mt_gpio_index), mt_get_gpio_dir(mt_gpio_index),
+				mt_get_gpio_ies(mt_gpio_index), mt_get_gpio_smt(mt_gpio_index));
+
+	}
+}
+#endif
+
+#ifndef CONFIG_MT_ENG_BUILD
+void clk_buf_store_kprow_gpio_config(void)
+{
+
+	GPIO_KPROW1_config.mode = mt_get_gpio_mode(GPIO_KPROW1);
+	GPIO_KPROW1_config.pull_enable = mt_get_gpio_pull_enable(GPIO_KPROW1);
+	GPIO_KPROW1_config.pull_select = mt_get_gpio_pull_select(GPIO_KPROW1);
+	GPIO_KPROW1_config.ies = mt_get_gpio_ies(GPIO_KPROW1);
+
+	GPIO_KPROW2_config.mode = mt_get_gpio_mode(GPIO_KPROW2);
+	GPIO_KPROW2_config.pull_enable = mt_get_gpio_pull_enable(GPIO_KPROW2);
+	GPIO_KPROW2_config.pull_select = mt_get_gpio_pull_select(GPIO_KPROW2);
+	GPIO_KPROW2_config.ies = mt_get_gpio_ies(GPIO_KPROW2);
+}
+
+void clk_buf_config_mdjtag_gpio(bool is_flightmode_on)
+{
+
+	int idx, mt_gpio_num;
+	int md_jtag_gpio[MD_JTAG_GPIO_NUM] = {GPIO_KPROW1, GPIO_KPROW2};
+	unsigned long mt_gpio_index;
+
+	if (is_flightmode_on) {
+		mt_set_gpio_mode(GPIO_KPROW1, GPIO_MODE_GPIO);
+		mt_set_gpio_pull_enable(GPIO_KPROW1, GPIO_PULL_ENABLE);
+		mt_set_gpio_pull_select(GPIO_KPROW1, GPIO_PULL_DOWN);
+		mt_set_gpio_ies(GPIO_KPROW1, GPIO_IES_DISABLE);
+
+		mt_set_gpio_mode(GPIO_KPROW2, GPIO_MODE_GPIO);
+		mt_set_gpio_pull_enable(GPIO_KPROW2, GPIO_PULL_ENABLE);
+		mt_set_gpio_pull_select(GPIO_KPROW2, GPIO_PULL_DOWN);
+		mt_set_gpio_ies(GPIO_KPROW2, GPIO_IES_DISABLE);
+	} else {
+		mt_set_gpio_mode(GPIO_KPROW1, GPIO_KPROW1_config.mode);
+		mt_set_gpio_pull_enable(GPIO_KPROW1, GPIO_KPROW1_config.pull_enable);
+		mt_set_gpio_pull_select(GPIO_KPROW1, GPIO_KPROW1_config.pull_select);
+		mt_set_gpio_ies(GPIO_KPROW1, GPIO_KPROW1_config.ies);
+
+		mt_set_gpio_mode(GPIO_KPROW2, GPIO_KPROW2_config.mode);
+		mt_set_gpio_pull_enable(GPIO_KPROW2, GPIO_KPROW2_config.pull_enable);
+		mt_set_gpio_pull_select(GPIO_KPROW2, GPIO_KPROW2_config.pull_select);
+		mt_set_gpio_ies(GPIO_KPROW2, GPIO_KPROW2_config.ies);
+	}
+
+	for (idx = 0 ; idx < MD_JTAG_GPIO_NUM; idx++) {
+		mt_gpio_num = md_jtag_gpio[idx] & (~MT_CPIO_INDEX_OFS);
+		mt_gpio_index = mt_gpio_num | MT_CPIO_INDEX_OFS;
+
+		clk_buf_warn("gpio = %3d: %d %d %d %d %d %d %d %d\n",
+			mt_gpio_num,
+			mt_get_gpio_mode(mt_gpio_index), mt_get_gpio_pull_select(mt_gpio_index),
+			mt_get_gpio_in(mt_gpio_index), mt_get_gpio_out(mt_gpio_index),
+			mt_get_gpio_pull_enable(mt_gpio_index), mt_get_gpio_dir(mt_gpio_index),
+			mt_get_gpio_ies(mt_gpio_index), mt_get_gpio_smt(mt_gpio_index));
+	}
+
+}
+#endif /* CONFIG_MT_ENG_BUILD */
+
 /* for spm driver use */
 bool is_clk_buf_under_flightmode(void)
 {
@@ -354,6 +455,10 @@ void clk_buf_set_by_flightmode(bool is_flightmode_on)
 		spm_clk_buf_ctrl(clk_buf_swctrl_modem_on);
 
 	mutex_unlock(&clk_buf_ctrl_lock);
+
+#ifndef CONFIG_MT_ENG_BUILD
+	clk_buf_config_mdjtag_gpio(is_flightmode_on);
+#endif
 }
 
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
@@ -914,6 +1019,13 @@ bool clk_buf_init(void)
 		clk_buf_warn("%s: afcdac=0x%x, SPM_BSI_EN_SR=0x%x\n", __func__,
 			     afcdac_val, spm_read(SPM_BSI_EN_SR));
 	}
+
+	/* Config RF_bpi related GPIO as IES=0*/
+	/*clk_buf_config_rfbpi_gpio(); */
+
+#ifndef CONFIG_MT_ENG_BUILD
+	clk_buf_store_kprow_gpio_config();
+#endif
 
 	is_clkbuf_initiated = true;
 
