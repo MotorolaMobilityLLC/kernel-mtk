@@ -1654,6 +1654,9 @@ bool SetFmI2sConnection(uint32 ConnectionState)
 	SetIntfConnection(ConnectionState,
 			  Soc_Aud_AFE_IO_Block_HW_GAIN1_IN,
 			  Soc_Aud_AFE_IO_Block_I2S1_DAC_2);
+	SetIntfConnection(ConnectionState,
+			  Soc_Aud_AFE_IO_Block_HW_GAIN1_IN,
+			  Soc_Aud_AFE_IO_Block_I2S3);
 	return true;
 }
 
