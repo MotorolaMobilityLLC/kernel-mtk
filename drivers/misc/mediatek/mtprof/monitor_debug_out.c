@@ -27,6 +27,9 @@
 
 #ifdef CONFIG_MT_SCHED_MONITOR
 
+#define WDT_SCHED_MON_LOG_SIZE	120
+static char wdt_sched_mon_log_buf[WDT_SCHED_MON_LOG_SIZE];
+
 #define get_sched_block_events(isr, softirq, tasklet, hrtimer, soft_timer) \
 	do {	\
 		isr = &per_cpu(ISR_mon, cpu);	\
@@ -130,28 +133,45 @@ static void mt_aee_show_current_irq_counts(void)
 	t_cur = sched_clock();
 	/* spin_lock_irqsave(&mt_irq_count_lock, flags); */
 
+	snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf), "\nIRQ Status\n");
+	aee_sram_fiq_log(wdt_sched_mon_log_buf);
+	memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
 
-	aee_wdt_printf("\nIRQ Status\n");
 	for (cpu = 0; cpu < num_possible_cpus(); cpu++) {
 		t_diff = t_cur - per_cpu(save_irq_count_time, cpu);
-		aee_wdt_printf("Dur:%lld us,(now:%lld,last:%lld)\n", usec_high(t_diff), usec_high(t_cur),
-		 usec_high(per_cpu(save_irq_count_time, cpu)));
-		aee_wdt_printf("CPU%d state:%s\n", cpu, cpu_online(cpu) ? "online" : "offline");
+		snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf), "Dur:%lld us,(now:%lld,last:%lld)\n",
+			usec_high(t_diff), usec_high(t_cur), usec_high(per_cpu(save_irq_count_time, cpu)));
+		aee_sram_fiq_log(wdt_sched_mon_log_buf);
+		memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+
+		snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf), "CPU%d state:%s\n",
+			cpu, cpu_online(cpu) ? "online" : "offline");
+		aee_sram_fiq_log(wdt_sched_mon_log_buf);
+		memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+
 		for (irq = 0; irq < nr_irqs && irq < MAX_NR_IRQS; irq++) {
 			count = kstat_irqs_cpu(irq, cpu);
-			if (count != 0)
-				aee_wdt_printf(" %d:%s +%d(%d)\n", irq, isr_name(irq),
-					       count - per_cpu(irq_count_mon, cpu).irqs[irq], count);
+			if (count != 0) {
+				snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf), " %d:%s +%d(%d)\n",
+					irq, isr_name(irq), count - per_cpu(irq_count_mon, cpu).irqs[irq], count);
+				aee_sram_fiq_log(wdt_sched_mon_log_buf);
+				memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+			}
 		}
 	}
 #ifdef CONFIG_SMP
 	for (cpu = 0; cpu < num_possible_cpus(); cpu++) {
-		aee_wdt_printf("CPU#%d:\n", cpu);
+		snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf), "CPU#%d:\n", cpu);
+		aee_sram_fiq_log(wdt_sched_mon_log_buf);
+		memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
 		for (irq = 0; irq < NR_IPI; irq++) {
 			count = __get_irq_stat(cpu, ipi_irqs[irq]);
-			if (count != 0)
-				aee_wdt_printf(" %d:IPI +%d(%d)\n", irq,
-					       count - per_cpu(ipi_count_mon, cpu).ipis[irq], count);
+			if (count != 0) {
+				snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf), " %d:IPI +%d(%d)\n",
+					irq, count - per_cpu(ipi_count_mon, cpu).ipis[irq], count);
+				aee_sram_fiq_log(wdt_sched_mon_log_buf);
+				memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+			}
 		}
 	}
 #endif
@@ -163,8 +183,10 @@ static void mt_aee_show_timer_info(void)
 	int cpu;
 
 	for_each_possible_cpu(cpu) {
-		aee_wdt_printf("[TimerISR#%d]last s:%llu e:%llu ns\n", cpu,
-			       per_cpu(local_timer_ts, cpu), per_cpu(local_timer_te, cpu));
+		snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf), "[TimerISR#%d]last s:%llu e:%llu ns\n",
+			cpu, per_cpu(local_timer_ts, cpu), per_cpu(local_timer_te, cpu));
+		aee_sram_fiq_log(wdt_sched_mon_log_buf);
+		memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
 	}
 }
 
@@ -291,77 +313,119 @@ void mt_aee_dump_sched_traces(void)
 	for_each_possible_cpu(cpu) {
 		get_sched_block_events(b_isr, b_sq, b_tk, b_hrt, b_sft);
 		get_sched_stop_events(e_pmpt, e_irq);
-		aee_wdt_printf("CPU%d\n", cpu);
-		b_isr->cur_event == 0 ?
-		    aee_wdt_printf("[ISR]last#%d,dur:%lld s:%lld\n\n",
-				   (int)b_isr->last_event,
-				   usec_high(b_isr->last_te - b_isr->last_ts),
-				   usec_high(b_isr->
-					     last_ts)) :
-		    aee_wdt_printf
-		    ("[In ISR]Current irq#:%d, Start:%lld (elapsed: %lld), last irq#:%d, s:%lld, e:%lld\n\n",
-		     (int)b_isr->cur_event, usec_high(b_isr->cur_ts),
-		     usec_high(sched_clock() - b_isr->cur_ts), (int)b_isr->last_event,
-		     usec_high(b_isr->last_ts), usec_high(b_isr->last_te));
 
-		if (b_sq->cur_event == 0)
-			aee_wdt_printf("[Softirq]last#%d,dur:%lld s:%lld\n\n",
-					(int)b_sq->last_event, usec_high(b_sq->last_te - b_sq->last_ts),
-					usec_high(b_sq->last_ts));
-		else {
-		    aee_wdt_printf("[In Softirq]Current softirq#:%d, Start:%lld(elapsed: %lld),",
+		snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf), "CPU%d\n", cpu);
+		aee_sram_fiq_log(wdt_sched_mon_log_buf);
+		memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+
+		if (b_isr->cur_event == 0) {
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				"[ISR]last#%d,dur:%lld s:%lld\n\n",
+				(int)b_isr->last_event,
+				usec_high(b_isr->last_te - b_isr->last_ts),
+				usec_high(b_isr->last_ts));
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+		} else {
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				"[In ISR]Current irq#:%d, Start:%lld (elapsed: %lld), last irq#:%d, s:%lld, e:%lld\n\n",
+				(int)b_isr->cur_event, usec_high(b_isr->cur_ts),
+				usec_high(sched_clock() - b_isr->cur_ts), (int)b_isr->last_event,
+				usec_high(b_isr->last_ts), usec_high(b_isr->last_te));
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+		}
+
+		if (b_sq->cur_event == 0) {
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				"[Softirq]last#%d,dur:%lld s:%lld\n\n",
+				(int)b_sq->last_event, usec_high(b_sq->last_te - b_sq->last_ts),
+				usec_high(b_sq->last_ts));
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+		} else {
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				"[In Softirq]Current softirq#:%d, Start:%lld(elapsed: %lld),",
 				(int)b_sq->cur_event, usec_high(b_sq->cur_ts),
 				usec_high(sched_clock() - b_sq->cur_ts));
-		    aee_wdt_printf(" last softirq#:%d(dur:%lld), s:%lld, e:%lld\n\n",
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				" last softirq#:%d(dur:%lld), s:%lld, e:%lld\n\n",
 				(int)b_sq->last_event,
 				usec_high(b_sq->last_te - b_sq->last_ts),
 				usec_high(b_sq->last_ts), usec_high(b_sq->last_te));
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
 		}
 
-
-		if (b_tk->cur_event == 0)
-				aee_wdt_printf("[Tasklet]%d/SoftIRQ\n %pS dur:%lld s:%lld\n\n",
-				   (int)b_tk->last_count, (void *)b_tk->last_event,
-				   usec_high(b_tk->last_te - b_tk->last_ts),
-				   usec_high(b_tk->last_ts));
-		else {
-		    aee_wdt_printf(
+		if (b_tk->cur_event == 0) {
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				"[Tasklet]%d/SoftIRQ\n %pS dur:%lld s:%lld\n\n",
+				(int)b_tk->last_count, (void *)b_tk->last_event,
+				usec_high(b_tk->last_te - b_tk->last_ts),
+				usec_high(b_tk->last_ts));
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+		} else {
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
 				"[In Tasklet]\n Occurs: cur:%d, last:%d\n Current:%pS, Start:%lld(elapsed: %lld),",
 				(int)b_tk->cur_count, (int)b_tk->last_count, (void *)b_tk->cur_event,
 				usec_high(b_tk->cur_ts), usec_high(sched_clock() - b_tk->cur_ts));
-		    aee_wdt_printf(" last#:%pS(dur:%lld), last_start:%lld, last_end:%lld\n\n",
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				" last#:%pS(dur:%lld), last_start:%lld, last_end:%lld\n\n",
 				(void *)b_tk->last_event, usec_high(b_tk->last_te - b_tk->last_ts),
 				usec_high(b_tk->last_ts), usec_high(b_tk->last_te));
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
 		}
 
-		if (b_hrt->cur_event == 0)
-				aee_wdt_printf("[HRTimer]%d/ISR\n %pS dur:%lld s:%lld\n\n",
+		if (b_hrt->cur_event == 0) {
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				"[HRTimer]%d/ISR\n %pS dur:%lld s:%lld\n\n",
 				   (int)b_hrt->last_count, (void *)b_hrt->last_event,
 				   usec_high(b_hrt->last_te - b_hrt->last_ts),
 				   usec_high(b_hrt->last_ts));
-		else {
-		    aee_wdt_printf
-		    ("[In HRTimer]\n Occurs: cur:%d, last:%d\n Current:%pS, Start:%lld(elapsed: %lld),",
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+		} else {
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				"[In HRTimer]\n Occurs: cur:%d, last:%d\n Current:%pS, Start:%lld(elapsed: %lld),",
 				(int)b_tk->cur_count, (int)b_tk->last_count, (void *)b_hrt->cur_event,
 				usec_high(b_hrt->cur_ts), usec_high(sched_clock() - b_hrt->cur_ts));
-		    aee_wdt_printf(" last#:%pS(dur:%lld), last_start:%lld, last_end:%lld\n\n",
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				" last#:%pS(dur:%lld), last_start:%lld, last_end:%lld\n\n",
 				(void *)b_hrt->last_event, usec_high(b_hrt->last_te - b_hrt->last_ts),
 				usec_high(b_hrt->last_ts), usec_high(b_hrt->last_te));
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
 		}
 
-		if (b_sft->cur_event == 0)
-				aee_wdt_printf("[SoftTimer]%d/SoftIRQ\n %pS dur:%lld s:%lld\n\n",
-					(int)b_sft->last_count, (void *)b_sft->last_event,
-					usec_high(b_sft->last_te - b_sft->last_ts),
-					usec_high(b_sft->last_ts));
-		else {
-		    aee_wdt_printf
-		    ("[In SoftTimer]\n Occurs: cur:%d, last:%d\n Current:%pS, Start:%lld(elapsed: %lld),",
+		if (b_sft->cur_event == 0) {
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				"[SoftTimer]%d/SoftIRQ\n %pS dur:%lld s:%lld\n\n",
+				(int)b_sft->last_count, (void *)b_sft->last_event,
+				usec_high(b_sft->last_te - b_sft->last_ts),
+				usec_high(b_sft->last_ts));
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+		} else {
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				"[In SoftTimer]\n Occurs: cur:%d, last:%d\n Current:%pS, Start:%lld(elapsed: %lld),",
 				(int)b_sft->cur_count, (int)b_sft->last_count, (void *)b_sft->cur_event,
 				usec_high(b_sft->cur_ts), usec_high(sched_clock() - b_sft->cur_ts));
-		    aee_wdt_printf(" last#:%pS(dur:%lld), last_start:%lld, last_end:%lld\n\n",
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
+			snprintf(wdt_sched_mon_log_buf, sizeof(wdt_sched_mon_log_buf),
+				" last#:%pS(dur:%lld), last_start:%lld, last_end:%lld\n\n",
 				(void *)b_sft->last_event, usec_high(b_sft->last_te - b_sft->last_ts),
 				usec_high(b_sft->last_ts), usec_high(b_sft->last_te));
+			aee_sram_fiq_log(wdt_sched_mon_log_buf);
+			memset(wdt_sched_mon_log_buf, 0, sizeof(wdt_sched_mon_log_buf));
 		}
 		/****  Dump Stop Events ****/
 		/*
