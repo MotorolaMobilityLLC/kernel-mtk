@@ -479,7 +479,7 @@ static int Audio_ModemPcm_ASRC_Set(struct snd_kcontrol *kcontrol,
 static int Audio_Ipoh_Setting_Get(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()\n", __func__);
+	PRINTK_AUDDRV("%s()\n", __func__);
 	ucontrol->value.integer.value[0] = AudDrvSuspend_ipoh_Status;
 	return 0;
 }
@@ -487,7 +487,7 @@ static int Audio_Ipoh_Setting_Get(struct snd_kcontrol *kcontrol,
 static int Audio_Ipoh_Setting_Set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("+%s()\n", __func__);
+	PRINTK_AUDDRV("+%s()\n", __func__);
 
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_IPOH_State)) {
 		pr_err("return -EINVAL\n");
@@ -501,14 +501,14 @@ static int Audio_Ipoh_Setting_Set(struct snd_kcontrol *kcontrol,
 
 static int Audio_Mode_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_SideTone_Get = %d\n", mAudio_Mode);
+	PRINTK_AUDDRV("Audio_SideTone_Get = %d\n", mAudio_Mode);
 	ucontrol->value.integer.value[0] = mAudio_Mode;
 	return 0;
 }
 
 static int Audio_Mode_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()\n", __func__);
+	PRINTK_AUDDRV("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(ANDROID_AUDIO_MODE)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
@@ -519,7 +519,7 @@ static int Audio_Mode_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 
 static int Audio_Irqcnt1_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_Irqcnt1_Get\n");
+	PRINTK_AUDDRV("Audio_Irqcnt1_Get\n");
 	mt_afe_ana_clk_on();
 	mt_afe_main_clk_on();
 	ucontrol->value.integer.value[0] = mt_afe_get_reg(AFE_IRQ_MCU_CNT1);
@@ -532,7 +532,7 @@ static int Audio_Irqcnt1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 {
 	uint32_t irq1_cnt = ucontrol->value.integer.value[0];
 
-	pr_debug("%s()\n", __func__);
+	PRINTK_AUDDRV("%s()\n", __func__);
 	mt_afe_ana_clk_on();
 	mt_afe_main_clk_on();
 	mt_afe_set_reg(AFE_IRQ_MCU_CNT1, irq1_cnt, 0xffffffff);
@@ -543,7 +543,7 @@ static int Audio_Irqcnt1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 
 static int Audio_Irqcnt2_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_Irqcnt2_Get\n");
+	PRINTK_AUDDRV("Audio_Irqcnt2_Get\n");
 	mt_afe_ana_clk_on();
 	mt_afe_main_clk_on();
 	ucontrol->value.integer.value[0] = mt_afe_get_reg(AFE_IRQ_MCU_CNT2);
@@ -556,7 +556,7 @@ static int Audio_Irqcnt2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_
 {
 	uint32_t irq1_cnt = ucontrol->value.integer.value[0];
 
-	pr_debug("%s()\n", __func__);
+	PRINTK_AUDDRV("%s()\n", __func__);
 	mt_afe_ana_clk_on();
 	mt_afe_main_clk_on();
 	mt_afe_set_reg(AFE_IRQ_MCU_CNT2, irq1_cnt, 0xffffffff);
