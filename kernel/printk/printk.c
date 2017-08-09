@@ -120,8 +120,10 @@ bool mt_get_uartlog_status(void)
 
 void set_uartlog_status(bool value)
 {
+#ifdef CONFIG_MT_ENG_BUILD
 	printk_disable_uart = !value;
 	pr_info("set uart log status %d.\n", value);
+#endif
 }
 
 static DEFINE_PER_CPU(char, printk_state);
@@ -2516,7 +2518,8 @@ skip:
 #if defined(CONFIG_MT_ENG_BUILD) && defined(CONFIG_LOG_TOO_MUCH_WARNING)
 		if (flag_toomuch == true) {
 			flag_toomuch = false;
-			add_len = scnprintf(aee_str, 63, "Printk too much: >100 L/s, L: %llu, ", delta_count);
+			add_len = scnprintf(aee_str, 63, "Printk too much: >%d L/s, L: %llu, ",
+							detect_count, delta_count);
 			if (63 >= add_len + 12) {
 				period = delta_time;
 				rem_nsec = do_div(period, 1000000000);
