@@ -111,7 +111,7 @@ static DEFINE_MUTEX(da9214_lock_mutex);
 
 int g_da9214_driver_ready = 0;
 int g_da9214_hw_exist = 0;
-
+int g_da9214_buckb_en_debug = 0;
 unsigned int g_da9214_cid = 0;
 
 #define PMICTAG                "[DA9214] "
@@ -169,6 +169,12 @@ unsigned int da9214_write_byte(unsigned char cmd, unsigned char writeData)
 	char write_data[2] = { 0 };
 	int ret = 0;
 
+	if (g_da9214_buckb_en_debug) {
+		if (cmd == 0x5e) {
+			if ((writeData & 0x01) == 0x0)
+				BUG_ON(1);
+		}
+	}
 	mutex_lock(&da9214_i2c_access);
 
 	write_data[0] = cmd;
@@ -241,7 +247,12 @@ unsigned int da9214_write_byte(unsigned char cmd, unsigned char writeData)
 	unsigned char xfers = 1;
 	int ret, retries = 1;
 	unsigned char buf[8];
-
+	if (g_da9214_buckb_en_debug) {
+		if (cmd == 0x5e) {
+			if ((writeData & 0x01) == 0x0)
+				BUG_ON(1);
+		}
+	}
 	mutex_lock(&da9214_i2c_access);
 
 	buf[0] = cmd;
@@ -350,6 +361,15 @@ void da9214_lock(void)
 void da9214_unlock(void)
 {
 	mutex_unlock(&da9214_lock_mutex);
+}
+
+void da9214_buckb_lock(unsigned int reg_val)
+{
+	if (reg_val)
+		g_da9214_buckb_en_debug = 1;
+	else
+		g_da9214_buckb_en_debug = 0;
+
 }
 
 

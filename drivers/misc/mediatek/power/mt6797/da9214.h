@@ -42,5 +42,5 @@ extern int da9214_vosel_buck_a(unsigned long val);
 extern int da9214_vosel_buck_b(unsigned long val);
 extern int is_da9214_exist(void);
 extern int is_da9214_sw_ready(void);
-
+extern void da9214_buckb_lock(unsigned int reg_val);
 #endif				/* _da9214_SW_H_ */
