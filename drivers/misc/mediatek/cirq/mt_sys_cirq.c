@@ -12,7 +12,7 @@
 #include <linux/irqchip/arm-gic.h>
 #include <linux/irqchip/mt-gic.h>
 
-#include <mach/irqs.h>
+/*#include <mach/irqs.h>*/
 #include "mt_sys_cirq.h"
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mt_io.h>

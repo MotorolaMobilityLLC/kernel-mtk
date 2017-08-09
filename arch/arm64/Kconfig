@@ -357,6 +357,8 @@ config ARCH_MT8173
 	bool "MediaTek MT8173"
 	select ARCH_MEDIATEK
 	select MTK_BASE_POWER
+	select MTK_SYS_CIRQ
+	select MTK_GIC_EXT
 	help
 	  This enable support for MediaTek MT8173. If you need support
 	  for MediaTek MT8173, say Y here.

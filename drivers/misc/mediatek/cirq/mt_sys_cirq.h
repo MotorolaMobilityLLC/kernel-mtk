@@ -63,6 +63,10 @@ extern void __iomem *GIC_DIST_BASE;
 extern void __iomem *GIC_CPU_BASE;
 extern void __iomem *INT_POL_CTL0;
 
+#ifndef GIC_PRIVATE_SIGNALS
+#define GIC_PRIVATE_SIGNALS     (32)
+#endif
+
 /*
  * Define function prototypes.
  */
