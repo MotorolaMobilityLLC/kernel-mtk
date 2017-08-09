@@ -18,11 +18,7 @@
 #define TUNE_TX_CNT                     (100)
 #define TUNE_DATA_TX_ADDR               (0x358000)
 #define CMDQ
-#ifndef CMDQ
 #define AUTOK_LATCH_CK_EMMC_TUNE_TIMES     (10) /* 5.0IP eMMC 1KB fifo ZIZE */
-#else
-#define AUTOK_LATCH_CK_EMMC_TUNE_TIMES     (3) /* 5.0IP 1KB fifo CMD8 need send 3 times  */
-#endif
 #define AUTOK_LATCH_CK_SDIO_TUNE_TIMES  (3) /* 4.5IP 128B fifo CMD19 need send 3 times  */
 #define AUTOK_LATCH_CK_SD_TUNE_TIMES    (3) /* 4.5IP 128B fifo CMD19 need send 3 times  */
 #define AUTOK_CMD_TIMES                 (20)
@@ -45,10 +41,14 @@
 
 /* autok platform specific setting */
 #define AUTOK_CKGEN_VALUE                       (0)
-#define AUTOK_CMD_LATCH_EN_HS400_VALUE          (3)
-#define AUTOK_CMD_LATCH_EN_NON_HS400_VALUE      (2)
-#define AUTOK_CRC_LATCH_EN_HS400_VALUE          (0)
-#define AUTOK_CRC_LATCH_EN_NON_HS400_VALUE      (2)
+#define AUTOK_CMD_LATCH_EN_HS400_PORT0_VALUE    (5)
+#define AUTOK_CRC_LATCH_EN_HS400_PORT0_VALUE    (5)
+#define AUTOK_CMD_LATCH_EN_HS200_PORT0_VALUE    (3)
+#define AUTOK_CRC_LATCH_EN_HS200_PORT0_VALUE    (3)
+#define AUTOK_CMD_LATCH_EN_SDR104_PORT1_VALUE   (4)
+#define AUTOK_CRC_LATCH_EN_SDR104_PORT1_VALUE   (4)
+#define AUTOK_CMD_LATCH_EN_HS_VALUE             (2)
+#define AUTOK_CRC_LATCH_EN_HS_VALUE            (2)
 #define AUTOK_LATCH_CK_VALUE                    (1)
 #define AUTOK_CMD_TA_VALUE                      (0)
 #define AUTOK_CRC_TA_VALUE                      (0)
@@ -57,7 +57,7 @@
 
 /* autok msdc TX init setting */
 #define AUTOK_MSDC0_HS400_CLKTXDLY            0
-#define AUTOK_MSDC0_HS400_CMDTXDLY            7
+#define AUTOK_MSDC0_HS400_CMDTXDLY            9
 #define AUTOK_MSDC0_HS400_DAT0TXDLY           0
 #define AUTOK_MSDC0_HS400_DAT1TXDLY           0
 #define AUTOK_MSDC0_HS400_DAT2TXDLY           0
@@ -429,11 +429,6 @@ static int autok_send_tune_cmd(struct msdc_host *host, unsigned int opcode, enum
 		break;
 	case SD_IO_RW_EXTENDED:
 		break;
-	}
-
-	if (host == NULL) {
-		pr_debug("[%s] [ERR]host = %p\n", __func__, host);
-		return E_RESULT_FATAL_ERR;
 	}
 
 	while ((MSDC_READ32(SDC_STS) & SDC_STS_SDCBUSY))
@@ -1137,6 +1132,7 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 			} else if (Bound_Cnt_F == 0) {
 				/* mode_7: rising edge only one bound (not full), falling no boundary */
 				cycle_cnt = 128;
+				pBdPrev = &(pBdInfo_R->bd_info[0]);
 				if (pBdPrev->Bound_Start == 0) {
 					uDlySel_F = 0;
 					uDlySel_R = 63;
@@ -1214,7 +1210,7 @@ static int autok_pad_dly_sel(struct AUTOK_REF_INFO *pInfo)
 		pInfo->opt_dly_cnt = uDlySel_F;
 
 	}
-	AUTOK_RAWPRINT("[AUTOK]Analysis Result: 1T = %d\r\n ", cycle_cnt);
+	AUTOK_RAWPRINT("[AUTOK]Analysis Result: 1T = %d\r\n", cycle_cnt);
 	AUTOK_RAWPRINT("[AUTOK]Analysis Result: Rising Dly Sel: %d, MgLost: %d\r\n", uDlySel_R,
 		       uMgLost_R);
 	AUTOK_RAWPRINT("[AUTOK]Analysis Result: Falling Dly Sel: %d, MgLost: %d\r\n", uDlySel_F,
@@ -1940,9 +1936,9 @@ int autok_init_sdr104(struct msdc_host *host)
 
 	/* if any specific config need modify add here */
 	/* LATCH_TA_EN Config for WCRC Path non_HS400 */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, AUTOK_CRC_LATCH_EN_NON_HS400_VALUE);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, AUTOK_CRC_LATCH_EN_SDR104_PORT1_VALUE);
 	/* LATCH_TA_EN Config for CMD Path non_HS400 */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, AUTOK_CMD_LATCH_EN_NON_HS400_VALUE);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, AUTOK_CMD_LATCH_EN_SDR104_PORT1_VALUE);
 
 	/* enable dvfs feature */
 	/* if (host->hw->host_function == MSDC_SDIO) */
@@ -1961,9 +1957,9 @@ int autok_init_hs200(struct msdc_host *host)
 
 	/* if any specific config need modify add here */
 	/* LATCH_TA_EN Config for WCRC Path non_HS400 */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, AUTOK_CRC_LATCH_EN_NON_HS400_VALUE);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, AUTOK_CRC_LATCH_EN_HS200_PORT0_VALUE);
 	/* LATCH_TA_EN Config for CMD Path non_HS400 */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, AUTOK_CMD_LATCH_EN_NON_HS400_VALUE);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, AUTOK_CMD_LATCH_EN_HS200_PORT0_VALUE);
 
 	return 0;
 }
@@ -1977,9 +1973,9 @@ int autok_init_hs400(struct msdc_host *host)
 
 	/* if any specific config need modify add here */
 	/* LATCH_TA_EN Config for WCRC Path HS400 */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, AUTOK_CMD_LATCH_EN_HS400_VALUE);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, AUTOK_CRC_LATCH_EN_HS400_PORT0_VALUE);
 	/* LATCH_TA_EN Config for CMD Path HS400 */
-	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_CRCSTSENSEL, AUTOK_CRC_LATCH_EN_HS400_VALUE);
+	MSDC_SET_FIELD(MSDC_PATCH_BIT2, MSDC_PB2_RESPSTENSEL, AUTOK_CMD_LATCH_EN_HS400_PORT0_VALUE);
 	/* write path switch to emmc50 */
 	autok_write_param(host, EMMC50_WDATA_MUX_EN, 1);
 	/* Specifical for HS400 Path Sel */
@@ -2061,8 +2057,8 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 		AUTOK_DBGPRINT(AUTOK_DBG_RES,
 			       "[AUTOK][Error]=============Analysis Failed!!=======================\r\n");
 	}
-
-	p_autok_tune_res[EMMC50_DS_ZDLY_DLY] = (uCmdDatInfo.cycle_cnt / 2) > 31 ? 31 : (uCmdDatInfo.cycle_cnt / 2);
+	/* DLY3 keep default value 20 */
+	p_autok_tune_res[EMMC50_DS_ZDLY_DLY] = 20;
 	cycle_value = uCmdDatInfo.cycle_cnt;
 	/* Step2 : Tuning DS Clk Path-ZCLK only tune DLY1 */
 #ifdef CMDQ
@@ -3660,11 +3656,11 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 	void __iomem *base = host->base;
 	unsigned int response;
 	unsigned int tune_tx_value;
-	unsigned int tune_cnt;
-	unsigned int i;
-	unsigned int tune_crc_cnt[32];
-	unsigned int tune_pass_cnt[32];
-	unsigned int tune_tmo_cnt[32];
+	unsigned char tune_cnt;
+	unsigned char i;
+	unsigned char tune_crc_cnt[32];
+	unsigned char tune_pass_cnt[32];
+	unsigned char tune_tmo_cnt[32];
 	char tune_result[33];
 	unsigned int cmd_tx;
 	unsigned int dat0_tx;
@@ -3796,21 +3792,6 @@ int autok_offline_tuning_TX(struct msdc_host *host)
 	MSDC_SET_FIELD(EMMC50_PAD_DAT67_TUNE, MSDC_EMMC50_PAD_DAT7_TXDLY, dat7_tx);
 
 	AUTOK_RAWPRINT("[AUTOK][tune data TX]=========end========\r\n");
-	goto end;
-
-/*adtc_cmd_err:*/
-	AUTOK_RAWPRINT("[AUTOK]------MSDC host reset------\r\n");
-	autok_msdc_reset();
-	msdc_clear_fifo();
-	MSDC_WRITE32(MSDC_INT, 0xffffffff);
-	response = 0;
-	while (((response >> 9) & 0xF) != 4) {
-		ret = autok_send_tune_cmd(host, MMC_SEND_STATUS, TUNE_CMD);
-		response = MSDC_READ32(SDC_RESP0);
-		if ((((response >> 9) & 0xF) == 5) || (((response >> 9) & 0xF) == 6))
-			ret = autok_send_tune_cmd(host, MMC_STOP_TRANSMISSION, TUNE_CMD);
-	}
-
 end:
 	return ret;
 }

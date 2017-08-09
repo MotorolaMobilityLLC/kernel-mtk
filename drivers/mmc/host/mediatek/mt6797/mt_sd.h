@@ -393,6 +393,7 @@ struct msdc_host {
 	struct mmc_command      *cmd;
 	struct mmc_data         *data;
 	struct mmc_request      *mrq;
+	int		        err_cmd;
 	ulong                   *pio_kaddr;
 	int                     cmd_rsp;
 	int                     cmd_rsp_done;

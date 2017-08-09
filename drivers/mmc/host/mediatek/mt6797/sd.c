@@ -3293,6 +3293,9 @@ done:
 	else if (host->error & REQ_CRC_STATUS_ERR)
 		host->need_tune = TUNE_LEGACY_DATA_WRITE;
 
+	if (host->error & REQ_CMD_EIO || host->error & REQ_DAT_ERR ||
+		host->error & REQ_CRC_STATUS_ERR)
+		host->err_cmd = mrq->cmd->opcode;
 #ifdef SDIO_ERROR_BYPASS
 	if (is_card_sdio(host) && !host->error)
 		host->sdio_error = 0;
@@ -3833,8 +3836,10 @@ done:
 		host->error |= REQ_STOP_TMO;
 
 	/* re-autok or try smpl except TMO */
-	if (host->error & REQ_CMD_EIO)
+	if (host->error & REQ_CMD_EIO) {
 		host->need_tune = TUNE_ASYNC_CMD;
+		host->err_cmd = mrq->cmd->opcode;
+	}
 
 #ifdef MTK_MSDC_USE_CACHE
 	msdc_update_cache_flush_status(host, mrq, data, 1);
@@ -3954,6 +3959,9 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 				host->tune_smpl_times = 0;
 				host->need_tune = TUNE_NONE;
 			}
+			if (host->need_tune == TUNE_NONE)
+				host->err_cmd = -1;
+
 		}
 	}
 #else
@@ -3985,6 +3993,8 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 			host->tune_smpl_times = 0;
 			host->need_tune = TUNE_NONE;
 		}
+		if (host->need_tune == TUNE_NONE)
+			host->err_cmd = -1;
 	}
 #endif
 
@@ -4091,7 +4101,7 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	return 0;
 }
 
-int msdc_error_tuning(struct mmc_host *mmc)
+int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 {
 	struct msdc_host *host = mmc_priv(mmc);
 	int ret = 0;
@@ -4149,10 +4159,21 @@ int msdc_error_tuning(struct mmc_host *mmc)
 		/* Other speed mode will tune smpl */
 		default:
 			tune_smpl = 1;
-			pr_err("msdc%d: tune smpl %d times timing:%d err: %d\n",
-				host->id, ++host->tune_smpl_times,
-				mmc->ios.timing, autok_err_type);
-			autok_low_speed_switch_edge(host, &mmc->ios, autok_err_type);
+			/* This is in linux error handle flow, Get card status
+			 * or stop transmision Don't switch edge, till error
+			 */
+			if ((mrq->cmd->opcode == MMC_SEND_STATUS &&
+				host->err_cmd != MMC_SEND_STATUS) ||
+				(mrq->cmd->opcode == MMC_STOP_TRANSMISSION &&
+				host->err_cmd != MMC_STOP_TRANSMISSION)) {
+				pr_err("msdc%d: tune smpl don't switch edge,  err cmd : %d\n",
+					host->id, host->err_cmd);
+			} else {
+				pr_err("msdc%d: tune smpl %d times timing:%d err: %d\n",
+					host->id, ++host->tune_smpl_times,
+					mmc->ios.timing, autok_err_type);
+				autok_low_speed_switch_edge(host, &mmc->ios, autok_err_type);
+			}
 			break;
 		}
 		/* autok failed three times will try reinit tuning */
@@ -4191,7 +4212,7 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	if (!(host->tuning_in_progress) && host->need_tune &&
 		!(host->need_tune & TUNE_AUTOK_PASS))
-		msdc_error_tuning(mmc);
+		msdc_error_tuning(mmc, mrq);
 
 	/* Async only support  DMA and asyc CMD flow */
 	if (msdc_use_async_dma(host_cookie))
@@ -4531,6 +4552,7 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 				host->error |= REQ_DAT_ERR;
 				host->need_tune = TUNE_ASYNC_DATA_READ;
 			}
+			host->err_cmd = mrq->cmd->opcode;
 			/* FIXME: return cmd error for retry if data CRC error */
 			mrq->cmd->error = (unsigned int)-EILSEQ;
 		} else {
@@ -4538,6 +4560,7 @@ static void msdc_irq_data_complete(struct msdc_host *host,
 			host->need_tune = TUNE_NONE;
 			host->reautok_times = 0;
 			host->tune_smpl_times = 0;
+			host->err_cmd = -1;
 		}
 		if (mrq->done)
 			mrq->done(mrq);
@@ -5222,7 +5245,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->reautok_times = 0;
 	host->tune_smpl_times = 0;
 	host->timing = 0;
-
+	host->err_cmd = -1;
 	host->sd_cd_insert_work = 0;
 	host->block_bad_card = 0;
 
