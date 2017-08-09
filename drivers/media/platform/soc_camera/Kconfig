@@ -89,3 +89,9 @@ config VIDEO_ATMEL_ISI
 	  This module makes the ATMEL Image Sensor Interface available
 	  as a v4l2 device.
 
+config VIDEO_MTK
+	tristate "MTK Camera Quick Capture Interface driver"
+	depends on VIDEO_DEV && SOC_CAMERA
+	select VIDEOBUF_DMA_CONTIG
+	---help---
+	  This is a v4l2 driver for the MTK Camera Quick Capture Interface
