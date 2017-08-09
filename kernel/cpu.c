@@ -205,6 +205,16 @@ void cpu_hotplug_enable(void)
 	cpu_maps_update_done();
 }
 
+bool cpu_hotplugging(void)
+{
+	bool ret = false;
+
+	if (cpu_hotplug_disabled == 1)
+		ret = true;
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(cpu_hotplugging);
 #endif	/* CONFIG_HOTPLUG_CPU */
 
 /* Need to know about CPUs going up/down? */
