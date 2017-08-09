@@ -1192,6 +1192,16 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 		.init = mt_soc_audio_init,
 		.ops = &mt_machine_audio_ops,
 	},
+	{
+		.name = "I2S1_AWB_CAPTURE",
+		.stream_name = MT_SOC_I2S2ADC2_STREAM_NAME,
+		.cpu_dai_name   = MT_SOC_I2S2ADC2DAI_NAME,
+		.platform_name  = MT_SOC_I2S2_ADC2_PCM,
+		.codec_dai_name = MT_SOC_CODEC_I2S2_ADC2_NAME,
+		.codec_name = MT_SOC_CODEC_DUMMY_NAME,
+		.init = mt_soc_audio_init,
+		.ops = &mt_machine_audio_ops,
+	},
 };
 
 static struct snd_soc_dai_link mt_soc_dai_component[

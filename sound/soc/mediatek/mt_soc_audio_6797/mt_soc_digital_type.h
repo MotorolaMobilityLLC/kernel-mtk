@@ -54,12 +54,12 @@ typedef enum {
 	Soc_Aud_Digital_Block_MEM_DL3,
 	Soc_Aud_Digital_Block_MEM_AWB,
 	Soc_Aud_Digital_Block_MEM_MOD_DAI,
+	/* currently no use */
+	Soc_Aud_Digital_Block_MEM_DL1_DATA2,
 	Soc_Aud_Digital_Block_MEM_VUL_DATA2,
 	Soc_Aud_Digital_Block_MEM_HDMI,
 	Soc_Aud_Digital_Block_MEM_BTCVSD_RX,
 	Soc_Aud_Digital_Block_MEM_BTCVSD_TX,
-	/* currently no use */
-	Soc_Aud_Digital_Block_MEM_DL1_DATA2,
 	Soc_Aud_Digital_Block_MEM_I2S,		/* this is not actually a mem if... */
 	/* ADDA */
 	Soc_Aud_Digital_Block_ADDA_DL,
@@ -73,6 +73,8 @@ typedef enum {
 	Soc_Aud_Digital_Block_I2S_OUT_DAC_2,	/* 4 channel */
 	Soc_Aud_Digital_Block_I2S_IN_ADC,
 	Soc_Aud_Digital_Block_I2S_IN_ADC_2,	/* 4 channel */
+	/*  I2S2 input    */
+	Soc_Aud_Digital_Block_I2S_IN,
 	/* 2nd I2S */
 	Soc_Aud_Digital_Block_I2S_OUT_2,
 	Soc_Aud_Digital_Block_I2S_IN_2,
@@ -905,5 +907,10 @@ typedef struct {
 	uint32 REG_AFE_ADDA4_ULCF_CFG_28_27;
 	uint32 REG_AFE_ADDA4_ULCF_CFG_30_29;*/
 } AudioAfeRegCache;
+
+
+typedef struct {
+	int  mAud_irq_counter[Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE];
+} Aud_Irq_Block;
 
 #endif

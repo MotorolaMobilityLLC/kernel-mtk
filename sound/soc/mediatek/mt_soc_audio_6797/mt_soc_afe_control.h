@@ -83,6 +83,8 @@ bool Set2ndI2SOutAttribute(uint32_t sampleRate);
 bool Set2ndI2SOut(AudioDigtalI2S *DigtalI2S);
 bool Set2ndI2SOutEnable(bool benable);
 bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S);
+bool SetExtI2SAdcIn(AudioDigtalI2S *DigtalI2S);
+bool SetExtI2SAdcInEnable(bool bEnable);
 bool Set2ndI2SAdcIn(AudioDigtalI2S *DigtalI2S);
 bool SetDLSrc2(uint32 SampleRate);
 
@@ -219,6 +221,8 @@ void SetOffloadSWMode(bool bEnable);
 
 bool SetOffloadCbk(Soc_Aud_Digital_Block block, void *offloadstream, void (*offloadCbk) (void *stream));
 bool ClrOffloadCbk(Soc_Aud_Digital_Block block, void *offloadstream);
+
+bool UpdateAndCheckIrqStatus(int irq_num, bool bEnable);
 
 unsigned int Align64ByteSize(unsigned int insize);
 

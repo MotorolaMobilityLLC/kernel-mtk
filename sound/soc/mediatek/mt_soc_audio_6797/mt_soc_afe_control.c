@@ -150,7 +150,7 @@ static int Aud_APLL_DIV_APLL2_cntr;
 static int irqcount;
 static int APLL1Counter;
 static int APLL2Counter;
-
+static Aud_Irq_Block mAudIrqBlock;
 
 static bool mExternalModemStatus;
 
@@ -492,6 +492,7 @@ bool InitAfeControl(void)
 	AudioAdcI2SStatus = false;
 	Audio2ndAdcI2SStatus = false;
 	AudioMrgStatus = false;
+	memset((void *)&mAudIrqBlock, 0 , sizeof(Aud_Irq_Block));
 
 	memset((void *)&mAudioSramManager, 0, sizeof(AudioSramManager));
 	mAudioMrg->Mrg_I2S_SampleRate = SampleRateTransform(44100, Soc_Aud_Digital_Block_MRG_I2S_OUT);
@@ -1377,10 +1378,39 @@ bool Set2ndI2SAdcIn(AudioDigtalI2S *DigtalI2S)
 	return true;
 }
 
+bool SetExtI2SAdcIn(AudioDigtalI2S *DigtalI2S)
+{
+	uint32 Audio_I2S_Adc = 0;
+	uint32 sampleRateType;
+
+	sampleRateType =
+		    SampleRateTransform(DigtalI2S->mI2S_SAMPLERATE, Soc_Aud_Digital_Block_I2S_IN_ADC);
+
+	/* Set I2S_ADC_IN */
+	Audio_I2S_Adc |= (DigtalI2S->mLR_SWAP << 31);
+	Audio_I2S_Adc |= (DigtalI2S->mBuffer_Update_word << 24);
+	Audio_I2S_Adc |= (DigtalI2S->mINV_LRCK << 23);
+	Audio_I2S_Adc |= (DigtalI2S->mFpga_bit_test << 22);
+	Audio_I2S_Adc |= (DigtalI2S->mFpga_bit << 21);
+	Audio_I2S_Adc |= (DigtalI2S->mloopback << 20);
+	Audio_I2S_Adc |= (sampleRateType << 8);
+	Audio_I2S_Adc |= (DigtalI2S->mI2S_FMT << 3);
+	Audio_I2S_Adc |= (DigtalI2S->mI2S_WLEN << 1);
+	pr_debug("%s Audio_I2S_Adc = 0x%x", __func__, Audio_I2S_Adc);
+	Afe_Set_Reg(AFE_I2S_CON2, Audio_I2S_Adc, MASK_ALL);
+
+	return true;
+}
+
+bool SetExtI2SAdcInEnable(bool bEnable)
+{
+	Afe_Set_Reg(AFE_I2S_CON2, bEnable, 0x1);
+	return true;
+}
 
 bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S)
 {
-	if (false == AudioAdcI2SStatus) {	/* TODO: KC: AudioAdcI2SStatus is always false? */
+	if (false == AudioAdcI2SStatus) {	/* TODO: KC:  AudioAdcI2SStatus is always false? */
 		uint32 dVoiceModeSelect = 0;
 		/* Using Internal ADC */
 		Afe_Set_Reg(AFE_ADDA_TOP_CON0, 0, 0x1 << 0);
@@ -1417,28 +1447,6 @@ bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S)
 			Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, 0x1 << 20, 0x1 << 20);
 		}
 
-	} else {
-		uint32 Audio_I2S_Adc = 0;
-		uint32 sampleRateType;
-
-		sampleRateType =
-		    SampleRateTransform(DigtalI2S->mI2S_SAMPLERATE,
-					Soc_Aud_Digital_Block_I2S_IN_ADC);
-
-		/* Using External ADC */
-		Afe_Set_Reg(AFE_ADDA_TOP_CON0, 1, 0x1 << 0);
-		/* Set I2S_ADC_IN */
-		Audio_I2S_Adc |= (DigtalI2S->mLR_SWAP << 31);
-		Audio_I2S_Adc |= (DigtalI2S->mBuffer_Update_word << 24);
-		Audio_I2S_Adc |= (DigtalI2S->mINV_LRCK << 23);
-		Audio_I2S_Adc |= (DigtalI2S->mFpga_bit_test << 22);
-		Audio_I2S_Adc |= (DigtalI2S->mFpga_bit << 21);
-		Audio_I2S_Adc |= (DigtalI2S->mloopback << 20);
-		Audio_I2S_Adc |= (sampleRateType << 8);
-		Audio_I2S_Adc |= (DigtalI2S->mI2S_FMT << 3);
-		Audio_I2S_Adc |= (DigtalI2S->mI2S_WLEN << 1);
-		pr_warn("%s Audio_I2S_Adc = 0x%x", __func__, Audio_I2S_Adc);
-		Afe_Set_Reg(AFE_I2S_CON2, Audio_I2S_Adc, MASK_ALL);	/* TODO: KC: didn't enable i2s_con2 */
 	}
 
 	return true;
@@ -2227,7 +2235,8 @@ bool SetConnection(uint32 ConnectionState, uint32 Input, uint32 Output)
 
 bool SetIrqEnable(uint32 Irqmode, bool bEnable)
 {
-	/* printk("+%s(), Irqmode = %d, bEnable = %d\n", __FUNCTION__, Irqmode, bEnable); */
+	bool IrqStatus = false;
+
 	switch (Irqmode) {
 	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:{
 			if (checkDllinkMEMIfStatus() == false)
@@ -2236,7 +2245,11 @@ bool SetIrqEnable(uint32 Irqmode, bool bEnable)
 		}
 	case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:{
 			/* TODO: KC: this is weird, should not put here, should have a better way */
-			if (checkUplinkMEMIfStatus() == false) {
+			IrqStatus = UpdateAndCheckIrqStatus(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, bEnable);
+			if ((IrqStatus == false) && (bEnable == true)) {
+				Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
+				mIRQ2Enable = bEnable;
+			} else if ((IrqStatus == false) && (bEnable == false)) {
 				Afe_Set_Reg(AFE_IRQ_MCU_CON, (bEnable << Irqmode), (1 << Irqmode));
 				mIRQ2Enable = bEnable;
 			}
@@ -3792,7 +3805,7 @@ void Auddrv_UL2_Interrupt_Handler(void)
 		Hw_Get_bytes += mBlock->u4BufferSize;
 
 	PRINTK_AUD_UL2("%s Get_bytes:%x, Cur_ReadIdx:%x,RadIdx:%x, WriteIdx:0x%x, BufAddr:%x MemIfNum = %d\n",
-	__func_-, Hw_Get_bytes, HW_Cur_ReadIdx, mBlock->u4DMAReadIdx, mBlock->u4WriteIdx,
+	__func__, Hw_Get_bytes, HW_Cur_ReadIdx, mBlock->u4DMAReadIdx, mBlock->u4WriteIdx,
 	mBlock->pucPhysBufAddr, Mem_Block->MemIfNum);
 
 	mBlock->u4WriteIdx += Hw_Get_bytes;
@@ -4026,6 +4039,44 @@ unsigned int Align64ByteSize(unsigned int insize)
 	align_size = insize & MAGIC_NUMBER;
 
 	return align_size;
+}
+
+bool UpdateAndCheckIrqStatus(int irq_num, bool bEnable)
+{
+	bool IrqStatus = false;
+
+	spin_lock(&afe_control_lock);
+	if (irq_num < Soc_Aud_IRQ_MCU_MODE_NUM_OF_IRQ_MODE) {
+		switch (irq_num) {
+		case Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE:
+			/* uplink path */
+			if (bEnable == true) {
+				if (mAudIrqBlock.mAud_irq_counter[irq_num] != 0)
+					IrqStatus = true;
+					mAudIrqBlock.mAud_irq_counter[irq_num]++;
+			} else {
+				mAudIrqBlock.mAud_irq_counter[irq_num]--;
+				if (mAudIrqBlock.mAud_irq_counter[irq_num] != 0)
+					IrqStatus = true;
+			}
+			break;
+		default:
+			break;
+		}
+	} else
+		pr_err("%s fail irq_num = %d\n", __func__, irq_num);
+
+	spin_unlock(&afe_control_lock);
+
+	pr_debug("%s irq_num = %d bEnable = %d mAud_irq_counter = %d\n",
+		__func__, irq_num, bEnable, mAudIrqBlock.mAud_irq_counter[Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE]);
+	if (mAudIrqBlock.mAud_irq_counter[irq_num] < 0) {
+		pr_err("%s irq_num = %d\n", __func__, irq_num);
+		mAudIrqBlock.mAud_irq_counter[irq_num] = 0;
+		AUDIO_AEE("UpdateAndCheckIrqStatus irq_num");
+	}
+
+	return IrqStatus;
 }
 
 bool SetOffloadCbk(Soc_Aud_Digital_Block block, void *offloadstream,

@@ -428,7 +428,7 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 	},
 	{
 	.capture = {
-		.stream_name = MT_SOC_4PINI2S0AWB_STREAM_NAME,
+		.stream_name = MT_SOC_I2S2ADC2_STREAM_NAME,
 		.rates = SNDRV_PCM_RATE_8000_48000,
 		.formats = SNDRV_PCM_FMTBIT_S16_LE,
 		.channels_min = 1,
@@ -436,7 +436,7 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 		.rate_min = 8000,
 		.rate_max = 48000,
 	},
-	.name = MT_SOC_4PINI2S0AWBDAI_NAME,
+	.name = MT_SOC_I2S2ADC2DAI_NAME,
 	.ops = &mtk_dai_stub_ops,
 	},
 	{

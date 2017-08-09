@@ -27,6 +27,7 @@
 #define AUDIO_DEF_H
 
 #include "AudDrv_Type_Def.h"
+#include <mt-plat/aee.h>
 
 #define PM_MANAGER_API
 #define AUDIO_MEMORY_SRAM
@@ -147,6 +148,10 @@
 /* if need assert , use AUDIO_ASSERT(true) */
 #define AUDIO_ASSERT(value) BUG_ON(false)
 
+#define AUDIO_AEE(message) \
+	(aee_kernel_exception_api(__FILE__, __LINE__, DB_OPT_FTRACE, message, "audio dump ftrace"))
+
+
 
 /**********************************
  *  Other Definitions             *
@@ -195,7 +200,7 @@
 #define MT_SOC_UL1DATA2_NAME "mt-soc-ul1data2dai-driver"
 #define MT_SOC_UL2DAI_NAME "mt-soc-ul2dai-driver"
 #define MT_SOC_I2S0AWBDAI_NAME "mt-soc-i2s0awbdai-driver"
-#define MT_SOC_4PINI2S0AWBDAI_NAME "mt-soc-4pini2s0awbdai-driver"
+#define MT_SOC_I2S2ADC2DAI_NAME "mt-soc-i2s2adc2dai-driver"
 #define MT_SOC_VOICE_MD1_NAME "mt-soc-voicemd1dai-driver"
 #define MT_SOC_VOICE_MD1_BT_NAME "mt-soc-voicemd1-btdai-driver"
 #define MT_SOC_VOICE_MD2_NAME "mt-soc-voicemd2dai-driver"
@@ -230,7 +235,6 @@
 #define MT_SOC_UL1_PCM   "mt-soc-ul1-pcm"
 #define MT_SOC_UL2_PCM   "mt-soc-ul2-pcm"
 #define MT_SOC_I2S0_AWB_PCM   "mt-soc-i2s0awb-pcm"
-#define MT_SOC_4PINI2S0_AWB_PCM   "mt-soc-4pini2s0awb-pcm"
 #define MT_SOC_AWB_PCM   "mt-soc-awb-pcm"
 #define MT_SOC_MRGRX_AWB_PCM   "mt-soc-mrgrx-awb-pcm"
 #define MT_SOC_DL1_AWB_PCM   "mt-soc-dl1-awb-pcm"
@@ -253,7 +257,7 @@
 #define MT_SOC_FM_MRGTX_PCM "mt-soc-fmmrgtx-pcm"
 #define MT_SOC_TDMRX_PCM "mt-soc-tdmrx-pcm"
 #define MT_SOC_MOD_ADCI2S_PCM "mt-soc-mod2adci2s-pcm"
-#define MT_SOC_ADC2_AWB_PCM "mt-soc-adc2awb-pcm"
+#define MT_SOC_I2S2_ADC2_PCM "mt-soc-i2s2_adc2-pcm"
 #define MT_SOC_IO2_DAI_PCM "mt-soc-io2dai-pcm"
 #define MT_SOC_FM_I2S_PCM  "mt-soc-fm-i2s-pcm"
 #define MT_SOC_FM_I2S_AWB_PCM  "mt-soc-fm-i2s-awb-pcm"
@@ -268,7 +272,7 @@
 #define MT_SOC_CODEC_RXDAI_NAME "mt-soc-codec-rx-dai"
 #define MT_SOC_CODEC_RXDAI2_NAME "mt-soc-codec-rx-dai2"
 #define MT_SOC_CODEC_I2S0AWB_NAME "mt-soc-codec-i2s0awb-dai"
-#define MT_SOC_CODEC_4PINI2S0AWB_NAME "mt-soc-codec-4pini2s0awb-dai"
+#define MT_SOC_CODEC_I2S2_ADC2_NAME "mt-soc-codec-i2s2adc2-dai"
 #define MT_SOC_CODEC_I2S0TXDAI_NAME "mt-soc-codec-I2s0tx-dai"
 #define MT_SOC_CODEC_DL1AWBDAI_NAME "mt-soc-codec-dl1awb-dai"
 #define MT_SOC_CODEC_VOICE_MD1DAI_NAME "mt-soc-codec-voicemd1-dai"
@@ -326,7 +330,7 @@
 #define MT_SOC_UL1_STREAM_NAME "MultiMedia1_Capture"
 #define MT_SOC_UL1DATA2_STREAM_NAME "MultiMediaData2_Capture"
 #define MT_SOC_I2S0AWB_STREAM_NAME "I2S0AWB_Capture"
-#define MT_SOC_4PINI2S0AWB_STREAM_NAME "4PINI2S0AWB_Capture"
+#define MT_SOC_I2S2ADC2_STREAM_NAME "I2S2ADC2_Capture"
 #define MT_SOC_AWB_STREAM_NAME "MultiMedia_awb_Capture"
 #define MT_SOC_DAI_STREAM_NAME "MultiMedia_dai_Capture"
 #define MT_SOC_MODDAI_STREAM_NAME "MultiMedia_Moddai_Capture"

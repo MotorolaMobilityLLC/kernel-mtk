@@ -203,9 +203,9 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 		     }
 	 },
 	{
-	.name = MT_SOC_CODEC_4PINI2S0AWB_NAME,
+	.name = MT_SOC_CODEC_I2S2_ADC2_NAME,
 	.capture = {
-		.stream_name = MT_SOC_4PINI2S0AWB_STREAM_NAME,
+		.stream_name = MT_SOC_I2S2ADC2_STREAM_NAME,
 		.channels_min = 1,
 		.channels_max = 2,
 		.rates = SNDRV_PCM_RATE_8000_48000,
@@ -310,32 +310,11 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 		      .stream_name = MT_SOC_I2S0_STREAM_NAME,
 		      .channels_min = 1,
 		      .channels_max = 8,
+		      .rate_min = 8000,
+		      .rate_max = 192000,
 		      .rates = SNDRV_PCM_RATE_8000_192000,
-		      .formats = (SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S8 |
-				  SNDRV_PCM_FMTBIT_U16_LE | SNDRV_PCM_FMTBIT_S16_LE |
-				  SNDRV_PCM_FMTBIT_U16_BE | SNDRV_PCM_FMTBIT_S16_BE |
-				  SNDRV_PCM_FMTBIT_U24_LE | SNDRV_PCM_FMTBIT_S24_LE |
-				  SNDRV_PCM_FMTBIT_U24_BE | SNDRV_PCM_FMTBIT_S24_BE |
-				  SNDRV_PCM_FMTBIT_U24_3LE | SNDRV_PCM_FMTBIT_S24_3LE |
-				  SNDRV_PCM_FMTBIT_U24_3BE | SNDRV_PCM_FMTBIT_S24_3BE |
-				  SNDRV_PCM_FMTBIT_U32_LE | SNDRV_PCM_FMTBIT_S32_LE |
-				  SNDRV_PCM_FMTBIT_U32_BE | SNDRV_PCM_FMTBIT_S32_BE),
+		      .formats = SND_SOC_ADV_MT_FMTS,
 		      },
-	 .capture = {
-		     .stream_name = MT_SOC_I2S0_STREAM_NAME,
-		     .channels_min = 1,
-		     .channels_max = 8,
-		     .rates = SNDRV_PCM_RATE_8000_192000,
-		     .formats = (SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S8 |
-				 SNDRV_PCM_FMTBIT_U16_LE | SNDRV_PCM_FMTBIT_S16_LE |
-				 SNDRV_PCM_FMTBIT_U16_BE | SNDRV_PCM_FMTBIT_S16_BE |
-				 SNDRV_PCM_FMTBIT_U24_LE | SNDRV_PCM_FMTBIT_S24_LE |
-				 SNDRV_PCM_FMTBIT_U24_BE | SNDRV_PCM_FMTBIT_S24_BE |
-				 SNDRV_PCM_FMTBIT_U24_3LE | SNDRV_PCM_FMTBIT_S24_3LE |
-				 SNDRV_PCM_FMTBIT_U24_3BE | SNDRV_PCM_FMTBIT_S24_3BE |
-				 SNDRV_PCM_FMTBIT_U32_LE | SNDRV_PCM_FMTBIT_S32_LE |
-				 SNDRV_PCM_FMTBIT_U32_BE | SNDRV_PCM_FMTBIT_S32_BE),
-		     },
 	 },
 	{
 	 .name = MT_SOC_CODEC_MRGRX_DUMMY_DAI_NAME,
