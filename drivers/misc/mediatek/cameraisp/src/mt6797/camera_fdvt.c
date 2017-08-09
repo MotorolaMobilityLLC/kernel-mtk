@@ -363,10 +363,19 @@ void FDVT_basic_config(void)
 /*******************************************************************************
 // Clock to ms
 ********************************************************************************/
+
+/*
 static unsigned long ms_to_jiffies(unsigned long ms)
 {
 	return (ms * HZ + 512) >> 10;
 }
+*/
+
+static unsigned long us_to_jiffies(unsigned long us)
+{
+    return (((us/1000) * HZ + 512) >> 10);
+}
+
 /*=======================================================================*/
 /* FDVT Clock control Registers */
 /*=======================================================================*/
@@ -484,10 +493,10 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 
 	for (i = 0; i < pREGIO->u4Count; i++) {
 		if ((FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) >= FDVT_ADDR && (FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]) <= (FDVT_ADDR + FDVT_MAX_OFFSET)) {
-			//LOG_DBG("Write: FDVT[0x%03x](0x%08x) = 0x%08x\n", pFDVTWriteBuffer.u4Addr[i], FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i], pFDVTWriteBuffer.u4Data[i]);
+			/* LOG_DBG("Write: FDVT[0x%03x](0x%08x) = 0x%08x\n", pFDVTWriteBuffer.u4Addr[i], FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i], pFDVTWriteBuffer.u4Data[i]); */
 			FDVT_WR32(pFDVTWriteBuffer.u4Data[i], FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i]);
 		} else {
-			LOG_DBG("Error: Writing Memory(0x%lx) Excess FDVT Range!  FD Offset: 0x%x\n", FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i], pFDVTWriteBuffer.u4Addr[i]);
+			/* LOG_DBG("Error: Writing Memory(0x%8x) Excess FDVT Range!  FD Offset: 0x%x\n", FDVT_ADDR + pFDVTWriteBuffer.u4Addr[i], pFDVTWriteBuffer.u4Addr[i]); */
 		}
 	}
 
@@ -515,9 +524,9 @@ static int FDVT_ReadRegHW(FDVTRegIO *a_pstCfg)
 	for (i = 0; i < a_pstCfg->u4Count; i++) {
 		if ((FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]) >= FDVT_ADDR && (FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]) <= (FDVT_ADDR + FDVT_MAX_OFFSET)) {
 			pFDVTReadBuffer.u4Data[i] = ioread32((void *)(FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]));
-			//LOG_DBG("Read  addr/val: 0x%08x/0x%08x\n", (u32) (FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]), (u32) pFDVTReadBuffer.u4Data[i]);
+			/* LOG_DBG("Read  addr/val: 0x%08x/0x%08x\n", (u32) (FDVT_ADDR + pFDVTReadBuffer.u4Addr[i]), (u32) pFDVTReadBuffer.u4Data[i]); */
 		} else {
-			LOG_DBG("Error: Reading Memory(0x%lx) Excess FDVT Range!  FD Offset: 0x%x\n", FDVT_ADDR + pFDVTReadBuffer.u4Addr[i], pFDVTReadBuffer.u4Addr[i]);
+			/* LOG_DBG("Error: Reading Memory(0x%8x) Excess FDVT Range!  FD Offset: 0x%x\n", FDVT_ADDR + pFDVTReadBuffer.u4Addr[i], pFDVTReadBuffer.u4Addr[i]); */
 			ret = -EFAULT;
 			goto mt_FDVT_read_reg_exit;
 		}
@@ -539,7 +548,8 @@ mt_FDVT_read_reg_exit:
 static int FDVT_WaitIRQ(u32 *u4IRQMask)
 {
 	int timeout;
-	timeout = wait_event_interruptible_timeout(g_FDVTWQ, (g_FDVTIRQMSK & g_FDVTIRQ), ms_to_jiffies(500));
+	/* timeout = wait_event_interruptible_timeout(g_FDVTWQ, (g_FDVTIRQMSK & g_FDVTIRQ), ms_to_jiffies(500)); */
+	timeout = wait_event_interruptible_timeout(g_FDVTWQ, (g_FDVTIRQMSK & g_FDVTIRQ), us_to_jiffies(15 * 1000000));	
 
 	if (timeout == 0) {
 		LOG_DBG("wait_event_interruptible_timeout timeout, %d, %d\n", g_FDVTIRQMSK, g_FDVTIRQ);

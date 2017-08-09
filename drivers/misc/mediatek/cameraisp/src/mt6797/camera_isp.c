@@ -113,6 +113,7 @@ typedef bool                    MBOOL;
 
 #define	LOG_VRB(format,	args...)    pr_debug(MyTag format, ##args)
 
+#define ISP_DEBUG
 #ifdef ISP_DEBUG
 #define LOG_DBG(format, args...)    pr_debug(MyTag format, ##args)
 #else
@@ -3693,10 +3694,15 @@ static inline void ISP_Reset(MINT32 module)
         case ISP_CAM_B_IDX:
         {
             /* Reset CAM flow */
+            ISP_WR32(CAM_REG_CTL_SW_CTL(module),0x2);
             ISP_WR32(CAM_REG_CTL_SW_CTL(module), 0x1);
+            #if 0
             while(ISP_RD32(CAM_REG_CTL_SW_CTL(module)) != 0x2){
                 LOG_DBG("CAM reseting... module:%d\n", module);
             }
+            #else
+            mdelay(1);
+            #endif
             ISP_WR32(CAM_REG_CTL_SW_CTL(module), 0x4);
             ISP_WR32(CAM_REG_CTL_SW_CTL(module), 0x0);
 
@@ -3705,10 +3711,15 @@ static inline void ISP_Reset(MINT32 module)
         case ISP_UNI_A_IDX:
         {
             /* Reset UNI flow */
+            ISP_WR32(CAM_UNI_REG_TOP_SW_CTL(module),0x222);
             ISP_WR32(CAM_UNI_REG_TOP_SW_CTL(module), 0x111);
+            #if 0
             while(ISP_RD32(CAM_UNI_REG_TOP_SW_CTL(module)) != 0x222){
                 LOG_DBG("UNI reseting... module:%d\n", module);
             }
+            #else
+            mdelay(1);
+            #endif
             ISP_WR32(CAM_UNI_REG_TOP_SW_CTL(module), 0x1444);
             ISP_WR32(CAM_UNI_REG_TOP_SW_CTL(module), 0x0);
             break;
@@ -3861,7 +3872,7 @@ static MINT32 ISP_WriteRegToHw(
     {
         if (dbgWriteReg)
         {
-            LOG_DBG("module(%d), base(0x%x),Addr(0x%x), Val(0x%x)\n", module, (unsigned long)regBase ,(unsigned long)(pReg[i].Addr), (MUINT32)(pReg[i].Val));
+            LOG_DBG("module(%d), base(0x%lx),Addr(0x%lx), Val(0x%x)\n", module, (unsigned long)regBase ,(unsigned long)(pReg[i].Addr), (MUINT32)(pReg[i].Val));
         }
 
         if (((regBase + pReg[i].Addr) < (regBase + PAGE_SIZE)))
@@ -5875,7 +5886,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
                 goto EXIT;
             }
 
-            LOG_DBG("ISP_CLEAR_IRQ:Type(%d),Status(0x%08X),st_status(%d),IrqStatus(0x%08X)\n", ClearIrq.Type, ClearIrq.EventInfo.Status, ClearIrq.EventInfo.St_type, IspInfo.IrqInfo.Status[ClearIrq.Type][ClearIrq.EventInfo.UserKey]);
+            LOG_DBG("ISP_CLEAR_IRQ:Type(%d),Status(0x%x),st_status(%d),IrqStatus(0x%p)\n", ClearIrq.Type, ClearIrq.EventInfo.Status, ClearIrq.EventInfo.St_type, IspInfo.IrqInfo.Status[ClearIrq.Type][ClearIrq.EventInfo.UserKey]);
             spin_lock_irqsave(&(IspInfo.SpinLockIrq[ClearIrq.Type]), flags);
             IspInfo.IrqInfo.Status[ClearIrq.Type][ClearIrq.EventInfo.St_type][ClearIrq.EventInfo.UserKey] &= (~ClearIrq.EventInfo.Status);
             spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[ClearIrq.Type]), flags);
@@ -7020,7 +7031,6 @@ static MINT32 ISP_probe(struct platform_device *pDev)
     struct device *dev = NULL;
 #endif
 
-	nr_isp_devs += 1;
     LOG_INF("- E. ISP driver probe. \n");
 
     /* Get platform_device parameters */
@@ -7031,7 +7041,7 @@ static MINT32 ISP_probe(struct platform_device *pDev)
         return -ENXIO;
     }
 
-
+    nr_isp_devs += 1;
     isp_devs = krealloc(isp_devs, sizeof(struct isp_device) * nr_isp_devs, GFP_KERNEL);
     if (!isp_devs) {
         dev_err(&pDev->dev, "Unable to allocate isp_devs\n");
@@ -8998,7 +9008,7 @@ static MINT32 __init ISP_Init(void)
         LOG_ERR("unable to map ISP_SENINF0_BASE registers!!!\n");
         return -ENODEV;
     }
-    LOG_DBG("ISP_SENINF0_BASE: %lx\n", ISP_SENINF0_BASE);
+    LOG_DBG("ISP_SENINF0_BASE: %p\n", ISP_SENINF0_BASE);
 
     node = of_find_compatible_node(NULL, NULL, "mediatek,seninf1");
     if (!node) {
@@ -9010,7 +9020,7 @@ static MINT32 __init ISP_Init(void)
         LOG_ERR("unable to map ISP_SENINF1_BASE registers!!!\n");
         return -ENODEV;
     }
-    LOG_DBG("ISP_SENINF1_BASE: %lx\n", ISP_SENINF1_BASE);
+    LOG_DBG("ISP_SENINF1_BASE: %p\n", ISP_SENINF1_BASE);
 
     node = of_find_compatible_node(NULL, NULL, "mediatek,seninf2");
     if (!node) {
@@ -9022,7 +9032,7 @@ static MINT32 __init ISP_Init(void)
         LOG_ERR("unable to map ISP_SENINF2_BASE registers!!!\n");
         return -ENODEV;
     }
-    LOG_DBG("ISP_SENINF2_BASE: %lx\n", ISP_SENINF2_BASE);
+    LOG_DBG("ISP_SENINF2_BASE: %p\n", ISP_SENINF2_BASE);
 
     /* FIX-ME: linux-3.10 procfs API changed */
     proc_create("driver/isp_reg", 0, NULL, &fcameraisp_proc_fops);
@@ -9988,7 +9998,7 @@ static irqreturn_t ISP_Irq_DIP_A(MINT32  Irq,void *DeviceId)
 
     spin_unlock(&(IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_DIP_A_ST]));
 
-    LOG_DBG("ISP_Irq_DIP_A:%d, reg 0x%x : 0x%lx, reg 0x%x : 0x%lx\n", Irq, ISP_DIP_A_BASE + 0x030, IrqINTStatus, ISP_DIP_A_BASE + 0x034, IrqCQStatus);
+    LOG_DBG("ISP_Irq_DIP_A:%d, reg 0x%p : 0x%x, reg 0x%p : 0x%x\n", Irq, (ISP_DIP_A_BASE + 0x030), IrqINTStatus, (ISP_DIP_A_BASE + 0x034), IrqCQStatus);
 
     /*  */
     wake_up_interruptible(&IspInfo.WaitQueueHead);
