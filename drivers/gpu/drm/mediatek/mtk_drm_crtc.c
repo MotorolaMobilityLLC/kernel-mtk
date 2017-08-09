@@ -270,19 +270,15 @@ static int mtk_crtc_ddp_hw_init(struct mtk_drm_crtc *mtk_crtc)
 		mtk_ddp_comp_start(comp);
 	}
 
-	/* Initially disable all planes, keep the pending plane state */
-/*	for (i = 0; i < OVL_LAYER_NR; i++) {
+	/* Initially configure all planes */
+	for (i = 0; i < OVL_LAYER_NR; i++) {
 		struct drm_plane *plane = &mtk_crtc->planes[i].base;
 		struct mtk_plane_state *plane_state;
-		bool enable;
 
 		plane_state = to_mtk_plane_state(plane->state);
-		enable = plane_state->pending.enable;
-		plane_state->pending.enable = false;
 		mtk_ddp_comp_layer_config(mtk_crtc->ddp_comp[0], i,
 					  plane_state);
-		plane_state->pending.enable = enable;
-	} */
+	}
 
 	return 0;
 
@@ -521,6 +517,19 @@ int mtk_drm_crtc_create(struct drm_device *drm_dev,
 	int ret;
 	int i;
 
+	for (i = 0; i < path_len; i++) {
+		enum mtk_ddp_comp_id comp_id = path[i];
+		struct device_node *node;
+
+		node = priv->comp_node[comp_id];
+		if (!node) {
+			dev_info(dev,
+				 "Not creating crtc %d because component %d is disabled or missing\n",
+				 pipe, comp_id);
+			return 0;
+		}
+	}
+
 	mtk_crtc = devm_kzalloc(dev, sizeof(*mtk_crtc), GFP_KERNEL);
 	if (!mtk_crtc)
 		return -ENOMEM;
@@ -544,12 +553,6 @@ int mtk_drm_crtc_create(struct drm_device *drm_dev,
 		struct device_node *node;
 
 		node = priv->comp_node[comp_id];
-		if (!node) {
-			dev_err(dev, "Component %d is disabled or missing\n",
-				comp_id);
-			ret = -ENODEV;
-			goto unprepare;
-		}
 
 		comp = priv->ddp_comp[comp_id];
 		if (!comp) {

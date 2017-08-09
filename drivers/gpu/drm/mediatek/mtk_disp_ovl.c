@@ -11,6 +11,9 @@
  * GNU General Public License for more details.
  */
 
+#ifdef CONFIG_ARM
+#include <asm/dma-iommu.h>
+#endif
 #include <drm/drmP.h>
 #include <linux/clk.h>
 #include <linux/component.h>
@@ -223,6 +226,24 @@ static int mtk_disp_ovl_bind(struct device *dev, struct device *master,
 	struct drm_device *drm_dev = data;
 	int ret;
 	int i;
+
+#ifdef CONFIG_ARM
+	struct device_node *np;
+	struct platform_device *pdev;
+	struct dma_iommu_mapping *dma_mapping;
+
+	np = of_parse_phandle(dev->of_node, "iommus", 0);
+	if (!np)
+		return 0;
+
+	pdev = of_find_device_by_node(np);
+	of_node_put(np);
+	if (WARN_ON(!pdev))
+		return -EINVAL;
+
+	dma_mapping = pdev->dev.archdata.iommu;
+	arm_iommu_attach_device(dev, dma_mapping);
+#endif
 
 	ret = mtk_ddp_comp_register(drm_dev, &priv->ddp_comp);
 	if (ret < 0) {

@@ -38,6 +38,7 @@ struct mtk_mmsys_driver_data {
 struct mtk_drm_private {
 	struct drm_fb_helper *fb_helper;
 	struct drm_device *drm;
+	struct device *dma_dev;
 
 	struct drm_crtc *crtc[MAX_CRTC];
 	unsigned int num_pipes;

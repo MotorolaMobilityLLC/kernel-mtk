@@ -15,6 +15,7 @@
 #include <drm/drm_gem.h>
 #include <linux/dma-buf.h>
 
+#include "mtk_drm_drv.h"
 #include "mtk_drm_gem.h"
 
 static struct mtk_drm_gem_obj *mtk_drm_gem_init(struct drm_device *dev,
@@ -42,6 +43,7 @@ static struct mtk_drm_gem_obj *mtk_drm_gem_init(struct drm_device *dev,
 struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 					   size_t size, bool alloc_kmap)
 {
+	struct mtk_drm_private *priv = dev->dev_private;
 	struct mtk_drm_gem_obj *mtk_gem;
 	struct drm_gem_object *obj;
 	int ret;
@@ -58,7 +60,7 @@ struct mtk_drm_gem_obj *mtk_drm_gem_create(struct drm_device *dev,
 	if (!alloc_kmap)
 		dma_set_attr(DMA_ATTR_NO_KERNEL_MAPPING, &mtk_gem->dma_attrs);
 
-	mtk_gem->cookie = dma_alloc_attrs(dev->dev, obj->size,
+	mtk_gem->cookie = dma_alloc_attrs(priv->dma_dev, obj->size,
 					  &mtk_gem->dma_addr, GFP_KERNEL,
 					  &mtk_gem->dma_attrs);
 	if (!mtk_gem->cookie) {
@@ -85,11 +87,12 @@ err_gem_free:
 void mtk_drm_gem_free_object(struct drm_gem_object *obj)
 {
 	struct mtk_drm_gem_obj *mtk_gem = to_mtk_gem_obj(obj);
+	struct mtk_drm_private *priv = obj->dev->dev_private;
 
 	if (mtk_gem->sg)
 		drm_prime_gem_destroy(obj, mtk_gem->sg);
 	else
-		dma_free_attrs(obj->dev->dev, obj->size, mtk_gem->cookie,
+		dma_free_attrs(priv->dma_dev, obj->size, mtk_gem->cookie,
 			       mtk_gem->dma_addr, &mtk_gem->dma_attrs);
 
 	/* release file pointer to gem object. */
@@ -166,7 +169,7 @@ static int mtk_drm_gem_object_mmap(struct drm_gem_object *obj,
 {
 	int ret;
 	struct mtk_drm_gem_obj *mtk_gem = to_mtk_gem_obj(obj);
-	struct drm_device *drm = obj->dev;
+	struct mtk_drm_private *priv = obj->dev->dev_private;
 
 	/*
 	 * dma_alloc_attrs() allocated a struct page table for mtk_gem, so clear
@@ -175,8 +178,8 @@ static int mtk_drm_gem_object_mmap(struct drm_gem_object *obj,
 	vma->vm_flags &= ~VM_PFNMAP;
 	vma->vm_pgoff = 0;
 
-	ret = dma_mmap_attrs(drm->dev, vma, mtk_gem->cookie, mtk_gem->dma_addr,
-			     obj->size, &mtk_gem->dma_attrs);
+	ret = dma_mmap_attrs(priv->dma_dev, vma, mtk_gem->cookie,
+			     mtk_gem->dma_addr, obj->size, &mtk_gem->dma_attrs);
 	if (ret)
 		drm_gem_vm_close(vma);
 
@@ -217,7 +220,7 @@ int mtk_drm_gem_mmap(struct file *filp, struct vm_area_struct *vma)
 struct sg_table *mtk_gem_prime_get_sg_table(struct drm_gem_object *obj)
 {
 	struct mtk_drm_gem_obj *mtk_gem = to_mtk_gem_obj(obj);
-	struct drm_device *drm = obj->dev;
+	struct mtk_drm_private *priv = obj->dev->dev_private;
 	struct sg_table *sgt;
 	int ret;
 
@@ -225,7 +228,7 @@ struct sg_table *mtk_gem_prime_get_sg_table(struct drm_gem_object *obj)
 	if (!sgt)
 		return ERR_PTR(-ENOMEM);
 
-	ret = dma_get_sgtable_attrs(drm->dev, sgt, mtk_gem->cookie,
+	ret = dma_get_sgtable_attrs(priv->dma_dev, sgt, mtk_gem->cookie,
 				    mtk_gem->dma_addr, obj->size,
 				    &mtk_gem->dma_attrs);
 	if (ret) {
