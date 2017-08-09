@@ -44,7 +44,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/tru
 endif
 endif
 
-ifneq ($(MTK_PLATFORM),mt8163)
+ifneq ($(CONFIG_MTK_CMDQ_TAB),y)
 # driver module
 obj-y += cmdq_record.o
 obj-y += cmdq_core.o
