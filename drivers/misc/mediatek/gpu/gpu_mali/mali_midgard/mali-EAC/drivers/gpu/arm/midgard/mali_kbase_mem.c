@@ -79,7 +79,7 @@ bool kbase_dump_gpu_memory_usage()
 
 		pr_warn(KERN_DEBUG "%10s\t%16s\n", "PID", "Memory by Page");
 		pr_warn(KERN_DEBUG "============================\n");
-		mutex_lock(&kbdev->kctx_list_lock);
+		//mutex_lock(&kbdev->kctx_list_lock);
 		list_for_each_entry(element, &kbdev->kctx_list, link) {
 			/* output the memory usage and cap for each kctx */
 			/* opened on this device */
@@ -91,7 +91,7 @@ bool kbase_dump_gpu_memory_usage()
 				"Total", \
 				atomic_read(&(kbdev->memdev.used_pages)));
 		pr_warn(KERN_DEBUG "============================\n");
-		mutex_unlock(&kbdev->kctx_list_lock);
+		//mutex_unlock(&kbdev->kctx_list_lock);
 	}
 	kbase_dev_list_put(kbdev_list);
 	return true;
