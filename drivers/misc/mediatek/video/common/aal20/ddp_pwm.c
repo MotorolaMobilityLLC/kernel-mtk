@@ -109,7 +109,7 @@ static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *p
 	/* disp_pwm_id_t id = DISP_PWM0; */
 	unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
 	int index = index_of_pwm(DISP_PWM0);
-	int i, ret;
+	int ret;
 
 	pwm_div = PWM_DEFAULT_DIV_VALUE;
 
@@ -130,13 +130,6 @@ static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *p
 
 	DISP_REG_MASK(cmdq, reg_base + DISP_PWM_CON_1_OFF, 1023, 0x3ff);	/* 1024 levels */
 	/* We don't init the backlight here until AAL/Android give */
-
-	g_pwm_log_index = 0;
-	for (i = 0; i < PWM_LOG_BUFFER_SIZE; i += 1) {
-		g_pwm_log_buffer[i].tsec = -1;
-		g_pwm_log_buffer[i].tusec = -1;
-		g_pwm_log_buffer[i].value = -1;
-	}
 
 	return 0;
 }
