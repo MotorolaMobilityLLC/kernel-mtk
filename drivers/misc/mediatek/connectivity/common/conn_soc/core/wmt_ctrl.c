@@ -893,7 +893,7 @@ INT32 wmt_ctrl_set_stp_dbg_info(P_WMT_CTRL_DATA pWmtCtrlData)
 	}
 	WMT_DBG_FUNC("chipid(0x%x),rom(%s),patch date(%s),patch plat(%s)\n", chipID, pRomVer, pPatch->ucDateTime,
 		     pPatch->ucPLat);
-	return stp_dbg_set_version_info(chipID, pRomVer, NULL, &(pPatch->ucDateTime[0]), &(pPatch->ucPLat[0]));
+	return stp_dbg_set_version_info(chipID, pRomVer, &(pPatch->ucDateTime[0]), &(pPatch->ucPLat[0]));
 }
 
 static INT32 wmt_ctrl_bgw_desense_ctrl(P_WMT_CTRL_DATA pWmtCtrlData)

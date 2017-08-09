@@ -1678,14 +1678,12 @@ INT32 stp_dbg_poll_cuppcr_ctrl(UINT32 en)
 	return 0;
 }
 
-INT32 stp_dbg_set_version_info(UINT32 chipid, UINT8 *pRomVer, UINT8 *wifiVer, UINT8 *pPatchVer, UINT8 *pPatchBrh)
+INT32 stp_dbg_set_version_info(UINT32 chipid, UINT8 *pRomVer, UINT8 *pPatchVer, UINT8 *pPatchBrh)
 {
 	if (g_stp_dbg_cpupcr) {
 		osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
 		g_stp_dbg_cpupcr->chipId = chipid;
 
-		if (wifiVer)
-			osal_memcpy(g_stp_dbg_cpupcr->wifiVer, wifiVer, 4);
 		if (pRomVer)
 			osal_memcpy(g_stp_dbg_cpupcr->romVer, pRomVer, 2);
 		if (pPatchVer)
@@ -1698,9 +1696,21 @@ INT32 stp_dbg_set_version_info(UINT32 chipid, UINT8 *pRomVer, UINT8 *wifiVer, UI
 		STP_DBG_ERR_FUNC("NULL pointer\n");
 		return -1;
 	}
-	STP_DBG_INFO_FUNC("chipid(0x%x),wifiver(%s),romver(%s),patchver(%s),branchver(%s)\n",
-			  g_stp_dbg_cpupcr->chipId, g_stp_dbg_cpupcr->wifiVer, &g_stp_dbg_cpupcr->romVer[0],
-			  &g_stp_dbg_cpupcr->patchVer[0], &g_stp_dbg_cpupcr->branchVer[0]);
+	STP_DBG_INFO_FUNC("chipid(0x%x),romver(%s),patchver(%s),branchver(%s)\n", g_stp_dbg_cpupcr->chipId,
+		&g_stp_dbg_cpupcr->romVer[0], &g_stp_dbg_cpupcr->patchVer[0], &g_stp_dbg_cpupcr->branchVer[0]);
+	return 0;
+}
+INT32 stp_dbg_set_wifiver(UINT32 wifiver)
+{
+	if (g_stp_dbg_cpupcr) {
+		osal_lock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+		g_stp_dbg_cpupcr->wifiVer = wifiver;
+		osal_unlock_sleepable_lock(&g_stp_dbg_cpupcr->lock);
+	} else {
+		STP_DBG_ERR_FUNC("NULL pointer\n");
+		return -1;
+	}
+	STP_DBG_INFO_FUNC("wifiver(%x)\n", g_stp_dbg_cpupcr->wifiVer);
 	return 0;
 }
 
@@ -1861,10 +1871,11 @@ INT32 stp_dbg_cpupcr_infor_format(PPUINT8 buf, PUINT32 str_len)
 
 	len += osal_sprintf(*buf + len, "<patch>%s</patch>\n\t\t", g_stp_dbg_cpupcr->patchVer);
 
-	if (!g_stp_dbg_cpupcr->wifiVer[0])
+	if (0 == g_stp_dbg_cpupcr->wifiVer)
 		len += osal_sprintf(*buf + len, "<wifi>NULL</wifi>\n\t");
 	else
-		len += osal_sprintf(*buf + len, "<wifi>%s</wifi>\n\t", g_stp_dbg_cpupcr->wifiVer);
+		len += osal_sprintf(*buf + len, "<wifi>0x%X.%X</wifi>\n\t",
+		(UINT8)((g_stp_dbg_cpupcr->wifiVer & 0xFF00)>>8), (UINT8)(g_stp_dbg_cpupcr->wifiVer & 0xFF));
 
 	len += osal_sprintf(*buf + len, "</version>\n\t");
 

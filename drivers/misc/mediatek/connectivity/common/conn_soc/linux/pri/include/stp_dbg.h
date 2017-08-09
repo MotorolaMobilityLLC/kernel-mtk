@@ -234,7 +234,6 @@ typedef enum _ENUM_DMA_ISSUE_TYPE_ {
 #define STP_DBG_DMAREGS_NUM 16
 #define STP_PATCH_BRANCH_SZIE 8
 #define STP_ASSERT_INFO_SIZE 64
-#define STP_DBG_WIFI_VER_SIZE 8
 #define STP_DBG_ROM_VER_SIZE 4
 #define STP_ASSERT_TYPE_SIZE 32
 
@@ -249,7 +248,7 @@ typedef struct stp_dbg_cpupcr_t {
 	UINT8 romVer[STP_DBG_ROM_VER_SIZE];
 	UINT8 patchVer[STP_PATCH_TIME_SIZE];
 	UINT8 branchVer[STP_PATCH_BRANCH_SZIE];
-	UINT8 wifiVer[STP_DBG_WIFI_VER_SIZE];
+	UINT32 wifiVer;
 	UINT32 count;
 	UINT32 stop_flag;
 	UINT32 buffer[STP_DBG_CPUPCR_NUM];
@@ -307,8 +306,9 @@ extern int stp_dbg_log_ctrl(unsigned int on);
 extern INT32 stp_dbg_poll_cpupcr(UINT32 times, UINT32 sleep, UINT32 cmd);
 extern INT32 stp_dbg_poll_dmaregs(UINT32 times, UINT32 sleep);
 extern INT32 stp_dbg_poll_cuppcr_ctrl(UINT32 en);
-extern INT32 stp_dbg_set_version_info(UINT32 chipid, PUINT8 pRomVer, PUINT8 wifiVer, PUINT8 pPatchVer,
+extern INT32 stp_dbg_set_version_info(UINT32 chipid, PUINT8 pRomVer, PUINT8 pPatchVer,
 				      PUINT8 pPatchBrh);
+extern INT32 stp_dbg_set_wifiver(UINT32 wifiver);
 extern INT32 stp_dbg_cpupcr_infor_format(PPUINT8 buf, PUINT32 len);
 extern INT32 stp_dbg_set_fw_info(PUINT8 assert_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE issue_type);
 extern INT32 stp_dbg_set_host_assert_info(UINT32 drv_type, UINT32 reason, UINT32 en);

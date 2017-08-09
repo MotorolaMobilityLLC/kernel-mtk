@@ -281,6 +281,8 @@ extern PUINT8 wmt_lib_get_cpupcr_xml_format(PUINT32 len);
 extern INT32 wmt_lib_register_thermal_ctrl_cb(thermal_query_ctrl_cb thermal_ctrl);
 extern UINT32 wmt_lib_set_host_assert_info(UINT32 type, UINT32 reason, UINT32 en);
 extern INT8 wmt_lib_co_clock_get(VOID);
+extern UINT32 wmt_lib_soc_set_wifiver(UINT32 wifiver);
+
 #if CFG_WMT_LTE_COEX_HANDLING
 extern MTK_WCN_BOOL wmt_lib_handle_idc_msg(ipc_ilm_t *idc_infor);
 #endif

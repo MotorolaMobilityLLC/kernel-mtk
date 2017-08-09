@@ -1930,3 +1930,8 @@ UINT32 wmt_lib_jtag_flag_set(UINT32 en)
 	return wmt_plat_jtag_flag_ctrl(en);
 }
 #endif
+
+UINT32 wmt_lib_soc_set_wifiver(UINT32 wifiver)
+{
+	return stp_dbg_set_wifiver(wifiver);
+}
