@@ -740,6 +740,7 @@ static void md_ccif_queue_dump(struct ccci_modem *md)
 	int idx;
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump md_ctrl->channel_id 0x%lx\n", md_ctrl->channel_id);
 	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF Queue Control\n");
 	for (idx = 0; idx < QUEUE_NUM; idx++) {
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Q%d TX: w=%d, r=%d, len=%d\n",
@@ -850,7 +851,7 @@ static void md_ccif_irq_tasklet(unsigned long data)
 						     md_ctrl->rxq[i].index,
 						     atomic_read(&md_ctrl->rxq
 								 [i].rx_on_going));
-					return;
+					continue;
 				}
 				if (md->md_state != EXCEPTION
 				    && (md->capability & MODEM_CAP_NAPI)
