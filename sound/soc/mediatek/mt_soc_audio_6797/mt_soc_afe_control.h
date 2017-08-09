@@ -186,6 +186,7 @@ void Auddrv_AWB_Interrupt_Handler(void);
 void Auddrv_DAI_Interrupt_Handler(void);
 void Auddrv_HDMI_Interrupt_Handler(void);
 void Auddrv_UL2_Interrupt_Handler(void);
+void Auddrv_MOD_DAI_Interrupt_Handler(void);
 kal_uint32 Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock,
 				    struct snd_pcm_substream *substream);
 void Set_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream *substream,

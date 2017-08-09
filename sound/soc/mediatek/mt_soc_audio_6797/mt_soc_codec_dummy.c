@@ -495,7 +495,17 @@ static struct snd_soc_dai_driver dummy_6323_dai_codecs[] = {
 		      .rates = SOC_HIGH_USE_RATE,
 		      .formats = SND_SOC_ADV_MT_FMTS,
 		      },
-	 }
+	 },
+	 {
+	.name = MT_SOC_CODEC_MOD_DAI_NAME,
+	.capture = {
+		.stream_name = MT_SOC_MODDAI_STREAM_NAME,
+		.channels_min = 1,
+		.channels_max = 2,
+		.rates = SNDRV_PCM_RATE_8000_48000,
+		.formats = SND_SOC_ADV_MT_FMTS,
+		},
+	},
 };
 
 static int dummy_codec_probe(struct snd_soc_codec *codec)

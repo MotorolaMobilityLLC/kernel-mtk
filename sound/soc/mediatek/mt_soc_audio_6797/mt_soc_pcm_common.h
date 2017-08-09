@@ -127,6 +127,9 @@ define for PCM settings
 #define AWB_MIN_PERIOD_SIZE       1
 #define AWB_MAX_PERIOD_SIZE     AWB_MAX_BUFFER_SIZE
 
+#define MOD_DAI_MAX_BUFFER_SIZE     (16*1024)
+#define MOD_DAI_MIN_PERIOD_SIZE       (1)
+#define MOD_DAI_MAX_PERIOD_SIZE     MOD_DAI_MAX_BUFFER_SIZE
 #define HDMI_MAX_BUFFER_SIZE     (384*1024)
 #define HDMI_MIN_PERIOD_SIZE       1
 #define HDMI_MAX_PERIODBYTE_SIZE     HDMI_MAX_BUFFER_SIZE
@@ -173,7 +176,7 @@ define for PCM settings
 #define SOC_NORMAL_USE_CHANNELS_MIN    1
 #define SOC_NORMAL_USE_CHANNELS_MAX    2
 #define SOC_NORMAL_USE_PERIODS_MIN     1
-#define SOC_NORMAL_USE_PERIODS_MAX     4
+#define SOC_NORMAL_USE_PERIODS_MAX     16
 #define SOC_NORMAL_USE_BUFFERSIZE_MAX     (48*1024)	/* TODO: KC: need to reserve 4k for md32 */
 
 

@@ -624,6 +624,8 @@ irqreturn_t AudDrv_IRQ_handler(int irq, void *dev_id)
 			Auddrv_DAI_Interrupt_Handler();
 		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL_DATA2]->mState == true)
 			Auddrv_UL2_Interrupt_Handler();
+		if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_MOD_DAI]->mState == true)
+			Auddrv_MOD_DAI_Interrupt_Handler();
 	}
 
 	if (u4RegValue & (0x1 << Soc_Aud_IRQ_MCU_MODE_IRQ5_MCU_MODE)) {
@@ -945,11 +947,11 @@ void EnableAfe(bool bEnable)
 	spin_lock_irqsave(&afe_control_lock, flags);
 	MemEnable = CheckMemIfEnable();
 
-	if (false == bEnable && false == MemEnable) {
+	if (false == bEnable && false == MemEnable)
 		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
-	} else if (true == bEnable && true == MemEnable) {
+	 else if (true == bEnable && true == MemEnable)
 		Afe_Set_Reg(AFE_DAC_CON0, 0x1, 0x1);
-	}
+
 	spin_unlock_irqrestore(&afe_control_lock, flags);
 }
 
@@ -2399,11 +2401,11 @@ bool SetI2SASRCConfig(bool bIsUseASRC, unsigned int dToSampleRate)
 		Afe_Set_Reg(AFE_CONN4, 0, 1 << 30);
 		SetSampleRate(Soc_Aud_Digital_Block_MEM_I2S, dToSampleRate);	/* To target sample rate */
 
-		if (dToSampleRate == 44100) {
+		if (dToSampleRate == 44100)
 			Afe_Set_Reg(AFE_ASRC_CON14, 0x001B9000, AFE_MASK_ALL);
-		} else {
+		 else
 			Afe_Set_Reg(AFE_ASRC_CON14, 0x001E0000, AFE_MASK_ALL);
-		}
+
 		Afe_Set_Reg(AFE_ASRC_CON15, 0x00140000, AFE_MASK_ALL);
 		Afe_Set_Reg(AFE_ASRC_CON16, 0x00FF5987, AFE_MASK_ALL);
 		Afe_Set_Reg(AFE_ASRC_CON17, 0x00007EF4, AFE_MASK_ALL);
@@ -2639,16 +2641,14 @@ bool SetTDMbckcycle(uint32 cycles)
 
 	pr_warn("%s cycles = %d\n", __func__, cycles);
 	switch (cycles) {
-	case Soc_Aud_I2S_WLEN_WLEN_16BITS:
-		{
-			index = 0;
-		}
-		break;
-	case Soc_Aud_I2S_WLEN_WLEN_32BITS:
-		{
-			index = 2;
-		}
-		break;
+	case Soc_Aud_I2S_WLEN_WLEN_16BITS: {
+		index = 0;
+	}
+	break;
+	case Soc_Aud_I2S_WLEN_WLEN_32BITS: {
+		index = 2;
+	}
+	break;
 	default:
 		index = 2;
 		break;
@@ -3767,6 +3767,58 @@ void Auddrv_UL2_Interrupt_Handler(void)
 	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 }
 
+void Auddrv_MOD_DAI_Interrupt_Handler(void)
+{
+	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_MOD_DAI];
+	kal_uint32 HW_Cur_ReadIdx = 0;
+	kal_int32 Hw_Get_bytes = 0;
+	AFE_BLOCK_T  *mBlock = NULL;
+	unsigned long flags;
+
+	if (Mem_Block == NULL)
+		return;
+
+	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_MOD_DAI) == false) {
+		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+		return;
+	}
+
+	mBlock = &Mem_Block->rBlock;
+	HW_Cur_ReadIdx = Align64ByteSize(Afe_Get_Reg(AFE_MOD_DAI_CUR));
+
+	if (CheckSize(HW_Cur_ReadIdx)) {
+		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+		return;
+	}
+	if (mBlock->pucVirtBufAddr  == NULL) {
+		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+		return;
+	}
+
+	Hw_Get_bytes = (HW_Cur_ReadIdx - mBlock->pucPhysBufAddr) - mBlock->u4WriteIdx;
+	if (Hw_Get_bytes < 0)
+		Hw_Get_bytes += mBlock->u4BufferSize;
+
+	mBlock->u4WriteIdx  += Hw_Get_bytes;
+	mBlock->u4WriteIdx  %= mBlock->u4BufferSize;
+	mBlock->u4DataRemained += Hw_Get_bytes;
+
+	if (mBlock->u4DataRemained > mBlock->u4BufferSize) {
+		pr_err("%s buffer overflow u4DMAReadIdx:%x, u4WriteIdx:%x, u4DataRemained:%x, u4BufferSize:%x\n",
+		__func__, mBlock->u4DMAReadIdx, mBlock->u4WriteIdx, mBlock->u4DataRemained, mBlock->u4BufferSize);
+	}
+	Mem_Block->interruptTrigger = 1;
+
+	if (Mem_Block->substreamL != NULL) {
+		if (Mem_Block->substreamL->substream != NULL) {
+			spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+			snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
+			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
+		}
+	}
+	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
+}
 bool BackUp_Audio_Register(void)
 {
 	AudDrv_Clk_On();

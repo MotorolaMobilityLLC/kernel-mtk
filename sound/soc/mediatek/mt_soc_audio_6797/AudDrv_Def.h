@@ -225,6 +225,7 @@
 #define MT_SOC_FM_I2S_CAPTURE_NAME "mt-soc-fmi2Scapturedai-driver"
 #define MT_SOC_BTCVSD_RX_DAI_NAME "mt-soc-btcvsd-rx-dai-driver"
 #define MT_SOC_BTCVSD_TX_DAI_NAME "mt-soc-btcvsd-tx-dai-driver"
+#define MT_SOC_MOD_DAI_NAME "mt-soc-moddai-driver"
 
 
 /* platform name */
@@ -263,6 +264,7 @@
 #define MT_SOC_FM_I2S_AWB_PCM  "mt-soc-fm-i2s-awb-pcm"
 #define MT_SOC_BTCVSD_RX_PCM   "mt-soc-btcvsd-rx-pcm"
 #define MT_SOC_BTCVSD_TX_PCM   "mt-soc-btcvsd-tx-pcm"
+#define MT_SOC_MOD_DAI_PCM   "mt-soc-MODDAI-pcm"
 
 
 /* codec dai name */
@@ -304,6 +306,7 @@
 #define MT_SOC_CODEC_FM_I2S_DAI_NAME "mt-soc-fm-i2s-dai-codec"
 #define MT_SOC_CODEC_BTCVSD_RX_DAI_NAME "mt-soc-codec-btcvsd-rx-dai"
 #define MT_SOC_CODEC_BTCVSD_TX_DAI_NAME "mt-soc-codec-btcvsd-tx-dai"
+#define MT_SOC_CODEC_MOD_DAI_NAME "mt-soc-mod-dai-codec"
 
 /* stream name */
 #define MT_SOC_DL1_STREAM_NAME "MultiMedia1_PLayback"
@@ -331,7 +334,7 @@
 #define MT_SOC_I2S2ADC2_STREAM_NAME "I2S2ADC2_Capture"
 #define MT_SOC_AWB_STREAM_NAME "MultiMedia_awb_Capture"
 #define MT_SOC_DAI_STREAM_NAME "MultiMedia_dai_Capture"
-#define MT_SOC_MODDAI_STREAM_NAME "MultiMedia_Moddai_Capture"
+#define MT_SOC_MODDAI_STREAM_NAME "Voice_Dai_Capture"
 #define MT_SOC_ROUTING_STREAM_NAME "MultiMedia_Routing"
 #define MT_SOC_HP_IMPEDANCE_STREAM_NAME "HP_IMPEDANCE_Playback"
 #define MT_SOC_FM_MRGTX_STREAM_NAME "FM_MRGTX_Playback"

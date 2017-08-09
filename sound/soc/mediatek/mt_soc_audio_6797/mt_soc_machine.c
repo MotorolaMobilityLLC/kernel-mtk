@@ -1210,7 +1210,16 @@ static struct snd_soc_dai_link mt_soc_dai_common[] = {
 	 .ops = &mt_machine_audio_ops,
 	 },
 #endif
-};
+	{
+	.name = "MOD_DAI_CAPTURE",
+	.stream_name = MT_SOC_MODDAI_STREAM_NAME,
+	.cpu_dai_name	= MT_SOC_MOD_DAI_NAME,
+	.platform_name	= MT_SOC_MOD_DAI_PCM,
+	.codec_dai_name = MT_SOC_CODEC_MOD_DAI_NAME,
+	.codec_name = MT_SOC_CODEC_DUMMY_NAME,
+	.init = mt_soc_audio_init,
+	.ops = &mt_machine_audio_ops,
+	},};
 
 static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 	{
