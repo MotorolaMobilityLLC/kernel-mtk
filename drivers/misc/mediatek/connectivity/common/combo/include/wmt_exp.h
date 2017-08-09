@@ -277,10 +277,15 @@ extern UINT32 mtk_wcn_wmt_ic_info_get(ENUM_WMT_CHIPINFO_TYPE_T type);
 extern INT32 mtk_wcn_wmt_chipid_query(VOID);
 
 extern INT32 mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL flag);
+extern ENUM_WMT_FLASH_PATCH_STATUS mtk_wcn_wmt_flash_patch_ctrl(ENUM_WMT_FLASH_PATCH_CTRL ctrlId,
+		PUINT8 pBuf, UINT32 length, ENUM_WMT_FLASH_PATCH_SEQ seq, ENUM_WMT_FLASH_PATCH_TYPE type,
+		PUINT32 version, UINT32 checksum);
 
 #else
 #define WMT_EXP_HID_API_EXPORT 1
 
+extern VOID mtk_wcn_wmt_exp_init(VOID);
+extern VOID mtk_wcn_wmt_exp_deinit(VOID);
 #endif
 
 extern INT32 wmt_lib_set_aif(CMB_STUB_AIF_X aif, MTK_WCN_BOOL share);	/* set AUDIO interface options */

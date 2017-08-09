@@ -95,6 +95,7 @@ static UINT8 gAntBuf[1024] = { 0 };
 #if CFG_WMT_LTE_COEX_HANDLING
 static UINT32 g_open_wmt_lte_flag;
 #endif
+static UINT8 gFlashBuf[1024] = { 0 };
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
@@ -132,6 +133,8 @@ static INT32 opfunc_ant_ram_stat_get(P_WMT_OP pWmtOp);
 static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp);
 #endif
 static INT32 opfunc_trigger_stp_assert(P_WMT_OP pWmtOp);
+static INT32 opfunc_flash_patch_down(P_WMT_OP pWmtOp);
+static INT32 opfunc_flash_patch_ver_get(P_WMT_OP pWmtOp);
 
 
 
@@ -221,6 +224,22 @@ static UINT8 WMT_ANT_RAM_DWN_EVT[] = { 0x02, 0x15, 0x01, 0x00	/*length */
 };
 #endif
 
+static UINT8 WMT_FLASH_PATCH_VER_GET_CMD[] = { 0x01, 0x01, 0x05, 0x00	/*length*/
+	, 0x06, 0x00, 0x00, 0x00, 0x00 /*flash patch type*/
+};
+
+static UINT8 WMT_FLASH_PATCH_VER_GET_EVT[] = { 0x02, 0x01, 0x09, 0x00	/*length */
+	, 0x06, 0x00, 0x00, 0x00, 0x00	/*flash patch type*/
+	, 0x00, 0x00, 0x00, 0x00	/*flash patch version*/
+};
+
+static UINT8 WMT_FLASH_PATCH_DWN_CMD[] = { 0x01, 0x01, 0x0d, 0x00, 0x05
+};
+
+static UINT8 WMT_FLASH_PATCH_DWN_EVT[] = { 0x02, 0x01, 0x01, 0x00	/*length */
+	, 0x00
+};
+
 
 /* GeorgeKuo: Use designated initializers described in
  * http://gcc.gnu.org/onlinedocs/gcc-4.0.4/gcc/Designated-Inits.html
@@ -254,6 +273,8 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_IDC_MSG_HANDLING] = opfunc_idc_msg_handling,
 #endif
 	[WMT_OPID_TRIGGER_STP_ASSERT] = opfunc_trigger_stp_assert,
+	[WMT_OPID_FLASH_PATCH_DOWN] = opfunc_flash_patch_down,
+	[WMT_OPID_FLASH_PATCH_VER_GET] = opfunc_flash_patch_ver_get,
 
 };
 
@@ -2357,6 +2378,146 @@ VOID wmt_core_set_coredump_state(ENUM_DRV_STS state)
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_COREDUMP] = state;
 }
 
+INT32 opfunc_flash_patch_down(P_WMT_OP pWmtOp)
+{
+	INT32 iRet = 0;
+	PUINT8 u4pbuf = (PUINT8)pWmtOp->au4OpData[0];
+	UINT16 u4PatchSize = pWmtOp->au4OpData[1];
+	UINT32 u4PatchSeq = pWmtOp->au4OpData[2];
+	UINT32 u4PatchType = pWmtOp->au4OpData[3];
+	UINT32 u4PatchVersion = pWmtOp->au4OpData[4];
+	UINT32 u4PatchChecksum = pWmtOp->au4OpData[5];
+	UINT16 wmtCmdLen;
+	UINT16 wmtPktLen = 0;
+	UINT32 u4Res = 0;
+	UINT8 evtBuf[osal_sizeof(WMT_FLASH_PATCH_DWN_EVT)];
+
+	do {
+		osal_memcpy(gFlashBuf, WMT_FLASH_PATCH_DWN_CMD, sizeof(WMT_FLASH_PATCH_DWN_CMD));
+
+		switch (u4PatchSeq) {
+		case WMT_FLASH_PATCH_HEAD_PKT:
+			/*WMT command length cal */
+			wmtPktLen = sizeof(WMT_FLASH_PATCH_DWN_CMD) + WMT_FLASH_PATCH_DWN_CMD[2] - 1;
+			osal_memcpy(&gFlashBuf[5], &u4PatchType, sizeof(u4PatchType));
+			osal_memcpy(&gFlashBuf[9], &u4PatchVersion, sizeof(u4PatchVersion));
+			osal_memcpy(&gFlashBuf[13], &u4PatchChecksum, sizeof(u4PatchChecksum));
+			break;
+		case WMT_FLASH_PATCH_START_PKT:
+		case WMT_FLASH_PATCH_CONTINUE_PKT:
+		case WMT_FLASH_PATCH_END_PKT:
+			gFlashBuf[4] = u4PatchSeq;
+			/*WMT command length cal */
+			wmtCmdLen = u4PatchSize;
+			wmtPktLen = u4PatchSize + sizeof(WMT_FLASH_PATCH_DWN_CMD);
+			gFlashBuf[2] = wmtCmdLen & 0xFF;
+			gFlashBuf[3] = (wmtCmdLen & 0xFF00) >> 16;
+			/*copy ram code content to global buffer */
+			osal_memcpy(&gFlashBuf[osal_sizeof(WMT_FLASH_PATCH_DWN_CMD)], u4pbuf, u4PatchSize);
+			break;
+		default:
+			break;
+		}
+
+		iRet = wmt_core_tx(gFlashBuf, wmtPktLen, &u4Res, MTK_WCN_BOOL_FALSE);
+		if (iRet || (u4Res != wmtPktLen)) {
+			WMT_ERR_FUNC("wmt_core: write PatchSeq(%d) size(%d, %d) fail(%d)\n", u4PatchSeq,
+				     wmtPktLen, u4Res, iRet);
+			iRet = -4;
+			u4Res = -1;
+			break;
+		}
+		WMT_DBG_FUNC("wmt_core: write PatchSeq(%d) size(%d, %d) ok\n",
+			     u4PatchSeq, wmtPktLen, u4Res);
+
+		osal_memset(evtBuf, 0, sizeof(evtBuf));
+
+		iRet = wmt_core_rx(evtBuf, sizeof(WMT_FLASH_PATCH_DWN_EVT), &u4Res);
+		if (iRet || (u4Res != sizeof(WMT_FLASH_PATCH_DWN_EVT))) {
+			WMT_ERR_FUNC("wmt_core: read WMT_FLASH_PATCH_DWN_EVT length(%zu, %d) fail(%d)\n",
+				     sizeof(WMT_FLASH_PATCH_DWN_EVT), u4Res, iRet);
+			iRet = -5;
+			u4Res = -2;
+			break;
+		}
+#if CFG_CHECK_WMT_RESULT
+		if (osal_memcmp(evtBuf, WMT_FLASH_PATCH_DWN_EVT, sizeof(WMT_FLASH_PATCH_DWN_EVT)) != 0) {
+			WMT_ERR_FUNC("wmt_core: compare WMT_FLASH_PATCH_DWN_EVT result error\n");
+			WMT_ERR_FUNC("rx(%d):[%02X,%02X,%02X,%02X,%02X] exp(%zu):[%02X,%02X,%02X,%02X,%02X]\n",
+					u4Res, evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4],
+					sizeof(WMT_FLASH_PATCH_DWN_EVT), WMT_FLASH_PATCH_DWN_EVT[0],
+					WMT_FLASH_PATCH_DWN_EVT[1], WMT_FLASH_PATCH_DWN_EVT[2],
+					WMT_FLASH_PATCH_DWN_EVT[3], WMT_FLASH_PATCH_DWN_EVT[4]);
+			iRet = -6;
+			u4Res = -3;
+			break;
+		}
+#endif
+		WMT_DBG_FUNC("wmt_core: read WMT_FLASH_PATCH_DWN_EVT length(%zu, %d) ok\n",
+			     sizeof(WMT_FLASH_PATCH_DWN_EVT), u4Res);
+
+	} while (0);
+
+	pWmtOp->au4OpData[6] = u4Res;
+	return iRet;
+}
+
+INT32 opfunc_flash_patch_ver_get(P_WMT_OP pWmtOp)
+{
+	INT32 iRet = 0;
+	UINT32 u4Res = 0;
+	UINT32 wmtPktLen = osal_sizeof(WMT_FLASH_PATCH_VER_GET_CMD);
+	UINT32 u4PatchType = pWmtOp->au4OpData[3];
+	UINT32 u4PatchVer = 0;
+	UINT8 evtBuf[osal_sizeof(WMT_FLASH_PATCH_VER_GET_EVT)];
+
+	do {
+		osal_memcpy(&WMT_FLASH_PATCH_VER_GET_CMD[5], &u4PatchType, sizeof(u4PatchType));
+
+		iRet = wmt_core_tx(WMT_FLASH_PATCH_VER_GET_CMD, wmtPktLen, &u4Res, MTK_WCN_BOOL_FALSE);
+		if (iRet || (u4Res != wmtPktLen)) {
+			WMT_ERR_FUNC
+				("wmt_core: write wmt and flash patch query command failed, (%d, %d), iRet(%d)\n",
+				 wmtPktLen, u4Res, iRet);
+			iRet = -4;
+			u4Res = -1;
+			break;
+		}
+
+		iRet = wmt_core_rx(evtBuf, sizeof(WMT_FLASH_PATCH_VER_GET_EVT), &u4Res);
+		if (iRet || (u4Res != sizeof(WMT_FLASH_PATCH_VER_GET_EVT))) {
+			WMT_ERR_FUNC("wmt_core: read WMT_FLASH_PATCH_VER_GET_EVT length(%zu, %d) fail(%d)\n",
+					sizeof(WMT_FLASH_PATCH_VER_GET_EVT), u4Res, iRet);
+			iRet = -5;
+			u4Res = -2;
+			break;
+		}
+#if CFG_CHECK_WMT_RESULT
+		if (osal_memcmp(evtBuf, WMT_FLASH_PATCH_VER_GET_EVT,
+					sizeof(WMT_FLASH_PATCH_VER_GET_EVT) - 8) != 0) {
+			WMT_ERR_FUNC("wmt_core: compare WMT_FLASH_PATCH_VER_GET_EVT result error\n");
+			WMT_ERR_FUNC("rx(%d):[%02X,%02X,%02X,%02X,%02X] exp(%zu):[%02X,%02X,%02X,%02X,%02X]\n",
+					u4Res, evtBuf[0], evtBuf[1], evtBuf[2], evtBuf[3], evtBuf[4],
+					sizeof(WMT_FLASH_PATCH_VER_GET_EVT), WMT_FLASH_PATCH_VER_GET_EVT[0],
+					WMT_FLASH_PATCH_VER_GET_EVT[1], WMT_FLASH_PATCH_VER_GET_EVT[2],
+					WMT_FLASH_PATCH_VER_GET_EVT[3], WMT_FLASH_PATCH_VER_GET_EVT[4]);
+			iRet = -6;
+			u4Res = -3;
+			break;
+		}
+#endif
+		if (0 == iRet) {
+			osal_memcpy(&u4PatchVer, &evtBuf[9], sizeof(u4PatchVer));
+			pWmtOp->au4OpData[4] = u4PatchVer;
+			WMT_INFO_FUNC("flash patch type: %x, flash patch version %x\n",
+					u4PatchType, u4PatchVer);
+		}
+	} while (0);
+
+	pWmtOp->au4OpData[6] = u4Res;
+	return iRet;
+}
+
 #if CFG_WMT_LTE_COEX_HANDLING
 static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 {
@@ -2428,8 +2589,6 @@ static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp)
 
 	return fgFail;
 }
-
-
 
 /*TEST CODE*/
 VOID wmt_core_set_flag_for_test(UINT32 enable)

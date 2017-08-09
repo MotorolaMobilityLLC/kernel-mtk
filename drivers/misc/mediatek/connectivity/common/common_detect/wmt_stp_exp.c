@@ -60,6 +60,7 @@ MTK_WCN_WMT_ASSERT mtk_wcn_wmt_assert_f = NULL;
 MTK_WCN_WMT_ASSERT_TIMEOUT mtk_wcn_wmt_assert_timeout_f = NULL;
 MTK_WCN_WMT_IC_INFO_GET mtk_wcn_wmt_ic_info_get_f = NULL;
 MTK_WCN_WMT_PSM_CTRL mtk_wcn_wmt_psm_ctrl_f = NULL;
+MTK_WCN_WMT_FLASH_PATCH_CTRL mtk_wcn_wmt_flash_patch_ctrl_f = NULL;
 
 /*******************************************************************************
 *                          F U N C T I O N S
@@ -282,6 +283,8 @@ UINT32 mtk_wcn_wmt_exp_cb_reg(P_MTK_WCN_WMT_EXP_CB_INFO pWmtExpCb)
 	mtk_wcn_wmt_assert_timeout_f = pWmtExpCb->wmt_assert_timeout_cb;
 	mtk_wcn_wmt_ic_info_get_f = pWmtExpCb->wmt_ic_info_get_cb;
 	mtk_wcn_wmt_psm_ctrl_f = pWmtExpCb->wmt_psm_ctrl_cb;
+	mtk_wcn_wmt_flash_patch_ctrl_f = pWmtExpCb->wmt_flash_patch_ctrl_cb;
+
 	return 0;
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_exp_cb_reg);
@@ -303,6 +306,7 @@ UINT32 mtk_wcn_wmt_exp_cb_unreg(VOID)
 	mtk_wcn_wmt_assert_timeout_f = NULL;
 	mtk_wcn_wmt_ic_info_get_f = NULL;
 	mtk_wcn_wmt_psm_ctrl_f = NULL;
+	mtk_wcn_wmt_flash_patch_ctrl_f = NULL;
 
 	return 0;
 }
@@ -476,5 +480,35 @@ INT32 mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL flag)
 	return ret;
 }
 EXPORT_SYMBOL(mtk_wcn_wmt_psm_ctrl);
+
+ENUM_WMT_FLASH_PATCH_STATUS mtk_wcn_wmt_flash_patch_ver_get(ENUM_WMT_FLASH_PATCH_TYPE type,
+		PUINT32 version)
+{
+	ENUM_WMT_FLASH_PATCH_STATUS ret = WMT_FLASH_PATCH_OP_ERR;
+
+	if (mtk_wcn_wmt_flash_patch_ctrl_f)
+		ret = (*mtk_wcn_wmt_flash_patch_ctrl_f)(WMT_FLASH_PATCH_VERSION_GET, NULL, 0, 0, type,
+				version, 0);
+	else
+		WMT_STP_EXP_ERR_FUNC("mtk_wcn_wmt_flash_patch_ctrl_f cb is null\n");
+
+	return ret;
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_flash_patch_ver_get);
+
+ENUM_WMT_FLASH_PATCH_STATUS mtk_wcn_wmt_flash_patch_download(ENUM_WMT_FLASH_PATCH_TYPE type,
+		PUINT8 pBuf, UINT32 length, ENUM_WMT_FLASH_PATCH_SEQ seq, PUINT32 version, UINT32 checksum)
+{
+	ENUM_WMT_FLASH_PATCH_STATUS ret = WMT_FLASH_PATCH_OP_ERR;
+
+	if (mtk_wcn_wmt_flash_patch_ctrl_f)
+		ret = (*mtk_wcn_wmt_flash_patch_ctrl_f)(WMT_FLASH_PATCH_DOWNLOAD, pBuf, length, seq, type,
+				version, checksum);
+	else
+		WMT_STP_EXP_ERR_FUNC("mtk_wcn_wmt_flash_patch_ctrl_f cb is null\n");
+
+	return ret;
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_flash_patch_download);
 
 #endif

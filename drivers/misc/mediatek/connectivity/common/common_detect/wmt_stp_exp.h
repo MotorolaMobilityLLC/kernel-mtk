@@ -203,6 +203,40 @@ typedef enum _ENUM_WMTCHIN_TYPE_T {
 
 } ENUM_WMT_CHIPINFO_TYPE_T, *P_ENUM_WMT_CHIPINFO_TYPE_T;
 
+typedef enum _ENUM_WMT_FLASH_PATCH_CTRL_T {
+	WMT_FLASH_PATCH_VERSION_GET = 0,
+	WMT_FLASH_PATCH_DOWNLOAD = WMT_FLASH_PATCH_VERSION_GET + 1,
+	WMT_FLASH_PATCH_CTRL_MAX,
+} ENUM_WMT_FLASH_PATCH_CTRL, *P_ENUM_WMT_FLASH_PATCH_CTRL;
+
+typedef enum _ENUM_WMT_FLASH_PATCH_SEQ_T {
+	WMT_FLASH_PATCH_HEAD_PKT = 0,
+	WMT_FLASH_PATCH_START_PKT = WMT_FLASH_PATCH_HEAD_PKT + 1,
+	WMT_FLASH_PATCH_CONTINUE_PKT = WMT_FLASH_PATCH_START_PKT + 1,
+	WMT_FLASH_PATCH_END_PKT = WMT_FLASH_PATCH_CONTINUE_PKT + 1,
+	WMT_FLASH_PATCH_SEQ_MAX,
+} ENUM_WMT_FLASH_PATCH_SEQ, *P_ENUM_WMT_FLASH_PATCH_SEQ;
+
+typedef enum _ENUM_WMT_FLASH_PATCH_TYPE_T {
+	WMT_FLASH_PATCH_HIF_SW_EFUSE = 0,
+	WMT_FLASH_PATCH_GATT = WMT_FLASH_PATCH_HIF_SW_EFUSE + 1,
+	WMT_FLASH_PATCH_SYSROM = WMT_FLASH_PATCH_GATT + 1,
+	WMT_FLASH_PATCH_ILM = WMT_FLASH_PATCH_SYSROM + 1,
+	WMT_FLASH_PATCH_FLP1 = WMT_FLASH_PATCH_ILM + 1,
+	WMT_FLASH_PATCH_FLP2 = WMT_FLASH_PATCH_FLP1 + 1,
+	WMT_FLASH_PATCH_TYPE_MAX,
+} ENUM_WMT_FLASH_PATCH_TYPE, *P_ENUM_WMT_FLASH_PATCH_TYPE;
+
+typedef enum _ENUM_WMT_FLASH_PATCH_STATUS_T {
+	WMT_FLASH_PATCH_VERSION_GET_OK = 0,
+	WMT_FLASH_PATCH_VERSION_GET_FAIL = WMT_FLASH_PATCH_VERSION_GET_OK + 1,
+	WMT_FLASH_PATCH_DOWNLOAD_OK = WMT_FLASH_PATCH_VERSION_GET_FAIL + 1,
+	WMT_FLASH_PATCH_DOWNLOAD_FAIL = WMT_FLASH_PATCH_DOWNLOAD_OK + 1,
+	WMT_FLASH_PATCH_PARA_ERR = WMT_FLASH_PATCH_DOWNLOAD_FAIL + 1,
+	WMT_FLASH_PATCH_OP_ERR = WMT_FLASH_PATCH_PARA_ERR + 1,
+	WMT_FLASH_PATCH_MAX
+} ENUM_WMT_FLASH_PATCH_STATUS, *P_ENUM_WMT_FLASH_PATCH_STATUS;
+
 /*end moved from wmt_exp.h*/
 
 typedef MTK_WCN_BOOL(*MTK_WCN_WMT_FUNC_CTRL) (ENUM_WMTDRV_TYPE_T type);
@@ -219,6 +253,10 @@ typedef MTK_WCN_BOOL(*MTK_WCN_WMT_ASSERT_TIMEOUT)(ENUM_WMTDRV_TYPE_T type,
 typedef UINT32(*MTK_WCN_WMT_IC_INFO_GET) (ENUM_WMT_CHIPINFO_TYPE_T type);
 typedef INT32 (*MTK_WCN_WMT_PSM_CTRL)(MTK_WCN_BOOL flag);
 
+typedef ENUM_WMT_FLASH_PATCH_STATUS(*MTK_WCN_WMT_FLASH_PATCH_CTRL)(ENUM_WMT_FLASH_PATCH_CTRL ctrlId,
+		PUINT8 pBuf, UINT32 length, ENUM_WMT_FLASH_PATCH_SEQ seq, ENUM_WMT_FLASH_PATCH_TYPE type,
+		PUINT32 version, UINT32 checksum);
+
 typedef struct _MTK_WCN_WMT_EXP_CB_INFO_ {
 	MTK_WCN_WMT_FUNC_CTRL wmt_func_on_cb;
 	MTK_WCN_WMT_FUNC_CTRL wmt_func_off_cb;
@@ -233,6 +271,7 @@ typedef struct _MTK_WCN_WMT_EXP_CB_INFO_ {
 	MTK_WCN_WMT_ASSERT_TIMEOUT wmt_assert_timeout_cb;
 	MTK_WCN_WMT_IC_INFO_GET wmt_ic_info_get_cb;
 	MTK_WCN_WMT_PSM_CTRL wmt_psm_ctrl_cb;
+	MTK_WCN_WMT_FLASH_PATCH_CTRL wmt_flash_patch_ctrl_cb;
 } MTK_WCN_WMT_EXP_CB_INFO, *P_MTK_WCN_WMT_EXP_CB_INFO;
 
 /*******************************************************************************
@@ -604,6 +643,38 @@ extern MTK_WCN_BOOL mtk_wcn_wmt_assert_timeout(ENUM_WMTDRV_TYPE_T type,
 *  always return 0;
 *****************************************************************************/
 extern INT32 mtk_wcn_wmt_psm_ctrl(MTK_WCN_BOOL flag);
+
+/*****************************************************************************
+* FUNCTION
+*  mtk_wcn_wmt_flash_patch_ver_get
+* DESCRIPTION
+*  get firmware flash patch version
+* PARAMETERS
+*  type		[IN] flash patch type
+*  version	[OUT] flash patch version pointer
+* RETURNS
+*  WMT_FLASH_PATCH_VERSION_GET_OK: ok; WMT_FLASH_PATCH_VERSION_GET_FAIL: error
+*****************************************************************************/
+extern ENUM_WMT_FLASH_PATCH_STATUS mtk_wcn_wmt_flash_patch_ver_get(ENUM_WMT_FLASH_PATCH_TYPE type,
+		PUINT32 version);
+
+/*****************************************************************************
+* FUNCTION
+*  mtk_wcn_wmt_flash_patch_download
+* DESCRIPTION
+*  download firmware flash patch
+* PARAMETERS
+*  pBuf		[IN] flash patch data buffer pointer
+*  length	[IN] flash patch data buffer length, length < 1000
+*  seq		[IN] flash patch download sequence
+*  type		[IN] flash patch type
+*  version	[IN] flash patch version pointer
+*  checksum	[IN] flash patch checksum
+* RETURNS
+*  WMT_FLASH_PATCH_DOWNLOAD_OK: ok; WMT_FLASH_PATCH_DOWNLOAD_FAIL: error
+*****************************************************************************/
+extern ENUM_WMT_FLASH_PATCH_STATUS mtk_wcn_wmt_flash_patch_download(ENUM_WMT_FLASH_PATCH_TYPE type,
+		PUINT8 pBuf, UINT32 length, ENUM_WMT_FLASH_PATCH_SEQ seq, PUINT32 version, UINT32 checksum);
 
 #endif
 

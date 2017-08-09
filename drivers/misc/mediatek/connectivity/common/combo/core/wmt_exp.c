@@ -499,19 +499,131 @@ MTK_WCN_BOOL mtk_wcn_wmt_assert(ENUM_WMTDRV_TYPE_T type, UINT32 reason)
 EXPORT_SYMBOL(mtk_wcn_wmt_assert);
 #endif
 
+/*
+	ctrlId: get flash patch version opId or flash patch download opId
+	pBuf: pointer to flash patch
+	length: total length of flash patch
+	type: flash patch type
+	version: flash patch version
+	checksum: flash patch checksum
+*/
+#if WMT_EXP_HID_API_EXPORT
+ENUM_WMT_FLASH_PATCH_STATUS _mtk_wcn_wmt_flash_patch_ctrl(ENUM_WMT_FLASH_PATCH_CTRL ctrlId,
+		PUINT8 pBuf, UINT32 length, ENUM_WMT_FLASH_PATCH_SEQ seq, ENUM_WMT_FLASH_PATCH_TYPE type,
+		PUINT32 version, UINT32 checksum)
+#else
+ENUM_WMT_FLASH_PATCH_STATUS mtk_wcn_wmt_flash_patch_ctrl(ENUM_WMT_FLASH_PATCH_CTRL ctrlId,
+		PUINT8 pBuf, UINT32 length, ENUM_WMT_FLASH_PATCH_SEQ seq, ENUM_WMT_FLASH_PATCH_TYPE type,
+		PUINT32 version, UINT32 checksum)
+#endif
+{
+	ENUM_WMT_FLASH_PATCH_STATUS eRet = 0;
+	P_OSAL_OP pOp = NULL;
+	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
+	P_OSAL_SIGNAL pSignal;
+
+	/*1. parameter validation check */
+	/*for WMT_FLASH_PATCH_VERSION_GET, ignore pBuf and length */
+	/*for WMT_ANT_RAM_DOWNLOAD,
+	   pBuf must not be NULL, kernel space memory pointer
+	   length must be large than 0 */
+	switch (ctrlId) {
+	case WMT_FLASH_PATCH_VERSION_GET:
+		break;
+	case WMT_FLASH_PATCH_DOWNLOAD:
+		if ((NULL == pBuf) || (0 >= length) || (1000 < length)) {
+			WMT_ERR_FUNC("error parameter detected, ctrlId:%d, pBuf:%p,length(0x%x).\n",
+					ctrlId, pBuf, length);
+			eRet = WMT_FLASH_PATCH_PARA_ERR;
+			goto exit;
+		} else
+			break;
+	default:
+		WMT_ERR_FUNC("error ctrlId:%d detected.\n", ctrlId);
+		eRet = WMT_FLASH_PATCH_PARA_ERR;
+		goto exit;
+	}
+
+	/*get WMT opId */
+	pOp = wmt_lib_get_free_op();
+	if (!pOp) {
+		WMT_DBG_FUNC("get_free_lxop fail\n");
+		eRet = WMT_FLASH_PATCH_OP_ERR;
+		goto exit;
+	}
+
+	pSignal = &pOp->signal;
+	pSignal->timeoutValue =
+	    (WMT_FLASH_PATCH_DOWNLOAD == ctrlId) ? MAX_FUNC_ON_TIME : MAX_EACH_WMT_CMD;
+
+	pOp->op.opId = (WMT_FLASH_PATCH_DOWNLOAD == ctrlId) ?
+		WMT_OPID_FLASH_PATCH_DOWN : WMT_OPID_FLASH_PATCH_VER_GET;
+	pOp->op.au4OpData[0] = (size_t) pBuf;
+	pOp->op.au4OpData[1] = length;
+	pOp->op.au4OpData[2] = seq;
+	pOp->op.au4OpData[3] = type;
+	pOp->op.au4OpData[4] = *version;
+	pOp->op.au4OpData[5] = checksum;
+
+	/*disable PSM monitor */
+	if (DISABLE_PSM_MONITOR()) {
+		WMT_ERR_FUNC("wake up failed\n");
+		wmt_lib_put_op_to_free_queue(pOp);
+		eRet = WMT_FLASH_PATCH_OP_ERR;
+		goto exit;
+	}
+	/*wakeup wmtd thread */
+	bRet = wmt_lib_put_act_op(pOp);
+
+	/*enable PSM monitor */
+	ENABLE_PSM_MONITOR();
+
+	WMT_INFO_FUNC("CMD_TEST, opid (%d), ret(%d),retVal(%zu) result(%s)\n",
+		      pOp->op.opId,
+		      bRet,
+		      pOp->op.au4OpData[6], MTK_WCN_BOOL_FALSE == bRet ? "failed" : "succeed");
+
+	/*check return value and return result */
+	if (MTK_WCN_BOOL_FALSE == bRet) {
+		eRet = WMT_FLASH_PATCH_OP_ERR;
+	} else {
+		switch (ctrlId) {
+		case WMT_FLASH_PATCH_VERSION_GET:
+			if (0 == pOp->op.au4OpData[6]) {
+				*version = pOp->op.au4OpData[4];
+				eRet = WMT_FLASH_PATCH_VERSION_GET_OK;
+			} else
+				eRet = WMT_FLASH_PATCH_VERSION_GET_FAIL;
+			break;
+		case WMT_FLASH_PATCH_DOWNLOAD:
+			eRet = (0 == pOp->op.au4OpData[6]) ?
+				WMT_FLASH_PATCH_DOWNLOAD_OK : WMT_FLASH_PATCH_DOWNLOAD_FAIL;
+			break;
+		default:
+			WMT_ERR_FUNC("error ctrlId:%d detected.\n", ctrlId);
+			eRet = WMT_FLASH_PATCH_PARA_ERR;
+			break;
+		}
+	}
+
+exit:
+	return eRet;
+}
+#if !(WMT_EXP_HID_API_EXPORT)
+EXPORT_SYMBOL(mtk_wcn_wmt_flash_patch_ctrl);
+#endif
 
 #if !(DELETE_HIF_SDIO_CHRDEV)
 extern INT32 mtk_wcn_wmt_chipid_query(VOID)
 {
 	return mtk_wcn_hif_sdio_query_chipid(0);
 }
-#ifndef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
+#if !(WMT_EXP_HID_API_EXPORT)
 EXPORT_SYMBOL(mtk_wcn_wmt_chipid_query);
 #endif
 #endif
 
-
-#ifdef MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
+#if WMT_EXP_HID_API_EXPORT
 VOID mtk_wcn_wmt_exp_init(VOID)
 {
 	MTK_WCN_WMT_EXP_CB_INFO wmtExpCb = {
@@ -529,6 +641,7 @@ VOID mtk_wcn_wmt_exp_init(VOID)
 		.wmt_assert_timeout_cb = _mtk_wcn_wmt_assert_timeout,
 		.wmt_ic_info_get_cb = _mtk_wcn_wmt_ic_info_get,
 		.wmt_psm_ctrl_cb = _mtk_wcn_wmt_psm_ctrl,
+		.wmt_flash_patch_ctrl_cb = _mtk_wcn_wmt_flash_patch_ctrl,
 	};
 
 	mtk_wcn_wmt_exp_cb_reg(&wmtExpCb);
