@@ -508,7 +508,8 @@ int mt_ppm_main(void)
 
 	/* update active policy's limit according to current state */
 	list_for_each_entry(pos, &ppm_main_info.policy_list, link) {
-		if (pos->is_activated && pos->update_limit_cb) {
+		if ((pos->is_activated || pos->policy == PPM_POLICY_HICA)
+			&& pos->update_limit_cb) {
 			ppm_lock(&pos->lock);
 			pos->update_limit_cb(next_state);
 			ppm_unlock(&pos->lock);
