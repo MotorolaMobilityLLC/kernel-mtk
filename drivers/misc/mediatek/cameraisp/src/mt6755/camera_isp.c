@@ -4219,11 +4219,13 @@ static MINT32 ISP_RTBC_ENQUE(MINT32 dma, ISP_RT_BUF_INFO_STRUCT *prt_buf_info)
 			ISP_WR32(ISP_REG_ADDR_RRZO_D_BASE_ADDR,
 				 pstRTBuf->ring_buf[rt_dma].data[index].base_pAddr);
 		} else if (_camsv_imgo_ == rt_dma) {
-			ISP_WR32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR,
-				 pstRTBuf->ring_buf[rt_dma].data[index].base_pAddr);
+			/*ISP_WR32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR,
+				 pstRTBuf->ring_buf[rt_dma].data[index].base_pAddr);*/
+		    LOG_INF("[rtbc][ENQUE]IMGO_SV:addr should write by MVHDR");
 		} else if (_camsv2_imgo_ == rt_dma) {
-			ISP_WR32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR,
-				 pstRTBuf->ring_buf[rt_dma].data[index].base_pAddr);
+			/*ISP_WR32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR,
+				 pstRTBuf->ring_buf[rt_dma].data[index].base_pAddr);*/
+		    LOG_INF("[rtbc][ENQUE]IMGO_SV_D:addr should write by PD");
 		}
 
 		/* if(IspInfo.DebugMask & ISP_DBG_BUF_CTRL)     { */
@@ -6677,13 +6679,15 @@ static MINT32 ISP_CAMSV_SOF_Buf_Get(unsigned int dma, CQ_RTBC_FBC camsv_fbc, MUI
 		/* last update buffer index     */
 		camsv_imgo_idx = (camsv_fbc.Bits.WCNT % camsv_fbc.Bits.FB_NUM);	/* nest frame */
 
-
-		if (_camsv_imgo_ == dma)
+		/* mark this: CAMSV_IMGO_* might be changed here, but it should be changed by MVHDR or PDAF*/
+		/*if (_camsv_imgo_ == dma)
 			ISP_WR32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR,
 				 pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].base_pAddr);
+			LOG_INF("[SOF]IMGO_SV:addr should write by MVHDR");
 		else
 			ISP_WR32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR,
 				 pstRTBuf->ring_buf[dma].data[camsv_imgo_idx].base_pAddr);
+			LOG_INF("[SOF]IMGO_SV_D:addr should write by PD");*/
 
 
 		/*      */
@@ -8827,13 +8831,12 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV(MINT32 Irq, void *DeviceId)
 
 		if (1 == mFwRcnt.bLoadBaseAddr[_CAMSV_IRQ]) {
 			if (pstRTBuf->ring_buf[_camsv_imgo_].active) {
-				IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
+				/*IRQ_LOG_KEEPER(_CAMSV_IRQ, m_CurrentPPB, _LOG_INF,
 					       CAMSV_TAG "wr2Phy,");
 				ISP_WR32(ISP_REG_ADDR_IMGO_SV_BASE_ADDR,
 					 pstRTBuf->ring_buf[_camsv_imgo_].data[pstRTBuf->
-									       ring_buf
-									       [_camsv_imgo_].
-									       start].base_pAddr);
+							ring_buf[_camsv_imgo_].start].base_pAddr);*/
+				LOG_INF("[no wr2Phy]IMGO_SV:addr should write by MVHDR");
 			}
 			mFwRcnt.bLoadBaseAddr[_CAMSV_IRQ] = 0;
 		}
@@ -9010,13 +9013,12 @@ static __tcmfunc irqreturn_t ISP_Irq_CAMSV2(MINT32 Irq, void *DeviceId)
 
 		if (1 == mFwRcnt.bLoadBaseAddr[_CAMSV_D_IRQ]) {
 			if (pstRTBuf->ring_buf[_camsv2_imgo_].active) {
-				IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
+				/*IRQ_LOG_KEEPER(_CAMSV_D_IRQ, m_CurrentPPB, _LOG_INF,
 					       CAMSV2_TAG "wr2Phy,");
 				ISP_WR32(ISP_REG_ADDR_IMGO_SV_D_BASE_ADDR,
 					 pstRTBuf->ring_buf[_camsv2_imgo_].data[pstRTBuf->
-										ring_buf
-										[_camsv2_imgo_].
-										start].base_pAddr);
+							ring_buf[_camsv2_imgo_].start].base_pAddr);*/
+				LOG_INF("[no wr2Phy]IMGO_SV_D:addr should write by PD");
 			}
 			mFwRcnt.bLoadBaseAddr[_CAMSV_D_IRQ] = 0;
 		}
