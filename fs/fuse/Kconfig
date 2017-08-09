@@ -29,11 +29,10 @@ config CUSE
 config FUSE_IO_LOG
 	bool "FUSE IO log"
 	depends on FUSE_FS
-	depends on MT_ENG_BUILD
 	default y
 	help
 	  Enable IO trace for performance analysis and application access
-	  pattern study. The trace is only avalible in eng build.
+	  pattern study.
 
 	  The trace is formatted as pid:operation{size(bytes),count,time(ms)}
 	  Type 1: read/write statics

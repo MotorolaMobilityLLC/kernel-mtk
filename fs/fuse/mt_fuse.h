@@ -16,7 +16,7 @@ void fuse_request_send_background_ex(struct fuse_conn *fc,
 void fuse_request_send_ex(struct fuse_conn *fc, struct fuse_req *req,
 	__u32 size);
 
-#if defined(CONFIG_FUSE_IO_LOG)  /* IO log is only enabled in eng load */
+#if defined(CONFIG_FUSE_IO_LOG)
 
 #include <linux/sched.h>
 #include <linux/kthread.h>
