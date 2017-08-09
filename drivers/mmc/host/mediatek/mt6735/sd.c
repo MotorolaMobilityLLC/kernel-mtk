@@ -7798,11 +7798,10 @@ static int msdc_ops_switch_volt(struct mmc_host *mmc, struct mmc_ios *ios)
 
 int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 {
-/* CCJ fix */
-#if 0
+#ifdef CONFIG_SDIOAUTOK_SUPPORT
 	struct msdc_host *host = mmc_priv(mmc);
 
-	if (host->hw->host_function == MSDC_SDIO)
+	if ((host->hw->host_function == MSDC_SDIO) && (host->id == 2))
 		init_tune_sdio(host);
 #endif
 	return 0;
