@@ -18,6 +18,7 @@
 #include <linux/major.h>
 #include <linux/mm.h>
 #include <linux/init.h>
+#include <linux/sysctl.h>
 #include <linux/device.h>
 #include <linux/uaccess.h>
 #include <linux/bitops.h>
@@ -48,9 +49,11 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
 	wake_up_interruptible(&tty->read_wait);
 	wake_up_interruptible(&tty->write_wait);
 	tty->packet = 0;
+	tty->peer_stops = 0;
 	/* Review - krefs on tty_link ?? */
 	if (!tty->link)
 		return;
+	tty->link->peer_stops = 0;
 	set_bit(TTY_OTHER_CLOSED, &tty->link->flags);
 	wake_up_interruptible(&tty->link->read_wait);
 	wake_up_interruptible(&tty->link->write_wait);
@@ -115,9 +118,9 @@ static int pty_write(struct tty_struct *tty, const unsigned char *buf, int c)
 {
 	struct tty_struct *to = tty->link;
 
-	if (tty->stopped)
+	if (tty->stopped || tty->peer_stops) {
 		return 0;
-
+	}
 	if (c > 0) {
 		/* Stuff the data into the input queue of the other end */
 		c = tty_insert_flip_string(to->port, buf, c);
@@ -140,7 +143,7 @@ static int pty_write(struct tty_struct *tty, const unsigned char *buf, int c)
 
 static int pty_write_room(struct tty_struct *tty)
 {
-	if (tty->stopped)
+	if (tty->stopped || tty->peer_stops)
 		return 0;
 	return pty_space(tty->link);
 }
@@ -354,6 +357,74 @@ static void pty_stop(struct tty_struct *tty)
 	spin_unlock_irqrestore(&tty->ctrl_lock, flags);
 }
 
+/* Unix98 devices */
+#ifdef CONFIG_UNIX98_PTYS
+/*
+ * sysctl support for setting limits on the number of Unix98 ptys allocated.
+ * Otherwise one can eat up all kernel memory by opening /dev/ptmx repeatedly.
+ */
+int pty_limit = NR_UNIX98_PTY_DEFAULT;
+static int pty_limit_min;
+static int pty_limit_max = NR_UNIX98_PTY_MAX;
+static int tty_count;
+static int pty_count;
+
+static inline void pty_inc_count(void)
+{
+	pty_count = (++tty_count) / 2;
+}
+
+static inline void pty_dec_count(void)
+{
+	pty_count = (--tty_count) / 2;
+}
+
+
+static struct cdev ptmx_cdev;
+
+static struct ctl_table pty_table[] = {
+	{
+		.procname	= "max",
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.data		= &pty_limit,
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= &pty_limit_min,
+		.extra2		= &pty_limit_max,
+	}, {
+		.procname	= "nr",
+		.maxlen		= sizeof(int),
+		.mode		= 0444,
+		.data		= &pty_count,
+		.proc_handler	= proc_dointvec,
+	},
+	{}
+};
+
+static struct ctl_table pty_kern_table[] = {
+	{
+		.procname	= "pty",
+		.mode		= 0555,
+		.child		= pty_table,
+	},
+	{}
+};
+
+static struct ctl_table pty_root_table[] = {
+	{
+		.procname	= "kernel",
+		.mode		= 0555,
+		.child		= pty_kern_table,
+	},
+	{}
+};
+
+#define TCOOFF 0
+#define TCOON 1
+#define TCIOFF 2
+#define TCION 3
+
+
 /**
  *	pty_common_install		-	set up the pty pair
  *	@driver: the pty driver
@@ -422,6 +493,8 @@ static int pty_common_install(struct tty_driver *driver, struct tty_struct *tty,
 
 	tty_driver_kref_get(driver);
 	tty->count++;
+	pty_inc_count(); /* tty */
+	pty_inc_count(); /* tty->link */
 	return 0;
 err_free_termios:
 	if (legacy)
@@ -539,6 +612,7 @@ static void __init legacy_pty_init(void)
 	if (IS_ERR(pty_slave_driver))
 		panic("Couldn't allocate pty slave driver");
 
+	pty_driver->owner = THIS_MODULE;
 	pty_driver->driver_name = "pty_master";
 	pty_driver->name = "pty";
 	pty_driver->major = PTY_MASTER_MAJOR;
@@ -555,6 +629,7 @@ static void __init legacy_pty_init(void)
 	pty_driver->other = pty_slave_driver;
 	tty_set_operations(pty_driver, &master_pty_ops_bsd);
 
+	pty_slave_driver->owner = THIS_MODULE;
 	pty_slave_driver->driver_name = "pty_slave";
 	pty_slave_driver->name = "ttyp";
 	pty_slave_driver->major = PTY_SLAVE_MAJOR;
@@ -577,11 +652,6 @@ static void __init legacy_pty_init(void)
 static inline void legacy_pty_init(void) { }
 #endif
 
-/* Unix98 devices */
-#ifdef CONFIG_UNIX98_PTYS
-
-static struct cdev ptmx_cdev;
-
 static int pty_unix98_ioctl(struct tty_struct *tty,
 			    unsigned int cmd, unsigned long arg)
 {
@@ -598,8 +668,21 @@ static int pty_unix98_ioctl(struct tty_struct *tty,
 		return put_user(tty->index, (unsigned int __user *)arg);
 	case TIOCSIG:    /* Send signal to other side of pty */
 		return pty_signal(tty, (int) arg);
+	case TCXONC: /* Flow Control */
+		switch (arg) {
+		case TCIOFF:
+			tty->link->peer_stops = 1;
+			break;
+		case TCION:
+			tty->link->peer_stops = 0;
+			if (waitqueue_active(&tty->link->write_wait))
+				wake_up_interruptible(&tty->link->write_wait);
+				break;
+		default:
+		return -EINVAL;
+		}
+	return 0;
 	}
-
 	return -ENOIOCTLCMD;
 }
 
@@ -652,6 +735,7 @@ static int pty_unix98_install(struct tty_driver *driver, struct tty_struct *tty)
 
 static void pty_unix98_remove(struct tty_driver *driver, struct tty_struct *tty)
 {
+	pty_dec_count();
 }
 
 /* this is called once with whichever end is closed last */
@@ -690,6 +774,7 @@ static const struct tty_operations pty_unix98_ops = {
 	.chars_in_buffer = pty_chars_in_buffer,
 	.unthrottle = pty_unthrottle,
 	.set_termios = pty_set_termios,
+	.ioctl = pty_unix98_ioctl,
 	.start = pty_start,
 	.stop = pty_stop,
 	.shutdown = pty_unix98_shutdown,
@@ -800,6 +885,7 @@ static void __init unix98_pty_init(void)
 	if (IS_ERR(pts_driver))
 		panic("Couldn't allocate Unix98 pts driver");
 
+	ptm_driver->owner = THIS_MODULE;
 	ptm_driver->driver_name = "pty_master";
 	ptm_driver->name = "ptm";
 	ptm_driver->major = UNIX98_PTY_MASTER_MAJOR;
@@ -833,6 +919,8 @@ static void __init unix98_pty_init(void)
 		panic("Couldn't register Unix98 ptm driver");
 	if (tty_register_driver(pts_driver))
 		panic("Couldn't register Unix98 pts driver");
+
+	register_sysctl_table(pty_root_table);
 
 	/* Now create the /dev/ptmx special device */
 	tty_default_fops(&ptmx_fops);

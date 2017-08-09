@@ -194,7 +194,7 @@ struct tty_port_operations {
 	/* Called on the final put of a port */
 	void (*destruct)(struct tty_port *port);
 };
-	
+
 struct tty_port {
 	struct tty_bufhead	buf;		/* Locked internally */
 	struct tty_struct	*tty;		/* Back pointer */
@@ -266,6 +266,7 @@ struct tty_struct {
 		      flow_stopped:1,
 		      unused:BITS_PER_LONG - 2;
 	int hw_stopped;
+	unsigned char peer_stops:1;
 	unsigned long ctrl_status:8,	/* ctrl_lock */
 		      packet:1,
 		      unused_ctrl:BITS_PER_LONG - 9;
