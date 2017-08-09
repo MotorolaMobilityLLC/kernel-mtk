@@ -594,13 +594,15 @@ static int bmp_set_oversampling_t(struct i2c_client *client,
 static int bmp_read_raw_temperature(struct i2c_client *client,
 			s32 *temperature)
 {
-	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
+	struct bmp_i2c_data *obj;
 	s32 err = 0;
 
 	if (NULL == client) {
 		err = -EINVAL;
 		return err;
 	}
+
+	obj = i2c_get_clientdata(client);
 
 	mutex_lock(&obj->lock);
 
@@ -628,13 +630,15 @@ static int bmp_read_raw_temperature(struct i2c_client *client,
 
 static int bmp_read_raw_pressure(struct i2c_client *client, s32 *pressure)
 {
-	struct bmp_i2c_data *priv = i2c_get_clientdata(client);
+	struct bmp_i2c_data *priv;
 	s32 err = 0;
 
 	if (NULL == client) {
 		err = -EINVAL;
 		return err;
 	}
+
+	priv = i2c_get_clientdata(client);
 
 	mutex_lock(&priv->lock);
 
@@ -712,7 +716,7 @@ static int bmp_read_raw_pressure(struct i2c_client *client, s32 *pressure)
 static int bmp_get_temperature(struct i2c_client *client,
 		char *buf, int bufsize)
 {
-	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
+	struct bmp_i2c_data *obj;
 	int status;
 	s32 utemp = 0;/* uncompensated temperature */
 	s32 temperature = 0;
@@ -724,6 +728,8 @@ static int bmp_get_temperature(struct i2c_client *client,
 		*buf = 0;
 		return -2;
 	}
+
+	obj = i2c_get_clientdata(client);
 
 	status = bmp_read_raw_temperature(client, &utemp);
 	if (status != 0)
@@ -762,7 +768,7 @@ static int bmp_get_temperature(struct i2c_client *client,
 */
 static int bmp_get_pressure(struct i2c_client *client, char *buf, int bufsize)
 {
-	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
+	struct bmp_i2c_data *obj;
 	int status;
 	s32 temperature = 0, upressure = 0, pressure = 0;
 	char temp_buf[BMP_BUFSIZE];
@@ -774,6 +780,8 @@ static int bmp_get_pressure(struct i2c_client *client, char *buf, int bufsize)
 		*buf = 0;
 		return -2;
 	}
+
+	obj = i2c_get_clientdata(client);
 
 	/* update the ambient temperature according to the given meas. period */
 	if (time_before((unsigned long)(obj->last_temp_measurement +
