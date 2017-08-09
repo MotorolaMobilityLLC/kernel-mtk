@@ -348,6 +348,7 @@ struct ppm_power_state_data {
 extern struct ppm_data ppm_main_info;
 extern struct ppm_hica_algo_data ppm_hica_algo_data;
 extern struct proc_dir_entry *policy_dir;
+extern struct proc_dir_entry *profile_dir;
 extern unsigned int ppm_func_lv_mask;
 extern unsigned int ppm_debug;
 extern met_set_ppm_state_funcMET g_pSet_PPM_State;
@@ -410,6 +411,12 @@ extern void ppm_task_wakeup(void);
 extern void ppm_main_clear_client_req(struct ppm_client_req *c_req);
 extern int ppm_main_register_policy(struct ppm_policy_data *policy);
 extern void ppm_main_unregister_policy(struct ppm_policy_data *policy);
+
+/* profiling */
+extern int ppm_profile_init(void);
+extern void ppm_profile_exit(void);
+extern void ppm_profile_state_change_notify(enum ppm_power_state old_state, enum ppm_power_state new_state);
+extern void ppm_profile_update_client_exec_time(enum ppm_client client, unsigned long long time);
 
 #ifdef __cplusplus
 }

@@ -23,6 +23,9 @@ obj-y := mt_ppm_main.o
 obj-y += mt_ppm_interface.o
 obj-y += mt_ppm_api.o
 
+# for profiling
+obj-y += mt_ppm_profile.o
+
 # policies
 obj-y += mt_ppm_policy_dlpt.o
 obj-y += mt_ppm_policy_perfserv.o

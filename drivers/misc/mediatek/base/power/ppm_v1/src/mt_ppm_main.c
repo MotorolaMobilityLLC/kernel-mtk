@@ -542,7 +542,8 @@ int mt_ppm_main(void)
 	enum ppm_power_state next_state;
 	unsigned int policy_mask = 0;
 	int i, notify_hps_first = 0;
-	ktime_t now, delta;
+	ktime_t now;
+	unsigned long long delta;
 
 	FUNC_ENTER(FUNC_LV_MAIN);
 
@@ -658,8 +659,9 @@ int mt_ppm_main(void)
 							c_req->root_cluster, buf);
 				if (ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
 					ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb(*c_req);
-				delta = ktime_sub(ktime_get(), now);
-				ppm_dbg(TIME_PROFILE, "Done! notify dvfs only! time = %lld us\n", ktime_to_us(delta));
+				delta = ktime_to_us(ktime_sub(ktime_get(), now));
+				ppm_profile_update_client_exec_time(PPM_CLIENT_DVFS, delta);
+				ppm_dbg(TIME_PROFILE, "Done! notify dvfs only! time = %lld us\n", delta);
 				goto nofity_end;
 			} else if (notify_hps && !notify_dvfs) {
 				if (log_print)
@@ -668,8 +670,9 @@ int mt_ppm_main(void)
 				now = ktime_get();
 				if (ppm_main_info.client_info[PPM_CLIENT_HOTPLUG].limit_cb)
 					ppm_main_info.client_info[PPM_CLIENT_HOTPLUG].limit_cb(*c_req);
-				delta = ktime_sub(ktime_get(), now);
-				ppm_dbg(TIME_PROFILE, "Done! notify hps only! time = %lld us\n", ktime_to_us(delta));
+				delta = ktime_to_us(ktime_sub(ktime_get(), now));
+				ppm_profile_update_client_exec_time(PPM_CLIENT_HOTPLUG, delta);
+				ppm_dbg(TIME_PROFILE, "Done! notify hps only! time = %lld us\n", delta);
 				goto nofity_end;
 			}
 		}
@@ -709,18 +712,20 @@ int mt_ppm_main(void)
 				now = ktime_get();
 				if (ppm_main_info.client_info[i].limit_cb)
 					ppm_main_info.client_info[i].limit_cb(*c_req);
-				delta = ktime_sub(ktime_get(), now);
+				delta = ktime_to_us(ktime_sub(ktime_get(), now));
+				ppm_profile_update_client_exec_time(i, delta);
 				ppm_dbg(TIME_PROFILE, "%s callback done! time = %lld us\n",
-					(i == PPM_CLIENT_DVFS) ? "DVFS" : "HPS", ktime_to_us(delta));
+					(i == PPM_CLIENT_DVFS) ? "DVFS" : "HPS", delta);
 			}
 		} else {
 			for_each_ppm_clients(i) {
 				now = ktime_get();
 				if (ppm_main_info.client_info[i].limit_cb)
 					ppm_main_info.client_info[i].limit_cb(*c_req);
-				delta = ktime_sub(ktime_get(), now);
+				delta = ktime_to_us(ktime_sub(ktime_get(), now));
+				ppm_profile_update_client_exec_time(i, delta);
 				ppm_dbg(TIME_PROFILE, "%s callback done! time = %lld us\n",
-					(i == PPM_CLIENT_DVFS) ? "DVFS" : "HPS", ktime_to_us(delta));
+					(i == PPM_CLIENT_DVFS) ? "DVFS" : "HPS", delta);
 			}
 		}
 
@@ -730,6 +735,9 @@ nofity_end:
 		memcpy(last_req->cpu_limit, c_req->cpu_limit,
 			ppm_main_info.cluster_num * sizeof(*c_req->cpu_limit));
 	}
+
+	if (prev_state != next_state)
+		ppm_profile_state_change_notify(prev_state, next_state);
 
 #if PPM_UPDATE_STATE_DIRECT_TO_MET
 	if (NULL != g_pSet_PPM_State && prev_state != next_state)
@@ -919,9 +927,8 @@ static int ppm_main_data_init(void)
 		kzalloc(ppm_main_info.cluster_num * sizeof(*ppm_main_info.last_req.cpu_limit), GFP_KERNEL);
 	if (!ppm_main_info.last_req.cpu_limit) {
 		ppm_err("@%s: fail to allocate memory for last_req!\n", __func__);
-		kfree(ppm_main_info.client_req.cpu_limit);
 		ret = -ENOMEM;
-		goto allocate_req_mem_fail;
+		goto allocate_last_req_mem_fail;
 	}
 
 	for_each_ppm_clusters(i) {
@@ -932,6 +939,7 @@ static int ppm_main_data_init(void)
 
 		ppm_main_info.last_req.cluster_num = ppm_main_info.cluster_num;
 	}
+
 #if 0
 	ppm_main_info.ppm_task = kthread_create(ppm_main_task, NULL, "ppm_main");
 	if (IS_ERR(ppm_main_info.ppm_task)) {
@@ -955,9 +963,11 @@ static int ppm_main_data_init(void)
 
 #if 0
 task_create_fail:
-	kfree(ppm_main_info.client_req.cpu_limit);
 	kfree(ppm_main_info.last_req.cpu_limit);
 #endif
+
+allocate_last_req_mem_fail:
+	kfree(ppm_main_info.client_req.cpu_limit);
 
 allocate_req_mem_fail:
 	kfree(ppm_main_info.cluster_info);
@@ -981,6 +991,8 @@ static void ppm_main_data_deinit(void)
 		put_task_struct(ppm_main_info.ppm_task);
 		ppm_main_info.ppm_task = NULL;
 	}
+
+	ppm_profile_exit();
 
 	/* free policy req mem */
 	list_for_each_entry(pos, &ppm_main_info.policy_list, link) {
@@ -1049,10 +1061,18 @@ static int __init ppm_main_init(void)
 		goto reg_platform_driver_fail;
 	}
 
+	if (ppm_profile_init()) {
+		ppm_err("@%s: ppm_profile_init fail!\n", __func__);
+		ret = -EFAULT;
+		goto profile_init_fail;
+	}
+
 	ppm_info("ppm driver init done!\n");
 
 	return ret;
 
+profile_init_fail:
+	platform_driver_unregister(&ppm_main_info.ppm_pdrv);
 
 reg_platform_driver_fail:
 	platform_device_unregister(&ppm_main_info.ppm_pdev);
