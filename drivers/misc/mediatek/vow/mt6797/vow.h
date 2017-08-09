@@ -4,12 +4,16 @@
 #include <linux/compat.h>
 #include <linux/fs.h>
 #include <linux/uaccess.h>
+#include <mt-plat/aee.h>
 
 /***********************************************************************************
 ** VOW Control Message
 ************************************************************************************/
 #define VOW_DEVNAME "vow"
 #define VOW_IOC_MAGIC    'a'
+
+/* if need assert , use VOW_ASSERT(true) */
+#define VOW_ASSERT(value) BUG_ON(false)
 
 /* below is control message */
 #if 0
@@ -83,6 +87,7 @@ enum VOW_MESSAGE_TEMP {
 #define VOW_WAITCHECK_INTERVAL_MS      1
 #define MAX_VOW_INFO_LEN               4
 #define VOW_VOICE_DATA_LENGTH_BYTES  320
+#define VOW_IPI_TIMEOUT              500 /* 500ms */
 
 /***********************************************************************************
 ** Type Define

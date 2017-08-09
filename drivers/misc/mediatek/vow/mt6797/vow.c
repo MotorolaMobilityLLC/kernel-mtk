@@ -137,6 +137,7 @@ static struct
 	int                  md32_command_id;
 	VOW_EINT_STATUS      eint_status;
 	VOW_PWR_STATUS       pwr_status;
+	int                  send_ipi_count;
 } vowserv;
 
 static struct device dev = {
@@ -189,7 +190,7 @@ static struct notifier_block md32_vow_nb = {
 };
 #endif
 
-bool vow_ipi_sendmsg(vow_ipi_msgid_t id, void *buf, unsigned int size, unsigned int type, unsigned int wait)
+int vow_ipi_sendmsg(vow_ipi_msgid_t id, void *buf, unsigned int size, unsigned int type, unsigned int wait)
 {
 #if !AP_ONLY_UT
 	ipi_status status;
@@ -198,7 +199,7 @@ bool vow_ipi_sendmsg(vow_ipi_msgid_t id, void *buf, unsigned int size, unsigned 
 	ipibuf[0] = id;
 	ipibuf[1] = size;
 	vowserv.ipi_fail_result = false;
-	pr_debug("[VOW_Kernel] vow_ipi_sendmsg:%x\n", id);
+	/* pr_debug("[VOW_Kernel] vow_ipi_sendmsg:%x\n", id); */
 	if (type == 0) {
 		if (size != 0)
 			memcpy((void *)&ipibuf[2], buf, size);
@@ -208,11 +209,23 @@ bool vow_ipi_sendmsg(vow_ipi_msgid_t id, void *buf, unsigned int size, unsigned 
 			memcpy((void *)&ipibuf[2], buf, 4);
 		status = scp_ipi_send(IPI_VOW, (void *)ipibuf, 8, wait);
 	}
-	if (status != DONE) {
-		pr_debug("[VOW_Kernel] vow_ipi_sendmsgFail:%x %x\n", id, status);
+	if (status == BUSY) {
+		/* pr_debug("[VOW_Kernel] vow_ipi_sendmsgFail:%x %x\n", id, status); */
+		msleep(VOW_WAITCHECK_INTERVAL_MS);
+		vowserv.send_ipi_count++;
+		if (vowserv.send_ipi_count > VOW_IPI_TIMEOUT) {
+			pr_debug("[VOW_Kernel] vow_ipi_sendmsg Timeout:0x%x_%d\n", id, vowserv.send_ipi_count);
+			VOW_ASSERT(true);
+		}
 		return false;
 	}
+	if (status == ERROR) {
+		pr_err("[VOW_Kernel] ipi error need check!\n");
+		VOW_ASSERT(true);
+		return -1;
+	}
 #endif
+	vowserv.send_ipi_count = 0; /* reset send_ipi_count*/
 	return true;
 }
 
@@ -345,6 +358,7 @@ static void vow_service_Init(void)
 		/*register IPI handler*/
 		scp_ipi_registration(IPI_VOW, vow_ipi_handler, "VOW");
 		/*Initialization*/
+		vowserv.send_ipi_count    = 0; /* count the busy times */
 		vowserv.ipimsgwait        = false;
 		vowserv.ipi_fail_result   = false;
 		vowserv.md32_command_flag = false;
@@ -382,7 +396,9 @@ static void vow_service_Init(void)
 					   DMA_TO_DEVICE);
 #endif
 		vowserv.ipimsgwait = true;
-		while (!vow_ipi_sendmsg(AP_IPIMSG_VOW_APREGDATA_ADDR, (void *)&vowserv.vow_info_dsp[0], 4, 0, 0))
+
+		while (vow_ipi_sendmsg(AP_IPIMSG_VOW_APREGDATA_ADDR, (void *)&vowserv.vow_info_dsp[0], 4, 0, 1)
+		       == false)
 			;
 		vow_ipimsg_wait(AP_IPIMSG_VOW_APREGDATA_ADDR);
 		vowserv.voicedata_kernel_ptr = NULL;
@@ -396,7 +412,8 @@ static void vow_service_Init(void)
 	} else {
 		vowserv.vow_info_dsp[0] = vowserv.voicedata_scp_addr;
 		vowserv.ipimsgwait = true;
-		while (!vow_ipi_sendmsg(AP_IPIMSG_VOW_APREGDATA_ADDR, (void *)&vowserv.vow_info_dsp[0], 4, 0, 0))
+		while (vow_ipi_sendmsg(AP_IPIMSG_VOW_APREGDATA_ADDR, (void *)&vowserv.vow_info_dsp[0], 4, 0, 1)
+		       == false)
 			;
 		vow_ipimsg_wait(AP_IPIMSG_VOW_APREGDATA_ADDR);
 #if VOW_PRE_LEARN_MODE
@@ -526,7 +543,7 @@ static bool vow_service_ReleaseSpeakerModel(int id)
 	PRINTK_VOWDRV("ReleaseSpeakerModel:id_%x\n", vowserv.vow_info_dsp[0]);
 
 	vowserv.ipimsgwait = true;
-	while (!vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 16, 0, 0))
+	while (vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 16, 0, 1) == false)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
 
@@ -548,7 +565,7 @@ static bool vow_service_SetVowMode(unsigned long arg)
 
 	PRINTK_VOWDRV("SetVowMode:mode_%x\n", vowserv.vow_info_dsp[0]);
 
-	while (!vow_ipi_sendmsg(AP_IPIMSG_VOW_SETMODE, (void *)&vowserv.vow_info_dsp[0], 2, 0, 0))
+	while (vow_ipi_sendmsg(AP_IPIMSG_VOW_SETMODE, (void *)&vowserv.vow_info_dsp[0], 2, 0, 1) == false)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_VOW_SETMODE);
 	return ret;
@@ -614,7 +631,7 @@ static bool vow_service_SetSpeakerModel(unsigned long arg)
 		      vowserv.vow_info_dsp[3]);
 
 	vowserv.ipimsgwait = true;
-	while (!vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 16, 0, 0))
+	while (vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 16, 0, 1) == false)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
 	return ret;
@@ -669,7 +686,7 @@ static bool vow_service_SetInitModel(unsigned long arg)
 		      vowserv.vow_info_dsp[1], vowserv.vow_info_dsp[3]);
 
 	vowserv.ipimsgwait = true;
-	while (!vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 16, 0, 0))
+	while (vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 16, 0, 1) == false)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
 	return ret;
@@ -705,7 +722,7 @@ static bool vow_service_SetNoiseModel(unsigned long arg)
 							  vowserv.vow_info_dsp[1]);
 
 	vowserv.ipimsgwait = true;
-	while (!vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 16, 0, 0))
+	while (vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 16, 0, 1) == false)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
 	return ret;
@@ -741,7 +758,7 @@ static bool vow_service_SetFirModel(unsigned long arg)
 		      vowserv.vow_info_dsp[0], vowserv.vow_info_dsp[1]);
 
 	vowserv.ipimsgwait = true;
-	while (!vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 4, 0, 0))
+	while (vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 4, 0, 1) == false)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
 	return ret;
@@ -770,7 +787,7 @@ static bool vow_service_Enable(void)
 
 	PRINTK_VOWDRV("vow_service_Enable\n");
 	vowserv.ipimsgwait = true;
-	while (!vow_ipi_sendmsg(AP_IPIMSG_VOW_ENABLE, (void *)0, 0, 0, 0))
+	while (vow_ipi_sendmsg(AP_IPIMSG_VOW_ENABLE, (void *)0, 0, 0, 1) == false)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_VOW_ENABLE);
 	return ret;
@@ -783,7 +800,7 @@ static bool vow_service_Disable(void)
 	PRINTK_VOWDRV("vow_service_Disable\n");
 	deregister_feature(VOW_FEATURE_ID);
 	vowserv.ipimsgwait = true;
-	while (!vow_ipi_sendmsg(AP_IPIMSG_VOW_DISABLE, (void *)0, 0, 0, 0))
+	while (vow_ipi_sendmsg(AP_IPIMSG_VOW_DISABLE, (void *)0, 0, 0, 1) == false)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_VOW_DISABLE);
 	vow_service_getVoiceData();
@@ -954,7 +971,7 @@ int VowDrv_ChangeStatus(void)
 void VowDrv_SetSmartDevice(void)
 {
 	PRINTK_VOWDRV("VowDrv_SetSmartDevice\n");
-	while (!vow_ipi_sendmsg(AP_IPIMSG_VOW_SET_SMART_DEVICE, (void *)0, 0, 0, 0))
+	while (vow_ipi_sendmsg(AP_IPIMSG_VOW_SET_SMART_DEVICE, (void *)0, 0, 0, 1) == false)
 		;
 }
 
@@ -964,7 +981,7 @@ void VowDrv_SetFlag(VOW_FLAG_TYPE type, bool set)
 	vowserv.vow_info_dsp[0] = type;
 	vowserv.vow_info_dsp[1] = set;
 	vowserv.ipimsgwait = true;
-	while (!vow_ipi_sendmsg(AP_IPIMSG_VOW_SET_FLAG, (void *)&vowserv.vow_info_dsp[0], 8, 0, 0))
+	while (vow_ipi_sendmsg(AP_IPIMSG_VOW_SET_FLAG, (void *)&vowserv.vow_info_dsp[0], 8, 0, 1) == false)
 		;
 	vow_ipimsg_wait(AP_IPIMSG_VOW_SET_FLAG);
 }
