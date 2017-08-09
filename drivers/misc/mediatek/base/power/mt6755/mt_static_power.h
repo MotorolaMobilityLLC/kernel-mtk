@@ -5,11 +5,16 @@
 enum {
 	MT_SPOWER_CPU = 0,
 	MT_SPOWER_VCORE,
-	MT_SPOWER_LTE,
+	MT_SPOWER_GPU,
+	MT_SPOWER_VMD1,
+	MT_SPOWER_MODEM,
+	MT_SPOWER_VMODEM_SRAM,
 	MT_SPOWER_MAX,
 };
 
-/*
+extern u32 get_devinfo_with_index(u32 index);
+
+/**
  * @argument
  * dev: the enum of MT_SPOWER_xxx
  * voltage: the operating voltage, mV.
@@ -17,8 +22,7 @@ enum {
  * @return
  *  -1, means sptab is not yet ready.
  *  other value: the mW of leakage value.
- */
-extern u32 get_devinfo_with_index(u32 index);
+ **/
 extern int mt_spower_get_leakage(int dev, int voltage, int degree);
 extern int mt_spower_init(void);
 
