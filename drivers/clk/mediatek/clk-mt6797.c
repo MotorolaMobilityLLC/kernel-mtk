@@ -275,6 +275,7 @@ static DEFINE_SPINLOCK(mt6797_clk_lock);
 
 /* MFG */
 #define mfg_bg3d			"mfg_bg3d"
+#define infra_mfg_vcg			"infra_mfg_vcg"
 
 /* IMG */
 #define	img_fdvt  "img_fdvt"
@@ -853,7 +854,7 @@ static struct mtk_mux top_muxes[] __initdata = {
 	MUX(TOP_MUX_AUDIO_H, audio_h_sel, audio_h_parents, 0x00C0, 16, 2, INVALID_MUX_GATE_BIT),
 	MUX(TOP_MUX_ANC_MD32, anc_md32_sel, anc_md32_parents, 0x00C0, 24, 2, INVALID_MUX_GATE_BIT),
 	MUX(TOP_MUX_MFG_52M, mfg_52m_sel, mfg_52m_parents, 0x0104, 1, 2,
-		INVALID_MUX_GATE_BIT),/* non glitch operation */
+		0),/* non glitch operation */
 };
 
 
@@ -1177,6 +1178,7 @@ static struct mtk_gate infra_clks[] __initdata = {
 	GATE(INFRA_VAD_WRAP_SOC, infra_vad_wrap_soc, axi_sel, infra2_cg_regs, 29, 0),
 	GATE(INFRA_DRAMC_CONF, infra_dramc_conf, axi_sel, infra2_cg_regs, 30, 0),
 	GATE(INFRA_DRAMC_B_CONF, infra_dramc_b_conf, axi_sel, infra2_cg_regs, 31, 0),
+	GATE(INFRA_MFG_VCG, infra_mfg_vcg, mfg_52m_sel, infra1_cg_regs, 14, 0),/*Virturl CG*/
 };
 
 static void __init init_clk_infrasys(void __iomem *infrasys_base,

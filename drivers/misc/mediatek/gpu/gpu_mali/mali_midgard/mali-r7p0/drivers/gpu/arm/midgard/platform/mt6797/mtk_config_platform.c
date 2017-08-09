@@ -88,6 +88,8 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	/* test: dealy for EMI violation issue */
 	udelay(100);
 
+	MTKCLK_prepare_enable(clk_mfg52m_vcg);
+
 	MTKCLK_prepare_enable(clk_mfg_async);
 	MTKCLK_prepare_enable(clk_mfg);
 #ifndef MTK_GPU_APM
@@ -204,6 +206,8 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 #endif
 	MTKCLK_disable_unprepare(clk_mfg);
 	MTKCLK_disable_unprepare(clk_mfg_async);
+
+	MTKCLK_disable_unprepare(clk_mfg52m_vcg);
 
 	mt_gpufreq_voltage_enable_set(0);
 	base_write32(g_ldo_base+0xfbc, 0x0);
@@ -414,11 +418,15 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	config->clk_mfg_core3 = devm_clk_get(&pdev->dev, "mtcmos-mfg-core3");
 #endif
 	config->clk_mfg_main = devm_clk_get(&pdev->dev, "mfg-main");
+	config->clk_mfg52m_vcg = devm_clk_get(&pdev->dev, "mfg52m-vcg");
 #ifdef MTK_GPU_SPM
 	config->clk_dvfs_gpu = devm_clk_get(&pdev->dev, "infra-dvfs-gpu");
 	config->clk_gpupm = devm_clk_get(&pdev->dev, "infra-gpupm");
 	config->clk_ap_dma = devm_clk_get(&pdev->dev, "infra-ap-dma");
 #endif
+
+	config->mux_mfg52m = devm_clk_get(&pdev->dev, "mux-mfg52m");
+	config->mux_mfg52m_52m = devm_clk_get(&pdev->dev, "mux-univpll2-d8");
 
 	dev_err(kbdev->dev, "xxxx mfg_async:%p\n", config->clk_mfg_async);
 	dev_err(kbdev->dev, "xxxx mfg:%p\n", config->clk_mfg);
@@ -437,8 +445,8 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 
 	config->max_volt = 1125;
 	config->max_freq = mt_gpufreq_get_freq_by_idx(0);
-	config->min_volt = 850;
-	config->min_freq = mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_dvfs_table_num()-2);
+	config->min_volt = 898;
+	config->min_freq = mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_dvfs_table_num()-3);
 
 	g_config = kbdev->mtk_config = config;
 
@@ -477,6 +485,10 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	base_write32(g_ldo_base+0xfc0, 0x0f0f0f0f);
 	base_write32(g_ldo_base+0xfc4, 0x0f0f0f0f);
 	base_write32(g_ldo_base+0xfc8, 0x0f);
+
+	clk_prepare_enable(config->mux_mfg52m);
+	clk_set_parent(config->mux_mfg52m, config->mux_mfg52m_52m);
+	clk_disable_unprepare(config->mux_mfg52m);
 
 #ifdef MTK_GPU_DPM
 	DFP_write32(CLK_MISC_CFG_0, DFP_read32(CLK_MISC_CFG_0) & 0xfffffffe);

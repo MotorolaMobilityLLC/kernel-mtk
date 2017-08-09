@@ -37,11 +37,15 @@ struct mtk_config {
 	struct clk *clk_mfg_core3;
 #endif
 	struct clk *clk_mfg_main;
+	struct clk *clk_mfg52m_vcg;
 #ifdef MTK_GPU_SPM
 	struct clk *clk_dvfs_gpu;
 	struct clk *clk_gpupm;
 	struct clk *clk_ap_dma;
 #endif
+
+	struct clk *mux_mfg52m;
+	struct clk *mux_mfg52m_52m;
 
 	unsigned int max_volt;
 	unsigned int max_freq;

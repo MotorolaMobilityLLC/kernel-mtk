@@ -212,7 +212,8 @@
 #define	INFRA_VAD_WRAP_SOC	80
 #define	INFRA_DRAMC_CONF	81
 #define	INFRA_DRAMC_B_CONF	82
-#define INFRA_NR_CLK	83
+#define INFRA_MFG_VCG 83
+#define INFRA_NR_CLK	84
 
 /* MFG_SYS, mfgsys */
 #define MFG_BG3D	1
