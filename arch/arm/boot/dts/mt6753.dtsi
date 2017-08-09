@@ -923,6 +923,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				<0 168 0x8>;
 		};
 
+		DEVAPC_AO@10007000 {
+			compatible = "mediatek,DEVAPC_AO";
+			reg = <0x10007000 0x1000>;
+		};
+
 		DRAMC_NAO@0x1020E000 {
 			compatible = "mediatek,DRAMC_NAO";
 			reg = <0x1020E000 0x1000>;
@@ -1095,9 +1100,15 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			pinctrl-4 = <&ssw_sim1_md3_sim2_md1>;
 		};
 
-		EFUSEC@0x10206000 {
+		EFUSEC@10206000 {
 			compatible = "mediatek,EFUSEC";
 			reg = <0x10206000 0x1000>;
+		};
+
+		DEVAPC@10207000 {
+			compatible = "mediatek,DEVAPC";
+			reg = <0x10207000 0x1000>;
+			interrupts = <GIC_SPI 134 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		APMIXED@0x10209000 {
