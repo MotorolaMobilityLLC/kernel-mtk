@@ -25,7 +25,11 @@
 #include "mtk_extd_mgr.h"
 /*#include <linux/earlysuspend.h>*/
 #include <linux/suspend.h>
-
+#ifdef CONFIG_PM_AUTOSLEEP
+#include <linux/fb.h>
+#include <linux/notifier.h>
+#include "mt8193_ckgen.h"
+#endif
 
 #define EXTD_DEVNAME "hdmitx"
 #define EXTD_DEV_ID(id) (((id)>>16)&0x0ff)
@@ -456,10 +460,73 @@ static struct early_suspend extd_early_suspend_handler = {
 	.resume = extd_late_resume,
 };
 #endif
+#if defined(CONFIG_PM_AUTOSLEEP)
+static void extd_hdmi_early_suspend(void)
+{
+	int i = 0;
+
+	EXT_MGR_FUNC();
+
+	for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
+		if (i != DEV_EINK && extd_driver[i]->power_enable)
+			extd_driver[i]->power_enable(0);
+	}
+	mt8193_ckgen_early_suspend();
+}
+
+static void extd_hdmi_late_resume(void)
+{
+	int i = 0;
+
+	EXT_MGR_FUNC();
+
+	mt8193_ckgen_late_resume();
+
+	for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
+		if (i != DEV_EINK && extd_driver[i]->power_enable)
+			extd_driver[i]->power_enable(1);
+	}
+}
+
+static int extd_hdmi_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *fb_evdata)
+{
+	struct fb_event *evdata = fb_evdata;
+	int blank;
+
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+	case FB_BLANK_NORMAL:
+		extd_hdmi_late_resume();
+		break;
+	case FB_BLANK_VSYNC_SUSPEND:
+	case FB_BLANK_HSYNC_SUSPEND:
+		break;
+	case FB_BLANK_POWERDOWN:
+		extd_hdmi_early_suspend();
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static struct notifier_block extd_hdmi_fb_notif = {
+	.notifier_call = extd_hdmi_fb_notifier_callback,
+};
+#endif
 
 static int __init mtk_extd_mgr_init(void)
 {
 	int i = 0;
+#ifdef CONFIG_PM_AUTOSLEEP
+	int ret = 0;
+#endif
 
 	EXT_MGR_FUNC();
 
@@ -480,6 +547,15 @@ static int __init mtk_extd_mgr_init(void)
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	register_early_suspend(&extd_early_suspend_handler);
 #endif
+
+#ifdef CONFIG_PM_AUTOSLEEP
+	ret = fb_register_client(&extd_hdmi_fb_notif);
+	if (ret) {
+		pr_err("fail to register extd_hdmi_fb notifier, ret=%d\n", ret);
+		return ret;
+	}
+#endif
+
 	return 0;
 }
 

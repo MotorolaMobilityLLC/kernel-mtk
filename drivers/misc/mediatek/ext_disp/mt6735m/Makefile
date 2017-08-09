@@ -15,6 +15,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/  \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/hdmi/inc/ \
+             -I$(srctree)/drivers/misc/mediatek/multibridge/mt6735/mt8193/inc/ \
              -I$(srctree)/drivers/misc/mediatek/leds/ \
              -I$(srctree)/drivers/misc/mediatek/leds/mt6735 \
              -I$(srctree)/drivers/staging/android/ion \
