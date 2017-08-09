@@ -59,7 +59,7 @@ config TOUCHSCREEN_MTK_GT9XXTB_HOTKNOT
 	bool "GT9XXTB hotknot for Mediatek package"
 	default n
 	help
-	  Say Y here if you have GT9xx touch panel.
+	  Say Y here if you have GT9XXTB hotknot touch panel.
 
 	  If unsure, say N.
 
@@ -69,10 +69,10 @@ config TOUCHSCREEN_MTK_GT9XXTB_HOTKNOT
 source "drivers/input/touchscreen/mediatek/GT9XXTB_hotknot/Kconfig"
 
 config TOUCHSCREEN_MTK_GT9XX_HOTKNOT
-	bool "GT9XXTB hotknot for Mediatek package"
+	bool "GT9XX hotknot for Mediatek package"
 	default n
 	help
-	  Say Y here if you have GT9xx touch panel.
+	  Say Y here if you have GT9XX hotknot touch panel.
 
 	  If unsure, say N.
 
@@ -82,10 +82,10 @@ config TOUCHSCREEN_MTK_GT9XX_HOTKNOT
 source "drivers/input/touchscreen/mediatek/GT9XX_hotknot/Kconfig"
 
 config TOUCHSCREEN_MTK_GT9XX_HOTKNOT_PHONE
-	bool "GT9XXTB hotknot phone for Mediatek package"
+	bool "GT9XX hotknot phone for Mediatek package"
 	default n
 	help
-	  Say Y here if you have GT9xx touch panel.
+	  Say Y here if you have GT9XX hotknot phone touch panel.
 
 	  If unsure, say N.
 
