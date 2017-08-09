@@ -107,7 +107,7 @@ static void store_rt_mon_info(struct task_struct *p)
 	rt_mon_count++;
 	mtmon->pid = p->pid;
 	mtmon->prio = p->prio;
-	strcpy(mtmon->comm, p->comm);
+	strncpy(mtmon->comm, p->comm, sizeof(p->comm));
 	mtmon->cputime = p->se.sum_exec_runtime;
 	mtmon->cputime_init = p->se.sum_exec_runtime;
 	mtmon->isr_time = p->se.mtk_isr_time;
@@ -141,7 +141,7 @@ void setup_mt_rt_mon_info(struct task_struct *p)
 	list_for_each_entry(tmp, &mt_rt_mon_head.list, list) {
 		if (!find && (tmp->pid == p->pid)) {
 			tmp->prio = p->prio;
-			strcpy(tmp->comm, p->comm);
+			strncpy(tmp->comm, p->comm, sizeof(p->comm));
 			tmp->cputime = p->se.sum_exec_runtime;
 			tmp->cputime_init = p->se.sum_exec_runtime;
 			tmp->isr_time = p->se.mtk_isr_time;
@@ -199,7 +199,7 @@ void stop_rt_mon_task(void)
 			tmp->isr_time =
 				tsk->se.mtk_isr_time - tmp->isr_time;
 			tmp->cost_isrtime += tmp->isr_time;
-			strcpy(tmp->comm, tsk->comm);
+			strncpy(tmp->comm, tsk->comm, sizeof(tsk->comm));
 			tmp->prio = tsk->prio;
 		}
 
@@ -397,7 +397,7 @@ void end_mt_rt_mon_info(struct task_struct *p)
 	list_for_each_entry(tmp, &mt_rt_mon_head.list, list) {
 		if (p->pid == tmp->pid) {
 			tmp->prio = p->prio;
-			strcpy(tmp->comm, p->comm);
+			strncpy(tmp->comm, p->comm, sizeof(p->comm));
 			/* update cputime */
 			tmp->cputime = p->se.sum_exec_runtime;
 			tmp->isr_time = p->se.mtk_isr_time - tmp->isr_time;
@@ -430,7 +430,7 @@ void check_mt_rt_mon_info(struct task_struct *p)
 	list_for_each_entry(tmp, &mt_rt_mon_head.list, list) {
 		if (!find && p->pid == tmp->pid) {
 			tmp->prio = p->prio;
-			strcpy(tmp->comm, p->comm);
+			strncpy(tmp->comm, p->comm, sizeof(p->comm));
 			tmp->cputime = p->se.sum_exec_runtime;
 			if (!task_has_rt_policy(p)) {
 				tmp->isr_time =
