@@ -26,7 +26,7 @@ void disp_dither_init(disp_dither_id_t id, int width, int height,
 	unsigned int enable;
 
 	DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 5), 0x00000000, ~0);
-	DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 6), 0x00003004, ~0);
+	DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 6), 0x00003002, ~0);
 	DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 7), 0x00000000, ~0);
 	DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 8), 0x00000000, ~0);
 	DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 9), 0x00000000, ~0);
