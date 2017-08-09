@@ -7617,7 +7617,7 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 	/* int present = 1; */
 
 	base = host->base;
-	spin_lock_irqsave(&host->lock, flags);
+	/* spin_lock_irqsave(&host->lock, flags); */
 
 	/* for sdio, depends on USER_RESUME */
 	if (is_card_sdio(host)) {
@@ -7661,7 +7661,7 @@ static int msdc_ops_get_cd(struct mmc_host *mmc)
 	/* enable msdc register dump */
 	sd_register_zone[host->id] = 1;
 
-	spin_unlock_irqrestore(&host->lock, flags);
+	/* spin_unlock_irqrestore(&host->lock, flags); */
 	return host->card_inserted;
 }
 
@@ -7673,6 +7673,9 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 	msdc_reset_pwr_cycle_counter(host);
 	msdc_reset_crc_tune_counter(host, ALL_TUNE_CNT);
 	msdc_reset_tmo_tune_counter(host, ALL_TUNE_CNT);
+
+	/* check cd first */
+	msdc_ops_get_cd(mmc);
 
 	/* when detect card, cmd13 will be sent which timeout log is not needed */
 	sd_register_zone[host->id] = 0;
