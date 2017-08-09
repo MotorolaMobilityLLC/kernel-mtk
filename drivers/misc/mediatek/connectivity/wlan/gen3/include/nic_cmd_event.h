@@ -126,6 +126,7 @@ typedef enum _ENUM_CMD_ID_T {
 	CMD_ID_SET_NVRAM_SETTINGS,	/* 0x48 (Set) */
 	CMD_ID_SET_COUNTRY_POWER_LIMIT,	/* 0x49 (Set) */
 
+	CMD_ID_SET_SUSPEND_MODE     = 0x58, /* 0x58 (Set) */
 	/* CFG_SUPPORT_GSCN  */
 	CMD_ID_GET_PSCAN_CAPABILITY = 0x60,	/* 0x60 (Set) */
 	CMD_ID_SET_PSCAN_ENABLE,	/* 0x61 (Set) */
@@ -1664,6 +1665,11 @@ typedef struct _CMD_SET_PSCAN_MAC_ADDR {
 	UINT_8 aucReserved[8];
 } CMD_SET_PSCAN_MAC_ADDR, *P_CMD_SET_PSCAN_MAC_ADDR;
 
+typedef struct _CMD_SUSPEND_MODE_SETTING_T {
+	UINT_8		ucBssIndex;
+	UINT_8		fIsEnableSuspendMode;
+	UINT_8		ucReserved[2];
+} CMD_SUSPEND_MODE_SETTING_T, *P_CMD_SUSPEND_MODE_SETTING_T;
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************

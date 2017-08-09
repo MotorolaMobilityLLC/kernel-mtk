@@ -4954,6 +4954,23 @@ kalGetIPv6Address(IN struct net_device *prDev,
 	return TRUE;
 }
 
+static void wlanNotifyFwSuspend(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgSuspend)
+{
+	WLAN_STATUS rStatus;
+	UINT_32 u4SetInfoLen;
+
+	rStatus = kalIoctl(prGlueInfo,
+			wlanoidNotifyFwSuspend,
+			(PVOID)&fgSuspend,
+			sizeof(fgSuspend),
+			FALSE,
+			FALSE,
+			TRUE,
+			&u4SetInfoLen);
+	if (rStatus != WLAN_STATUS_SUCCESS)
+		DBGLOG(INIT, INFO, "wlanNotifyFwSuspend fail\n");
+}
+
 VOID
 kalSetNetAddress(IN P_GLUE_INFO_T prGlueInfo,
 		 IN UINT_8 ucBssIdx,
@@ -5040,6 +5057,9 @@ VOID kalSetNetAddressFromInterface(IN P_GLUE_INFO_T prGlueInfo, IN struct net_de
 	if (fgSet) {
 		kalGetIPv4Address(prDev, CFG_PF_ARP_NS_MAX_NUM, pucIPv4Addr, &u4NumIPv4);
 		kalGetIPv6Address(prDev, CFG_PF_ARP_NS_MAX_NUM, pucIPv6Addr, &u4NumIPv6);
+		wlanNotifyFwSuspend(prGlueInfo, TRUE);
+	} else {
+		wlanNotifyFwSuspend(prGlueInfo, FALSE);
 	}
 
 	if (u4NumIPv4 + u4NumIPv6 > CFG_PF_ARP_NS_MAX_NUM) {
