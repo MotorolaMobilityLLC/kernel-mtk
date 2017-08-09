@@ -65,7 +65,7 @@
 /**
  * Disable M4U of display engines.
  */
-#define MTKFB_NO_M4U
+/* #define MTKFB_NO_M4U */
 
 /**
  * Bring-up display in kernel stage (not LK stage).
