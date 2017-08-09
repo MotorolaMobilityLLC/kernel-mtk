@@ -30,6 +30,82 @@ int mt_i2c_test(int id, int addr)
 }
 EXPORT_SYMBOL(mt_i2c_test);
 
+int mt_i2c_test_multi_wr(int id, int addr)
+{
+	int ret;
+	struct i2c_msg msg[12];
+	struct i2c_adapter *adap;
+	char buf0[3] = {0x55, 0x00, 0x01};
+	char buf1[3] = {0x55, 0x01, 0x02};
+	char buf2[3] = {0x55, 0x02, 0x03};
+	char buf3[3] = {0x55, 0x03, 0x04};
+	char buf4[2] = {0x55, 0x00};
+	char buf5[2] = {0xff, 0xff};
+	char buf6[2] = {0x55, 0x01};
+	char buf7[2] = {0xff, 0xff};
+	char buf8[2] = {0x55, 0x02};
+	char buf9[2] = {0xff, 0xff};
+	char buf10[2] = {0x55, 0x03};
+	char buf11[2] = {0xff, 0xff};
+
+	adap = i2c_get_adapter(id);
+	if (!adap)
+		return -1;
+
+	msg[0].addr = addr;
+	msg[0].flags = 0;
+	msg[0].len = 3;
+	msg[0].buf = buf0;
+	msg[1].addr = addr;
+	msg[1].flags = 0;
+	msg[1].len = 3;
+	msg[1].buf = buf1;
+	msg[2].addr = addr;
+	msg[2].flags = 0;
+	msg[2].len = 3;
+	msg[2].buf = buf2;
+	msg[3].addr = addr;
+	msg[3].flags = 0;
+	msg[3].len = 3;
+	msg[3].buf = buf3;
+	msg[4].addr = addr;
+	msg[4].flags = 0;
+	msg[4].len = 2;
+	msg[4].buf = buf4;
+	msg[5].addr = addr;
+	msg[5].flags = I2C_M_RD;
+	msg[5].len = 1;
+	msg[5].buf = buf5;
+	msg[6].addr = addr;
+	msg[6].flags = 0;
+	msg[6].len = 2;
+	msg[6].buf = buf6;
+	msg[7].addr = addr;
+	msg[7].flags = I2C_M_RD;
+	msg[7].len = 1;
+	msg[7].buf = buf7;
+	msg[8].addr = addr;
+	msg[8].flags = 0;
+	msg[8].len = 2;
+	msg[8].buf = buf8;
+	msg[9].addr = addr;
+	msg[9].flags = I2C_M_RD;
+	msg[9].len = 1;
+	msg[9].buf = buf9;
+	msg[10].addr = addr;
+	msg[10].flags = 0;
+	msg[10].len = 2;
+	msg[10].buf = buf10;
+	msg[11].addr = addr;
+	msg[11].flags = I2C_M_RD;
+	msg[11].len = 1;
+	msg[11].buf = buf11;
+	ret = i2c_transfer(adap, msg, 12);
+	pr_err("camera  0x5500 : %x 0x5501 : %x 0x5502 : %x 0x5503 : %x .\n",
+		buf5[0], buf7[0], buf9[0], buf11[0]);
+	return ret;
+}
+
 int mt_i2c_test_wrrd(int id, int addr, int wr_len, int rd_len, char *wr_buf, char *rd_buf)
 {
 
@@ -369,6 +445,7 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 				i2c_soft_reset(bus_id);
 				i2c_dump_info(i2c);
 			} else if (operation == 6) {
+				mt_i2c_test_multi_wr(bus_id, address);
 				if (bus_id == 0) {
 					/* I2C0 PINMUX2 power on */
 					/* hwPowerOn(MT65XX_POWER_LDO_VMC1,VOL_DEFAULT,"i2c_pinmux"); */

@@ -109,6 +109,7 @@ enum mt_trans_op {
 	I2C_MASTER_WR = 1,
 	I2C_MASTER_RD,
 	I2C_MASTER_WRRD,
+	I2C_MASTER_MULTI_WR,
 };
 
 enum I2C_REGS_OFFSET {
@@ -182,6 +183,7 @@ struct mt_i2c {
 	unsigned int clk_src_div;
 	bool trans_stop;		/* i2c transfer stop */
 	enum mt_trans_op op;
+	u16 total_len;
 	u16 msg_len;
 	u8 *msg_buf;			/* pointer to msg data */
 	u16 msg_aux_len;		/* WRRD mode to set AUX_LEN register*/
@@ -193,7 +195,7 @@ struct mt_i2c {
 };
 
 extern void i2c_dump_info(struct mt_i2c *i2c);
-
+extern void mt_irq_dump_status(unsigned int irq);
 extern int mtk_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num,
 					u32 ext_flag, u32 timing);
 extern void mt_irq_dump_status(unsigned int irq);

@@ -299,10 +299,10 @@ void i2c_dump_info(struct mt_i2c *i2c)
 	/* int val=0; */
 	pr_err("i2c_dump_info ++++++++++++++++++++++++++++++++++++++++++\n");
 	pr_err("I2C structure:\n"
-	       I2CTAG "Clk=%d,Id=%d,Op=%x,Irq_stat=%x\n"
+	       I2CTAG "Clk=%d,Id=%d,Op=%x,Irq_stat=%x,Total_len=%x\n"
 	       I2CTAG "Trans_len=%x,Trans_num=%x,Trans_auxlen=%x,speed=%d\n"
 	       I2CTAG "Trans_stop=%u\n",
-	       15600, i2c->id, i2c->op, i2c->irq_stat,
+	       15600, i2c->id, i2c->op, i2c->irq_stat, i2c->total_len,
 			i2c->msg_len, 1, i2c->msg_aux_len, i2c->speed_hz, i2c->trans_stop);
 
 	pr_err("base address 0x%p\n", i2c->base);
@@ -382,7 +382,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 
 	i2c->trans_stop = false;
 	i2c->irq_stat = 0;
-	if (i2c->msg_len > 8 || i2c->msg_aux_len > 8)
+	if (i2c->total_len > 8 || i2c->msg_aux_len > 8)
 		isDMA = true;
 	if (i2c->ext_data.isEnable && i2c->ext_data.timing)
 		speed_hz = i2c->ext_data.timing;
@@ -435,6 +435,9 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 				i2c, OFFSET_TRANSFER_LEN);
 		}
 		i2c_writew(0x02, i2c, OFFSET_TRANSAC_LEN);
+	} else if (i2c->op == I2C_MASTER_MULTI_WR) {
+		i2c_writew(i2c->msg_len, i2c, OFFSET_TRANSFER_LEN);
+		i2c_writew(i2c->total_len / i2c->msg_len, i2c, OFFSET_TRANSAC_LEN);
 	} else {
 		i2c_writew(i2c->msg_len, i2c, OFFSET_TRANSFER_LEN);
 		i2c_writew(0x01, i2c, OFFSET_TRANSAC_LEN);
@@ -447,11 +450,11 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 			i2c_writel_dma(I2C_DMA_CON_RX, i2c, OFFSET_CON);
 			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_RX_MEM_ADDR);
 			i2c_writel_dma(i2c->msg_len, i2c, OFFSET_RX_LEN);
-		} else if (i2c->op == I2C_MASTER_WR) {
+		} else if (i2c->op == I2C_MASTER_WR || i2c->op == I2C_MASTER_MULTI_WR) {
 			i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
 			i2c_writel_dma(I2C_DMA_CON_TX, i2c, OFFSET_CON);
 			i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
-			i2c_writel_dma(i2c->msg_len, i2c, OFFSET_TX_LEN);
+			i2c_writel_dma(i2c->total_len, i2c, OFFSET_TX_LEN);
 		} else {
 			i2c_writel_dma(0x0000, i2c, OFFSET_INT_FLAG);
 			i2c_writel_dma(0x0000, i2c, OFFSET_CON);
@@ -466,7 +469,7 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		i2c_writel_dma(I2C_DMA_START_EN, i2c, OFFSET_EN);
 	} else {
 		if (i2c->op != I2C_MASTER_RD) {
-			data_size = i2c->msg_len;
+			data_size = i2c->total_len;
 			ptr = i2c->dma_buf.vaddr;
 			while (data_size--) {
 				i2c_writew(*ptr, i2c, OFFSET_DATA_PORT);
@@ -512,9 +515,11 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 
 static inline void mt_i2c_copy_to_dma(struct mt_i2c *i2c, struct i2c_msg *msg)
 {
-	/* if the operate is write, need to copy the data to DMA memory */
+	/* if the operate is write, write-read, multi-write, need to copy the data
+		 to DMA memory */
 	if (!(msg->flags & I2C_M_RD))
-		memcpy(i2c->dma_buf.vaddr, msg->buf, msg->len);
+		memcpy(i2c->dma_buf.vaddr + i2c->total_len - msg->len,
+			msg->buf, msg->len);
 }
 
 static inline void mt_i2c_copy_from_dma(struct mt_i2c *i2c,
@@ -548,7 +553,16 @@ static bool mt_i2c_should_combine(struct i2c_msg *msg)
 	return false;
 }
 
+static bool mt_i2c_should_batch(struct i2c_msg *prev, struct i2c_msg *next)
+{
+	if ((prev->flags & I2C_M_RD) || (next->flags & I2C_M_RD))
+		return false;
+	if (prev->len == next->len && prev->addr == next->addr)
+		return true;
+	return false;
+}
 
+#if 0
 static int __mt_i2c_transfer(struct mt_i2c *i2c,
 	struct i2c_msg msgs[], int num)
 {
@@ -624,6 +638,97 @@ err_exit:
 	mt_i2c_clock_disable(i2c);
 	return ret;
 }
+#else
+static int __mt_i2c_transfer(struct mt_i2c *i2c,
+	struct i2c_msg msgs[], int num)
+{
+	int ret;
+	int left_num = num;
+
+	ret = mt_i2c_clock_enable(i2c);
+	if (ret)
+		return ret;
+	while (left_num--) {
+		/* In MTK platform the max transfer number is 4096 */
+		if (msgs->len > MAX_DMA_TRANS_SIZE) {
+			dev_dbg(i2c->dev,
+				" message data length is more than 255\n");
+			ret = -EINVAL;
+			goto err_exit;
+		}
+		if (msgs->addr == 0) {
+			dev_dbg(i2c->dev, " addr is invalid.\n");
+			ret = -EINVAL;
+			goto err_exit;
+		}
+		if (msgs->buf == NULL) {
+			dev_dbg(i2c->dev, " data buffer is NULL.\n");
+			ret = -EINVAL;
+			goto err_exit;
+		}
+
+		i2c->addr = msgs->addr;
+		i2c->msg_len = msgs->len;
+		i2c->msg_aux_len = 0;
+
+		if ((left_num + 1 == num) || !mt_i2c_should_batch(msgs - 1, msgs)) {
+			i2c->total_len = msgs->len;
+			if (msgs->flags & I2C_M_RD)
+				i2c->op = I2C_MASTER_RD;
+			else
+				i2c->op = I2C_MASTER_WR;
+		} else {
+			i2c->total_len += msgs->len;
+		}
+
+		/*
+		 * always use DMA mode.
+		 * 1st when write need copy the data of message to dma memory
+		 * 2nd when read need copy the DMA data to the message buffer.
+		 * The length should be less than 255.
+		 */
+		mt_i2c_copy_to_dma(i2c, msgs);
+
+		if (left_num >= 1) {
+			if (mt_i2c_should_batch(msgs, msgs + 1)) {
+				i2c->op = I2C_MASTER_MULTI_WR;
+				msgs++;
+				continue;
+			}
+			if (mt_i2c_should_combine(msgs)) {
+				i2c->msg_aux_len = (msgs + 1)->len;
+				i2c->op = I2C_MASTER_WRRD;
+				left_num--;
+			}
+		}
+
+		/* Use HW semaphore to protect mt6313 access between AP and SPM */
+		if (i2c_get_semaphore(i2c) != 0)
+			return -EBUSY;
+		ret = mt_i2c_do_transfer(i2c);
+		/* Use HW semaphore to protect mt6313 access between AP and SPM */
+		if (i2c_release_semaphore(i2c) != 0)
+			ret = -EBUSY;
+
+		if (ret < 0)
+			goto err_exit;
+		if (i2c->op == I2C_MASTER_WRRD)
+			mt_i2c_copy_from_dma(i2c, msgs + 1);
+		else
+			mt_i2c_copy_from_dma(i2c, msgs);
+
+		msgs++;
+		/* after combined two messages so we need ignore one */
+		if (left_num > 0 && i2c->op == I2C_MASTER_WRRD)
+			msgs++;
+	}
+	/* the return value is number of executed messages */
+	ret = num;
+err_exit:
+	mt_i2c_clock_disable(i2c);
+	return ret;
+}
+#endif
 
 static int mt_i2c_transfer(struct i2c_adapter *adap,
 	struct i2c_msg msgs[], int num)
