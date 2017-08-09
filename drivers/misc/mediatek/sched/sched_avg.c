@@ -107,7 +107,7 @@ EXPORT_SYMBOL(sched_get_nr_running_avg);
  *
  * Update average with latest nr_running value for CPU
  */
-void sched_update_nr_prod(int cpu, unsigned long nr_running, bool inc)
+void sched_update_nr_prod(int cpu, unsigned long nr_running, int inc)
 {
 	s64 diff;
 	u64 curr_time;
@@ -124,7 +124,7 @@ void sched_update_nr_prod(int cpu, unsigned long nr_running, bool inc)
 	/* ////////////////////////////////////// */
 
 	per_cpu(last_time, cpu) = curr_time;
-	per_cpu(nr, cpu) = nr_running + (inc ? 1 : -1);
+	per_cpu(nr, cpu) = nr_running + inc;
 
 	BUG_ON(per_cpu(nr, cpu) < 0);
 
