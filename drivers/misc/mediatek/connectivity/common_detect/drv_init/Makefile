@@ -19,6 +19,9 @@ endif
 	ifneq ($(filter "MT6628",$(CONFIG_MTK_COMBO_CHIP)),)
 		ccflags-y += -DMT6628
 	endif
+	ifneq ($(filter "MT6630",$(CONFIG_MTK_WLAN_CHIP)),)
+		ccflags-y += -DMT6630
+	endif
 endif
 
 else
