@@ -53,7 +53,7 @@ unsigned int dpidle_blocking_stat[NR_GRPS][32];
 unsigned int dpidle_condition_mask[NR_GRPS] = {
 	0x00460802, /* INFRA0: */
 	0x03AFF900, /* INFRA1: */
-	0x23FFB4FD, /* INFRA2: separate I2C-appm CG check */
+	0x21FFB6FD, /* INFRA2: */
 	0xFFFFFFFF, /* DISP0:  */
 	0x000003FF, /* DISP1:  */
 	0x00000312, /* IMAGE, use SPM MTCMOS off as condition: */
@@ -80,7 +80,7 @@ unsigned int soidle3_pll_condition_mask[NR_PLLS] = {
 unsigned int soidle3_condition_mask[NR_GRPS] = {
 	0x02440802, /* INFRA0: separate AUXADC CG check */
 	0x03AFF900, /* INFRA1: */
-	0x2FFFB4FD, /* INFRA2: separate I2C-appm CG check */
+	0x2DFFB6FD, /* INFRA2: */
 	0x00507FF8, /* DISP0:  */
 	0x000002F0, /* DISP1:  */
 	0x00000312, /* IMAGE, use SPM MTCMOS off as condition: */
@@ -94,7 +94,7 @@ unsigned int soidle3_condition_mask[NR_GRPS] = {
 unsigned int soidle_condition_mask[NR_GRPS] = {
 	0x00440802, /* INFRA0: */
 	0x03AFF900, /* INFRA1: */
-	0x23FFB4FD, /* INFRA2: separate I2C-appm CG check */
+	0x21FFB6FD, /* INFRA2: */
 	0x00507FF8, /* DISP0:  */
 	0x000002F0, /* DISP1:  */
 	0x00000312, /* IMAGE, use SPM MTCMOS off as condition: */
@@ -302,13 +302,7 @@ bool cg_check_idle_can_enter(
 
 bool cg_i2c_appm_check_idle_can_enter(unsigned int *block_mask)
 {
-	u32 clk_stat = ~idle_readl(INFRA_SW_CG_2_STA); /* INFRA1 */
-
-	if ((clk_stat & 0x00000002) == 0x00000002) {
-		block_mask[CG_INFRA2] |= 0x00000002;
-		return false;
-	}
-
+	/* Do NOT have to check i2c_appm CG */
 	return true;
 }
 
