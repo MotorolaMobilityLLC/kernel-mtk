@@ -1167,19 +1167,25 @@ void mt_irq_set_sens(unsigned int irq, unsigned int sens)
 }
 /* EXPORT_SYMBOL(mt_irq_set_sens); */
 
-char *mt_irq_dump_status_buf(int irq, char *buf)
+char *mt_irq_dump_status_buf(int irq, char *buf, int len)
 {
 	int rc;
-	unsigned int result;
 	char *ptr = buf;
+	char *pend = ptr + len;
+	int strlen = 0;
 
 	if (!ptr)
 		return NULL;
 
-	ptr += sprintf(ptr, "[mt gic dump] irq = %d\n", irq);
-
 	if (irq > mt_get_supported_irq_num()) {
-		ptr += sprintf(ptr, "[mt gic dump] error! not support to dump\n");
+		strlen = snprintf(ptr, pend - ptr,
+				  "error! irq = %d not support\n",
+				  irq);
+
+		if (strlen < 0)
+			goto overflow;
+		ptr += strlen;
+
 		return ptr;
 	}
 
@@ -1189,53 +1195,49 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 	rc = -1;
 #endif
 	if (rc < 0) {
-		ptr += sprintf(ptr, "[mt gic dump] not allowed to dump!\n");
+		strlen = snprintf(ptr, pend - ptr,
+				  "irq = %d not allowed to dump!\n",
+				  irq);
+
+		if (strlen < 0)
+			goto overflow;
+		ptr += strlen;
 		return ptr;
 	}
 
-	/* get mask */
-	result = rc & 0x1;
-	ptr += sprintf(ptr, "[mt gic dump] enable = %d\n", result);
+	strlen = snprintf(ptr, pend - ptr,
+			  "%s%s=%d\n%s=%d\n%s=%x%s\n%s=0x%x\n%s=%x%s\n%s=%x\n%s=%x\n%s=%x%s\n%s=0x%x\n",
+			  "[mt gic dump]\n",
+			  "irq", irq,
+			  "enable", rc & 0x1,
+			  "group", (rc >> 1) & 0x1, " (0x1:irq,0x0:fiq)",
+			  "priority", (rc >> 2) & 0xff,
+			  "sensitivity", (rc >> 10) & 0x1, " (edge:0x1, level:0x0)",
+			  "pending", (rc >> 11) & 0x1,
+			  "active", (rc >> 12) & 0x1,
+			  "polarity", (rc >> 13) & 0x1, " (0x0: high, 0x1:low)",
+			  "cpu mask", (rc >> 14) & 0xff);
+	if (strlen < 0)
+		goto overflow;
+	ptr += strlen;
 
-	/* get group */
-	result = (rc >> 1) & 0x1;
-	ptr += sprintf(ptr, "[mt gic dump] group = %x (0x1:irq,0x0:fiq)\n", result);
-
-	/* get priority */
-	result = (rc >> 2) & 0xff;
-	ptr += sprintf(ptr, "[mt gic dump] priority = %x\n", result);
-
-	/* get sensitivity */
-	result = (rc >> 10) & 0x1;
-	ptr += sprintf(ptr, "[mt gic dump] sensitivity = %x (edge:0x1, level:0x0)\n", result);
-
-	/* get pending status */
-	result = (rc >> 11) & 0x1;
-	ptr += sprintf(ptr, "[mt gic dump] pending = %x\n", result);
-
-	/* get active status */
-	result = (rc >> 12) & 0x1;
-	ptr += sprintf(ptr, "[mt gic dump] active status = %x\n", result);
-
-	/* get polarity */
-	result = (rc >> 13) & 0x1;
-	ptr += sprintf(ptr, "[mt gic dump] polarity = %x (0x0: high, 0x1:low)\n", result);
-
-	/* get target cpu mask */
-	result = (rc >> 14) & 0xff;
-	ptr += sprintf(ptr, "[mt gic dump] tartget cpu mask = 0x%x\n", result);
-
+overflow:
+	pr_err("%s, input buffer overflow\n", __func__);
+	/* Because the buffer has useful string, return it for dump */
 	return ptr;
+
+
 }
 
 void mt_irq_dump_status(int irq)
 {
-	char *buf = kmalloc(2048, GFP_KERNEL);
+	int len = PAGE_SIZE;
+	char *buf = kmalloc(len, GFP_KERNEL);
 
 	if (!buf)
 		return;
 
-	if (mt_irq_dump_status_buf(irq, buf))
+	if (mt_irq_dump_status_buf(irq, buf, len))
 		pr_debug("%s", buf);
 
 	kfree(buf);
@@ -1303,9 +1305,11 @@ static struct platform_driver gic_debug_drv = {
 
 static ssize_t dump_irq_show(struct device_driver *driver, char *buf)
 {
-	mt_irq_dump_status_buf(dump_irq, buf);
+	if (mt_irq_dump_status_buf(dump_irq, buf, PAGE_SIZE))
+		return strlen(buf);
 
-	return strlen(buf);
+	else
+		return 0;
 }
 
 static ssize_t dump_irq_store(struct device_driver *driver, const char *buf, size_t count)
