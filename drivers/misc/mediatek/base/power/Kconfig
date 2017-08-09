@@ -39,3 +39,11 @@ config MTK_SPM_USE_EXT_BUCK
 	help
 	  Vmd1 is controlled by an ext buck. If you want to use ext buck for
 	  Vmd1, set y here, or it dependeds on the efuse value.
+
+config MT2701_DCM
+	bool "Enable MT2701/MT7623 dynamic clock manager"
+	default y
+	depends on (MACH_MT2701 || ARCH_MT7623) && MTK_BASE_POWER
+	---help---
+	  Dynamic Clock Manager(DCM) can help slow bus frequency when
+	  DCM's hardware detects bus is in idle state.
