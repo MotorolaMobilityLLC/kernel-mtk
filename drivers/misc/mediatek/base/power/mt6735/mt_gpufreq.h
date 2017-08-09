@@ -55,6 +55,15 @@
 #define MT_GPUFREQ_AEE_RR_REC
 #endif
 
+/**********************************
+ * Power table struct for thermal
+ **********************************/
+struct mt_gpufreq_power_table_info {
+	unsigned int gpufreq_khz;
+	unsigned int gpufreq_volt;
+	unsigned int gpufreq_power;
+};
+
 
 /******************************
  * Forward ref

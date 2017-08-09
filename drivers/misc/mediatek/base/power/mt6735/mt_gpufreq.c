@@ -140,13 +140,6 @@ struct mt_gpufreq_table_info {
 	unsigned int gpufreq_volt;
 };
 
-struct mt_gpufreq_power_table_info {
-	unsigned int gpufreq_khz;
-	unsigned int gpufreq_volt;
-	unsigned int gpufreq_power;
-};
-
-
 /**************************
  * enable GPU DVFS count
  ***************************/
