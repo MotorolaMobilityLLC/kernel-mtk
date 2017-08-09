@@ -22,24 +22,20 @@
 /*
  * Macro and Inline
  */
-#define vcorefs_emerg(fmt, args...)	pr_emerg(fmt, ##args)
-#define vcorefs_alert(fmt, args...)	pr_alert(fmt, ##args)
-#define vcorefs_crit(fmt, args...)	pr_crit(fmt, ##args)
+#define vcorefs_crit(fmt, args...)	pr_err(fmt, ##args)
 #define vcorefs_err(fmt, args...)	pr_err(fmt, ##args)
 #define vcorefs_warn(fmt, args...)	pr_warn(fmt, ##args)
-#define vcorefs_notice(fmt, args...)	pr_notice(fmt, ##args)
-#define vcorefs_info(fmt, args...)	pr_info(fmt, ##args)
-#define vcorefs_debug(fmt, args...)	pr_info(fmt, ##args)	/* pr_debug show nothing */
+#define vcorefs_debug(fmt, args...)	pr_debug(fmt, ##args)
 
-/* log_mask[15:0]: show nothing, log_mask[16:31]: show only on MobileLog */
+/* log_mask[15:0]: show nothing, log_mask[31:16]: show only on MobileLog */
 #define vcorefs_crit_mask(fmt, args...)				\
 do {								\
 	if (pwrctrl->log_mask & (1U << kicker))			\
 		;						\
 	else if ((pwrctrl->log_mask >> 16) & (1U << kicker))	\
-		pr_info(fmt, ##args);				\
+		pr_debug(fmt, ##args);				\
 	else							\
-		pr_crit(fmt, ##args);				\
+		pr_err(fmt, ##args);				\
 } while (0)
 
 #define DEFINE_ATTR_RO(_name)			\
@@ -122,7 +118,7 @@ static struct vcorefs_profile vcorefs_ctrl = {
 	.vcore_dvs		= 1,
 	.freq_dfs		= 0,
 	.ddr_dfs		= 1,
-	.log_mask		= (1U << KIR_GPU),
+	.log_mask		= 0xffff0000 | (1U << KIR_GPU),
 
 	.late_init_opp_done	= 0,
 	.init_opp_perf		= 0,
