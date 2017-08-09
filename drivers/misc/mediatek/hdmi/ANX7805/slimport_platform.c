@@ -37,8 +37,6 @@ the GNU General Public License for more details at http://www.gnu.org/licenses/g
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
-#include <linux/of_address.h>
-#include "mt-plat/sync_write.h"
 
 /* GPIOs assigned to control various starter kit signals */
 /*
@@ -143,7 +141,6 @@ struct i2c_client *mClient = NULL;
 unsigned int mhl_eint_number = 0xffff;
 unsigned int mhl_eint_gpio_number = 132;
 static unsigned int mask_flag = 0;
-static unsigned int i2s_gpio_l_drv_cfg = 0;
 
 extern wait_queue_head_t mhl_irq_wq;
 extern atomic_t mhl_irq_event ;
@@ -318,8 +315,6 @@ void i2s_gpio_ctrl(int enable)
 {
     int offset = 0;
     int ret = 0;
-	struct device_node *node;
-	static void __iomem	*GPIO_L_base;	
 
     SLIMPORT_DBG("i2s_gpio_ctrl+  %ld !!\n", sizeof(i2s_gpio_name)); 
     
@@ -344,30 +339,6 @@ void i2s_gpio_ctrl(int enable)
         
         offset +=2;
     }
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,iocfg_l");
-	if (!node)
-	SLIMPORT_DBG("[GPIO_L] find node failed\n");
-	GPIO_L_base = of_iomap(node, 0);
-
-	if(enable) {
-		if (!GPIO_L_base)
-		SLIMPORT_DBG("[GPIO_L] base failed\n");
-		else {
-			i2s_gpio_l_drv_cfg = __raw_readl(GPIO_L_base + 0x100);
-			/*I2S_GPIOs = 2mA*/
-			mt_reg_sync_writel(0x00555505, GPIO_L_base + 0x100);
-		}
-	}
-	else {
-		if (!GPIO_L_base)
-		SLIMPORT_DBG("[GPIO_L] base failed\n");
-		else {
-			/*I2S_GPIOs = 4mA*/
-			mt_reg_sync_writel(i2s_gpio_l_drv_cfg, GPIO_L_base + 0x100);
-		}		
-	}
-
 }
 
 void mhl_power_ctrl(int enable)
