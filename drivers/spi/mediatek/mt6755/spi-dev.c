@@ -486,6 +486,8 @@ static ssize_t spi_store(struct device *dev,
 
 	}
 out:
+	if (!spi->controller_data)
+		kfree(chip_config);
 	return count;
 }
 
