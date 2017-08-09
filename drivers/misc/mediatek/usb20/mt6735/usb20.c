@@ -80,7 +80,7 @@ u32 port_mode = PORT_MODE_USB;
 u32 sw_tx = 0;
 u32 sw_rx = 0;
 u32 sw_uart_path = 0;
-#define AP_UART0_COMPATIBLE_NAME "mediatek,AP_UART0"
+#define AP_UART0_COMPATIBLE_NAME "mediatek,mt6735-uart"
 void __iomem *ap_uart0_base;
 #endif
 
