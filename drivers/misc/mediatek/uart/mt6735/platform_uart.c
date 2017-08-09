@@ -21,9 +21,11 @@
 #include <linux/serial_core.h>
 #include <linux/serial.h>
 
+#include <mt_idle.h>
+#include <mt_clk_id.h>
+
 #if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 #include <mach/mt_clkmgr.h>
-#include <mt_idle.h>
 #endif /* defined(CONFIG_MTK_CLKMGR) && !defined (CONFIG_MTK_FPGA)*/
 
 #if defined(CONFIG_MTK_LEGACY) && !defined(CONFIG_MTK_FPGA)
@@ -2551,21 +2553,15 @@ void mtk_uart_switch_to_rx(struct mtk_uart *uart)
 /*---------------------------------------------------------------------------*/
 void mtk_uart_enable_dpidle(struct mtk_uart *uart)
 {
-/* FIX-ME early porting */
-#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 	enable_dpidle_by_bit(uart->setting->pll_id);
 	enable_soidle_by_bit(uart->setting->pll_id);
-#endif
 }
 
 /*---------------------------------------------------------------------------*/
 void mtk_uart_disable_dpidle(struct mtk_uart *uart)
 {
-/* FIX-ME early porting */
-#if defined(CONFIG_MTK_CLKMGR) && !defined(CONFIG_MTK_FPGA)
 	disable_dpidle_by_bit(uart->setting->pll_id);
 	disable_soidle_by_bit(uart->setting->pll_id);
-#endif
 }
 
 /*---------------------------------------------------------------------------*/

@@ -2865,7 +2865,8 @@ int request_uart_to_sleep(void)
 			while (!(UART_READ32(UART_SLEEP_ACK) & UART_CLK_OFF_ACK)) {
 				if (i++ >= WAIT_UART_ACK_TIMES) {
 					reg_sync_writel(val1, UART_SLEEP_REQ);
-					pr_err("[UART]CANNOT GET UART[%d] SLEEP ACK\n", uart_idx);
+					pr_err_ratelimited("[UART]CANNOT GET UART[%d] SLEEP ACK\n",
+							uart_idx);
 					/* dump_uart_reg(); */
 					return -EBUSY;
 				}
