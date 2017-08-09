@@ -136,6 +136,7 @@ const char *reason_name[NR_REASONS] = {
 	"by_vtg",
 	"by_frm",
 	"by_pll",
+	"by_pwm",
 #ifdef CONFIG_CPU_ISOLATION
 	"by_iso",
 #endif
@@ -384,7 +385,9 @@ const char *cg_grp_get_name(int id)
 
 bool is_disp_pwm_rosc(void)
 {
-	return true;
+	u32 sta = idle_readl(DISP_PWM_MUX) & 0x3;
+
+	return (sta == 2) || (sta == 3);
 }
 
 bool is_auxadc_released(void)

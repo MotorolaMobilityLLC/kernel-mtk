@@ -94,6 +94,7 @@ extern void __iomem  *apmixed_base_in_idle;
 
 #define	CLK_CFG_UPDATE          TOPCKSYS_REG(0x004)
 #define CLK_CFG_4               TOPCKSYS_REG(0x080)
+#define DISP_PWM_MUX            TOPCKSYS_REG(0x050)
 
 #define MAINPLL_CON0		APMIXEDSYS(0x0220)
 #define UNIVPLL_CON0		APMIXEDSYS(0x0230)
