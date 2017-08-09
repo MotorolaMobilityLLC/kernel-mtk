@@ -109,13 +109,17 @@ int rdma_start(DISP_MODULE_ENUM module, void *handle)
 	    REG_FLD_VAL(INT_STATUS_FLD_FIFO_EMPTY_INT_FLAG, 0);
 
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
-			/* force commit */
-			DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SHADOW_UPDATE, 0x1);
-
+		if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+			/* full shadow mode: read working */
+			DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SHADOW_UPDATE, 0x1<<2);
+		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+			/* force commit: force_commit, read working */
+			DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SHADOW_UPDATE,
+			    (0x1<<0)|(0x1<<2));
 		} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
-			/* bypass shadow */
-			DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SHADOW_UPDATE, 0x2);
+			/* bypass shadow: bypass_shadow, read working */
+			DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SHADOW_UPDATE,
+			    (0x1<<1)|(0x1<<2));
 		}
 	}
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_INT_ENABLE, regval);

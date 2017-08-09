@@ -3250,6 +3250,28 @@ int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq)
 	}
 
 	if (module == DISP_MODULE_DSIDUAL) {
+		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+				/* full shadow mode: read working */
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[0]->DSI_SHADOW_DBG, READ_WRK_REG, 1);
+
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[1]->DSI_SHADOW_DBG, READ_WRK_REG, 1);
+			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+				/* force commit: force_commit, read working */
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[0]->DSI_SHADOW_DBG, FORCE_COMMIT, 1);
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[0]->DSI_SHADOW_DBG, READ_WRK_REG, 1);
+
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[1]->DSI_SHADOW_DBG, FORCE_COMMIT, 1);
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[1]->DSI_SHADOW_DBG, READ_WRK_REG, 1);
+			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
+				/* bypass shadow: bypass_shadow, read working */
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[0]->DSI_SHADOW_DBG, BYPASS_SHADOW, 1);
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[0]->DSI_SHADOW_DBG, READ_WRK_REG, 1);
+
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[1]->DSI_SHADOW_DBG, BYPASS_SHADOW, 1);
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[1]->DSI_SHADOW_DBG, READ_WRK_REG, 1);
+			}
+		}
 		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[0]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 		DSI_OUTREGBIT(cmdq, DSI_COM_CTRL_REG, DSI_REG[1]->DSI_COM_CTRL, DSI_DUAL_EN, 0);
 
@@ -3269,6 +3291,20 @@ int ddp_dsi_start(DISP_MODULE_ENUM module, void *cmdq)
 		DSI_clk_HS_mode(module, cmdq, TRUE);
 
 	} else if (module == DISP_MODULE_DSI0) {
+		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+				/* full shadow mode: read working */
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[0]->DSI_SHADOW_DBG, READ_WRK_REG, 1);
+			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 1) {
+				/* force commit: force_commit, read working */
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[0]->DSI_SHADOW_DBG, FORCE_COMMIT, 1);
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[0]->DSI_SHADOW_DBG, READ_WRK_REG, 1);
+			} else if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 2) {
+				/* bypass shadow: bypass_shadow, read working */
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[0]->DSI_SHADOW_DBG, BYPASS_SHADOW, 1);
+				DSI_OUTREGBIT(cmdq, DSI_SHADOW_DBG_REG, DSI_REG[0]->DSI_SHADOW_DBG, READ_WRK_REG, 1);
+			}
+		}
 		DSI_Send_ROI(module, cmdq, g_lcm_x, g_lcm_y, _dsi_context[i].lcm_width,
 			     _dsi_context[i].lcm_height);
 		DSI_SetMode(module, cmdq, _dsi_context[i].dsi_params.mode);

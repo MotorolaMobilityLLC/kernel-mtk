@@ -1241,16 +1241,6 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle, in
 			}
 		}
 	}
-	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
-		ddp_mutex_get(handle->hwmutexid, handle->scenario, trigger_loop_handle);
-		/* polling internal mutex is taken by sw */
-		/*DISP_REG_CMDQ_POLLING(handle, DISP_REG_CONFIG_MUTEX_GET(handle->hwmutexid),
-				REG_FLD_VAL(GET_FLD_INT_MUTEX0_EN, 1), REG_FLD_MASK(GET_FLD_INT_MUTEX0_EN));*/
-		ddp_mutex_release(handle->hwmutexid, handle->scenario, trigger_loop_handle);
-		/* polling internal mutex is released */
-		/*DISP_REG_CMDQ_POLLING(handle, DISP_REG_CONFIG_MUTEX_GET(handle->hwmutexid),
-						REG_FLD_VAL(GET_FLD_INT_MUTEX0_EN, 1), REG_FLD_MASK(GET_FLD_INT_MUTEX0_EN));*/
-	}
 	return 0;
 }
 
@@ -1872,4 +1862,34 @@ int dpmgr_wait_ovl_available(int ovl_num)
 	int ret = 1;
 
 	return ret;
+}
+
+int dpmgr_path_mutex_get(disp_path_handle dp_handle, void *cmdqhandle)
+{
+	ddp_path_handle handle = NULL;
+
+	ASSERT(dp_handle != NULL);
+	handle = (ddp_path_handle)dp_handle;
+
+	return ddp_mutex_get(handle->hwmutexid, cmdqhandle);
+}
+
+int dpmgr_path_mutex_release(disp_path_handle dp_handle, void *cmdqhandle)
+{
+	ddp_path_handle handle = NULL;
+
+	ASSERT(dp_handle != NULL);
+	handle = (ddp_path_handle)dp_handle;
+
+	return ddp_mutex_release(handle->hwmutexid, cmdqhandle);
+}
+
+int dpmgr_path_mutex_enable(disp_path_handle dp_handle, void *cmdqhandle)
+{
+	ddp_path_handle handle = NULL;
+
+	ASSERT(dp_handle != NULL);
+	handle = (ddp_path_handle)dp_handle;
+
+	return ddp_mutex_enable(handle->hwmutexid, 0, cmdqhandle);
 }

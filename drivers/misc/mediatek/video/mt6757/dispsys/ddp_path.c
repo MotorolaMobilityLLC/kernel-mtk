@@ -739,8 +739,17 @@ static int ddp_get_mutex_src(DISP_MODULE_ENUM dest_module, DDP_MODE ddp_mode,
 		if (ddp_mode == DDP_VIDEO_MODE)
 			DISP_LOG_W("%s: dst_mode=%s, but is video mode !!\n", __func__,
 				   ddp_get_module_name(dest_module));
-
-		*SOF_src = *EOF_src = SOF_VAL_MUTEX0_SOF_SINGLE_MODE;
+		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+				/* full shadow mode: sof=eof=reserved for cmd mode to delay */
+				/* signal sof until trigger path(mutex_en=1) */
+				*SOF_src = SOF_VAL_MUTEX0_SOF_RESERVED;
+				*EOF_src = SOF_VAL_MUTEX0_EOF_RESERVED;
+			} else {
+				/* force_commit, bypass_shadow should be sof=eof=single */
+				*SOF_src = *EOF_src = SOF_VAL_MUTEX0_SOF_SINGLE_MODE;
+			}
+		}
 		return 0;
 	}
 
@@ -761,6 +770,14 @@ static int ddp_get_mutex_src(DISP_MODULE_ENUM dest_module, DDP_MODE ddp_mode,
 		else
 			*EOF_src = SOF_VAL_MUTEX0_EOF_SINGLE_MODE;
 
+		if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER)) {
+			if (disp_helper_get_option(DISP_OPT_SHADOW_MODE) == 0) {
+				/* full shadow mode: sof=eof=reserved for cmd mode to delay */
+				/* signal sof until trigger path(mutex_en=1) */
+				*SOF_src = SOF_VAL_MUTEX0_SOF_RESERVED;
+				*EOF_src = SOF_VAL_MUTEX0_EOF_RESERVED;
+			}
+		}
 	} else {
 		*SOF_src = *EOF_src = src_from_dst_module;
 	}
@@ -803,12 +820,19 @@ static int ddp_mutex_set_l(int mutex_id, int *module_list, DDP_MODE ddp_mode, vo
 			       ddp_get_module_name(module_list[i]), mutex_id);
 		}
 	}
+
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_MOD0(mutex_id), value0);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_MOD1(mutex_id), value1);
 
 	sof_val = REG_FLD_VAL(SOF_FLD_MUTEX0_SOF, sof_src);
 	sof_val |= REG_FLD_VAL(SOF_FLD_MUTEX0_EOF, eof_src);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_SOF(mutex_id), sof_val);
+
+	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
+			disp_helper_get_option(DISP_OPT_SHADOW_MODE) != 0) {
+		ddp_mutex_get(mutex_id, handle);
+		ddp_mutex_release(mutex_id, handle);
+	}
 
 	DDPDBG("mutex %d value=0x%x, sof=%s, eof=%s\n", mutex_id,
 	       value0, ddp_get_mutex_sof_name(sof_src), ddp_get_mutex_sof_name(eof_src));
@@ -1234,17 +1258,27 @@ int ddp_mutex_disable(int mutex_id, DDP_SCENARIO_ENUM scenario, void *handle)
 	return 0;
 }
 
-int ddp_mutex_get(int mutex_id, DDP_SCENARIO_ENUM scenario, void *handle)
+int ddp_mutex_get(int mutex_id, void *handle)
 {
 	DDPDBG("mutex %d get\n", mutex_id);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_GET(mutex_id), 1);
+	/* polling internal mutex is taken by sw */
+#if 0
+	DISP_REG_CMDQ_POLLING(handle, DISP_REG_CONFIG_MUTEX_GET(mutex_id),
+			REG_FLD_VAL(GET_FLD_INT_MUTEX0_EN, 1), REG_FLD_MASK(GET_FLD_INT_MUTEX0_EN));
+#endif
 	return 0;
 }
 
-int ddp_mutex_release(int mutex_id, DDP_SCENARIO_ENUM scenario, void *handle)
+int ddp_mutex_release(int mutex_id, void *handle)
 {
 	DDPDBG("mutex %d release\n", mutex_id);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_GET(mutex_id), 0);
+	/* polling internal mutex is released */
+#if 0
+	DISP_REG_CMDQ_POLLING(handle, DISP_REG_CONFIG_MUTEX_GET(mutex_id),
+			REG_FLD_VAL(GET_FLD_INT_MUTEX0_EN, 1), REG_FLD_MASK(GET_FLD_INT_MUTEX0_EN));
+#endif
 	return 0;
 }
 

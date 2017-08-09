@@ -429,4 +429,15 @@ int dpmgr_remove_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle);
 int dpmgr_factory_mode_test(int module_name, void *cmdqhandle, void *config);
 
 int dpmgr_wait_ovl_available(int ovl_num);
+
+/**
+ * operations for shadow registers
+ * @{
+ */
+int dpmgr_path_mutex_get(disp_path_handle dp_handle, void *cmdqhandle);
+int dpmgr_path_mutex_release(disp_path_handle dp_handle, void *cmdqhandle);
+int dpmgr_path_mutex_enable(disp_path_handle dp_handle, void *cmdqhandle);
+/* @} */
+
+
 #endif
