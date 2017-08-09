@@ -1,6 +1,6 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
-#include <mach/mt_spm_sleep.h>
+#include <mt_spm_sleep.h>
 #include <mach/mt_pbm.h>
 
 #include "ccci_core.h"

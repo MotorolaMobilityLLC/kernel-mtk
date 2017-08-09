@@ -1,7 +1,7 @@
 #ifndef __CCIF_PLATFORM_H__
 #define __CCIF_PLATFORM_H__
 #include "ccci_core.h"
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 
 #define ccif_write32(b, a, v)           mt_reg_sync_writel(v, (b)+(a))
 #define ccif_write16(b, a, v)           mt_reg_sync_writew(v, (b)+(a))
