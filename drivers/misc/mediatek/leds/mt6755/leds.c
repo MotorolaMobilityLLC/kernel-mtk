@@ -263,14 +263,18 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 				switch (pled_dtsi[i].mode) {
 #ifdef CONFIG_MTK_FB
 				case MT65XX_LED_MODE_CUST_LCM:
+#ifdef CONFIG_MTK_VIDEOX
 					pled_dtsi[i].data =
 					    (long)mtkfb_set_backlight_level;
+#endif
 					LEDS_DEBUG
 					    ("kernel:the backlight hw mode is LCM.\n");
 					break;
 				case MT65XX_LED_MODE_CUST_BLS_PWM:
+#ifdef CONFIG_MTK_VIDEOX
 					pled_dtsi[i].data =
 					    (long)disp_bls_set_backlight;
+#endif
 					LEDS_DEBUG
 					    ("kernel:the backlight hw mode is BLS.\n");
 					break;
