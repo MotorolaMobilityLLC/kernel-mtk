@@ -248,7 +248,6 @@ extern char *adaptive_cooler_name;
 extern unsigned int adaptive_cpu_power_limit;
 extern unsigned int adaptive_gpu_power_limit;
 extern int TARGET_TJS[MAX_CPT_ADAPTIVE_COOLERS];
-extern unsigned int get_adaptive_power_limit(int type);
 
 /*common/coolers/mtk_cooler_dtm.c*/
 extern unsigned int static_cpu_power_limit;

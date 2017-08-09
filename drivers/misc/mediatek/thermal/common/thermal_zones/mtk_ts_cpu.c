@@ -52,6 +52,7 @@
 
 #include <linux/uidgid.h>
 #include "mt_auxadc.h"
+#include <ap_thermal_limit.h>
 
 /*=============================================================
  *Local variable definition
@@ -220,6 +221,7 @@ IMM_IsAdcInitReady(void)
 	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 0;
 }
+#if 0
 #if defined(ATM_USES_PPM)
 void __attribute__ ((weak))
 mt_ppm_cpu_thermal_protect(unsigned int limited_power)
@@ -232,6 +234,7 @@ mt_cpufreq_thermal_protect(unsigned int limited_power)
 {
 	pr_err("E_WF: %s doesn't exist\n", __func__);
 }
+#endif
 #endif
 
 bool __attribute__ ((weak))
@@ -574,11 +577,11 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 #else
 	curr_temp = tscpu_get_curr_temp();
 #endif
-	tscpu_dprintk("tscpu_get_temp CPU Max T=%d\n", curr_temp);
+	tscpu_dprintk("%s CPU T=%d\n", __func__, curr_temp);
 
 	if ((curr_temp > (trip_temp[0] - 15000)) || (curr_temp < -30000) || (curr_temp > 85000)) {
-		printk_ratelimited(TSCPU_LOG_TAG " %d %d CPU T=%d\n",
-			get_adaptive_power_limit(0), get_adaptive_power_limit(1), curr_temp);
+		printk_ratelimited(TSCPU_LOG_TAG " %u %u CPU T=%d\n",
+			apthermolmt_get_cpu_power_limit(), apthermolmt_get_gpu_power_limit(), curr_temp);
 	}
 
 	temp_temp = curr_temp;
@@ -848,13 +851,11 @@ static ssize_t tscpu_write_GPIO_out(struct file *file, const char __user *buffer
 
 static int tscpu_read_opp(struct seq_file *m, void *v)
 {
-
 	unsigned int cpu_power, gpu_power;
 	unsigned int gpu_loading = 0;
 
-	cpu_power = MIN(adaptive_cpu_power_limit, static_cpu_power_limit);
-
-	gpu_power = MIN(adaptive_gpu_power_limit, static_gpu_power_limit);
+	cpu_power = apthermolmt_get_cpu_power_limit();
+	gpu_power = apthermolmt_get_gpu_power_limit();
 
 #if CPT_ADAPTIVE_AP_COOLER
 
@@ -873,7 +874,6 @@ static int tscpu_read_opp(struct seq_file *m, void *v)
 		   (int)((gpu_power != 0x7FFFFFFF) ? gpu_power : 0),
 		   (int)mt_gpufreq_get_cur_freq());
 #endif
-
 
 	return 0;
 }
@@ -1094,10 +1094,6 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 		return 0;
 	}
 
-#if defined(CONFIG_ARCH_MT6797)
-		mt_ppm_cpu_thermal_protect(1000);
-#endif
-
 	ptr_mtktscpu_data->desc[len] = '\0';
 
 	if (sscanf
@@ -1121,6 +1117,10 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 		/*      modify for PTPOD, if disable Thermal,
 		   PTPOD still need to use this function for getting temperature
 		 */
+
+#if defined(CONFIG_ARCH_MT6797)
+		apthermolmt_set_general_cpu_power_limit(900);
+#endif
 
 		tscpu_unregister_thermal();
 
@@ -1256,9 +1256,8 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 		tscpu_register_thermal();
 
 #if defined(CONFIG_ARCH_MT6797)
-				mt_ppm_cpu_thermal_protect(0);
+		apthermolmt_set_general_cpu_power_limit(0);
 #endif
-
 		proc_write_flag = 1;
 		kfree(ptr_mtktscpu_data);
 		return count;
@@ -1573,31 +1572,27 @@ static int ktp_thread(void *arg)
 			tscpu_dprintk("ktp_thread overheat %d\n", max_temp);
 
 			/* freq/volt down or cpu down or backlight down or charging down... */
-#if defined(ATM_USES_PPM)
-			mt_ppm_cpu_thermal_protect(600);	/*D1 max~1600mW,min~600 */
-#else
-			mt_cpufreq_thermal_protect(600);	/*D1 max~1600mW,min~600 */
-#endif
-			mt_gpufreq_thermal_protect(600);	/*D1 max~900mW,min~600mW */
+			apthermolmt_set_general_cpu_power_limit(600);
+			apthermolmt_set_general_gpu_power_limit(600);
 
 			ktp_limited = temp_tc_mid_trip;
 
 			msleep(20 * 1000);
 		} else if ((temp_ktp_limited > -275000) && (max_temp < temp_ktp_limited)) {
+			/*
 			unsigned int final_limit;
 
 			final_limit = MIN(static_cpu_power_limit, adaptive_cpu_power_limit);
 			tscpu_dprintk("ktp_thread unlimit cpu=%d\n", final_limit);
+			*/
+			apthermolmt_set_general_cpu_power_limit(0);
 
-#if defined(ATM_USES_PPM)
-			mt_ppm_cpu_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);
-#else
-			mt_cpufreq_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);
-#endif
-
+			/*
 			final_limit = MIN(static_gpu_power_limit, adaptive_gpu_power_limit);
 			tscpu_dprintk("ktp_thread unlimit gpu=%d\n", final_limit);
 			mt_gpufreq_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);
+			*/
+			apthermolmt_set_general_gpu_power_limit(0);
 
 			ktp_limited = -275000;
 

@@ -5,6 +5,7 @@ ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/video/include
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/gpu/ged/include
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/common/inc/
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735"))
 ifeq ($(CONFIG_ARCH_MT6735),y)

@@ -280,7 +280,6 @@ extern char *adaptive_cooler_name;
 extern unsigned int adaptive_cpu_power_limit;
 extern unsigned int adaptive_gpu_power_limit;
 extern int TARGET_TJS[MAX_CPT_ADAPTIVE_COOLERS];
-extern unsigned int get_adaptive_power_limit(int type);
 #ifdef FAST_RESPONSE_ATM
 extern void atm_cancel_hrtimer(void);
 extern void atm_restart_hrtimer(void);
