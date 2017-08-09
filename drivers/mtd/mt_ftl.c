@@ -20,19 +20,13 @@ unsigned long getnstimenow(void)
 /* The process for PMT should traverse PMT indicator
  * if block num of items in PMT indicator is equal to u4SrcInvalidLeb, copy the
  * corresponding page to new block, and update corresponding PMT indicator */
-int mt_ftl_gc_pmt(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u4DstLeb,
-		  int *offset_dst, bool isReplay)
+int mt_ftl_gc_pmt(struct mt_ftl_blk *dev, unsigned int u4SrcLeb,
+		unsigned int u4DstLeb, int *offset_dst, bool isReplay)
 {
-	int ret = MT_FTL_SUCCESS;
-	int pnum_src = 0;
-	int pnum_dst = 0;
+	int ret = MT_FTL_SUCCESS, i = 0;
 	int offset_src = 0;
-	int page = 0;
-
-	int cache_num = 0;
+	int page = 0, cache_num = 0;
 	int isDirty = 0;
-
-	int i = 0;
 
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
@@ -45,57 +39,44 @@ int mt_ftl_gc_pmt(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u4
 		}
 	}
 
-	pnum_src = desc->vol->eba_tbl[u4SrcLeb];
-	pnum_dst = desc->vol->eba_tbl[u4DstLeb];
-
 	for (i = 0; i < (PMT_TOTAL_CLUSTER_NUM); i++) {
 		if (PMT_INDICATOR_GET_BLOCK(param->u4PMTIndicator[i]) == u4SrcLeb) {
 			offset_src =
 			    PMT_INDICATOR_GET_PAGE(param->u4PMTIndicator[i]) * NAND_PAGE_SIZE;
 			if (!isReplay) {
 				/* Copy PMT */
-				ret = ubi_io_read(desc->vol->ubi, param->gc_page_buffer, pnum_src,
-						  offset_src + desc->vol->ubi->leb_start,
-						  NAND_PAGE_SIZE);
+				ret = ubi_leb_read(desc, u4SrcLeb,
+						(char *)param->gc_page_buffer,
+						offset_src, NAND_PAGE_SIZE, 0);
 				if (ret && ret != UBI_IO_BITFLIPS) {
 					mt_ftl_err(dev,
-						   "ubi_io_read failed, leb = %u, pnum = %d, offset=%d ret = %d",
-						   u4SrcLeb, pnum_src, offset_src, ret);
+						   "Copy PMT failed, leb = %u, offset=%d ret = %d",
+						   u4SrcLeb, offset_src, ret);
 					return MT_FTL_FAIL;
 				}
-				/*mt_ftl_err(dev, "leb = %d, pnum = %d, page = %d",
-				   u4DstLeb, pnum_dst, *offset_dst / NAND_PAGE_SIZE);   // Temporary */
-
-				ret = ubi_io_write(desc->vol->ubi, param->gc_page_buffer, pnum_dst,
-						   *offset_dst + desc->vol->ubi->leb_start,
-						   NAND_PAGE_SIZE);
+				ret = ubi_leb_write(desc, u4DstLeb, param->gc_page_buffer,
+						*offset_dst, NAND_PAGE_SIZE);
 				if (ret) {
 					mt_ftl_err(dev,
-						   "ubi_io_write failed, leb = %u, pnum = %d, offset=0x%x ret = %d",
-						   u4DstLeb, pnum_dst, (unsigned int)*offset_dst, ret);
+						   "Write PMT failed, leb = %u, offset=0x%x ret = %d",
+						   u4DstLeb, (unsigned int)*offset_dst, ret);
 					return MT_FTL_FAIL;
 				}
 				/* Copy Meta PMT */
-				ret = ubi_io_read(desc->vol->ubi, param->gc_page_buffer, pnum_src,
-						  offset_src + NAND_PAGE_SIZE +
-						  desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+				ret = ubi_leb_read(desc, u4SrcLeb, (char *)param->gc_page_buffer,
+						offset_src + NAND_PAGE_SIZE, NAND_PAGE_SIZE, 0);
 				if (ret && ret != UBI_IO_BITFLIPS) {
 					mt_ftl_err(dev,
-						   "ubi_io_read failed, leb = %u, pnum = %d, offset=%d ret = %d",
-						   u4SrcLeb, pnum_src, offset_src, ret);
+						   "Copy Meta PMT failed, leb = %u, offset=%d ret = %d",
+						   u4SrcLeb, offset_src, ret);
 					return MT_FTL_FAIL;
 				}
-				/*mt_ftl_err(dev, "leb = %d, pnum = %d, page = %d",
-				   u4DstLeb, pnum_dst, *offset_dst / NAND_PAGE_SIZE);   // Temporary */
-
-				ret = ubi_io_write(desc->vol->ubi, param->gc_page_buffer, pnum_dst,
-						   *offset_dst + NAND_PAGE_SIZE +
-						   desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+				ret = ubi_leb_write(desc, u4DstLeb, param->gc_page_buffer,
+						*offset_dst + NAND_PAGE_SIZE, NAND_PAGE_SIZE);
 				if (ret) {
 					mt_ftl_err(dev,
-						   "ubi_io_write failed, leb = %d, pnum = %d, offset=0x%x ret = %d",
-						   u4DstLeb, pnum_dst, (unsigned int)*offset_dst + NAND_PAGE_SIZE,
-						   ret);
+						   "Write Meta PMT failed, leb = %d, offset=0x%x ret = %d",
+						   u4DstLeb, (unsigned int)*offset_dst + NAND_PAGE_SIZE, ret);
 					return MT_FTL_FAIL;
 				}
 			}
@@ -104,8 +85,9 @@ int mt_ftl_gc_pmt(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u4
 			page = *offset_dst / NAND_PAGE_SIZE;
 			PMT_INDICATOR_SET_BLOCKPAGE(param->u4PMTIndicator[i], u4DstLeb, page,
 						    isDirty, cache_num);
-			mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x, isDirty = %d, cache_num = %d, page = %d",
-				i, param->u4PMTIndicator[i], isDirty, cache_num, page);	/*  Temporary */
+			/* mt_ftl_err(dev,
+				"u4PMTIndicator[%d] = 0x%x, isDirty = %d, cache_num = %d, page = %d\n",
+				i, param->u4PMTIndicator[i], isDirty, cache_num, page);	 Temporary */
 			*offset_dst += (NAND_PAGE_SIZE * 2);
 		}
 	}
@@ -121,14 +103,11 @@ int mt_ftl_gc_pmt(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u4
 int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u4DstLeb,
 		   int *offset_dst, bool isReplay)
 {
-	int ret = MT_FTL_SUCCESS;
-	int pnum_src = 0, pnum_dst = 0, pnum_pmt;
+	int ret = MT_FTL_SUCCESS, i = 0;
 	int offset_src = 0;
 	int page_src = 0, page_dst = 0;
-	int pmt_block = 0;
-	int pmt_page = 0;
-	unsigned int pmt = 0;
-	unsigned int meta_pmt = 0;
+	int pmt_block = 0, pmt_page = 0;
+	unsigned int pmt = 0, meta_pmt = 0;
 
 	sector_t sector = 0;
 	unsigned int cluster = 0, sec_offset = 0;
@@ -138,10 +117,8 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 	unsigned int page_been_read = 0;
 	struct mt_ftl_data_header *header_buffer = NULL;
 
-	int copy_page = 0;
+	int copy_page = 0, cache_num = 0;
 	unsigned int invalid_num = 0;
-	int i = 0;
-	int cache_num = 0;
 
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
@@ -150,12 +127,9 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 
 #ifdef PROFILE
 	unsigned long start_time = 0, end_time = 0;
-#endif				/* PROFILE */
 
-#ifdef PROFILE
 	start_time = getnstimenow();
 #endif				/* PROFILE */
-
 	if (!isReplay) {
 		ret = ubi_is_mapped(desc, u4DstLeb);
 		if (ret == 0) {
@@ -163,29 +137,21 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 			ubi_leb_map(desc, u4DstLeb);
 		}
 	}
-
-	pnum_src = desc->vol->eba_tbl[u4SrcLeb];
-	pnum_dst = desc->vol->eba_tbl[u4DstLeb];
-
+	ret = ubi_is_mapped(desc, u4SrcLeb);
+	ubi_assert(ret > 0);
+	ubi_assert(u4DstLeb <= NAND_TOTAL_BLOCK_NUM);
 	offset_src = 0;
 	*offset_dst = 0;
-
-	if (u4DstLeb > NAND_TOTAL_BLOCK_NUM)
-		mt_ftl_err(dev, "u4DstLeb(%u) is larger than NAND_TOTAL_BLOCK_NUM(%d)", u4DstLeb,
-			   NAND_TOTAL_BLOCK_NUM);
-
 	if (!isReplay) {
-		ret = ubi_io_read(desc->vol->ubi, param->gc_page_buffer, pnum_src,
-				  offset_src + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+		ret = ubi_leb_read(desc, u4SrcLeb, (char *)param->gc_page_buffer, offset_src, NAND_PAGE_SIZE, 0);
 	} else {
 		/* When replay, the data has been copied to dst, so we read dst instead of src
 		 * but we still use offset_src to control flow */
-		ret = ubi_io_read(desc->vol->ubi, param->gc_page_buffer, pnum_dst,
-				  offset_src + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+		ret = ubi_leb_read(desc, u4DstLeb, (char *)param->gc_page_buffer, offset_src, NAND_PAGE_SIZE, 0);
 	}
 	if (ret && ret != UBI_IO_BITFLIPS) {
-		mt_ftl_err(dev, "ubi_io_read failed, leb = %u, pnum = %d, offset=%d ret = %d",
-			   u4SrcLeb, pnum_src, offset_src, ret);
+		mt_ftl_err(dev, "GC data read failed, leb = %u, offset=%d ret = %d",
+			   u4SrcLeb, offset_src, ret);
 		return MT_FTL_FAIL;
 	}
 
@@ -208,8 +174,9 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 	}
 	header_buffer = (struct mt_ftl_data_header *)(&param->gc_page_buffer[data_hdr_offset >> 2]);
 
-	mt_ftl_err(dev, "data_num = %d, data_hdr_offset = %d, header_buffer = 0x%lx, gc_page_buffer = 0x%lx",
-		data_num, data_hdr_offset, (unsigned long int)header_buffer, (unsigned long int)param->gc_page_buffer);
+	/* mt_ftl_err(dev, "data_num = %d, data_hdr_offset = %d, header_buffer = 0x%lx,
+	   gc_page_buffer = 0x%lx\n", data_num, data_hdr_offset, (unsigned long int)header_buffer,
+	   (unsigned long int)param->gc_page_buffer); */
 
 	andSec = NAND_DEFAULT_VALUE;
 	for (i = 0; i < data_num; i++)
@@ -244,8 +211,8 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 		for (i = 0; i < data_num; i++) {
 			/* Get sector in the page */
 			sector = header_buffer[data_num - i - 1].sector;
-
-			if (sector == NAND_DEFAULT_VALUE)
+			/*  NAND_DEFAULT_VALUE ULL*/
+			if ((sector & NAND_DEFAULT_VALUE) == NAND_DEFAULT_VALUE)
 				continue;
 
 			/* Calculate clusters and sec_offsets */
@@ -254,38 +221,22 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 			sec_offset =
 			    ((unsigned long int)sector / (FS_PAGE_SIZE >> 9)) & (PM_PER_NANDPAGE -
 										 1);
-
-			if (cluster > PMT_TOTAL_CLUSTER_NUM)
-				mt_ftl_err(dev,
-					   "cluster = %d is larger than PMT_TOTAL_CLUSTER_NUM(%d)",
-					   cluster, PMT_TOTAL_CLUSTER_NUM);
+			ubi_assert(cluster <= PMT_TOTAL_CLUSTER_NUM);
 
 			/* Download PMT to read PMT cache */
 			/* Don't use mt_ftl_updatePMT, that will cause PMT indicator mixed in replay */
 			if (PMT_INDICATOR_IS_INCACHE(param->u4PMTIndicator[cluster])) {
 				cache_num =
 				    PMT_INDICATOR_CACHE_BUF_NUM(param->u4PMTIndicator[cluster]);
-				if (cache_num >= PMT_CACHE_NUM)
-					mt_ftl_err(dev,
-						   "cache_num(%d) is larger than PMT_CACHE_NUM(%d)",
-						   cache_num, PMT_CACHE_NUM);
-				if (sec_offset >= PM_PER_NANDPAGE)
-					mt_ftl_err(dev,
-						   "sec_offset(%d) is larger than PM_PER_NANDPAGE(%d)",
-						   sec_offset, PM_PER_NANDPAGE);
+				ubi_assert(cache_num < PMT_CACHE_NUM);
+				ubi_assert(sec_offset < PM_PER_NANDPAGE);
 				pmt = param->u4PMTCache[cache_num * PM_PER_NANDPAGE + sec_offset];
 				meta_pmt =
 				    param->u4MetaPMTCache[cache_num * PM_PER_NANDPAGE + sec_offset];
-				/* mt_ftl_err(dev, "cluster is in write cache, cache_num = %d, pmt = 0x%x,
-				   u4PMTIndicator[%d] = 0x%x",
-				   cache_num, pmt, cluster, param->u4PMTIndicator[cluster]);    // Temporary */
 			} else if (cluster == param->i4CurrentReadPMTClusterInCache) {
 				/* mt_ftl_err(dev, "cluster == i4CurrentReadPMTClusterInCache (%d)",
 				   param->i4CurrentReadPMTClusterInCache); */
-				if (sec_offset > PM_PER_NANDPAGE)
-					mt_ftl_err(dev,
-						   "sec_offset(%d) is larger than PM_PER_NANDPAGE(%d)",
-						   sec_offset, PM_PER_NANDPAGE);
+				ubi_assert(sec_offset < PM_PER_NANDPAGE);
 				pmt = param->u4ReadPMTCache[sec_offset];
 				meta_pmt = param->u4ReadMetaPMTCache[sec_offset];
 			} else {
@@ -301,12 +252,8 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 					param->i4CurrentReadPMTClusterInCache = 0xFFFFFFFF;
 				} else {
 					mt_ftl_err(dev, "Get PMT of cluster (%d)", cluster);
-					pnum_pmt = desc->vol->eba_tbl[pmt_block];
-					ret =
-					    ubi_io_read(desc->vol->ubi, param->u4ReadPMTCache,
-							pnum_pmt,
-							pmt_page * NAND_PAGE_SIZE +
-							desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+					ret = ubi_leb_read(desc, pmt_block, (char *)param->u4ReadPMTCache,
+						pmt_page * NAND_PAGE_SIZE, NAND_PAGE_SIZE, 0);
 					if (ret && ret != UBI_IO_BITFLIPS) {
 						mt_ftl_err(dev,
 							   "u4CurrentPMTLebPageIndicator = 0x%x",
@@ -314,16 +261,13 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 						mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x",
 							   cluster, param->u4PMTIndicator[cluster]);
 						mt_ftl_err(dev,
-							   "[GET PMT] ubi_io_read PMT failed, leb%d, offset=%d, ret = 0x%x",
+							   "[GET PMT] ubi_leb_read PMT failed, leb%d, offset=%d, ret = 0x%x\n",
 							   pmt_block, pmt_page * NAND_PAGE_SIZE,
 							   ret);
 						return MT_FTL_FAIL;
 					}
-					ret =
-					    ubi_io_read(desc->vol->ubi, param->u4ReadMetaPMTCache,
-							pnum_pmt,
-							(pmt_page + 1) * NAND_PAGE_SIZE +
-							desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+					ret = ubi_leb_read(desc, pmt_block, (char *)param->u4ReadMetaPMTCache,
+							(pmt_page + 1) * NAND_PAGE_SIZE, NAND_PAGE_SIZE, 0);
 					if (ret && ret != UBI_IO_BITFLIPS) {
 						mt_ftl_err(dev,
 							   "u4CurrentPMTLebPageIndicator = 0x%x",
@@ -331,17 +275,14 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 						mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x",
 							   cluster, param->u4PMTIndicator[cluster]);
 						mt_ftl_err(dev,
-							   "[GET PMT] ubi_io_read Meta PMT failed, leb%d, offset=%d, ret = 0x%x",
+							   "[GET PMT] ubi_leb_read Meta PMT failed, leb%d, offset=%d, ret = 0x%x\n",
 							   pmt_block,
 							   (pmt_page + 1) * NAND_PAGE_SIZE, ret);
 						return MT_FTL_FAIL;
 					}
 					param->i4CurrentReadPMTClusterInCache = cluster;
 				}
-				if (sec_offset > PM_PER_NANDPAGE)
-					mt_ftl_err(dev,
-						   "sec_offset(%d) is larger than PM_PER_NANDPAGE(%d)",
-						   sec_offset, PM_PER_NANDPAGE);
+				ubi_assert(sec_offset <= PM_PER_NANDPAGE);
 				pmt = param->u4ReadPMTCache[sec_offset];
 				meta_pmt = param->u4ReadMetaPMTCache[sec_offset];
 			}
@@ -395,8 +336,6 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 		start_time = getnstimenow();
 #endif				/* PROFILE */
 		if ((!isReplay) && copy_page) {
-			/*mt_ftl_err(dev, "leb = %d, pnum = %d, page = %d",
-			   u4DstLeb, pnum_dst, *offset_dst / NAND_PAGE_SIZE);   // Temporary */
 			if ((data_hdr_offset + data_num * sizeof(struct mt_ftl_data_header)) >=
 			    NAND_PAGE_SIZE) {
 				mt_ftl_err(dev,
@@ -411,12 +350,11 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 			       data_num * sizeof(struct mt_ftl_data_header));
 			memcpy(&param->gc_page_buffer[(NAND_PAGE_SIZE - 4) >> 2], &data_num, 4);
 			PAGE_SET_READ(param->gc_page_buffer[(NAND_PAGE_SIZE >> 2) - 1]);
-			ret = ubi_io_write(desc->vol->ubi, param->gc_page_buffer, pnum_dst,
-					   *offset_dst + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+			ret = ubi_leb_write(desc, u4DstLeb, param->gc_page_buffer, *offset_dst, NAND_PAGE_SIZE);
 			if (ret) {
 				mt_ftl_err(dev,
-					   "ubi_io_write failed, leb = %d, pnum = %d, offset = %d ret = 0x%x",
-					   u4DstLeb, pnum_dst, *offset_dst, ret);
+					   "ubi_leb_write failed, leb = %d, offset = %d ret = 0x%x\n",
+					   u4DstLeb, *offset_dst, ret);
 				return MT_FTL_FAIL;
 			}
 
@@ -447,18 +385,17 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 		if (offset_src > max_offset_per_block)
 			break;
 
-		if (!isReplay) {
-			ret = ubi_io_read(desc->vol->ubi, param->gc_page_buffer, pnum_src,
-					  offset_src + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
-		} else {
-			ret = ubi_io_read(desc->vol->ubi, param->gc_page_buffer, pnum_dst,
-					  offset_src + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
-		}
+		if (!isReplay)
+			ret = ubi_leb_read(desc, u4SrcLeb, (char *)param->gc_page_buffer,
+					offset_src, NAND_PAGE_SIZE, 0);
+		else
+			ret = ubi_leb_read(desc, u4DstLeb, (char *)param->gc_page_buffer,
+					offset_src, NAND_PAGE_SIZE, 0);
 
 		if (ret && ret != UBI_IO_BITFLIPS) {
 			mt_ftl_err(dev,
-				   "ubi_io_read failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-				   u4SrcLeb, pnum_src, offset_src, ret);
+				   "ubi_leb_read failed, leb = %d, offset=%d ret = 0x%x",
+				   u4SrcLeb, offset_src, ret);
 			return MT_FTL_FAIL;
 		}
 
@@ -506,7 +443,7 @@ int mt_ftl_gc_data(struct mt_ftl_blk *dev, unsigned int u4SrcLeb, unsigned int u
 #endif				/* PROFILE */
 	}
 
-	mt_ftl_err(dev, "u4BIT[%d] = %d", u4DstLeb, param->u4BIT[u4DstLeb]);	/* Temporary */
+	/* mt_ftl_err(dev, "u4BIT[%d] = %d", u4DstLeb, param->u4BIT[u4DstLeb]);	 Temporary */
 
 	return ret;
 }
@@ -525,6 +462,7 @@ unsigned int mt_ftl_gc_findblock(struct mt_ftl_blk *dev, unsigned int u4StartLeb
 		mt_ftl_err(dev,
 			   "u4StartLeb(%d)u4EndLeb(%d) is larger than NAND_TOTAL_BLOCK_NUM(%d)",
 			   u4StartLeb, u4EndLeb, NAND_TOTAL_BLOCK_NUM);
+	ubi_assert((u4StartLeb < NAND_TOTAL_BLOCK_NUM || u4EndLeb < NAND_TOTAL_BLOCK_NUM));
 
 	for (i = u4StartLeb; i < u4EndLeb; i++) {
 		if (param->u4BIT[i] == desc->vol->ubi->leb_size) {
@@ -547,13 +485,10 @@ unsigned int mt_ftl_gc_findblock(struct mt_ftl_blk *dev, unsigned int u4StartLeb
 
 int mt_ftl_gc(struct mt_ftl_blk *dev, int *updated_page, bool isPMT, bool isReplay, int *isCommit)
 {
-	int ret = MT_FTL_SUCCESS;
-	int i = 0;
-	/* unsigned int u4MaxInvalidVolume = 0; */
+	int ret = MT_FTL_SUCCESS, i = 0;
 	unsigned int u4SrcInvalidLeb = MT_INVALID_BLOCKPAGE;
 	unsigned int u4ReturnLeb = 0;
 	int offset_dst = 0;
-	/* int isPMTBlock = 0; */
 	bool allInvalid = false;
 
 	struct ubi_volume_desc *desc = dev->desc;
@@ -563,12 +498,9 @@ int mt_ftl_gc(struct mt_ftl_blk *dev, int *updated_page, bool isPMT, bool isRepl
 
 #ifdef PROFILE
 	unsigned long start_time = 0, end_time = 0;
-#endif				/* PROFILE */
 
-#ifdef PROFILE
 	start_time = getnstimenow();
 #endif				/* PROFILE */
-
 	/* Get the most invalid block */
 	/* TODO: Separate PMT block to other volume, otherwise, there is only 1 PMT block and afford at most 4G data */
 	if (unlikely(isPMT)) {
@@ -580,8 +512,7 @@ int mt_ftl_gc(struct mt_ftl_blk *dev, int *updated_page, bool isPMT, bool isRepl
 	} else {
 		/* Leb 0/1 for storing backup dram data, leb2 for replay */
 		u4SrcInvalidLeb = mt_ftl_gc_findblock(dev, DATA_START_BLOCK,
-						      desc->vol->ubi->volumes[dev->
-									      vol_id]->reserved_pebs,
+						      desc->vol->ubi->volumes[dev->vol_id]->reserved_pebs,
 						      &allInvalid);
 		if (allInvalid)
 			goto gc_end;
@@ -592,9 +523,9 @@ int mt_ftl_gc(struct mt_ftl_blk *dev, int *updated_page, bool isPMT, bool isRepl
 		return MT_FTL_FAIL;
 	}
 
-	mt_ftl_err(dev, "u4BIT[%d] = %d, u4GCReservePMTLeb = 0x%x, u4GCReserveLeb = 0x%x",
+	/* mt_ftl_err(dev, "u4BIT[%d] = %d, u4GCReservePMTLeb = 0x%x, u4GCReserveLeb = 0x%x",
 			u4SrcInvalidLeb, param->u4BIT[u4SrcInvalidLeb],
-			param->u4GCReservePMTLeb, param->u4GCReserveLeb);	/* Temporary */
+			param->u4GCReservePMTLeb, param->u4GCReserveLeb);	 Temporary */
 
 #ifdef PROFILE
 	end_time = getnstimenow();
@@ -726,18 +657,14 @@ int mt_ftl_leb_lastpage_offset(struct mt_ftl_blk *dev, int leb)
 {
 	int ret = MT_FTL_SUCCESS;
 	int offset = 0;
-	int pnum = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
 	const int max_offset_per_block = desc->vol->ubi->leb_size - NAND_PAGE_SIZE;
 
-	pnum = desc->vol->eba_tbl[leb];
-
 	while (offset <= max_offset_per_block) {
-		ret = ubi_io_read(desc->vol->ubi, param->tmp_page_buffer, pnum,
-				  offset + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+		ret = ubi_leb_read(desc, leb, (char *)param->tmp_page_buffer, offset, NAND_PAGE_SIZE, 0);
 		if (ret && ret != UBI_IO_BITFLIPS) {
-			mt_ftl_err(dev, "ubi_io_read (leb%d, offset=%d) failed, ret = 0x%x",
+			mt_ftl_err(dev, "ubi_leb_read (leb%d, offset=%d) failed, ret = 0x%x",
 				   leb, offset, ret);
 			return MT_FTL_FAIL;
 		}
@@ -758,21 +685,17 @@ int mt_ftl_getfreeblock(struct mt_ftl_blk *dev, int *updated_page, bool isPMT, b
 {
 	int ret = MT_FTL_SUCCESS;
 	unsigned int u4FreeLeb = 0;
-	int offset = 0;
+	/*int offset = 0;*/
 	int isCommit = 0;
-	int pnum = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
 	const int max_offset_per_block = desc->vol->ubi->leb_size - NAND_PAGE_SIZE;
 
 #ifdef PROFILE
 	unsigned long start_time = 0, end_time = 0;
-#endif				/* PROFILE */
 
-#ifdef PROFILE
 	start_time = getnstimenow();
 #endif				/* PROFILE */
-
 	if (isPMT) {
 		if (param->u4NextFreePMTLebIndicator != MT_INVALID_BLOCKPAGE) {
 			u4FreeLeb = param->u4NextFreePMTLebIndicator;
@@ -867,17 +790,14 @@ int mt_ftl_getfreeblock(struct mt_ftl_blk *dev, int *updated_page, bool isPMT, b
 			*updated_page += 1;
 			/* offset = 0; */
 		}
-		pnum = desc->vol->eba_tbl[REPLAY_BLOCK];
 		mt_ftl_err(dev, "u4NextReplayOffsetIndicator = %d",
 			   param->u4NextReplayOffsetIndicator);
-		ret =
-		    ubi_io_write(desc->vol->ubi, param->replay_page_buffer, pnum,
-				 param->u4NextReplayOffsetIndicator + desc->vol->ubi->leb_start,
+		ret = ubi_leb_write(desc, REPLAY_BLOCK, param->replay_page_buffer, param->u4NextReplayOffsetIndicator,
 				 NAND_PAGE_SIZE);
 		if (ret) {
-			mt_ftl_err(dev,
+			/*mt_ftl_err(dev,
 				   "ubi_io_write failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-				   REPLAY_BLOCK, pnum, offset, ret);
+				   REPLAY_BLOCK, pnum, offset, ret);*/
 			return MT_FTL_FAIL;
 		}
 		param->u4NextReplayOffsetIndicator += NAND_PAGE_SIZE;
@@ -885,13 +805,15 @@ int mt_ftl_getfreeblock(struct mt_ftl_blk *dev, int *updated_page, bool isPMT, b
 	if (NAND_PAGE_NUM_PER_BLOCK <= param->replay_blk_index) {
 		mt_ftl_err(dev, "NAND_PAGE_NUM_PER_BLOCK(%d) <= param->replay_blk_index(%d)",
 			   NAND_PAGE_NUM_PER_BLOCK, param->replay_blk_index);
+		mt_ftl_commit_indicators(dev);
+		/* param->replay_blk_index = 0;  commit process: mt_ftl_commit_indicators*/
 	}
 	param->replay_blk_rec[param->replay_blk_index] = u4FreeLeb;
 	param->replay_blk_index++;
 
-	mt_ftl_err(dev,
+	/* mt_ftl_err(dev,
 		   "u4FreeLeb = %d, u4NextFreeLebIndicator = %d, isPMT = %d, updated_page = %d",
-		   u4FreeLeb, param->u4NextFreeLebIndicator, isPMT, *updated_page);
+		   u4FreeLeb, param->u4NextFreeLebIndicator, isPMT, *updated_page); */
 
 #ifdef PROFILE
 	end_time = getnstimenow();
@@ -913,15 +835,12 @@ int mt_ftl_write_to_blk(struct mt_ftl_blk *dev, int dst_leb, unsigned int *page_
 {
 	int ret = MT_FTL_SUCCESS;
 	int offset = 0;
-	int pnum = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	/* struct mt_ftl_param *param = dev->param; */
 	const int max_offset_per_block = desc->vol->ubi->leb_size - NAND_PAGE_SIZE;
 
 	if (!ubi_is_mapped(desc, dst_leb))
 		ubi_leb_map(desc, dst_leb);
-
-	pnum = desc->vol->eba_tbl[dst_leb];
 
 	offset = mt_ftl_leb_lastpage_offset(dev, dst_leb);
 	if (offset > max_offset_per_block) {
@@ -934,13 +853,11 @@ int mt_ftl_write_to_blk(struct mt_ftl_blk *dev, int dst_leb, unsigned int *page_
 		offset = 0;
 	}
 
-	mt_ftl_err(dev, "dst_leb = %d, offset = %d, page_buffer[0] = 0x%x", dst_leb, offset,
-		   page_buffer[0]);
-	ret =
-	    ubi_io_write(desc->vol->ubi, page_buffer, pnum, offset + desc->vol->ubi->leb_start,
-			 NAND_PAGE_SIZE);
+	/* mt_ftl_err(dev, "dst_leb = %d, offset = %d, page_buffer[0] = 0x%x", dst_leb, offset,
+		   page_buffer[0]); */
+	ret = ubi_leb_write(desc, dst_leb, page_buffer, offset, NAND_PAGE_SIZE);
 	if (ret && ret != UBI_IO_BITFLIPS) {
-		mt_ftl_err(dev, "ubi_io_write (leb%d, offset=%d) failed, ret = 0x%x",
+		mt_ftl_err(dev, "ubi_leb_write (leb%d, offset=%d) failed, ret = 0x%x",
 			   dst_leb, offset, ret);
 		return MT_FTL_FAIL;
 	}
@@ -950,40 +867,25 @@ int mt_ftl_write_to_blk(struct mt_ftl_blk *dev, int dst_leb, unsigned int *page_
 
 int mt_ftl_write_page(struct mt_ftl_blk *dev)
 {
-	int ret = MT_FTL_SUCCESS;
-	int leb = 0;
-	int page = 0;
-	int pnum = 0;
+	int ret = MT_FTL_SUCCESS, i = 0;
+	int leb = 0, page = 0, cache_num = 0;
 	sector_t sector = 0;
 	unsigned int cluster = 0, sec_offset = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
 	const int page_num_per_block = desc->vol->ubi->leb_size / NAND_PAGE_SIZE;
-	int i = 0;
-	int cache_num = 0;
 	unsigned int data_hdr_offset = 0;
-	/* unsigned int *tmpbuffer;	 Temporary */
 
 #ifdef PROFILE
 	unsigned long start_time = 0, end_time = 0;
-#endif				/* PROFILE */
 
-#ifdef PROFILE
 	start_time = getnstimenow();
 #endif				/* PROFILE */
-
 	leb = PMT_LEB_PAGE_INDICATOR_GET_BLOCK(param->u4NextLebPageIndicator);
 	page = PMT_LEB_PAGE_INDICATOR_GET_PAGE(param->u4NextLebPageIndicator);
 
 	/* mt_ftl_err(dev, "u4NextLebPageIndicator = 0x%x, leb = %d, page = %d",
 	   param->u4NextLebPageIndicator, leb, page); */
-
-	pnum = desc->vol->eba_tbl[leb];
-	/*
-	//mt_ftl_err(dev, "leb = %d, pnum = %d, page = %d, desc->vol->ubi->leb_start = %d, u4DataNum = %d",
-	leb, pnum, page, desc->vol->ubi->leb_start, param->u4DataNum);      // Temporary
-	//mt_ftl_err(dev, "leb = %d, page = %d, u4DataNum = %d", leb, page, param->u4DataNum);  // Temporary
-	 */
 	data_hdr_offset =
 	    NAND_PAGE_SIZE - (param->u4DataNum * sizeof(struct mt_ftl_data_header) + 4);
 	if ((data_hdr_offset + param->u4DataNum * sizeof(struct mt_ftl_data_header)) >=
@@ -1002,11 +904,10 @@ int mt_ftl_write_page(struct mt_ftl_blk *dev)
 	       &param->u4Header[MTKFTL_MAX_DATA_NUM_PER_PAGE - param->u4DataNum],
 	       param->u4DataNum * sizeof(struct mt_ftl_data_header));
 	memcpy(&param->u1DataCache[NAND_PAGE_SIZE - 4], &param->u4DataNum, 4);
-	ret = ubi_io_write(desc->vol->ubi, param->u1DataCache, pnum,
-			   page * NAND_PAGE_SIZE + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+	ret = ubi_leb_write(desc, leb, param->u1DataCache, page * NAND_PAGE_SIZE, NAND_PAGE_SIZE);
 	if (ret) {
-		mt_ftl_err(dev, "ubi_io_write failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-			   leb, pnum, page * NAND_PAGE_SIZE, ret);
+		mt_ftl_err(dev, "ubi_leb_write failed, leb = %d, offset=%d ret = 0x%x",
+			   leb, page * NAND_PAGE_SIZE, ret);
 		return MT_FTL_FAIL;
 	}
 #ifdef PROFILE
@@ -1027,17 +928,11 @@ int mt_ftl_write_page(struct mt_ftl_blk *dev)
 		cluster = ((unsigned long int)sector / (FS_PAGE_SIZE >> 9)) / PM_PER_NANDPAGE;
 		sec_offset =
 		    ((unsigned long int)sector / (FS_PAGE_SIZE >> 9)) & (PM_PER_NANDPAGE - 1);
-		if (cluster > PMT_TOTAL_CLUSTER_NUM)
-			mt_ftl_err(dev, "cluster = %d is larger than PMT_TOTAL_CLUSTER_NUM(%d)",
-				   cluster, PMT_TOTAL_CLUSTER_NUM);
+		ubi_assert(cluster <= PMT_TOTAL_CLUSTER_NUM);
 		if (PMT_INDICATOR_IS_INCACHE(param->u4PMTIndicator[cluster])) {
 			cache_num = PMT_INDICATOR_CACHE_BUF_NUM(param->u4PMTIndicator[cluster]);
-			if (cache_num >= PMT_CACHE_NUM)
-				mt_ftl_err(dev, "cache_num(%d) is larger than PMT_CACHE_NUM(%d)",
-					   cache_num, PMT_CACHE_NUM);
-			if (sec_offset >= PM_PER_NANDPAGE)
-				mt_ftl_err(dev, "sec_offset(%d) is larger than PM_PER_NANDPAGE(%d)",
-					   sec_offset, PM_PER_NANDPAGE);
+			ubi_assert(cache_num < PMT_CACHE_NUM);
+			ubi_assert(sec_offset < PM_PER_NANDPAGE);
 			PMT_RESET_DATA_INCACHE(param->u4MetaPMTCache[cache_num * PM_PER_NANDPAGE +
 								     sec_offset]);
 		} else {
@@ -1058,7 +953,7 @@ int mt_ftl_write_page(struct mt_ftl_blk *dev)
 		}
 	}
 	PMT_LEB_PAGE_INDICATOR_SET_BLOCKPAGE(param->u4NextLebPageIndicator, leb, page);
-	mt_ftl_err(dev, "u4NextLebPageIndicator = 0x%x", param->u4NextLebPageIndicator);
+	/*mt_ftl_err(dev, "u4NextLebPageIndicator = 0x%x", param->u4NextLebPageIndicator);*/
 
 #ifdef PROFILE
 	end_time = getnstimenow();
@@ -1099,49 +994,23 @@ int mt_ftl_commitPMT(struct mt_ftl_blk *dev, bool isReplay, bool isCommitDataCac
 {
 	int ret = MT_FTL_SUCCESS;
 	int pmt_block = 0, pmt_page = 0;
-	/* int pmt = 0, meta_pmt = 0; */
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
 	const int page_num_per_block = desc->vol->ubi->leb_size / NAND_PAGE_SIZE;
 	int i = 0;
-	int pnum_pmt = 0;
-	/* Temporary */
-	/*
-	int j = 0;
-	int k = 0;
-	int leb = 0;
-	int page = 0;
-	int part = 0;
-	int pnum = 0;
-	int pnum_pmt = 0;
-	int cluster = 0;
-	sector_t sector = 0;
-	unsigned int data_num = 0;
-	unsigned int data_num_offset = 0;
-	unsigned int data_hdr_offset =
-	    NAND_PAGE_SIZE - (param->u4DataNum * sizeof(struct mt_ftl_data_header) + 4);
-	int offset_in_pagebuf = 0;
-	unsigned char *page_buffer = NULL;
-	struct mt_ftl_data_header *header_buffer = NULL; */
 
 #ifdef PROFILE
 	unsigned long start_time = 0, end_time = 0;
-#endif				/* PROFILE */
 
-#ifdef PROFILE
 	start_time = getnstimenow();
 #endif				/* PROFILE */
-
 	if ((!isReplay) && isCommitDataCache)
 		ret = mt_ftl_write_page(dev);
 
 	for (i = 0; i < PMT_CACHE_NUM; i++) {
 		if (param->i4CurrentPMTClusterInCache[i] == 0xFFFFFFFF)
 			continue;
-		if (param->i4CurrentPMTClusterInCache[i] > PMT_TOTAL_CLUSTER_NUM)
-			mt_ftl_err(dev,
-				   "param->i4CurrentPMTClusterInCache[%d](%d) is larger than PMT_TOTAL_CLUSTER_NUM(%d)",
-				   i, param->i4CurrentPMTClusterInCache[i], PMT_TOTAL_CLUSTER_NUM);
+		ubi_assert(param->i4CurrentPMTClusterInCache[i] <= PMT_TOTAL_CLUSTER_NUM);
 		if (!PMT_INDICATOR_IS_INCACHE
 		    (param->u4PMTIndicator[param->i4CurrentPMTClusterInCache[i]])) {
 			mt_ftl_err(dev, "i4CurrentPMTClusterInCache (%d) is not in cache",
@@ -1153,6 +1022,9 @@ int mt_ftl_commitPMT(struct mt_ftl_blk *dev, bool isReplay, bool isCommitDataCac
 			mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x is not dirty",
 				   param->i4CurrentPMTClusterInCache[i],
 				   param->u4PMTIndicator[param->i4CurrentPMTClusterInCache[i]]);
+			/* clear i4CurrentPMTClusterInCache */
+			PMT_INDICATOR_RESET_INCACHE(param->u4PMTIndicator[param->i4CurrentPMTClusterInCache[i]]);
+			param->i4CurrentPMTClusterInCache[i] = 0xFFFFFFFF;
 			continue;
 		}
 		/* Update param->u4BIT of the block that is originally in param->u4PMTCache */
@@ -1165,9 +1037,7 @@ int mt_ftl_commitPMT(struct mt_ftl_blk *dev, bool isReplay, bool isCommitDataCac
 		/*mt_ftl_err(dev, "i4CurrentPMTClusterInCache = %d, u4PMTIndicator[i4CurrentPMTClusterInCache] = 0x%x",
 		   param->i4CurrentPMTClusterInCache, param->u4PMTIndicator[param->i4CurrentPMTClusterInCache]);
 		   mt_ftl_err(dev, "pmt_block = %d, pmt_page = %d", pmt_block, pmt_page);       // Temporary */
-		if (pmt_block >= NAND_TOTAL_BLOCK_NUM)
-			mt_ftl_err(dev, "pmt_block(%d) is larger than NAND_TOTAL_BLOCK_NUM(%d)",
-				   pmt_block, NAND_TOTAL_BLOCK_NUM);
+		ubi_assert(pmt_block < NAND_TOTAL_BLOCK_NUM);
 		if ((pmt_block != MT_INVALID_BLOCKPAGE) && (pmt_block != 0)) {
 			BIT_UPDATE(param->u4BIT[pmt_block], (NAND_PAGE_SIZE * 2));
 			mt_ftl_err(dev, "u4BIT[%d] = %d", pmt_block, param->u4BIT[pmt_block]);
@@ -1226,18 +1096,10 @@ int mt_ftl_commitPMT(struct mt_ftl_blk *dev, bool isReplay, bool isCommitDataCac
 				   param->u4CurrentPMTLebPageIndicator);
 				   //mt_ftl_err(dev, "pmt_block = %d, pmt_page = %d", pmt_block, pmt_page);
 				 */
-				pnum_pmt = desc->vol->eba_tbl[pmt_block];
-				ret =
-				    ubi_io_write(desc->vol->ubi,
-						 &param->u4PMTCache[i * PM_PER_NANDPAGE], pnum_pmt,
-						 pmt_page * NAND_PAGE_SIZE +
-						 desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
-				ret =
-				    ubi_io_write(desc->vol->ubi,
-						 &param->u4MetaPMTCache[i * PM_PER_NANDPAGE],
-						 pnum_pmt,
-						 (pmt_page + 1) * NAND_PAGE_SIZE +
-						 desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+				ret = ubi_leb_write(desc, pmt_block, &param->u4PMTCache[i * PM_PER_NANDPAGE],
+						 pmt_page * NAND_PAGE_SIZE, NAND_PAGE_SIZE);
+				ret = ubi_leb_write(desc, pmt_block, &param->u4MetaPMTCache[i * PM_PER_NANDPAGE],
+						 (pmt_page + 1) * NAND_PAGE_SIZE, NAND_PAGE_SIZE);
 			} else {
 				mt_ftl_err(dev, "pmt_block(%d) is not mapped", pmt_block);
 				return MT_FTL_FAIL;
@@ -1247,8 +1109,11 @@ int mt_ftl_commitPMT(struct mt_ftl_blk *dev, bool isReplay, bool isCommitDataCac
 		PMT_INDICATOR_SET_BLOCKPAGE(param->u4PMTIndicator
 					    [param->i4CurrentPMTClusterInCache[i]], pmt_block,
 					    pmt_page, 0, i);
-		mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x", param->i4CurrentPMTClusterInCache[i],
-			   param->u4PMTIndicator[param->i4CurrentPMTClusterInCache[i]]);
+		/* mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x", param->i4CurrentPMTClusterInCache[i],
+			   param->u4PMTIndicator[param->i4CurrentPMTClusterInCache[i]]); */
+		/* clear i4CurrentPMTClusterInCache */
+		PMT_INDICATOR_RESET_INCACHE(param->u4PMTIndicator[param->i4CurrentPMTClusterInCache[i]]);
+		param->i4CurrentPMTClusterInCache[i] = 0xFFFFFFFF;
 	}
 
 #ifdef PROFILE
@@ -1268,9 +1133,7 @@ int mt_ftl_commitPMT(struct mt_ftl_blk *dev, bool isReplay, bool isCommitDataCac
 int mt_ftl_commit_indicators(struct mt_ftl_blk *dev)
 {
 	int ret = MT_FTL_SUCCESS;
-	int offset = 0;
-	int pnum = 0;
-	int index = 0;
+	int offset = 0, index = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
 	const int max_offset_per_block = desc->vol->ubi->leb_size - NAND_PAGE_SIZE;
@@ -1342,14 +1205,9 @@ int mt_ftl_commit_indicators(struct mt_ftl_blk *dev)
 			   desc->vol->eba_tbl[CONFIG_START_BLOCK]);
 		offset = 0;
 	}
-	/* mt_ftl_err(dev, "offset = %d", offset);       // Temporary */
-
-	pnum = desc->vol->eba_tbl[CONFIG_START_BLOCK];
-	ret =
-	    ubi_io_write(desc->vol->ubi, param->commit_page_buffer, pnum,
-			 offset + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+	ret = ubi_leb_write(desc, CONFIG_START_BLOCK, param->commit_page_buffer, offset, NAND_PAGE_SIZE);
 	if (ret && ret != UBI_IO_BITFLIPS) {
-		mt_ftl_err(dev, "ubi_io_write (leb%d, offset=%d) failed, ret = 0x%x",
+		mt_ftl_err(dev, "ubi_leb_write (leb%d, offset=%d) failed, ret = 0x%x",
 			   CONFIG_START_BLOCK, offset, ret);
 		return MT_FTL_FAIL;
 	}
@@ -1365,27 +1223,21 @@ int mt_ftl_commit_indicators(struct mt_ftl_blk *dev)
 		   REPLAY_BLOCK, desc->vol->eba_tbl[REPLAY_BLOCK]);
 	memset(param->replay_blk_rec, 0xFF, NAND_PAGE_NUM_PER_BLOCK * sizeof(unsigned int));
 	param->u4NextReplayOffsetIndicator = 0;
-
+	param->replay_blk_index = 0;
 	return ret;
 }
 
 int mt_ftl_commit(struct mt_ftl_blk *dev)
 {
-	int ret = MT_FTL_SUCCESS;
-	int i = 0;
+	int ret = MT_FTL_SUCCESS, i = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
-	/* const int page_num_per_block = desc->vol->ubi->leb_size / NAND_PAGE_SIZE; */
-	/* const int max_offset_per_block = desc->vol->ubi->leb_size - NAND_PAGE_SIZE; */
 
 #ifdef PROFILE
 	unsigned long start_time = 0, end_time = 0;
-#endif				/* PROFILE */
 
-#ifdef PROFILE
 	start_time = getnstimenow();
 #endif				/* PROFILE */
-
 	ret = ubi_is_mapped(desc, CONFIG_START_BLOCK);
 	if (ret == 0)
 		ubi_leb_map(desc, CONFIG_START_BLOCK);
@@ -1397,10 +1249,7 @@ int mt_ftl_commit(struct mt_ftl_blk *dev)
 	for (i = 0; i < PMT_CACHE_NUM; i++) {
 		if (param->i4CurrentPMTClusterInCache[i] == 0xFFFFFFFF)
 			continue;
-		if (param->i4CurrentPMTClusterInCache[i] > PMT_TOTAL_CLUSTER_NUM)
-			mt_ftl_err(dev,
-				   "param->i4CurrentPMTClusterInCache[%d](%d) is larger than PMT_TOTAL_CLUSTER_NUM(%d)",
-				   i, param->i4CurrentPMTClusterInCache[i], PMT_TOTAL_CLUSTER_NUM);
+		ubi_assert(param->i4CurrentPMTClusterInCache[i] <= PMT_TOTAL_CLUSTER_NUM);
 		if (!PMT_INDICATOR_IS_INCACHE
 		    (param->u4PMTIndicator[param->i4CurrentPMTClusterInCache[i]])) {
 			mt_ftl_err(dev, "i4CurrentPMTClusterInCache (%d) is not in cache",
@@ -1436,29 +1285,22 @@ int mt_ftl_commit(struct mt_ftl_blk *dev)
 
 int mt_ftl_downloadPMT(struct mt_ftl_blk *dev, int cluster, int cache_num)
 {
-	int ret = MT_FTL_SUCCESS;
-	int pmt_block = 0;
-	int pmt_page = 0;
-	int pnum = 0;
+	int ret = MT_FTL_SUCCESS, i = 0;
+	int pmt_block = 0, pmt_page = 0;
+
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
 
-	if (cluster > PMT_TOTAL_CLUSTER_NUM)
-		mt_ftl_err(dev, "cluster(%d) is larger than PMT_TOTAL_CLUSTER_NUM(%d)", cluster,
-			   PMT_TOTAL_CLUSTER_NUM);
+	ubi_assert(cluster <= PMT_TOTAL_CLUSTER_NUM);
 	pmt_block = PMT_INDICATOR_GET_BLOCK(param->u4PMTIndicator[cluster]);
 	pmt_page = PMT_INDICATOR_GET_PAGE(param->u4PMTIndicator[cluster]);
-
 	if (param->u4MetaPMTCache[0] == 0xFFFFFFFF) {
 		mt_ftl_err(dev,
 			   "pmt_block = %d, cache_num = %d, cluster = %d, param->u4PMTCache[0] = 0x%x, param->u4MetaPMTCache[0] = 0x%x",
 			   pmt_block, cache_num, cluster, param->u4PMTCache[0],
 			   param->u4MetaPMTCache[0]);
 	}
-
-	if (cache_num >= PMT_CACHE_NUM)
-		mt_ftl_err(dev, "cache_num(%d) is larger than PMT_CACHE_NUM(%d)", cache_num,
-			   PMT_CACHE_NUM);
+	ubi_assert(cache_num < PMT_CACHE_NUM);
 
 	if (unlikely(pmt_block == 0) || unlikely(ubi_is_mapped(desc, pmt_block) == 0)) {
 		memset(&param->u4PMTCache[cache_num * PM_PER_NANDPAGE], 0xFF,
@@ -1466,32 +1308,27 @@ int mt_ftl_downloadPMT(struct mt_ftl_blk *dev, int cluster, int cache_num)
 		memset(&param->u4MetaPMTCache[cache_num * PM_PER_NANDPAGE], 0xFF,
 		       PM_PER_NANDPAGE * sizeof(unsigned int));
 	} else {
-		pnum = desc->vol->eba_tbl[pmt_block];
-		ret =
-		    ubi_io_read(desc->vol->ubi, &param->u4PMTCache[cache_num * PM_PER_NANDPAGE],
-				pnum, pmt_page * NAND_PAGE_SIZE + desc->vol->ubi->leb_start,
-				NAND_PAGE_SIZE);
+		ret = ubi_leb_read(desc, pmt_block, (char *)&param->u4PMTCache[cache_num * PM_PER_NANDPAGE],
+				pmt_page * NAND_PAGE_SIZE , NAND_PAGE_SIZE, 0);
 		if (ret && ret != UBI_IO_BITFLIPS) {
 			mt_ftl_err(dev, "u4CurrentPMTLebPageIndicator = 0x%x",
 				   param->u4CurrentPMTLebPageIndicator);
 			mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x", cluster,
 				   param->u4PMTIndicator[cluster]);
 			mt_ftl_err(dev,
-				   "[GET PMT] ubi_io_read get PMT failed, leb%d, offset=%d, ret = 0x%x",
+				   "[GET PMT] ubi_leb_read get PMT failed, leb%d, offset=%d, ret = 0x%x",
 				   pmt_block, pmt_page * NAND_PAGE_SIZE, ret);
 			return MT_FTL_FAIL;
 		}
-		ret =
-		    ubi_io_read(desc->vol->ubi, &param->u4MetaPMTCache[cache_num * PM_PER_NANDPAGE],
-				pnum, (pmt_page + 1) * NAND_PAGE_SIZE + desc->vol->ubi->leb_start,
-				NAND_PAGE_SIZE);
+		ret = ubi_leb_read(desc, pmt_block, (char *)&param->u4MetaPMTCache[cache_num * PM_PER_NANDPAGE],
+			(pmt_page + 1) * NAND_PAGE_SIZE, NAND_PAGE_SIZE, 0);
 		if (ret && ret != UBI_IO_BITFLIPS) {
 			mt_ftl_err(dev, "u4CurrentPMTLebPageIndicator = 0x%x",
 				   param->u4CurrentPMTLebPageIndicator);
 			mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x", cluster,
 				   param->u4PMTIndicator[cluster]);
 			mt_ftl_err(dev,
-				   "[GET PMT] ubi_io_read get Meta PMT failed, leb%d, offset=%d, ret = 0x%x",
+				   "[GET PMT]ubi_leb_read get Meta PMT failed, leb%d, offset=%d, ret = 0x%x",
 				   pmt_block, (pmt_page + 1) * NAND_PAGE_SIZE, ret);
 			return MT_FTL_FAIL;
 		}
@@ -1508,12 +1345,19 @@ int mt_ftl_downloadPMT(struct mt_ftl_blk *dev, int cluster, int cache_num)
 	   }
 	   } */
 	/*=======*/
+	/* consider cluser if in cache */
+	for (i = 0; i < PMT_CACHE_NUM; i++) {
+		if (param->i4CurrentPMTClusterInCache[i] == cluster) {
+			mt_ftl_err(dev, "[Bean]Tempory solution cluster is in cache already(%d)\n", i);
+			dump_stack();
+			break;
+		}
+	}
+	/*if(i >= PMT_CACHE_NUM)  */
 	param->i4CurrentPMTClusterInCache[cache_num] = cluster;
-	/* mt_ftl_err(dev, "i4CurrentPMTClusterInCache = %d", param->i4CurrentPMTClusterInCache); */
+	mt_ftl_err(dev, "i4CurrentPMTClusterInCache[%d] = %d", cache_num, param->i4CurrentPMTClusterInCache[cache_num]);
 	PMT_INDICATOR_SET_CACHE_BUF_NUM(param->u4PMTIndicator[cluster], cache_num);
 	mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x", cluster, param->u4PMTIndicator[cluster]);
-	/*mt_ftl_err(dev, "4: u4PMTIndicator[%d] = 0x%x",
-	   cluster, param->u4PMTIndicator[cluster]);    // Temporary */
 
 	return ret;
 }
@@ -1521,40 +1365,30 @@ int mt_ftl_downloadPMT(struct mt_ftl_blk *dev, int cluster, int cache_num)
 int mt_ftl_updatePMT(struct mt_ftl_blk *dev, int cluster, int sec_offset, int leb, int offset,
 		     int part, unsigned int cmpr_data_size, bool isReplay, bool isCommitDataCache)
 {
-	int ret = MT_FTL_SUCCESS;
+	int ret = MT_FTL_SUCCESS, i = 0;
 	unsigned int *pmt = NULL;
 	unsigned int *meta_pmt = NULL;
-	int old_leb = 0;
-	int old_data_size = 0;
+	int old_leb = 0, old_data_size = 0;
 	/* struct ubi_volume_desc *desc = dev->desc; */
 	struct mt_ftl_param *param = dev->param;
-	/* struct mt_ftl_data_header *header_buffer = NULL; */
-	/* const int page_num_per_block = desc->vol->ubi->leb_size / NAND_PAGE_SIZE; */
-	int i = 0;
 
 #ifdef PROFILE
 	unsigned long start_time = 0, end_time = 0;
 #endif				/* PROFILE */
-
-	if (cluster > PMT_TOTAL_CLUSTER_NUM)
-		mt_ftl_err(dev, "cluster(%d) is larger than PMT_TOTAL_CLUSTER_NUM(%d)", cluster,
-			   PMT_TOTAL_CLUSTER_NUM);
+	ubi_assert(cluster <= PMT_TOTAL_CLUSTER_NUM);
 	if (!PMT_INDICATOR_IS_INCACHE(param->u4PMTIndicator[cluster])) {	/* cluster is not in cache */
 #ifdef PROFILE
 		start_time = getnstimenow();
 #endif				/* PROFILE */
-		/* j = 1;        // Temporary */
 		for (i = 0; i < PMT_CACHE_NUM; i++) {
 			if (param->i4CurrentPMTClusterInCache[i] == 0xFFFFFFFF)
 				break;
-			if (param->i4CurrentPMTClusterInCache[i] > PMT_TOTAL_CLUSTER_NUM)
-				mt_ftl_err(dev,
-					   "param->i4CurrentPMTClusterInCache[%d](%d) is larger than PMT_TOTAL_CLUSTER_NUM(%d)"
-					   , i, param->i4CurrentPMTClusterInCache[i], PMT_TOTAL_CLUSTER_NUM);
-			if (!PMT_INDICATOR_IS_INCACHE
-			    (param->u4PMTIndicator[param->i4CurrentPMTClusterInCache[i]])) {
+			ubi_assert(param->i4CurrentPMTClusterInCache[i] <= PMT_TOTAL_CLUSTER_NUM);
+			if (!PMT_INDICATOR_IS_INCACHE(param->u4PMTIndicator[param->i4CurrentPMTClusterInCache[i]])) {
+				/* Cluster download PMT CLUSTER cache, but i4CurrentPMTClusterInCache not to update */
 				mt_ftl_err(dev, "i4CurrentPMTClusterInCache (%d) is not in cache",
 					   param->i4CurrentPMTClusterInCache[i]);
+				dump_stack();
 				return MT_FTL_FAIL;
 			}
 			if (!PMT_INDICATOR_IS_DIRTY
@@ -1573,7 +1407,7 @@ int mt_ftl_updatePMT(struct mt_ftl_blk *dev, int cluster, int sec_offset, int le
 		if (param->i4CurrentPMTClusterInCache[i] != 0xFFFFFFFF) {
 			PMT_INDICATOR_RESET_INCACHE(param->u4PMTIndicator
 						    [param->i4CurrentPMTClusterInCache[i]]);
-			mt_ftl_err(dev, "Reset u4PMTIndicator[%d] = 0x%x",
+			mt_ftl_err(dev, "Reset i(%d) u4PMTIndicator[%d] = 0x%x", i,
 				   param->i4CurrentPMTClusterInCache[i],
 				   param->u4PMTIndicator[param->i4CurrentPMTClusterInCache[i]]);
 			param->i4CurrentPMTClusterInCache[i] = 0xFFFFFFFF;
@@ -1631,12 +1465,9 @@ int mt_ftl_updatePMT(struct mt_ftl_blk *dev, int cluster, int sec_offset, int le
 		return ret;
 	}
 
+	ubi_assert(i < PMT_CACHE_NUM);
+	ubi_assert(sec_offset < PM_PER_NANDPAGE);
 
-	if (i >= PMT_CACHE_NUM)
-		mt_ftl_err(dev, "i(%d) is larger than PMT_CACHE_NUM(%d)", i, PMT_CACHE_NUM);
-	if (sec_offset >= PM_PER_NANDPAGE)
-		mt_ftl_err(dev, "sec_offset(%d) is larger than PM_PER_NANDPAGE(%d)", sec_offset,
-			   PM_PER_NANDPAGE);
 	pmt = &param->u4PMTCache[i * PM_PER_NANDPAGE + sec_offset];
 	meta_pmt = &param->u4MetaPMTCache[i * PM_PER_NANDPAGE + sec_offset];
 
@@ -1645,9 +1476,7 @@ int mt_ftl_updatePMT(struct mt_ftl_blk *dev, int cluster, int sec_offset, int le
 		/* BIT_UPDATE_FSPAGE(param->u4BIT[PMT_GET_BLOCK(*pmt)]); */
 		old_leb = PMT_GET_BLOCK(*pmt);
 		old_data_size = PMT_GET_DATASIZE(*meta_pmt);
-		if (old_leb >= NAND_TOTAL_BLOCK_NUM)
-			mt_ftl_err(dev, "old_leb(%d) is larger than NAND_TOTAL_BLOCK_NUM(%d)",
-				   old_leb, NAND_TOTAL_BLOCK_NUM);
+		ubi_assert(old_leb < NAND_TOTAL_BLOCK_NUM);
 		BIT_UPDATE(param->u4BIT[old_leb], old_data_size);
 		if (old_data_size == 0) {
 			mt_ftl_err(dev, "pmt = 0x%x, meta_pmt = 0x%x, u4PMTIndicator[%d] = 0x%x",
@@ -1681,24 +1510,20 @@ int mt_ftl_updatePMT(struct mt_ftl_blk *dev, int cluster, int sec_offset, int le
 int mt_ftl_write(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int len)
 {
 	int ret = MT_FTL_SUCCESS;
-	int leb = 0;
-	int page = 0;
+	int leb = 0, page = 0;
 	unsigned int cluster = 0, sec_offset = 0;
 	int cache_num = 0;
 	int *meta_pmt = NULL;
 	unsigned int cmpr_len = 0;
 	unsigned int data_offset = 0;
 	unsigned int total_consumed_size = 0;
-	/* unsigned int *tmpbuffer;	Temporary */
 	/* struct ubi_volume_desc *desc = dev->desc; */
 	struct mt_ftl_param *param = dev->param;
 
 #ifdef PROFILE
 	unsigned long start_time = 0, end_time = 0;
 	unsigned long start_time_all = 0, end_time_all = 0;
-#endif				/* PROFILE */
 
-#ifdef PROFILE
 	start_time = getnstimenow();
 	start_time_all = getnstimenow();
 #endif				/* PROFILE */
@@ -1762,10 +1587,6 @@ int mt_ftl_write(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, in
 	leb = PMT_LEB_PAGE_INDICATOR_GET_BLOCK(param->u4NextLebPageIndicator);
 	page = PMT_LEB_PAGE_INDICATOR_GET_PAGE(param->u4NextLebPageIndicator);
 
-	/*if (page >= 252)
-	   mt_ftl_err(dev, "u4NextLebPageIndicator = 0x%x, leb = %d, page = %d",
-	   param->u4NextLebPageIndicator, leb, page); */
-
 	param->u4Header[MTKFTL_MAX_DATA_NUM_PER_PAGE - param->u4DataNum - 1].sector =
 	    (sector / (FS_PAGE_SIZE >> 9)) * (FS_PAGE_SIZE >> 9);
 	param->u4Header[MTKFTL_MAX_DATA_NUM_PER_PAGE - param->u4DataNum - 1].offset_len =
@@ -1775,6 +1596,7 @@ int mt_ftl_write(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, in
 		mt_ftl_err(dev, "(data_offset + cmpr_len)(%d) >= NAND_PAGE_SIZE(%d)",
 			   (data_offset + cmpr_len), NAND_PAGE_SIZE);
 		mt_ftl_err(dev, "data_offset = %d, cmpr_len = %d", data_offset, cmpr_len);
+		ubi_assert(false);
 	}
 	memcpy(&param->u1DataCache[data_offset], param->cmpr_page_buffer, cmpr_len);
 	param->u4DataNum++;
@@ -1794,8 +1616,13 @@ int mt_ftl_write(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, in
 
 	cluster = ((unsigned long int)sector / (FS_PAGE_SIZE >> 9)) / PM_PER_NANDPAGE;
 	sec_offset = ((unsigned long int)sector / (FS_PAGE_SIZE >> 9)) & (PM_PER_NANDPAGE - 1);
-	mt_ftl_updatePMT(dev, cluster, sec_offset, leb, page * NAND_PAGE_SIZE, param->u4DataNum - 1,
+	ret = mt_ftl_updatePMT(dev, cluster, sec_offset, leb, page * NAND_PAGE_SIZE, param->u4DataNum - 1,
 			 cmpr_len, 0, 1);
+	if (ret < 0) {
+		mt_ftl_err(dev, "mt_ftl_updatePMT cluster(%d) offset(%d) leb(%d) page(%d) fail\n",
+			cluster, sec_offset, leb, page);
+		return ret;
+	}
 
 #ifdef PROFILE
 	end_time = getnstimenow();
@@ -1808,17 +1635,10 @@ int mt_ftl_write(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, in
 	}
 	start_time = getnstimenow();
 #endif				/* PROFILE */
-
-	if (cluster > PMT_TOTAL_CLUSTER_NUM)
-		mt_ftl_err(dev, "cluster(%d) is larger than PMT_TOTAL_CLUSTER_NUM(%d)", cluster,
-			   PMT_TOTAL_CLUSTER_NUM);
+	ubi_assert(cluster <= PMT_TOTAL_CLUSTER_NUM);
 	cache_num = PMT_INDICATOR_CACHE_BUF_NUM(param->u4PMTIndicator[cluster]);
-	if (cache_num >= PMT_CACHE_NUM)
-		mt_ftl_err(dev, "cache_num(%d) is larger than PMT_CACHE_NUM(%d)", cache_num,
-			   PMT_CACHE_NUM);
-	if (sec_offset >= PM_PER_NANDPAGE)
-		mt_ftl_err(dev, "sec_offset(%d) is larger than PM_PER_NANDPAGE(%d)", sec_offset,
-			   PM_PER_NANDPAGE);
+	ubi_assert(cache_num < PMT_CACHE_NUM);
+	ubi_assert(sec_offset < PM_PER_NANDPAGE);
 	meta_pmt = &param->u4MetaPMTCache[cache_num * PM_PER_NANDPAGE + sec_offset];
 	if (param->u4DataNum != 0)
 		PMT_SET_DATACACHE_BUF_NUM(*meta_pmt, 0);	/* Data is in cache 0 */
@@ -1857,21 +1677,14 @@ int mt_ftl_write(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, in
 int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int len)
 {
 	int ret = MT_FTL_SUCCESS;
-	int leb = 0;
-	int page = 0;
-	int part = 0;
-	int pnum = 0;
+	int leb = 0, page = 0, part = 0;
 	unsigned int cluster = 0, sec_offset = 0;
 	int pmt = 0, meta_pmt = 0;
 	int offset_in_pagebuf = 0;
-	int pmt_block = 0;
-	int pmt_page = 0;
-	int pnum_pmt = 0;
-	int cache_num = 0;
-	int data_cache_num = 0;
+	int pmt_block = 0, pmt_page = 0;
+	int cache_num = 0, data_cache_num = 0;
 	unsigned int decmpr_len = 0;
-	unsigned int data_num = 0;
-	unsigned int data_num_offset = 0;
+	unsigned int data_num = 0, data_num_offset = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
 	unsigned int data_hdr_offset =
@@ -1883,9 +1696,7 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 	unsigned long start_time = 0, end_time = 0;
 	unsigned long start_time_all = 0, end_time_all = 0;
 	unsigned long start_time_test = 0, end_time_test = 0;	/* Temporary */
-#endif				/* PROFILE */
 
-#ifdef PROFILE
 	start_time = getnstimenow();
 	start_time_all = getnstimenow();
 #endif				/* PROFILE */
@@ -1893,14 +1704,9 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 	cluster = ((unsigned long int)sector / (FS_PAGE_SIZE >> 9)) / PM_PER_NANDPAGE;
 	sec_offset = ((unsigned long int)sector / (FS_PAGE_SIZE >> 9)) & (PM_PER_NANDPAGE - 1);
 
-	if (sec_offset > PM_PER_NANDPAGE)
-		mt_ftl_err(dev, "sec_offset(%d) is larger than PM_PER_NANDPAGE(%d)", sec_offset,
-			   PM_PER_NANDPAGE);
-
+	ubi_assert(sec_offset <= PM_PER_NANDPAGE);
+	ubi_assert(cluster <= PMT_TOTAL_CLUSTER_NUM);
 	/* Download corresponding PMT to cache */
-	if (cluster > PMT_TOTAL_CLUSTER_NUM)
-		mt_ftl_err(dev, "cluster(%d) is larger than PMT_TOTAL_CLUSTER_NUM(%d)", cluster,
-			   PMT_TOTAL_CLUSTER_NUM);
 	if (PMT_INDICATOR_IS_INCACHE(param->u4PMTIndicator[cluster])) {
 		cache_num = PMT_INDICATOR_CACHE_BUF_NUM(param->u4PMTIndicator[cluster]);
 		if (cache_num >= PMT_CACHE_NUM)
@@ -1911,16 +1717,16 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 				   sec_offset, PM_PER_NANDPAGE);
 		pmt = param->u4PMTCache[cache_num * PM_PER_NANDPAGE + sec_offset];
 		meta_pmt = param->u4MetaPMTCache[cache_num * PM_PER_NANDPAGE + sec_offset];
-		/*mt_ftl_err(dev, "cluster is in write cache, cache_num = %d, pmt = 0x%x,
-		   meta_pmt = 0x%x, u4PMTIndicator[%d] = 0x%x",
-		   cache_num, pmt, meta_pmt, cluster, param->u4PMTIndicator[cluster]);  // Temporary */
+		/*mt_ftl_err(dev,
+		  "cluster is in write cache, cache_num = %d, pmt = 0x%x, meta_pmt = 0x%x, u4PMTIndicator[%d] = 0x%x",
+		  cache_num, pmt, meta_pmt, cluster, param->u4PMTIndicator[cluster]);  Temporary */
 	} else if (cluster == param->i4CurrentReadPMTClusterInCache) {
-		/* mt_ftl_err(dev, "cluster == i4CurrentReadPMTClusterInCache (%d)",
+		/*mt_ftl_err(dev, "cluster == i4CurrentReadPMTClusterInCache (%d)",
 		   param->i4CurrentReadPMTClusterInCache);  */
 		pmt = param->u4ReadPMTCache[sec_offset];
 		meta_pmt = param->u4ReadMetaPMTCache[sec_offset];
-		/* mt_ftl_err(dev, "cluster(%d) is in read cache, pmt = 0x%x, meta_pmt = 0x%x, sec_offset = %d",
-		   cluster, pmt, meta_pmt, sec_offset); // Temporary */
+		mt_ftl_err(dev, "cluster==(%d) is in read cache, pmt = 0x%x, meta_pmt = 0x%x, sec_offset = %d",
+		   cluster, pmt, meta_pmt, sec_offset);
 	} else {
 		pmt_block = PMT_INDICATOR_GET_BLOCK(param->u4PMTIndicator[cluster]);
 		pmt_page = PMT_INDICATOR_GET_PAGE(param->u4PMTIndicator[cluster]);
@@ -1930,7 +1736,6 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 			mt_ftl_err(dev, "leb%d is unmapped", pmt_block);
 			return MT_FTL_FAIL;
 		}
-		pnum_pmt = desc->vol->eba_tbl[pmt_block];
 
 		if (unlikely(pmt_block == 0)) {
 			mt_ftl_err(dev, "pmt_block == 0");
@@ -1940,29 +1745,27 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 			param->i4CurrentReadPMTClusterInCache = 0xFFFFFFFF;
 		} else {
 			/* mt_ftl_err(dev, "Get PMT of cluster (%d)", cluster); */
-			ret = ubi_io_read(desc->vol->ubi, param->u4ReadPMTCache, pnum_pmt,
-					  pmt_page * NAND_PAGE_SIZE + desc->vol->ubi->leb_start,
-					  NAND_PAGE_SIZE);
+			ret = ubi_leb_read(desc, pmt_block, (char *)param->u4ReadPMTCache, pmt_page * NAND_PAGE_SIZE,
+				NAND_PAGE_SIZE, 0);
 			if (ret && ret != UBI_IO_BITFLIPS) {
 				mt_ftl_err(dev, "u4CurrentPMTLebPageIndicator = 0x%x",
 					   param->u4CurrentPMTLebPageIndicator);
 				mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x", cluster,
 					   param->u4PMTIndicator[cluster]);
 				mt_ftl_err(dev,
-					   "[GET PMT] ubi_io_read PMT failed, leb%d, offset=%d, ret = %d",
+					   "[GET PMT]ubi_leb_read PMT failed, leb%d, offset=%d, ret = %d",
 					   pmt_block, pmt_page * NAND_PAGE_SIZE, ret);
 				return MT_FTL_FAIL;
 			}
-			ret = ubi_io_read(desc->vol->ubi, param->u4ReadMetaPMTCache, pnum_pmt,
-					  (pmt_page + 1) * NAND_PAGE_SIZE +
-					  desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+			ret = ubi_leb_read(desc, pmt_block, (char *)param->u4ReadMetaPMTCache,
+				(pmt_page + 1) * NAND_PAGE_SIZE, NAND_PAGE_SIZE, 0);
 			if (ret && ret != UBI_IO_BITFLIPS) {
 				mt_ftl_err(dev, "u4CurrentPMTLebPageIndicator = 0x%x",
 					   param->u4CurrentPMTLebPageIndicator);
 				mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x", cluster,
 					   param->u4PMTIndicator[cluster]);
 				mt_ftl_err(dev,
-					   "[GET PMT] ubi_io_read Meta PMT failed, leb%d, offset=%d, ret = %d",
+					   "[GET PMT]ubi_leb_read Meta PMT failed, leb%d, offset=%d, ret = %d",
 					   pmt_block, (pmt_page + 1) * NAND_PAGE_SIZE, ret);
 				return MT_FTL_FAIL;
 			}
@@ -1970,9 +1773,10 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 		}
 		pmt = param->u4ReadPMTCache[sec_offset];
 		meta_pmt = param->u4ReadMetaPMTCache[sec_offset];
-		/*mt_ftl_err(dev, "Read cluster(%d) to read cache, sec_offset = %d, pmt = 0x%x,
-		   meta_pmt = 0x%x, u4PMTIndicator[%d] = 0x%x",
-		   luster, sec_offset, pmt, meta_pmt, cluster, param->u4PMTIndicator[cluster]);        // Temporary */
+		/* mt_ftl_err(dev,
+		"Read cluster(%d) to read cache, sec_offset = %d, pmt = 0x%x, meta_pmt = 0x%x,
+		u4PMTIndicator[%d] = 0x%x",cluster, sec_offset, pmt, meta_pmt, cluster,
+		param->u4PMTIndicator[cluster]);         Temporary */
 	}
 
 #ifdef PROFILE
@@ -2018,7 +1822,7 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 	}
 
 	if (PMT_IS_DATA_INCACHE(meta_pmt)) {
-		/* mt_ftl_err(dev, "[INFO] Use data in cache"); */
+		mt_ftl_err(dev, "[INFO] Use data in cache");
 		data_cache_num = PMT_GET_DATACACHENUM(meta_pmt);	/* Not used yet */
 		header_buffer = &param->u4Header[MTKFTL_MAX_DATA_NUM_PER_PAGE - part - 1];
 		offset_in_pagebuf = header_buffer->offset_len >> 16;
@@ -2032,50 +1836,19 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 		}
 		page_buffer = &param->u1DataCache[offset_in_pagebuf];
 	} else {
-		/* mt_ftl_err(dev, "[INFO] read data from NAND"); */
-		pnum = desc->vol->eba_tbl[leb];
-#if 1
 #ifdef PROFILE
 		start_time_test = getnstimenow();
 #endif				/* PROFILE */
 
-		data_num_offset = desc->vol->ubi->leb_start + (page + 1) * NAND_PAGE_SIZE - 4;
-#if 0
-		ret = ubi_io_read(desc->vol->ubi, &data_num, pnum, data_num_offset, 4);
-		if (ret && ret != UBI_IO_BITFLIPS) {
-			mt_ftl_err(dev,
-				   "ubi_io_read data_num failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-				   leb, pnum, NAND_PAGE_SIZE - 4, ret);
-			return MT_FTL_FAIL;
-		}
-#ifdef PROFILE
-		end_time_test = getnstimenow();
-		if (end_time_test >= start_time_test)
-			profile_time[MT_FTL_PROFILE_READ_DATATOCACHE_TEST1] +=
-			    (end_time_test - start_time_test) / 1000;
-		else {
-			mt_ftl_err(dev, "end_time = %lu, start_time = %lu", end_time_test,
-				   start_time_test);
-			profile_time[MT_FTL_PROFILE_READ_DATATOCACHE_TEST1] +=
-			    (end_time_test + 0xFFFFFFFF - start_time_test) / 1000;
-		}
-		start_time_test = getnstimenow();
-#endif				/* PROFILE */
-
-		data_hdr_offset =
-		    data_num_offset - (data_num - part) * sizeof(struct mt_ftl_data_header);
-#else
+		data_num_offset = (page + 1) * NAND_PAGE_SIZE - 4;
 		data_hdr_offset = data_num_offset - (part + 1) * sizeof(struct mt_ftl_data_header);
-#endif
-		/*mt_ftl_err(dev, "data_num = %d, data_hdr_offset = %d, u4ReadHeader = 0x%x",
-		   data_num, data_hdr_offset, (unsigned int)param->u4ReadHeader);    // Temporary */
-		ret =
-		    ubi_io_read(desc->vol->ubi, param->u4ReadHeader, pnum, data_hdr_offset,
-				sizeof(struct mt_ftl_data_header));
+
+		ret = ubi_leb_read(desc, leb, (char *)param->u4ReadHeader, data_hdr_offset,
+				sizeof(struct mt_ftl_data_header), 0);
 		if (ret && ret != UBI_IO_BITFLIPS) {
 			mt_ftl_err(dev,
-				   "ubi_io_read data header failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-				   leb, pnum, data_hdr_offset, ret);
+				   "ubi_leb_read data header failed, leb = %d, offset=%d ret = 0x%x",
+				   leb, data_hdr_offset, ret);
 			return MT_FTL_FAIL;
 		}
 
@@ -2095,20 +1868,13 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 		start_time_test = getnstimenow();
 #endif				/* PROFILE */
 
-		offset_in_pagebuf =
-		    page * NAND_PAGE_SIZE + desc->vol->ubi->leb_start +
-		    (header_buffer->offset_len >> 16);
-		/*mt_ftl_err(dev, "offset_in_pagebuf = %d, general_page_buffer = 0x%x,
-		  (header_buffer->offset_len & 0xFFFF) = %d",
-		   offset_in_pagebuf, (unsigned int)param->general_page_buffer,
-		   (header_buffer->offset_len & 0xFFFF));  // Temporary */
-		ret =
-		    ubi_io_read(desc->vol->ubi, param->general_page_buffer, pnum, offset_in_pagebuf,
-				(header_buffer->offset_len & 0xFFFF));
+		offset_in_pagebuf = page * NAND_PAGE_SIZE + (header_buffer->offset_len >> 16);
+		ret = ubi_leb_read(desc, leb, (char *)param->general_page_buffer, offset_in_pagebuf,
+				(header_buffer->offset_len & 0xFFFF), 0);
 		if (ret && ret != UBI_IO_BITFLIPS) {
 			mt_ftl_err(dev,
-				   "ubi_io_read data failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-				   leb, pnum, offset_in_pagebuf, ret);
+				   "ubi_leb_read data failed, leb = %d, offset=%d ret = 0x%x",
+				   leb, offset_in_pagebuf, ret);
 			return MT_FTL_FAIL;
 		}
 		page_buffer = (unsigned char *)param->general_page_buffer;
@@ -2125,24 +1891,6 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 			    (end_time_test + 0xFFFFFFFF - start_time_test) / 1000;
 		}
 #endif				/* PROFILE */
-#else
-		ret = ubi_io_read(desc->vol->ubi, param->general_page_buffer, pnum,
-				  page * NAND_PAGE_SIZE + desc->vol->ubi->leb_start,
-				  NAND_PAGE_SIZE);
-		if (ret && ret != UBI_IO_BITFLIPS) {
-			mt_ftl_err(dev,
-				   "ubi_io_read failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-				   leb, pnum, page * NAND_PAGE_SIZE, ret);
-			return MT_FTL_FAIL;
-		}
-		page_buffer_c = (unsigned char *)param->general_page_buffer;
-		data_num = PAGE_GET_DATA_NUM(param->general_page_buffer[(NAND_PAGE_SIZE >> 2) - 1]);
-		data_hdr_offset =
-		    NAND_PAGE_SIZE - ((data_num - part) * sizeof(struct mt_ftl_data_header) + 4);
-		header_buffer = (struct mt_ftl_data_header *)(&page_buffer_c[data_hdr_offset]);
-		offset_in_pagebuf = (header_buffer->offset_len >> 16);
-		page_buffer = &page_buffer_c[offset_in_pagebuf];
-#endif
 	}
 
 #ifdef PROFILE
@@ -2167,13 +1915,11 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 			memset((void *)buffer, 0xFF, len);
 			return MT_FTL_SUCCESS;
 		}
-		ret =
-		    ubi_io_read(desc->vol->ubi, param->tmp_page_buffer, pnum,
-				desc->vol->ubi->leb_start + page * NAND_PAGE_SIZE, NAND_PAGE_SIZE);
+		ret = ubi_leb_read(desc, leb, (char *)param->tmp_page_buffer, page * NAND_PAGE_SIZE, NAND_PAGE_SIZE, 0);
 		if (ret && ret != UBI_IO_BITFLIPS) {
 			mt_ftl_err(dev,
-				   "ubi_io_read data_num failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-				   leb, pnum, 0, ret);
+				   "ubi_leb_read data_num failed, leb = %d, offset=%d ret = 0x%x",
+				   leb, 0, ret);
 			return MT_FTL_FAIL;
 		}
 		data_num = PAGE_GET_DATA_NUM(param->tmp_page_buffer[(NAND_PAGE_SIZE >> 2) - 1]);
@@ -2184,11 +1930,11 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 		mt_ftl_err(dev, "page_buffer[0] = 0x%x, u4PMTIndicator[%d] = 0x%x, data_num = %d",
 			   page_buffer[0], cluster, param->u4PMTIndicator[cluster], data_num);
 		mt_ftl_err(dev,
-			   "pmt = 0x%x, meta_pmt = 0x%x, leb = %d, page = %d, part = %d, pnum = %d",
-			   pmt, meta_pmt, leb, page, part, pnum);
+			   "pmt = 0x%x, meta_pmt = 0x%x, leb = %d, page = %d, part = %d",
+			   pmt, meta_pmt, leb, page, part);
 		mt_ftl_err(dev, "data_num_offset = %d, data_hdr_offset = %d", data_num_offset,
 			   data_hdr_offset);
-		mt_ftl_err(dev, "0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x",
+		mt_ftl_err(dev, "0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x",
 			   param->tmp_page_buffer[(NAND_PAGE_SIZE >> 2) - 1],
 			   param->tmp_page_buffer[(NAND_PAGE_SIZE >> 2) - 2],
 			   param->tmp_page_buffer[(NAND_PAGE_SIZE >> 2) - 3],
@@ -2196,7 +1942,8 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 			   param->tmp_page_buffer[(NAND_PAGE_SIZE >> 2) - 5],
 			   param->tmp_page_buffer[(NAND_PAGE_SIZE >> 2) - 6],
 			   param->tmp_page_buffer[(NAND_PAGE_SIZE >> 2) - 7],
-			   param->tmp_page_buffer[(NAND_PAGE_SIZE >> 2) - 8]);
+			   param->tmp_page_buffer[(NAND_PAGE_SIZE >> 2) - 8],
+			   param->tmp_page_buffer[(NAND_PAGE_SIZE >> 2) - 9]);
 		/*=====================Debug==========================*/
 		/* Calculate clusters and sec_offsets */
 		cluster =
@@ -2208,20 +1955,14 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 		mt_ftl_err(dev, "cluster = %d", cluster);
 		mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x", cluster,
 			   param->u4PMTIndicator[cluster]);
-		if (sec_offset > PM_PER_NANDPAGE)
-			mt_ftl_err(dev, "sec_offset(%d) is larger than PM_PER_NANDPAGE(%d)",
-				   sec_offset, PM_PER_NANDPAGE);
+		ubi_assert(sec_offset <= PM_PER_NANDPAGE);
 
 		/* Download PMT to read PMT cache */
 		/* Don't use mt_ftl_updatePMT, that will cause PMT indicator mixed in replay */
 		if (PMT_INDICATOR_IS_INCACHE(param->u4PMTIndicator[cluster])) {
 			cache_num = PMT_INDICATOR_CACHE_BUF_NUM(param->u4PMTIndicator[cluster]);
-			if (cache_num >= PMT_CACHE_NUM)
-				mt_ftl_err(dev, "cache_num(%d) is larger than PMT_CACHE_NUM(%d)",
-					   cache_num, PMT_CACHE_NUM);
-			if (sec_offset >= PM_PER_NANDPAGE)
-				mt_ftl_err(dev, "sec_offset(%d) is larger than PM_PER_NANDPAGE(%d)",
-					   sec_offset, PM_PER_NANDPAGE);
+			ubi_assert(cache_num < PMT_CACHE_NUM);
+			ubi_assert(sec_offset < PM_PER_NANDPAGE);
 			pmt = param->u4PMTCache[cache_num * PM_PER_NANDPAGE + sec_offset];
 			meta_pmt = param->u4MetaPMTCache[cache_num * PM_PER_NANDPAGE + sec_offset];
 			/*mt_ftl_err(dev, "[Debug] cluster is in write cache, cache_num = %d, pmt = 0x%x,
@@ -2236,8 +1977,6 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 			pmt_block = PMT_INDICATOR_GET_BLOCK(param->u4PMTIndicator[cluster]);
 			pmt_page = PMT_INDICATOR_GET_PAGE(param->u4PMTIndicator[cluster]);
 
-			pnum_pmt = desc->vol->eba_tbl[pmt_block];
-
 			if (unlikely(pmt_block == 0)) {
 				mt_ftl_err(dev, "pmt_block == 0");
 				/* memset(param->u4ReadPMTCache, 0xFF, PM_PER_NANDPAGE * sizeof(unsigned int)); */
@@ -2245,35 +1984,28 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 				meta_pmt = 0xFFFFFFFF;
 			} else {
 				mt_ftl_err(dev, "Get PMT of cluster (%d)", cluster);
-				ret = ubi_io_read(desc->vol->ubi, param->u4ReadPMTCache, pnum_pmt,
-						  pmt_page * NAND_PAGE_SIZE +
-						  desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+				ret = ubi_leb_read(desc, pmt_block, (char *)param->u4ReadPMTCache,
+						pmt_page * NAND_PAGE_SIZE, NAND_PAGE_SIZE, 0);
 				if (ret && ret != UBI_IO_BITFLIPS) {
 					mt_ftl_err(dev, "u4CurrentPMTLebPageIndicator = 0x%x",
 						   param->u4CurrentPMTLebPageIndicator);
 					mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x", cluster,
 						   param->u4PMTIndicator[cluster]);
 					mt_ftl_err(dev,
-						   "[GET PMT] ubi_io_read PMT failed, leb%d, offset=%d, ret = 0x%x",
+						   "[GET PMT]ubi_leb_read PMT failed, leb%d, offset=%d, ret = 0x%x",
 						   pmt_block, pmt_page * NAND_PAGE_SIZE, ret);
-					/*for (j = 0; j < PMT_TOTAL_CLUSTER_NUM; j++)
-					   mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x", j, param->u4PMTIndicator[j]); */
 					return MT_FTL_FAIL;
 				}
-				ret =
-				    ubi_io_read(desc->vol->ubi, param->u4ReadMetaPMTCache, pnum_pmt,
-						(pmt_page + 1) * NAND_PAGE_SIZE +
-						desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+				ret = ubi_leb_read(desc, pmt_block, (char *)param->u4ReadMetaPMTCache,
+					(pmt_page + 1) * NAND_PAGE_SIZE, NAND_PAGE_SIZE, 0);
 				if (ret && ret != UBI_IO_BITFLIPS) {
 					mt_ftl_err(dev, "u4CurrentPMTLebPageIndicator = 0x%x",
 						   param->u4CurrentPMTLebPageIndicator);
 					mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x", cluster,
 						   param->u4PMTIndicator[cluster]);
 					mt_ftl_err(dev,
-						   "[GET PMT] ubi_io_read Meta PMT failed, leb%d, offset=%d, ret = 0x%x"
+						   "[GET PMT]ubi_leb_read Meta PMT failed, leb%d, offset=%d, ret = 0x%x"
 						   , pmt_block, (pmt_page + 1) * NAND_PAGE_SIZE, ret);
-					/*for (j = 0; j < PMT_TOTAL_CLUSTER_NUM; j++)
-					   mt_ftl_err(dev, "u4PMTIndicator[%d] = 0x%x", j, param->u4PMTIndicator[j]); */
 					return MT_FTL_FAIL;
 				}
 				param->i4CurrentReadPMTClusterInCache = cluster;
@@ -2304,25 +2036,16 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 	start_time = getnstimenow();
 #endif				/* PROFILE */
 
-	/*
-	   //mt_ftl_err(dev, "Decompress");
-	   //offset_in_pagebuf = part * FS_PAGE_SIZE + (sector % FS_PAGE_SIZE);
-	   //offset_in_pagebuf = header_buffer->offset_len >> 16;
-	 */
 	decmpr_len = NAND_PAGE_SIZE;
-	/* mt_ftl_err(dev, "header_buffer = 0x%x, page_buffer = 0x%x",
-	   (unsigned int)header_buffer, (unsigned int)page_buffer);  */
 	ret =
 	    crypto_comp_decompress(param->cc, page_buffer, (header_buffer->offset_len & 0xFFFF),
 				   param->cmpr_page_buffer, &decmpr_len);
 	if (ret) {
-		ret =
-		    ubi_io_read(desc->vol->ubi, param->tmp_page_buffer, pnum,
-				desc->vol->ubi->leb_start + page * NAND_PAGE_SIZE, NAND_PAGE_SIZE);
+		ret = ubi_leb_read(desc, leb, (char *)param->tmp_page_buffer, page * NAND_PAGE_SIZE, NAND_PAGE_SIZE, 0);
 		if (ret && ret != UBI_IO_BITFLIPS) {
 			mt_ftl_err(dev,
-				   "ubi_io_read data_num failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-				   leb, pnum, 0, ret);
+				   "ubi_leb_read data_num failed, leb = %d, offset=%d ret = 0x%x",
+				   leb, 0, ret);
 			return MT_FTL_FAIL;
 		}
 		mt_ftl_err(dev, "part = %d", part);
@@ -2380,13 +2103,6 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 	}
 	memcpy((void *)buffer, &param->cmpr_page_buffer[offset_in_pagebuf], len);
 
-	/*for (i = 0; i < len; i++) {
-	   if (buffer[i] != 0x5a) {
-	   mt_ftl_err(dev, "sector = %d, buffer[%d] = 0x%x", (long unsigned int)sector, i, buffer[i]);
-	   break;
-	   }
-	   } */
-
 #ifdef PROFILE
 	end_time = getnstimenow();
 	end_time_all = getnstimenow();
@@ -2412,15 +2128,11 @@ int mt_ftl_read(struct mt_ftl_blk *dev, const char *buffer, sector_t sector, int
 
 int mt_ftl_replay_single_block(struct mt_ftl_blk *dev, int leb, int page)
 {
-	int ret = MT_FTL_SUCCESS;
+	int ret = MT_FTL_SUCCESS, i = 0;
 	int offset = 0;
-	int pnum = 0;
-	int i = 0;
 	sector_t sector = 0;
 	int cluster = 0, sec_offset = 0;
-	/* sector_t andSec = NAND_DEFAULT_VALUE; */
-	unsigned int data_num = 0;
-	unsigned int data_hdr_offset = 0;
+	unsigned int data_num = 0, data_hdr_offset = 0;
 	struct mt_ftl_data_header *header_buffer = NULL;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
@@ -2431,17 +2143,14 @@ int mt_ftl_replay_single_block(struct mt_ftl_blk *dev, int leb, int page)
 		mt_ftl_err(dev, "leb%d is unmapped", leb);
 		return MT_FTL_FAIL;
 	}
-
-	pnum = desc->vol->eba_tbl[leb];
 	/* Check if the block is PMT block
 	 * If yes, check the correctness of param->u4CurrentPMTLebPageIndicator
 	 */
 	offset = page * NAND_PAGE_SIZE;
-	ret = ubi_io_read(desc->vol->ubi, param->general_page_buffer, pnum,
-			  offset + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+	ret = ubi_leb_read(desc, leb, (char *)param->general_page_buffer, offset, NAND_PAGE_SIZE, 0);
 	if (ret && ret != UBI_IO_BITFLIPS) {
-		mt_ftl_err(dev, "ubi_io_read failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-			   leb, pnum, offset, ret);
+		mt_ftl_err(dev, "ubi_leb_read failed, leb = %d, offset=%d ret = 0x%x",
+			   leb, offset, ret);
 		return MT_FTL_FAIL;
 	}
 
@@ -2464,12 +2173,6 @@ int mt_ftl_replay_single_block(struct mt_ftl_blk *dev, int leb, int page)
 		 * check the correctness of param->u4NextLebPageIndicator &
 		 * if param->u4NextLebPageIndicator is full, need to call get free block & page function
 		 */
-		/*if ((PMT_LEB_PAGE_INDICATOR_GET_BLOCK(param->u4NextLebPageIndicator) == leb) &&
-		   (PMT_LEB_PAGE_INDICATOR_GET_PAGE(param->u4NextLebPageIndicator) != (offset / NAND_PAGE_SIZE))) {
-		   mt_ftl_err(dev, "u4NextLebPageIndicator (0x%x) not match to replay page (0x%x)",
-		   param->u4NextLebPageIndicator, offset / NAND_PAGE_SIZE);
-		   return MT_FTL_FAIL;
-		   } */
 
 		/* Update param->u4PMTCache and param->u4PMTIndicator and param->u4BIT */
 		/* If the page is copied in GC, that means the page should not be replayed */
@@ -2512,12 +2215,11 @@ int mt_ftl_replay_single_block(struct mt_ftl_blk *dev, int leb, int page)
 		if (offset > max_offset_per_block)
 			break;
 
-		ret = ubi_io_read(desc->vol->ubi, param->general_page_buffer, pnum,
-				  offset + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+		ret = ubi_leb_read(desc, leb, (char *)param->general_page_buffer, offset, NAND_PAGE_SIZE, 0);
 		if (ret && ret != UBI_IO_BITFLIPS) {
 			mt_ftl_err(dev,
-				   "ubi_io_read failed, leb = %d, pnum = %d, offset=%d ret = 0x%x",
-				   leb, pnum, offset, ret);
+				   "ubi_leb_read failed, leb = %d, offset=%d ret = 0x%x",
+				   leb, offset, ret);
 			return MT_FTL_FAIL;
 		}
 
@@ -2534,24 +2236,10 @@ int mt_ftl_replay_single_block(struct mt_ftl_blk *dev, int leb, int page)
 
 		if (data_num == 0x7FFFFFFF)
 			break;
-
-		/*mt_ftl_err(dev, "data_num = %d, data_hdr_offset = %d, header_buffer = 0x%x,
-		  general_page_buffer = 0x%x",
-		   data_num, data_hdr_offset, (unsigned int)header_buffer, (unsigned int)param->general_page_buffer);
-		 */
-		/* mt_ftl_err(dev, "leb = %d, page = %d, data_num = %d",
-		   leb, offset / NAND_PAGE_SIZE, data_num);   */
-		/*
-		andSec = NAND_DEFAULT_VALUE;
-		for (i = 0; i < data_num; i++)
-			andSec &= header_buffer[i].sector;
-		if (andSec == NAND_DEFAULT_VALUE)
-			mt_ftl_err(dev, "all header sectors are 0xFFFFFFFF");	// Temporary
-		 */
 	}
 
-	mt_ftl_err(dev, "offset = %d at the end, max_offset_per_block = %d", offset,
-		   max_offset_per_block);
+	/* mt_ftl_err(dev, "offset = %d at the end, max_offset_per_block = %d", offset,
+		   max_offset_per_block); */
 
 	return ret;
 }
@@ -2559,10 +2247,7 @@ int mt_ftl_replay_single_block(struct mt_ftl_blk *dev, int leb, int page)
 int mt_ftl_replay(struct mt_ftl_blk *dev)
 {
 	int ret = MT_FTL_SUCCESS;
-	int leb = 0;
-	int page = 0;
-	int pnum = 0;
-	int offset = 0;
+	int leb = 0, page = 0, offset = 0;
 	int nextleb_in_replay = MT_INVALID_BLOCKPAGE;
 
 	struct ubi_volume_desc *desc = dev->desc;
@@ -2572,7 +2257,6 @@ int mt_ftl_replay(struct mt_ftl_blk *dev)
 	/* const int page_num_per_block = desc->vol->ubi->leb_size / NAND_PAGE_SIZE; */
 
 	param->replay_blk_index = 0;
-
 	/* Replay leb/page of param->u4NextLebPageIndicator */
 	leb = PMT_LEB_PAGE_INDICATOR_GET_BLOCK(param->u4NextLebPageIndicator);
 	page = PMT_LEB_PAGE_INDICATOR_GET_PAGE(param->u4NextLebPageIndicator);
@@ -2589,13 +2273,9 @@ int mt_ftl_replay(struct mt_ftl_blk *dev)
 		mt_ftl_err(dev, "leb%d is unmapped", REPLAY_BLOCK);
 		return MT_FTL_FAIL;
 	}
-
-	pnum = desc->vol->eba_tbl[REPLAY_BLOCK];
-
-	ret = ubi_io_read(desc->vol->ubi, param->replay_page_buffer, pnum,
-			  offset + desc->vol->ubi->leb_start, sizeof(unsigned int) * 2);
+	ret = ubi_leb_read(desc, REPLAY_BLOCK, (char *)param->replay_page_buffer, offset, sizeof(unsigned int) * 2, 0);
 	if (ret && ret != UBI_IO_BITFLIPS) {
-		mt_ftl_err(dev, "ubi_io_read (leb%d, offset=%d) failed, ret = 0x%x",
+		mt_ftl_err(dev, "ubi_leb_read (leb%d, offset=%d) failed, ret = 0x%x",
 			   REPLAY_BLOCK, offset, ret);
 		return MT_FTL_FAIL;
 	}
@@ -2609,11 +2289,10 @@ int mt_ftl_replay(struct mt_ftl_blk *dev)
 		 * Get the next leb to replay */
 		if (leb == param->replay_page_buffer[1]) {
 			offset += NAND_PAGE_SIZE;
-			ret = ubi_io_read(desc->vol->ubi, param->replay_page_buffer, pnum,
-					  offset + desc->vol->ubi->leb_start,
-					  sizeof(unsigned int) * 2);
+			ret = ubi_leb_read(desc, REPLAY_BLOCK, (char *)param->replay_page_buffer, offset,
+					  sizeof(unsigned int) * 2, 0);
 			if (ret && ret != UBI_IO_BITFLIPS) {
-				mt_ftl_err(dev, "ubi_io_read (leb%d, offset=%d) failed, ret = 0x%x",
+				mt_ftl_err(dev, "ubi_leb_read (leb%d, offset=%d) failed, ret = 0x%x",
 					   REPLAY_BLOCK, offset, ret);
 				return MT_FTL_FAIL;
 			}
@@ -2654,10 +2333,10 @@ int mt_ftl_replay(struct mt_ftl_blk *dev)
 		if (offset >= max_offset_per_block)
 			break;
 
-		ret = ubi_io_read(desc->vol->ubi, param->replay_page_buffer, pnum,
-				  offset + desc->vol->ubi->leb_start, sizeof(unsigned int) * 2);
+		ret = ubi_leb_read(desc, REPLAY_BLOCK, (char *)param->replay_page_buffer,
+				offset, sizeof(unsigned int) * 2, 0);
 		if (ret && ret != UBI_IO_BITFLIPS) {
-			mt_ftl_err(dev, "ubi_io_read (leb%d, offset=%d) failed, ret = 0x%x",
+			mt_ftl_err(dev, "ubi_leb_read (leb%d, offset=%d) failed, ret = 0x%x",
 				   REPLAY_BLOCK, offset, ret);
 			return MT_FTL_FAIL;
 		}
@@ -2679,7 +2358,7 @@ int mt_ftl_replay(struct mt_ftl_blk *dev)
 
 	param->u4NextReplayOffsetIndicator = offset;
 
-	mt_ftl_err(dev, "u4DataNum = %d (Suppose to be 0)", param->u4DataNum);
+	/* mt_ftl_err(dev, "u4DataNum = %d (Suppose to be 0)", param->u4DataNum); */
 
 	return ret;
 }
@@ -2813,7 +2492,6 @@ static int mt_ftl_check_img_reload(struct mt_ftl_blk *dev, int leb)
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
 	int offset = 0;
-	int pnum = 0;
 	const int max_offset_per_block = desc->vol->ubi->leb_size - NAND_PAGE_SIZE;
 
 	ret = ubi_is_mapped(desc, leb);
@@ -2821,14 +2499,10 @@ static int mt_ftl_check_img_reload(struct mt_ftl_blk *dev, int leb)
 		mt_ftl_err(dev, "leb%d is unmapped", leb);
 		return MT_FTL_FAIL;
 	}
-
-	pnum = desc->vol->eba_tbl[leb];
-
 	while (offset <= max_offset_per_block) {
-		ret = ubi_io_read(desc->vol->ubi, param->tmp_page_buffer, pnum,
-				  offset + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+		ret = ubi_leb_read(desc, leb, (char *)param->tmp_page_buffer, offset, NAND_PAGE_SIZE, 0);
 		if (ret && ret != UBI_IO_BITFLIPS) {
-			mt_ftl_err(dev, "ubi_io_read (leb%d, offset=%d) failed, ret = 0x%x",
+			mt_ftl_err(dev, "ubi_leb_read (leb%d, offset=%d) failed, ret = 0x%x",
 				   leb, offset, ret);
 			return MT_FTL_FAIL;
 		}
@@ -2839,27 +2513,21 @@ static int mt_ftl_check_img_reload(struct mt_ftl_blk *dev, int leb)
 		offset += NAND_PAGE_SIZE;
 	}
 
-	mt_ftl_err(dev, "image not reloaded offset = %d", offset);
+	/* mt_ftl_err(dev, "image not reloaded offset = %d", offset); */
 	return 0;
 }
 
 static int mt_ftl_recover_blk(struct mt_ftl_blk *dev)
 {
-	int ret = MT_FTL_SUCCESS;
+	int ret = MT_FTL_SUCCESS, i = 0;
 	int offset = 0;
-	int i = 0;
-	int pnum_src = 0;
-	int pnum_dst = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
 	const int max_offset_per_block = desc->vol->ubi->leb_size - NAND_PAGE_SIZE;
-
 	/* Recover Config Block */
-	pnum_src = desc->vol->eba_tbl[CONFIG_START_BLOCK];
-	ret = ubi_io_read(desc->vol->ubi, param->general_page_buffer, pnum_src,
-			  offset + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+	ret = ubi_leb_read(desc, CONFIG_START_BLOCK, (char *)param->general_page_buffer, offset, NAND_PAGE_SIZE, 0);
 	if (ret && ret != UBI_IO_BITFLIPS) {
-		mt_ftl_err(dev, "ubi_io_read (leb%d, offset=%d) failed, ret = 0x%x",
+		mt_ftl_err(dev, "ubi_leb_read (leb%d, offset=%d) failed, ret = 0x%x",
 			   CONFIG_START_BLOCK, offset, ret);
 		return MT_FTL_FAIL;
 	}
@@ -2883,13 +2551,11 @@ static int mt_ftl_recover_blk(struct mt_ftl_blk *dev)
 		ubi_leb_map(desc, i);
 	}
 	offset = 2 * NAND_PAGE_SIZE;
-	pnum_src = desc->vol->eba_tbl[PMT_START_BLOCK];
-	pnum_dst = desc->vol->eba_tbl[PMT_START_BLOCK + 1];
 	while (offset <= max_offset_per_block) {
-		ret = ubi_io_read(desc->vol->ubi, param->general_page_buffer, pnum_src,
-				  offset + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+		ret = ubi_leb_read(desc, PMT_START_BLOCK, (char *)param->general_page_buffer,
+				offset, NAND_PAGE_SIZE, 0);
 		if (ret && ret != UBI_IO_BITFLIPS) {
-			mt_ftl_err(dev, "ubi_io_read (leb%d, offset=%d) failed, ret = 0x%x",
+			mt_ftl_err(dev, "ubi_leb_read (leb%d, offset=%d) failed, ret = 0x%x",
 				   PMT_START_BLOCK, offset, ret);
 			return MT_FTL_FAIL;
 		}
@@ -2897,10 +2563,9 @@ static int mt_ftl_recover_blk(struct mt_ftl_blk *dev)
 			mt_ftl_err(dev, "offset = %d, page = %d", offset, offset / NAND_PAGE_SIZE);
 			break;
 		}
-		ret = ubi_io_write(desc->vol->ubi, param->general_page_buffer, pnum_dst,
-				   offset + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+		ret = ubi_leb_write(desc, PMT_START_BLOCK + 1, param->general_page_buffer, offset, NAND_PAGE_SIZE);
 		if (ret) {
-			mt_ftl_err(dev, "ubi_io_write (leb%d, offset=%d) failed, ret = 0x%x",
+			mt_ftl_err(dev, "ubi_leb_write (leb%d, offset=%d) failed, ret = 0x%x",
 				   PMT_START_BLOCK + 1, offset, ret);
 			return MT_FTL_FAIL;
 		}
@@ -2909,13 +2574,11 @@ static int mt_ftl_recover_blk(struct mt_ftl_blk *dev)
 	ubi_leb_unmap(desc, PMT_START_BLOCK);
 	ubi_leb_map(desc, PMT_START_BLOCK);
 	offset = 2 * NAND_PAGE_SIZE;
-	pnum_src = desc->vol->eba_tbl[PMT_START_BLOCK + 1];
-	pnum_dst = desc->vol->eba_tbl[PMT_START_BLOCK];
 	while (offset <= max_offset_per_block) {
-		ret = ubi_io_read(desc->vol->ubi, param->general_page_buffer, pnum_src,
-				  offset + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+		ret = ubi_leb_read(desc, PMT_START_BLOCK + 1, (char *)param->general_page_buffer, offset,
+			NAND_PAGE_SIZE, 0);
 		if (ret && ret != UBI_IO_BITFLIPS) {
-			mt_ftl_err(dev, "ubi_io_read (leb%d, offset=%d) failed, ret = 0x%x",
+			mt_ftl_err(dev, "ubi_leb_read (leb%d, offset=%d) failed, ret = 0x%x",
 				   PMT_START_BLOCK + 1, offset, ret);
 			return MT_FTL_FAIL;
 		}
@@ -2923,10 +2586,9 @@ static int mt_ftl_recover_blk(struct mt_ftl_blk *dev)
 			mt_ftl_err(dev, "offset = %d, page = %d", offset, offset / NAND_PAGE_SIZE);
 			break;
 		}
-		ret = ubi_io_write(desc->vol->ubi, param->general_page_buffer, pnum_dst,
-				   offset + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+		ret = ubi_leb_write(desc, PMT_START_BLOCK, param->general_page_buffer, offset, NAND_PAGE_SIZE);
 		if (ret) {
-			mt_ftl_err(dev, "ubi_io_write (leb%d, offset=%d) failed, ret = 0x%x",
+			mt_ftl_err(dev, "ubi_leb_write (leb%d, offset=%d) failed, ret = 0x%x",
 				   PMT_START_BLOCK, offset, ret);
 			return MT_FTL_FAIL;
 		}
@@ -2962,10 +2624,87 @@ static int mt_ftl_show_param(struct mt_ftl_blk *dev)
 	return MT_FTL_SUCCESS;
 }
 
+/* To Do*/
+int mt_ftl_discard(struct mt_ftl_blk *dev, unsigned long sector, unsigned nr_sects)
+{
+	int ret = MT_FTL_SUCCESS, i = 0;
+	struct ubi_volume_desc *desc = dev->desc;
+	struct mt_ftl_param *param = dev->param;
+
+	param->u4DataNum = 0;
+	param->replay_blk_index = 0;
+	param->i4CurrentReadPMTClusterInCache = 0xFFFFFFFF;
+	param->u4NextReplayOffsetIndicator = 0;
+
+	/* There are some download information stored in some blocks
+	   So unmap the blocks at first */
+	for (i = 0; i < desc->vol->ubi->volumes[dev->vol_id]->reserved_pebs; i++)
+		ubi_leb_unmap(desc, i);
+
+	ret = ubi_is_mapped(desc, CONFIG_START_BLOCK);
+	if (ret == 0)
+		ubi_leb_map(desc, CONFIG_START_BLOCK);
+
+	ret = ubi_is_mapped(desc, CONFIG_START_BLOCK + 1);
+	if (ret == 0)
+		ubi_leb_map(desc, CONFIG_START_BLOCK + 1);
+
+	ret = ubi_is_mapped(desc, REPLAY_BLOCK);
+	if (ret == 0)
+		ubi_leb_map(desc, REPLAY_BLOCK);
+
+	PMT_LEB_PAGE_INDICATOR_SET_BLOCKPAGE(param->u4NextLebPageIndicator, DATA_START_BLOCK, 0);
+	mt_ftl_err(dev, "u4NextLebPageIndicator = 0x%x", param->u4NextLebPageIndicator);
+	ret = ubi_is_mapped(desc, DATA_START_BLOCK);
+	if (ret == 0)
+		ubi_leb_map(desc, DATA_START_BLOCK);
+
+	PMT_LEB_PAGE_INDICATOR_SET_BLOCKPAGE(param->u4CurrentPMTLebPageIndicator, PMT_START_BLOCK,
+					     0);
+	mt_ftl_err(dev, "u4CurrentPMTLebPageIndicator = 0x%x", param->u4CurrentPMTLebPageIndicator);
+	ret = ubi_is_mapped(desc, PMT_START_BLOCK);
+	if (ret == 0)
+		ubi_leb_map(desc, PMT_START_BLOCK);
+
+	param->u4NextFreeLebIndicator = DATA_START_BLOCK + 1;
+	mt_ftl_err(dev, "u4NextFreeLebIndicator = 0x%x", param->u4NextFreeLebIndicator);
+	param->u4NextFreePMTLebIndicator = PMT_START_BLOCK + 1;
+	mt_ftl_err(dev, "u4NextFreePMTLebIndicator = %d", param->u4NextFreePMTLebIndicator);
+	param->u4GCReserveLeb = desc->vol->ubi->volumes[dev->vol_id]->reserved_pebs - 1;
+	mt_ftl_err(dev, "u4GCReserveLeb = %d", param->u4GCReserveLeb);
+	ret = ubi_is_mapped(desc, param->u4GCReserveLeb);
+	if (ret == 0)
+		ubi_leb_map(desc, param->u4GCReserveLeb);
+	param->u4GCReservePMTLeb = DATA_START_BLOCK - 1;
+	ret = ubi_is_mapped(desc, param->u4GCReservePMTLeb);
+	if (ret == 0)
+		ubi_leb_map(desc, param->u4GCReservePMTLeb);
+	memset(param->u4PMTIndicator, 0, PMT_TOTAL_CLUSTER_NUM * sizeof(unsigned int));
+	memset(param->u4BIT, 0, NAND_TOTAL_BLOCK_NUM * sizeof(unsigned int));
+	/* add memory reset */
+	memset(param->u4PMTCache, 0xFF, PM_PER_NANDPAGE * PMT_CACHE_NUM * sizeof(unsigned int));
+	memset(param->u4MetaPMTCache, 0xFF, PM_PER_NANDPAGE * PMT_CACHE_NUM * sizeof(unsigned int));
+	memset(param->i4CurrentPMTClusterInCache, 0xFF, PMT_CACHE_NUM * sizeof(unsigned int));
+	memset(param->u4ReadPMTCache, 0xFF, PM_PER_NANDPAGE * sizeof(unsigned int));
+	memset(param->u4ReadMetaPMTCache, 0xFF, PM_PER_NANDPAGE * sizeof(unsigned int));
+	memset(param->u1DataCache, 0xFF, NAND_PAGE_SIZE * sizeof(unsigned char));
+	memset(param->u4Header, 0xFF, MTKFTL_MAX_DATA_NUM_PER_PAGE*sizeof(struct mt_ftl_data_header));
+	memset(param->u4ReadHeader, 0xFF, MTKFTL_MAX_DATA_NUM_PER_PAGE*sizeof(struct mt_ftl_data_header));
+	memset(param->replay_blk_rec, 0xFF, NAND_PAGE_NUM_PER_BLOCK * sizeof(unsigned int));
+	memset(param->general_page_buffer, 0xFF, (NAND_PAGE_SIZE >> 2) * sizeof(unsigned int));
+	memset(param->replay_page_buffer, 0xFF, (NAND_PAGE_SIZE >> 2) * sizeof(unsigned int));
+	memset(param->commit_page_buffer, 0xFF, (NAND_PAGE_SIZE >> 2) * sizeof(unsigned int));
+	memset(param->gc_page_buffer, 0xFF, (NAND_PAGE_SIZE >> 2) * sizeof(unsigned int));
+	memset(param->cmpr_page_buffer, 0xFF, NAND_PAGE_SIZE * sizeof(unsigned char));
+	memset(param->tmp_page_buffer, 0xFF, (NAND_PAGE_SIZE >> 2) * sizeof(unsigned int));
+
+	mt_ftl_show_param(dev);
+	return 0;
+}
+
 static int mt_ftl_param_default(struct mt_ftl_blk *dev)
 {
-	int ret = MT_FTL_SUCCESS;
-	int i = 0;
+	int ret = MT_FTL_SUCCESS, i = 0;
 	struct ubi_volume_desc *desc = dev->desc;
 	struct mt_ftl_param *param = dev->param;
 
@@ -3117,7 +2856,6 @@ int mt_ftl_create(struct mt_ftl_blk *dev)
 {
 	int ret = MT_FTL_SUCCESS;
 	int leb = 0;
-	int pnum = 0;
 	int offset = 0;
 	int img_reload = 0;
 	struct ubi_volume_desc *desc = dev->desc;
@@ -3189,11 +2927,9 @@ int mt_ftl_create(struct mt_ftl_blk *dev)
 
 	/* Grab configs */
 	mt_ftl_err(dev, "Get config page, leb:%d, page:%d", leb, offset / NAND_PAGE_SIZE);
-	pnum = desc->vol->eba_tbl[leb];
-	ret = ubi_io_read(desc->vol->ubi, param->general_page_buffer, pnum,
-			  offset + desc->vol->ubi->leb_start, NAND_PAGE_SIZE);
+	ret = ubi_leb_read(desc, leb, (char *)param->general_page_buffer, offset, NAND_PAGE_SIZE, 0);
 	if (ret && ret != UBI_IO_BITFLIPS) {
-		mt_ftl_err(dev, "ubi_io_read (leb%d, offset=%d) failed, ret = 0x%x",
+		mt_ftl_err(dev, "ubi_leb_read (leb%d, offset=%d) failed, ret = 0x%x",
 			   leb, offset, ret);
 		return MT_FTL_FAIL;
 	}

@@ -211,13 +211,19 @@ static int do_mt_ftl_blk_request(struct mt_ftl_blk *dev, struct request *req)
 	if ((req->bio->bi_rw & WRITE_SYNC) == WRITE_SYNC)
 		dev->sync = 1;
 
+	if (unlikely(req->cmd_flags & REQ_DISCARD)) {
+		mt_ftl_err(dev, "REQ_DISCARD to mt_ftl");
+		return mt_ftl_discard(dev, sec, len);
+	}
+
 	/*
 	 * Let's prevent the device from being removed while we're doing I/O
 	 * work. Notice that this means we serialize all the I/O operations,
 	 * but it's probably of no impact given the NAND core serializes
 	 * flash access anyway.
 	 */
-	/* pr_err("mt_ftl_blk : %s pos %d len %d\n", (rq_data_dir(req)==READ)?"READ":"WRITE", (int)(sec << 9), len); */
+	/* mt_ftl_err(dev, "mt_ftl_blk : %s pos %d len %d\n",
+	   (rq_data_dir(req)==READ)?"READ":"WRITE", (int)(sec << 9), len); */
 	switch (rq_data_dir(req)) {
 	case READ:
 		ret = mt_ftl_read(dev, bio_data(req->bio), sec, len);
@@ -226,36 +232,44 @@ static int do_mt_ftl_blk_request(struct mt_ftl_blk *dev, struct request *req)
 		ret = mt_ftl_write(dev, bio_data(req->bio), sec, len);
 		break;
 	default:
+		mt_ftl_err(dev, "unknown request\n");
 		return -EIO;
 	}
-
 	return ret;
 }
+
 
 static void mt_ftl_blk_do_work(struct work_struct *work)
 {
 	struct mt_ftl_blk *dev =
 		container_of(work, struct mt_ftl_blk, work);
 	struct request_queue *rq = dev->rq;
-	struct request *req;
-	int res;
+	struct request *req = NULL;
 
 	spin_lock_irq(rq->queue_lock);
-
 	req = blk_fetch_request(rq);
 	while (req) {
+		int res;
 
 		spin_unlock_irq(rq->queue_lock);
+
+		mutex_lock(&dev->dev_mutex);
 		res = do_mt_ftl_blk_request(dev, req);
+		if (res < 0) {
+			ubi_err("[Bean]request error\n");
+			break;
+		}
+
+		mutex_unlock(&dev->dev_mutex);
+
 		spin_lock_irq(rq->queue_lock);
 
-		/*
-		 * If we're done with this request,
-		 * we need to fetch a new one
-		 */
 		if (!__blk_end_request_cur(req, res))
 			req = blk_fetch_request(rq);
 	}
+
+	if (req)
+		__blk_end_request_all(req, -EIO);
 
 	spin_unlock_irq(rq->queue_lock);
 }
@@ -367,7 +381,7 @@ int mt_ftl_blk_create(struct ubi_volume_desc *desc)
 
 	ubi_get_volume_info(desc, &vi);
 
-	disk_capacity = (vi.used_bytes >> 9) + (vi.used_bytes >> 12);
+	disk_capacity = (vi.used_bytes >> 9) + (vi.used_bytes >> 11);
 
 	if ((sector_t)disk_capacity != disk_capacity)
 		return -EFBIG;
@@ -433,8 +447,6 @@ int mt_ftl_blk_create(struct ubi_volume_desc *desc)
 
 	/* Must be the last step: anyone can call file ops from now on */
 	add_disk(dev->gd);
-	pr_debug("UBI[%d]: %s created from ubi%d:%d(%s)\n",
-		vi.ubi_num, dev->gd->disk_name, dev->ubi_num, dev->vol_id, vi.name);
 
 	dev->param = kzalloc(sizeof(struct mt_ftl_param), GFP_KERNEL);
 	if (!dev->param)
@@ -506,7 +518,7 @@ int mt_ftl_blk_remove(struct ubi_volume_info *vi)
 static int mt_ftl_blk_resize(struct ubi_volume_info *vi)
 {
 	struct mt_ftl_blk *dev;
-	u64 disk_capacity = (vi->used_bytes >> 9) + (vi->used_bytes >> 12);
+	u64 disk_capacity = (vi->used_bytes >> 9) + (vi->used_bytes >> 11);
 
 	/*
 	 * Need to lock the device list until we stop using the device,
@@ -596,7 +608,6 @@ static int __init mt_ftl_blk_create_from_param(void)
 
 	for (i = 0; i < mt_ftl_blk_devs; i++) {
 		p = &mt_ftl_blk_param[i];
-
 		desc = open_volume_desc(p->name, p->ubi_num, p->vol_id);
 		if (IS_ERR(desc)) {
 			ubi_err("block: can't open volume, err=%ld\n",

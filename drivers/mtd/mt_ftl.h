@@ -6,7 +6,7 @@
 #include "linux/mtd/ubi.h"
 
 /* #define PROFILE */
-#define MTK_FTL_DEBUG
+/*#define MTK_FTL_DEBUG */
 
 #define MT_FTL_SUCCESS 0
 #define MT_FTL_FAIL -1
@@ -56,7 +56,7 @@
 /* mt_ftl error messages */
 #define mt_ftl_err(dev, fmt, ...) pr_err("[MTK FTL][%s][0x%lx] " fmt "\n",      \
 				 __func__, (unsigned long int)dev, ##__VA_ARGS__)
-/* #define mt_ftl_err(fmt, ...) */
+/*#define mt_ftl_err(fmt, ...) */
 
 #define PMT_LEB_PAGE_INDICATOR_SET_BLOCKPAGE(p, blk, page) \
 		((p) = (((blk) << PMT_LEB_PAGE_INDICATOR_PAGE_SHIFT) | (page)))
@@ -87,8 +87,6 @@
 #define PMT_INDICATOR_SET_DIRTY(p)	((p) |= (1 << PMT_INDICATOR_CACHED_SHIFT))
 #define PMT_INDICATOR_RESET_INCACHE(p)	((p) &= (~((1 << PMT_INDICATOR_CACHED_SHIFT) - 1)))
 #define PMT_INDICATOR_RESET_DIRTY(p)	((p) &= (~(1 << PMT_INDICATOR_CACHED_SHIFT)))
-
-
 
 /*#define PMT_SET_BLOCKPAGE(p, blk, page, part, cache_num) \
 		((p) = (((blk) << (PMT_PAGE_SHIFT + PMT_PART_SHIFT + PMT_DATACACHE_BUFF_NUM_SHIFT)) \
@@ -293,6 +291,7 @@ int mt_ftl_commit(struct mt_ftl_blk *dev);
 
 int mt_ftl_blk_create(struct ubi_volume_desc *desc);
 int mt_ftl_blk_remove(struct ubi_volume_info *vi);
+int mt_ftl_discard(struct mt_ftl_blk *dev, unsigned long sector, unsigned nr_sects);
 
 
 int mt_ftl_updatePMT(struct mt_ftl_blk *dev, int cluster, int sec_offset, int leb, int offset, int part,
