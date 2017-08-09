@@ -1023,15 +1023,603 @@ unsigned int get_dram_data_rate_from_reg(void)
 	return u2real_freq;
 }
 
+void DVFS_gating_auto_save(void)
+#if 1
+{
+
+}
+#else
+{
+	unsigned int u4HWTrackPICH0R0, u4HWTrackPICH0R1;
+	unsigned int u4HWTrackUICH0R0P0, u4HWTrackUICH0R1P0;
+	unsigned int u4HWTrackUICH0R0P1, u4HWTrackUICH0R1P1;
+	unsigned int bak_data0, bak_data1;
+	unsigned int dfs_level;
+	unsigned char checkPIResult = DRAM_FAIL;
+
+	/* ddrphy_conf shuffle_three */
+	/*TINFO="===  ddrphy shuffle_three reg start ==="*/
+
+	dfs_level =
+	(readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x028)) & 0x00003000) >> 12;
+	writel(readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x044)) | (0x1 << 12),
+	IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x044));
+	writel(readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x044)) | (0x1 << 12),
+	IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x044));
+	writel(readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x1c0)) | (0x1 << 20),
+	IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x1c0));
+	writel(readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x1c0)) | (0x1 << 20),
+	IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x1c0));
+
+	do {
+		unsigned char u1Dqs_pi[4];
+
+		checkPIResult = DRAM_OK;
+		u4HWTrackPICH0R0 = readl(IOMEM(DRAMCNAO_CHA_BASE_ADDR + 0x374));
+		u1Dqs_pi[0] = u4HWTrackPICH0R0 & 0xff;
+		u1Dqs_pi[1] = (u4HWTrackPICH0R0 >> 8) & 0xff;
+		u1Dqs_pi[2] = (u4HWTrackPICH0R0 >> 16) & 0xff;
+		u1Dqs_pi[3] = (u4HWTrackPICH0R0 >> 24) & 0xff;
+		if ((u1Dqs_pi[0] > 0x1F) || (u1Dqs_pi[1] > 0x1F)
+			|| (u1Dqs_pi[2] > 0x1F) || (u1Dqs_pi[3] > 0x1F))
+			checkPIResult = DRAM_FAIL;
+
+		u4HWTrackPICH0R1 = readl(IOMEM(DRAMCNAO_CHA_BASE_ADDR + 0x378));
+		u1Dqs_pi[0] = u4HWTrackPICH0R1 & 0xff;
+		u1Dqs_pi[1] = (u4HWTrackPICH0R1 >> 8) & 0xff;
+		u1Dqs_pi[2] = (u4HWTrackPICH0R1 >> 16) & 0xff;
+		u1Dqs_pi[3] = (u4HWTrackPICH0R1 >> 24) & 0xff;
+		if ((u1Dqs_pi[0] > 0x1F) || (u1Dqs_pi[1] > 0x1F)
+			|| (u1Dqs_pi[2] > 0x1F) || (u1Dqs_pi[3] > 0x1F))
+			checkPIResult = DRAM_FAIL;
+
+		if (checkPIResult == DRAM_FAIL) {
+			writel(readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x1c0))
+			& ~(0x1 << 20), IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x1c0));
+			writel(readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x044))
+			& ~(0x1 << 12), IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x044));
+			mb(); /* flush */
+			udelay(1);
+			writel(readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x044))
+			| (0x1 << 12),	IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x044));
+			writel(readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x1c0))
+			| (0x1 << 20),	IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x1c0));
+		}
+	} while (checkPIResult == DRAM_FAIL);
+
+	u4HWTrackPICH0R0 = readl(IOMEM(DRAMCNAO_CHA_BASE_ADDR + 0x374));
+	u4HWTrackPICH0R1 = readl(IOMEM(DRAMCNAO_CHA_BASE_ADDR + 0x378));
+	u4HWTrackUICH0R0P0 = readl(IOMEM(DRAMCNAO_CHA_BASE_ADDR + 0x37c));
+	u4HWTrackUICH0R0P1 = readl(IOMEM(DRAMCNAO_CHA_BASE_ADDR + 0x384));
+	u4HWTrackUICH0R1P0 = readl(IOMEM(DRAMCNAO_CHA_BASE_ADDR + 0x380));
+	u4HWTrackUICH0R1P1 = readl(IOMEM(DRAMCNAO_CHA_BASE_ADDR + 0x388));
+
+	if (dfs_level == 0x0) {
+		writel(u4HWTrackPICH0R0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x094));
+		writel(u4HWTrackPICH0R1, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x098));
+	} else if (dfs_level == 0x1) {
+		writel(u4HWTrackPICH0R0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x840));
+		writel(u4HWTrackPICH0R1, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x844));
+	} else { /* dfs_level == 0x2 */
+		writel(u4HWTrackPICH0R0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xc40));
+		writel(u4HWTrackPICH0R1, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xc44));
+		}
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x404)) & 0xff8f8fff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x864)) & 0xff8f8fff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xc64)) & 0xff8f8fff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 3;
+	bak_data0 |= bak_data1 << 17;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 3;
+	bak_data0 |= bak_data1 << 9;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x404));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x864));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xc64));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x410)) & 0xfc3fffff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x870)) & 0xfc3fffff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xc70)) & 0xfc3fffff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x3;
+	bak_data0 |= bak_data1 << 24;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x3;
+	bak_data0 |= bak_data1 << 22;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x410));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x870));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xc70));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x418)) & 0xfffff880;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x878)) & 0xfffff880;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xc78)) & 0xfffff880;
+	}
+
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 3;
+	bak_data0 |= bak_data1 << 5;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 3;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x3;
+	bak_data0 |= bak_data1 << 2;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x3;
+	bak_data0 |= bak_data1;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x418));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x878));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xc78));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x430)) & 0x888888ff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x8c0)) & 0x888888ff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xcc0)) & 0x888888ff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 27;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 27;
+	bak_data0 |= bak_data1 >> 3;
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 19;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 19;
+	bak_data0 |= bak_data1 >> 3;
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 11;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 11;
+	bak_data0 |= bak_data1 >> 3;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x430));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x8c0));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xcc0));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x434)) & 0x888888ff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x8c4)) & 0x888888ff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xcc4)) & 0x888888ff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 24;
+	bak_data0 |= bak_data1 << 4;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 24;
+	bak_data0 |= bak_data1;
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 16;
+	bak_data0 |= bak_data1 << 4;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 16;
+	bak_data0 |= bak_data1;
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 8;
+	bak_data0 |= bak_data1 << 4;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 8;
+	bak_data0 |= bak_data1;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x434));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x8c4));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xcc4));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x438)) & 0x888888ff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x8c8)) & 0x888888ff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xcc8)) & 0x888888ff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 27;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 27;
+	bak_data0 |= bak_data1 >> 3;
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 19;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 19;
+	bak_data0 |= bak_data1 >> 3;
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 11;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 11;
+	bak_data0 |= bak_data1 >> 3;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x438));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x8c8));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xcc8));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x43c)) & 0x888888ff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x8cc)) & 0x888888ff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xccc)) & 0x888888ff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 24;
+	bak_data0 |= bak_data1 << 4;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 24;
+	bak_data0 |= bak_data1;
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 16;
+	bak_data0 |= bak_data1 << 4;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 16;
+	bak_data0 |= bak_data1;
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 8;
+	bak_data0 |= bak_data1 << 4;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 8;
+	bak_data0 |= bak_data1;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x43c));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x8cc));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xccc));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x454)) & 0x0fffffff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x898)) & 0x0fffffff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xc98)) & 0x0fffffff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x1 << 2;
+	bak_data0 |= bak_data1 << 29;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x1 << 2;
+	bak_data0 |= bak_data1 << 28;
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x1 << 2;
+	bak_data0 |= bak_data1 << 27;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x1 << 2;
+	bak_data0 |= bak_data1 << 26;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x454));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0x898));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHA_BASE_ADDR + 0xc98));
+
+/* ch1 */
+	do {
+		unsigned char u1Dqs_pi[4];
+
+		checkPIResult = DRAM_OK;
+		u4HWTrackPICH0R0 = readl(IOMEM(DRAMCNAO_CHB_BASE_ADDR + 0x374));
+		u1Dqs_pi[0]  = u4HWTrackPICH0R0 & 0xff;
+		u1Dqs_pi[1]  = (u4HWTrackPICH0R0 >> 8) & 0xff;
+		u1Dqs_pi[2]  = (u4HWTrackPICH0R0 >> 16) & 0xff;
+		u1Dqs_pi[3]  = (u4HWTrackPICH0R0 >> 24) & 0xff;
+
+		if ((u1Dqs_pi[0] > 0x1F) || (u1Dqs_pi[1] > 0x1F)
+			|| (u1Dqs_pi[2] > 0x1F) || (u1Dqs_pi[3] > 0x1F))
+			checkPIResult = DRAM_FAIL;
+
+		u4HWTrackPICH0R1 = readl(IOMEM(DRAMCNAO_CHB_BASE_ADDR + 0x378));
+		u1Dqs_pi[0]  = u4HWTrackPICH0R1 & 0xff;
+		u1Dqs_pi[1]  = (u4HWTrackPICH0R1 >> 8) & 0xff;
+		u1Dqs_pi[2]  = (u4HWTrackPICH0R1 >> 16) & 0xff;
+		u1Dqs_pi[3]  = (u4HWTrackPICH0R1 >> 24) & 0xff;
+
+		if ((u1Dqs_pi[0] > 0x1F) || (u1Dqs_pi[1] > 0x1F)
+			|| (u1Dqs_pi[2] > 0x1F) || (u1Dqs_pi[3] > 0x1F))
+			checkPIResult = DRAM_FAIL;
+
+		if (checkPIResult == DRAM_FAIL) {
+			writel(readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x1c0))
+			& ~(0x1 << 20), IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x1c0));
+			writel(readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x044))
+			& ~(0x1 << 12), IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x044));
+			mb(); /* flush */
+			udelay(1);
+			writel(readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x044))
+			| (0x1 << 12), IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x044));
+			writel(readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x1c0))
+			| (0x1 << 20), IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x1c0));
+		}
+
+	} while (checkPIResult == DRAM_FAIL);
+
+	u4HWTrackPICH0R0 = readl(IOMEM(DRAMCNAO_CHB_BASE_ADDR + 0x374));
+	u4HWTrackPICH0R1 = readl(IOMEM(DRAMCNAO_CHB_BASE_ADDR + 0x378));
+	u4HWTrackUICH0R0P0 = readl(IOMEM(DRAMCNAO_CHB_BASE_ADDR + 0x37c));
+	u4HWTrackUICH0R0P1 = readl(IOMEM(DRAMCNAO_CHB_BASE_ADDR + 0x384));
+	u4HWTrackUICH0R1P0 = readl(IOMEM(DRAMCNAO_CHB_BASE_ADDR + 0x380));
+	u4HWTrackUICH0R1P1 = readl(IOMEM(DRAMCNAO_CHB_BASE_ADDR + 0x388));
+
+	if (dfs_level == 0x0) {
+		writel(u4HWTrackPICH0R0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x094));
+		writel(u4HWTrackPICH0R1, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x098));
+	} else if (dfs_level == 0x1) {
+		writel(u4HWTrackPICH0R0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x840));
+		writel(u4HWTrackPICH0R1, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x844));
+	} else { /* dfs_level == 0x2 */
+		writel(u4HWTrackPICH0R0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xc40));
+		writel(u4HWTrackPICH0R1, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xc44));
+	}
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x404)) & 0xff8f8fff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x864)) & 0xff8f8fff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xc64)) & 0xff8f8fff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 3;
+	bak_data0 |= bak_data1 << 17;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 3;
+	bak_data0 |= bak_data1 << 9;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x404));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x864));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xc64));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x410)) & 0xfc3fffff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x870)) & 0xfc3fffff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xc70)) & 0xfc3fffff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x3;
+	bak_data0 |= bak_data1 << 24;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x3;
+	bak_data0 |= bak_data1 << 22;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x410));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x870));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xc70));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x418)) & 0xfffff880;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x878)) & 0xfffff880;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xc78)) & 0xfffff880;
+	}
+
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 3;
+	bak_data0 |= bak_data1 << 5;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 3;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x3;
+	bak_data0 |= bak_data1 << 2;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x3;
+	bak_data0 |= bak_data1;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x418));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x878));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xc78));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x430)) & 0x888888ff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x8c0)) & 0x888888ff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xcc0)) & 0x888888ff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 27;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 27;
+	bak_data0 |= bak_data1 >> 3;
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 19;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 19;
+	bak_data0 |= bak_data1 >> 3;
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 11;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 11;
+	bak_data0 |= bak_data1 >> 3;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x430));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x8c0));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xcc0));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x434)) & 0x888888ff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x8c4)) & 0x888888ff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xcc4)) & 0x888888ff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 24;
+	bak_data0 |= bak_data1 << 4;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 24;
+	bak_data0 |= bak_data1;
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 16;
+	bak_data0 |= bak_data1 << 4;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 16;
+	bak_data0 |= bak_data1;
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x7 << 8;
+	bak_data0 |= bak_data1 << 4;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x7 << 8;
+	bak_data0 |= bak_data1;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x434));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x8c4));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xcc4));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x438)) & 0x888888ff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x8c8)) & 0x888888ff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xcc8)) & 0x888888ff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 27;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 27;
+	bak_data0 |= bak_data1 >> 3;
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 19;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 19;
+	bak_data0 |= bak_data1 >> 3;
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 11;
+	bak_data0 |= bak_data1 << 1;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 11;
+	bak_data0 |= bak_data1 >> 3;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x438));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x8c8));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xcc8));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x43c)) & 0x888888ff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x8cc)) & 0x888888ff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xccc)) & 0x888888ff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 24;
+	bak_data0 |= bak_data1 << 4;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 24;
+	bak_data0 |= bak_data1;
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 16;
+	bak_data0 |= bak_data1 << 4;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 16;
+	bak_data0 |= bak_data1;
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x7 << 8;
+	bak_data0 |= bak_data1 << 4;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x7 << 8;
+	bak_data0 |= bak_data1;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x43c));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x8cc));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xccc));
+
+	if (dfs_level == 0x0) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x454)) & 0x0fffffff;
+	} else if (dfs_level == 0x1) {
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x898)) & 0x0fffffff;
+	} else {/* dfs_level == 0x2 */
+		bak_data0 =
+		readl(IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xc98)) & 0x0fffffff;
+	}
+
+	bak_data1 = u4HWTrackUICH0R1P1 & 0x1 << 2;
+	bak_data0 |= bak_data1 << 29;
+	bak_data1 = u4HWTrackUICH0R1P0 & 0x1 << 2;
+	bak_data0 |= bak_data1 << 28;
+	bak_data1 = u4HWTrackUICH0R0P1 & 0x1 << 2;
+	bak_data0 |= bak_data1 << 27;
+	bak_data1 = u4HWTrackUICH0R0P0 & 0x1 << 2;
+	bak_data0 |= bak_data1 << 26;
+
+	if (dfs_level == 0x0)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x454));
+	else if (dfs_level == 0x1)
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0x898));
+	else /* dfs_level == 0x2 */
+		writel(bak_data0, IOMEM(DRAMCAO_CHB_BASE_ADDR + 0xc98));
+
+	/* *(UINT32P)DRAMC_WBR  = 0x0;          */
+	writel(0x0, IOMEM(INFRACFG_AO_BASE_ADDR + 0x0A4));
+}
+#endif
+
 unsigned int get_dram_data_rate(void)
 {
-	unsigned int SPM_ACTIVE = 0;
 	unsigned int MEMPLL_FOUT = 0;
 
-	/*6755 TBD*/
-	/*SPM_ACTIVE = spm_vcorefs_is_dvfs_in_porgress()*/
-	while (SPM_ACTIVE == 1)
-		;
 	MEMPLL_FOUT = get_dram_data_rate_from_reg() << 1;
 	return MEMPLL_FOUT;
 }
