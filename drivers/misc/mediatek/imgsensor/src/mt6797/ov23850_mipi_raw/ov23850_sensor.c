@@ -2911,7 +2911,7 @@ static void capture_setting(kal_uint16 currefps)
     else
 		ov23850_setting_PDAF(PDAF_OFF);
 	//Deskew
-	ov23850_setting_Deskew(1);
+	ov23850_setting_Deskew(0);
 	
 	write_cmos_sensor(0x0100, 0x01);
 }
