@@ -601,7 +601,52 @@ static struct snd_soc_dai_driver mtk_dai_stub_dai[] = {
 		},
 		.name = MT_SOC_BTCVSD_TX_DAI_NAME,
 		.ops = &mtk_dai_stub_ops,
-	}
+	},
+	{
+		.playback = {
+			.stream_name = MT_SOC_VOICEMD1_SPEAKER_STREAM_NAME,
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SND_SOC_STD_MT_FMTS,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min = 8000,
+			.rate_max = 32000,
+		},
+		.capture = {
+			.stream_name = MT_SOC_VOICEMD1_SPEAKER_STREAM_NAME,
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SND_SOC_STD_MT_FMTS,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min = 8000,
+			.rate_max = 32000,
+		},
+		.name = MT_SOC_VOICEMD1_EXTSPKDAI_NAME,
+		.ops = &mtk_dai_stub_ops,
+	},
+	{
+		.playback = {
+			.stream_name = MT_SOC_VOICEMD2_SPEAKER_STREAM_NAME,
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SND_SOC_STD_MT_FMTS,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min = 8000,
+			.rate_max = 32000,
+		},
+		.capture = {
+			.stream_name = MT_SOC_VOICEMD2_SPEAKER_STREAM_NAME,
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SND_SOC_STD_MT_FMTS,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min = 8000,
+			.rate_max = 32000,
+		},
+		.name = MT_SOC_VOICEMD2_EXTSPKDAI_NAME,
+		.ops = &mtk_dai_stub_ops,
+	},
+
 };
 
 

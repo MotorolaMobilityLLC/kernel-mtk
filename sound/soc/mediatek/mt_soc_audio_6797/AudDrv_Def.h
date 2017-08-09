@@ -190,6 +190,8 @@
 #define MT_SOC_DL1DAI_NAME "mt-soc-dl1dai-driver"
 #define MT_SOC_DL2DAI_NAME "mt-soc-dl2dai-driver"
 #define MT_SOC_EXTSPKDAI_NAME "mt-soc-extspkdai-driver"
+#define MT_SOC_VOICEMD1_EXTSPKDAI_NAME "mt-soc-voicemd1-extspkdai-driver"
+#define MT_SOC_VOICEMD2_EXTSPKDAI_NAME "mt-soc-voicemd2-extspkdai-driver"
 #define MT_SOC_DL1DATA2DAI_NAME "mt-soc-dl1data2dai-driver"
 #define MT_SOC_UL1DAI_NAME "mt-soc-ul1dai-driver"
 #define MT_SOC_UL1DATA2_NAME "mt-soc-ul1data2dai-driver"
@@ -306,6 +308,8 @@
 /* stream name */
 #define MT_SOC_DL1_STREAM_NAME "MultiMedia1_PLayback"
 #define MT_SOC_SPEAKER_STREAM_NAME "Speaker_PLayback"
+#define MT_SOC_VOICEMD1_SPEAKER_STREAM_NAME "VoiceMD1_Speaker_PLayback"
+#define MT_SOC_VOICEMD2_SPEAKER_STREAM_NAME "VoiceMD2_Speaker_PLayback"
 #define MT_SOC_DL1DATA2_STREAM_NAME "MultiMedia1data2_PLayback"
 #define MT_SOC_DL2_STREAM_NAME "MultiMedia2_PLayback"
 #define MT_SOC_VOICE_MD1_STREAM_NAME "Voice_MD1_PLayback"
