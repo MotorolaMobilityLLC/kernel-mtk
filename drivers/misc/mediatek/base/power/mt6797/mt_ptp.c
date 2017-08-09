@@ -391,7 +391,7 @@ static unsigned int *recordTbl;
 #ifdef ENABLE_IDVFS
 static unsigned int ctrl_EEM_Enable = 1;
 #else
-static unsigned int ctrl_EEM_Enable;
+static unsigned int ctrl_EEM_Enable = 1;
 #endif
 
 /* Global variable for slow idle*/
