@@ -45,7 +45,7 @@ void __iomem *clk_mfgcfg_base;
 void __iomem *clk_mmsys_config_base;
 void __iomem *clk_imgsys_base;
 void __iomem *clk_vdec_gcon_base;
-/* void __iomem *clk_venc_gcon_base; */
+void __iomem *clk_venc_gcon_base;
 #endif
 
 /* #define CLK_LOG_TOP */
@@ -1038,9 +1038,9 @@ static struct subsys_ops mfg_sys_ops;
 static struct subsys_ops isp_sys_ops;
 static struct subsys_ops vde_sys_ops;
 /* static struct subsys_ops mjc_sys_ops; */
-/* static struct subsys_ops ven_sys_ops; */
+static struct subsys_ops ven_sys_ops;
 /* static struct subsys_ops aud_sys_ops; */
-/* static struct subsys_ops md2_sys_ops; */
+static struct subsys_ops md2_sys_ops;
 
 static struct subsys syss[NR_SYSS] = {
 	{
@@ -1051,6 +1051,13 @@ static struct subsys syss[NR_SYSS] = {
 	/* .ctl_addr = SPM_MD_PWR_CON, */
 	.ops = &md1_sys_ops,
 	}, {
+	.name = __stringify(SYS_MD2),
+	.type = SYS_TYPE_MODEM,
+	.default_sta = PWR_DOWN,
+	.sta_mask = 1U << 22,
+	/* .ctl_addr = SPM_MD2_PWR_CON, */
+	.ops = &md2_sys_ops,
+	},  {
 	.name = __stringify(SYS_CONN),
 	.type = SYS_TYPE_CONN,
 	.default_sta = PWR_DOWN,
@@ -1097,6 +1104,16 @@ static struct subsys syss[NR_SYSS] = {
 	.start = &grps[CG_VDEC0],
 	.nr_grps = 2,
 	.mux = &muxs[MT_MUX_VDEC],
+	}, {
+	.name = __stringify(SYS_VEN),
+	.type = SYS_TYPE_MEDIA,
+	.default_sta = PWR_ON,
+	.sta_mask = 1U << 8,
+	/* .ctl_addr = SPM_VEN_PWR_CON, */
+	.ops = &ven_sys_ops,
+	.start = &grps[CG_VENC],
+	.nr_grps = 1,
+	/* .mux = &muxs[MT_MUX_VENC], */
 	}
 };
 
@@ -1125,7 +1142,7 @@ static int md1_sys_disable_op(struct subsys *sys)
 	err = spm_mtcmos_ctrl_mdsys1(STA_POWER_DOWN);
 	return err;
 }
-/*
+
 static int md2_sys_enable_op(struct subsys *sys)
 {
 	int err;
@@ -1141,7 +1158,7 @@ static int md2_sys_disable_op(struct subsys *sys)
 	err = spm_mtcmos_ctrl_mdsys2(STA_POWER_DOWN);
 	return err;
 }
-*/
+
 static int conn_sys_enable_op(struct subsys *sys)
 {
 	int err;
@@ -1286,7 +1303,7 @@ static int mjc_sys_disable_op(struct subsys *sys)
     return err;
 }
 */
-/*
+
 static int ven_sys_enable_op(struct subsys *sys)
 {
 	int err;
@@ -1310,7 +1327,7 @@ static int ven_sys_disable_op(struct subsys *sys)
 	err = spm_mtcmos_ctrl_venc(STA_POWER_DOWN);
 	return err;
 }
-*/
+
 /*
 static int aud_sys_enable_op(struct subsys *sys)
 {
@@ -1406,14 +1423,14 @@ static struct subsys_ops mjc_sys_ops = {
 	.dump_regs = sys_dump_regs_op,
 };
 */
-/*
+
 static struct subsys_ops ven_sys_ops = {
 	.enable = ven_sys_enable_op,
 	.disable = ven_sys_disable_op,
 	.get_state = sys_get_state_op,
 	.dump_regs = sys_dump_regs_op,
 };
-*/
+
 /*
 static struct subsys_ops aud_sys_ops = {
 	.enable = aud_sys_enable_op,
@@ -1422,14 +1439,14 @@ static struct subsys_ops aud_sys_ops = {
 	.dump_regs = sys_dump_regs_op,
 };
 */
-/*
+
 static struct subsys_ops md2_sys_ops = {
 	.enable = md2_sys_enable_op,
 	.disable = md2_sys_disable_op,
 	.get_state = sys_get_state_op,
 	.dump_regs = sys_dump_regs_op,
 };
-*/
+
 
 static int get_sys_state_locked(struct subsys *sys)
 {
@@ -1636,8 +1653,8 @@ int md_power_on(int id)
 #if !defined(CONFIG_MTK_FPGA)
 	if (id == SYS_MD1)
 		spm_mtcmos_ctrl_mdsys1(STA_POWER_ON);
-	/* else */
-		/* spm_mtcmos_ctrl_mdsys2(STA_POWER_ON); */
+	else
+		spm_mtcmos_ctrl_mdsys2(STA_POWER_ON);
 
 	clk_info("[%s]: id = %d\n", __func__, id);
 #endif
@@ -1686,8 +1703,8 @@ int md_power_off(int id, unsigned int timeout)
 #if !defined(CONFIG_MTK_FPGA)
 	if (id == SYS_MD1)
 		spm_mtcmos_ctrl_mdsys1(STA_POWER_DOWN);
-	/* else */
-		/* spm_mtcmos_ctrl_mdsys2(STA_POWER_DOWN); */
+	else
+		spm_mtcmos_ctrl_mdsys2(STA_POWER_DOWN);
 #endif
 	return 0;
 #endif
@@ -1845,10 +1862,10 @@ static void larb_clk_prepare(int larb_idx)
 		/* isp */
 		clk_writel(IMG_CG_CLR, 0x1);
 		break;
-	/* case MT_LARB_VENC: */
+	case MT_LARB_VENC:
 		/* venc */
-		/* clk_writel(VENC_CG_SET, 0x11); */
-		/* break; */
+		clk_writel(VENC_CG_SET, 0x11);
+		break;
 	/* case MT_LARB_MJC: */
 		/* mjc */
 		/* clk_writel(MJC_CG_CLR, 0x21); */
@@ -1873,10 +1890,10 @@ static void larb_clk_finish(int larb_idx)
 		/* isp */
 		clk_writel(IMG_CG_SET, 0x1);
 		break;
-	/* case MT_LARB_VENC: */
+	case MT_LARB_VENC:
 		/* venc */
-		/* clk_writel(VENC_CG_CLR, 0x11); */
-		/* break; */
+		clk_writel(VENC_CG_CLR, 0x11);
+		break;
 	/* case MT_LARB_MJC: */
 		/* mjc */
 		/* clk_writel(MJC_CG_SET, 0x21); */
@@ -2039,6 +2056,24 @@ static struct clkmux muxs[NR_MUXS] = {
 	.offset = 0,
 	.nr_inputs = 2,
 	.ops = &clkmux_ops,
+	}, {
+	.name = __stringify(MUX_MSDC30_3), /* 12 */
+	/* .base_addr = CLK_CFG_3, */
+	.sel_mask = 0x0f000000,
+	.pdn_mask = 0x80000000,
+	.offset = 24,
+	.nr_inputs = 9,
+	.ops = &clkmux_ops,
+	.pll = &plls[MSDCPLL],
+	}, {
+	.name = __stringify(MUX_MSDC30_2), /* 13 */
+	/* .base_addr = CLK_CFG_3, */
+	.sel_mask = 0x00070000,
+	.pdn_mask = 0x00800000,
+	.offset = 16,
+	.nr_inputs = 8,
+	.ops = &clkmux_ops,
+	.pll = &plls[MSDCPLL],
 	}, {
 	.name = __stringify(MUX_MSDC30_1),
 	/* .base_addr = CLK_CFG_3, */
@@ -2217,13 +2252,13 @@ static void clkmux_sel_op(struct clkmux *mux, unsigned clksrc)
 		aee_rr_rec_clk(1, clk_readl(mux->base_addr));
 	else if (id < 12)
 		aee_rr_rec_clk(2, clk_readl(mux->base_addr));
-	else if (id < 14)
+	else if (id < 16)
 		aee_rr_rec_clk(3, clk_readl(mux->base_addr));
-	else if (id < 18)
+	else if (id < 20)
 		aee_rr_rec_clk(4, clk_readl(mux->base_addr));
-	else if (id < 22)
+	else if (id < 24)
 		aee_rr_rec_clk(5, clk_readl(mux->base_addr));
-	else if (id < 26)
+	else if (id < 28)
 		aee_rr_rec_clk(6, clk_readl(mux->base_addr));
 	else if (id < 32)
 		aee_rr_rec_clk(7, clk_readl(mux->base_addr));
@@ -2257,13 +2292,13 @@ static void clkmux_enable_op(struct clkmux *mux)
 		aee_rr_rec_clk(1, clk_readl(mux->base_addr));
 	else if (id < 12)
 		aee_rr_rec_clk(2, clk_readl(mux->base_addr));
-	else if (id < 14)
+	else if (id < 16)
 		aee_rr_rec_clk(3, clk_readl(mux->base_addr));
-	else if (id < 18)
+	else if (id < 20)
 		aee_rr_rec_clk(4, clk_readl(mux->base_addr));
-	else if (id < 22)
+	else if (id < 24)
 		aee_rr_rec_clk(5, clk_readl(mux->base_addr));
-	else if (id < 26)
+	else if (id < 28)
 		aee_rr_rec_clk(6, clk_readl(mux->base_addr));
 	else if (id < 32)
 		aee_rr_rec_clk(7, clk_readl(mux->base_addr));
@@ -2296,13 +2331,13 @@ static void clkmux_disable_op(struct clkmux *mux)
 		aee_rr_rec_clk(1, clk_readl(mux->base_addr));
 	else if (id < 12)
 		aee_rr_rec_clk(2, clk_readl(mux->base_addr));
-	else if (id < 14)
+	else if (id < 16)
 		aee_rr_rec_clk(3, clk_readl(mux->base_addr));
-	else if (id < 18)
+	else if (id < 20)
 		aee_rr_rec_clk(4, clk_readl(mux->base_addr));
-	else if (id < 22)
+	else if (id < 24)
 		aee_rr_rec_clk(5, clk_readl(mux->base_addr));
-	else if (id < 26)
+	else if (id < 28)
 		aee_rr_rec_clk(6, clk_readl(mux->base_addr));
 	else if (id < 32)
 		aee_rr_rec_clk(7, clk_readl(mux->base_addr));
@@ -2508,9 +2543,9 @@ EXPORT_SYMBOL(disable_mux);
 
 static struct cg_grp_ops general_cg_grp_ops;
 static struct cg_grp_ops disp0_cg_grp_ops;
-static struct cg_grp_ops disp1_cg_grp_ops;
+/* static struct cg_grp_ops disp1_cg_grp_ops; */
 static struct cg_grp_ops vdec_cg_grp_ops;
-/* static struct cg_grp_ops venc_cg_grp_ops; */
+static struct cg_grp_ops venc_cg_grp_ops;
 
 static struct cg_grp grps[NR_GRPS] = {
 	{
@@ -2525,7 +2560,7 @@ static struct cg_grp grps[NR_GRPS] = {
 /* .set_addr = INFRA_PDN_SET1,    //disable */
 /* .clr_addr = INFRA_PDN_CLR1,    //enable */
 /* .sta_addr = INFRA_PDN_STA1, */
-	.mask = 0x3FDE7FFF,
+	.mask = 0x7FFFFFFF,
 	.ops = &general_cg_grp_ops,
 	}, {
 	.name = __stringify(CG_DISP0),
@@ -2534,7 +2569,7 @@ static struct cg_grp grps[NR_GRPS] = {
 /* .sta_addr = DISP_CG_CON0, */
 /* .dummy_addr = MMSYS_DUMMY, */
 /* .bw_limit_addr = SMI_LARB_BWL_EN_REG, */
-	.mask = 0x0007FFFF,
+	.mask = 0x002FFFFF,
 	.ops = &disp0_cg_grp_ops,
 	.sys = &syss[SYS_DIS],
 	}, {
@@ -2543,15 +2578,15 @@ static struct cg_grp grps[NR_GRPS] = {
 /* .clr_addr = DISP_CG_CLR1,    //enable */
 /* .sta_addr = DISP_CG_CON1, */
 	.mask = 0x0000003C,
-/*	.ops = &general_cg_grp_ops, */
-	.ops = &disp1_cg_grp_ops,
+	.ops = &general_cg_grp_ops,
+/*	.ops = &disp1_cg_grp_ops, */
 	.sys = &syss[SYS_DIS],
 	}, {
 	.name = __stringify(CG_IMAGE),
 /* .set_addr = IMG_CG_SET,        //disable */
 /* .clr_addr = IMG_CG_CLR,        //enable */
 /* .sta_addr = IMG_CG_CON, */
-	.mask = 0x000003F1,
+	.mask = 0x00000FE1,
 	.ops = &general_cg_grp_ops,
 	.sys = &syss[SYS_ISP],
 	}, {
@@ -2582,6 +2617,14 @@ static struct cg_grp grps[NR_GRPS] = {
 	.mask = 0x00000001,
 	.ops = &vdec_cg_grp_ops,
 	.sys = &syss[SYS_VDE],
+	}, {
+	.name = __stringify(CG_VENC),
+/* .set_addr = VENC_CG_CLR,    //disable */
+/* .clr_addr = VENC_CG_SET,    //enable */
+/* .sta_addr = VENC_CG_CON, */
+	.mask = 0x00001111,
+	.ops = &venc_cg_grp_ops,
+	.sys = &syss[SYS_VEN],
 	}
 };
 
@@ -2643,33 +2686,6 @@ static struct cg_grp_ops disp0_cg_grp_ops = {
 	.dump_regs = disp0_grp_dump_regs_op,
 };
 
-static unsigned int disp1_grp_get_state_op(struct cg_grp *grp)
-{
-	volatile unsigned int val;
-	struct subsys *sys = grp->sys;
-
-	if (sys && !sys->state)
-		return 0;
-
-	val = clk_readl(grp->dummy_addr_1);
-	val = (~val) & (grp->mask);
-	return val;
-}
-
-static int disp1_grp_dump_regs_op(struct cg_grp *grp, unsigned int *ptr)
-{
-	*(ptr) = clk_readl(grp->sta_addr);
-	*(++ptr) = clk_readl(grp->dummy_addr_1);
-/* *(++ptr) = clk_readl(grp->bw_limit_addr); */
-
-	return 2;
-}
-
-static struct cg_grp_ops disp1_cg_grp_ops = {
-	.get_state = disp1_grp_get_state_op,
-	.dump_regs = disp1_grp_dump_regs_op,
-};
-
 static unsigned int vdec_grp_get_state_op(struct cg_grp *grp)
 {
 	volatile unsigned int val = 0;
@@ -2692,7 +2708,7 @@ static struct cg_grp_ops vdec_cg_grp_ops = {
 	.dump_regs = vdec_grp_dump_regs_op,
 };
 
-/*
+
 static unsigned int venc_grp_get_state_op(struct cg_grp *grp)
 {
 	volatile unsigned int val = 0;
@@ -2713,7 +2729,7 @@ static struct cg_grp_ops venc_cg_grp_ops = {
 	.get_state = venc_grp_get_state_op,
 	.dump_regs = venc_grp_dump_regs_op,
 };
-*/
+
 
 /************************************************
  **********         cg_clk part        **********
@@ -2727,9 +2743,8 @@ static struct cg_clk_ops audio_cg_clk_ops;
 
 static struct cg_clk_ops audsys_cg_clk_ops;	/* @audio sys */
 static struct cg_clk_ops disp0_cg_clk_ops;
-static struct cg_clk_ops disp1_cg_clk_ops;
 static struct cg_clk_ops vdec_cg_clk_ops;
-/* static struct cg_clk_ops venc_cg_clk_ops; */
+static struct cg_clk_ops venc_cg_clk_ops;
 
 static struct cg_clk clks[NR_CLKS] = {
 	[CG_INFRA_FROM ... CG_INFRA_TO] = {
@@ -2749,8 +2764,8 @@ static struct cg_clk clks[NR_CLKS] = {
 	},
 	[CG_DISP1_FROM ... CG_DISP1_TO] = {
 		.cnt = 0,
-		/* .ops = &general_cg_clk_ops, */
-		.ops = &disp1_cg_clk_ops,
+		.ops = &general_cg_clk_ops,
+		/* .ops = &disp1_cg_clk_ops, */
 		.grp = &grps[CG_DISP1],
 	},
 	[CG_IMAGE_FROM ... CG_IMAGE_TO] = {
@@ -2782,12 +2797,12 @@ static struct cg_clk clks[NR_CLKS] = {
 		.cnt = 0,
 		.ops = &general_cg_clk_ops,
 		.grp = &grps[CG_MJC],
-	},
+	},*/
 	[CG_VENC_FROM ... CG_VENC_TO] = {
 		.cnt = 0,
 		.ops = &venc_cg_clk_ops,
 		.grp = &grps[CG_VENC],
-	}, */
+	},
 };
 
 static struct cg_clk *id_to_clk(unsigned int id)
@@ -2888,51 +2903,6 @@ static struct cg_clk_ops disp0_cg_clk_ops = {
 	.disable = disp0_clk_disable_op,
 };
 
-static int disp1_clk_get_state_op(struct cg_clk *clk)
-{
-	struct subsys *sys = clk->grp->sys;
-
-	if (sys && !sys->state)
-		return PWR_DOWN;
-
-	return (clk_readl(clk->grp->dummy_addr_1) & (clk->mask)) ? PWR_DOWN : PWR_ON;
-}
-
-static int disp1_clk_enable_op(struct cg_clk *clk)
-{
-#ifdef DISP_CLK_LOG
-	clk_info("[%s]: clk->grp->name=%s, clk->mask=0x%x\n", __func__, clk->grp->name, clk->mask);
-#endif
-
-/* clk_writel(clk->grp->clr_addr, clk->mask); */
-	clk_clrl(clk->grp->dummy_addr_1, clk->mask);
-
-	if (clk->mask & 0x0000001C)
-		clk_writel(clk->grp->clr_addr, clk->mask);
-
-	return 0;
-}
-
-static int disp1_clk_disable_op(struct cg_clk *clk)
-{
-#ifdef DISP_CLK_LOG
-	clk_info("[%s]: clk->grp->name=%s, clk->mask=0x%x\n", __func__, clk->grp->name, clk->mask);
-#endif
-/* clk_writel(clk->grp->set_addr, clk->mask); */
-	clk_setl(clk->grp->dummy_addr_1, clk->mask);
-
-	if (clk->mask & 0x0000001C)
-		clk_writel(clk->grp->set_addr, clk->mask);
-
-	return 0;
-}
-
-static struct cg_clk_ops disp1_cg_clk_ops = {
-	.get_state = disp1_clk_get_state_op,
-	.check_validity = general_clk_check_validity_op,
-	.enable = disp1_clk_enable_op,
-	.disable = disp1_clk_disable_op,
-};
 
 #if 0
 static int audio_clk_enable_op(struct cg_clk *clk)
@@ -2996,7 +2966,7 @@ static struct cg_clk_ops vdec_cg_clk_ops = {
 	.disable = general_clk_disable_op,
 };
 
-/*
+
 static int venc_clk_get_state_op(struct cg_clk *clk)
 {
 	return (clk_readl(clk->grp->sta_addr) & (clk->mask)) ? PWR_ON : PWR_DOWN;
@@ -3008,7 +2978,7 @@ static struct cg_clk_ops venc_cg_clk_ops = {
 	.enable = general_clk_enable_op,
 	.disable = general_clk_disable_op,
 };
-*/
+
 
 #ifdef PLL_CLK_LINK
 static int power_prepare_locked(struct cg_grp *grp)
@@ -3450,10 +3420,10 @@ static void subsys_all_force_on(void)
 #define MFG_CG    0x00000001
 #define DISP0_CG  0xFFFFFFFF
 #define DISP1_CG  0x0000003F
-#define IMG_CG    0x000003F1
+#define IMG_CG    0x00000FE1
 #define VDEC_CG   0x00000001
 #define LARB_CG   0x00000001
-/* #define VENC_CG   0x00001111 */
+#define VENC_CG   0x00001111
 
 
 static void cg_all_force_on(void)
@@ -3475,7 +3445,7 @@ static void cg_all_force_on(void)
 	clk_writel(VDEC_CKEN_SET, VDEC_CG);
 	clk_writel(LARB_CKEN_SET, LARB_CG);
 	/* VENC */
-	/* clk_writel(VENC_CG_SET, VENC_CG); */
+	clk_writel(VENC_CG_SET, VENC_CG);
 }
 
 
@@ -3486,7 +3456,7 @@ static void cg_bootup_pdn(void)
 
 	/* INFRA CG */
 	clk_writel(INFRA_PDN_SET0, 0x008a);
-	clk_writel(PERI_PDN_SET0, 0x3fc07ffc);
+	clk_writel(PERI_PDN_SET0, 0x7fc1fffc);
 
 	/* MFG */
 	clk_writel(MFG_CG_SET, MFG_CG);
@@ -3503,7 +3473,7 @@ static void cg_bootup_pdn(void)
 	clk_writel(LARB_CKEN_CLR, LARB_CG);
 
 	/* VENC */
-	/* clk_clrl(VENC_CG_CON, VENC_CG); */
+	clk_clrl(VENC_CG_CON, VENC_CG);
 }
 
 
@@ -3519,8 +3489,8 @@ static void mt_subsys_init(void)
 	syss[SYS_MFG].ctl_addr = SPM_MFG_PWR_CON;
 	syss[SYS_ISP].ctl_addr = SPM_ISP_PWR_CON;
 	syss[SYS_VDE].ctl_addr = SPM_VDE_PWR_CON;
-	/* syss[SYS_VEN].ctl_addr = SPM_VEN_PWR_CON; */
-	/* syss[SYS_MD2].ctl_addr = SPM_MD2_PWR_CON; */
+	syss[SYS_VEN].ctl_addr = SPM_VEN_PWR_CON;
+	syss[SYS_MD2].ctl_addr = SPM_MD2_PWR_CON;
 
 	for (i = 0; i < NR_SYSS; i++) {
 		sys = &syss[i];
@@ -3615,8 +3585,8 @@ static void mt_muxs_init(void)
 
 	muxs[MT_MUX_MSDC30_0].base_addr = CLK_CFG_3;
 	muxs[MT_MUX_MSDC30_1].base_addr = CLK_CFG_3;
-	/* muxs[MT_MUX_MSDC30_2].base_addr = CLK_CFG_3; */
-	/* muxs[MT_MUX_MSDC30_3].base_addr = CLK_CFG_3; */
+	muxs[MT_MUX_MSDC30_2].base_addr = CLK_CFG_3;
+	muxs[MT_MUX_MSDC30_3].base_addr = CLK_CFG_3;
 
 	muxs[MT_MUX_SCP].base_addr = CLK_CFG_4;
 	muxs[MT_MUX_PMICSPI].base_addr = CLK_CFG_4;
@@ -3658,7 +3628,7 @@ static void mt_clks_init(void)
 	struct cg_clk *clk;
 
 	clk_writel(MMSYS_DUMMY, clk_readl(DISP_CG_CON0));
-	clk_writel(MMSYS_DUMMY_1, clk_readl(DISP_CG_CON1));
+	/* clk_writel(MMSYS_DUMMY_1, clk_readl(DISP_CG_CON1)); */
 
 	grps[CG_INFRA].set_addr = INFRA_PDN_SET0;
 	grps[CG_INFRA].clr_addr = INFRA_PDN_CLR0;
@@ -3673,7 +3643,7 @@ static void mt_clks_init(void)
 	grps[CG_DISP1].set_addr = DISP_CG_SET1;
 	grps[CG_DISP1].clr_addr = DISP_CG_CLR1;
 	grps[CG_DISP1].sta_addr = DISP_CG_CON1;
-	grps[CG_DISP1].dummy_addr_1 = MMSYS_DUMMY_1;
+	/* grps[CG_DISP1].dummy_addr_1 = MMSYS_DUMMY_1; */
 	grps[CG_IMAGE].set_addr = IMG_CG_SET;
 	grps[CG_IMAGE].clr_addr = IMG_CG_CLR;
 	grps[CG_IMAGE].sta_addr = IMG_CG_CON;
@@ -3685,9 +3655,9 @@ static void mt_clks_init(void)
 	grps[CG_VDEC0].set_addr = VDEC_CKEN_CLR;
 	grps[CG_VDEC1].clr_addr = LARB_CKEN_SET;
 	grps[CG_VDEC1].set_addr = LARB_CKEN_CLR;
-	/* grps[CG_VENC].clr_addr = VENC_CG_SET; */
-	/* grps[CG_VENC].set_addr = VENC_CG_CLR; */
-	/* grps[CG_VENC].sta_addr = VENC_CG_CON; */
+	grps[CG_VENC].clr_addr = VENC_CG_SET;
+	grps[CG_VENC].set_addr = VENC_CG_CLR;
+	grps[CG_VENC].sta_addr = VENC_CG_CON;
 
 
 	for (i = 0; i < NR_GRPS; i++) {
@@ -3720,14 +3690,14 @@ static void mt_clks_init(void)
 
 	clks[MT_CG_PERI_MSDC30_0].mux = &muxs[MT_MUX_MSDC30_0];
 	clks[MT_CG_PERI_MSDC30_1].mux = &muxs[MT_MUX_MSDC30_1];
-	/* clks[MT_CG_PERI_MSDC30_2].mux = &muxs[MT_MUX_MSDC30_2]; */
-	/* clks[MT_CG_PERI_MSDC30_3].mux = &muxs[MT_MUX_MSDC30_3]; */
+	clks[MT_CG_PERI_MSDC30_2].mux = &muxs[MT_MUX_MSDC30_2];
+	clks[MT_CG_PERI_MSDC30_3].mux = &muxs[MT_MUX_MSDC30_3];
 
 	clks[MT_CG_PERI_UART0].mux = &muxs[MT_MUX_UART];
 	clks[MT_CG_PERI_UART1].mux = &muxs[MT_MUX_UART];
 	clks[MT_CG_PERI_UART2].mux = &muxs[MT_MUX_UART];
 	clks[MT_CG_PERI_UART3].mux = &muxs[MT_MUX_UART];
-	/* clks[MT_CG_PERI_UART4].mux = &muxs[MT_MUX_UART]; */
+	clks[MT_CG_PERI_UART4].mux = &muxs[MT_MUX_UART];
 
 	clks[MT_CG_PERI_SPI0].mux = &muxs[MT_MUX_SPI];
 	clks[MT_CG_PERI_IRTX].mux = &muxs[MT_MUX_IRTX];
@@ -3790,7 +3760,7 @@ void iomap(void)
 	if (!clk_pericfg_base)
 		pr_err("[PERICFG] base failed\n");
 /* audio */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,AUDIO");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,audio");
 	if (!node)
 		pr_err("[CLK_AUDIO] find node failed\n");
 	clk_audio_base = of_iomap(node, 0);
@@ -3811,19 +3781,26 @@ void iomap(void)
 	if (!clk_mmsys_config_base)
 		pr_err("[CLK_MMSYS_CONFIG] base failed\n");
 /* imgsys */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,IMGSYS");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-imgsys");
 	if (!node)
 		pr_err("[CLK_IMGSYS_CONFIG] find node failed\n");
 	clk_imgsys_base = of_iomap(node, 0);
 	if (!clk_imgsys_base)
 		pr_err("[CLK_IMGSYS_CONFIG] base failed\n");
 /* vdec_gcon */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,VDEC_GCON");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-vdec_gcon");
 	if (!node)
 		pr_err("[CLK_VDEC_GCON] find node failed\n");
 	clk_vdec_gcon_base = of_iomap(node, 0);
 	if (!clk_vdec_gcon_base)
 		pr_err("[CLK_VDEC_GCON] base failed\n");
+/* venc_gcon */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-venc_gcon");
+	if (!node)
+		pr_err("[CLK_VENC_GCON] find node failed\n");
+	clk_venc_gcon_base = of_iomap(node, 0);
+	if (!clk_venc_gcon_base)
+		pr_err("[CLK_VENC_GCON] base failed\n");
 }
 #endif
 
@@ -3839,7 +3816,7 @@ int mt_clkmgr_init(void)
 	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
 */
 	spm_mtcmos_ctrl_vdec(STA_POWER_ON);
-	/* spm_mtcmos_ctrl_venc(STA_POWER_ON); */
+	spm_mtcmos_ctrl_venc(STA_POWER_ON);
 	spm_mtcmos_ctrl_isp(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg(STA_POWER_ON);
 	/* spm_mtcmos_ctrl_connsys(STA_POWER_ON); */
@@ -3869,7 +3846,7 @@ int mt_clkmgr_init(void)
 /* **** */
 /* movr to .h */
 
-/* #define VEN_PWR_STA_MASK    (0x1 << 8) */
+#define VEN_PWR_STA_MASK    (0x1 << 8)
 #define VDE_PWR_STA_MASK    (0x1 << 7)
 #define ISP_PWR_STA_MASK    (0x1 << 5)
 #define MFG_PWR_STA_MASK    (0x1 << 4)
@@ -3905,10 +3882,11 @@ bool clkmgr_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mas
 	sta = clk_readl(SPM_PWR_STATUS);
 
 	if (mode == dpidle) {
-		if (sta & (MFG_PWR_STA_MASK | ISP_PWR_STA_MASK | VDE_PWR_STA_MASK | DIS_PWR_STA_MASK))
+		if (sta & (MFG_PWR_STA_MASK | ISP_PWR_STA_MASK | VDE_PWR_STA_MASK | DIS_PWR_STA_MASK |
+			VEN_PWR_STA_MASK))
 			return false;
 	} else if (mode == soidle) {
-		if (sta & (MFG_PWR_STA_MASK | ISP_PWR_STA_MASK | VDE_PWR_STA_MASK))
+		if (sta & (MFG_PWR_STA_MASK | ISP_PWR_STA_MASK | VDE_PWR_STA_MASK | VEN_PWR_STA_MASK))
 			return false;
 	}
 #endif
@@ -4774,8 +4752,8 @@ static int __init mt_clkmgr_late_init(void)
 	mt_disable_clock(MT_CG_IMAGE_LARB2_SMI, "clkmgr");
 	mt_enable_clock(MT_CG_VDEC0_VDEC, "clkmgr");
 	mt_disable_clock(MT_CG_VDEC0_VDEC, "clkmgr");
-	/* mt_enable_clock(MT_CG_VENC_LARB, "clkmgr"); */
-	/* mt_disable_clock(MT_CG_VENC_LARB, "clkmgr"); */
+	mt_enable_clock(MT_CG_VENC_LARB, "clkmgr");
+	mt_disable_clock(MT_CG_VENC_LARB, "clkmgr");
 
 	enable_mux(MT_MUX_AUD1, "clkmgr");
 	disable_mux(MT_MUX_AUD1, "clkmgr");

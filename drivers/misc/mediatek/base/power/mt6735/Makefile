@@ -25,7 +25,7 @@ ifeq ($(strip $(CONFIG_MTK_CLKMGR)),y)
 obj-y += mt_clkmgr_common_legacy.o
 obj-$(CONFIG_ARCH_MT6735) += mt_clkmgr_legacy.o
 obj-$(CONFIG_ARCH_MT6735M) += mt_clkmgr2.o
-obj-$(CONFIG_ARCH_MT6753) += mt_clkmgr_legacy.o
+obj-$(CONFIG_ARCH_MT6753) += mt_clkmgr3.o
 else
 obj-y += mt_clkmgr_common.o
 obj-$(CONFIG_ARCH_MT6735) += mt_clkmgr.o

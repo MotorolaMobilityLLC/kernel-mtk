@@ -7,6 +7,7 @@
 
 #define CONFIG_CLKMGR_STAT
 #define PLL_CLK_LINK
+#define CLKMGR_INCFILE_VER "CLKMGR_INCFILE_D3_LEGACY"
 
 /*
 #define APMIXED_BASE      (0x10209000)
@@ -22,15 +23,15 @@
 #define VENC_GCON_BASE    (0x17000000)
 */
 #ifdef CONFIG_OF
-extern void __iomem  *clk_apmixed_base;
-extern void __iomem  *clk_cksys_base;
-extern void __iomem  *clk_infracfg_ao_base;
-extern void __iomem  *clk_pericfg_base;
-extern void __iomem  *clk_audio_base;
-extern void __iomem  *clk_mfgcfg_base;
-extern void __iomem  *clk_mmsys_config_base;
-extern void __iomem  *clk_imgsys_base;
-extern void __iomem  *clk_vdec_gcon_base;
+extern void __iomem *clk_apmixed_base;
+extern void __iomem *clk_cksys_base;
+extern void __iomem *clk_infracfg_ao_base;
+extern void __iomem *clk_pericfg_base;
+extern void __iomem *clk_audio_base;
+extern void __iomem *clk_mfgcfg_base;
+extern void __iomem *clk_mmsys_config_base;
+extern void __iomem *clk_imgsys_base;
+extern void __iomem *clk_vdec_gcon_base;
 /* extern void __iomem  *clk_mjc_config_base; */
 extern void __iomem  *clk_venc_gcon_base;
 #endif
@@ -143,10 +144,11 @@ extern void __iomem  *clk_venc_gcon_base;
 #define TOPAXI_PROT_STA1        (clk_infracfg_ao_base + 0x0228)
 #define C2K_SPM_CTRL            (clk_infracfg_ao_base + 0x0338)
 
+/* PERI Register */
 #define PERI_PDN_SET0           (clk_pericfg_base + 0x0008)
 #define PERI_PDN_CLR0           (clk_pericfg_base + 0x0010)
 #define PERI_PDN_STA0           (clk_pericfg_base + 0x0018)
-#define PERI_GLOBALCON_CKSEL    (clk_pericfg_base + 0x005c)
+#define PERI_GLOBALCON_CKSEL    (clk_pericfg_base + 0x005c) /* used in clkmux_sel_op for vcore DVFS */
 
 /* Audio Register*/
 #define AUDIO_TOP_CON0          (clk_audio_base + 0x0000)
@@ -165,8 +167,8 @@ extern void __iomem  *clk_venc_gcon_base;
 #define DISP_CG_SET1            (clk_mmsys_config_base + 0x114)
 #define DISP_CG_CLR1            (clk_mmsys_config_base + 0x118)
 
-#define MMSYS_DUMMY             (clk_mmsys_config_base + 0x894)
-/* #define	SMI_LARB_BWL_EN_REG     (clk_mmsys_config_base + 0x21050) */
+#define MMSYS_DUMMY             (clk_mmsys_config_base + 0x894) /* use MMSYS_DUMMY1 for D1/D2/D3 SW compatible */
+#define MMSYS_DUMMY_1           (clk_mmsys_config_base + 0x898) /* use MMSYS_DUMMY2 for D1/D2/D3 SW compatible */
 
 /* IMGSYS Register */
 #define IMG_CG_CON              (clk_imgsys_base + 0x0000)
@@ -195,314 +197,320 @@ extern void __iomem  *clk_venc_gcon_base;
 
 
 enum {
-	CG_INFRA   = 0,
-	CG_PERI    = 1,
-	CG_DISP0   = 2,
-	CG_DISP1   = 3,
-	CG_IMAGE   = 4,
-	CG_MFG     = 5,
-	CG_AUDIO   = 6,
-	CG_VDEC0   = 7,
-	CG_VDEC1   = 8,
-	CG_VENC    = 9,
-	NR_GRPS    = 10,
+	CG_INFRA = 0,
+	CG_PERI = 1,
+	CG_DISP0 = 2,
+	CG_DISP1 = 3,
+	CG_IMAGE = 4,
+	CG_MFG = 5,
+	CG_AUDIO = 6,
+	CG_VDEC0 = 7,
+	CG_VDEC1 = 8,
+	CG_VENC = 9,
+	/* NR_GRPS = X, */
+	NR_GRPS = 10,
 };
 
-enum cg_clk_id {                                 /* The following is CODA name */
-	MT_CG_INFRA_DBGCLK              = 0,        /*  */
-	MT_CG_INFRA_GCE                 = 1,        /*  */
-	MT_CG_INFRA_TRBG                = 2,        /*  */
-	MT_CG_INFRA_CPUM                = 3,        /*  */
-	MT_CG_INFRA_DEVAPC              = 4,        /*  */
-	MT_CG_INFRA_AUDIO               = 5,        /*  */
-	MT_CG_INFRA_GCPU                = 6,        /*  */
-	MT_CG_INFRA_L2C_SRAM            = 7,        /*  */
-	MT_CG_INFRA_M4U                 = 8,        /*  */
-	MT_CG_INFRA_CLDMA               = 12,       /*  */
-	MT_CG_INFRA_CONNMCU_BUS         = 15,       /*  */
-	MT_CG_INFRA_KP                  = 16,       /*  */
-	MT_CG_INFRA_APXGPT              = 18,       /*  */
-	MT_CG_INFRA_SEJ                 = 19,       /*  */
-	MT_CG_INFRA_CCIF0_AP            = 20,       /*  */
-	MT_CG_INFRA_CCIF1_AP            = 21,       /*  */
-	MT_CG_INFRA_PMIC_SPI            = 22,       /*  */
-	MT_CG_INFRA_PMIC_WRAP           = 23,       /*  */
-/* MT_CG_INFRA_CG_0                = 32, */
+#ifndef _MT_IDLE_H
+enum cg_clk_id {
+	MT_CG_INFRA_DBGCLK = 0,
+	MT_CG_INFRA_GCE = 1,
+	MT_CG_INFRA_TRBG = 2,
+	MT_CG_INFRA_CPUM = 3,
+	MT_CG_INFRA_DEVAPC = 4,
+	MT_CG_INFRA_AUDIO = 5,
+	MT_CG_INFRA_GCPU = 6,
+	MT_CG_INFRA_L2C_SRAM = 7,
+	MT_CG_INFRA_M4U = 8,
+	MT_CG_INFRA_CLDMA = 12,
+	MT_CG_INFRA_CONNMCU_BUS = 15,
+	MT_CG_INFRA_KP = 16,
+	MT_CG_INFRA_APXGPT = 18,
+	MT_CG_INFRA_SEJ = 19,
+	MT_CG_INFRA_CCIF0_AP = 20,
+	MT_CG_INFRA_CCIF1_AP = 21,
+	MT_CG_INFRA_PMIC_SPI = 22,
+	MT_CG_INFRA_PMIC_WRAP = 23,
+	/* MT_CG_INFRA_CG_0 = 32, */
 
-	MT_CG_PERI_DISP_PWM             = 0 + 32,
-	MT_CG_PERI_THERM                = 1 + 32,
-	MT_CG_PERI_PWM1                 = 2 + 32,
-	MT_CG_PERI_PWM2                 = 3 + 32,
-	MT_CG_PERI_PWM3                 = 4 + 32,
-	MT_CG_PERI_PWM4                 = 5 + 32,
-	MT_CG_PERI_PWM5                 = 6 + 32,
-	MT_CG_PERI_PWM6                 = 7 + 32,
-	MT_CG_PERI_PWM7                 = 8 + 32,
-	MT_CG_PERI_PWM                  = 9 + 32,
-	MT_CG_PERI_USB0                 = 10 + 32,
-	MT_CG_PERI_IRDA                 = 11 + 32,
-	MT_CG_PERI_APDMA                = 12 + 32,
-	MT_CG_PERI_MSDC30_0             = 13 + 32,
-	MT_CG_PERI_MSDC30_1             = 14 + 32,
-	MT_CG_PERI_MSDC30_2             = 15 + 32,
-	MT_CG_PERI_MSDC30_3             = 16 + 32,
-	MT_CG_PERI_UART0                = 17 + 32,
-	MT_CG_PERI_UART1                = 18 + 32,
-	MT_CG_PERI_UART2                = 19 + 32,
-	MT_CG_PERI_UART3                = 20 + 32,
-	MT_CG_PERI_UART4                = 21 + 32,
-	MT_CG_PERI_BTIF                 = 22 + 32,
-	MT_CG_PERI_I2C0                 = 23 + 32,
-	MT_CG_PERI_I2C1                 = 24 + 32,
-	MT_CG_PERI_I2C2                 = 25 + 32,
-	MT_CG_PERI_I2C3                 = 26 + 32,
-	MT_CG_PERI_AUXADC               = 27 + 32,
-	MT_CG_PERI_SPI0                 = 28 + 32,
-	MT_CG_PERI_IRTX                 = 29 + 32,
-	MT_CG_PERI_I2C4                 = 30 + 32,
-/* MT_CG_INFRA_CG_1                = 64,       // , */
+	MT_CG_PERI_DISP_PWM = 0 + 32,
+	MT_CG_PERI_THERM = 1 + 32,
+	MT_CG_PERI_PWM1 = 2 + 32,
+	MT_CG_PERI_PWM2 = 3 + 32,
+	MT_CG_PERI_PWM3 = 4 + 32,
+	MT_CG_PERI_PWM4 = 5 + 32,
+	MT_CG_PERI_PWM5 = 6 + 32,
+	MT_CG_PERI_PWM6 = 7 + 32,
+	MT_CG_PERI_PWM7 = 8 + 32,
+	MT_CG_PERI_PWM = 9 + 32,
+	MT_CG_PERI_USB0 = 10 + 32,
+	MT_CG_PERI_IRDA = 11 + 32,
+	MT_CG_PERI_APDMA = 12 + 32,
+	MT_CG_PERI_MSDC30_0 = 13 + 32,
+	MT_CG_PERI_MSDC30_1 = 14 + 32,
+	MT_CG_PERI_MSDC30_2 = 15 + 32,
+	MT_CG_PERI_MSDC30_3 = 16 + 32,
+	MT_CG_PERI_UART0 = 17 + 32,
+	MT_CG_PERI_UART1 = 18 + 32,
+	MT_CG_PERI_UART2 = 19 + 32,
+	MT_CG_PERI_UART3 = 20 + 32,
+	MT_CG_PERI_UART4 = 21 + 32,
+	MT_CG_PERI_BTIF = 22 + 32,
+	MT_CG_PERI_I2C0 = 23 + 32,
+	MT_CG_PERI_I2C1 = 24 + 32,
+	MT_CG_PERI_I2C2 = 25 + 32,
+	MT_CG_PERI_I2C3 = 26 + 32,
+	MT_CG_PERI_AUXADC = 27 + 32,
+	MT_CG_PERI_SPI0 = 28 + 32,
+	MT_CG_PERI_IRTX = 29 + 32,
+	MT_CG_PERI_I2C4 = 30 + 32,
+	/* MT_CG_PERI_CG_1 = 64, */
 
-	MT_CG_DISP0_SMI_COMMON          = 0 + 64,
-	MT_CG_DISP0_SMI_LARB0           = 1 + 64,
-	MT_CG_DISP0_CAM_MDP             = 2 + 64,
-	MT_CG_DISP0_MDP_RDMA            = 3 + 64,
-	MT_CG_DISP0_MDP_RSZ0            = 4 + 64,
-	MT_CG_DISP0_MDP_RSZ1            = 5 + 64,
-	MT_CG_DISP0_MDP_TDSHP           = 6 + 64,
-	MT_CG_DISP0_MDP_WDMA            = 7 + 64,
-	MT_CG_DISP0_MDP_WROT            = 8 + 64,
-	MT_CG_DISP0_FAKE_ENG            = 9 + 64,
-	MT_CG_DISP0_DISP_OVL0           = 10 + 64,
-	MT_CG_DISP0_DISP_OVL1           = 11 + 64,
-	MT_CG_DISP0_DISP_RDMA0          = 12 + 64,
-	MT_CG_DISP0_DISP_RDMA1          = 13 + 64,
-	MT_CG_DISP0_DISP_WDMA0          = 14 + 64,
-	MT_CG_DISP0_DISP_COLOR          = 15 + 64,
-	MT_CG_DISP0_DISP_CCORR          = 16 + 64,
-	MT_CG_DISP0_DISP_AAL            = 17 + 64,
-	MT_CG_DISP0_DISP_GAMMA          = 18 + 64,
-	MT_CG_DISP0_DISP_DITHER         = 19 + 64,
-	MT_CG_DISP0_DISP_OD             = 21 + 64,
-/* MT_CG_DISP0_CG_0                  = 96, */
+	MT_CG_DISP0_SMI_COMMON = 0 + 64,
+	MT_CG_DISP0_SMI_LARB0 = 1 + 64,
+	MT_CG_DISP0_CAM_MDP = 2 + 64,
+	MT_CG_DISP0_MDP_RDMA = 3 + 64,
+	MT_CG_DISP0_MDP_RSZ0 = 4 + 64,
+	MT_CG_DISP0_MDP_RSZ1 = 5 + 64,
+	MT_CG_DISP0_MDP_TDSHP = 6 + 64,
+	MT_CG_DISP0_MDP_WDMA = 7 + 64,
+	MT_CG_DISP0_MDP_WROT = 8 + 64,
+	MT_CG_DISP0_FAKE_ENG = 9 + 64,
+	MT_CG_DISP0_DISP_OVL0 = 10 + 64,
+	MT_CG_DISP0_DISP_OVL1 = 11 + 64,
+	MT_CG_DISP0_DISP_RDMA0 = 12 + 64,
+	MT_CG_DISP0_DISP_RDMA1 = 13 + 64,
+	MT_CG_DISP0_DISP_WDMA0 = 14 + 64,
+	MT_CG_DISP0_DISP_COLOR = 15 + 64,
+	MT_CG_DISP0_DISP_CCORR = 16 + 64,
+	MT_CG_DISP0_DISP_AAL = 17 + 64,
+	MT_CG_DISP0_DISP_GAMMA = 18 + 64,
+	MT_CG_DISP0_DISP_DITHER = 19 + 64,
+	MT_CG_DISP0_DISP_OD = 21 + 64,
+	/* MT_CG_DISP0_CG_0 = 96, */
 
-	MT_CG_DISP1_DSI_ENGINE          = 2 + 96,
-	MT_CG_DISP1_DSI_DIGITAL         = 3 + 96,
-	MT_CG_DISP1_DPI_ENGINE          = 4 + 96,
-	MT_CG_DISP1_DPI_PIXEL           = 5 + 96,
-/* MT_CG_DISP1_CG_1                  = 128, */
+	/* MT_CG_DISP1_DSI_PWM_MM = 0 + 96, */
+	/* MT_CG_DISP1_DSI_PWM_26M = 1 + 96, */
+	MT_CG_DISP1_DSI_ENGINE = 2 + 96,
+	MT_CG_DISP1_DSI_DIGITAL = 3 + 96,
+	MT_CG_DISP1_DPI_ENGINE = 4 + 96,
+	MT_CG_DISP1_DPI_PIXEL = 5 + 96,
+	/* MT_CG_DISP1_CG_1 = 128, */
 
-	MT_CG_IMAGE_LARB2_SMI           = 0 + 128,
-	MT_CG_IMAGE_CAM_SMI             = 5 + 128,
-	MT_CG_IMAGE_CAM_CAM             = 6 + 128,
-	MT_CG_IMAGE_SEN_TG              = 7 + 128,
-	MT_CG_IMAGE_SEN_CAM             = 8 + 128,
-	MT_CG_IMAGE_CAM_SV              = 9 + 128,
-	MT_CG_IMAGE_SUFOD               = 10 + 128,
-	MT_CG_IMAGE_FD                  = 11 + 128,
-/* MT_CG_IMAGE_CG                  = 160, */
+	MT_CG_IMAGE_LARB2_SMI = 0 + 128,
+	MT_CG_IMAGE_CAM_SMI = 5 + 128,
+	MT_CG_IMAGE_CAM_CAM = 6 + 128,
+	MT_CG_IMAGE_SEN_TG = 7 + 128,
+	MT_CG_IMAGE_SEN_CAM = 8 + 128,
+	MT_CG_IMAGE_CAM_SV = 9 + 128,
+	MT_CG_IMAGE_SUFOD = 10 + 128,
+	MT_CG_IMAGE_FD = 11 + 128,
+	/* MT_CG_IMAGE_CG = 160, */
 
-	MT_CG_MFG_BG3D					= 0 + 160,
-/* MT_CG_MFG_CG                    = 192, */
+	MT_CG_MFG_BG3D = 0 + 160,
+	/* MT_CG_MFG_CG = 192, */
 
-	MT_CG_AUDIO_AFE                 = 2 + 192,
-	MT_CG_AUDIO_I2S                 = 6 + 192,
-	MT_CG_AUDIO_22M                 = 8 + 192,
-	MT_CG_AUDIO_24M                 = 9 + 192,
-	MT_CG_AUDIO_APLL2_TUNER         = 18 + 192,
-	MT_CG_AUDIO_APLL_TUNER          = 19 + 192,
-	MT_CG_AUDIO_ADC                 = 24 + 192,
-	MT_CG_AUDIO_DAC                 = 25 + 192,
-	MT_CG_AUDIO_DAC_PREDIS          = 26 + 192,
-	MT_CG_AUDIO_TML                 = 27 + 192,
-/* MT_CG_AUDIO_CG                  = 224, */
+	MT_CG_AUDIO_AFE = 2 + 192,
+	MT_CG_AUDIO_I2S = 6 + 192,
+	/* MT_CG_AUDIO_ADDA4_ADC = 7 + 192,*/ /* GeorgeCY:no use */
+	MT_CG_AUDIO_22M = 8 + 192,
+	MT_CG_AUDIO_24M = 9 + 192,
+	MT_CG_AUDIO_APLL2_TUNER = 18 + 192,
+	MT_CG_AUDIO_APLL_TUNER = 19 + 192,
+	MT_CG_AUDIO_ADC = 24 + 192,
+	MT_CG_AUDIO_DAC = 25 + 192,
+	MT_CG_AUDIO_DAC_PREDIS = 26 + 192,
+	MT_CG_AUDIO_TML = 27 + 192,
+	/* MT_CG_AUDIO_CG = 224, */
 
-	MT_CG_VDEC0_VDEC				= 0 + 224,
-/* MT_CG_VDEC0_CG                  = 256, */
+	MT_CG_VDEC0_VDEC = 0 + 224,
+	/* MT_CG_VDEC0_CG = 256, */
 
-	MT_CG_VDEC1_LARB				= 0 + 256,
-/* MT_CG_VDEC1_CG                  = 288, */
+	MT_CG_VDEC1_LARB = 0 + 256,
+	/* MT_CG_VDEC1_CG = 288, */
 
-	MT_CG_VENC_LARB                 = 0 + 288,
-	MT_CG_VENC_VENC                 = 4 + 288,
-	MT_CG_VENC_JPGENC               = 8 + 288,
-	MT_CG_VENC_JPGDEC               = 12 + 288,
+	MT_CG_VENC_LARB = 0 + 288,
+	MT_CG_VENC_VENC = 4 + 288,
+	MT_CG_VENC_JPGENC = 8 + 288,
+	MT_CG_VENC_JPGDEC = 12 + 288,
 
-	CG_INFRA_FROM                   = MT_CG_INFRA_DBGCLK,
-	CG_INFRA_TO                     = MT_CG_INFRA_PMIC_WRAP,
-	NR_INFRA_CLKS                   = 23,
+	CG_INFRA_FROM = MT_CG_INFRA_DBGCLK,
+	CG_INFRA_TO = MT_CG_INFRA_PMIC_WRAP,
+	NR_INFRA_CLKS = 23,
 
-	CG_PERI_FROM                    = MT_CG_PERI_DISP_PWM,
-	CG_PERI_TO                      = MT_CG_PERI_I2C4,
-	NR_PERI_CLKS                    = 29,
+	CG_PERI_FROM = MT_CG_PERI_DISP_PWM,
+	CG_PERI_TO = MT_CG_PERI_I2C4,
+	NR_PERI_CLKS = 29,
 
-	CG_DISP0_FROM                   = MT_CG_DISP0_SMI_COMMON,
-	CG_DISP0_TO                     = MT_CG_DISP0_DISP_OD,
-	NR_DISP0_CLKS                   = 21,
+	CG_DISP0_FROM = MT_CG_DISP0_SMI_COMMON,
+	CG_DISP0_TO = MT_CG_DISP0_DISP_OD,
+	NR_DISP0_CLKS = 21,
 
-	CG_DISP1_FROM                   = MT_CG_DISP1_DSI_ENGINE,
-	CG_DISP1_TO                     = MT_CG_DISP1_DPI_PIXEL,
-	NR_DISP1_CLKS                   = 5,
+	CG_DISP1_FROM = MT_CG_DISP1_DSI_ENGINE,
+	CG_DISP1_TO = MT_CG_DISP1_DPI_PIXEL,
+	NR_DISP1_CLKS = 5,
 
-	CG_IMAGE_FROM                   = MT_CG_IMAGE_LARB2_SMI,
-	CG_IMAGE_TO                     = MT_CG_IMAGE_FD,
-	NR_IMAGE_CLKS                   = 11,
+	CG_IMAGE_FROM = MT_CG_IMAGE_LARB2_SMI,
+	CG_IMAGE_TO = MT_CG_IMAGE_FD,
+	NR_IMAGE_CLKS = 11,
 
-	CG_MFG_FROM                     = MT_CG_MFG_BG3D,
-	CG_MFG_TO                       = MT_CG_MFG_BG3D,
-	NR_MFG_CLKS                     = 1,
+	CG_MFG_FROM = MT_CG_MFG_BG3D,
+	CG_MFG_TO = MT_CG_MFG_BG3D,
+	NR_MFG_CLKS = 1,
 
-	CG_AUDIO_FROM                   = MT_CG_AUDIO_AFE,
-	CG_AUDIO_TO                     = MT_CG_AUDIO_TML,
-	NR_AUDIO_CLKS                   = 27,
+	CG_AUDIO_FROM = MT_CG_AUDIO_AFE,
+	CG_AUDIO_TO = MT_CG_AUDIO_TML,
+	NR_AUDIO_CLKS = 27,
 
-	CG_VDEC0_FROM                   = MT_CG_VDEC0_VDEC,
-	CG_VDEC0_TO                     = MT_CG_VDEC0_VDEC,
-	NR_VDEC0_CLKS                   = 1,
+	CG_VDEC0_FROM = MT_CG_VDEC0_VDEC,
+	CG_VDEC0_TO = MT_CG_VDEC0_VDEC,
+	NR_VDEC0_CLKS = 1,
 
-	CG_VDEC1_FROM                   = MT_CG_VDEC1_LARB,
-	CG_VDEC1_TO                     = MT_CG_VDEC1_LARB,
-	NR_VDEC1_CLKS                   = 1,
+	CG_VDEC1_FROM = MT_CG_VDEC1_LARB,
+	CG_VDEC1_TO = MT_CG_VDEC1_LARB,
+	NR_VDEC1_CLKS = 1,
 
-	CG_VENC_FROM                    = MT_CG_VENC_LARB,
-	CG_VENC_TO                      = MT_CG_VENC_JPGDEC,
-	NR_VENC_CLKS                    = 12,
+	CG_VENC_FROM = MT_CG_VENC_LARB,
+	CG_VENC_TO = MT_CG_VENC_JPGDEC,
+	NR_VENC_CLKS = 12,
 
-	NR_CLKS                         = 301,
+	NR_CLKS = 301,
 
 };
+#endif				/* _MT_IDLE_H */
 
 enum {
 	/* CLK_CFG_0 */
-	MT_MUX_MM           = 0,
-	MT_MUX_DDRPHY       = 1,
-	MT_MUX_MEM          = 2,
-	MT_MUX_AXI          = 3,
+	MT_MUX_MM = 0,
+	MT_MUX_DDRPHY = 1,
+	MT_MUX_MEM = 2,
+	MT_MUX_AXI = 3,
 
 	/* CLK_CFG_1 */
-	MT_MUX_CAMTG        = 4,
-	MT_MUX_MFG          = 5,
-	MT_MUX_VDEC         = 6,
-	MT_MUX_PWM          = 7,
+	MT_MUX_CAMTG = 4,
+	MT_MUX_MFG = 5,
+	MT_MUX_VDEC = 6,
+	MT_MUX_PWM = 7,
 
 	/* CLK_CFG_2 */
-	MT_MUX_MSDC50_0     = 8,
-	MT_MUX_USB20        = 9,
-	MT_MUX_SPI          = 10,
-	MT_MUX_UART         = 11,
+	MT_MUX_MSDC50_0 = 8,
+	MT_MUX_USB20 = 9,
+	MT_MUX_SPI = 10,
+	MT_MUX_UART = 11,
 
 	/* CLK_CFG_3 */
-	MT_MUX_MSDC30_3     = 12,
-	MT_MUX_MSDC30_2     = 13,
-	MT_MUX_MSDC30_1     = 14,
-	MT_MUX_MSDC30_0     = 15,
+	MT_MUX_MSDC30_3 = 12,
+	MT_MUX_MSDC30_2 = 13,
+	MT_MUX_MSDC30_1 = 14,
+	MT_MUX_MSDC30_0 = 15,
 
 	/* CLK_CFG_4 */
-	MT_MUX_SCP          = 16,
-	MT_MUX_PMICSPI      = 17,
-	MT_MUX_AUDINTBUS    = 18,
-	MT_MUX_AUDIO        = 19,
+	MT_MUX_SCP = 16,
+	MT_MUX_PMICSPI = 17,
+	MT_MUX_AUDINTBUS = 18,
+	MT_MUX_AUDIO = 19,
 
 	/* CLK_CFG_5 */
-	MT_MUX_MFG13M       = 20,
-	MT_MUX_SCAM         = 21,
-	MT_MUX_DPI0         = 22,
-	MT_MUX_ATB          = 23,
+	MT_MUX_MFG13M = 20,
+	MT_MUX_SCAM = 21,
+	MT_MUX_DPI0 = 22,
+	MT_MUX_ATB = 23,
 
 	/* CLK_CFG_6 */
-	MT_MUX_IRTX         = 24,
-	MT_MUX_IRDA         = 25,
-	MT_MUX_AUD2         = 26,
-	MT_MUX_AUD1         = 27,
+	MT_MUX_IRTX = 24,
+	MT_MUX_IRDA = 25,
+	MT_MUX_AUD2 = 26,
+	MT_MUX_AUD1 = 27,
 
 	/* CLK_CFG_7 */
-	MT_MUX_DISPPWM      = 28,
+	MT_MUX_DISPPWM = 28,
 
-	NR_MUXS             = 29,
+	NR_MUXS = 29,
 };
 
 enum {
-	ARMPLL  = 0,
-	MAINPLL    = 1,
-	MSDCPLL    = 2,
-	UNIVPLL    = 3,
-	MMPLL      = 4,
-	VENCPLL    = 5,
-	TVDPLL     = 6,
-	APLL1      = 7,
-	APLL2      = 8,
-	NR_PLLS    = 9,
+	ARMPLL = 0,
+	MAINPLL = 1,
+	MSDCPLL = 2,
+	UNIVPLL = 3,
+	MMPLL = 4,
+	VENCPLL = 5, /* for display */
+	TVDPLL = 6,
+	APLL1 = 7,
+	APLL2 = 8,
+	NR_PLLS = 9,
 };
 
 enum {
-	SYS_MD1       = 0,
-	SYS_MD2       = 1,
-	SYS_CONN      = 2,
-	SYS_DIS       = 3,
-	SYS_MFG       = 4,
-	SYS_ISP       = 5,
-	SYS_VDE       = 6,
-	SYS_VEN       = 7,
-/* SYS_AUD       = 8, */
-	NR_SYSS       = 8,
+	SYS_MD1 = 0,
+	SYS_MD2 = 1,
+	SYS_CONN = 2,
+	SYS_DIS = 3,
+	SYS_MFG = 4,
+	SYS_ISP = 5,
+	SYS_VDE = 6,
+	SYS_VEN = 7,
+	/* SYS_AUD = X, */
+	NR_SYSS = 8,
 };
 
 enum {
 	MT_LARB_DISP = 0,
 	MT_LARB_VDEC = 1,
-	MT_LARB_IMG  = 2,
+	MT_LARB_IMG = 2,
 	MT_LARB_VENC = 3,
 	/* MT_LARB_MJC  = 4, */
 };
 
 /* larb monitor mechanism definition*/
 enum {
-	LARB_MONITOR_LEVEL_HIGH     = 10,
-	LARB_MONITOR_LEVEL_MEDIUM   = 20,
-	LARB_MONITOR_LEVEL_LOW      = 30,
+	LARB_MONITOR_LEVEL_HIGH = 10,
+	LARB_MONITOR_LEVEL_MEDIUM = 20,
+	LARB_MONITOR_LEVEL_LOW = 30,
 };
 
 struct larb_monitor {
 	struct list_head link;
 	int level;
-	void (*backup)(struct larb_monitor *h, int larb_idx);       /* called before disable larb clock */
-	void (*restore)(struct larb_monitor *h, int larb_idx);      /* called after enable larb clock */
+	void (*backup)(struct larb_monitor *h, int larb_idx);	/* called before disable larb clock */
+	void (*restore)(struct larb_monitor *h, int larb_idx);	/* called after enable larb clock */
 };
 
 enum monitor_clk_sel_0 {
-	no_clk_0             = 0,
-	AD_UNIV_624M_CK      = 5,
-	AD_UNIV_416M_CK      = 6,
-	AD_UNIV_249P6M_CK    = 7,
-	AD_UNIV_178P3M_CK_0  = 8,
-	AD_UNIV_48M_CK       = 9,
-	AD_USB_48M_CK        = 10,
-	rtc32k_ck_i_0        = 20,
-	AD_SYS_26M_CK_0      = 21,
+	no_clk_0 = 0,
+	AD_UNIV_624M_CK = 5,
+	AD_UNIV_416M_CK = 6,
+	AD_UNIV_249P6M_CK = 7,
+	AD_UNIV_178P3M_CK_0 = 8,
+	AD_UNIV_48M_CK = 9,
+	AD_USB_48M_CK = 10,
+	rtc32k_ck_i_0 = 20,
+	AD_SYS_26M_CK_0 = 21,
 };
 enum monitor_clk_sel {
-	no_clk               = 0,
-	AD_SYS_26M_CK        = 1,
-	rtc32k_ck_i          = 2,
-	clkph_MCLK_o         = 7,
-	AD_DPICLK            = 8,
-	AD_MSDCPLL_CK        = 9,
-	AD_MMPLL_CK          = 10,
-	AD_UNIV_178P3M_CK    = 11,
-	AD_MAIN_H156M_CK     = 12,
-	AD_VENCPLL_CK        = 13,
+	no_clk = 0,
+	AD_SYS_26M_CK = 1,
+	rtc32k_ck_i = 2,
+	clkph_MCLK_o = 7,
+	AD_DPICLK = 8,
+	AD_MSDCPLL_CK = 9,
+	AD_MMPLL_CK = 10,
+	AD_UNIV_178P3M_CK = 11,
+	AD_MAIN_H156M_CK = 12,
+	AD_VENCPLL_CK = 13,
 };
 
 enum ckmon_sel {
-	clk_ckmon0           = 0,
-	clk_ckmon1           = 1,
-	clk_ckmon2           = 2,
-	clk_ckmon3           = 3,
+	clk_ckmon0 = 0,
+	clk_ckmon1 = 1,
+	clk_ckmon2 = 2,
+	clk_ckmon3 = 3,
 };
 
 enum idle_mode {
-	dpidle               = 0,
-	soidle               = 1,
-	slidle               = 2,
+	dpidle = 0,
+	soidle = 1,
+	slidle = 2,
 };
 
 extern void register_larb_monitor(struct larb_monitor *handler);
@@ -566,5 +574,7 @@ extern void slp_check_pm_mtcmos_pll(void);
 
 /* sram debug */
 extern void aee_rr_rec_clk(int id, u32 val);
+
+extern void msdc_clk_status(int *status);
 
 #endif
