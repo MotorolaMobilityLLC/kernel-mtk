@@ -198,11 +198,16 @@ unsigned long dbgapb_base;
 
 
 /*-- MD3 Bank 0 */
-#define MD3_BANK0_MAP0 ((unsigned int *)(infra_ao_base+0x370))
-#define MD3_BANK0_MAP1 ((unsigned int *)(infra_ao_base+0x374))
+#define MD3_BANK0_MAP0 ((unsigned int *)(infra_ao_base+0x330))
+#define MD3_BANK0_MAP1 ((unsigned int *)(infra_ao_base+0x334))
+#define MD3_BANK0_MAP2 ((unsigned int *)(infra_ao_base+0x338))
+#define MD3_BANK0_MAP3 ((unsigned int *)(infra_ao_base+0x33C))
+
 /*-- MD3 Bank 4 */
-#define MD3_BANK4_MAP0 ((unsigned int *)(infra_ao_base+0x380))
-#define MD3_BANK4_MAP1 ((unsigned int *)(infra_ao_base+0x384))
+#define MD3_BANK4_MAP0 ((unsigned int *)(infra_ao_base+0x350))
+#define MD3_BANK4_MAP1 ((unsigned int *)(infra_ao_base+0x354))
+#define MD3_BANK4_MAP2 ((unsigned int *)(infra_ao_base+0x358))
+#define MD3_BANK4_MAP3 ((unsigned int *)(infra_ao_base+0x35C))
 
 void ccci_clear_md_region_protection(struct ccci_modem *md)
 {
@@ -669,18 +674,20 @@ int set_md_smem_remap(struct ccci_modem *md, phys_addr_t src, phys_addr_t des, p
 		break;
 
 	case MD_SYS3:
-		remap1_val = (((des>>24)|0x1)&0xFF)
-				  + ((((invalid+0x2000000*0)>>16)|1<<8)&0xFF00)
-				  + ((((invalid+0x2000000*1)>>8)|1<<16)&0xFF0000)
-				  + ((((invalid+0x2000000*2)>>0)|1<<24)&0xFF000000);
-		remap2_val = ((((invalid+0x2000000*3)>>24)|0x1)&0xFF)
-				  + ((((invalid+0x2000000*4)>>16)|1<<8)&0xFF00)
-				  + ((((invalid+0x2000000*5)>>8)|1<<16)&0xFF0000)
-				  + ((((invalid+0x2000000*6)>>0)|1<<24)&0xFF000000);
+		remap0_val = (((des >> 24) | 0x1) & 0x1FF)
+			+ ((((des + 0x2000000 * 1) >> 8) | (1 << 16)) & 0x1FF0000);
+		remap1_val = ((((des + 0x2000000 * 2) >> 24) | 0x1) & 0x1FF)
+			+ ((((des + 0x2000000 * 3) >> 8) | (1 << 16)) & 0x1FF0000);
+		remap2_val = ((((des + 0x2000000 * 4) >> 24) | 0x1) & 0x1FF)
+		    + ((((des + 0x2000000 * 5) >> 8) | (1 << 16)) & 0x1FF0000);
+		remap3_val = ((((des + 0x2000000 * 6) >> 24) | 0x1) & 0x1FF)
+		    + ((((des + 0x2000000 * 7) >> 8) | (1 << 16)) & 0x1FF0000);
 
 #ifdef ENABLE_MEM_REMAP_HW
-		mt_reg_sync_writel(remap1_val, MD3_BANK4_MAP0);
-		mt_reg_sync_writel(remap2_val, MD3_BANK4_MAP1);
+		mt_reg_sync_writel(remap0_val, MD3_BANK4_MAP0);
+		mt_reg_sync_writel(remap1_val, MD3_BANK4_MAP1);
+		mt_reg_sync_writel(remap2_val, MD3_BANK4_MAP2);
+		mt_reg_sync_writel(remap3_val, MD3_BANK4_MAP3);
 #endif
 		break;
 	default:
@@ -731,18 +738,20 @@ int set_md_rom_rw_mem_remap(struct ccci_modem *md, phys_addr_t src, phys_addr_t 
 		break;
 
 	case MD_SYS3:
-		remap1_val = (((des>>24)|0x1)&0xFF)
-				  + ((((des+0x2000000*1)>>16)|1<<8)&0xFF00)
-				  + ((((des+0x2000000*2)>>8)|1<<16)&0xFF0000)
-				  + ((((invalid+0x2000000*7)>>0)|1<<24)&0xFF000000);
-		remap2_val = ((((invalid+0x2000000*8)>>24)|0x1)&0xFF)
-				  + ((((invalid+0x2000000*9)>>16)|1<<8)&0xFF00)
-				  + ((((invalid+0x2000000*10)>>8)|1<<16)&0xFF0000)
-				  + ((((invalid+0x2000000*11)>>0)|1<<24)&0xFF000000);
+		remap0_val = (((des >> 24) | 0x1) & 0x1FF)
+			+ ((((des + 0x2000000 * 1) >> 8) | (1 << 16)) & 0x1FF0000);
+		remap1_val = ((((des + 0x2000000 * 2) >> 24) | 0x1) & 0x1FF)
+			+ ((((des + 0x2000000 * 3) >> 8) | (1 << 16)) & 0x1FF0000);
+		remap2_val = ((((des + 0x2000000 * 4) >> 24) | 0x1) & 0x1FF)
+		    + ((((des + 0x2000000 * 5) >> 8) | (1 << 16)) & 0x1FF0000);
+		remap3_val = ((((des + 0x2000000 * 6) >> 24) | 0x1) & 0x1FF)
+		    + ((((des + 0x2000000 * 7) >> 8) | (1 << 16)) & 0x1FF0000);
 
 #ifdef ENABLE_MEM_REMAP_HW
-		mt_reg_sync_writel(remap1_val, MD3_BANK0_MAP0);
-		mt_reg_sync_writel(remap2_val, MD3_BANK0_MAP1);
+		mt_reg_sync_writel(remap0_val, MD3_BANK0_MAP0);
+		mt_reg_sync_writel(remap1_val, MD3_BANK0_MAP1);
+		mt_reg_sync_writel(remap2_val, MD3_BANK0_MAP2);
+		mt_reg_sync_writel(remap3_val, MD3_BANK0_MAP3);
 #endif
 		break;
 
