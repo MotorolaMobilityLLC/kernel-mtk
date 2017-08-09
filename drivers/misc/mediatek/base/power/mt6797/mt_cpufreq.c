@@ -3783,7 +3783,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 				cpufreq_unlock(flags);
 			}
 			break;
-#if 0
+#if 1
 		case CPU_DEAD:
 			cpus = cpumask_weight(&cpu_online_cpumask);
 			cpufreq_ver("CPU_DEAD -> cpus = %d\n", cpus);
