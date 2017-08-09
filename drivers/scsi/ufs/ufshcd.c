@@ -975,7 +975,7 @@ __ufshcd_send_uic_cmd(struct ufs_hba *hba, struct uic_command *uic_cmd)
 	}
 
 #ifdef CONFIG_MTK_UFS_DEBUG
-	if (g_ufs_dbg_lvl >= T_UFS_DBG_LVL_1) {
+	if (ufs_mtk_dbg_lvl >= T_UFS_DBG_LVL_1) {
 		dev_err(hba->dev, "UCMD:%x,%x,%x,%x\n",
 		uic_cmd->command, uic_cmd->argument1, uic_cmd->argument2, uic_cmd->argument3);
 	}
@@ -1364,6 +1364,7 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 	tag = cmd->request->tag;
 
 #ifdef CONFIG_MTK_UFS_DEBUG
+#if 0
 	if (READ_10 == cmd->cmnd[0] || WRITE_10 == cmd->cmnd[0]) {
 		u32 lba = 0;
 		u32 blk_cnt;
@@ -1373,11 +1374,12 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 
 		dev_err(hba->dev, "QCMD,L:%x,T:%d,0x%x,%s,LBA:%d,BCNT:%d\n",
 			ufshcd_scsi_to_upiu_lun(cmd->device->lun), tag, cmd->cmnd[0],
-			g_ufs_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str, lba, blk_cnt);
+			ufs_mtk_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str, lba, blk_cnt);
 	} else
 		dev_err(hba->dev, "QCMD,L:%x,T:%d,0x%x,%s\n",
 		ufshcd_scsi_to_upiu_lun(cmd->device->lun),
-		tag, cmd->cmnd[0], g_ufs_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str);
+		tag, cmd->cmnd[0], ufs_mtk_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str);
+#endif
 #endif
 
 	spin_lock_irqsave(hba->host->host_lock, flags);
@@ -3232,7 +3234,7 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
 
 #ifdef CONFIG_MTK_UFS_BOOTING
     /* todo: consider ufshcd_reset_and_restore() case here */
-	if (g_ufs_tr_comp_notification_used) {
+	if (ufs_mtk_tr_cn_used) {
 		completed_reqs = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_LIST_COMP_NOTIFY);
 
 		/* read door bell for debugging */
@@ -3650,7 +3652,7 @@ static void ufshcd_update_uic_error(struct ufs_hba *hba)
 		dev_err(hba->dev,
 			"Host UIC Error Code PHY Adpter Layer: %lx\n", reg_l);
 
-		if (g_ufs_dbg_lvl >= T_UFS_DBG_LVL_1) {
+		if (ufs_mtk_dbg_lvl >= T_UFS_DBG_LVL_1) {
 			if (test_bit(0, &reg_l))
 				dev_err(hba->dev, "PHY error on Lane 0\n");
 			if (test_bit(1, &reg_l))
@@ -3675,7 +3677,7 @@ static void ufshcd_update_uic_error(struct ufs_hba *hba)
 		dev_err(hba->dev,
 			"Host UIC Error Code Data Link Layer: %08x\n", reg);
 
-		if (g_ufs_dbg_lvl >= T_UFS_DBG_LVL_1) {
+		if (ufs_mtk_dbg_lvl >= T_UFS_DBG_LVL_1) {
 			if (test_bit(0, &reg_l))
 				dev_err(hba->dev, "NAC_RECEIVED\n");
 			if (test_bit(1, &reg_l))
@@ -5584,6 +5586,16 @@ void ufshcd_remove(struct ufs_hba *hba)
 EXPORT_SYMBOL_GPL(ufshcd_remove);
 
 /**
+ * ufshcd_dealloc_host - deallocate Host Bus Adapter (HBA)
+ * @hba: pointer to Host Bus Adapter (HBA)
+ */
+void ufshcd_dealloc_host(struct ufs_hba *hba)
+{
+	scsi_host_put(hba->host);
+}
+EXPORT_SYMBOL_GPL(ufshcd_dealloc_host);
+
+/**
  * ufshcd_set_dma_mask - Set dma mask based on the controller
  *			 addressing capability
  * @hba: per adapter instance
@@ -5893,36 +5905,6 @@ out_disable:
 out_error:
 	return err;
 }
-
-#ifdef CONFIG_MTK_UFS_BOOTING
-/**
- * ufshcd_init - Driver registration routine
- */
-static int __init ufshcd_module_init(void)
-{
-	int err;
-
-	err = ufshcd_pltfrm_init();
-
-	if (err)
-		goto out;
-
-	return 0;
-
-out:
-	return err;
-}
-module_init(ufshcd_module_init);
-
-/**
- * ufshcd_exit - Driver exit clean-up routine
- */
-static void __exit ufshcd_module_exit(void)
-{
-	ufshcd_pltfrm_exit();
-}
-module_exit(ufshcd_module_exit);
-#endif  /* CONFIG_MTK_UFS_BOOTING */
 
 EXPORT_SYMBOL_GPL(ufshcd_init);
 

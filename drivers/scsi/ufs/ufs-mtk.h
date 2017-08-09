@@ -253,11 +253,11 @@ struct ufs_crypto {
  */
 #define UFS_DEVICE_QUIRK_INCORRECT_PWM_BURST_CLOSURE_EXTENSION    (1 << 30)
 
-extern ufs_cmd_str_table    g_ufs_cmd_str_tbl[];
-extern enum ufs_dbg_lvl_t   g_ufs_dbg_lvl;
-extern bool                 g_ufs_host_deep_stall_enable;
-extern bool                 g_ufs_host_scramble_enable;
-extern bool                 g_ufs_tr_comp_notification_used;
+extern ufs_cmd_str_table    ufs_mtk_cmd_str_tbl[];
+extern enum ufs_dbg_lvl_t   ufs_mtk_dbg_lvl;
+extern bool                 ufs_mtk_host_deep_stall_enable;
+extern bool                 ufs_mtk_host_scramble_enable;
+extern bool                 ufs_mtk_tr_cn_used;
 extern struct of_device_id  ufs_of_match[];
 
 void ufs_mtk_advertise_fixup_device(struct ufs_hba *hba);

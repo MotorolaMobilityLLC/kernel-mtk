@@ -36,42 +36,9 @@
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/of.h>
-#ifdef CONFIG_MTK_UFS_BOOTING
-#include <linux/of_address.h>   /* mtk patch */
-#include <linux/of_irq.h>       /* mtk patch */
-#endif
 
 #include "ufshcd.h"
-#include "ufs-mtk.h"
-
-#ifdef CONFIG_MTK_UFS_BOOTING
-static struct ufs_hba_variant_ops ufs_mtk_vops = {
-	"mediatek.ufs",  /* name */
-	ufs_mtk_init,    /* init */
-	NULL,            /* exit */
-	NULL,            /* clk_scale_notify */
-	NULL,            /* setup_clocks */
-	NULL,            /* setup_regulators */
-	NULL,            /* hce_enable_notify */
-	ufs_mtk_link_startup_notify,  /* link_startup_notify */
-	ufs_mtk_pwr_change_notify,    /* pwr_change_notify */
-	NULL,            /* suspend */
-	NULL,            /* resume */
-};
-#endif
-
-static struct ufs_hba_variant_ops *get_variant_ops(struct device *dev)
-{
-	if (dev->of_node) {
-		const struct of_device_id *match;
-
-		match = of_match_node(ufs_of_match, dev->of_node);
-		if (match)
-			return (struct ufs_hba_variant_ops *)match->data;
-	}
-
-	return NULL;
-}
+#include "ufshcd-pltfrm.h"
 
 static int ufshcd_parse_clock_info(struct ufs_hba *hba)
 {
@@ -265,10 +232,11 @@ out:
  * Returns 0 if successful
  * Returns non-zero otherwise
  */
-static int ufshcd_pltfrm_suspend(struct device *dev)
+int ufshcd_pltfrm_suspend(struct device *dev)
 {
 	return ufshcd_system_suspend(dev_get_drvdata(dev));
 }
+EXPORT_SYMBOL_GPL(ufshcd_pltfrm_suspend);
 
 /**
  * ufshcd_pltfrm_resume - resume power management function
@@ -277,13 +245,11 @@ static int ufshcd_pltfrm_suspend(struct device *dev)
  * Returns 0 if successful
  * Returns non-zero otherwise
  */
-static int ufshcd_pltfrm_resume(struct device *dev)
+int ufshcd_pltfrm_resume(struct device *dev)
 {
 	return ufshcd_system_resume(dev_get_drvdata(dev));
 }
-#else
-#define ufshcd_pltfrm_suspend	NULL
-#define ufshcd_pltfrm_resume	NULL
+EXPORT_SYMBOL_GPL(ufshcd_pltfrm_resume);
 #endif
 
 #ifdef CONFIG_PM_RUNTIME
@@ -291,76 +257,42 @@ static int ufshcd_pltfrm_runtime_suspend(struct device *dev)
 {
 	return ufshcd_runtime_suspend(dev_get_drvdata(dev));
 }
+EXPORT_SYMBOL_GPL(ufshcd_pltfrm_runtime_suspend);
+
 static int ufshcd_pltfrm_runtime_resume(struct device *dev)
 {
 	return ufshcd_runtime_resume(dev_get_drvdata(dev));
 }
+EXPORT_SYMBOL_GPL(ufshcd_pltfrm_runtime_resume);
+
 static int ufshcd_pltfrm_runtime_idle(struct device *dev)
 {
 	return ufshcd_runtime_idle(dev_get_drvdata(dev));
 }
-#else /* !CONFIG_PM_RUNTIME */
-#define ufshcd_pltfrm_runtime_suspend	NULL
-#define ufshcd_pltfrm_runtime_resume	NULL
-#define ufshcd_pltfrm_runtime_idle	NULL
+EXPORT_SYMBOL_GPL(ufshcd_pltfrm_runtime_idle);
 #endif /* CONFIG_PM_RUNTIME */
 
-static void ufshcd_pltfrm_shutdown(struct platform_device *pdev)
+void ufshcd_pltfrm_shutdown(struct platform_device *pdev)
 {
 	ufshcd_shutdown((struct ufs_hba *)platform_get_drvdata(pdev));
 }
+EXPORT_SYMBOL_GPL(ufshcd_pltfrm_shutdown);
 
 /**
- * ufshcd_pltfrm_probe - probe routine of the driver
+ * ufshcd_pltfrm_init - probe routine of the driver
  * @pdev: pointer to Platform device handle
+ * @vops: pointer to variant ops
  *
  * Returns 0 on success, non-zero value on failure
  */
-static int ufshcd_pltfrm_probe(struct platform_device *pdev)
+int ufshcd_pltfrm_init(struct platform_device *pdev,
+		       struct ufs_hba_variant_ops *vops)
 {
 	struct ufs_hba *hba;
 	void __iomem *mmio_base;
 	struct resource *mem_res;
 	int irq, err;
 	struct device *dev = &pdev->dev;
-#ifdef CONFIG_MTK_UFS_BOOTING
-	void __iomem *mmio_base_infracfg_ao;
-	void __iomem *mmio_base_pericfg;
-	struct device_node *node_infracfg_ao;
-	struct device_node *node_pericfg;
-#endif
-
-#ifdef CONFIG_MTK_UFS_BOOTING
-	/* get mmio_base_infracfg_ao */
-	mmio_base_infracfg_ao = NULL;
-	node_infracfg_ao = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
-
-	if (node_infracfg_ao) {
-		mmio_base_infracfg_ao = of_iomap(node_infracfg_ao, 0);
-
-	    if (IS_ERR(*(void **)&mmio_base_infracfg_ao)) {
-			err = PTR_ERR(*(void **)&mmio_base_infracfg_ao);
-			dev_err(dev, "error: mmio_base_infracfg_ao init fail\n");
-			mmio_base_infracfg_ao = NULL;
-		}
-	} else
-	    dev_err(dev, "error: node_infracfg_ao init fail\n");
-
-	/* get mmio_base_pericfg */
-	mmio_base_pericfg = NULL;
-	node_pericfg = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
-
-	if (node_pericfg) {
-		mmio_base_pericfg = of_iomap(node_pericfg, 0);
-
-		if (IS_ERR(*(void **)&mmio_base_pericfg)) {
-			err = PTR_ERR(*(void **)&mmio_base_pericfg);
-			dev_err(dev, "error: mmio_base_pericfg init fail\n");
-			mmio_base_pericfg = NULL;
-		}
-	} else
-	    dev_err(dev, "error: node_pericfg init fail\n");
-#endif
 
 	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	mmio_base = devm_ioremap_resource(dev, mem_res);
@@ -369,20 +301,12 @@ static int ufshcd_pltfrm_probe(struct platform_device *pdev)
 		goto out;
 	}
 
-#ifdef CONFIG_MTK_UFS_DEBUG
-	dev_err(dev, "mmio_base: %p\n", mmio_base);
-#endif
-
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
 		dev_err(dev, "IRQ resource not available\n");
 		err = -ENODEV;
 		goto out;
 	}
-#ifdef CONFIG_MTK_UFS_DEBUG
-	else
-	    dev_err(dev, "IRQ: %d\n", irq);
-#endif
 
 	err = ufshcd_alloc_host(dev, &hba);
 	if (err) {
@@ -390,45 +314,19 @@ static int ufshcd_pltfrm_probe(struct platform_device *pdev)
 		goto out;
 	}
 
-#ifdef CONFIG_MTK_UFS_BOOTING
-	if (mmio_base_infracfg_ao) {
-		hba->mmio_base_infracfg_ao = mmio_base_infracfg_ao;
-		dev_err(dev, "mmio_base_infracfg_ao: %p\n", hba->mmio_base_infracfg_ao);
-	} else
-		hba->mmio_base_infracfg_ao = NULL;
-
-	if (mmio_base_pericfg) {
-		hba->mmio_base_pericfg = mmio_base_pericfg;
-		dev_err(dev, "mmio_base_pericfg: %p\n", hba->mmio_base_pericfg);
-	} else
-		hba->mmio_base_pericfg = NULL;
-#endif
-
-	hba->vops = get_variant_ops(&pdev->dev);
-
-#ifdef CONFIG_MTK_UFS_BOOTING
-	/* TODO: Change to formal solution: device tree */
-
-	/*
-	 * temporary solution
-	 * forcedly hook mtk_ufs_vop to hba->vops
-	 * formal solution shall be hooked by device tree.
-	 */
-
-	hba->vops = (struct ufs_hba_variant_ops *)&ufs_mtk_vops;
-#endif
+	hba->vops = vops;
 
 	err = ufshcd_parse_clock_info(hba);
 	if (err) {
 		dev_err(&pdev->dev, "%s: clock parse failed %d\n",
 				__func__, err);
-		goto out;
+		goto dealloc_host;
 	}
 	err = ufshcd_parse_regulator_info(hba);
 	if (err) {
 		dev_err(&pdev->dev, "%s: regulator init failed %d\n",
 				__func__, err);
-		goto out;
+		goto dealloc_host;
 	}
 
 	pm_runtime_set_active(&pdev->dev);
@@ -436,7 +334,7 @@ static int ufshcd_pltfrm_probe(struct platform_device *pdev)
 
 	err = ufshcd_init(hba, mmio_base, irq);
 	if (err) {
-		dev_err(dev, "Intialization failed\n");
+		dev_err(dev, "Initialization failed\n");
 		goto out_disable_rpm;
 	}
 
@@ -447,58 +345,12 @@ static int ufshcd_pltfrm_probe(struct platform_device *pdev)
 out_disable_rpm:
 	pm_runtime_disable(&pdev->dev);
 	pm_runtime_set_suspended(&pdev->dev);
+dealloc_host:
+	ufshcd_dealloc_host(hba);
 out:
 	return err;
 }
-
-/**
- * ufshcd_pltfrm_remove - remove platform driver routine
- * @pdev: pointer to platform device handle
- *
- * Returns 0 on success, non-zero value on failure
- */
-static int ufshcd_pltfrm_remove(struct platform_device *pdev)
-{
-	struct ufs_hba *hba =  platform_get_drvdata(pdev);
-
-	pm_runtime_get_sync(&(pdev)->dev);
-	ufshcd_remove(hba);
-	return 0;
-}
-
-static const struct dev_pm_ops ufshcd_dev_pm_ops = {
-	.suspend	= ufshcd_pltfrm_suspend,
-	.resume		= ufshcd_pltfrm_resume,
-	.runtime_suspend = ufshcd_pltfrm_runtime_suspend,
-	.runtime_resume  = ufshcd_pltfrm_runtime_resume,
-	.runtime_idle    = ufshcd_pltfrm_runtime_idle,
-};
-
-static struct platform_driver ufshcd_pltfrm_driver = {
-	.probe	= ufshcd_pltfrm_probe,
-	.remove	= ufshcd_pltfrm_remove,
-	.shutdown = ufshcd_pltfrm_shutdown,
-	.driver	= {
-		.name	= "ufshcd",
-		.owner	= THIS_MODULE,
-		.pm	= &ufshcd_dev_pm_ops,
-		.of_match_table = ufs_of_match,
-	},
-};
-
-#ifdef CONFIG_MTK_UFS_BOOTING
-int ufshcd_pltfrm_init(void)
-{
-	return platform_driver_register(&ufshcd_pltfrm_driver);
-}
-
-void ufshcd_pltfrm_exit(void)
-{
-	platform_driver_unregister(&ufshcd_pltfrm_driver);
-}
-#else
-module_platform_driver(ufshcd_pltfrm_driver);
-#endif
+EXPORT_SYMBOL_GPL(ufshcd_pltfrm_init);
 
 MODULE_AUTHOR("Santosh Yaragnavi <santosh.sy@samsung.com>");
 MODULE_AUTHOR("Vinayak Holikatti <h.vinayak@samsung.com>");

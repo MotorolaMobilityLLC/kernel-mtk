@@ -10,21 +10,22 @@
 */
 
 #include "ufs.h"
+#include <linux/nls.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/platform_device.h>
+
 #include "ufshcd.h"
+#include "ufshcd-pltfrm.h"
 #include "unipro.h"
 #include "ufs-mtk.h"
-#include <linux/nls.h>
+
 #ifdef CONFIG_MTK_UFS_HW_CRYPTO
 /* #include <mach/mt_secure_api.h> */
 #endif
 
 /* Query request retries */
 #define QUERY_REQ_RETRIES 10
-
-struct of_device_id ufs_of_match[] = {
-	{ .compatible = "mediatek,ufs"},
-	{},
-};
 
 static struct ufs_dev_fix ufs_fixups[] = {
 	/* UFS cards deviations table */
@@ -42,7 +43,7 @@ static struct ufs_dev_fix ufs_fixups[] = {
 	END_FIX
 };
 
-ufs_cmd_str_table g_ufs_cmd_str_tbl[] = {
+ufs_cmd_str_table ufs_mtk_cmd_str_tbl[] = {
 	{"TEST_UNIT_READY"       , 0x00},
 	{"REQUEST_SENSE"         , 0x03},
 	{"FORMAT_UNIT"           , 0x04},
@@ -72,11 +73,13 @@ ufs_cmd_str_table g_ufs_cmd_str_tbl[] = {
 	{"UNKNOWN",               0xFF}
 };
 
-bool g_ufs_host_deep_stall_enable = 0;
-bool g_ufs_host_scramble_enable = 0;
-bool g_ufs_tr_comp_notification_used = 1;
+bool ufs_mtk_host_deep_stall_enable = 0;
+bool ufs_mtk_host_scramble_enable = 0;
+bool ufs_mtk_tr_cn_used = 1;
+void __iomem *ufs_mtk_mmio_base_infracfg_ao = NULL;
+void __iomem *ufs_mtk_mmio_base_pericfg = NULL;
 
-enum ufs_dbg_lvl_t g_ufs_dbg_lvl = T_UFS_DBG_LVL_1;
+enum ufs_dbg_lvl_t ufs_mtk_dbg_lvl = T_UFS_DBG_LVL_1;
 
 #if defined(CONFIG_MTK_UFS_DEBUG)
 
@@ -139,20 +142,20 @@ void ufs_mtk_print_request(struct ufshcd_lrb *lrbp)
 	struct utp_transfer_req_desc *req_desc = lrbp->utr_descriptor_ptr;
 	u8 req = be32_to_cpu(ucd_req_ptr->header.dword_0) >> 24;
 
-	if (g_ufs_dbg_lvl >= T_UFS_DBG_LVL_4) {
+	if (ufs_mtk_dbg_lvl >= T_UFS_DBG_LVL_4) {
 		dumpMemory4("UTRD : ", req_desc, sizeof(*req_desc));
 		dumpMemory4("CMD UPIU : ", ucd_req_ptr, sizeof(*ucd_req_ptr));
 	}
 
 	switch (req) {
 	case UPIU_TRANSACTION_COMMAND:
-		if (g_ufs_dbg_lvl >= T_UFS_DBG_LVL_3) {
+		if (ufs_mtk_dbg_lvl >= T_UFS_DBG_LVL_3) {
 			__scsi_print_command(ucd_req_ptr->sc.cdb);
 			print_prd(lrbp);
 		}
 		break;
 	case UPIU_TRANSACTION_QUERY_REQ:
-		if (g_ufs_dbg_lvl >= T_UFS_DBG_LVL_2)
+		if (ufs_mtk_dbg_lvl >= T_UFS_DBG_LVL_2)
 			print_query_function(ucd_req_ptr);
 		break;
 	}
@@ -164,7 +167,7 @@ void ufs_mtk_print_response(struct ufshcd_lrb *lrbp)
 	struct utp_transfer_req_desc *req_desc = lrbp->utr_descriptor_ptr;
 	u8 req = be32_to_cpu(lrbp->ucd_req_ptr->header.dword_0) >> 24;
 
-	if (g_ufs_dbg_lvl >= T_UFS_DBG_LVL_4) {
+	if (ufs_mtk_dbg_lvl >= T_UFS_DBG_LVL_4) {
 		pr_err("response\n");
 		dumpMemory4("UTRD : ", req_desc, sizeof(*req_desc));
 		dumpMemory4("RSP UPIU: ", ucd_rsp_ptr, sizeof(*ucd_rsp_ptr));
@@ -240,8 +243,8 @@ int ufs_mtk_get_cmd_str_idx(char cmd)
 {
 	int i;
 
-	for (i = 0; g_ufs_cmd_str_tbl[i].cmd != 0xFF; i++) {
-		if (g_ufs_cmd_str_tbl[i].cmd == cmd)
+	for (i = 0; ufs_mtk_cmd_str_tbl[i].cmd != 0xFF; i++) {
+		if (ufs_mtk_cmd_str_tbl[i].cmd == cmd)
 			return i;
 	}
 
@@ -278,10 +281,10 @@ int ufs_mtk_enable_unipro_cg(struct ufs_hba *hba, bool enable)
 }
 
 /**
- * ufs_qcom_advertise_quirks - advertise the known QCOM UFS controller quirks
+ * ufs_mtk_advertise_quirks - advertise the known mtk UFS controller quirks
  * @hba: host controller instance
  *
- * QCOM UFS host controller might have some non standard behaviours (quirks)
+ * mtk UFS host controller might have some non standard behaviours (quirks)
  * than what is specified by UFSHCI specification. Advertise all such
  * quirks to standard UFS host controller driver so standard takes them into
  * account.
@@ -290,9 +293,55 @@ static void ufs_mtk_advertise_hci_quirks(struct ufs_hba *hba)
 {
 }
 
+/**
+ * ufs_mtk_init - find other essential mmio bases
+ * @hba: host controller instance
+ */
 int ufs_mtk_init(struct ufs_hba *hba)
 {
+	struct device_node *node_infracfg_ao;
+	struct device_node *node_pericfg;
+	int err;
+
 	ufs_mtk_advertise_hci_quirks(hba);
+
+	/* get ufs_mtk_mmio_base_infracfg_ao */
+
+	ufs_mtk_mmio_base_infracfg_ao = NULL;
+	node_infracfg_ao = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+
+	if (node_infracfg_ao) {
+		ufs_mtk_mmio_base_infracfg_ao = of_iomap(node_infracfg_ao, 0);
+
+	    if (IS_ERR(*(void **)&ufs_mtk_mmio_base_infracfg_ao)) {
+			err = PTR_ERR(*(void **)&ufs_mtk_mmio_base_infracfg_ao);
+			dev_err(hba->dev, "error: ufs_mtk_mmio_base_infracfg_ao init fail\n");
+			ufs_mtk_mmio_base_infracfg_ao = NULL;
+		}
+	} else
+	    dev_err(hba->dev, "error: node_infracfg_ao init fail\n");
+
+	/* get ufs_mtk_mmio_base_pericfg */
+
+	ufs_mtk_mmio_base_pericfg = NULL;
+	node_pericfg = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
+
+	if (node_pericfg) {
+		ufs_mtk_mmio_base_pericfg = of_iomap(node_pericfg, 0);
+
+		if (IS_ERR(*(void **)&ufs_mtk_mmio_base_pericfg)) {
+			err = PTR_ERR(*(void **)&ufs_mtk_mmio_base_pericfg);
+			dev_err(hba->dev, "error: mmio_base_pericfg init fail\n");
+			ufs_mtk_mmio_base_pericfg = NULL;
+		}
+	} else
+	    dev_err(hba->dev, "error: node_pericfg init fail\n");
+
+	if (ufs_mtk_mmio_base_infracfg_ao)
+		dev_err(hba->dev, "ufs_mtk_mmio_base_infracfg_ao: %p\n", ufs_mtk_mmio_base_infracfg_ao);
+
+	if (ufs_mtk_mmio_base_pericfg)
+		dev_err(hba->dev, "ufs_mtk_mmio_base_pericfg: %p\n", ufs_mtk_mmio_base_pericfg);
 
 	return 0;
 
@@ -349,14 +398,14 @@ static int ufs_mtk_pre_link(struct ufs_hba *hba)
 	/* TODO: check deep stall policy */
 	ufshcd_dme_get(hba, UIC_ARG_MIB(VENDOR_SAVEPOWERCONTROL), &tmp);
 
-	if (g_ufs_host_deep_stall_enable)   /* enable deep stall */
+	if (ufs_mtk_host_deep_stall_enable)   /* enable deep stall */
 		tmp |= (1 << 6);
 	else
 		tmp &= ~(1 << 6);   /* disable deep stall */
 
 	ufshcd_dme_set(hba, UIC_ARG_MIB(VENDOR_SAVEPOWERCONTROL), tmp);
 
-	if (g_ufs_host_scramble_enable)
+	if (ufs_mtk_host_scramble_enable)
 		ufshcd_dme_set(hba, UIC_ARG_MIB(PA_SCRAMBLING), 1);
 	else
 		ufshcd_dme_set(hba, UIC_ARG_MIB(PA_SCRAMBLING), 0);
@@ -424,18 +473,18 @@ int ufs_mtk_bootrom_deputy(struct ufs_hba *hba)
 
 	u32 reg;
 
-	if (!hba->mmio_base_pericfg)
+	if (!ufs_mtk_mmio_base_pericfg)
 		return 1;
 
-	reg = readl(hba->mmio_base_pericfg + REG_UFS_PERICFG);
+	reg = readl(ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
 	reg = reg | (1 << REG_UFS_PERICFG_LDO_N_BIT);
-	writel(reg, hba->mmio_base_pericfg + REG_UFS_PERICFG);
+	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
 
 	udelay(10);
 
-	reg = readl(hba->mmio_base_pericfg + REG_UFS_PERICFG);
+	reg = readl(ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
 	reg = reg | (1 << REG_UFS_PERICFG_RST_N_BIT);
-	writel(reg, hba->mmio_base_pericfg + REG_UFS_PERICFG);
+	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
 
 	return 0;
 
@@ -625,4 +674,85 @@ void ufs_mtk_crypto_cal_dun(u32 alg_id, u32 lba, u32 *dunl, u32 *dunu)
 	}
 }
 #endif
+
+/**
+ * struct ufs_hba_mtk_vops - UFS MTK specific variant operations
+ *
+ * The variant operations configure the necessary controller and PHY
+ * handshake during initialization.
+ */
+static struct ufs_hba_variant_ops ufs_hba_mtk_vops = {
+	"mediatek.ufs",  /* name */
+	ufs_mtk_init,    /* init */
+	NULL,            /* exit */
+	NULL,            /* clk_scale_notify */
+	NULL,            /* setup_clocks */
+	NULL,            /* setup_regulators */
+	NULL,            /* hce_enable_notify */
+	ufs_mtk_link_startup_notify,  /* link_startup_notify */
+	ufs_mtk_pwr_change_notify,    /* pwr_change_notify */
+	NULL,            /* suspend */
+	NULL,            /* resume */
+};
+
+/**
+ * ufs_mtk_probe - probe routine of the driver
+ * @pdev: pointer to Platform device handle
+ *
+ * Return zero for success and non-zero for failure
+ */
+static int ufs_mtk_probe(struct platform_device *pdev)
+{
+	int err;
+	struct device *dev = &pdev->dev;
+
+	/* Perform generic probe */
+	err = ufshcd_pltfrm_init(pdev, &ufs_hba_mtk_vops);
+	if (err)
+		dev_err(dev, "ufshcd_pltfrm_init() failed %d\n", err);
+
+	return err;
+}
+
+/**
+ * ufs_mtk_remove - set driver_data of the device to NULL
+ * @pdev: pointer to platform device handle
+ *
+ * Always return 0
+ */
+static int ufs_mtk_remove(struct platform_device *pdev)
+{
+	struct ufs_hba *hba =  platform_get_drvdata(pdev);
+
+	pm_runtime_get_sync(&(pdev)->dev);
+	ufshcd_remove(hba);
+	return 0;
+}
+
+struct of_device_id ufs_mtk_of_match[] = {
+	{ .compatible = "mediatek,ufs"},
+	{},
+};
+
+static const struct dev_pm_ops ufs_mtk_pm_ops = {
+	.suspend	= ufshcd_pltfrm_suspend,
+	.resume		= ufshcd_pltfrm_resume,
+	.runtime_suspend = ufshcd_pltfrm_runtime_suspend,
+	.runtime_resume  = ufshcd_pltfrm_runtime_resume,
+	.runtime_idle    = ufshcd_pltfrm_runtime_idle,
+};
+
+static struct platform_driver ufs_mtk_pltform = {
+	.probe	= ufs_mtk_probe,
+	.remove	= ufs_mtk_remove,
+	.shutdown = ufshcd_pltfrm_shutdown,
+	.driver	= {
+		.name	= "ufshcd",
+		.owner	= THIS_MODULE,
+		.pm	= &ufs_mtk_pm_ops,
+		.of_match_table = ufs_mtk_of_match,
+	},
+};
+
+module_platform_driver(ufs_mtk_pltform);
 

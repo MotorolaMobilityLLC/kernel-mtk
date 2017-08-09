@@ -481,8 +481,6 @@ struct ufs_hba {
 	bool is_sys_suspended;
 
 #ifdef CONFIG_MTK_UFS_BOOTING
-	void __iomem *mmio_base_infracfg_ao;
-	void __iomem *mmio_base_pericfg;
 	u32 manu_id;               /* record vendor id for vendor-specific configurations */
 	unsigned int quirks;
 	unsigned int dev_quirks;
@@ -530,6 +528,7 @@ static inline void ufshcd_rmwl(struct ufs_hba *hba, u32 mask, u32 val, u32 reg)
 }
 
 int ufshcd_alloc_host(struct device *, struct ufs_hba **);
+void ufshcd_dealloc_host(struct ufs_hba *);
 int ufshcd_init(struct ufs_hba * , void __iomem * , unsigned int);
 void ufshcd_remove(struct ufs_hba *);
 
@@ -613,8 +612,6 @@ void  ufshcd_enable_intr(struct ufs_hba *hba, u32 intrs);
 int   ufshcd_get_req_rsp(struct utp_upiu_rsp *ucd_rsp_ptr);
 int   ufshcd_get_rsp_upiu_result(struct utp_upiu_rsp *ucd_rsp_ptr);
 int   ufshcd_get_tr_ocs(struct ufshcd_lrb *lrbp);
-int   ufshcd_pltfrm_init(void);
-void  ufshcd_pltfrm_exit(void);
 int   ufshcd_query_attr(struct ufs_hba *hba,
 							enum query_opcode opcode,
 							enum attr_idn idn,
