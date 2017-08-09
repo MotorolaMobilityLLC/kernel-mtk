@@ -5421,6 +5421,20 @@ int primary_display_resume(void)
 		goto done;
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 1);
+
+	if (is_ipoh_bootup) {
+		DISPCHECK("[primary display path] leave primary_display_resume -- IPOH\n");
+		DISPCHECK("ESD check start[begin]\n");
+		primary_display_esd_check_enable(1);
+		DISPCHECK("ESD check start[end]\n");
+		is_ipoh_bootup = false;
+		DISPCHECK("[POWER]start cmdq[begin]--IPOH\n");
+		_cmdq_start_trigger_loop();
+		DISPCHECK("[POWER]start cmdq[end]--IPOH\n");
+		pgc->state = DISP_ALIVE;
+		goto done;
+	}
+
 #ifndef CONFIG_MTK_CLKMGR
 	ddp_clk_prepare(DISP_MTCMOS_CLK);
 #endif
@@ -5437,18 +5451,6 @@ int primary_display_resume(void)
 		dpmgr_path_power_on(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 2);
-	if (is_ipoh_bootup) {
-		DISPCHECK("[primary display path] leave primary_display_resume -- IPOH\n");
-		DISPCHECK("ESD check start[begin]\n");
-		primary_display_esd_check_enable(1);
-		DISPCHECK("ESD check start[end]\n");
-		is_ipoh_bootup = false;
-		DISPCHECK("[POWER]start cmdq[begin]--IPOH\n");
-		_cmdq_start_trigger_loop();
-		DISPCHECK("[POWER]start cmdq[end]--IPOH\n");
-		pgc->state = DISP_ALIVE;
-		goto done;
-	}
 
 	if (primary_display_is_video_mode()) {
 		DISPCHECK("mutex0 clear[begin]\n");

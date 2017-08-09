@@ -54,6 +54,7 @@
 
 #include "mtk_ovl.h"
 #include "ion_drv.h"
+#include "ddp_drv.h"
 
 #ifdef DISP_GPIO_DTS
 #include "disp_dts_gpio.h" /* set gpio via DTS */
@@ -2437,82 +2438,6 @@ static void mtkfb_blank_suspend(void)
 	pr_debug("[FB Driver] leave early_suspend\n");
 }
 
-#ifdef DISP_IPOH_BOOT
-/* IPO-H workaround helper functions */
-struct ipoh_wkarnd {
-	bool is_ipoh_booting;
-	void (*on_restore_noirq)(struct ipoh_wkarnd *t, struct device *dev);
-	void (*on_late_resume_done)(struct ipoh_wkarnd *t);
-};
-
-static void ipoh_wkarnd_on_restore_noirq(struct ipoh_wkarnd *w, struct device *dev)
-{
-	if (w == 0)
-		return;
-
-	if (w->on_restore_noirq)
-		w->on_restore_noirq(w, dev);
-}
-
-static void ipoh_wkarnd_on_late_resume_done(struct ipoh_wkarnd *w)
-{
-	if (w == 0)
-		return;
-
-	if (w->on_late_resume_done)
-		w->on_late_resume_done(w);
-}
-
-/* workaround (2015/5/18)
- *
- *   Only happens in VDO mode.
- *
- *   These following external functions and local variable is workarounded for
- *   a case that during IPOH booting, unknown behavior that some one often
- *   disable/enabled clock of I2C channel 2 and this makes DISP_RDMA0 underflow.
- *
- *   However, we found that if DISPSYS enable one of MMSYS clock, and this
- *   problem can be workarounded. Therefore we enable a clock while ipoh booting,
- *   and disable it in late_resume.
- *
- *   Root cause not found.
- */
-#ifdef CONFIG_MTK_CLKMGR
-#include <mach/mt_clkmgr.h>
-#define DISP_IPOH_WORKAROUND_CG     MT_CG_DISP0_SMI_LARB0
-const char *ipoh_wkarnd_caller = "MTKFB";
-
-/* RDMA workaround handler */
-static void wkarnd_rdma_undflw_on_restore_noirq(struct ipoh_wkarnd *t, struct device *dev)
-{
-	t->is_ipoh_booting = 1;
-	enable_clock(DISP_IPOH_WORKAROUND_CG, (char *)ipoh_wkarnd_caller);
-}
-
-static void wkarnd_rdma_undflw_on_lateresume_done(struct ipoh_wkarnd *t)
-{
-	if (t->is_ipoh_booting) {
-		t->is_ipoh_booting = 0;
-		disable_clock(DISP_IPOH_WORKAROUND_CG, (char *)ipoh_wkarnd_caller);
-	}
-}
-
-static struct ipoh_wkarnd ipoh_workaround_rdma_underflow = {
-	.on_restore_noirq = wkarnd_rdma_undflw_on_restore_noirq,
-	.on_late_resume_done = wkarnd_rdma_undflw_on_lateresume_done,
-	.is_ipoh_booting = 0,
-};
-
-#define IPOH_WORKAROUND_RDMA_UNDERFLOW      (&ipoh_workaround_rdma_underflow)
-#endif /* CONFIG_MTK_CLKMGR */
-
-/* All IPO-H workaround solution */
-#ifndef IPOH_WORKAROUND_RDMA_UNDERFLOW
-#define IPOH_WORKAROUND_RDMA_UNDERFLOW      0
-#endif
-/*****************************************************************************/
-#endif
-
 /* PM resume */
 static int mtkfb_resume(struct device *pdev)
 {
@@ -2544,11 +2469,6 @@ static void mtkfb_blank_resume(void)
 		DISPERR("primary display resume failed\n");
 		return;
 	}
-
-#ifdef DISP_IPOH_BOOT
-	/* workaround (2015/5/18) */
-	ipoh_wkarnd_on_late_resume_done(IPOH_WORKAROUND_RDMA_UNDERFLOW);
-#endif
 
 	pr_debug("[FB Driver] leave late_resume\n");
 }
@@ -2584,16 +2504,16 @@ int mtkfb_pm_freeze(struct device *device)
 
 int mtkfb_pm_restore_noirq(struct device *device)
 {
-	/* disphal_pm_restore_noirq(device); */
+	DISPCHECK("%s: %d\n", __func__, __LINE__);
+
+#ifndef CONFIG_MTK_CLKMGR
+	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
+	ddp_clk_prepare_enable(DISP0_SMI_COMMON);
+	ddp_clk_prepare_enable(DISP0_SMI_LARB0);
+#endif
 	is_ipoh_bootup = true;
 
-#ifdef DISP_IPOH_BOOT
-	/* workaround (2015/5/18) */
-	ipoh_wkarnd_on_restore_noirq(IPOH_WORKAROUND_RDMA_UNDERFLOW, device);
-#endif
-
 	return 0;
-
 }
 
 /*---------------------------------------------------------------------------*/
