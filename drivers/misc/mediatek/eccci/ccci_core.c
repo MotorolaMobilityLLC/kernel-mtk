@@ -403,7 +403,7 @@ static void scp_md_state_sync_work(struct work_struct *work)
 static void ccci_scp_ipi_rx_work(struct work_struct *work)
 {
 	struct ccci_ipi_msg *ipi_msg_ptr;
-	struct ccci_modem *md;
+	struct ccci_modem *md, *md3;
 	struct sk_buff *skb = NULL;
 	int data;
 
@@ -418,6 +418,10 @@ static void ccci_scp_ipi_rx_work(struct work_struct *work)
 				if (scp_state == MD_BOOT_STAGE_2) {
 					CCCI_INF_MSG(md->index, CORE, "SCP reset detected\n");
 					ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, CCISM_SHM_INIT, 0, 1);
+					md3 = ccci_get_modem_by_id(MD_SYS3);
+					if (md3)
+						ccci_send_msg_to_md(md3, CCCI_CONTROL_TX,
+									C2K_CCISM_SHM_INIT, 0, 1);
 				} else {
 					CCCI_INF_MSG(md->index, CORE, "SCP boot up\n");
 				}
