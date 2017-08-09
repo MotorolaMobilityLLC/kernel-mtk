@@ -52,8 +52,8 @@
 
 /* LOG */
 #define MJC_ASSERT(x) {if (!(x)) pr_error("MJC assert fail, file:%s, line:%d", __FILE__, __LINE__); }
-#define MTK_MJC_DBG
 
+/*#define MTK_MJC_DBG */
 #ifdef MTK_MJC_DBG
 #define MJCDBG(string, args...)       pr_debug("MJC [pid=%d]"string, current->tgid, ##args)
 #else
@@ -249,14 +249,14 @@ static int _mjc_SetEvent(MJC_EVENT_T *a_prParam)
  * RETURNS
  *    None.
  ****************************************************************************/
-static void _mjc_m4uConfigPort(void)
+static void _mjc_m4uConfigPort(bool isOpen)
 {
 	int u4Status;
 	M4U_PORT_STRUCT rM4uPort;
 
 	rM4uPort.Virtuality = 1;
 	rM4uPort.Security = 0;
-	rM4uPort.Distance = 0;
+	rM4uPort.Distance = isOpen ? 0 : 1;
 	rM4uPort.Direction = 0;
 	rM4uPort.domain = 3;
 
@@ -441,7 +441,7 @@ static int mjc_open(struct inode *pInode, struct file *pFile)
 	grHWLockContext.rEvent.u4TimeoutMs = 0xFFFFFFFF;
 	spin_unlock_irqrestore(&HWLock, ulFlags);
 
-	_mjc_m4uConfigPort();
+	_mjc_m4uConfigPort(true);
 
 	m4u_register_fault_callback(M4U_PORT_MJC_MV_RD, mjc_m4u_fault_callback, (void *)0);
 	m4u_register_fault_callback(M4U_PORT_MJC_MV_WR, mjc_m4u_fault_callback, (void *)0);
@@ -468,6 +468,8 @@ static int mjc_release(struct inode *pInode, struct file *pFile)
 {
 	int ret;
 	MJCDBG("mjc_release() pid = %d\n", current->pid);
+
+	_mjc_m4uConfigPort(false);
 
 	ret = clk_prepare_enable(clk_TOP_MUX_MJC);
 	if (ret) {
