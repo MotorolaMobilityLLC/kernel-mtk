@@ -347,16 +347,18 @@ int32_t cmdqRecSetSecure(cmdqRecHandle handle, const bool isSecure)
 #endif
 }
 
-#ifdef CMDQ_SECURE_PATH_SUPPORT
 int32_t cmdqRecSetSecureMode(cmdqRecHandle handle, enum CMDQ_DISP_MODE mode)
 {
+#ifdef CMDQ_SECURE_PATH_SUPPORT
 	if (NULL == handle)
 		return -EFAULT;
 
 	handle->secData.secMode = mode;
 	return 0;
-}
+#else
+	return -EFAULT;
 #endif
+}
 
 int32_t cmdqRecSecureEnableDAPC(cmdqRecHandle handle, const uint64_t engineFlag)
 {

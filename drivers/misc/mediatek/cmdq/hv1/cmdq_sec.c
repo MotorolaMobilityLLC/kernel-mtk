@@ -4,14 +4,18 @@
 static atomic_t gDebugSecSwCopy = ATOMIC_INIT(0);
 static atomic_t gDebugSecCmdId = ATOMIC_INIT(0);
 
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
 static KREE_SESSION_HANDLE cmdq_session;
 static KREE_SESSION_HANDLE cmdq_mem_session;
+#endif
 
 #if 1
 static DEFINE_MUTEX(gCmdqSecExecLock);	/* lock to protect atomic secure task execution */
 static DEFINE_MUTEX(gCmdqSecContextLock);	/* lock to protext atomic access gCmdqSecContextList */
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
 static struct list_head gCmdqSecContextList;	/* secure context list. note each porcess has its own sec context */
 static cmdqSecContextHandle gCmdqSecContextHandle;	/* secure context to cmdqSecTL */
+#endif
 
 /* Set 1 to open once for each process context, because of below reasons:
  * 1. kmalloc size > 4KB, need pre-allocation to avoid memory fragmentation and causes kmalloc fail.
@@ -137,9 +141,9 @@ KREE_SESSION_HANDLE cmdq_mem_session_handle(void)
 #endif
 }
 
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
 static int32_t cmdq_sec_setup_context_session(cmdqSecContextHandle handle)
 {
-#if defined(CMDQ_SECURE_PATH_SUPPORT)
 	/* init handle:iwcMessage        sessionHandle   memSessionHandle */
 
 #if CMDQ_OPEN_SESSION_ONCE
@@ -171,16 +175,12 @@ static int32_t cmdq_sec_setup_context_session(cmdqSecContextHandle handle)
 	CMDQ_MSG("handle->sessionHandle 0x%x\n", handle->sessionHandle);
 	CMDQ_MSG("handle->memSessionHandle 0x%x\n", handle->memSessionHandle);
 	return 0;
-#else
-	CMDQ_ERR("SVP feature is not on\n");
-	return 0;
-#endif
 }
+#endif
 
-
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
 static void cmdq_sec_deinit_session_unlocked(cmdqSecContextHandle handle)
 {
-#if defined(CMDQ_SECURE_PATH_SUPPORT)
 	CMDQ_MSG("[SEC]-->SESSION_DEINIT\n");
 	do {
 		if (NULL != handle->iwcMessage) {
@@ -191,16 +191,14 @@ static void cmdq_sec_deinit_session_unlocked(cmdqSecContextHandle handle)
 	} while (0);
 
 	CMDQ_MSG("[SEC]<--SESSION_DEINIT\n");
-#else
-	CMDQ_ERR("SVP feature is not on\n");
-#endif
 }
+#endif
 
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
 static int32_t cmdq_sec_fill_iwc_command_basic_unlocked(iwcCmdqMessage_t *_pIwc,
 							uint32_t iwcCommand,
 							struct TaskStruct *_pTask, int32_t thread)
 {
-#if defined(CMDQ_SECURE_PATH_SUPPORT)
 	iwcCmdqMessage_t *pIwc;
 
 	pIwc = (iwcCmdqMessage_t *) _pIwc;
@@ -215,17 +213,14 @@ static int32_t cmdq_sec_fill_iwc_command_basic_unlocked(iwcCmdqMessage_t *_pIwc,
 	    cmdq_core_get_sec_print_count() ? LOG_LEVEL_MSG : cmdq_core_get_log_level();
 	pIwc->debug.enableProfile = cmdq_core_profile_enabled();
 	return 0;
-#else
-	CMDQ_ERR("SVP feature is not on\n");
-	return 0;
-#endif
 }
+#endif
 
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
 static int32_t cmdq_sec_fill_iwc_cancel_msg_unlocked(iwcCmdqMessage_t *_pIwc,
 						     uint32_t iwcCommand,
 						     struct TaskStruct *_pTask, int32_t thread)
 {
-#if defined(CMDQ_SECURE_PATH_SUPPORT)
 	const struct TaskStruct *pTask = (struct TaskStruct *)_pTask;
 	iwcCmdqMessage_t *pIwc;
 
@@ -241,17 +236,15 @@ static int32_t cmdq_sec_fill_iwc_cancel_msg_unlocked(iwcCmdqMessage_t *_pIwc,
 	pIwc->debug.enableProfile = cmdq_core_profile_enabled();
 	CMDQ_LOG("FILL:CANCEL_TASK: task: %p, thread:%d, cookie:%d, resetExecCnt:%d\n",
 		 pTask, thread, pTask->secData.waitCookie, pTask->secData.resetExecCnt);
-#else
-	CMDQ_ERR("SVP feature is not on\n");
-#endif
 	return 0;
 }
+#endif
 
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
 static int32_t cmdq_sec_fill_iwc_command_msg_unlocked(iwcCmdqMessage_t *pIwc,
 						      uint32_t iwcCommand,
 						      struct TaskStruct *pTask, int32_t thread)
 {
-#if defined(CMDQ_SECURE_PATH_SUPPORT)
 	int32_t status = 0;
 	/* TEE will insert some instr,DAPC and M4U configuration */
 	const uint32_t reservedCommandSize = 4 * CMDQ_INST_SIZE;
@@ -321,11 +314,8 @@ static int32_t cmdq_sec_fill_iwc_command_msg_unlocked(iwcCmdqMessage_t *pIwc,
 	CMDQ_MSG("[SEC]<--SESSION_MSG[%d]\n", status);
 	CMDQ_MSG("leaving fill_iwc_command_msg_unlock\n");
 	return status;
-#else
-	CMDQ_ERR("SVP feature is not on\n");
-	return 0;
-#endif
 }
+#endif
 
 void dump_message(const iwcCmdqMessage_t *message)
 {
@@ -347,10 +337,9 @@ void dump_message(const iwcCmdqMessage_t *message)
 #endif
 }
 
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
 static int32_t cmdq_sec_execute_session_unlocked(cmdqSecContextHandle handle)
 {
-#if defined(CMDQ_SECURE_PATH_SUPPORT)
-
 	TZ_RESULT tzRes;
 
 	CMDQ_PROF_START("CMDQ_SEC_EXE");
@@ -457,11 +446,8 @@ static int32_t cmdq_sec_execute_session_unlocked(cmdqSecContextHandle handle)
 
 	/* return tee service call result */
 	return tzRes;
-#else
-	CMDQ_ERR("SVP feature is not on\n");
-	return 0;
-#endif
 }
+#endif
 
 CmdqSecFillIwcCB cmdq_sec_get_iwc_msg_fill_cb_by_iwc_command(uint32_t iwcCommand)
 {
@@ -484,7 +470,7 @@ CmdqSecFillIwcCB cmdq_sec_get_iwc_msg_fill_cb_by_iwc_command(uint32_t iwcCommand
 	return cb;
 #else
 	CMDQ_ERR("SVP feature is not on\n");
-	return NULL;
+	return (CmdqSecFillIwcCB)NULL;
 #endif
 }
 
@@ -764,8 +750,9 @@ int32_t cmdq_sec_cancel_error_task_unlocked(struct TaskStruct *pTask, int32_t th
 #endif
 }
 
-
+#if defined(CMDQ_SECURE_PATH_SUPPORT)
 static atomic_t gCmdqSecPathResource = ATOMIC_INIT(0);
+#endif
 
 int32_t cmdq_sec_allocate_path_resource_unlocked(void)
 {
