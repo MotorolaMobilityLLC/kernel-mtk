@@ -23,6 +23,11 @@
 #include "mtk-phy-asic.h"
 #endif
 
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+#include <mt-plat/mt_usb2jtag.h>
+#endif
+
+
 #ifdef CONFIG_OF
 #include <linux/of_device.h>
 #endif
@@ -731,6 +736,14 @@ static int mtu3d_probe(struct platform_device *pdev)
 	int ret = -ENOMEM;
 
 	os_printk(K_DEBUG, "%s\n", __func__);
+
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+	if (usb2jtag_mode()) {
+		pr_err("[USB2JTAG] in usb2jtag mode, not to initialize usb driver\n");
+		return 0;
+	}
+#endif
+
 
 	glue = kzalloc(sizeof(*glue), GFP_KERNEL);
 	if (!glue) {

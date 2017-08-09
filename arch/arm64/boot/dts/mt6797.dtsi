@@ -687,6 +687,12 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			#clock-cells = <1>;
 		};
 
+		usb2jtag: usb2jtag@10001000 {
+			compatible = "mediatek,usb2jtag_v1";
+			reg = <0x10001000 0x1000>, <0x11290000 0x1000>;
+		};
+
+
 		infrasys: infracfg_ao@10001000 {
 			compatible = "mediatek,infracfg_ao";
 			reg = <0x10001000 0x1000>;

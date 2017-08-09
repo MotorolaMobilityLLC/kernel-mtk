@@ -33,6 +33,11 @@
 
 #include <mt-plat/mt_ccci_common.h>
 
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+#include <mt-plat/mt_usb2jtag.h>
+#endif
+
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -776,6 +781,12 @@ RESTORE_IRQ:
 #if SPM_AEE_RR_REC
 	aee_rr_rec_spm_suspend_val(0);
 #endif
+
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+	if (usb2jtag_mode())
+		mt_usb2jtag_resume();
+#endif
+
 
 	return last_wr;
 }
