@@ -77,7 +77,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1391000000>;
 		};
 
 		cpu1: cpu@001 {
@@ -88,7 +88,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1391000000>;
 		};
 
 		cpu2: cpu@002 {
@@ -99,10 +99,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1391000000>;
 		};
 
-		cpu3: cpu@3 {
+		cpu3: cpu@003 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x003>;
@@ -110,7 +110,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1391000000>;
 		};
 /*
 		cpu4: cpu@100 {
@@ -121,7 +121,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1950000000>;
 		};
 
 		cpu5: cpu@101 {
@@ -132,7 +132,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1950000000>;
 		};
 
 		cpu6: cpu@102 {
@@ -143,7 +143,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1950000000>;
 		};
 
 		cpu7: cpu@103 {
@@ -154,29 +154,29 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1950000000>;
 		};
 
 		cpu8: cpu@200 {
 			device_type = "cpu";
-			compatible = "arm,armv8";
+			compatible = "arm,cortex-a72";
 			reg = <0x200>;
 			enable-method = "psci";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <2288000000>;
 		};
 
 		cpu9: cpu@201 {
 			device_type = "cpu";
-			compatible = "arm,armv8";
+			compatible = "arm,cortex-a72";
 			reg = <0x201>;
 			enable-method = "psci";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cluster_sleep_0>,
 					  <&cpu_sleep_0_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <2288000000>;
 		};
 
 		cpu-map {
@@ -220,6 +220,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			};
 		};
 */
+
 		idle-states {
 			entry-method = "arm,psci";
 
