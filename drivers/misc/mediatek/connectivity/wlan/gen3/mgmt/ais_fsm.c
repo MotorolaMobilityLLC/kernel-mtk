@@ -2747,7 +2747,7 @@ VOID aisFsmRunEventAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	}
 
 	/* to support user space triggered roaming */
-	if (ucReasonOfDisconnect == DISCONNECT_REASON_CODE_REASSOCIATION &&
+	if (ucReasonOfDisconnect == DISCONNECT_REASON_CODE_ROAMING &&
 	    prAisFsmInfo->eCurrentState != AIS_STATE_DISCONNECTING) {
 
 		if (prAisFsmInfo->eCurrentState == AIS_STATE_NORMAL_TR &&
