@@ -46,7 +46,7 @@
 static struct dentry *spm_dir;
 static struct dentry *spm_file;
 struct platform_device *pspmdev;
-static int dyna_load_pcm_done;
+static int dyna_load_pcm_done __nosavedata;
 static char *dyna_load_pcm_path[] = {
 	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend.bin",
 	[DYNA_LOAD_PCM_SUSPEND_BY_MP1] = "pcm_suspend_by_mp1.bin",
