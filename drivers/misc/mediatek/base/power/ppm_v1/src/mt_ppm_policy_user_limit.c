@@ -149,9 +149,10 @@ static ssize_t ppm_userlimit_min_cpu_core_proc_write(struct file *file, const ch
 			goto out;
 		}
 
-		userlimit_data.limit[id].min_core_num = (min_core == -1) ? -1 : min_core;
-
-		ppm_info("user limit min_core_num = %d for cluster %d\n", min_core, id);
+		if (min_core != userlimit_data.limit[id].min_core_num) {
+			userlimit_data.limit[id].min_core_num = min_core;
+			ppm_info("user limit min_core_num = %d for cluster %d\n", min_core, id);
+		}
 
 		/* check is core limited or not */
 		for (i = 0; i < userlimit_policy.req.cluster_num; i++) {
@@ -227,9 +228,10 @@ static ssize_t ppm_userlimit_max_cpu_core_proc_write(struct file *file, const ch
 			goto out;
 		}
 
-		userlimit_data.limit[id].max_core_num = (max_core == -1) ? -1 : max_core;
-
-		ppm_info("user limit max_core_num = %d for cluster %d\n", max_core, id);
+		if (max_core != userlimit_data.limit[id].max_core_num) {
+			userlimit_data.limit[id].max_core_num = max_core;
+			ppm_info("user limit max_core_num = %d for cluster %d\n", max_core, id);
+		}
 
 		/* check is core limited or not */
 		for (i = 0; i < userlimit_policy.req.cluster_num; i++) {
@@ -298,9 +300,10 @@ static ssize_t ppm_userlimit_min_cpu_freq_proc_write(struct file *file, const ch
 			&& idx < userlimit_data.limit[id].max_freq_idx)
 			idx = userlimit_data.limit[id].max_freq_idx;
 
-		userlimit_data.limit[id].min_freq_idx = idx;
-
-		ppm_info("user limit min_freq = %d KHz(idx = %d) for cluster %d\n", min_freq, idx, id);
+		if (idx != userlimit_data.limit[id].min_freq_idx) {
+			userlimit_data.limit[id].min_freq_idx = idx;
+			ppm_info("user limit min_freq = %d KHz(idx = %d) for cluster %d\n", min_freq, idx, id);
+		}
 
 		/* check is freq limited or not */
 		for (i = 0; i < userlimit_policy.req.cluster_num; i++) {
@@ -369,9 +372,10 @@ static ssize_t ppm_userlimit_max_cpu_freq_proc_write(struct file *file, const ch
 			&& idx > userlimit_data.limit[id].min_freq_idx)
 			userlimit_data.limit[id].min_freq_idx = idx;
 
-		userlimit_data.limit[id].max_freq_idx = idx;
-
-		ppm_info("user limit max_freq = %d KHz(idx = %d) for cluster %d\n", max_freq, idx, id);
+		if (idx != userlimit_data.limit[id].max_freq_idx) {
+			userlimit_data.limit[id].max_freq_idx = idx;
+			ppm_info("user limit max_freq = %d KHz(idx = %d) for cluster %d\n", max_freq, idx, id);
+		}
 
 		/* check is freq limited or not */
 		for (i = 0; i < userlimit_policy.req.cluster_num; i++) {

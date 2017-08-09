@@ -1,6 +1,6 @@
 ccflags-y += \
-	-I$(srctree)/drivers/misc/mediatek/ppm/inc \
-	-I$(srctree)/drivers/misc/mediatek/ppm/src/mach/$(CONFIG_MTK_PLATFORM) \
+	-I$(PPM_ROOT_DIR)/inc \
+	-I$(PPM_ROOT_DIR)/src/mach/$(CONFIG_MTK_PLATFORM) \
 	-I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include	\
 	-I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)/
 

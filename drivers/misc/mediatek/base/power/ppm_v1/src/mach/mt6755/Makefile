@@ -1,5 +1,5 @@
 ccflags-y +=	\
-	-I$(srctree)/drivers/misc/mediatek/ppm/inc	\
+	-I$(PPM_ROOT_DIR)/inc \
 	-I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)/
 
 # power state settings
