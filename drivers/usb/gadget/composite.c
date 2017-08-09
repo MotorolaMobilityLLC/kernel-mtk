@@ -1307,7 +1307,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 
 			value = min(w_length, (u16) sizeof cdev->desc);
 			memcpy(req->buf, &cdev->desc, value);
-			INFO(cdev, "[COM]GET_DESCRIPTOR-DEVICE %d\n", value);
+			/*INFO(cdev, "[COM]GET_DESCRIPTOR-DEVICE %d\n", value);*/
 			break;
 		case USB_DT_DEVICE_QUALIFIER:
 			if (!gadget_is_dualspeed(gadget) ||
@@ -1332,7 +1332,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 			value = config_desc(cdev, w_value);
 			if (value >= 0)
 				value = min(w_length, (u16) value);
-			INFO(cdev, "[COM]GET_DESCRIPTOR-CONFIG %d\n", value);
+			/*INFO(cdev, "[COM]GET_DESCRIPTOR-CONFIG %d\n", value);*/
 			break;
 		case USB_DT_STRING:
 			value = get_string(cdev, req->buf,

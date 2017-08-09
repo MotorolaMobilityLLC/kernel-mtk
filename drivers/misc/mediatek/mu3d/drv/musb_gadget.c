@@ -779,7 +779,7 @@ static int musb_gadget_disable(struct usb_ep *ep)
 	struct musb_ep *musb_ep;
 	int status = 0;
 
-	os_printk(K_INFO, "%s %s\n", __func__, ep->name);
+	os_printk(K_DEBUG, "%s %s\n", __func__, ep->name);
 
 	musb_ep = to_musb_ep(ep);
 	musb = musb_ep->musb;

@@ -2621,7 +2621,7 @@ static void android_disconnect(struct usb_composite_dev *cdev)
 	struct android_dev *dev = _android_dev;
 
 	/* Added for USB Develpment debug, more log for more debuging help */
-	pr_notice("[USB]%s: \n", __func__);
+	/* pr_notice("[USB]%s:\n", __func__); */
 	/* Added for USB Develpment debug, more log for more debuging help */
 
 	/* accessory HID support can be active while the
