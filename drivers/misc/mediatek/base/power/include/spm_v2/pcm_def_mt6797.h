@@ -209,7 +209,7 @@ enum SPM_WAKE_SRC_LIST {
 	WAKE_SRC_R12_APSRC_SLEEP = (1U << 31)
 };
 
-#if 1 /* Jade's string */
+#if 1
 extern const char *wakesrc_str[32];
 #else
 static const char *wakesrc_str[32] = {
