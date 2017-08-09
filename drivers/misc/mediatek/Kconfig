@@ -97,6 +97,14 @@ config MTK_SHARED_SDCARD
 	help
 	  sdcard will be a folder of /data
 
+config MTK_GPT_SCHEME_SUPPORT
+        bool "MTK_GPT_SCHEME_SUPPORT"
+	help
+	  GPT is GUID Partition Table
+	  MTK driver support gpt scheme layout
+	  GPT is a better partition layout scheme
+	  GPT is instead of PMT
+
 config MTK_SENSOR_SUPPORT
 	bool "MTK_SENSOR_SUPPORT"
 	help
