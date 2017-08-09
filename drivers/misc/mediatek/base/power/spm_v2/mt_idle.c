@@ -333,6 +333,12 @@ static unsigned int idle_block_log_time_criteria = 5000;	/* 5 sec */
 static unsigned long long idle_cnt_dump_prev_time;
 static unsigned int idle_cnt_dump_criteria = 10000;			/* 10 sec */
 
+static bool             idle_ratio_en;
+static unsigned long long idle_ratio_profile_start_time;
+static unsigned long long idle_ratio_profile_duration;
+static unsigned long long idle_ratio_start_time[NR_TYPES];
+static unsigned long long idle_ratio_value[NR_TYPES];
+
 /* Slow Idle */
 static unsigned int     slidle_block_mask[NR_GRPS] = {0x0};
 static unsigned long    slidle_cnt[NR_CPUS] = {0};
@@ -1841,8 +1847,35 @@ void dump_idle_cnt_in_interval(int cpu)
 	/* dump log */
 	idle_warn("%s\n", log_buf_2);
 
+	/* dump idle ratio */
+	if (idle_ratio_en) {
+		idle_ratio_profile_duration = idle_get_current_time_ms() - idle_ratio_profile_start_time;
+		idle_warn("--- CPU 0 idle: %llu, DP = %llu, SO3 = %llu, SO = %llu, RG = %llu --- (ms)\n",
+				idle_ratio_profile_duration,
+				idle_ratio_value[IDLE_TYPE_DP],
+				idle_ratio_value[IDLE_TYPE_SO3],
+				idle_ratio_value[IDLE_TYPE_SO],
+				idle_ratio_value[IDLE_TYPE_RG]);
+
+		idle_ratio_profile_start_time = idle_get_current_time_ms();
+		for (i = 0; i < NR_TYPES; i++)
+			idle_ratio_value[i] = 0;
+	}
+
 	/* update time base */
 	idle_cnt_dump_prev_time = idle_cnt_dump_curr_time;
+}
+
+inline void idle_ratio_calc_start(int type, int cpu)
+{
+	if (type >= 0 && type < NR_TYPES && cpu == 0)
+		idle_ratio_start_time[type] = idle_get_current_time_ms();
+}
+
+inline void idle_ratio_calc_stop(int type, int cpu)
+{
+	if (type >= 0 && type < NR_TYPES && cpu == 0)
+		idle_ratio_value[type] += (idle_get_current_time_ms() - idle_ratio_start_time[type]);
 }
 
 int mt_idle_select(int cpu)
@@ -1864,11 +1897,15 @@ int dpidle_enter(int cpu)
 {
 	int ret = IDLE_TYPE_DP;
 
+	idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
+
 	dpidle_pre_handler();
 #ifndef CONFIG_MTK_FPGA
 	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log);
 #endif
 	dpidle_post_handler();
+
+	idle_ratio_calc_stop(IDLE_TYPE_DP, cpu);
 
 #ifdef CONFIG_SMP
 	idle_warn_log("DP:timer_left=%d, timer_left2=%d, delta=%d\n",
@@ -1899,6 +1936,8 @@ int soidle3_enter(int cpu)
 	if (sodi3_flags & SODI_FLAG_RESIDENCY)
 		soidle3_time = idle_get_current_time_ms();
 
+	idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
+
 	soidle_pre_handler();
 
 	if (is_auxadc_released())
@@ -1916,6 +1955,8 @@ int soidle3_enter(int cpu)
 #endif /* DEFAULT_MMP_ENABLE */
 
 	soidle_post_handler();
+
+	idle_ratio_calc_stop(IDLE_TYPE_SO3, cpu);
 
 	if (sodi3_flags & SODI_FLAG_RESIDENCY) {
 		soidle3_residency += idle_get_current_time_ms() - soidle3_time;
@@ -1953,6 +1994,8 @@ int soidle_enter(int cpu)
 	if (sodi_flags & SODI_FLAG_RESIDENCY)
 		soidle_time = idle_get_current_time_ms();
 
+	idle_ratio_calc_start(IDLE_TYPE_SO, cpu);
+
 	soidle_pre_handler();
 
 #ifdef DEFAULT_MMP_ENABLE
@@ -1966,6 +2009,8 @@ int soidle_enter(int cpu)
 #endif /* DEFAULT_MMP_ENABLE */
 
 	soidle_post_handler();
+
+	idle_ratio_calc_stop(IDLE_TYPE_SO, cpu);
 
 	if (sodi_flags & SODI_FLAG_RESIDENCY) {
 		soidle_residency += idle_get_current_time_ms() - soidle_time;
@@ -2021,7 +2066,11 @@ int rgidle_enter(int cpu)
 {
 	int ret = IDLE_TYPE_RG;
 
+	idle_ratio_calc_start(IDLE_TYPE_RG, cpu);
+
 	go_to_rgidle(cpu);
+
+	idle_ratio_calc_stop(IDLE_TYPE_RG, cpu);
 
 	return ret;
 }
@@ -2107,10 +2156,12 @@ static ssize_t idle_state_read(struct file *filp,
 		p += sprintf(p, "%s_switch=%d, ", idle_name[i], idle_switch[i]);
 
 	p += sprintf(p, "\n");
+	p += sprintf(p, "idle_ratio_en = %u\n", idle_ratio_en);
 
 	p += sprintf(p, "\n********** idle command help **********\n");
 	p += sprintf(p, "status help:   cat /sys/kernel/debug/cpuidle/idle_state\n");
 	p += sprintf(p, "switch on/off: echo switch mask > /sys/kernel/debug/cpuidle/idle_state\n");
+	p += sprintf(p, "idle ratio profile: echo ratio 1/0 > /sys/kernel/debug/cpuidle/idle_state\n");
 
 	p += sprintf(p, "soidle3 help:   cat /sys/kernel/debug/cpuidle/soidle3_state\n");
 	p += sprintf(p, "soidle help:   cat /sys/kernel/debug/cpuidle/soidle_state\n");
@@ -2142,6 +2193,14 @@ static ssize_t idle_state_write(struct file *filp,
 		if (!strcmp(cmd, "switch")) {
 			for (idx = 0; idx < NR_TYPES; idx++)
 				idle_switch[idx] = (param & (1U << idx)) ? 1 : 0;
+		} else if (!strcmp(cmd, "ratio")) {
+			idle_ratio_en = param;
+
+			if (idle_ratio_en) {
+				idle_ratio_profile_start_time = idle_get_current_time_ms();
+				for (idx = 0; idx < NR_TYPES; idx++)
+					idle_ratio_value[idx] = 0;
+			}
 		}
 		return count;
 	}
