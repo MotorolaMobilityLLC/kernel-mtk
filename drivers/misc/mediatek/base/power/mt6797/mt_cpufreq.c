@@ -2626,6 +2626,22 @@ static unsigned int _calc_pmic_settle_time(unsigned int old_vproc, unsigned int 
 	return delay;
 }
 
+static void dump_all_opp_table(void)
+{
+	int i;
+	struct mt_cpu_dvfs *p;
+
+	for_each_cpu_dvfs(i, p) {
+		cpufreq_err("[%s/%d] cpufreq_oppidx = %d\n", p->name, p->cpu_id, p->idx_opp_tbl);
+
+		for (i = 0; i < p->nr_opp_tbl; i++) {
+			cpufreq_err("\tOP(%d, %d),\n",
+					cpu_dvfs_get_freq_by_idx(p, i), cpu_dvfs_get_volt_by_idx(p, i)
+				);
+		}
+	}
+}
+
 static void dump_opp_table(struct mt_cpu_dvfs *p)
 {
 	int i;
@@ -3069,7 +3085,7 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 			if (volt < target_volt || freq != target_khz) {
 				cpufreq_err("volt = %u, target_volt = %u, freq = %u, target_khz = %u\n",
 					volt, target_volt, freq, target_khz);
-				dump_opp_table(p);
+				dump_all_opp_table();
 				BUG();
 			}
 		}
