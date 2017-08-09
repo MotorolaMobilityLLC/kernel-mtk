@@ -28,9 +28,6 @@
 #include <linux/kernel.h>
 #include <linux/delay.h>
 #include <linux/byteorder/generic.h>
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#endif
 #include <linux/interrupt.h>
 #include <linux/input/mt.h>
 #include <linux/time.h>
@@ -586,7 +583,7 @@ static void synaptics_setup_eint(void)
 
 	/* Configure GPIO settings for external interrupt pin  */
 	SYNAP_GPIO_OUTPUT(SYNAP_INT_PORT, 0);
-	mdelay(50);
+	msleep(50);
 	SYNAP_GPIO_AS_INT(SYNAP_INT_PORT);
 
 	/* ret = gpio_to_irq(P_GPIO_CTP_EINT_PIN); */
@@ -3128,8 +3125,7 @@ static int synaptics_local_init(void)
 	return 0;
 }
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void synaptics_suspend(struct early_suspend *h)
+static void synaptics_suspend(struct device *h)
 {
 	int ret = 0;
 
@@ -3151,7 +3147,7 @@ static void synaptics_suspend(struct early_suspend *h)
 	TPD_LOG("hrtimer_start return value  = %d", ret);
 }
 
-static void synaptics_resume(struct early_suspend *h)
+static void synaptics_resume(struct device *h)
 {
 	TPD_FUN();
 
@@ -3174,7 +3170,6 @@ static void synaptics_resume(struct early_suspend *h)
 
 	suspend_status = 0;
 }
-#endif
 
 #ifdef CONFIG_MTK_LEGACY
 static struct i2c_board_info i2c_tpd __initdata = { I2C_BOARD_INFO(TPD_DEV_NAME, TPD_I2C_ADDRESS) };
@@ -3183,10 +3178,8 @@ static struct i2c_board_info i2c_tpd __initdata = { I2C_BOARD_INFO(TPD_DEV_NAME,
 static struct tpd_driver_t tpd_device_driver = {
 	.tpd_device_name = TPD_DEV_NAME,
 	.tpd_local_init = synaptics_local_init,
-#ifdef CONFIG_HAS_EARLYSUSPEND
 	.suspend = synaptics_suspend,
 	.resume = synaptics_resume,
-#endif
 #ifdef TPD_HAVE_BUTTON
 	.tpd_have_button = 1,
 #else
