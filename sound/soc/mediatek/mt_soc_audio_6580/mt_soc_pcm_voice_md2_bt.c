@@ -226,7 +226,7 @@ static bool SetModemSpeechDAIBTAttribute(int sample_rate)
 {
 	AudioDigitalDAIBT daibt_attribute;
 
-	memset((void *)&daibt_attribute, 0, sizeof(daibt_attribute));
+	memset_io((void *)&daibt_attribute, 0, sizeof(daibt_attribute));
 
 #if 0				/* temp for merge only support */
 	daibt_attribute.mUSE_MRGIF_INPUT = Soc_Aud_BT_DAI_INPUT_FROM_BT;

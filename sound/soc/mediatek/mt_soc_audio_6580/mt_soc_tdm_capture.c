@@ -665,7 +665,7 @@ static int mtk_afe_capture_probe(struct snd_soc_platform *platform)
 	Capture_dma_buf = Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_VUL);
 	/*
 	   Capture_dma_buf = kmalloc(sizeof(struct snd_dma_buffer), GFP_KERNEL);
-	   memset((void *)Capture_dma_buf, 0, sizeof(struct snd_dma_buffer));
+	   memset_io((void *)Capture_dma_buf, 0, sizeof(struct snd_dma_buffer));
 	pr_debug("mtk_afe_capture_probe dma_alloc_coherent\n");
 
 	   Capture_dma_buf->area = dma_alloc_coherent(platform->dev,

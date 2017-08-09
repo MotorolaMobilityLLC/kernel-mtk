@@ -289,7 +289,7 @@ static void copysinewavetohdmi(unsigned int channels)
 		SinewaveArr = table_sgen_8ch_golden_values;
 	}
 	if (channels == 0) {
-		memset((void *)(Bufferaddr), 0x7f7f7f7f, Hhdmi_Buffer_length);	/* using for observe data */
+		memset_io((void *)(Bufferaddr), 0x7f7f7f7f, Hhdmi_Buffer_length);	/* using for observe data */
 		pr_warn("use fix pattern Bufferaddr = %p Hhdmi_Buffer_length = %d\n", Bufferaddr,
 		       Hhdmi_Buffer_length);
 		return;
@@ -1142,7 +1142,7 @@ static int mtk_afe_hdmi_probe(struct snd_soc_platform *platform)
 {
 
 	HDMI_dma_buf = kmalloc(sizeof(struct snd_dma_buffer), GFP_KERNEL);
-	memset((void *)HDMI_dma_buf, 0, sizeof(struct snd_dma_buffer));
+	memset_io((void *)HDMI_dma_buf, 0, sizeof(struct snd_dma_buffer));
 	PRINTK_AUD_HDMI("mtk_afe_hdmi_probe dma_alloc_coherent HDMI_dma_buf->addr=0x%lx\n",
 			(long)HDMI_dma_buf->addr);
 

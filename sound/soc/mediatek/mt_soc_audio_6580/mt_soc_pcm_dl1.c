@@ -250,7 +250,7 @@ static void SetDL1Buffer(struct snd_pcm_substream *substream, struct snd_pcm_hw_
 	/* set dram address top hardware */
 	Afe_Set_Reg(AFE_DL1_BASE, pblock->pucPhysBufAddr, 0xffffffff);
 	Afe_Set_Reg(AFE_DL1_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
-	memset((void *)pblock->pucVirtBufAddr, 0, pblock->u4BufferSize);
+	memset_io((void *)pblock->pucVirtBufAddr, 0, pblock->u4BufferSize);
 
 }
 

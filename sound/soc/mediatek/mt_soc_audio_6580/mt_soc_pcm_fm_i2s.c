@@ -293,7 +293,7 @@ static int mtk_pcm_fm_i2s_prepare(struct snd_pcm_substream *substream)
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_2, true);
 
 			/* Config 2nd I2S IN */
-			memset((void *)&m2ndI2SInAttribute, 0, sizeof(m2ndI2SInAttribute));
+			memset_io((void *)&m2ndI2SInAttribute, 0, sizeof(m2ndI2SInAttribute));
 
 			m2ndI2SInAttribute.mLR_SWAP = Soc_Aud_LR_SWAP_NO_SWAP;
 			m2ndI2SInAttribute.mI2S_IN_PAD_SEL = false;	/* I2S_IN_FROM_CONNSYS */

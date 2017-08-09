@@ -275,7 +275,7 @@ static int mtk_pcm_i2s0_stop(struct snd_pcm_substream *substream)
 	EnableAfe(false);
 
 	/* clean audio hardware buffer */
-	memset(Afe_Block->pucVirtBufAddr, 0, Afe_Block->u4BufferSize);
+	memset_io(Afe_Block->pucVirtBufAddr, 0, Afe_Block->u4BufferSize);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
 	AudDrv_Clk_Off();
 

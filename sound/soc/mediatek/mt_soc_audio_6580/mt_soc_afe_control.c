@@ -2307,7 +2307,7 @@ int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length)
 	/* set sram address top hardware */
 	Afe_Set_Reg(AFE_DL1_BASE, pblock->pucPhysBufAddr, 0xffffffff);
 	Afe_Set_Reg(AFE_DL1_END, pblock->pucPhysBufAddr + (Afe_Buf_Length - 1), 0xffffffff);
-	memset(pblock->pucVirtBufAddr, 0, pblock->u4BufferSize);
+	memset_io(pblock->pucVirtBufAddr, 0, pblock->u4BufferSize);
 	return 0;
 }
 
@@ -2419,7 +2419,7 @@ bool ClearMemBlock(Soc_Aud_Digital_Block MemBlock)
 	if (MemBlock >= 0 && MemBlock <= Soc_Aud_Digital_Block_MEM_HDMI) {
 		AFE_BLOCK_T *pBlock = &AFE_Mem_Control_context[MemBlock]->rBlock;
 
-		memset(pBlock->pucVirtBufAddr, 0, pBlock->u4BufferSize);
+		memset_io(pBlock->pucVirtBufAddr, 0, pBlock->u4BufferSize);
 		pBlock->u4WriteIdx = 0;
 		pBlock->u4DMAReadIdx = 0;
 		pBlock->u4DataRemained = 0;
