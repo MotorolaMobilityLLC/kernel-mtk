@@ -115,7 +115,7 @@ struct governor_profile {
 };
 
 static struct governor_profile governor_ctrl = {
-	.vcore_dvfs_en = 0,	/* vcore dvfs feature enable */
+	.vcore_dvfs_en = 1,	/* vcore dvfs feature enable */
 	.vcore_dvs = 1,
 	.ddr_dfs = 1,
 	.isr_debug = 0,
@@ -335,7 +335,7 @@ char *vcorefs_get_sram_debug_info(char *p)
 			     spm_read(VCOREFS_SRAM_DFS_DOWN_COUNT));
 		p += sprintf(p, "dvfs_up_latency   : 0x%x\n",
 			     spm_read(VCOREFS_SRAM_DVFS_UP_LATENCY));
-		p += sprintf(p, "dvs_down_latency  : 0x%x\n",
+		p += sprintf(p, "dvfs_down_latency  : 0x%x\n",
 			     spm_read(VCOREFS_SRAM_DVFS_DOWN_LATENCY));
 		p += sprintf(p, "dvfs_latency_spec : 0x%x\n",
 			     spm_read(VCOREFS_SRAM_DVFS_LATENCY_SPEC));
@@ -1096,7 +1096,7 @@ static int __init vcorefs_module_init(void)
 
 	struct device_node *node;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,VCORE_DVFS");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-vcorefs");
 	if (!node)
 		vcorefs_err("find VCORE_DVFS node failed\n");
 

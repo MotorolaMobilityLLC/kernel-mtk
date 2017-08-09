@@ -698,7 +698,7 @@
 		ranges;
 
 		vcore_dvfs@0011cf80 {
-			compatible = "mediatek,vcore_dvfs";
+			compatible = "mediatek,mt6755-vcorefs";
 			reg = <0x0011cf80 0x80>;
 			eint_spm_vcorefs_end@154 {
 				compatible = "mediatek,spm_vcorefs_err_eint";
