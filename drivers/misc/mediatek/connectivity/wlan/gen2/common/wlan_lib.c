@@ -6130,6 +6130,8 @@ VOID wlanCfgApply(IN P_ADAPTER_T prAdapter)
 		DBGLOG(INIT, LOUD, "CFG_FILE: Found Country Key, Value=%s\n", aucValue);
 		prAdapter->rWifiVar.rConnSettings.u2CountryCode =
 		    (((UINT_16) aucValue[0]) << 8) | ((UINT_16) aucValue[1]);
+		prRegInfo->au2CountryCode[0] = aucValue[0];
+		prRegInfo->au2CountryCode[1] = aucValue[1];
 	}
 	prWifiVar->ucApWpsMode = (UINT_8) wlanCfgGetUint32(prAdapter, "ApWpsMode", 0);
 	prWifiVar->ucCert11nMode = (UINT_8)wlanCfgGetUint32(prAdapter, "Cert11nMode", 0);
