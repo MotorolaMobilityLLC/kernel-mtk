@@ -29,9 +29,9 @@
 
 
 /**************************************
- * [Hybrid DVFS] Config
+ * [CPU SPM] Config
  **************************************/
-#define I2C_GO_PAUSE		1
+static u32 wa_get_emi_sema = 1;
 
 
 /**************************************
@@ -265,15 +265,15 @@
 #define CSPM_SEMA0_M0			(CSPM_BASE + 0x410)
 #define CSPM_SEMA0_M1			(CSPM_BASE + 0x414)
 #define CSPM_SEMA0_M2			(CSPM_BASE + 0x418)
-#define CSPM_SEMA1_M0			(CSPM_BASE + 0x420)
-#define CSPM_SEMA1_M1			(CSPM_BASE + 0x424)
-#define CSPM_SEMA1_M2			(CSPM_BASE + 0x428)
-#define CSPM_SEMA2_M0			(CSPM_BASE + 0x430)	/* Vcore DVFS workaround */
-#define CSPM_SEMA2_M1			(CSPM_BASE + 0x434)	/* Vcore DVFS workaround */
-#define CSPM_SEMA2_M2			(CSPM_BASE + 0x438)	/* Vcore DVFS workaround */
-#define CSPM_SEMA3_M0			(CSPM_BASE + 0x440)	/* MCUMIXEDSYS workaround */
-#define CSPM_SEMA3_M1			(CSPM_BASE + 0x444)	/* MCUMIXEDSYS workaround */
-#define CSPM_SEMA3_M2			(CSPM_BASE + 0x448)	/* MCUMIXEDSYS workaround */
+#define CSPM_SEMA1_M0			(CSPM_BASE + 0x420)	/* EMI SEMA (LP SPM) */
+#define CSPM_SEMA1_M1			(CSPM_BASE + 0x424)	/* EMI SEMA (CPU SPM) */
+#define CSPM_SEMA1_M2			(CSPM_BASE + 0x428)	/* EMI SEMA (GPU SPM) */
+#define CSPM_SEMA2_M0			(CSPM_BASE + 0x430)	/* EMI SEMA (LP SPM) */
+#define CSPM_SEMA2_M1			(CSPM_BASE + 0x434)	/* EMI SEMA (SCP) */
+#define CSPM_SEMA2_M2			(CSPM_BASE + 0x438)	/* EMI SEMA (SPI) */
+#define CSPM_SEMA3_M0			(CSPM_BASE + 0x440)	/* MCU SEMA (FH) */
+#define CSPM_SEMA3_M1			(CSPM_BASE + 0x444)	/* MCU SEMA (CPU SPM) */
+#define CSPM_SEMA3_M2			(CSPM_BASE + 0x448)	/* MCU SEMA (ATF) */
 #define CSPM_MP0_CPU0_WFI_EN		(CSPM_BASE + 0x530)
 #define CSPM_MP0_CPU1_WFI_EN		(CSPM_BASE + 0x534)
 #define CSPM_MP0_CPU2_WFI_EN		(CSPM_BASE + 0x538)
@@ -602,7 +602,6 @@ static u32 sema_fail_ke;
 static u32 pause_fail_ke;
 #endif
 
-static DEFINE_SPINLOCK(cspm_lock);
 static DEFINE_SPINLOCK(dvfs_lock);
 
 static DECLARE_WAIT_QUEUE_HEAD(dvfs_wait);
@@ -842,7 +841,7 @@ static void __cspm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 {
 	/* do basic init because of Infra power-on reset */
 #if 0
-	/* SEMA2/3 are used for workaround, so others will write POWERON_CONFIG_EN */
+	/* others will set REGWR_EN for SEMA1/2/3 access */
 	if (!(cspm_read(CSPM_POWERON_CONFIG_EN) & REGWR_EN))
 #else
 	if (!(cspm_read(CSPM_PCM_CON1) & CON1_MIF_APBEN))
@@ -865,6 +864,7 @@ static void __cspm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 static void __cspm_kick_im_to_fetch(const struct pcm_desc *pcmdesc)
 {
 	u32 ptr, len, con0;
+	bool emi_access = true;
 
 	/* tell IM where is PCM code (use slave mode if code existed) */
 	ptr = base_va_to_pa(pcmdesc->base);
@@ -875,12 +875,29 @@ static void __cspm_kick_im_to_fetch(const struct pcm_desc *pcmdesc)
 		cspm_write(CSPM_PCM_IM_LEN, len);
 	} else {
 		cspm_write(CSPM_PCM_CON1, cspm_read(CSPM_PCM_CON1) | CON1_CFG_KEY | CON1_IM_SLAVE);
+		emi_access = false;
+	}
+
+	if (wa_get_emi_sema && emi_access) {
+		/* get EMI SEMA */
+		do {
+			cspm_write(CSPM_SEMA1_M1, 0x1);
+		} while (!(cspm_read(CSPM_SEMA1_M1) & 0x1));
 	}
 
 	/* kick IM to fetch (only toggle IM_KICK) */
 	con0 = cspm_read(CSPM_PCM_CON0) & ~(CON0_IM_KICK | CON0_PCM_KICK);
 	cspm_write(CSPM_PCM_CON0, con0 | CON0_CFG_KEY | CON0_IM_KICK);
 	cspm_write(CSPM_PCM_CON0, con0 | CON0_CFG_KEY);
+
+	if (wa_get_emi_sema && emi_access) {
+		/* wait for IM fetch done */
+		while (!(cspm_read(CSPM_PCM_FSM_STA) & FSM_IM_REDY))
+			;
+
+		/* release EMI SEMA */
+		cspm_write(CSPM_SEMA1_M1, 0x1);
+	}
 }
 
 static void __cspm_init_pcm_register(void)
@@ -1219,20 +1236,15 @@ static void __cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 static int cspm_stop_pcm_running(struct cpuhvfs_dvfsp *dvfsp)
 {
 	int r;
-	unsigned long flags;
 
 	spin_lock(&dvfs_lock);
 	cspm_dbgx(STOP, "stop, map = 0x%x\n", pause_src_map);
 
 	r = __cspm_pause_pcm_running(dvfsp, PSF_PAUSE_INIT);
 	if (!r) {
-		spin_lock_irqsave(&cspm_lock, flags);
-
 		__cspm_clean_after_pause();
 
 		__cspm_pcm_sw_reset();
-
-		spin_unlock_irqrestore(&cspm_lock, flags);
 	}
 	spin_unlock(&dvfs_lock);
 
@@ -1276,10 +1288,8 @@ static int cspm_get_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user)
 	int i;
 	int n = DIV_ROUND_UP(SEMA_GET_TIMEOUT, 10);
 
-#if I2C_GO_PAUSE
 	if (user == SEMA_I2C_DRV)
 		return cspm_pause_pcm_running(dvfsp, PAUSE_I2CDRV);
-#endif
 
 	if (is_dvfsp_uninit(dvfsp))
 		return 0;
@@ -1302,12 +1312,10 @@ static int cspm_get_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user)
 
 static void cspm_release_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user)
 {
-#if I2C_GO_PAUSE
 	if (user == SEMA_I2C_DRV) {
 		cspm_unpause_pcm_to_run(dvfsp, PAUSE_I2CDRV);
 		return;
 	}
-#endif
 
 	if (is_dvfsp_uninit(dvfsp))
 		return;
@@ -1551,14 +1559,11 @@ static void __cspm_check_and_update_sta(struct cpuhvfs_dvfsp *dvfsp, struct init
 
 static int cspm_go_to_dvfs(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta)
 {
-	unsigned long flags;
 	struct pcm_desc *pcmdesc = dvfsp->pcmdesc;
 	struct pwr_ctrl *pwrctrl = dvfsp->pwrctrl;
 
 	spin_lock(&dvfs_lock);
 	__cspm_check_and_update_sta(dvfsp, sta);
-
-	spin_lock_irqsave(&cspm_lock, flags);
 
 	__cspm_reset_and_init_pcm(pcmdesc);
 
@@ -1574,7 +1579,6 @@ static int cspm_go_to_dvfs(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta)
 
 	__cspm_kick_pcm_to_run(pwrctrl, sta);
 
-	spin_unlock_irqrestore(&cspm_lock, flags);
 	spin_unlock(&dvfs_lock);
 
 	return 0;
@@ -1583,7 +1587,6 @@ static int cspm_go_to_dvfs(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta)
 static int cspm_probe(struct platform_device *pdev)
 {
 	int r;
-	unsigned long flags;
 
 	cspm_base = of_iomap(pdev->dev.of_node, 0);
 	if (!cspm_base) {
@@ -1619,7 +1622,6 @@ static int cspm_probe(struct platform_device *pdev)
 	hwsta_reg[CPU_CLUSTER_CCI] = CSPM_SW_RSV6;
 
 	sema_reg[SEMA_FHCTL_DRV] = CSPM_SEMA0_M0;
-	sema_reg[SEMA_I2C_DRV] = CSPM_SEMA1_M0;
 
 	swctrl_offs[CPU_CLUSTER_LL] = OFFS_SW_RSV0;
 	swctrl_offs[CPU_CLUSTER_L] = OFFS_SW_RSV1;
@@ -1630,10 +1632,7 @@ static int cspm_probe(struct platform_device *pdev)
 	hwsta_offs[CPU_CLUSTER_B] = OFFS_FW_RSV5;
 	hwsta_offs[CPU_CLUSTER_CCI] = OFFS_FW_RSV6;
 
-
-	spin_lock_irqsave(&cspm_lock, flags);
 	__cspm_register_init();
-	spin_unlock_irqrestore(&cspm_lock, flags);
 
 	cspm_probe_done = 1;
 
@@ -1799,6 +1798,8 @@ static int create_cpuhvfs_debug_fs(struct cpuhvfs_data *cpuhvfs)
 	debugfs_create_bool("dvfs_fail_ke", 0644, root, &dvfs_fail_ke);
 	debugfs_create_bool("sema_fail_ke", 0644, root, &sema_fail_ke);
 	debugfs_create_bool("pause_fail_ke", 0644, root, &pause_fail_ke);
+
+	debugfs_create_bool("wa_get_emi_sema", 0444, root, &wa_get_emi_sema);
 
 	cpuhvfs->dbg_fs = root;
 
@@ -2104,4 +2105,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.3");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.4");
