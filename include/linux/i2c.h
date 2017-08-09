@@ -37,6 +37,25 @@
 extern struct bus_type i2c_bus_type;
 extern struct device_type i2c_adapter_type;
 
+#define USE_I2C_MTK_EXT
+#ifdef USE_I2C_MTK_EXT
+#define I2C_A_FILTER_MSG	0x8000	/* filer out error messages	*/
+#define I2C_A_CHANGE_TIMING	0x4000	/* change timing parameters	*/
+#define I2C_MASK_FLAG	(0x00ff)
+#define I2C_DMA_FLAG	(0xdead2000)
+#define I2C_WR_FLAG		(0x1000)
+#define I2C_RS_FLAG		(0x0800)
+#define I2C_HS_FLAG   (0x0400)
+#define I2C_ENEXT_FLAG (0x0200)
+#define I2C_DISEXT_FLAG (0x0000)
+#define I2C_POLL_FLAG (0x4000)
+#define I2C_CH2_FLAG	(0x8000)
+#define I2C_POLLING_FLAG (0x00000001)
+#define I2C_PUSHPULL_FLAG (0x00000002)
+#define I2C_3DCAMERA_FLAG (0x00000004)
+#define I2C_DIRECTION_FLAG (0x00000008)
+#endif
+
 /* --- General options ------------------------------------------------	*/
 
 struct i2c_msg;
@@ -224,6 +243,10 @@ struct i2c_client {
 	struct device dev;		/* the device structure		*/
 	int irq;			/* irq issued by device		*/
 	struct list_head detected;
+	#ifdef USE_I2C_MTK_EXT
+	__u32 timing;			/* parameters of timings		*/
+	__u32 ext_flag;
+	#endif
 };
 #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
 
