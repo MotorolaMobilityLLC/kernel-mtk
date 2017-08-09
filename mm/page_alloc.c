@@ -2794,6 +2794,21 @@ got_pg:
 	return page;
 }
 
+#ifdef CONFIG_MT_ENG_BUILD
+#define __LOG_PAGE_ALLOC_ORDER__
+#include <linux/stacktrace.h>
+#endif
+
+#ifdef __LOG_PAGE_ALLOC_ORDER__
+
+static int page_alloc_dump_order_threshold = 4;
+static int page_alloc_log_order_threshold = 3;
+
+/* Jack remove page_alloc_order_log array for non-used */
+module_param_named(dump_order_threshold, page_alloc_dump_order_threshold, int, S_IRUGO | S_IWUSR);
+module_param_named(log_order_threshold, page_alloc_log_order_threshold, int, S_IRUGO | S_IWUSR);
+#endif /* __LOG_PAGE_ALLOC_ORDER__ */
+
 /*
  * This is the 'heart' of the zoned buddy allocator.
  */
@@ -2809,6 +2824,10 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
 	unsigned int cpuset_mems_cookie;
 	int alloc_flags = ALLOC_WMARK_LOW|ALLOC_CPUSET|ALLOC_FAIR;
 	int classzone_idx;
+#ifdef __LOG_PAGE_ALLOC_ORDER__
+	struct stack_trace trace;
+	unsigned long entries[6] = {0};
+#endif
 
 	gfp_mask &= gfp_allowed_mask;
 
@@ -2857,6 +2876,28 @@ retry_cpuset:
 				preferred_zone, classzone_idx, migratetype);
 	}
 
+#ifdef __LOG_PAGE_ALLOC_ORDER__
+
+#ifdef CONFIG_FREEZER /* Added skip debug log in IPOH */
+	if (unlikely(!atomic_read(&system_freezing_cnt))) {
+#endif
+		if (order >= page_alloc_dump_order_threshold) {
+			trace.nr_entries = 0;
+			trace.max_entries = ARRAY_SIZE(entries);
+			trace.entries = entries;
+			trace.skip = 2;
+
+			save_stack_trace(&trace);
+			trace_dump_allocate_large_pages(page, order, gfp_mask, entries);
+		} else if (order >= page_alloc_log_order_threshold) {
+			trace_debug_allocate_large_pages(page, order, gfp_mask);
+		}
+
+#ifdef CONFIG_FREEZER
+	}
+#endif
+
+#endif /* __LOG_PAGE_ALLOC_ORDER__ */
 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
 
 out:
