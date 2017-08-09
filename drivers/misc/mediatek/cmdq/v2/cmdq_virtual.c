@@ -992,20 +992,17 @@ uint64_t cmdq_virtual_flag_from_scenario(CMDQ_SCENARIO_ENUM scn)
  * Event backup
  *
  */
-#if defined(CMDQ_EVENT_NEED_BACKUP) || defined(CMDQ_EVENT_SVP_BACKUP)
 struct cmdq_backup_event_struct {
 	CMDQ_EVENT_ENUM EventID;
 	uint32_t BackupValue;
 };
 
+static struct cmdq_backup_event_struct g_cmdq_backup_event[] = {
 #ifdef CMDQ_EVENT_NEED_BACKUP
-static struct cmdq_backup_event_struct g_cmdq_backup_event[] = {
 	{CMDQ_SYNC_TOKEN_VENC_EOF, 0,},
-	{CMDQ_SYNC_TOKEN_VENC_INPUT_READY, 0,}
-};
-#else
+	{CMDQ_SYNC_TOKEN_VENC_INPUT_READY, 0,},
+#endif				/* CMDQ_EVENT_NEED_BACKUP */
 #ifdef CMDQ_EVENT_SVP_BACKUP
-static struct cmdq_backup_event_struct g_cmdq_backup_event[] = {
 	{CMDQ_SYNC_DISP_OVL0_2NONSEC_END, 0,},
 	{CMDQ_SYNC_DISP_OVL1_2NONSEC_END, 0,},
 	{CMDQ_SYNC_DISP_2LOVL0_2NONSEC_END, 0,},
@@ -1015,17 +1012,14 @@ static struct cmdq_backup_event_struct g_cmdq_backup_event[] = {
 	{CMDQ_SYNC_DISP_WDMA0_2NONSEC_END, 0,},
 	{CMDQ_SYNC_DISP_WDMA1_2NONSEC_END, 0,},
 	{CMDQ_SYNC_DISP_EXT_STREAM_EOF, 0,},
+#endif				/* CMDQ_EVENT_SVP_BACKUP */
 };
-#endif
-#endif
 
-#endif				/* CMDQ_EVENT_NEED_BACKUP */
 
 void cmdq_virtual_event_backup(void)
 {
-#if defined(CMDQ_EVENT_NEED_BACKUP) || defined(CMDQ_EVENT_SVP_BACKUP)
 	int i;
-	int array_size = (sizeof(g_cmdq_backup_event) / sizeof(g_cmdq_backup_event[0]));
+	int array_size = (sizeof(g_cmdq_backup_event) / sizeof(struct cmdq_backup_event_struct));
 
 	for (i = 0; i < array_size; i++) {
 		if (g_cmdq_backup_event[i].EventID < 0 || g_cmdq_backup_event[i].EventID >= CMDQ_SYNC_TOKEN_MAX)
@@ -1036,14 +1030,12 @@ void cmdq_virtual_event_backup(void)
 				cmdq_core_get_event_name_ENUM(g_cmdq_backup_event[i].EventID),
 				g_cmdq_backup_event[i].BackupValue);
 	}
-#endif				/* CMDQ_EVENT_NEED_BACKUP */
 }
 
 void cmdq_virtual_event_restore(void)
 {
-#if defined(CMDQ_EVENT_NEED_BACKUP) || defined(CMDQ_EVENT_SVP_BACKUP)
 	int i;
-	int array_size = (sizeof(g_cmdq_backup_event) / sizeof(g_cmdq_backup_event[0]));
+	int array_size = (sizeof(g_cmdq_backup_event) / sizeof(struct cmdq_backup_event_struct));
 
 	for (i = 0; i < array_size; i++) {
 		if (g_cmdq_backup_event[i].EventID < 0 || g_cmdq_backup_event[i].EventID >= CMDQ_SYNC_TOKEN_MAX)
@@ -1058,7 +1050,6 @@ void cmdq_virtual_event_restore(void)
 		else if (0 == g_cmdq_backup_event[i].BackupValue)
 			cmdqCoreClearEvent(g_cmdq_backup_event[i].EventID);
 	}
-#endif				/* CMDQ_EVENT_NEED_BACKUP */
 }
 
 /**
