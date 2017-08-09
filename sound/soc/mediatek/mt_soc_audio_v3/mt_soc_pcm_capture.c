@@ -102,13 +102,13 @@ static void StopAudioCaptureHardware(struct snd_pcm_substream *substream)
 
 	/* here to set interrupt */
 
-	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
-		SetI2SAdcEnable(false);
-
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL, false);
 
 	SetIrqEnable(Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE, false);
+
+	SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC, false);
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_IN_ADC) == false)
+		SetI2SAdcEnable(false);
 
 	/* here to turn off digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I03, Soc_Aud_InterConnectionOutput_O09);

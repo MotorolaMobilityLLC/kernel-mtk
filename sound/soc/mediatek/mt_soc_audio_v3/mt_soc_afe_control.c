@@ -2042,12 +2042,10 @@ bool checkDllinkMEMIfStatus(void)
 
 bool checkUplinkMEMIfStatus(void)
 {
-	int i = 0;
-
-	for (i = Soc_Aud_Digital_Block_MEM_VUL; i <= Soc_Aud_Digital_Block_MEM_VUL_DATA2; i++) {
-		if (mAudioMEMIF[i]->mState == true)
-			return true;
-	}
+	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL]->mState == true)
+		return true;
+	if (mAudioMEMIF[Soc_Aud_Digital_Block_MEM_VUL_DATA2]->mState == true)
+		return true;
 
 	return false;
 }
