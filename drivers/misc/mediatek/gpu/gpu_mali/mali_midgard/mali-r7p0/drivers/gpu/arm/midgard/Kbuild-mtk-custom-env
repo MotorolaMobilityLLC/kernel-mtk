@@ -61,8 +61,6 @@ endif
 
 #ccflags-y += -DCONFIG_HAVE_CLK
 
-ccflags-$(CONFIG_MTK_EXCL_MEMORY) += -DMMU_USE_RESERVED_CMA
-
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6797")
 ccflags-y += -DMTK_MT6797_DEBUG
 endif

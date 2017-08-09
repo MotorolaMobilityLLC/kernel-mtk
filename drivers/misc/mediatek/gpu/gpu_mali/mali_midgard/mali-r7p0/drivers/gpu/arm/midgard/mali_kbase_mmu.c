@@ -320,75 +320,6 @@ fault_done:
 		
 }
 
-#ifdef MMU_USE_RESERVED_CMA
-extern int get_excl_memory(int count, unsigned int align, struct page **pages);
-extern int put_excl_memory(int count, struct page *pages);
-
-static struct page *mtk_kbase_mem_pool_alloc(struct kbase_mem_pool *pool)
-{
-	struct page *p;
-	int size = 1;
-	int nr_pages;
-	int ret;
-
-	nr_pages = PAGE_ALIGN(size) >> PAGE_SHIFT;
-	ret = get_excl_memory(nr_pages, get_order(nr_pages), &p);
-
-	if (ret != 0) {
-		dev_err(pool->kbdev->dev, "excl_memory alloc"
-			" ret(%d) nr_pages(%d) get_order(nr_pages)=%d page_to_pfn(p)=%zu\n",
-			ret, nr_pages, get_order(nr_pages), page_to_pfn(p));
-	} else {
-		struct device *dev = pool->kbdev->dev;
-		dma_addr_t dma_addr;
-
-		dma_addr = dma_map_page(dev, p, 0, PAGE_SIZE, DMA_BIDIRECTIONAL);
-		if (dma_mapping_error(dev, dma_addr)) {
-			put_excl_memory(nr_pages, p);
-			return NULL;
-		}
-
-		SetPagePrivate(p);
-		if (sizeof(dma_addr_t) > sizeof(p->private)) {
-			set_page_private(p, dma_addr >> PAGE_SHIFT);
-		} else {
-			set_page_private(p, dma_addr);
-		}
-	}
-
-	return p;
-}
-
-static void mtk_kbase_mem_pool_free(struct kbase_mem_pool *pool, struct page *p, bool dirty)
-{
-	struct device *dev = pool->kbdev->dev;
-	int size = 1;
-	int nr_pages;
-	int ret;
-
-	dma_addr_t dma_addr = kbase_dma_addr(p);
-
-	dma_unmap_page(dev, dma_addr, PAGE_SIZE, DMA_BIDIRECTIONAL);
-	ClearPagePrivate(p);
-
-	nr_pages = PAGE_ALIGN(size) >> PAGE_SHIFT;
-	ret = put_excl_memory(nr_pages, p);
-
-	if (ret != 0) {
-		dev_err(pool->kbdev->dev, "excl_memory free ret(%d) nr_pages(%d)\n", ret, nr_pages);
-	}
-}
-#else
-static struct page *mtk_kbase_mem_pool_alloc(struct kbase_mem_pool *pool)
-{
-	return kbase_mem_pool_alloc(pool);
-}
-static void mtk_kbase_mem_pool_free(struct kbase_mem_pool *pool, struct page *p, bool dirty)
-{
-	kbase_mem_pool_free(pool, p, dirty);
-}
-#endif
-
 phys_addr_t kbase_mmu_alloc_pgd(struct kbase_context *kctx)
 {
 	u64 *page;
@@ -403,7 +334,7 @@ phys_addr_t kbase_mmu_alloc_pgd(struct kbase_context *kctx)
 	kbase_atomic_add_pages(1, &g_mtk_gpu_total_memory_usage_in_pages);
 #endif /* ENABLE_MTK_MEMINFO */
 
-	p = mtk_kbase_mem_pool_alloc(&kctx->mem_pool);
+	p = kbase_mem_pool_alloc(&kctx->mem_pool);
 	if (!p)
 		goto sub_pages;
 
@@ -422,7 +353,7 @@ phys_addr_t kbase_mmu_alloc_pgd(struct kbase_context *kctx)
 	return page_to_phys(p);
 
 alloc_free:
-	mtk_kbase_mem_pool_free(&kctx->mem_pool, p, false);
+	kbase_mem_pool_free(&kctx->mem_pool, p, false);
 sub_pages:
 	kbase_atomic_sub_pages(1, &kctx->used_pages);
 	kbase_atomic_sub_pages(1, &kctx->kbdev->memdev.used_pages);
@@ -1068,7 +999,7 @@ static void mmu_teardown_level(struct kbase_context *kctx, phys_addr_t pgd, int 
 			if (zap) {
 				struct page *p = phys_to_page(target_pgd);
 
-				mtk_kbase_mem_pool_free(&kctx->mem_pool, p, true);
+				kbase_mem_pool_free(&kctx->mem_pool, p, true);
 				kbase_process_page_usage_dec(kctx, 1);
 				kbase_atomic_sub_pages(1, &kctx->used_pages);
 				kbase_atomic_sub_pages(1, &kctx->kbdev->memdev.used_pages);
@@ -1115,7 +1046,7 @@ void kbase_mmu_free_pgd(struct kbase_context *kctx)
 	mmu_teardown_level(kctx, kctx->pgd, MIDGARD_MMU_TOPLEVEL, 1, kctx->mmu_teardown_pages);
 
 	beenthere(kctx, "pgd %lx", (unsigned long)kctx->pgd);
-	mtk_kbase_mem_pool_free(&kctx->mem_pool, phys_to_page(kctx->pgd), true);
+	kbase_mem_pool_free(&kctx->mem_pool, phys_to_page(kctx->pgd), true);
 	kbase_process_page_usage_dec(kctx, 1);
 	kbase_atomic_sub_pages(1, &kctx->used_pages);
 	kbase_atomic_sub_pages(1, &kctx->kbdev->memdev.used_pages);
