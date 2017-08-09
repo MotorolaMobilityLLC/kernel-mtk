@@ -348,7 +348,7 @@ noinline void MET_touch(int raw_x, int raw_y, int cal_x, int cal_y, int p, int d
 
 	do_gettimeofday(&t);
 	if ((tpd_down_status == 0 && down == 1) || (tpd_down_status == 1 && down == 0)) {
-		trace_MET_touch("EV_EKY", t.tv_sec, t.tv_usec, "BIT_TOUCH", down);
+		trace_MET_touch("EV_KEY", t.tv_sec, t.tv_usec, "BTN_TOUCH", down);
 		tpd_down_status = !tpd_down_status;
 	}
 	if (tpd_down_status) {
