@@ -20,14 +20,12 @@
 #include <mt-plat/sync_write.h>
 #include "mach/irqs.h"
 #include <mt-plat/dma.h>
-#include <mach/memory.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <mt-plat/mt_io.h>
 #include "mach/emi_mpu.h"
 
-void __iomem *EMI_BASE_ADDR = NULL;
 static int Violation_PortID = MASTER_ALL;
 
 
@@ -417,6 +415,7 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 	}
 }
 
+#if 0
 static u32 __id2mst(u32 id)
 {
 	int i;
@@ -434,6 +433,7 @@ static u32 __id2mst(u32 id)
 	}
 	return MST_INVALID;
 }
+#endif
 
 static int isetocunt;
 static void emi_mpu_set_violation_port(int portID)
@@ -492,7 +492,6 @@ static char *__id2name(u32 id)
 static void __clear_emi_mpu_vio(unsigned int first)
 {
 	u32 dbg_s, dbg_t;
-	int i;
 	/* clear violation status */
 
 	writel(0x00FFF3FF, EMI_MPUP);
@@ -672,7 +671,7 @@ static int mpu_check_violation(void)
 #endif
 
 	__clear_emi_mpu_vio(0);
-	mt_devapc_clear_emi_violation();
+	/* mt_devapc_clear_emi_violation(); */
 	vio_addr = dbg_t + emi_physical_offset;
 	return 0;
 
@@ -684,11 +683,11 @@ static irqreturn_t mpu_violation_irq(int irq, void *dev_id)
 	int res, res1;
 
 	/* Need DEVAPC owner porting */
-	res = mt_devapc_check_emi_violation();
+	/* res = mt_devapc_check_emi_violation(); */
 	if (!res)
 		pr_err("it's a mt_devapc_emi_violation.\n");
 
-	res1 = mt_devapc_check_emi_mpu_violation();
+	/* res1 = mt_devapc_check_emi_mpu_violation(); */
 	if (!res1) {
 		pr_err("EMI MPU APB violation.\n");
 			pr_err("[EMI MPU] Debug info start ----------------------------------------\n");
@@ -708,7 +707,7 @@ static irqreturn_t mpu_violation_irq(int irq, void *dev_id)
 			pr_err("[EMI MPU] Debug info end------------------------------------------\n");
 			mt_emi_reg_write(mt_emi_reg_read(EMI_MPUX)|0x80000000,
 			EMI_MPUX);
-			mt_devapc_clear_emi_mpu_violation();
+			/* mt_devapc_clear_emi_mpu_violation(); */
 			return IRQ_HANDLED;
 		}
 
@@ -1256,16 +1255,16 @@ const char *buf, size_t count)
 		region = simple_strtoul(token[3], &token[3], 16);
 		access_permission = simple_strtoul(token[4], &token[4], 16);
 		*/
-		ret = kstrtoul(token[1], 16, &start_addr);
+		ret = kstrtoul(token[1], 16, (unsigned long *)&start_addr);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse start_addr");
-		ret = kstrtoul(token[2], 16, &end_addr);
+		ret = kstrtoul(token[2], 16, (unsigned long *)&end_addr);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse end_addr");
-		ret = kstrtoul(token[3], 16, &region);
+		ret = kstrtoul(token[3], 16, (unsigned long *)&region);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse region");
-		ret = kstrtoul(token[4], 16, &access_permission);
+		ret = kstrtoul(token[4], 16, (unsigned long *)&access_permission);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse access_permission");
 		emi_mpu_set_region_protection(start_addr, end_addr,
@@ -1287,13 +1286,13 @@ const char *buf, size_t count)
 		end_addr = simple_strtoul(token[2], &token[2], 16);
 		region = simple_strtoul(token[3], &token[3], 16);
 		*/
-		ret = kstrtoul(token[1], 16, &start_addr);
+		ret = kstrtoul(token[1], 16, (unsigned long *)&start_addr);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse start_addr");
-		ret = kstrtoul(token[2], 16, &end_addr);
+		ret = kstrtoul(token[2], 16, (unsigned long *)&end_addr);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse end_addr");
-		ret = kstrtoul(token[3], 16, &region);
+		ret = kstrtoul(token[3], 16, (unsigned long *)&region);
 		if (ret != 0)
 			pr_err("kstrtoul fails to parse region");
 
@@ -1822,7 +1821,6 @@ static struct platform_driver emi_mpu_ctrl = {
 static int __init emi_mpu_mod_init(void)
 {
 	int ret;
-	struct basic_dram_setting DRAM_setting;
 	struct device_node *node;
 	unsigned int mpu_irq;
 
@@ -1878,15 +1876,15 @@ static int __init emi_mpu_mod_init(void)
 
 	if (readl(IOMEM(EMI_MPUS))) {
 		pr_err("[EMI MPU] get MPU violation in driver init\n");
-		mt_devapc_emi_initial();
+		/* mt_devapc_emi_initial(); */
 		mpu_check_violation();
 	} else {
 		__clear_emi_mpu_vio(0);
 		/* Set Device APC initialization for EMI-MPU. */
-		mt_devapc_emi_initial();
+		/* mt_devapc_emi_initial(); */
 	}
 
-	if (0 == enable_4G()) {
+	if (1) /* (0 == enable_4G()) need to refine, we need to identify the 4G mode*/ {
 		emi_physical_offset = 0x40000000;
 		pr_err("[EMI MPU] Not 4G mode\n");
 	} else { /* enable 4G mode */
