@@ -75,7 +75,7 @@ static struct pwr_ctrl vcore_dvfs_ctrl = {
 	/* default VCORE DVFS is disabled */
 	.pcm_flags = (SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS),
 
-	.wake_src = WAKE_SRC_R12_PCM_TIMER,
+	.wake_src = WAKE_SRC_R12_PCM_TIMER | WAKE_SRC_R12_MD32_SPM_IRQ_B,
 	/* SPM general */
 	.r0_ctrl_en = 1,
 	.r7_ctrl_en = 1,
@@ -300,17 +300,11 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 	switch (opp) {
 	case OPPI_PERF:
 		dvfs_req = 1;
-		if (screen_on)
-			target_sta = SPM_SCREEN_ON_HPM;
-		else
-			target_sta = SPM_SCREEN_OFF_HPM;
+		target_sta = SPM_SCREEN_ON_HPM;
 		break;
 	case OPPI_LOW_PWR:
 		dvfs_req = 0;
-		if (screen_on)
-			target_sta = SPM_SCREEN_ON_LPM;
-		else
-			target_sta = SPM_SCREEN_OFF_LPM;
+		target_sta = SPM_SCREEN_ON_LPM;
 		break;
 	default:
 		return -EINVAL;
@@ -344,81 +338,6 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	return t_dvfs;
-}
-
-/*
- * screen on/off setting
- */
-int spm_vcorefs_screen_on_setting(void)
-{
-	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
-	unsigned long flags;
-	int timer = 0;
-
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	#if GATING_AUTO_SAVE
-	DVFS_gating_auto_save();
-	#endif
-
-	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_SCREEN_ON);
-
-	pwrctrl->cpu_md_emi_dvfs_req_prot_dis = 0;
-	spm_write(SPM_SRC2_MASK, spm_read(SPM_SRC2_MASK) & (~CPU_MD_EMI_DVFS_REQ_PROT_DIS_LSB));
-
-	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
-
-	timer = wait_spm_complete_by_condition(get_screen_sta() == SPM_SCREEN_SETTING_DONE, SPM_DVFS_TIMEOUT);
-	if (timer < 0) {
-		spm_vcorefs_dump_dvfs_regs(NULL);
-		BUG();
-	}
-
-	spm_write(CPU_DVFS_REQ, (spm_read(CPU_DVFS_REQ) & (~0xF)) | MASK_MD_DVFS_REQ);
-
-	spm_write(SPM_CPU_WAKEUP_EVENT, 0);
-
-	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_CLEAN_WAKE_EVENT_DONE);
-
-	spin_unlock_irqrestore(&__spm_lock, flags);
-
-	return 0;
-}
-
-int spm_vcorefs_screen_off_setting(u32 md_dvfs_req)
-{
-	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
-	unsigned long flags;
-	int timer = 0;
-
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	#if GATING_AUTO_SAVE
-	DVFS_gating_auto_save();
-	#endif
-
-	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_SCREEN_OFF);
-
-	pwrctrl->cpu_md_emi_dvfs_req_prot_dis = 1;
-	spm_write(SPM_SRC2_MASK, spm_read(SPM_SRC2_MASK) | CPU_MD_EMI_DVFS_REQ_PROT_DIS_LSB);
-
-	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
-
-	timer = wait_spm_complete_by_condition(get_screen_sta() == SPM_SCREEN_SETTING_DONE, SPM_DVFS_TIMEOUT);
-	if (timer < 0) {
-		spm_vcorefs_dump_dvfs_regs(NULL);
-		BUG();
-	}
-
-	spm_write(CPU_DVFS_REQ, (spm_read(CPU_DVFS_REQ) & (~0xF)) | md_dvfs_req);
-
-	spm_write(SPM_CPU_WAKEUP_EVENT, 0);
-
-	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_CLEAN_WAKE_EVENT_DONE);
-
-	spin_unlock_irqrestore(&__spm_lock, flags);
-
-	return 0;
 }
 
 static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
@@ -487,11 +406,6 @@ void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data, bool screen_on, u32 md_dv
 	__go_to_vcore_dvfs(spm_flags, 0);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
-
-	if (screen_on)
-		spm_vcorefs_screen_on_setting();
-	else
-		spm_vcorefs_screen_off_setting(md_dvfs_req);
 }
 
 MODULE_DESCRIPTION("SPM-VCORE_DVFS Driver v0.1");

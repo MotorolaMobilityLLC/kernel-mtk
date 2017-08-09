@@ -132,7 +132,7 @@ static struct governor_profile governor_ctrl = {
 
 	.active_autok_kir = 0,
 	.autok_kir_group = ((1 << KIR_AUTOK_EMMC) | (1 << KIR_AUTOK_SD)),
-	.md_dvfs_req = (1 << MD_CAT6_CA_DATALINK | (1 << MD_NON_CA_DATALINK) | (1 << MD_POSITION)),
+	.md_dvfs_req = 0, /* (1 << MD_CAT6_CA_DATALINK | (1 << MD_NON_CA_DATALINK) | (1 << MD_POSITION)), */
 	.dvfs_timer = 0,
 
 	.curr_vcore_uv = VCORE_1_P_00_UV,
@@ -581,22 +581,7 @@ int governor_debug_store(const char *buf)
 			gvrctrl->freq_dfs = val;
 		else if (!strcmp(cmd, "dvfs_cnt"))
 			clean_dvfs_counter(val);
-		else if (!strcmp(cmd, "screen")) {
-			if (!is_vcorefs_feature_enable() || !gvrctrl->plat_init_done)
-				return 0;
-
-			if (val == 1) {
-				mutex_lock(&governor_mutex);
-				spm_vcorefs_screen_on_setting();
-				gvrctrl->screen_on = 1;
-				mutex_unlock(&governor_mutex);
-			} else if (val == 0) {
-				mutex_lock(&governor_mutex);
-				spm_vcorefs_screen_off_setting(gvrctrl->md_dvfs_req);
-				gvrctrl->screen_on = 0;
-				mutex_unlock(&governor_mutex);
-			}
-		} else
+		else
 			r = -EPERM;
 	} else {
 		r = -EPERM;
@@ -914,7 +899,6 @@ static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned lo
 		mutex_lock(&governor_mutex);
 
 		vcorefs_crit("SCREEN OFF\n");
-		spm_vcorefs_screen_off_setting(gvrctrl->md_dvfs_req);
 
 		if (vcorefs_get_curr_opp() == OPPI_PERF) {
 			krconf.dvfs_opp = OPP_1;

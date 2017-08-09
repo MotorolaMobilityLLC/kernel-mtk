@@ -580,7 +580,8 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 #elif defined(CONFIG_ARCH_MT6797)
 	pwrctrl->pcm_flags &= ~SPM_FLAG_RUN_COMMON_SCENARIO;
-	pwrctrl->pcm_flags |= (SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS);
+	pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
+	pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
 #endif
 
 	__spm_set_power_control(pwrctrl);
@@ -649,10 +650,12 @@ RESTORE_IRQ:
 		__spm_check_md_pdn_power_control(pwrctrl);
 		__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 		pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
-		pwrctrl->pcm_flags |= (SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS);
+		pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
+		pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
 
 		__spm_set_power_control(pwrctrl);
 		__spm_set_wakeup_event(pwrctrl);
+		__spm_set_vcorefs_wakeup_event(__spm_vcore_dvfs.pwrctrl);
 
 		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
 
@@ -752,7 +755,8 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 #elif defined(CONFIG_ARCH_MT6797)
 	pwrctrl->pcm_flags &= ~SPM_FLAG_RUN_COMMON_SCENARIO;
-	pwrctrl->pcm_flags |= (SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS);
+	pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
+	pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
 #endif
 
 	__spm_set_power_control(pwrctrl);
@@ -804,9 +808,12 @@ RESTORE_IRQ:
 		__spm_check_md_pdn_power_control(pwrctrl);
 		__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 		pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
+		pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
+		pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
 
 		__spm_set_power_control(pwrctrl);
 		__spm_set_wakeup_event(pwrctrl);
+		__spm_set_vcorefs_wakeup_event(__spm_vcore_dvfs.pwrctrl);
 		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
 		__spm_kick_pcm_to_run(pwrctrl);
 

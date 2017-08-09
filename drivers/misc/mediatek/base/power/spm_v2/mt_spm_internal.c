@@ -159,7 +159,7 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 		spm_write(SPM_WAKEUP_EVENT_MASK, (con1 & ~(0x1)));
 
 #ifdef SPM_VCORE_EN_MT6797
-		spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_OFFLOAD);
+		spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (0x0)) | SPM_OFFLOAD);
 #endif
 		spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 
@@ -197,7 +197,7 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 		spm_write(SPM_WAKEUP_EVENT_MASK, con1);
 
 #ifdef SPM_VCORE_EN_MT6797
-		spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_CLEAN_WAKE_EVENT_DONE);
+		spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (0x0)) | SPM_CLEAN_WAKE_EVENT_DONE);
 #endif
 
 		/* backup mem control from r0 to POWER_ON_VAL0 */
@@ -408,6 +408,15 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 	spm_write(MP0_CPU1_WFI_EN, !!pwrctrl->mp0_cpu1_wfi_en);
 	spm_write(MP0_CPU2_WFI_EN, !!pwrctrl->mp0_cpu2_wfi_en);
 	spm_write(MP0_CPU3_WFI_EN, !!pwrctrl->mp0_cpu3_wfi_en);
+}
+
+void __spm_set_vcorefs_wakeup_event(const struct pwr_ctrl *src_pwr_ctrl)
+{
+	u32 mask;
+
+	mask = src_pwr_ctrl->wake_src;
+
+	spm_write(SPM_WAKEUP_EVENT_MASK, ~mask);
 }
 
 void __spm_set_wakeup_event(const struct pwr_ctrl *pwrctrl)
@@ -706,7 +715,7 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 void __spm_backup_vcore_dvfs_dram_shuffle(void)
 {
 #ifdef SPM_VCORE_EN_MT6797
-	spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5)&~(3<<23)) | ((spm_read(PCM_REG6_DATA)&(3<<23))?:(1<<23)));
+	spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5)&~(0x3 << 23)) | (0x2 << 23));
 #endif
 }
 

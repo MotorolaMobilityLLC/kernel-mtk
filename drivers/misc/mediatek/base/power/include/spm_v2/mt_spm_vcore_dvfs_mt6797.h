@@ -51,8 +51,6 @@ extern void spm_vcorefs_enable_perform_bw(bool enable);
 
 /* misc vcore dvfs support func */
 extern char *spm_vcorefs_dump_dvfs_regs(char *p);
-extern int spm_vcorefs_screen_on_setting(void);
-extern int spm_vcorefs_screen_off_setting(u32);
 extern int spm_vcorefs_set_cpu_dvfs_req(u32 screen_on, u32 mask);
 extern u32 spm_vcorefs_get_MD_status(void);
 
