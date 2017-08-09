@@ -546,9 +546,12 @@ static void ncp1854_parse_customer_setting(void)
 #ifdef CONFIG_OF
 	unsigned int val;
 	struct device_node *np;
+	struct pinctrl *pinctrl;
+	struct pinctrl_state *pinctrl_drvvbus_init;
+	struct pinctrl_state *pinctrl_drvvbus_low;
 
 	/* check customer setting */
-	np = of_find_compatible_node(NULL, NULL, "mediatek,battery");
+	np = new_client->dev.of_node;
 	if (np) {
 		if (of_property_read_u32(np, "disable_ncp1854_fctry_mod", &val) == 0) {
 			if (val)
@@ -557,8 +560,35 @@ static void ncp1854_parse_customer_setting(void)
 			battery_log(BAT_LOG_FULL, "%s: disable factory mode, %d\n", __func__, val);
 		}
 	}
+
+	pinctrl = devm_pinctrl_get(&new_client->dev);
+	if (IS_ERR(pinctrl)) {
+		battery_log(BAT_LOG_CRTI, "[%s]Cannot find drvvbus pinctrl, err=%d\n",
+			__func__, (int)PTR_ERR(pinctrl));
+		return;
+	}
+
+	pinctrl_drvvbus_init = pinctrl_lookup_state(pinctrl, "drvvbus_init");
+	if (IS_ERR(pinctrl_drvvbus_init)) {
+		battery_log(BAT_LOG_CRTI, "[%s]Cannot find drvvbus_init state, err=%d\n",
+			__func__, (int)PTR_ERR(pinctrl_drvvbus_init));
+		return;
+	}
+
+	pinctrl_drvvbus_low = pinctrl_lookup_state(pinctrl, "drvvbus_low");
+	if (IS_ERR(pinctrl_drvvbus_low)) {
+		battery_log(BAT_LOG_CRTI, "[%s]Cannot find drvvbus_low state, err=%d\n",
+			__func__, (int)PTR_ERR(pinctrl_drvvbus_low));
+		return;
+	}
+
+	pinctrl_select_state(pinctrl, pinctrl_drvvbus_init);
+	pinctrl_select_state(pinctrl, pinctrl_drvvbus_low);
+
+	battery_log(BAT_LOG_FULL, "[%s]pinctrl_select_state success\n", __func__);
 #endif
 }
+
 
 static int ncp1854_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {

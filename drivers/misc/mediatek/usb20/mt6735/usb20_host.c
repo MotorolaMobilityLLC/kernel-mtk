@@ -131,20 +131,6 @@ void mt_usb_set_vbus(struct musb *musb, int is_on)
 		bq24196_set_otg_config(0x0);	/* OTG disabled */
 	#elif defined(CONFIG_MTK_NCP1854_SUPPORT)
 		ncp1854_set_otg_en(0x0);
-
-		/*for DRVVBUS gpio issue*/
-		#ifdef CONFIG_OF
-		#if defined(CONFIG_MTK_LEGACY)
-		mt_set_gpio_mode(drvvbus_pin, drvvbus_pin_mode);
-		mt_set_gpio_out(drvvbus_pin, GPIO_OUT_ZERO);
-		#else
-		pr_debug("****%s:%d NCP1854 Drive VBUS LOW KS!!!!!\n", __func__, __LINE__);
-		pinctrl_select_state(pinctrl, pinctrl_drvvbus_low);
-		#endif
-		#else
-		mt_set_gpio_mode(GPIO_OTG_DRVVBUS_PIN, GPIO_OTG_DRVVBUS_PIN_M_GPIO);
-		mt_set_gpio_out(GPIO_OTG_DRVVBUS_PIN, GPIO_OUT_ZERO);
-		#endif
 	#else
 		#ifdef CONFIG_OF
 		#if defined(CONFIG_MTK_LEGACY)
