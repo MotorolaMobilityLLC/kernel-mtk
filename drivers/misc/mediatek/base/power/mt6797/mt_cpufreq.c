@@ -1070,6 +1070,36 @@ static inline struct mt_cpu_dvfs *cluster_to_cpu_dvfs(unsigned int cluster)
 }
 #endif
 
+static void aee_record_cpu_dvfs_in(enum mt_cpu_dvfs_id id)
+{
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	if (id == MT_CPU_DVFS_LL)
+		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
+			(1 << CPU_DVFS_LL_IS_DOING_DVFS));
+	else if (id == MT_CPU_DVFS_L)
+		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
+			(1 << CPU_DVFS_L_IS_DOING_DVFS));
+	else
+		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
+			(1 << CPU_DVFS_B_IS_DOING_DVFS));
+#endif
+}
+
+static void aee_record_cpu_dvfs_out(enum mt_cpu_dvfs_id id)
+{
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	if (id == MT_CPU_DVFS_LL)
+		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
+			~(1 << CPU_DVFS_LL_IS_DOING_DVFS));
+	else if (id == MT_CPU_DVFS_L)
+		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
+			~(1 << CPU_DVFS_L_IS_DOING_DVFS));
+	else
+		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
+			~(1 << CPU_DVFS_B_IS_DOING_DVFS));
+#endif
+}
+
 static void aee_record_cpu_volt(struct mt_cpu_dvfs *p, unsigned int volt)
 {
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
@@ -3293,12 +3323,20 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 
 	now[SET_DVFS] = ktime_get();
 
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cpu_dvfs_in(id);
+#endif
+
 #ifdef CONFIG_CPU_FREQ
 	ret = _cpufreq_set_locked(p, cur_freq, target_freq, policy, cur_cci_freq, target_cci_freq,
 		target_volt_vpro1, log);
 #else
 	ret = _cpufreq_set_locked(p, cur_freq, target_freq, NULL, cur_cci_freq, target_cci_freq,
 		target_volt_vpro1, log);
+#endif
+
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cpu_dvfs_out(id);
 #endif
 
 	delta[SET_DVFS] = ktime_sub(ktime_get(), now[SET_DVFS]);
@@ -3983,31 +4021,7 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target
 	    )
 		return -EINVAL;
 
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	if (id == MT_CPU_DVFS_LL)
-		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
-			(1 << CPU_DVFS_LL_IS_DOING_DVFS));
-	else if (id == MT_CPU_DVFS_L)
-		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
-			(1 << CPU_DVFS_L_IS_DOING_DVFS));
-	else
-		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
-			(1 << CPU_DVFS_B_IS_DOING_DVFS));
-#endif
-
 	_mt_cpufreq_set(policy, id, new_opp_idx);
-
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
-	if (id == MT_CPU_DVFS_LL)
-		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
-			~(1 << CPU_DVFS_LL_IS_DOING_DVFS));
-	else if (id == MT_CPU_DVFS_L)
-		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
-			~(1 << CPU_DVFS_L_IS_DOING_DVFS));
-	else
-		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
-			~(1 << CPU_DVFS_B_IS_DOING_DVFS));
-#endif
 
 	FUNC_EXIT(FUNC_LV_MODULE);
 
