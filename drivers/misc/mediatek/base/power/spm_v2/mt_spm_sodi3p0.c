@@ -59,10 +59,10 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.scp_req_mask_b = 1, /* bit 21 */
 #endif
 	.lte_mask_b = 0,
-	.md_apsrc1_sel = 0, /* bit 24, set to be 1 for SODI CG mode */
-	.md_apsrc0_sel = 0, /* bit 25, set to be 1 for SODI CG mode */
+	.md_apsrc1_sel = 0, /* bit 24 */
+	.md_apsrc0_sel = 0, /* bit 25 */
 	.conn_mask_b = 1,
-	.conn_apsrc_sel = 0, /* bit 27, set to be 1 for SODI CG mode */
+	.conn_apsrc_sel = 0, /* bit 27 */
 
 	/* SPM_SRC_REQ */
 	.spm_apsrc_req = 0,
@@ -410,6 +410,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
 
+#if defined(CONFIG_ARCH_MT6797)
 	if (spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) {
 		/* the following masks set to be 1 only for SODI CG mode */
 		pwrctrl->md_apsrc1_sel = 1;
@@ -421,6 +422,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 		pwrctrl->md_apsrc0_sel = 0;
 		pwrctrl->conn_apsrc_sel = 0;
 	}
+#endif
 
 	__spm_set_power_control(pwrctrl);
 
