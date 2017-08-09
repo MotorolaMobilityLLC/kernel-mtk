@@ -50,10 +50,10 @@ struct clk *musb_clk;
 #endif
 /* GIT K318 WORKAROUND */
 /* #include <mach/mt_boot_common.h> */
-CHARGER_TYPE mt_get_charger_type(void){return STANDARD_HOST; }
+static CHARGER_TYPE mt_get_charger_type(void){return STANDARD_HOST; }
 #define MT6328_POWER_LDO_VUSB33 1
 #define VOL_3300 1
-void hwPowerOn(int index, int vol, char *name) {}
+static void hwPowerOn(int index, int vol, char *name) {}
 
 #ifdef MUSB_QMU_SUPPORT
 #include "musb_qmu.h"

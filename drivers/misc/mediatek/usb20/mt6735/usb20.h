@@ -115,6 +115,7 @@ extern void __iomem *ap_uart0_base;
 extern bool in_uart_mode;
 #endif
 extern int usb20_phy_init_debugfs(void);
-extern CHARGER_TYPE mt_get_charger_type(void);
+/* GIT K318 WORKAROUND */
+/* extern CHARGER_TYPE mt_get_charger_type(void); */
 
 #endif
