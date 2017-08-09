@@ -14,6 +14,7 @@
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
 #include <linux/sched_clock.h>
+#include <clocksource/arm_arch_timer.h>
 
 #include <mach/mt_gpt.h>
 #include <mach/mt_cpuxgpt.h>
@@ -135,7 +136,7 @@ static void mt_gpt_set_mode(enum clock_event_mode mode, struct clock_event_devic
 
 static struct clocksource gpt_clocksource = {
 	.name	= "mt6735-gpt",
-	.rating	= 300,
+	.rating	= 450,
 	.read	= mt_gpt_read,
 	.mask	= CLOCKSOURCE_MASK(32),
 	.shift  = 25,
@@ -416,6 +417,11 @@ static u64 notrace mt_read_sched_clock(void)
 	return mt_gpt_read(NULL);
 }
 
+static cycle_t mt_read_sched_clock_cc(const struct cyclecounter *cc)
+{
+	return mt_gpt_read(NULL);
+}
+
 static void clkevt_handler(unsigned long data)
 {
 	struct clock_event_device *evt = (struct clock_event_device *)data;
@@ -423,22 +429,35 @@ static void clkevt_handler(unsigned long data)
 	evt->event_handler(evt);
 }
 
+static struct cyclecounter mt_cyclecounter = {
+	.read	= mt_read_sched_clock_cc,
+	.mask	= CLOCKSOURCE_MASK(32),
+};
+
 static inline void setup_clksrc(u32 freq)
 {
 	struct clocksource *cs = &gpt_clocksource;
 	struct gpt_device *dev = id_to_dev(GPT_CLKSRC_ID);
+	struct timecounter *mt_timecounter;
+	u64 start_count;
 
 	pr_alert("setup_clksrc1: dev->base_addr=0x%lx GPT2_CON=0x%x\n",
 		(unsigned long)dev->base_addr, __raw_readl(dev->base_addr));
 	cs->mult = clocksource_hz2mult(freq, cs->shift);
+	sched_clock_register(mt_read_sched_clock, 32, freq);
 
 	setup_gpt_dev_locked(dev, GPT_FREE_RUN, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
 		0, NULL, 0);
 
-
-	sched_clock_register(mt_read_sched_clock, 32, freq);
-
 	clocksource_register(cs);
+
+	start_count = mt_read_sched_clock();
+	mt_cyclecounter.mult = cs->mult;
+	mt_cyclecounter.shift = cs->shift;
+	mt_timecounter = arch_timer_get_timecounter();
+	timecounter_init(mt_timecounter, &mt_cyclecounter, start_count);
+	pr_alert("setup_clksrc1: mt_cyclecounter.mult=0x%x mt_cyclecounter.shift=0x%x\n",
+		mt_cyclecounter.mult, mt_cyclecounter.shift);
 	pr_alert("setup_clksrc2: dev->base_addr=0x%lx GPT2_CON=0x%x\n",
 		(unsigned long)dev->base_addr, __raw_readl(dev->base_addr));
 }
@@ -740,4 +759,4 @@ unsigned int gpt_boot_time(void)
 EXPORT_SYMBOL(gpt_boot_time);
 
 /************************************************************************************************/
-CLOCKSOURCE_OF_DECLARE(mtk_apxgpt, "mediatek,APXGPT", mt_gpt_init);
+CLOCKSOURCE_OF_DECLARE(mtk_apxgpt, "mediatek,mt6735-apxgpt", mt_gpt_init);

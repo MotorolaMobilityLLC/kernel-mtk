@@ -49,7 +49,7 @@ static irqreturn_t __cpuxgpt6_irq_handler(int irq, void *dev_id);
 static irqreturn_t __cpuxgpt7_irq_handler(int irq, void *dev_id);
 
 static const struct of_device_id cpuxgpt_addr_ids[] __initconst = {
-	{.compatible = "mediatek,MCUCFG"},
+	{.compatible = "mediatek,mt6735-cpuxgpt"},
 	{},
 };
 
@@ -471,4 +471,4 @@ void cpu_xgpt_halt_on_debug_en(int en)
 }
 EXPORT_SYMBOL(cpu_xgpt_halt_on_debug_en);
 
-CLOCKSOURCE_OF_DECLARE(mtk_cpuxgpt, "mediatek,CPUXGPT", mt_cpuxgpt_init);
+CLOCKSOURCE_OF_DECLARE(mtk_cpuxgpt, "mediatek,mt6735-cpuxgpt", mt_cpuxgpt_init);

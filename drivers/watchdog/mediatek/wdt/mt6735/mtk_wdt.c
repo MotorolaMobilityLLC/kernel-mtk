@@ -33,7 +33,7 @@ void __iomem *toprgu_base = 0;
 int	wdt_irq_id = 0;
 
 static const struct of_device_id rgu_of_match[] = {
-	{ .compatible = "mediatek,TOPRGU", },
+	{ .compatible = "mediatek,mt6735-rgu", },
 	{},
 };
 #endif
