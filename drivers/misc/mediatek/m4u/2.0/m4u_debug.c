@@ -226,7 +226,7 @@ m4u_callback_ret_t test_fault_callback(int port, unsigned int mva, void *data)
 
 	/* DO NOT print too much logs here !!!! */
 	/* Do NOT use any lock hear !!!! */
-	/* DO NOT do any other things except printk !!! */
+	/* DO NOT do any other things except print !!! */
 	/* DO NOT make any mistake here (or reboot will happen) !!! */
 	return M4U_CALLBACK_HANDLED;
 }

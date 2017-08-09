@@ -2,7 +2,7 @@
 #define __M4U_PRIV_H__
 #include <linux/ioctl.h>
 #include <linux/fs.h>
-/* #include <linux/aee.h> */
+#include <aee.h>
 #include <linux/debugfs.h>
 #include <linux/platform_device.h>
 #include <linux/miscdevice.h>
@@ -245,10 +245,10 @@ extern int gM4U_log_to_uart;
 #define m4u_aee_print(string, args...) do {\
 	char m4u_name[100];\
 	snprintf(m4u_name, 100, "[M4U]"string, ##args); \
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_MMPROFILE_BUFFER, \
+		m4u_name, "[M4U] error"string, ##args); \
 	pr_err("M4U error: "string, ##args);  \
 } while (0)
-/*aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_MMPROFILE_BUFFER,
-		m4u_name, "[M4U] error"string, ##args);*/
 /*aee_kernel_warning(m4u_name, "[M4U] error:"string,##args); */
 
 #define M4U_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
