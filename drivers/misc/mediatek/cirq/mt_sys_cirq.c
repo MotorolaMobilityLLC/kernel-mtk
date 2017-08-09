@@ -29,7 +29,7 @@ static unsigned int CIRQ_SPI_START;
  *Define Data Structure
  */
 struct mt_cirq_driver {
-	struct device_driver driver;
+	struct platform_driver driver;
 	const struct platform_device_id *id_table;
 };
 
@@ -38,10 +38,12 @@ struct mt_cirq_driver {
  */
 static struct mt_cirq_driver mt_cirq_drv = {
 	.driver = {
+		.driver = {
 		   .name = "cirq",
 		   .bus = &platform_bus_type,
 		   .owner = THIS_MODULE,
 		   },
+	},
 	.id_table = NULL,
 };
 
@@ -60,6 +62,7 @@ void mt_cirq_ack_all(void)
 
 	for (i = 0; i < CIRQ_CTRL_REG_NUM; i++)
 		writel_relaxed(0xFFFFFFFF, CIRQ_ACK_BASE + (i * 4));
+	/* make sure all cirq setting take effect before doing other things */
 	mb();
 }
 
@@ -95,6 +98,7 @@ void mt_cirq_mask_all(void)
 	for (i = 0; i < CIRQ_CTRL_REG_NUM; i++)
 		writel_relaxed(0xFFFFFFFF, CIRQ_MASK_SET_BASE + (i * 4));
 
+	/* make sure all cirq setting take effect before doing other things */
 	mb();
 }
 
@@ -107,6 +111,7 @@ void mt_cirq_unmask_all(void)
 
 	for (i = 0; i < CIRQ_CTRL_REG_NUM; i++)
 		writel_relaxed(0xFFFFFFFF, CIRQ_MASK_CLR_BASE + (i * 4));
+	/* make sure all cirq setting take effect before doing other things */
 	mb();
 }
 
@@ -336,11 +341,12 @@ void mt_cirq_flush(void)
 			mt_cirq_set_pol(cirq_pattern_list, MT_CIRQ_POL_NEG);
 		} else {
 			pr_debug
-			    ("[CIRQ] There is no pattern to test, you should input pattern first\n");
+			("[CIRQ] no pattern to test, input pattern first\n");
 		}
-		pr_debug("[CIRQ] cirq_pattern %ld, cirq_p %d, cirq_s %d, cirq_con 0x%x\n",
-			cirq_pattern_list, mt_cirq_get_pending(cirq_pattern_list),
-			mt_cirq_get_sens(cirq_pattern_list), readl(IOMEM(CIRQ_CON)));
+		pr_debug("[CIRQ] cirq_pattern %ld, cirq_p %d,",
+		cirq_pattern_list, mt_cirq_get_pending(cirq_pattern_list));
+		pr_debug("cirq_s %d, cirq_con 0x%x\n",
+		mt_cirq_get_sens(cirq_pattern_list), readl(IOMEM(CIRQ_CON)));
 	}
 
 	mt_cirq_unmask_all();
@@ -357,13 +363,13 @@ void mt_cirq_flush(void)
 			irq_p_val = mt_irq_get_pending(irq_p);
 			if (cirq_p_val != irq_p_val) {
 				pr_err
-				    ("[CIRQ] CIRQ Flush Failed %d(cirq %d) != %d(gic %d)\n",
+			("[CIRQ] CIRQ Flush Failed %d(cirq %d) != %d(gic %d)\n",
 				     cirq_p_val, i, irq_p_val,
 				     CIRQ_TO_IRQ_NUM(i));
 				pass = 0;
 			} else {
 				pr_debug
-				    ("[CIRQ] CIRQ Flush Pass %d(cirq %d) = %d(gic %d)\n",
+			("[CIRQ] CIRQ Flush Pass %d(cirq %d) = %d(gic %d)\n",
 				     cirq_p_val, i, irq_p_val,
 				     CIRQ_TO_IRQ_NUM(i));
 			}
@@ -385,14 +391,15 @@ void mt_cirq_flush(void)
 				  last_fluashed_cirq, last_irq_flushedto);
 		} else {
 			pr_debug
-			    ("[CIRQ] There are no pending interrupt in CIRQ, so no flush operation happend\n");
+			    ("[CIRQ] There are no pending interrupt in CIRQ");
+			pr_debug("so no flush operation happend\n");
 		}
 		pr_debug
-		    ("[CIRQ] The Flush Max Range : CIRQ%d to IRQ%d ~ CIRQ%d to IRQ%d\n",
+	("[CIRQ] The Flush Max Range : CIRQ%d to IRQ%d ~ CIRQ%d to IRQ%d\n",
 		     0, CIRQ_TO_IRQ_NUM(0), CIRQ_IRQ_NUM - 1,
 		     CIRQ_TO_IRQ_NUM(CIRQ_IRQ_NUM - 1));
 		pr_debug
-		    ("[CIRQ] Flush Verifaction %s, Confirm:SPI_START_OFFSET:%d\n",
+		    ("[CIRQ] Flush Check %s, Confirm:SPI_START_OFFSET:%d\n",
 		     pass == 1 ? "Pass" : "Failed", CIRQ_SPI_START);
 	}
 	mt_cirq_mask_all();
@@ -545,16 +552,19 @@ DRIVER_ATTR(cirq_dvt, 0664, cirq_dvt_show, cirq_dvt_store);
 #endif
 
 /*
- * cirq_clone_flush_check_show: To show if we do cirq clone/flush value's check.
+ * cirq_clone_flush_check_show:
+ * To show if we do cirq clone/flush value's check.
  */
 static ssize_t cirq_clone_flush_check_show(struct device_driver *driver,
 					   char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%ld\n", cirq_clone_flush_check_val);
+	return snprintf(buf, PAGE_SIZE, "%ld\n",
+			cirq_clone_flush_check_val);
 }
 
 /*
- * cirq_clone_flush_check_store: set 1 if we need to enable clone/flush value's check
+ * cirq_clone_flush_check_store:
+ * set 1 if we need to enable clone/flush value's check
  */
 static ssize_t cirq_clone_flush_check_store(struct device_driver *driver,
 					    const char *buf, size_t count)
@@ -572,7 +582,8 @@ DRIVER_ATTR(cirq_clone_flush_check, 0664, cirq_clone_flush_check_show,
 	    cirq_clone_flush_check_store);
 
 /*
- * cirq_pattern_clone_flush_check_show:  To show if we do need to do pattern test.
+ * cirq_pattern_clone_flush_check_show:
+ * To show if we do need to do pattern test.
  */
 static ssize_t cirq_pattern_clone_flush_check_show(struct device_driver *driver,
 						   char *buf)
@@ -602,7 +613,8 @@ DRIVER_ATTR(cirq_pattern_clone_flush_check, 0664,
 	    cirq_pattern_clone_flush_check_store);
 
 /*
- * cirq_pattern_clone_flush_check_show:  To show if we do need to do pattern test.
+ * cirq_pattern_clone_flush_check_show:
+ * To show if we do need to do pattern test.
  */
 static ssize_t cirq_pattern_list_show(struct device_driver *driver, char *buf)
 {
@@ -681,17 +693,19 @@ void mt_cirq_dump_reg(void)
 					     __check_irq_type[irq_iter].num);
 					pass = 0;
 				}
-				if (__check_irq_type[irq_iter].polarity != pol) {
+				if (__check_irq_type[irq_iter].polarity
+					!= pol) {
 					pr_debug
-					    ("[CIRQ] Error polarity in irq:%d\n",
+					    ("[CIRQ]Err polarity in irq:%d\n",
 					     __check_irq_type[irq_iter].num);
 					pass = 0;
 				}
 			} else {
 				pr_err
-				    ("[CIRQ] Error CIRQ num %d Mapping to wrong GIC num %d\n",
-				     __check_irq_type[irq_iter].num,
-				     CIRQ_TO_IRQ_NUM(cirq_num));
+				    ("[CIRQ] Error CIRQ num %d",
+					__check_irq_type[irq_iter].num);
+				pr_err("Mapping to wrong GIC num %d\n",
+					CIRQ_TO_IRQ_NUM(cirq_num));
 				pass = 0;
 			}
 		}
@@ -702,7 +716,8 @@ void mt_cirq_dump_reg(void)
 		  pass == 1 ? "Pass" : "Failed");
 #else
 	pr_debug
-	    ("[CIRQ] Pleard enable __CHECK_IRQ_TYE and update x_define.h for enable CIRQ Clone checking\n");
+	    ("[CIRQ] Plz enable __CHECK_IRQ_TYE");
+	pr_debug("and update x_define.h for enable CIRQ Clone checking\n");
 #endif
 }
 
@@ -796,7 +811,8 @@ int __init mt_cirq_init(void)
 		return -1;
 	pr_debug("[CIRQ] cirq_num = %d\n", CIRQ_IRQ_NUM);
 
-	if (of_property_read_u32(node, "mediatek,spi_start_offset", &CIRQ_SPI_START))
+	if (of_property_read_u32(node, "mediatek,spi_start_offset",
+				&CIRQ_SPI_START))
 		return -1;
 	pr_debug("[CIRQ] spi_start_offset = %d\n", CIRQ_SPI_START);
 
@@ -810,8 +826,8 @@ int __init mt_cirq_init(void)
 				"CIRQ", NULL);
 #else
 	ret =
-		request_irq(SYS_CIRQ_IRQ_BIT_ID, cirq_irq_handler, IRQF_TRIGGER_LOW,
-				"CIRQ", NULL);
+		request_irq(SYS_CIRQ_IRQ_BIT_ID, cirq_irq_handler,
+				IRQF_TRIGGER_LOW, "CIRQ", NULL);
 #endif
 
 	if (ret > 0)
@@ -819,33 +835,34 @@ int __init mt_cirq_init(void)
 	else
 		pr_debug("[CIRQ] CIRQ handler init success.\n");
 
-	ret = driver_register(&mt_cirq_drv.driver);
+	ret = platform_driver_register(&mt_cirq_drv.driver);
 	if (ret == 0)
 		pr_debug("[CIRQ] CIRQ init done...\n");
 
 #ifdef LDVT
-	ret = driver_create_file(&mt_cirq_drv.driver, &driver_attr_cirq_dvt);
+	ret = driver_create_file(&mt_cirq_drv.driver.driver,
+					&driver_attr_cirq_dvt);
 	if (ret == 0)
 		pr_debug("[CIRQ] CIRQ create sysfs file for dvt done...\n");
 #endif
 
-	ret = driver_create_file(&mt_cirq_drv.driver,
+	ret = driver_create_file(&mt_cirq_drv.driver.driver,
 			&driver_attr_cirq_clone_flush_check);
 	if (ret == 0)
 		pr_debug
-			("[CIRQ] CIRQ create sysfs file for cirq clone flush check done...\n");
+		("[CIRQ] sysfs file for cirq clone flush check done...\n");
 
-	ret = driver_create_file(&mt_cirq_drv.driver,
+	ret = driver_create_file(&mt_cirq_drv.driver.driver,
 			&driver_attr_cirq_pattern_clone_flush_check);
 	if (ret == 0)
 		pr_debug
-			("[CIRQ] CIRQ create sysfs file for pattern clone flush check done...\n");
+		("[CIRQ] sysfs file for pattern clone flush check done...\n");
 	cirq_pattern_list = CIRQ_IRQ_NUM;
-	ret = driver_create_file(&mt_cirq_drv.driver,
+	ret = driver_create_file(&mt_cirq_drv.driver.driver,
 			&driver_attr_cirq_pattern_list);
 	if (ret == 0)
 		pr_debug
-			("[CIRQ] CIRQ create sysfs file for pattern list setup...\n");
+		("[CIRQ] CIRQ create sysfs file for pattern list setup...\n");
 
 	return 0;
 }
