@@ -46,6 +46,13 @@ ccflags-y +=	-DHDMI_MT8193_SUPPORT
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/hdmi/mt8193/
 endif
 
+ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "Sii8348")
+ccflags-y +=	-DSII8348_SUPPORT
+endif
+ifeq ($(CONFIG_CUSTOM_KERNEL_HDMI), "ANX7805")
+ccflags-y +=	-DANX7805_SUPPORT
+endif
+
 obj-y :=  \
     external_display.o \
     ./../mtk_extd_mgr.o   \

@@ -1285,10 +1285,10 @@ int hdmi_post_init(void)
 		.state_callback = hdmi_state_callback,
 	};
 
-#if 1
-	hdmi_drv = (struct HDMI_DRIVER *) HDMI_GetDriver();
-#else
-	hdmi_drv = (struct HDMI_DRIVER *) SlimPort_GetDriver();
+#ifdef SII8348_SUPPORT
+		hdmi_drv = (struct HDMI_DRIVER *) HDMI_GetDriver();
+#elif defined ANX7805_SUPPORT
+		hdmi_drv = (struct HDMI_DRIVER *) SlimPort_GetDriver();
 #endif
 
 	if (NULL == hdmi_drv) {

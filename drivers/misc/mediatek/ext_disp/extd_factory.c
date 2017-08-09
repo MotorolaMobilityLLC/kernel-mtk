@@ -45,9 +45,9 @@ int hdmi_factory_mode_init(void)
 {
 	EXTD_FACTORY_FUNC();
 
-#if 1
+#ifdef SII8348_SUPPORT
 	hdmi_tx_drv = (struct HDMI_DRIVER *) HDMI_GetDriver();
-#else
+#elif defined ANX7805_SUPPORT
 	hdmi_tx_drv = (struct HDMI_DRIVER *) SlimPort_GetDriver();
 #endif
 	if (NULL == hdmi_tx_drv) {
