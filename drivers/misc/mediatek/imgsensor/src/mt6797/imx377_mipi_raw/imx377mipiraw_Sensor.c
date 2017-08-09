@@ -134,15 +134,15 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 1200,
 	},
 	.slim_video = {
-              .pclk = 72000000,
-		.linelength = 750,
-              .framelength = 3200,
-		.startx = 38,
+		.pclk = 72000000,
+		.linelength = 300,
+		.framelength = 1000,
+		.startx = 26,
 		.starty = 14,
-		.grabwindow_width = 2000,
-		.grabwindow_height = 1500,
+		.grabwindow_width = 1280,
+		.grabwindow_height = 720,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.max_framerate = 300,
+		.max_framerate = 2400,
 	},
 	.margin = 0,
 	.min_shutter = 1,
@@ -192,8 +192,8 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
 {{ 4104  , 3062,  0,  0, 4104, 3048, 2052,  1524, 0000, 0000, 2052,  1524, 26,   12, 2000, 1500}, // Preview
 {  4104  , 3062,  0,  0, 4104, 3048, 4104,  3048, 0000, 0000, 4104,  3048, 52,   24, 4000, 3000}, // capture
 {  4104  , 3062,  0,  0, 4104, 3048, 4104,  3048, 0000, 0000, 4104,  3048, 52,   24, 4000, 3000}, // video
-{  4104  , 3062,  0,  0, 4104, 3048, 2052,  1524, 0000, 0000, 2052,  1524, 386, 402, 1280,  720}, // hight speed video
-{  4104  , 3062,  0,  0, 4104, 3048, 2052,  1524, 0000, 0000, 2052,  1524, 26,   12, 2000, 1500}};// slim video
+{  4104  , 3062,  0,  0, 4104, 3048, 2052,  1524, 0000, 0000, 2052,  1524, 386, 402, 1280,  720}, // hight speed video 120fps
+{  4104  , 3062,  0,  0, 4104, 3048, 2052,  1524, 0000, 0000, 2052,  1524, 386, 402, 1280,  720}};// hight speed video 240fps
 
 
 extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
@@ -1155,10 +1155,89 @@ write_cmos_sensor(0x3000,0x04);
 
 }
 
+static void hs_video_setting_240fps(void)
+{
+	LOG_INF("E\n");
+//720p 240fps
+write_cmos_sensor(0x3004,0x14);
+write_cmos_sensor(0x3005,0x31);
+write_cmos_sensor(0x3006,0x01);
+write_cmos_sensor(0x3007,0xA0);
+write_cmos_sensor(0x300D,0x00);
+write_cmos_sensor(0x300E,0x00);
+write_cmos_sensor(0x301A,0x00);
+write_cmos_sensor(0x3039,0xD8);
+write_cmos_sensor(0x303A,0x0F);
+write_cmos_sensor(0x303E,0xC0);
+write_cmos_sensor(0x303F,0x00);
+write_cmos_sensor(0x3040,0x01);
+write_cmos_sensor(0x3068,0x00);
+write_cmos_sensor(0x307E,0x00);
+write_cmos_sensor(0x307F,0x08);
+write_cmos_sensor(0x3080,0x00);
+write_cmos_sensor(0x3081,0x00);
+write_cmos_sensor(0x3082,0x00);
+write_cmos_sensor(0x3083,0x00);
+write_cmos_sensor(0x3084,0x00);
+write_cmos_sensor(0x3085,0x00);
+write_cmos_sensor(0x3086,0x00);
+write_cmos_sensor(0x3087,0x00);
+write_cmos_sensor(0x3095,0x00);
+write_cmos_sensor(0x3096,0x00);
+write_cmos_sensor(0x3097,0x00);
+write_cmos_sensor(0x3098,0x00);
+write_cmos_sensor(0x3099,0x00);
+write_cmos_sensor(0x309A,0x00);
+write_cmos_sensor(0x309B,0x00);
+write_cmos_sensor(0x309C,0x00);
+write_cmos_sensor(0x30BC,0x00);
+write_cmos_sensor(0x30BD,0x00);
+write_cmos_sensor(0x30BE,0x00);
+write_cmos_sensor(0x30BF,0x00);
+write_cmos_sensor(0x30C0,0x00);
+write_cmos_sensor(0x30C1,0x00);
+write_cmos_sensor(0x30C2,0x00);
+write_cmos_sensor(0x30C3,0x00);
+write_cmos_sensor(0x30C4,0x00);
+write_cmos_sensor(0x30C5,0x00);
+write_cmos_sensor(0x30C6,0x00);
+write_cmos_sensor(0x30C7,0x00);
+write_cmos_sensor(0x30C8,0x00);
+write_cmos_sensor(0x30C9,0x00);
+write_cmos_sensor(0x30CA,0x00);
+write_cmos_sensor(0x30CB,0x00);
+write_cmos_sensor(0x30CC,0x00);
+write_cmos_sensor(0x30D0,0x68);
+write_cmos_sensor(0x30D1,0x10);
+write_cmos_sensor(0x30D5,0x00);
+write_cmos_sensor(0x30D6,0x00);
+write_cmos_sensor(0x30D7,0x00);
+write_cmos_sensor(0x30D8,0x00);
+write_cmos_sensor(0x30D9,0x00);
+write_cmos_sensor(0x30DA,0x05);
+write_cmos_sensor(0x30F5,0x2C);
+write_cmos_sensor(0x30F6,0x01);
+write_cmos_sensor(0x30F7,0xE8);
+write_cmos_sensor(0x30F8,0x03);
+write_cmos_sensor(0x30F9,0x00);
+write_cmos_sensor(0x312F,0xE2);
+write_cmos_sensor(0x3130,0x02);
+write_cmos_sensor(0x3131,0xDE);
+write_cmos_sensor(0x3132,0x02);
+write_cmos_sensor(0x3A41,0x04);
+write_cmos_sensor(0x312E,0x03);
+write_cmos_sensor(0x303D,0x03);
+write_cmos_sensor(0x3AC4,0x00);
+write_cmos_sensor(0x3123,0x00);
+write_cmos_sensor(0x3000,0x04);
+
+}
+
 static void slim_video_setting(void)
 {
 	LOG_INF("E\n");
-	preview_setting();
+	//preview_setting();
+	hs_video_setting_240fps();
 }
 
 /*************************************************************************
@@ -1796,7 +1875,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
   //  unsigned long long *feature_return_para=(unsigned long long *) feature_para;
 
 	SENSOR_WINSIZE_INFO_STRUCT *wininfo;
-//    SENSOR_VC_INFO_STRUCT *pvcinfo;
 //    SET_SENSOR_AWB_GAIN *pSetSensorAWB=(SET_SENSOR_AWB_GAIN *)feature_para;
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
