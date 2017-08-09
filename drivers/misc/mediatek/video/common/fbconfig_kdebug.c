@@ -564,7 +564,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 		ret =
 			fbconfig_get_esd_check_test(dsi_id, esd_para.addr, buffer,
-						    esd_para.para_num + 6);
+						    esd_para.para_num);
 		if (ret < 0) {
 			kfree(buffer);
 			return -EFAULT;
