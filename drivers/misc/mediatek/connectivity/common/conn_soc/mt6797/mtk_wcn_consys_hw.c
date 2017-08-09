@@ -311,7 +311,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 #endif
 		}
 #endif
-
+		CONSYS_REG_WRITE(conn_reg.topckgen_base + CONSYS_CONN2AP_SLEEP_MASK_OFFSET,
+				 CONSYS_REG_READ(conn_reg.topckgen_base + CONSYS_CONN2AP_SLEEP_MASK_OFFSET) |
+				 CONSYS_CONN2AP_SLEEP_MASK_BIT);
 /*step2.MTCMOS ctrl*/
 
 #ifdef CONFIG_OF		/*use DT */
