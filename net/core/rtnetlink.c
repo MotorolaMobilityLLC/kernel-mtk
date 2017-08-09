@@ -62,20 +62,45 @@ struct rtnl_link {
 
 static DEFINE_MUTEX(rtnl_mutex);
 
+struct KAL_HALT_CTRL_T {
+	struct task_struct *owner;
+	unsigned int holdstart;
+};
+
+static struct KAL_HALT_CTRL_T haltctrl = {
+	.owner = NULL,
+	.holdstart = 0,
+};
+
 void rtnl_lock(void)
 {
 	#ifdef CONFIG_MTK_NET_LOGGING
 	pr_debug("[mtk_net][rtnl_lock]rtnl_lock++\n");
 	#endif
+	if (((jiffies_to_msecs(jiffies) - haltctrl.holdstart) > 1000) && (haltctrl.owner)) {
+		pr_info("[mtk_net]lock held by %s pid %d longer than %u ms!\n",
+			haltctrl.owner->comm, haltctrl.owner->pid, jiffies_to_msecs(jiffies) - haltctrl.holdstart);
+		show_stack(haltctrl.owner, NULL);
+	}
 	mutex_lock(&rtnl_mutex);
 	#ifdef CONFIG_MTK_NET_LOGGING
 	pr_debug("[mtk_net][rtnl_lock]rtnl_lock--\n");
 	#endif
+	haltctrl.owner = current;
+	haltctrl.holdstart = jiffies_to_msecs(jiffies);
 }
 EXPORT_SYMBOL(rtnl_lock);
 
 void __rtnl_unlock(void)
 {
+		if (((jiffies_to_msecs(jiffies) - haltctrl.holdstart) > 5000) && (haltctrl.owner)) {
+			pr_info("[mtk_net]halt lock held by %s pid %d longer than %u ms!\n",
+				haltctrl.owner->comm, haltctrl.owner->pid,
+				jiffies_to_msecs(jiffies) - haltctrl.holdstart);
+		show_stack(haltctrl.owner, NULL);
+	}
+	haltctrl.owner = NULL;
+	haltctrl.holdstart = 0;
 	mutex_unlock(&rtnl_mutex);
 	#ifdef CONFIG_MTK_NET_LOGGING
 	pr_debug("[mtk_net][rtnl_lock]rtnl_unlock done\n");
