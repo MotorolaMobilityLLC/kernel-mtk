@@ -1267,9 +1267,10 @@ void DSI_Exit_ULPS(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 
 void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PARAMS *dsi_params)
 {
-	DISPFUNC();
 #ifdef CONFIG_FPGA_EARLY_PORTING
 #if 0
+	DISPFUNC();
+
 	MIPITX_Write60384(0x18, 0x00, 0x10);
 	MIPITX_Write60384(0x20, 0x42, 0x01);
 	MIPITX_Write60384(0x20, 0x43, 0x01);
@@ -1343,13 +1344,15 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 /* unsigned int fmod = 30;//Fmod = 30KHz by default */
 	unsigned int delta1 = 5;	/* Delta1 is SSC range, default is 0%~-5% */
 	unsigned int pdelta1 = 0;
+#if 0
 	u32 m_hw_res3 = 0;
 	u32 temp1 = 0;
 	u32 temp2 = 0;
 	u32 temp3 = 0;
 	u32 temp4 = 0;
 	u32 temp5 = 0;
-	u32 lnt = 0;
+#endif
+	/* u32 lnt = 0; */
 
 	/* temp1~5 is used for impedence calibration, not enable now */
 #if 0
@@ -1361,6 +1364,7 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 	temp5 = (m_hw_res3 >> 12) & 0xF;
 #endif
 
+	DISPFUNC();
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		/* step 0 */
 		/*  because lk set

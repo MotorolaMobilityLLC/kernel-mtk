@@ -17,16 +17,20 @@
 #elif defined(BUILD_UBOOT)
 #include <asm/arch/mt_gpio.h>
 #else
+#include "mt-plat/upmu_common.h"
+
 #ifdef CONFIG_MTK_LEGACY
 #include <mach/mt_pm_ldo.h>
 #include <mach/mt_gpio.h>
-#endif
-#endif
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #include <cust_gpio_usage.h>
 #include <cust_i2c.h>
 #endif
+
+#endif
+#endif
+
 
 #ifdef BUILD_LK
 #define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
@@ -79,6 +83,7 @@ static LCM_UTIL_FUNCS lcm_util;
  *****************************************************************************/
 #ifndef CONFIG_FPGA_EARLY_PORTING
 
+#define I2C_I2C_LCD_BIAS_CHANNEL 1
 #define TPS_I2C_BUSNUM  I2C_I2C_LCD_BIAS_CHANNEL	/* for I2C channel 0 */
 #define I2C_ID_NAME "tps65132"
 #define TPS_ADDR 0x3E
@@ -180,12 +185,14 @@ MODULE_LICENSE("GPL");
 
 /* static unsigned char lcd_id_pins_value = 0xFF; */
 static const unsigned char LCD_MODULE_ID = 0x01;
-#define LCM_DSI_CMD_MODE									1
-#define FRAME_WIDTH										(1080)
-#define FRAME_HEIGHT									(1920)
+#define LCM_DSI_CMD_MODE	1
+#define FRAME_WIDTH		(1080)
+#define FRAME_HEIGHT		(1920)
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef CONFIG_MTK_LEGACY
 #define GPIO_65132_EN GPIO_LCD_BIAS_ENP_PIN
+#endif
 #endif
 
 #define REGFLAG_DELAY		0xFFFC
@@ -954,6 +961,7 @@ static int TPS65132_write_byte(kal_uint8 addr, kal_uint8 value)
 
 static void lcm_init_power(void)
 {
+#if 0
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef BUILD_LK
 	mt6325_upmu_set_rg_vgp1_en(1);
@@ -963,10 +971,12 @@ static void lcm_init_power(void)
 	LCM_LOGI("%s, end\n", __func__);
 #endif
 #endif
+#endif
 }
 
 static void lcm_suspend_power(void)
 {
+#if 0
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef BUILD_LK
 	mt6325_upmu_set_rg_vgp1_en(0);
@@ -976,10 +986,12 @@ static void lcm_suspend_power(void)
 	LCM_LOGI("%s, end\n", __func__);
 #endif
 #endif
+#endif
 }
 
 static void lcm_resume_power(void)
 {
+#if 0
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef BUILD_LK
 	mt6325_upmu_set_rg_vgp1_en(1);
@@ -987,6 +999,7 @@ static void lcm_resume_power(void)
 	LCM_LOGI("%s, begin\n", __func__);
 	hwPowerOn(MT6325_POWER_LDO_VGP1, VOL_DEFAULT, "LCM_DRV");
 	LCM_LOGI("%s, end\n", __func__);
+#endif
 #endif
 #endif
 }
@@ -1002,9 +1015,11 @@ static void lcm_init(void)
 	cmd = 0x00;
 	data = 0x0E;
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef CONFIG_MTK_LEGACY
 	mt_set_gpio_mode(GPIO_65132_EN, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO_65132_EN, GPIO_DIR_OUT);
 	mt_set_gpio_out(GPIO_65132_EN, GPIO_OUT_ONE);
+#endif
 
 #ifdef BUILD_LK
 	ret = TPS65132_write_byte(cmd, data);
@@ -1046,9 +1061,11 @@ static void lcm_init(void)
 static void lcm_suspend(void)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#ifdef CONFIG_MTK_LEGACY
 	mt_set_gpio_mode(GPIO_65132_EN, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO_65132_EN, GPIO_DIR_OUT);
 	mt_set_gpio_out(GPIO_65132_EN, GPIO_OUT_ZERO);
+#endif
 #endif
 	push_table(lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	/* SET_RESET_PIN(0); */
