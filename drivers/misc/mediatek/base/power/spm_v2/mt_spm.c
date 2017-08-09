@@ -1173,10 +1173,8 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		return;
 	}
 
-	if (force == 0 && mode == prev_mode) {
-		pr_debug("spm pmic power mode (%d) is not changed\n", mode);
+	if (force == 0 && mode == prev_mode)
 		return;
-	}
 
 	switch (mode) {
 	case PMIC_PWR_NORMAL:
