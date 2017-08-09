@@ -845,8 +845,11 @@ static int __init mtk_cooler_fps_init(void)
 		fps_tm_proc_dir = proc_mkdir("fps_tm", NULL);
 		if (!fps_tm_proc_dir)
 			mtk_cooler_fps_dprintk_always("[%s]: mkdir /proc/fps_tm failed\n", __func__);
-		else
+		else {
 			entry = proc_create("fps_count", S_IRUGO | S_IWUSR | S_IWGRP, fps_tm_proc_dir, &tm_fps_fops);
+			if (entry)
+				proc_set_user(entry, uid, gid);
+		}
 
 		dir_entry = mtk_thermal_get_proc_drv_therm_dir_entry();
 		if (!dir_entry)
