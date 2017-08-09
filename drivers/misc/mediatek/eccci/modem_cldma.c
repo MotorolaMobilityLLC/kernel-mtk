@@ -347,8 +347,9 @@ static int cldma_gpd_rx_refill(struct md_cd_queue *queue)
 			rgpd = (struct cldma_rgpd *)req->gpd;
 			req->data_buffer_ptr_saved =
 			    dma_map_single(&md->plat_dev->dev, new_skb->data, skb_data_size(new_skb), DMA_FROM_DEVICE);
-			rgpd->data_buff_bd_ptr = (u32) (req->data_buffer_ptr_saved);
-			rgpd->data_buff_len = 0;
+
+			cldma_write32(&rgpd->data_buff_bd_ptr, 0, (u32)(req->data_buffer_ptr_saved));
+			cldma_write16(&rgpd->data_buff_len, 0, 0);
 			/* checksum of GPD */
 			caculate_checksum((char *)rgpd, 0x81);
 			/* set HWO and mark cldma_request as available*/
@@ -585,8 +586,9 @@ static int cldma_gpd_net_rx_collect(struct md_cd_queue *queue, int budget, int b
 				req->data_buffer_ptr_saved =
 				    dma_map_single(&md->plat_dev->dev, new_skb->data, skb_data_size(new_skb),
 									DMA_FROM_DEVICE);
-				rgpd->data_buff_bd_ptr = (u32) (req->data_buffer_ptr_saved);
-				rgpd->data_buff_len = 0;
+				cldma_write32(&rgpd->data_buff_bd_ptr, 0, (u32)(req->data_buffer_ptr_saved));
+				cldma_write16(&rgpd->data_buff_len, 0, 0);
+
 				/* checksum of GPD */
 				caculate_checksum((char *)rgpd, 0x81);
 				/* set HWO, no need to hold ring_lock as no racer */
