@@ -3936,6 +3936,15 @@ static void _MUTEX_INTERNAL_IRQ_Handler(DISP_MODULE_ENUM module, unsigned int pa
 
 void primary_display_sodi_rule_init(void)
 {
+#if defined(MTK_FB_SODI_DEFEATURE)
+	if ((primary_display_get_width() > 800) && (primary_display_is_video_mode() == 1)) {
+#ifndef CONFIG_FPGA_EARLY_PORTING
+		defeature_soidle_by_display();
+#endif
+		DISPMSG("SODI defeatured!\n");
+		return;
+	}
+#endif
 #if defined(MTK_FB_SODI_SUPPORT)
 	/* if ((primary_display_mode == DECOUPLE_MODE) && primary_display_is_video_mode()) */
 	if (gEnableSODIControl == 0 && primary_display_is_video_mode() == 1) {
