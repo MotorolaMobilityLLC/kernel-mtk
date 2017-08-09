@@ -127,6 +127,7 @@ extern void aee_rr_rec_ptp_cpu_cci_volt_2(u64 val);
 extern void aee_rr_rec_ptp_cpu_cci_volt_3(u64 val);
 extern void aee_rr_rec_ptp_temp(u64 val);
 extern void aee_rr_rec_ptp_status(u8 val);
+extern void aee_rr_rec_eem_pi_offset(u8 val);
 
 extern u64 aee_rr_curr_ptp_cpu_big_volt(void);
 extern u64 aee_rr_curr_ptp_cpu_big_volt_1(void);
@@ -159,6 +160,7 @@ extern void mt_ptp_unlock(unsigned long *flags);
 extern int mt_eem_status(enum eem_det_id id);
 extern int is_have_550(void);
 extern unsigned int get_vcore_ptp_volt(int uv);
+extern void eem_set_pi_offset(enum eem_ctrl_id id, int step);
 extern unsigned int get_efuse_status(void);
 #if defined(__MTK_SLT_)
 /* extern int mt_ptp_idle_can_enter(void); */

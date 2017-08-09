@@ -925,6 +925,7 @@ struct eem_det {
 	unsigned int volt_tbl_pmic[NR_FREQ]; /* pmic value */
 	unsigned int volt_tbl_bin[NR_FREQ]; /* pmic value */
 	int volt_offset;
+	int pi_offset;
 
 	unsigned int disabled; /* Disabled by error or sysfs */
 };
@@ -2649,7 +2650,7 @@ static void eem_set_eem_volt(struct eem_det *det)
 			det->volt_tbl_pmic[i] =
 			min(
 			(unsigned int)(clamp(
-					(det->volt_tbl[i] + det->volt_offset + low_temp_offset),
+					(det->volt_tbl[i] + det->volt_offset + low_temp_offset + det->pi_offset),
 					det->VMIN, det->VMAX)),
 			(unsigned int)(*(recordTbl + ((i + 48) * 8) + 7) & 0x7F)
 			);
@@ -2670,7 +2671,8 @@ static void eem_set_eem_volt(struct eem_det *det)
 			det->volt_tbl_pmic[i] =
 			min(
 			(unsigned int)(clamp(
-				det->ops->eem_2_pmic(det, (det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
+				det->ops->eem_2_pmic(det,
+					(det->volt_tbl[i] + det->volt_offset + low_temp_offset)) + det->pi_offset,
 				det->ops->eem_2_pmic(det, det->VMIN),
 				det->ops->eem_2_pmic(det, det->VMAX))),
 			(unsigned int)(*(recordTbl + ((i + 16) * 8) + 7) & 0x7F)
@@ -2681,7 +2683,8 @@ static void eem_set_eem_volt(struct eem_det *det)
 			det->volt_tbl_pmic[i] =
 			min(
 			(unsigned int)(clamp(
-				det->ops->eem_2_pmic(det, (det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
+				det->ops->eem_2_pmic(det,
+					(det->volt_tbl[i] + det->volt_offset + low_temp_offset)) + det->pi_offset,
 				det->ops->eem_2_pmic(det, det->VMIN),
 				det->ops->eem_2_pmic(det, det->VMAX))),
 			(unsigned int)(*(recordTbl + (i * 8) + 7) & 0x7F)
@@ -4848,6 +4851,17 @@ unsigned int get_vcore_ptp_volt(int seg)
 	}
 
 	return ret;
+}
+
+void eem_set_pi_offset(enum eem_ctrl_id id, int step)
+{
+	struct eem_det *det = id_to_eem_det(id);
+
+	det->pi_offset = step;
+
+#ifdef CONFIG_EEM_AEE_RR_REC
+	aee_rr_rec_eem_pi_offset(step);
+#endif
 }
 
 unsigned int get_efuse_status(void)

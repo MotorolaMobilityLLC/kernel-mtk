@@ -30,6 +30,7 @@ obj-$(CONFIG_ARCH_MT6797) += mt_clkmgr.o
 #obj-y += mt_pbm.o
 obj-y += mt_vcorefs_manager.o
 obj-y += mt_vcorefs_governor.o
+obj-y += mt_picachu.o
 obj-y += mt_eem.o
 obj-y += mt_otp.o
 obj-y += mt_eem2.o
