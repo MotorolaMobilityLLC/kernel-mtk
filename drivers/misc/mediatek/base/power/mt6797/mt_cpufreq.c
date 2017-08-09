@@ -1155,6 +1155,16 @@ static void aee_record_cpu_dvfs_cb(unsigned int step)
 #endif
 }
 
+void aee_record_cpufreq_cb(unsigned int step)
+{
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	if (step == 0)
+		aee_rr_rec_cpufreq_cb(aee_rr_curr_cpufreq_cb() & 0x0);
+	else
+		aee_rr_rec_cpufreq_cb((aee_rr_curr_cpufreq_cb() & 0x0) | (step));
+#endif
+}
+
 static void aee_record_cpu_volt(struct mt_cpu_dvfs *p, unsigned int volt)
 {
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
@@ -4253,6 +4263,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		}
 #endif
 
+		aee_record_cpufreq_cb(7);
 		ret = _mt_cpufreq_setup_freqs_table(policy,
 						    opp_tbl_info->opp_tbl, opp_tbl_info->size);
 
@@ -4260,6 +4271,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		policy->cpuinfo.min_freq = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
 
 		policy->cur = mt_cpufreq_get_cur_phy_freq(id);	/* use cur phy freq is better */
+		aee_record_cpufreq_cb(8);
 		policy->max = cpu_dvfs_get_max_freq(id_to_cpu_dvfs(id));
 		policy->min = cpu_dvfs_get_min_freq(id_to_cpu_dvfs(id));
 
@@ -4267,6 +4279,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 			if (p->idx_normal_max_opp == -1)
 				p->idx_normal_max_opp = p->idx_opp_tbl;
 
+		aee_record_cpufreq_cb(9);
 		opp_tbl_m_info = &opp_tbls_m[id][CPU_LV_TO_OPP_IDX(lv)];
 		p->freq_tbl = opp_tbl_m_info->opp_tbl_m;
 
@@ -4280,12 +4293,13 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 				BigiDVFSEnable_hp();
 		}
 #endif
+		aee_record_cpufreq_cb(10);
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* after BigiDVFSEnable */
 		if (enable_cpuhvfs)
 			cpuhvfs_notify_cluster_on(cpu_dvfs_to_cluster(p));
 #endif
 		cpufreq_unlock(flags);
-
+		aee_record_cpufreq_cb(11);
 		if (init_cci_status == 0) {
 			/* init cci freq idx */
 			if (_mt_cpufreq_sync_opp_tbl_idx(p_cci) >= 0)

@@ -34,6 +34,7 @@ enum mt_cpu_dvfs_id {
 
 	NR_MT_CPU_DVFS,
 };
+
 /* 3 => MAIN */
 enum top_ckmuxsel {
 	TOP_CKMUXSEL_CLKSQ = 0,
@@ -80,6 +81,8 @@ extern void aee_rr_rec_cpu_dvfs_step(u8 val);
 extern u8 aee_rr_curr_cpu_dvfs_step(void);
 extern void aee_rr_rec_cpu_dvfs_cb(u8 val);
 extern u8 aee_rr_curr_cpu_dvfs_cb(void);
+extern void aee_rr_rec_cpufreq_cb(u8 val);
+extern u8 aee_rr_curr_cpufreq_cb(void);
 #endif
 
 /* PTP-OD */
@@ -112,6 +115,9 @@ extern enum top_ckmuxsel mt_cpufreq_get_clock_switch(enum mt_cpu_dvfs_id id);
 extern void mt_cpufreq_setvolt_registerCB(cpuVoltsampler_func pCB);
 extern bool mt_cpufreq_earlysuspend_status_get(void);
 extern unsigned int mt_get_cpu_freq(void);
+
+/* CPUFREQ */
+extern void aee_record_cpufreq_cb(unsigned int step);
 
 #ifdef __cplusplus
 }
