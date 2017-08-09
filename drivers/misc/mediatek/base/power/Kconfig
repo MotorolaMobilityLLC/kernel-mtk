@@ -32,3 +32,10 @@ config MTK_HYBRID_CPU_DVFS
 	  defined/undefined in the header file of CPUHVFS driver.
 	  If CONFIG_HYBRID_CPU_DVFS is defined, CPUHVFS driver will bring up
 	  DVFS processor to do CPU DVFS.
+
+config MTK_SPM_USE_EXT_BUCK
+	bool "MTK SPM use ext buck"
+	default n
+	help
+	  Vmd1 is controlled by an ext buck. If you want to use ext buck for
+	  Vmd1, set y here, or it dependeds on the efuse value.
