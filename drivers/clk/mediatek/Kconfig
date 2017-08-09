@@ -45,9 +45,20 @@ config COMMON_CLK_MT6797
 	default y if ARCH_MT6797 && !MTK_CLKMGR
 	---help---
 	  This driver supports Mediatek MT6797 clocks.
-          Use the config to support CCF on MT6797,
-          instead of old clkmgr architecture.
-          MT6797 default willl use CCF.
+	  Use the config to support CCF on MT6797,
+	  instead of old clkmgr architecture.
+	  MT6797 default will use CCF.
+
+config COMMON_CLK_MT6757
+	bool "Clock driver for Mediatek MT6757"
+	depends on COMMON_CLK
+	select COMMON_CLK_MEDIATEK_V1
+	default y if ARCH_MT6757 && !MTK_CLKMGR
+	---help---
+	  This driver supports Mediatek MT6757 clocks.
+	  Use the config to support CCF on MT6757,
+	  instead of old clkmgr architecture.
+	  MT6757 default will use CCF.
 
 config COMMON_CLK_MT8135
 	bool "Clock driver for Mediatek MT8135"

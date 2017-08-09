@@ -9,6 +9,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6757-msdc.h>
+#include <dt-bindings/clock/mt6757-clk.h>
 
 / {
 	model = "MT6757";
@@ -211,12 +212,14 @@
 	topckgen@10000000 {
 		compatible = "mediatek,topckgen";
 		reg = <0 0x10000000 0 0x1000>;
+		#clock-cells=<1>;
 	};
 
 	infracfg_ao@10001000 {
 		compatible = "mediatek,infracfg_ao";
 		reg = <0 0x10001000 0 0x1000>;
 		interrupts = <GIC_SPI 136 IRQ_TYPE_EDGE_RISING>;
+		#clock-cells=<1>;
 	};
 
 	iocfg_0@10002000 {
@@ -319,6 +322,7 @@
 	apmixed@1000C000 {
 		compatible = "mediatek,apmixed";
 		reg = <0 0x1000C000 0 0xf00>;
+		#clock-cells=<1>;
 	};
 
 	fhctl@1000CE00 {
@@ -1220,6 +1224,7 @@
 		compatible = "mediatek,audio";
 		reg = <0 0x11220000 0 0x1000>;
 		interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_LOW>;
+		#clock-cells=<1>;
 	};
 
 	audio_sram@11221000 {
@@ -1230,6 +1235,7 @@
 	g3d_config@13000000 {
 		compatible = "mediatek,g3d_config";
 		reg = <0 0x13000000 0 0x1000>;
+		#clock-cells=<1>;
 	};
 
 	vad_gpu@13001000 {
@@ -1262,6 +1268,7 @@
 		compatible = "mediatek,mmsys_config";
 		reg = <0 0x14000000 0 0x1000>;
 		interrupts = <GIC_SPI 213 IRQ_TYPE_LEVEL_LOW>;
+		#clock-cells=<1>;
 	};
 
 	dispsys: dispsys@14000000 {
@@ -1673,6 +1680,7 @@
 	imgsys_config@15020000 {
 		compatible = "mediatek,imgsys_config";
 		reg = <0 0x15020000 0 0x1000>;
+		#clock-cells=<1>;
 	};
 
 	smi_larb5@15021000 {
@@ -1740,6 +1748,7 @@
 	vdec_gcon@16000000 {
 		compatible = "mediatek,vdec_gcon";
 		reg = <0 0x16000000 0 0x10000>;
+		#clock-cells=<1>;
 	};
 
 	smi_larb1@16010000 {
@@ -1757,6 +1766,7 @@
 	venc_gcon@17000000 {
 		compatible = "mediatek,venc_gcon";
 		reg = <0 0x17000000 0 0x1000>;
+		#clock-cells=<1>;
 	};
 
 	smi_larb3@17001000 {
@@ -1786,6 +1796,7 @@
 	camsys_config@1a000000  {
 		compatible = "mediatek,camsys_config";
 		reg = <0 0x1a000000  0 0x1000>;
+		#clock-cells=<1>;
 	};
 
 	smi_larb2@1a001000 {
