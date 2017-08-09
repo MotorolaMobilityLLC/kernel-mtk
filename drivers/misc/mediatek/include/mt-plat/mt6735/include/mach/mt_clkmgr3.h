@@ -564,4 +564,7 @@ extern int clk_monitor(enum ckmon_sel ckmon, enum monitor_clk_sel sel, int div);
 extern void clk_stat_check(int id);
 extern void slp_check_pm_mtcmos_pll(void);
 
+/* sram debug */
+extern void aee_rr_rec_clk(int id, u32 val);
+
 #endif
