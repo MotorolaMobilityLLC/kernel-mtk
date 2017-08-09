@@ -106,9 +106,6 @@
  */
 
 /* ----------------------------------------------------------------------- */
-/* GADGET 318, FIXME */
-#include <linux/skbuff.h>
-int mbim_start_xmit(struct sk_buff *skb, int ifid){return 0;}
 
 #define is_buffer_mapped(req) (is_dma_capable() && \
 					(req->map_state != UN_MAPPED))
