@@ -1734,8 +1734,6 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 
 	fgIsWorkMcStart = TRUE;
 
-	DBGLOG(INIT, INFO, "wlanSetMulticastListWorkQueue start...\n");
-
 	down(&g_halt_sem);
 	if (g_u4HaltFlag) {
 		fgIsWorkMcStart = FALSE;
@@ -1776,6 +1774,7 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 		     &u4PacketFilter,
 		     sizeof(u4PacketFilter), FALSE, FALSE, TRUE, FALSE, &u4SetInfoLen) != WLAN_STATUS_SUCCESS) {
 		fgIsWorkMcStart = FALSE;
+		DBGLOG(INIT, ERROR, "wlanSetMulticastListWorkQueue kalIoctl u4PacketFilter=%d\n", u4PacketFilter);
 		return;
 	}
 
@@ -1789,6 +1788,7 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 		if (g_u4HaltFlag) {
 			fgIsWorkMcStart = FALSE;
 			up(&g_halt_sem);
+			DBGLOG(INIT, WARN, "wlanSetMulticastListWorkQueue g_u4HaltFlag=%d\n", g_u4HaltFlag);
 			return;
 		}
 
@@ -1811,7 +1811,6 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 	}
 
 	fgIsWorkMcStart = FALSE;
-	DBGLOG(INIT, INFO, "wlanSetMulticastListWorkQueue end\n");
 
 }				/* end of wlanSetMulticastList() */
 
