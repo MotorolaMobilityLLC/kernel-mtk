@@ -94,6 +94,15 @@ config MTK_BQ25890_SUPPORT
           Set to Yes if BQ25890 is used.
 	default n
 
+config MTK_FAN5405_SUPPORT
+	bool "MTK_FAN5405_SUPPORT"
+	help
+          This is to enable MediaTek supports to FAN5405.
+          It depends on config MTK_SMART_BATTERY
+          and config MTK_SWCHR_SUPPORT
+          Set to Yes if FAN5405 is used.
+	default n
+
 config MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION
 	bool "MTK_DISABLE_POWER_ON_OFF_VOLTAGE_LIMITATION"
 	help
