@@ -915,7 +915,7 @@ static struct mtk_mux_upd top_muxes[] __initdata = {
 	MUX_UPD(TOP_MUX_AUDIO_H, audio_h_sel, audio_h_parents, 0x00C0, 16, 2, 23, _UPDATE_REG, 27),
 	MUX_UPD(TOP_MUX_ANC_MD32, anc_md32_sel, anc_md32_parents, 0x00C0, 24, 2, 31, _UPDATE_REG,
 		29),
-	MUX_UPD(TOP_MUX_MFG_52M, mfg_52m_sel, mfg_52m_parents, 0x0104, 1, 2, 0, INVALID_UPDATE_REG,
+	MUX_UPD(TOP_MUX_MFG_52M, mfg_52m_sel, mfg_52m_parents, 0x0104, 1, 2, INVALID_MUX_GATE, INVALID_UPDATE_REG,
 		INVALID_UPDATE_SHIFT),	/*R1 -- 0 *//* non glitch operation */
 };
 #endif
