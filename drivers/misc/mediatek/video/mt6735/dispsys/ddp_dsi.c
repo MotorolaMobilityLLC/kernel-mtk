@@ -3070,15 +3070,10 @@ int ddp_dsi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 		_dsi_context[i].lcm_width = config->dst_w;
 		_dsi_context[i].lcm_height = config->dst_h;
 		/* _dump_dsi_params(&(_dsi_context[i].dsi_params)); */
-		if (dsi_config->mode != CMD_MODE) {
-			/* vdo mode enable te here(will remove later) */
+		/* cmd mode enable te here */
+		if (dsi_config->mode == CMD_MODE)
 			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN,
 				      TE_RDY, 1);
-		} else {
-			/* cmd mode enable te here */
-			DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN,
-				      TE_RDY, 1);
-		}
 	}
 	/* DISPDBG("===>01Pmaster: clk:%d\n",_dsi_context[0].dsi_params.PLL_CLOCK); */
 	if (dsi_config->mode != CMD_MODE)
