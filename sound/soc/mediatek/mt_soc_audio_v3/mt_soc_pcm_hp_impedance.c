@@ -486,7 +486,6 @@ static void ApplyDctoDl(void)
 	unsigned short  value = 0 , average = 0;
 	unsigned short dcoffset , dcoffset2, dcoffset3;
 
-	pr_warn("%s\n", __func__);
 
 	dcinit_value = DCoffsetDefault;
 	for (value = 0; value <= (HpImpedancePhase2AdcValue + HpImpedancePhase2Step);

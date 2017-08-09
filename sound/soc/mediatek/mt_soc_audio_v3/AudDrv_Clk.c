@@ -336,7 +336,7 @@ void AudDrv_Clk_On(void)
 	PRINTK_AUD_CLK("+AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	if (Aud_AFE_Clk_cntr == 0) {
-		pr_err("-----------AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+		PRINTK_AUD_CLK("-----------AudDrv_Clk_On, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 #ifdef PM_MANAGER_API
 #ifdef CONFIG_MTK_CLKMGR
 		if (enable_clock(MT_CG_INFRA_AUDIO, "AUDIO"))
@@ -443,7 +443,7 @@ void AudDrv_Clk_Off(void)
 
 	/* Aud_AFE_Clk_cntr--; */
 	if (Aud_AFE_Clk_cntr == 0) {
-		pr_err("------------AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
+		PRINTK_AUD_CLK("------------AudDrv_Clk_Off, Aud_AFE_Clk_cntr:%d\n", Aud_AFE_Clk_cntr);
 		{
 			/* Disable AFE clock */
 #ifdef PM_MANAGER_API

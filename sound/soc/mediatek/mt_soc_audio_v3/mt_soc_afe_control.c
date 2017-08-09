@@ -267,13 +267,13 @@ unsigned int GetSramState(void)
 
 void SetSramState(unsigned int State)
 {
-	pr_debug("%s state= %d\n", __func__, State);
+	/*pr_debug("%s state= %d\n", __func__, State);*/
 	mAudioSramManager.mMemoryState |= State;
 }
 
 void ClearSramState(unsigned int State)
 {
-	pr_debug("%s state= %d\n", __func__, State);
+	/*pr_debug("%s state= %d\n", __func__, State);*/
 	mAudioSramManager.mMemoryState &= (~State);
 }
 
@@ -782,8 +782,8 @@ uint32 SetCLkMclk(uint32 I2snum, uint32 SampleRate)
 		break;
 	}
 
-	pr_debug("%s I2snum = %d I2s_ck_div = %d I2S_APll = %d\n", __func__, I2snum, I2s_ck_div,
-		 I2S_APll);
+	/*pr_debug("%s I2snum = %d I2s_ck_div = %d I2S_APll = %d\n", __func__, I2snum, I2s_ck_div,
+		 I2S_APll);*/
 
 	return I2s_ck_div;
 }
@@ -795,8 +795,8 @@ void SetCLkBclk(uint32 MckDiv, uint32 SampleRate, uint32 Channels, uint32 Wlengt
 	uint32 I2S_Bclk = 0;
 	uint32 I2s_Bck_div = 0;
 
-	pr_debug("%s MckDiv = %dv SampleRate = %d  Channels = %d Wlength = %d\n", __func__, MckDiv,
-		 SampleRate, Channels, Wlength);
+	/*pr_debug("%s MckDiv = %dv SampleRate = %d  Channels = %d Wlength = %d\n", __func__, MckDiv,
+		 SampleRate, Channels, Wlength);*/
 	MckDiv++;
 
 	if (GetApllbySampleRate(SampleRate) == Soc_Aud_APLL1)
@@ -807,8 +807,8 @@ void SetCLkBclk(uint32 MckDiv, uint32 SampleRate, uint32 Channels, uint32 Wlengt
 	I2S_Bclk = SampleRate * Channels * (Wlength + 1) * 16;
 	I2s_Bck_div = (I2S_APll / MckDiv) / I2S_Bclk;
 
-	pr_debug("%s I2S_APll = %dv I2S_Bclk = %d  I2s_Bck_div = %d\n", __func__, I2S_APll,
-		 I2S_Bclk, I2s_Bck_div);
+	/*pr_debug("%s I2S_APll = %dv I2S_Bclk = %d  I2s_Bck_div = %d\n", __func__, I2S_APll,
+		 I2S_Bclk, I2s_Bck_div);*/
 
 	I2s_Bck_div--;
 }
@@ -1676,7 +1676,7 @@ bool SetHwDigitalGainMode(uint32 GainType, uint32 SampleRate, uint32 SamplePerSt
 
 bool SetHwDigitalGainEnable(int GainType, bool Enable)
 {
-	pr_warn("+%s(), GainType = %d, Enable = %d\n", __func__, GainType, Enable);
+	/*pr_warn("+%s(), GainType = %d, Enable = %d\n", __func__, GainType, Enable);*/
 
 	switch (GainType) {
 	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1:
@@ -1965,7 +1965,7 @@ bool EnableSideToneFilter(bool stf_on)
 
 bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable)
 {
-	pr_debug("%s Aud_block = %d bEnable = %d\n", __func__, Aud_block, bEnable);
+	/*pr_debug("%s Aud_block = %d bEnable = %d\n", __func__, Aud_block, bEnable);*/
 	if (Aud_block >= Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK)
 		return false;
 
@@ -1983,8 +1983,8 @@ bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable)
 			pr_err("warning , user count <0\n");
 		}
 	}
-	pr_debug("%s Aud_block = %d mAudioMEMIF[Aud_block]->mUserCount = %d\n", __func__, Aud_block,
-		 mAudioMEMIF[Aud_block]->mUserCount);
+	/*pr_debug("%s Aud_block = %d mAudioMEMIF[Aud_block]->mUserCount = %d\n", __func__, Aud_block,
+		 mAudioMEMIF[Aud_block]->mUserCount);*/
 
 	if (Aud_block > Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE)
 		return true;
@@ -2270,7 +2270,7 @@ bool Set2ndI2SIn(AudioDigtalI2S *mDigitalI2S)
 	Audio_I2S_Adc |= (m2ndI2S->mI2S_WLEN << 1);
 	Audio_I2S_Adc |= (m2ndI2S->mI2S_IN_PAD_SEL << 28);
 	Audio_I2S_Adc |= 1 << 31;	/* Default enable phase_shift_fix for better quality */
-	pr_debug("Set2ndI2SIn Audio_I2S_Adc= 0x%x", Audio_I2S_Adc);
+	/*pr_debug("Set2ndI2SIn Audio_I2S_Adc= 0x%x", Audio_I2S_Adc);*/
 	Afe_Set_Reg(AFE_I2S_CON, Audio_I2S_Adc, 0xfffffffe);
 
 	if (!m2ndI2S->mI2S_SLAVE)
@@ -2610,7 +2610,7 @@ int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length)
 #endif
 	AFE_BLOCK_T *pblock;
 
-	pr_warn("%s Afe_Buf_Length = %d\n ", __func__, Afe_Buf_Length);
+	/*pr_warn("%s Afe_Buf_Length = %d\n ", __func__, Afe_Buf_Length);*/
 	pblock = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]->rBlock);
 	pblock->u4BufferSize = Afe_Buf_Length;
 
@@ -2741,7 +2741,7 @@ bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream 
 	substreamList *temp = NULL;
 	unsigned long flags;
 
-	pr_debug("+%s MemBlock = %d substream = %p\n ", __func__, MemBlock, substream);
+	/*pr_debug("+%s MemBlock = %d substream = %p\n ", __func__, MemBlock, substream);*/
 	spin_lock_irqsave(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
 	if (head == NULL) {	/* frst item is NULL */
@@ -2763,7 +2763,7 @@ bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream 
 
 	AFE_Mem_Control_context[MemBlock]->MemIfNum++;
 	spin_unlock_irqrestore(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
-	pr_debug("-%s MemBlock = %d\n ", __func__, MemBlock);
+	/*pr_debug("-%s MemBlock = %d\n ", __func__, MemBlock);*/
 
 	/* DumpMemifSubStream(); */
 	return true;
@@ -2803,7 +2803,7 @@ bool RemoveMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substre
 		AFE_Mem_Control_context[MemBlock]->MemIfNum--;
 
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
-	pr_debug("+ %s MemBlock = %d substream = %p\n ", __func__, MemBlock, substream);
+	/*pr_debug("+ %s MemBlock = %d substream = %p\n ", __func__, MemBlock, substream);*/
 
 	if (head == NULL) {	/* no object */
 		/* do nothing */
@@ -2840,7 +2840,7 @@ bool RemoveMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substre
 		pr_warn("%s substreram is not NULL MemBlock = %d\n", __func__, MemBlock);
 
 	spin_unlock_irqrestore(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
-	pr_debug("- %s MemBlock = %d\n ", __func__, MemBlock);
+	/*pr_debug("- %s MemBlock = %d\n ", __func__, MemBlock);*/
 
 	return true;
 }

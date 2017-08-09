@@ -149,7 +149,7 @@ static struct snd_pcm_hardware mtk_fm_i2s_hardware = {
 
 static int mtk_pcm_fm_i2s_stop(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_pcm_fm_i2s_stop\n");
+	/*pr_warn("mtk_pcm_fm_i2s_stop\n");*/
 	return 0;
 }
 
@@ -169,7 +169,7 @@ static int mtk_pcm_fm_i2s_hw_params(struct snd_pcm_substream *substream,
 {
 	int ret = 0;
 
-	pr_warn("mtk_pcm_fm_i2s_hw_params\n");
+	/*pr_warn("mtk_pcm_fm_i2s_hw_params\n");*/
 	return ret;
 }
 
@@ -194,7 +194,7 @@ static int mtk_pcm_fm_i2s_open(struct snd_pcm_substream *substream)
 	AudDrv_Clk_On();
 	AudDrv_I2S_Clk_On();
 
-	pr_warn("mtk_pcm_fm_i2s_open\n");
+	/*pr_warn("mtk_pcm_fm_i2s_open\n");*/
 	runtime->hw = mtk_fm_i2s_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_fm_i2s_hardware ,
 	       sizeof(struct snd_pcm_hardware));
@@ -207,8 +207,8 @@ static int mtk_pcm_fm_i2s_open(struct snd_pcm_substream *substream)
 	pr_warn("mtk_pcm_fm_i2s_open runtime rate = %d channels = %d substream->pcm->device = %d\n",
 	       runtime->rate, runtime->channels, substream->pcm->device);
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_fm_i2s_playback_constraints\n");
+	/*if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_fm_i2s_playback_constraints\n");*/
 
 
 	if (ret < 0) {
@@ -218,7 +218,7 @@ static int mtk_pcm_fm_i2s_open(struct snd_pcm_substream *substream)
 	}
 
 	SetFMEnableFlag(true);
-	pr_warn("mtk_pcm_fm_i2s_open return\n");
+	/*pr_warn("mtk_pcm_fm_i2s_open return\n");*/
 	return 0;
 }
 
@@ -329,13 +329,13 @@ static int mtk_pcm_fm_i2s_prepare(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_fm_i2s_start(struct snd_pcm_substream *substream)
 {
-	pr_warn("%s\n", __func__);
+	/*pr_warn("%s\n", __func__);*/
 	return 0;
 }
 
 static int mtk_pcm_fm_i2s_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_warn("mtk_pcm_fm_i2s_trigger cmd = %d\n", cmd);
+	/*pr_warn("mtk_pcm_fm_i2s_trigger cmd = %d\n", cmd);*/
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
