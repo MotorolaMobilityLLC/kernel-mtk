@@ -57,10 +57,14 @@ void spm_dpidle_pre_process(void)
 		pmic_config_interface_nolock(MT6351_BUCK_ALL_CON2, 0x111, 0x3FF, 0);
 #endif
 	}
+
+	__spm_pmic_low_iq_mode(1);
 }
 
 void spm_dpidle_post_process(void)
 {
+	__spm_pmic_low_iq_mode(0);
+
 	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off()) {
 #if defined(PMIC_CLK_SRC_BY_SRCCLKEN_IN1)
