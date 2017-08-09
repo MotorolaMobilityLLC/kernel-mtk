@@ -584,6 +584,10 @@ int mtkts_bts_get_hw_temp(void)
 
 	mutex_unlock(&BTS_lock);
 
+#if 0 /*def THERMAL_CATM_USER*/
+	wakeup_ta_algo(TA_CATMPLUS_TTJ);
+#endif
+
 	bts_cur_temp = t_ret;
 
 	if (t_ret > 40000)	/* abnormal high temp */

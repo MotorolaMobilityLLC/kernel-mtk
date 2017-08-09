@@ -12,5 +12,6 @@ endif
 
 obj-$(CONFIG_THERMAL) += mtk_thermal_platform.o
 
+
 obj-y += thermal_zones/
 obj-y += coolers/
