@@ -1084,7 +1084,7 @@ static int ovl_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst_
 	if (dst_mod_type == DST_MOD_REAL_TIME)
 		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_PRE_ULTRA_THRESHOLD, 0xff);
 	else
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_PRE_ULTRA_THRESHOLD, 0x78);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC_PRE_ULTRA_THRESHOLD, /*0x78*/ 0xff);
 
 	for (i = 0; i < layer_num; i++) {
 		unsigned long layer_offset = i * OVL_LAYER_OFFSET + ovl_base;
@@ -1129,14 +1129,18 @@ static int ovl_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst_
 	/* DISP_REG_OVL_RDMA_ULTRA_SRC */
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_PREULTRA_BUF_SRC, 0);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_PREULTRA_SMI_SRC, 0);
-	regval |= REG_FLD_VAL(FLD_OVL_RDMA_PREULTRA_ROI_END_SRC, 0);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_PREULTRA_RDMA_SRC, 1);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_ULTRA_BUF_SRC, 0);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_ULTRA_SMI_SRC, 0);
-	if (dst_mod_type == DST_MOD_REAL_TIME)
+	if (dst_mod_type == DST_MOD_REAL_TIME) {
 		regval |= REG_FLD_VAL(FLD_OVL_RDMA_ULTRA_ROI_END_SRC, 0);
-	else
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_PREULTRA_ROI_END_SRC, 0);
+
+	} else {
 		regval |= REG_FLD_VAL(FLD_OVL_RDMA_ULTRA_ROI_END_SRC, 2);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_PREULTRA_ROI_END_SRC, 1);
+
+	}
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_ULTRA_RDMA_SRC, 2);
 
 	DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMA_ULTRA_SRC, regval);
@@ -1144,9 +1148,9 @@ static int ovl_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst_
 	/* DISP_REG_OVL_RDMAn_BUF_LOW */
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_ULTRA_TH, 0);
 	if (dst_mod_type == DST_MOD_REAL_TIME)
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_ULTRA_TH, 0);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_PREULTRA_TH, 0);
 	else
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_ULTRA_TH, 0x30);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_PREULTRA_TH, /*0x30*/ 0x0);
 
 	for (i = 0; i < layer_num; i++)
 		DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMAn_BUF_LOW(i), regval);

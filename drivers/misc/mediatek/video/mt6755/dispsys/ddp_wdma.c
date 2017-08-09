@@ -370,6 +370,18 @@ void wdma_dump_reg(DISP_MODULE_ENUM module)
 		DISP_REG_GET(DISP_REG_WDMA_DST_ADDR1 + off_sft),
 		DISP_REG_GET(DISP_REG_WDMA_DST_ADDR2 + off_sft));
 
+#ifdef __ENABLE_WDMA_PROC_TRACK__
+	DDPDUMP("WDMA:0x090=0x%08x,0x094=0x%08x,0x098=0x%08x\n",
+		DISP_REG_GET(DISP_REG_WDMA_PROC_TRACK_CON_0 + off_sft),
+		DISP_REG_GET(DISP_REG_WDMA_PROC_TRACK_CON_1 + off_sft),
+		DISP_REG_GET(DISP_REG_WDMA_PROC_TRACK_CON_2 + off_sft));
+
+	void *emi_va = ioremap_nocache(0x10203000, 0x1000);
+
+	DDPDUMP("0x10203018 = 0x%08x\n", *(unsigned int *)(emi_va+0x18));
+	iounmap(emi_va);
+#endif
+	return;
 }
 
 static int wdma_dump(DISP_MODULE_ENUM module, int level)
@@ -390,12 +402,13 @@ static int wdma_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst
 	unsigned long res_HD = 720 * 1280;
 	/* DISP_REG_WDMA_BUF_CON1 */
 	regval = 0;
-	if (dst_mod_type == DST_MOD_REAL_TIME)
+	if (dst_mod_type == DST_MOD_REAL_TIME) {
 		regval |= REG_FLD_VAL(BUF_CON1_FLD_ULTRA_ENABLE, 1);
-	else
+		regval |= REG_FLD_VAL(BUF_CON1_FLD_PRE_ULTRA_ENABLE, 1);
+	} else {
 		regval |= REG_FLD_VAL(BUF_CON1_FLD_ULTRA_ENABLE, 0);
-
-	regval |= REG_FLD_VAL(BUF_CON1_FLD_PRE_ULTRA_ENABLE, 1);
+		regval |= REG_FLD_VAL(BUF_CON1_FLD_PRE_ULTRA_ENABLE, 0);
+	}
 
 	if (dst_mod_type == DST_MOD_REAL_TIME)
 		regval |= REG_FLD_VAL(BUF_CON1_FLD_FRAME_END_ULTRA, 1);
@@ -428,6 +441,26 @@ static int wdma_golden_setting(DISP_MODULE_ENUM module, enum dst_module_type dst
 
 	DISP_REG_SET(cmdq, idx_offset + DISP_REG_WDMA_BUF_CON2, regval);
 
+#ifdef __ENABLE_WDMA_PROC_TRACK__
+	/* WDMA proc track */
+	regval = 0;
+	if (dst_mod_type == DST_MOD_REAL_TIME) {
+		DISP_REG_SET(cmdq, idx_offset + DISP_REG_WDMA_PROC_TRACK_CON_0, 0);
+		DISP_REG_SET(cmdq, idx_offset + DISP_REG_WDMA_PROC_TRACK_CON_1, 0);
+		DISP_REG_SET(cmdq, idx_offset + DISP_REG_WDMA_PROC_TRACK_CON_2, 0);
+		cmdqRecWrite(cmdq, 0x10203018, 0, 0xffff0000);
+	} else {
+		regval |= REG_FLD_VAL(FLD_WDMA_PROC_TRACK_CON0_IGNORE_INIT_LEGECY, 1);
+		regval |= REG_FLD_VAL(FLD_WDMA_PROC_TRACK_CON0_STOP_GREQ_EN, 1);
+		regval |= REG_FLD_VAL(FLD_WDMA_PROC_TRACK_CON0_PREULTRA_EN, 1);
+		regval |= REG_FLD_VAL(FLD_WDMA_PROC_TRACK_CON0_TRACK_WND, 256);
+
+		DISP_REG_SET(cmdq, idx_offset + DISP_REG_WDMA_PROC_TRACK_CON_0, regval);
+		DISP_REG_SET(cmdq, idx_offset + DISP_REG_WDMA_PROC_TRACK_CON_1, 0x8000);
+		DISP_REG_SET(cmdq, idx_offset + DISP_REG_WDMA_PROC_TRACK_CON_2, 3*0x8000);
+		cmdqRecWrite(cmdq, 0x10203018, 0xffff0000, 0xffff0000);
+	}
+#endif
 	return 0;
 }
 

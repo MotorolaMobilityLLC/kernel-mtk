@@ -1059,24 +1059,20 @@ static void _cmdq_build_trigger_loop(void)
 	if (primary_display_is_video_mode()) {
 		/* if (_need_lfr_check()) */
 		/* ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_DSI0_EOF); */
-#if 1 /* disable SOF wait */
-		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), pgc->cmdq_handle_trigger, 1);
-#endif
+
+		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), pgc->cmdq_handle_trigger, 0);
+
 		cmdqRecWaitNoClear(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
 		cmdqRecWaitNoClear(pgc->cmdq_handle_trigger, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 		cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
 		cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
+		/* wait and clear rdma0_sof for vfp change */
+		cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_SOF);
+
 		/* for some module(like COLOR) to read hw register to GPR after frame done */
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
 				      CMDQ_AFTER_STREAM_EOF, 0);
-
-#if 1 /* disable SOF wait */
-		cmdqRecClearEventToken(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_SOF);
-		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), pgc->cmdq_handle_trigger, 0);
-#endif
-		/* wait and clear rdma0_sof for vfp change */
-		cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_SOF);
 	} else {
 		/* DSI command mode doesn't have mutex_stream_eof, need use CMDQ token instead */
 		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
@@ -1317,6 +1313,7 @@ void _cmdq_insert_wait_frame_done_token_mira(void *handle)
 	if (primary_display_is_video_mode()) {
 		cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
 		cmdqRecWaitNoClear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+		ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), handle, 0);
 	} else {
 		cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
 	}
@@ -1448,18 +1445,6 @@ static void directlink_path_add_memory(WDMA_CONFIG_STRUCT *p_wdma, DISP_MODULE_E
 	cmdqRecWait(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
 	cmdqRecFlush(cmdq_wait_handle);
 	DISPMSG("dl_to_dc capture:Flush wait wdma sof\n");
-#if 0
-	cmdqRecReset(cmdq_handle);
-	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
-
-	dpmgr_path_remove_memout(pgc->dpmgr_handle, cmdq_handle);
-	_cmdq_set_config_handle_dirty_mira(cmdq_handle);
-	/* flush remove memory to cmdq */
-	_cmdq_flush_config_handle_mira(cmdq_handle, 0);
-	DISPMSG("dl_to_dc capture: Flush remove memout\n");
-
-	dpmgr_path_memout_clock(pgc->dpmgr_handle, 0);
-#endif
 out:
 	cmdqRecDestroy(cmdq_handle);
 	cmdqRecDestroy(cmdq_wait_handle);
@@ -1849,6 +1834,7 @@ static int DL_switch_to_rdma_mode(cmdqRecHandle handle, int block)
 			cmdqRecFlush(handle);
 		else
 			cmdqRecFlushAsync(handle);
+		cmdqRecDestroy(handle);
 	}
 
 	return 0;
@@ -1910,6 +1896,7 @@ static int rdma_mode_switch_to_DL(cmdqRecHandle handle, int block)
 			cmdqRecFlush(handle);
 		else
 			cmdqRecFlushAsync(handle);
+		cmdqRecDestroy(handle);
 	}
 
 	return 0;
@@ -2539,9 +2526,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 
 	_primary_path_lock(__func__);
 
-	if (real_overlap_layers > DISP_HW_HRT_LYAERS_FOR_LOW_POWER &&
-		primary_display_is_directlink_mode()) {
-
+	if (real_overlap_layers > DISP_HW_HRT_LYAERS_FOR_LOW_POWER) {
 		_request_dvfs_perf(OPPI_PERF);
 	} else {
 		/* be carefull for race condition !! because callback may delay */
@@ -2953,15 +2938,6 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		pgc->cmdq_handle_ovl1to2_config = NULL;
 	}
 
-	if (use_cmdq && is_lcm_inited) {
-		/* if lcm is not inited (no LK),
-		 * the first config should not wait frame done
-		 * because there's no frame done for vdo mode */
-		_cmdq_reset_config_handle();
-		_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
-	}
-
-
 	if (primary_display_mode == DIRECT_LINK_MODE) {
 		_build_path_direct_link();
 		pgc->session_mode = DISP_SESSION_DIRECT_LINK_MODE;
@@ -2981,6 +2957,14 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		DISPCHECK("primary display is DEBUG RDMA1 DSI0 MODE\n");
 	} else {
 		DISPCHECK("primary display mode is WRONG\n");
+	}
+
+	if (use_cmdq && is_lcm_inited) {
+		/* if lcm is not inited (no LK),
+		 * the first config should not wait frame done
+		 * because there's no frame done for vdo mode */
+		_cmdq_reset_config_handle();
+		_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 	}
 
 	config_display_m4u_port();
@@ -3454,7 +3438,7 @@ int primary_display_resume(void)
 		DISPDBG("[POWER]start cmdq[begin]--IPOH\n");
 		if (disp_helper_get_option(DISP_OPT_USE_CMDQ))
 			_cmdq_start_trigger_loop();
-
+		enable_idlemgr(1);
 		DISPDBG("[POWER]start cmdq[end]--IPOH\n");
 		goto done;
 	}
@@ -3569,8 +3553,15 @@ int primary_display_resume(void)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 10);
 
 	if (!primary_display_is_video_mode()) {
+		DISPCHECK("[POWER]triggger cmdq[begin]\n");
+		if (_should_reset_cmdq_config_handle())
+			_cmdq_reset_config_handle();
+		if (_should_insert_wait_frame_done_token())
+			_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
+		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_DSI0_EXT_TE);
+		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
+
 		/*refresh black picture of ovl bg */
-		DISPDBG("[POWER]triggger cmdq[begin]\n");
 		_trigger_display_interface(1, NULL, 0);
 		DISPCHECK("[POWER]triggger cmdq[end]\n");
 		mdelay(16);	/* wait for one frame for pms workarround!!!! */
@@ -3616,6 +3607,7 @@ int primary_display_ipoh_restore(void)
 {
 	DISPMSG("primary_display_ipoh_restore In\n");
 	DISPDBG("ESD check stop[begin]\n");
+	enable_idlemgr(0);
 	primary_display_esd_check_enable(0);
 	DISPCHECK("ESD check stop[end]\n");
 	if (NULL != pgc->cmdq_handle_trigger) {
@@ -3624,9 +3616,7 @@ int primary_display_ipoh_restore(void)
 			DISPCHECK("[Primary_display]display cmdq trigger loop stop[begin]\n");
 			_cmdq_stop_trigger_loop();
 			DISPCHECK("[Primary_display]display cmdq trigger loop stop[end]\n");
-#if 1
 			ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), NULL, 0);
-#endif
 		}
 	}
 	DISPMSG("primary_display_ipoh_restore Out\n");
@@ -3918,6 +3908,7 @@ static DISP_HELPER_OPT opt_backup_name[OPT_BACKUP_NUM] = {
 	DISP_OPT_BYPASS_OVL
 };
 static int opt_backup_value[OPT_BACKUP_NUM];
+unsigned int idlemgr_flag_backup;
 
 static int disp_enter_svp(SVP_STATE state)
 {
@@ -3934,6 +3925,7 @@ static int disp_enter_svp(SVP_STATE state)
 			/* switch to DL */
 			do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE, pgc->session_id, 0, NULL, 0);
 		}
+		idlemgr_flag_backup = set_idlemgr(0, 0);
 	}
 
 	return 0;
@@ -3948,6 +3940,7 @@ static int disp_leave_svp(SVP_STATE state)
 		for (i = 0; i < OPT_BACKUP_NUM; i++)
 			disp_helper_set_option(opt_backup_name[i], opt_backup_value[i]);
 
+		set_idlemgr(idlemgr_flag_backup, 0);
 	}
 	return 0;
 }
@@ -4102,8 +4095,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 				DISP_HW_HRT_LYAERS_FOR_HI_PERF);
 	}
 
-	if (overlap_layers > DISP_HW_HRT_LYAERS_FOR_LOW_POWER &&
-		primary_display_is_directlink_mode()) {
+	if (overlap_layers > DISP_HW_HRT_LYAERS_FOR_LOW_POWER) {
 		_request_dvfs_perf(OPPI_PERF);
 		dvfs_last_ovl_req = OPPI_PERF;
 	} else {
@@ -5196,9 +5188,7 @@ int primary_display_mipi_clk_change(unsigned int clk_value)
 	cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DISP_RDMA0_EOF);
 
 	dpmgr_path_trigger(pgc->dpmgr_handle, cmdq_handle, CMDQ_ENABLE);
-#if 1
 	ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle), pgc->cmdq_handle_config_esd, 0);
-#endif
 	_cmdq_flush_config_handle_mira(cmdq_handle, 1);
 
 	cmdqRecDestroy(cmdq_handle);
@@ -5691,6 +5681,7 @@ int fbconfig_get_esd_check_test(uint32_t dsi_id, uint32_t cmd, uint8_t *buffer, 
 		goto done;
 	}
 	primary_display_esd_check_enable(0);
+	disp_irq_esd_cust_bycmdq(0);
 	/* / 1: stop path */
 	_cmdq_stop_trigger_loop();
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle))
@@ -5716,6 +5707,7 @@ int fbconfig_get_esd_check_test(uint32_t dsi_id, uint32_t cmd, uint8_t *buffer, 
 	 * all cmdq event will be cleared after suspend */
 	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
 	DISPCHECK("[ESD]start cmdq trigger loop[end]\n");
+	disp_irq_esd_cust_bycmdq(1);
 	primary_display_esd_check_enable(1);
 	_primary_path_unlock(__func__);
 
