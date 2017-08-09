@@ -771,13 +771,61 @@ void mt_afe_hdmi_clk_off(void)/*AudDrv_HDMI_Clk_Off*/
   *****************************************************************************/
 void mt_afe_set_hdmi_clock_source(uint32_t SampleRate, int apllclksel) /*AudDrv_SetHDMIClkSource*/
 {
-	/* TBD */
+#ifdef COMMON_CLOCK_FRAMEWORK_API
+	uint32_t all_clk_rate = 98304000 ; /*48000*2048*/
+	int ret = 0;
+
+	if ((SampleRate == 44100) || (SampleRate == 88200) || (SampleRate == 176400))
+		all_clk_rate = 90316800; /*44100*2048*/
+
+	switch (apllclksel) {
+	case APLL_D4:
+		ret = clk_set_parent(aud_clks[CLOCK_TOP_APLL_SEL].clock,
+			aud_clks[CLOCK_TOP_AUDPLL_D4].clock);
+		if (ret)
+			pr_err("%s clk_set_parent %s-%s fail %d\n",
+			__func__, aud_clks[CLOCK_TOP_APLL_SEL].name,
+			aud_clks[CLOCK_TOP_AUDPLL_D4].name, ret);
+		break;
+	case APLL_D8:
+		ret = clk_set_parent(aud_clks[CLOCK_TOP_APLL_SEL].clock,
+			aud_clks[CLOCK_TOP_AUDPLL_D8].clock);
+		if (ret)
+			pr_err("%s clk_set_parent %s-%s fail %d\n",
+				__func__, aud_clks[CLOCK_TOP_APLL_SEL].name,
+				aud_clks[CLOCK_TOP_AUDPLL_D8].name, ret);
+		break;
+	case APLL_D24:
+		ret = clk_set_parent(aud_clks[CLOCK_TOP_APLL_SEL].clock,
+			aud_clks[CLOCK_TOP_AUDPLL_D24].clock);
+		if (ret)
+			pr_err("%s clk_set_parent %s-%s fail %d\n",
+				__func__, aud_clks[CLOCK_TOP_APLL_SEL].name,
+				aud_clks[CLOCK_TOP_AUDPLL_D24].name, ret);
+		break;
+	case APLL_D16:
+	default: /* default 48k */
+	/* APLL_DIV : 2048/128=16 */
+		ret = clk_set_parent(aud_clks[CLOCK_TOP_APLL_SEL].clock,
+			aud_clks[CLOCK_TOP_AUDPLL_D16].clock);
+		if (ret)
+			pr_err("%s clk_set_parent %s-%s fail %d\n",
+				__func__, aud_clks[CLOCK_TOP_APLL_SEL].name,
+				aud_clks[CLOCK_TOP_AUDPLL_D16].name, ret);
+		break;
+	}
+
+	/*replace pll_fsel*/
+	ret = clk_set_rate(aud_clks[CLOCK_TOP_AUDPLL].clock, all_clk_rate);
+	if (ret)
+		pr_err("%s clk_set_rate %s-%x fail %d\n",
+			__func__, aud_clks[CLOCK_TOP_AUDPLL].name, all_clk_rate, ret);
+#else
 	uint32_t APLL_TUNER_N_INFO = AUDPLL_TUNER_N_98M;
-	uint32_t apll_sdm_pcw = AUDPLL_SDM_PCW_98M;   /* apll tuner always equal to sdm+1 */
+	uint32_t apll_sdm_pcw = AUDPLL_SDM_PCW_98M; /* apll tuner always equal to sdm+1 */
 	uint32_t ck_apll = 0;
 	uint32_t u4HDMI_BCK_DIV;
 	uint32_t BitWidth = 3;    /* default = 32 bits */
-	int ret = 0;
 
 	u4HDMI_BCK_DIV = (128 / ((BitWidth + 1) * 8 * 2) / 2) - 1;
 	if ((u4HDMI_BCK_DIV < 0) || (u4HDMI_BCK_DIV > 63))
@@ -787,45 +835,7 @@ void mt_afe_set_hdmi_clock_source(uint32_t SampleRate, int apllclksel) /*AudDrv_
 		APLL_TUNER_N_INFO = AUDPLL_TUNER_N_90M;
 		apll_sdm_pcw = AUDPLL_SDM_PCW_90M;
 	}
-#ifdef COMMON_CLOCK_FRAMEWORK_API
-	switch (apllclksel) {
-	case APLL_D4:
-	ret = clk_set_parent(aud_clks[CLOCK_TOP_APLL_SEL].clock,
-			aud_clks[CLOCK_TOP_AUDPLL_D4].clock);
-		if (ret)
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-				__func__, aud_clks[CLOCK_TOP_APLL_SEL].name,
-				aud_clks[CLOCK_TOP_AUDPLL_D4].name, ret);
-		break;
-	case APLL_D8:
-		ret = clk_set_parent(aud_clks[CLOCK_TOP_APLL_SEL].clock,
-		aud_clks[CLOCK_TOP_AUDPLL_D8].clock);
-	if (ret)
-		pr_err("%s clk_set_parent %s-%s fail %d\n",
-			__func__, aud_clks[CLOCK_TOP_APLL_SEL].name,
-			aud_clks[CLOCK_TOP_AUDPLL_D8].name, ret);
-		break;
-	case APLL_D24:
-	ret = clk_set_parent(aud_clks[CLOCK_TOP_APLL_SEL].clock,
-		 aud_clks[CLOCK_TOP_AUDPLL_D24].clock);
-	if (ret)
-		pr_err("%s clk_set_parent %s-%s fail %d\n",
-			__func__, aud_clks[CLOCK_TOP_APLL_SEL].name,
-			aud_clks[CLOCK_TOP_AUDPLL_D24].name, ret);
-		break;
-	case APLL_D16:
-	default: /* default 48k */
-	/* APLL_DIV : 2048/128=16 */
-	ret = clk_set_parent(aud_clks[CLOCK_TOP_APLL_SEL].clock,
-		aud_clks[CLOCK_TOP_AUDPLL_D16].clock);
-	if (ret)
-		pr_err("%s clk_set_parent %s-%s fail %d\n",
-			__func__, aud_clks[CLOCK_TOP_APLL_SEL].name,
-			aud_clks[CLOCK_TOP_AUDPLL_D16].name, ret);
-		break;
-	}
 
-#else
 	switch (apllclksel) {
 	case APLL_D4:
 		clkmux_sel(MT_MUX_APLL, 2, "AUDIO");
@@ -844,21 +854,13 @@ void mt_afe_set_hdmi_clock_source(uint32_t SampleRate, int apllclksel) /*AudDrv_
 	}
 	/* Set APLL source clock SDM PCW info */
 #ifdef PM_MANAGER_API
-
-	if (aud_clks[CLOCK_APMIXED_AUDPLL].clk_prepare) {
-		/*replace pll_fsel*/
-		ret = clk_set_rate(aud_clks[CLOCK_APMIXED_AUDPLL].clock, apll_sdm_pcw);
-		if (ret) {
-			pr_err("%s clk_set_rate %s-%x fail %d\n",
-				__func__, aud_clks[CLOCK_APMIXED_AUDPLL].name, apll_sdm_pcw, ret);
-		}
-	}
+	pll_fsel(AUDPLL, apll_sdm_pcw);
 
 	/* Set HDMI BCK DIV  , replaced by set_hdmi_bck_div*/
 	/*mt_afe_set_reg(AUDIO_TOP_CON3, u4HDMI_BCK_DIV << HDMI_BCK_DIV_POS,
 	((0x1 << HDMI_BCK_DIV_LEN) - 1) << HDMI_BCK_DIV_POS);*/
 #else
-	mt_afe_set_reg(AUDPLL_CON1, APLL_SDM_PCW << AUDPLL_SDM_PCW_POS,
+	mt_afe_set_reg(AUDPLL_CON1, apll_sdm_pcw << AUDPLL_SDM_PCW_POS,
 		(0x1 << AUDPLL_SDM_PCW_LEN - 1) << AUDPLL_SDM_PCW_POS);
 	/* Set APLL tuner clock N info */
 	mt_afe_set_reg(AUDPLL_CON3, APLL_TUNER_N_INFO << AUDPLL_TUNER_N_INFO_POS,
@@ -887,12 +889,12 @@ void mt_afe_top_apll_clk_on(void)/*AudDrv_TOP_Apll_Clk_On*/
 	spin_lock_irqsave(&afe_clk_lock, flags);
 	pr_debug("%s aud_apll_tuner_clk_cntr:%d\n", __func__, aud_apll_tuner_clk_cntr);
 
-	if (aud_apll_tuner_clk_cntr == 0) {
+	if (aud_top_apll_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
-		turn_on_apll_tuner_clock();
+		turn_on_top_apll_clock();
 #endif
 	}
-	aud_apll_tuner_clk_cntr++;
+	aud_top_apll_clk_cntr++;
 
 	spin_unlock_irqrestore(&afe_clk_lock, flags);
 }
@@ -904,15 +906,15 @@ void mt_afe_top_apll_clk_off(void)/*AudDrv_TOP_Apll_Clk_Off*/
 	spin_lock_irqsave(&afe_clk_lock, flags);
 	pr_debug("%s aud_apll_tuner_clk_cntr:%d\n", __func__, aud_apll_tuner_clk_cntr);
 
-	aud_apll_tuner_clk_cntr--;
-	if (aud_apll_tuner_clk_cntr == 0) {
+	aud_top_apll_clk_cntr--;
+	if (aud_top_apll_clk_cntr == 0) {
 #ifdef PM_MANAGER_API
-		turn_off_apll_tuner_clock();
+		turn_off_top_apll_clock();
 #endif
-	} else if (aud_apll_tuner_clk_cntr < 0) {
+	} else if (aud_top_apll_clk_cntr < 0) {
 		pr_err("%s aud_apll_tuner_cntr:%d<0\n", __func__, aud_apll_tuner_clk_cntr);
 		AUDIO_ASSERT(true);
-		aud_apll_tuner_clk_cntr = 0;
+		aud_top_apll_clk_cntr = 0;
 	}
 
 	spin_unlock_irqrestore(&afe_clk_lock, flags);

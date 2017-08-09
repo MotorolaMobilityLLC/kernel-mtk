@@ -21,6 +21,7 @@
 /*****************************************************************************
  *                E X T E R N A L   R E F E R E N C E
  *****************************************************************************/
+bool mt_afe_set_hdmi_connection(uint32_t ConnectionState, uint32_t Input, uint32_t Output);
 bool mt_afe_set_connection(uint32_t ConnectionState, uint32_t Input, uint32_t Output);
 
 #endif

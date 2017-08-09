@@ -237,6 +237,14 @@ static bool CheckBitsandReg(short regaddr, char bits)
 	}
 	return true;
 }
+bool mt_afe_set_hdmi_connection(uint32_t ConnectionState, uint32_t Input, uint32_t Output)
+{
+	if (ConnectionState)
+		mt_afe_set_reg(AFE_HDMI_CONN0, (Input << (3 * Input)), (0x7 << (3 * Output)));
+	else
+		mt_afe_set_reg(AFE_HDMI_CONN0, 0x0, 0x3FFFFFFF);
+	return true;
+}
 
 bool mt_afe_set_connection(uint32_t ConnectionState, uint32_t Input, uint32_t Output)/*SetConnectionState*/
 {

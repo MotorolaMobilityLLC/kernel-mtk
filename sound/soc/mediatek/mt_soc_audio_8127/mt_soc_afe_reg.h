@@ -383,7 +383,8 @@
 
 #define AFE_MAXLENGTH           (AFE_BASE+0x07D8)
 
-#define AUDPLL_CON3   (APMIXEDSYS_BASE+0x0408)
+#define AUDPLL_CON1   0x0254/*(APMIXEDSYS_BASE+0x0254) */
+#define AUDPLL_CON3   0x0408/*(APMIXEDSYS_BASE+0x0408)*/
 
 /* apmixed sys AUDPLL_CON4 */
 #define AUDPLL_SDM_PCW_98M       0x3C7EA932
@@ -410,6 +411,9 @@
 #define AUDPLL_TUNER_EN_POS     31
 #define AUDPLL_TUNER_EN_LEN      1
 #define AUDPLL_TUNER_EN_MASK     0x80000000
+
+/*topckgen*/
+#define CLK_CFG_5     0x0090
 
 #define CLK_APLL_SEL_POS     16
 #define CLK_APLL_SEL_LEN     3
@@ -449,6 +453,7 @@ phys_addr_t mt_afe_get_sram_phy_addr(void);
 void mt_afe_log_print(void);
 
 void SetClkCfg(uint32_t offset, uint32_t value, uint32_t mask);
+uint32_t GetClkCfg(uint32_t offset);
 
 
 #endif

@@ -1785,55 +1785,55 @@ void SetHdmiPcmInterConnection(unsigned int connection_state, unsigned int chann
 	/* O20~O27: L/R/LS/RS/C/LFE/CH7/CH8 */
 	switch (channels) {
 	case 8:
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I26,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I26,
 			Soc_Aud_InterConnectionOutput_O26);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I27,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I27,
 			Soc_Aud_InterConnectionOutput_O27);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I24,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I24,
 			Soc_Aud_InterConnectionOutput_O22);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I25,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I25,
 			Soc_Aud_InterConnectionOutput_O23);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I22,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I22,
 			Soc_Aud_InterConnectionOutput_O24);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I23,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I23,
 			Soc_Aud_InterConnectionOutput_O25);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I20,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I20,
 			Soc_Aud_InterConnectionOutput_O20);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I21,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I21,
 			Soc_Aud_InterConnectionOutput_O21);
 		break;
 	case 6:
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I24,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I24,
 			Soc_Aud_InterConnectionOutput_O22);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I25,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I25,
 			Soc_Aud_InterConnectionOutput_O23);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I22,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I22,
 			Soc_Aud_InterConnectionOutput_O24);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I23,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I23,
 			Soc_Aud_InterConnectionOutput_O25);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I20,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I20,
 			Soc_Aud_InterConnectionOutput_O20);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I21,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I21,
 			Soc_Aud_InterConnectionOutput_O21);
 		break;
 	case 4:
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I22,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I22,
 			Soc_Aud_InterConnectionOutput_O24);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I23,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I23,
 			Soc_Aud_InterConnectionOutput_O25);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I20,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I20,
 			Soc_Aud_InterConnectionOutput_O20);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I21,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I21,
 			Soc_Aud_InterConnectionOutput_O21);
 		break;
 	case 2:
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I20,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I20,
 			Soc_Aud_InterConnectionOutput_O20);
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I21,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I21,
 			Soc_Aud_InterConnectionOutput_O21);
 		break;
 	case 1:
-		mt_afe_set_connection(connection_state, Soc_Aud_InterConnectionInput_I20,
+		mt_afe_set_hdmi_connection(connection_state, Soc_Aud_InterConnectionInput_I20,
 			Soc_Aud_InterConnectionOutput_O20);
 		break;
 
