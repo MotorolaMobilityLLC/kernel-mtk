@@ -1727,6 +1727,7 @@ void update_charger_info(int wireless_state)
 
 static void wireless_update(struct wireless_data *wireless_data)
 {
+	static int wireless_status = -1;
 	struct power_supply *wireless_psy = &wireless_data->psy;
 
 	if (BMT_status.charger_exist == KAL_TRUE || g_wireless_state) {
@@ -1740,11 +1741,15 @@ static void wireless_update(struct wireless_data *wireless_data)
 		wireless_data->WIRELESS_ONLINE = 0;
 	}
 
-	power_supply_changed(wireless_psy);
+	if (wireless_status != wireless_data->WIRELESS_ONLINE) {
+		wireless_status = wireless_data->WIRELESS_ONLINE;
+		power_supply_changed(wireless_psy);
+	}
 }
 
 static void ac_update(struct ac_data *ac_data)
 {
+	static int ac_status = -1;
 	struct power_supply *ac_psy = &ac_data->psy;
 
 	if (BMT_status.charger_exist == KAL_TRUE) {
@@ -1771,11 +1776,15 @@ static void ac_update(struct ac_data *ac_data)
 		ac_data->AC_ONLINE = 0;
 	}
 
-	power_supply_changed(ac_psy);
+	if (ac_status != ac_data->AC_ONLINE) {
+		ac_status = ac_data->AC_ONLINE;
+		power_supply_changed(ac_psy);
+	}
 }
 
 static void usb_update(struct usb_data *usb_data)
 {
+	static int usb_status = -1;
 	struct power_supply *usb_psy = &usb_data->psy;
 
 	if (BMT_status.charger_exist == KAL_TRUE) {
@@ -1790,7 +1799,10 @@ static void usb_update(struct usb_data *usb_data)
 		usb_data->USB_ONLINE = 0;
 	}
 
-	power_supply_changed(usb_psy);
+	if (usb_status != usb_data->USB_ONLINE) {
+		usb_status = usb_data->USB_ONLINE;
+		power_supply_changed(usb_psy);
+	}
 }
 
 #endif
