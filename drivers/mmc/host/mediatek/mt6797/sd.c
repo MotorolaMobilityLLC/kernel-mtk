@@ -5143,7 +5143,6 @@ static void msdc_add_host(struct work_struct *work)
 	BUG_ON(!host);
 	mmc = host->mmc;
 	BUG_ON(!mmc);
-
 	ret = mmc_add_host(mmc);
 
 	if (ret) {
@@ -5159,11 +5158,12 @@ static void msdc_add_host(struct work_struct *work)
 }
 static int msdc_drv_probe(struct platform_device *pdev)
 {
-	struct mmc_host *mmc;
-	struct msdc_host *host;
-	void __iomem *base;
-	u32 *hclks;
-	int ret;
+	struct mmc_host *mmc = NULL;
+	struct msdc_host *host = NULL;
+	void __iomem *base = NULL;
+	u32 *hclks = NULL;
+	int ret = 0;
+	u32 delay = 0;
 
 #ifdef FPGA_PLATFORM
 	msdc_fpga_pwr_init();
@@ -5319,8 +5319,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	}
 
 	INIT_DELAYED_WORK(&host->write_timeout, msdc_check_write_timeout);
-	INIT_WORK(&host->work_init, msdc_add_host);
-
+	INIT_DELAYED_WORK(&host->work_init, msdc_add_host);
 	/*INIT_DELAYED_WORK(&host->remove_card, msdc_remove_card);*/
 	spin_lock_init(&host->lock);
 	spin_lock_init(&host->clk_gate_lock);
@@ -5372,9 +5371,16 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	}
 
 	/* ret = mmc_add_host(mmc); */
-	/* Use workqueue to reduce msdc moudle init time */
-	if (!queue_work(wq_init, &host->work_init)) {
-		pr_err("msdc%d queue work failed BUG_ON,[%s]L:%d\n",
+	/* Use workqueue to reduce msdc moudle init time
+	 * device expect eMMC will delay 500ms to ensure
+	 * eMMC is started before other devices */
+	if (host->hw->host_function != MSDC_EMMC)
+		delay = 500;
+	else
+		delay = 0;
+
+	if (!queue_delayed_work(wq_init, &host->work_init, delay * HZ / 1000)) {
+		pr_err("msdc%d queue delay work failed BUG_ON,[%s]L:%d\n",
 			host->id, __func__, __LINE__);
 		BUG();
 	}
@@ -5549,7 +5555,7 @@ static int __init mt_msdc_init(void)
 	int ret;
 
 	/*config tune at workqueue*/
-	wq_init = create_workqueue("msdc-init");
+	wq_init = alloc_ordered_workqueue("msdc-init", 0);
 	if (!wq_init) {
 		pr_err("msdc create work_queue failed.[%s]:%d", __func__, __LINE__);
 		BUG();
