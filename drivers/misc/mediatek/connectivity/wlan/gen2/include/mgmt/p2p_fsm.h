@@ -894,7 +894,7 @@ VOID p2pFsmRunEventWfdSettingUpdate(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prM
 
 #define P2P_GC_MAX_CACHED_SEC_DEV_TYPE_COUNT        8	/* NOTE(Kevin): Shall <= 16 */
 
-#define P2P_MAXIMUM_CLIENT_COUNT                    8
+#define P2P_MAXIMUM_CLIENT_COUNT                    10
 #define P2P_MAXIMUM_NOA_COUNT                       8
 
 #define P2P_MAXIMUM_ATTRIBUTE_LEN                   251

@@ -127,8 +127,11 @@ struct _GL_P2P_INFO_T {
 	UINT_8 aucSecCheckRsp[256];
 #endif
 
-	/* Hotspot Client Management */
-	PARAM_MAC_ADDRESS aucblackMACList[8];
+	/*
+	 * Hotspot Client Management
+	 */
+	/* TODO: It is better to maintain the black MAC address with a linked list. */
+	PARAM_MAC_ADDRESS aucBlackMACList[10];
 	UINT_8 ucMaxClients;
 
 #if CFG_SUPPORT_HOTSPOT_OPTIMIZATION

@@ -1827,27 +1827,27 @@ VOID bssClearClientList(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo)
 /*----------------------------------------------------------------------------*/
 VOID bssAddStaRecToClientList(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN P_STA_RECORD_T prStaRec)
 {
-	P_LINK_T prStaRecOfClientList;
+	P_LINK_T prClientList;
 
 	ASSERT(prBssInfo);
 
-	prStaRecOfClientList = &prBssInfo->rStaRecOfClientList;
+	prClientList = &prBssInfo->rStaRecOfClientList;
 
-	if (!LINK_IS_EMPTY(prStaRecOfClientList)) {
+	if (!LINK_IS_EMPTY(prClientList)) {
 		P_STA_RECORD_T prCurrStaRec;
 
-		LINK_FOR_EACH_ENTRY(prCurrStaRec, prStaRecOfClientList, rLinkEntry, STA_RECORD_T) {
+		LINK_FOR_EACH_ENTRY(prCurrStaRec, prClientList, rLinkEntry, STA_RECORD_T) {
 
 			if (prCurrStaRec == prStaRec) {
-				DBGLOG(BSS, WARN,
-				       "Current Client List already contains that STA_RECORD_T[%pM]\n",
-					prStaRec->aucMacAddr);
+				DBGLOG(BSS, INFO, "Current client list already contains that STA_RECORD_T[%pM]\n",
+				       prStaRec->aucMacAddr);
 				return;
 			}
 		}
 	}
 
-	LINK_INSERT_TAIL(prStaRecOfClientList, &prStaRec->rLinkEntry);
+	DBGLOG(BSS, INFO, "Add STA_RECORD_T[%pM] to the client list\n", prStaRec->aucMacAddr);
+	LINK_INSERT_TAIL(prClientList, &prStaRec->rLinkEntry);
 
 }				/* end of bssAddStaRecToClientList() */
 
@@ -1863,41 +1863,43 @@ VOID bssAddStaRecToClientList(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInf
 /*----------------------------------------------------------------------------*/
 VOID bssRemoveStaRecFromClientList(IN P_ADAPTER_T prAdapter, IN P_BSS_INFO_T prBssInfo, IN P_STA_RECORD_T prStaRec)
 {
-	P_LINK_T prStaRecOfClientList;
+	P_LINK_T prClientList;
 
 	ASSERT(prBssInfo);
 
-	prStaRecOfClientList = &prBssInfo->rStaRecOfClientList;
+	prClientList = &prBssInfo->rStaRecOfClientList;
 
 #if 0
-	if (!LINK_IS_EMPTY(prStaRecOfClientList)) {
+	if (!LINK_IS_EMPTY(prClientList)) {
 		P_STA_RECORD_T prCurrStaRec;
 
-		LINK_FOR_EACH_ENTRY(prCurrStaRec, prStaRecOfClientList, rLinkEntry, STA_RECORD_T) {
+		LINK_FOR_EACH_ENTRY(prCurrStaRec, prClientList, rLinkEntry, STA_RECORD_T) {
 
 			if (prCurrStaRec == prStaRec) {
+				DBGLOG(BSS, INFO, "Remove STA_RECORD_T[%pM] from the client list\n",
+				       prStaRec->aucMacAddr);
+				LINK_REMOVE_KNOWN_ENTRY(prClientList, &prStaRec->rLinkEntry);
+				return;
+			}
+		}
+	}
+#else
+	if (!LINK_IS_EMPTY(prClientList)) {
 
-				LINK_REMOVE_KNOWN_ENTRY(prStaRecOfClientList, &prStaRec->rLinkEntry);
+		P_LINK_ENTRY_T prLinkEntry = (P_LINK_ENTRY_T) NULL;
 
+		LINK_FOR_EACH(prLinkEntry, prClientList) {
+			if ((ULONG) prStaRec == (ULONG) prLinkEntry) {
+				DBGLOG(BSS, INFO, "Remove STA_RECORD_T[%pM] from the client list\n",
+				       prStaRec->aucMacAddr);
+				LINK_REMOVE_KNOWN_ENTRY(prClientList, &prStaRec->rLinkEntry);
 				return;
 			}
 		}
 	}
 #endif
-	if (!LINK_IS_EMPTY(prStaRecOfClientList)) {
-
-		P_LINK_ENTRY_T prLinkEntry = (P_LINK_ENTRY_T) NULL;
-
-		LINK_FOR_EACH(prLinkEntry, prStaRecOfClientList) {
-			if ((ULONG) prStaRec == (ULONG) prLinkEntry) {
-				LINK_REMOVE_KNOWN_ENTRY(prStaRecOfClientList, &prStaRec->rLinkEntry);
-				return;
-			}
-		}
-	}
-
-	DBGLOG(BSS, INFO, "Current Client List didn't contain that STA_RECORD_T[%pM] before removing.\n",
-			   prStaRec->aucMacAddr);
+	DBGLOG(BSS, INFO, "Current client list didn't contain that STA_RECORD_T[%pM] before removing\n",
+	       prStaRec->aucMacAddr);
 
 }				/* end of bssRemoveStaRecFromClientList() */
 #endif /* CFG_SUPPORT_ADHOC || CFG_SUPPORT_AAA */

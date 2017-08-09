@@ -1519,7 +1519,6 @@ p2pFuncValidateAuth(IN P_ADAPTER_T prAdapter,
 		ASSERT_BREAK((prAdapter != NULL) &&
 			     (prSwRfb != NULL) && (pprStaRec != NULL) && (pu2StatusCode != NULL));
 
-		/* P2P 3.2.8 */
 		*pu2StatusCode = STATUS_CODE_REQ_DECLINED;
 
 		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
@@ -1527,10 +1526,28 @@ p2pFuncValidateAuth(IN P_ADAPTER_T prAdapter,
 
 		if ((prP2pBssInfo->eCurrentOPMode != OP_MODE_ACCESS_POINT)
 		    || (prP2pBssInfo->eIntendOPMode != OP_MODE_NUM)) {
-			/* We are not under AP Mode yet. */
+			/* We are not under AP mode yet */
 			fgReplyAuth = FALSE;
 			DBGLOG(P2P, WARN,
 			       "Current OP mode is not under AP mode. (%d)\n", prP2pBssInfo->eCurrentOPMode);
+			break;
+		}
+
+		if (prP2pBssInfo->rStaRecOfClientList.u4NumElem >= P2P_MAXIMUM_CLIENT_COUNT ||
+		    kalP2PReachMaxClients(prAdapter->prGlueInfo, prP2pBssInfo->rStaRecOfClientList.u4NumElem)) {
+			/* GROUP limit full */
+			/* P2P 3.2.8 */
+			DBGLOG(P2P, WARN,
+			       "Group Limit Full. (%d)\n", (INT_16)prP2pBssInfo->rStaRecOfClientList.u4NumElem);
+
+			*pu2StatusCode = STATUS_CODE_ASSOC_DENIED_AP_OVERLOAD;
+			break;
+		}
+
+		if (prAuthFrame->aucSrcAddr &&
+		    kalP2PCmpBlackList(prAdapter->prGlueInfo, prAuthFrame->aucSrcAddr)) {
+			/* STA in the black list of Hotspot */
+			*pu2StatusCode = STATUS_CODE_ASSOC_DENIED_OUTSIDE_STANDARD;
 			break;
 		}
 
@@ -1539,13 +1556,11 @@ p2pFuncValidateAuth(IN P_ADAPTER_T prAdapter,
 		if (!prStaRec) {
 			prStaRec = cnmStaRecAlloc(prAdapter, (UINT_8) NETWORK_TYPE_P2P_INDEX);
 
-			/* TODO(Kevin): Error handling of allocation of STA_RECORD_T for
+			/* TODO(Kevin): Error handling of STA_RECORD_T allocation for
 			 * exhausted case and do removal of unused STA_RECORD_T.
 			 */
-			/* Sent a message event to clean un-used STA_RECORD_T. */
-			ASSERT(prStaRec);
 			if (!prStaRec) {
-				DBGLOG(AAA, INFO, "Station Limit Full. Decline a new Authentication.\n");
+				DBGLOG(P2P, WARN, "StaRec exhausted!! Decline a new Authentication\n");
 				break;
 			}
 
@@ -1554,9 +1569,7 @@ p2pFuncValidateAuth(IN P_ADAPTER_T prAdapter,
 			prSwRfb->ucStaRecIdx = prStaRec->ucIndex;
 
 			prStaRec->u2BSSBasicRateSet = prP2pBssInfo->u2BSSBasicRateSet;
-
 			prStaRec->u2DesiredNonHTRateSet = RATE_SET_ERP_P2P;
-
 			prStaRec->u2OperationalRateSet = RATE_SET_ERP_P2P;
 			prStaRec->ucPhyTypeSet = PHY_TYPE_SET_802_11GN;
 			prStaRec->eStaType = STA_TYPE_P2P_GC;
@@ -1566,6 +1579,8 @@ p2pFuncValidateAuth(IN P_ADAPTER_T prAdapter,
 		} else {
 			prSwRfb->ucStaRecIdx = prStaRec->ucIndex;
 
+			prStaRec->eStaType = STA_TYPE_P2P_GC;
+
 			if ((prStaRec->ucStaState > STA_STATE_1) && (IS_STA_IN_P2P(prStaRec))) {
 
 				cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_1);
@@ -1574,41 +1589,7 @@ p2pFuncValidateAuth(IN P_ADAPTER_T prAdapter,
 
 				bssRemoveStaRecFromClientList(prAdapter, prP2pBssInfo, prStaRec);
 			}
-
 		}
-
-		if (prP2pBssInfo->rStaRecOfClientList.u4NumElem >= P2P_MAXIMUM_CLIENT_COUNT ||
-		    kalP2PMaxClients(prAdapter->prGlueInfo, prP2pBssInfo->rStaRecOfClientList.u4NumElem)) {
-			/* GROUP limit full. */
-			/* P2P 3.2.8 */
-			DBGLOG(P2P, WARN,
-			       "Group Limit Full. (%d)\n", (INT_16) prP2pBssInfo->rStaRecOfClientList.u4NumElem);
-
-			bssRemoveStaRecFromClientList(prAdapter, prP2pBssInfo, prStaRec);
-
-			cnmStaRecFree(prAdapter, prStaRec, FALSE);
-			fgReplyAuth = TRUE;
-			*pu2StatusCode = STATUS_CODE_ASSOC_DENIED_AP_OVERLOAD;
-			break;
-		}
-		/* Hotspot Blacklist */
-		if (prAuthFrame->aucSrcAddr) {
-			if (kalP2PCmpBlackList(prAdapter->prGlueInfo, prAuthFrame->aucSrcAddr)) {
-				fgReplyAuth = TRUE;
-				*pu2StatusCode = STATUS_CODE_ASSOC_DENIED_OUTSIDE_STANDARD;
-				return fgReplyAuth;
-			}
-		}
-
-		/* prStaRec->eStaType = STA_TYPE_INFRA_CLIENT; */
-		prStaRec->eStaType = STA_TYPE_P2P_GC;
-
-		prStaRec->ucNetTypeIndex = NETWORK_TYPE_P2P_INDEX;
-
-		/* Update Station Record - Status/Reason Code */
-		prStaRec->u2StatusCode = STATUS_CODE_SUCCESSFUL;
-
-		prStaRec->ucJoinFailureCount = 0;
 
 		*pprStaRec = prStaRec;
 

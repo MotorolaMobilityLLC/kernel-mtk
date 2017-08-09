@@ -2961,27 +2961,9 @@ WLAN_STATUS p2pRunEventAAAComplete(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T p
 
 		eOriMediaState = prP2pBssInfo->eConnectionState;
 
-		if (prStaRec != NULL)
-			bssRemoveStaRecFromClientList(prAdapter, prP2pBssInfo, prStaRec);
-		else
-			break;
-
-		if (prP2pBssInfo->rStaRecOfClientList.u4NumElem > P2P_MAXIMUM_CLIENT_COUNT ||
-		    kalP2PMaxClients(prAdapter->prGlueInfo, prP2pBssInfo->rStaRecOfClientList.u4NumElem)) {
-			rStatus = WLAN_STATUS_RESOURCES;
-			break;
-		}
-
 		bssAddStaRecToClientList(prAdapter, prP2pBssInfo, prStaRec);
 
 		prStaRec->u2AssocId = bssAssignAssocID(prStaRec);
-
-		if (prP2pBssInfo->rStaRecOfClientList.u4NumElem > P2P_MAXIMUM_CLIENT_COUNT ||
-		    kalP2PMaxClients(prAdapter->prGlueInfo, prP2pBssInfo->rStaRecOfClientList.u4NumElem)) {
-			rStatus = WLAN_STATUS_RESOURCES;
-			break;
-		}
-		DBGLOG(P2P, INFO, "P2P GO Join Complete\n");
 
 		cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_3);
 

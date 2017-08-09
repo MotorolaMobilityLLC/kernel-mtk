@@ -368,13 +368,11 @@ VOID aaaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 							    AUTH_TRANSACTION_SEQ_1, &u2StatusCode)) {
 
 					if (STATUS_CODE_SUCCESSFUL == u2StatusCode) {
-
 						/* 4 <2.2> Validate Auth Frame for Network Specific Conditions */
 						fgReplyAuth =
 						    bowValidateAuth(prAdapter, prSwRfb, &prStaRec, &u2StatusCode);
 
 					} else {
-
 						fgReplyAuth = TRUE;
 					}
 					eNetTypeIndex = NETWORK_TYPE_BOW_INDEX;
@@ -388,21 +386,20 @@ VOID aaaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		return;
 	} while (FALSE);
 
-	if (prStaRec) {
-		/* update RCPI */
-		prStaRec->ucRCPI = prSwRfb->prHifRxHdr->ucRcpi;
-	}
-	/* 4 <3> Update STA_RECORD_T and reply Auth_2(Response to Auth_1) Frame */
+
 	if (fgReplyAuth) {
 
+		/* 4 <3> Update STA_RECORD_T before reply Auth */
 		if (prStaRec) {
+
+			/* Update RCPI */
+			prStaRec->ucRCPI = prSwRfb->prHifRxHdr->ucRcpi;
 
 			if (u2StatusCode == STATUS_CODE_SUCCESSFUL) {
 				if (prStaRec->eAuthAssocState != AA_STATE_IDLE) {
 					DBGLOG(AAA, WARN, "Previous AuthAssocState (%d) != IDLE.\n",
-							   prStaRec->eAuthAssocState);
+					       prStaRec->eAuthAssocState);
 				}
-
 				prStaRec->eAuthAssocState = AAA_STATE_SEND_AUTH2;
 			} else {
 				prStaRec->eAuthAssocState = AA_STATE_IDLE;
@@ -414,7 +411,7 @@ VOID aaaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			/* Update the record join time. */
 			GET_CURRENT_SYSTIME(&prStaRec->rUpdateTime);
 
-			/* Update Station Record - Status/Reason Code */
+			/* Update Status/Reason Code */
 			prStaRec->u2StatusCode = u2StatusCode;
 
 			prStaRec->ucAuthAlgNum = AUTH_ALGORITHM_NUM_OPEN_SYSTEM;
@@ -423,10 +420,12 @@ VOID aaaFsmRunEventRxAuth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 			ASSERT(!(u2StatusCode == STATUS_CODE_SUCCESSFUL));
 		}
 
-		/* NOTE: Ignore the return status for AAA */
-		/* 4 <4> Reply  Auth */
+		/* 4 <4> Reply Auth_2 Frame */
 		authSendAuthFrame(prAdapter, prStaRec, eNetTypeIndex, prSwRfb, AUTH_TRANSACTION_SEQ_2, u2StatusCode);
 
+	} else {
+		if (prStaRec)
+			cnmStaRecFree(prAdapter, prStaRec, FALSE);
 	}
 
 }				/* end of aaaFsmRunEventRxAuth() */
