@@ -43,9 +43,9 @@ struct mtk_config {
 	struct clk *clk_ap_dma;
 #endif
 
-	unsigned int max_volt;
+	unsigned int max_vol;
 	unsigned int max_freq;
-	unsigned int min_volt;
+	unsigned int min_vol;
 	unsigned int min_freq;
 };
 
@@ -115,9 +115,6 @@ struct mtk_config {
 #define SPM_RSV_BIT_DVFS_EN      (1<<1)
 
 #define M3_REC0          0x800
-#define SPM_TAB_S(size)	        (0x800)
-#define SPM_TAB_F(size, idx)    (0x800+4*((i)+1))
-#define SPM_TAB_V(size, idx)    (0x800+4*((i)+(size)+1))
 
 #define SPM_PROJECT_CODE            (0xB16<<16)
 #define CON0_PCM_KICK_L             (1<<0)
@@ -181,15 +178,11 @@ unsigned int mtk_kbase_spm_get_dvfs_en(void);
 
 void mtk_kbase_spm_set_vol_freq_ceiling(unsigned int v, unsigned int f);
 void mtk_kbase_spm_set_vol_freq_floor(unsigned int v, unsigned int f);
-void mtk_kbase_spm_set_vol_freq_cf(unsigned int cv, unsigned int cf, unsigned int fv, unsigned int ff);
+/* special case, ceiling = floor */
+void mtk_kbase_spm_fix_vol_freq(unsigned int v, unsigned int f);
 
 void mtk_kbase_spm_boost(unsigned int idx, unsigned int cnt);
 
-void mtk_kbase_spm_update_table(void);
-
 void mtk_kbase_spm_hal_init(void);
-
-void mtk_gpu_spm_fix_by_idx(unsigned int idx);
-void mtk_gpu_spm_reset_fix(void);
 
 #endif
