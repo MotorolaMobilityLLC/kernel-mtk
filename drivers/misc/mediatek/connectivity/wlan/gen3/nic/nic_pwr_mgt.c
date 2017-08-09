@@ -293,7 +293,16 @@ VOID nicpmSetFWOwn(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnableGlobalInt)
 
 	ASSERT(prAdapter);
 
+	HAL_MCR_RD(prAdapter, MCR_WHLPCR, &u4RegValue);
+
+	if (((prAdapter->fgIsFwOwn == TRUE) && (u4RegValue & WHLPCR_FW_OWN_REQ_SET))
+	|| ((prAdapter->fgIsFwOwn == FALSE) && ((u4RegValue & WHLPCR_FW_OWN_REQ_SET) == 0)))
+		DBGLOG(NIC, ERROR, "FW OWN should be %x, WHLPCR=%x\n", !(prAdapter->fgIsFwOwn), u4RegValue);
+
 	if (prAdapter->fgIsFwOwn == TRUE)
+		return;
+
+	if ((u4RegValue & WHLPCR_FW_OWN_REQ_SET) == 0)
 		return;
 
 	if (nicProcessIST(prAdapter) != WLAN_STATUS_NOT_INDICATING) {
