@@ -999,7 +999,7 @@ INT32 mtk_wcn_consys_hw_restore(struct device *device)
 #if defined(CONFIG_ARCH_MT6797)
 		emi_mpu_set_region_protection(gConEmiPhyBase + SZ_1M / 2,
 							gConEmiPhyBase + SZ_1M - 1,
-							13,
+							19,
 							SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 							FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
 #else
@@ -1079,7 +1079,7 @@ INT32 mtk_wcn_consys_hw_init(void)
 #if defined(CONFIG_ARCH_MT6797)
 		emi_mpu_set_region_protection(gConEmiPhyBase + SZ_1M / 2,
 							gConEmiPhyBase + SZ_1M - 1,
-							13,
+							19,
 							SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 							FORBIDDEN, NO_PROTECTION, FORBIDDEN, NO_PROTECTION));
 
