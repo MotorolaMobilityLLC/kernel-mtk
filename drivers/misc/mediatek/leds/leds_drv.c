@@ -31,7 +31,6 @@
 #include <leds_hal.h>
 #include "leds_drv.h"
 #include <mt-plat/mt_pwm.h>
-#include <mt-plat/upmu_common.h>
 
 #ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557
 #include <linux/of_gpio.h>
