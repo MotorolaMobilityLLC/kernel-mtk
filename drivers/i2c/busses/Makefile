@@ -87,6 +87,7 @@ obj-$(CONFIG_I2C_XLR)		+= i2c-xlr.o
 obj-$(CONFIG_I2C_RCAR)		+= i2c-rcar.o
 ifneq ($(CONFIG_MTK_I2C_EXTENSION),y)
 obj-$(CONFIG_MTK_I2C)		+= i2c-mtk.o
+obj-$(CONFIG_MTK_I2C)		+= i2c_mtk_debug.o
 endif
 
 # External I2C/SMBus adapter drivers
