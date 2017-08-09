@@ -7,6 +7,8 @@
 #include <linux/mutex.h>
 #include <linux/delay.h>
 
+#include <mt_gpufreq.h>
+
 void mtk_kbase_dpm_setup(int *dfp_weights)
 {
 	int i;
@@ -147,8 +149,8 @@ void mtk_kbase_spm_set_dvfs_en(unsigned int en)
 
 static void spm_vf_adjust(unsigned int* pv, unsigned int* pf)
 {
-	if (pv && *pv > g_config->max_vol) *pv = g_config->max_vol;
-	if (pv && *pv < g_config->min_vol) *pv = g_config->min_vol;
+	if (pv && *pv > g_config->max_volt) *pv = g_config->max_volt;
+	if (pv && *pv < g_config->min_volt) *pv = g_config->min_volt;
 	if (pf && *pf > g_config->max_freq) *pf = g_config->max_freq;
 	if (pf && *pf < g_config->min_freq) *pf = g_config->min_freq;
 }
@@ -181,19 +183,20 @@ void mtk_kbase_spm_set_vol_freq_floor(unsigned int v, unsigned int f)
 	mtk_kbase_spm_wait();
 	spm_release();
 }
-void mtk_kbase_spm_fix_vol_freq(unsigned int v, unsigned int f)
+void mtk_kbase_spm_set_vol_freq_cf(unsigned int cv, unsigned int cf, unsigned int fv, unsigned int ff)
 {
 	int en;
-	spm_vf_adjust(&v, &f);
+	spm_vf_adjust(&cv, &cf);
+	spm_vf_adjust(&fv, &ff);
 	spm_acquire();
 	en = DVFS_GPU_read32(SPM_RSV_CON);
 	DVFS_GPU_write32(SPM_RSV_CON, 0);
 	mtk_kbase_spm_wait();
 	/* special case, ceiling = floor */
-	DVFS_GPU_write32(SPM_SW_CEIL_V, v);
-	DVFS_GPU_write32(SPM_SW_CEIL_F, f);
-	DVFS_GPU_write32(SPM_SW_FLOOR_V, v);
-	DVFS_GPU_write32(SPM_SW_FLOOR_F, f);
+	DVFS_GPU_write32(SPM_SW_CEIL_V, cv);
+	DVFS_GPU_write32(SPM_SW_CEIL_F, cf);
+	DVFS_GPU_write32(SPM_SW_FLOOR_V, fv);
+	DVFS_GPU_write32(SPM_SW_FLOOR_F, ff);
 	DVFS_GPU_write32(SPM_RSV_CON, en);
 	mtk_kbase_spm_wait();
 	spm_release();
@@ -208,6 +211,28 @@ void mtk_kbase_spm_boost(unsigned int idx, unsigned int cnt)
 	mtk_kbase_spm_wait();
 	DVFS_GPU_write32(SPM_SW_BOOST_IDX, idx);
 	DVFS_GPU_write32(SPM_SW_BOOST_CNT, cnt);
+	DVFS_GPU_write32(SPM_RSV_CON, en);
+	mtk_kbase_spm_wait();
+	spm_release();
+}
+
+void mtk_kbase_spm_update_table(void)
+{
+	int i, num;
+	int en;
+	spm_acquire();
+	en = DVFS_GPU_read32(SPM_RSV_CON);
+	DVFS_GPU_write32(SPM_RSV_CON, 0);
+	mtk_kbase_spm_wait();
+
+	num = mt_gpufreq_get_dvfs_table_num();
+	mtk_kbase_spm_wait();
+	for (i = 0; i < num; ++i)
+	{
+		unsigned int volt = (mt_gpufreq_get_volt_by_idx(i) - 10) / 100; // to mA
+		DVFS_GPU_write32(SPM_TAB_V(num, i), volt);
+	}
+
 	DVFS_GPU_write32(SPM_RSV_CON, en);
 	mtk_kbase_spm_wait();
 	spm_release();

@@ -40,6 +40,7 @@ extern unsigned int mt_gpufreq_target(unsigned int idx);
 extern unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable);
 extern unsigned int mt_gpufreq_update_volt(unsigned int pmic_volt[], unsigned int array_size);
 extern unsigned int mt_gpufreq_get_freq_by_idx(unsigned int idx);
+extern unsigned int mt_gpufreq_get_volt_by_idx(unsigned int idx);
 extern void mt_gpufreq_thermal_protect(unsigned int limited_power);
 extern void mt_gpufreq_restore_default_volt(void);
 extern void mt_gpufreq_enable_by_ptpod(void);
@@ -74,10 +75,21 @@ typedef void (*gpufreq_input_boost_notify)(unsigned int);
 extern void mt_gpufreq_input_boost_notify_registerCB(gpufreq_input_boost_notify pCB);
 
 /*****************
+ * update voltage notification
+ ******************/
+typedef void (*gpufreq_ptpod_update_notify)(void);
+extern void mt_gpufreq_update_volt_registerCB(gpufreq_ptpod_update_notify pCB);
+
+/*****************
  * profiling purpose
  ******************/
 typedef void (*sampler_func)(unsigned int);
 extern void mt_gpufreq_setfreq_registerCB(sampler_func pCB);
 extern void mt_gpufreq_setvolt_registerCB(sampler_func pCB);
+
+#ifdef MTK_GPU_SPM
+void mtk_gpu_spm_fix_by_idx(unsigned int idx);
+void mtk_gpu_spm_reset_fix(void);
+#endif
 
 #endif

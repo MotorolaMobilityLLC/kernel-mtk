@@ -13,6 +13,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 endif
 
+ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
+
 obj-y += mt_pm_init.o
 obj-y += mt_clkbuf_ctl.o
 obj-y += mt_dcm.o
