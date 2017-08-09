@@ -706,4 +706,28 @@ void __spm_bsi_top_init_setting(void)
 		spm_write(spm_bsi1cfg + 0x2030, 0x1);
 }
 
+void __spm_pmic_pg_force_on(void)
+{
+	pmic_config_interface_nolock(MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_ADDR,
+			0x1,
+			MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_MASK,
+			MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_SHIFT);
+	pmic_config_interface_nolock(MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_ADDR,
+			0x1,
+			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_MASK,
+			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_SHIFT);
+}
+
+void __spm_pmic_pg_force_off(void)
+{
+	pmic_config_interface_nolock(MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_ADDR,
+			0x0,
+			MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_MASK,
+			MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_SHIFT);
+	pmic_config_interface_nolock(MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_ADDR,
+			0x0,
+			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_MASK,
+			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_SHIFT);
+}
+
 MODULE_DESCRIPTION("SPM-Internal Driver v0.1");

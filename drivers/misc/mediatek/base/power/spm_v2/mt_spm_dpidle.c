@@ -518,6 +518,8 @@ static void spm_dpidle_pre_process(void)
 {
 	u32 value = 0;
 
+	__spm_pmic_pg_force_on();
+
 	spm_pmic_power_mode(PMIC_PWR_DEEPIDLE, 0, 0);
 
 	spm_bypass_boost_gpio_set();
@@ -572,6 +574,8 @@ static void spm_dpidle_post_process(void)
 
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
+
+	__spm_pmic_pg_force_off();
 }
 
 wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)

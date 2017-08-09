@@ -277,6 +277,8 @@ static void spm_sodi3_pre_process(void)
 {
 	u32 val;
 
+	__spm_pmic_pg_force_on();
+
 	mmu_smi_async_cfg = reg_read(MMU_SMI_ASYNC_CFG);
 	reg_write(MMU_SMI_ASYNC_CFG, mmu_smi_async_cfg | SMI_COMMON_ASYNC_DCM);
 
@@ -312,6 +314,8 @@ static void spm_sodi3_post_process(void)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
 
 	reg_write(MMU_SMI_ASYNC_CFG, mmu_smi_async_cfg);
+
+	__spm_pmic_pg_force_off();
 }
 
 wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)

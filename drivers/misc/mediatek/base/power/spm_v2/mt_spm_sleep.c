@@ -4,14 +4,7 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #include <linux/string.h>
-#include <linux/aee.h>
 #include <linux/of_fdt.h>
-#include <linux/io.h>
-#ifdef CONFIG_OF
-#include <linux/of_address.h>
-#else
-#include <mach/mt_reg_base.h>
-#endif
 #include <asm/setup.h>
 
 #ifndef CONFIG_ARM64
@@ -19,38 +12,22 @@
 #else
 #include <linux/irqchip/mt-gic.h>
 #endif
-#include <mach/mt_cirq.h>
-#include <mach/mt_spm_sleep.h>
+#include <mt-plat/mt_cirq.h>
 #include <mach/mt_clkmgr.h>
-#include <mach/mt_cpuidle.h>
+#include "mt_cpuidle.h"
 #ifdef CONFIG_MTK_WD_KICKER
 #include <mach/wd_api.h>
 #endif
-#include <mach/eint.h>
-#include <mach/mtk_ccci_helper.h>
-#include <mach/mt_cpufreq.h>
-#include <mach/upmu_common.h>
-#include "./mt_spm_pmic_wrap.h"
-#include <mach/mt_spm_misc.h>
-
-#ifndef MTK_TABLET_TURBO
-#define PMIC_MODE_PATCH
-#else
-/* TABLET TURBO mode changes pmic command for speical usage, can not apply PMIC_MODE_PATCH */
-#endif
-
-#ifdef PMIC_MODE_PATCH
-#include <mach/pmic_mt6325_sw.h>
-/* Note: following define needs to sync with mt_cpufreq.c*/
-#define PMIC_ADDR_VCORE_VOSEL_ON     0x0664  /* [6:0]                    */
-#define VOLT_TO_PMIC_VAL(volt)  (((volt) - 60000 + 625 - 1) / 625) /* ((((volt) - 700 * 100 + 625 - 1) / 625) */
-#endif
+#include "mt_cpufreq.h"
+#include <mt-plat/upmu_common.h>
+#include "mt_spm_misc.h"
 
 #if 1
-#include <mach/mt_dramc.h>
+#include <mt_dramc.h>
 #endif
 
 #include "mt_spm_internal.h"
+#include "mt_spm_pmic_wrap.h"
 
 /**************************************
  * only for internal debug
@@ -240,6 +217,8 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 	unsigned int temp;
 
+	__spm_pmic_pg_force_on();
+
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 
 	/* set PMIC WRAP table for suspend power control */
@@ -275,7 +254,9 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 		spm_dpd_dram_init();
 
 	/* set PMIC WRAP table for normal power control */
-	/* mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL); */
+	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
+
+	__spm_pmic_pg_force_off();
 }
 
 static void spm_set_sysclk_settle(void)
@@ -395,8 +376,10 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		spm_crit2("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
 			  spm_ap_mdsrc_req_cnt, spm_read(SPM_POWER_ON_VAL1) & (1 << 17));
 
+#if 0
 	if (wakesta->r12 & WAKE_SRC_R12_EINT_EVENT_B)
 		mt_eint_print_status();
+#endif
 
 #if 0
 	if (wakesta->debug_flag & (1 << 18)) {
@@ -409,10 +392,20 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		BUG();
 	}
 #endif
+
+#if 0
+#ifdef CONFIG_MTK_CCCI_DEVICES
+	/* if (wakesta->r13 & 0x18) { */
+		spm_crit2("dump ID_DUMP_MD_SLEEP_MODE");
+		exec_ccci_kern_func_by_md_id(0, ID_DUMP_MD_SLEEP_MODE, NULL, 0);
+	/* } */
+#endif
+
 #ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_MTK_ECCCI_DRIVER
 	if (wakesta->r12 & WAKE_SRC_R12_CLDMA_EVENT_B)
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
+#endif
 #endif
 #endif
 	return wr;
@@ -488,7 +481,14 @@ void spm_suspend_aee_init(void)
 
 #ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_MTK_PMIC
-#include <cust_pmic.h>
+/* #include <cust_pmic.h> */
+#ifndef DISABLE_DLPT_FEATURE
+/* extern int get_dlpt_imix_spm(void); */
+int __attribute__((weak)) get_dlpt_imix_spm(void)
+{
+	return 0;
+}
+#endif
 #endif
 #endif
 
@@ -548,7 +548,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	spm_suspend_pre_process(pwrctrl);
 
-#if 1
+#if 0
 	/* snapshot golden setting */
 	{
 		if (!is_already_snap_shot)
@@ -585,7 +585,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	__spm_check_md_pdn_power_control(pwrctrl);
 
-	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
+	/* __spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl); */
 
 	__spm_set_power_control(pwrctrl);
 

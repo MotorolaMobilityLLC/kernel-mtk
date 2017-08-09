@@ -357,6 +357,8 @@ extern bool is_md_c2k_conn_power_off(void);
 extern void __spm_backup_pmic_ck_pdn(void);
 extern void __spm_restore_pmic_ck_pdn(void);
 extern void __spm_bsi_top_init_setting(void);
+extern void __spm_pmic_pg_force_on(void);
+extern void __spm_pmic_pg_force_off(void);
 
 /**************************************
  * Macro and Inline
