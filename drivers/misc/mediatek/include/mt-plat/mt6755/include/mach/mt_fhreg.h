@@ -2,8 +2,6 @@
 #define __MT_FHREG_H__
 
 #include <linux/bitops.h>
-/* #include <mach/mt_reg_base.h> */
-
 
 /*--------------------------------------------------------------------------*/
 /* Common Macro                                                             */
@@ -11,7 +9,6 @@
 #ifdef CONFIG_OF
 
 #ifdef CONFIG_ARM64
-
 #define REG_ADDR(x)                 ((unsigned long)g_fhctl_base   + (x))
 #define REG_APMIX_ADDR(x)           ((unsigned long)g_apmixed_base + (x))
 #define REG_DDRPHY_ADDR(x)          ((unsigned long)g_ddrphy_base  + (x))
@@ -22,9 +19,9 @@
 #endif
 
 #else
-#define REG_ADDR(x)                 (FHCTL_BASE   + (x))
-#define REG_APMIX_ADDR(x)           (APMIXED_BASE + (x))
-#define REG_DDRPHY_ADDR(x)          (DDRPHY_BASE  + (x))
+#define REG_ADDR(x)                 ((0xF0209F00) + (x))
+#define REG_APMIX_ADDR(x)           ((0xF0209000) + (x))
+#define REG_DDRPHY_ADDR(x)          ((0xF000F000) + (x))
 #endif
 
 #define REG_FHCTL_HP_EN     REG_ADDR(0x0000)
@@ -85,30 +82,43 @@
 #define REG_FHCTL6_DVFS     REG_ADDR(0x00BC)
 #define REG_FHCTL6_MON      REG_ADDR(0x00C0)
 
-/* **************************************************** */
-/* APMIXED CON0/CON1 Register */
-/* **************************************************** */
+#define REG_FHCTL7_CFG      REG_ADDR(0x00C4)
+#define REG_FHCTL7_UPDNLMT  REG_ADDR(0x00C8)
+#define REG_FHCTL7_DDS      REG_ADDR(0x00CC)
+#define REG_FHCTL7_DVFS     REG_ADDR(0x00D0)
+#define REG_FHCTL7_MON      REG_ADDR(0x00D4)
 
+#define REG_FHCTL8_CFG      REG_ADDR(0x00D8)
+#define REG_FHCTL8_UPDNLMT  REG_ADDR(0x00DC)
+#define REG_FHCTL8_DDS      REG_ADDR(0x00E0)
+#define REG_FHCTL8_DVFS     REG_ADDR(0x00E4)
+#define REG_FHCTL8_MON      REG_ADDR(0x00E8)
+
+/****************************************************
+	APMIXED CON0/CON1 Register
+ ***************************************************/
 /*CON0, PLL enable status */
-#define REG_ARMPLL_CON0     REG_APMIX_ADDR(0x0200)
-#define REG_MAINPLL_CON0    REG_APMIX_ADDR(0x0210)
-/* #define REG_MEMPLL_CON0     REG_DDRPHY_ADDR(0x0600) ///< Bit[28] RG_MEMPLL_EN */
-#define REG_MMPLL_CON0      REG_APMIX_ADDR(0x0230)
-#define REG_VENCPLL_CON0    REG_APMIX_ADDR(0x0250)
-#define REG_MSDCPLL_CON0    REG_APMIX_ADDR(0x0240)
-#define REG_TVDPLL_CON0     REG_APMIX_ADDR(0x0260)
+#define REG_ARMCA15PLL_CON0 REG_APMIX_ADDR(0x0200)
+#define REG_ARMCA7PLL_CON0  REG_APMIX_ADDR(0x0210)
+#define REG_MAINPLL_CON0    REG_APMIX_ADDR(0x0220)
+#define REG_MEMPLL_CON0     REG_DDRPHY_ADDR(0x0604) /*< Bit[28] RG_MEMPLL_EN */
+#define REG_MMPLL_CON0      REG_APMIX_ADDR(0x0240)
+#define REG_MPLL_CON0       REG_APMIX_ADDR(0x0280)
+#define REG_VENCPLL_CON0    REG_APMIX_ADDR(0x0260)
+#define REG_MSDCPLL_CON0    REG_APMIX_ADDR(0x0250)
+#define REG_TVDPLL_CON0     REG_APMIX_ADDR(0x0270)
 
 /*CON1, DDS value */
-#define REG_ARMPLL_CON1     REG_APMIX_ADDR(0x0204)
-#define REG_MAINPLL_CON1    REG_APMIX_ADDR(0x0214)
-/* /MEMPLL_CON1 field mapping. Integer: [31:25] => FHCTL_DDS[20:14] ; Fraction: [24:1] => FHCTL_DDS[13:0] */
-#define REG_MEMPLL_CON1     REG_DDRPHY_ADDR(0x0624)
-#define REG_MMPLL_CON1      REG_APMIX_ADDR(0x0234)
-#define REG_VENCPLL_CON1    REG_APMIX_ADDR(0x0254)
-#define REG_MSDCPLL_CON1    REG_APMIX_ADDR(0x0244)
-#define REG_TVDPLL_CON1     REG_APMIX_ADDR(0x0264)
-/* **************************************************** */
-
+#define REG_ARMCA15PLL_CON1 REG_APMIX_ADDR(0x0204)
+#define REG_ARMCA7PLL_CON1  REG_APMIX_ADDR(0x0214)
+#define REG_MAINPLL_CON1    REG_APMIX_ADDR(0x0224)
+#define REG_MEMPLL_CON1     REG_DDRPHY_ADDR(0x0600) /*< Bit[30:10] DDS,  Bit[31] Update DDS */
+#define REG_MMPLL_CON1      REG_APMIX_ADDR(0x0244)
+#define REG_MPLL_CON1       REG_APMIX_ADDR(0x0284)
+#define REG_VENCPLL_CON1    REG_APMIX_ADDR(0x0264)
+#define REG_MSDCPLL_CON1    REG_APMIX_ADDR(0x0254)
+#define REG_TVDPLL_CON1     REG_APMIX_ADDR(0x0274)
+/****************************************************/
 
 static inline unsigned int uffs(unsigned int x)
 {
@@ -146,8 +156,8 @@ static inline unsigned int uffs(unsigned int x)
 #define fh_write16(reg, val)     mt_reg_sync_writew((val), (reg))
 #define fh_write32(reg, val)     mt_reg_sync_writel((val), (reg))
 
-/* #define fh_set_bits(reg,bs)     ((*(volatile u32*)(reg)) |= (u32)(bs)) */
-/* #define fh_clr_bits(reg,bs)     ((*(volatile u32*)(reg)) &= ~((u32)(bs))) */
+/*#define fh_set_bits(reg,bs)     ((*(volatile u32*)(reg)) |= (u32)(bs))*/
+/*#define fh_clr_bits(reg,bs)     ((*(volatile u32*)(reg)) &= ~((u32)(bs)))*/
 
 #define fh_set_field(reg, field, val) \
 	do {	\
@@ -163,4 +173,5 @@ static inline unsigned int uffs(unsigned int x)
 		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
 	} while (0)
 
-#endif				/* #ifndef __MT_FHREG_H__ */
+#endif /* #ifndef __MT_FHREG_H__ */
+
