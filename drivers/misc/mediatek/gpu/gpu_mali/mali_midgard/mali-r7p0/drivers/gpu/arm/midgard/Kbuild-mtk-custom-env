@@ -51,10 +51,6 @@ ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
 ccflags-y += -DENABLE_COMMON_DVFS
 endif
 
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6797")
-ccflags-y += -DLIMIT_DVFS_520
-endif
-
 VER := $(if $(filter eng,$(TARGET_BUILD_VARIANT)),eng,user)
 
 ifeq ($(VER),eng)

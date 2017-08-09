@@ -3,7 +3,7 @@
 #To Add 1.environment variable
 include $(src)/../../Kbuild-mtk-custom-env
 
-ccflags-y += -DMTK_GPU_APM
+#ccflags-y += -DMTK_GPU_APM
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
 #ccflags-y += -DMTK_GPU_DPM
 #ccflags-y += -DMTK_GPU_OCP
