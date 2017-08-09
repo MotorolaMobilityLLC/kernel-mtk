@@ -2,7 +2,6 @@
 #include <linux/module.h>
 #include <linux/delay.h>
 
-#include <mt-plat/mt_typedefs.h>
 #include "pwrap_hal.h"
 #include "mt_spm_pmic_wrap.h"
 
