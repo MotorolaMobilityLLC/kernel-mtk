@@ -536,13 +536,21 @@ int IMM_IsAdcInitReady(void)
 
 int IMM_get_adc_channel_num(char *channel_name, int len)
 {
-	unsigned int i;
+	unsigned int i = 0;
+	int ret = 0;
 
-	pr_debug("[ADC] name = %s\n", channel_name);
-	pr_debug("[ADC] name_len = %d\n", len);
+	if (NULL == channel_name) {
+		pr_err("[ADC] error: channel_name is NULL!\n");
+		return -1;
+	}
+
+	pr_debug("[ADC] name=%s, name_len=%d\n", channel_name, len);
 	for (i = 0; i < ADC_CHANNEL_MAX; i++) {
-		if (!strncmp(channel_name, g_adc_info[i].channel_name, len))
-			return g_adc_info[i].channel_number;
+		if (NULL != g_adc_info[i].channel_name) {
+			ret = strncmp(channel_name, g_adc_info[i].channel_name, len);
+			if (!ret)
+				return g_adc_info[i].channel_number;
+		}
 	}
 	pr_err("[ADC] find channel number failed\n");
 	return -1;
