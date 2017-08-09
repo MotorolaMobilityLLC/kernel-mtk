@@ -1205,7 +1205,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 		mutex_lock(&DecEMILock);
 		gu4DecEMICounter++;
-		MODULE_MFV_LOGE("[VCODEC] DEC_EMI_USER = %d\n", gu4DecEMICounter);
+		MODULE_MFV_LOGD("[VCODEC] DEC_EMI_USER = %d\n", gu4DecEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_to_user(user_data_addr, &gu4DecEMICounter, sizeof(VAL_UINT32_T));
 		if (ret) {
@@ -1225,7 +1225,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 		mutex_lock(&DecEMILock);
 		gu4DecEMICounter--;
-		MODULE_MFV_LOGE("[VCODEC] DEC_EMI_USER = %d\n", gu4DecEMICounter);
+		MODULE_MFV_LOGD("[VCODEC] DEC_EMI_USER = %d\n", gu4DecEMICounter);
 		user_data_addr = (VAL_UINT8_T *)arg;
 		ret = copy_to_user(user_data_addr, &gu4DecEMICounter, sizeof(VAL_UINT32_T));
 		if (ret) {
