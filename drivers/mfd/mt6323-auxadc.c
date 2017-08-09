@@ -349,6 +349,9 @@ unsigned int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd)
 	u32 adc_result_raw;
 	u32 adc_result;
 
+	if (!auxadc)
+		return -EPROBE_DEFER;
+
 	/* do not support BATON2 and THR SENSE2 for sw workaround */
 	if (dwChannel == 0 || dwChannel == 2)
 		return 0;
