@@ -27,7 +27,8 @@ typedef enum {
 	DISP_IF_TYPE_DSIDUAL,
 	DISP_IF_HDMI = 7,
 	DISP_IF_HDMI_SMARTBOOK,
-	DISP_IF_MHL
+	DISP_IF_MHL,
+	DISP_IF_EPD
 } DISP_IF_TYPE;
 
 typedef enum {
@@ -146,6 +147,14 @@ typedef enum {
 	DISP_OUTPUT_DECOUPLE = 2,
 } DISP_DC_TYPE;
 
+typedef enum {
+	TRIGGER_NORMAL,
+	TRIGGER_SUSPEND,
+	TRIGGER_RESUME,
+
+	TRIGGER_MODE_MAX_NUM
+} EXTD_TRIGGER_MODE;
+
 typedef struct disp_session_config_t {
 	DISP_SESSION_TYPE type;
 	unsigned int device_id;
@@ -155,6 +164,7 @@ typedef struct disp_session_config_t {
 	unsigned int present_fence_idx;
 	DISP_DC_TYPE dc_type;
 	int need_merge;
+	EXTD_TRIGGER_MODE tigger_mode;
 } disp_session_config;
 
 typedef struct {

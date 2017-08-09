@@ -5,7 +5,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/$(MTK_PLATFORM)/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/ \
-             -I$(srctree)/drivers/misc/mediatek/base/power/mt6735/
+             -I$(srctree)/drivers/misc/mediatek/base/power/mt6735/ \
+             -I$(srctree)/drivers/misc/mediatek/lcm/inc
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM) \
                     -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/mt6735

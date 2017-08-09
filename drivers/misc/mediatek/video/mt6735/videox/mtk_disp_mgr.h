@@ -18,6 +18,4 @@ extern disp_session_input_config *cached_session_input;
 extern disp_mem_output_config *captured_session_output;
 extern disp_mem_output_config *cached_session_output;
 
-extern wait_queue_head_t ovl1_wait_queue;
-
 #endif

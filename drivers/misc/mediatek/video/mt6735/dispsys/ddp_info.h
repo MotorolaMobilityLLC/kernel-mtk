@@ -106,15 +106,6 @@ typedef struct {
 	unsigned int fps;
 } disp_ddp_path_config;
 
-typedef struct {
-	unsigned int old_session;
-	unsigned int old_mode;
-	unsigned int cur_mode;
-	unsigned int ext_req;
-	unsigned int switching;
-	unsigned int ext_sid;
-} SWITCH_MODE_INFO_STRUCT;
-
 typedef int (*ddp_module_notify)(DISP_MODULE_ENUM, DISP_PATH_EVENT);
 
 typedef struct DDP_MODULE_DRIVER {

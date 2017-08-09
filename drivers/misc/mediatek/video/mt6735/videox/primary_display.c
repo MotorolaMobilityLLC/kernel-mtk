@@ -71,6 +71,7 @@
 #include "mtk_disp_mgr.h"
 #include "ddp_wdma.h"
 
+
 #ifndef MT_CG_DISP0_DISP_WDMA0
 #define MT_CG_DISP0_DISP_WDMA0	(13+64)
 #endif
@@ -4174,7 +4175,6 @@ static int _ovl2mem_fence_release_worker_thread(void *data)
 /* static struct task_struct *fence_release_worker_task = NULL; */
 
 /* extern unsigned int ddp_ovl_get_cur_addr(bool rdma_mode, int layerid); */
-/* extern wait_queue_head_t ovl1_wait_queue; */
 
 static void _wdma_fence_release_callback(uint32_t userdata)
 {
@@ -4209,13 +4209,11 @@ static int _ovl_fence_release_callback(uint32_t userdata)
 
 	MMProfileLogEx(ddp_mmp_get_events()->session_release, MMProfileFlagStart, 1, userdata);
 	/* releaes OVL1 when primary setting */
-	if (ovl_get_status() == DDP_OVL1_STATUS_PRIMARY_RELEASED) {
-		ovl_set_status(DDP_OVL1_STATUS_SUB);
-		wake_up_interruptible(&ovl1_wait_queue);
-	} else if (ovl_get_status() == DDP_OVL1_STATUS_PRIMARY_DISABLE) {
-		ovl_set_status(DDP_OVL1_STATUS_IDLE);
-		wake_up_interruptible(&ovl1_wait_queue);
-	}
+	if (ovl_get_status() == DDP_OVL1_STATUS_PRIMARY_RELEASED)
+		dpmgr_set_ovl1_status(DDP_OVL1_STATUS_SUB);
+	else if (ovl_get_status() == DDP_OVL1_STATUS_PRIMARY_DISABLE)
+		dpmgr_set_ovl1_status(DDP_OVL1_STATUS_IDLE);
+
 #ifndef MTK_FB_CMDQ_DISABLE
 	for (i = 0; i < PRIMARY_DISPLAY_SESSION_LAYER_COUNT; i++) {
 		int fence_idx = 0;
@@ -5339,12 +5337,10 @@ int primary_display_suspend(void)
 	else
 		dpmgr_path_disable_cascade(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 
-	if (ovl_get_status() == DDP_OVL1_STATUS_SUB_REQUESTING) {
-		ovl_set_status(DDP_OVL1_STATUS_SUB);
-		wake_up_interruptible(&ovl1_wait_queue);
-	} else if (ovl_get_status() != DDP_OVL1_STATUS_SUB) {
-		ovl_set_status(DDP_OVL1_STATUS_IDLE);
-	}
+	if (ovl_get_status() == DDP_OVL1_STATUS_SUB_REQUESTING)
+		dpmgr_set_ovl1_status(DDP_OVL1_STATUS_SUB);
+	else if (ovl_get_status() != DDP_OVL1_STATUS_SUB)
+		dpmgr_set_ovl1_status(DDP_OVL1_STATUS_IDLE);
 #endif
 
 #ifndef CONFIG_LCM_SEND_CMD_IN_VIDEO

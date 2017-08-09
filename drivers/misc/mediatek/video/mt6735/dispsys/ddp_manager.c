@@ -43,6 +43,8 @@ static int ddp_manager_init;
 #define DDP_MAX_MANAGER_HANDLE (DISP_MUTEX_DDP_COUNT+DISP_MUTEX_DDP_FIRST)
 
 unsigned int allLayerDisabled = 0;
+wait_queue_head_t ovl_wait_queue;
+
 
 typedef struct {
 	volatile unsigned int init;
@@ -535,6 +537,15 @@ int dpmgr_path_remove_memout(disp_path_handle dp_handle, void *cmdq_handle)
 	/* update connected */
 	ddp_connect_path(handle->scenario, cmdq_handle);
 	ddp_mutex_set(handle->hwmutexid, handle->scenario, handle->mode, cmdq_handle);
+	return 0;
+}
+
+int dpmgr_set_ovl1_status(int status)
+{
+	ovl_set_status((DISP_OVL1_STATUS) status);
+	if (status == DDP_OVL1_STATUS_IDLE || status == DDP_OVL1_STATUS_SUB)
+		wake_up_interruptible(&ovl_wait_queue);
+
 	return 0;
 }
 
@@ -2055,6 +2066,8 @@ int dpmgr_init(void)
 	disp_init_irq();
 	disp_register_irq_callback(dpmgr_irq_handler);
 
+	init_waitqueue_head(&ovl_wait_queue);
+
 	memset((void *)hw_mutex_id_to_handle_map, 0, sizeof(hw_mutex_id_to_handle_map));
 	return 0;
 }
@@ -2070,4 +2083,44 @@ int dpmgr_factory_mode_test(int module_name, void *cmdqhandle, void *config)
 	}
 
 	return 0;
+}
+
+int dpmgr_wait_ovl_available(int ovl_num)
+{
+	int ret = 1;
+#ifdef OVL_CASCADE_SUPPORT
+	int loop_cnt = 0;
+	DISP_OVL1_STATUS ovl_state = ovl_get_status();
+
+	if (ovl_state == DDP_OVL1_STATUS_PRIMARY || ovl_state == DDP_OVL1_STATUS_SUB_REQUESTING) {
+		ddp_path_handle handle = (ddp_path_handle)g_dp_handle;
+
+		if (handle &&  handle->power_sate != 0) {
+			if (ovl_state == DDP_OVL1_STATUS_PRIMARY)
+				ovl_set_status(DDP_OVL1_STATUS_SUB_REQUESTING);
+		}
+	}
+
+	while ((ovl_get_status() != DDP_OVL1_STATUS_SUB) && (ovl_get_status() != DDP_OVL1_STATUS_IDLE)
+		&& (loop_cnt++ < 10)) {
+		DISP_LOG_I("wait ovl available, ovl1 status:%d\n", ovl_get_status());
+
+		/* wait untile primary release OVL1*/
+		ret = wait_event_interruptible_timeout(ovl_wait_queue,
+		(ovl_get_status() == DDP_OVL1_STATUS_SUB || ovl_get_status() == DDP_OVL1_STATUS_IDLE), HZ/2);
+		if (ret < 0)
+			DISP_LOG_E("wait OVL interrupted by other ret=%d\n", ret);
+		else if (ret == 0)
+			DISP_LOG_E("wait OVL timeout! ret=0!\n");
+		else
+			DISP_LOG_I("wait OVL done!\n");
+	}
+
+	if (ovl_get_status() == DDP_OVL1_STATUS_IDLE) {
+		ovl_set_status(DDP_OVL1_STATUS_SUB);
+		ret = 1;
+	}
+#endif
+
+	return ret;
 }

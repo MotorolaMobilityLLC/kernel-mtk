@@ -416,6 +416,7 @@ void dpmgr_get_input_address(disp_path_handle dp_handle, unsigned long *addr);
 int dpmgr_path_enable_cascade(disp_path_handle dp_handle, void *cmdq_handle);
 int dpmgr_path_disable_cascade(disp_path_handle dp_handle, void *cmdq_handle);
 
+int dpmgr_set_ovl1_status(int status);
 int dpmgr_insert_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle);
 int dpmgr_remove_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle);
 
@@ -426,6 +427,7 @@ int dpmgr_remove_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle);
  * config:
 */
 int dpmgr_factory_mode_test(int module_name, void *cmdqhandle, void *config);
+int dpmgr_wait_ovl_available(int ovl_num);
 
 extern int dpmgr_path_get_handle(unsigned int *dp_handle, unsigned int *cmdq_handle);
 /* dpmgr_path_idle_on , it will  restore  of dst modules 's clock and top clock.

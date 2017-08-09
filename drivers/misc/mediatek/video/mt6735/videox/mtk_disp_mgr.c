@@ -70,15 +70,12 @@
 #include "mtk_ovl.h"
 #include "ddp_mmp.h"
 
+#include "extd_multi_control.h"
 /* extern unsigned int is_hwc_enabled; */
 /* extern int is_DAL_Enabled(void); */
 /* extern struct semaphore dal_sem; */
 /* extern int isAEEEnabled; */
 #define DISP_DISABLE_X_CHANNEL_ALPHA
-
-#ifdef CONFIG_MTK_HDMI_SUPPORT
-#include "extd_hdmi.h"
-#endif
 
 /* TODO: revise this later @xuecheng */
 #include "mtkfb_fence.h"
@@ -93,13 +90,6 @@ typedef enum {
 static dev_t mtk_disp_mgr_devno;
 static struct cdev *mtk_disp_mgr_cdev;
 static struct class *mtk_disp_mgr_class;
-
-static SWITCH_MODE_INFO_STRUCT path_info;
-
-int ovl1_remove = 0;
-struct task_struct *disp_switch_mode_task = NULL;
-wait_queue_head_t switch_mode_wq;
-atomic_t switch_mode_event = ATOMIC_INIT(0);
 
 DEFINE_MUTEX(session_config_mutex);
 disp_session_input_config _session_input[2][DISP_SESSION_MEMORY];
@@ -225,7 +215,6 @@ int _session_inited(disp_session_config config)
 	return 0;
 }
 
-wait_queue_head_t ovl1_wait_queue;
 #ifdef OVL_CASCADE_SUPPORT
 static int g_enable_clock;
 #endif
@@ -490,16 +479,9 @@ int _ioctl_trigger_session(unsigned long arg)
 		primary_display_merge_session_cmd(&config);
 		primary_display_trigger(0, NULL, 0);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
-#ifdef CONFIG_MTK_HDMI_SUPPORT
+#if defined(CONFIG_MTK_HDMI_SUPPORT) || defined(CONFIG_MTK_EPD_SUPPORT)
 		mutex_lock(&disp_session_lock);
-
-		ret = extd_hdmi_trigger(0, NULL, session_id);
-		if (ovl1_remove == 2) {
-			ovl1_remove++;
-		} else if (ovl1_remove == 3) {
-			ovl_set_status(DDP_OVL1_STATUS_IDLE);
-			ovl1_remove = 0;
-		}
+		ret = external_display_trigger(config.tigger_mode, session_id);
 		mutex_unlock(&disp_session_lock);
 #endif
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
@@ -1695,9 +1677,8 @@ int _ioctl_get_info(unsigned long arg)
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
 		primary_display_get_info(&info);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
-#ifdef CONFIG_MTK_HDMI_SUPPORT
-		/* this is for session test */
-		extd_hdmi_get_dev_info(&info);
+#if defined(CONFIG_MTK_HDMI_SUPPORT) || defined(CONFIG_MTK_EPD_SUPPORT)
+		external_display_get_info(&info, session_id);
 #endif
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
 		ovl2mem_get_info(&info);
@@ -1908,8 +1889,6 @@ static DISP_MODE select_session_mode(disp_session_config *session_info)
 int set_session_mode(disp_session_config *config_info, int force)
 {
 	int ret = 0;
-	int i = 0;
-	int session_id = 0;
 
 	config_info->mode = select_session_mode(config_info);
 
@@ -1921,51 +1900,9 @@ int set_session_mode(disp_session_config *config_info, int force)
 #endif
 
 	primary_display_switch_mode(config_info->mode, config_info->session_id, force);
-
-	if (path_info.switching == 1)
-		return ret;
-
-	for (i = 0; i < MAX_SESSION_COUNT; i++) {
-		if (session_config[i] != 0 && DISP_SESSION_TYPE(session_config[i]) != DISP_SESSION_PRIMARY) {
-			session_id = session_config[i];
-			break;
-		}
-	}
-
-	if ((config_info->mode != path_info.old_mode) ||
-	    (session_id > 0 && path_info.old_session == DISP_SESSION_PRIMARY) ||
-	    (session_id == 0 && path_info.old_session != DISP_SESSION_PRIMARY)) {
-		DISPMSG("_ioctl_set_session_mode mode, switch mode in\n");
-		if (path_info.switching == 0) {
-#ifdef CONFIG_MTK_HDMI_SUPPORT
-			int disp_type = 0;
-
-			disp_type = extd_get_device_type();
+#if defined(CONFIG_MTK_HDMI_SUPPORT) || defined(CONFIG_MTK_EPD_SUPPORT)
+	external_display_switch_mode(config_info->mode, session_config, config_info->session_id);
 #endif
-/*
-#ifdef OVL_CASCADE_SUPPORT
-			if (session_id > 0 && (config_info->mode < DISP_SESSION_DIRECT_LINK_MIRROR_MODE ||
-			    disp_type == DISP_IF_HDMI_SMARTBOOK)) {
-
-				if (ovl_get_status() == DDP_OVL1_STATUS_PRIMARY && primary_display_is_sleepd() == 0)
-					ovl_set_status(DDP_OVL1_STATUS_SUB_REQUESTING);
-			}
-#ifdef CONFIG_MTK_HDMI_SUPPORT
-			if (session_id > 0 && path_info.old_session == DISP_SESSION_EXTERNAL &&
-			    config_info->mode >= DISP_SESSION_DIRECT_LINK_MIRROR_MODE)
-				hdmi_set_layer_num(1);
-#endif
-#endif
-*/
-
-			DISPMSG("_ioctl_set_session_mode mode, wake up\n");
-			path_info.switching = 1;
-			path_info.cur_mode = config_info->mode;
-			path_info.ext_sid = session_id;
-			atomic_set(&switch_mode_event, 1);
-			wake_up_interruptible(&switch_mode_wq);
-		}
-	}
 	return ret;
 }
 
@@ -1979,254 +1916,7 @@ int _ioctl_set_session_mode(unsigned long arg)
 		return -EFAULT;
 	}
 	return set_session_mode(&config_info, 0);
-}
 
-#if 0
-static int wait_ovl1_available(void)
-{
-	int ret = 1;
-	int loop_cnt = 0;
-
-#ifdef OVL_CASCADE_SUPPORT
-	if (ovl_get_status() == DDP_OVL1_STATUS_PRIMARY) {
-		if (primary_display_is_sleepd() == 0) {
-			ovl_set_status(DDP_OVL1_STATUS_SUB_REQUESTING);
-		} else {
-			/* directly split OVL1 from primary */
-			unsigned long dp_handle = 0;
-			unsigned long cmdq_handle = 0;
-
-			dpmgr_path_get_handle(&dp_handle, &cmdq_handle);
-			if (dp_handle != 0) {
-				DISPMSG("split OVL1 in suspen mode\n");
-#ifndef CONFIG_MTK_CLKMGR
-				disp_clk_prepare(DISP_MTCMOS_CLK);
-#endif
-				dpmgr_path_power_on((disp_path_handle)(dp_handle), 0);
-				g_enable_clock = 1;
-				dpmgr_path_disable_cascade((disp_path_handle)(dp_handle), 0);
-				ovl_set_status(DDP_OVL1_STATUS_SUB);
-			}
-		}
-	}
-
-	while ((ovl_get_status() != DDP_OVL1_STATUS_SUB)
-	       && (ovl_get_status() != DDP_OVL1_STATUS_IDLE) && (loop_cnt++ < 10)) {
-		DISPMSG("cascade switch: 2.ovl1 status=%d\n", ovl_get_status());
-
-		/* wait untile primary release OVL1 */
-		ret = wait_event_interruptible_timeout(ovl1_wait_queue,
-						       (ovl_get_status() == DDP_OVL1_STATUS_SUB ||
-							ovl_get_status() == DDP_OVL1_STATUS_IDLE),
-						       HZ / 10);
-		if (ret < 0)
-			DISPERR("wait OVL1 interrupted by other ret=%d\n", ret);
-		else if (ret == 0)
-			DISPERR("wait OVL1 timeout! ret=0!\n");
-		else
-			DISPMSG("wait OVL1 done!\n");
-	}
-
-	if (ovl_get_status() == DDP_OVL1_STATUS_IDLE) {
-		ovl_set_status(DDP_OVL1_STATUS_SUB);
-		ret = 1;
-	}
-#endif
-
-	return ret;
-}
-#endif
-
-static int create_external_display_path(int session, int mode)
-{
-	int ret = 0;
-#ifdef CONFIG_MTK_HDMI_SUPPORT
-	int extd_type = DISP_IF_MHL;
-#endif
-
-	if (DISP_SESSION_TYPE(session) == DISP_SESSION_MEMORY) {
-#if 0
-		if (mode < DISP_SESSION_DIRECT_LINK_MIRROR_MODE) {
-			if (wait_ovl1_available() > 0) {
-				ovl2mem_init(session);
-				ovl2mem_setlayernum(4);
-			} else {
-				DISPERR("mhl path: OVL1 can not be split out!\n");
-				ret = -1;
-			}
-		} else if (path_info.old_session == DISP_SESSION_MEMORY
-			   && path_info.old_mode < DISP_SESSION_DIRECT_LINK_MIRROR_MODE) {
-			ovl2mem_deinit();
-			ovl2mem_setlayernum(0);
-#ifdef OVL_CASCADE_SUPPORT
-			if (ovl_get_status() == DDP_OVL1_STATUS_SUB)
-				ovl_set_status(DDP_OVL1_STATUS_IDLE);
-
-			if (g_enable_clock == 1) {
-				unsigned long dp_handle = 0;
-				unsigned long cmdq_handle = 0;
-
-				dpmgr_path_get_handle(&dp_handle, &cmdq_handle);
-				if (dp_handle != 0) {
-					dpmgr_path_power_off((disp_path_handle) (dp_handle), 0);
-					g_enable_clock = 0;
-				}
-			}
-#endif
-		}
-#else
-#if defined(OVL_TIME_SHARING)
-		DISPMSG("memory device session is:0x%x\n", session);
-		ext_session_id = session;
-		ovl2mem_setlayernum(4);
-		ret = 0;
-#else
-		DISPERR("wfd path: OVL needs to support time-sharing mechanism.\n");
-		ret = -1;
-#endif
-
-#endif
-	} else if (DISP_SESSION_TYPE(session) == DISP_SESSION_EXTERNAL) {
-#ifdef CONFIG_MTK_HDMI_SUPPORT
-		disp_path_handle dp_handle = 0;
-		cmdqRecHandle pHandle = 0;
-
-		extd_get_path_handle(&dp_handle, &pHandle);
-		extd_type = extd_get_device_type();
-		DISPMSG("external device type is:%d\n", extd_type);
-
-		if (path_info.old_session == DISP_SESSION_EXTERNAL)
-			extd_hdmi_path_resume();
-
-/*
-	if (mode < DISP_SESSION_DIRECT_LINK_MIRROR_MODE || extd_type == DISP_IF_HDMI_SMARTBOOK) {
-	    if (wait_ovl1_available() > 0) {
-		if (path_info.old_session == DISP_SESSION_EXTERNAL && extd_type != DISP_IF_HDMI_SMARTBOOK) {
-		    if (extd_hdmi_path_get_mode() != EXTD_DIRECT_LINK_MODE) {
-			dpmgr_insert_ovl1_sub(dp_handle, pHandle);
-			extd_hdmi_path_set_mode(EXTD_DIRECT_LINK_MODE);
-		    }
-		} else {
-		    extd_hdmi_path_init(EXTD_DIRECT_LINK_MODE, session);
-		}
-
-		hdmi_set_layer_num(4);
-	    } else {
-		DISPMSG("mhl path: OVL1 can not be split out!\n");
-		extd_hdmi_path_init(EXTD_RDMA_DPI_MODE, session);
-		hdmi_set_layer_num(1);
-	    }
-	} else {
-	    if (path_info.old_session == DISP_SESSION_EXTERNAL) {
-		dpmgr_remove_ovl1_sub(dp_handle, pHandle);
-		extd_hdmi_path_set_mode(EXTD_RDMA_DPI_MODE);
-		hdmi_set_layer_num(1);
-		ovl1_remove = 1;
-	    } else {
-		extd_hdmi_path_init(EXTD_RDMA_DPI_MODE, session);
-		hdmi_set_layer_num(1);
-	    }
-       }
-*/
-		if (path_info.old_session == DISP_SESSION_EXTERNAL) {
-			;
-		} else {
-			extd_hdmi_path_init(EXTD_RDMA_DPI_MODE, session);
-			hdmi_set_layer_num(1);
-		}
-#endif
-	}
-
-	return ret;
-}
-
-static void destroy_external_display_path(int session, int mode)
-{
-	if ((path_info.old_session == DISP_SESSION_PRIMARY) ||
-	    (path_info.old_session == DISP_SESSION_MEMORY
-	     && path_info.old_mode >= DISP_SESSION_DIRECT_LINK_MIRROR_MODE)) {
-		return;
-	}
-
-	if (path_info.old_session == DISP_SESSION_EXTERNAL) {
-#ifdef CONFIG_MTK_HDMI_SUPPORT
-		/*
-#ifdef OVL_CASCADE_SUPPORT
-		disp_path_handle dp_handle;
-		cmdqRecHandle pHandle;
-		int ori_mode = extd_get_path_handle(&dp_handle, &pHandle);
-
-		if (ovl_get_status() == DDP_OVL1_STATUS_SUB && ori_mode == EXTD_RDMA_DPI_MODE) {
-			extd_hdmi_path_set_mode(EXTD_RDMA_DPI_MODE);
-			ovl_set_status(DDP_OVL1_STATUS_IDLE);
-		}
-#endif
-		*/
-		extd_hdmi_path_deinit();
-		/* hdmi_set_layer_num(1); */
-#ifdef OVL_CASCADE_SUPPORT
-		if (extd_hdmi_path_get_mode() == EXTD_DIRECT_LINK_MODE)
-			ovl_set_status(DDP_OVL1_STATUS_IDLE);
-#endif
-		release_session_buffer(DISP_SESSION_EXTERNAL, 0xFF, NULL);
-#endif
-	} else if (path_info.old_session == DISP_SESSION_MEMORY) {
-		ovl2mem_setlayernum(0);
-#ifdef OVL_CASCADE_SUPPORT
-		ovl_set_status(DDP_OVL1_STATUS_IDLE);
-
-		if (g_enable_clock == 1) {
-			unsigned long dp_handle = 0;
-			unsigned long cmdq_handle = 0;
-
-			dpmgr_path_get_handle(&dp_handle, &cmdq_handle);
-			if (dp_handle != 0) {
-				dpmgr_path_power_off((disp_path_handle) (dp_handle), 0);
-#ifndef CONFIG_MTK_CLKMGR
-				disp_clk_unprepare(DISP_MTCMOS_CLK);
-#endif
-				g_enable_clock = 0;
-			}
-		}
-#endif
-		release_session_buffer(DISP_SESSION_MEMORY, 0xFF, 0);
-	}
-}
-
-static int disp_switch_mode_kthread(void *data)
-{
-	struct sched_param param = {.sched_priority = 94 }; /* RTPM_PRIO_SCRN_UPDATE */
-	int ret = 0;
-
-	sched_setscheduler(current, SCHED_RR, &param);
-	DISPMSG("disp_switch_mode_kthread in!\n");
-	for (;;) {
-		wait_event_interruptible(switch_mode_wq, atomic_read(&switch_mode_event));
-		atomic_set(&switch_mode_event, 0);
-
-		DISPPR_FENCE("disp_switch_mode_kthread, need switch mode, mode:%d, session:0x%x\n",
-			     path_info.cur_mode, path_info.ext_sid);
-
-		if (path_info.ext_sid > 0) {
-			ret = create_external_display_path(path_info.ext_sid, path_info.cur_mode);
-			if (ret == 0) {
-				path_info.old_session = DISP_SESSION_TYPE(path_info.ext_sid);
-				path_info.old_mode = path_info.cur_mode;
-			}
-		} else {
-			destroy_external_display_path(path_info.ext_sid,
-						      DISP_SESSION_DIRECT_LINK_MODE);
-			path_info.old_session = DISP_SESSION_PRIMARY;
-			path_info.old_mode = DISP_SESSION_DIRECT_LINK_MODE;
-		}
-
-		path_info.switching = 0;
-		path_info.ext_sid = 0;
-		if (kthread_should_stop())
-			break;
-	}
-
-	return 0;
 }
 
 const char *_session_ioctl_spy(unsigned int cmd)
@@ -2448,14 +2138,9 @@ static int mtk_disp_mgr_probe(struct platform_device *pdev)
 						 DISP_SESSION_DEVICE);
 	disp_sync_init();
 
-	path_info.old_mode = DISP_SESSION_DIRECT_LINK_MODE;
-	path_info.old_session = DISP_SESSION_PRIMARY;
-	path_info.switching = 0;
-	path_info.ext_sid = 0;
-	init_waitqueue_head(&ovl1_wait_queue);
-	init_waitqueue_head(&switch_mode_wq);
-	disp_switch_mode_task = kthread_create(disp_switch_mode_kthread, NULL, "disp_switch_mode_kthread");
-	wake_up_process(disp_switch_mode_task);
+#if defined(CONFIG_MTK_HDMI_SUPPORT) || defined(CONFIG_MTK_EPD_SUPPORT)
+	external_display_control_init();
+#endif
 
 #ifdef CONFIG_ALL_IN_TRIGGER_STAGE
 	for (i = 0; i < DISP_SESSION_MEMORY; i++) {
