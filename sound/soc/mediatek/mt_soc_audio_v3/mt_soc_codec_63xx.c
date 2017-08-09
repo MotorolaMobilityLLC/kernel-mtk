@@ -573,6 +573,8 @@ void OpenTrimBufferHardware(bool enable)
 	if (enable) {
 		pr_warn("%s true\n", __func__);
 		TurnOnDacPower();
+		/* AUXADC large scale - AUXADC_CON2(AUXADC ADC AVG SELECTION[9]) */
+		Ana_Set_Reg(0x0E9C, 0x0200, 0x0200);
 		/* set analog part (HP playback) */
 		Ana_Set_Reg(AUDDEC_ANA_CON8, 0x0000, 0x0002);
 		/* Enable AUDGLB */
@@ -624,7 +626,8 @@ void OpenTrimBufferHardware(bool enable)
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0x0000, 0xffff);	/* Disable Audio DAC */
 		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x2AC0, 0xfeeb);	/* Disable AUD_CLK, bit2/4/8 is for ADC, do not set */
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0000, 0x8000);	/* Disable NV regulator (-1.5V) */
-		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);	/* Disable cap-less LDOs (1.5V) & Disable IBIST */
+		/*Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);*/
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x02c1, 0xfeeb); /* for AUX detection ,Disable cap-less LDOs (1.5V) & Disable IBIST */	
 		TurnOffDacPower();
 	}
 }
@@ -697,7 +700,8 @@ void OpenAnalogTrimHardware(bool enable)
 		/* Disable AUD_CLK, bit2/4/8 is for ADC, do not set */
 		Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0000, 0x8000);
 		/* Disable NV regulator (-1.5V) */
-		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);
+		/*Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);*/
+		Ana_Set_Reg(AUDDEC_ANA_CON6, 0x02c1, 0xfeeb); /* for AUX detection */				
 		/* Disable cap-less LDOs (1.5V) & Disable IBIST */
 		TurnOffDacPower();
 	}
@@ -1537,7 +1541,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 		    false) {
 			pr_warn("Audio_Amp_Change off amp\n");
 			HeadsetVoloumeRestore();	/* Set HPR/HPL gain as -1dB, step by step */
-			/* Ana_Set_Reg(ZCD_CON2, 0x0F9F, 0xffff); //Set HPR/HPL gain as minimum (~ -40dB) */
+			Ana_Set_Reg(ZCD_CON2, 0x0F9F, 0xffff); /* Set HPR/HPL gain as minimum (~ -40dB) */
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF40F, 0xffff);	/* Disable HPR/HPL */
 		}
 
@@ -1550,7 +1554,8 @@ static void Audio_Amp_Change(int channels, bool enable)
 			/* Disable AUD_CLK, bit2/4/8 is for ADC, do not set */
 			Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0000, 0x8000);
 			/* Disable NV regulator (-1.5V) */
-			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);
+			/*Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);*/
+			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x02c1, 0xfeeb); /* for AUX detection */		 		
 			/* Disable cap-less LDOs (1.5V) & Disable IBIST */
 			TurnOffDacPower();
 		}
@@ -1687,7 +1692,8 @@ static void Voice_Amp_Change(bool enable)
 			/* Disable AUD_CLK, bit2/4/8 is for ADC, do not set */
 			Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0000, 0x8000);
 			/* Disable NV regulator (-1.5V) */
-			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);
+			/*Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);*/
+			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x02c1, 0xfeeb); /* for AUX detection */
 			/* Disable cap-less LDOs (1.5V) & Disable IBIST */
 
 			TurnOffDacPower();
@@ -1808,7 +1814,8 @@ static void Speaker_Amp_Change(bool enable)
 			/* Disable AUD_CLK, bit2/4/8 is for ADC, do not set */
 			Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0000, 0x8000);
 			/* Disable NV regulator (-1.5V) */
-			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);
+			/*Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);*/
+			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x02c1, 0xfeeb); /* for AUX detection */			
 			/* Disable cap-less LDOs (1.5V) & Disable IBIST */
 
 			TurnOffDacPower();
@@ -2259,8 +2266,8 @@ static void Headset_Speaker_Amp_Change(bool enable)
 		Ana_Set_Reg(ZCD_CON4, 0x0707, 0xffff);
 		/* Set min -2dB IV buffer gain */
 
-		/* HeadsetVoloumeRestore();// Set HPR/HPL gain as 0dB, step by step */
-		/* Ana_Set_Reg(ZCD_CON2, 0x0F9F, 0xffff); //Set HPR/HPL gain as minimum (~ -40dB) */
+		HeadsetVoloumeRestore();/* Set HPR/HPL gain as 0dB, step by step */
+		Ana_Set_Reg(ZCD_CON2, 0x0F9F, 0xffff); /* Set HPR/HPL gain as minimum (~ -40dB) */
 		Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF20F, 0xffff);	/* Disable HPR/HPL */
 		if (GetDLStatus() == false) {
 			Ana_Set_Reg(AUDDEC_ANA_CON4, 0x0000, 0xffff);
@@ -2271,7 +2278,8 @@ static void Headset_Speaker_Amp_Change(bool enable)
 			/* Disable AUD_CLK, bit2/4/8 is for ADC, do not set */
 			Ana_Set_Reg(AUDDEC_ANA_CON7, 0x0000, 0x8000);
 			/* Disable NV regulator (-1.5V) */
-			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);
+			/*Ana_Set_Reg(AUDDEC_ANA_CON6, 0x0001, 0xfeeb);*/
+			Ana_Set_Reg(AUDDEC_ANA_CON6, 0x02c1, 0xfeeb); /* for AUX detection */	
 			/* Disable cap-less LDOs (1.5V) & Disable IBIST */
 
 			TurnOffDacPower();
