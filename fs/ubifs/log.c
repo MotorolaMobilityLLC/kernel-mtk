@@ -666,8 +666,19 @@ int ubifs_consolidate_log(struct ubifs_info *c)
 	lnum = c->ltail_lnum;
 	write_lnum = lnum;
 	while (1) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+			atomic_long_inc(&ubifs_sbuf_lock_count);
+			ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+			mutex_lock(&ubifs_sbuf_mutex);
+			ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		}
+#endif
 		sleb = ubifs_scan(c, lnum, 0, c->sbuf, 0);
 		if (IS_ERR(sleb)) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+			mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 			err = PTR_ERR(sleb);
 			goto out_free;
 		}
@@ -719,6 +730,9 @@ int ubifs_consolidate_log(struct ubifs_info *c)
 			}
 		}
 		ubifs_scan_destroy(sleb);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		if (lnum == c->lhead_lnum)
 			break;
 		lnum = ubifs_next_log_lnum(c, lnum);
@@ -753,6 +767,9 @@ int ubifs_consolidate_log(struct ubifs_info *c)
 
 out_scan:
 	ubifs_scan_destroy(sleb);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 out_free:
 	destroy_done_tree(&done_tree);
 	vfree(buf);

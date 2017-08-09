@@ -389,6 +389,14 @@ static int write_cnodes(struct ubifs_info *c)
 	/* Try to place lsave and ltab nicely */
 	done_lsave = !c->big_lpt;
 	done_ltab = 0;
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+		atomic_long_inc(&ubifs_sbuf_lock_count);
+		ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		mutex_lock(&ubifs_sbuf_mutex);
+		ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+	}
+#endif
 	if (!done_lsave && offs + c->lsave_sz <= c->leb_size) {
 		done_lsave = 1;
 		ubifs_pack_lsave(c, buf + offs, c->lsave);
@@ -415,9 +423,13 @@ static int write_cnodes(struct ubifs_info *c)
 				alen = ALIGN(wlen, c->min_io_size);
 				memset(buf + offs, 0xff, alen - wlen);
 				err = ubifs_leb_write(c, lnum, buf + from, from,
-						       alen);
-				if (err)
+						alen);
+				if (err) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+					mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 					return err;
+				}
 			}
 			dbg_chk_lpt_sz(c, 2, c->leb_size - offs);
 			err = realloc_lpt_leb(c, &lnum);
@@ -427,8 +439,12 @@ static int write_cnodes(struct ubifs_info *c)
 			ubifs_assert(lnum >= c->lpt_first &&
 				     lnum <= c->lpt_last);
 			err = ubifs_leb_unmap(c, lnum);
-			if (err)
+			if (err) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+				mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 				return err;
+			}
 			/* Try to place lsave and ltab nicely */
 			if (!done_lsave) {
 				done_lsave = 1;
@@ -474,8 +490,12 @@ static int write_cnodes(struct ubifs_info *c)
 			alen = ALIGN(wlen, c->min_io_size);
 			memset(buf + offs, 0xff, alen - wlen);
 			err = ubifs_leb_write(c, lnum, buf + from, from, alen);
-			if (err)
+			if (err) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+				mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 				return err;
+			}
 			dbg_chk_lpt_sz(c, 2, c->leb_size - offs);
 			err = realloc_lpt_leb(c, &lnum);
 			if (err)
@@ -484,8 +504,12 @@ static int write_cnodes(struct ubifs_info *c)
 			ubifs_assert(lnum >= c->lpt_first &&
 				     lnum <= c->lpt_last);
 			err = ubifs_leb_unmap(c, lnum);
-			if (err)
+			if (err) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+				mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 				return err;
+			}
 		}
 		done_lsave = 1;
 		ubifs_pack_lsave(c, buf + offs, c->lsave);
@@ -500,8 +524,12 @@ static int write_cnodes(struct ubifs_info *c)
 			alen = ALIGN(wlen, c->min_io_size);
 			memset(buf + offs, 0xff, alen - wlen);
 			err = ubifs_leb_write(c, lnum, buf + from, from, alen);
-			if (err)
+			if (err) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+				mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 				return err;
+			}
 			dbg_chk_lpt_sz(c, 2, c->leb_size - offs);
 			err = realloc_lpt_leb(c, &lnum);
 			if (err)
@@ -510,8 +538,12 @@ static int write_cnodes(struct ubifs_info *c)
 			ubifs_assert(lnum >= c->lpt_first &&
 				     lnum <= c->lpt_last);
 			err = ubifs_leb_unmap(c, lnum);
-			if (err)
+			if (err) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+				mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 				return err;
+			}
 		}
 		ubifs_pack_ltab(c, buf + offs, c->ltab_cmt);
 		offs += c->ltab_sz;
@@ -523,13 +555,21 @@ static int write_cnodes(struct ubifs_info *c)
 	alen = ALIGN(wlen, c->min_io_size);
 	memset(buf + offs, 0xff, alen - wlen);
 	err = ubifs_leb_write(c, lnum, buf + from, from, alen);
-	if (err)
+	if (err) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		return err;
+	}
 
 	dbg_chk_lpt_sz(c, 4, alen - wlen);
 	err = dbg_chk_lpt_sz(c, 3, ALIGN(offs, c->min_io_size));
-	if (err)
+	if (err) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		return err;
+	}
 
 	c->nhead_lnum = lnum;
 	c->nhead_offs = ALIGN(offs, c->min_io_size);
@@ -540,9 +580,15 @@ static int write_cnodes(struct ubifs_info *c)
 	if (c->big_lpt)
 		dbg_lp("LPT lsave is at %d:%d", c->lsave_lnum, c->lsave_offs);
 
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	return 0;
 
 no_space:
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	ubifs_err("LPT out of space mismatch at LEB %d:%d needing %d, done_ltab %d, done_lsave %d",
 		  lnum, offs, len, done_ltab, done_lsave);
 	ubifs_dump_lpt_info(c);
@@ -1151,7 +1197,14 @@ static int lpt_gc_lnum(struct ubifs_info *c, int lnum)
 	void *buf = c->lpt_buf;
 
 	dbg_lp("LEB %d", lnum);
-
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+		atomic_long_inc(&ubifs_sbuf_lock_count);
+		ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		mutex_lock(&ubifs_sbuf_mutex);
+		ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+	}
+#endif
 	err = ubifs_leb_read(c, lnum, buf, 0, c->leb_size, 1);
 	if (err)
 		return err;
@@ -1166,6 +1219,9 @@ static int lpt_gc_lnum(struct ubifs_info *c, int lnum)
 				len -= pad_len;
 				continue;
 			}
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+			mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 			return 0;
 		}
 		node_type = get_lpt_node_type(c, buf, &node_num);
@@ -1180,6 +1236,9 @@ static int lpt_gc_lnum(struct ubifs_info *c, int lnum)
 		buf += node_len;
 		len -= node_len;
 	}
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	return 0;
 }
 
@@ -1463,7 +1522,9 @@ void ubifs_lpt_free(struct ubifs_info *c, int wr_only)
 
 	vfree(c->ltab_cmt);
 	c->ltab_cmt = NULL;
+#ifndef CONFIG_UBIFS_SHARE_BUFFER
 	vfree(c->lpt_buf);
+#endif
 	c->lpt_buf = NULL;
 	kfree(c->lsave);
 	c->lsave = NULL;

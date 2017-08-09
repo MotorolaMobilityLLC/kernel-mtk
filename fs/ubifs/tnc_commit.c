@@ -248,10 +248,22 @@ static int layout_leb_in_gaps(struct ubifs_info *c, int *p)
 	 * it is more comprehensive and less efficient than is needed for this
 	 * purpose.
 	 */
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+		atomic_long_inc(&ubifs_sbuf_lock_count);
+		ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		mutex_lock(&ubifs_sbuf_mutex);
+		ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+	}
+#endif
 	sleb = ubifs_scan(c, lnum, 0, c->ileb_buf, 0);
 	c->ileb_len = 0;
-	if (IS_ERR(sleb))
+	if (IS_ERR(sleb)) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		return PTR_ERR(sleb);
+	}
 	gap_start = 0;
 	list_for_each_entry(snod, &sleb->nodes, list) {
 		struct ubifs_idx_node *idx;
@@ -266,6 +278,9 @@ static int layout_leb_in_gaps(struct ubifs_info *c, int *p)
 					    snod->offs);
 		if (in_use < 0) {
 			ubifs_scan_destroy(sleb);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+			mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 			return in_use; /* Error code */
 		}
 		if (in_use) {
@@ -293,12 +308,19 @@ static int layout_leb_in_gaps(struct ubifs_info *c, int *p)
 	gap_end = c->leb_size;
 	/* Try to fill gap */
 	written = fill_gap(c, lnum, gap_start, gap_end, &dirt);
-	if (written < 0)
+	if (written < 0) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		return written; /* Error code */
+	}
 	tot_written += written;
 	if (tot_written == 0) {
 		struct ubifs_lprops lp;
 
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		dbg_gc("LEB %d wrote %d index nodes", lnum, tot_written);
 		err = ubifs_read_one_lp(c, lnum, &lp);
 		if (err)
@@ -318,9 +340,16 @@ static int layout_leb_in_gaps(struct ubifs_info *c, int *p)
 	}
 	err = ubifs_change_one_lp(c, lnum, c->leb_size - c->ileb_len, dirt,
 				  0, 0, 0);
-	if (err)
+	if (err) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		return err;
+	}
 	err = ubifs_leb_change(c, lnum, c->ileb_buf, c->ileb_len);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	if (err)
 		return err;
 	dbg_gc("LEB %d wrote %d index nodes", lnum, tot_written);

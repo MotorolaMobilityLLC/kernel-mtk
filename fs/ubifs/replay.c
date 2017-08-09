@@ -154,6 +154,14 @@ static int set_bud_lprops(struct ubifs_info *c, struct bud_entry *b)
 
 	/*MTK start*/
 	if (c->need_recovery && b->free > 0) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+			atomic_long_inc(&ubifs_sbuf_lock_count);
+			ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+			mutex_lock(&ubifs_sbuf_mutex);
+			ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		}
+#endif
 		err = ubifs_leb_read(c, b->bud->lnum, c->sbuf, 0, c->leb_size - b->free, 0);
 		if (err) {
 			switch (err) {
@@ -173,6 +181,9 @@ static int set_bud_lprops(struct ubifs_info *c, struct bud_entry *b)
 		err = ubifs_leb_change(c, b->bud->lnum, c->sbuf, c->leb_size - b->free);
 		if (err)
 			ubifs_err("ubifs_leb_change LEB %d:%d fail\n",  b->bud->lnum, c->leb_size - b->free);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	}
 skip_move:
 /*MTK end*/
@@ -572,6 +583,14 @@ static int replay_bud(struct ubifs_info *c, struct bud_entry *b)
 	dbg_mnt("replay bud LEB %d, head %d, offs %d, is_last %d",
 		lnum, b->bud->jhead, offs, is_last);
 
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+		atomic_long_inc(&ubifs_sbuf_lock_count);
+		ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		mutex_lock(&ubifs_sbuf_mutex);
+		ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+	}
+#endif
 	if (c->need_recovery && is_last)
 		/*
 		 * Recover only last LEBs in the journal heads, because power
@@ -582,8 +601,12 @@ static int replay_bud(struct ubifs_info *c, struct bud_entry *b)
 		sleb = ubifs_recover_leb(c, lnum, offs, c->sbuf, b->bud->jhead);
 	else
 		sleb = ubifs_scan(c, lnum, offs, c->sbuf, 0);
-	if (IS_ERR(sleb))
+	if (IS_ERR(sleb)) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		return PTR_ERR(sleb);
+	}
 
 	/*
 	 * The bud does not have to start from offset zero - the beginning of
@@ -706,12 +729,18 @@ static int replay_bud(struct ubifs_info *c, struct bud_entry *b)
 
 out:
 	ubifs_scan_destroy(sleb);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	return err;
 
 out_dump:
 	ubifs_err("bad node is at LEB %d:%d", lnum, snod->offs);
 	ubifs_dump_node(c, snod->node);
 	ubifs_scan_destroy(sleb);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	return -EINVAL;
 }
 
@@ -1080,7 +1109,18 @@ int ubifs_replay_journal(struct ubifs_info *c)
 	lnum = c->ltail_lnum = c->lhead_lnum;
 
 	do {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+			atomic_long_inc(&ubifs_sbuf_lock_count);
+			ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+			mutex_lock(&ubifs_sbuf_mutex);
+			ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		}
+#endif
 		err = replay_log_leb(c, lnum, 0, c->sbuf);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		if (err == 1)
 			/* We hit the end of the log */
 			break;

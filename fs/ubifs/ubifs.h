@@ -42,6 +42,12 @@
 /* Version of this UBIFS implementation */
 #define UBIFS_VERSION 1
 
+#define CONFIG_UBIFS_SHARE_BUFFER
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+extern struct mutex ubifs_sbuf_mutex;
+extern atomic_long_t ubifs_sbuf_lock_count;
+#endif
+
 /* Enable using log LEB fully */
 #if 0
 #define CONFIG_UBIFS_FS_FULL_USE_LOG

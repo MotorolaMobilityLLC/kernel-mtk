@@ -295,6 +295,14 @@ static int write_orph_node(struct ubifs_info *c, int atomic)
 	if (cnt > c->cmt_orphans)
 		cnt = c->cmt_orphans;
 	len = UBIFS_ORPH_NODE_SZ + cnt * sizeof(__le64);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+		atomic_long_inc(&ubifs_sbuf_lock_count);
+		ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		mutex_lock(&ubifs_sbuf_mutex);
+		ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+	}
+#endif
 	ubifs_assert(c->orph_buf);
 	orph = c->orph_buf;
 	orph->ch.node_type = UBIFS_ORPH_NODE;
@@ -320,6 +328,9 @@ static int write_orph_node(struct ubifs_info *c, int atomic)
 	ubifs_assert(c->ohead_lnum >= c->orph_first);
 	ubifs_assert(c->ohead_lnum <= c->orph_last);
 	err = do_write_orph_node(c, len, atomic);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	c->ohead_offs += ALIGN(len, c->min_io_size);
 	c->ohead_offs = ALIGN(c->ohead_offs, 8);
 	return err;
@@ -671,6 +682,14 @@ static int kill_orphans(struct ubifs_info *c)
 		struct ubifs_scan_leb *sleb;
 
 		dbg_rcvry("LEB %d", lnum);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+			atomic_long_inc(&ubifs_sbuf_lock_count);
+			ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+			mutex_lock(&ubifs_sbuf_mutex);
+			ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		}
+#endif
 		sleb = ubifs_scan(c, lnum, 0, c->sbuf, 1);
 		if (IS_ERR(sleb)) {
 			if (PTR_ERR(sleb) == -EUCLEAN)
@@ -685,6 +704,9 @@ static int kill_orphans(struct ubifs_info *c)
 				      &last_flagged);
 		if (err || outofdate) {
 			ubifs_scan_destroy(sleb);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+			mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 			break;
 		}
 		if (sleb->endpt) {
@@ -692,6 +714,9 @@ static int kill_orphans(struct ubifs_info *c)
 			c->ohead_offs = sleb->endpt;
 		}
 		ubifs_scan_destroy(sleb);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	}
 	return err;
 }
@@ -713,7 +738,11 @@ int ubifs_mount_orphans(struct ubifs_info *c, int unclean, int read_only)
 	c->max_orphans = tot_avail_orphs(c);
 
 	if (!read_only) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		c->orph_buf = c->sbuf;
+#else
 		c->orph_buf = vmalloc(c->leb_size);
+#endif
 		if (!c->orph_buf)
 			return -ENOMEM;
 	}

@@ -1430,6 +1430,14 @@ static int fix_size_in_place(struct ubifs_info *c, struct size_entry *e)
 
 	/* Locate the inode node LEB number and offset */
 	ino_key_init(c, &key, e->inum);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+		atomic_long_inc(&ubifs_sbuf_lock_count);
+		ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		mutex_lock(&ubifs_sbuf_mutex);
+		ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+	}
+#endif
 	err = ubifs_tnc_locate(c, &key, ino, &lnum, &offs);
 	if (err)
 		goto out;
@@ -1438,8 +1446,12 @@ static int fix_size_in_place(struct ubifs_info *c, struct size_entry *e)
 	 * was calculated from nodes in the journal then don't change the inode.
 	 */
 	i_size = le64_to_cpu(ino->size);
-	if (i_size >= e->d_size)
+	if (i_size >= e->d_size) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		return 0;
+	}
 	/* Read the LEB */
 	err = ubifs_leb_read(c, lnum, c->sbuf, 0, c->leb_size, 1);
 	if (err)
@@ -1462,11 +1474,17 @@ static int fix_size_in_place(struct ubifs_info *c, struct size_entry *e)
 		goto out;
 	dbg_rcvry("inode %lu at %d:%d size %lld -> %lld",
 		  (unsigned long)e->inum, lnum, offs, i_size, e->d_size);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	return 0;
 
 out:
 	ubifs_warn("inode %lu failed to fix size %lld -> %lld error %d",
 		   (unsigned long)e->inum, e->i_size, e->d_size, err);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	return err;
 }
 
@@ -1492,10 +1510,25 @@ int ubifs_recover_size(struct ubifs_info *c)
 			union ubifs_key key;
 
 			ino_key_init(c, &key, e->inum);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+			if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+				atomic_long_inc(&ubifs_sbuf_lock_count);
+				ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+				mutex_lock(&ubifs_sbuf_mutex);
+				ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+			}
+#endif
 			err = ubifs_tnc_lookup(c, &key, c->sbuf);
-			if (err && err != -ENOENT)
+			if (err && err != -ENOENT) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+				mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 				return err;
+			}
 			if (err == -ENOENT) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+				mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 				/* Remove data nodes that have no inode */
 				dbg_rcvry("removing ino %lu",
 					  (unsigned long)e->inum);
@@ -1507,6 +1540,9 @@ int ubifs_recover_size(struct ubifs_info *c)
 
 				e->exists = 1;
 				e->i_size = le64_to_cpu(ino->size);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+				mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 			}
 		}
 

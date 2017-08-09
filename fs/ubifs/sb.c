@@ -686,11 +686,23 @@ static int fixup_leb(struct ubifs_info *c, int lnum, int len)
 	}
 
 	dbg_mnt("fixup LEB %d, data len %d", lnum, len);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+		atomic_long_inc(&ubifs_sbuf_lock_count);
+		ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		mutex_lock(&ubifs_sbuf_mutex);
+		ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+	}
+#endif
 	err = ubifs_leb_read(c, lnum, c->sbuf, 0, len, 1);
 	if (err)
 		return err;
 
-	return ubifs_leb_change(c, lnum, c->sbuf, len);
+	err = ubifs_leb_change(c, lnum, c->sbuf, len);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
+	return err;
 }
 
 /**

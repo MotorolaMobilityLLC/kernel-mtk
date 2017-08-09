@@ -41,9 +41,21 @@ static int scan_for_master(struct ubifs_info *c)
 
 	lnum = UBIFS_MST_LNUM;
 
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+		atomic_long_inc(&ubifs_sbuf_lock_count);
+		ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		mutex_lock(&ubifs_sbuf_mutex);
+		ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+	}
+#endif
 	sleb = ubifs_scan(c, lnum, 0, c->sbuf, 1);
-	if (IS_ERR(sleb))
+	if (IS_ERR(sleb)) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		return PTR_ERR(sleb);
+	}
 	nodes_cnt = sleb->nodes_cnt;
 	if (nodes_cnt > 0) {
 		snod = list_entry(sleb->nodes.prev, struct ubifs_scan_node,
@@ -58,8 +70,12 @@ static int scan_for_master(struct ubifs_info *c)
 	lnum += 1;
 
 	sleb = ubifs_scan(c, lnum, 0, c->sbuf, 1);
-	if (IS_ERR(sleb))
+	if (IS_ERR(sleb)) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		return PTR_ERR(sleb);
+	}
 	if (sleb->nodes_cnt != nodes_cnt)
 		goto out;
 	if (!sleb->nodes_cnt)
@@ -75,16 +91,25 @@ static int scan_for_master(struct ubifs_info *c)
 		goto out;
 	c->mst_offs = offs;
 	ubifs_scan_destroy(sleb);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	return 0;
 
 out:
 	ubifs_scan_destroy(sleb);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	return -EUCLEAN;
 
 out_dump:
 	ubifs_err("unexpected node type %d master LEB %d:%d",
 		  snod->type, lnum, snod->offs);
 	ubifs_scan_destroy(sleb);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	return -EINVAL;
 }
 

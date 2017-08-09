@@ -513,9 +513,21 @@ int ubifs_garbage_collect_leb(struct ubifs_info *c, struct ubifs_lprops *lp)
 	 * We scan the entire LEB even though we only really need to scan up to
 	 * (c->leb_size - lp->free).
 	 */
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	if (mutex_trylock(&ubifs_sbuf_mutex) == 0) {
+		atomic_long_inc(&ubifs_sbuf_lock_count);
+		ubifs_err("trylock fail count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+		mutex_lock(&ubifs_sbuf_mutex);
+		ubifs_err("locked count %ld\n", atomic_long_read(&ubifs_sbuf_lock_count));
+	}
+#endif
 	sleb = ubifs_scan(c, lnum, 0, c->sbuf, 0);
-	if (IS_ERR(sleb))
+	if (IS_ERR(sleb)) {
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+		mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 		return PTR_ERR(sleb);
+	}
 
 	ubifs_assert(!list_empty(&sleb->nodes));
 	snod = list_entry(sleb->nodes.next, struct ubifs_scan_node, list);
@@ -598,6 +610,9 @@ int ubifs_garbage_collect_leb(struct ubifs_info *c, struct ubifs_lprops *lp)
 
 out:
 	ubifs_scan_destroy(sleb);
+#ifdef CONFIG_UBIFS_SHARE_BUFFER
+	mutex_unlock(&ubifs_sbuf_mutex);
+#endif
 	return err;
 
 out_inc_seq:
