@@ -2283,6 +2283,26 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 CLK_OF_DECLARE(mtk_pg_regs, "mediatek,mt6797-scpsys", mt_scpsys_init);
 
+#if 1 /*only use for suspend test*/
+void mtcmos_force_off(void)
+{
+	spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg_core0(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg_core1(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg_core2(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg_core3(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_dis(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mjc(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_ven(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_vde(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_c2k(STA_POWER_DOWN);
+	/*spm_mtcmos_ctrl_audio(STA_POWER_DOWN);*/
+}
+#endif
+
 #if CLK_DEBUG
 
 /*

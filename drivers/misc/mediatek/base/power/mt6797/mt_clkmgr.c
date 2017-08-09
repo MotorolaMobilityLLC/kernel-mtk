@@ -47,6 +47,7 @@ void __iomem *clk_vdec_gcon_base;
 void __iomem *clk_mjc_config_base;
 void __iomem *clk_venc_gcon_base;
 void __iomem *clk_mcumixed_base;
+void __iomem *clk_camsys_base;
 #endif
 
 #define Bring_Up
@@ -475,6 +476,137 @@ EXPORT_SYMBOL(clk_misc_cfg_ops);
 /************************************************
  **********       function debug       **********
  ************************************************/
+/*extern void mtcmos_force_off(void);*/
+#define PLL_PWR_CON0_ISO_EN_MASK 0xfffffffc
+#define PLL_PWR_CON0_ISO_EN_VALUE 0x2
+#define PLL_CON0_VALUE 0
+
+void __attribute__((weak)) mtcmos_force_off(void)
+{
+	pr_err("[%s]: warning!! real function doesn't exist\n", __func__);
+}
+
+static void pll_force_off(void)
+{
+	unsigned int temp;
+
+	temp = clk_readl(ARMCAXPLL1_PWR_CON0);
+	clk_writel(ARMCAXPLL1_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
+
+	temp = clk_readl(ARMCAXPLL3_PWR_CON0);
+	clk_writel(ARMCAXPLL3_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
+
+	temp = clk_readl(UNIVPLL_PWR_CON0);
+	clk_writel(UNIVPLL_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
+
+	temp = clk_readl(MFGPLL_PWR_CON0);
+	clk_writel(MFGPLL_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
+
+	temp = clk_readl(MSDCPLL_PWR_CON0);
+	clk_writel(MSDCPLL_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
+
+	temp = clk_readl(VDECPLL_PWR_CON0);
+	clk_writel(VDECPLL_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
+
+	temp = clk_readl(IMGPLL_PWR_CON0);
+	clk_writel(IMGPLL_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
+
+	temp = clk_readl(CODECPLL_PWR_CON0);
+	clk_writel(CODECPLL_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
+
+	temp = clk_readl(TVDPLL_PWR_CON0);
+	clk_writel(TVDPLL_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
+
+	temp = clk_readl(APLL1_PWR_CON0);
+	clk_writel(APLL1_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
+
+	temp = clk_readl(APLL2_PWR_CON0);
+	clk_writel(APLL2_PWR_CON0, (temp&PLL_PWR_CON0_ISO_EN_MASK) | PLL_PWR_CON0_ISO_EN_VALUE);
+
+
+    /***********************
+      * xPLL Frequency Enable
+      ************************/
+
+	temp = clk_readl(ARMCAXPLL1_CON0);
+	clk_writel(ARMCAXPLL1_CON0, PLL_CON0_VALUE);
+
+	temp = clk_readl(ARMCAXPLL3_CON0);
+	clk_writel(ARMCAXPLL3_CON0, PLL_CON0_VALUE);
+
+	temp = clk_readl(UNIVPLL_CON0);
+	clk_writel(UNIVPLL_CON0, PLL_CON0_VALUE);
+
+	temp = clk_readl(MFGPLL_CON0);
+	clk_writel(MFGPLL_CON0, PLL_CON0_VALUE);
+
+	temp = clk_readl(MSDCPLL_CON0);
+	clk_writel(MSDCPLL_CON0, PLL_CON0_VALUE);
+
+	temp = clk_readl(VDECPLL_CON0);
+	clk_writel(VDECPLL_CON0, PLL_CON0_VALUE);
+
+	temp = clk_readl(CODECPLL_CON0);
+	clk_writel(CODECPLL_CON0, PLL_CON0_VALUE);
+
+	temp = clk_readl(IMGPLL_CON0);
+	clk_writel(IMGPLL_CON0, PLL_CON0_VALUE);
+
+	temp = clk_readl(TVDPLL_CON0);
+	clk_writel(TVDPLL_CON0, PLL_CON0_VALUE);
+
+	temp = clk_readl(APLL1_CON0);
+	clk_writel(APLL1_CON0, PLL_CON0_VALUE);
+
+	temp = clk_readl(APLL2_CON0);
+	clk_writel(APLL2_CON0, PLL_CON0_VALUE);
+}
+
+#if 0
+static void cg_force_off(void)
+{
+	/*infra*/
+	clk_writel(INFRA_SW_CG0_SET, 0xFBEFFFFF); /*bit 20,26,: no use*/
+	clk_writel(INFRA_SW_CG1_SET, 0xFFFF3FFF); /*bit 14, 15: no use , bit 11 is auxadc*/
+	clk_writel(INFRA_SW_CG2_SET, 0xFFFFFDFF); /*bit 9: no use, bit 14 dvfs_spm0*/
+
+	/*vdec*/
+	clk_writel(VDEC_CKEN_CLR, 0x00000111);
+	clk_writel(LARB_CKEN_CLR, 0x00000001);
+
+	/*img*/
+	clk_writel(IMG_CG_SET, 0x00000C41);
+
+	/*cam*/
+	clk_writel(CAM_CG_SET, 0x00000FC1);
+
+	/*venc*/
+	clk_writel(VENC_CG_SET, 0x00001111);
+
+	/*mjc*/
+	clk_writel(MJC_CG_SET, 0x0000003F);
+
+	/*mfg*/
+	clk_writel(MFG_CG_SET, 0x00000001);
+
+	/*audio*/
+	clk_writel(AUDIO_TOP_CON0, 0xFFFFFFFF);
+	clk_writel(AUDIO_TOP_CON1, 0xFFFFFFFF);
+}
+#endif
+
+void all_force_off(void)
+{
+	/*CG*/
+	/*cg_force_off();*/
+
+	/*mtcmos*/
+	mtcmos_force_off();
+
+	/*pll*/
+	pll_force_off();
+}
+
 static int armbpll_fsel_read(struct seq_file *m, void *v)
 {
 	return 0;

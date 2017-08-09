@@ -1355,10 +1355,8 @@ static void __init mt_apmixedsys_init(struct device_node *node)
 	if (r)
 		pr_err("could not register clock provide\n");
 
-	#if MT_CCF_BRINGUP
 	mt_reg_sync_writel(0x00044440 , (base + 0x0C)); /* AP_PLL_CON3, 0x00044440*/
 	mt_reg_sync_writel(0xC , (base + 0x10)); /* AP_PLL_CON4, temp & 0xC*/
-	#endif
 
 }
 

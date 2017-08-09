@@ -19,6 +19,7 @@ extern void __iomem  *clk_vdec_gcon_base;
 extern void __iomem  *clk_mjc_config_base;
 extern void __iomem  *clk_venc_gcon_base;
 extern void __iomem  *clk_mcumixed_base;
+extern void __iomem *clk_camsys_base;
 #endif
 
 
@@ -99,6 +100,10 @@ extern void __iomem  *clk_mcumixed_base;
 #define ARMCAXPLL2_CON2         (clk_mcumixed_base + 0x228)
 #define ARMCAXPLL2_PWR_CON0      (clk_mcumixed_base + 0x22c)
 
+#define ARMCAXPLL3_CON0         (clk_mcumixed_base + 0x230)
+#define ARMCAXPLL3_CON1         (clk_mcumixed_base + 0x234)
+#define ARMCAXPLL3_CON2         (clk_mcumixed_base + 0x238)
+#define ARMCAXPLL3_PWR_CON0     (clk_mcumixed_base + 0x23c)
 
 #define ARMPLLDIV_MUXSEL        (clk_mcumixed_base + 0x270)
 #define ARMPLLDIV_CKDIV         (clk_mcumixed_base + 0x274)
@@ -170,6 +175,7 @@ extern void __iomem  *clk_mcumixed_base;
 
 /* Audio Register*/
 #define AUDIO_TOP_CON0          (clk_audio_base + 0x0000)
+#define AUDIO_TOP_CON1			(clk_audio_base + 0x0004)
 
 /* MFGCFG Register*/
 #define MFG_CG_CON              (clk_mfgcfg_base + 0)
@@ -209,6 +215,10 @@ extern void __iomem  *clk_mcumixed_base;
 #define VENC_CG_SET             (clk_venc_gcon_base + 0x4)
 #define VENC_CG_CLR             (clk_venc_gcon_base + 0x8)
 
+/* CAM Register*/
+#define CAM_CG_CON				(clk_camsys_base + 0x0)
+#define CAM_CG_SET				(clk_camsys_base + 0x4)
+#define CAM_CG_CLR				(clk_camsys_base + 0x8)
 
 enum {
 	MAINPLL    = 0,
