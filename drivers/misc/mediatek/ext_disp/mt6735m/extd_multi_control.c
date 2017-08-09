@@ -516,7 +516,7 @@ int external_display_switch_mode(DISP_MODE mode, unsigned int *session_created, 
 			change_flag = 1;
 		}
 #endif
-		switching = path_change_without_cascade(mode, session_id[j], j, change_flag);
+		switching = external_display_path_change_without_cascade(mode, session_id[j], j, change_flag);
 #else
 		switching = path_change_with_cascade(mode, session_id[j], j);
 #endif
