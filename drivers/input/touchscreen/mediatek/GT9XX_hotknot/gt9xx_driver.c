@@ -1467,24 +1467,24 @@ void gtp_int_sync(s32 ms)
 	gpio_direction_input(tpd_int_gpio_number);
 }
 
-void gtp_reset_guitar(struct i2c_client *client, s32 ms)
+void gtp_reset_guitar(struct i2c_client *client, s32 us)
 {
 	GTP_INFO("GTP RESET!\n");
 	gpio_direction_output(tpd_rst_gpio_number, 0);
-	msleep(ms);
+	usleep_range(us, us + 100);
 	gpio_direction_output(tpd_int_gpio_number, client->addr == 0x14);
 
-	msleep(20);
+	usleep_range(2000, 2100);
 	gpio_direction_output(tpd_rst_gpio_number, 1);
 
-	msleep(20);		/* must >= 6ms */
+	usleep_range(6000, 6100);		/* must >= 6ms */
 
 #if defined(CONFIG_GTP_COMPATIBLE_MODE)
 	if (CHIP_TYPE_GT9F == gtp_chip_type)
 		return;
 #endif
 
-	gtp_int_sync(100);	/* for dbl-system */
+	gtp_int_sync(51);	/* for dbl-system */
 #if defined(CONFIG_GTP_ESD_PROTECT)
 	gtp_init_ext_watchdog(i2c_client_tp_point);
 #endif
@@ -1498,7 +1498,6 @@ static int tpd_power_on(struct i2c_client *client)
 reset_proc:
 	gpio_direction_output(tpd_rst_gpio_number, 0);
 	gpio_direction_output(tpd_int_gpio_number, 0);
-	msleep(20);
 
 	ret = regulator_set_voltage(tpd->reg, 2800000, 2800000);	/* set 2.8v */
 	if (ret)
@@ -1507,7 +1506,7 @@ reset_proc:
 	if (ret)
 		GTP_DEBUG("regulator_enable() failed!\n");
 
-	gtp_reset_guitar(client, 20);
+	gtp_reset_guitar(client, 11000);
 
 #if defined(CONFIG_GTP_COMPATIBLE_MODE)
 	gtp_get_chip_type(client);
@@ -1925,7 +1924,8 @@ static int tpd_registration(void *unused)
 		GTP_ERROR("I2C communication ERROR!");
 		goto exit_fail;
 	}
-
+	tpd_load_status = 1;
+	check_flag = true;
 #ifdef VELOCITY_CUSTOM
 	tpd_v_magnify_x = TPD_VELOCITY_CUSTOM_X;
 	tpd_v_magnify_y = TPD_VELOCITY_CUSTOM_Y;
@@ -2025,8 +2025,6 @@ static int tpd_registration(void *unused)
 	gtp_esd_switch(client, SWITCH_ON);
 #endif
 	GTP_INFO("tpd registration done.");
-	tpd_load_status = 1;
-	check_flag = true;
 	return 0;
 
 exit_fail:
@@ -2062,6 +2060,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 			return 0;
 
 	probe_thread = kthread_run(tpd_registration, client, "tpd_probe");
+	usleep_range(1000, 1100);
 	if (IS_ERR(probe_thread)) {
 		err = PTR_ERR(probe_thread);
 		GTP_INFO(TPD_DEVICE " failed to create probe thread: %d\n", err);
@@ -2071,11 +2070,11 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 	}
 
 	do {
-		msleep(20);
+		usleep_range(3000, 3100);
 		count++;
 		if (check_flag)
 			break;
-	} while (count < 50);
+	} while (count < 120);
 	GTP_INFO("tpd_i2c_probe done.count = %d, flag = %d", count, check_flag);
 	return 0;
 }
