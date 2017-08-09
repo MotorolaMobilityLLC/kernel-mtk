@@ -42,6 +42,15 @@ config MTK_PMIC_CHIP_MT6337
 	  Set y to support this driver.
 	  Set n and choose other chip.
 
+config MTK_PMIC_CHIP_MT6336
+	tristate "MediaTek Power MT6336 Driver"
+	default n
+	---help---
+	  This selects for MediaTek(R) PMIC MT6336 driver.
+	  This driver uses I2C bus.
+	  Set y to support this driver.
+	  Set n and choose other chip.
+
 if MTK_LDVT
 config MTK_LDVT_PMIC
 	bool "MediaTek PMIC driver for LDVT"
