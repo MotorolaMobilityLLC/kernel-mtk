@@ -71,9 +71,7 @@ typedef unsigned int    UINT32;
   #define TRUE  (1)
 #endif
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
-#define ENABLE_CLK_MGR
-#endif
+/* #define ENABLE_CLK_MGR */
 
 /* field definition */
 /* ------------------------------------------------------------- */

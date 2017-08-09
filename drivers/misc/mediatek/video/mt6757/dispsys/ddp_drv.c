@@ -668,6 +668,9 @@ static int disp_probe(struct platform_device *pdev)
 	struct class_device;
 	/* int i; */
 	static unsigned int disp_probe_cnt;
+#ifdef ENABLE_CLK_MGR
+	int i;
+#endif
 
 	if (disp_probe_cnt != 0)
 		return 0;
