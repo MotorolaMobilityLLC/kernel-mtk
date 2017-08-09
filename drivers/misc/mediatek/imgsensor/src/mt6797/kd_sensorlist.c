@@ -87,7 +87,7 @@ static DEFINE_SPINLOCK(kdsensor_drv_lock);
 #ifndef SUPPORT_I2C_BUS_NUM3
     #define SUPPORT_I2C_BUS_NUM3        SUPPORT_I2C_BUS_NUM2
 #endif
-#define HW_TRIGGER_I2C_SUPPORT 0
+#define HW_TRIGGER_I2C_SUPPORT 1
 /*I2C trigger header file*/
 #include "i2c-mtk.h"
 
@@ -717,8 +717,26 @@ int iBurstWriteReg_HW(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 
 		msg[i].len = transfer_length;
 		msg[i].buf = pData+(i*transfer_length);
 	}
-	ret = mtk_i2c_transfer(pClient->adapter, msg, trans_num, I2C_HWTRIG_FLAG, speed_timing);
-		//ret = i2c_transfer(pClient->adapter, msg, trans_num);
+
+	ret = hw_trig_i2c_transfer(pClient->adapter, msg, trans_num);
+	return ret;
+}
+
+int i2c_buf_mode_en(int enable)
+{
+	int ret = 0;
+	struct i2c_client *pClient = NULL;
+	PK_ERR("i2c_buf_mode_en %d\n",enable);
+	if (gI2CBusNum == SUPPORT_I2C_BUS_NUM1)
+		pClient = g_pstI2Cclient3;
+	else {
+		PK_ERR("i2c_buf_mode_en only support main cam for now\n");
+		return -1;
+	}
+	if(enable)
+		ret = hw_trig_i2c_enable(pClient->adapter);
+	else
+		ret = hw_trig_i2c_disable(pClient->adapter);
 	return ret;
 }
 #else
@@ -726,6 +744,12 @@ int iBurstWriteReg_HW(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 
 	PK_ERR("plz #define HW_TRIGGER_I2C_SUPPORT 1\n");
         return -1;
 }
+int i2c_buf_mode_en(bool enable)
+{
+	PK_ERR("plz #define HW_TRIGGER_I2C_SUPPORT 1\n");
+        return -1;
+}
+
 #endif
 
 
@@ -2194,6 +2218,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
         g_NewSensorExpGain.uSensorGainDelayFrame = 0xFF;
         g_NewSensorExpGain.uISPGainDelayFrame = 0xFF;
         spin_unlock(&kdsensor_drv_lock);
+	case SENSOR_FEATURE_SET_I2C_BUF_MODE_EN:
 	case SENSOR_FEATURE_SET_SHUTTER_BUF_MODE:
 	case SENSOR_FEATURE_SET_GAIN_BUF_MODE:
     case SENSOR_FEATURE_SET_ISP_MASTER_CLOCK_FREQ:
@@ -2815,6 +2840,9 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
     /* copy to user */
     switch (pFeatureCtrl->FeatureId)
     {
+	case SENSOR_FEATURE_SET_I2C_BUF_MODE_EN:
+		i2c_buf_mode_en((*(unsigned long long *)pFeaturePara));
+		break;
     case SENSOR_FEATURE_SET_ESHUTTER:
     case SENSOR_FEATURE_SET_GAIN:
 	case SENSOR_FEATURE_SET_SHUTTER_BUF_MODE:
