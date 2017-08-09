@@ -467,15 +467,15 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 		((pwrctrl->mp0_cputop_idle_mask & 0x1) << 1) |
 		((pwrctrl->mp1_cputop_idle_mask & 0x1) << 2) |
 		((pwrctrl->mcusys_idle_mask & 0x1) << 4) |
-		(!(pwrctrl->mm_mask_b & 0x3) << 16) |
+		((pwrctrl->mm_mask_b & 0x3) << 16) |
 		((pwrctrl->md_ddr_en_dbc_en & 0x1) << 18) |
-		(!(pwrctrl->md_mask_b & 0x3) << 19) |
-		(!(pwrctrl->scp_mask_b & 0x1) << 21) |
-		(!(pwrctrl->lte_mask_b & 0x1) << 22) |
-		(!(pwrctrl->srcclkeni_mask_b & 0x1) << 23) |
+		((pwrctrl->md_mask_b & 0x3) << 19) |
+		((pwrctrl->scp_mask_b & 0x1) << 21) |
+		((pwrctrl->lte_mask_b & 0x1) << 22) |
+		((pwrctrl->srcclkeni_mask_b & 0x1) << 23) |
 		((pwrctrl->md_apsrc_1_sel & 0x1) << 24) |
 		((pwrctrl->md_apsrc_0_sel & 0x1) << 25) |
-		(!(pwrctrl->conn_mask_b & 0x1) << 26) |
+		((pwrctrl->conn_mask_b & 0x1) << 26) |
 		((pwrctrl->conn_apsrc_sel & 0x1) << 27));
 
 	/* SPM_SRC_REQ */
@@ -494,61 +494,61 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 	/* SPM_SRC_MASK */
 	spm_write(SPM_SRC_MASK,
 		((pwrctrl->csyspwreq_mask & 0x1) << 0) |
-		(!(pwrctrl->ccif0_md_event_mask_b & 0x1) << 1) |
-		(!(pwrctrl->ccif0_ap_event_mask_b & 0x1) << 2) |
-		(!(pwrctrl->ccif1_md_event_mask_b & 0x1) << 3) |
-		(!(pwrctrl->ccif1_ap_event_mask_b & 0x1) << 4) |
-		(!(pwrctrl->ccifmd_md1_event_mask_b & 0x1) << 5) |
-		(!(pwrctrl->ccifmd_md2_event_mask_b & 0x1) << 6) |
-		(!(pwrctrl->dsi0_vsync_mask_b & 0x1) << 7) |
-		(!(pwrctrl->dsi1_vsync_mask_b & 0x1) << 8) |
-		(!(pwrctrl->dpi_vsync_mask_b & 0x1) << 9) |
-		(!(pwrctrl->isp0_vsync_mask_b & 0x1) << 10) |
-		(!(pwrctrl->isp1_vsync_mask_b & 0x1) << 11) |
-		(!(pwrctrl->md_srcclkena_0_infra_mask_b & 0x1) << 12) |
-		(!(pwrctrl->md_srcclkena_1_infra_mask_b & 0x1) << 13) |
-		(!(pwrctrl->conn_srcclkena_infra_mask_b & 0x1) << 14) |
-		(!(pwrctrl->md32_srcclkena_infra_mask_b & 0x1) << 15) |
-		(!(pwrctrl->srcclkeni_infra_mask_b & 0x1) << 16) |
-		(!(pwrctrl->md_apsrc_req_0_infra_mask_b & 0x1) << 17) |
-		(!(pwrctrl->md_apsrc_req_1_infra_mask_b & 0x1) << 18) |
-		(!(pwrctrl->conn_apsrcreq_infra_mask_b & 0x1) << 19) |
-		(!(pwrctrl->md32_apsrcreq_infra_mask_b & 0x1) << 20) |
-		(!(pwrctrl->md_ddr_en_0_mask_b & 0x1) << 21) |
-		(!(pwrctrl->md_ddr_en_1_mask_b & 0x1) << 22) |
-		(!(pwrctrl->md_vrf18_req_0_mask_b & 0x1) << 23) |
-		(!(pwrctrl->md_vrf18_req_1_mask_b & 0x1) << 24) |
+		((pwrctrl->ccif0_md_event_mask_b & 0x1) << 1) |
+		((pwrctrl->ccif0_ap_event_mask_b & 0x1) << 2) |
+		((pwrctrl->ccif1_md_event_mask_b & 0x1) << 3) |
+		((pwrctrl->ccif1_ap_event_mask_b & 0x1) << 4) |
+		((pwrctrl->ccifmd_md1_event_mask_b & 0x1) << 5) |
+		((pwrctrl->ccifmd_md2_event_mask_b & 0x1) << 6) |
+		((pwrctrl->dsi0_vsync_mask_b & 0x1) << 7) |
+		((pwrctrl->dsi1_vsync_mask_b & 0x1) << 8) |
+		((pwrctrl->dpi_vsync_mask_b & 0x1) << 9) |
+		((pwrctrl->isp0_vsync_mask_b & 0x1) << 10) |
+		((pwrctrl->isp1_vsync_mask_b & 0x1) << 11) |
+		((pwrctrl->md_srcclkena_0_infra_mask_b & 0x1) << 12) |
+		((pwrctrl->md_srcclkena_1_infra_mask_b & 0x1) << 13) |
+		((pwrctrl->conn_srcclkena_infra_mask_b & 0x1) << 14) |
+		((pwrctrl->md32_srcclkena_infra_mask_b & 0x1) << 15) |
+		((pwrctrl->srcclkeni_infra_mask_b & 0x1) << 16) |
+		((pwrctrl->md_apsrc_req_0_infra_mask_b & 0x1) << 17) |
+		((pwrctrl->md_apsrc_req_1_infra_mask_b & 0x1) << 18) |
+		((pwrctrl->conn_apsrcreq_infra_mask_b & 0x1) << 19) |
+		((pwrctrl->md32_apsrcreq_infra_mask_b & 0x1) << 20) |
+		((pwrctrl->md_ddr_en_0_mask_b & 0x1) << 21) |
+		((pwrctrl->md_ddr_en_1_mask_b & 0x1) << 22) |
+		((pwrctrl->md_vrf18_req_0_mask_b & 0x1) << 23) |
+		((pwrctrl->md_vrf18_req_1_mask_b & 0x1) << 24) |
 		((pwrctrl->md1_dvfs_req_mask & 0x3) << 25) |
 		((pwrctrl->cpu_dvfs_req_mask & 0x1) << 27) |
 		((pwrctrl->emi_bw_dvfs_req_mask & 0x1) << 28) |
-		(!(pwrctrl->md_srcclkena_0_dvfs_req_mask_b & 0x1) << 29) |
-		(!(pwrctrl->md_srcclkena_1_dvfs_req_mask_b & 0x1) << 30) |
-		(!(pwrctrl->conn_srcclkena_dvfs_req_mask_b & 0x1) << 31));
+		((pwrctrl->md_srcclkena_0_dvfs_req_mask_b & 0x1) << 29) |
+		((pwrctrl->md_srcclkena_1_dvfs_req_mask_b & 0x1) << 30) |
+		((pwrctrl->conn_srcclkena_dvfs_req_mask_b & 0x1) << 31));
 
 	/* SPM_SRC2_MASK */
 	spm_write(SPM_SRC2_MASK,
-		(!(pwrctrl->dvfs_halt_mask_b & 0x1f) << 0) |
-		(!(pwrctrl->vdec_req_mask_b & 0x1) << 6) |
-		(!(pwrctrl->gce_req_mask_b & 0x1) << 7) |
-		(!(pwrctrl->cpu_md_dvfs_req_merge_mask_b & 0x1) << 8) |
-		(!(pwrctrl->md_ddr_en_dvfs_halt_mask_b & 0x3) << 9) |
-		(!(pwrctrl->dsi0_vsync_dvfs_halt_mask_b & 0x1) << 11) |
-		(!(pwrctrl->dsi1_vsync_dvfs_halt_mask_b & 0x1) << 12) |
-		(!(pwrctrl->dpi_vsync_dvfs_halt_mask_b & 0x1) << 13) |
-		(!(pwrctrl->isp0_vsync_dvfs_halt_mask_b & 0x1) << 14) |
-		(!(pwrctrl->isp1_vsync_dvfs_halt_mask_b & 0x1) << 15) |
-		(!(pwrctrl->conn_ddr_en_mask_b & 0x1) << 16) |
-		(!(pwrctrl->disp_req_mask_b & 0x1) << 17) |
-		(!(pwrctrl->disp1_req_mask_b & 0x1) << 18) |
-		(!(pwrctrl->mfg_req_mask_b & 0x1) << 19) |
-		(!(pwrctrl->c2k_ps_rccif_wake_mask_b & 0x1) << 20) |
-		(!(pwrctrl->c2k_l1_rccif_wake_mask_b & 0x1) << 21) |
-		(!(pwrctrl->ps_c2k_rccif_wake_mask_b & 0x1) << 22) |
-		(!(pwrctrl->l1_c2k_rccif_wake_mask_b & 0x1) << 23) |
-		(!(pwrctrl->sdio_on_dvfs_req_mask_b & 0x1) << 24) |
-		(!(pwrctrl->emi_boost_dvfs_req_mask_b & 0x1) << 25) |
+		((pwrctrl->dvfs_halt_mask_b & 0x1f) << 0) |
+		((pwrctrl->vdec_req_mask_b & 0x1) << 6) |
+		((pwrctrl->gce_req_mask_b & 0x1) << 7) |
+		((pwrctrl->cpu_md_dvfs_req_merge_mask_b & 0x1) << 8) |
+		((pwrctrl->md_ddr_en_dvfs_halt_mask_b & 0x3) << 9) |
+		((pwrctrl->dsi0_vsync_dvfs_halt_mask_b & 0x1) << 11) |
+		((pwrctrl->dsi1_vsync_dvfs_halt_mask_b & 0x1) << 12) |
+		((pwrctrl->dpi_vsync_dvfs_halt_mask_b & 0x1) << 13) |
+		((pwrctrl->isp0_vsync_dvfs_halt_mask_b & 0x1) << 14) |
+		((pwrctrl->isp1_vsync_dvfs_halt_mask_b & 0x1) << 15) |
+		((pwrctrl->conn_ddr_en_mask_b & 0x1) << 16) |
+		((pwrctrl->disp_req_mask_b & 0x1) << 17) |
+		((pwrctrl->disp1_req_mask_b & 0x1) << 18) |
+		((pwrctrl->mfg_req_mask_b & 0x1) << 19) |
+		((pwrctrl->c2k_ps_rccif_wake_mask_b & 0x1) << 20) |
+		((pwrctrl->c2k_l1_rccif_wake_mask_b & 0x1) << 21) |
+		((pwrctrl->ps_c2k_rccif_wake_mask_b & 0x1) << 22) |
+		((pwrctrl->l1_c2k_rccif_wake_mask_b & 0x1) << 23) |
+		((pwrctrl->sdio_on_dvfs_req_mask_b & 0x1) << 24) |
+		((pwrctrl->emi_boost_dvfs_req_mask_b & 0x1) << 25) |
 		((pwrctrl->cpu_md_emi_dvfs_req_prot_dis & 0x1) << 26) |
-		(!(pwrctrl->dramc_spcmd_apsrc_req_mask_b & 0x1) << 27));
+		((pwrctrl->dramc_spcmd_apsrc_req_mask_b & 0x1) << 27));
 
 #if 0
 	/* SPM_WAKEUP_EVENT_MASK */
