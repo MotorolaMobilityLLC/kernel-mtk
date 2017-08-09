@@ -659,6 +659,40 @@ static ssize_t mt_soc_debug_read(struct file *file, char __user *buf,
 			Afe_Get_Reg(AFE_CONN9));
 	n += scnprintf(buffer + n, size - n, "AFE_CONN10		   = 0x%x\n",
 			Afe_Get_Reg(AFE_CONN10));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN11		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN11));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN12		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN12));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN13		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN13));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN14		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN14));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN15		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN15));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN16		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN16));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN17		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN17));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN18		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN18));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN19		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN19));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN20		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN20));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN21		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN21));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN22		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN22));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN23		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN23));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN24		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN24));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN25		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN25));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN26		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN26));
+	n += scnprintf(buffer + n, size - n, "AFE_CONN27		   = 0x%x\n",
+			Afe_Get_Reg(AFE_CONN27));
 	n += scnprintf(buffer + n, size - n, "AFE_CONN28		   = 0x%x\n",
 			Afe_Get_Reg(AFE_CONN28));
 	n += scnprintf(buffer + n, size - n, "AFE_CONN29		   = 0x%x\n",
