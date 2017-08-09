@@ -1157,7 +1157,7 @@ void cmdqSecInitialize(void)
 	cmdq_sec_register_secure_irq();
 	cmdq_sec_unlock_secure_path();
 #endif
-
+#if 0
 	/* allocate shared memory */
 	gCmdqContext.hSecSharedMem = NULL;
 	cmdq_sec_create_shared_memory(&(gCmdqContext.hSecSharedMem), PAGE_SIZE);
@@ -1165,7 +1165,23 @@ void cmdqSecInitialize(void)
 	cmdq_sec_lock_secure_path();
 	cmdq_sec_init_share_memory();
 	cmdq_sec_unlock_secure_path();
+#endif
 
+#endif
+}
+
+void cmdq_sec_init_secure_path(void)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	CMDQ_LOG("begin to init secure path\n");
+	/* allocate shared memory */
+	gCmdqContext.hSecSharedMem = NULL;
+	cmdq_sec_create_shared_memory(&(gCmdqContext.hSecSharedMem), PAGE_SIZE);
+	/* init share memory */
+	cmdq_sec_lock_secure_path();
+	cmdq_sec_init_share_memory();
+	cmdq_sec_unlock_secure_path();
+	CMDQ_LOG("init secure path done\n");
 #endif
 }
 

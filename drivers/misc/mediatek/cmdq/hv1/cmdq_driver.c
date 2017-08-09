@@ -800,30 +800,27 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 #endif
 		break;
 	default:
+		CMDQ_LOG("size of  cmdqCommandStruct is %08lx\n", sizeof(struct cmdqCommandStruct));
+		CMDQ_LOG("CMDQ_IOCTL_QUERY_CAP_BITS:0x%08lx\n", CMDQ_IOCTL_QUERY_CAP_BITS);
+		CMDQ_LOG("CMDQ_IOCTL_LOCK_MUTEX:0x%08lx\n", CMDQ_IOCTL_LOCK_MUTEX);
+		CMDQ_LOG(" CMDQ_IOCTL_UNLOCK_MUTEX:0x%08lx\n", CMDQ_IOCTL_UNLOCK_MUTEX);
+		CMDQ_LOG(" CMDQ_IOCTL_EXEC_COMMAND:0x%08lx\t the error code\n",
+			 CMDQ_IOCTL_EXEC_COMMAND);
+		CMDQ_LOG(" CMDQ_IOCTL_QUERY_USAGE:0x%08lx\n", CMDQ_IOCTL_QUERY_USAGE);
+		CMDQ_LOG(" CMDQ_IOCTL_ASYNC_JOB_EXEC:0x%08lx\n", CMDQ_IOCTL_ASYNC_JOB_EXEC);
+		CMDQ_LOG(" CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE:0x%08lx\n",
+			 CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE);
+		CMDQ_LOG(" CMDQ_IOCTL_ALLOC_WRITE_ADDRESS:0x%08lx\n",
+			 CMDQ_IOCTL_ALLOC_WRITE_ADDRESS);
+		CMDQ_LOG(" CMDQ_IOCTL_FREE_WRITE_ADDRESS:0x%08lx\n", CMDQ_IOCTL_FREE_WRITE_ADDRESS);
+		CMDQ_LOG(" CMDQ_IOCTL_READ_ADDRESS_VALUE:0x%08lx\n", CMDQ_IOCTL_READ_ADDRESS_VALUE);
+		CMDQ_LOG(" CMDQ_IOCTL_QUERY_CAP_BITS:0x%08lx\n", CMDQ_IOCTL_QUERY_CAP_BITS);
+		CMDQ_ERR("occur this problem, do nothing,just full build and fix it");
+		CMDQ_ERR("possible reason:DpDriver_Android.cpp file need to rebuild cmdq_driver.h");
+		CMDQ_ERR
+		    ("sizeof(X) is a operator, the return value will be const value when compile this code,");
+		CMDQ_ERR("so if you modify type X's structure,you need to rebuild cmdq_driver.h\n");
 		CMDQ_ERR("unrecognized ioctl 0x%08x\n", code);
-		CMDQ_ERR("CMDQ_IOCTL_LOCK_MUTEX:0x%08lx sizeof(int) = %ld\n",
-			CMDQ_IOCTL_LOCK_MUTEX, sizeof(int));
-		CMDQ_ERR("CMDQ_IOCTL_UNLOCK_MUTEX:0x%08lx sizeof(int) = %ld\n",
-			CMDQ_IOCTL_UNLOCK_MUTEX, sizeof(int));
-		CMDQ_ERR("CMDQ_IOCTL_EXEC_COMMAND:0x%08lx sizeof(struct cmdqCommandStruct) = %ld\n",
-			CMDQ_IOCTL_EXEC_COMMAND, sizeof(struct cmdqCommandStruct));
-		CMDQ_ERR("CMDQ_IOCTL_QUERY_USAGE:0x%08lx sizeof(struct cmdqUsageInfoStruct) = %ld\n",
-			CMDQ_IOCTL_QUERY_USAGE, sizeof(struct cmdqUsageInfoStruct));
-		CMDQ_ERR("CMDQ_IOCTL_ASYNC_JOB_EXEC:0x%08lx sizeof(struct cmdqJobStruct) = %ld\n",
-			CMDQ_IOCTL_ASYNC_JOB_EXEC, sizeof(struct cmdqJobStruct));
-		CMDQ_ERR("CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE:0x%08lx sizeof(struct cmdqJobResultStruct) = %ld\n",
-			CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE, sizeof(struct cmdqJobResultStruct));
-		CMDQ_ERR("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS:0x%08lx sizeof(struct cmdqWriteAddressStruct) = %ld\n",
-			CMDQ_IOCTL_ALLOC_WRITE_ADDRESS, sizeof(struct cmdqWriteAddressStruct));
-		CMDQ_ERR("CMDQ_IOCTL_FREE_WRITE_ADDRESS:0x%08lx sizeof(struct cmdqWriteAddressStruct) = %ld\n",
-			CMDQ_IOCTL_FREE_WRITE_ADDRESS, sizeof(struct cmdqWriteAddressStruct));
-		CMDQ_ERR("CMDQ_IOCTL_READ_ADDRESS_VALUE:0x%08lx sizeof(struct cmdqReadAddressStruct) = %ld\n",
-			CMDQ_IOCTL_READ_ADDRESS_VALUE, sizeof(struct cmdqReadAddressStruct));
-		CMDQ_ERR("CMDQ_IOCTL_QUERY_CAP_BITS:0x%08lx sizeof(int) = %ld\n",
-			CMDQ_IOCTL_QUERY_CAP_BITS, sizeof(int));
-		CMDQ_ERR("CMDQ_IOCTL_SYNC_BUF_HDCP_VERSION:0x%08lx sizeof(struct cmdqSyncHandleHdcpStruct) = %ld\n",
-			CMDQ_IOCTL_SYNC_BUF_HDCP_VERSION, sizeof(struct cmdqSyncHandleHdcpStruct));
-
 		break;
 	}
 
@@ -850,28 +847,6 @@ static long cmdq_ioctl_compat(struct file *pFile, unsigned int code, unsigned lo
 		return -ENOIOCTLCMD;
 	default:
 		CMDQ_ERR("[COMPAT]unrecognized ioctl 0x%08x\n", code);
-		CMDQ_ERR("CMDQ_IOCTL_LOCK_MUTEX:0x%08lx sizeof(int) = %ld\n",
-			CMDQ_IOCTL_LOCK_MUTEX, sizeof(int));
-		CMDQ_ERR("CMDQ_IOCTL_UNLOCK_MUTEX:0x%08lx sizeof(int) = %ld\n",
-			CMDQ_IOCTL_UNLOCK_MUTEX, sizeof(int));
-		CMDQ_ERR("CMDQ_IOCTL_EXEC_COMMAND:0x%08lx sizeof(struct cmdqCommandStruct) = %ld\n",
-			CMDQ_IOCTL_EXEC_COMMAND, sizeof(struct cmdqCommandStruct));
-		CMDQ_ERR("CMDQ_IOCTL_QUERY_USAGE:0x%08lx sizeof(struct cmdqUsageInfoStruct) = %ld\n",
-			CMDQ_IOCTL_QUERY_USAGE, sizeof(struct cmdqUsageInfoStruct));
-		CMDQ_ERR("CMDQ_IOCTL_ASYNC_JOB_EXEC:0x%08lx sizeof(struct cmdqJobStruct) = %ld\n",
-			CMDQ_IOCTL_ASYNC_JOB_EXEC, sizeof(struct cmdqJobStruct));
-		CMDQ_ERR("CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE:0x%08lx sizeof(struct cmdqJobResultStruct) = %ld\n",
-			CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE, sizeof(struct cmdqJobResultStruct));
-		CMDQ_ERR("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS:0x%08lx sizeof(struct cmdqWriteAddressStruct) = %ld\n",
-			CMDQ_IOCTL_ALLOC_WRITE_ADDRESS, sizeof(struct cmdqWriteAddressStruct));
-		CMDQ_ERR("CMDQ_IOCTL_FREE_WRITE_ADDRESS:0x%08lx sizeof(struct cmdqWriteAddressStruct) = %ld\n",
-			CMDQ_IOCTL_FREE_WRITE_ADDRESS, sizeof(struct cmdqWriteAddressStruct));
-		CMDQ_ERR("CMDQ_IOCTL_READ_ADDRESS_VALUE:0x%08lx sizeof(struct cmdqReadAddressStruct) = %ld\n",
-			CMDQ_IOCTL_READ_ADDRESS_VALUE, sizeof(struct cmdqReadAddressStruct));
-		CMDQ_ERR("CMDQ_IOCTL_QUERY_CAP_BITS:0x%08lx sizeof(int) = %ld\n",
-			CMDQ_IOCTL_QUERY_CAP_BITS, sizeof(int));
-		CMDQ_ERR("CMDQ_IOCTL_SYNC_BUF_HDCP_VERSION:0x%08lx sizeof(struct cmdqSyncHandleHdcpStruct) = %ld\n",
-			CMDQ_IOCTL_SYNC_BUF_HDCP_VERSION, sizeof(struct cmdqSyncHandleHdcpStruct));
 		return -ENOIOCTLCMD;
 	}
 
@@ -1250,8 +1225,16 @@ static void __exit cmdq_exit(void)
 	CMDQ_MSG("CMDQ driver exit end\n");
 }
 
+static int __init cmdq_driver_init_secure_path(void)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	cmdq_sec_init_secure_path();
+#endif
+	return 0;
+}
 
 subsys_initcall(cmdq_init);
+late_initcall(cmdq_driver_init_secure_path);
 module_exit(cmdq_exit);
 
 MODULE_DESCRIPTION("MTK CMDQ driver");

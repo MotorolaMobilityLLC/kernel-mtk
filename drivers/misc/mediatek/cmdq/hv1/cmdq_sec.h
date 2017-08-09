@@ -110,6 +110,7 @@ void cmdqSecInitialize(void);
 void cmdqSecDeInitialize(void);
 
 int32_t cmdq_sec_sync_handle_hdcp_unlock(struct cmdqSyncHandleHdcpStruct syncHandle);
+void cmdq_sec_init_secure_path(void);
 
 
 extern struct ContextStruct gCmdqContext;
