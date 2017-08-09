@@ -16,6 +16,7 @@
 #obj- :=dummy.o
 
 #endif
+ifeq ($(CONFIG_MTK_ECCCI_DRIVER), y)
 ifneq ($(CONFIG_MTK_ECCCI_C2K), y)
 ifeq ($(CONFIG_MTK_C2K_SUPPORT), y)
 
@@ -33,6 +34,12 @@ c2k_sdio-y += cbp_sdio.o modem_sdio.o
 c2k_sdio-y += f_rawbulk.o rawbulk.o rawbulk_transfer.o
 
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+
+else
+
+obj- :=dummy.o
+
+endif
 
 else
 
