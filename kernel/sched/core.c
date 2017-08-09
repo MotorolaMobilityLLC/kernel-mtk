@@ -853,7 +853,7 @@ static void sched_tg_enqueue(struct rq *rq, struct task_struct *p)
 
 	if (group_leader_is_empty(p))
 		return;
-	id = get_cluster_id(rq->cpu);
+	id = arch_get_cluster_id(rq->cpu);
 	if (unlikely(WARN_ON(id < 0)))
 		return;
 
@@ -874,7 +874,7 @@ static void sched_tg_dequeue(struct rq *rq, struct task_struct *p)
 
 	if (group_leader_is_empty(p))
 		return;
-	id = get_cluster_id(rq->cpu);
+	id = arch_get_cluster_id(rq->cpu);
 	if (unlikely(WARN_ON(id < 0)))
 		return;
 

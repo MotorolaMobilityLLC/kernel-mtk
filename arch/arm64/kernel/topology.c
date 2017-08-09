@@ -46,6 +46,11 @@ unsigned long arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
 	return per_cpu(cpu_scale, cpu);
 }
 
+unsigned long arch_get_max_cpu_capacity(int cpu)
+{
+	return per_cpu(cpu_scale, cpu);
+}
+
 static void set_capacity_scale(unsigned int cpu, unsigned long capacity)
 {
 	per_cpu(cpu_scale, cpu) = capacity;
@@ -212,7 +217,7 @@ static const struct cpu_efficiency table_efficiency[] = {
 static unsigned long *__cpu_capacity;
 #define cpu_capacity(cpu)	__cpu_capacity[cpu]
 
-static unsigned long max_cpu_perf;
+static unsigned long max_cpu_perf, min_cpu_perf;
 
 static int __init parse_dt_topology(void)
 {
@@ -355,11 +360,14 @@ static void __init parse_dt_cpu_capacity(void)
 		cpu_perf = ((be32_to_cpup(rate)) >> 20) * cpu_eff->efficiency;
 		cpu_capacity(cpu) = cpu_perf;
 		max_cpu_perf = max(max_cpu_perf, cpu_perf);
+		min_cpu_perf = min(min_cpu_perf, cpu_perf);
 		i++;
 	}
 
-	if (i < num_possible_cpus())
+	if (i < num_possible_cpus()) {
 		max_cpu_perf = 0;
+		min_cpu_perf = 0;
+	}
 }
 
 /*
@@ -520,24 +528,16 @@ int arch_cpu_is_little(unsigned int cpu)
 	return !arch_cpu_is_big(cpu);
 }
 
-int arch_is_big_little(void)
+int arch_is_smp(void)
 {
-	static int __arch_big_little = -1;
-	unsigned int cpu;
-	int has_big = 0, has_little = 0;
+	static int __arch_smp = -1;
 
-	if (__arch_big_little != -1)
-		return __arch_big_little;
+	if (__arch_smp != -1)
+		return __arch_smp;
 
-	for_each_possible_cpu(cpu) {
-		if (arch_cpu_is_big(cpu))
-			has_big = 1;
-		else
-			has_little = 1;
-	}
-	__arch_big_little = (has_big && has_little) ? 1 : 0;
+	__arch_smp = (max_cpu_perf != min_cpu_perf) ? 0 : 1;
 
-	return __arch_big_little;
+	return __arch_smp;
 }
 
 int arch_get_nr_clusters(void)
@@ -584,6 +584,12 @@ void arch_get_cluster_cpus(struct cpumask *cpus, int cluster_id)
 		if (cpu_topo->cluster_id == cluster_id)
 			cpumask_set_cpu(cpu, cpus);
 	}
+}
+
+int arch_better_capacity(unsigned int cpu)
+{
+	BUG_ON(cpu >= num_possible_cpus());
+	return cpu_capacity(cpu) > min_cpu_perf;
 }
 
 #ifdef CONFIG_SCHED_HMP

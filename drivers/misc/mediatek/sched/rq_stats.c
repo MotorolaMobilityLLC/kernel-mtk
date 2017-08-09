@@ -127,7 +127,8 @@ static int update_average_load(unsigned int freq, unsigned int cpu, bool use_max
 	struct cpu_load_data *pcpu = &per_cpu(cpuload, cpu);
 	cputime64_t cur_wall_time, cur_idle_time, cur_iowait_time;
 	unsigned int idle_time, wall_time, iowait_time;
-	unsigned int cur_load, load_at_max_freq;
+	unsigned int cur_load, load_at_max_freq, prev_avg_load;
+	cputime64_t prev_wall_time, prev_cpu_idle, prev_cpu_iowait;
 
 #if defined(RQSTATS_USE_CPU_IDLE_INTERNAL) || !defined(CONFIG_CPU_FREQ)
 	cur_idle_time = get_cpu_idle_time_internal(cpu, &cur_wall_time);
@@ -135,6 +136,10 @@ static int update_average_load(unsigned int freq, unsigned int cpu, bool use_max
 	cur_idle_time = get_cpu_idle_time(cpu, &cur_wall_time, 0);
 #endif /* RQSTATS_USE_CPU_IDLE_INTERNAL || !CONFIG_CPU_FREQ */
 	cur_iowait_time = get_cpu_iowait_time(cpu, &cur_wall_time);
+
+	prev_wall_time = pcpu->prev_cpu_wall;
+	prev_cpu_idle = pcpu->prev_cpu_idle;
+	prev_cpu_iowait = pcpu->prev_cpu_iowait;
 
 	wall_time = (unsigned int) (cur_wall_time - pcpu->prev_cpu_wall);
 	pcpu->prev_cpu_wall = cur_wall_time;
@@ -165,6 +170,8 @@ static int update_average_load(unsigned int freq, unsigned int cpu, bool use_max
 	} else
 		load_at_max_freq = 0;
 
+	prev_avg_load = pcpu->avg_load_maxfreq;
+
 #if 1
 	if (!pcpu->avg_load_maxfreq) {
 		/* This is the first sample in this window*/
@@ -187,6 +194,13 @@ static int update_average_load(unsigned int freq, unsigned int cpu, bool use_max
 	pcpu->avg_load_maxfreq = load_at_max_freq;
 	pcpu->window_size = wall_time;
 #endif
+
+	mt_sched_printf(sched_log,
+		"[%s] cpu(%u) load:%u(%u/%u) wdz:%u wall:%u(%llu/%llu) idle: %u(%llu/%llu) iowait: %u(%llu/%llu)\n",
+		 __func__, cpu, pcpu->avg_load_maxfreq, load_at_max_freq, prev_avg_load, pcpu->window_size,
+		wall_time, cur_wall_time, prev_wall_time,
+		idle_time, cur_idle_time, prev_cpu_idle,
+		iowait_time, cur_iowait_time, prev_cpu_iowait);
 
 	return 0;
 }
@@ -246,7 +260,7 @@ EXPORT_SYMBOL(sched_get_percpu_load);
 static unsigned int htask_temperature;
 static void __heat_refined(int *count)
 {
-	if (arch_is_big_little()) {
+	if (!arch_is_smp()) {
 		if (*count) {
 			htask_temperature += (htask_temperature < MAX_HTASK_TEMPERATURE) ? 1 : 0;
 		} else {
