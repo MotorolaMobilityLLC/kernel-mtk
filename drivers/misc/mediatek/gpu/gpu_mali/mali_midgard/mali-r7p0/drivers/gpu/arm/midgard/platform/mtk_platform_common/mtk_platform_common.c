@@ -23,6 +23,9 @@ atomic_t g_mtk_gpu_total_memory_usage_in_pages;
 atomic_t g_mtk_gpu_peak_memory_usage_in_pages;
 static mtk_gpu_meminfo_type g_mtk_gpu_meminfo[MTK_MEMINFO_SIZE];
 
+/* on:1, off:0 */
+int g_vgpu_power_on_flag = 0;
+
 void mtk_kbase_gpu_memory_debug_init()
 {
 	mtk_dump_gpu_memory_usage_fp = mtk_kbase_dump_gpu_memory_usage;
@@ -223,3 +226,26 @@ void proc_mali_unregister(void)
 #define proc_mali_register() do{}while(0)
 #define proc_mali_unregister() do{}while(0)
 #endif /* CONFIG_PROC_FS */
+
+int mtk_get_vgpu_power_on_flag(void)
+{
+	return g_vgpu_power_on_flag;
+}
+
+int mtk_set_vgpu_power_on_flag(int power_on_id)
+{
+	g_vgpu_power_on_flag = power_on_id;
+	
+	return 0;
+}
+
+int mtk_set_mt_gpufreq_target(int freq_id)
+{
+	if (MTK_VGPU_POWER_ON == mtk_get_vgpu_power_on_flag()) {
+		return  mt_gpufreq_target(freq_id);
+	} else {
+		pr_alert("MALI: VGPU power is off, ignore set freq: %d. \n",freq_id);
+	}
+	
+	return 0;
+}

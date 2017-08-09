@@ -26,6 +26,7 @@
 #include <platform/mtk_platform_common.h>
 #include "mtk_common.h"
 #include "mtk_mfg_reg.h"
+#include "mt_gpufreq.h"
 
 #ifdef ENABLE_COMMON_DVFS
 #include <ged_dvfs.h>
@@ -104,14 +105,13 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
         pr_alert("MALI: mtk_config is NULL \n");
         return -1;
     }
-    /* FIXME: MT6755 */   
-    /*
+
 	mt_gpufreq_voltage_enable_set(1);
  	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
- 	*/
-#ifdef ENABLE_COMMON_DVFS    
+
+#ifdef ENABLE_COMMON_DVFS
 	ged_dvfs_gpu_clock_switch_notify(1);
-#endif    
+#endif
     
 	ret = clk_prepare_enable(config->clk_display_scp);
 	if (ret) {
@@ -133,7 +133,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 		pr_alert("MALI: clk_prepare_enable failed when enabling mfg clock");
 	}
 
-	pr_debug("MALI :[Power on] get GPU ID : 0x%x \n", kbase_os_reg_read(kbdev, GPU_CONTROL_REG(GPU_ID)) );        
+	pr_debug("MALI :[Power on] get GPU ID : 0x%x \n", kbase_os_reg_read(kbdev, GPU_CONTROL_REG(GPU_ID)) );
 	return 1;
 }
 
@@ -147,7 +147,8 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	void __iomem *clk_mfgsys_base;
     
     if (!kbdev) {
-        pr_alert("[MALI] input parameter is NULL \n");    
+        pr_alert("[MALI] input parameter is NULL \n");
+		return;
     }
     config = (struct mtk_config *)kbdev->mtk_config;
     clk_mfgsys_base = config->mfg_register;
@@ -218,16 +219,12 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	clk_disable_unprepare(config->clk_smi_common);
 	clk_disable_unprepare(config->clk_display_scp);
 
-    /* FIXME: MT6755 */ 
-    /* 
-     * 
 	mt_gpufreq_voltage_enable_set(0);
-	*/
 #ifdef ENABLE_COMMON_DVFS    
 	ged_dvfs_gpu_clock_switch_notify(0);
-#endif    
+#endif
+	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
     
-	
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {

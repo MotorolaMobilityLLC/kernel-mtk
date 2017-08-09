@@ -1,4 +1,10 @@
+#ifndef __MTK_PLATFORM_COMMON_H__
+#define __MTK_PLATFORM_COMMON_H__
+
 #include <linux/platform_device.h>
+
+/* MTK */
+#include "mt_gpufreq.h"
 
 int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev);
 
@@ -12,6 +18,12 @@ typedef struct
 	int used_pages;
 } mtk_gpu_meminfo_type;
 #endif /* ENABLE_MTK_MEMINFO */
+
+enum mtk_vgpu_power_on {
+	MTK_VGPU_POWER_OFF,	/** VGPU_POWER_OFF */    
+	MTK_VGPU_POWER_ON,	/** VGPU_POWER_ON */
+};
+
 
 #ifdef ENABLE_MTK_MEMINFO
 void mtk_kbase_gpu_memory_debug_init(void);
@@ -28,3 +40,12 @@ void mtk_kbase_set_gpu_memory_peak(void);
 void proc_mali_register(void);
 void proc_mali_unregister(void);
 #endif /* CONFIG_PROC_FS */
+
+/* MTK internal vgpu function */
+
+int mtk_get_vgpu_power_on_flag(void);
+int mtk_set_vgpu_power_on_flag(int power_on_id);
+
+int mtk_set_mt_gpufreq_target(int freq_id);
+
+#endif /* __MTK_PLATFORM_COMMON_H__ */
