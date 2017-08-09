@@ -1789,6 +1789,7 @@ int mtk_p2p_cfg80211_testmode_wfd_update_cmd(IN struct wiphy *wiphy, IN void *da
 	int status = 0;
 	P_WFD_CFG_SETTINGS_T prWfdCfgSettings = (P_WFD_CFG_SETTINGS_T) NULL;
 	P_MSG_WFD_CONFIG_SETTINGS_CHANGED_T prMsgWfdCfgUpdate = (P_MSG_WFD_CONFIG_SETTINGS_CHANGED_T) NULL;
+	static UINT_8 prevWfdEnable;
 
 	ASSERT(wiphy);
 
@@ -1798,37 +1799,37 @@ int mtk_p2p_cfg80211_testmode_wfd_update_cmd(IN struct wiphy *wiphy, IN void *da
 
 	DBGLOG(P2P, INFO, "mtk_p2p_cfg80211_testmode_wfd_update_cmd\n");
 
-#if 1
-
-	DBGLOG(P2P, INFO, "WFD Enable:%x\n", prParams->WfdEnable);
-	DBGLOG(P2P, INFO, "WFD Session Available:%x\n", prParams->WfdSessionAvailable);
-	DBGLOG(P2P, INFO, "WFD Couple Sink Status:%x\n", prParams->WfdCoupleSinkStatus);
-	/* aucReserved0[2] */
-	DBGLOG(P2P, INFO, "WFD Device Info:%x\n", prParams->WfdDevInfo);
-	DBGLOG(P2P, INFO, "WFD Control Port:%x\n", prParams->WfdControlPort);
-	DBGLOG(P2P, INFO, "WFD Maximum Throughput:%x\n", prParams->WfdMaximumTp);
-	DBGLOG(P2P, INFO, "WFD Extend Capability:%x\n", prParams->WfdExtendCap);
-	DBGLOG(P2P, INFO, "WFD Couple Sink Addr %pM\n", prParams->WfdCoupleSinkAddress);
-	DBGLOG(P2P, INFO, "WFD Associated BSSID %pM\n", prParams->WfdAssociatedBssid);
-	/* UINT_8 aucVideolp[4]; */
-	/* UINT_8 aucAudiolp[4]; */
-	DBGLOG(P2P, INFO, "WFD Video Port:%x\n", prParams->WfdVideoPort);
-	DBGLOG(P2P, INFO, "WFD Audio Port:%x\n", prParams->WfdAudioPort);
-	DBGLOG(P2P, INFO, "WFD Flag:%x\n", prParams->WfdFlag);
-	DBGLOG(P2P, INFO, "WFD Policy:%x\n", prParams->WfdPolicy);
-	DBGLOG(P2P, INFO, "WFD State:%x\n", prParams->WfdState);
-	/* UINT_8 aucWfdSessionInformationIE[24*8]; */
-	DBGLOG(P2P, INFO, "WFD Session Info Length:%x\n", prParams->WfdSessionInformationIELen);
-	/* UINT_8 aucReserved1[2]; */
-	DBGLOG(P2P, INFO, "WFD Primary Sink Addr %pM\n", prParams->aucWfdPrimarySinkMac);
-	DBGLOG(P2P, INFO, "WFD Secondary Sink Addr %pM\n", prParams->aucWfdSecondarySinkMac);
-	DBGLOG(P2P, INFO, "WFD Advanced Flag:%x\n", prParams->WfdAdvanceFlag);
-	DBGLOG(P2P, INFO, "WFD Sigma mode:%x\n", prParams->WfdSigmaMode);
-	/* UINT_8 aucReserved2[64]; */
-	/* UINT_8 aucReserved3[64]; */
-	/* UINT_8 aucReserved4[64]; */
-
-#endif
+	/* to reduce log, print when state changed */
+	if (prevWfdEnable != prParams->WfdEnable) {
+		prevWfdEnable = prParams->WfdEnable;
+		DBGLOG(P2P, INFO, "WFD Enable:%x\n", prParams->WfdEnable);
+		DBGLOG(P2P, INFO, "WFD Session Available:%x\n", prParams->WfdSessionAvailable);
+		DBGLOG(P2P, INFO, "WFD Couple Sink Status:%x\n", prParams->WfdCoupleSinkStatus);
+		/* aucReserved0[2] */
+		DBGLOG(P2P, INFO, "WFD Device Info:%x\n", prParams->WfdDevInfo);
+		DBGLOG(P2P, INFO, "WFD Control Port:%x\n", prParams->WfdControlPort);
+		DBGLOG(P2P, INFO, "WFD Maximum Throughput:%x\n", prParams->WfdMaximumTp);
+		DBGLOG(P2P, INFO, "WFD Extend Capability:%x\n", prParams->WfdExtendCap);
+		DBGLOG(P2P, INFO, "WFD Couple Sink Addr %pM\n", prParams->WfdCoupleSinkAddress);
+		DBGLOG(P2P, INFO, "WFD Associated BSSID %pM\n", prParams->WfdAssociatedBssid);
+		/* UINT_8 aucVideolp[4]; */
+		/* UINT_8 aucAudiolp[4]; */
+		DBGLOG(P2P, INFO, "WFD Video Port:%x\n", prParams->WfdVideoPort);
+		DBGLOG(P2P, INFO, "WFD Audio Port:%x\n", prParams->WfdAudioPort);
+		DBGLOG(P2P, INFO, "WFD Flag:%x\n", prParams->WfdFlag);
+		DBGLOG(P2P, INFO, "WFD Policy:%x\n", prParams->WfdPolicy);
+		DBGLOG(P2P, INFO, "WFD State:%x\n", prParams->WfdState);
+		/* UINT_8 aucWfdSessionInformationIE[24*8]; */
+		DBGLOG(P2P, INFO, "WFD Session Info Length:%x\n", prParams->WfdSessionInformationIELen);
+		/* UINT_8 aucReserved1[2]; */
+		DBGLOG(P2P, INFO, "WFD Primary Sink Addr %pM\n", prParams->aucWfdPrimarySinkMac);
+		DBGLOG(P2P, INFO, "WFD Secondary Sink Addr %pM\n", prParams->aucWfdSecondarySinkMac);
+		DBGLOG(P2P, INFO, "WFD Advanced Flag:%x\n", prParams->WfdAdvanceFlag);
+		DBGLOG(P2P, INFO, "WFD Sigma mode:%x\n", prParams->WfdSigmaMode);
+		/* UINT_8 aucReserved2[64]; */
+		/* UINT_8 aucReserved3[64]; */
+		/* UINT_8 aucReserved4[64]; */
+	}
 
 	prWfdCfgSettings = &(prGlueInfo->prAdapter->rWifiVar.prP2pFsmInfo->rWfdConfigureSettings);
 
