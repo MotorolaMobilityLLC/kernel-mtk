@@ -27,10 +27,13 @@
 #include <ged_dvfs.h>
 #endif
 
+#include <ged_log.h>
+
 #include <mt_gpufreq.h>
 #include <fan53555.h>
 
 struct mtk_config *g_config;
+static unsigned int *mtk_log = NULL;
 
 #ifdef MTK_GPU_DPM
 static int dfp_weights[] = {
@@ -121,6 +124,9 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	MFG_write32(0x448, MFG_read32(0x448) | 0x1);
 #endif
 
+	/* timing */
+	MFG_write32(0x1c, MFG_read32(0x1c) | 0xa);
+
 	/* enable PMU */
 	MFG_write32(0x3e0, 0xffffffff);
 	MFG_write32(0x3e4, 0xffffffff);
@@ -178,16 +184,6 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
 
 	/* polling mfg idle */
-	MFG_write32(MFG_DEBUG_SEL, 0x3);
-	while ((MFG_read32(MFG_DEBUG_A) & MFG_DEBUG_IDEL) != MFG_DEBUG_IDEL && --polling_retry);
-	if (polling_retry <= 0)
-	{
-		dev_err(kbdev->dev, "polling fail: idle rem:%d - MFG_DBUG_A=%x\n", polling_retry, MFG_read32(MFG_DEBUG_A));
-	}
-
-	/* hard reset */
-	kbase_os_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), GPU_COMMAND_HARD_RESET);
-	/* polling mfg idle again */
 	MFG_write32(MFG_DEBUG_SEL, 0x3);
 	while ((MFG_read32(MFG_DEBUG_A) & MFG_DEBUG_IDEL) != MFG_DEBUG_IDEL && --polling_retry);
 	if (polling_retry <= 0)
@@ -403,6 +399,66 @@ static DEVICE_ATTR(dvfs_gpu_dump, S_IRUGO | S_IWUSR, mtk_kbase_dvfs_gpu_show, mt
 
 #endif
 
+#ifdef MTK_MT6797_DEBUG
+
+static void _mtk_dump_register(unsigned int pa, int size, int offset, int dsize)
+{
+	int i;
+	volatile void *base = NULL;
+
+	base = ioremap_nocache(pa, size);
+	if (base)
+	{
+		unsigned int c_offset = offset;
+		int dump_size = dsize >> 2;
+		for (i = 0; i < dump_size; i += 4)
+		{
+			if (mtk_log)
+			{
+				ged_log_buf_print2(*mtk_log, GED_LOG_ATTR_TIME,
+						"[dump][0x%08x] 0x%08x 0x%08x 0x%08x 0x%08x",
+						pa + c_offset,
+						base_read32(base+c_offset),
+						base_read32(base+c_offset+0x4),
+						base_read32(base+c_offset+0x8),
+						base_read32(base+c_offset+0xc)
+						);
+			}
+			c_offset += 0x10;
+		}
+		iounmap(base);
+	}
+	else
+	{
+		if (mtk_log)
+		{
+			ged_log_buf_print2(*mtk_log, GED_LOG_ATTR_TIME,
+					"[dump] map 0x%08x size 0x%08x fail",
+					pa, size
+					);
+		}
+	}
+}
+
+void mtk_debug_dump_registers(void)
+{
+	_mtk_dump_register(0x1000f000, 0x1000, 0xfc0, 0x10);
+	_mtk_dump_register(0x10018000, 0x1000, 0xfc0, 0x10);
+	_mtk_dump_register(0x10012000, 0x1000, 0xfc0, 0x10);
+	_mtk_dump_register(0x10019000, 0x1000, 0xfc0, 0x10);
+	_mtk_dump_register(0x13000000, 0x1000, 0x0, 0x470);
+	_mtk_dump_register(0x13040000, 0x4000, 0x0, 0x4000);
+}
+
+void mtk_debug_mfg_reset(void)
+{
+	MFG_write32(0xc, 0x3);
+	udelay(1);
+	MFG_write32(0xc, 0x0);
+}
+
+#endif
+
 int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 {
 	struct mtk_config* config = kmalloc(sizeof(struct mtk_config), GFP_KERNEL);
@@ -504,6 +560,8 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 #ifdef MTK_GPU_DPM
 	DFP_write32(CLK_MISC_CFG_0, DFP_read32(CLK_MISC_CFG_0) & 0xfffffffe);
 #endif
+
+	mtk_log = &kbdev->mtk_log;
 
 	return 0;
 }

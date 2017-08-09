@@ -17,6 +17,10 @@
  */
 
 #include "mali_kbase_debug_gpu_mem_mapping.h"
+#include "mali_kbase_jm_rb.h"
+
+/* MTK */
+#include <platform/mtk_platform_common.h>
 
 #define ENTRY_TYPE_BITS		(3ULL)
 #define	ENTRY_TYPE_IS_ATE	(1ULL)
@@ -294,6 +298,7 @@ static bool kbasep_mmu_dump_level(struct kbase_context *kctx, phys_addr_t pgd, i
 	phys_addr_t phy_addr;
 
 	KBASE_DEBUG_ASSERT(NULL != kctx);
+	lockdep_assert_held(&kctx->reg_lock);
 #if PRINT_DETAIL
 	dev_info(kctx->kbdev->dev,"======== mmu level:%d\n", level);
 #endif
@@ -374,13 +379,31 @@ success: ret = true;
 
 	return ret;
 }
+/*
+static int kbase_backend_nr_atoms_on_slot(struct kbase_device *kbdev, int js)
+{
+	int nr = 0;
+	int i;
 
+	lockdep_assert_held(&kbdev->js_data.runpool_irq.lock);
+
+	for (i = 0; i < SLOT_RB_SIZE; i++) {
+		if (kbase_gpu_inspect(kbdev, js, i))
+			nr++;
+	}
+
+	return nr;
+}
+*/
 bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 {
 	bool ret = false;
 	struct list_head *entry;
 	const struct list_head *kbdev_list;
 	struct kbase_context *kctx = NULL;
+	/*int s;*/
+	struct kbasep_js_device_data *js_devdata;
+	/*unsigned long flags;*/
 
 	pr_info("Mali PA check\n");
 
@@ -396,11 +419,39 @@ bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 			pr_info("    No Mali device\n");
 			return false;
 		}
+		mtk_trigger_aee(kbdev->mtk_log, "check_pa");
+
+		js_devdata = &kbdev->js_data;
+/*
+		spin_lock_irqsave(&js_devdata->runpool_irq.lock, flags);
+		for (s = 0; s < kbdev->gpu_props.num_job_slots; s++) {
+			struct kbase_jd_atom *atom = NULL;
+
+			if (kbase_backend_nr_atoms_on_slot(kbdev, s) > 0) {
+				atom = kbase_gpu_inspect(kbdev, s, 0);
+				KBASE_DEBUG_ASSERT(atom != NULL);
+			}
+			else
+				pr_info("No atoms in slot :%d\n", s);
+			if (atom != NULL) {
+				kbase_job_slot_hardstop(atom->kctx, s, atom);
+				pr_info("hard-stop\n");
+			}
+		}
+		spin_unlock_irqrestore(&js_devdata->runpool_irq.lock, flags);
+*/
+
+		list_for_each_entry(element, &kbdev->kctx_list, link) {
+			/* list for each kctx opened on this device */
+			kctx = element->kctx;
+			kbase_gpu_vm_lock(kctx);
+		}
+
 		list_for_each_entry(element, &kbdev->kctx_list, link) {
 			/* list for each kctx opened on this device */
 			kctx = element->kctx;
 			ret = kbasep_mmu_dump_level(kctx, kctx->pgd, MIDGARD_MMU_TOPLEVEL, pa);
-
+			kbase_gpu_vm_unlock(kctx);
 			if (ret == true) {
 				dev_info(kctx->kbdev->dev,"    Get the PA:%016llx in PID:%llx\n", pa, (u64)(kctx->tgid));	
 			}

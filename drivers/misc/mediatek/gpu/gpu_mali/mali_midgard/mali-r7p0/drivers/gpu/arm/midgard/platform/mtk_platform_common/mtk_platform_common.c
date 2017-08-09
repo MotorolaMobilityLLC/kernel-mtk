@@ -7,6 +7,7 @@
 #include "mt_gpufreq.h"
 #include <mali_kbase_pm_internal.h>
 
+#include <ged_log.h>
 
 #include <linux/workqueue.h>
 #include <mt-plat/aee.h>
@@ -314,13 +315,27 @@ static void aee_Handle(struct work_struct *_psWork)
 {
     /* avoid the build warnning */
     _psWork = _psWork;
+
+#ifdef MTK_MT6797_DEBUG
+    {
+        void mtk_debug_dump_registers(void);
+        mtk_debug_dump_registers();
+    }
+#endif
+
     aee_kernel_exception("gpulog", "aee dump gpulog");
 }
-void mtk_trigger_aee(void)
+void mtk_trigger_aee(unsigned int mtk_log, const char *msg)
 {
-    if (g_aee_workqueue)
+    static int called = 0;
+    ged_log_buf_print2(mtk_log, GED_LOG_ATTR_TIME, "trigger aee: %s (aee warnning once)", msg);
+    if (called == 0)
     {
-        queue_work(g_aee_workqueue, &g_aee_work);
+        if (g_aee_workqueue)
+        {
+            called = 1;
+            queue_work(g_aee_workqueue, &g_aee_work);
+        }
     }
 }
 
