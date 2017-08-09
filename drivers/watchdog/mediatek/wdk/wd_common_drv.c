@@ -53,7 +53,8 @@ static int debug_sleep;
 static DEFINE_SPINLOCK(lock);
 
 #define CPU_NR (nr_cpu_ids)
-struct task_struct *wk_tsk[16];	/* max cpu 16 */
+struct task_struct *wk_tsk[16] = { 0 };	/* max cpu 16 */
+
 static unsigned long kick_bit;
 
 
@@ -192,7 +193,8 @@ static int mrdump_proc_cmd_open(struct inode *inode, struct file *file)
 	return single_open(file, mrdump_proc_cmd_read, NULL);
 }
 
-static ssize_t mrdump_proc_cmd_write(struct file *file, const char *buf, size_t count, loff_t *data)
+static ssize_t mrdump_proc_cmd_write(struct file *file, const char *buf, size_t count,
+				     loff_t *data)
 {
 	int ret = 0;
 	int mrdump_rst_source;
@@ -399,35 +401,39 @@ static int kwdt_thread(void *arg)
 				g_need_config = 0;
 				spin_unlock(&lock);
 			}
-			/* printk("[WDK]  cpu-task=%d, current_pid=%d\n",  wk_tsk[cpu]->pid,  current->pid); */
-			if (wk_tsk[cpu]->pid == current->pid) {
-				/* only process WDT info if thread-x is on cpu-x */
-				spin_lock(&lock);
-				local_bit = kick_bit;
-				printk_deferred("[WDK], local_bit:0x%x, cpu:%d,RT[%lld]\n", local_bit,
-					     cpu, sched_clock());
-				if ((local_bit & (1 << cpu)) == 0) {
-					/* printk("[WDK]: set  WDT kick_bit\n"); */
-					local_bit |= (1 << cpu);
-					/* aee_rr_rec_wdk_kick_jiffies(jiffies); */
-				}
-				printk_deferred("[WDK], local_bit:0x%x, cpu:%d, check bit0x:%x,RT[%lld]\n",
-				     local_bit, cpu, wk_check_kick_bit(), sched_clock());
-				if (local_bit == wk_check_kick_bit()) {
-					printk_deferred("[WDK]: kick Ex WDT,RT[%lld]\n",
-						     sched_clock());
-					mtk_wdt_restart(WD_TYPE_NORMAL);	/* for KICK external wdt */
-					local_bit = 0;
-				}
-				kick_bit = local_bit;
-				spin_unlock(&lock);
+			/* pr_debug("[WDK]  cpu-task=%d, current_pid=%d\n",  wk_tsk[cpu]->pid,  current->pid); */
+			/*to avoid wk_tsk[cpu] had not created out */
+			if (wk_tsk[cpu] != 0) {
+				if (wk_tsk[cpu]->pid == current->pid) {
+					/* only process WDT info if thread-x is on cpu-x */
+					spin_lock(&lock);
+					local_bit = kick_bit;
+					printk_deferred("[WDK], local_bit:0x%x, cpu:%d,RT[%lld]\n",
+							local_bit, cpu, sched_clock());
+					if ((local_bit & (1 << cpu)) == 0) {
+						/* printk("[WDK]: set  WDT kick_bit\n"); */
+						local_bit |= (1 << cpu);
+						/* aee_rr_rec_wdk_kick_jiffies(jiffies); */
+					}
+					printk_deferred
+					    ("[WDK], local_bit:0x%x, cpu:%d, check bit0x:%x,RT[%lld]\n",
+					     local_bit, cpu, wk_check_kick_bit(), sched_clock());
+					if (local_bit == wk_check_kick_bit()) {
+						printk_deferred("[WDK]: kick Ex WDT,RT[%lld]\n",
+								sched_clock());
+						mtk_wdt_restart(WD_TYPE_NORMAL);	/* for KICK external wdt */
+						local_bit = 0;
+					}
+					kick_bit = local_bit;
+					spin_unlock(&lock);
 
 #ifdef CONFIG_LOCAL_WDT
-				printk_deferred("[WDK]: cpu:%d, kick local wdt,RT[%lld]\n", cpu,
-					     sched_clock());
-				/* kick local wdt */
-				mpcore_wdt_restart(WD_TYPE_NORMAL);
+					printk_deferred("[WDK]: cpu:%d, kick local wdt,RT[%lld]\n",
+							cpu, sched_clock());
+					/* kick local wdt */
+					mpcore_wdt_restart(WD_TYPE_NORMAL);
 #endif
+				}
 			}
 		} else if (0 == g_enable) {
 			pr_debug("WDK stop to kick\n");
@@ -436,23 +442,28 @@ static int kwdt_thread(void *arg)
 			BUG();
 		}
 
-		if (wk_tsk[cpu]->pid == current->pid) {
+		/*to avoid wk_tsk[cpu] had not created out */
+		if (wk_tsk[cpu] != 0) {
+			if (wk_tsk[cpu]->pid == current->pid) {
 #if (DEBUG_WDK == 1)
-			msleep_interruptible(debug_sleep * 1000);
-			pr_debug("WD kicker woke up %d\n", debug_sleep);
+				msleep_interruptible(debug_sleep * 1000);
+				pr_debug("WD kicker woke up %d\n", debug_sleep);
 #endif
-			do_gettimeofday(&tv);
-			tv_android = tv;
-			rtc_time_to_tm(tv.tv_sec, &tm);
-			tv_android.tv_sec -= sys_tz.tz_minuteswest * 60;
-			rtc_time_to_tm(tv_android.tv_sec, &tm_android);
-			printk_deferred("[thread:%d][RT:%lld] %d-%02d-%02d %02d:%02d:%02d.%u UTC;"
-				"android time %d-%02d-%02d %02d:%02d:%02d.%03d\n",
-				current->pid, sched_clock(), tm.tm_year + 1900, tm.tm_mon + 1,
-				tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, (unsigned int)tv.tv_usec,
-				tm_android.tm_year + 1900, tm_android.tm_mon + 1, tm_android.tm_mday,
-				tm_android.tm_hour, tm_android.tm_min, tm_android.tm_sec,
-				(unsigned int)tv_android.tv_usec);
+				do_gettimeofday(&tv);
+				tv_android = tv;
+				rtc_time_to_tm(tv.tv_sec, &tm);
+				tv_android.tv_sec -= sys_tz.tz_minuteswest * 60;
+				rtc_time_to_tm(tv_android.tv_sec, &tm_android);
+				printk_deferred
+				    ("[thread:%d][RT:%lld] %d-%02d-%02d %02d:%02d:%02d.%u UTC;"
+				     "android time %d-%02d-%02d %02d:%02d:%02d.%03d\n",
+				     current->pid, sched_clock(), tm.tm_year + 1900, tm.tm_mon + 1,
+				     tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+				     (unsigned int)tv.tv_usec, tm_android.tm_year + 1900,
+				     tm_android.tm_mon + 1, tm_android.tm_mday, tm_android.tm_hour,
+				     tm_android.tm_min, tm_android.tm_sec,
+				     (unsigned int)tv_android.tv_usec);
+			}
 		}
 
 		msleep_interruptible((g_kinterval) * 1000);
@@ -693,6 +704,8 @@ static int __init init_wk(void)
 	mtk_rgu_sysfs();
 #endif
 
+	cpu_hotplug_disable();
+
 #ifdef __ENABLE_WDT_AT_INIT__
 
 	start_kicker_thread_with_default_setting();
@@ -700,7 +713,6 @@ static int __init init_wk(void)
 #endif
 
 	wk_proc_init();
-	cpu_hotplug_disable();
 	register_cpu_notifier(&cpu_nfb);
 
 	for (i = 0; i < CPU_NR; i++) {
