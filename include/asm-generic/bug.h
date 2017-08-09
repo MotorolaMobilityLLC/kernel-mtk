@@ -45,9 +45,10 @@ struct bug_entry {
  * users don't need to reboot ASAP and can mostly shut down cleanly.
  */
 #ifdef __aarch64__
+#include <asm/memory.h>
 #define BUG() do { \
 	printk("BUG: failure at %s:%d/%s()!\n", __FILE__, __LINE__, __func__); \
-	*((unsigned *)0xdead) = 0x0aee;	\
+	*((unsigned *)(VA_START - 0x10000 + 0xdead)) = 0x0aee;	\
 	unreachable();	\
 } while (0)
 #define HAVE_ARCH_BUG
