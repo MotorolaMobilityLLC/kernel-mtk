@@ -516,23 +516,23 @@ static void ApplyDctoDl(void)
 			pr_warn("dcinit_value = %d average = %d value = %d\n", dcinit_value, average,
 			       value);
 
-			/*printk("AUDIO_TOP_CON0 =0x%x\n", Afe_Get_Reg(AUDIO_TOP_CON0));
-			printk("PMIC_AFE_TOP_CON0 =0x%x\n", Ana_Get_Reg(PMIC_AFE_TOP_CON0));
-			printk("AUDNCP_CLKDIV_CON0 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON0));
-			printk("AUDNCP_CLKDIV_CON1 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON1));
-			printk("AUDNCP_CLKDIV_CON2 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON2));
-			printk("AUDNCP_CLKDIV_CON3 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON3));
-			printk("AUDNCP_CLKDIV_CON4 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON4));
-			printk("AUDDEC_ANA_CON0 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON0));
-			printk("AUDDEC_ANA_CON1 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON1));
-			printk("AUDDEC_ANA_CON2 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON2));
-			printk("AUDDEC_ANA_CON3 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON3));
-			printk("AUDDEC_ANA_CON4 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON4));
-			printk("AUDDEC_ANA_CON5 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON5));
-			printk("AUDDEC_ANA_CON6 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON6));
-			printk("AUDDEC_ANA_CON7 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON7));
-			printk("AUDDEC_ANA_CON8 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON8));
-			printk("ZCD_CON0 =0x%x\n", Ana_Get_Reg(ZCD_CON0)); */
+			/*pr_debug("AUDIO_TOP_CON0 =0x%x\n", Afe_Get_Reg(AUDIO_TOP_CON0));
+			pr_debug("PMIC_AFE_TOP_CON0 =0x%x\n", Ana_Get_Reg(PMIC_AFE_TOP_CON0));
+			pr_debug("AUDNCP_CLKDIV_CON0 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON0));
+			pr_debug("AUDNCP_CLKDIV_CON1 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON1));
+			pr_debug("AUDNCP_CLKDIV_CON2 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON2));
+			pr_debug("AUDNCP_CLKDIV_CON3 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON3));
+			pr_debug("AUDNCP_CLKDIV_CON4 =0x%x\n", Ana_Get_Reg(AUDNCP_CLKDIV_CON4));
+			pr_debug("AUDDEC_ANA_CON0 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON0));
+			pr_debug("AUDDEC_ANA_CON1 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON1));
+			pr_debug("AUDDEC_ANA_CON2 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON2));
+			pr_debug("AUDDEC_ANA_CON3 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON3));
+			pr_debug("AUDDEC_ANA_CON4 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON4));
+			pr_debug("AUDDEC_ANA_CON5 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON5));
+			pr_debug("AUDDEC_ANA_CON6 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON6));
+			pr_debug("AUDDEC_ANA_CON7 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON7));
+			pr_debug("AUDDEC_ANA_CON8 =0x%x\n", Ana_Get_Reg(AUDDEC_ANA_CON8));
+			pr_debug("ZCD_CON0 =0x%x\n", Ana_Get_Reg(ZCD_CON0)); */
 		}
 
 		/* start checking */

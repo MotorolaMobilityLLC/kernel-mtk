@@ -102,7 +102,7 @@
 /* #include <asm/mach-types.h> */
 
 #ifdef DEBUG_AUDDRV
-#define PRINTK_AUDDRV(format, args...) printk(format, ##args)
+#define PRINTK_AUDDRV(format, args...) pr_debug(format, ##args)
 #else
 #define PRINTK_AUDDRV(format, args...)
 #endif
@@ -404,7 +404,7 @@ static char mConnectionState[Soc_Aud_InterConnectionInput_Num_Input]
 static bool CheckBitsandReg(short regaddr, char bits)
 {
 	if (regaddr <= 0 || bits < 0) {
-		printk("regaddr = %x bits = %d\n", regaddr, bits);
+		pr_debug("regaddr = %x bits = %d\n", regaddr, bits);
 		return false;
 	}
 	return true;
@@ -412,7 +412,7 @@ static bool CheckBitsandReg(short regaddr, char bits)
 
 bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 {
-	/* printk("SetinputConnection ConnectionState = %d
+	/* pr_debug("SetinputConnection ConnectionState = %d
 	Input = %d Output = %d\n", ConnectionState, Input, Output); */
 	if ((mConnectionTable[Input][Output]) < 0) {
 		pr_warn("no connection mpConnectionTable[%d][%d] = %d\n", Input, Output,
@@ -428,7 +428,7 @@ bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 			switch (ConnectionState) {
 			case Soc_Aud_InterCon_DisConnect:
 			{
-				/* printk("nConnectionState = %d\n", ConnectionState); */
+				/* pr_debug("nConnectionState = %d\n", ConnectionState); */
 				if ((mConnectionState[Input][Output] &
 				     Soc_Aud_InterCon_Connection) ==
 				    Soc_Aud_InterCon_Connection) {
@@ -460,7 +460,7 @@ bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 			}
 			case Soc_Aud_InterCon_Connection:
 			{
-				/* printk("nConnectionState = %d\n", ConnectionState); */
+				/* pr_debug("nConnectionState = %d\n", ConnectionState); */
 				/* here to disconnect connect shift bits */
 				connectionBits = mConnectionbits[Input][Output];
 				connectReg = mConnectionReg[Input][Output];
@@ -474,7 +474,7 @@ bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 			}
 			case Soc_Aud_InterCon_ConnectionShift:
 			{
-				/* printk("nConnectionState = %d\n", ConnectionState); */
+				/* pr_debug("nConnectionState = %d\n", ConnectionState); */
 				if ((mConnectionTable[Input][Output] &
 				     Soc_Aud_InterCon_ConnectionShift) !=
 				    Soc_Aud_InterCon_ConnectionShift) {

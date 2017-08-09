@@ -370,7 +370,9 @@ typedef struct {
 #define AUDIO_CLKCFG_PHYSICAL_BASE  (0x10210000L)
 /* need enable this register before access all register */
 #define AUDIO_POWER_TOP (0x1000629cL)
-#define AUDIO_INFRA_BASE (0x10001000L)
+#define AUDIO_INFRA_BASE (0x10000000L)
+#define AUDIO_PLL_BASE (0x10209000L)
+#define INFRACFG_AO_BASE (0x10000000L)
 #define AUDIO_HW_VIRTUAL_BASE   (0xF1220000L)
 
 #ifdef AUDIO_MEM_IOREMAP
@@ -412,7 +414,47 @@ typedef struct {
 #define AUDIO_CLK_AUDDIV_0 (0x00120)
 #define AUDIO_CLK_AUDDIV_1 (0x00124)
 
+#ifdef CLK_MISC_CFG_0
+#undef CLK_MISC_CFG_0
+#endif
+#define CLK_MISC_CFG_0 (0x0210)
 
+#ifdef APLL1_CON0
+#undef APLL1_CON0
+#define APLL1_CON0 (0x0270)
+#else
+#define APLL1_CON0 (0x0270)
+#endif
+
+#ifdef APLL1_CON1
+#undef APLL1_CON1
+#define APLL1_CON1 (0x0274)
+#else
+#define APLL1_CON1 (0x0274)
+#endif
+
+#ifdef APLL1_CON2
+#undef APLL1_CON2
+#define APLL1_CON2 (0x0278)
+#else
+#define APLL1_CON2 (0x0278)
+#endif
+
+#ifdef APLL1_CON3
+#undef APLL1_CON3
+#define APLL1_CON3 (0x027c)
+#else
+#define APLL1_CON3 (0x027c)
+#endif
+
+#ifdef APLL1_PWR_CON0
+#undef APLL1_PWR_CON0
+#define APLL1_PWR_CON0 (0x0280)
+#else
+#define APLL1_PWR_CON0 (0x0280)
+#endif
+
+#define INFRA_GLOBALCON_PDN0 (0x0040)
 #ifdef AUDIO_TOP_CON0
 #undef AUDIO_TOP_CON0
 #define AUDIO_TOP_CON0  (AFE_BASE + 0x0000)
@@ -540,6 +582,11 @@ typedef struct {
 #define AFE_SGEN_CON0   (AFE_BASE + 0x01F0)
 #define AFE_TOP_CON0    (AFE_BASE + 0x0200)
 
+#define AFE_BUS_MON1    (AFE_BASE + 0x0240)
+#define AFE_CONN_MON0    (AFE_BASE + 0x0280)
+#define AFE_CONN_MON1    (AFE_BASE + 0x0284)
+#define AFE_CONN_MON2    (AFE_BASE + 0x0288)
+#define AFE_CONN_MON3    (AFE_BASE + 0x028c)
 #define AFE_ADDA_PREDIS_CON0    (AFE_BASE+0x00260)
 #define AFE_ADDA_PREDIS_CON1    (AFE_BASE+0x00264)
 
@@ -675,6 +722,7 @@ typedef struct {
 #define PCM_INTF_CON2   (AFE_BASE + 0x538)
 #define PCM2_INTF_CON   (AFE_BASE + 0x53C)
 
+#define AFE_APB_MON    (AFE_BASE + 0x0540)
 /* 6582 Add */
 #define AFE_ASRC_CON13  (AFE_BASE+0x00550)
 #define AFE_ASRC_CON14  (AFE_BASE+0x00554)

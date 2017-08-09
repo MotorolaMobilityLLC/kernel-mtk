@@ -909,12 +909,12 @@ static bool CheckMemIfEnable(void)
 
 	for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK; i++) {
 		if ((mAudioMEMIF[i]->mState) == true) {
-			/* printk("CheckMemIfEnable == true\n"); */
+			/* pr_debug("CheckMemIfEnable == true\n"); */
 			return true;
 		}
 	}
 
-	/* printk("CheckMemIfEnable == false\n"); */
+	/* pr_debug("CheckMemIfEnable == false\n"); */
 	return false;
 }
 
@@ -981,7 +981,7 @@ void EnableAfe(bool bEnable)
 	MemEnable = CheckMemIfEnable();
 
 	if (false == bEnable && false == MemEnable) {
-		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x0);
+		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_OF
 #if defined(CONFIG_MTK_LEGACY)
@@ -1075,7 +1075,7 @@ uint32 SampleRateTransform(uint32 SampleRate)
 
 bool SetSampleRate(uint32 Aud_block, uint32 SampleRate)
 {
-	/* printk("%s Aud_block = %d SampleRate = %d\n", __func__, Aud_block, SampleRate); */
+	/* pr_debug("%s Aud_block = %d SampleRate = %d\n", __func__, Aud_block, SampleRate); */
 	SampleRate = SampleRateTransform(SampleRate);
 
 	switch (Aud_block) {
@@ -1132,7 +1132,7 @@ bool SetSampleRate(uint32 Aud_block, uint32 SampleRate)
 bool SetChannels(uint32 Memory_Interface, uint32 channel)
 {
 	const bool bMono = (channel == 1) ? true : false;
-	/* printk("SetChannels Memory_Interface = %d channels = %d\n", Memory_Interface, channel); */
+	/* pr_debug("SetChannels Memory_Interface = %d channels = %d\n", Memory_Interface, channel); */
 	switch (Memory_Interface) {
 	case Soc_Aud_Digital_Block_MEM_DL1:{
 			Afe_Set_Reg(AFE_DAC_CON1, bMono << 21, 1 << 21);
@@ -1579,7 +1579,7 @@ bool Set2ndI2SEnable(bool bEnable)
 
 bool CleanPreDistortion(void)
 {
-	/* printk("%s\n", __FUNCTION__); */
+	/* pr_debug("%s\n", __FUNCTION__); */
 	Afe_Set_Reg(AFE_ADDA_PREDIS_CON0, 0, MASK_ALL);
 	Afe_Set_Reg(AFE_ADDA_PREDIS_CON1, 0, MASK_ALL);
 
@@ -1654,7 +1654,7 @@ bool SetI2SDacOut(uint32 SampleRate, bool lowjitter, bool I2SWLen)
 
 bool SetHwDigitalGainMode(uint32 GainType, uint32 SampleRate, uint32 SamplePerStep)
 {
-	/* printk("SetHwDigitalGainMode GainType = %d, SampleRate = %d,
+	/* pr_debug("SetHwDigitalGainMode GainType = %d, SampleRate = %d,
 	   SamplePerStep= %d\n", GainType, SampleRate, SamplePerStep); */
 	uint32 value = 0;
 
@@ -2093,7 +2093,7 @@ bool SetConnection(uint32 ConnectionState, uint32 Input, uint32 Output)
 
 bool SetIrqEnable(uint32 Irqmode, bool bEnable)
 {
-	/* printk("+%s(), Irqmode = %d, bEnable = %d, pid %d, tid %d\n", __FUNCTION__, Irqmode, bEnable,
+	/* pr_debug("+%s(), Irqmode = %d, bEnable = %d, pid %d, tid %d\n", __FUNCTION__, Irqmode, bEnable,
 				current->pid, current->tgid); */
 	switch (Irqmode) {
 	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:{
@@ -2127,7 +2127,7 @@ bool SetIrqEnable(uint32 Irqmode, bool bEnable)
 		break;
 	}
 
-	/* printk("-%s(), Irqmode = %d, bEnable = %d\n", __FUNCTION__, Irqmode, bEnable); */
+	/* pr_debug("-%s(), Irqmode = %d, bEnable = %d\n", __FUNCTION__, Irqmode, bEnable); */
 	return true;
 }
 
@@ -2166,7 +2166,7 @@ bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter)
 {
 	uint32 CurrentCount = 0;
 
-	/* printk("+%s Irqmode = %d Counter = %d, mIrqMcuCounter = %d, pid %d, tid %d\n", __func__, Irqmode, Counter,
+	/* pr_debug("+%s Irqmode = %d Counter = %d, mIrqMcuCounter = %d, pid %d, tid %d\n", __func__, Irqmode, Counter,
 				mAudioMcuMode[Irqmode]->mIrqMcuCounter, current->pid, current->tgid); */
 
 	if (!Counter) {
@@ -2905,7 +2905,6 @@ void Auddrv_AWB_Interrupt_Handler(void)
 	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB) == false) {
-		/* printk("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB) == false, return\n ", __func__); */
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 		pr_err("-%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB) = %d\n ",
 		       __func__, GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB));
@@ -3004,7 +3003,6 @@ void Auddrv_DAI_Interrupt_Handler(void)
 	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DAI) == false) {
-		/* printk("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DAI) == false, return\n ", __func__); */
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 		return;
 	}
@@ -3082,7 +3080,8 @@ void Auddrv_DL1_Interrupt_Handler(void)
 	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1) == false) {
-		/* printk("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1) == false, return\n ", __func__); */
+		/* pr_debug("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1) == false,
+		return\n ", __func__); */
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 		return;
 	}
@@ -3111,7 +3110,7 @@ void Auddrv_DL1_Interrupt_Handler(void)
 	/*
 	   if ((Afe_consumed_bytes & 0x1f) != 0)
 	   {
-	   printk("[Auddrv] DMA address is not aligned 32 bytes\n");
+	   pr_debug("[Auddrv] DMA address is not aligned 32 bytes\n");
 	   } */
 	PRINTK_AUD_DL1("+%s ReadIdx:%x WriteIdx:%x,Remained:%x,  consumed_bytes:%x HW_memory_index = %x\n",
 	__func__, Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx, Afe_Block->u4DataRemained,
@@ -3216,7 +3215,7 @@ void Auddrv_DL2_Interrupt_Handler(void)
 	/*
 	   if ((Afe_consumed_bytes & 0x1f) != 0)
 	   {
-	   printk("[Auddrv] DMA address is not aligned 32 bytes\n");
+	   pr_debug("[Auddrv] DMA address is not aligned 32 bytes\n");
 	   } */
 
 	PRINTK_AUD_DL2("+%s ReadIdx:%x WriteIdx:%x,Remained:%x, consumed_bytes:%x HW_memory_index = %x\n",
@@ -3322,7 +3321,8 @@ void Auddrv_UL1_Interrupt_Handler(void)
 	spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL) == false) {
-		/* printk("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL) == false, return\n ", __func__); */
+		/* pr_debug("%s(), GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_VUL) == false,
+		return\n ", __func__); */
 		spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 		return;
 
@@ -3390,7 +3390,7 @@ void Clear_Mem_CopySize(Soc_Aud_Digital_Block MemBlock)
 	}
 
 	/* spin_unlock_irqrestore(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags); */
-	/* printk("-%s MemBlock = %d\n ", __func__, MemBlock); */
+	/* pr_debug("-%s MemBlock = %d\n ", __func__, MemBlock); */
 }
 
 kal_uint32 Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock,
@@ -3403,7 +3403,7 @@ kal_uint32 Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock,
 	spin_lock_irqsave(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
 
-	/* printk("+%s MemBlock = %d\n ", __func__, MemBlock); */
+	/* pr_debug("+%s MemBlock = %d\n ", __func__, MemBlock); */
 	while (head != NULL) {	/* frst item is NULL */
 		if (head->substream == substream) {
 			MaxCopySize = head->u4MaxCopySize;
@@ -3414,7 +3414,7 @@ kal_uint32 Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock,
 		head = head->next;
 	}
 	spin_unlock_irqrestore(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
-	/* printk("-%s MemBlock = %d\n ", __func__, MemBlock); */
+	/* pr_debug("-%s MemBlock = %d\n ", __func__, MemBlock); */
 
 	return 0;
 }
@@ -3429,7 +3429,7 @@ kal_uint32 Get_Mem_MaxCopySize(Soc_Aud_Digital_Block MemBlock)
 	/* spin_lock_irqsave(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags); */
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
 	MaxCopySize = 0;
-	/* printk("+%s MemBlock = %d\n ", __func__, MemBlock); */
+	/* pr_debug("+%s MemBlock = %d\n ", __func__, MemBlock); */
 	while (head != NULL) {	/* frst item is NULL */
 		if (MaxCopySize < head->u4MaxCopySize)
 			MaxCopySize = head->u4MaxCopySize;
@@ -3437,7 +3437,7 @@ kal_uint32 Get_Mem_MaxCopySize(Soc_Aud_Digital_Block MemBlock)
 	}
 
 	/* spin_unlock_irqrestore(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags); */
-	/* printk("-%s MemBlock = %d\n ", __func__, MemBlock); */
+	/* pr_debug("-%s MemBlock = %d\n ", __func__, MemBlock); */
 	return MaxCopySize;
 }
 
@@ -3450,7 +3450,7 @@ void Set_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock,
 	spin_lock_irqsave(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
 
-	/* printk("+%s MemBlock = %d\n ", __func__, MemBlock); */
+	/* pr_debug("+%s MemBlock = %d\n ", __func__, MemBlock); */
 	while (head != NULL) {	/* frst item is NULL */
 		if (head->substream == substream) {
 			head->u4MaxCopySize += size;
@@ -3459,7 +3459,7 @@ void Set_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock,
 		head = head->next;
 	}
 	spin_unlock_irqrestore(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
-	/* printk("-%s MemBlock = %d\n ", __func__, MemBlock); */
+	/* pr_debug("-%s MemBlock = %d\n ", __func__, MemBlock); */
 }
 
 void Auddrv_UL2_Interrupt_Handler(void)
