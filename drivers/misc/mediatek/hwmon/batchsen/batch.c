@@ -112,7 +112,7 @@ static int get_fifo_data(struct batch_context *obj)
 				}
 			} else if (fifo_len >= 0) {
 			#ifdef CONFIG_PM_WAKELOCKS
-				/*__pm_stay_awake(&(batch_context_obj->read_data_wake_lock));*/
+				__pm_stay_awake(&(batch_context_obj->read_data_wake_lock));
 			#else
 				wake_lock(&(batch_context_obj->read_data_wake_lock));
 			#endif
@@ -236,6 +236,11 @@ static struct batch_context *batch_context_alloc_object(void)
 	obj->active_sensor = 0;
 	obj->div_flag = 0;
 	obj->force_wake_upon_fifo_full = SENSORS_BATCH_WAKE_UPON_FIFO_FULL;
+#ifdef CONFIG_PM_WAKELOCKS
+	wakeup_source_init(&(obj->read_data_wake_lock), "batch_data_wake_lock");
+#else
+	wake_lock_init(&(obj->read_data_wake_lock), WAKE_LOCK_SUSPEND, "batch_data_wake_lock");
+#endif
 	mutex_init(&obj->batch_op_mutex);
 	BATCH_LOG("batch_context_alloc_object----\n");
 	return obj;
@@ -639,7 +644,7 @@ static long batch_unlocked_ioctl(struct file *fp, unsigned int cmd, unsigned lon
 
 		if (batch_context_obj->numOfDataLeft == 0) {
 		#ifdef CONFIG_PM_WAKELOCKS
-			/*__pm_relax(&(batch_context_obj->read_data_wake_lock));*/
+			__pm_relax(&(batch_context_obj->read_data_wake_lock));
 		#else
 			wake_unlock(&(batch_context_obj->read_data_wake_lock));
 		#endif
