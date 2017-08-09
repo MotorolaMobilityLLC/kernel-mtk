@@ -281,7 +281,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		/*need PMIC driver provide new API protocol */
 		/*1.AP power on VCN_1V8 LDO (with PMIC_WRAP API) VCN_1V8  */
 #if defined(CONFIG_MTK_PMIC_LEGACY)
-		pmic_set_register_value(MT6323_PMIC_RG_VCN18_ON_CTRL, 0);
+		pmic_set_register_value(MT6351_PMIC_RG_VCN18_ON_CTRL, 0);
 		hwPowerOn(MT6351_POWER_LDO_VCN18, VOL_1800, "wcn_drv");
 #else
 		if (reg_VCN18) {
@@ -293,20 +293,23 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		}
 #endif
 		udelay(240);
-		/*2.2.turn on VCN28 LDO (with PMIC_WRAP API)" */
-#if defined(CONFIG_MTK_LEGACY)
-		pmic_set_register_value(MT6351_PMIC_RG_VCN28_ON_CTRL, 0);
-		hwPowerOn(MT6351_POWER_LDO_VCN28, VOL_2800, "wcn_drv");
-#else
-		if (reg_VCN28) {
-			regulator_set_voltage(reg_VCN28, 2800000, 2800000);
-			if (regulator_enable(reg_VCN28))
-				WMT_PLAT_INFO_FUNC("enable VCN_2V8 fail!\n");
-			else
-				WMT_PLAT_INFO_FUNC("enable VCN_2V8 ok\n");
-		}
-#endif
 
+		if (0 == co_clock_type) {
+			/*switch VCN28 to HW control mode */
+			pmic_set_register_value(MT6351_PMIC_RG_VCN28_ON_CTRL, 1);
+			/*turn on VCN28 LDO */
+#if defined(CONFIG_MTK_PMIC_LEGACY)
+			hwPowerOn(MT6351_POWER_LDO_VCN28, VOL_2800, "wcn_drv");
+#else
+			if (reg_VCN28) {
+				regulator_set_voltage(reg_VCN28, 2800000, 2800000);
+				if (regulator_enable(reg_VCN28))
+					WMT_PLAT_INFO_FUNC("enable VCN_2V8 fail!\n");
+				else
+					WMT_PLAT_INFO_FUNC("enable VCN_2V8 ok\n");
+			}
+#endif
+		}
 #endif
 
 /*step2.MTCMOS ctrl*/
@@ -701,8 +704,8 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 #endif
 
 #if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_LEGACY)
 			pmic_set_register_value(MT6351_PMIC_RG_VCN28_ON_CTRL, 0);
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 			/*turn off VCN28 LDO (with PMIC_WRAP API)" */
 			hwPowerDown(MT6351_POWER_LDO_VCN28, "wcn_drv");
 #else
@@ -714,7 +717,7 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 			}
 #endif
 
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 		/*AP power off MT6625L VCN_1V8 LDO */
 		pmic_set_register_value(MT6351_PMIC_RG_VCN18_ON_CTRL, 0);
 		hwPowerDown(MT6351_POWER_LDO_VCN18, "wcn_drv");
@@ -895,7 +898,7 @@ INT32 mtk_wcn_consys_hw_bt_paldo_ctrl(UINT32 enable)
 		/*do BT PMIC off */
 		/*switch BT PALDO control from HW mode to SW mode:0x416[5]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_BT, 0);
 		hwPowerDown(MT6351_POWER_LDO_VCN33_BT, "wcn_drv");
 #else
@@ -933,7 +936,7 @@ INT32 mtk_wcn_consys_hw_wifi_paldo_ctrl(UINT32 enable)
 		/*do WIFI PMIC off */
 		/*switch WIFI PALDO control from HW mode to SW mode:0x418[14]-->0x0 */
 #if CONSYS_PMIC_CTRL_ENABLE
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_PMIC_LEGACY)
 		pmic_set_register_value(MT6351_PMIC_RG_VCN33_ON_CTRL_WIFI, 0);
 		hwPowerDown(MT6351_POWER_LDO_VCN33_WIFI, "wcn_drv");
 #else
