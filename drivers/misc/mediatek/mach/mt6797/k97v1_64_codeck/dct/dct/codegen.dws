@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.1" buid_sn="151028" dws_modification_time="10.30.2015.13:40:19"-->
+<!--dct_version="2.1" buid_sn="151104" dws_modification_time="11.06.2015.10:41:24"-->
 <dct_cfg>
     <general chip="MT6797">
         <proj>Everest</proj>
@@ -16,12 +16,15 @@
             <count>4</count>
             <rf_clk1>
                 <varName>HW_CONTROL</varName>
+                <current>1.4</current>
             </rf_clk1>
             <rf_clk3>
                 <varName>SW_CONTROL</varName>
+                <current>1.4</current>
             </rf_clk3>
             <rf_clk4>
                 <varName>SW_CONTROL</varName>
+                <current>1.4</current>
             </rf_clk4>
         </module>
         <module name="eint">
@@ -4052,7 +4055,7 @@
                 <pullPushEn>false</pullPushEn>
             </i2c_bus4>
             <i2c_bus5>
-                <speed_kbps>1300</speed_kbps>
+                <speed_kbps>400</speed_kbps>
                 <pullPushEn>false</pullPushEn>
             </i2c_bus5>
             <i2c_bus6>
@@ -4186,7 +4189,7 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
                 <dedicated_en>Disable</dedicated_en>
-                <srcPin>GPIO93::PAD_EINT16</srcPin>
+                <srcPin ref_gpio="">GPIO93</srcPin>
                 <socketType>0</socketType>
             </eint0>
         </module>
