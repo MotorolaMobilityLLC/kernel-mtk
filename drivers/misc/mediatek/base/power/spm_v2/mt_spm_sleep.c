@@ -740,13 +740,13 @@ void spm_ap_mdsrc_req(u8 set)
 			spm_ap_mdsrc_req_cnt++;
 
 			hw_spin_lock_for_ddrdfs();
-			spm_write(SPM_POWER_ON_VAL1, spm_read(SPM_POWER_ON_VAL1) | (1 << 17));
+			spm_write(AP_MDSRC_REQ, spm_read(AP_MDSRC_REQ) | AP_MD1SRC_REQ_LSB);
 			hw_spin_unlock_for_ddrdfs();
 
 			spin_unlock_irqrestore(&__spm_lock, flags);
 
 			/* if md_apsrc_req = 1'b0, wait 26M settling time (3ms) */
-			if (0 == (spm_read(AP_MDSRC_REQ) & AP_MD1SRC_REQ_LSB)) {
+			if (0 == (spm_read(PCM_REG13_DATA) & R13_MD1_APSRC_REQ)) {
 				md_sleep = 1;
 				mdelay(3);
 			}
@@ -776,8 +776,7 @@ void spm_ap_mdsrc_req(u8 set)
 		} else {
 			if (0 == spm_ap_mdsrc_req_cnt) {
 				hw_spin_lock_for_ddrdfs();
-				spm_write(SPM_POWER_ON_VAL1,
-					  spm_read(SPM_POWER_ON_VAL1) & ~(1 << 17));
+				spm_write(AP_MDSRC_REQ, spm_read(AP_MDSRC_REQ) & ~AP_MD1SRC_REQ_LSB);
 				hw_spin_unlock_for_ddrdfs();
 			}
 		}
