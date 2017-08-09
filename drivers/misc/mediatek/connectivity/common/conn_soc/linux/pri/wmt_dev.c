@@ -57,7 +57,7 @@
 #if WMT_CREATE_NODE_DYNAMIC
 #include <linux/device.h>
 #endif
-
+#define BUF_LEN_MAX 384
 #include <linux/proc_fs.h>
 #ifdef CONFIG_COMPAT
 #define COMPAT_WMT_IOCTL_SET_PATCH_NAME		_IOW(WMT_IOC_MAGIC, 4, compat_uptr_t)
@@ -125,6 +125,7 @@ UINT32 pAtchNum = 0;
 #endif
 
 static UINT8 gEmiBuf[WMT_EMI_DEBUG_BUF_SIZE];
+UINT8 *buf_emi;
 
 #if CFG_WMT_PROC_FOR_AEE
 static struct proc_dir_entry *gWmtAeeEntry;
@@ -180,6 +181,28 @@ static INT32 wmt_dbg_jtag_flag_ctrl(INT32 par1, INT32 par2, INT32 par3);
 static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3);
 #endif
 #endif
+static void wmt_dbg_fwinfor_print_buff(UINT32 len)
+{
+	UINT32 i = 0;
+	UINT32 idx = 0;
+
+	for (i = 0; i < len; i++) {
+					buf_emi[idx] = gEmiBuf[i];
+					if (gEmiBuf[i] == '\n') {
+						pr_cont("%s", buf_emi);
+						osal_memset(buf_emi, 0, BUF_LEN_MAX);
+						idx = 0;
+					} else {
+						idx++;
+					}
+					if (idx == BUF_LEN_MAX-1) {
+						buf_emi[idx] = '\0';
+						pr_cont("%s", buf_emi);
+						osal_memset(buf_emi, 0, BUF_LEN_MAX);
+						idx = 0;
+					}
+				}
+}
 
 /*LCM on/off ctrl for wmt varabile*/
 static struct work_struct gPwrOnOffWork;
@@ -663,7 +686,6 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 {
 	UINT32 offset = 0;
 	UINT32 len = 0;
-	UINT32 i = 0;
 	UINT32 *pAddr = NULL;
 	UINT32 cur_idx_pagedtrace;
 	static UINT32 prev_idx_pagedtrace;
@@ -672,29 +694,24 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 	offset = par2;
 	len = par3;
 
+	buf_emi = kmalloc(sizeof(UINT8) * BUF_LEN_MAX, GFP_KERNEL);
+	if (!buf_emi) {
+			WMT_ERR_FUNC("buf kmalloc memory fail\n");
+			return 0;
+		}
+	osal_memset(buf_emi, 0, BUF_LEN_MAX);
 	osal_memset(&gEmiBuf[0], 0, WMT_EMI_DEBUG_BUF_SIZE);
 	wmt_lib_get_fwinfor_from_emi(0, offset, &gEmiBuf[0], 0x100);
 
 	if (offset == 1) {
 		do {
-			i = 0;
 			pAddr = (PUINT32) wmt_plat_get_emi_virt_add(0x24);
-
 			cur_idx_pagedtrace = *pAddr;
 
-			/* cur_idx_pagedtrace, prev_idx_pagedtrace); */
-
 			if (cur_idx_pagedtrace > prev_idx_pagedtrace) {
-
 				len = cur_idx_pagedtrace - prev_idx_pagedtrace;
-
 				wmt_lib_get_fwinfor_from_emi(1, prev_idx_pagedtrace, &gEmiBuf[0], len);
-
-				for (i = 0; i < len; i++) {
-					/*if (i % 64 == 0)
-						pr_cont("\n");*/
-					pr_cont("%c", gEmiBuf[i]);
-				}
+				wmt_dbg_fwinfor_print_buff(len);
 				prev_idx_pagedtrace = cur_idx_pagedtrace;
 			}
 
@@ -706,63 +723,34 @@ INT32 wmt_dbg_fwinfor_from_emi(INT32 par1, INT32 par2, INT32 par3)
 				}
 
 				len = 0x8000 - prev_idx_pagedtrace - 1;
-
 				wmt_lib_get_fwinfor_from_emi(1, prev_idx_pagedtrace, &gEmiBuf[0], len);
 				pr_debug("\n\n -- CONNSYS paged trace ascii output (cont...) --\n\n");
-				for (i = 0; i < len; i++) {
-					/*if (i % 64 == 0)
-						pr_cont("\n");*/
-					pr_cont("%c", gEmiBuf[i]);
-				}
+				wmt_dbg_fwinfor_print_buff(len);
 
 				len = cur_idx_pagedtrace;
-
 				wmt_lib_get_fwinfor_from_emi(1, 0x0, &gEmiBuf[0], len);
 				pr_debug("\n\n -- CONNSYS paged trace ascii output (end) --\n\n");
-				for (i = 0; i < len; i++) {
-					/*if (i % 64 == 0)
-						pr_cont("\n");*/
-					pr_cont("%c", gEmiBuf[i]);
-				}
-
+				wmt_dbg_fwinfor_print_buff(len);
 				prev_idx_pagedtrace = cur_idx_pagedtrace;
 			}
-
 			msleep(100);
 		} while (isBreak);
 	}
 
 	pr_debug("\n\n -- control word --\n\n");
-	for (i = 0; i < 0x100; i++) {
-		if (i % 16 == 0)
-			pr_cont("\n");
-
-		pr_cont("%02x ", gEmiBuf[i]);
-	}
-
+	wmt_dbg_fwinfor_print_buff(256);
 	if (len > 1024 * 4)
 		len = 1024 * 4;
 
 	WMT_WARN_FUNC("get fw infor from emi at offset(0x%x),len(0x%x)\n", offset, len);
-
 	osal_memset(&gEmiBuf[0], 0, WMT_EMI_DEBUG_BUF_SIZE);
 	wmt_lib_get_fwinfor_from_emi(1, offset, &gEmiBuf[0], len);
 
 	pr_debug("\n\n -- paged trace hex output --\n\n");
-	for (i = 0; i < len; i++) {
-		if (i % 16 == 0)
-			pr_cont("\n");
-
-		pr_cont("%02x ", gEmiBuf[i]);
-	}
-
+	wmt_dbg_fwinfor_print_buff(len);
 	pr_debug("\n\n -- paged trace ascii output --\n\n");
-	for (i = 0; i < len; i++) {
-		/*if (i % 64 == 0)
-			pr_cont("\n");*/
-		pr_cont("%c", gEmiBuf[i]);
-	}
-
+	wmt_dbg_fwinfor_print_buff(len);
+	kfree(buf_emi);
 	return 0;
 }
 
@@ -1029,7 +1017,13 @@ static INT32 wmt_dbg_lte_to_wmt_test(UINT32 opcode, UINT32 msg_len)
 
 static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3)
 {
-	UINT8 local_buffer[512] = { 0 };
+	UINT8 *local_buffer = NULL;
+
+	local_buffer = kmalloc(512, GFP_KERNEL);
+	if (!local_buffer) {
+			WMT_ERR_FUNC("local_buffer kmalloc memory fail\n");
+			return 0;
+	}
 	UINT32 handle_len;
 	INT32 iRet = -1;
 
@@ -1139,6 +1133,7 @@ static INT32 wmt_dbg_lte_coex_test(INT32 par1, INT32 par2, INT32 par3)
 			wmt_core_set_flag_for_test(0);
 	}
 	return 0;
+	kfree(local_buffer);
 }
 #endif
 
