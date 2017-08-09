@@ -899,7 +899,6 @@ config ARCH_MT6580
 	select KERNEL_MODE_NEON
 	select CRYPTO_AES_ARM_BS
 	select MTK_SYS_CIRQ
-	select MTK_SYSTRACKER_V2
 	select ARM_HAS_SG_CHAIN
 	select MTK_BASE_POWER
 	select MTK_EIC

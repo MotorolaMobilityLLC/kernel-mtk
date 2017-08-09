@@ -509,6 +509,21 @@ void __init hook_debug_fault_code(int nr,
 	debug_fault_info[nr].name	= name;
 }
 
+#ifdef CONFIG_MEDIATEK_SOLUTION
+void __init hook_fault_code(int nr,
+		int (*fn)(unsigned long, unsigned int, struct pt_regs *),
+		int sig, int code, const char *name)
+{
+	BUG_ON(nr < 0 || nr >= ARRAY_SIZE(fault_info));
+
+	fault_info[nr].fn   = fn;
+	fault_info[nr].sig  = sig;
+	fault_info[nr].code = code;
+	fault_info[nr].name = name;
+}
+#endif
+
+
 asmlinkage int __exception do_debug_exception(unsigned long addr,
 					      unsigned int esr,
 					      struct pt_regs *regs)

@@ -245,7 +245,6 @@ config ARCH_MT6755
 	select IRQ_DOMAIN
 	select IRQ_DOMAIN_DEBUG
 	select GENERIC_SCHED_CLOCK
-	select MTK_SYSTRACKER
 	select MTK_SYS_CIRQ
 	select MTK_EIC
 	select ARMV7_COMPAT
@@ -274,7 +273,6 @@ config ARCH_MT6797
 	select IRQ_DOMAIN
 	select IRQ_DOMAIN_DEBUG
 	select GENERIC_SCHED_CLOCK
-	select MTK_SYSTRACKER
 	select MTK_SYS_CIRQ
 	select MTK_EIC
 	select ARMV7_COMPAT
