@@ -163,6 +163,7 @@ static int mt_eint_get_level(unsigned int eint_num);
 static unsigned int mt_eint_flip_edge(struct eint_chip *chip, unsigned int eint_num);
 static unsigned int mt_eint_get_debounce_cnt(unsigned int cur_eint_num);
 static unsigned long cur_debug_eint;
+static unsigned long cur_debug_deint;
 
 static void mt_eint_clr_deint_selection(u32 deint_mapped)
 {
@@ -185,9 +186,40 @@ static void mt_eint_set_deint_selection(u32 eint_num, u32 deint_mapped)
 			IOMEM(DEINT_SEL_SET_BASE + 4));
 }
 
+
+static int mt_eint_get_deint_selection(u32 deint_mapped)
+{
+	int ret;
+	unsigned long base = DEINT_SEL_BASE;
+	unsigned int offset;
+	unsigned int field_shift;
+
+	if (deint_mapped >= MAX_DEINT_CNT)
+		return -EINVAL;
+	base = base + ((deint_mapped >> 0x2) << 0x2);
+	ret = readl(IOMEM(base));
+	field_shift = (deint_mapped % MAX_DEINT_CNT) << 0x3;
+	ret = (ret & (0xff << field_shift)) >> field_shift;
+	return ret;
+}
+
 static void mt_eint_enable_deint_selection(u32 deint_mapped)
 {
 	writel(readl(IOMEM(DEINT_CON_BASE)) | (1 << deint_mapped), IOMEM(DEINT_CON_BASE));
+}
+
+
+unsigned int mt_eint_get_enable_deint(unsigned int deint_mapped)
+{
+	unsigned long base;
+	unsigned int st;
+	unsigned int bit = 1 << (deint_mapped % MAX_DEINT_CNT);
+
+	base = DEINT_CON_BASE;
+	st = readl(IOMEM(base));
+	pr_debug("[EINT] %s :%lx,value: 0x%x,bit: %x\n", __func__, base, st, bit);
+	return ((st & bit)?1:0);
+
 }
 
 int mt_eint_clr_deint(u32 eint_num)
@@ -226,7 +258,7 @@ mt_eint_get_deint_sec_en(unsigned int deint_mapped)
 {
 	unsigned long base;
 	unsigned int st;
-	unsigned int bit = 1 << (deint_mapped % 16);
+	unsigned int bit = 1 << (deint_mapped % MAX_DEINT_CNT);
 
 	base = SECURE_DIR_EINT_EN;
 	st = readl(IOMEM(base));
@@ -1139,8 +1171,50 @@ static ssize_t per_eint_dump_store(struct device_driver *driver,
 	cur_debug_eint = num;
 	return count;
 }
-
 DRIVER_ATTR(per_eint_dump, 0644, per_eint_dump_show, per_eint_dump_store);
+
+#ifdef CONFIG_MTK_SEC_DEINT_SUPPORT
+static ssize_t per_deint_dump_show(struct device_driver *driver, char *buf)
+{
+	ssize_t ret;
+	unsigned int deint_sel;
+	unsigned int deint_sec;
+	unsigned int deint_en;
+
+	if (cur_debug_deint >= MAX_DEINT_CNT)
+		return -EINVAL;
+
+	deint_sel = (unsigned int)mt_eint_get_deint_selection(cur_debug_deint);
+	deint_sec = (unsigned int)mt_eint_get_deint_sec_en(cur_debug_deint);
+	deint_en  = (unsigned int)mt_eint_get_enable_deint(cur_debug_deint);
+	ret = snprintf(buf, PAGE_SIZE,
+		"[EINT] deint:%ld,sec:%x,sel:%x,en:0x%x\n",
+		cur_debug_deint,
+		deint_sec,
+		deint_sel,
+		deint_en);
+	return ret;
+}
+
+static ssize_t per_deint_dump_store(struct device_driver *driver,
+				   const char *buf,
+				   size_t count)
+{
+	char *p = (char *)buf;
+	unsigned long num;
+
+	if (kstrtoul(p, 10, &num) != 0) {
+		pr_err("[EIC] can not kstrtoul for %s\n", p);
+		return -1;
+	}
+	cur_debug_deint = num;
+	return count;
+}
+
+
+
+DRIVER_ATTR(per_deint_dump, 0644, per_deint_dump_show, per_deint_dump_store);
+#endif
 
 /*
  * mt_eint_isr: EINT interrupt service routine.
@@ -2056,6 +2130,15 @@ static int __init mt_eint_init(void)
 		pr_err("Fail to create eint_driver sysfs files");
 		return -1;
 	}
+
+#ifdef CONFIG_MTK_SEC_DEINT_SUPPORT
+	ret = driver_create_file(&eint_driver.driver, &driver_attr_per_deint_dump);
+	if (ret) {
+		pr_err("Fail to create eint_driver sysfs files");
+		return -1;
+	}
+#endif
+
 
 #if defined(CONFIG_MTK_EIC_HISTORY_DUMP)
 	ret = driver_create_file(&eint_driver.driver,
