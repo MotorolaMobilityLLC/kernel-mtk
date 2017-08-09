@@ -1297,8 +1297,7 @@ void Cluster0_OCP_ON(void)
 if (ocp_cluster0_enable == 0) {
 	LittleOCPConfig(0, 300, 10000);
 	LittleOCPSetTarget(0, 127000);
-	LittleOCPDVFSSet(0, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000,
-						mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100);
+	LittleOCPDVFSSet(0, 897, 1000);
 	LittleOCPEnable(0, 1, 625);
 	}
 }
@@ -1308,8 +1307,7 @@ void Cluster1_OCP_ON(void)
 if (ocp_cluster1_enable == 0) {
 	LittleOCPConfig(1, 300, 10000);
 	LittleOCPSetTarget(1, 127000);
-	LittleOCPDVFSSet(1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000,
-						mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100);
+	LittleOCPDVFSSet(1, 1274, 1000);
 	LittleOCPEnable(1, 1, 625);
 	}
 }
