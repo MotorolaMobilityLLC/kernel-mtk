@@ -10,13 +10,13 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 ifneq ($(CONFIG_ARM64), y)
 # For arm32
   obj-y += camera_isp.o
-  obj-y += camera_sysram.o
+  #obj-y += camera_sysram.o
   obj-y += camera_fdvt.o
   #obj-y += camera_eis.o
 else
 # For arm64
   obj-y += camera_isp.o
-  obj-y += camera_sysram.o
+  #obj-y += camera_sysram.o
   obj-y += camera_fdvt.o
   #obj-y += camera_eis.o
 endif
