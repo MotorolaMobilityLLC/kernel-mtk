@@ -181,13 +181,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	    time_before_eq(jiffies, lowmem_deathpending_timeout))
 		return SHRINK_STOP;
 
-#if 0
-	/*mask for build error, need unmask later*/
-	/* We are in MTKPASR stage! */
-	if (unlikely(current->flags & PF_MTKPASR))
-		return SHRINK_STOP;
-#endif
-
 	/* Subtract CMA free pages from other_free if this is an unmovable page allocation */
 	if (IS_ENABLED(CONFIG_CMA))
 		if (!(sc->gfp_mask & __GFP_MOVABLE))
@@ -203,6 +196,14 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		/* lowmem_print(1, "Original other_free [%d] is too low!\n", other_free); */
 		other_free = 0;
 	}
+
+#if defined(CONFIG_64BIT) && defined(CONFIG_SWAP)
+	/* Halve other_free if there is less free swap */
+	if (vm_swap_full()) {
+		lowmem_print(3, "Halve other_free %d\n", other_free);
+		other_free >>= 1;
+	}
+#endif
 
 	if (lowmem_adj_size < array_size)
 		array_size = lowmem_adj_size;
