@@ -359,10 +359,6 @@ void md_cd_check_emi_state(struct ccci_modem *md, int polling)
 {
 }
 
-/* callback for system power off*/
-void ccci_power_off(void)
-{
-}
 
 void md1_pmic_setting_off(void)
 {
@@ -398,6 +394,12 @@ void md1_pmic_setting_on(void)
 	pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VOSEL_CTRL, 1);/* HW mode, bit[1]; offset: 0x650 */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VMD1_VOSEL_CTRL, 1);/* HW mode, bit[1]; offset: 0x63C */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VOSEL_CTRL, 1);/* HW mode, bit[1]; offset: 0x628 */
+}
+
+/* callback for system power off*/
+void ccci_power_off(void)
+{
+	md1_pmic_setting_on();
 }
 
 #define ROr2W(a, b, c)  cldma_write32(a, b, (cldma_read32(a, b)|c))
