@@ -818,26 +818,15 @@ enum {
 
 static int mtk_sysinfo_get_info(unsigned int mask)
 {
-	int nBattVol, nBattTemp;
 	int i;
 	int nocpucores = 0, *cpufreqs, *cpuloadings;
 	int nogpucores = 0, *gpufreqs, *gpuloadings;
-	int noextraattr = 0, *attrvalues;
-	char **attrnames, **attrunits;
+	int noextraattr = 0;
 
 	if (mask == 0x0)
 		return 0;
 
 	mutex_lock(&MTM_SYSINFO_LOCK);
-
-	/* ****************** */
-	/* Battery */
-	/* ****************** */
-
-	if (mask & THERMAL_SYS_INFO_BATT) {
-		if (mtk_thermal_get_batt_info(&nBattVol, &nBattCurrentCnsmpt, &nBattTemp))
-			;	/* TODO: print error log */
-	}
 	/* ****************** */
 	/* CPU Usage */
 	/* ****************** */
@@ -871,25 +860,6 @@ static int mtk_sysinfo_get_info(unsigned int mask)
 			gpu_index.usage = gpuloadings[0];
 		}
 	}
-	/* ****************** */
-	/* Modem Index */
-	/* ****************** */
-	/* ****************** */
-	/* Wifi Index */
-	/* ****************** */
-	if (mask & (THERMAL_SYS_INFO_WIFI | THERMAL_SYS_INFO_MD)) {
-		if (mtk_thermal_get_extra_info(&noextraattr, &attrnames, &attrvalues, &attrunits))
-			/* TODO: print error log */;
-		else {
-				/* THRML_LOG("%s  %d, %d, %d, %d, %d, %d, %d, %d\n",
-				__func__,*(attrvalues +0), *(attrvalues +1), *(attrvalues +2),
-				*(attrvalues +3), *(attrvalues +4), *(attrvalues +5),
-				*(attrvalues +6), *(attrvalues +7)); */
-			nMobile_throughput = *(attrvalues + 7);
-			THRML_LOG("%s Mobile_throughput=%d\n", __func__, nMobile_throughput);
-		}
-	}
-
 	mutex_unlock(&MTM_SYSINFO_LOCK);
 
 	/* print extra info */
@@ -900,11 +870,10 @@ static int mtk_sysinfo_get_info(unsigned int mask)
 
 	/* print batt info */
 	if (mask & THERMAL_SYS_INFO_BATT) {
-		THRML_LOG("%s nBattCurrentCnsmpt=%d nBattVol=%d nBattTemp=%d\n", __func__,
-			  nBattCurrentCnsmpt, nBattVol, nBattTemp);
+		THRML_LOG("%s nBattCurrentCnsmpt=%d\n", __func__,
+			  nBattCurrentCnsmpt);
 	}
-	THRML_STORAGE_LOG(THRML_LOGGER_MSG_BATTERY_INFO, get_battery_info, nBattCurrentCnsmpt,
-			  nBattVol, nBattTemp);
+	THRML_STORAGE_LOG(THRML_LOGGER_MSG_BATTERY_INFO, get_battery_info, nBattCurrentCnsmp);
 
 	/* CPU and GPU to storage logger */
 	THRML_STORAGE_LOG(THRML_LOGGER_MSG_CPU_INFO_EX, get_cpu_info_ex,

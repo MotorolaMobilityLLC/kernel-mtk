@@ -393,6 +393,7 @@ static ssize_t _cl_bcct_write(struct file *filp, const char __user *buf, size_t 
 	char tmp[128] = { 0 };
 	int klog_on, limit0, limit1, limit2;
 
+	len = (len < (128 - 1)) ? len : (128 - 1);
 	/* write data to the buffer */
 	if (copy_from_user(tmp, buf, len))
 		return -EFAULT;
@@ -485,6 +486,7 @@ static ssize_t _cl_abcct_write(struct file *filp, const char __user *buf, size_t
 	long _abcct_target_temp, _abcct_kp, _abcct_ki, _abcct_kd;
 	int _max_cur, _min_cur;
 
+	len = (len < (128 - 1)) ? len : (128 - 1);
 	/* write data to the buffer */
 	if (copy_from_user(tmp, buf, len))
 		return -EFAULT;

@@ -73,91 +73,6 @@ pr_err("THERMAL/PLATFORM" fmt, ##args)
 /* ************************************ */
 
 /* ********************************************* */
-/* System Information Monitor */
-/* ********************************************* */
-static mm_segment_t oldfs;
-
-/*
- *  Read Battery Information.
- *
- *  "cat /sys/devices/platform/mt6575-battery/FG_Battery_CurrentConsumption"
- *  "cat /sys/class/power_supply/battery/batt_vol"
- *  "cat /sys/class/power_supply/battery/batt_temp"
- */
-static int get_sys_battery_info(char *dev)
-{
-	int fd;
-	long nRet;
-	int eCheck;
-	int nReadSize;
-	char buf[64];
-
-	oldfs = get_fs();
-	set_fs(KERNEL_DS);
-	fd = sys_open(dev, O_RDONLY, 0);
-	if (fd < 0) {
-		THRML_LOG("[get_sys_battery_info] open fail dev:%s fd:%d\n", dev, fd);
-		set_fs(oldfs);
-		return fd;
-	}
-
-	nReadSize = sys_read(fd, buf, sizeof(buf) - 1);
-	THRML_LOG("[get_sys_battery_info] nReadSize:%d\n", nReadSize);
-	eCheck = kstrtol(buf, 10, &nRet);
-
-	set_fs(oldfs);
-	sys_close(fd);
-
-	if (eCheck == 0)
-		return (int) nRet;
-	else
-		return 0;
-}
-
-/* ********************************************* */
-/* Get Wifi Tx throughput */
-/* ********************************************* */
-static int get_sys_node(char *dev, int nRetryNr)
-{
-	int fd;
-	int nRet;
-	int eCheck;
-	int nReadSize;
-	int nRetryCnt = 0;
-	char buf[32];
-
-	oldfs = get_fs();
-	set_fs(KERNEL_DS);
-
-	/* If sys_open fail, it will retry "nRetryNr" times. */
-	do {
-		fd = sys_open(dev, O_RDONLY, 0);
-		if (nRetryCnt > nRetryNr) {
-			THRML_LOG("[get_sys_node] open fail dev:%s fd:%d\n", dev, fd);
-			set_fs(oldfs);
-			return fd;
-		}
-		nRetryCnt++;
-	} while (fd < 0);
-
-	if (nRetryCnt > 1)
-		THRML_LOG("[get_sys_node] open fail nRetryCnt:%d\n", nRetryCnt);
-
-
-	nReadSize = sys_read(fd, buf, sizeof(buf) - 1);
-	THRML_LOG("[get_sys_node] nReadSize:%d\n", nReadSize);
-	eCheck = kstrtoint(buf, 10, &nRet);
-
-	set_fs(oldfs);
-	sys_close(fd);
-
-	if (eCheck == 0)
-		return nRet;
-	else
-		return 0;
-}
-
-/* ********************************************* */
 /* For get_sys_cpu_usage_info_ex() */
 /* ********************************************* */
 
@@ -531,61 +446,10 @@ int mtk_thermal_get_gpu_info(int *nocores, int **gpufreq, int **gpuloading)
 }
 EXPORT_SYMBOL(mtk_thermal_get_gpu_info);
 
-int mtk_thermal_get_batt_info(int *batt_voltage, int *batt_current, int *batt_temp)
-{
-	/* ****************** */
-	/* Battery */
-	/* ****************** */
-
-	/* Read Battery Information */
-	if (batt_current) {
-		*batt_current =
-		    get_sys_battery_info
-		    ("/sys/devices/platform/battery/FG_Battery_CurrentConsumption");
-		/* the return value is 0.1mA */
-		if (*batt_current % 10 < 5)
-			*batt_current /= 10;
-		else
-			*batt_current = 1 + (*batt_current / 10);
-
-
-#if defined(CONFIG_MTK_SMART_BATTERY)
-		if (KAL_TRUE == gFG_Is_Charging)
-			*batt_current *= -1;
-#endif
-	}
-
-	if (batt_voltage)
-		*batt_voltage = get_sys_battery_info("/sys/class/power_supply/battery/batt_vol");
-
-	if (batt_temp)
-		*batt_temp = get_sys_battery_info("/sys/class/power_supply/battery/batt_temp");
-
-	return 0;
-}
-EXPORT_SYMBOL(mtk_thermal_get_batt_info);
-
 /* ********************************************* */
 /* Get Extra Info */
 /* ********************************************* */
 #define MIN(_a_, _b_) ((_a_) < (_b_) ? (_a_) : (_b_))
-static unsigned int ma_len = 5;	/* max 60 */
-static unsigned int ma_counter;
-static unsigned int ma[60];
-
-static unsigned int  get_sma(unsigned int  latest_val)
-{
-	unsigned int ret = 0;
-	int i = 0;
-
-	ma[(ma_counter) % (ma_len)] = latest_val;
-	ma_counter++;
-	for (i = 0; i < MIN(ma_counter, ma_len); i++)
-		ret += ma[i];
-	ret = ret / (MIN(ma_counter, ma_len));
-
-	return ret;
-}
 
 enum {
 /*	TXPWR_MD1 = 0,
@@ -598,68 +462,6 @@ enum {
 	Mobile_TP = 7,
 	NO_EXTRA_THERMAL_ATTR
 };
-static char *extra_attr_names[NO_EXTRA_THERMAL_ATTR] = { 0 };
-static int extra_attr_values[NO_EXTRA_THERMAL_ATTR] = { 0 };
-static char *extra_attr_units[NO_EXTRA_THERMAL_ATTR] = { 0 };
-
-int mtk_thermal_get_extra_info(int *no_extra_attr,
-			       char ***attr_names, int **attr_values, char ***attr_units)
-{
-
-	int size, i = 0;
-
-	if (no_extra_attr)
-		*no_extra_attr = NO_EXTRA_THERMAL_ATTR;
-
-	/* ****************** */
-	/* Modem Index */
-	/* ****************** */
-	THRML_LOG("[mtk_thermal_get_extra_info] mtk_mdm_get_md_info\n");
-	{
-		struct md_info *p_info;
-
-		mtk_mdm_get_md_info(&p_info, &size);
-		THRML_LOG("[mtk_thermal_get_extra_info] mtk_mdm_get_md_info size %d\n", size);
-		if (size <= NO_EXTRA_THERMAL_ATTR - 2) {
-			for (i = 0; i < size; i++) {
-				extra_attr_names[i] = p_info[i].attribute;
-				extra_attr_values[i] = p_info[i].value;
-				extra_attr_units[i] = p_info[i].unit;
-			}
-		}
-	}
-	/* Get Mobile Tx throughput */
-	{
-		extra_attr_names[Mobile_TP] = "Mobile_TP";
-		extra_attr_values[Mobile_TP] = get_sys_node("/proc/mobile_tm/tx_thro", 3);
-		THRML_LOG("[mtk_thermal_get_extra_info] /proc/mobile_tm/tx_thro = %d\n", extra_attr_values[Mobile_TP]);
-		extra_attr_values[Mobile_TP] = get_sma(extra_attr_values[Mobile_TP]);
-		THRML_LOG("[mtk_thermal_get_extra_info] /proc/mobile_tm/tx_thro SMA = %d\n",
-						extra_attr_values[Mobile_TP]);
-		extra_attr_units[Mobile_TP] = "Kbps";
-	}
-
-	/* ****************** */
-	/* Wifi Index */
-	/* ****************** */
-	/* Get Wi-Fi Tx throughput */
-	extra_attr_names[WiFi_TP] = "WiFi_TP";
-	extra_attr_values[WiFi_TP] = get_sys_node("/proc/driver/thermal/wifi_tx_thro", 3);
-	extra_attr_units[WiFi_TP] = "Kbps";
-
-	if (attr_names)
-		*attr_names = extra_attr_names;
-
-	if (attr_values)
-		*attr_values = extra_attr_values;
-
-	if (attr_units)
-		*attr_units = extra_attr_units;
-
-	return 0;
-
-}
-EXPORT_SYMBOL(mtk_thermal_get_extra_info);
 
 int mtk_thermal_force_get_batt_temp(void)
 {
