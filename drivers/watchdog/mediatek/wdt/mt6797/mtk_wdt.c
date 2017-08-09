@@ -642,14 +642,7 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	mtk_wdt_mode_config(FALSE, FALSE, TRUE, FALSE, FALSE);
 	g_wdt_enable = 0;
 	#endif
-	/*
-	* E3 ECO
-       * reset will delay 2ms after set SW_WDT in register
-	*/
-	nonrst = __raw_readl(MTK_WDT_NONRST_REG);
-	nonrst = (nonrst | (1<<29));
-	mt_reg_sync_writel(nonrst, MTK_WDT_NONRST_REG);
-	pr_debug("WDT NONRST=0x%x\n", __raw_readl(MTK_WDT_NONRST_REG));
+
 	/* Update interval register value and check reboot flag */
 	interval_val = __raw_readl(MTK_WDT_INTERVAL);
 	interval_val &= ~(MAGIC_NUM_MASK);
