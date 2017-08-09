@@ -151,7 +151,11 @@ static int pickup_gesture_get_data(int *probability, int *status)
 
 static int pickup_gesture_open_report_data(int open)
 {
-	return sensor_enable_to_hub(ID_PICK_UP_GESTURE, open);
+	int ret = 0;
+
+	ret = sensor_set_delay_to_hub(ID_PICK_UP_GESTURE, 20);
+	ret = sensor_enable_to_hub(ID_PICK_UP_GESTURE, open);
+	return ret;
 }
 
 static int SCP_sensorHub_notify_handler(void *data, unsigned int len)

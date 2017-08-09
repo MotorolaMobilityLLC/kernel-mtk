@@ -119,17 +119,29 @@ static int step_chub_delete_attr(struct device_driver *driver)
 
 static int step_c_enable_nodata(int en)
 {
-	return sensor_enable_to_hub(ID_STEP_COUNTER, en);
+	int ret = 0;
+
+	ret = sensor_set_delay_to_hub(ID_STEP_COUNTER, 20);
+	ret = sensor_enable_to_hub(ID_STEP_COUNTER, en);
+	return ret;
 }
 
 static int step_d_enable_nodata(int en)
 {
-	return sensor_enable_to_hub(ID_STEP_DETECTOR, en);
+	int ret = 0;
+
+	ret = sensor_set_delay_to_hub(ID_STEP_DETECTOR, 20);
+	ret = sensor_enable_to_hub(ID_STEP_DETECTOR, en);
+	return ret;
 }
 
 static int step_s_enable_nodata(int en)
 {
-	return sensor_enable_to_hub(ID_SIGNIFICANT_MOTION, en);
+	int ret = 0;
+
+	ret = sensor_set_delay_to_hub(ID_SIGNIFICANT_MOTION, 20);
+	ret = sensor_enable_to_hub(ID_SIGNIFICANT_MOTION, en);
+	return ret;
 }
 
 static int step_c_set_delay(u64 delay)

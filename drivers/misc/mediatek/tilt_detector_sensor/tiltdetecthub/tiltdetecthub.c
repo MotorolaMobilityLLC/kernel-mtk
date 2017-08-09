@@ -128,7 +128,11 @@ static int tilt_detect_get_data(int *probability, int *status)
 }
 static int tilt_detect_open_report_data(int open)
 {
-	return sensor_enable_to_hub(ID_TILT_DETECTOR, open);
+	int ret = 0;
+
+	ret = sensor_set_delay_to_hub(ID_TILT_DETECTOR, 20);
+	ret = sensor_enable_to_hub(ID_TILT_DETECTOR, open);
+	return ret;
 }
 static int SCP_sensorHub_notify_handler(void *data, unsigned int len)
 {
