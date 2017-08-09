@@ -16,5 +16,6 @@ config MACH_MT2701
 config MACH_MT8127
         bool "MediaTek MT8127 SoCs support"
         default n
+	select MFD_SYSCON
 
 endif
