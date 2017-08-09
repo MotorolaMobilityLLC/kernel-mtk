@@ -385,7 +385,7 @@ const char *cg_grp_get_name(int id)
 
 bool is_disp_pwm_rosc(void)
 {
-	return idle_readl(DISP_PWM_MUX) == PWM_LPOSC_D8;
+	return (idle_readl(DISP_PWM_MUX) & 0x7) == PWM_LPOSC_D8;
 }
 
 bool is_auxadc_released(void)
