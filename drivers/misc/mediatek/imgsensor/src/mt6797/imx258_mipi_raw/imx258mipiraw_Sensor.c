@@ -2831,6 +2831,20 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
     return ERROR_NONE;
 }
 
+static kal_uint32 get_sensor_temperature(void)
+{
+
+    UINT32 temperature;
+    
+    /*TEMP_SEN_CTL*/
+    write_cmos_sensor(0x0138, 0x01);
+    temperature = read_cmos_sensor(0x013a);
+	
+	LOG_INF("get_temperature(%d)\n", temperature);
+
+    return temperature;
+}
+
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 							 UINT8 *feature_para,UINT32 *feature_para_len)
 {
@@ -3030,6 +3044,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
 			set_shutter_frame_length((UINT16)*feature_data,(UINT16)*(feature_data+1));
 			break;
+		case SENSOR_FEATURE_GET_TEMPERATURE_VALUE:
+			*feature_return_para_32 = get_sensor_temperature();
+			*feature_para_len=4;
+			break;	
 		default:
 			break;
 	}
