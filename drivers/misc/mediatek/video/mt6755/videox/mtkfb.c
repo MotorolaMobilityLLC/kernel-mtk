@@ -639,7 +639,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 		return ret;
 	}
 
-	DISPCHECK("pan_display: offset(%u,%u), res(%u,%u), resv(%u,%u)\n",
+	DISPDBG("pan_display: offset(%u,%u), res(%u,%u), resv(%u,%u)\n",
 		  var->xoffset, var->yoffset, info->var.xres, info->var.yres,
 		  info->var.xres_virtual, info->var.yres_virtual);
 
@@ -764,7 +764,7 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 
 	/* DISPFUNC(); */
 
-	DISPCHECK("mtkfb_check_var,xres=%u,yres=%u,x_virt=%u,y_virt=%u,xoffset=%u,yoffset=%u,bits_per_pixel=%u)\n",
+	DISPDBG("mtkfb_check_var,xres=%u,yres=%u,x_virt=%u,y_virt=%u,xoffset=%u,yoffset=%u,bits_per_pixel=%u)\n",
 		  var->xres, var->yres, var->xres_virtual, var->yres_virtual,
 		  var->xoffset, var->yoffset, var->bits_per_pixel);
 
@@ -818,7 +818,7 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 	if (var->yres + var->yoffset > var->yres_virtual)
 		var->yoffset = var->yres_virtual - var->yres;
 
-	DISPMSG("mtkfb_check_var,xres=%u,yres=%u,x_virt=%u,y_virt=%u,xoffset=%u,yoffset=%u,bits_per_pixel=%u)\n",
+	DISPDBG("mtkfb_check_var,xres=%u,yres=%u,x_virt=%u,y_virt=%u,xoffset=%u,yoffset=%u,bits_per_pixel=%u)\n",
 		var->xres, var->yres, var->xres_virtual, var->yres_virtual,
 		var->xoffset, var->yoffset, var->bits_per_pixel);
 
@@ -954,12 +954,12 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	session_input->config_layer_num = 0;
 
 	if (!is_DAL_Enabled()) {
-		DISPCHECK("AEE is not enabled, will disable layer 3\n");
+		DISPDBG("AEE is not enabled, will disable layer 3\n");
 		input = &session_input->config[session_input->config_layer_num++];
 		input->layer_id = primary_display_get_option("ASSERT_LAYER");
 		input->layer_enable = 0;
 	} else {
-		DISPCHECK("AEE is enabled, should not disable layer 3\n");
+		DISPDBG("AEE is enabled, should not disable layer 3\n");
 	}
 
 	input = &session_input->config[session_input->config_layer_num++];
