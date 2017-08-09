@@ -2270,7 +2270,7 @@ static int mtkfb_probe(struct device *dev)
 
 
 	/* this function will get fb_heap base address to ion for management frame buffer */
-	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size());
+	ion_drv_create_FB_heap(mtkfb_get_fb_base(), mtkfb_get_fb_size() - DAL_GetLayerSize());
 	fbdev->state = MTKFB_ACTIVE;
 
 #ifdef FPGA_DEBUG_PAN
