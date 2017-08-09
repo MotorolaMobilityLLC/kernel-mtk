@@ -250,7 +250,7 @@ int sp_read_reg(uint8_t slave_addr, uint8_t offset, uint8_t *buf)
 
 	the_chip->client->addr = (slave_addr >> 1);///& I2C_MASK_FLAG)|I2C_WR_FLAG;
 	
-	the_chip->client->timing = 100;
+	/*the_chip->client->timing = 100;*/
 #if 1
 	ret = i2c_master_send(the_chip->client, (const char*)&regAddress, sizeof(uint8_t));  
 	if(ret < 0)
@@ -331,7 +331,7 @@ int sp_write_reg(uint8_t slave_addr, uint8_t offset, uint8_t value)
 	}
 	
 	the_chip->client->addr = (slave_addr >> 1);
-	the_chip->client->timing = 100;
+	/*the_chip->client->timing = 100;*/
 	ret = i2c_master_send(the_chip->client, write_data, 2);  
 	if (ret < 0) {
 		pr_err("failed(%d) to write i2c addr=%x-%x-%x\n",ret, slave_addr, offset, value);
@@ -354,11 +354,13 @@ void sp_tx_hardware_poweron(void)
 {
 #ifndef dp_to_do
 		reset_mhl_board(5, 5, true);
-//		set_pin_high_low(RESET_PIN, 0);
+/*
+		set_pin_high_low(RESET_PIN, 0);
 		msleep(1);
 		set_pin_high_low(PD_PIN, 0);
 		msleep(2);
 		set_pin_high_low(RESET_PIN, 1);
+*/
 		pr_info("anx7805 power on, NOT dp_to_do\n");
 
 		return;
@@ -382,11 +384,12 @@ void sp_tx_hardware_powerdown(void)
 //int status = 0;
 #ifndef dp_to_do
 	reset_mhl_board(5, 5, false);
-
-//	set_pin_high_low(RESET_PIN, 0);
+/*
+	set_pin_high_low(RESET_PIN, 0);
 	msleep(2);
 	set_pin_high_low(PD_PIN, 1);
 	msleep(1);
+*/
 	pr_info("anx7805 power down, NOT dp_to_do\n");
 
 	return;
@@ -729,6 +732,7 @@ out:
 }
 */
 
+static unsigned int i2c_probe_count = 0;
 static int anx7805_i2c_probe(struct i2c_client *client,
                              const struct i2c_device_id *id)
 {
@@ -739,7 +743,13 @@ static int anx7805_i2c_probe(struct i2c_client *client,
 	*/
 	//struct msm_hdmi_sp_ops *hdmi_sp_ops = NULL;
 	int ret = 0;
-	
+
+	if (i2c_probe_count >= 1) {
+		pr_err("i2c_probe_count:%d\n", i2c_probe_count);
+		return 0;
+	}
+	i2c_probe_count++;
+
 	pr_err("anx7805 anx7805_i2c_probe + \n");
 	if (!i2c_check_functionality(client->adapter,
 	                             I2C_FUNC_SMBUS_I2C_BLOCK)) {
@@ -902,6 +912,7 @@ err2:
 err1:
 	anx7805_free_gpio(anx7805);
 err0:
+	pr_err("anx7805, error0\n");
 	the_chip = NULL;
 	kfree(anx7805);
 exit:
@@ -916,6 +927,7 @@ static int anx7805_i2c_remove(struct i2c_client *client)
 {
 	struct anx7805_data *anx7805 = i2c_get_clientdata(client);
 
+	pr_err("anx7805_i2c_remove\n");
 	///free_irq(client->irq, anx7805);
 	wake_lock_destroy(&anx7805->slimport_lock);
 	if (!anx7805->vdd_reg)

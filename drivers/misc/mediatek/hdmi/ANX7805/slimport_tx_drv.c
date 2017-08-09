@@ -1984,6 +1984,11 @@ void SP_TX_Config_Audio_I2S(struct AudioFormat *bAudioFormat)
 	}
 	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_I2S_CTRL,c); // enable I2S input
 
+	sp_read_reg (SP_TX_PORT2_ADDR, SP_TX_I2S_SWAP_WORD_LENGTH, &c);
+	c = c & 0xF0;
+	c = c | bAudioFormat->bAudio_word_len;
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_I2S_SWAP_WORD_LENGTH, c); // enable I2S input
+
 	sp_read_reg(SP_TX_PORT0_ADDR, SP_TX_AUD_CTRL,&c); // select I2S clock as audio reference clock-2011.9.9-ANX.Fei
 	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_AUD_CTRL,c|0x06);
 
@@ -4709,10 +4714,13 @@ BYTE sp_tx_get_ds_video_status(void)
 	return ((c & 0x01) != 0 ? 1 : 0);
 }
 #endif
+
+static unsigned int dump_count=0;
 void SP_CTRL_HDCP_Process(void)
 {
 	BYTE c;
 	static BYTE ds_vid_stb_cntr = 0;
+	dump_count = 0;
 	//pr_err("HDCP Process state: %x \r\n", (unsigned int)hdcp_process_state);
 	switch(hdcp_process_state) {
 	case HDCP_PROCESS_INIT:
@@ -4781,11 +4789,34 @@ void SP_CTRL_HDCP_Process(void)
 	}
 }
 
+void SP_CTRL_Dump_Reg(void)
+{
+	unsigned int BEGIN=0x80, END=0xFF, i=0;
+	uint8_t temp=0;
+
+	//for ANX7418 Debug
+	sp_read_reg(0x50, 0x36, &temp);
+	pr_err("ANX7418 reg:0x50,offset:0x36, temp:%d, bit4:%d\n", temp, (temp>>4) & 0x1);
+
+	temp = temp & 0xDF;
+	sp_write_reg(0x50, 0x36, temp);
+
+	sp_read_reg(0x50, 0x36, &temp);
+	pr_err("ANX7418 reg:0x50,offset:0x36, temp:%d\n", temp);
+
+	for(i=BEGIN; i<=END; i++) {
+		sp_read_reg(SP_TX_PORT0_ADDR, i, &temp);
+		pr_err("reg:%x,offset:%x, temp:%d\n", SP_TX_PORT0_ADDR, i, temp);
+	}
+	for(i=BEGIN; i<=END; i++) {
+		sp_read_reg(SP_TX_PORT2_ADDR, i, &temp);
+		pr_err("reg:%x,offset:%x, temp:%d\n", SP_TX_PORT2_ADDR, i, temp);
+	}
+}
 
 void SP_CTRL_PlayBack_Process(void)
 {
 	//BYTE c;
-
 #if 0
 	//for MIPI video change
 	if(SP_TX_Video_Input.Interface  == MIPI_DSI) {
@@ -4799,6 +4830,13 @@ void SP_CTRL_PlayBack_Process(void)
 		//pr_err("mipi checksum ok!");
 	}
 #endif
+	/*
+	if (dump_count < 3) {
+		dump_count++;
+		SP_CTRL_Dump_Reg();
+	}
+	*/
+
 if(audio_format_change)
 {
 	SP_TX_Update_Audio(&SP_TX_Audio_Input);

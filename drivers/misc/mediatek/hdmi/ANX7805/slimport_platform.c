@@ -219,7 +219,7 @@ void register_slimport_eint(void)
     u32 ints[2]={0, 0};
 
 	SLIMPORT_DBG("register_slimport_eint\n");
-    node = of_find_compatible_node(NULL, NULL, "mediatek,sii8348-hdmi");
+    node = of_find_compatible_node(NULL, NULL, "mediatek,extd_dev");
     if(node)
     {
         of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
@@ -230,7 +230,7 @@ void register_slimport_eint(void)
 		/*irq_set_irq_type(mhl_eint_number,IRQ_TYPE_EDGE_RISING);*/
 		gpio_set_debounce(mhl_eint_gpio_number, 2000);    /*debounce time is microseconds*/
     	/*if(request_irq(mhl_eint_number, anx7805_cbl_det_isr, IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT, "mediatek,sii8348-hdmi", NULL))*/ ///IRQF_TRIGGER_LOW
-    	if(request_irq(mhl_eint_number, anx7805_cbl_det_isr, IRQ_TYPE_LEVEL_HIGH, "mediatek,sii8348-hdmi", NULL))
+    	if(request_irq(mhl_eint_number, anx7805_cbl_det_isr, IRQ_TYPE_LEVEL_HIGH, "mediatek,extd_dev", NULL))
     	{
     		 SLIMPORT_DBG("request_irq fail\n");
     	}

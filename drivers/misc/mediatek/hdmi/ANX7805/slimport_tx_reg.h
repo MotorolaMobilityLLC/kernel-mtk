@@ -607,7 +607,7 @@
 #define PLL_FILTER_CTRL6			0xE4
 
 #define SP_TX_I2S_CTRL			0xE6
-//#define SP_TX_I2S_SWAP_WORD_LENGTH			0xE7
+#define SP_TX_I2S_SWAP_WORD_LENGTH			0xE7
 #define SP_TX_I2S_FMT			0xD5
 #define SP_TX_I2S_CH_Status1			0xD0
 #define SP_TX_I2S_CH_Status2			0xD1
