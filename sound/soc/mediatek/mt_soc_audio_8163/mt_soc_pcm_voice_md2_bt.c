@@ -124,7 +124,6 @@ static struct snd_pcm_hardware mtk_pcm_hardware = {
 static int mtk_voice_md2_bt_pcm_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	int err = 0;
 	int ret = 0;
 
 	AudDrv_ANA_Clk_On();
@@ -158,10 +157,10 @@ static int mtk_voice_md2_bt_pcm_open(struct snd_pcm_substream *substream)
 		runtime->rate = 16000;
 	}
 
-	if (err < 0) {
+	if (ret < 0) {
 		pr_err("%s ret < 0, close\n", __func__);
 		mtk_voice_md2_bt_close(substream);
-		return err;
+		return ret;
 	}
 	PRINTK_AUDDRV("%s return\n", __func__);
 	return 0;

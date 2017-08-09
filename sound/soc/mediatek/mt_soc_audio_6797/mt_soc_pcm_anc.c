@@ -898,8 +898,6 @@ static struct miscdevice ANCService_misc_device = {
 static int mtk_anc_pcm_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-
-	int err = 0;
 	int ret = 0;
 
 	pr_debug("mtk_anc_pcm_open\n");
@@ -927,10 +925,10 @@ static int mtk_anc_pcm_open(struct snd_pcm_substream *substream)
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 		pr_debug("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_playback_constraints\n");
 
-	if (err < 0) {
+	if (ret < 0) {
 		pr_debug("mtk_anc_close\n");
 		mtk_anc_close(substream);
-		return err;
+		return ret;
 	}
 	pr_debug("mtk_anc_pcm_open return\n");
 	return 0;

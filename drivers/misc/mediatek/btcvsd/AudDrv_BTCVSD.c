@@ -817,9 +817,8 @@ static ssize_t AudDrv_btcvsd_write(struct file *fp, const char __user *data,
 	char *data_w_ptr = (char *)data;
 	kal_uint64 write_timeout_limit;
 
-	if ((btsco.pTX == NULL) || (btsco.pTX->PacketBuf == NULL)
-	    || (btsco.pTX->u4BufferSize == 0)) {
-		pr_err("AudDrv_btcvsd_write btsco.pTX||btsco.pTX->PacketBuf==NULL||pTX->u4BufferSize==0!!!\n");
+	if ((btsco.pTX == NULL) || (btsco.pTX->u4BufferSize == 0)) {
+		pr_err("AudDrv_btcvsd_write btsco.pTX||pTX->u4BufferSize==0!!!\n");
 		msleep(60);
 		return written_size;
 	}
@@ -979,9 +978,8 @@ static ssize_t AudDrv_btcvsd_read(struct file *fp, char __user *data,
 	unsigned long flags;
 	kal_uint64 read_timeout_limit;
 
-	if ((btsco.pRX == NULL) || (btsco.pRX->PacketBuf == NULL)
-	    || (btsco.pRX->u4BufferSize == 0)) {
-		pr_err("AudDrv_btcvsd_read btsco.pRX|| btsco.pRX->PacketBuf==NULL||pRX->u4BufferSize == 0!\n");
+	if ((btsco.pRX == NULL) || (btsco.pRX->u4BufferSize == 0)) {
+		pr_err("AudDrv_btcvsd_read btsco.pRX || pRX->u4BufferSize == 0!\n");
 		msleep(60);
 		return -1;
 	}

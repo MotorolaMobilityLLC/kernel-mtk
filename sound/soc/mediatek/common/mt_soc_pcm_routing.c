@@ -896,7 +896,6 @@ static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
 static int mtk_routing_pcm_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	int err = 0;
 	int ret = 0;
 
 	pr_warn("mtk_routing_pcm_open\n");
@@ -916,10 +915,10 @@ static int mtk_routing_pcm_open(struct snd_pcm_substream *substream)
 	if (substream->pcm->device & 2)
 		runtime->hw.info &= ~(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID);
 
-	if (err < 0) {
+	if (ret < 0) {
 		pr_warn("mtk_routing_pcm_close\n");
 		mtk_routing_pcm_close(substream);
-		return err;
+		return ret;
 	}
 	pr_warn("mtk_routing_pcm_open return\n");
 	return 0;

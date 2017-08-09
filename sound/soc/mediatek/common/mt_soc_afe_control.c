@@ -261,9 +261,6 @@ unsigned int GetPLaybackSramPartial(void)
 {
 	unsigned int Sramsize = AudioSramPlaybackPartialSize;
 
-	if (Sramsize > AFE_INTERNAL_SRAM_SIZE)
-		Sramsize = AFE_INTERNAL_SRAM_SIZE;
-
 	return Sramsize;
 }
 
@@ -277,9 +274,6 @@ unsigned int GetPLaybackDramSize(void)
 size_t GetCaptureSramSize(void)
 {
 	unsigned int Sramsize = AudioSramCaptureSize;
-
-	if (Sramsize > AFE_INTERNAL_SRAM_SIZE)
-		Sramsize = AFE_INTERNAL_SRAM_SIZE;
 
 	return Sramsize;
 }

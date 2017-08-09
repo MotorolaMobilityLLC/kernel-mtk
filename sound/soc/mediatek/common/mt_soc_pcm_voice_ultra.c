@@ -327,7 +327,6 @@ static int mtk_voice_ultra_close(struct snd_pcm_substream *substream)
 static int mtk_voice_ultra_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	int err = 0;
 	int ret = 0;
 
 	AudDrv_Clk_On();
@@ -349,10 +348,10 @@ static int mtk_voice_ultra_open(struct snd_pcm_substream *substream)
 		runtime->rate,
 		runtime->channels);
 
-	if (err < 0) {
+	if (ret < 0) {
 		pr_warn("mtk_voice_ultra_close\n");
 		mtk_voice_ultra_close(substream);
-		return err;
+		return ret;
 	}
 
 	pr_warn("%s(), return\n", __func__);
