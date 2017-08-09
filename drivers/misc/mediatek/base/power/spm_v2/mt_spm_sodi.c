@@ -301,17 +301,16 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 	int need_log_out = 0;
 
 	if (sodi_flags&SODI_FLAG_NO_LOG) {
-		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
+		if (wakesta->assert_pc != 0) {
+			sodi_err("PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x\n",
+					wakesta->assert_pc, pcmdesc->version, wakesta->r13, wakesta->debug_flag);
+			wr = WR_PCM_ASSERT;
+		}
 	} else if (!(sodi_flags&SODI_FLAG_REDUCE_LOG) || (sodi_flags & SODI_FLAG_RESIDENCY)) {
 		sodi_warn("vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
 				vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
 				spm_read(DUMMY1_PWR_CON), pcmdesc->version);
-
 		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
-		if (wr == WR_PCM_ASSERT) {
-			sodi_err("PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x\n",
-					wakesta->assert_pc, pcmdesc->version, wakesta->r13, wakesta->debug_flag);
-		}
 	} else {
 		sodi_logout_curr_time = spm_get_current_time_ms();
 
@@ -356,8 +355,8 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
 
 				sodi_err("sodi_cnt = %d, self_refresh_cnt = 0x%x, spm_pc = 0x%0x, r13 = 0x%x, debug_flag = 0x%x\n",
-						wakesta->assert_pc, wakesta->r13, wakesta->debug_flag,
-						logout_sodi_cnt, logout_selfrefresh_cnt);
+						logout_sodi_cnt, logout_selfrefresh_cnt,
+						wakesta->assert_pc, wakesta->r13, wakesta->debug_flag);
 
 				sodi_err("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
 						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
@@ -390,8 +389,8 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
 
 				sodi_warn("sodi_cnt = %d, self_refresh_cnt = 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
-						wakesta->timer_out, wakesta->r13, wakesta->debug_flag,
-						logout_sodi_cnt, logout_selfrefresh_cnt);
+						logout_sodi_cnt, logout_selfrefresh_cnt,
+						wakesta->timer_out, wakesta->r13, wakesta->debug_flag);
 
 				sodi_warn("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
 						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
