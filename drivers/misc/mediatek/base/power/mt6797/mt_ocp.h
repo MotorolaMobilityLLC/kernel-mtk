@@ -246,6 +246,10 @@ extern void Cluster2_OCP_ON(void);
 extern void Cluster0_OCP_ON(void);
 extern void Cluster1_OCP_ON(void);
 
+/* default lower power is ON */
+extern int LittleLowerPowerOff(int Cluster, int Test_bit);
+extern int LittleLowerPowerOn(int Cluster, int Test_bit);
+
 /* DREQ + SRAMLDO */
 extern int BigSRAMLDOEnable(int mVolts);
 extern int BigDREQHWEn(int VthHi, int VthLo);

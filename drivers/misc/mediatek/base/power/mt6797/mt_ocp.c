@@ -24,6 +24,7 @@
 #include "mt_ocp.h"
 #include "mt_idvfs.h"
 #include "mt_cpufreq.h"
+#include "mach/mt_thermal.h"
 #include <mt-plat/sync_write.h>	/* mt_reg_sync_writel */
 #include <mt-plat/mt_io.h>		/*reg read, write */
 
@@ -99,8 +100,13 @@ static unsigned int ocp_cluster1_enable;
 static unsigned int ocp_cluster2_enable;
 static unsigned int big_dreq_enable;
 static unsigned int dvt_test_on;
+static unsigned int dvt_test_set;
+static unsigned int dvt_test_msb;
+static unsigned int dvt_test_lsb;
 static unsigned int hqa_test;
+static unsigned int little_dvfs_on;
 static unsigned int do_ocp_stress_test;
+static unsigned int do_ocp_test_on;
 
 /* OCP ADDR */
 #ifdef CONFIG_OF
@@ -126,10 +132,11 @@ static int ocp1_irq1_number; /* 285+50=335  */
 #define OCPPIN_UDI_SDCARD		(OCPPIN_BASE+0x400)
 
 
-typedef struct IDVFS_STAT {
+typedef struct DVFS_STAT {
 	unsigned int Freq;
 	unsigned int Volt;
-} IDVFS_STAT;
+	unsigned int Thermal;
+} DVFS_STAT;
 
 
 typedef struct OCP_STAT {
@@ -211,7 +218,7 @@ static struct OCP_STAT ocp_status[3] = {
 /* for HQA buffer */
 #define NR_HQA 10000
 static struct OCP_STAT ocp_hqa[3][NR_HQA];
-static struct IDVFS_STAT idvfs_hqa[NR_HQA];
+static struct DVFS_STAT dvfs_hqa[3][NR_HQA];
 
 /* BIG CPU */
 int BigOCPConfig(int VOffInmV, int VStepInuV)
@@ -1153,7 +1160,43 @@ return 1;
 
 }
 
+int LittleLowerPowerOn(int Cluster, int Test_bit)
+{
+if (Cluster == OCP_LL) {
+	ocp_write_field(MP0_OCP_ENABLE, 0:0, 0);
+	ocp_write(MP0_OCP_GENERAL_CTRL, 0x0);
+} else if (Cluster == OCP_L) {
+	ocp_write_field(MP1_OCP_ENABLE, 0:0, 0);
+	ocp_write(MP1_OCP_GENERAL_CTRL, 0x0);
+} else {
+	if (HW_API_RET_DEBUG_ON)
+		ocp_err("parameter Cluster OCP_LL/OCP_L must be 0/1\n");
+	return -1;
+}
+	do_ocp_test_on = Test_bit;
 
+return 0;
+}
+
+int LittleLowerPowerOff(int Cluster, int Test_bit)
+{
+if (Cluster == OCP_LL) {
+	ocp_write(MP0_OCP_GENERAL_CTRL, 0x6);
+	ocp_write_field(MP0_OCP_ENABLE, 0:0, 1);
+} else if (Cluster == OCP_L) {
+	ocp_write(MP1_OCP_GENERAL_CTRL, 0x6);
+	ocp_write_field(MP1_OCP_ENABLE, 0:0, 1);
+} else {
+	if (HW_API_RET_DEBUG_ON)
+		ocp_err("parameter Cluster OCP_LL/OCP_L must be 0/1\n");
+	return -1;
+}
+	do_ocp_test_on = Test_bit;
+
+return 0;
+}
+
+/* lower power for BU */
 int LittleOCPAvgPwr(int Cluster, int EnDis, int Count)
 {
 
@@ -1178,14 +1221,19 @@ if ((Count < 0) || (Count > 4194304)) {
 return -1;
 }
 
+if (do_ocp_test_on == 1)
+	return 0;
+
 if (Cluster == OCP_LL) {
-	ocp_write_field(MP0_OCP_GENERAL_CTRL, 1:1, EnDis);
+	LittleLowerPowerOff(0, 0);
+	/*ocp_write_field(MP0_OCP_GENERAL_CTRL, 1:1, EnDis);*/
 	ocp_write_field(MP0_OCP_DBG_IFCTRL, 1:1, EnDis);
 	ocp_write_field(MP0_OCP_DBG_IFCTRL1, 21:0, Count);
 	ocp_write_field(MP0_OCP_DBG_STAT, 0:0, ~ocp_read_field(MP0_OCP_DBG_STAT, 0:0));
 	}
 else if (Cluster == OCP_L) {
-	ocp_write_field(MP1_OCP_GENERAL_CTRL, 1:1, EnDis);
+	LittleLowerPowerOff(1, 0);
+	/*ocp_write_field(MP1_OCP_GENERAL_CTRL, 1:1, EnDis);*/
 	ocp_write_field(MP1_OCP_DBG_IFCTRL, 1:1, EnDis);
 	ocp_write_field(MP1_OCP_DBG_IFCTRL1, 21:0, Count);
 	ocp_write_field(MP1_OCP_DBG_STAT, 0:0, ~ocp_read_field(MP1_OCP_DBG_STAT, 0:0));
@@ -1194,7 +1242,117 @@ else if (Cluster == OCP_L) {
 return 0;
 }
 
+/* lower power for BU */
 int LittleOCPAvgPwrGet(int Cluster, unsigned long long *AvgLkg, unsigned long long *AvgAct)
+{
+
+if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
+	if (HW_API_RET_DEBUG_ON)
+		ocp_err("parameter Cluster OCP_LL/OCP_L must be 0/1\n");
+
+return -1;
+}
+
+if (do_ocp_test_on == 1) {
+		*AvgLkg = 1;
+		*AvgAct = 1;
+return 0;
+}
+
+if (Cluster == OCP_LL) {
+	if (ocp_read_field(MP0_OCP_DBG_STAT, 31:31) == 1) {
+				*AvgLkg = ((((((unsigned long long)ocp_read(MP0_OCP_DBG_LKG_H) << 32) +
+				(unsigned long long)ocp_read(MP0_OCP_DBG_LKG_L)) * 32) /
+				(unsigned long long)ocp_read_field(MP0_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
+
+				/* TotScaler */
+				if (ocp_read_field(MP0_OCP_SCAL, 3:3) == 1)
+					*AvgLkg = *AvgLkg >> (GET_BITS_VAL_OCP(2:0,
+								~ocp_read_field(MP0_OCP_SCAL, 2:0)) + 1);
+				else
+					*AvgLkg = *AvgLkg << (ocp_read_field(MP0_OCP_SCAL, 2:0));
+
+				*AvgAct = ((((((unsigned long long)ocp_read(MP0_OCP_DBG_ACT_H) << 32) +
+				(unsigned long long)ocp_read(MP0_OCP_DBG_ACT_L)) * 32) /
+				(unsigned long long)ocp_read_field(MP0_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
+
+	} else {
+		*AvgLkg = 0;
+		*AvgAct = 0;
+	}
+	LittleLowerPowerOn(0, 0);
+
+} else if (Cluster == OCP_L) {
+	if (ocp_read_field(MP1_OCP_DBG_STAT, 31:31) == 1) {
+				*AvgLkg = ((((((unsigned long long)ocp_read(MP1_OCP_DBG_LKG_H) << 32) +
+				(unsigned long long)ocp_read(MP1_OCP_DBG_LKG_L)) * 32) /
+				(unsigned long long)ocp_read_field(MP1_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
+
+				/* TotScaler */
+				if (ocp_read_field(MP1_OCP_SCAL, 3:3) == 1)
+					*AvgLkg = *AvgLkg >> (GET_BITS_VAL_OCP(2:0,
+								~ocp_read_field(MP1_OCP_SCAL, 2:0)) + 1);
+				else
+					*AvgLkg = *AvgLkg << (ocp_read_field(MP1_OCP_SCAL, 2:0));
+
+				*AvgAct = ((((((unsigned long long)ocp_read(MP1_OCP_DBG_ACT_H) << 32) +
+				(unsigned long long)ocp_read(MP1_OCP_DBG_ACT_L)) * 32) /
+				(unsigned long long)ocp_read_field(MP1_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
+
+	} else {
+		*AvgLkg = 0;
+		*AvgAct = 0;
+	}
+
+	LittleLowerPowerOn(1, 0);
+}
+
+return 0;
+}
+
+/* for DVT, HQA only */
+int LittleOCPAvgPwr_HQA(int Cluster, int EnDis, int Count)
+{
+
+if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
+	if (HW_API_RET_DEBUG_ON)
+		ocp_err("parameter Cluster OCP_LL/OCP_L must be 0/1\n");
+
+return -1;
+}
+
+if (!((EnDis == OCP_DISABLE) || (EnDis == OCP_ENABLE))) {
+	if (HW_API_RET_DEBUG_ON)
+		ocp_err("parameter EnDis must be 1/0\n");
+
+return -1;
+}
+
+if ((Count < 0) || (Count > 4194304)) {
+	if (HW_API_RET_DEBUG_ON)
+		ocp_err("parameter Count must be 0 ~ 4194304\n");
+
+return -1;
+}
+
+if (Cluster == OCP_LL) {
+	/*ocp_write_field(MP0_OCP_GENERAL_CTRL, 1:1, EnDis);*/
+	ocp_write_field(MP0_OCP_DBG_IFCTRL, 1:1, EnDis);
+	ocp_write_field(MP0_OCP_DBG_IFCTRL1, 21:0, Count);
+	ocp_write_field(MP0_OCP_DBG_STAT, 0:0, ~ocp_read_field(MP0_OCP_DBG_STAT, 0:0));
+	}
+else if (Cluster == OCP_L) {
+	/*ocp_write_field(MP1_OCP_GENERAL_CTRL, 1:1, EnDis);*/
+	ocp_write_field(MP1_OCP_DBG_IFCTRL, 1:1, EnDis);
+	ocp_write_field(MP1_OCP_DBG_IFCTRL1, 21:0, Count);
+	ocp_write_field(MP1_OCP_DBG_STAT, 0:0, ~ocp_read_field(MP1_OCP_DBG_STAT, 0:0));
+}
+
+return 0;
+}
+
+/* for DVT, HQA only */
+int LittleOCPAvgPwrGet_HQA(int Cluster, unsigned long long *AvgLkg, unsigned long long *AvgAct)
 {
 
 if (!((Cluster == OCP_LL) || (Cluster == OCP_L))) {
@@ -1225,6 +1383,7 @@ if (Cluster == OCP_LL) {
 		*AvgLkg = 0;
 		*AvgAct = 0;
 	}
+
 } else if (Cluster == OCP_L) {
 	if (ocp_read_field(MP1_OCP_DBG_STAT, 31:31) == 1) {
 				*AvgLkg = ((((((unsigned long long)ocp_read(MP1_OCP_DBG_LKG_H) << 32) +
@@ -1246,7 +1405,6 @@ if (Cluster == OCP_LL) {
 		*AvgLkg = 0;
 		*AvgAct = 0;
 	}
-
 
 }
 
@@ -2511,6 +2669,7 @@ if (!buf)
 if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 	switch (EnDis) {
 	case 0:
+		LittleLowerPowerOff(0, 1);
 		LittleOCPCapture(0, 0, 0, 0, 0);
 		ocp_status[0].CapToLkg = 0;
 		ocp_status[0].CapTotAct = 0;
@@ -2525,9 +2684,11 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		ocp_status[0].CPU1RawLkg = 0;
 		ocp_status[0].CPU2RawLkg = 0;
 		ocp_status[0].CPU3RawLkg = 0;
+		LittleLowerPowerOn(0, 0);
 		break;
 	case 1:
 		if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) == 4) {
+			LittleLowerPowerOff(0, 1);
 			if (LittleOCPCapture(0, 1, Edge, Count1, Trig) != 0)
 				ocp_err("ocp_cluster0_capture enable fail!");
 		}
@@ -2555,14 +2716,18 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 */
 		LittleOCPMAFAct(0, &CapMAFAct);
 		ocp_status[0].CapMAFAct = CapMAFAct;
+
+		LittleLowerPowerOn(0, 0);
 		break;
 	case 3:
 			if (sscanf(buf, "%d %d %d", &EnDis, &Edge, &Count1) == 3) {
+				do_ocp_test_on = 0;
 				if (LittleOCPAvgPwr(0, Edge, Count1) != 0)
 					ocp_err("LittleOCPAvgPwr enable fail!");
 			}
 			break;
 	case 4:
+			do_ocp_test_on = 0;
 			LittleOCPAvgPwrGet(0, &AvgLkg, &AvgAct);
 			ocp_status[0].CGAvgValid = ocp_read_field(MP0_OCP_DBG_STAT, 31:31);
 			ocp_status[0].CGAvg = AvgAct;
@@ -2572,9 +2737,10 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 			AvgAct, AvgLkg, ocp_read_field(MP0_OCP_DBG_STAT, 31:31));
 */			break;
 	case 8: /* capture all*/
+		LittleLowerPowerOff(0, 1);
 		LittleOCPDVFSSet(0, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000,
 					mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100);
-		LittleOCPAvgPwr(0, 1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL));
+		LittleOCPAvgPwr_HQA(0, 1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL));
 		mdelay(1);
 		LittleOCPCapture(0, 1, 1, 0, 15);
 		LittleOCPCaptureGet(0, &Leakage, &Total, &ClkPct);
@@ -2600,13 +2766,15 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		LittleOCPMAFAct(0, &CapMAFAct);
 		ocp_status[0].CapMAFAct = CapMAFAct;
 
-		LittleOCPAvgPwrGet(0, &AvgLkg, &AvgAct);
+		LittleOCPAvgPwrGet_HQA(0, &AvgLkg, &AvgAct);
 		ocp_status[0].CGAvgValid = ocp_read_field(MP0_OCP_DBG_STAT, 31:31);
 		ocp_status[0].CGAvg = AvgAct;
 		ocp_status[0].AvgLkg = AvgLkg;
 /*		ocp_info("Cluster 0 AvgPwr: AvgAct = %llu AvgLkg = %llu (valid = %d)\n",
 		AvgAct, AvgLkg, ocp_read_field(MP0_OCP_DBG_STAT, 31:31));
-*/		break;
+*/
+		LittleLowerPowerOn(0, 0);
+		break;
 	case 9:
 		if (sscanf(buf, "%d %d", &EnDis, &Count1) == 2)
 			Reg_Debug_on = Count1;
@@ -2674,6 +2842,7 @@ if (!buf)
 if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 	switch (EnDis) {
 	case 0:
+		LittleLowerPowerOff(1, 1);
 		LittleOCPCapture(1, 0, 0, 0, 0);
 		ocp_status[1].CapToLkg = 0;
 		ocp_status[1].CapTotAct = 0;
@@ -2688,9 +2857,11 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		ocp_status[1].CPU1RawLkg = 0;
 		ocp_status[1].CPU2RawLkg = 0;
 		ocp_status[1].CPU3RawLkg = 0;
+		LittleLowerPowerOn(1, 0);
 		break;
 	case 1:
 		if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) == 4) {
+			LittleLowerPowerOff(1, 1);
 			if (LittleOCPCapture(1, 1, Edge, Count1, Trig) != 0)
 				ocp_err("ocp_cluster1_capture enable fail!");
 		}
@@ -2718,15 +2889,17 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 */
 		LittleOCPMAFAct(1, &CapMAFAct);
 		ocp_status[1].CapMAFAct = CapMAFAct;
-
+		LittleLowerPowerOn(1, 0);
 		break;
 	case 3:
 			if (sscanf(buf, "%d %d %d", &EnDis, &Edge, &Count1) == 3) {
+				do_ocp_test_on = 0;
 				if (LittleOCPAvgPwr(1, Edge, Count1) != 0)
 					ocp_err("LittleOCPAvgPwr enable fail!");
 			}
 		break;
 	case 4:
+			do_ocp_test_on = 0;
 			LittleOCPAvgPwrGet(1, &AvgLkg, &AvgAct);
 			ocp_status[1].CGAvgValid = ocp_read_field(MP1_OCP_DBG_STAT, 31:31);
 			ocp_status[1].CGAvg = AvgAct;
@@ -2737,9 +2910,10 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 */
 		break;
 	case 8: /* capture all*/
+		LittleLowerPowerOff(1, 1);
 		LittleOCPDVFSSet(1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000,
 					mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100);
-		LittleOCPAvgPwr(1, 1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L));
+		LittleOCPAvgPwr_HQA(1, 1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L));
 		mdelay(1);
 		LittleOCPCapture(1, 1, 1, 0, 15);
 		LittleOCPCaptureGet(1, &Leakage, &Total, &ClkPct);
@@ -2765,13 +2939,15 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		LittleOCPMAFAct(1, &CapMAFAct);
 		ocp_status[1].CapMAFAct = CapMAFAct;
 
-		LittleOCPAvgPwrGet(1, &AvgLkg, &AvgAct);
+		LittleOCPAvgPwrGet_HQA(1, &AvgLkg, &AvgAct);
 		ocp_status[1].CGAvgValid = ocp_read_field(MP1_OCP_DBG_STAT, 31:31);
 		ocp_status[1].CGAvg = AvgAct;
 		ocp_status[1].AvgLkg = AvgLkg;
 /*		ocp_info("Cluster 1 AvgPwr: AvgAct = %llu AvgLkg = %llu (valid = %d)\n",
 		AvgAct, AvgLkg, ocp_read_field(MP1_OCP_DBG_STAT, 31:31));
-*/		break;
+*/
+		LittleLowerPowerOn(1, 0);
+		break;
 	case 9:
 		if (sscanf(buf, "%d %d", &EnDis, &Count1) == 2)
 			Reg_Debug_on = Count1;
@@ -2892,6 +3068,9 @@ else if (dvt_test_on == 123 || dvt_test_on == 223)
 else if (dvt_test_on == 124 || dvt_test_on == 224)
 	seq_printf(m, "TopRawLkg  = %d\n", ocp_status[1].TopRawLkg);
 
+if (dvt_test_on == 1)
+	seq_printf(m, "reg:0x%x [%d:%d] = %x\n", dvt_test_set, dvt_test_msb, dvt_test_lsb,
+			ocp_read_field(dvt_test_set, dvt_test_msb:dvt_test_lsb));
 
 return 0;
 }
@@ -3890,7 +4069,15 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			BigiDVFSSRAMLDOSet(val[1]*100);
 		}
 		break;
+	case 9:
+		if (sscanf(buf, "%d %x %d %d %x", &function_id, &dvt_test_set, &dvt_test_msb,
+				&dvt_test_lsb, &val[0]) == 5) {
+			ocp_write_field(dvt_test_set, dvt_test_msb:dvt_test_lsb, val[0]);
+			dvt_test_on = 1;
+		} else if (sscanf(buf, "%d %x %d %d", &function_id, &dvt_test_set, &dvt_test_msb, &dvt_test_lsb) == 4)
+			dvt_test_on = 1;
 
+		break;
 	case 11:
 		/* SPARK */
 		if (sscanf(buf, "%d %d %d", &function_id, &val[0], &val[1]) == 3)
@@ -3955,51 +4142,62 @@ int i;
 
 	for (i = 0; i < hqa_test; i++) {
 		if (ocp_cluster0_enable == 1) {
-			seq_printf(m, "Cluster 0 AvgActValid  = %d\n", ocp_hqa[0][i].CGAvgValid);
-			seq_printf(m, "Cluster 0 AvgAct       = %llu mA\n", ocp_hqa[0][i].CGAvg);
-			seq_printf(m, "Cluster 0 AvgLkg       = %llu mA\n", ocp_hqa[0][i].AvgLkg);
-			seq_printf(m, "Cluster 0 CapToLkg     = %d mA\n", ocp_hqa[0][i].CapToLkg);
-			seq_printf(m, "Cluster 0 CapOCCGPct   = %d %%\n", ocp_hqa[0][i].CapOCCGPct);
-			seq_printf(m, "Cluster 0 CaptureValid = %d\n", ocp_hqa[0][i].CaptureValid);
-			seq_printf(m, "Cluster 0 CapTotAct    = %d mA\n", ocp_hqa[0][i].CapTotAct);
-			seq_printf(m, "Cluster 0 CapMAFAct    = %d mA\n", ocp_hqa[0][i].CapMAFAct);
-			seq_printf(m, "Cluster 0 TopRawLkg    = %d\n", ocp_hqa[0][i].TopRawLkg);
-			seq_printf(m, "Cluster 0 CPU0RawLkg   = %d\n", ocp_hqa[0][i].CPU0RawLkg);
-			seq_printf(m, "Cluster 0 CPU1RawLkg   = %d\n", ocp_hqa[0][i].CPU1RawLkg);
-			seq_printf(m, "Cluster 0 CPU2RawLkg   = %d\n", ocp_hqa[0][i].CPU2RawLkg);
-			seq_printf(m, "Cluster 0 CPU3RawLkg   = %d\n", ocp_hqa[0][i].CPU3RawLkg);
+			seq_printf(m, "Cluster_0_AvgActValid  = %d\n", ocp_hqa[0][i].CGAvgValid);
+			seq_printf(m, "Cluster_0_AvgAct       = %llu mA\n", ocp_hqa[0][i].CGAvg);
+			seq_printf(m, "Cluster_0_AvgLkg       = %llu mA\n", ocp_hqa[0][i].AvgLkg);
+		if (little_dvfs_on == 1) {
+			seq_printf(m, "Cluster_0_Freq         = %d Mhz\n", dvfs_hqa[0][i].Freq);
+			seq_printf(m, "Cluster_0_Vproc        = %d mV\n", dvfs_hqa[0][i].Volt);
+			seq_printf(m, "Cluster_0_Thermal      = %d mC\n", dvfs_hqa[0][i].Thermal);
+			seq_printf(m, "Cluster_0_CapToLkg     = %d mA\n", ocp_hqa[0][i].CapToLkg);
+			seq_printf(m, "Cluster_0_CapOCCGPct   = %d %%\n", ocp_hqa[0][i].CapOCCGPct);
+			seq_printf(m, "Cluster_0_CaptureValid = %d\n", ocp_hqa[0][i].CaptureValid);
+			seq_printf(m, "Cluster_0_CapTotAct    = %d mA\n", ocp_hqa[0][i].CapTotAct);
+			seq_printf(m, "Cluster_0_CapMAFAct    = %d mA\n", ocp_hqa[0][i].CapMAFAct);
+			}
+			seq_printf(m, "Cluster_0_TopRawLkg    = %d\n", ocp_hqa[0][i].TopRawLkg);
+			seq_printf(m, "Cluster_0_CPU0RawLkg   = %d\n", ocp_hqa[0][i].CPU0RawLkg);
+			seq_printf(m, "Cluster_0_CPU1RawLkg   = %d\n", ocp_hqa[0][i].CPU1RawLkg);
+			seq_printf(m, "Cluster_0_CPU2RawLkg   = %d\n", ocp_hqa[0][i].CPU2RawLkg);
+			seq_printf(m, "Cluster_0_CPU3RawLkg   = %d\n", ocp_hqa[0][i].CPU3RawLkg);
 		}
 		if (ocp_cluster1_enable == 1) {
-			seq_printf(m, "Cluster 1 AvgActValid  = %d\n", ocp_hqa[1][i].CGAvgValid);
-			seq_printf(m, "Cluster 1 AvgAct       = %llu mA\n", ocp_hqa[1][i].CGAvg);
-			seq_printf(m, "Cluster 1 AvgLkg       = %llu mA\n", ocp_hqa[1][i].AvgLkg);
-			seq_printf(m, "Cluster 1 CapToLkg     = %d mA\n", ocp_hqa[1][i].CapToLkg);
-			seq_printf(m, "Cluster 1 CapOCCGPct   = %d %%\n", ocp_hqa[1][i].CapOCCGPct);
-			seq_printf(m, "Cluster 1 CaptureValid = %d\n", ocp_hqa[1][i].CaptureValid);
-			seq_printf(m, "Cluster 1 CapTotAct    = %d mA\n", ocp_hqa[1][i].CapTotAct);
-			seq_printf(m, "Cluster 1 CapMAFAct    = %d mA\n", ocp_hqa[1][i].CapMAFAct);
-			seq_printf(m, "Cluster 1 TopRawLkg    = %d\n", ocp_hqa[1][i].TopRawLkg);
-			seq_printf(m, "Cluster 1 CPU0RawLkg   = %d\n", ocp_hqa[1][i].CPU0RawLkg);
-			seq_printf(m, "Cluster 1 CPU1RawLkg   = %d\n", ocp_hqa[1][i].CPU1RawLkg);
-			seq_printf(m, "Cluster 1 CPU2RawLkg   = %d\n", ocp_hqa[1][i].CPU2RawLkg);
-			seq_printf(m, "Cluster 1 CPU3RawLkg   = %d\n", ocp_hqa[1][i].CPU3RawLkg);
+			seq_printf(m, "Cluster_1_AvgActValid  = %d\n", ocp_hqa[1][i].CGAvgValid);
+			seq_printf(m, "Cluster_1_AvgAct       = %llu mA\n", ocp_hqa[1][i].CGAvg);
+			seq_printf(m, "Cluster_1_AvgLkg       = %llu mA\n", ocp_hqa[1][i].AvgLkg);
+		if (little_dvfs_on == 1) {
+			seq_printf(m, "Cluster_1_Freq         = %d Mhz\n", dvfs_hqa[1][i].Freq);
+			seq_printf(m, "Cluster_1_Vproc        = %d mV\n", dvfs_hqa[1][i].Volt);
+			seq_printf(m, "Cluster_1_Thermal      = %d mC\n", dvfs_hqa[1][i].Thermal);
+			seq_printf(m, "Cluster_1_CapToLkg     = %d mA\n", ocp_hqa[1][i].CapToLkg);
+			seq_printf(m, "Cluster_1_CapOCCGPct   = %d %%\n", ocp_hqa[1][i].CapOCCGPct);
+			seq_printf(m, "Cluster_1_CaptureValid = %d\n", ocp_hqa[1][i].CaptureValid);
+			seq_printf(m, "Cluster_1_CapTotAct    = %d mA\n", ocp_hqa[1][i].CapTotAct);
+			seq_printf(m, "Cluster_1_CapMAFAct    = %d mA\n", ocp_hqa[1][i].CapMAFAct);
+			}
+			seq_printf(m, "Cluster_1_TopRawLkg    = %d\n", ocp_hqa[1][i].TopRawLkg);
+			seq_printf(m, "Cluster_1_CPU0RawLkg   = %d\n", ocp_hqa[1][i].CPU0RawLkg);
+			seq_printf(m, "Cluster_1_CPU1RawLkg   = %d\n", ocp_hqa[1][i].CPU1RawLkg);
+			seq_printf(m, "Cluster_1_CPU2RawLkg   = %d\n", ocp_hqa[1][i].CPU2RawLkg);
+			seq_printf(m, "Cluster_1_CPU3RawLkg   = %d\n", ocp_hqa[1][i].CPU3RawLkg);
 		}
 		if (ocp_cluster2_enable == 1) {
+				seq_printf(m, "Cluster_2_Freq         = %d Mhz\n", dvfs_hqa[2][i].Freq);
+				seq_printf(m, "Cluster_2_Vproc        = %d mV\n", dvfs_hqa[2][i].Volt);
+				seq_printf(m, "Cluster_2_Thermal      = %d mC\n", dvfs_hqa[2][i].Thermal);
 			if (ocp_hqa[2][i].CGAvgValid == 1) {
-				seq_printf(m, "Cluster 2 Freq         = %d Mhz\n", idvfs_hqa[i].Freq);
-				seq_printf(m, "Cluster 2 Vproc        = %d mV\n", idvfs_hqa[i].Volt);
-				seq_printf(m, "Cluster 2 CGAvgValid   = %d\n", ocp_hqa[2][i].CGAvgValid);
-				seq_printf(m, "Cluster 2 CGAvg        = %llu %%\n", ocp_hqa[2][i].CGAvg);
-				seq_printf(m, "Cluster 2 CapToLkg     = %d mA\n", ocp_hqa[2][i].CapToLkg);
-				seq_printf(m, "Cluster 2 CapOCCGPct   = %d %%\n", ocp_hqa[2][i].CapOCCGPct);
-				seq_printf(m, "Cluster 2 CaptureValid = %d\n", ocp_hqa[2][i].CaptureValid);
-				seq_printf(m, "Cluster 2 CapTotAct    = %d mA\n", ocp_hqa[2][i].CapTotAct);
-				seq_printf(m, "Cluster 2 CapMAFAct    = %d mA\n", ocp_hqa[2][i].CapMAFAct);
-				seq_printf(m, "Cluster 2 TopRawLkg    = %d\n", ocp_hqa[2][i].TopRawLkg);
-				seq_printf(m, "Cluster 2 CPU0RawLkg   = %d\n", ocp_hqa[2][i].CPU0RawLkg);
-				seq_printf(m, "Cluster 2 CPU1RawLkg   = %d\n", ocp_hqa[2][i].CPU1RawLkg);
+				seq_printf(m, "Cluster_2_CGAvgValid   = %d\n", ocp_hqa[2][i].CGAvgValid);
+				seq_printf(m, "Cluster_2_CGAvg        = %llu %%\n", ocp_hqa[2][i].CGAvg);
+				seq_printf(m, "Cluster_2_CapToLkg     = %d mA\n", ocp_hqa[2][i].CapToLkg);
+				seq_printf(m, "Cluster_2_CapOCCGPct   = %d %%\n", ocp_hqa[2][i].CapOCCGPct);
+				seq_printf(m, "Cluster_2_CaptureValid = %d\n", ocp_hqa[2][i].CaptureValid);
+				seq_printf(m, "Cluster_2_CapTotAct    = %d mA\n", ocp_hqa[2][i].CapTotAct);
+				seq_printf(m, "Cluster_2_CapMAFAct    = %d mA\n", ocp_hqa[2][i].CapMAFAct);
+				seq_printf(m, "Cluster_2_TopRawLkg    = %d\n", ocp_hqa[2][i].TopRawLkg);
+				seq_printf(m, "Cluster_2_CPU0RawLkg   = %d\n", ocp_hqa[2][i].CPU0RawLkg);
+				seq_printf(m, "Cluster_2_CPU1RawLkg   = %d\n", ocp_hqa[2][i].CPU1RawLkg);
 			} else {
-				seq_printf(m, "Cluster 2 AvgAct       = %llu mA\n", ocp_hqa[2][i].CGAvg);
+				seq_printf(m, "Cluster_2_AvgAct       = %llu mA\n", ocp_hqa[2][i].CGAvg);
 			}
 		}
 	}
@@ -4029,6 +4227,10 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				if (hqa_test > NR_HQA)
 					hqa_test = NR_HQA;
 
+					little_dvfs_on = 0;
+					LittleLowerPowerOff(0, 1);
+					LittleLowerPowerOff(1, 1);
+
 					calibration = 0;
 					freq_LL = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000;
 					volt_LL = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100;
@@ -4045,8 +4247,8 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 						/* This test must disable PPM*/
 						/* now = ktime_get(); */
 
-						LittleOCPAvgPwr(0, 1, count_LL);
-						LittleOCPAvgPwr(1, 1, count_L);
+						LittleOCPAvgPwr_HQA(0, 1, count_LL);
+						LittleOCPAvgPwr_HQA(1, 1, count_L);
 						udelay(val[3]);
 
 						LittleOCPCapture(0, 1, 1, 0, 15);
@@ -4069,12 +4271,12 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 						ocp_hqa[1][i].CPU3RawLkg = CPU3RawLkg;
 						ocp_hqa[1][i].CaptureValid = ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0);
 
-						LittleOCPAvgPwrGet(1, &AvgLkg, &AvgAct);
+						LittleOCPAvgPwrGet_HQA(1, &AvgLkg, &AvgAct);
 						ocp_hqa[1][i].CGAvgValid = ocp_read_field(MP1_OCP_DBG_STAT, 31:31);
 						ocp_hqa[1][i].CGAvg = AvgAct;
 						ocp_hqa[1][i].AvgLkg = AvgLkg;
 
-						LittleOCPAvgPwrGet(0, &AvgLkg, &AvgAct);
+						LittleOCPAvgPwrGet_HQA(0, &AvgLkg, &AvgAct);
 						ocp_hqa[0][i].CGAvgValid = ocp_read_field(MP0_OCP_DBG_STAT, 31:31);
 						ocp_hqa[0][i].CGAvg = AvgAct;
 						ocp_hqa[0][i].AvgLkg = AvgLkg;
@@ -4084,6 +4286,8 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 						/* ocp_info("Cluster 0/1 delta=%lld us\n", ktime_to_us(delta)); */
 					}
 				}
+				LittleLowerPowerOn(1, 0);
+				LittleLowerPowerOn(0, 0);
 				break;
 		case 2:
 				if (sscanf(buf, "%d %d %d %d", &function_id, &val[0], &val[1], &val[2]) == 4) {
@@ -4095,20 +4299,23 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 					BigOCPClkAvg(1, val[1]);
 					for (j = 0; j < hqa_test; j++) {
 						now = ktime_get();
-						BigOCPCapture(1, 1, 0, 15);
+
 						tmp = (val[2] - calibration);
 					if (tmp < 0)
 						tmp = 0;
 					else
 						udelay(tmp);
+						BigOCPCapture(1, 1, 0, 15);
 
 						da9214_read_interface(0xd9, &da9214, 0x7f, 0);
-						idvfs_hqa[j].Volt = DA9214_STEP_TO_MV((da9214 & 0x7f));
+						dvfs_hqa[2][j].Volt = DA9214_STEP_TO_MV((da9214 & 0x7f));
 
 					if (ocp_read_field(0x10222470, 0:0) == 1)
-						idvfs_hqa[j].Freq = ((BigiDVFSSWAvgStatus() * 25)/100);
+						dvfs_hqa[2][j].Freq = ((BigiDVFSSWAvgStatus() * 25)/100);
 					else
-						idvfs_hqa[j].Freq = BigiDVFSPllGetFreq();
+						dvfs_hqa[2][j].Freq = BigiDVFSPllGetFreq();
+
+						dvfs_hqa[2][j].Thermal = get_immediate_big_wrap();
 
 						BigOCPCaptureStatus(&Leakage, &Total, &ClkPct);
 						ocp_hqa[2][j].CapToLkg = Leakage;
@@ -4144,6 +4351,17 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 					calibration = 0;
 					for (j = 0; j < hqa_test; j++) {
 						now = ktime_get();
+
+						da9214_read_interface(0xd9, &da9214, 0x7f, 0);
+						dvfs_hqa[2][j].Volt = DA9214_STEP_TO_MV((da9214 & 0x7f));
+
+					if (ocp_read_field(0x10222470, 0:0) == 1)
+						dvfs_hqa[2][j].Freq = ((BigiDVFSSWAvgStatus() * 25)/100);
+					else
+						dvfs_hqa[2][j].Freq = BigiDVFSPllGetFreq();
+
+						dvfs_hqa[2][j].Thermal = get_immediate_big_wrap();
+
 						ocp_hqa[2][j].CGAvgValid = 0;
 						ocp_hqa[2][j].CGAvg = BigOCPAvgPwrGet(val[1]);
 						tmp = (val[2] - calibration);
@@ -4166,10 +4384,13 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				if (hqa_test > NR_HQA)
 					hqa_test = NR_HQA;
 
+					little_dvfs_on = 1;
+					LittleLowerPowerOff(0, 1);
+					LittleLowerPowerOff(1, 1);
+
 					calibration = 0;
 
 					for (i = 0; i < hqa_test; i++) {
-						/* This test must disable PPM*/
 						now = ktime_get();
 
 						freq_LL = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000;
@@ -4183,8 +4404,17 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 						ocp_info("L_freq=%u Mhz/L_volt=%u mV/LL_freq=%u Mhz/LL_volt=%u mV\n",
 								freq_L, volt_L, freq_LL, volt_LL);
 
-						LittleOCPAvgPwr(0, 1, count_LL);
-						LittleOCPAvgPwr(1, 1, count_L);
+						LittleOCPAvgPwr_HQA(0, 1, count_LL);
+						LittleOCPAvgPwr_HQA(1, 1, count_L);
+
+						dvfs_hqa[0][i].Freq = freq_LL;
+						dvfs_hqa[0][i].Volt = volt_LL;
+						dvfs_hqa[1][i].Freq = freq_L;
+						dvfs_hqa[1][i].Volt = volt_L;
+
+						dvfs_hqa[0][i].Thermal = get_immediate_cpuLL_wrap();
+						dvfs_hqa[1][i].Thermal = get_immediate_cpuL_wrap();
+
 						udelay(val[3]);
 
 						LittleOCPCapture(0, 1, 1, 0, 15);
@@ -4226,12 +4456,12 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 						LittleOCPMAFAct(0, &CapMAFAct);
 						ocp_hqa[0][i].CapMAFAct = CapMAFAct;
 
-						LittleOCPAvgPwrGet(1, &AvgLkg, &AvgAct);
+						LittleOCPAvgPwrGet_HQA(1, &AvgLkg, &AvgAct);
 						ocp_hqa[1][i].CGAvgValid = ocp_read_field(MP1_OCP_DBG_STAT, 31:31);
 						ocp_hqa[1][i].CGAvg = AvgAct;
 						ocp_hqa[1][i].AvgLkg = AvgLkg;
 
-						LittleOCPAvgPwrGet(0, &AvgLkg, &AvgAct);
+						LittleOCPAvgPwrGet_HQA(0, &AvgLkg, &AvgAct);
 						ocp_hqa[0][i].CGAvgValid = ocp_read_field(MP0_OCP_DBG_STAT, 31:31);
 						ocp_hqa[0][i].CGAvg = AvgAct;
 						ocp_hqa[0][i].AvgLkg = AvgLkg;
@@ -4241,6 +4471,8 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 						ocp_info("Cluster 0/1 delta=%lld us\n", ktime_to_us(delta));
 					}
 				}
+				LittleLowerPowerOn(1, 0);
+				LittleLowerPowerOn(0, 0);
 				break;
 		default:
 			break;
@@ -4261,8 +4493,10 @@ static int ocp_stress_test_proc_show(struct seq_file *m, void *v)
 static ssize_t ocp_stress_test_proc_write(struct file *file, const char __user *buffer,
 					size_t count, loff_t *pos)
 {
-	unsigned int do_stress, freq_L, volt_L, freq_LL, volt_LL, LL_pwr_limit, L_pwr_limit, big_pwr_limit;
-	int rc, i;
+	unsigned int do_stress,  big_pwr_limit;
+	/*unsigned int freq_L, volt_L, freq_LL, volt_LL, LL_pwr_limit, L_pwr_limit;*/
+	int rc;
+	/*int i;*/
 	unsigned long long count1;
 	char *buf = _copy_from_user_for_proc(buffer, count);
 
@@ -4275,18 +4509,20 @@ static ssize_t ocp_stress_test_proc_write(struct file *file, const char __user *
 		do_ocp_stress_test = do_stress;
 
 	if (do_ocp_stress_test == 0) {
-		if (ocp_cluster0_enable == 1) {
+		/*if (ocp_cluster0_enable == 1) {
 			freq_LL = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000;
 			volt_LL = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100;
 			LittleOCPDVFSSet(0, freq_LL, volt_LL);
 			LittleOCPSetTarget(0, 127000);
+			LittleLowerPowerOn(0, 0);
 		}
 		if (ocp_cluster1_enable == 1) {
 			freq_L = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000;
 			volt_L = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100;
 			LittleOCPDVFSSet(1, freq_L, volt_L);
 			LittleOCPSetTarget(1, 127000);
-		}
+			LittleLowerPowerOn(1, 0);
+		}*/
 		if (ocp_cluster2_enable == 1)
 			BigOCPSetTarget(3, 127000);
 
@@ -4295,8 +4531,21 @@ static ssize_t ocp_stress_test_proc_write(struct file *file, const char __user *
 
 count1 = 0;
 
+
+
+
 while (do_ocp_stress_test == 1) {
+	if (ocp_cluster2_enable == 1) {
+		big_pwr_limit = jiffies % 5000;
+		BigOCPSetTarget(3, big_pwr_limit);
+		ocp_info("stress test: big power limit=%u\n", big_pwr_limit);
+	} else
+		ocp_info("stress test: cluster 2 (Big) is off\n");
+
+	mdelay(2000);
+/*
 	if (ocp_cluster0_enable == 1) {
+		LittleLowerPowerOff(0, 1);
 		freq_LL = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000;
 		volt_LL = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100;
 		LittleOCPDVFSSet(0, freq_LL, volt_LL);
@@ -4309,6 +4558,7 @@ while (do_ocp_stress_test == 1) {
 		ocp_info("stress test: cluster 0 (LL) is off\n");
 
 	if (ocp_cluster1_enable == 1) {
+		LittleLowerPowerOff(1, 1);
 		freq_L = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000;
 		volt_L = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100;
 		LittleOCPDVFSSet(1, freq_L, volt_L);
@@ -4318,13 +4568,6 @@ while (do_ocp_stress_test == 1) {
 				freq_L, volt_L, L_pwr_limit);
 	} else
 		ocp_info("stress test: cluster 1 (L) is off\n");
-
-	if (ocp_cluster2_enable == 1) {
-		big_pwr_limit = jiffies % 5000;
-		BigOCPSetTarget(3, big_pwr_limit);
-		ocp_info("stress test: big power limit=%u\n", big_pwr_limit);
-	} else
-		ocp_info("stress test: cluster 2 (Big) is off\n");
 
 for (i = 0; i < 2000; i++) {
 	if (ocp_cluster0_enable == 1) {
@@ -4339,7 +4582,7 @@ for (i = 0; i < 2000; i++) {
 	}
 		mdelay(1);
 }
-
+*/
 		ocp_info("stress test: count = %llu\n", count1++);
 	}
 
