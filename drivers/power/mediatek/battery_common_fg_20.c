@@ -169,6 +169,8 @@ signed int batterypseudo100 = BATTERYPSEUDO100;
 int Is_In_IPOH;
 struct battery_custom_data batt_cust_data;
 int pending_wake_up_bat;
+
+int cable_in_uevent = 0;
 /* ////////////////////////////////////////////////////////////////////////////// */
 /* Integrate with NVRAM */
 /* ////////////////////////////////////////////////////////////////////////////// */
@@ -1735,6 +1737,10 @@ static void battery_update(struct battery_data *bat_data)
 		power_supply_changed(bat_psy);
 		pre_soc = BMT_status.SOC;
 		update_cnt = 0;
+	} else if (cable_in_uevent == 1) {
+		/*To prevent interrupt-trigger update from being filtered*/
+		power_supply_changed(bat_psy);
+		cable_in_uevent = 0;
 	} else {
 		/* No update */
 		update_cnt++;
@@ -2725,6 +2731,8 @@ void do_chrdet_int_task(void)
 #endif
 			battery_log(BAT_LOG_CRTI, "[do_chrdet_int_task] charger exist!\n");
 			BMT_status.charger_exist = KAL_TRUE;
+
+			cable_in_uevent = 1;
 
 			wake_lock(&battery_suspend_lock);
 
