@@ -219,6 +219,12 @@ static const LCM_UTIL_FUNCS lcm_utils_dsi0;
 static const LCM_UTIL_FUNCS lcm_utils_dsi1;
 static const LCM_UTIL_FUNCS lcm_utils_dsidual;
 
+unsigned int clock_lane[2] = { 0 }; /* MIPITX_DSI_CLOCK_LANE */
+unsigned int data_lane0[2] = { 0 }; /* MIPITX_DSI_DATA_LANE0 */
+unsigned int data_lane1[2] = { 0 }; /* MIPITX_DSI_DATA_LANE1 */
+unsigned int data_lane2[2] = { 0 }; /* MIPITX_DSI_DATA_LANE2 */
+unsigned int data_lane3[2] = { 0 }; /* MIPITX_DSI_DATA_LANE3 */
+
 atomic_t PMaster_enable = ATOMIC_INIT(0);
 
 static const char *_dsi_cmd_mode_parse_state(unsigned int state)
@@ -1349,29 +1355,24 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		/* step 0 */
-		/*  because lk set
-			u32 lnt = 0;
+		MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
+				 RG_DSI_LNTC_RT_CODE, ((clock_lane[i] >> 8) & 0xf));
+		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
+				 RG_DSI_LNT3_RT_CODE, ((data_lane3[i] >> 8) & 0xf));
+		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
+				 RG_DSI_LNT2_RT_CODE, ((data_lane2[i] >> 8) & 0xf));
+		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
+				 RG_DSI_LNT1_RT_CODE, ((data_lane1[i] >> 8) & 0xf));
+		MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG, DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
+				 RG_DSI_LNT0_RT_CODE, ((data_lane0[i] >> 8) & 0xf));
 
-			lnt = MIPITX_INREG32(0xf0206190);
-			MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG,DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
-			RG_DSI_LNTC_RT_CODE,((lnt >> 0) & 0xf));
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG,DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
-			RG_DSI_LNT3_RT_CODE,((lnt >> 4) & 0xf));
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG,DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
-			RG_DSI_LNT2_RT_CODE,((lnt >> 8) & 0xf));
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG,DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
-			RG_DSI_LNT1_RT_CODE,((lnt >> 12) & 0xf));
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG,DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
-			RG_DSI_LNT0_RT_CODE,((lnt >> 16) & 0xf));
-
-			DISPMSG("PLL config: LNT=0x%x,clk=0x%x,lan3=0x%x,lan2=0x%x,lan1=0x%x,lan0=0x%x\n",
-			lnt,INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2),
+		DISPMSG("mipi_tx%d: clk=0x%x,lan0=0x%x,lan1=0x%x,lan2=0x%x,lan3=0x%x\n",
+			i, INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE),
+			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0),
 			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1),
-			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0));
-		*/
+			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2),
+			INREG32(&DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3));
+
 		/* step 1 */
 		/* MIPITX_MASKREG32(APMIXED_BASE+0x00, (0x1<<6), 1); */
 
@@ -1496,7 +1497,6 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 		MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON1_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON1,
 				 RG_DSI0_MPPLL_SDM_FRA_EN, 1);
 
-#if 1
 		/* step 11 */
 		MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
 				 RG_DSI_LNTC_LDOOUT_EN, 1);
@@ -1570,59 +1570,6 @@ void DSI_PHY_clk_setting(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, LCM_DSI_PA
 							 RG_DSI_LNT3_CKLANE_EN, 0);
 			}
 		}
-
-#elif 0
-		/* step 11 */
-		MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
-				 RG_DSI_LNTC_LDOOUT_EN, 1);
-
-		if (dsi_params->lane_swap_en)
-			MIPITX_OUTREGBIT(MIPITX_DSI_CLOCK_LANE_REG, DSI_PHY_REG[i]->MIPITX_DSI_CLOCK_LANE,
-					 RG_DSI_LNTC_CKLANE_EN, 0);
-
-		/* step 12 */
-		if (dsi_params->LANE_NUM > 0) {
-			if (dsi_params->lane_swap_en && i == 0) {
-				MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG,
-						 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
-						 RG_DSI_LNT0_LDOOUT_EN, 1);
-				MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG,
-						 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
-						 RG_DSI_LNT0_CKLANE_EN, 1);
-			} else {
-				MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE0_REG,
-						 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE0,
-						 RG_DSI_LNT0_LDOOUT_EN, 1);
-			}
-		}
-		/* step 13 */
-		if (dsi_params->LANE_NUM > 1) {
-			if (dsi_params->lane_swap_en && i == 1) {
-				MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG,
-						 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
-						 RG_DSI_LNT1_LDOOUT_EN, 1);
-				MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG,
-						 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
-						 RG_DSI_LNT1_CKLANE_EN, 1);
-			} else {
-				MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE1_REG,
-						 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE1,
-						 RG_DSI_LNT1_LDOOUT_EN, 1);
-			}
-		}
-		/* step 14 */
-		if (dsi_params->LANE_NUM > 2) {
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE2_REG,
-					 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE2,
-					 RG_DSI_LNT2_LDOOUT_EN, 1);
-		}
-		/* step 15 */
-		if (dsi_params->LANE_NUM > 3) {
-			MIPITX_OUTREGBIT(MIPITX_DSI_DATA_LANE3_REG,
-					 DSI_PHY_REG[i]->MIPITX_DSI_DATA_LANE3,
-					 RG_DSI_LNT3_LDOOUT_EN, 1);
-		}
-#endif
 
 		/* step 16 */
 		MIPITX_OUTREGBIT(MIPITX_DSI_PLL_CON0_REG, DSI_PHY_REG[i]->MIPITX_DSI_PLL_CON0,
@@ -3000,6 +2947,8 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 #endif
 
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+			unsigned long mipi_tx_reg_base = (unsigned long)DSI_PHY_REG[i];
+
 			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, CMD_DONE, 1);
 			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, RD_RDY, 1);
 			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, VM_DONE, 1);
@@ -3009,6 +2958,14 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 			DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, SLEEPOUT_DONE, 1);
 			/* DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG,DSI_REG[i]->DSI_INTEN,FRAME_DONE_INT_EN,0); */
 			DSI_BackupRegisters(module, NULL);
+
+			clock_lane[i] = (INREG32(mipi_tx_reg_base + 0x4)); /* MIPITX_DSI_CLOCK_LANE */
+			data_lane0[i] = (INREG32(mipi_tx_reg_base + 0x8)); /* MIPITX_DSI_DATA_LANE0 */
+			data_lane1[i] = (INREG32(mipi_tx_reg_base + 0xc)); /* MIPITX_DSI_DATA_LANE1 */
+			data_lane2[i] = (INREG32(mipi_tx_reg_base + 0x10)); /* MIPITX_DSI_DATA_LANE2 */
+			data_lane3[i] = (INREG32(mipi_tx_reg_base + 0x14)); /* MIPITX_DSI_DATA_LANE3 */
+			DISPCHECK("mipi_tx%d: clk=0x%x,lan0=0x%x,lan1=0x%x,lan2=0x%x,lan3=0x%x\n",
+				  i, clock_lane[i], data_lane0[i], data_lane1[i], data_lane2[i], data_lane3[i]);
 		}
 	}
 #endif

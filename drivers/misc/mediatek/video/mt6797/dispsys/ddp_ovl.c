@@ -1249,7 +1249,7 @@ static int ovl_ioctl(DISP_MODULE_ENUM module, void *handle, DDP_IOCTL_NAME ioctl
 
 		ovl_golden_setting(module, gset_arg->dst_mod_type, handle);
 	} else if (ioctl_cmd == DDP_PARTIAL_UPDATE) {
-		struct disp_rect *roi = (struct disp_rect *) params;
+		struct disp_rect *roi = (struct disp_rect *)params;
 
 		ovl_partial_update(module, roi->width, roi->height, handle);
 	} else {

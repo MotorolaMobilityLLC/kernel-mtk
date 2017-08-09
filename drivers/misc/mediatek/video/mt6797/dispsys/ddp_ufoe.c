@@ -162,7 +162,7 @@ static int ufoe_reset(DISP_MODULE_ENUM module, void *handle)
 
 static int _ufoe_partial_update(DISP_MODULE_ENUM module, void *arg, void *handle)
 {
-	struct disp_rect *roi = (struct disp_rect *) arg;
+	struct disp_rect *roi = (struct disp_rect *)arg;
 	int width = roi->width;
 	int height = roi->height;
 

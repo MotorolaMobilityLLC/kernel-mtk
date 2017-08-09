@@ -69,13 +69,6 @@ typedef struct selection_s {
 
 unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 	/*PRIMARY_DISP */
-#if 0
-	{
-	 DISP_MODULE_OVL0_2L, DISP_MODULE_OVL0, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
-	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA,
-	 DISP_MODULE_DITHER,
-	 DISP_MODULE_RDMA0, DISP_MODULE_UFOE, DISP_MODULE_PWM0, DISP_MODULE_DSI0, -1, -1},
-#endif
 	{
 	 DISP_MODULE_OVL0, DISP_MODULE_OVL0_2L, DISP_MODULE_OVL1_2L, DISP_MODULE_OVL0_VIRTUAL,
 	 DISP_MODULE_COLOR0, DISP_MODULE_CCORR, DISP_MODULE_AAL, DISP_MODULE_GAMMA,
@@ -913,6 +906,7 @@ DISP_MODULE_ENUM ddp_get_dst_module(DDP_SCENARIO_ENUM ddp_scenario)
 {
 	DISP_MODULE_ENUM module_name = DISP_MODULE_UNKNOWN;
 	int module_num = ddp_get_module_num_l(module_list_scenario[ddp_scenario]) - 1;
+
 	if (module_num >= 0)
 		module_name = module_list_scenario[ddp_scenario][module_num];
 
@@ -927,6 +921,7 @@ int *ddp_get_scenario_list(DDP_SCENARIO_ENUM ddp_scenario)
 int ddp_is_module_in_scenario(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM module)
 {
 	int i = 0;
+
 	for (i = 0; i < DDP_ENING_NUM; i++) {
 		if (module_list_scenario[ddp_scenario][i] == module)
 			return 1;
@@ -940,6 +935,7 @@ int ddp_insert_module(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM place,
 {
 	int i = DDP_ENING_NUM - 1;
 	int idx = ddp_find_module_index(ddp_scenario, place);
+
 	if (idx < 0) {
 		DDPERR("error: ddp_insert_module , place=%s is not in scenario %s!\n",
 		       ddp_get_module_name(place), ddp_get_scenario_name(ddp_scenario));

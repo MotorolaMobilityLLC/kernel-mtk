@@ -339,7 +339,7 @@ int primary_display_config_full_roi(disp_ddp_path_config *pconfig, disp_path_han
 			dpmgr_path_update_partial_roi(disp_handle,
 					total_dirty_roi, cmdq_handle);
 			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING)) {
-				/*update rdma goden settin*/
+				/* update rdma goden settin*/
 				set_rdma_width_height(total_dirty_roi.width, total_dirty_roi.height);
 				dpmgr_path_ioctl(disp_handle, cmdq_handle, DDP_RDMA_GOLDEN_SETTING, pconfig);
 			}
@@ -1306,7 +1306,7 @@ void _cmdq_start_trigger_loop(void)
 {
 	int ret = 0;
 
-	/*cmdqRecDumpCommand(pgc->cmdq_handle_trigger);*/
+	/* cmdqRecDumpCommand(pgc->cmdq_handle_trigger);*/
 	/* this should be called only once because trigger loop will nevet stop */
 	ret = cmdqRecStartLoop(pgc->cmdq_handle_trigger);
 	if (!primary_display_is_video_mode()) {
@@ -1507,7 +1507,7 @@ static void directlink_path_add_memory(WDMA_CONFIG_STRUCT *p_wdma, DISP_MODULE_E
 	cmdqRecHandle cmdq_wait_handle = NULL;
 	disp_ddp_path_config *pconfig = NULL;
 
-	/*create config thread */
+	/* create config thread */
 	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
 	if (ret != 0) {
 		DISPERR("dl_to_dc capture:Fail to create cmdq handle\n");
@@ -1516,7 +1516,7 @@ static void directlink_path_add_memory(WDMA_CONFIG_STRUCT *p_wdma, DISP_MODULE_E
 	}
 	cmdqRecReset(cmdq_handle);
 
-	/*create wait thread */
+	/* create wait thread */
 	ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &cmdq_wait_handle);
 	if (ret != 0) {
 		DISPERR("dl_to_dc capture:Fail to create cmdq wait handle\n");
@@ -1525,7 +1525,7 @@ static void directlink_path_add_memory(WDMA_CONFIG_STRUCT *p_wdma, DISP_MODULE_E
 	}
 	cmdqRecReset(cmdq_wait_handle);
 
-	/*configure  config thread */
+	/* configure config thread */
 	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
 
 	dpmgr_path_add_memout(pgc->dpmgr_handle, after_engine, cmdq_handle);
@@ -1545,7 +1545,7 @@ static void directlink_path_add_memory(WDMA_CONFIG_STRUCT *p_wdma, DISP_MODULE_E
 	_cmdq_flush_config_handle_mira(cmdq_handle, 0);
 	DISPDBG("dl_to_dc capture:Flush add memout mva(0x%lx)\n", p_wdma->dstAddress);
 
-	/*wait wdma0 sof */
+	/* wait wdma0 sof */
 	cmdqRecWait(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
 	cmdqRecFlush(cmdq_wait_handle);
 	DISPMSG("dl_to_dc capture:Flush wait wdma sof\n");
@@ -1597,7 +1597,6 @@ static int _DL_switch_to_DC_fast(void)
 	dpmgr_modify_path(pgc->dpmgr_handle, new_scenario, pgc->cmdq_handle_config,
 			  primary_display_is_video_mode() ? DDP_VIDEO_MODE : DDP_CMD_MODE, 0);
 
-
 	/* 4.config rdma from directlink mode to memory mode */
 	rdma_config.address = mva;
 	rdma_config.security = DISP_NORMAL_BUFFER;
@@ -1633,7 +1632,6 @@ static int _DL_switch_to_DC_fast(void)
 	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 1, rdma_config.pitch);
 	cmdqRecBackupUpdateSlot(pgc->cmdq_handle_config, pgc->rdma_buff_info, 2, rdma_config.inputFormat);
 
-
 	/* 6 .flush to cmdq */
 	_cmdq_set_config_handle_dirty();
 	_cmdq_flush_config_handle(1, NULL, 0);
@@ -1652,7 +1650,7 @@ static int _DL_switch_to_DC_fast(void)
 	/* 9. create ovl2mem path handle */
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
 	pgc->ovl2mem_path_handle =
-	    dpmgr_create_path(DDP_SCENARIO_PRIMARY_OVL_MEMOUT, pgc->cmdq_handle_ovl1to2_config);
+		dpmgr_create_path(DDP_SCENARIO_PRIMARY_OVL_MEMOUT, pgc->cmdq_handle_ovl1to2_config);
 
 	if (pgc->ovl2mem_path_handle) {
 		DISPDBG("dpmgr create ovl memout path SUCCESS(%p)\n", pgc->ovl2mem_path_handle);
@@ -1674,7 +1672,7 @@ static int _DL_switch_to_DC_fast(void)
 	       sizeof(data_config_dl->ovl_config));
 
 	ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config_dc,
-			      pgc->cmdq_handle_ovl1to2_config);
+				pgc->cmdq_handle_ovl1to2_config);
 
 	memset(&gset_arg, 0, sizeof(gset_arg));
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->ovl2mem_path_handle);
@@ -1684,16 +1682,17 @@ static int _DL_switch_to_DC_fast(void)
 	ret = dpmgr_path_start(pgc->ovl2mem_path_handle, CMDQ_ENABLE);
 
 	/* cmdqRecDumpCommand(pgc->cmdq_handle_ovl1to2_config); */
-	/*cmdqRecClearEventToken(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);*/
+	/* cmdqRecClearEventToken(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);*/
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 0);
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
 	cmdqRecWait(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_EOF);
 	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagPulse, 3, 0);
 
 	/* 11..enable event for new path */
-/* dpmgr_enable_event(pgc->ovl2mem_path_handle, DISP_PATH_EVENT_FRAME_COMPLETE); */
-/* dpmgr_map_event_to_irq(pgc->ovl2mem_path_handle, DISP_PATH_EVENT_FRAME_START, DDP_IRQ_WDMA0_FRAME_COMPLETE); */
-/* dpmgr_enable_event(pgc->ovl2mem_path_handle, DISP_PATH_EVENT_FRAME_START); */
+	/* dpmgr_enable_event(pgc->ovl2mem_path_handle, DISP_PATH_EVENT_FRAME_COMPLETE); */
+	/* dpmgr_map_event_to_irq(pgc->ovl2mem_path_handle, DISP_PATH_EVENT_FRAME_START,
+	   DDP_IRQ_WDMA0_FRAME_COMPLETE); */
+	/* dpmgr_enable_event(pgc->ovl2mem_path_handle, DISP_PATH_EVENT_FRAME_START); */
 
 	if (primary_display_is_video_mode()) {
 		if (_need_lfr_check()) {
@@ -1720,7 +1719,7 @@ static int DL_switch_to_DC_fast(int sw_only)
 	if (!sw_only)
 		ret = _DL_switch_to_DC_fast();
 	else
-		ret = -1;	/*not support yet */
+		ret = -1; /* not support yet */
 
 	return ret;
 }
@@ -1753,12 +1752,12 @@ static int _DC_switch_to_DL_fast(void)
 	data_config_dc = dpmgr_path_get_last_config(pgc->ovl2mem_path_handle);
 	data_config_dl = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 
-	/*copy ovl config from DC handle to DL handle */;
+	/* copy ovl config from DC handle to DL handle */;
 	memcpy(data_config_dl->ovl_config, data_config_dc->ovl_config, sizeof(data_config_dl->ovl_config));
 
 	dpmgr_path_deinit(pgc->ovl2mem_path_handle, (unsigned long)(pgc->cmdq_handle_ovl1to2_config));
 	dpmgr_destroy_path(pgc->ovl2mem_path_handle, pgc->cmdq_handle_ovl1to2_config);
-	/*clear sof token for next dl to dc */
+	/* clear sof token for next dl to dc */
 	cmdqRecClearEventToken(pgc->cmdq_handle_ovl1to2_config, CMDQ_EVENT_DISP_WDMA0_SOF);
 
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
@@ -1807,8 +1806,8 @@ static int _DC_switch_to_DL_fast(void)
 
 	/* cmdqRecDumpCommand(pgc->cmdq_handle_config); */
 	_cmdq_set_config_handle_dirty();
-	/*if blocking flush won't cause UX issue, we should simplify this code: remove callback *
-	 *else we should move disable_sodi to callback, and change to nonblocking flush */
+	/* if blocking flush won't cause UX issue, we should simplify this code: remove callback
+	 * else we should move disable_sodi to callback, and change to nonblocking flush */
 	_cmdq_flush_config_handle(0, modify_path_power_off_callback, (old_scenario << 16) | new_scenario);
 	/* modify_path_power_off_callback((old_scenario << 16) | new_scenario); */
 
@@ -2153,7 +2152,7 @@ static int init_decouple_buffers(void)
 
 	}
 
-	/*initialize rdma config */
+	/* initialize rdma config */
 	decouple_rdma_config.height = height;
 	decouple_rdma_config.width = width;
 	decouple_rdma_config.idx = 0;
@@ -2165,7 +2164,7 @@ static int init_decouple_buffers(void)
 	decouple_rdma_config.dst_w = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
 	decouple_rdma_config.dst_h = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
 
-	/*initialize wdma config */
+	/* initialize wdma config */
 	decouple_wdma_config.srcHeight = height;
 	decouple_wdma_config.srcWidth = width;
 	decouple_wdma_config.clipX = 0;
@@ -2367,7 +2366,7 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 
 	cmdqRecBackupUpdateSlot(cmdq_handle, pgc->rdma_buff_info, 0, (unsigned int)mem_config.addr);
 
-	/*rdma pitch only use bit[15..0], we use bit[31:30] to store secure information */
+	/* rdma pitch only use bit[15..0], we use bit[31:30] to store secure information */
 	rdma_pitch_sec = mem_config.pitch | (mem_config.security << 30);
 	cmdqRecBackupUpdateSlot(cmdq_handle, pgc->rdma_buff_info, 1, rdma_pitch_sec);
 	cmdqRecBackupUpdateSlot(cmdq_handle, pgc->rdma_buff_info, 2, (unsigned int)mem_config.fmt);
@@ -2627,7 +2626,7 @@ static int _decouple_update_rdma_config_nolock(void)
 			_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
 			cmdqBackupReadSlot(pgc->rdma_buff_info, 0, (uint32_t *)(&(tmpConfig.address)));
 
-			/*rdma pitch only use bit[15..0], we use bit[31:30] to store secure information*/
+			/* rdma pitch only use bit[15..0], we use bit[31:30] to store secure information */
 			cmdqBackupReadSlot(pgc->rdma_buff_info, 1, &(rdma_pitch_sec));
 			tmpConfig.pitch = rdma_pitch_sec & ~(3<<30);
 			tmpConfig.security = rdma_pitch_sec >> 30;
@@ -2708,7 +2707,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	}
 	_primary_path_unlock(__func__);
 
-	/*check last ovl status: should be idle when config */
+	/* check last ovl status: should be idle when config */
 	if (primary_display_is_video_mode() && !primary_display_is_decouple_mode()) {
 		unsigned int status;
 
@@ -2786,7 +2785,7 @@ static void decouple_mirror_irq_callback(DISP_MODULE_ENUM module, unsigned int r
 	/* In TEE, we have to protect WDMA registers, so we can't enable WDMA interrupt */
 	/* here we use ovl frame done interrupt instead */
 	if ((module == DISP_MODULE_OVL0) && (primary_display_is_decouple_mode())) {
-		if (reg_value & 0x2) {/*OVL0 frame done*/
+		if (reg_value & 0x2) { /* OVL0 frame done */
 			atomic_set(&decouple_update_rdma_event, 1);
 			wake_up_interruptible(&decouple_update_rdma_wq);
 	    }
@@ -2794,7 +2793,7 @@ static void decouple_mirror_irq_callback(DISP_MODULE_ENUM module, unsigned int r
 
 #else
 	if ((module == DISP_MODULE_WDMA0) && (primary_display_is_decouple_mode())) {
-		if (reg_value & 0x1) {	/* wdma0 frame done */
+		if (reg_value & 0x1) { /* wdma0 frame done */
 			atomic_set(&decouple_update_rdma_event, 1);
 			wake_up_interruptible(&decouple_update_rdma_wq);
 		}
@@ -2829,7 +2828,7 @@ static int primary_display_remove_output(void *callback, unsigned int userdata)
 	static cmdqRecHandle cmdq_handle;
 	static cmdqRecHandle cmdq_wait_handle;
 
-	/*create config thread */
+	/* create config thread */
 	if (cmdq_handle == NULL)
 		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
 
@@ -2997,7 +2996,7 @@ unsigned long get_dim_layer_mva_addr(void)
 
 	if (dim_layer_mva == 0) {
 		int frame_buffer_size = ALIGN_TO(DISP_GetScreenWidth(), MTK_FB_ALIGNMENT) *
-		    ALIGN_TO(DISP_GetScreenHeight(), MTK_FB_ALIGNMENT) * 4;
+			ALIGN_TO(DISP_GetScreenHeight(), MTK_FB_ALIGNMENT) * 4;
 
 		dim_layer_mva = pgc->framebuffer_mva + (DISP_GetPages() - 1) * frame_buffer_size;
 		DISPMSG("init dim layer mva %lu, size %d", dim_layer_mva, frame_buffer_size);
@@ -3019,7 +3018,7 @@ static int init_cmdq_slots(cmdqBackupSlotHandle *pSlot, int count, int init_val)
 
 static int update_primary_intferface_module(void)
 {
-	/*update interface module, it may be: dsi0/dsi1/dsi_dual */
+	/* update interface module, it may be: dsi0/dsi1/dsi_dual */
 	DISP_MODULE_ENUM interface_module;
 
 	interface_module = _get_dst_module_by_lcm(pgc->plcm);
@@ -3103,9 +3102,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 			DISPDBG("cmdqRecCreate SUCCESS, g_cmdq_handle=%p\n",
 				  pgc->cmdq_handle_config);
 		}
-		/*create ovl2mem path cmdq handle */
-		ret =
-		    cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_MEMOUT, &(pgc->cmdq_handle_ovl1to2_config));
+		/* create ovl2mem path cmdq handle */
+		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_MEMOUT, &(pgc->cmdq_handle_ovl1to2_config));
 		if (ret != 0) {
 			DISPERR("cmdqRecCreate FAIL, ret=%d\n", ret);
 			ret = DISP_STATUS_ERROR;
@@ -3350,7 +3348,7 @@ int primary_display_set_lcm_refresh_rate(int fps)
 		return -1;
 	}
 
-	/*TODO: Should skip while MHL connected*/
+	/* TODO: Should skip while MHL connected */
 
 	ret = _display_set_lcm_refresh_rate(fps);
 	_primary_path_unlock(__func__);
@@ -3458,7 +3456,7 @@ int _display_set_lcm_refresh_rate(int fps)
 	}
 
 	if (pgc->session_mode == DISP_SESSION_DECOUPLE_MODE)
-		/*need sync, make sure od is config done, even if od in decouple path*/
+		/* need sync, make sure od is config done, even if od in decouple path*/
 		_cmdq_flush_config_handle_mira(cmdq_handle, 1);
 	else
 		_cmdq_flush_config_handle_mira(cmdq_handle, 0);
@@ -3728,7 +3726,7 @@ int primary_display_suspend(void)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 8);
 
 	pgc->lcm_refresh_rate = 60;
-	/*pgc->state = DISP_SLEPT;*/
+	/* pgc->state = DISP_SLEPT; */
 done:
 	primary_set_state(DISP_SLEPT);
 	_primary_path_unlock(__func__);
@@ -3785,7 +3783,7 @@ int primary_display_resume(void)
 			_cmdq_start_trigger_loop();
 		enable_idlemgr(1);
 		DISPDBG("[POWER]start cmdq[end]--IPOH\n");
-		/*pgc->state = DISP_ALIVE;*/
+		/* pgc->state = DISP_ALIVE; */
 		goto done;
 	}
 
@@ -3847,7 +3845,7 @@ int primary_display_resume(void)
 			data_config->ovl_partial_roi.width = primary_display_get_width();
 			data_config->ovl_partial_roi.height = primary_display_get_height();
 			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING)) {
-				/*update rdma goden settin*/
+				/* update rdma goden settin */
 				set_rdma_width_height(data_config->ovl_partial_roi.width,
 						data_config->ovl_partial_roi.height);
 			}
@@ -3946,7 +3944,7 @@ int primary_display_resume(void)
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_DSI0_EXT_TE);
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
-		/*refresh black picture of ovl bg */
+		/* refresh black picture of ovl bg */
 		_trigger_display_interface(1, NULL, 0);
 		DISPCHECK("[POWER]triggger cmdq[end]\n");
 		mdelay(16);	/* wait for one frame for pms workarround!!!! */
@@ -4262,7 +4260,7 @@ static int primary_frame_cfg_output(struct disp_frame_cfg_t *cfg)
 	if (primary_display_is_decouple_mode()) {
 		pgc->need_trigger_dcMirror_out = 1;
 	} else {
-		/*direct link mirror mode should add memout first */
+		/* direct link mirror mode should add memout first */
 		dpmgr_path_add_memout(pgc->dpmgr_handle, DISP_MODULE_OVL0, cmdq_handle);
 		pgc->need_trigger_ovl1to2 = 1;
 	}
@@ -4370,7 +4368,7 @@ static int setup_disp_sec(disp_ddp_path_config *data_config, cmdqRecHandle cmdq_
 			disp_enter_svp(svp_state);
 			MMProfileLogEx(ddp_mmp_get_events()->sec, MMProfileFlagStart, 0, 0);
 		} else {
-			/*switch sec --> nonsec */
+			/* switch sec --> nonsec */
 			svp_state = SVP_2_NOMAL;
 			MMProfileLogEx(ddp_mmp_get_events()->sec, MMProfileFlagEnd, 0, 0);
 		}
@@ -4611,11 +4609,11 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			total_dirty_roi.width, total_dirty_roi.height);
 
 		if (!rect_equal(&total_dirty_roi, &data_config->ovl_partial_roi)) {
-			/*update roi to lcm*/
+			/* update roi to lcm */
 			disp_partial_update_roi_to_lcm(disp_handle, total_dirty_roi, cmdq_handle);
 			data_config->ovl_partial_roi = total_dirty_roi;
 			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING)) {
-				/*update rdma goden settin*/
+				/* update rdma goden settin */
 				set_rdma_width_height(total_dirty_roi.width, total_dirty_roi.height);
 				dpmgr_path_ioctl(disp_handle, cmdq_handle, DDP_RDMA_GOLDEN_SETTING, data_config);
 			}
@@ -4942,14 +4940,14 @@ int do_primary_display_switch_mode(int sess_mode, unsigned int session, int need
 		/* dl to dl mirror */
 	} else if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MIRROR_MODE
 		   && sess_mode == DISP_SESSION_DIRECT_LINK_MODE) {
-		/*dl mirror to dl */
+		/* dl mirror to dl */
 	} else if (pgc->session_mode == DISP_SESSION_DIRECT_LINK_MODE
 		   && sess_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
 		/* dl to dc mirror  mirror */
 		DL_switch_to_DC_fast(sw_only);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE
 		   && sess_mode == DISP_SESSION_DIRECT_LINK_MODE) {
-		/*dc mirror  to dl */
+		/* dc mirror  to dl */
 		DC_switch_to_DL_fast(sw_only);
 	} else if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE &&
 			sess_mode == DISP_SESSION_DECOUPLE_MODE){
@@ -5244,7 +5242,7 @@ int primary_display_get_max_layer(void)
 
 int primary_display_get_info(disp_session_info *info)
 {
-	disp_session_info *dispif_info = (disp_session_info *) info;
+	disp_session_info *dispif_info = (disp_session_info *)info;
 	LCM_PARAMS *lcm_param = disp_lcm_get_params(pgc->plcm);
 
 	if (lcm_param == NULL) {
@@ -5784,7 +5782,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DI
 	unsigned int w_xres = primary_display_get_width();
 	unsigned int h_yres = primary_display_get_height();
 
-	/*create config thread */
+	/* create config thread */
 	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
 	if (ret != 0) {
 		DISPCHECK("primary capture:Fail to create primary cmdq handle for capture\n");
@@ -5793,7 +5791,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DI
 	}
 	cmdqRecReset(cmdq_handle);
 
-	/*create wait thread */
+	/* create wait thread */
 	ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_SCREEN_CAPTURE, &cmdq_wait_handle);
 	if (ret != 0) {
 		DISPCHECK
@@ -5835,7 +5833,7 @@ static int _screen_cap_by_cmdq(unsigned int mva, enum UNIFIED_COLOR_FMT ufmt, DI
 	_cmdq_set_config_handle_dirty_mira(cmdq_handle);
 	_cmdq_flush_config_handle_mira(cmdq_handle, 0);
 	DISPMSG("primary capture:Flush add memout mva(0x%x)\n", mva);
-	/*wait wdma0 sof */
+	/* wait wdma0 sof */
 	cmdqRecWait(cmdq_wait_handle, CMDQ_EVENT_DISP_WDMA0_SOF);
 	cmdqRecFlush(cmdq_wait_handle);
 	DISPMSG("primary capture:Flush wait wdma sof\n");
@@ -6232,7 +6230,7 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 {
 	int ret = 0;
 	int force_trigger_path = 0;
-	UINT32 *config_dsi = (UINT32 *) config_value;
+	UINT32 *config_dsi = (UINT32 *)config_value;
 	LCM_PARAMS *lcm_param = NULL;
 	LCM_DRIVER *pLcm_drv = DISP_GetLcmDrv();
 
@@ -6248,14 +6246,15 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 		DISPERR("[Pmaster]Panel_Master: primary display path is slept??\n");
 		goto done;
 	}
-	/* / Esd Check : Read from lcm */
-	/* / the following code is to */
-	/* / 0: lock path */
-	/* / 1: stop path */
-	/* / 2: do esd check (!!!) */
-	/* / 3: start path */
-	/* / 4: unlock path */
-	/* / 1: stop path */
+	/* Esd Check : Read from lcm
+	 * the following code is to
+	 * 0: lock path
+	 * 1: stop path
+	 * 2: do esd check (!!!)
+	 * 3: start path
+	 * 4: unlock path
+	 * 1: stop path
+	 */
 	_cmdq_stop_trigger_loop();
 
 	if (dpmgr_path_is_busy(pgc->dpmgr_handle)) {
@@ -6316,8 +6315,8 @@ done:
 }
 
 /*
-mode: 0, switch to cmd mode; 1, switch to vdo mode
-*/
+ * mode: 0, switch to cmd mode; 1, switch to vdo mode
+ */
 int primary_display_switch_dst_mode(int mode)
 {
 	DISP_STATUS ret = DISP_STATUS_ERROR;
@@ -6658,6 +6657,7 @@ OPT_BACKUP tui_opt_backup[3] = {
 	{DISP_OPT_SMART_OVL, 0},
 	{DISP_OPT_BYPASS_OVL, 0}
 };
+
 void stop_smart_ovl_nolock(void)
 {
 	int i;
@@ -6666,8 +6666,9 @@ void stop_smart_ovl_nolock(void)
 		tui_opt_backup[i].value = disp_helper_get_option(tui_opt_backup[i].option);
 		disp_helper_set_option(tui_opt_backup[i].option, 0);
 	}
-	/*primary_display_esd_check_enable(0);*/
+	/* primary_display_esd_check_enable(0);*/
 }
+
 void restart_smart_ovl_nolock(void)
 {
 	int i;
@@ -6734,10 +6735,10 @@ int display_exit_tui(void)
 
 	/* trigger rdma to display last normal buffer */
 	_decouple_update_rdma_config_nolock();
-	/*workaround: wait until this frame triggered to lcm */
+	/* workaround: wait until this frame triggered to lcm */
 	msleep(32);
 	do_primary_display_switch_mode(tui_session_mode_backup, pgc->session_id, 0, NULL, 0);
-	/*DISP_REG_SET(NULL, DISP_REG_RDMA_INT_ENABLE, 0xffffffff);*/
+	/* DISP_REG_SET(NULL, DISP_REG_RDMA_INT_ENABLE, 0xffffffff); */
 
 	restart_smart_ovl_nolock();
 	_primary_path_unlock(__func__);

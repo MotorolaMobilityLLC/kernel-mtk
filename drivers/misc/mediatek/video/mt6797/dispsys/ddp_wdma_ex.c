@@ -448,9 +448,8 @@ static int wdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig,
 			cmdqRecHandle nonsec_switch_handle;
 			int ret;
 
-			ret =
-			    cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
-					  &(nonsec_switch_handle));
+			ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
+					    &(nonsec_switch_handle));
 			if (ret)
 				DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
 				       __func__, ret);
