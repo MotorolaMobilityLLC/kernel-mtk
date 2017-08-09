@@ -270,8 +270,8 @@ struct pwr_ctrl {
 };
 
 #define PCM_FIRMWARE_SIZE   0x2000
-#define DYNA_LOAD_PCM_PATH_SIZE 64
-#define PCM_FIRMWARE_VERSION_SIZE 64
+#define DYNA_LOAD_PCM_PATH_SIZE 128
+#define PCM_FIRMWARE_VERSION_SIZE 128
 
 enum dyna_load_pcm_index {
 	DYNA_LOAD_PCM_SUSPEND = 0,

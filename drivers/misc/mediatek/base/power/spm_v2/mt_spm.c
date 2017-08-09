@@ -684,7 +684,8 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		/* start of pcm_desc version */
 		offset += copy_size;
 		copy_size = fw->size - offset;
-		memcpy(dyna_load_pcm[i].version, fw->data + offset, copy_size);
+		snprintf(dyna_load_pcm[i].version, PCM_FIRMWARE_VERSION_SIZE - 1,
+				"%s", fw->data + offset);
 		pdesc->version = dyna_load_pcm[i].version;
 		pdesc->base = (u32 *) dyna_load_pcm[i].buf;
 		pdesc->base_dma = dyna_load_pcm[i].buf_dma;
