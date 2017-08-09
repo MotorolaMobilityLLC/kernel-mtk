@@ -1790,7 +1790,7 @@ static void record(struct eem_det *det)
 	int i;
 	unsigned int vSram;
 
-	eem_error("record() called !!\n");
+	eem_debug("record() called !!\n");
 	det->recordRef[NR_FREQ * 2] = 0x00000000;
 	mb(); /* SRAM writing */
 	for (i = 0; i < NR_FREQ; i++) {
@@ -1810,7 +1810,7 @@ static void restore_record(struct eem_det *det)
 {
 	int i;
 
-	eem_error("restore_record() called !!\n");
+	eem_debug("restore_record() called !!\n");
 	det->recordRef[NR_FREQ * 2] = 0x00000000;
 	mb(); /* SRAM writing */
 	for (i = 0; i < NR_FREQ; i++) {
@@ -5066,7 +5066,7 @@ int __init eem_init(void)
 		eem_debug("[EEM] get irqnr failed=0x%x\n", eem_irq_number);
 		return 0;
 	}
-	eem_error("[EEM] new_eem_val=%d, ctrl_EEM_Enable=%d\n", new_eem_val, ctrl_EEM_Enable);
+	eem_debug("[EEM] new_eem_val=%d, ctrl_EEM_Enable=%d\n", new_eem_val, ctrl_EEM_Enable);
 #endif
 
 	get_devinfo(&eem_devinfo);
