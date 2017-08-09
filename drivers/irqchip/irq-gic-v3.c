@@ -231,46 +231,9 @@ static void gic_eoi_irq(struct irq_data *d)
 	gic_write_eoir(gic_irq(d));
 }
 
-void __iomem *INT_POL_CTL_REG;
-
-__weak void _mt_set_pol_reg(u32 reg_index, u32 value)
+/* should be define in mtk-gic-v3-extend.c */
+__weak void _mt_irq_set_polarity(unsigned int irq, unsigned int polarity)
 {
-	writel_relaxed(value, (INT_POL_CTL_REG + (reg_index * 4)));
-}
-
-
-void _mt_irq_set_polarity(unsigned int irq, unsigned int polarity)
-{
-	u32 offset, reg_index, value;
-
-	if (irq < 32) {
-		pr_err("Fail to set polarity of interrupt %d\n", irq);
-		return;
-	}
-
-	offset = (irq - 32) & 0x1F;
-	reg_index = (irq - 32) >> 5;
-
-	/* tmp hack for everest, non-continuous POL registers allocations */
-	if (reg_index >= 8) {
-		reg_index -= 8;
-		reg_index += 0x70/4;
-	}
-
-	if (polarity == 0) {
-		/* active low */
-		value = readl_relaxed(IOMEM(INT_POL_CTL_REG + (reg_index * 4)));
-		value |= (1 << offset);
-		/* some platforms has to write POL register in secure world.
-		USE PHYSICALL ADDRESS */
-		_mt_set_pol_reg(reg_index, value);
-	} else {
-		/* active high */
-		value = readl_relaxed(IOMEM(INT_POL_CTL_REG + (reg_index * 4)));
-		value &= ~(0x1 << offset);
-		/* some platforms has to write POL register in secure world */
-		_mt_set_pol_reg(reg_index, value);
-	}
 }
 
 static int gic_set_type(struct irq_data *d, unsigned int type)
@@ -348,7 +311,9 @@ void __exception_irq_entry gic_handle_irq(struct pt_regs *regs)
 static void __init gic_dist_init(void)
 {
 	unsigned int i;
+#ifndef CONFIG_MTK_IRQ_NEW_DESIGN
 	u64 affinity;
+#endif
 	void __iomem *base = gic_data.dist_base;
 
 	/* Disable the distributor */
@@ -724,13 +689,13 @@ static const struct irq_domain_ops gic_irq_domain_ops = {
 	.xlate = gic_irq_domain_xlate,
 };
 
+__weak int __init mt_gic_ext_init(void) { return 0; }
+
 static int __init gic_of_init(struct device_node *node,
 				struct device_node *parent)
 {
 	void __iomem *dist_base;
 	void __iomem **redist_base;
-	void __iomem *pol_base;
-	struct resource res;
 
 	u64 redist_stride;
 	u32 redist_regions;
@@ -775,12 +740,6 @@ static int __init gic_of_init(struct device_node *node,
 		}
 	}
 
-	pol_base = of_iomap(node, redist_regions+1);
-	WARN(!pol_base, "unable to map pol registers\n");
-	INT_POL_CTL_REG = pol_base;
-	if (of_address_to_resource(node, redist_regions+1, &res))
-		WARN(!pol_base, "unable to map pol registers\n");
-
 	if (of_property_read_u64(node, "redistributor-stride", &redist_stride))
 		redist_stride = 0;
 
@@ -824,6 +783,8 @@ static int __init gic_of_init(struct device_node *node,
 	gic_smp_init();
 	gic_dist_init();
 	gic_cpu_init();
+
+	mt_gic_ext_init();
 
 	mt_gic_irqs = gic_data.irq_nr;
 

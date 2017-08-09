@@ -32,12 +32,14 @@
 #include <linux/irqchip/mtk-gic-extend.h>
 #include <mach/mt_secure_api.h>
 
+#define IOMEM(x)        ((void __force __iomem *)(x))
 /* for cirq use */
 void __iomem *GIC_DIST_BASE;
 void __iomem *INT_POL_CTL0;
 void __iomem *INT_POL_CTL1;
 static void __iomem *GIC_REDIST_BASE;
 static u32 wdt_irq;
+static u32 reg_len_pol0;
 
 static inline unsigned int gic_irq(struct irq_data *d)
 {
@@ -112,18 +114,28 @@ build_mask:
 
 u32 mt_irq_get_pol(u32 irq)
 {
-	u32 reg_index = 0;
+	u32 reg;
+	void __iomem *base = INT_POL_CTL0;
 
-	reg_index = (irq - 32) >> 5;
-
-	/* FIXME: need to use more flexible way to
-	 * get non-continuous POL registers */
-	if (reg_index >= 8) {
-		reg_index -= 8;
-		reg_index += 0x70/4;
+	if (irq < 32) {
+		pr_err("Fail to set polarity of interrupt %d\n", irq);
+		return 0;
 	}
 
-	return readl(INT_POL_CTL0 + reg_index*4);
+	reg = ((irq - 32)/32);
+
+	/* if reg_len_pol0 != 0, means there is 2nd POL reg base,
+	   compute the correct offset for polarity reg in 2nd POL reg */
+	if ((reg_len_pol0 != 0) && (reg >= reg_len_pol0)) {
+		if (!INT_POL_CTL1) {
+			pr_err("MUST have 2nd INT_POL_CTRL\n");
+			BUG_ON(1);
+		}
+		reg -= reg_len_pol0;
+		base = INT_POL_CTL1;
+	}
+
+	return readl_relaxed(IOMEM(base + reg*4));
 }
 /*
  * mt_irq_mask_all: disable all interrupts
@@ -369,7 +381,48 @@ void mt_irq_dump_status(int irq)
 }
 EXPORT_SYMBOL(mt_irq_dump_status);
 
-static int __init mt_gic_ext_init(void)
+static void _mt_set_pol_reg(void __iomem *add, u32 val)
+{
+	writel_relaxed(val, add);
+}
+
+void _mt_irq_set_polarity(unsigned int irq, unsigned int polarity)
+{
+	u32 offset, reg, value;
+	void __iomem *base = INT_POL_CTL0;
+
+	if (irq < 32) {
+		pr_err("Fail to set polarity of interrupt %d\n", irq);
+		return;
+	}
+
+	offset = irq%32;
+	reg = ((irq - 32)/32);
+
+	/* if reg_len_pol0 != 0, means there is 2nd POL reg base,
+	   compute the correct offset for polarity reg in 2nd POL reg */
+	if ((reg_len_pol0 != 0) && (reg >= reg_len_pol0)) {
+		if (!INT_POL_CTL1) {
+			pr_err("MUST have 2nd INT_POL_CTRL\n");
+			BUG_ON(1);
+		}
+		reg -= reg_len_pol0;
+		base = INT_POL_CTL1;
+	}
+
+	value = readl_relaxed(IOMEM(base + reg*4));
+	if (polarity == 0) {
+		/* active low */
+		value |= (1 << offset);
+	} else {
+		/* active high */
+		value &= ~(0x1 << offset);
+	}
+	/* some platforms has to write POL register in secure world */
+	_mt_set_pol_reg(base + reg*4, value);
+}
+
+int __init mt_gic_ext_init(void)
 {
 	struct device_node *node;
 #ifdef CONFIG_MTK_IRQ_NEW_DESIGN
@@ -399,6 +452,10 @@ static int __init mt_gic_ext_init(void)
 	 * INT_POL_CTL0 is enough */
 	INT_POL_CTL1 = of_iomap(node, 3);
 
+	if (of_property_read_u32(node, "mediatek,reg_len_pol0",
+				&reg_len_pol0))
+		reg_len_pol0 = 0;
+
 #ifdef CONFIG_MTK_IRQ_NEW_DESIGN
 	for (i = 0; i <= CONFIG_NR_CPUS-1; ++i) {
 		INIT_LIST_HEAD(&(irq_need_migrate_list[i].list));
@@ -413,7 +470,6 @@ static int __init mt_gic_ext_init(void)
 
 	return 0;
 }
-core_initcall(mt_gic_ext_init);
 
 MODULE_LICENSE("GPL v2");
 MODULE_DESCRIPTION("MediaTek gicv3 extend Driver");

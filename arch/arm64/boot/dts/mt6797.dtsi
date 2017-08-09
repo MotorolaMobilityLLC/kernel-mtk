@@ -362,9 +362,11 @@
 		interrupt-controller;
 		reg = <0 0x19000000 0 0x40000>, // distributor
 			<0 0x19200000 0 0x200000>, // redistributor
-			<0 0x10220620 0 0x001000>; // INTPOL
+			<0 0x10220620 0 0x001000>, // INTPOL0
+			<0 0x10220690 0 0x001000>; // INTPOL1
 		interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
 		mediatek,wdt_irq = <169>;
+		mediatek,reg_len_pol0 = <8>; // 8*32 irq polarity setting in INTPOL0
 	};
 
 	clocks {
