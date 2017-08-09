@@ -6,14 +6,14 @@ choice
 
 config MTK_EVB_BOARD
 	bool "MTK EVB BOARD"
-	depends on ARCH_MT6735
+	depends on (ARCH_MT6580 || ARCH_MT6735)
 	select ARM_L1_CACHE_SHIFT_6 if (!ARM64)
 	help
 	  Select if you are using an EVB board.
 
 config MTK_FPGA
 	bool "MTK FPGA"
-	depends on ARCH_MT6735
+	depends on (ARCH_MT6580 || ARCH_MT6735)
 	select ARM_L1_CACHE_SHIFT_6 if (!ARM64)
 	help
 	  Select if you are using the FPGA board.
@@ -29,7 +29,7 @@ config FPGA_CA7
 
 config MTK_PSCI
 	bool "MT6752 PSCI boot method"
-	depends on ARCH_MT6735
+	depends on (ARCH_MT6580 || ARCH_MT6735)
 	default n
 	help
 	  Select if you want to enable PSCI boot method on MTK platform.
@@ -37,7 +37,7 @@ config MTK_PSCI
 config MAX_DRAM_SIZE_SUPPORT
 	hex "The maximum size of the DRAM can be supported in the kernel"
 	default 0x10000000
-	depends on ARCH_MT6735
+	depends on (ARCH_MT6580 || ARCH_MT6735)
 	help
 	  Define the maximum size of the kernel can be supported.
 	  It will modify the memory size if it size is smaller than

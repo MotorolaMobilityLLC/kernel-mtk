@@ -809,6 +809,31 @@ config ARCH_MT6735
 	help
 	  This enable support for MediaTek MT6735
 
+config ARCH_MT6580
+    bool "MediaTek MT6580"
+    select GENERIC_TIME
+    select GENERIC_CLOCKEVENTS
+    select ARCH_HAS_CPUFREQ
+    select ARM_AMBA
+    select CPU_V7
+    select FIQ_GLUE if !TRUSTONIC_TEE_SUPPORT
+    select HAVE_SMP
+    select NEED_MACH_MEMORY_H
+    select IRQ_DOMAIN
+    select IRQ_DOMAIN_DEBUG
+    select GENERIC_SCHED_CLOCK
+    select VFP_OPT
+    select ARCH_REQUIRE_GPIOLIB
+    select MTK_CPU_STRESS
+    select MTK_LASTPC
+    select KERNEL_MODE_NEON
+    select CRYPTO_AES_ARM_BS
+    select MTK_SYS_CIRQ
+    select MTK_EIC
+    select MTK_SYSTRACKER_V2
+    select ARM_HAS_SG_CHAIN
+    help
+      This enable support for MediaTek MT6580
 endchoice
 
 menu "Multiple platform selection"

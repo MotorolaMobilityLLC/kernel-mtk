@@ -18,6 +18,8 @@
 #define GIC_CPU_RUNNINGPRI		0x14
 #define GIC_CPU_HIGHPRI			0x18
 #define GIC_CPU_ALIAS_BINPOINT		0x1c
+#define GIC_CPU_AIAR			0x20
+#define GIC_CPU_AEOI			0x24
 #define GIC_CPU_ACTIVEPRIO		0xd0
 #define GIC_CPU_IDENT			0xfc
 
