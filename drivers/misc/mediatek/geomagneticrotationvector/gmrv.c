@@ -6,11 +6,6 @@ static struct gmrv_context *gmrv_context_obj;
 
 static struct gmrv_init_info *gmrvsensor_init_list[MAX_CHOOSE_GMRV_NUM] = { 0 };	/* modified */
 
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-static void gmrv_early_suspend(struct early_suspend *h);
-static void gmrv_late_resume(struct early_suspend *h);
-#endif
-
 static void gmrv_work_func(struct work_struct *work)
 {
 
@@ -64,6 +59,7 @@ static void gmrv_work_func(struct work_struct *work)
 		}
 	}
 	/* report data to input device */
+	/* printk("new gmrv work run....\n"); */
 	/* GMRV_LOG("gmrv data[%d,%d,%d]\n" ,cxt->drv_data.gmrv_data.values[0], */
 	/* cxt->drv_data.gmrv_data.values[1],cxt->drv_data.gmrv_data.values[2]); */
 
@@ -422,7 +418,7 @@ static int gmrvsensor_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id gmrvsensor_of_match[] = {
-	{.compatible = "mediatek,gmrvsensor",},
+	{.compatible = "mediatek,gmagrotvec",},
 	{},
 };
 #endif
@@ -431,7 +427,7 @@ static struct platform_driver gmrvsensor_driver = {
 	.probe = gmrvsensor_probe,
 	.remove = gmrvsensor_remove,
 	.driver = {
-		   .name = "gmrvsensor",
+		   .name = "gmagrotvec",
 #ifdef CONFIG_OF
 		   .of_match_table = gmrvsensor_of_match,
 #endif
@@ -608,7 +604,7 @@ int gmrv_data_report(int x, int y, int z, int scalar, int status)
 	return 0;
 }
 
-static int gmrv_probe(struct platform_device *pdev)
+static int gmrv_probe(void)
 {
 
 	int err;
@@ -633,13 +629,6 @@ static int gmrv_probe(struct platform_device *pdev)
 		GMRV_ERR("unable to register gmrv input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-	atomic_set(&(gmrv_context_obj->early_suspend), 0);
-	gmrv_context_obj->early_drv.level = 1;	/* EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1, */
-	gmrv_context_obj->early_drv.suspend = gmrv_early_suspend,
-	    gmrv_context_obj->early_drv.resume = gmrv_late_resume,
-	    register_early_suspend(&gmrv_context_obj->early_drv);
-#endif
 
 	GMRV_LOG("----gmrv_probe OK !!\n");
 	return 0;
@@ -667,7 +656,7 @@ exit_alloc_data_failed:
 
 
 
-static int gmrv_remove(struct platform_device *pdev)
+static int gmrv_remove(void)
 {
 	int err = 0;
 
@@ -683,57 +672,6 @@ static int gmrv_remove(struct platform_device *pdev)
 
 	return 0;
 }
-
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-static void gmrv_early_suspend(struct early_suspend *h)
-{
-	atomic_set(&(gmrv_context_obj->early_suspend), 1);
-	GMRV_LOG(" gmrv_early_suspend ok------->hwm_obj->early_suspend=%d\n",
-		 atomic_read(&(gmrv_context_obj->early_suspend)));
-}
-
-/*----------------------------------------------------------------------------*/
-
-static void gmrv_late_resume(struct early_suspend *h)
-{
-	atomic_set(&(gmrv_context_obj->early_suspend), 0);
-	GMRV_LOG(" gmrv_late_resume ok------->hwm_obj->early_suspend=%d\n",
-		 atomic_read(&(gmrv_context_obj->early_suspend)));
-}
-#endif
-
-static int gmrv_suspend(struct platform_device *dev, pm_message_t state)
-{
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int gmrv_resume(struct platform_device *dev)
-{
-	return 0;
-}
-
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_gmrv_pl_of_match[] = {
-	{.compatible = "mediatek,m_gmrv_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver gmrv_driver = {
-	.probe = gmrv_probe,
-	.remove = gmrv_remove,
-	.suspend = gmrv_suspend,
-	.resume = gmrv_resume,
-	.driver = {
-		   .name = GMRV_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_gmrv_pl_of_match,
-#endif
-		   }
-};
-
 int gmrv_driver_add(struct gmrv_init_info *obj)
 {
 	int err = 0;
@@ -759,13 +697,13 @@ int gmrv_driver_add(struct gmrv_init_info *obj)
 		err = -1;
 	}
 	return err;
-} EXPORT_SYMBOL_GPL(gmrv_driver_add);
+}
 
 static int __init gmrv_init(void)
 {
 	GMRV_FUN();
 
-	if (platform_driver_register(&gmrv_driver)) {
+	if (gmrv_probe()) {
 		GMRV_ERR("failed to register gmrv driver\n");
 		return -ENODEV;
 	}
@@ -775,7 +713,7 @@ static int __init gmrv_init(void)
 
 static void __exit gmrv_exit(void)
 {
-	platform_driver_unregister(&gmrv_driver);
+	gmrv_remove();
 	platform_driver_unregister(&gmrvsensor_driver);
 }
 

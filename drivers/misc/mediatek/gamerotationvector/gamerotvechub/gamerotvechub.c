@@ -11,41 +11,17 @@
  *
  */
 
-#include <linux/interrupt.h>
-#include <linux/i2c.h>
-#include <linux/slab.h>
-#include <linux/irq.h>
-#include <linux/miscdevice.h>
-#include <asm/uaccess.h>
-#include <linux/delay.h>
-#include <linux/input.h>
-#include <linux/workqueue.h>
-#include <linux/kobject.h>
-#include <linux/earlysuspend.h>
-#include <linux/platform_device.h>
-#include <asm/atomic.h>
-
-#include <linux/hwmsensor.h>
-#include <linux/hwmsen_dev.h>
-#include <linux/sensors_io.h>
+#include <hwmsensor.h>
 #include "gamerotvechub.h"
 #include <grv.h>
-#include <linux/hwmsen_helper.h>
-
-#include <mach/mt_typedefs.h>
-#include <mach/mt_gpio.h>
-#include <mach/mt_pm_ldo.h>
-
-#include <linux/batch.h>
 #include <SCP_sensorHub.h>
 #include <linux/notifier.h>
 #include "scp_helper.h"
 
-
 #define GROTVEC_TAG                  "[gamerotvechub] "
-#define GROTVEC_FUN(f)               printk(GROTVEC_TAG"%s\n", __func__)
-#define GROTVEC_ERR(fmt, args...)    printk(GROTVEC_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define GROTVEC_LOG(fmt, args...)    printk(GROTVEC_TAG fmt, ##args)
+#define GROTVEC_FUN(f)               pr_debug(GROTVEC_TAG"%s\n", __func__)
+#define GROTVEC_ERR(fmt, args...)    pr_err(GROTVEC_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define GROTVEC_LOG(fmt, args...)    pr_debug(GROTVEC_TAG fmt, ##args)
 
 typedef enum {
 	GROTVECHUB_TRC_INFO = 0X10,

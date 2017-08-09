@@ -430,7 +430,7 @@ int wag_register_control_path(struct wag_control_path *ctl)
 	return 0;
 }
 
-static int wag_probe(struct platform_device *pdev)
+static int wag_probe(void)
 {
 	int err;
 
@@ -453,13 +453,6 @@ static int wag_probe(struct platform_device *pdev)
 		WAG_ERR("unable to register wag input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-	atomic_set(&(wag_context_obj->early_suspend), 0);
-	wag_context_obj->early_drv.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1,
-	    wag_context_obj->early_drv.suspend = wag_early_suspend,
-	    wag_context_obj->early_drv.resume = wag_late_resume,
-	    register_early_suspend(&wag_context_obj->early_drv);
-#endif				/* #if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND) */
 
 	WAG_LOG("----wag_probe OK !!\n");
 	return 0;
@@ -476,7 +469,7 @@ exit_alloc_data_failed:
 	return err;
 }
 
-static int wag_remove(struct platform_device *pdev)
+static int wag_remove(void)
 {
 	int err = 0;
 
@@ -491,64 +484,11 @@ static int wag_remove(struct platform_device *pdev)
 	kfree(wag_context_obj);
 	return 0;
 }
-
-
-#if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
-static int wag_suspend(struct platform_device *dev, pm_message_t state)
-{
-#if 0
-	atomic_set(&(wag_context_obj->suspend), 1);
-	if (!atomic_read(&wag_context_obj->wake))	/* not wake up, disable in early suspend */
-		wag_real_enable(WAG_SUSPEND);
-
-	WAG_LOG(" wag_suspend ok------->hwm_obj->suspend=%d\n",
-		atomic_read(&(wag_context_obj->suspend)));
-	#endif
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int wag_resume(struct platform_device *dev)
-{
-	#if 0
-	atomic_set(&(wag_context_obj->suspend), 0);
-	if (!atomic_read(&wag_context_obj->wake) && resume_enable_status)
-		wag_real_enable(WAG_RESUME);
-
-	WAG_LOG(" wag_resume ok------->hwm_obj->suspend=%d\n",
-		atomic_read(&(wag_context_obj->suspend)));
-	#endif
-	return 0;
-}
-#endif				/* #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND) */
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_wag_pl_of_match[] = {
-	{.compatible = "mediatek,m_wag_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver wag_driver = {
-	.probe = wag_probe,
-	.remove = wag_remove,
-#if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
-	.suspend = wag_suspend,
-	.resume = wag_resume,
-#endif
-	.driver = {
-		   .name = WAG_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_wag_pl_of_match,
-#endif
-		   }
-};
-
 static int __init wag_init(void)
 {
 	WAG_FUN();
 
-	if (platform_driver_register(&wag_driver)) {
+	if (wag_probe()) {
 		WAG_ERR("failed to register wag driver\n");
 		return -ENODEV;
 	}
@@ -558,7 +498,7 @@ static int __init wag_init(void)
 
 static void __exit wag_exit(void)
 {
-	platform_driver_unregister(&wag_driver);
+	wag_remove();
 	platform_driver_unregister(&wake_gesture_driver);
 }
 

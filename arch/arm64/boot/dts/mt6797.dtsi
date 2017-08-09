@@ -4072,24 +4072,24 @@
 			compatible = "mediatek,pedometer";
 	};
 
-	wag@0 {
-			compatible = "mediatek,m_wag_pl";
+	wake_gesture@0 {
+			compatible = "mediatek,wake_gesture";
 	};
 
-	pkup@0 {
-			compatible = "mediatek,m_pkup_pl";
+	pick_up@0 {
+			compatible = "mediatek,pick_up";
 	};
 
-	glg@0 {
-			compatible = "mediatek,m_glg_pl";
+	glance_gesture@0 {
+			compatible = "mediatek,glance_gesture";
 	};
 
 	tilt@0 {
-			compatible = "mediatek,m_tilt_pl";
+			compatible = "mediatek,tilt_detector";
 	};
 
 	answer_call@0 {
-			compatible = "mediatek,m_ancall_pl";
+			compatible = "mediatek,answer_call";
 	};
 
 	activity@0 {
@@ -4098,6 +4098,26 @@
 
 	step_counter@0 {
 			compatible = "mediatek,step_counter";
+	};
+
+	rotationvector@0 {
+			compatible = "mediatek,rotationvector";
+	};
+
+	gamerotvec@0 {
+			compatible = "mediatek,gamerotvec";
+	};
+
+	gmagrotvec@0 {
+			compatible = "mediatek,gmagrotvec";
+	};
+
+	linearaccel@0 {
+			compatible = "mediatek,linearaccel";
+	};
+
+	gravity@0 {
+			compatible = "mediatek,gravity";
 	};
 /* sensor end */
 	shf{

@@ -10,9 +10,20 @@
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 #include <linux/module.h>
-#include <linux/hwmsensor.h>
-#include <linux/earlysuspend.h>
-#include <linux/hwmsen_dev.h>
+
+#include <linux/i2c.h>
+#include <linux/irq.h>
+#include <linux/uaccess.h>
+#include <linux/delay.h>
+#include <linux/kobject.h>
+#include <linux/atomic.h>
+#include <linux/ioctl.h>
+
+#include <batch.h>
+#include <sensors_io.h>
+#include <hwmsen_helper.h>
+#include <hwmsensor.h>
+
 
 #define DEBUG
 #ifdef DEBUG
@@ -77,7 +88,7 @@ struct la_init_info {
 };
 
 struct la_data {
-	hwm_sensor_data la_data;
+	struct hwm_sensor_data la_data;
 	int data_updata;
 };
 
@@ -98,7 +109,6 @@ struct la_context {
 	struct timer_list timer;	/* polling timer */
 	atomic_t trace;
 	atomic_t enable;
-	struct early_suspend early_drv;
 	struct la_data drv_data;
 	int cali_sw[LA_AXES_NUM + 1];
 	struct la_control_path la_ctl;

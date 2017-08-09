@@ -292,7 +292,7 @@ static ssize_t grav_store_delay(struct device *dev, struct device_attribute *att
 		return count;
 	}
 
-	if (1 != kstrtoint(buf, 10, &delay)) {
+	if (0 != kstrtoint(buf, 10, &delay)) {
 		GRAV_ERR("invalid format!!\n");
 		mutex_unlock(&grav_context_obj->grav_op_mutex);
 		return count;
@@ -390,7 +390,7 @@ static int gravitysensor_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id gravitysensor_of_match[] = {
-	{.compatible = "mediatek,gravitysensor",},
+	{.compatible = "mediatek,gravity",},
 	{},
 };
 #endif
@@ -400,7 +400,7 @@ static struct platform_driver gravitysensor_driver = {
 	.remove = gravitysensor_remove,
 	.driver = {
 
-		   .name = "gravitysensor",
+		   .name = "gravity",
 #ifdef CONFIG_OF
 		   .of_match_table = gravitysensor_of_match,
 #endif
@@ -576,7 +576,7 @@ int grav_data_report(int x, int y, int z, int status)
 	return err;
 }
 
-static int grav_probe(struct platform_device *pdev)
+static int grav_probe(void)
 {
 
 	int err;
@@ -625,7 +625,7 @@ exit_alloc_data_failed:
 
 
 
-static int grav_remove(struct platform_device *pdev)
+static int grav_remove(void)
 {
 	int err = 0;
 
@@ -640,40 +640,6 @@ static int grav_remove(struct platform_device *pdev)
 
 	return 0;
 }
-
-static int grav_suspend(struct platform_device *dev, pm_message_t state)
-{
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int grav_resume(struct platform_device *dev)
-{
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_grav_pl_of_match[] = {
-	{.compatible = "mediatek,m_grav_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver grav_driver = {
-
-	.probe = grav_probe,
-	.remove = grav_remove,
-	.suspend = grav_suspend,
-	.resume = grav_resume,
-	.driver = {
-
-		   .name = GRAV_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_grav_pl_of_match,
-#endif
-		   }
-};
-
 int grav_driver_add(struct grav_init_info *obj)
 {
 	int err = 0;
@@ -705,7 +671,7 @@ static int __init grav_init(void)
 {
 	GRAV_FUN();
 
-	if (platform_driver_register(&grav_driver)) {
+	if (grav_probe()) {
 		GRAV_ERR("failed to register grav driver\n");
 		return -ENODEV;
 	}
@@ -715,7 +681,7 @@ static int __init grav_init(void)
 
 static void __exit grav_exit(void)
 {
-	platform_driver_unregister(&grav_driver);
+	grav_remove();
 	platform_driver_unregister(&gravitysensor_driver);
 }
 

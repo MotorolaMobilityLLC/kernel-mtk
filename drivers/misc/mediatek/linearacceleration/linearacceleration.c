@@ -291,7 +291,7 @@ static ssize_t la_store_delay(struct device *dev, struct device_attribute *attr,
 		return count;
 	}
 
-	if (1 != kstrtoint(buf, 10, &delay)) {
+	if (0 != kstrtoint(buf, 10, &delay)) {
 		LA_ERR("invalid format!!\n");
 		mutex_unlock(&la_context_obj->la_op_mutex);
 		return count;
@@ -387,7 +387,7 @@ static int linearaccelerationsensor_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id linearaccelerationsensor_of_match[] = {
-	{.compatible = "mediatek,linearaccelerationsensor",},
+	{.compatible = "mediatek,linearaccel",},
 	{},
 };
 #endif
@@ -397,7 +397,7 @@ static struct platform_driver linearaccelerationsensor_driver = {
 	.remove = linearaccelerationsensor_remove,
 	.driver = {
 
-		   .name = "linearaccelerationsensor",
+		   .name = "linearaccel",
 #ifdef CONFIG_OF
 		   .of_match_table = linearaccelerationsensor_of_match,
 #endif
@@ -573,7 +573,7 @@ int la_data_report(int x, int y, int z, int status)
 	return err;
 }
 
-static int la_probe(struct platform_device *pdev)
+static int la_probe(void)
 {
 
 	int err;
@@ -621,7 +621,7 @@ exit_alloc_data_failed:
 
 
 
-static int la_remove(struct platform_device *pdev)
+static int la_remove(void)
 {
 	int err = 0;
 
@@ -636,40 +636,6 @@ static int la_remove(struct platform_device *pdev)
 
 	return 0;
 }
-
-static int la_suspend(struct platform_device *dev, pm_message_t state)
-{
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int la_resume(struct platform_device *dev)
-{
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_la_pl_of_match[] = {
-	{.compatible = "mediatek,m_la_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver la_driver = {
-
-	.probe = la_probe,
-	.remove = la_remove,
-	.suspend = la_suspend,
-	.resume = la_resume,
-	.driver = {
-
-		   .name = LA_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_la_pl_of_match,
-#endif
-		   }
-};
-
 int la_driver_add(struct la_init_info *obj)
 {
 	int err = 0;
@@ -701,7 +667,7 @@ static int __init la_init(void)
 {
 	LA_FUN();
 
-	if (platform_driver_register(&la_driver)) {
+	if (la_probe()) {
 		LA_ERR("failed to register la driver\n");
 		return -ENODEV;
 	}
@@ -711,7 +677,7 @@ static int __init la_init(void)
 
 static void __exit la_exit(void)
 {
-	platform_driver_unregister(&la_driver);
+	la_remove();
 	platform_driver_unregister(&linearaccelerationsensor_driver);
 }
 

@@ -6,11 +6,6 @@ static struct grv_context *grv_context_obj;
 
 static struct grv_init_info *grvsensor_init_list[MAX_CHOOSE_GRV_NUM] = { 0 };	/* modified */
 
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-static void grv_early_suspend(struct early_suspend *h);
-static void grv_late_resume(struct early_suspend *h);
-#endif
-
 static void grv_work_func(struct work_struct *work)
 {
 
@@ -63,6 +58,7 @@ static void grv_work_func(struct work_struct *work)
 		}
 	}
 	/* report data to input device */
+	/* printk("new grv work run....\n"); */
 	/* GRV_LOG("grv data[%d,%d,%d]\n" ,cxt->drv_data.grv_data.values[0], */
 	/* cxt->drv_data.grv_data.values[1],cxt->drv_data.grv_data.values[2]); */
 
@@ -423,7 +419,7 @@ static int grvsensor_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id grvsensor_of_match[] = {
-	{.compatible = "mediatek,grvsensor",},
+	{.compatible = "mediatek,grv",},
 	{},
 };
 #endif
@@ -432,7 +428,7 @@ static struct platform_driver grvsensor_driver = {
 	.probe = grvsensor_probe,
 	.remove = grvsensor_remove,
 	.driver = {
-		   .name = "grvsensor",
+		   .name = "grv",
 #ifdef CONFIG_OF
 		   .of_match_table = grvsensor_of_match,
 #endif
@@ -610,7 +606,7 @@ int grv_data_report(int x, int y, int z, int scalar, int status)
 	return 0;
 }
 
-static int grv_probe(struct platform_device *pdev)
+static int grv_probe(void)
 {
 
 	int err;
@@ -635,13 +631,6 @@ static int grv_probe(struct platform_device *pdev)
 		GRV_ERR("unable to register grv input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-	atomic_set(&(grv_context_obj->early_suspend), 0);
-	grv_context_obj->early_drv.level = 1;	/* EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1, */
-	grv_context_obj->early_drv.suspend = grv_early_suspend,
-	    grv_context_obj->early_drv.resume = grv_late_resume,
-	    register_early_suspend(&grv_context_obj->early_drv);
-#endif
 
 	GRV_LOG("----grv_probe OK !!\n");
 	return 0;
@@ -669,7 +658,7 @@ exit_alloc_data_failed:
 
 
 
-static int grv_remove(struct platform_device *pdev)
+static int grv_remove(void)
 {
 	int err = 0;
 
@@ -684,56 +673,6 @@ static int grv_remove(struct platform_device *pdev)
 
 	return 0;
 }
-
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-static void grv_early_suspend(struct early_suspend *h)
-{
-	atomic_set(&(grv_context_obj->early_suspend), 1);
-	GRV_LOG(" grv_early_suspend ok------->hwm_obj->early_suspend=%d\n",
-		atomic_read(&(grv_context_obj->early_suspend)));
-}
-
-/*----------------------------------------------------------------------------*/
-
-static void grv_late_resume(struct early_suspend *h)
-{
-	atomic_set(&(grv_context_obj->early_suspend), 0);
-	GRV_LOG(" grv_late_resume ok------->hwm_obj->early_suspend=%d\n",
-		atomic_read(&(grv_context_obj->early_suspend)));
-}
-#endif
-
-static int grv_suspend(struct platform_device *dev, pm_message_t state)
-{
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int grv_resume(struct platform_device *dev)
-{
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_grv_pl_of_match[] = {
-	{.compatible = "mediatek,m_grv_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver grv_driver = {
-	.probe = grv_probe,
-	.remove = grv_remove,
-	.suspend = grv_suspend,
-	.resume = grv_resume,
-	.driver = {
-		   .name = GRV_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_grv_pl_of_match,
-#endif
-		   }
-};
-
 int grv_driver_add(struct grv_init_info *obj)
 {
 	int err = 0;
@@ -763,13 +702,12 @@ int grv_driver_add(struct grv_init_info *obj)
 		err = -1;
 	}
 	return err;
-} EXPORT_SYMBOL_GPL(grv_driver_add);
-
+}
 static int __init grv_init(void)
 {
 	GRV_FUN();
 
-	if (platform_driver_register(&grv_driver)) {
+	if (grv_probe()) {
 		GRV_ERR("failed to register grv driver\n");
 		return -ENODEV;
 	}
@@ -779,7 +717,7 @@ static int __init grv_init(void)
 
 static void __exit grv_exit(void)
 {
-	platform_driver_unregister(&grv_driver);
+	grv_remove();
 	platform_driver_unregister(&grvsensor_driver);
 }
 

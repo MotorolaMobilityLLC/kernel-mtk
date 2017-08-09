@@ -1,7 +1,6 @@
 #ifndef __GRAV_H__
 #define __GRAV_H__
 
-
 #include <linux/wakelock.h>
 #include <linux/interrupt.h>
 #include <linux/miscdevice.h>
@@ -10,9 +9,19 @@
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 #include <linux/module.h>
-#include <linux/hwmsensor.h>
-#include <linux/earlysuspend.h>
-#include <linux/hwmsen_dev.h>
+
+#include <linux/i2c.h>
+#include <linux/irq.h>
+#include <linux/uaccess.h>
+#include <linux/delay.h>
+#include <linux/kobject.h>
+#include <linux/atomic.h>
+#include <linux/ioctl.h>
+
+#include <batch.h>
+#include <sensors_io.h>
+#include <hwmsen_helper.h>
+#include <hwmsensor.h>
 
 #define DEBUG
 
@@ -78,7 +87,7 @@ struct grav_init_info {
 };
 
 struct grav_data {
-	hwm_sensor_data grav_data;
+	struct hwm_sensor_data grav_data;
 	int data_updata;
 	/* struct mutex lock; */
 };
@@ -100,7 +109,6 @@ struct grav_context {
 	struct timer_list   timer;  /* polling timer */
 	atomic_t            trace;
 	atomic_t			enable;
-	struct early_suspend    early_drv;
 	atomic_t                early_suspend;
 	/* struct grav_drv_obj    drv_obj; */
 	struct grav_data       drv_data;
