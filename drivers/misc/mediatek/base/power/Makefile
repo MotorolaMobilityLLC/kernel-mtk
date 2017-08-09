@@ -13,6 +13,7 @@
 
 obj-$(CONFIG_ARCH_MT6755) += ppm_v1/
 obj-$(CONFIG_ARCH_MT6797) += ppm_v1/
+obj-$(CONFIG_ARCH_MT6757) += ppm_v2/
 obj-$(CONFIG_ARCH_MT6735) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_ARCH_MT6735M) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_ARCH_MT6580) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
