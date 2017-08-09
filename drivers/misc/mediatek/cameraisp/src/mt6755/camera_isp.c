@@ -11998,10 +11998,17 @@ static MINT32 bPass1_On_In_Resume_TG1;
 static MINT32 bPass1_On_In_Resume_TG2;
 static MINT32 ISP_suspend(struct platform_device *pDev, pm_message_t Mesg)
 {
+	MUINT32 regTG1Val, regTG2Val;
+
+	if (IspInfo.UserCount == 0) {
+		LOG_DBG("ISP UserCount=0");
+		return 0;
+	}
+
 	/* TG_VF_CON[0] (0x15004414[0]): VFDATA_EN.     TG1     Take Picture Request. */
-	MUINT32 regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
+	 regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
 	/* TG2_VF_CON[0] (0x150044B4[0]): VFDATA_EN. TG2 Take Picture Request. */
-	MUINT32 regTG2Val = ISP_RD32(ISP_ADDR + 0x4B4);
+	 regTG2Val = ISP_RD32(ISP_ADDR + 0x4B4);
 
 	LOG_DBG
 	("bPass1_On_In_Resume_TG1(%d). bPass1_On_In_Resume_TG2(%d). regTG1Val(0x%08x). regTG2Val(0x%08x)\n",
@@ -12027,10 +12034,17 @@ static MINT32 ISP_suspend(struct platform_device *pDev, pm_message_t Mesg)
 ********************************************************************************/
 static MINT32 ISP_resume(struct platform_device *pDev)
 {
+	MUINT32 regTG1Val, regTG2Val;
+
+	if (IspInfo.UserCount == 0) {
+		LOG_DBG("ISP UserCount=0");
+		return 0;
+	}
+
 	/* TG_VF_CON[0] (0x15004414[0]): VFDATA_EN.     TG1     Take Picture Request. */
-	MUINT32 regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
+	regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
 	/* TG2_VF_CON[0] (0x150044B4[0]): VFDATA_EN. TG2 Take Picture Request. */
-	MUINT32 regTG2Val = ISP_RD32(ISP_ADDR + 0x4B4);
+	regTG2Val = ISP_RD32(ISP_ADDR + 0x4B4);
 
 	LOG_DBG
 		("bPass1_On_In_Resume_TG1(%d). bPass1_On_In_Resume_TG2(%d). regTG1Val(0x%x) regTG2Val(0x%x)\n",
