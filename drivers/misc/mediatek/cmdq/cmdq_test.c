@@ -25,11 +25,58 @@
 
 #ifdef CMDQ_TEST
 
+#define CMDQ_TESTCASE_PARAMETER_MAX		4
+#define CMDQ_MONITOR_EVENT_MAX			10
+
 /* test configuration */
 static DEFINE_MUTEX(gCmdqTestProcLock);
-static int32_t gCmdqTestConfig[2] = { 0, 0 };	/* {test case, type(normal, secure)} */
 
+typedef enum CMDQ_TEST_TYPE_ENUM {
+	CMDQ_TEST_TYPE_NORMAL = 0,
+	CMDQ_TEST_TYPE_SECURE = 1,
+	CMDQ_TEST_TYPE_MONITOR_EVENT = 2,
+	CMDQ_TEST_TYPE_MONITOR_POLL = 3,
+	CMDQ_TEST_TYPE_OPEN_COMMAND_DUMP = 4,
+
+	CMDQ_TEST_TYPE_MAX	/* ALWAYS keep at the end */
+} CMDQ_TEST_TYPE_ENUM;
+
+typedef enum CMDQ_MOITOR_TYPE_ENUM {
+	CMDQ_MOITOR_TYPE_FLUSH = 0,
+	CMDQ_MOITOR_TYPE_WFE = 1,	/* wait for event and clear */
+	CMDQ_MOITOR_TYPE_WAIT_NO_CLEAR = 2,
+	CMDQ_MOITOR_TYPE_QUERYREGISTER = 3,
+
+	CMDQ_MOITOR_TYPE_MAX	/* ALWAYS keep at the end */
+} CMDQ_MOITOR_TYPE_ENUM;
+
+typedef struct cmdqMonitorEventStruct {
+	bool status;
+
+	cmdqRecHandle cmdqHandle;
+	cmdqBackupSlotHandle slotHandle;
+	uint32_t monitorNUM;
+	uint32_t waitType[CMDQ_MONITOR_EVENT_MAX];
+	uint64_t monitorEvent[CMDQ_MONITOR_EVENT_MAX];
+	uint32_t previousValue[CMDQ_MONITOR_EVENT_MAX];
+} cmdqMonitorEventStruct;
+
+typedef struct cmdqMonitorPollStruct {
+	bool status;
+
+	cmdqRecHandle cmdqHandle;
+	cmdqBackupSlotHandle slotHandle;
+	uint64_t pollReg;
+	uint64_t pollValue;
+	uint64_t pollMask;
+	uint32_t delayTime;
+	struct delayed_work delayContinueWork;
+} cmdqMonitorPollStruct;
+
+static int64_t gCmdqTestConfig[CMDQ_MONITOR_EVENT_MAX];
 static bool gCmdqTestSecure;
+static cmdqMonitorEventStruct gEventMonitor;
+static cmdqMonitorPollStruct gPollMonitor;
 
 static struct proc_dir_entry *gCmdqTestProcEntry;
 
@@ -61,7 +108,7 @@ static void testcase_scenario(void)
 
 	/* make sure each scenario runs properly with empty commands */
 	for (i = 0; i < CMDQ_MAX_SCENARIO_COUNT; ++i) {
-		if (cmdq_get_func()->isRequestUser(i))
+		if (cmdq_core_is_request_from_user_space(i))
 			continue;
 
 		CMDQ_MSG("testcase_scenario id:%d\n", i);
@@ -761,7 +808,7 @@ static void testcase_prefetch_scenarios(void)
 
 	/* make sure each scenario runs properly with 248+ commands */
 	for (scn = 0; scn < CMDQ_MAX_SCENARIO_COUNT; ++scn) {
-		if (cmdq_get_func()->isRequestUser(scn))
+		if (cmdq_core_is_request_from_user_space(scn))
 			continue;
 
 		CMDQ_MSG("testcase_prefetch_scenarios scenario:%d\n", scn);
@@ -822,15 +869,13 @@ void testcase_clkmgr_impl(enum cg_clk_id gateId,
 static void testcase_clkmgr(void)
 {
 	CMDQ_MSG("%s\n", __func__);
-#ifndef CMDQ_USE_CCF
-#ifdef CMDQ_PWR_AWARE
+#if defined(CMDQ_PWR_AWARE) && !defined(CMDQ_USE_CCF)
 	testcase_clkmgr_impl(MT_CG_INFRA_GCE,
 			     "CMDQ_TEST",
 			     CMDQ_GPR_R32(CMDQ_DATA_REG_DEBUG),
 			     0xFFFFDEAD, CMDQ_GPR_R32(CMDQ_DATA_REG_DEBUG), true);
 
 	cmdq_mdp_get_func()->testcaseClkmgrMdp();
-#endif
 #endif				/* !defined(CMDQ_USE_CCF) */
 
 	CMDQ_MSG("%s END\n", __func__);
@@ -850,7 +895,7 @@ static void testcase_dram_access(void)
 
 	CMDQ_MSG("%s\n", __func__);
 
-	regResults = cmdq_core_alloc_hw_buffer(cmdq_dev_get_func()->devGet(),
+	regResults = cmdq_core_alloc_hw_buffer(cmdq_dev_get(),
 					       sizeof(uint32_t) * 2, &regResultsMVA, GFP_KERNEL);
 
 	/* set up intput */
@@ -941,7 +986,7 @@ static void testcase_dram_access(void)
 		CMDQ_MSG("OK!!!!!!\n");
 	}
 
-	cmdq_core_free_hw_buffer(cmdq_dev_get_func()->devGet(), 2 * sizeof(uint32_t), regResults,
+	cmdq_core_free_hw_buffer(cmdq_dev_get(), 2 * sizeof(uint32_t), regResults,
 				 regResultsMVA);
 
 	CMDQ_MSG("%s END\n", __func__);
@@ -2697,16 +2742,230 @@ static void testcase_error_irq(void)
 	CMDQ_MSG("%s END\n", __func__);
 }
 
-static int testcase_check_event_table_correctness(void)
+static void testcase_open_buffer_dump(int32_t scenario, int32_t bufferSize)
+{
+	CMDQ_MSG("%s\n", __func__);
+
+	CMDQ_LOG("[TESTCASE]CONFIG: bufferSize: %d, scenario: %d\n", bufferSize, scenario);
+	cmdq_core_set_command_buffer_dump(scenario, bufferSize);
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
+static void testcase_check_event_table_correctness(void)
 {
 	CMDQ_MSG("%s\n", __func__);
 
 	cmdq_dev_test_event_correctness();
 
 	CMDQ_MSG("%s END\n", __func__);
+}
+
+static int32_t testcase_monitor_callback(unsigned long data)
+{
+	uint32_t i;
+	uint32_t monitorValue[CMDQ_MONITOR_EVENT_MAX];
+	uint32_t durationTime[CMDQ_MONITOR_EVENT_MAX];
+
+	if (false == gEventMonitor.status)
+		return 0;
+
+	for (i = 0; i < gEventMonitor.monitorNUM; i++) {
+		/* Read monitor time */
+		cmdqBackupReadSlot(gEventMonitor.slotHandle, i, &monitorValue[i]);
+
+		switch (gEventMonitor.waitType[i]) {
+		case CMDQ_MOITOR_TYPE_WFE:
+			durationTime[i] = (monitorValue[i] - gEventMonitor.previousValue[i]) * 76;
+			CMDQ_LOG("[MONITOR][WFE] event: %s, duration: (%u ns)\n",
+				cmdq_core_get_event_name((int32_t)gEventMonitor.monitorEvent[i]), durationTime[i]);
+			CMDQ_MSG("[MONITOR][WFE] time:(%u ns)\n", monitorValue[i]);
+			break;
+		case CMDQ_MOITOR_TYPE_WAIT_NO_CLEAR:
+			durationTime[i] = (monitorValue[i] - gEventMonitor.previousValue[i]) * 76;
+			CMDQ_LOG("[MONITOR][Wait] event: %s, duration: (%u ns)\n",
+				cmdq_core_get_event_name((int32_t)gEventMonitor.monitorEvent[i]), durationTime[i]);
+			CMDQ_MSG("[MONITOR] time:(%u ns)\n", monitorValue[i]);
+			break;
+		case CMDQ_MOITOR_TYPE_QUERYREGISTER:
+			CMDQ_LOG("[MONITOR] Register:0x08%llx, value:(0x04%x)\n", gEventMonitor.monitorEvent[i],
+				monitorValue[i]);
+			break;
+		}
+		/* Update previous monitor time */
+		gEventMonitor.previousValue[i] = monitorValue[i];
+	}
+
 	return 0;
 }
 
+static void testcase_monitor_trigger_initialization(void)
+{
+	/* Create Slot*/
+	cmdqBackupAllocateSlot(&gEventMonitor.slotHandle, CMDQ_MONITOR_EVENT_MAX);
+	/* Create CMDQ handle */
+	cmdqRecCreate(CMDQ_SCENARIO_HIGHP_TRIGGER_LOOP, &gEventMonitor.cmdqHandle);
+	cmdqRecReset(gEventMonitor.cmdqHandle);
+	/* Insert enable pre-fetch instruction */
+	cmdqRecEnablePrefetch(gEventMonitor.cmdqHandle);
+}
+
+static void testcase_monitor_trigger(uint32_t waitType, uint64_t monitorEvent)
+{
+	int32_t eventID;
+	bool successAddInstruction = false;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	if (true == gEventMonitor.status) {
+		/* Reset monitor status */
+		gEventMonitor.status = false;
+
+		CMDQ_LOG("stop monitor thread\n");
+
+		/* Stop trigger loop */
+		cmdqRecStopLoop(gEventMonitor.cmdqHandle);
+		/* Destroy slot & CMDQ handle */
+		cmdqBackupFreeSlot(gEventMonitor.slotHandle);
+		/* Dump CMDQ command */
+		cmdqRecDestroy(gEventMonitor.cmdqHandle);
+		/* Reset global variable */
+		memset(&(gEventMonitor), 0x0, sizeof(gEventMonitor));
+	}
+
+	if (0 == gEventMonitor.monitorNUM) {
+		/* Monitor trigger thread initialization */
+		testcase_monitor_trigger_initialization();
+	} else if (gEventMonitor.monitorNUM >= CMDQ_MONITOR_EVENT_MAX) {
+		waitType = CMDQ_MOITOR_TYPE_FLUSH;
+		CMDQ_LOG("[MONITOR] reach MAX monitor number: %d, force flush\n", gEventMonitor.monitorNUM);
+	}
+
+	switch (waitType) {
+	case CMDQ_MOITOR_TYPE_FLUSH:
+		if (gEventMonitor.monitorNUM > 0) {
+			CMDQ_LOG("start monitor thread\n");
+
+			/* Insert disable pre-fetch instruction */
+			cmdqRecDisablePrefetch(gEventMonitor.cmdqHandle);
+			/* Set monitor status */
+			gEventMonitor.status = true;
+			/* Start trigger loop */
+			cmdqRecStartLoopWithCallback(gEventMonitor.cmdqHandle, &testcase_monitor_callback, 0);
+			cmdqRecDumpCommand(gEventMonitor.cmdqHandle);
+		}
+		break;
+	case CMDQ_MOITOR_TYPE_WFE:
+		eventID = (int32_t)monitorEvent;
+		if (eventID >= 0 && eventID < CMDQ_SYNC_TOKEN_MAX) {
+			cmdqRecWait(gEventMonitor.cmdqHandle, eventID);
+			cmdqRecBackupRegisterToSlot(gEventMonitor.cmdqHandle, gEventMonitor.slotHandle,
+				gEventMonitor.monitorNUM, CMDQ_APXGPT2_COUNT);
+			successAddInstruction = true;
+		}
+		break;
+	case CMDQ_MOITOR_TYPE_WAIT_NO_CLEAR:
+		eventID = (int32_t)monitorEvent;
+		if (eventID >= 0 && eventID < CMDQ_SYNC_TOKEN_MAX) {
+			cmdqRecWaitNoClear(gEventMonitor.cmdqHandle, eventID);
+			cmdqRecBackupRegisterToSlot(gEventMonitor.cmdqHandle, gEventMonitor.slotHandle,
+				gEventMonitor.monitorNUM, CMDQ_APXGPT2_COUNT);
+			successAddInstruction = true;
+		}
+		break;
+	case CMDQ_MOITOR_TYPE_QUERYREGISTER:
+		cmdqRecBackupRegisterToSlot(gEventMonitor.cmdqHandle, gEventMonitor.slotHandle,
+				gEventMonitor.monitorNUM, monitorEvent);
+		successAddInstruction = true;
+		break;
+	}
+
+	if (true == successAddInstruction) {
+		gEventMonitor.waitType[gEventMonitor.monitorNUM] = waitType;
+		gEventMonitor.monitorEvent[gEventMonitor.monitorNUM] = monitorEvent;
+		gEventMonitor.monitorNUM++;
+	}
+
+	CMDQ_MSG("%s\n", __func__);
+}
+
+static void testcase_poll_monitor_delay_continue(struct work_struct *workItem)
+{
+	/* set event to start next polling */
+	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_POLL_MONITOR);
+	CMDQ_LOG("monitor after delay: (%d)ms, start polling again\n", gPollMonitor.delayTime);
+}
+
+static int32_t testcase_poll_monitor_callback(unsigned long data)
+{
+	uint32_t pollTime;
+
+	if (false == gPollMonitor.status)
+		return 0;
+
+	cmdqBackupReadSlot(gPollMonitor.slotHandle, 0, &pollTime);
+	CMDQ_LOG("monitor, time: (%u ns), regAddr: 0x%08llx, regValue: 0x%08llx, regMask=0x%08llx\n",
+		pollTime, gPollMonitor.pollReg, gPollMonitor.pollValue, gPollMonitor.pollMask);
+	schedule_delayed_work(&gPollMonitor.delayContinueWork, gPollMonitor.delayTime);
+
+	return 0;
+}
+
+static void testcase_poll_monitor_trigger(uint64_t pollReg, uint64_t pollValue, uint64_t pollMask)
+{
+	CMDQ_MSG("%s\n", __func__);
+
+	if (true == gPollMonitor.status) {
+		/* Reset monitor status */
+		gPollMonitor.status = false;
+
+		CMDQ_LOG("stop polling monitor thread: regAddr: 0x%08llx\n", gPollMonitor.pollReg);
+
+		/* Stop trigger loop */
+		cmdqRecStopLoop(gPollMonitor.cmdqHandle);
+		/* Destroy slot & CMDQ handle */
+		cmdqBackupFreeSlot(gPollMonitor.slotHandle);
+		cmdqRecDestroy(gPollMonitor.cmdqHandle);
+		/* Reset global variable */
+		memset(&(gPollMonitor), 0x0, sizeof(gPollMonitor));
+	}
+
+	if (-1 == pollReg)
+		return;
+
+	CMDQ_LOG("start polling monitor thread, regAddr=0x%08llx, regValue=0x%08llx, regMask=0x%08llx\n",
+			pollReg, pollValue, pollMask);
+
+	/* Set event to start first polling */
+	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_POLL_MONITOR);
+	/* Create slot */
+	cmdqBackupAllocateSlot(&gPollMonitor.slotHandle, 1);
+	/* Create CMDQ handle */
+	cmdqRecCreate(CMDQ_SCENARIO_LOWP_TRIGGER_LOOP, &gPollMonitor.cmdqHandle);
+	cmdqRecReset(gPollMonitor.cmdqHandle);
+	/* Insert monitor thread command */
+	cmdqRecWait(gPollMonitor.cmdqHandle, CMDQ_SYNC_TOKEN_POLL_MONITOR);
+	if (0 == cmdqRecPoll(gPollMonitor.cmdqHandle, pollReg, pollValue, pollMask)) {
+		cmdqRecBackupRegisterToSlot(gPollMonitor.cmdqHandle, gPollMonitor.slotHandle, 0, CMDQ_APXGPT2_COUNT);
+		/* Set value to global variable */
+		gPollMonitor.pollReg = pollReg;
+		gPollMonitor.pollValue = pollValue;
+		gPollMonitor.pollMask = pollMask;
+		gPollMonitor.delayTime = 1;
+		gPollMonitor.status = true;
+		INIT_DELAYED_WORK(&gPollMonitor.delayContinueWork, testcase_poll_monitor_delay_continue);
+		/* Start trigger loop */
+		cmdqRecStartLoopWithCallback(gPollMonitor.cmdqHandle, &testcase_poll_monitor_callback, 0);
+		/* Dump CMDQ command */
+		cmdqRecDumpCommand(gPollMonitor.cmdqHandle);
+	} else {
+		/* Destroy slot & CMDQ handle */
+		cmdqBackupFreeSlot(gPollMonitor.slotHandle);
+		cmdqRecDestroy(gPollMonitor.cmdqHandle);
+	}
+
+	CMDQ_MSG("%s\n", __func__);
+}
 
 typedef enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_ALL = 0,
@@ -2720,26 +2979,9 @@ typedef enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_END,	/* always at the end */
 } CMDQ_TESTCASE_ENUM;
 
-ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
+static void testcase_general_handling(int32_t testID)
 {
-	uint32_t testId;
-	bool isSecureTest;
-
-	mutex_lock(&gCmdqTestProcLock);
-	/* make sure the following section is protected */
-	smp_mb();
-
-	CMDQ_LOG("[TESTCASE]CONFIG: test case: %d, secure test: %d, gCmdqTestSecure:%d\n",
-		 gCmdqTestConfig[0], gCmdqTestConfig[1], gCmdqTestSecure);
-	testId = gCmdqTestConfig[0];
-	isSecureTest = (0 < gCmdqTestConfig[1]) ? (true) : (false);
-	mutex_unlock(&gCmdqTestProcLock);
-
-	/* trigger test case here */
-	CMDQ_MSG("//\n//\n//\ncmdq_test_proc\n");
-
-	cmdq_get_func()->testSetup();
-	switch (gCmdqTestConfig[0]) {
+	switch (testID) {
 	case 119:
 		testcase_check_event_table_correctness();
 		break;
@@ -2970,6 +3212,49 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 		testcase_module_full_dump();
 		break;
 	}
+}
+
+ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
+{
+	int64_t testParameter[CMDQ_TESTCASE_PARAMETER_MAX];
+
+	mutex_lock(&gCmdqTestProcLock);
+	/* make sure the following section is protected */
+	smp_mb();
+
+	CMDQ_LOG("[TESTCASE]CONFIG: gCmdqTestSecure: %d, testType: %lld\n",
+		 gCmdqTestSecure, gCmdqTestConfig[0]);
+	CMDQ_LOG("[TESTCASE]CONFIG PARAMETER: [1]: %lld, [2]: %lld, [3]: %lld\n",
+		 gCmdqTestConfig[1], gCmdqTestConfig[2], gCmdqTestConfig[3]);
+	memcpy(testParameter, gCmdqTestConfig, sizeof(testParameter));
+	mutex_unlock(&gCmdqTestProcLock);
+
+	/* trigger test case here */
+	CMDQ_MSG("//\n//\n//\ncmdq_test_proc\n");
+
+	cmdq_get_func()->testSetup();
+
+	switch (testParameter[0]) {
+	case CMDQ_TEST_TYPE_NORMAL:
+	case CMDQ_TEST_TYPE_SECURE:
+		testcase_general_handling((int32_t)testParameter[1]);
+		break;
+	case CMDQ_TEST_TYPE_MONITOR_EVENT:
+		/* (wait type, event ID or back register) */
+		testcase_monitor_trigger((uint32_t)testParameter[1], (uint64_t)testParameter[2]);
+		break;
+	case CMDQ_TEST_TYPE_MONITOR_POLL:
+		/* (poll register, poll value, poll mask) */
+		testcase_poll_monitor_trigger((uint64_t)testParameter[1], (uint64_t)testParameter[2],
+			(uint64_t)testParameter[3]);
+		break;
+	case CMDQ_TEST_TYPE_OPEN_COMMAND_DUMP:
+		/* (scenario, buffersize) */
+		testcase_open_buffer_dump((int32_t)testParameter[1], (int32_t)testParameter[2]);
+		break;
+	default:
+		break;
+	}
 
 	cmdq_get_func()->testCleanup();
 
@@ -2980,42 +3265,55 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 static ssize_t cmdq_write_test_proc_config(struct file *file,
 					   const char __user *userBuf, size_t count, loff_t *data)
 {
-	char desc[10];
-	int testType = -1;
-	int newTestSuit = -1;
+	char desc[50];
+	int64_t testConfig[CMDQ_TESTCASE_PARAMETER_MAX];
 	int32_t len = 0;
 
-	/* copy user input */
-	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-	if (copy_from_user(desc, userBuf, count)) {
-		CMDQ_ERR("TEST_CONFIG: data fail\n");
-		return 0;
-	}
-	desc[len] = '\0';
+	do {
+		/* copy user input */
+		len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+		if (copy_from_user(desc, userBuf, count)) {
+			CMDQ_ERR("TEST_CONFIG: data fail\n");
+			break;
+		}
+		desc[len] = '\0';
 
-	/* process and update config */
-	if (0 >= sscanf(desc, "%d %d", &testType, &newTestSuit)) {
-		/* sscanf returns the number of items in argument list successfully filled. */
-		CMDQ_ERR("TEST_CONFIG: sscanf failed\n");
-		return 0;
-	}
+		/* Set initial test config value */
+		memset(testConfig, -1, sizeof(testConfig));
 
-	if ((0 > testType) || (2 <= testType) || (-1 == newTestSuit)) {
-		CMDQ_ERR("TEST_CONFIG: testType:%d, newTestSuit:%d\n", testType, newTestSuit);
-		return 0;
-	}
+		/* process and update config */
+		if (0 >= sscanf(desc, "%lld %lld %lld %lld", &testConfig[0], &testConfig[1],
+			&testConfig[2], &testConfig[3])) {
+			/* sscanf returns the number of items in argument list successfully filled. */
+			CMDQ_ERR("TEST_CONFIG: sscanf failed\n");
+			break;
+		}
 
-	mutex_lock(&gCmdqTestProcLock);
-	/* set memory barrier for lock */
-	smp_mb();
+		if ((testConfig[0] < 0) || (testConfig[0] >= CMDQ_TEST_TYPE_MAX)) {
+			CMDQ_ERR("TEST_CONFIG: testType:%lld, newTestSuit:%lld\n", testConfig[0], testConfig[1]);
+			break;
+		}
 
-	gCmdqTestConfig[0] = newTestSuit;
-	gCmdqTestConfig[1] = testType;
-	gCmdqTestSecure = (testType == 1) ? (true) : (false);
+		mutex_lock(&gCmdqTestProcLock);
+		/* set memory barrier for lock */
+		smp_mb();
 
-	mutex_unlock(&gCmdqTestProcLock);
+		memcpy(&gCmdqTestConfig, &testConfig, sizeof(testConfig));
+		if (testConfig[0] == CMDQ_TEST_TYPE_NORMAL)
+			gCmdqTestSecure = false;
+		else
+			gCmdqTestSecure = true;
+
+		mutex_unlock(&gCmdqTestProcLock);
+	} while (0);
 
 	return count;
+}
+
+void cmdq_test_init_setting(void)
+{
+	memset(&(gEventMonitor), 0x0, sizeof(gEventMonitor));
+	memset(&(gPollMonitor), 0x0, sizeof(gPollMonitor));
 }
 
 static int cmdq_test_open(struct inode *pInode, struct file *pFile)

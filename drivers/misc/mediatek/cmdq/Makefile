@@ -37,8 +37,7 @@ endif
 # secure path
 ifeq ($(strip $(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)),y)
 ifeq ($(strip $(CONFIG_TRUSTONIC_TEE_SUPPORT)),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/gud/$(MTK_PLATFORM)/gud/MobiCoreKernelApi/public
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/gud/$(MTK_PLATFORM)/gud/MobiCoreKernelApi/include
+include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/trustzone/cmdq/cmdq_sec_dr \
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/trustzone/cmdq/cmdq_sec_tl
@@ -50,13 +49,13 @@ ifneq ($(MTK_PLATFORM),mt8163)
 obj-y += cmdq_record.o
 obj-y += cmdq_core.o
 obj-y += cmdq_virtual.o
+obj-y += cmdq_device.o
 obj-y += cmdq_driver.o
 # obj-y += cmdq_mmp.o
 obj-y += cmdq_mdp_common.o
 obj-y += cmdq_prof.o
 obj-y += cmdq_test.o
 obj-y += cmdq_sec.o
-obj-y += cmdq_device_common.o
 endif
 
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/

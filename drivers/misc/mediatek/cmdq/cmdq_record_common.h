@@ -350,6 +350,8 @@ extern "C" {
  */
 	int32_t cmdqRecStartLoop(cmdqRecHandle handle);
 
+	int32_t cmdqRecStartLoopWithCallback(cmdqRecHandle handle, CmdqInterruptCB loopCB, unsigned long loopData);
+
 /**
  * Unconditionally stops the loop thread.
  * Must call after cmdqRecStartLoop().

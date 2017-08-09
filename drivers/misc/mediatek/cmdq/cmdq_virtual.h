@@ -21,12 +21,6 @@ typedef const bool(*CmdqIsSecureThread) (const int32_t thread);
 /* is valid notify thread for secure path */
 typedef const bool(*CmdqIsValidNotifyThread) (const int32_t thread);
 
-/* fix command scenario for user space request */
-typedef void (*CmdqFixCommandScenarioUser) (cmdqCommandStruct *pCommand);
-
-/* is request from user space */
-typedef bool(*CmdqIsRequestUser) (const CMDQ_SCENARIO_ENUM scenario);
-
 /* is display scenario */
 typedef bool(*CmdqIsDispScenario) (const CMDQ_SCENARIO_ENUM scenario);
 
@@ -92,9 +86,6 @@ typedef int (*CmdqDumpSMI) (const int showSmiDump);
 /* dump GPR */
 typedef void (*CmdqDumpGPR) (void);
 
-/* dump GPR */
-typedef void (*CmdqDumpSecureMetadata) (cmdqSecDataStruct *pSecData);
-
 /* flag from scenario */
 typedef uint64_t(*CmdqFlagFromScenario) (CMDQ_SCENARIO_ENUM scenario);
 
@@ -113,6 +104,9 @@ typedef void (*CmdqTestSetup) (void);
 /* test cleanup */
 typedef void (*CmdqTestCleanup) (void);
 
+/* test for instruction statistic */
+typedef void (*CmdqInitModulePAStat) (void);
+
 typedef struct cmdqCoreFuncStruct {
 	CmdqSyncNonSuspendable syncNonSuspendable;
 	CmdqWaitAndReceiveEvent waitAndReceiveEvent;
@@ -120,8 +114,6 @@ typedef struct cmdqCoreFuncStruct {
 	CmdqSubsysPA subsysPA;
 	CmdqIsSecureThread isSecureThread;
 	CmdqIsValidNotifyThread isValidNotifyThread;
-	CmdqFixCommandScenarioUser fixCommandScenarioUser;
-	CmdqIsRequestUser isRequestUser;
 	CmdqIsDispScenario isDispScenario;
 	CmdqShouldEnablePrefetch shouldEnablePrefetch;
 	CmdqShouldProfile shouldProfile;
@@ -137,19 +129,19 @@ typedef struct cmdqCoreFuncStruct {
 	CmdqPrintStatusClock printStatusClock;
 	CmdqPrintStatusSeqClock printStatusSeqClock;
 	CmdqEnableCommonClockLocked enableCommonClockLocked;
-	CmdqEnableGCEClockLocked gceClockLocked;
+	CmdqEnableGCEClockLocked enableGCEClockLocked;
 	CmdqParseErrorModule parseErrorModule;
 	CmdqDumpMMSYSConfig dumpMMSYSConfig;
 	CmdqDumpClockGating dumpClockGating;
 	CmdqDumpSMI dumpSMI;
 	CmdqDumpGPR dumpGPR;
-	CmdqDumpSecureMetadata dumpSecureMetadata;
 	CmdqFlagFromScenario flagFromScenario;
 	CmdqInitialBackupEvent initialBackupEvent;
 	CmdqEventBackup eventBackup;
 	CmdqEventRestore eventRestore;
 	CmdqTestSetup testSetup;
 	CmdqTestCleanup testCleanup;
+	CmdqInitModulePAStat initModulePAStat;
 } cmdqCoreFuncStruct;
 
 #ifdef __cplusplus

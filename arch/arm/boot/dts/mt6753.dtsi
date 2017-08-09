@@ -919,7 +919,83 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		gcpu@10216000 {
 			compatible = "mediatek,mt6735-gcpu";
 			reg = <0x10216000 0x1000>;
+<<<<<<< HEAD
 			interrupts = <GIC_SPI 150 IRQ_TYPE_LEVEL_LOW>;
+=======
+			interrupts = <0 150 0x8>;
+		};
+
+		GCE@0x10217000 {
+			compatible = "mediatek,GCE";
+			reg = <0x10217000 0x1000>;
+			interrupts = <0 151 0x8>,
+						<0 148 0x8>;
+			mdp_rdma0_sof = <0>;
+			mdp_rsz0_sof = <1>;
+			mdp_rsz1_sof = <2>;
+			mdp_tdshp_sof = <3>;
+			mdp_wdma_sof = <4>;
+			mdp_wrot_sof = <5>;
+			disp_ovl0_sof = <6>;
+			disp_ovl1_sof = <7>;
+			disp_rdma0_sof = <8>;
+			disp_rdma1_sof = <9>;
+			disp_wdma0_sof = <10>;
+			disp_ccorr_sof = <11>;
+			disp_color_sof = <12>;
+			disp_aal_sof = <13>;
+			disp_gamma_sof = <14>;
+			disp_dither_sof = <15>;
+			disp_pwm0_sof = <17>;
+			disp_od_sof = <18>;
+			mdp_rdma0_frame_done = <19>;
+			mdp_rsz0_frame_done = <20>;
+			mdp_rsz1_frame_done = <21>;
+			mdp_tdshp_frame_done = <22>;
+			mdp_wdma_frame_done = <23>;
+			mdp_wrot_write_frame_done = <24>;
+			mdp_wrot_read_frame_done = <25>;
+			disp_ovl0_frame_done = <26>;
+			disp_ovl1_frame_done = <27>;
+			disp_rdma0_frame_done = <28>;
+			disp_rdma1_frame_done = <29>;
+			disp_wdma0_frame_done = <30>;
+			disp_ccorr_frame_done = <31>;
+			disp_color_frame_done = <32>;
+			disp_aal_frame_done = <33>;
+			disp_gamma_frame_done = <34>;
+			disp_dither_frame_done = <35>;
+			disp_od_frame_done = <37>;
+			disp_dpi0_frame_done = <38>;
+			disp_dsi0_frame_done = <39>;
+			stream_done_0 = <40>;
+			stream_done_1 = <41>;
+			stream_done_2 = <42>;
+			stream_done_3 = <43>;
+			stream_done_4 = <44>;
+			stream_done_5 = <45>;
+			stream_done_6 = <46>;
+			stream_done_7 = <47>;
+			stream_done_8 = <48>;
+			stream_done_9 = <49>;
+			buf_underrun_event_0 = <50>;
+			buf_underrun_event_1 = <51>;
+			dsi0_te_event = <52>;
+			isp_frame_done_p2_2 = <65>;
+			isp_frame_done_p2_1 = <66>;
+			isp_frame_done_p2_0 = <67>;
+			isp_frame_done_p1_1 = <68>;
+			isp_frame_done_p1_0 = <69>;
+			camsv_2_pass1_done = <70>;
+			camsv_1_pass1_done = <71>;
+			seninf_cam1_2_3_fifo_full = <72>;
+			seninf_cam0_fifo_full = <73>;
+			venc_done = <129>;
+			jpgenc_done = <130>;
+			jpgdec_done = <131>;
+			venc_mb_done = <132>;
+			venc_128byte_cnt_done = <133>;
+>>>>>>> 12a9ed7... [ALPS02161257] CMDQ: mediatek: IP base common code
 		};
 
 		CQDMA@0x10217C00 {

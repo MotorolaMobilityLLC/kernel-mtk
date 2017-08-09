@@ -772,7 +772,7 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 	} else if (0 > status) {
 		/* dump metadata first */
 		if (pTask)
-			cmdq_get_func()->dumpSecureMetadata(&(pTask->secData));
+			cmdq_core_dump_secure_metadata(&(pTask->secData));
 
 		longMsg[0] = '\0';
 		msgOffset = 0;
@@ -865,6 +865,7 @@ int32_t cmdq_sec_fill_iwc_command_sectrace_unlocked(int32_t iwcCommand, void *_p
 	return 0;
 }
 
+#ifdef CMDQ_SECTRACE_SUPPORT
 static int cmdq_sec_sectrace_map(void *va, size_t size)
 {
 	int status;
@@ -969,6 +970,7 @@ static int cmdq_sec_sectrace_transact(void)
 
 	return status;
 }
+#endif
 
 int32_t cmdq_sec_sectrace_init(void)
 {
@@ -1022,7 +1024,7 @@ int32_t cmdq_sec_create_shared_memory(cmdqSecSharedMemoryHandle *pHandle, const 
 	CMDQ_LOG("%s\n", __func__);
 
 	/* allocate non-cachable memory */
-	pVA = cmdq_core_alloc_hw_buffer(cmdq_dev_get_func()->devGet(), size, &PA, GFP_KERNEL);
+	pVA = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), size, &PA, GFP_KERNEL);
 
 	CMDQ_MSG("%s, MVA:%pa, pVA:%p, size:%d\n", __func__, &PA, pVA, size);
 
@@ -1045,7 +1047,7 @@ int32_t cmdq_sec_destroy_shared_memory(cmdqSecSharedMemoryHandle handle)
 {
 
 	if (handle && handle->pVABase) {
-		cmdq_core_free_hw_buffer(cmdq_dev_get_func()->devGet(), handle->size,
+		cmdq_core_free_hw_buffer(cmdq_dev_get(), handle->size,
 					 handle->pVABase, handle->MVABase);
 	}
 

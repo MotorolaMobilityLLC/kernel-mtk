@@ -9,19 +9,193 @@
 #include <mach/mt_clkmgr.h>
 #endif				/* !defined(CMDQ_USE_CCF) */
 
-#include "cmdq_device.h"
+#include "../cmdq_device.h"
+
+typedef struct CmdqMdpModuleBaseVA {
+	long MDP_RDMA;
+	long MDP_RSZ0;
+	long MDP_RSZ1;
+	long MDP_WDMA;
+	long MDP_WROT;
+	long MDP_TDSHP;
+	long VENC;
+} CmdqMdpModuleBaseVA;
+static CmdqMdpModuleBaseVA gCmdqMdpModuleBaseVA;
+
+#ifndef CMDQ_USE_CCF
+#define IMP_ENABLE_MDP_HW_CLOCK(FN_NAME, HW_NAME)	\
+uint32_t cmdq_mdp_enable_clock_##FN_NAME(bool enable)	\
+{		\
+	return cmdq_dev_enable_mtk_clock(enable, MT_CG_DISP0_##HW_NAME, "CMDQ_MDP_"#HW_NAME);	\
+}
+#define IMP_MDP_HW_CLOCK_IS_ENABLE(FN_NAME, HW_NAME)	\
+bool cmdq_mdp_clock_is_enable_##FN_NAME(void)	\
+{		\
+	return cmdq_dev_mtk_clock_is_enable(MT_CG_DISP0_##HW_NAME);	\
+}
+#else
+typedef struct CmdqMdpModuleClock {
+	struct clk *clk_CAM_MDP;
+	struct clk *clk_MDP_RDMA;
+	struct clk *clk_MDP_RSZ0;
+	struct clk *clk_MDP_RSZ1;
+	struct clk *clk_MDP_WDMA;
+	struct clk *clk_MDP_WROT;
+	struct clk *clk_MDP_TDSHP;
+} CmdqMdpModuleClock;
+
+static CmdqMdpModuleClock gCmdqMdpModuleClock;
+
+#define IMP_ENABLE_MDP_HW_CLOCK(FN_NAME, HW_NAME)	\
+uint32_t cmdq_mdp_enable_clock_##FN_NAME(bool enable)	\
+{		\
+	return cmdq_dev_enable_device_clock(enable, gCmdqMdpModuleClock.clk_##HW_NAME, #HW_NAME "-clk");	\
+}
+#define IMP_MDP_HW_CLOCK_IS_ENABLE(FN_NAME, HW_NAME)	\
+bool cmdq_mdp_clock_is_enable_##FN_NAME(void)	\
+{		\
+	return cmdq_dev_device_clock_is_enable(gCmdqMdpModuleClock.clk_##HW_NAME);	\
+}
+#endif				/* !defined(CMDQ_USE_CCF) */
+
+IMP_ENABLE_MDP_HW_CLOCK(CAM_MDP, CAM_MDP);
+IMP_ENABLE_MDP_HW_CLOCK(MDP_RDMA0, MDP_RDMA);
+IMP_ENABLE_MDP_HW_CLOCK(MDP_RSZ0, MDP_RSZ0);
+IMP_ENABLE_MDP_HW_CLOCK(MDP_RSZ1, MDP_RSZ1);
+IMP_ENABLE_MDP_HW_CLOCK(MDP_WDMA, MDP_WDMA);
+IMP_ENABLE_MDP_HW_CLOCK(MDP_WROT0, MDP_WROT);
+IMP_ENABLE_MDP_HW_CLOCK(MDP_TDSHP0, MDP_TDSHP);
+IMP_MDP_HW_CLOCK_IS_ENABLE(CAM_MDP, CAM_MDP);
+IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RDMA0, MDP_RDMA);
+IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RSZ0, MDP_RSZ0);
+IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_RSZ1, MDP_RSZ1);
+IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_WDMA, MDP_WDMA);
+IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_WROT0, MDP_WROT);
+IMP_MDP_HW_CLOCK_IS_ENABLE(MDP_TDSHP0, MDP_TDSHP);
+#undef IMP_ENABLE_MDP_HW_CLOCK
+#undef IMP_MDP_HW_CLOCK_IS_ENABLE
+
+const long cmdq_mdp_get_module_base_VA_MDP_RDMA(void)
+{
+	return gCmdqMdpModuleBaseVA.MDP_RDMA;
+}
+
+const long cmdq_mdp_get_module_base_VA_MDP_RSZ0(void)
+{
+	return gCmdqMdpModuleBaseVA.MDP_RSZ0;
+}
+
+const long cmdq_mdp_get_module_base_VA_MDP_RSZ1(void)
+{
+	return gCmdqMdpModuleBaseVA.MDP_RSZ1;
+}
+
+const long cmdq_mdp_get_module_base_VA_MDP_WDMA(void)
+{
+	return gCmdqMdpModuleBaseVA.MDP_WDMA;
+}
+
+const long cmdq_mdp_get_module_base_VA_MDP_WROT(void)
+{
+	return gCmdqMdpModuleBaseVA.MDP_WROT;
+}
+
+const long cmdq_mdp_get_module_base_VA_MDP_TDSHP(void)
+{
+	return gCmdqMdpModuleBaseVA.MDP_TDSHP;
+}
+
+const long cmdq_mdp_get_module_base_VA_VENC(void)
+{
+	return gCmdqMdpModuleBaseVA.VENC;
+}
+
 #ifdef CMDQ_OF_SUPPORT
 #define MMSYS_CONFIG_BASE cmdq_dev_get_module_base_VA_MMSYS_CONFIG()
-#define MDP_RDMA_BASE     cmdq_dev_get_module_base_VA_MDP_RDMA()
-#define MDP_RSZ0_BASE     cmdq_dev_get_module_base_VA_MDP_RSZ0()
-#define MDP_RSZ1_BASE     cmdq_dev_get_module_base_VA_MDP_RSZ1()
-#define MDP_TDSHP_BASE    cmdq_dev_get_module_base_VA_MDP_TDSHP()
-#define MDP_WROT_BASE     cmdq_dev_get_module_base_VA_MDP_WROT()
-#define MDP_WDMA_BASE     cmdq_dev_get_module_base_VA_MDP_WDMA()
-#define VENC_BASE         cmdq_dev_get_module_base_VA_VENC()
+#define MDP_RDMA_BASE     cmdq_mdp_get_module_base_VA_MDP_RDMA()
+#define MDP_RSZ0_BASE     cmdq_mdp_get_module_base_VA_MDP_RSZ0()
+#define MDP_RSZ1_BASE     cmdq_mdp_get_module_base_VA_MDP_RSZ1()
+#define MDP_TDSHP_BASE    cmdq_mdp_get_module_base_VA_MDP_TDSHP()
+#define MDP_WROT_BASE     cmdq_mdp_get_module_base_VA_MDP_WROT()
+#define MDP_WDMA_BASE     cmdq_mdp_get_module_base_VA_MDP_WDMA()
+#define VENC_BASE         cmdq_mdp_get_module_base_VA_VENC()
 #else
 #include <mach/mt_reg_base.h>
 #endif
+
+bool cmdq_mdp_clock_is_on(CMDQ_ENG_ENUM engine)
+{
+	switch (engine) {
+	case CMDQ_ENG_MDP_CAMIN:
+		return cmdq_mdp_clock_is_enable_CAM_MDP();
+	case CMDQ_ENG_MDP_RDMA0:
+		return cmdq_mdp_clock_is_enable_MDP_RDMA0();
+	case CMDQ_ENG_MDP_RSZ0:
+		return cmdq_mdp_clock_is_enable_MDP_RSZ0();
+	case CMDQ_ENG_MDP_RSZ1:
+		return cmdq_mdp_clock_is_enable_MDP_RSZ1();
+	case CMDQ_ENG_MDP_WDMA:
+		return cmdq_mdp_clock_is_enable_MDP_WDMA();
+	case CMDQ_ENG_MDP_WROT0:
+		return cmdq_mdp_clock_is_enable_MDP_WROT0();
+	case CMDQ_ENG_MDP_TDSHP0:
+		return cmdq_mdp_clock_is_enable_MDP_TDSHP0();
+	default:
+		CMDQ_ERR("try to query unknown mdp clock");
+		return false;
+	}
+}
+
+void cmdq_mdp_enable_clock(bool enable, CMDQ_ENG_ENUM engine)
+{
+	switch (engine) {
+	case CMDQ_ENG_MDP_CAMIN:
+		cmdq_mdp_enable_clock_CAM_MDP(enable);
+		break;
+	case CMDQ_ENG_MDP_RDMA0:
+		cmdq_mdp_enable_clock_MDP_RDMA0(enable);
+		break;
+	case CMDQ_ENG_MDP_RSZ0:
+		cmdq_mdp_enable_clock_MDP_RSZ0(enable);
+		break;
+	case CMDQ_ENG_MDP_RSZ1:
+		cmdq_mdp_enable_clock_MDP_RSZ1(enable);
+		break;
+	case CMDQ_ENG_MDP_WDMA:
+		cmdq_mdp_enable_clock_MDP_WDMA(enable);
+		break;
+	case CMDQ_ENG_MDP_WROT0:
+		cmdq_mdp_enable_clock_MDP_WROT0(enable);
+		break;
+	case CMDQ_ENG_MDP_TDSHP0:
+		cmdq_mdp_enable_clock_MDP_TDSHP0(enable);
+		break;
+	default:
+		CMDQ_ERR("try to enable unknown mdp clock");
+		break;
+	}
+}
+
+/* Common Clock Framework */
+void cmdq_mdp_init_module_clk(void)
+{
+#if defined(CMDQ_OF_SUPPORT) && defined(CMDQ_USE_CCF)
+	cmdq_dev_get_module_clock_by_name("mediatek,MMSYS_CONFIG", "CAM_MDP",
+					  &gCmdqMdpModuleClock.clk_CAM_MDP);
+	cmdq_dev_get_module_clock_by_name("mediatek,MDP_RDMA", "MDP_RDMA",
+					  &gCmdqMdpModuleClock.clk_MDP_RDMA);
+	cmdq_dev_get_module_clock_by_name("mediatek,MDP_RSZ0", "MDP_RSZ0",
+					  &gCmdqMdpModuleClock.clk_MDP_RSZ0);
+	cmdq_dev_get_module_clock_by_name("mediatek,MDP_RSZ1", "MDP_RSZ1",
+					  &gCmdqMdpModuleClock.clk_MDP_RSZ1);
+	cmdq_dev_get_module_clock_by_name("mediatek,MDP_WDMA", "MDP_WDMA",
+					  &gCmdqMdpModuleClock.clk_MDP_WDMA);
+	cmdq_dev_get_module_clock_by_name("mediatek,MDP_WROT", "MDP_WROT",
+					  &gCmdqMdpModuleClock.clk_MDP_WROT);
+	cmdq_dev_get_module_clock_by_name("mediatek,MDP_TDSHP", "MDP_TDSHP",
+					  &gCmdqMdpModuleClock.clk_MDP_TDSHP);
+#endif
+}
 
 int32_t cmdqMdpClockOn(uint64_t engineFlag)
 {
@@ -196,7 +370,7 @@ int32_t cmdqMdpResetEng(uint64_t engineFlag)
 
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_RSZ0)) {
 		mout_bits |= (1 << MOUT_BITS_MDP_PRZ0);
-		if (cmdq_dev_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_RSZ0)) {
+		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_RSZ0)) {
 			CMDQ_REG_SET32(MDP_RSZ0_BASE, 0x0);
 			CMDQ_REG_SET32(MDP_RSZ0_BASE, 0x10000);
 			CMDQ_REG_SET32(MDP_RSZ0_BASE, 0x0);
@@ -205,7 +379,7 @@ int32_t cmdqMdpResetEng(uint64_t engineFlag)
 
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_RSZ1)) {
 		mout_bits |= (1 << MOUT_BITS_MDP_PRZ1);
-		if (cmdq_dev_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_RSZ1)) {
+		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_RSZ1)) {
 			CMDQ_REG_SET32(MDP_RSZ1_BASE, 0x0);
 			CMDQ_REG_SET32(MDP_RSZ1_BASE, 0x10000);
 			CMDQ_REG_SET32(MDP_RSZ1_BASE, 0x0);
@@ -214,7 +388,7 @@ int32_t cmdqMdpResetEng(uint64_t engineFlag)
 
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_TDSHP0)) {
 		mout_bits |= (1 << MOUT_BITS_MDP_TDSHP0);
-		if (cmdq_dev_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_TDSHP0)) {
+		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_TDSHP0)) {
 			CMDQ_REG_SET32(MDP_TDSHP_BASE + 0x100, 0x0);
 			CMDQ_REG_SET32(MDP_TDSHP_BASE + 0x100, 0x2);
 			CMDQ_REG_SET32(MDP_TDSHP_BASE + 0x100, 0x0);
@@ -300,36 +474,36 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 	}
 
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_TDSHP0)) {
-		if (cmdq_dev_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_TDSHP0)) {
+		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_TDSHP0)) {
 			CMDQ_REG_SET32(MDP_TDSHP_BASE + 0x100, 0x0);
 			CMDQ_REG_SET32(MDP_TDSHP_BASE + 0x100, 0x2);
 			CMDQ_REG_SET32(MDP_TDSHP_BASE + 0x100, 0x0);
 			CMDQ_MSG("Disable MDP_TDSHP0 clock\n");
-			cmdq_dev_get_func()->enableMDPClock(false, CMDQ_ENG_MDP_TDSHP0);
+			cmdq_mdp_get_func()->enableMdpClock(false, CMDQ_ENG_MDP_TDSHP0);
 		}
 	}
 
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_RSZ1)) {
-		if (cmdq_dev_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_RSZ1)) {
+		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_RSZ1)) {
 			CMDQ_REG_SET32(MDP_RSZ1_BASE, 0x0);
 			CMDQ_REG_SET32(MDP_RSZ1_BASE, 0x10000);
 			CMDQ_REG_SET32(MDP_RSZ1_BASE, 0x0);
 
 			CMDQ_MSG("Disable MDP_RSZ1 clock\n");
 
-			cmdq_dev_get_func()->enableMDPClock(false, CMDQ_ENG_MDP_RSZ1);
+			cmdq_mdp_get_func()->enableMdpClock(false, CMDQ_ENG_MDP_RSZ1);
 		}
 	}
 
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_RSZ0)) {
-		if (cmdq_dev_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_RSZ0)) {
+		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_RSZ0)) {
 			CMDQ_REG_SET32(MDP_RSZ0_BASE, 0x0);
 			CMDQ_REG_SET32(MDP_RSZ0_BASE, 0x10000);
 			CMDQ_REG_SET32(MDP_RSZ0_BASE, 0x0);
 
 			CMDQ_MSG("Disable MDP_RSZ0 clock\n");
 
-			cmdq_dev_get_func()->enableMDPClock(false, CMDQ_ENG_MDP_RSZ0);
+			cmdq_mdp_get_func()->enableMdpClock(false, CMDQ_ENG_MDP_RSZ0);
 		}
 	}
 
@@ -341,11 +515,11 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 
 
 	if (engineFlag & (1LL << CMDQ_ENG_MDP_CAMIN)) {
-		if (cmdq_dev_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_CAMIN)) {
+		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_CAMIN)) {
 			cmdq_mdp_reset_with_mmsys((1LL << CMDQ_ENG_MDP_CAMIN));
 
 			CMDQ_MSG("Disable MDP_CAMIN clock\n");
-			cmdq_dev_get_func()->enableMDPClock(false, CMDQ_ENG_MDP_CAMIN);
+			cmdq_mdp_get_func()->enableMdpClock(false, CMDQ_ENG_MDP_CAMIN);
 		}
 	}
 
@@ -354,6 +528,46 @@ int32_t cmdqMdpClockOff(uint64_t engineFlag)
 #endif				/* #ifdef CMDQ_PWR_AWARE */
 
 	return 0;
+}
+
+void cmdq_mdp_init_module_base_VA(void)
+{
+	memset(&gCmdqMdpModuleBaseVA, 0, sizeof(CmdqMdpModuleBaseVA));
+
+#ifdef CMDQ_OF_SUPPORT
+	gCmdqMdpModuleBaseVA.MDP_RDMA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MDP_RDMA");
+	gCmdqMdpModuleBaseVA.MDP_RSZ0 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MDP_RSZ0");
+	gCmdqMdpModuleBaseVA.MDP_RSZ1 = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MDP_RSZ1");
+	gCmdqMdpModuleBaseVA.MDP_WDMA = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MDP_WDMA");
+	gCmdqMdpModuleBaseVA.MDP_WROT = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MDP_WROT");
+	gCmdqMdpModuleBaseVA.MDP_TDSHP = cmdq_dev_alloc_module_base_VA_by_name("mediatek,MDP_TDSHP");
+	gCmdqMdpModuleBaseVA.VENC = cmdq_dev_alloc_module_base_VA_by_name("mediatek,VENC");
+#else
+	gCmdqMdpModuleBaseVA.MDP_RDMA = MDP_RDMA_BASE;
+	gCmdqMdpModuleBaseVA.MDP_RSZ0 = MDP_RSZ0_BASE;
+	gCmdqMdpModuleBaseVA.MDP_RSZ1 = MDP_RSZ1_BASE;
+	gCmdqMdpModuleBaseVA.MDP_WDMA = MDP_WDMA_BASE;
+	gCmdqMdpModuleBaseVA.MDP_WROT = MDP_WROT_BASE;
+	gCmdqMdpModuleBaseVA.MDP_TDSHP = MDP_TDSHP_BASE;
+	gCmdqMdpModuleBaseVA.VENC = VENC_BASE;
+#endif
+}
+
+void cmdq_mdp_deinit_module_base_VA(void)
+{
+#ifdef CMDQ_OF_SUPPORT
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_RDMA());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_RSZ0());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_RSZ1());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_WDMA());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_WROT());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_MDP_TDSHP());
+	cmdq_dev_free_module_base_VA(cmdq_mdp_get_module_base_VA_VENC());
+
+	memset(&gCmdqMdpModuleBaseVA, 0, sizeof(CmdqMdpModuleBaseVA));
+#else
+	/* do nothing, registers' IOMAP will be destroyed by platform */
+#endif
 }
 
 const uint32_t cmdq_mdp_rdma_get_reg_offset_src_addr(void)
@@ -373,7 +587,7 @@ const uint32_t cmdq_mdp_wdma_get_reg_offset_dst_addr(void)
 
 void testcase_clkmgr_mdp(void)
 {
-#ifndef CMDQ_USE_CCF
+#if defined(CMDQ_PWR_AWARE) && !defined(CMDQ_USE_CCF)
 	/* RDMA clk test with src buffer addr */
 	testcase_clkmgr_impl(MT_CG_DISP0_MDP_RDMA,
 			     "CMDQ_TEST_MDP_RDMA",
@@ -417,11 +631,19 @@ void cmdq_mdp_platform_function_setting(void)
 
 	pFunc = cmdq_mdp_get_func();
 
+	pFunc->mdpClockIsOn = cmdq_mdp_clock_is_on;
+	pFunc->enableMdpClock = cmdq_mdp_enable_clock;
+	pFunc->initModuleCLK = cmdq_mdp_init_module_clk;
+
+	pFunc->vEncDumpInfo = cmdqVEncDumpInfo;
 	pFunc->mdpClockOn = cmdqMdpClockOn;
 	pFunc->mdpDumpInfo = cmdqMdpDumpInfo;
-	pFunc->vEncDumpInfo = cmdqVEncDumpInfo;
 	pFunc->mdpResetEng = cmdqMdpResetEng;
 	pFunc->mdpClockOff = cmdqMdpClockOff;
+
+	pFunc->initModuleBaseVA = cmdq_mdp_init_module_base_VA;
+	pFunc->deinitModuleBaseVA = cmdq_mdp_deinit_module_base_VA;
+
 	pFunc->rdmaGetRegOffsetSrcAddr = cmdq_mdp_rdma_get_reg_offset_src_addr;
 	pFunc->wrotGetRegOffsetDstAddr = cmdq_mdp_wrot_get_reg_offset_dst_addr;
 	pFunc->wdmaGetRegOffsetDstAddr = cmdq_mdp_wdma_get_reg_offset_dst_addr;

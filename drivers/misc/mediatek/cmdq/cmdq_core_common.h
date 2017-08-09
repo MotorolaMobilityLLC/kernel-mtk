@@ -14,7 +14,7 @@
 #define CMDQ_LONGSTRING_MAX (512)
 
 #ifdef CMDQ_DUMP_FIRSTERROR
-#define CMDQ_MAX_FIRSTERROR	(16*1024)
+#define CMDQ_MAX_FIRSTERROR	(32*1024)
 typedef struct DumpFirstErrorStruct {
 	pid_t callerPid;
 	char callerName[TASK_COMM_LEN];
@@ -203,6 +203,15 @@ typedef enum CMDQ_CODE_ENUM {
 	CMDQ_CODE_PREFETCH_ENABLE = 0x41,	/* enable prefetch marker */
 	CMDQ_CODE_PREFETCH_DISABLE = 0x42,	/* disable prefetch marker */
 } CMDQ_CODE_ENUM;
+
+typedef enum CMDQ_LOG_LEVEL_ENUM {
+	CMDQ_LOG_LEVEL_NORMAL = 0,
+	CMDQ_LOG_LEVEL_MSG = 1,
+	CMDQ_LOG_LEVEL_FULL_ERROR = 2,
+	CMDQ_LOG_LEVEL_EXTENSION = 3,
+
+	CMDQ_LOG_LEVEL_MAX	/* ALWAYS keep at the end */
+} CMDQ_LOG_LEVEL_ENUM;
 
 typedef enum TASK_STATE_ENUM {
 	TASK_STATE_IDLE,	/* free task */
@@ -479,6 +488,13 @@ typedef struct ContextStruct {
 #endif
 } ContextStruct;
 
+/* Command dump information */
+typedef struct DumpCommandBufferStruct {
+	uint64_t scenario;
+	int32_t bufferSize;
+	uint32_t count;
+	char *cmdqString;
+} DumpCommandBufferStruct;
 
 #ifdef __cplusplus
 extern "C" {
@@ -635,6 +651,7 @@ extern "C" {
  * GCE capability
  */
 	uint32_t cmdq_core_subsys_to_reg_addr(uint32_t argA);
+	const char *cmdq_core_parse_subsys_from_reg_addr(uint32_t reg_addr);
 	int32_t cmdq_core_suspend_HW_thread(int32_t thread, uint32_t lineNum);
 
 /**
@@ -666,6 +683,7 @@ extern "C" {
 	ssize_t cmdqCoreWriteProfileEnable(struct device *dev, struct device_attribute *attr,
 					   const char *buf, size_t size);
 
+	void cmdq_core_dump_secure_metadata(cmdqSecDataStruct *pSecData);
 	int32_t cmdqCoreDebugRegDumpBegin(uint32_t taskID, uint32_t *regCount,
 					  uint32_t **regAddress);
 	int32_t cmdqCoreDebugRegDumpEnd(uint32_t taskID, uint32_t regCount, uint32_t *regValues);
@@ -679,6 +697,10 @@ extern "C" {
 	ssize_t cmdqCorePrintRecord(struct device *dev, struct device_attribute *attr, char *buf);
 	ssize_t cmdqCorePrintError(struct device *dev, struct device_attribute *attr, char *buf);
 	ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, char *buf);
+
+	void cmdq_core_fix_command_scenario_for_user_space(cmdqCommandStruct *pCommand);
+	bool cmdq_core_is_request_from_user_space(const CMDQ_SCENARIO_ENUM scenario);
+	uint64_t cmdq_core_flag_from_scenario(CMDQ_SCENARIO_ENUM scn);
 
 	unsigned long long cmdq_core_get_GPR64(const CMDQ_DATA_REGISTER_ENUM regID);
 	void cmdq_core_set_GPR64(const CMDQ_DATA_REGISTER_ENUM regID,
@@ -694,6 +716,7 @@ extern "C" {
 	int32_t cmdq_core_profile_enabled(void);
 
 	bool cmdq_core_should_print_msg(void);
+	bool cmdq_core_should_full_error(void);
 
 	int32_t cmdq_core_enable_emergency_buffer_test(const bool enable);
 
@@ -707,6 +730,12 @@ extern "C" {
 
 	void cmdqCoreLongString(bool forceLog, char *buf, uint32_t *offset, int32_t *maxSize,
 				const char *string, ...);
+
+	/* Command Buffer Dump */
+	void cmdq_core_set_command_buffer_dump(int32_t scenario, int32_t bufferSize);
+
+	/* test case initialization */
+	void cmdq_test_init_setting(void);
 
 #ifdef CMDQ_INSTRUCTION_COUNT
 	CmdqModulePAStatStruct *cmdq_core_Initial_and_get_module_stat(void);

@@ -16,5 +16,4 @@ endif
 endif
 
 obj-y += cmdq_mdp.o
-obj-y += cmdq_device.o
 obj-y += cmdq_platform.o

@@ -5,16 +5,33 @@
 
 #include <linux/types.h>
 
+/* query MDP clock is on  */
+typedef bool(*CmdqMdpClockIsOn) (CMDQ_ENG_ENUM engine);
+
+/* enable MDP clock  */
+typedef void (*CmdqEnableMdpClock) (bool enable, CMDQ_ENG_ENUM engine);
+
+/* Common Clock Framework */
+typedef void (*CmdqMdpInitModuleClk) (void);
+
+/* VENC callback function */
+typedef int32_t(*CmdqVEncDumpInfo) (uint64_t engineFlag, int level);
+
+/* MDP callback function */
 typedef int32_t(*CmdqMdpClockOn) (uint64_t engineFlag);
 
 typedef int32_t(*CmdqMdpDumpInfo) (uint64_t engineFlag, int level);
-
-typedef int32_t(*CmdqVEncDumpInfo) (uint64_t engineFlag, int level);
 
 typedef int32_t(*CmdqMdpResetEng) (uint64_t engineFlag);
 
 typedef int32_t(*CmdqMdpClockOff) (uint64_t engineFlag);
 
+/* Initialization & de-initialization MDP base VA */
+typedef void (*CmdqMdpInitModuleBaseVA) (void);
+
+typedef void (*CmdqMdpDeinitModuleBaseVA) (void);
+
+/* test MDP clock function */
 typedef const uint32_t(*CmdqMdpRdmaGetRegOffsetSrcAddr) (void);
 
 typedef const uint32_t(*CmdqMdpWrotGetRegOffsetDstAddr) (void);
@@ -24,11 +41,16 @@ typedef const uint32_t(*CmdqMdpWdmaGetRegOffsetDstAddr) (void);
 typedef void (*CmdqTestcaseClkmgrMdp) (void);
 
 typedef struct cmdqMDPFuncStruct {
+	CmdqVEncDumpInfo vEncDumpInfo;
+	CmdqMdpClockIsOn mdpClockIsOn;
+	CmdqEnableMdpClock enableMdpClock;
+	CmdqMdpInitModuleClk initModuleCLK;
 	CmdqMdpClockOn mdpClockOn;
 	CmdqMdpDumpInfo mdpDumpInfo;
-	CmdqVEncDumpInfo vEncDumpInfo;
 	CmdqMdpResetEng mdpResetEng;
 	CmdqMdpClockOff mdpClockOff;
+	CmdqMdpInitModuleBaseVA initModuleBaseVA;
+	CmdqMdpDeinitModuleBaseVA deinitModuleBaseVA;
 	CmdqMdpRdmaGetRegOffsetSrcAddr rdmaGetRegOffsetSrcAddr;
 	CmdqMdpWrotGetRegOffsetDstAddr wrotGetRegOffsetDstAddr;
 	CmdqMdpWdmaGetRegOffsetDstAddr wdmaGetRegOffsetDstAddr;

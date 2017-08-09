@@ -367,7 +367,7 @@ static long cmdq_driver_create_secure_medadata(cmdqCommandStruct *pCommand)
 	pCommand->secData.addrMetadatas = (cmdqU32Ptr_t) (unsigned long)pAddrMetadatas;
 
 #if 0
-	cmdq_get_func()->dumpSecureMetadata(&(pCommand->secData));
+	cmdq_core_dump_secure_metadata(&(pCommand->secData));
 #endif
 
 	return 0;
@@ -411,7 +411,7 @@ static long cmdq_driver_process_command_request(cmdqCommandStruct *pCommand)
 	}
 
 	/* scenario id fixup */
-	cmdq_get_func()->fixCommandScenarioUser(pCommand);
+	cmdq_core_fix_command_scenario_for_user_space(pCommand);
 
 	status = cmdqCoreSubmitTask(pCommand);
 	if (0 > status) {
@@ -514,7 +514,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			return status;
 
 		/* scenario id fixup */
-		cmdq_get_func()->fixCommandScenarioUser(&job.command);
+		cmdq_core_fix_command_scenario_for_user_space(&job.command);
 
 		status = cmdqCoreSubmitTaskAsync(&job.command, NULL, 0, &pTask);
 
@@ -812,7 +812,7 @@ static irqreturn_t cmdq_irq_handler(int IRQ, void *pDevice)
 	/* so it is possible that this handler */
 	/* is called but GCE does not have IRQ flag. */
 	do {
-		if (cmdq_dev_get_func()->irqIndex() == IRQ) {
+		if (cmdq_dev_get_irq_id() == IRQ) {
 			irqStatus = CMDQ_REG_GET32(CMDQ_CURR_IRQ_STATUS) & 0x0FFFF;
 			for (index = 0; (irqStatus != 0xFFFF) && index < CMDQ_MAX_THREAD_COUNT;
 			     index++) {
@@ -827,7 +827,7 @@ static irqreturn_t cmdq_irq_handler(int IRQ, void *pDevice)
 				cmdqCoreHandleIRQ(index);
 				handled = true;
 			}
-		} else if (cmdq_dev_get_func()->irqSecureIndex() == IRQ) {
+		} else if (cmdq_dev_get_irq_secure_id() == IRQ) {
 			CMDQ_ERR("receive secure IRQ %d in NWD\n", IRQ);
 		}
 	} while (0);
@@ -868,12 +868,12 @@ static int cmdq_probe(struct platform_device *pDevice)
 
 	CMDQ_MSG("CMDQ driver probe begin\n");
 
-	/* Device function link */
-	cmdq_dev_virtual_function_setting();
-	cmdq_dev_platform_function_setting();
+	/* Function link */
+	cmdq_virtual_function_setting();
+	cmdq_platform_function_setting();
 
 	/* init cmdq device related data */
-	cmdq_dev_get_func()->devInit(pDevice);
+	cmdq_dev_init(pDevice);
 
 	/* init cmdq context */
 	cmdqCoreInitialize();
@@ -898,7 +898,7 @@ static int cmdq_probe(struct platform_device *pDevice)
 	object = device_create(gCMDQClass, NULL, gCmdqDevNo, NULL, CMDQ_DRIVER_DEVICE_NAME);
 
 	status =
-	    request_irq(cmdq_dev_get_func()->irqIndex(), cmdq_irq_handler,
+	    request_irq(cmdq_dev_get_irq_id(), cmdq_irq_handler,
 			IRQF_TRIGGER_LOW | IRQF_SHARED, CMDQ_DRIVER_DEVICE_NAME, gCmdqCDev);
 	if (status != 0) {
 		CMDQ_ERR("Register cmdq driver irq handler(%d) failed(%d)\n", gCmdqDevNo, status);
@@ -910,9 +910,9 @@ static int cmdq_probe(struct platform_device *pDevice)
 	/* (that's because t-base does not support GIC init IRQ in secure world...) */
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	status =
-	    request_irq(cmdq_dev_get_func()->irqSecureIndex(), cmdq_irq_handler, IRQF_TRIGGER_LOW,
+	    request_irq(cmdq_dev_get_irq_secure_id(), cmdq_irq_handler, IRQF_TRIGGER_LOW,
 			CMDQ_DRIVER_DEVICE_NAME, gCmdqCDev);
-	CMDQ_MSG("register sec IRQ:%d\n", cmdq_dev_get_func()->irqSecureIndex());
+	CMDQ_MSG("register sec IRQ:%d\n", cmdq_dev_get_irq_secure_id());
 	if (status != 0) {
 		CMDQ_ERR("Register cmdq driver secure irq handler(%d) failed(%d)\n", gCmdqDevNo,
 			 status);
@@ -947,7 +947,7 @@ static int cmdq_probe(struct platform_device *pDevice)
 
 static int cmdq_remove(struct platform_device *pDevice)
 {
-	disable_irq(cmdq_dev_get_func()->irqIndex());
+	disable_irq(cmdq_dev_get_irq_id());
 
 	device_remove_file(&pDevice->dev, &dev_attr_status);
 	device_remove_file(&pDevice->dev, &dev_attr_error);
@@ -1078,7 +1078,7 @@ static void __exit cmdq_exit(void)
 	cmdqCoreDeInitialize();
 
 	/* De-Initialize cmdq dev related data */
-	cmdq_dev_get_func()->devDeinit();
+	cmdq_dev_deinit();
 
 	CMDQ_MSG("CMDQ driver exit end\n");
 }

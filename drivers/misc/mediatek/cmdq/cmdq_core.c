@@ -51,6 +51,7 @@
 /* use mutex because we don't access task list in IRQ */
 /* and we may allocate memory when create list items */
 static DEFINE_MUTEX(gCmdqTaskMutex);
+static DEFINE_MUTEX(gCmdqSaveBufferMutex);
 /* static DEFINE_MUTEX(gCmdqWriteAddrMutex); */
 static DEFINE_SPINLOCK(gCmdqWriteAddrLock);
 
@@ -88,6 +89,8 @@ static CmdqDebugCBkStruct gCmdqDebugCallback;
 #ifdef CMDQ_DUMP_FIRSTERROR
 DumpFirstErrorStruct gCmdqFirstError;
 #endif
+
+static DumpCommandBufferStruct gCmdqBufferDump;
 
 /* Debug or test usage */
 /* enable this option only when test emergency buffer*/
@@ -135,21 +138,20 @@ int32_t *cmdq_core_get_whole_event_table(uint32_t *tableSize)
 
 const int32_t cmdq_core_get_event_value(CMDQ_EVENT_ENUM event)
 {
+	int32_t eventValue;
+
 	if (event < 0 || event >= CMDQ_SYNC_TOKEN_MAX)
 		return -EINVAL;
 
 #ifdef CMDQ_DVENT_FROM_DTS
-	int32_t eventValue;
-
 	if (event < CMDQ_MAX_HW_EVENT_COUNT)
 		eventValue = gCmdqEventTable[event];	/* HW event */
 	else
 		eventValue = (int32_t) event;	/* SW token */
-
-	return eventValue;
 #else
-	return (int32_t) event;
+	eventValue = (int32_t) event;
 #endif
+	return eventValue;
 }
 
 const int32_t cmdq_core_reverse_event_ENUM(const uint32_t value)
@@ -225,9 +227,8 @@ static bool cmdq_core_init_emergency_buffer(void)
 	for (i = 0; i < CMDQ_EMERGENCY_BLOCK_COUNT; ++i) {
 		EmergencyBufferStruct *buf = &gCmdqEmergencyBuffer[i];
 
-		buf->va = cmdq_core_alloc_hw_buffer(cmdq_dev_get_func()->devGet(),
-						    CMDQ_EMERGENCY_BLOCK_SIZE, &buf->pa,
-						    GFP_KERNEL);
+		buf->va = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), CMDQ_EMERGENCY_BLOCK_SIZE,
+							&buf->pa, GFP_KERNEL);
 		buf->size = CMDQ_EMERGENCY_BLOCK_SIZE;
 		buf->used = false;
 	}
@@ -242,7 +243,7 @@ static bool cmdq_core_uninit_emergency_buffer(void)
 	for (i = 0; i < CMDQ_EMERGENCY_BLOCK_COUNT; ++i) {
 		EmergencyBufferStruct *buf = &gCmdqEmergencyBuffer[i];
 
-		cmdq_core_free_hw_buffer(cmdq_dev_get_func()->devGet(), CMDQ_EMERGENCY_BLOCK_SIZE,
+		cmdq_core_free_hw_buffer(cmdq_dev_get(), CMDQ_EMERGENCY_BLOCK_SIZE,
 					 buf->va, buf->pa);
 		if (buf->used) {
 			CMDQ_ERR("Emergency buffer %d, 0x%p, 0x%pa still using\n",
@@ -877,9 +878,22 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 			   gCmdqFirstError.callerName);
 		seq_printf(m, "%s", gCmdqFirstError.cmdqString);
 		if (gCmdqFirstError.cmdqMaxSize <= 0)
-			seq_printf(m, "\nWARNING: MAX size: %d is full\n\n\n", CMDQ_MAX_FIRSTERROR);
+			seq_printf(m, "\nWARNING: MAX size: %d is full\n", CMDQ_MAX_FIRSTERROR);
+		seq_puts(m, "\n\n");
 	}
 #endif
+
+	/* Save command buffer dump */
+	if (gCmdqBufferDump.count > 0) {
+		int32_t buffer_id;
+
+		seq_puts(m, "================= [CMDQ] Dump Command Buffer =================\n");
+		mutex_lock(&gCmdqTaskMutex);
+		for (buffer_id = 0; buffer_id < gCmdqBufferDump.bufferSize; buffer_id++)
+			seq_printf(m, "%c", gCmdqBufferDump.cmdqString[buffer_id]);
+		mutex_unlock(&gCmdqTaskMutex);
+		seq_puts(m, "\n=============== [CMDQ] Dump Command Buffer END ===============\n\n\n");
+	}
 
 #ifdef CMDQ_PWR_AWARE
 	/* note for constatnt format (without a % substitution), use seq_puts to speed up outputs */
@@ -903,7 +917,7 @@ int cmdqCorePrintStatusSeq(struct seq_file *m, void *v)
 	/* print all tasks in both list */
 	for (listIdx = 0; listIdx < (sizeof(lists) / sizeof(lists[0])); listIdx++) {
 		/* skip FreeTasks by default */
-		if (gCmdqContext.logLevel < 2 && listIdx == 0)
+		if (!cmdq_core_should_print_msg() && 0 == listIdx)
 			continue;
 
 		index = 0;
@@ -1106,7 +1120,7 @@ ssize_t cmdqCorePrintStatus(struct device *dev, struct device_attribute *attr, c
 	/* print all tasks in both list */
 	for (listIdx = 0; listIdx < (sizeof(lists) / sizeof(lists[0])); listIdx++) {
 		/* skip FreeTasks by default */
-		if (gCmdqContext.logLevel < 2 && listIdx == 0)
+		if (!cmdq_core_should_print_msg() && 0 == listIdx)
 			continue;
 
 		index = 0;
@@ -1247,7 +1261,7 @@ void cmdq_task_free_task_command_buffer(TaskStruct *pTask)
 		if (pTask->useEmergencyBuf) {
 			cmdq_core_free_emergency_buffer(pTask->pVABase, pTask->MVABase);
 		} else {
-			cmdq_core_free_hw_buffer(cmdq_dev_get_func()->devGet(), pTask->bufferSize,
+			cmdq_core_free_hw_buffer(cmdq_dev_get(), pTask->bufferSize,
 						 pTask->pVABase, pTask->MVABase);
 		}
 
@@ -1280,9 +1294,8 @@ static int32_t cmdq_core_task_realloc_buffer_size(TaskStruct *pTask, uint32_t si
 
 	do {
 		/* allocate new buffer, try if we can alloc without reclaim */
-		pNewBuffer = cmdq_core_alloc_hw_buffer(cmdq_dev_get_func()->devGet(),
-						       size, &newMVABase,
-						       GFP_KERNEL | __GFP_NO_KSWAPD);
+		pNewBuffer = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), size,
+						&newMVABase, GFP_KERNEL | __GFP_NO_KSWAPD);
 
 		if (pNewBuffer) {
 			pTask->useEmergencyBuf = false;
@@ -1301,7 +1314,7 @@ static int32_t cmdq_core_task_realloc_buffer_size(TaskStruct *pTask, uint32_t si
 
 		/* finally try reclaim */
 		pNewBuffer =
-		    cmdq_core_alloc_hw_buffer(cmdq_dev_get_func()->devGet(), size, &newMVABase,
+		    cmdq_core_alloc_hw_buffer(cmdq_dev_get(), size, &newMVABase,
 					      GFP_KERNEL);
 		if (pNewBuffer) {
 			pTask->useEmergencyBuf = false;
@@ -1576,7 +1589,7 @@ static void cmdq_core_release_buffer(TaskStruct *pTask)
 {
 	CMDQ_MSG("cmdq_core_release_buffer start\n");
 	if (pTask->profileData) {
-		cmdq_core_free_hw_buffer(cmdq_dev_get_func()->devGet(),
+		cmdq_core_free_hw_buffer(cmdq_dev_get(),
 					 2 * sizeof(uint32_t), pTask->profileData,
 					 pTask->profileDataPA);
 		pTask->profileData = NULL;
@@ -1586,7 +1599,7 @@ static void cmdq_core_release_buffer(TaskStruct *pTask)
 	if (pTask->regResults) {
 		CMDQ_MSG("COMMAND: Free result buf VA:0x%p, PA:%pa\n", pTask->regResults,
 			 &pTask->regResultsMVA);
-		cmdq_core_free_hw_buffer(cmdq_dev_get_func()->devGet(),
+		cmdq_core_free_hw_buffer(cmdq_dev_get(),
 					 pTask->regCount * sizeof(pTask->regResults[0]),
 					 pTask->regResults, pTask->regResultsMVA);
 	}
@@ -1694,6 +1707,102 @@ void cmdq_core_invalidate_hw_fetched_buffer(int32_t thread)
 	const int32_t pc = CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread));
 
 	CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), pc);
+}
+
+void cmdq_core_fix_command_scenario_for_user_space(cmdqCommandStruct *pCommand)
+{
+	if ((CMDQ_SCENARIO_USER_DISP_COLOR == pCommand->scenario)
+	    || (CMDQ_SCENARIO_USER_MDP == pCommand->scenario)) {
+		CMDQ_VERBOSE("user space request, scenario:%d\n", pCommand->scenario);
+	} else {
+		CMDQ_VERBOSE("[WARNING]fix user space request to CMDQ_SCENARIO_USER_SPACE\n");
+		pCommand->scenario = CMDQ_SCENARIO_USER_SPACE;
+	}
+}
+
+bool cmdq_core_is_request_from_user_space(const CMDQ_SCENARIO_ENUM scenario)
+{
+	switch (scenario) {
+	case CMDQ_SCENARIO_USER_DISP_COLOR:
+	case CMDQ_SCENARIO_USER_MDP:
+	case CMDQ_SCENARIO_USER_SPACE:	/* phased out */
+		return true;
+	default:
+		return false;
+	}
+	return false;
+}
+
+uint64_t cmdq_core_flag_from_scenario(CMDQ_SCENARIO_ENUM scn)
+{
+	uint64_t flag = 0;
+
+	switch (scn) {
+	case CMDQ_SCENARIO_DISP_CONFIG_AAL:
+	case CMDQ_SCENARIO_DISP_CONFIG_PRIMARY_GAMMA:
+	case CMDQ_SCENARIO_DISP_CONFIG_PRIMARY_DITHER:
+	case CMDQ_SCENARIO_DISP_CONFIG_PRIMARY_PWM:
+	case CMDQ_SCENARIO_DISP_CONFIG_PRIMARY_PQ:
+	case CMDQ_SCENARIO_DISP_CONFIG_SUB_GAMMA:
+	case CMDQ_SCENARIO_DISP_CONFIG_SUB_DITHER:
+	case CMDQ_SCENARIO_DISP_CONFIG_SUB_PWM:
+	case CMDQ_SCENARIO_DISP_CONFIG_SUB_PQ:
+	case CMDQ_SCENARIO_DISP_CONFIG_OD:
+		flag = 0LL;
+		break;
+	case CMDQ_SCENARIO_TRIGGER_LOOP:
+	case CMDQ_SCENARIO_HIGHP_TRIGGER_LOOP:
+	case CMDQ_SCENARIO_LOWP_TRIGGER_LOOP:
+		/* Trigger loop does not related to any HW by itself. */
+		flag = 0LL;
+		break;
+
+	case CMDQ_SCENARIO_USER_SPACE:
+		/* user space case, engine flag is passed seprately */
+		flag = 0LL;
+		break;
+
+	case CMDQ_SCENARIO_DEBUG:
+	case CMDQ_SCENARIO_DEBUG_PREFETCH:
+		flag = 0LL;
+		break;
+
+	case CMDQ_SCENARIO_DISP_ESD_CHECK:
+	case CMDQ_SCENARIO_DISP_SCREEN_CAPTURE:
+		/* ESD check uses separate thread (not config, not trigger) */
+		flag = 0LL;
+		break;
+
+	case CMDQ_SCENARIO_DISP_COLOR:
+	case CMDQ_SCENARIO_USER_DISP_COLOR:
+		/* color path */
+		flag = 0LL;
+		break;
+
+	case CMDQ_SCENARIO_DISP_MIRROR_MODE:
+		flag = 0LL;
+		break;
+
+	case CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH:
+	case CMDQ_SCENARIO_DISP_SUB_DISABLE_SECURE_PATH:
+		/* secure path */
+		flag = 0LL;
+		break;
+
+	case CMDQ_SCENARIO_SECURE_NOTIFY_LOOP:
+		flag = 0LL;
+		break;
+
+	default:
+		if (scn < 0 || scn >= CMDQ_MAX_SCENARIO_COUNT) {
+			/* Error status print */
+			CMDQ_ERR("Unknown scenario type %d\n", scn);
+		}
+		flag = 0LL;
+		break;
+	}
+
+	return flag;
 }
 
 static void cmdq_core_append_command(TaskStruct *pTask, uint32_t argA, uint32_t argB)
@@ -1962,7 +2071,7 @@ bool cmdq_core_verfiy_command_desc_end(cmdqCommandStruct *pCommandDesc)
 	if (!CMDQ_U32_PTR(pCommandDesc->pVABase) || pCommandDesc->blockSize < (2 * CMDQ_INST_SIZE))
 		return false;
 
-	if (true == cmdq_get_func()->isRequestUser(pCommandDesc->scenario)) {
+	if (true == cmdq_core_is_request_from_user_space(pCommandDesc->scenario)) {
 		/* command buffer has not copied from user space yet, skip verify. */
 		return true;
 	}
@@ -2072,7 +2181,7 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 	CMDQ_DATA_REGISTER_ENUM destRegId;
 	CMDQ_EVENT_ENUM regAccessToken;
 	uint32_t prependBufferSize = 0;
-	const bool userSpaceRequest = cmdq_get_func()->isRequestUser(pTask->scenario);
+	const bool userSpaceRequest = cmdq_core_is_request_from_user_space(pTask->scenario);
 	bool isValidCommandEnd = true;
 
 	/* HACK: let blockSize >= commandSize + 1 * CMDQ_INST_SIZE to prevnet GCE stop wrongly */
@@ -2253,7 +2362,7 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 		CMDQ_VERBOSE("COMMAND:allocate register output section\n");
 		/* allocate register output section */
 		BUG_ON(pTask->regResults);
-		pTask->regResults = cmdq_core_alloc_hw_buffer(cmdq_dev_get_func()->devGet(),
+		pTask->regResults = cmdq_core_alloc_hw_buffer(cmdq_dev_get(),
 							      pTask->regCount * sizeof(pTask->regResults[0]),
 							      &pTask->regResultsMVA,
 							      GFP_KERNEL);
@@ -2338,7 +2447,6 @@ static TaskStruct *cmdq_core_acquire_task(cmdqCommandStruct *pCommandDesc,
 					  CmdqInterruptCB loopCB, unsigned long loopData)
 {
 	TaskStruct *pTask = NULL;
-	unsigned long long *privateDataPtr = NULL;
 	int32_t status;
 
 	CMDQ_MSG("-->TASK: acquire task begin CMD: 0x%p, size: %d, Eng: 0x%016llx\n",
@@ -2357,8 +2465,7 @@ static TaskStruct *cmdq_core_acquire_task(cmdqCommandStruct *pCommandDesc,
 		pTask->scenario = pCommandDesc->scenario;
 		pTask->priority = pCommandDesc->priority;
 		pTask->engineFlag = pCommandDesc->engineFlag;
-		privateDataPtr = &pCommandDesc->privateData;
-		pTask->privateData = (void *)privateDataPtr;
+		pTask->privateData = (void *)(unsigned long long *)&pCommandDesc->privateData;
 		pTask->loopCallback = loopCB;
 		pTask->loopData = loopData;
 		pTask->taskState = TASK_STATE_WAITING;
@@ -2378,7 +2485,7 @@ static TaskStruct *cmdq_core_acquire_task(cmdqCommandStruct *pCommandDesc,
 		/* profile data for command profiling */
 		if (cmdq_get_func()->shouldProfile(pTask->scenario)) {
 			pTask->profileData =
-			    cmdq_core_alloc_hw_buffer(cmdq_dev_get_func()->devGet(),
+			    cmdq_core_alloc_hw_buffer(cmdq_dev_get(),
 						      2 * sizeof(uint32_t), &pTask->profileDataPA,
 						      GFP_KERNEL);
 		} else {
@@ -2460,7 +2567,7 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			/* CMDQ init flow: */
 			/* 1. clock-on */
 			/* 2. reset all events */
-			cmdq_get_func()->gceClockLocked(enable);
+			cmdq_get_func()->enableGCEClockLocked(enable);
 			cmdq_core_reset_hw_events();
 #ifdef CMDQ_ENABLE_BUS_ULTRA
 			CMDQ_LOG("Enable GCE Ultra ability");
@@ -2494,7 +2601,7 @@ static void cmdq_core_enable_common_clock_locked(const bool enable,
 			cmdq_get_func()->eventBackup();
 #endif
 			/* clock-off */
-			cmdq_get_func()->gceClockLocked(enable);
+			cmdq_get_func()->enableGCEClockLocked(enable);
 		}
 
 		/* SMI related threads common clock enable, excluding display scenario on his own */
@@ -3181,6 +3288,20 @@ uint32_t cmdq_core_subsys_to_reg_addr(uint32_t argA)
 	return (base_addr << subsysBit) | offset;
 }
 
+const char *cmdq_core_parse_subsys_from_reg_addr(uint32_t reg_addr)
+{
+	const uint32_t addr_base_shifted = (reg_addr & 0xFFFF0000) >> 16;
+	const char *module = "CMDQ";
+
+#undef DECLARE_CMDQ_SUBSYS
+#define DECLARE_CMDQ_SUBSYS(msb, id, grp, base) { if (msb == addr_base_shifted) {module = #grp; break; } }
+	do {
+#include "cmdq_subsys.h"
+	} while (0);
+#undef DECLARE_CMDQ_SUBSYS
+	return module;
+}
+
 static const char *cmdq_core_parse_op(uint32_t opCode)
 {
 	switch (opCode) {
@@ -3515,6 +3636,34 @@ static void cmdq_core_dump_task_in_thread(const int32_t thread,
 	}
 }
 
+void cmdq_core_dump_secure_metadata(cmdqSecDataStruct *pSecData)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	uint32_t i = 0;
+	cmdqSecAddrMetadataStruct *pAddr = NULL;
+
+	if (NULL == pSecData)
+		return;
+
+	pAddr = (cmdqSecAddrMetadataStruct *) (CMDQ_U32_PTR(pSecData->addrMetadatas));
+
+	CMDQ_LOG("========= pSecData: %p dump =========\n", pSecData);
+	CMDQ_LOG("count:%d(%d), enginesNeedDAPC:0x%llx, enginesPortSecurity:0x%llx\n",
+		 pSecData->addrMetadataCount, pSecData->addrMetadataMaxCount,
+		 pSecData->enginesNeedDAPC, pSecData->enginesNeedPortSecurity);
+
+	if (NULL == pAddr)
+		return;
+
+	for (i = 0; i < pSecData->addrMetadataCount; i++) {
+		CMDQ_LOG("idx:%d, type:%d, baseHandle:%x, offset:%d, size:%d, port:%d\n",
+			 i, pAddr[i].type, pAddr[i].baseHandle, pAddr[i].offset, pAddr[i].size,
+			 pAddr[i].port);
+	}
+#endif
+}
+
+
 int32_t cmdq_core_interpret_instruction(char *textBuf, int bufLen,
 					const uint32_t op, const uint32_t argA, const uint32_t argB)
 {
@@ -3778,6 +3927,114 @@ int32_t cmdqCoreDebugDumpCommand(TaskStruct *pTask)
 	CMDQ_LOG("======TASK 0x%p command END\n", pTask);
 
 	return 0;
+}
+
+void cmdq_core_set_command_buffer_dump(int32_t scenario, int32_t bufferSize)
+{
+	mutex_lock(&gCmdqSaveBufferMutex);
+
+	if (bufferSize != gCmdqBufferDump.bufferSize && bufferSize != -1) {
+		if (gCmdqBufferDump.bufferSize != 0) {
+			vfree(gCmdqBufferDump.cmdqString);
+			gCmdqBufferDump.bufferSize = 0;
+			gCmdqBufferDump.count = 0;
+		}
+
+		if (bufferSize > 0) {
+			gCmdqBufferDump.bufferSize = bufferSize;
+			gCmdqBufferDump.cmdqString = vmalloc(gCmdqBufferDump.bufferSize);
+		}
+	}
+
+	if (-1 == scenario) {
+		/* clear all scenario */
+		gCmdqBufferDump.scenario = 0LL;
+	} else if (-2 == scenario) {
+		/* set all scenario */
+		gCmdqBufferDump.scenario = ~0LL;
+	} else if (scenario >= 0 && scenario < CMDQ_MAX_SCENARIO_COUNT) {
+		/* set scenario to save command buffer */
+		gCmdqBufferDump.scenario |= (1LL << scenario);
+	}
+
+	CMDQ_LOG("[SET DUMP]CONFIG: bufferSize: %d, scenario: 0x%08llx\n",
+		gCmdqBufferDump.bufferSize, gCmdqBufferDump.scenario);
+
+	mutex_unlock(&gCmdqSaveBufferMutex);
+}
+
+static void cmdq_core_save_buffer(const char *string, ...)
+{
+	int logLen, redundantLen, i;
+	va_list argptr;
+	char *pBuffer;
+
+	va_start(argptr, string);
+	do {
+		logLen = vsnprintf(NULL, 0, string, argptr) + 1;
+		if (logLen <= 1)
+			break;
+
+		redundantLen = gCmdqBufferDump.bufferSize - gCmdqBufferDump.count;
+		if (logLen >= redundantLen) {
+			for (i = 0; i < redundantLen; i++)
+				*(gCmdqBufferDump.cmdqString + gCmdqBufferDump.count + i) = 0;
+			gCmdqBufferDump.count = 0;
+		}
+
+		pBuffer = gCmdqBufferDump.cmdqString + gCmdqBufferDump.count;
+		gCmdqBufferDump.count += vsnprintf(pBuffer, logLen, string, argptr);
+	} while (0);
+
+	va_end(argptr);
+}
+
+static void cmdq_core_save_command_buffer_dump(const TaskStruct *pTask)
+{
+	static char textBuf[128] = { 0 };
+	struct timeval savetv;
+	struct tm nowTM;
+	unsigned long long saveTimeSec;
+	unsigned long rem_nsec;
+	const uint32_t *pCmd;
+	int i;
+
+	if (gCmdqContext.errNum > 0)
+		return;
+
+	if (gCmdqBufferDump.bufferSize <= 0 || NULL == pTask->pVABase)
+		return;
+
+	mutex_lock(&gCmdqSaveBufferMutex);
+
+	if (gCmdqBufferDump.scenario & (1LL << pTask->scenario)) {
+		pCmd = pTask->pVABase;
+
+		cmdq_core_save_buffer("************TASK command buffer TRANSLATED************\n");
+		/* get kernel time */
+		saveTimeSec = sched_clock();
+		rem_nsec = do_div(saveTimeSec, 1000000000);
+		/* get UTC time */
+		do_gettimeofday(&savetv);
+		time_to_tm(savetv.tv_sec, sys_tz.tz_minuteswest * 60, &nowTM);
+		/* print current task information */
+		cmdq_core_save_buffer("kernel time:[%5llu.%06lu],", saveTimeSec, rem_nsec / 1000);
+		cmdq_core_save_buffer(" UTC time:[%04ld-%02d-%02d %02d:%02d:%02d.%06ld]",
+				   (nowTM.tm_year + 1900), (nowTM.tm_mon + 1), nowTM.tm_mday,
+				   nowTM.tm_hour, nowTM.tm_min, nowTM.tm_sec,
+				   savetv.tv_usec);
+		cmdq_core_save_buffer(" Pid: %d, Name: %s\n", pTask->callerPid, pTask->callerName);
+		cmdq_core_save_buffer("Task: 0x%p, Scenario: %d, Size: %d, Flag: 0x%016llx\n",
+			pTask, pTask->scenario, pTask->commandSize, pTask->engineFlag);
+		/* print command buffer */
+		for (i = 0; i < pTask->commandSize; i += CMDQ_INST_SIZE, pCmd += 2) {
+			cmdq_core_parse_instruction(pCmd, textBuf, 128);
+			cmdq_core_save_buffer("[%5llu.%06lu] %s", saveTimeSec, rem_nsec / 1000, textBuf);
+		}
+		cmdq_core_save_buffer("****************TASK command buffer END***************\n\n");
+	}
+
+	mutex_unlock(&gCmdqSaveBufferMutex);
 }
 
 #ifdef CMDQ_INSTRUCTION_COUNT
@@ -4135,7 +4392,6 @@ static void cmdq_core_fill_task_profile_marker_record(RecordStruct *pRecord,
 	uint32_t profileMarkerCount;
 	uint32_t value;
 	cmdqBackupSlotHandle hSlot;
-	const unsigned long long *tagPtr = NULL;
 
 	if ((NULL == pRecord) || (NULL == pTask))
 		return;
@@ -4151,9 +4407,7 @@ static void cmdq_core_fill_task_profile_marker_record(RecordStruct *pRecord,
 		/* timestamp, each count is 76ns */
 		cmdqBackupReadSlot(hSlot, i, &value);
 		pRecord->profileMarkerTimeNS[i] = value * 76;
-
-		tagPtr = &pTask->profileMarker.tag[i];
-		pRecord->profileMarkerTag[i] = (char *)tagPtr;
+		pRecord->profileMarkerTag[i] = (char *)(const unsigned long long *)&pTask->profileMarker.tag[i];
 	}
 #endif
 }
@@ -4240,18 +4494,39 @@ void cmdq_core_dump_GIC(void)
 {
 #ifndef CMDQ_OF_SUPPORT		/* OF Support removes mt_irq.h, mt_irq_dump_status support will be added later. */
 #if CMDQ_DUMP_GIC
-	mt_irq_dump_status(cmdq_dev_get_func()->irqIndex());
-	mt_irq_dump_status(cmdq_dev_get_func()->irqSecureIndex());
+	mt_irq_dump_status(cmdq_dev_get_irq_id());
+	mt_irq_dump_status(cmdq_dev_get_irq_secure_id());
 #endif
 #endif
 }
 
-static void cmdq_core_dump_error_task(const TaskStruct *pTask, uint32_t thread)
+static void cmdq_core_dump_error_buffer(const TaskStruct *pTask, uint32_t *hwPC)
+{
+	if (hwPC && pTask && hwPC >= pTask->pVABase) {
+		/* because hwPC points to "start" of the instruction */
+		/* add offset 1 */
+		print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
+			       pTask->pVABase, (2 + hwPC - pTask->pVABase) * sizeof(uint32_t),
+			       true);
+		cmdq_core_save_hex_first_dump("", 16, 4,
+					      pTask->pVABase,
+					      (2 + hwPC - pTask->pVABase) * sizeof(uint32_t));
+	} else {
+		CMDQ_ERR("hwPC is not in region, dump all\n");
+		print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
+			       pTask->pVABase, (pTask->commandSize), true);
+		cmdq_core_save_hex_first_dump("", 16, 4, pTask->pVABase, (pTask->commandSize));
+	}
+}
+
+static void cmdq_core_dump_error_task(const TaskStruct *pTask, const TaskStruct *pNGTask, uint32_t thread)
 {
 	CmdqCBkStruct *pCallback = NULL;
 	ThreadStruct *pThread;
 	int32_t index = 0;
 	uint32_t *hwPC = NULL;
+	uint32_t *hwNGPC = NULL;
+	uint64_t printEngineFlag = 0;
 	uint32_t value[10] = { 0 };
 
 	static const char *const engineGroupName[] = {
@@ -4287,17 +4562,31 @@ static void cmdq_core_dump_error_task(const TaskStruct *pTask, uint32_t thread)
 			 pThread->waitCookie, pThread->nextCookie, pThread->taskCount);
 	}
 
+	/* Begin is not first, save NG task but print pTask as well */
+	if (pNGTask != pTask && NULL != pNGTask) {
+		CMDQ_ERR("== [CMDQ] We have NG task, so engine dumps may more than you think ==\n");
+		CMDQ_ERR("========== [CMDQ] Error Thread PC (NG Task) ==========\n");
+		hwNGPC = cmdq_core_dump_pc(pNGTask, thread, "ERR");
+
+		CMDQ_ERR("========= [CMDQ] Error Task Status (NG Task) =========\n");
+		cmdq_core_dump_task(pNGTask);
+
+		printEngineFlag |= pNGTask->engineFlag;
+	}
+
 	if (NULL != pTask) {
 		CMDQ_ERR("=============== [CMDQ] Error Thread PC ===============\n");
 		hwPC = cmdq_core_dump_pc(pTask, thread, "ERR");
 
 		CMDQ_ERR("=============== [CMDQ] Error Task Status ===============\n");
 		cmdq_core_dump_task(pTask);
+
+		printEngineFlag |= pTask->engineFlag;
 	}
 
 	/* dump tasks in error thread */
 	cmdq_core_dump_task_in_thread(thread, false, false, false);
-	cmdq_core_dump_task_with_engine_flag(pTask->engineFlag);
+	cmdq_core_dump_task_with_engine_flag(printEngineFlag);
 
 	CMDQ_ERR("=============== [CMDQ] CMDQ Status ===============\n");
 	cmdq_core_dump_status("ERR");
@@ -4323,7 +4612,7 @@ static void cmdq_core_dump_error_task(const TaskStruct *pTask, uint32_t thread)
 	CMDQ_ERR("=============== [CMDQ] Engine Status ===============\n");
 	pCallback = gCmdqGroupCallback;
 	for (index = 0; index < CMDQ_MAX_GROUP_COUNT; ++index) {
-		if (!cmdq_core_is_group_flag((CMDQ_GROUP_ENUM) index, pTask->engineFlag))
+		if (!cmdq_core_is_group_flag((CMDQ_GROUP_ENUM) index, printEngineFlag))
 			continue;
 
 		CMDQ_ERR("====== engine group %s status =======\n", engineGroupName[index]);
@@ -4333,15 +4622,16 @@ static void cmdq_core_dump_error_task(const TaskStruct *pTask, uint32_t thread)
 			continue;
 		}
 
-		pCallback[index].dumpInfo((gCmdqEngineGroupBits[index] & pTask->engineFlag),
+		pCallback[index].dumpInfo((gCmdqEngineGroupBits[index] & printEngineFlag),
 					  gCmdqContext.logLevel);
 	}
 
 	/* force dump DISP for DISP scenario with 0x0 engine flag */
-	if ((0x0 == pTask->engineFlag) && cmdq_get_func()->isDispScenario(pTask->scenario)) {
+	if (cmdq_get_func()->isDispScenario(pTask->scenario)
+		|| cmdq_get_func()->isDispScenario(pNGTask->scenario)) {
 		index = CMDQ_GROUP_DISP;
 		if (pCallback[index].dumpInfo) {
-			pCallback[index].dumpInfo((gCmdqEngineGroupBits[index] & pTask->engineFlag),
+			pCallback[index].dumpInfo((gCmdqEngineGroupBits[index] & printEngineFlag),
 						  gCmdqContext.logLevel);
 		}
 	}
@@ -4349,21 +4639,15 @@ static void cmdq_core_dump_error_task(const TaskStruct *pTask, uint32_t thread)
 	CMDQ_ERR("=============== [CMDQ] GIC dump ===============\n");
 	cmdq_core_dump_GIC();
 
-	CMDQ_ERR("=============== [CMDQ] Error Command Buffer ===============\n");
-	if (hwPC && pTask && hwPC >= pTask->pVABase) {
-		/* because hwPC points to "start" of the instruction */
-		/* add offset 1 */
-		print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
-			       pTask->pVABase, (2 + hwPC - pTask->pVABase) * sizeof(uint32_t),
-			       true);
-		cmdq_core_save_hex_first_dump("", 16, 4,
-					      pTask->pVABase,
-					      (2 + hwPC - pTask->pVABase) * sizeof(uint32_t));
-	} else {
-		CMDQ_ERR("hwPC is not in region, dump all\n");
-		print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 4,
-			       pTask->pVABase, (pTask->commandSize), true);
-		cmdq_core_save_hex_first_dump("", 16, 4, pTask->pVABase, (pTask->commandSize));
+	/* Begin is not first, save NG task but print pTask as well */
+	if (pNGTask != pTask && NULL != pNGTask) {
+		CMDQ_ERR("========== [CMDQ] Error Command Buffer (NG Task) ==========\n");
+		cmdq_core_dump_error_buffer(pNGTask, hwNGPC);
+	}
+
+	if (NULL != pTask) {
+		CMDQ_ERR("=============== [CMDQ] Error Command Buffer ===============\n");
+		cmdq_core_dump_error_buffer(pTask, hwPC);
 	}
 }
 
@@ -4410,15 +4694,6 @@ static void cmdq_core_attach_error_task(const TaskStruct *pTask, int32_t thread,
 		snprintf(gCmdqFirstError.callerName, TASK_COMM_LEN, "%s", pTask->callerName);
 		gCmdqFirstError.savetime = sched_clock();
 		do_gettimeofday(&gCmdqFirstError.savetv);
-
-		/* Only do summary for first error */
-		cmdq_core_dump_summary(pTask, thread, &pNGTask);
-		if (pNGTask != pTask && NULL != pNGTask) {
-			/* Begin is not first, save NG task but print pTask as well */
-			cmdq_core_dump_error_task(pNGTask, thread);
-			if (true == gCmdqFirstError.flag)
-				gCmdqFirstError.flag = false;
-		}
 	}
 #endif
 
@@ -4428,15 +4703,16 @@ static void cmdq_core_attach_error_task(const TaskStruct *pTask, int32_t thread,
 	CMDQ_ERR("================= [CMDQ] Begin of Error %d================\n",
 		 gCmdqContext.errNum);
 
-	cmdq_core_dump_error_task(pTask, thread);
+	cmdq_core_dump_summary(pTask, thread, &pNGTask);
+	if (gCmdqContext.errNum <= 2 || gCmdqContext.errNum % 16 == 0 || cmdq_core_should_full_error()) {
+		/* Dump error task */
+		cmdq_core_dump_error_task(pTask, pNGTask, thread);
+	}
 
 	CMDQ_ERR("================= [CMDQ] End of Error %d ================\n",
 		 gCmdqContext.errNum);
 	gCmdqContext.errNum++;
-#ifdef CMDQ_DUMP_FIRSTERROR
-	if (true == gCmdqFirstError.flag)
-		gCmdqFirstError.flag = false;
-#endif
+
 	if (pOutNGTask != NULL) {
 		if (NULL != pNGTask)
 			*pOutNGTask = pNGTask;
@@ -4618,9 +4894,15 @@ static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 
 	if (pThread->waitCookie <= cookie) {
 		count = cookie - pThread->waitCookie + 1;
+	} else if ((cookie+1) % CMDQ_MAX_COOKIE_VALUE == pThread->waitCookie) {
+		count = 0;
+		CMDQ_MSG("IRQ: duplicated cookie: waitCookie:%d, hwCookie:%d",
+			pThread->waitCookie, cookie);
 	} else {
 		/* Counter wrapped */
 		count = (CMDQ_MAX_COOKIE_VALUE - pThread->waitCookie + 1) + (cookie + 1);
+		CMDQ_ERR("IRQ: counter wrapped: waitCookie:%d, hwCookie:%d, count=%d",
+			pThread->waitCookie, cookie, count);
 	}
 
 	for (inner = (pThread->waitCookie % CMDQ_MAX_TASK_IN_THREAD); count > 0; count--, inner++) {
@@ -4773,9 +5055,15 @@ static void cmdqCoreHandleError(int32_t thread, int32_t value, CMDQ_TIME *pGotIR
 	/* Set the remain tasks to done state */
 	if (pThread->waitCookie <= cookie) {
 		count = cookie - pThread->waitCookie + 1;
+	} else if ((cookie+1) % CMDQ_MAX_COOKIE_VALUE == pThread->waitCookie) {
+		count = 0;
+		CMDQ_MSG("IRQ: duplicated cookie: waitCookie:%d, hwCookie:%d",
+			pThread->waitCookie, cookie);
 	} else {
 		/* Counter wrapped */
 		count = (CMDQ_MAX_COOKIE_VALUE - pThread->waitCookie + 1) + (cookie + 1);
+		CMDQ_ERR("IRQ: counter wrapped: waitCookie:%d, hwCookie:%d, count=%d",
+			pThread->waitCookie, cookie, count);
 	}
 
 	for (inner = (pThread->waitCookie % CMDQ_MAX_TASK_IN_THREAD); count > 0; count--, inner++) {
@@ -5311,7 +5599,7 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 			    CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread)));
 			backupEnd = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread)));
 			backupCookieCnt = CMDQ_GET_COOKIE_CNT(thread);
-			CMDQ_ERR
+			CMDQ_LOG
 			    ("Reset Backup Thread PC: 0x%08x, End: 0x%08x, CookieCnt: 0x%08x\n",
 			     backupCurrPC, backupEnd, backupCookieCnt);
 			/* Reset GCE thread */
@@ -6086,6 +6374,9 @@ static int32_t cmdq_core_exec_task_async_with_retry(TaskStruct *pTask, int32_t t
 		do {
 			cmdq_core_verfiy_command_end(pTask);
 
+			/* Save command buffer dump */
+			cmdq_core_save_command_buffer_dump(pTask);
+
 			status = (false == pTask->secData.isSecure) ?
 			    (cmdq_core_exec_task_async_impl(pTask, thread)) :
 			    (cmdq_core_exec_task_async_secure_impl(pTask, thread));
@@ -6547,7 +6838,7 @@ void cmdq_core_release_task_by_file_node(void *file_node)
 		pTask = list_entry(p, struct TaskStruct, listEntry);
 		if (TASK_STATE_IDLE != pTask->taskState &&
 		    pTask->privateData == file_node &&
-		    (cmdq_get_func()->isRequestUser(pTask->scenario))) {
+		    (cmdq_core_is_request_from_user_space(pTask->scenario))) {
 
 			CMDQ_LOG
 			    ("[WARNING] ACTIVE task 0x%p release because file node 0x%p closed\n",
@@ -6570,7 +6861,7 @@ void cmdq_core_release_task_by_file_node(void *file_node)
 		pTask = list_entry(p, struct TaskStruct, listEntry);
 		if (TASK_STATE_WAITING == pTask->taskState &&
 		    pTask->privateData == file_node &&
-		    (cmdq_get_func()->isRequestUser(pTask->scenario))) {
+		    (cmdq_core_is_request_from_user_space(pTask->scenario))) {
 
 			CMDQ_LOG
 			    ("[WARNING] WAITING task 0x%p release because file node 0x%p closed\n",
@@ -6671,10 +6962,6 @@ int32_t cmdqCoreInitialize(void)
 
 	init_waitqueue_head(&gCmdqThreadDispatchQueue);
 
-	/* Function link */
-	cmdq_virtual_function_setting();
-	cmdq_platform_function_setting();
-
 	/* Reset overall context */
 	memset(&gCmdqContext, 0x0, sizeof(ContextStruct));
 	/* some fields has non-zero initial value */
@@ -6701,6 +6988,9 @@ int32_t cmdqCoreInitialize(void)
 
 	gCmdqContext.taskAutoReleaseWQ = create_singlethread_workqueue("cmdq_auto_release");
 	gCmdqContext.taskConsumeWQ = create_singlethread_workqueue("cmdq_task");
+
+	/* Initialize command buffer dump */
+	memset(&gCmdqBufferDump, 0x0, sizeof(DumpCommandBufferStruct));
 
 #ifdef CMDQ_DUMP_FIRSTERROR
 	/* Reset overall first error dump */
@@ -6741,6 +7031,8 @@ int32_t cmdqCoreInitialize(void)
 #endif
 	/* Initialize secure path context */
 	cmdqSecInitialize();
+	/* Initialize test case structure */
+	cmdq_test_init_setting();
 
 	return 0;
 }
@@ -6839,7 +7131,7 @@ int cmdqCoreAllocWriteAddress(uint32_t count, dma_addr_t *paStart)
 
 		pWriteAddr->count = count;
 		pWriteAddr->va =
-		    cmdq_core_alloc_hw_buffer(cmdq_dev_get_func()->devGet(),
+		    cmdq_core_alloc_hw_buffer(cmdq_dev_get(),
 					      count * sizeof(uint32_t), &(pWriteAddr->pa),
 					      GFP_KERNEL);
 		if (current)
@@ -6882,7 +7174,7 @@ int cmdqCoreAllocWriteAddress(uint32_t count, dma_addr_t *paStart)
 	if (0 != status) {
 		/* release resources */
 		if (pWriteAddr && pWriteAddr->va) {
-			cmdq_core_free_hw_buffer(cmdq_dev_get_func()->devGet(),
+			cmdq_core_free_hw_buffer(cmdq_dev_get(),
 						 sizeof(uint32_t) * pWriteAddr->count,
 						 pWriteAddr->va, pWriteAddr->pa);
 			memset(pWriteAddr, 0, sizeof(WriteAddrStruct));
@@ -7006,7 +7298,7 @@ int cmdqCoreFreeWriteAddress(dma_addr_t paStart)
 
 	/* release resources */
 	if (pWriteAddr->va) {
-		cmdq_core_free_hw_buffer(cmdq_dev_get_func()->devGet(),
+		cmdq_core_free_hw_buffer(cmdq_dev_get(),
 					 sizeof(uint32_t) * pWriteAddr->count,
 					 pWriteAddr->va, pWriteAddr->pa);
 		memset(pWriteAddr, 0xdeaddead, sizeof(WriteAddrStruct));
@@ -7040,12 +7332,24 @@ int32_t cmdqCoreDebugRegDumpEnd(uint32_t taskID, uint32_t regCount, uint32_t *re
 
 void cmdq_core_set_log_level(const int32_t value)
 {
-	gCmdqContext.logLevel = value;
+	if (value == CMDQ_LOG_LEVEL_NORMAL) {
+		/* Only print CMDQ ERR and CMDQ LOG */
+		gCmdqContext.logLevel = CMDQ_LOG_LEVEL_NORMAL;
+	} else if (value < CMDQ_LOG_LEVEL_MAX) {
+		/* Modify log level */
+		gCmdqContext.logLevel = (1 << value);
+	}
 }
 
 bool cmdq_core_should_print_msg(void)
 {
-	int32_t logLevel = (gCmdqContext.logLevel > 0) ? (1) : (0);
+	bool logLevel = (gCmdqContext.logLevel & (1 << CMDQ_LOG_LEVEL_MSG)) ? (1) : (0);
+	return logLevel;
+}
+
+bool cmdq_core_should_full_error(void)
+{
+	bool logLevel = (gCmdqContext.logLevel & (1 << CMDQ_LOG_LEVEL_FULL_ERROR)) ? (1) : (0);
 	return logLevel;
 }
 
@@ -7100,7 +7404,7 @@ int32_t cmdq_core_save_first_dump(const char *string, ...)
 	char *pBuffer;
 
 	if (false == gCmdqFirstError.flag)
-		return 0;
+		return -EFAULT;
 
 	va_start(argptr, string);
 	pBuffer = gCmdqFirstError.cmdqString + gCmdqFirstError.cmdqCount;
@@ -7193,6 +7497,7 @@ void cmdq_core_save_hex_first_dump(const char *prefix_str,
 	int i, linelen, remaining = len;
 	unsigned char linebuf[32 * 3 + 2 + 32 + 1];
 	int logLen;
+	char *pBuffer;
 
 	if (false == gCmdqFirstError.flag)
 		return;
@@ -7206,16 +7511,13 @@ void cmdq_core_save_hex_first_dump(const char *prefix_str,
 
 		cmdq_core_hex_dump_to_buffer(ptr + i, linelen, rowsize, groupsize,
 					     linebuf, sizeof(linebuf));
-		logLen = snprintf(NULL, 0, "%s%p: %s\n", prefix_str, ptr + i, linebuf) + 1;
-		if (logLen <= 1)
-			continue;
 
-		if ((gCmdqFirstError.cmdqCount + logLen) < CMDQ_MAX_FIRSTERROR) {
-			char *pBuffer = gCmdqFirstError.cmdqString + gCmdqFirstError.cmdqCount;
+		pBuffer = gCmdqFirstError.cmdqString + gCmdqFirstError.cmdqCount;
+		logLen = snprintf(pBuffer, gCmdqFirstError.cmdqMaxSize, "%s%p: %s\n", prefix_str, ptr + i, linebuf);
+		gCmdqFirstError.cmdqMaxSize -= logLen;
+		gCmdqFirstError.cmdqCount += logLen;
 
-			gCmdqFirstError.cmdqCount +=
-			    snprintf(pBuffer, logLen, "%s%p: %s\n", prefix_str, ptr + i, linebuf);
-		} else {
+		if (gCmdqFirstError.cmdqMaxSize <= 0) {
 			gCmdqFirstError.flag = false;
 			pr_err("[CMDQ][ERR] Error0 dump saving buffer is full\n");
 		}

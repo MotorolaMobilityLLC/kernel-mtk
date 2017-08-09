@@ -5,9 +5,14 @@
 #include <asm/io.h>
 
 #include "cmdq_core.h"
-#include "cmdq_device.h"
-#define GCE_BASE_PA cmdq_dev_get_func()->gceBasePA()
-#define GCE_BASE_VA cmdq_dev_get_func()->gceBaseVA()
+#include "../cmdq_device.h"
+
+#ifndef CMDQ_OF_SUPPORT
+#define GCE_BASEPA_NO_OF		0x10212000
+#endif
+
+#define GCE_BASE_PA cmdq_dev_get_module_base_PA_GCE()
+#define GCE_BASE_VA cmdq_dev_get_module_base_VA_GCE()
 
 #define CMDQ_CORE_WARM_RESET         (GCE_BASE_VA + 0x000)
 #define CMDQ_CURR_IRQ_STATUS         (GCE_BASE_VA + 0x010)

@@ -59,6 +59,9 @@ typedef enum CMDQ_SCENARIO_ENUM {
 
 	CMDQ_SCENARIO_RDMA2_DISP = 34,
 
+	CMDQ_SCENARIO_HIGHP_TRIGGER_LOOP = 35,	/* for primary trigger loop enable pre-fetch usage */
+	CMDQ_SCENARIO_LOWP_TRIGGER_LOOP = 36,	/* for low priority monitor loop to polling bus status*/
+
 	CMDQ_MAX_SCENARIO_COUNT	/* ALWAYS keep at the end */
 } CMDQ_SCENARIO_ENUM;
 

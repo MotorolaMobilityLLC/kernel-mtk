@@ -1,6 +1,6 @@
 #include "cmdq_mdp_common.h"
 #include "cmdq_core.h"
-#include "cmdq_device_common.h"
+#include "cmdq_device.h"
 #include "cmdq_reg.h"
 #ifdef CMDQ_PROFILE_MMP
 #include "cmdq_mmp.h"
@@ -9,17 +9,38 @@
 /**************************************************************************************/
 /*******************                    Platform dependent function                    ********************/
 /**************************************************************************************/
+
+/* query MDP clock is on  */
+bool cmdq_mdp_clock_is_on_virtual(CMDQ_ENG_ENUM engine)
+{
+	return false;
+}
+
+/* enable MDP clock  */
+void cmdq_mdp_enable_clock_virtual(bool enable, CMDQ_ENG_ENUM engine)
+{
+	/* Do Nothing */
+}
+
+/* Common Clock Framework */
+void cmdq_mdp_init_module_clk_virtual(void)
+{
+	/* Do Nothing */
+}
+
+/* VENC callback function */
+int32_t cmdqVEncDumpInfo_virtual(uint64_t engineFlag, int level)
+{
+	return 0;
+}
+
+/* MDP callback function */
 int32_t cmdqMdpClockOn_virtual(uint64_t engineFlag)
 {
 	return 0;
 }
 
 int32_t cmdqMdpDumpInfo_virtual(uint64_t engineFlag, int level)
-{
-	return 0;
-}
-
-int32_t cmdqVEncDumpInfo_virtual(uint64_t engineFlag, int level)
 {
 	return 0;
 }
@@ -34,6 +55,17 @@ int32_t cmdqMdpClockOff_virtual(uint64_t engineFlag)
 	return 0;
 }
 
+void cmdq_mdp_init_module_base_VA_virtual(void)
+{
+	/* Do Nothing */
+}
+
+void cmdq_mdp_deinit_module_base_VA_virtual(void)
+{
+	/* Do Nothing */
+}
+
+/* test MDP clock function */
 const uint32_t cmdq_mdp_rdma_get_reg_offset_src_addr_virtual(void)
 {
 	return 0;
@@ -64,11 +96,19 @@ void cmdq_mdp_virtual_function_setting(void)
 
 	pFunc = &(gMDPFunctionPointer);
 
+	pFunc->mdpClockIsOn = cmdq_mdp_clock_is_on_virtual;
+	pFunc->enableMdpClock = cmdq_mdp_enable_clock_virtual;
+	pFunc->initModuleCLK = cmdq_mdp_init_module_clk_virtual;
+
+	pFunc->vEncDumpInfo = cmdqVEncDumpInfo_virtual;
 	pFunc->mdpClockOn = cmdqMdpClockOn_virtual;
 	pFunc->mdpDumpInfo = cmdqMdpDumpInfo_virtual;
-	pFunc->vEncDumpInfo = cmdqVEncDumpInfo_virtual;
 	pFunc->mdpResetEng = cmdqMdpResetEng_virtual;
 	pFunc->mdpClockOff = cmdqMdpClockOff_virtual;
+
+	pFunc->initModuleBaseVA = cmdq_mdp_init_module_base_VA_virtual;
+	pFunc->deinitModuleBaseVA = cmdq_mdp_deinit_module_base_VA_virtual;
+
 	pFunc->rdmaGetRegOffsetSrcAddr = cmdq_mdp_rdma_get_reg_offset_src_addr_virtual;
 	pFunc->wrotGetRegOffsetDstAddr = cmdq_mdp_wrot_get_reg_offset_dst_addr_virtual;
 	pFunc->wdmaGetRegOffsetDstAddr = cmdq_mdp_wdma_get_reg_offset_dst_addr_virtual;
@@ -85,7 +125,7 @@ void cmdq_mdp_enable(uint64_t engineFlag, CMDQ_ENG_ENUM engine)
 #ifdef CMDQ_PWR_AWARE
 	CMDQ_VERBOSE("Test for ENG %d\n", engine);
 	if (engineFlag & (1LL << engine))
-		cmdq_dev_get_func()->enableMDPClock(true, engine);
+		cmdq_mdp_get_func()->enableMdpClock(true, engine);
 #endif
 }
 
@@ -127,7 +167,7 @@ int cmdq_mdp_loop_reset(CMDQ_ENG_ENUM engine,
 	int resetStatus = 0;
 	int initStatus = 0;
 
-	if (cmdq_dev_get_func()->mdpClockIsOn(engine)) {
+	if (cmdq_mdp_get_func()->mdpClockIsOn(engine)) {
 		CMDQ_PROF_START(current->pid, __func__);
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->MDP_reset,
 			      MMProfileFlagStart, resetReg, resetStateReg);
@@ -174,7 +214,7 @@ void cmdq_mdp_loop_off(CMDQ_ENG_ENUM engine,
 	int resetStatus = 0;
 	int initStatus = 0;
 
-	if (cmdq_dev_get_func()->mdpClockIsOn(engine)) {
+	if (cmdq_mdp_get_func()->mdpClockIsOn(engine)) {
 
 		/* loop reset */
 		resetStatus = cmdq_mdp_loop_reset_impl(resetReg, 0x1,
@@ -199,7 +239,7 @@ void cmdq_mdp_loop_off(CMDQ_ENG_ENUM engine,
 			return;
 		}
 
-		cmdq_dev_get_func()->enableMDPClock(false, engine);
+		cmdq_mdp_get_func()->enableMdpClock(false, engine);
 	}
 #endif
 }

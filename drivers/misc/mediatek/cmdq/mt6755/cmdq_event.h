@@ -118,6 +118,7 @@ DECLARE_CMDQ_EVENT(CMDQ_SYNC_SECURE_THR_EOF, 408)
 /* SW Sync Tokens (User-defined) */
 DECLARE_CMDQ_EVENT(CMDQ_SYNC_TOKEN_USER_0, 410)
 DECLARE_CMDQ_EVENT(CMDQ_SYNC_TOKEN_USER_1, 411)
+DECLARE_CMDQ_EVENT(CMDQ_SYNC_TOKEN_POLL_MONITOR, 412)
 
 /* Event for CMDQ to block executing command when append command
 * Plz sync CMDQ_SYNC_TOKEN_APPEND_THR(id) in cmdq_core source file. */

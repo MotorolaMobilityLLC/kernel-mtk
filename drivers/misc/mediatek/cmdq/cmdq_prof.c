@@ -86,7 +86,7 @@ uint32_t cmdq_prof_get_statistic_id(const uint32_t *pCmd)
 uint32_t cmdq_prof_calculate_HW_cycle(const CMDQ_OP_STATISTIC_ENUM statisticId,
 				      const uint32_t count)
 {
-	uint32_t hwCycle = 0;
+	uint32_t hwCycle = -1;
 
 #undef DECLARE_CMDQ_INSTR_CYCLE
 #define DECLARE_CMDQ_INSTR_CYCLE(id, hw_op, cycle, name) { if (id == statisticId) {hwCycle = (count * cycle); break; } }
@@ -95,7 +95,7 @@ uint32_t cmdq_prof_calculate_HW_cycle(const CMDQ_OP_STATISTIC_ENUM statisticId,
 	} while (0);
 #undef DECLARE_CMDQ_INSTR_CYCLE
 
-	if (0 == hwCycle) {
+	if (-1 == hwCycle) {
 		/* Error message dump */
 		CMDQ_ERR("unknown statisticId: %d\n", statisticId);
 	}

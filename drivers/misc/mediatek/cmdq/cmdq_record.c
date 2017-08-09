@@ -299,7 +299,9 @@ int32_t cmdq_append_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code,
 	pCommand = (uint32_t *) ((uint8_t *) handle->pBuffer + handle->blockSize);
 
 	if (handle->finalized) {
-		CMDQ_ERR("Already finalized record 0x%p, cannot add more command", handle);
+		CMDQ_ERR("Finalized record 0x%p (scenario:%d)\n", handle, handle->scenario);
+		CMDQ_ERR("    cannot add command (op: 0x%02x, argA: 0x%08x, argB: 0x%08x)\n",
+			code, argA, argB);
 		return -EBUSY;
 	}
 
@@ -1156,6 +1158,11 @@ static int32_t cmdqRecIRQCallback(unsigned long data)
 
 int32_t cmdqRecStartLoop(cmdqRecHandle handle)
 {
+	return cmdqRecStartLoopWithCallback(handle, &cmdqRecIRQCallback, 0);
+}
+
+int32_t cmdqRecStartLoopWithCallback(cmdqRecHandle handle, CmdqInterruptCB loopCB, unsigned long loopData)
+{
 	int32_t status = 0;
 	cmdqCommandStruct desc = { 0 };
 	char longMsg[CMDQ_LONGSTRING_MAX];
@@ -1179,8 +1186,8 @@ int32_t cmdqRecStartLoop(cmdqRecHandle handle)
 			   "Submit task loop: scenario: %d, priority: %d, engine: 0x%llx,",
 			   handle->scenario, handle->priority, handle->engineFlag);
 	cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
-			   " buffer: 0x%p, size: %d, callback: 0x%p, data: %d\n",
-			   handle->pBuffer, handle->blockSize, &cmdqRecIRQCallback, 0);
+			   " buffer: 0x%p, size: %d, callback: 0x%p, data: %ld\n",
+			   handle->pBuffer, handle->blockSize, loopCB, loopData);
 	if (msgOffset > 0) {
 		/* print message */
 		CMDQ_MSG("%s", longMsg);
@@ -1196,7 +1203,7 @@ int32_t cmdqRecStartLoop(cmdqRecHandle handle)
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
-	status = cmdqCoreSubmitTaskAsync(&desc, &cmdqRecIRQCallback, 0, &handle->pRunningTask);
+	status = cmdqCoreSubmitTaskAsync(&desc, loopCB, loopData, &handle->pRunningTask);
 	return status;
 }
 
