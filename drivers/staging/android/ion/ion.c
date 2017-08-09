@@ -777,14 +777,28 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 	struct ion_client *client = s->private;
 	struct ion_device *dev = g_ion_device;
 	struct rb_node *n;
-	size_t sizes[ION_NUM_HEAP_IDS] = {0};
-	const char *names[ION_NUM_HEAP_IDS] = {NULL};
+	/*size_t sizes[ION_NUM_HEAP_IDS] = {0};
+	const char *names[ION_NUM_HEAP_IDS] = {NULL};*/
+	size_t *sizes;
+	const char **names;
 	int i;
+
+	sizes = kcalloc(ION_NUM_HEAP_IDS, sizeof(size_t), GFP_ATOMIC);
+
+	if (!sizes)
+		return -ENOMEM;
+
+	names = kcalloc(ION_NUM_HEAP_IDS, sizeof(char *), GFP_ATOMIC);
+
+	if (!names)
+		return -ENOMEM;
 
 	down_read(&dev->lock);
 	if (!ion_client_validate(dev, client)) {
 		pr_err("%s: client is invlaid.\n", __func__);
 		up_read(&dev->lock);
+		kfree(sizes);
+		kfree(names);
 		return -1;
 	}
 
@@ -817,6 +831,9 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 	}
 
 	up_read(&dev->lock);
+
+	kfree(sizes);
+	kfree(names);
 
 	return 0;
 }

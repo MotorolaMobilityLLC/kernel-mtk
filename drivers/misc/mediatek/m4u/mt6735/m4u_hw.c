@@ -1291,11 +1291,16 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 	int port, larb, larb_port;
 	int ret = 0;
 
-	unsigned int config_larb[SMI_LARB_NR] = {0};
-	unsigned int regOri[SMI_LARB_NR] = {0};
-	unsigned int regNew[SMI_LARB_NR] = {0};
+	unsigned int config_larb[SMI_LARB_NR];
+	unsigned int regOri[SMI_LARB_NR];
+	unsigned int regNew[SMI_LARB_NR];
 	unsigned int change = 0;
-	unsigned char m4u_port_array[(M4U_PORT_NR+1)/2] = {0};
+	unsigned char m4u_port_array[(M4U_PORT_NR+1)/2];
+
+	memset(config_larb, 0, SMI_LARB_NR * sizeof(unsigned int));
+	memset(regOri, 0, SMI_LARB_NR * sizeof(unsigned int));
+	memset(regNew, 0, SMI_LARB_NR * sizeof(unsigned int));
+	memset(m4u_port_array, 0, (M4U_PORT_NR+1)/2 * sizeof(unsigned char));
 
 	for (port = 0; port < M4U_PORT_NR; port++) {
 		if (port_array->ports[port] && M4U_PORT_ATTR_EN != 0) {
@@ -1340,9 +1345,8 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 					change = 1;
 			}
 		}
+		M4ULOG_HIGH("m4u_config_port_array 1: larb: %d, [0x%x], %d\n", larb, config_larb[larb], change);
 	}
-	M4ULOG_HIGH("m4u_config_port_array 1: [0x%x, 0x%x, 0x%x, 0x%x, 0x%x] %d\n",
-			config_larb[0], config_larb[1], config_larb[2], config_larb[3], config_larb[4], change);
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 	if (m4u_tee_en && 1 == change) {
@@ -1796,9 +1800,6 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 	if (irq == gM4uDev->irq_num[0]) {
 		m4u_base = gM4UBaseAddr[0];
 		m4u_index = 0;
-	} else if (irq == gM4uDev->irq_num[1]) {
-		m4u_base = gM4UBaseAddr[1];
-		m4u_index = 1;
 	} else {
 		M4UMSG("MTK_M4U_isr(), Invalid irq number %d\n", irq);
 		return -1;
