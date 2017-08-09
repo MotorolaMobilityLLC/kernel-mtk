@@ -2535,7 +2535,7 @@ static __always_inline int __update_entity_runnable_avg(u64 now, int cpu,
 		sa->avg_period += delta_w;
 
 		mt_sched_printf(sched_lb_info,
-			"[%s] cpu=%d freq=%lu cap=%lu delta=%d scaled_delta_w=%d avg_sum=%lu avg_period=%lu",
+			"[%s] cpu=%d freq=%lu cap=%lu delta=%d scaled_delta_w=%d avg_sum=%u avg_period=%u",
 			__func__, cpu, scale_freq, scale_cpu, delta_w, scaled_delta_w, sa->running_avg_sum,
 			sa->avg_period);
 
@@ -4765,7 +4765,6 @@ static inline unsigned int hmp_domain_min_load(struct hmp_domain *hmpd,
 	return min_runnable_load ? min_runnable_load / (LOAD_AVG_MAX + 1) : 0;
 }
 #else
-static int __init hmp_cpu_mask_setup(void) { return 1; }
 static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 			int prev_cpu, int new_cpu) { return new_cpu; }
 static void hmp_online_cpu(int cpu) {}
@@ -7641,7 +7640,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 
 	sgs->group_no_capacity = group_is_overloaded(env, sgs);
 	sgs->group_type = group_classify(env, group, sgs);
-	mt_sched_printf(sched_lb_info, "[%s] cpu=0x%lx no_capacity=%d weight=%lu nr=%d type=%d, usage=%lu",
+	mt_sched_printf(sched_lb_info, "[%s] cpu=0x%lx no_capacity=%d weight=%d nr=%d type=%d, usage=%lu",
 		__func__, sched_group_cpus(group)->bits[0],
 		sgs->group_no_capacity, sgs->group_weight, sgs->sum_nr_running,
 		sgs->group_type, sgs->group_usage);
