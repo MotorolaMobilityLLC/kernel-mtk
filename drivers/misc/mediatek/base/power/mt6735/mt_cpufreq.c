@@ -1384,6 +1384,29 @@ static int _mt_cpufreq_set_limit_by_pwr_budget(unsigned int budget)
 }
 
 #ifndef DISABLE_PBM_FEATURE
+static unsigned int _mt_cpufreq_get_limited_core_num(unsigned int budget)
+{
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(0);	/* TODO: FIXME */
+	int possible_cpu = num_possible_cpus();
+	int ncpu;
+	int i;
+
+	for (ncpu = possible_cpu; ncpu > 0; ncpu--) {
+		for (i = 0; i < p->nr_opp_tbl * possible_cpu; i++) {
+#ifdef CONFIG_ARCH_MT6753
+			if (is_need_5A_throttle(p, p->power_tbl[i].cpufreq_khz,
+						p->power_tbl[i].cpufreq_ncpu))
+				continue;
+#endif
+			if (p->power_tbl[i].cpufreq_power <= budget)
+				return p->power_tbl[i].cpufreq_ncpu;
+		}
+	}
+
+	/* not found */
+	return p->power_tbl[p->nr_power_tbl - 1].cpufreq_ncpu;
+}
+
 /* for power budget calculate */
 static int _mt_cpufreq_get_pwr_idx(struct mt_cpu_dvfs *p, unsigned int freq, unsigned int ncpu)
 {
@@ -1441,6 +1464,8 @@ void mt_cpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 	if (p->limited_power_by_thermal != 0 && limited_power > p->limited_power_by_thermal) {
 		cpufreq_ver("@%s: power is limited by thermal(%d), ignore budget from PBM(%d)...\n",
 			    __func__, p->limited_power_by_thermal, limited_power);
+		/* we still need to update limited core */
+		hps_set_cpu_num_limit(LIMIT_LOW_BATTERY, _mt_cpufreq_get_limited_core_num(limited_power), 0);
 		return;
 	}
 
@@ -1473,6 +1498,10 @@ void mt_cpufreq_set_power_limit_by_pbm(unsigned int limited_power)
 #endif
 	} else
 		_mt_cpufreq_set_limit_by_pwr_budget(p->limited_power_by_pbm);
+
+	if (p->limited_max_ncpu < num_online_cpus())
+		cpufreq_dbg("@%s: limited power = %d, limited_max_ncpu = %d, online CPU = %d\n",
+				__func__, p->limited_power_by_pbm, p->limited_max_ncpu, num_online_cpus());
 
 	cpufreq_ver("@%s: limited_power_idx = %d, limited_max_freq = %d, limited_max_ncpu = %d\n",
 		    __func__, p->limited_power_idx, p->limited_max_freq, p->limited_max_ncpu);
