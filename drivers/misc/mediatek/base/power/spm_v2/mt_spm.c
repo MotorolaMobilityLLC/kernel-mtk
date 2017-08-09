@@ -653,6 +653,7 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 	int i;
 	int offset = 0;
 	int addr_2nd = 0;
+	int spm_fw_count = 0;
 
 	if (!pdev)
 		return err;
@@ -724,11 +725,12 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		pdesc->base_dma = dyna_load_pcm[i].buf_dma;
 
 		dyna_load_pcm[i].ready = 1;
-		dyna_load_pcm_done = 1;
+		spm_fw_count++;
 	}
 
+#if defined(CONFIG_ARCH_MT6755)
 	/* check addr_2nd */
-	if (dyna_load_pcm_done) {
+	if (spm_fw_count == DYNA_LOAD_PCM_MAX) {
 		for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++) {
 			struct pcm_desc *pdesc = &(dyna_load_pcm[i].desc);
 
@@ -738,16 +740,17 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 			if (pdesc->addr_2nd == 0) {
 				if (addr_2nd == (pdesc->size - 3))
 					*(u16 *) &pdesc->size = addr_2nd;
-#if defined(CONFIG_ARCH_MT6755)
 				else
 					BUG();
-#endif
 			}
 		}
 	}
+#endif
 
-	if (dyna_load_pcm_done)
+	if (spm_fw_count == DYNA_LOAD_PCM_MAX) {
 		vcorefs_late_init_dvfs();
+		dyna_load_pcm_done = 1;
+	}
 
 	return err;
 }
@@ -863,17 +866,20 @@ static int spm_pm_event(struct notifier_block *notifier, unsigned long pm_event,
 			if (spm_fw[i])
 				release_firmware(spm_fw[i]);
 		}
+		dyna_load_pcm_done = 0;
+		for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
+			dyna_load_pcm[i].ready = 0;
 		return NOTIFY_DONE;
 	case PM_RESTORE_PREPARE:
 		return NOTIFY_DONE;
 	case PM_POST_HIBERNATION:
+		dyna_load_pcm_done = 0;
+		for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
+			dyna_load_pcm[i].ready = 0;
 		if (local_buf) {
 			iounmap(local_buf);
 			local_buf = NULL;
 		}
-		dyna_load_pcm_done = 0;
-		for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
-			dyna_load_pcm[i].ready = 0;
 		spm_load_pcm_firmware_nodev();
 
 		return NOTIFY_DONE;
