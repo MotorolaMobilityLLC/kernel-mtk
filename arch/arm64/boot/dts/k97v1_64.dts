@@ -344,46 +344,46 @@
 	tpd-filter-custom-speed = <0 0 0>;
 	pinctrl-names = "default", "state_eint_as_int", "state_eint_output0", "state_eint_output1",
 		"state_rst_output0", "state_rst_output1";
-	pinctrl-0 = <&CTP_pins_default>;
-	pinctrl-1 = <&CTP_pins_eint_as_int>;
-	pinctrl-2 = <&CTP_pins_eint_output0>;
-	pinctrl-3 = <&CTP_pins_eint_output1>;
-	pinctrl-4 = <&CTP_pins_rst_output0>;
-	pinctrl-5 = <&CTP_pins_rst_output1>;
+	pinctrl-0 = <&ctp_pins_default>;
+	pinctrl-1 = <&ctp_pins_eint_as_int>;
+	pinctrl-2 = <&ctp_pins_eint_output0>;
+	pinctrl-3 = <&ctp_pins_eint_output1>;
+	pinctrl-4 = <&ctp_pins_rst_output0>;
+	pinctrl-5 = <&ctp_pins_rst_output1>;
 	status = "okay";
 };
 &pio {
-	CTP_pins_default: eint0default {
+	ctp_pins_default: eint0default {
 	};
-	CTP_pins_eint_as_int: eint@0 {
+	ctp_pins_eint_as_int: eint@0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO85__FUNC_GPIO85>;
+			pins = <PINMUX_GPIO85__FUNC_EINT8>;
 			slew-rate = <0>;
 			bias-disable;
 		};
 	};
-	CTP_pins_eint_output0: eintoutput0 {
+	ctp_pins_eint_output0: eintoutput0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO85__FUNC_GPIO85>;
+			pins = <PINMUX_GPIO85__FUNC_EINT8>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-	CTP_pins_eint_output1: eintoutput1 {
+	ctp_pins_eint_output1: eintoutput1 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO85__FUNC_GPIO85>;
+			pins = <PINMUX_GPIO85__FUNC_EINT8>;
 			slew-rate = <1>;
 			output-high;
 		};
 	};
-	CTP_pins_rst_output0: rstoutput0 {
+	ctp_pins_rst_output0: rstoutput0 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO68__FUNC_GPIO68>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-	CTP_pins_rst_output1: rstoutput1 {
+	ctp_pins_rst_output1: rstoutput1 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO68__FUNC_GPIO68>;
 			slew-rate = <1>;
@@ -404,16 +404,16 @@
 		headset-four-key-threshold = <0 58 121 192 400>;
 		/* ACCDET GPIO standardization ACC mode use */
 		pinctrl-names = "default", "state_eint_as_int";
-		pinctrl-0 = <&ACCDET_pins_default>;
-		pinctrl-1 = <&ACCDET_pins_eint_as_int>;
+		pinctrl-0 = <&accdet_pins_default>;
+		pinctrl-1 = <&accdet_pins_eint_as_int>;
 		status = "okay";
 };
 &pio {
-	ACCDET_pins_default: eint0default {
+	accdet_pins_default: accdetdefault {
 	};
-	ACCDET_pins_eint_as_int: eint@0 {
+	accdet_pins_eint_as_int: accdeteint@0 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO92__FUNC_GPIO92>;
+			pins = <PINMUX_GPIO92__FUNC_EINT15>;
 			slew-rate = <0>;
 			bias-disable;
 		};
