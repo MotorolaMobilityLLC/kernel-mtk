@@ -4386,6 +4386,11 @@ static int cpufreq_power_mode_proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+int mt_cpufreq_get_ppb_state(void)
+{
+	return dvfs_power_mode;
+}
+
 static ssize_t cpufreq_power_mode_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
 	unsigned int do_power_mode;

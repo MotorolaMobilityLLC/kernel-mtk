@@ -65,6 +65,9 @@ extern void mt_cpufreq_set_ptbl_registerCB(mt_cpufreq_set_ptbl_funcPTP pCB);
 /* PBM */
 extern unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id);
 
+/* PPB */
+extern int mt_cpufreq_get_ppb_state(void);
+
 /* PPM */
 extern unsigned int mt_cpufreq_get_cur_phy_freq(enum mt_cpu_dvfs_id id);
 
