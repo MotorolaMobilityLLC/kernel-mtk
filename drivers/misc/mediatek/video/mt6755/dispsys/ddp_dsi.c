@@ -3715,7 +3715,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 					      DSI_REG[dsi_i]->DSI_INTSTA, RD_RDY, 0x00000000);
 			}
 			/* 2. save RX data */
-			if (hSlot[0] & hSlot[1] & hSlot[2] & hSlot[3]) {
+			if (hSlot[0] && hSlot[1] && hSlot[2] && hSlot[3]) {
 				DSI_BACKUPREG32(cmdq_trigger_handle, hSlot[0], i,
 					&DSI_REG[0]->DSI_RX_DATA0);
 				DSI_BACKUPREG32(cmdq_trigger_handle, hSlot[1], i,
@@ -3745,7 +3745,7 @@ int ddp_dsi_build_cmdq(DISP_MODULE_ENUM module, void *cmdq_trigger_handle, CMDQ_
 			DISPCHECK("[DSI]enter cmp i=%d\n", i);
 
 			/* read data */
-			if (hSlot[0] & hSlot[1] & hSlot[2] & hSlot[3]) {
+			if (hSlot[0] && hSlot[1] && hSlot[2] && hSlot[3]) {
 				/* read from slot */
 				cmdqBackupReadSlot(hSlot[0], i, ((uint32_t *) &read_data[0]));
 				cmdqBackupReadSlot(hSlot[1], i, ((uint32_t *) &read_data[1]));
