@@ -120,6 +120,7 @@ static bool mFMEnable;
 static bool mOffloadEnable;
 static bool mOffloadSWMode;
 static bool mIRQ2Enable;
+static bool mAdcHiresEnable;
 
 static AudioHdmi *mHDMIOutput;
 static AudioMrgIf *mAudioMrg;
@@ -1401,11 +1402,14 @@ bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S)
 		Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x03F87201, 0xFFFFFFFF);	/* up8x txif sat on */
 
 		if (dVoiceModeSelect >= Soc_Aud_ADDA_UL_SAMPLERATE_96K) {	/* hires */
-			if (dVoiceModeSelect >= Soc_Aud_ADDA_UL_SAMPLERATE_96K)
-				Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x1 << 5, 0x1 << 5);	/* use hires format [1 0 23] */
+			Afe_Set_Reg(AFE_ADDA_NEWIF_CFG0, 0x1 << 5, 0x1 << 5);	/* use hires format [1 0 23] */
 
 			/*Afe_Set_Reg(AFE_ADDA_NEWIF_CFG1, ((dVoiceModeSelect < 3) ? 1 : 3) << 10, 0x3 << 10);*/
 			Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, dVoiceModeSelect << 28, 0xf << 28);
+
+			/* power on adc hires */
+			AudDrv_ADC_Hires_Clk_On();
+			mAdcHiresEnable = true;
 		} else {	/* normal 8~48k */
 			/* use fixed 260k anc path */
 			Afe_Set_Reg(AFE_ADDA_NEWIF_CFG2, 8 << 28, 0xf << 28);
@@ -1632,12 +1636,18 @@ bool SetI2SAdcEnable(bool bEnable)
 		   mAudioMEMIF[Soc_Aud_Digital_Block_I2S_IN_ADC_2]->mState == false) {
 		Afe_Set_Reg(AFE_ADDA_UL_DL_CON0, 0, 0x1);
 	}
-#ifdef CONFIG_FPGA_EARLY_PORTING
+
 	if (bEnable == false) {
+		if (mAdcHiresEnable) {
+			/* power on adc hires */
+			AudDrv_ADC_Hires_Clk_Off();
+			mAdcHiresEnable = false;
+		}
+#ifdef CONFIG_FPGA_EARLY_PORTING
 		pr_warn("%s(), disable fpga clock divide by 4", __func__);
 		Afe_Set_Reg(FPGA_CFG0, 0x0 << 1, 0x1 << 1);
-	}
 #endif
+	}
 
 	return true;
 }
