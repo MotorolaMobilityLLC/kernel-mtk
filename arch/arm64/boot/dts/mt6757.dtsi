@@ -300,6 +300,10 @@
 		/* VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>; */
 	};
 
+	accdet: accdet@ {
+		compatible = "mediatek,mt6757-accdet";
+	};
+
 	swtp: swtp {
 		compatible = "mediatek, swtp-eint";
 	};
