@@ -25,6 +25,10 @@
 #define HPS_TASK_PRIORITY		(MAX_RT_PRIO - 3)
 #define HPS_TIMER_INTERVAL_MS		100
 
+#define HPS_PERIODICAL_BY_WAIT_QUEUE        (1)
+#define HPS_PERIODICAL_BY_TIMER             (2)
+#define HPS_PERIODICAL_BY_HR_TIMER          (3)
+
 #define MAX_CPU_UP_TIMES		10
 #define MAX_CPU_DOWN_TIMES		100
 #define MAX_TLP_TIMES			10
@@ -86,18 +90,18 @@ enum hps_ctxt_state_e {
 
 enum hps_ctxt_action_e {
 	ACTION_NONE = 0,
-	ACTION_BASE_LITTLE,		/* bit  1, 0x0002 */
-	ACTION_BASE_BIG,		/* bit  2, 0x0004 */
-	ACTION_LIMIT_LITTLE,		/* bit  3, 0x0008 */
-	ACTION_LIMIT_BIG,		/* bit  4, 0x0010 */
+	ACTION_BASE_LITTLE,	/* bit  1, 0x0002 */
+	ACTION_BASE_BIG,	/* bit  2, 0x0004 */
+	ACTION_LIMIT_LITTLE,	/* bit  3, 0x0008 */
+	ACTION_LIMIT_BIG,	/* bit  4, 0x0010 */
 	ACTION_RUSH_BOOST_LITTLE,	/* bit  5, 0x0020 */
-	ACTION_RUSH_BOOST_BIG,		/* bit  6, 0x0040 */
-	ACTION_UP_LITTLE,		/* bit  7, 0x0080 */
-	ACTION_UP_BIG,			/* bit  8, 0x0100 */
-	ACTION_DOWN_LITTLE,		/* bit  9, 0x0200 */
-	ACTION_DOWN_BIG,		/* bit 10, 0x0400 */
-	ACTION_BIG_TO_LITTLE,		/* bit 11, 0x0800 */
-	ACTION_INPUT,			/* bit 12, 0x1000 */
+	ACTION_RUSH_BOOST_BIG,	/* bit  6, 0x0040 */
+	ACTION_UP_LITTLE,	/* bit  7, 0x0080 */
+	ACTION_UP_BIG,		/* bit  8, 0x0100 */
+	ACTION_DOWN_LITTLE,	/* bit  9, 0x0200 */
+	ACTION_DOWN_BIG,	/* bit 10, 0x0400 */
+	ACTION_BIG_TO_LITTLE,	/* bit 11, 0x0800 */
+	ACTION_INPUT,		/* bit 12, 0x1000 */
 	ACTION_COUNT
 };
 
@@ -109,7 +113,7 @@ struct hps_ctxt_struct {
 	/* enabled */
 	unsigned int enabled;
 	/* disable hotplug strategy in suspend flow */
-	unsigned int suspend_enabled;		/* default: 1 */
+	unsigned int suspend_enabled;	/* default: 1 */
 	unsigned int cur_dump_enabled;
 	unsigned int stats_dump_enabled;
 
@@ -118,6 +122,9 @@ struct hps_ctxt_struct {
 	struct mutex lock;
 	struct task_struct *tsk_struct_ptr;
 	wait_queue_head_t wait_queue;
+	struct timer_list tmr_list;
+	unsigned int periodical_by;
+	struct hrtimer hr_timer;
 	struct platform_driver pdrv;
 
 	/* backup */
@@ -203,6 +210,9 @@ extern void hps_ctxt_print_algo_stats_cur(int toUart);
 extern void hps_ctxt_print_algo_stats_up(int toUart);
 extern void hps_ctxt_print_algo_stats_down(int toUart);
 extern void hps_ctxt_print_algo_stats_tlp(int toUart);
+extern int hps_restart_timer(void);
+extern int hps_del_timer(void);
+extern int hps_core_deinit(void);
 
 /* mt_hotplug_strategy_core.c */
 extern int hps_core_init(void);
@@ -239,8 +249,7 @@ extern struct cpumask cpu_domain_big_mask;
 extern struct cpumask cpu_domain_little_mask;
 extern void sched_get_nr_running_avg(int *avg, int *iowait_avg);
 
-extern unsigned int sched_get_percpu_load(int cpu,
-	bool reset, bool use_maxfreq);
+extern unsigned int sched_get_percpu_load(int cpu, bool reset, bool use_maxfreq);
 extern unsigned int sched_get_nr_heavy_task(void);
 
 #endif

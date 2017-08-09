@@ -57,6 +57,7 @@ struct hps_ctxt_struct hps_ctxt = {
 	.lock = __MUTEX_INITIALIZER(hps_ctxt.lock),
 	.tsk_struct_ptr = NULL,
 	.wait_queue = __WAIT_QUEUE_HEAD_INITIALIZER(hps_ctxt.wait_queue),
+	.periodical_by = HPS_PERIODICAL_BY_HR_TIMER,
 	.pdrv = {
 		 .remove = NULL,
 		 .shutdown = NULL,
@@ -120,14 +121,14 @@ void hps_ctxt_reset_stas_nolock(void)
 	hps_ctxt.up_loads_history_index = 0;
 	hps_ctxt.up_loads_history[hps_ctxt.up_times - 1] = 0;
 	/* memset(hps_ctxt.up_loads_history, 0,
-		sizeof(hps_ctxt.up_loads_history)); */
+	   sizeof(hps_ctxt.up_loads_history)); */
 
 	hps_ctxt.down_loads_sum = 0;
 	hps_ctxt.down_loads_count = 0;
 	hps_ctxt.down_loads_history_index = 0;
 	hps_ctxt.down_loads_history[hps_ctxt.down_times - 1] = 0;
 	/* memset(hps_ctxt.down_loads_history, 0,
-		sizeof(hps_ctxt.down_loads_history)); */
+	   sizeof(hps_ctxt.down_loads_history)); */
 
 	hps_ctxt.rush_count = 0;
 	hps_ctxt.tlp_sum = 0;
@@ -155,32 +156,22 @@ void hps_ctxt_print_basic(int toUart)
 		hps_warn("hps_ctxt.init_state: %u\n", hps_ctxt.init_state);
 		hps_warn("hps_ctxt.state: %u\n", hps_ctxt.state);
 		hps_warn("hps_ctxt.enabled: %u\n", hps_ctxt.enabled);
-		hps_warn("hps_ctxt.suspend_enabled: %u\n",
-			hps_ctxt.suspend_enabled);
+		hps_warn("hps_ctxt.suspend_enabled: %u\n", hps_ctxt.suspend_enabled);
 		hps_warn("hps_ctxt.is_hmp: %u\n", hps_ctxt.is_hmp);
-		hps_warn("hps_ctxt.little_cpu_id_min: %u\n",
-			hps_ctxt.little_cpu_id_min);
-		hps_warn("hps_ctxt.little_cpu_id_max: %u\n",
-			hps_ctxt.little_cpu_id_max);
-		hps_warn("hps_ctxt.big_cpu_id_min: %u\n",
-			hps_ctxt.big_cpu_id_min);
-		hps_warn("hps_ctxt.big_cpu_id_max: %u\n",
-			hps_ctxt.big_cpu_id_max);
+		hps_warn("hps_ctxt.little_cpu_id_min: %u\n", hps_ctxt.little_cpu_id_min);
+		hps_warn("hps_ctxt.little_cpu_id_max: %u\n", hps_ctxt.little_cpu_id_max);
+		hps_warn("hps_ctxt.big_cpu_id_min: %u\n", hps_ctxt.big_cpu_id_min);
+		hps_warn("hps_ctxt.big_cpu_id_max: %u\n", hps_ctxt.big_cpu_id_max);
 	} else {
 		hps_debug("hps_ctxt.init_state: %u\n", hps_ctxt.init_state);
 		hps_debug("hps_ctxt.state: %u\n", hps_ctxt.state);
 		hps_debug("hps_ctxt.enabled: %u\n", hps_ctxt.enabled);
-		hps_debug("hps_ctxt.suspend_enabled: %u\n",
-			hps_ctxt.suspend_enabled);
+		hps_debug("hps_ctxt.suspend_enabled: %u\n", hps_ctxt.suspend_enabled);
 		hps_debug("hps_ctxt.is_hmp: %u\n", hps_ctxt.is_hmp);
-		hps_debug("hps_ctxt.little_cpu_id_min: %u\n",
-			hps_ctxt.little_cpu_id_min);
-		hps_debug("hps_ctxt.little_cpu_id_max: %u\n",
-			hps_ctxt.little_cpu_id_max);
-		hps_debug("hps_ctxt.big_cpu_id_min: %u\n",
-			hps_ctxt.big_cpu_id_min);
-		hps_debug("hps_ctxt.big_cpu_id_max: %u\n",
-			hps_ctxt.big_cpu_id_max);
+		hps_debug("hps_ctxt.little_cpu_id_min: %u\n", hps_ctxt.little_cpu_id_min);
+		hps_debug("hps_ctxt.little_cpu_id_max: %u\n", hps_ctxt.little_cpu_id_max);
+		hps_debug("hps_ctxt.big_cpu_id_min: %u\n", hps_ctxt.big_cpu_id_min);
+		hps_debug("hps_ctxt.big_cpu_id_max: %u\n", hps_ctxt.big_cpu_id_max);
 	}
 }
 
@@ -189,36 +180,24 @@ void hps_ctxt_print_algo_config(int toUart)
 	if (toUart) {
 		hps_warn("hps_ctxt.up_threshold: %u\n", hps_ctxt.up_threshold);
 		hps_warn("hps_ctxt.up_times: %u\n", hps_ctxt.up_times);
-		hps_warn("hps_ctxt.down_threshold: %u\n",
-			hps_ctxt.down_threshold);
+		hps_warn("hps_ctxt.down_threshold: %u\n", hps_ctxt.down_threshold);
 		hps_warn("hps_ctxt.down_times: %u\n", hps_ctxt.down_times);
-		hps_warn("hps_ctxt.input_boost_enabled: %u\n",
-			hps_ctxt.input_boost_enabled);
-		hps_warn("hps_ctxt.input_boost_cpu_num: %u\n",
-			hps_ctxt.input_boost_cpu_num);
-		hps_warn("hps_ctxt.rush_boost_enabled: %u\n",
-			hps_ctxt.rush_boost_enabled);
-		hps_warn("hps_ctxt.rush_boost_threshold: %u\n",
-			hps_ctxt.rush_boost_threshold);
-		hps_warn("hps_ctxt.rush_boost_times: %u\n",
-			hps_ctxt.rush_boost_times);
+		hps_warn("hps_ctxt.input_boost_enabled: %u\n", hps_ctxt.input_boost_enabled);
+		hps_warn("hps_ctxt.input_boost_cpu_num: %u\n", hps_ctxt.input_boost_cpu_num);
+		hps_warn("hps_ctxt.rush_boost_enabled: %u\n", hps_ctxt.rush_boost_enabled);
+		hps_warn("hps_ctxt.rush_boost_threshold: %u\n", hps_ctxt.rush_boost_threshold);
+		hps_warn("hps_ctxt.rush_boost_times: %u\n", hps_ctxt.rush_boost_times);
 		hps_warn("hps_ctxt.tlp_times: %u\n", hps_ctxt.tlp_times);
 	} else {
 		hps_debug("hps_ctxt.up_threshold: %u\n", hps_ctxt.up_threshold);
 		hps_debug("hps_ctxt.up_times: %u\n", hps_ctxt.up_times);
-		hps_debug("hps_ctxt.down_threshold: %u\n",
-			hps_ctxt.down_threshold);
+		hps_debug("hps_ctxt.down_threshold: %u\n", hps_ctxt.down_threshold);
 		hps_debug("hps_ctxt.down_times: %u\n", hps_ctxt.down_times);
-		hps_debug("hps_ctxt.input_boost_enabled: %u\n",
-			hps_ctxt.input_boost_enabled);
-		hps_debug("hps_ctxt.input_boost_cpu_num: %u\n",
-			hps_ctxt.input_boost_cpu_num);
-		hps_debug("hps_ctxt.rush_boost_enabled: %u\n",
-			hps_ctxt.rush_boost_enabled);
-		hps_debug("hps_ctxt.rush_boost_threshold: %u\n",
-			hps_ctxt.rush_boost_threshold);
-		hps_debug("hps_ctxt.rush_boost_times: %u\n",
-			hps_ctxt.rush_boost_times);
+		hps_debug("hps_ctxt.input_boost_enabled: %u\n", hps_ctxt.input_boost_enabled);
+		hps_debug("hps_ctxt.input_boost_cpu_num: %u\n", hps_ctxt.input_boost_cpu_num);
+		hps_debug("hps_ctxt.rush_boost_enabled: %u\n", hps_ctxt.rush_boost_enabled);
+		hps_debug("hps_ctxt.rush_boost_threshold: %u\n", hps_ctxt.rush_boost_threshold);
+		hps_debug("hps_ctxt.rush_boost_times: %u\n", hps_ctxt.rush_boost_times);
 		hps_debug("hps_ctxt.tlp_times: %u\n", hps_ctxt.tlp_times);
 	}
 }
@@ -227,46 +206,42 @@ void hps_ctxt_print_algo_bound(int toUart)
 {
 	if (toUart) {
 		hps_warn("hps_ctxt.little_num_base_perf_serv: %u\n",
-			hps_ctxt.little_num_base_perf_serv);
+			 hps_ctxt.little_num_base_perf_serv);
 		hps_warn("hps_ctxt.little_num_limit_thermal: %u\n",
-			hps_ctxt.little_num_limit_thermal);
+			 hps_ctxt.little_num_limit_thermal);
 		hps_warn("hps_ctxt.little_num_limit_low_battery: %u\n",
-			hps_ctxt.little_num_limit_low_battery);
+			 hps_ctxt.little_num_limit_low_battery);
 		hps_warn("hps_ctxt.little_num_limit_ultra_power_saving: %u\n",
-			hps_ctxt.little_num_limit_ultra_power_saving);
+			 hps_ctxt.little_num_limit_ultra_power_saving);
 		hps_warn("hps_ctxt.little_num_limit_power_serv: %u\n",
-			hps_ctxt.little_num_limit_power_serv);
-		hps_warn("hps_ctxt.big_num_base_perf_serv: %u\n",
-			hps_ctxt.big_num_base_perf_serv);
-		hps_warn("hps_ctxt.big_num_limit_thermal: %u\n",
-			hps_ctxt.big_num_limit_thermal);
+			 hps_ctxt.little_num_limit_power_serv);
+		hps_warn("hps_ctxt.big_num_base_perf_serv: %u\n", hps_ctxt.big_num_base_perf_serv);
+		hps_warn("hps_ctxt.big_num_limit_thermal: %u\n", hps_ctxt.big_num_limit_thermal);
 		hps_warn("hps_ctxt.big_num_limit_low_battery: %u\n",
-			hps_ctxt.big_num_limit_low_battery);
+			 hps_ctxt.big_num_limit_low_battery);
 		hps_warn("hps_ctxt.big_num_limit_ultra_power_saving: %u\n",
-			hps_ctxt.big_num_limit_ultra_power_saving);
+			 hps_ctxt.big_num_limit_ultra_power_saving);
 		hps_warn("hps_ctxt.big_num_limit_power_serv: %u\n",
-			hps_ctxt.big_num_limit_power_serv);
+			 hps_ctxt.big_num_limit_power_serv);
 	} else {
 		hps_debug("hps_ctxt.little_num_base_perf_serv: %u\n",
-			hps_ctxt.little_num_base_perf_serv);
+			  hps_ctxt.little_num_base_perf_serv);
 		hps_debug("hps_ctxt.little_num_limit_thermal: %u\n",
-			hps_ctxt.little_num_limit_thermal);
+			  hps_ctxt.little_num_limit_thermal);
 		hps_debug("hps_ctxt.little_num_limit_low_battery: %u\n",
-			hps_ctxt.little_num_limit_low_battery);
+			  hps_ctxt.little_num_limit_low_battery);
 		hps_debug("hps_ctxt.little_num_limit_ultra_power_saving: %u\n",
-			hps_ctxt.little_num_limit_ultra_power_saving);
+			  hps_ctxt.little_num_limit_ultra_power_saving);
 		hps_debug("hps_ctxt.little_num_limit_power_serv: %u\n",
-			hps_ctxt.little_num_limit_power_serv);
-		hps_debug("hps_ctxt.big_num_base_perf_serv: %u\n",
-			hps_ctxt.big_num_base_perf_serv);
-		hps_debug("hps_ctxt.big_num_limit_thermal: %u\n",
-			hps_ctxt.big_num_limit_thermal);
+			  hps_ctxt.little_num_limit_power_serv);
+		hps_debug("hps_ctxt.big_num_base_perf_serv: %u\n", hps_ctxt.big_num_base_perf_serv);
+		hps_debug("hps_ctxt.big_num_limit_thermal: %u\n", hps_ctxt.big_num_limit_thermal);
 		hps_debug("hps_ctxt.big_num_limit_low_battery: %u\n",
-			hps_ctxt.big_num_limit_low_battery);
+			  hps_ctxt.big_num_limit_low_battery);
 		hps_debug("hps_ctxt.big_num_limit_ultra_power_saving: %u\n",
-			hps_ctxt.big_num_limit_ultra_power_saving);
+			  hps_ctxt.big_num_limit_ultra_power_saving);
 		hps_debug("hps_ctxt.big_num_limit_power_serv: %u\n",
-			hps_ctxt.big_num_limit_power_serv);
+			  hps_ctxt.big_num_limit_power_serv);
 	}
 }
 
@@ -276,14 +251,12 @@ void hps_ctxt_print_algo_stats_cur(int toUart)
 		hps_warn("hps_ctxt.cur_loads: %u\n", hps_ctxt.cur_loads);
 		hps_warn("hps_ctxt.cur_tlp: %u\n", hps_ctxt.cur_tlp);
 		hps_warn("hps_ctxt.cur_iowait: %u\n", hps_ctxt.cur_iowait);
-		hps_warn("hps_ctxt.cur_nr_heavy_task: %u\n",
-			hps_ctxt.cur_nr_heavy_task);
+		hps_warn("hps_ctxt.cur_nr_heavy_task: %u\n", hps_ctxt.cur_nr_heavy_task);
 	} else {
 		hps_debug("hps_ctxt.cur_loads: %u\n", hps_ctxt.cur_loads);
 		hps_debug("hps_ctxt.cur_tlp: %u\n", hps_ctxt.cur_tlp);
 		hps_debug("hps_ctxt.cur_iowait: %u\n", hps_ctxt.cur_iowait);
-		hps_debug("hps_ctxt.cur_nr_heavy_task: %u\n",
-			hps_ctxt.cur_nr_heavy_task);
+		hps_debug("hps_ctxt.cur_nr_heavy_task: %u\n", hps_ctxt.cur_nr_heavy_task);
 	}
 }
 
@@ -291,35 +264,27 @@ void hps_ctxt_print_algo_stats_up(int toUart)
 {
 	if (toUart) {
 		hps_warn("hps_ctxt.up_loads_sum: %u\n", hps_ctxt.up_loads_sum);
-		hps_warn("hps_ctxt.up_loads_count: %u\n",
-			hps_ctxt.up_loads_count);
-		hps_warn("hps_ctxt.up_loads_history_index: %u\n",
-			hps_ctxt.up_loads_history_index);
+		hps_warn("hps_ctxt.up_loads_count: %u\n", hps_ctxt.up_loads_count);
+		hps_warn("hps_ctxt.up_loads_history_index: %u\n", hps_ctxt.up_loads_history_index);
 	} else {
 		hps_debug("hps_ctxt.up_loads_sum: %u\n", hps_ctxt.up_loads_sum);
-		hps_debug("hps_ctxt.up_loads_count: %u\n",
-			hps_ctxt.up_loads_count);
-		hps_debug("hps_ctxt.up_loads_history_index: %u\n",
-			hps_ctxt.up_loads_history_index);
+		hps_debug("hps_ctxt.up_loads_count: %u\n", hps_ctxt.up_loads_count);
+		hps_debug("hps_ctxt.up_loads_history_index: %u\n", hps_ctxt.up_loads_history_index);
 	}
 }
 
 void hps_ctxt_print_algo_stats_down(int toUart)
 {
 	if (toUart) {
-		hps_warn("hps_ctxt.down_loads_sum: %u\n",
-			hps_ctxt.down_loads_sum);
-		hps_warn("hps_ctxt.down_loads_count: %u\n",
-			hps_ctxt.down_loads_count);
+		hps_warn("hps_ctxt.down_loads_sum: %u\n", hps_ctxt.down_loads_sum);
+		hps_warn("hps_ctxt.down_loads_count: %u\n", hps_ctxt.down_loads_count);
 		hps_warn("hps_ctxt.down_loads_history_index: %u\n",
-			hps_ctxt.down_loads_history_index);
+			 hps_ctxt.down_loads_history_index);
 	} else {
-		hps_debug("hps_ctxt.down_loads_sum: %u\n",
-			hps_ctxt.down_loads_sum);
-		hps_debug("hps_ctxt.down_loads_count: %u\n",
-			hps_ctxt.down_loads_count);
+		hps_debug("hps_ctxt.down_loads_sum: %u\n", hps_ctxt.down_loads_sum);
+		hps_debug("hps_ctxt.down_loads_count: %u\n", hps_ctxt.down_loads_count);
 		hps_debug("hps_ctxt.down_loads_history_index: %u\n",
-			hps_ctxt.down_loads_history_index);
+			  hps_ctxt.down_loads_history_index);
 	}
 }
 
@@ -328,15 +293,13 @@ void hps_ctxt_print_algo_stats_tlp(int toUart)
 	if (toUart) {
 		hps_warn("hps_ctxt.tlp_sum: %u\n", hps_ctxt.tlp_sum);
 		hps_warn("hps_ctxt.tlp_count: %u\n", hps_ctxt.tlp_count);
-		hps_warn("hps_ctxt.tlp_history_index: %u\n",
-			hps_ctxt.tlp_history_index);
+		hps_warn("hps_ctxt.tlp_history_index: %u\n", hps_ctxt.tlp_history_index);
 		hps_warn("hps_ctxt.tlp_avg: %u\n", hps_ctxt.tlp_avg);
 		hps_warn("hps_ctxt.rush_count: %u\n", hps_ctxt.rush_count);
 	} else {
 		hps_debug("hps_ctxt.tlp_sum: %u\n", hps_ctxt.tlp_sum);
 		hps_debug("hps_ctxt.tlp_count: %u\n", hps_ctxt.tlp_count);
-		hps_debug("hps_ctxt.tlp_history_index: %u\n",
-			hps_ctxt.tlp_history_index);
+		hps_debug("hps_ctxt.tlp_history_index: %u\n", hps_ctxt.tlp_history_index);
 		hps_debug("hps_ctxt.tlp_avg: %u\n", hps_ctxt.tlp_avg);
 		hps_debug("hps_ctxt.rush_count: %u\n", hps_ctxt.rush_count);
 	}
@@ -369,11 +332,9 @@ static int hps_suspend(struct device *dev)
 
 suspend_end:
 	hps_ctxt.state = STATE_SUSPEND;
-	hps_warn(
-		"state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
-		hps_ctxt.state, hps_ctxt.enabled,
-		hps_ctxt.suspend_enabled,
-		hps_ctxt.rush_boost_enabled);
+	hps_warn("state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
+		 hps_ctxt.state, hps_ctxt.enabled,
+		 hps_ctxt.suspend_enabled, hps_ctxt.rush_boost_enabled);
 
 	return 0;
 }
@@ -397,8 +358,7 @@ static int hps_resume(struct device *dev)
 	/* In order to fast screen on, power on extra little
 	   CPU to serve system resume. */
 	little_cpu_num_resume = 4;
-	for (cpu = hps_ctxt.little_cpu_id_min; cpu <= little_cpu_num_resume;
-	     cpu++) {
+	for (cpu = hps_ctxt.little_cpu_id_min; cpu <= little_cpu_num_resume; cpu++) {
 		if (!cpu_online(cpu)) {
 			cpu_up(cpu);
 		}
@@ -406,11 +366,9 @@ static int hps_resume(struct device *dev)
 
 resume_end:
 	hps_ctxt.state = STATE_EARLY_SUSPEND;
-	hps_warn(
-		"state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
-		hps_ctxt.state, hps_ctxt.enabled,
-		hps_ctxt.suspend_enabled,
-		hps_ctxt.rush_boost_enabled);
+	hps_warn("state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
+		 hps_ctxt.state, hps_ctxt.enabled,
+		 hps_ctxt.suspend_enabled, hps_ctxt.rush_boost_enabled);
 
 	return 0;
 }
@@ -433,8 +391,7 @@ static int hps_freeze(struct device *dev)
 	if (hps_ctxt.is_hmp) {
 		unsigned int cpu;
 
-		for (cpu = hps_ctxt.big_cpu_id_max;
-			cpu >= hps_ctxt.big_cpu_id_min; --cpu) {
+		for (cpu = hps_ctxt.big_cpu_id_max; cpu >= hps_ctxt.big_cpu_id_min; --cpu) {
 			if (cpu_online(cpu)) {
 				cpu_down(cpu);
 			}
@@ -444,11 +401,9 @@ static int hps_freeze(struct device *dev)
 
 freeze_end:
 	hps_ctxt.state = STATE_SUSPEND;
-	hps_warn(
-		"state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
-		hps_ctxt.state, hps_ctxt.enabled,
-		hps_ctxt.suspend_enabled,
-		hps_ctxt.rush_boost_enabled);
+	hps_warn("state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
+		 hps_ctxt.state, hps_ctxt.enabled,
+		 hps_ctxt.suspend_enabled, hps_ctxt.rush_boost_enabled);
 
 	return 0;
 }
@@ -469,11 +424,9 @@ static int hps_restore(struct device *dev)
 
 restore_end:
 	hps_ctxt.state = STATE_EARLY_SUSPEND;
-	hps_warn(
-		"state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
-		hps_ctxt.state, hps_ctxt.enabled,
-		hps_ctxt.suspend_enabled,
-		hps_ctxt.rush_boost_enabled);
+	hps_warn("state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
+		 hps_ctxt.state, hps_ctxt.enabled,
+		 hps_ctxt.suspend_enabled, hps_ctxt.rush_boost_enabled);
 
 	return 0;
 }
