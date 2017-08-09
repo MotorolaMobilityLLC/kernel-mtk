@@ -1061,6 +1061,7 @@ unsigned int ppm_get_root_cluster_by_state(enum ppm_power_state cur_state)
 #include "mt_idvfs.h"
 
 static unsigned int max_power_except_big;
+static unsigned int max_power_big;
 /* set a margin (2B @ idx 14) to avoid big be throttled / un-throttled frequently */
 static unsigned int big_on_margin;
 #define MAX_OCP_TARGET_POWER	127000
@@ -1092,11 +1093,12 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 			}
 		}
 
+		max_power_big = power_table.power_tbl[0].power_idx - max_power_except_big;
 		big_on_margin = (ref_tbl.pwr_idx_ref_tbl[PPM_CLUSTER_B].core_total_power[14] * 2)
 				+ ref_tbl.pwr_idx_ref_tbl[PPM_CLUSTER_B].l2_power[14];
 
-		ppm_info("@%s: max_power_except_big = %d, big_on_margin = %d\n",
-			__func__, max_power_except_big, big_on_margin);
+		ppm_info("@%s: max_power_big = %d, max_power_except_big = %d, big_on_margin = %d\n",
+			__func__, max_power_big, max_power_except_big, big_on_margin);
 	}
 
 	/* no need to set big OCP since big cluster is powered off */
@@ -1122,11 +1124,14 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 		power_for_ocp = (percentage)
 			? ((limited_power - max_power_except_big) * 100 + (percentage - 1)) / percentage
 			: (limited_power - max_power_except_big);
-		power_for_ocp = (power_for_ocp > MAX_OCP_TARGET_POWER)
+		power_for_ocp = (power_for_ocp >= max_power_big)
 			? MAX_OCP_TARGET_POWER : power_for_ocp;
 		/* set to max power in power table to avoid big core being throttled */
 		power_for_tbl_lookup = power_table.power_tbl[0].power_idx;
 	}
+
+	ppm_dbg(DLPT, "power_for_ocp = %d, power_for_tbl_lookup = %d\n",
+		power_for_ocp, power_for_tbl_lookup);
 
 	ret = BigOCPSetTarget(OCP_ALL, power_for_ocp);
 	if (ret) {
