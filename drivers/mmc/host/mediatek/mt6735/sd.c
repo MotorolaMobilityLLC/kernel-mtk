@@ -1518,6 +1518,7 @@ void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18)
 #if 0
 void msdc_get_driving(struct msdc_host *host, struct msdc_ioctl *msdc_ctl)
 {
+/* for try submit */
 	switch (host->id) {
 	case 0:
 		sdr_get_field(MSDC0_GPIO_DRV0_G5_ADDR,
