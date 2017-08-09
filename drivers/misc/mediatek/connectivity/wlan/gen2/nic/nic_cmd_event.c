@@ -1495,12 +1495,9 @@ VOID nicCmdEventQueryStaStatistics(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prC
 }
 
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
-
-/* 4  Auto Channel Selection */
-
 /*----------------------------------------------------------------------------*/
 /*!
-* @brief This function is called when event for query STA link status
+* @brief This function is called when event for query LTE safe channels
 *        has been retrieved
 *
 * @param prAdapter          Pointer to the Adapter structure.
@@ -1508,52 +1505,15 @@ VOID nicCmdEventQueryStaStatistics(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prC
 * @param pucEventBuf        Pointer to the event buffer
 *
 * @return none
-*
 */
 /*----------------------------------------------------------------------------*/
-VOID nicCmdEventQueryChannelLoad(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
+VOID nicCmdEventQueryLteSafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
 {
 	UINT_32 u4QueryInfoLen;
-	P_EVENT_CHN_LOAD_T prEvent;
+	P_EVENT_LTE_SAFE_CHN_T prEvent;
 	P_GLUE_INFO_T prGlueInfo;
-	P_PARAM_GET_CHN_LOAD prChnLoad;
-
-	if ((prAdapter == NULL)
-		|| (prCmdInfo == NULL)
-		|| (pucEventBuf == NULL)
-		|| (prCmdInfo->pvInformationBuffer == NULL)) {
-		ASSERT(FALSE);
-		return;
-	}
-
-	if (prCmdInfo->fgIsOid) {
-		prGlueInfo = prAdapter->prGlueInfo;
-		prEvent = (P_EVENT_CHN_LOAD_T) pucEventBuf;	/* 4 The firmware responsed data */
-		/* 4 Fill the firmware data in and send it back to host */
-		prChnLoad = (P_PARAM_GET_CHN_LOAD) prCmdInfo->pvInformationBuffer;
-
-		u4QueryInfoLen = sizeof(PARAM_GET_CHN_LOAD);
-
-		/* Statistics from FW is valid */
-		if (prEvent->u4Flags & BIT(0)) {
-			prChnLoad->rEachChnLoad[0].ucChannel = prEvent->ucChannel;
-			prChnLoad->rEachChnLoad[0].u2ChannelLoad = prEvent->u2ChannelLoad;
-			DBGLOG(P2P, INFO, "CHN[%d]=%d\n", prEvent->ucChannel, prEvent->u2ChannelLoad);
-
-		}
-
-		kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
-	}
-
-}
-
-VOID nicCmdEventQueryLTESafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
-{
+	P_PARAM_GET_CHN_INFO prLteSafeChnInfo;
 	UINT_8 ucIdx = 0;
-	UINT_32 u4QueryInfoLen;
-	P_EVENT_LTE_MODE_T prEvent;
-	P_GLUE_INFO_T prGlueInfo;
-	P_PARAM_GET_CHN_LOAD prLteSafeChnInfo;
 
 	if ((prAdapter == NULL)
 		|| (prCmdInfo == NULL)
@@ -1562,31 +1522,32 @@ VOID nicCmdEventQueryLTESafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdI
 		ASSERT(FALSE);
 		return;
 	}
+
 	if (prCmdInfo->fgIsOid) {
 		prGlueInfo = prAdapter->prGlueInfo;
-		prEvent = (P_EVENT_LTE_MODE_T) pucEventBuf;	/* 4 The firmware responsed data */
+		prEvent = (P_EVENT_LTE_SAFE_CHN_T) pucEventBuf;	/* FW responsed data */
 
-		prLteSafeChnInfo = (P_PARAM_GET_CHN_LOAD) prCmdInfo->pvInformationBuffer;
+		prLteSafeChnInfo = (P_PARAM_GET_CHN_INFO) prCmdInfo->pvInformationBuffer;
 
-		u4QueryInfoLen = sizeof(PARAM_GET_CHN_LOAD);
+		u4QueryInfoLen = sizeof(PARAM_GET_CHN_INFO);
 
 		/* Statistics from FW is valid */
 		if (prEvent->u4Flags & BIT(0)) {
-			for (ucIdx = 0; ucIdx < (NL80211_TESTMODE_AVAILABLE_CHAN_NUM - 1); ucIdx++) {
+			for (ucIdx = 0; ucIdx < 5; ucIdx++) {
 				prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[ucIdx] =
-				    prEvent->rLteSafeChn.au4SafeChannelBitmask[ucIdx];
+					prEvent->rLteSafeChn.au4SafeChannelBitmask[ucIdx];
 
 				DBGLOG(P2P, INFO,
-				       "[Auto Channel]LTE safe channels [%d]=[%x]\n", ucIdx,
-					(UINT32) prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[ucIdx]);
+				       "[ACS]LTE safe channels[%d]=0x%08x\n", ucIdx,
+				       prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[ucIdx]);
 			}
 		}
 
 		kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
 	}
-
 }
 #endif
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This function is called when event for query FW bss info

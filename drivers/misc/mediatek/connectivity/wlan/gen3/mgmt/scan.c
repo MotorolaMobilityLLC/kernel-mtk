@@ -2918,79 +2918,77 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBss
 
 }				/* end of scanSearchBssDescByPolicy() */
 
-VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSType, IN P_BSS_DESC_T SpecificprBssDesc)
+VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSType, IN P_BSS_DESC_T prSpecificBssDesc)
 {
-	P_SCAN_INFO_T prScanInfo = NULL;
 	P_LINK_T prBSSDescList = NULL;
 	P_BSS_DESC_T prBssDesc = NULL;
 	RF_CHANNEL_INFO_T rChannelInfo;
 
 	ASSERT(prAdapter);
 
-	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
-
-	prBSSDescList = &prScanInfo->rBSSDescList;
-
 	DBGLOG(SCN, TRACE, "scanReportBss2Cfg80211\n");
 
-	if (SpecificprBssDesc) {
-		{
-			/* check BSSID is legal channel */
-			if (!scanCheckBssIsLegal(prAdapter, SpecificprBssDesc))
-				return;
+	if (prSpecificBssDesc) {
 
-			DBGLOG(SCN, TRACE, "Report Specific SSID[%s]\n", SpecificprBssDesc->aucSSID);
-			if (eBSSType == BSS_TYPE_INFRASTRUCTURE) {
+		/* Check BSSID is legal channel */
+		if (!scanCheckBssIsLegal(prAdapter, prSpecificBssDesc)) {
+			DBGLOG(SCN, TRACE, "Remove specific SSID[%s] on channel %d\n",
+			       prSpecificBssDesc->aucSSID, prSpecificBssDesc->ucChannelNum);
+			return;
+		}
 
-				kalIndicateBssInfo(prAdapter->prGlueInfo,
-						   (PUINT_8) SpecificprBssDesc->aucRawBuf,
-						   SpecificprBssDesc->u2RawLength,
-						   SpecificprBssDesc->ucChannelNum,
-						   RCPI_TO_dBm(SpecificprBssDesc->ucRCPI));
-			} else {
+		DBGLOG(SCN, TRACE, "Report specific SSID[%s]\n", prSpecificBssDesc->aucSSID);
 
-				rChannelInfo.ucChannelNum = SpecificprBssDesc->ucChannelNum;
-				rChannelInfo.eBand = SpecificprBssDesc->eBand;
-				kalP2PIndicateBssInfo(prAdapter->prGlueInfo,
-						      (PUINT_8) SpecificprBssDesc->aucRawBuf,
-						      SpecificprBssDesc->u2RawLength,
-						      &rChannelInfo, RCPI_TO_dBm(SpecificprBssDesc->ucRCPI));
-
-			}
+		if (eBSSType == BSS_TYPE_INFRASTRUCTURE) {
+			kalIndicateBssInfo(prAdapter->prGlueInfo,
+					   (PUINT_8) prSpecificBssDesc->aucRawBuf,
+					   prSpecificBssDesc->u2RawLength,
+					   prSpecificBssDesc->ucChannelNum,
+					   RCPI_TO_dBm(prSpecificBssDesc->ucRCPI));
+		} else {
+			rChannelInfo.ucChannelNum = prSpecificBssDesc->ucChannelNum;
+			rChannelInfo.eBand = prSpecificBssDesc->eBand;
+			kalP2PIndicateBssInfo(prAdapter->prGlueInfo,
+					      (PUINT_8) prSpecificBssDesc->aucRawBuf,
+					      prSpecificBssDesc->u2RawLength,
+					      &rChannelInfo,
+					      RCPI_TO_dBm(prSpecificBssDesc->ucRCPI));
+		}
 
 #if CFG_ENABLE_WIFI_DIRECT
-			SpecificprBssDesc->fgIsP2PReport = FALSE;
+		prSpecificBssDesc->fgIsP2PReport = FALSE;
 #endif
-		}
+
 	} else {
 		/* Search BSS Desc from current SCAN result list. */
-		LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
-#if CFG_AUTO_CHANNEL_SEL_SUPPORT
-			/* Auto Channel Selection:Record the AP Number */
-			P_PARAM_CHN_LOAD_INFO prChnLoad = NULL;
+		prBSSDescList = &(prAdapter->rWifiVar.rScanInfo.rBSSDescList);
 
-			if ((prBssDesc->ucChannelNum <= 48) && (prBssDesc->ucChannelNum >= 1)) {
-				if (prBssDesc->ucChannelNum <= 14)
-					prChnLoad =
-					    (P_PARAM_CHN_LOAD_INFO)&(prAdapter->rWifiVar.
-								       rChnLoadInfo.rEachChnLoad[prBssDesc->
-												 ucChannelNum - 1]);
-				else
-					prChnLoad =
-					    (P_PARAM_CHN_LOAD_INFO)&(prAdapter->rWifiVar.
-								       rChnLoadInfo.rEachChnLoad[(prBssDesc->
-												  ucChannelNum / 4) +
-												 5]);
-				prChnLoad->u2APNum++;
-				prChnLoad->ucChannel = prBssDesc->ucChannelNum;
+		LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
+
+#if CFG_AUTO_CHANNEL_SEL_SUPPORT
+			/* Record channel loading with channel's AP number */
+			UINT_8 ucIdx = 0;
+
+			if (prBssDesc->ucChannelNum <= 14)
+				ucIdx = prBssDesc->ucChannelNum - 1;
+			else if (prBssDesc->ucChannelNum >= 36 && prBssDesc->ucChannelNum <= 64)
+				ucIdx = 14 + (prBssDesc->ucChannelNum - 36) / 4;
+			else if (prBssDesc->ucChannelNum >= 100 && prBssDesc->ucChannelNum <= 144)
+				ucIdx = 14 + 8 + (prBssDesc->ucChannelNum - 100) / 4;
+			else if (prBssDesc->ucChannelNum >= 149)
+				ucIdx = 14 + 8 + 12 + (prBssDesc->ucChannelNum - 149) / 4;
+
+			if (ucIdx < MAX_CHN_NUM) {
+				prAdapter->rWifiVar.rChnLoadInfo.rEachChnLoad[ucIdx].ucChannel =
+					prBssDesc->ucChannelNum;
+				prAdapter->rWifiVar.rChnLoadInfo.rEachChnLoad[ucIdx].u2APNum++;
 			}
-			if (prChnLoad)
-				DBGLOG(SCN, TRACE, "chNum=%d,apNum=%d\n", prBssDesc->ucChannelNum, prChnLoad->u2APNum);
 #endif
 
-			/* check BSSID is legal channel */
+			/* Check BSSID is legal channel */
 			if (!scanCheckBssIsLegal(prAdapter, prBssDesc)) {
-				DBGLOG(SCN, TRACE, "Remove SSID[%s %d]\n", prBssDesc->aucSSID, prBssDesc->ucChannelNum);
+				DBGLOG(SCN, TRACE, "Remove SSID[%s] on channel %d\n",
+				       prBssDesc->aucSSID, prBssDesc->ucChannelNum);
 				continue;
 			}
 
@@ -3000,8 +2998,7 @@ VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSTyp
 #endif
 			    ) {
 
-				DBGLOG(SCN, TRACE, "Report ALL SSID[%s %d]\n",
-				       prBssDesc->aucSSID, prBssDesc->ucChannelNum);
+				DBGLOG(SCN, TRACE, "Report SSID[%s]\n", prBssDesc->aucSSID);
 
 				if (eBSSType == BSS_TYPE_INFRASTRUCTURE) {
 					if (prBssDesc->u2RawLength != 0) {
@@ -3012,7 +3009,6 @@ VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSTyp
 								   RCPI_TO_dBm(prBssDesc->ucRCPI));
 						kalMemZero(prBssDesc->aucRawBuf, CFG_RAW_BUFFER_SIZE);
 						prBssDesc->u2RawLength = 0;
-
 #if CFG_ENABLE_WIFI_DIRECT
 						prBssDesc->fgIsP2PReport = FALSE;
 #endif
@@ -3027,15 +3023,15 @@ VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSTyp
 						kalP2PIndicateBssInfo(prAdapter->prGlueInfo,
 								      (PUINT_8) prBssDesc->aucRawBuf,
 								      prBssDesc->u2RawLength,
-								      &rChannelInfo, RCPI_TO_dBm(prBssDesc->ucRCPI));
+								      &rChannelInfo,
+								      RCPI_TO_dBm(prBssDesc->ucRCPI));
 
-						/* do not clear it then we can pass the bss in Specific report */
+						/* Do not clear it then we can pass the bss in Specific report */
 						/* kalMemZero(prBssDesc->aucRawBuf,CFG_RAW_BUFFER_SIZE); */
 
-						/*
-						   the BSS entry will not be cleared after scan done.
-						   So if we dont receive the BSS in next scan, we cannot
-						   pass it. We use u2RawLength for the purpose.
+						/* The BSS entry will not be cleared after scan done.
+						 * So if we dont receive the BSS in next scan, we cannot
+						 * pass it. We use u2RawLength for the purpose.
 						 */
 						/* prBssDesc->u2RawLength=0; */
 #if CFG_ENABLE_WIFI_DIRECT
@@ -3044,12 +3040,11 @@ VOID scanReportBss2Cfg80211(IN P_ADAPTER_T prAdapter, IN ENUM_BSS_TYPE_T eBSSTyp
 #endif
 				}
 			}
-
 		}
+
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
 		prAdapter->rWifiVar.rChnLoadInfo.fgDataReadyBit = TRUE;
 #endif
-
 	}
 
 }

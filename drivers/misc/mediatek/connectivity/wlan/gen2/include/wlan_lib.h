@@ -675,66 +675,6 @@ typedef enum _ENUM_BAND_EDGE_CERT_T {
 	BAND_EDGE_CERT_NUM = 2
 } ENUM_BAND_EDGE_CERT_T, *P_ENUM_BAND_EDGE_CERT_T;
 
-#if CFG_AUTO_CHANNEL_SEL_SUPPORT
-typedef enum _ENUM_TESTMODE_AVAILABLE_CHAN_ATTR {
-	NL80211_TESTMODE_AVAILABLE_CHAN_INVALID = 0,
-	NL80211_TESTMODE_AVAILABLE_CHAN_2G_BASE_1,
-	NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_34,
-	NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_149,
-	NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_184,
-
-	NL80211_TESTMODE_AVAILABLE_CHAN_NUM,
-} ENUM_TESTMODE_AVAILABLE_CHAN_ATTR;
-
-typedef struct _LTE_SAFE_CH_INFO_T {
-	UINT_32 au4SafeChannelBitmask[NL80211_TESTMODE_AVAILABLE_CHAN_NUM - 1];
-} LTE_SAFE_CH_INFO_T, *P_CMD_LTE_SAFE_CH_INFO_T;
-
-    /* Record Each CH Load */
-typedef struct _PARAM_CHN_LOAD_INFO {
-	/* Per-CHN Load */
-	UINT_32 u4Flag;
-
-	UINT_8 ucChannel;
-	UINT_16 u2ChannelLoad;
-	UINT_8 au4Reserved[1];
-
-	UINT_16 u2APNum;
-	UINT_16 u2APNumTmpCountingBuf;
-
-	/* Reserved fields */
-	UINT_8 au4Reserved1[8];
-} PARAM_CHN_LOAD_INFO, *P_PARAM_CHN_LOAD_INFO;
-
-typedef struct _PARAM_GET_CHN_LOAD {
-	LTE_SAFE_CH_INFO_T rLteSafeChnList;
-	PARAM_CHN_LOAD_INFO rEachChnLoad[MAX_AUTO_CHAL_NUM];
-	BOOLEAN fgDataReadyBit;
-	UINT_8 au4Reserved1[3];
-} PARAM_GET_CHN_LOAD, *P_PARAM_GET_CHN_LOAD;
-
-typedef struct _PARAM_PREFER_CHN_INFO {
-
-	UINT_8 ucChannel;
-	UINT_16 u2APNum;
-	UINT_8 au4Reserved1[1];
-} PARAM_PREFER_CHN_INFO, *P_PARAM_PREFER_CHN_INFO;
-
-typedef struct _PARAM_GET_LTE_MODE {
-	/* Event Body */
-	UINT_8 ucVersion;
-	UINT_8 aucReserved1[3];
-	UINT_32 u4Flags;	/* Bit0: valid */
-
-	LTE_SAFE_CH_INFO_T LTE_MODE;
-	UINT_8 aucReserved4[3];
-
-	UINT_8 aucReserved[4];
-
-} PARAM_GET_LTE_MODE, *P_PARAM_GET_LTE_MODE;
-
-#endif
-
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************

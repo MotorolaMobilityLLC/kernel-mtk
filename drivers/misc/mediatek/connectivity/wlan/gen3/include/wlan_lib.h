@@ -942,49 +942,6 @@ typedef enum _ENUM_MAX_BANDWIDTH_SETTING_T {
 	MAX_BW_160MHZ,
 	MAX_BW_80_80_MHZ
 } ENUM_MAX_BANDWIDTH_SETTING, *P_ENUM_MAX_BANDWIDTH_SETTING_T;
-#if CFG_AUTO_CHANNEL_SEL_SUPPORT
-
-typedef struct _LTE_SAFE_CH_INFO_T {
-	UINT_32 u4SafeChannelBitmask[4];
-} LTE_SAFE_CH_INFO_T, *P_CMD_LTE_SAFE_CH_INFO_T;
-
-/* Record Each CH Load */
-typedef struct _PARAM_CHN_LOAD_INFO {
-	/* Per-CHN Load */
-	UINT_32 u4Flag;
-	UINT_8 ucChannel;
-	UINT_16 u2ChannelLoad;
-	UINT_8 au4Reserved0[1];
-	UINT_16 u2APNum;
-	UINT_16 u2APNumTmpCountingBuf;
-	/* Reserved fields */
-	UINT_8 au4Reserved1[8];
-} PARAM_CHN_LOAD_INFO, *P_PARAM_CHN_LOAD_INFO;
-
-typedef struct _PARAM_GET_CHN_LOAD {
-	LTE_SAFE_CH_INFO_T rLteSafeChnList;
-	PARAM_CHN_LOAD_INFO rEachChnLoad[MAX_AUTO_CHAL_NUM];
-	BOOLEAN fgDataReadyBit;
-	UINT_8 au4Reserved[3];
-} PARAM_GET_CHN_LOAD, *P_PARAM_GET_CHN_LOAD;
-
-typedef struct _PARAM_PREFER_CHN_INFO {
-	UINT_8 ucChannel;
-	UINT_16 u2APNum;
-	UINT_8 au4Reserved[1];
-} PARAM_PREFER_CHN_INFO, *P_PARAM_PREFER_CHN_INFO;
-
-typedef struct _PARAM_GET_LTE_MODE {
-	/* Event Body */
-	UINT_8 ucVersion;
-	UINT_8 aucReserved0[3];
-	UINT_32 u4Flags;	/* Bit0: valid */
-	LTE_SAFE_CH_INFO_T LTE_MODE;
-	UINT_8 aucReserved1[4];
-	UINT_8 aucReserved2[4];
-} PARAM_GET_LTE_MODE, *P_PARAM_GET_LTE_MODE;
-
-#endif
 
 typedef struct _TX_PACKET_INFO {
 	UINT_8 ucPriorityParam;

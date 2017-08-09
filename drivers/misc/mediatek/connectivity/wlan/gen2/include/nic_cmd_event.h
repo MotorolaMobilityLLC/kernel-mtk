@@ -1145,17 +1145,6 @@ typedef struct _CMD_ACCESS_REG {
 	UINT_32 u4Data;
 } CMD_ACCESS_REG, *P_CMD_ACCESS_REG;
 
-/* CMD_ID_ACCESS_REG & EVENT_ID_ACCESS_REG */
-#if CFG_AUTO_CHANNEL_SEL_SUPPORT
-
-typedef struct _CMD_ACCESS_CHN_LOAD {
-	UINT_32 u4Address;
-	UINT_32 u4Data;
-	UINT_16 u2Channel;
-	UINT_8 aucReserved[2];
-} CMD_ACCESS_CHN_LOAD, *P_ACCESS_CHN_LOAD;
-
-#endif
 /* CMD_DUMP_MEMORY */
 typedef struct _CMD_DUMP_MEM {
 	UINT_32 u4Address;
@@ -1890,14 +1879,6 @@ typedef struct _CMD_GET_STA_STATISTICS_T {
 
 /* CFG_SUPPORT_WFD */
 typedef struct _EVENT_STA_STATISTICS_T {
-	/* Event header */
-	/* UINT_16     u2Length; */
-	/* UINT_16     u2Reserved1; *//* Must be filled with 0x0001 (EVENT Packet) */
-	/* UINT_8            ucEID; */
-	/* UINT_8      ucSeqNum; */
-	/* UINT_8            aucReserved2[2]; */
-
-	/* Event Body */
 	UINT_8 ucVersion;
 	UINT_8 aucReserved1[3];
 	UINT_32 u4Flags;	/* Bit0: valid */
@@ -1930,57 +1911,16 @@ typedef struct _CMD_HOTSPOT_OPTIMIZATION_CONFIG {
 	UINT_32 u4Level;
 } CMD_HOTSPOT_OPTIMIZATION_CONFIG, *P_HOTSPOT_OPTIMIZATION_CONFIG;
 #endif
+
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
-
-/* 4 Auto Channel Selection */
-
-typedef struct _CMD_GET_CHN_LOAD_T {
-	UINT_8 ucIndex;
-	UINT_8 ucFlags;
-	UINT_8 ucReadClear;
-	UINT_8 aucReserved0[1];
-
-	UINT_8 ucChannel;
-	UINT_16 u2ChannelLoad;
-	UINT_8 aucReserved1[1];
-	UINT_8 aucReserved2[16];
-} CMD_GET_CHN_LOAD_T, *P_CMD_GET_CHN_LOAD_T;
-/* 4  Auto Channel Selection */
-
-typedef struct _EVENT_CHN_LOAD_T {
-	/* Event Body */
+typedef struct _EVENT_LTE_SAFE_CHN_T {
 	UINT_8 ucVersion;
-	UINT_8 aucReserved1[3];
+	UINT_8 aucReserved[3];
 	UINT_32 u4Flags;	/* Bit0: valid */
-
-	UINT_8 ucChannel;
-	UINT_16 u2ChannelLoad;
-	UINT_8 aucReserved4[1];
-
-	UINT_8 aucReserved[64];
-
-} EVENT_CHN_LOAD_T, *P_EVENT_CHN_LOAD_T;
-typedef struct _CMD_GET_LTE_SAFE_CHN_T {
-	UINT_8 ucIndex;
-	UINT_8 ucFlags;
-	UINT_8 aucReserved0[2];
-
-	UINT_8 aucReserved2[16];
-} CMD_GET_LTE_SAFE_CHN_T, *P_CMD_GET_LTE_SAFE_CHN_T;
-
-typedef struct _EVENT_LTE_MODE_T {
-	/* Event Body */
-	UINT_8 ucVersion;
-	UINT_8 aucReserved1[3];
-	UINT_32 u4Flags;	/* Bit0: valid */
-
-	LTE_SAFE_CH_INFO_T rLteSafeChn;
-	UINT_8 aucReserved4[3];
-
-	UINT_8 aucReserved[4];
-
-} EVENT_LTE_MODE_T, *P_EVENT_LTE_MODE_T;
+	LTE_SAFE_CHN_INFO_T rLteSafeChn;
+} EVENT_LTE_SAFE_CHN_T, *P_EVENT_LTE_SAFE_CHN_T;
 #endif
+
 typedef struct _CMD_ROAMING_INFO_T {
 	UINT_32 fgIsFastRoamingApplied;
 	UINT_32 Reserved[9];
@@ -2271,10 +2211,7 @@ VOID nicCmdEventBuildDateCode(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInf
 VOID nicCmdEventQueryStaStatistics(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
 
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
-/* 4 Auto Channel Selection */
-VOID nicCmdEventQueryChannelLoad(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
-
-VOID nicCmdEventQueryLTESafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
+VOID nicCmdEventQueryLteSafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf);
 #endif
 
 #if CFG_SUPPORT_BATCH_SCAN

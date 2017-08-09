@@ -468,6 +468,26 @@ typedef struct iw_p2p_version {
 	UINT_32 u4Version;
 } IW_P2P_VERSION, *P_IW_P2P_VERSION;
 
+/*----------------------------------------------------------------------------*/
+/* NL80211 TEST MODE                                                          */
+/*----------------------------------------------------------------------------*/
+#if CONFIG_NL80211_TESTMODE
+
+#if CFG_AUTO_CHANNEL_SEL_SUPPORT
+typedef enum _ENUM_TESTMODE_AVAILABLE_CHAN_ATTR {
+	__NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_INVALID,
+	NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_2G_BASE_1,
+	NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_5G_BASE_36,
+	NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_5G_BASE_52,
+	NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_5G_BASE_100,
+	NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_5G_BASE_149,
+	__NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_AFTER_LAST,
+	NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_MAX = __NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_AFTER_LAST - 1
+} ENUM_TESTMODE_AVAILABLE_CHAN_ATTR;
+
+#endif
+
+#endif
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -598,8 +618,11 @@ mtk_p2p_cfg80211_set_bitrate_mask(IN struct wiphy *wiphy,
 				  IN const u8 *peer, IN const struct cfg80211_bitrate_mask *mask);
 
 #if CONFIG_NL80211_TESTMODE
+
 int mtk_p2p_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wdev, IN void *data, IN int len);
+
 int mtk_p2p_cfg80211_testmode_p2p_sigma_pre_cmd(IN struct wiphy *wiphy, IN void *data, IN int len);
+
 int mtk_p2p_cfg80211_testmode_p2p_sigma_cmd(IN struct wiphy *wiphy, IN void *data, IN int len);
 
 #if CFG_SUPPORT_WFD
@@ -607,8 +630,12 @@ int mtk_p2p_cfg80211_testmode_wfd_update_cmd(IN struct wiphy *wiphy, IN void *da
 #endif
 
 int mtk_p2p_cfg80211_testmode_hotspot_block_list_cmd(IN struct wiphy *wiphy, IN void *data, IN int len);
+
+#if CFG_AUTO_CHANNEL_SEL_SUPPORT
+int mtk_p2p_cfg80211_testmode_get_best_channel(IN struct wiphy *wiphy, IN void *data, IN int len);
+#endif
 #else
-#error "Please ENABLE kernel config (CONFIG_NL80211_TESTMODE) to support Wi-Fi Direct"
+#error "Please ENABLE kernel config (CONFIG_NL80211_TESTMODE)"
 #endif
 
 #endif

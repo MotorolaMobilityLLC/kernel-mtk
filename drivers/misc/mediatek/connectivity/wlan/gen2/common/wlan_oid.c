@@ -11027,7 +11027,7 @@ wlanoidSetTxRateInfo(
 
 WLAN_STATUS
 wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
-			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
+		       IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
 {
 	WIFI_SYSTEM_SUSPEND_CMD_T rSuspendCmd;
 
@@ -11036,15 +11036,66 @@ wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
 
 	rSuspendCmd.fgIsSystemSuspend = *(PBOOLEAN)pvSetBuffer;
 	return wlanSendSetQueryCmd(prAdapter,
-							CMD_ID_SET_SYSTEM_SUSPEND,
-							TRUE,
-							FALSE,
-							TRUE,
-							nicCmdEventSetCommon,
-							nicOidCmdTimeoutCommon,
-							sizeof(BOOLEAN),
-							(PUINT_8)&rSuspendCmd,
-							NULL,
-							0);
+				   CMD_ID_SET_SYSTEM_SUSPEND,
+				   TRUE,
+				   FALSE,
+				   TRUE,
+				   nicCmdEventSetCommon,
+				   nicOidCmdTimeoutCommon,
+				   sizeof(BOOLEAN),
+				   (PUINT_8)&rSuspendCmd,
+				   NULL,
+				   0);
 }
 
+#if CFG_AUTO_CHANNEL_SEL_SUPPORT
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to query LTE safe channels.
+*
+* \param[in]  pvAdapter        Pointer to the Adapter structure.
+* \param[out] pvQueryBuffer    A pointer to the buffer that holds the result of
+*                              the query.
+* \param[in]  u4QueryBufferLen The length of the query buffer.
+* \param[out] pu4QueryInfoLen  If the call is successful, returns the number of
+*                              bytes written into the query buffer. If the call
+*                              failed due to invalid length of the query buffer,
+*                              returns the amount of storage needed.
+*
+* \retval WLAN_STATUS_PENDING
+* \retval WLAN_STATUS_FAILURE
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS
+wlanoidQueryLteSafeChannel(IN P_ADAPTER_T prAdapter,
+			   IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen)
+{
+	WLAN_STATUS rResult = WLAN_STATUS_FAILURE;
+
+	DBGLOG(P2P, INFO, "[ACS]Get LTE safe channels\n");
+
+	do {
+		/* Sanity test */
+		if ((prAdapter == NULL) || (pu4QueryInfoLen == NULL))
+			break;
+		if ((pvQueryBuffer == NULL) || (u4QueryBufferLen == 0))
+			break;
+
+		/* Get LTE safe channel list */
+		rResult = wlanSendSetQueryCmd(prAdapter,
+					      CMD_ID_GET_LTE_CHN,
+					      FALSE,
+					      TRUE,
+					      TRUE,
+					      nicCmdEventQueryLteSafeChn,
+					      nicOidCmdTimeoutCommon,
+					      0,
+					      NULL,
+					      pvQueryBuffer,
+					      u4QueryBufferLen);
+
+	} while (FALSE);
+
+	return rResult;
+}				/* wlanoidQueryLteSafeChannel */
+#endif

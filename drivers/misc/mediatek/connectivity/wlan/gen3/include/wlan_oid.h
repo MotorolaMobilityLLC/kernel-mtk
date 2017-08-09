@@ -1128,6 +1128,35 @@ typedef enum _ENUM_PSCAN_ACT_T {
 	CLEAR
 } ENUM_PSCAN_ACT_T, *P_ENUM_PSCAN_ACT_T;
 
+#if CFG_AUTO_CHANNEL_SEL_SUPPORT
+/*--------------------------------------------------------------*/
+/*! \brief MTK Auto Channel Selection related Container         */
+/*--------------------------------------------------------------*/
+typedef struct _LTE_SAFE_CHN_INFO_T {
+	UINT_32 au4SafeChannelBitmask[5]; /* NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_MAX */
+} LTE_SAFE_CHN_INFO_T, *P_CMD_LTE_SAFE_CHN_INFO_T;
+
+typedef struct _PARAM_CHN_LOAD_INFO {
+	/* Per-CHN Load */
+	UINT_8 ucChannel;
+	UINT_16 u2APNum;
+	UINT_8 ucReserved;
+} PARAM_CHN_LOAD_INFO, *P_PARAM_CHN_LOAD_INFO;
+
+typedef struct _PARAM_GET_CHN_INFO {
+	LTE_SAFE_CHN_INFO_T rLteSafeChnList;
+	PARAM_CHN_LOAD_INFO rEachChnLoad[MAX_CHN_NUM];
+	BOOLEAN fgDataReadyBit;
+	UINT_8 aucReserved[3];
+} PARAM_GET_CHN_INFO, *P_PARAM_GET_CHN_INFO;
+
+typedef struct _PARAM_PREFER_CHN_INFO {
+	UINT_8 ucChannel;
+	UINT_16 u2APNumScore;
+	UINT_8 ucReserved;
+} PARAM_PREFER_CHN_INFO, *P_PARAM_PREFER_CHN_INFO;
+
+#endif
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -1659,40 +1688,6 @@ WLAN_STATUS
 wlanoidSetTxPower(IN P_ADAPTER_T prAdapter,
 		  IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 
-/*
-WLAN_STATUS
-wlanoidQueryBtSingleAntenna (
-    IN  P_ADAPTER_T prAdapter,
-    OUT PVOID       pvQueryBuffer,
-    IN  UINT_32     u4QueryBufferLen,
-    OUT PUINT_32    pu4QueryInfoLen
-    );
-
-WLAN_STATUS
-wlanoidSetBtSingleAntenna (
-    IN  P_ADAPTER_T prAdapter,
-    IN  PVOID       pvSetBuffer,
-    IN  UINT_32     u4SetBufferLen,
-    OUT PUINT_32    pu4SetInfoLen
-    );
-
-WLAN_STATUS
-wlanoidSetPta (
-    IN  P_ADAPTER_T prAdapter,
-    IN  PVOID       pvSetBuffer,
-    IN  UINT_32     u4SetBufferLen,
-    OUT PUINT_32    pu4SetInfoLen
-    );
-
-WLAN_STATUS
-wlanoidQueryPta (
-    IN  P_ADAPTER_T prAdapter,
-    OUT PVOID       pvQueryBuffer,
-    IN  UINT_32     u4QueryBufferLen,
-    OUT PUINT_32    pu4QueryInfoLen
-    );
-*/
-
 #if CFG_ENABLE_WIFI_DIRECT
 WLAN_STATUS
 wlanoidSetP2pMode(IN P_ADAPTER_T prAdapter,
@@ -1768,14 +1763,19 @@ WLAN_STATUS
 wlanoidGetGSCNResult(IN P_ADAPTER_T prAdapter,
 		     IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
 
-WLAN_STATUS wlanoidSetPacketFilter(P_ADAPTER_T prAdapter, UINT_32 u4PacketFilter,
-				BOOLEAN fgIsOid, PVOID pvSetBuffer, UINT_32 u4SetBufferLen);
+WLAN_STATUS
+wlanoidSetPacketFilter(P_ADAPTER_T prAdapter, UINT_32 u4PacketFilter,
+		       BOOLEAN fgIsOid, PVOID pvSetBuffer, UINT_32 u4SetBufferLen);
 
 WLAN_STATUS
 wlanoidNotifyFwSuspend(IN P_ADAPTER_T prAdapter,
-			IN PVOID pvSetBuffer,
-			IN UINT_32 u4SetBufferLen,
-			OUT PUINT_32 pu4SetInfoLen);
+		       IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+#if CFG_AUTO_CHANNEL_SEL_SUPPORT
+WLAN_STATUS
+wlanoidQueryLteSafeChannel(IN P_ADAPTER_T prAdapter,
+			   IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
+#endif
 
 /*******************************************************************************
 *                              F U N C T I O N S

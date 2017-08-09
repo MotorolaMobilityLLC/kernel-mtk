@@ -108,8 +108,8 @@
 #define CFG_SLT_SUPPORT                             0
 
 #ifdef NDIS60_MINIPORT
-#define CFG_NATIVE_802_11                       1
 
+#define CFG_NATIVE_802_11                       1
 #define CFG_TX_MAX_PKT_SIZE                     2304
 #define CFG_TCP_IP_CHKSUM_OFFLOAD_NDIS_60       0	/* !< 1: Enable TCP/IP header checksum offload
 							   0: Disable */
@@ -120,11 +120,13 @@
 #define CFG_WHQL_SAFE_MODE_ENABLED              1
 
 #else
+
+#define CFG_NATIVE_802_11                       0
+#define CFG_TX_MAX_PKT_SIZE                     1600
 #define CFG_TCP_IP_CHKSUM_OFFLOAD               1	/* !< 1: Enable TCP/IP header checksum offload
 							   0: Disable */
 #define CFG_TCP_IP_CHKSUM_OFFLOAD_NDIS_60       0
-#define CFG_TX_MAX_PKT_SIZE                     1600
-#define CFG_NATIVE_802_11                       0
+
 #endif
 
 /* 2 Flags for Driver Parameters */
@@ -386,10 +388,11 @@
 #define CFG_MAX_PMKID_CACHE                     16	/*!< max number of PMKID cache
 							   16(default) : The Max PMKID cache */
 /*------------------------------------------------------------------------------
- * Auto Channel Selection Maximun Channel Number
+ * Auto Channel Selection maximun channel number
  *------------------------------------------------------------------------------
  */
-#define MAX_AUTO_CHAL_NUM			18
+#define MAX_CHN_NUM                             39 /* CH1~CH14, CH36~CH48, CH52~CH64, CH100~CH144, CH149~CH165 */
+#define MAX_2G_BAND_CHN_NUM                     14
 
 /*------------------------------------------------------------------------------
  * Flags and Parameters for Ad-Hoc
@@ -539,6 +542,7 @@
 #define CFG_SUPPORT_HOTSPOT_OPTIMIZATION        0
 #define CFG_HOTSPOT_OPTIMIZATION_BEACON_INTERVAL 300
 #define CFG_HOTSPOT_OPTIMIZATION_DTIM           1
+
 #define CFG_AUTO_CHANNEL_SEL_SUPPORT            1
 
 /*------------------------------------------------------------------------------

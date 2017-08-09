@@ -971,19 +971,11 @@
  * SLT Option
  *------------------------------------------------------------------------------
  */
-#define CFG_SLT_SUPPORT                             0
-
-#define	MTK_AUTO_CHANNEL_SEL_SUPPORT_ENABLE				0
-
-#if defined(MTK_AUTO_CHANNEL_SEL_SUPPORT_ENABLE)
-#define CFG_AUTO_CHANNEL_SEL_SUPPORT				1
-#else
-#define CFG_AUTO_CHANNEL_SEL_SUPPORT				0
-#endif
+#define CFG_SLT_SUPPORT                         0
 
 #ifdef NDIS60_MINIPORT
-#define CFG_NATIVE_802_11                       1
 
+#define CFG_NATIVE_802_11                       1
 #define CFG_TX_MAX_PKT_SIZE                     2304
 #define CFG_TCP_IP_CHKSUM_OFFLOAD_NDIS_60       0	/* !< 1: Enable TCP/IP header checksum offload
 							   0: Disable */
@@ -994,11 +986,13 @@
 #define CFG_WHQL_SAFE_MODE_ENABLED              1
 
 #else
+
+#define CFG_NATIVE_802_11                       0
+#define CFG_TX_MAX_PKT_SIZE                     1600
 #define CFG_TCP_IP_CHKSUM_OFFLOAD               1	/* !< 1: Enable TCP/IP header checksum offload
 							   0: Disable */
 #define CFG_TCP_IP_CHKSUM_OFFLOAD_NDIS_60       0
-#define CFG_TX_MAX_PKT_SIZE                     1600
-#define CFG_NATIVE_802_11                       0
+
 #endif
 
 /* 2 Flags for Driver Parameters */
@@ -1250,18 +1244,18 @@
 #define CFG_MAX_PMKID_CACHE                     16	/*!< max number of PMKID cache
 							   16(default) : The Max PMKID cache */
 /*------------------------------------------------------------------------------
- * Auto Channel Selection Maximun Channel Number
+ * Auto Channel Selection maximun channel number
  *------------------------------------------------------------------------------
  */
+#define MAX_CHN_NUM                             39 /* CH1~CH14, CH36~CH48, CH52~CH64, CH100~CH144, CH149~CH165 */
+#define MAX_2G_BAND_CHN_NUM                     14
 
-#define MAX_AUTO_CHAL_NUM						23	/* Ch1~Ch14,Ch36,Ch40,Ch44,
-										   Ch48,Ch149,Ch153,Ch157,Ch161 */
 /*------------------------------------------------------------------------------
  * FAST SCAN
  *------------------------------------------------------------------------------
  */
 #define CFG_ENABLE_FAST_SCAN                    0
-#define CFG_CN_SUPPORT_CLASS121                 0        /* Add Class 121, 5470-5725MHz, support for China domain */
+#define CFG_CN_SUPPORT_CLASS121                 0 /* Add Class 121, 5470-5725MHz, support for China domain */
 #if CFG_ENABLE_FAST_SCAN
 	#define CFG_FAST_SCAN_DWELL_TIME                  40
 	#define CFG_FAST_SCAN_REG_DOMAIN_DEF_IDX          10
@@ -1417,9 +1411,11 @@
  */
 #define CFG_ENABLE_WIFI_DIRECT_CFG_80211        1
 
-#define CFG_SUPPORT_HOTSPOT_OPTIMIZATION                1
-#define     CFG_HOTSPOT_OPTIMIZATION_BEACON_INTERVAL    300
-#define     CFG_HOTSPOT_OPTIMIZATION_DTIM               1
+#define CFG_SUPPORT_HOTSPOT_OPTIMIZATION        1
+#define CFG_HOTSPOT_OPTIMIZATION_BEACON_INTERVAL 300
+#define CFG_HOTSPOT_OPTIMIZATION_DTIM           1
+
+#define CFG_AUTO_CHANNEL_SEL_SUPPORT            1
 
 /*------------------------------------------------------------------------------
  * Configuration Flags (Linux Only)

@@ -1075,16 +1075,14 @@ typedef struct _WIFI_VAR_T {
 	UINT_8 ucCeFccTxPwrLimitOfdmHt20;
 	UINT_8 ucCeFccTxPwrLimitHt40;
 #endif
-
 #if CFG_SLT_SUPPORT
 	SLT_INFO_T rSltInfo;
 #endif
-
 #if CFG_SUPPORT_HOTSPOT_2_0
 	HS20_INFO_T rHS20Info;
 #endif
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
-	PARAM_GET_CHN_LOAD rChnLoadInfo;
+	PARAM_GET_CHN_INFO rChnLoadInfo;
 #endif
 
 } WIFI_VAR_T, *P_WIFI_VAR_T;	/* end of _WIFI_VAR_T */

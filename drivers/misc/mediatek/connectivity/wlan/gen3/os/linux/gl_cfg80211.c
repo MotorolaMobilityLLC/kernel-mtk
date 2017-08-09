@@ -2036,52 +2036,48 @@ int mtk_cfg80211_testmode_sw_cmd(IN struct wiphy *wiphy, IN void *data, IN int l
 int mtk_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev *wdev, IN void *data, IN int len)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
-	P_NL80211_DRIVER_TEST_MODE_PARAMS prParams = (P_NL80211_DRIVER_TEST_MODE_PARAMS) NULL;
+	P_NL80211_DRIVER_TEST_MODE_PARAMS prParams = NULL;
 	INT_32 i4Status = -EINVAL;
 
 	ASSERT(wiphy);
-	ASSERT(wdev);
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
-
 
 	if (data && len)
 		prParams = (P_NL80211_DRIVER_TEST_MODE_PARAMS) data;
 	else {
-		DBGLOG(REQ, ERROR, "mtk_cfg80211_testmode_cmd, data is NULL\n");
+		DBGLOG(REQ, ERROR, "data is NULL\n");
 		return i4Status;
 	}
 
 	/* Clear the version byte */
 	prParams->index = prParams->index & ~BITS(24, 31);
 
-	if (prParams) {
-		switch (prParams->index) {
-		case TESTMODE_CMD_ID_SW_CMD:	/* SW cmd */
-			i4Status = mtk_cfg80211_testmode_sw_cmd(wiphy, data, len);
-			break;
-		case TESTMODE_CMD_ID_WAPI:	/* WAPI */
+	switch (prParams->index) {
+	case TESTMODE_CMD_ID_SW_CMD: /* SW cmd */
+		i4Status = mtk_cfg80211_testmode_sw_cmd(wiphy, data, len);
+		break;
 #if CFG_SUPPORT_WAPI
-			i4Status = mtk_cfg80211_testmode_set_key_ext(wiphy, data, len);
+	case TESTMODE_CMD_ID_WAPI: /* WAPI */
+		i4Status = mtk_cfg80211_testmode_set_key_ext(wiphy, data, len);
+		break;
 #endif
-			break;
-		case 0x10:
-			i4Status = mtk_cfg80211_testmode_get_sta_statistics(wiphy, data, len, prGlueInfo);
-			break;
+	case 0x10:
+		i4Status = mtk_cfg80211_testmode_get_sta_statistics(wiphy, data, len, prGlueInfo);
+		break;
 
 #if CFG_SUPPORT_PASSPOINT
-		case TESTMODE_CMD_ID_HS20:
-			i4Status = mtk_cfg80211_testmode_hs20_cmd(wiphy, data, len);
-			break;
-#endif /* CFG_SUPPORT_PASSPOINT */
-
-		default:
-			i4Status = -EINVAL;
-			break;
-		}
-		if (i4Status != 0)
-			DBGLOG(REQ, TRACE, "prParams->index=%d, status=%d\n", prParams->index, i4Status);
+	case TESTMODE_CMD_ID_HS20:
+		i4Status = mtk_cfg80211_testmode_hs20_cmd(wiphy, data, len);
+		break;
+#endif
+	default:
+		i4Status = -EINVAL;
+		break;
 	}
+
+	DBGLOG(REQ, TRACE, "prParams->index=%d, status=%d\n", prParams->index, i4Status);
+
 	return i4Status;
 }
 #endif
@@ -2584,257 +2580,19 @@ int mtk_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device *dev,
 		 &u4BufLen);
 	return 0;
 }
-
-#if CFG_AUTO_CHANNEL_SEL_SUPPORT
-int
-mtk_cfg80211_testmode_get_lte_channel(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo)
-{
-#define MAXMUN_2_4G_CHA_NUM 14
-#define CHN_DIRTY_WEIGHT_UPPERBOUND 4
-
-	BOOLEAN fgIsReady = FALSE;
-	BOOLEAN fgIsPureAP;
-
-	UINT_8 ucIdx = 0, ucMax_24G_Chn_List = 11, ucChValidCnt = 0, ucDefaultIdx = 0;
-	UINT_16 u2APNumScore = 0, u2UpThsrold = 0, u2LowThsrold = 0, ucInnerIdx = 0;
-	INT_32 i4Status = -EINVAL;
-	UINT_32 u4BufLen;
-	UINT_32 AcsChnRepot[4];
-	UINT_32 u4TempSafeChannelBitmask = 0;
-	UINT_8 u1Buf = 0;
-
-	struct sk_buff *skb;
-
-	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
-
-	PARAM_GET_CHN_LOAD rQueryLTEChn;
-	PARAM_PREFER_CHN_INFO PreferChannels[2] = { {0, 0, {0} }, };
-	PARAM_PREFER_CHN_INFO ar2_4G_ChannelLoadingWeightScore[MAXMUN_2_4G_CHA_NUM] = { {0, 0, {0} }, };
-	/* P_DOMAIN_INFO_ENTRY prDomainInfo = NULL; */
-	/* RF_CHANNEL_INFO_T aucChannelList[14]; */
-	P_PARAM_GET_CHN_LOAD prGetChnLoad;
-
-	ASSERT(wiphy);
-	ASSERT(prGlueInfo);
-
-	fgIsPureAP = prGlueInfo->prAdapter->rWifiVar.prP2PConnSettings->fgIsApMode;
-
-	/* Prepare Reply skb buffer */
-	skb = cfg80211_testmode_alloc_reply_skb(wiphy, sizeof(PARAM_GET_STA_STA_STATISTICS) + 1);
-	if (!skb) {
-		DBGLOG(QM, TRACE, "%s allocate skb failed:%lx\n", __func__, rStatus);
-		return -ENOMEM;
-	}
-
-	DBGLOG(P2P, INFO, "[Auto Channel]Get LTE Channels\n");
-	kalMemZero(&rQueryLTEChn, sizeof(rQueryLTEChn));
-
-	/* Query LTE Safe Channels */
-	rStatus = kalIoctl(prGlueInfo,
-			   wlanoidQueryACSChannelList, &rQueryLTEChn, sizeof(rQueryLTEChn), TRUE, FALSE, TRUE,
-			   /* TRUE, //6628 -> 6630  fgIsP2pOid-> x */
-			   &u4BufLen);
-
-	/* u4SafeChannelBitmask[0] -> 2G4 */
-	/* u4SafeChannelBitmask[1/2/3] -> 5G */
-	u4TempSafeChannelBitmask = rQueryLTEChn.rLteSafeChnList.u4SafeChannelBitmask[0];
-	DBGLOG(P2P, INFO,
-	       "   rLteSafeChnList.u4SafeChannelBitmask=%08x\n",
-		rQueryLTEChn.rLteSafeChnList.u4SafeChannelBitmask[0]);
-#if 0
-	if (fgIsPureAP) {
-		AcsChnRepot[NL80211_TESTMODE_AVAILABLE_CHAN_2G_BASE_1 - 1] = 0x20;	/* Channel 6 */
-	} else
-#endif
-	{
-		/* Get the Maximun channel List in 2.4G Bands */
-		/* Determin if countryCode is valid */
-		/* whatever case only support ch 1~11 */
-		/* if (prGlueInfo->prAdapter->rWifiVar.rConnSettings.u2CountryCode != 0x0000) { */
-		/* prDomainInfo = rlmDomainGetDomainInfo(prGlueInfo->prAdapter); */
-		/* ASSERT(prDomainInfo); */
-		/* 2. Get current domain channel list */
-		/* kalMemZero(aucChannelList, sizeof(aucChannelList)); */
-		/* rlmDomainGetChnlList(prGlueInfo->prAdapter, */
-		/* BAND_2G4, */
-		/* 14, */
-		/* &ucMax_24G_Chn_List, */
-		/* aucChannelList); */
-		/* } else { */
-		ucMax_24G_Chn_List = 11;
-		/* } */
-		DBGLOG(P2P, INFO, "ucMax_24G_Chn_List=%d\n", ucMax_24G_Chn_List);
-
-		prGetChnLoad = (P_PARAM_GET_CHN_LOAD) &(prGlueInfo->prAdapter->rWifiVar.rChnLoadInfo);
-
-		for (ucIdx = 0; ucIdx < ucMax_24G_Chn_List; ucIdx++) {
-			DBGLOG(P2P, INFO,
-			       "[Auto Channel][Ori_AP_Num] ch[%d]=%d\n", ucIdx + 1,
-				prGetChnLoad->rEachChnLoad[ucIdx].u2APNum);
-		}
-
-		ucDefaultIdx = 0;
-		for (ucIdx = ucDefaultIdx; ucIdx < ucMax_24G_Chn_List; ucIdx++) {
-
-#if 1
-			u2APNumScore = prGetChnLoad->rEachChnLoad[ucIdx].u2APNum * CHN_DIRTY_WEIGHT_UPPERBOUND;
-			u2UpThsrold = u2LowThsrold = 3;
-
-			if (ucIdx < 3) {
-				u2UpThsrold = ucIdx;
-				u2LowThsrold = 3;
-			} else if (ucIdx >= (ucMax_24G_Chn_List - 3)) {
-				u2UpThsrold = 3;
-				u2LowThsrold = ucMax_24G_Chn_List - (ucIdx + 1);
-			}
-			for (ucInnerIdx = 0; ucInnerIdx < u2LowThsrold; ucInnerIdx++) {
-				u2APNumScore +=
-				    (prGetChnLoad->rEachChnLoad[ucIdx + ucInnerIdx + 1].u2APNum *
-				     (CHN_DIRTY_WEIGHT_UPPERBOUND - 1 - ucInnerIdx));
-			}
-			for (ucInnerIdx = 0; ucInnerIdx < u2UpThsrold; ucInnerIdx++) {
-				u2APNumScore +=
-				    (prGetChnLoad->rEachChnLoad[ucIdx - ucInnerIdx - 1].u2APNum *
-				     (CHN_DIRTY_WEIGHT_UPPERBOUND - 1 - ucInnerIdx));
-			}
-			ar2_4G_ChannelLoadingWeightScore[ucIdx].u2APNum = u2APNumScore;
-
-			DBGLOG(P2P, INFO, "[Auto Channel]chn=%d score=%d\n", ucIdx + 1, u2APNumScore);
-#else
-			if (ucIdx == 0) {
-				/* ar2_4G_ChannelLoadingWeightScore[ucIdx].u2APNum =
-				(prGetChnLoad->rEachChnLoad[ucIdx].u2APNum +
-				prGetChnLoad->rEachChnLoad[ucIdx+1].u2APNum*0.75); */
-				u2APNumScore = (prGetChnLoad->rEachChnLoad[ucIdx].u2APNum + ((UINT_16)
-											     ((3 *
-											       (prGetChnLoad->
-												rEachChnLoad[ucIdx +
-													     1].
-												u2APNum +
-												prGetChnLoad->
-												rEachChnLoad[ucIdx +
-													     2].
-												u2APNum)) / 4)));
-
-				ar2_4G_ChannelLoadingWeightScore[ucIdx].u2APNum = u2APNumScore;
-				DBGLOG(P2P, INFO,
-				       "[Auto Channel]ucIdx=%d score=%d=%d+0.75*%d\n", ucIdx,
-					ar2_4G_ChannelLoadingWeightScore[ucIdx].u2APNum,
-					prGetChnLoad->rEachChnLoad[ucIdx].u2APNum,
-					prGetChnLoad->rEachChnLoad[ucIdx + 1].u2APNum);
-			}
-			if ((ucIdx > 0) && (ucIdx < (MAXMUN_2_4G_CHA_NUM - 1))) {
-				u2APNumScore = (prGetChnLoad->rEachChnLoad[ucIdx].u2APNum + ((UINT_16)
-											     ((3 *
-											       (prGetChnLoad->
-												rEachChnLoad[ucIdx +
-													     1].
-												u2APNum +
-												prGetChnLoad->
-												rEachChnLoad[ucIdx -
-													     1].
-												u2APNum)) / 4)));
-
-				ar2_4G_ChannelLoadingWeightScore[ucIdx].u2APNum = u2APNumScore;
-				DBGLOG(P2P, INFO,
-				       "[Auto Channel]ucIdx=%d score=%d=%d+0.75*%d+0.75*%d\n", ucIdx,
-					ar2_4G_ChannelLoadingWeightScore[ucIdx].u2APNum,
-					prGetChnLoad->rEachChnLoad[ucIdx].u2APNum,
-					prGetChnLoad->rEachChnLoad[ucIdx + 1].u2APNum,
-					prGetChnLoad->rEachChnLoad[ucIdx - 1].u2APNum);
-			}
-
-			if (ucIdx == (MAXMUN_2_4G_CHA_NUM - 1)) {
-				u2APNumScore = (prGetChnLoad->rEachChnLoad[ucIdx].u2APNum +
-						((UINT_16) ((3 * prGetChnLoad->rEachChnLoad[ucIdx - 1].u2APNum) / 4)));
-
-				ar2_4G_ChannelLoadingWeightScore[ucIdx].u2APNum = u2APNumScore;
-				DBGLOG(P2P, INFO,
-				       "[Auto Channel]ucIdx=%d score=%d=%d+0.75*%d\n", ucIdx,
-					ar2_4G_ChannelLoadingWeightScore[ucIdx].u2APNum,
-					prGetChnLoad->rEachChnLoad[ucIdx].u2APNum,
-					prGetChnLoad->rEachChnLoad[ucIdx - 1].u2APNum);
-			}
 #endif
 
-		}
-
-		fgIsReady = prGlueInfo->prAdapter->rWifiVar.rChnLoadInfo.fgDataReadyBit;
-		PreferChannels[0].ucChannel = 0;	/* default channel : ch1 */
-		PreferChannels[1].ucChannel = 0;	/* default channel : ch1 */
-		PreferChannels[0].u2APNum = 0xFFFF; /* default channel score  : 0xFFFF */
-		PreferChannels[1].u2APNum = 0xFFFF; /* default channel score  : 0xFFFF */
-
-		/* (u4TempSafeChannelBitmask & BIT(1) == 1) -> 2G Ch1 is valid */
-		if (u4TempSafeChannelBitmask == 0) {
-			DBGLOG(P2P, WARN, "  Can't get any safe channel from fw!?\n");
-			u4TempSafeChannelBitmask = BITS(1, (ucMax_24G_Chn_List));
-		}
-		DBGLOG(P2P, INFO, "   SafeChannelBitmask=%08x\n", u4TempSafeChannelBitmask);
-
-		ucChValidCnt = 0;
-		for (ucIdx = ucDefaultIdx; ucIdx < ucMax_24G_Chn_List; ucIdx++) {
-			if (!(u4TempSafeChannelBitmask & BIT(ucIdx + 1)))
-				continue;
-			if (PreferChannels[0].u2APNum >= ar2_4G_ChannelLoadingWeightScore[ucIdx].u2APNum) {
-				PreferChannels[1].ucChannel = PreferChannels[0].ucChannel;
-				PreferChannels[1].u2APNum = PreferChannels[0].u2APNum;
-
-				PreferChannels[0].ucChannel = ucIdx;
-				PreferChannels[0].u2APNum = ar2_4G_ChannelLoadingWeightScore[ucIdx].u2APNum;
-			} else {
-				if (PreferChannels[1].u2APNum >= ar2_4G_ChannelLoadingWeightScore[ucIdx].u2APNum) {
-					PreferChannels[1].ucChannel = ucIdx;
-					PreferChannels[1].u2APNum = ar2_4G_ChannelLoadingWeightScore[ucIdx].u2APNum;
-				}
-			}
-			ucChValidCnt++;
-		}
-		AcsChnRepot[NL80211_TESTMODE_AVAILABLE_CHAN_2G_BASE_1 - 1] = fgIsReady ? BIT(31) : 0;
-		if (ucChValidCnt >= 1) {
-			if (ucChValidCnt == 1) {
-				PreferChannels[1].ucChannel = PreferChannels[0].ucChannel;
-				PreferChannels[1].u2APNum = PreferChannels[0].u2APNum;
-			}
-			AcsChnRepot[NL80211_TESTMODE_AVAILABLE_CHAN_2G_BASE_1 - 1] |=
-			    (BIT(PreferChannels[1].ucChannel) | BIT(PreferChannels[0].ucChannel));
-		}
-	}
-
-	/* ToDo: Support 5G Channel Selection */
-	AcsChnRepot[NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_34 - 1] = 0x11223344;
-	AcsChnRepot[NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_149 - 1] = 0x55667788;
-	AcsChnRepot[NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_184 - 1] = 0x99AABBCC;
-
-	if (!NLA_PUT_U8(skb, NL80211_TESTMODE_AVAILABLE_CHAN_INVALID, &u1Buf))
-		return i4Status;
-
-	if (!NLA_PUT_U32(skb, NL80211_TESTMODE_AVAILABLE_CHAN_2G_BASE_1,
-		    &AcsChnRepot[NL80211_TESTMODE_AVAILABLE_CHAN_2G_BASE_1 - 1]))
-		return i4Status;
-
-	if (!NLA_PUT_U32(skb, NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_34,
-		    &AcsChnRepot[NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_34 - 1]))
-		return i4Status;
-
-	if (!NLA_PUT_U32(skb, NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_149,
-		    &AcsChnRepot[NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_149 - 1]))
-		return i4Status;
-
-	if (!NLA_PUT_U32(skb, NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_184,
-		    &AcsChnRepot[NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_184 - 1]))
-		return i4Status;
-
-	DBGLOG(P2P, INFO, "[Auto Channel]Relpy AcsChanInfo[%x:%x:%x:%x]\n",
-			   AcsChnRepot[0], AcsChnRepot[1], AcsChnRepot[2], AcsChnRepot[3]);
-
-	i4Status = cfg80211_testmode_reply(skb);
-	return i4Status;
-}
-#endif
-#endif
-
-
+/*----------------------------------------------------------------------------*/
+/*!
+ * @brief cfg80211 suspend callback, will be invoked in wiphy_suspend.
+ *
+ * @param wiphy: pointer to wiphy
+ *        wow:   pointer to cfg80211_wowlan
+ *
+ * @retval 0:       successful
+ *         others:  failure
+ */
+/*----------------------------------------------------------------------------*/
 int	mtk_cfg80211_suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;

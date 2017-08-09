@@ -158,23 +158,7 @@ typedef enum _ENUM_TESTMODE_STA_STATISTICS_ATTR {
 
 	NL80211_TESTMODE_STA_STATISTICS_NUM
 } ENUM_TESTMODE_STA_STATISTICS_ATTR;
-#if CFG_AUTO_CHANNEL_SEL_SUPPORT
-typedef struct _NL80211_DRIVER_GET_LTE_PARAMS {
-	NL80211_DRIVER_TEST_MODE_PARAMS hdr;
-	UINT_32 u4Version;
-	UINT_32 u4Flag;
-} NL80211_DRIVER_GET_LTE_PARAMS, *P_NL80211_DRIVER_GET_LTE_PARAMS;
 
-typedef enum _ENUM_TESTMODE_AVAILABLE_CHAN_ATTR {
-	NL80211_TESTMODE_AVAILABLE_CHAN_INVALID = 0,
-	NL80211_TESTMODE_AVAILABLE_CHAN_2G_BASE_1,
-	NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_34,
-	NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_149,
-	NL80211_TESTMODE_AVAILABLE_CHAN_5G_BASE_184,
-	NL80211_TESTMODE_AVAILABLE_CHAN_NUM,
-} ENUM_TESTMODE_AVAILABLE_CHAN_ATTR;
-
-#endif
 #endif
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -267,14 +251,6 @@ int mtk_cfg80211_mgmt_tx_cancel_wait(struct wiphy *wiphy,
 				     u64 cookie);
 
 #if CONFIG_NL80211_TESTMODE
-#if CFG_AUTO_CHANNEL_SEL_SUPPORT
-WLAN_STATUS
-wlanoidQueryACSChannelList(IN P_ADAPTER_T prAdapter,
-			   IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
-
-int
-mtk_cfg80211_testmode_get_lte_channel(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo);
-#endif
 int
 mtk_cfg80211_testmode_get_sta_statistics(IN struct wiphy *wiphy,
 					 IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo);
@@ -291,11 +267,12 @@ int mtk_cfg80211_testmode_hs20_cmd(IN struct wiphy *wiphy, IN void *data, IN int
 #if CFG_SUPPORT_WAPI
 int mtk_cfg80211_testmode_set_key_ext(IN struct wiphy *wiphy, IN void *data, IN int len);
 #endif
+
 #if CFG_SUPPORT_NFC_BEAM_PLUS
 int mtk_cfg80211_testmode_get_scan_done(IN struct wiphy *wiphy, IN void *data, IN int len, IN P_GLUE_INFO_T prGlueInfo);
 #endif
 #else
-#error "Please ENABLE kernel config (CONFIG_NL80211_TESTMODE) to support Wi-Fi Direct"
+#error "Please ENABLE kernel config (CONFIG_NL80211_TESTMODE)"
 #endif
 
 int
@@ -323,7 +300,9 @@ int mtk_cfg80211_tdls_oper(struct wiphy *wiphy, struct net_device *dev, const u8
 			enum nl80211_tdls_operation oper);
 
 int mtk_cfg80211_suspend(struct wiphy *wiphy, struct cfg80211_wowlan *wow);
+
 int mtk_cfg80211_resume(struct wiphy *wiphy);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
