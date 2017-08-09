@@ -2756,6 +2756,7 @@ static int mt6391_dev_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct mt6391_priv *codec_data;
+	int ret;
 
 	pr_notice("%s dev name %s\n", __func__, dev_name(dev));
 
@@ -2776,18 +2777,14 @@ static int mt6391_dev_probe(struct platform_device *pdev)
 	codec_data->sample_rate[MT6391_ADDA_DAC] = 44100;
 	codec_data->sample_rate[MT6391_ADDA_ADC] = 32000;
 
-	if (dev->of_node) {
-		int ret = of_property_read_u32(dev->of_node,
-				"mediatek,speaker-mode",
+	ret = of_property_read_u32(dev->of_node, "mediatek,speaker-mode",
 				&codec_data->speaker_mode);
-		if (ret)
-			pr_warn("%s fail to read speaker-mode in node %s\n",
-				__func__, dev->of_node->full_name);
-
-	}
-
-	if (codec_data->speaker_mode != MT6391_CLASS_D &&
-	    codec_data->speaker_mode != MT6391_CLASS_AB) {
+	if (ret) {
+		pr_warn("%s fail to read speaker-mode in node %s\n", __func__,
+			dev->of_node->full_name);
+		codec_data->speaker_mode = MT6391_CLASS_D;
+	} else if (codec_data->speaker_mode != MT6391_CLASS_D &&
+		codec_data->speaker_mode != MT6391_CLASS_AB) {
 		codec_data->speaker_mode = MT6391_CLASS_D;
 	}
 
