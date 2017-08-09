@@ -19,7 +19,7 @@ Registers define
 /*=========================
 Define
 =========================*/
-#define DUAL_FREQ_HIGH		900
+#define DUAL_FREQ_HIGH		832
 #define DUAL_FREQ_LOW		650
 #define DATA_RATE_THRESHOLD	15
 #define MPLL_CON0_OFFSET	0x280
