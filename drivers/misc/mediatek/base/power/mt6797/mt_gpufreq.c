@@ -147,7 +147,7 @@
 #define GPU_DVFS_VOLT10	 (84670)	/* mV x 100 */
 #define GPU_DVFS_VOLT11	 (80820)	/* mV x 100 */
 
-#define GPU_DVFS_PTPOD_DISABLE_VOLT	GPU_DVFS_VOLT5
+#define GPU_DVFS_PTPOD_DISABLE_VOLT	GPU_DVFS_VOLT4
 
 #define UNIVPLL_FREQ	(416000) /* KHz */
 /*****************************************
