@@ -263,6 +263,7 @@ typedef struct {
 	unsigned int enterulps;
 	int session_mode_before_enter_idle;
 	int is_primary_idle;
+	int cur_lp_cust_mode;
 
 } disp_idlemgr_context;
 

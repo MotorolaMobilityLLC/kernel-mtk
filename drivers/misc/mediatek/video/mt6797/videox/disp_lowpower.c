@@ -98,6 +98,7 @@ static disp_idlemgr_context *_get_idlemgr_context(void)
 		g_idlemgr_context.is_primary_idle = 0;
 		g_idlemgr_context.enterulps = 0;
 		g_idlemgr_context.idlemgr_last_kick_time = ~(0ULL);
+		g_idlemgr_context.cur_lp_cust_mode = 0;
 		g_idlemgr_context.primary_display_idlemgr_task
 			= kthread_create(_primary_path_idlemgr_monitor_thread, NULL, "disp_idlemgr");
 
@@ -269,8 +270,6 @@ int primary_display_dsi_vfp_change(int state)
 			DDP_DSI_PORCH_CHANGE,
 			&primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power);
 	} else if (state == 0) {
-
-		set_fps(primary_display_get_fps_nolock()/100);
 		dpmgr_path_ioctl(primary_get_dpmgr_handle(), handle,
 			DDP_DSI_PORCH_CHANGE,
 			&primary_get_lcm()->params->dsi.vertical_frontporch);
@@ -680,19 +679,15 @@ void _vdo_mode_enter_idle(void)
 		if (get_lp_cust_mode() > LP_CUST_DISABLE && get_lp_cust_mode() < PERFORMANC_MODE + 1) {
 			switch (get_lp_cust_mode()) {
 			case LOW_POWER_MODE: /* 50 */
-				primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power = 400;
+			case JUST_MAKE_MODE: /* 55 */
 				set_fps(50);
 				primary_display_dsi_vfp_change(1);
-				break;
-			case JUST_MAKE_MODE: /* 55 */
-				primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power = 200;
-				set_fps(55);
-				primary_display_dsi_vfp_change(1);
+				idlemgr_pgc->cur_lp_cust_mode = 1;
 				break;
 			case PERFORMANC_MODE: /* 60 */
-				primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power = 0;
 				set_fps(primary_display_get_fps_nolock()/100);
 				primary_display_dsi_vfp_change(0);
+				idlemgr_pgc->cur_lp_cust_mode = 0;
 				break;
 			}
 		} else {
@@ -702,6 +697,7 @@ void _vdo_mode_enter_idle(void)
 			if (primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power) {
 				set_fps(50);
 				primary_display_dsi_vfp_change(1);
+				idlemgr_pgc->cur_lp_cust_mode = 1;
 			}
 		}
 
@@ -764,8 +760,10 @@ void _vdo_mode_leave_idle(void)
 	/* Enable irq & restore vfp */
 	if (!primary_is_sec()) {
 
-		if (primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power) {
+		if (idlemgr_pgc->cur_lp_cust_mode != 0) {
+			set_fps(primary_display_get_fps_nolock()/100);
 			primary_display_dsi_vfp_change(0);
+			idlemgr_pgc->cur_lp_cust_mode = 0;
 			if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 				_idle_set_golden_setting();
 		}
