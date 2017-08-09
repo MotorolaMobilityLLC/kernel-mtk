@@ -1879,6 +1879,7 @@ static void rpc_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	ret = ccci_port_send_request(port, req);
 	if (ret)
 		goto err_out;
+	kfree(tmp_data);
 	return;
 
  err_out:
