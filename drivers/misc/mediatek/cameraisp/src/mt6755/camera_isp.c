@@ -3219,7 +3219,7 @@ static void ISP_EnableClock(MBOOL En)
 		G_u4EnableClockCount++;
 		spin_unlock(&(IspInfo.SpinLockClock));
 #else
-		LOG_INF("CCF:prepare_enable clk cnt %d\n", G_u4EnableClockCount);
+		/*LOG_INF("CCF:prepare_enable clk cnt %d\n", G_u4EnableClockCount);*/
 		spin_lock(&(IspInfo.SpinLockClock));
 		G_u4EnableClockCount++;
 		spin_unlock(&(IspInfo.SpinLockClock));
@@ -3248,7 +3248,7 @@ static void ISP_EnableClock(MBOOL En)
 		}
 		spin_unlock(&(IspInfo.SpinLockClock));
 #else
-		LOG_INF("CCF:disable_unprepare cnt %d\n", G_u4EnableClockCount);
+		/*LOG_INF("CCF:disable_unprepare cnt %d\n", G_u4EnableClockCount);*/
 		spin_lock(&(IspInfo.SpinLockClock));
 		G_u4EnableClockCount--;
 		spin_unlock(&(IspInfo.SpinLockClock));
@@ -4652,6 +4652,11 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 		deque_buf       = kmalloc(sizeof(ISP_DEQUE_BUF_INFO_STRUCT), GFP_KERNEL);
 		if ((NULL == p1_fbc) || (NULL == p1_fbc_reg) || (NULL == p1_dma_addr_reg) ||
 			(NULL == rt_buf_info) || (NULL == deque_buf)) {
+			kfree((unsigned int *)p1_fbc);
+			kfree(p1_fbc_reg);
+			kfree(p1_dma_addr_reg);
+			kfree(rt_buf_info);
+			kfree(deque_buf);
 			return -ENOMEM;
 		}
 		rt_dma = rt_buf_ctrl.buf_id;
@@ -4731,6 +4736,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 #endif
 			{
 				LOG_ERR("[rtbc]invalid dma channel(%d)", rt_dma);
+
+			kfree((unsigned int *)p1_fbc);
+			kfree(p1_fbc_reg);
+			kfree(p1_dma_addr_reg);
+			kfree(rt_buf_info);
+			kfree(deque_buf);
 				return -EFAULT;
 			}
 		}
@@ -4862,6 +4873,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 									  pstRTBuf->ring_buf[rt_dma].data[i+2].bufIdx,
 									  pstRTBuf->ring_buf[rt_dma].data[i+3].bufIdx);
 								}
+
+								kfree((unsigned int *)p1_fbc);
+								kfree(p1_fbc_reg);
+								kfree(p1_dma_addr_reg);
+								kfree(rt_buf_info);
+								kfree(deque_buf);
 								return -EFAULT;
 							}
 							LOG_DBG("[rtbc][replace2]dma(%d),idx(%d) PA(0x%x_0x%x)",
@@ -4903,6 +4920,11 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 									     pstRTBuf->
 									     ring_buf[rt_dma].
 									     data[i].base_pAddr);
+									kfree((unsigned int *)p1_fbc);
+									kfree(p1_fbc_reg);
+									kfree(p1_dma_addr_reg);
+									kfree(rt_buf_info);
+									kfree(deque_buf);
 									return -EFAULT;
 								}
 								/* LOG_INF("RTBC_DBG7 e_dma_%d:%d %d %d\n",
@@ -4923,6 +4945,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 								/* LOG_ERR("[rtbc][ENQUE_ext]:copy_from_user fail,
 								dst_buf(0x%lx), user_buf(0x%lx)",
 								   &deque_buf.data[0],  rt_buf_ctrl.ex_data_ptr); */
+
+								kfree((unsigned int *)p1_fbc);
+								kfree(p1_fbc_reg);
+								kfree(p1_dma_addr_reg);
+								kfree(rt_buf_info);
+								kfree(deque_buf);
 								return -EAGAIN;
 							}
 				/**/	/**/	} else {	/*     this case for camsv     & pass1 fw rtbc */
@@ -4978,6 +5006,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 										     [rt_dma].
 										     data[i].
 										     base_pAddr);
+
+										kfree((unsigned int *)p1_fbc);
+										kfree(p1_fbc_reg);
+										kfree(p1_dma_addr_reg);
+										kfree(rt_buf_info);
+										kfree(deque_buf);
 										return -EFAULT;
 									}
 
@@ -5539,6 +5573,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 
 			} else {
 				LOG_ERR("[rtbc][ENQUE]:copy_from_user fail");
+
+				kfree((unsigned int *)p1_fbc);
+				kfree(p1_fbc_reg);
+				kfree(p1_dma_addr_reg);
+				kfree(rt_buf_info);
+				kfree(deque_buf);
 				return -EFAULT;
 			}
 			break;
@@ -5934,6 +5974,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 				break;
 			default:
 				LOG_ERR("[rtbc][CLEAR]N.S.(%d)\n", rt_dma);
+
+				kfree((unsigned int *)p1_fbc);
+				kfree(p1_fbc_reg);
+				kfree(p1_dma_addr_reg);
+				kfree(rt_buf_info);
+				kfree(deque_buf);
 				return -EFAULT;
 			}
 			/* remove, cause clear will     be involked     only when current module r totally stopped */
@@ -6079,6 +6125,12 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			break;
 
 		}
+		/*free*/
+		kfree((unsigned int *)p1_fbc);
+		kfree(p1_fbc_reg);
+		kfree(p1_dma_addr_reg);
+		kfree(rt_buf_info);
+		kfree(deque_buf);
 		/*      */
 	} else {
 		LOG_ERR("[rtbc]copy_from_user failed");
