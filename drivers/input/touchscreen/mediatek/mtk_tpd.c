@@ -482,7 +482,7 @@ static int tpd_probe(struct platform_device *pdev)
 	#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION
 	if (0 == strncmp(CONFIG_MTK_LCM_PHYSICAL_ROTATION, "90", 2)
 		|| 0 == strncmp(CONFIG_MTK_LCM_PHYSICAL_ROTATION, "270", 3)) {
-#ifndef CONFIG_ARCH_MT8173
+#ifdef CONFIG_MTK_FB	/*Fix build errors,as some projects  cannot support these apis while bring up*/
 		TPD_RES_Y = DISP_GetScreenWidth();
 		TPD_RES_X = DISP_GetScreenHeight();
 #endif
@@ -491,7 +491,7 @@ static int tpd_probe(struct platform_device *pdev)
 	{
 #ifdef CONFIG_CUSTOM_LCM_X
 #ifndef CONFIG_MTK_FPGA
-#ifndef CONFIG_ARCH_MT8173
+#ifdef CONFIG_MTK_FB	/*Fix build errors,as some projects  cannot support these apis while bring up*/
 		TPD_RES_X = DISP_GetScreenWidth();
 		TPD_RES_Y = DISP_GetScreenHeight();
 #endif
