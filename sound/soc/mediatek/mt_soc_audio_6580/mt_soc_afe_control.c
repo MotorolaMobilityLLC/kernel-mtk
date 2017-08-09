@@ -2409,8 +2409,10 @@ int AudDrv_Allocate_mem_Buffer(struct device *pDev,
 		}
 	case Soc_Aud_Digital_Block_MEM_I2S:
 		pr_warn("currently not support\n");
+		break;
 	default:
 		pr_warn("%s not support\n", __func__);
+		break;
 	}
 	return true;
 }
