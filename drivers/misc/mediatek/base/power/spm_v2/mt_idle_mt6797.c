@@ -230,7 +230,7 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	if (sys_is_on(SYS_MJC))
 		clks[CG_MJC] = ~idle_readl(SPM_MJC_PWR_CON); /* VMJC */
 
-	if (sys_is_on(SYS_AUDIO))
+	if (sys_is_on(SYS_AUDIO) && (clks[CG_INFRA2] & 0x04000000))
 		clks[CG_AUDIO] = ~idle_readl(AUDIO_TOP_CON0); /* AUDIO */
 }
 

@@ -419,6 +419,7 @@ static bool             dpidle_by_pass_cg;
 static bool             dpidle_by_pass_i2c_appm_cg;
 bool                    dpidle_by_pass_pg;
 static unsigned int     dpidle_dump_log = DEEPIDLE_LOG_REDUCED;
+static unsigned int     dpidle_run_once;
 /* MCDI */
 static unsigned int mcidle_timer_left[NR_CPUS];
 static unsigned int mcidle_timer_left2[NR_CPUS];
@@ -1287,10 +1288,17 @@ static bool dpidle_can_enter(int cpu)
 	}
 #endif
 
+#if defined(CONFIG_ARCH_MT6755)
 	if (cpu % 4) {
 		reason = BY_CPU;
 		goto out;
 	}
+#elif defined(CONFIG_ARCH_MT6797)
+	if (cpu != 0) {
+		reason = BY_CPU;
+		goto out;
+	}
+#endif
 
 	if (idle_spm_lock) {
 		reason = BY_VTG;
@@ -1692,19 +1700,11 @@ u32 slp_spm_deepidle_flags = {
 	#endif
 	SPM_FLAG_DIS_VPROC_VSRAM_DVS
 #else
-#if defined(CONFIG_ARCH_MT6755)
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN
 	#else
 	0
 	#endif
-#elif defined(CONFIG_ARCH_MT6797)
-	#ifdef CONFIG_MTK_ICUSB_SUPPORT
-	SPM_FLAG_DIS_INFRA_PDN | SPM_FLAG_DIS_VPROC_VSRAM_DVS
-	#else
-	SPM_FLAG_DIS_VPROC_VSRAM_DVS
-	#endif
-#endif
 #endif
 };
 
@@ -1995,6 +1995,10 @@ int dpidle_enter(int cpu)
 	idle_warn_log("1:%u, 2:%u, 3:%u, 4:%u\n",
 				dpidle_profile[0], dpidle_profile[1], dpidle_profile[2], dpidle_profile[3]);
 #endif
+
+	/* For test */
+	if (dpidle_run_once)
+		idle_switch[IDLE_TYPE_DP] = 0;
 
 	return ret;
 }
@@ -2453,6 +2457,8 @@ static ssize_t dpidle_state_write(struct file *filp,
 			idle_switch[IDLE_TYPE_DP] = param;
 		else if (!strcmp(cmd, "enable"))
 			enable_dpidle_by_bit(param);
+		else if (!strcmp(cmd, "once"))
+			dpidle_run_once = param;
 		else if (!strcmp(cmd, "disable"))
 			disable_dpidle_by_bit(param);
 		else if (!strcmp(cmd, "time"))

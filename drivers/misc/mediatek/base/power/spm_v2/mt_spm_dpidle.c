@@ -658,6 +658,8 @@ RESTORE_IRQ:
 		__spm_set_power_control(pwrctrl);
 		__spm_set_wakeup_event(pwrctrl);
 
+		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
+
 		__spm_kick_pcm_to_run(pwrctrl);
 	}
 #endif
