@@ -12,6 +12,7 @@
 #include <linux/interrupt.h>
 #include <linux/cpu.h>
 #include <linux/ktime.h>
+#include <linux/io.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -23,6 +24,44 @@
 #include "mt_ocp.h"
 #include "mt_idvfs.h"
 #include "mt_cpufreq.h"
+#include <mt-plat/sync_write.h>	/* mt_reg_sync_writel */
+#include <mt-plat/mt_io.h>		/*reg read, write */
+
+#include "../../../power/mt6797/da9214.h"
+#define	DA9214_STEP_TO_MV(step)				(((step	& 0x7f)	* 10) +	300)
+
+/*
+ * BIT Operation
+ */
+#undef  BIT_OCP
+#define BIT_OCP(_bit_)                    (unsigned)(1 << (_bit_))
+#define BITS_OCP(_bits_, _val_)           ((((unsigned) -1 >> (31 - ((1) ? _bits_))) \
+& ~((1U << ((0) ? _bits_)) - 1)) & ((_val_)<<((0) ? _bits_)))
+#define BITMASK_OCP(_bits_)               (((unsigned) -1 >> (31 - ((1) ? _bits_))) & ~((1U << ((0) ? _bits_)) - 1))
+#define GET_BITS_VAL_OCP(_bits_, _val_)   (((_val_) & (BITMASK_OCP(_bits_))) >> ((0) ? _bits_))
+
+/**
+ * Read/Write a field of a register.
+ * @addr:       Address of the register
+ * @range:      The field bit range in the form of MSB:LSB
+ * @val:        The value to be written to the field
+ */
+
+#define MTK_SIP_KERNEL_OCP_READ 0x8200035F
+#define MTK_SIP_KERNEL_OCP_WRITE 0x8200035E
+/* for ATF */
+#define ocp_read(addr)                       mt_secure_call_ocp(MTK_SIP_KERNEL_OCP_READ, addr, 0, 0)
+#define ocp_read_field(addr, range)          GET_BITS_VAL_OCP(range, ocp_read(addr))
+#define ocp_write(addr, val)                 mt_secure_call_ocp(MTK_SIP_KERNEL_OCP_WRITE, addr, val, 0)
+#define ocp_write_field(addr, range, val)    ocp_write(addr, \
+(ocp_read(addr) & ~(BITMASK_OCP(range))) | BITS_OCP(range, val))
+/* for IO MAP */
+#define _ocp_read(addr)                      __raw_readl(IOMEM(addr))
+#define _ocp_read_field(addr, range)         GET_BITS_VAL_OCP(range, _ocp_read(addr))
+#define _ocp_write(addr, val)                 mt_reg_sync_writel((val), ((void *)addr))
+#define _ocp_write_field(addr, range, val)    _ocp_write(addr, \
+(_ocp_read(addr) & ~(BITMASK_OCP(range))) | BITS_OCP(range, val))
+
 
 #define TAG     "[mt_ocp]"
 
@@ -65,21 +104,33 @@ static unsigned int do_ocp_stress_test;
 
 /* OCP ADDR */
 #ifdef CONFIG_OF
-/* 0x10220000 */
-void __iomem *ocp_base;
-/* 279+50=329 */
-static int ocp2_irq0_number;
-/* 280+50=330 */
-static int ocp2_irq1_number;
-/* 282+50=332  LL = MP0 */
-static int ocp0_irq0_number;
-/* 283+50=333  */
-static int ocp0_irq1_number;
-/* 284+50=334  L = MP1  */
-static int ocp1_irq0_number;
-/* 285+50=335  */
-static int ocp1_irq1_number;
+static void __iomem  *ocp_base;            /* 0x10220000 0x4000, OCP */
+static void __iomem  *ocppin_base;         /* 0x10005000 0x1000, UDI pinmux reg */
+static void __iomem  *ocpprob_base;        /* 0x10001000 0x2000, GPU, L-LL, BIG sarm ldo probe reg */
+static void __iomem  *ocpefus_base;        /* 0x10206000 0x1000, OCP eFUSE register */
+static int ocp2_irq0_number; /* 279+50=329 */
+static int ocp2_irq1_number; /* 280+50=330 */
+static int ocp0_irq0_number; /* 282+50=332  LL = MP0 */
+static int ocp0_irq1_number; /* 283+50=333  */
+static int ocp1_irq0_number; /* 284+50=334  L = MP1  */
+static int ocp1_irq1_number; /* 285+50=335  */
 #endif
+
+#define OCPPIN_BASE				(ocppin_base)
+#define OCPPROB_BASE			(ocpprob_base)
+#define OCPEFUS_BASE			(ocpefus_base)
+
+/* 0x10005000 0x1000, DFD,UDI pinmux reg */
+#define OCPPIN_UDI_JTAG1		(OCPPIN_BASE+0x330)
+#define OCPPIN_UDI_JTAG2		(OCPPIN_BASE+0x340)
+#define OCPPIN_UDI_SDCARD		(OCPPIN_BASE+0x400)
+
+
+typedef struct IDVFS_STAT {
+	unsigned int Freq;
+	unsigned int Volt;
+} IDVFS_STAT;
+
 
 typedef struct OCP_STAT {
 	unsigned int IntEnDis;
@@ -160,6 +211,7 @@ static struct OCP_STAT ocp_status[3] = {
 /* for HQA buffer */
 #define NR_HQA 10000
 static struct OCP_STAT ocp_hqa[3][NR_HQA];
+static struct IDVFS_STAT idvfs_hqa[NR_HQA];
 
 /* BIG CPU */
 int BigOCPConfig(int VOffInmV, int VStepInuV)
@@ -2271,10 +2323,10 @@ if (Reg_Debug_on) {
 	for (i = 0; i < 148; i += 4)
 		seq_printf(m, "Addr: 0x%x = %x\n", (OCPAPBSTATUS00 + i), ocp_read(OCPAPBSTATUS00 + i));
 
-	seq_printf(m, "Addr: 0x10206660 = %x\n", ocp_read(0x10206660));
-	seq_printf(m, "Addr: 0x10206664 = %x\n", ocp_read(0x10206664));
-	seq_printf(m, "Addr: 0x10206668 = %x\n", ocp_read(0x10206668));
-	seq_printf(m, "Addr: 0x1020666C = %x\n", ocp_read(0x1020666C));
+	seq_printf(m, "Addr: 0x10206660 = %x\n", _ocp_read(OCPEFUS_BASE + 0x660));
+	seq_printf(m, "Addr: 0x10206664 = %x\n", _ocp_read(OCPEFUS_BASE + 0x664));
+	seq_printf(m, "Addr: 0x10206668 = %x\n", _ocp_read(OCPEFUS_BASE + 0x668));
+	seq_printf(m, "Addr: 0x1020666C = %x\n", _ocp_read(OCPEFUS_BASE + 0x66C));
 }
 
 return 0;
@@ -2525,6 +2577,7 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		LittleOCPAvgPwr(0, 1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL));
 		mdelay(1);
 		LittleOCPCapture(0, 1, 1, 0, 15);
+		LittleOCPCaptureGet(0, &Leakage, &Total, &ClkPct);
 		ocp_status[0].CapToLkg = Leakage;
 		ocp_status[0].CapTotAct = Total;
 		ocp_status[0].CapOCCGPct = ClkPct;
@@ -2689,6 +2742,7 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		LittleOCPAvgPwr(1, 1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L));
 		mdelay(1);
 		LittleOCPCapture(1, 1, 1, 0, 15);
+		LittleOCPCaptureGet(1, &Leakage, &Total, &ClkPct);
 		ocp_status[1].CapToLkg = Leakage;
 		ocp_status[1].CapTotAct = Total;
 		ocp_status[1].CapOCCGPct = ClkPct;
@@ -2740,11 +2794,11 @@ static int dreq_function_test_proc_show(struct seq_file *m, void *v)
 {
 seq_printf(m, "Big DREQ HW Enable = %d\n", big_dreq_enable);
 seq_printf(m, "       Big DREQ on = %d\n", BigDREQGet());
-seq_printf(m, "    Little DREQ on = %d\n", LittleDREQGet());
+seq_printf(m, "    Little DREQ on = %x\n", LittleDREQGet());
 
 if (Reg_Debug_on) {
 	seq_printf(m, "BIG_SRAMDREQ:    Addr: 0x%x = %x\n", BIG_SRAMDREQ, ocp_read(BIG_SRAMDREQ));
-	seq_printf(m, "LITTLE_SRAMDREQ: Addr: 0x%x = %x\n", LITTLE_SRAMDREQ, ocp_read(LITTLE_SRAMDREQ));
+	seq_printf(m, "LITTLE_SRAMDREQ: Addr: 0x%x = %x\n", LITTLE_SRAMDREQ, _ocp_read(OCPPROB_BASE));
 	seq_printf(m, "BIG_SRAMLDO:     Addr: 0x%x = %x\n", BIG_SRAMLDO, ocp_read(BIG_SRAMLDO));
 }
 return 0;
@@ -3350,7 +3404,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10222584, 9:5, 0x0);
 				ocp_write_field(0x102222B0, 31:24, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002890, ~(1<<6));
+				_ocp_write(OCPPROB_BASE + 0x1890, ~(1<<6));
 				ocp_write_field(0x10222584, 20:20, 0x1);
 
 				for (i = 0; i < 16; i++) {
@@ -3367,7 +3421,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10222584, 9:5, 0x0);
 				ocp_write_field(0x102222B0, 31:24, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002890, ~(1<<6));
+				_ocp_write(OCPPROB_BASE + 0x1890, ~(1<<6));
 				ocp_write_field(0x10222584, 25:25, 0x1);
 
 				for (i = 0; i < 16; i++) {
@@ -3384,7 +3438,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10222584, 9:5, 0x0);
 				ocp_write_field(0x102222B0, 31:24, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002890, ~(1<<6));
+				_ocp_write(OCPPROB_BASE + 0x1890, ~(1<<6));
 				ocp_write_field(0x10222584, 5:5, 0x1);
 
 				for (i = 0; i < 16; i++) {
@@ -3416,9 +3470,9 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10221160, 9:5 , 0x0);
 
 				/* SRAMLDO: Liitle */
-				ocp_write_field(0x10001FAC, 23:0, 0x0);
+				_ocp_write_field(OCPPROB_BASE + 0xfac, 23:0, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002510, ~(1<<30));
+				_ocp_write(OCPPROB_BASE + 0x1510, ~(1<<30));
 
 				ocp_write_field(0x10221168, 0:0, 0x1);
 
@@ -3452,9 +3506,9 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10221160, 9:5, 0x0);
 
 				/* SRAMLDO: Liitle */
-				ocp_write_field(0x10001FAC, 23:0, 0x0);
+				_ocp_write_field(OCPPROB_BASE + 0xfac, 23:0, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002510, ~(1<<30));
+				_ocp_write(OCPPROB_BASE + 0x1510, ~(1<<30));
 
 				ocp_write_field(0x10221168, 5:5, 0x1);
 
@@ -3488,9 +3542,9 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10221160, 9:5, 0x0);
 
 				/* SRAMLDO: Liitle */
-				ocp_write_field(0x10001FAC, 23:0, 0x0);
+				_ocp_write_field(OCPPROB_BASE + 0xfac, 23:0, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002510, ~(1<<30));
+				_ocp_write(OCPPROB_BASE + 0x1510, ~(1<<30));
 
 				ocp_write_field(0x10221168, 10:10, 0x1);
 
@@ -3524,9 +3578,9 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10221160, 9:5, 0x0);
 
 				/* SRAMLDO: Liitle */
-				ocp_write_field(0x10001FAC, 23:0, 0x0);
+				_ocp_write_field(OCPPROB_BASE + 0xfac, 23:0, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002510, ~(1<<30));
+				_ocp_write(OCPPROB_BASE + 0x1510, ~(1<<30));
 
 				ocp_write_field(0x10221168, 15:15, 0x1);
 
@@ -3559,9 +3613,9 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10221168, 19:0, 0x0);
 				ocp_write_field(0x10221160, 9:5, 0x0);
 				/* SRAMLDO: Liitle */
-				ocp_write_field(0x10001FAC, 23:0, 0x0);
+				_ocp_write_field(OCPPROB_BASE + 0xfac, 23:0, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002510, ~(1<<30));
+				_ocp_write(OCPPROB_BASE + 0x1510, ~(1<<30));
 
 				ocp_write_field(0x10221160, 9:5, 0x1);
 
@@ -3594,9 +3648,9 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10223168, 19:0, 0x0);
 				ocp_write_field(0x10223160, 9:5, 0x0);
 				/* SRAMLDO: Liitle */
-				ocp_write_field(0x10001FAC, 23:0, 0x0);
+				_ocp_write_field(OCPPROB_BASE + 0xfac, 23:0, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002510, ~(1<<30));
+				_ocp_write(OCPPROB_BASE + 0x1510, ~(1<<30));
 
 				ocp_write_field(0x10223168, 0:0, 0x1);
 
@@ -3630,9 +3684,9 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10223160, 9:5 , 0x0);
 
 				/* SRAMLDO: Liitle */
-				ocp_write_field(0x10001FAC, 23:0, 0x0);
+				_ocp_write_field(OCPPROB_BASE + 0xfac, 23:0, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002510, ~(1<<30));
+				_ocp_write(OCPPROB_BASE + 0x1510, ~(1<<30));
 
 				ocp_write_field(0x10223168, 5:5, 0x1);
 
@@ -3663,9 +3717,9 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10223168, 19:0, 0x0);
 				ocp_write_field(0x10223160, 9:5, 0x0);
 
-				ocp_write_field(0x10001FAC, 23:0, 0x0);
+				_ocp_write_field(OCPPROB_BASE + 0xfac, 23:0, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002510, ~(1<<30));
+				_ocp_write(OCPPROB_BASE + 0x1510, ~(1<<30));
 
 				ocp_write_field(0x10223168, 10:10, 0x1);
 
@@ -3696,9 +3750,9 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10223168, 19:0, 0x0);
 				ocp_write_field(0x10223160, 9:5 , 0x0);
 
-				ocp_write_field(0x10001FAC, 23:0, 0x0);
+				_ocp_write_field(OCPPROB_BASE + 0xfac, 23:0, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002510, ~(1<<30));
+				_ocp_write(OCPPROB_BASE + 0x1510, ~(1<<30));
 
 				ocp_write_field(0x10223168, 15:15, 0x1);
 
@@ -3729,9 +3783,9 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 				ocp_write_field(0x10223168, 19:0, 0x0);
 				ocp_write_field(0x10223160, 9:5 , 0x0);
 
-				ocp_write_field(0x10001FAC, 23:0, 0x0);
+				_ocp_write_field(OCPPROB_BASE + 0xfac, 23:0, 0x0);
 				/* 4. Enable AMUXOUT ball AGPIO (at SOC level config) */
-				ocp_write(0x10002510, ~(1<<30));
+				_ocp_write(OCPPROB_BASE + 0x1510, ~(1<<30));
 
 				ocp_write_field(0x10223160, 9:5, 0x1);
 
@@ -3749,12 +3803,12 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 		break;
 	case 4:
 		/* PMUX JTAG */
-		ocp_write(0x10005330, 0x331111);
-		ocp_write(0x10005340, 0x1100333);
+		_ocp_write(OCPPIN_UDI_JTAG1, 0x331111);
+		_ocp_write(OCPPIN_UDI_JTAG2, 0x1100333);
 		break;
 	case 5:
 		/* PMUX SD CARD  */
-		ocp_write(0x10005400, 0x04414440);
+		_ocp_write(OCPPIN_UDI_SDCARD, 0x04414440);
 		break;
 	case 6:
 		/* AUXPMUX switch */
@@ -3762,40 +3816,40 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			if (val[0] == 0) {
 				if (val[1] == 0) {
 					/* disable pinmux */
-					ocp_write_field(0x10002510, 30:30, 0x1);
+					_ocp_write_field(OCPPROB_BASE + 0x1510, 30:30, 0x1);
 					/* L/LL CPU AGPIO prob out volt disable */
-					ocp_write(0x10001fac, 0x000000ff);
+					_ocp_write(OCPPROB_BASE + 0xfac, 0x000000ff);
 				} else if (val[1] == 1) {
 					/* enable pinmux */
 					/* L/LL CPU AGPIO enable */
-					ocp_write_field(0x10002510, 30:30, 0x0);
+					_ocp_write_field(OCPPROB_BASE + 0x1510, 30:30, 0x0);
 					/* L/LL CPU AGPIO prob out volt enable */
-					ocp_write(0x10001fac, 0x0000ff00);
+					_ocp_write(OCPPROB_BASE + 0xfac, 0x0000ff00);
 				}
 			} else if (val[0] == 1) {
 				if (val[1] == 0) {
 					/* disable pinmux */
 					/* BIG CPU AGPIO prob out volt disable */
-					ocp_write_field(0x10002890, 6:6, 0x1);
+					_ocp_write_field(OCPPROB_BASE + 0x1890, 6:6, 0x1);
 					ocp_write_field(0x102222b0, 31:31, 0x0);
 				} else if (val[1] == 1) {
 					/* enable pinmux */
 					/* BIG CPU AGPIO enable */
-					ocp_write_field(0x10002890, 6:6, 0x0);
+					_ocp_write_field(OCPPROB_BASE + 0x1890, 6:6, 0x0);
 					ocp_write_field(0x102222b0, 31:31, 0x1);
 				}
 			} else if (val[0] == 2) {
 				if (val[1] == 0) {
 					/* disable pinmux */
-					ocp_write_field(0x10002120, 30:30, 0x1);
+					_ocp_write_field(OCPPROB_BASE + 0x1120, 30:30, 0x1);
 					/* GPU AGPIO prob out volt disable */
-					ocp_write(0x10001fd4, 0x000000ff);
+					_ocp_write(OCPPROB_BASE + 0xfd4, 0x000000ff);
 				} else if (val[1] == 1) {
 					/* enable pinmux */
 					/* GPU AGPIO enable */
-					ocp_write_field(0x10002120, 30:30, 0x0);
+					_ocp_write_field(OCPPROB_BASE + 0x1120, 30:30, 0x0);
 					/* GPU AGPIO prob out volt enable */
-					ocp_write(0x10001fd4, 0x0000ff00);
+					_ocp_write(OCPPROB_BASE + 0xfd4, 0x0000ff00);
 				}
 			}
 		}
@@ -3808,7 +3862,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 			unsigned int volt_sram = val[1]*100;
 
 			da9214_config_interface(0xD7, (((((val[0]*100) - 30000) + 900) / 1000) & 0x7F), 0x7F, 0);
-			ocp_write(0x10001f98, 0x000000ff);
+			_ocp_write(OCPPROB_BASE + 0xf98, 0x000000ff);
 		switch (volt_sram) {
 		case 60000:
 			rdata = 1;
@@ -3824,8 +3878,8 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 		for (i = 0; i < 4; i++)
 			wdata = wdata | (rdata << (i*8));
 
-			ocp_write(0x10001f9c, wdata);
-			ocp_write(0x10001fa0, wdata);
+			_ocp_write(OCPPROB_BASE + 0xf9c, wdata);
+			_ocp_write(OCPPROB_BASE + 0xfa0, wdata);
 		}
 		break;
 	case 8:
@@ -3904,6 +3958,11 @@ int i;
 			seq_printf(m, "Cluster 0 AvgActValid  = %d\n", ocp_hqa[0][i].CGAvgValid);
 			seq_printf(m, "Cluster 0 AvgAct       = %llu mA\n", ocp_hqa[0][i].CGAvg);
 			seq_printf(m, "Cluster 0 AvgLkg       = %llu mA\n", ocp_hqa[0][i].AvgLkg);
+			seq_printf(m, "Cluster 0 CapToLkg     = %d mA\n", ocp_hqa[0][i].CapToLkg);
+			seq_printf(m, "Cluster 0 CapOCCGPct   = %d %%\n", ocp_hqa[0][i].CapOCCGPct);
+			seq_printf(m, "Cluster 0 CaptureValid = %d\n", ocp_hqa[0][i].CaptureValid);
+			seq_printf(m, "Cluster 0 CapTotAct    = %d mA\n", ocp_hqa[0][i].CapTotAct);
+			seq_printf(m, "Cluster 0 CapMAFAct    = %d mA\n", ocp_hqa[0][i].CapMAFAct);
 			seq_printf(m, "Cluster 0 TopRawLkg    = %d\n", ocp_hqa[0][i].TopRawLkg);
 			seq_printf(m, "Cluster 0 CPU0RawLkg   = %d\n", ocp_hqa[0][i].CPU0RawLkg);
 			seq_printf(m, "Cluster 0 CPU1RawLkg   = %d\n", ocp_hqa[0][i].CPU1RawLkg);
@@ -3914,6 +3973,11 @@ int i;
 			seq_printf(m, "Cluster 1 AvgActValid  = %d\n", ocp_hqa[1][i].CGAvgValid);
 			seq_printf(m, "Cluster 1 AvgAct       = %llu mA\n", ocp_hqa[1][i].CGAvg);
 			seq_printf(m, "Cluster 1 AvgLkg       = %llu mA\n", ocp_hqa[1][i].AvgLkg);
+			seq_printf(m, "Cluster 1 CapToLkg     = %d mA\n", ocp_hqa[1][i].CapToLkg);
+			seq_printf(m, "Cluster 1 CapOCCGPct   = %d %%\n", ocp_hqa[1][i].CapOCCGPct);
+			seq_printf(m, "Cluster 1 CaptureValid = %d\n", ocp_hqa[1][i].CaptureValid);
+			seq_printf(m, "Cluster 1 CapTotAct    = %d mA\n", ocp_hqa[1][i].CapTotAct);
+			seq_printf(m, "Cluster 1 CapMAFAct    = %d mA\n", ocp_hqa[1][i].CapMAFAct);
 			seq_printf(m, "Cluster 1 TopRawLkg    = %d\n", ocp_hqa[1][i].TopRawLkg);
 			seq_printf(m, "Cluster 1 CPU0RawLkg   = %d\n", ocp_hqa[1][i].CPU0RawLkg);
 			seq_printf(m, "Cluster 1 CPU1RawLkg   = %d\n", ocp_hqa[1][i].CPU1RawLkg);
@@ -3922,6 +3986,8 @@ int i;
 		}
 		if (ocp_cluster2_enable == 1) {
 			if (ocp_hqa[2][i].CGAvgValid == 1) {
+				seq_printf(m, "Cluster 2 Freq         = %d Mhz\n", idvfs_hqa[i].Freq);
+				seq_printf(m, "Cluster 2 Vproc        = %d mV\n", idvfs_hqa[i].Volt);
 				seq_printf(m, "Cluster 2 CGAvgValid   = %d\n", ocp_hqa[2][i].CGAvgValid);
 				seq_printf(m, "Cluster 2 CGAvg        = %llu %%\n", ocp_hqa[2][i].CGAvg);
 				seq_printf(m, "Cluster 2 CapToLkg     = %d mA\n", ocp_hqa[2][i].CapToLkg);
@@ -3949,6 +4015,7 @@ unsigned long long AvgAct, AvgLkg;
 int TopRawLkg, CPU0RawLkg, CPU1RawLkg, CPU2RawLkg, CPU3RawLkg;
 char *buf = _copy_from_user_for_proc(buffer, count);
 ktime_t now, delta;
+unsigned char da9214;
 
 	if (!buf)
 		return -EINVAL;
@@ -4035,6 +4102,14 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 					else
 						udelay(tmp);
 
+						da9214_read_interface(0xd9, &da9214, 0x7f, 0);
+						idvfs_hqa[j].Volt = DA9214_STEP_TO_MV((da9214 & 0x7f));
+
+					if (ocp_read_field(0x10222470, 0:0) == 1)
+						idvfs_hqa[j].Freq = ((BigiDVFSSWAvgStatus() * 25)/100);
+					else
+						idvfs_hqa[j].Freq = BigiDVFSPllGetFreq();
+
 						BigOCPCaptureStatus(&Leakage, &Total, &ClkPct);
 						ocp_hqa[2][j].CapToLkg = Leakage;
 						ocp_hqa[2][j].CapTotAct = Total;
@@ -4114,6 +4189,19 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 						LittleOCPCapture(0, 1, 1, 0, 15);
 						LittleOCPCapture(1, 1, 1, 0, 15);
+
+						LittleOCPCaptureGet(1, &Leakage, &Total, &ClkPct);
+						ocp_hqa[1][i].CapToLkg = Leakage;
+						ocp_hqa[1][i].CapTotAct = Total;
+						ocp_hqa[1][i].CapOCCGPct = ClkPct;
+						ocp_hqa[1][i].CaptureValid = ocp_read_field(MP0_OCP_CAP_STATUS00, 0:0);
+
+						LittleOCPCaptureGet(0, &Leakage, &Total, &ClkPct);
+						ocp_hqa[0][i].CapToLkg = Leakage;
+						ocp_hqa[0][i].CapTotAct = Total;
+						ocp_hqa[0][i].CapOCCGPct = ClkPct;
+						ocp_hqa[0][i].CaptureValid = ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0);
+
 						CL0OCPCaptureRawLkgStatus(&TopRawLkg, &CPU0RawLkg,
 								&CPU1RawLkg, &CPU2RawLkg, &CPU3RawLkg);
 						ocp_hqa[0][i].TopRawLkg = TopRawLkg;
@@ -4131,6 +4219,12 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 						ocp_hqa[1][i].CPU2RawLkg = CPU2RawLkg;
 						ocp_hqa[1][i].CPU3RawLkg = CPU3RawLkg;
 						ocp_hqa[1][i].CaptureValid = ocp_read_field(MP1_OCP_CAP_STATUS00, 0:0);
+
+						LittleOCPMAFAct(1, &CapMAFAct);
+						ocp_hqa[1][i].CapMAFAct = CapMAFAct;
+
+						LittleOCPMAFAct(0, &CapMAFAct);
+						ocp_hqa[0][i].CapMAFAct = CapMAFAct;
 
 						LittleOCPAvgPwrGet(1, &AvgLkg, &AvgAct);
 						ocp_hqa[1][i].CGAvgValid = ocp_read_field(MP1_OCP_DBG_STAT, 31:31);
@@ -4378,10 +4472,26 @@ int err = 0;
 #if 1
 struct device_node *node = NULL;
 node = of_find_compatible_node(NULL, NULL, "mediatek,ocp_cfg");
-if (node) {
-	/* Setup IO addresses */
-	ocp_base = of_iomap(node, 0);
-}
+	if (!node) {
+		ocp_err("error: cannot find node OCP_NODE!\n");
+		BUG();
+	}
+
+ocp_base = of_iomap(node, 0); /* 0x10220000 0x4000, OCP */
+/* Setup IO addresses and printf */
+ocppin_base = of_iomap(node, 1); /* 0x10005000 0x1000, DFD,UDI pinmux reg */
+ocpprob_base = of_iomap(node, 2); /* 0x10001000 0x2000, GPU, L-LL, BIG sarm ldo probe reg */
+ocpefus_base = of_iomap(node, 3); /* 0x10206000 0x1000, Big eFUSE register */
+
+
+/*	ocp_info("ocppin_base = 0x%lx.\n", (unsigned long)ocppin_base);
+	ocp_info("ocpprob_base = 0x%lx.\n", (unsigned long)ocpprob_base);
+	ocp_info("ocpefus_base = 0x%lx.\n", (unsigned long)ocpefus_base);*/
+	if (!ocppin_base || !ocpprob_base || !ocpefus_base) {
+		ocp_err("OCP get some base NULL.\n");
+		BUG();
+	}
+
 
 /*get ocp irq num*/
 ocp2_irq0_number = irq_of_parse_and_map(node, 0);

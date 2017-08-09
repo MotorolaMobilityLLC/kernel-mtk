@@ -35,44 +35,6 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 #endif
 #endif
 
-/*
-#ifdef __MT_OCP_C__
-	#define OCP_EXTERN
-#else
-	#define OCP_EXTERN extern
-#endif
-*/
-
-/*
- * BIT Operation
- */
-#undef  BIT_OCP
-#define BIT_OCP(_bit_)                    (unsigned)(1 << (_bit_))
-#define BITS_OCP(_bits_, _val_)           ((((unsigned) -1 >> (31 - ((1) ? _bits_))) \
-& ~((1U << ((0) ? _bits_)) - 1)) & ((_val_)<<((0) ? _bits_)))
-#define BITMASK_OCP(_bits_)               (((unsigned) -1 >> (31 - ((1) ? _bits_))) & ~((1U << ((0) ? _bits_)) - 1))
-#define GET_BITS_VAL_OCP(_bits_, _val_)   (((_val_) & (BITMASK_OCP(_bits_))) >> ((0) ? _bits_))
-
-
-
-/**
- * Read/Write a field of a register.
- * @addr:       Address of the register
- * @range:      The field bit range in the form of MSB:LSB
- * @val:        The value to be written to the field
- */
-
-#define MTK_SIP_KERNEL_OCP_READ 0x8200035F
-#define MTK_SIP_KERNEL_OCP_WRITE 0x8200035E
-
-#define ocp_read(addr)	                     mt_secure_call_ocp(MTK_SIP_KERNEL_OCP_READ, addr, 0, 0)
-#define ocp_read_field(addr, range)	         GET_BITS_VAL_OCP(range, ocp_read(addr))
-
-/* for DVT only */
-#define ocp_write(addr, val)                 mt_secure_call_ocp(MTK_SIP_KERNEL_OCP_WRITE, addr, val, 0)
-#define ocp_write_field(addr, range, val)    ocp_write(addr, \
-(ocp_read(addr) & ~(BITMASK_OCP(range))) | BITS_OCP(range, val))
-
 
 #define HW_API_RET_DEBUG_ON 1
 
@@ -82,9 +44,7 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 /**
  * OCP control register
  */
-extern void __iomem *ocp_base;  /*0x10220000 */
-#define OCP_BASE_ADDR      (0x10220000) /* ocp_base     */
-
+#define OCP_BASE_ADDR         (0x10220000)
 
 /* eFuse for BIG */
 #define EFUSE_LkgMonTRIM      (0x0)
