@@ -1424,25 +1424,33 @@ static int tscpu_thermal_suspend(struct platform_device *dev, pm_message_t state
 		aee_rr_rec_thermal_status(TSCPU_SUSPEND);
 #endif
 
-		while (cnt < 50) {
-			temp = (DRV_Reg32(THAHBST0) >> 16);
-			if (cnt > 10)
-				pr_debug("THAHBST0 = 0x%x,cnt=%d, %d\n", temp, cnt,
-				       __LINE__);
-			if (temp == 0x0) {
-				/* pause all periodoc temperature sensing point 0~2 */
-				thermal_pause_all_periodoc_temp_sensing();	/* TEMPMSRCTL1 */
-				break;
-			}
-			udelay(2);
-			cnt++;
-		}
-
+#if defined(CONFIG_ARCH_MT6797)
 		/* disable periodic temp measurement on sensor 0~2 */
 		thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
 
+		do {
+			temp = (DRV_Reg32(THAHBST0) >> 16);
+			if (cnt > 10)
+				pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
+			udelay(50);
+			cnt++;
+		} while (temp != 0x0 && cnt < 50);
+#else
+		thermal_pause_all_periodoc_temp_sensing();	/* TEMPMSRCTL1 */
 
+		do {
+			temp = (DRV_Reg32(THAHBST0) >> 16);
+			if (cnt > 10)
+				pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
+
+			udelay(2);
+			cnt++;
+		} while (temp != 0x0 && cnt < 50);
+
+		/* disable periodic temp measurement on sensor 0~2 */
+		thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
+#endif
 		/* tscpu_thermal_clock_off(); */
 
 		/*TSCON1[5:4]=2'b11, Buffer off */
@@ -1475,7 +1483,12 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 #endif
 
 		tscpu_reset_thermal();
-
+		/*
+		   TS_CON1 default is 0x30, this is buffer off
+		   we should turn on this buffer berore we use thermal sensor,
+		   or this buffer off will let TC read a very small value from auxadc
+		   and this small value will trigger thermal reboot
+		 */
 		temp = DRV_Reg32(TS_CONFIGURE);
 		temp &= ~(TS_TURN_OFF);	/* TS_CON1[5:4]=2'b00,   00: Buffer on, TSMCU to AUXADC */
 		THERMAL_WRAP_WR32(temp, TS_CONFIGURE);	/* read abb need */
@@ -1483,36 +1496,45 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 		when resume.wait 100uS than turn on thermal controller. */
 		udelay(200);
 
+		BUG_ON((DRV_Reg32(TS_CONFIGURE) & TS_TURN_OFF) != 0x0);
 
-		/*add this function to read all temp first to avoid
+		/*Add this function to read all temp first to avoid
 		   write TEMPPROTTC first time will issue an fake signal to RGU */
 		tscpu_fast_initial_sw_workaround();
 
-		while (cnt < 50) {
-			temp = (DRV_Reg32(THAHBST0) >> 16);
-			if (cnt > 10)
-				pr_debug("THAHBST0 = 0x%x,cnt=%d, %d\n", temp, cnt, __LINE__);
-			if (temp == 0x0) {
-				/* pause all periodoc temperature sensing point 0~2 */
-				thermal_pause_all_periodoc_temp_sensing();	/* TEMPMSRCTL1 */
-				break;
-			}
-			udelay(2);
-			cnt++;
-		}
+#if defined(CONFIG_ARCH_MT6797)
+		/* disable periodic temp measurement on sensor 0~2 */
 		thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
 
+		do {
+			temp = (DRV_Reg32(THAHBST0) >> 16);
+			if (cnt > 10)
+				pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
+
+			udelay(50);
+			cnt++;
+		} while (temp != 0x0 && cnt < 50);
+#else
+		thermal_pause_all_periodoc_temp_sensing();	/* TEMPMSRCTL1 */
+
+		do {
+			temp = (DRV_Reg32(THAHBST0) >> 16);
+			if (cnt > 10)
+				pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
+
+			udelay(2);
+			cnt++;
+		} while (temp != 0x0 && cnt < 50);
+
+		thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
+#endif
 		tscpu_thermal_initial_all_bank();
 
 		thermal_release_all_periodoc_temp_sensing();	/* must release before start */
 
-
-
 		tscpu_clear_all_temp();
 
 		tscpu_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
-
-
 	}
 
 	g_tc_resume = 2;	/* set "2", resume finish,can read temp */
@@ -1883,6 +1905,19 @@ static void tscpu_thermal_pause(void)
 
 	aee_rr_rec_thermal_status(TSCPU_PAUSE);
 
+#if defined(CONFIG_ARCH_MT6797)
+	/* disable periodic temp measurement on sensor 0~2 */
+	thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
+
+	do {
+		temp = (DRV_Reg32(THAHBST0) >> 16);
+		if (cnt > 10)
+			pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
+
+		udelay(50);
+		cnt++;
+	} while (temp != 0x0 && cnt < 50);
+#else
 	thermal_pause_all_periodoc_temp_sensing();	/* TEMPMSRCTL1 */
 
 	do {
@@ -1893,7 +1928,7 @@ static void tscpu_thermal_pause(void)
 		udelay(2);
 		cnt++;
 	} while (temp != 0x0 && cnt < 50);
-
+#endif
 	/* disable periodic temp measurement on sensor 0~2 */
 	thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
 }
@@ -1906,6 +1941,19 @@ static void tscpu_thermal_release(void)
 	aee_rr_rec_thermal_status(TSCPU_RELEASE);
 
 	BUG_ON((~__raw_readl((infracfg_ao_base + 0x0094)) & 0x400) != 0x400);
+	/*
+	   TS_CON1 default is 0x30, this is buffer off
+	   we should turn on this buffer berore we use thermal sensor,
+	   or this buffer off will let TC read a very small value from auxadc
+	   and this small value will trigger thermal reboot
+	 */
+	temp = DRV_Reg32(TS_CONFIGURE);
+	temp &= ~(TS_TURN_OFF);	/* TS_CON1[5:4]=2'b00,   00: Buffer on, TSMCU to AUXADC */
+	THERMAL_WRAP_WR32(temp, TS_CONFIGURE);	/* read abb need */
+	/* RG_TS2AUXADC < set from 2'b11 to 2'b00
+	when resume.wait 100uS than turn on thermal controller.*/
+	udelay(200);
+
 	BUG_ON((DRV_Reg32(TS_CONFIGURE) & TS_TURN_OFF) != 0x0);
 
 	/*thermal_auxadc_get_data(2, 11);*/
@@ -1913,6 +1961,19 @@ static void tscpu_thermal_release(void)
 
 	tscpu_fast_initial_sw_workaround();
 
+#if defined(CONFIG_ARCH_MT6797)
+	/* disable periodic temp measurement on sensor 0~2 */
+	thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
+
+	do {
+		temp = (DRV_Reg32(THAHBST0) >> 16);
+		if (cnt > 10)
+			pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
+
+		udelay(50);
+		cnt++;
+	} while (temp != 0x0 && cnt < 50);
+#else
 	thermal_pause_all_periodoc_temp_sensing();	/* TEMPMSRCTL1 */
 
 	do {
@@ -1925,6 +1986,7 @@ static void tscpu_thermal_release(void)
 	} while (temp != 0x0 && cnt < 50);
 
 	thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
+#endif
 
 	tscpu_thermal_initial_all_bank();
 
