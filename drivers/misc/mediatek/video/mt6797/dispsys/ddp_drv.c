@@ -602,7 +602,7 @@ m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva, void *data)
 	case M4U_PORT_DISP_WDMA1:
 		module = DISP_MODULE_WDMA1;
 		break;
-	case M4U_PORT_DISP_2L_OVL0:
+	case M4U_PORT_DISP_2L_OVL0_LARB0:
 		module = DISP_MODULE_OVL0_2L;
 		break;
 	case M4U_PORT_DISP_2L_OVL1:
@@ -797,7 +797,7 @@ static int __init disp_probe_1(void)
 	m4u_register_fault_callback(M4U_PORT_DISP_OVL1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_RDMA1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_WDMA1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
-	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
+	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL0_LARB0, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 	m4u_register_fault_callback(M4U_PORT_DISP_2L_OVL1, (m4u_fault_callback_t *)disp_m4u_callback, 0);
 
 

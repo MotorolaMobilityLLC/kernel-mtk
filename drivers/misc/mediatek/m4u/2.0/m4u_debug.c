@@ -637,8 +637,10 @@ static int m4u_debug_set(void *data, u64 val)
 			*pDst, *(pDst+1), *(pDst+126), *(pDst+127), *(pDst+128));
 
 
-		m4u_alloc_mva(client, M4U_PORT_DISP_FAKE, (unsigned long)pSrc, NULL, allocated_size, 0, 0, &mva_rd);
-		m4u_alloc_mva(client, M4U_PORT_DISP_FAKE, (unsigned long)pDst, NULL, allocated_size, 0, 0, &mva_wr);
+		m4u_alloc_mva(client, M4U_PORT_DISP_FAKE_LARB0,
+			(unsigned long)pSrc, NULL, allocated_size, 0, 0, &mva_rd);
+		m4u_alloc_mva(client, M4U_PORT_DISP_FAKE_LARB0,
+			(unsigned long)pDst, NULL, allocated_size, 0, 0, &mva_wr);
 
 		m4u_dump_pgtable(domain, NULL);
 
@@ -646,8 +648,8 @@ static int m4u_debug_set(void *data, u64 val)
 
 		M4UMSG("(2) mva_wr:0x%x\n", mva_wr);
 
-		m4u_dealloc_mva(client, M4U_PORT_DISP_FAKE, mva_rd);
-		m4u_dealloc_mva(client, M4U_PORT_DISP_FAKE, mva_wr);
+		m4u_dealloc_mva(client, M4U_PORT_DISP_FAKE_LARB0, mva_rd);
+		m4u_dealloc_mva(client, M4U_PORT_DISP_FAKE_LARB0, mva_wr);
 
 		m4u_cache_sync(NULL, 0, 0, 0, 0, M4U_CACHE_FLUSH_ALL);
 

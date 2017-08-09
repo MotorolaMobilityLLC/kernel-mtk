@@ -1985,7 +1985,7 @@ static int config_display_m4u_port(void)
 		return -1;
 	}
 
-	sPort.ePortID = M4U_PORT_DISP_2L_OVL0;
+	sPort.ePortID = M4U_PORT_DISP_2L_OVL0_LARB0;
 	ret = m4u_config_port(&sPort);
 	if (ret) {
 		DISPERR("config M4U Port %s to %s FAIL(ret=%d)\n",

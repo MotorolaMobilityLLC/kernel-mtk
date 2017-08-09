@@ -89,7 +89,7 @@ static inline unsigned long ovl_to_m4u_port(DISP_MODULE_ENUM module)
 	case DISP_MODULE_OVL1:
 		return M4U_PORT_DISP_OVL1;
 	case DISP_MODULE_OVL0_2L:
-		return M4U_PORT_DISP_2L_OVL0;
+		return M4U_PORT_DISP_2L_OVL0_LARB0;
 	case DISP_MODULE_OVL1_2L:
 		return M4U_PORT_DISP_2L_OVL1;
 	default:
