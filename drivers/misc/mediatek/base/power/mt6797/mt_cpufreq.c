@@ -752,6 +752,7 @@ static void _mt_cpufreq_aee_init(void)
 	aee_rr_rec_cpu_dvfs_vproc_little(0xFF);
 	aee_rr_rec_cpu_dvfs_oppidx(0xFF);
 	aee_rr_rec_cpu_dvfs_status(0xF0);
+	aee_rr_rec_cpu_dvfs_step(0x00);
 }
 #endif
 
@@ -1097,6 +1098,26 @@ static void aee_record_cpu_dvfs_out(enum mt_cpu_dvfs_id id)
 	else
 		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
 			~(1 << CPU_DVFS_B_IS_DOING_DVFS));
+#endif
+}
+
+static void aee_record_cpu_dvfs_step(unsigned int step)
+{
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	if (step == 0)
+		aee_rr_rec_cpu_dvfs_step(aee_rr_curr_cpu_dvfs_step() & 0xF0);
+	else
+		aee_rr_rec_cpu_dvfs_step((aee_rr_curr_cpu_dvfs_step() & 0xF0) | (step));
+#endif
+}
+
+static void aee_record_cci_dvfs_step(unsigned int step)
+{
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	if (step == 0)
+		aee_rr_rec_cpu_dvfs_step(aee_rr_curr_cpu_dvfs_step() & 0x0F);
+	else
+		aee_rr_rec_cpu_dvfs_step((aee_rr_curr_cpu_dvfs_step() & 0x0F) | (step << 4));
 #endif
 }
 
@@ -3043,6 +3064,7 @@ static int _cpufreq_set_locked_cci(unsigned int cur_cci_khz, unsigned int target
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
 		(1 << CPU_DVFS_CCI_IS_DOING_DVFS));
+	aee_record_cci_dvfs_step(1);
 #endif
 	/* This is for cci */
 	id = MT_CPU_DVFS_CCI;
@@ -3056,6 +3078,10 @@ static int _cpufreq_set_locked_cci(unsigned int cur_cci_khz, unsigned int target
 	cur_cci_volt = p_cci->ops->get_cur_volt(p_cci);
 	/* target_cci_volt = _search_available_volt(p_cci, target_cci_khz); */
 
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cci_dvfs_step(2);
+#endif
+
 	cpufreq_ver
 		    ("@%s(), %s: cur_cci_volt = %d, target_cci_volt = %d\n",
 		     __func__, cpu_dvfs_get_name(p_cci), cur_cci_volt, target_cci_volt);
@@ -3067,9 +3093,17 @@ static int _cpufreq_set_locked_cci(unsigned int cur_cci_khz, unsigned int target
 			goto out;
 	}
 
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cci_dvfs_step(3);
+#endif
+
 	/* set cci freq (UP/DOWN) */
 	if (cur_cci_khz != target_cci_khz)
 		p_cci->ops->set_cur_freq(p_cci, cur_cci_khz, target_cci_khz);
+
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cci_dvfs_step(4);
+#endif
 
 	/* Set cci voltage (DOWN) */
 	if (target_cci_volt != 0 && (target_cci_volt < cur_cci_volt)) {
@@ -3078,12 +3112,17 @@ static int _cpufreq_set_locked_cci(unsigned int cur_cci_khz, unsigned int target
 			goto out;
 	}
 
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cci_dvfs_step(5);
+#endif
+
 	cpufreq_ver("@%s(): Vproc = %dmv, Vsram = %dmv, freq = %dKHz\n",
 		    __func__,
 		    (p_cci->ops->get_cur_volt(p_cci)) / 100,
 		    (p_cci->ops->get_cur_vsram(p_cci) / 100), p_cci->ops->get_cur_phy_freq(p_cci));
 out:
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cci_dvfs_step(0);
 	aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
 		~(1 << CPU_DVFS_CCI_IS_DOING_DVFS));
 #endif
@@ -3143,6 +3182,10 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 	target_volt = get_turbo_volt(p->cpu_id, target_volt);
 	target_khz = get_turbo_freq(p->cpu_id, target_khz);
 
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cpu_dvfs_step(1);
+#endif
+
 #ifdef CONFIG_HYBRID_CPU_DVFS
 	if (!enable_cpuhvfs) {
 #endif
@@ -3156,6 +3199,10 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 		}
 #ifdef CONFIG_HYBRID_CPU_DVFS
 	}
+#endif
+
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cpu_dvfs_step(2);
 #endif
 
 #ifdef CONFIG_CPU_FREQ
@@ -3175,6 +3222,10 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 #endif
 		p->ops->set_cur_freq(p, cur_khz, target_khz);
 
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cpu_dvfs_step(3);
+#endif
+
 #ifdef CONFIG_CPU_FREQ
 	if (policy)
 		cpufreq_freq_transition_end(policy, &freqs, 0);
@@ -3186,6 +3237,10 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 		/* set cci freq/volt */
 		_cpufreq_set_locked_cci(cur_cci_khz, target_cci_khz, target_volt_vproc1);
 
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cpu_dvfs_step(4);
+#endif
+
 		/* set volt (DOWN) */
 		cur_volt = p->ops->get_cur_volt(p);
 		if (cur_volt > target_volt) {
@@ -3196,6 +3251,10 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 		}
 #ifdef CONFIG_HYBRID_CPU_DVFS
 	}
+#endif
+
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cpu_dvfs_step(5);
 #endif
 
 #ifdef ENABLE_IDVFS
@@ -3227,9 +3286,18 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 
 	FUNC_EXIT(FUNC_LV_HELP);
 
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cpu_dvfs_step(0);
+#endif
+
 	return 0;
 
 out:
+
+#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
+	aee_record_cpu_dvfs_step(0);
+#endif
+
 	return ret;
 }
 
