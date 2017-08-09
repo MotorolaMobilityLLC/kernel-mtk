@@ -1253,7 +1253,7 @@ static void mt_init_thread_group(struct task_struct *p)
 	for (i = 0; i < num_cluster; i++) {
 		p->thread_group_info[i].cfs_nr_running = 0;
 		p->thread_group_info[i].nr_running = 0;
-		p->thread_group_info[i].load_avg_contrib = 0;
+		p->thread_group_info[i].utilization_avg_contrib = 0;
 	}
 
 }

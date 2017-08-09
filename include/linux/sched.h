@@ -1325,7 +1325,7 @@ struct thread_group_info_t {
 	/* # of threads in the thread group per cluster */
 	unsigned long nr_running;
 	/* runnable contrib of the thread group per cluster */
-	unsigned long load_avg_contrib;
+	unsigned long utilization_avg_contrib;
 };
 
 #endif
