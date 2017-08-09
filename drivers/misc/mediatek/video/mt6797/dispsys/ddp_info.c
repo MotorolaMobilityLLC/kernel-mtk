@@ -12,89 +12,89 @@
  */
 
 #define LOG_TAG "INFO"
-#include"ddp_info.h"
-#include"ddp_debug.h"
+#include "ddp_info.h"
+#include "ddp_debug.h"
 #include "ddp_log.h"
 
 char *ddp_get_module_name(DISP_MODULE_ENUM module)
 {
 	switch (module) {
 	case DISP_MODULE_AAL:
-		return "aal ";
+		return "aal";
 	case DISP_MODULE_COLOR0:
-		return "color0 ";
+		return "color0";
 	case DISP_MODULE_COLOR1:
-		return "color1 ";
+		return "color1";
 	case DISP_MODULE_RDMA0:
-		return "rdma0 ";
+		return "rdma0";
 	case DISP_MODULE_RDMA1:
-		return "rdma1 ";
+		return "rdma1";
 	case DISP_MODULE_RDMA2:
-		return "rdma2 ";
+		return "rdma2";
 	case DISP_MODULE_WDMA0:
-		return "wdma0 ";
+		return "wdma0";
 	case DISP_MODULE_OVL0:
-		return "ovl0 ";
+		return "ovl0";
 	case DISP_MODULE_OVL1:
-		return "ovl1 ";
+		return "ovl1";
 	case DISP_MODULE_WDMA1:
-		return "wdma1 ";
+		return "wdma1";
 	case DISP_MODULE_OVL0_2L:
-		return "ovl0_2l ";
+		return "ovl0_2l";
 	case DISP_MODULE_OVL1_2L:
-		return "ovl1_2l ";
+		return "ovl1_2l";
 	case DISP_MODULE_GAMMA:
-		return "gamma ";
+		return "gamma";
 	case DISP_MODULE_PWM0:
-		return "pwm0 ";
+		return "pwm0";
 	case DISP_MODULE_PWM1:
-		return "pwm1 ";
+		return "pwm1";
 	case DISP_MODULE_OD:
-		return "od ";
+		return "od";
 	case DISP_MODULE_MERGE:
-		return "merge ";
+		return "merge";
 	case DISP_MODULE_SPLIT0:
-		return "split0 ";
+		return "split0";
 	case DISP_MODULE_SPLIT1:
-		return "split1 ";
+		return "split1";
 	case DISP_MODULE_DSI0:
-		return "dsi0 ";
+		return "dsi0";
 	case DISP_MODULE_DSI1:
-		return "dsi1 ";
+		return "dsi1";
 	case DISP_MODULE_DSIDUAL:
-		return "dsidual ";
+		return "dsidual";
 	case DISP_MODULE_DPI:
-		return "dpi ";
+		return "dpi";
 	case DISP_MODULE_SMI:
-		return "smi ";
+		return "smi";
 	case DISP_MODULE_CONFIG:
-		return "config ";
+		return "config";
 	case DISP_MODULE_CMDQ:
-		return "cmdq ";
+		return "cmdq";
 	case DISP_MODULE_MUTEX:
-		return "mutex ";
+		return "mutex";
 	case DISP_MODULE_CCORR:
-		return "ccorr ";
+		return "ccorr";
 	case DISP_MODULE_DITHER:
-		return "dither ";
+		return "dither";
 	case DISP_MODULE_SMI_LARB0:
-		return "smi_larb0 ";
+		return "smi_larb0";
 	case DISP_MODULE_SMI_LARB5:
-		return "smi_larb5 ";
+		return "smi_larb5";
 	case DISP_MODULE_SMI_COMMON:
-		return "smi_common ";
+		return "smi_common";
 	case DISP_MODULE_UFOE:
-		return "ufoe ";
+		return "ufoe";
 	case DISP_MODULE_OVL0_VIRTUAL:
-		return "ovl0_virtual ";
+		return "ovl0_virtual";
 	case DISP_MODULE_MIPI0:
-		return "mipi0 ";
+		return "mipi0";
 	case DISP_MODULE_MIPI1:
-		return "mipi1 ";
+		return "mipi1";
 	case DISP_MODULE_DSC:
-		return "dsc ";
+		return "dsc";
 	case DISP_PATH0:
-		return "path0 ";
+		return "path0";
 
 	default:
 		DDPMSG("invalid module id=%d", module);
@@ -278,9 +278,6 @@ unsigned int ddp_module_to_idx(int module)
 
 	return id;
 }
-
-
-/*#define DISP_NO_DPI*/ /* FIXME: tmp define */
 
 DDP_MODULE_DRIVER *ddp_modules_driver[DISP_MODULE_NUM] = {
 	&ddp_driver_ovl,	/* DISP_MODULE_OVL0 = 0, */

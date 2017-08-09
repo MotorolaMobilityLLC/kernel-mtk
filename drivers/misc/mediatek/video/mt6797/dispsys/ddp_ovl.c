@@ -880,92 +880,92 @@ void ovl_dump_reg(DISP_MODULE_ENUM module)
 	unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset);
 
 	DDPDUMP("== DISP %s REGS ==\n", ddp_get_module_name(module));
-	DDPDUMP("OVL:0x000=0x%08x,0x004=0x%08x,0x008=0x%08x,0x00c=0x%08x\n",
+	DDPDUMP("0x000: 0x%08x 0x%08x 0x%08x 0x%08x\n",
 		DISP_REG_GET(DISP_REG_OVL_STA + offset),
 		DISP_REG_GET(DISP_REG_OVL_INTEN + offset),
 		DISP_REG_GET(DISP_REG_OVL_INTSTA + offset), DISP_REG_GET(DISP_REG_OVL_EN + offset));
-	DDPDUMP("OVL:0x010=0x%08x,0x014=0x%08x,0x020=0x%08x,0x024=0x%08x\n",
+	DDPDUMP("0x010: 0x%08x 0x%08x, 0x020: 0x%08x 0x%08x\n",
 		DISP_REG_GET(DISP_REG_OVL_TRIG + offset),
 		DISP_REG_GET(DISP_REG_OVL_RST + offset),
 		DISP_REG_GET(DISP_REG_OVL_ROI_SIZE + offset),
 		DISP_REG_GET(DISP_REG_OVL_DATAPATH_CON + offset));
-	DDPDUMP("OVL:0x028=0x%08x,0x02c=0x%08x\n",
+	DDPDUMP("0x028: 0x%08x 0x%08x\n",
 		DISP_REG_GET(DISP_REG_OVL_ROI_BGCLR + offset),
 		DISP_REG_GET(DISP_REG_OVL_SRC_CON + offset));
 
 	if (src_on & 0x1) {
-		DDPDUMP("OVL:0x030=0x%08x,0x034=0x%08x,0x038=0x%08x,0x03c=0x%08x\n",
+		DDPDUMP("0x030: 0x%08x 0x%08x 0x%08x 0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L0_CON + offset),
 			DISP_REG_GET(DISP_REG_OVL_L0_SRCKEY + offset),
 			DISP_REG_GET(DISP_REG_OVL_L0_SRC_SIZE + offset),
 			DISP_REG_GET(DISP_REG_OVL_L0_OFFSET + offset));
 
-		DDPDUMP("OVL:0xf40=0x%08x,0x044=0x%08x,0x0c0=0x%08x,0x0c8=0x%08x\n",
+		DDPDUMP("0xf40=0x%08x,0x044=0x%08x,0x0c0=0x%08x,0x0c8=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L0_ADDR + offset),
 			DISP_REG_GET(DISP_REG_OVL_L0_PITCH + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA0_CTRL + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA0_MEM_GMC_SETTING + offset));
 
-		DDPDUMP("OVL:0x0d0=0x%08x,0x1e0=0x%08x,0x24c=0x%08x\n",
+		DDPDUMP("0x0d0=0x%08x,0x1e0=0x%08x,0x24c=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_RDMA0_FIFO_CTRL + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA0_MEM_GMC_S2 + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA0_DBG + offset));
 	}
 	if (src_on & 0x2) {
-		DDPDUMP("OVL:0x050=0x%08x,0x054=0x%08x,0x058=0x%08x,0x05c=0x%08x\n",
+		DDPDUMP("0x050: 0x%08x 0x%08x 0x%08x 0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L1_CON + offset),
 			DISP_REG_GET(DISP_REG_OVL_L1_SRCKEY + offset),
 			DISP_REG_GET(DISP_REG_OVL_L1_SRC_SIZE + offset),
 			DISP_REG_GET(DISP_REG_OVL_L1_OFFSET + offset));
 
-		DDPDUMP("OVL:0xf60=0x%08x,0x064=0x%08x,0x0e0=0x%08x,0x0e8=0x%08x,0x0f0=0x%08x\n",
+		DDPDUMP("0xf60=0x%08x,0x064=0x%08x,0x0e0=0x%08x,0x0e8=0x%08x,0x0f0=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L1_ADDR + offset),
 			DISP_REG_GET(DISP_REG_OVL_L1_PITCH + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA1_CTRL + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA1_MEM_GMC_SETTING + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA1_FIFO_CTRL + offset));
 
-		DDPDUMP("OVL:0x1e4=0x%08x,0x250=0x%08x\n",
+		DDPDUMP("0x1e4=0x%08x,0x250=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_RDMA1_MEM_GMC_S2 + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA1_DBG + offset));
 	}
 	if (src_on & 0x4) {
-		DDPDUMP("OVL:0x070=0x%08x,0x074=0x%08x,0x078=0x%08x,0x07c=0x%08x\n",
+		DDPDUMP("0x070: 0x%08x 0x%08x 0x%08x 0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L2_CON + offset),
 			DISP_REG_GET(DISP_REG_OVL_L2_SRCKEY + offset),
 			DISP_REG_GET(DISP_REG_OVL_L2_SRC_SIZE + offset),
 			DISP_REG_GET(DISP_REG_OVL_L2_OFFSET + offset));
 
-		DDPDUMP("OVL:0xf80=0x%08x,0x084=0x%08x,0x100=0x%08x,0x110=0x%08x\n",
+		DDPDUMP("0xf80=0x%08x,0x084=0x%08x,0x100=0x%08x,0x110=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L2_ADDR + offset),
 			DISP_REG_GET(DISP_REG_OVL_L2_PITCH + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA2_CTRL + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA2_FIFO_CTRL + offset));
 
-		DDPDUMP("OVL:0x1e8=0x%08x,0x254=0x%08x\n",
+		DDPDUMP("0x1e8=0x%08x,0x254=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_RDMA2_MEM_GMC_S2 + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA2_DBG + offset));
 	}
 	if (src_on & 0x8) {
-		DDPDUMP("OVL:0x090=0x%08x,0x094=0x%08x,0x098=0x%08x,0x09c=0x%08x\n",
+		DDPDUMP("0x090: 0x%08x 0x%08x 0x%08x 0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L3_CON + offset),
 			DISP_REG_GET(DISP_REG_OVL_L3_SRCKEY + offset),
 			DISP_REG_GET(DISP_REG_OVL_L3_SRC_SIZE + offset),
 			DISP_REG_GET(DISP_REG_OVL_L3_OFFSET + offset));
 
-		DDPDUMP("OVL:0xfa0=0x%08x,0x0a4=0x%08x,0x120=0x%08x,0x130=0x%08x\n",
+		DDPDUMP("0xfa0=0x%08x,0x0a4=0x%08x,0x120=0x%08x,0x130=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_L3_ADDR + offset),
 			DISP_REG_GET(DISP_REG_OVL_L3_PITCH + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA3_CTRL + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA3_FIFO_CTRL + offset));
 
-		DDPDUMP("OVL:0x1ec=0x%08x,0x258=0x%08x\n",
+		DDPDUMP("0x1ec=0x%08x,0x258=0x%08x\n",
 			DISP_REG_GET(DISP_REG_OVL_RDMA3_MEM_GMC_S2 + offset),
 			DISP_REG_GET(DISP_REG_OVL_RDMA3_DBG + offset));
 	}
-	DDPDUMP("OVL:0x1d4=0x%08x,0x1f8=0x%08x,0x1fc=0x%08x,0x200=0x%08x,0x20c=0x%08x\n"
-		"0x210=0x%08x,0x214=0x%08x,0x218=0x%08x,0x21c=0x%08x\n"
-		"0x230=0x%08x,0x234=0x%08x,0x240=0x%08x,0x244=0x%08x,0x2A0=0x%08x,0x2A4=0x%08x\n",
+	DDPDUMP("0x1d4=0x%08x,0x1f8=0x%08x,0x1fc=0x%08x,0x200=0x%08x,0x20c=0x%08x\n"
+		"0x210: 0x%08x 0x%08x 0x%08x 0x%08x\n"
+		"0x230: 0x%08x 0x%08x, 0x240: 0x%08x 0x%08x, 0x2a0: 0x%08x 0x%08x\n",
 		DISP_REG_GET(DISP_REG_OVL_DEBUG_MON_SEL + offset),
 		DISP_REG_GET(DISP_REG_OVL_RDMA_GREQ_NUM + offset),
 		DISP_REG_GET(DISP_REG_OVL_RDMA_GREQ_URG_NUM + offset),
@@ -987,7 +987,7 @@ void ovl_dump_reg(DISP_MODULE_ENUM module)
 
 static void ovl_printf_status(unsigned int status)
 {
-	DDPDUMP("=OVL_FLOW_CONTROL_DEBUG=:\n");
+	DDPDUMP("- OVL_FLOW_CONTROL_DEBUG -\n");
 	DDPDUMP("addcon_idle:%d,blend_idle:%d,out_valid:%d,out_ready:%d,out_idle:%d\n",
 		(status >> 10) & (0x1),
 		(status >> 11) & (0x1),

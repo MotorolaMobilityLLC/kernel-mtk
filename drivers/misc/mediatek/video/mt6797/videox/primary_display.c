@@ -3317,7 +3317,9 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 */
 
 done:
-	primary_display_diagnose();
+	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
+		primary_display_diagnose();
+
 	dst_module = _get_dst_module_by_lcm(pgc->plcm);
 	_primary_path_unlock(__func__);
 	return ret;

@@ -237,23 +237,25 @@ static const char *_dsi_cmd_mode_parse_state(unsigned int state)
 	case 0x0020:
 		return "Sending type-2 command";
 	case 0x0040:
-		return "Reading command queue for data";
+		return "Reading command queue for type-2 data";
 	case 0x0080:
 		return "Sending type-3 command";
 	case 0x0100:
 		return "Sending BTA";
 	case 0x0200:
-		return "Waiting RX-read data ";
+		return "Waiting RX-read data";
 	case 0x0400:
 		return "Waiting SW RACK for RX-read data";
 	case 0x0800:
 		return "Waiting TE";
 	case 0x1000:
-		return "Get TE ";
+		return "Get TE";
 	case 0x2000:
 		return "Waiting SW RACK for TE";
 	case 0x4000:
 		return "Waiting external TE";
+	case 0x8000:
+		return "Get external TE";
 	default:
 		return "unknown";
 	}
@@ -294,60 +296,68 @@ static const char *_dsi_vdo_mode_parse_state(unsigned int state)
 
 DSI_STATUS DSI_DumpRegisters(DISP_MODULE_ENUM module, int level)
 {
-	UINT32 i;
+	u32 i = 0;
+	u32 k = 0;
 
+	DDPDUMP("== DISP DSI REGS ==\n");
 	if (level >= 0) {
-		if (module == DISP_MODULE_DSI0) {
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 			unsigned int DSI_DBG8_Status;
 			unsigned int DSI_DBG9_Status;
+			unsigned long dsi_base_addr = (unsigned long)DSI_REG[i];
 
 			if (DSI_REG[0]->DSI_MODE_CTRL.MODE == CMD_MODE) {
-				unsigned int DSI_DBG6_Status = (INREG32(DDP_REG_BASE_DSI0 + 0x160)) & 0xffff;
+				unsigned int DSI_DBG6_Status = (INREG32(dsi_base_addr + 0x160)) & 0xffff;
 
-				DDPDUMP("DSI0 state6(cmd mode):%s\n",
-					_dsi_cmd_mode_parse_state(DSI_DBG6_Status));
-
+				DDPDUMP("DSI%d state6(cmd mode):%s\n",
+					i, _dsi_cmd_mode_parse_state(DSI_DBG6_Status));
 			} else {
-				unsigned int DSI_DBG7_Status = (INREG32(DDP_REG_BASE_DSI0 + 0x164)) & 0xff;
+				unsigned int DSI_DBG7_Status = (INREG32(dsi_base_addr + 0x164)) & 0xff;
 
-				DDPDUMP("DSI0 state7(vdo mode):%s\n",
-					_dsi_vdo_mode_parse_state(DSI_DBG7_Status));
+				DDPDUMP("DSI%d state7(vdo mode):%s\n",
+					i, _dsi_vdo_mode_parse_state(DSI_DBG7_Status));
 			}
-			DSI_DBG8_Status = (INREG32(DDP_REG_BASE_DSI0 + 0x168)) & 0x3fff;
-			DDPDUMP("DSI0 state8 WORD_COUNTER(cmd mode):%s\n",
-				_dsi_cmd_mode_parse_state(DSI_DBG8_Status));
-			DSI_DBG9_Status = (INREG32(DDP_REG_BASE_DSI0 + 0x16C)) & 0x3fffff;
-			DDPDUMP("DSI0 state9 LINE_COUNTER(cmd mode):%s\n",
-				_dsi_cmd_mode_parse_state(DSI_DBG9_Status));
+			DSI_DBG8_Status = (INREG32(dsi_base_addr + 0x168)) & 0x3fff;
+			DDPDUMP("DSI%d state8 WORD_COUNTER(cmd mode):%s\n",
+				i, _dsi_cmd_mode_parse_state(DSI_DBG8_Status));
+			DSI_DBG9_Status = (INREG32(dsi_base_addr + 0x16C)) & 0x3fffff;
+			DDPDUMP("DSI%d state9 LINE_COUNTER(cmd mode):%s\n",
+				i, _dsi_cmd_mode_parse_state(DSI_DBG9_Status));
 		}
 	}
 	if (level >= 1) {
-		if (module == DISP_MODULE_DSI0) {
-			DDPDUMP("---------- Start dump DSI0 registers ----------\n");
+		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+			unsigned long dsi_base_addr = (unsigned long)DSI_REG[i];
+#ifndef CONFIG_FPGA_EARLY_PORTING
+			unsigned long mipi_base_addr = (unsigned long)DSI_PHY_REG[i];
+#endif
 
-			for (i = 0; i < sizeof(DSI_REGS); i += 16) {
-				DDPDUMP("DSI+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
-					INREG32(DDP_REG_BASE_DSI0 + i),
-					INREG32(DDP_REG_BASE_DSI0 + i + 0x4),
-					INREG32(DDP_REG_BASE_DSI0 + i + 0x8),
-					INREG32(DDP_REG_BASE_DSI0 + i + 0xc));
+			DDPDUMP("== DSI%d REGS ==\n", i);
+			for (k = 0; k < sizeof(DSI_REGS); k += 16) {
+				DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
+					INREG32(dsi_base_addr + k),
+					INREG32(dsi_base_addr + k + 0x4),
+					INREG32(dsi_base_addr + k + 0x8),
+					INREG32(dsi_base_addr + k + 0xc));
 			}
 
-			for (i = 0; i < sizeof(DSI_CMDQ_REGS); i += 16) {
-				DDPDUMP("DSI_CMD+%04x : 0x%08x  0x%08x  0x%08x  0x%08x\n", i,
-					INREG32((DDP_REG_BASE_DSI0 + 0x200 + i)),
-					INREG32((DDP_REG_BASE_DSI0 + 0x200 + i + 0x4)),
-					INREG32((DDP_REG_BASE_DSI0 + 0x200 + i + 0x8)),
-					INREG32((DDP_REG_BASE_DSI0 + 0x200 + i + 0xc)));
+			DDPDUMP("- DSI%d CMD REGS -\n", i);
+			for (k = 0; k < 32; k += 16) { /* only dump first 32 bytes cmd */
+				DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
+					INREG32((dsi_base_addr + 0x200 + k)),
+					INREG32((dsi_base_addr + 0x200 + k + 0x4)),
+					INREG32((dsi_base_addr + 0x200 + k + 0x8)),
+					INREG32((dsi_base_addr + 0x200 + k + 0xc)));
 			}
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-			for (i = 0; i < sizeof(DSI_PHY_REGS); i += 16) {
-				DDPDUMP("DSI_PHY+%04x : 0x%08x    0x%08x  0x%08x  0x%08x\n", i,
-					INREG32((MIPITX0_BASE + i)),
-					INREG32((MIPITX0_BASE + i + 0x4)),
-					INREG32((MIPITX0_BASE + i + 0x8)),
-					INREG32((MIPITX0_BASE + i + 0xc)));
+			DDPDUMP("== DSI_PHY%d REGS ==\n", i);
+			for (k = 0; k < sizeof(DSI_PHY_REGS); k += 16) {
+				DDPDUMP("0x%04x: 0x%08x 0x%08x 0x%08x 0x%08x\n", k,
+					INREG32((mipi_base_addr + k)),
+					INREG32((mipi_base_addr + k + 0x4)),
+					INREG32((mipi_base_addr + k + 0x8)),
+					INREG32((mipi_base_addr + k + 0xc)));
 			}
 #endif
 		}
@@ -3816,19 +3826,16 @@ void dsi_analysis(DISP_MODULE_ENUM module)
 	DDPDUMP("== DISP DSI ANALYSIS ==\n");
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 		DDPDUMP("MIPITX Clock: %d\n", dsi_phy_get_clk(module));
-		DDPDUMP
-		    ("DSI%d Start:%x, Busy:%d, DSI_DUAL_EN:%d, MODE:%s, High Speed:%d, FSM State:%s\n",
-		     i, DSI_REG[i]->DSI_START.DSI_START, DSI_REG[i]->DSI_INTSTA.BUSY,
-		     DSI_REG[i]->DSI_COM_CTRL.DSI_DUAL_EN,
-		     dsi_mode_spy(DSI_REG[i]->DSI_MODE_CTRL.MODE),
-		     DSI_REG[i]->DSI_PHY_LCCON.LC_HS_TX_EN,
-		     _dsi_cmd_mode_parse_state(DSI_REG[i]->DSI_STATE_DBG6.CMTRL_STATE));
+		DDPDUMP("DSI%d Start:%x, Busy:%d, DSI_DUAL_EN:%d, MODE:%s, High Speed:%d, FSM State:%s\n",
+			i, DSI_REG[i]->DSI_START.DSI_START, DSI_REG[i]->DSI_INTSTA.BUSY,
+			DSI_REG[i]->DSI_COM_CTRL.DSI_DUAL_EN, dsi_mode_spy(DSI_REG[i]->DSI_MODE_CTRL.MODE),
+			DSI_REG[i]->DSI_PHY_LCCON.LC_HS_TX_EN,
+			_dsi_cmd_mode_parse_state(DSI_REG[i]->DSI_STATE_DBG6.CMTRL_STATE));
 
-		DDPDUMP
-		    ("DSI%d IRQ,RD_RDY:%d, CMD_DONE:%d, SLEEPOUT_DONE:%d, TE_RDY:%d, VM_CMD_DONE:%d, VM_DONE:%d\n",
-		     i, DSI_REG[i]->DSI_INTSTA.RD_RDY, DSI_REG[i]->DSI_INTSTA.CMD_DONE,
-		     DSI_REG[i]->DSI_INTSTA.SLEEPOUT_DONE, DSI_REG[i]->DSI_INTSTA.TE_RDY,
-		     DSI_REG[i]->DSI_INTSTA.VM_CMD_DONE, DSI_REG[i]->DSI_INTSTA.VM_DONE);
+		DDPDUMP("DSI%d IRQ,RD_RDY:%d, CMD_DONE:%d, SLEEPOUT_DONE:%d, TE_RDY:%d, VM_CMD_DONE:%d, VM_DONE:%d\n",
+			i, DSI_REG[i]->DSI_INTSTA.RD_RDY, DSI_REG[i]->DSI_INTSTA.CMD_DONE,
+			DSI_REG[i]->DSI_INTSTA.SLEEPOUT_DONE, DSI_REG[i]->DSI_INTSTA.TE_RDY,
+			DSI_REG[i]->DSI_INTSTA.VM_CMD_DONE, DSI_REG[i]->DSI_INTSTA.VM_DONE);
 
 		DDPDUMP("DSI%d Lane Num:%d, Ext_TE_EN:%d, Ext_TE_Edge:%d, HSTX_CKLP_EN:%d\n", i,
 			DSI_REG[i]->DSI_TXRX_CTRL.LANE_NUM,

@@ -1605,14 +1605,13 @@ int dpmgr_check_status_by_scenario(DDP_SCENARIO_ENUM scenario)
 	int module_num = ddp_get_module_num(scenario);
 	DDP_MANAGER_CONTEXT *context = _get_context();
 
-	DDPDUMP("check status on scenario %s\n", ddp_get_scenario_name(scenario));
+	DDPDUMP("--> check status on scenario %s\n", ddp_get_scenario_name(scenario));
 
 	if (!(context->power_state)) {
 		DDPDUMP("cannot check ddp status due to already power off\n");
 		return 0;
 	}
 
-	ddp_dump_analysis(DISP_MODULE_CONFIG);
 	ddp_check_path(scenario);
 
 	{
@@ -1622,16 +1621,12 @@ int dpmgr_check_status_by_scenario(DDP_SCENARIO_ENUM scenario)
 
 		DDPDUMP("\n");
 	}
-	ddp_dump_analysis(DISP_MODULE_MUTEX);
 
 	for (i = 0; i < module_num; i++)
 		ddp_dump_analysis(modules[i]);
 
 	for (i = 0; i < module_num; i++)
 		ddp_dump_reg(modules[i]);
-
-	ddp_dump_reg(DISP_MODULE_CONFIG);
-	ddp_dump_reg(DISP_MODULE_MUTEX);
 
 	return 0;
 }
@@ -1650,7 +1645,7 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DDPDUMP("check status on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DDPDUMP("--> check status on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 
 	if (!(context->power_state)) {
 		DDPDUMP("cannot check ddp status due to already power off\n");

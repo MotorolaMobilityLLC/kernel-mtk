@@ -616,17 +616,17 @@ int rdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 void rdma_dump_golden_setting_context(DISP_MODULE_ENUM module)
 {
 	if (rdma_golden_setting) {
-		DDPDUMP("==RDMA Golden Setting Context=============\n");
-		DDPDUMP("fifo_mode	= %d\n", rdma_golden_setting->fifo_mode);
-		DDPDUMP("hrt_num	= %d\n", rdma_golden_setting->hrt_num);
-		DDPDUMP("is_display_idle	= %d\n", rdma_golden_setting->is_display_idle);
-		DDPDUMP("is_wrot_sram	= %d\n", rdma_golden_setting->is_wrot_sram);
-		DDPDUMP("is_dc		= %d\n", rdma_golden_setting->is_dc);
-		DDPDUMP("mmsys_clk	= %d\n", rdma_golden_setting->mmsys_clk);
-		DDPDUMP("fps		= %d\n", rdma_golden_setting->fps);
-		DDPDUMP("is_one_layer	= %d\n", rdma_golden_setting->is_one_layer);
-		DDPDUMP("rdma_width		= %d\n", rdma_golden_setting->rdma_width);
-		DDPDUMP("rdma_height	= %d\n", rdma_golden_setting->rdma_height);
+		DDPDUMP("-- RDMA Golden Setting Context --\n");
+		DDPDUMP("fifo_mode=%d\n", rdma_golden_setting->fifo_mode);
+		DDPDUMP("hrt_num=%d\n", rdma_golden_setting->hrt_num);
+		DDPDUMP("is_display_idle=%d\n", rdma_golden_setting->is_display_idle);
+		DDPDUMP("is_wrot_sram=%d\n", rdma_golden_setting->is_wrot_sram);
+		DDPDUMP("is_dc=%d\n", rdma_golden_setting->is_dc);
+		DDPDUMP("mmsys_clk=%d\n", rdma_golden_setting->mmsys_clk);
+		DDPDUMP("fps=%d\n", rdma_golden_setting->fps);
+		DDPDUMP("is_one_layer=%d\n", rdma_golden_setting->is_one_layer);
+		DDPDUMP("rdma_width=%d\n", rdma_golden_setting->rdma_width);
+		DDPDUMP("rdma_height=%d\n", rdma_golden_setting->rdma_height);
 	}
 }
 
@@ -635,71 +635,71 @@ void rdma_dump_reg(DISP_MODULE_ENUM module)
 	unsigned int idx = rdma_index(module);
 
 	DDPDUMP("== DISP RDMA%d REGS ==\n", idx);
-	DDPDUMP("(0x000)R_INTEN       =0x%x\n",
+	DDPDUMP("(0x000)R_INTEN=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_INT_ENABLE + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x004)R_INTS        =0x%x\n",
+	DDPDUMP("(0x004)R_INTS=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_INT_STATUS + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x010)R_CON         =0x%x\n",
+	DDPDUMP("(0x010)R_CON=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_GLOBAL_CON + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x014)R_SIZE0       =0x%x\n",
+	DDPDUMP("(0x014)R_SIZE0=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_0 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x018)R_SIZE1       =0x%x\n",
+	DDPDUMP("(0x018)R_SIZE1=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_SIZE_CON_1 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x01c)R_TAR_LINE    =0x%x\n",
+	DDPDUMP("(0x01c)R_TAR_LINE=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_TARGET_LINE + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x024)R_M_CON       =0x%x\n",
+	DDPDUMP("(0x024)R_M_CON=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_CON + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0xf00)R_M_S_ADDR    =0x%x\n",
+	DDPDUMP("(0xf00)R_M_S_ADDR=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x02c)R_M_SRC_PITCH =0x%x\n",
+	DDPDUMP("(0x02c)R_M_SRC_PITCH=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_SRC_PITCH + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x030)R_M_GMC_SET0  =0x%x\n",
+	DDPDUMP("(0x030)R_M_GMC_SET0=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_0 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x034)R_M_GMC_SET1  =0x%x\n",
+	DDPDUMP("(0x034)R_M_GMC_SET1=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_1 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x038)R_M_SLOW_CON  =0x%x\n",
+	DDPDUMP("(0x038)R_M_SLOW_CON=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_SLOW_CON + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x03c)R_M_GMC_SET2  =0x%x\n",
+	DDPDUMP("(0x03c)R_M_GMC_SET2=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_GMC_SETTING_2 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x040)R_FIFO_CON    =0x%x\n",
+	DDPDUMP("(0x040)R_FIFO_CON=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_FIFO_CON + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x044)R_FIFO_LOG    =0x%x\n",
+	DDPDUMP("(0x044)R_FIFO_LOG=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_FIFO_LOG + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x078)R_PRE_ADD0    =0x%x\n",
+	DDPDUMP("(0x078)R_PRE_ADD0=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_PRE_ADD_0 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x07c)R_PRE_ADD1    =0x%x\n",
+	DDPDUMP("(0x07c)R_PRE_ADD1=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_PRE_ADD_1 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x080)R_PRE_ADD2    =0x%x\n",
+	DDPDUMP("(0x080)R_PRE_ADD2=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_PRE_ADD_2 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x084)R_POST_ADD0   =0x%x\n",
+	DDPDUMP("(0x084)R_POST_ADD0=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_POST_ADD_0 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x088)R_POST_ADD1   =0x%x\n",
+	DDPDUMP("(0x088)R_POST_ADD1=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_POST_ADD_1 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x08c)R_POST_ADD2   =0x%x\n",
+	DDPDUMP("(0x08c)R_POST_ADD2=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_POST_ADD_2 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x090)R_DUMMY       =0x%x\n",
+	DDPDUMP("(0x090)R_DUMMY=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_DUMMY + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x094)R_OUT_SEL     =0x%x\n",
+	DDPDUMP("(0x094)R_OUT_SEL=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_DEBUG_OUT_SEL + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x094)R_M_START     =0x%x\n",
+	DDPDUMP("(0x094)R_M_START=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_MEM_START_ADDR + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0a0)R_BG_CON_0    =0x%x\n",
+	DDPDUMP("(0x0a0)R_BG_CON_0=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_BG_CON_0 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0a4)R_BG_CON_1    =0x%x\n",
+	DDPDUMP("(0x0a4)R_BG_CON_1=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_BG_CON_1 + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0a8)R_FOR_SODI    =0x%x\n",
+	DDPDUMP("(0x0a8)R_FOR_SODI=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_THRESHOLD_FOR_SODI + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0ac)R_FOR_DVFS    =0x%x\n",
+	DDPDUMP("(0x0ac)R_FOR_DVFS=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_THRESHOLD_FOR_DVFS + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0b0)R_FOR_SRAM    =0x%x\n",
+	DDPDUMP("(0x0b0)R_FOR_SRAM=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_SRAM_SEL + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0b4)DISP_REG_RDMA_STALL_CG_CON =0x%x\n",
+	DDPDUMP("(0x0b4)DISP_REG_RDMA_STALL_CG_CON=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_STALL_CG_CON + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0f0)R_IN_PXL_CNT  =0x%x\n",
+	DDPDUMP("(0x0f0)R_IN_PXL_CNT=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_IN_P_CNT + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0f4)R_IN_LINE_CNT =0x%x\n",
+	DDPDUMP("(0x0f4)R_IN_LINE_CNT=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_IN_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx));
-	DDPDUMP("(0x0f8)R_OUT_PXL_CNT =0x%x\n",
+	DDPDUMP("(0x0f8)R_OUT_PXL_CNT=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_OUT_P_CNT + DISP_RDMA_INDEX_OFFSET * idx));
 	DDPDUMP("(0x0fc)R_OUT_LINE_CNT=0x%x\n",
 		DISP_REG_GET(DISP_REG_RDMA_OUT_LINE_CNT + DISP_RDMA_INDEX_OFFSET * idx));

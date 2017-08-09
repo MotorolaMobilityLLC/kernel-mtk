@@ -1102,6 +1102,7 @@ void enable_idlemgr(unsigned int flag)
 		primary_display_idlemgr_kick((char *)__func__, 1);
 	}
 }
+
 unsigned int get_idlemgr_flag(void)
 {
 	unsigned int idlemgr_flag;
