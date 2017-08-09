@@ -65,7 +65,9 @@ void __cpuinit mt_smp_secondary_init(unsigned int cpu)
 	pr_debug("Slave cpu init\n");
 	HOTPLUG_INFO("platform_secondary_init, cpu: %d\n", cpu);
 
+#ifndef CONFIG_MTK_GIC
 	mt_gic_secondary_init();
+#endif
 
 	/*
 	 * let the primary processor know we're out of the
@@ -266,7 +268,9 @@ void __init mt_smp_init_cpus(void)
 		num_possible_cpus());
 	pr_emerg("@@@### num_present_cpus(): %u ###@@@\n", num_present_cpus());
 
+#ifndef CONFIG_MTK_GIC
 	irq_total_secondary_cpus = num_possible_cpus() - 1;
+#endif
 }
 
 void __init mt_smp_prepare_cpus(unsigned int max_cpus)
