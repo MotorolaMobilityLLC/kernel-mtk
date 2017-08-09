@@ -264,7 +264,7 @@ static void cmdq_driver_process_read_address_request(cmdqReadAddressStruct *req_
 	dma_addr_t pa = 0;
 	int i = 0;
 
-	CMDQ_LOG("[READ_PA] cmdq_driver_process_read_address_request()\n");
+	CMDQ_MSG("[READ_PA] cmdq_driver_process_read_address_request()\n");
 
 	do {
 		if (NULL == req_user ||
@@ -298,7 +298,7 @@ static void cmdq_driver_process_read_address_request(cmdqReadAddressStruct *req_
 		/* actually read these PA write buffers */
 		for (i = 0; i < req_user->count; ++i) {
 			pa = (0xFFFFFFFF & addrs[i]);
-			CMDQ_LOG("[READ_PA] req read dma address 0x%pa\n", &pa);
+			CMDQ_MSG("[READ_PA] req read dma address 0x%pa\n", &pa);
 			values[i] = cmdqCoreReadWriteAddress(pa);
 		}
 
@@ -675,7 +675,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 			cmdqWriteAddressStruct addrReq;
 			dma_addr_t paStart = 0;
 
-			CMDQ_LOG("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS\n");
+			CMDQ_MSG("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS\n");
 
 			if (copy_from_user(&addrReq, (void *)param, sizeof(addrReq))) {
 				CMDQ_ERR("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS copy_from_user failed\n");
@@ -691,7 +691,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 
 
 			addrReq.startPA = (uint32_t) paStart;
-			CMDQ_LOG("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS get 0x%08x\n", addrReq.startPA);
+			CMDQ_MSG("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS get 0x%08x\n", addrReq.startPA);
 
 			if (copy_to_user((void *)param, &addrReq, sizeof(addrReq))) {
 				CMDQ_ERR("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS copy_to_user failed\n");
@@ -704,7 +704,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		do {
 			cmdqWriteAddressStruct freeReq;
 
-			CMDQ_LOG("CMDQ_IOCTL_FREE_WRITE_ADDRESS\n");
+			CMDQ_MSG("CMDQ_IOCTL_FREE_WRITE_ADDRESS\n");
 
 			if (copy_from_user(&freeReq, (void *)param, sizeof(freeReq))) {
 				CMDQ_ERR("CMDQ_IOCTL_FREE_WRITE_ADDRESS copy_from_user failed\n");
@@ -722,7 +722,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		do {
 			cmdqReadAddressStruct readReq;
 
-			CMDQ_LOG("CMDQ_IOCTL_READ_ADDRESS_VALUE\n");
+			CMDQ_MSG("CMDQ_IOCTL_READ_ADDRESS_VALUE\n");
 
 			if (copy_from_user(&readReq, (void *)param, sizeof(readReq))) {
 				CMDQ_ERR("CMDQ_IOCTL_READ_ADDRESS_VALUE copy_from_user failed\n");
