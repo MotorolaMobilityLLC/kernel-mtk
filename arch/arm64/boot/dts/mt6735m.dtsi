@@ -1709,7 +1709,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,m_acc_pl";
 		};
 
-		m_alsps_pl@0 {
+		alsps:m_alsps_pl@0 {
 			compatible = "mediatek,m_alsps_pl";
 		};
 
@@ -1722,7 +1722,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 		gyroscope@0 {
 			compatible = "mediatek,gyroscope";
 		};
-		m_gyro_pl@0 {
+		gyro:m_gyro_pl@0 {
 			compatible = "mediatek,m_gyro_pl";
 		};
 		barometer@0 {
