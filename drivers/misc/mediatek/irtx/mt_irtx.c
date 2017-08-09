@@ -18,6 +18,8 @@
 
 #if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
+#else
+#include <mach/mt_clkmgr.h>
 #endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 #ifdef CONFIG_OF
@@ -27,29 +29,11 @@
 #include <linux/of_address.h>
 #endif
 
-#include <mach/mt_pwm.h>
+#include <mt-plat/sync_write.h>
+#include <mt-plat/mt_pwm.h>
 #include <mach/mt_pwm_hal.h>
 
-#if defined(CONFIG_MTK_LEGACY)
-#include <mach/mt_gpio.h>
-#include <cust_gpio_usage.h>
-#endif /* !defined(CONFIG_MTK_LEGACY) */
-
 #include "mt_irtx.h"
-
-#if defined(CONFIG_MTK_LEGACY)
-#ifdef GPIO_IRTX_OUT_PIN
-#define IRTX_GPIO GPIO_IRTX_OUT_PIN
-#else
-#ifdef GPIO_ANT_SEL0
-#define IRTX_GPIO GPIO_ANT_SEL0
-#else
-#define IRTX_GPIO GPIO19
-#endif
-#endif
-
-#endif /* !defined(CONFIG_MTK_LEGACY) */
-
 
 struct mt_irtx mt_irtx_dev;
 void __iomem *irtx_reg_base;
@@ -69,8 +53,6 @@ struct pwm_spec_config irtx_pwm_config = {
 	.PWM_MODE_MEMORY_REGS.GDURATION = 0,
 	.PWM_MODE_MEMORY_REGS.WAVE_NUM = 1,
 };
-
-#if !defined(CONFIG_MTK_LEGACY)
 
 #define IRTX_GPIO_MODE_DEFAULT 0
 #define IRTX_GPIO_MODE_LED_SET 1
@@ -105,25 +87,12 @@ void switch_irtx_gpio(int mode)
 	pinctrl_select_state(ppinctrl_irtx, pins_irtx);
 	pr_notice("[IRTX][PinC]%s(%d)-\n", __func__, mode);
 }
-#endif /* !defined(CONFIG_MTK_LEGACY) */
 
 static int dev_char_open(struct inode *inode, struct file *file)
 {
 #if !defined(CONFIG_MTK_CLKMGR)
 	int clk_en_ret = 0;
 #endif /* !defined(CONFIG_MTK_CLKMGR) */
-
-#if defined(CONFIG_MTK_LEGACY)
-#ifdef GPIO_IRTX_OUT_PIN
-	pr_warn("[IRTX] open GPIO_IRTX_OUT_PIN defined\n");
-#else
-#ifdef GPIO_ANT_SEL0
-	pr_warn("[IRTX] open GPIO_ANT_SEL0 defined\n");
-#else
-	pr_warn("[IRTX] open GPIO19 defined\n");
-#endif
-#endif
-#endif /* defined(CONFIG_MTK_LEGACY) */
 
 	if (atomic_read(&mt_irtx_dev.usage_cnt))
 		return -EBUSY;
@@ -170,9 +139,6 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 {
 	int ret = 0;
 	unsigned int para = 0, gpio_id = -1, en = 0;
-#if defined(CONFIG_MTK_LEGACY)
-	unsigned long mode = 0, dir = 0, outp = 0;
-#endif /* defined(CONFIG_MTK_LEGACY) */
 
 	switch (cmd) {
 	case IRTX_IOC_SET_CARRIER_FREQ:
@@ -199,31 +165,10 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			en = (para & 0xF);
 			pr_warn("[IRTX] IRTX_IOC_SET_IRTX_LED_EN: 0x%x, gpio_id:%ul, en:%ul\n", para, gpio_id, en);
 
-#if !defined(CONFIG_MTK_LEGACY)
 			if (en)
 				switch_irtx_gpio(IRTX_GPIO_MODE_LED_SET);
 			else
 				switch_irtx_gpio(IRTX_GPIO_MODE_DEFAULT);
-#else  /* !defined(CONFIG_MTK_LEGACY) */
-
-			if (en) {
-				mode = GPIO_MODE_02;
-				dir = GPIO_DIR_OUT;
-				outp = GPIO_OUT_ZERO;	/* Low means enable LED */
-			} else {
-				mode = GPIO_MODE_00;
-				dir = GPIO_DIR_OUT;
-				outp = GPIO_OUT_ONE;	/* High means disable LED */
-			}
-			gpio_id = IRTX_GPIO;
-
-			mt_set_gpio_mode(gpio_id, mode);
-			mt_set_gpio_dir(gpio_id, dir);
-			mt_set_gpio_out(gpio_id, outp);
-
-			pr_warn("[IRTX] IOC_SET_IRTX_LED_EN: gpio:0x%xl, mode:%d, dir:%d, out:%d\n", gpio_id,
-				mt_get_gpio_mode(gpio_id), mt_get_gpio_dir(gpio_id), mt_get_gpio_out(gpio_id));
-#endif  /* !defined(CONFIG_MTK_LEGACY) */
 		}
 		break;
 
@@ -301,15 +246,11 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	mt_set_intr_enable(1);
 	mt_pwm_26M_clk_enable_hal(1);
 	pr_warn("[IRTX] irtx before read IRTXCFG:0x%x\n", (irtx_read32(mt_irtx_dev.reg_base, IRTXCFG)));
-	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_BASE_ADDR = (U32 *) wave_phy;
+	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_BASE_ADDR = (u32 *) wave_phy;
 	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_SIZE = (buf_size ? (buf_size - 1) : 0);
 
 	set_irtx_sw_mode();
-#if !defined(CONFIG_MTK_LEGACY)
 	switch_irtx_gpio(IRTX_GPIO_MODE_LED_SET);
-#else /* !defined(CONFIG_MTK_LEGACY) */
-	mt_set_gpio_mode(IRTX_GPIO, GPIO_MODE_02);
-#endif /* !defined(CONFIG_MTK_LEGACY) */
 	irtx_write32(mt_irtx_dev.reg_base, IRTXCFG, irtx_read32(mt_irtx_dev.reg_base, IRTXCFG) | 0x1);	/* STRT=1 */
 
 	mt_set_intr_ack(0);
@@ -330,13 +271,7 @@ exit:
 	irtx_write32(mt_irtx_dev.reg_base, IRTXCFG, irtx_read32(mt_irtx_dev.reg_base, IRTXCFG) & 0xFFFFFFFE);
 	mt_pwm_disable(irtx_pwm_config.pwm_no, irtx_pwm_config.pmic_pad);
 
-#if !defined(CONFIG_MTK_LEGACY)
 	switch_irtx_gpio(IRTX_GPIO_MODE_DEFAULT);
-#else /* !defined(CONFIG_MTK_LEGACY) */
-	mt_set_gpio_mode(IRTX_GPIO, GPIO_MODE_00);
-	mt_set_gpio_dir(IRTX_GPIO, GPIO_DIR_OUT);
-	mt_set_gpio_out(IRTX_GPIO, GPIO_OUT_ONE);
-#endif /* !defined(CONFIG_MTK_LEGACY) */
 
 	return ret;
 }
@@ -367,9 +302,6 @@ static int irtx_probe(struct platform_device *plat_dev)
 	static void *dev_class;
 	u32 major = 0, minor = 0;
 	int ret = 0;
-#if defined(CONFIG_MTK_LEGACY)
-	unsigned int gpio_id = -1;
-#endif /* defined(CONFIG_MTK_LEGACY) */
 
 #ifdef CONFIG_OF
 	if (plat_dev->dev.of_node == NULL) {
@@ -394,7 +326,6 @@ static int irtx_probe(struct platform_device *plat_dev)
 	pr_notice("[IRTX][CCF]clk_irtx_main:%p\n", mt_irtx_dev.clk_irtx_main);
 #endif /* !defined(CONFIG_MTK_CLKMGR) */
 
-#if !defined(CONFIG_MTK_LEGACY)
 	mt_irtx_dev.ppinctrl_irtx = devm_pinctrl_get(&plat_dev->dev);
 	if (IS_ERR(mt_irtx_dev.ppinctrl_irtx)) {
 		pr_err("[IRTX][PinC]cannot find pinctrl. ptr_err:%ld\n", PTR_ERR(mt_irtx_dev.ppinctrl_irtx));
@@ -404,13 +335,6 @@ static int irtx_probe(struct platform_device *plat_dev)
 
 	/* Set GPIO as default */
 	switch_irtx_gpio(IRTX_GPIO_MODE_DEFAULT);
-#else /* !defined(CONFIG_MTK_LEGACY) */
-	gpio_id = IRTX_GPIO;
-
-	mt_set_gpio_mode(gpio_id, GPIO_MODE_00);
-	mt_set_gpio_dir(gpio_id, GPIO_DIR_OUT);
-	mt_set_gpio_out(gpio_id, GPIO_OUT_ONE);
-#endif /* !defined(CONFIG_MTK_LEGACY) */
 
 	if (!major) {
 		ret = alloc_chrdev_region(&dev_t_irtx, 0, 1, irtx_driver_name);

@@ -6,12 +6,10 @@ struct mt_irtx {
 	unsigned int carrier_freq;
 	atomic_t usage_cnt;
 
-#if !defined(CONFIG_MTK_LEGACY)
 	/* struct clk *clk_irtx_main; */
 	struct clk *clk_irtx_main;
 	/* GPIO pin control */
 	struct pinctrl *ppinctrl_irtx;
-#endif /* !defined(CONFIG_MTK_LEGACY) */
 };
 
 struct irtx_config {
