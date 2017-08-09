@@ -3493,30 +3493,31 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	cpufreq_unlock(flags);
 
 	for_each_cpu_dvfs_only(i, p) {
-		if (!ignore_ppm[i]) {
-			get_online_cpus();
-			cpumask_and(&cpu_online_cpumask, &dvfs_cpumask[i], cpu_online_mask);
-			cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)cpu_online_mask);
-			cpulist_scnprintf(str2, sizeof(str2), (const struct cpumask *)&cpu_online_cpumask);
-			cpufreq_ver("cpu_online_mask = %s, cpu_online_cpumask for little = %s\n", str1, str2);
-			ret = -1;
-			for_each_cpu(j, &cpu_online_cpumask) {
-				policy[i] = cpufreq_cpu_get(j);
-				if (policy[i]) {
-					if (p->idx_opp_ppm_limit == -1)
-						policy[i]->max = cpu_dvfs_get_max_freq(p);
-					else
-						policy[i]->max = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_limit);
-					if (p->idx_opp_ppm_base == -1)
-						policy[i]->min = cpu_dvfs_get_min_freq(p);
-					else
-						policy[i]->min = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
-					cpufreq_cpu_put(policy[i]);
-					ret = 0;
-					break;
-				}
+		get_online_cpus();
+		cpumask_and(&cpu_online_cpumask, &dvfs_cpumask[i], cpu_online_mask);
+		cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)cpu_online_mask);
+		cpulist_scnprintf(str2, sizeof(str2), (const struct cpumask *)&cpu_online_cpumask);
+		cpufreq_ver("cpu_online_mask = %s, cpu_online_cpumask for little = %s\n", str1, str2);
+		ret = -1;
+		for_each_cpu(j, &cpu_online_cpumask) {
+			policy[i] = cpufreq_cpu_get(j);
+			if (policy[i]) {
+				if (p->idx_opp_ppm_limit == -1)
+					policy[i]->max = cpu_dvfs_get_max_freq(p);
+				else
+					policy[i]->max = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_limit);
+				if (p->idx_opp_ppm_base == -1)
+					policy[i]->min = cpu_dvfs_get_min_freq(p);
+				else
+					policy[i]->min = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
+				cpufreq_cpu_put(policy[i]);
+				ret = 0;
+				break;
 			}
-			put_online_cpus();
+		}
+		put_online_cpus();
+
+		if (!ignore_ppm[i]) {
 			if (!ret)
 				_mt_cpufreq_set(policy[i], i, -1);
 		}
