@@ -39,3 +39,5 @@ obj-$(CONFIG_MTK_SYNC) += sync/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/met/),)
 obj-$(CONFIG_MTK_MET) += met/
 endif
+
+obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/

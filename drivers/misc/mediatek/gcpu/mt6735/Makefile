@@ -1,0 +1,1 @@
+obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu.o
