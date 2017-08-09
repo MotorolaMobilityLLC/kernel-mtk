@@ -2625,8 +2625,8 @@ PL_CORE_PROC:
 					break;
 
 				case EMI_MPU_VIOLATION:
-					debug_info->type = MD_EX_DUMP_3P_EX;
-					ee_case = MD_EX_TYPE_FATALERR_BUF;
+					debug_info->type = MD_EX_DUMP_EMI_CHECK;
+					ee_case = MD_EX_TYPE_EMI_CHECK;
 					debug_info->name = "Fatal error (rmpu violation)";
 					debug_info->fatal_error.err_code1 =
 					    ex_PLloginfo->content.fatalerr.error_code.code1;
