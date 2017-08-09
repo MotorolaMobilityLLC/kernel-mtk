@@ -282,6 +282,8 @@ static const char *dprec_logger_spy(DPREC_LOGGER_ENUM l)
 		return "ESD Check";
 	case DPREC_LOGGER_ESD_CMDQ:
 		return "ESD CMDQ Keep";
+	case DPREC_LOGGER_IDLEMGR:
+		return "IDLE_MANAGER";
 	case DPREC_LOGGER_PRIMARY_CONFIG:
 		return "Primary Path Config";
 	case DPREC_LOGGER_DISPMGR_PREPARE:

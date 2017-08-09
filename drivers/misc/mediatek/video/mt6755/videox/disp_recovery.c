@@ -271,7 +271,7 @@ int primary_display_switch_esd_mode(int mode)
 	if (mode == GPIO_EINT_MODE) {
 
 		/* 1. set mode0 */
-		disp_dts_gpio_select_state(DTS_GPIO_STATE_TE_MODE_GPIO);
+		/* disp_dts_gpio_select_state(DTS_GPIO_STATE_TE_MODE_GPIO); */
 
 		/* 2.register irq handler */
 		node = of_find_compatible_node(NULL, NULL, "mediatek, DSI_TE-eint");
@@ -301,7 +301,7 @@ int primary_display_switch_esd_mode(int mode)
 			free_irq(irq, NULL);
 		}
 
-		disp_dts_gpio_select_state(DTS_GPIO_STATE_TE_MODE_TE);
+		/* disp_dts_gpio_select_state(DTS_GPIO_STATE_TE_MODE_TE); */
 
 
 	}

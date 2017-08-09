@@ -836,6 +836,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 		DISPDBG("[disp_lowpower]primary enter idle state\n");
 
 		/* enter idle state */
+		dprec_logger_start(DPREC_LOGGER_IDLEMGR, 0, 0);
 		primary_display_idlemgr_enter_idle_nolock();
 		primary_display_set_idle_stat(1);
 
@@ -968,6 +969,7 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 	if (primary_display_is_idle()) {
 		primary_display_idlemgr_leave_idle_nolock();
 		primary_display_set_idle_stat(0);
+		dprec_logger_done(DPREC_LOGGER_IDLEMGR, 0, 0);
 
 		MMProfileLogEx(ddp_mmp_get_events()->idlemgr, MMProfileFlagEnd, 0, 0);
 		/* wake up idlemgr process to monitor next idle stat */

@@ -1038,11 +1038,13 @@ int rdma_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, DDP_IOCTL_NAME ioctl_
 	int ret = 0;
 	DDP_IOCTL_NAME ioctl = (DDP_IOCTL_NAME) ioctl_cmd;
 	unsigned int idx = rdma_index(module);
-	disp_ddp_path_config *pConfig = (disp_ddp_path_config *)params;
-	golden_setting_context *p_golden_setting = pConfig->p_golden_setting_context;
+	disp_ddp_path_config *pConfig = NULL;
+	golden_setting_context *p_golden_setting = NULL;
 
 	switch (ioctl) {
 	case DDP_RDMA_GOLDEN_SETTING:
+		pConfig = (disp_ddp_path_config *)params;
+		p_golden_setting = pConfig->p_golden_setting_context;
 		rdma_set_ultra_l(idx, pConfig->lcm_bpp, cmdq_handle, p_golden_setting);
 		break;
 	default:
