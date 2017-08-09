@@ -43,6 +43,8 @@ void init_ddp_mmp_events(void)
 		    MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "interface_trigger");
 		DDP_MMP_Events.primary_switch_mode =
 		    MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "switch_session_mode");
+		DDP_MMP_Events.primary_switch_fps =
+		    MMProfileRegisterEvent(DDP_MMP_Events.primary_Parent, "switch_fps");
 		DDP_MMP_Events.primary_mode[DISP_SESSION_DIRECT_LINK_MODE] =
 			MMProfileRegisterEvent(DDP_MMP_Events.primary_switch_mode, "directlink");
 		DDP_MMP_Events.primary_mode[DISP_SESSION_DECOUPLE_MODE] =

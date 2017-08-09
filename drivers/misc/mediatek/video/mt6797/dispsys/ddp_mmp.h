@@ -43,6 +43,7 @@ typedef struct {
 	MMP_Event primary_switch_mode;
 	MMP_Event primary_mode[DISP_SESSION_MODE_NUM];
 	MMP_Event primary_seq_info;
+	MMP_Event primary_switch_fps;
 	MMP_Event primary_seq_insert;
 	MMP_Event primary_seq_config;
 	MMP_Event primary_seq_trigger;

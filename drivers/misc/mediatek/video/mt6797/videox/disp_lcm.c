@@ -455,6 +455,36 @@ int disp_lcm_resume(disp_lcm_handle *plcm)
 	}
 }
 
+int disp_lcm_is_support_adjust_fps(disp_lcm_handle *plcm)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->adjust_fps)
+			return 1;
+		else
+			return 0;
+	}
+	DISPERR("lcm not initialied\n");
+	return 0;
+}
+
+int disp_lcm_adjust_fps(void *cmdq, disp_lcm_handle *plcm, int fps)
+{
+	LCM_DRIVER *lcm_drv = NULL;
+
+	if (_is_lcm_inited(plcm)) {
+		lcm_drv = plcm->drv;
+		if (lcm_drv->adjust_fps) {
+			lcm_drv->adjust_fps(cmdq, fps);
+			return 0;
+		}
+	}
+	DISPERR("lcm not initialied\n");
+	return -1;
+}
+
 int disp_lcm_set_backlight(disp_lcm_handle *plcm, void *handle, int level)
 {
 	LCM_DRIVER *lcm_drv = NULL;

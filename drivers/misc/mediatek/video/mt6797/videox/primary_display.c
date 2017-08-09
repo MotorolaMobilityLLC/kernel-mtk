@@ -77,6 +77,7 @@ static disp_internal_buffer_info *decouple_buffer_info[DISP_INTERNAL_BUFFER_COUN
 static RDMA_CONFIG_STRUCT decouple_rdma_config;
 static WDMA_CONFIG_STRUCT decouple_wdma_config;
 static disp_mem_output_config mem_config;
+atomic_t hwc_configing = ATOMIC_INIT(0);
 static unsigned int primary_session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 static disp_frm_seq_info frm_update_sequence[FRM_UPDATE_SEQ_CACHE_NUM];
 static unsigned int frm_update_cnt;
@@ -139,6 +140,7 @@ static unsigned int _need_lfr_check(void);
 typedef struct {
 	DISP_POWER_STATE state;
 	unsigned int lcm_fps;
+	int lcm_refresh_rate;
 	int max_layer;
 	int need_trigger_overlay;
 	int need_trigger_ovl1to2;
@@ -3641,7 +3643,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	}
 
 	pgc->lcm_fps = lcm_fps;
-
+	pgc->lcm_refresh_rate = 60;
 	pgc->state = DISP_ALIVE;
 
 /*
@@ -3656,6 +3658,121 @@ done:
 	dst_module = _get_dst_module_by_lcm(pgc->plcm);
 	_primary_path_unlock(__func__);
 	return ret;
+}
+
+static void _primary_protect_mode_switch(void)
+{
+	int try_cnt = 50;
+
+	while ((--try_cnt) && atomic_read(&hwc_configing)) {
+		udelay(1000);
+		/* DISPCHECK("detecting protect mode switch\n"); */
+	}
+	if (try_cnt <= 0)
+		DISPCHECK("display warning:switch mode when hwc config\n");
+}
+
+int primary_display_set_lcm_refresh_rate(int fps)
+{
+	int ret = 0;
+
+	DISPCHECK("set lcm fps(%d)\n", fps);
+	_primary_protect_mode_switch();
+	_primary_path_lock(__func__);
+	if (pgc->state == DISP_SLEPT) {
+		_primary_path_unlock(__func__);
+		DISPCHECK("Sleep State set lcm rate\n");
+		return -1;
+	}
+
+	/*TODO: Should skip while MHL connected*/
+
+	ret = _display_set_lcm_refresh_rate(fps);
+	_primary_path_unlock(__func__);
+	return ret;
+}
+
+int _display_set_lcm_refresh_rate(int fps)
+{
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+	static cmdqRecHandle cmdq_handle, cmdq_pre_handle;
+	int ret = 0;
+
+	if (pgc->state == DISP_SLEPT) {
+		DISPCHECK("Sleep State set lcm rate\n");
+		return -1;
+	}
+
+	if (primary_display_get_lcm_max_refresh_rate() <= 60) {
+		DISPCHECK("not support set lcm rate!!\n");
+		return 0;
+	}
+
+	if (fps == pgc->lcm_refresh_rate)
+		return 0;
+
+	if (cmdq_handle == NULL) {
+		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
+		if (ret != 0) {
+			DISPCHECK("fail to create primary cmdq handle for adjust fps\n");
+			return -1;
+		}
+	}
+	if (cmdq_pre_handle == NULL) {
+		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_MEMOUT, &cmdq_pre_handle);
+		if (ret != 0) {
+			DISPCHECK("fail to create memout cmdq handle for adjust fps\n");
+			cmdqRecDestroy(cmdq_handle);
+			cmdq_handle = NULL;
+			return -1;
+		}
+	}
+	primary_display_idlemgr_kick(__func__, 0);
+
+	/* don't move ,switch need this part*/
+	pgc->lcm_refresh_rate = fps;
+	DISPCHECK("[refresh_rate]:fps(%d)\n", fps);
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_fps, MMProfileFlagStart, fps, 0);
+
+	/* TODO: switch path before adjusting fps
+	if (fps == 120) {
+		Switch path.
+	}
+	*/
+
+	cmdqRecReset(cmdq_handle);
+	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
+	ret = cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_MDP_DSI0_TE_SOF);
+	ret = cmdqRecWait(cmdq_handle, CMDQ_EVENT_MDP_DSI0_TE_SOF);
+	/* Change PLL CLOCK parameter and build fps lcm command */
+	disp_lcm_adjust_fps(cmdq_handle, pgc->plcm, fps);
+	dpmgr_path_ioctl(pgc->dpmgr_handle, cmdq_handle, DDP_PHY_CLK_CHANGE, &pgc->plcm->params->dsi.PLL_CLOCK);
+	/* TODO: OD Control
+	*/
+
+	if (pgc->session_mode == DISP_SESSION_DECOUPLE_MODE)
+		/*need sync, make sure od is config done, even if od in decouple path*/
+		_cmdq_flush_config_handle_mira(cmdq_handle, 1);
+	else
+		_cmdq_flush_config_handle_mira(cmdq_handle, 0);
+
+	/* TODO: switch path after adjusting fps
+	if (fps == 60) {
+		Switch path.
+	}
+	*/
+
+	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_fps, MMProfileFlagEnd, fps, 0);
+#endif
+	return 0;
+}
+
+int primary_display_get_lcm_max_refresh_rate(void)
+{
+	if (disp_lcm_is_support_adjust_fps(pgc->plcm) != 0)
+		return 120;
+	return 60;
 }
 
 int primary_display_deinit(void)
@@ -3781,6 +3898,7 @@ int primary_display_wait_for_vsync(void *config)
 out:
 	c->vsync_ts = ts;
 	c->vsync_cnt++;
+	c->lcm_fps = pgc->lcm_refresh_rate;
 
 	return ret;
 }
@@ -3827,6 +3945,9 @@ int primary_display_suspend(void)
 		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
 					pgc->session_id, 0, NULL, 1);
 	}
+
+	/* restore to 60 fps */
+	_display_set_lcm_refresh_rate(60);
 
 	/* need leave share sram for suspend */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM) && !primary_display_is_video_mode())
@@ -3891,6 +4012,7 @@ int primary_display_suspend(void)
 	DISPCHECK("[POWER]dpmanager path power off[end]\n");
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 8);
 
+	pgc->lcm_refresh_rate = 60;
 	pgc->state = DISP_SLEPT;
 done:
 	_primary_path_unlock(__func__);
@@ -4253,6 +4375,7 @@ int primary_display_trigger(int blocking, void *callback, int need_merge)
 
 	smart_ovl_try_switch_mode_nolock();
 done:
+	atomic_set(&hwc_configing, 0);
 	_primary_path_unlock(__func__);
 
 	if ((primary_trigger_cnt > 1) && aee_kernel_Powerkey_is_press()) {
@@ -4576,6 +4699,7 @@ int primary_display_config_input_multiple(disp_session_input_config *session_inp
 	cmdqRecHandle cmdq_handle;
 
 	_primary_path_lock(__func__);
+	atomic_set(&hwc_configing, 1);
 
 	if (pgc->state == DISP_SLEPT) {
 		DISPMSG("%s, skip because primary dipslay is sleep\n", __func__);

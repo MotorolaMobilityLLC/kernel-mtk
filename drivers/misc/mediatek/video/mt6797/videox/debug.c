@@ -464,6 +464,13 @@ static void process_dbg_opt(const char *opt)
 			gCapturePriLayerNum = TOTAL_OVL_LAYER_NUM;
 			DDPMSG("dump_layer En %d\n", gCapturePriLayerEnable);
 		}
+	} else if (0 == strncmp(opt, "fps:", 4)) {
+		char *p = (char *)opt+4;
+		int fps = kstrtoul(p, 10, (unsigned long int *)&p);
+
+		DDPMSG("change fps\n");
+		primary_display_set_lcm_refresh_rate(fps);
+		return;
 	}
 
 	if (0 == strncmp(opt, "primary_basic_test:", 19)) {
