@@ -75,9 +75,15 @@ static long fm_ops_compat_ioctl(struct file *filp, fm_u32 cmd, unsigned long arg
 
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl)
 		return -ENOTTY;
-
+	switch (cmd) {
+	case COMPAT_FM_IOCTL_GET_AUDIO_INFO: {
+		ret = filp->f_op->unlocked_ioctl(filp, FM_IOCTL_GET_AUDIO_INFO, arg);
+		break;
+		}
+	default:
 	ret = filp->f_op->unlocked_ioctl(filp, cmd, arg);
-
+		break;
+	}
 	return ret;
 }
 #endif
