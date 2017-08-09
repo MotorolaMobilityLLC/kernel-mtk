@@ -445,7 +445,7 @@ static void accdet_eint_work_callback(struct work_struct *work)
 	} else {
 /*EINT_PIN_PLUG_OUT*/
 /*Disable ACCDET*/
-		ACCDET_DEBUG("[Accdet]DCC EINT func :plug-out, cur_eint_state = %d\n", cur_eint_state);
+		ACCDET_DEBUG("[Accdet]ACC EINT func :plug-out, cur_eint_state = %d\n", cur_eint_state);
 		mutex_lock(&accdet_eint_irq_sync_mutex);
 		eint_accdet_sync_flag = 0;
 		mutex_unlock(&accdet_eint_irq_sync_mutex);
@@ -553,19 +553,19 @@ static inline int accdet_setup_eint(struct platform_device *accdet_device)
 	pins_default = pinctrl_lookup_state(accdet_pinctrl1, "default");
 	if (IS_ERR(pins_default)) {
 		ret = PTR_ERR(pins_default);
-		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl default!\n");
+		/*dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl default!\n");*/
 	}
 
 	pins_eint_int = pinctrl_lookup_state(accdet_pinctrl1, "state_eint_as_int");
 	if (IS_ERR(pins_eint_int)) {
 		ret = PTR_ERR(pins_eint_int);
-		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl state_eint_int!\n");
+		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl state_eint_accdet!\n");
 		return ret;
 	}
 	pinctrl_select_state(accdet_pinctrl1, pins_eint_int);
 
 	/*node = of_find_matching_node(node, accdet_of_match);*/
-	node = of_find_compatible_node(NULL, NULL, "mediatek, ACCDET-eint");
+	node = of_find_matching_node(node, accdet_of_match);
 	if (node) {
 		of_property_read_u32_array(node, "debounce", ints, ARRAY_SIZE(ints));
 		of_property_read_u32_array(node, "interrupts", ints1, ARRAY_SIZE(ints1));
