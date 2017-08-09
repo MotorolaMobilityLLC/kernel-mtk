@@ -61,6 +61,9 @@
 #include "queue.h"
 #include <linux/time.h>
 #include <linux/debugfs.h>
+#include <linux/cpumask.h>
+#include <linux/kernel_stat.h>
+#include <linux/tick.h>
 MODULE_ALIAS("mmc:block");
 #ifdef MODULE_PARAM_PREFIX
 #undef MODULE_PARAM_PREFIX
@@ -2199,6 +2202,38 @@ void block_io_dbg_deinit(void)
 	debugfs_remove(blockio_dbgfs);
 }
 
+static u64 get_idle_time(int cpu)
+{
+	u64 idle, idle_time = -1ULL;
+
+	if (cpu_online(cpu))
+		idle_time = get_cpu_idle_time_us(cpu, NULL);
+
+	if (idle_time == -1ULL)
+		/* !NO_HZ or cpu offline so we can rely on cpustat.idle */
+		idle = kcpustat_cpu(cpu).cpustat[CPUTIME_IDLE];
+	else
+		idle = usecs_to_cputime64(idle_time);
+
+	return idle;
+}
+
+static u64 get_iowait_time(int cpu)
+{
+	u64 iowait, iowait_time = -1ULL;
+
+	if (cpu_online(cpu))
+		iowait_time = get_cpu_iowait_time_us(cpu, NULL);
+
+	if (iowait_time == -1ULL)
+		/* !NO_HZ or cpu offline so we can rely on cpustat.iowait */
+		iowait = kcpustat_cpu(cpu).cpustat[CPUTIME_IOWAIT];
+	else
+		iowait = usecs_to_cputime64(iowait_time);
+
+	return iowait;
+}
+
 #endif
 static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 {
@@ -2226,6 +2261,8 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 	unsigned int index = 0;
 	uint64_t time = 0;
 	unsigned long rem_nsec;
+	u64 user, nice, system, idle, iowait, irq, softirq;
+	int i;
 #endif
 
 	if (!rqc && !mq->mqrq_prev->req)
@@ -2333,6 +2370,30 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 				strncat(block_io_log_dst_buffer, block_io_log_source_buffer, VMSTAT_LOG_LENGTH);
 
 #endif
+/*/proc/stat*/
+				user = nice = system = idle = iowait =
+				irq = softirq = 0;
+
+				for_each_possible_cpu(i) {
+					user += kcpustat_cpu(i).cpustat[CPUTIME_USER];
+					nice += kcpustat_cpu(i).cpustat[CPUTIME_NICE];
+					system += kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM];
+					idle += get_idle_time(i);
+					iowait += get_iowait_time(i);
+					irq += kcpustat_cpu(i).cpustat[CPUTIME_IRQ];
+					softirq += kcpustat_cpu(i).cpustat[CPUTIME_SOFTIRQ];
+				}
+				snprintf(block_io_log_source_buffer, CPUSTAT_LOG_LENGTH,
+					"cpu:%llu,%llu,%llu,%llu,%llu,%llu,%llu.",
+							cputime64_to_clock_t(user),
+							cputime64_to_clock_t(nice),
+							cputime64_to_clock_t(system),
+							cputime64_to_clock_t(idle),
+							cputime64_to_clock_t(iowait),
+							cputime64_to_clock_t(irq),
+							cputime64_to_clock_t(softirq));
+				strncat(block_io_log_dst_buffer, block_io_log_source_buffer, CPUSTAT_LOG_LENGTH);
+/*/proc/stat end*/
 #if defined(FEATURE_STORAGE_PID_LOGGER)
 		do {
 			int i;

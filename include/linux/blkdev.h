@@ -147,10 +147,11 @@ struct struct_pid_logger {
 #define READ_THROUGHPUT_LOG_LENGTH 44
 #define VMSTAT_OFFSET (READ_THROUGHPUT_OFFSET+READ_THROUGHPUT_LOG_LENGTH)
 #define VMSTAT_LOG_LENGTH 54
+#define CPUSTAT_LOG_LENGTH 145
 #define PID_OFFSET (VMSTAT_OFFSET+VMSTAT_LOG_LENGTH)
 #define PID_LOG_LENGTH (PID_BUFFER_SIZE + 8)
 /*log size+header size 18*/
-#define BLOCK_IO_BUFFER_SIZE (64 + 54 + 54 + 44 + 44 + 54 + PID_LOG_LENGTH + 18)
+#define BLOCK_IO_BUFFER_SIZE (64 + 54 + 54 + 44 + 44 + 54 + 145 + PID_LOG_LENGTH + 18)
 extern struct struct_pid_logger g_pid_logger[PID_ID_CNT];
 extern spinlock_t g_locker;
 extern unsigned char *page_logger;
