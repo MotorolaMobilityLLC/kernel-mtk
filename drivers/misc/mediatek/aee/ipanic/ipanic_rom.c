@@ -614,11 +614,10 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	mrdump_mini_ke_cpu_regs(dargs->regs);
 	flush_cache_all();
 
-	emergency_restart();
-
 	if (aee_rr_curr_exp_type() == 2)
 		/* No return if mrdump is enable */
 		__mrdump_create_oops_dump(AEE_REBOOT_MODE_KERNEL_OOPS, dargs->regs, "Kernel Oops");
+	emergency_restart();
 
 	smp_send_stop();
 
