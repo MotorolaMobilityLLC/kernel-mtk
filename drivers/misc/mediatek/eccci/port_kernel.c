@@ -1599,7 +1599,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				struct device_node *node;
 				u32 vals[4] = {0, 0, 0, 0};
 
-				node = of_find_compatible_node(NULL, NULL, "mediatek, rf_clock_buffer");
+				node = of_find_compatible_node(NULL, NULL, "mediatek,rf_clock_buffer");
 				if (node) {
 					of_property_read_u32_array(node, "mediatek,clkbuf-config", vals, 4);
 				} else {
