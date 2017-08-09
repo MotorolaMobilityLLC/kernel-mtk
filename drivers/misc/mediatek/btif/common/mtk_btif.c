@@ -3259,8 +3259,6 @@ static int BTIF_init(void)
 			BTIF_ERR_FUNC("BTIF Tx vFIFO allocation failed\n");
 			goto err_exit2;
 		}
-		if (enable_4G())
-			hal_btif_tx_dma_vff_set_for_4g();
 
 #if !(MTK_BTIF_ENABLE_CLK_REF_COUNTER)
 /*enable BTIF Tx DMA channel's clock gating by default*/
@@ -3296,8 +3294,7 @@ static int BTIF_init(void)
 			BTIF_ERR_FUNC("BTIF Rx vFIFO allocation failed\n");
 			goto err_exit2;
 		}
-		if (enable_4G())
-			hal_btif_rx_dma_vff_set_for_4g();
+
 #if !(MTK_BTIF_ENABLE_CLK_REF_COUNTER)
 /*enable BTIF Tx DMA channel's clock gating by default*/
 		i_ret = hal_btif_dma_clk_ctrl(p_rx_dma->p_dma_info,

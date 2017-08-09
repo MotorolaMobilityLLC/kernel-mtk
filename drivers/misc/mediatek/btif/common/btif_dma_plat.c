@@ -12,6 +12,7 @@
  */
 
 #include <linux/kernel.h>
+#include <mt_lpae.h>
 
 #ifdef DFT_TAG
 #undef DFT_TAG
@@ -114,6 +115,9 @@ static int hal_tx_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info,
 			       ENUM_BTIF_REG_ID flag);
 static int is_tx_dma_irq_finish_done(P_MTK_DMA_INFO_STR p_dma_info);
 static int _btif_dma_dump_dbg_reg(void);
+static void hal_btif_tx_dma_vff_set_for_4g(void);
+static void hal_btif_rx_dma_vff_set_for_4g(void);
+
 /*****************************************************************************
 * FUNCTION
 *  hal_tx_dma_ier_ctrl
@@ -415,6 +419,8 @@ int hal_btif_dma_hw_init(P_MTK_DMA_INFO_STR p_dma_info)
 		} while (0x01 & dat);
 		/*write vfifo base address to VFF_ADDR*/
 		btif_reg_sync_writel(p_vfifo->phy_addr, RX_DMA_VFF_ADDR(base));
+		if (enable_4G())
+			hal_btif_rx_dma_vff_set_for_4g();
 		/*write vfifo length to VFF_LEN*/
 		btif_reg_sync_writel(p_vfifo->vfifo_size, RX_DMA_VFF_LEN(base));
 		/*write wpt to VFF_WPT*/
@@ -441,6 +447,8 @@ int hal_btif_dma_hw_init(P_MTK_DMA_INFO_STR p_dma_info)
 		} while (0x01 & dat);
 /*write vfifo base address to VFF_ADDR*/
 		btif_reg_sync_writel(p_vfifo->phy_addr, TX_DMA_VFF_ADDR(base));
+		if (enable_4G())
+			hal_btif_tx_dma_vff_set_for_4g();
 /*write vfifo length to VFF_LEN*/
 		btif_reg_sync_writel(p_vfifo->vfifo_size, TX_DMA_VFF_LEN(base));
 /*write wpt to VFF_WPT*/
@@ -1409,14 +1417,14 @@ int _btif_dma_dump_dbg_reg(void)
 	return 0;
 }
 
-void hal_btif_tx_dma_vff_set_for_4g(void)
+static void hal_btif_tx_dma_vff_set_for_4g(void)
 {
 	BTIF_DBG_FUNC("Set btif tx_vff_addr bit29\n");
 	BTIF_SET_BIT(TX_DMA_VFF_ADDR_BIT29(mtk_btif_tx_dma.base), DMA_VFF_BIT29_OFFSET);
 	BTIF_DBG_FUNC("Dump value of bit29 0x%x:(0x%x)\n", TX_DMA_VFF_ADDR_BIT29(mtk_btif_tx_dma.base),
 					BTIF_READ32(TX_DMA_VFF_ADDR_BIT29(mtk_btif_tx_dma.base)));
 }
-void hal_btif_rx_dma_vff_set_for_4g(void)
+static void hal_btif_rx_dma_vff_set_for_4g(void)
 {
 	BTIF_DBG_FUNC("Set btif rx_vff_addr bit29\n");
 	BTIF_SET_BIT(RX_DMA_VFF_ADDR_BIT29(mtk_btif_rx_dma.base), DMA_VFF_BIT29_OFFSET);

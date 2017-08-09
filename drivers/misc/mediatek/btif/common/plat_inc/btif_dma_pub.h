@@ -194,7 +194,4 @@ int hal_dma_dump_reg(P_MTK_DMA_INFO_STR p_dma_info, ENUM_BTIF_REG_ID flag);
 
 int hal_dma_pm_ops(P_MTK_DMA_INFO_STR p_dma_info, MTK_BTIF_PM_OPID opid);
 
-void hal_btif_tx_dma_vff_set_for_4g(void);
-void hal_btif_rx_dma_vff_set_for_4g(void);
-
 #endif /*__HAL_BTIFD_DMA_PUB_H_*/
