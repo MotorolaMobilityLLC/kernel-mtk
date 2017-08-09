@@ -1278,107 +1278,88 @@ static int MD1_sys_enable_op(struct subsys *sys)
 }
 static int C2K_sys_enable_op(struct subsys *sys)
 {
-	/*printk("C2K_sys_enable_op\r\n");*/
 	spm_mtcmos_ctrl_mdsys_intf_infra2(STA_POWER_ON);
 	return spm_mtcmos_ctrl_mdsys2(STA_POWER_ON);
 }
 static int CONN_sys_enable_op(struct subsys *sys)
 {
-	/*printk("CONN_sys_enable_op\r\n");*/
 	return spm_mtcmos_ctrl_connsys(STA_POWER_ON);
 }
 static int MFG_sys_enable_op(struct subsys *sys)
 {
-	/*printk("MFG_sys_enable_op\r\n");*/
 	spm_mtcmos_ctrl_mfg_async(STA_POWER_ON);
 	return spm_mtcmos_ctrl_mfg2(STA_POWER_ON);
 }
 static int DIS_sys_enable_op(struct subsys *sys)
 {
-	/*printk("DIS_sys_enable_op\r\n");*/
 	return spm_mtcmos_ctrl_dis(STA_POWER_ON);
 }
 static int ISP_sys_enable_op(struct subsys *sys)
 {
-	/*printk("ISP_sys_enable_op\r\n");*/
 	return spm_mtcmos_ctrl_isp2(STA_POWER_ON);
 }
 static int VDE_sys_enable_op(struct subsys *sys)
 {
-	/*printk("VDE_sys_enable_op\r\n");*/
 	return spm_mtcmos_ctrl_vde(STA_POWER_ON);
 }
 static int VEN_sys_enable_op(struct subsys *sys)
 {
-	/*printk("VEN_sys_enable_op\r\n");*/
 	return spm_mtcmos_ctrl_ven(STA_POWER_ON);
 }
 #if 0
 static int AUD_sys_enable_op(struct subsys *sys)
 {
-	/*printk("AUD_sys_enable_op\r\n");*/
 	return spm_mtcmos_ctrl_audio(STA_POWER_ON);
 }
 static int IFR_sys_enable_op(struct subsys *sys)
 {
-	/*printk("IFR_sys_enable_op\r\n");*/
 	return spm_mtcmos_ctrl_ifr(STA_POWER_ON);
 }
 #endif
 static int MD1_sys_disable_op(struct subsys *sys)
 {
-	/*printk("MD1_sys_disable_op\r\n");*/
 	spm_mtcmos_ctrl_mdsys1(STA_POWER_DOWN);
 	return spm_mtcmos_ctrl_mdsys_intf_infra2(STA_POWER_DOWN);
 }
 static int C2K_sys_disable_op(struct subsys *sys)
 {
-	/*printk("C2K_sys_disable_op\r\n");*/
 	spm_mtcmos_ctrl_mdsys2(STA_POWER_DOWN);
 	return spm_mtcmos_ctrl_mdsys_intf_infra2(STA_POWER_DOWN);
 }
 static int CONN_sys_disable_op(struct subsys *sys)
 {
-	/*printk("CONN_sys_disable_op\r\n");*/
 	return spm_mtcmos_ctrl_connsys(STA_POWER_DOWN);
 }
 static int MFG_sys_disable_op(struct subsys *sys)
 {
-	/*printk("MFG_sys_disable_op\r\n");*/
 	/*spm_mtcmos_ctrl_mfg2(STA_POWER_DOWN);
 	return spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);*/
 	return 0;
 }
 static int DIS_sys_disable_op(struct subsys *sys)
 {
-	/*printk("DIS_sys_disable_op bypass\r\n");*/
 	/*return spm_mtcmos_ctrl_dis(STA_POWER_DOWN);*/
 	return 0;
 }
 static int ISP_sys_disable_op(struct subsys *sys)
 {
-	/*printk("ISP_sys_disable_op\r\n");*/
 	return spm_mtcmos_ctrl_isp2(STA_POWER_DOWN);
 }
 static int VDE_sys_disable_op(struct subsys *sys)
 {
-	/*printk("VDE_sys_disable_op\r\n");*/
 	return spm_mtcmos_ctrl_vde(STA_POWER_DOWN);
 }
 static int VEN_sys_disable_op(struct subsys *sys)
 {
-	/*printk("VEN_sys_disable_op\r\n");*/
 	return spm_mtcmos_ctrl_ven(STA_POWER_DOWN);
 }
 #if 0
 static int AUD_sys_disable_op(struct subsys *sys)
 {
-	/*printk("AUD_sys_disable_op\r\n");*/
 	return spm_mtcmos_ctrl_audio(STA_POWER_DOWN);
 }
 static int IFR_sys_disable_op(struct subsys *sys)
 {
-	/*printk("IFR_sys_disable_op\r\n");*/
 	return spm_mtcmos_ctrl_ifr(STA_POWER_DOWN);
 }
 #endif
