@@ -106,7 +106,6 @@ void switch_irtx_gpio(int mode)
 static void set_irtx_duty(int duty_cycle)
 {
 	unsigned int cdt, cwt;
-	struct irtx_config ir_conf;
 
 	pr_debug("[IRTX] change IrTx duty cycle\n");
 
@@ -325,7 +324,6 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	void *wave_vir;
 	int ret;
 	int buf_size = (count + 3) / 4;	/* when count is 5... */
-	unsigned int gpio_id = IRTX_GPIO;
 
 	pr_debug("[IRTX] irtx write len=0x%x, pwm=%d\n", (unsigned int)count,
 		(unsigned int)irtx_pwm_config.pwm_no);
@@ -345,7 +343,7 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	mt_pwm_26M_clk_enable_hal(1);
 	pr_debug("[IRTX] irtx before read IRTXCFG:0x%x\n",
 		(irtx_read32(mt_irtx_dev.reg_base, IRTXCFG)));
-	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_BASE_ADDR = (U32 *) wave_phy;
+	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_BASE_ADDR = (u32 *) wave_phy;
 	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_SIZE = (buf_size ? (buf_size - 1) : 0);
 
 	set_irtx_sw_mode();
