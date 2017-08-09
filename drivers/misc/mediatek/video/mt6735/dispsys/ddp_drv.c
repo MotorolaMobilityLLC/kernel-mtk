@@ -268,7 +268,11 @@ static int set_tplay_handle_addr_request(void)
 	DDPDBG("[SVP] handle_pa=0x%pa\n", &handle_pa);
 	/* set other TCI parameter */
 	pTplayTci->tplay_handle_low_addr = (uint32_t) handle_pa;
+#ifdef CONFIG_ARM64
 	pTplayTci->tplay_handle_high_addr = (uint32_t) (handle_pa >> 32);
+#else
+	pTplayTci->tplay_handle_high_addr = 0;
+#endif
 	/* set TCI command */
 	pTplayTci->cmd.header.commandId = CMD_TPLAY_REQUEST;
 
