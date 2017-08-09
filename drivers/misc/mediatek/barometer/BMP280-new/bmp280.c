@@ -252,7 +252,7 @@ static int bmp_i2c_write_block(struct i2c_client *client, u8 addr,
 		/* register address */
 		buffer[0] = addr + offset;
 
-		if (left > C_I2C_FIFO_SIZE) {
+		if (left >= C_I2C_FIFO_SIZE) {
 			memcpy(&buffer[1], &txbuf[offset], C_I2C_FIFO_SIZE - 1);
 			msg.len = C_I2C_FIFO_SIZE;
 			left -= C_I2C_FIFO_SIZE - 1;
