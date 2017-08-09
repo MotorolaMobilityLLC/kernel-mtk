@@ -140,14 +140,6 @@ static void hps_get_sysinfo(void)
 #endif
 }
 
-struct hrtimer cpuhp_timer;
-static int cpuhp_timer_func(unsigned long data)
-{
-	BUG_ON(1);
-
-	return HRTIMER_NORESTART;
-}
-
 /*
  * hps task main loop
  */
@@ -157,9 +149,6 @@ static int _hps_task_main(void *data)
 	void (*algo_func_ptr)(void);
 
 	hps_ctxt_print_basic(1);
-
-	hrtimer_init(&cpuhp_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	cpuhp_timer.function = (void *)&cpuhp_timer_func;
 
 	algo_func_ptr = hps_algo_main;
 
@@ -203,10 +192,7 @@ static int _hps_task_main(void *data)
 			hps_ctxt.is_interrupt = 0;
 
 		/*execute hotplug algorithm */
-		if (!hrtimer_active(&cpuhp_timer))
-			hrtimer_start(&cpuhp_timer, ns_to_ktime(CPUHP_INTERVAL), HRTIMER_MODE_REL);
 		(*algo_func_ptr) ();
-		hrtimer_cancel(&cpuhp_timer);
 
 #ifdef CONFIG_CPU_ISOLATION
 HPS_WAIT_EVENT:

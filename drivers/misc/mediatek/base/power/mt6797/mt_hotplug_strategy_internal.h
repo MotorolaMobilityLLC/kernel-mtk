@@ -106,10 +106,6 @@
 /* #define STEP_BY_STEP_DEBUG
 	hps_debug("@@@### file:%s, func:%s, line:%d ###@@@\n", __FILE__, __func__, __LINE__) */
 
-#define CPUHP_INTERVAL          (5LL * NSEC_PER_SEC)
-
-extern struct hrtimer cpuhp_timer;
-
 /*=============================================================*/
 /* Type definition */
 /*=============================================================*/
