@@ -902,6 +902,7 @@ config ARCH_MT6580
 	select PINCTRL
 	select PINCTRL_MT6580
 	select MFD_SYSCON
+	select MTK_LASTPC
 	help
 	  This enable support for MediaTek MT6580
 
