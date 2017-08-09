@@ -12,7 +12,7 @@ static void initTimer(struct hrtimer *timer, enum hrtimer_restart (*callback)(st
 
 static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 {
-	struct acc_context *obj = (struct acc_context *)container_of(timer, struct acc_context, hrTimer);
+	struct mag_context *obj = (struct mag_context *)container_of(timer, struct mag_context, hrTimer);
 
 	if (obj == NULL) {
 		MAG_ERR("NULL pointer\n");
