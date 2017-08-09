@@ -94,6 +94,8 @@
 
 #define C2K_IRAM_BASE			0x01000000 /*0x39000000*/
 #define C2K_H2X_ZONE_BASE		0x00000000
+#define C2K_CLK_BASE			0x02000000
+#define C2K_PLL_BASE			0x02013000
 #define C2K_CGBR_SBC_BASE		0x0200B000
 #define C2K_BOOT_ROM_BASE		0x3FFF0000
 /*end of C2K side register*/
@@ -158,7 +160,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 			      struct md_hw_info *hw_info);
 int md_ccif_io_remap_md_side_register(struct ccci_modem *md);
 void reset_md1_md3_pccif(struct ccci_modem *md);
-void dump_c2k_boot_status(struct ccci_modem *md);
+void dump_c2k_register(struct ccci_modem *md, unsigned int dump_boot_reg);
 
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);

@@ -146,6 +146,7 @@ int md_ccif_get_modem_hw_info(struct platform_device *dev_ptr,
 			      struct md_hw_info *hw_info);
 int md_ccif_io_remap_md_side_register(struct ccci_modem *md);
 void reset_md1_md3_pccif(struct ccci_modem *md);
+void dump_c2k_register(struct ccci_modem *md, unsigned int dump_boot_reg);
 
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);

@@ -58,6 +58,7 @@ struct md_ccif_ctrl {
 	void __iomem *md_boot_slave_Key;
 	void __iomem *md_boot_slave_En;
 
+	struct work_struct wdt_work;
 	struct md_hw_info *hw_info;
 };
 /* always keep this in mind: what if there are more than 1 modems using CLDMA... */

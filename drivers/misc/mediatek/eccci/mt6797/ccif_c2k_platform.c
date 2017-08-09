@@ -538,3 +538,9 @@ void reset_md1_md3_pccif(struct ccci_modem *md)
 
 }
 
+void dump_c2k_register(struct ccci_modem *md, unsigned int dump_boot_reg)
+{
+	if (dump_boot_reg == 0)
+		return;
+
+}

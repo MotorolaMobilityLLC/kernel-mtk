@@ -36,6 +36,7 @@
 #include "ccci_bm.h"
 #include "ccci_platform.h"
 #include "modem_ccif.h"
+#include "port_kernel.h"
 #include "ccif_c2k_platform.h"
 #if defined(ENABLE_32K_CLK_LESS)
 #include <mt-plat/mtk_rtc.h>
@@ -586,16 +587,44 @@ static void ccif_rx_work(struct work_struct *work)
 	}
 }
 
+static void md_ccif_wdt_work(struct work_struct *work)
+{
+	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+	struct ccci_modem *md = md_ctrl->rxq[0].modem;
+	int ret = 0;
+
+	CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_wdt_work\n");
+	if (*((int *)(md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_EPON))
+	    == 0xBAEBAE10) {
+		/*3. reset */
+		ret = md->ops->reset(md);
+		CCCI_NORMAL_LOG(md->index, TAG, "reset MD after WDT %d\n", ret);
+		/*4. send message, only reset MD on non-eng load */
+		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
+
+		if (md->index == MD_SYS3)
+			exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
+	} else {
+		if (md->critical_user_active[2] == 0) {
+			ret = md->ops->reset(md);
+			CCCI_NORMAL_LOG(md->index, TAG, "mdlogger closed,reset MD after WDT %d\n", ret);
+			/* 4. send message, only reset MD on non-eng load */
+			ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
+
+			if (md->index == MD_SYS3)
+				exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
+		} else {
+			ccci_md_exception_notify(md, MD_WDT);
+			CCCI_NORMAL_LOG(md->index, TAG, "exception notify after WDT\n");
+		}
+	}
+}
+
 static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 {
 	struct ccci_modem *md = (struct ccci_modem *)data;
-#ifdef ENABLE_MD_WDT_DBG
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
-#endif
-	int ret = 0;
 
-	CCCI_NORMAL_LOG(md->index, TAG, "MD WDT IRQ\n");
-	ccci_event_log("md%d: MD WDT IRQ\n", md->index);
 	/*1. disable MD WDT */
 #ifdef ENABLE_MD_WDT_DBG
 	unsigned int state;
@@ -605,36 +634,10 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 	CCCI_NORMAL_LOG(md->index, TAG, "WDT IRQ disabled for debug, state=%X\n",
 		     state);
 #endif
+	CCCI_NORMAL_LOG(md->index, TAG, "MD WDT IRQ\n");
+	ccci_event_log("md%d: MD WDT IRQ\n", md->index);
+	schedule_work(&md_ctrl->wdt_work);
 
-	if (*((int *)(md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_EPON))
-	    == 0xBAEBAE10) {
-		/*3. reset */
-		ret = md->ops->reset(md);
-		CCCI_NORMAL_LOG(md->index, TAG, "reset MD after WDT %d\n", ret);
-		/*4. send message, only reset MD on non-eng load */
-		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
-		/* #ifdef CONFIG_MTK_SVLTE_SUPPORT */
-		#ifdef CONFIG_MTK_ECCCI_C2K
-		if (md->index == MD_SYS3)
-			exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
-		#endif
-		/* #endif */
-
-	} else {
-		if (md->critical_user_active[2] == 0) {
-			ret = md->ops->reset(md);
-			CCCI_NORMAL_LOG(md->index, TAG, "mdlogger closed,reset MD after WDT %d\n", ret);
-			/* 4. send message, only reset MD on non-eng load */
-			ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
-			#ifdef CONFIG_MTK_ECCCI_C2K
-			if (md->index == MD_SYS3)
-				exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
-			#endif
-		} else {
-			ccci_md_exception_notify(md, MD_WDT);
-			CCCI_NORMAL_LOG(md->index, TAG, "exception notify after WDT\n");
-		}
-	}
 	return IRQ_HANDLED;
 }
 
@@ -1339,12 +1342,20 @@ static int md_ccif_op_force_assert(struct ccci_modem *md, MD_COMM_TYPE type)
 static int md_ccif_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag,
 			     void *buff, int length)
 {
-	if (flag & DUMP_FLAG_CCIF)
+	if (flag & DUMP_FLAG_CCIF) {
 		md_ccif_dump("Dump CCIF SRAM\n", md);
+		CCCI_NORMAL_LOG(md->index, TAG, "dump MD1 exception memory start\n");
+		ccci_mem_dump(md->index, md1_excp_smem_vir, md1_excp_smem__size);
+	}
 
-	CCCI_MEM_LOG_TAG(md->index, TAG, "dump MD1 exception memory start\n");
-	ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md1_excp_smem_vir, md1_excp_smem__size);
-	/*dump_c2k_boot_status(md);*/
+	if (flag & DUMP_FLAG_REG) {
+		ccci_dump_req_user_list();
+		if (md->ee_info_flag & (1 << MD_EE_WDT_GET))
+			dump_c2k_register(md, 0);
+	}
+	/*MD boot fail EE*/
+	if (flag & DUMP_FLAG_CCIF_REG)
+		dump_c2k_register(md, 1);
 
 	return 0;
 }
@@ -1546,6 +1557,7 @@ static int md_ccif_probe(struct platform_device *dev)
 	tasklet_init(&md_ctrl->ccif_irq_task, md_ccif_irq_tasklet,
 		     (unsigned long)md);
 	INIT_WORK(&md_ctrl->ccif_sram_work, md_ccif_sram_rx_work);
+	INIT_WORK(&md_ctrl->wdt_work, md_ccif_wdt_work);
 	md_ctrl->channel_id = 0;
 
 	/*register modem */
