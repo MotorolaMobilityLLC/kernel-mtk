@@ -87,7 +87,7 @@ static struct ppm_policy_data hica_policy = {
 
 struct ppm_hica_algo_data ppm_hica_algo_data = {
 	.cur_state = PPM_POWER_STATE_4LL_L,
-	.new_state = PPM_POWER_STATE_NONE,
+	.new_state = PPM_POWER_STATE_4LL_L,
 
 	.ppm_cur_loads = 0,
 	.ppm_cur_tlp = 0,
