@@ -688,6 +688,7 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	return -1;
 #else
 	int i;
+	/* static void __iomem *reg_base; */
 	/* unsigned char ret_val = 0; */
 
 	/* for back legacy DVFS mode debug */
@@ -700,28 +701,6 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	if (idvfs_init_opt.idvfs_status == 0)
 		return -1;
 	else if (idvfs_init_opt.idvfs_status == 1) {
-		idvfs_init_opt.idvfs_status = 3;
-		AEE_RR_REC(idvfs_state_manchine, 3);
-	} else if (idvfs_init_opt.idvfs_status == 4) {
-		/* wait SWREQ and into 5 fist */
-		idvfs_init_opt.idvfs_status = 5;
-		AEE_RR_REC(idvfs_state_manchine, 5);
-		udelay(120);
-		if (idvfs_init_opt.idvfs_status != 6) {
-			idvfs_warning("iDVFS state machine = %u, but 5 next should be 6 only.\n",
-						idvfs_init_opt.idvfs_status);
-			/* return -2 */
-		}
-		idvfs_init_opt.idvfs_status = 3;
-		AEE_RR_REC(idvfs_state_manchine, 3);
-	} else {
-		/* wait status and check equ 1 fail then return -1 */
-		udelay(100);
-		if (idvfs_init_opt.idvfs_status != 1) {
-			idvfs_warning("iDVFS state machine = %u, force into disable status.\n",
-						idvfs_init_opt.idvfs_status);
-			/* return -2; */
-		}
 		idvfs_init_opt.idvfs_status = 3;
 		AEE_RR_REC(idvfs_state_manchine, 3);
 	}
@@ -741,15 +720,42 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	/* BigiDVFSChannel(1, 0); */
 	/* BigOCPDisable(); */
 
+#if 0
+	/* check cpu8 into WFI */
+	i = 0;
+	/* reg_base = ioremap(0x10220000, 0x1000); */
+	idvfs_ver("Check all big core in WFI.\n");
+	/* writel(reg_base + 0x2400, 0x1b); */
+	SEC_BIGIDVFS_WRITE(0x10222400, 0x1b);
+	while (1) {
+		/* bit[1:0] = core8/9 WFI status bit */
+		/* if ((readl(reg_base + 0x2404) & 0x03) == 0x03) */
+		if ((SEC_BIGIDVFS_READ(0x10222404) & 0x03) == 0x03)
+			break;
+
+	/* total wait 50*1000 = 50ms */
+		udelay(50);
+	/* if (i++ >= 1000)
+		BUG_ON(1); */
+	}
+	/* iounmap(reg_base); */
+	idvfs_ver("All big core in WFI success.\n");
+#endif
+
 	/* down to 30% = 750MHz(IDVFS_FREQMz_STORE) for disable */
 	/* BigIDVFSFreq(3000), ()IDVFS_FREQMz_STORE / 4) * 100 = 30 */
 	idvfs_ver("iDVFS disable force setting FreqREQ = 30%%, 750MHz(IDVFS_FREQMz_STORE)\n");
 	SEC_BIGIDVFS_WRITE(0x10222498, ((IDVFS_FREQMz_STORE / 25) << 12));
+	idvfs_init_opt.freq_cur = 750;
 
 	/* force disable otp/ocp channel first */
 	SEC_BIGIDVFS_WRITE(0x10222470, (SEC_BIGIDVFS_READ(0x10222470) & 0xfffffff3));
-	AEE_RR_REC(idvfs_state_manchine, 31);
+	idvfs_init_opt.channel[IDVFS_CHANNEL_OTP].status = 0;
+	idvfs_init_opt.channel[IDVFS_CHANNEL_OCP].status = 0;
+
+	/* wait 750Mhz ready */
 	udelay(120);
+	AEE_RR_REC(idvfs_state_manchine, 31);
 
 	if (idvfs_init_opt.ocp_endis)
 		Cluster2_OCP_OFF();
@@ -767,14 +773,14 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	AEE_RR_REC(idvfs_ctrl_reg, 0x0);
 	AEE_RR_REC(idvfs_state_manchine, 34);
 
-	/* set Vproc = 1000mv for 750MHz(IDVFS_FREQMz_STORE), due to PTP VBOOT */
-	da9214_vosel_buck_b(IDVFS_VPROC_STORE);
+	/* When next iDVFS enable Freq = 750MHz(default)
+	 chk touch SRAMLDO must before cluster rst active */
+	/* set Vsram = 1100mv for 750MHz */
+	BigiDVFSSRAMLDOSet(IDVFS_VSRAM_STORE);
 	AEE_RR_REC(idvfs_state_manchine, 35);
 
-	/* set Vsram = 1100mv for 750MHz */
-	/* When next iDVFS enable Freq = 750MHz(default),
-	so the Vproc need parking to 880mv, Vsarm parking to 1005mv(default). */
-	BigiDVFSSRAMLDOSet(IDVFS_VSRAM_STORE);
+	/* set Vproc = 1000mv for 750MHz(IDVFS_FREQMz_STORE), due to PTP VBOOT */
+	da9214_vosel_buck_b(IDVFS_VPROC_STORE);
 	AEE_RR_REC(idvfs_state_manchine, 36);
 
 	udelay(20); /* settle time Max(pmic, sarm) */
@@ -1064,10 +1070,8 @@ int BigiDVFSPllSetFreq(unsigned int Freq)
 	}
 
 	/* if iDVFS enable change to iDVFS mode setting Freq */
-	if ((idvfs_init_opt.idvfs_status == 1) ||
-		(idvfs_init_opt.idvfs_status == 4)) {
+	if (idvfs_init_opt.idvfs_status == 1)
 		return BigIDVFSFreq(Freq * (10000 / IDVFS_FMAX_DEFAULT));
-	}
 
 	/* if big cluster offline then return */
 	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
@@ -1084,8 +1088,7 @@ unsigned int BigiDVFSPllGetFreq(void)
 	unsigned int freq = 0, pos_div = 0;
 
 	/* iDVFS mode use SWAVG to get Freq */
-	if ((idvfs_init_opt.idvfs_status == 1) ||
-		(idvfs_init_opt.idvfs_status == 4)) {
+	if (idvfs_init_opt.idvfs_status == 1) {
 		/* call smc, function_id = SMC_IDVFS_BigiDVFSSWAvgStatus */
 		/* get freq_swreq integer, swavg only 7+8 bit need shift to 7+12 bit */
 		return GetDecInterger(((SEC_BIGIDVFS_READ(0x102224cc) >> 16) & 0x7fff) << 4);
@@ -1108,6 +1111,7 @@ unsigned int BigiDVFSPllGetFreq(void)
 	return (freq / pos_div);
 }
 
+#if 0
 int BigiDVFSPllDisable(void)
 {
 	if ((SEC_BIGIDVFS_READ(0x102224a0) & 0x1) == 0) {
@@ -1125,6 +1129,7 @@ int BigiDVFSPllDisable(void)
 	idvfs_ver("Legacy iDVFS PLL disable success.\n");
 	return 0;
 }
+#endif
 
 /* bit[31:16] = SRAM LDO cal, bit[15:0] = eFuse cal */
 unsigned int BigiDVFSSRAMLDOEFUSE(void)
@@ -1203,6 +1208,10 @@ unsigned int BigiDVFSSRAMLDOGet(void)
 int BigiDVFSPOSDIVSet(unsigned int pos_div)
 {
 
+	/* if big cluster offline then return */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return -1;
+
 	if ((pos_div > 7) || (pos_div < 0)) {
 		idvfs_error("iDVFS Pos Div set = %u, out of range 0 ~ 7.\n", pos_div);
 		return -1;
@@ -1219,11 +1228,19 @@ int BigiDVFSPOSDIVSet(unsigned int pos_div)
 
 unsigned int BigiDVFSPOSDIVGet(void)
 {
-	return ((SEC_BIGIDVFS_READ(0x102224a0) >> 12) & 0x7);	  /* 0~7 */
+	/* if big cluster offline then return */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return 0;
+	else
+		return ((SEC_BIGIDVFS_READ(0x102224a0) >> 12) & 0x7);	  /* 0~7 */
 }
 
 int BigiDVFSPLLSetPCM(unsigned int freq)	/* <1000 ~ = 3000(MHz), with our pos div value */
 {
+	/* if big cluster offline then return */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return -1;
+
 	if ((freq > 3000) || (freq <= 1000)) {
 		idvfs_error("Source PLL Freq = %u out of 1000 ~ 3000MHz range.\n", freq);
 		return -1;
@@ -1259,6 +1276,10 @@ int BigiDVFSPLLSetPCM(unsigned int freq)	/* <1000 ~ = 3000(MHz), with our pos di
 unsigned int BigiDVFSPLLGetPCW(void) /* <1000 ~ = 3000(MHz), with our pos div value */
 {
 	unsigned int freq;
+
+	/* if big cluster offline then return */
+	if ((cpu_online(8) == 0) && (cpu_online(9) == 0))
+		return 0;
 
 	/* default fcur = 1500MHz */
 	freq = (((unsigned long long)(SEC_BIGIDVFS_READ(0x102224a4) & 0x7fffffff) * 26L) / (1L << 24));

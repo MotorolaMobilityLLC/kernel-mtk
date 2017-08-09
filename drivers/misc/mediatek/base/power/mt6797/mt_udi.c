@@ -294,17 +294,23 @@ static ssize_t udi_reg_proc_write(struct file *file, const char __user *buffer, 
 	if (!buf)
 		return -EINVAL;
 
-	if (sscanf(buf, "%s %x %d %d %x", udi_rw, &udi_addr_phy, &udi_reg_msb , &udi_reg_lsb, &udi_value) == 5) {
+	/* protect udi reg read/write */
+	if (func_lv_mask_udi == 0) {
+		free_page((unsigned long)buf);
+		return count;
+	}
+
+	if (sscanf(buf, "%1s %x %d %d %x", udi_rw, &udi_addr_phy, &udi_reg_msb , &udi_reg_lsb, &udi_value) == 5) {
 		/* f format or 'f', addr, MSB, LSB, value */
 		udi_reg_field(udi_addr_phy, udi_reg_msb : udi_reg_lsb, udi_value);
 		udi_info("Read back, Reg[%x] = 0x%x.\n",
 				udi_addr_phy, udi_reg_read(udi_addr_phy));
-	} else if (sscanf(buf, "%s %x %x", udi_rw, &udi_addr_phy, &udi_value) == 3) {
+	} else if (sscanf(buf, "%1s %x %x", udi_rw, &udi_addr_phy, &udi_value) == 3) {
 		/* w format or 'w', addr, value */
 		udi_reg_write(udi_addr_phy, udi_value);
 		udi_info("Read back, Reg[%x] = 0x%x.\n",
 				udi_addr_phy, udi_reg_read(udi_addr_phy));
-	} else if (sscanf(buf, "%s %x", udi_rw, &udi_addr_phy) == 2) {
+	} else if (sscanf(buf, "%1s %x", udi_rw, &udi_addr_phy) == 2) {
 		/* r format or 'r', addr */
 		udi_info("Read back, aReg[%x] = 0x%x.\n",
 				udi_addr_phy, udi_reg_read(udi_addr_phy));
@@ -410,12 +416,12 @@ static ssize_t udi_jtag_clock_proc_write(struct file *file, const char __user *b
 	memset(DR_byte, 0, sizeof(DR_byte));
 
 	/* input check format */
-	if (sscanf(buf, "%s %u %u %s %u %s", &recv_key_word[0], &recv_buf[0],
+	if (sscanf(buf, "%4s %u %u %512s %u %512s", &recv_key_word[0], &recv_buf[0],
 				&recv_buf[1], recv_char[0], &recv_buf[2], recv_char[1]) == 6) {
 		/* 4 parameter */
 		IR_pause_count = 0;
 		DR_pause_count = 0;
-	} else if (sscanf(buf, "%s %u %u %s %u %u %s %u", &recv_key_word[0], &recv_buf[0],
+	} else if (sscanf(buf, "%4s %u %u %512s %u %u %512s %u", &recv_key_word[0], &recv_buf[0],
 				&recv_buf[1], recv_char[0], &recv_buf[3],
 				&recv_buf[2], recv_char[1], &recv_buf[4]) == 8) {
 		/* 6 parameter */
@@ -637,7 +643,7 @@ static int __init udi_init(void)
 	err = platform_device_register(&udi_pdev);
 
 	/* initial value */
-	func_lv_mask_udi = 1;
+	func_lv_mask_udi = 0;
 	IR_bit_count = 0;
 	DR_bit_count = 0;
 	jtag_sw_tck = 1;    /* default debug channel = 1 */
