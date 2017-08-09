@@ -94,7 +94,10 @@ P_WMT_FUNC_OPS gpWmtFuncOps[4] = {
 
 static WMT_CTX gMtkWmtCtx;
 static UINT8 gLpbkBuf[1024+5] = { 0 };
-
+#ifdef CONFIG_MTK_COMBO_ANT
+static UINT8 gAntBuf[1024] = { 0 };
+#define CFG_CHECK_WMT_RESULT (1)
+#endif
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
@@ -124,6 +127,10 @@ static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp);
 static INT32 opfunc_adie_lpbk_test(P_WMT_OP pWmtOp);
 #if CFG_WMT_LTE_COEX_HANDLING
 static INT32 opfunc_idc_msg_handling(P_WMT_OP pWmtOp);
+#endif
+#ifdef CONFIG_MTK_COMBO_ANT
+static INT32 opfunc_ant_ram_down(P_WMT_OP pWmtOp);
+static INT32 opfunc_ant_ram_stat_get(P_WMT_OP pWmtOp);
 #endif
 static VOID wmt_core_dump_func_state(PINT8 pSource);
 static INT32 wmt_core_stp_init(VOID);
@@ -203,6 +210,22 @@ static UINT8 WMT_SET_REG_RD_EVT[] = { 0x02, 0x08, 0x04, 0x00	/*length */
 	    , 0x00, 0x00, 0x00, 0x00	/* value */
 };
 
+#ifdef CONFIG_MTK_COMBO_ANT
+static UINT8 WMT_ANT_RAM_STA_GET_CMD[] = { 0x01, 0x06, 0x02, 0x00, 0x05, 0x02
+};
+
+static UINT8 WMT_ANT_RAM_STA_GET_EVT[] = { 0x02, 0x06, 0x03, 0x00	/*length */
+	    , 0x05, 0x02, 0x00	/*S: result */
+};
+
+static UINT8 WMT_ANT_RAM_DWN_CMD[] = { 0x01, 0x15, 0x00, 0x00, 0x01
+};
+
+static UINT8 WMT_ANT_RAM_DWN_EVT[] = { 0x02, 0x15, 0x01, 0x00	/*length */
+	, 0x00
+};
+#endif
+
 /* GeorgeKuo: Use designated initializers described in
  * http://gcc.gnu.org/onlinedocs/gcc-4.0.4/gcc/Designated-Inits.html
  */
@@ -231,6 +254,10 @@ static const WMT_OPID_FUNC wmt_core_opfunc[] = {
 	[WMT_OPID_ADIE_LPBK_TEST] = opfunc_adie_lpbk_test,
 #if CFG_WMT_LTE_COEX_HANDLING
 	[WMT_OPID_IDC_MSG_HANDLING] = opfunc_idc_msg_handling,
+#endif
+#ifdef CONFIG_MTK_COMBO_ANT
+	[WMT_OPID_ANT_RAM_DOWN] = opfunc_ant_ram_down,
+	[WMT_OPID_ANT_RAM_STA_GET] = opfunc_ant_ram_stat_get,
 #endif
 };
 
@@ -2251,6 +2278,226 @@ VOID wmt_core_set_coredump_state(ENUM_DRV_STS state)
 	WMT_INFO_FUNC("wmt-core: set coredump state(%d)\n", state);
 	gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_COREDUMP] = state;
 }
+#ifdef CONFIG_MTK_COMBO_ANT
+INT32 opfunc_ant_ram_down(P_WMT_OP pWmtOp)
+{
+	INT32 iRet = 0;
+	size_t ctrlPa1 = pWmtOp->au4OpData[0];
+	UINT32 ctrlPa2 = pWmtOp->au4OpData[1];
+	PUINT8 pbuf = (PUINT8) ctrlPa1;
+	UINT32 fragSeq = 0;
+	UINT16 fragSize = 0;
+	UINT16 wmtCmdLen;
+	UINT16 wmtPktLen;
+	UINT32 u4Res = 0;
+	UINT8 antEvtBuf[osal_sizeof(WMT_ANT_RAM_DWN_EVT)];
+#if 1
+	UINT32 ctrlPa3 = pWmtOp->au4OpData[2];
+
+	do {
+		fragSize = ctrlPa2;
+		fragSeq = ctrlPa3;
+		gAntBuf[5] = fragSeq;
+
+
+		wmtPktLen = fragSize + sizeof(WMT_ANT_RAM_DWN_CMD) + 1;
+
+		/*WMT command length cal */
+		wmtCmdLen = wmtPktLen - 4;
+#if 0
+		WMT_ANT_RAM_DWN_CMD[2] = wmtCmdLen & 0xFF;
+		WMT_ANT_RAM_DWN_CMD[3] = (wmtCmdLen & 0xFF00) >> 16;
+#else
+		osal_memcpy(&WMT_ANT_RAM_DWN_CMD[2], &wmtCmdLen, 2);
+#endif
+
+
+
+		WMT_ANT_RAM_DWN_CMD[4] = 1;	/*RAM CODE download */
+
+		osal_memcpy(gAntBuf, WMT_ANT_RAM_DWN_CMD, sizeof(WMT_ANT_RAM_DWN_CMD));
+
+		/*copy ram code content to global buffer */
+		osal_memcpy(&gAntBuf[osal_sizeof(WMT_ANT_RAM_DWN_CMD) + 1], pbuf, fragSize);
+
+		iRet = wmt_core_tx(gAntBuf, wmtPktLen, &u4Res, MTK_WCN_BOOL_FALSE);
+		if (iRet || (u4Res != wmtPktLen)) {
+			WMT_ERR_FUNC("wmt_core: write fragSeq(%d) size(%d, %d) fail(%d)\n", fragSeq,
+				     wmtPktLen, u4Res, iRet);
+			iRet = -4;
+			break;
+		}
+		WMT_DBG_FUNC("wmt_core: write fragSeq(%d) size(%d, %d) ok\n",
+			     fragSeq, wmtPktLen, u4Res);
+
+		osal_memset(antEvtBuf, 0, sizeof(antEvtBuf));
+
+		WMT_ANT_RAM_DWN_EVT[4] = 0;	/*download result; 0 */
+
+		iRet = wmt_core_rx(antEvtBuf, sizeof(WMT_ANT_RAM_DWN_EVT), &u4Res);
+		if (iRet || (u4Res != sizeof(WMT_ANT_RAM_DWN_EVT))) {
+			WMT_ERR_FUNC("wmt_core: read WMT_ANT_RAM_DWN_EVT length(%zu, %d) fail(%d)\n",
+				     sizeof(WMT_ANT_RAM_DWN_EVT), u4Res, iRet);
+			iRet = -5;
+			break;
+		}
+#if CFG_CHECK_WMT_RESULT
+		if (osal_memcmp(antEvtBuf, WMT_ANT_RAM_DWN_EVT, sizeof(WMT_ANT_RAM_DWN_EVT)) != 0) {
+			WMT_ERR_FUNC("wmt_core: compare WMT_ANT_RAM_DWN_EVT result error\n");
+			WMT_ERR_FUNC("rx(%d):[%02X,%02X,%02X,%02X,%02X] exp(%zu):[%02X,%02X,%02X,%02X,%02X]\n",
+					u4Res, antEvtBuf[0], antEvtBuf[1], antEvtBuf[2], antEvtBuf[3],
+					antEvtBuf[4], sizeof(WMT_ANT_RAM_DWN_EVT), WMT_ANT_RAM_DWN_EVT[0],
+					WMT_ANT_RAM_DWN_EVT[1], WMT_ANT_RAM_DWN_EVT[2], WMT_ANT_RAM_DWN_EVT[3],
+					WMT_ANT_RAM_DWN_EVT[4]);
+			iRet = -6;
+			break;
+		}
+#endif
+		WMT_DBG_FUNC("wmt_core: read WMT_ANT_RAM_DWN_EVT length(%zu, %d) ok\n",
+			     sizeof(WMT_ANT_RAM_DWN_EVT), u4Res);
+
+	} while (0);
+#else
+	UINT32 patchSize = ctrlPa2;
+	UINT32 patchSizePerFrag = 1000;
+	UINT32 offset;
+	UINT32 fragNum = 0;
+	/*cal patch fragNum */
+	fragNum = (patchSize + patchSizePerFrag - 1) / patchSizePerFrag;
+	if (2 >= fragNum) {
+		WMT_WARN_FUNC("ANT ramcode size(%d) too short\n", patchSize);
+		return -1;
+	}
+
+	while (fragSeq < fragNum) {
+		/*update fragNum */
+		fragSeq++;
+
+		if (1 == fragSeq) {
+			fragSize = patchSizePerFrag;
+			/*first package */
+			gAntBuf[5] = 1;	/*RAM CODE start */
+		} else if (fragNum == fragSeq) {
+			/*last package */
+			fragSize = patchSizePerFrag;
+			gAntBuf[5] = 3;	/*RAM CODE end */
+		} else {
+			/*middle package */
+			fragSize = patchSize - ((fragNum - 1) * patchSizePerFrag);
+			gAntBuf[5] = 2;	/*RAM CODE confinue */
+		}
+		wmtPktLen = fragSize + sizeof(WMT_ANT_RAM_OP_CMD) + 1;
+
+		/*WMT command length cal */
+		wmtCmdLen = wmtPktLen - 4;
+
+		WMT_ANT_RAM_OP_CMD[2] = wmtCmdLen & 0xFF;
+		WMT_ANT_RAM_OP_CMD[3] = (wmtCmdLen & 0xFF00) >> 16;
+
+		WMT_ANT_RAM_OP_CMD[4] = 1;	/*RAM CODE download */
+
+		osal_memcpy(gAntBuf, WMT_ANT_RAM_OP_CMD, sizeof(WMT_ANT_RAM_OP_CMD));
+
+		/*copy ram code content to global buffer */
+		osal_memcpy(&gAntBuf[6], pbuf, fragSize);
+
+		/*update offset */
+		offset += fragSize;
+		pbuf += offset;
+
+		iRet = wmt_core_tx(gAntBuf, wmtPktLen, &u4Res, MTK_WCN_BOOL_FALSE);
+		if (iRet || (u4Res != wmtPktLen)) {
+			WMT_ERR_FUNC("wmt_core: write fragSeq(%d) size(%d, %d) fail(%d)\n", fragSeq,
+				     wmtPktLen, u4Res, iRet);
+			iRet = -4;
+			break;
+		}
+		WMT_DBG_FUNC("wmt_core: write fragSeq(%d) size(%d, %d) ok\n",
+			     fragSeq, wmtPktLen, u4Res);
+
+		osal_memset(antEvtBuf, 0, sizeof(antEvtBuf));
+
+		WMT_SET_RAM_OP_EVT[4] = 0;	/*download result; 0 */
+
+		iRet = wmt_core_rx(antEvtBuf, sizeof(WMT_SET_RAM_OP_EVT), &u4Res);
+		if (iRet || (u4Res != sizeof(WMT_SET_RAM_OP_EVT))) {
+			WMT_ERR_FUNC("wmt_core: read WMT_SET_RAM_OP_EVT length(%d, %d) fail(%d)\n",
+				     sizeof(WMT_SET_RAM_OP_EVT), u4Res, iRet);
+			iRet = -5;
+			break;
+		}
+#if CFG_CHECK_WMT_RESULT
+		if (osal_memcmp(antEvtBuf, WMT_SET_RAM_OP_EVT, sizeof(WMT_SET_RAM_OP_EVT)) != 0) {
+			WMT_ERR_FUNC("wmt_core: compare WMT_SET_RAM_OP_EVT result error\n");
+			WMT_ERR_FUNC("rx(%d):[%02X,%02X,%02X,%02X,%02X] exp(%d):[%02X,%02X,%02X,%02X,%02X]\n",
+			     u4Res, antEvtBuf[0], antEvtBuf[1], antEvtBuf[2], antEvtBuf[3],
+			     antEvtBuf[4], sizeof(WMT_SET_RAM_OP_EVT), WMT_SET_RAM_OP_EVT[0],
+			     WMT_SET_RAM_OP_EVT[1], WMT_SET_RAM_OP_EVT[2], WMT_SET_RAM_OP_EVT[3],
+			     WMT_SET_RAM_OP_EVT[4]);
+			iRet = -6;
+			break;
+		}
+#endif
+		WMT_DBG_FUNC("wmt_core: read WMT_SET_RAM_OP_EVT length(%d, %d) ok\n",
+			     sizeof(WMT_SET_RAM_OP_EVT), u4Res);
+
+
+	}
+	if (fragSeq != fragNum)
+		iRet = -7;
+#endif
+	return iRet;
+}
+
+
+INT32 opfunc_ant_ram_stat_get(P_WMT_OP pWmtOp)
+{
+	INT32 iRet = 0;
+	UINT32 u4Res = 0;
+	UINT32 wmtPktLen = osal_sizeof(WMT_ANT_RAM_STA_GET_CMD);
+	UINT32 u4AntRamStatus = 0;
+	UINT8 antEvtBuf[osal_sizeof(WMT_ANT_RAM_STA_GET_EVT)];
+
+
+	iRet = wmt_core_tx(WMT_ANT_RAM_STA_GET_CMD, wmtPktLen, &u4Res, MTK_WCN_BOOL_FALSE);
+	if (iRet || (u4Res != wmtPktLen)) {
+		WMT_ERR_FUNC
+		    ("wmt_core: write wmt and ramcode status query command failed, (%d, %d), iRet(%d)\n",
+		     wmtPktLen, u4Res, iRet);
+		iRet = -4;
+		return iRet;
+	}
+
+
+	iRet = wmt_core_rx(antEvtBuf, sizeof(WMT_ANT_RAM_STA_GET_EVT), &u4Res);
+	if (iRet || (u4Res != sizeof(WMT_ANT_RAM_STA_GET_EVT))) {
+		WMT_ERR_FUNC("wmt_core: read WMT_ANT_RAM_STA_GET_EVT length(%zu, %d) fail(%d)\n",
+			     sizeof(WMT_ANT_RAM_STA_GET_EVT), u4Res, iRet);
+		iRet = -5;
+		return iRet;
+	}
+#if CFG_CHECK_WMT_RESULT
+	if (osal_memcmp(antEvtBuf, WMT_ANT_RAM_STA_GET_EVT, sizeof(WMT_ANT_RAM_STA_GET_EVT) - 1) !=
+	    0) {
+		WMT_ERR_FUNC("wmt_core: compare WMT_ANT_RAM_STA_GET_EVT result error\n");
+		WMT_ERR_FUNC("rx(%d):[%02X,%02X,%02X,%02X,%02X] exp(%zu):[%02X,%02X,%02X,%02X,%02X]\n",
+				u4Res, antEvtBuf[0], antEvtBuf[1], antEvtBuf[2], antEvtBuf[3], antEvtBuf[4],
+				sizeof(WMT_ANT_RAM_STA_GET_EVT), WMT_ANT_RAM_STA_GET_EVT[0],
+				WMT_ANT_RAM_STA_GET_EVT[1], WMT_ANT_RAM_STA_GET_EVT[2],
+				WMT_ANT_RAM_STA_GET_EVT[3], WMT_ANT_RAM_STA_GET_EVT[4]);
+		iRet = -6;
+		return iRet;
+	}
+#endif
+	if (0 == iRet) {
+		u4AntRamStatus = antEvtBuf[sizeof(WMT_ANT_RAM_STA_GET_EVT) - 1];
+		pWmtOp->au4OpData[2] = u4AntRamStatus;
+		WMT_INFO_FUNC("ANT ram code %s\n",
+			      1 == u4AntRamStatus ? "exist already" : "not exist");
+	}
+	return iRet;
+}
+#endif
 
 #if CFG_WMT_LTE_COEX_HANDLING
 /*TEST CODE*/

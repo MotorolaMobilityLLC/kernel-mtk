@@ -17,12 +17,12 @@
 
 MODULE_LICENSE("Dual BSD/GPL");
 
-
 #define ANT_DRIVER_NAME "mtk_stp_ANT_chrdev"
 #define ANT_DEV_MAJOR 197	/* never used number */
-static PINT8 ANT_BUILT_IN_PATCH_FILE_NAME;
-static PINT8 ANT_BUILT_IN_PATCH_FILE_NAME_E1 = "/system/etc/firmware/ANT_RAM_CODE_E1.BIN";
-static PINT8 ANT_BUILT_IN_PATCH_FILE_NAME_E2 = "/system/etc/firmware/ANT_RAM_CODE_E2.BIN";
+static PINT8 ANT_PATCH_FILE_NAME;
+static PINT8 ANT_PATCH_FILE_NAME_COMBO_V1 = "/system/etc/firmware/ANT_RAM_CODE_E1.BIN";
+static PINT8 ANT_PATCH_FILE_NAME_COMBO_V2 = "/system/etc/firmware/ANT_RAM_CODE_E2.BIN";
+static PINT8 ANT_PATCH_FILE_NAME_ADDIE_V1 = "/system/etc/firmware/ANT_RAM_CODE_CONN_V1.BIN";
 
 #define PFX                         "[MTK-ANT] "
 #define ANT_LOG_DBG                  3
@@ -410,26 +410,30 @@ static INT32 ANT_DownLoad_RAM_Code(unsigned long ver)
 
 	switch (ver) {
 	case 1:
-		ANT_BUILT_IN_PATCH_FILE_NAME = ANT_BUILT_IN_PATCH_FILE_NAME_E1;
-		ANT_INFO_FUNC("download E1 patch\n");
+		ANT_PATCH_FILE_NAME = ANT_PATCH_FILE_NAME_COMBO_V1;
+		ANT_INFO_FUNC("download COMBO V1 patch\n");
 		break;
 	case 2:
-		ANT_BUILT_IN_PATCH_FILE_NAME = ANT_BUILT_IN_PATCH_FILE_NAME_E2;
-		ANT_INFO_FUNC("download E2 patch\n");
+		ANT_PATCH_FILE_NAME = ANT_PATCH_FILE_NAME_COMBO_V2;
+		ANT_INFO_FUNC("download COMBO V2 patch\n");
+		break;
+	case 3:
+		ANT_PATCH_FILE_NAME = ANT_PATCH_FILE_NAME_ADDIE_V1;
+		ANT_INFO_FUNC("download CONN V1 patch\n");
 		break;
 	default:
 		ANT_INFO_FUNC("Can not support RAM code version:%ld!\n", ver);
 		return 0;
 	}
-	pPatchExtFile = filp_open(ANT_BUILT_IN_PATCH_FILE_NAME, O_RDONLY, 0644);
+	pPatchExtFile = filp_open(ANT_PATCH_FILE_NAME, O_RDONLY, 0644);
 
 
 	if ((IS_ERR(pPatchExtFile))) {
-		ANT_ERR_FUNC("failed to open  %s\r\n", ANT_BUILT_IN_PATCH_FILE_NAME);
+		ANT_ERR_FUNC("failed to open  %s\r\n", ANT_PATCH_FILE_NAME);
 		return -1;
 	}
 
-	ANT_INFO_FUNC("Open %s\r\n", ANT_BUILT_IN_PATCH_FILE_NAME);
+	ANT_INFO_FUNC("Open %s\r\n", ANT_PATCH_FILE_NAME);
 	/* Set the file at end */
 	lFileLen = pPatchExtFile->f_op->llseek(pPatchExtFile, 0, SEEK_END);
 
@@ -628,7 +632,7 @@ const struct file_operations ANT_fops = {
 	.poll = ANT_poll
 };
 
-#if REMOVE_MK_NODE
+#if WMT_CREATE_NODE_DYNAMIC
 struct class *stpant_class = NULL;
 #endif
 
@@ -637,7 +641,7 @@ static int ANT_init(void)
 	dev_t dev = MKDEV(ANT_major, 0);
 	INT32 alloc_ret = 0;
 	INT32 cdev_err = 0;
-#if REMOVE_MK_NODE
+#if WMT_CREATE_NODE_DYNAMIC
 	struct device *stpant_dev = NULL;
 #endif
 
@@ -654,7 +658,7 @@ static int ANT_init(void)
 	cdev_err = cdev_add(&ANT_cdev, dev, ANT_devs);
 	if (cdev_err)
 		goto error;
-#if REMOVE_MK_NODE		/* mknod replace */
+#if WMT_CREATE_NODE_DYNAMIC		/* mknod replace */
 
 	stpant_class = class_create(THIS_MODULE, "stpant");
 	if (IS_ERR(stpant_class))
@@ -674,7 +678,7 @@ static int ANT_init(void)
 	return 0;
 
  error:
-#if REMOVE_MK_NODE
+#if WMT_CREATE_NODE_DYNAMIC
 	if (!IS_ERR(stpant_dev))
 		device_destroy(stpant_class, dev);
 	if (!IS_ERR(stpant_class)) {
@@ -699,7 +703,7 @@ static void ANT_exit(void)
 	retflag = 0;
 
 	mtk_wcn_stp_register_event_cb(ANT_TASK_INDX, NULL);	/* unregister event callback function */
-#if REMOVE_MK_NODE
+#if WMT_CREATE_NODE_DYNAMIC
 	device_destroy(stpant_class, dev);
 	class_destroy(stpant_class);
 	stpant_class = NULL;

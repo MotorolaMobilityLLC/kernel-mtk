@@ -18,6 +18,10 @@ ifeq ($(CONFIG_ARCH_MT6580), y)
 subdir-ccflags-y += -D CFG_WMT_READ_EFUSE_VCN33
 endif
 
+ifeq ($(CONFIG_ARCH_MT6797), y)
+subdir-ccflags-y += -D CONFIG_MTK_COMBO_ANT
+endif
+
 ifeq ($(CONFIG_MTK_COMBO), m)
 # WMT DRIVER
 obj-$(CONFIG_MTK_COMBO) += mtk_stp_wmt$(EXT_FLAG).o

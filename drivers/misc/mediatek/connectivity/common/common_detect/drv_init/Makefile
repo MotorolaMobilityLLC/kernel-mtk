@@ -19,6 +19,8 @@ endif
 	obj-y += wlan_drv_init.o
 ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
 	obj-y += ant_drv_init.o
+else ifneq ($(filter "CONSYS_6797",$(CONFIG_MTK_COMBO_CHIP)),)
+	obj-y += ant_drv_init.o
 endif
 
 endif

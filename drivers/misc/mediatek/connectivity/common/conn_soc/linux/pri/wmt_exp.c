@@ -512,4 +512,90 @@ VOID mtk_wcn_wmt_exp_deinit(void)
 {
 	mtk_wcn_wmt_exp_cb_unreg();
 }
+#ifdef CONFIG_MTK_COMBO_ANT
+/*
+	ctrlId: get ram code status opId or ram code download opId
+	pBuf: pointer to ANT ram code
+	length: total length of ANT ram code
+*/
+ENUM_WMT_ANT_RAM_STATUS mtk_wcn_wmt_ant_ram_ctrl(ENUM_WMT_ANT_RAM_CTRL ctrlId, PUINT8 pBuf,
+						 UINT32 length, ENUM_WMT_ANT_RAM_SEQ seq)
+{
+	ENUM_WMT_ANT_RAM_STATUS eRet = 0;
+	P_OSAL_OP pOp = NULL;
+	MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
+	P_OSAL_SIGNAL pSignal;
+
+	/*1. parameter validation check */
+	/*for WMT_ANT_RAM_GET_STATUS, ignore pBuf and length */
+	/*for WMT_ANT_RAM_DOWNLOAD,
+	   pBuf must not be NULL, kernel space memory pointer
+	   length must be large than 0 */
+
+	if ((WMT_ANT_RAM_GET_STATUS > ctrlId) || (WMT_ANT_RAM_CTRL_MAX <= ctrlId)) {
+		WMT_ERR_FUNC("error ctrlId:%d detected.\n", ctrlId);
+		eRet = WMT_ANT_RAM_PARA_ERR;
+		return eRet;
+	}
+
+	if ((WMT_ANT_RAM_DOWNLOAD == ctrlId) &&
+	    ((NULL == pBuf) ||
+	     (0 >= length) ||
+	     (1000 < length) || (seq >= WMT_ANT_RAM_SEQ_MAX) || (seq < WMT_ANT_RAM_START_PKT))) {
+		eRet = WMT_ANT_RAM_PARA_ERR;
+		WMT_ERR_FUNC
+		    ("error parameter detected, ctrlId:%d, pBuf:%p,length(0x%x),seq(%d) .\n",
+		     ctrlId, pBuf, length, seq);
+		return eRet;
+	}
+	/*get WMT opId */
+	pOp = wmt_lib_get_free_op();
+	if (!pOp) {
+		WMT_DBG_FUNC("get_free_lxop fail\n");
+		return MTK_WCN_BOOL_FALSE;
+	}
+
+	pSignal = &pOp->signal;
+	pSignal->timeoutValue =
+	    (WMT_ANT_RAM_DOWNLOAD == ctrlId) ? MAX_FUNC_ON_TIME : MAX_EACH_WMT_CMD;
+
+	pOp->op.opId =
+	    (WMT_ANT_RAM_DOWNLOAD == ctrlId) ? WMT_OPID_ANT_RAM_DOWN : WMT_OPID_ANT_RAM_STA_GET;
+	pOp->op.au4OpData[0] = (size_t) pBuf;
+	pOp->op.au4OpData[1] = length;
+	pOp->op.au4OpData[2] = seq;
+
+
+	/*disable PSM monitor */
+	if (DISABLE_PSM_MONITOR()) {
+		WMT_ERR_FUNC("wake up failed\n");
+		wmt_lib_put_op_to_free_queue(pOp);
+		return MTK_WCN_BOOL_FALSE;
+	}
+	/*wakeup wmtd thread */
+	bRet = wmt_lib_put_act_op(pOp);
+
+	/*enable PSM monitor */
+	ENABLE_PSM_MONITOR();
+
+	WMT_INFO_FUNC("CMD_TEST, opid (%d), ret(%d),retVal(%zu) result(%s)\n",
+		      pOp->op.opId,
+		      bRet,
+		      pOp->op.au4OpData[2], MTK_WCN_BOOL_FALSE == bRet ? "failed" : "succeed");
+
+	/*check return value and return result */
+	if (MTK_WCN_BOOL_FALSE == bRet) {
+		eRet = WMT_ANT_RAM_OP_ERR;
+	} else {
+		eRet = (WMT_ANT_RAM_DOWNLOAD == ctrlId) ?
+		    WMT_ANT_RAM_DOWN_OK :
+		    ((1 == pOp->op.au4OpData[2]) ? WMT_ANT_RAM_EXIST : WMT_ANT_RAM_NOT_EXIST);
+	}
+
+	return eRet;
+
+}
+EXPORT_SYMBOL(mtk_wcn_wmt_ant_ram_ctrl);
+#endif
+
 #endif

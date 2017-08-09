@@ -27,6 +27,7 @@ int do_ant_drv_init(int chip_id)
 	WMT_DETECT_INFO_FUNC("start to do ANT driver init\n");
 	switch (chip_id) {
 	case 0x6630:
+	case 0x6797:
 		i_ret = mtk_wcn_stpant_drv_init();
 		WMT_DETECT_INFO_FUNC("finish ANT driver init, i_ret:%d\n", i_ret);
 		break;
