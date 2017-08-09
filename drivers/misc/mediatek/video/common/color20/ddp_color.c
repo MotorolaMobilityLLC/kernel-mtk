@@ -1004,6 +1004,7 @@ void DpEngine_COLORonInit(DISP_MODULE_ENUM module, void *__cmdq)
 #else
 		_color_reg_set(cmdq, DISP_COLOR_CFG_MAIN + offset, (1 << 8));	/* enable wide_gamut */
 #endif
+		_color_reg_set(cmdq, DISP_COLOR_START + offset, 0x00000001);	/* color start */
 	} else {
 		_color_reg_set_field(cmdq, CFG_MAIN_FLD_COLOR_DBUF_EN, DISP_COLOR_CFG_MAIN + offset,
 				     0x1);
