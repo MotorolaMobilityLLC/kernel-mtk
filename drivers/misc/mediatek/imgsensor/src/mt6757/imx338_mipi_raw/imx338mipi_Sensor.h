@@ -1,8 +1,21 @@
+/*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
 /*****************************************************************************
  *
  * Filename:
  * ---------
- *     OV5693mipi_Sensor.h
+ *     IMX338mipi_Sensor.h
  *
  * Project:
  * --------
@@ -13,8 +26,8 @@
  *     CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _OV5693MIPI_SENSOR_H
-#define _OV5693MIPI_SENSOR_H
+#ifndef _IMX338MIPI_SENSOR_H
+#define _IMX338MIPI_SENSOR_H
 
   
 typedef enum{

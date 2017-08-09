@@ -332,7 +332,7 @@ static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
 		IDX += 2;
 		addr_last = addr;
 		
-		ret = iWriteRegI2CTiming(puSendCmd , 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
+		//ret = iWriteRegI2CTiming(puSendCmd , 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 		
 		if(ret != 0)
 		{
@@ -446,9 +446,9 @@ static int BU64164_read_id(void)
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
     kal_uint16 get_byte=0;
-    char pusendcmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
+    //char pusendcmd[2] = {(char)(addr >> 8) , (char)(addr & 0xFF) };
     //iReadRegI2C(pusendcmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id);
-	iReadRegI2CTiming(pusendcmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
+//	iReadRegI2CTiming(pusendcmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
     return get_byte;
 }
 
@@ -457,7 +457,7 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
     char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para & 0xFF)};
     iWriteRegI2C(pusendcmd , 3, imgsensor.i2c_write_id);
-	iWriteRegI2CTiming(pusendcmd , 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
+	//iWriteRegI2CTiming(pusendcmd , 3, imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 }
 
 

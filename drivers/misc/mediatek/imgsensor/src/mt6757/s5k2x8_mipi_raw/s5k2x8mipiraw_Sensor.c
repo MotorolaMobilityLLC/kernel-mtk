@@ -286,8 +286,8 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
     kal_uint16 get_byte=0;
 
     char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
-    //iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 1, imgsensor.i2c_write_id);
-	iReadRegI2CTiming(pu_send_cmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
+    iReadRegI2C(pu_send_cmd, 2, (u8*)&get_byte, 1, imgsensor.i2c_write_id);
+	//iReadRegI2CTiming(pu_send_cmd , 2, (u8*)&get_byte,1,imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
 
     return get_byte;
 }
@@ -296,8 +296,8 @@ static kal_uint16 read_cmos_sensor_twobyte(kal_uint32 addr)
     kal_uint16 get_byte = 0;
 	char get_word[2];
     char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
-    //iReadRegI2C(pu_send_cmd, 2, get_word, 2, imgsensor.i2c_write_id);
-	iReadRegI2CTiming(pu_send_cmd, 2, get_word, 2, imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
+    iReadRegI2C(pu_send_cmd, 2, get_word, 2, imgsensor.i2c_write_id);
+	//iReadRegI2CTiming(pu_send_cmd, 2, get_word, 2, imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
 	get_byte = (((int)get_word[0])<<8) | get_word[1];
     return get_byte;
 }
@@ -305,16 +305,16 @@ static kal_uint16 read_cmos_sensor_twobyte(kal_uint32 addr)
 static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
     char pu_send_cmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
-    //iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
-	iWriteRegI2CTiming(pu_send_cmd, 3, imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
+    iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
+	//iWriteRegI2CTiming(pu_send_cmd, 3, imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
 }
 
 static void write_cmos_sensor_twobyte(kal_uint32 addr, kal_uint32 para)
 {
     char pu_send_cmd[4] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para >> 8),(char)(para & 0xFF)};
     //LOG_INF("write_cmos_sensor_twobyte is %x,%x,%x,%x\n", pu_send_cmd[0], pu_send_cmd[1], pu_send_cmd[2], pu_send_cmd[3]);
-    //iWriteRegI2C(pu_send_cmd, 4, imgsensor.i2c_write_id);
-	iWriteRegI2CTiming(pu_send_cmd, 4, imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
+    iWriteRegI2C(pu_send_cmd, 4, imgsensor.i2c_write_id);
+	//iWriteRegI2CTiming(pu_send_cmd, 4, imgsensor.i2c_write_id,imgsensor_info.i2c_speed);
 }
 static void set_dummy(void)
 {
