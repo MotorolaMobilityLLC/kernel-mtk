@@ -1995,6 +1995,10 @@ struct free_record {
  */
 void musb_ep_restart(struct musb *musb, struct musb_request *req)
 {
+#ifdef MUSB_QMU_SUPPORT
+	QMU_WARN("<== %s request %p len %u on hw_ep%d\n",
+	    req->tx ? "TX/IN" : "RX/OUT", &req->request, req->request.length, req->epnum);
+#else
 	DBG(2, "<== %s request %p len %u on hw_ep%d\n",
 	    req->tx ? "TX/IN" : "RX/OUT", &req->request, req->request.length, req->epnum);
 
@@ -2003,6 +2007,7 @@ void musb_ep_restart(struct musb *musb, struct musb_request *req)
 		txstate(musb, req);
 	else
 		rxstate(musb, req);
+#endif
 }
 
 static int musb_gadget_queue(struct usb_ep *ep, struct usb_request *req, gfp_t gfp_flags)
@@ -2268,7 +2273,7 @@ static int musb_gadget_set_halt(struct usb_ep *ep, int value)
 
 	/* maybe start the first request in the queue */
 	if (!musb_ep->busy && !value && request) {
-		DBG(2, "restarting the request\n");
+		DBG(0, "restarting the request\n");
 		musb_ep_restart(musb, request);
 	}
 
