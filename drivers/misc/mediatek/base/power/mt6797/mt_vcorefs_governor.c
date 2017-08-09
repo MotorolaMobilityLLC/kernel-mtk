@@ -167,44 +167,6 @@ static char *kicker_name[] = {
 	"LAST_KICKER",
 };
 
-static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
-{
-	struct governor_profile *gvrctrl = &governor_ctrl;
-	struct fb_event *evdata = data;
-	int blank;
-
-	if (!is_vcorefs_feature_enable()  || !gvrctrl->plat_init_done)
-		return 0;
-
-	if (event != FB_EVENT_BLANK)
-		return 0;
-
-	blank = *(int *)evdata->data;
-
-	switch (blank) {
-	case FB_BLANK_UNBLANK:
-		mutex_lock(&governor_mutex);
-		spm_vcorefs_screen_on_setting();
-		gvrctrl->screen_on = 1;
-		mutex_unlock(&governor_mutex);
-		break;
-	case FB_BLANK_POWERDOWN:
-		mutex_lock(&governor_mutex);
-		spm_vcorefs_screen_off_setting(gvrctrl->md_dvfs_req);
-		gvrctrl->screen_on = 0;
-		mutex_unlock(&governor_mutex);
-		break;
-	default:
-		break;
-	}
-
-	return 0;
-}
-
-static struct notifier_block vcorefs_fb_notif = {
-		.notifier_call = vcorefs_fb_notifier_callback,
-};
-
 /*
  * set vcore cmd
  */
@@ -754,7 +716,7 @@ static int set_freq_with_opp(struct kicker_config *krconf)
 		     gvrctrl->screen_on,
 		     gvrctrl->freq_dfs ? "" : "[X]");
 
-	if (!gvrctrl->freq_dfs)
+	if (!gvrctrl->freq_dfs || !gvrctrl->screen_on)
 		return 0;
 
 #if CCF_CONFIG
@@ -848,6 +810,57 @@ int kick_dvfs_by_opp_index(struct kicker_config *krconf)
 
 	return r;
 }
+
+static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+	struct kicker_config krconf;
+	struct fb_event *evdata = data;
+	int blank;
+
+	if (!is_vcorefs_feature_enable() || !gvrctrl->plat_init_done)
+		return 0;
+
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+		mutex_lock(&governor_mutex);
+		spm_vcorefs_screen_on_setting();
+		gvrctrl->screen_on = 1;
+
+		if (vcorefs_get_curr_opp() == OPPI_PERF) {
+			krconf.dvfs_opp = OPP_0;
+			set_freq_with_opp(&krconf);
+		}
+
+		mutex_unlock(&governor_mutex);
+		break;
+	case FB_BLANK_POWERDOWN:
+		mutex_lock(&governor_mutex);
+		spm_vcorefs_screen_off_setting(gvrctrl->md_dvfs_req);
+
+		if (vcorefs_get_curr_opp() == OPPI_PERF) {
+			krconf.dvfs_opp = OPP_1;
+			set_freq_with_opp(&krconf);
+		}
+
+		gvrctrl->screen_on = 0;
+		mutex_unlock(&governor_mutex);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block vcorefs_fb_notif = {
+		.notifier_call = vcorefs_fb_notifier_callback,
+};
 
 /*
  * AutoK related API
