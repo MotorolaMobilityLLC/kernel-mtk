@@ -5236,6 +5236,7 @@ int primary_suspend_clr_ovl_config(void)
 
 	for (i = 0; i < OVL_LAYER_NUM; i++)
 		ovl_layer_switch(DISP_MODULE_OVL0, i, 0, NULL);
+	DISP_REG_SET(NULL, DISP_REG_OVL_SRC_CON, 0x0);
 
 	return 0;
 }
