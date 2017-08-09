@@ -324,7 +324,9 @@ static struct platform_driver usb_xhci_driver = {
 	.remove	= xhci_plat_remove,
 	.driver	= {
 		.name = "xhci-hcd",
+#ifndef CONFIG_USB_XHCI_MTK
 		.pm = DEV_PM_OPS,
+#endif
 		.of_match_table = of_match_ptr(usb_xhci_of_match),
 	},
 };
