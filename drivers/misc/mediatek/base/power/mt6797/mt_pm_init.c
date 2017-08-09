@@ -34,6 +34,7 @@
 /* #include "mach/mt_chip.h" */
 #include <mach/mt_freqhopping.h>
 #include "mt-plat/mtk_rtc.h"
+#include "mt_freqhopping_drv.h"
 
 
 #ifdef CONFIG_ARM64
@@ -108,10 +109,14 @@ static unsigned int abist_meter(int ID)
 	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;
 	unsigned int temp2 = 0, temp1 = 0;
 
+	mt6797_0x1001AXXX_lock();
 	temp1 = pminit_read(ARMPLLDIV_ARM_K1);
 	temp2 = pminit_read(ARMPLLDIV_MON_EN);
 	pminit_write(ARMPLLDIV_ARM_K1, 0);
+	ndelay(200);
 	pminit_write(ARMPLLDIV_MON_EN, 0xFFFFFFFF);
+	ndelay(200);
+	mt6797_0x1001AXXX_unlock();
 
 	clk26cali_0 = pminit_read(CLK26CALI_0);
 
@@ -154,8 +159,12 @@ static unsigned int abist_meter(int ID)
 	pminit_write(CLK26CALI_0, 0x1000);
 	pminit_write(CLK26CALI_0, 0x0000);
 
+	mt6797_0x1001AXXX_lock();
 	pminit_write(ARMPLLDIV_MON_EN, temp2);
+	ndelay(200);
 	pminit_write(ARMPLLDIV_ARM_K1, temp1);
+	ndelay(200);
+	mt6797_0x1001AXXX_unlock();
 
 	if (i > 10)
 		return 0;
