@@ -495,8 +495,11 @@ EXPORT_SYMBOL(update_audio_format_setting);
 int update_video_format_setting(int video_format)
 {
 	pr_err("video_format:%d, three_3d_format:%d\n", video_format, three_3d_format);
-	if (video_format != three_3d_format)
+	if (video_format != three_3d_format) {
 		video_format_change=1;
+		SP_TX_Video_Mute(0);
+		SP_TX_Enable_Audio_Output(0);
+	}	
 	three_3d_format = video_format;
 	return 0;
 }

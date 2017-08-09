@@ -29,6 +29,7 @@
 BYTE bEDID_extblock[128];
 BYTE bEDID_firstblock[128];
 BYTE bEDID_fourblock[256];
+static BYTE mute_count = 0;
 
 struct MIPI_Video_Format mipi_video_timing_table[] = {
 //////////////////////pixel_clk--Htotal---H active--Vtotal--V active-HFP---HSW--HBP--VFP--VSW--VBP-----////////
@@ -3607,6 +3608,8 @@ BYTE SP_TX_HW_Link_Training (void)
 void SP_TX_Video_Mute(BYTE enable)
 {
 	BYTE c;
+
+	pr_info("SP_TX_Video_Mute, enable:%d\n", enable);
 	if(enable) {
 		sp_read_reg(SP_TX_PORT2_ADDR, SP_TX_VID_CTRL1_REG, &c);
 		c |=SP_TX_VID_CTRL1_VID_MUTE;
@@ -3913,7 +3916,8 @@ void change_system_state_clean(SP_TX_System_State cur_state)
 		SP_TX_Video_Mute(1);
 		hdcp_encryption_enable(0);
 		SP_CTRL_Clean_HDCP();
-	} else if(sp_tx_system_state > SP_TX_CONFIG_VIDEO_INPUT
+	} 
+	if(sp_tx_system_state > SP_TX_CONFIG_VIDEO_INPUT
 	          && cur_state <= SP_TX_CONFIG_VIDEO_INPUT) {
 		sp_tx_enable_video_input(0);
 		SP_TX_Disable_Audio_Input();
@@ -5052,13 +5056,18 @@ void SP_CTRL_HDCP_Process(void)
 	case HDCP_WAITTING_FINISH:
 		break;
 	case HDCP_FINISH:
-		hdcp_encryption_enable(1);
-		SP_TX_Video_Mute(0);
-		HDCP_fail_count = 0;
-		pr_info("@@@@@@@@@@@@@@@@@@@@@@@hdcp_auth_pass@@@@@@@@@@@@@@@@@@@@\n");
-		//SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
-		SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
-		SP_TX_Show_Infomation();
+		if (mute_count <= 0) {
+			hdcp_encryption_enable(1);
+			SP_TX_Video_Mute(0);
+			HDCP_fail_count = 0;
+			pr_info("@@@@@@@@@@@@@@@@@@@@@@@hdcp_auth_pass@@@@@@@@@@@@@@@@@@@@\n");
+			//SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+			SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
+			SP_TX_Show_Infomation();
+		} else {
+			pr_info("authentication, mute_count > 0, mute_count:%d\n", mute_count);
+			mute_count--;
+		}
 		break;
 	case HDCP_FAILE:
 		#ifdef Redo_HDCP
@@ -5086,11 +5095,17 @@ void SP_CTRL_HDCP_Process(void)
 	default:
 	case HDCP_NOT_SUPPORT:
 		pr_info("Sink is not capable HDCP");
+
 		#ifdef Display_NoHDCP
-		SP_TX_Power_Enable(SP_TX_PWR_HDCP, SP_TX_POWER_DOWN);
-		SP_TX_Video_Mute(0);
-		//SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
-		SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
+		if (mute_count <= 0) {
+			SP_TX_Power_Enable(SP_TX_PWR_HDCP, SP_TX_POWER_DOWN);
+			SP_TX_Video_Mute(0);
+			//SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+			SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
+		} else {
+			pr_info("mute_count > 0, mute_count:%d\n", mute_count);
+			mute_count--;
+		}
 		#else
 		SP_TX_Video_Mute(1);//when Rx does not support HDCP, force to send blue screen
 		//SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
@@ -5194,6 +5209,7 @@ if(audio_format_change)
 }
 if(video_format_change)
 {
+	mute_count = 30;
 	slimport_config_video_output();
 	video_format_change=0;
 }
@@ -5507,11 +5523,16 @@ void slimport_hdcp_authentication(BYTE enable)
 	if(enable) {
 		SP_CTRL_HDCP_Process();
 	} else {
-		SP_TX_Power_Enable(SP_TX_PWR_HDCP, SP_TX_POWER_DOWN);// Poer down HDCP link clock domain logic for B0 version-20110913-ANX.Fei
-		SP_TX_Show_Infomation();
-		SP_TX_Video_Mute(0);
-		//SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
-		SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
+		if (mute_count <= 0) {
+			SP_TX_Power_Enable(SP_TX_PWR_HDCP, SP_TX_POWER_DOWN);// Poer down HDCP link clock domain logic for B0 version-20110913-ANX.Fei
+			SP_TX_Show_Infomation();
+			SP_TX_Video_Mute(0);
+			//SP_CTRL_Set_System_State(SP_TX_PLAY_BACK);
+			SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);
+		} else {
+			pr_info("authentication, mute_count > 0, mute_count:%d\n", mute_count);
+			mute_count--;
+		}
 	}
 }
 
