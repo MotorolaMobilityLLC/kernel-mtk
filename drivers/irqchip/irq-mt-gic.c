@@ -1087,6 +1087,10 @@ EXPORT_SYMBOL(mt_irq_set_sens);
 
 void mt_irq_dump_status(int irq)
 {
+#ifndef CONFIG_MTK_PSCI
+	pr_debug("[mt gic dump] not allowed to dump!\n");
+	return;
+#else
 	int rc;
 	unsigned int result;
 
@@ -1125,6 +1129,7 @@ void mt_irq_dump_status(int irq)
 	/* get polarity */
 	result = (rc >> 13) & 0x1;
 	pr_debug("[mt gic dump] polarity = %x (0x0: high, 0x1:low)\n", result);
+#endif
 }
 EXPORT_SYMBOL(mt_irq_dump_status);
 
