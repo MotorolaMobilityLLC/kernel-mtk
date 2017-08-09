@@ -30,6 +30,7 @@ config USB_MTK_OTG
 
 config MTK_UART_USB_SWITCH
     bool "MTK_UART_USB_SWITCH"
+    default n
 	help
 	  This is a feature for debugging purpose.
 	  It uses the USB TX/RX as UART TX/RX.
