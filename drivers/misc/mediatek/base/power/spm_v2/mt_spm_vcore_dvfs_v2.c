@@ -293,14 +293,14 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 	unsigned long flags;
 	u8 dvfs_req;
 	u32 target_sta, req;
-	int r = 0;
+	int timer = 0;
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_ENTER);
 
-	r = wait_spm_complete_by_condition(!is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
-	if (r < 0) {
+	timer = wait_spm_complete_by_condition(!is_dvfs_in_progress(), SPM_DVFS_TIMEOUT);
+	if (timer < 0) {
 		spm_vcorefs_err("wait F/W idle timeout, PCM_REG6_DATA: 0x%x, opp: %d\n", spm_read(PCM_REG6_DATA), opp);
 		spm_vcorefs_dump_dvfs_regs(NULL);
 		BUG();
@@ -327,8 +327,7 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 		return -EINVAL;
 	}
 
-	spm_vcorefs_crit("screen_on: %u, dvfs_req: 0x%x, target_sta: 0x%x\n",
-						screen_on, dvfs_req, target_sta);
+	spm_vcorefs_crit("dvfs_req: 0x%x, target_sta: 0x%x\n", dvfs_req, target_sta);
 
 	req = spm_read(SPM_SRC_REQ) & ~(SPM_DVFS_REQ_LSB);
 	spm_write(SPM_SRC_REQ, req | (dvfs_req << 5));
@@ -338,14 +337,12 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 
 	if (opp == OPPI_PERF) {
 
-		r = wait_spm_complete_by_condition(get_vcore_sta() == target_sta, SPM_DVFS_TIMEOUT);
+		timer = wait_spm_complete_by_condition(get_vcore_sta() == target_sta, SPM_DVFS_TIMEOUT);
 
-		if (r >= 0) {	/* DVFS pass */
-			r = 0;
-		} else {
+		/* DVFS time is out of spec */
+		if (timer < 0) {
 			spm_vcorefs_err("wait DVFS finish timeout, SPM_SW_RSV_5: 0x%x\n", spm_read(SPM_SW_RSV_5));
-			spm_vcorefs_err("screen_on: %u, dvfs_req: 0x%x, target_sta: 0x%x\n",
-							screen_on, dvfs_req, target_sta);
+			spm_vcorefs_err("dvfs_req: 0x%x, target_sta: 0x%x\n", dvfs_req, target_sta);
 			spm_vcorefs_dump_dvfs_regs(NULL);
 			BUG();
 		}
@@ -355,7 +352,7 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
-	return r;
+	return timer;
 }
 
 u32 spm_vcorefs_get_MD_status(void)
@@ -378,7 +375,7 @@ int spm_vcorefs_set_cpu_dvfs_req(u32 val, u32 mask)
 int spm_vcorefs_screen_on_setting(void)
 {
 	unsigned long flags;
-	int r = 0;
+	int timer = 0;
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
@@ -388,8 +385,8 @@ int spm_vcorefs_screen_on_setting(void)
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 
-	r = wait_spm_complete_by_condition(get_screnn_sta() == SPM_SCREEN_SETTING_DONE, SPM_SCREEN_TIMEOUT);
-	if (r < 0) {
+	timer = wait_spm_complete_by_condition(get_screnn_sta() == SPM_SCREEN_SETTING_DONE, SPM_SCREEN_TIMEOUT);
+	if (timer < 0) {
 		spm_vcorefs_err("[%s] CPU waiting F/W ack fail, SPM_SW_RSV_1: 0x%x\n", __func__,
 										spm_read(SPM_SW_RSV_1));
 		spm_vcorefs_dump_dvfs_regs(NULL);
@@ -408,7 +405,7 @@ int spm_vcorefs_screen_on_setting(void)
 int spm_vcorefs_screen_off_setting(u32 cpu_dvfs_req)
 {
 	unsigned long flags;
-	int r = 0;
+	int timer = 0;
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
@@ -418,8 +415,8 @@ int spm_vcorefs_screen_off_setting(u32 cpu_dvfs_req)
 
 	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
 
-	r = wait_spm_complete_by_condition(get_screnn_sta() == SPM_SCREEN_SETTING_DONE, SPM_SCREEN_TIMEOUT);
-	if (r < 0) {
+	timer = wait_spm_complete_by_condition(get_screnn_sta() == SPM_SCREEN_SETTING_DONE, SPM_SCREEN_TIMEOUT);
+	if (timer < 0) {
 		spm_vcorefs_err("[%s] CPU waiting F/W ack fail, SPM_SW_RSV_1: 0x%x\n", __func__,
 										spm_read(SPM_SW_RSV_1));
 		spm_vcorefs_dump_dvfs_regs(NULL);

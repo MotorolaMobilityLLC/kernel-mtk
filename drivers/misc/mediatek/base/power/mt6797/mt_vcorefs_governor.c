@@ -122,6 +122,14 @@ struct governor_profile {
 	bool perform_bw_enable;
 	u32 perform_bw_lpm_threshold;
 	u32 perform_bw_hpm_threshold;
+
+	u32 dvfs_work_timer_1;
+	u32 dvfs_work_timer_2;
+	u32 dvfs_work_timer_3;
+	u32 dvfs_work_timer_4;
+	u32 dvfs_work_timer_5;
+	u32 dvfs_work_timer_6;
+	u32 dvfs_work_timer_7;
 };
 
 static struct governor_profile governor_ctrl = {
@@ -144,6 +152,16 @@ static struct governor_profile governor_ctrl = {
 	.curr_axi_khz = FAXI_S0_KHZ,
 
 	.perform_bw_enable = 0,
+	.perform_bw_lpm_threshold = 0,
+	.perform_bw_hpm_threshold = 0,
+
+	.dvfs_work_timer_1 = 0,
+	.dvfs_work_timer_2 = 0,
+	.dvfs_work_timer_3 = 0,
+	.dvfs_work_timer_4 = 0,
+	.dvfs_work_timer_5 = 0,
+	.dvfs_work_timer_6 = 0,
+	.dvfs_work_timer_7 = 0,
 };
 
 int kicker_table[NUM_KICKER] __nosavedata;
@@ -525,6 +543,42 @@ static int set_init_opp_index(void)
 }
 
 /*
+ *  DVFS working timer
+ */
+void record_dvfs_timer(u32 timer)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	if (timer > RANGE_1 && timer <= RANGE_2)
+		gvrctrl->dvfs_work_timer_1++;
+	else if (timer > RANGE_2 && timer <= RANGE_3)
+		gvrctrl->dvfs_work_timer_2++;
+	else if (timer > RANGE_3 && timer <= RANGE_4)
+		gvrctrl->dvfs_work_timer_3++;
+	else if (timer > RANGE_4 && timer <= RANGE_5)
+		gvrctrl->dvfs_work_timer_4++;
+	else if (timer > RANGE_5 && timer <= RANGE_6)
+		gvrctrl->dvfs_work_timer_5++;
+	else if (timer > RANGE_6 && timer <= RANGE_7)
+		gvrctrl->dvfs_work_timer_6++;
+	else if (timer > RANGE_7)
+		gvrctrl->dvfs_work_timer_7++;
+}
+
+void clean_dvfs_timer(int timer)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	gvrctrl->dvfs_work_timer_1 = timer;
+	gvrctrl->dvfs_work_timer_2 = timer;
+	gvrctrl->dvfs_work_timer_3 = timer;
+	gvrctrl->dvfs_work_timer_4 = timer;
+	gvrctrl->dvfs_work_timer_5 = timer;
+	gvrctrl->dvfs_work_timer_6 = timer;
+	gvrctrl->dvfs_work_timer_7 = timer;
+}
+
+/*
  *  governor debug sysfs
  */
 int vcorefs_enable_debug_isr(bool enable)
@@ -666,6 +720,8 @@ int governor_debug_store(const char *buf)
 			gvrctrl->freq_dfs = val;
 		else if (!strcmp(cmd, "load_spm"))
 			vcorefs_reload_spm_firmware(val);
+		else if (!strcmp(cmd, "timer"))
+			clean_dvfs_timer(val);
 		else
 			r = -EPERM;
 	} else {
@@ -718,6 +774,16 @@ char *governor_get_dvfs_info(char *p)
 	p += sprintf(p, "[perf_bw_en]: %d\n", gvrctrl->perform_bw_enable);
 	p += sprintf(p, "[LPM_thres ]: 0x%x\n", gvrctrl->perform_bw_lpm_threshold);
 	p += sprintf(p, "[HPM_thres ]: 0x%x\n", gvrctrl->perform_bw_hpm_threshold);
+	p += sprintf(p, "\n");
+
+	p += sprintf(p, "[timer]: [%d] %u [%d] %u [%d] %u [%d] %u [%d] %u [%d] %u [%d] %u\n",
+						RANGE_1, gvrctrl->dvfs_work_timer_1,
+						RANGE_2, gvrctrl->dvfs_work_timer_2,
+						RANGE_3, gvrctrl->dvfs_work_timer_3,
+						RANGE_4, gvrctrl->dvfs_work_timer_4,
+						RANGE_5, gvrctrl->dvfs_work_timer_5,
+						RANGE_6, gvrctrl->dvfs_work_timer_6,
+						RANGE_7, gvrctrl->dvfs_work_timer_7);
 #ifdef SRAM_DEBUG
 	p = governor_get_sram_debug_info(p);
 #endif
@@ -765,7 +831,7 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct opp_profile *opp_ctrl_table = opp_table;
-	int r = 0;
+	int timer = 0;
 
 	gvrctrl->curr_vcore_uv = vcorefs_get_curr_vcore();
 	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
@@ -780,18 +846,18 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
 
-	#ifndef CONFIG_MTK_FPGA
-	r = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->screen_on);
-	#endif
+	timer = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->screen_on);
 
-	if (r) {
+	if (timer < 0) {
 		vcorefs_err("FAILED: SET VCORE DVFS FAIL\n");
-	} else {
-		gvrctrl->curr_vcore_uv = opp_ctrl_table[krconf->dvfs_opp].vcore_uv;
-		gvrctrl->curr_ddr_khz = opp_ctrl_table[krconf->dvfs_opp].ddr_khz;
+		return -EBUSY;
 	}
 
-	return r;
+	record_dvfs_timer(timer);
+	gvrctrl->curr_vcore_uv = opp_ctrl_table[krconf->dvfs_opp].vcore_uv;
+	gvrctrl->curr_ddr_khz = opp_ctrl_table[krconf->dvfs_opp].ddr_khz;
+
+	return 0;
 }
 
 static int set_freq_with_opp(struct kicker_config *krconf)

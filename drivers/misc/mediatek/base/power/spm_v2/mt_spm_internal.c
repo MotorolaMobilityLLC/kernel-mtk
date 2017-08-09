@@ -72,7 +72,7 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 		con1 = spm_read(SPM_WAKEUP_EVENT_MASK);
 		spm_write(SPM_WAKEUP_EVENT_MASK, (con1 & ~(0x1)));
 
-#if defined(SPM_VCORE_EN_MT6797)
+#ifdef SPM_VCORE_EN_MT6797
 		spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xFFFF)) | SPM_OFFLOAD);
 #endif
 		spm_write(SPM_CPU_WAKEUP_EVENT, 1);
@@ -606,8 +606,10 @@ static int dt_scan_memory(unsigned long node, const char *uname, int depth, void
 		rank1_addr = rank0_addr;
 	else
 		rank1_addr = dram_info->rank_info[1].start;
+
 	spm_crit("dram_rank_num: %d\n", dram_rank_num);
-	spm_crit("dummy read addr: rank0=0x%x rank1=0x%x\n", rank0_addr, rank1_addr);
+	spm_crit("dummy read addr: rank0: 0x%x, rank1: 0x%x\n", rank0_addr, rank1_addr);
+
 	spm_write(SPM_PASR_DPD_1, rank0_addr);
 	spm_write(SPM_PASR_DPD_2, rank1_addr);
 

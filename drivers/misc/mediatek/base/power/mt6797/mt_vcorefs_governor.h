@@ -84,6 +84,16 @@ enum md_status {
 	MD_DISABLE_SCREEN_CHANGE = 16,
 };
 
+enum dvfs_timer {
+	RANGE_1 = 50,
+	RANGE_2 = 75,
+	RANGE_3 = 100,
+	RANGE_4 = 125,
+	RANGE_5 = 150,
+	RANGE_6 = 175,
+	RANGE_7 = 200,
+};
+
 struct opp_profile {
 	int vcore_uv;
 	int ddr_khz;
