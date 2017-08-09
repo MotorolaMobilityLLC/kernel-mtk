@@ -1941,36 +1941,36 @@ static int compat_copy_struct(
 			err |= put_user(compat_ptr(p), &(to->pvReserved));
 			err |= get_user(l, &(from32->u4ReservedSize));
 			err |= put_user(l, &(to->u4ReservedSize));
+		} else{
+			COMPAT_VAL_MEMORY_T __user *to32 = (COMPAT_VAL_MEMORY_T *)data32;
 
-			return err;
+			VAL_MEMORY_T __user *from = (VAL_MEMORY_T *)data;
+
+			err = get_user(u, &(from->eMemType));
+			err |= put_user(u, &(to32->eMemType));
+			err |= get_user(l, &(from->u4MemSize));
+			err |= put_user(l, &(to32->u4MemSize));
+			err |= get_uptr_to_32(&p, &(from->pvMemVa));
+			err |= put_user(p, &(to32->pvMemVa));
+			err |= get_uptr_to_32(&p, &(from->pvMemPa));
+			err |= put_user(p, &(to32->pvMemPa));
+			err |= get_user(u, &(from->eAlignment));
+			err |= put_user(u, &(to32->eAlignment));
+			err |= get_uptr_to_32(&p, &(from->pvAlignMemVa));
+			err |= put_user(p, &(to32->pvAlignMemVa));
+			err |= get_uptr_to_32(&p, &(from->pvAlignMemPa));
+			err |= put_user(p, &(to32->pvAlignMemPa));
+			err |= get_user(u, &(from->eMemCodec));
+			err |= put_user(u, &(to32->eMemCodec));
+			err |= get_user(u, &(from->i4IonShareFd));
+			err |= put_user(u, &(to32->i4IonShareFd));
+			err |= get_uptr_to_32(&p, (void __user **)&(from->pIonBufhandle));
+			err |= put_user(p, &(to32->pIonBufhandle));
+			err |= get_uptr_to_32(&p, &(from->pvReserved));
+			err |= put_user(p, &(to32->pvReserved));
+			err |= get_user(l, &(from->u4ReservedSize));
+			err |= put_user(l, &(to32->u4ReservedSize));
 		}
-		COMPAT_VAL_MEMORY_T __user *to32 = (COMPAT_VAL_MEMORY_T *)data32;
-		VAL_MEMORY_T __user *from = (VAL_MEMORY_T *)data;
-
-		err = get_user(u, &(from->eMemType));
-		err |= put_user(u, &(to32->eMemType));
-		err |= get_user(l, &(from->u4MemSize));
-		err |= put_user(l, &(to32->u4MemSize));
-		err |= get_uptr_to_32(&p, &(from->pvMemVa));
-		err |= put_user(p, &(to32->pvMemVa));
-		err |= get_uptr_to_32(&p, &(from->pvMemPa));
-		err |= put_user(p, &(to32->pvMemPa));
-		err |= get_user(u, &(from->eAlignment));
-		err |= put_user(u, &(to32->eAlignment));
-		err |= get_uptr_to_32(&p, &(from->pvAlignMemVa));
-		err |= put_user(p, &(to32->pvAlignMemVa));
-		err |= get_uptr_to_32(&p, &(from->pvAlignMemPa));
-		err |= put_user(p, &(to32->pvAlignMemPa));
-		err |= get_user(u, &(from->eMemCodec));
-		err |= put_user(u, &(to32->eMemCodec));
-		err |= get_user(u, &(from->i4IonShareFd));
-		err |= put_user(u, &(to32->i4IonShareFd));
-		err |= get_uptr_to_32(&p, (void __user **)&(from->pIonBufhandle));
-		err |= put_user(p, &(to32->pIonBufhandle));
-		err |= get_uptr_to_32(&p, &(from->pvReserved));
-		err |= put_user(p, &(to32->pvReserved));
-		err |= get_user(l, &(from->u4ReservedSize));
-		err |= put_user(l, &(to32->u4ReservedSize));
 	}
 	break;
 	default:
