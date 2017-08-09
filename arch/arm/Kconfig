@@ -888,7 +888,7 @@ config ARCH_MT6580
 	select ARCH_HAS_CPUFREQ
 	select ARM_AMBA
 	select CPU_V7
-	select FIQ_GLUE if !TRUSTONIC_TEE_SUPPORT
+	select FIQ_GLUE if (!TRUSTONIC_TEE_SUPPORT && !TRUSTY)
 	select HAVE_SMP
 	select NEED_MACH_MEMORY_H
 	select IRQ_DOMAIN
