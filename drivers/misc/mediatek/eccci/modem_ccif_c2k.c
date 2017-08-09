@@ -1214,9 +1214,12 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 		/*free request */
 		if (IS_PASS_SKB(md, qno))
 			dev_kfree_skb_any(skb);
-		else
+		else if (likely(req))
 			ccci_free_req(req);
-
+		else {
+			CCCI_ERROR_LOG(md->index, TAG, "unexpected md state? only free skb for Q%d\n", queue->index);
+			dev_kfree_skb_any(skb);
+		}
 		/*send ccif request */
 		md_ccif_send(md, queue->ccif_ch);
 		spin_unlock_irqrestore(&queue->tx_lock, flags);
