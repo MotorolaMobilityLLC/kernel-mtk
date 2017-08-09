@@ -2843,6 +2843,34 @@ static void ov23850_setting_PDAF(int enable)
 		ov23850_MIPI_table_write_cmos_sensor(addr_data_pair_pdaf_off, sizeof(addr_data_pair_pdaf_off)/sizeof(kal_uint16));
 }
 
+static void ov23850_setting_Deskew(int enable)
+{
+	if(enable){
+		/*Deskew funciton*/
+		write_cmos_sensor(0x4800, 0x64);//r4800 = r4800 | 60, clk gate en
+		write_cmos_sensor(0x484b, 0x03);//r484b = r484b|02 ; [1] clk start after mipi rst
+		write_cmos_sensor(0x4850, 0x7c);//[6] eof_busy_en
+										//[5] one_time_one_lane
+										//[4] r_wait_pa_cal
+										//[3] r_deskew_auto_en
+										//[2] r_frame_skew_en
+										//[1] r_deskew_manual1
+										//[0] r_deskew_manual0
+		
+		write_cmos_sensor(0x4852, 0x27);//4852 06 ; 27 ; ;deskew length for periodic
+		write_cmos_sensor(0x4856, 0x5e);//r4856 = r4856 & fc | 02;[1:0] 01: DPHY plus, 10: dphy12 ,11: cphy 
+		write_cmos_sensor(0x4857, 0xaa);//4857 aa ; 55 ;r_mode12_hsdat
+		write_cmos_sensor(0x486f, 0x55);//486f 55 ; ;r_mode12_clk_data
+
+	}
+	else{
+		/*Deskew funciton*/
+		write_cmos_sensor(0x4800, 0x04);//r4800 = r4800 | 60, clk gate en
+		write_cmos_sensor(0x484b, 0x01);//r484b = r484b|02 ; [1] clk start after mipi rst
+	}
+
+}
+
 static void preview_setting(void)
 {
 	//int i ,temp;
@@ -2857,6 +2885,8 @@ static void preview_setting(void)
 	ov23850_MIPI_table_write_cmos_sensor(addr_data_pair_prv, sizeof(addr_data_pair_prv)/sizeof(kal_uint16));
 	/*None PDAF focus windows range*/
 	ov23850_setting_PDAF(PDAF_OFF);
+	//Deskew
+	ov23850_setting_Deskew(0);
 
 	write_cmos_sensor(0x0100,0x01);
 
@@ -2874,28 +2904,14 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0318,0x03);
 	mdelay(1);
 	ov23850_MIPI_table_write_cmos_sensor(addr_data_pair_cap, sizeof(addr_data_pair_cap)/sizeof(kal_uint16));
-#if 0
-	/*Deskew funciton*/
-	write_cmos_sensor(0x4800, 0x64);//r4800 = r4800 | 60, clk gate en
-	write_cmos_sensor(0x484b, 0x03);//r484b = r484b|02 ; [1] clk start after mipi rst
-	write_cmos_sensor(0x4850, 0x5c);//[6] eof_busy_en
-								    //[5] one_time_one_lane
-								    //[4] r_wait_pa_cal
-									//[3] r_deskew_auto_en
-									//[2] r_frame_skew_en
-									//[1] r_deskew_manual1
-									//[0] r_deskew_manual0
-	
-	write_cmos_sensor(0x4852, 0x27);//4852 06 ; 27 ; ;deskew length for periodic
-	write_cmos_sensor(0x4856, 0x5e);//r4856 = r4856 & fc | 02;[1:0] 01: DPHY plus, 10: dphy12 ,11: cphy 
-	write_cmos_sensor(0x4857, 0xaa);//4857 aa ; 55 ;r_mode12_hsdat
-	write_cmos_sensor(0x486f, 0x55);//486f 55 ; ;r_mode12_clk_data
-#endif
+
 	/*None PDAF focus windows range*/
     if(imgsensor.pdaf_mode == 1)
 		ov23850_setting_PDAF(PDAF_ON);
     else
 		ov23850_setting_PDAF(PDAF_OFF);
+	//Deskew
+	ov23850_setting_Deskew(1);
 	
 	write_cmos_sensor(0x0100, 0x01);
 }
@@ -2916,6 +2932,9 @@ static void normal_video_setting(kal_uint16 currefps)//1080p
 		ov23850_setting_PDAF(PDAF_ON);
     else
 		ov23850_setting_PDAF(PDAF_OFF);
+	//Deskew
+	ov23850_setting_Deskew(0);
+	
 	write_cmos_sensor(0x0100,0x01);
 }
 
@@ -2923,6 +2942,8 @@ static void hs_video_setting(void)
 {
 	ov23850_MIPI_table_write_cmos_sensor(addr_data_pair_hs_video, sizeof(addr_data_pair_hs_video)/sizeof(kal_uint16));
 	ov23850_setting_PDAF(PDAF_OFF);
+	//Deskew
+	ov23850_setting_Deskew(0);
 	write_cmos_sensor(0x0100,0x01);
 }
 
