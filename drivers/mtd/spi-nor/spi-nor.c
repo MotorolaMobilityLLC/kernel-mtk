@@ -265,7 +265,7 @@ static int spi_nor_wait_till_ready(struct spi_nor *nor)
  */
 static int erase_chip(struct spi_nor *nor)
 {
-	dev_dbg(nor->dev, " %lldKiB\n", (long long)(nor->mtd->size >> 10));
+	dev_dbg(nor->dev, " %lldKiB\n", (long long)(nor->mtd.size >> 10));
 
 	/* Send write enable, then erase commands. */
 	write_enable(nor);
@@ -370,7 +370,7 @@ erase_err:
 
 static int stm_lock(struct spi_nor *nor, loff_t ofs, uint64_t len)
 {
-	struct mtd_info *mtd = nor->mtd;
+	struct mtd_info *mtd = &nor->mtd;
 	uint32_t offset = ofs;
 	uint8_t status_old, status_new;
 	int ret = 0;
@@ -404,7 +404,7 @@ static int stm_lock(struct spi_nor *nor, loff_t ofs, uint64_t len)
 
 static int stm_unlock(struct spi_nor *nor, loff_t ofs, uint64_t len)
 {
-	struct mtd_info *mtd = nor->mtd;
+	struct mtd_info *mtd = &nor->mtd;
 	uint32_t offset = ofs;
 	uint8_t status_old, status_new;
 	int ret = 0;
@@ -979,7 +979,7 @@ int spi_nor_scan(struct spi_nor *nor, const char *name, enum read_mode mode)
 {
 	const struct flash_info *info = NULL;
 	struct device *dev = nor->dev;
-	struct mtd_info *mtd = nor->mtd;
+	struct mtd_info *mtd = &nor->mtd;
 	struct device_node *np = dev->of_node;
 	int ret;
 	int i;

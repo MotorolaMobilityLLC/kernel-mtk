@@ -160,7 +160,7 @@ enum spi_nor_option_flags {
  * @priv:		the private data
  */
 struct spi_nor {
-	struct mtd_info		*mtd;
+	struct mtd_info		mtd;
 	struct mutex		lock;
 	struct device		*dev;
 	u32			page_size;

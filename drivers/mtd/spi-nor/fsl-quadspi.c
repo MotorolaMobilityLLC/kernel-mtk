@@ -214,7 +214,6 @@ static struct fsl_qspi_devtype_data imx6sx_data = {
 
 #define FSL_QSPI_MAX_CHIP	4
 struct fsl_qspi {
-	struct mtd_info mtd[FSL_QSPI_MAX_CHIP];
 	struct spi_nor nor[FSL_QSPI_MAX_CHIP];
 	void __iomem *iobase;
 	void __iomem *ahb_base; /* Used when read from AHB bus */
@@ -743,7 +742,7 @@ static int fsl_qspi_erase(struct spi_nor *nor, loff_t offs)
 	int ret;
 
 	dev_dbg(nor->dev, "%dKiB at 0x%08x:0x%08x\n",
-		nor->mtd->erasesize / 1024, q->chip_base_addr, (u32)offs);
+		nor->mtd.erasesize / 1024, q->chip_base_addr, (u32)offs);
 
 	/* Wait until finished previous write command. */
 	ret = nor->wait_till_ready(nor);
@@ -888,9 +887,8 @@ static int fsl_qspi_probe(struct platform_device *pdev)
 			i *= 2;
 
 		nor = &q->nor[i];
-		mtd = &q->mtd[i];
+		mtd = &nor->mtd;
 
-		nor->mtd = mtd;
 		nor->dev = dev;
 		nor->priv = q;
 
@@ -962,7 +960,7 @@ last_init_failed:
 		/* skip the holes */
 		if (!q->has_second_chip)
 			i *= 2;
-		mtd_device_unregister(&q->mtd[i]);
+		mtd_device_unregister(&q->nor[i].mtd);
 	}
 irq_failed:
 	clk_disable_unprepare(q->clk);
@@ -981,7 +979,7 @@ static int fsl_qspi_remove(struct platform_device *pdev)
 		/* skip the holes */
 		if (!q->has_second_chip)
 			i *= 2;
-		mtd_device_unregister(&q->mtd[i]);
+		mtd_device_unregister(&q->nor[i].mtd);
 	}
 
 	/* disable the hardware */
