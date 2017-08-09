@@ -1,7 +1,5 @@
 $(info mali MTK evironment)
 
-MTK_TOP = $(srctree)/drivers/misc/mediatek/
-
 #build support for a ARM Mali Midgard GPU
 CONFIG_MALI_MIDGARD := y
 
@@ -24,15 +22,11 @@ ccflags-y += -I-I$(srctree)/include
 ccflags-y += -I$(srctree)/drivers/staging/android
 
 #include clock manager for clock use
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/mt6735/include
+#ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/mt6735/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mt6735
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/mt6735/include/mach
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
-#Add include path for mtk dvfs
-ccflags-y += \
-	-I$(srctree)/include/ \
-    -I$(MTK_TOP)/include/ \
-    -I$(MTK_TOP)/include/mt-plat \
-    -I$(MTK_TOP)/include/mt-plat/$(subst ",,$(CONFIG_MTK_PLATFORM))/include \
-    -I$(MTK_TOP)/base/power/$(subst ",,$(CONFIG_MTK_PLATFORM))/
 
 VER:=eng
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),)
@@ -49,5 +43,3 @@ ccflags-y += -DCONFIG_MALI_DEBUG
 else
 ccflags-y += -UCONFIG_MALI_DEBUG
 endif
-
-#ccflags-y += -DCONFIG_HAVE_CLK

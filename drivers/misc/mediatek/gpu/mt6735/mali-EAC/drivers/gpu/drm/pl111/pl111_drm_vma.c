@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2012-2015 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -189,6 +189,7 @@ error_out:
 int pl111_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 	struct page **pages;
+	pgoff_t pgoff;
 	unsigned long pfn;
 	struct drm_gem_object *obj = vma->vm_private_data;
 	struct pl111_gem_bo *bo = PL111_BO_FROM_GEM(obj);
@@ -197,14 +198,12 @@ int pl111_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 	mutex_lock(&dev->struct_mutex);
 
-	/*
-	 * Our mmap calls setup a valid vma->vm_pgoff
-	 * so we can use vmf->pgoff
-	 */
+	/* We don't use vmf->pgoff since that has the fake offset: */
+	pgoff = ((unsigned long)vmf->virtual_address -
+		 vma->vm_start) >> PAGE_SHIFT;
 
 	if (bo->type & PL111_BOT_DMA) {
-		pfn = (bo->backing_data.dma.fb_dev_addr >> PAGE_SHIFT) +
-				vmf->pgoff;
+		pfn = (bo->backing_data.dma.fb_dev_addr >> PAGE_SHIFT) + pgoff;
 	} else { /* PL111_BOT_SHM */
 		pages = get_pages(obj);
 		if (IS_ERR(pages)) {
@@ -213,12 +212,12 @@ int pl111_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 			ret = PTR_ERR(pages);
 			goto error;
 		}
-		pfn = page_to_pfn(pages[vmf->pgoff]);
-		pl111_gem_sync_to_cpu(bo, vmf->pgoff);
+		pfn = page_to_pfn(pages[pgoff]);
+		pl111_gem_sync_to_cpu(bo, pgoff);
 	}
 
 	DRM_DEBUG("bo=%p physaddr=0x%.8x for offset 0x%x\n",
-				bo, PFN_PHYS(pfn), PFN_PHYS(vmf->pgoff));
+				bo, PFN_PHYS(pfn), PFN_PHYS(pgoff));
 
 	ret = vm_insert_mixed(vma, (unsigned long)vmf->virtual_address, pfn);
 

@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2008-2013, 2015 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -82,8 +82,8 @@ typedef struct ump_dd_physical_block_64
  * @li a handle to the allocation
  * @li  the callback_data argument provided to @ref ump_dd_allocate_64 or @ref ump_dd_create_from_phys_blocks_64
  *
- * The hook must return @a true to indicate that access to the handle is allowed or @n
- * @a false to state that no access is permitted.@n
+ * The hook must return @a MALI_TRUE to indicate that access to the handle is allowed or @n
+ * @a MALI_FALSE to state that no access is permitted.@n
  * This hook is guaranteed to be called in the context of the requesting process/address space.
  *
  * The arguments provided to the hook are;
@@ -92,8 +92,8 @@ typedef struct ump_dd_physical_block_64
  * @li the callback_data set when registering the hook
  *
  * Return value;
- * @li @a true to permit access
- * @li @a false to deny access
+ * @li @a TRUE to permit access
+ * @li @a FALSE to deny access
  */
 typedef bool (*ump_dd_security_filter)(ump_secure_id, ump_dd_handle, void *);
 

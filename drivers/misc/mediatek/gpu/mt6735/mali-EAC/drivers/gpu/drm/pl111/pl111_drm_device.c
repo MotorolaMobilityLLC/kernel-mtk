@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2012-2014 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -212,10 +212,6 @@ static int pl111_drm_load(struct drm_device *dev, unsigned long chipset)
 		goto out_vblank;
 	}
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(3, 13, 0))
-	platform_set_drvdata(dev->platformdev, dev);
-#endif
-
 	goto finish;
 
 out_vblank:
@@ -270,6 +266,7 @@ static const struct file_operations drm_fops = {
 	.mmap = pl111_gem_mmap,
 	.poll = drm_poll,
 	.read = drm_read,
+	.fasync = drm_fasync,
 };
 
 static struct drm_ioctl_desc pl111_ioctls[] = {
@@ -279,7 +276,7 @@ static struct drm_ioctl_desc pl111_ioctls[] = {
 
 static struct drm_driver driver = {
 	.driver_features =
-		DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME,
+		DRIVER_MODESET | DRIVER_FB_DMA | DRIVER_GEM | DRIVER_PRIME,
 	.load = pl111_drm_load,
 	.unload = pl111_drm_unload,
 	.context_dtor = NULL,
@@ -315,11 +312,9 @@ int pl111_drm_init(struct platform_device *dev)
 	pr_info("DRM %s\n", __func__);
 	pr_info("PL111 DRM initialize, driver name: %s, version %d.%d\n",
 		DRIVER_NAME, DRIVER_MAJOR, DRIVER_MINOR);
-	driver.num_ioctls = ARRAY_SIZE(pl111_ioctls);
+	driver.num_ioctls = DRM_ARRAY_SIZE(pl111_ioctls);
 	ret = 0;
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 15, 0))
 	driver.kdriver.platform_device = dev;
-#endif
 	return drm_platform_init(&driver, dev);
 
 }
@@ -327,10 +322,5 @@ int pl111_drm_init(struct platform_device *dev)
 void pl111_drm_exit(struct platform_device *dev)
 {
 	pr_info("DRM %s\n", __func__);
-
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 13, 0))
 	drm_platform_exit(&driver, dev);
-#else
-	drm_put_dev(platform_get_drvdata(dev));
-#endif
 }

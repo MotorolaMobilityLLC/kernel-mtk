@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2014 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -22,14 +22,15 @@
 #ifdef CONFIG_DEBUG_FS
 
 /**
- * kbasep_jd_debugfs_atoms_show - Show callback for the JD atoms debugfs file.
- * @sfile: The debugfs entry
- * @data:  Data associated with the entry
+ * @brief Show callback for the @c JD atoms debugfs file.
  *
- * This function is called to get the contents of the JD atoms debugfs file.
- * This is a report of all atoms managed by kbase_jd_context.atoms
+ * This function is called to get the contents of the @c JD atoms debugfs file.
+ * This is a report of all atoms managed by kbase_jd_context::atoms .
  *
- * Return: 0 if successfully prints data in debugfs entry file, failure
+ * @param sfile The debugfs entry
+ * @param data Data associated with the entry
+ *
+ * @return 0 if successfully prints data in debugfs entry file, failure
  * otherwise
  */
 static int kbasep_jd_debugfs_atoms_show(struct seq_file *sfile, void *data)
@@ -63,17 +64,27 @@ static int kbasep_jd_debugfs_atoms_show(struct seq_file *sfile, void *data)
 			start_timestamp = ktime_to_ns(
 					ktime_sub(ktime_get(), atom->start_timestamp));
 
+#ifdef CONFIG_64BIT
 		seq_printf(sfile,
-				"%i,%u,%u,%u,%u %u,%lli,%llu\n",
+				"%i,%u,%u,%u,%lu %lu,%lli,%llu\n",
 				i, atom->core_req, atom->status, atom->coreref_state,
-				(unsigned)(atom->dep[0].atom ?
-						atom->dep[0].atom - atoms : 0),
-				(unsigned)(atom->dep[1].atom ?
-						atom->dep[1].atom - atoms : 0),
+				atom->dep[0].atom ? atom->dep[0].atom - atoms : 0,
+				atom->dep[1].atom ? atom->dep[1].atom - atoms : 0,
 				(signed long long)start_timestamp,
 				(unsigned long long)(atom->time_spent_us ?
 					atom->time_spent_us * 1000 : start_timestamp)
 				);
+#else
+        seq_printf(sfile,
+				"%i,%u,%u,%u,%u %u,%lli,%llu\n",
+				i, atom->core_req, atom->status, atom->coreref_state,
+				atom->dep[0].atom ? atom->dep[0].atom - atoms : 0,
+				atom->dep[1].atom ? atom->dep[1].atom - atoms : 0,
+				(signed long long)start_timestamp,
+				(unsigned long long)(atom->time_spent_us ?
+					atom->time_spent_us * 1000 : start_timestamp)
+				);
+#endif
 	}
 	spin_unlock_irqrestore(&kctx->kbdev->js_data.runpool_irq.lock, irq_flags);
 	mutex_unlock(&kctx->jctx.lock);
@@ -83,11 +94,7 @@ static int kbasep_jd_debugfs_atoms_show(struct seq_file *sfile, void *data)
 
 
 /**
- * kbasep_jd_debugfs_atoms_open - open operation for atom debugfs file
- * @in: &struct inode pointer
- * @file: &struct file pointer
- *
- * Return: file descriptor
+ * @brief File operations related to debugfs entry for atoms
  */
 static int kbasep_jd_debugfs_atoms_open(struct inode *in, struct file *file)
 {
@@ -101,14 +108,85 @@ static const struct file_operations kbasep_jd_debugfs_atoms_fops = {
 	.release = single_release,
 };
 
-void kbasep_jd_debugfs_ctx_add(struct kbase_context *kctx)
+
+int kbasep_jd_debugfs_init(struct kbase_device *kbdev)
+{
+	kbdev->jd_directory = debugfs_create_dir(
+			"jd", kbdev->mali_debugfs_directory);
+	if (IS_ERR(kbdev->jd_directory)) {
+		dev_err(kbdev->dev, "Couldn't create mali jd debugfs directory\n");
+		goto err;
+	}
+
+	return 0;
+
+err:
+	return -1;
+}
+
+
+void kbasep_jd_debugfs_term(struct kbase_device *kbdev)
+{
+	KBASE_DEBUG_ASSERT(kbdev != NULL);
+
+	if (!IS_ERR(kbdev->jd_directory))
+		debugfs_remove_recursive(kbdev->jd_directory);
+}
+
+
+int kbasep_jd_debugfs_ctx_add(struct kbase_context *kctx)
+{
+	/* Refer below for format string, %u is 10 chars max */
+	char dir_name[10 * 2 + 2];
+
+	KBASE_DEBUG_ASSERT(kctx != NULL);
+
+	/* Create per-context directory */
+	scnprintf(dir_name, sizeof(dir_name), "%u_%u", kctx->pid, kctx->id);
+	kctx->jd_ctx_dir = debugfs_create_dir(dir_name, kctx->kbdev->jd_directory);
+	if (IS_ERR(kctx->jd_ctx_dir))
+		goto err;
+
+	/* Expose all atoms */
+	if (IS_ERR(debugfs_create_file("atoms", S_IRUGO,
+			kctx->jd_ctx_dir, kctx, &kbasep_jd_debugfs_atoms_fops)))
+		goto err_jd_ctx_dir;
+
+	return 0;
+
+err_jd_ctx_dir:
+	debugfs_remove_recursive(kctx->jd_ctx_dir);
+err:
+	return -1;
+}
+
+
+void kbasep_jd_debugfs_ctx_remove(struct kbase_context *kctx)
 {
 	KBASE_DEBUG_ASSERT(kctx != NULL);
 
-	/* Expose all atoms */
-	debugfs_create_file("atoms", S_IRUGO, kctx->kctx_dentry, kctx,
-			&kbasep_jd_debugfs_atoms_fops);
+	if (!IS_ERR(kctx->jd_ctx_dir))
+		debugfs_remove_recursive(kctx->jd_ctx_dir);
+}
 
+#else /* CONFIG_DEBUG_FS */
+
+/**
+ * @brief Stub functions for when debugfs is disabled
+ */
+int kbasep_jd_debugfs_init(struct kbase_device *kbdev)
+{
+	return 0;
+}
+void kbasep_jd_debugfs_term(struct kbase_device *kbdev)
+{
+}
+int kbasep_jd_debugfs_ctx_add(struct kbase_context *ctx)
+{
+	return 0;
+}
+void kbasep_jd_debugfs_ctx_remove(struct kbase_context *ctx)
+{
 }
 
 #endif /* CONFIG_DEBUG_FS */

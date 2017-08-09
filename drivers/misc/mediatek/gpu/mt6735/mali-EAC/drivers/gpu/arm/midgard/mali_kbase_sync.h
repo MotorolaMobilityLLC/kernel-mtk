@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2012-2015 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -26,15 +26,7 @@
 #define MALI_KBASE_SYNC_H
 
 #include "sync.h"
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 17, 0)
-/* For backwards compatiblility with kernels before 3.17. After 3.17
- * sync_pt_parent is included in the kernel. */
-static inline struct sync_timeline *sync_pt_parent(struct sync_pt *pt)
-{
-	return pt->parent;
-}
-#endif
+#include <malisw/mali_malisw.h>
 
 /*
  * Create a stream object.
@@ -44,7 +36,7 @@ static inline struct sync_timeline *sync_pt_parent(struct sync_pt *pt)
  * - dup to add a ref
  * - close to remove a ref
  */
-int kbase_stream_create(const char *name, int *const out_fd);
+mali_error kbase_stream_create(const char *name, int *const out_fd);
 
 /*
  * Create a fence in a stream object
@@ -58,7 +50,7 @@ int kbase_stream_create_fence(int tl_fd);
  * This function is only usable to catch unintentional user errors early,
  * it does not stop malicious code changing the fd after this function returns.
  */
-int kbase_fence_validate(int fd);
+mali_error kbase_fence_validate(int fd);
 
 /* Returns true if the specified timeline is allocated by Mali */
 int kbase_sync_timeline_is_ours(struct sync_timeline *timeline);

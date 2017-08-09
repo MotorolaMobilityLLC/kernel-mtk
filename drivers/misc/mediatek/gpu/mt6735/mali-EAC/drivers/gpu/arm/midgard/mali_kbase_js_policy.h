@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2011-2015 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -99,8 +99,8 @@
  * The following diagram shows an example Policy that contains a Low Priority
  * queue, and a Real-time (High Priority) Queue. The RT queue is examined
  * before the LowP one on dequeuing from the head. The Low Priority Queue is
- * ordered by time, and the RT queue is ordered by time weighted by
- * RT-priority. In addition, it shows that the Job Scheduler Core will start a
+ * ordered by time, and the RT queue is ordered by RT-priority, and then by
+ * time. In addition, it shows that the Job Scheduler Core will start a
  * Soft-Stop Timer (SS-Timer) when it dequeue's and submits a job. The
  * Soft-Stop time is set by a global configuration value, and must be a value
  * appropriate for the policy. For example, this could include "don't run a
@@ -111,11 +111,13 @@
  *
  * @section sec_kbase_js_policy_operation_prio Dealing with Priority
  *
- * Priority applies separately to a context as a whole, and to the jobs within
- * a context. The jobs specify a priority in the base_jd_atom::prio member, but
- * it is independent of the context priority. That is, it only affects
- * scheduling of atoms within a context. Refer to @ref base_jd_prio for more
- * details. The meaning of the context's priority value is up to the policy
+ * Priority applies both to a context as a whole, and to the jobs within a
+ * context. The jobs specify a priority in the base_jd_atom::prio member, which
+ * is relative to that of the context. A positive setting indicates a reduction
+ * in priority, whereas a negative setting indicates a boost in priority. Of
+ * course, the boost in priority should only be honoured when the originating
+ * process has sufficient priviledges, and should be ignored for unpriviledged
+ * processes. The meaning of the combined priority value is up to the policy
  * itself, and could be a logarithmic scale instead of a linear scale (e.g. the
  * policy could implement an increase/decrease in priority by 1 results in an
  * increase/decrease in \em proportion of time spent scheduled in by 25%, an
@@ -124,10 +126,10 @@
  * It is up to the policy whether a boost in priority boosts the priority of
  * the entire context (e.g. to such an extent where it may pre-empt other
  * running contexts). If it chooses to do this, the Policy must make sure that
- * only jobs from high-priority contexts are run, and that the context is
- * scheduled out once only jobs from low priority contexts remain. This ensures
- * that the low priority contexts do not gain from the priority boost, yet they
- * still get scheduled correctly with respect to other low priority contexts.
+ * only the high-priority jobs are run, and that the context is scheduled out
+ * once only low priority jobs remain. This ensures that the low priority jobs
+ * within the context do not gain from the priority boost, yet they still get
+ * scheduled correctly with respect to other low priority contexts.
  *
  *
  * @section sec_kbase_js_policy_operation_irq IRQ Path
@@ -162,9 +164,9 @@
  * - If there is space in the completed job slots' HEAD/NEXT registers, run the next job:
  *  - kbasep_js_policy_dequeue_job() <em>in the context of the irq
  * handler</em> with core_req set to that of the completing slot
- *  - if this returned true, submit the job to the completed slot.
+ *  - if this returned MALI_TRUE, submit the job to the completed slot.
  *  - This is repeated until kbasep_js_policy_dequeue_job() returns
- * false, or the job slot has a job queued on both the HEAD and NEXT registers.
+ * MALI_FALSE, or the job slot has a job queued on both the HEAD and NEXT registers.
  *  - If kbasep_js_policy_dequeue_job() returned false, submit some work to
  * the work-queue to retry from outside of IRQ context (calling
  * kbasep_js_policy_dequeue_job() from a work-queue).
@@ -275,7 +277,7 @@
  * slot
  *   - if we got one, submit it to the job slot.
  *   - This is repeated until kbasep_js_policy_dequeue_job() returns
- * false, or the job slot has a job queued on both the HEAD and NEXT registers.
+ * MALI_FALSE, or the job slot has a job queued on both the HEAD and NEXT registers.
  *
  * The above case shows that we should attempt to run jobs in cases where a) a ctx
  * has been added to the Run Pool, and b) new jobs have been added to a context
@@ -389,7 +391,7 @@ union kbasep_js_policy;
 /**
  * @brief Initialize the Job Scheduler Policy
  */
-int kbasep_js_policy_init(struct kbase_device *kbdev);
+mali_error kbasep_js_policy_init(struct kbase_device *kbdev);
 
 /**
  * @brief Terminate the Job Scheduler Policy
@@ -425,7 +427,7 @@ union kbasep_js_policy_ctx_info;
  * This effectively initializes the union kbasep_js_policy_ctx_info structure within
  * the struct kbase_context (itself located within the kctx->jctx.sched_info structure).
  */
-int kbasep_js_policy_init_ctx(struct kbase_device *kbdev, struct kbase_context *kctx);
+mali_error kbasep_js_policy_init_ctx(struct kbase_device *kbdev, struct kbase_context *kctx);
 
 /**
  * @brief Terminate resources associated with using a ctx in the Job Scheduler
@@ -454,11 +456,11 @@ void kbasep_js_policy_enqueue_ctx(union kbasep_js_policy *js_policy, struct kbas
  *
  * The caller will be holding kbasep_js_device_data::queue_mutex.
  *
- * @return true if a context was available, and *kctx_ptr points to
+ * @return MALI_TRUE if a context was available, and *kctx_ptr points to
  * the kctx dequeued.
- * @return false if no contexts were available.
+ * @return MALI_FALSE if no contexts were available.
  */
-bool kbasep_js_policy_dequeue_head_ctx(union kbasep_js_policy *js_policy, struct kbase_context ** const kctx_ptr);
+mali_bool kbasep_js_policy_dequeue_head_ctx(union kbasep_js_policy *js_policy, struct kbase_context ** const kctx_ptr);
 
 /**
  * @brief Evict a context from the Job Scheduler Policy Queue
@@ -477,17 +479,17 @@ bool kbasep_js_policy_dequeue_head_ctx(union kbasep_js_policy *js_policy, struct
  *
  * The caller will be holding kbasep_js_device_data::queue_mutex.
  *
- * @return true if the context was evicted from the Policy Queue
- * @return false if the context was not found in the Policy Queue
+ * @return MALI_TRUE if the context was evicted from the Policy Queue
+ * @return MALI_FALSE if the context was not found in the Policy Queue
  */
-bool kbasep_js_policy_try_evict_ctx(union kbasep_js_policy *js_policy, struct kbase_context *kctx);
+mali_bool kbasep_js_policy_try_evict_ctx(union kbasep_js_policy *js_policy, struct kbase_context *kctx);
 
 /**
  * @brief Call a function on all jobs belonging to a non-queued, non-running
  * context, optionally detaching the jobs from the context as it goes.
  *
  * At the time of the call, the context is guarenteed to be not-currently
- * scheduled on the Run Pool (is_scheduled == false), and not present in
+ * scheduled on the Run Pool (is_scheduled == MALI_FALSE), and not present in
  * the Policy Queue. This is because one of the following functions was used
  * recently on the context:
  * - kbasep_js_policy_evict_ctx()
@@ -508,7 +510,7 @@ bool kbasep_js_policy_try_evict_ctx(union kbasep_js_policy *js_policy, struct kb
  * - it will be holding kbasep_js_kctx_info::ctx::jsctx_mutex.
  */
 void kbasep_js_policy_foreach_ctx_job(union kbasep_js_policy *js_policy, struct kbase_context *kctx,
-	kbasep_js_policy_ctx_job_cb callback, bool detach_jobs);
+	kbasep_js_policy_ctx_job_cb callback, mali_bool detach_jobs);
 
 /**
  * @brief Add a context to the Job Scheduler Policy's Run Pool
@@ -526,7 +528,7 @@ void kbasep_js_policy_foreach_ctx_job(union kbasep_js_policy *js_policy, struct 
  * - the context has its submit_allowed flag set
  * - kbasep_js_device_data::runpool_irq::per_as_data[kctx->as_nr] is valid
  * - The refcount of the context is guarenteed to be zero.
- * - kbasep_js_kctx_info::ctx::is_scheduled will be true.
+ * - kbasep_js_kctx_info::ctx::is_scheduled will be MALI_TRUE.
  *
  * The locking conditions on the caller are as follows:
  * - it will be holding kbasep_js_kctx_info::ctx::jsctx_mutex.
@@ -562,7 +564,7 @@ void kbasep_js_policy_runpool_remove_ctx(union kbasep_js_policy *js_policy, stru
  *
  * @note This API is called from IRQ context.
  */
-bool kbasep_js_policy_should_remove_ctx(union kbasep_js_policy *js_policy, struct kbase_context *kctx);
+mali_bool kbasep_js_policy_should_remove_ctx(union kbasep_js_policy *js_policy, struct kbase_context *kctx);
 
 /**
  * @brief Synchronize with any timers acting upon the runpool
@@ -596,7 +598,7 @@ void kbasep_js_policy_runpool_timers_sync(union kbasep_js_policy *js_policy);
  * cannot be held). Therefore, this function should only be seen as a heuristic
  * guide as to whether \a new_ctx is higher priority than \a current_ctx
  */
-bool kbasep_js_policy_ctx_has_priority(union kbasep_js_policy *js_policy, struct kbase_context *current_ctx, struct kbase_context *new_ctx);
+mali_bool kbasep_js_policy_ctx_has_priority(union kbasep_js_policy *js_policy, struct kbase_context *current_ctx, struct kbase_context *new_ctx);
 
 	  /** @} *//* end group kbase_js_policy_ctx */
 
@@ -613,10 +615,12 @@ bool kbasep_js_policy_ctx_has_priority(union kbasep_js_policy *js_policy, struct
  *
  * This structure is embedded in the struct kbase_jd_atom structure. It is used to:
  * - track information needed for the policy to schedule the job (e.g. time
- * used, etc.)
+ * used, OS priority etc.)
  * - link together jobs into a queue/buffer, so that a struct kbase_jd_atom can be
  * obtained as the container of the policy job info. This allows the API to
  * return what "the next job" should be.
+ * - obtain other information already stored in the struct kbase_context for
+ * scheduling purposes (e.g user-side relative priority)
  */
 union kbasep_js_policy_job_info;
 
@@ -641,9 +645,9 @@ union kbasep_js_policy_job_info;
  * The caller will not be holding any locks, and so this function will not
  * modify any information in \a kctx or \a js_policy.
  *
- * @return 0 if initialization was correct.
+ * @return MALI_ERROR_NONE if initialization was correct.
  */
-int kbasep_js_policy_init_job(const union kbasep_js_policy *js_policy, const struct kbase_context *kctx, struct kbase_jd_atom *katom);
+mali_error kbasep_js_policy_init_job(const union kbasep_js_policy *js_policy, const struct kbase_context *kctx, struct kbase_jd_atom *katom);
 
 /**
  * @brief Register context/policy-wide information for a job on the Job Scheduler Policy.
@@ -694,9 +698,9 @@ void kbasep_js_policy_deregister_job(union kbasep_js_policy *js_policy, struct k
  * this new job when the currently executing job (in the jobslot's HEAD
  * register) has completed.
  *
- * @return true if a job was available, and *kctx_ptr points to
+ * @return MALI_TRUE if a job was available, and *kctx_ptr points to
  * the kctx dequeued.
- * @return false if no jobs were available among all ctxs in the Run Pool.
+ * @return MALI_FALSE if no jobs were available among all ctxs in the Run Pool.
  *
  * @note base_jd_core_req is currently a u8 - beware of type conversion.
  *
@@ -705,7 +709,7 @@ void kbasep_js_policy_deregister_job(union kbasep_js_policy *js_policy, struct k
  * - kbasep_js_device_data::runpool_mutex will be held.
  * - kbasep_js_kctx_info::ctx::jsctx_mutex. will be held
  */
-bool kbasep_js_policy_dequeue_job(struct kbase_device *kbdev, int job_slot_idx, struct kbase_jd_atom ** const katom_ptr);
+mali_bool kbasep_js_policy_dequeue_job(struct kbase_device *kbdev, int job_slot_idx, struct kbase_jd_atom ** const katom_ptr);
 
 /**
  * @brief Requeue a Job back into the the Job Scheduler Policy Run Pool

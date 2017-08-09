@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2012-2015 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -86,7 +86,7 @@ static struct sg_table *dma_buf_te_map(struct dma_buf_attachment *attachment, en
 	if (alloc->fail_map)
 		return ERR_PTR(-ENOMEM);
 
-#if !(defined(ARCH_HAS_SG_CHAIN) || defined(CONFIG_ARCH_HAS_SG_CHAIN))
+#ifndef ARCH_HAS_SG_CHAIN
 	/* if the ARCH can't chain we can't have allocs larger than a single sg can hold */
 	if (alloc->nr_pages > SG_MAX_SINGLE_ALLOC)
 		return ERR_PTR(-EINVAL);
@@ -152,6 +152,8 @@ static void dma_buf_te_release(struct dma_buf *buf)
 	struct dma_buf_te_alloc *alloc;
 	alloc = buf->priv;
 	/* no need for locking */
+
+	dev_info(te_device.this_device, "%s", __func__);
 
 	if (alloc->contiguous) {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0))
@@ -313,20 +315,8 @@ static int do_dma_buf_te_ioctl_alloc(struct dma_buf_te_ioctl_alloc __user *buf, 
 
 	if (!alloc_req.size) {
 		dev_err(te_device.this_device, "%s: no size specified", __func__);
-		goto invalid_size;
+		goto zero_size;
 	}
-
-#if !(defined(ARCH_HAS_SG_CHAIN) || defined(CONFIG_ARCH_HAS_SG_CHAIN))
-	/* Whilst it is possible to allocate larger buffer, we won't be able to
-	 * map it during actual usage (mmap() still succeeds). We fail here so
-	 * userspace code can deal with it early than having driver failure
-	 * later on. */
-	if (alloc_req.size > SG_MAX_SINGLE_ALLOC) {
-		dev_err(te_device.this_device, "%s: buffer size of %llu pages exceeded the mapping limit of %lu pages",
-				__func__, alloc_req.size, SG_MAX_SINGLE_ALLOC);
-		goto invalid_size;
-	}
-#endif
 
 	alloc = kzalloc(sizeof(struct dma_buf_te_alloc), GFP_KERNEL);
 	if (NULL == alloc) {
@@ -353,14 +343,12 @@ static int do_dma_buf_te_ioctl_alloc(struct dma_buf_te_ioctl_alloc __user *buf, 
 
 		dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
 		alloc->contig_cpu_addr = dma_alloc_attrs(te_device.this_device,
-				alloc->nr_pages * PAGE_SIZE,
-				&alloc->contig_dma_addr,
-				GFP_KERNEL | __GFP_ZERO, &attrs);
+												alloc->nr_pages * PAGE_SIZE,
+												&alloc->contig_dma_addr, GFP_KERNEL, &attrs);
 #else
 		alloc->contig_cpu_addr = dma_alloc_writecombine(te_device.this_device,
-				alloc->nr_pages * PAGE_SIZE,
-				&alloc->contig_dma_addr,
-				GFP_KERNEL | __GFP_ZERO);
+														alloc->nr_pages * PAGE_SIZE,
+														&alloc->contig_dma_addr, GFP_KERNEL);
 #endif
 		if (!alloc->contig_cpu_addr) {
 			dev_err(te_device.this_device, "%s: couldn't alloc contiguous buffer %d pages", __func__, alloc->nr_pages);
@@ -373,7 +361,7 @@ static int do_dma_buf_te_ioctl_alloc(struct dma_buf_te_ioctl_alloc __user *buf, 
 		}
 	} else {
 		for (i = 0; i < alloc->nr_pages; i++) {
-			alloc->pages[i] = alloc_page(GFP_KERNEL | __GFP_ZERO);
+			alloc->pages[i] = alloc_page(GFP_KERNEL);
 			if (NULL == alloc->pages[i]) {
 				dev_err(te_device.this_device, "%s: couldn't alloc page", __func__);
 				goto no_page;
@@ -382,13 +370,7 @@ static int do_dma_buf_te_ioctl_alloc(struct dma_buf_te_ioctl_alloc __user *buf, 
 	}
 
 	/* alloc ready, let's export it */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 17, 0))
-	dma_buf = dma_buf_export(alloc, &dma_buf_te_ops,
-			alloc->nr_pages << PAGE_SHIFT, O_CLOEXEC|O_RDWR, NULL);
-#else
-	dma_buf = dma_buf_export(alloc, &dma_buf_te_ops,
-			alloc->nr_pages << PAGE_SHIFT, O_CLOEXEC|O_RDWR);
-#endif
+	dma_buf = dma_buf_export(alloc, &dma_buf_te_ops, alloc->nr_pages << PAGE_SHIFT, O_CLOEXEC|O_RDWR);
 
 	if (IS_ERR_OR_NULL(dma_buf)) {
 		dev_err(te_device.this_device, "%s: couldn't export dma_buf", __func__);
@@ -432,7 +414,7 @@ free_page_struct:
 free_alloc_object:
 	kfree(alloc);
 no_alloc_object:
-invalid_size:
+zero_size:
 no_input:
 	return -EFAULT;
 }
@@ -614,7 +596,7 @@ static int __init dma_buf_te_init(void)
 
 	res = misc_register(&te_device);
 	if (res) {
-		printk(KERN_WARNING"Misc device registration failed of 'dma_buf_te'\n");
+		pr_debug("Misc device registration failed of 'dma_buf_te'\n");
 		return res;
 	}
 	te_device.this_device->coherent_dma_mask = DMA_BIT_MASK(32);

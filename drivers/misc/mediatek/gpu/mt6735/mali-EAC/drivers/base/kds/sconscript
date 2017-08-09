@@ -1,5 +1,5 @@
 #
-# (C) COPYRIGHT 2010-2015 ARM Limited. All rights reserved.
+# (C) COPYRIGHT 2010-2014 ARM Limited. All rights reserved.
 #
 # This program is free software and is provided to you under the terms of the
 # GNU General Public License version 2 as published by the Free Software
@@ -45,10 +45,15 @@ if Glob('tests/sconscript'):
 
 if env.GetOption('clean') :
 	# Clean KDS module
-	if build_kds or (int(env['unit']) == 1):
+	if build_kds:
 		env.Execute(Action("make clean", '[CLEAN] kds'))
 		cmd = env.Command('$STATIC_LIB_PATH/kds.ko', src, [])
 		env.ProgTarget('kds', cmd)
+
+	# Clean KDS test module
+	if (int(env['unit']) == 1):
+		cmdTest = env.Command('$STATIC_LIB_PATH/kds_test.ko', src, [])
+		env.ProgTarget('kds', cmdTest)
 else:
 	# Build KDS module
 	if build_kds:

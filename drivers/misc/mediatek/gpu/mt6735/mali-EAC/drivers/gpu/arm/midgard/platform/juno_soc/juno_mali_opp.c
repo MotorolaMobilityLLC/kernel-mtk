@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2014 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -18,18 +18,8 @@
 #include <linux/module.h>
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
-#include <linux/scpi_protocol.h>
-#include <linux/version.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 13, 0)
 #include <linux/pm_opp.h>
-#else /* Linux >= 3.13 */
-/* In 3.13 the OPP include header file, types, and functions were all
- * renamed. Use the old filename for the include, and define the new names to
- * the old, when an old kernel is detected.
- */
-#include <linux/opp.h>
-#define dev_pm_opp_add opp_add
-#endif /* Linux >= 3.13 */
+#include <linux/scpi_protocol.h>
 
 
 static int init_juno_opps_from_scpi(struct device *dev)
@@ -44,7 +34,6 @@ static int init_juno_opps_from_scpi(struct device *dev)
 
 	for (i = 0; i < sopp->count; i++) {
 		struct scpi_opp_entry *e = &sopp->opp[i];
-
 		dev_info(dev, "Mali OPP from SCPI: %u Hz @ %u mV\n",
 				e->freq_hz, e->volt_mv);
 

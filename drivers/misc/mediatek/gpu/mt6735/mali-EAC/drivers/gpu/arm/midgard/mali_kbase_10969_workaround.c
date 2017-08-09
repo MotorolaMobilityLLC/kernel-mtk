@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2013-2015 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -68,7 +68,7 @@ int kbasep_10969_workaround_clamp_coordinates(struct kbase_jd_atom *katom)
 	if (!region || (region->flags & KBASE_REG_FREE))
 		goto out_unlock;
 
-	page_array = kbase_get_cpu_phy_pages(region);
+	page_array = kbase_get_phy_pages(region);
 	if (!page_array)
 		goto out_unlock;
 
@@ -88,11 +88,9 @@ int kbasep_10969_workaround_clamp_coordinates(struct kbase_jd_atom *katom)
 
 	/* page_1 is a u32 pointer, offset is expressed in bytes */
 	page_1 += offset>>2;
-
-	kbase_sync_single_for_cpu(katom->kctx->kbdev,
+	dma_sync_single_for_cpu(katom->kctx->kbdev->dev,
 			kbase_dma_addr(p) + offset,
 			copy_size, DMA_BIDIRECTIONAL);
-
 	memcpy(dst, page_1, copy_size);
 
 	/* The data needed overflows page the dimension,
@@ -101,10 +99,9 @@ int kbasep_10969_workaround_clamp_coordinates(struct kbase_jd_atom *katom)
 		p = pfn_to_page(PFN_DOWN(page_array[page_index + 1]));
 		page_2 = kmap_atomic(p);
 
-		kbase_sync_single_for_cpu(katom->kctx->kbdev,
+		dma_sync_single_for_cpu(katom->kctx->kbdev->dev,
 				kbase_dma_addr(p),
 				JOB_HEADER_SIZE - copy_size, DMA_BIDIRECTIONAL);
-
 		memcpy(dst + copy_size, page_2, JOB_HEADER_SIZE - copy_size);
 	}
 
@@ -182,8 +179,7 @@ int kbasep_10969_workaround_clamp_coordinates(struct kbase_jd_atom *katom)
 		/* Flush CPU cache to update memory for future GPU reads*/
 		memcpy(page_1, dst, copy_size);
 		p = pfn_to_page(PFN_DOWN(page_array[page_index]));
-
-		kbase_sync_single_for_device(katom->kctx->kbdev,
+		dma_sync_single_for_device(katom->kctx->kbdev->dev,
 				kbase_dma_addr(p) + offset,
 				copy_size, DMA_TO_DEVICE);
 
@@ -191,8 +187,7 @@ int kbasep_10969_workaround_clamp_coordinates(struct kbase_jd_atom *katom)
 			memcpy(page_2, dst + copy_size,
 					JOB_HEADER_SIZE - copy_size);
 			p = pfn_to_page(PFN_DOWN(page_array[page_index + 1]));
-
-			kbase_sync_single_for_device(katom->kctx->kbdev,
+			dma_sync_single_for_device(katom->kctx->kbdev->dev,
 					kbase_dma_addr(p),
 					JOB_HEADER_SIZE - copy_size,
 					DMA_TO_DEVICE);

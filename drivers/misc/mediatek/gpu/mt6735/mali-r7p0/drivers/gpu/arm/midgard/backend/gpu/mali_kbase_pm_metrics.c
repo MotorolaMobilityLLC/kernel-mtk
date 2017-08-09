@@ -77,7 +77,9 @@ extern mtk_gpu_thd_level_offset gpu_thd_level_off[];
 //#include <linux/earlysuspend.h>
 #include <linux/suspend.h>
 
+#ifdef CONFIG_MALI_MIDGARD_DVFS
 static enum hrtimer_restart dvfs_callback(struct hrtimer *timer);
+#endif /* CONFIG_MALI_MIDGARD_DVFS */
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void mali_early_suspend(struct early_suspend *h)
@@ -153,7 +155,7 @@ static struct early_suspend mali_early_suspend_handler =
 };
 #endif /* CONFIG_HAS_EARLYSUSPEND */
 
-
+#ifdef CONFIG_MALI_MIDGARD_DVFS
 void mali_SODI_begin(void)
 {
 		struct list_head *entry;
@@ -235,6 +237,7 @@ void mali_SODI_exit(void)
   	kbase_dev_list_put(kbdev_list);  	
 }
 KBASE_EXPORT_TEST_API(mali_SODI_exit);
+#endif /* CONFIG_MALI_MIDGARD_DVFS */
 
 /* Shift used for kbasep_pm_metrics_data.time_busy/idle - units of (1 << 8) ns
  * This gives a maximum period between samples of 2^(32+8)/100 ns = slightly

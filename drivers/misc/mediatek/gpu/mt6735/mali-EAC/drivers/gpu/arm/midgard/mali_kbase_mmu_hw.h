@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2014-2015 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -53,9 +53,7 @@ struct kbase_context;
 enum kbase_mmu_fault_type {
 	KBASE_MMU_FAULT_TYPE_UNKNOWN = 0,
 	KBASE_MMU_FAULT_TYPE_PAGE,
-	KBASE_MMU_FAULT_TYPE_BUS,
-	KBASE_MMU_FAULT_TYPE_PAGE_UNEXPECTED,
-	KBASE_MMU_FAULT_TYPE_BUS_UNEXPECTED
+	KBASE_MMU_FAULT_TYPE_BUS
 };
 
 /** @brief Configure an address space for use.

@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2012-2014 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -37,9 +37,12 @@
 
 #define KBASE_PHY_PAGES_POISON_VALUE  0xFD /** Value to fill the memory with when KBASE_PHY_PAGES_FLAG_POISON is set */
 
-enum kbase_sync_type {
-	KBASE_SYNC_TO_CPU,
-	KBASE_SYNC_TO_DEVICE
-};
+/**
+ * A pointer to a cache synchronization function, either dma_sync_single_for_cpu
+ * or dma_sync_single_for_device.
+ */
+typedef void (*kbase_sync_kmem_fn) (struct device *, dma_addr_t, size_t size,
+				   enum dma_data_direction);
+
 
 #endif				/* _KBASE_LOWLEVEL_H */

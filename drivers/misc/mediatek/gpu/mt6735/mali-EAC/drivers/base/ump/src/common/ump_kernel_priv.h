@@ -1,6 +1,6 @@
 /*
  *
- * (C) COPYRIGHT 2008-2014 ARM Limited. All rights reserved.
+ * (C) COPYRIGHT ARM Limited. All rights reserved.
  *
  * This program is free software and is provided to you under the terms of the
  * GNU General Public License version 2 as published by the Free Software
@@ -34,7 +34,7 @@
 #ifdef __KERNEL__
 #define UMP_ASSERT(expr) \
 		if (!(expr)) { \
-			printk(KERN_ERR "UMP: Assertion failed! %s,%s,%s,line=%d\n",\
+			pr_err("UMP: Assertion failed! %s,%s,%s,line=%d\n",\
 					#expr,__FILE__,__func__,__LINE__); \
 					BUG(); \
 		}
