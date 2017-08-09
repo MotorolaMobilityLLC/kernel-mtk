@@ -100,20 +100,12 @@ static struct pwr_ctrl sodi3_ctrl = {
 	.md_srcclkena_0_infra_mask_b = 0, /* bit 12 */
 	.md_srcclkena_1_infra_mask_b = 0, /* bit 13 */
 	.conn_srcclkena_infra_mask_b = 0, /* bit 14 */
-#if defined(CONFIG_ARCH_MT6755)
 	.md32_srcclkena_infra_mask_b = 0, /* bit 15 */
-#elif defined(CONFIG_ARCH_MT6797)
-	.md32_srcclkena_infra_mask_b = 1,
-#endif
 	.srcclkeni_infra_mask_b = 0, /* bit 16 */
 	.md_apsrcreq_0_infra_mask_b = 1,
 	.md_apsrcreq_1_infra_mask_b = 0,
 	.conn_apsrcreq_infra_mask_b = 1,
-#if defined(CONFIG_ARCH_MT6755)
 	.md32_apsrcreq_infra_mask_b = 0,
-#elif defined(CONFIG_ARCH_MT6797)
-	.md32_apsrcreq_infra_mask_b = 1,
-#endif
 	.md_ddr_en_0_mask_b = 1,
 	.md_ddr_en_1_mask_b = 0, /* bit 22 */
 	.md_vrf18_req_0_mask_b = 1,
