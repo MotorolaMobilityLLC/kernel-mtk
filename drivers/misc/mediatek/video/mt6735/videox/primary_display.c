@@ -4140,7 +4140,7 @@ static void _wdma_fence_release_callback(uint32_t userdata)
 		       fence_idx);
 }
 
-static void _Interface_fence_release_callback(uint32_t userdata)
+static int _Interface_fence_release_callback(uint32_t userdata)
 {
 	int layer = disp_sync_get_output_interface_timeline_id();
 
@@ -4149,6 +4149,8 @@ static void _Interface_fence_release_callback(uint32_t userdata)
 		MMProfileLogEx(ddp_mmp_get_events()->primary_wdma_fence_release, MMProfileFlagPulse,
 			       layer, userdata);
 	}
+
+	return 0;
 }
 
 static int _ovl_ext_fence_release_callback(uint32_t userdata)
