@@ -6,8 +6,8 @@
 #endif
 
 #ifdef __KERNEL__
-	#define EEMCONF_S       0x0011c010
-	#define EEMCONF_E       0x0011c260
+	#define EEMCONF_S       0x0012A010
+	#define EEMCONF_E       0x0012A250
 	#define EEMCONF_SIZE    (EEMCONF_E - EEMCONF_S)
 
 	extern void __iomem *eem_base;

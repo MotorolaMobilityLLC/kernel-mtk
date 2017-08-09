@@ -517,6 +517,7 @@ static void eem2_apply(struct EEM2_data *data, struct EEM2_trig *trig)
 
 	eem2_ctrl_lo[0] = val_0;
 	eem2_ctrl_lo[1] = val_1;
+	eem2_err("%s() set value[0]=0x%x, value[1]=0x%x\n", __func__, eem2_ctrl_lo[0], eem2_ctrl_lo[1]);
 	/* for Everest cluster 0 */
 	eem2_write(EEM2_CTRL_REG_0, val_0);
 	eem2_write(EEM2_CTRL_REG_1, val_1 & 0xfff80000);
@@ -533,6 +534,7 @@ static void eem2_apply(struct EEM2_data *data, struct EEM2_trig *trig)
 	eem2_write_field(EEM2_CTRL_REG_2, 31:31, 1);
 	udelay(1000);
 	eem2_write_field(EEM2_CTRL_REG_2, 31:31, 0);
+	eem2_err("%s() read value[0]=0x%x, value[1]=0x%x\n", __func__, eem2_ctrl_lo[0], eem2_ctrl_lo[1]);
 }
 
 
@@ -923,7 +925,7 @@ static ssize_t eem2_ctrl_lo_0_proc_write(struct file *file, const char __user *b
 	if (!buf)
 		return -EINVAL;
 
-	if (!kstrtoint(buf, 10, eem2_ctrl_lo))
+	if (!kstrtoint(buf, 16, eem2_ctrl_lo))
 		config_LO_CTRL(
 			(eem2_ctrl_lo[0]>>12) & 0x03,
 			(eem2_ctrl_lo[0]>>8) & 0x0F,
@@ -967,7 +969,8 @@ static ssize_t eem2_ctrl_lo_1_proc_write(struct file *file, const char __user *b
 	if (!buf)
 		return -EINVAL;
 
-	if (!kstrtoint(buf, 10, (eem2_ctrl_lo + 1)))
+	if (!kstrtoint(buf, 16, (eem2_ctrl_lo + 1))) {
+		eem2_ctrl_lo[1] = eem2_ctrl_lo[1] << 4;
 		config_LO_CTRL(
 			(eem2_ctrl_lo[0]>>12) & 0x03,
 			(eem2_ctrl_lo[0]>>8) & 0x0F,
@@ -985,6 +988,7 @@ static ssize_t eem2_ctrl_lo_1_proc_write(struct file *file, const char __user *b
 			(eem2_ctrl_lo[1]>>7) & 0x0f,
 			(eem2_ctrl_lo[1]>>6) & 0x01
 			);
+	}
 
 	free_page((unsigned long)buf);
 	return count;
@@ -996,6 +1000,7 @@ static ssize_t eem2_ctrl_lo_1_proc_write(struct file *file, const char __user *b
 static int eem2_big_ctrl_lo_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "eem2_big_ctrl_lo = %08lx\n", (unsigned long)eem2_big_regs[3]);
+	seq_printf(m, "[print by register] eem2_big_ctrl_lo = %x\n", eem2_read(EEM2_DET_CPU_ENABLE_ADDR));
 	return 0;
 }
 
@@ -1009,7 +1014,7 @@ static ssize_t eem2_big_ctrl_lo_proc_write(struct file *file, const char __user 
 	if (!buf)
 		return -EINVAL;
 
-	if (!kstrtoint(buf, 16, (eem2_big_regs + 3))) /* 0x2424 */
+	if (!kstrtoint(buf, 16, (eem2_big_regs + 3))) /* 0xc453 */
 		eem2_dbg("write success (0x%x)", *(eem2_big_regs + 3));
 
 	free_page((unsigned long)buf);
@@ -1038,9 +1043,10 @@ static ssize_t eem2_big_ctrl_trig_0_proc_write(struct file *file, const char __u
 	if (!buf)
 		return -EINVAL;
 
-	if (!kstrtoint(buf, 16, eem2_big_regs)) /* 0x33338000 */
+	if (!kstrtoint(buf, 16, eem2_big_regs)) { /* 0x33338 */
+		eem2_big_regs[0] = eem2_big_regs[0] << 12;
 		eem2_dbg("write success (0x%x)", *(eem2_big_regs));
-
+	}
 	free_page((unsigned long)buf);
 
 	return count;
@@ -1067,8 +1073,10 @@ static ssize_t eem2_big_ctrl_trig_1_proc_write(struct file *file, const char __u
 	if (!buf)
 		return -EINVAL;
 
-	if (!kstrtoint(buf, 16, (eem2_big_regs + 1))) /* 0xF0000000 */
+	if (!kstrtoint(buf, 16, (eem2_big_regs + 1))) { /* 0xF */
+		eem2_big_regs[1] = eem2_big_regs[1] << 28;
 		eem2_dbg("write success (0x%x)", *(eem2_big_regs + 1));
+	}
 	free_page((unsigned long)buf);
 
 	return count;
@@ -1095,8 +1103,10 @@ static ssize_t eem2_big_ctrl_trig_2_proc_write(struct file *file, const char __u
 	if (!buf)
 		return -EINVAL;
 
-	if (!kstrtoint(buf, 16, (eem2_big_regs + 2))) /* 0xF0000000 */
+	if (!kstrtoint(buf, 16, (eem2_big_regs + 2))) {/* 0xF */
+		eem2_big_regs[2] = eem2_big_regs[2] << 28;
 		eem2_dbg("write success (0x%x)", *(eem2_big_regs + 2));
+	}
 	free_page((unsigned long)buf);
 
 	return count;
@@ -1227,7 +1237,7 @@ void eem2_pre_iomap(void)
 
 #ifdef CONFIG_OF
 	if (eem2_base == NULL) {
-		node = of_find_compatible_node(NULL, NULL, "mediatek,MCUCFG");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
 
 		if (node) {
 			/* Setup IO addresses */
@@ -1274,7 +1284,7 @@ static int __init eem2_init(void)
 	struct resource r;
 
 	if (eem2_base == NULL) {
-		node = of_find_compatible_node(NULL, NULL, "mediatek,MCUCFG");
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
 		if (node) {
 			/* Setup IO addresses */
 			eem2_base = of_iomap(node, 0);

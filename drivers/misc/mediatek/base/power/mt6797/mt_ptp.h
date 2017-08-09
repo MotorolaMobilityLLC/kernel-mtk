@@ -67,6 +67,7 @@ typedef struct {
 enum eem_ctrl_id {
 	EEM_CTRL_BIG = 0,
 	EEM_CTRL_GPU = 1,
+	EEM_CTRL_SOC = 2,
 	EEM_CTRL_L = 3,
 	EEM_CTRL_2L = 4,
 	EEM_CTRL_CCI = 5,
@@ -76,6 +77,7 @@ enum eem_ctrl_id {
 enum eem_det_id {
 	EEM_DET_BIG	= EEM_CTRL_BIG,
 	EEM_DET_GPU	= EEM_CTRL_GPU,
+	EEM_DET_SOC	= EEM_CTRL_SOC,
 	EEM_DET_L	= EEM_CTRL_L,
 	EEM_DET_2L	= EEM_CTRL_2L,
 	EEM_DET_CCI	= EEM_CTRL_CCI,
