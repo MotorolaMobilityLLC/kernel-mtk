@@ -5409,12 +5409,6 @@ int primary_display_resume(void)
 	if (_is_decouple_mode(pgc->session_mode) && !pgc->force_on_wdma_path)
 		dpmgr_path_power_on(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 
-	if (primary_display_is_video_mode()) {
-		DISPCHECK("mutex0 clear[begin]\n");
-		ddp_mutex_clear(0, NULL);
-		DISPCHECK("mutex0 clear[end]\n");
-	}
-
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 2);
 	if (is_ipoh_bootup) {
 		DISPCHECK("[primary display path] leave primary_display_resume -- IPOH\n");
@@ -5427,6 +5421,12 @@ int primary_display_resume(void)
 		DISPCHECK("[POWER]start cmdq[end]--IPOH\n");
 		pgc->state = DISP_ALIVE;
 		goto done;
+	}
+
+	if (primary_display_is_video_mode()) {
+		DISPCHECK("mutex0 clear[begin]\n");
+		ddp_mutex_clear(0, NULL);
+		DISPCHECK("mutex0 clear[end]\n");
 	}
 	DISPCHECK("[POWER]dpmanager re-init[begin]\n");
 
