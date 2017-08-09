@@ -1633,7 +1633,7 @@ unsigned int get_dram_data_rate(void)
 	not real frequency */
 	if (MEMPLL_FOUT == 1866)
 		MEMPLL_FOUT = 1866;
-	else if (MEMPLL_FOUT == 1700)
+	else if (MEMPLL_FOUT == 1716)
 		MEMPLL_FOUT = 1700;
 	else if (MEMPLL_FOUT == 1560)
 		MEMPLL_FOUT = 1600;
