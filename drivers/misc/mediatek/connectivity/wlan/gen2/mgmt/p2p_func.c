@@ -543,10 +543,8 @@ VOID p2pFuncAcquireCh(IN P_ADAPTER_T prAdapter, IN P_P2P_CHNL_REQ_INFO_T prChnlR
 		prMsgChReq->ucNetTypeIndex = NETWORK_TYPE_P2P_INDEX;
 		prMsgChReq->ucTokenID = ++prChnlReqInfo->ucSeqNumOfChReq;
 		prMsgChReq->eReqType = CH_REQ_TYPE_JOIN;
-		if (prChnlReqInfo->u4MaxInterval != P2P_OFF_CHNL_TX_DEFAULT_TIME_MS)
+		if (prChnlReqInfo->u4MaxInterval < P2P_EXT_LISTEN_TIME_MS)
 			prMsgChReq->u4MaxInterval = P2P_EXT_LISTEN_TIME_MS;
-		else if (prChnlReqInfo->u4MaxInterval == P2P_OFF_CHNL_TX_DEFAULT_TIME_MS)
-			prMsgChReq->u4MaxInterval = P2P_OFF_CHNL_TX_DEFAULT_TIME_MS;
 		else
 			prMsgChReq->u4MaxInterval = prChnlReqInfo->u4MaxInterval;
 
