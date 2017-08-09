@@ -189,7 +189,11 @@ void p2pHandleSystemSuspend(void)
 
 		kalMemZero(g_aucBufIpAddr, sizeof(g_aucBufIpAddr));
 
-		prParamNetAddrList->u4AddressCount = u4NumIPv4 + u4NumIPv6;
+		prParamNetAddrList->u4AddressCount = u4NumIPv4;
+#ifdef CONFIG_IPV6
+		prParamNetAddrList->u4AddressCount += u4NumIPv6;
+#endif
+
 		prParamNetAddrList->u2AddressType = PARAM_PROTOCOL_ID_TCP_IP;
 		for (i = 0; i < u4NumIPv4; i++) {
 			prParamNetAddr->u2AddressLength = sizeof(PARAM_NETWORK_ADDRESS_IP);	/* 4;; */
