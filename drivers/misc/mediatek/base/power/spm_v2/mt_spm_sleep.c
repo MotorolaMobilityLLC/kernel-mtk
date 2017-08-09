@@ -270,16 +270,18 @@ static struct pwr_ctrl suspend_ctrl = {
 	.spm_lte_req = 1,
 	.spm_infra_req = 1,
 	.spm_vrf18_req = 1,
+	.spm_ddren_req = 1,
 #else
 	.spm_apsrc_req = 0,
 	.spm_f26m_req = 0,
 	.spm_lte_req = 0,
 	.spm_infra_req = 0,
 	.spm_vrf18_req = 0,
+	.spm_ddren_req = 0,
 #endif
 	.spm_dvfs_req = 0,
 	.spm_dvfs_force_down = 1,
-	.spm_ddren_req = 0,
+	/*.spm_ddren_req = 0, */
 	.cpu_md_dvfs_sop_force_on = 0,
 
 	/* SPM_CLK_CON */
