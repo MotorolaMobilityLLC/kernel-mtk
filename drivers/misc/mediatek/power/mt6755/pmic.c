@@ -812,6 +812,42 @@ static ssize_t store_pmic_dvt(struct device *dev, struct device_attribute *attr,
 
 static DEVICE_ATTR(pmic_dvt, 0664, show_pmic_dvt, store_pmic_dvt);
 
+/*
+ * auxadc
+ */
+unsigned char g_auxadc_pmic = 0;
+
+static ssize_t show_pmic_auxadc(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	pr_err("[show_pmic_auxadc] 0x%x\n", g_auxadc_pmic);
+	return sprintf(buf, "%u\n", g_auxadc_pmic);
+}
+
+static ssize_t store_pmic_auxadc(struct device *dev, struct device_attribute *attr, const char *buf,
+			      size_t size)
+{
+	int ret = 0, i, j;
+	char *pvalue = NULL;
+	unsigned int val = 0;
+
+	pr_err("[store_pmic_auxadc]\n");
+
+	if (buf != NULL && size != 0) {
+		pvalue = (char *)buf;
+		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
+		for (i = 0; i < val; i++) {
+
+			for (j = 0; j < 16; j++) {
+				pr_err("[PMIC_AUXADC] [%d]=%d\n", j, PMIC_IMM_GetOneChannelValue(j, 0, 0));
+				mdelay(5);
+			}
+			pr_err("[PMIC_AUXADC] [%d]=%d\n", j, PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH4_DCXO, 0, 0));
+		}
+	}
+	return size;
+}
+
+static DEVICE_ATTR(pmic_auxadc_ut, 0664, show_pmic_auxadc, store_pmic_auxadc);
 
 /*****************************************************************************
  * PMIC6351 linux reguplator driver
@@ -895,12 +931,12 @@ static int mtk_regulator_get_voltage_sel(struct regulator_dev *rdev)
 			if (mreg->pvoltages != NULL) {
 				pVoltage = (const int *)mreg->pvoltages;
 				/*HW LDO sequence issue, we need to change it */
-				if ((strcmp(mreg->desc.name, "VA18") == 0) |
-					(strcmp(mreg->desc.name, "VTCXO24") == 0) |
-					(strcmp(mreg->desc.name, "VTCXO28") == 0) |
-					(strcmp(mreg->desc.name, "VCN28") == 0) |
-					(strcmp(mreg->desc.name, "VXO22") == 0) |
-					(strcmp(mreg->desc.name, "VBIF28") == 0)) {
+				if ((strcmp(mreg->desc.name, "va18") == 0) |
+					(strcmp(mreg->desc.name, "vtcxo24") == 0) |
+					(strcmp(mreg->desc.name, "vtcxo28") == 0) |
+					(strcmp(mreg->desc.name, "vcn28") == 0) |
+					(strcmp(mreg->desc.name, "vxo22") == 0) |
+					(strcmp(mreg->desc.name, "vbif28") == 0)) {
 					PMICLOG("mtk_regulator_get_voltage_sel(name=%s selector=%d)\n",
 						mreg->desc.name, regVal);
 					if (regVal == 0)
@@ -935,12 +971,12 @@ static int mtk_regulator_get_voltage_sel(struct regulator_dev *rdev)
 		}
 	}
 	/*HW LDO sequence issue, we need to change it */
-	if ((strcmp(mreg->desc.name, "VA18") == 0) |
-		(strcmp(mreg->desc.name, "VTCXO24") == 0) |
-		(strcmp(mreg->desc.name, "VTCXO28") == 0) |
-		(strcmp(mreg->desc.name, "VCN28") == 0) |
-		(strcmp(mreg->desc.name, "VXO22") == 0) |
-		(strcmp(mreg->desc.name, "VBIF28") == 0)) {
+	if ((strcmp(mreg->desc.name, "va18") == 0) |
+		(strcmp(mreg->desc.name, "vtcxo24") == 0) |
+		(strcmp(mreg->desc.name, "vtcxo28") == 0) |
+		(strcmp(mreg->desc.name, "vcn28") == 0) |
+		(strcmp(mreg->desc.name, "vxo22") == 0) |
+		(strcmp(mreg->desc.name, "vbif28") == 0)) {
 		PMICLOG("mtk_regulator_get_voltage_sel_restore(name=%s selector=%d)\n",
 			mreg->desc.name, regVal);
 			if (regVal == 0)
@@ -980,12 +1016,13 @@ static int mtk_regulator_set_voltage_sel(struct regulator_dev *rdev, unsigned se
 	}
 #endif
 	/*HW LDO sequence issue, we need to change it */
-	if ((strcmp(rdesc->name, "VA18") == 0) |
-		(strcmp(rdesc->name, "VTCXO24") == 0) |
-		(strcmp(rdesc->name, "VTCXO28") == 0) |
-		(strcmp(rdesc->name, "VCN28") == 0) |
-		(strcmp(rdesc->name, "VXO22") == 0) |
-		(strcmp(rdesc->name, "VBIF28") == 0)) {
+/*
+	if ((strcmp(mreg->desc.name, "va18") == 0) |
+		(strcmp(mreg->desc.name, "vtcxo24") == 0) |
+		(strcmp(mreg->desc.name, "vtcxo28") == 0) |
+		(strcmp(mreg->desc.name, "vcn28") == 0) |
+		(strcmp(mreg->desc.name, "vxo22") == 0) |
+		(strcmp(mreg->desc.name, "vbif28") == 0)) {
 		PMICLOG("regulator_set_voltage_sel (name=%s selector=%d)\n",
 			rdesc->name, selector);
 			if (selector == 0)
@@ -997,7 +1034,8 @@ static int mtk_regulator_set_voltage_sel(struct regulator_dev *rdev, unsigned se
 			else if  (selector == 3)
 				selector = 0;
 	}
-	PMICLOG("regulator_set_voltage_sel (name=%s selector=%d)\n",
+*/
+	pr_err("regulator_set_voltage_sel(name=%s selector=%d)\n",
 		rdesc->name, selector);
 	if (mreg->vol_reg != 0)
 		pmic_set_register_value(mreg->vol_reg, selector);
@@ -1019,12 +1057,12 @@ static int mtk_regulator_list_voltage(struct regulator_dev *rdev, unsigned selec
 			if (mreg->pvoltages != NULL) {
 				pVoltage = (const int *)mreg->pvoltages;
 				/*HW LDO sequence issue, we need to change it */
-				if ((strcmp(mreg->desc.name, "VA18") == 0) |
-					(strcmp(mreg->desc.name, "VTCXO24") == 0) |
-					(strcmp(mreg->desc.name, "VTCXO28") == 0) |
-					(strcmp(mreg->desc.name, "VCN28") == 0) |
-					(strcmp(mreg->desc.name, "VXO22") == 0) |
-					(strcmp(mreg->desc.name, "VBIF28") == 0)) {
+				if ((strcmp(mreg->desc.name, "va18") == 0) |
+					(strcmp(mreg->desc.name, "vtcxo24") == 0) |
+					(strcmp(mreg->desc.name, "vtcxo28") == 0) |
+					(strcmp(mreg->desc.name, "vcn28") == 0) |
+					(strcmp(mreg->desc.name, "vxo22") == 0) |
+					(strcmp(mreg->desc.name, "vbif28") == 0)) {
 					PMICLOG("mtk_regulator_list_voltage(name=%s selector=%d)\n",
 						mreg->desc.name, selector);
 					if (selector == 0)
@@ -1100,12 +1138,12 @@ static ssize_t show_LDO_VOLTAGE(struct device *dev, struct device_attribute *att
 			if (mreg->pvoltages != NULL) {
 				pVoltage = (const int *)mreg->pvoltages;
 				/*HW LDO sequence issue, we need to change it */
-				if ((strcmp(mreg->desc.name, "VA18") == 0) |
-					(strcmp(mreg->desc.name, "VTCXO24") == 0) |
-					(strcmp(mreg->desc.name, "VTCXO28") == 0) |
-					(strcmp(mreg->desc.name, "VCN28") == 0) |
-					(strcmp(mreg->desc.name, "VXO22") == 0) |
-					(strcmp(mreg->desc.name, "VBIF28") == 0)) {
+				if ((strcmp(mreg->desc.name, "va18") == 0) |
+					(strcmp(mreg->desc.name, "vtcxo24") == 0) |
+					(strcmp(mreg->desc.name, "vtcxo28") == 0) |
+					(strcmp(mreg->desc.name, "vcn28") == 0) |
+					(strcmp(mreg->desc.name, "vxo22") == 0) |
+					(strcmp(mreg->desc.name, "vbif28") == 0)) {
 					PMICLOG("show_LDO_VOLTAGE(name=%s selector=%d)\n",
 						mreg->desc.name, regVal);
 					if (regVal == 0)
@@ -2571,7 +2609,9 @@ MT6351_PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN));*/
 	vbat_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_IMP_AVG);
 	ptim_bat_vol = (vbat_reg * 3 * 18000) / 32768;
 
+#if defined(CONFIG_MTK_SMART_BATTERY)
 	fgauge_read_IM_current((void *)&ptim_R_curr);
+#endif
 
 }
 
@@ -2583,16 +2623,20 @@ void enable_dummy_load(unsigned int en)
 		/*1. disable isink pdn */
 		pmic_set_register_value(PMIC_RG_DRV_ISINK3_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK2_CK_PDN, 0);
+		/*
 		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK0_CK_PDN, 0);
+		*/
 		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0);
 
 		/*1. disable isink pdn */
 		pmic_set_register_value(PMIC_RG_DRV_CHRIND_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK7_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK6_CK_PDN, 0);
+		/*
 		pmic_set_register_value(PMIC_RG_DRV_ISINK5_CK_PDN, 0);
 		pmic_set_register_value(PMIC_RG_DRV_ISINK4_CK_PDN, 0);
+		*/
 
 		/* enable isink step */
 		pmic_set_register_value(PMIC_ISINK_CH2_STEP, 0x7);
@@ -2624,6 +2668,25 @@ void enable_dummy_load(unsigned int en)
 		pmic_set_register_value(PMIC_ISINK_CH6_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH3_EN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH2_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CHOP7_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CHOP6_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CHOP3_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CHOP2_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH7_BIAS_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH6_BIAS_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH3_BIAS_EN, 0);
+		pmic_set_register_value(PMIC_ISINK_CH2_BIAS_EN, 0);
+
+		/*1. enable isink pdn */
+		pmic_set_register_value(PMIC_RG_DRV_ISINK3_CK_PDN, 0x1);
+		pmic_set_register_value(PMIC_RG_DRV_ISINK2_CK_PDN, 0x1);
+		pmic_set_register_value(PMIC_RG_DRV_32K_CK_PDN, 0x1);
+
+		/*1. enable isink pdn */
+		pmic_set_register_value(PMIC_RG_DRV_CHRIND_CK_PDN, 0x1);
+		pmic_set_register_value(PMIC_RG_DRV_ISINK7_CK_PDN, 0x1);
+		pmic_set_register_value(PMIC_RG_DRV_ISINK6_CK_PDN, 0x1);
+
 		/*pmic_set_register_value(PMIC_RG_VIBR_EN,0); */
 		/*PMICLOG("[disable dummy load]\n"); */
 	}
@@ -2814,15 +2877,6 @@ int get_rac_val(void)
 			else
 				ret = rac_cal * 1;
 
-		} else if ((curr_1 - curr_2) >= 700 &&
-			   (curr_1 - curr_2) <= 1200 && (volt_2 - volt_1) >= 80) {
-			/*40.0mA */
-			rac_cal = ((volt_2 - volt_1) * 1000) / (curr_1 - curr_2);	/*m-ohm */
-
-			if (rac_cal < 0)
-				ret = (rac_cal - (rac_cal * 2)) * 1;
-			else
-				ret = rac_cal * 1;
 		} else {
 			ret = -1;
 			pmic_spm_crit2("[4,Calculate Rac] bypass due to (curr_x-curr_y) < 40mA\n");
@@ -2851,6 +2905,7 @@ int get_rac_val(void)
 
 int get_dlpt_imix_spm(void)
 {
+#if defined(CONFIG_MTK_SMART_BATTERY)
 	int rac_val[5], rac_val_avg;
 #if 0
 	int volt[5], curr[5];
@@ -2909,6 +2964,7 @@ int get_dlpt_imix_spm(void)
 
 	ptim_imix=imix;
 */
+#endif /* end of #if defined(CONFIG_MTK_SMART_BATTERY) */
 	return 0;
 
 }
@@ -2937,9 +2993,10 @@ int get_dlpt_imix(void)
 
 	imix = (curr_avg + (volt_avg - g_lbatInt1) * 1000 / ptim_rac_val_avg) / 10;
 
+#if defined(CONFIG_MTK_SMART_BATTERY)
 	PMICLOG("[get_dlpt_imix] %d,%d,%d,%d,%d,%d,%d\n", volt_avg, curr_avg, g_lbatInt1,
 		ptim_rac_val_avg, imix, BMT_status.SOC, bat_get_ui_percentage());
-
+#endif
 	ptim_imix = imix;
 
 	return ptim_imix;
@@ -3001,7 +3058,9 @@ int dlpt_notify_handler(void *unused)
 	int cur_ui_soc = 0;
 	int diff_ui_soc = 1;
 
+#if defined(CONFIG_MTK_SMART_BATTERY)
 	pre_ui_soc = bat_get_ui_percentage();
+#endif
 	cur_ui_soc = pre_ui_soc;
 
 	do {
@@ -3017,7 +3076,9 @@ int dlpt_notify_handler(void *unused)
 		mutex_lock(&dlpt_notify_mutex);
 		/*---------------------------------*/
 
+#if defined(CONFIG_MTK_SMART_BATTERY)
 		cur_ui_soc = bat_get_ui_percentage();
+#endif
 
 		if (cur_ui_soc <= 1) {
 			g_low_per_timer += 10;
@@ -3530,14 +3591,14 @@ void dump_ldo_status_read_debug(void)
 				voltage_reg = pmic_get_register_value(mtk_ldos[i].vol_reg);
 				if (mtk_ldos[i].pvoltages != NULL) {
 					pVoltage = (const int *)mtk_ldos[i].pvoltages;
-				/*HW LDO sequence issue, we need to change it */
-				if ((strcmp(mtk_ldos[i].desc.name, "VA18") == 0) |
-					(strcmp(mtk_ldos[i].desc.name, "VTCXO24") == 0) |
-					(strcmp(mtk_ldos[i].desc.name, "VTCXO28") == 0) |
-					(strcmp(mtk_ldos[i].desc.name, "VCN28") == 0) |
-					(strcmp(mtk_ldos[i].desc.name, "VXO22") == 0) |
-					(strcmp(mtk_ldos[i].desc.name, "VBIF28") == 0)) {
-					pr_err("dump_ldo_status_read_debug(name=%s selector=%d)\n",
+					/*HW LDO sequence issue, we need to change it */
+					if ((strcmp(mtk_ldos[i].desc.name, "va18") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "vtcxo24") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "vtcxo28") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "vcn28") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "vxo22") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "vbif28") == 0)) {
+						pr_err("dump_ldo_status_read_debug(name=%s selector=%d)\n",
 						mtk_ldos[i].desc.name, voltage_reg);
 					if (voltage_reg == 0)
 						voltage_reg = 3;
@@ -3566,7 +3627,6 @@ void dump_ldo_status_read_debug(void)
 		pr_err("%s   status:%d     voltage:%duv    voltage_reg:%d\n",
 			mtk_ldos[i].desc.name, en, voltage, voltage_reg);
 	}
-
 
 	for (i = 0; i < interrupts_size; i++) {
 		for (j = 0; j < PMIC_INT_WIDTH; j++) {
@@ -3622,12 +3682,12 @@ static int proc_utilization_show(struct seq_file *m, void *v)
 				if (mtk_ldos[i].pvoltages != NULL) {
 					pVoltage = (const int *)mtk_ldos[i].pvoltages;
 					/*HW LDO sequence issue, we need to change it */
-					if ((strcmp(mtk_ldos[i].desc.name, "VA18") == 0) |
-						(strcmp(mtk_ldos[i].desc.name, "VTCXO24") == 0) |
-						(strcmp(mtk_ldos[i].desc.name, "VTCXO28") == 0) |
-						(strcmp(mtk_ldos[i].desc.name, "VCN28") == 0) |
-						(strcmp(mtk_ldos[i].desc.name, "VXO22") == 0) |
-						(strcmp(mtk_ldos[i].desc.name, "VBIF28") == 0)) {
+					if ((strcmp(mtk_ldos[i].desc.name, "va18") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "vtcxo24") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "vtcxo28") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "vcn28") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "vxo22") == 0) |
+						(strcmp(mtk_ldos[i].desc.name, "vbif28") == 0)) {
 						pr_err("dump_ldo_status_read_debug(name=%s selector=%d)\n",
 							mtk_ldos[i].desc.name, voltage_reg);
 					if (voltage_reg == 0)
@@ -4196,7 +4256,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0, i;
 #ifdef DLPT_FEATURE_SUPPORT
-	const int *pimix;
+	const int *pimix = NULL;
 	int len = 0;
 #endif
 #if defined(CONFIG_MTK_SMART_BATTERY)
@@ -4352,6 +4412,8 @@ static int pmic_mt_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_dlpt_stop);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_dlpt_level);
 #endif
+
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_pmic_auxadc_ut);
 
 	PMICLOG("[PMIC] device_create_file for EM : done.\n");
 
