@@ -87,8 +87,8 @@ void __iomem *scp_i2c0_base;
 void __iomem *scp_i2c1_base;
 void __iomem *scp_i2c2_base;
 void __iomem *scp_i2c3_base;
+#include <mt_dramc.h> /* for ucDram_Register_Read () */
 void __iomem *spm_infracfg_ao_base;
-void __iomem *spm_ddrphy_base;
 void __iomem *spm_cksys_base;
 void __iomem *spm_mcucfg;
 u32 gpio_base_addr;
@@ -394,13 +394,6 @@ static void spm_register_init(void)
 	if (!spm_mcucfg)
 		spm_err("[MCUCFG] base failed\n");
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,DDRPHY");
-	if (!node)
-		spm_err("find DDRPHY node failed\n");
-	spm_ddrphy_base = of_iomap(node, 0);
-	if (!spm_ddrphy_base)
-		spm_err("[DDRPHY] base failed\n");
-
 #if 0
 	node = of_find_compatible_node(NULL, NULL, "mediatek,spm_vcorefs_start_eint");
 	if (!node) {
@@ -567,14 +560,14 @@ int spm_module_init(void)
 
 	spm_set_dummy_read_addr();
 
-	if (spm_read(spm_ddrphy_base + 0x698) & (1 << 5)) {
+	if (ucDram_Register_Read(0x698) & (1 << 5)) {
 		spm_write(SPM_SW_RSV_5, spm_read(SPM_SW_RSV_5) & ~1);
 		spm_crit2("SPM_SW_RSV5(0x%x) init by 1pll(0x%x)\n", spm_read(SPM_SW_RSV_5),
-			  spm_read(spm_ddrphy_base + 0x698));
+			  ucDram_Register_Read(0x698));
 	} else {
 		spm_write(SPM_SW_RSV_5, spm_read(SPM_SW_RSV_5) | 1);
 		spm_crit2("SPM_SW_RSV5(0x%x) init by 3pll(0x%x)\n", spm_read(SPM_SW_RSV_5),
-			  spm_read(spm_ddrphy_base + 0x698));
+			  ucDram_Register_Read(0x698));
 	}
 
 	return r;
@@ -1037,13 +1030,13 @@ int spm_golden_setting_cmp(bool en)
 	ddrphy_num = sizeof(ddrphy_setting) / sizeof(ddrphy_setting[0]);
 	for (i = 0; i < ddrphy_num; i++) {
 #ifdef CONFIG_OF
-		if ((spm_read(spm_ddrphy_base + ddrphy_setting[i].addr) != ddrphy_setting[i].value)
+		if ((ucDram_Register_Read(ddrphy_setting[i].addr) != ddrphy_setting[i].value)
 		    && ((ddrphy_setting[i].value1 == 0xffffffff)
-			|| (spm_read(spm_ddrphy_base + ddrphy_setting[i].addr) !=
+			|| (ucDram_Register_Read(ddrphy_setting[i].addr) !=
 			    ddrphy_setting[i].value1))) {
-			spm_err("dramc setting mismatch addr: %p, val: 0x%x\n",
-				spm_ddrphy_base + ddrphy_setting[i].addr,
-				spm_read(spm_ddrphy_base + ddrphy_setting[i].addr));
+			spm_err("dramc setting mismatch addr: %x, val: 0x%x\n",
+				ddrphy_setting[i].addr,
+				ucDram_Register_Read(ddrphy_setting[i].addr));
 			r = -EPERM;
 		}
 #else
