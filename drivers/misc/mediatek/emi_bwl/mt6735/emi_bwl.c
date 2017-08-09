@@ -99,43 +99,43 @@ static const unsigned int emi_arbg2_lpddr2_1066_val[] = {
 
 static const unsigned int emi_arba_lpddr3_1600_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg2) arba,
-#include "mach/con_sce_lpddr3_1600_D2.h"
+#include "mach/con_sce_lpddr3_1600_D1.h"
 #undef X_CON_SCE
 };
 
 static const unsigned int emi_arbb_lpddr3_1600_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg2) arbb,
-#include "mach/con_sce_lpddr3_1600_D2.h"
+#include "mach/con_sce_lpddr3_1600_D1.h"
 #undef X_CON_SCE
 };
 
 static const unsigned int emi_arbc_lpddr3_1600_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg2) arbc,
-#include "mach/con_sce_lpddr3_1600_D2.h"
+#include "mach/con_sce_lpddr3_1600_D1.h"
 #undef X_CON_SCE
 };
 
 static const unsigned int emi_arbd_lpddr3_1600_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg2) arbd,
-#include "mach/con_sce_lpddr3_1600_D2.h"
+#include "mach/con_sce_lpddr3_1600_D1.h"
 #undef X_CON_SCE
 };
 
 static const unsigned int emi_arbe_lpddr3_1600_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg2) arbe,
-#include "mach/con_sce_lpddr3_1600_D2.h"
+#include "mach/con_sce_lpddr3_1600_D1.h"
 #undef X_CON_SCE
 };
 
 static const unsigned int emi_arbf_lpddr3_1600_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg2) arbf,
-#include "mach/con_sce_lpddr3_1600_D2.h"
+#include "mach/con_sce_lpddr3_1600_D1.h"
 #undef X_CON_SCE
 };
 
 static const unsigned int emi_arbg2_lpddr3_1600_val[] = {
 #define X_CON_SCE(con_sce, arba, arbb, arbc, arbd, arbe, arbf, arbg2) arbg2,
-#include "mach/con_sce_lpddr3_1600_D2.h"
+#include "mach/con_sce_lpddr3_1600_D1.h"
 #undef X_CON_SCE
 };
 
