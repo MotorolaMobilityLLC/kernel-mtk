@@ -297,7 +297,7 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 static void write_cmos_sensor_twobyte(kal_uint32 addr, kal_uint32 para)
 {
     char pu_send_cmd[4] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para >> 8),(char)(para & 0xFF)};
-    LOG_INF("write_cmos_sensor_twobyte is %x,%x,%x,%x\n", pu_send_cmd[0], pu_send_cmd[1], pu_send_cmd[2], pu_send_cmd[3]);
+    //LOG_INF("write_cmos_sensor_twobyte is %x,%x,%x,%x\n", pu_send_cmd[0], pu_send_cmd[1], pu_send_cmd[2], pu_send_cmd[3]);
     iWriteRegI2C(pu_send_cmd, 4, imgsensor.i2c_write_id);
 }
 static void set_dummy(void)
@@ -429,7 +429,7 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
 	imgsensor.shutter = le;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
-	LOG_INF("HDR set shutter =%d\n", le);
+	LOG_INF("HDR set shutter LE=%d, SE=%d\n", le, se);
 	if(!le) le = 1; /*avoid 0*/
 	
 	spin_lock(&imgsensor_drv_lock);
