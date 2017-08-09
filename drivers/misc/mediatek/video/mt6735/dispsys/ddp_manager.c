@@ -330,7 +330,7 @@ disp_path_handle dpmgr_create_path(DDP_SCENARIO_ENUM scenario, cmdqRecHandle cmd
 	int module_num = ddp_get_module_num(scenario);
 	DDP_MANAGER_CONTEXT *content = _get_context();
 
-	path_handle = kzalloc(sizeof(uint8_t *) * sizeof(ddp_path_handle_t), GFP_KERNEL);
+	path_handle = kzalloc(sizeof(ddp_path_handle_t), GFP_KERNEL);
 	if (NULL != path_handle) {
 		path_handle->cmdqhandle = cmdq_handle;
 		path_handle->scenario = scenario;
