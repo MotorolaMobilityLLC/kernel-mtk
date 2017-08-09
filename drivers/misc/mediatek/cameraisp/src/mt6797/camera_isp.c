@@ -10239,7 +10239,7 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 				(unsigned int)ISP_RD32(CAM_REG_CQ_THR4_BASEADDR(module)));
 			/*AAO*/
 			LOG_DBG("[TF_%d]%08X %08X", port, (unsigned int)(0x0C00),
-				(unsigned int)ISP_RD32(CAM_REG_AAO_FH_BASE_ADDR(module)));
+				(unsigned int)ISP_RD32(CAM_REG_DMA_FRAME_HEADER_EN(module)));
 			LOG_DBG("[TF_%d]%08X %08X", port, (unsigned int)(0x0C0C),
 				(unsigned int)ISP_RD32(CAM_REG_AAO_FH_BASE_ADDR(module)));
 			LOG_DBG("[TF_%d]%08X %08X", port, (unsigned int)(0x0280),
@@ -10259,8 +10259,10 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 			LOG_DBG("[TF_%d]%08X %08X", port, (unsigned int)(0x02A4),
 				(unsigned int)ISP_RD32(CAM_REG_AAO_CON3(module)));
 
-			if ((ISP_RD32(CAM_REG_TG_VF_CON(ISP_CAM_B_IDX)) & 0x01) == 0)
+			if ((ISP_RD32(CAM_REG_TG_VF_CON(ISP_CAM_B_IDX)) & 0x01) == 0) {
+				LOG_DBG("[TF_%d]CamB is off", port);
 				break;
+			}
 		}
 		break;
 #if 0
@@ -10458,7 +10460,7 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 				(unsigned int)ISP_RD32(CAM_REG_AFO_FH_BASE_ADDR(module)));
 			LOG_DBG("[TF_%d]%08X %08X", port, (unsigned int)(0x0C14),
 				(unsigned int)ISP_RD32(CAM_REG_LCSO_FH_BASE_ADDR(module)));
-			LOG_DBG("[TF_%d]%08X %08X", port, (unsigned int)(0x0C018),
+			LOG_DBG("[TF_%d]%08X %08X", port, (unsigned int)(0x0C18),
 				(unsigned int)ISP_RD32(CAM_REG_UFEO_FH_BASE_ADDR(module)));
 			LOG_DBG("[TF_%d]%08X %08X", port, (unsigned int)(0x0C1C),
 				(unsigned int)ISP_RD32(CAM_REG_PDO_FH_BASE_ADDR(module)));
