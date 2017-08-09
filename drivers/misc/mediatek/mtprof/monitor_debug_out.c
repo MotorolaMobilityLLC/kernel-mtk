@@ -118,26 +118,26 @@ static void mt_aee_show_current_irq_counts(void)
 	/* spin_lock_irqsave(&mt_irq_count_lock, flags); */
 
 	t_diff = t_cur - mt_save_irq_count_time;
-	/*aee_wdt_printf("\nIRQ Status\n");*/
-	/*aee_wdt_printf("Dur:%lld us,(now:%lld,last:%lld)\n", usec_high(t_diff), usec_high(t_cur),
-		 usec_high(mt_save_irq_count_time));*/
+	aee_wdt_printf("\nIRQ Status\n");
+	aee_wdt_printf("Dur:%lld us,(now:%lld,last:%lld)\n", usec_high(t_diff), usec_high(t_cur),
+		 usec_high(mt_save_irq_count_time));
 	for (cpu = 0; cpu < num_possible_cpus(); cpu++) {
-		/*aee_wdt_printf(" CPU%d\n", cpu);*/
+		aee_wdt_printf(" CPU%d\n", cpu);
 		for (irq = 0; irq < nr_irqs && irq < MAX_NR_IRQS; irq++) {
 			count = kstat_irqs_cpu(irq, cpu);
-			/*if (count != 0)
+			if (count != 0)
 				aee_wdt_printf(" %d:%s +%d(%d)\n", irq, isr_name(irq),
-					       count - mt_irq_count[cpu][irq], count);*/
+					       count - mt_irq_count[cpu][irq], count);
 		}
 	}
 #ifdef CONFIG_SMP
 	for (cpu = 0; cpu < num_possible_cpus(); cpu++) {
-		/*aee_wdt_printf("CPU#%d:\n", cpu);*/
+		aee_wdt_printf("CPU#%d:\n", cpu);
 		for (irq = 0; irq < NR_IPI; irq++) {
 			count = __get_irq_stat(cpu, ipi_irqs[irq]);
-			/*if (count != 0)
+			if (count != 0)
 				aee_wdt_printf(" %d:IPI +%d(%d)\n", irq,
-					       count - mt_local_irq_count[cpu][irq], count);*/
+					       count - mt_local_irq_count[cpu][irq], count);
 		}
 	}
 #endif
@@ -149,8 +149,8 @@ static void mt_aee_show_timer_info(void)
 	int cpu;
 
 	for_each_possible_cpu(cpu) {
-		/*aee_wdt_printf("[TimerISR#%d]last s:%llu e:%llu ns\n", cpu,
-			       per_cpu(local_timer_ts, cpu), per_cpu(local_timer_te, cpu));*/
+		aee_wdt_printf("[TimerISR#%d]last s:%llu e:%llu ns\n", cpu,
+			       per_cpu(local_timer_ts, cpu), per_cpu(local_timer_te, cpu));
 	}
 }
 
@@ -277,8 +277,7 @@ void mt_aee_dump_sched_traces(void)
 	for_each_possible_cpu(cpu) {
 		get_sched_block_events(b_isr, b_sq, b_tk, b_hrt, b_sft);
 		get_sched_stop_events(e_pmpt, e_irq);
-		/*aee_wdt_printf("CPU%d\n", cpu);*/
-		/*
+		aee_wdt_printf("CPU%d\n", cpu);
 		b_isr->cur_event == 0 ?
 		    aee_wdt_printf("[ISR]last#%d,dur:%lld s:%lld\n\n",
 				   (int)b_isr->last_event,
@@ -350,7 +349,6 @@ void mt_aee_dump_sched_traces(void)
 				(void *)b_sft->last_event, usec_high(b_sft->last_te - b_sft->last_ts),
 				usec_high(b_sft->last_ts), usec_high(b_sft->last_te));
 		}
-		*/
 		/****  Dump Stop Events ****/
 		/*
 		 * e_irq->cur_ts == 0?

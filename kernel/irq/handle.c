@@ -20,6 +20,9 @@
 #include <trace/events/irq.h>
 
 #include "internals.h"
+#ifdef CONFIG_MT_RT_THROTTLE_MON
+#include "mt_sched_mon.h"
+#endif
 #ifdef CONFIG_MTPROF_CPUTIME
 #include "mt_cputime.h"
 /*  cputime monitor en/disable value */
