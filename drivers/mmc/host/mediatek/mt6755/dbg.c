@@ -828,7 +828,7 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 	}
 
 	host_ctl = mtk_msdc_host[host_num];
-	mmc = host_ctl->mmc;
+
 
 	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card) {
 		pr_err(" No card initialized in host[%d]\n", host_num);
@@ -858,6 +858,8 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 		result = -1;
 		goto free;
 	}
+
+	mmc = host_ctl->mmc;
 
 	mmc_claim_host(mmc);
 
@@ -889,9 +891,6 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 	}
 
 	msdc_cmd.arg = address;
-
-	BUG_ON(!host_ctl->mmc->card);
-
 	msdc_stop.opcode = MMC_STOP_TRANSMISSION;
 	msdc_stop.arg = 0;
 	msdc_stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
