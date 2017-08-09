@@ -706,8 +706,10 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 			if (pdesc->addr_2nd == 0) {
 				if (addr_2nd == (pdesc->size - 3))
 					*(u16 *) &pdesc->size = addr_2nd;
+#if defined(CONFIG_ARCH_MT6755)
 				else
 					BUG();
+#endif
 			}
 		}
 	}
