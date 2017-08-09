@@ -53,7 +53,7 @@
 #define ENABLE_EMI_PROTECTION
 #ifdef ENABLE_EMI_PROTECTION
 #define SET_EMI_STEP_BY_STAGE
-/* #define SET_AP_MPU_REGION */ /*no need set ap region in Jade */
+/* #define SET_AP_MPU_REGION */ /*no need set ap region */
 #endif
 
 #endif
