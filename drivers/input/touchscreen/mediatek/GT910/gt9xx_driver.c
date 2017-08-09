@@ -51,7 +51,7 @@ static int tpd_def_calmat_local_factory[8] = TPD_CALIBRATION_MATRIX_ROTATION_FAC
 static u8 *gpDMABuf_va;
 static u32 gpDMABuf_pa;
 #endif
-static void tpd_eint_interrupt_handler(void);
+static irqreturn_t tpd_eint_interrupt_handler(void);
 static int touch_event_handler(void *unused);
 static int tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int tpd_i2c_detect(struct i2c_client *client, struct i2c_board_info *info);
@@ -1612,11 +1612,12 @@ out:
 	return -1;
 }
 
-static void tpd_eint_interrupt_handler(void)
+static irqreturn_t tpd_eint_interrupt_handler(void)
 {
 	TPD_DEBUG_PRINT_INT;
 	tpd_flag = 1;
 	wake_up_interruptible(&waiter);
+	return IRQ_HANDLED;
 }
 
 static int tpd_i2c_remove(struct i2c_client *client)
