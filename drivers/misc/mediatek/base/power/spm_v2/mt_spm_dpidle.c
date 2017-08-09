@@ -795,8 +795,8 @@ RESTORE_IRQ:
 #if SPM_AEE_RR_REC
 	aee_rr_rec_deepidle_val(0);
 #endif
-
-	rekick_dpidle_common_scenario(pcmdesc, pwrctrl);
+	if (wr != WR_UART_BUSY)
+		rekick_dpidle_common_scenario(pcmdesc, pwrctrl);
 
 	return wr;
 }
@@ -937,8 +937,8 @@ RESTORE_IRQ:
 	/* restore original dpidle setting */
 	pwrctrl->timer_val = dpidle_timer_val;
 	pwrctrl->wake_src = dpidle_wake_src;
-
-	rekick_dpidle_common_scenario(pcmdesc, pwrctrl);
+	if (last_wr != WR_UART_BUSY)
+		rekick_dpidle_common_scenario(pcmdesc, pwrctrl);
 
 	return last_wr;
 }

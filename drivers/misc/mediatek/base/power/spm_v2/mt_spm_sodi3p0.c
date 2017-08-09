@@ -555,10 +555,12 @@ UNLOCK_SPM:
 #endif
 
 #if defined(CONFIG_ARCH_MT6797)
-	spm_sodi3_footprint(SPM_SODI3_REKICK_VCORE);
-	spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-	__spm_backup_vcore_dvfs_dram_shuffle();
-	vcorefs_go_to_vcore_dvfs();
+	if (wr != WR_UART_BUSY) {
+		spm_sodi3_footprint(SPM_SODI3_REKICK_VCORE);
+		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
+		__spm_backup_vcore_dvfs_dram_shuffle();
+		vcorefs_go_to_vcore_dvfs();
+	}
 #endif
 
 	spm_sodi3_reset_footprint();

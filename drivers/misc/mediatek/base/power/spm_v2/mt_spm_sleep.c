@@ -1345,27 +1345,28 @@ RESTORE_IRQ:
 
 #if defined(CONFIG_ARCH_MT6797)
 	/* Re-kick VCORE DVFS */
-	if (is_vcorefs_feature_enable()) {
-		__spm_backup_vcore_dvfs_dram_shuffle();
-		__spm_kick_im_to_fetch(pcmdesc);
-		__spm_init_pcm_register();
-		__spm_init_event_vector(pcmdesc);
-		__spm_check_md_pdn_power_control(pwrctrl);
-		__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
-		pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
-		pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
-		pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
-		__spm_set_power_control(pwrctrl);
-		__spm_set_wakeup_event(pwrctrl);
-		__spm_set_vcorefs_wakeup_event(__spm_vcore_dvfs.pwrctrl);
-		spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
-		__spm_kick_pcm_to_run(pwrctrl);
-		spm_crit2("R15: 0x%x\n", spm_read(PCM_REG15_DATA));
+	if (last_wr != WR_UART_BUSY)
+		if (is_vcorefs_feature_enable()) {
+			__spm_backup_vcore_dvfs_dram_shuffle();
+			__spm_kick_im_to_fetch(pcmdesc);
+			__spm_init_pcm_register();
+			__spm_init_event_vector(pcmdesc);
+			__spm_check_md_pdn_power_control(pwrctrl);
+			__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
+			pwrctrl->pcm_flags |= SPM_FLAG_RUN_COMMON_SCENARIO;
+			pwrctrl->pcm_flags &= ~SPM_FLAG_DIS_VCORE_DVS;
+			pwrctrl->pcm_flags |= SPM_FLAG_DIS_VCORE_DFS;
+			__spm_set_power_control(pwrctrl);
+			__spm_set_wakeup_event(pwrctrl);
+			__spm_set_vcorefs_wakeup_event(__spm_vcore_dvfs.pwrctrl);
+			spm_write(PCM_CON1, SPM_REGWR_CFG_KEY | (spm_read(PCM_CON1) & ~PCM_TIMER_EN_LSB));
+			__spm_kick_pcm_to_run(pwrctrl);
+			spm_crit2("R15: 0x%x\n", spm_read(PCM_REG15_DATA));
 
 #if SPM_AEE_RR_REC
-		aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_SUSPEND);
+			aee_rr_rec_spm_common_scenario_val(SPM_COMMON_SCENARIO_SUSPEND);
 #endif
-	}
+		}
 #endif
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
