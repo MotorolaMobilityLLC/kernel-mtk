@@ -939,14 +939,14 @@ static u32 charging_get_charger_type(void *data)
 static u32 charging_get_is_pcm_timer_trigger(void *data)
 {
 	u32 status = STATUS_OK;
-/*  TODO: depend on spm, which would be porting later.
-	if (slp_get_wake_reason() == WR_PCM_TIMER)
+
+	if (slp_get_wake_reason() == 3)
 		*(bool *) (data) = true;
 	else
 		*(bool *) (data) = false;
 
 	battery_log(BAT_LOG_CRTI, "slp_get_wake_reason=%d\n", slp_get_wake_reason());
-*/
+
 	*(bool *) (data) = false;
 	return status;
 }

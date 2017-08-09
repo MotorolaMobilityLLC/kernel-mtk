@@ -241,4 +241,7 @@ extern u32 bq24297_read_interface(u8 RegNum, u8 *val, u8 MASK,
 					 u8 SHIFT);
 s32 bq24297_control_interface(int cmd, void *data);
 
+/* spm utility */
+extern int slp_get_wake_reason(void);
+
 #endif				/* _bq24297_SW_H_ */
