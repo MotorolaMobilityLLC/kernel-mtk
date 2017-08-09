@@ -296,9 +296,16 @@ int mtk_dvfs_gpu_lock(int sem, int user)
 	while (DVFS_GPU_read32(offset) != 0x1)
 	{
 		DVFS_GPU_write32(offset, 0x1);
-		if (((++retry) % 10000) == 0)
+		if (((++retry) % 1000) == 0)
 		{
 			pr_MTK_err("request sem @ dvfs_gpu:0x%x fail, retry=%d, continue...\n", offset, retry);
+		}
+		udelay(1);
+
+		if (retry > 2000)
+		{
+			pr_MTK_err("request sem @ dvfs_gpu:0x%x fail, retry=%d, exit\n", offset, retry);
+			return 1;
 		}
 	}
 

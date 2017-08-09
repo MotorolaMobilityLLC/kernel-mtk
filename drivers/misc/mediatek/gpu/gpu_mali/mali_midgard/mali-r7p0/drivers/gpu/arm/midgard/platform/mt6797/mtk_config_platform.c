@@ -96,10 +96,8 @@ int dvfs_gpu_pm_spin_lock_for_vgpu(void)
 	int ret = 0;
 #ifdef MTK_GPU_SPM
 	mutex_lock(&spm_mutex_lock);
-	mtk_kbase_spm_acquire();
 	if (g_is_spm_on)
 		ret = mtk_dvfs_gpu_lock(0, 1);
-	mtk_kbase_spm_release();
 #endif
 	return ret;
 }
@@ -108,10 +106,8 @@ int dvfs_gpu_pm_spin_unlock_for_vgpu(void)
 {
 	int ret = 0;
 #ifdef MTK_GPU_SPM
-	mtk_kbase_spm_acquire();
 	if (g_is_spm_on)
 		ret = mtk_dvfs_gpu_unlock(0, 1);
-	mtk_kbase_spm_release();
 	mutex_unlock(&spm_mutex_lock);
 #endif
 	return ret;
@@ -518,10 +514,6 @@ ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *att
 		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "\n");
 	}
 
-	/* dump DFP registers */
-	//ret += scnprintf(buf + ret, PAGE_SIZE - ret, "DFP_ctrl = %u\n", DFP_read32(DFP_CTRL));
-	//ret += scnprintf(buf + ret, PAGE_SIZE - ret, "\n");
-
 	/* dump DVFS_GPU registers */
 	MTKCLK_prepare_enable(clk_dvfs_gpu);
 
@@ -553,16 +545,6 @@ ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *att
 		ret += scnprintf(buf + ret, PAGE_SIZE - ret, "\n");
 	}
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
-
-	ret += scnprintf(buf + ret, PAGE_SIZE - ret,
-		"command list\n"
-		"  reset : reset to default\n"
-		"  enable : enable DVFS\n"
-		"  dsiable : disable DVFS\n"
-		"  ceiling_fv <freq> <vol> : ex. ceiling_fv 700000 1125\n"
-		"  floor_fv <freq> <vol> : ex. floor_fv 154000 800\n"
-		"  fix_fv <freq> <vol> : ex. fix_fv 700000 1125\n"
-		);
 
 	if (ret < PAGE_SIZE - 1)
 	{
@@ -701,8 +683,8 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	dev_MTK_err(kbdev->dev, "xxxx clk_ap_dmau:%p\n", config->clk_ap_dma);
 #endif
 
-	config->max_volt = 1077;
-	config->max_freq = mt_gpufreq_get_freq_by_idx(1);
+	config->max_volt = 1128;
+	config->max_freq = mt_gpufreq_get_freq_by_idx(0);
 	config->min_volt = 860;
 	config->min_freq = mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_dvfs_table_num()-2);
 
@@ -721,10 +703,11 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	DVFS_GPU_write32(SPM_GPU_POWER, 0x1);
 	mtk_kbase_spm_con(0, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
-	/* init gpu hal */
-	mtk_kbase_spm_hal_init();
 
 	mtk_kbase_spm_release();
+
+	/* init gpu hal */
+	mtk_kbase_spm_hal_init();
 
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
 	MTKCLK_disable_unprepare(clk_gpupm);

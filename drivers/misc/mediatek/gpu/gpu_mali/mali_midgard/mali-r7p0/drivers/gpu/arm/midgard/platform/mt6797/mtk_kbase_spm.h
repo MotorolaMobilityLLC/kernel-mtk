@@ -217,4 +217,7 @@ void mtk_gpu_spm_resume(void);
 int mtk_dvfs_gpu_lock(int sem, int user);
 int mtk_dvfs_gpu_unlock(int sem, int user);
 
+extern int dvfs_gpu_pm_spin_lock_for_vgpu(void);
+extern int dvfs_gpu_pm_spin_unlock_for_vgpu(void);
+
 #endif
