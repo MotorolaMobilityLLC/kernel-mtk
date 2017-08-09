@@ -125,13 +125,42 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		#size-cells = <2>;
 		ranges;
 
-		/* reserve 192KB at DRAM start + 48MB */
+		lk-reserved-memory@41e00000{
+			compatible = "mediatek,lk";
+			reg = <0 0x41e00000 0 0x100000>;
+		};
+
+		mrdump-reserved-memory@41f00000{
+			compatible = "mediatek,mrdump-V2";
+			reg = <0 0x41f00000 0 0x2000>;
+		};
+
+		preloader-reserved-memory@42000000{
+			compatible = "mediatek,preloader";
+			reg = <0 0x42000000 0 0x200000>;
+		};
+
 		atf-reserved-memory@43000000 {
 			compatible = "mediatek,mt6735-atf-reserved-memory",
 				     "mediatek,mt6735m-atf-reserved-memory",
 				     "mediatek,mt6753-atf-reserved-memory";
 			no-map;
 			reg = <0 0x43000000 0 0x30000>;
+		};
+
+		ram_console-reserved-memory@43f00000{
+			compatible = "mediatek,ram_console";
+			reg = <0 0x43f00000 0 0x10000>;
+		};
+
+		pstore-reserved-memory@43f10000 {
+			compatible = "mediatek,pstore";
+			reg = <0 0x43f10000 0 0xe0000>;
+		};
+
+		minirdump-reserved-memory@43ff0000{
+			compatible = "mediatek,minirdump";
+			reg = <0 0x43ff0000 0 0x10000>;
 		};
 
 		reserve-memory-ccci_md1 {
@@ -149,36 +178,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			alignment = <0 0x200000>;
 		};
 
-		mrdump-reserved-memory@41f00000{
-			compatible = "mediatek,mrdump-V2";
-			reg = <0 0x41f00000 0 0x2000>;
-		};
-
-		preloader-reserved-memory@42000000{
-			compatible = "mediatek,preloader";
-			reg = <0 0x42000000 0 0x200000>;
-		};
-
-		lk-reserved-memory@41e00000{
-			compatible = "mediatek,lk";
-			reg = <0 0x41e00000 0 0x100000>;
-		};
-
-
-		ram_console-reserved-memory@43f00000{
-			compatible = "mediatek,ram_console";
-			reg = <0 0x43f00000 0 0x10000>;
-		};
-
-		minirdump-reserved-memory@43ff0000{
-			compatible = "mediatek,minirdump";
-			reg = <0 0x43ff0000 0 0x10000>;
-		};
-
-		pstore-reserved-memory@43f10000 {
-			compatible = "mediatek,pstore";
-			reg = <0 0x43f10000 0 0xe0000>;
-		};
 	};
 
 	gic: interrupt-controller@10220000 {
@@ -310,7 +309,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		eintc: eintc@10005000 {
 			compatible = "mtk,mt-eic";
 			reg = <0x10005000 0x1000>;
-			interrupts = <0 153 0x4>;
+			interrupts = <GIC_SPI 153 IRQ_TYPE_LEVEL_HIGH>;
 
 			#interrupt-cells = <2>;
 			interrupt-controller;
@@ -433,9 +432,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x10209000 0x1000>;
 		};
 
-		fhctl@10209F00 {
+		fhctl@10209f00 {
 			compatible = "mediatek,fhctl";
-			reg = <0x10209F00 0x100>;
+			reg = <0x10209f00 0x100>;
 		};
 
 		dramc_nao: dramc_nao@1020e000 {
@@ -609,8 +608,8 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			num = <4>;
 			reg =  <0x10810000 0x1000
 				0x10910000 0x1000
-				0x10A10000 0x1000
-				0x10B10000 0x1000>;
+				0x10a10000 0x1000
+				0x10b10000 0x1000>;
 		};
 
 		auxadc: adc_hw@11001000 {
@@ -621,9 +620,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "auxadc-main";
 		};
 
-		dbgapb_base@1011A000{
+		dbgapb_base@1011a000{
 			compatible = "mediatek,dbgapb_base";
-			reg = <0x1011A000 0x100>;/* MD debug register */
+			reg = <0x1011a000 0x100>;/* MD debug register */
 		};
 
 		ap_dma:dma@11000000 {
@@ -841,9 +840,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-div = <1>;
 		};
 
-		therm_ctrl@1100B000 {
+		therm_ctrl@1100b000 {
 			compatible = "mediatek,mt6735-therm_ctrl";
-			reg = <0x1100B000 0x1000>;
+			reg = <0x1100b000 0x1000>;
 			interrupts = <GIC_SPI 78 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&perisys PERI_THERM>;
 			clock-names = "therm-main";
@@ -1231,7 +1230,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		ispsys@15000000 {
 			compatible = "mediatek,mt6735-ispsys";
 			reg = <0x15004000 0x9000>,  /*ISP_ADDR      */
-				<0x1500D000 0x1000>,  /*INNER_ISP_ADDR      */
+				<0x1500d000 0x1000>,  /*INNER_ISP_ADDR      */
 				<0x15000000 0x10000>,  /*IMGSYS_CONFIG_ADDR      */
 				<0x10215000 0x3000>,  /*MIPI_ANA_ADDR      */
 				<0x10211000 0x1000>;  /*GPIO_ADDR      */
