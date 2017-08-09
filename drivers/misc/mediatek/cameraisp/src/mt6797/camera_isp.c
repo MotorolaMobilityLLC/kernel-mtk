@@ -3740,13 +3740,6 @@ static MINT32 ISP_ReadReg(ISP_REG_IO_STRUCT * pRegIo)
 
     module = pData->module;
 
-    // Force to SENINF0, need to modify cause it can use other module.
-    // But currently the design of module is a private member in isp_drv
-    if(pData->module == CAM_A)
-        module = 0xFF;
-    else
-        module = 0xFE;
-
     switch(module)
     {
         case CAM_A:
@@ -3766,7 +3759,8 @@ static MINT32 ISP_ReadReg(ISP_REG_IO_STRUCT * pRegIo)
             break;
         default:
             LOG_ERR("Unsupported module(%x) !!!\n", module);
-            break;
+			Ret = -EFAULT;
+			goto EXIT;
     }
 
 
@@ -3828,12 +3822,6 @@ static MINT32 ISP_WriteRegToHw(
 
     module = pReg->module;
 
-    // Force to SENINF0, need to modify cause it can use other module.
-    // But currently the design of module is a private member in isp_drv
-    if(pReg->module == CAM_A)
-        module = 0xFF;
-    else
-        module = 0xFE;
 
     switch(module)
     {
@@ -3854,7 +3842,7 @@ static MINT32 ISP_WriteRegToHw(
             break;
         default:
             LOG_ERR("Unsupported module(%x) !!!\n", module);
-            break;
+			return -EFAULT;
     }
 
     /*  */
