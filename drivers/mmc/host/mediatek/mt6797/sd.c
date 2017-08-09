@@ -4749,6 +4749,20 @@ static void msdc_card_reset(struct mmc_host *mmc)
 	usleep_range(200, 500);
 	msdc_init_hw(host);
 }
+
+static int msdc_card_busy(struct mmc_host *mmc)
+{
+	struct msdc_host *host = mmc_priv(mmc);
+	void __iomem *base = host->base;
+	u32 status = MSDC_READ32(MSDC_PS);
+
+	/* check if any pin between dat[0:3] is low */
+	if (((status >> 16) & 0xf) != 0xf)
+		return 1;
+
+	return 0;
+}
+
 static struct mmc_host_ops mt_msdc_ops = {
 	.post_req                      = msdc_post_req,
 	.pre_req                       = msdc_pre_req,
@@ -4761,6 +4775,7 @@ static struct mmc_host_ops mt_msdc_ops = {
 	.start_signal_voltage_switch   = msdc_ops_switch_volt,
 	.execute_tuning                = msdc_execute_tuning,
 	.hw_reset			= msdc_card_reset,
+	.card_busy                     = msdc_card_busy,
 };
 
 static void msdc_irq_data_complete(struct msdc_host *host,
