@@ -8841,6 +8841,14 @@ static int msdc_drv_probe(struct platform_device *pdev)
 		mmc_free_host(mmc);
 		return 1;
 	}
+	/*remove denali DDR mode*/
+	if ((0 == strcmp(pdev->dev.of_node->name, "msdc0"))
+		|| (0 == strcmp(pdev->dev.of_node->name, "msdc1"))) {
+		mmc->caps &= ~MMC_CAP_UHS_DDR50;
+		mmc->caps &= ~MMC_CAP_1_8V_DDR;
+		mmc->caps &= ~MMC_CAP_1_2V_DDR;
+	}
+
 	host = mmc_priv(mmc);
 	base = host->base;
 
