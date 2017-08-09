@@ -1988,7 +1988,7 @@ static int MFG_CORE2_sys_disable_op(struct subsys *sys)
 static int MFG_CORE1_sys_disable_op(struct subsys *sys)
 {
 	/*printk("MFG_CORE1_sys_disable_op\r\n"); */
-	return spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);
+	return spm_mtcmos_ctrl_mfg_core1(STA_POWER_DOWN);
 }
 
 static int MFG_CORE0_sys_disable_op(struct subsys *sys)
