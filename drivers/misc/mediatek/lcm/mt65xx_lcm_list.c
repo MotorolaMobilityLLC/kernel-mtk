@@ -942,6 +942,10 @@ unsigned char lcm_name_list[][128] = {
 	"hx8392a_vdo_cmd",
 #endif
 
+#if defined(HX8392A_DSI_CMD_FWVGA)
+	"hx8392a_dsi_cmd_fwvga",
+#endif
+
 #if defined(OTM9608_QHD_DSI_CMD)
 	"otm9608a_qhd_dsi_cmd",
 #endif

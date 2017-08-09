@@ -138,7 +138,7 @@ extern char dprec_error_log_buffer[];
 #define DISPPR_ERROR(string, args...)							\
 	do {										\
 		dprec_logger_pr(DPREC_LOGGER_ERROR, string, ##args);			\
-		pr_debug("[DISP][%s #%d]ERROR:"string, __func__, __LINE__, ##args);	\
+		pr_err("[DISP][%s #%d]ERROR:"string, __func__, __LINE__, ##args);	\
 	} while (0)
 #define DISPPR_FENCE(string, args...)					\
 	do {								\

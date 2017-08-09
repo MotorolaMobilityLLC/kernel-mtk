@@ -4728,7 +4728,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps)
 	pgc->plcm = disp_lcm_probe(lcm_name, LCM_INTERFACE_NOTDEFINED);
 
 	if (pgc->plcm == NULL) {
-		DISPCHECK("disp_lcm_probe returns null\n");
+		DISPERR("disp_lcm_probe returns null\n");
 		ret = DISP_STATUS_ERROR;
 		goto done;
 	}
