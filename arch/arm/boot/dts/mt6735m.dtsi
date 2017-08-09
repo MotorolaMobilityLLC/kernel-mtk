@@ -493,6 +493,10 @@
 			reg = <0x10300000 0x8000>;
 		};
 
+		gpio_usage_mapping:gpio {
+			compatible = "mediatek,gpio_usage_mapping";
+		};
+
 		gpio: gpio@10211000 {
 			compatible = "mediatek,gpio";
 			reg = <0x10211000 0x1000>;
