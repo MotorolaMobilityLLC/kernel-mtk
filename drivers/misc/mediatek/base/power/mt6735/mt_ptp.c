@@ -614,6 +614,7 @@ static struct ptp_det ptp_detectors[NR_PTP_DET] = {
 static struct ptp_devinfo ptp_devinfo;
 
 static unsigned int ptp_level;	/* debug info */
+unsigned int stress_result = 1;	/* ATE stress */
 
 /*
  * timer for log
@@ -1470,6 +1471,9 @@ static inline void handle_init02_isr(struct ptp_det *det)
 
 	ptp_set_ptp_volt(det);
 
+	if (stress_result == 1)
+		stress_result = 0;
+
 	/*
 	 * Set PTPEN.PTPINITEN/PTPEN.PTPINIT2EN = 0x0 &
 	 * Clear PTP INIT interrupt PTPINTSTS = 0x00000001
@@ -2033,6 +2037,16 @@ static int ptp_cur_volt_proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+static int ptp_stress_result_proc_show(struct seq_file *m, void *v)
+{
+	if (stress_result != 0)
+		ptp_isr_info("PTP fail to trigger irq\n");
+
+	seq_printf(m, "0x%X\n", stress_result);
+
+	return 0;
+}
+
 /*
  * show current PTP status
  */
@@ -2234,6 +2248,7 @@ out:
 
 PROC_FOPS_RW(ptp_debug);
 PROC_FOPS_RO(ptp_dump);
+PROC_FOPS_RO(ptp_stress_result);
 PROC_FOPS_RW(ptp_log_en);
 PROC_FOPS_RO(ptp_status);
 PROC_FOPS_RO(ptp_cur_volt);
@@ -2252,7 +2267,7 @@ static int create_procfs(void)
 	};
 
 	struct pentry det_entries[] = {
-	PROC_ENTRY(ptp_debug),
+		PROC_ENTRY(ptp_debug),
 		PROC_ENTRY(ptp_status),
 		PROC_ENTRY(ptp_cur_volt),
 		PROC_ENTRY(ptp_offset),
@@ -2261,6 +2276,7 @@ static int create_procfs(void)
 	struct pentry ptp_entries[] = {
 		PROC_ENTRY(ptp_dump),
 		PROC_ENTRY(ptp_log_en),
+		PROC_ENTRY(ptp_stress_result),
 	};
 
 	FUNC_ENTER(FUNC_LV_HELP);
