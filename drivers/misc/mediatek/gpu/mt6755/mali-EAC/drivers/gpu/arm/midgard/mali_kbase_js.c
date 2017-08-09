@@ -571,6 +571,7 @@ mali_error kbasep_js_devdata_init(struct kbase_device * const kbdev)
 
 	mutex_init(&js_devdata->runpool_mutex);
 	mutex_init(&js_devdata->queue_mutex);
+	mutex_init(&js_devdata->mtk_sj_mutex);    
 	spin_lock_init(&js_devdata->runpool_irq.lock);
 
 	err = kbasep_js_policy_init(kbdev);

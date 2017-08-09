@@ -420,6 +420,7 @@ void kbase_resume_suspended_soft_jobs(struct kbase_device *kbdev)
 	list_splice_init(&js_devdata->suspended_soft_jobs_list, &local_suspended_soft_jobs);
 	mutex_unlock(&js_devdata->runpool_mutex);
 
+	mutex_lock(&js_devdata->mtk_sj_mutex);
 	/* Each atom must be detached from the list and ran separately - it could
 	 * be re-added to the old list, but this is unlikely */
 	list_for_each_entry_safe(katom_iter, tmp_iter, &local_suspended_soft_jobs, dep_item[1])
@@ -445,6 +446,7 @@ void kbase_resume_suspended_soft_jobs(struct kbase_device *kbdev)
 
 		mutex_unlock(&kctx->jctx.lock);
 	}
+	mutex_unlock(&js_devdata->mtk_sj_mutex);
 
 	if (resched)
 		kbasep_js_try_schedule_head_ctx(kbdev);

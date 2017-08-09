@@ -369,6 +369,7 @@ struct kbasep_js_device_data {
 	 * only be using this during init/term paths).
 	 * @note This is a write-once member, and so no locking is required to read */
 	int init_status;
+    struct mutex mtk_sj_mutex;
 };
 
 /**

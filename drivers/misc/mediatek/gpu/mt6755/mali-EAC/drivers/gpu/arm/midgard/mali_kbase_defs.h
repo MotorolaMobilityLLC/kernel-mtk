@@ -645,6 +645,7 @@ struct kbase_device {
 #ifdef CONFIG_HAVE_CLK
 	struct clk *clock;
 #endif
+	void __iomem *mfg_register;
 	char devname[DEVNAME_SIZE];
 
 #ifdef CONFIG_MALI_NO_MALI

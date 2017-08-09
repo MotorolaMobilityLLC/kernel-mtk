@@ -38,9 +38,8 @@
 #include <linux/clk.h>
 #endif /* !CONFIG_MTK_CLKMGR */
 
-#ifdef CONFIG_OF
-extern void __iomem  *clk_mfgcfg_base_addr;
-#endif /* !defined(CONFIG_MTK_CLKMGR) */
+#include <linux/of.h>
+#include <linux/of_address.h>
 
 /* Versatile Express (VE) configuration defaults shared between config_attributes[]
  * and config_attributes_hw_issue_8408[]. Settings are not shared for
@@ -75,7 +74,7 @@ extern void __iomem  *clk_mfgcfg_base_addr;
 #define KBASE_VE_POWER_MANAGEMENT_CALLBACKS     ((uintptr_t)&pm_callbacks)
 #define KBASE_VE_CPU_SPEED_FUNC                 ((uintptr_t)&kbase_get_vexpress_cpu_clock_speed)
 
-#define HARD_RESET_AT_POWER_OFF 0
+#define HARD_RESET_AT_POWER_OFF 1
 
 #ifndef CONFIG_OF
 static kbase_io_resources io_resources = {
@@ -94,6 +93,7 @@ static kbase_io_resources io_resources = {
 static int pm_callback_power_on(struct kbase_device *kbdev)
 {
     int touch_boost_flag, touch_boost_id;
+    int power_on_freq_flag, power_on_freq_id;
 	int ret;
 
     /* MTK clock modified */
@@ -101,9 +101,9 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
     {
         mt_gpufreq_voltage_enable_set(1);
     }*/
-#ifndef NO_DVFS_FOR_BRINGUP
     mt_gpufreq_voltage_enable_set(1);
-#endif
+    mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON);
+    ged_dvfs_gpu_clock_switch_notify(1);	
 
 #if defined(CONFIG_MTK_CLKMGR)
     enable_clock( MT_CG_DISP0_SMI_COMMON, "GPU");
@@ -133,17 +133,22 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 			pr_alert("MALI: clk_prepare_enable failed when enabling mfg clock");
 		}
 #endif
-    pr_debug("MALI :[Power on] get GPU ID : 0x%x", kbase_os_reg_read(kbdev, GPU_CONTROL_REG(GPU_ID)) );
+    pr_debug("MALI :[Power on] get GPU ID : 0x%x \n", kbase_os_reg_read(kbdev, GPU_CONTROL_REG(GPU_ID)) );
 
     mtk_get_touch_boost_flag( &touch_boost_flag, &touch_boost_id);
     if(touch_boost_flag > 0)
     {
-#ifndef NO_DVFS_FOR_BRINGUP
+
         mt_gpufreq_target(touch_boost_id);
-#endif        
         mtk_clear_touch_boost_flag();
     }
 
+    mtk_get_power_on_freq_flag( &power_on_freq_flag, &power_on_freq_id);
+    if(power_on_freq_flag > 0)
+    {
+        mtk_set_mt_gpufreq_target(power_on_freq_id);
+        mtk_clear_power_on_freq_flag();
+    }
 	/* Nothing is needed on VExpress, but we may have destroyed GPU state (if the below HARD_RESET code is active) */
 	return 1;
 }
@@ -151,37 +156,41 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 /*-----------------------------------------------------------------------------
     Macro
 -----------------------------------------------------------------------------*/
-#define DELAY_LOOP_COUNT    10000
+#define DELAY_LOOP_COUNT    100000
 #define MFG_DEBUG_SEL        0x3
 #define MFG_BUS_IDLE_BIT    (1 << 2)
                             
-#define MFG_DEBUG_CTRL_REG  (clk_mfgcfg_base_addr + 0x180)
-#define MFG_DEBUG_STAT_REG  (clk_mfgcfg_base_addr + 0x184)
+#define MFG_DEBUG_CTRL_REG(value)  (value + 0x180)
+#define MFG_DEBUG_STAT_REG(value)  (value + 0x184)
 
 #define MFG_WRITE32(value, addr) writel(value, addr)
 #define MFG_READ32(addr)         readl(addr)
 
 static void pm_callback_power_off(struct kbase_device *kbdev)
 {      
-   //volatile int polling_count = 100000;
+   volatile int polling_count = 100000;
    volatile int i = 0;
+   void __iomem *clk_mfgsys_base = kbdev->mfg_register;
+   if (!clk_mfgsys_base ) {
+        pr_alert("[Mali] mfg_register find node failed\n");
+   }else{ 
 
    /// 1. Delay 0.01ms before power off   
    for (i=0; i < DELAY_LOOP_COUNT;i++);
    if (DELAY_LOOP_COUNT != i)
    {   
-		pr_debug("[MALI] power off delay error!\n");
+    		pr_alert("[MALI] power off delay error!\n");
    }
           
    /// 2. Polling the MFG_DEBUG_REG for checking GPU IDLE before MTCMOS power off (0.1ms)
 
-   /*MFG_WRITE32(0x3, MFG_DEBUG_CTRL_REG);
+       MFG_WRITE32(0x3, MFG_DEBUG_CTRL_REG(clk_mfgsys_base));
    
    do {
       /// 0x13000184[2]
       /// 1'b1: bus idle
       /// 1'b0: bus busy  
-      if (MFG_READ32(MFG_DEBUG_STAT_REG) & MFG_BUS_IDLE_BIT)
+          if (MFG_READ32(MFG_DEBUG_STAT_REG(clk_mfgsys_base)) & MFG_BUS_IDLE_BIT)
       {
          /// pr_debug("[MALI]MFG BUS already IDLE! Ready to power off, %d\n", polling_count);
          break;
@@ -190,8 +199,9 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 
    if (polling_count <=0)
    {
-      pr_debug("[MALI]!!!!MFG(GPU) subsys is still BUSY!!!!!, polling_count=%d\n", polling_count);
-   }*/
+          pr_alert("[MALI]!!!!MFG(GPU) subsys is still BUSY!!!!!, polling_count=%d\n", polling_count);
+        }
+    }
 #if HARD_RESET_AT_POWER_OFF
 	/* Cause a GPU hard reset to test whether we have actually idled the GPU
 	 * and that we properly reconfigure the GPU on power up.
@@ -200,9 +210,28 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	 * However this is disabled normally because it will most likely interfere with
 	 * bus logging etc.
 	 */
-	KBASE_TRACE_ADD(kbdev, CORE_GPU_HARD_RESET, NULL, NULL, 0u, 0);
+//	KBASE_TRACE_ADD(kbdev, CORE_GPU_HARD_RESET, NULL, NULL, 0u, 0);
 	kbase_os_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), GPU_COMMAND_HARD_RESET);
 #endif
+
+	///  Polling the MFG_DEBUG_REG for checking GPU IDLE before MTCMOS power off (0.1ms)
+	MFG_WRITE32(0x3, MFG_DEBUG_CTRL_REG(clk_mfgsys_base));
+
+	do {
+		/// 0x13000184[2]
+		/// 1'b1: bus idle
+		/// 1'b0: bus busy  
+		if (MFG_READ32(MFG_DEBUG_STAT_REG(clk_mfgsys_base)) & MFG_BUS_IDLE_BIT)
+		{
+			/// pr_alert("[MALI]MFG BUS already IDLE! Ready to power off, %d\n", polling_count);
+			break;
+		}
+	} while (polling_count--);
+
+	if (polling_count <=0)
+	{
+		pr_alert("[MALI]!!!!MFG(GPU) subsys is still BUSY2!!!!!, polling_count=%d\n", polling_count);
+	}
 
     /* MTK clock modified */
 #if defined(CONFIG_MTK_CLKMGR)
@@ -218,9 +247,10 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
     {
         mt_gpufreq_voltage_enable_set(0);
     }*/
-#ifndef NO_DVFS_FOR_BRINGUP    
     mt_gpufreq_voltage_enable_set(0);
-#endif
+    mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_OFF);
+    ged_dvfs_gpu_clock_switch_notify(0);
+
 }
 
 static struct kbase_pm_callback_conf pm_callbacks = {

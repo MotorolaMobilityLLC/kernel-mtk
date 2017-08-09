@@ -117,7 +117,7 @@ static int kbase_dev_nr;
 /* MTK GPU DVFS freq */
 
 // TBEX:
-//static struct kbase_device *gpsMaliData = NULL;
+static struct kbase_device *gpsMaliData = NULL;
 
 int g_current_freq_id = 3;
 int g_deferred_down_shift = 0;
@@ -362,10 +362,10 @@ static mali_error kbase_external_buffer_lock(struct kbase_context *kctx, struct 
 }
 #endif /* CONFIG_KDS */
 
-/*struct kbase_device *MaliGetMaliData()
+struct kbase_device *MaliGetMaliData(void)
 {
 	return gpsMaliData;
-}*/
+}
 #ifndef NO_DVFS_FOR_BRINGUP
 static void _mtk_set_gpu_boost_duration(void)
 {
@@ -1377,25 +1377,40 @@ static int kbase_release(struct inode *inode, struct file *filp)
 
 static long kbase_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	u64 msg[(CALL_MAX_SIZE + 7) >> 3] = { 0xdeadbeefdeadbeefull };	/* alignment fixup */
+	///u64 msg[(CALL_MAX_SIZE + 7) >> 3] = { 0xdeadbeefdeadbeefull };	/* alignment fixup */
+	u64* msg = kmalloc(CALL_MAX_SIZE + 7, GFP_KERNEL);
 	u32 size = _IOC_SIZE(cmd);
 	struct kbase_context *kctx = filp->private_data;
 
-	if (size > CALL_MAX_SIZE)
+	if (size > CALL_MAX_SIZE){
+		kfree(msg);
 		return -ENOTTY;
+	}
 
-	if (0 != copy_from_user(&msg, (void __user *)arg, size)) {
+	if (!msg) {        
+		pr_alert("kmalloc fail, %d byte\n", CALL_MAX_SIZE + 7);        
+		kfree(msg);
+		return -EFAULT;    
+	}
+	*msg = 0xdeadbeefdeadbeefull;
+
+	if (0 != copy_from_user(msg, (void __user *)arg, size)) {
 		dev_err(kctx->kbdev->dev, "failed to copy ioctl argument into kernel space\n");
+		kfree(msg);
 		return -EFAULT;
 	}
 
-	if (MALI_ERROR_NONE != kbase_dispatch(kctx, &msg, size))
+	if (MALI_ERROR_NONE != kbase_dispatch(kctx, msg, size)){
+		kfree(msg);
 		return -EFAULT;
-
-	if (0 != copy_to_user((void __user *)arg, &msg, size)) {
+	}
+	if (0 != copy_to_user((void __user *)arg, msg, size)) {
 		dev_err(kctx->kbdev->dev, "failed to copy results of UK call back to user space\n");
+		kfree(msg);
 		return -EFAULT;
 	}
+    
+	kfree(msg);
 	return 0;
 }
 
@@ -2871,6 +2886,31 @@ static int kbase_common_reg_map(struct kbase_device *kbdev)
 	return err;
 }
 
+static int mtk_mfg_reg_map(struct kbase_device *kbdev)
+{
+	int err = -ENOMEM;
+    struct device_node *dnode;
+   //void __iomem *clk_mfgsys_base;
+    
+   dnode = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-mfgsys");
+   if (!dnode) {
+        pr_alert("[Mali][mtk_mfg_reg_map] mfgsys find node failed\n");
+        goto out_ioremap_err;
+   }else{
+       kbdev->mfg_register = of_iomap(dnode, 0);
+    }
+       
+	if (!kbdev->mfg_register) {
+		dev_err(kbdev->dev, "[Mali][mtk_mfg_reg_map] Can't remap mfgsys register \n");
+		err = -EINVAL;
+		goto out_ioremap_err;
+	}
+
+	return 0;
+
+ out_ioremap_err:
+	return err;
+}
 static void kbase_common_reg_unmap(struct kbase_device * const kbdev)
 {
 	iounmap(kbdev->reg);
@@ -3275,6 +3315,9 @@ probe_begin:
 	if (err)
 		goto out_free_dev;
 
+	err = mtk_mfg_reg_map(kbdev);
+	if (err)
+		goto out_free_dev;
 #ifdef CONFIG_HAVE_CLK  // MTK
 	kbdev->clock = clk_get(kbdev->dev, "clk_mali");
 	if (IS_ERR_OR_NULL(kbdev->clock)) {
@@ -3308,7 +3351,7 @@ probe_begin:
 	}
 #endif /* CONFIG_DEBUG_FS */
 
-#if 0
+//#if 0
 #if defined(CONFIG_MTK_CLKMGR)
 #else	
 		kbdev->clk_mfg = devm_clk_get(&pdev->dev, "mfg-main");
@@ -3333,7 +3376,7 @@ probe_begin:
 		}
 #endif
 
-#endif 
+//#endif 
 
 
 	if (MALI_ERROR_NONE != kbase_device_init(kbdev)) {
@@ -3357,7 +3400,7 @@ probe_begin:
 
 	pr_alert("[MALI]Using mali midgard r5p0-EAC DDK kernel device driver. GPU probe() end. [%s][l:%d] \n", __func__, __LINE__);
 
-	/*gpsMaliData = kbdev;*/
+	gpsMaliData = kbdev;
 	return 0;
 
 out_term_dev:
@@ -3384,7 +3427,7 @@ out_midg:
 #endif /* CONFIG_MALI_NO_MALI */
 	kbase_device_free(kbdev);
 out:
-	/*gpsMaliData = NULL;*/
+	gpsMaliData = NULL;
 	if(probe_count++ <3){
 	    pr_alert("[Mali]Failed probe_count to re-try\n");
 	    goto probe_begin;

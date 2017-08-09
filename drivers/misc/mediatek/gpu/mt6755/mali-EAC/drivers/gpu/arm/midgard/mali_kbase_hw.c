@@ -125,7 +125,7 @@ f. MFG CG( 0x13000000 MFG_CG_CON ,correct : 0)
     struct device_node *node;
     void __iomem *clk_apmixed_base;
     
-    node = of_find_compatible_node(NULL, NULL, "mediatek,MFGCFG");
+    node = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-mfgsys");
     if (!node) {
         pr_alert("[Mali]MFG_CG_CON find node failed\n");
     }

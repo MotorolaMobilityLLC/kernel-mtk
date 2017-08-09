@@ -31,9 +31,11 @@
 #include <asm/uaccess.h>
 #include <linux/module.h>
 #include <linux/proc_fs.h>
-
+#include <linux/time.h>
 //#define NO_DVFS_FOR_BRINGUP
 
+#include <linux/of.h>
+#include <linux/of_address.h>
 #if KBASE_PM_EN
 
 /* When VSync is being hit aim for utilisation between 70-90% */
@@ -43,6 +45,7 @@
 #define KBASE_PM_NO_VSYNC_MIN_UTILISATION       10
 #define KBASE_PM_NO_VSYNC_MAX_UTILISATION       40
 
+#define KBASE_TIMER_THRESHOLD 3000
 #ifdef CONFIG_MALI_MIDGARD_DVFS
 
 int g_current_sample_gl_utilization = 0;
@@ -63,6 +66,98 @@ int g_dvfs_deferred_count = 4;
 int g_touch_boost_flag = 0;
 int g_touch_boost_id = 0;
 
+struct timeval g_tv_timer_start;
+
+static enum hrtimer_restart dvfs_callback(struct hrtimer *timer);
+
+int g_vgpu_power_on_flag = 0;   // on:1, off:0
+int g_power_on_freq_flag = 0;
+int g_power_on_freq_id = 0;
+void __iomem *g_clk_topck_base = 0x0;
+void __iomem *gb_DFP_base = 0x0;
+
+
+void mali_SODI_begin(void)
+{
+	  struct list_head *entry;
+	  const struct list_head *kbdev_list;    
+	  kbdev_list = kbase_dev_list_get();
+	  
+	  list_for_each(entry, kbdev_list) 
+	  {
+	  	struct kbase_device *kbdev = NULL;
+	  	kbdev = list_entry(entry, struct kbase_device, entry);	  	
+	  	
+	  	if (MALI_TRUE == kbdev->pm.metrics.timer_active)
+	  	{
+				 unsigned long flags;	
+				
+				 spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
+				 kbdev->pm.metrics.timer_active = MALI_FALSE;				
+				 spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
+				 
+				 hrtimer_cancel(&kbdev->pm.metrics.timer);
+	  	}
+	  }	  
+	  kbase_dev_list_put(kbdev_list);	  	  
+}
+KBASE_EXPORT_TEST_API(mali_SODI_begin);
+
+
+void mali_SODI_exit(void)
+{	  
+	  struct list_head *entry;
+	  const struct list_head *kbdev_list;	  	    
+	  struct timeval tv_timer_end;
+      long timer_time_elapse;	
+      
+	  kbdev_list = kbase_dev_list_get();	    
+	  list_for_each(entry, kbdev_list) 
+	  {
+	  	 struct kbase_device *kbdev = NULL;
+	  	 kbdev = list_entry(entry, struct kbase_device, entry);	  	
+
+	  	 if((MALI_FALSE == kbdev->pm.metrics.timer_active) )
+	  	 {		
+	  	 	 unsigned long flags;	
+	  	 	 
+			 	 spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
+  		 	 kbdev->pm.metrics.timer_active = MALI_TRUE;
+  		 	 spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
+
+             // exit SODI, calculate the length of timer before SODI cancelled the timer.
+             do_gettimeofday(&tv_timer_end);
+             timer_time_elapse = (tv_timer_end.tv_sec - g_tv_timer_start.tv_sec)*1000000 + (tv_timer_end.tv_usec - g_tv_timer_start.tv_usec);
+
+
+             if( timer_time_elapse > (mtk_get_dvfs_freq()*1000 - KBASE_TIMER_THRESHOLD) )
+             {
+                 // remain time is too short, calcute loading immediately
+                 dvfs_callback(&kbdev->pm.metrics.timer);
+             }
+             else if( (timer_time_elapse <= (mtk_get_dvfs_freq()*1000 - KBASE_TIMER_THRESHOLD)) && (timer_time_elapse > 0))
+             {
+                 hrtimer_init(&kbdev->pm.metrics.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+                 kbdev->pm.platform_dvfs_frequency = mtk_get_dvfs_freq() - timer_time_elapse/1000;   /* set timer length to: original - elasped time */
+                 kbdev->pm.metrics.timer.function = dvfs_callback;
+                 do_gettimeofday( &g_tv_timer_start);
+                 hrtimer_start(&kbdev->pm.metrics.timer, HR_TIMER_DELAY_MSEC(kbdev->pm.platform_dvfs_frequency), HRTIMER_MODE_REL);
+             }
+             else
+             {
+                 // unknown case
+                 hrtimer_init(&kbdev->pm.metrics.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+                 kbdev->pm.platform_dvfs_frequency = mtk_get_dvfs_freq();
+      		 	 kbdev->pm.metrics.timer.function = dvfs_callback;
+    			 do_gettimeofday( &g_tv_timer_start);
+      		 	 hrtimer_start(&kbdev->pm.metrics.timer, HR_TIMER_DELAY_MSEC(kbdev->pm.platform_dvfs_frequency), HRTIMER_MODE_REL);
+             }
+
+  		 }
+  	}
+  	kbase_dev_list_put(kbdev_list);  	
+}
+KBASE_EXPORT_TEST_API(mali_SODI_exit);
 
 /* Shift used for kbasep_pm_metrics_data.time_busy/idle - units of (1 << 8) ns
    This gives a maximum period between samples of 2^(32+8)/100 ns = slightly under 11s.
@@ -121,6 +216,47 @@ int mtk_get_dvfs_deferred_count()
     return g_dvfs_deferred_count;
 }
 
+void mtk_set_vgpu_power_on_flag(int power_on_id)
+{
+    g_vgpu_power_on_flag = power_on_id;
+    return;
+}
+int mtk_get_vgpu_power_on_flag(void)
+{
+    return g_vgpu_power_on_flag;
+}
+
+int mtk_set_mt_gpufreq_target(int freq_id)
+{
+    if(MTK_VGPU_POWER_ON == mtk_get_vgpu_power_on_flag()){
+       return mt_gpufreq_target(freq_id);
+    }else{
+        mtk_set_power_on_freq_flag(freq_id);
+        pr_alert("MALI: VGPU power is off, ignore set freq: %d. \n",freq_id);
+    }
+    return -1;
+
+}
+
+void mtk_get_power_on_freq_flag(int *power_on_freq_flag, int *power_on_freq_id)
+{
+    *power_on_freq_flag = g_power_on_freq_flag;
+    *power_on_freq_id = g_power_on_freq_id;
+    return;
+}
+
+void mtk_set_power_on_freq_flag(int power_on_freq_id)
+{
+    g_power_on_freq_flag = 1;
+    g_power_on_freq_id = power_on_freq_id;
+    return;
+}
+
+void mtk_clear_power_on_freq_flag(void)
+{
+    g_power_on_freq_flag = 0;
+    return;
+}
 enum kbase_pm_dvfs_action mtk_get_dvfs_action()
 {
     return g_current_action;
@@ -147,9 +283,12 @@ static enum hrtimer_restart dvfs_callback(struct hrtimer *timer)
     metrics->kbdev->pm.platform_dvfs_frequency = mtk_get_dvfs_freq();
 
 	if (metrics->timer_active)
+	{
+		do_gettimeofday( &g_tv_timer_start);
 		hrtimer_start(timer,
 					  HR_TIMER_DELAY_MSEC(metrics->kbdev->pm.platform_dvfs_frequency),
 					  HRTIMER_MODE_REL);
+	}
 
 	spin_unlock_irqrestore(&metrics->lock, flags);
 
@@ -187,6 +326,7 @@ mali_error kbasep_pm_metrics_init(struct kbase_device *kbdev)
 	hrtimer_init(&kbdev->pm.metrics.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	kbdev->pm.metrics.timer.function = dvfs_callback;
 
+	do_gettimeofday( &g_tv_timer_start);
 	hrtimer_start(&kbdev->pm.metrics.timer, HR_TIMER_DELAY_MSEC(kbdev->pm.platform_dvfs_frequency), HRTIMER_MODE_REL);
 #endif
 #endif /* CONFIG_MALI_MIDGARD_DVFS */
@@ -400,7 +540,7 @@ out:
 
 	return utilisation;
 }
-#if 0
+
 void MTKCalGpuUtilization(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle)
 {
    struct kbase_device *kbdev = MaliGetMaliData();
@@ -417,9 +557,15 @@ void MTKCalGpuUtilization(unsigned int* pui32Loading , unsigned int* pui32Block,
 
 	utilisation = kbase_pm_get_dvfs_utilisation_old(kbdev, &util_gl_share, util_cl_share);
 	
+	if(pui32Loading)
 	*pui32Loading = utilisation;
-	*pui32Idle = 0; // no ref value in Midguard	
-	*pui32Block = 0; // no ref value in Midguard
+    if(pui32Idle)
+        *pui32Idle = 100 - utilisation;
+    
+    /*
+    if(pui32Block)
+        *pui32Block = 0; // no ref value in r5px
+     */
 
 	if (utilisation < 0 || util_gl_share < 0 || util_cl_share[0] < 0 || util_cl_share[1] < 0) {
 		action = KBASE_PM_DVFS_NOP;
@@ -453,7 +599,7 @@ void MTKCalGpuUtilization(unsigned int* pui32Loading , unsigned int* pui32Block,
 	{
 		get_random_bytes( &random_action, sizeof(random_action));
         random_action = random_action%3;
-        printk("[MALI] GPU DVFS stress test - genereate random action here: action = %d", random_action);
+        pr_debug("[MALI] GPU DVFS stress test - genereate random action here: action = %d", random_action);
         action = random_action;
 	}
 
@@ -477,7 +623,188 @@ out:
 	kbdev->pm.metrics.busy_gl = 0;
 	spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);	
 }
-#endif
+#define base_write32(addr, value) writel(value, addr)
+#define base_read32(addr)         readl(addr)
+void mtk_Power_Enable_MFG(void)
+{
+    struct kbase_device *kbdev = MaliGetMaliData();
+    void __iomem *clk_mfgsys_base = kbdev->mfg_register;
+#define    MFG_PERF_EN_0  (clk_mfgsys_base +0x1B0)
+#define    MFG_PERF_EN_1  (clk_mfgsys_base +0x1B4)
+#define    MFG_PERF_EN_2  (clk_mfgsys_base +0x1B8)
+    if (!clk_mfgsys_base){
+        pr_alert("[Mali] mtk_Power_Enable_MFG failed\n");
+    }else{
+        base_write32(MFG_PERF_EN_0, 0xffffffff);
+        ///pr_alert("[Mali] MFG_PERF_EN_0 = %08x\n",base_read32(MFG_PERF_EN_0));
+        base_write32(MFG_PERF_EN_1, 0xffffffff);
+        ///pr_alert("[Mali] MFG_PERF_EN_1 = %08x\n",base_read32(MFG_PERF_EN_1));
+        base_write32(MFG_PERF_EN_2, 0xffffffff);
+        ///pr_alert("[Mali] MFG_PERF_EN_2 = %08x\n",base_read32(MFG_PERF_EN_2));
+    }
+}
+
+void mtk_Power_Enable_Topck(void)
+{
+	struct device_node *node;
+	void __iomem *clk_topck_base;
+	
+#define  CLK_MISC_CFG_0  (clk_topck_base + 0x104)
+
+    if(g_clk_topck_base == 0x0){
+        pr_alert("[Mali][pmeter]g_clk_topck_base: %p \n",g_clk_topck_base);
+    	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-topckgen");
+    	if (!node) {
+    		pr_alert("[Mali]mtk_Power_Enable_TOPCK find node failed\n");
+    	}
+    	clk_topck_base = of_iomap(node, 0);
+        g_clk_topck_base= clk_topck_base;
+    }else{
+        clk_topck_base = g_clk_topck_base;
+    }
+	if (!clk_topck_base){
+		pr_alert("[Mali] mtk_Power_Enable_TOP_CK failed\n");
+	}else{
+			base_write32(CLK_MISC_CFG_0, base_read32(CLK_MISC_CFG_0) & 0xfffffffe);
+			///pr_alert("[Mali] CLK_MISC_CFG_0 : %08x\n",base_read32(CLK_MISC_CFG_0));
+	}
+
+}
+
+
+/* TODO: config by CONFIG_OF */
+int dfp_weights[] = {
+    173,    9,      1,      9,      2726,   793,    1277,   0,      8318,   4434,
+    211,    8338,   0,      2572,   2163,   3254,   687,    0,      39499,  0,
+    0,      0,      1988,   673,    0,      0,      890,    352,    0,      4803,
+    611,    1051,   82,     0,      215,    211,    8338,   0,      2572,   2163,
+    3254,   697,    0,      39499,  44,     42,     206,    17,     2,      31,
+    26,     6,      566,    39,     52,     5,      0,      1171,   2232,   328,
+    126,    776,    97,     17451,  33052,  65131,  1623,   66,     43,     91,
+    19,     133,    12,     0,      3,      54,     3,      35,     217,    600,
+    487,    2146,   572,    359,    13009,  253,    16889, 399,     1,      10,
+    79,     22,     299,    304,    9,      1164,   412,    361,    61,     22,
+    3,      2,      80,     29795,  46,     1009,   167,    390,    232,    113
+};                                                                                        
+
+#define DFP_ID                      0x0
+#define DFP_CTRL                    0x4
+//#define DFP_EVENT_ACCUM_CTRL       0x8
+#define DFP_PM_VALUE                0x38
+#define DFP_LP_CONSTANT            0x3c
+#define DFP_LEAKAGE_VALUE          0x40
+#define DFP_SCALING_FACTOR         0x44 // 0x50               
+#define DFP_VOLT_FACTOR            0x48 // 0x54
+#define DFP_PIECE_PWR              0x50
+#define DFP_PM_PERIOD               0x5c
+#define DFP_COUNTER_EN_0            0x60
+#define DFP_COUNTER_EN_1            0x64
+#define DFP_LINAER_A0               0x68
+#define DFP_WEIGHT_(x)              (0x70+4*x)
+
+#define DFP_DEBUG 0
+
+unsigned int MTKCalPowerIndex(void){
+    struct device_node *node;
+    void __iomem *g_DFP_base;
+    unsigned int dep =0;
+
+    if(gb_DFP_base==0x0){
+        pr_alert("[Mali][pmeter]gb_DFP_base: %p \n",gb_DFP_base);
+        node = of_find_compatible_node(NULL, NULL, "mediatek,mfg_dfp");
+        if (!node) {
+            pr_alert("[Mali]mfg_dfp find node failed\n");
+        }
+        g_DFP_base = of_iomap(node, 0);
+        gb_DFP_base = g_DFP_base;
+    }else{
+        g_DFP_base =gb_DFP_base;
+    }
+    if (!g_DFP_base){
+        pr_alert("[Mali] g_DFP_base failed\n");
+    }else{    
+
+        
+#define DFP_write32(addr, value)   base_write32(g_DFP_base+addr, value)
+#define DFP_read32(addr)            base_read32(g_DFP_base+addr)
+
+    int i,id,pm_period,linear_a0, scaling_factor,vlotage_factor,leakage_val;
+
+    pm_period = 0;
+    linear_a0 = 0;
+    vlotage_factor = 1;
+    scaling_factor = 14;
+    leakage_val = 10;
+
+    // turn on clock
+    mtk_Power_Enable_Topck();
+    //   GPU perforamcne clock gated
+    mtk_Power_Enable_MFG();
+
+    //pr_alert("[MALI]MTKCalPowerIndex g_DFP_base  = 0x%08x \n", (int)g_DFP_base);    
+
+    DFP_write32(DFP_CTRL, DFP_read32(DFP_CTRL) | 0x2); // bit[0] -> dpm enable,  bit[1] ->  dcm enable
+
+    DFP_write32(DFP_ID, 0x55aa3344);
+    id = DFP_read32(DFP_ID);
+    
+    DFP_write32(DFP_LEAKAGE_VALUE, leakage_val);
+    DFP_write32(DFP_VOLT_FACTOR, vlotage_factor);
+    DFP_write32(DFP_SCALING_FACTOR, scaling_factor);
+    DFP_write32(DFP_PM_PERIOD, pm_period);
+    DFP_write32(DFP_LP_CONSTANT, 9);
+    DFP_write32(DFP_LINAER_A0, linear_a0);
+
+    if(DFP_DEBUG){
+        pr_alert("[MALI]MTKCalPowerIndex ID_value = 0x%08x \n", id);
+        pr_alert("[MALI]MTKCalPowerIndex Leakage_value = 0x%08x \n", DFP_read32(DFP_LEAKAGE_VALUE));
+        pr_alert("[MALI]MTKCalPowerIndex DFP_VOLT_FACTOR = 0x%08x \n", DFP_read32(DFP_VOLT_FACTOR));        
+        pr_alert("[MALI]MTKCalPowerIndex DFP_SCALING_FACTOR = 0x%08x \n", DFP_read32(DFP_SCALING_FACTOR));
+        pr_alert("[MALI]MTKCalPowerIndex DFP_PM_PERIOD = 0x%08x \n", DFP_read32(DFP_PM_PERIOD));        
+        pr_alert("[MALI]MTKCalPowerIndex DFP_LP_CONSTANT = 0x%08x \n", DFP_read32(DFP_LP_CONSTANT));        
+        pr_alert("[MALI]MTKCalPowerIndex DFP_LINAER_A0 = 0x%08x \n", DFP_read32(DFP_LINAER_A0));
+        pr_alert("[MALI]MTKCalPowerIndex DFP_COUNTER_EN_0 = 0x%08x \n", DFP_read32(DFP_COUNTER_EN_0));   
+        pr_alert("[MALI]MTKCalPowerIndex DFP_COUNTER_EN_1 = 0x%08x \n", DFP_read32(DFP_COUNTER_EN_1));           
+        pr_alert("[MALI]MTKCalPowerIndex g_vgpu_power_on_flag = 0x%08x \n", g_vgpu_power_on_flag);   
+
+    }
+
+
+
+    for (i = 0; i < 60; ++i)
+    {
+        DFP_write32(DFP_WEIGHT_(i), dfp_weights[i]);
+    }
+
+    DFP_write32(DFP_CTRL, DFP_read32(DFP_CTRL) | 0x1); // bit[0] -> dpm enable,  bit[1] ->  dcm enable
+    if(DFP_DEBUG){
+        pr_alert("[MALI]MTKCalPowerIndex DFP_CTRL 1= 0x%08x \n", DFP_read32(DFP_CTRL));  
+    }
+
+
+    DFP_write32(DFP_CTRL, 0x3 ); // bit[0] -> dpm enable,  bit[1] ->  dcm enable
+    if(DFP_DEBUG){
+        pr_alert("[MALI]MTKCalPowerIndex DFP_CTRL 2 = 0x%08x \n", DFP_read32(DFP_CTRL));  
+    }
+
+    
+    for(i=0;i<100;i++)
+    {
+           dep = DFP_read32(DFP_PIECE_PWR);
+           ///pr_alert("[MALI]MTKCalPowerIndex normal piece_pwr = 0x%08x \n", dep);
+    }
+       
+    
+    dep = DFP_read32(DFP_PM_VALUE); //MFG_DFP_60_PM_VALUE
+    pr_alert("[MALI]MTKCalPowerIndex normal PM_value = %d \n", DFP_read32(DFP_PM_VALUE));
+  
+
+    }
+    
+    
+    return dep;
+}
+
 
 enum kbase_pm_dvfs_action kbase_pm_get_dvfs_action(struct kbase_device *kbdev)
 {
@@ -593,12 +920,8 @@ KBASE_EXPORT_TEST_API(kbasep_get_cl_js1_utilization)
 static unsigned int _mtk_gpu_dvfs_index_to_frequency(int iFreq)
 {
     unsigned int iCurrentFreqCount;
-    #ifndef NO_DVFS_FOR_BRINGUP
         iCurrentFreqCount =mt_gpufreq_get_dvfs_table_num();
-    #else
-        iCurrentFreqCount = 0;
-    #endif
-    if(iCurrentFreqCount == 6) // MT6752
+    if(iCurrentFreqCount == 8) // MT6755
     {
         switch(iFreq)
         {
@@ -611,38 +934,19 @@ static unsigned int _mtk_gpu_dvfs_index_to_frequency(int iFreq)
             case 3:
                 return 520000;
             case 4:
-                return 416000;
+                return 468000;
             case 5:
-                return 312000;
+                return 429000;
+            case 6:
+                return 390000;
+            case 7:
+                return 351000;
+            default:
+                return 351000;
         }
     }
-    else if(iCurrentFreqCount == 4) // MT6752M, 6751, 6733 
-    {
-        switch(iFreq)
-        {
-            case 0:
-                return 598000;
-            case 1:
-                return 520000;
-            case 2:
-                return 416000;
-            case 3:
-                return 312000;
-        }
-    }
-    else if(iCurrentFreqCount == 3) // MT6732, 6732M
-    {
-        switch(iFreq)
-        {
-            case 0:
-                return 494000;
-            case 1:
-                return 416000;
-            case 2:
-                return 312000;
-        }
-	}
-	return 0;
+    return 351000;
+        
 }
 
 ///=====================================================================================
@@ -685,11 +989,7 @@ static int proc_gpu_utilization_show(struct seq_file *m, void *v)
     unsigned long gl, cl0, cl1;
     unsigned int iCurrentFreq;
 
-    #ifndef NO_DVFS_FOR_BRINGUP
         iCurrentFreq =mt_gpufreq_get_cur_freq_index();
-    #else
-        iCurrentFreq = 0;
-    #endif
     
     gl  = kbasep_get_gl_utilization();
     cl0 = kbasep_get_cl_js0_utilization();
@@ -712,19 +1012,30 @@ static const struct file_operations kbasep_gpu_utilization_debugfs_fops = {
 	.release = single_release,
 };
 
+static int proc_gpu_powermeter_show(struct seq_file *m, void *v)
+{
 
+    seq_printf(m, "gpu/pm =%d \n", MTKCalPowerIndex());
 
+    return 0;
+}
+static int kbasep_gpu_powermeter_debugfs_open(struct inode *in, struct file *file)
+{
+	return single_open(file, proc_gpu_powermeter_show , NULL);
+}
+static const struct file_operations kbasep_gpu_powermeter_debugfs_fops = {
+	.open    = kbasep_gpu_powermeter_debugfs_open,
+	.read    = seq_read,
+	.llseek  = seq_lseek,
+	.release = single_release,
+};
 /// 3. For query GPU frequency
 static int proc_gpu_frequency_show(struct seq_file *m, void *v)
 {
 
     unsigned int iCurrentFreq;
 
-    #ifndef NO_DVFS_FOR_BRINGUP
         iCurrentFreq =mt_gpufreq_get_cur_freq_index();
-    #else
-        iCurrentFreq = 0;
-    #endif
 
     seq_printf(m, "GPU Frequency: %u(kHz)\n", _mtk_gpu_dvfs_index_to_frequency(iCurrentFreq));
 
@@ -996,6 +1307,7 @@ static int proc_gpu_help_show(struct seq_file *m, void *v)
     seq_printf(m, "  cat /proc/mali/utilization\n");
     seq_printf(m, "  cat /proc/mali/frequency\n");
     seq_printf(m, "  cat /proc/mali/memory_usage\n");
+    seq_printf(m, "  cat /proc/mali/powermeter\n");
     seq_printf(m, "  cat /proc/gpufreq/gpufreq_var_dump\n");
     seq_printf(m, "  cat /proc/pm_init/ckgen_meter_test\n");
     seq_printf(m, "  cat /proc/cpufreq/cpufreq_cur_freq\n");
@@ -1046,6 +1358,7 @@ void proc_mali_register(void)
     proc_create("memory_usage", 0, mali_pentry, &kbasep_gpu_memory_usage_debugfs_open);
     proc_create("utilization", 0, mali_pentry, &kbasep_gpu_utilization_debugfs_fops);
     proc_create("frequency", 0, mali_pentry, &kbasep_gpu_frequency_debugfs_fops);
+    proc_create("powermeter", 0, mali_pentry, &kbasep_gpu_powermeter_debugfs_fops);
     proc_create("dvfs_enable", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_enable_debugfs_fops);
     proc_create("input_boost", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_input_boost_debugfs_fops);
     proc_create("dvfs_freq", S_IRUGO | S_IWUSR, mali_pentry, &kbasep_gpu_dvfs_freq_debugfs_fops);
@@ -1061,6 +1374,7 @@ void proc_mali_unregister(void)
     remove_proc_entry("memory_usage", mali_pentry);
     remove_proc_entry("utilization", mali_pentry);
     remove_proc_entry("frequency", mali_pentry);
+    remove_proc_entry("powermeter", mali_pentry);
     remove_proc_entry("mali", NULL);
     mali_pentry = NULL;
 }

@@ -39,10 +39,8 @@
 extern u32 get_devinfo_with_index(u32 index);
 unsigned int g_current_gpu_platform_id = 0;
 
-mtk_gpu_freq_limit_data mt6755_gpu_freq_limit_data[MTK_MT6752_GPU_LIMIT_COUNT]=
-{ {6, 3, (const int[]){0,3,5}}, // MT6752; no limit
-  {4, 3, (const int[]){0,1,3}}, // MT6752M, MT6751, MT6733; limit@600MHz
-  {3, 2, (const int[]){0,2}}    // MT6732, MT6732M; limit@500MHz
+mtk_gpu_freq_limit_data mt6755_gpu_freq_limit_data[MTK_MT6755_GPU_LIMIT_COUNT]=
+{ {8, 4, (const int[]){0,2,4,7}}, // MT6755; no limit
 };
 
 extern unsigned int (*mtk_get_gpu_loading_fp)(void);
@@ -56,6 +54,11 @@ extern void __attribute__((weak)) mt_gpufreq_input_boost_notify_registerCB(gpufr
 extern void __attribute__((weak)) mt_gpufreq_power_limit_notify_registerCB(gpufreq_power_limit_notify pCB);
 
 extern unsigned int mt_gpufreq_get_dvfs_table_num(void);
+/* gpu SODI */
+extern void (*mtk_gpu_sodi_entry_fp)(void);
+extern void (*mtk_gpu_sodi_exit_fp)(void);
+extern void mali_SODI_begin(void);
+extern void mali_SODI_exit(void);
 
 unsigned int mtk_get_current_gpu_platform_id()
 {
@@ -68,14 +71,12 @@ void _mtk_gpu_dvfs_init(void)
     unsigned int iCurrentFreqCount;
     pr_debug("[MALI] _mtk_gpu_dvfs_init\n");
     
-    #ifndef NO_DVFS_FOR_BRINGUP
         iCurrentFreqCount = mt_gpufreq_get_dvfs_table_num();
-    #else
-        iCurrentFreqCount = 0;
-    #endif
+		pr_alert("[MALI] _mtk_gpu_dvfs_init, count: %d\n", iCurrentFreqCount);
+
     
     // get curent platform index
-    for(i=0 ; i<MTK_MT6752_GPU_LIMIT_COUNT ; i++)
+    for(i=0 ; i<MTK_MT6755_GPU_LIMIT_COUNT ; i++)
     {
         if(iCurrentFreqCount == mt6755_gpu_freq_limit_data[i].actual_freq_index_count)
         {
@@ -110,10 +111,10 @@ void kbase_pm_register_access_disable(struct kbase_device *kbdev)
 	if (callbacks)
 		callbacks->power_off_callback(kbdev);
 }
-#if 0
+
 extern void (*ged_dvfs_cal_gpu_utilization_fp)(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle);
 extern void (*ged_dvfs_gpu_freq_commit_fp)(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType);
-#endif
+extern unsigned int (*mtk_get_gpu_power_loading_fp)(void);
 
 mali_error kbase_pm_init(struct kbase_device *kbdev)
 {
@@ -170,10 +171,14 @@ mali_error kbase_pm_init(struct kbase_device *kbdev)
 
 	/* MTK MET use */
 	mtk_get_gpu_loading_fp = kbasep_get_gl_utilization;
+    /* SODI callback function */
+    mtk_gpu_sodi_entry_fp = mali_SODI_begin;
+    mtk_gpu_sodi_exit_fp  = mali_SODI_exit;
 #else
 	ged_dvfs_cal_gpu_utilization_fp = MTKCalGpuUtilization;
 	ged_dvfs_gpu_freq_commit_fp = mtk_gpu_dvfs_commit;
 #endif
+    mtk_get_gpu_power_loading_fp = MTKCalPowerIndex;
 
 	kbdev->pm.platform_dvfs_frequency = (u32) kbasep_get_config_value(kbdev, kbdev->config_attributes, KBASE_CONFIG_ATTR_POWER_MANAGEMENT_DVFS_FREQ);
 

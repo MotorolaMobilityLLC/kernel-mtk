@@ -47,9 +47,8 @@ struct kbase_device;
 #include "mali_kbase_pm_fast_start.h"
 #endif
 
-#if 0
 #include "ged_dvfs.h"
-#endif
+
 /** The types of core in a GPU.
  *
  * These enumerated values are used in calls to:
@@ -69,13 +68,17 @@ enum kbase_pm_core_type {
 	KBASE_PM_CORE_TILER = TILER_PRESENT_LO	    /**< Tiler cores */
 };
 /* MTK DVFS */
-#define MTK_MT6752_GPU_LIMIT_COUNT 3
+#define MTK_MT6755_GPU_LIMIT_COUNT 1
 
 typedef struct _mtk_gpu_freq_limit_data{
     const int actual_freq_index_count;
     const int virtual_freq_index_count;
     const int *virtual_freq_index;
 }mtk_gpu_freq_limit_data;
+enum mtk_vgpu_power_on {
+	MTK_VGPU_POWER_OFF,	/** VGPU_POWER_OFF */    
+	MTK_VGPU_POWER_ON,	/** VGPU_POWER_ON */
+};
 
 extern mtk_gpu_freq_limit_data mt6755_gpu_freq_limit_data[];
 
@@ -930,11 +933,16 @@ int mtk_get_dvfs_deferred_count(void);
 void mtk_get_touch_boost_flag(int *touch_boost_flag, int *touch_boost_id);
 void mtk_set_touch_boost_flag(int boost_id);
 void mtk_clear_touch_boost_flag(void);
+void mtk_set_vgpu_power_on_flag(int power_on_id);
+int mtk_set_mt_gpufreq_target(int freq_id);
+void mtk_get_power_on_freq_flag(int *power_on_freq_flag, int *power_on_freq_id);
+void mtk_set_power_on_freq_flag(int power_on_freq_id);
+void mtk_clear_power_on_freq_flag(void);
 
-#if 0
-struct kbase_device *MaliGetMaliData();
+struct kbase_device *MaliGetMaliData(void);
 
 void MTKCalGpuUtilization(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle);
 int mtk_gpu_dvfs_commit(unsigned int ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitTyp);
-#endif
+unsigned int MTKCalPowerIndex(void);
+int mtk_get_vgpu_power_on_flag(void);
 #endif				/* _KBASE_PM_H_ */
