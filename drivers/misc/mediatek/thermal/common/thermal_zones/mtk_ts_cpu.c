@@ -195,6 +195,7 @@ static void _mt_thermal_aee_init(void)
 	aee_rr_rec_thermal_temp4(0xFF);
 	aee_rr_rec_thermal_temp5(0xFF);
 	aee_rr_rec_thermal_status(0xFF);
+	aee_rr_rec_thermal_ATM_status(0xFF);
 	aee_rr_rec_thermal_ktime(0xFFFFFFFFFFFFFFFF);
 }
 #endif

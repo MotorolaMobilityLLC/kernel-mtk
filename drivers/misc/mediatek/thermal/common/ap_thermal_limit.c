@@ -143,6 +143,9 @@ void apthermolmt_set_cpu_power_limit(struct apthermolmt_user *handle, unsigned i
 		unsigned long timeout;
 
 		tscpu_dprintk("%s %u\n", __func__, final_limit);
+#if (CONFIG_THERMAL_AEE_RR_REC == 1)
+		aee_rr_rec_thermal_ATM_status(ATM_CPULIMIT);
+#endif
 		timeout = jiffies + msecs_to_jiffies(100);
 #if defined(ATM_USES_PPM)
 		mt_ppm_cpu_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);
@@ -177,6 +180,9 @@ void apthermolmt_set_gpu_power_limit(struct apthermolmt_user *handle, unsigned i
 
 	if (apthermolmt_prev_gpu_pwr_lim != apthermolmt_curr_gpu_pwr_lim) {
 		tscpu_dprintk("%s %d\n", __func__, final_limit);
+#if (CONFIG_THERMAL_AEE_RR_REC == 1)
+		aee_rr_rec_thermal_ATM_status(ATM_GPULIMIT);
+#endif
 		mt_gpufreq_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);
 	}
 }

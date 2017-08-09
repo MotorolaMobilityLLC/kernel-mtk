@@ -216,6 +216,12 @@ enum thermal_state {
 	TSCPU_PAUSE   = 4,
 	TSCPU_RELEASE = 5
 };
+enum atm_state {
+	ATM_WAKEUP = 0,
+	ATM_CPULIMIT  = 1,
+	ATM_GPULIMIT  = 2,
+	ATM_DONE    = 3,
+};
 #endif
 
 struct mtk_cpu_power_info {
@@ -358,6 +364,7 @@ extern void aee_rr_rec_thermal_temp3(u8 val);
 extern void aee_rr_rec_thermal_temp4(u8 val);
 extern void aee_rr_rec_thermal_temp5(u8 val);
 extern void aee_rr_rec_thermal_status(u8 val);
+extern void aee_rr_rec_thermal_ATM_status(u8 val);
 extern void aee_rr_rec_thermal_ktime(u64 val);
 
 extern u8 aee_rr_curr_thermal_temp1(void);
@@ -366,6 +373,7 @@ extern u8 aee_rr_curr_thermal_temp3(void);
 extern u8 aee_rr_curr_thermal_temp4(void);
 extern u8 aee_rr_curr_thermal_temp5(void);
 extern u8 aee_rr_curr_thermal_status(void);
+extern u8 aee_rr_curr_thermal_ATM_status(void);
 extern u64 aee_rr_curr_thermal_ktime(void);
 #endif
 

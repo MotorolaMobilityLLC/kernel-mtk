@@ -136,6 +136,7 @@ struct last_reboot_reason {
 	uint8_t thermal_temp4;
 	uint8_t thermal_temp5;
 	uint8_t thermal_status;
+	uint8_t thermal_ATM_status;
 	uint64_t thermal_ktime;
 
 	uint8_t isr_el1;
@@ -1439,6 +1440,13 @@ void aee_rr_rec_thermal_status(u8 val)
 	LAST_RR_SET(thermal_status, val);
 }
 
+void aee_rr_rec_thermal_ATM_status(u8 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(thermal_ATM_status, val);
+}
+
 void aee_rr_rec_thermal_ktime(u64 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -1738,6 +1746,11 @@ u8 aee_rr_curr_thermal_temp5(void)
 u8 aee_rr_curr_thermal_status(void)
 {
 	return LAST_RR_VAL(thermal_status);
+}
+
+u8 aee_rr_curr_thermal_ATM_status(void)
+{
+	return LAST_RR_VAL(thermal_ATM_status);
 }
 
 u64 aee_rr_curr_thermal_ktime(void)
@@ -2414,6 +2427,11 @@ void aee_rr_show_thermal_status(struct seq_file *m)
 	seq_printf(m, "thermal_status: %d\n", LAST_RRR_VAL(thermal_status));
 }
 
+void aee_rr_show_thermal_ATM_status(struct seq_file *m)
+{
+	seq_printf(m, "thermal_ATM_status: %d\n", LAST_RRR_VAL(thermal_ATM_status));
+}
+
 void aee_rr_show_thermal_ktime(struct seq_file *m)
 {
 	seq_printf(m, "thermal_ktime: %lld\n", LAST_RRR_VAL(thermal_ktime));
@@ -2576,6 +2594,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_eem_pi_offset,
 	aee_rr_show_thermal_temp,
 	aee_rr_show_thermal_status,
+	aee_rr_show_thermal_ATM_status,
 	aee_rr_show_thermal_ktime,
 	aee_rr_show_isr_el1,
 	aee_rr_show_idvfs_ctrl_reg,

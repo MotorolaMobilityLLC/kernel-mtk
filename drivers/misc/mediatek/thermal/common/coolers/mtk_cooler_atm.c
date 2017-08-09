@@ -611,6 +611,9 @@ static int P_adaptive(int total_power, unsigned int gpu_loading)
 
 	tscpu_dprintk("%s cpu %d, gpu %d\n", __func__, cpu_power, gpu_power);
 
+#if (CONFIG_THERMAL_AEE_RR_REC == 1)
+	aee_rr_rec_thermal_ATM_status(ATM_DONE);
+#endif
 	return 0;
 }
 
@@ -1896,6 +1899,9 @@ static int krtatm_thread(void *arg)
 
 	for (;;) {
 		tscpu_dprintk("%s awake\n", __func__);
+#if (CONFIG_THERMAL_AEE_RR_REC == 1)
+		aee_rr_rec_thermal_ATM_status(ATM_WAKEUP);
+#endif
 		if (kthread_should_stop())
 			break;
 
