@@ -51,15 +51,9 @@
 
 
 /* local includes */
-/* #include "../../../power/mt6797/da9214.h" */
+#include "../../../power/mt6797/da9214.h"
 #include "mt_cpufreq.h"
 /* #include "mach/mt_cpufreq_hybrid.h" */
-void da9214_vosel_buck_a(unsigned int val)
-{
-}
-void da9214_vosel_buck_b(unsigned int val)
-{
-}
 void  SEC_BIGIDVFSPLLSETFREQ(unsigned int val)
 {
 }
@@ -1010,8 +1004,7 @@ static struct mt_cpu_dvfs cpu_dvfs[] = {
 #define cpu_dvfs_get_cur_volt(p)				(p->opp_tbl[p->idx_opp_tbl].cpufreq_volt)
 #define cpu_dvfs_get_volt_by_idx(p, idx)		(p->opp_tbl[idx].cpufreq_volt)
 
-/* #define cpu_dvfs_is_extbuck_valid()     (is_ext_buck_exist() && is_ext_buck_sw_ready()) */
-#define cpu_dvfs_is_extbuck_valid()     1
+#define cpu_dvfs_is_extbuck_valid()     (is_da9214_exist() && is_da9214_sw_ready())
 
 static struct mt_cpu_dvfs *id_to_cpu_dvfs(enum mt_cpu_dvfs_id id)
 {
@@ -2287,8 +2280,7 @@ static unsigned int get_cur_volt_extbuck(struct mt_cpu_dvfs *p)
 
 	if (cpu_dvfs_is_extbuck_valid()) {
 		do {
-			/*if (!da9214_read_interface(addr, &ret_val, 0x7F, 0)) {*/
-			if (1) {
+			if (!da9214_read_interface(addr, &ret_val, 0x7F, 0)) {
 				cpufreq_err("%s(), fail to read ext buck volt\n", __func__);
 				ret_volt = 0;
 			} else {
