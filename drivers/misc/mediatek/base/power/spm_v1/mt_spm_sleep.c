@@ -42,6 +42,10 @@
 #include <linux/of_address.h>
 #endif
 
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+#include <mt-plat/mt_usb2jtag.h>
+#endif
+
 #if defined(CONFIG_ARCH_MT6580)
 #define DISABLE_DLPT_FEATURE
 #endif
@@ -1687,6 +1691,11 @@ RESTORE_IRQ:
 
 	if (!wd_ret)
 		wd_api->wd_resume_notify();
+
+#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
+	if (usb2jtag_mode())
+		mt_usb2jtag_resume();
+#endif
 #if SPM_AEE_RR_REC
 	aee_rr_rec_spm_suspend_val(aee_rr_curr_spm_suspend_val() | (1 << SPM_SUSPEND_LEAVE));
 #endif

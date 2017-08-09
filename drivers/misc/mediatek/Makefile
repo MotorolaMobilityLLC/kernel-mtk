@@ -172,7 +172,7 @@ obj-$(CONFIG_MTK_DUM_CHAR) += dum-char/
 obj-$(CONFIG_MTK_DYNAMIC_BOOST) += dynamic_boost/
 
 obj-$(CONFIG_MTK_DISPLAY_120HZ_SUPPORT)	+= rrc/
-
+obj-$(CONFIG_MTK_USB2JTAG_SUPPORT) += usb2jtag/
 # Crypto performance tools (disable by default)
 obj-n += crypto/
 
