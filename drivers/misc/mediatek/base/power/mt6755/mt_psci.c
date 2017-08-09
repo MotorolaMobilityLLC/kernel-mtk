@@ -67,37 +67,42 @@ static int mt_psci_cpu_kill(unsigned int cpu)
 	return !spm_mtcmos_ctrl_cpu(cpu, STA_POWER_DOWN, 1);
 }
 
-#ifdef CONFIG_ARM64_CPU_SUSPEND
+#endif
 
-static int mt_psci_cpu_suspend(unsigned long flags)
+#ifdef CONFIG_CPU_IDLE
+
+static int mt_psci_cpu_init_idle(struct device_node *cpu_node,
+				 unsigned int cpu)
+{
+	return cpu_psci_ops.cpu_init_idle(cpu_node, cpu);
+}
+
+static int mt_psci_cpu_suspend(unsigned long index)
 {
 #ifdef CONFIG_MTK_HIBERNATION
-	int ret;
-
-	if (flags == POWERMODE_HIBERNATE) {
+	if (index == POWERMODE_HIBERNATE) {
 		pr_warn("[%s] hibernating\n", __func__);
 		return swsusp_arch_save_image(0);
 	}
 #endif
-	return cpu_psci_ops.cpu_suspend(flags);
+	return cpu_psci_ops.cpu_suspend(index);
 }
 
 #endif
 
-#endif
-
 const struct cpu_operations mt_cpu_psci_ops = {
-	.name = "mt-boot",
-	.cpu_init = mt_psci_cpu_init,
-	.cpu_prepare = mt_psci_cpu_prepare,
-	.cpu_boot = mt_psci_cpu_boot,
-#ifdef CONFIG_HOTPLUG_CPU
-	.cpu_disable = mt_psci_cpu_disable,
-	.cpu_die = mt_psci_cpu_die,
-	.cpu_kill = mt_psci_cpu_kill,
+	.name		= "mt-boot",
+#ifdef CONFIG_CPU_IDLE
+	.cpu_init_idle	= mt_psci_cpu_init_idle,
+	.cpu_suspend	= mt_psci_cpu_suspend,
 #endif
-#ifdef CONFIG_ARM64_CPU_SUSPEND
-	.cpu_suspend = mt_psci_cpu_suspend,
+	.cpu_init	= mt_psci_cpu_init,
+	.cpu_prepare	= mt_psci_cpu_prepare,
+	.cpu_boot	= mt_psci_cpu_boot,
+#ifdef CONFIG_HOTPLUG_CPU
+	.cpu_disable	= mt_psci_cpu_disable,
+	.cpu_die	= mt_psci_cpu_die,
+	.cpu_kill	= mt_psci_cpu_kill,
 #endif
 };
 
