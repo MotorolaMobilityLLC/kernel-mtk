@@ -946,12 +946,20 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt36850_wqhd_dsi_2k_cmd_lcm_drv,
 #endif
 
+#if defined(S6E3HA3_WQHD_2K_CMD)
+	&s6e3ha3_wqhd_2k_cmd_lcm_drv,
+#endif
+
 #endif
 };
 
 unsigned char lcm_name_list[][128] = {
 #if defined(HX8392A_DSI_CMD)
 	"hx8392a_dsi_cmd",
+#endif
+
+#if defined(S6E3HA3_WQHD_2K_CMD)
+	"s6e3ha3_wqhd_2k_cmd",
 #endif
 
 #if defined(HX8392A_DSI_VDO)
