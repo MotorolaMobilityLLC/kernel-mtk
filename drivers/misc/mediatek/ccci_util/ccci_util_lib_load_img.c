@@ -698,10 +698,11 @@ static void get_md_postfix(int md_id, char k[], char buf[], char buf_ex[])
 		CCCI_UTIL_DBG_MSG_WITH_ID(md_id, "MD%d image postfix=%s\n", md_id + 1, buf_ex);
 	}
 }
-
+static int check_if_bypass_header(void *buf, int *img_size);
 int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_fix[], struct device *dev)
 {
 #define MAX_REMAP_SIZE (1024 * 1024)
+	int i = 0;
 	int ret = 0;
 	int check_ret = 0;
 	int read_size = 0;
@@ -713,6 +714,9 @@ int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_f
 	int size_per_read = MAX_REMAP_SIZE;
 	char img_name[IMG_NAME_LEN];
 	struct ccci_image_info *img = (struct ccci_image_info *)img_inf;
+	int img_size = 0;
+	int hdr_size = 0;
+	void *img_data_ptr = NULL;
 
 	if (dev == NULL) {
 		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "dev == NULL\n");
@@ -732,42 +736,75 @@ int ccci_load_firmware(int md_id, void *img_inf, char img_err_str[], char post_f
 		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Error]Invalid img type%d\n", img->type);
 		return -CCCI_ERR_INVALID_PARAM;
 	}
-
+	/*
+	* NOTES:
+	* if md support type is ubin, then need try to find suitable md image
+	*/
+	i = modem_ultg;
+TRY_LOAD_IMG:
+	ret = request_firmware(&fw_entry, img_name, dev);
+	if (ret != 0) {
+		/*CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
+			     "Try to load firmware %s failed:ret=%d!\n", img_name, ret);*/
+		if (i <= MAX_IMG_NUM) {
+			CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Curr i:%d\n", i);
+			if (img->type == IMG_MD)
+				snprintf(img_name, IMG_NAME_LEN, "modem_%d_%s_n.img", md_id+1, type_str[i]);
+			else if (img->type == IMG_DSP)
+				snprintf(img_name, IMG_NAME_LEN, "dsp_%d_%s_n.bin", md_id+1, type_str[i]);
+			else if (img->type == IMG_ARMV7)
+				snprintf(img_name, IMG_NAME_LEN, "armv7_%d_%s_n.bin", md_id+1, type_str[i]);
+			else {
+				CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "[Error]Invalid img type%d\n", img->type);
+				return -CCCI_ERR_INVALID_PARAM;
+			}
+			i++;
+			goto TRY_LOAD_IMG;
+		} else {
+			CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
+			     "Try to load all md image failed:ret=%d!\n", ret);
+			return -CCCI_ERR_INVALID_PARAM;
+		}
+	}
 	strncpy(img->file_name, img_name, sizeof(img->file_name));
 	img->offset = 0;
 	img->tail_length = 0;
-
-	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Not cipher image: %s\n", img_name);
-	ret = request_firmware(&fw_entry, img_name, dev);
-	if (ret != 0) {
-		CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
-			     "load_firmware failed:ret=%d!\n", ret);
-		goto out;
+	/*Check whether need skip header*/
+	hdr_size = check_if_bypass_header((void *)fw_entry->data, &img_size);
+	if (hdr_size != 0) {
+		img->size = img_size;
+		img_data_ptr = (void *)fw_entry->data + hdr_size;
+	} else {
+		img->size = fw_entry->size;
+		img_data_ptr = (void *)fw_entry->data;
 	}
-	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Firmware:size=%d\n", fw_entry->size);
+
 	/*load modem img context to kernel addr*/
 	load_addr = img->address;
+	CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "Not cipher image: %s Firmware:size=%zu, img_size=%d\n",
+		img_name, fw_entry->size, img->size);
+
 	while (1) {
 		/*  Map 1M memory */
-		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "Firmware:read_size=%d, size_per_read=%d\n", read_size, size_per_read);
+		CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "Firmware:read_size=%d, size_per_read=%d\n", read_size, size_per_read);
 		start = ioremap_nocache((load_addr + read_size), MAX_REMAP_SIZE);
 		if (start == 0) {
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "image ioremap fail %d\n",
 						(unsigned int)(load_addr + read_size));
 			return -CCCI_ERR_LOAD_IMG_NOMEM;
 		}
-		memcpy(start, fw_entry->data + read_size, size_per_read);
+		if (read_size + size_per_read > img->size - img->tail_length)
+			size_per_read = img->size - img->tail_length - read_size;
+		else
+			size_per_read = MAX_REMAP_SIZE;
+		memcpy(start, (void *)(img_data_ptr + read_size), size_per_read);
 		iounmap(start);
 		start = NULL;
 		read_size += size_per_read;
-		if (read_size + size_per_read > fw_entry->size - img->tail_length)
-			size_per_read = fw_entry->size - img->tail_length - read_size;
-		else
-			size_per_read = MAX_REMAP_SIZE;
-		if (read_size == fw_entry->size - img->tail_length)
+		if (read_size == img->size - img->tail_length)
 			break;
 	}
-	img->size = read_size;
+
 	CCCI_UTIL_ERR_MSG_WITH_ID(md_id, "Firmware check header:load_addr=%lx, size=%d\n", load_addr, img->size);
 	if (img->type == IMG_MD) {
 		start = ioremap_nocache(round_down(load_addr + img->size - 0x4000, 0x4000),
@@ -1013,20 +1050,14 @@ int ccci_get_md_check_hdr_inf(int md_id, void *img_inf, char post_fix[])
 	return 0;
 }
 
-int check_if_bypass_header(struct file *filp, int *img_size)
+int check_if_bypass_header(void *buf, int *img_size)
 {
-	char buf[64];
-	int ret;
 	prt_img_hdr_t *hdr_ptr;
 
-	filp->f_pos = 0; /* make sure read from 0 */
-
-	ret = (int)filp->f_op->read(filp, buf, 64, &filp->f_pos);
-	if (ret != 64) {
-		CCCI_UTIL_ERR_MSG("Can't read enough data(%d)\n", ret);
+	if (buf == NULL) {
+		CCCI_UTIL_ERR_MSG("buffer is NULL, no need bypass\n");
 		return 0;
 	}
-
 	hdr_ptr = (prt_img_hdr_t *)buf;
 	if ((hdr_ptr->info.magic == IMG_MAGIC) && (hdr_ptr->info.ext_magic == EXT_MAGIC)) {
 		CCCI_UTIL_ERR_MSG("This image has header, bypass %d bytes\n", (int)hdr_ptr->info.hdr_size);
@@ -1038,3 +1069,4 @@ int check_if_bypass_header(struct file *filp, int *img_size)
 	CCCI_UTIL_ERR_MSG("This image does not find header, no need bypass\n");
 	return 0;
 }
+
