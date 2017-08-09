@@ -3431,8 +3431,8 @@ static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 static MINT32 ISP_DumpSeninfReg(void)
 {
 	MINT32 Ret = 0;
-	/*  */
-	LOG_INF("- E.");
+	/* IMGPLL frequency */
+	LOG_INF("- E. IMGPLL(0x%x)[HPM:0x114EC5,LPM:0xC8000]\n", ISP_RD32(CLOCK_CELL_BASE + 0x0264));
 	/*Sensor interface Top mux and Package counter*/
 	LOG_INF("seninf:0008(0x%x)-0010(0x%x)-0a10(0x%x)-1a10(0x%x) 0a1c(0x%x)-1a1c(0x%x)-0a1c(0x%x)-1a1c(0x%x)\n", \
 		ISP_RD32(ISP_SENINF0_BASE + 0x0008), ISP_RD32(ISP_SENINF0_BASE + 0x0010), \
@@ -3451,6 +3451,12 @@ static MINT32 ISP_DumpSeninfReg(void)
 		ISP_RD32(ISP_SENINF1_BASE + 0x0a00), ISP_RD32(ISP_SENINF1_BASE + 0x0a14), \
 		ISP_RD32(ISP_SENINF1_BASE + 0x0a3c), ISP_RD32(ISP_SENINF1_BASE + 0x0a44), \
 		ISP_RD32(ISP_SENINF1_BASE + 0x0af0), ISP_RD32(ISP_SENINF1_BASE + 0x0af4));
+	/*Sensor interface1 control*/
+	LOG_INF("seninf:3200(0x%x)-3204(0x%x)-3a00(0x%x)-3a14(0x%x) 3a3c(0x%x)-3a44(0x%x)-3af0(0x%x)-3af4(0x%x)\n", \
+		ISP_RD32(ISP_SENINF3_BASE + 0x0200), ISP_RD32(ISP_SENINF3_BASE + 0x0204), \
+		ISP_RD32(ISP_SENINF3_BASE + 0x0a00), ISP_RD32(ISP_SENINF3_BASE + 0x0a14), \
+		ISP_RD32(ISP_SENINF3_BASE + 0x0a3c), ISP_RD32(ISP_SENINF3_BASE + 0x0a44), \
+		ISP_RD32(ISP_SENINF3_BASE + 0x0af0), ISP_RD32(ISP_SENINF3_BASE + 0x0af4));
 	/*Sensor interface mux*/
 	LOG_INF("seninf:0d00(0x%x)-0d08(0x%x)-0d14(0x%x)-0d18(0x%x) 1d00(0x%x)-1d08(0x%x)-1d14(0x%x)-1d18(0x%x)\n", \
 		ISP_RD32(ISP_SENINF0_BASE + 0x0d00), ISP_RD32(ISP_SENINF0_BASE + 0x0d08), \
@@ -3462,9 +3468,6 @@ static MINT32 ISP_DumpSeninfReg(void)
 		ISP_RD32(ISP_SENINF2_BASE + 0x0d14), ISP_RD32(ISP_SENINF2_BASE + 0x0d18), \
 		ISP_RD32(ISP_SENINF3_BASE + 0x0d00), ISP_RD32(ISP_SENINF3_BASE + 0x0d08), \
 		ISP_RD32(ISP_SENINF3_BASE + 0x0d14), ISP_RD32(ISP_SENINF3_BASE + 0x0d18));
-	/* IMGPLL frequency */
-	LOG_INF("IMGPLL frequency(0x%x)[HPM:0x114EC5, LPM:0xC8000]", ISP_RD32(CLOCK_CELL_BASE + 0x0264));
-
 	/*  */
 	return Ret;
 
