@@ -297,7 +297,7 @@ void mtk_wcn_cmb_stub_func_ctrl(unsigned int type, unsigned int on)
 }
 EXPORT_SYMBOL(mtk_wcn_cmb_stub_func_ctrl);
 
-signed long mtk_wcn_cmb_stub_query_ctrl(void)
+int mtk_wcn_cmb_stub_query_ctrl(void)
 {
 	signed long temp = 0;
 

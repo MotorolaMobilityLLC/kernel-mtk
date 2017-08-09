@@ -122,7 +122,7 @@ extern int mt_combo_plt_exit_deep_idle(COMBO_IF src);
  * function on/off.
  */
 extern void mtk_wcn_cmb_stub_func_ctrl(unsigned int type, unsigned int on);
-extern signed long mtk_wcn_cmb_stub_query_ctrl(void);
+extern int mtk_wcn_cmb_stub_query_ctrl(void);
 extern int board_sdio_ctrl(unsigned int sdio_port_num, unsigned int on);
 
 extern int mtk_wcn_wmt_chipid_query(void);

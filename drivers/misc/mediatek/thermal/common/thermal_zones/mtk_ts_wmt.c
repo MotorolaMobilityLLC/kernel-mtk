@@ -10,11 +10,21 @@
 /* For using net dev + */
 #include <linux/netdevice.h>
 /* For using net dev - */
-#include <mach/mtk_wcn_cmb_stub.h>
+#include <mt-plat/mtk_wcn_cmb_stub.h>
 #include <mt-plat/aee.h>
 #include "mach/mt_thermal.h"
 #include <linux/uidgid.h>
 
+/*=============================================================
+ *Weak functions
+ *=============================================================*/
+int __attribute__ ((weak))
+mtk_wcn_cmb_stub_query_ctrl(void)
+{
+	pr_err("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+/*=============================================================*/
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 
@@ -58,7 +68,7 @@ struct wmt_stats {
 };
 
 #define NR_TS_SENSORS		4
-static int (*ts_get_temp_wrap[]) (void) = {
+static int (*ts_get_temp_wrap[4]) (void) = {
 	mtk_wcn_cmb_stub_query_ctrl,	/* 0 is for WMT sensor */
 mtkts_get_ts1_temp, mtkts_get_ts2_temp, mtkts_get_ts3_temp};
 
