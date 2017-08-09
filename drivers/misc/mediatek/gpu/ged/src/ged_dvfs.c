@@ -146,9 +146,9 @@ unsigned long ged_query_info( GED_INFO eType)
 			return 0;
 		case GED_MIN_FREQ_IDX_FREQ:
 			return mt_gpufreq_get_freq_by_idx(0);
-                case GED_EVENT_GAS_MODE:
-                        return ged_gas_query_mode();
 #endif
+		case GED_EVENT_GAS_MODE:
+			return ged_gas_query_mode();
 		case GED_3D_FENCE_DONE_TIME:
 			return ged_monitor_3D_fence_done_time();
 		case GED_VSYNC_OFFSET:
@@ -913,7 +913,7 @@ void set_target_fps(int i32FPS)
 
 }
 
-#ifdef GED_DVFS_ENABLE
+
 unsigned long ged_gas_query_mode()
 {
 	if (g_ui32EventStatus & GED_EVENT_GAS)
@@ -921,7 +921,7 @@ unsigned long ged_gas_query_mode()
 	else
 		return GAS_CATEGORY_GAME;
 }
-#endif
+
 
 GED_ERROR ged_dvfs_probe(int pid)
 {

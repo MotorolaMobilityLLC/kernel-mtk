@@ -64,6 +64,18 @@ static unsigned long long g_timer_on_ts=0;
 
 static bool g_bGPUClock = false;
 
+int (*ged_sw_vsync_event_fp)(int msCount) = NULL;
+EXPORT_SYMBOL(ged_sw_vsync_event_fp);
+
+static int ged_sw_vsync_event(int msCount)
+{
+	if(ged_sw_vsync_event_fp)
+	{
+		return ged_sw_vsync_event_fp(msCount);
+	}
+	return -1;
+}
+
 /*
  * void timer_switch(bool bTock)
  * only set the staus, not really operating on real timer 
@@ -111,6 +123,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	unsigned long t;
 	long phase = 0;
 
+	ged_sw_vsync_event(20);
 	temp = ged_get_time();
 
 	if(g_gpu_timer_based_emu)
@@ -140,7 +153,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 			timer_switch_locked(true);
 		}				
 
-#endif				
+#endif			///	#ifdef ENABLE_TIMER_BACKUP		
 	}
 	else
 	{
@@ -162,7 +175,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	{
 		GED_LOGE("[5566] SW VSYNC: llDiff= %lld, hw_vsync_ts=%llu, sw_vsync_ts=%llu\n", llDiff, hw_vsync_ts, sw_vsync_ts);
 	}
-#endif		
+#endif		///	#ifdef GED_DVFS_DEBUG		
 
 
 	if(GED_VSYNC_HW_EVENT==eType)
@@ -188,7 +201,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 		{
 #ifdef GED_DVFS_DEBUG		
 			GED_LOGE("[5566] HW Event: kick!\n");
-#endif								
+#endif							/// GED_DVFS_DEBUG	
 			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] HW VSync: mending kick!");
 			ged_dvfs_run(0, 0, 0);
 		}
@@ -211,7 +224,8 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	psNotify->phase = phase;
 	psNotify->ul3DFenceDoneTime = ged_monitor_3D_fence_done_time();
 	queue_work(g_psNotifyWorkQueue, &psNotify->sWork);
-#endif
+#endif /// #if 0
+ged_sw_vsync_event(20);
 #endif
 
 	return GED_OK;

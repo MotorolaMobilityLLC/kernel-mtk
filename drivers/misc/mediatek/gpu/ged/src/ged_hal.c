@@ -288,7 +288,7 @@ static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer,
 				pcCMD = acBuffer+aint32Indx[0];
 
 				pcValue = acBuffer+aint32Indx[1];
-#ifdef ENABLE_COMMON_DVFS                
+ 
 				if(strcmp(pcCMD,"touch_down")==0)
 				{
 					if ( (*pcValue)=='1'|| (*pcValue) =='0')
@@ -309,9 +309,7 @@ static ssize_t ged_vsync_offset_enable_write_entry(const char __user *pszBuffer,
 							ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_WFD_EVENT , true);
 					}
 				}
-				else 
-#endif                    
-					if(strcmp(pcCMD,"enable_debug")==0)
+				else if(strcmp(pcCMD,"enable_debug")==0)
 					{
 						if ( (*pcValue) =='1'|| (*pcValue) =='0'||(*pcValue) =='2')
 						{
