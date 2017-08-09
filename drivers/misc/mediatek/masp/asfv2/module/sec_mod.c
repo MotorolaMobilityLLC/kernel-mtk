@@ -59,6 +59,7 @@
 #include "sec_osal.h"
 #include "sec_mod.h"
 #include "sec_boot_lib.h"
+#include "sec_clk.h"
 #ifdef MTK_SECURITY_MODULE_LITE
 #include "masp_version.h"
 #endif
@@ -75,7 +76,6 @@
  *  GLOBAL VARIABLE
  **************************************************************************/
 static struct sec_mod sec = { 0 };
-
 static struct cdev sec_dev;
 static struct class *sec_class;
 static struct device *sec_device;
@@ -224,6 +224,12 @@ static int sec_init(struct platform_device *dev)
 	if (!hacc_base) {
 		pr_err("[%s] HACC register remapping failed\n", SEC_DEV_NAME);
 		return -ENXIO;
+	}
+
+	ret = sec_clk_enable(dev);
+	if (ret) {
+		pr_err("[%s] Cannot get hacc clock\n", SEC_DEV_NAME);
+		return ret;
 	}
 
 	id = MKDEV(SEC_MAJOR, 0);
