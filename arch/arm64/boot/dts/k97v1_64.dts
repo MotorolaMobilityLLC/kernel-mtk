@@ -1609,3 +1609,26 @@
 };
 
 /* SCP DVFS GPIO end */
+
+/* DA9214 GPIO Start */
+&ext_buck_vproc {
+	pinctrl-names = "da9214_gpio_default";
+	pinctrl-0 = <&da9214_gpio_default>;
+	status = "okay";
+};
+
+&pio {
+	/* DA9214 GPIO Settings -Start */
+	/* default: GPIO61, output, low */
+	da9214_gpio_default:da9214_gpio_def@gpio61 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO61__FUNC_GPIO61>;
+			slew-rate = <1>;
+			bias-disable;
+			output-low;
+			input-schmitt-enable = <0>;
+		};
+	};
+	/* DA9214 GPIO Settings -End */
+};
+/* DA9214 GPIO End */
