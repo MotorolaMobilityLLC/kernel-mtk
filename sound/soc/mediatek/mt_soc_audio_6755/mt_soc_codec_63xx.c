@@ -96,11 +96,11 @@
 #include "AudDrv_Common_func.h"
 #include "AudDrv_Gpio.h"
 
-/* #define MT6755_AW8736_REWORK	*/ /* use different GPIO for rework version */
+#define MT6755_AW8736_REWORK	/* use different GPIO for rework version */
 #define AW8736_MODE_CTRL /* AW8736 PA output power mode control*/
 
 #ifdef MT6755_AW8736_REWORK
-#include "../../../../drivers/misc/mediatek/auxadc/mt6755/mt_auxadc_sw.h"
+#include "../../../../drivers/misc/mediatek/auxadc/mt_auxadc.h"
 #endif
 
 /* static function declaration */
@@ -1929,7 +1929,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #ifndef MT6755_AW8736_REWORK
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
 #else
-		if (pin_extspkamp != 54)
+		if (pin_extspkamp != (54 | 0x80000000))
 			AudDrv_GPIO_EXTAMP_Select(false, 3);
 		else
 			AudDrv_GPIO_EXTAMP2_Select(false, 3);
@@ -1954,7 +1954,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #ifndef MT6755_AW8736_REWORK
 		AudDrv_GPIO_EXTAMP_Select(true, 3);
 #else
-		if (pin_extspkamp != 54)
+		if (pin_extspkamp != (54 | 0x80000000))
 			AudDrv_GPIO_EXTAMP_Select(true, 3);
 		else
 			AudDrv_GPIO_EXTAMP2_Select(true, 3);
@@ -1979,7 +1979,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #ifndef MT6755_AW8736_REWORK
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
 #else
-		if (pin_extspkamp != 54)
+		if (pin_extspkamp != (54 | 0x80000000))
 			AudDrv_GPIO_EXTAMP_Select(false, 3);
 		else
 			AudDrv_GPIO_EXTAMP2_Select(false, 3);
@@ -4593,18 +4593,16 @@ static void InitGlobalVarDefault(void)
 
 static int mt6331_codec_probe(struct snd_soc_codec *codec)
 {
+#ifdef MT6755_AW8736_REWORK
+	int data[4];
+	int rawdata;
+#endif
 	struct snd_soc_dapm_context *dapm = &codec->dapm;
 
 	pr_warn("%s()\n", __func__);
 
 	if (mInitCodec == true)
 		return 0;
-
-#ifdef MT6755_AW8736_REWORK
-	int data[4];
-	int rawdata;
-	int ret;
-#endif
 
 	pin_extspkamp = pin_extspkamp_2 = pin_vowclk = pin_audmiso = pin_rcvspkswitch = 0;
 	pin_mode_extspkamp = pin_mode_extspkamp_2 = pin_mode_vowclk =
@@ -4644,31 +4642,31 @@ static int mt6331_codec_probe(struct snd_soc_codec *codec)
 	InitCodecDefault();
 	mInitCodec = true;
 
-#ifdef CONFIG_MTK_LEGACY
 #ifdef MT6755_AW8736_REWORK
 	/* Get PCB ID : Channel 12 */
-	IMM_auxadc_GetOneChannelValue(12, data, &rawdata);
+	IMM_GetOneChannelValue(12, data, &rawdata);
 	pr_warn("PCB_ID: voltage: %d.%d\n", data[0], data[1]);
-
 	if ((data[0] == 0) && (data[1] < 25))
 		mHPDePop = false;	/* EVB don't use hp de pop circuit */
 	else
 		mHPDePop = true;
-
 	if ((data[0] == 0) && (data[1] > 40 && data[1] < 54)) {
 		/* 0.505v : rework version -- use GPIO 54 */
-		pin_extspkamp = 54;
+		pin_extspkamp = (54 | 0x80000000);
 		pin_mode_extspkamp = 0;
 		pr_warn("AW8736 rework version WS3000 -- use GPIO %u as SHDN\n", pin_extspkamp);
 	} else {
+	#if 0
 		ret = GetGPIO_Info(5, &pin_extspkamp, &pin_mode_extspkamp);
 		if (ret < 0) {
 			pr_err("Ext_Speaker_Amp_Change GetGPIO_Info FAIL!!!\n");
-			return;
+			return -1;
 		}
+	#endif
+		pin_extspkamp = (115 | 0x80000000);
+		pin_mode_extspkamp = 0;
 		pr_warn("Get AW8736 SHDN IO %u from DTS\n", (pin_extspkamp - 0x80000000));
 	}
-#endif
 #endif
 	return 0;
 }

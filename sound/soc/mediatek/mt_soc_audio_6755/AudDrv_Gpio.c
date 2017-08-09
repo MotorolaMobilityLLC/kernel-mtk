@@ -262,6 +262,7 @@ int AudDrv_GPIO_EXTAMP_Select(int bEnable, int mode)
 	int i;
 
 	if (bEnable == 1) {
+		pr_debug("%s On", __func__);
 		if (mode == 1)
 			extamp_mode = 1;
 		else if (mode == 2)
@@ -284,6 +285,7 @@ int AudDrv_GPIO_EXTAMP_Select(int bEnable, int mode)
 			}
 		}
 	} else {
+		pr_debug("%s Off", __func__);
 		if (aud_gpios[GPIO_EXTAMP_LOW].gpio_prepare) {
 			retval =
 			    pinctrl_select_state(pinctrlaud, aud_gpios[GPIO_EXTAMP_LOW].gpioctrl);
@@ -302,6 +304,7 @@ int AudDrv_GPIO_EXTAMP2_Select(int bEnable, int mode)
 	int i;
 
 	if (bEnable == 1) {
+		pr_debug("%s On", __func__);
 		if (mode == 1)
 			extamp_mode = 1;
 		else if (mode == 2)
@@ -315,15 +318,16 @@ int AudDrv_GPIO_EXTAMP2_Select(int bEnable, int mode)
 						aud_gpios[GPIO_EXTAMP2_LOW].gpioctrl);
 				if (retval)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP2_LOW] pins\n");
-				udelay(2);
+				udelay(5);
 				retval = pinctrl_select_state(pinctrlaud,
 						aud_gpios[GPIO_EXTAMP2_HIGH].gpioctrl);
 				if (retval)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP2_HIGH] pins\n");
-				udelay(2);
+				udelay(5);
 			}
 		}
 	} else {
+		pr_debug("%s Off", __func__);
 		if (aud_gpios[GPIO_EXTAMP2_LOW].gpio_prepare) {
 			retval =
 			    pinctrl_select_state(pinctrlaud, aud_gpios[GPIO_EXTAMP2_LOW].gpioctrl);
