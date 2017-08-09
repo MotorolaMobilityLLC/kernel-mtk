@@ -911,6 +911,7 @@ config ARCH_MT6580
 	select PINCTRL
 	select PINCTRL_MT6580
 	select MFD_SYSCON
+	select MTK_DEBUG_LATCH
 	select MTK_LASTPC
 	select CPU_IDLE
 	select ARM_MT6735_CPUIDLE
