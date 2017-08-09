@@ -51,6 +51,8 @@
 #include <linux/uaccess.h>
 #endif
 
+#include "rrc_def.h"
+
 #include "rrc_drv.h"
 
 #define RRC_DEVNAME "mtk_rrc"
