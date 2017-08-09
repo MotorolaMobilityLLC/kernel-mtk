@@ -5,12 +5,6 @@
 #include <linux/kernel.h>
 #include <linux/completion.h>
 #include <linux/scatterlist.h>
-#include <linux/mmc/card.h>
-#include <linux/mmc/core.h>
-#include <linux/mmc/host.h>
-#include <linux/mmc/mmc.h>
-#include <linux/mmc/sd.h>
-#include <linux/mmc/sdio.h>
 #include "mt_sd.h"
 
 #define E_RESULT_PASS     (0)

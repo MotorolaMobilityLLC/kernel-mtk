@@ -4,8 +4,6 @@
 
 #define pr_fmt(fmt) "["KBUILD_MODNAME"]" fmt
 
-#include <linux/mmc/host.h>
-#include <linux/mmc/card.h>
 #include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
@@ -14,6 +12,7 @@
 #include <linux/of_irq.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
+
 #include "mt_sd.h"
 #include <mt-plat/sd_misc.h>
 #include "msdc_tune.h"
@@ -22,41 +21,12 @@
 /**************************************************************/
 /* Section 1: Device Tree Global Variables                    */
 /**************************************************************/
-/* FIX ME: check if it can be removed */
 const struct of_device_id msdc_of_ids[] = {
-	{   .compatible = "mediatek,mt6755-mmc", },
+	{   .compatible = DT_COMPATIBLE_NAME, },
 	{ },
 };
 
-/* GPIO, IO_CONFIG node */
-struct device_node *gpio_node;
-struct device_node *msdc0_io_cfg_node;
-struct device_node *msdc1_io_cfg_node;
-struct device_node *msdc2_io_cfg_node;
-struct device_node *msdc3_io_cfg_node;
-
-/* debig node */
-struct device_node *infracfg_ao_node;
-struct device_node *toprgu_node;
-struct device_node *apmixed_node;
-struct device_node *topckgen_node;
-
-/* eint node */
-struct device_node *eint_node;
-
-struct device_node **msdc_io_cfg_nodes[HOST_MAX_NUM] = {
-	&msdc0_io_cfg_node,
-	&msdc1_io_cfg_node,
-	&msdc2_io_cfg_node,
-	&msdc3_io_cfg_node
-};
-
 void __iomem *gpio_base;
-void __iomem *msdc0_io_cfg_base;
-void __iomem *msdc1_io_cfg_base;
-void __iomem *msdc2_io_cfg_base;
-void __iomem *msdc3_io_cfg_base;
-
 void __iomem *infracfg_ao_reg_base;
 void __iomem *infracfg_reg_base;
 void __iomem *pericfg_reg_base;
@@ -64,12 +34,7 @@ void __iomem *toprgu_reg_base;
 void __iomem *apmixed_reg_base;
 void __iomem *topckgen_reg_base;
 
-void __iomem **msdc_io_cfg_bases[HOST_MAX_NUM] = {
-	&msdc0_io_cfg_base,
-	&msdc1_io_cfg_base,
-	&msdc2_io_cfg_base,
-	&msdc3_io_cfg_base
-};
+void __iomem *msdc_io_cfg_bases[HOST_MAX_NUM];
 
 
 /**************************************************************/
@@ -186,8 +151,8 @@ void msdc_sd_power_switch(struct msdc_host *host, u32 on)
 		}
 
 		msdc_ldo_power(on, host->mmc->supply.vqmmc, VOL_1800, &g_msdc1_io);
-		msdc_set_tdsel(host, 0, 1);
-		msdc_set_rdsel(host, 0, 1);
+		msdc_set_tdsel(host, MSDC_TDRDSEL_1V8, 0);
+		msdc_set_rdsel(host, MSDC_TDRDSEL_1V8, 0);
 		msdc_set_driving(host, host->hw, 1);
 		break;
 
@@ -286,10 +251,18 @@ void msdc_emmc_power(struct msdc_host *host, u32 on)
 			if (time_after(jiffies, tmo)) {
 				pr_err("Dat0 keep low before power off,sa_timeout = 0x%x",
 					sa_timeout);
+				#ifdef EMMC_SLEEP_FAIL_HANDLE
 				emmc_sleep_failed = 1;
+				#endif
 				break;
 			}
 		}
+	}
+
+	if (on) {
+		msdc_set_driving(host, host->hw, 0);
+		msdc_set_tdsel(host, MSDC_TDRDSEL_1V8, 0);
+		msdc_set_rdsel(host, MSDC_TDRDSEL_1V8, 0);
 	}
 
 	msdc_ldo_power(on, host->mmc->supply.vmmc, VOL_3000, &g_msdc0_flash);
@@ -304,8 +277,8 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 	switch (host->id) {
 	case 1:
 		msdc_set_driving(host, host->hw, 0);
-		msdc_set_tdsel(host, 0, 0);
-		msdc_set_rdsel(host, 0, 0);
+		msdc_set_tdsel(host, MSDC_TDRDSEL_3V, 0);
+		msdc_set_rdsel(host, MSDC_TDRDSEL_3V, 0);
 		if (host->hw->flags & MSDC_SD_NEED_POWER)
 			card_on = 1;
 
@@ -366,17 +339,17 @@ void msdc_HQA_set_vcore(struct msdc_host *host)
 /* Section 3: Clock                                           */
 /**************************************************************/
 #if !defined(FPGA_PLATFORM)
-u32 hclks_msdc50[] = {26000000 , 400000000, 200000000, 156000000,
-		      182000000, 156000000, 100000000, 624000000,
-		      312000000};
+u32 hclks_msdc50[] = { MSDC0_SRC_0, MSDC0_SRC_1, MSDC0_SRC_2, MSDC0_SRC_3,
+		       MSDC0_SRC_4, MSDC0_SRC_5, MSDC0_SRC_6, MSDC0_SRC_7,
+		       MSDC0_SRC_8};
 
 /* msdc1/2 clock source reference value is 200M */
-u32 hclks_msdc30[] = {26000000 , 208000000, 100000000, 156000000,
-		      182000000, 156000000, 178000000, 200000000};
+u32 hclks_msdc30[] = { MSDC1_SRC_0, MSDC1_SRC_1, MSDC1_SRC_2, MSDC1_SRC_3,
+		       MSDC1_SRC_4, MSDC1_SRC_5, MSDC1_SRC_6, MSDC1_SRC_7};
 
-u32 hclks_msdc30_3[] = {26000000 , 50000000, 100000000, 156000000,
-		      48000000, 156000000, 178000000, 54000000,
-		      25000000};
+u32 hclks_msdc30_3[] = { MSDC3_SRC_0, MSDC3_SRC_1, MSDC3_SRC_2, MSDC3_SRC_3,
+			 MSDC3_SRC_4, MSDC3_SRC_5, MSDC3_SRC_6, MSDC3_SRC_7,
+			 MSDC3_SRC_8};
 
 u32 *hclks_msdc_all[] = {
 	hclks_msdc50,
@@ -391,17 +364,17 @@ u32 *hclks_msdc = hclks_msdc30;
 #include <mt_clk_id.h>
 
 int msdc_cg_clk_id[HOST_MAX_NUM] = {
-	MT_CG_INFRA0_MSDC0_CG_STA,
-	MT_CG_INFRA0_MSDC1_CG_STA,
-	MT_CG_INFRA0_MSDC2_CG_STA,
-	MT_CG_INFRA0_MSDC3_CG_STA
+	MSDC0_CG_NAME,
+	MSDC1_CG_NAME,
+	MSDC2_CG_NAME,
+	MSDC3_CG_NAME
 };
 
 int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 	struct msdc_host *host)
 {
 	static char const * const clk_names[] = {
-		"MSDC0-CLOCK", "MSDC1-CLOCK", "MSDC2-CLOCK", "MSDC3-CLOCK"
+		MSDC0_CLK_NAME, MSDC1_CLK_NAME, MSDC2_CLK_NAME, MSDC3_CLK_NAME
 	};
 
 	host->clock_control = devm_clk_get(&pdev->dev, clk_names[pdev->id]);
@@ -463,7 +436,6 @@ void msdc_dump_clock_sts(void)
 #endif
 }
 
-/* FIX ME: check if this function can be removed */
 void msdc_clk_status(int *status)
 {
 	int g_clk_gate = 0;
@@ -652,15 +624,27 @@ void msdc_set_smt_by_id(u32 id, int set_smt)
 	}
 }
 
-void msdc_set_tdsel_by_id(u32 id, bool sleep, bool sd_18)
+void msdc_set_tdsel_by_id(u32 id, u32 flag, u32 value)
 {
+	u32 cust_val;
+
 	switch (id) {
 	case 0:
 		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR, MSDC0_TDSEL_ALL_MASK , 0);
 		break;
 	case 1:
-		MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR, MSDC1_TDSEL_ALL_MASK,
-			(sleep ? 0xFFF : 0xAAA));
+		if (flag == MSDC_TDRDSEL_SLEEP) {
+			MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR,
+				MSDC1_TDSEL_ALL_MASK, 0xFFF);
+		} else if (flag == MSDC_TDRDSEL_CUST) {
+			value &= 0xF;
+			cust_val = value | (value << 4) | (value << 8);
+			MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR,
+				MSDC1_TDSEL_ALL_MASK, cust_val);
+		} else {
+			MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR,
+				MSDC1_TDSEL_ALL_MASK, 0xAAA);
+		}
 		break;
 
 #ifdef CFG_DEV_MSDC2
@@ -675,7 +659,7 @@ void msdc_set_tdsel_by_id(u32 id, bool sleep, bool sd_18)
 	}
 }
 
-void msdc_set_rdsel_by_id(u32 id, bool sleep, bool sd_18)
+void msdc_set_rdsel_by_id(u32 id, u32 flag, u32 value)
 {
 	switch (id) {
 	case 0:
@@ -683,10 +667,23 @@ void msdc_set_rdsel_by_id(u32 id, bool sleep, bool sd_18)
 		break;
 
 	case 1:
-		MSDC_SET_FIELD(MSDC1_GPIO_RDSEL0_ADDR, MSDC1_RDSEL0_ALL_MASK,
-			(sd_18 ? 0 : 0x30C));
-		MSDC_SET_FIELD(MSDC1_GPIO_RDSEL1_ADDR, MSDC1_RDSEL1_ALL_MASK,
-			(sd_18 ? 0 : 0xC));
+		if (flag == MSDC_TDRDSEL_1V8) {
+			MSDC_SET_FIELD(MSDC1_GPIO_RDSEL0_ADDR,
+				MSDC1_RDSEL0_ALL_MASK, 0);
+			MSDC_SET_FIELD(MSDC1_GPIO_RDSEL1_ADDR,
+				MSDC1_RDSEL1_ALL_MASK, 0);
+		} else if (flag == MSDC_TDRDSEL_3V) {
+			MSDC_SET_FIELD(MSDC1_GPIO_RDSEL0_ADDR,
+				MSDC1_RDSEL0_ALL_MASK, 0x30C);
+			MSDC_SET_FIELD(MSDC1_GPIO_RDSEL1_ADDR,
+				MSDC1_RDSEL1_ALL_MASK, 0xC);
+		} else if (flag == MSDC_TDRDSEL_CUST) {
+			MSDC_SET_FIELD(MSDC1_GPIO_RDSEL0_ADDR,
+				MSDC1_RDSEL0_ALL_MASK,
+				(value & 0x3F) | ((value & 0x3F) << 6));
+			MSDC_SET_FIELD(MSDC1_GPIO_RDSEL1_ADDR,
+				MSDC1_RDSEL1_ALL_MASK, value & 0x3F);
+		}
 		break;
 
 #ifdef CFG_DEV_MSDC2
@@ -701,82 +698,7 @@ void msdc_set_rdsel_by_id(u32 id, bool sleep, bool sd_18)
 	}
 }
 
-void msdc_set_tdsel_dbg_by_id(u32 id, u32 value)
-{
-	switch (id) {
-	case 0:
-		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR,
-			MSDC0_TDSEL_CMD_MASK, value);
-		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR,
-			MSDC0_TDSEL_DSL_MASK, value);
-		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR,
-			MSDC0_TDSEL_CLK_MASK, value);
-		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR,
-			MSDC0_TDSEL_DAT_MASK, value);
-		MSDC_SET_FIELD(MSDC0_GPIO_TDSEL_ADDR,
-			MSDC0_TDSEL_RSTB_MASK, value);
-		break;
-
-	case 1:
-		MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR,
-			MSDC1_TDSEL_CMD_MASK, value);
-		MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR,
-			MSDC1_TDSEL_CLK_MASK, value);
-		MSDC_SET_FIELD(MSDC1_GPIO_TDSEL_ADDR,
-			MSDC1_TDSEL_DAT_MASK, value);
-		break;
-
-#ifdef CFG_DEV_MSDC2
-	case 2:
-		MSDC_SET_FIELD(MSDC2_GPIO_TDSEL_ADDR,
-			MSDC2_TDSEL_CMD_MASK, value);
-		MSDC_SET_FIELD(MSDC2_GPIO_TDSEL_ADDR,
-			MSDC2_TDSEL_CLK_MASK, value);
-		MSDC_SET_FIELD(MSDC2_GPIO_TDSEL_ADDR,
-			MSDC2_TDSEL_DAT_MASK, value);
-		break;
-#endif
-	}
-}
-
-void msdc_set_rdsel_dbg_by_id(u32 id, u32 value)
-{
-	switch (id) {
-	case 0:
-		MSDC_SET_FIELD(MSDC0_GPIO_RDSEL_ADDR,
-			MSDC0_RDSEL_CMD_MASK, value);
-		MSDC_SET_FIELD(MSDC0_GPIO_RDSEL_ADDR,
-			MSDC0_RDSEL_DSL_MASK, value);
-		MSDC_SET_FIELD(MSDC0_GPIO_RDSEL_ADDR,
-			MSDC0_RDSEL_CLK_MASK, value);
-		MSDC_SET_FIELD(MSDC0_GPIO_RDSEL_ADDR,
-			MSDC0_RDSEL_DAT_MASK, value);
-		MSDC_SET_FIELD(MSDC0_GPIO_RDSEL_ADDR,
-			MSDC0_RDSEL_RSTB_MASK, value);
-		break;
-	case 1:
-		MSDC_SET_FIELD(MSDC1_GPIO_RDSEL0_ADDR,
-			MSDC1_RDSEL_CMD_MASK, value);
-		MSDC_SET_FIELD(MSDC1_GPIO_RDSEL0_ADDR,
-			MSDC1_RDSEL_CLK_MASK, value);
-		MSDC_SET_FIELD(MSDC1_GPIO_RDSEL1_ADDR,
-			MSDC1_RDSEL_DAT_MASK, value);
-		break;
-
-#ifdef CFG_DEV_MSDC2
-	case 2:
-		MSDC_SET_FIELD(MSDC2_GPIO_RDSEL_ADDR,
-			MSDC2_RDSEL_CMD_MASK, value);
-		MSDC_SET_FIELD(MSDC2_GPIO_RDSEL_ADDR,
-			MSDC2_RDSEL_CLK_MASK, value);
-		MSDC_SET_FIELD(MSDC2_GPIO_RDSEL_ADDR,
-			MSDC2_RDSEL_DAT_MASK, value);
-		break;
-#endif
-	}
-}
-
-void msdc_get_tdsel_dbg_by_id(u32 id, u32 *value)
+void msdc_get_tdsel_by_id(u32 id, u32 *value)
 {
 	switch (id) {
 	case 0:
@@ -798,7 +720,7 @@ void msdc_get_tdsel_dbg_by_id(u32 id, u32 *value)
 	}
 }
 
-void msdc_get_rdsel_dbg_by_id(u32 id, u32 *value)
+void msdc_get_rdsel_by_id(u32 id, u32 *value)
 {
 	switch (id) {
 	case 0:
@@ -969,68 +891,60 @@ void msdc_get_driving_by_id(u32 id, struct msdc_hw *hw)
 
 void msdc_pin_config_by_id(u32 id, u32 mode)
 {
+	u32 val0, val1;
+
 	switch (id) {
 	case 0:
 		/*Attention: don't pull CLK high; Don't toggle RST to prevent
 		  from entering boot mode */
 		if (MSDC_PIN_PULL_NONE == mode) {
 			/* high-Z */
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR,
-				MSDC0_PUPD0_MASK, 0x4444444);
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR,
-				MSDC0_PUPD1_MASK, 0x4444);
+			val0 = 0x4444444;
+			val1 = 0x4444;
 		} else if (MSDC_PIN_PULL_DOWN == mode) {
 			/* cmd/clk/dat/(rstb)/dsl:pd-50k*/
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR,
-				MSDC0_PUPD0_MASK, 0x6666666);
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR,
-				MSDC0_PUPD1_MASK, 0x6666);
+			val0 = 0x6666666;
+			val1 = 0x6666;
 		} else if (MSDC_PIN_PULL_UP == mode) {
 			/* clk/dsl:pd-50k, cmd/dat:pu-10k, (rstb:pu-50k)*/
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR,
-				MSDC0_PUPD0_MASK, 0x1111161);
-			MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR,
-				MSDC0_PUPD1_MASK, 0x6111);
+			val0 = 0x1111161;
+			val1 = 0x6111;
 		}
+		MSDC_SET_FIELD(MSDC0_GPIO_PUPD0_ADDR, MSDC0_PUPD0_MASK, val0);
+		MSDC_SET_FIELD(MSDC0_GPIO_PUPD1_ADDR, MSDC0_PUPD1_MASK, val1);
 		break;
 
 	case 1:
 		if (MSDC_PIN_PULL_NONE == mode) {
 			/* high-Z */
-			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR,
-				MSDC1_PUPD_MASK, 0x444444);
+			val0 = 0x444444;
 		} else if (MSDC_PIN_PULL_DOWN == mode) {
 			/* cmd/clk/dat:pd-50k */
-			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR,
-				MSDC1_PUPD_MASK, 0x666666);
+			val0 = 0x666666;
 		} else if (MSDC_PIN_PULL_UP == mode) {
 			/* cmd/dat:pu-50k, clk:pd-50k */
-			MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR,
-				MSDC1_PUPD_MASK, 0x222262);
+			val0 = 0x222262;
 		}
+		MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_MASK, val0);
 		break;
 
 #ifdef CFG_DEV_MSDC2
 	case 2:
 		if (MSDC_PIN_PULL_NONE == mode) {
 			/* high-Z */
-			MSDC_SET_FIELD(MSDC2_GPIO_PUPD_ADDR0,
-				MSDC2_PUPD_MASK0, 0x44444);
-			MSDC_SET_FIELD(MSDC2_GPIO_PUPD_ADDR1,
-				MSDC2_PUPD_MASK1, 0x4);
+			val0 = 0x44444;
+			val1 = 0x4;
 		} else if (MSDC_PIN_PULL_DOWN == mode) {
 			/* cmd/clk/dat:pd-50k */
-			MSDC_SET_FIELD(MSDC2_GPIO_PUPD_ADDR0,
-				MSDC2_PUPD_MASK0, 0x66666);
-			MSDC_SET_FIELD(MSDC2_GPIO_PUPD_ADDR1,
-				MSDC2_PUPD_MASK1, 0x6);
+			val0 = 0x66666;
+			val1 = 0x6;
 		} else if (MSDC_PIN_PULL_UP == mode) {
 			/* cmd/dat:pu-10k, clk:pd-50k, */
-			MSDC_SET_FIELD(MSDC2_GPIO_PUPD_ADDR0,
-				MSDC2_PUPD_MASK0, 0x11611);
-			MSDC_SET_FIELD(MSDC2_GPIO_PUPD_ADDR1,
-				MSDC2_PUPD_MASK1, 0x1);
+			val0 = 0x11611;
+			val1 = 0x1;
 		}
+		MSDC_SET_FIELD(MSDC2_GPIO_PUPD_ADDR0, MSDC2_PUPD_MASK0, val0);
+		MSDC_SET_FIELD(MSDC2_GPIO_PUPD_ADDR1, MSDC2_PUPD_MASK1, val1);
 		break;
 #endif
 
@@ -1054,66 +968,50 @@ void msdc_pin_config_by_id(u32 id, u32 mode)
  */
 static int msdc_get_pinctl_settings(struct msdc_host *host, struct device_node *np)
 {
-	struct device_node *pinctl_node;
-	struct device_node *pins_node;
+	struct device_node *pinctl_node, *pins_node;
+	static char const * const pinctl_names[] = {
+		"pinctl", "pinctl_sdr104", "pinctl_sdr50", "pinctl_ddr50"
+	};
 
-	pinctl_node = of_parse_phandle(np, "pinctl", 0);
-	pins_node = of_get_child_by_name(pinctl_node, "pins_cmd");
-	of_property_read_u8(pins_node, "drive-strength", &host->hw->cmd_drv);
+	static char const * const pins_names[] = {
+		"pins_cmd", "pins_dat", "pins_clk", "pins_rst", "pins_ds"
+	};
+	unsigned char *pins_drv[5];
+	int i, j;
 
-	pins_node = of_get_child_by_name(pinctl_node, "pins_dat");
-	of_property_read_u8(pins_node, "drive-strength", &host->hw->dat_drv);
+	for (i = 0; i < sizeof(pinctl_names)/sizeof(pinctl_names[0]); i++) {
+		pinctl_node = of_parse_phandle(np, pinctl_names[i], 0);
 
-	pins_node = of_get_child_by_name(pinctl_node, "pins_clk");
-	of_property_read_u8(pins_node, "drive-strength", &host->hw->clk_drv);
+		if (strcmp(pinctl_names[i], "pinctl") == 0) {
+			pins_drv[0] = &host->hw->cmd_drv;
+			pins_drv[1] = &host->hw->dat_drv;
+			pins_drv[2] = &host->hw->clk_drv;
+			pins_drv[3] = &host->hw->rst_drv;
+			pins_drv[4] = &host->hw->ds_drv;
+		} else if (strcmp(pinctl_names[i], "pinctl_sdr104") == 0) {
+			pins_drv[0] = &host->hw->cmd_drv_sd_18;
+			pins_drv[1] = &host->hw->dat_drv_sd_18;
+			pins_drv[2] = &host->hw->clk_drv_sd_18;
+		} else if (strcmp(pinctl_names[i], "pinctl_sdr50") == 0) {
+			pins_drv[0] = &host->hw->cmd_drv_sd_18_sdr50;
+			pins_drv[1] = &host->hw->dat_drv_sd_18_sdr50;
+			pins_drv[2] = &host->hw->clk_drv_sd_18_sdr50;
+		} else if (strcmp(pinctl_names[i], "pinctl_ddr50") == 0) {
+			pins_drv[0] = &host->hw->cmd_drv_sd_18_ddr50;
+			pins_drv[1] = &host->hw->dat_drv_sd_18_ddr50;
+			pins_drv[2] = &host->hw->clk_drv_sd_18_ddr50;
+		} else {
+			continue;
+		}
 
-	pins_node = of_get_child_by_name(pinctl_node, "pins_rst");
-	of_property_read_u8(pins_node, "drive-strength", &host->hw->rst_drv);
-
-	pins_node = of_get_child_by_name(pinctl_node, "pins_ds");
-	of_property_read_u8(pins_node, "drive-strength", &host->hw->ds_drv);
-
-	/* SDR104 for SDcard */
-	pinctl_node = of_parse_phandle(np, "pinctl_sdr104", 0);
-	pins_node = of_get_child_by_name(pinctl_node, "pins_cmd");
-	of_property_read_u8(pins_node, "drive-strength",
-			&host->hw->cmd_drv_sd_18);
-
-	pins_node = of_get_child_by_name(pinctl_node, "pins_dat");
-	of_property_read_u8(pins_node, "drive-strength",
-			&host->hw->dat_drv_sd_18);
-
-	pins_node = of_get_child_by_name(pinctl_node, "pins_clk");
-	of_property_read_u8(pins_node, "drive-strength",
-			&host->hw->clk_drv_sd_18);
-
-	/* SDR50 for SDcard */
-	pinctl_node = of_parse_phandle(np, "pinctl_sdr50", 0);
-	pins_node = of_get_child_by_name(pinctl_node, "pins_cmd");
-	of_property_read_u8(pins_node, "drive-strength",
-			&host->hw->cmd_drv_sd_18_sdr50);
-
-	pins_node = of_get_child_by_name(pinctl_node, "pins_dat");
-	of_property_read_u8(pins_node, "drive-strength",
-			&host->hw->dat_drv_sd_18_sdr50);
-
-	pins_node = of_get_child_by_name(pinctl_node, "pins_clk");
-	of_property_read_u8(pins_node, "drive-strength",
-			&host->hw->clk_drv_sd_18_sdr50);
-
-	/* DDR50 for SDcard */
-	pinctl_node = of_parse_phandle(np, "pinctl_ddr50", 0);
-	pins_node = of_get_child_by_name(pinctl_node, "pins_cmd");
-	of_property_read_u8(pins_node, "drive-strength",
-			&host->hw->cmd_drv_sd_18_ddr50);
-
-	pins_node = of_get_child_by_name(pinctl_node, "pins_dat");
-	of_property_read_u8(pins_node, "drive-strength",
-			&host->hw->dat_drv_sd_18_ddr50);
-
-	pins_node = of_get_child_by_name(pinctl_node, "pins_clk");
-	of_property_read_u8(pins_node, "drive-strength",
-			&host->hw->clk_drv_sd_18_ddr50);
+		for (j = 0; j < sizeof(pins_names)/sizeof(pins_names[0]); j++) {
+			pins_node = of_get_child_by_name(pinctl_node,
+				pins_names[j]);
+			if (pins_node)
+				of_property_read_u8(pins_node,
+					"drive-strength", pins_drv[j]);
+		}
+	}
 
 	return 0;
 }
@@ -1195,7 +1093,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 	#if !defined(FPGA_PLATFORM)
 	if (of_property_read_u8(np, "clk_src", &host->hw->clk_src)) {
 		pr_err("[msdc%d] error: clk_src isn't found in device tree.\n",
-				host->id);
+			host->id);
 		BUG_ON(1);
 	}
 	#endif
@@ -1236,8 +1134,6 @@ int msdc_of_parse(struct mmc_host *mmc)
 
 #if defined(CFG_DEV_MSDC2)
 	if (host->hw->host_function == MSDC_SDIO) {
-		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
-		host->mmc->pm_caps |= MMC_PM_KEEP_POWER;
 		host->hw->flags |= MSDC_EXT_SDIO_IRQ;
 		host->hw->request_sdio_eirq = mt_sdio_ops[2].sdio_request_eirq;
 		host->hw->enable_sdio_eirq = mt_sdio_ops[2].sdio_enable_eirq;
@@ -1257,9 +1153,10 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 	static char const * const msdc_names[] = {
 		"msdc0", "msdc1", "msdc2", "msdc3"};
 	static char const * const ioconfig_names[] = {
-		"mediatek,iocfg_5", "mediatek,iocfg_0",
-		"mediatek,iocfg_4", "NOT EXIST"
+		MSDC0_IOCFG_NAME, MSDC1_IOCFG_NAME,
+		MSDC2_IOCFG_NAME, MSDC3_IOCFG_NAME
 	};
+	struct device_node *np;
 
 	pr_err("DT probe %s!\n", pdev->dev.of_node->name);
 
@@ -1284,57 +1181,47 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 	host = mmc_priv(mmc);
 	host->id = id;
 
-	if (gpio_node == NULL) {
-		gpio_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,GPIO");
-		gpio_base = of_iomap(gpio_node, 0);
+	if (gpio_base == NULL) {
+		np = of_find_compatible_node(NULL, NULL, "mediatek,GPIO");
+		gpio_base = of_iomap(np, 0);
 		pr_debug("of_iomap for gpio base @ 0x%p\n", gpio_base);
 	}
 
-	if (*msdc_io_cfg_nodes[id] == NULL) {
-		*msdc_io_cfg_nodes[id] = of_find_compatible_node(
-			NULL, NULL, ioconfig_names[id]);
-		*msdc_io_cfg_bases[id] =
-			of_iomap(*msdc_io_cfg_nodes[id], 0);
+	if (msdc_io_cfg_bases[id] == NULL) {
+		np = of_find_compatible_node(NULL, NULL, ioconfig_names[id]);
+		msdc_io_cfg_bases[id] = of_iomap(np, 0);
 		pr_debug("of_iomap for MSDC%d IOCFG base @ 0x%p\n",
-			id, *msdc_io_cfg_bases[id]);
+			id, msdc_io_cfg_bases[id]);
 	}
 
 #ifndef FPGA_PLATFORM
-	/*FIX ME, correct node match string */
-	if (infracfg_ao_node == NULL) {
-		infracfg_ao_node = of_find_compatible_node(NULL, NULL,
+	if (infracfg_ao_reg_base == NULL) {
+		np = of_find_compatible_node(NULL, NULL,
 			"mediatek,infracfg_ao");
-		infracfg_ao_reg_base = of_iomap(infracfg_ao_node, 0);
+		infracfg_ao_reg_base = of_iomap(np, 0);
 		pr_debug("of_iomap for infracfg_ao base @ 0x%p\n",
 			infracfg_ao_reg_base);
 	}
 
-	if (toprgu_node == NULL) {
-		toprgu_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,toprgu");
-		toprgu_reg_base = of_iomap(toprgu_node, 0);
+	if (toprgu_reg_base == NULL) {
+		np = of_find_compatible_node(NULL, NULL, "mediatek,toprgu");
+		toprgu_reg_base = of_iomap(np, 0);
 		pr_debug("of_iomap for toprgu base @ 0x%p\n",
 			toprgu_reg_base);
 	}
 
-	if (apmixed_node == NULL) {
-		apmixed_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,apmixed");
-		apmixed_reg_base = of_iomap(apmixed_node, 0);
-		pr_err("of_iomap for APMIXED base @ 0x%p\n",
+	if (apmixed_reg_base == NULL) {
+		np = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
+		apmixed_reg_base = of_iomap(np, 0);
+		pr_err("of_iomap for apmixed base @ 0x%p\n",
 			apmixed_reg_base);
 	}
 
-	if (topckgen_node == NULL) {
-		topckgen_node = of_find_compatible_node(NULL, NULL,
+	if (topckgen_reg_base == NULL) {
+		np = of_find_compatible_node(NULL, NULL,
 			"mediatek,mt6755-topckgen");
-		if (!topckgen_node) {
-			topckgen_node = of_find_compatible_node(NULL, NULL,
-			"mediatek,topckgen");
-		}
-		topckgen_reg_base = of_iomap(topckgen_node, 0);
-		pr_err("of_iomap for TOPCKGEN base @ 0x%p\n",
+		topckgen_reg_base = of_iomap(np, 0);
+		pr_err("of_iomap for topckgen base @ 0x%p\n",
 			topckgen_reg_base);
 	}
 #endif

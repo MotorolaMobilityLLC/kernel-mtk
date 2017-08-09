@@ -1,15 +1,10 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/delay.h>        /* for mdely */
-#include <linux/irqflags.h>     /* for mdely */
 #include <asm/io.h>             /* __raw_readl */
 #include <asm/arch_timer.h>
-#include <linux/mmc/host.h>
-#include <linux/mmc/mmc.h>
-#include <linux/mmc/card.h>
 #include <linux/types.h>
 #include <mt-plat/partition.h>
-#include <mt-plat/sync_write.h>
 
 #include "mt_sd.h"
 #include <mt-plat/sd_misc.h>
@@ -953,29 +948,6 @@ static unsigned int simp_mmc_select_voltage(struct simp_mmc_host *host,
 
 	return ocr;
 }
-
-#define CAPACITY_2G                        (2 * 1024 * 1024 * 1024ULL)
-#ifdef CONFIG_MTK_EMMC_SUPPORT
-#if 0
-static u64 simp_msdc_get_user_capacity(struct simp_mmc_card *card)
-{
-	u64 device_capacity = 0;
-	u32 device_legacy_capacity = 0;
-	if (card->csd.read_blkbits) {
-		device_legacy_capacity = (2 << (card->csd.read_blkbits - 1))
-			* card->csd.capacity;
-	} else {
-		device_legacy_capacity = card->csd.capacity;
-		/*pr_debug("XXX read_blkbits = 0 XXX\n");*/
-	}
-	device_capacity = (u64) (card->ext_csd.sectors) * 512 >
-		device_legacy_capacity ? (u64) (card->ext_csd.sectors) * 512
-			: device_legacy_capacity;
-
-	return device_capacity;
-}
-#endif
-#endif
 
 static int simp_msdc_pio_read(struct simp_msdc_host *host,
 	unsigned int *ptr, unsigned int size);
@@ -2086,6 +2058,12 @@ int card_dump_func_read(unsigned char *buf, unsigned int len,
 }
 EXPORT_SYMBOL(card_dump_func_read);
 
+int has_mt_dump_support(void)
+{
+	return 1;
+}
+EXPORT_SYMBOL(has_mt_dump_support);
+
 
 /*--------------------------------------------------------------------------*/
 /* porting for kdump interface                                              */
@@ -2125,7 +2103,7 @@ int get_emmc_dump_status(void)
 	return partition_ready_flag;
 }
 
-static int __init get_emmc_dump_info(void)
+static void get_emmc_dump_info(void)
 {
 	struct hd_struct *lp_hd_struct = NULL;
 	lp_hd_struct = get_part("expdb");
@@ -2134,6 +2112,7 @@ static int __init get_emmc_dump_info(void)
 		lp_nr_sects = lp_hd_struct->nr_sects;
 		put_part(lp_hd_struct);
 		partition_ready_flag = 1;
+		pr_err("get expdb info\n");
 	} else {
 		lp_start_sect = (sector_t)(-1);
 		lp_nr_sects = (sector_t)(-1);
@@ -2142,6 +2121,15 @@ static int __init get_emmc_dump_info(void)
 	}
 
 	partition_ready_flag = 1;
+}
+
+static struct delayed_work get_dump_info;
+static int __init init_get_dump_work(struct work_struct *work)
+{
+	INIT_DELAYED_WORK(&get_dump_info, get_emmc_dump_info);
+	if (schedule_delayed_work(&get_dump_info, 100))
+		return 1;
+
 	return 0;
 }
 late_initcall_sync(get_emmc_dump_info);

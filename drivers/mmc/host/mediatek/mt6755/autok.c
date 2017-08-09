@@ -5,12 +5,6 @@
 
 #include <linux/time.h>
 #include <linux/delay.h>
-
-#include <linux/mmc/card.h>
-#include <linux/mmc/host.h>
-#include <linux/mmc/mmc.h>
-#include <linux/mmc/sdio.h>
-
 #include <linux/completion.h>
 #include <linux/scatterlist.h>
 

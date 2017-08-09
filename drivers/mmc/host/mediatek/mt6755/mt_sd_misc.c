@@ -3,36 +3,27 @@
 #include <linux/moduleparam.h>
 #include <linux/init.h>
 #include <linux/spinlock.h>
-#include <linux/timer.h>
-#include <linux/ioport.h>
 #include <linux/device.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
 #include <linux/blkdev.h>
-#include <linux/mmc/host.h>
-#include <linux/mmc/card.h>
-#include <linux/mmc/core.h>
-#include <linux/mmc/mmc.h>
-#include <linux/mmc/sd.h>
-#include <linux/mmc/sdio.h>
 #include <linux/dma-mapping.h>
-#include <core.h>
 
-#include "mt_sd.h"
-#include <mt-plat/sd_misc.h>
-#include "msdc_io.h"
-#include "dbg.h"
-#include <queue.h>
+#include <linux/proc_fs.h>
+#include <linux/fs.h>
+#include <asm/uaccess.h>
 
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
 
-#include <linux/proc_fs.h>
-#include <linux/fs.h>
-#include <asm/uaccess.h>
+#include "mt_sd.h"
+#include <core/core.h>
+#include <mt-plat/sd_misc.h>
+#include "msdc_io.h"
+#include "dbg.h"
 
 #define PARTITION_NAME_LENGTH   (64)
 #define DRV_NAME_MISC           "misc-sd"
@@ -394,6 +385,7 @@ static int simple_sd_ioctl_get_excsd(struct msdc_ioctl *msdc_ctl)
 {
 	char *l_buf;
 	struct msdc_host *host_ctl;
+	int ret;
 
 #if DEBUG_MMC_IOCTL
 	int i;
@@ -416,7 +408,10 @@ static int simple_sd_ioctl_get_excsd(struct msdc_ioctl *msdc_ctl)
 	pr_debug("user want the extend csd in msdc slot%d\n",
 		msdc_ctl->host_num);
 #endif
-	mmc_send_ext_csd(host_ctl->mmc->card, l_buf);
+	ret = mmc_send_ext_csd(host_ctl->mmc->card, l_buf);
+	if (ret)
+		return ret;
+
 	if (copy_to_user(msdc_ctl->buffer, l_buf, 512))
 		return -EFAULT;
 
@@ -742,7 +737,7 @@ static int simple_sd_ioctl_sd30_mode_switch(struct msdc_ioctl *msdc_ctl)
 	};
 	unsigned int timing;
 
-	if (!msdc_ctl)
+	if (!msdc_ctl || (msdc_ctl->sd30_mode < 0) || (msdc_ctl->sd30_mode > 6))
 		return -EINVAL;
 
 	id = msdc_ctl->host_num;
@@ -850,7 +845,6 @@ int msdc_get_info(STORAGE_TPYE storage_type, GET_STORAGE_INFO info_type,
 static int simple_mmc_get_disk_info(struct mbr_part_info *mpi,
 	unsigned char *name)
 {
-	char *no_partition_name = "n/a";
 	struct disk_part_iter piter;
 	struct hd_struct *part;
 	struct msdc_host *host;
@@ -874,11 +868,7 @@ static int simple_mmc_get_disk_info(struct mbr_part_info *mpi,
 			mpi->start_sector = part->start_sect;
 			mpi->nr_sects = part->nr_sects;
 			mpi->part_no = part->partno;
-			if (part->info)
-				mpi->part_name = part->info->volname;
-			else
-				mpi->part_name = no_partition_name;
-
+			mpi->part_name = part->info->volname;
 			disk_part_iter_exit(&piter);
 			return 0;
 		}
@@ -1020,11 +1010,8 @@ static int simple_mmc_erase_partition(unsigned char *name)
 				mbr_part.nr_sects);
 		}
 	}
-
-	return 0;
-#else
-	return 0;
 #endif
+	return 0;
 
 }
 

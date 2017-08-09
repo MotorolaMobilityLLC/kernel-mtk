@@ -14,16 +14,9 @@
 #include <mt-plat/sd_misc.h>
 
 extern const struct of_device_id msdc_of_ids[];
-extern struct msdc_hw *p_msdc_hw[]; /* FIX ME: check if can be removed */
 extern unsigned int cd_gpio;
-extern struct device_node *eint_node;
 
 extern void __iomem *gpio_base;
-extern void __iomem *msdc0_io_cfg_base;
-extern void __iomem *msdc1_io_cfg_base;
-extern void __iomem *msdc2_io_cfg_base;
-extern void __iomem *msdc3_io_cfg_base;
-
 extern void __iomem *infracfg_ao_reg_base;
 extern void __iomem *pericfg_reg_base;
 extern void __iomem *apmixed_reg_base;
@@ -34,6 +27,17 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc);
 #ifdef FPGA_PLATFORM
 void msdc_fpga_pwr_init(void);
 #endif
+
+/* Names used for device tree lookup */
+#define DT_COMPATIBLE_NAME      "mediatek,mt6755-mmc"
+#define MSDC0_CLK_NAME          "MSDC0-CLOCK"
+#define MSDC1_CLK_NAME          "MSDC1-CLOCK"
+#define MSDC2_CLK_NAME          "MSDC2-CLOCK"
+#define MSDC3_CLK_NAME          "MSDC3-CLOCK"
+#define MSDC0_IOCFG_NAME        "mediatek,iocfg_5"
+#define MSDC1_IOCFG_NAME        "mediatek,iocfg_0"
+#define MSDC2_IOCFG_NAME        "mediatek,iocfg_4"
+#define MSDC3_IOCFG_NAME        "NOT EXIST"
 
 /**************************************************************/
 /* Section 2: Power                                           */
@@ -119,6 +123,7 @@ void msdc_oc_check(struct msdc_host *host);
 void msdc_emmc_power(struct msdc_host *host, u32 on);
 void msdc_sd_power(struct msdc_host *host, u32 on);
 void msdc_sdio_power(struct msdc_host *host, u32 on);
+void msdc_sd_power_off(void);
 void msdc_dump_ldo_sts(struct msdc_host *host);
 void msdc_HQA_set_vcore(struct msdc_host *host);
 int msdc_regulator_set_and_enable(struct regulator *reg, int powerVolt);
@@ -132,6 +137,7 @@ bool hwPowerDown_fpga(void);
 #define msdc_emmc_power                 msdc_fpga_power
 #define msdc_sd_power                   msdc_fpga_power
 #define msdc_sdio_power                 msdc_fpga_power
+#define msdc_sd_power_off()
 #define msdc_dump_ldo_sts(host)
 #endif
 
@@ -180,6 +186,40 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 
 #endif
 
+#define MSDC0_SRC_0             260000
+#define MSDC0_SRC_1             400000000
+#define MSDC0_SRC_2             200000000
+#define MSDC0_SRC_3             156000000
+#define MSDC0_SRC_4             182000000
+#define MSDC0_SRC_5             156000000
+#define MSDC0_SRC_6             100000000
+#define MSDC0_SRC_7             624000000
+#define MSDC0_SRC_8             312000000
+
+#define MSDC1_SRC_0             260000
+#define MSDC1_SRC_1             208000000
+#define MSDC1_SRC_2             100000000
+#define MSDC1_SRC_3             156000000
+#define MSDC1_SRC_4             182000000
+#define MSDC1_SRC_5             156000000
+#define MSDC1_SRC_6             178000000
+#define MSDC1_SRC_7             200000000
+
+#define MSDC3_SRC_0             260000
+#define MSDC3_SRC_1             50000000
+#define MSDC3_SRC_2             100000000
+#define MSDC3_SRC_3             156000000
+#define MSDC3_SRC_4             48000000
+#define MSDC3_SRC_5             156000000
+#define MSDC3_SRC_6             178000000
+#define MSDC3_SRC_7             54000000
+#define MSDC3_SRC_8             25000000
+
+#define MSDC0_CG_NAME           MT_CG_INFRA0_MSDC0_CG_STA
+#define MSDC1_CG_NAME           MT_CG_INFRA0_MSDC1_CG_STA
+#define MSDC2_CG_NAME           MT_CG_INFRA0_MSDC2_CG_STA
+#define MSDC3_CG_NAME           MT_CG_INFRA0_MSDC3_CG_STA
+
 /**************************************************************/
 /* Section 4: GPIO and Pad                                    */
 /**************************************************************/
@@ -196,14 +236,19 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 #define MSDC_GPIO_PULL_UP       (0)
 #define MSDC_GPIO_PULL_DOWN     (1)
 
+#define MSDC_TDRDSEL_SLEEP      (0)
+#define MSDC_TDRDSEL_3V         (1)
+#define MSDC_TDRDSEL_1V8        (2)
+#define MSDC_TDRDSEL_CUST       (3)
+
 /*--------------------------------------------------------------------------*/
 /* MSDC0~3 GPIO and IO Pad Configuration Base                               */
 /*--------------------------------------------------------------------------*/
 #define MSDC_GPIO_BASE          gpio_base
-#define MSDC0_IO_PAD_BASE       (msdc0_io_cfg_base)
-#define MSDC1_IO_PAD_BASE       (msdc1_io_cfg_base)
-#define MSDC2_IO_PAD_BASE       (msdc2_io_cfg_base)
-#define MSDC3_IO_PAD_BASE       (msdc3_io_cfg_base)
+#define MSDC0_IO_PAD_BASE       (msdc_io_cfg_bases[0])
+#define MSDC1_IO_PAD_BASE       (msdc_io_cfg_bases[1])
+#define MSDC2_IO_PAD_BASE       (msdc_io_cfg_bases[2])
+#define MSDC3_IO_PAD_BASE       (msdc_io_cfg_bases[3])
 
 /*--------------------------------------------------------------------------*/
 /* MSDC GPIO Related Register                                               */
@@ -447,12 +492,10 @@ void msdc_get_driving_by_id(u32 id, struct msdc_hw *hw);
 void msdc_set_ies_by_id(u32 id, int set_ies);
 void msdc_set_sr_by_id(u32 id, int clk, int cmd, int dat, int rst, int ds);
 void msdc_set_smt_by_id(u32 id, int set_smt);
-void msdc_set_tdsel_by_id(u32 id, bool sleep, bool sd_18);
-void msdc_set_rdsel_by_id(u32 id, bool sleep, bool sd_18);
-void msdc_set_tdsel_dbg_by_id(u32 id, u32 value);
-void msdc_set_rdsel_dbg_by_id(u32 id, u32 value);
-void msdc_get_tdsel_dbg_by_id(u32 id, u32 *value);
-void msdc_get_rdsel_dbg_by_id(u32 id, u32 *value);
+void msdc_set_tdsel_by_id(u32 id, u32 flag, u32 value);
+void msdc_set_rdsel_by_id(u32 id, u32 flag, u32 value);
+void msdc_get_tdsel_by_id(u32 id, u32 *value);
+void msdc_get_rdsel_by_id(u32 id, u32 *value);
 void msdc_dump_padctl_by_id(u32 id);
 void msdc_pin_config_by_id(u32 id, u32 mode);
 #endif
@@ -464,12 +507,10 @@ void msdc_pin_config_by_id(u32 id, u32 mode);
 #define msdc_set_ies_by_id(id, set_ies)
 #define msdc_set_sr_by_id(id, clk, cmd, dat, rst, ds)
 #define msdc_set_smt_by_id(id, set_smt)
-#define msdc_set_tdsel_by_id(id, sleep, sd_18)
-#define msdc_set_rdsel_by_id(id, sleep, sd_18)
-#define msdc_set_tdsel_dbg_by_id(id, value)
-#define msdc_set_rdsel_dbg_by_id(id, value)
-#define msdc_get_tdsel_dbg_by_id(id, value)
-#define msdc_get_rdsel_dbg_by_id(id, value)
+#define msdc_set_tdsel_by_id(id, flag, value)
+#define msdc_set_rdsel_by_id(id, flag, value)
+#define msdc_get_tdsel_by_id(id, value)
+#define msdc_get_rdsel_by_id(id, value)
 #define msdc_dump_padctl_by_id(id)
 #define msdc_pin_config_by_id(id, mode)
 #define msdc_set_pin_mode(host)
@@ -495,23 +536,17 @@ void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18)
 #define msdc_set_smt(host, set_smt) \
 	msdc_set_smt_by_id(host->id, set_smt)
 
-#define msdc_set_tdsel(host, sleep, sd_18) \
-	msdc_set_tdsel_by_id(host->id, sleep, sd_18)
+#define msdc_set_tdsel(host, flag, value) \
+	msdc_set_tdsel_by_id(host->id, flag, value)
 
-#define msdc_set_rdsel(host, sleep, sd_18) \
-	msdc_set_rdsel_by_id(host->id, sleep, sd_18)
+#define msdc_set_rdsel(host, flag, value) \
+	msdc_set_rdsel_by_id(host->id, flag, value)
 
-#define msdc_set_tdsel_dbg(host, value) \
-	msdc_set_tdsel_dbg_by_id(host->id, value)
+#define msdc_get_tdsel(host, value) \
+	msdc_get_tdsel_by_id(host->id, value)
 
-#define msdc_set_rdsel_dbg(host, value) \
-	msdc_set_rdsel_dbg_by_id(host->id, value)
-
-#define msdc_get_tdsel_dbg(host, value) \
-	msdc_get_tdsel_dbg_by_id(host->id, value)
-
-#define msdc_get_rdsel_dbg(host, value) \
-	msdc_get_rdsel_dbg_by_id(host->id, value)
+#define msdc_get_rdsel(host, value) \
+	msdc_get_rdsel_by_id(host->id, value)
 
 #define msdc_dump_padctl(host) \
 	msdc_dump_padctl_by_id(host->id)
@@ -522,9 +557,6 @@ void msdc_set_driving(struct msdc_host *host, struct msdc_hw *hw, bool sd_18)
 /**************************************************************/
 /* Section 5: MISC                                            */
 /**************************************************************/
-void dump_axi_bus_info(void);
-void dump_emi_info(void);
 void msdc_polling_axi_status(int line, int dead);
-void msdc_sd_power_off(void);
 
 #endif /* end of _MSDC_IO_H_ */

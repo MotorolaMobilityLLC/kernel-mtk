@@ -4,31 +4,17 @@
 
 #define pr_fmt(fmt) "["KBUILD_MODNAME"]" fmt
 
-#include <linux/version.h>
-#include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/kthread.h>
 #include <linux/delay.h>
-#include <linux/module.h>
-#include <linux/init.h>
-#include <linux/proc_fs.h>
-#include <linux/string.h>
 #include <linux/uaccess.h>
 #include <linux/slab.h>
-#include <linux/mmc/host.h>
+#include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <mach/mt_gpt.h>
 #include <asm/io.h>
-/* for fpga early porting */
-#include <linux/mmc/mmc.h>
-#include <linux/mmc/card.h>
-#include <linux/mmc/core.h>
-#include <core.h>
 #include <linux/scatterlist.h>
-#include <linux/mm_types.h>
-/* end for fpga early porting */
-#include "mt_sd.h"
-#include "dbg.h"
+
 #ifndef FPGA_PLATFORM
 #include <mt-plat/upmu_common.h>
 #endif
@@ -36,6 +22,9 @@
 #include <mach/mt_pmic_wrap.h>
 #endif
 
+#include "mt_sd.h"
+#include <core/core.h>
+#include "dbg.h"
 #include "autok_dvfs.h"
 
 #ifdef MTK_IO_PERFORMANCE_DEBUG
@@ -124,8 +113,6 @@ struct sdio_profile {
 
 static char cmd_buf[256];
 
-int sdio_cd_result = 1;
-
 /* for driver profile */
 #define TICKS_ONE_MS  (13000)
 u32 gpt_enable = 0;
@@ -139,7 +126,7 @@ struct sdio_profile sdio_perfomance = { 0 };
 #ifdef MSDC_DMA_ADDR_DEBUG
 struct dma_addr msdc_latest_dma_address[MAX_BD_PER_GPD];
 
-struct dma_addr *msdc_get_dma_address(int host_id)
+static struct dma_addr *msdc_get_dma_address(int host_id)
 {
 	struct bd_t *bd;
 	int i = 0;
@@ -190,7 +177,6 @@ struct dma_addr *msdc_get_dma_address(int host_id)
 	return msdc_latest_dma_address;
 
 }
-EXPORT_SYMBOL(msdc_get_dma_address);
 
 static void msdc_init_dma_latest_address(void)
 {
@@ -202,8 +188,7 @@ static void msdc_init_dma_latest_address(void)
 	while (ptr != msdc_latest_dma_address) {
 		prev = ptr - 1;
 		prev->next = (void *)(msdc_latest_dma_address
-			+ sizeof(struct dma_addr)
-			* (ptr - msdc_latest_dma_address));
+			+ (ptr - msdc_latest_dma_address));
 		ptr = prev;
 	}
 
@@ -488,13 +473,18 @@ void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode, int cmdq)
 	case MMC_TIMING_UHS_SDR25:
 		mmc->caps |= MMC_CAP_UHS_SDR25 | MMC_CAP_UHS_SDR12;
 		break;
+	case MMC_TIMING_UHS_SDR50:
+		mmc->caps |= MMC_CAP_UHS_SDR50 | MMC_CAP_UHS_SDR25 |
+			MMC_CAP_UHS_SDR12;
+		break;
 	case MMC_TIMING_UHS_SDR104:
 		mmc->caps |= MMC_CAP_UHS_SDR104 | MMC_CAP_UHS_DDR50 |
-				   MMC_CAP_UHS_SDR25 | MMC_CAP_UHS_SDR12;
+			MMC_CAP_UHS_SDR50 | MMC_CAP_UHS_SDR25 |
+			MMC_CAP_UHS_SDR12;
 		break;
 	case MMC_TIMING_UHS_DDR50:
 		mmc->caps |= MMC_CAP_UHS_DDR50 | MMC_CAP_UHS_SDR25 |
-				   MMC_CAP_UHS_SDR12;
+			MMC_CAP_UHS_SDR12;
 		break;
 	case MMC_TIMING_MMC_DDR52:
 		mmc->caps |= MMC_CAP_1_8V_DDR | MMC_CAP_MMC_HIGHSPEED;
@@ -522,20 +512,13 @@ void msdc_set_host_mode_speed(struct mmc_host *mmc, int spd_mode, int cmdq)
 		pr_err("[SD_Debug] disable command queue feature\n");
 #endif
 
-	if (!mmc || !mmc->card)
+	if (!mmc->card || mmc_card_sd(mmc->card))
 		return;
 
+	/* For suppressing msdc_dump_info() caused by
+	   cmd13 do in mmc_reset()@mmc.c */
 	msdc_select_card_type(mmc);
-
-	if (mmc_card_sd(mmc->card)) {
-		/* For chang default caps in card_event */
-		g_sd_mode_switch = 1;
-		return;
-	} else {
-		/* For suppressing msdc_dump_info() caused by
-		   cmd13 do in mmc_reset()@mmc.c */
-		g_emmc_mode_switch = 1;
-	}
+	g_emmc_mode_switch = 1;
 
 	mmc_claim_host(mmc);
 
@@ -569,7 +552,8 @@ static void msdc_set_field(void __iomem *address, unsigned int start_bit,
 {
 	unsigned long field;
 
-	if (start_bit > 31 || start_bit < 0 || len > 32 || len <= 0) {
+	if (start_bit > 31 || start_bit < 0 || len > 31 || len <= 0
+	 || (start_bit + len > 31)) {
 		pr_err("[SD_Debug]invalid reg field range or length\n");
 	} else {
 		field = ((1 << len) - 1) << start_bit;
@@ -586,7 +570,8 @@ static void msdc_get_field(void __iomem *address, unsigned int start_bit,
 	unsigned int len, unsigned int value)
 {
 	unsigned long field;
-	if (start_bit > 31 || start_bit < 0 || len > 32 || len <= 0) {
+	if (start_bit > 31 || start_bit < 0 || len > 31 || len <= 0
+	 || (start_bit + len > 31)) {
 		pr_err("[SD_Debug]invalid reg field range or length\n");
 	} else {
 		field = ((1 << len) - 1) << start_bit;
@@ -851,6 +836,12 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 		return -1;
 	}
 
+	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card) {
+		pr_err(" No card initialized in host[%d]\n", host_num);
+		result = -1;
+		goto free;
+	}
+
 	/*allock memory for test buf*/
 	multi_rwbuf = kzalloc((MSDC_MULTI_BUF_LEN), GFP_KERNEL);
 	if (multi_rwbuf == NULL) {
@@ -861,11 +852,6 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 
 	host_ctl = mtk_msdc_host[host_num];
 	mmc = host_ctl->mmc;
-	if (!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card) {
-		pr_err(" No card initialized in host[%d]\n", host_num);
-		result = -1;
-		goto free;
-	}
 
 	if (!is_card_present(host_ctl)) {
 		pr_err("  [%s]: card is removed!\n", __func__);
@@ -1074,6 +1060,9 @@ static struct write_read_data wr_data[HOST_MAX_NUM][MAX_THREAD_NUM_FOR_SMP];
  * the SMP thread function
  * do read after write the memory card, and bit by bit comparison
  */
+
+struct task_struct *rw_thread = NULL;
+
 static int write_read_thread(void *ptr)
 {
 	struct write_read_data *data = (struct write_read_data *)ptr;
@@ -1364,13 +1353,10 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 	seq_puts(m, "=========================================\n\n");
 
 	/* FIX ME: check if the following 4 lines can be removed*/
-	/* remove temporarily since msdc0_hw and msdc1_hw are not defined */
-	/*
 	seq_puts(m, "Index<4> msdc0 hw parameter:\n");
-	msdc_hw_parameter_debug(&msdc0_hw, m, v);
+	msdc_hw_parameter_debug(mtk_msdc_host[0]->hw, m, v);
 	seq_puts(m, "Index<5> msdc1 hw parameter:\n");
-	msdc_hw_parameter_debug(&msdc1_hw, m, v);
-	*/
+	msdc_hw_parameter_debug(mtk_msdc_host[1]->hw, m, v);
 
 	return 0;
 }
@@ -1435,8 +1421,10 @@ void msdc_dump_gpd_bd(int id)
 	struct gpd_t *gpd;
 	struct bd_t *bd;
 
-	if (id < 0 || id >= HOST_MAX_NUM)
+	if (id < 0 || id >= HOST_MAX_NUM) {
 		pr_err("[%s]: invalid host id: %d\n", __func__, id);
+		return;
+	}
 
 	host = mtk_msdc_host[id];
 	if (host == NULL) {
@@ -1716,7 +1704,6 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf,
 	struct dma_addr *dma_address, *p_dma_address;
 #endif
 	int dma_status;
-	struct task_struct *rw_thread = NULL;
 	int sscanf_num;
 	u8 *res;
 
@@ -1873,16 +1860,16 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf,
 			pr_err("[SD_Debug]Some rd/td value was invalid (rd mask:(0x3F << 4),td mask:(0xF << 0))\n");
 		} else {
 			if (p2 == 0) {
-				msdc_set_rdsel_dbg(host, p3);
+				msdc_set_rdsel(host, MSDC_TDRDSEL_CUST, p3);
 				pr_err("[SD_Debug]msdc%d, set rd=%d\n",
 					id, p3);
 			} else if (p2 == 1) { /* set td:1 */
-				msdc_set_tdsel_dbg(host, p3);
+				msdc_set_tdsel(host, MSDC_TDRDSEL_CUST, p3);
 				pr_err("[SD_Debug]msdc%d, set td=%d\n",
 					id, p3);
 			} else if (p2 == 2) { /* get td/rd:2 */
-				msdc_get_rdsel_dbg(host, &p3); /* get rd */
-				msdc_get_tdsel_dbg(host, &p4); /* get td */
+				msdc_get_rdsel(host, &p3); /* get rd */
+				msdc_get_tdsel(host, &p4); /* get td */
 				pr_err("[SD_Debug]msdc%d, rd : 0x%x, td : 0x%x\n",
 					id, p3, p4);
 			}
@@ -1929,7 +1916,7 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf,
 			return count;
 		}
 		if (mode == read_write_state) {
-			pr_err("[SD_Debug]: same operation mode=%d.\n",
+			pr_err("[SD_Debug]: same operation mode=%d\n",
 				read_write_state);
 			return count;
 		}

@@ -6,12 +6,9 @@
 
 #include <linux/gpio.h>
 #include <linux/delay.h>
-#include <linux/mmc/host.h>
-#include <linux/mmc/card.h>
-#include <linux/mmc/mmc.h>
-#include <linux/mmc/sd.h>
-#include <core.h>
+
 #include "mt_sd.h"
+#include <core/core.h>
 #include "dbg.h"
 #include "autok.h"
 
@@ -62,7 +59,8 @@ int g_ett_write_tune = 0; /* record the number of failed write ETT settings */
 int g_reset_tune = 0;     /* do not record the pass settigns, but try the worst
 			     setting of each request. */
 
-u32 sdio_tune_flag = 0; /* FIX ME: check if it can be removed */
+u32 sdio_tune_flag = 0; /* FIX ME: check if it can be removed since it is set
+			   but referenced */
 
 void msdc_reset_pwr_cycle_counter(struct msdc_host *host)
 {

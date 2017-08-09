@@ -9,39 +9,21 @@
 #include <linux/moduleparam.h>
 #include <linux/init.h>
 #include <linux/spinlock.h>
-#include <linux/ioport.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
 #include <linux/blkdev.h>
 #include <linux/slab.h>
-#include <linux/wakelock.h>
-#include <linux/mmc/host.h>
-#include <linux/mmc/card.h>
-#include <linux/mmc/core.h>
-#include <linux/mmc/mmc.h>
-#include <linux/mmc/sd.h>
 #include <linux/printk.h>
 #include <linux/mm_types.h>
 #include <linux/seq_file.h>
-#include <mt-plat/mt_chip.h>
-#include <core.h>
-#include "mt_sd.h"
-#include "dbg.h"
-
 #include <linux/proc_fs.h>
-#include <queue.h>
-
 #include <mt-plat/partition.h>
 
-struct mmc_blk_data {
-	spinlock_t lock;
-	struct gendisk *disk;
-	struct mmc_queue queue;
-
-	unsigned int usage;
-	unsigned int read_only;
-};
+#include "mt_sd.h"
+#include <core/core.h>
+#include <card/queue.h>
+#include "dbg.h"
 
 u64 msdc_get_user_capacity(struct msdc_host *host)
 {
@@ -191,6 +173,16 @@ u64 msdc_get_capacity(int get_emmc_total)
 }
 EXPORT_SYMBOL(msdc_get_capacity);
 
+#if defined(CONFIG_MTK_EMMC_SUPPORT) && defined(CONFIG_PROC_FS)
+struct mmc_blk_data {
+	spinlock_t lock;
+	struct gendisk *disk;
+	struct mmc_queue queue;
+
+	unsigned int usage;
+	unsigned int read_only;
+};
+
 struct gendisk *mmc_get_disk(struct mmc_card *card)
 {
 	struct mmc_blk_data *md;
@@ -203,7 +195,7 @@ struct gendisk *mmc_get_disk(struct mmc_card *card)
 	return md->disk;
 }
 
-#if defined(CONFIG_MTK_EMMC_SUPPORT) && defined(CONFIG_PROC_FS)
+#if defined(CONFIG_PWR_LOSS_MTK_SPOH)
 static struct proc_dir_entry *proc_emmc;
 
 static inline int emmc_proc_info(struct seq_file *m, struct hd_struct *this)
@@ -254,6 +246,7 @@ void msdc_proc_emmc_create(void)
 {
 	proc_emmc = proc_create("emmc", 0, NULL, &proc_emmc_fops);
 }
+#endif
 #endif
 
 #ifdef MTK_MSDC_USE_CACHE

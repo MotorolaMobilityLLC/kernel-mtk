@@ -39,7 +39,8 @@
 extern int g_ett_tune;
 extern int g_reset_tune;
 
-extern u32 sdio_tune_flag;
+extern u32 sdio_tune_flag; /* FIX ME: check if it can be removed since it is set
+			      but referenced */
 
 void msdc_init_tune_setting(struct msdc_host *host);
 void msdc_ios_tune_setting(struct mmc_host *mmc, struct mmc_ios *ios);
@@ -67,6 +68,6 @@ void msdc_restore_timing_setting(struct msdc_host *host);
 void msdc_set_bad_card_and_remove(struct msdc_host *host);
 
 /* For KS only */
-int msdc_setting_parameter(struct msdc_hw *hw, unsigned int *para);
+/*int msdc_setting_parameter(struct msdc_hw *hw, unsigned int *para);*/
 
 #endif /* end of_MSDC_TUNE_H_ */

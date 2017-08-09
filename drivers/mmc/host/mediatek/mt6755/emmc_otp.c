@@ -3,30 +3,21 @@
 #include <linux/moduleparam.h>
 #include <linux/init.h>
 #include <linux/spinlock.h>
-#include <linux/timer.h>
-#include <linux/ioport.h>
 #include <linux/device.h>
 #include <linux/miscdevice.h>
 #include <linux/platform_device.h>
-#include <linux/interrupt.h>
-#include <linux/delay.h>
 #include <linux/blkdev.h>
-#include <linux/mmc/host.h>
-#include <linux/mmc/card.h>
-#include <linux/mmc/core.h>
-#include <linux/mmc/mmc.h>
-#include <linux/mmc/sd.h>
 #include <linux/dma-mapping.h>
 #include <linux/proc_fs.h>
 #include <linux/fs.h>
 #include <asm/uaccess.h>
 
-#include "mt_sd.h"
-#include "dbg.h"
-
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
+
+#include "mt_sd.h"
+#include "dbg.h"
 
 #define OTP_MAGIC_NUM           0x4E3AF28B
 

@@ -7,9 +7,16 @@
 #define MTK_MSDC_BRINGUP_DEBUG
 #endif
 
-#include <linux/bitops.h>
-#include <linux/mmc/host.h>
 #include <mt-plat/sync_write.h>
+#include <linux/bitops.h>
+
+#include <linux/mmc/host.h>
+#include <linux/mmc/card.h>
+#include <linux/mmc/core.h>
+#include <linux/mmc/mmc.h>
+#include <linux/mmc/sd.h>
+#include <linux/mmc/sdio.h>
+
 #include <dt-bindings/mmc/mt6755-msdc.h>
 
 #define MSDC_WQ_ERROR_TUNE
@@ -423,13 +430,8 @@ struct msdc_host {
 #ifndef MSDC_WQ_ERROR_TUNE
 	unsigned int            err_mrq_dir;
 #endif
-	unsigned int            power_domain;
 	struct msdc_saved_para  saved_para;
-#ifndef CONFIG_HAS_EARLYSUSPEND
 	struct wakeup_source    trans_lock;
-#else
-	struct wake_lock        trans_lock;
-#endif
 	bool                    block_bad_card;
 	struct delayed_work     write_timeout;  /* check if write busy timeout*/
 #ifdef SDIO_ERROR_BYPASS
@@ -652,7 +654,6 @@ extern struct dma_addr msdc_latest_dma_address[MAX_BD_PER_GPD];
 #endif
 extern int g_dma_debug[HOST_MAX_NUM];
 
-extern u32 g_sd_mode_switch;
 extern u32 g_emmc_mode_switch;
 
 enum {
@@ -705,7 +706,9 @@ extern unsigned char msdc_clock_src[];
 
 extern u32 sdio_pro_enable;
 
+#ifdef EMMC_SLEEP_FAIL_HANDLE
 extern bool emmc_sleep_failed;
+#endif
 
 extern int msdc_rsp[];
 
@@ -716,7 +719,6 @@ extern int msdc_rsp[];
 #include "msdc_io.h"
 
 /* Function provided by sd.c */
-struct gendisk *mmc_get_disk(struct mmc_card *card);
 int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 	u32 hs400_src);
 void msdc_clr_fifo(unsigned int id);
@@ -724,7 +726,6 @@ unsigned int msdc_do_command(struct msdc_host *host,
 	struct mmc_command *cmd,
 	int                 tune,
 	unsigned long       timeout);
-int msdc_do_request(struct mmc_host *mmc, struct mmc_request *mrq);
 void msdc_dump_info(u32 id);
 void msdc_dump_register(struct msdc_host *host);
 void msdc_dump_register_core(u32 id, void __iomem *base);
@@ -734,12 +735,9 @@ int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
 	u32 *status);
 int msdc_get_card_status(struct mmc_host *mmc, struct msdc_host *host,
 	u32 *status);
-struct dma_addr *msdc_get_dma_address(int host_id);
 int msdc_get_dma_status(int host_id);
 struct msdc_host *msdc_get_host(int host_function, bool boot,
 	bool secondary);
-int msdc_pio_read(struct msdc_host *host, struct mmc_data *data);
-int msdc_pio_write(struct msdc_host *host, struct mmc_data *data);
 int msdc_reinit(struct msdc_host *host);
 void msdc_select_clksrc(struct msdc_host *host, int clksrc);
 void msdc_send_stop(struct msdc_host *host);
@@ -758,9 +756,12 @@ unsigned int msdc_do_cmdq_command(struct msdc_host *host,
 #endif
 
 /* Function provided by msdc_partition.c */
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
 void msdc_proc_emmc_create(void);
+#endif
 int msdc_can_apply_cache(unsigned long long start_addr,
 	unsigned int size);
+struct gendisk *mmc_get_disk(struct mmc_card *card);
 u64 msdc_get_capacity(int get_emmc_total);
 u64 msdc_get_user_capacity(struct msdc_host *host);
 u32 msdc_get_other_capacity(struct msdc_host *host, char *name);
@@ -772,8 +773,6 @@ int mmc_sd_power_cycle(struct mmc_host *host, u32 ocr,
 /* Function provided by mmc/core/bus.c */
 void mmc_remove_card(struct mmc_card *card);
 
-/* Function provided by drivers/irqchip/irq-mt-eic.c */
-int mt_eint_get_polarity_external(unsigned int irq_num);
 
 #define check_mmc_cache_ctrl(card) \
 	(card && mmc_card_mmc(card) && (card->ext_csd.cache_ctrl & 0x1))
