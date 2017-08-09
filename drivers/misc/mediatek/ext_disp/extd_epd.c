@@ -67,6 +67,8 @@ enum EPD_POWER_STATE {
 static void _epd_rdma_irq_handler(DISP_MODULE_ENUM module, unsigned int param)
 {
 	/*RET_VOID_IF_NOLOG(!IS_EPD_ON());*/
+	if (!IS_EPD_ON())
+		return;
 
 	if (param & 0x2) {	/* start */
 		atomic_set(&epd_fence_release_event, 1);

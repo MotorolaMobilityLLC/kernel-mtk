@@ -429,6 +429,8 @@ int hdmi_audio_config(unsigned int format)
 static void _hdmi_rdma_irq_handler(DISP_MODULE_ENUM module, unsigned int param)
 {
 	/*RET_VOID_IF_NOLOG(!is_hdmi_active());*/
+	if (!is_hdmi_active())
+		return;
 
 	if (param & 0x2) {	/* start */
 		atomic_set(&hdmi_fence_release_event, 1);
@@ -572,6 +574,8 @@ static void hdmi_state_reset(void)
 {
 	HDMI_FUNC();
 	/*RET_VOID_IF(IS_HDMI_NOT_ON());*/
+	if (IS_HDMI_NOT_ON())
+		return;
 
 	MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagStart, Plugout, 0);
 
@@ -603,6 +607,8 @@ static void hdmi_state_reset(void)
 {
 	HDMI_LOG("p->state is %d,(0:off, 1:on, 2:standby)\n", atomic_read(&p->state));
 	/*RET_VOID_IF(IS_HDMI_NOT_STANDBY());*/
+	if (IS_HDMI_NOT_STANDBY())
+		return;
 
 	MMProfileLogEx(ddp_mmp_get_events()->Extd_State, MMProfileFlagStart, Plugin, 0);
 
@@ -624,6 +630,8 @@ static void hdmi_state_reset(void)
 	HDMI_FUNC();
 
 	/*RET_VOID_IF(IS_HDMI_NOT_OFF());*/
+	if (IS_HDMI_NOT_OFF())
+		return;
 
 	if (down_interruptible(&hdmi_update_mutex)) {
 		HDMI_ERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
@@ -657,6 +665,8 @@ static void hdmi_state_reset(void)
 {
 	HDMI_FUNC();
 	/*RET_VOID_IF(IS_HDMI_OFF());*/
+	if (IS_HDMI_OFF())
+		return;
 
 	if (down_interruptible(&hdmi_update_mutex)) {
 		HDMI_ERR("[hdmi][HDMI] can't get semaphore in %s()\n", __func__);
@@ -792,6 +802,8 @@ void hdmi_state_callback(enum HDMI_STATE state)
 	HDMI_LOG("[hdmi]%s, state = %d\n", __func__, state);
 	/*RET_VOID_IF((p->is_force_disable == true));*/
 	/*RET_VOID_IF(IS_HDMI_FAKE_PLUG_IN());*/
+	if ((p->is_force_disable == true) || (IS_HDMI_FAKE_PLUG_IN()))
+		return;
 
 	switch (state) {
 	case HDMI_STATE_NO_DEVICE:
