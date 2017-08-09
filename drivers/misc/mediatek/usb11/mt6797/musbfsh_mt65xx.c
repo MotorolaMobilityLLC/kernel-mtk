@@ -985,8 +985,7 @@ void mt65xx_usb11_phy_recover(void)
 #ifdef CONFIG_MTK_ICUSB_SUPPORT
 	enum PHY_VOLTAGE_TYPE phy_volt = get_usb11_phy_voltage();
 #endif
-
-	WARNING("mt65xx_usb11_phy_recover++\r\n");
+	WARNING("%s++\r\n", __func__);
 #ifdef CONFIG_MTK_ICUSB_SUPPORT
 	if (phy_volt == VOL_33)
 		mt65xx_usb11_phy_recover_volt_30();
@@ -1107,16 +1106,16 @@ static bool clock_enabled;
 static int enable_cnt;
 static int disable_cnt;
 
-#define MTK_USB11_CLKNODE	"mediatek,mt6755-infrasys"
+#define MTK_USB11_CLKNODE	"mediatek,infracfg_ao"
 
 void mt65xx_usb11_clock_enable(bool enable)
 {
 	struct device_node *node;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-infrasys");
+	node = of_find_compatible_node(NULL, NULL, MTK_USB11_CLKNODE);
 	/* WARNING("mt65xx_usb11_clock_enable++\r\n"); */
 	/* dump_stack(); */
-	MYDBG("enable_cnt : %d, disable_cnt : %d\n", enable_cnt, disable_cnt);
+	MYDBG("enable_cnt: %d, disable_cnt : %d\n", enable_cnt, disable_cnt);
 	if (enable) {
 		enable_cnt++;
 		if (clock_enabled)	/* already enable */

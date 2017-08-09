@@ -49,7 +49,6 @@
 #define USB11_L1INTP 0xA8
 #define MUSBFSH_DMA_INTR_UNMASK_CLR_OFFSET	(16)
 #define MUSBFSH_DMA_INTR_UNMASK_SET_OFFSET	(24)
-#define USB11_BASE USB3_BASE
 /* USB11 PHY registers: */
 #define USB11_PHY_ADDR		(USB_SIF_BASE + 0x900)
 
@@ -98,7 +97,7 @@ extern struct clk *musb_clk30;
 #define USB11PHY_READ32(offset)         __raw_readl(offset)
 #define USB11PHY_READ8(offset)          __raw_readb(offset)
 #define USB11PHY_WRITE8(offset, value)  __raw_writeb(value, offset)
-#endif
+#endif /* CONFIG_MTK_USBFSH */
 
 #define USB11PHY_SET8(offset, mask)     USB11PHY_WRITE8((offset), \
 					USB11PHY_READ8(offset) | (mask))

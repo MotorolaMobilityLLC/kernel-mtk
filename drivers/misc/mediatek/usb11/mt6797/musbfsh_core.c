@@ -173,7 +173,7 @@ struct my_attr hw_dbg_attr = {
 static int __init musbfsh_dts_probe(struct platform_device *pdev);
 
 static const struct of_device_id apusb11_of_ids[] = {
-	{.compatible = "mediatek,ICUSB",},
+	{.compatible = "mediatek,icusb",},
 	{},
 };
 
@@ -2138,6 +2138,10 @@ static int __init musbfsh_init_controller(struct device *dev,
 	}
 	spin_lock_init(&musbfsh->lock);
 	musbfsh->phy_base = pbase;
+
+	/* bugfix: g_musbfsh should be assigned as earlier as possible */
+	g_musbfsh = musbfsh;
+
 	musbfsh->board_mode = plat->mode;
 	musbfsh->config->fifo_cfg = epx_cfg;
 	musbfsh->config->fifo_cfg_size =
@@ -2269,7 +2273,6 @@ static int __init musbfsh_init_controller(struct device *dev,
 	babble_recover_timer.data = (unsigned long)musbfsh;
 #endif
 
-	g_musbfsh = musbfsh;
 #ifdef CONFIG_MUSBFSH_DEBUG_FS
 	status = musbfsh_init_debugfs(musbfsh);
 	if (status < 0)
@@ -2303,7 +2306,6 @@ static int __init musbfsh_init_controller(struct device *dev,
 	create_dsda_tmp_entry();
 #endif
 
-
 	return 0;
 
 
@@ -2318,11 +2320,36 @@ fail1:
 	musbfsh_free(musbfsh);
 
 fail0:
-	dev_err(dev, "failed to initialize musb\n");
+	dev_err(dev, "failed to initialize musbfsh\n");
 	return status;
 
 }
 
+#define MUSBFSH_BASE_REGS_ADDR_RES_NAME "musbfsh_base"
+#define MUSBFSH_SIF_REGS_ADDR_RES_NAME "musbfsh_sif"
+
+#if 0
+static void __iomem *acquire_reg_base(struct platform_device *pdev, const char *res_name)
+{
+	struct resource *iomem;
+	void __iomem *base = NULL;
+
+	iomem = platform_get_resource_byname(pdev, IORESOURCE_MEM, res_name);
+	if (!iomem) {
+		pr_err("Can't get resource for %s\n", res_name);
+		goto end;
+	}
+
+	base = ioremap(iomem->start, resource_size(iomem));
+	if (!(uintptr_t)base) {
+		pr_err("Can't remap %s\n", res_name);
+		goto end;
+	}
+	INFO("%s=0x%lx\n", res_name, (uintptr_t)(base));
+end:
+	return base;
+}
+#endif
 /*-------------------------------------------------------------------------*/
 
 /* all implementations (PCI bridge to FPGA, VLYNQ, etc) should just
@@ -2343,8 +2370,8 @@ static int __init musbfsh_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	int status;
 	int irq;
-	unsigned char __iomem *base;
-	unsigned char __iomem *pbase;
+	void __iomem *base;
+	void __iomem *pbase;
 	struct device_node *node = NULL;
 
 	INFO("%s++\r\n", __func__);
@@ -2371,8 +2398,10 @@ static int __init musbfsh_probe(struct platform_device *pdev)
 		pr_info("USB get node failed\n");
 		return -1;
 	}
-	base = of_iomap(node, 0);
+
 	irq = irq_of_parse_and_map(node, 0);
+
+	base = of_iomap(node, 0);
 	pbase = of_iomap(node, 1);
 #else
 	irq = MT_USB1_IRQ_ID;
@@ -2385,7 +2414,7 @@ static int __init musbfsh_probe(struct platform_device *pdev)
 	 */
 	status = musbfsh_init_controller(dev, irq, base, pbase);
 	if (status < 0)
-		ERR("musbfsh_probe failed with status %d\n", status);
+		ERR("%s failed with status %d\n", __func__, status);
 	INFO("%s--\r\n", __func__);
 #if 0				/* IC_USB from SS5 */
 #ifdef IC_USB
@@ -2427,7 +2456,6 @@ static int __exit musbfsh_remove(struct platform_device *pdev)
 }
 
 #ifdef	CONFIG_PM
-
 static void musbfsh_save_context(struct musbfsh *musbfsh)
 {
 	int i;
@@ -2541,8 +2569,6 @@ static void musbfsh_restore_context(struct musbfsh *musbfsh)
 	/* mb(); */
 	musbfsh_writel(musbfsh_base, USB11_L1INTM, musbfsh->context.l1_int);
 }
-
-
 
 static int musbfsh_suspend(struct device *dev)
 {
@@ -2675,8 +2701,8 @@ static int __init musbfsh_dts_probe(struct platform_device *pdev)
 {
 	int retval;
 
-	musb_clk11 = devm_clk_get(&pdev->dev, "USB11-CLOCK");
-	musb_clk30 = devm_clk_get(&pdev->dev, "SSUSB-CLOCK");
+	musb_clk11 = devm_clk_get(&pdev->dev, "infra_icusb");
+	musb_clk30 = devm_clk_get(&pdev->dev, "sssub_ref_clk");
 
 	if (IS_ERR(musb_clk11)) {
 		dev_err(&pdev->dev, "USB11 cannot get musb clock\n");
@@ -2701,7 +2727,7 @@ static int __init musbfsh_dts_probe(struct platform_device *pdev)
 
 	retval = platform_device_register(&mt_usb11_dev);
 	if (retval != 0)
-		ERR("musbfsh_dts_probe failed with status %d\n", retval);
+		ERR("%s: failed with status %d\n", __func__, retval);
 	return retval;
 }
 
@@ -2810,6 +2836,7 @@ static void usb11_phy_savecurrent(unsigned char __iomem *pbase)
 }
 
 
+#if 0
 static int __init musbfsh_dts_probe(struct platform_device *pdev)
 {
 	unsigned char __iomem *pbase;
@@ -2844,8 +2871,7 @@ static int __init musbfsh_dts_probe(struct platform_device *pdev)
 	clk_disable(musb_clk11);
 	return 0;
 }
-
-
+#endif
 /*-------------------------------------------------------------------------*/
 
 static int __init musbfsh_init(void)
