@@ -343,13 +343,15 @@ long primary_display_wait_not_state(DISP_POWER_STATE state, long timeout)
 	return ret;
 }
 
-int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes_per_pix)
+int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch_in_bytes, int bytes_per_pix)
 {
 	int ret = 0;
-	unsigned int layer_size = pitch * h;
+	unsigned int layer_size = pitch_in_bytes * h;
 	unsigned int real_mva = 0;
 	unsigned long kva = 0;
 	unsigned int real_size = 0, mapped_size = 0;
+	unsigned int bg_color = 0, fg_color = 0;
+
 	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
 		static MFC_HANDLE mfc_handle;
 
@@ -368,13 +370,19 @@ int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch, int bytes
 			goto err1;
 		}
 
-		ret = MFC_Open(&mfc_handle,
-			       (void *)kva,
-			       pitch,
-			       h,
-			       bytes_per_pix,
-			       DAL_COLOR_WHITE,
-			       DAL_COLOR_RED);
+#define RGB888_To_RGB565(x) ((((x) & 0xF80000) >> 8) |	\
+			     (((x) & 0x00FC00) >> 5) |	\
+			     (((x) & 0x0000F8) >> 3))
+		fg_color = bytes_per_pix == 2 ? RGB888_To_RGB565(DAL_COLOR_WHITE) : DAL_COLOR_WHITE;
+		bg_color = bytes_per_pix == 2 ? RGB888_To_RGB565(DAL_COLOR_RED) : DAL_COLOR_RED;
+		ret = MFC_Open_Ex_v2(&mfc_handle,
+				     (void *)kva,
+				     w,
+				     h,
+				     pitch_in_bytes,
+				     bytes_per_pix,
+				     DAL_COLOR_WHITE,
+				     DAL_COLOR_RED);
 		if (ret != MFC_STATUS_OK)
 			goto err1;
 		screen_logger_print(mfc_handle);
@@ -391,6 +399,7 @@ static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 	fpsEx fps;
 	char disp_tmp[20];
 	int dst_layer_id = 0;
+	int bytes_per_pixel = 0;
 
 	dprec_logger_get_result_value(DPREC_LOGGER_RDMA0_TRANSFER_1SECOND, &fps);
 	snprintf(disp_tmp, sizeof(disp_tmp), ",rdma_fps:%lld.%02lld,", fps.fps, fps.fps_low);
@@ -415,11 +424,12 @@ static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 		}
 	}
 
-	dynamic_debug_msg_print((unsigned long)cfg->input_cfg[dst_layer_id].src_phy_addr,
+	bytes_per_pixel = cfg->input_cfg[dst_layer_id].src_fmt & 0xff;
+	dynamic_debug_msg_print((unsigned int)(unsigned long)cfg->input_cfg[dst_layer_id].src_phy_addr,
 				cfg->input_cfg[dst_layer_id].tgt_width,
 				cfg->input_cfg[dst_layer_id].tgt_height,
-				cfg->input_cfg[dst_layer_id].src_pitch,
-				4);
+				cfg->input_cfg[dst_layer_id].src_pitch * bytes_per_pixel,
+				bytes_per_pixel);
 	return 0;
 }
 

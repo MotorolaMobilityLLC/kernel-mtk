@@ -49,6 +49,7 @@ do {                                \
 		uint32_t fb_width;
 		uint32_t fb_height;
 		uint32_t fb_bpp;
+		uint32_t fb_pitch;
 		uint32_t fg_color;
 		uint32_t bg_color;
 		uint32_t screen_color;
@@ -75,6 +76,12 @@ do {                                \
 			       unsigned int fb_pitch,
 			       unsigned int fb_bpp, unsigned int fg_color, unsigned int bg_color);
 
+	MFC_STATUS MFC_Open_Ex_v2(MFC_HANDLE *handle,
+				  void *fb_addr,
+				  unsigned int fb_width,
+				  unsigned int fb_height,
+				  unsigned int fb_pitch_in_bytes,
+				  unsigned int fb_bpp, unsigned int fg_color, unsigned int bg_color);
 
 	MFC_STATUS MFC_Close(MFC_HANDLE handle);
 
