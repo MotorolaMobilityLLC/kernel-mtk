@@ -62,6 +62,7 @@ do {                                \
 		UINT32 cursor_col;
 		UINT32 font_width;
 		UINT32 font_height;
+		UINT32 scale;
 	} MFC_CONTEXT;
 
 /* MTK Framebuffer Console API */

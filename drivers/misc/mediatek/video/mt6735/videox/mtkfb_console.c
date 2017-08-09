@@ -36,7 +36,7 @@
 #define MFC_FONT_HEIGHT     (MFC_FONT.height)
 #define MFC_FONT_DATA       (MFC_FONT.data)
 
-#define MFC_ROW_SIZE        (MFC_FONT_HEIGHT * MFC_PITCH)
+#define MFC_ROW_SIZE        (MFC_FONT_HEIGHT * MFC_PITCH * ctxt->scale)
 #define MFC_ROW_FIRST       ((uint8_t *)(ctxt->fb_addr))
 #define MFC_ROW_SECOND      (MFC_ROW_FIRST + MFC_ROW_SIZE)
 #define MFC_ROW_LAST        (MFC_ROW_FIRST + MFC_SIZE - MFC_ROW_SIZE)
@@ -55,6 +55,26 @@ uint32_t MFC_Get_Cursor_Offset(MFC_HANDLE handle)
 	return offset;
 }
 
+static void _MFC_DrawRow(MFC_CONTEXT *ctxt, uint8_t *dest, uint8_t raw_color)
+{
+	uint32_t pixel_row, i;
+	uint16_t color;
+	int cols;
+
+	for (pixel_row = 0 ; pixel_row < ctxt->scale ; pixel_row++) {
+		for (cols = 7 ; cols >= 0 ; cols--) {
+			if (raw_color >> cols & 1)
+				color = MFC_FG_COLOR;
+			else
+				color = MFC_BG_COLOR;
+
+			for (i = 0 ; i < ctxt->scale ; i++)
+				((uint16_t *)dest)[i + (7 - cols) * ctxt->scale] = color;
+		}
+		dest += MFC_PITCH;
+	}
+}
+
 static void _MFC_DrawChar(MFC_CONTEXT *ctxt, uint32_t x, uint32_t y, char c)
 {
 	uint8_t ch = *((uint8_t *)&c);
@@ -68,6 +88,7 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, uint32_t x, uint32_t y, char c)
 	BUG_ON(!(y <= (MFC_HEIGHT - MFC_FONT_HEIGHT)));
 
 	offset = y * MFC_PITCH + x * MFC_BPP;
+	offset *= ctxt->scale;
 	dest = (MFC_ROW_FIRST + offset);
 
 	switch (MFC_BPP) {
@@ -79,13 +100,18 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, uint32_t x, uint32_t y, char c)
 
 		cdat = (const uint8_t *)MFC_FONT_DATA + ch * MFC_FONT_HEIGHT;
 
-		for (rows = MFC_FONT_HEIGHT; rows--; dest += MFC_PITCH) {
+		for (rows = MFC_FONT_HEIGHT; rows--;) {
 			uint8_t bits = *cdat++;
-
-			((uint32_t *)dest)[0] = font_draw_table16[bits >> 6];
-			((uint32_t *)dest)[1] = font_draw_table16[bits >> 4 & 3];
-			((uint32_t *)dest)[2] = font_draw_table16[bits >> 2 & 3];
-			((uint32_t *)dest)[3] = font_draw_table16[bits & 3];
+			if (ctxt->scale >= 2) {
+				_MFC_DrawRow(ctxt, dest, bits);
+				dest += (MFC_PITCH * ctxt->scale);
+			} else {
+				((uint32_t *)dest)[0] = font_draw_table16[bits >> 6];
+				((uint32_t *)dest)[1] = font_draw_table16[bits >> 4 & 3];
+				((uint32_t *)dest)[2] = font_draw_table16[bits >> 2 & 3];
+				((uint32_t *)dest)[3] = font_draw_table16[bits & 3];
+				dest += MFC_PITCH;
+			}
 		}
 		break;
 
@@ -163,6 +189,14 @@ static void _MFC_Putc(MFC_CONTEXT *ctxt, const char c)
 	}
 }
 
+static int MFC_GetScale(unsigned int fb_width, unsigned int fb_height)
+{
+	if (fb_width * fb_height >= 1080 * 1920)
+		return 2;
+	else
+		return 1;
+
+}
 /* --------------------------------------------------------------------------- */
 
 MFC_STATUS MFC_Open(MFC_HANDLE *handle, void *fb_addr,
@@ -181,7 +215,7 @@ MFC_STATUS MFC_Open(MFC_HANDLE *handle, void *fb_addr,
 	if (!ctxt)
 		return MFC_STATUS_OUT_OF_MEMORY;
 
-	/* init_MUTEX(&ctxt->sem); */
+	ctxt->scale = MFC_GetScale(fb_width, fb_height);
 	sema_init(&ctxt->sem, 1);
 	ctxt->fb_addr = fb_addr;
 	ctxt->fb_width = fb_width;
@@ -189,8 +223,8 @@ MFC_STATUS MFC_Open(MFC_HANDLE *handle, void *fb_addr,
 	ctxt->fb_bpp = fb_bpp;
 	ctxt->fg_color = fg_color;
 	ctxt->bg_color = bg_color;
-	ctxt->rows = fb_height / MFC_FONT_HEIGHT;
-	ctxt->cols = fb_width / MFC_FONT_WIDTH;
+	ctxt->rows = fb_height / (MFC_FONT_HEIGHT * ctxt->scale);
+	ctxt->cols = fb_width / (MFC_FONT_WIDTH * ctxt->scale);
 	ctxt->font_width = MFC_FONT_WIDTH;
 	ctxt->font_height = MFC_FONT_HEIGHT;
 
@@ -217,7 +251,7 @@ MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle, void *fb_addr,
 	if (!ctxt)
 		return MFC_STATUS_OUT_OF_MEMORY;
 
-	/* init_MUTEX(&ctxt->sem); */
+	ctxt->scale = MFC_GetScale(fb_width, fb_height);
 	sema_init(&ctxt->sem, 1);
 	ctxt->fb_addr = fb_addr;
 	ctxt->fb_width = fb_pitch;
@@ -225,8 +259,8 @@ MFC_STATUS MFC_Open_Ex(MFC_HANDLE *handle, void *fb_addr,
 	ctxt->fb_bpp = fb_bpp;
 	ctxt->fg_color = fg_color;
 	ctxt->bg_color = bg_color;
-	ctxt->rows = fb_height / MFC_FONT_HEIGHT;
-	ctxt->cols = fb_width / MFC_FONT_WIDTH;
+	ctxt->rows = fb_height / (MFC_FONT_HEIGHT * ctxt->scale);
+	ctxt->cols = fb_width / (MFC_FONT_WIDTH * ctxt->scale);
 	ctxt->font_width = MFC_FONT_WIDTH;
 	ctxt->font_height = MFC_FONT_HEIGHT;
 

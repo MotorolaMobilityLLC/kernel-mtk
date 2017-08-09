@@ -56,6 +56,7 @@ typedef struct {
 	uint32_t cursor_col;
 	uint32_t font_width;
 	uint32_t font_height;
+	uint32_t scale;
 } MFC_CONTEXT;
 
 /* MTK Framebuffer Console API */
