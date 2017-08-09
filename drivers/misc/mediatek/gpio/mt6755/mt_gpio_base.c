@@ -343,9 +343,15 @@ int mt_get_gpio_ies_base(unsigned long pin)
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_pull_enable_base(unsigned long pin, unsigned long enable)
 {
+	unsigned long reg;
+	u32 bit;
 	if (pin >= MAX_GPIO_PIN)
 		return -ERINVAL;
 
+	if (PULLEN_offset[pin].offset == -1 && PUPD_offset[pin].offset == -1) {
+		gpio_pullen_unsupport[pin] = -1;
+		return GPIO_PULL_EN_UNSUPPORTED;
+	}
 	if (PULLEN_offset[pin].offset != -1) {
 		if (enable == GPIO_PULL_DISABLE)
 			IOCFG_SET_BITS((1L << (PULLEN_offset[pin].offset)),
@@ -354,8 +360,13 @@ int mt_set_gpio_pull_enable_base(unsigned long pin, unsigned long enable)
 			IOCFG_SET_BITS((1L << (PULLEN_offset[pin].offset)),
 				       PULLEN_addr[pin].addr + REGSET);
 	} else {
-		gpio_pullen_unsupport[pin] = -1;
-		return GPIO_PULL_EN_UNSUPPORTED;
+		bit = PUPD_offset[pin].offset;
+		reg = IOCFG_RD32(PUPD_addr[pin].addr);
+		if (enable == GPIO_PULL_DISABLE)
+			reg &= (~(0x7 << bit));
+		else
+			reg |= (1 << bit);
+		IOCFG_WR32(PUPD_addr[pin].addr, reg);
 	}
 /* GPIOERR("%s:pin:%ld, enable:%ld, value:0x%x\n",__FUNCTION__, pin, enable, GPIO_RD32(PULLEN_addr[pin].addr)); */
 
