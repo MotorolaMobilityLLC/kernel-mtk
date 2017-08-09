@@ -116,6 +116,7 @@ static int rotatvec_get_data(int *x, int *y, int *z, int *scalar, int *status)
 	*x = data.orientation_t.azimuth;
 	*y = data.orientation_t.pitch;
 	*z = data.orientation_t.roll;
+	*scalar = 1;
 	*status = data.orientation_t.status;
 	ROTVEC_LOG("recv ipi: timestamp: %lld, timestamp_gpt: %lld, x: %d, y: %d, z: %d!\n", time_stamp, time_stamp_gpt,
 		   *x, *y, *z);
