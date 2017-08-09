@@ -2179,9 +2179,20 @@ static const struct file_operations m4u_fops = {
 	/* .mmap = NULL; */
 };
 
+#if !defined(CONFIG_MTK_CLKMGR)
+const char *smi_clk_name[] = {
+	"smi_common", "m4u_disp0_smi_larb0", "m4u_vdec0_vdec", "m4u_vdec1_larb",
+	"m4u_img_image_larb2_smi", "m4u_venc_venc", "m4u_venc_larb"
+};
+#endif
+
 static int m4u_probe(struct platform_device *pdev)
 {
 	struct device_node *node = pdev->dev.of_node;
+
+#if !defined(CONFIG_MTK_CLKMGR)
+	int i;
+#endif
 
 	M4UINFO("m4u_probe 0\n");
 
@@ -2197,6 +2208,23 @@ static int m4u_probe(struct platform_device *pdev)
 	gM4uDev->pDev[pdev->id] = &pdev->dev;
 	gM4uDev->m4u_base[pdev->id] = (unsigned long)of_iomap(node, 0);
 	gM4uDev->irq_num[pdev->id] = irq_of_parse_and_map(node, 0);
+
+#if !defined(CONFIG_MTK_CLKMGR)
+	gM4uDev->infra_m4u = devm_clk_get(&pdev->dev, "infra_m4u");
+	if (IS_ERR(gM4uDev->infra_m4u)) {
+		M4UMSG("cannot get infra m4u clock\n");
+		return PTR_ERR(gM4uDev->infra_m4u);
+	}
+
+	for (i = SMI_COMMON_CLK; i < SMI_CLK_NUM; i++) {
+		gM4uDev->smi_clk[i] = devm_clk_get(&pdev->dev, smi_clk_name[i]);
+		if (IS_ERR(gM4uDev->smi_clk[i])) {
+			M4UMSG("cannot get %s clock\n", smi_clk_name[i]);
+			return PTR_ERR(gM4uDev->smi_clk[i]);
+		}
+	}
+	smi_common_clock_on();
+#endif
 
 	M4UMSG("m4u_probe 2, of_iomap: 0x%lx, irq_num: %d, pDev: %p\n",
 		gM4uDev->m4u_base[pdev->id], gM4uDev->irq_num[pdev->id], gM4uDev->pDev[pdev->id]);
@@ -2404,12 +2432,23 @@ static int __init MTK_M4U_Init(void)
 	return 0;
 }
 
+static int __init mtk_m4u_late_init(void)
+{
+
+#if !defined(CONFIG_MTK_CLKMGR)
+	smi_common_clock_off();
+#endif
+
+	return 0;
+}
+
 static void __exit MTK_M4U_Exit(void)
 {
 	platform_driver_unregister(&m4uDrv);
 }
 
 subsys_initcall(MTK_M4U_Init);
+late_initcall(mtk_m4u_late_init);
 module_exit(MTK_M4U_Exit);
 
 MODULE_DESCRIPTION("MTKM4Udriver");
