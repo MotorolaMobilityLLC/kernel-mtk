@@ -1069,6 +1069,8 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd, unsigned long a
 	} else {
 		if (copy_from_user(&msdc_ctl, (struct msdc_ioctl *)arg, sizeof(struct msdc_ioctl)))
 			return -EFAULT;
+		if (msdc_ctl.host_num >= HOST_MAX_NUM || msdc_ctl.host_num < 0)
+			return -EFAULT;
 		if (msdc_ctl.host_num > (HOST_MAX_NUM - 1)) {
 			pr_err("msdc:host id=%d is not available.\n", msdc_ctl.host_num);
 			return -EINVAL;
