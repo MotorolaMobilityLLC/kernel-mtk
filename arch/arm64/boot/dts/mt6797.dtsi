@@ -2200,7 +2200,10 @@
 
 		ocp_cfg@10220000 {
 			compatible = "mediatek,ocp_cfg";
-			reg = <0x10220000 0x1000>;
+			reg = <0x10220000 0x4000>,
+				<0x10005000 0x1000>, /* pinmux reg */
+				<0x10001000 0x2000>, /* probe reg */
+				<0x10206000 0x1000>; /* eFUSE */
 			interrupts = <GIC_SPI 329 IRQ_TYPE_LEVEL_HIGH>,
 						<GIC_SPI 330 IRQ_TYPE_LEVEL_HIGH>,
 						<GIC_SPI 332 IRQ_TYPE_LEVEL_HIGH>,
