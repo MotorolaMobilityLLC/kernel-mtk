@@ -17,6 +17,7 @@
 #define CMD_CMDQ_TL_INIT_SHARED_MEMORY 6	/* create shared memory in Normal and Secure world */
 #define CMD_CMDQ_TL_SYNC_HANDLE_HDCP 7	/* send src & dst handle to Secure World to copy HDCP version */
 #define CMD_CMDQ_TL_REGISTER_SECURE_IRQ 8	/* register secure irq */
+#define CMD_CMDQ_TL_DUMP_SMI_LARB	9
 
 
 #define CMD_CMDQ_TL_TEST_HELLO_TL	(4000)	/* entry cmdqSecTl, and do nothing */

@@ -2363,6 +2363,34 @@ void testcase_write_stress_test(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
+void testcase_read_smi_larb(void)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	uint32_t larb = 0;
+
+	struct transmitBufferStruct secureData;
+
+	CMDQ_LOG("harry >>> read smi larb0 & larb4 register\n");
+
+	memset(&secureData, 0, sizeof(secureData));
+	secureData.pBuffer = &larb;
+	secureData.size = sizeof(larb);
+
+	/* 2	register secure buffer */
+	if (0 !=  cmdqSecRegisterSecureBuffer(&secureData))
+		return;
+
+	/* 3	service call */
+	cmdqSecServiceCall(&secureData, CMD_CMDQ_TL_DUMP_SMI_LARB);
+
+	/* 4	unregister secure buffer */
+	cmdqSecUnRegisterSecureBuffer(&secureData);
+#else
+	CMDQ_ERR("sorry, SVP config is not enabled\n");
+#endif
+}
+
+
 enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_ALL = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -2427,9 +2455,12 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 */
 
 	case 112:
+#if 0
 		CMDQ_MSG("CMDQ_MSG log\n");
 		CMDQ_LOG("CMDQ_LOG log\n");
 		CMDQ_ERR("CMDQ_ERR log\n");
+#endif
+		testcase_read_smi_larb();
 		break;
 	case 111:
 		CMDQ_LOG("enter testcase 111\n");
