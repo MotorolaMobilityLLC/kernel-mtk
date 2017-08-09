@@ -556,6 +556,7 @@ static int fsg_setup(struct usb_function *f,
 			*(u8 *)req->buf = fsg->common->nluns - 1;
 		}
 
+		INFO(fsg, "get max LUN = %d\n", *(u8 *)req->buf);
 		/* Respond with data/status */
 		req->length = min((u16)1, w_length);
 		return ep0_queue(fsg->common);
@@ -1682,7 +1683,7 @@ static int send_status(struct fsg_common *common)
 		sd = SS_LOGICAL_UNIT_NOT_SUPPORTED;
 
 	if (common->phase_error) {
-		DBG(common, "sending phase-error status\n");
+		ERROR(common, "sending phase-error status\n");
 		status = US_BULK_STAT_PHASE;
 		sd = SS_INVALID_COMMAND;
 	} else if (sd != SS_NO_SENSE) {
@@ -1748,6 +1749,8 @@ static int check_command(struct fsg_common *common, int cmnd_size,
 		 * Carry out the command, but only transfer as much as
 		 * we are allowed.
 		 */
+		ERROR(common, "PHASE ERROR: data_size(%d) < data_size_from_cmnd(%d)\n",
+				common->data_size, common->data_size_from_cmnd);
 		common->data_size_from_cmnd = common->data_size;
 		common->phase_error = 1;
 	}
@@ -1756,6 +1759,8 @@ static int check_command(struct fsg_common *common, int cmnd_size,
 
 	/* Conflicting data directions is a phase error */
 	if (common->data_dir != data_dir && common->data_size_from_cmnd > 0) {
+		ERROR(common, "PHASE ERROR: conflict data dir(%d,%d),data_size_from_cmnd(%d)\n",
+				common->data_dir, data_dir, common->data_size_from_cmnd);
 		common->phase_error = 1;
 		return -EINVAL;
 	}

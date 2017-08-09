@@ -715,8 +715,15 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 	ssize_t ret, data_len = -EINVAL;
 	int halt;
 
-	if (atomic_read(&epfile->error))
+	pr_debug("%s: len %lld, read %d\n", __func__, (u64)io_data->len, io_data->read);
+
+	if (atomic_read(&epfile->error)) {
+		static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
+
+		if (__ratelimit(&ratelimit))
+			pr_err("[ratelimit]%s: ep=%p\n", __func__, epfile->ep);
 		return -ENODEV;
+	}
 
 	/* Are we still active? */
 	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE)) {

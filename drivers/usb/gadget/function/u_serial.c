@@ -30,6 +30,8 @@
 
 #include "u_serial.h"
 
+#define ACM_LOG(fmt, args...) pr_notice("USB_ACM " fmt, ## args)
+
 
 /*
  * This component encapsulates the TTY layer glue needed to provide basic
@@ -371,6 +373,8 @@ __acquires(&port->port_lock)
 	struct usb_ep		*in;
 	int			status = 0;
 	bool			do_tty_wake = false;
+	static unsigned int	skip;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
 
 	if (!port || !port->port_usb) {
 		pr_err("Error - port or port->usb is NULL.");
@@ -403,6 +407,17 @@ __acquires(&port->port_lock)
 		pr_vdebug("ttyGS%d: tx len=%d, 0x%02x 0x%02x 0x%02x ...\n",
 			  port->port_num, len, *((u8 *)req->buf),
 			  *((u8 *)req->buf+1), *((u8 *)req->buf+2));
+
+		if (__ratelimit(&ratelimit)) {
+			ACM_LOG("%s: ttyGS%d: tx len=%d, 0x%02x 0x%02x 0x%02x ...\n",
+					__func__, port->port_num, len, *((u8 *)req->buf),
+					*((u8 *)req->buf+1), *((u8 *)req->buf+2));
+			if (skip > 0) {
+				ACM_LOG("%s Too many data, skipped %d bytes\n", __func__, skip);
+				skip = 0;
+			}
+		} else
+			skip += req->actual;
 
 		/* Drop lock while we call out of driver; completions
 		 * could be issued while we do so.  Disconnection may
@@ -502,6 +517,8 @@ static void gs_rx_push(unsigned long _port)
 	struct list_head	*queue = &port->read_queue;
 	bool			disconnect = false;
 	bool			do_push = false;
+	static unsigned int	skip;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 10);
 
 	/* hand any queued data to the tty */
 	spin_lock_irq(&port->port_lock);
@@ -530,6 +547,17 @@ static void gs_rx_push(unsigned long _port)
 			/* normal completion */
 			break;
 		}
+
+		if (__ratelimit(&ratelimit)) {
+			ACM_LOG("%s: ttyGS%d: actual=%d, n_read=%d 0x%02x 0x%02x 0x%02x ...\n",
+					__func__, port->port_num, req->actual, port->n_read,
+					*((u8 *)req->buf), *((u8 *)req->buf+1), *((u8 *)req->buf+2));
+			if (skip > 0) {
+				ACM_LOG("%s Too many data, skipped %d bytes\n", __func__, skip);
+				skip = 0;
+			}
+		} else
+			skip += req->actual;
 
 		/* push data to (open) tty */
 		if (req->actual) {
@@ -825,6 +853,8 @@ static int gs_open(struct tty_struct *tty, struct file *file)
 
 	pr_debug("gs_open: ttyGS%d (%p,%p)\n", port->port_num, tty, file);
 
+	ACM_LOG("gs_open: ttyGS%d (%p,%p)\n", port->port_num, tty, file);
+
 	status = 0;
 
 exit_unlock_port:
@@ -860,6 +890,8 @@ static void gs_close(struct tty_struct *tty, struct file *file)
 	}
 
 	pr_debug("gs_close: ttyGS%d (%p,%p) ...\n", port->port_num, tty, file);
+
+	ACM_LOG("gs_close: ttyGS%d (%p,%p) ...\n", port->port_num, tty, file);
 
 	/* mark port as closing but in use; we can drop port lock
 	 * and sleep if necessary
