@@ -246,6 +246,26 @@ static inline unsigned int fh_read32(unsigned long reg)
 	return val;
 }
 
+static inline unsigned int mcu_fh_read32(unsigned long reg)
+{
+	volatile unsigned int val;
+
+	do {
+		val = readl((void __iomem *)reg);
+		val = readl((void __iomem *)reg);
+		if (val == 0) {
+			val = readl((void __iomem *)reg);
+			val = readl((void __iomem *)reg);
+			if (val == 0) {
+				val = readl((void __iomem *)reg);
+				val = readl((void __iomem *)reg);
+			}
+		}
+	} while (0);
+
+	mb();
+	return val;
+}
 
 #define fh_write8(reg, val)      mt_reg_sync_writeb((val), (reg))
 #define fh_write16(reg, val)     mt_reg_sync_writew((val), (reg))
@@ -257,6 +277,34 @@ static inline void fh_write32(unsigned long reg, unsigned int val)
 	mb();
 }
 
+static inline void mcu_fh_write32(unsigned long reg, unsigned int val, unsigned int cmp_mask)
+{
+
+	volatile unsigned int r_val;
+	volatile unsigned int c_val;
+	volatile unsigned int cnt = 5;
+
+	mt_reg_sync_writel(val, reg);
+	ndelay(100);
+
+	c_val = val & cmp_mask;
+	r_val = mcu_fh_read32(reg) & cmp_mask;
+
+	while ((r_val != c_val) && (cnt > 0)) {
+		/* retry */
+		mt_reg_sync_writel(val, reg);
+		ndelay(100);
+		r_val = mcu_fh_read32(reg) & cmp_mask;
+		cnt = cnt - 1;
+	}
+
+	if (cnt == 0)
+		BUG_ON(1);
+
+	mb();
+}
+
+
 /* #define fh_set_bits(reg,bs)     ((*(volatile u32*)(reg)) |= (u32)(bs)) */
 /* #define fh_clr_bits(reg,bs)     ((*(volatile u32*)(reg)) &= ~((u32)(bs))) */
 
@@ -267,6 +315,15 @@ static inline void fh_write32(unsigned long reg, unsigned int val)
 		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
 		fh_write32(reg, tv); \
 	} while (0)
+
+#define mcu_fh_set_field(reg, field, val) \
+	do {	\
+		volatile unsigned int tv = mcu_fh_read32(reg);  \
+		tv &= ~(field); \
+		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
+		mcu_fh_write32(reg, tv, field); \
+	} while (0)
+
 
 #define fh_get_field(reg, field, val) \
 	do {	\
