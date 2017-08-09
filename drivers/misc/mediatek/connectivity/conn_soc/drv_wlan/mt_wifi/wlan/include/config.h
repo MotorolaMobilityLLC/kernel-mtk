@@ -909,7 +909,7 @@
 #endif
 
 #if CFG_ENABLE_AEE_MSG
-#include <linux/aee.h>
+#include <mt-plat/aee.h>
 #endif
 
 /* 2 Flags for Driver Features */

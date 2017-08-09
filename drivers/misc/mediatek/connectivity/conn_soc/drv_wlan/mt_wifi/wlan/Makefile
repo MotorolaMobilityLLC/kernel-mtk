@@ -25,7 +25,7 @@ else
     ccflags-y += -DCFG_SUPPORT_XLOG=0
 endif
 
-ifeq ($(CONFIG_HAVE_AEE_FEATURE), y)
+ifeq ($(CONFIG_MTK_AEE_FEATURE), y)
     ccflags-y += -DCFG_SUPPORT_AEE=1
 else
     ccflags-y += -DCFG_SUPPORT_AEE=0
