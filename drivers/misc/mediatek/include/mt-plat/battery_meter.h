@@ -228,106 +228,6 @@ struct battery_meter_custom_data {
 
 #endif
 
-struct battery_custom_data {
-	/* mt_charging.h */
-	/* stop charging while in talking mode */
-	int stop_charging_in_takling;
-	int talking_recharge_voltage;
-	int talking_sync_time;
-
-	/* Battery Temperature Protection */
-	int mtk_temperature_recharge_support;
-	int max_charge_temperature;
-	int max_charge_temperature_minus_x_degree;
-	int min_charge_temperature;
-	int min_charge_temperature_plus_x_degree;
-	int err_charge_temperature;
-
-	/* Linear Charging Threshold */
-	int v_pre2cc_thres;
-	int v_cc2topoff_thres;
-	int recharging_voltage;
-	int charging_full_current;
-
-
-	/* Charging Current Setting */
-	int config_usb_if;
-	int usb_charger_current_suspend;
-	int usb_charger_current_unconfigured;
-	int usb_charger_current_configured;
-	int usb_charger_current;
-	int ac_charger_current;
-	int non_std_ac_charger_current;
-	int charging_host_charger_current;
-	int apple_0_5a_charger_current;
-	int apple_1_0a_charger_current;
-	int apple_2_1a_charger_current;
-
-	/* Precise Tunning
-	   int battery_average_data_number;
-	   int battery_average_size;
-	 */
-
-	/* charger error check */
-	int bat_low_temp_protect_enable;
-	int v_charger_enable;
-	int v_charger_max;
-	int v_charger_min;
-
-	/* Tracking TIME */
-	int onehundred_percent_tracking_time;
-	int npercent_tracking_time;
-	int sync_to_real_tracking_time;
-	int v_0percent_tracking;
-
-	/* Battery Notify
-	   int battery_notify_case_0001_vcharger;
-	   int battery_notify_case_0002_vbattemp;
-	   int battery_notify_case_0003_icharging;
-	   int battery_notify_case_0004_vbat;
-	   int battery_notify_case_0005_total_chargingtime;
-	 */
-
-	/* High battery support */
-	int high_battery_voltage_support;
-
-	/* JEITA parameter
-	   int mtk_jeita_standard_support;
-	   int cust_soc_jeita_sync_time;
-	   int jeita_recharge_voltage;
-	   int jeita_temp_above_pos_60_cv_voltage;
-	   int jeita_temp_pos_45_to_pos_60_cv_voltage;
-	   int jeita_temp_pos_10_to_pos_45_cv_voltage;
-	   int jeita_temp_pos_0_to_pos_10_cv_voltage;
-	   int jeita_temp_neg_10_to_pos_0_cv_voltage;
-	   int jeita_temp_below_neg_10_cv_voltage;
-	 */
-
-	/* For JEITA Linear Charging only
-	   int jeita_neg_10_to_pos_0_full_current;
-	   int jeita_temp_pos_45_to_pos_60_recharge_voltage;
-	   int jeita_temp_pos_10_to_pos_45_recharge_voltage;
-	   int jeita_temp_pos_0_to_pos_10_recharge_voltage;
-	   int jeita_temp_neg_10_to_pos_0_recharge_voltage;
-	   int jeita_temp_pos_45_to_pos_60_cc2topoff_threshold;
-	   int jeita_temp_pos_10_to_pos_45_cc2topoff_threshold;
-	   int jeita_temp_pos_0_to_pos_10_cc2topoff_threshold;
-	   int jeita_temp_neg_10_to_pos_0_cc2topoff_threshold;
-	 */
-
-	/* cust_pe.h
-	   int mtk_pump_express_plus_support;
-	   int ta_start_battery_soc;
-	   int ta_stop_battery_soc;
-	   int ta_ac_9v_input_current;
-	   int ta_ac_7v_input_current;
-	   int ta_ac_charging_current;
-	   int ta_9v_support;
-	 */
-};
-
-
-
 typedef enum {
 	FG_DAEMON_CMD_GET_INIT_FLAG,
 	FG_DAEMON_CMD_GET_SOC,
@@ -398,12 +298,7 @@ typedef enum {
 /* ============================================================ */
 
 #if !defined(CONFIG_MTK_HAFG_20)
-extern struct battery_custom_data batt_cust_data;
 extern struct battery_meter_custom_data batt_meter_cust_data;
-#else
-extern struct battery_custom_data batt_cust_data;
-extern struct battery_meter_custom_data batt_meter_cust_data;
-extern struct battery_meter_table_custom_data batt_meter_table_cust_data;
 #endif
 
 #if !defined(CONFIG_MTK_HAFG_20)
@@ -457,7 +352,6 @@ extern signed int battery_meter_get_tempV(void);
 extern signed int battery_meter_get_VSense(void);/* isense voltage */
 extern int wakeup_fg_algo(int flow_state);
 
-extern int batt_meter_init_cust_data(struct platform_device *dev);
 #if defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
 extern void battery_meter_set_reset_soc(kal_bool bUSE_UI_SOC);
 extern signed int battery_meter_get_battery_soc(void);
@@ -478,9 +372,8 @@ extern unsigned int get_pmic_mt6325_cid(void);
 extern void fgauge_algo_run_get_init_data(void);
 extern void battery_meter_set_init_flag(kal_bool flag);
 
-
-extern BATTERY_VOLTAGE_ENUM battery_get_cv_voltage(void);
-extern void battery_set_cv_voltage(BATTERY_VOLTAGE_ENUM cv);
-
+#if defined(CONFIG_MTK_HAFG_20)
+unsigned int get_fg_20_cv_voltage(void);
+#endif
 
 #endif /* #ifndef _BATTERY_METER_H */

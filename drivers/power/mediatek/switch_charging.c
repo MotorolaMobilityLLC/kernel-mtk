@@ -69,6 +69,9 @@ CHR_CURRENT_ENUM g_temp_CC_value = CHARGE_CURRENT_0_00_MA;
 CHR_CURRENT_ENUM g_temp_input_CC_value = CHARGE_CURRENT_0_00_MA;
 unsigned int g_usb_state = USB_UNCONFIGURED;
 static bool usb_unlimited;
+#if defined(CONFIG_MTK_HAFG_20)
+BATTERY_VOLTAGE_ENUM g_FG_20_cv = BATTERY_VOLT_04_200000_V;
+#endif
 
  /* ///////////////////////////////////////////////////////////////////////////////////////// */
  /* // PUMP EXPRESS */
@@ -426,6 +429,10 @@ PMU_STATUS do_jeita_state_machine(void)
 	cv_voltage = select_jeita_cv();
 	battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
 
+#if defined(CONFIG_MTK_HAFG_20)
+	g_FG_20_cv = cv_voltage;
+#endif
+
 	return jeita_status;
 }
 
@@ -739,6 +746,10 @@ static void pchr_turn_on_charging(void)
 				cv_voltage = BATTERY_VOLT_04_200000_V;
 
 			battery_charging_control(CHARGING_CMD_SET_CV_VOLTAGE, &cv_voltage);
+
+			#if defined(CONFIG_MTK_HAFG_20)
+			g_FG_20_cv = cv_voltage;
+			#endif
 #endif
 		}
 	}

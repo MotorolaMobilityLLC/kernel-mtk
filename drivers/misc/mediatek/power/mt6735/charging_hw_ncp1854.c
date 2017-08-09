@@ -4,8 +4,7 @@
 #include <linux/delay.h>
 #include <linux/reboot.h>
 #include <mt-plat/mt_boot.h>
-#include <mt-plat/battery_meter.h>
-#include <mach/mt_battery_meter.h>
+#include <mt-plat/battery_common.h>
 #include <mach/mt_charging.h>
 #include <mach/mt_pmic.h>
 #include "ncp1854.h"

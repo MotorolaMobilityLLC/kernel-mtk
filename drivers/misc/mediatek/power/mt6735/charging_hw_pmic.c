@@ -7,8 +7,7 @@
 #include <linux/delay.h>
 #include <linux/reboot.h>
 #include <mt-plat/mt_boot.h>
-#include <mt-plat/battery_meter.h>
-#include <mach/mt_battery_meter.h>
+#include <mt-plat/battery_common.h>
 #include <mach/mt_charging.h>
 #include <mach/mt_pmic.h>
 
@@ -295,8 +294,6 @@ static unsigned int charging_set_cv_voltage(void *data)
 	register_value =
 	    charging_parameter_to_value(VBAT_CV_VTH, GETARRAYNUM(VBAT_CV_VTH),
 					*(unsigned int *) (data));
-
-	battery_set_cv_voltage(*(unsigned int *) (data));
 
 	pmic_set_register_value(PMIC_RG_VBAT_CV_VTH, register_value);
 

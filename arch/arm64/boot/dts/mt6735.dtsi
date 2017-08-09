@@ -1973,55 +1973,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 
 		bat_meter: bat_meter{
 			compatible = "mediatek,bat_meter";
-			/* cust_charging.h */
-			/* stop charging while in talking mode */
-			stop_charging_in_takling = <1 >;
-			talking_recharge_voltage = <3800 >;
-			talking_sync_time = <60 >;
-
-			/* Battery Temperature Protection */
-			mtk_temperature_recharge_support = <1 >;
-			max_charge_temperature = <50 >;
-			max_charge_temperature_minus_x_degree = <47 >;
-			min_charge_temperature = <0 >;
-			min_charge_temperature_plus_x_degree = <6 >;
-			err_charge_temperature = <0xff >;
-
-			/* Linear Charging Threshold */
-			v_pre2cc_thres = <3400 >;	/* unit: mV */
-			v_cc2topoff_thres = <4050 >;
-			recharging_voltage = <4110 >;
-			charging_full_current = <100 >;	/* unit: mA */
-
-			/* Charging Current Setting */
-			config_usb_if = <0 >;
-			usb_charger_current_suspend = <0 >;	/* Unit: 0.01 mA */
-			usb_charger_current_unconfigured = <7000 >;	/* Unit: 0.01 mA */
-			usb_charger_current_configured = <50000 >;	/* Unit: 0.01 mA */
-			usb_charger_current = <50000 >;	/* Unit: 0.01 mA */
-			ac_charger_current = <80000 >;	/* Unit: 0.01 mA */
-			non_std_ac_charger_current = <50000 >;	/* Unit: 0.01 mA */
-			charging_host_charger_current = <65000 >;	/* Unit: 0.01 mA */
-			apple_0_5a_charger_current = <50000 >;	/* Unit: 0.01 mA */
-			apple_1_0a_charger_current = <65000 >;	/* Unit: 0.01 mA */
-			apple_2_1a_charger_current = <80000 >;	/* Unit: 0.01 mA */
-
-
-			/* charger error check */
-			bat_low_temp_protect_enable = <0 >;
-			v_charger_enable = <0 >;	/* 1:on , 0:off */
-			v_charger_max = <6500 >;	/* unit: mV */
-			v_charger_min = <4400 >;
-
-			/*  Tracking TIME */
-			onehundred_percent_tracking_time = <10 >;	/* Unit: second */
-			npercent_tracking_time = <20 >;	/* Unit: second */
-			sync_to_real_tracking_time = <60 >;	/* Unit: second */
-			v_0percent_tracking = <3450 >;	/* Unit: mV */
-
-			/* High battery support */
-			high_battery_voltage_support = <0 >;
-
 			/* cust_battery_meter.h */
 			/* ADC resistor  */
 			r_bat_sense = <4 >;
@@ -2867,8 +2818,55 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			compatible = "mediatek,bat_notify";
 		};
 
-		BATTERY {
+		bat_comm: bat_comm {
 			compatible = "mediatek,battery";
+			/* cust_charging.h */
+			/* stop charging while in talking mode */
+			stop_charging_in_takling = <1 >;
+			talking_recharge_voltage = <3800 >;
+			talking_sync_time = <60 >;
+
+			/* Battery Temperature Protection */
+			mtk_temperature_recharge_support = <1 >;
+			max_charge_temperature = <50 >;
+			max_charge_temperature_minus_x_degree = <47 >;
+			min_charge_temperature = <0 >;
+			min_charge_temperature_plus_x_degree = <6 >;
+			err_charge_temperature = <0xff >;
+
+			/* Linear Charging Threshold */
+			v_pre2cc_thres = <3400 >;	/* unit: mV */
+			v_cc2topoff_thres = <4050 >;
+			recharging_voltage = <4110 >;
+			charging_full_current = <100 >;	/* unit: mA */
+
+			/* Charging Current Setting */
+			config_usb_if = <0 >;
+			usb_charger_current_suspend = <0 >;	/* Unit: 0.01 mA */
+			usb_charger_current_unconfigured = <7000 >;	/* Unit: 0.01 mA */
+			usb_charger_current_configured = <50000 >;	/* Unit: 0.01 mA */
+			usb_charger_current = <50000 >;	/* Unit: 0.01 mA */
+			ac_charger_current = <80000 >;	/* Unit: 0.01 mA */
+			non_std_ac_charger_current = <50000 >;	/* Unit: 0.01 mA */
+			charging_host_charger_current = <65000 >;	/* Unit: 0.01 mA */
+			apple_0_5a_charger_current = <50000 >;	/* Unit: 0.01 mA */
+			apple_1_0a_charger_current = <65000 >;	/* Unit: 0.01 mA */
+			apple_2_1a_charger_current = <80000 >;	/* Unit: 0.01 mA */
+
+			/* charger error check */
+			bat_low_temp_protect_enable = <0 >;
+			v_charger_enable = <0 >;	/* 1:on , 0:off */
+			v_charger_max = <6500 >;	/* unit: mV */
+			v_charger_min = <4400 >;
+
+			/*  Tracking TIME */
+			onehundred_percent_tracking_time = <10 >;	/* Unit: second */
+			npercent_tracking_time = <20 >;	/* Unit: second */
+			sync_to_real_tracking_time = <60 >;	/* Unit: second */
+			v_0percent_tracking = <3450 >;	/* Unit: mV */
+
+			/* High battery support */
+			high_battery_voltage_support = <0 >;
 		};
 
 

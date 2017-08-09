@@ -294,443 +294,8 @@ void fgauge_get_profile_id(void)
 /* ============================================================ // */
 /* function prototype */
 /* ============================================================ // */
-
-
-
-struct battery_custom_data batt_cust_data;
 struct battery_meter_custom_data batt_meter_cust_data;
 
-
-int __batt_init_cust_data_from_cust_header(void)
-{
-	/* mt_charging.h */
-	/* stop charging while in talking mode */
-#if defined(STOP_CHARGING_IN_TAKLING)
-	batt_cust_data.stop_charging_in_takling = 1;
-#else				/* #if defined(STOP_CHARGING_IN_TAKLING) */
-	batt_cust_data.stop_charging_in_takling = 0;
-#endif				/* #if defined(STOP_CHARGING_IN_TAKLING) */
-
-#if defined(TALKING_RECHARGE_VOLTAGE)
-	batt_cust_data.talking_recharge_voltage = TALKING_RECHARGE_VOLTAGE;
-#endif
-
-#if defined(TALKING_SYNC_TIME)
-	batt_cust_data.talking_sync_time = TALKING_SYNC_TIME;
-#endif
-
-	/* Battery Temperature Protection */
-#if defined(MTK_TEMPERATURE_RECHARGE_SUPPORT)
-	batt_cust_data.mtk_temperature_recharge_support = 1;
-#else				/* #if defined(MTK_TEMPERATURE_RECHARGE_SUPPORT) */
-	batt_cust_data.mtk_temperature_recharge_support = 0;
-#endif				/* #if defined(MTK_TEMPERATURE_RECHARGE_SUPPORT) */
-
-#if defined(MAX_CHARGE_TEMPERATURE)
-	batt_cust_data.max_charge_temperature = MAX_CHARGE_TEMPERATURE;
-#endif
-
-#if defined(MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE)
-	batt_cust_data.max_charge_temperature_minus_x_degree =
-	    MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE;
-#endif
-
-#if defined(MIN_CHARGE_TEMPERATURE)
-	batt_cust_data.min_charge_temperature = MIN_CHARGE_TEMPERATURE;
-#endif
-
-#if defined(MIN_CHARGE_TEMPERATURE_PLUS_X_DEGREE)
-	batt_cust_data.min_charge_temperature_plus_x_degree = MIN_CHARGE_TEMPERATURE_PLUS_X_DEGREE;
-#endif
-
-#if defined(ERR_CHARGE_TEMPERATURE)
-	batt_cust_data.err_charge_temperature = ERR_CHARGE_TEMPERATURE;
-#endif
-
-	/* Linear Charging Threshold */
-#if defined(V_PRE2CC_THRES)
-	batt_cust_data.v_pre2cc_thres = V_PRE2CC_THRES;
-#endif
-#if defined(V_CC2TOPOFF_THRES)
-	batt_cust_data.v_cc2topoff_thres = V_CC2TOPOFF_THRES;
-#endif
-#if defined(RECHARGING_VOLTAGE)
-	batt_cust_data.recharging_voltage = RECHARGING_VOLTAGE;
-#endif
-#if defined(CHARGING_FULL_CURRENT)
-	batt_cust_data.charging_full_current = CHARGING_FULL_CURRENT;
-#endif
-
-	/* Charging Current Setting */
-#if defined(CONFIG_USB_IF)
-	batt_cust_data.config_usb_if = 1;
-#else				/* #if defined(CONFIG_USB_IF) */
-	batt_cust_data.config_usb_if = 0;
-#endif				/* #if defined(CONFIG_USB_IF) */
-
-#if defined(USB_CHARGER_CURRENT_SUSPEND)
-	batt_cust_data.usb_charger_current_suspend = USB_CHARGER_CURRENT_SUSPEND;
-#endif
-#if defined(USB_CHARGER_CURRENT_UNCONFIGURED)
-	batt_cust_data.usb_charger_current_unconfigured = USB_CHARGER_CURRENT_UNCONFIGURED;
-#endif
-#if defined(USB_CHARGER_CURRENT_CONFIGURED)
-	batt_cust_data.usb_charger_current_configured = USB_CHARGER_CURRENT_CONFIGURED;
-#endif
-#if defined(USB_CHARGER_CURRENT)
-	batt_cust_data.usb_charger_current = USB_CHARGER_CURRENT;
-#endif
-#if defined(AC_CHARGER_CURRENT)
-	batt_cust_data.ac_charger_current = AC_CHARGER_CURRENT;
-#endif
-#if defined(NON_STD_AC_CHARGER_CURRENT)
-	batt_cust_data.non_std_ac_charger_current = NON_STD_AC_CHARGER_CURRENT;
-#endif
-#if defined(CHARGING_HOST_CHARGER_CURRENT)
-	batt_cust_data.charging_host_charger_current = CHARGING_HOST_CHARGER_CURRENT;
-#endif
-#if defined(APPLE_0_5A_CHARGER_CURRENT)
-	batt_cust_data.apple_0_5a_charger_current = APPLE_0_5A_CHARGER_CURRENT;
-#endif
-#if defined(APPLE_1_0A_CHARGER_CURRENT)
-	batt_cust_data.apple_1_0a_charger_current = APPLE_1_0A_CHARGER_CURRENT;
-#endif
-#if defined(APPLE_2_1A_CHARGER_CURRENT)
-	batt_cust_data.apple_2_1a_charger_current = APPLE_2_1A_CHARGER_CURRENT;
-#endif
-
-	/* Precise Tunning
-	   batt_cust_data.battery_average_data_number =
-	   BATTERY_AVERAGE_DATA_NUMBER;
-	   batt_cust_data.battery_average_size = BATTERY_AVERAGE_SIZE;
-	 */
-
-
-	/* charger error check */
-#if defined(BAT_LOW_TEMP_PROTECT_ENABLE)
-	batt_cust_data.bat_low_temp_protect_enable = 1;
-#else				/* #if defined(BAT_LOW_TEMP_PROTECT_ENABLE) */
-	batt_cust_data.bat_low_temp_protect_enable = 0;
-#endif				/* #if defined(BAT_LOW_TEMP_PROTECT_ENABLE) */
-
-#if defined(V_CHARGER_ENABLE)
-	batt_cust_data.v_charger_enable = V_CHARGER_ENABLE;
-#endif
-#if defined(V_CHARGER_MAX)
-	batt_cust_data.v_charger_max = V_CHARGER_MAX;
-#endif
-#if defined(V_CHARGER_MIN)
-	batt_cust_data.v_charger_min = V_CHARGER_MIN;
-#endif
-
-
-	/* Tracking TIME */
-#if defined(ONEHUNDRED_PERCENT_TRACKING_TIME)
-	batt_cust_data.onehundred_percent_tracking_time = ONEHUNDRED_PERCENT_TRACKING_TIME;
-#endif
-#if defined(NPERCENT_TRACKING_TIME)
-	batt_cust_data.npercent_tracking_time = NPERCENT_TRACKING_TIME;
-#endif
-#if defined(SYNC_TO_REAL_TRACKING_TIME)
-	batt_cust_data.sync_to_real_tracking_time = SYNC_TO_REAL_TRACKING_TIME;
-#endif
-#if defined(V_0PERCENT_TRACKING)
-	batt_cust_data.v_0percent_tracking = V_0PERCENT_TRACKING;
-#endif
-
-	/* High battery support */
-#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
-	batt_cust_data.high_battery_voltage_support = 1;
-#else				/* #if defined(HIGH_BATTERY_VOLTAGE_SUPPORT) */
-	batt_cust_data.high_battery_voltage_support = 0;
-#endif				/* #if defined(HIGH_BATTERY_VOLTAGE_SUPPORT) */
-
-	return 0;
-}
-
-
-#ifdef CONFIG_OF
-int __batt_init_cust_data_from_dt(void)
-{
-	/* struct device_node *np = dev->dev.of_node; */
-	struct device_node *np;
-	u32 val;
-
-	/* check customer setting */
-	np = of_find_compatible_node(NULL, NULL, "mediatek,bat_meter");
-	if (!np) {
-		/* printk(KERN_ERR "(E) Failed to find device-tree node: %s\n", path); */
-		battery_log(BAT_LOG_CRTI, "Failed to find device-tree node: bat_meter\n");
-		return -ENODEV;
-	}
-
-	if (of_property_read_u32(np, "stop_charging_in_takling", &val) == 0) {
-		batt_cust_data.stop_charging_in_takling = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get stop_charging_in_takling: %d\n",
-			    batt_cust_data.stop_charging_in_takling);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get stop_charging_in_takling failed\n");
-	}
-
-	if (of_property_read_u32(np, "talking_recharge_voltage", &val) == 0) {
-		batt_cust_data.talking_recharge_voltage = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get talking_recharge_voltage: %d\n",
-			    batt_cust_data.talking_recharge_voltage);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get talking_recharge_voltage failed\n");
-	}
-
-	if (of_property_read_u32(np, "talking_sync_time", &val) == 0) {
-		batt_cust_data.talking_sync_time = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get talking_sync_time: %d\n",
-			    batt_cust_data.talking_sync_time);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get talking_sync_time failed\n");
-	}
-
-	if (of_property_read_u32(np, "mtk_temperature_recharge_support", &val) == 0) {
-		batt_cust_data.mtk_temperature_recharge_support = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get mtk_temperature_recharge_support: %d\n",
-			    batt_cust_data.mtk_temperature_recharge_support);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get mtk_temperature_recharge_support failed\n");
-	}
-
-	if (of_property_read_u32(np, "max_charge_temperature", &val) == 0) {
-		batt_cust_data.max_charge_temperature = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get max_charge_temperature: %d\n",
-			    batt_cust_data.max_charge_temperature);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get max_charge_temperature failed\n");
-	}
-
-	if (of_property_read_u32(np, "max_charge_temperature_minus_x_degree", &val) == 0) {
-		batt_cust_data.max_charge_temperature_minus_x_degree = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get max_charge_temperature_minus_x_degree: %d\n",
-			    batt_cust_data.max_charge_temperature_minus_x_degree);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get max_charge_temperature_minus_x_degree failed\n");
-	}
-
-	if (of_property_read_u32(np, "min_charge_temperature", &val) == 0) {
-		batt_cust_data.min_charge_temperature = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get min_charge_temperature: %d\n",
-			    batt_cust_data.min_charge_temperature);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get min_charge_temperature failed\n");
-	}
-
-	if (of_property_read_u32(np, "min_charge_temperature_plus_x_degree", &val) == 0) {
-		batt_cust_data.min_charge_temperature_plus_x_degree = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get min_charge_temperature_plus_x_degree: %d\n",
-			    batt_cust_data.min_charge_temperature_plus_x_degree);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get min_charge_temperature_plus_x_degree failed\n");
-	}
-
-	if (of_property_read_u32(np, "err_charge_temperature", &val) == 0) {
-		batt_cust_data.err_charge_temperature = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get err_charge_temperature: %d\n",
-			    batt_cust_data.err_charge_temperature);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get err_charge_temperature failed\n");
-	}
-
-	if (of_property_read_u32(np, "v_pre2cc_thres", &val) == 0) {
-		batt_cust_data.v_pre2cc_thres = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get v_pre2cc_thres: %d\n",
-			    batt_cust_data.v_pre2cc_thres);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get v_pre2cc_thres failed\n");
-	}
-
-	if (of_property_read_u32(np, "v_cc2topoff_thres", &val) == 0) {
-		batt_cust_data.v_cc2topoff_thres = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get v_cc2topoff_thres: %d\n",
-			    batt_cust_data.v_cc2topoff_thres);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get v_cc2topoff_thres failed\n");
-	}
-
-	if (of_property_read_u32(np, "recharging_voltage", &val) == 0) {
-		batt_cust_data.recharging_voltage = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get recharging_voltage: %d\n",
-			    batt_cust_data.recharging_voltage);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get recharging_voltage failed\n");
-	}
-
-	if (of_property_read_u32(np, "charging_full_current", &val) == 0) {
-		batt_cust_data.charging_full_current = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get charging_full_current: %d\n",
-			    batt_cust_data.charging_full_current);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get charging_full_current failed\n");
-	}
-
-	if (of_property_read_u32(np, "config_usb_if", &val) == 0) {
-		batt_cust_data.config_usb_if = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get config_usb_if: %d\n", batt_cust_data.config_usb_if);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get config_usb_if failed\n");
-	}
-
-	if (of_property_read_u32(np, "usb_charger_current_suspend", &val) == 0) {
-		batt_cust_data.usb_charger_current_suspend = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get usb_charger_current_suspend: %d\n",
-			    batt_cust_data.usb_charger_current_suspend);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get usb_charger_current_suspend failed\n");
-	}
-
-	if (of_property_read_u32(np, "usb_charger_current_unconfigured", &val) == 0) {
-		batt_cust_data.usb_charger_current_unconfigured = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get usb_charger_current_unconfigured: %d\n",
-			    batt_cust_data.usb_charger_current_unconfigured);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get usb_charger_current_unconfigured failed\n");
-	}
-
-	if (of_property_read_u32(np, "usb_charger_current_configured", &val) == 0) {
-		batt_cust_data.usb_charger_current_configured = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get usb_charger_current_configured: %d\n",
-			    batt_cust_data.usb_charger_current_configured);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get usb_charger_current_configured failed\n");
-	}
-
-	if (of_property_read_u32(np, "usb_charger_current", &val) == 0) {
-		batt_cust_data.usb_charger_current = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get usb_charger_current: %d\n",
-			    batt_cust_data.usb_charger_current);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get usb_charger_current failed\n");
-	}
-
-	if (of_property_read_u32(np, "ac_charger_current", &val) == 0) {
-		batt_cust_data.ac_charger_current = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get ac_charger_current: %d\n",
-			    batt_cust_data.ac_charger_current);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get ac_charger_current failed\n");
-	}
-
-	if (of_property_read_u32(np, "non_std_ac_charger_current", &val) == 0) {
-		batt_cust_data.non_std_ac_charger_current = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get non_std_ac_charger_current: %d\n",
-			    batt_cust_data.non_std_ac_charger_current);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get non_std_ac_charger_current failed\n");
-	}
-
-	if (of_property_read_u32(np, "charging_host_charger_current", &val) == 0) {
-		batt_cust_data.charging_host_charger_current = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get charging_host_charger_current: %d\n",
-			    batt_cust_data.charging_host_charger_current);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get charging_host_charger_current failed\n");
-	}
-
-	if (of_property_read_u32(np, "apple_0_5a_charger_current", &val) == 0) {
-		batt_cust_data.apple_0_5a_charger_current = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get apple_0_5a_charger_current: %d\n",
-			    batt_cust_data.apple_0_5a_charger_current);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get apple_0_5a_charger_current failed\n");
-	}
-
-	if (of_property_read_u32(np, "apple_1_0a_charger_current", &val) == 0) {
-		batt_cust_data.apple_1_0a_charger_current = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get apple_1_0a_charger_current: %d\n",
-			    batt_cust_data.apple_1_0a_charger_current);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get apple_1_0a_charger_current failed\n");
-	}
-
-	if (of_property_read_u32(np, "apple_2_1a_charger_current", &val) == 0) {
-		batt_cust_data.apple_2_1a_charger_current = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get apple_2_1a_charger_current: %d\n",
-			    batt_cust_data.apple_2_1a_charger_current);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get apple_2_1a_charger_current failed\n");
-	}
-
-
-	if (of_property_read_u32(np, "bat_low_temp_protect_enable", &val) == 0) {
-		batt_cust_data.bat_low_temp_protect_enable = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get bat_low_temp_protect_enable: %d\n",
-			    batt_cust_data.bat_low_temp_protect_enable);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get bat_low_temp_protect_enable failed\n");
-	}
-
-	if (of_property_read_u32(np, "v_charger_enable", &val) == 0) {
-		batt_cust_data.v_charger_enable = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get v_charger_enable: %d\n",
-			    batt_cust_data.v_charger_enable);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get v_charger_enable failed\n");
-	}
-
-	if (of_property_read_u32(np, "v_charger_max", &val) == 0) {
-		batt_cust_data.v_charger_max = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get v_charger_max: %d\n", batt_cust_data.v_charger_max);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get v_charger_max failed\n");
-	}
-
-	if (of_property_read_u32(np, "v_charger_min", &val) == 0) {
-		batt_cust_data.v_charger_min = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get v_charger_min: %d\n", batt_cust_data.v_charger_min);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get v_charger_min failed\n");
-	}
-
-	if (of_property_read_u32(np, "onehundred_percent_tracking_time", &val) == 0) {
-		batt_cust_data.onehundred_percent_tracking_time = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get onehundred_percent_tracking_time: %d\n",
-			    batt_cust_data.onehundred_percent_tracking_time);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get onehundred_percent_tracking_time failed\n");
-	}
-
-	if (of_property_read_u32(np, "npercent_tracking_time", &val) == 0) {
-		batt_cust_data.npercent_tracking_time = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get npercent_tracking_time: %d\n",
-			    batt_cust_data.npercent_tracking_time);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get npercent_tracking_time failed\n");
-	}
-
-	if (of_property_read_u32(np, "sync_to_real_tracking_time", &val) == 0) {
-		batt_cust_data.sync_to_real_tracking_time = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get sync_to_real_tracking_time: %d\n",
-			    batt_cust_data.sync_to_real_tracking_time);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get sync_to_real_tracking_time failed\n");
-	}
-
-	if (of_property_read_u32(np, "v_0percent_tracking", &val) == 0) {
-		batt_cust_data.v_0percent_tracking = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get v_0percent_tracking: %d\n",
-			    batt_cust_data.v_0percent_tracking);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get v_0percent_tracking failed\n");
-	}
-
-
-	if (of_property_read_u32(np, "high_battery_voltage_support", &val) == 0) {
-		batt_cust_data.high_battery_voltage_support = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get high_battery_voltage_support: %d\n",
-			    batt_cust_data.high_battery_voltage_support);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get high_battery_voltage_support failed\n");
-	}
-
-	of_node_put(np);
-	return 0;
-}
-#endif
 int __batt_meter_init_cust_data_from_cust_header(void)
 {
 	battery_log(BAT_LOG_CRTI, "__batt_meter_init_cust_data_from_cust_header\n");
@@ -915,16 +480,76 @@ int __batt_meter_init_cust_data_from_cust_header(void)
 	return 0;
 }
 
-#ifdef CONFIG_OF
+#if defined(BATTERY_DTS_SUPPORT) && defined(CONFIG_OF)
+static void __batt_meter_parse_node(const struct device_node *np,
+				const char *node_srting, int *cust_val)
+{
+	u32 val;
+	if (of_property_read_u32(np, node_srting, &val) == 0) {
+		(*cust_val) = (int)val;
+		bm_print(BM_LOG_FULL, "Get %s: %d\n", node_srting, (*cust_val));
+	} else {
+		bm_print(BM_LOG_CRTI, "Get %s failed\n", node_srting);
+	}
+}
+
+static void __batt_meter_parse_table(const struct device_node *np,
+				const char *node_srting, BATTERY_PROFILE_STRUCT_P profile_p)
+{
+	int addr, val, idx, saddles;
+
+	/*the number of battery table is
+		the same as the number of r table*/
+	saddles = fgauge_get_saddles();
+	idx = 0;
+	bm_print(BM_LOG_CRTI, "batt_meter_parse_table: %s, %d\n", node_srting, saddles);
+
+	while (!of_property_read_u32_index(np, node_srting, idx, &addr)) {
+		idx++;
+		if (!of_property_read_u32_index(np, node_srting, idx, &val)) {
+			battery_log(BAT_LOG_CRTI, "batt_temperature_table: addr: %d, val: %d\n",
+				    addr, val);
+		}
+		profile_p->percentage = addr;
+		profile_p->voltage = val;
+
+		/* dump parsing data */
+		#if 0
+		msleep(20);
+		bm_print(BM_LOG_CRTI, "__batt_meter_parse_table>> %s[%d]: <%d, %d>\n",
+				node_srting, (idx/2), profile_p->percentage, profile_p->voltage);
+		#endif
+
+		profile_p++;
+		if ((idx++) >= (saddles * 2))
+			break;
+	}
+
+	/* use last data to fill with the rest array
+				if raw data is less than temp array */
+	/* error handle */
+	profile_p--;
+
+	while (idx < (saddles * 2)) {
+		profile_p++;
+		profile_p->percentage = addr;
+		profile_p->voltage = val;
+		idx = idx + 2;
+
+		/* dump parsing data */
+		#if 0
+		msleep(20);
+		bm_print(BM_LOG_CRTI, "__batt_meter_parse_table>> %s[%d]: <%d, %d>\n",
+				node_srting, (idx/2) - 1, profile_p->percentage, profile_p->voltage);
+		#endif
+	}
+}
+
 int __batt_meter_init_cust_data_from_dt(void)
 {
 	struct device_node *np;
-	u32 val;
-	/*struct device_node *dt_node;
-	   const u32 *property;
-	   int len; */
-	int num, idx, saddles;
-	unsigned int addr;
+	int num;
+	unsigned int idx, addr, val;
 
 	/* check customer setting */
 	np = of_find_compatible_node(NULL, NULL, "mediatek,bat_meter");
@@ -934,33 +559,14 @@ int __batt_meter_init_cust_data_from_dt(void)
 		return -ENODEV;
 	}
 
+	__batt_meter_parse_node(np, "rbat_pull_up_r",
+		&batt_meter_cust_data.rbat_pull_up_r);
 
-	if (of_property_read_u32(np, "rbat_pull_up_r", &val) == 0) {
-		batt_meter_cust_data.rbat_pull_up_r = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get rbat_pull_up_r: %d\n",
-			    batt_meter_cust_data.rbat_pull_up_r);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get rbat_pull_up_r failed\n");
-	}
+	__batt_meter_parse_node(np, "rbat_pull_up_volt",
+		&batt_meter_cust_data.rbat_pull_up_volt);
 
-	if (of_property_read_u32(np, "rbat_pull_up_volt", &val) == 0) {
-		batt_meter_cust_data.rbat_pull_up_volt = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get rbat_pull_up_volt: %d\n",
-			    batt_meter_cust_data.rbat_pull_up_volt);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get rbat_pull_up_volt failed\n");
-	}
+	__batt_meter_parse_node(np, "batt_temperature_table_num", &num);
 
-
-
-	if (of_property_read_u32(np, "batt_temperature_table_num", &val) == 0) {
-		num = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get batt_temperature_table_num: %d\n", num);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get batt_temperature_table_num failed\n");
-	}
-
-	saddles = fgauge_get_saddles();
 	idx = 0;
 	while (!of_property_read_u32_index(np, "batt_temperature_table", idx, &addr)) {
 		idx++;
@@ -968,547 +574,190 @@ int __batt_meter_init_cust_data_from_dt(void)
 			battery_log(BAT_LOG_CRTI, "batt_temperature_table: addr: %d, val: %d\n",
 				    addr, val);
 		}
-		idx++;
 		Batt_Temperature_Table[idx / 2].BatteryTemp = addr;
 		Batt_Temperature_Table[idx / 2].TemperatureR = val;
 
-		if (idx >= saddles * 2)
+		idx++;
+		if (idx >= num * 2)
 			break;
 	}
 
+	__batt_meter_parse_node(np, "battery_profile_t0_num", &num);
 
+	__batt_meter_parse_table(np, "battery_profile_t0",
+			fgauge_get_profile(batt_meter_cust_data.temperature_t0));
 
+	__batt_meter_parse_node(np, "battery_profile_t1_num", &num);
 
-	if (of_property_read_u32(np, "battery_profile_t0_num", &val) == 0) {
-		num = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get battery_profile_t0_num: %d\n", num);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get battery_profile_t0_num failed\n");
-	}
-
-	saddles = fgauge_get_saddles();
-	idx = 0;
-	while (!of_property_read_u32_index(np, "battery_profile_t0", idx, &addr)) {
-		idx++;
-		if (!of_property_read_u32_index(np, "battery_profile_t0", idx, &val)) {
-			battery_log(BAT_LOG_CRTI, "battery_profile_t0: addr: %d, val: %d\n", addr,
-				    val);
-		}
-		idx++;
-		battery_profile_t0[idx / 2].percentage = addr;
-		battery_profile_t0[idx / 2].voltage = val;
-
-		if (idx >= saddles * 2)
-			break;
-	}
-
-
-	if (of_property_read_u32(np, "battery_profile_t1_num", &val) == 0) {
-		num = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get battery_profile_t1_num: %d\n", num);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get battery_profile_t1_num failed\n");
-	}
-
-	saddles = fgauge_get_saddles();
-	idx = 0;
-	while (!of_property_read_u32_index(np, "battery_profile_t1", idx, &addr)) {
-		idx++;
-		if (!of_property_read_u32_index(np, "battery_profile_t1", idx, &val)) {
-			battery_log(BAT_LOG_CRTI, "battery_profile_t1: addr: %d, val: %d\n", addr,
-				    val);
-		}
-		idx++;
-		battery_profile_t1[idx / 2].percentage = addr;
-		battery_profile_t1[idx / 2].voltage = val;
-
-		if (idx >= saddles * 2)
-			break;
-	}
-
-	if (of_property_read_u32(np, "battery_profile_t2_num", &val) == 0) {
-		num = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get battery_profile_t2_num: %d\n", num);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get battery_profile_t2_num failed\n");
-	}
-
-	saddles = fgauge_get_saddles();
-	idx = 0;
-	while (!of_property_read_u32_index(np, "battery_profile_t2", idx, &addr)) {
-		idx++;
-		if (!of_property_read_u32_index(np, "battery_profile_t2", idx, &val)) {
-			battery_log(BAT_LOG_CRTI, "battery_profile_t0: addr: %d, val: %d\n", addr,
-				    val);
-		}
-		idx++;
-		battery_profile_t2[idx / 2].percentage = addr;
-		battery_profile_t2[idx / 2].voltage = val;
-
-		if (idx >= saddles * 2)
-			break;
-	}
-
-	if (of_property_read_u32(np, "battery_profile_t3_num", &val) == 0) {
-		num = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get battery_profile_t3_num: %d\n", num);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get battery_profile_t3_num failed\n");
-	}
-
-	saddles = fgauge_get_saddles();
-	idx = 0;
-	while (!of_property_read_u32_index(np, "battery_profile_t3", idx, &addr)) {
-		idx++;
-		if (!of_property_read_u32_index(np, "battery_profile_t3", idx, &val)) {
-			battery_log(BAT_LOG_CRTI, "battery_profile_t3: addr: %d, val: %d\n", addr,
-				    val);
-		}
-		idx++;
-		battery_profile_t0[idx / 2].percentage = addr;
-		battery_profile_t0[idx / 2].voltage = val;
-
-		if (idx >= saddles * 2)
-			break;
-	}
-
-	if (of_property_read_u32(np, "r_profile_t0_num", &val) == 0) {
-		num = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get r_profile_t0_num: %d\n", num);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get r_profile_t0_num failed\n");
-	}
-
-	saddles = fgauge_get_saddles();
-	idx = 0;
-	while (!of_property_read_u32_index(np, "r_profile_t0", idx, &addr)) {
-		idx++;
-		if (!of_property_read_u32_index(np, "r_profile_t0", idx, &val))
-			battery_log(BAT_LOG_CRTI, "r_profile_t0: addr: %d, val: %d\n", addr, val);
-
-		idx++;
-		r_profile_t0[idx / 2].resistance = addr;
-		r_profile_t0[idx / 2].voltage = val;
-
-		if (idx >= saddles * 2)
-			break;
-	}
-
-	if (of_property_read_u32(np, "r_profile_t1_num", &val) == 0) {
-		num = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get r_profile_t1_num: %d\n", num);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get r_profile_t1_num failed\n");
-	}
-
-	saddles = fgauge_get_saddles();
-	idx = 0;
-	while (!of_property_read_u32_index(np, "r_profile_t1", idx, &addr)) {
-		idx++;
-		if (!of_property_read_u32_index(np, "r_profile_t1", idx, &val))
-			battery_log(BAT_LOG_CRTI, "r_profile_t1: addr: %d, val: %d\n", addr, val);
-
-		idx++;
-		r_profile_t1[idx / 2].resistance = addr;
-		r_profile_t1[idx / 2].voltage = val;
-
-		if (idx >= saddles * 2)
-			break;
-	}
-
-	if (of_property_read_u32(np, "r_profile_t2_num", &val) == 0) {
-		num = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get r_profile_t2_num: %d\n", num);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get r_profile_t2_num failed\n");
-	}
-
-	saddles = fgauge_get_saddles();
-	idx = 0;
-	while (!of_property_read_u32_index(np, "r_profile_t2", idx, &addr)) {
-		idx++;
-		if (!of_property_read_u32_index(np, "r_profile_t2", idx, &val))
-			battery_log(BAT_LOG_CRTI, "r_profile_t2: addr: %d, val: %d\n", addr, val);
-
-		idx++;
-		r_profile_t2[idx / 2].resistance = addr;
-		r_profile_t2[idx / 2].voltage = val;
-
-		if (idx >= saddles * 2)
-			break;
-	}
-
-	if (of_property_read_u32(np, "r_profile_t3_num", &val) == 0) {
-		num = (int)val;
-		battery_log(BAT_LOG_CRTI, "Get r_profile_t3_num: %d\n", num);
-	} else {
-		battery_log(BAT_LOG_CRTI, "Get r_profile_t3_num failed\n");
-	}
-
-	saddles = fgauge_get_saddles();
-	idx = 0;
-	while (!of_property_read_u32_index(np, "r_profile_t3", idx, &addr)) {
-		idx++;
-		if (!of_property_read_u32_index(np, "r_profile_t3", idx, &val))
-			battery_log(BAT_LOG_CRTI, "r_profile_t3: addr: %d, val: %d\n", addr, val);
-
-		idx++;
-		r_profile_t3[idx / 2].resistance = addr;
-		r_profile_t3[idx / 2].voltage = val;
-
-		if (idx >= saddles * 2)
-			break;
-	}
-
-
-
-	if (of_property_read_u32(np, "r_bat_sense", &val) == 0) {
-		batt_meter_cust_data.r_bat_sense = (int)val;
-		bm_print(BM_LOG_CRTI, "Get r_bat_sense: %d\n", batt_meter_cust_data.r_bat_sense);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get r_bat_sense failed\n");
-	}
-
-	if (of_property_read_u32(np, "r_i_sense", &val) == 0) {
-		batt_meter_cust_data.r_i_sense = (int)val;
-		bm_print(BM_LOG_CRTI, "Get r_i_sense: %d\n", batt_meter_cust_data.r_i_sense);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get r_i_sense failed\n");
-	}
-
-	if (of_property_read_u32(np, "r_charger_1", &val) == 0) {
-		batt_meter_cust_data.r_charger_1 = (int)val;
-		bm_print(BM_LOG_CRTI, "Get r_charger_1: %d\n", batt_meter_cust_data.r_charger_1);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get r_charger_1 failed\n");
-	}
-
-	if (of_property_read_u32(np, "r_charger_2", &val) == 0) {
-		batt_meter_cust_data.r_charger_2 = (int)val;
-		bm_print(BM_LOG_CRTI, "Get r_charger_2: %d\n", batt_meter_cust_data.r_charger_2);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get r_charger_2 failed\n");
-	}
-
-	if (of_property_read_u32(np, "temperature_t0", &val) == 0) {
-		batt_meter_cust_data.temperature_t0 = (int)val;
-		bm_print(BM_LOG_CRTI, "Get temperature_t0: %d\n",
-			 batt_meter_cust_data.temperature_t0);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get temperature_t0 failed\n");
-	}
-
-	if (of_property_read_u32(np, "temperature_t1", &val) == 0) {
-		batt_meter_cust_data.temperature_t1 = (int)val;
-		bm_print(BM_LOG_CRTI, "Get temperature_t1: %d\n",
-			 batt_meter_cust_data.temperature_t1);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get temperature_t1 failed\n");
-	}
-
-	if (of_property_read_u32(np, "temperature_t2", &val) == 0) {
-		batt_meter_cust_data.temperature_t2 = (int)val;
-		bm_print(BM_LOG_CRTI, "Get temperature_t2: %d\n",
-			 batt_meter_cust_data.temperature_t2);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get temperature_t2 failed\n");
-	}
-
-	if (of_property_read_u32(np, "temperature_t3", &val) == 0) {
-		batt_meter_cust_data.temperature_t3 = (int)val;
-		bm_print(BM_LOG_CRTI, "Get temperature_t3: %d\n",
-			 batt_meter_cust_data.temperature_t3);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get temperature_t3 failed\n");
-	}
-
-	if (of_property_read_u32(np, "temperature_t", &val) == 0) {
-		batt_meter_cust_data.temperature_t = (int)val;
-		bm_print(BM_LOG_CRTI, "Get temperature_t: %d\n",
-			 batt_meter_cust_data.temperature_t);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get temperature_t failed\n");
-	}
-
-	if (of_property_read_u32(np, "fg_meter_resistance", &val) == 0) {
-		batt_meter_cust_data.fg_meter_resistance = (int)val;
-		bm_print(BM_LOG_CRTI, "Get fg_meter_resistance: %d\n",
-			 batt_meter_cust_data.fg_meter_resistance);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get fg_meter_resistance failed\n");
-	}
-
-	if (of_property_read_u32(np, "q_max_pos_50", &val) == 0) {
-		batt_meter_cust_data.q_max_pos_50 = (int)val;
-		bm_print(BM_LOG_CRTI, "Get q_max_pos_50: %d\n", batt_meter_cust_data.q_max_pos_50);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get q_max_pos_50 failed\n");
-	}
-
-	if (of_property_read_u32(np, "q_max_pos_25", &val) == 0) {
-		batt_meter_cust_data.q_max_pos_25 = (int)val;
-		bm_print(BM_LOG_CRTI, "Get q_max_pos_25: %d\n", batt_meter_cust_data.q_max_pos_25);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get q_max_pos_25 failed\n");
-	}
-
-	if (of_property_read_u32(np, "q_max_pos_0", &val) == 0) {
-		batt_meter_cust_data.q_max_pos_0 = (int)val;
-		bm_print(BM_LOG_CRTI, "Get q_max_pos_0: %d\n", batt_meter_cust_data.q_max_pos_0);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get q_max_pos_0 failed\n");
-	}
-
-	if (of_property_read_u32(np, "q_max_neg_10", &val) == 0) {
-		batt_meter_cust_data.q_max_neg_10 = (int)val;
-		bm_print(BM_LOG_CRTI, "Get q_max_neg_10: %d\n", batt_meter_cust_data.q_max_neg_10);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get q_max_neg_10 failed\n");
-	}
-
-	if (of_property_read_u32(np, "q_max_pos_50_h_current", &val) == 0) {
-		batt_meter_cust_data.q_max_pos_50_h_current = (int)val;
-		bm_print(BM_LOG_CRTI, "Get q_max_pos_50_h_current: %d\n",
-			 batt_meter_cust_data.q_max_pos_50_h_current);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get q_max_pos_50_h_current failed\n");
-	}
-
-	if (of_property_read_u32(np, "q_max_pos_25_h_current", &val) == 0) {
-		batt_meter_cust_data.q_max_pos_25_h_current = (int)val;
-		bm_print(BM_LOG_CRTI, "Get q_max_pos_25_h_current: %d\n",
-			 batt_meter_cust_data.q_max_pos_25_h_current);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get q_max_pos_25_h_current failed\n");
-	}
-
-	if (of_property_read_u32(np, "q_max_pos_0_h_current", &val) == 0) {
-		batt_meter_cust_data.q_max_pos_0_h_current = (int)val;
-		bm_print(BM_LOG_CRTI, "Get q_max_pos_0_h_current: %d\n",
-			 batt_meter_cust_data.q_max_pos_0_h_current);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get q_max_pos_0_h_current failed\n");
-	}
-
-	if (of_property_read_u32(np, "q_max_neg_10_h_current", &val) == 0) {
-		batt_meter_cust_data.q_max_neg_10_h_current = (int)val;
-		bm_print(BM_LOG_CRTI, "Get q_max_neg_10_h_current: %d\n",
-			 batt_meter_cust_data.q_max_neg_10_h_current);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get q_max_neg_10_h_current failed\n");
-	}
-
-	if (of_property_read_u32(np, "oam_d5", &val) == 0) {
-		batt_meter_cust_data.oam_d5 = (int)val;
-		bm_print(BM_LOG_CRTI, "Get oam_d5: %d\n", batt_meter_cust_data.oam_d5);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get oam_d5 failed\n");
-	}
-
-	if (of_property_read_u32(np, "change_tracking_point", &val) == 0) {
-		batt_meter_cust_data.change_tracking_point = (int)val;
-		bm_print(BM_LOG_CRTI, "Get change_tracking_point: %d\n",
-			 batt_meter_cust_data.change_tracking_point);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get change_tracking_point failed\n");
-	}
-
-	if (of_property_read_u32(np, "cust_tracking_point", &val) == 0) {
-		batt_meter_cust_data.cust_tracking_point = (int)val;
-		bm_print(BM_LOG_CRTI, "Get cust_tracking_point: %d\n",
-			 batt_meter_cust_data.cust_tracking_point);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get cust_tracking_point failed\n");
-	}
-
-	if (of_property_read_u32(np, "cust_r_sense", &val) == 0) {
-		batt_meter_cust_data.cust_r_sense = (int)val;
-		bm_print(BM_LOG_CRTI, "Get cust_r_sense: %d\n", batt_meter_cust_data.cust_r_sense);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get cust_r_sense failed\n");
-	}
-
-	if (of_property_read_u32(np, "cust_hw_cc", &val) == 0) {
-		batt_meter_cust_data.cust_hw_cc = (int)val;
-		bm_print(BM_LOG_CRTI, "Get cust_hw_cc: %d\n", batt_meter_cust_data.cust_hw_cc);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get cust_hw_cc failed\n");
-	}
-
-	if (of_property_read_u32(np, "aging_tuning_value", &val) == 0) {
-		batt_meter_cust_data.aging_tuning_value = (int)val;
-		bm_print(BM_LOG_CRTI, "Get aging_tuning_value: %d\n",
-			 batt_meter_cust_data.aging_tuning_value);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get aging_tuning_value failed\n");
-	}
-
-	if (of_property_read_u32(np, "cust_r_fg_offset", &val) == 0) {
-		batt_meter_cust_data.cust_r_fg_offset = (int)val;
-		bm_print(BM_LOG_CRTI, "Get cust_r_fg_offset: %d\n",
-			 batt_meter_cust_data.cust_r_fg_offset);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get cust_r_fg_offset failed\n");
-	}
-
-	if (of_property_read_u32(np, "ocv_board_compesate", &val) == 0) {
-		batt_meter_cust_data.ocv_board_compesate = (int)val;
-		bm_print(BM_LOG_CRTI, "Get ocv_board_compesate: %d\n",
-			 batt_meter_cust_data.ocv_board_compesate);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get ocv_board_compesate failed\n");
-	}
-
-	if (of_property_read_u32(np, "r_fg_board_base", &val) == 0) {
-		batt_meter_cust_data.r_fg_board_base = (int)val;
-		bm_print(BM_LOG_CRTI, "Get r_fg_board_base: %d\n",
-			 batt_meter_cust_data.r_fg_board_base);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get r_fg_board_base failed\n");
-	}
-
-	if (of_property_read_u32(np, "r_fg_board_slope", &val) == 0) {
-		batt_meter_cust_data.r_fg_board_slope = (int)val;
-		bm_print(BM_LOG_CRTI, "Get r_fg_board_slope: %d\n",
-			 batt_meter_cust_data.r_fg_board_slope);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get r_fg_board_slope failed\n");
-	}
-
-	if (of_property_read_u32(np, "car_tune_value", &val) == 0) {
-		batt_meter_cust_data.car_tune_value = (int)val;
-		bm_print(BM_LOG_CRTI, "Get car_tune_value: %d\n",
-			 batt_meter_cust_data.car_tune_value);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get car_tune_value failed\n");
-	}
-
-	if (of_property_read_u32(np, "current_detect_r_fg", &val) == 0) {
-		batt_meter_cust_data.current_detect_r_fg = (int)val;
-		bm_print(BM_LOG_CRTI, "Get current_detect_r_fg: %d\n",
-			 batt_meter_cust_data.current_detect_r_fg);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get current_detect_r_fg failed\n");
-	}
-
-	if (of_property_read_u32(np, "minerroroffset", &val) == 0) {
-		batt_meter_cust_data.minerroroffset = (int)val;
-		bm_print(BM_LOG_CRTI, "Get minerroroffset: %d\n",
-			 batt_meter_cust_data.minerroroffset);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get minerroroffset failed\n");
-	}
-
-	if (of_property_read_u32(np, "fg_vbat_average_size", &val) == 0) {
-		batt_meter_cust_data.fg_vbat_average_size = (int)val;
-		bm_print(BM_LOG_CRTI, "Get fg_vbat_average_size: %d\n",
-			 batt_meter_cust_data.fg_vbat_average_size);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get fg_vbat_average_size failed\n");
-	}
-
-	if (of_property_read_u32(np, "r_fg_value", &val) == 0) {
-		batt_meter_cust_data.r_fg_value = (int)val;
-		bm_print(BM_LOG_CRTI, "Get r_fg_value: %d\n", batt_meter_cust_data.r_fg_value);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get r_fg_value failed\n");
-	}
-
-	if (of_property_read_u32(np, "cust_poweron_delta_capacity_tolrance", &val) == 0) {
-		batt_meter_cust_data.cust_poweron_delta_capacity_tolrance = (int)val;
-		bm_print(BM_LOG_CRTI, "Get cust_poweron_delta_capacity_tolrance: %d\n",
-			 batt_meter_cust_data.cust_poweron_delta_capacity_tolrance);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get cust_poweron_delta_capacity_tolrance failed\n");
-	}
-
-	if (of_property_read_u32(np, "cust_poweron_low_capacity_tolrance", &val) == 0) {
-		batt_meter_cust_data.cust_poweron_low_capacity_tolrance = (int)val;
-		bm_print(BM_LOG_CRTI, "Get cust_poweron_low_capacity_tolrance: %d\n",
-			 batt_meter_cust_data.cust_poweron_low_capacity_tolrance);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get cust_poweron_low_capacity_tolrance failed\n");
-	}
-
-	if (of_property_read_u32(np, "cust_poweron_max_vbat_tolrance", &val) == 0) {
-		batt_meter_cust_data.cust_poweron_max_vbat_tolrance = (int)val;
-		bm_print(BM_LOG_CRTI, "Get cust_poweron_max_vbat_tolrance: %d\n",
-			 batt_meter_cust_data.cust_poweron_max_vbat_tolrance);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get cust_poweron_max_vbat_tolrance failed\n");
-	}
-
-	if (of_property_read_u32(np, "cust_poweron_delta_vbat_tolrance", &val) == 0) {
-		batt_meter_cust_data.cust_poweron_delta_vbat_tolrance = (int)val;
-		bm_print(BM_LOG_CRTI, "Get cust_poweron_delta_vbat_tolrance: %d\n",
-			 batt_meter_cust_data.cust_poweron_delta_vbat_tolrance);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get cust_poweron_delta_vbat_tolrance failed\n");
-	}
-
-	if (of_property_read_u32(np, "cust_poweron_delta_hw_sw_ocv_capacity_tolrance", &val) == 0) {
-		batt_meter_cust_data.cust_poweron_delta_hw_sw_ocv_capacity_tolrance = (int)val;
-		bm_print(BM_LOG_CRTI, "Get cust_poweron_delta_hw_sw_ocv_capacity_tolrance: %d\n",
-			 batt_meter_cust_data.cust_poweron_delta_hw_sw_ocv_capacity_tolrance);
-	} else {
-		bm_print(BM_LOG_CRTI,
-			 "Get cust_poweron_delta_hw_sw_ocv_capacity_tolrance failed\n");
-	}
-
-	if (of_property_read_u32(np, "fixed_tbat_25", &val) == 0) {
-		batt_meter_cust_data.fixed_tbat_25 = (int)val;
-		bm_print(BM_LOG_CRTI, "Get fixed_tbat_25: %d\n",
-			 batt_meter_cust_data.fixed_tbat_25);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get fixed_tbat_25 failed\n");
-	}
-
-	if (of_property_read_u32(np, "vbat_normal_wakeup", &val) == 0) {
-		batt_meter_cust_data.vbat_normal_wakeup = (int)val;
-		bm_print(BM_LOG_CRTI, "Get vbat_normal_wakeup: %d\n",
-			 batt_meter_cust_data.vbat_normal_wakeup);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get vbat_normal_wakeup failed\n");
-	}
-
-	if (of_property_read_u32(np, "vbat_low_power_wakeup", &val) == 0) {
-		batt_meter_cust_data.vbat_low_power_wakeup = (int)val;
-		bm_print(BM_LOG_CRTI, "Get vbat_low_power_wakeup: %d\n",
-			 batt_meter_cust_data.vbat_low_power_wakeup);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get vbat_low_power_wakeup failed\n");
-	}
-
-	if (of_property_read_u32(np, "normal_wakeup_period", &val) == 0) {
-		batt_meter_cust_data.normal_wakeup_period = (int)val;
-		bm_print(BM_LOG_CRTI, "Get normal_wakeup_period: %d\n",
-			 batt_meter_cust_data.normal_wakeup_period);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get normal_wakeup_period failed\n");
-	}
-
-	if (of_property_read_u32(np, "low_power_wakeup_period", &val) == 0) {
-		batt_meter_cust_data.low_power_wakeup_period = (int)val;
-		bm_print(BM_LOG_CRTI, "Get low_power_wakeup_period: %d\n",
-			 batt_meter_cust_data.low_power_wakeup_period);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get low_power_wakeup_period failed\n");
-	}
-
-	if (of_property_read_u32(np, "close_poweroff_wakeup_period", &val) == 0) {
-		batt_meter_cust_data.close_poweroff_wakeup_period = (int)val;
-		bm_print(BM_LOG_CRTI, "Get close_poweroff_wakeup_period: %d\n",
-			 batt_meter_cust_data.close_poweroff_wakeup_period);
-	} else {
-		bm_print(BM_LOG_CRTI, "Get close_poweroff_wakeup_period failed\n");
-	}
+	__batt_meter_parse_table(np, "battery_profile_t1",
+			fgauge_get_profile(batt_meter_cust_data.temperature_t1));
+
+	__batt_meter_parse_node(np, "battery_profile_t2_num", &num);
+
+	__batt_meter_parse_table(np, "battery_profile_t2",
+			fgauge_get_profile(batt_meter_cust_data.temperature_t2));
+
+	__batt_meter_parse_node(np, "battery_profile_t3_num", &num);
+
+	__batt_meter_parse_table(np, "battery_profile_t3",
+			fgauge_get_profile(batt_meter_cust_data.temperature_t3));
+
+	__batt_meter_parse_node(np, "r_profile_t0_num",	&num);
+
+	__batt_meter_parse_table(np, "r_profile_t0",
+			(BATTERY_PROFILE_STRUCT *)fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t0));
+
+	__batt_meter_parse_node(np, "r_profile_t1_num",	&num);
+
+	__batt_meter_parse_table(np, "r_profile_t1",
+			(BATTERY_PROFILE_STRUCT *)fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t1));
+
+	__batt_meter_parse_node(np, "r_profile_t2_num",	&num);
+
+	__batt_meter_parse_table(np, "r_profile_t2",
+			(BATTERY_PROFILE_STRUCT *)fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t2));
+
+	__batt_meter_parse_node(np, "r_profile_t3_num",	&num);
+
+	__batt_meter_parse_table(np, "r_profile_t3",
+			(BATTERY_PROFILE_STRUCT *)fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t3));
+
+	__batt_meter_parse_node(np, "r_bat_sense",
+		&batt_meter_cust_data.r_bat_sense);
+
+	__batt_meter_parse_node(np, "r_i_sense",
+		&batt_meter_cust_data.r_i_sense);
+
+	__batt_meter_parse_node(np, "r_charger_1",
+		&batt_meter_cust_data.r_charger_1);
+
+	__batt_meter_parse_node(np, "r_charger_2",
+		&batt_meter_cust_data.r_charger_2);
+
+	__batt_meter_parse_node(np, "temperature_t0",
+		&batt_meter_cust_data.temperature_t0);
+
+	__batt_meter_parse_node(np, "temperature_t1",
+		&batt_meter_cust_data.temperature_t1);
+
+	__batt_meter_parse_node(np, "temperature_t2",
+		&batt_meter_cust_data.temperature_t2);
+
+	__batt_meter_parse_node(np, "temperature_t3",
+		&batt_meter_cust_data.temperature_t3);
+
+	__batt_meter_parse_node(np, "temperature_t",
+		&batt_meter_cust_data.temperature_t);
+
+	__batt_meter_parse_node(np, "fg_meter_resistance",
+		&batt_meter_cust_data.fg_meter_resistance);
+
+	__batt_meter_parse_node(np, "q_max_pos_50",
+		&batt_meter_cust_data.q_max_pos_50);
+
+	__batt_meter_parse_node(np, "q_max_pos_25",
+		&batt_meter_cust_data.q_max_pos_25);
+
+	__batt_meter_parse_node(np, "q_max_pos_0",
+		&batt_meter_cust_data.q_max_pos_0);
+
+	__batt_meter_parse_node(np, "q_max_neg_10",
+		&batt_meter_cust_data.q_max_neg_10);
+
+	__batt_meter_parse_node(np, "q_max_pos_50_h_current",
+		&batt_meter_cust_data.q_max_pos_50_h_current);
+
+	__batt_meter_parse_node(np, "q_max_pos_25_h_current",
+		&batt_meter_cust_data.q_max_pos_25_h_current);
+
+	__batt_meter_parse_node(np, "q_max_pos_0_h_current",
+		&batt_meter_cust_data.q_max_pos_0_h_current);
+
+	__batt_meter_parse_node(np, "oam_d5",
+		&batt_meter_cust_data.oam_d5);
+
+	__batt_meter_parse_node(np, "change_tracking_point",
+		&batt_meter_cust_data.change_tracking_point);
+
+	__batt_meter_parse_node(np, "cust_tracking_point",
+		&batt_meter_cust_data.cust_tracking_point);
+
+	__batt_meter_parse_node(np, "cust_r_sense",
+		&batt_meter_cust_data.cust_r_sense);
+
+	__batt_meter_parse_node(np, "cust_hw_cc",
+		&batt_meter_cust_data.cust_hw_cc);
+
+	__batt_meter_parse_node(np, "aging_tuning_value",
+		&batt_meter_cust_data.aging_tuning_value);
+
+	__batt_meter_parse_node(np, "cust_r_fg_offset",
+		&batt_meter_cust_data.cust_r_fg_offset);
+
+	__batt_meter_parse_node(np, "ocv_board_compesate",
+		&batt_meter_cust_data.ocv_board_compesate);
+
+	__batt_meter_parse_node(np, "r_fg_board_base",
+		&batt_meter_cust_data.r_fg_board_base);
+
+	__batt_meter_parse_node(np, "r_fg_board_slope",
+		&batt_meter_cust_data.r_fg_board_slope);
+
+	__batt_meter_parse_node(np, "car_tune_value",
+		&batt_meter_cust_data.car_tune_value);
+
+	__batt_meter_parse_node(np, "current_detect_r_fg",
+		&batt_meter_cust_data.current_detect_r_fg);
+
+	__batt_meter_parse_node(np, "minerroroffset",
+		&batt_meter_cust_data.minerroroffset);
+
+	__batt_meter_parse_node(np, "fg_vbat_average_size",
+		&batt_meter_cust_data.fg_vbat_average_size);
+
+	__batt_meter_parse_node(np, "r_fg_value",
+		&batt_meter_cust_data.r_fg_value);
+
+	__batt_meter_parse_node(np, "cust_poweron_delta_capacity_tolrance",
+		&batt_meter_cust_data.cust_poweron_delta_capacity_tolrance);
+
+	__batt_meter_parse_node(np, "cust_poweron_low_capacity_tolrance",
+		&batt_meter_cust_data.cust_poweron_low_capacity_tolrance);
+
+	__batt_meter_parse_node(np, "cust_poweron_max_vbat_tolrance",
+		&batt_meter_cust_data.cust_poweron_max_vbat_tolrance);
+
+	__batt_meter_parse_node(np, "cust_poweron_delta_vbat_tolrance",
+		&batt_meter_cust_data.cust_poweron_delta_vbat_tolrance);
+
+	__batt_meter_parse_node(np, "cust_poweron_delta_hw_sw_ocv_capacity_tolrance",
+		&batt_meter_cust_data.cust_poweron_delta_hw_sw_ocv_capacity_tolrance);
+
+	__batt_meter_parse_node(np, "fixed_tbat_25",
+		&batt_meter_cust_data.fixed_tbat_25);
+
+	__batt_meter_parse_node(np, "vbat_normal_wakeup",
+		&batt_meter_cust_data.vbat_normal_wakeup);
+
+	__batt_meter_parse_node(np, "vbat_low_power_wakeup",
+		&batt_meter_cust_data.vbat_low_power_wakeup);
+
+	__batt_meter_parse_node(np, "normal_wakeup_period",
+		&batt_meter_cust_data.normal_wakeup_period);
+
+	__batt_meter_parse_node(np, "low_power_wakeup_period",
+		&batt_meter_cust_data.low_power_wakeup_period);
+
+	__batt_meter_parse_node(np, "close_poweroff_wakeup_period",
+		&batt_meter_cust_data.close_poweroff_wakeup_period);
+
 	of_node_put(np);
 
 	return 0;
 }
 #endif
 
-int batt_init_cust_data(void)
+int batt_meter_init_cust_data(void)
 {
 	static int init_done;
 
@@ -1516,22 +765,11 @@ int batt_init_cust_data(void)
 		return 0;
 	init_done = 1;
 
-#if defined(BATTERY_DTS_SUPPORT)
-#ifdef CONFIG_OF
-	bm_print(BM_LOG_CRTI, "battery custom init by DTS\n");
-	__batt_init_cust_data_from_cust_header();
 	__batt_meter_init_cust_data_from_cust_header();
-	__batt_init_cust_data_from_dt();
+
+#if defined(BATTERY_DTS_SUPPORT) && defined(CONFIG_OF)
+	bm_print(BM_LOG_CRTI, "battery meter custom init by DTS\n");
 	__batt_meter_init_cust_data_from_dt();
-#else				/* #ifdef CONFIG_OF */
-	bm_print(BM_LOG_CRTI, "battery custom init\n");
-	__batt_init_cust_data_from_cust_header();
-	__batt_meter_init_cust_data_from_cust_header();
-#endif				/* #ifdef CONFIG_OF */
-#else
-	bm_print(BM_LOG_CRTI, "battery custom init2\n");
-	__batt_init_cust_data_from_cust_header();
-	__batt_meter_init_cust_data_from_cust_header();
 #endif
 
 	return 0;
@@ -1834,6 +1072,11 @@ int force_get_tbat(kal_bool update)
 	kal_bool fg_current_state = KAL_FALSE;
 	int bat_temperature_volt_temp = 0;
 	int ret = 0;
+
+	if (batt_meter_cust_data.fixed_tbat_25) {
+		bm_print(BM_LOG_CRTI, "[force_get_tbat] fixed TBAT=25 t\n");
+		return 25;
+	}
 
 	if (update == KAL_TRUE || pre_bat_temperature_val == -1) {
 		/* Get V_BAT_Temperature */
@@ -5094,7 +4337,7 @@ static int battery_meter_probe(struct platform_device *dev)
 
 	bm_print(BM_LOG_CRTI, "[battery_meter_probe] probe\n");
 
-	batt_init_cust_data();
+	batt_meter_init_cust_data();
 
 	/* select battery meter control method */
 	battery_meter_ctrl = bm_ctrl_cmd;
