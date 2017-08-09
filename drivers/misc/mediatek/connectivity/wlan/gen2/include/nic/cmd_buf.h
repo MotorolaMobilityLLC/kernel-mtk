@@ -142,7 +142,7 @@ wlanSendSetQueryCmd(IN P_ADAPTER_T prAdapter,
 		    PFN_CMD_TIMEOUT_HANDLER pfCmdTimeoutHandler,
 		    UINT_32 u4SetQueryInfoLen,
 		    PUINT_8 pucInfoBuffer, OUT PVOID pvSetQueryBuffer, IN UINT_32 u4SetQueryBufferLen);
-
+VOID cmdBufDumpCmdQueue(P_QUE_T prQueue, CHAR *queName);
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************

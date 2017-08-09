@@ -123,7 +123,7 @@ VOID cmdBufInitialize(IN P_ADAPTER_T prAdapter)
 * @param[in] quename	Name of the queue
 */
 /*----------------------------------------------------------------------------*/
-static VOID cmdBufDumpCmdQueue(P_QUE_T prQueue, CHAR *queName)
+VOID cmdBufDumpCmdQueue(P_QUE_T prQueue, CHAR *queName)
 {
 	P_CMD_INFO_T prCmdInfo = (P_CMD_INFO_T)QUEUE_GET_HEAD(prQueue);
 

@@ -541,7 +541,7 @@ VOID nicTxInitialize(IN P_ADAPTER_T prAdapter)
 UINT_32 u4CurrTick = 0;
 WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 {
-#define TC4_NO_RESOURCE_DELAY_MS      (1048*30)    /* exponential of 30s */
+#define TC4_NO_RESOURCE_DELAY_MS      (1048*5)    /* exponential of 5s */
 
 	P_TX_CTRL_T prTxCtrl;
 	WLAN_STATUS u4Status = WLAN_STATUS_RESOURCES;
@@ -576,7 +576,13 @@ WLAN_STATUS nicTxAcquireResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 			u4CurrTick = kalGetTimeTick();
 		fgTimeout = ((kalGetTimeTick() - u4CurrTick) > TC4_NO_RESOURCE_DELAY_MS) ? TRUE : FALSE;
 		if (fgTimeout) {
-			kalSendAeeWarning("[TC4 no resource delay 30s!]", __func__);
+			UINT_32 u4RegValue = 0;
+
+			kalSendAeeWarning("[TC4 no resource delay 5s!]", __func__);
+			HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &u4RegValue);
+			DBGLOG(TX, INFO, "last three freed cmd id %06x", ((u4RegValue >> 8) & 0xffffff));
+			wlanDumpTcResAndTxedCmd(NULL, 0);
+			cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
 			glDoChipReset();
 		}
 	}
@@ -679,11 +685,9 @@ BOOLEAN nicTxReleaseResource(IN P_ADAPTER_T prAdapter, IN unsigned char *aucTxRl
 		KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 		for (i = 0; i < TC_NUM; i++)
 			prTxCtrl->rTc.aucFreeBufferCount[i] += aucTxRlsCnt[i];
-		if (aucTxRlsCnt[TC4_INDEX] != 0 || aucTxRlsCnt[TC5_INDEX] != 0) {
-			DBGLOG(TX, TRACE, "Release: TC4 count %d, Free=%d; TC5 count %d, Free=%d\n",
-					   aucTxRlsCnt[TC4_INDEX], prTxCtrl->rTc.aucFreeBufferCount[TC4_INDEX],
-					   aucTxRlsCnt[TC5_INDEX], prTxCtrl->rTc.aucFreeBufferCount[TC5_INDEX]);
-		}
+		if (aucTxRlsCnt[TC4_INDEX] != 0)
+			wlanTraceReleaseTcRes(aucTxRlsCnt, prTxCtrl->rTc.aucFreeBufferCount[TC4_INDEX]);
+
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 #if 0
 		for (i = 0; i < TC_NUM; i++) {
@@ -1720,6 +1724,7 @@ WLAN_STATUS nicTxCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN UIN
 			  (UINT_32) u2OverallBufferLength,
 			  (PUINT_8) pucOutputBuf, (UINT_32) prAdapter->u4CoalescingBufCachedSize);
 
+	wlanTraceTxCmd(prCmdInfo);
 	return WLAN_STATUS_SUCCESS;
 }				/* end of nicTxCmd() */
 
