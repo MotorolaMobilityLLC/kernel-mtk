@@ -56,7 +56,7 @@ static struct				clk *idvfs_i2c6_clk;	/* i2c6 clk ctrl */
 #include "mt_idvfs.h"
 #endif
 
-static int func_lv_mask_idvfs = 800;
+static int func_lv_mask_idvfs = 100;
 #define IDVFS_DREQ_ENABLE		0
 #define IDVFS_OCP_OTP_ENABLE	1
 #define IDVFS_CCF_I2C6			1
@@ -789,7 +789,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	/* default 100% freq start and enable sw channel */
 	/* BigiDVFSSWAvgStatus(); */
 
-	idvfs_alert("[****]iDVFS enable success. Fmax = %d MHz, Fcur = %dMHz.\n",
+	idvfs_ver("[****]iDVFS enable success. Fmax = %d MHz, Fcur = %dMHz.\n",
 	IDVFS_FMAX_DEFAULT, idvfs_init_opt.freq_cur);
 	return 0;
 
@@ -902,7 +902,7 @@ int BigiDVFSDisable_hp(void) /* chg for hot plug */
 	/* disable struct, 0: disable finish */
 	idvfs_init_opt.idvfs_status = 0;
 
-	idvfs_alert("[****]iDVFS disable success.\n");
+	idvfs_ver("[****]iDVFS disable success.\n");
 	return 0;
 
 #endif
@@ -994,7 +994,7 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	/* Frepct_x100 = 100(1%) ~ 10000(100%) */
 	/* swreq = cur/max */
 	idvfs_write(0x10222498, freq_swreq);
-	idvfs_alert("Set Freq: SWP_cur_pct_x100 = %d, SWP_new_pct_x100 = %d, freq_swreq = 0x%x.\n",
+	idvfs_ver("Set Freq: SWP_cur_pct_x100 = %d, SWP_new_pct_x100 = %d, freq_swreq = 0x%x.\n",
 				idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage, Freqpct_x100, freq_swreq);
 	idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage = Freqpct_x100;
 
@@ -1174,7 +1174,7 @@ int BigiDVFSSRAMLDOSet(unsigned int mVolts_x100)
 	rc = SEC_BIGIDVFSSRAMLDOSET(mVolts_x100);
 
 	if (rc >= 0)
-		idvfs_alert("SRAM LDO setting = %d(x100mv) success.\n", mVolts_x100);
+		idvfs_ver("SRAM LDO setting = %d(x100mv) success.\n", mVolts_x100);
 	else
 		idvfs_error("iDVFS set SRAM LDO volt fail and return rc = %d.\n", rc);
 
