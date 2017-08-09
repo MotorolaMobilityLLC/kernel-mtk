@@ -74,3 +74,11 @@ obj-$(CONFIG_GATOR_DRIVER) += gator-driver/
 endif # gator-driver folder exist
 
 obj-$(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) += trustzone/
+
+ifeq ($(CONFIG_ARCH_MT6753),y)
+obj-$(CONFIG_THERMAL)   += thermal/
+endif
+
+ifeq ($(CONFIG_ARCH_MT6753m),y)
+obj-$(CONFIG_THERMAL)   += thermal/
+endif
