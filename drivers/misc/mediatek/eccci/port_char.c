@@ -29,6 +29,7 @@
 #define BAT_Get_Battery_Voltage(polling_mode)    ({ 0; })
 #endif
 
+#include <mt-plat/env.h>
 #define MAX_QUEUE_LENGTH 32
 
 static void dev_char_open_check(struct ccci_port *port)
@@ -526,6 +527,11 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	unsigned int md_boot_data[16] = { 0 };
 	int md_type = 0;
 
+#ifdef CONFIG_MTK_SIM_LOCK_POWER_ON_WRITE_PROTECT
+	unsigned int val;
+	char magic_pattern[64];
+#endif
+
 	switch (cmd) {
 	case CCCI_IOC_GET_MD_PROTOCOL_TYPE:
 		{
@@ -1017,6 +1023,17 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		port->flags &= ~PORT_F_USER_HEADER;
 		break;
 
+#ifdef CONFIG_MTK_SIM_LOCK_POWER_ON_WRITE_PROTECT
+	case CCCI_IOC_RESET_AP:
+		if (copy_from_user(&val, (void __user *)arg, sizeof(unsigned int)))
+			CCCI_ERR_MSG(md->index, KERN, "get SML value failed.\n");
+
+		CCCI_INF_MSG(md->index, CHAR, "get val=%x from userspace.\n", val);
+
+		snprintf(magic_pattern, 64, "%x", val);
+		set_env("sml_sync", magic_pattern);
+		break;
+#endif
 	case CCCI_IOC_SEND_SIGNAL_TO_USER:
 		if (copy_from_user(&sig_pid, (void __user *)arg, sizeof(unsigned int))) {
 			CCCI_NORMAL_LOG(md->index, CHAR, "signal to rild fail: copy_from_user fail!\n");

@@ -723,6 +723,11 @@ static void system_msg_handler(struct ccci_port *port, struct ccci_request *req)
 	case MD_WDT_MONITOR:
 		/* abandoned */
 		break;
+#ifdef CONFIG_MTK_SIM_LOCK_POWER_ON_WRITE_PROTECT
+	case MD_RESET_AP:
+		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, 0xFAF51234, 0);
+		break;
+#endif
 	case MD_SIM_TYPE:
 		md->sim_type = ccci_h->reserved;
 		CCCI_NORMAL_LOG(md->index, KERN, "MD send sys msg sim type(0x%x)\n", md->sim_type);
