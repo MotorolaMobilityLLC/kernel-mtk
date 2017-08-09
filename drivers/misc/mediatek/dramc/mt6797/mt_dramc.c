@@ -64,7 +64,9 @@ int org_dram_data_rate = 0;
 unsigned char old_IC = 0;
 unsigned char DFS_type = 0;
 
+#ifdef CONFIG_MTK_DRAMC_PASR
 static unsigned int enter_pdp_cnt;
+#endif
 
 /*extern bool spm_vcorefs_is_dvfs_in_porgress(void);*/
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
@@ -530,6 +532,7 @@ void spm_dpd_dram_init(void)
 	writel(0x00000000, PDEF_DRAMC0_CHB_REG_088);
 }
 
+#ifdef CONFIG_MTK_DRAMC_PASR
 int enter_pasr_dpd_config(unsigned char segment_rank0,
 			   unsigned char segment_rank1)
 {
@@ -542,8 +545,21 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	unsigned int u4value_E4 = 0;
 	unsigned int u4value_F4 = 0;
 
-	return 0; /* temp to disable pasr for gating error issue */
+	/* request SPM HW SEMAPHORE to avoid race condition */
+	cnt = 100;
+	do {
+		if (cnt < 100)
+			udelay(10);
 
+		if (cnt-- == 0) {
+			pr_warn("[DRAMC0] can NOT get SPM HW SEMAPHORE!\n");
+			return -1; }
+
+		writel(0x1, PDEF_SPM_AP_SEMAPHORE);
+
+		} while ((readl(PDEF_SPM_AP_SEMAPHORE) & 0x1) == 0x0);
+
+	/* pr_warn("[DRAMC0] get SPM HW SEMAPHORE!\n"); */
 	rank_pasr_segment[0] = segment_rank0 & 0xFF;	/* for rank0 */
 	rank_pasr_segment[1] = segment_rank1 & 0xFF;	/* for rank1 */
 	pr_warn("[DRAMC0] PASR r0 = 0x%x  r1 = 0x%x\n",
@@ -581,6 +597,14 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 		do {
 			if (cnt-- == 0) {
 				pr_warn("[DRAMC0] CHA PASR MRW fail!\n");
+
+				/* release SEMAPHORE to avoid race condition */
+				writel(0x1, PDEF_SPM_AP_SEMAPHORE);
+				if ((readl(PDEF_SPM_AP_SEMAPHORE) & 0x1) == 0x1)
+					pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
+				else
+					pr_warn("[DRAMC0] release SPM HW SEMAPHORE success!\n");
+
 				return -1; }
 			udelay(1);
 			} while ((readl(PDEF_DRAMCNAO_CHA_REG_3B8)
@@ -626,6 +650,14 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 		do {
 			if (cnt-- == 0) {
 				pr_warn("[DRAMC0] CHB PASR MRW fail!\n");
+
+				/* release SEMAPHORE to avoid race condition */
+				writel(0x1, PDEF_SPM_AP_SEMAPHORE);
+				if ((readl(PDEF_SPM_AP_SEMAPHORE) & 0x1) == 0x1)
+					pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
+				else
+					pr_warn("[DRAMC0] release SPM HW SEMAPHORE success!\n");
+
 				return -1; }
 			udelay(1);
 			} while ((readl(PDEF_DRAMCNAO_CHB_REG_3B8)
@@ -644,7 +676,12 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 		enter_pdp_cnt++;
 		spm_dpd_init();
 	}
-  /* pr_warn("[DRAMC0] enter PASR!\n"); */
+	/* pr_warn("[DRAMC0] enter PASR!\n"); */
+	/* release SPM HW SEMAPHORE to avoid race condition */
+	writel(0x1, PDEF_SPM_AP_SEMAPHORE);
+	if ((readl(PDEF_SPM_AP_SEMAPHORE) & 0x1) == 0x1)
+		pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
+
 	return 0;
 }
 
@@ -656,7 +693,30 @@ int exit_pasr_dpd_config(void)
 	/*slp_pasr_en(0, 0);*/
 	if (enter_pdp_cnt == 1) {
 		enter_pdp_cnt--;
+
+		rk1 = 100;
+		do {
+			if (rk1 < 100)
+				udelay(10);
+
+			if (rk1-- == 0) {
+				pr_warn("[DRAMC0] can NOT get SPM HW SEMAPHORE!\n");
+				return -1; }
+
+			writel(0x1, PDEF_SPM_AP_SEMAPHORE);
+
+		} while ((readl(PDEF_SPM_AP_SEMAPHORE) & 0x1) == 0x0);
+		/* pr_warn("[DRAMC0] get SPM HW SEMAPHORE!\n"); */
+
 		spm_dpd_dram_init();
+
+		/* release SEMAPHORE to avoid race condition */
+		writel(0x1, PDEF_SPM_AP_SEMAPHORE);
+		if ((readl(PDEF_SPM_AP_SEMAPHORE) & 0x1) == 0x1)
+			pr_warn("[DRAMC0] release SPM HW SEMAPHORE fail!\n");
+		else
+			pr_warn("[DRAMC0] release SPM HW SEMAPHORE success!\n");
+
 		rk1 = 0xFF;
 	}
 
@@ -664,6 +724,17 @@ int exit_pasr_dpd_config(void)
 
 	return ret;
 }
+#else
+int enter_pasr_dpd_config(unsigned char segment_rank0, unsigned char segment_rank1)
+{
+	return 0;
+}
+
+int exit_pasr_dpd_config(void)
+{
+	return 0;
+}
+#endif
 
 #define MEM_TEST_SIZE 0x2000
 #define PATTERN1 0x5A5A5A5A

@@ -44,6 +44,7 @@ Registers define
 
 #define PDEF_SPM_PASR_DPD_0	IOMEM((SLEEP_BASE_ADDR + 0x0630))
 #define PDEF_SPM_PASR_DPD_3	IOMEM((SLEEP_BASE_ADDR + 0x063C))
+#define PDEF_SPM_AP_SEMAPHORE	IOMEM((SLEEP_BASE_ADDR + 0x0428))
 /* #define _CLK_CFG_0_SET		IOMEM((TOPCKGEN_BASE_ADDR + 0x0040)) */
 
 /*=========================
