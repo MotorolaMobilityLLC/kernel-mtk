@@ -2060,9 +2060,9 @@
 			disp_ovl0_sof = <10>;
 			disp_ovl1_sof = <11>;
 			disp_2l_ovl0_sof = <12>;
-			disp_2l_ovl1_sof = <13>;
-			disp_rdma0_sof = <14>;
-			disp_rdma1_sof = <15>;
+			disp_2l_ovl1_sof = <15>;
+			disp_rdma0_sof = <13>;
+			disp_rdma1_sof = <14>;
 			disp_wdma0_sof = <16>;
 			disp_wdma1_sof = <17>;
 			disp_color_sof = <18>;
