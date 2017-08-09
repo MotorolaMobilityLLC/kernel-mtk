@@ -181,7 +181,11 @@ static int AudDrv_GPIO_Select(enum audio_system_gpio_type _type)
 
 static int set_aud_clk_mosi(bool _enable)
 {
-#if 0
+/*
+ * scp also need this gpio on mt6797,
+ * don't switch gpio if they exist.
+ */
+#ifndef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	static int aud_clk_mosi_counter;
 
 	if (_enable) {
