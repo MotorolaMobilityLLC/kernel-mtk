@@ -2712,7 +2712,7 @@ static int md_cd_send_request(struct ccci_modem *md, unsigned char qno, struct c
 			queue->busy_count++;
 		} else {
 			if (cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TIMR0) & (1 << qno))
-				CCCI_INF_MSG(md->index, TAG, "ch=%d qno=%d free slot 0, CLDMA_AP_L2TIMR0=0x%x\n",
+				CCCI_RATE_LIMIT_MSG(md->index, TAG, "ch=%d qno=%d free slot 0, CLDMA_AP_L2TIMR0=0x%x\n",
 					ccci_h.channel, qno, cldma_read32(md_ctrl->cldma_ap_pdn_base,
 					CLDMA_AP_L2TIMR0));
 		}

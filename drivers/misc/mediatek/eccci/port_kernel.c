@@ -1515,7 +1515,7 @@ static void ccci_rpc_work_helper(struct ccci_modem *md, struct rpc_pkt *pkt,
 				kfree(eint_name);
 			} else {
 				tmp_data[0] = ret;
-				CCCI_INF_MSG(md->index, RPC, "[0x%08X] fail: name:%s, len:%d, type:%d, ret:%d\n",
+				CCCI_DBG_MSG(md->index, RPC, "[0x%08X] fail: name:%s, len:%d, type:%d, ret:%d\n",
 					     p_rpc_buf->op_id, eint_name, name_len, type, ret);
 				kfree(eint_name);
 				goto err3;

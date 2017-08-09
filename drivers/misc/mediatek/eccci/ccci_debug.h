@@ -46,6 +46,13 @@ do { \
 		pr_err("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
 } while (0)
 
+/* 10 line/s */
+#define CCCI_RATE_LIMIT_MSG(idx, tag, fmt, args...) \
+do { \
+	if (ccci_debug_enable == 5 || ccci_debug_enable == 6) \
+		pr_notice_ratelimited("[ccci%d/" tag "]" fmt, (idx+1), ##args); \
+} while (0)
+
 /* for critical init log*/
 #define CCCI_NOTICE_MSG(idx, tag, fmt, args...) pr_notice("[ccci%d/ntc/" tag "]" fmt, (idx+1), ##args)
 /* for error log */
