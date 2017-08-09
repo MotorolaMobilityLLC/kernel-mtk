@@ -423,7 +423,8 @@ typedef struct {
 	MUINT16 IHDR_LE_FirstLine;
 	MUINT8 ZHDR_Mode;
 	SENSOR_SETTLEDELAY_MODE_ENUM SettleDelayMode;
-	MUINT8 PDAF_Support;
+	MUINT8 PDAF_Support;/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full), 3:PDAF VC mode(Binning)*/
+	MUINT8 HDR_Support;/*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR*/
 	MUINT8 DPCM_INFO;
 	MUINT8 PerFrameCTL_Support;
 	SENSOR_SCAM_DATA_CHANNEL_ENUM SCAM_DataNumber;
@@ -516,7 +517,8 @@ typedef struct {
 	MUINT16 IHDR_LE_FirstLine;
 	MUINT8 ZHDR_Mode;
 	SENSOR_SETTLEDELAY_MODE_ENUM SettleDelayMode;
-	MUINT8 PDAF_Support;
+	MUINT8 PDAF_Support;/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full), 3:PDAF VC mode(Binning)*/
+	MUINT8 HDR_Support;/*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR*/
 	MUINT8 DPCM_INFO;
 	MUINT8 IMGSENSOR_DPCM_TYPE_PRE;
 	MUINT8 IMGSENSOR_DPCM_TYPE_CAP;
