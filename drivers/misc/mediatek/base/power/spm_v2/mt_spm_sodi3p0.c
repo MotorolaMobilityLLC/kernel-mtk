@@ -403,11 +403,19 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 	int vcore_status = vcorefs_get_curr_ddr();
 	u32 cpu = spm_data;
 
+#if defined(CONFIG_ARCH_MT6797)
+	if (!dyna_load_pcm[DYNA_LOAD_PCM_SODI_LPM + cpu / 4].ready) {
+		sodi3_err("error: load firmware fail\n");
+		BUG();
+	}
+	pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SODI_LPM + cpu / 4].desc);
+#else
 	if (!dyna_load_pcm[DYNA_LOAD_PCM_SODI + cpu / 4].ready) {
 		sodi3_err("error: load firmware fail\n");
 		BUG();
 	}
 	pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_SODI + cpu / 4].desc);
+#endif
 
 	spm_sodi3_footprint(SPM_SODI3_ENTER);
 

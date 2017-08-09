@@ -48,8 +48,18 @@ static int dyna_load_pcm_done;
 static char *dyna_load_pcm_path[] = {
 	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend.bin",
 	[DYNA_LOAD_PCM_SUSPEND_BY_MP1] = "pcm_suspend_by_mp1.bin",
+
+#if defined(CONFIG_ARCH_MT6797)
+	[DYNA_LOAD_PCM_SODI_LPM] = "pcm_sodi_ddrdfs_lpm.bin",
+	[DYNA_LOAD_PCM_SODI_BY_MP1_LPM] = "pcm_sodi_ddrdfs_by_mp1_lpm.bin",
+	[DYNA_LOAD_PCM_SODI_HPM] = "pcm_sodi_ddrdfs_hpm.bin",
+	[DYNA_LOAD_PCM_SODI_BY_MP1_HPM] = "pcm_sodi_ddrdfs_by_mp1_hpm.bin",
+	[DYNA_LOAD_PCM_SODI_ULTRA] = "pcm_sodi_ddrdfs_ultra.bin",
+	[DYNA_LOAD_PCM_SODI_BY_MP1_ULTRA] = "pcm_sodi_ddrdfs_by_mp1_ultra.bin",
+#else
 	[DYNA_LOAD_PCM_SODI] = "pcm_sodi_ddrdfs.bin",
 	[DYNA_LOAD_PCM_SODI_BY_MP1] = "pcm_sodi_ddrdfs_by_mp1.bin",
+#endif
 	[DYNA_LOAD_PCM_DEEPIDLE] = "pcm_deepidle.bin",
 	[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1] = "pcm_deepidle_by_mp1.bin",
 	[DYNA_LOAD_PCM_MCDI] = "pcm_mcdi_ddrdfs.bin",
