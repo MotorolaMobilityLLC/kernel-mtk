@@ -3412,6 +3412,14 @@ static inline void handle_mon_err_isr(struct eem_det *det)
 
 	/* EEM Monitor mode error handler */
 	eem_error("====================================================\n");
+	eem_error("EEM mon err: EEMCORESEL(%p) = 0x%08X, EEM_THERMINTST(%p) = 0x%08X, EEMODINTST(%p) = 0x%08X",
+		     EEMCORESEL, eem_read(EEMCORESEL),
+		     EEM_THERMINTST, eem_read(EEM_THERMINTST),
+		     EEMODINTST, eem_read(EEMODINTST));
+	eem_error(" EEMINTSTSRAW(%p) = 0x%08X, EEMINTEN(%p) = 0x%08X\n",
+		     EEMINTSTSRAW, eem_read(EEMINTSTSRAW),
+		     EEMINTEN, eem_read(EEMINTEN));
+	eem_error("====================================================\n");
 	eem_error("EEM mon err: EEMEN(%p) = 0x%08X, EEMINTSTS(%p) = 0x%08X\n",
 		     EEMEN, eem_read(EEMEN),
 		     EEMINTSTS, eem_read(EEMINTSTS));
@@ -3433,8 +3441,30 @@ static inline void handle_mon_err_isr(struct eem_det *det)
 		     EEM_TEMPMSRCTL1, eem_read(EEM_TEMPMSRCTL1));
 	eem_error("====================================================\n");
 
+	{
+		unsigned int i;
+
+		for (i = 0; i < ARRAY_SIZE(reg_dump_addr_off); i++) {
+			det->reg_dump_data[i][EEM_PHASE_MON] = eem_read(EEM_BASEADDR + reg_dump_addr_off[i]);
+			eem_error("0x%lx = 0x%08x\n",
+				(unsigned long)EEM_BASEADDR + reg_dump_addr_off[i],
+				det->reg_dump_data[i][EEM_PHASE_MON]
+				);
+		}
+	}
+	eem_error("====================================================\n");
+	eem_error("EEM mon err: EEMCORESEL(%p) = 0x%08X, EEM_THERMINTST(%p) = 0x%08X, EEMODINTST(%p) = 0x%08X",
+		     EEMCORESEL, eem_read(EEMCORESEL),
+		     EEM_THERMINTST, eem_read(EEM_THERMINTST),
+		     EEMODINTST, eem_read(EEMODINTST));
+	eem_error(" EEMINTSTSRAW(%p) = 0x%08X, EEMINTEN(%p) = 0x%08X\n",
+		     EEMINTSTSRAW, eem_read(EEMINTSTSRAW),
+		     EEMINTEN, eem_read(EEMINTEN));
+	eem_error("====================================================\n");
+
 #ifdef __KERNEL__
 	aee_kernel_warning("mt_eem", "@%s():%d, get_volt(%s) = 0x%08X\n", __func__, __LINE__, det->name, det->VBOOT);
+	/* BUG(); */
 #endif
 	det->ops->disable_locked(det, BY_MON_ERROR);
 
