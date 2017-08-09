@@ -9,7 +9,7 @@ else
     ifneq (,$(filter y,$(CONFIG_ARCH_MT6795)))
 	    MDI_IP_FOLDER:=mt6331
     else
-        ifneq (,$(filter y,$(CONFIG_ARCH_MT6572) $(CONFIG_ARCH_MT6582) $(CONFIG_ARCH_MT6592) $(CONFIG_ARCH_MT8163)))
+        ifneq (,$(filter y,$(CONFIG_ARCH_MT6572) $(CONFIG_ARCH_MT6582) $(CONFIG_ARCH_MT6592) $(CONFIG_ARCH_MT8163) $(CONFIG_ARCH_MT8127)))
 	        MDI_IP_FOLDER:=mt6323
         else
             ifneq (,$(filter y,$(CONFIG_ARCH_MT6752)))
