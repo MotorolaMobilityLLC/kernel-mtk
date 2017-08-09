@@ -506,8 +506,7 @@ INT32 mtk_wcn_hif_sdio_client_reg(const MTK_WCN_HIF_SDIO_CLTINFO *pinfo)
 	UINT32 j = 0;
 	MTK_WCN_HIF_SDIO_CLT_PROBE_WORKERINFO *clt_probe_worker_info = 0;
 
-	HIF_SDIO_INFO_FUNC("start!\n");
-
+	HIF_SDIO_DBG_FUNC("start!\n");
 	/* 4 <1> check input pointer is valid */
 	HIF_SDIO_ASSERT(pinfo);
 
@@ -1944,7 +1943,8 @@ static INT32 hif_sdio_init(VOID)
 
 	/* 4 <2> register to mmc driver */
 	ret = sdio_register_driver(&mtk_sdio_client_drv);
-	HIF_SDIO_INFO_FUNC("sdio_register_driver() ret=%d\n", ret);
+	if (ret != 0)
+		HIF_SDIO_INFO_FUNC("sdio_register_driver() fail, ret=%d\n", ret);
 
 #if !(DELETE_HIF_SDIO_CHRDEV)
 	/* 4 <3> create thread for query chip id and device node for launcher to access */

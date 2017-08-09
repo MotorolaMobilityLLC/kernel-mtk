@@ -716,7 +716,7 @@ static int mtk_wcn_stp_uart_init(void)
 	INT32 err;
 	INT32 fifo_init_done = 0;
 
-	UART_INFO_FUNC("mtk_wcn_stp_uart_init(): MTK STP UART driver\n");
+	UART_DBG_FUNC("mtk_wcn_stp_uart_init(): MTK STP UART driver\n");
 
 #if  (LDISC_RX == LDISC_RX_TASKLET)
 	err = stp_uart_fifo_init();

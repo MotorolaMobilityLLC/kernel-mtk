@@ -191,7 +191,7 @@ INT32 wmt_plat_audio_ctrl(CMB_STUB_AIF_X state, CMB_STUB_AIF_CTRL ctrl)
 
 	if (0 != wmt_plat_merge_if_flag_get()) {
 #if (MTK_WCN_CMB_MERGE_INTERFACE_SUPPORT)
-		WMT_INFO_FUNC("[MT6628]<Merge IF> no need to ctrl combo chip side GPIO\n");
+		WMT_DBG_FUNC("[MT6628]<Merge IF> no need to ctrl combo chip side GPIO\n");
 #else
 		mergeIfSupport = 1;
 #endif
@@ -298,127 +298,127 @@ INT32 wmt_plat_irq_ctrl(ENUM_FUNC_STATE state)
 
 static INT32 wmt_plat_dump_pin_conf(VOID)
 {
-	WMT_INFO_FUNC("[WMT-PLAT]=>dump wmt pin configuration start<=\n");
+	WMT_DBG_FUNC("[WMT-PLAT]=>dump wmt pin configuration start<=\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num) {
-		WMT_INFO_FUNC("LDO(GPIO%d)\n",
+		WMT_DBG_FUNC("LDO(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("LDO(not defined)\n");
+		WMT_DBG_FUNC("LDO(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num) {
-		WMT_INFO_FUNC("PMU(GPIO%d)\n",
+		WMT_DBG_FUNC("PMU(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMU_EN_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("PMU(not defined)\n");
+		WMT_DBG_FUNC("PMU(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num) {
-		WMT_INFO_FUNC("PMUV28(GPIO%d)\n",
+		WMT_DBG_FUNC("PMUV28(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_PMUV28_EN_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("PMUV28(not defined)\n");
+		WMT_DBG_FUNC("PMUV28(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num) {
-		WMT_INFO_FUNC("RST(GPIO%d)\n",
+		WMT_DBG_FUNC("RST(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_RST_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("RST(not defined)\n");
+		WMT_DBG_FUNC("RST(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_BGF_EINT_PIN].gpio_num) {
-		WMT_INFO_FUNC("BGF_EINT(GPIO%d)\n",
+		WMT_DBG_FUNC("BGF_EINT(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_BGF_EINT_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("BGF_EINT(not defined)\n");
+		WMT_DBG_FUNC("BGF_EINT(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_BGF_EINT_PIN].gpio_num) {
-		WMT_INFO_FUNC("BGF_EINT_NUM(%d)\n",
+		WMT_DBG_FUNC("BGF_EINT_NUM(%d)\n",
 				gpio_to_irq(gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_BGF_EINT_PIN].gpio_num));
 	} else
-		WMT_INFO_FUNC("BGF_EINT_NUM(not defined)\n");
+		WMT_DBG_FUNC("BGF_EINT_NUM(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_WIFI_EINT_PIN].gpio_num) {
-		WMT_INFO_FUNC("WIFI_EINT(GPIO%d)\n",
+		WMT_DBG_FUNC("WIFI_EINT(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_WIFI_EINT_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("WIFI_EINT(not defined)\n");
+		WMT_DBG_FUNC("WIFI_EINT(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_WIFI_EINT_PIN].gpio_num) {
-		WMT_INFO_FUNC("WIFI_EINT_NUM(%d)\n",
+		WMT_DBG_FUNC("WIFI_EINT_NUM(%d)\n",
 				gpio_to_irq(gpio_ctrl_info.gpio_ctrl_state[GPIO_WIFI_EINT_PIN].gpio_num));
 	} else
-		WMT_INFO_FUNC("WIFI_EINT_NUM(not defined)\n");
+		WMT_DBG_FUNC("WIFI_EINT_NUM(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num) {
-		WMT_INFO_FUNC("UART_RX(GPIO%d)\n",
+		WMT_DBG_FUNC("UART_RX(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("UART_RX(not defined)\n");
+		WMT_DBG_FUNC("UART_RX(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_UTXD_PIN].gpio_num) {
-		WMT_INFO_FUNC("UART_TX(GPIO%d)\n",
+		WMT_DBG_FUNC("UART_TX(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_UTXD_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("UART_TX(not defined)\n");
+		WMT_DBG_FUNC("UART_TX(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAICLK_PIN].gpio_num) {
-		WMT_INFO_FUNC("DAICLK(GPIO%d)\n",
+		WMT_DBG_FUNC("DAICLK(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAICLK_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("DAICLK(not defined)\n");
+		WMT_DBG_FUNC("DAICLK(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAIPCMOUT_PIN].gpio_num) {
-		WMT_INFO_FUNC("PCMOUT(GPIO%d)\n",
+		WMT_DBG_FUNC("PCMOUT(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAIPCMOUT_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("PCMOUT(not defined)\n");
+		WMT_DBG_FUNC("PCMOUT(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAIPCMIN_PIN].gpio_num) {
-		WMT_INFO_FUNC("PCMIN(GPIO%d)\n",
+		WMT_DBG_FUNC("PCMIN(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAIPCMIN_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("PCMIN(not defined)\n");
+		WMT_DBG_FUNC("PCMIN(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAISYNC_PIN].gpio_num) {
-		WMT_INFO_FUNC("PCMSYNC(GPIO%d)\n",
+		WMT_DBG_FUNC("PCMSYNC(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_PCM_DAISYNC_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("PCMSYNC(not defined)\n");
+		WMT_DBG_FUNC("PCMSYNC(not defined)\n");
 #if defined(FM_DIGITAL_INPUT) || defined(FM_DIGITAL_OUTPUT)
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_CK_PIN].gpio_num) {
-		WMT_INFO_FUNC("I2S_CK(GPIO%d)\n",
+		WMT_DBG_FUNC("I2S_CK(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_CK_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("I2S_CK(not defined)\n");
+		WMT_DBG_FUNC("I2S_CK(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_WS_PIN].gpio_num) {
-		WMT_INFO_FUNC("I2S_WS(GPIO%d)\n",
+		WMT_DBG_FUNC("I2S_WS(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_WS_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("I2S_WS(not defined)\n");
+		WMT_DBG_FUNC("I2S_WS(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_DAT_PIN].gpio_num) {
-		WMT_INFO_FUNC("I2S_DAT(GPIO%d)\n",
+		WMT_DBG_FUNC("I2S_DAT(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_DAT_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("I2S_DAT(not defined)\n");
+		WMT_DBG_FUNC("I2S_DAT(not defined)\n");
 
 #else				/* FM_ANALOG_INPUT || FM_ANALOG_OUTPUT */
-	WMT_INFO_FUNC("FM digital mode is not set, no need for I2S GPIOs\n");
+	WMT_DBG_FUNC("FM digital mode is not set, no need for I2S GPIOs\n");
 #endif
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_num) {
-		WMT_INFO_FUNC("GPS_SYNC(GPIO%d)\n",
+		WMT_DBG_FUNC("GPS_SYNC(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_SYNC_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("GPS_SYNC(not defined)\n");
+		WMT_DBG_FUNC("GPS_SYNC(not defined)\n");
 
 	if (DEFAULT_PIN_ID != gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_LNA_PIN].gpio_num) {
-		WMT_INFO_FUNC("GPS_LNA(GPIO%d)\n",
+		WMT_DBG_FUNC("GPS_LNA(GPIO%d)\n",
 				gpio_ctrl_info.gpio_ctrl_state[GPIO_GPS_LNA_PIN].gpio_num);
 	} else
-		WMT_INFO_FUNC("GPS_LNA(not defined)\n");
+		WMT_DBG_FUNC("GPS_LNA(not defined)\n");
 
-	WMT_INFO_FUNC("[WMT-PLAT]=>dump wmt pin configuration emds<=\n");
+	WMT_DBG_FUNC("[WMT-PLAT]=>dump wmt pin configuration emds<=\n");
 
 	return 0;
 }
@@ -565,7 +565,7 @@ INT32 wmt_plat_gpio_ctrl(ENUM_PIN_ID id, ENUM_PIN_STATE state)
 INT32 wmt_plat_ldo_ctrl(ENUM_PIN_STATE state)
 {
 	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_LDO_EN_PIN].gpio_num) {
-		WMT_INFO_FUNC("WMT-PLAT:LDO is not used\n");
+		WMT_DBG_FUNC("WMT-PLAT:LDO is not used\n");
 		return 0;
 	}
 
@@ -820,7 +820,7 @@ INT32 wmt_plat_wifi_eint_ctrl(ENUM_PIN_STATE state)
 INT32 wmt_plat_all_eint_ctrl(ENUM_PIN_STATE state)
 {
 	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_ALL_EINT_PIN].gpio_num) {
-		WMT_INFO_FUNC("WMT-PLAT:ALL EINT not defined\n");
+		WMT_DBG_FUNC("WMT-PLAT:ALL EINT not defined\n");
 		return 0;
 	}
 
@@ -851,12 +851,12 @@ INT32 wmt_plat_all_eint_ctrl(ENUM_PIN_STATE state)
 INT32 wmt_plat_uart_ctrl(ENUM_PIN_STATE state)
 {
 	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_UTXD_PIN].gpio_num) {
-		WMT_INFO_FUNC("WMT-PLAT:UART TX not defined\n");
+		WMT_DBG_FUNC("WMT-PLAT:UART TX not defined\n");
 		return 0;
 	}
 
 	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num) {
-		WMT_INFO_FUNC("WMT-PLAT:UART RX not defined\n");
+		WMT_DBG_FUNC("WMT-PLAT:UART RX not defined\n");
 		return 0;
 	}
 
@@ -1009,17 +1009,17 @@ INT32 wmt_plat_i2s_ctrl(ENUM_PIN_STATE state)
 	UINT32 normalI2SFlag = 0;
 
 	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_CK_PIN].gpio_num) {
-		WMT_INFO_FUNC("WMT-PLAT:I2S CK not defined\n");
+		WMT_DBG_FUNC("WMT-PLAT:I2S CK not defined\n");
 		return 0;
 	}
 
 	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_WS_PIN].gpio_num) {
-		WMT_INFO_FUNC("WMT-PLAT:I2S WS not defined\n");
+		WMT_DBG_FUNC("WMT-PLAT:I2S WS not defined\n");
 		return 0;
 	}
 
 	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_I2S_DAT_PIN].gpio_num) {
-		WMT_INFO_FUNC("WMT-PLAT:DAT CK not defined\n");
+		WMT_DBG_FUNC("WMT-PLAT:DAT CK not defined\n");
 		return 0;
 	}
 	/*check if combo chip support merge if or not */
@@ -1266,7 +1266,7 @@ static INT32 wmt_plat_gps_lna_ctrl(ENUM_PIN_STATE state)
 static INT32 wmt_plat_uart_rx_ctrl(ENUM_PIN_STATE state)
 {
 	if (DEFAULT_PIN_ID == gpio_ctrl_info.gpio_ctrl_state[GPIO_COMBO_URXD_PIN].gpio_num) {
-		WMT_INFO_FUNC("WMT-PLAT:UART RX not defined\n");
+		WMT_DBG_FUNC("WMT-PLAT:UART RX not defined\n");
 		return 0;
 	}
 

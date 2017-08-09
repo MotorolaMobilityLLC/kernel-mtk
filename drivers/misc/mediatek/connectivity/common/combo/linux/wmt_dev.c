@@ -1301,7 +1301,7 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		}
 	case WMT_IOCTL_GET_APO_FLAG:
 		iRet = combo_comm_apo_flag;
-		WMT_INFO_FUNC("always power on flag: %d!\n", combo_comm_apo_flag);
+		WMT_DBG_FUNC("always power on flag: %d!\n", combo_comm_apo_flag);
 		break;
 	default:
 		iRet = -EINVAL;
@@ -1447,7 +1447,7 @@ int WMT_init(void)
 		WMT_ERR_FUNC("cdev_add() fails (%d)\n", cdevErr);
 		goto error;
 	}
-	WMT_INFO_FUNC("driver(major %d) installed\n", gWmtMajor);
+	WMT_DBG_FUNC("driver(major %d) installed\n", gWmtMajor);
 #if REMOVE_MK_NODE
 	wmt_class = class_create(THIS_MODULE, "stpwmt");
 	if (IS_ERR(wmt_class))
@@ -1513,10 +1513,10 @@ int WMT_init(void)
 	if (ret)
 		WMT_ERR_FUNC("wmt register fb_notifier failed! ret(%d)\n", ret);
 	else
-		WMT_INFO_FUNC("wmt register fb_notifier OK!\n");
+		WMT_DBG_FUNC("wmt register fb_notifier OK!\n");
 #endif
 #endif /*CONFIG_MTK_COMBO_COMM_APO end*/
-	WMT_INFO_FUNC("success\n");
+	WMT_DBG_FUNC("success\n");
 	return 0;
 
  error:

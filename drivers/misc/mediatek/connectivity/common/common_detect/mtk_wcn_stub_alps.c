@@ -560,7 +560,7 @@ int board_sdio_ctrl(unsigned int sdio_port_num, unsigned int on)
 	CMB_STUB_LOG_DBG("mt_mtk_wcn_cmb_sdio_ctrl (%d, %d)\n", sdio_port_num, on);
 	if (on) {
 #if 1
-		CMB_STUB_LOG_INFO("board_sdio_ctrl force off before on\n");
+		CMB_STUB_LOG_DBG("board_sdio_ctrl force off before on\n");
 		mtk_wcn_cmb_sdio_off(sdio_port_num);
 #else
 		CMB_STUB_LOG_WARN("skip sdio off before on\n");

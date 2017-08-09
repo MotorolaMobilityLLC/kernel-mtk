@@ -227,7 +227,7 @@ INT32 wmt_lib_init(VOID)
 		pDevWmt->rFdrvCb.fDrvRst[i] = NULL;
 
 	pDevWmt->hw_ver = WMTHWVER_MAX;
-	WMT_INFO_FUNC("***********Init, hw->ver = %x\n", pDevWmt->hw_ver);
+	WMT_DBG_FUNC("***********Init, hw->ver = %x\n", pDevWmt->hw_ver);
 
 	/* TODO:[FixMe][GeorgeKuo]: wmt_lib_conf_init */
 	/* initialize default configurations */
@@ -399,12 +399,12 @@ INT32 wmt_lib_set_uart_name(PINT8 cUartName)
 {
 #if WMT_PLAT_ALPS
 
-	WMT_INFO_FUNC("orig uart: %s\n", wmt_uart_port_desc);
+	WMT_DBG_FUNC("orig uart: %s\n", wmt_uart_port_desc);
 #endif
 	osal_strncpy(gDevWmt.cUartName, cUartName, NAME_MAX);
 #if WMT_PLAT_ALPS
 	wmt_uart_port_desc = gDevWmt.cUartName;
-	WMT_INFO_FUNC("new uart: %s\n", wmt_uart_port_desc);
+	WMT_DBG_FUNC("new uart: %s\n", wmt_uart_port_desc);
 #endif
 	return 0;
 }

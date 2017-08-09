@@ -782,10 +782,10 @@ static inline INT32 _stp_psm_reset(MTKSTP_PSM_T *stp_psm)
 	INT32 ret = 0;
 
 	STP_PSM_DBG_FUNC("PSM MODE RESET=============================>\n\r");
-	STP_PSM_INFO_FUNC("_stp_psm_reset\n");
-	STP_PSM_INFO_FUNC("reset-wake_lock(%d)\n", osal_wake_lock_count(&stp_psm->wake_lock));
+	STP_PSM_DBG_FUNC("_stp_psm_reset\n");
+	STP_PSM_DBG_FUNC("reset-wake_lock(%d)\n", osal_wake_lock_count(&stp_psm->wake_lock));
 	osal_wake_unlock(&stp_psm->wake_lock);
-	STP_PSM_INFO_FUNC("reset-wake_lock(%d)\n", osal_wake_lock_count(&stp_psm->wake_lock));
+	STP_PSM_DBG_FUNC("reset-wake_lock(%d)\n", osal_wake_lock_count(&stp_psm->wake_lock));
 	/* --> serialized the request from wmt <--// */
 	ret = osal_lock_sleepable_lock(&stp_psm->user_lock);
 	if (ret) {
@@ -1117,7 +1117,7 @@ static inline INT32 _stp_psm_init_monitor(MTKSTP_PSM_T *stp_psm)
 {
 	if (!stp_psm)
 		return STP_PSM_OPERATION_FAIL;
-	STP_PSM_INFO_FUNC("init monitor\n");
+	STP_PSM_DBG_FUNC("init monitor\n");
 	stp_psm->psm_timer.timeoutHandler = _stp_psm_stp_is_idle;
 	stp_psm->psm_timer.timeroutHandlerData = (unsigned long)stp_psm;
 	osal_timer_create(&stp_psm->psm_timer);
@@ -1566,7 +1566,7 @@ MTKSTP_PSM_T *stp_psm_init(VOID)
 	INT32 i = 0;
 	INT32 ret = -1;
 
-	STP_PSM_INFO_FUNC("psm init\n");
+	STP_PSM_DBG_FUNC("psm init\n");
 
 	stp_psm->work_state = ACT;
 	stp_psm->wmt_notify = wmt_lib_ps_stp_cb;

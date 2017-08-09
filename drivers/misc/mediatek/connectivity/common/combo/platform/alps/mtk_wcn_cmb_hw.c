@@ -126,7 +126,7 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 	static UINT32 _pwr_first_time = 1;
 	INT32 iRet = 0;
 
-	WMT_INFO_FUNC("CMB-HW, hw_pwr_on start\n");
+	WMT_DBG_FUNC("CMB-HW, hw_pwr_on start\n");
 
 	/* disable interrupt firstly */
 	if (!((0x6630 == mtk_wcn_wmt_chipid_query())
@@ -207,7 +207,7 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 		iRet += wmt_plat_eirq_ctrl(PIN_BGF_EINT, PIN_STA_INIT);
 		WMT_INFO_FUNC("CMB-HW, BGF_EINT IRQ registered and disabled\n");
 	} else {
-		WMT_INFO_FUNC("CMB-HW, no need to register BGF_EINT for MT6630 SDIO mode\n");
+		WMT_DBG_FUNC("CMB-HW, no need to register BGF_EINT for MT6630 SDIO mode\n");
 	}
 
 	/* 8.1 set ALL_EINT pin to correct state even it is not used currently */

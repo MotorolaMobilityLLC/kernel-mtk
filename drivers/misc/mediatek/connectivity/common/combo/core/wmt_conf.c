@@ -370,7 +370,7 @@ static INT32 wmt_conf_parse(P_DEV_WMT pWmtDev, const PINT8 pInBuf, UINT32 size)
 
 		/* WMT_DBG_FUNC("parse (key: #%s#, value: #%s#)\n", pKey, pVal); */
 		ret = wmt_conf_parse_pair(pWmtDev, pKey, pVal);
-		WMT_WARN_FUNC("parse (%s, %s, %d)\n", pKey, pVal, ret);
+		WMT_DBG_FUNC("parse (%s, %s, %d)\n", pKey, pVal, ret);
 		if (ret)
 			WMT_WARN_FUNC("parse fail (%s, %s, %d)\n", pKey, pVal, ret);
 	}
@@ -380,7 +380,7 @@ static INT32 wmt_conf_parse(P_DEV_WMT pWmtDev, const PINT8 pInBuf, UINT32 size)
 
 		pa = field->writer(pWmtDev, field);
 		if (pa) {
-			WMT_INFO_FUNC("#%d(%s)=>%s\n", i, field->name, pa);
+			WMT_DBG_FUNC("#%d(%s)=>%s\n", i, field->name, pa);
 			osal_free(pa);
 		} else
 			WMT_ERR_FUNC("failed to parse '%s'.\n", field->name);
@@ -433,17 +433,15 @@ INT32 wmt_conf_read_file(VOID)
 	if (0 ==
 	    wmt_dev_patch_get(&gDevWmt.cWmtcfgName[0], (osal_firmware **) &gDevWmt.pWmtCfg, 0)) {
 		/*get full name patch success */
-		WMT_INFO_FUNC("get full file name(%s) buf(0x%p) size(%zu)\n",
+		WMT_DBG_FUNC("get full file name(%s) buf(0x%p) size(%zu)\n",
 			      &gDevWmt.cWmtcfgName[0], gDevWmt.pWmtCfg->data,
 			      gDevWmt.pWmtCfg->size);
-
 		if (0 ==
 		    wmt_conf_parse(&gDevWmt, (const PINT8)gDevWmt.pWmtCfg->data,
 				   gDevWmt.pWmtCfg->size)) {
 			/*config file exists */
 			gDevWmt.rWmtGenConf.cfgExist = 1;
-
-			WMT_INFO_FUNC("&gDevWmt.rWmtGenConf=%p\n", &gDevWmt.rWmtGenConf);
+			WMT_DBG_FUNC("&gDevWmt.rWmtGenConf=%p\n", &gDevWmt.rWmtGenConf);
 			ret = 0;
 		} else {
 			WMT_ERR_FUNC("wmt conf parsing fail\n");

@@ -648,7 +648,7 @@ static INT32 mt6630_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 			return -3;
 		}
 
-		WMT_INFO_FUNC("WMT-CORE: change baudrate(%d) ok\n", pWmtHifConf->au4HifConf[0]);
+		WMT_DBG_FUNC("WMT-CORE: change baudrate(%d) ok\n", pWmtHifConf->au4HifConf[0]);
 
 		/* 7. Wake up chip and check event */
 /* iRet = (*kal_stp_tx_raw)(&WMT_SET_WAKEUP_WAKE_CMD_RAW[0], 1, &u4Res); */
@@ -750,13 +750,13 @@ static INT32 mt6630_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 		WMT_ERR_FUNC("init_coex fail(%d)\n", iRet);
 		return -10;
 	}
-	WMT_INFO_FUNC("init_coex ok\n");
+	WMT_DBG_FUNC("init_coex ok\n");
 
 	mt6630_crystal_triming_set();
 #if MT6630_BRINGUP
 	WMT_INFO_FUNC("Bring up period, skip sdio driving settings\n");
 #else
-	WMT_INFO_FUNC("Temp solution, skip sdio driving settings\n");
+	WMT_DBG_FUNC("Temp solution, skip sdio driving settings\n");
 	/* 6630_set_sdio_driving(); */
 #endif
 	if (WMT_HIF_UART == pWmtHifConf->hifType) {
@@ -816,7 +816,7 @@ static INT32 mt6630_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 
 
 	} else
-		WMT_INFO_FUNC("co-clock disabled.\n");
+		WMT_DBG_FUNC("co-clock disabled.\n");
 #if MT6630_BRINGUP
 	WMT_INFO_FUNC("Bring up period, skip merge interface settings\n");
 #else
@@ -1109,8 +1109,6 @@ static INT32 mt6630_ver_check(VOID)
 		return -2;
 	}
 
-	WMT_INFO_FUNC("MT6630: read hw_ver (hw version) (0x%x)\n", hw_ver);
-
 	WMT_LOUD_FUNC("MT6630: before fw_ver (rom version)\n");
 	wmt_core_reg_rw_raw(0, GEN_FVR, &fw_ver, GEN_VER_MASK);
 
@@ -1119,7 +1117,7 @@ static INT32 mt6630_ver_check(VOID)
 		return -2;
 	}
 
-	WMT_INFO_FUNC("MT6630: read fw_ver (rom version) (0x%x)\n", fw_ver);
+	WMT_INFO_FUNC("MT6630: read (hw version)(0x%x), (fw version version)(0x%x)\n", hw_ver, fw_ver);
 
 	p_info = mt6630_find_wmt_ic_info(hw_ver);
 
@@ -1594,18 +1592,11 @@ static INT32 mt6630_patch_dwn(UINT32 index)
 	cDataTime[15] = '\0';
 
 	if (index == 0) {
-		WMT_INFO_FUNC("===========================================\n");
-		WMT_INFO_FUNC("[Combo Patch] Built Time = %s\n", cDataTime);
-		WMT_INFO_FUNC("[Combo Patch] Hw Ver = 0x%x\n",
-			      ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8));
-		WMT_INFO_FUNC("[Combo Patch] Sw Ver = 0x%x\n",
-			      ((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8));
-		WMT_INFO_FUNC("[Combo Patch] Ph Ver = 0x%04x\n",
-			      ((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >>
-								   16));
-		WMT_INFO_FUNC("[Combo Patch] Platform = %c%c%c%c\n", patchHdr->ucPLat[0],
-			      patchHdr->ucPLat[1], patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
-		WMT_INFO_FUNC("===========================================\n");
+		WMT_INFO_FUNC("Combo Patch:Build Time(%s)Hw(0x%x) Sw(0x%x) Ph(0x%04x)Platform(%c%c%c%c)\n",
+			 cDataTime, ((u2HwVer & 0x00ff) << 8) | ((u2HwVer & 0xff00) >> 8),
+			((u2SwVer & 0x00ff) << 8) | ((u2SwVer & 0xff00) >> 8),
+			((u4PatchVer & 0xff000000) >> 24) | ((u4PatchVer & 0x00ff0000) >> 16),
+			patchHdr->ucPLat[0], patchHdr->ucPLat[1], patchHdr->ucPLat[2], patchHdr->ucPLat[3]);
 	}
 
 	/* remove patch header:
