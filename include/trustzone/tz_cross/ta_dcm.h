@@ -11,6 +11,7 @@
 #define TZCMD_DCM_ENABLE_DCM     0
 #define TZCMD_DCM_DISABLE_DCM    1
 #define TZCMD_DCM_GET_DCM_STATUS 2
+#define TZCMD_DCM_GET_DCM_OP_STATUS 3
 
 /* Usage */
 /*
