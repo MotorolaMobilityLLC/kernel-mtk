@@ -5483,13 +5483,10 @@ unsigned short mt6328_set_register_value(PMU_FLAGS_LIST_ENUM flagname, unsigned 
 		return 1;
 	}
 
-	pmic_lock();
-
 	ret = pmic_config_interface((pFlag->offset),
 				    (unsigned int) (val),
 				    (unsigned int) (pFlag->mask), (unsigned int) (pFlag->shift)
 	    );
-	pmic_unlock();
 
 	return 0;
 }

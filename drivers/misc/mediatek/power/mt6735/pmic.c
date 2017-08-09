@@ -25,6 +25,7 @@
 #include <linux/sched.h>
 #include <linux/spinlock.h>
 #include <linux/interrupt.h>
+#include <linux/irqflags.h>
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/kthread.h>
@@ -150,11 +151,14 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 				 unsigned int SHIFT)
 {
 	unsigned int return_value = 0;
-
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
+#endif
+	if (irqs_disabled())
+		return pmic_read_interface_nolock(RegNum, val, MASK, SHIFT);
 
+#if defined(CONFIG_PMIC_HW_ACCESS_EN)
 	mutex_lock(&pmic_access_mutex);
 
 	/*mt_read_byte(RegNum, &pmic_reg); */
@@ -183,11 +187,15 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 				   unsigned int SHIFT)
 {
 	unsigned int return_value = 0;
-
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
 	unsigned int pmic_reg = 0;
 	unsigned int rdata;
+#endif
 
+	if (irqs_disabled())
+		return pmic_config_interface_nolock(RegNum, val, MASK, SHIFT);
+
+#if defined(CONFIG_PMIC_HW_ACCESS_EN)
 	mutex_lock(&pmic_access_mutex);
 
 	/*1. mt_read_byte(RegNum, &pmic_reg); */
