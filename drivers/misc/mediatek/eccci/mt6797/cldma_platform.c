@@ -512,19 +512,6 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		while (!(ccci_read32(md_addr, 0x20)&(1<<3)))
 			;
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action]after 0x%x\n", reg_value);
-		md_addr = md_reg->md_ect_0;
-		reg_value = ccci_read32(md_addr, 4);
-		reg_value |= (0x1 << 3);
-		CCCI_MEM_LOG(md->index, TAG, "[pre-action] write: %p=0x%x\n", (md_addr + 4), reg_value);
-		ccci_write32(md_addr, 4, reg_value);	/* clear bit[29] */
-		reg_value = ccci_read32(md_addr, 4);
-		CCCI_MEM_LOG(md->index, TAG, "[pre-action] read: %p=0x%x\n", (md_addr + 4), reg_value);
-		reg_value = ccci_read32(md_addr, 0x20);
-		CCCI_MEM_LOG(md->index, TAG, "[pre-action] before %p=0x%x\n", (md_addr + 0x20), reg_value);
-		while (!(ccci_read32(md_addr, 0x20)&(1<<3)))
-			;
-		CCCI_MEM_LOG(md->index, TAG, "[pre-action] after 0x%x\n", reg_value);
-
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_1, MD_ECT_DUMP_LEN1);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_2, MD_ECT_DUMP_LEN2);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_3, MD_ECT_DUMP_LEN3);

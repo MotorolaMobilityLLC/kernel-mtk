@@ -577,26 +577,6 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 			}
 		}
 		CCCI_MEM_LOG(md->index, TAG, "[pre-action]after 0x%x\n", reg_value);
-		md_addr = md_reg->md_dbgsys_clk;
-		reg_value = ccci_read32(md_addr, 4);
-		reg_value |= (0x1 << 3);
-		CCCI_MEM_LOG(md->index, TAG, "[pre-action] write: %p=0x%x\n", (md_addr + 4), reg_value);
-		ccci_write32(md_addr, 4, reg_value);	/* clear bit[29] */
-		reg_value = ccci_read32(md_addr, 4);
-		CCCI_MEM_LOG(md->index, TAG, "[pre-action] read: %p=0x%x\n", (md_addr + 4), reg_value);
-		reg_value = ccci_read32(md_addr, 0x20);
-		CCCI_MEM_LOG(md->index, TAG, "[pre-action] before %p=0x%x\n", (md_addr + 0x20), reg_value);
-		cnt = 0;
-		while (!(reg_value = ccci_read32(md_addr, 0x20)&(1<<3))) {
-			udelay(20);
-			cnt++;
-			if (cnt > 100) {
-				CCCI_ERROR_LOG(md->index, TAG, "[pre-action]read 0x%p=  0x%x\n",
-					(md_addr + 0x20), ccci_read32(md_addr, 0x20));
-				break;
-			}
-		}
-		CCCI_MEM_LOG(md->index, TAG, "[pre-action] after 0x%x\n", reg_value);
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD ECT 0x%x,len=0x%x\n", MD_ECT_DUMP_ADDR1, MD_ECT_DUMP_LEN1);
 		ccci_util_mem_dump(md->index, CCCI_DUMP_MEM_DUMP, md_reg->md_ect_1, MD_ECT_DUMP_LEN1);
 		CCCI_MEM_LOG_TAG(md->index, TAG, "Dump MD ECT 0x%x,len=0x%x\n", MD_ECT_DUMP_ADDR2, MD_ECT_DUMP_LEN2);
