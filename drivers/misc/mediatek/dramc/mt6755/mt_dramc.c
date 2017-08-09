@@ -457,6 +457,10 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	udelay(1);
 
 	for (i = 0; i < 2; i++) {
+
+		if ((i == 1) && (rank_pasr_segment[i] == 0xFF))
+			continue;
+
 		/* set MRS settings include rank number, segment information and MRR17 */
 		writel(((i << 28) | (rank_pasr_segment[i] << 16) | 0x00000011), PDEF_DRAMC0_REG_088);
 		/* Mode register write command enable */
@@ -505,14 +509,17 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 int exit_pasr_dpd_config(void)
 {
 	int ret;
+	unsigned char rk1 = 0;
+
 	/*slp_dpd_en(0);*/
 	/*slp_pasr_en(0, 0);*/
 	if (enter_pdp_cnt == 1) {
 		enter_pdp_cnt--;
 		spm_dpd_dram_init();
+		rk1 = 0xFF;
 	}
 
-	ret = enter_pasr_dpd_config(0, 0);
+	ret = enter_pasr_dpd_config(0, rk1);
 
 	return ret;
 }
