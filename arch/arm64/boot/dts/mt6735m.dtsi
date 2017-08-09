@@ -799,7 +799,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <0 90 0x8>;
 		};
 
-		mt3326-gps@0xffffffff {
+		gps {
 			compatible = "mediatek,mt3326-gps";
 		};
 
