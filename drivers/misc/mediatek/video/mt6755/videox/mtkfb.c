@@ -48,7 +48,7 @@
 #include "mt_boot.h"
 #include "disp_helper.h"
 #include "compat_mtkfb.h"
-#include <mt-plat/mt_typedefs.h>
+/*#include <mt-plat/mt_typedefs.h>*/
 
 /* static variable */
 static u32 MTK_FB_XRES;
@@ -113,16 +113,16 @@ unsigned int EnableVSyncLog = 0;
 unsigned long fb_pa = 0;
 atomic_t has_pending_update = ATOMIC_INIT(0);
 struct fb_overlay_layer video_layerInfo;
-UINT32 dbr_backup = 0;
-UINT32 dbg_backup = 0;
-UINT32 dbb_backup = 0;
+uint32_t dbr_backup = 0;
+uint32_t dbg_backup = 0;
+uint32_t dbb_backup = 0;
 bool fblayer_dither_needed = false;
 bool is_ipoh_bootup = false;
 struct fb_info *mtkfb_fbi;
 struct fb_overlay_layer fb_layer_context;
 mtk_dispif_info_t dispif_info[MTKFB_MAX_DISPLAY_COUNT];
 unsigned int FB_LAYER = 2;
-bool is_early_suspended = FALSE;
+bool is_early_suspended = false;
 atomic_t OverlaySettingDirtyFlag = ATOMIC_INIT(0);
 atomic_t OverlaySettingApplied = ATOMIC_INIT(0);
 unsigned int PanDispSettingPending = 0;
@@ -163,8 +163,8 @@ void mtkfb_log_enable(int enable)
 /* Called each time the mtkfb device is opened */
 static int mtkfb_open(struct fb_info *info, int user)
 {
-	NOT_REFERENCED(info);
-	NOT_REFERENCED(user);
+	/*NOT_REFERENCED(info);*/
+	/*NOT_REFERENCED(user);*/
 	DISPFUNC();
 	MSG_FUNC_ENTER();
 	MSG_FUNC_LEAVE();
@@ -176,8 +176,8 @@ static int mtkfb_open(struct fb_info *info, int user)
 static int mtkfb_release(struct fb_info *info, int user)
 {
 
-	NOT_REFERENCED(info);
-	NOT_REFERENCED(user);
+	/*NOT_REFERENCED(info);*/
+	/*NOT_REFERENCED(user);*/
 	DISPFUNC();
 
 	MSG_FUNC_ENTER();
@@ -195,7 +195,7 @@ static int mtkfb_setcolreg(u_int regno, u_int red, u_int green,
 	int r = 0;
 	unsigned bpp, m;
 
-	NOT_REFERENCED(transp);
+	/*NOT_REFERENCED(transp);*/
 
 	MSG_FUNC_ENTER();
 
@@ -452,9 +452,9 @@ static int _convert_fb_layer_to_disp_input(struct fb_overlay_layer *src, disp_in
 	/* set Alpha blending */
 	dst->alpha = src->alpha;
 	if (MTK_FB_FORMAT_ARGB8888 == src->src_fmt || MTK_FB_FORMAT_ABGR8888 == src->src_fmt)
-		dst->alpha_enable = TRUE;
+		dst->alpha_enable = true;
 	else
-		dst->alpha_enable = FALSE;
+		dst->alpha_enable = false;
 
 
 	/* set src width, src height */
@@ -582,9 +582,9 @@ static int _overlay_info_convert(struct fb_overlay_layer *src, OVL_CONFIG_STRUCT
 
 	dst->alpha = src->alpha;
 	if (MTK_FB_FORMAT_ARGB8888 == src->src_fmt || MTK_FB_FORMAT_ABGR8888 == src->src_fmt)
-		dst->aen = TRUE;
+		dst->aen = true;
 	else
-		dst->aen = FALSE;
+		dst->aen = false;
 
 
 	dst->src_x = src->src_offset_x;
@@ -679,7 +679,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 		DISPERR("Invalid color format bpp: 0x%d\n", var->bits_per_pixel);
 		return -1;
 	}
-	input->alpha_enable = FALSE;
+	input->alpha_enable = false;
 
 	input->alpha = 0xFF;
 	input->next_buff_idx = -1;
@@ -696,7 +696,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 		session_input.config_layer_num++;
 	}
 	ret = primary_display_config_input_multiple(&session_input);
-	ret = primary_display_trigger(TRUE, NULL, 0);
+	ret = primary_display_trigger(true, NULL, 0);
 
 	return ret;
 }
@@ -966,8 +966,8 @@ static int mtkfb_set_par(struct fb_info *fbi)
 
 static int mtkfb_soft_cursor(struct fb_info *info, struct fb_cursor *cursor)
 {
-	NOT_REFERENCED(info);
-	NOT_REFERENCED(cursor);
+	/*NOT_REFERENCED(info);*/
+	/*NOT_REFERENCED(cursor);*/
 
 	return 0;
 }
@@ -1116,7 +1116,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				DISPERR("primary display suspend failed\n");
 			DISPMSG("[FB Driver] leave MTKFB_POWEROFF\n");
 
-			is_early_suspended = TRUE;	/* no care */
+			is_early_suspended = true;	/* no care */
 			return r;
 		}
 
@@ -1130,7 +1130,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			DISPMSG("[FB Driver] enter MTKFB_POWERON\n");
 			primary_display_resume();
 			DISPMSG("[FB Driver] leave MTKFB_POWERON\n");
-			is_early_suspended = FALSE;	/* no care */
+			is_early_suspended = false;	/* no care */
 			return r;
 		}
 	case MTKFB_GET_POWERSTATE:
@@ -1753,14 +1753,14 @@ static struct fb_ops mtkfb_ops = {
 
 static int mtkfb_register_sysfs(struct mtkfb_device *fbdev)
 {
-	NOT_REFERENCED(fbdev);
+	/*NOT_REFERENCED(fbdev);*/
 
 	return 0;
 }
 
 static void mtkfb_unregister_sysfs(struct mtkfb_device *fbdev)
 {
-	NOT_REFERENCED(fbdev);
+	/*NOT_REFERENCED(fbdev);*/
 }
 
 /*
@@ -2414,7 +2414,7 @@ static int mtkfb_remove(struct device *dev)
 /* PM suspend */
 static int mtkfb_suspend(struct device *pdev, pm_message_t mesg)
 {
-	NOT_REFERENCED(pdev);
+	/*NOT_REFERENCED(pdev);*/
 	MSG_FUNC_ENTER();
 	MTKFB_LOG("[FB Driver] mtkfb_suspend(): 0x%x\n", mesg.event);
 /*	ovl2mem_wait_done();*/
@@ -2495,7 +2495,7 @@ static void mtkfb_early_suspend(struct early_suspend *h)
 /* PM resume */
 static int mtkfb_resume(struct device *pdev)
 {
-	NOT_REFERENCED(pdev);
+	/*NOT_REFERENCED(pdev);*/
 	MSG_FUNC_ENTER();
 	MTKFB_LOG("[FB Driver] mtkfb_resume()\n");
 	MSG_FUNC_LEAVE();
