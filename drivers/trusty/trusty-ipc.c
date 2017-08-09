@@ -1159,7 +1159,7 @@ err_vds_lookup:
 int tipc_k_connect(tipc_k_handle *h, const char *port)
 {
 	int err;
-	struct tipc_dn_chan *dn;
+	struct tipc_dn_chan *dn = NULL;
 
 	err = tipc_open_channel(NULL, &dn);
 	if (err)
