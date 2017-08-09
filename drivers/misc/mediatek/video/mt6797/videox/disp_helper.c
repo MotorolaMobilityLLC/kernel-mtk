@@ -363,7 +363,9 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
 	disp_helper_set_option(DISP_OPT_HRT, 1);
 	/* display partial update */
-	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 0);
+#ifdef CONFIG_MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT
+	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 1);
+#endif
 	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 1);
 }
 
