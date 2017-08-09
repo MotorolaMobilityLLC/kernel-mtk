@@ -116,8 +116,8 @@ static struct i2c_driver tps65132_iic_driver = {
  *****************************************************************************/
 static int tps65132_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	pr_info("tps65132_iic_probe\n");
-	pr_info("NT: info==>name=%s addr=0x%x\n", client->name, client->addr);
+	pr_debug("tps65132_iic_probe\n");
+	pr_debug("NT: info==>name=%s addr=0x%x\n", client->name, client->addr);
 	tps65132_i2c_client  = client;
 	return 0;
 }
@@ -125,7 +125,7 @@ static int tps65132_probe(struct i2c_client *client, const struct i2c_device_id 
 
 static int tps65132_remove(struct i2c_client *client)
 {
-	pr_info("tps65132_remove\n");
+	pr_debug("tps65132_remove\n");
 	tps65132_i2c_client = NULL;
 	i2c_unregister_device(client);
 	return 0;
@@ -146,7 +146,7 @@ static int tps65132_write_bytes(unsigned char addr, unsigned char value)
 	write_data[1] = value;
 	ret=i2c_master_send(client, write_data, 2);
 	if(ret<0)
-	pr_info("tps65132 write data fail !!\n");
+	pr_debug("tps65132 write data fail !!\n");
 	return ret ;
 }
 */
@@ -157,17 +157,17 @@ static int tps65132_write_bytes(unsigned char addr, unsigned char value)
 
 static int __init tps65132_iic_init(void)
 {
-	pr_info("tps65132_iic_init\n");
+	pr_debug("tps65132_iic_init\n");
 	i2c_register_board_info(NT_I2C_BUSNUM, &tps65132_board_info, 1);
-	pr_info("tps65132_iic_init2\n");
+	pr_debug("tps65132_iic_init2\n");
 	i2c_add_driver(&tps65132_iic_driver);
-	pr_info("tps65132_iic_init success\n");
+	pr_debug("tps65132_iic_init success\n");
 	return 0;
 }
 
 static void __exit tps65132_iic_exit(void)
 {
-	pr_info("tps65132_iic_exit\n");
+	pr_debug("tps65132_iic_exit\n");
 	i2c_del_driver(&tps65132_iic_driver);
 }
 
@@ -426,9 +426,9 @@ static void lcm_init(void)
 #else
 	ret = tps65132_write_bytes(cmd, data);
 	if (ret < 0)
-		pr_info("[KERNEL]r63417----tps65132---cmd=%0x-- i2c write error-----\n", cmd);
+		pr_debug("[KERNEL]r63417----tps65132---cmd=%0x-- i2c write error-----\n", cmd);
 	else
-		pr_info("[KERNEL]r63417----tps65132---cmd=%0x-- i2c write success-----\n", cmd);
+		pr_debug("[KERNEL]r63417----tps65132---cmd=%0x-- i2c write success-----\n", cmd);
 #endif
 
 	cmd = 0x01;
@@ -442,9 +442,9 @@ static void lcm_init(void)
 #else
 	ret = tps65132_write_bytes(cmd, data);
 	if (ret < 0)
-		pr_info("[KERNEL]r63417----tps65132---cmd=%0x-- i2c write error-----\n", cmd);
+		pr_debug("[KERNEL]r63417----tps65132---cmd=%0x-- i2c write error-----\n", cmd);
 	else
-		pr_info("[KERNEL]r63417----tps65132---cmd=%0x-- i2c write success-----\n", cmd);
+		pr_debug("[KERNEL]r63417----tps65132---cmd=%0x-- i2c write success-----\n", cmd);
 #endif
 #endif
 
@@ -533,7 +533,7 @@ static unsigned int lcm_compare_id(void)
 #ifdef BUILD_LK
 		dprintf(0, "%s, LK r63417 debug: r63417 id = 0x%08x\n", __func__, id);
 #else
-		pr_info("%s, kernel r63417 horse debug: r63417 id = 0x%08x\n", __func__, id);
+		pr_debug("%s, kernel r63417 horse debug: r63417 id = 0x%08x\n", __func__, id);
 #endif
 
 	if (id == LCM_ID_R63417)
@@ -558,11 +558,11 @@ static unsigned int lcm_esd_check(void)
 	read_reg_v2(0x53, buffer, 1);
 
 	if (buffer[0] != 0x24) {
-		pr_info("[LCM ERROR] [0x53]=0x%02x\n", buffer[0]);
+		pr_debug("[LCM ERROR] [0x53]=0x%02x\n", buffer[0]);
 		return TRUE;
 
 	} else {
-		pr_info("[LCM NORMAL] [0x53]=0x%02x\n", buffer[0]);
+		pr_debug("[LCM NORMAL] [0x53]=0x%02x\n", buffer[0]);
 		return FALSE;
 	}
 #else
@@ -585,7 +585,7 @@ unsigned int lcm_ata_check(unsigned char *buffer)
 	unsigned int data_array[3];
 	unsigned char read_buf[4];
 
-	pr_info("ATA check size = 0x%x,0x%x,0x%x,0x%x\n", x0_MSB, x0_LSB, x1_MSB, x1_LSB);
+	pr_debug("ATA check size = 0x%x,0x%x,0x%x,0x%x\n", x0_MSB, x0_LSB, x1_MSB, x1_LSB);
 	data_array[0] = 0x0005390A;
 	data_array[1] = (x1_MSB<<24)|(x0_LSB<<16)|(x0_MSB<<8)|0x2a;
 	data_array[2] = (x1_LSB);
@@ -624,7 +624,7 @@ static void lcm_setbacklight(unsigned int level)
 #ifdef BUILD_LK
 	dprintf(0, "%s,lk r63417 backlight: level = %d\n", __func__, level);
 #else
-	pr_info("%s, kernel r63417 backlight: level = %d\n", __func__, level);
+	pr_debug("%s, kernel r63417 backlight: level = %d\n", __func__, level);
 #endif
 	/* Refresh value of backlight level. */
 	lcm_backlight_level_setting[0].para_list[0] = level;
