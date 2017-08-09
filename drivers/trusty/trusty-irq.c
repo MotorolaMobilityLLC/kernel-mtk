@@ -543,6 +543,11 @@ static int trusty_irq_probe(struct platform_device *pdev)
 	init_irq_node(pdev->dev.of_node);
 #endif
 
+#ifdef CONFIG_TRUSTY_INTERRUPT_FIQ_ONLY
+	pr_info("%s: trusty flow with FIQ is supported!\n", __func__);
+	return 0;
+#endif
+
 	is = kzalloc(sizeof(*is), GFP_KERNEL);
 	if (!is) {
 		ret = -ENOMEM;

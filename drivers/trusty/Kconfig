@@ -38,4 +38,9 @@ config TRUSTY_INTERRUPT_MAP
 	depends on TRUSTY
 	default n
 
+config TRUSTY_INTERRUPT_FIQ_ONLY
+	tristate "Trusty interrupt fiq support"
+	depends on TRUSTY && MTK_GIC_V3_EXT
+	default y
+
 endmenu

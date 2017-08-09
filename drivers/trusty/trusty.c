@@ -167,8 +167,13 @@ static ulong trusty_std_call_helper(struct device *dev, ulong smcnr,
 static void trusty_std_call_cpu_idle(struct trusty_state *s)
 {
 	int ret;
+	unsigned long timeout = HZ * 10;
 
-	ret = wait_for_completion_timeout(&s->cpu_idle_completion, HZ * 10);
+#ifdef CONFIG_TRUSTY_INTERRUPT_FIQ_ONLY
+	timeout = HZ / 5; /* 200 ms */
+#endif
+
+	ret = wait_for_completion_timeout(&s->cpu_idle_completion, timeout);
 	if (!ret) {
 		pr_warn("%s: timed out waiting for cpu idle to clear, retry anyway\n",
 			__func__);
