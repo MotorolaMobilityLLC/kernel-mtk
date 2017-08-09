@@ -75,8 +75,25 @@ struct last_reboot_reason {
 	uint8_t gpu_dvfs_status;
 
 	uint64_t ptp_cpu_big_volt;
+	uint64_t ptp_cpu_big_volt_1;
+	uint64_t ptp_cpu_big_volt_2;
+	uint64_t ptp_cpu_big_volt_3;
+	uint64_t ptp_cpu_2_little_volt;
+	uint64_t ptp_cpu_2_little_volt_1;
+	uint64_t ptp_cpu_2_little_volt_2;
+	uint64_t ptp_cpu_2_little_volt_3;
 	uint64_t ptp_cpu_little_volt;
+	uint64_t ptp_cpu_little_volt_1;
+	uint64_t ptp_cpu_little_volt_2;
+	uint64_t ptp_cpu_little_volt_3;
+	uint64_t ptp_cpu_cci_volt;
+	uint64_t ptp_cpu_cci_volt_1;
+	uint64_t ptp_cpu_cci_volt_2;
+	uint64_t ptp_cpu_cci_volt_3;
 	uint64_t ptp_gpu_volt;
+	uint64_t ptp_gpu_volt_1;
+	uint64_t ptp_gpu_volt_2;
+	uint64_t ptp_gpu_volt_3;
 	uint64_t ptp_temp;
 	uint8_t ptp_status;
 	uint8_t eem_pi_offset;
@@ -1023,6 +1040,55 @@ void aee_rr_rec_ptp_cpu_big_volt(u64 val)
 	LAST_RR_SET(ptp_cpu_big_volt, val);
 }
 
+void aee_rr_rec_ptp_cpu_big_volt_1(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_big_volt_1, val);
+}
+
+void aee_rr_rec_ptp_cpu_big_volt_2(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_big_volt_2, val);
+}
+
+void aee_rr_rec_ptp_cpu_big_volt_3(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_big_volt_3, val);
+}
+
+void aee_rr_rec_ptp_cpu_2_little_volt(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_2_little_volt, val);
+}
+
+void aee_rr_rec_ptp_cpu_2_little_volt_1(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_2_little_volt_1, val);
+}
+
+void aee_rr_rec_ptp_cpu_2_little_volt_2(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_2_little_volt_2, val);
+}
+
+void aee_rr_rec_ptp_cpu_2_little_volt_3(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_2_little_volt_3, val);
+}
+
 void aee_rr_rec_ptp_cpu_little_volt(u64 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -1030,11 +1096,81 @@ void aee_rr_rec_ptp_cpu_little_volt(u64 val)
 	LAST_RR_SET(ptp_cpu_little_volt, val);
 }
 
+void aee_rr_rec_ptp_cpu_little_volt_1(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_little_volt_1, val);
+}
+
+void aee_rr_rec_ptp_cpu_little_volt_2(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_little_volt_2, val);
+}
+
+void aee_rr_rec_ptp_cpu_little_volt_3(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_little_volt_3, val);
+}
+
+void aee_rr_rec_ptp_cpu_cci_volt(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_cci_volt, val);
+}
+
+void aee_rr_rec_ptp_cpu_cci_volt_1(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_cci_volt_1, val);
+}
+
+void aee_rr_rec_ptp_cpu_cci_volt_2(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_cci_volt_2, val);
+}
+
+void aee_rr_rec_ptp_cpu_cci_volt_3(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_cpu_cci_volt_3, val);
+}
+
 void aee_rr_rec_ptp_gpu_volt(u64 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
 	LAST_RR_SET(ptp_gpu_volt, val);
+}
+
+void aee_rr_rec_ptp_gpu_volt_1(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_gpu_volt_1, val);
+}
+
+void aee_rr_rec_ptp_gpu_volt_2(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_gpu_volt_2, val);
+}
+
+void aee_rr_rec_ptp_gpu_volt_3(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_gpu_volt_3, val);
 }
 
 void aee_rr_rec_ptp_temp(u64 val)
@@ -1112,14 +1248,99 @@ u64 aee_rr_curr_ptp_cpu_big_volt(void)
 	return LAST_RR_VAL(ptp_cpu_big_volt);
 }
 
+u64 aee_rr_curr_ptp_cpu_big_volt_1(void)
+{
+	return LAST_RR_VAL(ptp_cpu_big_volt_1);
+}
+
+u64 aee_rr_curr_ptp_cpu_big_volt_2(void)
+{
+	return LAST_RR_VAL(ptp_cpu_big_volt_2);
+}
+
+u64 aee_rr_curr_ptp_cpu_big_volt_3(void)
+{
+	return LAST_RR_VAL(ptp_cpu_big_volt_3);
+}
+
+u64 aee_rr_curr_ptp_cpu_2_little_volt(void)
+{
+	return LAST_RR_VAL(ptp_cpu_2_little_volt);
+}
+
+u64 aee_rr_curr_ptp_cpu_2_little_volt_1(void)
+{
+	return LAST_RR_VAL(ptp_cpu_2_little_volt_1);
+}
+
+u64 aee_rr_curr_ptp_cpu_2_little_volt_2(void)
+{
+	return LAST_RR_VAL(ptp_cpu_2_little_volt_2);
+}
+
+u64 aee_rr_curr_ptp_cpu_2_little_volt_3(void)
+{
+	return LAST_RR_VAL(ptp_cpu_2_little_volt_3);
+}
+
 u64 aee_rr_curr_ptp_cpu_little_volt(void)
 {
 	return LAST_RR_VAL(ptp_cpu_little_volt);
 }
 
+u64 aee_rr_curr_ptp_cpu_little_volt_1(void)
+{
+	return LAST_RR_VAL(ptp_cpu_little_volt_1);
+}
+
+u64 aee_rr_curr_ptp_cpu_little_volt_2(void)
+{
+	return LAST_RR_VAL(ptp_cpu_little_volt_2);
+}
+
+u64 aee_rr_curr_ptp_cpu_little_volt_3(void)
+{
+	return LAST_RR_VAL(ptp_cpu_little_volt_3);
+}
+
+u64 aee_rr_curr_ptp_cpu_cci_volt(void)
+{
+	return LAST_RR_VAL(ptp_cpu_cci_volt);
+}
+
+u64 aee_rr_curr_ptp_cpu_cci_volt_1(void)
+{
+	return LAST_RR_VAL(ptp_cpu_cci_volt_1);
+}
+
+u64 aee_rr_curr_ptp_cpu_cci_volt_2(void)
+{
+	return LAST_RR_VAL(ptp_cpu_cci_volt_2);
+}
+
+u64 aee_rr_curr_ptp_cpu_cci_volt_3(void)
+{
+	return LAST_RR_VAL(ptp_cpu_cci_volt_3);
+}
+
 u64 aee_rr_curr_ptp_gpu_volt(void)
 {
 	return LAST_RR_VAL(ptp_gpu_volt);
+}
+
+u64 aee_rr_curr_ptp_gpu_volt_1(void)
+{
+	return LAST_RR_VAL(ptp_gpu_volt_1);
+}
+
+u64 aee_rr_curr_ptp_gpu_volt_2(void)
+{
+	return LAST_RR_VAL(ptp_gpu_volt_2);
+}
+
+u64 aee_rr_curr_ptp_gpu_volt_3(void)
+{
+	return LAST_RR_VAL(ptp_gpu_volt_3);
 }
 
 u64 aee_rr_curr_ptp_temp(void)
@@ -1350,6 +1571,69 @@ void aee_rr_show_ptp_cpu_big_volt(struct seq_file *m)
 			   (LAST_RRR_VAL(ptp_cpu_big_volt) >> (i * 8)) & 0xFF);
 }
 
+void aee_rr_show_ptp_cpu_big_volt_1(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_big_volt_1[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_big_volt_1) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_cpu_big_volt_2(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_big_volt_2[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_big_volt_2) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_cpu_big_volt_3(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_big_volt_3[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_big_volt_3) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_cpu_2_little_volt(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_2_little_volt[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_2_little_volt) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_cpu_2_little_volt_1(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_2_little_volt_1[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_2_little_volt_1) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_cpu_2_little_volt_2(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_2_little_volt_2[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_2_little_volt_2) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_cpu_2_little_volt_3(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_2_little_volt_3[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_2_little_volt_3) >> (i * 8)) & 0xFF);
+}
+
 void aee_rr_show_ptp_cpu_little_volt(struct seq_file *m)
 {
 	int i;
@@ -1359,6 +1643,69 @@ void aee_rr_show_ptp_cpu_little_volt(struct seq_file *m)
 			   (LAST_RRR_VAL(ptp_cpu_little_volt) >> (i * 8)) & 0xFF);
 }
 
+void aee_rr_show_ptp_cpu_little_volt_1(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_little_volt_1[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_little_volt_1) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_cpu_little_volt_2(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_little_volt_2[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_little_volt_2) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_cpu_little_volt_3(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_little_volt_3[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_little_volt_3) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_cpu_cci_volt(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_cci_volt[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_cci_volt) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_cpu_cci_volt_1(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_cci_volt_1[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_cci_volt_1) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_cpu_cci_volt_2(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_cci_volt_2[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_cci_volt_2) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_cpu_cci_volt_3(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_cpu_cci_volt_3[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_cpu_cci_volt_3) >> (i * 8)) & 0xFF);
+}
+
 void aee_rr_show_ptp_gpu_volt(struct seq_file *m)
 {
 	int i;
@@ -1366,6 +1713,33 @@ void aee_rr_show_ptp_gpu_volt(struct seq_file *m)
 	for (i = 0; i < 8; i++)
 		seq_printf(m, "ptp_gpu_volt[%d] = %llx\n", i,
 			   (LAST_RRR_VAL(ptp_gpu_volt) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_gpu_volt_1(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_gpu_volt_1[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_gpu_volt_1) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_gpu_volt_2(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_gpu_volt_2[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_gpu_volt_2) >> (i * 8)) & 0xFF);
+}
+
+void aee_rr_show_ptp_gpu_volt_3(struct seq_file *m)
+{
+	int i;
+
+	for (i = 0; i < 8; i++)
+		seq_printf(m, "ptp_gpu_volt_3[%d] = %llx\n", i,
+			   (LAST_RRR_VAL(ptp_gpu_volt_3) >> (i * 8)) & 0xFF);
 }
 
 void aee_rr_show_ptp_temp(struct seq_file *m)
@@ -1507,7 +1881,21 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_gpu_dvfs_oppidx,
 	aee_rr_show_gpu_dvfs_status,
 	aee_rr_show_ptp_cpu_big_volt,
+	aee_rr_show_ptp_cpu_big_volt_1,
+	aee_rr_show_ptp_cpu_big_volt_2,
+	aee_rr_show_ptp_cpu_big_volt_3,
+	aee_rr_show_ptp_cpu_2_little_volt,
+	aee_rr_show_ptp_cpu_2_little_volt_1,
+	aee_rr_show_ptp_cpu_2_little_volt_2,
+	aee_rr_show_ptp_cpu_2_little_volt_3,
 	aee_rr_show_ptp_cpu_little_volt,
+	aee_rr_show_ptp_cpu_little_volt_1,
+	aee_rr_show_ptp_cpu_little_volt_2,
+	aee_rr_show_ptp_cpu_little_volt_3,
+	aee_rr_show_ptp_cpu_cci_volt,
+	aee_rr_show_ptp_cpu_cci_volt_1,
+	aee_rr_show_ptp_cpu_cci_volt_2,
+	aee_rr_show_ptp_cpu_cci_volt_3,
 	aee_rr_show_ptp_gpu_volt,
 	aee_rr_show_ptp_temp,
 	aee_rr_show_ptp_status,

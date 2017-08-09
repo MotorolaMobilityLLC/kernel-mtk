@@ -496,9 +496,26 @@ static void eem_restore_eem_volt(struct eem_det *det);
 #if defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING)
 static void _mt_eem_aee_init(void)
 {
-	aee_rr_rec_ptp_cpu_little_volt(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_cpu_big_volt(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_big_volt_1(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_big_volt_2(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_big_volt_3(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_gpu_volt(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_gpu_volt_1(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_gpu_volt_2(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_gpu_volt_3(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_little_volt(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_little_volt_1(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_little_volt_2(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_little_volt_3(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_2_little_volt(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_2_little_volt_1(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_2_little_volt_2(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_2_little_volt_3(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_cci_volt(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_cci_volt_1(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_cci_volt_2(0xFFFFFFFFFFFFFFFF);
+	aee_rr_rec_ptp_cpu_cci_volt_3(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_temp(0xFFFFFFFFFFFFFFFF);
 	aee_rr_rec_ptp_status(0xFF);
 }
@@ -2203,11 +2220,21 @@ static int eem_volt_thread_handler(void *data)
 				break;
 
 			case EEM_CTRL_L:
-			case EEM_CTRL_2L:
-			case EEM_CTRL_CCI:
 				aee_rr_rec_ptp_status(aee_rr_curr_ptp_status() |
 					(1 << EEM_CPU_LITTLE_IS_SET_VOLT));
 				temp = EEM_CPU_LITTLE_IS_SET_VOLT;
+				break;
+
+			case EEM_CTRL_2L:
+				aee_rr_rec_ptp_status(aee_rr_curr_ptp_status() |
+					(1 << EEM_CPU_2_LITTLE_IS_SET_VOLT));
+				temp = EEM_CPU_2_LITTLE_IS_SET_VOLT;
+				break;
+
+			case EEM_CTRL_CCI:
+				aee_rr_rec_ptp_status(aee_rr_curr_ptp_status() |
+					(1 << EEM_CPU_CCI_IS_SET_VOLT));
+				temp = EEM_CPU_CCI_IS_SET_VOLT;
 				break;
 
 			default:
@@ -2819,36 +2846,97 @@ static inline void handle_init02_isr(struct eem_det *det)
 	/* backup to volt_tbl_init2 */
 	memcpy(det->volt_tbl_init2, det->volt_tbl, sizeof(det->volt_tbl_init2));
 
-	for (i = 0; i < NR_FREQ; i += (NR_FREQ / 8)) {
+	for (i = 0; i < NR_FREQ; i++) {
 		#if defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING) /* I-Chang */
 		switch (det->ctrl_id) {
 		case EEM_CTRL_BIG:
-			aee_rr_rec_ptp_cpu_big_volt(
-				((unsigned long long)(det->volt_tbl[i]) << (8 * i / (NR_FREQ / 8))) |
-				(aee_rr_curr_ptp_cpu_big_volt() & ~
-					((unsigned long long)(0xFF) << (8 * i / (NR_FREQ / 8)))
-				)
-			);
+			if (i < 8) {
+				aee_rr_rec_ptp_cpu_big_volt(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
+					(aee_rr_curr_ptp_cpu_big_volt() & ~
+						((unsigned long long)(0xFF) << (8 * i))
+					)
+				);
+			} else {
+				aee_rr_rec_ptp_cpu_big_volt_1(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
+					(aee_rr_curr_ptp_cpu_big_volt_1() & ~
+						((unsigned long long)(0xFF) << (8 * (i - 8)))
+					)
+				);
+			}
 			break;
 
 		case EEM_CTRL_GPU:
-			aee_rr_rec_ptp_gpu_volt(
-				((unsigned long long)(det->volt_tbl[i]) << (8 * i / (NR_FREQ / 8))) |
-				(aee_rr_curr_ptp_gpu_volt() & ~
-					((unsigned long long)(0xFF) << (8 * i / (NR_FREQ / 8)))
-				)
-			);
+			if (i < 8) {
+				aee_rr_rec_ptp_gpu_volt(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
+					(aee_rr_curr_ptp_gpu_volt() & ~
+						((unsigned long long)(0xFF) << (8 * i))
+					)
+				);
+			} else {
+				aee_rr_rec_ptp_gpu_volt_1(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
+					(aee_rr_curr_ptp_gpu_volt_1() & ~
+						((unsigned long long)(0xFF) << (8 * (i - 8)))
+					)
+				);
+			}
 			break;
 
 		case EEM_CTRL_L:
+			if (i < 8) {
+				aee_rr_rec_ptp_cpu_little_volt(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
+					(aee_rr_curr_ptp_cpu_little_volt() & ~
+						((unsigned long long)(0xFF) << (8 * i))
+					)
+				);
+			} else {
+				aee_rr_rec_ptp_cpu_little_volt_1(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
+					(aee_rr_curr_ptp_cpu_little_volt_1() & ~
+						((unsigned long long)(0xFF) << (8 * (i - 8)))
+					)
+				);
+			}
+			break;
+
 		case EEM_CTRL_2L:
+			if (i < 8) {
+				aee_rr_rec_ptp_cpu_2_little_volt(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
+					(aee_rr_curr_ptp_cpu_2_little_volt() & ~
+						((unsigned long long)(0xFF) << (8 * i))
+					)
+				);
+			} else {
+				aee_rr_rec_ptp_cpu_2_little_volt_1(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
+					(aee_rr_curr_ptp_cpu_2_little_volt_1() & ~
+						((unsigned long long)(0xFF) << (8 * (i - 8)))
+					)
+				);
+			}
+			break;
+
 		case EEM_CTRL_CCI:
-			aee_rr_rec_ptp_cpu_little_volt(
-				((unsigned long long)(det->volt_tbl[i]) << (8 * i / (NR_FREQ / 8))) |
-				(aee_rr_curr_ptp_cpu_little_volt() & ~
-					((unsigned long long)(0xFF) << (8 * i / (NR_FREQ / 8)))
-				)
-			);
+			if (i < 8) {
+				aee_rr_rec_ptp_cpu_cci_volt(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
+					(aee_rr_curr_ptp_cpu_cci_volt() & ~
+						((unsigned long long)(0xFF) << (8 * i))
+					)
+				);
+			} else {
+				aee_rr_rec_ptp_cpu_cci_volt_1(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
+					(aee_rr_curr_ptp_cpu_cci_volt_1() & ~
+						((unsigned long long)(0xFF) << (8 * (i - 8)))
+					)
+				);
+			}
 			break;
 
 		default:
@@ -3063,36 +3151,97 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 		}
 	}
 
-	for (i = 0; i < NR_FREQ; i += (NR_FREQ / 8)) {
+	for (i = 0; i < NR_FREQ; i++) {
 		#if defined(CONFIG_EEM_AEE_RR_REC) && !defined(EARLY_PORTING) /* I-Chang */
 		switch (det->ctrl_id) {
 		case EEM_CTRL_BIG:
-			aee_rr_rec_ptp_cpu_big_volt(
-				((unsigned long long)(det->volt_tbl[i]) << (8 * i / (NR_FREQ / 8))) |
-				(aee_rr_curr_ptp_cpu_big_volt() & ~
-					((unsigned long long)(0xFF) << (8 * i / (NR_FREQ / 8)))
-				)
-			);
+			if (i < 8) {
+				aee_rr_rec_ptp_cpu_big_volt(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
+					(aee_rr_curr_ptp_cpu_big_volt() & ~
+						((unsigned long long)(0xFF) << (8 * i))
+					)
+				);
+			} else {
+				aee_rr_rec_ptp_cpu_big_volt_1(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
+					(aee_rr_curr_ptp_cpu_big_volt_1() & ~
+						((unsigned long long)(0xFF) << (8 * (i - 8)))
+					)
+				);
+			}
 			break;
 
 		case EEM_CTRL_GPU:
-			aee_rr_rec_ptp_gpu_volt(
-				((unsigned long long)(det->volt_tbl[i]) << (8 * i / (NR_FREQ / 8))) |
-				(aee_rr_curr_ptp_gpu_volt() & ~
-					((unsigned long long)(0xFF) << (8 * i / (NR_FREQ / 8)))
-				)
-			);
+			if (i < 8) {
+				aee_rr_rec_ptp_gpu_volt(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
+					(aee_rr_curr_ptp_gpu_volt() & ~
+						((unsigned long long)(0xFF) << (8 * i))
+					)
+				);
+			} else {
+				aee_rr_rec_ptp_gpu_volt_1(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
+					(aee_rr_curr_ptp_gpu_volt_1() & ~
+						((unsigned long long)(0xFF) << (8 * (i - 8)))
+					)
+				);
+			}
 			break;
 
 		case EEM_CTRL_L:
+			if (i < 8) {
+				aee_rr_rec_ptp_cpu_little_volt(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
+					(aee_rr_curr_ptp_cpu_little_volt() & ~
+						((unsigned long long)(0xFF) << (8 * i))
+					)
+				);
+			} else {
+				aee_rr_rec_ptp_cpu_little_volt_1(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
+					(aee_rr_curr_ptp_cpu_little_volt_1() & ~
+						((unsigned long long)(0xFF) << (8 * (i - 8)))
+					)
+				);
+			}
+			break;
+
 		case EEM_CTRL_2L:
+			if (i < 8) {
+				aee_rr_rec_ptp_cpu_2_little_volt(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
+					(aee_rr_curr_ptp_cpu_2_little_volt() & ~
+						((unsigned long long)(0xFF) << (8 * i))
+					)
+				);
+			} else {
+				aee_rr_rec_ptp_cpu_2_little_volt_1(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
+					(aee_rr_curr_ptp_cpu_2_little_volt_1() & ~
+						((unsigned long long)(0xFF) << (8 * (i - 8)))
+					)
+				);
+			}
+			break;
+
 		case EEM_CTRL_CCI:
-			aee_rr_rec_ptp_cpu_little_volt(
-				((unsigned long long)(det->volt_tbl[i]) << (8 * i / (NR_FREQ / 8))) |
-				(aee_rr_curr_ptp_cpu_little_volt() & ~
-					((unsigned long long)(0xFF) << (8 * i / (NR_FREQ / 8)))
-				)
-			);
+			if (i < 8) {
+				aee_rr_rec_ptp_cpu_cci_volt(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
+					(aee_rr_curr_ptp_cpu_cci_volt() & ~
+						((unsigned long long)(0xFF) << (8 * i))
+					)
+				);
+			} else {
+				aee_rr_rec_ptp_cpu_cci_volt_1(
+					((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
+					(aee_rr_curr_ptp_cpu_cci_volt_1() & ~
+						((unsigned long long)(0xFF) << (8 * (i - 8)))
+					)
+				);
+			}
 			break;
 
 		default:

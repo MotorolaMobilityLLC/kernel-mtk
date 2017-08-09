@@ -101,17 +101,53 @@ enum eem_state {
 	EEM_CPU_BIG_IS_SET_VOLT = 0,    /* B */
 	EEM_GPU_IS_SET_VOLT,            /* G */
 	EEM_CPU_LITTLE_IS_SET_VOLT, /* L */
+	EEM_CPU_2_LITTLE_IS_SET_VOLT, /* 2L */
+	EEM_CPU_CCI_IS_SET_VOLT, /* CCI */
 };
 
-extern void aee_rr_rec_ptp_cpu_little_volt(u64 val);
-extern void aee_rr_rec_ptp_gpu_volt(u64 val);
 extern void aee_rr_rec_ptp_cpu_big_volt(u64 val);
+extern void aee_rr_rec_ptp_cpu_big_volt_1(u64 val);
+extern void aee_rr_rec_ptp_cpu_big_volt_2(u64 val);
+extern void aee_rr_rec_ptp_cpu_big_volt_3(u64 val);
+extern void aee_rr_rec_ptp_gpu_volt(u64 val);
+extern void aee_rr_rec_ptp_gpu_volt_1(u64 val);
+extern void aee_rr_rec_ptp_gpu_volt_2(u64 val);
+extern void aee_rr_rec_ptp_gpu_volt_3(u64 val);
+extern void aee_rr_rec_ptp_cpu_little_volt(u64 val);
+extern void aee_rr_rec_ptp_cpu_little_volt_1(u64 val);
+extern void aee_rr_rec_ptp_cpu_little_volt_2(u64 val);
+extern void aee_rr_rec_ptp_cpu_little_volt_3(u64 val);
+extern void aee_rr_rec_ptp_cpu_2_little_volt(u64 val);
+extern void aee_rr_rec_ptp_cpu_2_little_volt_1(u64 val);
+extern void aee_rr_rec_ptp_cpu_2_little_volt_2(u64 val);
+extern void aee_rr_rec_ptp_cpu_2_little_volt_3(u64 val);
+extern void aee_rr_rec_ptp_cpu_cci_volt(u64 val);
+extern void aee_rr_rec_ptp_cpu_cci_volt_1(u64 val);
+extern void aee_rr_rec_ptp_cpu_cci_volt_2(u64 val);
+extern void aee_rr_rec_ptp_cpu_cci_volt_3(u64 val);
 extern void aee_rr_rec_ptp_temp(u64 val);
 extern void aee_rr_rec_ptp_status(u8 val);
 
-extern u64 aee_rr_curr_ptp_cpu_little_volt(void);
-extern u64 aee_rr_curr_ptp_gpu_volt(void);
 extern u64 aee_rr_curr_ptp_cpu_big_volt(void);
+extern u64 aee_rr_curr_ptp_cpu_big_volt_1(void);
+extern u64 aee_rr_curr_ptp_cpu_big_volt_2(void);
+extern u64 aee_rr_curr_ptp_cpu_big_volt_3(void);
+extern u64 aee_rr_curr_ptp_gpu_volt(void);
+extern u64 aee_rr_curr_ptp_gpu_volt_1(void);
+extern u64 aee_rr_curr_ptp_gpu_volt_2(void);
+extern u64 aee_rr_curr_ptp_gpu_volt_3(void);
+extern u64 aee_rr_curr_ptp_cpu_little_volt(void);
+extern u64 aee_rr_curr_ptp_cpu_little_volt_1(void);
+extern u64 aee_rr_curr_ptp_cpu_little_volt_2(void);
+extern u64 aee_rr_curr_ptp_cpu_little_volt_3(void);
+extern u64 aee_rr_curr_ptp_cpu_2_little_volt(void);
+extern u64 aee_rr_curr_ptp_cpu_2_little_volt_1(void);
+extern u64 aee_rr_curr_ptp_cpu_2_little_volt_2(void);
+extern u64 aee_rr_curr_ptp_cpu_2_little_volt_3(void);
+extern u64 aee_rr_curr_ptp_cpu_cci_volt(void);
+extern u64 aee_rr_curr_ptp_cpu_cci_volt_1(void);
+extern u64 aee_rr_curr_ptp_cpu_cci_volt_2(void);
+extern u64 aee_rr_curr_ptp_cpu_cci_volt_3(void);
 extern u64 aee_rr_curr_ptp_temp(void);
 extern u8 aee_rr_curr_ptp_status(void);
 #endif
