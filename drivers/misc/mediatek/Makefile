@@ -34,6 +34,7 @@ obj-$(CONFIG_MTK_GPU_SUPPORT) += gpu/
 obj-$(CONFIG_MTK_LCM) += lcm/
 obj-$(CONFIG_MTK_VIDEOX) += dispsys/
 obj-$(CONFIG_MTK_FB) += videox/
+obj-$(CONFIG_MTK_DRAMC) += dramc/
 obj-$(CONFIG_MTK_SYNC) += sync/
 obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 obj-$(CONFIG_MTK_WFD_SUPPORT)  += uibc/
