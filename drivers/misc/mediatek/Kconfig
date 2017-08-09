@@ -12,3 +12,5 @@ config ARCH_MTK_PROJECT
 	string "MTK project name"
 
 endif
+
+source "drivers/misc/mediatek/uart/Kconfig"

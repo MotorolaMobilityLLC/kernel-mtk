@@ -247,4 +247,6 @@
 /* MESON */
 #define PORT_MESON	109
 
+/* Mediatek */
+#define PORT_MTK	110
 #endif /* _UAPILINUX_SERIAL_CORE_H */
