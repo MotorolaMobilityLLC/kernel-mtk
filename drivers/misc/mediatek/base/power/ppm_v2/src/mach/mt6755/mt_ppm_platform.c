@@ -27,7 +27,6 @@ void ppm_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_policy_req
 
 int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 {
-#if 1
 	struct ppm_pwr_idx_ref_tbl_data ref_tbl = ppm_get_pwr_idx_ref_tbl();
 	unsigned int pwr_idx = 0;
 	int i;
@@ -52,43 +51,6 @@ int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 	ppm_ver("@%s: pwr_idx = %d\n", __func__, pwr_idx);
 
 	return pwr_idx;
-#else
-	int i;
-	struct ppm_power_tbl_data power_table = ppm_get_power_table();
-	int core_1 = cluster_status[0].core_num;
-	int opp_1 = cluster_status[0].freq_idx;
-	int core_2 = cluster_status[1].core_num;
-	int opp_2 = cluster_status[1].freq_idx;
-
-	ppm_dbg(DLPT, "@%s: core_1 = %d, opp_1 = %d, core_2 = %d, opp_2 = %d, volt_1 = %d, volt_2 = %d\n",
-		__func__, core_1, opp_1, core_2, opp_2, cluster_status[0].volt, cluster_status[1].volt);
-
-	opp_1 = (!core_1) ? -1 : opp_1;
-	opp_2 = (!core_2) ? -1 : opp_2;
-
-	/* sync opp to little one due to shared bulk*/
-	if (opp_1 != -1 && opp_2 != -1) {
-		opp_1 = MIN(opp_1, opp_2);
-		opp_2 = MIN(opp_1, opp_2);
-	}
-
-	for_each_pwr_tbl_entry(i, power_table) {
-		if (power_table.power_tbl[i].cluster_cfg[0].core_num == core_1
-				&& power_table.power_tbl[i].cluster_cfg[0].opp_lv == opp_1
-				&& power_table.power_tbl[i].cluster_cfg[1].core_num == core_2
-				&& power_table.power_tbl[i].cluster_cfg[1].opp_lv == opp_2
-			) {
-				ppm_dbg(DLPT, "[index][power] = [%d][%d]\n",
-					i, power_table.power_tbl[i].power_idx);
-				return power_table.power_tbl[i].power_idx;
-			}
-	}
-
-	ppm_dbg(DLPT, "@%s: power_idx not found!\n", __func__);
-
-	/* return -1 if not found */
-	return -1;
-#endif
 }
 
 int ppm_get_max_pwr_idx(void)

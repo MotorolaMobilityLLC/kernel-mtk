@@ -60,7 +60,6 @@ extern "C" {
 
 /* loop macros */
 #define for_each_ppm_clusters(i)	for (i = 0; i < ppm_main_info.cluster_num; i++)
-#define for_each_pwr_tbl_entry(i, tbl)	for (i = 0; i < tbl.nr_power_tbl; i++)
 #define for_each_ppm_clients(i)		for (i = 0; i < NR_PPM_CLIENTS; i++)
 #define for_each_ppm_power_state(i)	for (i = 0; i < NR_PPM_POWER_STATE; i++)
 

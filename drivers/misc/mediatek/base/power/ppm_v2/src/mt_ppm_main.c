@@ -676,6 +676,17 @@ int mt_ppm_main(void)
 		aee_rr_rec_ppm_policy_mask(policy_mask);
 #endif
 
+#ifdef PPM_PMCU_SUPPORT
+#ifdef CONFIG_MTK_RAM_CONSOLE
+		aee_rr_rec_ppm_step(5);
+#endif
+		/* update limit to PMCU first */
+		ppm_ipi_update_limit(*c_req);
+#ifdef CONFIG_MTK_RAM_CONSOLE
+		aee_rr_rec_ppm_step(6);
+#endif
+#endif
+
 		{
 			bool notify_hps = false, notify_dvfs = false, log_print = false;
 

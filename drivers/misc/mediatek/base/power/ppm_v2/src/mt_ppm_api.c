@@ -77,11 +77,6 @@ void mt_ppm_register_client(enum ppm_client client, void (*limit)(struct ppm_cli
 	ppm_main_info.client_info[client].client = client;
 	ppm_main_info.client_info[client].limit_cb = limit;
 
-#ifdef PPM_PMCU_SUPPORT
-	if (client == PPM_CLIENT_DVFS)
-		ppm_main_info.client_info[client].limit_cb = ppm_ipi_update_limit;
-#endif
-
 	ppm_unlock(&ppm_main_info.lock);
 
 	FUNC_EXIT(FUNC_LV_API);

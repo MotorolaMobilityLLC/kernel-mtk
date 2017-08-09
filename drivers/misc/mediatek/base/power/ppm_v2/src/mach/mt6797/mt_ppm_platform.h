@@ -203,7 +203,7 @@ extern int *ppm_get_perf_idx_ref_tbl(enum ppm_cluster cluster);
 
 extern void ppm_power_data_init(void);
 
-/* ET algo */
+/* COBRA algo */
 extern void ppm_cobra_update_core_limit(unsigned int cluster, int limit);
 extern void ppm_cobra_update_freq_limit(unsigned int cluster, int limit);
 extern void ppm_cobra_update_limit(enum ppm_power_state new_state, void *user_req);
