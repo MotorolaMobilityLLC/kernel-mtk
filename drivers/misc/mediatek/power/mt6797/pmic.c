@@ -93,7 +93,7 @@
 
 #include <da9214.h>
 #include <fan53555.h>
-/*#include <fan49101.h>*/
+#include <fan49101.h>
 
 /*****************************************************************************
  * PMIC extern variable
@@ -3390,38 +3390,26 @@ int is_ext_buck_sw_ready(void)
 
 int is_ext_buck_exist(void)
 {
-#if 0
 	if ((is_da9214_exist() == 1))
 		return 1;
 	else
 		return 0;
-#else
-	return 0;
-#endif
 }
 
 int is_ext_buck2_exist(void)
 {
-#if 0
 	if ((is_fan53555_exist() == 1))
 		return 1;
 	else
 		return 0;
-#else
-	return 0;
-#endif
 }
 
 int is_ext_buck3_exist(void)
 {
-#if 0
 	if ((is_fan49101_exist() == 1))
 		return 1;
 	else
 		return 0;
-#else
-	return 0;
-#endif
 }
 /*****************************************************************************
  * FTM

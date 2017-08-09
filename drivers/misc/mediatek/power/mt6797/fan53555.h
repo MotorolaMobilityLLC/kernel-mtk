@@ -22,10 +22,13 @@
 
 #define fan53555_REG_NUM 6
 
+extern int is_fan53555_exist(void);
 extern void fan53555_dump_register(void);
 extern unsigned int fan53555_read_interface(unsigned char RegNum, unsigned char *val,
 					    unsigned char MASK, unsigned char SHIFT);
 extern unsigned int fan53555_config_interface(unsigned char RegNum, unsigned char val,
 					      unsigned char MASK, unsigned char SHIFT);
+extern int fan53555_vosel(unsigned long val);
+extern unsigned int fan53555_read_byte(unsigned char cmd, unsigned char *returnData);
 
 #endif				/* _fan53555_SW_H_ */

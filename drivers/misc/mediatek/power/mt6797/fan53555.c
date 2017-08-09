@@ -75,6 +75,7 @@ unsigned int g_fan53555_cid = 0;
   *   [I2C Function For Read/Write fan53555]
   *
   *********************************************************/
+#ifdef CONFIG_MTK_I2C_EXTENSION
 unsigned int fan53555_read_byte(unsigned char cmd, unsigned char *returnData)
 {
 	char cmd_buf[1] = { 0x00 };
@@ -83,7 +84,7 @@ unsigned int fan53555_read_byte(unsigned char cmd, unsigned char *returnData)
 
 	mutex_lock(&fan53555_i2c_access);
 
-#ifdef CONFIG_MTK_I2C_EXTENSION
+
 	/*
 	   new_client->ext_flag =
 	   ((new_client->ext_flag) & I2C_MASK_FLAG) | I2C_WR_FLAG | I2C_DIRECTION_FLAG;
@@ -92,9 +93,7 @@ unsigned int fan53555_read_byte(unsigned char cmd, unsigned char *returnData)
 	    ((new_client->ext_flag) & I2C_MASK_FLAG) | I2C_WR_FLAG | I2C_PUSHPULL_FLAG |
 	    I2C_HS_FLAG;
 	new_client->timing = 3400;
-#else
 
-#endif
 
 	cmd_buf[0] = cmd;
 	ret = i2c_master_send(new_client, &cmd_buf[0], (1 << 8 | 1));
@@ -125,14 +124,13 @@ unsigned int fan53555_write_byte(unsigned char cmd, unsigned char writeData)
 	write_data[0] = cmd;
 	write_data[1] = writeData;
 
-#ifdef CONFIG_MTK_I2C_EXTENSION
+
 	/* new_client->ext_flag = ((new_client->ext_flag) & I2C_MASK_FLAG) | I2C_DIRECTION_FLAG; */
 	new_client->ext_flag =
 	    ((new_client->ext_flag) & I2C_MASK_FLAG) | I2C_DIRECTION_FLAG | I2C_PUSHPULL_FLAG |
 	    I2C_HS_FLAG;
 	new_client->timing = 3400;
-#else
-#endif
+
 
 	ret = i2c_master_send(new_client, write_data, 2);
 	if (ret < 0) {
@@ -147,6 +145,86 @@ unsigned int fan53555_write_byte(unsigned char cmd, unsigned char writeData)
 	mutex_unlock(&fan53555_i2c_access);
 	return 1;
 }
+#else
+unsigned int fan53555_read_byte(unsigned char cmd, unsigned char *returnData)
+{
+	unsigned char xfers = 2;
+	int ret, retries = 1;
+
+	mutex_lock(&fan53555_i2c_access);
+
+	do {
+		struct i2c_msg msgs[2] = {
+			{
+			 .addr = new_client->addr,
+			 .flags = 0,
+			 .len = 1,
+			 .buf = &cmd,
+			 }, {
+
+			     .addr = new_client->addr,
+			     .flags = I2C_M_RD,
+			     .len = 1,
+			     .buf = returnData,
+			     }
+		};
+
+		/*
+		 * Avoid sending the segment addr to not upset non-compliant
+		 * DDC monitors.
+		 */
+		ret = i2c_transfer(new_client->adapter, &msgs[xfers], xfers);
+
+		if (ret == -ENXIO) {
+			PMICLOG1("skipping non-existent adapter %s\n", new_client->adapter->name);
+			break;
+		}
+	} while (ret != xfers && --retries);
+
+	mutex_unlock(&fan53555_i2c_access);
+
+	return ret == xfers ? 0 : -1;
+}
+
+unsigned int fan53555_write_byte(unsigned char cmd, unsigned char writeData)
+{
+	unsigned char xfers = 1;
+	int ret, retries = 1;
+	unsigned char buf[8];
+
+
+	mutex_lock(&fan53555_i2c_access);
+
+	buf[0] = cmd;
+	memcpy(&buf[1], &writeData, 1);
+
+	do {
+		struct i2c_msg msgs[1] = {
+			{
+			 .addr = new_client->addr,
+			 .flags = 0,
+			 .len = 1 + 1,
+			 .buf = buf,
+			 },
+		};
+
+		/*
+		 * Avoid sending the segment addr to not upset non-compliant
+		 * DDC monitors.
+		 */
+		ret = i2c_transfer(new_client->adapter, &msgs[xfers], xfers);
+
+		if (ret == -ENXIO) {
+			PMICLOG1("skipping non-existent adapter %s\n", new_client->adapter->name);
+			break;
+		}
+	} while (ret != xfers && --retries);
+
+	mutex_unlock(&fan53555_i2c_access);
+
+	return ret == xfers ? 0 : -1;
+}
+#endif
 
 /*
  *   [Read / Write Function]
@@ -304,13 +382,13 @@ int fan53555_vosel(unsigned long val)
 	unsigned long reg_val = 0;
 
 	/* 0.603~1.411V (step 12.826mv) */
-	reg_val = (((val * 1000) - 603000) + 6413) / 12826;
+	reg_val = (((val * 1000) - 603000) + 12825) / 12826;
 
 	if (reg_val > 63)
 		reg_val = 63;
 
 	reg_val = reg_val | 0x80;
-	ret = fan53555_write_byte(0x01, reg_val);
+	ret = fan53555_write_byte(0x00, reg_val);
 
 	pr_notice("[fan53555_vosel] val=%ld, reg_val=%ld\n", val, reg_val);
 
@@ -504,4 +582,3 @@ module_exit(fan53555_exit);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("I2C fan53555 Driver");
 MODULE_AUTHOR("Anderson Tsai");
-
