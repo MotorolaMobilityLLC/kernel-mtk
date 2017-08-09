@@ -11,9 +11,6 @@
 #include "cmdq_core_idv.h"
 #include <linux/platform_device.h>
 #include <mt-plat/aee.h>
-#ifdef CONFIG_PM_RUNTIME
-#include <linux/pm_runtime.h>
-#endif
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 #include "cmdq_iwc_sec.h"
@@ -706,7 +703,7 @@ char *cmdq_core_get_clk_name(CMDQ_CLK_ENUM clk_enum);
 void cmdq_core_get_clk_map(struct platform_device *pDevice);
 int cmdq_core_enable_ccf_clk(CMDQ_CLK_ENUM clk_enum);
 int cmdq_core_disable_ccf_clk(CMDQ_CLK_ENUM clk_enum);
-int cmdq_core_enable_mtcmos_clock(bool enable);
+/* int cmdq_core_enable_mtcmos_clock(bool enable); */
 bool cmdq_core_clock_is_on(CMDQ_CLK_ENUM clk_enum);
 /*
 bool cmdq_core_subsys_is_on(CMDQ_SUBSYS_ENUM clk_enum);

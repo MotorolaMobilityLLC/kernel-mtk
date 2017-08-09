@@ -6951,6 +6951,7 @@ int cmdq_core_disable_ccf_clk(CMDQ_CLK_ENUM clk_enum)
 	return ret;
 }
 
+/*
 int cmdq_core_enable_mtcmos_clock(bool enable)
 {
 	int status = 0;
@@ -6970,6 +6971,7 @@ int cmdq_core_enable_mtcmos_clock(bool enable)
 
 	return status;
 }
+*/
 
 bool cmdq_core_clock_is_on(CMDQ_CLK_ENUM clk_enum)
 {
