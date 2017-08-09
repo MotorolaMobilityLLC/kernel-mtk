@@ -8,6 +8,7 @@
 #include <linux/printk.h>
 
 #include "internal.h"
+#include <mt_cpufreq.h>
 
 #define BOOT_STR_SIZE 128
 #ifdef CONFIG_MT_ENG_BUILD
@@ -55,11 +56,17 @@ static void bootup_finish(void)
 {
 	mt_disable_uart();
 	set_logtoomuch_enable(1);
+#ifdef CONFIG_CPU_DVFS_SYSTEM_BOOTUP_BOOST
+	mt_cpufreq_set_min_freq(MT_CPU_DVFS_LITTLE, 0);
+#endif
 }
 #else
 static void bootup_finish(void)
 {
 	set_logtoomuch_enable(1);
+#ifdef CONFIG_CPU_DVFS_SYSTEM_BOOTUP_BOOST
+	mt_cpufreq_set_min_freq(MT_CPU_DVFS_LITTLE, 0);
+#endif
 }
 #endif
 /* extern void (*set_intact_mode)(void); */

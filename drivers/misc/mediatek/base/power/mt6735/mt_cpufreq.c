@@ -3742,6 +3742,10 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 		cpufreq_info("@%s: limited_power_idx = %d\n", __func__, p->limited_power_idx);
 
+#ifdef CONFIG_CPU_DVFS_SYSTEM_BOOTUP_BOOST
+		p->limited_min_freq_by_kdriver = cpu_dvfs_get_max_freq(p);
+#endif
+
 #ifdef CONFIG_CPU_DVFS_POWER_THROTTLING
 		register_battery_percent_notify(
 			&_mt_cpufreq_power_throttle_bat_per_CB,	BATTERY_PERCENT_PRIO_CPU_L);
