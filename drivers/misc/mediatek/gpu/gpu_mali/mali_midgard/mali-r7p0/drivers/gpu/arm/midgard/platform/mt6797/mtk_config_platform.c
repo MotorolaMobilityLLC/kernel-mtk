@@ -588,7 +588,7 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 
 	config->max_volt = 1077;
 	config->max_freq = mt_gpufreq_get_freq_by_idx(1);
-	config->min_volt = 850;
+	config->min_volt = 860;
 	config->min_freq = mt_gpufreq_get_freq_by_idx(mt_gpufreq_get_dvfs_table_num()-2);
 
 	g_config = kbdev->mtk_config = config;

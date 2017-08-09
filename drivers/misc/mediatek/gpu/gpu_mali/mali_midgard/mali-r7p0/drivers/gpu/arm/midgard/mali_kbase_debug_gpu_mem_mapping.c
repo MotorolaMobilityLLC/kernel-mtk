@@ -273,12 +273,12 @@ phys_addr_t kbase_debug_gpu_mem_mapping(struct kbase_context *kctx, u64 va)
 	phys_addr_t phy_addr = get_phy_addr(kctx, va);
 
 	if (!phy_addr && kctx->kbdev->debug_gpu_page_tables) {
-		show(kctx, "VA %016llx NOT mapped on GPU\n", va);
+		show(kctx, "VA %016llx NOT mapped on GPU, process:%s\n", va, kctx->process_name);
 		return 0;
 	}
 	if (kctx->kbdev->debug_gpu_page_tables)
 		show(kctx, "VA %016llx mapped -> PA %pa\n", va, &phy_addr);
-	
+
 	return phy_addr;
 
 }
@@ -313,6 +313,7 @@ static bool kbasep_mmu_dump_level(struct kbase_context *kctx, phys_addr_t pgd, i
 	m_pgd = pgd | level;
 	phy_addr = mmu_mode->pte_to_phy_addr(m_pgd);
 	phy_u64 = (u64)phy_addr;
+	phy_u64 &= PAGE_MASK;
 #if PRINT_DETAIL
 	dev_info(kctx->kbdev->dev,"=====%pa, %llx, %llx \n", &phy_addr, phy_u64, m_pgd);
 #endif
@@ -324,11 +325,12 @@ static bool kbasep_mmu_dump_level(struct kbase_context *kctx, phys_addr_t pgd, i
 
 		ate_page = pgd_page;
 		for (i=0; i < KBASE_MMU_PAGE_ENTRIES; i++) {
-			
+
 			ate = ate_page[i];
-			if (mmu_mode->ate_is_valid(ate)) {
+			/*if (mmu_mode->ate_is_valid(ate))*/ {
 				phy_addr = ate_to_phy_addr(ate);
 				phy_u64 = (u64) phy_addr;
+				phy_u64 &= PAGE_MASK;
 #if PRINT_DETAIL
 				dev_info(kctx->kbdev->dev,"=%pa \n", &phy_addr);
 #endif
@@ -337,7 +339,7 @@ static bool kbasep_mmu_dump_level(struct kbase_context *kctx, phys_addr_t pgd, i
 
 			}
 		}
-	
+
 	}
 	else {
 		u64 pte;
@@ -345,12 +347,13 @@ static bool kbasep_mmu_dump_level(struct kbase_context *kctx, phys_addr_t pgd, i
 		/* Followed by the page table itself */
 		for (i=0; i < KBASE_MMU_PAGE_ENTRIES; i++) {
 			pte = pgd_page[i];
-			if (mmu_mode->pte_is_valid(pte)) {
-				phy_addr = mmu_mode->pte_to_phy_addr(pte);	
-#if PRINT_DETAIL		
+			/*if (mmu_mode->pte_is_valid(pte))*/ {
+				phy_addr = mmu_mode->pte_to_phy_addr(pte);
+#if PRINT_DETAIL
 				dev_info(kctx->kbdev->dev,"=%pa \n", &phy_addr);
 #endif
 				phy_u64 = (u64) phy_addr;
+				phy_u64 &= PAGE_MASK;
 				if ((phy_u64&MIDGARD_MMU_PA_MASK) == (pa&MIDGARD_MMU_PA_MASK))
 					goto success;
 
@@ -361,13 +364,13 @@ static bool kbasep_mmu_dump_level(struct kbase_context *kctx, phys_addr_t pgd, i
 
 	if (level < 3) {
 	    for (i = 0; i < KBASE_MMU_PAGE_ENTRIES; i++) {
-		if (mmu_mode->pte_is_valid(pgd_page[i])) {
-			target_pgd = mmu_mode->pte_to_phy_addr(pgd_page[i]);
+			if (mmu_mode->pte_is_valid(pgd_page[i])) {
+				target_pgd = mmu_mode->pte_to_phy_addr(pgd_page[i]);
 
-			ret = kbasep_mmu_dump_level(kctx, target_pgd, level + 1, pa);
-			if (ret == true)
-				goto success;
-		}
+				ret = kbasep_mmu_dump_level(kctx, target_pgd, level + 1, pa);
+				if (ret == true)
+					goto success;
+			}
 	    }
 	}
 
@@ -377,6 +380,31 @@ static bool kbasep_mmu_dump_level(struct kbase_context *kctx, phys_addr_t pgd, i
 success: ret = true;
 	kunmap(pfn_to_page(PFN_DOWN(pgd)));
 
+	return ret;
+}
+static bool kbasep_check_va_reg(struct kbase_context *kctx, u64 pa)
+{
+	bool ret = false;
+	struct rb_node *p;
+	int i;
+	u64 phy_u64;
+
+	for (p = rb_first(&kctx->reg_rbtree); p; p = rb_next(p)) {
+		struct kbase_va_region *reg;
+
+		reg = rb_entry(p, struct kbase_va_region, rblink);
+		if (reg->gpu_alloc == NULL)
+			continue;
+		for (i = 0; i < reg->gpu_alloc->nents; i++) {
+			phy_u64 = (u64)reg->gpu_alloc->pages[i];
+			phy_u64 &= PAGE_MASK;
+			if ((phy_u64&MIDGARD_MMU_PA_MASK) == (pa&MIDGARD_MMU_PA_MASK)) {
+				dev_info(kctx->kbdev->dev,"    Get the PA:%016llx in VA region, kctx:%llx, PID:%llx\n, Process:%s",
+					phy_u64, (u64)kctx, (u64)(kctx->tgid), kctx->process_name);
+				ret = true;
+			}
+		}
+	}
 	return ret;
 }
 /*
@@ -405,12 +433,12 @@ bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 	struct list_head *entry;
 	const struct list_head *kbdev_list;
 	struct kbase_context *kctx = NULL;
-	/*int s;*/
+	int /*s,*/ i;
 	struct kbasep_js_device_data *js_devdata;
 	/*unsigned long flags;*/
 
-	pr_err("Mali PA check\n");
-
+	pr_info("Mali PA page check:%llx\n", pa);
+	pa &= PAGE_MASK;
 	kbdev_list = kbase_dev_list_get();
 	if(kbdev_list == NULL)
 		return false;
@@ -454,13 +482,34 @@ bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 			/* list for each kctx opened on this device */
 			kctx = element->kctx;
 			ret = kbasep_mmu_dump_level(kctx, kctx->pgd, MIDGARD_MMU_TOPLEVEL, pa);
-			kbase_gpu_vm_unlock(kctx);
 			if (ret == true) {
-				dev_info(kctx->kbdev->dev,"    Get the PA:%016llx in PID:%llx\n", pa, (u64)(kctx->tgid));
+				dev_info(kctx->kbdev->dev,"    Get the PA:%016llx, %s, PID:%llx\n",
+						pa, kctx->process_name,  (u64)(kctx->tgid));
 			}
 			else {
-				dev_info(kctx->kbdev->dev,"    Didn't get the PA:%016llx in GPU page table\n", pa);
+				dev_info(kctx->kbdev->dev,"    Didn't get the PA:%016llx in :%s\n",
+						pa, kctx->process_name);
 			}
+			ret = kbasep_check_va_reg(kctx, pa);
+			if (ret == false) {
+				dev_info(kctx->kbdev->dev,"    Didn't get the PA:%016llx in VA region\n", pa);
+			}
+
+			dev_info(kctx->kbdev->dev,"\n Map history: \n");
+			for (i = 0; i < TRACE_MAP_COUNT; i++)
+				dev_info(kctx->kbdev->dev," VA:%llx, PA:%llx\n",
+						kctx->map_pa_trace[0][i], kctx->map_pa_trace[1][i]);
+			dev_info(kctx->kbdev->dev,"\n Unap history: \n");
+			for (i = 0; i < TRACE_MAP_COUNT; i++)
+				dev_info(kctx->kbdev->dev," VA:%llx, PA:%llx\n",
+						kctx->unmap_pa_trace[0][i], kctx->unmap_pa_trace[1][i]);
+
+			kbase_gpu_vm_unlock(kctx);
+
+			dev_info(kctx->kbdev->dev,"\n MMU REG history: \n");
+			for (i = 0; i < TRACE_MMU_REG_COUNT; i++)
+				dev_info(kctx->kbdev->dev," MMU offset:%x, VAL:%x\n",
+					kbdev->mmu_reg_trace[0][i], kbdev->mmu_reg_trace[1][i]);
 		}
 
 		mtk_trigger_aee_report("check_pa");
