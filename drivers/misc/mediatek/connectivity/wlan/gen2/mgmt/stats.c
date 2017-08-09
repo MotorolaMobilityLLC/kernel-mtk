@@ -1009,11 +1009,9 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 	{
 		UINT_16 u2OpCode = (pucEthBody[6] << 8) | pucEthBody[7];
 
-		if ((su2TxDoneCfg & CFG_ARP) == 0) {
-			if (eventType == EVENT_TX)
-				prMsduInfo->fgIsBasicRate = TRUE;
+		if ((su2TxDoneCfg & CFG_ARP) == 0)
 			break;
-		}
+
 		switch (eventType) {
 		case EVENT_RX:
 			if (u2OpCode == ARP_PRO_REQ)
@@ -1031,6 +1029,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 				DBGLOG(TX, INFO, "<TX> Arp Rsp to IP: %d.%d.%d.%d\n",
 					pucEthBody[24], pucEthBody[25], pucEthBody[26], pucEthBody[27]);
 			prMsduInfo->fgNeedTxDoneStatus = TRUE;
+			prMsduInfo->fgIsBasicRate = TRUE;
 			break;
 		case EVENT_TX_DONE:
 			if (u2OpCode == ARP_PRO_REQ)
@@ -1123,6 +1122,7 @@ static VOID statsParsePktInfo(PUINT_8 pucPkt, UINT_8 status, UINT_8 eventType, P
 				if (eventType == EVENT_TX) {
 					DBGLOG(TX, INFO, "<TX> DNS: IPID 0x%02x, TransID 0x%04x\n", u2IpId, u2TransId);
 					prMsduInfo->fgNeedTxDoneStatus = TRUE;
+					prMsduInfo->fgIsBasicRate = TRUE;
 				} else if (eventType == EVENT_TX_DONE)
 					DBGLOG(TX, INFO, "<TX status:%d> DNS: IPID 0x%02x, TransID 0x%04x\n",
 							status, u2IpId, u2TransId);
