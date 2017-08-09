@@ -144,14 +144,15 @@ static cmdqDTSDataStruct gCmdqDtsData;
 
 #ifdef CMDQ_DVFS_SPECIAL
 static const uint32_t g_special_shuffle[] = {
-		0xfffdffff, 0x02000000, 0x00020000, 0x04084029,
-		0xfffdffff, 0x02000000, 0x00020000, 0x04093029,
-		0xfffffffe, 0x02000000, 0x00000001, 0x0808416d,
-		0xfffdffff, 0x02000000, 0x00000000, 0x04084029,
-		0xfffdffff, 0x02000000, 0x00000000, 0x04093029,
-		0x00000001, 0x0408663c, 0x00000000, 0x40000000,
-		0x00000008, 0x10000000
-		};
+	0x80008001, 0x200001fe, 0x10224f0f, 0x04083204,
+	0xfffdffff, 0x02000000, 0x00020000, 0x04084029,
+	0xfffdffff, 0x02000000, 0x00020000, 0x04093029,
+	0xfffffffe, 0x02000000, 0x00000001, 0x0808416d,
+	0xfffdffff, 0x02000000, 0x00000000, 0x04084029,
+	0xfffdffff, 0x02000000, 0x00000000, 0x04093029,
+	0x10224fff, 0x04083204, 0x00000001, 0x0408663c,
+	0x00000000, 0x40000000, 0xffffff88, 0x10000000,
+	};
 
 typedef struct CmdqSpecialCMDStruct {
 	void *pVABase;			/* VA: denote CMD virtual address space */
@@ -182,7 +183,7 @@ void cmdq_special_init(void)
 	cmdqRecReset(handle);
 	cmdqRecSetSecure(handle, 0);
 
-	cmdqRecWrite(handle, 0x10006414, (uint32_t)PA, ~0);
+	cmdqRecWrite(handle, 0x10006098, (uint32_t)PA, ~0);
 	cmdqRecWrite(handle, 0x10006418, (uint32_t)PA+buffer_size, ~0);
 
 	cmdqRecFlushAsync(handle);
@@ -1682,6 +1683,11 @@ static TaskStruct *cmdq_core_task_create(void)
 void cmdq_core_reset_hw_events_impl(CMDQ_EVENT_ENUM event)
 {
 	int32_t value = cmdq_core_get_event_value(event);
+
+#ifdef CMDQ_DVFS_SPECIAL
+	if (CMDQ_SYNC_DVFS_NOTIFY == event)
+		return;
+#endif
 
 	if (value > 0) {
 		/* Reset GCE event */
