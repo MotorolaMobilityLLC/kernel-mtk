@@ -123,16 +123,16 @@ struct nand_flash_dev nand_flash_ids[] = {
 					SZ_8K, SZ_4K, SZ_2M, 0, 5, 640},
 	{"TC58TEG6DDKTA00 64G 3.3V 8-bit",
 		{ .id = {0x98, 0xDE, 0x94, 0x93, 0x76, 0x50} },
-					SZ_16K, SZ_8K, SZ_4M, 0, 5, 1280},
+		SZ_16K, SZ_8K, SZ_4M, 0, 6, 1280},
 	{"H27QCG8D2F5R 64G 3.3V 8-bit",
 		{ .id = {0xAD, 0xDE, 0x14, 0xAB, 0x42, 0x00} },
 					SZ_16K, SZ_8K, SZ_4M, 0, 5, 1664},
 	{"TC58TEG6DDLTA00 64G 3.3V 8-bit",
 		{ .id = {0x98, 0xDE, 0x94, 0x93, 0x76, 0x51} },
-					SZ_16K, SZ_8K, SZ_4M, 0, 5, 1280},
+		SZ_16K, SZ_8K, SZ_4M, 0, 6, 1280},
 	{"TC58TEG7DDLTA0D 128G 3.3V 8-bit",
 		{ .id = {0x98, 0x3A, 0x94, 0x93, 0x76, 0x51} },
-					SZ_16K, SZ_16K, SZ_4M, 0, 5, 1280},
+		SZ_16K, SZ_16K, SZ_4M, 0, 6, 1280},
 	#endif
 	#endif
 
