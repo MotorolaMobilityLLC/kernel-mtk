@@ -1577,6 +1577,9 @@ wlanoidSetBssidListScanExt(IN P_ADAPTER_T prAdapter,
 		DBGLOG(OID, ERROR, "Fail in set BSSID list scan! (Adapter not ready). ACPI=D%d, Radio=%d\n",
 				   prAdapter->rAcpiState, prAdapter->fgIsRadioOff);
 		return WLAN_STATUS_ADAPTER_NOT_READY;
+	} else if (prAdapter->fgTestMode) {
+		DBGLOG(OID, WARN, "didn't support Scan in test mode\n");
+		return WLAN_STATUS_FAILURE;
 	}
 
 	ASSERT(pu4SetInfoLen);
