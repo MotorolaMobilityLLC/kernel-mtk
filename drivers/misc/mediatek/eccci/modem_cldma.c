@@ -277,7 +277,7 @@ static int cldma_queue_broadcast_state(struct ccci_modem *md, MD_STATE state, DI
 			match = dir == OUT ? index == port->txq_index
 			    || index == (port->txq_exp_index & 0x0F) : index == port->rxq_index;
 		if (match && port->ops->md_state_notice)
-			port->ops->md_state_notice(port, state);
+			port->ops->md_state_notice(port, (dir<<31)|(index<<16)|state);
 	}
 	return 0;
 }

@@ -26,6 +26,7 @@
 static atomic_t mbim_ccmni_index[MAX_MD_NUM]; /* now we only support MBIM Tx/Rx in CCMNI_U context */
 
 #ifdef CCMNI_U
+#include "ccmni.h"
 int ccci_get_ccmni_channel(int md_id, int ccmni_idx, struct ccmni_ch *channel)
 {
 	int ret = 0;
@@ -188,7 +189,7 @@ struct ccmni_ccci_ops eccci_ccmni_ops = {
 	.ccmni_ver = CCMNI_DRV_V0,
 	.ccmni_num = 8,
 	.name = "ccmni",
-	.md_ability = MODEM_CAP_DATA_ACK_DVD,
+	.md_ability = MODEM_CAP_DATA_ACK_DVD | MODEM_CAP_CCMNI_MQ,
 	.irat_md_id = -1,
 	.napi_poll_weigh = NAPI_POLL_WEIGHT,
 	.send_pkt = ccmni_send_pkt,
@@ -737,7 +738,7 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 #ifdef CCCI_SKB_TRACE
 		md->netif_rx_profile[2] = ((struct iphdr *)skb->data)->id;
 		skb->mark &= 0x0FFFFFFF;
-		skb->mark |= (0x5<<28);
+		skb->mark |= (0x1<<28);
 #endif
 	}
 	skb->ip_summed = CHECKSUM_NONE;
@@ -783,11 +784,28 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 
 static void port_net_md_state_notice(struct ccci_port *port, MD_STATE state)
 {
+	int dir = state & 0x10000000;
+	int qno = (state & 0x00FF0000) >> 16;
+	int tx_ch = port->tx_ch;
+
+	state = state & 0x0000FFFF;
 #ifdef CCMNI_U
 	if (((state == TX_IRQ) && ((port->flags & PORT_F_RX_FULLED) == 0)) ||
 		((state == TX_FULL) && (port->flags & PORT_F_RX_FULLED)))
 		return;
-	ccmni_ops.md_state_callback(port->modem->index, port->rx_ch, state);
+	if (dir == OUT) {
+		if (qno == NET_ACK_TXQ_INDEX(port)) {
+			if (tx_ch == CCCI_CCMNI1_TX)
+				tx_ch = CCCI_CCMNI1_DL_ACK;
+			else if (tx_ch == CCCI_CCMNI2_TX)
+				tx_ch = CCCI_CCMNI2_DL_ACK;
+			else if (tx_ch == CCCI_CCMNI8_TX)
+				tx_ch = CCCI_CCMNI8_DLACK_RX;
+		}
+		ccmni_ops.md_state_callback(port->modem->index, (1<<16)|tx_ch, state);
+	} else {
+		ccmni_ops.md_state_callback(port->modem->index, port->rx_ch, state);
+	}
 	switch (state) {
 	case TX_IRQ:
 		port->flags &= ~PORT_F_RX_FULLED;
