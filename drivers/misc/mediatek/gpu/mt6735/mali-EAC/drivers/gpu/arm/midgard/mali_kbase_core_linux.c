@@ -70,6 +70,7 @@
 #endif /* CONFIG_PM_DEVFREQ */
 #include <linux/clk.h>
 
+#include "ged_dvfs.h"
 /*
  * This file is included since when we support device tree we don't
  * use the platform fake code for registering the kbase config attributes.
@@ -116,6 +117,11 @@ static const char kbase_drv_name[] = KBASE_DRV_NAME;
 static int kbase_dev_nr;
 
 /* MTK GPU DVFS freq */
+
+/// MTK_GED {
+static struct kbase_device *gpsMaliData = NULL;
+///}
+
 int g_current_freq_id = 3;
 int g_deferred_down_shift = 0;
 
@@ -365,6 +371,13 @@ static mali_error kbase_external_buffer_lock(struct kbase_context *kctx, struct 
 }
 #endif /* CONFIG_KDS */
 
+/// MTK_GED {
+struct kbase_device *MaliGetMaliData(void)
+{
+	return gpsMaliData;
+}
+/// }
+
 static void _mtk_set_gpu_boost_duration(void)
 {
     g_gpu_boost_duartion = MTK_GPU_BOOST_DURATION;
@@ -417,7 +430,7 @@ void mtk_gpu_power_limit_CB(unsigned int ui32LimitFreqID)
         mt_gpufreq_target(ui32LimitFreqID);
 }
 
-void mtk_kbase_boost_gpu_freq()
+void mtk_kbase_boost_gpu_freq(void)
 {
     mtk_gpu_input_boost_CB(0);
 
@@ -469,7 +482,7 @@ void mtk_kbase_ged_bottom_gpu_freq(unsigned int ui32FreqLevel)
 }
 
 
-unsigned int mtk_kbase_custom_get_gpu_freq_level_count()
+unsigned int mtk_kbase_custom_get_gpu_freq_level_count(void)
 {
     return mt_gpufreq_get_dvfs_table_num();
 }
@@ -484,6 +497,13 @@ int _mtk_dvfs_index_clipping(int iTargetVirtualFreqID, int start, int end)
         return iTargetVirtualFreqID;
 }
 
+/// MTK_GED {
+void mtk_gpu_dvfs_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int* pbCommited)
+{
+        mt_gpufreq_target(ui32NewFreqID);
+        *pbCommited = true;
+}
+///
 
 int mtk_gpu_dvfs(void)
 {
@@ -886,10 +906,14 @@ copy_failed:
 #endif /* BASE_LEGACY_UK6_SUPPORT */
 				ukh->ret = MALI_ERROR_FUNCTION_FAILED;
 
+			
+#ifndef ENABLE_COMMON_DVFS
+				//dev_err(kbdev->dev, "5566 JOB SUBMIT BASED");
 			if(mtk_get_dvfs_enabled())
 			{
 				mtk_gpu_dvfs();
 			}
+#endif
             
 			break;
 		}
@@ -3131,6 +3155,13 @@ static int kbase_common_device_init(struct kbase_device *kbdev)
 }
 
 
+/// MTK{
+extern void (*ged_dvfs_cal_gpu_utilization_fp)(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle);
+extern void (*ged_dvfs_gpu_freq_commit_fp)(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int* pbCommited);
+extern unsigned int (*mtk_get_gpu_power_loading_fp)(void);
+/// }
+
+
 static int kbase_platform_device_probe(struct platform_device *pdev)
 {
 	struct kbase_device *kbdev;
@@ -3343,6 +3374,13 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	//printk(KERN_EMERG "[MALI]Using mali midgard r5p0-02dev0 DDK kernel device driver. GPU probe() end\n");
 	pr_debug("[MALI]Using mali midgard r5p0-02dev0 DDK kernel device driver. GPU probe() end\n");
 
+    gpsMaliData = kbdev;
+#ifdef ENABLE_COMMON_DVFS      
+/// MTK_GED {	
+   ged_dvfs_cal_gpu_utilization_fp = MTKCalGpuUtilization;
+   ged_dvfs_gpu_freq_commit_fp = mtk_gpu_dvfs_commit;
+///}
+#endif  
 	return 0;
 
 out_term_dev:

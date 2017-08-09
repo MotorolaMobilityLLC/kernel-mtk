@@ -44,6 +44,8 @@
 extern void __iomem  *clk_mfgcfg_base_addr;
 #endif
 
+#include "ged_dvfs.h"
+
 /* Versatile Express (VE) configuration defaults shared between config_attributes[]
  * and config_attributes_hw_issue_8408[]. Settings are not shared for
  * JS_HARD_STOP_TICKS_SS and JS_RESET_TICKS_SS.
@@ -105,7 +107,9 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	unsigned int code = mt_get_chip_hw_code();
 
 	mt_gpufreq_voltage_enable_set(1);
-    
+#ifdef ENABLE_COMMON_DVFS
+	ged_dvfs_gpu_clock_switch_notify(1);
+#endif
 	if (0x321 == code) {
 		// do something for Denali-1(6735)
 #ifdef CONFIG_MTK_CLKMGR
@@ -296,6 +300,9 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	}
 
 	mt_gpufreq_voltage_enable_set(0);
+#ifdef ENABLE_COMMON_DVFS
+	ged_dvfs_gpu_clock_switch_notify(0);
+#endif
 
 }
 

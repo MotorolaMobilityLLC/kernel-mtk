@@ -26,6 +26,11 @@ ccflags-y += -I$(srctree)/drivers/staging/android
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mt6735
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/mt6735/include/mach
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/gpu/ged/include
+
+ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
+ccflags-y += -DENABLE_COMMON_DVFS
+endif
 
 
 VER:=eng

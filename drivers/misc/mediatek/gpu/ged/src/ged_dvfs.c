@@ -3,7 +3,7 @@
 
 #ifdef GED_DVFS_ENABLE
 #include <mt_clkmgr.h>
-#include <mt-plat/mt_typedefs.h>
+//#include <mt-plat/mt_typedefs.h>
 #include <mt-plat/mt_boot.h>
 #include <mt_gpufreq.h>
 #endif

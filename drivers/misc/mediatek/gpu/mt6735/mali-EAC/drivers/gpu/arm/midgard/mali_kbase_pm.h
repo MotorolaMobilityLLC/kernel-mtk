@@ -927,5 +927,15 @@ int mtk_get_dvfs_deferred_count(void);
 void mtk_get_touch_boost_flag(int *touch_boost_flag, int *touch_boost_id);
 void mtk_set_touch_boost_flag(int boost_id);
 void mtk_clear_touch_boost_flag(void);
+void mtk_set_vgpu_power_on_flag(int power_on_id);
+int mtk_set_mt_gpufreq_target(int freq_id);
+void mtk_get_power_on_freq_flag(int *power_on_freq_flag, int *power_on_freq_id);
+void mtk_set_power_on_freq_flag(int power_on_freq_id);
+void mtk_clear_power_on_freq_flag(void);
 
+struct kbase_device *MaliGetMaliData(void);
+
+void MTKCalGpuUtilization(unsigned int* pui32Loading , unsigned int* pui32Block,unsigned int* pui32Idle);
+unsigned int MTKCalPowerIndex(void);
+int mtk_get_vgpu_power_on_flag(void);
 #endif				/* _KBASE_PM_H_ */
