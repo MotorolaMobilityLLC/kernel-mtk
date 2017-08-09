@@ -114,4 +114,12 @@ config MT_BOOT_TIME_CPU_BOOST
 	  MT_BOOT_TIME_CPU_BOOST is to boost CPU performance to enhance boot
 	  speed and save time cost during system booting. This mechanism
 	  will recover DVFS/hotplug after system boot up done.
+config MT_RCU_MONITOR
+	bool "mt rcu callback list monitor"
+	default n
+	help
+	  MT_RCU_MONITOR is used to monitor rcu callback list.
+	  Record all call_rcu callback information and invoke rcu callback information.
+	  Say Y here to enable rt throttle
+	  monitor. If you are not sure about whether to enable it or not, please set n.
 endif
