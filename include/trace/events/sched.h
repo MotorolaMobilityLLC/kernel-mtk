@@ -691,5 +691,40 @@ TRACE_EVENT(sched_select_task_rq,
 			__entry->target_cpu)
 );
 #endif
+
+#ifdef CONFIG_MT_SCHED_TRACE
+#define sched_trace(event) \
+TRACE_EVENT(event,             		\
+    TP_PROTO(char *strings),			\
+    TP_ARGS(strings),				\
+    TP_STRUCT__entry(				\
+        __array(    char,  strings, 128)	\
+    ),						\
+    TP_fast_assign(				\
+        memcpy(__entry->strings, strings, 128);	\
+    ),						\
+    TP_printk("%s",__entry->strings))		
+
+
+sched_trace(sched_log);
+// mtk rt enhancement 
+sched_trace(sched_rt);
+sched_trace(sched_rt_info);
+sched_trace(sched_lb);
+ #ifdef CONFIG_MTK_SCHED_CMP
+sched_trace(sched_cmp);
+sched_trace(sched_cmp_info);
+ #endif
+
+// mtk scheduling interopertion enhancement 
+ #ifdef CONFIG_MT_SCHED_INTEROP
+sched_trace(sched_interop);
+ #endif
+
+ #ifdef CONFIG_MT_DEBUG_PREEMPT
+sched_trace(sched_preempt);
+ #endif
+#endif
+
 /* This part must be outside protection */
 #include <trace/define_trace.h>
