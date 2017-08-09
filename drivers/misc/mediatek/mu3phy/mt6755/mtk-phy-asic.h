@@ -37,6 +37,7 @@
 #define U3D_U3PHYA_DA_REG0 (SSUSB_SIFSLV_U3PHYA_DA_BASE+0x0)
 
 #define U3D_SPLLC_XTALCTL3 (SSUSB_SIFSLV_SPLLC_BASE+0x18)
+#define U3D_PHYA_REG6 (SSUSB_USB30_PHYA_SIV_B_BASE+0x18)
 
 #define U2_SR_COEF_E60802 28
 
@@ -686,6 +687,7 @@ struct u3phya_reg_e {
 #define RG_SSUSB_TX_EIDLE_CM               (0xf<<28)	/* 31:28 */
 #define RG_SSUSB_RXLBTX_EN                 (0x1<<27)	/* 27:27 */
 #define RG_SSUSB_TXLBRX_EN                 (0x1<<26)	/* 26:26 */
+#define RG_SSUSB_RESERVE6                  (0x1<<22)	/* 22:22 */
 #define RG_SSUSB_RESERVE                   (0x3ff<<16)	/* 25:16 */
 #define RG_SSUSB_PLL_POSDIV                (0x3<<14)	/* 15:14 */
 #define RG_SSUSB_PLL_AUTOK_LOAD            (0x1<<13)	/* 13:13 */
@@ -843,6 +845,7 @@ struct u3phya_reg_e {
 #define RG_SSUSB_TX_EIDLE_CM_OFST          (28)
 #define RG_SSUSB_RXLBTX_EN_OFST            (27)
 #define RG_SSUSB_TXLBRX_EN_OFST            (26)
+#define RG_SSUSB_RESERVE6_OFST             (22)
 #define RG_SSUSB_RESERVE_OFST              (16)
 #define RG_SSUSB_PLL_POSDIV_OFST           (14)
 #define RG_SSUSB_PLL_AUTOK_LOAD_OFST       (13)

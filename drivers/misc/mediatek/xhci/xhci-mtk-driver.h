@@ -120,6 +120,7 @@ extern void mtk_xhci_switch_init(void);
 extern void mtk_xhci_eint_iddig_deinit(void);
 extern void mtk_ep_count_inc(void);
 extern void mtk_ep_count_dec(void);
+extern bool musb_check_ipo_state(void);
 #endif
 
 extern int xhci_attrs_init(void);

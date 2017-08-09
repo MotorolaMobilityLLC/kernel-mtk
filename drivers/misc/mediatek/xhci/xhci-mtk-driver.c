@@ -97,6 +97,19 @@ static struct delayed_work mtk_xhci_delaywork;
 int mtk_iddig_debounce = 10;
 module_param(mtk_iddig_debounce, int, 0644);
 
+void switch_int_to_host_and_mask(void)
+{
+	irq_set_irq_type(mtk_idpin_irqnum, IRQF_TRIGGER_LOW);
+	disable_irq(mtk_idpin_irqnum);
+}
+
+void switch_int_to_host(void)
+{
+	irq_set_irq_type(mtk_idpin_irqnum, IRQF_TRIGGER_LOW);
+	enable_irq(mtk_idpin_irqnum);
+}
+
+
 static void mtk_set_iddig_out_detect(void)
 {
 	irq_set_irq_type(mtk_idpin_irqnum, IRQF_TRIGGER_HIGH);
@@ -111,7 +124,6 @@ static void mtk_set_iddig_in_detect(void)
 
 static bool mtk_is_charger_4_vol(void)
 {
-#if 0
 	int vol = battery_meter_get_charger_voltage();
 
 	mtk_xhci_mtk_log("voltage(%d)\n", vol);
@@ -120,9 +132,6 @@ static bool mtk_is_charger_4_vol(void)
 	return false;
 #else
 	return (vol > 4000) ? true : false;
-#endif
-#else
-	return 0;
 #endif
 }
 
@@ -367,7 +376,7 @@ static void mtk_enable_otg_mode(void)
 {
 #if defined(CONFIG_MTK_BQ25896_SUPPORT)
 	bq25890_otg_en(0x01);
-	bq25890_set_boost_ilim(0x01);
+	bq25890_set_boost_ilim(0x03);	/* 1.3A */
 #elif defined(CONFIG_MTK_OTG_PMIC_BOOST_5V)
 	mtk_enable_pmic_otg_mode();
 #endif
@@ -477,9 +486,7 @@ static int mtk_xhci_driver_load(void)
 	mtk_xhci_imod_set(0x30);
 
 	mtk_enable_otg_mode();
-	/* USB PLL Force settings */
 	enableXhciAllPortPower(mtk_xhci);
-
 
 	return 0;
 
@@ -528,6 +535,11 @@ void mtk_xhci_mode_switch(struct work_struct *work)
 	int ret = 0;
 
 	mtk_xhci_mtk_log("mtk_xhci_mode_switch\n");
+
+	if (musb_check_ipo_state() == true) {
+		enable_irq(mtk_idpin_irqnum); /* prevent from disable irq twice*/
+		return;
+	}
 
 	if (mtk_idpin_cur_stat == IDPIN_OUT) {
 		is_load = false;
@@ -681,6 +693,18 @@ bool mtk_is_host_mode(void)
 {
 	return (vbus_on > 0 || mtk_idpin_cur_stat == IDPIN_IN_HOST) ? true : false;
 }
+
+void mtk_unload_xhci_on_ipo(void)
+{
+	mtk_xhci_disPortPower();
+	/* USB PLL Force settings */
+	usb20_pll_settings(true, false);
+	mtk_xhci_driver_unload();
+	switch_set_state(&mtk_otg_state, 0);
+	mtk_xhci_wakelock_unlock();
+	mtk_idpin_cur_stat = IDPIN_OUT;
+}
+
 
 #endif
 

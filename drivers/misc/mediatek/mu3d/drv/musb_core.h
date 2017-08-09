@@ -451,6 +451,7 @@ struct musb_context_registers {
 struct musb {
 	/* device lock */
 	spinlock_t lock;
+	struct semaphore musb_lock;
 
 	const struct musb_platform_ops *ops;
 	struct musb_context_registers context;
@@ -561,6 +562,7 @@ struct musb {
 
 	u8 address;
 	u8 test_mode_nr;
+	bool in_ipo_off;
 	u32 ackpend;		/* ep0 *//*We don't maintain Max Packet size in it. */
 	enum musb_g_ep0_state ep0_state;
 	struct usb_gadget g;	/* the gadget */
@@ -804,14 +806,16 @@ extern bool upmu_is_chr_det(void);
 extern u32 upmu_get_rgs_chrdet(void);
 #endif
 
-#ifdef CONFIG_USB_XHCI_MTK
+#ifdef CONFIG_USB_MTK_DUALMODE
 extern bool mtk_is_host_mode(void);
+extern void mtk_unload_xhci_on_ipo(void);
+extern void switch_int_to_host_and_mask(void);
+extern void switch_int_to_host(void);
 #else
-static inline bool mtk_is_host_mode(void)
+static inline int mtk_is_host_mode(void)
 {
-	return false;
+	return 0;
 }
 #endif
-
 
 #endif	/* __MUSB_CORE_H__ */

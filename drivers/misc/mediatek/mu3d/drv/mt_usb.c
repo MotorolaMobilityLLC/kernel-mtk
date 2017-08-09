@@ -315,6 +315,20 @@ void musb_sync_with_bat(struct musb *musb, int usb_state)
 }
 EXPORT_SYMBOL_GPL(musb_sync_with_bat);
 
+
+#ifdef CONFIG_USB_MTK_DUALMODE
+bool musb_check_ipo_state(void)
+{
+	bool ipo_off;
+
+	down(&_mu3d_musb->musb_lock);
+	ipo_off = _mu3d_musb->in_ipo_off;
+	os_printk(K_INFO, "IPO State is %s\n", (ipo_off ? "true" : "false"));
+	up(&_mu3d_musb->musb_lock);
+	return ipo_off;
+}
+#endif
+
 /*--FOR INSTANT POWER ON USAGE--------------------------------------------------*/
 static inline struct musb *dev_to_musb(struct device *dev)
 {
@@ -349,6 +363,18 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 			cmode = CABLE_MODE_NORMAL;
 
 		if (cable_mode != cmode) {
+			if (_mu3d_musb) {
+				if (down_interruptible(&_mu3d_musb->musb_lock))
+					os_printk(K_INFO, "%s: busy, Couldn't get musb_lock\n", __func__);
+			}
+			if (cmode == CABLE_MODE_CHRG_ONLY) {	/* IPO shutdown, disable USB */
+				if (_mu3d_musb)
+					_mu3d_musb->in_ipo_off = true;
+			} else {	/* IPO bootup, enable USB */
+				if (_mu3d_musb)
+					_mu3d_musb->in_ipo_off = false;
+			}
+
 			if (cmode == CABLE_MODE_CHRG_ONLY) {	/* IPO shutdown, disable USB */
 				if (musb) {
 					musb->usb_mode = CABLE_MODE_CHRG_ONLY;
@@ -366,6 +392,26 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 				}
 			}
 			cable_mode = cmode;
+#ifdef CONFIG_USB_MTK_DUALMODE
+			if (cmode == CABLE_MODE_CHRG_ONLY) {
+#ifdef CONFIG_MTK_TYPEC_SWITCH
+				;
+#else
+				/* mask ID pin interrupt even if A-cable is not plugged in */
+				switch_int_to_host_and_mask();
+				if (mtk_is_host_mode() == true)
+					mtk_unload_xhci_on_ipo();
+#endif
+			} else {
+#ifdef CONFIG_MTK_TYPEC_SWITCH
+				;
+#else
+				switch_int_to_host();	/* resotre ID pin interrupt */
+#endif
+			}
+#endif
+			if (_mu3d_musb)
+				up(&_mu3d_musb->musb_lock);
 		}
 	}
 	return count;

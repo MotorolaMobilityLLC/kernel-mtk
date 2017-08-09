@@ -2087,7 +2087,7 @@ allocate_instance(struct device *dev, struct musb_hdrc_config *config, void __io
 		ep->musb = musb;
 		ep->epnum = epnum;
 	}
-
+	musb->in_ipo_off = false;
 	musb->controller = dev;
 
 	/* added for ssusb: */
@@ -2198,6 +2198,7 @@ static int __init musb_init_controller(struct device *dev, int nIrq, void __iome
 	/* pm_runtime_enable(musb->controller); */
 
 	spin_lock_init(&musb->lock);
+	sema_init(&musb->musb_lock, 1);
 	musb->board_mode = plat->mode;
 	musb->board_set_power = plat->set_power;
 	musb->min_power = plat->min_power;

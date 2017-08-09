@@ -119,14 +119,29 @@ void usb20_pll_settings(bool host, bool forceOn)
 	if (host) {
 		if (forceOn) {
 			os_printk(K_INFO, "%s-%d - Set USBPLL_FORCE_ON.\n", __func__, __LINE__);
-			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR0,
-					  RG_USB20_USBPLL_FORCE_ON_OFST, RG_USB20_USBPLL_FORCE_ON,
-					  0x1);
+			/* Set RG_SUSPENDM to 1 */
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, RG_SUSPENDM_OFST,
+				RG_SUSPENDM, 1);
+			/* force suspendm = 1 */
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST,
+				FORCE_SUSPENDM, 1);
+#ifndef CONFIG_MTK_TYPEC_SWITCH
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_PHYA_REG6, RG_SSUSB_RESERVE6_OFST,
+				RG_SSUSB_RESERVE6, 0x1);
+#endif
+
 		} else {
 			os_printk(K_INFO, "%s-%d - Clear USBPLL_FORCE_ON.\n", __func__, __LINE__);
-			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR0,
-					  RG_USB20_USBPLL_FORCE_ON_OFST, RG_USB20_USBPLL_FORCE_ON,
-					  0x0);
+			/* Set RG_SUSPENDM to 1 */
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, RG_SUSPENDM_OFST,
+				RG_SUSPENDM, 0);
+			/* force suspendm = 1 */
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_SUSPENDM_OFST,
+				FORCE_SUSPENDM, 0);
+#ifndef CONFIG_MTK_TYPEC_SWITCH
+			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_PHYA_REG6, RG_SSUSB_RESERVE6_OFST,
+				RG_SSUSB_RESERVE6, 0x0);
+#endif
 			return;
 		}
 	}
@@ -504,21 +519,21 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 
 	/* => USBPHY base address + 0x110 = 1 */
 	/* Enable free run clock */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x110)
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x110)
 			  , RG_FRCK_EN_OFST, RG_FRCK_EN, 0x1);
 
 	/* => USBPHY base address + 0x100 = 0x04 */
 	/* Setting cyclecnt */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x100)
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x100)
 			  , RG_CYCLECNT_OFST, RG_CYCLECNT, 0x400);
 
 	/* => USBPHY base address + 0x100 = 0x01 */
 	/* Enable frequency meter */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x100)
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x100)
 			  , RG_FREQDET_EN_OFST, RG_FREQDET_EN, 0x1);
 
 	os_printk(K_INFO, "Freq_Valid=(0x%08X)\n",
-		  U3PhyReadReg32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x110)));
+		  U3PhyReadReg32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x110)));
 
 	mdelay(1);
 
@@ -526,7 +541,7 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 	for (i = 0; i < 10; i++) {
 		/* => USBPHY base address + 0x10C = FM_OUT */
 		/* Read result */
-		u4FmOut = U3PhyReadReg32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x10C));
+		u4FmOut = U3PhyReadReg32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x10C));
 		os_printk(K_INFO, "FM_OUT value: u4FmOut = %d(0x%08X)\n", u4FmOut, u4FmOut);
 
 		/* check if FM detection done */
@@ -540,12 +555,12 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 	}
 	/* => USBPHY base address + 0x100 = 0x00 */
 	/* Disable Frequency meter */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x100)
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x100)
 			  , RG_FREQDET_EN_OFST, RG_FREQDET_EN, 0);
 
 	/* => USBPHY base address + 0x110 = 0x00 */
 	/* Disable free run clock */
-	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif_base + 0x110)
+	U3PhyWriteField32((phys_addr_t) (uintptr_t) (u3_sif2_base + 0x110)
 			  , RG_FRCK_EN_OFST, RG_FRCK_EN, 0);
 
 	/* RG_USB20_HSTX_SRCTRL[2:0] = (1024/FM_OUT) * reference clock frequency * 0.028 */
