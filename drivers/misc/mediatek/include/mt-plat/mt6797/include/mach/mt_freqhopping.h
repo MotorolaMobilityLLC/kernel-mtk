@@ -136,11 +136,13 @@ void mt_fh_popod_restore(void);
 void mt_fh_unlock(void);
 void mt_fh_lock(void);
 
-/* Special lock for Everest only */
+/* Special for Everest issue mistake-proofing API */
 /* All driver access 0x1001AXX should use the lock to protect (Everest only) */
 void mt6797_0x1001AXXX_lock(void);
 void mt6797_0x1001AXXX_unlock(void);
-
+void mt6797_0x1001AXXX_reg_write(unsigned long reg_offset, unsigned int value);
+unsigned int mt6797_0x1001AXXX_reg_read(unsigned long reg_offset);
+void mt6797_0x1001AXXX_reg_set(unsigned long reg_offset, unsigned int field, unsigned int value);
 
 
 #endif				/* !__MT_FREQHOPPING_H__ */

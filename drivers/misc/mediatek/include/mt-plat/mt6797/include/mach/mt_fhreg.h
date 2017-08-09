@@ -232,23 +232,14 @@ static inline unsigned int uffs(unsigned int x)
 
 #define fh_read8(reg)           readb(reg)
 #define fh_read16(reg)          readw(reg)
-/* #define fh_read32(reg)          readl((void __iomem *)reg) */
+#define fh_read32(reg)          readl((void __iomem *)reg)
+
 /* EVEREST CHIP issue, should read two times. */
-static inline unsigned int fh_read32(unsigned long reg)
-{
-	volatile unsigned int val;
-
-	do {
-		val = readl((void __iomem *)reg);
-		val = readl((void __iomem *)reg);
-	} while (0);
-	mb();
-	return val;
-}
-
 static inline unsigned int mcu_fh_read32(unsigned long reg)
 {
 	volatile unsigned int val;
+
+	ndelay(200);
 
 	do {
 		val = readl((void __iomem *)reg);
@@ -269,20 +260,15 @@ static inline unsigned int mcu_fh_read32(unsigned long reg)
 
 #define fh_write8(reg, val)      mt_reg_sync_writeb((val), (reg))
 #define fh_write16(reg, val)     mt_reg_sync_writew((val), (reg))
-/* #define fh_write32(reg, val)     mt_reg_sync_writel((val), (reg)) */
-static inline void fh_write32(unsigned long reg, unsigned int val)
-{
-	mt_reg_sync_writel(val, reg);
-	ndelay(100);
-	mb();
-}
+#define fh_write32(reg, val)     mt_reg_sync_writel((val), (reg))
 
+/* EVEREST CHIP issue, add 200ns delay after write.  */
 static inline void mcu_fh_write32(unsigned long reg, unsigned int val, unsigned int cmp_mask)
 {
 
 	volatile unsigned int r_val;
 	volatile unsigned int c_val;
-	volatile unsigned int cnt = 5;
+	volatile unsigned int cnt = 3;
 
 	mt_reg_sync_writel(val, reg);
 	ndelay(200);

@@ -226,17 +226,48 @@ static unsigned long g_reg_sema3_m0;
 static unsigned long g_reg_cspm_poweron_en;
 #define SEMA_GET_TIMEOUT	2000	/* us */
 
+/* 0x1001AXXX mistake-proofing mechanism. */
+/* Whole system only dispatch VA of 0x1001A000 in the API */
+static int __init mt6797_0x1001AXXX_sw_protect_init(void)
+{
+	FH_MSG_DEBUG("init_mcumixedsys_base_addr+++");
+	/* Init APMIXED base address */
+
+	g_mcumixed_base = ioremap_nocache(0x1001A000, 0x1000);
+	if (!g_mcumixed_base) {
+		FH_MSG("Error, MCUMIXED iomap failed");
+		BUG_ON(1);
+	}
+
+	g_mcu_fhctl_base = g_mcumixed_base + 0xf00;
+
+	/* DVFSP HW semaphore init. */
+	{
+		g_sema_base = ioremap_nocache(0x11015000, 0x1000);
+		g_reg_sema3_m0 = (unsigned long)g_sema_base + (0x440);
+		g_reg_cspm_poweron_en = (unsigned long)g_sema_base;
+		hs_write32(g_reg_cspm_poweron_en, 0x0b160001);	/* mt6797-dvfsp enable internal CG bit */
+	}
+
+	FH_MSG_DEBUG("g_mcumixed_base:0x%lx\n", (unsigned long)g_mcumixed_base);
+	FH_MSG_DEBUG("g_mcu_fhctl_base:0x%lx\n", (unsigned long)g_mcu_fhctl_base);
+	FH_MSG_DEBUG("g_reg_sema3_m0:0x%lx\n", (unsigned long)g_reg_sema3_m0);
+	FH_MSG_DEBUG("g_reg_cspm_poweron_en:0x%lx\n", (unsigned long)g_reg_cspm_poweron_en);
+
+	return 0;
+}
+core_initcall(mt6797_0x1001AXXX_sw_protect_init);
+
+/* HW semaphore3 M0 get.
+ *  For ATF, SPM and kernel protecting 0x1001AXXX access
+ */
+
 static int mt6797_0x1001AXXX_get_semaphore(void)
 {
 	int i;
 	int n = DIV_ROUND_UP(SEMA_GET_TIMEOUT, 10);
 
 	FH_MSG_DEBUG("mt6797_0x1001AXXX_get_semaphore+");
-
-	if (g_initialize == 0) {
-		FH_MSG("(Warning) %s FHCTL isn't ready.\n", __func__);
-		return 0;
-	}
 
 	/* mt6797-dvfsp enable internal CG bit */
 	hs_write32(g_reg_cspm_poweron_en, 0x0b160001);
@@ -258,15 +289,11 @@ static int mt6797_0x1001AXXX_get_semaphore(void)
 	return -EBUSY;
 }
 
+/* HW semaphore3 M0 release.
+ *  For ATF, SPM and kernel protecting 0x1001AXXX access
+ */
 static void mt6797_0x1001AXXX_release_semaphore(void)
 {
-
-	if (g_initialize == 0) {
-		FH_MSG("(Warning) %s FHCTL isn't ready.", __func__);
-		return;
-	}
-
-
 	FH_MSG_DEBUG("0x1001AXXX sema release\n");
 
 	if (hs_read32(g_reg_sema3_m0) & 0x1) {
@@ -275,6 +302,68 @@ static void mt6797_0x1001AXXX_release_semaphore(void)
 	}
 }
 
+/* 0x1001AXXX register write API
+ *  Provide to MCUMIXEDSYS access. (Clock related driver)
+ */
+void mt6797_0x1001AXXX_reg_write(unsigned long reg_offset, unsigned int value)
+{
+	volatile unsigned long reg;
+
+	BUG_ON(reg_offset > 0xfff);
+
+	reg = (unsigned long)g_mcumixed_base + reg_offset;
+
+	mt6797_0x1001AXXX_lock();	/* To protect between ATF and SPM. */
+
+	mt_reg_sync_writel(value, reg);
+	ndelay(200);		/* DE workaround, for first read after sequential write. */
+
+	mt6797_0x1001AXXX_unlock();	/* To protect between ATF and SPM. */
+}
+
+/* 0x1001AXXX register read API
+ *  Provide to MCUMIXEDSYS access.  (Clock related driver)
+ */
+unsigned int mt6797_0x1001AXXX_reg_read(unsigned long reg_offset)
+{
+	volatile unsigned int value;
+	volatile unsigned long reg;
+
+	BUG_ON(reg_offset > 0xfff);
+
+	/* g_mcumixed_base value from VA protect mechanism */
+	reg = (unsigned long)g_mcumixed_base + reg_offset;
+
+	mt6797_0x1001AXXX_lock();	/* To protect between ATF and SPM. */
+
+	ndelay(200);		/* DE workaround, for first read after sequential write. */
+	value = readl((void __iomem *)reg);
+
+	mt6797_0x1001AXXX_unlock();	/* To protect between ATF and SPM. */
+
+	return value;
+}
+
+void mt6797_0x1001AXXX_reg_set(unsigned long reg_offset, unsigned int field, unsigned int val)
+{
+	volatile unsigned long reg;
+	volatile unsigned int temp_val;
+
+	BUG_ON(reg_offset > 0xfff);
+
+	reg = (unsigned long)g_mcumixed_base + reg_offset;
+
+	mt6797_0x1001AXXX_lock();	/* To protect between ATF and SPM. */
+
+	ndelay(200);		/* DE workaround, for first read after sequential write. */
+	temp_val = readl((void __iomem *)reg);
+	temp_val &= ~(field);
+	temp_val |= ((val) << (uffs((unsigned int)field) - 1));
+	mt_reg_sync_writel(temp_val, reg);
+	ndelay(200);		/* DE workaround, for first read after sequential write. */
+
+	mt6797_0x1001AXXX_unlock();	/* To protect between ATF and SPM. */
+}
 
 /* 0x1001AXX bus access should use the API to protect
  * All clock driver might call the API when access 0x1001AXX address.
@@ -419,10 +508,8 @@ static void fh_sync_ncpo_to_fhctl_dds(enum FH_PLL_ID pll_id)
 		fh_write32(reg_dst, (fh_read32(reg_src) & MASK21b) | BIT32);
 	} else {
 		/* MCU FHCTL */
-		volatile unsigned int w_val;
-
-		w_val = (mcu_fh_read32(reg_src) & MASK21b);
-		mcu_fh_write32(reg_dst, (w_val | BIT32), MASK21b);
+		FH_MSG("Don't use fh_sync_ncpo_to_fhctl_dds for MCU FHCTL");
+		BUG_ON(1);
 	}
 
 }
@@ -437,6 +524,11 @@ static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *sett
 	FH_MSG_DEBUG("%s: %x~%x df:%d dt:%d dds:%x",
 		     __func__, setting->lowbnd, setting->upbnd, setting->df, setting->dt,
 		     setting->dds);
+
+	if (!isFHCTL(pll_id)) {
+		FH_MSG("MCU FHCTL is forbidden to call __enable_ssc()");
+		BUG_ON(1);
+	}
 
 	mb();
 
@@ -474,6 +566,12 @@ static void __disable_ssc(unsigned int pll_id, const struct freqhopping_ssc *ssc
 	unsigned long reg_cfg = g_reg_cfg[pll_id];
 
 	FH_MSG_DEBUG("Calling %s", __func__);
+
+	if (!isFHCTL(pll_id)) {
+		FH_MSG("MCU FHCTL is forbidden to call __disable_ssc()");
+		BUG_ON(1);
+	}
+
 
 	local_irq_save(flags);
 	/* spin_lock(&g_fh_lock); */
@@ -522,6 +620,12 @@ static int __freqhopping_ctrl(struct freqhopping_ioctl *fh_ctl, bool enable)
 	fh_pll_t *pfh_pll = NULL;
 
 	FH_MSG("%s for pll %d", __func__, fh_ctl->pll_id);
+
+	if (!isFHCTL(fh_ctl->pll_id)) {
+		FH_MSG("MCU FHCTL is forbidden to call __freqhopping_ctrl()");
+		BUG_ON(1);
+	}
+
 
 	/* Check the out of range of frequency hopping PLL ID */
 	VALIDATE_PLLID(fh_ctl->pll_id);
@@ -590,6 +694,7 @@ Exit:
 	return retVal;
 }
 
+/* For FHCTL hopping only*/
 static void wait_dds_stable(enum FH_PLL_ID pll_id, unsigned int target_dds, unsigned long reg_mon,
 			    unsigned int wait_count)
 {
@@ -631,6 +736,7 @@ static void wait_dds_stable(enum FH_PLL_ID pll_id, unsigned int target_dds, unsi
 	}
 }
 
+/* For MCU FHCTL hopping only*/
 static void wait_mcu_fh_dds_stable(enum FH_PLL_ID pll_id, unsigned int target_dds,
 				   unsigned long reg_mon, unsigned int wait_count)
 {
@@ -676,6 +782,7 @@ static void wait_mcu_fh_dds_stable(enum FH_PLL_ID pll_id, unsigned int target_dd
  *     spin_lock(&g_fh_lock);
  *     mt_fh_hal_hopping();
  *     spin_unlock(&g_fh_lock);
+ *     for FHCTL only.
  */
 static int mt_fh_hal_hopping(enum FH_PLL_ID pll_id, unsigned int dds_value)
 {
@@ -964,7 +1071,7 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	reg_cfg = g_reg_cfg[pll];
 
 	mt6797_0x1001AXXX_lock();
-	spin_lock(&g_fh_lock);
+	/* spin_lock(&g_fh_lock); */
 
 	/* MCU FHCTL reg should read two times, so add disable IRQ to protect. */
 	mcu_fh_write32(reg_cfg, 0, MASK32b);	/* disable SSC mode, disable dvfs mode  and disable hopping control */
@@ -973,7 +1080,7 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 
 	mcu_fh_write32(reg_cfg, 0, MASK32b);	/* disable SSC mode, disable dvfs mode  and disable hopping control */
 
-	spin_unlock(&g_fh_lock);
+	/* spin_unlock(&g_fh_lock); */
 	mt6797_0x1001AXXX_unlock();
 	/***************************************************/
 
@@ -1277,7 +1384,15 @@ static int fh_dvfs_proc_read(struct seq_file *m, void *v)
 
 	seq_puts(m, "DVFS:\r\n");
 	seq_puts(m, "CFG: 0x3 is SSC mode;  0x5 is DVFS mode \r\n");
-	for (i = 0; i < FH_PLL_NUM; ++i) {
+
+	mt6797_0x1001AXXX_lock();
+	for (i = 0; i <= MCU_FH_PLL3; ++i) {
+		seq_printf(m, "MCU FHCTL%d:   CFG:0x%08x    DVFS:0x%08x\r\n",
+			   i, mcu_fh_read32(g_reg_cfg[i]), mcu_fh_read32(g_reg_dvfs[i]));
+	}
+	mt6797_0x1001AXXX_unlock();
+
+	for (i = FH_PLL0; i < FH_PLL_NUM; ++i) {
 		seq_printf(m, "FHCTL%d:   CFG:0x%08x    DVFS:0x%08x\r\n",
 			   i, fh_read32(g_reg_cfg[i]), fh_read32(g_reg_dvfs[i]));
 	}
@@ -1537,9 +1652,9 @@ static void __reg_tbl_init(void)
 static int __reg_base_addr_init(void)
 {
 	struct device_node *fhctl_node;
-	struct device_node *mcu_fhctl_node;
+	/* struct device_node *mcu_fhctl_node; */
 	struct device_node *apmixed_node;
-	struct device_node *mcumixed_node;
+	/* struct device_node *mcumixed_node; */
 
 	FH_MSG("(b) g_fhctl_base:0x%lx", (unsigned long)g_fhctl_base);
 	FH_MSG("(b) g_mcu_fhctl_base:0x%lx", (unsigned long)g_mcu_fhctl_base);
@@ -1554,7 +1669,7 @@ static int __reg_base_addr_init(void)
 		FH_MSG_DEBUG("Error, FHCTL iomap failed");
 		BUG_ON(1);
 	}
-
+#if 0				/* move to init_mcumixedsys_base_addr() */
 	/* Init MCU FHCTL base address */
 	mcu_fhctl_node = of_find_compatible_node(NULL, NULL, "mediatek,mcufhctl");
 	g_mcu_fhctl_base = of_iomap(mcu_fhctl_node, 0);
@@ -1562,6 +1677,7 @@ static int __reg_base_addr_init(void)
 		FH_MSG_DEBUG("Error, MCU FHCTL iomap failed");
 		BUG_ON(1);
 	}
+#endif
 
 	/* Init APMIXED base address */
 	apmixed_node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
@@ -1570,7 +1686,7 @@ static int __reg_base_addr_init(void)
 		FH_MSG_DEBUG("Error, APMIXED iomap failed");
 		BUG_ON(1);
 	}
-
+#if 0				/* move to init_mcumixedsys_base_addr() */
 	/* Init APMIXED base address */
 	mcumixed_node = of_find_compatible_node(NULL, NULL, "mediatek,mcumixed");
 	g_mcumixed_base = of_iomap(mcumixed_node, 0);
@@ -1578,25 +1694,13 @@ static int __reg_base_addr_init(void)
 		FH_MSG_DEBUG("Error, MCUMIXED iomap failed");
 		BUG_ON(1);
 	}
+#endif
 
 	FH_MSG("g_fhctl_base:0x%lx", (unsigned long)g_fhctl_base);
 	FH_MSG("g_mcu_fhctl_base:0x%lx", (unsigned long)g_mcu_fhctl_base);
 	FH_MSG("g_apmixed_base:0x%lx", (unsigned long)g_apmixed_base);
 	FH_MSG("g_mcumixed_base:0x%lx", (unsigned long)g_mcumixed_base);
 
-	/*****************************************************/
-	/* [Everest issue] Special code for 0x1001AXXX accese */
-	/* DVFSP HW semaphore. */
-	{
-		struct device_node *sema_node;
-
-		sema_node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-dvfsp");
-		g_sema_base = of_iomap(sema_node, 0);
-		g_reg_sema3_m0 = (unsigned long)g_sema_base + (0x440);
-		g_reg_cspm_poweron_en = (unsigned long)g_sema_base;
-		hs_write32(g_reg_cspm_poweron_en, 0x0b160001);	/* mt6797-dvfsp enable internal CG bit */
-	}
-	/******************************************************/
 
 	__reg_tbl_init();
 
@@ -1652,7 +1756,6 @@ static void mt_fh_hal_init(void)
 			spin_unlock(&g_fh_lock);
 		} else {
 			mt6797_0x1001AXXX_lock();
-			spin_lock(&g_fh_lock);
 
 			mask = 1 << i;
 
@@ -1668,7 +1771,6 @@ static void mt_fh_hal_init(void)
 			mcu_fh_write32(g_reg_updnlmt[i], 0x00000000, 0);	/* clear all the settings */
 			mcu_fh_write32(g_reg_dds[i], 0x00000000, 0);	/* clear all the settings */
 
-			spin_unlock(&g_fh_lock);
 			mt6797_0x1001AXXX_unlock();
 		}		/* if-else */
 	}			/* for */
@@ -1789,8 +1891,7 @@ static int fh_ioctl_dvfs_ssc(unsigned int ctlid, void *arg)
 			if (isFHCTL(fh_ctl->pll_id))
 				mt_fh_hal_hopping(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
 			else
-				mt_fh_hal_hopping_mcu(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
-
+				BUG_ON(1);
 			__enable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
 		}
 		break;
@@ -1801,22 +1902,31 @@ static int fh_ioctl_dvfs_ssc(unsigned int ctlid, void *arg)
 			if (isFHCTL(fh_ctl->pll_id))
 				mt_fh_hal_hopping(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
 			else
-				mt_fh_hal_hopping_mcu(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
+				BUG_ON(1);
 
 		}
 		break;
 	case FH_DCTL_CMD_SSC_ENABLE:	/* SSC enable */
 		{
+			if (!isFHCTL(fh_ctl->pll_id))
+				BUG_ON(1);
+
 			__enable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
 		}
 		break;
 	case FH_DCTL_CMD_SSC_DISABLE:	/* SSC disable */
 		{
+			if (!isFHCTL(fh_ctl->pll_id))
+				BUG_ON(1);
+
 			__disable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
 		}
 		break;
 	case FH_DCTL_CMD_GENERAL_DFS:
 		{
+			if (!isFHCTL(fh_ctl->pll_id))
+				BUG_ON(1);
+
 			mt_fh_hal_general_pll_dfs(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
 		}
 		break;
