@@ -1132,34 +1132,54 @@ static ssize_t tscpu_write(struct file *file, const char __user *buffer, size_t 
 			TARGET_TJS[i] = 117000;
 
 		if (!strncmp(&ptr_mtktscpu_data->bind0[0], adaptive_cooler_name, 13))
-			TARGET_TJS[(ptr_mtktscpu_data->bind0[13] - '0')] = ptr_mtktscpu_data->trip[0];
+			if ((ptr_mtktscpu_data->bind0[13] - '0') >= 0 &&
+					(ptr_mtktscpu_data->bind0[13] - '0') < MAX_CPT_ADAPTIVE_COOLERS)
+				TARGET_TJS[(ptr_mtktscpu_data->bind0[13] - '0')] = ptr_mtktscpu_data->trip[0];
 
 		if (!strncmp(&ptr_mtktscpu_data->bind1[0], adaptive_cooler_name, 13))
-			TARGET_TJS[(ptr_mtktscpu_data->bind1[13] - '0')] = ptr_mtktscpu_data->trip[1];
+			if ((ptr_mtktscpu_data->bind1[13] - '0') >= 0 &&
+					(ptr_mtktscpu_data->bind1[13] - '0') < MAX_CPT_ADAPTIVE_COOLERS)
+				TARGET_TJS[(ptr_mtktscpu_data->bind1[13] - '0')] = ptr_mtktscpu_data->trip[1];
 
 		if (!strncmp(&ptr_mtktscpu_data->bind2[0], adaptive_cooler_name, 13))
-			TARGET_TJS[(ptr_mtktscpu_data->bind2[13] - '0')] = ptr_mtktscpu_data->trip[2];
+			if ((ptr_mtktscpu_data->bind2[13] - '0') >= 0 &&
+					(ptr_mtktscpu_data->bind2[13] - '0') < MAX_CPT_ADAPTIVE_COOLERS)
+				TARGET_TJS[(ptr_mtktscpu_data->bind2[13] - '0')] = ptr_mtktscpu_data->trip[2];
 
 		if (!strncmp(&ptr_mtktscpu_data->bind3[0], adaptive_cooler_name, 13))
-			TARGET_TJS[(ptr_mtktscpu_data->bind3[13] - '0')] = ptr_mtktscpu_data->trip[3];
+			if ((ptr_mtktscpu_data->bind3[13] - '0') >= 0 &&
+					(ptr_mtktscpu_data->bind3[13] - '0') < MAX_CPT_ADAPTIVE_COOLERS)
+				TARGET_TJS[(ptr_mtktscpu_data->bind3[13] - '0')] = ptr_mtktscpu_data->trip[3];
 
 		if (!strncmp(&ptr_mtktscpu_data->bind4[0], adaptive_cooler_name, 13))
-			TARGET_TJS[(ptr_mtktscpu_data->bind4[13] - '0')] = ptr_mtktscpu_data->trip[4];
+			if ((ptr_mtktscpu_data->bind4[13] - '0') >= 0 &&
+					(ptr_mtktscpu_data->bind4[13] - '0') < MAX_CPT_ADAPTIVE_COOLERS)
+				TARGET_TJS[(ptr_mtktscpu_data->bind4[13] - '0')] = ptr_mtktscpu_data->trip[4];
 
 		if (!strncmp(&ptr_mtktscpu_data->bind5[0], adaptive_cooler_name, 13))
-			TARGET_TJS[(ptr_mtktscpu_data->bind5[13] - '0')] = ptr_mtktscpu_data->trip[5];
+			if ((ptr_mtktscpu_data->bind5[13] - '0') >= 0 &&
+					(ptr_mtktscpu_data->bind5[13] - '0') < MAX_CPT_ADAPTIVE_COOLERS)
+				TARGET_TJS[(ptr_mtktscpu_data->bind5[13] - '0')] = ptr_mtktscpu_data->trip[5];
 
 		if (!strncmp(&ptr_mtktscpu_data->bind6[0], adaptive_cooler_name, 13))
-			TARGET_TJS[(ptr_mtktscpu_data->bind6[13] - '0')] = ptr_mtktscpu_data->trip[6];
+			if ((ptr_mtktscpu_data->bind6[13] - '0') >= 0 &&
+					(ptr_mtktscpu_data->bind6[13] - '0') < MAX_CPT_ADAPTIVE_COOLERS)
+				TARGET_TJS[(ptr_mtktscpu_data->bind6[13] - '0')] = ptr_mtktscpu_data->trip[6];
 
 		if (!strncmp(&ptr_mtktscpu_data->bind7[0], adaptive_cooler_name, 13))
-			TARGET_TJS[(ptr_mtktscpu_data->bind7[13] - '0')] = ptr_mtktscpu_data->trip[7];
+			if ((ptr_mtktscpu_data->bind7[13] - '0') >= 0 &&
+					(ptr_mtktscpu_data->bind7[13] - '0') < MAX_CPT_ADAPTIVE_COOLERS)
+				TARGET_TJS[(ptr_mtktscpu_data->bind7[13] - '0')] = ptr_mtktscpu_data->trip[7];
 
 		if (!strncmp(&ptr_mtktscpu_data->bind8[0], adaptive_cooler_name, 13))
-			TARGET_TJS[(ptr_mtktscpu_data->bind8[13] - '0')] = ptr_mtktscpu_data->trip[8];
+			if ((ptr_mtktscpu_data->bind8[13] - '0') >= 0 &&
+					(ptr_mtktscpu_data->bind8[13] - '0') < MAX_CPT_ADAPTIVE_COOLERS)
+				TARGET_TJS[(ptr_mtktscpu_data->bind8[13] - '0')] = ptr_mtktscpu_data->trip[8];
 
 		if (!strncmp(&ptr_mtktscpu_data->bind9[0], adaptive_cooler_name, 13))
-			TARGET_TJS[(ptr_mtktscpu_data->bind9[13] - '0')] = ptr_mtktscpu_data->trip[9];
+			if ((ptr_mtktscpu_data->bind9[13] - '0') >= 0 &&
+					(ptr_mtktscpu_data->bind9[13] - '0') < MAX_CPT_ADAPTIVE_COOLERS)
+				TARGET_TJS[(ptr_mtktscpu_data->bind9[13] - '0')] = ptr_mtktscpu_data->trip[9];
 
 		tscpu_dprintk("tscpu_write TTJ0=%d, TTJ1=%d, TTJ2=%d\n", TARGET_TJS[0],
 			      TARGET_TJS[1], TARGET_TJS[2]);
