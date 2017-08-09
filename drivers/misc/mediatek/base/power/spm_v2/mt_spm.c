@@ -580,9 +580,7 @@ int spm_module_init(void)
 	}
 #endif
 
-#if defined(CONFIG_ARCH_MT6755)
 	spm_set_dummy_read_addr();
-#endif
 
 #if defined(CONFIG_ARCH_MT6755)
 	/* debug code */

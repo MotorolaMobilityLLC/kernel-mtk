@@ -135,9 +135,27 @@ static void set_aee_vcore_dvfs_status(int state)
 	i;						\
 })
 
+void dump_pmic_info(void)
+{
+	u32 ret, reg_val;
+
+	ret = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
+	spm_notice("[PMIC]wdtdbg_con1=0x%x\n", reg_val);
+
+	ret = pmic_read_interface_nolock(MT6351_BUCK_VCORE_CON0, &reg_val, 0xffff, 0);
+	spm_notice("[PMIC]vcore vosel_ctrl=0x%x\n", reg_val);
+
+	ret = pmic_read_interface_nolock(MT6351_BUCK_VCORE_CON4, &reg_val, 0xffff, 0);
+	spm_notice("[PMIC]vcore vosel=0x%x\n", reg_val);
+
+	ret = pmic_read_interface_nolock(MT6351_BUCK_VCORE_CON5, &reg_val, 0xffff, 0);
+	spm_notice("[PMIC]vcore vosel_on=0x%x\n", reg_val);
+}
+
 char *spm_vcorefs_dump_dvfs_regs(char *p)
 {
 	if (p) {
+		dump_pmic_info();
 		p += sprintf(p, "SPM_SW_FLAG     : 0x%x\n", spm_read(SPM_SW_FLAG));
 		p += sprintf(p, "MD2SPM_DVFS_CON : 0x%x\n", spm_read(MD2SPM_DVFS_CON));
 		p += sprintf(p, "CPU_DVFS_REQ    : 0x%x\n", spm_read(CPU_DVFS_REQ));
@@ -150,6 +168,7 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "PCM_REG6_DATA   : 0x%x\n", spm_read(PCM_REG6_DATA));
 		p += sprintf(p, "PCM_IM_PTR      : 0x%x (%u)\n", spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
 	} else {
+		dump_pmic_info();
 		spm_vcorefs_info("SPM_SW_FLAG     : 0x%x\n", spm_read(SPM_SW_FLAG));
 		spm_vcorefs_info("MD2SPM_DVFS_CON : 0x%x\n", spm_read(MD2SPM_DVFS_CON));
 		spm_vcorefs_info("CPU_DVFS_REQ    : 0x%x\n", spm_read(CPU_DVFS_REQ));
