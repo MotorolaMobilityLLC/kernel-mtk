@@ -441,7 +441,8 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u8 spm_data)
 
 	set_pwrctrl_pcm_flags(pwrctrl, spm_flags);
 
-	__spm_reset_and_init_pcm(pcmdesc);
+	if (!vcorefs_sodi_rekick_lock())
+		__spm_reset_and_init_pcm(pcmdesc);
 
 	__spm_kick_im_to_fetch(pcmdesc);
 

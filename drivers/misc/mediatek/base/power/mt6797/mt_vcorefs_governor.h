@@ -126,6 +126,7 @@ bool vcorefs_screen_on_lock_dpidle(void);
 bool vcorefs_screen_on_lock_suspend(void);
 bool vcorefs_screen_on_lock_sodi(void);
 void vcorefs_go_to_vcore_dvfs(void);
+bool vcorefs_sodi_rekick_lock(void);
 
 /* AXI API */
 extern unsigned int ckgen_meter(int ID);

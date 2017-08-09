@@ -96,6 +96,7 @@ struct governor_profile {
 	int init_opp_perf;
 	int late_init_opp;
 	bool plat_init_done;
+	bool sodi_rekick_lock;
 
 	int curr_vcore_uv;
 	int curr_ddr_khz;
@@ -127,6 +128,7 @@ static struct governor_profile governor_ctrl = {
 	.init_opp_perf = 0,
 	.late_init_opp = OPPI_LOW_PWR,
 	.plat_init_done = 0,
+	.sodi_rekick_lock = 0,
 
 	.active_autok_kir = 0,
 	.autok_kir_group = ((1 << KIR_AUTOK_EMMC) | (1 << KIR_AUTOK_SD)),
@@ -1040,12 +1042,23 @@ static int vcorefs_remove(struct platform_device *pdev)
 	return 0;
 }
 
+bool vcorefs_sodi_rekick_lock(void)
+{
+	struct governor_profile *gvrctrl = &governor_ctrl;
+
+	return gvrctrl->sodi_rekick_lock;
+}
+
 void vcorefs_go_to_vcore_dvfs(void)
 {
 	struct governor_profile *gvrctrl = &governor_ctrl;
 
+	gvrctrl->sodi_rekick_lock = 1;
+
 	if (is_vcorefs_feature_enable())
 		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+
+	gvrctrl->sodi_rekick_lock = 0;
 }
 
 /*
