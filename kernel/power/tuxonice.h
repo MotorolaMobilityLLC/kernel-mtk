@@ -42,7 +42,7 @@
 #define HIB_SHOW_MEMINFO()                                              \
 do {									\
 	hib_warn("%d MEMINFO ---\n", __LINE__);                         \
-	show_mem(SHOW_MEM_FILTER_NODES|SHOW_MEM_FILTER_PAGE_COUNT);     \
+	show_mem(SHOW_MEM_FILTER_NODES);     \
 } while (0)
 #endif
 

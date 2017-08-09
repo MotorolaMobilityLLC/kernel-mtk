@@ -45,4 +45,9 @@
 
 /* #define MFV_GET_CACHECTRLADDR_CMD  _IOR(MFV_IOC_MAGIC, 0x06, int) */
 
+#ifdef CONFIG_MTK_HIBERNATION
+extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
+extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
+#endif
+
 #endif /* __VCODEC_DRIVER_H__ */

@@ -22,7 +22,12 @@
 #include <asm/suspend.h>
 #include <asm/memory.h>
 #include <asm/sections.h>
+#include <mtk_hibernate_core.h>
 #include "reboot.h"
+
+#ifdef CONFIG_MTK_HIBERNATION
+static int swsusp_saved;
+#endif
 
 int pfn_is_nosave(unsigned long pfn)
 {
@@ -36,11 +41,17 @@ void notrace save_processor_state(void)
 {
 	WARN_ON(num_online_cpus() != 1);
 	local_fiq_disable();
+#ifdef CONFIG_MTK_HIBERNATION
+	mtk_save_processor_state();
+#endif
 }
 
 void notrace restore_processor_state(void)
 {
 	local_fiq_enable();
+#ifdef CONFIG_MTK_HIBERNATION
+	mtk_restore_processor_state();
+#endif
 }
 
 /*
@@ -61,8 +72,12 @@ static int notrace arch_save_image(unsigned long unused)
 	int ret;
 
 	ret = swsusp_save();
+#ifdef CONFIG_MTK_HIBERNATION
+	swsusp_saved = (ret == 0) ? 1 : 0;
+#else
 	if (ret == 0)
 		_soft_restart(virt_to_phys(cpu_resume), false);
+#endif
 	return ret;
 }
 
@@ -71,7 +86,17 @@ static int notrace arch_save_image(unsigned long unused)
  */
 int notrace swsusp_arch_suspend(void)
 {
+#ifdef CONFIG_MTK_HIBERNATION
+	int retval = 0;
+
+	retval = cpu_suspend(0, arch_save_image);
+	if (swsusp_saved)
+		retval = 0;
+
+	return retval;
+#else
 	return cpu_suspend(0, arch_save_image);
+#endif
 }
 
 /*
@@ -79,8 +104,11 @@ int notrace swsusp_arch_suspend(void)
  * hibernation image.  Switch to idmap_pgd so the physical page tables
  * are overwritten with the same contents.
  */
-static void notrace arch_restore_image(void *unused)
+static void notrace arch_restore_image(void)
 {
+#ifdef CONFIG_MTK_HIBERNATION
+	mtk_arch_restore_image();
+#else
 	struct pbe *pbe;
 
 	cpu_switch_mm(idmap_pgd, &init_mm);
@@ -88,6 +116,7 @@ static void notrace arch_restore_image(void *unused)
 		copy_page(pbe->orig_address, pbe->address);
 
 	_soft_restart(virt_to_phys(cpu_resume), false);
+#endif
 }
 
 static u64 resume_stack[PAGE_SIZE/2/sizeof(u64)] __nosavedata;
@@ -100,7 +129,9 @@ static u64 resume_stack[PAGE_SIZE/2/sizeof(u64)] __nosavedata;
  */
 int swsusp_arch_resume(void)
 {
-	extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
+#ifdef CONFIG_MTK_HIBERNATION
+	cpu_init();	/* get a clean PSR */
+#endif
 	call_with_stack(arch_restore_image, 0,
 		resume_stack + ARRAY_SIZE(resume_stack));
 	return 0;

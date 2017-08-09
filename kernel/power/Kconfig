@@ -385,6 +385,14 @@ config TOI_ZRAM_SUPPORT
 	def_bool y
 	depends on TOI && ZRAM!=n
 
+config TOI_FIXUP
+        def_bool y
+        depends on TOI
+
+config TOI_ENHANCE
+        def_bool y
+        depends on TOI
+
 config PM_SLEEP
 	def_bool y
 	depends on SUSPEND || HIBERNATE_CALLBACKS

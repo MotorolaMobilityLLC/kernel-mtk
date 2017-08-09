@@ -61,7 +61,7 @@
 #include <mt-plat/partition.h>
 
 #ifdef CONFIG_MTK_HIBERNATION
-#include "mach/mtk_hibernate_dpm.h"
+#include <mtk_hibernate_dpm.h>
 #endif
 
 #include "msdc_hw_ett.h"
@@ -8515,11 +8515,12 @@ int msdc_drv_pm_restore_noirq(struct device *device)
 	if (host->hw->host_function == MSDC_SD) {
 		if ((host->id == 1) && (!(mmc->caps & MMC_CAP_NONREMOVABLE))) {
 			l_polarity = mt_eint_get_polarity_external(mmc->slot.cd_irq);
+#ifdef MT_POLARITY_LOW
 			if (l_polarity == MT_POLARITY_LOW)
 				host->sd_cd_polarity = 0;
 			else
 				host->sd_cd_polarity = 1;
-
+#endif
 			if (!(host->hw->cd_level ^ host->sd_cd_polarity)
 				&& host->mmc->card) {
 				mmc_card_set_removed(host->mmc->card);

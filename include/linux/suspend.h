@@ -332,6 +332,7 @@ extern bool system_entering_hibernation(void);
 extern bool hibernation_available(void);
 asmlinkage int swsusp_save(void);
 extern struct pbe *restore_pblist;
+extern bool system_entering_hibernation(void);
 #else /* CONFIG_HIBERNATION */
 static inline void register_nosave_region(unsigned long b, unsigned long e) {}
 static inline void register_nosave_region_late(unsigned long b, unsigned long e) {}
@@ -469,6 +470,10 @@ extern int toi_running;
 
 #define test_action_state(bit) (test_bit(bit, &toi_bkd.toi_action))
 extern int try_tuxonice_hibernate(void);
+#ifdef CONFIG_TOI_ENHANCE
+extern int toi_abort_hibernate(void);
+extern int toi_hibernate_fatalerror(void);
+#endif
 
 #else /* !CONFIG_TOI */
 
@@ -480,6 +485,10 @@ extern int try_tuxonice_hibernate(void);
 
 static inline int try_tuxonice_hibernate(void) { return 0; }
 #define test_action_state(bit) (0)
+#ifdef CONFIG_TOI_ENHANCE
+static inline int toi_abort_hibernate(void) { return 0; }
+static inline int toi_hibernate_fatalerror(void) { return 0; }
+#endif
 
 #endif /* CONFIG_TOI */
 
@@ -549,5 +558,16 @@ static inline void page_key_memorize(unsigned long *pfn) {}
 static inline void page_key_write(void *address) {}
 
 #endif /* !CONFIG_ARCH_SAVE_PAGE_KEYS */
+
+#ifdef CONFIG_MTK_HIBERNATION
+extern int pre_hibernate(void);
+extern int mtk_hibernate(void);
+extern int mtk_hibernate_abort(void);
+#ifdef CONFIG_TOI_CORE
+extern int hybrid_sleep_mode(void);
+#else
+static inline int hybrid_sleep_mode(void) { return 0; }
+#endif
+#endif /* CONFIG_MTK_HIBERNATION */
 
 #endif /* _LINUX_SUSPEND_H */

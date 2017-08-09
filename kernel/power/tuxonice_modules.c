@@ -155,7 +155,7 @@ int toi_actual_compression_ratio(void)
 
 	return ratio;
 }
-#endif				/* CONFIG_TOI_ENHANCE */
+#endif /* CONFIG_TOI_ENHANCE */
 
 /* toi_find_module_given_dir
  * Functionality :	Return a module (if found), given a pointer

@@ -142,7 +142,6 @@ static char *result_strings[] = {
 	"Header reservation too small",
 	"Device Power Management Preparation failed",
 };
-
 #ifdef CONFIG_TOI_FIXUP
 #endif				/* remove it */
 #endif
@@ -755,6 +754,7 @@ abort_reloading_pagedir_two:
 	if (temp_result)
 		panic("Attempt to reload pagedir 2 while aborting " "a hibernate failed.");
 
+	hib_log("passed!\n");
 	return 1;
 }
 
@@ -1039,6 +1039,7 @@ static void toi_sys_power_disk_try_resume(void)
 {
 	resume_attempted = 1;
 
+	hib_log("step 1 @line:%d\n", __LINE__);
 	/*
 	 * There's a comment in kernel/power/disk.c that indicates
 	 * we should be able to use mutex_lock_nested below. That
@@ -1144,7 +1145,7 @@ out:
 int toi_launch_userspace_program(char *command, int channel_no, int wait, int debug)
 {
 	int retval;
-	static const char * const envp[] = {
+	static char *envp[4] = {
 		"HOME=/",
 		"TERM=linux",
 		"PATH=/sbin:/usr/sbin:/bin:/usr/bin",
@@ -1285,7 +1286,7 @@ static struct toi_sysfs_data sysfs_params[] = {
 		  TOI_NO_PS2_IF_UNNEEDED, 0),
 	SYSFS_STRING("binary_signature", SYSFS_READONLY,
 		     tuxonice_signature, 9, 0, NULL),
-	SYSFS_INT("max_workers", SYSFS_RW, &toi_max_workers, 0, num_possible_cpus(), 0,
+	SYSFS_INT("max_workers", SYSFS_RW, &toi_max_workers, 0, nr_cpumask_bits, 0,
 		  NULL),
 #ifdef CONFIG_KGDB
 	SYSFS_BIT("post_resume_breakpoint", SYSFS_RW, &toi_bkd.toi_action,

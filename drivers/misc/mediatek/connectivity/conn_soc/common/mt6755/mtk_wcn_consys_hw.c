@@ -48,7 +48,7 @@
 #endif
 
 #ifdef CONFIG_MTK_HIBERNATION
-#include <mach/mtk_hibernate_dpm.h>
+#include <mtk_hibernate_dpm.h>
 #endif
 
 #include <linux/of_reserved_mem.h>

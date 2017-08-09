@@ -38,8 +38,6 @@ config MTK_LM_MODE
 	help
 	  Large Memory mode support for supporting more than 4GB DRAM access
 
-endif
-
 config MTK_MEM
 	bool "Support platform memory information"
 	default y
@@ -92,6 +90,16 @@ config CUSTOM_KERNEL_IMGSENSOR
 	  sensors .The value is combination of CUSTOM_KERNEL_MAIN_IMGSENSOR,
 	  CUSTOM_KERNEL_MAIN_BACKUP_IMGSENSOR, CUSTOM_KERNEL_SUB_IMGSENSOR,
 	  and CUSTOM_KERNEL_SUB_BACKUP_IMGSENSOR
+
+config MTK_HIBERNATION
+	bool "MTK Hibernation support (IPOH)"
+	depends on TOI
+	default y
+	help
+	  MTK Hibernation is the improved hibernation driver in kernel for IPOH.
+	  This depends on TuxOnIce implementation of kernel hibernation
+	  architecture to improve mediatek platform hibernation flow.
+	  This option is required when IPOH is enabled.
 
 config MT_ENG_BUILD
 	bool "flag for MTK eng/usr build verification"
@@ -234,3 +242,4 @@ source "drivers/misc/mediatek/scp/Kconfig"
 source "drivers/misc/mediatek/rrc/Kconfig"
 source "drivers/misc/mediatek/selinux_warning/Kconfig"
 
+endif

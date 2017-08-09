@@ -61,7 +61,7 @@
 #include <mt-plat/partition.h>
 
 #ifdef CONFIG_MTK_HIBERNATION
-#include "mach/mtk_hibernate_dpm.h"
+#include <mtk_hibernate_dpm.h>
 #endif
 
 #include "mt_sd.h"

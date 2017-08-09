@@ -2363,9 +2363,6 @@ static inline bool should_continue_reclaim(struct zone *zone,
 	unsigned long pages_for_compaction;
 	unsigned long inactive_lru_pages;
 
-	if (nr_reclaimed && nr_scanned && sc->nr_to_reclaim >= sc->nr_reclaimed)
-		return true;
-
 	/* If not in reclaim/compaction mode, stop */
 	if (!in_reclaim_compaction(sc))
 		return false;

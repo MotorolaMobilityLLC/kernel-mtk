@@ -2,8 +2,10 @@
 # Makefile for the linux kernel.
 #
 
-subdir-ccflags-y += -Idrivers/misc/mediatek/mtprof/
-subdir-ccflags-y += -Idrivers/misc/mediatek/include/
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mtprof/
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/hibcore
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
 obj-y     = fork.o exec_domain.o panic.o \
 	    cpu.o exit.o softirq.o resource.o \

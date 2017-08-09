@@ -9,8 +9,18 @@
 #include <linux/device.h>
 #include <linux/mutex.h>
 #include <linux/pm_wakeup.h>
+#include <mtk_hibernate_core.h>
 
 #include "power.h"
+
+#define HIB_AUTOSLEEP_DEBUG 1
+#define _TAG_HIB_M "HIB/AUTOSLEEP"
+#if (HIB_AUTOSLEEP_DEBUG)
+#define hib_autoslp_log(fmt, ...)   pr_warn("[%s][%s]" fmt, _TAG_HIB_M, __func__, ##__VA_ARGS__)
+#else
+#define hib_autoslp_log(fmt, ...)
+#endif
+#define hib_autoslp_warn(fmt, ...)   pr_warn("[%s][%s]" fmt, _TAG_HIB_M, __func__, ##__VA_ARGS__)
 
 static suspend_state_t autosleep_state;
 static struct workqueue_struct *autosleep_wq;
@@ -39,13 +49,32 @@ static void try_to_suspend(struct work_struct *work)
 	}
 
 	if (autosleep_state == PM_SUSPEND_ON) {
+#ifdef CONFIG_MTK_HIBERNATION
+		system_is_hibernating = false;
+#endif
 		mutex_unlock(&autosleep_lock);
 		return;
 	}
+#ifdef CONFIG_MTK_HIBERNATION
+	if (autosleep_state >= PM_SUSPEND_MAX) {
+		mtk_hibernate_via_autosleep(&autosleep_state);
+	} else {
+		hib_autoslp_log("pm_suspend: state(%d)\n", autosleep_state);
+		if (!system_is_hibernating) {
+			hib_autoslp_warn("calling pm_suspend() state(%d)\n", autosleep_state);
+			pm_suspend(autosleep_state);
+		} else {
+			hib_autoslp_warn("system is hibernating: so changing state(%d->%d)\n",
+					 autosleep_state, PM_SUSPEND_MAX);
+			autosleep_state = PM_SUSPEND_MAX;
+		}
+	}
+#else /* !CONFIG_MTK_HIBERNATION */
 	if (autosleep_state >= PM_SUSPEND_MAX)
 		hibernate();
 	else
 		pm_suspend(autosleep_state);
+#endif /* CONFIG_MTK_HIBERNATION */
 
 	mutex_unlock(&autosleep_lock);
 

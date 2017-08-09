@@ -17,7 +17,7 @@
 #include <asm/cpu_ops.h>
 #include <asm/psci.h>
 #include <mach/mt_spm_mtcmos.h>
-
+#include <mtk_hibernate_core.h>
 #include "mt_cpu_psci_ops.h"
 
 #ifdef CONFIG_SMP

@@ -334,7 +334,7 @@ int toi_bio_image_exists(int quiet)
 int toi_bio_scan_for_image(int quiet)
 {
 	struct block_device *bdev;
-	char default_name[255] = "";
+	int first = 1;
 
 	if (!quiet)
 		pr_debug("Scanning swap devices for TuxOnIce " "signature...\n");
@@ -353,9 +353,6 @@ int toi_bio_scan_for_image(int quiet)
 		resume_block_device = NULL;
 		resume_dev_t = MKDEV(0, 0);
 
-		if (!default_name[0])
-			strcpy(default_name, name);
-
 		if (result == 1) {
 			/* Got one! */
 			strcpy(resume_file, name);
@@ -364,12 +361,16 @@ int toi_bio_scan_for_image(int quiet)
 				pr_debug(" ==> Image found on %s.\n", resume_file);
 			return 1;
 		}
+		if (first) {
+			strcpy(resume_file, name);
+			first = 0;
+		}
+
 		forget_signature_page();
 	}
 
 	if (!quiet)
 		pr_debug("TuxOnIce scan: No image found.\n");
-	strcpy(resume_file, default_name);
 	return 0;
 }
 

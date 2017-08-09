@@ -18,6 +18,7 @@ unsigned long memory_bm_next_pfn(struct memory_bitmap *bm, int index);
 unsigned long memory_bm_next_pfn_index(struct memory_bitmap *bm, int index);
 void memory_bm_position_reset(struct memory_bitmap *bm);
 int toi_alloc_bitmap(struct memory_bitmap **bm);
+void toi_free_bitmap(struct memory_bitmap **bm);
 void memory_bm_clear(struct memory_bitmap *bm);
 void memory_bm_clear_bit(struct memory_bitmap *bm, int index, unsigned long pfn);
 void memory_bm_set_bit(struct memory_bitmap *bm, int index, unsigned long pfn);

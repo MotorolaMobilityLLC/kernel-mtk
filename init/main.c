@@ -78,6 +78,7 @@
 #include <linux/context_tracking.h>
 #include <linux/random.h>
 #include <linux/list.h>
+#include <linux/suspend.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
@@ -1019,6 +1020,11 @@ static noinline void __init kernel_init_freeable(void)
 
 	(void) sys_dup(0);
 	(void) sys_dup(0);
+
+#ifdef CONFIG_MTK_HIBERNATION
+	/* IPO-H, move here for console ok after hibernaton resume */
+	software_resume();
+#endif
 	/*
 	 * check if there is an early userspace init.  If yes, let it do all
 	 * the work

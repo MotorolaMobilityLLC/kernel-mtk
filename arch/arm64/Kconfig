@@ -926,6 +926,11 @@ config ARCH_SUSPEND_POSSIBLE
 config ARM64_CPU_SUSPEND
 	def_bool PM_SLEEP
 
+config ARCH_HIBERNATION_POSSIBLE
+        bool
+        depends on MMU
+        default y if ARCH_SUSPEND_POSSIBLE
+
 endmenu
 
 menu "CPU Power Management"

@@ -32,7 +32,7 @@
 #endif
 
 #ifdef CONFIG_MTK_HIBERNATION
-#include "mach/mtk_hibernate_dpm.h"
+#include <mtk_hibernate_dpm.h>
 #include <mach/diso.h>
 #endif
 

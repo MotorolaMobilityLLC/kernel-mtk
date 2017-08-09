@@ -1890,7 +1890,15 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
 	if (!capable(CAP_SYS_ADMIN))
 		return -EPERM;
 
+#ifdef CONFIG_TOI
+	/* FIXME: Turn it off due to current->mm may be NULL in kernel space */
+	/* by calling sys_swapoff(swapfilename) in disable_swapfile() @ tuxonice_swap.c */
+	pr_warn("[HIB/SWAP] [%s] file(%s) current(%p/%d/%s) current->mm(%p)\n", __func__,
+		specialfile, current, current->pid, current->comm, current->mm);
+	WARN_ON(!current->mm);
+#else
 	BUG_ON(!current->mm);
+#endif
 
 	pathname = getname(specialfile);
 	if (IS_ERR(pathname))

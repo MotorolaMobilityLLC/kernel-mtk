@@ -658,6 +658,8 @@ int hibernate(void)
 {
 	int error;
 
+	hib_log("entering hibernate()\n");
+
 	if (test_action_state(TOI_REPLACE_SWSUSP))
 		return try_tuxonice_hibernate();
 
@@ -888,7 +890,10 @@ int software_resume(void)
 	goto Finish;
 }
 
-late_initcall_sync(software_resume);
+#if !defined(CONFIG_MTK_HIBERNATION)
+/* IPO-H, move to kernel_init() @ kernel/init/main.c */
+late_initcall(software_resume);
+#endif
 
 
 static const char * const hibernation_modes[] = {

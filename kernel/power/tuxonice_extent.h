@@ -35,5 +35,5 @@ struct hibernate_extent_chain {
 	     (extentpointer) && (((extentpointer)->next) || ((value) <= ((extentpointer)->end))); \
 	     ((value) == ((extentpointer)->end) ? \
 		((extentpointer) = ((extentpointer)->next), (value) = \
-		 ((extentpointer) ? ((extentpointer)->start) : 0)) : i((value)++)))
+		 ((extentpointer) ? ((extentpointer)->start) : 0)) : ((value)++)))
 #endif
