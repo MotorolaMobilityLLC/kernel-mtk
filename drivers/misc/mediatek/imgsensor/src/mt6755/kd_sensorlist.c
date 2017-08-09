@@ -2242,7 +2242,7 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		{
 			SENSOR_AE_AWB_REF_STRUCT *pAeAwbRef = NULL;
 			unsigned long long *pFeaturePara_64 = (unsigned long long *)pFeaturePara;
-			void *usr_ptr = (void*)(*(pFeaturePara_64));
+			void *usr_ptr = (void*)(uintptr_t)(*(pFeaturePara_64));
 			pAeAwbRef = kmalloc(sizeof(SENSOR_AE_AWB_REF_STRUCT), GFP_KERNEL);
 			if (pAeAwbRef == NULL) {
 				PK_ERR(" ioctl allocate mem failed\n");
