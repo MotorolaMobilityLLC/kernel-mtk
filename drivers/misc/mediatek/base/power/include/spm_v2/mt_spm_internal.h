@@ -636,11 +636,9 @@ static inline void set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags)
 
 #if defined(CONFIG_ARCH_MT6797)
 	if (0xCA01 == segment_code) {
-		pwrctrl->pcm_flags |= SPM_FLAG_EN_SEGMENT_E2;
-		/* for E2*/
+		pwrctrl->pcm_flags |= SPM_FLAG_EN_SEGMENT2;
 	} else {
-		pwrctrl->pcm_flags &= ~SPM_FLAG_EN_SEGMENT_E2;
-		/* for E1*/
+		pwrctrl->pcm_flags &= ~SPM_FLAG_EN_SEGMENT2;
 	}
 #endif
 }

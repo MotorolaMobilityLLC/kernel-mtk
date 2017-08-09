@@ -41,7 +41,7 @@
 #if defined(CONFIG_ARCH_MT6755)
 #define SPM_FLAG_DIS_MCDI_FLOW                (1U << 18)
 #elif defined(CONFIG_ARCH_MT6797)
-#define SPM_FLAG_EN_SEGMENT_E2                (1U << 18)
+#define SPM_FLAG_EN_SEGMENT2                  (1U << 18)
 #endif
 
 #define SPM_FLAG_NOT_USED_IN_EN_LPMP3_WITH_DMA   (1U << 19)
