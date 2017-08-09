@@ -448,7 +448,9 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 	}
 	for (i = 1; i < 32; i++) {
 		if (wakesta->r12 & (1U << i)) {
-			strcat(buf, wakesrc_str[i]);
+			if ((strlen(buf) + strlen(wakesrc_str[i])) < LOG_BUF_SIZE)
+				strncat(buf, wakesrc_str[i], strlen(wakesrc_str[i]));
+
 			wr = WR_WAKE_SRC;
 		}
 	}
