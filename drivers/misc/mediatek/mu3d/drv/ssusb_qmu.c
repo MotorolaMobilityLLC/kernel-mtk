@@ -39,6 +39,7 @@ void qmu_done_tx(struct musb *musb, u8 ep_num, unsigned long flags)
 	struct musb_ep *musb_ep = &musb->endpoints[ep_num].ep_in;
 	struct usb_request *request = NULL;
 	struct musb_request *req = NULL;
+	static DEFINE_RATELIMIT_STATE(ratelimit_tx, 1 * HZ, 3);
 
 	/*Transfer PHY addr got from QMU register to VIR addr */
 	gpd_current = gpd_phys_to_virt((void *)gpd_current, USB_TX, ep_num);
@@ -55,7 +56,8 @@ void qmu_done_tx(struct musb *musb, u8 ep_num, unsigned long flags)
 
 	/*gpd_current should at least point to the next GPD to the previous last one. */
 	if (gpd == gpd_current) {
-		qmu_printk(K_ERR, "[TXD]" "%s gpd(%p) == gpd_current(%p)\n", __func__, gpd,
+		if (__ratelimit(&ratelimit_tx))
+			qmu_printk(K_ERR, "[TXD]" "%s gpd(%p) == gpd_current(%p)\n", __func__, gpd,
 			   gpd_current);
 		return;
 	}
@@ -180,6 +182,7 @@ void qmu_done_rx(struct musb *musb, u8 ep_num, unsigned long flags)
 	struct musb_ep *musb_ep = &musb->endpoints[ep_num].ep_out;
 	struct usb_request *request = NULL;
 	struct musb_request *req;
+	static DEFINE_RATELIMIT_STATE(ratelimit_rx, 1 * HZ, 3);
 
 	/* trying to give_back the request to gadget driver. */
 	req = next_request(musb_ep);
@@ -199,24 +202,21 @@ void qmu_done_rx(struct musb *musb, u8 ep_num, unsigned long flags)
 
 	/*gpd_current should at least point to the next GPD to the previous last one. */
 	if (gpd == gpd_current) {
-		qmu_printk(K_ERR, "[RXD][ERROR]" "%s gpd(%p) == gpd_current(%p)\n", __func__, gpd,
-			   gpd_current);
-
-		qmu_printk(K_ERR, "[RXD][ERROR] EP%d RQCSR=%x, RQSAR=%x, RQCPR=%x, RQLDPR=%x\n",
-			   ep_num, os_readl(USB_QMU_RQCSR(ep_num)), os_readl(USB_QMU_RQSAR(ep_num)),
-			   os_readl(USB_QMU_RQCPR(ep_num)), os_readl(USB_QMU_RQLDPR(ep_num)));
-
-		qmu_printk(K_ERR, "[RXD][ERROR] QCR0=%x, QCR1=%x, QCR2=%x, QCR3=%x, QGCSR=%x\n",
-			   os_readl(U3D_QCR0), os_readl(U3D_QCR1), os_readl(U3D_QCR2),
-			   os_readl(U3D_QCR3), os_readl(U3D_QGCSR));
-
-		qmu_printk(K_INFO, "[RXD][ERROR] HWO=%d, Next_GPD=%lx ,DataBufLen=%d, DataBuf=%lx\n",
-			   (u32) TGPD_GET_FLAG(gpd), (uintptr_t) TGPD_GET_NEXT(gpd),
-			   (u32) TGPD_GET_DataBUF_LEN(gpd), (uintptr_t) TGPD_GET_DATA(gpd));
-
-		qmu_printk(K_INFO, "[RXD][ERROR] RecvLen=%d, Endpoint=%d\n",
-			   (u32) TGPD_GET_BUF_LEN(gpd), (u32) TGPD_GET_EPaddr(gpd));
-
+		if (__ratelimit(&ratelimit_rx)) {
+			qmu_printk(K_ERR, "[RXD][ERROR]" "%s gpd(%p) == gpd_current(%p)\n", __func__, gpd,
+				   gpd_current);
+			qmu_printk(K_ERR, "[RXD][ERROR] EP%d RQCSR=%x, RQSAR=%x, RQCPR=%x, RQLDPR=%x\n",
+				   ep_num, os_readl(USB_QMU_RQCSR(ep_num)), os_readl(USB_QMU_RQSAR(ep_num)),
+				   os_readl(USB_QMU_RQCPR(ep_num)), os_readl(USB_QMU_RQLDPR(ep_num)));
+			qmu_printk(K_ERR, "[RXD][ERROR] QCR0=%x, QCR1=%x, QCR2=%x, QCR3=%x, QGCSR=%x\n",
+				   os_readl(U3D_QCR0), os_readl(U3D_QCR1), os_readl(U3D_QCR2),
+				   os_readl(U3D_QCR3), os_readl(U3D_QGCSR));
+			qmu_printk(K_INFO, "[RXD][ERROR] HWO=%d, Next_GPD=%lx ,DataBufLen=%d, DataBuf=%lx\n",
+				   (u32) TGPD_GET_FLAG(gpd), (uintptr_t) TGPD_GET_NEXT(gpd),
+				   (u32) TGPD_GET_DataBUF_LEN(gpd), (uintptr_t) TGPD_GET_DATA(gpd));
+			qmu_printk(K_INFO, "[RXD][ERROR] RecvLen=%d, Endpoint=%d\n",
+				   (u32) TGPD_GET_BUF_LEN(gpd), (u32) TGPD_GET_EPaddr(gpd));
+		}
 		return;
 	}
 
