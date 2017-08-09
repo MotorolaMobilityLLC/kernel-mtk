@@ -768,7 +768,7 @@ static fm_s32 mt6631_PowerUp(fm_u16 *chip_id, fm_u16 *device_id)
 	/* Enable connsys FM 2 wire RX */
 	mt6631_write(0x9B, 0xF9AB);				/* G2: Set audio output i2s TX mode */
 	mt6631_host_write(0x81024064, 0x00000014); /* G3: Enable aon_osc_clk_cg */
-	mt6631_host_write(0x81024058, 0x888100c3); /* G4: Enable FMAUD trigger */
+	mt6631_host_write(0x81024058, 0x888100D3); /* G4: Enable FMAUD trigger */
 	mt6631_host_write(0x81024054, 0x00000100); /* G5: Release fmsys memory power down*/
 
 	WCN_DBG(FM_NTC | CHIP, "pwr on seq ok\n");
@@ -937,7 +937,7 @@ static fm_bool mt6631_SetFreq(fm_u16 freq)
 	/* A1.1 enable aon_osc_clk_cg */
 	mt6631_host_write(0x81024064, 0x00000014); /* G3: Enable aon_osc_clk_cg */
 	/* A1.1 enable FMAUD trigger */
-	mt6631_host_write(0x81024058, 0x888100c3); /* G4: Enable FMAUD trigger */
+	mt6631_host_write(0x81024058, 0x888100D3); /* G4: Enable FMAUD trigger */
 	/* A1.1 release fmsys memory power down */
 	mt6631_host_write(0x81024054, 0x00000100); /* G5: Release fmsys memory power down*/
 
