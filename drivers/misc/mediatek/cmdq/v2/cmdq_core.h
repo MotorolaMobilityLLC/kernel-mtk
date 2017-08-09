@@ -95,7 +95,11 @@ else								\
 #define CMDQ_ENG_DPE_GROUP_BITS					(1LL << CMDQ_ENG_DPE)
 
 #ifdef CMDQ_DUMP_FIRSTERROR
+#ifdef CMDQ_LARGE_MAX_FIRSTERROR_BUFFER
+#define CMDQ_MAX_FIRSTERROR	(64*1024)
+#else
 #define CMDQ_MAX_FIRSTERROR	(32*1024)
+#endif
 typedef struct DumpFirstErrorStruct {
 	pid_t callerPid;
 	char callerName[TASK_COMM_LEN];

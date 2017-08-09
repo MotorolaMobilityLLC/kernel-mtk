@@ -896,7 +896,7 @@ int cmdq_virtual_dump_smi(const int showSmiDump)
 #if defined(CMDQ_CONFIG_SMI) && !defined(CONFIG_MTK_FPGA)
 	isSMIHang =
 	    smi_debug_bus_hanging_detect_ext(SMI_DBG_DISPSYS | SMI_DBG_VDEC | SMI_DBG_IMGSYS |
-					     SMI_DBG_VENC | SMI_DBG_MJC, showSmiDump, 1);
+					     SMI_DBG_VENC | SMI_DBG_MJC, showSmiDump, showSmiDump);
 	CMDQ_ERR("SMI Hang? = %d\n", isSMIHang);
 #else
 	CMDQ_LOG("[WARNING]not enable SMI dump now\n");
