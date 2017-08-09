@@ -19,9 +19,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
-#if defined(CONFIG_MTK_CLKMGR)
-#include <mach/mt_clkmgr.h>	/* mt_clkmgr.h will be removed after CCF porting is finished. */
-#endif				/* defined(CONFIG_MTK_CLKMGR) */
 #include <asm/io.h>
 /* #include <mach/dma.h> */
 /* #include <mach/mt_reg_base.h> */
@@ -1252,46 +1249,34 @@ static s32 _i2c_deal_result_3dcamera(struct mt_i2c_t *i2c, struct mt_i2c_msg *ms
 static void mt_i2c_clock_enable(struct mt_i2c_t *i2c)
 {
 #if (!defined(CONFIG_MT_I2C_FPGA_ENABLE))
-#if defined(CONFIG_MTK_CLKMGR)
-	if (i2c->dma_en) {
-		I2CINFO(I2C_T_TRANSFERFLOW, "Before dma clock enable .....\n");
-		enable_clock(MT_CG_PERI_APDMA, "i2c");
-	}
-	I2CINFO(I2C_T_TRANSFERFLOW, "Before i2c clock enable .....\n");
-	enable_clock(i2c->pdn, "i2c");
-	I2CINFO(I2C_T_TRANSFERFLOW, "clock enable done.....\n");
-#else
 	if (i2c->dma_en) {
 		I2CINFO(I2C_T_TRANSFERFLOW, "Before dma clock enable .....\n");
 		clk_prepare_enable(i2c->clk_dma);
 	}
 	I2CINFO(I2C_T_TRANSFERFLOW, "Before i2c clock enable .....\n");
-	clk_prepare_enable(i2c->clk_main);
+	if (i2c->id != 6) {		/* the clock of i2c6 will always on */
+		if (i2c->clk_arb != NULL)
+			clk_prepare_enable(i2c->clk_arb);
+		clk_prepare_enable(i2c->clk_main);
+	}
 	I2CINFO(I2C_T_TRANSFERFLOW, "clock enable done.....\n");
-#endif
 #endif
 }
 
 static void mt_i2c_clock_disable(struct mt_i2c_t *i2c)
 {
 #if (!defined(CONFIG_MT_I2C_FPGA_ENABLE))
-#if defined(CONFIG_MTK_CLKMGR)
-	if (i2c->dma_en) {
-		I2CINFO(I2C_T_TRANSFERFLOW, "Before dma clock disable .....\n");
-		disable_clock(MT_CG_PERI_APDMA, "i2c");
-	}
-	I2CINFO(I2C_T_TRANSFERFLOW, "Before i2c clock disable .....\n");
-	disable_clock(i2c->pdn, "i2c");
-	I2CINFO(I2C_T_TRANSFERFLOW, "clock disable done .....\n");
-#else
 	if (i2c->dma_en) {
 		I2CINFO(I2C_T_TRANSFERFLOW, "Before dma clock disable .....\n");
 		clk_disable_unprepare(i2c->clk_dma);
 	}
 	I2CINFO(I2C_T_TRANSFERFLOW, "Before i2c clock disable .....\n");
-	clk_disable_unprepare(i2c->clk_main);
+	if (i2c->id != 6) {		/* the clock of i2c6 will always on */
+		clk_disable_unprepare(i2c->clk_main);
+		if (i2c->clk_arb != NULL)
+			clk_disable_unprepare(i2c->clk_arb);
+	}
 	I2CINFO(I2C_T_TRANSFERFLOW, "clock disable done.....\n");
-#endif
 #endif
 }
 
@@ -1467,74 +1452,26 @@ static s32 mt_i2c_probe(struct platform_device *pdev)
 	i2c->irqnr = irq;
 	pr_info("reg: 0x%p, irq: 0x%d, id: %d\n", i2c->base, i2c->irqnr, i2c->id);
 
-#if defined(CONFIG_MTK_CLKMGR)
-
-#if (defined(CONFIG_MT_I2C_FPGA_ENABLE))
-	i2c->clk = I2C_CLK_RATE;
-#else
-	i2c->clk = I2C_CLK_RATE;
-
-	switch (i2c->id) {
-	case 0:
-		i2c->pdn = MT_CG_PERI_I2C0;
-		break;
-	case 1:
-		i2c->pdn = MT_CG_PERI_I2C1;
-		break;
-	case 2:
-		i2c->pdn = MT_CG_PERI_I2C2;
-		break;
-	case 3:
-		i2c->pdn = MT_CG_PERI_I2C3;
-		break;
-#ifdef CONFIG_ARCH_MT6753
-	case 4:
-		i2c->pdn = MT_CG_PERI_I2C4;
-		break;
-#endif
-	default:
-		dev_err(&pdev->dev, "Error id %d\n", i2c->id);
-		break;
-	}
-#endif
-
-#else
 	i2c->clk = I2C_CLK_RATE;
 	/* of_property_read_u32(pdev->dev.of_node, "clock-frequency", &speed_hz); */
 	/* of_property_read_u32(pdev->dev.of_node, "clock-div", &clk_src_div); */
-	switch (i2c->id) {
-	case 0:
-		i2c->clk_main = devm_clk_get(&pdev->dev, "i2c0-main");
-		i2c->clk_dma = devm_clk_get(&pdev->dev, "i2c0-dma");
-		break;
-	case 1:
-		i2c->clk_main = devm_clk_get(&pdev->dev, "i2c1-main");
-		i2c->clk_dma = devm_clk_get(&pdev->dev, "i2c1-dma");
-		break;
-	case 2:
-		i2c->clk_main = devm_clk_get(&pdev->dev, "i2c2-main");
-		i2c->clk_dma = devm_clk_get(&pdev->dev, "i2c2-dma");
-		break;
-	case 3:
-		i2c->clk_main = devm_clk_get(&pdev->dev, "i2c3-main");
-		i2c->clk_dma = devm_clk_get(&pdev->dev, "i2c3-dma");
-		break;
-#ifdef CONFIG_ARCH_MT6753
-	case 4:
-		i2c->clk_main = devm_clk_get(&pdev->dev, "i2c4-main");
-		i2c->clk_dma = devm_clk_get(&pdev->dev, "i2c4-dma");
-		break;
-#endif
-	default:
-		dev_err(&pdev->dev, "Error id %d\n", i2c->id);
-		break;
-	}
-	if (IS_ERR(i2c->clk_main) && IS_ERR(i2c->clk_dma)) {
-		I2CERR
-		    ("cannot get i2c main clock or dma clock. main clk err : %ld dma clk err %ld .\n",
-		     PTR_ERR(i2c->clk_main), PTR_ERR(i2c->clk_dma));
+
+#if (!defined(CONFIG_MT_I2C_FPGA_ENABLE))
+	i2c->clk_main = devm_clk_get(&pdev->dev, "main");
+	if (IS_ERR(i2c->clk_main)) {
+		dev_err(&pdev->dev, "cannot get main clock\n");
 		return PTR_ERR(i2c->clk_main);
 	}
+	i2c->clk_dma = devm_clk_get(&pdev->dev, "dma");
+	if (IS_ERR(i2c->clk_dma)) {
+		dev_err(&pdev->dev, "cannot get dma clock\n");
+		return PTR_ERR(i2c->clk_dma);
+	}
+	i2c->clk_arb = devm_clk_get(&pdev->dev, "arb");
+	if (IS_ERR(i2c->clk_arb))
+		i2c->clk_arb = NULL;
+	else
+		I2CLOG("i2c%d has the relevant arbitrator clk.\n", i2c->id);
 #endif
 
 	i2c->dev = &i2c->adap.dev;
@@ -1686,6 +1623,22 @@ static s32 __init mt_i2c_init(void)
 		return -ENOMEM;
 	}
 #endif
+	struct device_node *pericfg_node;
+	void __iomem *pericfg_base;
+
+	pericfg_node = of_find_compatible_node(NULL, NULL, "mediatek,pericfg");
+	if (!pericfg_node) {
+		I2CERR("Cannot find pericfg node\n");
+		return -ENODEV;
+	}
+	pericfg_base = of_iomap(pericfg_node, 0);
+	if (!pericfg_base) {
+		I2CERR("pericfg iomap failed\n");
+		return -ENOMEM;
+	}
+	/* Enable the I2C arbitration */
+	mt_reg_sync_writel(0x3, pericfg_base + OFFSET_PERI_I2C_MODE_ENABLE);
+
 	I2CLOG(" mt_i2c_init driver us platform device\n");
 	return platform_driver_register(&mt_i2c_driver);
 }

@@ -1,9 +1,7 @@
 #ifndef __MT_I2C_H__
 #define __MT_I2C_H__
 #include <linux/types.h>
-#if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
-#endif				/* !defined(CONFIG_MTK_CLKMGR) */
 
 #define I2CTAG			"[I2C]"
 /* #define pr_fmt(fmt)		"[I2C]"fmt */
@@ -33,10 +31,10 @@
 
 #if (defined(CONFIG_MT_I2C_FPGA_ENABLE))
 #define FPGA_CLOCK	12000	/* FPGA crystal frequency (KHz) */
-#define I2C_CLK_DIV	5	/* frequency divider */
+#define I2C_CLK_DIV	(2*5)	/* frequency divider */
 #define I2C_CLK_RATE	(FPGA_CLOCK / I2C_CLK_DIV)	/* kHz for FPGA I2C work frequency */
 #else
-#define I2C_CLK_RATE	13600
+#define I2C_CLK_RATE	15600
 #endif
 
 #else
@@ -92,6 +90,10 @@ enum I2C_REGS_OFFSET {
 	OFFSET_DEBUGSTAT = 0x64,
 	OFFSET_DEBUGCTRL = 0x68,
 	OFFSET_TRANSFER_LEN_AUX = 0x6C,
+};
+
+enum PERICFG_OFFSET {
+	OFFSET_PERI_I2C_MODE_ENABLE = 0x0410,
 };
 
 #define I2C_HS_NACKERR		(1 << 2)
@@ -237,10 +239,9 @@ struct mt_i2c_t {
 	u32 defaul_speed;
 	struct mt_trans_data trans_data;
 	struct i2c_dma_buf dma_buf;
-#if !defined(CONFIG_MTK_CLKMGR)
 	struct clk *clk_main;	/* main clock for i2c bus */
 	struct clk *clk_dma;	/* DMA clock for i2c via DMA */
-#endif				/* !defined(CONFIG_MTK_CLKMGR) */
+	struct clk *clk_arb;	/* arbitrator clock for i2c8 i2c9 */
 };
 
 struct mt_i2c_msg {
