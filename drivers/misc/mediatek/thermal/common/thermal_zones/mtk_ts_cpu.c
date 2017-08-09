@@ -550,7 +550,11 @@ static int tscpu_get_temp(struct thermal_zone_device *thermal, unsigned long *t)
 	int temp_temp;
 	static int last_cpu_real_temp;
 
+#ifdef FAST_RESPONSE_ATM
+	curr_temp = tscpu_get_curr_max_ts_temp();
+#else
 	curr_temp = tscpu_get_curr_temp();
+#endif
 	tscpu_dprintk("tscpu_get_temp CPU Max T=%d\n", curr_temp);
 
 	if ((curr_temp > (trip_temp[0] - 15000)) || (curr_temp < -30000) || (curr_temp > 85000)) {
@@ -2031,11 +2035,15 @@ void tscpu_cancel_thermal_timer(void)
 {
 	/* stop thermal framework polling when entering deep idle */
 	if (thz_dev)
-		cancel_delayed_work(&(thz_dev->poll_queue));
+		cancel_delayed_work_sync(&(thz_dev->poll_queue));
+
+#ifdef FAST_RESPONSE_ATM
+	atm_cancel_hrtimer();
+#endif
 
 #if defined(CONFIG_ARCH_MT6755)
-/*Patch to pause thermal controller and turn off auxadc GC.
-  For mt6755 only*/
+	/*Patch to pause thermal controller and turn off auxadc GC.
+		For mt6755 only*/
 	tscpu_thermal_pause();
 #endif
 }
@@ -2043,6 +2051,10 @@ void tscpu_cancel_thermal_timer(void)
 
 void tscpu_start_thermal_timer(void)
 {
+#ifdef FAST_RESPONSE_ATM
+	atm_restart_hrtimer();
+#endif
+
 	/* resume thermal framework polling when leaving deep idle */
 	if (thz_dev != NULL && interval != 0)
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(1000)));

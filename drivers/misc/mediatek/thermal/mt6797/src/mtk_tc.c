@@ -161,6 +161,9 @@ struct bigCoreTime {
 };
 struct bigCoreTime g_bigCTS = {0, 0, 0, 0};
 thermal_bank_name g_currentBank = THERMAL_BANK0;
+
+static int tscpu_curr_max_ts_temp;
+
 /*=============================================================
  * Local function declartation
  *=============================================================*/
@@ -1238,11 +1241,22 @@ int tscpu_get_curr_temp(void)
 	tscpu_prev_gpu_temp = tscpu_curr_gpu_temp;
 
 	/* It is platform dependent which TS is better to present CPU/GPU temperature */
-	tscpu_curr_cpu_temp = get_immediate_ts1_wrap(); /* TS4 for Jade GPU */
-	tscpu_curr_gpu_temp = get_immediate_ts4_wrap(); /* TS3 for Jade CPU */
+	/* TS1 or TS2 for Everest CPU */
+	tscpu_curr_cpu_temp = MAX(get_immediate_ts1_wrap(), get_immediate_ts2_wrap());
+	tscpu_curr_gpu_temp = get_immediate_ts4_wrap(); /* TS4 for Jade CPU */
 #endif
+	/* though tscpu_max_temperature is common, put it in mtk_ts_cpu.c is weird. */
+	tscpu_curr_max_ts_temp = tscpu_max_temperature();
 
-	return tscpu_max_temperature();
+	return tscpu_curr_max_ts_temp;
+}
+
+/**
+ * this only returns latest stored max ts temp but not updated from TC.
+ */
+int tscpu_get_curr_max_ts_temp(void)
+{
+	return tscpu_curr_max_ts_temp;
 }
 
 #ifdef CONFIG_OF

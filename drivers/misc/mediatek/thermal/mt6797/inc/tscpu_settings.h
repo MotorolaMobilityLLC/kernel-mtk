@@ -46,6 +46,8 @@ they means one reading is a avg of X samples*/
 
 /* 1: turn on precise power budgeting; 0: turn off */
 #define PRECISE_HYBRID_POWER_BUDGET         (1)
+
+#define PHPB_DEFAULT_ON						(1)
 #endif
 
 /* 1: thermal driver fast polling, use hrtimer; 0: turn off*/
@@ -53,6 +55,11 @@ they means one reading is a avg of X samples*/
 
 /* 1: thermal driver update temp to MET directly, use hrtimer; 0: turn off*/
 #define THERMAL_DRV_UPDATE_TEMP_DIRECT_TO_MET  (1)
+
+/*	Define this in tscpu_settings.h enables this feature. It polls CPU TS in hrtimer and
+	run ATM in RT 98 kthread. This is for Everest only.
+ */
+#define FAST_RESPONSE_ATM					(1)
 /*=============================================================
  * Chip related
  *=============================================================*/
@@ -266,6 +273,10 @@ extern unsigned int adaptive_cpu_power_limit;
 extern unsigned int adaptive_gpu_power_limit;
 extern int TARGET_TJS[MAX_CPT_ADAPTIVE_COOLERS];
 extern unsigned int get_adaptive_power_limit(int type);
+#ifdef FAST_RESPONSE_ATM
+extern void atm_cancel_hrtimer(void);
+extern void atm_restart_hrtimer(void);
+#endif
 
 /*common/coolers/mtk_cooler_dtm.c*/
 extern unsigned int static_cpu_power_limit;
@@ -301,6 +312,7 @@ extern int tscpu_thermal_clock_off(void);
 extern int tscpu_read_temperature_info(struct seq_file *m, void *v);
 extern int tscpu_thermal_fast_init(void);
 extern int tscpu_get_curr_temp(void);
+extern int tscpu_get_curr_max_ts_temp(void);
 extern void thermal_get_AHB_clk_info(void);
 
 /*
