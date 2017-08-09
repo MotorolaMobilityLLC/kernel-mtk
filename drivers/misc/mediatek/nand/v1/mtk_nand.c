@@ -1022,7 +1022,6 @@ u32 NFI_TLC_GetMappedPgAddr(u32 rowaddr)
 
 static bool mtk_nand_reset(void);
 
-
 u32 mtk_nand_page_transform(struct mtd_info *mtd, struct nand_chip *chip, u32 page, u32 *blk,
 				u32 *map_blk)
 {
@@ -1042,11 +1041,13 @@ u32 mtk_nand_page_transform(struct mtd_info *mtd, struct nand_chip *chip, u32 pa
 #endif
 	if (MLC_DEVICE && init_pmt_done == TRUE) {
 		start_address = part_get_startaddress(logical_address, &idx);
-		/*MSG(INIT , "[start_address]page = 0x%x, start_address = 0x%lx\n", page, start_address); */
 		if (raw_partition(idx))
 			raw_part = TRUE;
 		else
 			raw_part = FALSE;
+	}
+	if (init_pmt_done != TRUE) {
+		gn_devinfo.tlcControl.slcopmodeEn = TRUE;
 	}
 	if (raw_part == TRUE) {
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
@@ -1159,9 +1160,8 @@ u16 randomizer_seed[128] = {
 
 static int mtk_nand_randomizer_config(struct gRandConfig *conf, u16 seed)
 {
-#if 0
-	if (gn_devinfo.vendor == VEND_SANDISK || gn_devinfo.vendor == VEND_TOSHIBA
-		|| gn_devinfo.vendor == VEND_HYNIX) {
+#if 1
+	if (gn_devinfo.vendor != VEND_NONE) {
 		u16 nfi_cnfg = 0;
 		u32 nfi_ran_cnfg = 0;
 		u8 i;
@@ -1201,9 +1201,8 @@ static int mtk_nand_randomizer_config(struct gRandConfig *conf, u16 seed)
 
 static bool mtk_nand_israndomizeron(void)
 {
-#if 0
-	if (gn_devinfo.vendor == VEND_SANDISK || gn_devinfo.vendor == VEND_TOSHIBA
-		|| gn_devinfo.vendor == VEND_HYNIX) {
+#if 1
+	if (gn_devinfo.vendor != VEND_NONE) {
 		u32 nfi_ran_cnfg = 0;
 
 		nfi_ran_cnfg = DRV_Reg32(NFI_RANDOM_CNFG_REG32);
@@ -1234,19 +1233,18 @@ static void mtk_nand_interface_switch(struct mtd_info *mtd)
 static void mtk_nand_turn_on_randomizer(struct mtd_info *mtd, struct nand_chip *chip,
 					u32 page)
 {
-#if 0
+#if 1
 	/*struct gRandConfig *conf = &gn_devinfo.feature_set.randConfig; */
-	if (gn_devinfo.vendor == VEND_SANDISK || gn_devinfo.vendor == VEND_TOSHIBA
-		|| gn_devinfo.vendor == VEND_HYNIX) {
+	if (gn_devinfo.vendor != VEND_NONE) {
 		u32 nfi_ran_cnfg = 0;
 		u16 seed;
 		u32 page_size = (1 << chip->page_shift);
 		u32 page_per_blk = (mtd->erasesize / page_size);
 
-		if (page_per_blk == 256)
-			seed = randomizer_seed[page % 128];
+		if (page_per_blk < 128)
+			seed = randomizer_seed[page % page_per_blk];
 		else
-			seed = randomizer_seed[(page % page_per_blk) % 128];
+			seed = randomizer_seed[page % 128];
 
 		mtk_nand_randomizer_config(&gn_devinfo.feature_set.randConfig, seed);
 		nfi_ran_cnfg = DRV_Reg32(NFI_RANDOM_CNFG_REG32);
@@ -1258,9 +1256,8 @@ static void mtk_nand_turn_on_randomizer(struct mtd_info *mtd, struct nand_chip *
 
 static void mtk_nand_turn_off_randomizer(void)
 {
-#if 0
-	if (gn_devinfo.vendor == VEND_SANDISK || gn_devinfo.vendor == VEND_TOSHIBA
-		|| gn_devinfo.vendor == VEND_HYNIX) {
+#if 1
+	if (gn_devinfo.vendor != VEND_NONE) {
 		u32 nfi_ran_cnfg = 0;
 
 		nfi_ran_cnfg = DRV_Reg32(NFI_RANDOM_CNFG_REG32);
@@ -1612,6 +1609,7 @@ static bool mtk_nand_check_bch_error(struct mtd_info *mtd, u8 *pDataBuf, u8 *spa
 	}
 	if (0 != (DRV_Reg32(NFI_STA_REG32) & STA_READ_EMPTY)) {
 		ret = true;
+		uncorrect_sector = 0;
 		memset(pDataBuf, 0xff, page_size);
 		memset(spareBuf, 0xff, sec_num*host->hw->nand_fdm_size);
 		maxSectorBitErr = 0;
@@ -2996,7 +2994,7 @@ static bool mtk_nand_read_status(void)
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	if ((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
 			&& (gn_devinfo.tlcControl.slcopmodeEn)) {
-		pr_warn("status 0x%x", status);
+		/*pr_warn("status 0x%x", status);*/
 		if (SLC_MODE_OP_FALI & status) {
 			if (!(STATUS_WR_ALLOW & status))
 				MSG(INIT, "status locked\n");
@@ -3333,7 +3331,7 @@ static void mtk_nand_toshiba_slc_1y_rrtry(flashdev_info deviceinfo, u32 retryCou
 static void mtk_nand_toshiba_tlc_rrtry(struct mtd_info *mtd, struct flashdev_info_t deviceinfo,
 				u32 retryCount, bool defValue)
 {
-	if (TRUE == gn_devinfo.tlcControl.slcopmodeEn)
+	if (gn_devinfo.tlcControl.slcopmodeEn)
 		mtk_nand_toshiba_slc_1y_rrtry(deviceinfo, retryCount, defValue);
 	else
 		mtk_nand_toshiba_tlc_1y_rrtry(deviceinfo, retryCount, defValue);
@@ -3942,7 +3940,7 @@ int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 	unsigned int NAND_ECC_Enc_Reg = 0;
 	unsigned int NAND_ECC_Dec_Reg = 0;
 #endif
-	MSG(INIT, "mtk_nand_exec_read_page, u4RowAddr: %x\n", u4RowAddr);
+	/*MSG(INIT, "mtk_nand_exec_read_page, u4RowAddr: %x\n", u4RowAddr);*/
 
 	PFM_BEGIN(pfm_time_read);
 	tempBitMap = 0;
@@ -3965,6 +3963,7 @@ int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 		spare_ptr = pFDMBuf;
 		logical_plane_num = 1;
 		tlc_wl_info.wl_pre = WL_LOW_PAGE; /* init for build warning*/
+		tlc_wl_info.word_line_idx = u4RowAddr;
 
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 		if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
@@ -4025,8 +4024,12 @@ int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 #endif
 			real_row_addr = u4RowAddr;
 
-		if (use_randomizer && u4RowAddr >= RAND_START_ADDR)
-			mtk_nand_turn_on_randomizer(mtd, nand, u4RowAddr);
+	if (use_randomizer) {
+		if (gn_devinfo.tlcControl.slcopmodeEn)
+			mtk_nand_turn_on_randomizer(mtd, nand, tlc_wl_info.word_line_idx);
+		else
+			mtk_nand_turn_on_randomizer(mtd, nand, (tlc_wl_info.word_line_idx*3+tlc_wl_info.wl_pre));
+	}
 
 	if (mtk_nand_ready_for_read(nand, real_row_addr, 0, data_sector_num, true, buf)) {
 		while (logical_plane_num) {
@@ -4315,6 +4318,8 @@ bool mtk_nand_exec_read_sector(struct mtd_info *mtd, u32 u4RowAddr, u32 u4ColAdd
 		data_sector_num[0] = u4SecNum;
 		data_sector_num[1] = 0;
 		logical_plane_num = 1;
+		tlc_wl_info.word_line_idx = u4RowAddr;
+		tlc_wl_info.wl_pre = WL_LOW_PAGE;
 
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 		if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
@@ -4393,9 +4398,13 @@ bool mtk_nand_exec_read_sector(struct mtd_info *mtd, u32 u4RowAddr, u32 u4ColAdd
 			real_row_addr = u4RowAddr;
 		}
 
-		if (use_randomizer && u4RowAddr >= RAND_START_ADDR)
-			mtk_nand_turn_on_randomizer(mtd, nand, u4RowAddr);
-
+		if (use_randomizer) {
+			if (gn_devinfo.tlcControl.slcopmodeEn)
+				mtk_nand_turn_on_randomizer(mtd, nand, tlc_wl_info.word_line_idx);
+			else
+				mtk_nand_turn_on_randomizer(mtd, nand,
+				(tlc_wl_info.word_line_idx*3+tlc_wl_info.wl_pre));
+		}
 
 	if (mtk_nand_ready_for_read
 		(nand, real_row_addr, temp_col_addr[logical_plane_num-1],
@@ -4670,10 +4679,6 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 	u32 real_row_addr = 0;
 
 	mtk_nand_interface_switch(mtd);
-	if (use_randomizer && u4RowAddr >= RAND_START_ADDR)
-		mtk_nand_turn_on_randomizer(mtd, chip, u4RowAddr);
-
-
 
 #ifdef _MTK_NAND_DUMMY_DRIVER_
 	if (dummy_driver_debug) {
@@ -4707,6 +4712,7 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	mtk_nand_reset();
 	tlc_wl_info.wl_pre = WL_LOW_PAGE; /* avoid compile warning */
+	tlc_wl_info.word_line_idx = u4RowAddr;
 	if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)	 {
 		if (gn_devinfo.tlcControl.normaltlc) {
 			NFI_TLC_GetMappedWL(u4RowAddr, &tlc_wl_info);
@@ -4764,7 +4770,13 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 	{
 		real_row_addr = u4RowAddr;
 	}
-
+	if (use_randomizer) {
+		if (gn_devinfo.tlcControl.slcopmodeEn)
+			mtk_nand_turn_on_randomizer(mtd, chip, tlc_wl_info.word_line_idx);
+		else
+			mtk_nand_turn_on_randomizer(mtd, chip,
+			(tlc_wl_info.word_line_idx*3+tlc_wl_info.wl_pre));
+	}
 	if (mtk_nand_ready_for_write(chip, real_row_addr, 0, true, buf)) {
 		mtk_nand_write_fdm_data(chip, pFDMBuf, u4SecNum);
 		(void)mtk_nand_write_page_data(mtd, buf, u4PageSize);
@@ -6315,7 +6327,7 @@ int mtk_nand_block_bad_hw(struct mtd_info *mtd, loff_t ofs)
 		&& mtk_nand_IsBMTPOOL(ofs)) {
 		page_addr = mtk_nand_page_transform(mtd, chip, page_addr, &block, &mapped_block);
 		bRet = mtk_nand_slc_write_wodata(chip, mapped_block * page_per_block);
-		pr_warn("after mtk_nand_slc_write_wodata\n");
+		/*pr_warn("after mtk_nand_slc_write_wodata\n");*/
 		if (bRet)
 			ret = 1;
 		else
