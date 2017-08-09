@@ -10,6 +10,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6757-msdc.h>
 #include <dt-bindings/clock/mt6757-clk.h>
+#include <dt-bindings/pinctrl/mt6757-pinfunc.h>
 
 / {
 	model = "MT6757";
@@ -286,6 +287,11 @@
 		compatible = "mediatek,mtkfb";
 	};
 
+	touch: touch {
+		compatible = "mediatek,mt6757-touch";
+		/* VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>; */
+	};
+
 	swtp: swtp {
 		compatible = "mediatek, swtp-eint";
 	};
@@ -393,6 +399,11 @@
 		reg = <0 0x10002000 0 0x200>;
 	};
 
+	syscfg_pctl_a: syscfg_pctl_a@10002000 {
+		compatible = "mediatek,mt6757-pctl-a-syscfg", "syscon";
+		reg = <0x10002000 0x1000>;
+	};
+
 	iocfg_1@10002200 {
 		compatible = "mediatek,iocfg_1";
 		reg = <0 0x10002200 0 0x200>;
@@ -421,6 +432,15 @@
 	pericfg@10003000 {
 		compatible = "mediatek,pericfg";
 		reg = <0 0x10003000 0 0x1000>;
+	};
+
+	pio: pinctrl@10005000 {
+		compatible = "mediatek,mt6757-pinctrl";
+		reg = <0x10005000 0x1000>;
+		mediatek,pctl-regmap = <&syscfg_pctl_a>;
+		pins-are-numbered;
+		gpio-controller;
+		#gpio-cells = <2>;
 	};
 
 	gpio@10005000 {
