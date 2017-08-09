@@ -707,7 +707,13 @@ static int ged_dvfs_gpu_util_seq_show(struct seq_file *psSeqFile, void *pvData)
 {
 	if (pvData != NULL)
 	{
-		seq_printf(psSeqFile, "%u %u %u\n",ged_dvfs_get_gpu_loading(),ged_dvfs_get_gpu_blocking(),ged_dvfs_get_gpu_idle());      
+		unsigned int loading;
+		unsigned int block;
+		unsigned int idle;
+		mtk_get_gpu_loading(&loading);
+		mtk_get_gpu_block(&block);
+		mtk_get_gpu_idle(&idle);
+		seq_printf(psSeqFile, "%u %u %u\n",loading,block,idle);      
 	}
 
 	return 0;

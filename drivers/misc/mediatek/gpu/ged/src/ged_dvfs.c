@@ -115,15 +115,21 @@ unsigned long ged_gas_query_mode(void);
 
 unsigned long ged_query_info( GED_INFO eType)
 {
+	unsigned int gpu_loading;
+	unsigned int gpu_block;
+	unsigned int gpu_idle;
 	switch(eType)
 	{
-#ifdef GED_DVFS_ENABLE    
 		case GED_LOADING:
+			mtk_get_gpu_loading(&gpu_loading);
 			return gpu_loading;
 		case GED_IDLE:
+			mtk_get_gpu_idle(&gpu_idle);
 			return gpu_idle;
 		case GED_BLOCKING:
+			mtk_get_gpu_block(&gpu_block);
 			return gpu_block;
+#ifdef GED_DVFS_ENABLE
 		case GED_PRE_FREQ:
 			return mt_gpufreq_get_freq_by_idx(g_ui32PreFreqID);
 		case GED_PRE_FREQ_IDX:
@@ -140,6 +146,9 @@ unsigned long ged_query_info( GED_INFO eType)
 			return 0;
 		case GED_MIN_FREQ_IDX_FREQ:
 			return mt_gpufreq_get_freq_by_idx(0);
+                case GED_EVENT_GAS_MODE:
+                        return ged_gas_query_mode();
+#endif
 		case GED_3D_FENCE_DONE_TIME:
 			return ged_monitor_3D_fence_done_time();
 		case GED_VSYNC_OFFSET:
@@ -148,8 +157,6 @@ unsigned long ged_query_info( GED_INFO eType)
 			return g_ui32EventStatus;
 		case GED_EVENT_DEBUG_STATUS:
 			return g_ui32EventDebugStatus;
-		case GED_EVENT_GAS_MODE:
-			return ged_gas_query_mode();
 		case GED_SRV_SUICIDE:
 			ged_dvfs_probe_signal(GED_SRV_SUICIDE_EVENT);
 			return g_probe_pid;
@@ -157,7 +164,6 @@ unsigned long ged_query_info( GED_INFO eType)
 			return g_ulWorkingPeriod_us;
 		case GED_LATEST_START:
 			return g_ulPreCalResetTS_us;
-#endif             
 		default:
 			return 0;
 	}
