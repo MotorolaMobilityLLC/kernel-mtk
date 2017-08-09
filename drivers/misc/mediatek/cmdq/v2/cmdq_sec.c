@@ -761,23 +761,16 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 				   " tgid[%d:%d], config_duration_ms[%d], cmdId[%d]\n",
 				   tgid, pid, duration, iwcCommand);
 
-		if (throwAEE) {
-			if (msgOffset > 0) {
+		if (msgOffset > 0) {
+			/* print message */
+			if (throwAEE) {
 				/* print message */
 				CMDQ_AEE("CMDQ", "%s", longMsg);
 			}
-		} else {
-			if (msgOffset > 0) {
-				/* print message */
-				CMDQ_ERR("%s", longMsg);
-			}
+			cmdq_core_turnon_first_dump(pTask);
+			CMDQ_ERR("%s", longMsg);
 		}
-
 	} else if (0 > status) {
-		/* dump metadata first */
-		if (pTask)
-			cmdq_core_dump_secure_metadata(&(pTask->secData));
-
 		cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 				   "[SEC]<--SEC_SUBMIT: err[%d], pTask[0x%p], THR[%d], tgid[%d:%d],",
@@ -785,19 +778,19 @@ int32_t cmdq_sec_submit_to_secure_world_async_unlocked(uint32_t iwcCommand,
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,
 				   " config_duration_ms[%d], cmdId[%d]\n", duration, iwcCommand);
 
-		if (throwAEE) {
-			/* throw AEE */
-			if (msgOffset > 0) {
+		if (msgOffset > 0) {
+			/* print message */
+			if (throwAEE) {
 				/* print message */
 				CMDQ_AEE("CMDQ", "%s", longMsg);
 			}
-		} else {
-			/* no throw AEE */
-			if (msgOffset > 0) {
-				/* print message */
-				CMDQ_ERR("%s", longMsg);
-			}
+			cmdq_core_turnon_first_dump(pTask);
+			CMDQ_ERR("%s", longMsg);
 		}
+
+		/* dump metadata first */
+		if (pTask)
+			cmdq_core_dump_secure_metadata(&(pTask->secData));
 	} else {
 		cmdq_core_longstring_init(longMsg, &msgOffset, &msgMAXSize);
 		cmdqCoreLongString(false, longMsg, &msgOffset, &msgMAXSize,

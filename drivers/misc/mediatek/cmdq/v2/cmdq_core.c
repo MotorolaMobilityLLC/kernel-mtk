@@ -5033,16 +5033,9 @@ static void cmdq_core_attach_error_task(const TaskStruct *pTask, int32_t thread,
 		cmdq_core_fill_task_record(&pError->errorRec, pTask, thread);
 		pError->ts_nsec = local_clock();
 	}
-#ifdef CMDQ_DUMP_FIRSTERROR
-	if (0 == gCmdqFirstError.cmdqCount) {
-		gCmdqFirstError.flag = true;
-		/* save kernel time, pid, and caller name */
-		gCmdqFirstError.callerPid = pTask->callerPid;
-		snprintf(gCmdqFirstError.callerName, TASK_COMM_LEN, "%s", pTask->callerName);
-		gCmdqFirstError.savetime = sched_clock();
-		do_gettimeofday(&gCmdqFirstError.savetv);
-	}
-#endif
+
+	/* Turn on first CMDQ error dump */
+	cmdq_core_turnon_first_dump(pTask);
 
 	/*  */
 	/* Then we just print out info */
@@ -5121,7 +5114,7 @@ static int32_t cmdq_core_remove_task_from_thread_array_by_cookie(ThreadStruct *p
 {
 	TaskStruct *pTask = NULL;
 
-	if ((NULL == pThread) || (0 > index)) {
+	if ((NULL == pThread) || (index < 0) || (index > CMDQ_MAX_TASK_IN_THREAD)) {
 		CMDQ_ERR
 		    ("remove task from thread array, invalid param. THR[0x%p], task_slot[%d], newTaskState[%d]\n",
 		     pThread, index, newTaskState);
@@ -5160,6 +5153,46 @@ static int32_t cmdq_core_remove_task_from_thread_array_by_cookie(ThreadStruct *p
 	if (0 > pThread->taskCount) {
 		/* Error status print */
 		CMDQ_ERR("taskCount < 0 after cmdq_core_remove_task_from_thread_array_by_cookie\n");
+	}
+
+	return 0;
+}
+
+static int32_t cmdq_core_remove_task_from_thread_array_when_secure_submit_fail(ThreadStruct *pThread,
+								int32_t index)
+{
+	TaskStruct *pTask = NULL;
+
+	if ((NULL == pThread) || (index < 0) || (index > CMDQ_MAX_TASK_IN_THREAD)) {
+		CMDQ_ERR
+		    ("remove task from thread array, invalid param. THR[0x%p], task_slot[%d]\n",
+		     pThread, index);
+		return -EINVAL;
+	}
+
+	pTask = pThread->pCurTask[index];
+
+	if (NULL == pTask) {
+		CMDQ_ERR("remove fail, task_slot[%d] on thread[%p] is NULL\n", index, pThread);
+		return -EINVAL;
+	}
+
+	if (cmdq_core_max_task_in_thread(pTask->thread) <= index) {
+		CMDQ_ERR
+		    ("remove task from thread array, invalid index. THR[0x%p], task_slot[%d]\n",
+		     pThread, index);
+		return -EINVAL;
+	}
+
+	CMDQ_VERBOSE("remove task, slot[%d]\n", index);
+	pTask = NULL;
+	pThread->pCurTask[index] = NULL;
+	pThread->taskCount--;
+	pThread->nextCookie--;
+
+	if (0 > pThread->taskCount) {
+		/* Error status print */
+		CMDQ_ERR("taskCount < 0 after cmdq_core_remove_task_from_thread_array_when_secure_submit_fail\n");
 	}
 
 	return 0;
@@ -6184,6 +6217,8 @@ static int32_t cmdq_core_exec_task_async_secure_impl(TaskStruct *pTask, int32_t 
 		if (0 > status) {
 			/* config failed case, dump for more detail */
 			cmdq_core_attach_error_task(pTask, thread, NULL);
+			cmdq_core_turnoff_first_dump();
+			cmdq_core_remove_task_from_thread_array_when_secure_submit_fail(pThread, cookie);
 		}
 	} while (0);
 
@@ -7833,6 +7868,21 @@ void cmdqCoreLongString(bool forceLog, char *buf, uint32_t *offset, int32_t *max
 		*maxSize = 0;
 	*offset += msgLen;
 	va_end(argptr);
+}
+
+void cmdq_core_turnon_first_dump(const TaskStruct *pTask)
+{
+#ifdef CMDQ_DUMP_FIRSTERROR
+	if (gCmdqFirstError.cmdqCount != 0)
+		return;
+
+	gCmdqFirstError.flag = true;
+	/* save kernel time, pid, and caller name */
+	gCmdqFirstError.callerPid = pTask->callerPid;
+	snprintf(gCmdqFirstError.callerName, TASK_COMM_LEN, "%s", pTask->callerName);
+	gCmdqFirstError.savetime = sched_clock();
+	do_gettimeofday(&gCmdqFirstError.savetv);
+#endif
 }
 
 void cmdq_core_turnoff_first_dump(void)

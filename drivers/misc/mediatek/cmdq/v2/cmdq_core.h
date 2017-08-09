@@ -910,10 +910,10 @@ extern "C" {
 	int cmdqCorePrintInstructionCountSeq(struct seq_file *m, void *v);
 #endif				/* CMDQ_INSTRUCTION_COUNT */
 
-#ifdef CMDQ_DUMP_FIRSTERROR
 /**
  * Save first error dump
  */
+	void cmdq_core_turnon_first_dump(const TaskStruct *pTask);
 	void cmdq_core_turnoff_first_dump(void);
 /**
  * cmdq_core_save_first_dump - save a CMDQ first error dump to file
@@ -947,7 +947,6 @@ extern "C" {
 */
 	void cmdq_core_save_hex_first_dump(const char *prefix_str,
 					   int rowsize, int groupsize, const void *buf, size_t len);
-#endif				/* CMDQ_DUMP_FIRSTERROR */
 
 	void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify);
 	bool cmdqCoreAcquireResource(CMDQ_EVENT_ENUM resourceEvent);
