@@ -53,6 +53,7 @@ static int dfp_weights[] = {
 static volatile void *g_ldo_base = NULL;
 
 volatile void *g_MFG_base;
+volatile void *g_DVFS_CPU_base;
 volatile void *g_DVFS_GPU_base;
 volatile void *g_DFP_base;
 volatile void *g_TOPCK_base;
@@ -381,12 +382,16 @@ static void mtk_pm_callback_power_off(void)
 static int pm_callback_power_on(struct kbase_device *kbdev)
 {
 	int ret;
+
 	MTK_err("power-on enter");
+
 	ret = mtk_pm_callback_power_on();
+
 	power_acquire();
 	g_is_power_on = 1;
 	MTK_err("power-on leave");
 	power_release();
+
 	return ret;
 }
 static void pm_callback_power_off(struct kbase_device *kbdev)
@@ -395,7 +400,9 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	g_is_power_on = 0;
 	MTK_err("power-off enter");
 	power_release();
+
 	mtk_pm_callback_power_off();
+
 	MTK_err("power-off leave");
 }
 
@@ -591,6 +598,7 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev)
 	/* MTK: TODO, using device_treee */
 	g_ldo_base = ioremap_nocache(0x10001000, 0x1000);
 	g_MFG_base = ioremap_nocache(0x13000000, 0x1000);
+	g_DVFS_CPU_base = ioremap_nocache(0x11015000, 0x1000);
 	g_DVFS_GPU_base = ioremap_nocache(0x11016000, 0x1000);
 	g_DFP_base = ioremap_nocache(0x13020000, 0x1000);
 	g_TOPCK_base = ioremap_nocache(0x10000000, 0x1000);

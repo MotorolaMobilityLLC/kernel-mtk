@@ -55,6 +55,21 @@ void mtk_kbase_spm_release(void)
 	spm_release();
 }
 
+static void _mtk_kbase_spm_kick_lock(void)
+{
+	int retry = 0;
+	DVFS_CPU_write32(0x0, 0x0b160001);
+	do {
+		DVFS_CPU_write32(0x428, 0x1);
+		if (((++retry) % 10000) == 0)
+			pr_MTK_err("polling dvfs_cpu:0x428 , retry=%d\n", retry);
+	} while(DVFS_CPU_read32(0x428) != 0x1);
+}
+static void _mtk_kbase_spm_kick_unlock(void)
+{
+	DVFS_CPU_write32(0x428, 0x1);
+}
+
 void mtk_kbase_spm_kick(struct pcm_desc *pd)
 {
 	dma_addr_t pa;
@@ -91,9 +106,18 @@ void mtk_kbase_spm_kick(struct pcm_desc *pd)
 
 	DVFS_GPU_write32(DVFS_GPU_PCM_PWR_IO_EN, 0x0081); /* sync register and enable IO output for r0 and r7 */
 
+	/* Lock before fetch IM */
+	_mtk_kbase_spm_kick_lock();
+
 	/* Kick */
 	DVFS_GPU_write32(DVFS_GPU_PCM_CON0, SPM_PROJECT_CODE | CON0_PCM_CK_EN | CON0_EN_SLEEP_DVS | CON0_IM_KICK_L | CON0_PCM_KICK_L);
 	DVFS_GPU_write32(DVFS_GPU_PCM_CON0, SPM_PROJECT_CODE | CON0_PCM_CK_EN | CON0_EN_SLEEP_DVS);
+
+	/* Wait IM ready */
+	while ((DVFS_GPU_read32(DVFS_GPU_PCM_FSM_STA) & FSM_STA_IM_STATE_MASK) != FSM_STA_IM_STATE_IM_READY);
+
+	/* Unlock after IM ready */
+	_mtk_kbase_spm_kick_unlock();
 
 	spm_release();
 }

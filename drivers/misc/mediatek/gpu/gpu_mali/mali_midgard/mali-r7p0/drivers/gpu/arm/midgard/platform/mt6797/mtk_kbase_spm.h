@@ -79,6 +79,10 @@ struct mtk_config {
 #define DVFS_GPU_PCM_REG_DATA_INI   0x28
 #define DVFS_GPU_PCM_PWR_IO_EN      0x2c
 
+#define DVFS_GPU_PCM_FSM_STA        0x178
+#define FSM_STA_IM_STATE_IM_READY   (0x4 << 7)
+#define FSM_STA_IM_STATE_MASK       (0x7 << 7)
+
 #define M0_REC0          0x300
 #define M1_REC0          0x350
 #define M2_REC0          0x3A0
@@ -155,6 +159,7 @@ struct mtk_config {
 #define CLK_MISC_CFG_0              0x104
 
 extern volatile void *g_MFG_base;
+extern volatile void *g_DVFS_CPU_base;
 extern volatile void *g_DVFS_GPU_base;
 extern volatile void *g_DFP_base;
 extern volatile void *g_TOPCK_base;
@@ -165,6 +170,8 @@ extern struct mtk_config *g_config;
 #define base_read32(addr)             (*(volatile uint32_t*)(addr))
 #define MFG_write32(addr, value)      base_write32(g_MFG_base+addr, value)
 #define MFG_read32(addr)              base_read32(g_MFG_base+addr)
+#define DVFS_CPU_write32(addr, value) base_write32(g_DVFS_CPU_base+addr, value)
+#define DVFS_CPU_read32(addr)         base_read32(g_DVFS_CPU_base+addr)
 #define DVFS_GPU_write32(addr, value) base_write32(g_DVFS_GPU_base+addr, value)
 #define DVFS_GPU_read32(addr)         base_read32(g_DVFS_GPU_base+addr)
 #define DFP_write32(addr, value)      base_write32(g_DFP_base+addr, value)
