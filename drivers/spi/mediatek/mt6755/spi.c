@@ -1536,6 +1536,7 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	}
 #endif
 
+	master->dev.of_node = pdev->dev.of_node;
 	/* hardware can only connect 1 slave.if you want to multiple, using gpio CS */
 	master->num_chipselect = 2;
 
