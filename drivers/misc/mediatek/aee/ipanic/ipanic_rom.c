@@ -470,6 +470,9 @@ int ipanic(struct notifier_block *this, unsigned long event, void *ptr)
 	spin_lock_irq(&ipanic_lock);
 	aee_disable_api();
 	mrdump_mini_ke_cpu_regs(NULL);
+	flush_cache_all();
+	if (!has_mt_dump_support())
+		emergency_restart();
 	ipanic_mrdump_mini(AEE_REBOOT_MODE_KERNEL_PANIC, "kernel PANIC");
 	if (!ipanic_data_is_valid(IPANIC_DT_KERNEL_LOG)) {
 		ipanic_klog_region(&dumper);
