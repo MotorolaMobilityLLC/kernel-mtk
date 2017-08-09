@@ -15,7 +15,6 @@
 #include "ion_drv.h"
 #include "mt_idle.h"
 #include "mt_spm_reg.h"
-#include "mt_boot_common.h"
 /* #include "pcm_def.h" */
 #include "mt_spm_idle.h"
 #include "mt_smi.h"
@@ -698,22 +697,25 @@ void _vdo_mode_enter_idle(void)
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 		_idle_set_golden_setting();
 
+#if 0
 	/* Enable sodi - need wait golden setting done ??? */
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT)) {
 		/* set power down mode forbidden */
 		spm_sodi_mempll_pwr_mode(1);
 		spm_enable_sodi(1);
 	}
-
+#endif
 }
 
 void _vdo_mode_leave_idle(void)
 {
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 
+#if 0
 	/* Disable sodi */
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		spm_enable_sodi(0);
+#endif
 
 	/* set golden setting */
 	set_is_display_idle(0);
@@ -908,8 +910,11 @@ void primary_display_sodi_enable(int flag)
 void primary_display_sodi_rule_init(void)
 {
 	/* enable sodi when display driver is ready */
-	if (primary_display_is_video_mode())
-		;/* spm_enable_sodi(1); */
+	if (primary_display_is_video_mode()) {
+		/* set power down mode forbidden */
+		spm_sodi_mempll_pwr_mode(1);
+		spm_enable_sodi(1);
+	}
 	else
 		primary_display_sodi_enable(1);
 
@@ -920,7 +925,7 @@ int primary_display_lowpower_init(void)
 	set_fps(primary_display_get_fps_nolock()/100);
 	backup_vfp_for_lp_cust(primary_get_lcm()->params->dsi.vertical_frontporch_for_low_power);
 	/* init idlemgr */
-	if (disp_helper_get_option(DISP_OPT_IDLE_MGR) && get_boot_mode() == NORMAL_BOOT)
+	if (disp_helper_get_option(DISP_OPT_IDLE_MGR))
 		primary_display_idlemgr_init();
 
 
