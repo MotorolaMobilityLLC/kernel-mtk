@@ -9161,6 +9161,7 @@ wlanoidSetCountryCode(IN P_ADAPTER_T prAdapter,
 		      IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
 {
 	PUINT_8 pucCountry;
+	UINT_16 u2CountryCode;
 
 	ASSERT(prAdapter);
 	ASSERT(pvSetBuffer);
@@ -9169,10 +9170,27 @@ wlanoidSetCountryCode(IN P_ADAPTER_T prAdapter,
 	*pu4SetInfoLen = 2;
 
 	pucCountry = pvSetBuffer;
+	u2CountryCode = (((UINT_16) pucCountry[0]) << 8) | ((UINT_16) pucCountry[1]);
 
-	prAdapter->rWifiVar.rConnSettings.u2CountryCode = (((UINT_16) pucCountry[0]) << 8) | ((UINT_16) pucCountry[1]);
+	/* previous country code == FF : ignore country code, current country code == FE : resume */
+	if (prAdapter->rWifiVar.rConnSettings.u2CountryCodeBakup == COUNTRY_CODE_FF) {
+		if (u2CountryCode != COUNTRY_CODE_FE) {
+			DBGLOG(OID, INFO, "Skip country code cmd (0x%04x)\n", u2CountryCode);
+			return WLAN_STATUS_SUCCESS;
+		}
+		DBGLOG(OID, INFO, "Resume handle country code cmd (0x%04x)\n", u2CountryCode);
+	}
 
+	prAdapter->rWifiVar.rConnSettings.u2CountryCode = u2CountryCode;
+	prAdapter->rWifiVar.rConnSettings.u2CountryCodeBakup = prAdapter->rWifiVar.rConnSettings.u2CountryCode;
+	DBGLOG(OID, LOUD, "u2CountryCodeBakup=0x%04x\n", prAdapter->rWifiVar.rConnSettings.u2CountryCodeBakup);
+
+	/* Force to re-search country code in country domains */
+	prAdapter->prDomainInfo = NULL;
 	rlmDomainSendCmd(prAdapter, TRUE);
+
+	/* Update supported channel list in channel table based on current country domain */
+	wlanUpdateChannelTable(prAdapter->prGlueInfo);
 
 	return WLAN_STATUS_SUCCESS;
 }

@@ -1257,7 +1257,7 @@ BOOLEAN wlanExportGlueInfo(P_GLUE_INFO_T *prGlueInfoExpAddr);
 
 BOOLEAN wlanIsLaunched(VOID);
 
-void p2pSetMulticastListWorkQueueWrapper(P_GLUE_INFO_T prGlueInfo);
+VOID wlanUpdateChannelTable(P_GLUE_INFO_T prGlueInfo);
 
 #endif
 

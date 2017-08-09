@@ -473,6 +473,10 @@ typedef struct iw_p2p_version {
 ********************************************************************************
 */
 
+extern struct ieee80211_supported_band mtk_band_2ghz;
+extern struct ieee80211_supported_band mtk_band_5ghz;
+extern UINT_32 mtk_cipher_suites[5];
+
 /*******************************************************************************
 *                           P R I V A T E   D A T A
 ********************************************************************************
@@ -482,40 +486,13 @@ typedef struct iw_p2p_version {
 *                                 M A C R O S
 ********************************************************************************
 */
-/* Macros used for cfg80211 */
-#define RATETAB_ENT(_rate, _rateid, _flags) \
-{                                       \
-	.bitrate    = (_rate),              \
-	.hw_value   = (_rateid),            \
-	.flags      = (_flags),             \
-}
-
-#define CHAN2G(_channel, _freq, _flags)             \
-{                                               \
-	.band               = IEEE80211_BAND_2GHZ,  \
-	.center_freq        = (_freq),              \
-	.hw_value           = (_channel),           \
-	.flags              = (_flags),             \
-	.max_antenna_gain   = 0,                    \
-	.max_power          = 30,                   \
-}
-
-#define CHAN5G(_channel, _flags)                        \
-{                                                   \
-	.band               = IEEE80211_BAND_5GHZ,      \
-	.center_freq        = 5000 + (5 * (_channel)),  \
-	.hw_value           = (_channel),               \
-	.flags              = (_flags),                 \
-	.max_antenna_gain   = 0,                        \
-	.max_power          = 30,                       \
-}
 
 /*******************************************************************************
 *                  F U N C T I O N   D E C L A R A T I O N S
 ********************************************************************************
 */
 
-#if (CFG_ENABLE_WIFI_DIRECT_CFG_80211 != 0)
+#if CFG_ENABLE_WIFI_DIRECT_CFG_80211
 
 struct wireless_dev *
 mtk_p2p_cfg80211_add_iface(struct wiphy *wiphy,

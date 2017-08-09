@@ -211,7 +211,7 @@
 
 #include "precomp.h"
 #include "gl_cfg80211.h"
-#include "gl_p2p_os.h"
+#include "gl_p2p_ioctl.h"
 
 #ifdef __GNUC__
 #pragma GCC diagnostic ignored "-Wformat"
