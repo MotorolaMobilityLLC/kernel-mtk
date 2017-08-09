@@ -28,8 +28,9 @@ extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #if PPM_DLPT_ENHANCEMENT
 #define DYNAMIC_TABLE2REAL_PERCENTAGE	(58)
 #endif
-
-/* #define PPM_DISABLE_CLUSTER_MIGRATION	(1) */
+#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
+#define PPM_DISABLE_CLUSTER_MIGRATION	(1)
+#endif
 /* #define PPM_POWER_TABLE_CALIBRATION	(1) */
 #ifdef PPM_POWER_TABLE_CALIBRATION
 #include "mt_static_power.h"
