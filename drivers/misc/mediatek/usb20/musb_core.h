@@ -48,7 +48,16 @@
 #include "musb.h"
 #include <linux/wakelock.h>
 #include <linux/version.h>
-#include <mt-plat/mt_typedefs.h>
+
+/* data type used from mt_typdefs.h, mt_typedefs.h is removed now */
+typedef enum {
+	KAL_FALSE = 0,
+	KAL_TRUE  = 1,
+} kal_bool;
+#ifndef TRUE
+  #define TRUE  true
+#endif
+typedef unsigned int    kal_uint32;
 
 #ifdef MUSB_QMU_SUPPORT
 #include "mtk_qmu.h"
@@ -89,7 +98,7 @@ extern int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd);
 #define R_CHARGER_1 330
 #define R_CHARGER_2 39
 #else
-extern kal_int32 battery_meter_get_charger_voltage(void);
+extern signed_int battery_meter_get_charger_voltage(void);
 #endif
 extern void send_otg_event(enum usb_otg_event event);
 #endif
