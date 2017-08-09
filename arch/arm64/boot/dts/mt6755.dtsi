@@ -2224,7 +2224,7 @@
 			interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&scpsys SCP_SYS_DIS>,
 					<&scpsys SCP_SYS_ISP>,
-					<&mmsys MM_DISP0_SMI_COMMON_FDVT>,
+					<&mmsys MM_DISP0_SMI_COMMON>,
 					<&imgsys IMG_IMAGE_FD>;
 			clock-names = "FD-SCP_SYS_DIS",
 						"FD-SCP_SYS_ISP",
