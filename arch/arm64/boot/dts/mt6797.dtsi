@@ -2402,11 +2402,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			gpio-rst = <59>;
 			gpio-eint = <57>;
 			gpio-irq = <58>;
+			gpio-osc = <100>;
 		};
 
-		irq_nfc: irq_nfc@ {
+		irq_nfc: irq_nfc1@ {
 			compatible = "mediatek,irq_nfc-eint";
-			status = "disabled";
 		};
 
 		ccci_util_cfg {

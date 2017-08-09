@@ -41,6 +41,7 @@
 				reg = <0x64>;
 			};
 		};
+
 		mmc0_pins_default: mmc0@default {
 			pins_cmd {
 				drive-strength = /bits/ 8 <2>;
@@ -504,10 +505,19 @@
 			bias-pull-down = <00>;
 		};
 	};
+
+	nfc_osc_init: state_osc_init {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO100__FUNC_GPIO100>;
+			slew-rate = <1>;
+			bias-pull-down = <00>;
+		};
+	};
 };
 
 &nfc {
-	pinctrl-names = "default", "ven_high", "ven_low", "rst_high", "rst_low", "eint_high", "eint_low", "irq_init";
+	pinctrl-names = "default", "ven_high", "ven_low", "rst_high", "rst_low",
+	"eint_high", "eint_low", "irq_init", "osc_init";
 	pinctrl-0 = <&nfc_default>;
 	pinctrl-1 = <&nfc_ven_high>;
 	pinctrl-2 = <&nfc_ven_low>;
@@ -516,6 +526,7 @@
 	pinctrl-5 = <&nfc_eint_high>;
 	pinctrl-6 = <&nfc_eint_low>;
 	pinctrl-7 = <&nfc_irq_init>;
+	pinctrl-8 = <&nfc_osc_init>;
 	status = "okay";
 };
 /* NFC end */

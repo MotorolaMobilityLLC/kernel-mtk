@@ -124,6 +124,7 @@ struct pinctrl_state *st_rst_l = NULL;
 struct pinctrl_state *st_eint_h = NULL;
 struct pinctrl_state *st_eint_l = NULL;
 struct pinctrl_state *st_irq_init = NULL;
+struct pinctrl_state *st_osc_init = NULL;
 #endif
 
 /* static struct i2c_board_info nfc_board_info __initdata = */
@@ -200,6 +201,7 @@ struct mt6605_i2c_platform_data {
 	unsigned int ven_gpio;
 	unsigned int sysrstb_gpio;
 	unsigned int eint_gpio;	/* Host inform Chip */
+	unsigned int osc_en;
 };
 
 static const struct i2c_device_id mt6605_id[] = {
@@ -889,14 +891,14 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			pr_debug("%s, enable clock buffer.\n", __func__);
 #ifndef CONFIG_MTK_FPGA
 			/* enable nfc clock buffer */
-			clk_buf_ctrl(CLK_BUF_NFC, 1);
+			/* clk_buf_ctrl(CLK_BUF_NFC, 1); */
 #endif
 			break;
 		case MTK_NFC_IOCTL_CMD_CLOCK_BUF_DISABLE:
 			pr_debug("%s, disable clock buffer.\n", __func__);
 #ifndef CONFIG_MTK_FPGA
 			/* disable nfc clock buffer */
-			clk_buf_ctrl(CLK_BUF_NFC, 0);
+			/* clk_buf_ctrl(CLK_BUF_NFC, 0); */
 #endif
 			break;
 		case MTK_NFC_IOCTL_CMD_EXIT_EINT:
@@ -1108,7 +1110,16 @@ static int mt_nfc_pinctrl_init(struct platform_device *pdev)
 		pr_debug("%s : pinctrl err, irq_init\n", __func__);
 	}
 
+	st_osc_init = pinctrl_lookup_state(gpctrl, "osc_init");
+	if (IS_ERR(st_osc_init)) {
+		ret = PTR_ERR(st_osc_init);
+		pr_debug("%s : pinctrl err, osc_init\n", __func__);
+	}
+
 	/* select state */
+	ret = mt_nfc_pinctrl_select(gpctrl, st_osc_init);
+	usleep_range(900, 1000);
+
 	ret = mt_nfc_pinctrl_select(gpctrl, st_irq_init);
 	usleep_range(900, 1000);
 
