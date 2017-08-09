@@ -573,7 +573,7 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 
 
 #if (TIMESTAMP_QUEUE_EN == 1)
-static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, MUINT32 dma_id);
+static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_mod, MUINT32 dma_id);
 static int32_t ISP_PushBufTimestamp(MUINT32 module, MUINT32 dma_id, MUINT32 sec, MUINT32 usec);
 static int32_t ISP_PopBufTimestamp(MUINT32 module, MUINT32 dma_id, S_START_T *pTstp);
 #endif
@@ -695,6 +695,7 @@ typedef struct {
 		S_START_T   TimeQue[ISP_TIMESTPQ_DEPTH];
 		MUINT32     WrIndex; /* increase when p1done or dmao done */
 		MUINT32     RdIndex; /* increase when user deque */
+		MUINT32		PrevFbcDropCnt;
 	} Dmao[_cam_max_];
 } ISP_TIMESTPQ_INFO_STRUCT;
 #endif
@@ -10686,7 +10687,7 @@ void IRQ_INT_ERR_CHECK_CAM(MUINT32 WarnStatus, MUINT32 ErrStatus, ISP_IRQ_TYPE_E
 }
 
 
-CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module)
+CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_mod)
 {
 	MINT32 dma_arry_map[_cam_max_] = {
 		/*      0,  1,  2,  3,  4,  5,  6,  7,  8,  9,*/
@@ -10771,10 +10772,24 @@ CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module)
 		for (i = 0; i < _cam_max_; i++) {
 			if (dma_arry_map[i] >= 0) {
 				if (fbc_ctrl1[dma_arry_map[i]].Raw != 0) {
-					product *= fbc_ctrl2[dma_arry_map[i]].Bits.FBC_CNT;
-					if (product == 0) {
-						return CAM_FST_DROP_FRAME;
+#if (TIMESTAMP_QUEUE_EN == 1)
+					if (fbc_ctrl2[dma_arry_map[i]].Bits.DROP_CNT !=
+						IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt) {
+						IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt =
+							((IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt + 1)
+							& 0xFF);
+						product = 0;
 					}
+					/* Prevent *0 for SOF ISR delayed after P1_DON */
+					if (0 == fbc_ctrl2[dma_arry_map[i]].Bits.FBC_CNT)
+						product *= 1;
+					else
+						product *= fbc_ctrl2[dma_arry_map[i]].Bits.FBC_CNT;
+#else
+					product *= fbc_ctrl2[dma_arry_map[i]].Bits.FBC_CNT;
+					if (product == 0)
+						return CAM_FST_DROP_FRAME;
+#endif
 				}
 			}
 		}
@@ -10782,25 +10797,41 @@ CAM_FrameST Irq_CAM_FrameStatus(ISP_DEV_NODE_ENUM module)
 		for (i = 0; i < _cam_max_; i++) {
 			if (dma_arry_map[i] >= 0) {
 				if (fbc_ctrl1[dma_arry_map[i]].Raw != 0) {
+#if (TIMESTAMP_QUEUE_EN == 1)
+					if (fbc_ctrl2[dma_arry_map[i]].Bits.DROP_CNT !=
+						IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt) {
+						IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt =
+							((IspInfo.TstpQInfo[irq_mod].Dmao[i].PrevFbcDropCnt + 1)
+							& 0xFF);
+						product = 0;
+					}
+					if (0 == (fbc_ctrl1[dma_arry_map[i]].Bits.FBC_NUM -
+									fbc_ctrl2[dma_arry_map[i]].Bits.FBC_CNT))
+						product *= 1;
+					else
+						product *= (fbc_ctrl1[dma_arry_map[i]].Bits.FBC_NUM -
+									fbc_ctrl2[dma_arry_map[i]].Bits.FBC_CNT);
+#else
 					product *= (fbc_ctrl1[dma_arry_map[i]].Bits.FBC_NUM -
 									fbc_ctrl2[dma_arry_map[i]].Bits.FBC_CNT);
-					if (product == 0) {
+					if (product == 0)
 						return CAM_FST_DROP_FRAME;
-					}
+#endif
 				}
 			}
 		}
 	}
 
-	if (product == 1) {
+	if (product == 1)
 		return CAM_FST_LAST_WORKING_FRAME;
-	} else {
+	else if (product == 0)
+		return CAM_FST_DROP_FRAME;
+	else
 		return CAM_FST_NORMAL;
-	}
 }
 
 #if (TIMESTAMP_QUEUE_EN == 1)
-static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, MUINT32 dma_id)
+static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, ISP_IRQ_TYPE_ENUM irq_mod, MUINT32 dma_id)
 {
 	static const MINT32 dma_arry_map[_cam_max_] = {
 		-1, /* _imgo_*/
@@ -10881,25 +10912,56 @@ static CAM_FrameST Irq_CAM_SttFrameStatus(ISP_DEV_NODE_ENUM module, MUINT32 dma_
 
 	if (bQueMode) {
 		if (fbc_ctrl1.Raw != 0) {
+#if (TIMESTAMP_QUEUE_EN == 1)
+			if (fbc_ctrl2.Bits.DROP_CNT !=
+				IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt) {
+				IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt =
+							((IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt + 1)
+							& 0xFF);
+				product = 0;
+			}
+			/* Prevent *0 for SOF ISR delayed after P1_DON */
+			if (0 == fbc_ctrl2.Bits.FBC_CNT)
+				product *= 1;
+			else
+				product *= fbc_ctrl2.Bits.FBC_CNT;
+#else
 			product *= fbc_ctrl2.Bits.FBC_CNT;
 
 			if (product == 0)
 				return CAM_FST_DROP_FRAME;
+#endif
 		} else
 			return CAM_FST_DROP_FRAME;
 	} else {
 		if (fbc_ctrl1.Raw != 0) {
-			product *= (fbc_ctrl1.Bits.FBC_NUM -
-							fbc_ctrl2.Bits.FBC_CNT);
+#if (TIMESTAMP_QUEUE_EN == 1)
+			if (fbc_ctrl2.Bits.DROP_CNT !=
+				IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt) {
+				IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt =
+							((IspInfo.TstpQInfo[irq_mod].Dmao[dma_id].PrevFbcDropCnt + 1)
+							& 0xFF);
+				product = 0;
+			}
+			/* Prevent *0 for SOF ISR delayed after P1_DON */
+			if (0 == (fbc_ctrl1.Bits.FBC_NUM - fbc_ctrl2.Bits.FBC_CNT))
+				product *= 1;
+			else
+				product *= (fbc_ctrl1.Bits.FBC_NUM - fbc_ctrl2.Bits.FBC_CNT);
+#else
+			product *= (fbc_ctrl1.Bits.FBC_NUM - fbc_ctrl2.Bits.FBC_CNT);
 
 			if (product == 0)
 				return CAM_FST_DROP_FRAME;
+#endif
 		} else
 			return CAM_FST_DROP_FRAME;
 	}
 
 	if (product == 1)
 		return CAM_FST_LAST_WORKING_FRAME;
+	else if (product == 0)
+		return CAM_FST_DROP_FRAME;
 	else
 		return CAM_FST_NORMAL;
 
@@ -12219,7 +12281,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 		usec = do_div(sec, 1000000);    /* sec and usec */
 
 		/* chk this frame have EOF or not, dynimic dma port chk */
-		FrameStatus[module] = Irq_CAM_FrameStatus(reg_module);
+		FrameStatus[module] = Irq_CAM_FrameStatus(reg_module, module);
 		if (FrameStatus[module] == CAM_FST_DROP_FRAME) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, "CAMA Lost p1 done_%d (0x%x): ", \
 					   sof_count[module], cur_v_cnt);
@@ -12250,7 +12312,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 			} else {
 				magic_num = ISP_RD32(CAM_REG_RRZO_FH_SPARE_3(reg_module));
 			}
-			/* if (g1stSof[module]) */ {
+			if (g1stSof[module]) {
 				m_sec = sec;
 				m_usec = usec;
 				gSTime[module].sec = sec;
@@ -12270,20 +12332,20 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 						ISP_PushBufTimestamp(module, _lcso_, sec, usec);
 					}
 
-					if (CAM_FST_DROP_FRAME != Irq_CAM_SttFrameStatus(reg_module, _aao_))
+					if (CAM_FST_DROP_FRAME != Irq_CAM_SttFrameStatus(reg_module, module, _aao_))
 						ISP_PushBufTimestamp(module, _aao_, sec, usec);
 
-					if (CAM_FST_DROP_FRAME != Irq_CAM_SttFrameStatus(reg_module, _afo_))
+					if (CAM_FST_DROP_FRAME != Irq_CAM_SttFrameStatus(reg_module, module, _afo_))
 						ISP_PushBufTimestamp(module, _afo_, sec, usec);
 
-					if (CAM_FST_DROP_FRAME != Irq_CAM_SttFrameStatus(reg_module, _flko_))
+					if (CAM_FST_DROP_FRAME != Irq_CAM_SttFrameStatus(reg_module, module, _flko_))
 						ISP_PushBufTimestamp(module, _flko_, sec, usec);
 				}
 			}
 			#endif
 
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, \
-				       "CAMA P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,%d),int_us:0x%x,cq:0x%x\n", \
+				       "CAMA P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,%d),int_us:%d,cq:0x%x\n", \
 				       sof_count[module], cur_v_cnt, \
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL1(reg_module))), \
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL2(reg_module))), \
@@ -12491,7 +12553,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 		usec = do_div(sec, 1000000);    /* sec and usec */
 
 		/* chk this frame have EOF or not, dynimic dma port chk */
-		FrameStatus[module] = Irq_CAM_FrameStatus(reg_module);
+		FrameStatus[module] = Irq_CAM_FrameStatus(reg_module, module);
 		if (FrameStatus[module] == CAM_FST_DROP_FRAME) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, "CAMB Lost p1 done_%d (0x%x): ", \
 				       sof_count[module], cur_v_cnt);
@@ -12524,7 +12586,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 			} else {
 				magic_num = ISP_RD32(CAM_REG_RRZO_FH_SPARE_3(reg_module));
 			}
-			/* if (g1stSof[module]) */ {
+			if (g1stSof[module]) {
 				m_sec = sec;
 				m_usec = usec;
 				gSTime[module].sec = sec;
@@ -12544,20 +12606,20 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 						ISP_PushBufTimestamp(module, _lcso_, sec, usec);
 					}
 
-					if (CAM_FST_DROP_FRAME != Irq_CAM_SttFrameStatus(reg_module, _aao_))
+					if (CAM_FST_DROP_FRAME != Irq_CAM_SttFrameStatus(reg_module, module, _aao_))
 						ISP_PushBufTimestamp(module, _aao_, sec, usec);
 
-					if (CAM_FST_DROP_FRAME != Irq_CAM_SttFrameStatus(reg_module, _afo_))
+					if (CAM_FST_DROP_FRAME != Irq_CAM_SttFrameStatus(reg_module, module, _afo_))
 						ISP_PushBufTimestamp(module, _afo_, sec, usec);
 
-					if (CAM_FST_DROP_FRAME != Irq_CAM_SttFrameStatus(reg_module, _flko_))
+					if (CAM_FST_DROP_FRAME != Irq_CAM_SttFrameStatus(reg_module, module, _flko_))
 						ISP_PushBufTimestamp(module, _flko_, sec, usec);
 				}
 			}
 			#endif
 
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, \
-				       "CAMB P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,%d),int_us:0x%x,cq:0x%x\n", \
+				       "CAMB P1_SOF_%d_%d(0x%x_0x%x,0x%x_0x%x,0x%x,0x%x,%d),int_us:%d,cq:0x%x\n", \
 				       sof_count[module], cur_v_cnt, \
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL1(reg_module))), \
 				       (unsigned int)(ISP_RD32(CAM_REG_FBC_IMGO_CTL2(reg_module))), \
