@@ -24,23 +24,23 @@
 
 /* MSDC clock can select different PLL
  * software can used mux interface from clock management module to select */
-#define MSDC0_CLKSRC_50MHZ         (0)
-#define MSDC0_CLKSRC_400MHZ        (1)
-#define MSDC0_CLKSRC_364MHZ        (2)
-#define MSDC0_CLKSRC_156MHZ        (3)
-#define MSDC0_CLKSRC_182MHZ        (4)
-/* #define MSDC0_CLKSRC_156MHZ        (5) */
-#define MSDC0_CLKSRC_200MHZ        (6)
-#define MSDC0_CLKSRC_312MHZ        (7)
-#define MSDC0_CLKSRC_416MHZ        (8)
+#define MSDC50_CLKSRC_50MHZ         (0)
+#define MSDC50_CLKSRC_400MHZ        (1)
+#define MSDC50_CLKSRC_364MHZ        (2)
+#define MSDC50_CLKSRC_156MHZ        (3)
+#define MSDC50_CLKSRC_182MHZ        (4)
+/* #define MSDC50_CLKSRC_156MHZ        (5) */
+#define MSDC50_CLKSRC_200MHZ        (6)
+#define MSDC50_CLKSRC_312MHZ        (7)
+#define MSDC50_CLKSRC_416MHZ        (8)
 
-#define MSDC1_CLKSRC_50MHZ        (0)
-#define MSDC1_CLKSRC_208MHZ       (1)
-#define MSDC1_CLKSRC_200MHZ       (2)
-#define MSDC1_CLKSRC_156MHZ       (3)
-#define MSDC1_CLKSRC_182MHZ       (4)
-/* #define MSDC1_CLKSRC_156MHZ       (5) */
-#define MSDC1_CLKSRC_178MHZ       (6)
+#define MSDC30_CLKSRC_50MHZ        (0)
+#define MSDC30_CLKSRC_208MHZ       (1)
+#define MSDC30_CLKSRC_200MHZ       (2)
+#define MSDC30_CLKSRC_156MHZ       (3)
+#define MSDC30_CLKSRC_182MHZ       (4)
+/* #define MSDC30_CLKSRC_156MHZ       (5) */
+#define MSDC30_CLKSRC_178MHZ       (6)
 
 #define MMC_VDD_165_195		0x00000080	/* VDD voltage 1.65 - 1.95 */
 #define MMC_VDD_20_21		0x00000100	/* VDD voltage 2.0 ~ 2.1 */

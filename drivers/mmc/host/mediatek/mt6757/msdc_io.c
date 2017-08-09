@@ -45,7 +45,7 @@ void __iomem *infracfg_ao_reg_base;
 void __iomem *infracfg_reg_base;
 void __iomem *pericfg_reg_base;
 void __iomem *emi_reg_base;
-void __iomem *toprgu_reg_base;
+/*void __iomem *toprgu_reg_base;*/
 void __iomem *apmixed_reg_base;
 void __iomem *topckgen_reg_base;
 
@@ -889,15 +889,15 @@ void msdc_get_driving_by_id(u32 id, struct msdc_hw *hw)
 
 /* msdc pin config
  * MSDC0
- * PUPD/RO/R1
+ * PUPD/R1/R0
  * 0/0/0: High-Z
- * 0/0/1: Pull-up with 50Kohm
- * 0/1/0: Pull-up with 10Kohm
- * 0/1/1: Pull-up with 10Kohm//50Kohm
+ * 0/1/0: Pull-up with 50Kohm
+ * 0/0/1: Pull-up with 10Kohm
+ * 0/1/1: Pull-up with 50Kohm//10Kohm
  * 1/0/0: High-Z
- * 1/0/1: Pull-down with 50Kohm
- * 1/1/0: Pull-down with 10Kohm
- * 1/1/1: Pull-down with 10Kohm//50Kohm
+ * 1/1/0: Pull-down with 50Kohm
+ * 1/0/1: Pull-down with 10Kohm
+ * 1/1/1: Pull-down with 50Kohm//10Kohm
  */
 void msdc_pin_config_by_id(u32 id, u32 mode)
 {
@@ -1338,6 +1338,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 		}
 	}
 
+/*
 	if (toprgu_reg_base == NULL) {
 		np = of_find_compatible_node(NULL, NULL, "mediatek,toprgu");
 		if (np) {
@@ -1346,6 +1347,7 @@ int msdc_dt_init(struct platform_device *pdev, struct mmc_host *mmc)
 				toprgu_reg_base);
 		}
 	}
+*/
 
 	if (apmixed_reg_base == NULL) {
 		np = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
