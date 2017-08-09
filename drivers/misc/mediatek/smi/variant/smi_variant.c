@@ -56,7 +56,13 @@
 #define LARB_BACKUP_REG_SIZE 128
 
 #define SMI_COMMON_BACKUP_REG_NUM   10
+#ifdef CONFIG_ARCH_MT8160
+/* mt8160 has different register offset as other SoCs of SMI_L1LEN etc */
+static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = {
+	0x100, 0x104, 0x108, 0x10c, 0x110, 0x114, 0x120, 0x230, 0x234, 0x238
+};
 
+#else
 /*
  * SMI COMMON register list to be backuped
  * for some socs which do not have some register, it's OK to read and write to
@@ -65,6 +71,7 @@
 static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = {
 	0x200, 0x204, 0x208, 0x20c, 0x210, 0x214, 0x220, 0x230, 0x234, 0x238
 };
+#endif
 
 #define SF_HWC_PIXEL_MAX_NORMAL  (2560 * 1600 * 7)
 #define SF_HWC_PIXEL_MAX_VR   (2560 * 1600 * 7)
@@ -270,11 +277,13 @@ static void restore_larb_smi(int index)
 	}
 
 	/* we do not backup 0x20 because it is a fixed setting */
-	if (smi_data->smi_priv->plat == MTK_PLAT_MT8173 || smi_data->smi_priv->plat == MTK_PLAT_MT8163)
+	if (smi_data->smi_priv->plat == MTK_PLAT_MT8173 || smi_data->smi_priv->plat == MTK_PLAT_MT8163
+		|| smi_data->smi_priv->plat == MTK_PLAT_MT8160)
 		M4U_WriteReg32(larb_base, 0x20, smi_data->smi_priv->larb_vc_setting[index]);
 
-	/* turn off EMI empty OSTD dobule, fixed setting */
-	M4U_WriteReg32(larb_base, 0x2c, 4);
+	/* turn off EMI empty OSTD dobule, fixed setting, mt8160 do not have this register */
+	if (smi_data->smi_priv->plat != MTK_PLAT_MT8160)
+		M4U_WriteReg32(larb_base, 0x2c, 4);
 
 }
 
@@ -361,7 +370,8 @@ int larb_reg_restore(int larb)
 	/*M4U_WriteReg32(larb_base, SMI_ROUTE_SEL, *(pReg++) ); */
 
 	smi_larb_init(larb);
-	if (smi_data->smi_priv->plat == MTK_PLAT_MT8173 || smi_data->smi_priv->plat == MTK_PLAT_MT8163)
+	if (smi_data->smi_priv->plat == MTK_PLAT_MT8173 || smi_data->smi_priv->plat == MTK_PLAT_MT8163
+		|| smi_data->smi_priv->plat == MTK_PLAT_MT8160)
 		m4u_larb_restore_sec(larb);
 
 	return 0;
@@ -1091,6 +1101,7 @@ static const struct of_device_id mtk_smi_larb_of_ids[] = {
 	{ .compatible = "mediatek,mt8173-smi-larb", },
 	{ .compatible = "mediatek,mt8163-smi-larb", },
 	{ .compatible = "mediatek,mt8127-smi-larb", },
+	{ .compatible = "mediatek,mt8160-smi-larb", },
 	{}
 };
 
@@ -1113,6 +1124,7 @@ static const struct of_device_id mtk_smi_of_ids[] = {
 	{ .compatible = "mediatek,mt8173-smi", .data = &smi_mt8173_priv, },
 	{ .compatible = "mediatek,mt8163-smi", .data = &smi_mt8163_priv, },
 	{ .compatible = "mediatek,mt8127-smi", .data = &smi_mt8127_priv, },
+	{ .compatible = "mediatek,mt8160-smi", .data = &smi_mt8160_priv, },
 	{}
 };
 
