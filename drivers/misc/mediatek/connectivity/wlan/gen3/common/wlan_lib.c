@@ -6399,8 +6399,11 @@ VOID wlanInitFeatureOption(IN P_ADAPTER_T prAdapter)
 	    (UINT_32) wlanCfgGetUint32(prAdapter, "NetifStartTh", CFG_TX_START_NETIF_PER_QUEUE_THRESHOLD);
 	prWifiVar->ucTxBaSize = (UINT_8) wlanCfgGetUint32(prAdapter, "TxBaSize", 64);
 	prWifiVar->ucRxHtBaSize = (UINT_8) wlanCfgGetUint32(prAdapter, "RxHtBaSize", 64);
+#ifdef MT6630
 	prWifiVar->ucRxVhtBaSize = (UINT_8) wlanCfgGetUint32(prAdapter, "RxVhtBaSize", 32);
-
+#else
+	prWifiVar->ucRxVhtBaSize = (UINT_8) wlanCfgGetUint32(prAdapter, "RxVhtBaSize", 64);
+#endif
 	/* Tx Buffer Management */
 	prWifiVar->ucExtraTxDone = (UINT_32) wlanCfgGetUint32(prAdapter, "ExtraTxDone", 1);
 	prWifiVar->ucTxDbg = (UINT_32) wlanCfgGetUint32(prAdapter, "TxDbg", 0);
