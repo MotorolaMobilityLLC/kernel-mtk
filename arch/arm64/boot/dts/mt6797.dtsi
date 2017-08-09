@@ -336,7 +336,7 @@
 			no-map;
 			size = <0 0x1000000>; /*16 MB share mem size */
 			alignment = <0 0x1000000>;
-			alloc-ranges = <0 0x40000000 0 0x60000000>;
+			alloc-ranges = <0 0x40000000 0 0x50000000>; /*0x4000_0000~0x8FFF_FFFF*/
 		};
 
 	};

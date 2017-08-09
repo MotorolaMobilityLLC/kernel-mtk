@@ -56,9 +56,9 @@
 #define IS_CLK_DMA_EN 0x40000
 #define SCP_READY_TIMEOUT (2 * HZ) /* 2 seconds*/
 
-phys_addr_t scp_mem_base_phys;
-phys_addr_t scp_mem_base_virt;
-phys_addr_t scp_mem_size;
+phys_addr_t scp_mem_base_phys = 0x0;
+phys_addr_t scp_mem_base_virt = 0x0;
+phys_addr_t scp_mem_size = 0x0;
 struct scp_regs scpreg;
 unsigned char *scp_send_buff;
 unsigned char *scp_recv_buff;
@@ -508,6 +508,16 @@ int scp_reserve_mem_of_init(struct reserved_mem *rmem)
 
 	scp_mem_base_phys = (phys_addr_t) rmem->base;
 	scp_mem_size = (phys_addr_t) rmem->size;
+	if ((scp_mem_base_phys >= (0x90000000ULL)) || (scp_mem_base_phys <= 0x0)) {
+		/*The scp remap region is fixed, only
+		 * 0x4000_0000ULL~0x8FFF_FFFFULL
+		 * can be accessible*/
+		pr_err("[SCP] The allocated memory(0x%llx) is larger than expected\n", scp_mem_base_phys);
+		/*should not call BUG() here or there is no log, return -1
+		 * instead.*/
+		return -1;
+	}
+
 
 	pr_debug("[SCP] phys:0x%llx - 0x%llx (0x%llx)\n", (phys_addr_t)rmem->base,
 			(phys_addr_t)rmem->base + (phys_addr_t)rmem->size, (phys_addr_t)rmem->size);
@@ -561,6 +571,15 @@ static void scp_reserve_memory_ioremap(void)
 	scp_reserve_mem_id_t id;
 	phys_addr_t accumlate_memory_size;
 
+
+	if ((scp_mem_base_phys >= (0x90000000ULL)) || (scp_mem_base_phys <= 0x0)) {
+		/*The scp remap region is fixed, only
+		 * 0x4000_0000ULL~0x8FFF_FFFFULL
+		 * can be accessible*/
+		pr_err("[SCP] The allocated memory(0x%llx) is larger than expected\n", scp_mem_base_phys);
+		/*call BUG() here to assert the unexpected memory allocation*/
+		BUG();
+	}
 	accumlate_memory_size = 0;
 	scp_mem_base_virt = (phys_addr_t)ioremap_nocache(scp_mem_base_phys, scp_mem_size);
 	pr_debug("[SCP]reserve mem: virt:0x%llx - 0x%llx (0x%llx)\n", (phys_addr_t)scp_mem_base_virt,
