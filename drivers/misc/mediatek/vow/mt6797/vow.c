@@ -139,6 +139,10 @@ static struct
 	VOW_PWR_STATUS       pwr_status;
 	int                  send_ipi_count;
 	bool                 suspend_lock;
+	bool                 firstRead;
+	unsigned long        voicedata_user_return_size_addr;
+	unsigned int         voice_length;
+	unsigned int         transfer_length;
 } vowserv;
 
 static struct device dev = {
@@ -243,6 +247,8 @@ static void vow_service_getVoiceData(void)
 	if (VoiceData_Wait_Queue_flag == 0) {
 		VoiceData_Wait_Queue_flag = 1;
 		wake_up_interruptible(&VoiceData_Wait_Queue);
+	} else {
+		/*pr_debug("getVoiceData but no one wait for it, may lost it!!\n");*/
 	}
 }
 
@@ -303,11 +309,16 @@ void vow_ipi_handler(int id, void *data, unsigned int len)
 			vowserv.ipi_fail_result = true;
 		vowserv.ipimsgwait = false;
 		break;
-	case SCP_IPIMSG_VOW_DATAREADY:
-		/*pr_debug("MD32_IPIMSG_VOW_DATAREADY\n");*/
+	case SCP_IPIMSG_VOW_DATAREADY: {
+		int *ptr32;
+
+		ptr32 = (int *)&vowmsg[3];
+		/*pr_debug("SCP_IPIMSG_VOW_DATAREADY 0x%x\n", *ptr32);*/
+		vowserv.voice_length = (*ptr32);
 		if (vowserv.recording_flag)
 			vow_service_getVoiceData();
 		break;
+	}
 	case SCP_IPIMSG_VOW_RECOGNIZE_OK:
 		pr_debug("SCP_IPIMSG_VOW_RECOGNIZE_OK\n");
 		vow_ipi_reg_ok(vowmsg[2]);
@@ -366,6 +377,8 @@ static void vow_service_Init(void)
 		vowserv.md32_command_flag = false;
 		vowserv.recording_flag    = false;
 		vowserv.suspend_lock      = 0;
+		vowserv.voice_length      = 0;
+		vowserv.firstRead         = false;
 		vowserv.pwr_status        = VOW_PWR_OFF;
 		vowserv.eint_status       = VOW_EINT_DISABLE;
 		vowserv.vow_init_model    = NULL;
@@ -433,10 +446,11 @@ int vow_service_GetParameter(unsigned long arg)
 		pr_debug("Get parameter fail\n");
 		return -EFAULT;
 	}
-	pr_debug("Get parameter: %lu %lu %lu %lu\n", vowserv.vow_info_apuser[0],
-						     vowserv.vow_info_apuser[1],
-						     vowserv.vow_info_apuser[2],
-						     vowserv.vow_info_apuser[3]);
+	pr_debug("Get parameter: %lu %lu %lu %lu %lu\n", vowserv.vow_info_apuser[0],
+							 vowserv.vow_info_apuser[1],
+							 vowserv.vow_info_apuser[2],
+							 vowserv.vow_info_apuser[3],
+							 vowserv.vow_info_apuser[4]);
 
 	return 0;
 }
@@ -779,6 +793,7 @@ static bool vow_service_SetVBufAddr(unsigned long arg)
 
 	vowserv.voicedata_user_addr = vowserv.vow_info_apuser[1];
 	vowserv.voicedata_user_size = vowserv.vow_info_apuser[2];
+	vowserv.voicedata_user_return_size_addr = vowserv.vow_info_apuser[3];
 	vowserv.voicedata_kernel_ptr = kmalloc(vowserv.voicedata_user_size, 0);
 
 	return true;
@@ -806,19 +821,28 @@ static bool vow_service_Disable(void)
 	bool ret;
 
 	PRINTK_VOWDRV("vow_service_Disable\n");
-	deregister_feature(VOW_FEATURE_ID);
 	vowserv.ipimsgwait = true;
 	while (vow_ipi_sendmsg(AP_IPIMSG_VOW_DISABLE, (void *)0, 0, 0, 1) == false)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_VOW_DISABLE);
+	if (vowserv.recording_flag) {
+		vowserv.voice_length = 0;
+		vow_service_getVoiceData();
+	}
 	if (vowserv.suspend_lock == 1) {
 		vowserv.suspend_lock = 0;
 		wake_unlock(&VOW_suspend_lock); /* Let AP will suspend */
 		PRINTK_VOWDRV("==DEBUG MODE STOP==\n");
 	}
-	if (vowserv.recording_flag)
-		vow_service_getVoiceData();
+	deregister_feature(VOW_FEATURE_ID);
 	return ret;
+}
+
+static bool vow_service_SyncVoiceDataAck(void)
+{
+	while (vow_ipi_sendmsg(AP_IPIMSG_VOW_DATAREADY_ACK, (void *)0, 0, 0, 1) == false)
+		;
+	return true;
 }
 
 void vow_memcpy_to_md32(void __iomem *trg, const void *src, int size)
@@ -863,6 +887,7 @@ static void vow_service_ReadVoiceData(void)
 			if ((VowDrv_GetHWStatus() == VOW_PWR_OFF) || (vowserv.recording_flag == false)) {
 				vowserv.voicedata_idx = 0;
 				stop_condition = 1;
+				PRINTK_VOWDRV("stop read vow voice data\n");
 			} else {
 				ptr16 = (short *)vowserv.voicddata_scp_ptr;
 				/* PRINTK_VOWDRV("[VOW] ReadDMA:%x\n", *ptr16); */
@@ -892,18 +917,41 @@ static void vow_service_ReadVoiceData(void)
 					firstbuffer = 1;
 				}
 			#else
+				/*PRINTK_VOWDRV("get once:%x\n",vowserv.voice_length);*/
 				memcpy(&vowserv.voicedata_kernel_ptr[vowserv.voicedata_idx],
 				       vowserv.voicddata_scp_ptr,
-				       VOW_VOICE_DATA_LENGTH_BYTES);
+				       vowserv.voice_length);
+				vow_service_SyncVoiceDataAck();
 			#endif
-				vowserv.voicedata_idx += (VOW_VOICE_DATA_LENGTH_BYTES >> 1);
-				if (vowserv.voicedata_idx >= (vowserv.voicedata_user_size >> 1)) {
+				vowserv.voicedata_idx += (vowserv.voice_length >> 1);
+
+				if (vowserv.voicedata_idx >= (VOW_VOICE_RECORD_BIG_THRESHOLD >> 1))
+					vowserv.transfer_length = VOW_VOICE_RECORD_BIG_THRESHOLD;
+				else
+					vowserv.transfer_length = VOW_VOICE_RECORD_THRESHOLD;
+
+				if (vowserv.voicedata_idx >= (vowserv.transfer_length >> 1)) {
 					unsigned int ret;
 
-					vowserv.voicedata_idx = 0;
+					ret = copy_to_user((void __user *)(vowserv.voicedata_user_return_size_addr),
+							   &vowserv.transfer_length,
+							   4);
+
 					ret = copy_to_user((void __user *)vowserv.voicedata_user_addr,
 							   vowserv.voicedata_kernel_ptr,
-							   vowserv.voicedata_user_size);
+							   vowserv.transfer_length);
+					/* move left data to buffer's head */
+					if (vowserv.voicedata_idx > (vowserv.transfer_length >> 1)) {
+						memcpy(&vowserv.voicedata_kernel_ptr[0],
+						       &vowserv.voicedata_kernel_ptr[(vowserv.transfer_length >> 1)],
+						       (vowserv.voicedata_idx << 1) - vowserv.transfer_length);
+						vowserv.voicedata_idx -= (vowserv.transfer_length >> 1);
+					} else
+						vowserv.voicedata_idx = 0;
+
+					/*PRINTK_VOWDRV("TX Leng:%d, %d\n",
+							vowserv.transfer_length, vowserv.voicedata_idx);*/
+
 					stop_condition = 1;
 				}
 			}
@@ -1071,6 +1119,10 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 			vow_service_Init();
 			break;
 		case VOWControlCmd_ReadVoiceData:
+			if ((vowserv.recording_flag == true) && (vowserv.firstRead == true)) {
+				vowserv.firstRead = false;
+				VowDrv_SetFlag(VOW_FLAG_DEBUG, true);
+			}
 			vow_service_ReadVoiceData();
 			break;
 		case VOWControlCmd_EnableDebug:
@@ -1078,13 +1130,17 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 			vowserv.voicedata_idx = 0;
 			vowserv.recording_flag = true;
 			vowserv.suspend_lock = 0;
-			VowDrv_SetFlag(VOW_FLAG_DEBUG, true);
+			vowserv.voice_length = 0;
+			vowserv.firstRead = true;
+			/*VowDrv_SetFlag(VOW_FLAG_DEBUG, true);*/
 			break;
 		case VOWControlCmd_DisableDebug:
 			pr_debug("VOW_SET_CONTROL VOWControlCmd_DisableDebug");
 			VowDrv_SetFlag(VOW_FLAG_DEBUG, false);
 			if (vowserv.recording_flag)
 				vow_service_getVoiceData();
+			vowserv.voice_length = 0;
+			vowserv.firstRead = true;
 			vowserv.recording_flag = false;
 			break;
 		default:
@@ -1188,10 +1244,12 @@ static long VowDrv_compat_ioctl(struct file *fp, unsigned int cmd, unsigned long
 		err |= put_user(l, &data->addr);
 		err |= get_user(l, &data32->size);
 		err |= put_user(l, &data->size);
+		err |= get_user(l, &data32->return_size_addr);
+		err |= put_user(l, &data->return_size_addr);
 		err |= get_user(p, (compat_uptr_t *)&data32->data);
 		err |= put_user(p, (compat_uptr_t *)&data->data);
-		PRINTK_VOWDRV("VowDrv_compat_ioctl_getpar:size: %lu %lu %lu %lu\n",
-			      data->id, data->addr, data->size, (unsigned int long)data->data);
+		PRINTK_VOWDRV("VowDrv_compat_ioctl_getpar:size: %lu %lu %lu %lu %lu\n",
+			      data->id, data->addr, data->size, data->return_size_addr, (unsigned int long)data->data);
 		ret = fp->f_op->unlocked_ioctl(fp, cmd, (unsigned long)data);
 	}
 		break;

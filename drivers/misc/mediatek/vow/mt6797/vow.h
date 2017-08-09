@@ -85,8 +85,10 @@ enum VOW_MESSAGE_TEMP {
 #define VOW_SWAPTCM_TIMEOUT           50
 #define VOW_IPIMSG_TIMEOUT            50
 #define VOW_WAITCHECK_INTERVAL_MS      1
-#define MAX_VOW_INFO_LEN               4
+#define MAX_VOW_INFO_LEN               5
 #define VOW_VOICE_DATA_LENGTH_BYTES  320
+#define VOW_VOICE_RECORD_THRESHOLD   2560 /* 80ms */
+#define VOW_VOICE_RECORD_BIG_THRESHOLD 8000 /* 1sec */
 #define VOW_IPI_TIMEOUT              500 /* 500ms */
 
 /***********************************************************************************
@@ -193,6 +195,7 @@ typedef struct {
 	long  id;
 	long  addr;
 	long  size;
+	long  return_size_addr;
 	void *data;
 } VOW_MODEL_INFO_T;
 
@@ -206,6 +209,7 @@ typedef struct {
 	compat_size_t  id;
 	compat_size_t  addr;
 	compat_size_t  size;
+	compat_size_t  return_size_addr;
 	compat_uptr_t *data;
 } VOW_MODEL_INFO_KERNEL_T;
 
@@ -220,6 +224,7 @@ typedef struct {
 	long  id;
 	long  addr;
 	long  size;
+	long  return_size_addr;
 	void *data;
 } VOW_MODEL_INFO_T;
 
