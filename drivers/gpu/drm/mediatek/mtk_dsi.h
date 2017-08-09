@@ -16,29 +16,26 @@
 
 #include <drm/drm_crtc.h>
 
+#include "mtk_drm_ddp_comp.h"
+
 struct phy;
 
 struct mtk_dsi {
 	struct mtk_ddp_comp ddp_comp;
 	struct device *dev;
-	struct drm_device *drm_dev;
 	struct drm_encoder encoder;
 	struct drm_connector conn;
-	struct device_node *panel_node;
+	struct device_node *panel_node, *device_node;
 	struct drm_panel *panel;
 	struct drm_bridge *bridge;
+	struct phy *phy;
+
 	struct mipi_dsi_host host;
-	struct regulator *disp_supplies;
 
-	void __iomem *dsi_reg_base;
-	void __iomem *dsi_tx_reg_base;
+	void __iomem *regs;
 
-	struct clk *dsi_disp_clk_cg;
-	struct clk *dsi_dsi_clk_cg;
-	struct clk *dsi_div2_clk_cg;
-
-	struct clk *dsi0_engine_clk_cg;
-	struct clk *dsi0_digital_clk_cg;
+	struct clk *engine_clk;
+	struct clk *digital_clk;
 
 	u32 data_rate;
 
@@ -46,6 +43,7 @@ struct mtk_dsi {
 	enum mipi_dsi_pixel_format format;
 	unsigned int lanes;
 	struct videomode vm;
+	int refcount;
 	bool enabled;
 	int irq;
 };

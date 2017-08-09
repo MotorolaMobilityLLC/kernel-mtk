@@ -13,74 +13,75 @@
 
 #include <drm/drmP.h>
 #include <drm/drm_gem.h>
-#include <drm/drm_crtc_helper.h>
 #include <drm/drm_atomic_helper.h>
-
+#include <drm/drm_crtc_helper.h>
+#include <drm/drm_mipi_dsi.h>
+#include <drm/drm_panel.h>
 #include <linux/clk.h>
+#include <linux/component.h>
 #include <linux/debugfs.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/reset.h>
-
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
-
 #include <linux/gpio/consumer.h>
 #include <linux/module.h>
 #include <linux/of_platform.h>
 #include <linux/of_graph.h>
-#include <linux/component.h>
-
 #include <linux/regulator/consumer.h>
-
 #include <linux/sched.h>
 #include <linux/interrupt.h>
 #include <linux/wait.h>
-
-#include <drm/drm_mipi_dsi.h>
-#include <drm/drm_panel.h>
-
 #include <video/mipi_display.h>
+#include <linux/phy/phy.h>
+#include <linux/platform_device.h>
 #include <video/videomode.h>
 
 #include "mtk_drm_drv.h"
 #include "mtk_drm_crtc.h"
-
 #include "mtk_drm_ddp.h"
-
 #include "mtk_drm_gem.h"
 #include "mtk_dsi.h"
+#include "mtk_mipi_tx.h"
 
 #define DSI_VIDEO_FIFO_DEPTH	(1920 / 4)
 #define DSI_HOST_FIFO_DEPTH	64
 
-#define DSI_START	0x00
-#define DSI_INTEN	0x08
-#define DSI_INTSTA	0x0c
+#define DSI_START		0x00
+#define SLEEPOUT_START		BIT(2)
+#define VM_CMD_START		BIT(16)
 
-#define DSI_CON_CTRL	0x10
-#define DSI_RESET	BIT(0)
+#define DSI_INTEN		0x08
+#define DSI_INTSTA		0x0c
 
-#define DSI_MODE_CTRL	0x14
-#define MODE		(3)
-#define CMD_MODE	0
-#define SYNC_PULSE_MODE	1
-#define SYNC_EVENT_MODE	2
-#define BURST_MODE	3
-#define FRM_MODE	BIT(16)
-#define MIX_MODE	BIT(17)
+#define DSI_CON_CTRL		0x10
+#define DSI_RESET		BIT(0)
+#define DSI_EN			BIT(1)
 
-#define DSI_TXRX_CTRL	0x18
-#define VC_NUM		(2 << 0)
-#define LANE_NUM	(0xf << 2)
-#define DIS_EOT		BIT(6)
-#define NULL_EN		BIT(7)
-#define TE_FREERUN	BIT(8)
-#define EXT_TE_EN	BIT(9)
-#define EXT_TE_EDGE	BIT(10)
-#define MAX_RTN_SIZE	(0xf << 12)
-#define HSTX_CKLP_EN	BIT(16)
+#define DSI_MODE_CTRL		0x14
+#define MODE			(3)
+#define CMD_MODE		0
+#define SYNC_PULSE_MODE		1
+#define SYNC_EVENT_MODE		2
+#define BURST_MODE		3
+#define FRM_MODE		BIT(16)
+#define MIX_MODE		BIT(17)
+#define V2C_SWITCH_ON		BIT(18)
+#define C2V_SWITCH_ON		BIT(19)
+#define SLEEP_MODE		BIT(20)
+
+#define DSI_TXRX_CTRL		0x18
+#define VC_NUM			(2 << 0)
+#define LANE_NUM		(0xf << 2)
+#define DIS_EOT			BIT(6)
+#define NULL_EN			BIT(7)
+#define TE_FREERUN		BIT(8)
+#define EXT_TE_EN		BIT(9)
+#define EXT_TE_EDGE		BIT(10)
+#define MAX_RTN_SIZE		(0xf << 12)
+#define HSTX_CKLP_EN		BIT(16)
 
 #define DSI_PSCTRL		0x1c
 #define DSI_PS_WC		0x3fff
@@ -98,188 +99,48 @@
 #define DSI_HBP_WC		0x54
 #define DSI_HFP_WC		0x58
 
-#define DSI_CMDQ_SIZE	0x60
+#define DSI_CMDQ_SIZE		0x60
 #define CMDQ_SIZE		0x3f
 
-#define DSI_HSTX_CKL_WC	0x64
-#define DSI_RACK	0x84
+#define DSI_HSTX_CKL_WC		0x64
+#define DSI_RACK		0x84
 
-#define DSI_PHY_LCCON	0x104
-#define LC_HS_TX_EN	BIT(0)
-#define LC_ULPM_EN	BIT(1)
-#define LC_WAKEUP_EN	BIT(2)
+#define DSI_PHY_LCCON		0x104
+#define LC_HS_TX_EN		BIT(0)
+#define LC_ULPM_EN		BIT(1)
+#define LC_WAKEUP_EN		BIT(2)
 
-#define DSI_PHY_LD0CON	0x108
-#define LD0_HS_TX_EN	BIT(0)
-#define LD0_ULPM_EN	BIT(1)
-#define LD0_WAKEUP_EN	BIT(2)
+#define DSI_PHY_LD0CON		0x108
+#define LD0_HS_TX_EN		BIT(0)
+#define LD0_ULPM_EN		BIT(1)
+#define LD0_WAKEUP_EN		BIT(2)
 
 #define DSI_PHY_TIMECON0	0x110
-#define LPX		(0xff << 0)
-#define HS_PRPR		(0xff << 8)
-#define HS_ZERO		(0xff << 16)
-#define HS_TRAIL	(0xff << 24)
+#define LPX			(0xff << 0)
+#define HS_PRPR			(0xff << 8)
+#define HS_ZERO			(0xff << 16)
+#define HS_TRAIL		(0xff << 24)
 
 #define DSI_PHY_TIMECON1	0x114
-#define TA_GO		(0xff << 0)
-#define TA_SURE		(0xff << 8)
-#define TA_GET		(0xff << 16)
-#define DA_HS_EXIT	(0xff << 24)
+#define TA_GO			(0xff << 0)
+#define TA_SURE			(0xff << 8)
+#define TA_GET			(0xff << 16)
+#define DA_HS_EXIT		(0xff << 24)
 
 #define DSI_PHY_TIMECON2	0x118
-#define CONT_DET	(0xff << 0)
-#define CLK_ZERO	(0xff << 16)
-#define CLK_TRAIL	(0xff << 24)
+#define CONT_DET		(0xff << 0)
+#define CLK_ZERO		(0xff << 16)
+#define CLK_TRAIL		(0xff << 24)
 
 #define DSI_PHY_TIMECON3	0x11c
-#define CLK_HS_PRPR	(0xff << 0)
-#define CLK_HS_POST	(0xff << 8)
-#define CLK_HS_EXIT	(0xff << 16)
+#define CLK_HS_PRPR		(0xff << 0)
+#define CLK_HS_POST		(0xff << 8)
+#define CLK_HS_EXIT		(0xff << 16)
 
-#define DSI_CMDQ0	0x180
+#define DSI_PHY_TIMECON4	0x120
+#define ULPS_WAKEUP		(0x1fffff << 0)
 
-#define MIPITX_DSI0_CON		0x00
-#define RG_DSI0_LDOCORE_EN	BIT(0)
-#define RG_DSI0_CKG_LDOOUT_EN	BIT(1)
-#define RG_DSI0_BCLK_SEL	(3 << 2)
-#define RG_DSI0_LD_IDX_SEL	(7 << 4)
-#define RG_DSI0_PHYCLK_SEL	(2 << 8)
-#define RG_DSI0_DSICLK_FREQ_SEL	BIT(10)
-#define RG_DSI0_LPTX_CLMP_EN	BIT(11)
-
-#define MIPITX_DSI0_CLOCK_LANE	0x04
-#define RG_DSI0_LNTC_LDOOUT_EN		BIT(0)
-#define RG_DSI0_LNTC_CKLANE_EN		BIT(1)
-#define RG_DSI0_LNTC_LPTX_IPLUS1	BIT(2)
-#define RG_DSI0_LNTC_LPTX_IPLUS2	BIT(3)
-#define RG_DSI0_LNTC_LPTX_IMINUS	BIT(4)
-#define RG_DSI0_LNTC_LPCD_IPLUS		BIT(5)
-#define RG_DSI0_LNTC_LPCD_IMLUS		BIT(6)
-#define RG_DSI0_LNTC_RT_CODE		(0xf << 8)
-
-#define MIPITX_DSI0_DATA_LANE0	0x08
-#define RG_DSI0_LNT0_LDOOUT_EN		BIT(0)
-#define RG_DSI0_LNT0_CKLANE_EN		BIT(1)
-#define RG_DSI0_LNT0_LPTX_IPLUS1	BIT(2)
-#define RG_DSI0_LNT0_LPTX_IPLUS2	BIT(3)
-#define RG_DSI0_LNT0_LPTX_IMINUS	BIT(4)
-#define RG_DSI0_LNT0_LPCD_IPLUS		BIT(5)
-#define RG_DSI0_LNT0_LPCD_IMINUS	BIT(6)
-#define RG_DSI0_LNT0_RT_CODE		(0xf << 8)
-
-#define MIPITX_DSI0_DATA_LANE1	0x0c
-#define RG_DSI0_LNT1_LDOOUT_EN		BIT(0)
-#define RG_DSI0_LNT1_CKLANE_EN		BIT(1)
-#define RG_DSI0_LNT1_LPTX_IPLUS1	BIT(2)
-#define RG_DSI0_LNT1_LPTX_IPLUS2	BIT(3)
-#define RG_DSI0_LNT1_LPTX_IMINUS	BIT(4)
-#define RG_DSI0_LNT1_LPCD_IPLUS		BIT(5)
-#define RG_DSI0_LNT1_LPCD_IMINUS	BIT(6)
-#define RG_DSI0_LNT1_RT_CODE		(0xf << 8)
-
-#define MIPITX_DSI0_DATA_LANE2	0x10
-#define RG_DSI0_LNT2_LDOOUT_EN		BIT(0)
-#define RG_DSI0_LNT2_CKLANE_EN		BIT(1)
-#define RG_DSI0_LNT2_LPTX_IPLUS1	BIT(2)
-#define RG_DSI0_LNT2_LPTX_IPLUS2	BIT(3)
-#define RG_DSI0_LNT2_LPTX_IMINUS	BIT(4)
-#define RG_DSI0_LNT2_LPCD_IPLUS		BIT(5)
-#define RG_DSI0_LNT2_LPCD_IMINUS	BIT(6)
-#define RG_DSI0_LNT2_RT_CODE		(0xf << 8)
-
-#define MIPITX_DSI0_DATA_LANE3	0x14
-#define RG_DSI0_LNT3_LDOOUT_EN		BIT(0)
-#define RG_DSI0_LNT3_CKLANE_EN		BIT(1)
-#define RG_DSI0_LNT3_LPTX_IPLUS1	BIT(2)
-#define RG_DSI0_LNT3_LPTX_IPLUS2	BIT(3)
-#define RG_DSI0_LNT3_LPTX_IMINUS	BIT(4)
-#define RG_DSI0_LNT3_LPCD_IPLUS		BIT(5)
-#define RG_DSI0_LNT3_LPCD_IMINUS	BIT(6)
-#define RG_DSI0_LNT3_RT_CODE		(0xf << 8)
-
-#define MIPITX_DSI_TOP_CON	0x40
-#define RG_DSI_LNT_INTR_EN		BIT(0)
-#define RG_DSI_LNT_HS_BIAS_EN		BIT(1)
-#define RG_DSI_LNT_IMP_CAL_EN		BIT(2)
-#define RG_DSI_LNT_TESTMODE_EN		BIT(3)
-#define RG_DSI_LNT_IMP_CAL_CODE		(0xf << 4)
-#define RG_DSI_LNT_AIO_SEL		(7 << 8)
-#define RG_DSI_PAD_TIE_LOW_EN		BIT(11)
-#define RG_DSI_DEBUG_INPUT_EN		BIT(12)
-#define RG_DSI_PRESERVE			(7 << 13)
-
-#define MIPITX_DSI_BG_CON	0x44
-#define RG_DSI_BG_CORE_EN		BIT(0)
-#define RG_DSI_BG_CKEN			BIT(1)
-#define RG_DSI_BG_DIV			(0x3 << 2)
-#define RG_DSI_BG_FAST_CHARGE		BIT(4)
-#define RG_DSI_VOUT_MSK			(0x3ffff << 5)
-#define RG_DSI_V12_SEL			(7 << 5)
-#define RG_DSI_V10_SEL			(7 << 8)
-#define RG_DSI_V072_SEL			(7 << 11)
-#define RG_DSI_V04_SEL			(7 << 14)
-#define RG_DSI_V032_SEL			(7 << 17)
-#define RG_DSI_V02_SEL			(7 << 20)
-#define RG_DSI_BG_R1_TRIM		(0xf << 24)
-#define RG_DSI_BG_R2_TRIM		(0xf << 28)
-
-#define MIPITX_DSI_PLL_CON0	0x50
-#define RG_DSI0_MPPLL_PLL_EN		BIT(0)
-#define RG_DSI0_MPPLL_DIV_MSK		(0x1ff << 1)
-#define RG_DSI0_MPPLL_PREDIV		(3 << 1)
-#define RG_DSI0_MPPLL_TXDIV0		(3 << 3)
-#define RG_DSI0_MPPLL_TXDIV1		(3 << 5)
-#define RG_DSI0_MPPLL_POSDIV		(7 << 7)
-#define RG_DSI0_MPPLL_MONVC_EN		BIT(10)
-#define RG_DSI0_MPPLL_MONREF_EN		BIT(11)
-#define RG_DSI0_MPPLL_VOD_EN		BIT(12)
-
-#define MIPITX_DSI_PLL_CON1	0x54
-#define RG_DSI0_MPPLL_SDM_FRA_EN	BIT(0)
-#define RG_DSI0_MPPLL_SDM_SSC_PH_INIT	BIT(1)
-#define RG_DSI0_MPPLL_SDM_SSC_EN	BIT(2)
-#define RG_DSI0_MPPLL_SDM_SSC_PRD	(0xffff << 16)
-
-#define MIPITX_DSI_PLL_CON2	0x58
-
-#define MIPITX_DSI_PLL_TOP 0x64
-#define RG_DSI_MPPLL_PRESERVE		BIT(8)
-
-#define MIPITX_DSI_PLL_PWR	0x68
-#define RG_DSI_MPPLL_SDM_PWR_ON		BIT(0)
-#define RG_DSI_MPPLL_SDM_ISO_EN		BIT(1)
-#define RG_DSI_MPPLL_SDM_PWR_ACK	BIT(8)
-
-#define MIPITX_DSI_SW_CTRL	0x80
-#define SW_CTRL_EN			BIT(0)
-
-#define MIPITX_DSI_SW_CTRL_CON0	0x84
-#define SW_LNTC_LPTX_PRE_OE		BIT(0)
-#define SW_LNTC_LPTX_OE			BIT(1)
-#define SW_LNTC_LPTX_P			BIT(2)
-#define SW_LNTC_LPTX_N			BIT(3)
-#define SW_LNTC_HSTX_PRE_OE		BIT(4)
-#define SW_LNTC_HSTX_OE			BIT(5)
-#define SW_LNTC_HSTX_ZEROCLK		BIT(6)
-#define SW_LNT0_LPTX_PRE_OE		BIT(7)
-#define SW_LNT0_LPTX_OE			BIT(8)
-#define SW_LNT0_LPTX_P			BIT(9)
-#define SW_LNT0_LPTX_N			BIT(10)
-#define SW_LNT0_HSTX_PRE_OE		BIT(11)
-#define SW_LNT0_HSTX_OE			BIT(12)
-#define SW_LNT0_LPRX_EN			BIT(13)
-#define SW_LNT1_LPTX_PRE_OE		BIT(14)
-#define SW_LNT1_LPTX_OE			BIT(15)
-#define SW_LNT1_LPTX_P			BIT(16)
-#define SW_LNT1_LPTX_N			BIT(17)
-#define SW_LNT1_HSTX_PRE_OE		BIT(18)
-#define SW_LNT1_HSTX_OE			BIT(19)
-#define SW_LNT2_LPTX_PRE_OE		BIT(20)
-#define SW_LNT2_LPTX_OE			BIT(21)
-#define SW_LNT2_LPTX_P			BIT(22)
-#define SW_LNT2_LPTX_N			BIT(23)
-#define SW_LNT2_HSTX_PRE_OE		BIT(24)
-#define SW_LNT2_HSTX_OE			BIT(25)
+#define DSI_CMDQ0		0x180
 
 #define NS_TO_CYCLE(n, c)    ((n) / c + (((n) % c) ? 1 : 0))
 
@@ -311,168 +172,11 @@ struct dsi_cmd_t3 {
 	unsigned mem_start1;
 };
 
-static void mtk_dsi_tx_mask(struct mtk_dsi *dsi, u32 offset, u32 mask, u32 data)
-{
-	u32 temp = readl(dsi->dsi_tx_reg_base + offset);
-
-	writel((temp & ~mask) | (data & mask), dsi->dsi_tx_reg_base + offset);
-}
-
 static void mtk_dsi_mask(struct mtk_dsi *dsi, u32 offset, u32 mask, u32 data)
 {
-	u32 temp = readl(dsi->dsi_reg_base + offset);
+	u32 temp = readl(dsi->regs + offset);
 
-	writel((temp & ~mask) | (data & mask), dsi->dsi_reg_base + offset);
-}
-
-static void dsi_phy_clk_switch_off(struct mtk_dsi *dsi)
-{
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_PLL_EN, 0);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_TOP_CON, RG_DSI_PAD_TIE_LOW_EN,
-			RG_DSI_PAD_TIE_LOW_EN);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI0_CLOCK_LANE, RG_DSI0_LNTC_LDOOUT_EN, 0);
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI0_DATA_LANE0, RG_DSI0_LNT0_LDOOUT_EN, 0);
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI0_DATA_LANE1, RG_DSI0_LNT1_LDOOUT_EN, 0);
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI0_DATA_LANE2, RG_DSI0_LNT2_LDOOUT_EN, 0);
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI0_DATA_LANE3, RG_DSI0_LNT3_LDOOUT_EN, 0);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_PLL_PWR,
-			RG_DSI_MPPLL_SDM_ISO_EN | RG_DSI_MPPLL_SDM_PWR_ON,
-			RG_DSI_MPPLL_SDM_ISO_EN);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_TOP_CON, RG_DSI_LNT_HS_BIAS_EN, 0);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI0_CON,
-			RG_DSI0_CKG_LDOOUT_EN |	RG_DSI0_LDOCORE_EN, 0);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_BG_CON,
-			RG_DSI_BG_CKEN | RG_DSI_BG_CORE_EN, 0);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_DIV_MSK, 0);
-}
-
-static void dsi_phy_clk_setting(struct mtk_dsi *dsi)
-{
-	unsigned int txdiv;
-	u64 pcw;
-	u32 reg;
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_TOP_CON,
-			RG_DSI_LNT_IMP_CAL_CODE | RG_DSI_LNT_HS_BIAS_EN,
-			(8 << 4) | RG_DSI_LNT_HS_BIAS_EN);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_BG_CON,
-			RG_DSI_VOUT_MSK | RG_DSI_BG_CKEN | RG_DSI_BG_CORE_EN,
-			(4 << 20) | (4 << 17) | (4 << 14) |
-			(4 << 11) | (4 << 8) | (4 << 5) |
-			RG_DSI_BG_CKEN | RG_DSI_BG_CORE_EN);
-	usleep_range(10000, 11000);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI0_CON,
-			RG_DSI0_CKG_LDOOUT_EN | RG_DSI0_LDOCORE_EN,
-			RG_DSI0_CKG_LDOOUT_EN | RG_DSI0_LDOCORE_EN);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_PLL_PWR,
-			RG_DSI_MPPLL_SDM_PWR_ON | RG_DSI_MPPLL_SDM_ISO_EN,
-			RG_DSI_MPPLL_SDM_PWR_ON);
-	usleep_range(10000, 11000);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_PLL_CON0, RG_DSI0_MPPLL_PLL_EN, 0);
-
-	/**
-	 * data_rate = (pixel_clock / 1000) * pixel_dipth * mipi_ratio;
-	 * pixel_clock unit is Khz, data_rata unit is MHz, so need divide 1000.
-	 * mipi_ratio is mipi clk coefficient for balance the pixel clk in mipi.
-	 * we set mipi_ratio is 1.05.
-	 */
-	dsi->data_rate = dsi->vm.pixelclock * 3 * 21 / (1 * 1000 * 10);
-	if (dsi->data_rate > 1250) {
-		DRM_ERROR("Wrong mipi dsi data rate, pls check it\n");
-		return;
-	} else if (dsi->data_rate >= 500) {
-		txdiv = 1;
-	} else if (dsi->data_rate >= 250) {
-		txdiv = 2;
-	} else if (dsi->data_rate >= 125) {
-		txdiv = 4;
-	} else if (dsi->data_rate > 62) {
-		txdiv = 8;
-	} else if (dsi->data_rate >= 50) {
-		txdiv = 16;
-	} else {
-		DRM_ERROR("Wrong pixel clk, pls check pixel clk\n");
-		return;
-	}
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
-
-	switch (txdiv) {
-	case 1:
-		reg &= ~RG_DSI0_MPPLL_TXDIV0;
-		reg &= ~RG_DSI0_MPPLL_TXDIV1;
-		break;
-	case 2:
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (1 << 3);
-		reg &= ~RG_DSI0_MPPLL_TXDIV1;
-		break;
-	case 4:
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (2 << 3);
-		reg &= ~RG_DSI0_MPPLL_TXDIV1;
-		break;
-	case 8:
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (2 << 3);
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV1)) | (1 << 5);
-		break;
-	case 16:
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV0)) | (2 << 3);
-		reg = (reg & (~RG_DSI0_MPPLL_TXDIV1)) | (2 << 5);
-		break;
-	default:
-		break;
-	}
-	reg &= ~RG_DSI0_MPPLL_PREDIV;
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON0);
-
-	/**
-	 * PLL PCW config
-	 * PCW bit 24~30 = integer part of pcw
-	 * PCW bit 0~23 = fractional part of pcw
-	 * pcw = data_Rate*4*txdiv/(Ref_clk*2);
-	 * Post DIV =4, so need data_Rate*4
-	 * Ref_clk is 26MHz
-	 */
-	pcw = ((u64)dsi->data_rate * txdiv) << 24;
-	do_div(pcw, 13);
-	writel(pcw, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_CON2);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_PLL_CON1,
-			RG_DSI0_MPPLL_SDM_FRA_EN, RG_DSI0_MPPLL_SDM_FRA_EN);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI0_CLOCK_LANE,
-			RG_DSI0_LNTC_LDOOUT_EN,	RG_DSI0_LNTC_LDOOUT_EN);
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI0_DATA_LANE0,
-			RG_DSI0_LNT0_LDOOUT_EN,	RG_DSI0_LNT0_LDOOUT_EN);
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI0_DATA_LANE1,
-			RG_DSI0_LNT1_LDOOUT_EN,	RG_DSI0_LNT1_LDOOUT_EN);
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI0_DATA_LANE2,
-			RG_DSI0_LNT2_LDOOUT_EN,	RG_DSI0_LNT2_LDOOUT_EN);
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI0_DATA_LANE3,
-			RG_DSI0_LNT3_LDOOUT_EN,	RG_DSI0_LNT3_LDOOUT_EN);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_PLL_CON0,
-			RG_DSI0_MPPLL_PLL_EN, RG_DSI0_MPPLL_PLL_EN);
-	usleep_range(1000, 1100);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_PLL_CON1, RG_DSI0_MPPLL_SDM_SSC_EN, 0);
-
-	reg = readl(dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_TOP);
-	reg &= ~(0xffff00ff);
-	reg |= (0x03 << 8);
-	writel(reg, dsi->dsi_tx_reg_base + MIPITX_DSI_PLL_TOP);
-
-	mtk_dsi_tx_mask(dsi, MIPITX_DSI_TOP_CON, RG_DSI_PAD_TIE_LOW_EN, 0);
+	writel((temp & ~mask) | (data & mask), dsi->regs + offset);
 }
 
 static void dsi_phy_timconfig(struct mtk_dsi *dsi)
@@ -493,47 +197,66 @@ static void dsi_phy_timconfig(struct mtk_dsi *dsi)
 	timcon3 = (2 * lpx) << 16 | NS_TO_CYCLE(80 + 52 * ui, cycle_time) << 8 |
 		   NS_TO_CYCLE(0x40, cycle_time);
 
-	writel(timcon0, dsi->dsi_reg_base + DSI_PHY_TIMECON0);
-	writel(timcon1, dsi->dsi_reg_base + DSI_PHY_TIMECON1);
-	writel(timcon2, dsi->dsi_reg_base + DSI_PHY_TIMECON2);
-	writel(timcon3, dsi->dsi_reg_base + DSI_PHY_TIMECON3);
+	writel(timcon0, dsi->regs + DSI_PHY_TIMECON0);
+	writel(timcon1, dsi->regs + DSI_PHY_TIMECON1);
+	writel(timcon2, dsi->regs + DSI_PHY_TIMECON2);
+	writel(timcon3, dsi->regs + DSI_PHY_TIMECON3);
+}
+
+static void mtk_dsi_enable(struct mtk_dsi *dsi)
+{
+	mtk_dsi_mask(dsi, DSI_CON_CTRL, DSI_EN, DSI_EN);
+}
+
+static void mtk_dsi_disable(struct mtk_dsi *dsi)
+{
+	mtk_dsi_mask(dsi, DSI_CON_CTRL, DSI_EN, 0);
 }
 
 static void mtk_dsi_reset(struct mtk_dsi *dsi)
 {
-	writel(3, dsi->dsi_reg_base + DSI_CON_CTRL);
-	writel(2, dsi->dsi_reg_base + DSI_CON_CTRL);
+	mtk_dsi_mask(dsi, DSI_CON_CTRL, DSI_RESET, DSI_RESET);
+	mtk_dsi_mask(dsi, DSI_CON_CTRL, DSI_RESET, 0);
 }
 
 static int mtk_dsi_poweron(struct mtk_dsi *dsi)
 {
+	struct device *dev = dsi->dev;
 	int ret;
-	struct drm_device *dev = dsi->drm_dev;
 
-	dsi_phy_clk_setting(dsi);
+	if (++dsi->refcount != 1)
+		return 0;
 
-	ret = clk_prepare_enable(dsi->dsi0_engine_clk_cg);
+	ret = clk_prepare_enable(dsi->engine_clk);
 	if (ret < 0) {
-		dev_err(dev->dev, "can't enable dsi0_engine_clk_cg %d\n", ret);
-		goto err_dsi0_engine_clk_cg;
+		dev_err(dev, "can't enable engine %d\n", ret);
+		goto err_engine_clk;
 	}
 
-	ret = clk_prepare_enable(dsi->dsi0_digital_clk_cg);
+	ret = clk_prepare_enable(dsi->digital_clk);
 	if (ret < 0) {
-		dev_err(dev->dev, "can't enable dsi0_digital_clk_cg %d\n", ret);
-		goto err_dsi0_digital_clk_cg;
+		dev_err(dev, "can't enable digital %d\n", ret);
+		goto err_digital_clk;
 	}
 
-	mtk_dsi_reset((dsi));
-	dsi_phy_timconfig(dsi);
+	/**
+	 * data_rate = (pixel_clock / 1000) * pixel_dipth * mipi_ratio;
+	 * pixel_clock unit is Khz, data_rata unit is MHz, so need divide 1000.
+	 * mipi_ratio is mipi clk coefficient for balance the pixel clk in mipi.
+	 * we set mipi_ratio is 1.05.
+	 */
+
+	dsi->data_rate = dsi->vm.pixelclock * 3 * 21 / (1 * 1000 * 10);
+
+	mtk_mipi_tx_set_data_rate(dsi->phy, dsi->data_rate);
+	phy_power_on(dsi->phy);
 
 	return 0;
 
-err_dsi0_digital_clk_cg:
-	clk_disable_unprepare(dsi->dsi0_engine_clk_cg);
-
-err_dsi0_engine_clk_cg:
-
+err_digital_clk:
+	clk_disable_unprepare(dsi->engine_clk);
+err_engine_clk:
+	dsi->refcount--;
 	return ret;
 }
 
@@ -550,23 +273,24 @@ static void dsi_clk_ulp_mode_leave(struct mtk_dsi *dsi)
 	mtk_dsi_mask(dsi, DSI_PHY_LCCON, LC_WAKEUP_EN, 0);
 }
 
-static void dsi_lane0_ulp_mode(struct mtk_dsi *dsi, bool enter)
+static void dsi_lane0_ulp_mode_enter(struct mtk_dsi *dsi)
 {
-	if (enter) {
-		mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_HS_TX_EN, 0);
-		mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_ULPM_EN, 0);
-	} else {
-		mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_ULPM_EN, 0);
-		mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_WAKEUP_EN, LD0_WAKEUP_EN);
-		mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_WAKEUP_EN, 0);
-	}
+	mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_HS_TX_EN, 0);
+	mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_ULPM_EN, 0);
+}
+
+static void dsi_lane0_ulp_mode_leave(struct mtk_dsi *dsi)
+{
+	mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_ULPM_EN, 0);
+	mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_WAKEUP_EN, LD0_WAKEUP_EN);
+	mtk_dsi_mask(dsi, DSI_PHY_LD0CON, LD0_WAKEUP_EN, 0);
 }
 
 static bool dsi_clk_hs_state(struct mtk_dsi *dsi)
 {
 	u32 tmp_reg1;
 
-	tmp_reg1 = readl(dsi->dsi_reg_base + DSI_PHY_LCCON);
+	tmp_reg1 = readl(dsi->regs + DSI_PHY_LCCON);
 	return ((tmp_reg1 & LC_HS_TX_EN) == 1) ? true : false;
 }
 
@@ -580,67 +304,51 @@ static void dsi_clk_hs_mode(struct mtk_dsi *dsi, bool enter)
 
 static void dsi_set_mode(struct mtk_dsi *dsi)
 {
-	u32 tmp_reg1;
-
-	tmp_reg1 = 0;
+	u32 vid_mode = CMD_MODE;
 
 	if (dsi->mode_flags & MIPI_DSI_MODE_VIDEO) {
-		tmp_reg1 = SYNC_PULSE_MODE;
+		vid_mode = SYNC_PULSE_MODE;
 
-		if (dsi->mode_flags & MIPI_DSI_MODE_VIDEO_BURST)
-			tmp_reg1 = BURST_MODE;
-
-		if (dsi->mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE)
-			tmp_reg1 = SYNC_PULSE_MODE;
+		if ((dsi->mode_flags & MIPI_DSI_MODE_VIDEO_BURST) &&
+		    !(dsi->mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE))
+			vid_mode = BURST_MODE;
 	}
 
-	writel(tmp_reg1, dsi->dsi_reg_base + DSI_MODE_CTRL);
-}
-
-static void dsi_set_cmd_mode(struct mtk_dsi *dsi)
-{
-	u32 tmp_reg1;
-
-	tmp_reg1 = CMD_MODE;
-	writel(tmp_reg1, dsi->dsi_reg_base + DSI_MODE_CTRL);
+	writel(vid_mode, dsi->regs + DSI_MODE_CTRL);
 }
 
 static void dsi_ps_control_vact(struct mtk_dsi *dsi)
 {
 	struct videomode *vm = &dsi->vm;
-	u32 dsi_tmp_buf_bpp, ps_wc;
-	u32 tmp_reg;
-	u32 tmp_hstx_cklp_wc;
+	u32 dsi_buf_bpp, ps_wc;
+	u32 ps_bpp_mode;
 
 	if (dsi->format == MIPI_DSI_FMT_RGB565)
-		dsi_tmp_buf_bpp = 2;
+		dsi_buf_bpp = 2;
 	else
-		dsi_tmp_buf_bpp = 3;
+		dsi_buf_bpp = 3;
 
-	ps_wc = vm->vactive * dsi_tmp_buf_bpp;
-
-	tmp_reg = ps_wc;
+	ps_wc = vm->hactive * dsi_buf_bpp;
+	ps_bpp_mode = ps_wc;
 
 	switch (dsi->format) {
 	case MIPI_DSI_FMT_RGB888:
-		tmp_reg |= PACKED_PS_24BIT_RGB888;
+		ps_bpp_mode |= PACKED_PS_24BIT_RGB888;
 		break;
 	case MIPI_DSI_FMT_RGB666:
-		tmp_reg |= PACKED_PS_18BIT_RGB666;
+		ps_bpp_mode |= PACKED_PS_18BIT_RGB666;
 		break;
 	case MIPI_DSI_FMT_RGB666_PACKED:
-		tmp_reg |= LOOSELY_PS_18BIT_RGB666;
+		ps_bpp_mode |= LOOSELY_PS_18BIT_RGB666;
 		break;
 	case MIPI_DSI_FMT_RGB565:
-		tmp_reg |= PACKED_PS_16BIT_RGB565;
+		ps_bpp_mode |= PACKED_PS_16BIT_RGB565;
 		break;
 	}
 
-	tmp_hstx_cklp_wc = ps_wc;
-
-	writel(vm->vactive, dsi->dsi_reg_base + DSI_VACT_NL);
-	writel(tmp_reg, dsi->dsi_reg_base + DSI_PSCTRL);
-	writel(tmp_hstx_cklp_wc, dsi->dsi_reg_base + DSI_HSTX_CKL_WC);
+	writel(vm->vactive, dsi->regs + DSI_VACT_NL);
+	writel(ps_bpp_mode, dsi->regs + DSI_PSCTRL);
+	writel(ps_wc, dsi->regs + DSI_HSTX_CKL_WC);
 }
 
 static void dsi_rxtx_control(struct mtk_dsi *dsi)
@@ -665,7 +373,7 @@ static void dsi_rxtx_control(struct mtk_dsi *dsi)
 		break;
 	}
 
-	writel(tmp_reg, dsi->dsi_reg_base + DSI_TXRX_CTRL);
+	writel(tmp_reg, dsi->regs + DSI_TXRX_CTRL);
 }
 
 static void dsi_ps_control(struct mtk_dsi *dsi)
@@ -697,7 +405,7 @@ static void dsi_ps_control(struct mtk_dsi *dsi)
 	}
 
 	tmp_reg += dsi->vm.hactive * dsi_tmp_buf_bpp & DSI_PS_WC;
-	writel(tmp_reg, dsi->dsi_reg_base + DSI_PSCTRL);
+	writel(tmp_reg, dsi->regs + DSI_PSCTRL);
 }
 
 static void dsi_config_vdo_timing(struct mtk_dsi *dsi)
@@ -714,10 +422,10 @@ static void dsi_config_vdo_timing(struct mtk_dsi *dsi)
 	else
 		dsi_tmp_buf_bpp = 3;
 
-	writel(vm->vsync_len, dsi->dsi_reg_base + DSI_VSA_NL);
-	writel(vm->vback_porch, dsi->dsi_reg_base + DSI_VBP_NL);
-	writel(vm->vfront_porch, dsi->dsi_reg_base + DSI_VFP_NL);
-	writel(vm->vactive, dsi->dsi_reg_base + DSI_VACT_NL);
+	writel(vm->vsync_len, dsi->regs + DSI_VSA_NL);
+	writel(vm->vback_porch, dsi->regs + DSI_VBP_NL);
+	writel(vm->vfront_porch, dsi->regs + DSI_VFP_NL);
+	writel(vm->vactive, dsi->regs + DSI_VACT_NL);
 
 	horizontal_sync_active_byte = (vm->hsync_len * dsi_tmp_buf_bpp - 10);
 
@@ -730,30 +438,41 @@ static void dsi_config_vdo_timing(struct mtk_dsi *dsi)
 
 	horizontal_frontporch_byte = (vm->hfront_porch * dsi_tmp_buf_bpp - 12);
 
-	writel(horizontal_sync_active_byte, dsi->dsi_reg_base + DSI_HSA_WC);
-	writel(horizontal_backporch_byte, dsi->dsi_reg_base + DSI_HBP_WC);
-	writel(horizontal_frontporch_byte, dsi->dsi_reg_base + DSI_HFP_WC);
+	writel(horizontal_sync_active_byte, dsi->regs + DSI_HSA_WC);
+	writel(horizontal_backporch_byte, dsi->regs + DSI_HBP_WC);
+	writel(horizontal_frontporch_byte, dsi->regs + DSI_HFP_WC);
 
 	dsi_ps_control(dsi);
 }
 
 static void dsi_set_interrupt_enable(struct mtk_dsi *dsi)
 {
-	writel(0x0000003f, dsi->dsi_reg_base + DSI_INTEN);
+	writel(0x0000003f, dsi->regs + DSI_INTEN);
 }
 
 static void mtk_dsi_start(struct mtk_dsi *dsi)
 {
-	writel(0, dsi->dsi_reg_base + DSI_START);
-	writel(1, dsi->dsi_reg_base + DSI_START);
+	writel(0, dsi->regs + DSI_START);
+	writel(1, dsi->regs + DSI_START);
 }
 
 static void mtk_dsi_poweroff(struct mtk_dsi *dsi)
 {
-	clk_disable_unprepare(dsi->dsi0_engine_clk_cg);
-	clk_disable_unprepare(dsi->dsi0_digital_clk_cg);
+	if (WARN_ON(dsi->refcount == 0))
+		return;
 
-	dsi_phy_clk_switch_off(dsi);
+	if (--dsi->refcount != 0)
+		return;
+
+	dsi_lane0_ulp_mode_enter(dsi);
+	dsi_clk_ulp_mode_enter(dsi);
+
+	mtk_dsi_disable(dsi);
+
+	clk_disable_unprepare(dsi->engine_clk);
+	clk_disable_unprepare(dsi->digital_clk);
+
+	phy_power_off(dsi->phy);
 }
 
 static void mtk_output_dsi_enable(struct mtk_dsi *dsi)
@@ -771,12 +490,13 @@ static void mtk_output_dsi_enable(struct mtk_dsi *dsi)
 
 	/* need set to cmd mode for send panel init code */
 	dsi_set_interrupt_enable(dsi);
-	dsi_set_cmd_mode(dsi);
 	dsi_rxtx_control(dsi);
+	mtk_dsi_enable(dsi);
 	dsi_clk_ulp_mode_leave(dsi);
-	dsi_lane0_ulp_mode(dsi, 0);
+	dsi_lane0_ulp_mode_leave(dsi);
 	dsi_clk_hs_mode(dsi, 0);
 	dsi_ps_control_vact(dsi);
+	dsi_phy_timconfig(dsi);
 	dsi_config_vdo_timing(dsi);
 
 	if (dsi->panel) {
@@ -805,10 +525,7 @@ static void mtk_output_dsi_disable(struct mtk_dsi *dsi)
 		}
 	}
 
-	dsi_lane0_ulp_mode(dsi, 1);
-	dsi_clk_ulp_mode_enter(dsi);
 	mtk_dsi_poweroff(dsi);
-	dsi_phy_clk_switch_off(dsi);
 
 	dsi->enabled = false;
 }
@@ -878,6 +595,20 @@ static void mtk_dsi_encoder_mode_set(
 	dsi->vm.vsync_len = adjusted->vsync_end - adjusted->vsync_start;
 }
 
+static void mtk_dsi_encoder_disable(struct drm_encoder *encoder)
+{
+	struct mtk_dsi *dsi = encoder_to_dsi(encoder);
+
+	mtk_output_dsi_disable(dsi);
+}
+
+static void mtk_dsi_encoder_enable(struct drm_encoder *encoder)
+{
+	struct mtk_dsi *dsi = encoder_to_dsi(encoder);
+
+	mtk_output_dsi_enable(dsi);
+}
+
 static void mtk_dsi_encoder_commit(struct drm_encoder *encoder)
 {
 	struct mtk_dsi *dsi = encoder_to_dsi(encoder);
@@ -890,12 +621,8 @@ mtk_dsi_connector_detect(struct drm_connector *connector, bool force)
 {
 	struct mtk_dsi *dsi = connector_to_dsi(connector);
 
-	DRM_INFO("dsi connector detect panel = 0x%p, panel node = 0x%p\n",
-		dsi->panel, dsi->panel_node);
-
 	if (!dsi->panel) {
 		dsi->panel = of_drm_find_panel(dsi->panel_node);
-		DRM_INFO("dsi connector detect panel 0x%p\n", dsi->panel);
 		if (dsi->panel)
 			drm_panel_attach(dsi->panel, &dsi->conn);
 	} else if (!dsi->panel_node) {
@@ -915,21 +642,11 @@ static void mtk_dsi_connector_destroy(struct drm_connector *connector)
 	drm_connector_cleanup(connector);
 }
 
-static const struct drm_display_mode default_modes[] = {
-	/* 1368x768@60Hz */
-	{ DRM_MODE("1080x1920", DRM_MODE_TYPE_DRIVER, 148500,
-	1080, 1080 + 58, 1080 + 58 + 58, 1080 + 58 + 58 + 58, 0,
-	1920, 1920 + 4, 1920 + 4 + 4, 1920 + 4 + 4 + 4, 0, 0) },
-};
-
 static int mtk_dsi_connector_get_modes(struct drm_connector *connector)
 {
 	struct mtk_dsi *dsi = connector_to_dsi(connector);
 
-	if (dsi->panel)
-		return dsi->panel->funcs->get_modes(dsi->panel);
-
-	return 0;
+	return drm_panel_get_modes(dsi->panel);
 }
 
 static struct drm_encoder
@@ -946,10 +663,12 @@ static const struct drm_encoder_helper_funcs mtk_dsi_encoder_helper_funcs = {
 	.prepare = mtk_dsi_encoder_prepare,
 	.mode_set = mtk_dsi_encoder_mode_set,
 	.commit = mtk_dsi_encoder_commit,
+	.disable = mtk_dsi_encoder_disable,
+	.enable = mtk_dsi_encoder_enable,
 };
 
 static const struct drm_connector_funcs mtk_dsi_connector_funcs = {
-	.dpms = drm_helper_connector_dpms,
+	.dpms = drm_atomic_helper_connector_dpms,
 	.detect = mtk_dsi_connector_detect,
 	.fill_modes = drm_helper_probe_single_connector_modes,
 	.destroy = mtk_dsi_connector_destroy,
@@ -964,22 +683,28 @@ static const struct drm_connector_helper_funcs
 	.best_encoder = mtk_dsi_connector_best_encoder,
 };
 
-struct bridge_init {
-	struct i2c_client *mipirx_client;
-	struct i2c_client *dptx_client;
-	struct device_node *node_mipirx;
-	struct device_node *node_dptx;
-};
-
-static int mtk_dsi_create_conn_enc(struct mtk_dsi *dsi)
+static int mtk_drm_attach_lcm_bridge(struct drm_bridge *bridge,
+				     struct drm_encoder *encoder)
 {
 	int ret;
 
-	ret = drm_encoder_init(
-			dsi->drm_dev, &dsi->encoder,
-			&mtk_dsi_encoder_funcs, DRM_MODE_ENCODER_DSI
-			);
+	encoder->bridge = bridge;
+	bridge->encoder = encoder;
+	ret = drm_bridge_attach(encoder->dev, bridge);
+	if (ret) {
+		DRM_ERROR("Failed to attach bridge to drm\n");
+		return ret;
+	}
 
+	return 0;
+}
+
+static int mtk_dsi_create_conn_enc(struct drm_device *drm, struct mtk_dsi *dsi)
+{
+	int ret;
+
+	ret = drm_encoder_init(drm, &dsi->encoder, &mtk_dsi_encoder_funcs,
+			       DRM_MODE_ENCODER_DSI);
 	if (ret) {
 		DRM_ERROR("Failed to encoder init to drm\n");
 		return ret;
@@ -989,8 +714,14 @@ static int mtk_dsi_create_conn_enc(struct mtk_dsi *dsi)
 
 	dsi->encoder.possible_crtcs = 1;
 
-	ret = drm_connector_init(dsi->drm_dev, &dsi->conn,
-				 &mtk_dsi_connector_funcs,
+	/* Pre-empt DP connector creation if there's a bridge */
+	if (dsi->bridge) {
+		ret = mtk_drm_attach_lcm_bridge(dsi->bridge, &dsi->encoder);
+		if (!ret)
+			return 0;
+	}
+
+	ret = drm_connector_init(drm, &dsi->conn, &mtk_dsi_connector_funcs,
 				 DRM_MODE_CONNECTOR_DSI);
 	if (ret) {
 		DRM_ERROR("Failed to connector init to drm\n");
@@ -1006,12 +737,10 @@ static int mtk_dsi_create_conn_enc(struct mtk_dsi *dsi)
 	}
 
 	dsi->conn.dpms = DRM_MODE_DPMS_OFF;
-
 	drm_mode_connector_attach_encoder(&dsi->conn, &dsi->encoder);
 
 	if (dsi->panel) {
 		ret = drm_panel_attach(dsi->panel, &dsi->conn);
-
 		if (ret) {
 			DRM_ERROR("Failed to attact panel to drm\n");
 			return ret;
@@ -1085,15 +814,21 @@ static ssize_t mtk_dsi_host_transfer(struct mipi_dsi_host *host,
 			);
 	if (0 == ret) {
 		DRM_INFO("dsi wait not busy timeout!\n");
+		mtk_dsi_clk_enable(dsi);
 		mtk_dsi_reset(dsi);
 	}
 	#else
 	while (timeout_ms--) {
-		i = readl(dsi->dsi_reg_base + DSI_INTSTA);
+		i = readl(dsi->regs + DSI_INTSTA);
 		if (!(i & BIT(31)))
 			break;
 
 		usleep_range(1, 2);
+	}
+
+	if (0 == timeout_ms) {
+		mtk_dsi_enable(dsi);
+		mtk_dsi_reset(dsi);
 	}
 	#endif
 
@@ -1104,18 +839,18 @@ static ssize_t mtk_dsi_host_transfer(struct mipi_dsi_host *host,
 
 		reg_val = (t2.wc16 << 16) | (t2.type << 8) | t2.config;
 
-		writel(reg_val, dsi->dsi_reg_base + DSI_CMDQ0);
+		writel(reg_val, dsi->regs + DSI_CMDQ0);
 
 		for (i = 0; i < msg->tx_len; i++) {
 			goto_addr = DSI_CMDQ0 + i;
 			mask_para = (0xff << ((goto_addr & 0x3) * 8));
 			set_para = (tx_buf[i] << ((goto_addr & 0x3) * 8));
-			mtk_dsi_tx_mask(dsi, goto_addr & (~0x3), mask_para,
-					set_para);
+			mtk_dsi_mask(dsi, goto_addr & (~0x3), mask_para,
+				     set_para);
 		}
 
-		mtk_dsi_tx_mask(dsi, DSI_CMDQ_SIZE, CMDQ_SIZE,
-				1 + (msg->tx_len - 1) / 4);
+		mtk_dsi_mask(dsi, DSI_CMDQ_SIZE, CMDQ_SIZE,
+			     1 + (msg->tx_len - 1) / 4);
 	} else {
 		t0.config = 0;
 		t0.type = msg->type;
@@ -1128,8 +863,8 @@ static ssize_t mtk_dsi_host_transfer(struct mipi_dsi_host *host,
 		reg_val = (t0.data1 << 24) | (t0.data0 << 16) | (t0.type << 8) |
 			   t0.config;
 
-		writel(reg_val, dsi->dsi_reg_base + DSI_CMDQ0);
-		mtk_dsi_tx_mask(dsi, DSI_CMDQ_SIZE, CMDQ_SIZE, 1);
+		writel(reg_val, dsi->regs + DSI_CMDQ0);
+		mtk_dsi_mask(dsi, DSI_CMDQ_SIZE, CMDQ_SIZE, 1);
 	}
 
 	mtk_dsi_start(dsi);
@@ -1165,104 +900,44 @@ static const struct mtk_ddp_comp_funcs mtk_dsi_funcs = {
 static int mtk_dsi_bind(struct device *dev, struct device *master, void *data)
 {
 	int ret;
-	struct mtk_dsi *dsi = NULL;
+	struct drm_device *drm = data;
+	struct mtk_dsi *dsi = dev_get_drvdata(dev);
 
-	dsi = platform_get_drvdata(to_platform_device(dev));
-
-	if (!dsi) {
-		ret = -EFAULT;
-		DRM_ERROR("Failed to get driver data from dsi device\n");
-		goto errcode;
-	}
-
-	dsi->drm_dev = data;
-
-	ret = mtk_ddp_comp_register(dsi->drm_dev, &dsi->ddp_comp);
+	ret = mtk_ddp_comp_register(drm, &dsi->ddp_comp);
 	if (ret < 0) {
 		dev_err(dev, "Failed to register component %s: %d\n",
 			dev->of_node->full_name, ret);
 		return ret;
 	}
 
-	ret = mtk_dsi_create_conn_enc(dsi);
+	ret = mtk_dsi_create_conn_enc(drm, dsi);
 	if (ret) {
 		DRM_ERROR("Encoder create failed with %d\n", ret);
-		return ret;
+		goto err_unregister;
 	}
 
 	return 0;
 
-errcode:
+err_unregister:
+	mtk_ddp_comp_unregister(drm, &dsi->ddp_comp);
 	return ret;
 }
 
-static void mtk_dsi_unbind(
-		struct device *dev, struct device *master,
-		void *data
-		)
+static void mtk_dsi_unbind(struct device *dev, struct device *master,
+			   void *data)
 {
-	struct mtk_dsi *dsi = NULL;
+	struct drm_device *drm = data;
+	struct mtk_dsi *dsi;
 
 	dsi = platform_get_drvdata(to_platform_device(dev));
 	mtk_dsi_destroy_conn_enc(dsi);
 	mipi_dsi_host_unregister(&dsi->host);
-	mtk_ddp_comp_unregister(dsi->drm_dev, &dsi->ddp_comp);
-
-	dsi->drm_dev = NULL;
+	mtk_ddp_comp_unregister(drm, &dsi->ddp_comp);
 }
 
 static const struct component_ops mtk_dsi_component_ops = {
 	.bind = mtk_dsi_bind,
 	.unbind = mtk_dsi_unbind,
-};
-
-/* of_* functions will be removed after merge of of_graph patches */
-static struct device_node *
-of_get_child_by_name_reg(struct device_node *parent, const char *name, u32 reg)
-{
-	struct device_node *np;
-
-	for_each_child_of_node(parent, np) {
-		u32 r;
-
-		if (!np->name || of_node_cmp(np->name, name))
-			continue;
-
-		if (of_property_read_u32(np, "reg", &r) < 0)
-			r = 0;
-
-		if (reg == r)
-			break;
-	}
-
-	return np;
-}
-
-static struct device_node *of_graph_get_port_by_reg(struct device_node *parent,
-						    u32 reg)
-{
-	struct device_node *ports, *port;
-
-	ports = of_get_child_by_name(parent, "ports");
-	if (ports)
-		parent = ports;
-
-	port = of_get_child_by_name_reg(parent, "port", reg);
-
-	of_node_put(ports);
-
-	return port;
-}
-
-static struct device_node *
-of_graph_get_endpoint_by_reg(struct device_node *port, u32 reg)
-{
-	return of_get_child_by_name_reg(port, "endpoint", reg);
-}
-
-enum {
-	DSI_PORT_IN,
-	DSI_PORT_OUT
 };
 
 #define INTERRUPT_MODE
@@ -1280,7 +955,7 @@ static irqreturn_t mediatek_dsi_irq(int irq, void *dev_id)
 	struct mtk_dsi *dsi = dev_id;
 	u32 status, tmp;
 
-	status = readl(dsi->dsi_reg_base + DSI_INTSTA);
+	status = readl(dsi->regs + DSI_INTSTA);
 
 	if (status & BIT(0)) {
 		/* write clear RD_RDY interrupt */
@@ -1290,7 +965,7 @@ static irqreturn_t mediatek_dsi_irq(int irq, void *dev_id)
 		do {
 			/* send read ACK */
 			mtk_dsi_mask(dsi, DSI_RACK,	BIT(0), BIT(0));
-			tmp = readl(dsi->dsi_reg_base + DSI_INTSTA);
+			tmp = readl(dsi->regs + DSI_INTSTA);
 		} while (tmp & BIT(31));
 
 		mtk_dsi_mask(dsi, DSI_INTSTA, BIT(0), ~(BIT(0)));
@@ -1328,9 +1003,9 @@ static irqreturn_t mediatek_dsi_irq(int irq, void *dev_id)
 
 static int mtk_dsi_probe(struct platform_device *pdev)
 {
-	struct mtk_dsi *dsi = NULL;
+	struct mtk_dsi *dsi;
 	struct device *dev = &pdev->dev;
-	struct device_node *port, *ep, *node = dev->of_node;
+	struct device_node *remote_node, *endpoint;
 	struct resource *regs;
 	int comp_id;
 	int ret;
@@ -1340,50 +1015,63 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	dsi->format = MIPI_DSI_FMT_RGB888;
 	dsi->lanes = 4;
 
-	port = of_graph_get_port_by_reg(node, DSI_PORT_OUT);
-	if (!port) {
-		dev_err(dev, "no output port specified\n");
-		return -EINVAL;
+	endpoint = of_graph_get_next_endpoint(dev->of_node, NULL);
+	if (endpoint) {
+		remote_node = of_graph_get_remote_port_parent(endpoint);
+		of_node_put(endpoint);
+
+		if (!remote_node) {
+			dev_err(dev, "No panel connected\n");
+			return -ENODEV;
+		}
+
+		dsi->device_node = remote_node;
+		of_node_put(remote_node);
 	}
 
-	ep = of_graph_get_endpoint_by_reg(port, 0);
-	of_node_put(port);
-	if (!ep) {
-		dev_err(dev, "no endpoint specified in output port\n");
-		return -EINVAL;
+	dsi->engine_clk = devm_clk_get(dev, "engine");
+	if (IS_ERR(dsi->engine_clk)) {
+		ret = PTR_ERR(dsi->engine_clk);
+		dev_err(dev, "Failed to get engine clock: %d\n", ret);
+		return ret;
 	}
 
-	of_node_put(ep);
-
-	dsi->dsi0_engine_clk_cg = devm_clk_get(dev, "dsi0_engine_disp_ck");
-	if (IS_ERR(dsi->dsi0_engine_clk_cg)) {
-		dev_err(dev, "cannot get dsi0_engine_clk_cg\n");
-		return PTR_ERR(dsi->dsi0_engine_clk_cg);
-	}
-
-	dsi->dsi0_digital_clk_cg = devm_clk_get(dev, "dsi0_digital_disp_ck");
-	if (IS_ERR(dsi->dsi0_digital_clk_cg)) {
-		dev_err(dev, "cannot get dsi0_digital_disp_ck\n");
-		return PTR_ERR(dsi->dsi0_digital_clk_cg);
+	dsi->digital_clk = devm_clk_get(dev, "digital");
+	if (IS_ERR(dsi->digital_clk)) {
+		ret = PTR_ERR(dsi->digital_clk);
+		dev_err(dev, "Failed to get digital clock: %d\n", ret);
+		return ret;
 	}
 
 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	dsi->dsi_reg_base = devm_ioremap_resource(dev, regs);
-	if (IS_ERR(dsi->dsi_reg_base)) {
-		dev_err(dev, "cannot get dsi->dsi_reg_base\n");
-		return PTR_ERR(dsi->dsi_reg_base);
+	dsi->regs = devm_ioremap_resource(dev, regs);
+	if (IS_ERR(dsi->regs)) {
+		ret = PTR_ERR(dsi->regs);
+		dev_err(dev, "Failed to ioremap memory: %d\n", ret);
+		return ret;
 	}
 
-	regs = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-	dsi->dsi_tx_reg_base = devm_ioremap_resource(dev, regs);
-	if (IS_ERR(dsi->dsi_tx_reg_base)) {
-		dev_err(dev, "cannot get dsi->dsi_tx_reg_base\n");
-		return PTR_ERR(dsi->dsi_tx_reg_base);
+	dsi->phy = devm_phy_get(dev, "dphy");
+	if (IS_ERR(dsi->phy)) {
+		ret = PTR_ERR(dsi->phy);
+		dev_err(dev, "Failed to get MIPI-DPHY: %d\n", ret);
+		return ret;
 	}
 
 	dsi->host.ops = &mtk_dsi_ops;
 	dsi->host.dev = dev;
 	mipi_dsi_host_register(&dsi->host);
+
+	dsi->bridge = of_drm_find_bridge(dsi->device_node);
+	dsi->panel = of_drm_find_panel(dsi->device_node);
+
+	DRM_INFO("dsi connector detect panel = 0x%p, bridge = 0x%p\n",
+		 dsi->panel, dsi->bridge);
+
+	if (!dsi->bridge && !dsi->panel) {
+		dev_info(dev, "Waiting for bridge or panel driver\n");
+		return -EPROBE_DEFER;
+	}
 
 	comp_id = mtk_ddp_comp_get_id(dev->of_node, MTK_DSI);
 	if (comp_id < 0) {
@@ -1392,7 +1080,7 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	}
 
 	ret = mtk_ddp_comp_init(dev, dev->of_node, &dsi->ddp_comp, comp_id,
-				NULL);
+				&mtk_dsi_funcs);
 	if (ret) {
 		dev_err(dev, "Failed to initialize component: %d\n", ret);
 		return ret;
@@ -1407,9 +1095,8 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 	}
 
 	irq_set_status_flags(dsi->irq, IRQ_TYPE_LEVEL_LOW);
-	ret = devm_request_irq(&pdev->dev, dsi->irq,
-					mediatek_dsi_irq, IRQF_TRIGGER_LOW,
-					dev_name(&pdev->dev), dsi);
+	ret = devm_request_irq(&pdev->dev, dsi->irq, mediatek_dsi_irq,
+			       IRQF_TRIGGER_LOW, dev_name(&pdev->dev), dsi);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to request mediatek dsi irq\n");
 		return -EPROBE_DEFER;
@@ -1429,12 +1116,9 @@ static int mtk_dsi_probe(struct platform_device *pdev)
 
 	ret = component_add(&pdev->dev, &mtk_dsi_component_ops);
 	if (ret) {
-		dev_err(dev, "cannot get dsi->dsi_tx_reg_base\n");
+		dev_err(dev, "Failed to add DSI component\n");
 		return -EPROBE_DEFER;
 	}
-
-	DRM_INFO("dsi_reg_base = 0x%x, dsi_tx_reg_base = 0x%x\n",
-	(unsigned int)dsi->dsi_reg_base, (unsigned int)dsi->dsi_tx_reg_base);
 
 	return 0;
 }
@@ -1449,63 +1133,39 @@ static int mtk_dsi_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM_SLEEP
+#ifdef CONFIG_PM
 static int mtk_dsi_suspend(struct device *dev)
 {
-	struct mtk_dsi *dsi = NULL;
-	int ret = 0;
+	struct mtk_dsi *dsi;
 
 	dsi = dev_get_drvdata(dev);
-	if (!dsi) {
-		DRM_ERROR("dsi is null\n");
-		ret = -EINVAL;
-		goto errcode;
-	}
 
 	mtk_output_dsi_disable(dsi);
 	DRM_INFO("dsi suspend success!\n");
 
 	return 0;
-
-errcode:
-	DRM_ERROR("dsi suspend failed!\n");
-	return ret;
 }
 
 static int mtk_dsi_resume(struct device *dev)
 {
-	struct mtk_dsi *dsi = NULL;
-	int ret = 0;
+	struct mtk_dsi *dsi;
 
 	dsi = dev_get_drvdata(dev);
-	if (!dsi) {
-		DRM_ERROR("dsi is null\n");
-		ret = -EINVAL;
-		goto errcode;
-	}
 
 	mtk_output_dsi_enable(dsi);
 	DRM_INFO("dsi resume success!\n");
 
 	return 0;
-
-errcode:
-	DRM_ERROR("dsi resume failed!\n");
-	return ret;
 }
-
-static const struct dev_pm_ops mediatek_dsi_pm_ops = {
-	SET_SYSTEM_SLEEP_PM_OPS(mtk_dsi_suspend, mtk_dsi_resume)
-};
-
 #endif
+
+static SIMPLE_DEV_PM_OPS(mtk_dsi_pm_ops, mtk_dsi_suspend, mtk_dsi_resume);
 
 static const struct of_device_id mtk_dsi_of_match[] = {
 	{ .compatible = "mediatek,mt2701-dsi" },
+	{ .compatible = "mediatek,mt8173-dsi" },
 	{ },
 };
-
-MODULE_DEVICE_TABLE(of, mtk_dsi_of_match);
 
 struct platform_driver mtk_dsi_driver = {
 	.probe = mtk_dsi_probe,
@@ -1513,9 +1173,6 @@ struct platform_driver mtk_dsi_driver = {
 	.driver = {
 		.name = "mtk-dsi",
 		.of_match_table = mtk_dsi_of_match,
-		.owner = THIS_MODULE,
-#ifdef CONFIG_PM_SLEEP
-		.pm = &mediatek_dsi_pm_ops,
-#endif
+		.pm = &mtk_dsi_pm_ops,
 	},
 };

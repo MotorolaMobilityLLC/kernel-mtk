@@ -15,6 +15,7 @@
 #include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/module.h>
+#include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/phy/phy.h>
 
@@ -124,6 +125,9 @@
 
 #define MIPITX_DSI_PLL_CON2	0x58
 
+#define MIPITX_DSI_PLL_TOP	0x64
+#define RG_DSI_MPPLL_PRESERVE		(0xff << 8)
+
 #define MIPITX_DSI_PLL_PWR	0x68
 #define RG_DSI_MPPLL_SDM_PWR_ON		BIT(0)
 #define RG_DSI_MPPLL_SDM_ISO_EN		BIT(1)
@@ -160,17 +164,92 @@
 #define SW_LNT2_HSTX_PRE_OE		BIT(24)
 #define SW_LNT2_HSTX_OE			BIT(25)
 
+enum reg_idx {
+	TX_DSI_CON,
+	TX_DSI_CLOCK_LANE,
+	TX_DSI_DATA_LANE0,
+	TX_DSI_DATA_LANE1,
+	TX_DSI_DATA_LANE2,
+	TX_DSI_DATA_LANE3,
+	TX_DSI_TOP_CON,
+	TX_DSI_BG_CON,
+	TX_DSI_PLL_CON0,
+	TX_DSI_PLL_CON1,
+	TX_DSI_PLL_CON2,
+	TX_DSI_PLL_TOP,
+	TX_DSI_PLL_PWR,
+	TX_DSI_SW_CTRL,
+
+	NUM_REGS
+};
+
+static unsigned int mtk_regs_ofs[] = {
+	[TX_DSI_CON]		=  MIPITX_DSI_CON,
+	[TX_DSI_CLOCK_LANE]	=  MIPITX_DSI_CLOCK_LANE,
+	[TX_DSI_DATA_LANE0]	=  MIPITX_DSI_DATA_LANE0,
+	[TX_DSI_DATA_LANE1]	=  MIPITX_DSI_DATA_LANE1,
+	[TX_DSI_DATA_LANE2]	=  MIPITX_DSI_DATA_LANE2,
+	[TX_DSI_DATA_LANE3]	=  MIPITX_DSI_DATA_LANE3,
+	[TX_DSI_TOP_CON]	=  MIPITX_DSI_TOP_CON,
+	[TX_DSI_BG_CON]		=  MIPITX_DSI_BG_CON,
+	[TX_DSI_PLL_CON0]	=  MIPITX_DSI_PLL_CON0,
+	[TX_DSI_PLL_CON1]	=  MIPITX_DSI_PLL_CON1,
+	[TX_DSI_PLL_CON2]	=  MIPITX_DSI_PLL_CON2,
+	[TX_DSI_PLL_TOP]	=  MIPITX_DSI_PLL_TOP,
+	[TX_DSI_PLL_PWR]	=  MIPITX_DSI_PLL_PWR,
+	[TX_DSI_SW_CTRL]	=  MIPITX_DSI_SW_CTRL,
+};
+
+static unsigned int mt2701_regs_val[] = {
+	[TX_DSI_PLL_TOP]	=  (3 << 8),
+};
+
+static unsigned int mt8173_regs_val[] = {
+	[TX_DSI_PLL_TOP]	=  (0 << 8),
+};
+
+struct mtk_mipitx_driver_data {
+	unsigned int *reg_ofs;
+	unsigned int *reg_value;
+};
+
+static struct mtk_mipitx_driver_data mt2701_mipitx_driver_data = {
+	.reg_ofs = mtk_regs_ofs,
+	.reg_value = mt2701_regs_val,
+};
+
+static struct mtk_mipitx_driver_data mt8173_mipitx_driver_data = {
+	.reg_ofs = mtk_regs_ofs,
+	.reg_value = mt8173_regs_val,
+};
+
+static const struct of_device_id mtk_mipi_tx_match[] = {
+	{ .compatible = "mediatek,mt2701-mipi-tx",
+	  .data = &mt2701_mipitx_driver_data },
+	{ .compatible = "mediatek,mt8173-mipi-tx",
+	  .data = &mt8173_mipitx_driver_data },
+	{},
+};
+
 struct mtk_mipi_tx {
 	void __iomem *regs;
 	unsigned int data_rate;
+	struct mtk_mipitx_driver_data *driver_data;
 };
 
-static void mtk_mipi_tx_mask(struct mtk_mipi_tx *mipi_tx, u32 offset, u32 mask,
+#define MIPITX_REG_ADDR(mipi_tx, reg_idx) ((mipi_tx)->regs + \
+				mipi_tx->driver_data->reg_ofs[(reg_idx)])
+#define MIPITX_WRITE(mipi_tx, reg_idx, val)	writel((val), \
+				MIPITX_REG_ADDR((mipi_tx), (reg_idx)))
+#define MIPITX_READ(mipi_tx, reg_idx) \
+				readl(MIPITX_REG_ADDR((mipi_tx), (reg_idx)))
+
+static void mtk_mipi_tx_mask(struct mtk_mipi_tx *mipi_tx, u32 reg_idx, u32 mask,
 			     u32 data)
 {
-	u32 temp = readl(mipi_tx->regs + offset);
+	u32 temp = MIPITX_READ(mipi_tx, reg_idx);
 
-	writel((temp & ~mask) | (data & mask), mipi_tx->regs + offset);
+	MIPITX_WRITE(mipi_tx, reg_idx, (temp & ~mask) | (data & mask));
 }
 
 int mtk_mipi_tx_set_data_rate(struct phy *phy, unsigned int data_rate)
@@ -191,7 +270,36 @@ static int mtk_mipi_tx_power_on(struct phy *phy)
 	unsigned int txdiv, txdiv0, txdiv1;
 	u64 pcw;
 
-	if (mipi_tx->data_rate >= 500) {
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_TOP_CON,
+			 RG_DSI_LNT_IMP_CAL_CODE | RG_DSI_LNT_HS_BIAS_EN,
+			 (8 << 4) | RG_DSI_LNT_HS_BIAS_EN);
+
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_BG_CON,
+			 RG_DSI_VOUT_MSK | RG_DSI_BG_CKEN | RG_DSI_BG_CORE_EN,
+			 (4 << 20) | (4 << 17) | (4 << 14) |
+			 (4 << 11) | (4 << 8) | (4 << 5) |
+			 RG_DSI_BG_CKEN | RG_DSI_BG_CORE_EN);
+
+	usleep_range(30, 100);
+
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_CON,
+			 RG_DSI_CKG_LDOOUT_EN | RG_DSI_LDOCORE_EN,
+			 RG_DSI_CKG_LDOOUT_EN | RG_DSI_LDOCORE_EN);
+
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_PWR,
+			 RG_DSI_MPPLL_SDM_PWR_ON | RG_DSI_MPPLL_SDM_ISO_EN,
+			 RG_DSI_MPPLL_SDM_PWR_ON);
+
+	/**
+	 * data_rate = (pixel_clock / 1000) * pixel_dipth * mipi_ratio;
+	 * pixel_clock unit is Khz, data_rata unit is MHz, so need divide 1000.
+	 * mipi_ratio is mipi clk coefficient for balance the pixel clk in mipi.
+	 * we set mipi_ratio is 1.05.
+	 */
+
+	if (mipi_tx->data_rate > 1250) {
+		return -EINVAL;
+	} else if (mipi_tx->data_rate >= 500) {
 		txdiv = 1;
 		txdiv0 = 0;
 		txdiv1 = 0;
@@ -215,32 +323,10 @@ static int mtk_mipi_tx_power_on(struct phy *phy)
 		return -EINVAL;
 	}
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_BG_CON,
-			 RG_DSI_VOUT_MSK | RG_DSI_BG_CKEN | RG_DSI_BG_CORE_EN,
-			 (4 << 20) | (4 << 17) | (4 << 14) |
-			 (4 << 11) | (4 << 8) | (4 << 5) |
-			 RG_DSI_BG_CKEN | RG_DSI_BG_CORE_EN);
-
-	usleep_range(30, 100);
-
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_TOP_CON,
-			 RG_DSI_LNT_IMP_CAL_CODE | RG_DSI_LNT_HS_BIAS_EN,
-			 (8 << 4) | RG_DSI_LNT_HS_BIAS_EN);
-
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_CON,
-			 RG_DSI_CKG_LDOOUT_EN | RG_DSI_LDOCORE_EN,
-			 RG_DSI_CKG_LDOOUT_EN | RG_DSI_LDOCORE_EN);
-
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_PLL_PWR,
-			 RG_DSI_MPPLL_SDM_PWR_ON | RG_DSI_MPPLL_SDM_ISO_EN,
-			 RG_DSI_MPPLL_SDM_PWR_ON);
-
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_PLL_CON0, RG_DSI_MPPLL_PLL_EN, 0);
-
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_PLL_CON0,
-			 RG_DSI_MPPLL_TXDIV0 | RG_DSI_MPPLL_TXDIV1 |
-			 RG_DSI_MPPLL_PREDIV,
-			 (txdiv0 << 3) | (txdiv1 << 5));
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON0,
+			 RG_DSI_MPPLL_PREDIV | RG_DSI_MPPLL_TXDIV0 |
+			 RG_DSI_MPPLL_TXDIV1 | RG_DSI_MPPLL_POSDIV,
+			 (0 << 1) | (txdiv0 << 3) | (txdiv1 << 5) | (0 << 7));
 
 	/*
 	 * PLL PCW config
@@ -252,31 +338,32 @@ static int mtk_mipi_tx_power_on(struct phy *phy)
 	 */
 	pcw = ((u64) mipi_tx->data_rate * txdiv) << 24;
 	do_div(pcw, 13);
-	writel(pcw, mipi_tx->regs + MIPITX_DSI_PLL_CON2);
+	MIPITX_WRITE(mipi_tx, TX_DSI_PLL_CON2, pcw);
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_PLL_CON1,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON1,
 			 RG_DSI_MPPLL_SDM_FRA_EN, RG_DSI_MPPLL_SDM_FRA_EN);
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_CLOCK_LANE,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_CLOCK_LANE,
 			 RG_DSI_LNTC_LDOOUT_EN, RG_DSI_LNTC_LDOOUT_EN);
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_DATA_LANE0,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_DATA_LANE0,
 			 RG_DSI_LNT0_LDOOUT_EN, RG_DSI_LNT0_LDOOUT_EN);
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_DATA_LANE1,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_DATA_LANE1,
 			 RG_DSI_LNT1_LDOOUT_EN, RG_DSI_LNT1_LDOOUT_EN);
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_DATA_LANE2,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_DATA_LANE2,
 			 RG_DSI_LNT2_LDOOUT_EN, RG_DSI_LNT2_LDOOUT_EN);
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_DATA_LANE3,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_DATA_LANE3,
 			 RG_DSI_LNT3_LDOOUT_EN, RG_DSI_LNT3_LDOOUT_EN);
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_PLL_CON0,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON0,
 			 RG_DSI_MPPLL_PLL_EN, RG_DSI_MPPLL_PLL_EN);
 
 	usleep_range(20, 100);
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_PLL_CON1,
-			 RG_DSI_MPPLL_SDM_SSC_EN, 0);
-
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_TOP_CON, RG_DSI_PAD_TIE_LOW_EN, 0);
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON1,
+			 RG_DSI_MPPLL_SDM_SSC_EN, (0 << 2));
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_TOP, RG_DSI_MPPLL_PRESERVE,
+			 mipi_tx->driver_data->reg_value[TX_DSI_PLL_TOP]);
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_TOP_CON, RG_DSI_PAD_TIE_LOW_EN, (0 << 11));
 
 	return 0;
 }
@@ -285,35 +372,38 @@ static int mtk_mipi_tx_power_off(struct phy *phy)
 {
 	struct mtk_mipi_tx *mipi_tx = phy_get_drvdata(phy);
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_PLL_CON0, RG_DSI_MPPLL_PLL_EN, 0);
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON0, RG_DSI_MPPLL_PLL_EN, 0);
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_TOP_CON, RG_DSI_PAD_TIE_LOW_EN,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_TOP, RG_DSI_MPPLL_PRESERVE,
+			 (0 << 8));
+
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_TOP_CON, RG_DSI_PAD_TIE_LOW_EN,
 			RG_DSI_PAD_TIE_LOW_EN);
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_CLOCK_LANE,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_CLOCK_LANE,
 			 RG_DSI_LNTC_LDOOUT_EN, 0);
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_DATA_LANE0,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_DATA_LANE0,
 			 RG_DSI_LNT0_LDOOUT_EN, 0);
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_DATA_LANE1,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_DATA_LANE1,
 			 RG_DSI_LNT1_LDOOUT_EN, 0);
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_DATA_LANE2,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_DATA_LANE2,
 			 RG_DSI_LNT2_LDOOUT_EN, 0);
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_DATA_LANE3,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_DATA_LANE3,
 			 RG_DSI_LNT3_LDOOUT_EN, 0);
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_PLL_PWR,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_PWR,
 			RG_DSI_MPPLL_SDM_ISO_EN | RG_DSI_MPPLL_SDM_PWR_ON,
 			RG_DSI_MPPLL_SDM_ISO_EN);
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_TOP_CON, RG_DSI_LNT_HS_BIAS_EN, 0);
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_TOP_CON, RG_DSI_LNT_HS_BIAS_EN, 0);
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_CON,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_CON,
 			RG_DSI_CKG_LDOOUT_EN | RG_DSI_LDOCORE_EN, 0);
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_BG_CON,
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_BG_CON,
 			RG_DSI_BG_CKEN | RG_DSI_BG_CORE_EN, 0);
 
-	mtk_mipi_tx_mask(mipi_tx, MIPITX_DSI_PLL_CON0, RG_DSI_MPPLL_DIV_MSK, 0);
+	mtk_mipi_tx_mask(mipi_tx, TX_DSI_PLL_CON0, RG_DSI_MPPLL_DIV_MSK, 0);
 
 	return 0;
 }
@@ -328,6 +418,7 @@ static int mtk_mipi_tx_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	struct mtk_mipi_tx *mipi_tx;
+	const struct of_device_id *of_id;
 	struct resource *mem;
 	struct phy *phy;
 	struct phy_provider *phy_provider;
@@ -336,6 +427,9 @@ static int mtk_mipi_tx_probe(struct platform_device *pdev)
 	mipi_tx = devm_kzalloc(dev, sizeof(*mipi_tx), GFP_KERNEL);
 	if (!mipi_tx)
 		return -ENOMEM;
+
+	of_id = of_match_device(mtk_mipi_tx_match, &pdev->dev);
+	mipi_tx->driver_data = (struct mtk_mipitx_driver_data *)of_id->data;
 
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	mipi_tx->regs = devm_ioremap_resource(dev, mem);
@@ -361,11 +455,6 @@ static int mtk_mipi_tx_remove(struct platform_device *pdev)
 {
 	return 0;
 }
-
-static const struct of_device_id mtk_mipi_tx_match[] = {
-	{ .compatible = "mediatek,mt8173-mipi-tx", },
-	{},
-};
 
 struct platform_driver mtk_mipi_tx_driver = {
 	.probe = mtk_mipi_tx_probe,
