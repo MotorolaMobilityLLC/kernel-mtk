@@ -309,26 +309,6 @@ static fm_s32 mt6631_RampDown(void)
 
 	WCN_DBG(FM_DBG | CHIP, "ramp down\n");
 
-	/* A1.1. Disable aon_osc_clk_cg */
-	ret = mt6631_host_write(0x81024064, 0x00000004);
-	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, " Disable aon_osc_clk_cg failed\n");
-		return ret;
-	}
-	/* A1.1. Disable FMAUD trigger */
-	ret = mt6631_host_write(0x81024058, 0x88800000);
-	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, "Disable FMAUD trigger failed\n");
-		return ret;
-	}
-
-	/* A1.1. issue fmsys memory powr down */
-	ret = mt6631_host_write(0x81024054, 0x00000180);
-	if (ret) {
-		WCN_DBG(FM_ALT | CHIP, " Issue fmsys memory powr down failed\n");
-		return ret;
-	}
-
 	/* switch SPI clock to 26MHz */
 	ret = mt6631_host_read(0x81026004, &tem);   /* Set 0x81026004[0] = 0x0 */
 	tem = tem & 0xFFFFFFFE;
@@ -400,13 +380,11 @@ static fm_s32 mt6631_RampDown(void)
 		return ret;
 	}
 
-
 	if (FM_LOCK(cmd_buf_lock))
 		return -FM_ELOCK;
 	pkt_size = mt6631_rampdown(cmd_buf, TX_BUF_SIZE);
 	ret = fm_cmd_tx(cmd_buf, pkt_size, FLAG_RAMPDOWN, SW_RETRY_CNT, RAMPDOWN_TIMEOUT, NULL);
 	FM_UNLOCK(cmd_buf_lock);
-
 
 	if (ret) {
 		WCN_DBG(FM_ERR | CHIP, "ramp down failed\n");
@@ -422,6 +400,31 @@ static fm_s32 mt6631_RampDown(void)
 	ret = mt6631_write(FM_MAIN_INTRMASK, 0x0021);
 	if (ret)
 		WCN_DBG(FM_ERR | CHIP, "ramp down wr FM_MAIN_INTRMASK failed\n");
+
+#if 0
+	Delayms(1);
+	WCN_DBG(FM_DBG | CHIP, "ramp down delay 1ms\n");
+
+	/* A1.1. Disable aon_osc_clk_cg */
+	ret = mt6631_host_write(0x81024064, 0x00000004);
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, " Disable aon_osc_clk_cg failed\n");
+		return ret;
+	}
+	/* A1.1. Disable FMAUD trigger */
+	ret = mt6631_host_write(0x81024058, 0x88800000);
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, "Disable FMAUD trigger failed\n");
+		return ret;
+	}
+
+	/* A1.1. issue fmsys memory powr down */
+	ret = mt6631_host_write(0x81024054, 0x00000180);
+	if (ret) {
+		WCN_DBG(FM_ALT | CHIP, " Issue fmsys memory powr down failed\n");
+		return ret;
+	}
+#endif
 
 	return ret;
 }
