@@ -215,6 +215,7 @@ struct spm_lp_scen __spm_suspend = {
 
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
+#if defined(CONFIG_ARCH_MT6755)
 	unsigned int temp;
 
 	__spm_pmic_pg_force_on();
@@ -241,10 +242,12 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 		__spm_backup_pmic_ck_pdn();
 	}
+#endif
 }
 
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 {
+#if defined(CONFIG_ARCH_MT6755)
 	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off())
 		__spm_restore_pmic_ck_pdn();
@@ -257,6 +260,7 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
 
 	__spm_pmic_pg_force_off();
+#endif
 }
 
 static void spm_set_sysclk_settle(void)

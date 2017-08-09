@@ -86,14 +86,14 @@ static u32 slp_spm_flags = {
 	SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL
 #endif
 };
-
+#if defined(CONFIG_ARCH_MT6755)
 #if SLP_SLEEP_DPIDLE_EN
 /* sync with mt_idle.c spm_deepidle_flags setting */
 static u32 slp_spm_deepidle_flags = {
 	SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL
 };
 #endif
-
+#endif
 /* static u32 slp_spm_data = 0; */
 u32 slp_spm_data = 0;
 
@@ -259,7 +259,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
-
+#if defined(CONFIG_ARCH_MT6755)
 #if SLP_SLEEP_DPIDLE_EN
 #ifdef CONFIG_MT_SND_SOC_6755
 	if (slp_ck26m_on | fm_radio_is_playing)
@@ -268,6 +268,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif
 		slp_wake_reason = spm_go_to_sleep_dpidle(slp_spm_deepidle_flags, slp_spm_data);
 	else
+#endif
 #endif
 		slp_wake_reason = spm_go_to_sleep(slp_spm_flags, slp_spm_data);
 

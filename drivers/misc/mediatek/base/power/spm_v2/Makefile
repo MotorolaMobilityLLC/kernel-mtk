@@ -39,6 +39,8 @@ ifeq ($(CONFIG_ARCH_MT6797), y)
 
 obj-y += mt_idle.o
 obj-y += mt_spm.o
+obj-y += mt_spm_sleep.o
+obj-y += mt_sleep.o
 obj-y += mt_spm_internal.o
 
 endif
