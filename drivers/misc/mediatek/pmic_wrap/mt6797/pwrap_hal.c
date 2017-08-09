@@ -514,7 +514,6 @@ void mt_pmic_wrap_eint_clr(int offset)
 		PWRAPERR("clear EINT flag error, only 0-3 bit\n");
 	else
 		WRAP_WR32(PMIC_WRAP_EINT_CLR, (1 << offset));
-	PWRAPREG("clear EINT flag mt_pmic_wrap_eint_status=0x%x\n", WRAP_RD32(PMIC_WRAP_EINT_STA));
 }
 
 static inline u32 wait_for_state_ready(loop_condition_fp fp, u32 timeout_us, void *wacs_register,
