@@ -80,7 +80,9 @@ static unsigned int gDrvIndex = 0;
 #ifdef CONFIG_MTK_SMI_EXT
 static int current_mmsys_clk = MMSYS_CLK_MEDIUM;
 #endif
-
+/*Clock meter*/
+/* \drivers\misc\mediatek\base\power\{platform}\mt_pm_init.c */
+extern unsigned int abist_meter(int ID);
 static DEFINE_SPINLOCK(kdsensor_drv_lock);
 
 /* Move these defines to kd_camera_hw.h, so they can be project-dependent //Jessy @2014/06/04
@@ -3607,6 +3609,7 @@ static long CAMERA_HW_Ioctl_Compat(struct file *filp, unsigned int cmd, unsigned
     case KDIMGSENSORIOC_X_SET_CURRENT_SENSOR:
     case KDIMGSENSORIOC_X_SET_GPIO:
     case KDIMGSENSORIOC_X_GET_ISP_CLK:
+    case KDIMGSENSORIOC_X_GET_CSI_CLK:
     return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 
     default:
@@ -3731,6 +3734,16 @@ static long CAMERA_HW_Ioctl(
    	*(unsigned int*)pBuff = 450;
 #endif
 	break;
+	
+    case KDIMGSENSORIOC_X_GET_CSI_CLK:
+		//AD_CSI0A_DELAYCAL_CK_MUX =	54	
+		//AD_CSI0B_DELAYCAL_CK_MUX	=	55	
+		//AD_CSI1A_DELAYCAL_CK_MUX =	56	
+		//AD_CSI1B_DELAYCAL_CK_MUX	=	57	
+		//AD_CSI2_DELAYCAL_CK_MUX	=	58	
+		PK_DBG("abist_meter=%d %d %d %d %d\n", abist_meter(54), abist_meter(55), abist_meter(56), abist_meter(57), abist_meter(58));
+		*(unsigned int*)pBuff = abist_meter(54);
+    break;
 
     default:
         PK_DBG("No such command %d\n",a_u4Command);

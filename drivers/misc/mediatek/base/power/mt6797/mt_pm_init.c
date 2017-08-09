@@ -116,7 +116,7 @@ unsigned int ckgen_meter(int ID)
 
 }
 
-static unsigned int abist_meter(int ID)
+unsigned int abist_meter(int ID)
 {
 	int output = 0, i = 0;
 	unsigned int temp, clk26cali_0, clk_dbg_cfg, clk_misc_cfg_0, clk26cali_1;

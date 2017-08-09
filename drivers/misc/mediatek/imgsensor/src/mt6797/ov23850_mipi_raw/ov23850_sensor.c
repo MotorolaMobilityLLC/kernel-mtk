@@ -507,6 +507,11 @@ static void write_shutter(kal_uint16 shutter)
             return;
         }
 #endif
+		/* 0x3500, 0x3501, 0x3502 will increase VBLANK to get exposure larger than frame exposure */
+		/* AE doesn't update sensor gain at capture mode, thus extra exposure lines must be updated here. */
+		// OV Recommend Solution
+		// if shutter bigger than frame_length, should extend frame length first
+
         LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
         spin_lock(&imgsensor_drv_lock);
         if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
