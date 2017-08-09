@@ -55,6 +55,7 @@
 
 #define CONFIG_CL2_BUCK_CTRL	1
 #define CONFIG_ARMPLL_CTRL	1
+ #undef CONFIG_ARMPLL_CTRL
 #define CONFIG_OCP_IDVFS_CTRL	1
 
 int bypass_boot = 0;
@@ -562,6 +563,9 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 				enable_armpll_ll();
 				/* non-pause FQHP function */
 				mt_pause_armpll(MCU_FH_PLL0, 0);
+				mt_pause_armpll(MCU_FH_PLL1, 0);
+				mt_pause_armpll(MCU_FH_PLL2, 0);
+				mt_pause_armpll(MCU_FH_PLL3, 0);
 				/* switch to HW mode */
 				switch_armpll_ll_hwmode(1);
 #endif
@@ -576,7 +580,10 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 				/* turn on arm pll */
 				enable_armpll_l();
 				/* non-pause FQHP function */
+				mt_pause_armpll(MCU_FH_PLL0, 0);
 				mt_pause_armpll(MCU_FH_PLL1, 0);
+				mt_pause_armpll(MCU_FH_PLL2, 0);
+				mt_pause_armpll(MCU_FH_PLL3, 0);
 				/* switch to HW mode */
 				switch_armpll_l_hwmode(1);
 #endif
@@ -693,6 +700,9 @@ static int cpu_kill_pll_buck_ctrl(unsigned int cpu)
 			switch_armpll_ll_hwmode(0);
 			/* pause FQHP function */
 			mt_pause_armpll(MCU_FH_PLL0, 1);
+			mt_pause_armpll(MCU_FH_PLL1, 1);
+			mt_pause_armpll(MCU_FH_PLL2, 1);
+			mt_pause_armpll(MCU_FH_PLL3, 1);
 			/* turn off arm pll */
 			disable_armpll_ll();
 #endif
@@ -704,7 +714,10 @@ static int cpu_kill_pll_buck_ctrl(unsigned int cpu)
 			/* switch to SW mode */
 			switch_armpll_l_hwmode(0);
 			/* pause FQHP function */
+			mt_pause_armpll(MCU_FH_PLL0, 1);
 			mt_pause_armpll(MCU_FH_PLL1, 1);
+			mt_pause_armpll(MCU_FH_PLL2, 1);
+			mt_pause_armpll(MCU_FH_PLL3, 1);
 			/* turn off arm pll */
 			disable_armpll_l();
 #endif
