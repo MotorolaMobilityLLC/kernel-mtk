@@ -1189,7 +1189,7 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 
 			WMT_INFO_FUNC("read SOC Adie Efuse(0x120) value:0x%2x,0x%2x,0x%2x,0x%2x -> %s\n",
 				      evtbuf[u4Res - 4], evtbuf[u4Res - 3], evtbuf[u4Res - 2], evtbuf[u4Res - 1],
-				      (evtbuf[u4Res - 2] & 0x30) == 0x01 ? "MT6625L" : "MT6625");
+				      evtbuf[u4Res - 2] == 0x31 ? "MT6625L" : "MT6625");
 		}
 		/* get PMIC chipid */
 

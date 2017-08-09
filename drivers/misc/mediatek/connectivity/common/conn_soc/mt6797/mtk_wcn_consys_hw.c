@@ -323,10 +323,7 @@ static INT32 mtk_wmt_remove(struct platform_device *pdev)
 
 INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 {
-
-#if CONSYS_PWR_ON_OFF_API_AVAILABLE
 	INT32 iRet = -1;
-#endif
 	UINT8 *consys_afe_reg_base = NULL;
 	UINT32 retry = 10;
 	UINT32 consysHwChipId = 0;
@@ -445,7 +442,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		enable_clock(MT_CG_INFRA_CONNMCU_BUS, "WCN_MOD");
 		WMT_PLAT_DBG_FUNC("enable MT_CG_INFRA_CONNMCU_BUS CLK\n");
 #else
-		clk_prepare_enable(clk_infra_conn_main);
+		iRet = clk_prepare_enable(clk_infra_conn_main);
+		if (iRet)
+			WMT_PLAT_ERR_FUNC("clk_prepare_enable(clk_infra_conn_main) fail(%d)\n", iRet);
 		WMT_PLAT_DBG_FUNC("[CCF]enable clk_infra_conn_main\n");
 #endif /* defined(CONFIG_MTK_CLKMGR) */
 #endif
@@ -561,7 +560,9 @@ INT32 mtk_wcn_consys_hw_reg_ctrl(UINT32 on, UINT32 co_clock_type)
 		enable_clock(MT_CG_INFRA_CONNMCU_BUS, "WCN_MOD");
 		WMT_PLAT_DBG_FUNC("enable MT_CG_INFRA_CONNMCU_BUS CLK\n");
 #else
-		clk_prepare_enable(clk_infra_conn_main);
+		iRet = clk_prepare_enable(clk_infra_conn_main);
+		if (iRet)
+			WMT_PLAT_ERR_FUNC("clk_prepare_enable(clk_infra_conn_main) fail(%d)\n", iRet);
 		WMT_PLAT_DBG_FUNC("[CCF]enable clk_infra_conn_main\n");
 #endif /* defined(CONFIG_MTK_CLKMGR) */
 #endif

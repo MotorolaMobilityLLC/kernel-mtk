@@ -161,7 +161,6 @@ static const fp_set_pin gfp_set_pin_table[] = {
 INT32 wmt_plat_audio_ctrl(CMB_STUB_AIF_X state, CMB_STUB_AIF_CTRL ctrl)
 {
 	INT32 iRet = 0;
-	UINT32 pinShare = 0;
 
 	/* input sanity check */
 	if ((CMB_STUB_AIF_MAX <= state)
@@ -201,7 +200,7 @@ INT32 wmt_plat_audio_ctrl(CMB_STUB_AIF_X state, CMB_STUB_AIF_CTRL ctrl)
 		WMT_PLAT_INFO_FUNC("call chip aif setting\n");
 		/* need to control chip side GPIO */
 		if (NULL != wmt_plat_audio_if_cb) {
-			iRet += (*wmt_plat_audio_if_cb) (state, (pinShare) ? MTK_WCN_BOOL_TRUE : MTK_WCN_BOOL_FALSE);
+			iRet += (*wmt_plat_audio_if_cb) (state, MTK_WCN_BOOL_FALSE);
 		} else {
 			WMT_PLAT_WARN_FUNC("wmt_plat_audio_if_cb is not registered\n");
 			iRet -= 1;
@@ -320,6 +319,7 @@ INT32 wmt_plat_init(UINT32 co_clock_type)
 	stub_cb.func_ctrl_cb = wmt_plat_func_ctrl;
 	stub_cb.thermal_query_cb = wmt_plat_thermal_ctrl;
 	stub_cb.deep_idle_ctrl_cb = wmt_plat_deep_idle_ctrl;
+	stub_cb.wmt_do_reset_cb = NULL;
 	stub_cb.size = sizeof(stub_cb);
 
 	/* register to cmb_stub */

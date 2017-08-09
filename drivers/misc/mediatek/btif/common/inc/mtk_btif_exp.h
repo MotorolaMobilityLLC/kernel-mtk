@@ -73,7 +73,7 @@ typedef int (*MTK_WCN_BTIF_RX_CB) (const unsigned char *p_buf,
 *      including read/write/dpidle_ctrl/rx_cb_retister
 *      this user id is only an identifier used for owner identification
 *****************************************************************************/
-const int mtk_wcn_btif_open(char *p_owner, unsigned long *p_id);
+int mtk_wcn_btif_open(char *p_owner, unsigned long *p_id);
 
 /*****************************************************************************
 * FUNCTION

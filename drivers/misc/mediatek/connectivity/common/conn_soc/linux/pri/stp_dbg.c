@@ -240,11 +240,8 @@ fail:
 		wcn_compressor_deinit(core_dmp->compressor);
 		core_dmp->compressor = NULL;
 	}
-
 	if (core_dmp)
 		osal_free(core_dmp);
-
-	osal_sleepable_lock_deinit(&core_dmp->dmp_lock);
 
 	return NULL;
 }
@@ -960,8 +957,10 @@ static int _stp_dbg_disable(MTKSTP_DBG_T *stp_dbg)
 
 static int _stp_dbg_dmp_in(MTKSTP_DBG_T *stp_dbg, char *buf, int len)
 {
-
 	unsigned long flags;
+	STP_DBG_HDR_T *pHdr = NULL;
+	char *pBuf = NULL;
+	unsigned int length = 0;
 	unsigned int internalFlag = stp_dbg->logsys->size < STP_DBG_LOG_ENTRY_NUM;
 	/* #ifdef CONFIG_LOG_STP_INTERNAL */
 	/* Here we record log in this circle buffer, if buffer is full ,
@@ -983,21 +982,16 @@ static int _stp_dbg_dmp_in(MTKSTP_DBG_T *stp_dbg, char *buf, int len)
 		    (stp_dbg->logsys->size > STP_DBG_LOG_ENTRY_NUM) ? STP_DBG_LOG_ENTRY_NUM : stp_dbg->logsys->size;
 
 		if (0 != gStpDbgLogOut) {
-			STP_DBG_HDR_T *pHdr = NULL;
-			char *pBuf = NULL;
-			unsigned int len = 0;
-
 			pHdr = (STP_DBG_HDR_T *) &(stp_dbg->logsys->queue[stp_dbg->logsys->in].buffer[0]);
 			pBuf = (char *)&(stp_dbg->logsys->queue[stp_dbg->logsys->in].buffer[0]) + sizeof(STP_DBG_HDR_T);
-			len = stp_dbg->logsys->queue[stp_dbg->logsys->in].len - sizeof(STP_DBG_HDR_T);
+			length = stp_dbg->logsys->queue[stp_dbg->logsys->in].len - sizeof(STP_DBG_HDR_T);
 			pr_debug("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d)\n",
 			       pHdr->sec,
 			       pHdr->usec,
 			       pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx",
 			       gStpDbgType[pHdr->type], pHdr->no, pHdr->len, pHdr->seq, pHdr->ack);
-			if (0 < len)
-				stp_dbg_dump_data(pBuf, pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx", len);
-
+			if (0 < length)
+				stp_dbg_dump_data(pBuf, pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx", length);
 		}
 		stp_dbg->logsys->in =
 		    (stp_dbg->logsys->in >= (STP_DBG_LOG_ENTRY_NUM - 1)) ? (0) : (stp_dbg->logsys->in + 1);
@@ -1738,7 +1732,7 @@ INT32 stp_dbg_set_fw_info(UINT8 *issue_info, UINT32 len, ENUM_STP_FW_ISSUE_TYPE 
 	if ((STP_FW_ASSERT_ISSUE == issue_type) ||
 	    (STP_HOST_TRIGGER_FW_ASSERT == issue_type) || (STP_HOST_TRIGGER_ASSERT_TIMEOUT == issue_type)) {
 		if ((STP_FW_ASSERT_ISSUE == issue_type) || (STP_HOST_TRIGGER_FW_ASSERT == issue_type)) {
-			tempbuf = osal_malloc(len);
+			tempbuf = osal_malloc(len + 1);
 			if (!tempbuf)
 				return -2;
 
@@ -1846,7 +1840,7 @@ INT32 stp_dbg_cpupcr_infor_format(PPUINT8 buf, PUINT32 str_len)
 	len += osal_sprintf(*buf + len, "<chipid>\n\t\tMT%x\n\t</chipid>\n\t", g_stp_dbg_cpupcr->chipId);
 	len += osal_sprintf(*buf + len, "<version>\n\t\t");
 	len += osal_sprintf(*buf + len, "<rom>%s</rom>\n\t\t", g_stp_dbg_cpupcr->romVer);
-	if (!(osal_memcmp(g_stp_dbg_cpupcr->branchVer, "ALPS", STP_PATCH_BRANCH_SZIE)))
+	if (!(osal_memcmp(g_stp_dbg_cpupcr->branchVer, "ALPS", strlen("ALPS"))))
 		len += osal_sprintf(*buf + len, "<branch>Internal Dev</branch>\n\t\t", g_stp_dbg_cpupcr->branchVer);
 	else
 		len += osal_sprintf(*buf + len, "<branch>W%sMP</branch>\n\t\t", g_stp_dbg_cpupcr->branchVer);

@@ -58,7 +58,7 @@ p_mtk_btif btif_exp_srh_id(unsigned long u_id)
 *       including read/write/dpidle_ctrl/rx_cb_retister
 *       this user id is only an identifier used for owner identification
 *****************************************************************************/
-const int mtk_wcn_btif_open(char *p_owner, unsigned long *p_id)
+int mtk_wcn_btif_open(char *p_owner, unsigned long *p_id)
 {
 	int i_ret = -1;
 	unsigned int index = 0;
@@ -104,7 +104,8 @@ const int mtk_wcn_btif_open(char *p_owner, unsigned long *p_id)
 		p_new_user->enable = false;
 		p_new_user->p_btif = p_btif;
 		p_new_user->u_id = (unsigned long)p_new_user;
-		strncpy(p_new_user->u_name, p_owner, BTIF_USER_NAME_MAX_LEN);
+		strncpy(p_new_user->u_name, p_owner, sizeof(p_new_user->u_name) - 1);
+		p_new_user->u_name[sizeof(p_new_user->u_name) - 1] = '\0';
 		BTIF_INFO_FUNC("owner name:%s, recorded name:%s\n",
 			       p_owner, p_new_user->u_name);
 
@@ -494,7 +495,7 @@ bool mtk_wcn_btif_parser_wmt_evt(unsigned long u_id,
 
 /**********End of Debug Purpose API declearation**********/
 
-const int btif_open_no_id(void)
+int btif_open_no_id(void)
 {
 	int i_ret = 0;
 	p_mtk_btif p_btif = &g_btif[0];
@@ -509,7 +510,7 @@ const int btif_open_no_id(void)
 	return i_ret;
 }
 
-const int btif_close_no_id(void)
+int btif_close_no_id(void)
 {
 	int i_ret = 0;
 	p_mtk_btif p_btif = &g_btif[0];
