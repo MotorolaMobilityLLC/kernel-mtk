@@ -646,6 +646,7 @@ static int mpu_check_violation(void)
 	if (wr_vio != 0) {
 		/* EMI violation is relative to MD at user build*/
 		#ifndef CONFIG_MT_ENG_BUILD
+		#if 0 /* temp to disable, wait for CCCI ready */
 			if (((master_ID & 0x7) == MASTER_MDMCU) ||
 				((master_ID & 0x7) == MASTER_MDHW)) {
 					int md_id = 0;
@@ -654,6 +655,7 @@ static int mpu_check_violation(void)
 					ID_DUMP_MD_REG, NULL, 0);
 					pr_err("[EMI MPU] MPU violation trigger MD\n");
 				}
+		#endif
 		#endif
 		aee_kernel_exception("EMI MPU",
 "%sEMI_MPUS = 0x%x,EMI_MPUT = 0x%x\n CHKER = 0x%x,CHKER_TYPE = 0x%x,CHKER_ADR = 0x%x\n MPUA = 0x%x, MPUI = 0x%x\n%s%s\n",
