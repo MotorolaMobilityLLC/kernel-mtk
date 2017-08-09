@@ -13,6 +13,8 @@
 /*=============================================================
  * CONFIG (SW related)
  *=============================================================*/
+#define ATM_USES_PPM	(1)
+
 #define THERMAL_GET_AHB_BUS_CLOCK		    (0)
 #define THERMAL_PERFORMANCE_PROFILE         (0)
 

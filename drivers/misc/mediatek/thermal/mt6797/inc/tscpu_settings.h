@@ -13,10 +13,7 @@
 /*=============================================================
  * CONFIG (SW related)
  *=============================================================*/
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
-/*	TODO: use PPM's kconfig instead */
 #define ATM_USES_PPM	(1)
-#endif
 
 #define THERMAL_GET_AHB_BUS_CLOCK		    (0)
 #define THERMAL_PERFORMANCE_PROFILE         (0)

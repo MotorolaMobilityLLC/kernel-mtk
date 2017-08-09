@@ -44,7 +44,7 @@
 #include <linux/kthread.h>
 #endif
 
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(ATM_USES_PPM)
 #include "mach/mt_ppm_api.h"
 #else
 #include "mt_cpufreq.h"
@@ -201,7 +201,7 @@ IMM_IsAdcInitReady(void)
 	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 0;
 }
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(ATM_USES_PPM)
 void __attribute__ ((weak))
 mt_ppm_cpu_thermal_protect(unsigned int limited_power)
 {
@@ -1543,7 +1543,7 @@ static int ktp_thread(void *arg)
 			tscpu_dprintk("ktp_thread overheat %d\n", max_temp);
 
 			/* freq/volt down or cpu down or backlight down or charging down... */
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(ATM_USES_PPM)
 			mt_ppm_cpu_thermal_protect(600);	/*D1 max~1600mW,min~600 */
 #else
 			mt_cpufreq_thermal_protect(600);	/*D1 max~1600mW,min~600 */
@@ -1558,7 +1558,7 @@ static int ktp_thread(void *arg)
 			final_limit = MIN(static_cpu_power_limit, adaptive_cpu_power_limit);
 			tscpu_dprintk("ktp_thread unlimit cpu=%d\n", final_limit);
 
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(ATM_USES_PPM)
 			mt_ppm_cpu_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);
 #else
 			mt_cpufreq_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);

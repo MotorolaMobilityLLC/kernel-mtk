@@ -16,7 +16,7 @@
 #include <linux/seq_file.h>
 #include <tscpu_settings.h>
 
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(ATM_USES_PPM)
 #include "mach/mt_ppm_api.h"
 #else
 #include "mt_cpufreq.h"
@@ -44,7 +44,7 @@ static void set_static_gpu_power_limit(unsigned int limit);
 /*=============================================================
  *Weak functions
  *=============================================================*/
-#if defined(CONFIG_ARCH_MT6755)
+#if defined(ATM_USES_PPM)
 void __attribute__ ((weak))
 mt_ppm_cpu_thermal_protect(unsigned int limited_power)
 {
@@ -71,7 +71,7 @@ static void set_static_cpu_power_limit(unsigned int limit)
 			     (final_limit != 0x7FFFFFFF) ? final_limit : 0, tscpu_get_curr_temp());
 		/*tscpu_print_all_temperature(0);*/
 
-	#if defined(CONFIG_ARCH_MT6755)
+	#if defined(ATM_USES_PPM)
 		mt_ppm_cpu_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);
 	#else
 		mt_cpufreq_thermal_protect((final_limit != 0x7FFFFFFF) ? final_limit : 0);

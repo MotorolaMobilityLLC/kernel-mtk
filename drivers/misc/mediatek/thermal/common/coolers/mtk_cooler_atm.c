@@ -18,11 +18,6 @@
 #include <mt-plat/aee.h>
 #include <linux/uidgid.h>
 
-#if defined(CONFIG_ARCH_MT6755)
-/*	TODO: use PPM's kconfig instead */
-#define ATM_USES_PPM	(1)
-#endif
-
 #ifdef ATM_USES_PPM
 #include "mach/mt_ppm_api.h"
 #else
