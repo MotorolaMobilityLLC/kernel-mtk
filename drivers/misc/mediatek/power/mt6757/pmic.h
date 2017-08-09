@@ -17,11 +17,6 @@
 
 #define PMIC_DEBUG
 
-/* #define EXTERNAL_BUCK_MT6311 */
-#define EXTERNAL_BUCK_FAN49101
-#define EXTERNAL_BUCK_FAN53555
-#define EXTERNAL_BUCK_DA9214
-
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 /*
@@ -39,15 +34,18 @@
 #define pmic_warn(fmt, args...)		pr_warn("[SPM-PMIC] " fmt, ##args)
 #define pmic_notice(fmt, args...)	pr_notice("[SPM-PMIC] " fmt, ##args)
 #define pmic_info(fmt, args...)		pr_info("[SPM-PMIC] " fmt, ##args)
-#define pmic_debug(fmt, args...)		pr_info("[SPM-PMIC] " fmt, ##args)	/* pr_debug show nothing */
+#define pmic_debug(fmt, args...)		pr_debug("[SPM-PMIC] " fmt, ##args)	/* pr_debug show nothing */
 
 /* just use in suspend flow for important log due to console suspend */
+#if defined PMIC_DEBUG_PR_DBG
 #define pmic_spm_crit2(fmt, args...)		\
 do {					\
 	aee_sram_printk(fmt, ##args);	\
 	pmic_crit(fmt, ##args);		\
 } while (0)
-
+#else
+#define pmic_spm_crit2(fmt, args...)    aee_sram_printk(fmt, ##args)
+#endif
 
 /*#define PMIC_DEBUG_PR_DBG*/
 

@@ -106,16 +106,6 @@
 #include <mt-plat/mt_reboot.h>
 #include <mach/mt_charging.h>
 
-#if defined(EXTERNAL_BUCK_FAN49101)
-#include <fan49101.h>
-#endif
-#if defined(EXTERNAL_BUCK_FAN53555)
-#include <fan53555.h>
-#endif
-#if defined(EXTERNAL_BUCK_DA9214)
-#include <da9214.h>
-#endif
-
 /*****************************************************************************
  * PMIC extern variable
  ******************************************************************************/
@@ -161,7 +151,7 @@ static DEFINE_MUTEX(pmic_access_mutex);
 /*--- Global suspend state ---*/
 static bool pmic_suspend_state;
 
-static void md1_pmic_setting_on(void)
+void vmd1_pmic_setting_on(void)
 {
 	/* VSRAM_MD on */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_EN, 1); /* 0x0654[0]=0, 0:Disable, 1:Enable */
@@ -1060,9 +1050,9 @@ static int mtk_regulator_set_voltage_sel(struct regulator_dev *rdev, unsigned se
 	mreg = container_of(rdesc, struct mtk_regulator, desc);
 
 	mreg->vosel.cur_sel = selector;
+
 	PMICLOG("regulator_set_voltage_sel(name=%s id=%d en_reg=%x vol_reg=%x selector=%d)\n",
 		rdesc->name, rdesc->id, mreg->en_reg, mreg->vol_reg, selector);
-
 
 #if 0
 	if (strcmp(rdesc->name, "VCAMD") == 0) {
@@ -1692,6 +1682,7 @@ static int pmic_regulator_ldo_init(struct platform_device *pdev)
 				mtk_ldos[i].vosel.def_sel = mtk_regulator_get_voltage_sel(mtk_ldos[i].rdev);
 				mtk_ldos[i].vosel.cur_sel = mtk_ldos[i].vosel.def_sel;
 			}
+
 			PMICLOG("[PMIC]mtk_ldos[%d].config.init_data min_uv:%d max_uv:%d\n", i,
 				mtk_ldos[i].config.init_data->constraints.min_uV,
 				mtk_ldos[i].config.init_data->constraints.max_uV);
@@ -1997,6 +1988,7 @@ void mtk_regulator_init(struct platform_device *dev)
 	ret = register_pm_notifier(&pmic_regulator_pm_notifier_block);
 	if (ret)
 		PMICLOG("****failed to register PM notifier %d\n", ret);
+
 }
 
 
@@ -2670,15 +2662,15 @@ unsigned int ptim_cnt = 0;
 signed int count_time_out_adc_imp = 36;
 unsigned int count_adc_imp = 0;
 
-
-int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur)
+int do_ptim(bool isSuspend)
 {
 	unsigned int vbat_reg;
 	int ret = 0;
 
 	count_adc_imp = 0;
 	/*PMICLOG("[do_ptim] start\n"); */
-
+	if (isSuspend == false)
+		pmic_auxadc_lock();
 	/*pmic_set_register_value(PMIC_RG_AUXADC_RST,1); */
 	/*pmic_set_register_value(PMIC_RG_AUXADC_RST,0); */
 
@@ -2735,6 +2727,9 @@ MT6351_PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN));*/
 	pmic_set_register_value(PMIC_AUXADC_CLR_IMP_CNT_STOP, 0);
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_CLR, 0);
 
+
+	if (isSuspend == false)
+		pmic_auxadc_unlock();
 	/*PMICLOG("[do_ptim2] 0xee8=0x%x  0x2c6=0x%x\n", upmu_get_reg_value
 	(0xee8),upmu_get_reg_value(0x2c6));*/
 
@@ -2744,63 +2739,13 @@ MT6351_PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN));*/
 
 
 	vbat_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_IMP_AVG);
-	/*ptim_bat_vol = (vbat_reg * 3 * 18000) / 32768;*/
-	*bat = (vbat_reg * 3 * 18000) / 32768;
+	ptim_bat_vol = (vbat_reg * 3 * 18000) / 32768;
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
-	fgauge_read_IM_current((void *)cur);
-#else
-	*cur = 0;
+	fgauge_read_IM_current((void *)&ptim_R_curr);
 #endif
-	pr_err("do_ptim_internal : bat %d cur %d\n", *bat, *cur);
-
-#if defined(SWCHR_POWER_PATH)
-	pr_err("do_ptim_internal test: bat %d cur %d\n", *bat, *cur);
-#endif
-
-
-
 	return ret;
 }
-
-int do_ptim(bool isSuspend)
-{
-	int ret;
-
-	if (isSuspend == false)
-		pmic_auxadc_lock();
-
-	ret = do_ptim_internal(isSuspend, &ptim_bat_vol, &ptim_R_curr);
-
-	if (isSuspend == false)
-		pmic_auxadc_unlock();
-	return ret;
-}
-
-int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur)
-{
-	int ret;
-
-	if (isSuspend == false)
-		pmic_auxadc_lock();
-
-	ret = do_ptim_internal(isSuspend, bat, cur);
-
-	if (isSuspend == false)
-		pmic_auxadc_unlock();
-	return ret;
-}
-
-void get_ptim_value(bool isSuspend, unsigned int *bat, signed int *cur)
-{
-	if (isSuspend == false)
-		pmic_auxadc_lock();
-	*bat = ptim_bat_vol;
-	*cur = ptim_R_curr;
-	if (isSuspend == false)
-		pmic_auxadc_unlock();
-}
-
 
 
 void enable_dummy_load(unsigned int en)
@@ -3128,7 +3073,8 @@ int get_dlpt_imix_spm(void)
 
 	rac_val_avg = rac_val[0] + rac_val[1];
 	rac_val_avg = rac_val_avg / 2;
-	pmic_spm_crit2("[dlpt_R] %d,%d,%d\n", rac_val[0], rac_val[1], rac_val_avg);
+	/*pmic_spm_crit2("[dlpt_R] %d,%d,%d\n", rac_val[0], rac_val[1], rac_val_avg);*/
+	pr_err("[dlpt_R] %d,%d,%d\n", rac_val[0], rac_val[1], rac_val_avg);
 
 	if (rac_val_avg > 100)
 		ptim_rac_val_avg = rac_val_avg;
@@ -3572,6 +3518,21 @@ bool is_charger_detection_rdy(void)
 		return false;
 }
 
+int is_ext_buck2_exist(void)
+{
+#if defined(CONFIG_MTK_FPGA)
+	return 0;
+#else
+#if !defined CONFIG_MTK_LEGACY
+	return gpiod_get_value(gpio_to_desc(130));
+	/*return __gpio_get_value(130);*/
+	/*return mt_get_gpio_in(130);*/
+#else
+	return 0;
+#endif
+#endif
+}
+
 int is_ext_vbat_boost_exist(void)
 {
 	return 0;
@@ -3636,76 +3597,28 @@ int is_ext_vbat_boost_exist(void)
 
 int get_ext_buck_i2c_ch_num(void)
 {
-#if 0
 	if (is_mt6311_exist() == 1)
 		return get_mt6311_i2c_ch_num();
 	else
 		return -1;
-#else
-	return -1;
-#endif
 }
 
 int is_ext_buck_sw_ready(void)
 {
-#if 0
 	if ((is_mt6311_sw_ready() == 1))
 		return 1;
 	else
 		return 0;
-#else
-	return 0;
-#endif
 }
 
 int is_ext_buck_exist(void)
 {
-#if defined(EXTERNAL_BUCK_MT6311)
 	if ((is_mt6311_exist() == 1))
-#elif defined(EXTERNAL_BUCK_DA9214)
-	if ((is_da9214_exist() == 1))
-#endif
 		return 1;
 	else
 		return 0;
 }
 
-int is_ext_buck2_exist(void)
-{
-#if defined(EXTERNAL_BUCK_FAN53555)
-	if ((is_fan53555_exist() == 1))
-		return 1;
-	else
-		return 0;
-#else
-	return 0;
-#if 0
-#if defined(CONFIG_MTK_FPGA)
-	return 0;
-#else
-#if !defined CONFIG_MTK_LEGACY
-	/*return gpiod_get_value(gpio_to_desc(130));*/
-	return __gpio_get_value(130);
-	/*return mt_get_gpio_in(130);*/
-#else
-	return 0;
-#endif
-#endif
-#endif
-#endif /* End of #if defined(EXTERNAL_BUCK_FAN53555) */
-}
-
-int is_ext_buck3_exist(void)
-{
-#if defined(EXTERNAL_BUCK_FAN49101)
-	if ((is_fan49101_exist() == 1))
-		return 1;
-	else
-		return 0;
-#else
-	return 0;
-#endif
-}
 /*****************************************************************************
  * FTM
  ******************************************************************************/
@@ -3714,7 +3627,7 @@ int is_ext_buck3_exist(void)
 #define Get_IS_EXT_VBAT_BOOST_EXIST _IOW('k', 21, int)
 #define Get_IS_EXT_SWCHR_EXIST _IOW('k', 22, int)
 #define Get_IS_EXT_BUCK2_EXIST _IOW('k', 23, int)
-#define Get_IS_EXT_BUCK3_EXIST _IOW('k', 24, int)
+
 
 static struct class *pmic_class;
 static struct cdev *pmic_cdev;
@@ -3764,13 +3677,6 @@ static long pmic_ftm_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		adc_out_data[0] = is_ext_buck2_exist();
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 		PMICLOG("[pmic_ftm_ioctl] Get_IS_EXT_BUCK2_EXIST:%d\n", adc_out_data[0]);
-		break;
-	case Get_IS_EXT_BUCK3_EXIST:
-		user_data_addr = (int *)arg;
-		ret = copy_from_user(adc_in_data, user_data_addr, 8);
-		adc_out_data[0] = is_ext_buck3_exist();
-		ret = copy_to_user(user_data_addr, adc_out_data, 8);
-		PMICLOG("[pmic_ftm_ioctl] Get_IS_EXT_BUCK3_EXIST:%d\n", adc_out_data[0]);
 		break;
 	default:
 		PMICLOG("[pmic_ftm_ioctl] Error ID\n");
@@ -4616,7 +4522,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 	pr_debug("[PMIC]pmic_mt_probe %s %s\n", dev->name, dev->id_entry->name);
 #endif /* #ifdef DLPT_FEATURE_SUPPORT */
 	/*get PMIC CID */
-	pr_err
+	pr_debug
 	    ("PMIC CID=0x%x PowerGoodStatus = 0x%x OCStatus = 0x%x ThermalStatus = 0x%x rsvStatus = 0x%x\n",
 	     pmic_get_register_value(PMIC_SWCID), upmu_get_reg_value(0x21c),
 	     upmu_get_reg_value(0x214), upmu_get_reg_value(0x21e), upmu_get_reg_value(0x2a6));
@@ -4624,7 +4530,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 	/* upmu_set_reg_value(0x2a6, 0xff); */ /* TBD */
 
 	/*pmic initial setting */
-#if !defined(EXTERNAL_BUCK_MT6311)
+#if 0
 	PMIC_INIT_SETTING_V1();
 	PMICLOG("[PMIC_INIT_SETTING_V1] Done\n");
 #else
@@ -4637,7 +4543,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 	PMICLOG("[PMIC_CUSTOM_SETTING_V1] Done\n");
 #endif				/*End of #if !defined CONFIG_MTK_LEGACY */
 
-	pmic_auxadc_init();
+
 /*#if defined(CONFIG_MTK_FPGA)*/
 #if 0
 	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_MTK_FPGA\n");
@@ -4773,7 +4679,7 @@ static int pmic_mt_remove(struct platform_device *dev)
 static void pmic_mt_shutdown(struct platform_device *dev)
 {
 	PMICLOG("******** MT pmic driver shutdown!! ********\n");
-	md1_pmic_setting_on();
+	vmd1_pmic_setting_on();
 }
 
 static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)
@@ -4936,12 +4842,7 @@ unsigned int pmic_Read_Efuse_HPOffset(int i)
 static int __init pmic_mt_init(void)
 {
 	int ret;
-	unsigned long long ts = 0;
-	unsigned long long ts1 = 0;
-	unsigned long long ts2 = 0;
-	unsigned long long ts3 = 0;
 
-	ts = sched_clock();
 #if !defined CONFIG_HAS_WAKELOCKS
 	wakeup_source_init(&pmicThread_lock, "pmicThread_lock_mt6328 wakelock");
 	wakeup_source_init(&bat_percent_notify_lock, "bat_percent_notify_lock wakelock");
@@ -4950,13 +4851,13 @@ static int __init pmic_mt_init(void)
 	wake_lock_init(&bat_percent_notify_lock, WAKE_LOCK_SUSPEND,
 		       "bat_percent_notify_lock wakelock");
 #endif
-	ts1 = sched_clock()-ts;
+
 #if !defined CONFIG_HAS_WAKELOCKS
 	wakeup_source_init(&dlpt_notify_lock, "dlpt_notify_lock wakelock");
 #else
 	wake_lock_init(&dlpt_notify_lock, WAKE_LOCK_SUSPEND, "dlpt_notify_lock wakelock");
 #endif
-	ts2 = sched_clock()-ts;
+
 #if !defined CONFIG_MTK_LEGACY
 #ifdef CONFIG_OF
 	PMICLOG("pmic_regulator_init_OF\n");
@@ -4980,7 +4881,6 @@ static int __init pmic_mt_init(void)
 #endif				/* End of #ifdef CONFIG_OF */
 #else
 	PMICLOG("pmic_regulator_init\n");
-
 	/* PMIC device driver register*/
 	ret = platform_device_register(&pmic_mt_device);
 	if (ret) {
@@ -4993,9 +4893,11 @@ static int __init pmic_mt_init(void)
 		return ret;
 	}
 #endif				/* End of #if !defined CONFIG_MTK_LEGACY */
-	ts3 = sched_clock()-ts;
+
+
+	pmic_auxadc_init();
+
 	pr_debug("****[pmic_mt_init] Initialization : DONE !!\n");
-	pr_debug("ts=%10llu,ts1=%10llu,ts2=%10llu,ts3=%10llu!!\n", ts, ts1, ts2, ts3);
 
 	return 0;
 }

@@ -85,8 +85,6 @@ static DEFINE_MUTEX(pmic_adc_mutex);
 
 void pmic_auxadc_init(void)
 {
-	int ret;
-
 	/*signed int adc_busy;*/
 	wake_lock_init(&pmicAuxadc_irq_lock, WAKE_LOCK_SUSPEND, "pmicAuxadc irq wakelock");
 
@@ -97,7 +95,6 @@ void pmic_auxadc_init(void)
 
 	pmic_set_register_value(PMIC_AUXADC_VBUF_EN, 0x1);
 
-	ret = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH11, 5, 0);
 	PMICLOG2("****[pmic_auxadc_init] DONE\n");
 }
 
@@ -115,8 +112,8 @@ void pmic_auxadc_unlock(void)
 
 void pmic_auxadc_debug(int index)
 {
-	int ret_val = 0, val, val1, val2, val3, val4, val5, val6, val7;
-
+	int ret_val = 0, val, val1, val2, val3, val4;
+	int val5, val6, val7;
 	ret_val = pmic_read_interface((unsigned int)(0x0240), (&val), (0xffff), 0);
 	ret_val = pmic_read_interface((unsigned int)(0x0282), (&val1), (0xffff), 0);
 	ret_val = pmic_read_interface((unsigned int)(0x025e), (&val2), (0xffff), 0);

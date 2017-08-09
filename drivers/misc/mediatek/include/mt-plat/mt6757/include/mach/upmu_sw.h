@@ -1,25 +1,31 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
+* Copyright (C) 2015 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*/
 #ifndef _MT_PMIC_UPMU_SW_H_
 #define _MT_PMIC_UPMU_SW_H_
+
+#ifdef CONFIG_MTK_PMIC_NEW_ARCH
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+#include <mach/mt6353_hw.h>
+#include <mach/mt6353_sw.h>
+#endif
+
+#else
 #include <mach/upmu_hw.h>
 
 #define AUXADC_SUPPORT_IMM_CURRENT_MODE
 #define BATTERY_DTS_SUPPORT
-#define BATTERY_SW_INIT
 #define RBAT_PULL_UP_VOLT_BY_BIF
-#define INIT_BAT_CUR_FROM_PTIM
 
 #define FG_BAT_INT_H_NO 48
 #define FG_BAT_INT_L_NO 49
@@ -62,10 +68,7 @@ typedef enum BATTERY_OC_LEVEL_TAG {
 typedef enum BATTERY_OC_PRIO_TAG {
 	BATTERY_OC_PRIO_CPU_B = 0,
 	BATTERY_OC_PRIO_CPU_L = 1,
-	BATTERY_OC_PRIO_GPU = 2,
-	BATTERY_OC_PRIO_MD = 3,
-	BATTERY_OC_PRIO_MD5 = 4,
-	BATTERY_OC_PRIO_FLASHLIGHT = 5
+	BATTERY_OC_PRIO_GPU = 2
 } BATTERY_OC_PRIO;
 
 extern void (*battery_oc_callback)(BATTERY_OC_LEVEL);
@@ -206,14 +209,14 @@ extern void kpd_pmic_rstkey_handler(unsigned long pressed);
 extern int is_mt6311_sw_ready(void);
 extern int is_mt6311_exist(void);
 extern int get_mt6311_i2c_ch_num(void);
-extern bool crystal_exist_status(void);
+/*extern bool crystal_exist_status(void);*/
 #if defined CONFIG_MTK_LEGACY
 extern void pmu_drv_tool_customization_init(void);
 #endif
 extern int batt_init_cust_data(void);
 extern void PMIC_INIT_SETTING_V1(void);
 
-extern int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur);
+#endif
 
 #endif /* _MT_PMIC_UPMU_SW_H_ */
 

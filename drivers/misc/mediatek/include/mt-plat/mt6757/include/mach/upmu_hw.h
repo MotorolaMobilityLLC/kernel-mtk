@@ -1,19 +1,26 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
+* Copyright (C) 2015 MediaTek Inc.
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU General Public License for more details.
+*/
 
 #ifndef _MT_PMIC_UPMU_HW_H_
 #define _MT_PMIC_UPMU_HW_H_
 
+#ifdef CONFIG_MTK_PMIC_NEW_ARCH
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+#include <mach/mt6353_hw.h>
+#endif
+
+#else
 /*MT6351*/
 #define MT6351_PMIC_REG_BASE (0x0000)
 
@@ -18616,6 +18623,7 @@ typedef struct {
 	unsigned short mask;
 	unsigned char shift;
 } PMU_FLAG_TABLE_ENTRY;
+#endif
 
 #endif /* _MT_PMIC_UPMU_HW_H_ */
 
