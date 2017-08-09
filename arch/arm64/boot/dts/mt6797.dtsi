@@ -742,6 +742,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg = <0x10004000 0x1000>;
 		};
 
+		gpio_usage_mapping:gpio {
+			compatible = "mediatek,gpio_usage_mapping";
+		};
+
 		gpio@10005000 {
 			compatible = "mediatek,gpio";
 			reg = <0x10005000 0x1000>;
