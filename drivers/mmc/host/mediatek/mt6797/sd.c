@@ -3785,20 +3785,8 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		msdc_ios_tune_setting(host, ios);
 		if (ios->timing == MMC_TIMING_MMC_DDR52)
 			msdc_set_mclk(host, ios->timing, ios->clock);
-#ifdef CONFIG_MMC_FFU
-		if ((host->hw->host_function == MSDC_EMMC) &&
-		    ((ios->timing == MMC_TIMING_LEGACY) && (ios->clock <= 25000000)))
-			emmc_clear_timing();
-#endif
 		host->timing = ios->timing;
 	}
-	/* reserve for FFU */
-#ifdef CONFIG_MMC_FFU
-	/* if ((ios->timing != MMC_TIMING_MMC_HS400) &&
-		(host->hw->host_function == MSDC_EMMC))
-		msdc_clock_src[host->id] = MSDC0_CLKSRC_200MHZ;
-	*/
-#endif
 	if (msdc_clock_src[host->id] != host->hw->clk_src) {
 		host->hw->clk_src = msdc_clock_src[host->id];
 		msdc_select_clksrc(host, host->hw->clk_src);

@@ -742,6 +742,7 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 	u32 ffu_data_len;
 	u32 timeout;
 	u8 set = 1;
+	u8 retry = 10;
 
 	if (!FFU_FEATURES(ext_csd[EXT_CSD_FFU_FEATURES])) {
 
@@ -809,9 +810,16 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 	}
 
 	/* read ext_csd */
-	err = mmc_send_ext_csd(card, ext_csd);
+	while (retry--) {
+		err = mmc_send_ext_csd(card, ext_csd);
+		if (err)
+			pr_err("FFU: %s: sending ext_csd retry times %d\n",
+				mmc_hostname(card->host), retry);
+		else
+			break;
+	}
 	if (err) {
-		pr_err("FFU: %s: error %d sending ext_csd\n",
+		pr_err("FFU: %s: sending ext_csd error %d\n",
 			mmc_hostname(card->host), err);
 		goto exit;
 	}
