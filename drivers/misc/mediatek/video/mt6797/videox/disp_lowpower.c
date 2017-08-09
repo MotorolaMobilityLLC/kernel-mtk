@@ -697,6 +697,7 @@ void _vdo_mode_enter_idle(void)
 		_idle_set_golden_setting();
 
 	/* Enable sodi - need wait golden setting done ??? */
+#if 0
 #ifndef CONFIG_MTK_FPGA
 #ifndef NO_SPM
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT)) {
@@ -706,6 +707,7 @@ void _vdo_mode_enter_idle(void)
 	}
 #endif
 #endif
+#endif
 }
 
 void _vdo_mode_leave_idle(void)
@@ -713,10 +715,12 @@ void _vdo_mode_leave_idle(void)
 	DISPMSG("[disp_lowpower]%s\n", __func__);
 
 	/* Disable sodi */
+#if 0
 #ifndef CONFIG_MTK_FPGA
 #ifndef NO_SPM
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
 		spm_enable_sodi(0);
+#endif
 #endif
 #endif
 
@@ -907,8 +911,11 @@ void primary_display_sodi_rule_init(void)
 	/* enable sodi when display driver is ready */
 #ifndef CONFIG_MTK_FPGA
 #ifndef NO_SPM
-	if (primary_display_is_video_mode())
-		;/* spm_enable_sodi(1); */
+	if (primary_display_is_video_mode()) {
+		spm_sodi_set_vdo_mode(1);
+		spm_sodi_mempll_pwr_mode(1);
+		spm_enable_sodi(1);
+	}
 	else
 		spm_enable_sodi(1);
 #endif
