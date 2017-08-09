@@ -277,13 +277,12 @@ static struct early_suspend vcorefs_earlysuspend_desc = {
 };
 #else
 static struct notifier_block vcorefs_fb_notif;
-
 static int
 vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *fb_evdata)
 {
+	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct fb_event *evdata = fb_evdata;
 	int blank;
-	struct governor_profile *gvrctrl = &governor_ctrl;
 
 	if (gvrctrl->cpu_dvfs_req & MD_DISABLE_SCREEN_CHANGE)
 		return 0;
@@ -293,17 +292,21 @@ vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned long event, v
 		return 0;
 
 	/* skip non-interested event immediately */
-	if (event != FB_EVENT_BLANK || event != FB_EARLY_EVENT_BLANK)
+	if (event != FB_EVENT_BLANK && event != FB_EARLY_EVENT_BLANK)
 		return 0;
 
 	blank = *(int *)evdata->data;
-	if ((blank == FB_BLANK_POWERDOWN) && (event == FB_EVENT_BLANK))
+	vcorefs_debug("fb_notify event=%lu blank=%d\n", event, blank);
+	if ((blank == FB_BLANK_POWERDOWN) && (event == FB_EVENT_BLANK)) {
+		vcorefs_info("Switch to Screen-OFF\n");
 		spm_vcorefs_set_cpu_dvfs_req(0, gvrctrl->cpu_dvfs_req);	/* set screen OFF state */
-	else if ((blank == FB_BLANK_UNBLANK) && (event == FB_EARLY_EVENT_BLANK))
+	} else if ((blank == FB_BLANK_UNBLANK) && (event == FB_EARLY_EVENT_BLANK)) {
+		vcorefs_info("Switch to Screen-ON\n");
 		spm_vcorefs_set_cpu_dvfs_req(0xFFFF, gvrctrl->cpu_dvfs_req);	/* set screen ON state */
-
+	}
 	return 0;
 }
+
 #endif
 /*
  *  sram debug info
@@ -951,6 +954,9 @@ int vcorefs_late_init_dvfs(void)
 	bool plat_init_done = true;
 	int plat_init_opp;
 
+	if (DISP_GetScreenWidth() * DISP_GetScreenHeight() < 1080 * 1920)
+		gvrctrl->is_fhd_segment = false;
+
 	vcorefs_init_sram_debug();
 
 	is_vcorefs_feature_enable();
@@ -1001,9 +1007,6 @@ static int init_vcorefs_config(void)
 	gvrctrl->curr_ddr_khz = vcorefs_get_curr_ddr();
 
 	spm_vcorefs_set_cpu_dvfs_req(gvrctrl->cpu_dvfs_req, 0xFFFF);
-
-	if (DISP_GetScreenWidth() * DISP_GetScreenHeight() < 1080 * 1920)
-		gvrctrl->is_fhd_segment = false;
 
 	for (opp = 0; opp < NUM_OPP; opp++) {
 		opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
