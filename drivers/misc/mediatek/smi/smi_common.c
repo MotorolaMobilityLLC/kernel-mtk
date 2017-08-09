@@ -121,7 +121,7 @@ unsigned long smi_reg_base_barb6 = 0;
 
 
 
-
+static unsigned int smi_first_restore = 1;
 char *smi_get_region_name(unsigned int region_indx);
 
 static struct smi_device *smi_dev;
@@ -250,14 +250,14 @@ static unsigned long gSMIBaseAddrs[SMI_REG_REGION_MAX];
 
 /* SMI COMMON register list to be backuped */
 #if defined(SMI_EV)
-#define SMI_COMMON_BACKUP_REG_NUM   9
+#define SMI_COMMON_BACKUP_REG_NUM   10
 static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = { 0x100, 0x104,
-	0x108, 0x10c, 0x110, 0x220, 0x230, 0x234, 0x238
+	0x108, 0x10c, 0x110, 0x220, 0x230, 0x234, 0x238, 0x300
 };
 #else
-#define SMI_COMMON_BACKUP_REG_NUM   7
+#define SMI_COMMON_BACKUP_REG_NUM   8
 static unsigned short g_smi_common_backup_reg_offset[SMI_COMMON_BACKUP_REG_NUM] = { 0x100, 0x104,
-	0x108, 0x10c, 0x110, 0x230, 0x234
+	0x108, 0x10c, 0x110, 0x230, 0x234, 0x300
 };
 #endif
 
@@ -305,7 +305,6 @@ static unsigned int force_camera_hpm;
 static unsigned int bus_optimization;
 static unsigned int enable_bw_optimization;
 static unsigned int smi_profile = SMI_BWC_SCEN_NORMAL;
-static unsigned int is_dcm_enable;
 static unsigned int disable_mmdvfs;
 
 
@@ -804,29 +803,6 @@ static int larb_clock_unprepare(int larb_id, int enable_mtcmos)
 	return 0;
 }
 
-static void smi_enable_dcm(void)
-{
-	if (is_dcm_enable)
-		return;
-#if defined(SMI_J)
-	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x300, 0x1 + (0x78 << 1) + (0x4 << 8));
-	M4U_WriteReg32(LARB0_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB1_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB2_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB3_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-#elif defined(SMI_EV)
-	M4U_WriteReg32(SMI_COMMON_EXT_BASE, 0x300, 0x1 + (0x78 << 1) + (0x4 << 8));
-	M4U_WriteReg32(LARB0_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB1_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB2_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB3_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB4_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB5_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-	M4U_WriteReg32(LARB6_BASE, 0x14, (0x7 << 8) + (0xf << 4));
-#endif
-	is_dcm_enable = 1;
-}
-
 static void backup_smi_common(void)
 {
 	int i;
@@ -992,7 +968,8 @@ int larb_reg_restore(int larb)
 	SMIDBG(1, "+larb_reg_restore(), larb_idx=%d\n", larb);
 	SMIDBG(1, "m4u part restore, larb_idx=%d\n", larb);
 	/* warning: larb_con is controlled by set/clr */
-	regval = *(pReg++);
+	regval = (smi_first_restore) ? M4U_ReadReg32(larb_base, SMI_LARB_CON) : *(pReg++);
+
 	M4U_WriteReg32(larb_base, SMI_LARB_CON_CLR, ~(regval));
 	M4U_WriteReg32(larb_base, SMI_LARB_CON_SET, (regval));
 
@@ -1026,8 +1003,7 @@ void on_larb_power_on_with_ccf(int larb_idx)
 	larb_clock_prepare(larb_idx, 0);
 	larb_clock_enable(larb_idx, 0);
 	larb_reg_restore(larb_idx);
-	is_dcm_enable = 0;
-	smi_enable_dcm();
+
 	larb_clock_disable(larb_idx, 0);
 	larb_clock_unprepare(larb_idx, 0);
 }
@@ -1222,12 +1198,22 @@ void smi_bus_optimization(int optimization_larbs, int smi_profile)
 		if (optimization_larbs & larb_mask) {
 			SMIDBG(1, "enable clock%d\n", i);
 			larb_clock_enable(i, 1);
-			smi_enable_dcm();
-			smi_bus_regs_setting(smi_profile,
-				smi_profile_config[smi_profile].setting);
+
+		} else {
+			SMIMSG("Larb:%d optimization disabled\n", i);
+		}
+	}
+
+	smi_bus_regs_setting(smi_profile,
+			smi_profile_config[smi_profile].setting);
+
+	for (i = 0; i < SMI_LARB_NR; i++) {
+		int larb_mask = 1 << i;
+
+		if (optimization_larbs & larb_mask) {
 			SMIDBG(1, "disable clock%d\n", i);
 			larb_clock_disable(i, 1);
-		}	else {
+		} else {
 			SMIMSG("Larb:%d optimization disabled\n", i);
 		}
 	}
@@ -1427,6 +1413,8 @@ int smi_common_init(void)
 	smi_bus_optimization(bus_optimization, SMI_BWC_SCEN_NORMAL);
 	smi_bus_optimization_unprepare(bus_optimization);
 
+	/* After clock callback registration, it will restore incorrect value because backup is not called. */
+	smi_first_restore = 0;
 	return 0;
 
 }
