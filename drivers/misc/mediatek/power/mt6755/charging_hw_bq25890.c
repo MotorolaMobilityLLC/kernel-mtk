@@ -151,7 +151,9 @@ static char *DISO_state_s[8] = {
 /* extern unsigned int mt6311_get_chip_id(void); _not_ used*/
 /* extern int is_mt6311_exist(void); _not_ used */
 /* extern int is_mt6311_sw_ready(void); _not_ used */
+#ifdef CONFIG_MTK_BIF_SUPPORT
 static int bif_inited;
+#endif
 static unsigned int charging_error;
 static unsigned int charging_get_error_state(void);
 static unsigned int charging_set_error_state(void *data);
