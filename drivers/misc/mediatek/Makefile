@@ -22,4 +22,5 @@ obj-$(CONFIG_MTK_PMIC_WRAP) += pmic_wrap/
 obj-$(CONFIG_USB_MTK_HDRC) += usb20/
 obj-$(CONFIG_MTK_GPIO) += gpio/
 obj-$(CONFIG_SECURITY_SELINUX)	+= selinux_warning/
+obj-$(CONFIG_MTK_KEYPAD) += keypad/
 

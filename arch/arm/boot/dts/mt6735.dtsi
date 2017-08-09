@@ -517,6 +517,19 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <0 163 0x4>;
 		};
 
+		touch: TP@0x10004000 {
+			compatible = "mediatek, touch";
+			/*VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>;*/
+		};
+		accdet: ACCDET@ {
+			compatible = "mediatek, accdet";
+		};
+		keypad: KP@0x10003000 {
+			compatible = "mediatek,KP";
+			reg = <0x10003000 0x1000>;
+			interrupts = <0 164 0x2>;
+		};
 	};
 
 };
+/include/ "cust_kpd.dtsi"
