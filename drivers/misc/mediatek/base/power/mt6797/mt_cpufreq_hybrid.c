@@ -941,7 +941,7 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	cspm_write(CSPM_M2_REC0,  0x1001af68);
 	cspm_write(CSPM_M2_REC1,  0x1001af6c);
 	cspm_write(CSPM_M2_REC2,  0x1001a224);
-	cspm_write(CSPM_M2_REC3,  0x8);
+	cspm_write(CSPM_M2_REC3,  0x4);
 	cspm_write(CSPM_M2_REC4,  0x2);
 	cspm_write(CSPM_M2_REC5,  0xffffffc1);
 	cspm_write(CSPM_M2_REC6,  0x40);
