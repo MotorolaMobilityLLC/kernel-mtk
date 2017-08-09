@@ -2541,8 +2541,9 @@ static __always_inline int __update_entity_runnable_avg(u64 now, int cpu,
 		sa->avg_period += delta_w;
 
 		mt_sched_printf(sched_lb_info,
-			"[%s] cpu=%d freq=%lu cap=%lu delta=%d scaled_delta_w=%d avg_sum=%u avg_period=%u",
-			__func__, cpu, scale_freq, scale_cpu, delta_w, scaled_delta_w, sa->running_avg_sum,
+			"[%s] cpu=%d freq=%lu cap=%lu delta=%d scaled_delta_w=%d running_sum=%u runnable=%u period=%u",
+			__func__, cpu, scale_freq, scale_cpu, delta_w, scaled_delta_w,
+			sa->running_avg_sum, sa->runnable_avg_sum,
 			sa->avg_period);
 
 		delta -= delta_w;
@@ -7620,7 +7621,11 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 		else
 			load = source_load(i, load_idx);
 
+#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
+		sgs->group_load += (load * capacity_orig_of(i)) >> SCHED_CAPACITY_SHIFT;
+#else
 		sgs->group_load += load;
+#endif
 		sgs->group_usage += get_cpu_usage(i);
 		sgs->sum_nr_running += rq->cfs.h_nr_running;
 
@@ -7635,16 +7640,18 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 		if (idle_cpu(i))
 			sgs->idle_cpus++;
 
-		mt_sched_printf(sched_lb_info, "[%s] cpu=%d group_load=%lu load=%lu nr=%d sum_nr=%d", __func__,
-			i, sgs->group_load, load, rq->nr_running, sgs->sum_nr_running);
+		mt_sched_printf(sched_lb_info, "[%s] cpu=%d grp_load=%lu load=%lu cap=%lu nr=%d sum_nr=%d overload=%d",
+			__func__,
+			i, sgs->group_load, load, capacity_orig_of(i), rq->nr_running, sgs->sum_nr_running, *overload);
 	}
 
 	/* Adjust by relative CPU capacity of the group */
 	sgs->group_capacity = group->sgc->capacity;
 	sgs->avg_load = (sgs->group_load*SCHED_CAPACITY_SCALE) / sgs->group_capacity;
+
 	mt_sched_printf(sched_lb_info, "[%s] cpu=0x%lx avg_load=%lu group_load=%lu cap=%lu",
-		__func__, sched_group_cpus(group)->bits[0], sgs->avg_load,
-		sgs->group_load, sgs->group_capacity);
+		__func__, sched_group_cpus(group)->bits[0],
+		sgs->avg_load, sgs->group_load, sgs->group_capacity);
 
 	if (sgs->sum_nr_running)
 		sgs->load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
@@ -7679,9 +7686,10 @@ static bool update_sd_pick_busiest(struct lb_env *env,
 {
 	struct sg_lb_stats *busiest = &sds->busiest_stat;
 
-	mt_sched_printf(sched_lb_info, "[%s] cpu=0x%lx sgs_type=%d b_type=%d %lu %lu ", __func__,
+	mt_sched_printf(sched_lb_info, "[%s] cpu=0x%lx sgs_type=%d b_type=%d %lu %lu sum_nr_running=%d grp_weight=%d",
+		__func__,
 		sched_group_cpus(sg)->bits[0], sgs->group_type,
-		busiest->group_type, sgs->avg_load, busiest->avg_load);
+		busiest->group_type, sgs->avg_load, busiest->avg_load, sgs->sum_nr_running, sgs->group_weight);
 
 	if (sgs->group_type > busiest->group_type)
 		return true;
@@ -7815,6 +7823,8 @@ next_group:
 		/* Now, start updating sd_lb_stats */
 		sds->total_load += sgs->group_load;
 		sds->total_capacity += sgs->group_capacity;
+		mt_sched_printf(sched_lb, "[%s] total_load=%lu grp_load=%lu total_capacity=%lu total_grp_capacity=%lu",
+			__func__, sds->total_load, sgs->group_load, sds->total_capacity, sgs->group_capacity);
 
 		sg = sg->next;
 	} while (sg != env->sd->groups);
@@ -8007,6 +8017,10 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
 		(sds->avg_load - local->avg_load) * local->group_capacity
 	) / SCHED_CAPACITY_SCALE;
 
+	mt_sched_printf(sched_lb,
+		"[%s] imbalance=%lu  max_pull=%lu,  busiest_cap=%lu, avg_load=%lu local_avg_load=%lu local_cap=%lu",
+		__func__, env->imbalance, max_pull, busiest->group_capacity, sds->avg_load,
+		local->avg_load, local->group_capacity);
 	/*
 	 * if *imbalance is less than the average load per runnable task
 	 * there is no guarantee that any tasks will be moved so we'll have
@@ -8067,6 +8081,8 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 
 	sds.avg_load = (SCHED_CAPACITY_SCALE * sds.total_load)
 						/ sds.total_capacity;
+	mt_sched_printf(sched_lb, "[%s] %d: avg_load=%lu total=%lu capacity=%lu",
+		__func__, env->src_cpu, sds.avg_load, sds.total_load, sds.total_capacity);
 
 	/*
 	 * If the busiest group is imbalanced the below checks don't
@@ -8075,6 +8091,7 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	 */
 	if (busiest->group_type == group_imbalanced)
 		goto force_balance;
+
 
 	/* SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
 	if (env->idle == CPU_NEWLY_IDLE && group_has_capacity(env, local) &&
@@ -8142,6 +8159,15 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 force_balance:
 	/* Looks like there is an imbalance. Compute it */
 	calculate_imbalance(env, &sds);
+#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
+	mt_sched_printf(sched_lb, "[%s] %d: imbalance=%lu",
+		__func__, env->src_cpu, env->imbalance);
+	env->imbalance = env->imbalance * SCHED_CAPACITY_SCALE
+				/ (sds.busiest->sgc->capacity / cpumask_weight(sched_group_cpus(sds.busiest)));
+	mt_sched_printf(sched_lb, "[%s] %d: imbalance=%lu capacity=%d mask=0x%lx",
+		__func__, env->src_cpu, env->imbalance,
+		sds.busiest->sgc->capacity, sched_group_cpus(sds.busiest)->bits[0]);
+#endif
 	return sds.busiest;
 
 out_balanced:
@@ -8687,8 +8713,8 @@ static int idle_balance(struct rq *this_rq)
 		if (sd)
 			update_next_balance(sd, 0, &next_balance);
 		rcu_read_unlock();
-		mt_sched_printf(sched_lb, "%d:idle balance bypass: %llu",
-				this_cpu, this_rq->avg_idle);
+		mt_sched_printf(sched_lb, "%d:idle balance bypass: avg_idle=%llu span=%lu overload=%d",
+				this_cpu, this_rq->avg_idle, this_rq->rd->span->bits[0], this_rq->rd->overload);
 		goto out;
 	}
 
