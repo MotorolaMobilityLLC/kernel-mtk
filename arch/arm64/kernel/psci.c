@@ -49,7 +49,9 @@
 #define MT6797_IDVFS_BASE_ADDR		0x10222000
 
 #define CONFIG_CL2_BUCK_CTRL	1
+ #undef CONFIG_CL2_BUCK_CTRL
 #define CONFIG_ARMPLL_CTRL	1
+ #undef CONFIG_ARMPLL_CTRL
 
 int bypass_boot = 2;
 int bypass_cl0_armpll = 3;
