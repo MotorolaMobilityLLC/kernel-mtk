@@ -2049,7 +2049,7 @@ static void get_freq_table_cpu(struct eem_det *det)
 		#else
 			binLevel = GET_BITS_VAL(3:0, eem_read(0x1020671C));
 		#endif
-		if (binLevel == 0) {
+		if ((binLevel == 0) || (binLevel == 3)) {
 			det->freq_tbl[i] =
 				PERCENT((det_to_id(det) == EEM_DET_BIG) ? bigFreq_FY[i] :
 					(det_to_id(det) == EEM_DET_L) ? L_Freq_FY[i] :
@@ -2065,12 +2065,20 @@ static void get_freq_table_cpu(struct eem_det *det)
 					cciFreq_SB[i]
 					,
 					det->max_freq_khz);
-		} else {
+		} else if ((binLevel == 2) || (binLevel == 7)) {
 				det->freq_tbl[i] =
 				PERCENT((det_to_id(det) == EEM_DET_BIG) ? bigFreq_MB[i] :
 					(det_to_id(det) == EEM_DET_L) ? L_Freq_MB[i] :
 					(det_to_id(det) == EEM_DET_2L) ? LL_Freq_MB[i] :
 					cciFreq_MB[i]
+					,
+					det->max_freq_khz);
+		} else {
+			det->freq_tbl[i] =
+				PERCENT((det_to_id(det) == EEM_DET_BIG) ? bigFreq_FY[i] :
+					(det_to_id(det) == EEM_DET_L) ? L_Freq_FY[i] :
+					(det_to_id(det) == EEM_DET_2L) ? LL_Freq_FY[i] :
+					cciFreq_FY[i]
 					,
 					det->max_freq_khz);
 		}
@@ -2147,12 +2155,14 @@ static void get_freq_table_gpu(struct eem_det *det)
 		#else
 			binLevel = GET_BITS_VAL(3:0, eem_read(0x1020671C));
 		#endif
-		if (binLevel == 0)
+		if ((binLevel == 0) || (binLevel == 3))
 			det->freq_tbl[i] = PERCENT(gpuFreq_FY[i], det->max_freq_khz);
 		else if (binLevel == 1)
 			det->freq_tbl[i] = PERCENT(gpuFreq_SB[i], det->max_freq_khz);
-		else
+		else if ((binLevel == 2) || (binLevel == 7))
 			det->freq_tbl[i] = PERCENT(gpuFreq_MB[i], det->max_freq_khz);
+		else
+			det->freq_tbl[i] = PERCENT(gpuFreq_FY[i], det->max_freq_khz);
 		if (0 == det->freq_tbl[i])
 			break;
 	}
@@ -2538,10 +2548,12 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	#else
 		binLevel = GET_BITS_VAL(3:0, eem_read(0x1020671C));
 	#endif
-	if (binLevel == 0)
+	if ((binLevel == 0) || (binLevel == 3))
 		det->VMIN       = det->ops->volt_2_eem(det, VMIN_VAL_LITTLE);
 	else if (binLevel == 1)
 		det->VMIN       = det->ops->volt_2_eem(det, VMIN_VAL_LITTLE_SB);
+	else if ((binLevel == 2) || (binLevel == 7))
+		det->VMIN       = det->ops->volt_2_eem(det, VMIN_VAL_LITTLE);
 	else
 		det->VMIN       = det->ops->volt_2_eem(det, VMIN_VAL_LITTLE);
 	/*
@@ -5326,7 +5338,7 @@ static int __init eem_conf(void)
 		binLevel = 0;
 	}
 
-	if (binLevel == 0) {
+	if ((binLevel == 0) || (binLevel == 3)) {
 		gpuTbl = &gpuFy[0];
 		recordTbl = &fyTbl[0][0];
 		eem_error("@The table ----->(fyTbl)\n");
@@ -5334,10 +5346,14 @@ static int __init eem_conf(void)
 		gpuTbl = &gpuSb[0];
 		recordTbl = &sbTbl[0][0];
 		eem_error("@The table ----->(sbTbl)\n");
-	} else {
+	} else if ((binLevel == 2) || (binLevel == 7)) {
 		gpuTbl = &gpuMb[0];
 		recordTbl = &mbTbl[0][0];
 		eem_error("@The table ----->(mbTbl)\n");
+	} else {
+		gpuTbl = &gpuFy[0];
+		recordTbl = &fyTbl[0][0];
+		eem_error("@The table ----->(unknown fyTbl)\n");
 	}
 
 	for (i = 0; i < NR_FREQ; i++) {
