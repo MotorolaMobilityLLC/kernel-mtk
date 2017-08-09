@@ -63,7 +63,7 @@ int g_fan49101_hw_exist = 0;
 unsigned int g_fan49101_cid = 0;
 
 #define PMICTAG                "[FAN49101] "
-#if 1				/* defined(PMIC_DEBUG_PR_DBG) */
+#if defined(PMIC_DEBUG_PR_DBG)
 #define PMICLOG1(fmt, arg...)   pr_err(PMICTAG fmt, ##arg)
 #else
 #define PMICLOG1(fmt, arg...)
@@ -172,7 +172,7 @@ unsigned int fan49101_read_byte(unsigned char cmd, unsigned char *returnData)
 		 * Avoid sending the segment addr to not upset non-compliant
 		 * DDC monitors.
 		 */
-		ret = i2c_transfer(new_client->adapter, &msgs[xfers], xfers);
+		ret = i2c_transfer(new_client->adapter, msgs, xfers);
 
 		if (ret == -ENXIO) {
 			PMICLOG1("skipping non-existent adapter %s\n", new_client->adapter->name);
@@ -210,7 +210,7 @@ unsigned int fan49101_write_byte(unsigned char cmd, unsigned char writeData)
 		 * Avoid sending the segment addr to not upset non-compliant
 		 * DDC monitors.
 		 */
-		ret = i2c_transfer(new_client->adapter, &msgs[xfers], xfers);
+		ret = i2c_transfer(new_client->adapter, msgs, xfers);
 
 		if (ret == -ENXIO) {
 			PMICLOG1("skipping non-existent adapter %s\n", new_client->adapter->name);

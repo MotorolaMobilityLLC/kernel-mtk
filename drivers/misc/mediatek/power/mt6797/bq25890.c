@@ -178,7 +178,7 @@ unsigned int bq25890_read_byte(unsigned char cmd, unsigned char *returnData)
 		 * Avoid sending the segment addr to not upset non-compliant
 		 * DDC monitors.
 		 */
-		ret = i2c_transfer(new_client->adapter, &msgs[xfers], xfers);
+		ret = i2c_transfer(new_client->adapter, msgs, xfers);
 
 		if (ret == -ENXIO) {
 			battery_log(BAT_LOG_CRTI, "skipping non-existent adapter %s\n", new_client->adapter->name);
@@ -216,7 +216,7 @@ unsigned int bq25890_write_byte(unsigned char cmd, unsigned char writeData)
 		 * Avoid sending the segment addr to not upset non-compliant
 		 * DDC monitors.
 		 */
-		ret = i2c_transfer(new_client->adapter, &msgs[xfers], xfers);
+		ret = i2c_transfer(new_client->adapter, msgs, xfers);
 
 		if (ret == -ENXIO) {
 			battery_log(BAT_LOG_CRTI, "skipping non-existent adapter %s\n", new_client->adapter->name);
