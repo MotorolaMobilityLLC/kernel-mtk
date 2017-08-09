@@ -427,8 +427,7 @@ static void mmdvfs_stop_cam_monitor(void)
 	cancel_delayed_work_sync(&g_mmdvfs_cam_work);
 }
 
-#define MMDVFS_CAM_MON_DELAY (6 * HZ)
-static void mmdvfs_start_cam_monitor(int scen)
+static void mmdvfs_start_cam_monitor(int scen, int delay_hz)
 {
 	int delayed_mmsys_state = MMSYS_CLK_MEDIUM;
 
@@ -438,36 +437,24 @@ static void mmdvfs_start_cam_monitor(int scen)
 	is_cam_monior_work = 1;
 	spin_unlock(&g_mmdvfs_mgr->scen_lock);
 
+	if (current_mmsys_clk == MMSYS_CLK_LOW)
+		MMDVFSMSG("Error!Can't switch clk by hopping when CLK is low\n");
 
-	if (current_mmsys_clk == MMSYS_CLK_LOW) {
-		MMDVFSMSG("Can't switch clk by hopping when CLK is low\n");
-		delayed_mmsys_state = MMSYS_CLK_MEDIUM;
-	} else {
-		delayed_mmsys_state = current_mmsys_clk;
-	}
+	/* Make sure advance feature is in high frequency mode for J1 pr0file */
+	if (is_force_max_mmsys_clk())
+		delayed_mmsys_state = MMSYS_CLK_HIGH;
+	if ((scen == SMI_BWC_SCEN_ICFP || scen == SMI_BWC_SCEN_VR_SLOW || scen == SMI_BWC_SCEN_VR) &&
+			(g_mmdvfs_cmd.camera_mode & (MMDVFS_CAMERA_MODE_FLAG_PIP | MMDVFS_CAMERA_MODE_FLAG_STEREO)))
+		delayed_mmsys_state = MMSYS_CLK_HIGH;
+	else if (current_mmsys_clk == MMSYS_CLK_LOW)
+			delayed_mmsys_state = MMSYS_CLK_MEDIUM;
+	else
+			delayed_mmsys_state = current_mmsys_clk;
 
-	/* MMDVFSMSG("CAM start %d\n", jiffies_to_msecs(jiffies)); */
+	MMDVFSMSG("MMDVFS boost:%d\n", delay_hz);
+	mmdvfs_set_step_with_mmsys_clk(MMDVFS_CAM_MON_SCEN, MMDVFS_VOLTAGE_HIGH, delayed_mmsys_state);
 
-	if (is_force_max_mmsys_clk()) {
-
-		mmdvfs_set_step_with_mmsys_clk(MMDVFS_CAM_MON_SCEN, MMDVFS_VOLTAGE_HIGH, MMSYS_CLK_HIGH);
-
-	}	else if (scen == SMI_BWC_SCEN_ICFP || scen == SMI_BWC_SCEN_VR_SLOW || scen == SMI_BWC_SCEN_VR) {
-
-		if (g_mmdvfs_cmd.camera_mode & (MMDVFS_CAMERA_MODE_FLAG_PIP | MMDVFS_CAMERA_MODE_FLAG_STEREO))
-			mmdvfs_set_step_with_mmsys_clk(MMDVFS_CAM_MON_SCEN, MMDVFS_VOLTAGE_HIGH, MMSYS_CLK_HIGH);
-			/* MMDVFSMSG("CAM monitor keep MMSYS_CLK_HIGH\n"); */
-		else if (g_mmdvfs_cmd.camera_mode & (MMDVFS_CAMERA_MODE_FLAG_VFB | MMDVFS_CAMERA_MODE_FLAG_EIS_2_0))
-			mmdvfs_set_step_with_mmsys_clk(MMDVFS_CAM_MON_SCEN, MMDVFS_VOLTAGE_HIGH, delayed_mmsys_state);
-		/*
-		else {
-			MMDVFSMSG("Keep cam monitor going so that DISP can't disable the vencpll\n");
-		}
-		*/
-
-	}
-	/* 4 seconds for PIP switch preview aspect delays... */
-	schedule_delayed_work(&g_mmdvfs_cam_work, MMDVFS_CAM_MON_DELAY);
+	schedule_delayed_work(&g_mmdvfs_cam_work, delay_hz * HZ);
 }
 
 #if MMDVFS_ENABLE_WQHD
@@ -826,7 +813,7 @@ void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 		g_mmdvfs_mgr->is_wfd_enable = 0;
 
 	if ((scen == SMI_BWC_SCEN_VR) || (scen == SMI_BWC_SCEN_VR_SLOW) || (scen == SMI_BWC_SCEN_ICFP))
-		mmdvfs_start_cam_monitor(scen);
+		mmdvfs_start_cam_monitor(scen, 8);
 
 	/* reset scenario voltage to default when it exits */
 	mmdvfs_set_step(scen, mmdvfs_get_default_step());
@@ -841,8 +828,6 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 	return;
 #endif
 
-	/* MMDVFSMSG("enter %d\n", scen); */
-
 	if (scen == SMI_BWC_SCEN_VR && is_force_camera_hpm()) {
 		/* currently we set mmsys clk medium in default
 		when force_camera_hpm is enabled */
@@ -850,6 +835,7 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 
 		if (is_force_max_mmsys_clk())
 			mmsys_clk_request = MMSYS_CLK_HIGH;
+
 		mmdvfs_set_step_with_mmsys_clk(scen, MMDVFS_VOLTAGE_HIGH, mmsys_clk_request);
 		return;
 	}
@@ -857,6 +843,10 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 	/* Leave display idle mode before set scenario */
 	if (current_mmsys_clk == MMSYS_CLK_LOW && scen != SMI_BWC_SCEN_NORMAL)
 		mmdvfs_raise_mmsys_by_mux();
+
+	/* Boost for ISP related scenario */
+	if ((scen == SMI_BWC_SCEN_VR) || (scen == SMI_BWC_SCEN_VR_SLOW) || (scen == SMI_BWC_SCEN_ICFP))
+		mmdvfs_start_cam_monitor(scen, 8);
 
 	switch (scen) {
 	case SMI_BWC_SCEN_VENC:
@@ -874,8 +864,8 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 		break;
 	case SMI_BWC_SCEN_VR:
 		{
-			mmdvfs_voltage_enum vr_step = MMSYS_CLK_LOW;
-			mmdvfs_voltage_enum venc_step = MMSYS_CLK_LOW;
+			mmdvfs_voltage_enum vr_step = MMDVFS_VOLTAGE_LOW;
+			mmdvfs_voltage_enum venc_step = MMDVFS_VOLTAGE_LOW;
 
 			vr_step = get_vr_step(g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.camera_mode);
 
@@ -887,7 +877,8 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 				if (g_mmdvfs_cmd.camera_mode & (MMDVFS_CAMERA_MODE_FLAG_VFB |
 					MMDVFS_CAMERA_MODE_FLAG_EIS_2_0))
 					/* Only set HPM mode for EMI BW requirement, don't care the mm clock */
-					mmdvfs_set_step(scen, MMDVFS_VOLTAGE_HIGH);
+					mmdvfs_set_step_with_mmsys_clk(scen, MMDVFS_VOLTAGE_HIGH,
+						MMSYS_CLK_MEDIUM);
 				else
 					mmdvfs_set_step_with_mmsys_clk(scen, MMDVFS_VOLTAGE_HIGH,
 						MMSYS_CLK_HIGH);
