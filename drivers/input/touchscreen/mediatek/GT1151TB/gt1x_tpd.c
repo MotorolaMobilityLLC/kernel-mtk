@@ -845,15 +845,15 @@ static int tpd_event_handler(void *unused)
 #else
 		ret = gt1x_touch_event_handler(point_data, tpd->dev, NULL);
 #endif
-		if (ret) {
+		/*if (ret) {
 			gt1x_irq_enable();
 			mutex_unlock(&i2c_access);
 			continue;
-		}
+		}*/
 
  exit_work_func:
 
-		if (!gt1x_rawdiff_mode) {
+		if ((!gt1x_rawdiff_mode) && (ret >= 0 || ret == ERROR_VALUE)) {
 			ret = gt1x_i2c_write(GTP_READ_COOR_ADDR, &end_cmd, 1);
 			if (ret < 0)
 				GTP_INFO("I2C write end_cmd  error!");
