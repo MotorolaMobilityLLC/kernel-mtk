@@ -11,6 +11,8 @@
 #include <linux/kobject.h>
 #include <linux/platform_device.h>
 #include <asm/atomic.h>
+#include <linux/of.h>
+#include <linux/module.h>
 
 #include "sn65dsi83_i2c.h"
 
@@ -27,10 +29,22 @@ static const struct i2c_device_id sn65dsi83_i2c_id[] = { {"sn65dsi83", 0}, {} };
 static int sn65dsi83_driver_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int sn65dsi83_driver_remove(struct i2c_client *client);
 
+#ifdef CONFIG_OF
+static const struct of_device_id sn65dsi83_id[] = {
+	{.compatible = "sn65dsi83"},
+	{},
+};
+
+MODULE_DEVICE_TABLE(of, sn65dsi83_id);
+#endif
+
 static struct i2c_driver sn65dsi83_driver = {
 	.driver = {
 		   .owner = THIS_MODULE,
 		   .name = "sn65dsi83",
+#ifdef CONFIG_OF
+			.of_match_table = of_match_ptr(sn65dsi83_id),
+#endif
 		   },
 	.probe = sn65dsi83_driver_probe,
 	.remove = sn65dsi83_driver_remove,
@@ -140,15 +154,17 @@ static int sn65dsi83_driver_remove(struct i2c_client *client)
 
 #define SN65DSI83_BUSNUM 4
 
+/*
 static struct i2c_board_info i2c_sn65dsi83 __initdata = {
 	I2C_BOARD_INFO("sn65dsi83", (sn65dsi83_SLAVE_ADDR_WRITE >> 1))
 };
+*/
 
 static int __init sn65dsi83_init(void)
 {
 	pr_notice("[sn65dsi83_init] init start\n");
 
-	i2c_register_board_info(SN65DSI83_BUSNUM, &i2c_sn65dsi83, 1);
+	/* i2c_register_board_info(SN65DSI83_BUSNUM, &i2c_sn65dsi83, 1); */
 
 	if (i2c_add_driver(&sn65dsi83_driver) != 0)
 		pr_notice("[sn65dsi83_init] failed to register sn65dsi83 i2c driver.\n");
