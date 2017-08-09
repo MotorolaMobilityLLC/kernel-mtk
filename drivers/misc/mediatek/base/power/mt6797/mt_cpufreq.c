@@ -487,7 +487,7 @@ ktime_t max[NR_SET_V_F];
 #define CPU_IDVFS_FREQ12_B_M	(3484)	/* Perc */
 #define CPU_IDVFS_FREQ13_B_M	(2912)	/* Perc */
 #define CPU_IDVFS_FREQ14_B_M	(2340)	/* Perc */
-#define CPU_IDVFS_FREQ15_B_M	(1352)	/* Perc */
+#define CPU_IDVFS_FREQ15_B_M	(1216)	/* Perc */
 
 /* for DVFS OPP table CCI/M */
 #define CPU_DVFS_FREQ0_CCI_M    (949000)	/* KHz */
@@ -523,7 +523,7 @@ ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_FREQ12_B_M    (871000)	/* KHz */
 #define CPU_DVFS_FREQ13_B_M    (728000)	/* KHz */
 #define CPU_DVFS_FREQ14_B_M    (585000)	/* KHz */
-#define CPU_DVFS_FREQ15_B_M    (338000)	/* KHz */
+#define CPU_DVFS_FREQ15_B_M    (304000)	/* KHz */
 
 /* for DVFS OPP table LL|L|CCI */
 #define CPU_DVFS_VOLT0_VPROC1_M    (120000)	/* 10MV */
