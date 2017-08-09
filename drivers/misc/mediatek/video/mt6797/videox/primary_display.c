@@ -2678,7 +2678,9 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 			/* disp_aee_print("ovl_stat 0x%x\n", status); */
 			MMProfileLogEx(ddp_mmp_get_events()->primary_error, MMProfileFlagPulse, status, 0);
 			primary_display_diagnose();
+#if 0 /* FIXME: workaround for vdo mode */
 			ret = -1;
+#endif
 		}
 	}
 
