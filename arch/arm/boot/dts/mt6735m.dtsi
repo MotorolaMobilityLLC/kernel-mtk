@@ -717,7 +717,7 @@
 			compatible = "mediatek,bat_notify";
 		};
 
-		battery: battery {
+		bat_comm: bat_comm {
 			compatible = "mediatek,battery";
 		};
 
