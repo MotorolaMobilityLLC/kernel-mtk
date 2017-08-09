@@ -12,6 +12,8 @@
 #include <linux/irqchip.h>
 #include <linux/of_platform.h>
 
+#include "../../../drivers/misc/mediatek/base/power/mt6580/mt-smp.h"
+
 #ifdef CONFIG_OF
 static const char *mt_dt_match[] __initconst = {
 	"mediatek,mt6735",
@@ -20,6 +22,7 @@ static const char *mt_dt_match[] __initconst = {
 };
 
 DT_MACHINE_START(MT6735_DT, "MT6735")
-	.dt_compat = mt_dt_match,
+	.smp		= smp_ops(mt_smp_ops),
+	.dt_compat	= mt_dt_match,
 MACHINE_END
 #endif
