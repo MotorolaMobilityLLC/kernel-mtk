@@ -411,6 +411,20 @@ config ARCH_MT6797
 	  Support for evb6797_64 related projects
 	  Support for k97_64 related projects
 
+config ARCH_ELBRUS
+        bool "MediaTek ELBRUS"
+        select PINCTRL
+        select MTK_FPGA
+        select FPGA_EARLY_PORTING
+        select MTK_EIC
+        select MTK_SYSTRACKER_V2
+        select CPU_IDLE
+        select MTK_BASE_POWER
+        select MTK_TIMER
+
+        help
+          This enables support for MediaTek Elbrus
+
 config ARCH_MT8160
 	bool "MediaTek MT8160"
 	select ARCH_MEDIATEK
