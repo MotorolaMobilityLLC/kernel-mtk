@@ -1411,12 +1411,12 @@ unsigned long *smi_larb_debug_offset[SMI_LARB_NR] = {
 
 #define SMI_PROFILE_SETTING_COMMON_INIT_NUM 13
 
-#define SMI_INITSETTING_LARB0_NUM (SMI_LARB0_PORT_NUM + 2) /* add cmd throttle setting/dcm*/
+#define SMI_INITSETTING_LARB0_NUM (SMI_LARB0_PORT_NUM + 5) /* add cmd throttle setting/dcm/cmd grouping*/
 #define SMI_INITSETTING_LARB1_NUM (SMI_LARB1_PORT_NUM + 2) /* add cmd throttle setting/dcm*/
 #define SMI_INITSETTING_LARB2_NUM (SMI_LARB2_PORT_NUM + 2) /* add cmd throttle setting/dcm*/
 #define SMI_INITSETTING_LARB3_NUM (SMI_LARB3_PORT_NUM + 2) /* add cmd throttle setting/dcm*/
 #define SMI_INITSETTING_LARB4_NUM (SMI_LARB4_PORT_NUM + 2) /* add cmd throttle setting/dcm*/
-#define SMI_INITSETTING_LARB5_NUM (SMI_LARB5_PORT_NUM + 2) /* add cmd throttle setting/dcm*/
+#define SMI_INITSETTING_LARB5_NUM (SMI_LARB5_PORT_NUM + 5) /* add cmd throttle setting/dcm/cmd grouping*/
 #define SMI_INITSETTING_LARB6_NUM (SMI_LARB6_PORT_NUM + 2) /* add cmd throttle setting/dcm*/
 
 /* vc setting */
@@ -1439,7 +1439,7 @@ struct SMI_SETTING_VALUE smi_profile_setting_common_init[SMI_PROFILE_SETTING_COM
 
 struct SMI_SETTING_VALUE smi_profile_setting_larb0_init[SMI_INITSETTING_LARB0_NUM] = {
 	{0x14, (0x7 << 8) + (0xf << 4)}, {0x24, 0x370246},
-	{0x200, 0x1f}, {0x204, 0x1f}, {0x208, 1}, {0x20c, 0xa}, {0x210, 1}, {0x214, 1}, {0x218, 1},
+	{0x200, 0x1f}, {0x204, 0x1f}, {0x208, 0x1f}, {0x20c, 0xa}, {0x210, 1}, {0x214, 1}, {0x218, 1},
 	    {0x21c, 1}
 };
 
@@ -1466,10 +1466,9 @@ struct SMI_SETTING_VALUE smi_profile_setting_larb4_init[SMI_INITSETTING_LARB4_NU
 	{0x14, (0x7 << 8) + (0xf << 4)}, {0x24, 0x370246},
 	{0x200, 1}, {0x204, 1}, {0x208, 1}, {0x20c, 1}
 };
-
 struct SMI_SETTING_VALUE smi_profile_setting_larb5_init[SMI_INITSETTING_LARB5_NUM] = {
 	{0x14, (0x7 << 8) + (0xf << 4)}, {0x24, 0x370246},
-	{0x200, 0x1f}, {0x204, 0x1f}, {0x208, 1}, {0x20c, 1}, {0x210, 6}, {0x214, 6}, {0x218, 0x1f}, {0x21c,
+	{0x200, 0xb}, {0x204, 0xb}, {0x208, 1}, {0x20c, 1}, {0x210, 6}, {0x214, 6}, {0x218, 0xb}, {0x21c,
 											     7},
 	{0x220, 8}, {0x224, 1}
 };
