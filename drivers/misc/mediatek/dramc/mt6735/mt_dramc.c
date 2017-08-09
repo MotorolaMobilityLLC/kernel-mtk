@@ -69,9 +69,7 @@ static DEFINE_MUTEX(dram_dfs_mutex);
 int org_dram_data_rate = 0;
 static unsigned int dram_rank_num;
 phys_addr_t dram_base, dram_add_rank0_base;
-#ifndef CONFIG_OF_RESERVED_MEM
-dram_info_t *dram_info = NULL;
-#endif
+
 
 /* #include <mach/emi_bwl.h> */
 #define DRAMC_LPDDR2    (0x1e0)
@@ -1174,7 +1172,6 @@ static ssize_t freq_hopping_test_store(struct device_driver *driver,
 }
 #endif
 
-#ifndef CONFIG_OF_RESERVED_MEM
 static int __init dt_scan_dram_info(unsigned long node, const char *uname, int depth, void *data)
 {
 	char *type = (char *)of_get_flat_dt_prop(node, "device_type", NULL);
@@ -1209,7 +1206,6 @@ static int __init dt_scan_dram_info(unsigned long node, const char *uname, int d
 
 	return node;
 }
-#endif
 
 int DFS_APDMA_early_init(void)
 {
@@ -1584,14 +1580,14 @@ static int dram_dt_init(void)
 		return -1;
 	}
 
-#ifndef CONFIG_OF_RESERVED_MEM
-	if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
-		pr_warn("[DRAMC]find dt_scan_dram_info\n");
-	} else {
-		pr_warn("[DRAMC]can't find dt_scan_dram_info\n");
-		return -1;
+	if (dram_rank_num == 0) { /* happend to no rsv mem node from LK */
+		if (of_scan_flat_dt(dt_scan_dram_info, NULL) > 0) {
+			pr_err("[DRAMC]find dt_scan_dram_info\n");
+		} else {
+			pr_err("[DRAMC]can't find dt_scan_dram_info\n");
+			return -1;
+		}
 	}
-#endif
 
 	return ret;
 }
