@@ -3,13 +3,18 @@
 
 #include <linux/ioctl.h>
 
+#ifndef CONFIG_OF
+extern void mt_irq_set_sens(unsigned int irq, unsigned int sens); */
+extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity); */
+#endif
+
 /**
  enforce kernel log enable
  */
-#define KERNEL_LOG  //enable debug log flag if defined
-#define ISR_LOG_ON  //turn on log print at isr if defined
+#define KERNEL_LOG
+#define ISR_LOG_ON
 
-#define SIG_ERESTARTSYS 512 //ERESTARTSYS
+#define SIG_ERESTARTSYS 512
 /*******************************************************************************
  *
  ********************************************************************************/
@@ -18,6 +23,12 @@
 
 #define CAM_A_BASE_HW   0x1A004000
 #define CAM_B_BASE_HW   0x1A005000
+#define CAMSV_0_BASE_HW 0x1A050000
+#define CAMSV_1_BASE_HW 0x1A051000
+#define CAMSV_2_BASE_HW 0x1A052000
+#define CAMSV_3_BASE_HW 0x1A053000
+#define CAMSV_4_BASE_HW 0x1A054000
+#define CAMSV_5_BASE_HW 0x1A055000
 #define DIP_A_BASE_HW   0x15022000
 #define UNI_A_BASE_HW   0x1A003000
 #define SENINF_BASE_HW  0x1A040000
@@ -97,6 +108,10 @@ typedef enum {
 	ISP_IRQ_TYPE_INT_DIP_A_ST,
 	ISP_IRQ_TYPE_INT_CAMSV_0_ST,
 	ISP_IRQ_TYPE_INT_CAMSV_1_ST,
+	ISP_IRQ_TYPE_INT_CAMSV_2_ST,
+	ISP_IRQ_TYPE_INT_CAMSV_3_ST,
+	ISP_IRQ_TYPE_INT_CAMSV_4_ST,
+	ISP_IRQ_TYPE_INT_CAMSV_5_ST,
 	ISP_IRQ_TYPE_INT_UNI_A_ST,
 	ISP_IRQ_TYPE_AMOUNT
 } ISP_IRQ_TYPE_ENUM;
@@ -158,11 +173,10 @@ typedef struct {
 } ISP_REG_IO_STRUCT;
 
 #ifdef CONFIG_COMPAT
-typedef struct
-{
+typedef struct {
 	compat_uptr_t pData;
 	unsigned int Count; /* count */
-}compat_ISP_REG_IO_STRUCT;
+} compat_ISP_REG_IO_STRUCT;
 #endif
 
 /* length of the two memory areas */
@@ -181,7 +195,7 @@ typedef enum {
 	_cam_tg_max_
 } _isp_tg_enum_;
 
-//
+
 typedef enum {
 	_imgi_ = 0,
 	_imgbi_,
@@ -318,7 +332,7 @@ typedef struct {
 	unsigned long dropCnt;
 	ISP_RT_RING_BUF_INFO_STRUCT ring_buf[_cam_max_];
 } ISP_RT_BUF_STRUCT;
-//
+
 typedef struct {
 	ISP_RT_BUF_CTRL_ENUM ctrl;
 	ISP_IRQ_TYPE_ENUM module;
@@ -424,17 +438,17 @@ typedef struct {
 	compat_uptr_t data_ptr;
 	compat_uptr_t ex_data_ptr; /* exchanged buffer */
 	compat_uptr_t pExtend;
-}compat_ISP_BUFFER_CTRL_STRUCT;
+} compat_ISP_BUFFER_CTRL_STRUCT;
 
 typedef struct {
 	ISP_REF_CNT_CTRL_ENUM ctrl;
 	ISP_REF_CNT_ID_ENUM id;
 	compat_uptr_t data_ptr;
-}compat_ISP_REF_CNT_CTRL_STRUCT;
+} compat_ISP_REF_CNT_CTRL_STRUCT;
 
 #endif
 
-//
+
 /********************************************************************************************
 
  ********************************************************************************************/
@@ -474,7 +488,7 @@ typedef enum {
 	ISP_CMD_GET_START_TIME,
 	ISP_CMD_VF_LOG, /* dbg only, prt log on kernel when vf_en is driven */
 } ISP_CMD_ENUM;
-//
+
 
 /* Everest reset ioctl */
 #define ISP_RESET_BY_HWMODULE    _IOW(ISP_MAGIC, ISP_CMD_RESET_BY_HWMODULE, unsigned long)
