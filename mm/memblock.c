@@ -679,6 +679,7 @@ int __init_memblock memblock_remove_range(struct memblock_type *type,
 
 int __init_memblock memblock_remove(phys_addr_t base, phys_addr_t size)
 {
+	kmemleak_free_part(__va(base), size); /* kmemleak free for overlaps issue */
 	return memblock_remove_range(&memblock.memory, base, size);
 }
 
