@@ -17,7 +17,6 @@
 #include "kd_flashlight.h"
 #include <asm/io.h>
 #include <asm/uaccess.h>
-#include <linux/xlog.h>
 /* #include <mach/mt6516_typedefs.h> */
 /* #include <mach/mt6516_gpt_sw.h> */
 
