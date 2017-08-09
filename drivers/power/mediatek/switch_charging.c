@@ -712,9 +712,9 @@ void set_usb_current_unlimited(bool enable)
 
 	usb_unlimited = enable;
 	if (enable == true)
-		en = 1;
-	else
 		en = 0;
+	else
+		en = 1;
 	battery_charging_control(CHARGING_CMD_ENABLE_SAFETY_TIMER, &en);
 }
 

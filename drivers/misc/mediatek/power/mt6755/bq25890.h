@@ -208,8 +208,8 @@
 #define CONB_BOOST_STAT_MASK   0x1
 #define CONB_BOOST_STAT_SHIFT  6
 
-/*#define CONB_CHRG_FAULT_MASK   0x3
-#define CONB_CHRG_FAULT_SHIFT  4 //already define at line 175 */
+#define CONC_CHRG_FAULT_MASK   0x3
+#define CONC_CHRG_FAULT_SHIFT  4
 
 #define CONB_BAT_STAT_MASK   0x1
 #define CONB_BAT_STAT_SHIFT  3
