@@ -103,11 +103,7 @@ static struct pwr_ctrl sodi_ctrl = {
 	.conn_apsrc_sel = 0, /* bit 27 */
 
 	/* SPM_SRC_REQ */
-#if defined(CONFIG_ARCH_MT6755)
 	.spm_apsrc_req = 0,
-#elif defined(CONFIG_ARCH_MT6797)
-	.spm_apsrc_req = 1,
-#endif
 	.spm_f26m_req = 0,
 	.spm_lte_req = 0,
 	.spm_infra_req = 0,
@@ -356,8 +352,6 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 			need_log_out = 1;
 		} else if ((sodi_logout_curr_time - sodi_logout_prev_time) > SODI_LOGOUT_INTERVAL_CRITERIA) {
 			need_log_out = 1;
-		} else if (wakesta->r12 == 0) {
-			need_log_out = 1;
 		} else {
 			int mem_status = 0;
 
@@ -382,12 +376,17 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 				if (wakesta->assert_pc != 0) {
 					sodi_err("Warning: wakeup reason is WR_PCM_ASSERT!\n");
 					wr = WR_PCM_ASSERT;
+#if defined(CONFIG_ARCH_MT6797)
+				} else if (wakesta->r12_ext == 0x400) {
+					sodi_err("wake up by vcore dvfs\n");
+					wr = WR_WAKE_SRC;
+#endif
 				} else if (wakesta->r12 == 0) {
 					sodi_err("Warning: wakeup reason is WR_UNKNOWN!\n");
 					wr = WR_UNKNOWN;
 				}
 
-				sodi_err("WAKE UP BY ASSERT, VCORE_STATUS = %d, SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, %s\n",
+				sodi_err("VCORE_STATUS = %d, SELF_REFRESH = 0x%x, SW_FLAG = 0x%x, 0x%x, %s\n",
 						vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
 						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
 
@@ -599,10 +598,11 @@ UNLOCK_SPM:
 	/* stop APxGPT timer and enable caore0 local timer */
 	soidle_after_wfi(cpu);
 
+#if defined(CONFIG_ARCH_MT6797)
 	spm_sodi_footprint(SPM_SODI_REKICK_VCORE);
-
 	__spm_backup_vcore_dvfs_dram_shuffle();
 	vcorefs_go_to_vcore_dvfs();
+#endif
 
 	spm_sodi_reset_footprint();
 	return wr;

@@ -69,6 +69,7 @@
 		WAKE_SRC_R12_EINT_EVENT_B | \
 		WAKE_SRC_R12_CONN_WDT_IRQ_B | \
 		WAKE_SRC_R12_CCIF0_EVENT_B | \
+		WAKE_SRC_R12_MD32_SPM_IRQ_B | \
 		WAKE_SRC_R12_USB0_CDSC_B_AND_USB1_CSDC_B | \
 		WAKE_SRC_R12_USB0_POWERDWN_B_AND_USB1_POWERDWN_B | \
 		WAKE_SRC_R12_C2K_WDT_IRQ_B | \
@@ -109,10 +110,6 @@ enum spm_sodi_step {
 	SPM_SODI_LEAVE,
 	SPM_SODI_REKICK_VCORE,
 };
-
-void __attribute__((weak)) vcorefs_go_to_vcore_dvfs(void)
-{
-}
 
 #if SPM_AEE_RR_REC
 void __attribute__((weak)) aee_rr_rec_sodi_val(u32 val)

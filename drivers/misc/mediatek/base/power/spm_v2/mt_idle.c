@@ -904,17 +904,10 @@ bool soidle_can_enter(int cpu)
 	}
 #endif
 
-#if defined(CONFIG_ARCH_MT6755)
 		if (cpu % 4) {
 			reason = BY_CPU;
 			goto out;
 		}
-#elif defined(CONFIG_ARCH_MT6797)
-		if (cpu != 0) {
-			reason = BY_CPU;
-			goto out;
-		}
-#endif
 
 	if (idle_spm_lock || vcore_dvfs_is_progressing()) {
 		reason = BY_VTG;
@@ -1610,9 +1603,11 @@ static inline void soidle_pre_handler(void)
 {
 	hps_del_timer();
 #ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_ARCH_MT6755)
 	/* stop Mali dvfs_callback timer */
 	if (!mtk_gpu_sodi_entry())
 		idle_warn("not stop GPU timer in SODI\n");
+#endif
 #endif
 
 #ifdef CONFIG_THERMAL
@@ -1639,9 +1634,11 @@ static inline void soidle_post_handler(void)
 {
 	hps_restart_timer();
 #ifndef CONFIG_MTK_FPGA
+#if defined(CONFIG_ARCH_MT6755)
 	/* restart Mali dvfs_callback timer */
 	if (!mtk_gpu_sodi_exit())
 		idle_warn("not restart GPU timer outside SODI\n");
+#endif
 #endif
 
 #ifdef CONFIG_THERMAL
