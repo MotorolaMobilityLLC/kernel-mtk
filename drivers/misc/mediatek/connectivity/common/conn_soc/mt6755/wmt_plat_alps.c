@@ -243,7 +243,6 @@ static INT32 wmt_plat_deep_idle_ctrl(UINT32 dpilde_ctrl)
 #if CFG_WMT_PS_SUPPORT
 static VOID wmt_plat_bgf_eirq_cb(VOID)
 {
-
 /* #error "need to disable EINT here" */
 	/* wmt_lib_ps_irq_cb(); */
 	if (NULL != wmt_plat_bgf_irq_cb)
