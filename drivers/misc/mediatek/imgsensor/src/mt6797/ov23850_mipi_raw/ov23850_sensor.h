@@ -65,8 +65,8 @@ typedef struct imgsensor_struct {
 	kal_uint32 line_length;			//current linelength
 
 	kal_uint32 min_frame_length;	//current min  framelength to max framerate
-	kal_uint16 dummy_pixel;			//current dummypixel
-	kal_uint16 dummy_line;			//current dummline
+	kal_int32 dummy_pixel;			//current dummypixel
+	kal_int32 dummy_line;			//current dummline
 	kal_uint16 current_fps;			//current max fps
 	kal_bool   autoflicker_en;		//record autoflicker enable or disable
 	kal_bool test_pattern;			//record test pattern mode or not
