@@ -69,7 +69,7 @@ typedef struct {
 /* map_p: 0 = no remap, 1 = remap */
 TZ_RESULT kree_register_sharedmem(KREE_SESSION_HANDLE session,
 		KREE_SHAREDMEM_HANDLE *mem_handle, void *start,
-		uint32_t size, void *map_p);
+		uint32_t size, void *map_p, const char *tag);
 
 TZ_RESULT kree_unregister_sharedmem(KREE_SESSION_HANDLE session,
 					KREE_SHAREDMEM_HANDLE mem_handle);
@@ -166,6 +166,21 @@ TZ_RESULT KREE_AllocSecuremem(KREE_SESSION_HANDLE session,
 	KREE_SECUREMEM_HANDLE *mem_handle, uint32_t alignment, uint32_t size);
 
 /**
+ * Secure memory allocation With Tag
+ *
+ * Same as KREE_AllocSecuremem() but with one additional tag for debugging.
+ *
+ * @param session    The session handle.
+ * @param mem_handle    [out] A pointer to secure memory handle.
+ * @param alignment    Memory alignment in bytes.
+ * @param size    The size of the buffer to be allocated in bytes.
+ & @param tag     The string for marking the allocation
+ * @return    return code.
+ */
+TZ_RESULT KREE_AllocSecurememWithTag(KREE_SESSION_HANDLE session,
+	KREE_SECUREMEM_HANDLE *mem_handle, uint32_t alignment, uint32_t size,
+	const char *tag);
+/**
  * Secure memory reference
  *
  * Reference memory.
@@ -238,6 +253,23 @@ TZ_RESULT KREE_UnreferenceSecuremem(KREE_SESSION_HANDLE session,
  */
 TZ_RESULT KREE_AllocSecurechunkmem(KREE_SESSION_HANDLE session,
 	KREE_SECURECM_HANDLE *cm_handle, uint32_t alignment, uint32_t size);
+
+/**
+ * Secure chunk memory allocation with tag
+ *
+ * Same as KREE_AllocSecuremem() but with one additional tag for debugging.
+ *
+ * @param session    The session handle.
+ * @param cm_handle    [out] A pointer to secure chunk memory handle.
+ * @param alignment    Memory alignment in bytes.
+ * @param size    The size of the buffer to be allocated in bytes.
+ * @param tag     The string for marking the allocation
+
+ * @return    return code.
+ */
+TZ_RESULT KREE_AllocSecurechunkmemWithTag(KREE_SESSION_HANDLE session,
+	KREE_SECURECM_HANDLE *cm_handle, uint32_t alignment, uint32_t size,
+	const char *tag);
 
 /**
  * Secure chunk memory reference

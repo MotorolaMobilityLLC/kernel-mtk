@@ -32,6 +32,7 @@
 #include <linux/irqdomain.h>
 #include <linux/of_platform.h>
 #include <linux/of_irq.h>
+#include <linux/completion.h>
 
 #include "trustzone/kree/tz_mod.h"
 #include "trustzone/kree/mem.h"
@@ -854,10 +855,10 @@ static long tz_client_tee_service(struct file *file, unsigned long arg,
 	return cret;
 }
 
-static long tz_client_reg_sharedmem(struct file *file, unsigned long arg)
+static long __tz_reg_sharedmem(struct file *file, unsigned long arg,
+				struct kree_sharedmemory_tag_cmd_param *cparam)
 {
 	unsigned long cret;
-	struct kree_sharedmemory_cmd_param cparam;
 	KREE_SESSION_HANDLE session;
 	uint32_t mem_handle;
 	struct MTIOMMU_PIN_RANGE_T *pin;
@@ -867,15 +868,25 @@ static long tz_client_reg_sharedmem(struct file *file, unsigned long arg)
 	int i;
 	long errcode;
 	unsigned long *pfns;
+	char *tag = NULL;
 
-	cret = copy_from_user(&cparam, (void *)arg, sizeof(cparam));
-	if (cret)
-		return -EFAULT;
+	/* handle tag for debugging purpose */
+	if (cparam->tag != 0 && cparam->tag_size != 0) {
+		tag = kmalloc(cparam->tag_size+1, GFP_KERNEL);
+		if (tag == NULL)
+			return -ENOMEM;
+		cret = copy_from_user(tag, (void *)(unsigned long)cparam->tag, cparam->tag_size);
+		if (cret)
+			return -EFAULT;
+		tag[cparam->tag_size] = '\0';
+	}
 
 	/* session handle */
-	session = tz_client_get_session(file, cparam.session);
-	if (session <= 0)
+	session = tz_client_get_session(file, cparam->session);
+	if (session <= 0) {
+		kfree(tag);
 		return -EINVAL;
+	}
 
 	/* map pages
 	 */
@@ -887,8 +898,8 @@ static long tz_client_reg_sharedmem(struct file *file, unsigned long arg)
 		errcode = -ENOMEM;
 		goto client_regshm_mapfail;
 	}
-	cret = _map_user_pages(pin, (unsigned long)cparam.buffer,
-				cparam.size, cparam.control);
+	cret = _map_user_pages(pin, (unsigned long)cparam->buffer,
+				cparam->size, cparam->control);
 	if (cret != 0) {
 		pr_warn("tz_client_reg_sharedmem fail: map user pages = 0x%x\n",
 			(uint32_t) cret);
@@ -921,15 +932,17 @@ static long tz_client_reg_sharedmem(struct file *file, unsigned long arg)
 	/* register it ...
 	 */
 	ret = kree_register_sharedmem(session, &mem_handle, pin->start,
-					pin->size, (void *)map_p);
+					pin->size, (void *)map_p, tag);
 	if (ret != TZ_RESULT_SUCCESS) {
 		pr_warn("tz_client_reg_sharedmem fail: register shm 0x%x\n",
 			ret);
 		kfree(map_p);
+		kfree(tag);
 		errcode = -EFAULT;
 		goto client_regshm_free;
 	}
 	kfree(map_p);
+	kfree(tag);
 
 	/* register to fd
 	 */
@@ -943,9 +956,9 @@ static long tz_client_reg_sharedmem(struct file *file, unsigned long arg)
 		goto client_regshm_free_1;
 	}
 
-	cparam.mem_handle = mem_handle;
-	cparam.ret = ret;	/* TEE service call return */
-	cret = copy_to_user((void *)arg, &cparam, sizeof(cparam));
+	cparam->mem_handle = mem_handle;
+	cparam->ret = ret;	/* TEE service call return */
+	cret = copy_to_user((void *)arg, cparam, sizeof(struct kree_sharedmemory_cmd_param));
 	if (cret)
 		return -EFAULT;
 
@@ -956,8 +969,8 @@ client_regshm_free_1:
 client_regshm_free:
 	_unmap_user_pages(pin);
 	kfree(pin);
-	cparam.ret = ret;	/* TEE service call return */
-	cret = copy_to_user((void *)arg, &cparam, sizeof(cparam));
+	cparam->ret = ret;	/* TEE service call return */
+	cret = copy_to_user((void *)arg, cparam, sizeof(struct kree_sharedmemory_cmd_param));
 	pr_warn("tz_client_reg_sharedmem fail: shm reg\n");
 	return errcode;
 
@@ -966,8 +979,36 @@ client_regshm_mapfail_2:
 client_regshm_mapfail_1:
 	kfree(pin);
 client_regshm_mapfail:
+	kfree(tag);
 	pr_warn("tz_client_reg_sharedmem fail: map memory\n");
 	return errcode;
+}
+
+static long tz_client_reg_sharedmem_with_tag(struct file *file, unsigned long arg)
+{
+	unsigned long cret;
+	struct kree_sharedmemory_tag_cmd_param cparam;
+
+	cret = copy_from_user(&cparam, (void *)arg, sizeof(cparam));
+	if (cret)
+		return -EFAULT;
+
+	return __tz_reg_sharedmem(file, arg, &cparam);
+}
+
+static long tz_client_reg_sharedmem(struct file *file, unsigned long arg)
+{
+	unsigned long cret;
+	struct kree_sharedmemory_tag_cmd_param cparam;
+
+	cret = copy_from_user(&cparam, (void *)arg, sizeof(struct kree_sharedmemory_cmd_param));
+	if (cret)
+		return -EFAULT;
+
+	cparam.tag = 0;
+	cparam.tag_size = 0;
+
+	return __tz_reg_sharedmem(file, arg, &cparam);
 }
 
 static long tz_client_unreg_sharedmem(struct file *file, unsigned long arg)
@@ -1050,6 +1091,9 @@ static long do_tz_client_ioctl(struct file *file, unsigned int cmd,
 
 	case MTEE_CMD_SHM_REG:
 		return tz_client_reg_sharedmem(file, arg);
+
+	case MTEE_CMD_SHM_REG_WITH_TAG:
+		return tz_client_reg_sharedmem_with_tag(file, arg);
 
 	case MTEE_CMD_SHM_UNREG:
 		return tz_client_unreg_sharedmem(file, arg);
