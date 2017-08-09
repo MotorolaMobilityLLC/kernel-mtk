@@ -2131,8 +2131,7 @@ p2pFuncParseBeaconVenderId(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucIE,
 				   pucIE, IE_SIZE(pucIE));
 
 			prP2pSpecificBssInfo->u2AttributeLen += IE_SIZE(pucIE);
-			DBGLOG(P2P, TRACE, "Driver unprocessed Vender Specific IE\n");
-			ASSERT(FALSE);
+			DBGLOG(P2P, INFO, "Driver unprocessed Vender Specific IE\n");
 		}
 	} while (0);
 }
