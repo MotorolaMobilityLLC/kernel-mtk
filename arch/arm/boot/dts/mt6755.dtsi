@@ -2404,12 +2404,14 @@
 		compatible = "mediatek,rf_clock_buffer";
 		mediatek,clkbuf-quantity = <4>;
 		mediatek,clkbuf-config = <2 0 1 1>;
+		mediatek,clkbuf-driving-current = <2 2 2 2>;
 	};
 
 	pmic_clock_buffer_ctrl:pmic_clock_buffer {
 		compatible = "mediatek,pmic_clock_buffer";
 		mediatek,clkbuf-quantity = <4>;
-		mediatek,clkbuf-config = <0 0 0 0>;
+		mediatek,clkbuf-config = <2 1 1 2>;
+		mediatek,clkbuf-driving-current = <2 2 2 2>;
 	};
 };
 /*/include/ "cust_pmic.dtsi"*/
