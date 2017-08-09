@@ -63,16 +63,17 @@
 #define S62X_DEFAULT_DELAY      100
 
 #if S62X_DEBUG_MSG
-#define SSMDBG(format, ...)			pr_err("S62X " format "\n", ## __VA_ARGS__)
+#define SSMDBG(format, ...)			pr_debug("S62X " format "\n", ## __VA_ARGS__)
 #else
 #define SSMDBG(format, ...)
 #endif
 
 #if S62X_DEBUG_FUNC
-#define SSMFUNC(func)           pr_err("S62X " func " is called\n")
+#define SSMFUNC(func)           pr_debug("S62X " func " is called\n")
 #else
 #define SSMFUNC(func)
 #endif
+#define SSMERR(format, ...)			pr_err("S62X " format "\n", ## __VA_ARGS__)
 
 /* Don't change this if you don't know why! (refer comment:ticket:35:2) */
 #define PROJECT_ID              "S628"
@@ -284,16 +285,16 @@ static int I2C_RxData(char *rxData, int length)
 	}
 
 	if (loop_i >= S62X_RETRY_COUNT) {
-		pr_err("S62X %s retry over %d\n", __func__, S62X_RETRY_COUNT);
+		SSMERR("%s retry over %d\n", __func__, S62X_RETRY_COUNT);
 		return -EIO;
 	}
 #if DEBUG
 	if (atomic_read(&data->trace) & SS_I2C_DEBUG) {
-		pr_info("S62X RxData len=%02x addr=%02x\n data=",
+		SSMDBG("RxData len=%02x addr=%02x\n data=",
 		       length, addr);
 		for (i = 0; i < length; i++)
-			pr_info(" %02x", rxData[i]);
-		pr_info("\n");
+			SSMDBG(" %02x", rxData[i]);
+		SSMDBG("\n");
 	}
 #endif
 	return 0;
@@ -322,16 +323,16 @@ static int I2C_TxData(char *txData, int length)
 	}
 
 	if (loop_i >= S62X_RETRY_COUNT) {
-		pr_err("S62X %s retry over %d\n", __func__, S62X_RETRY_COUNT);
+		SSMERR("%s retry over %d\n", __func__, S62X_RETRY_COUNT);
 		return -EIO;
 	}
 #if DEBUG
 	if (atomic_read(&data->trace) & SS_I2C_DEBUG) {
-		pr_info("S62X TxData len=%02x addr=%02x\n data=",
+		SSMDBG("TxData len=%02x addr=%02x\n data=",
 		       length, txData[0]);
 		for (i = 0; i < (length - 1); i++)
-			pr_info(" %02x", txData[i + 1]);
-		pr_info("\n");
+			SSMDBG(" %02x", txData[i + 1]);
+		SSMDBG("\n");
 	}
 #endif
 	return 0;
@@ -419,7 +420,7 @@ static int ECS_InitDevice(void)
 end_of_func:
 
 	if (err_desc) {
-		pr_err("S62X_IDX_%s failed\n", err_desc);
+		SSMERR("S62X_IDX_%s failed\n", err_desc);
 		return -EFAULT;
 	}
 #if DEBUG
@@ -457,7 +458,7 @@ static int ECS_SetMode_Off(void)
 end_of_func:
 
 	if (err_desc) {
-		pr_err("S62X_IDX_%s failed\n", err_desc);
+		SSMERR("S62X_IDX_%s failed\n", err_desc);
 		return -EFAULT;
 	}
 
@@ -486,7 +487,7 @@ static int ECS_SetMode_Measure(void)
 end_of_func:
 
 	if (err_desc) {
-		pr_err("S62X_IDX_%s failed\n", err_desc);
+		SSMERR("S62X_IDX_%s failed\n", err_desc);
 		return -EFAULT;
 	}
 
@@ -541,7 +542,7 @@ static int ECS_CheckDevice(void)
 	}
 #endif
 	if (id1 != DEVICE_ID_VALUE || id2 != DEVICE_INFO_VALUE) {
-		pr_err("S62X incorrect id %02X:%02X\n", id1, id2);
+		SSMERR("incorrect id %02X:%02X\n", id1, id2);
 		return -EFAULT;
 	}
 
@@ -577,12 +578,15 @@ static int ECS_SaveData(short *buf)
 static int ECS_GetData(short *mag)
 {
 	int loop_i, ret;
+	struct i2c_client *client = this_client;
+	struct s62x_i2c_data *data = i2c_get_clientdata(client);
+	short v;
 	char buf[6];
 
 	for (loop_i = 0; loop_i < S62X_RETRY_COUNT; loop_i++) {
 		buf[0] = S62X_IDX_STA1;
 		if (I2C_RxData(buf, 1)) {
-			pr_err("S62X_IDX_STA1 %s fail\n", __func__);
+			SSMERR("S62X_IDX_STA1 %s fail\n", __func__);
 			return -1;
 		}
 
@@ -592,19 +596,23 @@ static int ECS_GetData(short *mag)
 	}
 
 	if (loop_i >= S62X_RETRY_COUNT) {
-		pr_err("S62X %s retry over\n", __func__);
+		SSMERR("%s retry over\n", __func__);
 		return -1;
 	}
 
 	buf[0] = S62X_IDX_X_LSB;
 	ret = I2C_RxData(buf, sizeof(buf));
 	if (ret < 0) {
-		pr_err("S62X_IDX_X_LSB %s fail\n", __func__);
+		SSMERR("S62X_IDX_X_LSB %s fail\n", __func__);
 		return -1;
 	}
-	mag[0] =	V(buf[1], buf[0]);
-	mag[1] =	V(buf[5], buf[4]);
-	mag[2] =	V(buf[3], buf[2]);
+
+	v = V(buf[1], buf[0]), mag[data->cvt.map[0]] =
+	    (data->cvt.sign[0] > 0) ? v : (4095 - v);
+	v = V(buf[5], buf[4]), mag[data->cvt.map[1]] =
+	    (data->cvt.sign[1] > 0) ? v : (4095 - v);
+	v = V(buf[3], buf[2]), mag[data->cvt.map[2]] =
+	    (data->cvt.sign[2] > 0) ? v : (4095 - v);
 
 	/* for debug only */
 	mutex_lock(&last_m_data_mutex);
@@ -727,23 +735,23 @@ static ssize_t store_layout_value(struct device_driver *ddri, const char *buf,
 
 	ret = kstrtoint(buf, 0, &layout);
 	if (ret < 0)
-		pr_err("input err\n");
+		SSMERR("input err\n");
 	if (layout == 1) {
 		atomic_set(&data->layout, layout);
 		if (!hwmsen_get_convert(L2CVTI(layout), &data->cvt)) {
-			pr_err("HWMSEN_GET_CONVERT function error!\n");
+			SSMERR("HWMSEN_GET_CONVERT function error!\n");
 		} else
 		    if (!hwmsen_get_convert
 			(L2CVTI(data->hw->direction), &data->cvt)) {
-			pr_err("invalid layout: %d, restore to %d\n", layout,
+			SSMERR("invalid layout: %d, restore to %d\n", layout,
 			       data->hw->direction);
 		} else {
-			pr_err("invalid layout: (%d, %d)\n", layout,
+			SSMERR("invalid layout: (%d, %d)\n", layout,
 			       data->hw->direction);
 			hwmsen_get_convert(0, &data->cvt);
 		}
 	} else {
-		pr_err("invalid format = '%s'\n", buf);
+		SSMERR("invalid format = '%s'\n", buf);
 	}
 
 	return count;
@@ -803,7 +811,7 @@ static ssize_t show_trace_value(struct device_driver *ddri, char *buf)
 	struct s62x_i2c_data *obj = i2c_get_clientdata(this_client);
 
 	if (NULL == obj) {
-		pr_err("S62X data is null!!\n");
+		SSMERR("data is null!!\n");
 		return 0;
 	}
 
@@ -819,14 +827,14 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf,
 	int trace;
 
 	if (NULL == obj) {
-		pr_err("S62X data is null!!\n");
+		SSMERR("data is null!!\n");
 		return 0;
 	}
 
 	if (1 == sscanf(buf, "0x%x", &trace))
 		atomic_set(&obj->trace, trace);
 	else
-		pr_err("S62X invalid content: '%s', length = %d\n", buf, count);
+		SSMERR("invalid content: '%s', length = %d\n", buf, count);
 
 	return count;
 }
@@ -865,7 +873,7 @@ static int s62x_create_attr(struct device_driver *driver)
 	for (idx = 0; idx < num; idx++) {
 		err = driver_create_file(driver, s62x_attr_list[idx]);
 		if (err != 0) {
-			pr_err("S62X driver_create_file (%s) = %d\n",
+			SSMERR("driver_create_file (%s) = %d\n",
 			       s62x_attr_list[idx]->attr.name, err);
 			break;
 		}
@@ -1010,7 +1018,7 @@ static long s62x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 
 	case MSENSOR_IOCTL_SET_MODE:
-		pr_info("arg = %d\n", (char)arg);
+		SSMDBG("arg = %d\n", (char)arg);
 		ret = ECS_SetMode((char)arg);
 		if (ret < 0)
 			return ret;
@@ -1066,7 +1074,7 @@ static long s62x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case ECS_IOCTL_GET_PROJECT_NAME:
 		if (argp == NULL) {
-			pr_err("S62X IO parameter pointer is NULL!\n");
+			SSMERR("IO parameter pointer is NULL!\n");
 			break;
 		}
 
@@ -1083,7 +1091,7 @@ static long s62x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case MSENSOR_IOCTL_READ_CHIPINFO:
 		if (argp == NULL) {
-			pr_err("S61X IO parameter pointer is NULL!\n");
+			SSMERR("IO parameter pointer is NULL!\n");
 			break;
 		}
 
@@ -1094,7 +1102,7 @@ static long s62x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case MSENSOR_IOCTL_READ_SENSORDATA:
 		if (argp == NULL) {
-			pr_err("S61X IO parameter pointer is NULL!\n");
+			SSMERR("IO parameter pointer is NULL!\n");
 			break;
 		}
 
@@ -1118,7 +1126,7 @@ static long s62x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case MSENSOR_IOCTL_SENSOR_ENABLE:
 		if (argp == NULL) {
-			pr_err("S61X IO parameter pointer is NULL!\n");
+			SSMERR("IO parameter pointer is NULL!\n");
 			break;
 		}
 
@@ -1152,7 +1160,7 @@ static long s62x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case MSENSOR_IOCTL_READ_FACTORY_SENSORDATA:
 		if (argp == NULL) {
-			pr_err("S61X IO parameter pointer is NULL!\n");
+			SSMERR("IO parameter pointer is NULL!\n");
 			break;
 		}
 
@@ -1173,7 +1181,7 @@ static long s62x_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 
 	default:
-		pr_err("S62X %s not supported = 0x%x\n", __func__, cmd);
+		SSMERR("%s not supported = 0x%x\n", __func__, cmd);
 		return -ENOIOCTLCMD;
 	}
 
@@ -1217,7 +1225,7 @@ int s62x_operate(void *self, uint32_t command, void *buff_in, int size_in,
 
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("S62X Set delay parameter error!\n");
+			SSMERR("Set delay parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -1229,7 +1237,7 @@ int s62x_operate(void *self, uint32_t command, void *buff_in, int size_in,
 
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("S62X Enable sensor parameter error!\n");
+			SSMERR("Enable sensor parameter error!\n");
 			err = -EINVAL;
 		} else {
 
@@ -1251,7 +1259,7 @@ int s62x_operate(void *self, uint32_t command, void *buff_in, int size_in,
 	case SENSOR_GET_DATA:
 		atomic_inc(&m_get_data);
 		if ((buff_out == NULL) || (size_out < sizeof(struct hwm_sensor_data))) {
-			pr_err("S62X get sensor data parameter error!\n");
+			SSMERR("get sensor data parameter error!\n");
 			err = -EINVAL;
 		} else {
 			msensor_data = (struct hwm_sensor_data *) buff_out;
@@ -1279,7 +1287,7 @@ int s62x_operate(void *self, uint32_t command, void *buff_in, int size_in,
 		break;
 
 	default:
-		pr_err("S62X msensor operate function no this parameter %d!\n",
+		SSMERR("msensor operate function no this parameter %d!\n",
 		       command);
 		err = -1;
 		break;
@@ -1310,7 +1318,7 @@ int s62x_orientation_operate(void *self, uint32_t command, void *buff_in,
 
 	case SENSOR_DELAY:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("S62X Set delay parameter error!\n");
+			SSMERR("Set delay parameter error!\n");
 			err = -EINVAL;
 		} else {
 			value = *(int *)buff_in;
@@ -1322,7 +1330,7 @@ int s62x_orientation_operate(void *self, uint32_t command, void *buff_in,
 
 	case SENSOR_ENABLE:
 		if ((buff_in == NULL) || (size_in < sizeof(int))) {
-			pr_err("S62X Enable sensor parameter error!\n");
+			SSMERR("Enable sensor parameter error!\n");
 			err = -EINVAL;
 		} else {
 
@@ -1344,7 +1352,7 @@ int s62x_orientation_operate(void *self, uint32_t command, void *buff_in,
 	case SENSOR_GET_DATA:
 		atomic_inc(&o_get_data);
 		if ((buff_out == NULL) || (size_out < sizeof(struct hwm_sensor_data))) {
-			pr_err("S62X get sensor data parameter error!\n");
+			SSMERR("get sensor data parameter error!\n");
 			err = -EINVAL;
 		} else {
 			osensor_data = (struct hwm_sensor_data *) buff_out;
@@ -1371,7 +1379,7 @@ int s62x_orientation_operate(void *self, uint32_t command, void *buff_in,
 		}
 		break;
 	default:
-		pr_err("S62X gsensor operate function no this parameter %d!\n",
+		SSMERR("gsensor operate function no this parameter %d!\n",
 		       command);
 		err = -1;
 		break;
@@ -1456,7 +1464,7 @@ static int s62x_change_address(const struct i2c_client *client)
 		mdelay(10);
 	}
 
-	/* pr_err("S62X change address retry over %d\n", loop_i); */
+	/* SSMERR("change address retry over %d\n", loop_i); */
 	return -EIO;
 }
 #endif
@@ -1530,7 +1538,7 @@ static int s62x_o_enable(int en)
 		atomic_set(&open_flag, 1);
 		err = ECS_SetMode(SS_SENSOR_MODE_MEASURE);
 		if (err < 0) {
-			pr_err("%s:ECS_SetMode on Error.\n", __func__);
+			SSMERR("%s:ECS_SetMode on Error.\n", __func__);
 			return err;
 		}
 	} else {
@@ -1540,7 +1548,7 @@ static int s62x_o_enable(int en)
 			atomic_set(&open_flag, 0);
 		err = ECS_SetMode(SS_SENSOR_MODE_OFF);
 		if (err < 0) {
-			pr_err("%s:ECS_SetMode off Error.\n", __func__);
+			SSMERR("%s:ECS_SetMode off Error.\n", __func__);
 			return err;
 		}
 	}
@@ -1596,6 +1604,11 @@ static int s62x_i2c_probe(struct i2c_client *client,
 	memset(data, 0, sizeof(struct s62x_i2c_data));
 	data->hw = hw;
 
+	if (hwmsen_get_convert(L2CVTI(data->hw->direction), &data->cvt)) {
+		SSMERR("invalid direction: %d\n", data->hw->direction);
+		goto exit_init_failed;
+	}
+
 	atomic_set(&data->layout, data->hw->direction);
 	atomic_set(&data->trace, 0x0000);
 
@@ -1616,21 +1629,21 @@ static int s62x_i2c_probe(struct i2c_client *client,
 
 #ifdef USE_ALTERNATE_ADDRESS
 	err = s62x_change_address(client);
-	pr_err("S62X address change %s\n", err == 0 ? "OK" : "NG");
+	SSMERR("address change %s\n", err == 0 ? "OK" : "NG");
 #endif
 
 #ifdef _FORCE_PROBE_ERROR
-	pr_err("S62X force probe error\n");
+	SSMERR("force probe error\n");
 	return -1;
 #endif
 
 	/* Check connection */
 	if (ECS_CheckDevice() != 0) {
-		pr_err("S62X check device connect error\n");
+		SSMERR("check device connect error\n");
 	} else {
 		atomic_set(&init_phase, 1);
 		if (ECS_InitDevice() != 0)
-			pr_err("S62X init device error\n");
+			SSMERR("init device error\n");
 		else
 			atomic_set(&init_phase, 0);
 	}
@@ -1638,19 +1651,19 @@ static int s62x_i2c_probe(struct i2c_client *client,
 	/* Register sysfs attribute */
 	err = s62x_create_attr(&(s62x_init_info.platform_diver_addr->driver));
 	if (err != 0) {
-		pr_err("S62X create attribute err = %d\n", err);
+		SSMERR("create attribute err = %d\n", err);
 		goto exit_sysfs_create_group_failed;
 	}
 #ifdef ENABLE_DUALSTACK_MODE
 	if (atomic_read(&init_phase) == 2) {
-		pr_err("S62X dual stack mode exit\n");
+		SSMERR("dual stack mode exit\n");
 		goto exit_init_failed;
 	}
 #endif
 
 	err = misc_register(&s62x_device);
 	if (err != 0) {
-		pr_err("S62X device register failed\n");
+		SSMERR("device register failed\n");
 		goto exit_misc_device_register_failed;
 	}
 
@@ -1685,15 +1698,13 @@ static int s62x_i2c_probe(struct i2c_client *client,
 	return 0;
 
 exit_sysfs_create_group_failed:
-#ifdef ENABLE_DUALSTACK_MODE
 exit_init_failed:
-#endif
 exit_misc_device_register_failed:
 exit_kfree:
 	kfree(data);
 
 exit:
-	pr_err("S62X %s: err = %d\n", __func__, err);
+	SSMERR("%s: err = %d\n", __func__, err);
 	return err;
 }
 
@@ -1704,7 +1715,7 @@ static int s62x_i2c_remove(struct i2c_client *client)
 
 	err = s62x_delete_attr(&(s62x_init_info.platform_diver_addr->driver));
 	if (err != 0)
-		pr_err("S62X delete_attr fail: %d\n", err);
+		SSMERR("delete_attr fail: %d\n", err);
 
 	this_client = NULL;
 	i2c_unregister_device(client);
@@ -1719,7 +1730,7 @@ static int s62x_local_init(void)
 	s62x_power(hw, 1);
 	atomic_set(&dev_open_count, 0);
 	if (i2c_add_driver(&s62x_i2c_driver)) {
-		pr_err("S62X add driver error\n");
+		SSMERR("add driver error\n");
 		return -1;
 	}
 	return 0;
@@ -1741,7 +1752,7 @@ static int __init s62x_init(void)
 
 	hw = get_mag_dts_func(name, hw);
 	if (!hw)
-		pr_err("get dts info fail\n");
+		SSMERR("get dts info fail\n");
 
 	mag_driver_add(&s62x_init_info);
 	return 0;
