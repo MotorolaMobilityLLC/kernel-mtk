@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-/* #define ENABLE_IDVFS 1 */
+#define ENABLE_IDVFS 1
 extern int disable_idvfs_flag;
 
 enum mt_cpu_dvfs_id {

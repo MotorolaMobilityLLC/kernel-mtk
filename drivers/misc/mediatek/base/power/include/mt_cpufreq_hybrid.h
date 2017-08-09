@@ -14,7 +14,8 @@
 #elif defined(CONFIG_ARCH_MT6797)
 #include "../mt6797/mt_cpufreq.h"
 #ifdef ENABLE_IDVFS
-#define CONFIG_HYBRID_CPU_DVFS
+/* mark by Ue wait check 2015/11/01 */
+/* #define CONFIG_HYBRID_CPU_DVFS */
 #endif
 /*#define __TRIAL_RUN__*/
 
