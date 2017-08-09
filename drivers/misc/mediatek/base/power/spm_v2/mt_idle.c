@@ -611,7 +611,7 @@ bool soidle3_can_enter(int cpu)
 		goto out;
 	}
 
-	if (idle_spm_lock) {
+	if (idle_spm_lock || vcore_dvfs_is_progressing()) {
 		reason = BY_VTG;
 		goto out;
 	}
@@ -904,7 +904,7 @@ bool soidle_can_enter(int cpu)
 		goto out;
 	}
 
-	if (idle_spm_lock) {
+	if (idle_spm_lock || vcore_dvfs_is_progressing()) {
 		reason = BY_VTG;
 		goto out;
 	}

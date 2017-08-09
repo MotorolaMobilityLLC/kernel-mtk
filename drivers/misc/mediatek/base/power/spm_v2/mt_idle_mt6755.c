@@ -401,3 +401,8 @@ bool is_auxadc_released(void)
 
 	return true;
 }
+
+bool vcore_dvfs_is_progressing(void)
+{
+	return false;
+}

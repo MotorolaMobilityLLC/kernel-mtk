@@ -511,6 +511,7 @@ UNLOCK_SPM:
 #endif
 
 	spm_sodi3_reset_footprint();
+	vcorefs_go_to_vcore_dvfs();
 	return wr;
 }
 

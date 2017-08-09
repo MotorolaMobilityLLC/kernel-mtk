@@ -9,6 +9,8 @@
 #include <mt_spm_misc.h>
 #include <mt_spm_internal.h>
 
+#include "mt_vcorefs_governor.h"
+
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write_phy(addr##_PHYS, val)
 #else
@@ -104,6 +106,9 @@ enum spm_sodi3_step {
 	SPM_SODI3_LEAVE,
 };
 
+void __attribute__((weak)) vcorefs_go_to_vcore_dvfs(void)
+{
+}
 
 #if SPM_AEE_RR_REC
 void __attribute__((weak)) aee_rr_rec_sodi3_val(u32 val)

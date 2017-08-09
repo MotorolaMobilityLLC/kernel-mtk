@@ -2,6 +2,7 @@
 #define __MT_IDLE_MT6797__H__
 
 #include "mt_idle_internal.h"
+#include "mt_vcorefs_governor.h"
 
 enum {
 	UNIV_PLL = 0,

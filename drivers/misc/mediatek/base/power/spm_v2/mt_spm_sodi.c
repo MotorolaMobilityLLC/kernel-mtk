@@ -583,7 +583,7 @@ UNLOCK_SPM:
 	soidle_after_wfi(cpu);
 
 	spm_sodi_reset_footprint();
-
+	vcorefs_go_to_vcore_dvfs();
 	return wr;
 }
 

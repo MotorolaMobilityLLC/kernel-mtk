@@ -77,6 +77,8 @@ void __init iomap_init(void);
 
 bool is_disp_pwm_rosc(void);
 bool is_auxadc_released(void);
+bool vcore_dvfs_is_progressing(void);
+
 
 #endif /* __MT_IDLE_INTERNAL_H__ */
 
