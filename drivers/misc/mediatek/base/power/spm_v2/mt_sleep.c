@@ -15,8 +15,10 @@
 #include "mt_spm.h"
 #include "mt_spm_sleep.h"
 #include "mt_spm_idle.h"
-#include "mt_spm_mtcmos.h"
+#if defined(CONFIG_ARCH_MT6797)
 #include "mt_clkmgr.h"
+#endif
+#include "mt_spm_mtcmos.h"
 #include "mt_spm_misc.h"
 #ifdef CONFIG_MT_SND_SOC_6755
 #include <mt_soc_afe_control.h>

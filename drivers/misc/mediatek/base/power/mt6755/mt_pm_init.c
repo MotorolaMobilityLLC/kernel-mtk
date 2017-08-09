@@ -21,7 +21,6 @@
 #include "mt_spm.h"
 #include "mt_sleep.h"
 #include "mt_dcm.h"
-#include "mt_clkmgr.h"
 #include "mt_cpufreq.h"
 #include "mt_gpufreq.h"
 /* #include "mach/mt_sleep.h" */
