@@ -29,11 +29,13 @@
 
 #include <mach/wd_api.h>
 #include <mach/mt_secure_api.h>
+#include <linux/irqchip/mt-eic.h>
 
 #ifdef CONFIG_OF
 void __iomem *toprgu_base = 0;
 int	wdt_irq_id = 0;
 int ext_debugkey_io = -1;
+int ext_debugkey_io_eint = -1;
 
 static const struct of_device_id rgu_of_match[] = {
 	{ .compatible = "mediatek,mt6797-toprgu", },
@@ -467,7 +469,8 @@ int mtk_wdt_request_en_set(int mark_bit, WD_REQ_CTL en)
 	} else if (MTK_WDT_REQ_MODE_EINT == mark_bit) {
 		if (WD_REQ_EN == en) {
 			if (ext_debugkey_io != -1) {
-				ext_req_con = (ext_debugkey_io << 4) | 0x01;
+				ext_debugkey_io_eint = mt_gpio_to_eint(ext_debugkey_io);
+				ext_req_con = (ext_debugkey_io_eint << 4) | 0x01;
 				mt_reg_sync_writel(ext_req_con, MTK_WDT_EXT_REQ_CON);
 				tmp |= (MTK_WDT_REQ_MODE_EINT);
 			} else {
