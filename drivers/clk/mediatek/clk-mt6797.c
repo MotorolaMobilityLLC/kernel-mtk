@@ -834,7 +834,7 @@ static struct mtk_mux_upd top_muxes[] __initdata = {
 		INVALID_MUX_GATE, _UPDATE_REG, 18),
 	MUX_UPD(TOP_MUX_PMICSPI, pmicspi_sel, pmicspi_parents, 0x0090, 0, 3, INVALID_MUX_GATE,
 		_UPDATE_REG, 19),	/*7->INVALID_MUX_GATE */
-	MUX_UPD(TOP_MUX_SCP, scp_sel, scp_parents, 0x0090, 8, 2, 15, _UPDATE_REG, 20),
+	MUX_UPD(TOP_MUX_SCP, scp_sel, scp_parents, 0x0090, 8, 2, INVALID_MUX_GATE, _UPDATE_REG, 20),/*15*/
 	MUX_UPD(TOP_MUX_ATB, atb_sel, atb_parents, 0x0090, 16, 2, 23, _UPDATE_REG, 21),
 	MUX_UPD(TOP_MUX_MJC, mjc_sel, mjc_parents, 0x0090, 24, 2, 31, _UPDATE_REG, 22),
 	MUX_UPD(TOP_MUX_DPI0, dpi0_sel, dpi0_parents, 0x00A0, 0, 3, 7, _UPDATE_REG, 23),
@@ -1075,7 +1075,7 @@ static struct mtk_gate infra_clks[] __initdata = {
 	GATE(INFRA_DEVICE_APC, infra_device_apc, axi_sel, infra1_cg_regs, 20, 0),
 	GATE(INFRA_L2C_SRAM, infra_l2c_sram, mm_sel, infra1_cg_regs, 22, 0),
 	GATE(INFRA_CCIF_AP, infra_ccif_ap, axi_sel, infra1_cg_regs, 23, 0),
-	GATE(INFRA_DEBUGSYS, infra_debugsys, axi_sel, infra1_cg_regs, 24, 0),
+	/*GATE(INFRA_DEBUGSYS, infra_debugsys, axi_sel, infra1_cg_regs, 24, 0),*/
 	GATE(INFRA_AUDIO, infra_audio, axi_sel, infra1_cg_regs, 25, 0),
 	GATE(INFRA_CCIF_MD, infra_ccif_md, axi_sel, infra1_cg_regs, 26, 0),
 	GATE(INFRA_DRAMC_F26M, infra_dramc_f26m, f26m_sel, infra1_cg_regs, 31, 0),

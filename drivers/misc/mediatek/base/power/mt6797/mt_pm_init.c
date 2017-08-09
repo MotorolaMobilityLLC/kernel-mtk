@@ -88,9 +88,12 @@ static unsigned int ckgen_meter(int ID)
 
 	pminit_write(CLK_DBG_CFG, clk_dbg_cfg);
 	pminit_write(CLK_MISC_CFG_0, clk_misc_cfg_0);
-	pminit_write(CLK26CALI_0, clk26cali_0);
-	pminit_write(CLK26CALI_1, clk26cali_1);
+	/*pminit_write(CLK26CALI_0, clk26cali_0);*/
+	/*pminit_write(CLK26CALI_1, clk26cali_1);*/
 
+	pminit_write(CLK26CALI_0, 0x1010);
+	mdelay(10);
+	pminit_write(CLK26CALI_0, 0x1000);
 	if (i > 10)
 		return 0;
 	else
