@@ -6,9 +6,6 @@ static struct step_c_context *step_c_context_obj;
 
 static struct step_c_init_info *step_counter_init_list[MAX_CHOOSE_STEP_C_NUM] = { 0 };
 
-static void step_c_early_suspend(struct early_suspend *h);
-static void step_c_late_resume(struct early_suspend *h);
-
 static void step_c_work_func(struct work_struct *work)
 {
 
@@ -229,7 +226,6 @@ static int step_c_real_enable(int enable)
 static int step_c_enable_data(int enable)
 {
 	struct step_c_context *cxt = NULL;
-	int err = 0;
 
 	cxt = step_c_context_obj;
 	if (NULL == cxt->step_c_ctl.open_report_data) {
@@ -418,7 +414,7 @@ static ssize_t step_c_store_delay(struct device *dev, struct device_attribute *a
 		return count;
 	}
 
-	if (1 != kstrtoint(buf, 10, &delay)) {
+	if (0 != kstrtoint(buf, 10, &delay)) {
 		STEP_C_ERR("invalid format!!\n");
 		mutex_unlock(&step_c_context_obj->step_c_op_mutex);
 		return count;
@@ -595,7 +591,7 @@ static int step_c_misc_init(struct step_c_context *cxt)
 	int err = 0;
 	/* kernel-3.10\include\linux\Miscdevice.h */
 	/* use MISC_DYNAMIC_MINOR exceed 64 */
-	cxt->mdev.minor = M_STEP_C_MISC_MINOR;
+	cxt->mdev.minor = MISC_DYNAMIC_MINOR;
 	cxt->mdev.name = STEP_C_MISC_DEV_NAME;
 	err = misc_register(&cxt->mdev);
 	if (err)
@@ -733,7 +729,7 @@ int step_c_data_report(struct input_dev *dev, uint32_t value, int status)
 	return 0;
 }
 
-static int step_c_probe(struct platform_device *pdev)
+static int step_c_probe(void)
 {
 
 	int err;
@@ -760,13 +756,6 @@ static int step_c_probe(struct platform_device *pdev)
 		STEP_C_ERR("unable to register step_c input device!\n");
 		goto exit_alloc_input_dev_failed;
 	}
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_EARLYSUSPEND)
-	atomic_set(&(step_c_context_obj->early_suspend), 0);
-	step_c_context_obj->early_drv.level = EARLY_SUSPEND_LEVEL_STOP_DRAWING - 1;
-	step_c_context_obj->early_drv.suspend = step_c_early_suspend;
-	step_c_context_obj->early_drv.resume = step_c_late_resume;
-	register_early_suspend(&step_c_context_obj->early_drv);
-#endif
 
 
 	STEP_C_LOG("----step_c_probe OK !!\n");
@@ -782,7 +771,7 @@ exit_alloc_data_failed:
 
 
 
-static int step_c_remove(struct platform_device *pdev)
+static int step_c_remove(void)
 {
 
 	int err = 0;
@@ -799,59 +788,11 @@ static int step_c_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static void step_c_early_suspend(struct early_suspend *h)
-{
-	atomic_set(&(step_c_context_obj->early_suspend), 1);
-	STEP_C_LOG(" step_c_early_suspend ok------->hwm_obj->early_suspend=%d\n",
-		   atomic_read(&(step_c_context_obj->early_suspend)));
-}
-
-/*----------------------------------------------------------------------------*/
-static void step_c_late_resume(struct early_suspend *h)
-{
-	atomic_set(&(step_c_context_obj->early_suspend), 0);
-	STEP_C_LOG(" step_c_late_resume ok------->hwm_obj->early_suspend=%d\n",
-		   atomic_read(&(step_c_context_obj->early_suspend)));
-}
-
-static int step_c_suspend(struct platform_device *dev, pm_message_t state)
-{
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int step_c_resume(struct platform_device *dev)
-{
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_step_c_pl_of_match[] = {
-	{.compatible = "mediatek,m_step_c_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver step_c_driver = {
-
-	.probe = step_c_probe,
-	.remove = step_c_remove,
-	.suspend = step_c_suspend,
-	.resume = step_c_resume,
-	.driver = {
-
-		   .name = STEP_C_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_step_c_pl_of_match,
-#endif
-		   }
-};
-
 static int __init step_c_init(void)
 {
 	STEP_C_FUN();
 
-	if (platform_driver_register(&step_c_driver)) {
+	if (step_c_probe()) {
 		STEP_C_ERR("failed to register step_c driver\n");
 		return -ENODEV;
 	}
@@ -861,13 +802,11 @@ static int __init step_c_init(void)
 
 static void __exit step_c_exit(void)
 {
-	platform_driver_unregister(&step_c_driver);
+	step_c_remove();
 	platform_driver_unregister(&step_counter_driver);
 }
 
 late_initcall(step_c_init);
-/* module_init(step_c_init); */
-/* module_exit(step_c_exit); */
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("STEP_CMETER device driver");
 MODULE_AUTHOR("Mediatek");

@@ -4013,6 +4013,10 @@
 	activity@0 {
 			compatible = "mediatek,activity";
 	};
+
+	step_counter@0 {
+			compatible = "mediatek,step_counter";
+	};
 /* sensor end */
 	cam_cal_drv{
 		compatible = "mediatek,cam_cal_drv";

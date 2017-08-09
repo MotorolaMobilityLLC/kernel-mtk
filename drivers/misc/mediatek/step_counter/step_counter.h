@@ -11,16 +11,28 @@
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 #include <linux/module.h>
-#include <linux/hwmsensor.h>
-#include <linux/earlysuspend.h>
-#include <linux/hwmsen_dev.h>
+
+#include <linux/i2c.h>
+#include <linux/irq.h>
+#include <linux/uaccess.h>
+#include <linux/delay.h>
+#include <linux/kobject.h>
+#include <linux/atomic.h>
+#include <linux/ioctl.h>
+
+#include <batch.h>
+#include <sensors_io.h>
+#include <hwmsen_helper.h>
+#include <hwmsensor.h>
+#include <hwmsen_dev.h>
+
 
 
 #define STEP_C_TAG					"<STEP_COUNTER> "
-#define STEP_C_FUN(f)				printk(STEP_C_TAG"%s\n", __func__)
-#define STEP_C_ERR(fmt, args...)	printk(STEP_C_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define STEP_C_LOG(fmt, args...)	printk(STEP_C_TAG fmt, ##args)
-#define STEP_C_VER(fmt, args...)	printk(STEP_C_TAG"%s: "fmt, __func__, ##args) /* ((void)0) */
+#define STEP_C_FUN(f)				pr_err(STEP_C_TAG"%s\n", __func__)
+#define STEP_C_ERR(fmt, args...)	pr_err(STEP_C_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define STEP_C_LOG(fmt, args...)	pr_err(STEP_C_TAG fmt, ##args)
+#define STEP_C_VER(fmt, args...)	pr_err(STEP_C_TAG"%s: "fmt, __func__, ##args) /* ((void)0) */
 
 #define	OP_STEP_C_DELAY		0X01
 #define	OP_STEP_C_ENABLE		0X02
@@ -29,7 +41,7 @@
 #define STEP_C_INVALID_VALUE -1
 
 #define EVENT_TYPE_STEP_C_VALUE				ABS_X
-#define EVENT_TYPE_STEP_C_STATUS				ABS_WHEEL
+#define EVENT_TYPE_STEP_C_STATUS			ABS_WHEEL
 #define EVENT_TYPE_STEP_DETECTOR_VALUE		REL_Y
 #define EVENT_TYPE_SIGNIFICANT_VALUE		REL_Z
 
@@ -92,7 +104,6 @@ struct step_c_context {
 	struct timer_list   timer;  /* polling timer */
 	atomic_t            trace;
 
-	struct early_suspend    early_drv;
 	atomic_t                early_suspend;
 
 	struct step_c_data       drv_data;

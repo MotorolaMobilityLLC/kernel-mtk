@@ -11,41 +11,19 @@
  *
  */
 
-#include <linux/interrupt.h>
-#include <linux/i2c.h>
-#include <linux/slab.h>
-#include <linux/irq.h>
-#include <linux/miscdevice.h>
-#include <asm/uaccess.h>
-#include <linux/delay.h>
-#include <linux/input.h>
-#include <linux/workqueue.h>
-#include <linux/kobject.h>
-#include <linux/earlysuspend.h>
-#include <linux/platform_device.h>
-#include <asm/atomic.h>
-
-#include <linux/hwmsensor.h>
-#include <linux/hwmsen_dev.h>
-#include <linux/sensors_io.h>
+#include <hwmsensor.h>
 #include "stepsignhub.h"
 #include <step_counter.h>
-#include <linux/hwmsen_helper.h>
-
-#include <mach/mt_typedefs.h>
-#include <mach/mt_gpio.h>
-#include <mach/mt_pm_ldo.h>
-
-#include <linux/batch.h>
 #include <SCP_sensorHub.h>
 #include <linux/notifier.h>
 #include "scp_helper.h"
 
 
+
 #define STEP_CDS_TAG                  "[stepsignhub] "
-#define STEP_CDS_FUN(f)               printk(STEP_CDS_TAG"%s\n", __func__)
-#define STEP_CDS_ERR(fmt, args...)    printk(STEP_CDS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define STEP_CDS_LOG(fmt, args...)    printk(STEP_CDS_TAG fmt, ##args)
+#define STEP_CDS_FUN(f)               pr_err(STEP_CDS_TAG"%s\n", __func__)
+#define STEP_CDS_ERR(fmt, args...)    pr_err(STEP_CDS_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define STEP_CDS_LOG(fmt, args...)    pr_err(STEP_CDS_TAG fmt, ##args)
 
 typedef enum {
 	STEP_CDSH_TRC_INFO = 0X10,
@@ -181,6 +159,14 @@ static int step_counter_get_data(uint32_t *counter, int *status)
 		     time_stamp_gpt, *counter);
 	return 0;
 }
+static int step_detector_get_data(uint32_t *counter, int *status)
+{
+	return 0;
+}
+static int significant_get_data(uint32_t *counter, int *status)
+{
+	return 0;
+}
 
 static int step_cds_open_report_data(int open)
 {
@@ -194,10 +180,8 @@ static int SCP_sensorHub_detect_notify_handler(void *data, unsigned int len)
 
 	switch (rsp->rsp.action) {
 	case SENSOR_HUB_NOTIFY:
-		STEP_CDS_LOG("sensorId = %d\n", rsp->notify_rsp.sensorType);
 		switch (rsp->notify_rsp.event) {
 		case SCP_NOTIFY:
-			if (ID_STEP_DETECTOR == rsp->notify_rsp.sensorType)
 				schedule_work(&(obj->step_d_work));
 			break;
 		default:
@@ -220,10 +204,8 @@ static int SCP_sensorHub_sign_notify_handler(void *data, unsigned int len)
 
 	switch (rsp->rsp.action) {
 	case SENSOR_HUB_NOTIFY:
-		STEP_CDS_LOG("sensorId = %d\n", rsp->notify_rsp.sensorType);
 		switch (rsp->notify_rsp.event) {
 		case SCP_NOTIFY:
-			if (ID_SIGNIFICANT_MOTION == rsp->notify_rsp.sensorType)
 				schedule_work(&(obj->step_s_work));
 			break;
 		default:
@@ -265,6 +247,8 @@ static int step_chub_local_init(void)
 	}
 
 	data.get_data = step_counter_get_data;
+	data.get_data_step_d = step_detector_get_data;
+	data.get_data_significant = significant_get_data;
 	err = step_c_register_data_path(&data);
 	if (err) {
 		STEP_CDS_ERR("register step_cds data path err\n");
