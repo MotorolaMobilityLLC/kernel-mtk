@@ -86,7 +86,7 @@ enum EXT_DISP_PATH_MODE ext_disp_path_get_mode(unsigned int session)
 
 void ext_disp_path_set_mode(enum EXT_DISP_PATH_MODE mode, unsigned int session)
 {
-	ext_disp_mode = EXTD_RDMA_DPI_MODE; /*mode;*/
+	ext_disp_mode = EXTD_DIRECT_LINK_MODE; /*mode;*/
 	init_roi = (mode == EXTD_DIRECT_LINK_MODE ? 1 : 0);
 }
 
@@ -739,7 +739,7 @@ void ext_disp_probe(void)
 
 	ext_disp_use_cmdq = CMDQ_ENABLE;
 	ext_disp_use_m4u = 1;
-	ext_disp_mode = EXTD_RDMA_DPI_MODE;
+	ext_disp_mode = EXTD_DIRECT_LINK_MODE;
 }
 
 int ext_disp_init(char *lcm_name, unsigned int session)
@@ -1359,7 +1359,6 @@ int ext_disp_wait_ovl_available(int ovl_num)
 		/*wait OVL can be used by external display */
 		ret = dpmgr_wait_ovl_available(ovl_num);
 	}
-	ret = 0;
 
 	return ret;
 }
