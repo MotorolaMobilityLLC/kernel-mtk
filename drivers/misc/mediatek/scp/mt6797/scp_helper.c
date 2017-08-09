@@ -468,6 +468,7 @@ static int __init scp_init(void)
 
 	mutex_init(&scp_notify_mutex);
 
+	scp_excep_init();
 	ret = scp_dt_init();
 	if (ret) {
 		pr_err("[SCP] Device Init Fail\n");
@@ -485,7 +486,6 @@ static int __init scp_init(void)
 	scp_workqueue = create_workqueue("SCP_WQ");
 	INIT_WORK(&scp_notify_work.work, scp_notify_ws);
 
-	scp_excep_init();
 	scp_irq_init();
 	scp_ipi_init();
 
