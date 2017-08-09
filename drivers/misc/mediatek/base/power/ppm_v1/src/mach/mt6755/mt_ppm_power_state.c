@@ -323,8 +323,7 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 
 	/* check freq */
 	cur_freq_LL = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LITTLE);	/* FIXME */
-	if (ppm_hica_is_log_enabled())
-		ppm_info("LL cur freq = %d\n", cur_freq_LL);
+	ppm_dbg(HICA, "LL cur freq = %d\n", cur_freq_LL);
 
 	if (cur_freq_LL >= get_cluster_max_cpufreq(0)) {
 		settings->freq_hold_cnt++;
@@ -362,8 +361,7 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 		return false;
 
 	cur_freq_L = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_BIG); /* FIXME */
-	if (ppm_hica_is_log_enabled())
-		ppm_info("L cur freq = %d\n", cur_freq_L);
+	ppm_dbg(HICA, "L cur freq = %d\n", cur_freq_L);
 
 	if (cur_freq_L < get_cluster_max_cpufreq(0)) {
 		settings->freq_hold_cnt++;
@@ -521,7 +519,7 @@ int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 	int core_2 = cluster_status[1].core_num;
 	int opp_2 = cluster_status[1].freq_idx;
 
-	ppm_ver("@%s: core_1 = %d, opp_1 = %d, core_2 = %d, opp_2 = %d, volt_1 = %d, volt_2 = %d\n",
+	ppm_dbg(DLPT, "@%s: core_1 = %d, opp_1 = %d, core_2 = %d, opp_2 = %d, volt_1 = %d, volt_2 = %d\n",
 		__func__, core_1, opp_1, core_2, opp_2, cluster_status[0].volt, cluster_status[1].volt);
 
 	opp_1 = (!core_1) ? -1 : opp_1;
@@ -539,13 +537,13 @@ int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status)
 				&& power_table.power_tbl[i].cluster_cfg[1].core_num == core_2
 				&& power_table.power_tbl[i].cluster_cfg[1].opp_lv == opp_2
 			) {
-				ppm_ver("[index][power] = [%d][%d]\n",
+				ppm_dbg(DLPT, "[index][power] = [%d][%d]\n",
 					i, power_table.power_tbl[i].power_idx);
 				return power_table.power_tbl[i].power_idx;
 			}
 	}
 
-	ppm_ver("@%s: power_idx not found!\n", __func__);
+	ppm_dbg(DLPT, "@%s: power_idx not found!\n", __func__);
 
 	/* return -1 if not found */
 	return -1;

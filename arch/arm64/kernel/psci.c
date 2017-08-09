@@ -587,7 +587,7 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 	} else if ((cpu == 4) || (cpu == 5) || (cpu == 6) || (cpu == 7)) {
 		if (!ocp_cl1_init) {
 			pr_err("OXOXOX %s %d OXOXOX\n", __func__, __LINE__);
-			Cluster0_OCP_ON();
+			Cluster1_OCP_ON();
 			ocp_cl1_init = 1;
 		}
 	} else if ((cpu == 8) || (cpu == 9)) {

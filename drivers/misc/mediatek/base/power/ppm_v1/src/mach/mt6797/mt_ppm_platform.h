@@ -7,6 +7,7 @@ extern "C" {
 #endif
 
 #include "mach/mt_ppm_api.h"
+#include "mt_cpufreq.h"	/* for IDVFS option */
 
 /*==============================================================*/
 /* Macros							*/
@@ -17,9 +18,11 @@ extern "C" {
 #if PPM_HEAVY_TASK_INDICATE_SUPPORT
 extern unsigned int hps_get_hvytsk(unsigned int cluster_id);
 #endif
-#define PPM_HW_OCP_SUPPORT		(0)
-#if PPM_HW_OCP_SUPPORT
+#ifdef ENABLE_IDVFS
 #include "mt_ocp.h"
+#define PPM_HW_OCP_SUPPORT		(1)
+#else
+#define PPM_HW_OCP_SUPPORT		(0)
 #endif
 
 /* DLPT mode */

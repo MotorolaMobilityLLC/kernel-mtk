@@ -338,8 +338,7 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_LL);
 
 		if (heavy_task && data.ppm_cur_tlp <= settings->tlp_bond) {
-			if (ppm_hica_is_log_enabled())
-				ppm_info("LL heavy task = %d\n", heavy_task);
+			ppm_dbg(HICA, "LL heavy task = %d\n", heavy_task);
 			return true;
 		}
 	}
@@ -356,8 +355,7 @@ static bool ppm_trans_rule_LL_ONLY_to_L_ONLY(
 
 	/* check freq */
 	cur_freq_LL = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL);	/* FIXME */
-	if (ppm_hica_is_log_enabled())
-		ppm_info("LL cur freq = %d\n", cur_freq_LL);
+	ppm_dbg(HICA, "LL cur freq = %d\n", cur_freq_LL);
 
 	if (cur_freq_LL >= get_cluster_max_cpufreq(PPM_CLUSTER_LL)) {
 		settings->freq_hold_cnt++;
@@ -377,8 +375,7 @@ static bool ppm_trans_rule_LL_ONLY_to_4LL_L(
 	unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_LL);
 
 	if (heavy_task && data.ppm_cur_tlp > settings->tlp_bond) {
-		if (ppm_hica_is_log_enabled())
-			ppm_info("LL heavy task = %d\n", heavy_task);
+		ppm_dbg(HICA, "LL heavy task = %d\n", heavy_task);
 		return true;
 	}
 #endif
@@ -410,16 +407,14 @@ static bool ppm_trans_rule_L_ONLY_to_LL_ONLY(
 		unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
 
 		if (heavy_task) {
-			if (ppm_hica_is_log_enabled())
-				ppm_info("L heavy task = %d\n", heavy_task);
+			ppm_dbg(HICA, "L heavy task = %d\n", heavy_task);
 			return false;
 		}
 	}
 #endif
 
 	cur_freq_L = mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L); /* FIXME */
-	if (ppm_hica_is_log_enabled())
-		ppm_info("L cur freq = %d\n", cur_freq_L);
+	ppm_dbg(HICA, "L cur freq = %d\n", cur_freq_L);
 
 	if (cur_freq_L < get_cluster_max_cpufreq(PPM_CLUSTER_LL)) {
 		settings->freq_hold_cnt++;
@@ -439,8 +434,7 @@ static bool ppm_trans_rule_L_ONLY_to_4L_LL(
 	unsigned int heavy_task = hps_get_hvytsk(PPM_CLUSTER_L);
 
 	if (heavy_task) {
-		if (ppm_hica_is_log_enabled())
-			ppm_info("L heavy task = %d\n", heavy_task);
+		ppm_dbg(HICA, "L heavy task = %d\n", heavy_task);
 		return true;
 	}
 #endif
@@ -467,8 +461,7 @@ static bool ppm_trans_rule_4LL_L_to_LL_ONLY(
 	for_each_ppm_clusters(i) {
 		heavy_task = hps_get_hvytsk(i);
 		if (heavy_task) {
-			if (ppm_hica_is_log_enabled())
-				ppm_info("Cluster%d heavy task = %d\n", i, heavy_task);
+			ppm_dbg(HICA, "Cluster%d heavy task = %d\n", i, heavy_task);
 			return false;
 		}
 	}
@@ -496,8 +489,7 @@ static bool ppm_trans_rule_4L_LL_to_L_ONLY(
 	for_each_ppm_clusters(i) {
 		heavy_task = hps_get_hvytsk(i);
 		if (heavy_task) {
-			if (ppm_hica_is_log_enabled())
-				ppm_info("Cluster%d heavy task = %d\n", i, heavy_task);
+			ppm_dbg(HICA, "Cluster%d heavy task = %d\n", i, heavy_task);
 			return false;
 		}
 	}
@@ -883,6 +875,8 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 		power_for_ocp = (percentage)
 			? ((limited_power - max_power) * 100 + (percentage - 1)) / percentage
 			: (limited_power - max_power);
+		power_for_ocp = (power_for_ocp > MAX_OCP_TARGET_POWER)
+			? MAX_OCP_TARGET_POWER : power_for_ocp;
 		power_for_tbl_lookup = max_power;
 	}
 
@@ -893,7 +887,7 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 		return limited_power;
 	}
 
-	ppm_ver("set budget = %d to OCP done!\n", power_for_ocp);
+	ppm_dbg(DLPT, "set budget = %d to OCP done!\n", power_for_ocp);
 
 	return power_for_tbl_lookup;
 }
@@ -901,42 +895,74 @@ unsigned int ppm_set_ocp(unsigned int limited_power, unsigned int percentage)
 unsigned int ppm_calc_total_power(struct ppm_cluster_status *cluster_status, unsigned int cluster_num)
 {
 	unsigned int budget = 0;
-	int i;
+	int i, ret, retry = 20;
 
 	for (i = 0; i < cluster_num; i++) {
 		/* read power meter for total power calculation */
 		if (cluster_status[i].core_num) {
+			unsigned int freq =
+				ppm_main_info.cluster_info[i].dvfs_tbl[cluster_status[i].freq_idx].frequency;
+
 			if (i == PPM_CLUSTER_B) {
 				int leakage, total, clkpct;
 
-				BigOCPCapture(1, 1, 0, 15);
-				BigOCPCaptureStatus(&leakage, &total, &clkpct);
+				ppm_dbg(DLPT, "%d: freq/volt/core = %d/%d/%d\n",
+					i, freq, cluster_status[i].volt, cluster_status[i].core_num);
 
-				ppm_ver("ocp capture(%d): %d, %d, %d\n", i, leakage, total, clkpct);
+				BigOCPCapture(1, 1, 0, 15);
+				do {
+					ret = BigOCPCaptureStatus(&leakage, &total, &clkpct);
+					if (ret && total) /* success */
+						break;
+					retry--;
+					udelay(100);
+				} while (retry > 0);
+				if (!retry) {
+					ppm_warn("cluster %d OCP capture failed, ret = %d, total = %d\n",
+						i, ret, total);
+					return 0; /* error */
+				}
+
+				ppm_dbg(DLPT, "ocp capture(%d): %d, %d, %d\n", i, leakage, total, clkpct);
 
 				budget += total;
 			} else {
-				unsigned int freq =
-					ppm_main_info.cluster_info[i].dvfs_tbl[cluster_status[i].freq_idx].frequency;
 				unsigned int count = get_cluster_min_cpufreq(i);
 				unsigned long long leakage, total;
 
-				ppm_ver("%d: freq/volt/count = %d/%d/%d\n", i, freq, cluster_status[i].volt, count);
+				ppm_dbg(DLPT, "%d: freq/volt/core/count = %d/%d/%d/%d\n",
+					i, freq, cluster_status[i].volt, cluster_status[i].core_num, count);
 
 				LittleOCPDVFSSet(i, freq / 1000, cluster_status[i].volt);
-				LittleOCPAvgPwr(0, 1, count);
+				LittleOCPAvgPwr(i, 1, count);
 				mdelay(1);
-				LittleOCPAvgPwrGet(0, &leakage, &total);
+				do {
+					ret = LittleOCPAvgPwrGet(i, &leakage, &total);
+					if (!ret && total) /* success */
+						break;
+					retry--;
+					udelay(100);
+				} while (retry > 0);
+				if (!retry) {
+					ppm_warn("cluster %d OCP capture failed, ret = %d, total = %llu\n",
+						i, ret, total);
+					return 0; /* error */
+				}
 
-				budget += (i == PPM_CLUSTER_LL) ? ((207 + total) * cluster_status[i].volt / 1000) + 1
-								: (total * cluster_status[i].volt / 1000) + 1;
+#if 0	/* wait for mcusys power calculation formula */
+				budget += (i == PPM_CLUSTER_LL)
+					? ((207 + total) * cluster_status[i].volt + (1000 - 1)) / 1000
+					: (total * cluster_status[i].volt + (1000 - 1)) / 1000;
+#else
+				budget += (total * cluster_status[i].volt + (1000 - 1)) / 1000;
 
-				ppm_ver("ocp capture(%d): %llu, %llu\n", i, leakage, total);
+#endif
+				ppm_dbg(DLPT, "ocp capture(%d): %llu, %llu\n", i, leakage, total);
 			}
 		}
 	}
 
-	ppm_ver("total budget = %d\n", budget);
+	ppm_dbg(DLPT, "total budget = %d\n", budget);
 
 	return budget;
 }

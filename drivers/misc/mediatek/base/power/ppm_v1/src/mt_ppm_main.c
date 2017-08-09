@@ -92,7 +92,7 @@ void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_polic
 				req->limit[i].min_cpufreq_idx = req->limit[i].max_cpufreq_idx;
 		}
 	} else
-		ppm_dbg("@%s: index not found!", __func__);
+		ppm_dbg(MAIN, "@%s: index not found!", __func__);
 }
 
 int ppm_main_freq_to_idx(unsigned int cluster_id,
@@ -588,7 +588,7 @@ int mt_ppm_main(void)
 				);
 		}
 
-		ppm_dbg("(%d)%s\n", c_req->root_cluster, buf);
+		ppm_dbg(MAIN, "(%d)%s\n", c_req->root_cluster, buf);
 
 		memcpy(last_req->cpu_limit, c_req->cpu_limit,
 			ppm_main_info.cluster_num * sizeof(*c_req->cpu_limit));

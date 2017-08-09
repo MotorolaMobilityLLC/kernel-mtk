@@ -105,20 +105,21 @@ static const struct file_operations ppm_ ## name ## _proc_fops = {		\
 	pr_warn(TAG"[WARNING]"fmt, ##args)
 #define ppm_info(fmt, args...)		\
 	pr_warn(TAG""fmt, ##args)
-#define ppm_dbg(fmt, args...)		\
-	do {				\
-		if (ppm_debug)		\
-			ppm_info(fmt, ##args);		\
-		else			\
-			pr_debug(TAG""fmt, ##args);	\
+#define ppm_dbg(type, fmt, args...)				\
+	do {							\
+		if (ppm_debug & ALL || ppm_debug & type)	\
+			ppm_info(fmt, ##args);			\
+		else						\
+			pr_debug(TAG""fmt, ##args);		\
 	} while (0)
-#define ppm_ver(fmt, args...)		\
-	do {				\
-		if (ppm_debug == 1)	\
-			ppm_info(fmt, ##args);		\
+#define ppm_ver(fmt, args...)			\
+	do {					\
+		if (ppm_debug == ALL)		\
+			ppm_info(fmt, ##args);	\
 	} while (0)
 #define ppm_cont(fmt, args...)		\
 	pr_cont(fmt, ##args)
+
 
 #define FUNC_LV_MODULE		BIT(0)	/* module, platform driver interface */
 #define FUNC_LV_API		BIT(1)	/* mt_ppm driver global function */
@@ -135,6 +136,14 @@ static const struct file_operations ppm_ ## name ## _proc_fops = {		\
 /*==============================================================*/
 /* Enum								*/
 /*==============================================================*/
+enum {
+	NONE	= 0,
+	ALL	= 1 << 0,
+	MAIN	= 1 << 1,
+	HICA	= 1 << 2,
+	DLPT	= 1 << 3,
+};
+
 enum ppm_policy {
 	PPM_POLICY_PTPOD = 0,		/* highest priority if priority value is the same */
 	PPM_POLICY_UT,
@@ -325,7 +334,6 @@ extern int ppm_procfs_init(void);
 extern char *ppm_copy_from_user_for_proc(const char __user *buffer, size_t count);
 
 /* hica */
-extern bool ppm_hica_is_log_enabled(void);
 extern unsigned int ppm_hica_get_table_idx_by_perf(enum ppm_power_state state, unsigned int perf_idx);
 extern unsigned int ppm_hica_get_table_idx_by_pwr(enum ppm_power_state state, unsigned int pwr_idx);
 extern void ppm_hica_set_default_limit_by_state(enum ppm_power_state state,

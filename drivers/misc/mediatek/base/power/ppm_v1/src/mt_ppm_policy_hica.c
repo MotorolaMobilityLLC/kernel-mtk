@@ -10,12 +10,6 @@
 #include "mt_ppm_internal.h"
 
 
-#define hica_dbg(fmt, args...)				\
-	do {						\
-		if (hica_debug_enable)			\
-			ppm_info("[HICA]"fmt, ##args);	\
-	} while (0)
-
 #define PROC_FOPS_RO_HICA_SETTINGS(name, var)						\
 	static int ppm_##name##_proc_show(struct seq_file *m, void *v)			\
 	{										\
@@ -58,7 +52,6 @@
 	PROC_FOPS_RW(name)
 
 
-static int hica_debug_enable;
 static enum ppm_power_state fix_power_state = PPM_POWER_STATE_NONE;
 
 static void ppm_hica_reset_data_for_state(enum ppm_power_state new_state);
@@ -108,7 +101,7 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 	cur_state = ppm_hica_algo_data.cur_state;
 	cur_mode = ppm_main_info.cur_mode;
 
-	hica_dbg("cur_loads = %d, cur_tlp = %d, cur_nr_heavy_task = %d, cur_state = %s, cur_mode = %d\n",
+	ppm_dbg(HICA, "cur_loads = %d, cur_tlp = %d, cur_nr_heavy_task = %d, cur_state = %s, cur_mode = %d\n",
 		cur_loads, cur_tlp, cur_nr_heavy_task, ppm_get_power_state_name(cur_state), cur_mode);
 
 	if (!ppm_main_info.is_enabled || !hica_policy.is_enabled || ppm_main_info.is_in_suspend ||
@@ -135,7 +128,7 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 			if (data->transition_data[j].transition_rule(
 				ppm_hica_algo_data, &data->transition_data[j])) {
 				ppm_hica_algo_data.new_state = data->transition_data[j].next_state;
-				hica_dbg("[%s(%d)] Need state transfer: %s --> %s\n",
+				ppm_dbg(HICA, "[%s(%d)] Need state transfer: %s --> %s\n",
 					(i == 0) ? "PERF" : "PWR",
 					j,
 					ppm_get_power_state_name(cur_state),
@@ -143,7 +136,7 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 					);
 				goto end;
 			} else
-				hica_dbg("[%s(%d)]hold in %s state, loading_cnt = %d, freq_cnt = %d\n",
+				ppm_dbg(HICA, "[%s(%d)]hold in %s state, loading_cnt = %d, freq_cnt = %d\n",
 					(i == 0) ? "PERF" : "PWR",
 					j,
 					ppm_get_power_state_name(cur_state),
@@ -156,11 +149,6 @@ void mt_ppm_hica_update_algo_data(unsigned int cur_loads,
 end:
 	ppm_unlock(&hica_policy.lock);
 	FUNC_EXIT(FUNC_LV_HICA);
-}
-
-bool ppm_hica_is_log_enabled(void)
-{
-	return (hica_debug_enable) ? true : false;
 }
 
 unsigned int ppm_hica_get_table_idx_by_perf(enum ppm_power_state state, unsigned int perf_idx)
@@ -421,10 +409,10 @@ static void ppm_hica_update_limit_cb(enum ppm_power_state new_state)
 	ppm_hica_set_default_limit_by_state(new_state, &hica_policy);
 
 	if (new_state >= NR_PPM_POWER_STATE)
-		hica_dbg("PPM current state is NONE, skip HICA result...\n");
+		ppm_dbg(HICA, "PPM current state is NONE, skip HICA result...\n");
 	else if (new_state != ppm_hica_algo_data.cur_state) {
 		/* update HICA algo data for state transition */
-		hica_dbg("state transfer (final): %s --> %s\n",
+		ppm_dbg(HICA, "state transfer (final): %s --> %s\n",
 			ppm_get_power_state_name(ppm_hica_algo_data.cur_state),
 			ppm_get_power_state_name(new_state)
 			);
@@ -455,32 +443,6 @@ static void ppm_hica_mode_change_cb(enum ppm_mode mode)
 	ppm_info("@%s: ppm mode changed to %d\n", __func__, mode);
 
 	FUNC_EXIT(FUNC_LV_HICA);
-}
-
-static int ppm_hica_debug_proc_show(struct seq_file *m, void *v)
-{
-	seq_printf(m, "hica_debug_enable = %d\n", hica_debug_enable);
-
-	return 0;
-}
-
-static ssize_t ppm_hica_debug_proc_write(struct file *file, const char __user *buffer,
-					size_t count, loff_t *pos)
-{
-	unsigned int dbg;
-
-	char *buf = ppm_copy_from_user_for_proc(buffer, count);
-
-	if (!buf)
-		return -EINVAL;
-
-	if (!kstrtouint(buf, 10, &dbg))
-		hica_debug_enable = dbg;
-	else
-		ppm_err("echo (1 or 0) > /proc/ppm/policy/hica_debug\n");
-
-	free_page((unsigned long)buf);
-	return count;
 }
 
 static int ppm_hica_power_state_proc_show(struct seq_file *m, void *v)
@@ -518,7 +480,6 @@ static ssize_t ppm_hica_power_state_proc_write(struct file *file, const char __u
 	return count;
 }
 
-PROC_FOPS_RW(hica_debug);
 PROC_FOPS_RW(hica_power_state);
 PROC_FOPS_RW_HICA_SETTINGS(mode_mask, p->mode_mask);
 PROC_FOPS_RW_HICA_SETTINGS(loading_delta, p->loading_delta);
@@ -544,7 +505,6 @@ static int __init ppm_hica_policy_init(void)
 	};
 
 	const struct pentry entries[] = {
-		PROC_ENTRY(hica_debug),
 		PROC_ENTRY(hica_power_state),
 	};
 

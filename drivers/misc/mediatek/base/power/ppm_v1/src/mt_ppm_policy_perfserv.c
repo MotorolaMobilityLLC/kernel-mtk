@@ -82,7 +82,7 @@ static void ppm_perfserv_update_limit_cb(enum ppm_power_state new_state)
 					perfserv_policy.req.limit[i].max_cpufreq_idx = -1;
 			}
 		} else
-			ppm_dbg("@%s: index not found!", __func__);
+			ppm_dbg(MAIN, "@%s: index not found!", __func__);
 	}
 
 	FUNC_EXIT(FUNC_LV_POLICY);

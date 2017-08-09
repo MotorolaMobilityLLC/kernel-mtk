@@ -17,7 +17,6 @@ enum PPM_DLPT_MODE {
 	HW_MODE,	/* use HW OCP only */
 };
 
-
 static unsigned int ppm_dlpt_pwr_budget_preprocess(unsigned int budget);
 #if PPM_HW_OCP_SUPPORT
 static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget, unsigned int pwr_idx);
@@ -45,6 +44,7 @@ static struct ppm_policy_data dlpt_policy = {
 
 };
 
+
 void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned int cluster_num)
 {
 	int power_idx;
@@ -65,13 +65,16 @@ void mt_ppm_dlpt_kick_PBM(struct ppm_cluster_status *cluster_status, unsigned in
 		max_volt = MAX(max_volt, cluster_status[i].volt);
 	}
 #if PPM_HW_OCP_SUPPORT
-	budget = ppm_dlpt_pwr_budget_postprocess(
-			ppm_calc_total_power(cluster_status, cluster_num), (unsigned int)power_idx);
+	budget = ppm_calc_total_power(cluster_status, cluster_num);
+	if (!budget)
+		goto end;
+
+	budget = ppm_dlpt_pwr_budget_postprocess(budget, (unsigned int)power_idx);
 #else
 	budget = ppm_dlpt_pwr_budget_postprocess((unsigned int)power_idx);
 #endif
 
-	ppm_ver("budget = %d(%d), total_core = %d, max_volt = %d\n",
+	ppm_dbg(DLPT, "budget = %d(%d), total_core = %d, max_volt = %d\n",
 		budget, power_idx, total_core, max_volt);
 
 #ifndef DISABLE_PBM_FEATURE
@@ -90,7 +93,7 @@ void mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power)
 
 	budget = ppm_dlpt_pwr_budget_preprocess(limited_power);
 
-	ppm_ver("Get PBM notifier => budget = %d(%d)\n", budget, limited_power);
+	ppm_dbg(DLPT, "Get PBM notifier => budget = %d(%d)\n", budget, limited_power);
 
 	ppm_lock(&dlpt_policy.lock);
 
@@ -138,7 +141,7 @@ static unsigned int ppm_dlpt_pwr_budget_postprocess(unsigned int budget, unsigne
 {
 	/* just calculate new ratio */
 	dlpt_percentage_to_real_power = (pwr_idx * 100 + (budget - 1)) / budget;
-	ppm_ver("new dlpt ratio = %d (%d/%d)\n", dlpt_percentage_to_real_power, pwr_idx, budget);
+	ppm_dbg(DLPT, "new dlpt ratio = %d (%d/%d)\n", dlpt_percentage_to_real_power, pwr_idx, budget);
 
 	return budget;
 }
@@ -302,25 +305,6 @@ static int __init ppm_dlpt_policy_init(void)
 			goto out;
 		}
 	}
-
-#if PPM_HW_OCP_SUPPORT
-	/* enable OCP */
-	/* TBD: move these to cpu hotplug? */
-#if 0
-	BigiDVFSEnable(2500, 110000, 120000);	/* idvfs enable 2500MHz, Vproc_x100mv, Vsram_x100mv */
-	BigiDVFSChannel(1, 1);			/* ocp channel enable */
-	BigOCPConfig(300, 10000);		/* cluster 2 Voffset=0.3v_x1000, Vstep=10mv_x1000000 */
-	BigOCPSetTarget(3, 127000);		/* cluster 2 set OCPI/FPI, Target=127 W */
-	BigOCPEnable(3, 1, 625, 0);		/* cluster 2 set OCPI/FPI, Target_unit=mW, CG=6.25%_x100 */
-#endif
-	LittleOCPConfig(300, 10000);		/* cluster 0/1 Voffset=0.5v_x1000, Vstep=6.25mv_x1000000 */
-	LittleOCPSetTarget(0, 127000);		/* cluster 0 Target=127W_x1000 */
-	LittleOCPSetTarget(1, 127000);		/* cluster 1 Target=127W_x1000 */
-	LittleOCPDVFSSet(0, 897, 1000);		/* cluster 0 FreqMH= 897 Mhz, VoltInmV = 1.0v (base on DVFS) */
-	LittleOCPDVFSSet(1, 1274, 1000);	/* cluster 1 FreqMHz = 1274 Mhz , VoltInmV = 1.0v (base on DVFS) */
-	LittleOCPEnable(0, 1, 625);		/* cluster 0 Target_unit=mW, CG=6.25_x100 */
-	LittleOCPEnable(1, 1, 625);		/* cluster 1 Target_unit=mW, CG=6.25_x100 */
-#endif
 
 	if (ppm_main_register_policy(&dlpt_policy)) {
 		ppm_err("@%s: dlpt policy register failed\n", __func__);
