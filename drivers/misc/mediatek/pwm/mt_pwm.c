@@ -1795,6 +1795,7 @@ static const struct of_device_id pwm_of_match[] = {
 	{.compatible = "mediatek,mt8163-pwm",},
 	{.compatible = "mediatek,mt8173-pwm",},
 	{.compatible = "mediatek,mt8127-pwm",},
+	{.compatible = "mediatek,mt2701-pwm",},
 	{},
 };
 #endif
