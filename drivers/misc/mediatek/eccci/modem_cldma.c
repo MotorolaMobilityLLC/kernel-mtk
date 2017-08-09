@@ -696,6 +696,8 @@ static void cldma_rx_refill(struct work_struct *work)
 #endif
 }
 
+u64 last_rx_done = 0;
+
 static void cldma_rx_done(struct work_struct *work)
 {
 	struct md_cd_queue *queue = container_of(work, struct md_cd_queue, cldma_rx_work);
@@ -721,6 +723,7 @@ static void cldma_rx_done(struct work_struct *work)
 	else
 		rx_interal = total_time - last_leave_time[queue->index];
 #endif
+	last_rx_done = local_clock();
 
 again:
 	result = rx_bytes = 0;
@@ -1153,6 +1156,7 @@ static void cldma_tx_queue_init(struct md_cd_queue *queue)
 #endif
 }
 
+u64 last_q0_rx_isr = 0;
 static void cldma_irq_work_cb(struct ccci_modem *md)
 {
 	int i, ret;
@@ -1259,6 +1263,9 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 					md_ctrl->rxq[i].napi_port->ops->md_state_notice(md_ctrl->rxq[i].napi_port,
 							RX_IRQ);
 				} else {
+					if (L2RISAR0 & 0x1)
+						last_q0_rx_isr = local_clock();
+
 					ret = queue_work(md_ctrl->rxq[i].worker,
 									&md_ctrl->rxq[i].cldma_rx_work);
 				}
@@ -1271,6 +1278,8 @@ static void cldma_irq_work_cb(struct ccci_modem *md)
 #endif
 }
 
+u64 last_cldma_isr = 0;
+
 static irqreturn_t cldma_isr(int irq, void *data)
 {
 	struct ccci_modem *md = (struct ccci_modem *)data;
@@ -1279,6 +1288,7 @@ static irqreturn_t cldma_isr(int irq, void *data)
 #endif
 
 	CCCI_DEBUG_LOG(md->index, TAG, "CLDMA IRQ!\n");
+	last_cldma_isr = local_clock();
 #ifdef ENABLE_CLDMA_AP_SIDE
 	cldma_irq_work_cb(md);
 #else

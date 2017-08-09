@@ -51,6 +51,8 @@
 #include <mt-plat/mtk_rtc.h>
 #endif
 
+#include "modem_cldma.h"
+
 static void ccci_ee_info_dump(struct ccci_modem *md);
 static void ccci_aed(struct ccci_modem *md, unsigned int dump_flag, char *aed_str, int db_opt);
 static void status_msg_handler(struct ccci_port *port, struct ccci_request *req);
@@ -1954,10 +1956,37 @@ static void rpc_msg_handler(struct ccci_port *port, struct ccci_request *req)
 static void status_msg_handler(struct ccci_port *port, struct ccci_request *req)
 {
 	struct ccci_modem *md = port->modem;
+
 	struct ccci_header *ccci_h = (struct ccci_header *)req->skb->data;
+	u64 ts_nsec1 = last_cldma_isr;
+	u64 ts_nsec2 = last_q0_rx_isr;
+	u64 ts_nsec3 = last_rx_done;
+
+	unsigned long rem_nsec1, rem_nsec2, rem_nsec3;
+
+	if (ts_nsec1 == 0)
+		rem_nsec1 = 0;
+	else
+		rem_nsec1 = do_div(ts_nsec1, 1000000000);
+
+	if (ts_nsec2 == 0)
+		rem_nsec2 = 0;
+	else
+		rem_nsec2 = do_div(ts_nsec2, 1000000000);
+
+	if (ts_nsec3 == 0)
+		rem_nsec3 = 0;
+	else
+		rem_nsec3 = do_div(ts_nsec3, 1000000000);
+
 
 	del_timer(&port->modem->md_status_timeout);
-	CCCI_REPEAT_LOG(port->modem->index, KERN, "modem status info seq=0x%X\n", *(((u32 *) ccci_h) + 2));
+	CCCI_REPEAT_LOG(port->modem->index, KERN,
+			"modem status info seq=0x%X, cldma_isr=%5lu.%06lu, q0_rx=%5lu.%06lu, rx_done=%5lu.%06lu\n",
+			*(((u32 *) ccci_h) + 2),
+			(unsigned long)ts_nsec1, rem_nsec1 / 1000,
+			(unsigned long)ts_nsec2, rem_nsec2 / 1000,
+			(unsigned long)ts_nsec3, rem_nsec3 / 1000);
 	ccci_util_cmpt_mem_dump(md->index, CCCI_DUMP_REPEAT, req->skb->data, req->skb->len);
 	req->policy = RECYCLE;
 	ccci_free_req(req);
@@ -1997,12 +2026,45 @@ void md_status_poller_func(unsigned long data)
 void md_status_timeout_func(unsigned long data)
 {
 	struct ccci_modem *md = (struct ccci_modem *)data;
+	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
+
+	u64 ts_nsec1 = last_cldma_isr;
+	u64 ts_nsec2 = last_q0_rx_isr;
+	u64 ts_nsec3 = last_rx_done;
+
+	unsigned long rem_nsec1, rem_nsec2, rem_nsec3;
+
+	if (ts_nsec1 == 0)
+		rem_nsec1 = 0;
+	else
+		rem_nsec1 = do_div(ts_nsec1, 1000000000);
+
+	if (ts_nsec2 == 0)
+		rem_nsec2 = 0;
+	else
+		rem_nsec2 = do_div(ts_nsec2, 1000000000);
+
+
+	if (ts_nsec3 == 0)
+		rem_nsec3 = 0;
+	else
+		rem_nsec3 = do_div(ts_nsec3, 1000000000);
+
+	mt_irq_dump_status(md_ctrl->cldma_irq_id);
 
 	if (md->md_status_poller_flag & MD_STATUS_ASSERTED) {
-		CCCI_ERROR_LOG(md->index, KERN, "modem status polling timeout, assert fail\n");
+		CCCI_ERROR_LOG(md->index, KERN, "modem status polling timeout, assert fail,");
+		CCCI_ERROR_LOG(md->index, KERN, "cldma_isr=%5lu.%06lu, q0_rx=%5lu.%06lu, rx_done=%5lu.%06lu\n",
+				(unsigned long)ts_nsec1, rem_nsec1 / 1000,
+				(unsigned long)ts_nsec2, rem_nsec2 / 1000,
+				(unsigned long)ts_nsec3, rem_nsec3 / 1000);
 		ccci_md_exception_notify(md, MD_NO_RESPONSE);
 	} else {
-		CCCI_ERROR_LOG(md->index, KERN, "modem status polling timeout, force assert\n");
+		CCCI_ERROR_LOG(md->index, KERN, "modem status polling timeout, force assert,");
+		CCCI_ERROR_LOG(md->index, KERN, "cldma_isr=%5lu.%06lu, q0_rx=%5lu.%06lu, rx_done=%5lu.%06lu\n",
+				(unsigned long)ts_nsec1, rem_nsec1 / 1000,
+				(unsigned long)ts_nsec2, rem_nsec2 / 1000,
+				(unsigned long)ts_nsec3, rem_nsec3 / 1000);
 		md->md_status_poller_flag |= MD_STATUS_ASSERTED;
 		md->ops->dump_info(md, DUMP_FLAG_QUEUE_0, NULL, 0);
 		mod_timer(&md->md_status_timeout, jiffies + 5 * HZ);

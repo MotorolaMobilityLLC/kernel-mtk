@@ -19,6 +19,8 @@
 
 #define CCCI_EXREC_OFFSET_OFFENDER 288
 
+extern u64 last_rx_done, last_q0_rx_isr, last_cldma_isr;
+
 enum {
 	MD_EX_TYPE_INVALID = 0,
 	MD_EX_TYPE_UNDEF = 1,
