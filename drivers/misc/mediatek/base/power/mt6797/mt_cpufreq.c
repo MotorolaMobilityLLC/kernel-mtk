@@ -690,7 +690,12 @@ bool is_in_cpufreq = 0;
  * EFUSE
  */
 
+#define OPP_DEFECT 1
 int dvfs_disable_flag = 0;
+int release_dvfs = 0;
+int thres_ll = 0;
+int thres_l = 0;
+int thres_b = 0;
 
 #define CPUFREQ_EFUSE_INDEX     (3)
 #define FUNC_CODE_EFUSE_INDEX	(22)
@@ -3303,11 +3308,6 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx);
 static unsigned int _calc_new_cci_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx,
 	unsigned int *target_cci_volt);
 
-int release_dvfs = 0;
-int thres_ll = 8;
-int thres_l = 8;
-int thres_b = 8;
-
 static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id id, int new_opp_idx)
 {
 	unsigned long flags;
@@ -3957,6 +3957,21 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 	if ((p->idx_opp_ppm_base == p->idx_opp_ppm_limit) && p->idx_opp_ppm_base != -1)
 		new_opp_idx = p->idx_opp_ppm_base;
 
+#ifdef OPP_DEFECT
+	if (!release_dvfs) {
+		if (cpu_dvfs_is(p, MT_CPU_DVFS_LL)) {
+			if (new_opp_idx < thres_ll)
+				new_opp_idx = thres_ll;
+		} else if (cpu_dvfs_is(p, MT_CPU_DVFS_L)) {
+			if (new_opp_idx < thres_l)
+				new_opp_idx = thres_l;
+		} else if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
+			if (new_opp_idx < thres_b)
+				new_opp_idx = thres_b;
+		}
+	}
+#endif
+
 	FUNC_EXIT(FUNC_LV_HELP);
 
 	return new_opp_idx;
@@ -4187,6 +4202,22 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 			|| lv == CPU_LEVEL_3));
 
 		p->cpu_level = lv;
+
+#ifdef OPP_DEFECT
+		if (lv == CPU_LEVEL_0) {
+			thres_ll = 4;
+			thres_l = 4;
+			thres_b = 8;
+		} else if (lv == CPU_LEVEL_1) {
+			thres_ll = 6;
+			thres_l = 6;
+			thres_b = 9;
+		} else if (lv == CPU_LEVEL_2) {
+			thres_ll = 4;
+			thres_l = 4;
+			thres_b = 6;
+		}
+#endif
 
 		ret = _mt_cpufreq_setup_freqs_table(policy,
 						    opp_tbl_info->opp_tbl, opp_tbl_info->size);
