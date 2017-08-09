@@ -212,4 +212,8 @@ bool mtk_is_host_mode(void);
 int mt6332_OpenBoost4Flash(void);
 int mt6332_CloseBoost4Flash(void);
 
+/* GPIO pinctrl */
+int flashlight_gpio_init(struct platform_device *pdev);
+int flashlight_gpio_hwen_high(void);
+int flashlight_gpio_hwen_low(void);
 #endif

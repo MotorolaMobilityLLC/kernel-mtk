@@ -78,6 +78,46 @@ static int gLowBatDuty[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
 static int g_strobePartId[e_Max_Sensor_Dev_Num][e_Max_Strobe_Num_Per_Dev];
 
 /* ============================== */
+/* Pinctrl */
+/* ============================== */
+static struct pinctrl *flashlight_pinctrl;
+static struct pinctrl_state *flashlight_hwen_high;
+static struct pinctrl_state *flashlight_hwen_low;
+
+int flashlight_gpio_init(struct platform_device *pdev)
+{
+	int ret = 0;
+
+	flashlight_pinctrl = devm_pinctrl_get(&pdev->dev);
+	if (IS_ERR(flashlight_pinctrl)) {
+		logI("Cannot find flashlight pinctrl!");
+		ret = PTR_ERR(flashlight_pinctrl);
+	}
+	/* Flashlight HWEN pin initialization */
+	flashlight_hwen_high = pinctrl_lookup_state(flashlight_pinctrl, "hwen_high");
+	if (IS_ERR(flashlight_hwen_high)) {
+		ret = PTR_ERR(flashlight_hwen_high);
+		logI("%s : pinctrl err, flashlight_hwen_high\n", __func__);
+	}
+
+	flashlight_hwen_low = pinctrl_lookup_state(flashlight_pinctrl, "hwen_low");
+	if (IS_ERR(flashlight_hwen_low)) {
+		ret = PTR_ERR(flashlight_hwen_low);
+		logI("%s : pinctrl err, flashlight_hwen_low\n", __func__);
+	}
+	return ret;
+}
+
+int flashlight_gpio_hwen_high(void)
+{
+	return pinctrl_select_state(flashlight_pinctrl, flashlight_hwen_high);
+}
+
+int flashlight_gpio_hwen_low(void)
+{
+	return pinctrl_select_state(flashlight_pinctrl, flashlight_hwen_low);
+}
+/* ============================== */
 /* functions */
 /* ============================== */
 int globalInit(void)
@@ -710,6 +750,9 @@ static int flashlight_probe(struct platform_device *dev)
 	/* init_MUTEX(&flashlight_private.sem); */
 	sema_init(&flashlight_private.sem, 1);
 
+	/* GPIO pinctrl initial */
+	flashlight_gpio_init(dev);
+
 	logI("[flashlight_probe] Done ~");
 	return 0;
 
@@ -752,6 +795,13 @@ static void flashlight_shutdown(struct platform_device *dev)
 	logI("[flashlight_shutdown] Done ~");
 }
 
+#ifdef CONFIG_OF
+static const struct of_device_id FLASHLIGHT_of_match[] = {
+	{.compatible = "mediatek,camera_flashlight"},
+	{},
+};
+#endif
+
 static struct platform_driver flashlight_platform_driver = {
 	.probe = flashlight_probe,
 	.remove = flashlight_remove,
@@ -759,6 +809,9 @@ static struct platform_driver flashlight_platform_driver = {
 	.driver = {
 		   .name = FLASHLIGHT_DEVNAME,
 		   .owner = THIS_MODULE,
+#ifdef CONFIG_OF
+	.of_match_table = FLASHLIGHT_of_match,
+#endif
 		   },
 };
 

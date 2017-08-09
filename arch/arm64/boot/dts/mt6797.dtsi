@@ -891,6 +891,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			compatible = "mediatek,battery";
 		};
 
+		flashlight: flashlight@ {
+			compatible = "mediatek,camera_flashlight";
+		};
+
 		bat_metter {
 			compatible = "mediatek,bat_meter";
 			/* cust_charging.h */
