@@ -105,7 +105,7 @@ static DEFINE_MUTEX(tpd_set_gpio_mutex);
 void tpd_gpio_as_int(int pin)
 {
 	mutex_lock(&tpd_set_gpio_mutex);
-	pr_info("[tpd]tpd_gpio_as_int\n");
+	TPD_DEBUG("[tpd]tpd_gpio_as_int\n");
 	if (pin == 1)
 		pinctrl_select_state(pinctrl1, eint_as_int);
 	mutex_unlock(&tpd_set_gpio_mutex);
@@ -114,7 +114,7 @@ void tpd_gpio_as_int(int pin)
 void tpd_gpio_output(int pin, int level)
 {
 	mutex_lock(&tpd_set_gpio_mutex);
-	pr_info("[tpd]tpd_gpio_output pin = %d, level = %d\n", pin, level);
+	TPD_DEBUG("[tpd]tpd_gpio_output pin = %d, level = %d\n", pin, level);
 	if (pin == 1) {
 		if (level)
 			pinctrl_select_state(pinctrl1, eint_output1);
@@ -132,7 +132,7 @@ int tpd_get_gpio_info(struct platform_device *pdev)
 {
 	int ret;
 
-	pr_info("[tpd %d] mt_tpd_pinctrl+++++++++++++++++\n", pdev->id);
+	TPD_DEBUG("[tpd %d] mt_tpd_pinctrl+++++++++++++++++\n", pdev->id);
 	pinctrl1 = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(pinctrl1)) {
 		ret = PTR_ERR(pinctrl1);
@@ -174,7 +174,7 @@ int tpd_get_gpio_info(struct platform_device *pdev)
 		dev_err(&pdev->dev, "fwq Cannot find touch pinctrl state_rst_output1!\n");
 		return ret;
 	}
-	pr_info("[tpd%d] mt_tpd_pinctrl----------\n", pdev->id);
+	TPD_DEBUG("[tpd%d] mt_tpd_pinctrl----------\n", pdev->id);
 	return 0;
 }
 
@@ -617,7 +617,7 @@ static int tpd_remove(struct platform_device *pdev)
 /* called when loaded into kernel */
 static int __init tpd_device_init(void)
 {
-	TPD_DMESG("MediaTek touch panel driver init\n");
+	TPD_DEBUG("MediaTek touch panel driver init\n");
 	if (platform_driver_register(&tpd_driver) != 0) {
 		TPD_DMESG("unable to register touch panel driver.\n");
 		return -1;

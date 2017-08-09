@@ -309,14 +309,14 @@ static int tpd_irq_registration(void)
 	struct device_node *node = NULL;
 	int ret = 0;
 
-	TPD_DMESG("Device Tree Tpd_irq_registration!");
+	TPD_DEBUG("Device Tree Tpd_irq_registration!");
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,cap_touch");
 
 	if (node) {
 		/*touch_irq = gpio_to_irq(tpd_int_gpio_number);*/
 		touch_irq = irq_of_parse_and_map(node, 0);
-		TPD_DMESG("touch_irq number %d\n", touch_irq);
+		TPD_DEBUG("touch_irq number %d\n", touch_irq);
 
 		ret = request_irq(touch_irq, tpd_eint_handler, IRQF_TRIGGER_FALLING,
 					TPD_DEVICE, NULL);
@@ -1113,14 +1113,14 @@ static int tpd_rmi4_read_pdt(struct tpd_data *ts)
 						      sizeof(f11_query));
 				if (retval < 0)
 					return retval;
-				TPD_DMESG("f11 query base=%d\n", ts->f11.query_base);
+				TPD_DEBUG("f11 query base=%d\n", ts->f11.query_base);
 				/* Maximum number of fingers supported */
 				if ((f11_query[1] & MASK_3BIT) <= 4) {
 					ts->points_supported = (f11_query[1] & MASK_3BIT) + 1;
-					TPD_DMESG("points_supported=%d\n", ts->points_supported);
+					TPD_DEBUG("points_supported=%d\n", ts->points_supported);
 				} else if ((f11_query[1] & MASK_3BIT) == 5) {
 					ts->points_supported = 10;
-					TPD_DMESG("points_supported=%d\n", ts->points_supported);
+					TPD_DEBUG("points_supported=%d\n", ts->points_supported);
 				}
 				retval =
 				    tpd_i2c_read_data(ts->client, ts->f11.ctrl_base + 6,
@@ -1331,7 +1331,7 @@ static int touch_update_handler(void *unused)
 
 	msleep(10000);
 
-	TPD_DMESG("start to touch_update_handler\n");
+	TPD_DEBUG("start to touch_update_handler\n");
 
 	mutex_lock(&i2c_access);
 
@@ -1516,7 +1516,7 @@ static int touch_event_handler(void *unused)
 					ppt->raw_y = ppt->y =
 					    (((u16) (data[1]) << 4) | ((data[2] >> 4) & 0x0F));
 					ppt->z = data[4];
-					TPD_DMESG("Touch point %d: [X:%04d, Y:%04d]",
+					TPD_DEBUG("Touch point %d: [X:%04d, Y:%04d]",
 						  i, ppt->x, ppt->y);
 					tpd_down(ppt->x, ppt->y, ppt->z, i);
 				} else {
@@ -1733,14 +1733,14 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		dev_err(&client->dev, "Failed to read config (code %d).\n", retval);
 		return retval;
 	}
-	TPD_DMESG("Device config ID 0x%02X, 0x%02X, 0x%02X, 0x%02X\n",
+	TPD_DEBUG("Device config ID 0x%02X, 0x%02X, 0x%02X, 0x%02X\n",
 		  config_id[0], config_id[1], config_id[2], config_id[3]);
 
 	for (i = 0; i < sizeof(config_id); i++) {
-		TPD_DMESG("[wj]the [%d] is 0x%08x ...\n", i, (int)config_id[i]);
+		TPD_DEBUG("[wj]the [%d] is 0x%08x ...\n", i, (int)config_id[i]);
 		config_id_no += ((int)config_id[i] << ((sizeof(config_id) - i - 1) * 8));
 	}
-	TPD_DMESG("[wj]the config_id_no is 0x%08x .\n", config_id_no);
+	TPD_DEBUG("[wj]the config_id_no is 0x%08x .\n", config_id_no);
 
 	/* Need to implement in a kthread */
 	if (config_id_no < 0x30303033) {
@@ -1752,9 +1752,9 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
 #if 0
 	tpd_i2c_read_data(client, ts->f11.ctrl_base + 6, &tp_x_for_lcd, 2);
 	tpd_i2c_read_data(client, ts->f11.ctrl_base + 8, &tp_y_for_lcd, 2);
-	TPD_DMESG("tp_x_for_lcd = %d, tp_y_for_lcd = %d\n", tp_x_for_lcd, tp_y_for_lcd);
+	TPD_DEBUG("tp_x_for_lcd = %d, tp_y_for_lcd = %d\n", tp_x_for_lcd, tp_y_for_lcd);
 	if (tp_x_for_lcd != (u16) TPD_RES_X || tp_y_for_lcd != (u16) TPD_RES_Y) {
-		TPD_DMESG("Reset the resolution for LCM\n");
+		TPD_DEBUG("Reset the resolution for LCM\n");
 		tpd_i2c_write_data(client, ts->f11.ctrl_base + 6, &(u16) TPD_RES_X, 2);
 		tpd_i2c_write_data(client, ts->f11.ctrl_base + 8, &(u16) TPD_RES_Y, 2);
 	}
@@ -1803,7 +1803,7 @@ static int tpd_local_init(void)
 {
 	int retval;
 
-	TPD_DMESG("Synaptics I2C Touchscreen Driver load\n");
+	TPD_DEBUG("Synaptics I2C Touchscreen Driver load\n");
 
 	tpd->reg = regulator_get(tpd->tpd_dev, "vtouch");
 	tpd->io_reg = regulator_get(tpd->tpd_dev, "vtouchio");
@@ -1848,7 +1848,7 @@ static int tpd_local_init(void)
 	boot_mode = get_boot_mode();
 	/* if (boot_mode == 3) boot_mode = NORMAL_BOOT; */             /*No need */
 	input_set_abs_params(tpd->dev, ABS_MT_TRACKING_ID, 0, (10 - 1), 0, 0);
-	TPD_DMESG("end %s, %d\n", __func__, __LINE__);
+	TPD_DEBUG("end %s, %d\n", __func__, __LINE__);
 	tpd_type_cap = 1;
 	return 0;
 }
@@ -1936,7 +1936,7 @@ static void tpd_suspend(struct device *h)
 		TPD_DMESG("Failed to disable reg-vgp6: %d\n", retval);
 #endif
 
-	TPD_DMESG("TPD enter sleep\n");
+	TPD_DEBUG("TPD enter sleep\n");
 }
 
 
@@ -1949,7 +1949,7 @@ static struct tpd_driver_t tpd_device_driver = {
 
 static int __init tpd_driver_init(void)
 {
-	TPD_DMESG("Synaptics touch panel driver init\n");
+	TPD_DEBUG("Synaptics touch panel driver init\n");
 
 	tpd_get_dts_info();
 	if (tpd_driver_add(&tpd_device_driver) < 0)
@@ -1959,7 +1959,7 @@ static int __init tpd_driver_init(void)
 
 static void __exit tpd_driver_exit(void)
 {
-	TPD_DMESG("Synaptics touch panel driver exit\n");
+	TPD_DEBUG("Synaptics touch panel driver exit\n");
 	tpd_driver_remove(&tpd_device_driver);
 }
 module_init(tpd_driver_init);
