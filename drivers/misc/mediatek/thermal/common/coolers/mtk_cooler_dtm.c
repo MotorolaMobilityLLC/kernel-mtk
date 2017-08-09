@@ -11,7 +11,6 @@
 #include "mach/mt_thermal.h"
 #include "mt_gpufreq.h"
 #include <mach/mt_clkmgr.h>
-#include <mt_spm.h>
 #include <mt_ptp.h>
 #include <mach/wd_api.h>
 #include <linux/slab.h>

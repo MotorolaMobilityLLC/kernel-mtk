@@ -11,7 +11,6 @@
 #include "mach/mt_thermal.h"
 #include "mt_gpufreq.h"
 #include <mach/mt_clkmgr.h>
-#include <mt_spm.h>
 #include <mt_ptp.h>
 #include <mach/wd_api.h>
 #include <linux/slab.h>
@@ -72,7 +71,6 @@ static struct thermal_cooling_device_ops mtktscpu_cooling_sysrst_ops = {
 static int __init mtk_cooler_sysrst_init(void)
 {
 	int err = 0;
-
 	tscpu_dprintk("mtk_cooler_sysrst_init: Start\n");
 	cl_dev_sysrst = mtk_thermal_cooling_device_register("mtktscpu-sysrst", NULL,
 							    &mtktscpu_cooling_sysrst_ops);

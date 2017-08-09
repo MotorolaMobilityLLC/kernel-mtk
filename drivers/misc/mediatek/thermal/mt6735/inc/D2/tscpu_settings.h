@@ -187,6 +187,16 @@ extern int tscpu_polling_trip_temp1;
 extern int tscpu_polling_trip_temp2;
 extern int tscpu_polling_factor1;
 extern int tscpu_polling_factor2;
+#if MTKTSCPU_FAST_POLLING
+/* Combined fast_polling_trip_temp and fast_polling_factor,
+it means polling_delay will be 1/5 of original interval
+after mtktscpu reports > 65C w/o exit point */
+extern int fast_polling_trip_temp;
+extern int fast_polling_trip_temp_high;
+extern int fast_polling_factor;
+extern int tscpu_cur_fp_factor;
+extern int tscpu_next_fp_factor;
+#endif
 
 /*In common/thermal_zones/mtk_ts_cpu.c*/
 extern int Num_of_GPU_OPP;

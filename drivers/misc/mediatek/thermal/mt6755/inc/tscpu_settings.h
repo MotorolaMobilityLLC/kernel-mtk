@@ -9,6 +9,7 @@
 /*=============================================================
  * CONFIG (SW related)
  *=============================================================*/
+#define THERMAL_GET_AHB_BUS_CLOCK		    (0)
 #define THERMAL_PERFORMANCE_PROFILE         (0)
 
 /* 1: turn on GPIO toggle monitor; 0: turn off */
@@ -36,6 +37,9 @@ they means one reading is a avg of X samples */
 #define THERMAL_HEADROOM                    (0)
 #define CONTINUOUS_TM                       (1)
 #define DYNAMIC_GET_GPU_POWER			    (1)
+
+/* 1: turn on precise power budgeting; 0: turn off */
+#define PRECISE_HYBRID_POWER_BUDGET         (1)
 #endif
 
 /* 1: thermal driver fast polling, use hrtimer; 0: turn off */
@@ -47,14 +51,14 @@ they means one reading is a avg of X samples */
  * Chip related
  *=============================================================*/
 /* double check */
-#define TS_CONFIGURE     TS_CON1_TM	/* depend on CPU design */
-#define TS_CONFIGURE_P   TS_CON1_P	/* depend on CPU design */
-#define TS_TURN_ON       0xFFFFFFCF	/* turn on TS_CON1[5:4] 2'b 00  11001111 -> 0xCF  ~(0x30) */
-#define TS_TURN_OFF      0x00000030	/* turn off thermal */
-/* chip dependent */
-#define ADDRESS_INDEX_0  43	/* 0x102061A0 */
-#define ADDRESS_INDEX_1	 42	/* 0x1020619C */
-#define ADDRESS_INDEX_2	 44	/* 0x102061A4 */
+#define TS_CONFIGURE     TS_CON1_TM    /*depend on CPU design*/
+#define TS_CONFIGURE_P   TS_CON1_P  /*depend on CPU design*/
+#define TS_TURN_ON       0xFFFFFFCF /*turn on TS_CON1[5:4] 2'b 00  11001111 -> 0xCF  ~(0x30)*/
+#define TS_TURN_OFF      0x00000030 /*turn off thermal*/
+/*chip dependent*/
+#define ADDRESS_INDEX_0  8  /*0x10206184*/
+#define ADDRESS_INDEX_1	 7  /*0x10206180*/
+#define ADDRESS_INDEX_2	 9  /*0x10206188*/
 
 #define CLEAR_TEMP 26111
 
@@ -84,11 +88,11 @@ they means one reading is a avg of X samples */
 
 /* ADC value to mcu */
 /* chip dependent */
-#define TEMPADC_MCU1    ((0xC0&TSCON0_bit_6_7_00)|(0x07&TSCON1_bit_0_2_000))
-#define TEMPADC_MCU2    ((0xC0&TSCON0_bit_6_7_00)|(0x07&TSCON1_bit_0_2_001))
-#define TEMPADC_MCU3    ((0xC0&TSCON0_bit_6_7_01)|(0x07&TSCON1_bit_0_2_000))
-#define TEMPADC_MCU4    ((0xC0&TSCON0_bit_6_7_00)|(0x07&TSCON1_bit_0_2_011))
-#define TEMPADC_ABB     ((0xC0&TSCON0_bit_6_7_01)|(0x07&TSCON1_bit_0_2_000))
+#define TEMPADC_MCU1    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_000))
+#define TEMPADC_MCU2    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_001))
+#define TEMPADC_MCU3    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_010))
+#define TEMPADC_MCU4    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_011))
+#define TEMPADC_ABB     ((0x30&TSCON1_bit_4_5_01)|(0x07&TSCON1_bit_0_2_000))
 
 #define TS_FILL(n) {#n, n}
 #define TS_LEN_ARRAY(name) (sizeof(name)/sizeof(name[0]))
@@ -118,6 +122,14 @@ they means one reading is a avg of X samples */
 
 #define TS_MS_TO_NS(x) (x * 1000 * 1000)
 
+#if THERMAL_GET_AHB_BUS_CLOCK
+#define THERMAL_MODULE_SW_CG_SET	(therm_clk_infracfg_ao_base + 0x88)
+#define THERMAL_MODULE_SW_CG_CLR	(therm_clk_infracfg_ao_base + 0x8C)
+#define THERMAL_MODULE_SW_CG_STA	(therm_clk_infracfg_ao_base + 0x94)
+
+#define THERMAL_CG	(therm_clk_infracfg_ao_base + 0x80)
+#define THERMAL_DCM	(therm_clk_infracfg_ao_base + 0x70)
+#endif
 /*=============================================================
  *LOG
  *=============================================================*/
@@ -129,7 +141,8 @@ they means one reading is a avg of X samples */
 		}                                   \
 	} while (0)
 
-#define tscpu_printk(fmt, args...)   pr_debug("[Power/CPU_Thermal]" fmt, ##args)
+#define tscpu_printk(fmt, args...) pr_debug("[Power/CPU_Thermal]" fmt, ##args)
+#define tscpu_warn(fmt, args...)  pr_warn("[Power/CPU_Thermal]" fmt, ##args)
 
 /*=============================================================
  * Structures
@@ -158,9 +171,11 @@ typedef struct {
 #if (CONFIG_THERMAL_AEE_RR_REC == 1)
 enum thermal_state {
 	TSCPU_SUSPEND = 0,
-	TSCPU_RESUME = 1,
-	TSCPU_NORMAL = 2,
-	TSCPU_INIT = 3
+	TSCPU_RESUME  = 1,
+	TSCPU_NORMAL  = 2,
+	TSCPU_INIT    = 3,
+	TSCPU_PAUSE   = 4,
+	TSCPU_RELEASE = 5
 };
 #endif
 
@@ -199,6 +214,7 @@ extern int tscpu_next_fp_factor;
 #endif
 
 /*In common/thermal_zones/mtk_ts_cpu.c*/
+extern void __iomem  *therm_clk_infracfg_ao_base;
 extern int Num_of_GPU_OPP;
 extern struct mtk_gpu_power_info *mtk_gpu_power;
 extern int tscpu_read_curr_temp;
@@ -216,6 +232,17 @@ extern int tscpu_g_prev_temp;
 #if (THERMAL_HEADROOM == 1) || (CONTINUOUS_TM == 1)
 extern int bts_cur_temp;	/* in mtk_ts_bts.c */
 #endif
+
+#if PRECISE_HYBRID_POWER_BUDGET
+/*	tscpu_prev_cpu_temp: previous CPUSYS temperature
+	tscpu_curr_cpu_temp: current CPUSYS temperature
+	tscpu_prev_gpu_temp: previous GPUSYS temperature
+	tscpu_curr_gpu_temp: current GPUSYS temperature
+ */
+extern int tscpu_prev_cpu_temp, tscpu_prev_gpu_temp;
+extern int tscpu_curr_cpu_temp, tscpu_curr_gpu_temp;
+#endif
+
 #endif
 
 #ifdef CONFIG_OF
@@ -223,7 +250,7 @@ extern u32 thermal_irq_number;
 extern void __iomem *thermal_base;
 extern void __iomem *auxadc_ts_base;
 extern void __iomem *infracfg_ao_base;
-extern void __iomem *apmixed_base;
+extern void __iomem *th_apmixed_base;
 extern void __iomem *INFRACFG_AO_base;
 
 extern int thermal_phy_base;
@@ -237,6 +264,7 @@ extern char *adaptive_cooler_name;
 extern unsigned int adaptive_cpu_power_limit;
 extern unsigned int adaptive_gpu_power_limit;
 extern int TARGET_TJS[MAX_CPT_ADAPTIVE_COOLERS];
+extern unsigned int get_adaptive_power_limit(int type);
 
 /*common/coolers/mtk_cooler_dtm.c*/
 extern unsigned int static_cpu_power_limit;
@@ -272,6 +300,8 @@ extern int tscpu_thermal_clock_off(void);
 extern int tscpu_read_temperature_info(struct seq_file *m, void *v);
 extern int tscpu_thermal_fast_init(void);
 extern int tscpu_get_curr_temp(void);
+extern void thermal_get_AHB_clk_info(void);
+
 /*
 In drivers/misc/mediatek/gpu/hal/mtk_gpu_utility.c
 It's not our api, ask them to provide header file

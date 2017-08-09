@@ -118,6 +118,15 @@ int tscpu_polling_trip_temp1 = 30000;
 int tscpu_polling_trip_temp2 = 20000;
 int tscpu_polling_factor1 = 1;
 int tscpu_polling_factor2 = 2;
+#if MTKTSCPU_FAST_POLLING
+/* Combined fast_polling_trip_temp and fast_polling_factor,
+it means polling_delay will be 1/5 of original interval
+after mtktscpu reports > 65C w/o exit point */
+int fast_polling_trip_temp = 70000;
+int fast_polling_factor = 2;
+int tscpu_cur_fp_factor = 1;
+int tscpu_next_fp_factor = 1;
+#endif
 /*=============================================================
  * Local function declartation
  *=============================================================*/

@@ -43,7 +43,29 @@ obj-$(CONFIG_THERMAL) += mtk_ts4.o
 #obj-$(CONFIG_THERMAL) += mtk_ts5.o
 endif
 
+
+
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6580"))
+#obj-$(CONFIG_THERMAL) += mtk_ts_6311buck.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_abb.o
+obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
+obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_btsmdpa.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_buck.o
+obj-$(CONFIG_THERMAL) += mtk_ts_cpu.o
+obj-$(CONFIG_THERMAL) += mtk_ts_pa.o
+obj-$(CONFIG_THERMAL) += mtk_ts_pa_thput.o
+obj-$(CONFIG_THERMAL) += mtk_ts_pmic.o
+obj-$(CONFIG_THERMAL) += mtk_ts_wmt.o
+
+obj-$(CONFIG_THERMAL) += mtk_ts1.o
+obj-$(CONFIG_THERMAL) += mtk_ts2.o
+obj-$(CONFIG_THERMAL) += mtk_ts3.o
+obj-$(CONFIG_THERMAL) += mtk_ts4.o
+#obj-$(CONFIG_THERMAL) += mtk_ts5.o
+endif
+
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6755"))
 #obj-$(CONFIG_THERMAL) += mtk_ts_6311buck.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_abb.o
 obj-$(CONFIG_THERMAL) += mtk_ts_battery.o

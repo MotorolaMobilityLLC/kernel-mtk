@@ -24,7 +24,6 @@
 #include <linux/clk.h>
 #endif
 
-#include <mt_spm.h>
 #include <mt_ptp.h>
 /* #include <mach/mt_wtd.h> */
 #include <mach/wd_api.h>
@@ -68,7 +67,11 @@ u32 thermal_irq_number = 0;
 void __iomem *thermal_base;
 void __iomem *auxadc_ts_base;
 void __iomem *infracfg_ao_base;
+#if defined(CONFIG_ARCH_MT6755)
+void __iomem *th_apmixed_base;
+#else
 void __iomem *apmixed_base;
+#endif
 void __iomem *INFRACFG_AO_base;
 
 int thermal_phy_base;
@@ -78,15 +81,6 @@ int pericfg_phy_base;
 #endif
 
 static unsigned int interval = 1000;	/* mseconds, 0 : no auto polling */
-#if MTKTSCPU_FAST_POLLING
-/* Combined fast_polling_trip_temp and fast_polling_factor,
-it means polling_delay will be 1/5 of original interval
-after mtktscpu reports > 65C w/o exit point */
-static int fast_polling_trip_temp = 60000;
-static int fast_polling_factor = 2;
-int tscpu_cur_fp_factor = 1;
-static int tscpu_next_fp_factor = 1;
-#endif
 
 int tscpu_g_curr_temp = 0;
 int tscpu_g_prev_temp = 0;
