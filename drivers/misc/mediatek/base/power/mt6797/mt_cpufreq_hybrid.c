@@ -11,8 +11,7 @@
 #include <linux/wait.h>
 
 #include <mt-plat/sync_write.h>
-/*#include <mach/mt_lpae.h>*/	/* FIXME */
-#define MAPPING_DRAM_ACCESS_ADDR(phy_addr)
+#include <mt-plat/mt_lpae.h>
 #include "mt_cpufreq_hybrid.h"
 
 
@@ -649,12 +648,12 @@ do {								\
 
 #define cspm_get_timestamp()		cspm_read(CSPM_PCM_TIMER_OUT)
 
-#define cspm_min_freq(reg)		((cspm_read(reg) >> 0) & SW_F_MIN_MASK)
-#define cspm_max_freq(reg)		((cspm_read(reg) >> 4) & SW_F_MAX_MASK)
+#define cspm_min_freq(reg)		((cspm_read(reg) & SW_F_MIN_MASK) >> 0)
+#define cspm_max_freq(reg)		((cspm_read(reg) & SW_F_MAX_MASK) >> 4)
 #define cspm_is_paused(reg)		(!!(cspm_read(reg) & SW_PAUSE))
 
-#define cspm_curr_freq(reg)		((cspm_read(reg) >> 0) & F_CURR_MASK)
-#define cspm_curr_volt(reg)		((cspm_read(reg) >> 8) & V_CURR_MASK)
+#define cspm_curr_freq(reg)		((cspm_read(reg) & F_CURR_MASK) >> 0)
+#define cspm_curr_volt(reg)		((cspm_read(reg) & V_CURR_MASK) >> 8)
 #define cspm_is_done(reg)		(!!(cspm_read(reg) & FW_DONE))
 
 #define cspm_is_fw_all_done()		(cspm_is_done(CSPM_SW_RSV3) &&	\
