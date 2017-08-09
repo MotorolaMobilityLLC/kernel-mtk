@@ -2393,6 +2393,7 @@ INT32 opfunc_flash_patch_down(P_WMT_OP pWmtOp)
 	UINT8 evtBuf[osal_sizeof(WMT_FLASH_PATCH_DWN_EVT)];
 	unsigned long ctrlpa1 = 0;
 	unsigned long ctrlpa2 = 0;
+	UINT32 i = 0;
 
 	do {
 		osal_memcpy(gFlashBuf, WMT_FLASH_PATCH_DWN_CMD, sizeof(WMT_FLASH_PATCH_DWN_CMD));
@@ -2434,7 +2435,12 @@ INT32 opfunc_flash_patch_down(P_WMT_OP pWmtOp)
 
 		osal_memset(evtBuf, 0, sizeof(evtBuf));
 
-		iRet = wmt_core_rx(evtBuf, sizeof(WMT_FLASH_PATCH_DWN_EVT), &u4Res);
+		/* flash patch download time longer than WMT command timeout */
+		for (i = 0; i < 3; i++) {
+			iRet = wmt_core_rx(evtBuf, sizeof(WMT_FLASH_PATCH_DWN_EVT), &u4Res);
+			if (!iRet)
+				break;
+		}
 		if (iRet || (u4Res != sizeof(WMT_FLASH_PATCH_DWN_EVT))) {
 			WMT_ERR_FUNC("wmt_core: read WMT_FLASH_PATCH_DWN_EVT length(%zu, %d) fail(%d)\n",
 				     sizeof(WMT_FLASH_PATCH_DWN_EVT), u4Res, iRet);
