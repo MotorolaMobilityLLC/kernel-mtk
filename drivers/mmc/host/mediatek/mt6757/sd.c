@@ -3720,7 +3720,7 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 					pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
 				autok_execute_tuning(host, sdio_autok_res[AUTOK_VCORE_HIGH]);
 
-			#ifdef SDIO_FIX_VCORE_CONDITIONAL
+			#ifdef SDIO_HW_DVFS_CONDITIONAL
 				/* Low power mode, return 0 pass */
 				if (vcorefs_request_dvfs_opp(KIR_AUTOK_SDIO, OPPI_LOW_PWR) != 0)
 					pr_err("vcorefs_request_dvfs_opp@OPPI_PERF fail!\n");
@@ -3763,7 +3763,7 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 		} else {
 			autok_init_sdr104(host);
 
-		#ifdef SDIO_FIX_VCORE_CONDITIONAL
+		#ifdef SDIO_HW_DVFS_CONDITIONAL
 			if (autok_res_check(sdio_autok_res[AUTOK_VCORE_HIGH], sdio_autok_res[AUTOK_VCORE_LOW]) == 0) {
 				pr_err("[AUTOK] No need change para when dvfs\n");
 			} else {

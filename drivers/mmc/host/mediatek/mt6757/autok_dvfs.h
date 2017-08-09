@@ -20,7 +20,7 @@
 #define SDIO_DVFS_TIMEOUT       (HZ/100 * 5)    /* 10ms x5 */
 
 /* Enable later@Peter */
-/* #define SDIO_FIX_VCORE_CONDITIONAL */
+/* #define SDIO_HW_DVFS_CONDITIONAL */
 
 enum AUTOK_VCORE {
 	AUTOK_VCORE_LOW = 0,

@@ -198,6 +198,10 @@ void sdio_dvfs_reg_restore(struct msdc_host *host)
 	MSDC_WRITE32(MSDC_DAT_RDDLY1_2, sdio_reg_backup[1][7]);
 	MSDC_WRITE32(MSDC_DAT_RDDLY2_2, sdio_reg_backup[1][8]);
 	MSDC_WRITE32(MSDC_DAT_RDDLY3_2, sdio_reg_backup[1][9]);
+
+	/* Enable HW DVFS */
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 1);
+	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 1);
 }
 
 static void sdio_dvfs_reg_backup(struct msdc_host *host)
