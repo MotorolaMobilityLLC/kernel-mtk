@@ -540,6 +540,13 @@ void reset_md1_md3_pccif(struct ccci_modem *md)
 
 void dump_c2k_register(struct ccci_modem *md, unsigned int dump_boot_reg)
 {
+	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+
+	CCCI_NORMAL_LOG(md->index, TAG, "INFRA_C2K_BOOT_STATUS = 0x%x\n",
+			 ccif_read32(md_ctrl->hw_info->c2k_misc, INFRA_C2K_BOOT_STATUS));
+	CCCI_NORMAL_LOG(md->index, TAG, "INFRA_C2K_BOOT_STATUS2 = 0x%x\n",
+			 ccif_read32(md_ctrl->hw_info->c2k_misc, INFRA_C2K_BOOT_STATUS2));
+
 	if (dump_boot_reg == 0)
 		return;
 
