@@ -2282,7 +2282,7 @@
 		};
 
 		touch: touch {
-			compatible = "mediatek, mt6755-touch";
+			compatible = "mediatek,mt6755-touch";
 			/* VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>; */
 		};
 
