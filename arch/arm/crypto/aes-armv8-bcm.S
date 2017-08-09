@@ -289,6 +289,7 @@ ENTRY(aes_v8_cbc_decrypt)
     vmov      q2, q4
     vst1.8    {d0-d1}, [r0]!
     vst1.8    {d2-d3}, [r0]!
+    vst1.8    {d4-d5}, [r5]
     subs      r4, r4, #2
     bpl       .Lcbcdec128_2XLoop
 .Lcbcdec128_1X:
@@ -300,6 +301,8 @@ ENTRY(aes_v8_cbc_decrypt)
 .Lcbcdec128_FinalRound:
     // load input 16 bytes
     vld1.8    {d0-d1}, [r1]!
+    vmov      q3, q0
+    vst1.8    {d0-d1}, [r5]
     // aes kernel
     aesd.8    q0, q5
     aesimc.8  q0, q0
@@ -322,6 +325,7 @@ ENTRY(aes_v8_cbc_decrypt)
     aesd.8    q0, q14
     veor.8    q0, q0, q15
     veor.8    q0, q0, q2
+    vmov      q2, q3
     vst1.8    {d0-d1}, [r0]!
     vpop      {q4, q5, q6, q7}
     pop       {r4, r5, r6}
@@ -407,6 +411,7 @@ ENTRY(aes_v8_cbc_decrypt)
     vmov      q2, q4
     vst1.8    {d0-d1}, [r0]!
     vst1.8    {d2-d3}, [r0]!
+    vst1.8    {d4-d5}, [r5]
     subs      r4, r4, #2
     bpl       .Lcbcdec192_2XLoop
 .Lcbcdec192_1X:
@@ -418,6 +423,8 @@ ENTRY(aes_v8_cbc_decrypt)
 .Lcbcdec192_FinalRound:
     // load input 16 bytes
     vld1.8    {d0-d1}, [r1]!
+    vmov      q3, q0
+    vst1.8    {d0-d1}, [r5]
     // aes kernel
     aesd.8    q0, q5
     aesimc.8  q0, q0
@@ -448,6 +455,7 @@ ENTRY(aes_v8_cbc_decrypt)
     vld1.8    {d30-d31}, [r2]!
     veor.8    q0, q0, q15
     veor.8    q0, q0, q2
+    vmov      q2, q3
     vst1.8    {d0-d1}, [r0]!
     vpop      {q4, q5, q6, q7}
     pop       {r4, r5, r6}
@@ -543,6 +551,7 @@ ENTRY(aes_v8_cbc_decrypt)
     vmov      q2, q4
     vst1.8    {d0-d1}, [r0]!
     vst1.8    {d2-d3}, [r0]!
+    vst1.8    {d4-d5}, [r5]
     subs      r4, r4, #2
     bpl       .Lcbcdec256_2XLoop
 .Lcbcdec256_1X:
@@ -554,6 +563,8 @@ ENTRY(aes_v8_cbc_decrypt)
 .Lcbcdec256_FinalRound:
     // load input 16 bytes
     vld1.8    {d0-d1}, [r1]!
+    vmov      q3, q0
+    vst1.8    {d0-d1}, [r5]
     // aes kernel
     aesd.8    q0, q5
     aesimc.8  q0, q0
@@ -590,6 +601,7 @@ ENTRY(aes_v8_cbc_decrypt)
     vld1.8    {d30-d31}, [r2]!
     veor.8    q0, q0, q15
     veor.8    q0, q0, q2
+    vmov      q2, q3
     vst1.8    {d0-d1}, [r0]!
     vpop      {q4, q5, q6, q7}
     pop       {r4, r5, r6}
