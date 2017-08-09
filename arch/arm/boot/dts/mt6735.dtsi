@@ -624,6 +624,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			#clock-cells = <1>;
 		};
 
+		keypad: keypad@10003000 {
+			compatible = "mediatek,mt6735-keypad";
+			reg = <0x10003000 0x1000>;
+			interrupts = <GIC_SPI 164 IRQ_TYPE_EDGE_FALLING>;
+		};
 	};
 
 	bus {
@@ -909,11 +914,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		};
 		accdet: ACCDET@ {
 			compatible = "mediatek, accdet";
-		};
-		keypad: KP@0x10003000 {
-			compatible = "mediatek,KP";
-			reg = <0x10003000 0x1000>;
-			interrupts = <0 164 0x2>;
 		};
 
 		vcorefs {

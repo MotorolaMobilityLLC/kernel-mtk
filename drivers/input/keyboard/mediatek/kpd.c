@@ -66,7 +66,7 @@ static int kpd_pdrv_resume(struct platform_device *pdev);
 #endif
 
 static const struct of_device_id kpd_of_match[] = {
-	{.compatible = "mediatek,KP",},
+	{.compatible = KPD_DTS_NODE_NAME},
 	{},
 };
 
@@ -741,23 +741,24 @@ void kpd_get_dts_info(void)
 {
 	struct device_node *node;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek, kpd");
+	node = of_find_compatible_node(NULL, NULL, KPD_DTS_NODE_NAME);
 	if (node) {
-		of_property_read_u32(node, "kpd-key-debounce", &kpd_dts_data.kpd_key_debounce);
-		of_property_read_u32(node, "kpd-sw-pwrkey", &kpd_dts_data.kpd_sw_pwrkey);
-		of_property_read_u32(node, "kpd-hw-pwrkey", &kpd_dts_data.kpd_hw_pwrkey);
-		of_property_read_u32(node, "kpd-sw-rstkey", &kpd_dts_data.kpd_sw_rstkey);
-		of_property_read_u32(node, "kpd-hw-rstkey", &kpd_dts_data.kpd_hw_rstkey);
-		of_property_read_u32(node, "kpd-use-extend-type", &kpd_dts_data.kpd_use_extend_type);
-		of_property_read_u32(node, "kpd-pwrkey-eint-gpio", &kpd_dts_data.kpd_pwrkey_eint_gpio);
-		of_property_read_u32(node, "kpd-pwrkey-gpio-din", &kpd_dts_data.kpd_pwrkey_gpio_din);
-		of_property_read_u32(node, "kpd-hw-dl-key1", &kpd_dts_data.kpd_hw_dl_key1);
-		of_property_read_u32(node, "kpd-hw-dl-key2", &kpd_dts_data.kpd_hw_dl_key2);
-		of_property_read_u32(node, "kpd-hw-dl-key3", &kpd_dts_data.kpd_hw_dl_key3);
-		of_property_read_u32(node, "kpd-hw-recovery-key", &kpd_dts_data.kpd_hw_recovery_key);
-		of_property_read_u32(node, "kpd-hw-factory-key", &kpd_dts_data.kpd_hw_factory_key);
-		of_property_read_u32_array(node, "kpd-hw-init-map", kpd_dts_data.kpd_hw_init_map,
-					   ARRAY_SIZE(kpd_dts_data.kpd_hw_init_map));
+		of_property_read_u32(node, "mediatek,kpd-key-debounce", &kpd_dts_data.kpd_key_debounce);
+		of_property_read_u32(node, "mediatek,kpd-sw-pwrkey", &kpd_dts_data.kpd_sw_pwrkey);
+		of_property_read_u32(node, "mediatek,kpd-hw-pwrkey", &kpd_dts_data.kpd_hw_pwrkey);
+		of_property_read_u32(node, "mediatek,kpd-sw-rstkey", &kpd_dts_data.kpd_sw_rstkey);
+		of_property_read_u32(node, "mediatek,kpd-hw-rstkey", &kpd_dts_data.kpd_hw_rstkey);
+		of_property_read_u32(node, "mediatek,kpd-use-extend-type", &kpd_dts_data.kpd_use_extend_type);
+		of_property_read_u32(node, "mediatek,kpd-pwrkey-eint-gpio", &kpd_dts_data.kpd_pwrkey_eint_gpio);
+		of_property_read_u32(node, "mediatek,kpd-pwrkey-gpio-din", &kpd_dts_data.kpd_pwrkey_gpio_din);
+		of_property_read_u32(node, "mediatek,kpd-hw-dl-key1", &kpd_dts_data.kpd_hw_dl_key1);
+		of_property_read_u32(node, "mediatek,kpd-hw-dl-key2", &kpd_dts_data.kpd_hw_dl_key2);
+		of_property_read_u32(node, "mediatek,kpd-hw-dl-key3", &kpd_dts_data.kpd_hw_dl_key3);
+		of_property_read_u32(node, "mediatek,kpd-hw-recovery-key", &kpd_dts_data.kpd_hw_recovery_key);
+		of_property_read_u32(node, "mediatek,kpd-hw-factory-key", &kpd_dts_data.kpd_hw_factory_key);
+		of_property_read_u32(node, "mediatek,kpd-hw-map-num", &kpd_dts_data.kpd_hw_map_num);
+		of_property_read_u32_array(node, "mediatek,kpd-hw-init-map", kpd_dts_data.kpd_hw_init_map,
+					   kpd_dts_data.kpd_hw_map_num);
 
 		kpd_info
 		    ("key-debounce = %d, sw-pwrkey = %d, hw-pwrkey = %d, hw-rstkey = %d, sw-rstkey = %d\n",

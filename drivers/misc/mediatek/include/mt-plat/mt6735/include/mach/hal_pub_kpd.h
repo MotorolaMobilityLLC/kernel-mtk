@@ -37,5 +37,5 @@ void sb_kpd_disable(void);
 #define KPD_MEM5_BITS	8
 
 #define KPD_NUM_KEYS	72	/* 4 * 16 + KPD_MEM5_BITS */
-
+#define KPD_DTS_NODE_NAME "mediatek,mt6735-keypad"
 #endif

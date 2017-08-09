@@ -250,6 +250,13 @@
 			compatible = "mediatek,gpio";
 			reg = <0x10211000 0x1000>;
 		};
+
+		keypad: keypad@10003000 {
+			compatible = "mediatek,mt6735-keypad",
+					"mediatek,mt6735m-keypad";
+			reg = <0x10003000 0x1000>;
+			interrupts = <GIC_SPI 164 IRQ_TYPE_EDGE_FALLING>;
+		};
 	};
 
 	bus {

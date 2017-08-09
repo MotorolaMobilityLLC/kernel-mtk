@@ -52,6 +52,7 @@ struct keypad_dts_data {
 	u32 kpd_sw_rstkey;
 	u32 kpd_hw_rstkey;
 	u32 kpd_use_extend_type;
+	u32 kpd_hw_map_num;
 	u32 kpd_hw_init_map[72];
 	u32 kpd_pwrkey_eint_gpio;
 	u32 kpd_pwrkey_gpio_din;
