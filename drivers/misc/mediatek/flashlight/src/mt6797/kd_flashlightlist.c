@@ -73,6 +73,8 @@
 #define logE(a, ...)
 #endif
 #endif
+
+#define POWER_THROTTLING 0
 /* ============================== */
 /* variables */
 /* ============================== */
@@ -262,8 +264,9 @@ static int setFlashDrv(int sensorDev, int strobeId)
 	}
 	return 0;
 }
+#if POWER_THROTTLING
 
-
+/*
 static int decFlash(void)
 {
 	int i;
@@ -286,7 +289,7 @@ static int decFlash(void)
 			}
 	return 0;
 }
-
+*/
 static int closeFlash(void)
 {
 	int i;
@@ -347,7 +350,7 @@ static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
 
 
 static int gLowPowerPer = BATTERY_PERCENT_LEVEL_0;
-
+/*
 static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level)
 {
 	logI("bat_per_protection_powerlimit_flashlight %d (%d %d %d)\n", level,
@@ -365,7 +368,7 @@ static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level
 /*
 	}
 }
-
+*/
 
 /*
 static int gLowPowerOc=BATTERY_OC_LEVEL_0;
@@ -386,7 +389,7 @@ void bat_oc_protection_powerlimit(BATTERY_OC_LEVEL level)
 }
 */
 
-
+#endif
 
 /* ======================================================================== */
 
@@ -422,11 +425,12 @@ static long flashlight_ioctl_core(struct file *file, unsigned int cmd, unsigned 
 		logI("FLASH_IOC_IS_LOW_POWER");
 		{
 			int isLow = 0;
-
+#if POWER_THROTTLING
 			if (gLowPowerPer != BATTERY_PERCENT_LEVEL_0
 			|| gLowPowerVbat != LOW_BATTERY_LEVEL_0)
 				isLow = 1;
 			logI("FLASH_IOC_IS_LOW_POWER %d %d %d", gLowPowerPer, gLowPowerVbat, isLow);
+#endif
 			kdArg.arg = isLow;
 			if (copy_to_user
 			    ((void __user *)arg, (void *)&kdArg, sizeof(kdStrobeDrvArg))) {
@@ -794,11 +798,11 @@ static int __init flashlight_init(void)
 		logE("[flashlight_probe] platform_driver_register fail ~");
 		return ret;
 	}
-/*
+#if POWER_THROTTLING
 	register_low_battery_notify(&Lbat_protection_powerlimit_flash, LOW_BATTERY_PRIO_FLASHLIGHT);
 	register_battery_percent_notify(&bat_per_protection_powerlimit_flashlight, BATTERY_PERCENT_PRIO_FLASHLIGHT);
-	register_battery_oc_notify(&bat_oc_protection_powerlimit, BATTERY_OC_PRIO_FLASHLIGHT);
-*/
+/*	register_battery_oc_notify(&bat_oc_protection_powerlimit, BATTERY_OC_PRIO_FLASHLIGHT);*/
+#endif
 	logI("[flashlight_probe] done! ~");
 	return ret;
 }
