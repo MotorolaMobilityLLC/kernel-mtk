@@ -1,0 +1,217 @@
+#ifndef _MT_IDVFS_H
+#define _MT_IDVFS_H
+
+#include <linux/kernel.h>
+#include <mach/mt_secure_api.h>
+
+/*
+#ifdef __MT_IDVFS_C__
+	#define IDVFS_EXTERN
+#else
+	#define IDVFS_EXTERN extern
+#endif
+*/
+
+/* This is workaround for idvfs use */
+static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u64 arg2)
+{
+	register u64 reg0 __asm__("x0") = function_id;
+	register u64 reg1 __asm__("x1") = arg0;
+	register u64 reg2 __asm__("x2") = arg1;
+	register u64 reg3 __asm__("x3") = arg2;
+	int ret = 0;
+
+	asm volatile ("smc    #0\n" : "+r" (reg0) :
+		"r"(reg1), "r"(reg2), "r"(reg3));
+
+	ret = (int)reg0;
+	return ret;
+}
+
+/* define for iDVFS service */
+#ifdef CONFIG_ARM64
+
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSENABLE             0xC20003B0
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSDISABLE            0xC20003B1
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSFREQ               0xC20003B2
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSCHANNEL            0xC20003B3
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWAVG              0xC20003B4
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWAVGSTATUS        0xC20003B5
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWMODE             0xC20003B6
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSLOWMODE           0xC20003B7
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLSETFREQ         0xC20003B8
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLDISABLE         0xC20003B9  /* add */
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETFREQ         0xC20003BA
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLSETPOSDIV       0xC20003BB
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETPOSDIV       0xC20003BC
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLSETPCW          0xC20003BD
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETPCW          0xC20003BE
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSRAMLDOSET         0xC20003BF
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSRAMLDOGET         0xC20003C0
+
+#define MTK_SIP_KERNEL_IDVFS_OCP_READ                   0xC200035F
+#define MTK_SIP_KERNEL_IDVFS_OCP_WRITE                  0xC200035E
+
+#else
+
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSENABLE             0x820003B0
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSDISABLE            0x820003B1
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSFREQ               0x820003B2
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSCHANNEL            0x820003B3
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWAVG              0x820003B4
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWAVGSTATUS        0x820003B5
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWMODE             0x820003B6
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSLOWMODE           0x820003B7
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLSETFREQ         0x820003B8
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLDISABLE         0x820003B9
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETFREQ         0x820003BA
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLSETPOSDIV       0x820003BB
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETPOSDIV       0x820003BC
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLSETPCW          0x820003BD
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETPCW          0x820003BE
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSRAMLDOSET         0x820003BF
+#define MTK_SIP_KERNEL_IDVFS_BIGIDVFSSRAMLDOGET         0x820003C0
+
+#define MTK_SIP_KERNEL_IDVFS_OCP_READ                   0x8200035F
+#define MTK_SIP_KERNEL_IDVFS_OCP_WRITE                  0x8200035E
+#endif
+
+/*
+ * bit operation
+ */
+#undef  BIT
+#define BIT(bit)	(1U << (bit))
+
+#define MSB(range)	(1 ? range)
+#define LSB(range)	(0 ? range)
+/**
+ * Genearte a mask wher MSB to LSB are all 0b1
+ * @r:	Range in the form of MSB:LSB
+ */
+#define BITMASK(r)	\
+	(((unsigned) -1 >> (31 - MSB(r))) & ~((1U << LSB(r)) - 1))
+
+/**
+ * Set value at MSB:LSB. For example, BITS(7:3, 0x5A)
+ * will return a value where bit 3 to bit 7 is 0x5A
+ * @r:	Range in the form of MSB:LSB
+ */
+/* BITS(MSB:LSB, value) => Set value at MSB:LSB  */
+#define BITS(r, val)	((val << LSB(r)) & BITMASK(r))
+
+/* dfine for IDVFS register service */
+#define idvfs_read(addr) \
+		mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_OCP_READ, addr, 0, 0)
+#define idvfs_write(addr, val) \
+		mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_OCP_WRITE, addr, val, 0)
+#define idvfs_read_field(addr, range) \
+		GET_BITS_VAL(range, idvfs_read(addr))
+#define idvfs_write_field(addr, range, val) \
+		idvfs_write(addr, (idvfs_read(addr) & ~(BITMASK(range))) | BITS(range, val))
+
+/* ATF only support */
+/* #define __KERNEL__ */
+#define SEC_BIGIDVFSENABLE(FMax, Vproc, Vsram) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSENABLE, FMax, Vproc, Vsram)
+#define SEC_BIGIDVFSDISABLE() \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSDISABLE, 0, 0, 0)
+#define SEC_BIGIDVFSPLLSETFREQ(Freq) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLSETFREQ, Freq, 0, 0)
+#define SEC_BIGIDVFSSRAMLDOSET(mv_x100) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSRAMLDOSET, mv_x100, 0, 0)
+/* #else */
+/* #define SEC_BIGIDVFSENABLE(FMax,Vproc,Vsram) API_BIGIDVFSENABLE(FMax, Vproc, Vsram) */
+/* #endif */
+
+/* ATF remove, add at Android code base, remove later due to build code issue */
+#define SEC_BIGIDVFSFREQ(FreqPct) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSFREQ, FreqPct, 0, 0)
+#define SEC_BIGIDVFSCHANNEL(Channel, EnDis) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSCHANNEL, Channel, EnDis, 0)
+#define SEC_BIGIDVFSSWAVG(Length, EnDis) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWAVG, Length, EnDis, 0)
+#define SEC_BIGIDVFSSWAVGSTATUS() \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWAVGSTATUS, 0, 0, 0)
+#define SEC_BIGIDVFSPURESWMODE(Func, Para) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSWMODE, Func, Para, 0) /* option */
+#define SEC_BIGIDVFSSLOWMODE(pllus, voltus) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSLOWMODE, pllus, voltus, 0) /* option */
+#define SEC_BIGIDVFSPLLDISABLE() \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLDISABLE, 0, 0, 0)
+#define SEC_BIGIDVFSPLLGETFREQ() \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETFREQ, 0, 0, 0)
+#define SEC_BIGIDVFSPLLSETPOSDIV(div) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLSETPOSDIV, div, 0, 0)
+#define SEC_BIGIDVFSPLLGETPOSDIV() \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETPOSDIV, 0, 0, 0)
+#define SEC_BIGIDVFSPLLSETPCW(pcw) \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLSETPCW, pcw, 0, 0)
+#define SEC_BIGIDVFSPLLGETPCW() \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSPLLGETPCW, 0, 0, 0)
+#define SEC_BIGIDVFSSRAMLDOGET() \
+			mt_secure_call_idvfs(MTK_SIP_KERNEL_IDVFS_BIGIDVFSSRAMLDOGET, 0, 0, 0)
+
+/* Channel type*/
+enum idvfs_channel {
+	/* 0 */
+	IDVFS_CHANNEL_SW,
+	/* 2 */
+	IDVFS_CHANNEL_OCP,
+	/* 1 */ /* nth */
+	IDVFS_CHANNEL_OTP,
+
+	IDVFS_CHANNEL_NP,
+};
+
+/* IDVFS Structure */
+struct CHANNEL_STATUS {
+	const char *name;
+	unsigned short ch_number;
+	unsigned short status;
+};
+
+struct  IDVFS_INIT_OPT {
+	unsigned int idvfs_en;
+	unsigned int freq_max;
+	unsigned int freq_min;
+	unsigned int freq_cur;
+	unsigned short swavg_length;
+	unsigned short swavg_endis;
+	struct CHANNEL_STATUS *channel;
+};
+
+/* IDVFS Extern Function */
+
+#ifdef CONFIG_ARM64
+/* IDVFS_EXTERN int get_idvfs_status(void); */
+/* IDVFS_EXTERN unsigned int get_vcore_ptp_volt(int uv); */
+#endif /* CONFIG_ARM64 */
+
+/* #undef IDVFS_EXTERN */
+
+extern int BigiDVFSEnable(int Fmax, int cur_vproc_mv_x100, int cur_vsram_mv_x100);
+extern int BigiDVFSDisable(void);
+extern int BigiDVFSChannel(int Channelm, int EnDis);
+extern int BigIDVFSFreq(int Freqpct_x100);
+extern int BigiDVFSSWAvg(int Length, int EnDis);
+extern int BigiDVFSSWAvgStatus(void);
+extern int BigiDVFSPureSWMode(int function, int parameter);
+
+extern int BigiDVFSPllSetFreq(int Freq);		/* rang 507 ~ 3000(MHz) */
+extern unsigned int BigiDVFSPllGetFreq(void);
+extern int BigiDVFSPllDisable(void);
+
+extern int BigiDVFSSRAMLDOSet(int mVolts_x100);	/* range 60000 ~ 120000(mv_x100) */
+extern unsigned int BigiDVFSSRAMLDOGet(void);
+
+extern int BigiDVFSPOSDIVSet(int pos_div);		/* range 0/1/2 = div 1/2/4 */
+extern unsigned int BigiDVFSPOSDIVGet(void);
+
+extern int BigiDVFSPLLSetPCM(int freq);			/* range 1000 ~ 3000(MHz), without pos div value */
+extern unsigned int BigiDVFSPLLGetPCW(void);
+
+#endif /* _MT_IDVFS_H  */
+
+/* add for da9214*/
+extern unsigned int da9214_read_byte(unsigned char cmd, unsigned char *returnData);
+
