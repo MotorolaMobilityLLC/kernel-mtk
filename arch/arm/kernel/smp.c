@@ -53,9 +53,7 @@
 #include "mt_sched_mon.h"
 #endif
 #include <mt-plat/mtk_ram_console.h>
-#ifdef CONFIG_ARCH_MT6580
-#include "hotplug.h"
-#endif
+#include <hotplug.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/ipi.h>
@@ -256,6 +254,13 @@ void __cpu_die(unsigned int cpu)
 	if (!platform_cpu_kill(cpu))
 		printk("CPU%u: unable to kill\n", cpu);
 }
+
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+void  __attribute__((weak)) gic_set_primask(void)
+{
+
+}
+#endif
 
 /*
  * Called from the idle thread for the CPU which has been shutdown.
