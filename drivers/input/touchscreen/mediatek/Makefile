@@ -11,5 +11,5 @@ obj-y   +=  tpd_misc.o
 obj-y   +=  tpd_setting.o
 
 obj-$(CONFIG_TOUCHSCREEN_MTK_GT1151)	+=  GT1151/
-
+obj-$(CONFIG_TOUCHSCREEN_MTK_GT9XXTB_HOTKNOT)	+=  GT9XXTB_hotknot/
 obj-$(CONFIG_TOUCHSCREEN_MTK_SYNAPTICS_I2C_RMI4)	+=  synaptics_i2c_rmi4/

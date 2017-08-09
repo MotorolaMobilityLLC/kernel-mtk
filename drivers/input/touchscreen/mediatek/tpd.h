@@ -1,3 +1,5 @@
+#ifndef __TPD_H
+#define __TPD_H
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -165,3 +167,4 @@ void _tpd_switch_single_mode(void);
 void _tpd_switch_multiple_mode(void);
 void _tpd_switch_sleep_mode(void);
 void _tpd_switch_normal_mode(void);
+#endif
