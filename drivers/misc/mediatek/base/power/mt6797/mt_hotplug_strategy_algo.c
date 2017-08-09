@@ -344,6 +344,17 @@ void hps_set_funct_ctrl(void)
 		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_HVY_TSK);
 	else
 		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_HVY_TSK);
+	if (!hps_ctxt.is_ppm_init)
+		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_PPM_INIT);
+	else
+		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_PPM_INIT);
+	if (!get_efuse_status())
+		hps_ctxt.hps_func_control &= ~(1 << HPS_FUNC_CTRL_EFUSE);
+	else
+		hps_ctxt.hps_func_control |= (1 << HPS_FUNC_CTRL_EFUSE);
+
+
+
 }
 
 void hps_algo_main(void)
@@ -387,9 +398,18 @@ void hps_algo_main(void)
 	/*Back up limit and base value for check */
 
 	mutex_lock(&hps_ctxt.para_lock);
+	hps_ctxt.is_ppm_init = 0;
 	for (i = 0; i < hps_sys.cluster_num; i++) {
 		hps_sys.cluster_info[i].base_value = hps_sys.cluster_info[i].ref_base_value;
 		hps_sys.cluster_info[i].limit_value = hps_sys.cluster_info[i].ref_limit_value;
+		if (hps_sys.cluster_info[i].limit_value)
+			hps_ctxt.is_ppm_init = 1;
+	}
+	if (!hps_ctxt.is_ppm_init) {
+		action_print = 0;
+		hrtbt_dbg = 1;
+		mutex_unlock(&hps_ctxt.para_lock);
+		goto HPS_END;
 	}
 
 	for (i = 0; i < hps_sys.cluster_num; i++) {
@@ -502,8 +522,7 @@ void hps_algo_main(void)
 HPS_END:
 	if (action_print || hrtbt_dbg) {
 		int online, target, ref_limit, ref_base, criteria_limit, criteria_base, hvytsk;
-		if (0 == get_efuse_status())
-			hps_sys.action_id |= (0x1 << 12);
+
 		mutex_lock(&hps_ctxt.para_lock);
 		online = target = criteria_limit = criteria_base = 0;
 		for (i = 0; i < hps_sys.cluster_num; i++) {

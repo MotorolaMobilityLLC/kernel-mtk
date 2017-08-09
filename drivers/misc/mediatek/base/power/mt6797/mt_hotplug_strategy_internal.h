@@ -147,6 +147,8 @@ typedef enum {
 	HPS_FUNC_CTRL_HPS,	/* bit  0, 0x0001 */
 	HPS_FUNC_CTRL_RUSH,	/* bit  1, 0x0002 */
 	HPS_FUNC_CTRL_HVY_TSK,	/* bit  2, 0x0004 */
+	HPS_FUNC_CTRL_PPM_INIT,	/* big  3, 0x0008 */
+	HPS_FUNC_CTRL_EFUSE,	/* big  4, 0x0010 */
 	HPS_FUNC_CTRL_COUNT
 } hps_ctxt_func_ctrl_e;
 
@@ -205,6 +207,7 @@ typedef struct hps_ctxt_struct {
 	unsigned int power_mode;
 	unsigned int ppm_power_mode;
 	unsigned int heavy_task_enabled;
+	unsigned int is_ppm_init;
 	unsigned int hps_func_control;
 	/* core */
 	struct mutex lock;	/* Synchronizes accesses */
