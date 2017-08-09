@@ -3550,7 +3550,19 @@ int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params
 		DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, TE_RDY, 1);
 		DSI_OUTREGBIT(cmdq_handle, DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL, EXT_TE_EN, 1);
 
-		/* 4. blocking flush */
+		/* 4.Set packet_size_mult */
+		if (dsi_params->packet_size_mult) {
+			unsigned int ps_wc = 0, h = 0;
+
+			h = DSI_INREG32(DSI_VACT_NL_REG, &DSI_REG[i]->DSI_VACT_NL);
+			h /= dsi_params->packet_size_mult;
+			DSI_OUTREGBIT(cmdq_handle, DSI_VACT_NL_REG, DSI_REG[i]->DSI_VACT_NL, VACT_NL, h);
+			ps_wc = DSI_INREG32(DSI_PSCTRL_REG, &DSI_REG[i]->DSI_PSCTRL);
+			ps_wc *= dsi_params->packet_size_mult;
+			DSI_OUTREGBIT(cmdq_handle, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC, ps_wc);
+		}
+
+		/* 5. blocking flush */
 		cmdqRecFlush(cmdq_handle);
 		cmdqRecReset(cmdq_handle);
 #endif
@@ -3588,11 +3600,23 @@ int ddp_dsi_switch_mode(DISP_MODULE_ENUM module, void *cmdq_handle, void *params
 		DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_SOF, 0x7, 0x1); /* sof */
 		DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_SOF, 0x1c0, 0x40); /* eof */
 
-		/* 6. trigger vdo mode frame update */
+		/* 6.Disable packet_size_mult */
+		if (dsi_params->packet_size_mult) {
+			unsigned int ps_wc = 0, h = 0;
+
+			h = DSI_INREG32(DSI_VACT_NL_REG, &DSI_REG[i]->DSI_VACT_NL);
+			h *= dsi_params->packet_size_mult;
+			DSI_OUTREGBIT(cmdq_handle, DSI_VACT_NL_REG, DSI_REG[i]->DSI_VACT_NL, VACT_NL, h);
+			ps_wc = DSI_INREG32(DSI_PSCTRL_REG, &DSI_REG[i]->DSI_PSCTRL);
+			ps_wc /= dsi_params->packet_size_mult;
+			DSI_OUTREGBIT(cmdq_handle, DSI_PSCTRL_REG, DSI_REG[i]->DSI_PSCTRL, DSI_PS_WC, ps_wc);
+		}
+
+		/* 7. trigger vdo mode frame update */
 		DSI_MASKREG32(cmdq_handle, DISP_REG_CONFIG_MUTEX0_EN, 0x1, 0x1); /* release mutex for video mode */
 		DSI_Start(module, cmdq_handle);
 
-		/* 7. blocking flush */
+		/* 8. blocking flush */
 		cmdqRecFlush(cmdq_handle);
 		cmdqRecReset(cmdq_handle);
 
