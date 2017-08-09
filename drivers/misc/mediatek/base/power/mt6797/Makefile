@@ -33,7 +33,9 @@ obj-y += mt_eem2.o
 #obj-y += mt_static_power.o
 obj-y += mt_cpufreq.o
 obj-y += mt_idvfs.o
+obj-y += mt_udi.o
 obj-y += mt_ocp.o
+obj-y += mt_otp.o
 obj-y += mt_gpufreq.o
 #obj-y += mt_cpuidle.o
 
