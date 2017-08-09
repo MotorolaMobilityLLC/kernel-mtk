@@ -892,6 +892,24 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "uart4-main";
 		};
 
+		btif_tx:btif_tx@11000880 {
+			compatible = "mediatek,btif_tx";
+			reg = <0x11000880 0x80>;
+			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
+		};
+		btif_rx:btif_rx@11000900 {
+			compatible = "mediatek,btif_rx";
+			reg = <0x11000900 0x80>;
+			interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>;
+		};
+		btif:btif@1100c000 {
+			compatible = "mediatek,btif";
+			reg = <0x1100c000 0x1000>;
+			interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_LOW>;
+	      clocks = <&perisys PERI_BTIF>,<&perisys PERI_APDMA>;
+	      clock-names = "btifc","apdmac";
+		};/* End of btif */
+
 		consys:consys@18070000 {
 			compatible = "mediatek,mt6735-consys";
 			reg = <0x18070000 0x0200>,  /*CONN_MCU_CONFIG_BASE      */

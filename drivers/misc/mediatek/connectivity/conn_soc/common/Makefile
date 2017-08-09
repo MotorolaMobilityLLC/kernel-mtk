@@ -4,7 +4,7 @@ subdir-ccflags-y += -I$(src)/linux/include \
 						 -I$(src)/core/include \
 						 -I$(src)/include \
 						 -I$(src)/ \
-						 -I$(srctree)/drivers/misc/mediatek/btif/inc \
+						 -I$(srctree)/drivers/misc/mediatek/btif/common/inc \
 						 -I$(srctree)/drivers/misc/mediatek/connectivity/common_detect
 
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/

@@ -611,6 +611,22 @@
 						 <GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>; /* DMA Rx IRQ */
 		};
 
+		btif_tx:btif_tx@11000780 {
+			compatible = "mediatek,btif_tx";
+			reg = <0x11000780 0x80>;
+			interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_LOW>;
+		};
+		btif_rx:btif_rx@11000800 {
+			compatible = "mediatek,btif_rx";
+			reg = <0x11000800 0x80>;
+			interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>;
+		};
+		btif:btif@1100c000 {
+			compatible = "mediatek,btif";
+			reg = <0x1100c000 0x1000>;
+			interrupts = <GIC_SPI 90 IRQ_TYPE_LEVEL_LOW>;
+		};/* End of btif */
+
 		consys:consys@18070000 {
 			compatible = "mediatek,mt6735m-consys",
 						 "mediatek,mt6735-consys";
