@@ -9,7 +9,6 @@
  * This file is released under the GPLv2.
  *
  */
-
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/mm.h>
@@ -823,7 +822,7 @@ static bool rtree_next_node(struct memory_bitmap *bm, int index)
 }
 
 /**
- *	memory_bm_rtree_next_pfn - Find the next set bit in the bitmap @bm
+ *	memory_bm_next_pfn - Find the next set bit in the bitmap @bm
  *
  *	Starting from the last returned position this function searches
  *	for the next set bit in the memory bitmap and returns its

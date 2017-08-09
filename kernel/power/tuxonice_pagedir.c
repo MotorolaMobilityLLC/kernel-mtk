@@ -147,6 +147,7 @@ int toi_get_pageset1_load_addresses(void)
 	int high_pbes_done = 0, low_pbes_done = 0;
 	int low_direct = 0, high_direct = 0, result = 0, i;
 	int high_page = 1, high_offset = 0, low_page = 1, low_offset = 0;
+	int low_for_high_count = 0, high_direct_count = 0, low_direct_count = 0;
 
 	toi_trace_index++;
 
@@ -172,6 +173,10 @@ int toi_get_pageset1_load_addresses(void)
 		goto out;
 	}
 	this_low_pbe = (struct pbe *)page_address(low_pbe_page);
+
+	pr_warn("%s: %d. %d, %d, %d, %d, %d, %d, %d\n", __func__, __LINE__,
+		low_needed, lowallocd, low_direct,
+		high_needed, highallocd, high_direct, low_pages_for_highmem);
 
 	/*
 	 * Next, allocate the number of pages we need.
@@ -204,8 +209,16 @@ int toi_get_pageset1_load_addresses(void)
 		}
 	} while (--i);
 
+	pr_warn("%s: %d. %d, %d, %d, %d, %d, %d, %d\n", __func__, __LINE__,
+		low_needed, lowallocd, low_direct,
+		high_needed, highallocd, high_direct, low_pages_for_highmem);
+
 	high_needed -= high_direct;
 	low_needed -= low_direct;
+
+	pr_warn("%s: %d. %d, %d, %d, %d, %d, %d, %d\n", __func__, __LINE__,
+		low_needed, lowallocd, low_direct,
+		high_needed, highallocd, high_direct, low_pages_for_highmem);
 
 	/*
 	 * Do we need to use some lowmem pages for the copies of highmem
@@ -217,6 +230,10 @@ int toi_get_pageset1_load_addresses(void)
 		low_needed += low_pages_for_highmem;
 	}
 
+	pr_warn("%s: %d. %d, %d, %d, %d, %d, %d, %d\n", __func__, __LINE__,
+		low_needed, lowallocd, low_direct,
+		high_needed, highallocd, high_direct, low_pages_for_highmem);
+
 	/*
 	 * Now generate our pbes (which will be used for the atomic restore),
 	 * and free unneeded pages.
@@ -225,25 +242,52 @@ int toi_get_pageset1_load_addresses(void)
 	for (pfn = memory_bm_next_pfn(pageset1_copy_map, 0); pfn != BM_END_OF_MAP;
 	     pfn = memory_bm_next_pfn(pageset1_copy_map, 0)) {
 		int is_high;
+#ifdef CONFIG_TOI_FIXUP
+		int orig_is_high;
+		unsigned long orig_pfn;
+		struct page *orig_page;
+#endif
 
 		page = pfn_to_page(pfn);
 		is_high = PageHighMem(page);
 
-		if (PagePageset1(page))
+		if (PagePageset1(page)) {
+			is_high ? high_direct_count++ : low_direct_count++;
 			continue;
+		}
 
+#ifdef CONFIG_TOI_FIXUP
+		do {
+			orig_pfn = memory_bm_next_pfn(pageset1_map, 0);
+			BUG_ON(orig_pfn == BM_END_OF_MAP);
+			orig_page = pfn_to_page(orig_pfn);
+		} while (PagePageset1Copy(orig_page));
+
+		orig_is_high = PageHighMem(orig_page);
+
+		if (orig_is_high &&
+			 (is_high || low_pages_for_highmem)) {
+#else
 		/* Nope. We're going to use this page. Add a pbe. */
 		if (is_high || low_pages_for_highmem) {
 			struct page *orig_page;
+#endif
 
 			high_pbes_done++;
 			if (!is_high)
 				low_pages_for_highmem--;
+			else
+				low_for_high_count++;
+
+#ifdef CONFIG_TOI_FIXUP
+			orig_high_pfn = orig_pfn;
+#else
 			do {
 				orig_high_pfn = memory_bm_next_pfn(pageset1_map, 0);
 				BUG_ON(orig_high_pfn == BM_END_OF_MAP);
 				orig_page = pfn_to_page(orig_high_pfn);
 			} while (!PageHighMem(orig_page) || PagePageset1Copy(orig_page));
+#endif
 
 			this_high_pbe->orig_address = (void *)orig_high_pfn;
 			this_high_pbe->address = page;
@@ -269,15 +313,24 @@ int toi_get_pageset1_load_addresses(void)
 				pr_warn("This high pbe is an error.\n");
 				return -ENOMEM;
 			}
+#ifdef CONFIG_TOI_FIXUP
+		} else if (!orig_is_high) {
+#else
 		} else {
 			struct page *orig_page;
+#endif
 
 			low_pbes_done++;
+
+#ifdef CONFIG_TOI_FIXUP
+			orig_low_pfn = orig_pfn;
+#else
 			do {
 				orig_low_pfn = memory_bm_next_pfn(pageset1_map, 0);
 				BUG_ON(orig_low_pfn == BM_END_OF_MAP);
 				orig_page = pfn_to_page(orig_low_pfn);
 			} while (PageHighMem(orig_page) || PagePageset1Copy(orig_page));
+#endif
 
 			this_low_pbe->orig_address = page_address(orig_page);
 			this_low_pbe->address = page_address(page);
@@ -307,6 +360,11 @@ int toi_get_pageset1_load_addresses(void)
 			}
 		}
 	}
+	pr_warn("%s: %d. %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\n", __func__, __LINE__,
+		low_needed, lowallocd, low_direct,
+		high_needed, highallocd, high_direct, low_pages_for_highmem,
+		low_pbes_done, low_direct_count,
+		high_pbes_done, high_direct_count, low_for_high_count);
 
 	if (high_pbe_page)
 		kunmap(high_pbe_page);
