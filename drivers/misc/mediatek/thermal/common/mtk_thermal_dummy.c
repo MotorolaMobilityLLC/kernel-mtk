@@ -18,7 +18,6 @@
 #include <linux/module.h>
 #include <linux/types.h>
 #include <linux/err.h>
-#include <mtk_thermal_typedefs.h>
 
 /* ************************************ */
 /* Definition */

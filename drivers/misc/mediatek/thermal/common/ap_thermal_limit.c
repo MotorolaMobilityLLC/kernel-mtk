@@ -21,7 +21,6 @@
 #include <linux/seq_file.h>
 #include <linux/time.h>
 #include <linux/jiffies.h>
-#include "mtk_thermal_typedefs.h"
 #include <mach/mt_thermal.h> /* needed by tscpu_settings.h */
 #include <tscpu_settings.h> /* needed by tscpu_warn */
 #include <ap_thermal_limit.h>

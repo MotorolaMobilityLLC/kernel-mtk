@@ -24,7 +24,6 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_hw.h>
@@ -81,10 +80,10 @@ do {									\
 } while (0)
 
 #define PMIC6333_INT_TEMP_CUNT 0xF
-/* static kal_uint32 tempsetting_count=0; */
+/* static __u32 tempsetting_count=0; */
 typedef struct {
-	INT32 regsetting;
-	INT32 Temperature;
+	__s32 regsetting;
+	__s32 Temperature;
 } pmic6333_TEMPERATURE;
 
 #define mtkts6311_dprintk(fmt, args...)   \

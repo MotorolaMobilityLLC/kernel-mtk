@@ -172,10 +172,8 @@ they means one reading is a avg of X samples*/
  *REG ACCESS
  *=============================================================*/
 
-#define thermal_readl(addr)         DRV_Reg32(addr)
-#define thermal_writel(addr, val)   mt_reg_sync_writel((val), ((void *)addr))
-#define thermal_setl(addr, val)     mt_reg_sync_writel(thermal_readl(addr) | (val), ((void *)addr))
-#define thermal_clrl(addr, val)     mt_reg_sync_writel(thermal_readl(addr) & ~(val), ((void *)addr))
+#define thermal_setl(addr, val)     mt_reg_sync_writel(readl(addr) | (val), ((void *)addr))
+#define thermal_clrl(addr, val)     mt_reg_sync_writel(readl(addr) & ~(val), ((void *)addr))
 
 #define MTKTSCPU_TEMP_CRIT 120000 /* 120.000 degree Celsius */
 

@@ -27,7 +27,6 @@
 #include <linux/writeback.h>
 #include <asm/uaccess.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
 #include "mt-plat/mtk_thermal_platform.h"
 #include <linux/uidgid.h>
@@ -117,8 +116,8 @@ static int my_open(char *fname, int flag)
 }
 */
 typedef struct {
-	INT32 BTS_Temp;
-	INT32 TemperatureR;
+	__s32 BTS_Temp;
+	__s32 TemperatureR;
 } BTS_TEMPERATURE;
 
 #define AUX_IN0_NTC (0)		/* NTC6301 */
@@ -470,12 +469,12 @@ BTS_TEMPERATURE BTS_Temperature_Table7[] = {
 
 
 /* convert register to temperature  */
-static INT16 mtkts_bts_thermistor_conver_temp(INT32 Res)
+static __s16 mtkts_bts_thermistor_conver_temp(__s32 Res)
 {
 	int i = 0;
 	int asize = 0;
-	INT32 RES1 = 0, RES2 = 0;
-	INT32 TAP_Value = -200, TMP1 = 0, TMP2 = 0;
+	__s32 RES1 = 0, RES2 = 0;
+	__s32 TAP_Value = -200, TMP1 = 0, TMP2 = 0;
 
 	asize = (sizeof(BTS_Temperature_Table) / sizeof(BTS_TEMPERATURE));
 	/* mtkts_bts_dprintk("mtkts_bts_thermistor_conver_temp() : asize = %d, Res = %d\n",asize,Res); */
@@ -517,11 +516,11 @@ static INT16 mtkts_bts_thermistor_conver_temp(INT32 Res)
 
 /* convert ADC_AP_temp_volt to register */
 /*Volt to Temp formula same with 6589*/
-static INT16 mtk_ts_bts_volt_to_temp(UINT32 dwVolt)
+static __s16 mtk_ts_bts_volt_to_temp(__u32 dwVolt)
 {
-	INT32 TRes;
-	INT32 dwVCriAP = 0;
-	INT32 BTS_TMP = -100;
+	__s32 TRes;
+	__s32 dwVCriAP = 0;
+	__s32 BTS_TMP = -100;
 
 	/* SW workaround----------------------------------------------------- */
 	/* dwVCriAP = (TAP_OVER_CRITICAL_LOW * 1800) / (TAP_OVER_CRITICAL_LOW + 39000); */

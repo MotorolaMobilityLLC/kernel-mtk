@@ -25,7 +25,6 @@
 #include <linux/spinlock.h>
 #include <linux/seq_file.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
 #include <linux/uidgid.h>
 #include <linux/slab.h>

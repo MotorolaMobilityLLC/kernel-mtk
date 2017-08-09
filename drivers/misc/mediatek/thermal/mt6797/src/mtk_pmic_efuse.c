@@ -24,7 +24,6 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
 #include <mt-plat/upmu_common.h>
 #include <tspmic_settings.h>
@@ -33,24 +32,24 @@
  *=============================================================*/
 int mtktspmic_debug_log = 0;
 /* Cali */
-static kal_int32 g_o_vts;
-static kal_int32 g_degc_cali;
-static kal_int32 g_adc_cali_en;
-static kal_int32 g_o_slope;
-static kal_int32 g_o_slope_sign;
-static kal_int32 g_id;
-static kal_int32 g_slope1 = 1;
-static kal_int32 g_slope2 = 1;
-static kal_int32 g_intercept;
+static __s32 g_o_vts;
+static __s32 g_degc_cali;
+static __s32 g_adc_cali_en;
+static __s32 g_o_slope;
+static __s32 g_o_slope_sign;
+static __s32 g_id;
+static __s32 g_slope1 = 1;
+static __s32 g_slope2 = 1;
+static __s32 g_intercept;
 
 static DEFINE_MUTEX(TSPMIC_lock);
 static int pre_temp1 = 0, PMIC_counter;
 /*=============================================================*/
 
-static kal_int32 pmic_raw_to_temp(kal_uint32 ret)
+static __s32 pmic_raw_to_temp(__u32 ret)
 {
-	kal_int32 y_curr = ret;
-	kal_int32 t_current;
+	__s32 y_curr = ret;
+	__s32 t_current;
 	t_current = g_intercept + ((g_slope1 * y_curr) / (g_slope2));
 	mtktspmic_dprintk("[pmic_raw_to_temp] t_current=%d\n", t_current);
 	return t_current;
@@ -58,7 +57,7 @@ static kal_int32 pmic_raw_to_temp(kal_uint32 ret)
 
 static void mtktspmic_read_efuse(void)
 {
-	U32 efusevalue[3];
+	__u32 efusevalue[3];
 
 	mtktspmic_info("[pmic_debug]  start\n");
 	/*
@@ -125,7 +124,7 @@ void mtktspmic_cali_prepare(void)
 void mtktspmic_cali_prepare2(void)
 {
 
-	kal_int32 vbe_t;
+	__s32 vbe_t;
 	g_slope1 = (100 * 1000 * 10);	/* 1000 is for 0.001 degree */
 
 	if (g_o_slope_sign == 0)

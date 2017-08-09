@@ -29,7 +29,6 @@
 #include <asm/string.h>
 #include <linux/spinlock.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
 #include "mt-plat/mtk_mdm_monitor.h"
 #include <linux/uidgid.h>

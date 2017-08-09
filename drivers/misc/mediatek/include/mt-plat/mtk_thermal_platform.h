@@ -44,12 +44,6 @@ unsigned int mtk_thermal_set_user_scenarios(unsigned int mask);
 extern
 unsigned int mtk_thermal_clear_user_scenarios(unsigned int mask);
 
-
-#if defined(CONFIG_MTK_SMART_BATTERY)
-/* global variable from battery driver... */
-extern kal_bool gFG_Is_Charging;
-#endif
-
 extern int force_get_tbat(void);
 #endif				/* _MTK_THERMAL_PLATFORM_H */
 

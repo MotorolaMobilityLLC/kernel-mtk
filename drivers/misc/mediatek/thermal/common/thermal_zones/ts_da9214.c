@@ -11,7 +11,6 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include "mt-plat/mtk_thermal_monitor.h"
-#include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
 #include "da9214.h"
 #include <linux/uidgid.h>

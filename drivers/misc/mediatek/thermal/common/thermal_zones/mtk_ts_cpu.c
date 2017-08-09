@@ -29,7 +29,6 @@
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <linux/ktime.h>
-#include "mtk_thermal_typedefs.h"
 #include "mach/mt_thermal.h"
 
 #if defined(CONFIG_MTK_CLKMGR)
@@ -342,19 +341,19 @@ void tscpu_thermal_tempADCPNP(int adc, int order)
 
 	switch (order) {
 	case 0:
-		THERMAL_WRAP_WR32(adc, TEMPADCPNP0);
+		mt_reg_sync_writel(adc, TEMPADCPNP0);
 		break;
 	case 1:
-		THERMAL_WRAP_WR32(adc, TEMPADCPNP1);
+		mt_reg_sync_writel(adc, TEMPADCPNP1);
 		break;
 	case 2:
-		THERMAL_WRAP_WR32(adc, TEMPADCPNP2);
+		mt_reg_sync_writel(adc, TEMPADCPNP2);
 		break;
 	case 3:
-		THERMAL_WRAP_WR32(adc, TEMPADCPNP3);
+		mt_reg_sync_writel(adc, TEMPADCPNP3);
 		break;
 	default:
-		THERMAL_WRAP_WR32(adc, TEMPADCPNP0);
+		mt_reg_sync_writel(adc, TEMPADCPNP0);
 		break;
 	}
 }
@@ -702,7 +701,7 @@ static int tscpu_read_Tj_out(struct seq_file *m, void *v)
 	int ts_con0 = 0;
 
 	/*      TS_CON0[19:16] = 0x8: Tj sensor Analog signal output via HW pin */
-	ts_con0 = DRV_Reg32(TS_CON0_TM);
+	ts_con0 = readl(TS_CON0_TM);
 
 	seq_printf(m, "TS_CON0:0x%x\n", ts_con0);
 
@@ -727,10 +726,10 @@ static ssize_t tscpu_write_Tj_out(struct file *file, const char __user *buffer, 
 	if (kstrtoint(desc, 10, &lv_Tj_out_flag) == 0) {
 		if (lv_Tj_out_flag == 1) {
 			/*      TS_CON0[19:16] = 0x8: Tj sensor Analog signal output via HW pin */
-			THERMAL_WRAP_WR32(DRV_Reg32(TS_CON0_TM) | 0x00010000, TS_CON0_TM);
+			mt_reg_sync_writel(readl(TS_CON0_TM) | 0x00010000, TS_CON0_TM);
 		} else {
 			/*      TS_CON0[19:16] = 0x8: Tj sensor Analog signal output via HW pin */
-			THERMAL_WRAP_WR32(DRV_Reg32(TS_CON0_TM) & 0xfffeffff, TS_CON0_TM);
+			mt_reg_sync_writel(readl(TS_CON0_TM) & 0xfffeffff, TS_CON0_TM);
 		}
 
 		tscpu_dprintk("tscpu_write_Tj_out lv_Tj_out_flag=%d\n", lv_Tj_out_flag);
@@ -766,9 +765,9 @@ void tscpu_set_GPIO_toggle_for_monitor(void)
 			g_GPIO_out_enable = 0;	/* only can enter once */
 			g_GPIO_already_set = 1;
 
-			lv_GPIO118_MODE = thermal_readl(GPIO118_MODE);
-			lv_GPIO118_DIR = thermal_readl(GPIO118_DIR);
-			lv_GPIO118_DOUT = thermal_readl(GPIO118_DOUT);
+			lv_GPIO118_MODE = readl(GPIO118_MODE);
+			lv_GPIO118_DIR = readl(GPIO118_DIR);
+			lv_GPIO118_DOUT = readl(GPIO118_DOUT);
 
 			tscpu_printk("tscpu_set_GPIO_toggle_for_monitor:lv_GPIO118_MODE=0x%x,", lv_GPIO118_MODE);
 			tscpu_printk("lv_GPIO118_DIR=0x%x,lv_GPIO118_DOUT=0x%x,\n", lv_GPIO118_DIR, lv_GPIO118_DOUT);
@@ -783,9 +782,6 @@ void tscpu_set_GPIO_toggle_for_monitor(void)
 			if (g_GPIO_already_set == 1) {
 				/* restore */
 				g_GPIO_already_set = 0;
-				/* thermal_writel(GPIO118_MODE,lv_GPIO118_MODE); */
-				/* thermal_writel(GPIO118_DIR, lv_GPIO118_DIR); */
-				/* thermal_writel(GPIO118_DOUT,lv_GPIO118_DOUT); */
 				thermal_clrl(GPIO118_DOUT, 0x00000040);	/* set GPIO118_DOUT[6]=0 Low */
 
 			}
@@ -861,8 +857,8 @@ static ssize_t tscpu_write_GPIO_out(struct file *file, const char __user *buffer
 			return -EINVAL;
 		}
 
-		lv_GPIO118_MODE = thermal_readl(GPIO118_MODE);
-		lv_GPIO118_DIR = thermal_readl(GPIO118_DIR);
+		lv_GPIO118_MODE = readl(GPIO118_MODE);
+		lv_GPIO118_DIR = readl(GPIO118_DIR);
 
 		/* clear GPIO118_MODE[11:9],GPIO118_MODE = 0 (change to GPIO mode) */
 		thermal_clrl(GPIO118_MODE, 0x00000E00);
@@ -1334,9 +1330,9 @@ static void thermal_pause_all_periodoc_temp_sensing(void)
 		mt_ptp_lock(&flags);
 
 		tscpu_switch_bank(i);
-		temp = DRV_Reg32(TEMPMSRCTL1);
+		temp = readl(TEMPMSRCTL1);
 		/* set bit8=bit1=bit2=bit3=1 to pause sensing point 0,1,2,3 */
-		DRV_WriteReg32(TEMPMSRCTL1, (temp | 0x10E));
+		mt_reg_sync_writel((temp | 0x10E), TEMPMSRCTL1);
 
 		mt_ptp_unlock(&flags);
 	}
@@ -1357,9 +1353,9 @@ static void thermal_release_all_periodoc_temp_sensing(void)
 		mt_ptp_lock(&flags);
 
 		tscpu_switch_bank(i);
-		temp = DRV_Reg32(TEMPMSRCTL1);
+		temp = readl(TEMPMSRCTL1);
 		/* set bit1=bit2=bit3=0 to release sensing point 0,1,2 */
-		DRV_WriteReg32(TEMPMSRCTL1, ((temp & (~0x10E))));
+		mt_reg_sync_writel(((temp & (~0x10E))), TEMPMSRCTL1);
 
 		mt_ptp_unlock(&flags);
 	}
@@ -1371,15 +1367,15 @@ void tscpu_thermal_enable_all_periodoc_sensing_point(thermal_bank_name bank_num)
 	switch (tscpu_g_bank[bank_num].ts_number) {
 	case 1:
 		/* enable periodoc temperature sensing point 0 */
-		THERMAL_WRAP_WR32(0x00000001, TEMPMONCTL0);
+		mt_reg_sync_writel(0x00000001, TEMPMONCTL0);
 		break;
 	case 2:
 		/* enable periodoc temperature sensing point 0,1 */
-		THERMAL_WRAP_WR32(0x00000003, TEMPMONCTL0);
+		mt_reg_sync_writel(0x00000003, TEMPMONCTL0);
 		break;
 	case 3:
 		/* enable periodoc temperature sensing point 0,1,2 */
-		THERMAL_WRAP_WR32(0x00000007, TEMPMONCTL0);
+		mt_reg_sync_writel(0x00000007, TEMPMONCTL0);
 		break;
 	default:
 		tscpu_printk("Error at %s\n", __func__);
@@ -1400,7 +1396,7 @@ static void thermal_disable_all_periodoc_temp_sensing(void)
 
 		tscpu_switch_bank(i);
 		/* tscpu_printk("thermal_disable_all_periodoc_temp_sensing:Bank_%d\n",i); */
-		THERMAL_WRAP_WR32(0x00000000, TEMPMONCTL0);
+		mt_reg_sync_writel(0x00000000, TEMPMONCTL0);
 
 		mt_ptp_unlock(&flags);
 	}
@@ -1450,7 +1446,7 @@ static int tscpu_thermal_suspend(struct platform_device *dev, pm_message_t state
 		thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
 
 		do {
-			temp = (DRV_Reg32(THAHBST0) >> 16);
+			temp = (readl(THAHBST0) >> 16);
 			if ((cnt + 1) % 10 == 0)
 				pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
@@ -1461,7 +1457,7 @@ static int tscpu_thermal_suspend(struct platform_device *dev, pm_message_t state
 		thermal_pause_all_periodoc_temp_sensing();	/* TEMPMSRCTL1 */
 
 		do {
-			temp = (DRV_Reg32(THAHBST0) >> 16);
+			temp = (readl(THAHBST0) >> 16);
 			if ((cnt + 1) % 10 == 0)
 				pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
@@ -1476,7 +1472,7 @@ static int tscpu_thermal_suspend(struct platform_device *dev, pm_message_t state
 
 		/*TSCON1[5:4]=2'b11, Buffer off */
 		/* turn off the sensor buffer to save power */
-		THERMAL_WRAP_WR32(DRV_Reg32(TS_CONFIGURE) | TS_TURN_OFF, TS_CONFIGURE);
+		mt_reg_sync_writel(readl(TS_CONFIGURE) | TS_TURN_OFF, TS_CONFIGURE);
 	}
 #if THERMAL_PERFORMANCE_PROFILE
 	do_gettimeofday(&end);
@@ -1510,14 +1506,14 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 		   or this buffer off will let TC read a very small value from auxadc
 		   and this small value will trigger thermal reboot
 		 */
-		temp = DRV_Reg32(TS_CONFIGURE);
+		temp = readl(TS_CONFIGURE);
 		temp &= ~(TS_TURN_OFF);	/* TS_CON1[5:4]=2'b00,   00: Buffer on, TSMCU to AUXADC */
-		THERMAL_WRAP_WR32(temp, TS_CONFIGURE);	/* read abb need */
+		mt_reg_sync_writel(temp, TS_CONFIGURE);	/* read abb need */
 		/* RG_TS2AUXADC < set from 2'b11 to 2'b00
 		when resume.wait 100uS than turn on thermal controller. */
 		udelay(200);
 
-		BUG_ON((DRV_Reg32(TS_CONFIGURE) & TS_TURN_OFF) != 0x0);
+		BUG_ON((readl(TS_CONFIGURE) & TS_TURN_OFF) != 0x0);
 
 		/*Add this function to read all temp first to avoid
 		   write TEMPPROTTC first time will issue an fake signal to RGU */
@@ -1528,7 +1524,7 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 		thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
 
 		do {
-			temp = (DRV_Reg32(THAHBST0) >> 16);
+			temp = (readl(THAHBST0) >> 16);
 			if ((cnt + 1) % 10 == 0)
 				pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
@@ -1539,7 +1535,7 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 		thermal_pause_all_periodoc_temp_sensing();	/* TEMPMSRCTL1 */
 
 		do {
-			temp = (DRV_Reg32(THAHBST0) >> 16);
+			temp = (readl(THAHBST0) >> 16);
 			if ((cnt + 1) % 10 == 0)
 				pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
@@ -1966,7 +1962,7 @@ static void tscpu_thermal_pause(void)
 	thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
 
 	do {
-		temp = (DRV_Reg32(THAHBST0) >> 16);
+		temp = (readl(THAHBST0) >> 16);
 		if ((cnt + 1) % 10 == 0)
 			pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
@@ -1977,7 +1973,7 @@ static void tscpu_thermal_pause(void)
 	thermal_pause_all_periodoc_temp_sensing();	/* TEMPMSRCTL1 */
 
 	do {
-		temp = (DRV_Reg32(THAHBST0) >> 16);
+		temp = (readl(THAHBST0) >> 16);
 		if ((cnt + 1) % 10 == 0)
 			pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
@@ -2003,14 +1999,14 @@ static void tscpu_thermal_release(void)
 	   or this buffer off will let TC read a very small value from auxadc
 	   and this small value will trigger thermal reboot
 	 */
-	temp = DRV_Reg32(TS_CONFIGURE);
+	temp = readl(TS_CONFIGURE);
 	temp &= ~(TS_TURN_OFF);	/* TS_CON1[5:4]=2'b00,   00: Buffer on, TSMCU to AUXADC */
-	THERMAL_WRAP_WR32(temp, TS_CONFIGURE);	/* read abb need */
+	mt_reg_sync_writel(temp, TS_CONFIGURE);	/* read abb need */
 	/* RG_TS2AUXADC < set from 2'b11 to 2'b00
 	when resume.wait 100uS than turn on thermal controller.*/
 	udelay(200);
 
-	BUG_ON((DRV_Reg32(TS_CONFIGURE) & TS_TURN_OFF) != 0x0);
+	BUG_ON((readl(TS_CONFIGURE) & TS_TURN_OFF) != 0x0);
 
 	/*thermal_auxadc_get_data(2, 11);*/
 	thermal_release_all_periodoc_temp_sensing();	/* must release before start */
@@ -2022,7 +2018,7 @@ static void tscpu_thermal_release(void)
 	thermal_disable_all_periodoc_temp_sensing();	/* TEMPMONCTL0 */
 
 	do {
-		temp = (DRV_Reg32(THAHBST0) >> 16);
+		temp = (readl(THAHBST0) >> 16);
 		if ((cnt + 1) % 10 == 0)
 			pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
@@ -2033,7 +2029,7 @@ static void tscpu_thermal_release(void)
 	thermal_pause_all_periodoc_temp_sensing();	/* TEMPMSRCTL1 */
 
 	do {
-		temp = (DRV_Reg32(THAHBST0) >> 16);
+		temp = (readl(THAHBST0) >> 16);
 		if ((cnt + 1) % 10 == 0)
 			pr_err("THAHBST0 = 0x%x, cnt = %d, %d\n", temp, cnt, __LINE__);
 
@@ -2240,14 +2236,14 @@ static void init_thermal(void)
 	   or this buffer off will let TC read a very small value from auxadc
 	   and this small value will trigger thermal reboot
 	 */
-	temp = DRV_Reg32(TS_CONFIGURE);
+	temp = readl(TS_CONFIGURE);
 	temp &= ~(TS_TURN_OFF);	/* TS_CON1[5:4]=2'b00,   00: Buffer on, TSMCU to AUXADC */
-	THERMAL_WRAP_WR32(temp, TS_CONFIGURE);	/* read abb need */
+	mt_reg_sync_writel(temp, TS_CONFIGURE);	/* read abb need */
 	/* RG_TS2AUXADC < set from 2'b11 to 2'b00
 	when resume.wait 100uS than turn on thermal controller.*/
 	udelay(200);
 
-	BUG_ON((DRV_Reg32(TS_CONFIGURE) & TS_TURN_OFF) != 0x0);
+	BUG_ON((readl(TS_CONFIGURE) & TS_TURN_OFF) != 0x0);
 
 	BUG_ON(IMM_IsAdcInitReady() != 1);
 
@@ -2256,7 +2252,7 @@ static void init_thermal(void)
 	tscpu_fast_initial_sw_workaround();
 
 	while (cnt < 50) {
-		temp = (DRV_Reg32(THAHBST0) >> 16);
+		temp = (readl(THAHBST0) >> 16);
 		if ((cnt + 1) % 10 == 0)
 			pr_debug("THAHBST0 = 0x%x,cnt=%d, %d\n", temp, cnt, __LINE__);
 		if (temp == 0x0) {

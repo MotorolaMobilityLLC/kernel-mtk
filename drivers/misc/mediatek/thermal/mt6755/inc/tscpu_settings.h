@@ -130,10 +130,8 @@ they means one reading is a avg of X samples */
  *REG ACCESS
  *=============================================================*/
 
-#define thermal_readl(addr)         DRV_Reg32(addr)
-#define thermal_writel(addr, val)   mt_reg_sync_writel((val), ((void *)addr))
-#define thermal_setl(addr, val)     mt_reg_sync_writel(thermal_readl(addr) | (val), ((void *)addr))
-#define thermal_clrl(addr, val)     mt_reg_sync_writel(thermal_readl(addr) & ~(val), ((void *)addr))
+#define thermal_setl(addr, val)     mt_reg_sync_writel(readl(addr) | (val), ((void *)addr))
+#define thermal_clrl(addr, val)     mt_reg_sync_writel(readl(addr) & ~(val), ((void *)addr))
 
 #define MTKTSCPU_TEMP_CRIT 120000	/* 120.000 degree Celsius */
 
@@ -314,7 +312,7 @@ extern void tscpu_thermal_initial_all_bank(void);
 extern int tscpu_switch_bank(thermal_bank_name bank);
 extern void tscpu_thermal_read_bank_temp(thermal_bank_name bank, ts_e type, int order);
 extern void tscpu_thermal_cal_prepare(void);
-extern void tscpu_thermal_cal_prepare_2(U32 ret);
+extern void tscpu_thermal_cal_prepare_2(__u32 ret);
 extern irqreturn_t tscpu_thermal_all_bank_interrupt_handler(int irq, void *dev_id);
 extern int tscpu_thermal_clock_on(void);
 extern int tscpu_thermal_clock_off(void);
