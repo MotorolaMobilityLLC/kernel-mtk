@@ -2086,7 +2086,7 @@ write_cmos_sensor_8(0x0100,0x01);
 } else if (chip_id == 0xD101) {
 	LOG_INF("--preview_setting, chip_id = 0xD101\n");
 write_cmos_sensor_8(0x0100,0x00);
-mdelay(200);
+//mdelay(200);
 
 write_cmos_sensor(0x6028,0x2000);
 write_cmos_sensor(0x602A,0x14F0);
@@ -2246,7 +2246,7 @@ static void normal_capture_setting(void)
 } else if (chip_id == 0xD101) {
 	LOG_INF( "-- normal_capture_setting, chip_id = 0xD101\n");
 write_cmos_sensor_8(0x0100,0x00);
-mdelay(200);
+//mdelay(200);
 write_cmos_sensor(0x6028,0x2000);
 write_cmos_sensor(0x602A,0x14F0);
 write_cmos_sensor(0x6F12,0x0040);
@@ -2400,7 +2400,7 @@ static void pip_capture_setting(void)
 {
 	LOG_INF( "--pip_capture_setting, chip_id = 0x%x\n", chip_id);
 	write_cmos_sensor_8(0x0100,0x00);
-	mdelay(200);
+	//mdelay(200);
 	write_cmos_sensor(0x6028,0x2000);
 	write_cmos_sensor(0x602A,0x14F0);
 	write_cmos_sensor(0x6F12,0x0040);
@@ -2571,7 +2571,7 @@ static void hs_video_setting(void)
 } else if (chip_id == 0xD101) {
 	LOG_INF("--hs_video_setting. chip_id = 0xD101\n");
 write_cmos_sensor_8(0x0100,0x00);
-mdelay(200);
+//mdelay(200);
 	write_cmos_sensor(0x6028,0x2000);
 	write_cmos_sensor(0x602A,0x14F0);
 	write_cmos_sensor(0x6F12,0x0040);
@@ -2726,7 +2726,7 @@ static void slim_video_setting(void)
 } else if (chip_id == 0xD101) {
 	LOG_INF("--slim_video_setting. chip_id = 0xD101");
 	write_cmos_sensor_8(0x0100,0x00);
-  mdelay(200);
+  //mdelay(200);
 	write_cmos_sensor(0x6028,0x2000);
 	write_cmos_sensor(0x602A,0x14F0);
 	write_cmos_sensor(0x6F12,0x0040);
