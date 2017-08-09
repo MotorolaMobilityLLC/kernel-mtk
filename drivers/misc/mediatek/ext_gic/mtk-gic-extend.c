@@ -32,7 +32,6 @@
 
 void __iomem *GIC_DIST_BASE;
 void __iomem *INT_POL_CTL0;
-static spinlock_t irq_lock;
 
 /*
  * mt_irq_mask_all: disable all interrupts
@@ -42,7 +41,6 @@ static spinlock_t irq_lock;
  */
 int mt_irq_mask_all(struct mtk_irq_mask *mask)
 {
-	unsigned long flags;
 	void __iomem *dist_base;
 
 	dist_base = GIC_DIST_BASE;
@@ -53,7 +51,6 @@ int mt_irq_mask_all(struct mtk_irq_mask *mask)
 			local_fiq_disable();
 	#endif
 		*/
-		spin_lock_irqsave(&irq_lock, flags);
 
 		mask->mask0 = readl((dist_base + GIC_DIST_ENABLE_SET));
 		mask->mask1 = readl((dist_base + GIC_DIST_ENABLE_SET + 0x4));
@@ -76,7 +73,6 @@ int mt_irq_mask_all(struct mtk_irq_mask *mask)
 		writel(0xFFFFFFFF, (dist_base + GIC_DIST_ENABLE_CLEAR + 0x20));
 		mb();
 
-		spin_unlock_irqrestore(&irq_lock, flags);
 		/*
 	#if defined(CONFIG_FIQ_GLUE)
 		local_fiq_enable();
@@ -99,7 +95,6 @@ int mt_irq_mask_all(struct mtk_irq_mask *mask)
  */
 int mt_irq_mask_restore(struct mtk_irq_mask *mask)
 {
-	unsigned long flags;
 	void __iomem *dist_base;
 
 	dist_base = GIC_DIST_BASE;
@@ -116,7 +111,6 @@ int mt_irq_mask_restore(struct mtk_irq_mask *mask)
 		  local_fiq_disable();
 #endif
 	*/
-	spin_lock_irqsave(&irq_lock, flags);
 
 	writel(mask->mask0, (dist_base + GIC_DIST_ENABLE_SET));
 	writel(mask->mask1, (dist_base + GIC_DIST_ENABLE_SET + 0x4));
@@ -129,7 +123,7 @@ int mt_irq_mask_restore(struct mtk_irq_mask *mask)
 	writel(mask->mask8, (dist_base + GIC_DIST_ENABLE_SET + 0x20));
 	mb();
 
-	spin_unlock_irqrestore(&irq_lock, flags);
+
 	/*
 #if defined(CONFIG_FIQ_GLUE)
 		  local_fiq_enable();
