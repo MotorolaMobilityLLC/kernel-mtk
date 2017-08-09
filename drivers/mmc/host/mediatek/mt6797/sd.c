@@ -2904,7 +2904,9 @@ int msdc_do_request_prepare(struct msdc_host *host,
 	u32 *l_bypass_flush,
 	int prepare_case)
 {
+#ifndef CONFIG_CMDQ_CMD_DAT_PARALLEL
 	void __iomem *base = host->base;
+#endif
 
 	atomic_set(&host->abort, 0);
 #ifndef CONFIG_CMDQ_CMD_DAT_PARALLEL

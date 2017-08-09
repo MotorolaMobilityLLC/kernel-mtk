@@ -518,7 +518,8 @@ static int mmc_ffu_restart(struct mmc_card *card)
 	mmc_set_bus_width(card->host, MMC_BUS_WIDTH_1);
 
 	card->state |= MMC_STATE_FFUED;
-
+	mmc_power_off(host);
+	mmc_power_up(host, card->ocr);
 	err = mmc_reinit_oldcard(host);
 	pr_err("mmc_init_card ret %d\n", err);
 	if (!err)
