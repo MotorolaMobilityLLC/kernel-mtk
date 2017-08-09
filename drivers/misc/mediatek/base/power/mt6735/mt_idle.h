@@ -1,5 +1,5 @@
-#ifndef _MT_IDLE_H
-#define _MT_IDLE_H
+#ifndef __MT_IDLE_H__
+#define __MT_IDLE_H__
 
 #include <linux/types.h>
 
@@ -14,4 +14,4 @@ extern void disable_dpidle_by_bit(int id);
 extern void enable_soidle_by_bit(int id);
 extern void disable_soidle_by_bit(int id);
 
-#endif
+#endif /* __MT_IDLE_H__ */
