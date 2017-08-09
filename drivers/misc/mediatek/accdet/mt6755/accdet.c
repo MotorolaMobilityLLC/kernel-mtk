@@ -8,12 +8,15 @@
 #include <linux/of_irq.h>
 
 #define DEBUG_THREAD 1
+#define GET_ADC_DIRECTLY
 
 /*----------------------------------------------------------------------
 static variable defination
 ----------------------------------------------------------------------*/
 
 #define REGISTER_VALUE(x)   (x - 1)
+
+#define ACCDET_DEBOUNCE3_PLUG_OUT	(0x20*30) /* 30 msec */
 static int button_press_debounce = 0x400;
 int cur_key = 0;
 struct head_dts_data accdet_dts_data;
@@ -191,6 +194,7 @@ static void pmic_pwrap_write(unsigned int addr, unsigned int wdata)
 	pwrap_write(addr, wdata);
 }
 
+#ifdef GET_ADC_DIRECTLY
 static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 {
 	unsigned int vol_val = 0;
@@ -206,6 +210,7 @@ static int Accdet_PMIC_IMM_GetOneChannelValue(int deCount)
 	ACCDET_DEBUG("ACCDET accdet_auxadc_offset: %d mv, MIC_Voltage1 = %d mv!\n\r", accdet_auxadc_offset, vol_val);
 	return vol_val;
 }
+#endif
 
 #ifdef CONFIG_ACCDET_PIN_SWAP
 
@@ -665,8 +670,13 @@ static void multi_key_detection(int current_status)
 	int cali_voltage = 0;
 
 	if (0 == current_status) {
+#ifdef GET_ADC_DIRECTLY
 		cali_voltage = Accdet_PMIC_IMM_GetOneChannelValue(1);
-		/*ACCDET_DEBUG("[Accdet]adc cali_voltage1 = %d mv\n", cali_voltage);*/
+#else
+		cali_voltage = PMIC_IMM_GetOneChannelValue(PMIC_AUX_VACCDET_AP, 1, 0);
+		cali_voltage -= accdet_auxadc_offset;
+		ACCDET_DEBUG("[Accdet]adc cali_voltage1 = %d mv\n", cali_voltage);
+#endif
 		m_key = cur_key = key_check(cali_voltage);
 	}
 	mdelay(30);
@@ -811,7 +821,12 @@ static inline void check_cable_type(void)
 			current_status = ((pmic_pwrap_read(ACCDET_STATE_RG) & 0xc0) >> 6);	/*A=bit1; B=bit0*/
 			if (current_status == 0 && show_icon_delay != 0) {
 				/*accdet_auxadc_switch(1);switch on when need to use auxadc read voltage*/
+#ifdef GET_ADC_DIRECTLY
 				pin_adc_value = Accdet_PMIC_IMM_GetOneChannelValue(1);
+#else
+				pin_adc_value = PMIC_IMM_GetOneChannelValue(PMIC_AUX_VACCDET_AP, 1, 0);
+				pin_adc_value -= accdet_auxadc_offset;
+#endif
 				ACCDET_DEBUG("[Accdet]pin_adc_value = %d mv!\n", pin_adc_value);
 				/*accdet_auxadc_switch(0);*/
 				if (180 > pin_adc_value && pin_adc_value > 90) {	/*90mv   ilegal headset*/
@@ -855,7 +870,7 @@ static inline void check_cable_type(void)
 				accdet_status = MIC_BIAS;
 				cable_type = HEADSET_MIC;
 				/*AB=11 debounce=30ms*/
-				pmic_pwrap_write(ACCDET_DEBOUNCE3, cust_headset_settings->debounce3 * 30);
+				pmic_pwrap_write(ACCDET_DEBOUNCE3, ACCDET_DEBOUNCE3_PLUG_OUT);
 			} else {
 				ACCDET_DEBUG("[Accdet] Headset has plugged out\n");
 			}
@@ -1208,8 +1223,10 @@ static inline void accdet_init(void)
 		;
 	else if (accdet_dts_data.accdet_mic_mode == 2)	/* Low cost mode without internal bias*/
 		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0x08C0);
-	else if (accdet_dts_data.accdet_mic_mode == 6)	/* Low cost mode with internal bias*/
-		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0x09C4);
+	else if (accdet_dts_data.accdet_mic_mode == 6) {	/* Low cost mode with internal bias*/
+		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0x08C0);
+		pmic_pwrap_write(ACCDET_MICBIAS_REG, pmic_pwrap_read(ACCDET_MICBIAS_REG) | 0x0104);
+	}
     /**************************************************************************************************/
 #if defined CONFIG_ACCDET_EINT
 	/* disable ACCDET unit*/
@@ -1252,6 +1269,7 @@ static int dump_register(void)
 	ACCDET_DEBUG(" TOP_RST_ACCDET(0x%x) =%x\n", TOP_RST_ACCDET, pmic_pwrap_read(TOP_RST_ACCDET));
 	ACCDET_DEBUG(" INT_CON_ACCDET(0x%x) =%x\n", INT_CON_ACCDET, pmic_pwrap_read(INT_CON_ACCDET));
 	ACCDET_DEBUG(" TOP_CKPDN(0x%x) =%x\n", TOP_CKPDN, pmic_pwrap_read(TOP_CKPDN));
+	ACCDET_DEBUG(" ACCDET_MICBIAS_REG(0x%x) =%x\n", ACCDET_MICBIAS_REG, pmic_pwrap_read(ACCDET_MICBIAS_REG));
 	ACCDET_DEBUG(" ACCDET_ADC_REG(0x%x) =%x\n", ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG));
 #ifdef CONFIG_ACCDET_PIN_SWAP
 	/*ACCDET_DEBUG(" 0x00004000 =%x\n",pmic_pwrap_read(0x00004000));*/
