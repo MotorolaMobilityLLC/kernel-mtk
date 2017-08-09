@@ -1478,7 +1478,7 @@ struct SMI_SETTING_VALUE smi_profile_setting_common_init[SMI_PROFILE_SETTING_COM
 		 + (0x4 << 10) + (0x4 << 5) + 0x5)},
 	{0x238, (0x2 << 25) + (0x3 << 20) + (0x4 << 15) + (0x5 << 10) + (0x7 << 5) + 0x8},
 	{0x230, 0x7f + (0x8 << 7) + (0x7 << 12)},
-	{0x300, 0x1 + (0x78 << 1) + (0x4 << 8)}
+	{0x300, 0x1 + (0x1 << 1) + (0x4 << 8)}
 };
 
 struct SMI_SETTING_VALUE smi_profile_setting_larb0_init[SMI_INITSETTING_LARB0_NUM] = {
