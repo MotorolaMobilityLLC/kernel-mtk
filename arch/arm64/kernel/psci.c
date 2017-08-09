@@ -492,7 +492,7 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	unsigned int temp;
 	int ret = 0;
 
-	pr_info("cpu_power_on_buck\n");
+	pr_info("cpu_power_on_buck (%d)\n", cpu);
 	reg_base = ioremap(MT6797_SPM_BASE_ADDR, 0x1000);
 	writel_relaxed((readl(reg_base + 0x218) | (1 << 0)), reg_base + 0x218);
 	iounmap(reg_base);
@@ -503,7 +503,6 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	iounmap(reg_base);
 
 	if (hotplug) {
-		pr_info("power on vproc\n");
 		ret = da9214_config_interface(0x0, 0x0, 0xF, 0);
 		ret = da9214_config_interface(0x5E, 0x1, 0x1, 0);
 
@@ -521,9 +520,7 @@ static int cpu_power_on_buck(unsigned int cpu, bool hotplug)
 	writel_relaxed(temp, reg_base + 0x018);
 	iounmap(reg_base);
 
-	pr_info("power on vsram (%d) (max:%d)\n", cpu, num_possible_cpus());
 	/* set VSRAM enable, cal_eFuse, rsh = 0x0f -> 0x08 */
-	pr_info("Vsram = 1100mv and load eFuse.\n");
 	BigiDVFSSRAMLDOSet(110000);
 	udelay(240);
 
@@ -535,11 +532,10 @@ static int cpu_power_off_buck(unsigned int cpu)
 	static void __iomem *reg_base;
 	int ret = 0;
 
-	pr_info("power down vproc (%d)\n", cpu);
+	pr_info("cpu_power_off_buck (%d)\n", cpu);
 	ret = da9214_config_interface(0x0, 0x0, 0xF, 0);
 	ret = da9214_config_interface(0x5E, 0x0, 0x1, 0);
 
-	pr_info("power down vsram\n");
 	BigiDVFSSRAMLDODisable();
 
 	return ret;
@@ -557,7 +553,6 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 			bypass_cl0_armpll--;
 		} else {
 			if (!g_cl0_online) {
-				pr_info("boot cluster0\n");
 #ifdef CONFIG_ARMPLL_CTRL
 				/* turn on arm pll */
 				enable_armpll_ll();
@@ -576,7 +571,6 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 			bypass_cl1_armpll--;
 		} else {
 			if (!g_cl1_online) {
-				pr_info("boot cluster1\n");
 #ifdef CONFIG_ARMPLL_CTRL
 				/* turn on arm pll */
 				enable_armpll_l();
@@ -599,7 +593,6 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 			bypass_boot--;
 		} else {
 			if (!g_cl2_online) {
-				pr_info("boot cluster2\n");
 #ifdef CONFIG_CL2_BUCK_CTRL
 				cpu_power_on_buck(cpu, 1);
 #endif
@@ -612,19 +605,16 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 #ifdef CONFIG_OCP_IDVFS_CTRL
 	if ((cpu == 0) || (cpu == 1) || (cpu == 2) || (cpu == 3)) {
 		if (!ocp_cl0_init) {
-			pr_err("OXOXOX %s %d OXOXOX\n", __func__, __LINE__);
 			Cluster0_OCP_ON();
 			ocp_cl0_init = 1;
 		}
 	} else if ((cpu == 4) || (cpu == 5) || (cpu == 6) || (cpu == 7)) {
 		if (!ocp_cl1_init) {
-			pr_err("OXOXOX %s %d OXOXOX\n", __func__, __LINE__);
 			Cluster1_OCP_ON();
 			ocp_cl1_init = 1;
 		}
 	} else if ((cpu == 8) || (cpu == 9)) {
 		if (!idvfs_init) {
-			pr_err("OXOXOX %s %d OXOXOX\n", __func__, __LINE__);
 			BigiDVFSEnable_hp();
 			idvfs_init = 1;
 		}
@@ -692,7 +682,6 @@ static int cpu_kill_pll_buck_ctrl(unsigned int cpu)
 	if ((cpu == 0) || (cpu == 1) || (cpu == 2) || (cpu == 3)) {
 		g_cl0_online &= ~(1 << cpu);
 		if (!g_cl0_online) {
-			pr_info("cluster0 down\n");
 #ifdef CONFIG_ARMPLL_CTRL
 			/* switch to SW mode */
 			switch_armpll_ll_hwmode(0);
@@ -708,7 +697,6 @@ static int cpu_kill_pll_buck_ctrl(unsigned int cpu)
 	} else if ((cpu == 4) || (cpu == 5) || (cpu == 6) || (cpu == 7)) {
 		g_cl1_online &= ~(1 << (cpu - 4));
 		if (!g_cl1_online) {
-			pr_info("cluster1 down\n");
 #ifdef CONFIG_ARMPLL_CTRL
 			/* switch to SW mode */
 			switch_armpll_l_hwmode(0);
@@ -724,7 +712,6 @@ static int cpu_kill_pll_buck_ctrl(unsigned int cpu)
 	} else if ((cpu == 8) || (cpu == 9)) {
 		g_cl2_online &= ~(1 << (cpu - 8));
 		if (!g_cl2_online) {
-			pr_info("cluster2 down\n");
 #ifdef CONFIG_CL2_BUCK_CTRL
 			ret = cpu_power_off_buck(cpu);
 #endif
@@ -790,19 +777,16 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 #ifdef CONFIG_ARCH_MT6797
 #ifdef CONFIG_OCP_IDVFS_CTRL
 		if (idvfs_init && last_cl2_online_cpus(cpu)) {
-			pr_info("BigiDVFSDisable_hp()\n");
 			BigiDVFSDisable_hp();
 			idvfs_init = 0;
 		}
 
 		if (ocp_cl0_init && last_cl0_online_cpus(cpu)) {
-			pr_info("LittleOCPDisable(0)\n");
 			LittleOCPDisable(0);
 			ocp_cl0_init = 0;
 		}
 
 		if (ocp_cl1_init && last_cl1_online_cpus(cpu)) {
-			pr_info("LittleOCPDisable(1)\n");
 			LittleOCPDisable(1);
 			ocp_cl1_init = 0;
 		}
