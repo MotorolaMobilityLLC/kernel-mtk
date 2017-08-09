@@ -232,6 +232,7 @@ static int mtk_cec_remove(struct platform_device *pdev)
 
 static const struct of_device_id mtk_cec_of_ids[] = {
 	{ .compatible = "mediatek,mt8173-cec", },
+	{ .compatible = "mediatek,mt2701-cec", },
 	{}
 };
 

@@ -14,6 +14,8 @@
 #include <linux/debugfs.h>
 #include <linux/uaccess.h>
 #include <drm/drm_edid.h>
+#include <drm/drm_crtc.h>
+#include <drm/drm_crtc_helper.h>
 #include "mtk_dpi.h"
 #include "mtk_hdmi.h"
 
@@ -698,6 +700,113 @@ static struct drm_display_mode display_mode[] = {
 		   DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NVSYNC) },
 };
 
+static int mtk_hdmi_get_edid(struct mtk_hdmi *hdmi, char *oprands)
+{
+	struct edid *edid_info;
+	u8 *edid_raw;
+	int size;
+
+	edid_info = drm_get_edid(&hdmi->conn, hdmi->ddc_adpt);
+	if (!edid_info) {
+		dev_err(hdmi->dev, "get edid failed!\n");
+		return PTR_ERR(edid_info);
+	}
+
+	edid_raw = (u8 *)edid_info;
+	size = EDID_LENGTH * (1 + edid_info->extensions);
+
+	dev_info(hdmi->dev,
+		 "get edid success! edid raw data:\n");
+	print_hex_dump(KERN_INFO, "  ", DUMP_PREFIX_NONE, 16,
+		       1, edid_raw, size, false);
+	return 0;
+}
+
+static int mtk_hdmi_status(struct mtk_hdmi *hdmi, char *oprands)
+{
+	dev_info(hdmi->dev, "cur display: name:%s, hdisplay:%d\n",
+			      hdmi->mode.name, hdmi->mode.hdisplay);
+	dev_info(hdmi->dev, "hsync_start:%d,hsync_end:%d, htotal:%d",
+		 hdmi->mode.hsync_start, hdmi->mode.hsync_end,
+		 hdmi->mode.htotal);
+	dev_info(hdmi->dev, "hskew:%d, vdisplay:%d\n",
+		 hdmi->mode.hskew, hdmi->mode.vdisplay);
+	dev_info(hdmi->dev, "vsync_start:%d, vsync_end:%d, vtotal:%d",
+		 hdmi->mode.vsync_start, hdmi->mode.vsync_end,
+		 hdmi->mode.vtotal);
+	dev_info(hdmi->dev, "vscan:%d, flag:%d\n",
+		 hdmi->mode.vscan, hdmi->mode.flags);
+	dev_info(hdmi->dev, "current display mode:%s\n",
+		 hdmi->dvi_mode ? "dvi" : "hdmi");
+	dev_info(hdmi->dev, "min clock:%d, max clock:%d\n",
+		 hdmi->min_clock, hdmi->max_clock);
+	dev_info(hdmi->dev, "max hdisplay:%d, max vdisplay:%d\n",
+		 hdmi->max_hdisplay, hdmi->max_vdisplay);
+	dev_info(hdmi->dev, "ibias:0x%x, ibias_up:0x%x\n",
+		 hdmi->ibias, hdmi->ibias_up);
+	return 0;
+}
+
+static int mtk_hdmi_set_display_mode(struct mtk_hdmi *hdmi, char *oprands)
+{
+	unsigned long res;
+
+	if (!oprands) {
+		dev_err(hdmi->dev, "Error! oprands should be NULL\n");
+		return -EFAULT;
+	}
+	if (kstrtoul(oprands, 10, &res)) {
+		dev_err(hdmi->dev, "kstrtoul error\n");
+		return -EFAULT;
+	}
+
+	if (res >= ARRAY_SIZE(display_mode)) {
+		dev_err(hdmi->dev, "invalid format, res = %ld\n", res);
+		return -EFAULT;
+	}
+
+	dev_info(hdmi->dev, "set format %ld\n", res);
+
+	if (hdmi->bridge.encoder) {
+		struct drm_encoder_helper_funcs *helper;
+
+		helper = (struct drm_encoder_helper_funcs *)hdmi->bridge.encoder->helper_private;
+		helper->mode_set(hdmi->bridge.encoder, NULL, &display_mode[res]);
+		helper->enable(hdmi->bridge.encoder);
+
+		hdmi->bridge.funcs->mode_set(&hdmi->bridge, NULL, &display_mode[res]);
+		hdmi->bridge.funcs->pre_enable(&hdmi->bridge);
+		hdmi->bridge.funcs->enable(&hdmi->bridge);
+	} else {
+		WARN_ON(1);
+	}
+
+	return 0;
+}
+
+struct mtk_hdmi_cmd {
+	const char *name;
+	int (*proc)(struct mtk_hdmi *hdmi, char *oprands);
+};
+
+static const struct mtk_hdmi_cmd hdmi_cmds[] = {
+	{.name = "getedid", .proc = mtk_hdmi_get_edid},
+	{.name = "status", .proc = mtk_hdmi_status},
+	{.name = "res", .proc = mtk_hdmi_set_display_mode}
+};
+
+static const struct mtk_hdmi_cmd *mtk_hdmi_find_cmd_by_name(char *name)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(hdmi_cmds); i++) {
+		if (!strncmp(name, hdmi_cmds[i].name, strlen(hdmi_cmds[i].name)))
+			return &hdmi_cmds[i];
+	}
+
+	return NULL;
+}
+
 static int mtk_hdmi_debug_open(struct inode *inode, struct file *file)
 {
 	file->private_data = inode->i_private;
@@ -711,106 +820,48 @@ static ssize_t mtk_hdmi_debug_read(struct file *file, char __user *ubuf,
 				       strlen(HELP_INFO));
 }
 
-static int mtk_hdmi_process_cmd(char *cmd, struct mtk_hdmi *hdmi)
-{
-	char *np;
-	unsigned long res;
-
-	dev_info(hdmi->dev, "dbg cmd: %s\n", cmd);
-
-	if (!strncmp(cmd, "getedid", 7)) {
-		struct edid *edid_info = NULL;
-
-		edid_info = drm_get_edid(&hdmi->conn, hdmi->ddc_adpt);
-		if (!edid_info) {
-			dev_err(hdmi->dev, "get edid failed!\n");
-			goto errcode;
-		} else {
-			u8 *edid_raw = (u8 *)edid_info;
-			int size = EDID_LENGTH * (1 + edid_info->extensions);
-
-			dev_info(hdmi->dev,
-				 "get edid success! edid raw data:\n");
-			print_hex_dump(KERN_INFO, "  ", DUMP_PREFIX_NONE, 16,
-				       1, edid_raw, size, false);
-		}
-	} else if (!strncmp(cmd, "status", 6)) {
-		dev_info(hdmi->dev, "cur display: name:%s, hdisplay:%d\n",
-			      hdmi->mode.name, hdmi->mode.hdisplay);
-		dev_info(hdmi->dev, "hsync_start:%d,hsync_end:%d, htotal:%d",
-			 hdmi->mode.hsync_start, hdmi->mode.hsync_end,
-			 hdmi->mode.htotal);
-		dev_info(hdmi->dev, "hskew:%d, vdisplay:%d\n",
-			 hdmi->mode.hskew, hdmi->mode.vdisplay);
-		dev_info(hdmi->dev, "vsync_start:%d, vsync_end:%d, vtotal:%d",
-			 hdmi->mode.vsync_start, hdmi->mode.vsync_end,
-			 hdmi->mode.vtotal);
-		dev_info(hdmi->dev, "vscan:%d, flag:%d\n",
-			 hdmi->mode.vscan, hdmi->mode.flags);
-		dev_info(hdmi->dev, "current display mode:%s\n",
-			 hdmi->dvi_mode ? "dvi" : "hdmi");
-		dev_info(hdmi->dev, "min clock:%d, max clock:%d\n",
-			 hdmi->min_clock, hdmi->max_clock);
-		dev_info(hdmi->dev, "max hdisplay:%d, max vdisplay:%d\n",
-			 hdmi->max_hdisplay, hdmi->max_vdisplay);
-		dev_info(hdmi->dev, "ibias:0x%x, ibias_up:0x%x\n",
-			 hdmi->ibias, hdmi->ibias_up);
-	} else {
-		np = strsep(&cmd, "=");
-		if (strncmp(np, "res", 3))
-			goto errcode;
-
-		np = strsep(&cmd, "=");
-		if (kstrtoul(np, 10, &res))
-			goto errcode;
-
-		if (res >= ARRAY_SIZE(display_mode)) {
-			dev_err(hdmi->dev, "invalid format, res = %ld\n", res);
-			goto errcode;
-		}
-
-		dev_info(hdmi->dev, "set format %ld\n", res);
-
-		if (hdmi->bridge.encoder) {
-			struct mtk_dpi *dpi;
-
-			dpi = mtk_dpi_from_encoder(hdmi->bridge.encoder);
-			mtk_dpi_set_display_mode(dpi, &display_mode[res]);
-		} else {
-			WARN_ON(1);
-		}
-		mtk_hdmi_output_set_display_mode(hdmi, &display_mode[res]);
-	}
-
-	return 0;
-
-errcode:
-	dev_err(hdmi->dev, "invalid dbg command\n");
-	return -1;
-}
-
 static ssize_t mtk_hdmi_debug_write(struct file *file, const char __user *ubuf,
 				    size_t count, loff_t *ppos)
 {
-	char str_buf[64];
-	size_t ret;
+	char *cmd_str;
+	char *opt;
+	char *oprands;
 	struct mtk_hdmi *hdmi;
+	const struct mtk_hdmi_cmd *hdmi_cmd;
 
 	hdmi = file->private_data;
-	ret = count;
-	memset(str_buf, 0, sizeof(str_buf));
+	cmd_str = kzalloc(128, GFP_KERNEL);
+	if (!cmd_str)
+		return -ENOMEM;
 
-	if (count > sizeof(str_buf))
-		count = sizeof(str_buf);
+	if (count >= 128) {
+		dev_err(hdmi->dev, "input commands are too long\n");
+		goto err;
+	}
 
-	if (copy_from_user(str_buf, ubuf, count))
-		return -EFAULT;
+	if (copy_from_user(cmd_str, ubuf, count))
+		goto err;
 
-	str_buf[count] = 0;
+	cmd_str[count] = 0;
+	opt = strsep(&cmd_str, "=");
+	if (!opt) {
+		dev_err(hdmi->dev, "invalid command\n");
+		goto err;
+	}
 
-	mtk_hdmi_process_cmd(str_buf, hdmi);
+	hdmi_cmd = mtk_hdmi_find_cmd_by_name(opt);
+	if (!hdmi_cmd) {
+		dev_err(hdmi->dev, "can not find cmd : %s\n", cmd_str);
+		goto err;
+	}
 
-	return ret;
+	oprands = strsep(&cmd_str, "=");
+	if (hdmi_cmd->proc)
+		hdmi_cmd->proc(hdmi, oprands);
+	return count;
+err:
+	kfree(cmd_str);
+	return -EFAULT;
 }
 
 static const struct file_operations mtk_hdmi_debug_fops = {

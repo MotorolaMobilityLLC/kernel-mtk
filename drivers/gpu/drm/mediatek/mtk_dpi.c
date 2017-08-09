@@ -51,6 +51,11 @@ struct mtk_dpi_yc_limit {
 	u16 c_bottom;
 };
 
+struct mtk_dpi_conf {
+	int (*parse_clk_from_dt)(struct mtk_dpi *dpi, struct device *dev);
+	void (*clk_config)(struct mtk_dpi *dpi, unsigned long clock);
+};
+
 static void mtk_dpi_mask(struct mtk_dpi *dpi, u32 offset, u32 val, u32 mask)
 {
 	u32 tmp = readl(dpi->regs + offset) & ~mask;
@@ -141,6 +146,7 @@ static void mtk_dpi_config_pol(struct mtk_dpi *dpi,
 	      (dpi_pol->vsync_pol == MTK_DPI_POLARITY_RISING ? 0 : VSYNC_POL);
 	mtk_dpi_mask(dpi, DPI_OUTPUT_SETTING, pol,
 		     CK_POL | DE_POL | HSYNC_POL | VSYNC_POL);
+	mtk_dpi_mask(dpi, DPI_CLK_CTRL, CKOUT_DIV, EDGE_SEL_EN | CKOUT_DIV);
 }
 
 static void mtk_dpi_config_3d(struct mtk_dpi *dpi, bool en_3d)
@@ -344,7 +350,7 @@ err_dec:
 	return ret;
 }
 
-int mtk_dpi_set_display_mode(struct mtk_dpi *dpi, struct drm_display_mode *mode)
+static int mtk_dpi_set_display_mode(struct mtk_dpi *dpi, struct drm_display_mode *mode)
 {
 	struct mtk_dpi_yc_limit limit;
 	struct mtk_dpi_polarities dpi_pol;
@@ -353,20 +359,15 @@ int mtk_dpi_set_display_mode(struct mtk_dpi *dpi, struct drm_display_mode *mode)
 	struct mtk_dpi_sync_param vsync_leven = { 0 };
 	struct mtk_dpi_sync_param vsync_rodd = { 0 };
 	struct mtk_dpi_sync_param vsync_reven = { 0 };
+	struct mtk_dpi_conf *conf;
 	unsigned long pix_rate;
 
-	if (!dpi) {
-		dev_err(dpi->dev, "invalid argument\n");
-		return -EINVAL;
-	}
-
 	pix_rate = 1000UL * mode->clock;
-	if (pix_rate <= 74250000)
-		clk_set_parent(dpi->sel, dpi->tvd_d8);
-	else
-		clk_set_parent(dpi->sel, dpi->tvd_d4);
+	conf = (struct mtk_dpi_conf *)dpi->data;
 
+	conf->clk_config(dpi, pix_rate);
 	clk_set_rate(dpi->pixel_clk, pix_rate);
+
 	dev_info(dpi->dev, "expected clock is %lu, actual is %lu\n", pix_rate, clk_get_rate(dpi->pixel_clk));
 
 	limit.c_bottom = 0x0010;
@@ -568,6 +569,111 @@ static const struct component_ops mtk_dpi_component_ops = {
 	.unbind = mtk_dpi_unbind,
 };
 
+static int mt8173_parse_clk_from_dt(struct mtk_dpi *dpi, struct device *dev)
+{
+	int ret;
+
+	dpi->tvd_div4 = devm_clk_get(dev, "div4");
+	if (IS_ERR(dpi->tvd_div4)) {
+		ret = PTR_ERR(dpi->tvd_div4);
+		dev_err(dev, "Failed to get tvdpll_d4 clock: %d\n", ret);
+		return ret;
+	}
+
+	dpi->tvd_div8 = devm_clk_get(dev, "div8");
+	if (IS_ERR(dpi->tvd_div8)) {
+		ret = PTR_ERR(dpi->tvd_div8);
+		dev_err(dev, "Failed to get tvdpll_d8 clock: %d\n", ret);
+		return ret;
+	}
+
+	dpi->sel = devm_clk_get(dev, "sel");
+	if (IS_ERR(dpi->sel)) {
+		ret = PTR_ERR(dpi->sel);
+		dev_err(dev, "Failed to get dpi0_sel clock: %d\n", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+static void mt8173_clk_config(struct mtk_dpi *dpi, unsigned long clock)
+{
+	if (clock <= 74250000)
+		clk_set_parent(dpi->sel, dpi->tvd_div8);
+	else
+		clk_set_parent(dpi->sel, dpi->tvd_div4);
+}
+
+static const struct mtk_dpi_conf mt8173_conf = {
+	.parse_clk_from_dt = mt8173_parse_clk_from_dt,
+	.clk_config = mt8173_clk_config,
+};
+
+static int mt2701_parse_clk_from_dt(struct mtk_dpi *dpi, struct device *dev)
+{
+	int ret;
+
+	dpi->tvd_div1 = devm_clk_get(dev, "div1");
+	if (IS_ERR(dpi->tvd_div1)) {
+		ret = PTR_ERR(dpi->tvd_div1);
+		dev_err(dev, "Failed to get tvdpll_d1 clock: %d\n", ret);
+		return ret;
+	}
+
+	dpi->tvd_div2 = devm_clk_get(dev, "div2");
+	if (IS_ERR(dpi->tvd_div2)) {
+		ret = PTR_ERR(dpi->tvd_div2);
+		dev_err(dev, "Failed to get tvdpll_d2 clock: %d\n", ret);
+		return ret;
+	}
+
+	dpi->tvd_div4 = devm_clk_get(dev, "div4");
+	if (IS_ERR(dpi->tvd_div4)) {
+		ret = PTR_ERR(dpi->tvd_div4);
+		dev_err(dev, "Failed to get tvdpll_d4 clock: %d\n", ret);
+		return ret;
+	}
+
+	dpi->sel = devm_clk_get(dev, "sel");
+	if (IS_ERR(dpi->sel)) {
+		ret = PTR_ERR(dpi->sel);
+		dev_err(dev, "Failed to get dpi1_sel clock: %d\n", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+static void mt2701_clk_config(struct mtk_dpi *dpi, unsigned long clock)
+{
+	if (clock >= 148000000)
+		clk_set_parent(dpi->sel, dpi->tvd_div1);
+	else if (clock >= 74250000)
+		clk_set_parent(dpi->sel, dpi->tvd_div2);
+	else
+		clk_set_parent(dpi->sel, dpi->tvd_div4);
+}
+
+static const struct mtk_dpi_conf mt2701_conf = {
+	.parse_clk_from_dt = mt2701_parse_clk_from_dt,
+	.clk_config = mt2701_clk_config,
+};
+
+
+static const struct of_device_id mtk_dpi_of_ids[] = {
+	{
+		.compatible = "mediatek,mt8173-dpi",
+		.data = &mt8173_conf,
+	},
+	{
+		.compatible = "mediatek,mt2701-dpi",
+		.data = &mt2701_conf,
+	},
+	{}
+};
+MODULE_DEVICE_TABLE(of, mtk_dpi_of_ids);
+
 static int mtk_dpi_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -576,12 +682,20 @@ static int mtk_dpi_probe(struct platform_device *pdev)
 	struct device_node *ep, *bridge_node = NULL;
 	int comp_id;
 	int ret;
+	const struct of_device_id *match;
+	struct mtk_dpi_conf *conf;
+
+	match = of_match_node(mtk_dpi_of_ids, dev->of_node);
+	if (!match)
+		return -ENODEV;
 
 	dpi = devm_kzalloc(dev, sizeof(*dpi), GFP_KERNEL);
 	if (!dpi)
 		return -ENOMEM;
 
 	dpi->dev = dev;
+	dpi->data = (void *)match->data;
+	conf = (struct mtk_dpi_conf *)match->data;
 
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	dpi->regs = devm_ioremap_resource(dev, mem);
@@ -605,24 +719,9 @@ static int mtk_dpi_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	dpi->sel = devm_clk_get(dev, "sel");
-	if (IS_ERR(dpi->sel)) {
-		ret = PTR_ERR(dpi->sel);
-		dev_err(dev, "Failed to get sel clock: %d\n", ret);
-		return ret;
-	}
-
-	dpi->tvd_d4 = devm_clk_get(dev, "tvd_d4");
-	if (IS_ERR(dpi->tvd_d4)) {
-		ret = PTR_ERR(dpi->tvd_d4);
-		dev_err(dev, "Failed to get tvd_d4 clock: %d\n", ret);
-		return ret;
-	}
-
-	dpi->tvd_d8 = devm_clk_get(dev, "tvd_d8");
-	if (IS_ERR(dpi->tvd_d8)) {
-		ret = PTR_ERR(dpi->tvd_d8);
-		dev_err(dev, "Failed to get tvd_d8 clock: %d\n", ret);
+	ret = conf->parse_clk_from_dt(dpi, dev);
+	if (ret) {
+		dev_err(dev, "parse tvd div clk failed!");
 		return ret;
 	}
 
@@ -725,11 +824,6 @@ static int mtk_dpi_resume(struct device *dev)
 #endif
 
 static SIMPLE_DEV_PM_OPS(mtk_dpi_pm_ops, mtk_dpi_suspend, mtk_dpi_resume);
-
-static const struct of_device_id mtk_dpi_of_ids[] = {
-	{ .compatible = "mediatek,mt8173-dpi", },
-	{}
-};
 
 struct platform_driver mtk_dpi_driver = {
 	.probe = mtk_dpi_probe,

@@ -438,7 +438,12 @@ static struct mtk_ddp_comp_driver_data mt2701_bls_driver_data = {
 	.comp_type = MTK_DISP_BLS,
 };
 
+static struct mtk_ddp_comp_driver_data mt2701_dpi_driver_data = {
+	.comp_type = MTK_DPI,
+};
+
 static const struct of_device_id mtk_ddp_comp_dt_ids[] = {
+	{ .compatible = "mediatek,mt2701-dpi",        .data = &mt2701_dpi_driver_data },
 	{ .compatible = "mediatek,mt2701-disp-rdma",  .data = &mt2701_rdma_driver_data },
 	{ .compatible = "mediatek,mt2701-disp-bls",   .data = &mt2701_bls_driver_data },
 	{ .compatible = "mediatek,mt8173-disp-ovl",   .data = &mt8173_ovl_driver_data },

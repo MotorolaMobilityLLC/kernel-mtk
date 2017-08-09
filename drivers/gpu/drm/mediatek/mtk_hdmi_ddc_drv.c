@@ -320,12 +320,6 @@ static int mtk_hdmi_i2c_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, i2c);
-
-	dev_dbg(dev, "i2c->adap: %p\n", &i2c->adap);
-	dev_dbg(dev, "i2c->clk: %p\n", i2c->clk);
-	dev_dbg(dev, "physical adr: 0x%llx, end: 0x%llx\n", mem->start,
-		mem->end);
-
 	return 0;
 
 err_clk_disable:
@@ -345,6 +339,7 @@ static int mtk_hdmi_i2c_remove(struct platform_device *pdev)
 
 static const struct of_device_id mtk_hdmi_i2c_match[] = {
 	{ .compatible = "mediatek,mt8173-hdmi-ddc", },
+	{ .compatible = "mediatek,mt2701-hdmi-ddc", },
 	{},
 };
 

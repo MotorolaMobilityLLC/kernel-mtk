@@ -64,8 +64,10 @@ struct mtk_dpi {
 	struct clk *engine_clk;
 	struct clk *pixel_clk;
 	struct clk *sel;
-	struct clk *tvd_d4;
-	struct clk *tvd_d8;
+	struct clk *tvd_div1;
+	struct clk *tvd_div2;
+	struct clk *tvd_div4;
+	struct clk *tvd_div8;
 	int irq;
 	struct drm_display_mode mode;
 	enum mtk_dpi_out_color_format color_format;
@@ -73,14 +75,12 @@ struct mtk_dpi {
 	enum mtk_dpi_out_bit_num bit_num;
 	enum mtk_dpi_out_channel_swap channel_swap;
 	int refcount;
+	void *data;
 };
 
 static inline struct mtk_dpi *mtk_dpi_from_encoder(struct drm_encoder *e)
 {
 	return container_of(e, struct mtk_dpi, encoder);
 }
-
-int mtk_dpi_set_display_mode(struct mtk_dpi *dpi,
-			     struct drm_display_mode *mode);
 
 #endif /* _MTK_DPI_H */

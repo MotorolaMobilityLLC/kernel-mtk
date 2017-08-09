@@ -223,6 +223,13 @@
 #define ESAV_CODE2			(0xFFF << 0)
 #define ESAV_CODE3_MSB			BIT(16)
 
+#define DPI_CLK_CTRL	0xB0
+#define CK_DIV_MASK		(0x1F << 0)
+#define EDGE_SEL_EN		BIT(5)
+#define CK_DUTY_MASK	(0x1F << 8)
+#define CKOUT_DIV		BIT(25)
+#define CLK_POL			BIT(31)
+
 #define DPI_H_FRE_CON		0xE0
 #define H_FRE_2N			BIT(25)
 #endif /* __MTK_DPI_REGS_H */

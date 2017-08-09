@@ -104,5 +104,4 @@ void mtk_drm_hdmi_debugfs_exit(struct mtk_hdmi *hdmi)
 
 extern struct platform_driver mtk_cec_driver;
 extern struct platform_driver mtk_hdmi_ddc_driver;
-extern struct platform_driver mtk_hdmi_pll_driver;
 #endif /* _MTK_HDMI_CTRL_H */
