@@ -81,4 +81,16 @@ config TOUCHSCREEN_MTK_GT910
 
 source "drivers/input/touchscreen/mediatek/GT910/Kconfig"
 
+config TOUCHSCREEN_MTK_GT911
+	bool "GT1151 for Mediatek package"
+	default n
+	help
+	Say Y here if you have GT911 touch panel.
+
+	If unsure, say N.
+
+	To compile this dirver as a module, choose M here: the
+	module will be called.
+
+source "drivers/input/touchscreen/mediatek/GT911/Kconfig"
 endif
