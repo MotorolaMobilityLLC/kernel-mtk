@@ -791,6 +791,43 @@ BOOLEAN cnmBowIsPermitted(P_ADAPTER_T prAdapter)
 	return TRUE;
 }
 
+static UINT_8 cnmGetAPBwPermitted(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex)
+{
+	P_BSS_INFO_T prBssInfo;
+	UINT_8 ucAPBandwidth = MAX_BW_80MHZ;
+	P_BSS_DESC_T    prBssDesc = NULL;
+	P_P2P_ROLE_FSM_INFO_T prP2pRoleFsmInfo = (P_P2P_ROLE_FSM_INFO_T) NULL;
+
+	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
+	/* Currently we only support 2 p2p interface. So the RoleIndex is 0. */
+	prP2pRoleFsmInfo = prAdapter->rWifiVar.aprP2pRoleFsmInfo[0];
+
+	if (IS_BSS_AIS(prBssInfo)) {
+		prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
+	} else if (IS_BSS_P2P(prBssInfo)) {
+		/* P2P mode */
+		if (!p2pFuncIsAPMode(prAdapter->rWifiVar.prP2PConnSettings)) {
+			if (prP2pRoleFsmInfo)
+				prBssDesc = prP2pRoleFsmInfo->rJoinInfo.prTargetBssDesc;
+		}
+	}
+
+	if (prBssDesc) {
+		if (prBssDesc->eChannelWidth == CW_20_40MHZ) {
+			if ((prBssDesc->eSco == CHNL_EXT_SCA) || (prBssDesc->eSco == CHNL_EXT_SCB))
+				ucAPBandwidth = MAX_BW_40MHZ;
+			else
+				ucAPBandwidth = MAX_BW_20MHZ;
+		}
+#if (CFG_FORCE_USE_20BW == 1)
+		if (prBssDesc->eBand == BAND_2G4)
+			ucAPBandwidth = MAX_BW_20MHZ;
+#endif
+	}
+
+	return ucAPBandwidth;
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief
@@ -803,6 +840,8 @@ BOOLEAN cnmBowIsPermitted(P_ADAPTER_T prAdapter)
 /*----------------------------------------------------------------------------*/
 BOOLEAN cnmBss40mBwPermitted(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex)
 {
+	UINT_8 ucAPBandwidth;
+
 	ASSERT(prAdapter);
 
 	/* Note: To support real-time decision instead of current activated-time,
@@ -811,8 +850,10 @@ BOOLEAN cnmBss40mBwPermitted(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex)
 	 *       represent HT capability when association
 	 */
 
+	ucAPBandwidth = cnmGetAPBwPermitted(prAdapter, ucBssIndex);
+
 	/* Decide max bandwidth by feature option */
-	if (cnmGetBssMaxBw(prAdapter, ucBssIndex) < MAX_BW_40MHZ)
+	if ((cnmGetBssMaxBw(prAdapter, ucBssIndex) < MAX_BW_40MHZ) || (ucAPBandwidth < MAX_BW_40MHZ))
 		return FALSE;
 #if 0
 	/* Decide max by other BSS */
@@ -842,6 +883,8 @@ BOOLEAN cnmBss40mBwPermitted(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex)
 /*----------------------------------------------------------------------------*/
 BOOLEAN cnmBss80mBwPermitted(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex)
 {
+	UINT_8 ucAPBandwidth;
+
 	ASSERT(prAdapter);
 
 	/* Note: To support real-time decision instead of current activated-time,
@@ -850,12 +893,10 @@ BOOLEAN cnmBss80mBwPermitted(P_ADAPTER_T prAdapter, UINT_8 ucBssIndex)
 	 *       represent HT capability when association
 	 */
 
-	/* Check 40Mhz first */
-	if (!cnmBss40mBwPermitted(prAdapter, ucBssIndex))
-		return FALSE;
+	ucAPBandwidth = cnmGetAPBwPermitted(prAdapter, ucBssIndex);
 
 	/* Decide max bandwidth by feature option */
-	if (cnmGetBssMaxBw(prAdapter, ucBssIndex) < MAX_BW_80MHZ)
+	if ((cnmGetBssMaxBw(prAdapter, ucBssIndex) < MAX_BW_80MHZ) || (ucAPBandwidth < MAX_BW_80MHZ))
 		return FALSE;
 
 	return TRUE;

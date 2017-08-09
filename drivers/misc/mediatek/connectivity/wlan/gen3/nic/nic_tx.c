@@ -1588,7 +1588,7 @@ UINT_32 nicTxMsduQueueMthread(IN P_ADAPTER_T prAdapter)
 			QUEUE_MOVE_ALL((prDataPort1), (&(prAdapter->rTxP1Queue)));
 			KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_PORT_QUE);
 
-			nicTxMsduQueue(prAdapter, 1, prDataPort0);
+			nicTxMsduQueue(prAdapter, 1, prDataPort1);
 		}
 	}
 

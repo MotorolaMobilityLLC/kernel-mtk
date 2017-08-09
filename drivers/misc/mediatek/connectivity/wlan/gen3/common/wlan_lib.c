@@ -2792,7 +2792,9 @@ VOID wlanReleaseCommand(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN 
 		if (prMsduInfo->pfTxDoneHandler != NULL)
 			prMsduInfo->pfTxDoneHandler(prAdapter, prMsduInfo, rTxDoneStatus);
 
-		GLUE_DEC_REF_CNT(prTxCtrl->i4TxMgmtPendingNum);
+		if (prCmdInfo->eCmdType == COMMAND_TYPE_MANAGEMENT_FRAME)
+			GLUE_DEC_REF_CNT(prTxCtrl->i4TxMgmtPendingNum);
+
 		cnmMgtPktFree(prAdapter, prMsduInfo);
 		break;
 

@@ -684,8 +684,8 @@ const UINT_8 aucWmmAC2TcResourceSet2[WMM_AC_INDEX_NUM] = {
 ********************************************************************************
 */
 #if ARP_MONITER_ENABLE
-	static UINT_16 arpMoniter;
-	static UINT_8 apIp[4];
+static UINT_16 arpMoniter;
+static UINT_8 apIp[4];
 #endif
 
 /*******************************************************************************
@@ -1609,7 +1609,7 @@ P_MSDU_INFO_T qmEnqueueTxPackets(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMs
 				prTxQue = qmDetermineStaTxQueue(prAdapter, prCurrentMsduInfo, &ucTC);
 #if ARP_MONITER_ENABLE
 				prStaRec = QM_GET_STA_REC_PTR_FROM_INDEX(prAdapter, prCurrentMsduInfo->ucStaRecIndex);
-				if (IS_STA_IN_AIS(prStaRec) && prCurrentMsduInfo->eSrc == TX_PACKET_OS)
+				if (prStaRec && IS_STA_IN_AIS(prStaRec) && prCurrentMsduInfo->eSrc == TX_PACKET_OS)
 					qmDetectArpNoResponse(prAdapter, prCurrentMsduInfo);
 #endif
 				break;	/*default */
@@ -6314,10 +6314,21 @@ VOID mqmHandleBaActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 #if ARP_MONITER_ENABLE
 VOID qmDetectArpNoResponse(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 {
-	struct sk_buff *prSkb = (struct sk_buff *)prMsduInfo->prPacket;
-	PUINT_8 pucData = prSkb->data;
-	UINT_16 u2EtherType = (pucData[ETH_TYPE_LEN_OFFSET] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 1]);
-	int arpOpCode = (pucData[ETH_TYPE_LEN_OFFSET + 8] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 8 + 1]);
+	struct sk_buff *prSkb = NULL;
+	PUINT_8 pucData = NULL;
+	UINT_16 u2EtherType = 0;
+	int arpOpCode = 0;
+
+	prSkb = (struct sk_buff *)prMsduInfo->prPacket;
+
+	if (!prSkb || (prSkb->len <= ETHER_HEADER_LEN))
+		return;
+
+	pucData = prSkb->data;
+	if (!pucData)
+		return;
+	u2EtherType = (pucData[ETH_TYPE_LEN_OFFSET] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 1]);
+	arpOpCode = (pucData[ETH_TYPE_LEN_OFFSET + 8] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 8 + 1]);
 
 	if (u2EtherType != ETH_P_ARP || (apIp[0] | apIp[1] | apIp[2] | apIp[3]) == 0)
 		return;
@@ -6338,9 +6349,18 @@ VOID qmDetectArpNoResponse(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo)
 
 VOID qmHandleRxArpPackets(P_ADAPTER_T prAdapter, P_SW_RFB_T prSwRfb)
 {
-	PUINT_8 pucData = (PUINT_8)prSwRfb->pvHeader;
-	UINT_16 u2EtherType = (pucData[ETH_TYPE_LEN_OFFSET] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 1]);
-	int arpOpCode = (pucData[ETH_TYPE_LEN_OFFSET + 8] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 8 + 1]);
+	PUINT_8 pucData = NULL;
+	UINT_16 u2EtherType = 0;
+	int arpOpCode = 0;
+
+	if (prSwRfb->u2PacketLen <= ETHER_HEADER_LEN)
+		return;
+
+	pucData = (PUINT_8)prSwRfb->pvHeader;
+	if (!pucData)
+		return;
+	u2EtherType = (pucData[ETH_TYPE_LEN_OFFSET] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 1]);
+	arpOpCode = (pucData[ETH_TYPE_LEN_OFFSET + 8] << 8) | (pucData[ETH_TYPE_LEN_OFFSET + 8 + 1]);
 
 	if (u2EtherType != ETH_P_ARP)
 		return;
