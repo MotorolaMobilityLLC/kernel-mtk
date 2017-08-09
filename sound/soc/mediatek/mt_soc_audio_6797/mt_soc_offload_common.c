@@ -705,7 +705,6 @@ static void OffloadService_IPICmd_Send(audio_ipi_msg_data_t data_type,
 }
 #endif
 
-#if 0
 static bool OffloadService_IPICmd_Wait(IPI_MSG_ID id)
 {
 	int timeout = 0;
@@ -719,11 +718,11 @@ static bool OffloadService_IPICmd_Wait(IPI_MSG_ID id)
 		}
 	}
 	/* pr_debug("IPI MSG -: time:%x, id:%x\n", timeout, id); */
-	if (!afe_offload_service.ipiresult)
-		return false;
+	/* if (!afe_offload_service.ipiresult)
+		return false; */
 	return true;
 }
-#endif
+
 int OffloadService_CopyDatatoRAM(void __user *buf, size_t count)
 {
 	size_t copy1, copy2;
@@ -804,7 +803,7 @@ static int mtk_compr_offload_pointer(void __user *arg)
 	int ret = 0;
 	struct OFFLOAD_TIMESTAMP_T timestamp;
 
-	if (afe_offload_block.state == OFFLOAD_STATE_RUNNING && !afe_offload_service.ipiwait) {
+	if (!afe_offload_service.ipiwait) {
 #ifdef MTK_AUDIO_TUNNELING_SUPPORT
 		OffloadService_IPICmd_Send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 					   MP3_TSTAMP, 0, 0, NULL);
@@ -819,6 +818,8 @@ static int mtk_compr_offload_pointer(void __user *arg)
 		timestamp.pcm_io_frames = 0;
 		return 0;
 	}
+	if (afe_offload_block.state == OFFLOAD_STATE_RUNNING && afe_offload_service.write_blocked)
+		OffloadService_IPICmd_Wait(MP3_PCMCONSUMED);
 	timestamp.sampling_rate = afe_offload_block.samplerate;
 	timestamp.pcm_io_frames = afe_offload_block.copied_total >> 2; /* DSP return 16bit data */
 
