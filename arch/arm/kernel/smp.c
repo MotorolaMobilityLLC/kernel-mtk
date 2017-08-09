@@ -257,6 +257,13 @@ void __cpu_die(unsigned int cpu)
 		printk("CPU%u: unable to kill\n", cpu);
 }
 
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+void  __attribute__((weak)) gic_set_primask(void)
+{
+
+}
+#endif
+
 /*
  * Called from the idle thread for the CPU which has been shutdown.
  *
