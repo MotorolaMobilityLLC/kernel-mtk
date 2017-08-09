@@ -61,6 +61,7 @@
 #endif
 
 #define FEATURE_ENABLE_SODI2P5
+#define SPM_MET_TAGGING 0
 
 #ifdef CONFIG_ARCH_MT6755
 #define USING_STD_TIMER_OPS
@@ -78,6 +79,10 @@
 #if ((MCDI_DVT_IPI) || (MCDI_DVT_CPUxGPT))
 #include <linux/delay.h>
 #endif
+#endif
+
+#if SPM_MET_TAGGING
+#include <core/met_drv.h>
 #endif
 
 #define IDLE_TAG     "Power/swap "
@@ -373,6 +378,22 @@ static unsigned long long idle_ratio_profile_start_time;
 static unsigned long long idle_ratio_profile_duration;
 static unsigned long long idle_ratio_start_time[NR_TYPES];
 static unsigned long long idle_ratio_value[NR_TYPES];
+
+#if SPM_MET_TAGGING
+#define idle_get_current_time_us(x) do {\
+		struct timeval t;\
+		do_gettimeofday(&t);\
+		(x) = ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec);\
+	} while (0)
+
+static unsigned long long idle_met_timestamp[NR_TYPES];
+static unsigned long long idle_met_prev_tag[NR_TYPES];
+static const char *idle_met_label[NR_TYPES] = {
+	[IDLE_TYPE_DP] = "deep idle residency",
+	[IDLE_TYPE_SO3] = "SODI3 residency",
+	[IDLE_TYPE_SO] = "SODI residency",
+};
+#endif
 
 /* Slow Idle */
 static unsigned int     slidle_block_mask[NR_GRPS] = {0x0};
@@ -2019,10 +2040,10 @@ void dump_idle_cnt_in_interval(int cpu)
 	bool have_soidle3 = false;
 	bool have_soidle = false;
 
-	if (idle_cnt_dump_prev_time == 0)
-		idle_cnt_dump_prev_time = idle_get_current_time_ms();
-
 	idle_cnt_dump_curr_time = idle_get_current_time_ms();
+
+	if (idle_cnt_dump_prev_time == 0)
+		idle_cnt_dump_prev_time = idle_cnt_dump_curr_time;
 
 	if (!(cpu == 0 || cpu == 4))
 		return;
@@ -2104,16 +2125,34 @@ void dump_idle_cnt_in_interval(int cpu)
 	idle_cnt_dump_prev_time = idle_cnt_dump_curr_time;
 }
 
+
 inline void idle_ratio_calc_start(int type, int cpu)
 {
-	if (type >= 0 && type < NR_TYPES && cpu == 0)
+	if (idle_ratio_en && type >= 0 && type < NR_TYPES && cpu == 0)
 		idle_ratio_start_time[type] = idle_get_current_time_ms();
+
+#if SPM_MET_TAGGING
+	if (type < IDLE_TYPE_MC)
+		idle_get_current_time_us(idle_met_timestamp[type]);
+#endif
 }
 
 inline void idle_ratio_calc_stop(int type, int cpu)
 {
-	if (type >= 0 && type < NR_TYPES && cpu == 0)
-		idle_ratio_value[type] += (idle_get_current_time_ms() - idle_ratio_start_time[type]);
+	if (idle_ratio_en && type >= 0 && type < NR_TYPES && cpu == 0)
+		idle_ratio_value[type] += idle_get_current_time_ms() - idle_ratio_start_time[type];
+
+#if SPM_MET_TAGGING
+	if (type < IDLE_TYPE_MC) {
+		unsigned long long idle_met_curr;
+
+		idle_get_current_time_us(idle_met_curr);
+
+		met_tag_oneshot(0, idle_met_label[type],
+			((idle_met_curr - idle_met_timestamp[type])*100)/(idle_met_curr - idle_met_prev_tag[type]));
+		idle_met_prev_tag[type] = idle_met_curr;
+	}
+#endif
 }
 
 int mt_idle_select(int cpu)
@@ -2126,7 +2165,6 @@ int mt_idle_select(int cpu)
 		if (idle_select_handlers[i] (cpu))
 			break;
 	}
-
 	/* FIXME: return the corresponding idle state after verification successed */
 	return i;
 }
@@ -2205,7 +2243,6 @@ int soidle3_enter(int cpu)
 	if (sodi3_flags & SODI_FLAG_RESIDENCY) {
 		soidle3_residency += idle_get_current_time_ms() - soidle3_time;
 		idle_dbg("SO3: soidle3_residency = %llu\n", soidle3_residency);
-
 #ifndef USING_STD_TIMER_OPS
 #ifdef CONFIG_SMP
 		idle_ver("SO3:timer_left=%d, timer_left2=%d, delta=%d\n",
@@ -2222,9 +2259,10 @@ int soidle3_enter(int cpu)
 #ifdef SPM_SODI3_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI3_PROFILE_APXGPT, &soidle3_profile[3]);
 	idle_ver("SODI3: cpu_freq:%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
-			mt_cpufreq_get_cur_freq(0), soidle3_profile[1] - soidle3_profile[0],
-			soidle3_profile[2] - soidle3_profile[1],
-			soidle3_profile[3] - soidle3_profile[2]);
+			mt_cpufreq_get_cur_phy_freq(0),
+			((soidle3_profile[1] - soidle3_profile[0])*1000)/APXGPT_RTC_TICKS_PER_MS,
+			((soidle3_profile[2] - soidle3_profile[1])*1000)/APXGPT_RTC_TICKS_PER_MS,
+			((soidle3_profile[3] - soidle3_profile[2])*1000)/APXGPT_RTC_TICKS_PER_MS);
 #endif
 
 	return ret;
@@ -2278,9 +2316,10 @@ int soidle_enter(int cpu)
 #ifdef SPM_SODI_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[3]);
 	idle_ver("SODI: cpu_freq:%u, 1=>2:%u, 2=>3:%u, 3=>4:%u\n",
-			mt_cpufreq_get_cur_freq(0), soidle_profile[1] - soidle_profile[0],
-			soidle_profile[2] - soidle_profile[1],
-			soidle_profile[3] - soidle_profile[2]);
+			mt_cpufreq_get_cur_phy_freq(0),
+			(soidle_profile[1] - soidle_profile[0])/APXGPT_SYS_TICKS_PER_US,
+			(soidle_profile[2] - soidle_profile[1])/APXGPT_SYS_TICKS_PER_US,
+			(soidle_profile[3] - soidle_profile[2])/APXGPT_SYS_TICKS_PER_US);
 #endif
 
 	return ret;
@@ -2884,6 +2923,8 @@ static ssize_t soidle_state_read(struct file *filp, char __user *userbuf, size_t
 		      "bypass en:     echo bypass_en 1/0 > /sys/kernel/debug/cpuidle/soidle_state\n");
 	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 		      "sodi flags:	echo sodi_flags value > /sys/kernel/debug/cpuidle/soidle_state\n");
+	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+		      "spmtwam event:	echo spmtwam value/-1 > /sys/kernel/debug/cpuidle/soidle_state\n");
 
 	len = p - dbg_buf;
 
@@ -2929,6 +2970,12 @@ static ssize_t soidle_state_write(struct file *filp,
 		} else if (!strcmp(cmd, "sodi_flags")) {
 			sodi_flags = param;
 			idle_dbg("sodi_flags = 0x%x\n", sodi_flags);
+		} else if (!strcmp(cmd, "spmtwam")) {
+			idle_dbg("spmtwam_event = %d\n", param);
+			if (param >= 0)
+				spm_sodi_twam_enable((u32)param);
+			else
+				spm_sodi_twam_disable();
 		}
 		return count;
 	} else if (!kstrtoint(cmd_buf, 10, &param) == 1) {
@@ -3213,12 +3260,14 @@ void mt_cpuidle_framework_init(void)
 	if (err)
 		idle_warn("[%s]fail to request cpuxgpt\n", __func__);
 #endif
-
 	iomap_init();
 	mt_cpuidle_debugfs_init();
 	mt_idle_hotplug_cb_init();
 #if defined(CONFIG_ARCH_MT6797)
 	set_sodi_fw_mode();
+#endif
+#if SPM_MET_TAGGING
+	met_tag_init();
 #endif
 }
 EXPORT_SYMBOL(mt_cpuidle_framework_init);

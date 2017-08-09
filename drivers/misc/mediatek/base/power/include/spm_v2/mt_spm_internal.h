@@ -404,6 +404,7 @@ extern struct spm_lp_scen *spm_check_talking_get_lpscen(struct spm_lp_scen *lpsc
 							u32 *spm_flags);
 
 extern int spm_golden_setting_cmp(bool en);
+extern void spm_get_twam_table(const char ***table);
 extern bool is_md_c2k_conn_power_off(void);
 extern void __spm_backup_pmic_ck_pdn(void);
 extern void __spm_restore_pmic_ck_pdn(void);

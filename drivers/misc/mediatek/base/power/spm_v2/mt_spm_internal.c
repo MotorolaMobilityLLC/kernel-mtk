@@ -108,6 +108,41 @@ const char *wakesrc_str[32] = {
 	[31] = " R12_APSRC_SLEEP",
 };
 
+const char *twam_event_str[32] = {
+	[0] = "SRCCLKENI_0",
+	[1] = "SRCCLKENI_1",
+	[2] = "SRCCLKENO_0",
+	[3] = "SRCCLKENO_1",
+	[4] = "MD1_SRCCLKENA",
+	[5] = "MD1_APSRC_REQ",
+	[6] = "MD1_DDR_EN",
+	[7] = "MD2_SRCCLKENA",
+	[8] = "MD2_APSRC_REQ",
+	[9] = "MD2_DDR_EN",
+	[10] = "CONN_SRCCLKENA",
+	[11] = "CONN_APSRC_REQ",
+	[12] = "SCP_SRCCLKENA",
+	[13] = "SCP_APSRC_REQ",
+	[14] = "DISP_REQ",
+	[15] = "MFG_REQ",
+	[16] = "MD1_VRF18_REQ",
+	[17] = "C2K_VRF18_REQ",
+	[18] = "LTE_SRCCLKENA",
+	[19] = "APSRC_ACK",
+	[20] = "SRCCLKENA_ACK",
+	[21] = "VRF18_SRC_ACK",
+	[22] = "INFRA_SRC_ACK",
+	[23] = "26M_STATE",
+	[24] = "INFRA_STATE",
+	[25] = "APSRC_STATE",
+	[26] = "VRF18_STATE",
+	[27] = "DISP_STATE",
+	[28] = "EMI_CLK_OFF_REQ",
+	[29] = "EMI_CLK_OFF_ACK",
+	[30] = "DDREN_STATE",
+	[31] = "CONN_DDR_EN",
+};
+
 #if defined(CONFIG_ARCH_MT6755)
 #define SPM_CPU_PWR_STATUS		PWR_STATUS
 #define SPM_CPU_PWR_STATUS_2ND	PWR_STATUS_2ND
@@ -898,6 +933,11 @@ void spm_set_dummy_read_addr(void)
 
 	spm_write(SPM_PASR_DPD_1, rank0_addr);
 	spm_write(SPM_PASR_DPD_2, rank1_addr);
+}
+
+void spm_get_twam_table(const char ***table)
+{
+	*table = (const char **)twam_event_str;
 }
 
 bool is_md_c2k_conn_power_off(void)

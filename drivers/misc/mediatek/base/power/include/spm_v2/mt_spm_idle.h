@@ -87,6 +87,9 @@ bool spm_get_cmd_mode(void);
 void spm_sodi_mempll_pwr_mode(bool pwr_mode);
 bool spm_get_sodi_mempll(void);
 
+void spm_sodi_twam_disable(void);
+void spm_sodi_twam_enable(u32 event);
+
 enum mt_sodi_flag {
 	SODI_FLAG_V3          = (1 << 0),
 	SODI_FLAG_RESIDENCY   = (1 << 1),
@@ -94,6 +97,9 @@ enum mt_sodi_flag {
 	SODI_FLAG_NO_LOG      = (1 << 3),
 	SODI_FLAG_DUMP_REG    = (1 << 4),
 };
+
+#define APXGPT_SYS_TICKS_PER_US ((u32)(13))
+#define APXGPT_RTC_TICKS_PER_MS ((u32)(32))
 
 /*
  * for Multi Core Deep Idle

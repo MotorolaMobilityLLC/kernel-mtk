@@ -607,6 +607,10 @@ bool spm_get_sodi3_en(void)
 void spm_sodi3_init(void)
 {
 	sodi3_debug("spm_sodi3_init\n");
+#ifdef SPM_SODI3_PROFILE_TIME
+	request_gpt(SPM_SODI3_PROFILE_APXGPT, GPT_FREE_RUN, GPT_CLK_SRC_RTC, GPT_CLK_DIV_1,
+			  0, NULL, GPT_NOIRQEN);
+#endif
 	spm_sodi3_aee_init();
 }
 

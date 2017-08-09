@@ -49,11 +49,10 @@
 
 #define SPM_BYPASS_SYSPWREQ         0
 
-#define LOG_BUF_SIZE					(256)
-#define SODI_LOGOUT_TIMEOUT_CRITERIA	(20)
-#define SODI_LOGOUT_MAXTIME_CRITERIA	(2000)
-#define SODI_LOGOUT_INTERVAL_CRITERIA	(5000U)	/* unit:ms */
-
+#define LOG_BUF_SIZE                    (256)
+#define SODI_LOGOUT_TIMEOUT_CRITERIA    (20)
+#define SODI_LOGOUT_MAXTIME_CRITERIA    (2000)
+#define SODI_LOGOUT_INTERVAL_CRITERIA   (5000U)	/* unit:ms */
 
 #if defined(CONFIG_OF)
 #define MCUCFG_NODE "mediatek,MCUCFG"
@@ -87,6 +86,14 @@ static unsigned long m4u_phys_base;
 #define MMU_SMI_ASYNC_CFG	(M4U_BASE + 0xB80)
 #define MMU_SMI_ASYNC_CFG_PHYS	(m4u_phys_base + 0xB80)
 #define SMI_COMMON_ASYNC_DCM	(0x3 << 14)
+
+/* SPM TAWM */
+#define TRIGGER_TYPE            (2) /* b'10: high */
+#define TWAM_PERIOD_MS          (1000)
+#define WINDOW_LEN              (TWAM_PERIOD_MS * 0x65B8)
+static bool twam_running;
+static u32 twam_event = 29; /* EMI_CLK_OFF_ACK */
+const char **twam_str = NULL;
 
 static struct pwr_ctrl sodi_ctrl = {
 	.wake_src = WAKE_SRC_FOR_SODI,
@@ -226,6 +233,45 @@ static int by_ccif1_count;
 static unsigned long int logout_prev_dvfs_time;
 #endif
 
+static void spm_sodi_twam_callback(struct twam_sig *ts)
+{
+	sodi_warn("spm twan %s ratio: %5llu/10000\n",
+			(twam_str)?"unknown":twam_str[twam_event],
+			(((u64)ts->sig0)*10000)/WINDOW_LEN);
+}
+
+void spm_sodi_twam_disable(void)
+{
+	if (twam_running == false)
+		return;
+	spm_twam_register_handler(NULL);
+	spm_twam_disable_monitor();
+	twam_running = false;
+}
+
+void spm_sodi_twam_enable(u32 event)
+{
+	struct twam_sig montype = {0};
+	struct twam_sig twamsig = {0};
+
+	if (twam_event != event)
+		spm_sodi_twam_disable();
+
+	if (twam_running == true)
+		return;
+
+	twam_event = (event < 32)?event:29;
+	twamsig.sig0 = twam_event;
+	montype.sig0 = TRIGGER_TYPE;
+
+	spm_twam_set_mon_type(&montype);
+	spm_twam_set_window_length(WINDOW_LEN);
+	spm_twam_register_handler(spm_sodi_twam_callback);
+	spm_twam_set_idle_select(0);
+	spm_twam_enable_monitor(&twamsig, true);
+	twam_running = true;
+}
+
 void spm_trigger_wfi_for_sodi(struct pwr_ctrl *pwrctrl)
 {
 	u32 v0, v1;
@@ -267,7 +313,6 @@ void spm_enable_mmu_smi_async(void)
 {
 	reg_write(MMU_SMI_ASYNC_CFG, mmu_smi_async_cfg);
 }
-
 
 static void spm_sodi_pre_process(void)
 {
@@ -432,7 +477,6 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 
 					if (wakesta->wake_misc & WAKE_MISC_CPU_WAKE)
 						strncat(buf, " CPU", sizeof(buf) - strlen(buf) - 1);
-
 #if defined(CONFIG_ARCH_MT6797)
 					if (wakesta->r12_ext == WAKE_SRC_R12_EXT_VCORE_DVFS_B) {
 						strncat(buf, " vcore dvfs", sizeof(buf) - strlen(buf) - 1);
@@ -462,6 +506,7 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 	}
 	return wr;
 }
+
 wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 {
 	struct wake_status wakesta;
@@ -554,7 +599,6 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 				(1 << SPM_SODI_B3) | (1 << SPM_SODI_B4) |
 				(1 << SPM_SODI_B5) | (1 << SPM_SODI_B6));
 
-
 #ifdef SPM_SODI_PROFILE_TIME
 	gpt_get_cnt(SPM_SODI_PROFILE_APXGPT, &soidle_profile[1]);
 #endif
@@ -617,7 +661,6 @@ bool spm_get_cmd_mode(void)
 	return !gSpm_lcm_vdo_mode;
 }
 #endif
-
 
 void spm_sodi_mempll_pwr_mode(bool pwr_mode)
 {
@@ -690,6 +733,11 @@ m4u_exit:
 	sodi_debug("spm_sodi_init\n");
 #endif
 
+#ifdef SPM_SODI_PROFILE_TIME
+	request_gpt(SPM_SODI_PROFILE_APXGPT, GPT_FREE_RUN, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1,
+			  0, NULL, GPT_NOIRQEN);
+#endif
+	spm_get_twam_table(&twam_str);
 	spm_sodi_aee_init();
 }
 
