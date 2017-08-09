@@ -478,8 +478,8 @@ if (ocp_read_field(OCPAPBSTATUS01, 0:0) == 1) {
 	else
 		*Leakage = *Leakage << (ocp_read_field(OCPAPBCFG24, 24:22));
 
-	/* CapOCCGPct -> % */
-	*ClkPct = (100*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
+	/* CapOCCGPct -> 100.00% */
+	*ClkPct = (10000*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
 
 	/* CapTotAct:  Q8.12 -> integer  */
 	Temp = ocp_read(OCPAPBSTATUS02);
@@ -536,8 +536,8 @@ unsigned int Temp;
 if (ocp_read_field(OCPAPBSTATUS04, 27:27) == 1) {
 	Temp = ocp_read(OCPAPBSTATUS04);
 
-/* CGAvg: shfit 11 bit -> UQ4.12  -> xx%  */
-*CGAvg = ((((Temp & 0x07FFF800) >> 23) + 1) * 100)/16;
+/* CGAvg: shfit 11 bit -> UQ4.12  -> 100.00%  */
+*CGAvg = ((((Temp & 0x07FFF800) >> 23) + 1) * 10000)/16;
 
 } else {
 *CGAvg = 0x0;
@@ -981,8 +981,8 @@ if (Cluster == OCP_LL) {
 		else
 			*Leakage = *Leakage << (ocp_read_field(MP0_OCP_SCAL, 2:0));
 
-		/* CapOCCGPct -> % */
-		*ClkPct = (100*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
+		/* CapOCCGPct -> 100.00% */
+		*ClkPct = (10000*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
 		Temp = ocp_read((MP0_OCP_CAP_STATUS01));
 		/* CapTotAct:  Q8.12 -> integer (mA, mW) */
 		*Total = ((Temp & 0x000FFFFF) * 1000) >> 12;
@@ -1010,8 +1010,8 @@ return 1;
 		else
 			*Leakage = *Leakage << (ocp_read_field(MP1_OCP_SCAL, 2:0));
 
-		/* CapOCCGPct -> % */
-		*ClkPct = (100*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
+		/* CapOCCGPct -> 100.00% */
+		*ClkPct = (10000*(((Temp & 0x000000F0) >> 4) + 1)) >> 4;
 		Temp = ocp_read((MP1_OCP_CAP_STATUS01));
 		/* CapTotAct:  Q8.12 -> integer (mA, mW) */
 		*Total = ((Temp & 0x000FFFFF) * 1000) >> 12;
@@ -1140,6 +1140,13 @@ if (Cluster == OCP_LL) {
 				*AvgLkg = ((((((unsigned long long)ocp_read(MP0_OCP_DBG_LKG_H) << 32) +
 				(unsigned long long)ocp_read(MP0_OCP_DBG_LKG_L)) * 32) /
 				(unsigned long long)ocp_read_field(MP0_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
+
+				/* TotScaler */
+				if (ocp_read_field(MP0_OCP_SCAL, 3:3) == 1)
+					*AvgLkg = *AvgLkg >> (ocp_read_field(MP0_OCP_SCAL, 2:0) + 1);
+				else
+					*AvgLkg = *AvgLkg << (ocp_read_field(MP0_OCP_SCAL, 2:0));
+
 				*AvgAct = ((((((unsigned long long)ocp_read(MP0_OCP_DBG_ACT_H) << 32) +
 				(unsigned long long)ocp_read(MP0_OCP_DBG_ACT_L)) * 32) /
 				(unsigned long long)ocp_read_field(MP0_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
@@ -1153,6 +1160,13 @@ if (Cluster == OCP_LL) {
 				*AvgLkg = ((((((unsigned long long)ocp_read(MP1_OCP_DBG_LKG_H) << 32) +
 				(unsigned long long)ocp_read(MP1_OCP_DBG_LKG_L)) * 32) /
 				(unsigned long long)ocp_read_field(MP1_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
+
+				/* TotScaler */
+				if (ocp_read_field(MP1_OCP_SCAL, 3:3) == 1)
+					*AvgLkg = *AvgLkg >> (ocp_read_field(MP1_OCP_SCAL, 2:0) + 1);
+				else
+					*AvgLkg = *AvgLkg << (ocp_read_field(MP1_OCP_SCAL, 2:0));
+
 				*AvgAct = ((((((unsigned long long)ocp_read(MP1_OCP_DBG_ACT_H) << 32) +
 				(unsigned long long)ocp_read(MP1_OCP_DBG_ACT_L)) * 32) /
 				(unsigned long long)ocp_read_field(MP1_OCP_DBG_IFCTRL1, 21:0)) * 1000) >> 12;
