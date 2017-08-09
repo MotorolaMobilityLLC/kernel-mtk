@@ -207,7 +207,7 @@ unsigned int piderrmin = 0xFFFFF060;
 unsigned int kp_step = 0x0;
 unsigned int kp = 0xFF9C;
 unsigned int ki_step = 0x0;
-unsigned int ki = 0xFFFF;
+unsigned int ki = 0xFFFE;
 unsigned int kd_step = 0x0;
 unsigned int kd = 0x0;
 
@@ -217,7 +217,7 @@ unsigned int pid_score_m = 0x7FFF;
 unsigned int pid_freq_sht = 0x0;
 unsigned int pid_calc_sht = 0x0;
 unsigned int pid_score_sht = 0x2;
-unsigned int pid_freq_s = 0x0016;
+unsigned int pid_freq_s = 0x000D;
 unsigned int pid_freq_m = 0x0;
 
 /* otp_debug_data */
@@ -824,7 +824,7 @@ static void Normal_Mode_Setting(void)
 {
 
 	/* derrmax, piderrmin, kp_step, kp, ki_step, ki, kd_step, kd */
-	set_otp_ctrl_data(0x00020000, 0xFFFFF060, 0x0, 0xFF9C, 0x0, 0xFFFF, 0x0, 0x0);
+	set_otp_ctrl_data(0x00020000, 0xFFFFF060, 0x0, 0xFF9C, 0x0, 0xFFFE, 0x0, 0x0);
 }
 
 void getTHslope(void)
@@ -989,7 +989,7 @@ void disable_otp_hrtimer(void)
 		hrtimer_cancel(&otp_timer);
 		timer_enabled = 0;
 		if (dump_debug_log)
-			otp_info("disenable timer\n");
+			otp_info("disable timer\n");
 	}
 }
 
@@ -1020,6 +1020,7 @@ static void enable_OTP(void)
 
 	/* otp_info_data_reset(&otp_info_data); */
 
+#if OTP_TIMER_INTERRUPT
 	if (get_immediate_big_wrap() < 70000)
 		sw_channel_status = 0;
 	else
@@ -1033,6 +1034,13 @@ static void enable_OTP(void)
 	if (sw_channel_status == 1)
 		enable_otp_hrtimer();
 	mutex_unlock(&timer_mutex);
+#else
+	if (dump_debug_log)
+		otp_info(" Configuration finished, pid_en = %d\n", pid_en);
+
+	if (get_piden_status() == 1)
+		enable_otp_hrtimer();
+#endif
 }
 
 static void disable_OTP(void)
@@ -1043,27 +1051,29 @@ static void disable_OTP(void)
 	BigiDVFSChannel(2, 0);
 	otp_info_data_reset(&otp_info_data);
 
+#if OTP_TIMER_INTERRUPT
 	mutex_lock(&timer_mutex);
 	disable_otp_hrtimer();
 	mutex_unlock(&timer_mutex);
-
-	/*
-	set_otp_config_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
-	set_otp_ctrl_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
-	set_otp_score_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
-	set_otp_debug_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
-	*/
+#else
+	disable_otp_hrtimer();
+#endif
 
 	pid_en = 0x0;
 	otp_set_PID_EN(&otp_config_data, pid_en);
 	otp_PID_EN_apply(&otp_config_data);
+
+	set_otp_config_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
+	set_otp_ctrl_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
+	set_otp_score_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
+	set_otp_debug_data(0x0, 0x0, 0x0, 0x0, 0x0, 0x0);
 }
 
 int BigOTPThermIRQ(int status)
 {
 	if (0 == otp_enable)
 		return 0;
-
+#if OTP_TIMER_INTERRUPT
 	if (otp_workqueue) {
 		if (dump_debug_log)
 			otp_info("Thermal IRQ, schedule queue\n");
@@ -1074,7 +1084,7 @@ int BigOTPThermIRQ(int status)
 			queue_work(otp_workqueue, &therm_L_check);
 	} else
 		otp_info("Thermal IRQ before OTP init ready, ignore\n");
-
+#endif
 	return 0;
 }
 
@@ -1638,29 +1648,33 @@ static int otp_curr_temp_proc_show(struct seq_file *m, void *v)
 	u32 freq;
 	u32 info_freq;
 
-	mutex_lock(&debug_mutex);
-
-	otp_set_NTH_DEBUG_MUX(&otp_debug_data, 5);
-	otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
-	score = (otp_read(OTP_PID_DEBUGOUT) & 0xFFFFFF);
-	otp_set_NTH_DEBUG_MUX(&otp_debug_data, 6);
-	otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
-	freq = (otp_read(OTP_PID_DEBUGOUT) & 0x7FFFF);
-
-	mutex_unlock(&debug_mutex);
-
-	freqpct_x100_internal = get_freq_pct(freq);
-
 	info_freq = otp_info_data.freq;
 	freqpct_x100 = get_freq_pct(info_freq);
 
 	if ((cpu_online(BIG_CPU_NUM0) == 1) || (cpu_online(BIG_CPU_NUM1) == 1)) {
+		mutex_lock(&debug_mutex);
+
+		otp_set_NTH_DEBUG_MUX(&otp_debug_data, 5);
+		otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
+		score = (otp_read(OTP_PID_DEBUGOUT) & 0xFFFFFF);
+		otp_set_NTH_DEBUG_MUX(&otp_debug_data, 6);
+		otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
+		freq = (otp_read(OTP_PID_DEBUGOUT) & 0x7FFFF);
+
+		mutex_unlock(&debug_mutex);
+
+		freqpct_x100_internal = get_freq_pct(freq);
+
 		if (otp_info_data.channel_status == 1)
 			freqpct_x100_real = freqpct_x100;
 		else
 			freqpct_x100_real = 0;
-	} else
+	} else {
 		freqpct_x100_real = 0;
+		score = 0;
+		freq = 0;
+		freqpct_x100_internal = 0;
+	}
 
 	seq_printf(m, "%d,0x%06x,0x%05x,%u,%d,0x%06x,0x%05x,%u,%u\n",
 	get_immediate_big_wrap(), score, freq, freqpct_x100_internal,
@@ -1822,6 +1836,7 @@ static int __init otp_init(void)
 
 	otp_monitor_ctrl();
 
+#if OTP_TIMER_INTERRUPT
 	if (get_immediate_big_wrap() < 70000)
 		sw_channel_status = 0;
 	else
@@ -1836,6 +1851,7 @@ static int __init otp_init(void)
 		otp_info("Big Temp = %d, sw_channel_status = %d\n",
 		get_immediate_big_wrap(), sw_channel_status);
 	}
+#endif
 
 #ifdef CONFIG_PROC_FS
 	/* init proc */

@@ -12,6 +12,7 @@
 #define OTP_ENABLE		(1)
 #define PID_EN_enable		(1)
 
+#define OTP_TIMER_INTERRUPT	(0)
 /**
  * OTP control register PID_CTL0
  */
