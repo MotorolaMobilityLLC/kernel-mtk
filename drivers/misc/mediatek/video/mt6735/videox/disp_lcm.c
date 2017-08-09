@@ -169,7 +169,7 @@ void _dump_lcm_info(disp_lcm_handle *plcm)
 }
 
 #if !defined(CONFIG_MTK_LEGACY)
-static struct LCM_setting_table {
+struct LCM_setting_table {
 	unsigned cmd;
 	unsigned char count;
 	unsigned char para_list[64];
