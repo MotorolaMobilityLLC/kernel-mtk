@@ -71,9 +71,11 @@
 #include <linux/string.h>
 #include <linux/mutex.h>
 /* #include <linux/xlog.h> */
+#ifndef _IRQS_H_NOT_SUPPORT
 #include <mach/irqs.h>
 /* #include <mach/mt_irq.h> */
 #include <mach/irqs.h>
+#endif
 #include <asm/uaccess.h>
 #include <asm/irq.h>
 #include <asm/io.h>
