@@ -1,4 +1,4 @@
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
 #include <linux/clk.h>
@@ -194,14 +194,14 @@ bool usb_enable_clock(bool enable)
 	if (enable && count == 0) {
 		real_enable++;
 		enable_phy_clock(true);
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		res = enable_clock(MT_CG_PERI_USB0, "PERI_USB");
 #else
 		res = clk_enable(musb_clk);
 #endif
 	} else if (!enable && count == 1) {
 		real_disable++;
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 		res = disable_clock(MT_CG_PERI_USB0, "PERI_USB");
 #else
 		res = 0;

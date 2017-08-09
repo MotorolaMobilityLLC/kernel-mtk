@@ -30,8 +30,11 @@
 /* GIT K318 WORKAROUND */
 /* #include <mach/upmu_common.h> */
 /* #include <mach/mt_pm_ldo.h> */
-#if defined(CONFIG_MTK_LEGACY) || !defined(CONFIG_COMMON_CLK)
+#ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
+#else
+#include <linux/clk.h>
+struct clk *musb_clk;
 #endif
 /* GIT K318 WORKAROUND */
 /* #include <mach/emi_mpu.h> */
@@ -42,10 +45,6 @@
 #include <linux/of_address.h>
 #ifndef CONFIG_MTK_LEGACY
 #include <linux/regulator/consumer.h>
-#endif
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
-#include <linux/clk.h>
-struct clk *musb_clk;
 #endif
 #endif
 /* GIT K318 WORKAROUND */
@@ -1423,7 +1422,7 @@ static int mt_usb_dts_probe(struct platform_device *pdev)
 	/* enable uart log */
 	musb_uart_debug = 1;
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	musb_clk = devm_clk_get(&pdev->dev, "usb0");
 	if (IS_ERR(musb_clk)) {
 		DBG(0, KERN_WARNING "cannot get musb clock\n");
@@ -1467,7 +1466,7 @@ static int mt_usb_dts_remove(struct platform_device *pdev)
 	platform_device_unregister(glue->musb);
 	kfree(glue);
 
-#if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)
+#ifndef CONFIG_MTK_CLKMGR
 	clk_unprepare(musb_clk);
 #endif
 
