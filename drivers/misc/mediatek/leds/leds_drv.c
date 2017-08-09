@@ -222,7 +222,6 @@ static void mt65xx_led_set(struct led_classdev *led_cdev,
 	int value = 0;
 	int retval;
 	struct i2c_client *client = g_client;
-
 	value = i2c_smbus_read_byte_data(g_client, 0x10);
 	LEDS_DRV_DEBUG("LEDS:mt65xx_led_set:0x10 = %d\n", value);
 	#endif
@@ -530,16 +529,18 @@ static DEVICE_ATTR(pwm_register, 0664, show_pwm_register, store_pwm_register);
 #ifdef BACKLIGHT_SUPPORT_LP8557
 static int led_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
 static int led_i2c_remove(struct i2c_client *client);
-
+/*
 static struct i2c_board_info leds_board_info __initdata = {
 	I2C_BOARD_INFO("lp8557_led", 0x2c),
-};
+};*/
 
-static const struct i2c_device_id lp855x_ids[] = {
-	{"lp8557_led", 0},
-	{"mediatek,8173led_i2c", 0},
-	{ }
+static const struct of_device_id lp855x_id[] = {
+	{.compatible = "mediatek,8173led_i2c"},
+	{},
 };
+MODULE_DEVICE_TABLE(OF, lp855x_id);
+
+static const struct i2c_device_id lp855x_i2c_id[] = {{"lp8557_led", 0}, {} };
 
 struct i2c_driver led_i2c_driver = {
 	.probe = led_i2c_probe,
@@ -547,8 +548,9 @@ struct i2c_driver led_i2c_driver = {
 	.driver = {
 		.name = "lp8557_led",
 		.owner = THIS_MODULE,
+		.of_match_table = of_match_ptr(lp855x_id),
 	},
-	.id_table = lp855x_ids,
+	.id_table = lp855x_i2c_id,
 };
 
 static int led_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
@@ -574,7 +576,7 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 	#ifdef BACKLIGHT_SUPPORT_LP8557
 	struct device_node *node = NULL;
 
-	i2c_register_board_info(4, &leds_board_info, 1);
+	/*i2c_register_board_info(4, &leds_board_info, 1);*/
 	if (i2c_add_driver(&led_i2c_driver)) {
 		LEDS_DRV_DEBUG("unable to add led-i2c driver.\n");
 		return -1;
