@@ -16,6 +16,14 @@ extern void __iomem *auxadc_efuse_base;
 #endif
 
 #define EFUSE_CALI
+#define ADC_GE_A_MASK 0xffc00
+#define ADC_GE_A_SHIFT 10
+#define ADC_OE_A_MASK 0x3ff00000
+#define ADC_OE_A_SHIFT 20
+#define ADC_CALI_EN_A_MASK 0x40000000
+#define ADC_CALI_EN_A_SHIFT 30
+
+
 #define ADC_CHANNEL_MAX 16
 
 #define MT_PDN_PERI_AUXADC MT_CG_PERI_AUXADC
