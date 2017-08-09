@@ -1642,6 +1642,7 @@ static int dram_dt_init(void)
 static int __init dram_test_init(void)
 {
 	int ret = 0;
+	unsigned int tmp;
 
 	/* unsigned char * dst = &__ssram_text; */
 	/* unsigned char * src = &_sram_start; */
@@ -1697,6 +1698,12 @@ static int __init dram_test_init(void)
 
 	org_dram_data_rate = get_dram_data_rate();
 	pr_warn("[DRAMC Driver] Dram Data Rate = %d\n", org_dram_data_rate);
+	if (org_dram_data_rate != dram_fh_steps_freq(0)) {
+		tmp = ucDram_Register_Read(0xf4);
+		tmp &= ~(0x1 << 15);
+		ucDram_Register_Write(0xf4, tmp);
+		pr_warn("[DRAMC Driver] (boot DRAM freq != DVFS DRAM freq) !!!\n");
+	}
 
 	if (dram_can_support_fh())
 		pr_warn("[DRAMC Driver] dram can support Frequency Hopping\n");
