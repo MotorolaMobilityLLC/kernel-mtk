@@ -50,8 +50,12 @@
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
 /*#include <mt-plat/battery_common.h>*/
+#ifdef USB_ELBRUS
+#include <mt-plat/charging.h>
+#else
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #include <mt-plat/charging.h>
+#endif
 #endif
 
 struct musb;
@@ -141,8 +145,10 @@ extern void musb_g_resume(struct musb *);
 extern void musb_g_wakeup(struct musb *);
 extern void musb_g_disconnect(struct musb *);
 #ifdef CONFIG_DEBUG_FS
+#ifndef USB_ELBRUS
 extern unsigned musb_uart_debug;
 extern int usb20_phy_init_debugfs(void);
+#endif
 #endif
 /****************************** HOST ROLE ***********************************/
 

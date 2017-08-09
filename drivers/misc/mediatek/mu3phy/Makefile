@@ -27,5 +27,9 @@ mu3phy-$(CONFIG_C60802_SUPPORT) += mtk-phy-c60802.o
 mu3phy-$(CONFIG_D60802_SUPPORT) += mtk-phy-d60802.o
 mu3phy-$(CONFIG_E60802_SUPPORT) += mtk-phy-e60802.o
 mu3phy-$(CONFIG_A60810_SUPPORT) += mtk-phy-a60810.o
+ifeq (,$(filter $(CONFIG_MTK_PLATFORM) , "elbrus"))
 mu3phy-$(CONFIG_DEBUG_FS) += usb20_phy_debugfs.o
-obj-$(CONFIG_MU3_PHY) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+else
+ccflags-y += -DUSB_ELBRUS
+endif
+obj-$(CONFIG_PROJECT_PHY) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
