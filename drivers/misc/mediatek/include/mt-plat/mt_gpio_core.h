@@ -12,6 +12,10 @@
 #include <mach/mt_gpio_ext.h>
 */
 
+#if (defined(CONFIG_FPGA_EARLY_PORTING))
+#include <mach/mt_gpio_fpga.h>
+#endif
+
 #ifdef CONFIG_OF
 #include <linux/of_device.h>
 #endif
@@ -48,14 +52,6 @@ enum {
 
 #if defined CONFIG_FPGA_EARLY_PORTING
 
-#define MT_GPIO_BASE_START 0
-#define MT_GPIO_BASE_MAX 200
-#define MT_GPIO_EXT_START  MT_GPIO_BASE_MAX
-
-typedef enum GPIO_PIN_EXT {
-	MT_GPIO_EXT_MAX = MT_GPIO_EXT_START
-} GPIO_PIN_EXT;
-#define MT_GPIO_MAX_PIN MT_GPIO_EXT_MAX
 
 #define MT_GPIO_PLACE(pin) ({\
 	int ret = -1;\

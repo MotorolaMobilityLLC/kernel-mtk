@@ -2,14 +2,14 @@
 #define _MT_GPIO_FPGA_H_
 
 #include <asm/io.h>
-#include <mach/sync_write.h>
+#include <mt-plat/sync_write.h>
 
 /* This MACRO define is FAKE, just for compile pass with mt_gpio_debug.c */
 #define GPIO_MODE_BITS                 4
 #define MAX_GPIO_MODE_PER_REG          8
 #define MAX_GPIO_REG_BITS              32
 
-#define GPIO_BASE_1                      0x10005000
+#define GPIO_BASE                    0x10005000
 
 typedef enum GPIO_PIN {
 	GPIO_UNSUPPORTED = -1,
@@ -49,6 +49,7 @@ typedef enum GPIO_PIN_EXT {
 
 
 /* This REG structure is FAKE, just for compile pass with mt_gpio_debug.c */
+/*
 typedef struct {
 	unsigned short val;
 	unsigned short _align1;
@@ -66,6 +67,7 @@ typedef struct {
 	VAL_REGS    mode[36];
 	VAL_REGS    ies[2];
 } GPIO_REGS;
+*/
 /*----------------------------------------------------------------------------*/
 
 #endif /*_MT_GPIO_FPGA_H_*/

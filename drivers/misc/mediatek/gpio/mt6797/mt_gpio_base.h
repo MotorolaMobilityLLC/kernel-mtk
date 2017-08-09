@@ -2,8 +2,11 @@
 #define _MT_GPIO_BASE_H_
 
 #include "mt-plat/sync_write.h"
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #include <mach/gpio_const.h>
-
+#else
+#include <mach/mt_gpio_fpga.h>
+#endif
 #define GPIO_WR32(addr, data)   mt_reg_sync_writel(data, (GPIO_BASE + addr))
 #define GPIO_RD32(addr)         __raw_readl(((GPIO_BASE + addr)))
 /* #define GPIO_SET_BITS(BIT,REG)   ((*(volatile unsigned long*)(REG)) = (unsigned long)(BIT)) */

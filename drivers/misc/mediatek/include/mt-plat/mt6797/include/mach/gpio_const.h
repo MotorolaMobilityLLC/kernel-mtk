@@ -2,10 +2,12 @@
 #define _GPIO_CONST_H_
 
 /* #include <mach/mt_reg_base.h> */
+#ifndef CONFIG_FPGA_EARLY_PORTING
 
 #define GPIO_MODE_BITS                 3
 #define MAX_GPIO_MODE_PER_REG          8
 #define MAX_GPIO_REG_BITS              32
+#endif
 
 #define GPIO_BASE                     gpio_vbase.gpio_regs
 /*

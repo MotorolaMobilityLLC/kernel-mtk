@@ -13,7 +13,6 @@
 #include <mt-plat/mt_gpio.h>
 #include <mt-plat/mt_gpio_core.h>
 
-
 /*----------------------------------------------------------------------------*/
 typedef struct {		/*FIXME: check GPIO spec */
 	unsigned int no:16;
