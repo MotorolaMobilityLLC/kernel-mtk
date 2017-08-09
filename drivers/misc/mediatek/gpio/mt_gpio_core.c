@@ -43,8 +43,12 @@ struct mt_gpio_ops {
 	int (*get_smt)(unsigned long pin);
 	int (*set_ies)(unsigned long pin, unsigned long enable);
 	int (*get_ies)(unsigned long pin);
+	int (*set_slew_rate)(unsigned long pin, unsigned long enable);
+	int (*get_slew_rate)(unsigned long pin);
 	int (*set_pull_select)(unsigned long pin, unsigned long select);
 	int (*get_pull_select)(unsigned long pin);
+	int (*set_pull_resistor)(unsigned long pin, unsigned long resistors);
+	int (*get_pull_resistor)(unsigned long pin);
 	int (*set_inversion)(unsigned long pin, unsigned long enable);
 	int (*get_inversion)(unsigned long pin);
 	int (*set_out)(unsigned long pin, unsigned long output);
@@ -52,6 +56,8 @@ struct mt_gpio_ops {
 	int (*get_in)(unsigned long pin);
 	int (*set_mode)(unsigned long pin, unsigned long mode);
 	int (*get_mode)(unsigned long pin);
+	int (*set_driving)(unsigned long pin, unsigned long strength);
+	int (*get_driving)(unsigned long pin);
 };
 
 /*---------------------------------------------------------------------------*/
@@ -64,8 +70,12 @@ static struct mt_gpio_ops mt_base_ops = {
 	.get_smt = mt_get_gpio_smt_base,
 	.set_ies = mt_set_gpio_ies_base,
 	.get_ies = mt_get_gpio_ies_base,
+	.set_slew_rate = mt_set_gpio_slew_rate_base,
+	.get_slew_rate = mt_get_gpio_slew_rate_base,
 	.set_pull_select = mt_set_gpio_pull_select_base,
 	.get_pull_select = mt_get_gpio_pull_select_base,
+	.set_pull_resistor = mt_set_gpio_pull_resistor_base,
+	.get_pull_resistor = mt_get_gpio_pull_resistor_base,
 	.set_inversion = mt_set_gpio_inversion_base,
 	.get_inversion = mt_get_gpio_inversion_base,
 	.set_out = mt_set_gpio_out_base,
@@ -73,6 +83,8 @@ static struct mt_gpio_ops mt_base_ops = {
 	.get_in = mt_get_gpio_in_base,
 	.set_mode = mt_set_gpio_mode_base,
 	.get_mode = mt_get_gpio_mode_base,
+	.set_driving = mt_set_gpio_driving_base,
+	.get_driving = mt_get_gpio_driving_base,
 };
 
 static struct mt_gpio_ops mt_ext_ops = {
@@ -265,6 +277,22 @@ int mt_get_gpio_ies(unsigned long pin)
 }
 EXPORT_SYMBOL(mt_get_gpio_ies);
 /*---------------------------------------------------------------------------*/
+int mt_set_gpio_slew_rate(unsigned long pin, unsigned long enable)
+{
+	if (enable >= GPIO_SLEW_RATE_MAX) {
+		GPIOERR("Parameter enable error: %d\n", (int)enable);
+		return -ERINVAL;
+	}
+	return MT_GPIO_OPS_SET(pin, set_slew_rate, enable);
+}
+EXPORT_SYMBOL(mt_set_gpio_slew_rate);
+/*---------------------------------------------------------------------------*/
+int mt_get_gpio_slew_rate(unsigned long pin)
+{
+	return MT_GPIO_OPS_GET(pin, get_slew_rate);
+}
+EXPORT_SYMBOL(mt_get_gpio_slew_rate);
+/*---------------------------------------------------------------------------*/
 int mt_set_gpio_pull_select(unsigned long pin, unsigned long select)
 {
 	if (select >= GPIO_PULL_MAX) {
@@ -280,6 +308,22 @@ int mt_get_gpio_pull_select(unsigned long pin)
 	return MT_GPIO_OPS_GET(pin, get_pull_select);
 }
 EXPORT_SYMBOL(mt_set_gpio_pull_select);
+/*---------------------------------------------------------------------------*/
+int mt_set_gpio_pull_resistor(unsigned long pin, unsigned long resistors)
+{
+	if (resistors >= GPIO_PULL_RESISTOR_MAX) {
+		GPIOERR("Parameter resistors error: %d\n", (int)resistors);
+		return -ERINVAL;
+	}
+	return MT_GPIO_OPS_SET(pin, set_pull_resistor, resistors);
+}
+EXPORT_SYMBOL(mt_get_gpio_pull_resistor);
+/*---------------------------------------------------------------------------*/
+int mt_get_gpio_pull_resistor(unsigned long pin)
+{
+	return MT_GPIO_OPS_GET(pin, get_pull_resistor);
+}
+EXPORT_SYMBOL(mt_set_gpio_pull_resistor);
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_inversion(unsigned long pin, unsigned long enable)
 {
@@ -334,6 +378,18 @@ int mt_get_gpio_mode(unsigned long pin)
 	return MT_GPIO_OPS_GET(pin, get_mode);
 }
 EXPORT_SYMBOL(mt_get_gpio_mode);
+/*---------------------------------------------------------------------------*/
+int mt_set_gpio_driving(unsigned long pin, unsigned long strength)
+{
+	return MT_GPIO_OPS_SET(pin, set_driving, strength);
+}
+EXPORT_SYMBOL(mt_set_gpio_driving);
+/*---------------------------------------------------------------------------*/
+int mt_get_gpio_driving(unsigned long pin)
+{
+	return MT_GPIO_OPS_GET(pin, get_driving);
+}
+EXPORT_SYMBOL(mt_get_gpio_driving);
 
 #endif
 /*****************************************************************************/

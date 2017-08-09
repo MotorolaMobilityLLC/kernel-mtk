@@ -68,6 +68,16 @@ typedef enum {
 	GPIO_IES_DEFAULT = GPIO_IES_ENABLE,
 } GPIO_IES;
 /*----------------------------------------------------------------------------*/
+/* GPIO slew rate*/
+enum GPIO_SLEW_RATE {
+	GPIO_SLEW_RATE_UNSUPPORTED = -1,
+	GPIO_SLEW_RATE_DISABLE = 0,
+	GPIO_SLEW_RATE_ENABLE = 1,
+
+	GPIO_SLEW_RATE_MAX,
+	GPIO_SLEW_RATE_DEFAULT = GPIO_IES_ENABLE,
+};
+/*----------------------------------------------------------------------------*/
 /* GPIO PULL-UP/PULL-DOWN*/
 typedef enum {
 	GPIO_PULL_UNSUPPORTED = -1,
@@ -77,6 +87,16 @@ typedef enum {
 	GPIO_PULL_MAX,
 	GPIO_PULL_DEFAULT = GPIO_PULL_DOWN
 } GPIO_PULL;
+/*----------------------------------------------------------------------------*/
+/* GPIO PULL RESISTOR */
+enum GPIO_PULL_RESISTOR {
+	GPIO_PULL_RESISTOR_UNSUPPORTED = -1,
+	GPIO_PULL_HIGH_Z = 0,
+	GPIO_PULL_R0	= 0x1,
+	GPIO_PULL_R1	= 0x2,
+	GPIO_PULL_RESISTOR_MAX	= 0xff,
+	GPIO_PULL_RESISTOR_DEFAULT = GPIO_PULL_HIGH_Z
+};
 /*----------------------------------------------------------------------------*/
 /* GPIO INVERSION */
 typedef enum {

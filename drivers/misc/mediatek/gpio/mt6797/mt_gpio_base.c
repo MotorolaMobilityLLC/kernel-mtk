@@ -267,6 +267,18 @@ int mt_get_gpio_ies_base(unsigned long pin)
 
 }
 
+/*---------------------------------------------------------------------------*/
+int mt_set_gpio_slew_rate_base(unsigned long pin, unsigned long enable)
+{
+	return RSUCCESS;
+}
+
+/*---------------------------------------------------------------------------*/
+int mt_get_gpio_slew_rate_base(unsigned long pin)
+{
+	return GPIO_SLEW_RATE_UNSUPPORTED;
+}
+
 s32 mt_set_gpio_pull_select_rx_chip(u32 pin, u32 r0, u32 r1)
 {
 #ifdef GPIO_BRINGUP
@@ -564,6 +576,42 @@ int mt_get_gpio_pull_select_base(unsigned long pin)
 }
 
 /*---------------------------------------------------------------------------*/
+int mt_set_gpio_pull_resistor_base(unsigned long pin, unsigned long resistors)
+{
+	if (pin >= MAX_GPIO_PIN)
+		return -ERINVAL;
+
+	if (-1 != PUPD_offset[pin].offset) {
+		return mt_set_gpio_pull_select_rx_chip(pin, resistors & GPIO_PULL_R0,
+			(resistors & GPIO_PULL_R1) >> 1);
+	}
+	return GPIO_PULL_RESISTOR_UNSUPPORTED;
+}
+
+/*---------------------------------------------------------------------------*/
+int mt_get_gpio_pull_resistor_base(unsigned long pin)
+{
+	unsigned long resistors = 0;
+	void __iomem *addr;
+	unsigned long bit;
+	unsigned long reg;
+
+	if (pin >= MAX_GPIO_PIN)
+		return -ERINVAL;
+
+	if (-1 != PUPD_offset[pin].offset) {
+		addr = getpinaddr(pin, R0_addr);
+		bit = R0_offset[pin].offset;
+		reg = GPIO_RD32(addr);
+		resistors |= ((reg & (1L << bit)) != 0) ? GPIO_PULL_R0 : 0;
+		addr = getpinaddr(pin, R1_addr);
+		bit = R1_offset[pin].offset;
+		reg = GPIO_RD32(addr);
+		return resistors |= ((reg & (1L << bit)) != 0) ? GPIO_PULL_R1 : 0;
+	}
+	return GPIO_PULL_RESISTOR_UNSUPPORTED;
+}
+/*---------------------------------------------------------------------------*/
 int mt_set_gpio_inversion_base(unsigned long pin, unsigned long enable)
 {				/*FIX-ME
 				 */
@@ -721,6 +769,111 @@ int mt_get_gpio_mode_base(unsigned long pin)
 	/* printf("fwqread  pin=%d,moderead=%x, bit=%d\n",pin,GPIO_RD32(MODE_addr[pin].addr),bit); */
 	return (reg >> bit) & mask;
 }
+
+int mt_set_gpio_driving_base(unsigned long pin, unsigned long strength)
+{
+	u32 bit;
+#ifdef GPIO_BRINGUP
+	u32 reg = 0;
+#endif
+	void __iomem *addr;
+
+	if (pin >= MAX_GPIO_PIN)
+		return -ERINVAL;
+
+	addr = getpinaddr(pin, DRV_addr);
+	bit = DRV_offset[pin].offset;
+	if (-1 == DRV_width[pin].width)
+		return -ERWRAPPER;
+
+#ifdef GPIO_BRINGUP
+	if (3 == DRV_width[pin].width) {
+		if (strength > 0x111)
+			return -ERWRAPPER;
+		reg = GPIO_RD32(addr);
+		reg &= ~(0x111 << bit);
+		GPIO_WR32(addr, reg);
+
+		reg = GPIO_RD32(addr);
+		reg |= (strength << bit);
+		GPIO_WR32(addr, reg);
+	} else if (2 == DRV_width[pin].width) {
+		if (strength > 0x11)
+			return -ERWRAPPER;
+		reg = GPIO_RD32(addr);
+		reg &= ~(0x11 << bit);
+		GPIO_WR32(addr, reg);
+
+		reg = GPIO_RD32(addr);
+		reg |= (strength << bit);
+		GPIO_WR32(addr, reg);
+
+	} else if (1 == DRV_width[pin].width) {
+		if (strength > 1)
+			return -ERWRAPPER;
+		reg = GPIO_RD32(addr);
+		reg &= ~(0x1 << bit);
+		GPIO_WR32(addr, reg);
+
+		reg = GPIO_RD32(addr);
+		reg |= (strength << bit);
+		GPIO_WR32(addr, reg);
+	}
+
+#else
+	if (3 == DRV_width[pin].width) {
+		if (strength > 0x111)
+			return -ERWRAPPER;
+
+		GPIO_SET_BITS((0x111 << bit), addr + 8);
+		GPIO_SET_BITS((strength << bit), addr + 4);
+
+	} else if (2 == DRV_width[pin].width) {
+		if (strength > 0x11)
+			return -ERWRAPPER;
+
+		GPIO_SET_BITS((0x11 << bit), addr + 8);
+		GPIO_SET_BITS((strength << bit), addr + 4);
+
+
+	} else if (1 == DRV_width[pin].width) {
+		if (strength > 1)
+			return -ERWRAPPER;
+
+		GPIO_SET_BITS((0x1 << bit), addr + 8);
+		GPIO_SET_BITS((strength << bit), addr + 4);
+
+	}
+
+
+#endif
+	return RSUCCESS;
+
+}
+
+int mt_get_gpio_driving_base(unsigned long pin)
+{
+	unsigned long bit;
+	void __iomem *addr;
+
+	if (pin >= MAX_GPIO_PIN)
+		return -ERINVAL;
+	if (-1 == DRV_width[pin].width)
+		return -ERWRAPPER;
+
+	addr = getpinaddr(pin, DRV_addr);
+	bit = DRV_offset[pin].offset;
+
+	if (3 == DRV_width[pin].width)
+		return GPIO_RD32(addr) & (0x111 << bit);
+	else if (2 == DRV_width[pin].width)
+		return GPIO_RD32(addr) & (0x11 << bit);
+	else if (1 == DRV_width[pin].width)
+		return GPIO_RD32(addr) & (0x1 << bit);
+
+	return -ERINVAL;
+}
+
 
 /*---------------------------------------------------------------------------*/
 void get_gpio_vbase(struct device_node *node)
