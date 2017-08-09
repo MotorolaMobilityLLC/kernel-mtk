@@ -875,6 +875,15 @@ int m4u_dma_cache_flush_all(void)
 	return 0;
 }
 
+void m4u_dma_cache_flush_range(void *start, size_t size)
+{
+#ifndef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+	dmac_flush_range((void *)start, (void *)(start + size));
+#else
+	mt_smp_cache_flush_m4u(start, size);
+#endif
+}
+
 static struct vm_struct *cache_map_vm_struct;
 static int m4u_cache_sync_init(void)
 {
@@ -1202,6 +1211,8 @@ long m4u_dma_op(m4u_client_t *client, M4U_PORT_ID port,
 				m4u_dma_map_area((void *)start, PAGE_SIZE, dma_dir);
 			else if (dma_type == M4U_DMA_UNMAP_AREA)
 				m4u_dma_unmap_area((void *)start, PAGE_SIZE, dma_dir);
+			else if (dma_type == M4U_DMA_FLUSH_BY_RANGE)
+				m4u_dma_cache_flush_range((void *)start, PAGE_SIZE);
 
 			m4u_cache_unmap_page_va(start);
 		}

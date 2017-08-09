@@ -73,6 +73,7 @@ typedef enum {
 typedef enum {
 	M4U_DMA_MAP_AREA,
 	M4U_DMA_UNMAP_AREA,
+	M4U_DMA_FLUSH_BY_RANGE,
 } M4U_DMA_TYPE;
 
 typedef enum {
