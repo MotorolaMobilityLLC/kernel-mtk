@@ -52,8 +52,6 @@ static LCM_STATUS _lcm_util_check_write_cmd_v1(const LCM_DATA_T5 *t5)
 {
 	if (t5 == NULL)
 		return LCM_STATUS_ERROR;
-	if (t5->cmd == NULL)
-		return LCM_STATUS_ERROR;
 	if (t5->size == 0)
 		return LCM_STATUS_ERROR;
 
@@ -75,8 +73,6 @@ static LCM_STATUS _lcm_util_check_write_cmd_v2(const LCM_DATA_T3 *t3)
 static LCM_STATUS _lcm_util_check_write_cmd_v23(const LCM_DATA_T3 *t3)
 {
 	if (t3 == NULL)
-		return LCM_STATUS_ERROR;
-	if ((t3->size > 0) && (t3->data == NULL))
 		return LCM_STATUS_ERROR;
 
 	return LCM_STATUS_OK;
