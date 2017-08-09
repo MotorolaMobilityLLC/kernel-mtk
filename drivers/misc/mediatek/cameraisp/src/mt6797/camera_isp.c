@@ -448,6 +448,8 @@ static void __iomem *g_imgsys_config_base_dase;
 void __iomem *ISP_SENINF0_BASE;
 void __iomem *ISP_SENINF1_BASE;
 void __iomem *ISP_SENINF2_BASE;
+void __iomem *ISP_MMSYS_CONFIG_BASE;
+
 
 
 /* TODO: Remove start, Jessy */
@@ -610,6 +612,17 @@ typedef struct {
 /*******************************************************************************
 *
 ********************************************************************************/
+#define ISP_ISR_MAX_NUM 32
+#define INT_ERR_WARN_TIMER_THREAS 1000
+#define INT_ERR_WARN_MAX_TIME 3
+
+typedef struct {
+	MUINT32 m_err_int_cnt[ISP_IRQ_TYPE_AMOUNT][ISP_ISR_MAX_NUM]; /* cnt for each err int # */
+	MUINT32 m_warn_int_cnt[ISP_IRQ_TYPE_AMOUNT][ISP_ISR_MAX_NUM]; /* cnt for each warning int # */
+	MUINT32 m_err_int_mark[ISP_IRQ_TYPE_AMOUNT]; /* mark for err int, where its cnt > threshold */
+	MUINT32 m_warn_int_mark[ISP_IRQ_TYPE_AMOUNT]; /* mark for warn int, where its cnt > threshold */
+	unsigned long m_int_usec[ISP_IRQ_TYPE_AMOUNT];
+} ISP_IRQ_ERR_WAN_CNT_STRUCT;
 
 static volatile MINT32 FirstUnusedIrqUserKey = 1;
 #define USERKEY_STR_LEN 128
@@ -682,6 +695,7 @@ typedef struct {
 	spinlock_t                      SpinLockIspRef;
 	spinlock_t                      SpinLockIsp;
 	spinlock_t                      SpinLockIrq[ISP_IRQ_TYPE_AMOUNT];
+	spinlock_t                      SpinLockIrqCnt[ISP_IRQ_TYPE_AMOUNT];
 	spinlock_t                      SpinLockRTBC;
 	spinlock_t                      SpinLockClock;
 	wait_queue_head_t               WaitQueueHead;
@@ -689,9 +703,10 @@ typedef struct {
 	volatile wait_queue_head_t      WaitQHeadList[SUPPORT_MAX_IRQ];
 	MUINT32                         UserCount;
 	MUINT32                         DebugMask;
-	MINT32                          IrqNum;
-	ISP_IRQ_INFO_STRUCT             IrqInfo;
-	ISP_BUF_INFO_STRUCT             BufInfo;
+	MINT32							IrqNum;
+	ISP_IRQ_INFO_STRUCT			IrqInfo;
+	ISP_IRQ_ERR_WAN_CNT_STRUCT		IrqCntInfo;
+	ISP_BUF_INFO_STRUCT			BufInfo;
 	ISP_TIME_LOG_STRUCT             TimeLog;
 } ISP_INFO_STRUCT;
 
@@ -3104,12 +3119,14 @@ static inline MUINT32 ISP_JiffiesToMs(MUINT32 Jiffies)
 /*******************************************************************************
 *
 ********************************************************************************/
-static void ISP_DumpDmaDeepDbg(ISP_DEV_NODE_ENUM module)
+
+static void ISP_DumpDmaDeepDbg(ISP_IRQ_TYPE_ENUM module)
 {
 	MUINT32 uni_path;
 	MUINT32 flk2_sel;
 	MUINT32 hds2_sel;
 	MUINT32 dmaerr[nDMA_ERR];
+
 	switch (module) {
 	case ISP_IRQ_TYPE_INT_CAM_A_ST:
 		module = ISP_CAM_A_IDX;
@@ -3122,6 +3139,8 @@ static void ISP_DumpDmaDeepDbg(ISP_DEV_NODE_ENUM module)
 		return;
 		break;
 	}
+
+
 	dmaerr[0] = (MUINT32)ISP_RD32(CAM_REG_IMGO_ERR_STAT(module));
 	dmaerr[1] = (MUINT32)ISP_RD32(CAM_REG_RRZO_ERR_STAT(module));
 	dmaerr[2] = (MUINT32)ISP_RD32(CAM_REG_AAO_ERR_STAT(module));
@@ -3137,6 +3156,9 @@ static void ISP_DumpDmaDeepDbg(ISP_DEV_NODE_ENUM module)
 	dmaerr[11] = (MUINT32)ISP_RD32(CAM_UNI_REG_RSSO_A_ERR_STAT(ISP_UNI_A_IDX));
 	dmaerr[12] = (MUINT32)ISP_RD32(CAM_UNI_REG_RSSO_B_ERR_STAT(ISP_UNI_A_IDX));
 	dmaerr[13] = (MUINT32)ISP_RD32(CAM_UNI_REG_RAWI_ERR_STAT(ISP_UNI_A_IDX));
+
+	LOG_ERR("mmsys:0x%x, imgsys:0x%x, camsys:0x%x", ISP_RD32(ISP_MMSYS_CONFIG_BASE + 0x100),
+		ISP_RD32(ISP_IMGSYS_CONFIG_BASE), ISP_RD32(ISP_CAMSYS_CONFIG_BASE));
 
 	uni_path = ISP_RD32(CAM_UNI_REG_TOP_PATH_SEL(ISP_UNI_A_IDX));
 	flk2_sel = (uni_path & 0x3);
@@ -7140,7 +7162,7 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 {
 	MINT32 Ret = 0;
 	/*    struct resource *pRes = NULL;*/
-	MINT32 i = 0;
+	MINT32 i = 0, j = 0;
 	MUINT8 n;
 	MUINT32 irq_info[3]; /* Record interrupts info from device tree */
 
@@ -7246,6 +7268,7 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 		spin_lock_init(&(IspInfo.SpinLockIsp));
 		for (n = 0; n < ISP_IRQ_TYPE_AMOUNT; n++) {
 			spin_lock_init(&(IspInfo.SpinLockIrq[n]));
+			spin_lock_init(&(IspInfo.SpinLockIrqCnt[n]));
 		}
 		spin_lock_init(&(IspInfo.SpinLockRTBC));
 		spin_lock_init(&(IspInfo.SpinLockClock));
@@ -7378,6 +7401,17 @@ static MINT32 ISP_probe(struct platform_device *pDev)
 		IspInfo.IrqInfo.ErrMask[ISP_IRQ_TYPE_INT_CAMSV_4_ST][SIGNAL_INT]  = INT_ST_MASK_CAMSV_ERR;
 		IspInfo.IrqInfo.ErrMask[ISP_IRQ_TYPE_INT_CAMSV_5_ST][SIGNAL_INT]  = INT_ST_MASK_CAMSV_ERR;
 
+		/* Init IrqCntInfo */
+		for (i = 0; i < ISP_IRQ_TYPE_AMOUNT; i++) {
+			for (j = 0; j < ISP_ISR_MAX_NUM; j++) {
+				IspInfo.IrqCntInfo.m_err_int_cnt[i][j] = 0;
+				IspInfo.IrqCntInfo.m_warn_int_cnt[i][j] = 0;
+			}
+			IspInfo.IrqCntInfo.m_err_int_mark[i] = 0;
+			IspInfo.IrqCntInfo.m_warn_int_mark[i] = 0;
+
+			IspInfo.IrqCntInfo.m_int_usec[i] = 0;
+		}
 
 
 EXIT:
@@ -9052,6 +9086,19 @@ static MINT32 __init ISP_Init(void)
 		return -ENODEV;
 	}
 	LOG_DBG("ISP_SENINF2_BASE: %p\n", ISP_SENINF2_BASE);
+
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mmsys_config");
+	if (!node) {
+		LOG_ERR("find mmsys_config node failed!!!\n");
+		return -ENODEV;
+	}
+	ISP_MMSYS_CONFIG_BASE = of_iomap(node, 0);
+	if (!ISP_MMSYS_CONFIG_BASE) {
+		LOG_ERR("unable to map ISP_MMSYS_CONFIG_BASE registers!!!\n");
+		return -ENODEV;
+	}
+	LOG_DBG("ISP_MMSYS_CONFIG_BASE: %p\n", ISP_MMSYS_CONFIG_BASE);
 
 	/* FIX-ME: linux-3.10 procfs API changed */
 	proc_create("driver/isp_reg", 0, NULL, &fcameraisp_proc_fops);
@@ -11147,6 +11194,8 @@ static irqreturn_t ISP_Irq_CAMSV_5(MINT32  Irq, void *DeviceId)
 
 }
 
+#define ERR_WRN_INT_CNT_THRE    3
+
 static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 {
 	/* LOG_DBG("ISP_IRQ_CAM_A:0x%x\n",Irq); */
@@ -11162,6 +11211,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
 	ktime_t             time;
+	MUINT32 IrqEnableOrig, IrqEnableNew;
 
 	/*  */
 	/* do_gettimeofday(&time_frmb); */
@@ -11171,6 +11221,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 	time_frmb.tv_usec = usec;
 	time_frmb.tv_sec = sec;
 
+
 	spin_lock(&(IspInfo.SpinLockIrq[module]));
 	IrqStatus = ISP_RD32(CAM_REG_CTL_RAW_INT_STATUS(reg_module));
 	DmaStatus = ISP_RD32(CAM_REG_CTL_RAW_INT2_STATUS(reg_module));
@@ -11179,7 +11230,47 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 	ErrStatus = IrqStatus & IspInfo.IrqInfo.ErrMask[module][SIGNAL_INT];
 	WarnStatus = IrqStatus & IspInfo.IrqInfo.WarnMask[module][SIGNAL_INT];
 	IrqStatus = IrqStatus & IspInfo.IrqInfo.Mask[module][SIGNAL_INT];
-	/*  */
+
+    /* Check ERR/WRN ISR times, if it occur too frequently, mark it for avoding keep enter ISR
+     * It will happen KE
+	 */
+	for (i = 0; i < ISP_ISR_MAX_NUM; i++) {
+		/* Only check irq that un marked yet */
+		if (!((IspInfo.IrqCntInfo.m_err_int_mark[module] & (1 << i))
+			|| (IspInfo.IrqCntInfo.m_warn_int_mark[module] & (1 << i)))) {
+
+			if (ErrStatus & (1 << i))
+				IspInfo.IrqCntInfo.m_err_int_cnt[module][i]++;
+
+			if (WarnStatus & (1 << i))
+				IspInfo.IrqCntInfo.m_warn_int_cnt[module][i]++;
+
+
+			if (usec - IspInfo.IrqCntInfo.m_int_usec[module] < INT_ERR_WARN_TIMER_THREAS) {
+				if (IspInfo.IrqCntInfo.m_err_int_cnt[module][i] >= INT_ERR_WARN_MAX_TIME)
+					IspInfo.IrqCntInfo.m_err_int_mark[module] |= (1 << i);
+
+				if (IspInfo.IrqCntInfo.m_warn_int_cnt[module][i] >= INT_ERR_WARN_MAX_TIME)
+					IspInfo.IrqCntInfo.m_warn_int_mark[module] |= (1 << i);
+
+			} else {
+				IspInfo.IrqCntInfo.m_int_usec[module] = usec;
+				IspInfo.IrqCntInfo.m_err_int_cnt[module][i] = 0;
+				IspInfo.IrqCntInfo.m_warn_int_cnt[module][i] = 0;
+			}
+		}
+
+	}
+
+	spin_lock(&(IspInfo.SpinLockIrq[module]));
+	IrqEnableOrig = ISP_RD32(CAM_REG_CTL_RAW_INT_EN(reg_module));
+	spin_unlock(&(IspInfo.SpinLockIrq[module]));
+
+	IrqEnableNew = IrqEnableOrig & ~(IspInfo.IrqCntInfo.m_err_int_mark[module]
+		| IspInfo.IrqCntInfo.m_warn_int_mark[module]);
+	ISP_WR32(CAM_REG_CTL_RAW_INT_EN(reg_module), IrqEnableNew);
+
+	/*	*/
 	IRQ_INT_ERR_CHECK_CAM(WarnStatus, ErrStatus, module);
 
 	fbc_ctrl1[0].Raw = ISP_RD32(CAM_REG_FBC_IMGO_CTL1(reg_module));
@@ -11207,7 +11298,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 	spin_lock(&(IspInfo.SpinLockIrq[module]));
 	if (IrqStatus & VS_INT_ST) {
 		Vsync_cnt[0]++;
-		LOG_INF("CAMA N3D:0x%x\n", Vsync_cnt[0]);
+		/*LOG_INF("CAMA N3D:0x%x\n", Vsync_cnt[0]);*/
 	}
 	if (IrqStatus & SW_PASS1_DON_ST) {
 		sec = cpu_clock(0);	/* ns */
@@ -11244,9 +11335,25 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
 		FrameStatus[module] = Irq_CAM_FrameStatus(reg_module);
 		if (FrameStatus[module] == CAM_FST_DROP_FRAME) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, "CAMA Lost p1 done_%d (0x%x): ", \
-				       sof_count[module], cur_v_cnt);
+					   sof_count[module], cur_v_cnt);
 		}
 
+		/* During SOF, re-enable that err/warn irq had been marked and
+		 * reset IrqCntInfo
+		 */
+		IrqEnableNew = ISP_RD32(CAM_REG_CTL_RAW_INT_EN(reg_module));
+		IrqEnableNew |= (IspInfo.IrqCntInfo.m_err_int_mark[module]
+			| IspInfo.IrqCntInfo.m_warn_int_mark[module]);
+		ISP_WR32(CAM_REG_CTL_RAW_INT_EN(reg_module), IrqEnableNew);
+
+		IspInfo.IrqCntInfo.m_err_int_mark[module] = 0;
+		IspInfo.IrqCntInfo.m_warn_int_mark[module] = 0;
+		IspInfo.IrqCntInfo.m_int_usec[module] = 0;
+
+		for (i = 0; i < ISP_ISR_MAX_NUM; i++) {
+			IspInfo.IrqCntInfo.m_err_int_cnt[module][i] = 0;
+			IspInfo.IrqCntInfo.m_warn_int_cnt[module][i] = 0;
+		}
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
 			static MUINT32 m_sec = 0, m_usec;
@@ -11348,6 +11455,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 	unsigned long long  sec = 0;
 	unsigned long       usec = 0;
 	ktime_t             time;
+	MUINT32 IrqEnableOrig, IrqEnableNew;
 
 	/*  */
 	/* do_gettimeofday(&time_frmb); */
@@ -11365,6 +11473,46 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 	ErrStatus = IrqStatus & IspInfo.IrqInfo.ErrMask[module][SIGNAL_INT];
 	WarnStatus = IrqStatus & IspInfo.IrqInfo.WarnMask[module][SIGNAL_INT];
 	IrqStatus = IrqStatus & IspInfo.IrqInfo.Mask[module][SIGNAL_INT];
+
+    /* Check ERR/WRN ISR times, if it occur too frequently, mark it for avoding keep enter ISR
+     * It will happen KE
+	 */
+	for (i = 0; i < ISP_ISR_MAX_NUM; i++) {
+		/* Only check irq that un marked yet */
+		if (!((IspInfo.IrqCntInfo.m_err_int_mark[module] & (1 << i))
+			|| (IspInfo.IrqCntInfo.m_warn_int_mark[module] & (1 << i)))) {
+
+			if (ErrStatus & (1 << i))
+				IspInfo.IrqCntInfo.m_err_int_cnt[module][i]++;
+
+			if (WarnStatus & (1 << i))
+				IspInfo.IrqCntInfo.m_warn_int_cnt[module][i]++;
+
+			if (usec - IspInfo.IrqCntInfo.m_int_usec[module] < INT_ERR_WARN_TIMER_THREAS) {
+				if (IspInfo.IrqCntInfo.m_err_int_cnt[module][i] >= INT_ERR_WARN_MAX_TIME)
+					IspInfo.IrqCntInfo.m_err_int_mark[module] |= (1 << i);
+
+				if (IspInfo.IrqCntInfo.m_warn_int_cnt[module][i] >= INT_ERR_WARN_MAX_TIME)
+					IspInfo.IrqCntInfo.m_warn_int_mark[module] |= (1 << i);
+
+			} else {
+				IspInfo.IrqCntInfo.m_int_usec[module] = usec;
+				IspInfo.IrqCntInfo.m_err_int_cnt[module][i] = 0;
+				IspInfo.IrqCntInfo.m_warn_int_cnt[module][i] = 0;
+			}
+		}
+
+	}
+
+	spin_lock(&(IspInfo.SpinLockIrq[module]));
+	IrqEnableOrig = ISP_RD32(CAM_REG_CTL_RAW_INT_EN(reg_module));
+	spin_unlock(&(IspInfo.SpinLockIrq[module]));
+
+	IrqEnableNew = IrqEnableOrig & ~(IspInfo.IrqCntInfo.m_err_int_mark[module]
+		| IspInfo.IrqCntInfo.m_warn_int_mark[module]);
+	ISP_WR32(CAM_REG_CTL_RAW_INT_EN(reg_module), IrqEnableNew);
+
+
 	/*  */
 	IRQ_INT_ERR_CHECK_CAM(WarnStatus, ErrStatus, module);
 
@@ -11431,6 +11579,24 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 		if (FrameStatus[module] == CAM_FST_DROP_FRAME) {
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF, "CAMB Lost p1 done_%d (0x%x): ", \
 				       sof_count[module], cur_v_cnt);
+		}
+
+
+		/* During SOF, re-enable that err/warn irq had been marked and
+		 * reset IrqCntInfo
+		 */
+		IrqEnableNew = ISP_RD32(CAM_REG_CTL_RAW_INT_EN(reg_module));
+		IrqEnableNew |= (IspInfo.IrqCntInfo.m_err_int_mark[module] |
+			IspInfo.IrqCntInfo.m_warn_int_mark[module]);
+		ISP_WR32(CAM_REG_CTL_RAW_INT_EN(reg_module), IrqEnableNew);
+
+		IspInfo.IrqCntInfo.m_err_int_mark[module] = 0;
+		IspInfo.IrqCntInfo.m_warn_int_mark[module] = 0;
+		IspInfo.IrqCntInfo.m_int_usec[module] = 0;
+
+		for (i = 0; i < ISP_ISR_MAX_NUM; i++) {
+			IspInfo.IrqCntInfo.m_err_int_cnt[module][i] = 0;
+			IspInfo.IrqCntInfo.m_warn_int_cnt[module][i] = 0;
 		}
 
 
