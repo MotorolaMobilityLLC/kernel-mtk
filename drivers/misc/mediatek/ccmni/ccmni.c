@@ -31,7 +31,7 @@
 #include <linux/sockios.h>
 #include <linux/device.h>
 #include <linux/debugfs.h>
-
+#include <trace/events/netdev_rx.h>
 #include "ccmni.h"
 
 
@@ -881,7 +881,6 @@ static int ccmni_rx_callback(int md_id, int rx_ch, struct sk_buff *skb, void *pr
 
 #if defined(CCCI_SKB_TRACE)
 	struct iphdr *iph = (struct iphdr *)skb->data;
-
 	net_rx_delay[2] = iph->id;
 	net_rx_delay[3] = sched_clock();
 #endif
