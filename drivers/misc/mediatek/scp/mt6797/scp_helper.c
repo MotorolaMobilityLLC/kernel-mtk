@@ -752,9 +752,9 @@ int check_scp_resource(void)
 	int scp_resource_status = 0;
 
 	if (EXPECTED_FREQ_REG == FREQ_354MHZ || CURRENT_FREQ_REG == FREQ_354MHZ)
-		scp_resource_status = 0;
-	else
 		scp_resource_status = 1;
+	else
+		scp_resource_status = 0;
 
 	return scp_resource_status;
 }
