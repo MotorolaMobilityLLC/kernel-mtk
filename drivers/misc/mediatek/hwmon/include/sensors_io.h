@@ -244,7 +244,32 @@ struct SENSOR_DATA {
 #define AAL_SET_ALS_MODE			_IOW(ALSPS, 0x14, int)
 #define AAL_GET_ALS_MODE			_IOR(ALSPS, 0x15, int)
 #define AAL_GET_ALS_DATA			_IOR(ALSPS, 0x16, int)
+#ifdef CONFIG_COMPAT
+#define COMPAT_ALSPS_SET_PS_MODE				_IOW(ALSPS, 0x01, compat_int_t)
+#define COMPAT_ALSPS_GET_PS_MODE				_IOR(ALSPS, 0x02, compat_int_t)
+#define COMPAT_ALSPS_GET_PS_DATA				_IOR(ALSPS, 0x03, compat_int_t)
+#define COMPAT_ALSPS_GET_PS_RAW_DATA			_IOR(ALSPS, 0x04, compat_int_t)
+#define COMPAT_ALSPS_SET_ALS_MODE				_IOW(ALSPS, 0x05, compat_int_t)
+#define COMPAT_ALSPS_GET_ALS_MODE				_IOR(ALSPS, 0x06, compat_int_t)
+#define COMPAT_ALSPS_GET_ALS_DATA				_IOR(ALSPS, 0x07, compat_int_t)
+#define COMPAT_ALSPS_GET_ALS_RAW_DATA			_IOR(ALSPS, 0x08, compat_int_t)
 
+/*-------------------MTK add-------------------------------------------*/
+#define COMPAT_ALSPS_GET_PS_TEST_RESULT		_IOR(ALSPS, 0x09, compat_int_t)
+#define COMPAT_ALSPS_GET_ALS_TEST_RESULT		_IOR(ALSPS, 0x0A, compat_int_t)
+#define COMPAT_ALSPS_GET_PS_THRESHOLD_HIGH		_IOR(ALSPS, 0x0B, compat_int_t)
+#define COMPAT_ALSPS_GET_PS_THRESHOLD_LOW		_IOR(ALSPS, 0x0C, compat_int_t)
+#define COMPAT_ALSPS_GET_ALS_THRESHOLD_HIGH	_IOR(ALSPS, 0x0D, compat_int_t)
+#define COMPAT_ALSPS_GET_ALS_THRESHOLD_LOW		_IOR(ALSPS, 0x0E, compat_int_t)
+#define COMPAT_ALSPS_IOCTL_CLR_CALI			_IOW(ALSPS, 0x0F, compat_int_t)
+#define COMPAT_ALSPS_IOCTL_GET_CALI			_IOR(ALSPS, 0x10, compat_int_t)
+#define COMPAT_ALSPS_IOCTL_SET_CALI			_IOW(ALSPS, 0x11, compat_int_t)
+#define COMPAT_ALSPS_SET_PS_THRESHOLD			_IOW(ALSPS, 0x12, compat_int_t)
+#define COMPAT_ALSPS_SET_ALS_THRESHOLD			_IOW(ALSPS, 0x13, compat_int_t)
+#define COMPAT_AAL_SET_ALS_MODE				_IOW(ALSPS, 0x14, compat_int_t)
+#define COMPAT_AAL_GET_ALS_MODE				_IOR(ALSPS, 0x15, compat_int_t)
+#define COMPAT_AAL_GET_ALS_DATA				_IOR(ALSPS, 0x16, compat_int_t)
+#endif
 
 #define GYROSCOPE							0X86
 #define GYROSCOPE_IOCTL_INIT				_IO(GYROSCOPE, 0x01)

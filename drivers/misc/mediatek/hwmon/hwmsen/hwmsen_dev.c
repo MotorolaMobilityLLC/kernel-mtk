@@ -1209,7 +1209,7 @@ static const struct file_operations hwmsen_fops = {
 };
 
 /*----------------------------------------------------------------------------*/
-static int hwmsen_probe(struct platform_device *pdev)
+static int hwmsen_probe(void)
 {
 
 	int err;
@@ -1288,7 +1288,7 @@ exit_alloc_data_failed:
 }
 
 /*----------------------------------------------------------------------------*/
-static int hwmsen_remove(struct platform_device *pdev)
+static int hwmsen_remove(void)
 {
 	HWM_FUN(f);
 
@@ -1319,44 +1319,6 @@ static void hwmsen_late_resume(struct early_suspend *h)
 }
 #endif				/*#if defined(CONFIG_HAS_EARLYSUSPEND)*/
 /*----------------------------------------------------------------------------*/
-static int hwmsen_suspend(struct platform_device *dev, pm_message_t state)
-{
-	/*HWM_FUN(f);*/
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int hwmsen_resume(struct platform_device *dev)
-{
-	/*HWM_FUN(f);*/
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-
-#ifdef CONFIG_OF
-static const struct of_device_id hwmsensor_of_match[] = {
-	{.compatible = "mediatek,hwmsensor",},
-	{},
-};
-#endif
-
-static struct platform_driver hwmsen_driver = {
-	.probe = hwmsen_probe,
-	.remove = hwmsen_remove,
-	.suspend = hwmsen_suspend,
-	.resume = hwmsen_resume,
-	.driver = {
-		   .name = HWM_SENSOR_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = hwmsensor_of_match,
-#endif
-/*              .owner = THIS_MODULE,*/
-		   }
-};
-
-/*----------------------------------------------------------------------------*/
-
 #if defined(CONFIG_MTK_AUTO_DETECT_MAGNETOMETER)
 
 int hwmsen_msensor_remove(struct platform_device *pdev)
@@ -1601,7 +1563,7 @@ EXPORT_SYMBOL_GPL(hwmsen_alsps_sensor_add);
 static int __init hwmsen_init(void)
 {
 	HWM_FUN(f);
-	if (platform_driver_register(&hwmsen_driver)) {
+	if (0 != hwmsen_probe()) {
 		HWM_ERR("failed to register sensor driver");
 		return -ENODEV;
 	}
@@ -1634,7 +1596,7 @@ static int __init hwmsen_init(void)
 /*----------------------------------------------------------------------------*/
 static void __exit hwmsen_exit(void)
 {
-	platform_driver_unregister(&hwmsen_driver);
+	hwmsen_remove();
 }
 /*----------------------------------------------------------------------------*/
 late_initcall(hwmsen_init);

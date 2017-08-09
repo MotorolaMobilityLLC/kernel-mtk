@@ -15,40 +15,23 @@
 #include <linux/i2c.h>
 #include <linux/slab.h>
 #include <linux/irq.h>
+#include <linux/gpio.h>
 #include <linux/miscdevice.h>
 #include <asm/uaccess.h>
 #include <linux/delay.h>
 #include <linux/input.h>
 #include <linux/workqueue.h>
 #include <linux/kobject.h>
-#include <linux/earlysuspend.h>
 #include <linux/platform_device.h>
 #include <asm/atomic.h>
-
-#include <mach/mt_typedefs.h>
-#ifdef CONFIG_MTK_LEGACY
-#include <mach/mt_gpio.h>
-#endif
-#include <mach/mt_pm_ldo.h>
-
-#define POWER_NONE_MACRO MT65XX_POWER_NONE
-
-#include <linux/hwmsensor.h>
-#include <linux/hwmsen_dev.h>
-#include <linux/sensors_io.h>
 #include <asm/io.h>
-#ifdef CONFIG_MTK_LEGACY
-#include <cust_eint.h>
-#endif
-#include <cust_alsps.h>
+#include "cust_alsps.h"
 #include "cm36686.h"
 #include <linux/sched.h>
 #include <alsps.h>
-#include <linux/batch.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
-#include <mach/eint.h>
 /******************************************************************************
  * configuration
 *******************************************************************************/
@@ -144,7 +127,7 @@ struct cm36686_priv {
 
 #ifdef CONFIG_OF
 static const struct of_device_id alsps_of_match[] = {
-	{.compatible = "mediatek,als_ps"},
+	{.compatible = "mediatek,alsps"},
 	{},
 };
 #endif
@@ -245,25 +228,6 @@ EXIT_ERR:
 /*----------------------------------------------------------------------------*/
 static void cm36686_power(struct alsps_hw *hw, unsigned int on)
 {
-#ifdef __USE_LINUX_REGULATOR_FRAMEWORK__
-#else
-	static unsigned int power_on;
-
-	APS_LOG("power %s\n", on ? "on" : "off");
-
-	if (hw->power_id != POWER_NONE_MACRO) {
-		if (power_on == on) {
-			APS_LOG("ignore power control: %d\n", on);
-		} else if (on) {
-			if (!hwPowerOn(hw->power_id, hw->power_vol, "CM36686"))
-				APS_ERR("power on fails!!\n");
-		} else {
-			if (!hwPowerDown(hw->power_id, "CM36686"))
-				APS_ERR("power off fail!!\n");
-		}
-	}
-	power_on = on;
-#endif
 }
 
 /********************************************************************/
@@ -748,7 +712,7 @@ static ssize_t cm36686_store_recv(struct device_driver *ddri, const char *buf, s
 		APS_ERR("cm36686_obj is null!!\n");
 		return 0;
 	}
-	ret = kstrtoint(buf, 16, addr);
+	ret = kstrtoint(buf, 16, &addr);
 	if (ret < 0) {
 		APS_ERR("invalid format: '%s'\n", buf);
 		return 0;
@@ -1036,20 +1000,11 @@ int cm36686_setup_eint(struct i2c_client *client)
 	u32 ints[2] = { 0, 0 };
 #endif
 
-#ifdef CONFIG_MTK_LEGACY
-#else
 	int ret;
 	struct pinctrl *pinctrl;
 	struct pinctrl_state *pins_default;
 	struct pinctrl_state *pins_cfg;
-#endif
 
-#ifdef CONFIG_MTK_LEGACY
-	mt_set_gpio_dir(GPIO_ALS_EINT_PIN, GPIO_DIR_IN);
-	mt_set_gpio_mode(GPIO_ALS_EINT_PIN, GPIO_ALS_EINT_PIN_M_EINT);
-	mt_set_gpio_pull_enable(GPIO_ALS_EINT_PIN, TRUE);
-	mt_set_gpio_pull_select(GPIO_ALS_EINT_PIN, GPIO_PULL_UP);
-#else
 	alspsPltFmDev = get_alsps_platformdev();
 
 	pinctrl = devm_pinctrl_get(&alspsPltFmDev->dev);
@@ -1071,12 +1026,12 @@ int cm36686_setup_eint(struct i2c_client *client)
 
 	}
 	pinctrl_select_state(pinctrl, pins_cfg);
-#endif
 
 	if (cm36686_obj->irq_node) {
 		of_property_read_u32_array(cm36686_obj->irq_node, "debounce", ints,
 					   ARRAY_SIZE(ints));
-		mt_gpio_set_debounce(ints[0], ints[1]);
+		gpio_request(ints[0], "p-sensor");
+		gpio_set_debounce(ints[0], ints[1]);
 		APS_LOG("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
 
 		cm36686_obj->irq = irq_of_parse_and_map(cm36686_obj->irq_node, 0);
@@ -1367,8 +1322,6 @@ err_out:
 #ifdef CONFIG_COMPAT
 static long compat_cm36686_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
-	long ret;
-
 	APS_FUN();
 
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
@@ -1434,10 +1387,10 @@ static int cm36686_init_client(struct i2c_client *client)
 	APS_FUN();
 	databuf[0] = CM36686_REG_ALS_CONF;
 	if (1 == obj->hw->polling_mode_als)
-		databuf[1] = 0 b01000001;
+		databuf[1] = 0x41; /*0b01000001;*/
 	else
-		databuf[1] = 0 b01000111;
-	databuf[2] = 0 b00000000;
+		databuf[1] = 0x47; /*0b01000111;*/
+	databuf[2] = 0x00; /*0b00000000;*/
 	res = CM36686_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
 	if (res <= 0) {
 		APS_ERR("i2c_master_send function err\n");
@@ -1446,11 +1399,11 @@ static int cm36686_init_client(struct i2c_client *client)
 	APS_LOG("cm36686 ps CM36686_REG_ALS_CONF command!\n");
 
 	databuf[0] = CM36686_REG_PS_CONF1_2;
-	databuf[1] = 0 b01100011;
+	databuf[1] = 0x63; /*0b01100011;*/
 	if (1 == obj->hw->polling_mode_ps)
-		databuf[2] = 0 b00001000;
+		databuf[2] = 0x08; /*0b00001000;*/
 	else
-		databuf[2] = 0 b00001011;
+		databuf[2] = 0x0B; /*0b00001011;*/
 	res = CM36686_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
 	if (res <= 0) {
 		APS_ERR("i2c_master_send function err\n");
@@ -1459,8 +1412,8 @@ static int cm36686_init_client(struct i2c_client *client)
 	APS_LOG("cm36686 ps CM36686_REG_PS_CONF1_2 command!\n");
 
 	databuf[0] = CM36686_REG_PS_CONF3_MS;
-	databuf[1] = 0 b00010100;
-	databuf[2] = 0 b00000010;
+	databuf[1] = 0x14; /*0b00010100;*/
+	databuf[2] = 0x02; /*0b00000010;*/
 	res = CM36686_i2c_master_operate(client, databuf, 0x3, I2C_FLAG_WRITE);
 	if (res <= 0) {
 		APS_ERR("i2c_master_send function err\n");
@@ -1872,7 +1825,7 @@ static int cm36686_i2c_resume(struct i2c_client *client)
 {
 	struct cm36686_priv *obj = i2c_get_clientdata(client);
 	int err;
-	hwm_sensor_data sensor_data;
+	struct hwm_sensor_data sensor_data;
 
 	memset(&sensor_data, 0, sizeof(sensor_data));
 	APS_FUN();
@@ -1927,12 +1880,6 @@ static int __init cm36686_init(void)
 		APS_ERR("get_alsps_dts_func fail\n");
 		return 0;
 	}
-#ifdef CONFIG_MTK_LEGACY
-	struct i2c_board_info i2c_cm36686 = { I2C_BOARD_INFO(CM36686_DEV_NAME, hw->i2c_addr[0]) };
-
-	APS_LOG("%s: i2c_number=%d, i2c_addr: 0x%x\n", __func__, hw->i2c_num, hw->i2c_addr[0]);
-	i2c_register_board_info(hw->i2c_num, &i2c_cm36686, 1);
-#endif
 	alsps_driver_add(&cm36686_init_info);
 	return 0;
 }

@@ -861,6 +861,84 @@ static int sensorHub_probe(struct platform_device *pdev)
 	return 0;
 }
 
+static int sensorHub_suspend(struct platform_device *dev, pm_message_t state)
+{
+	int handle;
+	struct batch_context *cxt = NULL;
+	int res;
+	int en;
+
+	BATCH_FUN();
+
+	cxt = batch_context_obj;
+
+	mutex_lock(&batch_hw_mutex);
+	cxt->force_wake_upon_fifo_full = 0;
+	for (handle = 0; handle <= ID_SENSOR_MAX_HANDLE; handle++) {
+		if (cxt->dev_list.data_dev[handle].is_batch_supported) {
+			en = (cxt->active_sensor & (0x01 << handle))?1:0;
+			if (cxt->dev_list.ctl_dev[handle].enable_hw_batch != NULL) {
+				res = cxt->dev_list.ctl_dev[handle].enable_hw_batch(handle,
+					en, cxt->dev_list.data_dev[handle].flags|cxt->force_wake_upon_fifo_full,
+					(long long)cxt->dev_list.data_dev[handle].samplingPeriodMs*1000000,
+					(long long)cxt->dev_list.data_dev[handle].maxBatchReportLatencyMs*1000000);
+				if (res < 0)
+					BATCH_ERR("enable_hw_batch fail, %d, %d\n", handle, res);
+			} else if (cxt->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].enable_hw_batch != NULL) {
+				res = cxt->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].enable_hw_batch(handle,
+					en, cxt->dev_list.data_dev[handle].flags|cxt->force_wake_upon_fifo_full,
+					(long long)cxt->dev_list.data_dev[handle].samplingPeriodMs*1000000,
+					(long long)cxt->dev_list.data_dev[handle].maxBatchReportLatencyMs*1000000);
+				if (res < 0)
+					BATCH_ERR("enable_hw_batch fail, %d, %d\n",
+						ID_SENSOR_MAX_HANDLE, res);
+			}
+		}
+	}
+	mutex_unlock(&batch_hw_mutex);
+
+	return 0;
+}
+/*----------------------------------------------------------------------------*/
+static int sensorHub_resume(struct platform_device *dev)
+{
+	int handle;
+	struct batch_context *cxt = NULL;
+	int res;
+	int en;
+
+	BATCH_FUN();
+
+	cxt = batch_context_obj;
+
+	mutex_lock(&batch_hw_mutex);
+	cxt->force_wake_upon_fifo_full = SENSORS_BATCH_WAKE_UPON_FIFO_FULL;
+	for (handle = 0; handle <= ID_SENSOR_MAX_HANDLE; handle++) {
+		if (cxt->dev_list.data_dev[handle].is_batch_supported) {
+			en = (cxt->active_sensor & (0x01 << handle))?1:0;
+			if (cxt->dev_list.ctl_dev[handle].enable_hw_batch != NULL) {
+				res = cxt->dev_list.ctl_dev[handle].enable_hw_batch(handle,
+					en, cxt->dev_list.data_dev[handle].flags|cxt->force_wake_upon_fifo_full,
+					(long long)cxt->dev_list.data_dev[handle].samplingPeriodMs*1000000,
+					(long long)cxt->dev_list.data_dev[handle].maxBatchReportLatencyMs*1000000);
+				if (res < 0)
+					BATCH_ERR("enable_hw_batch fail, %d, %d\n", handle, res);
+			} else if (cxt->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].enable_hw_batch != NULL) {
+				res = cxt->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].enable_hw_batch(handle,
+					en, cxt->dev_list.data_dev[handle].flags|cxt->force_wake_upon_fifo_full,
+					(long long)cxt->dev_list.data_dev[handle].samplingPeriodMs*1000000,
+					(long long)cxt->dev_list.data_dev[handle].maxBatchReportLatencyMs*1000000);
+				if (res < 0)
+					BATCH_ERR("enable_hw_batch fail, %d, %d\n",
+						ID_SENSOR_MAX_HANDLE, res);
+			}
+		}
+	}
+	mutex_unlock(&batch_hw_mutex);
+
+	return 0;
+}
+
 #ifdef CONFIG_OF
 static const struct of_device_id sensorHub_of_match[] = {
 	{ .compatible = "mediatek,sensorHub", },
@@ -871,6 +949,8 @@ static const struct of_device_id sensorHub_of_match[] = {
 static struct platform_driver sensorHub_driver = {
 	.probe	  = sensorHub_probe,
 	.remove	 = sensorHub_remove,
+	.suspend    = sensorHub_suspend,
+	.resume     = sensorHub_resume,
 	.driver = {
 
 		.name  = "sensorHub",
@@ -940,7 +1020,7 @@ int  batch_driver_add(struct batch_init_info *obj)
 }
 EXPORT_SYMBOL_GPL(batch_driver_add);
 
-static int batch_probe(struct platform_device *pdev)
+static int batch_probe(void)
 {
 
 	int err;
@@ -1012,7 +1092,7 @@ exit_alloc_data_failed:
 
 
 
-static int batch_remove(struct platform_device *pdev)
+static int batch_remove(void)
 {
 	int err = 0;
 
@@ -1030,105 +1110,11 @@ static int batch_remove(struct platform_device *pdev)
 	return 0;
 }
 
-
-static int batch_suspend(struct platform_device *dev, pm_message_t state)
-{
-	int handle;
-	struct batch_context *cxt = NULL;
-	int res;
-	int en;
-
-	BATCH_FUN();
-	BATCH_ERR("batch_suspend");
-
-	cxt = batch_context_obj;
-
-	mutex_lock(&batch_hw_mutex);
-	cxt->force_wake_upon_fifo_full = 0;
-	for (handle = 0; handle <= ID_SENSOR_MAX_HANDLE; handle++) {
-		if (cxt->dev_list.data_dev[handle].is_batch_supported) {
-			en = (cxt->active_sensor & (0x01 << handle))?1:0;
-			if (cxt->dev_list.ctl_dev[handle].enable_hw_batch != NULL) {
-				res = cxt->dev_list.ctl_dev[handle].enable_hw_batch(handle, en,
-					cxt->dev_list.data_dev[handle].flags|cxt->force_wake_upon_fifo_full,
-			(long long)cxt->dev_list.data_dev[handle].samplingPeriodMs*1000000,
-				(long long)cxt->dev_list.data_dev[handle].maxBatchReportLatencyMs*1000000);
-			} else if (cxt->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].enable_hw_batch != NULL) {
-				res = cxt->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].enable_hw_batch(handle, en,
-					cxt->dev_list.data_dev[handle].flags|cxt->force_wake_upon_fifo_full,
-					(long long)cxt->dev_list.data_dev[handle].samplingPeriodMs*1000000, (long long)
-					cxt->dev_list.data_dev[handle].maxBatchReportLatencyMs*1000000);
-			}
-		}
-	}
-	mutex_unlock(&batch_hw_mutex);
-
-	return 0;
-}
-/*----------------------------------------------------------------------------*/
-static int batch_resume(struct platform_device *dev)
-{
-	int handle;
-	struct batch_context *cxt = NULL;
-	int res;
-	int en;
-
-	BATCH_FUN();
-	BATCH_ERR("batch_resume");
-
-	cxt = batch_context_obj;
-
-	mutex_lock(&batch_hw_mutex);
-	cxt->force_wake_upon_fifo_full = SENSORS_BATCH_WAKE_UPON_FIFO_FULL;
-	for (handle = 0; handle <= ID_SENSOR_MAX_HANDLE; handle++) {
-		if (cxt->dev_list.data_dev[handle].is_batch_supported) {
-			en = (cxt->active_sensor & (0x01 << handle))?1:0;
-			if (cxt->dev_list.ctl_dev[handle].enable_hw_batch != NULL) {
-				res = cxt->dev_list.ctl_dev[handle].enable_hw_batch(handle, en,
-					cxt->dev_list.data_dev[handle].flags|cxt->force_wake_upon_fifo_full,
-			(long long)cxt->dev_list.data_dev[handle].samplingPeriodMs*1000000,
-				(long long)cxt->dev_list.data_dev[handle].maxBatchReportLatencyMs*1000000);
-			} else if (cxt->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].enable_hw_batch != NULL) {
-				res = cxt->dev_list.ctl_dev[ID_SENSOR_MAX_HANDLE].enable_hw_batch(handle,
-					en, cxt->dev_list.data_dev[handle].flags|cxt->force_wake_upon_fifo_full,
-					(long long)cxt->dev_list.data_dev[handle].samplingPeriodMs*1000000,
-						(long long)cxt->dev_list.data_dev[handle]
-							.maxBatchReportLatencyMs*1000000);
-			}
-		}
-	}
-	mutex_unlock(&batch_hw_mutex);
-
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_batch_pl_of_match[] = {
-	{ .compatible = "mediatek,m_batch_pl", },
-	{},
-};
-#endif
-
-static struct platform_driver batch_driver = {
-
-	.probe	  = batch_probe,
-	.remove	 = batch_remove,
-	.suspend	= batch_suspend,
-	.resume	 = batch_resume,
-	.driver = {
-
-		.name = BATCH_PL_DEV_NAME,
-	#ifdef CONFIG_OF
-		.of_match_table = m_batch_pl_of_match,
-		#endif
-	}
-};
-
 static int __init batch_init(void)
 {
 	BATCH_FUN();
 
-	if (platform_driver_register(&batch_driver)) {
+	if (batch_probe()) {
 		BATCH_ERR("failed to register batch driver\n");
 		return -ENODEV;
 	}
@@ -1138,7 +1124,7 @@ static int __init batch_init(void)
 
 static void __exit batch_exit(void)
 {
-	platform_driver_unregister(&batch_driver);
+	batch_remove();
 	platform_driver_unregister(&sensorHub_driver);
 }
 
