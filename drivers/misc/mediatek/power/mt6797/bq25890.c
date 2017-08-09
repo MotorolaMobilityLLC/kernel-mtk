@@ -188,7 +188,7 @@ unsigned int bq25890_read_byte(unsigned char cmd, unsigned char *returnData)
 
 	mutex_unlock(&bq25890_i2c_access);
 
-	return ret == xfers ? 0 : -1;
+	return ret == xfers ? 1 : -1;
 }
 
 unsigned int bq25890_write_byte(unsigned char cmd, unsigned char writeData)
@@ -226,7 +226,7 @@ unsigned int bq25890_write_byte(unsigned char cmd, unsigned char writeData)
 
 	mutex_unlock(&bq25890_i2c_access);
 
-	return ret == xfers ? 0 : -1;
+	return ret == xfers ? 1 : -1;
 }
 #endif
 /**********************************************************

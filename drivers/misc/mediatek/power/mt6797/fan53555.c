@@ -183,7 +183,7 @@ unsigned int fan53555_read_byte(unsigned char cmd, unsigned char *returnData)
 
 	mutex_unlock(&fan53555_i2c_access);
 
-	return ret == xfers ? 0 : -1;
+	return ret == xfers ? 1 : -1;
 }
 
 unsigned int fan53555_write_byte(unsigned char cmd, unsigned char writeData)
@@ -222,7 +222,7 @@ unsigned int fan53555_write_byte(unsigned char cmd, unsigned char writeData)
 
 	mutex_unlock(&fan53555_i2c_access);
 
-	return ret == xfers ? 0 : -1;
+	return ret == xfers ? 1 : -1;
 }
 #endif
 
