@@ -702,12 +702,12 @@
 &mtkfb {
 	pinctrl-names = "mode_te_gpio", "mode_te_te", "lcm_rst_out0_gpio",
 			"lcm_rst_out1_gpio", "lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio";
-	pinctrl-1 = <&mtkfb_pins_mode_te_gpio>;
-	pinctrl-2 = <&mtkfb_pins_mode_te_te>;
-	pinctrl-3 = <&mtkfb_pins_lcm_reset0>;
-	pinctrl-4 = <&mtkfb_pins_lcm_reset1>;
-	pinctrl-5 = <&mtkfb_pins_lcd_bias_enp0>;
-	pinctrl-6 = <&mtkfb_pins_lcd_bias_enp1>;
+	pinctrl-0 = <&mtkfb_pins_mode_te_gpio>;
+	pinctrl-1 = <&mtkfb_pins_mode_te_te>;
+	pinctrl-2 = <&mtkfb_pins_lcm_reset0>;
+	pinctrl-3 = <&mtkfb_pins_lcm_reset1>;
+	pinctrl-4 = <&mtkfb_pins_lcd_bias_enp0>;
+	pinctrl-5 = <&mtkfb_pins_lcd_bias_enp1>;
 	status = "okay";
 };
 
@@ -743,7 +743,7 @@
 
 	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO65__FUNC_EINT4>;
+			pins = <PINMUX_GPIO65__FUNC_GPIO65>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -751,7 +751,7 @@
 
 	mtkfb_pins_lcd_bias_enp1: lcd_bias_enp1_gpio {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO65__FUNC_EINT4>;
+			pins = <PINMUX_GPIO65__FUNC_GPIO65>;
 			slew-rate = <1>;
 			output-high;
 		};

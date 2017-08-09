@@ -25,7 +25,7 @@ static long _set_state(const char *name)
 
 	pState = pinctrl_lookup_state(this_pctrl, name);
 	if (IS_ERR(pState)) {
-		pr_err("set state '%s' failed\n", name);
+		pr_err("lookup state '%s' failed\n", name);
 		ret = PTR_ERR(pState);
 		goto exit;
 	}
