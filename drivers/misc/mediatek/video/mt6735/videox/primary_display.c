@@ -586,6 +586,14 @@ int primary_display_save_power_for_idle(int enter, unsigned int need_primary_loc
 		}
 	}
 
+	if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS) {
+		DISPMSG("MMDVFS enter:%d\n", enter);
+		if (enter)
+			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW); /* Vote to LPM mode */
+		else
+			mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); /* Enter HPM mode */
+	}
+
 end:
 	if (enter)
 		atomic_set(&isDdp_Idle, 1);
@@ -5474,8 +5482,12 @@ int primary_display_suspend(void)
 	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
 	DISPCHECK("[POWER]dpmanager path power off[end]\n");
 
-	if (_is_decouple_mode(pgc->session_mode) && !pgc->force_on_wdma_path)
+	if (_is_decouple_mode(pgc->session_mode) && !pgc->force_on_wdma_path) {
 		dpmgr_path_power_off(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
+	} else if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS) {
+		DISPMSG("set MMDVFS low\n");
+		mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_LOW); /* Vote to LPM mode */
+	}
 
 #ifndef CONFIG_MTK_CLKMGR
 	ddp_clk_unprepare(DISP_MTCMOS_CLK);
@@ -5707,6 +5719,11 @@ int primary_display_resume(void)
 			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
 					       DDP_IRQ_UNKNOWN);
 		}
+	}
+
+	if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS) {
+		DISPMSG("set MMDVFS high\n");
+		mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); /* Enter HPM mode */
 	}
 
 #if 0
