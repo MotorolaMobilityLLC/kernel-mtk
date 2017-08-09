@@ -1666,6 +1666,17 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,  unsi
 		{
 		    return _compat_ioctl_set_output_buffer(file, arg);
 		}
+	case DISP_IOCTL_AAL_GET_HIST:
+	case DISP_IOCTL_AAL_EVENTCTL:
+	case DISP_IOCTL_AAL_INIT_REG:
+	case DISP_IOCTL_AAL_SET_PARAM:
+		{
+			void __user *data32;
+
+			data32 = compat_ptr(arg);
+			ret = file->f_op->unlocked_ioctl(file, cmd, (unsigned long)data32);
+			return ret;
+		}
 	default:
 		{
 				DISPERR("[session]ioctl not supported, 0x%08x\n", cmd);

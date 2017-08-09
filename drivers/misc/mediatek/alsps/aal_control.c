@@ -81,11 +81,24 @@ err_out:
 		return err;
 }
 
+#ifdef CONFIG_COMPAT
+static long AAL_compact_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	void __user *data32;
+
+	data32 = compat_ptr(arg);
+	return AAL_unlocked_ioctl(file, cmd, (unsigned long)data32);
+}
+#endif
+
 static const struct file_operations AAL_fops = {
 	.owner = THIS_MODULE,
 	.open = AAL_open,
 	.release = AAL_release,
 	.unlocked_ioctl = AAL_unlocked_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = AAL_compact_ioctl,
+#endif
 };
 
 static struct miscdevice AAL_device = {
