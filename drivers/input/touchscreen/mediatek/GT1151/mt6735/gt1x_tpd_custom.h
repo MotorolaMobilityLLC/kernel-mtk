@@ -32,7 +32,7 @@
 #define TPD_SUPPORT_I2C_DMA         0	/* if gt9l, better enable it if hardware platform supported*/
 
 #if defined(CONFIG_MTK_LEGACY)
-#define TPD_POWER_SOURCE_CUSTOM	PMIC_APP_CAP_TOUCH_VDD
+#define TPD_POWER_SOURCE_CUSTOM	MT6328_POWER_LDO_VGP1
 #endif
 
 #define GTP_GPIO_AS_INT(pin) tpd_gpio_as_int(pin)
