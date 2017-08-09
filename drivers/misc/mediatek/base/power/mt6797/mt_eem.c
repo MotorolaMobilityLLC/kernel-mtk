@@ -3683,11 +3683,11 @@ void eem_init01(void)
 
 	/* set non-PWM mode for DA9214 */
 	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
-	da9214_config_interface(0xD1, 0x0, 0x3, 0); /* Disable Buck A PWM Mode */
+	da9214_config_interface(0xD1, 0x1, 0x3, 0); /* Disable Buck A PWM Mode for LL/L/CCI */
 	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
-	da9214_config_interface(0xD2, 0x0, 0x3, 0); /* Disable Buck B PWM Mode */
-	/* set PWM mode for FAN5355 */
-	fan53555_config_interface(0x0, 0x0, 0x0, 6); /* Set PWM mode for GPU */
+	da9214_config_interface(0xD2, 0x1, 0x3, 0); /* Disable Buck B PWM Mode for BIG */
+	/* set non_PWM mode for FAN5355 */
+	fan53555_config_interface(0x0, 0x0, 0x1, 6); /* Disable PWM mode for GPU */
 
 	#ifdef __KERNEL__
 		#ifndef EARLY_PORTING
@@ -3985,9 +3985,9 @@ static int eem_probe(struct platform_device *pdev)
 	#endif
 	/* set PWM mode for DA9214 */
 	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
-	da9214_config_interface(0xD1, 0x2, 0x3, 0); /* Enable Buck A PWM Mode */
+	da9214_config_interface(0xD1, 0x2, 0x3, 0); /* Enable Buck A PWM Mode for L/LL/CCI */
 	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
-	da9214_config_interface(0xD2, 0x2, 0x3, 0); /* Enable Buck B PWM Mode */
+	da9214_config_interface(0xD2, 0x2, 0x3, 0); /* Enable Buck B PWM Mode for BIG */
 	/* set PWM mode for FAN5355 */
 	fan53555_config_interface(0x00, 0x01, 0x01, 6); /* Set PWM mode for GPU */
 
