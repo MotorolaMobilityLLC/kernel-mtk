@@ -90,6 +90,30 @@ extern void show_pte(struct mm_struct *mm, unsigned long addr);
 extern void smp_inner_dcache_flush_all(void);
 #endif
 
+#ifdef CONFIG_MTK_CLKMGR
+#include <mach/mt_clkmgr.h>
+#else
+#include <linux/clk.h>
+#endif
+
+#if !defined(CONFIG_MTK_CLKMGR)
+
+enum {
+	MM_SMI_COMMON,
+	MM_SMI_LARB0,
+	VDEC_CKEN,
+	VDEC_LARB1_CKEN,
+	CAM_LARB2,
+	VENC_1,
+	MJC_SMI_LARB,
+	MJC_LARB4_ASIF,
+	MM_SMI_LARB5,
+	IMG_LARB6,
+	SMI_CLK_NUM,
+};
+
+#endif /* !defined(CONFIG_MTK_CLKMGR) */
+
 struct m4u_device {
 	struct miscdevice dev;
 	struct proc_dir_entry *m4u_dev_proc_entry;
@@ -97,6 +121,10 @@ struct m4u_device {
 	struct dentry *debug_root;
 	unsigned long m4u_base[TOTAL_M4U_NUM];
 	unsigned int irq_num[TOTAL_M4U_NUM];
+#if !defined(CONFIG_MTK_CLKMGR)
+	struct clk *infra_m4u;
+	struct clk *smi_clk[SMI_CLK_NUM];
+#endif
 };
 
 typedef struct {
@@ -335,14 +363,16 @@ typedef struct _M4U_DMA {
 
 #define MTK_M4U_T_SEC_INIT	    _IOW(MTK_M4U_MAGICNO, 50, int)
 
-
 #ifdef M4U_TEE_SERVICE_ENABLE
 int m4u_config_port_tee(M4U_PORT_STRUCT *pM4uPort);
 int m4u_larb_backup_sec(unsigned int larb_idx);
 int m4u_larb_restore_sec(unsigned int larb_idx);
 int m4u_config_port_array_tee(unsigned char *port_array);
 int m4u_sec_init(void);
+#endif
 
+#if !defined(CONFIG_MTK_CLKMGR)
+extern const char *smi_clk_name[];
 #endif
 
 #endif
