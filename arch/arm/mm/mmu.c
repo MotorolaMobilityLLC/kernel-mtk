@@ -1304,7 +1304,6 @@ static void __init map_lowmem(void)
 	struct memblock_region *reg;
 	unsigned long kernel_x_start = round_down(__pa(_stext), SECTION_SIZE);
 	unsigned long kernel_x_end = round_up(__pa(__init_end), SECTION_SIZE);
-	phys_addr_t limit = 0;
 
 	/* Map all the lowmem memory banks. */
 	for_each_memblock(memory, reg) {
@@ -1351,11 +1350,9 @@ static void __init map_lowmem(void)
 				create_mapping(&map);
 			}
 		}
-		if (!limit && !(end & ~SECTION_MASK)) {
-			/* take first section-size aligned memblock */
-			limit = end;
-			memblock_set_current_limit(limit);
-		}
+
+		if (!(end & ~SECTION_MASK))
+			memblock_set_current_limit(end);
 	}
 }
 
