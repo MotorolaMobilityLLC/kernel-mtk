@@ -199,4 +199,5 @@ source "drivers/misc/mediatek/mjc/Kconfig"
 source "drivers/misc/mediatek/emi_mbw/Kconfig"
 
 source "drivers/misc/mediatek/btcvsd/Kconfig"
-
+source "drivers/misc/mediatek/nand/Kconfig"
+source "drivers/misc/mediatek/dum-char/Kconfig"
