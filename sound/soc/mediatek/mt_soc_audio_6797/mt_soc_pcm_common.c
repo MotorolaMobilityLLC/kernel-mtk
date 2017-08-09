@@ -38,6 +38,10 @@ unsigned long audio_frame_to_bytes(struct snd_pcm_substream *substream, unsigned
 
 	if (runtime->channels == 2)
 		bytes = bytes << 1;
+	else if (runtime->channels == 4)
+		bytes = bytes << 2;
+	else if (runtime->channels != 1)
+		bytes = bytes << 3;
 	/* printk("%s bytes = %d count = %d\n",__func__,bytes,count); */
 	return bytes;
 }
@@ -56,6 +60,10 @@ unsigned long audio_bytes_to_frame(struct snd_pcm_substream *substream, unsigned
 
 	if (runtime->channels == 2)
 		count = count >> 1;
+	else if (runtime->channels == 4)
+		count = count >> 2;
+	else if (runtime->channels != 1)
+		count = count >> 3;
 	/* printk("%s bytes = %d count = %d\n",__func__,bytes,count); */
 	return count;
 }

@@ -951,7 +951,7 @@ static int mtk_pcm_hdmi_start(struct snd_pcm_substream *substream)
 	u4RegValue = Afe_Get_Reg(AFE_IRQ_MCU_STATUS);
 	u4RegValue &= 0xffffffff;
 
-	u4tmpValue = Afe_Get_Reg(AFE_HDMI_CONN0);
+	u4tmpValue = Afe_Get_Reg(AFE_HDMI_OUT_CON0);
 	u4tmpValue &= 0xffffffff;
 
 	u4tmpValue1 = Afe_Get_Reg(AFE_TDM_CON1);
@@ -968,7 +968,7 @@ static int mtk_pcm_hdmi_start(struct snd_pcm_substream *substream)
 	u4tmpHDAlign = Afe_Get_Reg(AFE_MEMIF_HDALIGN);
 
 	pr_debug
-	    ("%s IRQ =0x%x, CONN0= 0x%x, CON1=0x%x, CON2 =0x%x,DIV0=0x%x,DIV1=0x%x,DIV2=0x%x,Mode=0x%x,Align=0x%x\n",
+	    ("%s IRQ =0x%x, CON0= 0x%x, CON1=0x%x, CON2 =0x%x,DIV0=0x%x,DIV1=0x%x,DIV2=0x%x,Mode=0x%x,Align=0x%x\n",
 	     __func__, u4RegValue, u4tmpValue, u4tmpValue1, u4tmpValue2,
 	     u4tmpClkdiv0, u4tmpClkdiv1, u4tmpClkdiv2, u4tmpHDMode, u4tmpHDAlign);
 
