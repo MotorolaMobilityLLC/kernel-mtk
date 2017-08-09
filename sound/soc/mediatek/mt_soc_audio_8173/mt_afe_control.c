@@ -44,9 +44,6 @@ static DEFINE_SPINLOCK(afe_control_lock);
 /* static variable */
 static struct mt_afe_merge_interface *audio_mrg;
 static struct mt_afe_digital_dai_bt *audio_dai_bt;
-static struct mt_afe_digital_i2s *audio_adc_i2s;
-static const bool audio_adc_i2s_status;
-static struct mt_afe_digital_i2s *audio_2nd_i2s;
 
 static struct mt_afe_irq_status *audio_mcu_mode[MT_AFE_IRQ_MCU_MODE_NUM] = { NULL };
 static struct mt_afe_mem_if_attribute *audio_mem_if[MT_AFE_DIGITAL_BLOCK_NUM] = { NULL };
@@ -498,78 +495,86 @@ void mt_afe_enable_afe(bool enable)
 	spin_unlock_irqrestore(&afe_control_lock, flags);
 }
 
+void mt_afe_set_mtkif_adc_in(uint32_t sample_rate)
+{
+	uint32_t sample_rate_index = mt_afe_rate_to_idx(sample_rate);
+	uint32_t voice_mode_select = 0;
+
+	/* I_03/I_04 source from internal ADC */
+	mt_afe_set_reg(AFE_ADDA_TOP_CON0, 0, 0x1);
+	if (sample_rate_index == MT_AFE_I2S_SAMPLERATE_8K)
+		voice_mode_select = 0;
+	else if (sample_rate_index == MT_AFE_I2S_SAMPLERATE_16K)
+		voice_mode_select = 1;
+	else if (sample_rate_index == MT_AFE_I2S_SAMPLERATE_32K)
+		voice_mode_select = 2;
+	else if (sample_rate_index == MT_AFE_I2S_SAMPLERATE_48K)
+		voice_mode_select = 3;
+
+	mt_afe_set_reg(AFE_ADDA_UL_SRC_CON0,
+		    ((voice_mode_select << 2) | voice_mode_select) << 17, 0x001E0000);
+	/* up8x txif sat on */
+	/* mt_afe_set_reg(AFE_ADDA_NEWIF_CFG0, 0x03F87201, 0xFFFFFFFF); */
+	mt_afe_set_reg(AFE_ADDA_NEWIF_CFG1, ((voice_mode_select < 3) ? 1 : 3) << 10,
+		    0x00000C00);
+}
+
+void mt_afe_enable_mtkif_adc(void)
+{
+	mt_afe_set_reg(AFE_ADDA_UL_SRC_CON0, 0x1, 0x1);
+	mt_afe_set_reg(AFE_ADDA_UL_DL_CON0, 0x1, 0x1);
+}
+
+void mt_afe_disable_mtkif_adc(void)
+{
+	mt_afe_set_reg(AFE_ADDA_UL_SRC_CON0, 0x0, 0x1);
+
+	if (audio_mem_if[MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC]->state == false &&
+	    audio_mem_if[MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC]->state == false) {
+		mt_afe_set_reg(AFE_ADDA_UL_DL_CON0, 0x0, 0x1);
+	}
+}
+
 void mt_afe_set_i2s_adc_in(uint32_t sample_rate)
 {
-	audio_adc_i2s->lr_swap = MT_AFE_LR_SWAP_NO_SWAP;
-	audio_adc_i2s->buffer_update_word = 8;
-	audio_adc_i2s->fpga_bit_test = 0;
-	audio_adc_i2s->fpga_bit = 0;
-	audio_adc_i2s->loopback = 0;
-	audio_adc_i2s->inv_lrck = MT_AFE_INV_LRCK_NO_INVERSE;
-	audio_adc_i2s->i2s_fmt = MT_AFE_I2S_FORMAT_I2S;
-	audio_adc_i2s->i2s_wlen = MT_AFE_I2S_WLEN_16BITS;
-	audio_adc_i2s->i2s_sample_rate = sample_rate;
+	uint32_t reg_val = 0;
+	struct mt_afe_digital_i2s i2s_settings;
 
-	if (!audio_adc_i2s_status) {
-		uint32_t sample_rate_index = mt_afe_rate_to_idx(audio_adc_i2s->i2s_sample_rate);
-		uint32_t voice_mode_select = 0;
-		/* I_03/I_04 source from internal ADC */
-		mt_afe_set_reg(AFE_ADDA_TOP_CON0, 0, 0x1);
-		if (sample_rate_index == MT_AFE_I2S_SAMPLERATE_8K)
-			voice_mode_select = 0;
-		else if (sample_rate_index == MT_AFE_I2S_SAMPLERATE_16K)
-			voice_mode_select = 1;
-		else if (sample_rate_index == MT_AFE_I2S_SAMPLERATE_32K)
-			voice_mode_select = 2;
-		else if (sample_rate_index == MT_AFE_I2S_SAMPLERATE_48K)
-			voice_mode_select = 3;
+	i2s_settings.lr_swap = MT_AFE_LR_SWAP_NO_SWAP;
+	i2s_settings.buffer_update_word = 8;
+	i2s_settings.fpga_bit_test = 0;
+	i2s_settings.fpga_bit = 0;
+	i2s_settings.loopback = 0;
+	i2s_settings.inv_lrck = MT_AFE_INV_LRCK_NO_INVERSE;
+	i2s_settings.i2s_fmt = MT_AFE_I2S_FORMAT_I2S;
+	i2s_settings.i2s_wlen = MT_AFE_I2S_WLEN_16BITS;
+	i2s_settings.i2s_sample_rate = sample_rate;
 
-		mt_afe_set_reg(AFE_ADDA_UL_SRC_CON0,
-			    ((voice_mode_select << 2) | voice_mode_select) << 17, 0x001E0000);
-		/* up8x txif sat on */
-		/* mt_afe_set_reg(AFE_ADDA_NEWIF_CFG0, 0x03F87201, 0xFFFFFFFF); */
-		mt_afe_set_reg(AFE_ADDA_NEWIF_CFG1, ((voice_mode_select < 3) ? 1 : 3) << 10,
-			    0x00000C00);
-	} else {
-		uint32_t audio_i2s_adc = 0;
-		/* I_03/I_04 source from external ADC */
-		mt_afe_set_reg(AFE_ADDA_TOP_CON0, 1, 0x1);
-		audio_i2s_adc |= (audio_adc_i2s->lr_swap << 31);
-		audio_i2s_adc |= (audio_adc_i2s->buffer_update_word << 24);
-		audio_i2s_adc |= (audio_adc_i2s->inv_lrck << 23);
-		audio_i2s_adc |= (audio_adc_i2s->fpga_bit_test << 22);
-		audio_i2s_adc |= (audio_adc_i2s->fpga_bit << 21);
-		audio_i2s_adc |= (audio_adc_i2s->loopback << 20);
-		audio_i2s_adc |= (mt_afe_rate_to_idx(audio_adc_i2s->i2s_sample_rate) << 8);
-		audio_i2s_adc |= (audio_adc_i2s->i2s_fmt << 3);
-		audio_i2s_adc |= (audio_adc_i2s->i2s_wlen << 1);
-		mt_afe_set_reg(AFE_I2S_CON2, audio_i2s_adc, MASK_ALL);
-	}
+	/* I_03/I_04 source from external ADC */
+	mt_afe_set_reg(AFE_ADDA_TOP_CON0, 1, 0x1);
+
+	reg_val |= (i2s_settings.lr_swap << 31);
+	reg_val |= (i2s_settings.buffer_update_word << 24);
+	reg_val |= (i2s_settings.inv_lrck << 23);
+	reg_val |= (i2s_settings.fpga_bit_test << 22);
+	reg_val |= (i2s_settings.fpga_bit << 21);
+	reg_val |= (i2s_settings.loopback << 20);
+	reg_val |= (mt_afe_rate_to_idx(i2s_settings.i2s_sample_rate) << 8);
+	reg_val |= (i2s_settings.i2s_fmt << 3);
+	reg_val |= (i2s_settings.i2s_wlen << 1);
+	mt_afe_set_reg(AFE_I2S_CON2, reg_val, MASK_ALL);
 }
 
-int mt_afe_enable_i2s_adc(void)
+void mt_afe_enable_i2s_adc(void)
 {
-	if (!audio_adc_i2s_status) {
-		mt_afe_set_reg(AFE_ADDA_UL_SRC_CON0, 0x1, 0x1);
-		mt_afe_set_reg(AFE_ADDA_UL_DL_CON0, 0x1, 0x1);
-	} else {
-		mt_afe_set_reg(AFE_I2S_CON2, 0x1, 0x1);
-	}
-	return 0;
+	mt_afe_set_reg(AFE_I2S_CON2, 0x1, 0x1);
 }
 
-int mt_afe_disable_i2s_adc(void)
+void mt_afe_disable_i2s_adc(void)
 {
-	if (!audio_adc_i2s_status) {
-		mt_afe_set_reg(AFE_ADDA_UL_SRC_CON0, 0x0, 0x1);
-		if (audio_mem_if[MT_AFE_DIGITAL_BLOCK_I2S_OUT_DAC]->state == false &&
-		    audio_mem_if[MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC]->state == false) {
-			mt_afe_set_reg(AFE_ADDA_UL_DL_CON0, 0x0, 0x1);
-		}
-	} else {
+	if (audio_mem_if[MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC]->state == false &&
+	    audio_mem_if[MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC2]->state == false)
 		mt_afe_set_reg(AFE_I2S_CON2, 0x0, 0x1);
-	}
-	return 0;
 }
 
 void mt_afe_set_i2s_adc2_in(uint32_t sample_rate)
@@ -588,16 +593,16 @@ void mt_afe_set_i2s_adc2_in(uint32_t sample_rate)
 	mt_afe_set_reg(AFE_ADDA2_TOP_CON0, 0x1, 0x1);
 }
 
-int mt_afe_enable_i2s_adc2(void)
+void mt_afe_enable_i2s_adc2(void)
 {
 	mt_afe_set_reg(AFE_I2S_CON2, 0x1, 0x1);
-	return 0;
 }
 
-int mt_afe_disable_i2s_adc2(void)
+void mt_afe_disable_i2s_adc2(void)
 {
-	mt_afe_set_reg(AFE_I2S_CON2, 0x0, 0x1);
-	return 0;
+	if (audio_mem_if[MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC]->state == false &&
+	    audio_mem_if[MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC2]->state == false)
+		mt_afe_set_reg(AFE_I2S_CON2, 0x0, 0x1);
 }
 
 void mt_afe_set_2nd_i2s_out(uint32_t sample_rate, uint32_t clock_mode)
@@ -1634,8 +1639,6 @@ static void mt_afe_init_control(void *dev)
 
 	audio_mrg = devm_kzalloc(dev, sizeof(struct mt_afe_merge_interface), GFP_KERNEL);
 	audio_dai_bt = devm_kzalloc(dev, sizeof(struct mt_afe_digital_dai_bt), GFP_KERNEL);
-	audio_adc_i2s = devm_kzalloc(dev, sizeof(struct mt_afe_digital_i2s), GFP_KERNEL);
-	audio_2nd_i2s = devm_kzalloc(dev, sizeof(struct mt_afe_digital_i2s), GFP_KERNEL);
 
 	for (i = 0; i < MT_AFE_IRQ_MCU_MODE_NUM; i++)
 		audio_mcu_mode[i] = devm_kzalloc(dev, sizeof(struct mt_afe_irq_status),

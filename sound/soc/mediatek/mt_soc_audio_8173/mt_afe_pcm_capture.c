@@ -20,8 +20,17 @@
 #include <linux/delay.h>
 #include <sound/soc.h>
 
+enum mt_afe_ul1_capture_mux {
+	UL1_MTK_INTERFACE = 0,
+	UL1_I2S2
+};
+
 struct mt_pcm_capture_priv {
+	bool prepared;
+	bool enable_i2s2_low_jitter;
 	unsigned int mono_type;
+	unsigned int capture_mux;
+	unsigned int i2s2_clock_mode;
 };
 
 
@@ -40,7 +49,10 @@ static void mt_pcm_capture_start_audio_hw(struct snd_pcm_substream *substream)
 
 	pr_debug("%s\n", __func__);
 
-	mt_afe_set_i2s_adc_in(runtime->rate);
+	if (priv->capture_mux == UL1_I2S2)
+		mt_afe_set_i2s_adc_in(runtime->rate);
+	else
+		mt_afe_set_mtkif_adc_in(runtime->rate);
 
 	mt_afe_set_memif_fetch_format(MT_AFE_DIGITAL_BLOCK_MEM_VUL, MT_AFE_MEMIF_16_BIT);
 	mt_afe_set_out_conn_format(MT_AFE_CONN_OUTPUT_16BIT, INTER_CONN_O09);
@@ -48,7 +60,10 @@ static void mt_pcm_capture_start_audio_hw(struct snd_pcm_substream *substream)
 
 	if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC) == false) {
 		mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC);
-		mt_afe_enable_i2s_adc();
+		if (priv->capture_mux == UL1_I2S2)
+			mt_afe_enable_i2s_adc();
+		else
+			mt_afe_enable_mtkif_adc();
 	} else {
 		mt_afe_enable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC);
 	}
@@ -90,11 +105,18 @@ static void mt_pcm_capture_start_audio_hw(struct snd_pcm_substream *substream)
 
 static void mt_pcm_capture_stop_audio_hw(struct snd_pcm_substream *substream)
 {
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mt_pcm_capture_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
+
 	pr_debug("%s\n", __func__);
 
 	mt_afe_disable_memory_path(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC);
-	if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC) == false)
-		mt_afe_disable_i2s_adc();
+	if (mt_afe_get_memory_path_state(MT_AFE_DIGITAL_BLOCK_I2S_IN_ADC) == false) {
+		if (priv->capture_mux == UL1_I2S2)
+			mt_afe_disable_i2s_adc();
+		else
+			mt_afe_disable_mtkif_adc();
+	}
 
 	mt_afe_disable_memory_path(MT_AFE_DIGITAL_BLOCK_MEM_VUL);
 
@@ -168,7 +190,22 @@ static int mt_pcm_capture_open(struct snd_pcm_substream *substream)
 
 static int mt_pcm_capture_close(struct snd_pcm_substream *substream)
 {
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mt_pcm_capture_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
+
 	pr_debug("%s\n", __func__);
+
+	if (priv->prepared) {
+		if (priv->enable_i2s2_low_jitter) {
+			mt_afe_disable_apll_div_power(MT_AFE_I2S2, runtime->rate);
+			mt_afe_disable_apll_div_power(MT_AFE_ENGEN, runtime->rate);
+			mt_afe_disable_apll_tuner(runtime->rate);
+			mt_afe_disable_apll(runtime->rate);
+			priv->enable_i2s2_low_jitter = false;
+		}
+		priv->prepared = false;
+	}
 
 	mt_afe_adc_clk_off();
 	mt_afe_main_clk_off();
@@ -206,6 +243,24 @@ static int mt_pcm_capture_hw_free(struct snd_pcm_substream *substream)
 
 static int mt_pcm_capture_prepare(struct snd_pcm_substream *substream)
 {
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mt_pcm_capture_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
+
+	if (!priv->prepared) {
+		if (priv->i2s2_clock_mode == MT_AFE_LOW_JITTER_CLOCK &&
+		    priv->capture_mux == UL1_I2S2) {
+			mt_afe_enable_apll(runtime->rate);
+			mt_afe_enable_apll_tuner(runtime->rate);
+			mt_afe_set_mclk(MT_AFE_I2S2, runtime->rate);
+			mt_afe_set_mclk(MT_AFE_ENGEN, runtime->rate);
+			mt_afe_enable_apll_div_power(MT_AFE_I2S2, runtime->rate);
+			mt_afe_enable_apll_div_power(MT_AFE_ENGEN, runtime->rate);
+		    priv->enable_i2s2_low_jitter = true;
+		}
+		priv->prepared = true;
+	}
+
 	return 0;
 }
 
@@ -280,14 +335,65 @@ static int capture_mono_type_set(struct snd_kcontrol *kcontrol, struct snd_ctl_e
 	return 0;
 }
 
+static const char *const mt_pcm_ul1_capture_mux_function[] = {
+	ENUM_TO_STR(UL1_MTK_INTERFACE),
+	ENUM_TO_STR(UL1_I2S2)
+};
+
+static int ul1_capture_mux_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt_pcm_capture_priv *priv = snd_soc_component_get_drvdata(component);
+
+	ucontrol->value.integer.value[0] = priv->capture_mux;
+	return 0;
+}
+
+static int ul1_capture_mux_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt_pcm_capture_priv *priv = snd_soc_component_get_drvdata(component);
+
+	priv->capture_mux = ucontrol->value.integer.value[0];
+	return 0;
+}
+
+static const char *const mt_pcm_ul1_i2s2_clock_function[] = { "Normal", "Low Jitter" };
+
+static int ul1_i2s2_clock_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt_pcm_capture_priv *priv = snd_soc_component_get_drvdata(component);
+
+	ucontrol->value.integer.value[0] = priv->i2s2_clock_mode;
+	return 0;
+}
+
+static int ul1_i2s2_clock_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt_pcm_capture_priv *priv = snd_soc_component_get_drvdata(component);
+
+	priv->i2s2_clock_mode = ucontrol->value.integer.value[0];
+	return 0;
+}
+
 static const struct soc_enum mt_pcm_caprure_control_enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(capture_mono_type_function),
 			capture_mono_type_function),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(mt_pcm_ul1_capture_mux_function),
+			mt_pcm_ul1_capture_mux_function),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(mt_pcm_ul1_i2s2_clock_function),
+			mt_pcm_ul1_i2s2_clock_function),
 };
 
 static const struct snd_kcontrol_new mt_pcm_capture_controls[] = {
 	SOC_ENUM_EXT("Capture_Mono_Type", mt_pcm_caprure_control_enum[0],
 		capture_mono_type_get, capture_mono_type_set),
+	SOC_ENUM_EXT("UL1_Capture_Mux", mt_pcm_caprure_control_enum[1],
+		ul1_capture_mux_get, ul1_capture_mux_set),
+	SOC_ENUM_EXT("UL1_I2S2_Clock", mt_pcm_caprure_control_enum[2],
+		ul1_i2s2_clock_get, ul1_i2s2_clock_set),
 };
 
 static int mt_pcm_capture_probe(struct snd_soc_platform *platform)
