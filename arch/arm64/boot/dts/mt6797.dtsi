@@ -3273,6 +3273,11 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				<&vencsys VENC_1>,
 				<&mmsys MM_LARB4_AXI_ASIF_MM_CLOCK>,
 				<&mmsys MM_LARB4_AXI_ASIF_MJC_CLOCK>,
+				<&mjcsys MJC_SMI_LARB>,
+				<&mjcsys MJC_TOP_CLK_0>,
+				<&mjcsys MJC_TOP_CLK_1>,
+				<&mjcsys MJC_TOP_CLK_2>,
+				<&mjcsys MJC_LARB4_ASIF>,
 				<&mmsys MM_SMI_LARB5>,
 				<&imgsys IMG_LARB6>,
 				<&scpsys SCP_SYS_VEN>,
@@ -3280,8 +3285,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				<&scpsys SCP_SYS_ISP>,
 				<&scpsys SCP_SYS_MJC>,
 				<&scpsys SCP_SYS_DIS>;
-			clock-names = "smi-common", "smi-larb0", "vdec-larb1", "cam-larb2", "venc-larb3",
-				"mm-larb4", "mjc-larb4",  "smi-larb5", "img-larb6",
+			clock-names = "smi-common", "smi-larb0", "vdec-larb1", "img-larb2", "venc-larb3",
+				"mjc-larb4", "mm-larb4", "mjc_smi_larb", "mjc_top_clk_0",
+				"mjc_top_clk_1", "mjc_top_clk_2", "mjc_larb4_asif",
+				"smi-larb5", "img2-larb6",
 				"mtcmos-ven", "mtcmos-vde", "mtcmos-isp", "mtcmos-mjc", "mtcmos-dis";
 		};
 

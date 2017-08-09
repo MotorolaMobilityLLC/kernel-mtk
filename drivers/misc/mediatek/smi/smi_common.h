@@ -63,8 +63,6 @@ extern void smi_dumpCommon(void);
 /* void register_base_dump(void); */
 
 extern struct SMI_PROFILE_CONFIG smi_profile_config[SMI_PROFILE_CONFIG_NUM];
-extern void smi_set_nonconstant_variable(void);
-extern void save_default_common_val(int *is_default_value_saved, unsigned int *default_val_smi_array);
 extern int smi_bus_regs_setting(int profile, struct SMI_SETTING *settings);
 
 #endif

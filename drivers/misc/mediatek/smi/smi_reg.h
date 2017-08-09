@@ -10,6 +10,12 @@
 #elif defined(SMI_D1) || defined(SMI_D3) || defined(SMI_J)
 #define LARB2_BASE (smi_reg_base_barb2)
 #define LARB3_BASE (smi_reg_base_barb3)
+#elif defined(SMI_EV)
+#define LARB2_BASE (smi_reg_base_barb2)
+#define LARB3_BASE (smi_reg_base_barb3)
+#define LARB4_BASE (smi_reg_base_barb4)
+#define LARB5_BASE (smi_reg_base_barb5)
+#define LARB6_BASE (smi_reg_base_barb6)
 #endif
 
 
@@ -313,6 +319,16 @@
 #define SMI_LARB1_PORT_NUM  7
 #define SMI_LARB2_PORT_NUM  21
 #define SMI_LARB3_PORT_NUM  13
+#elif defined(SMI_EV)
+#define SMI_LARB_NR     7
+
+#define SMI_LARB0_PORT_NUM  8
+#define SMI_LARB1_PORT_NUM  10
+#define SMI_LARB2_PORT_NUM  14
+#define SMI_LARB3_PORT_NUM  15
+#define SMI_LARB4_PORT_NUM  4
+#define SMI_LARB5_PORT_NUM  10
+#define SMI_LARB6_PORT_NUM  10
 #endif
 
 #define SMI_LARB_STAT                   (0x0)
@@ -396,6 +412,8 @@
 #define REG_OFFSET_SMI_L1ARB2	                (0x10C)
 #define REG_OFFSET_SMI_L1ARB3	                (0x110)
 #define REG_OFFSET_SMI_L1ARB4	                (0x114)
+#define REG_OFFSET_SMI_L1ARB5	                (0x118)
+#define REG_OFFSET_SMI_L1ARB6	                (0x11C)
 #endif
 
 /* ========================================================================= */

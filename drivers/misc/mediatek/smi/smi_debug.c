@@ -346,3 +346,11 @@ int smi_debug_bus_hanging_detect_ext(unsigned int larbs, int show_dump, int outp
 	}
 	return is_smi_issue;
 }
+void smi_dump_clk_status(void)
+{
+	int i = 0;
+
+	for (i = 0 ; i < SMI_CLK_CNT ; ++i)
+		SMIMSG("CLK status of %s is 0x%x", smi_clk_info[i].name,
+		M4U_ReadReg32(smi_clk_info[i].base_addr, smi_clk_info[i].offset));
+}

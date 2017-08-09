@@ -34,16 +34,3 @@ int smi_bus_regs_setting(int profile, struct SMI_SETTING *settings)
 		}
 	return 0;
 }
-
-void save_default_common_val(int *is_default_value_saved, unsigned int *default_val_smi_array)
-{
-	if (!*is_default_value_saved) {
-		int i = 0;
-
-		SMIMSG("Save default config:\n");
-		for (i = 0 ; i < SMI_LARB_NR ; ++i)
-			default_val_smi_array[i] = M4U_ReadReg32(SMI_COMMON_EXT_BASE, smi_common_l1arb_offset[i]);
-
-		*is_default_value_saved = 1;
-	}
-}

@@ -30,5 +30,5 @@ extern unsigned int smi_dbg_vdec_mask;
 extern unsigned int smi_dbg_imgsys_mask;
 extern unsigned int smi_dbg_venc_mask;
 extern unsigned int smi_dbg_mjc_mask;
-
+extern void smi_dump_clk_status(void);
 #endif				/* _SMI_DEBUG_H__ */
