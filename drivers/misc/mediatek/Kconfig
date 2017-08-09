@@ -72,6 +72,15 @@ config CUSTOM_KERNEL_IMGSENSOR
 	  CUSTOM_KERNEL_MAIN_BACKUP_IMGSENSOR, CUSTOM_KERNEL_SUB_IMGSENSOR,
 	  and CUSTOM_KERNEL_SUB_BACKUP_IMGSENSOR
 
+config MT_ENG_BUILD
+	bool "flag for MTK eng/usr build verification"
+	default n
+	help
+	  Y means this kernel version is engineering mode and has more debugging
+	  features built-in. This option is supposed to specifiy engineering or
+	  user load for this build.
+	  If you are not sure about this, set n
+
 source "drivers/misc/mediatek/gpt/Kconfig"
 source "drivers/misc/mediatek/uart/Kconfig"
 source "drivers/misc/mediatek/irtx/Kconfig"

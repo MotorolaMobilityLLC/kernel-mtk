@@ -19,15 +19,6 @@ config MTPROF_CPUTIME
 	  profiling. If you are not sure about whether to enable it or not, please
 	  set n.
 
-config MT_ENG_BUILD
-	bool "flag for MTK eng/usr build verification"
-	default n
-	help
-	  Y means this kernel version is engineering mode and has more debugging
-	  features built-in. This option is supposed to specifiy engineering or
-	  user load for this build.
-	  If you are not sure about this, set n
-
 config MTK_WQ_DEBUG
 	bool "mtk workqueue debug"
 	default n
