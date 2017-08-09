@@ -144,9 +144,9 @@ struct pinctrl_state *st_irq_init = NULL;
 
 /* For DMA */
 static char *I2CDMAWriteBuf;	/*= NULL;*//* unnecessary initialise */
-static unsigned int I2CDMAWriteBuf_pa;	/* = NULL; */
+static dma_addr_t I2CDMAWriteBuf_pa;
 static char *I2CDMAReadBuf;	/*= NULL;*//* unnecessary initialise */
-static unsigned int I2CDMAReadBuf_pa;	/* = NULL; */
+static dma_addr_t I2CDMAReadBuf_pa;	/* = NULL; */
 
 static int fgNfcChip;		/*= 0;*//* unnecessary initialise */
 int forceExitBlockingRead = 0;
@@ -385,13 +385,11 @@ static int mt6605_probe(struct i2c_client *client,
 #ifdef CONFIG_64BIT
 	I2CDMAWriteBuf =
 	    (char *)dma_alloc_coherent(&client->dev, MAX_BUFFER_SIZE,
-				       (dma_addr_t *) &I2CDMAWriteBuf_pa,
-				       GFP_KERNEL);
+				       &I2CDMAWriteBuf_pa, GFP_KERNEL);
 #else
 	I2CDMAWriteBuf =
 	    (char *)dma_alloc_coherent(NULL, MAX_BUFFER_SIZE,
-				       (dma_addr_t *) &I2CDMAWriteBuf_pa,
-				       GFP_KERNEL);
+				       &I2CDMAWriteBuf_pa, GFP_KERNEL);
 #endif
 
 	if (I2CDMAWriteBuf == NULL) {
@@ -401,20 +399,18 @@ static int mt6605_probe(struct i2c_client *client,
 #ifdef CONFIG_64BIT
 	I2CDMAReadBuf =
 	    (char *)dma_alloc_coherent(&client->dev, MAX_BUFFER_SIZE,
-				       (dma_addr_t *) &I2CDMAReadBuf_pa,
-				       GFP_KERNEL);
+				       &I2CDMAReadBuf_pa, GFP_KERNEL);
 #else
 	I2CDMAReadBuf =
 	    (char *)dma_alloc_coherent(NULL, MAX_BUFFER_SIZE,
-				       (dma_addr_t *) &I2CDMAReadBuf_pa,
-				       GFP_KERNEL);
+				       &I2CDMAReadBuf_pa, GFP_KERNEL);
 #endif
 
 	if (I2CDMAReadBuf == NULL) {
 		pr_err("%s : failed to allocate dma buffer\n", __func__);
 		goto err_request_irq_failed;
 	}
-	pr_debug("%s :I2CDMAWriteBuf_pa %d, I2CDMAReadBuf_pa,%d\n", __func__,
+	pr_debug("%s :I2CDMAWriteBuf_pa %lld, I2CDMAReadBuf_pa,%lld\n", __func__,
 		 I2CDMAWriteBuf_pa, I2CDMAReadBuf_pa);
 	/* request irq.  the irq is set whenever the chip has data available
 	 * for reading.  it is cleared when all data has been read.
@@ -709,7 +705,7 @@ static ssize_t mt6605_dev_write(struct file *filp, const char __user *buf,
 	while (1) {
 		if (copy_from_user
 		    (I2CDMAWriteBuf, &buf[(idx * MAX_BUFFER_SIZE)], count)) {
-			pr_debug("%s : failed to copy from user space...\n",
+			pr_debug("%s : failed to copy from user space.\n",
 				 __func__);
 			return -EFAULT;
 		}
