@@ -157,7 +157,11 @@ static int ppm_lcmoff_fb_notifier_callback(struct notifier_block *self, unsigned
 	FUNC_ENTER(FUNC_LV_POLICY);
 
 	blank = *(int *)evdata->data;
-	ppm_info("@%s: blank = %d, event = %lu\n", __func__, blank, event);
+	ppm_ver("@%s: blank = %d, event = %lu\n", __func__, blank, event);
+
+	/* skip if it's not a blank event */
+	if (event != FB_EVENT_BLANK)
+		return 0;
 
 	switch (blank) {
 	/* LCM ON */

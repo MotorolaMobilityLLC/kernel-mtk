@@ -43,13 +43,13 @@
 /* #include "mach/mt_thermal.h" */
 #include "mach/mt_pmic_wrap.h"
 #include "mach/mt_freqhopping.h"
+#include "mach/mt_ppm_api.h"
 /* #include "mach/mt_ptp.h"
 #include "mach/mt_static_power.h"
 #include "mach/upmu_common.h"
 #include "mach/upmu_sw.h"
 #include "mach/upmu_hw.h"
 #include "mach/mt_hotplug_strategy.h"
-#include "mach/mt_ppm_api.h"
 #include "mach/mt_pbm.h"
 #include "mt-plat/mt_devinfo.h" */
 
@@ -1023,7 +1023,7 @@ unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id)
 
 static void _kick_PBM_by_cpu(struct mt_cpu_dvfs *p)
 {
-#if 0
+#if 1
 	struct mt_cpu_dvfs *p_dvfs[NR_MT_CPU_DVFS];
 	struct cpumask dvfs_cpumask[NR_MT_CPU_DVFS];
 	struct cpumask cpu_online_cpumask[NR_MT_CPU_DVFS];
@@ -2655,7 +2655,7 @@ static unsigned int _calc_new_opp_idx(struct mt_cpu_dvfs *p, int new_opp_idx)
 	return new_opp_idx;
 }
 
-#if 0
+#if 1
 static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *ppm = (struct ppm_client_req *)&req;
@@ -2721,8 +2721,8 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	if (!ignore_ppm[MT_CPU_DVFS_LITTLE]) {
 		get_online_cpus();
 		cpumask_and(&cpu_online_cpumask, &dvfs_cpumask[MT_CPU_DVFS_LITTLE], cpu_online_mask);
-		cpulist_scnprintf(str1, sizeof(str1), &cpu_online_mask);
-		cpulist_scnprintf(str2, sizeof(str2), &cpu_online_cpumask);
+		cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)&cpu_online_mask);
+		cpulist_scnprintf(str2, sizeof(str2), (const struct cpumask *)&cpu_online_cpumask);
 		cpufreq_ver("cpu_online_mask = %s, cpu_online_cpumask for little = %s\n", str1, str2);
 		ret = -1;
 		for_each_cpu(i, &cpu_online_cpumask) {
@@ -2743,8 +2743,8 @@ second_limit:
 	if (!ignore_ppm[MT_CPU_DVFS_BIG]) {
 		get_online_cpus();
 		cpumask_and(&cpu_online_cpumask, &dvfs_cpumask[MT_CPU_DVFS_BIG], cpu_online_mask);
-		cpulist_scnprintf(str1, sizeof(str1), &cpu_online_mask);
-		cpulist_scnprintf(str2, sizeof(str2), &cpu_online_cpumask);
+		cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)&cpu_online_mask);
+		cpulist_scnprintf(str2, sizeof(str2), (const struct cpumask *)&cpu_online_cpumask);
 		cpufreq_ver("cpu_online_mask = %s, cpu_online_cpumask for big = %s\n", str1, str2);
 		ret = -1;
 		for_each_cpu(i, &cpu_online_cpumask) {
@@ -3145,7 +3145,7 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 			p->nr_opp_tbl = opp_tbl_info->size;
 			p->freq_tbl_for_cpufreq = table;
 		}
-#if 0
+#if 1
 		if (j == MT_CPU_DVFS_LITTLE) {
 			if (lv == CPU_LEVEL_0)
 				mt_ppm_set_dvfs_table(0, p->freq_tbl_for_cpufreq,
@@ -3189,7 +3189,7 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 	cpufreq_register_driver(&_mt_cpufreq_driver);
 #endif
 	register_hotcpu_notifier(&_mt_cpufreq_cpu_notifier);
-	/* mt_ppm_register_client(PPM_CLIENT_DVFS, &ppm_limit_callback); */
+	mt_ppm_register_client(PPM_CLIENT_DVFS, &ppm_limit_callback);
 	pm_notifier(_mt_cpufreq_pm_callback, 0);
 	FUNC_EXIT(FUNC_LV_MODULE);
 

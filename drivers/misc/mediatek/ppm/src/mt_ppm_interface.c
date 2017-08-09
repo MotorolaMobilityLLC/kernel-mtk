@@ -348,11 +348,17 @@ static int ppm_dump_dvfs_table_proc_show(struct seq_file *m, void *v)
 	struct ppm_cluster_info *info = (struct ppm_cluster_info *)m->private;
 	unsigned int i;
 
+	if (!info->dvfs_tbl) {
+		ppm_err("DVFS table for cluster %d is NULL!\n", info->cluster_id);
+		goto end;
+	}
+
 	for (i = 0; i < info->dvfs_opp_num; i++)
 		seq_printf(m, "%d ", info->dvfs_tbl[i].frequency);
 
 	seq_puts(m, "\n");
 
+end:
 	return 0;
 }
 
