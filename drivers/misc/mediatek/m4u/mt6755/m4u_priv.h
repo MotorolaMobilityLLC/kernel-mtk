@@ -9,7 +9,7 @@
 
 #include "m4u.h"
 #include "m4u_reg.h"
-#include "m4u_pgtable.h"
+#include "../2.0/m4u_pgtable.h"
 
 #define M4UMSG(string, args...)	pr_err("M4U"string, ##args)
 #define M4UINFO(string, args...) pr_debug("M4U"string, ##args)

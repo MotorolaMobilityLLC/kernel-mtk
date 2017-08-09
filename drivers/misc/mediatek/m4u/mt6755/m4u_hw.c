@@ -2,7 +2,7 @@
 #include <linux/interrupt.h>
 
 #include "m4u_priv.h"
-#include "m4u_port_priv.h"
+#include "m4u_platform.h"
 #include "m4u_hw.h"
 
 #include <linux/of.h>

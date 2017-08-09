@@ -103,7 +103,7 @@ typedef struct {imu_pteval_t imu_pgd; } imu_pgd_t;
 
 static inline imu_pte_t *imu_pte_map(imu_pgd_t *pgd)
 {
-	return (imu_pte_t *)__va(imu_pgd_val(*pgd)&F_PGD_PA_PAGETABLE_MSK);
+	return (imu_pte_t *) __va(imu_pgd_val(*pgd) & F_PGD_PA_PAGETABLE_MSK);
 }
 
 static inline int imu_pte_unmap(imu_pte_t *pte)
@@ -114,30 +114,30 @@ static inline int imu_pte_unmap(imu_pte_t *pte)
 static inline unsigned int imu_pgd_entry_pa(imu_pgd_t pgd)
 {
 	if (F_PGD_TYPE_IS_PAGE(pgd))
-		return imu_pgd_val(pgd)&F_PGD_PA_PAGETABLE_MSK;
+		return imu_pgd_val(pgd) & F_PGD_PA_PAGETABLE_MSK;
 	else if (F_PGD_TYPE_IS_SECTION(pgd))
-		return imu_pgd_val(pgd)&F_PGD_PA_SECTION_MSK;
+		return imu_pgd_val(pgd) & F_PGD_PA_SECTION_MSK;
 	else if (F_PGD_TYPE_IS_SUPERSECTION(pgd))
-		return imu_pgd_val(pgd)&F_PGD_PA_SUPERSECTION_MSK;
+		return imu_pgd_val(pgd) & F_PGD_PA_SUPERSECTION_MSK;
 	else
 		return 0;
 }
 
 static inline imu_pgd_t *imu_supersection_start(imu_pgd_t *pgd)
 {
-	return (imu_pgd_t *)(round_down((unsigned long)pgd, (16*4)));
+	return (imu_pgd_t *) (round_down((unsigned long)pgd, (16 * 4)));
 }
 static inline imu_pte_t *imu_largepage_start(imu_pte_t *pte)
 {
-	return (imu_pte_t *)(round_down((unsigned long)pte, (16*4)));
+	return (imu_pte_t *) (round_down((unsigned long)pte, (16 * 4)));
 }
 
 static inline unsigned int m4u_calc_next_mva(unsigned int addr, unsigned int end, unsigned int size)
 {
-	/* addr + size may equal 0x100000000*/
+	/* addr + size may equal 0x100000000 */
 	unsigned long long __boundary = ((unsigned long long)addr
-										+(unsigned long long)size)
-										&(~((unsigned long long)size-1));
+									+(unsigned long long)size)
+									&(~((unsigned long long)size-1));
 	unsigned long long min = min_t(unsigned long long, __boundary, (unsigned long long)end);
 
 	return (unsigned int)min;
