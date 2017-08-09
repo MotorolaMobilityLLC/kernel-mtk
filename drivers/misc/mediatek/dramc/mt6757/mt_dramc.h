@@ -114,8 +114,6 @@ int dram_steps_freq(unsigned int step);
 unsigned int get_shuffle_status(void);
 int get_ddr_type(void);
 int dram_can_support_fh(void);
-void spm_dpd_init(void);
-void spm_dpd_dram_init(void);
 extern void *mt_dramc_base_get(void);
 extern void *mt_dramc_nao_base_get(void);
 extern void *mt_ddrphy_base_get(void);

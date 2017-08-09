@@ -154,13 +154,6 @@ void *mt_ddrphy_base_get(void)
 }
 EXPORT_SYMBOL(mt_ddrphy_base_get);
 
-void spm_dpd_init(void)
-{
-}
-void spm_dpd_dram_init(void)
-{
-}
-
 #ifdef CONFIG_MTK_DRAMC_PASR
 int enter_pasr_dpd_config(unsigned char segment_rank0,
 			   unsigned char segment_rank1)
