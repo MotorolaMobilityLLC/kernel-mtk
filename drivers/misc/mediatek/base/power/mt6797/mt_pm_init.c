@@ -10,7 +10,6 @@
 #include <linux/interrupt.h>
 #include <linux/types.h>
 /* #include <linux/xlog.h> */
-#include <linux/cpu.h>
 
 #include <asm/io.h>
 #include <asm/uaccess.h>
@@ -593,9 +592,6 @@ static int __init mt_power_management_init(void)
 	struct proc_dir_entry *entry = NULL;
 	struct proc_dir_entry *pm_init_dir = NULL;
 	/* unsigned int code = mt_get_chip_hw_code(); */
-#if defined(CONFIG_HOTPLUG_CPU)
-	static int cpu;
-#endif
 
 	pm_power_off = mt_power_off;
 
@@ -648,14 +644,6 @@ static int __init mt_power_management_init(void)
 
 #endif
 
-
-#if defined(CONFIG_HOTPLUG_CPU)
-	/* limit 4 cores online for thermal concern */
-	for (cpu = 9; cpu >= 4; cpu--) {
-		if (cpu_online(cpu))
-			cpu_down(cpu);
-	}
-#endif
 
 	return 0;
 }
