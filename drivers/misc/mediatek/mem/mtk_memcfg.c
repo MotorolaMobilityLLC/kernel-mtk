@@ -228,6 +228,14 @@ static const struct file_operations mtk_memcfg_frag_operations = {
 	.release = single_release,
 };
 
+#ifdef CONFIG_SLUB_DEBUG
+static const struct file_operations proc_slabtrace_operations = {
+	.open = slabtrace_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+#endif
 static int __init mtk_memcfg_late_init(void)
 {
 	struct proc_dir_entry *entry = NULL;
@@ -263,6 +271,15 @@ static int __init mtk_memcfg_late_init(void)
 		if (!frag_page_cache)
 			pr_err("create frag_page_cache failed\n");
 
+#ifdef CONFIG_SLUB_DEBUG
+		/* slabtrace - full slub object backtrace */
+		entry = proc_create("slabtrace",
+				    S_IRUSR, mtk_memcfg_dir,
+				    &proc_slabtrace_operations);
+
+		if (!entry)
+			pr_err("create slabtrace proc entry failed\n");
+#endif
 	}
 	return 0;
 }
@@ -272,6 +289,7 @@ module_exit(mtk_memcfg_exit);
 
 static int __init mtk_memcfg_late_sanity_test(void)
 {
+#if 0
 	/* trigger kernel warning if warning flag is set */
 	if (mtk_memcfg_late_warning_flag & WARN_MEMBLOCK_CONFLICT) {
 		aee_kernel_warning("[memory layout conflict]",
@@ -296,6 +314,7 @@ static int __init mtk_memcfg_late_sanity_test(void)
 	}
 #endif /* end of CONFIG_HIGHMEM */
 
+#endif
 	return 0;
 }
 
