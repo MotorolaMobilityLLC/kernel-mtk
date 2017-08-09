@@ -1,6 +1,7 @@
 #include "inc/gyroscope.h"
 
 struct gyro_context *gyro_context_obj = NULL;
+static struct platform_device *pltfm_dev;
 
 static struct gyro_init_info *gyroscope_init_list[MAX_CHOOSE_GYRO_NUM] = {0};
 
@@ -400,6 +401,7 @@ static int gyroscope_remove(struct platform_device *pdev)
 static int gyroscope_probe(struct platform_device *pdev)
 {
 	GYRO_LOG("gyroscope_probe\n");
+	pltfm_dev = pdev;
 	return 0;
 }
 
@@ -645,7 +647,7 @@ int gyro_data_report(int x, int y, int z, int status)
 	return err;
 }
 
-static int gyro_probe(struct platform_device *pdev)
+static int gyro_probe(void)
 {
 
 	int err;
@@ -660,7 +662,7 @@ static int gyro_probe(struct platform_device *pdev)
 	}
 
 	/* init real gyroeleration driver */
-	err = gyro_real_driver_init(pdev);
+	err = gyro_real_driver_init(pltfm_dev);
 	if (err) {
 		GYRO_ERR("gyro real driver init fail\n");
 		goto real_driver_init_fail;
@@ -690,11 +692,11 @@ exit_alloc_input_dev_failed:
 	kfree(gyro_context_obj);
 
 exit_alloc_data_failed:
-	GYRO_LOG("----gyro_probe fail !!!\n");
+	GYRO_ERR("----gyro_probe fail !!!\n");
 	return err;
 }
 
-static int gyro_remove(struct platform_device *pdev)
+static int gyro_remove(void)
 {
 	int err = 0;
 
@@ -710,41 +712,11 @@ static int gyro_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static int gyro_suspend(struct platform_device *dev, pm_message_t state)
-{
-	return 0;
-}
-/*----------------------------------------------------------------------------*/
-static int gyro_resume(struct platform_device *dev)
-{
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_gyro_pl_of_match[] = {
-	{ .compatible = "mediatek,m_gyro_pl", },
-	{},
-};
-#endif
-
-static struct platform_driver gyro_driver = {
-	.probe      = gyro_probe,
-	.remove     = gyro_remove,
-	.suspend    = gyro_suspend,
-	.resume     = gyro_resume,
-	.driver = {
-		.name = GYRO_PL_DEV_NAME,/* mt_gyro_pl */
-		#ifdef CONFIG_OF
-		.of_match_table = m_gyro_pl_of_match,
-		#endif
-	}
-};
-
 static int __init gyro_init(void)
 {
 	GYRO_LOG("gyro_init\n");
 
-	if (platform_driver_register(&gyro_driver)) {
+	if (gyro_probe()) {
 		GYRO_ERR("failed to register gyro driver\n");
 		return -ENODEV;
 	}
@@ -754,7 +726,7 @@ static int __init gyro_init(void)
 
 static void __exit gyro_exit(void)
 {
-	platform_driver_unregister(&gyro_driver);
+	gyro_remove();
 	platform_driver_unregister(&gyroscope_driver);
 }
 

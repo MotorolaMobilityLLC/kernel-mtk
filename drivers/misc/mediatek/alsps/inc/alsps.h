@@ -161,5 +161,5 @@ extern int als_register_data_path(struct als_data_path *data);
 extern int ps_data_report(struct input_dev *dev, int value, int status);
 extern int ps_register_control_path(struct ps_control_path *ctl);
 extern int ps_register_data_path(struct ps_data_path *data);
-
+extern struct platform_device *get_alsps_platformdev(void);
 #endif

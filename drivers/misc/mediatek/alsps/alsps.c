@@ -642,6 +642,7 @@ static int als_ps_remove(struct platform_device *pdev)
 static int als_ps_probe(struct platform_device *pdev)
 {
 	ALSPS_LOG("als_ps_probe\n");
+	pltfm_dev = pdev;
 	return 0;
 }
 
@@ -996,12 +997,11 @@ int alsps_aal_get_data(void)
 }
 /* *************************************************** */
 
-static int alsps_probe(struct platform_device *pdev)
+static int alsps_probe(void)
 {
 	int err;
 
 	ALSPS_LOG("+++++++++++++alsps_probe!!\n");
-	pltfm_dev = pdev;
 	alsps_context_obj = alsps_context_alloc_object();
 	if (!alsps_context_obj) {
 		err = -ENOMEM;
@@ -1032,11 +1032,11 @@ exit_alloc_input_dev_failed:
 	kfree(alsps_context_obj);
 	alsps_context_obj = NULL;
 exit_alloc_data_failed:
-	ALSPS_LOG("----alsps_probe fail !!!\n");
+	ALSPS_ERR("----alsps_probe fail !!!\n");
 	return err;
 }
 
-static int alsps_remove(struct platform_device *pdev)
+static int alsps_remove(void)
 {
 	int err = 0;
 
@@ -1053,42 +1053,11 @@ static int alsps_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static int alsps_suspend(struct platform_device *dev, pm_message_t state)
-{
-	return 0;
-}
-
-static int alsps_resume(struct platform_device *dev)
-{
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id alsps_of_match[] = {
-	{.compatible = "mediatek,m_alsps_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver alsps_driver = {
-
-	.probe    = alsps_probe,
-	.remove	  = alsps_remove,
-	.suspend  = alsps_suspend,
-	.resume	  = alsps_resume,
-	.driver   = {
-		.name = ALSPS_PL_DEV_NAME,
-	#ifdef CONFIG_OF
-		.of_match_table = alsps_of_match,
-	#endif
-	}
-};
-
 static int __init alsps_init(void)
 {
 	ALSPS_FUN();
 
-	if (platform_driver_register(&alsps_driver)) {
+	if (alsps_probe()) {
 		ALSPS_ERR("failed to register alsps driver\n");
 		return -ENODEV;
 	}
@@ -1098,7 +1067,7 @@ static int __init alsps_init(void)
 
 static void __exit alsps_exit(void)
 {
-	platform_driver_unregister(&alsps_driver);
+	alsps_remove();
 	platform_driver_unregister(&als_ps_driver);
 
 }

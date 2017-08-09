@@ -609,7 +609,7 @@ int baro_data_report(struct input_dev *dev, int value, int status)
 	return 0;
 }
 
-static int baro_probe(struct platform_device *pdev)
+static int baro_probe(void)
 {
 
 	int err;
@@ -670,13 +670,13 @@ exit_alloc_input_dev_failed:
 exit_alloc_data_failed:
 
 
-	BARO_LOG("----baro_probe fail !!!\n");
+	BARO_ERR("----baro_probe fail !!!\n");
 	return err;
 }
 
 
 
-static int baro_remove(struct platform_device *pdev)
+static int baro_remove(void)
 {
 	int err = 0;
 
@@ -708,42 +708,11 @@ static void baro_late_resume(struct early_suspend *h)
 atomic_read(&(baro_context_obj->early_suspend)));
 }
 
-static int baro_suspend(struct platform_device *dev, pm_message_t state)
-{
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int baro_resume(struct platform_device *dev)
-{
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_baro_pl_of_match[] = {
-	{.compatible = "mediatek,m_baro_pl",},
-	{},
-};
-#endif
-
-static struct platform_driver baro_driver = {
-	.probe = baro_probe,
-	.remove = baro_remove,
-	.suspend = baro_suspend,
-	.resume = baro_resume,
-	.driver = {
-		   .name = BARO_PL_DEV_NAME,
-#ifdef CONFIG_OF
-		   .of_match_table = m_baro_pl_of_match,
-#endif
-		   }
-};
-
 static int __init baro_init(void)
 {
 	BARO_FUN();
 
-	if (platform_driver_register(&baro_driver)) {
+	if (baro_probe()) {
 		BARO_ERR("failed to register baro driver\n");
 		return -ENODEV;
 	}
@@ -753,7 +722,7 @@ static int __init baro_init(void)
 
 static void __exit baro_exit(void)
 {
-	platform_driver_unregister(&baro_driver);
+	baro_remove();
 	platform_driver_unregister(&barometer_driver);
 }
 

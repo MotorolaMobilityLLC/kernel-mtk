@@ -837,7 +837,7 @@ int mag_data_report(enum MAG_TYPE type, int x, int y, int z, int status)
 	return 0;
 }
 
-static int mag_probe(struct platform_device *pdev)
+static int mag_probe(void)
 {
 	int err;
 
@@ -875,11 +875,11 @@ exit_alloc_input_dev_failed:
 
 exit_alloc_data_failed:
 	mag_input_destroy(mag_context_obj);
-	MAG_LOG("----magel_probe fail !!!\n");
+	MAG_ERR("----magel_probe fail !!!\n");
 	return err;
 }
 
-static int mag_remove(struct platform_device *pdev)
+static int mag_remove(void)
 {
 	int err = 0;
 
@@ -897,43 +897,11 @@ static int mag_remove(struct platform_device *pdev)
 	return 0;
 }
 
-
-static int mag_suspend(struct platform_device *dev, pm_message_t state)
-{
-	return 0;
-}
-
-static int mag_resume(struct platform_device *dev)
-{
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_mag_pl_of_match[] = {
-	{ .compatible = "mediatek,m_mag_pl", },
-	{},
-};
-#endif
-
-static struct platform_driver mag_driver = {
-	.probe	  = mag_probe,
-	.remove	 = mag_remove,
-	.suspend	= mag_suspend,
-	.resume	 = mag_resume,
-	.driver = {
-
-		.name = MAG_PL_DEV_NAME,
-		#ifdef CONFIG_OF
-		.of_match_table = m_mag_pl_of_match,
-		#endif
-	}
-};
-
 static int __init mag_init(void)
 {
 	MAG_FUN();
 
-	if (platform_driver_register(&mag_driver)) {
+	if (mag_probe()) {
 		MAG_ERR("failed to register mag driver\n");
 		return -ENODEV;
 	}
@@ -943,7 +911,7 @@ static int __init mag_init(void)
 
 static void __exit mag_exit(void)
 {
-	platform_driver_unregister(&mag_driver);
+	mag_remove();
 	platform_driver_unregister(&msensor_driver);
 }
 

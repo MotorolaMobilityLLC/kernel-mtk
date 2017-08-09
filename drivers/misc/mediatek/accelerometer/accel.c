@@ -614,7 +614,7 @@ int acc_data_report(int x, int y, int z, int status)
 	return err;
 }
 
-static int acc_probe(struct platform_device *pdev)
+static int acc_probe(void)
 {
 
 	int err;
@@ -655,13 +655,13 @@ static int acc_probe(struct platform_device *pdev)
  exit_alloc_data_failed:
 
 
-	ACC_LOG("----accel_probe fail !!!\n");
+	ACC_ERR("----accel_probe fail !!!\n");
 	return err;
 }
 
 
 
-static int acc_remove(struct platform_device *pdev)
+static int acc_remove(void)
 {
 	int err = 0;
 
@@ -676,42 +676,11 @@ static int acc_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static int acc_suspend(struct platform_device *dev, pm_message_t state)
-{
-	return 0;
-}
-
-/*----------------------------------------------------------------------------*/
-static int acc_resume(struct platform_device *dev)
-{
-	return 0;
-}
-
-#ifdef CONFIG_OF
-static const struct of_device_id m_acc_pl_of_match[] = {
-	{ .compatible = "mediatek,m_acc_pl", },
-	{},
-};
-#endif
-
-static struct platform_driver acc_driver = {
-	.probe = acc_probe,
-	.remove = acc_remove,
-	.suspend = acc_suspend,
-	.resume = acc_resume,
-	.driver = {
-		   .name = ACC_PL_DEV_NAME,
-	#ifdef CONFIG_OF
-		.of_match_table = m_acc_pl_of_match,
-		#endif
-		   }
-};
-
 static int __init acc_init(void)
 {
 	ACC_LOG("acc_init\n");
 
-	if (platform_driver_register(&acc_driver)) {
+	if (acc_probe()) {
 		ACC_ERR("failed to register acc driver\n");
 		return -ENODEV;
 	}
@@ -721,7 +690,7 @@ static int __init acc_init(void)
 
 static void __exit acc_exit(void)
 {
-	platform_driver_unregister(&acc_driver);
+	acc_remove();
 	platform_driver_unregister(&gsensor_driver);
 }
 late_initcall(acc_init);
