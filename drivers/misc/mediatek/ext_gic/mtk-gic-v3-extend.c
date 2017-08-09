@@ -30,6 +30,7 @@
 #include <linux/sizes.h>
 #include <linux/irqchip/arm-gic-v3.h>
 #include <linux/irqchip/mtk-gic-extend.h>
+#include <mach/mt_secure_api.h>
 
 /* for cirq use */
 void __iomem *GIC_DIST_BASE;
@@ -294,6 +295,79 @@ void mt_irq_mask_for_sleep(unsigned int irq)
 	writel(mask, dist_base + GIC_DIST_ENABLE_CLEAR + irq / 32 * 4);
 	mb();
 }
+
+char *mt_irq_dump_status_buf(int irq, char *buf)
+{
+	int rc;
+	unsigned int result;
+	char *ptr = buf;
+
+	if (!ptr)
+		return NULL;
+
+	ptr += sprintf(ptr, "[mt gic dump] irq = %d\n", irq);
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
+	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0);
+#else
+	rc = -1;
+#endif
+	if (rc < 0) {
+		ptr += sprintf(ptr, "[mt gic dump] not allowed to dump!\n");
+		return ptr;
+	}
+
+	/* get mask */
+	result = rc & 0x1;
+	ptr += sprintf(ptr, "[mt gic dump] enable = %d\n", result);
+
+	/* get group */
+	result = (rc >> 1) & 0x1;
+	ptr += sprintf(ptr, "[mt gic dump] group = %x (0x1:irq,0x0:fiq)\n",
+			result);
+
+	/* get priority */
+	result = (rc >> 2) & 0xff;
+	ptr += sprintf(ptr, "[mt gic dump] priority = %x\n", result);
+
+	/* get sensitivity */
+	result = (rc >> 10) & 0x1;
+	ptr += sprintf(ptr, "[mt gic dump] sensitivity = %x ", result);
+	ptr += sprintf(ptr, "(edge:0x1, level:0x0)\n");
+
+	/* get pending status */
+	result = (rc >> 11) & 0x1;
+	ptr += sprintf(ptr, "[mt gic dump] pending = %x\n", result);
+
+	/* get active status */
+	result = (rc >> 12) & 0x1;
+	ptr += sprintf(ptr, "[mt gic dump] active status = %x\n", result);
+
+	/* get polarity */
+	result = (rc >> 13) & 0x1;
+	ptr += sprintf(ptr,
+		"[mt gic dump] polarity = %x (0x0: high, 0x1:low)\n",
+		result);
+
+	/* get target cpu mask */
+	result = (rc >> 14) & 0xffff;
+	ptr += sprintf(ptr, "[mt gic dump] tartget cpu mask = 0x%x\n", result);
+
+	return ptr;
+}
+
+void mt_irq_dump_status(int irq)
+{
+	char *buf = kmalloc(2048, GFP_ATOMIC);
+
+	if (!buf)
+		return;
+
+	if (mt_irq_dump_status_buf(irq, buf))
+		pr_warn("%s", buf);
+
+	kfree(buf);
+}
+EXPORT_SYMBOL(mt_irq_dump_status);
 
 static int __init mt_gic_ext_init(void)
 {
