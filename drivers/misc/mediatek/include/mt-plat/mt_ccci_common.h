@@ -404,6 +404,8 @@ enum{
 
 #define CCCI_IOC_SET_CCIF_CG			_IOW(CCCI_IOC_MAGIC, 54, unsigned int) /*md_init*/
 #define CCCI_IOC_SET_EFUN               _IOW(CCCI_IOC_MAGIC, 55, unsigned int) /* RILD */
+#define CCCI_IOC_MDLOG_DUMP_DONE		_IO(CCCI_IOC_MAGIC, 56) /*mdlogger*/
+#define CCCI_IOC_GET_OTHER_MD_STATE		_IOR(CCCI_IOC_MAGIC, 57, unsigned int) /* mdlogger */
 
 #define CCCI_IOC_SET_HEADER				_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER				_IO(CCCI_IOC_MAGIC,  113) /* emcs_va */
@@ -662,7 +664,7 @@ typedef enum {
 	CCCI_MD_MSG_BOOT_UP		= 0xFAF50002,
 	CCCI_MD_MSG_EXCEPTION		= 0xFAF50003,
 	CCCI_MD_MSG_RESET		= 0xFAF50004,
-	CCCI_MD_MSG_RESET_RETRY		= 0xFAF50005,
+	CCCI_MD_MSG_RESET_RETRY		= 0xFAF50005, /*not used*/
 	CCCI_MD_MSG_READY_TO_RESET	= 0xFAF50006,
 	CCCI_MD_MSG_BOOT_TIMEOUT	= 0xFAF50007,
 	CCCI_MD_MSG_STOP_MD_REQUEST	= 0xFAF50008,
@@ -705,6 +707,8 @@ enum {
 	ID_DUMP_MD_REG = 15,
 	ID_DUMP_MD_SLEEP_MODE = 16, /* for dump MD debug info from SMEM when AP sleep */
 	ID_PMIC_INTR = 17, /* for PMIC to notify MD buck over current, called from kernel thread context */
+	ID_STOP_MD = 18,
+	ID_START_MD = 19,
 
 	ID_UPDATE_TX_POWER = 100,   /* for SWTP */
 

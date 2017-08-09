@@ -242,6 +242,7 @@ static void config_ap_side_feature(struct ccci_modem *md, struct md_query_ap_fea
 	ap_side_md_feature->feature_set[MISC_INFO_C2K].support_mask = CCCI_FEATURE_NOT_SUPPORT;
 #endif
 	ap_side_md_feature->feature_set[MD_IMAGE_START_MEMORY].support_mask = CCCI_FEATURE_OPTIONAL_SUPPORT;
+	ap_side_md_feature->feature_set[EE_AFTER_EPOF].support_mask = CCCI_FEATURE_MUST_SUPPORT;
 
 }
 
@@ -470,6 +471,10 @@ static int prepare_runtime_data(struct ccci_modem *md, struct ccci_request *req)
 				rt_shm.addr = md->img_info[IMG_MD].address;
 				rt_shm.size = md->img_info[IMG_MD].size;
 				append_runtime_feature(&rt_data, &rt_feature, &rt_shm);
+				break;
+			case EE_AFTER_EPOF:
+				rt_feature.data_len = sizeof(struct ccci_misc_info_element);
+				append_runtime_feature(&rt_data, &rt_feature, &rt_f_element);
 				break;
 			default:
 				break;
@@ -2269,13 +2274,13 @@ void ccci_md_exception_notify(struct ccci_modem *md, MD_EX_STAGE stage)
 		del_timer(&md->md_status_poller);
 		del_timer(&md->md_status_timeout);
 		md->ee_info_flag |= ((1 << MD_EE_FLOW_START) | (1 << MD_EE_SWINT_GET));
-		if (!MD_IN_DEBUG(md))
-			mod_timer(&md->ex_monitor, jiffies + EX_TIMER_SWINT * HZ);
 		md->ops->broadcast_state(md, EXCEPTION);
 		break;
 	case EX_DHL_DL_RDY:
 		break;
 	case EX_INIT_DONE:
+		if (!MD_IN_DEBUG(md))
+			mod_timer(&md->ex_monitor, jiffies + EX_TIMER_SWINT * HZ);
 		ccci_reset_seq_num(md);
 		break;
 	case MD_NO_RESPONSE:
@@ -3528,6 +3533,37 @@ void md_bootup_timeout_func(unsigned long data)
 	}
 }
 EXPORT_SYMBOL(md_bootup_timeout_func);
+
+/*timeout: seconds. if timeout == 0, block wait*/
+int check_ee_done(struct ccci_modem *md, int timeout)
+{
+	int count = 0;
+	bool is_ee_done = 0;
+	int time_step = 200; /*ms*/
+	int loop_max = timeout * 1000 / time_step;
+
+	CCCI_BOOTUP_LOG(md->index, KERN, "checking EE status\n");
+	while (md->md_state == EXCEPTION) {
+		if (md->critical_user_active[CRIT_USR_MDLOG]) {
+			CCCI_DEBUG_LOG(md->index, KERN, "mdlog running, waiting for EE dump done\n");
+			is_ee_done = !(md->ee_info_flag & MD_EE_FLOW_START) && md->mdlog_dump_done;
+		} else
+			is_ee_done = !(md->ee_info_flag & MD_EE_FLOW_START);
+
+		if (!is_ee_done) {
+			msleep(time_step);
+			count++;
+		} else
+			break;
+
+		if (loop_max && (count > loop_max)) {
+			CCCI_ERROR_LOG(md->index, KERN, "wait EE done timeout\n");
+			return -1;
+		}
+	}
+	CCCI_BOOTUP_LOG(md->index, KERN, "check EE done\n");
+	return 0;
+}
 
 void ccci_subsys_kernel_init(void)
 {

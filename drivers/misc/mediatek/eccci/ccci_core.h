@@ -698,11 +698,17 @@ typedef enum {
 	MD_STATUS_ASSERTED = (1 << 1),
 } MD_STATUS_POLL_FLAG;
 
+typedef enum {
+	OTHER_MD_NONE,
+	OTHER_MD_STOP,
+	OTHER_MD_RESET,
+} OTHER_MD_OPS;
+
 struct ccci_modem_ops {
 	/* must-have */
 	int (*init)(struct ccci_modem *md);
 	int (*start)(struct ccci_modem *md);
-	int (*reset)(struct ccci_modem *md);	/* as pre-stop */
+	int (*pre_stop)(struct ccci_modem *md, unsigned int timeout, OTHER_MD_OPS other_ops);
 	int (*stop)(struct ccci_modem *md, unsigned int timeout);
 	int (*soft_start)(struct ccci_modem *md, unsigned int mode);
 	int (*soft_stop)(struct ccci_modem *md, unsigned int mode);
@@ -753,6 +759,7 @@ typedef enum{
 	DHL_RAW_SHARE_MEMORY,
 	DT_NETD_SHARE_MEMORY,
 	DT_USB_SHARE_MEMORY,
+	EE_AFTER_EPOF,
 	RUNTIME_FEATURE_ID_MAX,
 } MD_CCCI_RUNTIME_FEATURE_ID;
 
@@ -820,6 +827,14 @@ struct ap_query_md_feature {
 	u32 tail_pattern;
 };
 /*********************************************/
+enum {
+	CRIT_USR_FS,
+	CRIT_USR_MUXD,
+	CRIT_USR_MDLOG,
+	CRIT_USR_META,
+	CRIT_USR_MDLOG_CTRL = CRIT_USR_META,
+	CRIT_USR_MAX,
+};
 
 struct ccci_modem {
 	unsigned char index;
@@ -846,7 +861,7 @@ struct ccci_modem {
 	unsigned int sbp_code;
 	unsigned int sbp_code_default;
 	unsigned int mdlg_mode;
-	unsigned char critical_user_active[4];
+	unsigned char critical_user_active[CRIT_USR_MAX];
 	unsigned int md_img_exist[MAX_IMG_NUM];
 	unsigned int md_img_type_is_set;
 	struct platform_device *plat_dev;
@@ -878,6 +893,7 @@ struct ccci_modem {
 	unsigned char flight_mode;
 	unsigned char ex_type;
 	EX_LOG_T ex_info;
+	unsigned char mdlog_dump_done;
 #ifdef MD_UMOLY_EE_SUPPORT
 	/* EX_PL_LOG_T ex_pl_info; */
 	unsigned char ex_pl_info[MD_HS1_FAIL_DUMP_SIZE]; /* request by modem, change to 2k: include EX_PL_LOG_T*/
@@ -1094,6 +1110,7 @@ extern void md_status_timeout_func(unsigned long data);
 extern void ccci_subsys_kernel_init(void);
 extern int ccci_set_md_boot_data(struct ccci_modem *md, unsigned int data[], int len);
 extern int md_smem_port_cfg(struct ccci_modem *md);
+extern int check_ee_done(struct ccci_modem *md, int timeout);
 /*
  * if recv_request returns 0 or -CCCI_ERR_DROP_PACKET, then it's port's duty to free the request, and caller should
  * NOT reference the request any more. but if it returns other error, caller should be responsible to free the request.

@@ -789,7 +789,7 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 #endif
 	case ID_RESET_MD:
 		CCCI_NOTICE_LOG(md->index, CHAR, "MD reset API called by %ps\n", __builtin_return_address(0));
-		ret = md->ops->reset(md);
+		ret = md->ops->pre_stop(md, 0, OTHER_MD_NONE);
 		if (ret == 0)
 			ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
 		break;
@@ -798,6 +798,17 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 		break;
 	case ID_PMIC_INTR:
 		ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, PMIC_INTR_MODEM_BUCK_OC, *((int *)buf), 1);
+		break;
+	case ID_STOP_MD:
+		CCCI_NOTICE_LOG(md->index, CHAR, "MD stop API called by %ps\n", __builtin_return_address(0));
+		ret = md->ops->pre_stop(md, 0, OTHER_MD_NONE);
+		if (ret == 0) {
+			md->ops->stop(md, 0);
+			ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_STOP_MD_REQUEST, 0);
+		}
+		break;
+	case ID_START_MD:
+		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_START_MD_REQUEST, 0);
 		break;
 	default:
 		ret = -CCCI_ERR_FUNC_ID_ERROR;

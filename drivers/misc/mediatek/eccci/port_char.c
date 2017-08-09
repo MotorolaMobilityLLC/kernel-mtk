@@ -49,44 +49,48 @@
 static void dev_char_open_check(struct ccci_port *port)
 {
 	if (port->rx_ch == CCCI_FS_RX)
-		port->modem->critical_user_active[0] = 1;
+		port->modem->critical_user_active[CRIT_USR_FS] = 1;
 	if (port->rx_ch == CCCI_UART2_RX)
-		port->modem->critical_user_active[1] = 1;
+		port->modem->critical_user_active[CRIT_USR_MUXD] = 1;
 	if (port->rx_ch == CCCI_MD_LOG_RX)
-		port->modem->critical_user_active[2] = 1;
+		port->modem->critical_user_active[CRIT_USR_MDLOG] = 1;
 	if (port->rx_ch == CCCI_UART1_RX)
-		port->modem->critical_user_active[3] = 1;
+		port->modem->critical_user_active[CRIT_USR_META] = 1;
 }
 
 static int dev_char_close_check(struct ccci_port *port)
 {
 	if (port->rx_ch == CCCI_FS_RX && !atomic_read(&port->usage_cnt))
-		port->modem->critical_user_active[0] = 0;
+		port->modem->critical_user_active[CRIT_USR_FS] = 0;
 	if (port->rx_ch == CCCI_UART2_RX && !atomic_read(&port->usage_cnt))
-		port->modem->critical_user_active[1] = 0;
+		port->modem->critical_user_active[CRIT_USR_MUXD] = 0;
 	if (port->rx_ch == CCCI_MD_LOG_RX && !atomic_read(&port->usage_cnt))
-		port->modem->critical_user_active[2] = 0;
+		port->modem->critical_user_active[CRIT_USR_MDLOG] = 0;
 	if (port->rx_ch == CCCI_UART1_RX && !atomic_read(&port->usage_cnt))
-		port->modem->critical_user_active[3] = 0;
+		port->modem->critical_user_active[CRIT_USR_META] = 0;
 	CCCI_NORMAL_LOG(port->modem->index, CHAR, "dev close check: %d %d %d %d\n",
-				port->modem->critical_user_active[0],
-				port->modem->critical_user_active[1], port->modem->critical_user_active[2],
-				port->modem->critical_user_active[3]);
+				port->modem->critical_user_active[CRIT_USR_FS],
+				port->modem->critical_user_active[CRIT_USR_MUXD],
+				port->modem->critical_user_active[CRIT_USR_MDLOG],
+				port->modem->critical_user_active[CRIT_USR_META]);
 	ccci_event_log("md%d: dev close check: %d %d %d %d\n", port->modem->index,
-				port->modem->critical_user_active[0],
-				port->modem->critical_user_active[1], port->modem->critical_user_active[2],
-				port->modem->critical_user_active[3]);
+				port->modem->critical_user_active[CRIT_USR_FS],
+				port->modem->critical_user_active[CRIT_USR_MUXD],
+				port->modem->critical_user_active[CRIT_USR_MDLOG],
+				port->modem->critical_user_active[CRIT_USR_META]);
 
-	if (port->modem->critical_user_active[0] == 0 && port->modem->critical_user_active[1] == 0) {
+	if (port->modem->critical_user_active[CRIT_USR_FS] == 0 &&
+		port->modem->critical_user_active[CRIT_USR_MUXD] == 0) {
 		if (is_meta_mode() || is_advanced_meta_mode()) {
-			if (port->modem->critical_user_active[3] == 0) {
+			if (port->modem->critical_user_active[CRIT_USR_META] == 0) {
 				CCCI_NORMAL_LOG(port->modem->index, CHAR, "ready to reset MD in META mode\n");
 				return 0;
 			}
 			/* this should never happen */
 			CCCI_ERROR_LOG(port->modem->index, CHAR, "DHL ctrl is still open in META mode\n");
 		} else {
-			if (port->modem->critical_user_active[2] == 0 && port->modem->critical_user_active[3] == 0) {
+			if (port->modem->critical_user_active[CRIT_USR_MDLOG] == 0 &&
+				port->modem->critical_user_active[CRIT_USR_MDLOG_CTRL] == 0) {
 				CCCI_NORMAL_LOG(port->modem->index, CHAR, "ready to reset MD in normal mode\n");
 				return 0;
 			}
@@ -555,6 +559,7 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	unsigned int md_boot_data[16] = { 0 };
 	int md_type = 0;
 	unsigned int ccif_on = 0;
+	long other_md_boot_stage = 0;
 
 #ifdef CONFIG_MTK_SIM_LOCK_POWER_ON_WRITE_PROTECT
 	unsigned int val;
@@ -604,6 +609,24 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 			ret = state;
 		}
 		break;
+	case CCCI_IOC_GET_OTHER_MD_STATE:
+		CCCI_NOTICE_LOG(md->index, CHAR, "Get other md state ioctl(%d) called by %s\n", ch, current->comm);
+		if (md->index == MD_SYS1)
+			other_md_boot_stage = exec_ccci_kern_func_by_md_id(MD_SYS3, ID_GET_MD_STATE, NULL, 0);
+		else if (md->index == MD_SYS3)
+			other_md_boot_stage = exec_ccci_kern_func_by_md_id(MD_SYS1, ID_GET_MD_STATE, NULL, 0);
+
+		if (other_md_boot_stage == CCCI_ERR_MD_INDEX_NOT_FOUND)
+			other_md_boot_stage = MD_BOOT_STAGE_0;
+
+		if (other_md_boot_stage >= 0) {
+			CCCI_NORMAL_LOG(md->index, CHAR, "Other MD state %ld\n", other_md_boot_stage);
+			ret = put_user((unsigned int)other_md_boot_stage, (unsigned int __user *)arg);
+		} else {
+			CCCI_ERROR_LOG(md->index, CHAR, "Get Other MD state fail: %ld\n", other_md_boot_stage);
+			ret = other_md_boot_stage;
+		}
+		break;
 	case CCCI_IOC_PCM_BASE_ADDR:
 	case CCCI_IOC_PCM_LEN:
 	case CCCI_IOC_ALLOC_MD_LOG_MEM:
@@ -612,19 +635,9 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case CCCI_IOC_MD_RESET:
 		CCCI_NOTICE_LOG(md->index, CHAR, "MD reset ioctl(%d) called by %s\n", ch, current->comm);
 		ccci_event_log("md%d: MD reset ioctl(%d) called by %s\n", md->index, ch, current->comm);
-		ret = md->ops->reset(md);
+		ret = md->ops->pre_stop(md, 0, OTHER_MD_RESET);
 		if (ret == 0) {
 			ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
-			#ifdef CONFIG_MTK_ECCCI_C2K
-			if (md->index == MD_SYS1)
-				exec_ccci_kern_func_by_md_id(MD_SYS3, ID_RESET_MD, NULL, 0);
-			else if (md->index == MD_SYS3)
-				exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
-			#else
-#ifdef CONFIG_MTK_SVLTE_SUPPORT
-			c2k_reset_modem();
-#endif
-			#endif
 		}
 		break;
 	case CCCI_IOC_FORCE_MD_ASSERT:
@@ -656,20 +669,10 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case CCCI_IOC_SEND_STOP_MD_REQUEST:
 		CCCI_NORMAL_LOG(md->index, CHAR, "stop MD request ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: stop MD request ioctl called by %s\n", md->index, current->comm);
-		ret = md->ops->reset(md);
+		ret = md->ops->pre_stop(md, 0, OTHER_MD_STOP);
 		if (ret == 0) {
 			md->ops->stop(md, 0);
 			ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_STOP_MD_REQUEST, 0);
-#ifdef CONFIG_MTK_ECCCI_C2K
-			if (md->index == MD_SYS1)
-				exec_ccci_kern_func_by_md_id(MD_SYS3, ID_RESET_MD, NULL, 0);
-			else if (md->index == MD_SYS3)
-				exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
-#else
-#ifdef CONFIG_MTK_SVLTE_SUPPORT
-			c2k_reset_modem();
-#endif
-#endif
 		}
 		break;
 	case CCCI_IOC_SET_BOOT_DATA:
@@ -696,6 +699,12 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		CCCI_NORMAL_LOG(md->index, CHAR, "start MD request ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: start MD request ioctl called by %s\n", md->index, current->comm);
 		ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_START_MD_REQUEST, 0);
+#ifdef CONFIG_MTK_ECCCI_C2K
+		if (md->index == MD_SYS1)
+			exec_ccci_kern_func_by_md_id(MD_SYS3, ID_START_MD, NULL, 0);
+		else if (md->index == MD_SYS3)
+			exec_ccci_kern_func_by_md_id(MD_SYS1, ID_START_MD, NULL, 0);
+#endif
 		break;
 	case CCCI_IOC_DO_START_MD:
 		CCCI_NORMAL_LOG(md->index, CHAR, "start MD ioctl called by %s\n", current->comm);
@@ -711,9 +720,9 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		CCCI_NOTICE_LOG(md->index, CHAR, "enter MD flight mode ioctl called by %s\n", current->comm);
 		ccci_event_log("md%d: enter MD flight mode ioctl called by %s\n", md->index, current->comm);
 		md->flight_mode = MD_FIGHT_MODE_ENTER; /* enter flight mode */
-		ret = md->ops->reset(md);
+		ret = md->ops->pre_stop(md, 1000, OTHER_MD_NONE);
 		if (ret == 0) {
-			md->ops->stop(md, 1000);
+			md->ops->stop(md, 0);
 			ret = ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_ENTER_FLIGHT_MODE, 0);
 		}
 		break;
@@ -1106,6 +1115,10 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		}
 		break;
 
+	case CCCI_IOC_MDLOG_DUMP_DONE:
+		CCCI_NORMAL_LOG(md->index, CHAR, "mdlog dump done ioctl called by %s\n", current->comm);
+		md->mdlog_dump_done = 1;
+		break;
 	default:
 		ret = -ENOTTY;
 		break;

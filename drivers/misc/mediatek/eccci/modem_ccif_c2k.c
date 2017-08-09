@@ -661,22 +661,16 @@ static void md_ccif_wdt_work(struct work_struct *work)
 	if (*((int *)(md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_EPON))
 	    == 0xBAEBAE10) {
 		/*3. reset */
-		ret = md->ops->reset(md);
+		ret = md->ops->pre_stop(md, 0, OTHER_MD_RESET);
 		CCCI_NORMAL_LOG(md->index, TAG, "reset MD after WDT %d\n", ret);
 		/*4. send message, only reset MD on non-eng load */
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
-
-		if (md->index == MD_SYS3)
-			exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
 	} else {
-		if (md->critical_user_active[2] == 0) {
-			ret = md->ops->reset(md);
+		if (md->critical_user_active[CRIT_USR_MDLOG] == 0) {
+			ret = md->ops->pre_stop(md, 0, OTHER_MD_RESET);
 			CCCI_NORMAL_LOG(md->index, TAG, "mdlogger closed,reset MD after WDT %d\n", ret);
 			/* 4. send message, only reset MD on non-eng load */
 			ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
-
-			if (md->index == MD_SYS3)
-				exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
 		} else {
 			ccci_md_exception_notify(md, MD_WDT);
 			CCCI_NORMAL_LOG(md->index, TAG, "exception notify after WDT\n");
@@ -989,6 +983,7 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	ccci_reset_seq_num(md);
 	md->heart_beat_counter = 0;
 	md->data_usb_bypass = 0;
+	md->mdlog_dump_done = 0;
 	CCCI_NORMAL_LOG(md->index, TAG, "CCIF modem is starting\n");
 	/*1. load modem image */
 	if (!modem_run_env_ready(md->index)) {
@@ -1076,10 +1071,9 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
 	return 0;
 }
 
-static int md_ccif_op_reset(struct ccci_modem *md)
+static int md_ccif_op_pre_stop(struct ccci_modem *md, unsigned int timeout, OTHER_MD_OPS other_ops)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
-	int count = 0;
 
 	/*1. mutex check */
 	if (atomic_inc_return(&md_ctrl->reset_on_going) > 1) {
@@ -1087,34 +1081,28 @@ static int md_ccif_op_reset(struct ccci_modem *md)
 		return -CCCI_ERR_MD_IN_RESET;
 	}
 
-	if (md->flight_mode != MD_FIGHT_MODE_ENTER && md->md_state == EXCEPTION &&
-		md->boot_stage != MD_BOOT_STAGE_EXCEPTION && md->ex_stage != EX_INIT_DONE) {
-
-		CCCI_NORMAL_LOG(md->index, TAG, "Will reset after MD exception!\n");
-		while (++count < (EX_EE_WHOLE_TIMEOUT * 50)) {
-			if (unlikely(in_interrupt())) {
-				CCCI_ERR_MSG(md->index, TAG, "calling Reset from IRQ\n");
-				break;/* return -CCCI_ERR_ASSERT_ERR; */
-			}
-			if ((md->md_state != EXCEPTION) ||
-				(md->boot_stage == MD_BOOT_STAGE_EXCEPTION && md->ex_stage == EX_INIT_DONE)) {
-				/* EXCEPTION for modem state change: maybe reset by another md ccci directly;
-					MD_BOOT_STAGE_EXCEPTION: boot changed to exception at last;
-					EX_INIT_DONE: CCIF HS had Done */
-				CCCI_NORMAL_LOG(md->index, TAG, "Reset when MD exception!%d, %d, %d\n",
-					md->md_state, md->boot_stage, md->ex_stage);
-				break;
-			}
-			msleep(20);
-		}
-	}
-
 	CCCI_NORMAL_LOG(md->index, TAG, "ccif modem is resetting\n");
 	/*2. disable IRQ (use nosync) */
 	disable_irq_nosync(md_ctrl->md_wdt_irq_id);
+
+	check_ee_done(md, 0);
+
 	md->ops->broadcast_state(md, RESET);	/*to block char's write operation */
 	del_timer(&md->bootup_timer);
 	ccci_update_md_boot_stage(md, MD_BOOT_STAGE_0);
+
+	switch (other_ops) {
+	case OTHER_MD_RESET:
+		if (md->index == MD_SYS3)
+			exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
+		break;
+	case OTHER_MD_STOP:
+		if (md->index == MD_SYS3)
+			exec_ccci_kern_func_by_md_id(MD_SYS1, ID_STOP_MD, NULL, 0);
+		break;
+	default:
+		break;
+	}
 	return 0;
 }
 
@@ -1507,7 +1495,7 @@ static struct ccci_modem_ops md_ccif_ops = {
 	.init = &md_ccif_op_init,
 	.start = &md_ccif_op_start,
 	.stop = &md_ccif_op_stop,
-	.reset = &md_ccif_op_reset,
+	.pre_stop = &md_ccif_op_pre_stop,
 	.send_request = &md_ccif_op_send_request,
 	.give_more = &md_ccif_op_give_more,
 	.napi_poll = &md_ccif_op_napi_poll,

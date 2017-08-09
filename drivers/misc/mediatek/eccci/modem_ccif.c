@@ -329,7 +329,7 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 
 	if (*((int *)(md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_EPON)) == 0xBAEBAE10) {
 		/* 3. reset */
-		ret = md->ops->reset(md);
+		ret = md->ops->pre_stop(md, 0, OTHER_MD_NONE);
 		CCCI_NORMAL_LOG(md->index, TAG, "reset MD after WDT %d\n", ret);
 		/* 4. send message, only reset MD on non-eng load */
 		ccci_send_virtual_md_msg(md, CCCI_MONITOR_CH, CCCI_MD_MSG_RESET, 0);
@@ -624,7 +624,7 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int timeout)
 	return 0;
 }
 
-static int md_ccif_op_reset(struct ccci_modem *md)
+static int md_ccif_op_pre_stop(struct ccci_modem *md, unsigned int timeout, OTHER_MD_OPS other_ops)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
@@ -1020,7 +1020,7 @@ static struct ccci_modem_ops md_ccif_ops = {
 	.init = &md_ccif_op_init,
 	.start = &md_ccif_op_start,
 	.stop = &md_ccif_op_stop,
-	.reset = &md_ccif_op_reset,
+	.pre_stop = &md_ccif_op_pre_stop,
 	.send_request = &md_ccif_op_send_request,
 	.give_more = &md_ccif_op_give_more,
 	.napi_poll = &md_ccif_op_napi_poll,
