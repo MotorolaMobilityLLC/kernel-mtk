@@ -4086,6 +4086,9 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	int ignore_ppm[NR_MT_CPU_DVFS] = {0};
 	unsigned int i;
 
+	if (dvfs_disable_flag)
+		return;
+
 	cpufreq_ver("get feedback from PPM module\n");
 
 	cpufreq_lock(flags);
@@ -4284,8 +4287,13 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		p->freq_tbl = opp_tbl_m_info->opp_tbl_m;
 
 		cpufreq_lock(flags);
-		p->armpll_is_available = 1;
-		p->mt_policy = policy;
+		if (!dvfs_disable_flag) {
+			p->armpll_is_available = 1;
+			p->mt_policy = policy;
+		} else {
+			p->armpll_is_available = 0;
+			p->mt_policy = NULL;
+		}
 #if 0
 /* #ifdef ENABLE_IDVFS */
 		if (MT_CPU_DVFS_B == id) {
