@@ -1853,6 +1853,7 @@ static VOID stp_sdio_tx_wkr(
 				STPSDIO_INFO_FUNC("No ack trigger assert, tx %d seconds later\n",
 						TX_NO_ACK_TIMEOUT_ASSERT);
 				p_info->firmware_info.tx_fifo_size = STP_SDIO_TX_FIFO_SIZE;
+				p_info->firmware_info.tx_packet_num = 0;
 				if (MTK_WCN_BOOL_FALSE != pb->full_flag) {
 					pb->full_flag = MTK_WCN_BOOL_FALSE;
 					wake_up_interruptible(&pb->fullwait_q);
@@ -2035,6 +2036,7 @@ static VOID stp_sdio_tx_wkr(
 						__func__, p_info->firmware_info.tx_fifo_size, four_byte_align_len,
 						p_info->firmware_info.tx_packet_num);
 				p_info->firmware_info.tx_fifo_size = STP_SDIO_TX_FIFO_SIZE;
+				p_info->firmware_info.tx_packet_num = 0;
 				if (MTK_WCN_BOOL_FALSE != pb->full_flag) {
 					pb->full_flag = MTK_WCN_BOOL_FALSE;
 					wake_up_interruptible(&pb->fullwait_q);
