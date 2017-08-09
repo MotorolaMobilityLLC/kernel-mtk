@@ -14,13 +14,13 @@
 #include <linux/smp.h>
 #include <linux/cpu.h>
 #include <linux/sched.h>
+#include "smpboot.h"
 #ifdef CONFIG_PROFILE_CPU
 #include <linux/slab.h>
 #include <linux/proc_fs.h>
+#include <linux/time.h>
+#include <linux/spinlock.h>
 #endif
-
-#include "smpboot.h"
-
 enum {
 	CSD_FLAG_LOCK		= 0x01,
 	CSD_FLAG_WAIT		= 0x02,
@@ -47,19 +47,24 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
 	case CPU_UP_PREPARE:
 	case CPU_UP_PREPARE_FROZEN:
 		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
-				cpu_to_node(cpu)))
+					     cpu_to_node(cpu)))
 			return notifier_from_errno(-ENOMEM);
+
 		cfd->csd = alloc_percpu(struct call_single_data);
+
 		if (!cfd->csd) {
 			free_cpumask_var(cfd->cpumask);
 			return notifier_from_errno(-ENOMEM);
 		}
+
 		break;
 
 #ifdef CONFIG_HOTPLUG_CPU
+
 	case CPU_UP_CANCELED:
 	case CPU_UP_CANCELED_FROZEN:
-		/* Fall-through to the CPU_DEAD[_FROZEN] case. */
+
+	/* Fall-through to the CPU_DEAD[_FROZEN] case. */
 
 	case CPU_DEAD:
 	case CPU_DEAD_FROZEN:
@@ -168,6 +173,7 @@ static int generic_exec_single(int cpu, struct call_single_data *csd,
 
 	if (!csd) {
 		csd = &csd_stack;
+
 		if (!wait)
 			csd = this_cpu_ptr(&csd_data);
 	}
@@ -355,11 +361,13 @@ int smp_call_function_any(const struct cpumask *mask,
 
 	/* Try for same CPU (cheapest) */
 	cpu = get_cpu();
+
 	if (cpumask_test_cpu(cpu, mask))
 		goto call;
 
 	/* Try for same node. */
 	nodemask = cpumask_of_node(cpu_to_node(cpu));
+
 	for (cpu = cpumask_first_and(nodemask, mask); cpu < nr_cpu_ids;
 	     cpu = cpumask_next_and(cpu, nodemask, mask)) {
 		if (cpu_online(cpu))
@@ -406,6 +414,7 @@ void smp_call_function_many(const struct cpumask *mask,
 
 	/* Try to fastpath.  So, what's a CPU they want? Ignoring this one. */
 	cpu = cpumask_first_and(mask, cpu_online_mask);
+
 	if (cpu == this_cpu)
 		cpu = cpumask_next_and(cpu, mask, cpu_online_mask);
 
@@ -415,6 +424,7 @@ void smp_call_function_many(const struct cpumask *mask,
 
 	/* Do we have another CPU which isn't us? */
 	next_cpu = cpumask_next_and(cpu, mask, cpu_online_mask);
+
 	if (next_cpu == this_cpu)
 		next_cpu = cpumask_next_and(next_cpu, mask, cpu_online_mask);
 
@@ -515,6 +525,7 @@ static int __init nrcpus(char *str)
 	int nr_cpus;
 
 	get_option(&str, &nr_cpus);
+
 	if (nr_cpus > 0 && nr_cpus < nr_cpu_ids)
 		nr_cpu_ids = nr_cpus;
 
@@ -526,6 +537,7 @@ early_param("nr_cpus", nrcpus);
 static int __init maxcpus(char *str)
 {
 	get_option(&str, &setup_max_cpus);
+
 	if (setup_max_cpus == 0)
 		arch_disable_smp_support();
 
@@ -549,41 +561,97 @@ void __weak smp_announce(void)
 	printk(KERN_INFO "Brought up %d CPUs\n", num_online_cpus());
 }
 
-#ifdef CONFIG_PROFILE_CPU
-struct profile_cpu_stats *cpu_stats;
+#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+struct timestamp_rec hotplug_ts_rec;
+DEFINE_SPINLOCK(hotplug_timestamp_lock);
+unsigned int timestamp_enable = 1;
 
-DEFINE_SPINLOCK(profile_cpu_stats_lock);
-
-static ssize_t proc_write(struct file *f, const char *data, size_t len, loff_t *offset)
+long hotplug_get_current_time_us(void)
 {
+	struct timeval t;
+
+	do_gettimeofday(&t);
+	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec);
+}
+
+static ssize_t timestamp_enable_proc_write(struct file *f, const char *data, size_t len, loff_t *offset)
+{
+	int r;
+	unsigned int enable_val;
+
+	r = kstrtouint_from_user(data, len, 0, &enable_val);
+
+	if (r)
+		return -EINVAL;
+
+	timestamp_enable = enable_val;
+
+	return len;
+}
+static int timestamp_enable_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", timestamp_enable);
 	return 0;
 }
 
-static int proc_show(struct seq_file *m, void *v)
+static int profile_timestamp_init(void)
+{
+	int ret = 0;
+	int i = 0;
+
+	for (i = 0; i < TIMESTAMP_REC_SIZE; i++) {
+		hotplug_ts_rec.rec[i].func = NULL;
+		hotplug_ts_rec.rec[i].line = 0;
+		hotplug_ts_rec.rec[i].timestamp_us = 0;
+		hotplug_ts_rec.rec[i].delta_us = 0;
+		hotplug_ts_rec.rec[i].note1 = 0;
+		hotplug_ts_rec.rec[i].note2 = 0;
+		hotplug_ts_rec.rec[i].note3 = 0;
+		hotplug_ts_rec.rec[i].note4 = 0;
+	}
+
+	hotplug_ts_rec.rec_idx = 0;
+	hotplug_ts_rec.filter = 0;
+
+	SET_TIMESTAMP_FILTER(hotplug_ts_rec, TIMESTAMP_FILTER);
+	timestamp_enable = 0;
+
+	return ret;
+}
+#endif /* #ifdef MTK_CPU_HOTPLUG_DEBUG_3 */
+
+
+#ifdef CONFIG_PROFILE_CPU
+struct profile_cpu_stats *cpu_stats;
+DEFINE_SPINLOCK(profile_cpu_stats_lock);
+
+static int cpu_lat_proc_show(struct seq_file *m, void *v)
 {
 	unsigned int cpu;
-
 	seq_puts(m, "cpu\t up_time      up_lat_sum.us   up_lat_avg");
 	seq_puts(m, "      up_lat_max      up_lat_min\n");
+
 	for (cpu = 0; cpu < CONFIG_NR_CPUS; cpu++) {
 		seq_printf(m, "%d %14lld", cpu, cpu_stats[cpu].hotplug_up_time);
 		seq_printf(m, "%16lld", cpu_stats[cpu].hotplug_up_lat_us);
 		seq_printf(m, "%16lld", div64_ul(cpu_stats[cpu].hotplug_up_lat_us,
-						cpu_stats[cpu].hotplug_up_time));
+						 cpu_stats[cpu].hotplug_up_time));
 		seq_printf(m, "%16lld", cpu_stats[cpu].hotplug_up_lat_max);
 		seq_printf(m, "%16lld\n", cpu_stats[cpu].hotplug_up_lat_min);
 	}
 
 	seq_puts(m, "cpu    down_time    down_lat_sum    down_lat_avg");
 	seq_puts(m, "    down_lat_max    down_lat_min\n");
+
 	for (cpu = 0; cpu < CONFIG_NR_CPUS; cpu++) {
 		seq_printf(m, "%d %14lld", cpu, cpu_stats[cpu].hotplug_down_time);
 		seq_printf(m, "%16lld", cpu_stats[cpu].hotplug_down_lat_us);
 		seq_printf(m, "%16lld", div64_ul(cpu_stats[cpu].hotplug_down_lat_us,
-						cpu_stats[cpu].hotplug_down_time));
+						 cpu_stats[cpu].hotplug_down_time));
 		seq_printf(m, "%16lld", cpu_stats[cpu].hotplug_down_lat_max);
 		seq_printf(m, "%16lld\n", cpu_stats[cpu].hotplug_down_lat_min);
 	}
+
 
 	for_each_possible_cpu(cpu) {
 		cpu_stats[cpu].hotplug_up_time = 0;
@@ -599,30 +667,12 @@ static int proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 
-static int proc_open(struct inode *inode, struct  file *file)
-{
-	int ret;
-
-	ret = single_open(file, proc_show, NULL);
-
-	return ret;
-}
-
-static const struct file_operations proc_fops = {
-	.owner = THIS_MODULE,
-	.open = proc_open,
-	.read = seq_read,
-	.write = proc_write,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
 static int profile_cpu_stats_init(void)
 {
 	unsigned int cpu;
 	int ret = 0;
-
 	cpu_stats = kzalloc(sizeof(*cpu_stats) * CONFIG_NR_CPUS, GFP_KERNEL);
+
 	if (!cpu_stats)
 		return -ENOMEM;
 
@@ -637,12 +687,93 @@ static int profile_cpu_stats_init(void)
 		cpu_stats[cpu].hotplug_down_lat_min = 0;
 	}
 
-	proc_create("cpu_lat", 0, NULL, &proc_fops);
-
 	return ret;
 }
+#endif /* ifdef CONFIG_PROFILE_CPU */
+
+#define PROC_FOPS_RW(name)							\
+	static int name ## _proc_open(struct inode *inode, struct file *file)	\
+{									\
+	return single_open(file, name ## _proc_show, PDE_DATA(inode));	\
+}									\
+static const struct file_operations name ## _proc_fops = {		\
+	.owner          = THIS_MODULE,					\
+	.open           = name ## _proc_open,				\
+	.read           = seq_read,					\
+	.llseek         = seq_lseek,					\
+	.release        = single_release,				\
+	.write          = name ## _proc_write,				\
+}
+
+#define PROC_FOPS_RO(name)							\
+	static int name ## _proc_open(struct inode *inode, struct file *file)	\
+{									\
+	return single_open(file, name ## _proc_show, PDE_DATA(inode));	\
+}									\
+static const struct file_operations name ## _proc_fops = {		\
+	.owner          = THIS_MODULE,					\
+	.open           = name ## _proc_open,				\
+	.read           = seq_read,					\
+	.llseek         = seq_lseek,					\
+	.release        = single_release,				\
+}
+
+#define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
+
+#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+PROC_FOPS_RW(timestamp_enable);
+#endif
+#ifdef CONFIG_PROFILE_CPU
+PROC_FOPS_RO(cpu_lat);
+#endif
+static int create_procfs(void)
+{
+	struct proc_dir_entry *dir = NULL;
+	int i = 0;
+
+	struct pentry {
+		const char *name;
+		const struct file_operations *fops;
+	};
+
+#ifdef CONFIG_PROFILE_CPU
+	const struct pentry entries_ro[] = {
+		PROC_ENTRY(cpu_lat),
+	};
 #endif
 
+#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+	const struct pentry entries_rw[] = {
+		PROC_ENTRY(timestamp_enable),
+	};
+#endif
+
+	dir = proc_mkdir("cpu_hotplug", NULL);
+
+	if (!dir)
+		return -ENOMEM;
+
+#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+
+	for (i = 0; i < ARRAY_SIZE(entries_rw); i++) {
+		if (!proc_create(entries_rw[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries_rw[i].fops))
+			return -ENOMEM;
+	}
+
+#endif
+
+#ifdef CONFIG_PROFILE_CPU
+
+	for (i = 0; i < ARRAY_SIZE(entries_ro); i++) {
+		if (!proc_create(entries_ro[i].name, 0, dir, entries_ro[i].fops))
+			return -ENOMEM;
+	}
+
+#endif
+
+	return 0;
+
+}
 /* Called by boot processor to activate the rest. */
 void __init smp_init(void)
 {
@@ -650,14 +781,23 @@ void __init smp_init(void)
 
 	idle_threads_init();
 
+#if defined(CONFIG_PROFILE_CPU) || defined(MTK_CPU_HOTPLUG_DEBUG_3)
+	create_procfs();
+#endif
+
 #ifdef CONFIG_PROFILE_CPU
 	profile_cpu_stats_init();
+#endif
+
+#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+	profile_timestamp_init();
 #endif
 
 	/* FIXME: This should be done in userspace --RR */
 	for_each_present_cpu(cpu) {
 		if (num_online_cpus() >= setup_max_cpus)
 			break;
+
 		if (!cpu_online(cpu))
 			cpu_up(cpu);
 	}
@@ -672,7 +812,7 @@ void __init smp_init(void)
  * early_boot_irqs_disabled is set.  Use local_irq_save/restore() instead
  * of local_irq_disable/enable().
  */
-int on_each_cpu(void (*func) (void *info), void *info, int wait)
+int on_each_cpu(void (*func)(void *info), void *info, int wait)
 {
 	unsigned long flags;
 	int ret = 0;
@@ -704,17 +844,19 @@ EXPORT_SYMBOL(on_each_cpu);
  * early_boot_irqs_disabled is set.
  */
 void on_each_cpu_mask(const struct cpumask *mask, smp_call_func_t func,
-			void *info, bool wait)
+		      void *info, bool wait)
 {
 	int cpu = get_cpu();
 
 	smp_call_function_many(mask, func, info, wait);
+
 	if (cpumask_test_cpu(cpu, mask)) {
 		unsigned long flags;
 		local_irq_save(flags);
 		func(info);
 		local_irq_restore(flags);
 	}
+
 	put_cpu();
 }
 EXPORT_SYMBOL(on_each_cpu_mask);
@@ -747,19 +889,21 @@ EXPORT_SYMBOL(on_each_cpu_mask);
  * from a hardware interrupt handler or from a bottom half handler.
  */
 void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
-			smp_call_func_t func, void *info, bool wait,
-			gfp_t gfp_flags)
+		      smp_call_func_t func, void *info, bool wait,
+		      gfp_t gfp_flags)
 {
 	cpumask_var_t cpus;
 	int cpu, ret;
 
 	might_sleep_if(gfp_flags & __GFP_WAIT);
 
-	if (likely(zalloc_cpumask_var(&cpus, (gfp_flags|__GFP_NOWARN)))) {
+	if (likely(zalloc_cpumask_var(&cpus, (gfp_flags | __GFP_NOWARN)))) {
 		preempt_disable();
 		for_each_online_cpu(cpu)
+
 			if (cond_func(cpu, info))
 				cpumask_set_cpu(cpu, cpus);
+
 		on_each_cpu_mask(cpus, func, info, wait);
 		preempt_enable();
 		free_cpumask_var(cpus);
@@ -770,11 +914,13 @@ void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
 		 */
 		preempt_disable();
 		for_each_online_cpu(cpu)
+
 			if (cond_func(cpu, info)) {
 				ret = smp_call_function_single(cpu, func,
 								info, wait);
-				WARN_ON_ONCE(ret);
-			}
+			WARN_ON_ONCE(ret);
+		}
+
 		preempt_enable();
 	}
 }

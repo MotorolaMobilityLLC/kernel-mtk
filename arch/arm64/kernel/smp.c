@@ -92,6 +92,7 @@ struct irq_domain *ipi_custom_irq_domain;
 #endif
 #endif
 
+
 /*
  * Boot a secondary CPU, and assign it the specified idle task.
  * This also gives us the initial stack to use for this CPU.
@@ -120,7 +121,13 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
 	/*
 	 * Now bring the CPU into our world.
 	 */
+
 	ret = boot_secondary(cpu, idle);
+
+#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
+#endif
+
 	if (ret == 0) {
 		/*
 		 * CPU was successfully started, wait for it to come online or
@@ -136,14 +143,17 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
 
 		if (!cpu_online(cpu)) {
 			pr_crit("CPU%u: failed to come online\n", cpu);
-			#ifdef CONFIG_ARCH_MT6797
+#ifdef CONFIG_ARCH_MT6797
 			BUG_ON(1);
-			#endif
+#endif
 			ret = -EIO;
 		}
-	} else {
+	} else
 		pr_err("CPU%u: failed to boot: %d\n", cpu, ret);
-	}
+
+#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
+#endif
 
 	secondary_data.stack = NULL;
 
@@ -216,9 +226,16 @@ asmlinkage void secondary_start_kernel(void)
 	/*
 	 * Enable GIC and timers.
 	 */
+#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
+#endif
 	notify_cpu_starting(cpu);
 
 	aee_rr_rec_hotplug_footprint(cpu, 10);
+
+#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
+#endif
 
 	smp_store_cpu_info(cpu);
 
@@ -286,6 +303,7 @@ int __cpu_disable(void)
 	int ret;
 
 	ret = op_cpu_disable(cpu);
+
 	if (ret)
 		return ret;
 
@@ -337,10 +355,12 @@ static DECLARE_COMPLETION(cpu_died);
  */
 void __cpu_die(unsigned int cpu)
 {
+
 	if (!wait_for_completion_timeout(&cpu_died, msecs_to_jiffies(5000))) {
 		pr_crit("CPU%u: cpu didn't die\n", cpu);
 		return;
 	}
+
 	pr_notice("CPU%u: shutdown\n", cpu);
 
 	/*
@@ -349,8 +369,17 @@ void __cpu_die(unsigned int cpu)
 	 * verify that it has really left the kernel before we consider
 	 * clobbering anything it might still be using.
 	 */
+
+#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
+#endif
+
 	if (!op_cpu_kill(cpu))
 		pr_warn("CPU%d may not have shut down cleanly\n", cpu);
+
+#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
+#endif
 }
 
 /*
@@ -398,8 +427,8 @@ void __init smp_cpus_done(unsigned int max_cpus)
 	unsigned long bogosum = loops_per_jiffy * num_online_cpus();
 
 	pr_info("SMP: Total of %d processors activated (%lu.%02lu BogoMIPS).\n",
-			num_online_cpus(), bogosum / (500000/HZ),
-			(bogosum / (5000/HZ)) % 100);
+		num_online_cpus(), bogosum / (500000 / HZ),
+		(bogosum / (5000 / HZ)) % 100);
 	apply_alternatives_all();
 }
 
@@ -429,10 +458,12 @@ void __init smp_init_cpus(void)
 		 * entry.
 		 */
 		cell = of_get_property(dn, "reg", NULL);
+
 		if (!cell) {
 			pr_err("%s: missing reg property\n", dn->full_name);
 			goto next;
 		}
+
 		hwid = of_read_number(cell, of_n_addr_cells(dn));
 
 		/*
@@ -453,7 +484,7 @@ void __init smp_init_cpus(void)
 		for (i = 1; (i < cpu) && (i < NR_CPUS); i++) {
 			if (cpu_logical_map(i) == hwid) {
 				pr_err("%s: duplicate cpu reg properties in the DT\n",
-					dn->full_name);
+				       dn->full_name);
 				goto next;
 			}
 		}
@@ -467,7 +498,7 @@ void __init smp_init_cpus(void)
 		if (hwid == cpu_logical_map(0)) {
 			if (bootcpu_valid) {
 				pr_err("%s: duplicate boot cpu reg property in DT\n",
-					dn->full_name);
+				       dn->full_name);
 				goto next;
 			}
 
@@ -554,6 +585,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
 			continue;
 
 		err = cpu_ops[cpu]->cpu_prepare(cpu);
+
 		if (err)
 			continue;
 
@@ -594,7 +626,7 @@ void show_ipi_list(struct seq_file *p, int prec)
 			   prec >= 4 ? " " : "");
 		for_each_online_cpu(cpu)
 			seq_printf(p, "%10u ",
-				   __get_irq_stat(cpu, ipi_irqs[i]));
+			   __get_irq_stat(cpu, ipi_irqs[i]));
 		seq_printf(p, "      %s\n", ipi_types[i]);
 	}
 }
@@ -706,6 +738,7 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 		break;
 
 #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
+
 	case IPI_TIMER:
 		irq_enter();
 #ifdef CONFIG_MTPROF
@@ -720,6 +753,7 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 #endif
 
 #ifdef CONFIG_IRQ_WORK
+
 	case IPI_IRQ_WORK:
 		irq_enter();
 #ifdef CONFIG_MTPROF
@@ -738,17 +772,20 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 		if (ipinr >= IPI_CUSTOM_FIRST && ipinr <= IPI_CUSTOM_LAST)
 #ifndef CONFIG_TRUSTY_INTERRUPT_MAP
 			handle_domain_irq(ipi_custom_irq_domain, ipinr, regs);
+
 #else
 			handle_trusty_ipi(ipinr);
 #endif
 		else
 #endif
-		pr_crit("CPU%u: Unknown IPI message 0x%x\n", cpu, ipinr);
+			pr_crit("CPU%u: Unknown IPI message 0x%x\n", cpu, ipinr);
+
 		break;
 	}
 
 	if ((unsigned)ipinr < NR_IPI)
 		trace_ipi_exit(ipi_types[ipinr]);
+
 	set_irq_regs(old_regs);
 }
 
@@ -793,7 +830,7 @@ static int __init smp_custom_ipi_init(void)
 
 	/* alloc descs for these custom ipis/irqs before using them */
 	irq_alloc_descs(IPI_CUSTOM_FIRST, 0,
-		IPI_CUSTOM_LAST - IPI_CUSTOM_FIRST + 1, 0);
+			IPI_CUSTOM_LAST - IPI_CUSTOM_FIRST + 1, 0);
 
 	for (ipinr = IPI_CUSTOM_FIRST; ipinr <= IPI_CUSTOM_LAST; ipinr++) {
 		irq_set_percpu_devid(ipinr);
@@ -801,11 +838,12 @@ static int __init smp_custom_ipi_init(void)
 					 handle_custom_ipi_irq);
 		set_irq_flags(ipinr, IRQF_VALID | IRQF_NOAUTOEN);
 	}
+
 	ipi_custom_irq_domain = irq_domain_add_legacy(NULL,
-					IPI_CUSTOM_LAST - IPI_CUSTOM_FIRST + 1,
-					IPI_CUSTOM_FIRST, IPI_CUSTOM_FIRST,
-					&irq_domain_simple_ops,
-					&custom_ipi_chip);
+				IPI_CUSTOM_LAST - IPI_CUSTOM_FIRST + 1,
+				IPI_CUSTOM_FIRST, IPI_CUSTOM_FIRST,
+				&irq_domain_simple_ops,
+				&custom_ipi_chip);
 
 	return 0;
 }
@@ -840,6 +878,7 @@ void smp_send_stop(void)
 
 	/* Wait up to one second for other CPUs to stop */
 	timeout = USEC_PER_SEC;
+
 	while (num_online_cpus() > 1 && timeout--)
 		udelay(1);
 
