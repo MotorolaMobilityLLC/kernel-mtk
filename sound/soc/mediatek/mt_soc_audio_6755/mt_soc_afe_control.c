@@ -159,8 +159,6 @@ const unsigned int AudioSramPlaybackFullSize = 1024 * 48;
 const unsigned int AudioSramPlaybackPartialSize = 1024 * 32;
 const unsigned int AudioDramPlaybackSize = 1024 * 48;
 
-const unsigned int AudioDramPlaybackLowLatencySize = 1024 * 4;
-
 const size_t AudioSramCaptureSize = 1024 * 48;
 const size_t AudioDramCaptureSize = 1024 * 48;
 const size_t AudioInterruptLimiter = 100;
@@ -306,12 +304,6 @@ unsigned int GetPLaybackSramPartial(void)
 unsigned int GetPLaybackDramSize(void)
 {
 	return AudioDramPlaybackSize;
-}
-
-
-unsigned int GetPLaybackDramLowLatencySize(void)
-{
-	return AudioDramPlaybackLowLatencySize;
 }
 
 

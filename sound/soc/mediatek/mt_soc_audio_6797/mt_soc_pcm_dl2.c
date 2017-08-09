@@ -240,7 +240,7 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 
 	PRINTK_AUDDRV("mtk_pcm_dl2_open\n");
 
-	mtk_pcm_dl2_hardware.buffer_bytes_max = GetPLaybackDramLowLatencySize();
+	mtk_pcm_dl2_hardware.buffer_bytes_max = GetPLaybackDramSize();
 	AudDrv_Emi_Clk_On();
 
 	pr_warn("mtk_pcm_dl2_hardware.buffer_bytes_max = %zu\n",

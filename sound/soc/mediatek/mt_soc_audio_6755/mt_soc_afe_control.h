@@ -199,7 +199,6 @@ void SetSramState(unsigned int State);
 unsigned int GetPLaybackSramFullSize(void);
 unsigned int GetPLaybackSramPartial(void);
 unsigned int GetPLaybackDramSize(void);
-unsigned int GetPLaybackDramLowLatencySize(void);
 size_t GetCaptureDramSize(void);
 
 /* offsetTrimming */
