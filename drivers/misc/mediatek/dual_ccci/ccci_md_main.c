@@ -68,8 +68,9 @@ struct md_ctl_block_t {
 	struct timer_list md_ex_monitor;
 	struct timer_list md_boot_up_check_timer;
 	/*  -- EE flag */
-	volatile unsigned int ee_info_got;
-	volatile unsigned int ee_info_flag;
+	unsigned int ee_info_got;
+	unsigned int ee_info_flag;
+	unsigned int mdl_mode;
 	spinlock_t ctl_lock;
 	unsigned int m_md_id;
 	struct ccci_reset_sta reset_sta[NR_CCCI_RESET_USER];
@@ -1642,9 +1643,7 @@ static int set_md_runtime(int md_id,
 			  struct modem_runtime_info_tag_t *tag)
 {
 	int i;
-	struct file *filp = NULL;
 	enum LOGGING_MODE mdlog_flag = MODE_IDLE;
-	int ret = 0;
 	struct md_ctl_block_t *ctl_b;
 	int dl_ctl_mem_size, ul_ctl_mem_size;
 
@@ -1863,28 +1862,7 @@ static int set_md_runtime(int md_id,
 		runtime->MiscInfoSize = 0;
 	}
 
-	/* add a new attribute of mdlogger auto start info to notify md */
-	filp = filp_open(MDLOGGER_FILE_PATH, O_RDONLY, 0777);
-	if (IS_ERR(filp)) {
-		CCCI_MSG_INF(md_id, "ctl",
-			     "open /data/mdl/mdl_config fail:%ld\n",
-			     PTR_ERR(filp));
-		filp = NULL;
-	} else {
-		ret = kernel_read(filp, 0, (char *)&mdlog_flag, sizeof(int));
-		if (ret != sizeof(int)) {
-			CCCI_MSG_INF(md_id, "ctl",
-				     "read /data/mdl/mdl_config fail: %d!\n",
-				     ret);
-			mdlog_flag = MODE_IDLE;
-		}
-	}
-
-	if (filp != NULL) {
-		/* CCCI_MSG_INF("ctl", "close /data/mdl/mdl_config!\n"); */
-		/* filp_close(filp, current->files); */
-		filp_close(filp, NULL);
-	}
+	mdlog_flag = (char)ctl_b->mdl_mode;
 
 	if (is_meta_mode() || is_advanced_meta_mode())
 		runtime->BootingStartID =
@@ -1989,7 +1967,18 @@ int ccci_set_reload_modem(int md_id)
 	CCCI_MSG_INF(md_id, "ctl", "md image will be reloaded!\n");
 	return 0;
 }
+int ccci_set_md_boot_data(int md_id, unsigned int data[], int len)
+{
+	struct md_ctl_block_t *ctl_b;
+	int ret = 0;
 
+	ctl_b = md_ctlb[md_id];
+	if (len > 0 && data != NULL)
+		ctl_b->mdl_mode = data[0];
+	else
+		ret = -1;
+	return ret;
+}
 /* ccci_start_modem: do start modem operation */
 int ccci_start_modem(int md_id)
 {

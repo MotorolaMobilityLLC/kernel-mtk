@@ -16,8 +16,8 @@ static struct wake_lock chrdev_wakelock_mdlogger[MAX_MD_NUM];
 char chrdev_wakelock_name[MAX_MD_NUM][32];
 char chrdev_wakelock_mdlog_name[MAX_MD_NUM][32];
 unsigned int md_img_exist[MD_IMG_MAX_CNT] = { 0 };
-
-unsigned int md_type_saving = 0;
+static unsigned int md_img_type_is_set;
+unsigned int md_type_saving;
 
 unsigned int curr_sim_mode[MAX_MD_NUM];
 
@@ -29,7 +29,7 @@ static unsigned int catch_more;
 static unsigned int md_sbp_code;
 static unsigned int md_sbp_code_default;
 #endif				/* CONFIG_MTK_MD_SBP_CUSTOM_VALUE */
-
+#if 0
 #ifndef CONFIG_MODEM_FIRMWARE_CIP_PATH
 #define CONFIG_MODEM_FIRMWARE_CIP_PATH  "/custom/etc/firmware/"
 #endif
@@ -85,6 +85,7 @@ int scan_image_list(int md_id, char fmt[], unsigned int out_img_list[],
 		CCCI_ERR_INF(md_id, "chr", "Error! - No Image found\n");
 	return img_num;
 }
+#endif
 
 unsigned int __weak get_sim_switch_type(void)
 {
@@ -1002,7 +1003,9 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 	unsigned int sim_slot_cfg[3];
 	int ccci_cfg_setting[2];
 	int setting_num;
-	int scanned_num = -1;
+	unsigned int md_boot_data[16];
+
+	/*int scanned_num = -1;*/
 
 	switch (cmd) {
 	case CCCI_IOC_GET_MD_PROTOCOL_TYPE:
@@ -1073,6 +1076,23 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 			     current->comm);
 		ret = send_md_start_notify(md_id);
 		break;
+	case CCCI_IOC_SET_BOOT_DATA:
+			CCCI_MSG_INF(md_id, "chr", "set MD boot env data called by %s\n",
+					 current->comm);
+			if (copy_from_user
+				(&md_boot_data, (void __user *)arg, sizeof(md_boot_data))) {
+				CCCI_MSG_INF(md_id, "chr",
+					"CCCI_IOC_SET_BOOT_DATA: copy_from_user fail!\n");
+				ret = -EFAULT;
+			} else {
+				ret = ccci_set_md_boot_data(md_id, md_boot_data, ARRAY_SIZE(md_boot_data));
+				if (ret < 0) {
+					CCCI_MSG_INF(md_id, "chr",
+					"ccci_set_md_boot_data return fail!\n");
+					ret = -EFAULT;
+				}
+			}
+			break;
 
 	case CCCI_IOC_DO_START_MD:
 		CCCI_MSG_INF(md_id, "chr", "start MD ioctl called by %s\n",
@@ -1245,19 +1265,31 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 		break;
 
 	case CCCI_IOC_SET_MD_IMG_EXIST:
-#if 0
 		if (copy_from_user
 		    (&md_img_exist, (void __user *)arg, sizeof(md_img_exist))) {
 			CCCI_MSG_INF(md_id, "chr",
-				     "CCCI_IOC_ENABLE_GET_SIM_TYPE: copy_from_user fail!\n");
+				     "CCCI_IOC_SET_MD_IMG_EXIST: copy_from_user fail!\n");
 			ret = -EFAULT;
 		}
-#endif
+		md_img_type_is_set = 1;
 		CCCI_MSG_INF(md_id, "chr",
-			     "CCCI_IOC_ENABLE_GET_SIM_TYPE: need not set!\n");
+			     "CCCI_IOC_SET_MD_IMG_EXIST: set done!\n");
 		break;
 
 	case CCCI_IOC_GET_MD_IMG_EXIST:
+		CCCI_MSG_INF(md_id, "chr",
+						 "CCCI_IOC_GET_MD_IMG_EXIST: waiting set\n");
+		while (md_img_type_is_set == 0)
+			msleep(200);
+		CCCI_MSG_INF(md_id, "chr",
+				     "CCCI_IOC_GET_MD_IMG_EXIST: waiting set done!\n");
+		if (copy_to_user((void __user *)arg, &md_img_exist, sizeof(md_img_exist))) {
+			CCCI_MSG_INF(md_id, "chr",
+				     "CCCI_IOC_GET_MD_IMG_EXIST: copy_to_user fail!\n");
+			ret = -EFAULT;
+		}
+
+#if 0
 		memset(md_img_exist, 0, sizeof(md_img_exist));
 		scanned_num =
 		    scan_image_list(md_id, "modem_%d_%s_n.img", md_img_exist,
@@ -1275,6 +1307,7 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 				ret = -EFAULT;
 			}
 		}
+#endif
 		break;
 
 	case CCCI_IOC_GET_MD_TYPE:
