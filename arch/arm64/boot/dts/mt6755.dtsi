@@ -1358,11 +1358,12 @@
 
 
 		mmsys: mmsys_config@14000000 {
-			compatible = "mediatek,mmsys_config";
+			compatible = "mediatek,mmsys_config", "mediatek,mt6755-mmsys";
 			reg = <0x14000000 0x1000>;
 			interrupts = <GIC_SPI 196 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&mmsys MM_DISP0_CAM_MDP>;
 			clock-names = "CAM_MDP";
+			#clock-cells = <1>;
 		};
 
 		mdp_rdma@14001000 {
@@ -1795,7 +1796,7 @@
 		};
 
 		vdecsys: vdec_gcon@16000000 {
-			compatible = "mediatek,mt6755-vdec_gcon";
+			compatible = "mediatek,mt6755-vdec_gcon", "mediatek,mt6755-vdecsys";
 			reg = <0x16000000 0x1000>;
 			interrupts = <GIC_SPI 206 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&mmsys MM_DISP0_SMI_COMMON>, <&vdecsys VDEC0_VDEC>,
@@ -1808,6 +1809,7 @@
 					"MT_CG_VENC_LARB", "MT_CG_TOP_MUX_VDEC",
 					"MT_CG_TOP_SYSPLL1_D2", "MT_CG_TOP_SYSPLL1_D4",
 					"MT_SCP_SYS_VDE", "MT_SCP_SYS_VEN", "MT_SCP_SYS_DIS";
+			#clock-cells = <1>;
 		};
 
 		smi_larb1@16010000 {
@@ -1823,9 +1825,10 @@
 		};
 
 		vencsys: venc_gcon@17000000 {
-			compatible = "mediatek,mt6755-venc_gcon";
+			compatible = "mediatek,mt6755-venc_gcon", "mediatek,mt6755-vencsys";
 			reg = <0x17000000 0x1000>;
 			interrupts = <GIC_SPI 202 IRQ_TYPE_LEVEL_LOW>;
+			#clock-cells = <1>;
 		};
 
 		smi_larb3@17001000 {
