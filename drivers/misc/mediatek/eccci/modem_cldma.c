@@ -378,6 +378,7 @@ static int cldma_gpd_rx_refill(struct md_cd_queue *queue)
 			req->data_buffer_ptr_saved =
 			    dma_map_single(&md->plat_dev->dev, new_skb->data, skb_data_size(new_skb), DMA_FROM_DEVICE);
 			rgpd->data_buff_bd_ptr = (u32) (req->data_buffer_ptr_saved);
+			rgpd->data_buff_len = 0;
 			/* checksum of GPD */
 			caculate_checksum((char *)rgpd, 0x81);
 			/* set HWO and mark cldma_request as available*/
@@ -614,6 +615,7 @@ static int cldma_gpd_net_rx_collect(struct md_cd_queue *queue, int budget, int b
 				    dma_map_single(&md->plat_dev->dev, new_skb->data, skb_data_size(new_skb),
 									DMA_FROM_DEVICE);
 				rgpd->data_buff_bd_ptr = (u32) (req->data_buffer_ptr_saved);
+				rgpd->data_buff_len = 0;
 				/* checksum of GPD */
 				caculate_checksum((char *)rgpd, 0x81);
 				/* set HWO, no need to hold ring_lock as no racer */
@@ -1626,10 +1628,31 @@ static void md_cd_clear_all_queue(struct ccci_modem *md, DIRECTION dir)
 				rgpd = (struct cldma_rgpd *)req->gpd;
 				cldma_write8(&rgpd->gpd_flags, 0, 0x81);
 				cldma_write16(&rgpd->data_buff_len, 0, 0);
-				req->skb->len = 0;
-				skb_reset_tail_pointer(req->skb);
+				caculate_checksum((char *)rgpd, 0x81);
+				if (req->skb != NULL) {
+					req->skb->len = 0;
+					skb_reset_tail_pointer(req->skb);
+				}
 			}
 			spin_unlock_irqrestore(&md_ctrl->rxq[i].ring_lock, flags);
+			list_for_each_entry(req, &md_ctrl->rxq[i].tr_ring->gpd_ring, entry) {
+				rgpd = (struct cldma_rgpd *)req->gpd;
+				if (req->skb == NULL) {
+					struct md_cd_queue *queue = &md_ctrl->rxq[i];
+					/*which queue*/
+					CCCI_INF_MSG(md->index, TAG, "skb NULL in Rx queue %d/%d\n",
+							i, queue->index);
+					/*if ((1 << queue->index) & NET_TX_QUEUE_MASK)
+						req->skb = ccci_alloc_skb(queue->tr_ring->pkt_size, 0, 1);
+					else */
+					req->skb = ccci_alloc_skb(queue->tr_ring->pkt_size, 1, 1);
+					req->data_buffer_ptr_saved =
+						dma_map_single(&md->plat_dev->dev, req->skb->data,
+								skb_data_size(req->skb), DMA_FROM_DEVICE);
+					rgpd->data_buff_bd_ptr = (u32) (req->data_buffer_ptr_saved);
+					caculate_checksum((char *)rgpd, 0x81);
+				}
+			}
 		}
 	}
 }
@@ -1869,7 +1892,7 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 	case HIF_EX_ALLQ_RESET:
 		/* re-start CLDMA */
 		cldma_reset(md);
-		md_cd_clear_all_queue(md, IN);	/* purge Rx queue */
+		/* md_cd_clear_all_queue(md, IN); move to delay work for request skb in it*/ /* purge Rx queue */
 		ccci_md_exception_notify(md, EX_INIT_DONE);
 		cldma_start(md);
 
@@ -1904,6 +1927,7 @@ static void md_cd_ccif_delayed_work(struct work_struct *work)
 	/* tell MD to reset CLDMA */
 	md_cd_ccif_send(md, H2D_EXCEPTION_CLEARQ_ACK);
 	CCCI_INF_MSG(md->index, TAG, "send clearq_ack to MD\n");
+	md_cd_clear_all_queue(md, IN);	/* purge Rx queue */ /* last position: HIF_EX_ALLQ_RESET */
 }
 
 static void md_cd_ccif_work(struct work_struct *work)
