@@ -40,6 +40,9 @@
 #include "ddp_pwm.h"
 #include "mtkfb.h"
 
+#define MET_USER_EVENT_SUPPORT
+#include <mt-plat/met_drv.h>
+
 /* for LED&Backlight bringup, define the dummy API */
 #ifndef CONFIG_MTK_PMIC
 u16 pmic_set_register_value(u32 flagname, u32 val)
@@ -972,6 +975,10 @@ int mt_mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level)
 	case MT65XX_LED_MODE_CUST_BLS_PWM:
 		if (strcmp(cust->name, "lcd-backlight") == 0)
 			bl_brightness_hal = level;
+
+		if (enable_met_backlight_tag())
+			output_met_backlight_tag(level);
+
 		return ((cust_set_brightness) (cust->data)) (level);
 
 	case MT65XX_LED_MODE_NONE:

@@ -259,6 +259,9 @@ void fs_unreg(void);
 #define met_ccf_clk_set_parent(clk, parent) (0)
 #define met_fh_print_dds(pll_id, dds_value) (0)
 
+#define enable_met_backlight_tag() (0)
+#define output_met_backlight_tag(level) (0)
+
 #else
 #include <linux/kernel.h>
 int __attribute__((weak)) met_tag_init(void);
@@ -314,6 +317,9 @@ int __attribute__((weak)) met_ccf_clk_set_parent(struct clk *clk, struct clk *pa
 
 extern unsigned int __attribute__((weak)) met_fh_dds[];
 int __attribute__((weak)) met_fh_print_dds(int pll_id, unsigned int dds_value);
+
+int __attribute__((weak)) enable_met_backlight_tag(void);
+int __attribute__((weak)) output_met_backlight_tag(int level);
 
 #define met_record_on()		tracing_on()
 
