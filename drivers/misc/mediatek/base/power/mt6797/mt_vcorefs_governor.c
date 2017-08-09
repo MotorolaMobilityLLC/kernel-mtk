@@ -329,10 +329,13 @@ int vcorefs_get_vcore_by_steps(u32 steps)
 {
 	switch (steps) {
 	case OPP_0:
-		return vcore_pmic_to_uv(get_vcore_ptp_volt(VCORE_1_P_00_UV));
+		return vcore_pmic_to_uv(get_vcore_ptp_volt(OPP_0));
 	break;
 	case OPP_1:
-		return vcore_pmic_to_uv(get_vcore_ptp_volt(VCORE_0_P_90_UV));
+		return vcore_pmic_to_uv(get_vcore_ptp_volt(OPP_1));
+	break;
+	case 2:
+		return vcore_pmic_to_uv(get_vcore_ptp_volt(2));
 	break;
 	default:
 		break;
@@ -1142,8 +1145,6 @@ static int init_vcorefs_cmd_table(void)
 			opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
 			opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);
 			opp_ctrl_table[opp].axi_khz = FAXI_S1_KHZ;
-
-			gvrctrl->screen_off_vol = vcorefs_get_vcore_by_steps(opp);
 			break;
 		default:
 			break;
@@ -1155,6 +1156,7 @@ static int init_vcorefs_cmd_table(void)
 								opp_ctrl_table[opp].axi_khz);
 	}
 
+	gvrctrl->screen_off_vol = vcorefs_get_vcore_by_steps(2);
 	vcorefs_crit("curr_vcore_uv: %u, curr_ddr_khz: %u, curr_axi_khz: %u\n",
 							gvrctrl->curr_vcore_uv,
 							gvrctrl->curr_ddr_khz,
