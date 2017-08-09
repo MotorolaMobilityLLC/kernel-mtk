@@ -1013,10 +1013,12 @@ static int od_config_od(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, 
 static int od_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef ENABLE_CLK_MGR
+#ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_OD, "od");
 	DDPMSG("od_clock on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 #else
 	ddp_clk_enable(DISP0_DISP_OD);
+#endif
 #endif
 
 	return 0;
@@ -1026,10 +1028,12 @@ static int od_clock_on(DISP_MODULE_ENUM module, void *handle)
 static int od_clock_off(DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef ENABLE_CLK_MGR
+#ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_OD , "od");
 	DDPMSG("od_clock off CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 #else
 	ddp_clk_disable(DISP0_DISP_OD);
+#endif
 #endif
 
 	return 0;
