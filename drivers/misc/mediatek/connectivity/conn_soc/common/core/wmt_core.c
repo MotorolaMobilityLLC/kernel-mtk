@@ -455,7 +455,7 @@ INT32 wmt_core_opid(P_WMT_OP pWmtOp)
 	return wmt_core_opid_handler(pWmtOp);
 }
 
-INT32 wmt_core_ctrl(ENUM_WMT_CTRL_T ctrId, PUINT32 pPa1, PUINT32 pPa2)
+INT32 wmt_core_ctrl(ENUM_WMT_CTRL_T ctrId, unsigned long *pPa1, unsigned long *pPa2)
 {
 	INT32 iRet = -1;
 	WMT_CTRL_DATA ctrlData;
@@ -609,8 +609,8 @@ INT32 wmt_core_init_script(struct init_script *script, INT32 count)
 static INT32 wmt_core_stp_init(VOID)
 {
 	INT32 iRet = -1;
-	UINT32 ctrlPa1;
-	UINT32 ctrlPa2;
+	unsigned long ctrlPa1;
+	unsigned long ctrlPa2;
 	UINT8 co_clock_type;
 	P_WMT_CTX pctx = &gMtkWmtCtx;
 	P_WMT_GEN_CONF pWmtGenConf = NULL;
@@ -689,8 +689,8 @@ static INT32 wmt_core_stp_init(VOID)
 static INT32 wmt_core_stp_deinit(VOID)
 {
 	INT32 iRet;
-	UINT32 ctrlPa1;
-	UINT32 ctrlPa2;
+	unsigned long ctrlPa1;
+	unsigned long ctrlPa2;
 
 	WMT_DBG_FUNC(" start\n");
 
@@ -848,8 +848,8 @@ static INT32 opfunc_pwr_on(P_WMT_OP pWmtOp)
 {
 
 	INT32 iRet;
-	UINT32 ctrlPa1;
-	UINT32 ctrlPa2;
+	unsigned long ctrlPa1;
+	unsigned long ctrlPa2;
 	INT32 retry = WMT_PWRON_RTY_DFT;
 
 	if (DRV_STS_POWER_OFF != gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT]) {
@@ -913,8 +913,8 @@ static INT32 opfunc_pwr_off(P_WMT_OP pWmtOp)
 {
 
 	INT32 iRet;
-	UINT32 ctrlPa1;
-	UINT32 ctrlPa2;
+	unsigned long ctrlPa1;
+	unsigned long ctrlPa2;
 
 	if (DRV_STS_POWER_OFF == gMtkWmtCtx.eDrvStatus[WMTDRV_TYPE_WMT]) {
 		WMT_WARN_FUNC("WMT-CORE: WMT already off, WMT DRV_STS_[0x%x]\n",
@@ -1139,8 +1139,8 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 	UINT32 u4_result;
 	UINT32 evt_len;
 	UINT8 evt_buf[16] = { 0 };
-	UINT32 ctrlPa1 = 0;
-	UINT32 ctrlPa2 = 0;
+	unsigned long ctrlPa1 = 0;
+	unsigned long ctrlPa2 = 0;
 
 	typedef INT32(*STP_PSM_CB) (INT32);
 	STP_PSM_CB psm_cb = NULL;
@@ -1159,14 +1159,14 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 		evt_len = sizeof(WMT_SLEEP_EVT);
 		ret = wmt_core_rx(evt_buf, evt_len, &u4_result);
 		if (ret || (u4_result != evt_len)) {
-			UINT32 type = WMTDRV_TYPE_WMT;
-			UINT32 reason = 33;
-			UINT32 ctrlpa = 1;
+			unsigned long type = WMTDRV_TYPE_WMT;
+			unsigned long reason = 33;
+			unsigned long ctrlpa = 1;
 
 			wmt_core_rx_flush(WMT_TASK_INDX);
 			WMT_ERR_FUNC("wmt_core: read SLEEP_EVT fail(%d) len(%d, %d)", ret, u4_result, evt_len);
 			mtk_wcn_stp_dbg_dump_package();
-			ret = wmt_core_ctrl(WMT_CTRL_EVT_PARSER, (PUINT32) &ctrlpa, 0);
+			ret = wmt_core_ctrl(WMT_CTRL_EVT_PARSER, &ctrlpa, 0);
 			if (!ret) {	/* parser ok */
 				reason = 38;	/* host schedule issue reason code */
 				WMT_WARN_FUNC("This evt error may be caused by system schedule issue\n");
@@ -1221,13 +1221,13 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 		evt_len = sizeof(WMT_WAKEUP_EVT);
 		ret = wmt_core_rx(evt_buf, evt_len, &u4_result);
 		if (ret || (u4_result != evt_len)) {
-			UINT32 type = WMTDRV_TYPE_WMT;
-			UINT32 reason = 34;
-			UINT32 ctrlpa = 2;
+			unsigned long type = WMTDRV_TYPE_WMT;
+			unsigned long reason = 34;
+			unsigned long ctrlpa = 2;
 
 			WMT_ERR_FUNC("wmt_core: read WAKEUP_EVT fail(%d) len(%d, %d)", ret, u4_result, evt_len);
 			mtk_wcn_stp_dbg_dump_package();
-			ret = wmt_core_ctrl(WMT_CTRL_EVT_PARSER, (PUINT32) &ctrlpa, 0);
+			ret = wmt_core_ctrl(WMT_CTRL_EVT_PARSER, &ctrlpa, 0);
 			if (!ret) {	/* parser ok */
 				reason = 39;	/* host schedule issue reason code */
 				WMT_WARN_FUNC("This evt error may be caused by system schedule issue\n");
@@ -1276,14 +1276,14 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 		evt_len = sizeof(WMT_HOST_AWAKE_EVT);
 		ret = wmt_core_rx(evt_buf, evt_len, &u4_result);
 		if (ret || (u4_result != evt_len)) {
-			UINT32 type = WMTDRV_TYPE_WMT;
-			UINT32 reason = 35;
-			UINT32 ctrlpa = 3;
+			unsigned long type = WMTDRV_TYPE_WMT;
+			unsigned long reason = 35;
+			unsigned long ctrlpa = 3;
 
 			wmt_core_rx_flush(WMT_TASK_INDX);
 			WMT_ERR_FUNC("wmt_core: read HOST_AWAKE_EVT fail(%d) len(%d, %d)", ret, u4_result, evt_len);
 			mtk_wcn_stp_dbg_dump_package();
-			ret = wmt_core_ctrl(WMT_CTRL_EVT_PARSER, (PUINT32) &ctrlpa, 0);
+			ret = wmt_core_ctrl(WMT_CTRL_EVT_PARSER, &ctrlpa, 0);
 			if (!ret) {	/* parser ok */
 				reason = 40;	/* host schedule issue reason code */
 				WMT_WARN_FUNC("This evt error may be caused by system schedule issue\n");
@@ -1380,8 +1380,8 @@ static INT32 opfunc_dsns(P_WMT_OP pWmtOp)
 INT32 wmt_core_lpbk_do_stp_init(void)
 {
 	INT32 iRet = 0;
-	UINT32 ctrlPa1 = 0;
-	UINT32 ctrlPa2 = 0;
+	unsigned long ctrlPa1 = 0;
+	unsigned long ctrlPa2 = 0;
 
 	ctrlPa1 = 0;
 	ctrlPa2 = 0;
@@ -1407,8 +1407,8 @@ INT32 wmt_core_lpbk_do_stp_init(void)
 INT32 wmt_core_lpbk_do_stp_deinit(void)
 {
 	INT32 iRet = 0;
-	UINT32 ctrlPa1 = 0;
-	UINT32 ctrlPa2 = 0;
+	unsigned long ctrlPa1 = 0;
+	unsigned long ctrlPa2 = 0;
 
 	ctrlPa1 = 0;
 	ctrlPa2 = 0;
@@ -1681,8 +1681,8 @@ static INT32 opfunc_hw_rst(P_WMT_OP pWmtOp)
 {
 
 	INT32 iRet = -1;
-	UINT32 ctrlPa1;
-	UINT32 ctrlPa2;
+	unsigned long ctrlPa1;
+	unsigned long ctrlPa2;
 
 	wmt_core_dump_func_state("BE HW RST");
     /*-->Reset WMT  data structure*/
@@ -1942,8 +1942,8 @@ MTK_WCN_BOOL wmt_core_get_aee_dump_flag(void)
 INT32 opfunc_pin_state(P_WMT_OP pWmtOp)
 {
 
-	UINT32 ctrlPa1 = 0;
-	UINT32 ctrlPa2 = 0;
+	unsigned long ctrlPa1 = 0;
+	unsigned long ctrlPa2 = 0;
 	UINT32 iRet = 0;
 
 	iRet = wmt_core_ctrl(WMT_CTRL_HW_STATE_DUMP, &ctrlPa1, &ctrlPa2);

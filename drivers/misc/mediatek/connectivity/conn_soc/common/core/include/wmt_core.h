@@ -372,7 +372,7 @@ extern INT32 wmt_core_deinit(VOID);
 *****************************************************************************/
 extern INT32 wmt_core_opid(P_WMT_OP pWmtOp);
 
-extern INT32 wmt_core_ctrl(ENUM_WMT_CTRL_T ctrId, PUINT32 pPa1, PUINT32 pPa2);
+extern INT32 wmt_core_ctrl(ENUM_WMT_CTRL_T ctrId, unsigned long *pPa1, unsigned long *pPa2);
 
 extern INT32 wmt_core_func_ctrl_cmd(ENUM_WMTDRV_TYPE_T type, MTK_WCN_BOOL fgEn);
 

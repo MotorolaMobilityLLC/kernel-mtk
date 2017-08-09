@@ -886,8 +886,8 @@ WMT_IC_OPS wmt_ic_ops_soc = {
 static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 {
 	INT32 iRet = -1;
-	UINT32 ctrlPa1;
-	UINT32 ctrlPa2;
+	unsigned long ctrlPa1;
+	unsigned long ctrlPa2;
 	UINT32 hw_ver;
 	WMT_CTRL_DATA ctrlData;
 #ifdef CFG_WMT_READ_EFUSE_VCN33
@@ -1484,8 +1484,8 @@ static INT32 mtk_wcn_soc_ver_check(VOID)
 	UINT32 fw_ver;
 	INT32 iret;
 	const WMT_IC_INFO_S *p_info;
-	UINT32 ctrlPa1;
-	UINT32 ctrlPa2;
+	unsigned long ctrlPa1;
+	unsigned long ctrlPa2;
 
 	/* 1. identify chip versions: HVR(HW_VER) and FVR(FW_VER) */
 	WMT_LOUD_FUNC("0x%x: before read hw_ver (hw version)\n", wmt_ic_ops_soc.icId);
@@ -1576,11 +1576,11 @@ static const WMT_IC_INFO_S *mtk_wcn_soc_find_wmt_ic_info(const UINT32 hw_ver)
 static INT32 wmt_stp_wifi_lte_coex(VOID)
 {
 	INT32 iRet;
-	SIZE_T addr;
+	unsigned long addr;
 	WMT_GEN_CONF *pWmtGenConf;
 
 	/*Get wmt config */
-	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, (PUINT32) &addr, 0);
+	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);
 	if (iRet) {
 		WMT_ERR_FUNC("ctrl GET_WMT_CONF fail(%d)\n", iRet);
 		return -2;
@@ -1627,7 +1627,7 @@ static INT32 wmt_stp_wifi_lte_coex(VOID)
 static INT32 wmt_stp_init_coex(VOID)
 {
 	INT32 iRet;
-	SIZE_T addr;
+	unsigned long addr;
 	WMT_GEN_CONF *pWmtGenConf;
 
 #define COEX_WMT  0
@@ -1640,7 +1640,7 @@ static INT32 wmt_stp_init_coex(VOID)
 #define COEX_MISC 4
 #endif
 	/*Get wmt config */
-	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, (PUINT32) &addr, 0);
+	iRet = wmt_core_ctrl(WMT_CTRL_GET_WMT_CONF, &addr, 0);
 	if (iRet) {
 		WMT_ERR_FUNC("ctrl GET_WMT_CONF fail(%d)\n", iRet);
 		return -2;
@@ -1735,7 +1735,7 @@ static INT32 mtk_wcn_soc_set_sdio_driving(void)
 {
 	INT32 ret = 0;
 
-	SIZE_T addr;
+	unsigned long addr;
 	WMT_GEN_CONF *pWmtGenConf;
 	UINT32 drv_val = 0;
 
