@@ -23,6 +23,7 @@ extern void log_boot(char *str);
 #define log_boot(str)
 #endif
 
+#include <linux/sched.h>
 #ifndef TIME_LOG_START
 #define TIME_LOG_START() \
 	({ts = sched_clock(); })
