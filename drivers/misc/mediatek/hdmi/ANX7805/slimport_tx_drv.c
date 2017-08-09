@@ -2183,42 +2183,42 @@ void SP_TX_InfoFrameUpdate(struct AudiInfoframe* pAudioInfoFrame)
 	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_LEN,	c);
 
 	c = pAudioInfoFrame->pb_byte[0];
-	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB1,c);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB0,c);
 
 	c = pAudioInfoFrame->pb_byte[1];
-	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB2,c);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB1,c);
 
 	c = pAudioInfoFrame->pb_byte[2];
-	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB3,c);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB2,c);
 
 	c = pAudioInfoFrame->pb_byte[3];
-	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB4,c);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB3,c);
 
 	c = pAudioInfoFrame->pb_byte[4];
-	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB5,c);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB4,c);
 
 	c = pAudioInfoFrame->pb_byte[5];
-	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB6,c);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB5,c);
 
 	c = pAudioInfoFrame->pb_byte[6];
-	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB7,c);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB6,c);
 
 	c = pAudioInfoFrame->pb_byte[7];
-	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB8,c);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB7,c);
 
 	c = pAudioInfoFrame->pb_byte[8];
-	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB9,c);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB8,c);
 
 	c = pAudioInfoFrame->pb_byte[9];
-	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB10,c);
+	sp_write_reg(SP_TX_PORT2_ADDR, SP_TX_AUD_DB9,c);
 
 
 	sp_read_reg (SP_TX_PORT0_ADDR, SP_TX_PKT_EN_REG, &c);
-	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_PKT_EN_REG, ( c | SP_TX_PKT_AUD_UP ) ); // update the audio info-frame
+	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_PKT_EN_REG, ( c | SP_TX_PKT_AUD_UP )); // update the audio info-frame
 
 
 	sp_read_reg (SP_TX_PORT0_ADDR, SP_TX_PKT_EN_REG, &c);
-	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_PKT_EN_REG, ( c | SP_TX_PKT_AUD_EN ) ); // enable the audio info-frame
+	sp_write_reg(SP_TX_PORT0_ADDR, SP_TX_PKT_EN_REG, ( c | SP_TX_PKT_AUD_EN )); // enable the audio info-frame
 }
 
 
@@ -4968,7 +4968,6 @@ void SP_CTRL_Dump_Reg(void)
 			pr_err("   BW = 5.4G");
 			SP_TX_PCLK_Calc(BW_54G);//str_clk = 540;
 		}
-
 	} else {
 		sp_read_reg(SP_TX_PORT0_ADDR,SP_TX_LINK_BW_SET_REG, &c);
 		if(c==0x06) {
