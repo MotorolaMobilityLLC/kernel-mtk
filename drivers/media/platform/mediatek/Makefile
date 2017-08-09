@@ -5,7 +5,8 @@ obj-$(CONFIG_VIDEO_MEDIATEK_VCODEC) += mtk_vcodec_dec_drv.o\
 				       mtk_vcodec_util.o\
 				       mtk_vcodec_enc_drv.o\
 				       mtk_vcodec_enc.o\
-				       mtk_vcodec_enc_pm.o
+				       mtk_vcodec_enc_pm.o\
+				       mtkbuf-dma-cache-sg.o
 
 ifeq ($(CONFIG_VIDEO_MEDIATEK_VCODEC),y)
     obj-$(CONFIG_MTK_IOMMU) += mtk_vcodec_iommu.o

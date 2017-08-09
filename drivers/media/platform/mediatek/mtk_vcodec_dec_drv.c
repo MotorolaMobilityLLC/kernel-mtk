@@ -21,6 +21,7 @@
 #include <media/v4l2-event.h>
 #include <media/v4l2-mem2mem.h>
 #include <media/videobuf2-dma-contig.h>
+#include <mtkbuf-dma-cache-sg.h>
 
 #include "mtk_vcodec_drv.h"
 #include "mtk_vcodec_dec.h"
@@ -329,7 +330,7 @@ static int mtk_vcodec_probe(struct platform_device *pdev)
 	mtk_v4l2_debug(0, "decoder registered as /dev/video%d\n",
 			 vfd_dec->num);
 
-	dev->alloc_ctx = vb2_dma_contig_init_ctx(&pdev->dev);
+	dev->alloc_ctx = mtk_dma_sg_init_ctx(&pdev->dev);
 	if (IS_ERR(dev->alloc_ctx)) {
 		mtk_v4l2_err("Failed to alloc vb2 dma context 0\n");
 		ret = PTR_ERR(dev->alloc_ctx);

@@ -16,6 +16,7 @@
 #include <media/v4l2-event.h>
 #include <media/v4l2-mem2mem.h>
 #include <media/videobuf2-dma-contig.h>
+#include <mtkbuf-dma-cache-sg.h>
 
 #include "mtk_vcodec_drv.h"
 #include "mtk_vcodec_dec.h"
@@ -428,15 +429,15 @@ void mtk_vdec_worker(struct work_struct *work)
 	pfb = &dst_buf_info->frame_buffer;
 #ifdef Y_C_SEPARATE
 	pfb->base_y.va = vb2_plane_vaddr(dst_buf, 0);
-	pfb->base_y.dma_addr = vb2_dma_contig_plane_dma_addr(dst_buf, 0);
+	pfb->base_y.dma_addr = mtk_dma_sg_plane_dma_addr(dst_buf, 0);
 	pfb->base_y.size = ctx->picinfo.y_bs_sz + ctx->picinfo.y_len_sz;
 
 	pfb->base_c.va = vb2_plane_vaddr(dst_buf, 1);
-	pfb->base_c.dma_addr = vb2_dma_contig_plane_dma_addr(dst_buf, 1);
+	pfb->base_c.dma_addr = mtk_dma_sg_plane_dma_addr(dst_buf, 1);
 	pfb->base_c.size = ctx->picinfo.c_bs_sz + ctx->picinfo.c_len_sz;
 #else
 	pfb->base.va = vb2_plane_vaddr(dst_buf, 0);
-	pfb->base.dma_addr = vb2_dma_contig_plane_dma_addr(dst_buf, 0);
+	pfb->base.dma_addr = mtk_dma_sg_plane_dma_addr(dst_buf, 0);
 	pfb->base.size = dst_buf->v4l2_planes[0].bytesused;
 	if (!pfb->base.va) {
 		mtk_v4l2_err("[%d] idx=%d dst_addr is NULL!!",
@@ -495,7 +496,6 @@ void mtk_vdec_worker(struct work_struct *work)
 		ctx->state |= MTK_STATE_FLUSH;
 		ctx->state &= ~MTK_STATE_RUNNING;
 	} else {
-
 		dst_buf_info->b.v4l2_buf.timestamp
 					= src_buf->v4l2_buf.timestamp;
 		dst_buf_info->b.v4l2_buf.timecode
@@ -590,7 +590,7 @@ int m2mctx_vdec_queue_init(void *priv, struct vb2_queue *src_vq,
 	dst_vq->drv_priv	= ctx;
 	dst_vq->buf_struct_size = sizeof(struct mtk_video_buf);
 	dst_vq->ops		= &mtk_vdec_vb2_ops;
-	dst_vq->mem_ops		= &vb2_dma_contig_memops;
+	dst_vq->mem_ops		= &mtk_dma_sg_memops;
 	dst_vq->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 	dst_vq->lock = &ctx->vb2_mutex;
 
