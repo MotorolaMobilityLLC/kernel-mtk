@@ -3579,7 +3579,8 @@ struct of_device_id swtp_of_match[] = {
 	{ .compatible = SWTP_COMPATIBLE_DEVICE_ID, },
 	{},
 };
-struct swtp_t swtp_data[1];
+#define SWTP_MAX_SUPPORT_MD 1
+struct swtp_t swtp_data[SWTP_MAX_SUPPORT_MD];
 
 
 static int swtp_switch_mode(struct swtp_t *swtp)
@@ -3627,8 +3628,6 @@ static int swtp_send_tx_power_mode(struct swtp_t *swtp)
 	}
 	if (swtp->md_id == 0)
 		ret = switch_MD1_Tx_Power(swtp->curr_mode);
-	else if (swtp->md_id == 2)
-		ret = switch_MD2_Tx_Power(swtp->curr_mode);
 	else {
 		CCCI_LEGACY_ERR_LOG(swtp->md_id, KERN, "%s md is no support\n", __func__);
 		ret = 2;
@@ -3692,8 +3691,11 @@ void ccci_swtp_test(int irq)
 int swtp_md_tx_power_req_hdlr(int md_id, int data)
 {
 	int ret = 0;
-	struct swtp_t *swtp = &swtp_data[md_id];
+	struct swtp_t *swtp = NULL;
 
+	if (md_id < 0 || md_id >= SWTP_MAX_SUPPORT_MD)
+		return -1;
+	swtp = &swtp_data[md_id];
 	ret = swtp_send_tx_power_mode(swtp);
 	return 0;
 }

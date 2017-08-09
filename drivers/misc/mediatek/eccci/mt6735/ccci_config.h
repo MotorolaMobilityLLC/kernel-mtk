@@ -67,11 +67,6 @@
 
 #endif
 
-#define FEATURE_MTK_SWITCH_TX_POWER
-#ifdef FEATURE_MTK_SWITCH_TX_POWER
-#define SWTP_COMPATIBLE_DEVICE_ID "mediatek, swtp-eint"
-#endif
-
 /*================================================ */
 /* misc size description */
 #define CCCI_SMEM_DUMP_SIZE      4096 /* smem size we dump when EE */
