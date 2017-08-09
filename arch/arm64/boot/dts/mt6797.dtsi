@@ -2030,13 +2030,13 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		};
 
 		mjc_config@12000000 {
-			compatible = "mediatek,mt6797-mjc_config";
+			compatible = "mediatek,mjc_config-v1";
 			reg = <0x12000000 0x1000>;
 			interrupts = <GIC_SPI 244 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		mjc_top@12001000 {
-			compatible = "mediatek,mt6797-mjc_top";
+			compatible = "mediatek,mjc_top-v1";
 			reg = <0x12001000 0x1000>;
 			interrupts = <GIC_SPI 243 IRQ_TYPE_LEVEL_LOW>;
 		};

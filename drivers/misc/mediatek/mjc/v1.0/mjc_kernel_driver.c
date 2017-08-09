@@ -328,7 +328,7 @@ static int mjc_open(struct inode *pInode, struct file *pFile)
 	enable_clock(MT_CG_MJC_LARB4_AXI_ASIF, "mjc");
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-mjc_config");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,-mjc_config-v1");
 	gulCGRegister = (unsigned long)of_iomap(node, 0);
 	MJC_WriteReg32((gulCGRegister+8), 0xffffffff);
 #endif
@@ -980,7 +980,7 @@ const struct dev_pm_ops mjc_pm_ops = {
 /*---------------------------------------------------------------------------*/
 
 static const struct of_device_id mjc_of_ids[] = {
-	{.compatible = "mediatek,mt6797-mjc_top",},
+	{.compatible = "mediatek,mjc_top-v1",},
 	{}
 };
 
