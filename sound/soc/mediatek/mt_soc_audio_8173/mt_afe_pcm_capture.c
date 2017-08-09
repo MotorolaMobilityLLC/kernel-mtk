@@ -25,12 +25,20 @@ enum mt_afe_ul1_capture_mux {
 	UL1_I2S2
 };
 
+enum mt_afe_ul1_i2s2_mclk_mode {
+	MCLK_INDEPENDENT = 0,
+	MCLK_SHARE_FROM_I2S0,
+	MCLK_SHARE_FROM_I2S0_MAX
+};
+
 struct mt_pcm_capture_priv {
 	bool prepared;
 	bool enable_i2s2_low_jitter;
 	unsigned int mono_type;
 	unsigned int capture_mux;
 	unsigned int i2s2_clock_mode;
+	unsigned int i2s2_mclk_mode;
+	unsigned int i2s2_mclk_divider_type;
 };
 
 
@@ -199,7 +207,7 @@ static int mt_pcm_capture_close(struct snd_pcm_substream *substream)
 
 	if (priv->prepared) {
 		if (priv->enable_i2s2_low_jitter) {
-			mt_afe_disable_apll_div_power(MT_AFE_I2S2, runtime->rate);
+			mt_afe_disable_apll_div_power(priv->i2s2_mclk_divider_type, runtime->rate);
 			mt_afe_disable_apll_div_power(MT_AFE_ENGEN, runtime->rate);
 			mt_afe_disable_apll_tuner(runtime->rate);
 			mt_afe_disable_apll(runtime->rate);
@@ -248,19 +256,32 @@ static int mt_pcm_capture_prepare(struct snd_pcm_substream *substream)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt_pcm_capture_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 
-	if (!priv->prepared) {
-		if (priv->i2s2_clock_mode == MT_AFE_LOW_JITTER_CLOCK &&
-		    priv->capture_mux == UL1_I2S2) {
-			mt_afe_enable_apll(runtime->rate);
-			mt_afe_enable_apll_tuner(runtime->rate);
-			mt_afe_set_mclk(MT_AFE_I2S2, runtime->rate);
-			mt_afe_set_mclk(MT_AFE_ENGEN, runtime->rate);
-			mt_afe_enable_apll_div_power(MT_AFE_I2S2, runtime->rate);
-			mt_afe_enable_apll_div_power(MT_AFE_ENGEN, runtime->rate);
-			priv->enable_i2s2_low_jitter = true;
-		}
-		priv->prepared = true;
+	if (priv->prepared)
+		return 0;
+
+	if (priv->i2s2_clock_mode == MT_AFE_LOW_JITTER_CLOCK && priv->capture_mux == UL1_I2S2) {
+		if (priv->i2s2_mclk_mode == MCLK_SHARE_FROM_I2S0 ||
+		    priv->i2s2_mclk_mode == MCLK_SHARE_FROM_I2S0_MAX)
+			priv->i2s2_mclk_divider_type = MT_AFE_I2S0;
+		else
+			priv->i2s2_mclk_divider_type = MT_AFE_I2S2;
+
+		mt_afe_enable_apll(runtime->rate);
+		mt_afe_enable_apll_tuner(runtime->rate);
+
+		if (priv->i2s2_mclk_mode == MCLK_SHARE_FROM_I2S0_MAX)
+			mt_afe_set_mclk(priv->i2s2_mclk_divider_type,
+				(runtime->rate % 8000) ? 176400 : 192000);
+		else
+			mt_afe_set_mclk(priv->i2s2_mclk_divider_type, runtime->rate);
+
+		mt_afe_set_mclk(MT_AFE_ENGEN, runtime->rate);
+		mt_afe_enable_apll_div_power(priv->i2s2_mclk_divider_type, runtime->rate);
+		mt_afe_enable_apll_div_power(MT_AFE_ENGEN, runtime->rate);
+		priv->enable_i2s2_low_jitter = true;
 	}
+
+	priv->prepared = true;
 
 	return 0;
 }
@@ -379,6 +400,32 @@ static int ul1_i2s2_clock_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem
 	return 0;
 }
 
+static const char *const mt_pcm_ul1_i2s2_mclk_function[] = {
+	ENUM_TO_STR(MCLK_INDEPENDENT),
+	ENUM_TO_STR(MCLK_SHARE_FROM_I2S0),
+	ENUM_TO_STR(MCLK_SHARE_FROM_I2S0_MAX)
+};
+
+static int ul1_i2s2_mclk_mode_get(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt_pcm_capture_priv *priv = snd_soc_component_get_drvdata(component);
+
+	ucontrol->value.integer.value[0] = priv->i2s2_mclk_mode;
+	return 0;
+}
+
+static int ul1_i2s2_mclk_mode_set(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt_pcm_capture_priv *priv = snd_soc_component_get_drvdata(component);
+
+	priv->i2s2_mclk_mode = ucontrol->value.integer.value[0];
+	return 0;
+}
+
 static const struct soc_enum mt_pcm_caprure_control_enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(capture_mono_type_function),
 			capture_mono_type_function),
@@ -386,6 +433,8 @@ static const struct soc_enum mt_pcm_caprure_control_enum[] = {
 			mt_pcm_ul1_capture_mux_function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(mt_pcm_ul1_i2s2_clock_function),
 			mt_pcm_ul1_i2s2_clock_function),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(mt_pcm_ul1_i2s2_mclk_function),
+			mt_pcm_ul1_i2s2_mclk_function),
 };
 
 static const struct snd_kcontrol_new mt_pcm_capture_controls[] = {
@@ -395,6 +444,8 @@ static const struct snd_kcontrol_new mt_pcm_capture_controls[] = {
 		ul1_capture_mux_get, ul1_capture_mux_set),
 	SOC_ENUM_EXT("UL1_I2S2_Clock", mt_pcm_caprure_control_enum[2],
 		ul1_i2s2_clock_get, ul1_i2s2_clock_set),
+	SOC_ENUM_EXT("UL1_I2S2_Mclk", mt_pcm_caprure_control_enum[3],
+		ul1_i2s2_mclk_mode_get, ul1_i2s2_mclk_mode_set),
 };
 
 static int mt_pcm_capture_probe(struct snd_soc_platform *platform)
@@ -447,6 +498,9 @@ static int mt_pcm_capture_dev_probe(struct platform_device *pdev)
 	priv = devm_kzalloc(dev, sizeof(struct mt_pcm_capture_priv), GFP_KERNEL);
 	if (!priv)
 		return -ENOMEM;
+
+	priv->i2s2_clock_mode = MT_AFE_LOW_JITTER_CLOCK;
+	priv->i2s2_mclk_divider_type = MT_AFE_I2S2;
 
 	dev_set_drvdata(dev, priv);
 
