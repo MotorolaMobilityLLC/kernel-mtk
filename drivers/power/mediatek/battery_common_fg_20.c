@@ -2782,6 +2782,7 @@ void BAT_thread(void)
 	if (fg_ipoh_reset) {
 		battery_log(BAT_LOG_CRTI, "[FG BAT_thread]FG_MAIN because IPOH  .\n");
 		battery_meter_set_init_flag(false);
+		fgauge_algo_run_get_init_data();
 		wakeup_fg_algo((FG_MAIN));
 		fg_ipoh_reset = 0;
 		bat_spm_timeout = FALSE;

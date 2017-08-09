@@ -4155,10 +4155,6 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			memcpy(&init_flag, &msg->fgd_data[0], sizeof(init_flag));
 
 			bm_notice("[fg_res] init_flag = %d\n", init_flag);
-			if (init_flag == 0) {
-				fgauge_algo_run_get_init_data();
-				bm_notice("[fg_res] init_flag = %d\n", init_flag);
-			}
 		}
 		break;
 
