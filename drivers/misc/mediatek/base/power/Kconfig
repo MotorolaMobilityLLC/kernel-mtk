@@ -15,3 +15,12 @@ config MTK_DISABLE_PICACHU
           PICACHU (PI CAlibration and CHaracterization Utility) aims
           at the voltage calibration during booting. It increases
 	  the voltage when needed.
+
+config MTK_HYBRID_CPU_DVFS
+	bool "MediaTek Hybrid CPU DVFS support"
+	default n
+	help
+	  This kernel config can be used to control CONFIG_HYBRID_CPU_DVFS
+	  defined/undefined in the header file of CPUHVFS driver.
+	  If CONFIG_HYBRID_CPU_DVFS is defined, CPUHVFS driver will bring up
+	  DVFS processor to do CPU DVFS.
