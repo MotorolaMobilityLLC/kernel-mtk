@@ -36,6 +36,7 @@
 #include <linux/compiler.h>
 /* #include <mach/fiq_smp_call.h> */
 #include <mach/wd_api.h>
+#include <ext_wd_drv.h>
 #include <smp.h>
 #ifndef CONFIG_ARM64
 #include <mach/irqs.h>
@@ -457,6 +458,9 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	nanosec_rem = do_div(t, 1000000000);
 	aee_wdt_printf("\nQwdt at [%5lu.%06lu]\n", (unsigned long)t, nanosec_rem / 1000);
 	aee_sram_fiq_log(wdt_log_buf);
+
+	/* dump bind info */
+	dump_wdk_bind_info();
 
 	if (regs) {
 		aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_STACK);
