@@ -3,10 +3,10 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 
-#include <mach/mt_spm_vcore_dvfs.h>
-#include <mach/mt_vcorefs_governor.h>
+#include "mt_spm_vcore_dvfs.h"
+#include "mt_vcorefs_governor.h"
 
-#include <mach/upmu_common.h>
+#include "upmu_common.h"
 
 #include <linux/of_fdt.h>
 #include <asm/setup.h>
@@ -188,7 +188,6 @@ static inline int _wait_spm_dvfs_complete(int opp, int timeout)
  **************************************/
 bool _get_total_bw_enable(void)
 {
-	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 	bool enabled = true;
 
 	if ((spm_read(SPM_SRC_MASK) & EMI_BW_DVFS_REQ_MASK_LSB) != 0)
@@ -292,7 +291,6 @@ static void __go_to_vcore_dvfs(u32 spm_flags, u32 spm_data)
 void _spm_vcorefs_init_reg(void)
 {
 	u32 mask;
-	u32 curr_vcore = 0;
 
 	/* set en_spm2cksys_mem_ck_mux_update for SPM control */
 	spm_write((spm_cksys_base + 0x40), (spm_read(spm_cksys_base + 0x40) | (0x1 << 13)));
@@ -386,17 +384,15 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 
 int spm_vcorefs_get_clk_mem_pll(void)
 {
-	int r, val;
+	int r;
 /*
     -1 : dvfs in progress
     0  : MEMPLL1PLL
     1  : MEMPLL3PLL
 */
-	val = spm_read(PCM_REG6_DATA);
-
-	if (val & SPM_FLAG_DVFS_ACTIVE != 0)
+	if ((spm_read(PCM_REG6_DATA) & SPM_FLAG_DVFS_ACTIVE))
 		r = -1;
-	else if (spm_read(SPM_SW_RSV_5) & 0x1)
+	else if ((spm_read(SPM_SW_RSV_5) & 0x1))
 		r = 1;
 	else
 		r = 0;
@@ -698,8 +694,6 @@ int spm_vcorefs_set_dvfs_lpm_force(int opp, int vcore, int ddr)
 
 int spm_vcorefs_set_total_bw(int opp, int vcore, int ddr)
 {
-	unsigned long flags;
-
 	/* HPM means to disable total bw,
 	   avoid trigger LPM event */
 
@@ -714,23 +708,6 @@ int spm_vcorefs_set_total_bw(int opp, int vcore, int ddr)
 u32 spm_vcorefs_get_MD_status(void)
 {
 	return spm_read(MD2SPM_DVFS_CON);
-}
-
-void spm_vcorefs_set_opp_state(int opp)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&__spm_lock, flags);
-
-	u32 val = spm_read(SPM_SW_RSV_5);
-
-	if (opp == OPPI_PERF)
-		val |= 1;
-	else
-		val &= (~1);
-	spm_write(SPM_SW_RSV_5, val);
-
-	spin_unlock_irqrestore(&__spm_lock, flags);
 }
 
 int spm_vcorefs_set_cpu_dvfs_req(u32 val, u32 mask)
