@@ -642,6 +642,9 @@ void usb_phy_recover(void)
 /* BC1.2 */
 void Charger_Detect_Init(void)
 {
+	/* GIT K318 WORKAROUND */
+	DBG(0, "WORKAROUND, return\n");
+	return;
 	/* turn on USB reference clock. */
 	usb_enable_clock(true);
 	/* wait 50 usec. */
@@ -653,6 +656,9 @@ void Charger_Detect_Init(void)
 
 void Charger_Detect_Release(void)
 {
+	/* GIT K318 WORKAROUND */
+	DBG(0, "WORKAROUND, return\n");
+	return;
 	/* RG_USB20_BC11_SW_EN = 1'b0 */
 	USBPHY_CLR8(0x1a, 0x80);
 	udelay(1);

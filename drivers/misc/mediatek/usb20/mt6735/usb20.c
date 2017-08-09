@@ -418,6 +418,10 @@ bool mt_usb_is_device(void)
 
 void mt_usb_connect(void)
 {
+	/* GIT K318 WORKAROUND */
+	DBG(0, "WORKAROUND, return\n");
+	return;
+
 	if (mtk_musb) {
 		DBG(0, "is ready %d is_host %d power %d\n", mtk_musb->is_ready, mtk_musb->is_host,
 		    mtk_musb->power);
@@ -487,6 +491,10 @@ void mt_usb_connect(void)
 
 void mt_usb_disconnect(void)
 {
+	/* GIT K318 WORKAROUND */
+	DBG(0, "WORKAROUND, return\n");
+	return;
+
 	if (mtk_musb) {
 		DBG(0, "is ready %d is_host %d power %d\n", mtk_musb->is_ready, mtk_musb->is_host,
 		    mtk_musb->power);
@@ -562,6 +570,7 @@ bool usb_cable_connected(void)
 #else
 	int charger_type;
 	/* GIT K318 WORKAROUND */
+	DBG(0, "WORKAROUND, return\n");
 	return true;
 
 #ifdef CONFIG_USB_MTK_OTG
