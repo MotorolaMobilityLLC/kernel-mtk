@@ -74,10 +74,13 @@ __weak int sdio_autok(void)
 	(((pmic) * VCORE_STEP_UV) + VCORE_BASE_UV)
 
 /* CCF clock */
-/* #define CCF_CONFIG */
+#define CCF_CONFIG	1
+
+#if CCF_CONFIG
 struct clk *clk_axi_sel;
-struct clk *clk_syspll_d5;
-struct clk *clk_syspll1_d4;
+struct clk *clk_syspll_d7;
+struct clk *clk_mux_ulposc_axi_ck_mux;
+#endif
 
 /*
  * struct define
@@ -769,7 +772,7 @@ static int set_freq_with_opp(struct kicker_config *krconf)
 /*
  * AXI DFS
  */
-#ifdef CCF_CONFIG
+#if CCF_CONFIG
 	r = clk_prepare_enable(clk_axi_sel);
 
 	if (r) {
@@ -779,10 +782,10 @@ static int set_freq_with_opp(struct kicker_config *krconf)
 
 	switch (krconf->dvfs_opp) {
 	case OPP_0:
-		clk_set_parent(clk_axi_sel, clk_syspll_d5);	/* 218MHz - syspll_D5 */
+		clk_set_parent(clk_axi_sel, clk_syspll_d7);		/* 158MHz */
 		break;
 	case OPP_1:
-		clk_set_parent(clk_axi_sel, clk_syspll1_d4);	/* 136MHz - syspll_D4 */
+		clk_set_parent(clk_axi_sel, clk_mux_ulposc_axi_ck_mux);	/* 138MHz */
 		break;
 	default:
 		vcorefs_err("*** FAILED: OPP INDEX IS INCORRECT ***\n");
@@ -933,7 +936,7 @@ static int vcorefs_remove(struct platform_device *pdev);
 
 #ifdef CONFIG_OF
 static const struct of_device_id alsps_of_match[] = {
-	{ .compatible = "mediatek,mt6735-vcorefs" },
+	{ .compatible = "mediatek,mt6797-vcorefs" },
 	{},
 };
 #endif
@@ -951,26 +954,26 @@ static struct platform_driver vcorefs_driver = {
 
 static int vcorefs_probe(struct platform_device *pdev)
 {
-#ifdef CCF_CONFIG
+#if CCF_CONFIG
 	clk_axi_sel = devm_clk_get(&pdev->dev, "mux_axi");
 	if (IS_ERR(clk_axi_sel)) {
 		vcorefs_err("FAILED: CANNOT GET clk_axi_sel\n");
-		BUG();
+		/* BUG(); */
 		return PTR_ERR(clk_axi_sel);
 	}
 
-	clk_syspll_d5 = devm_clk_get(&pdev->dev, "syspll_d5");
-	if (IS_ERR(clk_syspll_d5)) {
-		vcorefs_err("FAILED: CANNOT GET clk_syspll_d5\n");
-		BUG();
-		return PTR_ERR(clk_syspll_d5);
+	clk_syspll_d7 = devm_clk_get(&pdev->dev, "syspll_d7");
+	if (IS_ERR(clk_syspll_d7)) {
+		vcorefs_err("FAILED: CANNOT GET clk_syspll_d7\n");
+		/* BUG(); */
+		return PTR_ERR(clk_syspll_d7);
 	}
 
-	clk_syspll1_d4 = devm_clk_get(&pdev->dev, "syspll1_d4");
-	if (IS_ERR(clk_syspll1_d4)) {
-		vcorefs_err("FAILED: CANNOT GET clk_syspll1_d4\n");
-		BUG();
-		return PTR_ERR(clk_syspll1_d4);
+	clk_mux_ulposc_axi_ck_mux = devm_clk_get(&pdev->dev, "mux_ulposc_axi_ck_mux");
+	if (IS_ERR(clk_mux_ulposc_axi_ck_mux)) {
+		vcorefs_err("FAILED: CANNOT GET clk_mux_ulposc_axi_ck_mux\n");
+		/* BUG(); */
+		return PTR_ERR(clk_mux_ulposc_axi_ck_mux);
 	}
 #endif
 	return 0;

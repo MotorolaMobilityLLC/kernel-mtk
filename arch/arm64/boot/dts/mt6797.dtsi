@@ -2490,6 +2490,18 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		gps {
 			compatible = "mediatek,mt3326-gps";
 		};
+
+		vcorefs {
+			compatible = "mediatek,mt6797-vcorefs";
+			clocks =
+				<&topckgen TOP_MUX_AXI>,
+				<&topckgen TOP_SYSPLL_D7>,
+				<&topckgen TOP_MUX_ULPOSC_AXI_CK_MUX>;
+			clock-names =
+				"mux_axi",
+				"syspll_d7",
+				"mux_ulposc_axi_ck_mux";
+		};
 	};
 /* sensor part */
 	hwmsensor@0 {
