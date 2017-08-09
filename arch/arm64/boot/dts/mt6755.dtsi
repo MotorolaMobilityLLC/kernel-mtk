@@ -46,23 +46,22 @@
 			clocks = <&infrasys INFRA_MSDC1>;
 			clock-names = "MSDC1-CLOCK";
 		};
-/*
-		msdc2@11250000 {
-			compatible = "mediatek,msdc2";
+
+		mmc2: msdc2@11250000 {
+			compatible = "mediatek,mt6755-mmc";
 			reg = <0x11250000 0x10000>;
 			interrupts = <GIC_SPI 81 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_MSDC2>;
 			clock-names = "MSDC2-CLOCK";
 		};
 
-		msdc3@11260000 {
-			compatible = "mediatek,msdc3";
+		mmc3: msdc3@11260000 {
+			compatible = "mediatek,mt6755-mmc";
 			reg = <0x11260000 0x10000>;
 			interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_MSDC3>;
 			clock-names = "MSDC3-CLOCK";
 		};
-*/
 	};
 
 	psci {
