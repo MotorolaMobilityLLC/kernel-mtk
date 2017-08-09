@@ -158,6 +158,24 @@ config ARCH_VEXPRESS
 	  This enables support for the ARMv8 software model (Versatile
 	  Express).
 
+config ARCH_MEDIATEK
+	bool
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select PINCTRL
+	select MFD_SYSCON
+
 config ARCH_MT6735
 	bool "MediaTek MT6735"
 	select GENERIC_TIME
@@ -183,6 +201,16 @@ config ARCH_MT6735
 	select MTK_GIC
 	help
 	  This enable support for MediaTek MT6735
+
+config ARCH_MT8163
+	bool "MediaTek MT8163"
+	select ARCH_MEDIATEK
+	select MTK_INTPOL
+	help
+	  This enable support for MediaTek MT8163. If you need support
+	  for MediaTek MT8163, say Y here.
+	  Please note this also select ARCH_MEDIATEK, so driver depends
+	  on it can be selected.
 
 config ARCH_XGENE
 	bool "AppliedMicro X-Gene SOC Family"
