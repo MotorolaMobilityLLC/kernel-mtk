@@ -32,6 +32,9 @@
 #include <asm/suspend.h>
 #include <asm/system_misc.h>
 #include <mtk_hibernate_core.h>
+#ifdef CONFIG_ARCH_MT6797
+#include <mt6797/da9214.h>
+#endif
 
 #ifdef MTK_IRQ_NEW_DESIGN
 #include <linux/irqchip/mtk-gic-extend.h>
@@ -39,6 +42,12 @@
 
 #define PSCI_POWER_STATE_TYPE_STANDBY		0
 #define PSCI_POWER_STATE_TYPE_POWER_DOWN	1
+
+#ifdef CONFIG_ARCH_MT6797
+#define MT6797_IDVFS_BASE_ADDR		0x10222000
+int bypass_boot = 2;
+char cl2_online = 0;
+#endif
 
 struct psci_power_state {
 	u16	id;
@@ -451,14 +460,56 @@ static int __init cpu_psci_cpu_prepare(unsigned int cpu)
 	return 0;
 }
 
+#ifdef CONFIG_ARCH_MT6797
+static int cpu_power_on_buck(unsigned int cpu)
+{
+	static void __iomem *reg_base;
+	int ret = 0;
+
+	pr_info("power on vsram (%d) (max:%d)\n", cpu, num_possible_cpus());
+	reg_base = ioremap(MT6797_IDVFS_BASE_ADDR, 0x1000);
+	writel_relaxed((readl(reg_base + 0x02B0) | (0xf << 4)), reg_base + 0x02B0);
+	iounmap(reg_base);
+
+	pr_info("power on vproc\n");
+	ret = da9214_config_interface(0x0, 0x0, 0xF, 0);
+	ret = da9214_config_interface(0x5E, 0x1, 0x1, 0);
+
+	return ret;
+}
+#endif
+
 static int cpu_psci_cpu_boot(unsigned int cpu)
 {
+#ifdef CONFIG_ARCH_MT6797
+	int err = 0;
+
+	if ((cpu == 8) || (cpu == 9)) {
+		if (bypass_boot > 0) {
+			bypass_boot--;
+		} else {
+			if (!cl2_online)
+				cpu_power_on_buck(cpu);
+		}
+	}
+	err = psci_ops.cpu_on(cpu_logical_map(cpu), __pa(secondary_entry));
+
+	if (err)
+		pr_err("failed to boot CPU%d (%d)\n", cpu, err);
+	else {
+		if ((cpu == 8) || (cpu == 9))
+			cl2_online |= (1 << (cpu - 8));
+	}
+#else
 	int err = psci_ops.cpu_on(cpu_logical_map(cpu), __pa(secondary_entry));
 	if (err)
 		pr_err("failed to boot CPU%d (%d)\n", cpu, err);
+#endif
+
 #ifdef MTK_IRQ_NEW_DESIGN
 	gic_clear_primask();
 #endif
+
 	return err;
 }
 
@@ -489,6 +540,30 @@ static void cpu_psci_cpu_die(unsigned int cpu)
 	pr_crit("unable to power off CPU%u (%d)\n", cpu, ret);
 }
 
+#ifdef CONFIG_ARCH_MT6797
+static int cpu_power_down_buck(unsigned int cpu)
+{
+	static void __iomem *reg_base;
+	int ret = 0;
+
+	if ((cpu == 8) || (cpu == 9)) {
+		cl2_online &= ~(1 << (cpu - 8));
+		if (!cl2_online) {
+			pr_info("power down vproc (%d)\n", cpu);
+			ret = da9214_config_interface(0x0, 0x0, 0xF, 0);
+			ret = da9214_config_interface(0x5E, 0x0, 0x1, 0);
+
+			pr_info("power down vsram\n");
+			reg_base = ioremap(MT6797_IDVFS_BASE_ADDR, 0x1000);
+			writel_relaxed((readl(reg_base + 0x02B0) & ~(0xf << 4)), reg_base + 0x02B0);
+			iounmap(reg_base);
+		}
+	}
+
+	return ret;
+}
+#endif
+
 static int cpu_psci_cpu_kill(unsigned int cpu)
 {
 	int err, i;
@@ -505,6 +580,9 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 		err = psci_ops.affinity_info(cpu_logical_map(cpu), 0);
 		if (err == PSCI_0_2_AFFINITY_LEVEL_OFF) {
 			pr_info("CPU%d killed.\n", cpu);
+#ifdef CONFIG_ARCH_MT6797
+			cpu_power_down_buck(cpu);
+#endif
 			return 1;
 		}
 
