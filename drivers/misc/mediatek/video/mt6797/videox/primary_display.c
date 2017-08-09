@@ -3365,8 +3365,12 @@ int _display_set_lcm_refresh_rate(int fps)
 	disp_lcm_adjust_fps(cmdq_handle, pgc->plcm, fps);
 	dpmgr_path_ioctl(pgc->dpmgr_handle, cmdq_handle, DDP_PHY_CLK_CHANGE, &pgc->plcm->params->dsi.PLL_CLOCK);
 	/* OD Enable */
-	if (!od_by_pass)
-		disp_od_set_enabled(cmdq_handle, 1);
+	if (!od_by_pass) {
+		if (fps == 120)
+			disp_od_set_enabled(cmdq_handle, 1);
+		else
+			disp_od_set_enabled(cmdq_handle, 0);
+	}
 
 	if (pgc->session_mode == DISP_SESSION_DECOUPLE_MODE)
 		/*need sync, make sure od is config done, even if od in decouple path*/
