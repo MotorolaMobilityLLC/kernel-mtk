@@ -27,9 +27,9 @@
 #include <mach/mt_idle.h>
 #endif				/* !defined(CONFIG_MTK_LEGACY) */
 
-#include "linux/delay.h"
-#include <linux/uart/mtk_uart.h>
-#include <linux/uart/mtk_uart_intf.h>
+#include <linux/delay.h>
+#include "include/mtk_uart.h"
+#include "include/mtk_uart_intf.h"
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 

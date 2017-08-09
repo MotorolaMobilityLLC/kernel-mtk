@@ -49,17 +49,17 @@
 #include <mt-plat/dma.h>
 /* #include <mach/mt_clkmgr.h> */
 #include <linux/slab.h>
-#include "linux/delay.h"
+#include <linux/delay.h>
 #include <linux/syscore_ops.h>
-#include <linux/uart/mtk_uart.h>
-#include <linux/uart/mtk_uart_intf.h>
+#include "include/mtk_uart.h"
+#include "include/mtk_uart_intf.h"
 #include <linux/version.h>
 #include <linux/suspend.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #endif
 
-#include "mtk_uart_internal.h"
+#include "include/mtk_uart_internal.h"
 
 #define TTY_FLIP_ARG(a)  ((a)->port)
 
