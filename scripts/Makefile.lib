@@ -284,6 +284,8 @@ $(obj)/%.dtb: $(src)/%.dts FORCE
 
 dtc-tmp = $(subst $(comma),_,$(dot-target).dts.tmp)
 
+targets += $(DTB_OBJS)
+
 # Helper targets for Installing DTBs into the boot directory
 quiet_cmd_dtb_install =	INSTALL $<
       cmd_dtb_install =	cp $< $(2)

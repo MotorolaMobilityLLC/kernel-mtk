@@ -7,14 +7,10 @@ else
   DRVGEN_PATH := drivers/misc/mediatek/mach/$(MTK_PLATFORM)/$(MTK_PROJECT)/dct/$(PRIVATE_CUSTOM_KERNEL_DCT)
 endif
 ifndef DRVGEN_OUT
-DRVGEN_OUT := $(objtree)/$(DRVGEN_PATH)
+#DRVGEN_OUT := $(objtree)/$(DRVGEN_PATH)
+DRVGEN_OUT := $(objtree)/arch/$(SRCARCH)/boot/dts
 endif
-
-DRVGEN_CUSTOM_OUT := $(objtree)/arch/$(SRCARCH)/boot/dts/
-
 export DRVGEN_OUT
-
-DRVGEN_OUT_PATH := $(DRVGEN_OUT)/inc
 
 ALL_DRVGEN_FILE := cust.dtsi
 
@@ -31,15 +27,13 @@ DRVGEN_PREBUILT_CHECK := $(filter-out $(wildcard $(addprefix $(DRVGEN_PREBUILT_P
 .PHONY: drvgen
 drvgen: $(DRVGEN_FILE_LIST)
 ifneq ($(DRVGEN_PREBUILT_CHECK),)
-
-
-$(DRVGEN_OUT)/cust.dtsi: $(DWS_FILE)
-	@mkdir -p $(DRVGEN_CUSTOM_OUT)
-	@$(DRVGEN_TOOL) $(DWS_FILE) $(DRVGEN_CUSTOM_OUT) $(DRVGEN_OUT_PATH) cust_dtsi
+$(DRVGEN_OUT)/cust.dtsi: $(DRVGEN_TOOL) $(DWS_FILE)
+	@mkdir -p $(dir $@)
+	$(DRVGEN_TOOL) $(DWS_FILE) $(dir $@) $(dir $@) cust_dtsi
 
 else
 $(DRVGEN_FILE_LIST): $(DRVGEN_OUT)/% : $(DRVGEN_PREBUILT_PATH)/%
-	@mkdir -p $(DRVGEN_CUSTOM_OUT)
+	@mkdir -p $(dir $@)
 	cp -f $< $@
 endif
 

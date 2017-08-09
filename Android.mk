@@ -59,6 +59,10 @@ ifneq ($(strip $(TARGET_NO_KERNEL)),true)
         KERNEL_ZIMAGE_OUT := $(KERNEL_OUT)/arch/$(TARGET_ARCH)/boot/zImage
       endif
     endif
+    KBUILD_BUILD_USER ?= mediatek
+    KBUILD_BUILD_HOST ?= mediatek
+    export KBUILD_BUILD_USER
+    export KBUILD_BUILD_HOST
     BUILT_KERNEL_TARGET := $(KERNEL_ZIMAGE_OUT).bin
     INSTALLED_KERNEL_TARGET := $(PRODUCT_OUT)/kernel
     TARGET_KERNEL_CONFIG := $(KERNEL_OUT)/.config
@@ -72,6 +76,9 @@ ifneq ($(strip $(TARGET_NO_KERNEL)),true)
 
 # .config cannot be PHONY due to config_data.gz
 $(TARGET_KERNEL_CONFIG): $(KERNEL_CONFIG_FILE)
+ifneq ($(wildcard $(TARGET_KERNEL_CONFIG)),)
+$(TARGET_KERNEL_CONFIG): $(shell find $(KERNEL_DIR) -name "Kconfig*")
+endif
 	$(hide) mkdir -p $(KERNEL_OUT)
 	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) $(KERNEL_DEFCONFIG)
 
