@@ -14,7 +14,6 @@ obj-$(CONFIG_MTK_IRQ) += irq/
 obj-$(CONFIG_MTK_SYS_CIRQ) += cirq/
 obj-$(CONFIG_MTK_GPS)	    += gps/
 obj-$(CONFIG_MTK_NFC) += nfc/
-#obj-y   += nfc/
 
 obj-$(CONFIG_MMPROFILE) += mmp/
 obj-$(CONFIG_MTK_AUXADC)	+= auxadc/
