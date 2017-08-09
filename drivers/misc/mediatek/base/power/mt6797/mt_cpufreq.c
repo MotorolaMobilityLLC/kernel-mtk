@@ -2966,10 +2966,11 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 
 	if (cur_khz != get_turbo_freq(p->cpu_id, target_khz)) {
 		cpufreq_dbg
-		    ("@%s(), %s: (%d, %d): freq = %d (%d), volt = %d (%d), cpus = %d, cur = %d\n",
+		    ("@%s(), %s: (%d, %d): freq = %d(%d), volt = %d(%d), cpus = %d, cur = %d, cci(%d, %d)\n",
 		     __func__, cpu_dvfs_get_name(p), p->idx_opp_ppm_base, p->idx_opp_ppm_limit,
 			 target_khz, get_turbo_freq(p->cpu_id, target_khz), target_volt,
-		     get_turbo_volt(p->cpu_id, target_volt), num_online_cpus(), cur_khz);
+		     get_turbo_volt(p->cpu_id, target_volt), num_online_cpus(), cur_khz,
+			 cur_cci_khz, target_cci_khz);
 	}
 
 	target_volt = get_turbo_volt(p->cpu_id, target_volt);
