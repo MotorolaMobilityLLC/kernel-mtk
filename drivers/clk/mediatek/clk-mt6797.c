@@ -44,6 +44,17 @@
 		mb(); } \
 while (0)
 
+#define clk_readl(addr)			__raw_readl(IOMEM(addr))
+
+#define clk_writel(addr, val)   \
+	mt_reg_sync_writel(val, addr)
+
+#define clk_setl(addr, val) \
+	mt_reg_sync_writel(clk_readl(addr) | (val), addr)
+
+#define clk_clrl(addr, val) \
+	mt_reg_sync_writel(clk_readl(addr) & ~(val), addr)
+
 static DEFINE_SPINLOCK(mt6797_clk_lock);
 
 /*
@@ -357,6 +368,55 @@ static DEFINE_SPINLOCK(mt6797_clk_lock);
 #define	audio_pdn_afe         "audio_pdn_afe"
 #define	audio_pdn_adc_hires_tml "audio_pdn_adc_hires_tml"
 #define	audio_pdn_adc_hires "audio_pdn_adc_hires"
+
+#ifdef CONFIG_OF
+void __iomem  *cksys_base;
+void __iomem  *infracfg_base;
+void __iomem  *audio_base;
+void __iomem  *mfgcfg_base;
+void __iomem  *mmsys_config_base;
+void __iomem  *img_base;
+void __iomem  *vdec_gcon_base;
+void __iomem  *venc_gcon_base;
+void __iomem  *mjcsys_base;
+void __iomem  *camsys_base;
+
+#define INFRA_PDN_SET0          (infracfg_base + 0x0080)
+#define INFRA_PDN_SET1          (infracfg_base + 0x0088)
+#define INFRA_PDN_SET2          (infracfg_base + 0x00A8)
+#define MFG_CG_SET              (mfgcfg_base + 4)
+#define IMG_CG_SET              (img_base + 0x0004)
+#define MM_CG_SET0            (mmsys_config_base + 0x104)
+#define MM_CG_SET1            (mmsys_config_base + 0x114)
+#define MM_DUMMY_CG_SET0            (mmsys_config_base + 0x894)
+#define MM_DUMMY_CG_SET1            (mmsys_config_base + 0x898)
+#define VDEC_CKEN_CLR           (vdec_gcon_base + 0x0004)
+#define LARB_CKEN_CLR           (vdec_gcon_base + 0x000C)
+#define VENC_CG_CON             (venc_gcon_base + 0x0)
+#define AUDIO_TOP_CON0          (audio_base + 0x0000)
+#define AUDIO_TOP_CON1          (audio_base + 0x0004)
+#define MJC_CG_SET				(mjcsys_base + 0x0008)
+#define CAMSYS_CG_SET			(camsys_base + 0x0004)
+#endif
+
+#define INFRA0_CG  0x03AFF900/*0: Disable  ( with clock), 1: Enable ( without clock )*/
+#define INFRA1_CG  0x00460802/*0: Disable  ( with clock), 1: Enable ( without clock )*/
+#define INFRA2_CG  0x20FBb4FD/*0: Disable  ( with clock), 1: Enable ( without clock ) 0x23FFb4FD*/
+#define AUD_0_CG   0x0F0C0302
+#define AUD_1_CG   0x00020000
+#define MFG_CG     0x00000001/*set*/
+#define MM_0_CG   0xFFFFFFFF
+#define MM_1_CG   0x000003F0
+#define MM_DUMMY_0_CG   0xFFFFBFF8/*function on off*/
+#define MM_DUMMY_1_CG   0x00000120/*function on off*/
+#define IMG_CG     0x00000C41
+#define VDEC_CG    0x00000111/*set*/
+#define LARB_CG    0x00000001
+#define VENC_CG    0x00001111/*set*/
+#define MJC_CG     0x0000001F
+#define CAM_CG	   0x00000FC1
+
+#define CG_BOOTUP_PDN			1
 
 
 #define INFRA_BUS_DCM_CTRL_OFS (0x70)
@@ -1188,52 +1248,64 @@ static struct mtk_gate_regs mm0_cg_regs = {
 	.sta_ofs = 0x0100,
 };
 
+static struct mtk_gate_regs mm0_dummy_cg_regs = {
+	.set_ofs = 0x0894,
+	.clr_ofs = 0x0894,
+	.sta_ofs = 0x0894,
+};
+
 static struct mtk_gate_regs mm1_cg_regs = {
 	.set_ofs = 0x0114,
 	.clr_ofs = 0x0118,
 	.sta_ofs = 0x0110,
 };
 
+static struct mtk_gate_regs mm1_dummy_cg_regs = {
+	.set_ofs = 0x0898,
+	.clr_ofs = 0x0898,
+	.sta_ofs = 0x0898,
+};
+
 static struct mtk_gate mm_clks[] __initdata = {
 	GATE(MM_SMI_COMMON, mm_smi_common, mm_sel, mm0_cg_regs, 0, 0),
 	GATE(MM_SMI_LARB0, mm_smi_larb0, mm_sel, mm0_cg_regs, 1, 0),
 	GATE(MM_SMI_LARB5, mm_smi_larb5, mm_sel, mm0_cg_regs, 2, 0),
-	GATE(MM_CAM_MDP, mm_cam_mdp, mm_sel, mm0_cg_regs, 3, 0),
-	GATE(MM_MDP_RDMA0, mm_mdp_rdma0, mm_sel, mm0_cg_regs, 4, 0),
-	GATE(MM_MDP_RDMA1, mm_mdp_rdma1, mm_sel, mm0_cg_regs, 5, 0),
-	GATE(MM_MDP_RSZ0, mm_mdp_rsz0, mm_sel, mm0_cg_regs, 6, 0),
-	GATE(MM_MDP_RSZ1, mm_mdp_rsz1, mm_sel, mm0_cg_regs, 7, 0),
-	GATE(MM_MDP_RSZ2, mm_mdp_rsz2, mm_sel, mm0_cg_regs, 8, 0),
-	GATE(MM_MDP_TDSHP, mm_mdp_tdshp, mm_sel, mm0_cg_regs, 9, 0),
-	GATE(MM_MDP_COLOR, mm_mdp_color, mm_sel, mm0_cg_regs, 10, 0),
-	GATE(MM_MDP_WDMA, mm_mdp_wdma, mm_sel, mm0_cg_regs, 11, 0),
-	GATE(MM_MDP_WROT0, mm_mdp_wrot0, mm_sel, mm0_cg_regs, 12, 0),
-	GATE(MM_MDP_WROT1, mm_mdp_wrot1, mm_sel, mm0_cg_regs, 13, 0),
+	GATE(MM_CAM_MDP, mm_cam_mdp, mm_sel, mm0_dummy_cg_regs, 3, 0),
+	GATE(MM_MDP_RDMA0, mm_mdp_rdma0, mm_sel, mm0_dummy_cg_regs, 4, 0),
+	GATE(MM_MDP_RDMA1, mm_mdp_rdma1, mm_sel, mm0_dummy_cg_regs, 5, 0),
+	GATE(MM_MDP_RSZ0, mm_mdp_rsz0, mm_sel, mm0_dummy_cg_regs, 6, 0),
+	GATE(MM_MDP_RSZ1, mm_mdp_rsz1, mm_sel, mm0_dummy_cg_regs, 7, 0),
+	GATE(MM_MDP_RSZ2, mm_mdp_rsz2, mm_sel, mm0_dummy_cg_regs, 8, 0),
+	GATE(MM_MDP_TDSHP, mm_mdp_tdshp, mm_sel, mm0_dummy_cg_regs, 9, 0),
+	GATE(MM_MDP_COLOR, mm_mdp_color, mm_sel, mm0_dummy_cg_regs, 10, 0),
+	GATE(MM_MDP_WDMA, mm_mdp_wdma, mm_sel, mm0_dummy_cg_regs, 11, 0),
+	GATE(MM_MDP_WROT0, mm_mdp_wrot0, mm_sel, mm0_dummy_cg_regs, 12, 0),
+	GATE(MM_MDP_WROT1, mm_mdp_wrot1, mm_sel, mm0_dummy_cg_regs, 13, 0),
 	GATE(MM_FAKE_ENG, mm_fake_eng, mm_sel, mm0_cg_regs, 14, 0),
-	GATE(MM_DISP_OVL0, mm_disp_ovl0, mm_sel, mm0_cg_regs, 15, 0),
-	GATE(MM_DISP_OVL1, mm_disp_ovl1, mm_sel, mm0_cg_regs, 16, 0),
-	GATE(MM_DISP_OVL0_2L, mm_disp_ovl0_2l, mm_sel, mm0_cg_regs, 17, 0),
-	GATE(MM_DISP_OVL1_2L, mm_disp_ovl1_2l, mm_sel, mm0_cg_regs, 18, 0),
-	GATE(MM_DISP_RDMA0, mm_disp_rdma0, mm_sel, mm0_cg_regs, 19, 0),
-	GATE(MM_DISP_RDMA1, mm_disp_rdma1, mm_sel, mm0_cg_regs, 20, 0),
-	GATE(MM_DISP_WDMA0, mm_disp_wdma0, mm_sel, mm0_cg_regs, 21, 0),
-	GATE(MM_DISP_WDMA1, mm_disp_wdma1, mm_sel, mm0_cg_regs, 22, 0),
-	GATE(MM_DISP_COLOR, mm_disp_color, mm_sel, mm0_cg_regs, 23, 0),
-	GATE(MM_DISP_CCORR, mm_disp_ccorr, mm_sel, mm0_cg_regs, 24, 0),
-	GATE(MM_DISP_AAL, mm_disp_aal, mm_sel, mm0_cg_regs, 25, 0),
-	GATE(MM_DISP_GAMMA, mm_disp_gamma, mm_sel, mm0_cg_regs, 26, 0),
-	GATE(MM_DISP_OD, mm_disp_od, mm_sel, mm0_cg_regs, 27, 0),
-	GATE(MM_DISP_DITHER, mm_disp_dither, mm_sel, mm0_cg_regs, 28, 0),
-	GATE(MM_DISP_UFOE, mm_disp_ufoe, mm_sel, mm0_cg_regs, 29, 0),
-	GATE(MM_DISP_DSC, mm_disp_dsc, mm_sel, mm0_cg_regs, 30, 0),
-	GATE(MM_DISP_SPLIT, mm_disp_split, mm_sel, mm0_cg_regs, 31, 0),
+	GATE(MM_DISP_OVL0, mm_disp_ovl0, mm_sel, mm0_dummy_cg_regs, 15, 0),
+	GATE(MM_DISP_OVL1, mm_disp_ovl1, mm_sel, mm0_dummy_cg_regs, 16, 0),
+	GATE(MM_DISP_OVL0_2L, mm_disp_ovl0_2l, mm_sel, mm0_dummy_cg_regs, 17, 0),
+	GATE(MM_DISP_OVL1_2L, mm_disp_ovl1_2l, mm_sel, mm0_dummy_cg_regs, 18, 0),
+	GATE(MM_DISP_RDMA0, mm_disp_rdma0, mm_sel, mm0_dummy_cg_regs, 19, 0),
+	GATE(MM_DISP_RDMA1, mm_disp_rdma1, mm_sel, mm0_dummy_cg_regs, 20, 0),
+	GATE(MM_DISP_WDMA0, mm_disp_wdma0, mm_sel, mm0_dummy_cg_regs, 21, 0),
+	GATE(MM_DISP_WDMA1, mm_disp_wdma1, mm_sel, mm0_dummy_cg_regs, 22, 0),
+	GATE(MM_DISP_COLOR, mm_disp_color, mm_sel, mm0_dummy_cg_regs, 23, 0),
+	GATE(MM_DISP_CCORR, mm_disp_ccorr, mm_sel, mm0_dummy_cg_regs, 24, 0),
+	GATE(MM_DISP_AAL, mm_disp_aal, mm_sel, mm0_dummy_cg_regs, 25, 0),
+	GATE(MM_DISP_GAMMA, mm_disp_gamma, mm_sel, mm0_dummy_cg_regs, 26, 0),
+	GATE(MM_DISP_OD, mm_disp_od, mm_sel, mm0_dummy_cg_regs, 27, 0),
+	GATE(MM_DISP_DITHER, mm_disp_dither, mm_sel, mm0_dummy_cg_regs, 28, 0),
+	GATE(MM_DISP_UFOE, mm_disp_ufoe, mm_sel, mm0_dummy_cg_regs, 29, 0),
+	GATE(MM_DISP_DSC, mm_disp_dsc, mm_sel, mm0_dummy_cg_regs, 30, 0),
+	GATE(MM_DISP_SPLIT, mm_disp_split, mm_sel, mm0_dummy_cg_regs, 31, 0),
 	GATE(MM_DSI0_MM_CLOCK, mm_dsi0_mm_clock, mm_sel, mm1_cg_regs, 0, 0),
 	GATE(MM_DSI1_MM_CLOCK, mm_dsi1_mm_clock, mm_sel, mm1_cg_regs, 2, 0),
 	GATE(MM_DPI_MM_CLOCK, mm_dpi_mm_clock, mm_sel, mm1_cg_regs, 4, 0),
-	GATE(MM_DPI_INTERFACE_CLOCK, mm_dpi_interface_clock, dpi0_sel, mm1_cg_regs, 5, 0),
+	GATE(MM_DPI_INTERFACE_CLOCK, mm_dpi_interface_clock, dpi0_sel, mm1_dummy_cg_regs, 5, 0),
 	GATE(MM_LARB4_AXI_ASIF_MM_CLOCK, mm_larb4_axi_asif_mm_clock, mm_sel, mm1_cg_regs, 6, 0),
 	GATE(MM_LARB4_AXI_ASIF_MJC_CLOCK, mm_larb4_axi_asif_mjc_clock, mjc_sel, mm1_cg_regs, 7, 0),
-	GATE(MM_DISP_OVL0_MOUT_CLOCK, mm_disp_ovl0_mout_clock, mm_sel, mm1_cg_regs, 8, 0),
+	GATE(MM_DISP_OVL0_MOUT_CLOCK, mm_disp_ovl0_mout_clock, mm_sel, mm1_dummy_cg_regs, 8, 0),
 	GATE(MM_FAKE_ENG2, mm_fake_eng2, mm_sel, mm1_cg_regs, 9, 0),
 	GATE(MM_DSI0_INTERFACE_CLOCK, mm_dsi0_interface_clock, clk_null, mm1_cg_regs, 1, 0),
 	GATE(MM_DSI1_INTERFACE_CLOCK, mm_dsi1_interface_clock, clk_null, mm1_cg_regs, 3, 0),
@@ -1416,6 +1488,9 @@ static void __init mt_topckgen_init(struct device_node *node)
 	mt_reg_sync_writel(0x00000FFF, (base + 0x200));	/* CLK_SCP_CFG_0 = 0x00000FFF */
 	mt_reg_sync_writel(0x00000007, (base + 0x204));	/* CLK_SCP_CFG_1 = 0x00000007 */
 
+#if CG_BOOTUP_PDN
+	cksys_base = base;
+#endif
 }
 
 CLK_OF_DECLARE(mtk_topckgen, "mediatek,topckgen", mt_topckgen_init);
@@ -1498,6 +1573,12 @@ static void __init mt_infrasys_init(struct device_node *node)
 	mt_reg_sync_writel(__raw_readl(base + INFRA_BUS_DCM_CTRL_OFS) | (1 << 21),
 			   (base + INFRA_BUS_DCM_CTRL_OFS));
 
+#if CG_BOOTUP_PDN
+	infracfg_base = base;
+	clk_writel(INFRA_PDN_SET0, INFRA0_CG);
+	clk_writel(INFRA_PDN_SET1, INFRA1_CG);
+	clk_writel(INFRA_PDN_SET2, INFRA2_CG);
+#endif
 }
 
 CLK_OF_DECLARE(mtk_infrasys, "mediatek,infracfg_ao", mt_infrasys_init);
@@ -1527,6 +1608,11 @@ static void __init mt_mfgsys_init(struct device_node *node)
 #if MT_CCF_BRINGUP
 	mt_reg_sync_writel(0x1, (base + mfg_cg_regs.clr_ofs));
 #endif
+#if CG_BOOTUP_PDN
+	mfgcfg_base = base;
+	clk_writel(MFG_CG_SET, MFG_CG);
+#endif
+
 }
 
 CLK_OF_DECLARE(mtk_mfgsys, "mediatek,g3d_config", mt_mfgsys_init);
@@ -1555,6 +1641,10 @@ static void __init mt_imgsys_init(struct device_node *node)
 
 #if MT_CCF_BRINGUP
 	mt_reg_sync_writel(0x00000C41, base + img_cg_regs.clr_ofs);
+#endif
+#if CG_BOOTUP_PDN
+	img_base = base;
+	clk_writel(IMG_CG_SET, IMG_CG);
 #endif
 
 
@@ -1588,10 +1678,17 @@ static void __init mt_camsys_init(struct device_node *node)
 #if MT_CCF_BRINGUP
 	mt_reg_sync_writel(0x00000FC1, base + cam_cg_regs.clr_ofs);
 #endif
+#if CG_BOOTUP_PDN
+	camsys_base = base;
+	clk_writel(CAMSYS_CG_SET, CAM_CG);
+#endif
+
 }
 
 CLK_OF_DECLARE(mtk_camsys, "mediatek,camsys_config", mt_camsys_init);
 
+#define MMSYS_CG_SET0_OFS 0x104
+#define MMSYS_CG_SET1_OFS 0x114
 static void __init mt_mmsys_init(struct device_node *node)
 {
 	struct clk_onecell_data *clk_data;
@@ -1613,6 +1710,15 @@ static void __init mt_mmsys_init(struct device_node *node)
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
 	if (r)
 		pr_err("could not register clock provide\n");
+
+#if CG_BOOTUP_PDN
+	mmsys_config_base = base;
+	clk_writel(MM_CG_SET0, MM_0_CG);
+	clk_writel(MM_CG_SET1, MM_1_CG);
+	clk_writel(MM_DUMMY_CG_SET0, MM_DUMMY_0_CG);
+	clk_writel(MM_DUMMY_CG_SET1, MM_DUMMY_1_CG);
+#endif
+
 }
 
 CLK_OF_DECLARE(mtk_mmsys, "mediatek,mmsys_config", mt_mmsys_init);
@@ -1642,6 +1748,11 @@ static void __init mt_mjcsys_init(struct device_node *node)
 #if MT_CCF_BRINGUP
 	mt_reg_sync_writel(0x0000003F, base + mjc_cg_regs.clr_ofs);
 #endif
+#if CG_BOOTUP_PDN
+	mjcsys_base = base;
+	clk_writel(MJC_CG_SET, MJC_CG);
+#endif
+
 }
 
 CLK_OF_DECLARE(mtk_mjcsys, "mediatek,mjc_config-v1", mt_mjcsys_init);
@@ -1672,6 +1783,12 @@ static void __init mt_vdecsys_init(struct device_node *node)
 	mt_reg_sync_writel(0x00000111, base + vdec0_cg_regs.set_ofs);
 	mt_reg_sync_writel(0x00000001, base + vdec1_cg_regs.set_ofs);
 #endif
+#if CG_BOOTUP_PDN
+	vdec_gcon_base = base;
+	clk_writel(VDEC_CKEN_CLR, VDEC_CG);
+	clk_writel(LARB_CKEN_CLR, LARB_CG);
+#endif
+
 }
 
 CLK_OF_DECLARE(mtk_vdecsys, "mediatek,mt6797-vdec_gcon", mt_vdecsys_init);
@@ -1700,6 +1817,11 @@ static void __init mt_vencsys_init(struct device_node *node)
 #if MT_CCF_BRINGUP
 	mt_reg_sync_writel(0x00001111, base + venc_cg_regs.clr_ofs);
 #endif
+#if CG_BOOTUP_PDN
+	venc_gcon_base = base;
+	clk_clrl(VENC_CG_CON, VENC_CG);
+#endif
+
 }
 
 CLK_OF_DECLARE(mtk_vencsys, "mediatek,mt6797-venc_gcon", mt_vencsys_init);
@@ -1729,6 +1851,11 @@ static void __init mt_audiosys_init(struct device_node *node)
 #if MT_CCF_BRINGUP
 	mt_reg_sync_writel(0x801c4000, base + aud0_cg_regs.set_ofs);
 	mt_reg_sync_writel(0x00000000, base + aud1_cg_regs.set_ofs);
+#endif
+#if CG_BOOTUP_PDN
+	audio_base = base;
+	clk_writel(AUDIO_TOP_CON0, AUD_0_CG);
+	clk_writel(AUDIO_TOP_CON1, AUD_1_CG);
 #endif
 
 }
