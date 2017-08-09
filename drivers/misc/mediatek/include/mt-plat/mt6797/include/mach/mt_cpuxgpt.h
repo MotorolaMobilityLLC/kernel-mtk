@@ -12,6 +12,8 @@ typedef enum cpuxgpt_num {
 	CPUXGPT5,
 	CPUXGPT6,
 	CPUXGPT7,
+	CPUXGPT8,
+	CPUXGPT9,
 	CPUXGPTNUMBERS,
 } CPUXGPT_NUM;
 
@@ -43,6 +45,9 @@ typedef enum cpuxgpt_num {
 #define CPUX_GPT5_ACK            (1<<0x5)
 #define CPUX_GPT6_ACK            (1<<0x6)
 #define CPUX_GPT7_ACK            (1<<0x7)
+#define CPUX_GPT8_ACK            (1<<0x8)
+#define CPUX_GPT9_ACK            (1<<0x9)
+
 
 void enable_cpuxgpt(void);
 void set_cpuxgpt_clk(unsigned int div);
@@ -56,6 +61,5 @@ u64 localtimer_get_phy_count(void);
 unsigned int cpu_xgpt_irq_dis(int cpuxgpt_num);
 void restore_cpuxgpt(void);
 void save_cpuxgpt(void);
-void generic_timer_backup(void);
 
 #endif

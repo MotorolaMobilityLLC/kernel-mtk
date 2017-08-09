@@ -47,6 +47,8 @@ static irqreturn_t __cpuxgpt4_irq_handler(int irq, void *dev_id);
 static irqreturn_t __cpuxgpt5_irq_handler(int irq, void *dev_id);
 static irqreturn_t __cpuxgpt6_irq_handler(int irq, void *dev_id);
 static irqreturn_t __cpuxgpt7_irq_handler(int irq, void *dev_id);
+static irqreturn_t __cpuxgpt8_irq_handler(int irq, void *dev_id);
+static irqreturn_t __cpuxgpt9_irq_handler(int irq, void *dev_id);
 
 static const struct of_device_id cpuxgpt_addr_ids[] __initconst = {
 	{.compatible = "mediatek,mt6797-cpuxgpt"},
@@ -62,7 +64,9 @@ __cpuxgpt4_irq_handler,
 __cpuxgpt5_irq_handler,
 __cpuxgpt6_irq_handler,
 __cpuxgpt7_irq_handler,
-};/* support 8 timer call back */
+__cpuxgpt8_irq_handler,
+__cpuxgpt9_irq_handler,
+};/*support 10 timer call back*/
 
 #define gpt_update_lock(flags)  spin_lock_irqsave(&cpuxgpt_reg_lock, flags)
 
@@ -71,27 +75,36 @@ __cpuxgpt7_irq_handler,
 static unsigned int __read_cpuxgpt(unsigned int reg_index)
 {
 	unsigned int value = 0;
-   #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	mt_reg_sync_writel(reg_index, INDEX_BASE);
+#else
+	#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 	/* DRV_WriteReg32(INDEX_BASE,reg_index); */
 	mcusys_smc_write_phy(INDEX_BASE_PHY, reg_index);
-   #else
-mcusys_smc_write(INDEX_BASE, reg_index);
-   #endif
+	#else
+	mcusys_smc_write(INDEX_BASE, reg_index);
+	#endif
+#endif
 	value = __raw_readl(CTL_BASE);
 	return value;
 }
 
 static void __write_cpuxgpt(unsigned int reg_index, unsigned int value)
 {
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	mt_reg_sync_writel(reg_index, INDEX_BASE);
+	mt_reg_sync_writel(value, CTL_BASE);
+#else
    #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 	/* DRV_WriteReg32(INDEX_BASE,reg_index); */
 	/* DRV_WriteReg32(CTL_BASE,value); */
 	mcusys_smc_write_phy(INDEX_BASE_PHY, reg_index);
 	mcusys_smc_write_phy(CTL_BASE_PHY, value);
-   #else
-mcusys_smc_write(INDEX_BASE, reg_index);
+	#else
+	mcusys_smc_write(INDEX_BASE, reg_index);
 	mcusys_smc_write(CTL_BASE, value);
-   #endif
+	#endif
+#endif
 }
 
 static int __get_irq_id(int id)
@@ -254,6 +267,24 @@ static irqreturn_t __cpuxgpt7_irq_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+static irqreturn_t __cpuxgpt8_irq_handler(int irq, void *dev_id)
+{
+	/*printk("cpuxgpt7 irq accured\n" );*/
+	__cpuxgpt_irq_dis(8);
+	user_handlers[8](irq, dev_id);
+	return IRQ_HANDLED;
+}
+
+static irqreturn_t __cpuxgpt9_irq_handler(int irq, void *dev_id)
+{
+	/*printk("cpuxgpt7 irq accured\n" );*/
+	__cpuxgpt_irq_dis(9);
+	user_handlers[9](irq, dev_id);
+	return IRQ_HANDLED;
+}
+
+
+
 int cpu_xgpt_set_cmp_HL(CPUXGPT_NUM cpuxgpt_num, int countH, int countL)
 {
 	__cpuxgpt_set_cmp(cpuxgpt_num, countH, countL);
@@ -352,6 +383,12 @@ int cpu_xgpt_register_timer(unsigned int id, irqreturn_t (*func)(int irq, void *
 		case 7:
 				name = "mtk_cpuxgpt7";
 				break;
+		case 8:
+				name = "mtk_cpuxgpt8";
+				break;
+		case 9:
+				name = "mtk_cpuxgpt9";
+				break;
 
 		}
 		if (func)
@@ -362,8 +399,14 @@ int cpu_xgpt_register_timer(unsigned int id, irqreturn_t (*func)(int irq, void *
 		irq_id  = __get_irq_id(id);
 
 		/*cpuxgpt assigne  for per core*/
-/*don't trigger IRQ to CPU0 mt_gic_cfg_irq2cpu(irq_id,0,0);*/
-/*trigger IRQ to CPUx mt_gic_cfg_irq2cpu(irq_id,(irq_id - CPUXGPT_IRQID_BASE)%num_possible_cpus(),1); */
+#ifdef CONFIG_MTK_GIC
+		/*irq_set_affinity(irq_id, cpumask_of((irq_id - CPUXGPT_IRQID_BASE)%num_possible_cpus()));*/
+
+#else
+		/*mt_gic_cfg_irq2cpu(irq_id,0,0);*//*don't trigger IRQ to CPU0*/
+		/*mt_gic_cfg_irq2cpu(irq_id,(irq_id - CPUXGPT_IRQID_BASE)%num_possible_cpus(),1); */
+		/*trigger IRQ to CPUx*/
+#endif
 
 		ret = request_irq(irq_id, (irq_handler_t)cpuxgpt_irq_handler[id], IRQF_TRIGGER_HIGH, name, NULL);
 		if (ret != 0) {
