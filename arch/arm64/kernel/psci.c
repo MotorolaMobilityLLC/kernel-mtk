@@ -49,9 +49,7 @@
 #define MT6797_IDVFS_BASE_ADDR		0x10222000
 
 #define CONFIG_CL2_BUCK_CTRL	1
- #undef CONFIG_CL2_BUCK_CTRL
 #define CONFIG_ARMPLL_CTRL	1
- #undef CONFIG_ARMPLL_CTRL
 
 int bypass_boot = 2;
 int bypass_cl0_armpll = 3;
@@ -557,11 +555,12 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 		if (bypass_boot > 0) {
 			bypass_boot--;
 		} else {
-			if (!g_cl2_online)
+			if (!g_cl2_online) {
 				pr_info("boot cluster2\n");
 #ifdef CONFIG_CL2_BUCK_CTRL
 				cpu_power_on_buck(cpu);
 #endif
+			}
 		}
 	}
 
