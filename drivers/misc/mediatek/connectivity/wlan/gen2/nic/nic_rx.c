@@ -862,7 +862,7 @@ static PROCESS_RX_MGT_FUNCTION apfnProcessRxMgtFrame[MAX_NUM_OF_FC_SUBTYPES] = {
 	NULL,			/* subtype 0010: Reassociation request */
 #endif /* CFG_SUPPORT_AAA */
 	saaFsmRunEventRxAssoc,	/* subtype 0011: Reassociation response */
-#if CFG_SUPPORT_ADHOC
+#if (CFG_SUPPORT_ADHOC) || (CFG_SUPPORT_AAA)
 	bssProcessProbeRequest,	/* subtype 0100: Probe request */
 #else
 	NULL,			/* subtype 0100: Probe request */
