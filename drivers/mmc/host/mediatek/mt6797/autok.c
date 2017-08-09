@@ -90,7 +90,7 @@
 #define AUTOK_MSDC2_CLK_TX_VALUE              0
 
 /* #define PORT0_PB0_RD_DAT_SEL_VALID */
-#define PORT1_PB0_RD_DAT_SEL_VALID
+/* #define PORT1_PB0_RD_DAT_SEL_VALID */
 #define PORT2_PB0_RD_DAT_SEL_VALID
 
 enum TUNE_TYPE {
