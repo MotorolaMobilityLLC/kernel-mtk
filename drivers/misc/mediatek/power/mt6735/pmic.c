@@ -1698,6 +1698,7 @@ int g_lowbat_int_bottom = 0;
 #define BAT_HV_THD   (POWER_INT0_VOLT*4096/5400)	/*ex: 3400mV*/
 #define BAT_LV_1_THD (POWER_INT1_VOLT*4096/5400)	/*ex: 3250mV*/
 #define BAT_LV_2_THD (POWER_INT2_VOLT*4096/5400)	/*ex: 3000mV*/
+#define BAT_LV_3_THD (2900*4096/5400) /*ex: 3000mV*/
 
 int g_low_battery_level = 0;
 int g_low_battery_stop = 0;
@@ -1848,8 +1849,12 @@ void bat_l_int_handler(void)
 	lbat_min_en_setting(0);
 	lbat_max_en_setting(0);
 	mdelay(1);
-	if (g_low_battery_level < 2)
+	if (g_low_battery_level < 2) {
 		lbat_min_en_setting(1);
+	} else if (g_low_battery_level == 2) {
+		pmic_set_register_value(PMIC_AUXADC_LBAT_DEBT_MIN, 500);
+		pmic_set_register_value(PMIC_AUXADC_LBAT_VOLT_MIN, BAT_LV_3_THD);
+	}
 	lbat_max_en_setting(1);
 #endif
 
@@ -2536,7 +2541,7 @@ int get_rac_val(void)
 				ret = rac_cal * 1;
 
 		} else if ((curr_1 - curr_2) >= 700 &&
-			   ((curr_2 - curr_1) <= 1200) & ((volt_2 - volt_1) >= 80)) {
+			   ((curr_1 - curr_2) <= 1200) && ((volt_2 - volt_1) >= 80)) {
 			/*40.0mA */
 			rac_cal = ((volt_2 - volt_1) * 1000) / (curr_1 - curr_2);	/*m-ohm */
 
