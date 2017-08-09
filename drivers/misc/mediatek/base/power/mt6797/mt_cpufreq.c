@@ -462,12 +462,12 @@ ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_FREQ5_L_M	(1417000)	/* KHz */
 #define CPU_DVFS_FREQ6_L_M	(1274000)	/* KHz */
 #define CPU_DVFS_FREQ7_L_M	(1209000)	/* KHz */
-#define CPU_DVFS_FREQ8_L_M	(832000)	/* KHz */
-#define CPU_DVFS_FREQ9_L_M	(832000)	/* KHz */
+#define CPU_DVFS_FREQ8_L_M	(1079000)	/* KHz */
+#define CPU_DVFS_FREQ9_L_M	(949000)	/* KHz */
 #define CPU_DVFS_FREQ10_L_M    (832000)	/* KHz */
 #define CPU_DVFS_FREQ11_L_M    (741000)	/* KHz */
 #define CPU_DVFS_FREQ12_L_M    (650000)	/* KHz */
-#define CPU_DVFS_FREQ13_L_M    (468000)	/* KHz */
+#define CPU_DVFS_FREQ13_L_M    (559000)	/* KHz */
 #define CPU_DVFS_FREQ14_L_M    (468000)	/* KHz */
 #define CPU_DVFS_FREQ15_L_M    (325000)	/* KHz */
 
@@ -1300,12 +1300,12 @@ static struct mt_cpu_freq_method opp_tbl_method_L_e1[] = {
 	FP(CPU_DVFS_FREQ5_L_FY,		1,	1),
 	FP(CPU_DVFS_FREQ6_L_FY,		1,	1),
 	FP(CPU_DVFS_FREQ7_L_FY,		1,	1),
-	FP(CPU_DVFS_FREQ8_L_FY,		2,	1),
-	FP(CPU_DVFS_FREQ9_L_FY,		2,	1),
+	FP(CPU_DVFS_FREQ8_L_FY,		1,	1),
+	FP(CPU_DVFS_FREQ9_L_FY,		1,	1),
 	FP(CPU_DVFS_FREQ10_L_FY,	2,	1),
 	FP(CPU_DVFS_FREQ11_L_FY,	2,	1),
 	FP(CPU_DVFS_FREQ12_L_FY,	2,	1),
-	FP(CPU_DVFS_FREQ13_L_FY,	2,	2),
+	FP(CPU_DVFS_FREQ13_L_FY,	2,	1),
 	FP(CPU_DVFS_FREQ14_L_FY,	2,	2),
 	FP(CPU_DVFS_FREQ15_L_FY,	2,	2),
 };
@@ -1460,12 +1460,12 @@ static struct mt_cpu_freq_method opp_tbl_method_L_e3[] = {
 	FP(CPU_DVFS_FREQ5_L_M,		1,	1),
 	FP(CPU_DVFS_FREQ6_L_M,		1,	1),
 	FP(CPU_DVFS_FREQ7_L_M,		1,	1),
-	FP(CPU_DVFS_FREQ8_L_M,		2,	1),
+	FP(CPU_DVFS_FREQ8_L_M,		1,	1),
 	FP(CPU_DVFS_FREQ9_L_M,		2,	1),
 	FP(CPU_DVFS_FREQ10_L_M,		2,	1),
 	FP(CPU_DVFS_FREQ11_L_M,		2,	1),
 	FP(CPU_DVFS_FREQ12_L_M,		2,	1),
-	FP(CPU_DVFS_FREQ13_L_M,		2,	2),
+	FP(CPU_DVFS_FREQ13_L_M,		2,	1),
 	FP(CPU_DVFS_FREQ14_L_M,		2,	2),
 	FP(CPU_DVFS_FREQ15_L_M,		2,	2),
 };
@@ -1501,12 +1501,12 @@ static struct mt_cpu_freq_method opp_tbl_method_B_e3[] = {
 	FP(CPU_DVFS_FREQ6_B_M,		1,	1),
 	FP(CPU_DVFS_FREQ7_B_M,		1,	1),
 	FP(CPU_DVFS_FREQ8_B_M,		1,	1),
-	FP(CPU_DVFS_FREQ9_B_M,		2,	1),
-	FP(CPU_DVFS_FREQ10_B_M,		2,	1),
+	FP(CPU_DVFS_FREQ9_B_M,		1,	1),
+	FP(CPU_DVFS_FREQ10_B_M,		1,	1),
 	FP(CPU_DVFS_FREQ11_B_M,		2,	1),
 	FP(CPU_DVFS_FREQ12_B_M,		2,	1),
 	FP(CPU_DVFS_FREQ13_B_M,		2,	1),
-	FP(CPU_DVFS_FREQ14_B_M,		2,	2),
+	FP(CPU_DVFS_FREQ14_B_M,		2,	1),
 	FP(CPU_DVFS_FREQ15_B_M,		2,	2),
 };
 
