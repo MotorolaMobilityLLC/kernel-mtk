@@ -964,9 +964,9 @@ void __init setup_arch(char **cmdline_p)
 
 	early_paging_init(mdesc, lookup_processor_type(read_cpuid_id()));
 	setup_dma_zone(mdesc);
-	sanity_check_meminfo();
 	arm_memblock_init(mdesc);
 
+	sanity_check_meminfo();
 	paging_init(mdesc);
 	request_standard_resources(mdesc);
 
