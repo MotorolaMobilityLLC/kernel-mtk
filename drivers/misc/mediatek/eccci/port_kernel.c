@@ -2492,16 +2492,16 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 	/* Add additional info */
 	switch (debug_info->more_info) {
 	case MD_EE_CASE_ONLY_SWINT:
-		strcat(ex_info, "\nOnly SWINT case\n");
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info, "\nOnly SWINT case\n");
 		break;
 	case MD_EE_CASE_SWINT_MISSING:
-		strcat(ex_info, "\nSWINT missing case\n");
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info, "\nSWINT missing case\n");
 		break;
 	case MD_EE_CASE_ONLY_EX:
-		strcat(ex_info, "\nOnly EX case\n");
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info, "\nOnly EX case\n");
 		break;
 	case MD_EE_CASE_ONLY_EX_OK:
-		strcat(ex_info, "\nOnly EX_OK case\n");
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info, "\nOnly EX_OK case\n");
 		break;
 	case MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG:
 		i_bit_ex_info = kmalloc(EE_BUF_LEN_UMOLY, GFP_ATOMIC);
@@ -2509,13 +2509,12 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 			CCCI_ERROR_LOG(md->index, KERN, "Fail alloc Mem for i_bit_ex_info!\n");
 			break;
 		}
-		snprintf(i_bit_ex_info, EE_BUF_LEN_UMOLY, "\n[Others] May I-Bit dis too long\n");
-		strcat(i_bit_ex_info, ex_info);
+		snprintf(i_bit_ex_info, EE_BUF_LEN_UMOLY, "\n[Others] May I-Bit dis too long\n%s", ex_info);
 		strcpy(ex_info, i_bit_ex_info);
 		break;
 	case MD_EE_CASE_TX_TRG:
 	case MD_EE_CASE_ISR_TRG:
-		strcat(ex_info, "\n[Others] May I-Bit dis too long\n");
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info, "\n[Others] May I-Bit dis too long\n");
 		break;
 	case MD_EE_CASE_NO_RESPONSE:
 		/* use strcpy, otherwise if this happens after a MD EE, the former EE info will be printed out */
@@ -2534,16 +2533,16 @@ static void ccci_md_ee_info_dump(struct ccci_modem *md)
 	CCCI_NORMAL_LOG(md->index, KERN, "ELM_status: %x\n", c);
 	switch (c) {
 	case 0xFF:
-		strcat(ex_info, "\nno ELM info\n");
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info, "\nno ELM info\n");
 		break;
 	case 0xAE:
-		strcat(ex_info, "\nELM rlat:FAIL\n");
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info, "\nELM rlat:FAIL\n");
 		break;
 	case 0xBE:
-		strcat(ex_info, "\nELM wlat:FAIL\n");
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info, "\nELM wlat:FAIL\n");
 		break;
 	case 0xDE:
-		strcat(ex_info, "\nELM r/wlat:PASS\n");
+		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s%s", ex_info, "\nELM r/wlat:PASS\n");
 		break;
 	default:
 		break;
@@ -2870,10 +2869,12 @@ PL_CORE_PROC:
 					     ex_md32LogInfo->except_content.assert.file_name);
 				switch (ex_md32LogInfo->md32_active_mode) {
 				case 1:
-					strcat(debug_info->core_name, MD32_FDD_ROCODE);
+					snprintf(debug_info->core_name, MD_CORE_NAME_DEBUG, "%s%s",
+						debug_info->core_name, MD32_FDD_ROCODE);
 					break;
 				case 2:
-					strcat(debug_info->core_name, MD32_TDD_ROCODE);
+					snprintf(debug_info->core_name, MD_CORE_NAME_DEBUG, "%s%s",
+						debug_info->core_name, MD32_TDD_ROCODE);
 					break;
 				default:
 					break;
@@ -3072,16 +3073,16 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 	/* Add additional info */
 	switch (debug_info->more_info) {
 	case MD_EE_CASE_ONLY_SWINT:
-		strcat(ex_info, "\nOnly SWINT case\n");
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nOnly SWINT case\n");
 		break;
 	case MD_EE_CASE_SWINT_MISSING:
-		strcat(ex_info, "\nSWINT missing case\n");
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nSWINT missing case\n");
 		break;
 	case MD_EE_CASE_ONLY_EX:
-		strcat(ex_info, "\nOnly EX case\n");
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nOnly EX case\n");
 		break;
 	case MD_EE_CASE_ONLY_EX_OK:
-		strcat(ex_info, "\nOnly EX_OK case\n");
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nOnly EX_OK case\n");
 		break;
 	case MD_EE_CASE_AP_MASK_I_BIT_TOO_LONG:
 		i_bit_ex_info = kmalloc(EE_BUF_LEN, GFP_ATOMIC);
@@ -3089,14 +3090,13 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 			CCCI_ERROR_LOG(md->index, KERN, "Fail alloc Mem for i_bit_ex_info!\n");
 			break;
 		}
-		snprintf(i_bit_ex_info, EE_BUF_LEN, "\n[Others] May I-Bit dis too long\n");
-		strcat(i_bit_ex_info, ex_info);
+		snprintf(i_bit_ex_info, EE_BUF_LEN, "\n[Others] May I-Bit dis too long\n%s", ex_info);
 		strcpy(ex_info, i_bit_ex_info);
 		break;
 	case MD_EE_CASE_TX_TRG:
 		/* Fall through */
 	case MD_EE_CASE_ISR_TRG:
-		strcat(ex_info, "\n[Others] May I-Bit dis too long\n");
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\n[Others] May I-Bit dis too long\n");
 		break;
 	case MD_EE_CASE_NO_RESPONSE:
 		/* use strcpy, otherwise if this happens after a MD EE, the former EE info will be printed out */
@@ -3115,16 +3115,16 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 	CCCI_NORMAL_LOG(md->index, KERN, "ELM_status: %x\n", c);
 	switch (c) {
 	case 0xFF:
-		strcat(ex_info, "\nno ELM info\n");
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nno ELM info\n");
 		break;
 	case 0xAE:
-		strcat(ex_info, "\nELM rlat:FAIL\n");
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nELM rlat:FAIL\n");
 		break;
 	case 0xBE:
-		strcat(ex_info, "\nELM wlat:FAIL\n");
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nELM wlat:FAIL\n");
 		break;
 	case 0xDE:
-		strcat(ex_info, "\nELM r/wlat:PASS\n");
+		snprintf(ex_info, EE_BUF_LEN, "%s%s", ex_info, "\nELM r/wlat:PASS\n");
 		break;
 	default:
 		break;

@@ -423,7 +423,7 @@ static void lk_dt_info_collect(void)
 	#endif
 
 	lk_inf_base = ioremap_nocache((phys_addr_t)lk_inf.lk_info_base_addr, MAX_LK_INFO_SIZE);
-	if (lk_inf_base <= 0) {
+	if (lk_inf_base == NULL) {
 		CCCI_UTIL_ERR_MSG("ioremap lk info buf fail\n");
 		lk_load_img_status |= LK_LOAD_MD_ERR_NO_MD_LOAD;
 		goto _Load_fail;
