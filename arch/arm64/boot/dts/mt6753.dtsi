@@ -139,7 +139,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			enable-method = "mt-boot";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1300000000>;
 		};
 
 		cpu5: cpu@101 {
@@ -149,7 +149,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			enable-method = "mt-boot";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1300000000>;
 		};
 
 		cpu6: cpu@102 {
@@ -159,7 +159,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			enable-method = "mt-boot";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1300000000>;
 		};
 
 		cpu7: cpu@103 {
@@ -169,7 +169,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			enable-method = "mt-boot";
 			cpu-idle-states = <&cluster_sleep_0 &cluster_sleep_0 &cpu_sleep_0_0 &cpu_sleep_0_0>;
 			cpu-release-addr = <0x0 0x40000200>;
-			clock-frequency = <2000000000>;
+			clock-frequency = <1300000000>;
 		};
 
 		cpu-map {
