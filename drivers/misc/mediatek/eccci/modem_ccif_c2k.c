@@ -1208,7 +1208,7 @@ static void eccci_c2k_smem_sub_region_init(struct ccci_modem *md)
 	int i;
 
 	/* Region 0, dbm */
-	addr = (volatile int __iomem *)(md->mem_layout.smem_region_vir+CCCI_SMEM_MD3_DBM_OFFSET);
+	addr = (volatile int __iomem *)(md->mem_layout.smem_region_vir+CCCI_SMEM_OFFSET_MD3_DBM);
 	addr[0] = 0x44444444; /* Guard pattern 1 header */
 	addr[1] = 0x44444444; /* Guard pattern 2 header */
 	#ifdef DISABLE_PBM_FEATURE
@@ -1425,7 +1425,7 @@ static int md_ccif_ring_buf_init(struct ccci_modem *md)
 	md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 	md_ctrl->total_smem_size = 0;
 	/*CCIF_MD_SMEM_RESERVE; */
-	buf = (unsigned char *)md->md->smem_layout.ccci_ccif_smem_base_vir;
+	buf = (unsigned char *)md->smem_layout.ccci_ccif_smem_base_vir;
 	for (i = 0; i < QUEUE_NUM; i++) {
 		bufsize =
 		    CCCI_RINGBUF_CTL_LEN + rx_queue_buffer_size[i] +
