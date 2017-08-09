@@ -421,6 +421,12 @@ void mt_usb_connect(void)
 	} else {
 		DBG(0, "!mtk_musb\n");
 	}
+
+	if (musb_removed) {
+		DBG(0, "musb_removed, direct return\n");
+		return;
+	}
+
 	if (!mtk_musb || !mtk_musb->is_ready || mtk_musb->is_host || mtk_musb->power) {
 		DBG(0, "first_connect to 1\n");
 		first_connect = 1;
@@ -498,6 +504,11 @@ void mt_usb_disconnect(void)
 		    mtk_musb->power);
 	} else {
 		DBG(0, "!mtk_musb\n");
+	}
+
+	if (musb_removed) {
+		DBG(0, "musb_removed, direct return\n");
+		return;
 	}
 
 	if (!mtk_musb || !mtk_musb->is_ready || mtk_musb->is_host || !mtk_musb->power)

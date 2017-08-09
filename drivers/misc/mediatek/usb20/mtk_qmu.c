@@ -704,7 +704,7 @@ void qmu_done_tx(struct musb *musb, u8 ep_num)
 
 	/*gpd_current should at least point to the next GPD to the previous last one. */
 	if (gpd == gpd_current) {
-		QMU_ERR("[TXD] gpd(%p) == gpd_current(%p)\n", gpd, gpd_current);
+		QMU_INFO("[TXD] gpd(%p) == gpd_current(%p)\n", gpd, gpd_current);
 		return;
 	}
 

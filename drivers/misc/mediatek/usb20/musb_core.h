@@ -62,6 +62,7 @@ struct musb_ep;
 extern volatile bool usb_is_host;
 extern int musb_skip_charge_detect;
 extern int musb_is_shutting;
+extern int musb_removed;
 
 extern struct usb_ep *ep_in;
 extern struct usb_ep *ep_out;

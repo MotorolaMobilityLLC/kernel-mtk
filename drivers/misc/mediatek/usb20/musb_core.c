@@ -118,8 +118,10 @@ struct device_node *dts_np;
 
 int musb_is_shutting = 0;
 int musb_skip_charge_detect = 0;
+int musb_removed = 0;
 module_param(musb_is_shutting, int, 0644);
 module_param(musb_skip_charge_detect, int, 0644);
+module_param(musb_removed, int, 0644);
 #ifdef MUSB_QMU_SUPPORT
 #include "musb_qmu.h"
 int mtk_qmu_dbg_level = LOG_WARN;
@@ -2374,6 +2376,8 @@ static int musb_probe(struct platform_device *pdev)
 	unsigned long usb_phy_base;
 
 	pr_info("musb probe\n");
+	DBG(0, "musb_removed to 0\n");
+	musb_removed = 0;
 	if (dts_np) {
 		DBG(0, "dts node from dts_np\n");
 		pdev->dev.of_node = dts_np;
@@ -2424,6 +2428,8 @@ static int musb_remove(struct platform_device *pdev)
 	 *  - Peripheral mode: peripheral is deactivated (or never-activated)
 	 *  - OTG mode: both roles are deactivated (or never-activated)
 	 */
+	DBG(0, "musb_removed to 1\n");
+	musb_removed = 1;
 	musb_exit_debugfs(musb);
 	musb_shutdown(pdev);
 
