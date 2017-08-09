@@ -53,8 +53,7 @@ mkdir ${OUT}
 
 for CONFIG in $CONFIGS ; do
 	if [ ! -e ${CONFIG} ]; then
-		echo error: defconfig file $CONFIG not found
-		FAIL=1
+		echo warning: defconfig file $CONFIG not found
 		continue
 	fi
 
