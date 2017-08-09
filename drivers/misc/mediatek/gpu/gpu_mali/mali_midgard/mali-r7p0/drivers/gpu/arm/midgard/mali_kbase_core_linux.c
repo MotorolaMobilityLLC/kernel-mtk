@@ -3800,8 +3800,9 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	bl_core_set_threshold(kbdev->buslogger, 1024*1024*1024);
 #endif
 
-	kbdev->gpu_fault_wq = alloc_workqueue(
-		"kbase_gpu_fault_work_queue", WQ_MEM_RECLAIM, 1);
+	kbdev->gpu_fault_wq =
+		alloc_ordered_workqueue("kbase_gpu_fault_work_queue", 
+				WQ_FREEZABLE | WQ_MEM_RECLAIM);
 
 	gpsMaliData = kbdev;
 #ifdef ENABLE_COMMON_DVFS
