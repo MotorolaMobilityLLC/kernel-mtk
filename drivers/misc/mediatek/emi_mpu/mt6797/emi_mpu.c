@@ -906,70 +906,7 @@ static int mpu_check_violation(void)
 	pr_err("Violation domain ID is 0x%x.\n", domain_ID);
 	pr_err("%s violation.\n", (wr_vio == 1) ? "Write" : "Read");
 	pr_err("Corrupted region is %d\n\r", region);
-	if ((region == 0) || (region == 1)) { /* add log to debug */
-		pr_err("EMI_CHKER=%x, EMI_CHKER_TYPE=%x, EMI_CHKER_ADR=%x\n",
-		readl(IOMEM(EMI_CHKER)), readl(IOMEM(EMI_CHKER_TYPE)),
-		readl(IOMEM(EMI_CHKER_ADR)));
-		pr_err("EMI_MPUA=%x, EMI_MPUB=%x, EMI_MPUC=%x\n",
-		mt_emi_reg_read(EMI_MPUA), mt_emi_reg_read(EMI_MPUB),
-		mt_emi_reg_read(EMI_MPUC));
-		pr_err("EMI_MPUD=%x, EMI_MPUE=%x, EMI_MPUF=%x\n",
-		mt_emi_reg_read(EMI_MPUD), mt_emi_reg_read(EMI_MPUE),
-		mt_emi_reg_read(EMI_MPUF));
-		pr_err("EMI_MPUG=%x, EMI_MPUH=%x, EMI_MPUA2=%x\n",
-		mt_emi_reg_read(EMI_MPUG), mt_emi_reg_read(EMI_MPUH),
-		mt_emi_reg_read(EMI_MPUA2));
-		pr_err("EMI_MPUB2=%x, EMI_MPUC2=%x, EMI_MPUD2=%x\n",
-		mt_emi_reg_read(EMI_MPUB2),	mt_emi_reg_read(EMI_MPUC2),
-		mt_emi_reg_read(EMI_MPUD2));
-		pr_err("EMI_MPUE2=%x, EMI_MPUF2=%x, EMI_MPUG2=%x\n",
-		mt_emi_reg_read(EMI_MPUE2),	mt_emi_reg_read(EMI_MPUF2),
-		mt_emi_reg_read(EMI_MPUG2));
-		pr_err("EMI_MPUH2=%x, EMI_MPUA3=%x, EMI_MPUB3=%x\n",
-		mt_emi_reg_read(EMI_MPUH2), mt_emi_reg_read(EMI_MPUA3),
-		mt_emi_reg_read(EMI_MPUB3));
-		pr_err("EMI_MPUC3=%x, EMI_MPUD3=%x, EMI_MPUE3=%x\n",
-		mt_emi_reg_read(EMI_MPUC3), mt_emi_reg_read(EMI_MPUD3),
-		mt_emi_reg_read(EMI_MPUE3));
-		pr_err("EMI_MPUF3=%x, EMI_MPUG3=%x, EMI_MPUH3=%x\n",
-		mt_emi_reg_read(EMI_MPUF3), mt_emi_reg_read(EMI_MPUG3),
-		mt_emi_reg_read(EMI_MPUH3));
-		pr_err("EMI_MPUI=%x\n", mt_emi_reg_read(EMI_MPUI));
-		pr_err("EMI_MPUI_2ND=%x, EMI_MPUJ=%x, EMI_MPUJ_2ND=%x\n",
-		mt_emi_reg_read(EMI_MPUI_2ND), mt_emi_reg_read(EMI_MPUJ),
-		mt_emi_reg_read(EMI_MPUJ_2ND));
-		pr_err("EMI_MPUK=%x, EMI_MPUK_2ND=%x, EMI_MPUL=%x\n",
-		mt_emi_reg_read(EMI_MPUK), mt_emi_reg_read(EMI_MPUK_2ND),
-		mt_emi_reg_read(EMI_MPUL));
-		pr_err("EMI_MPUL_2ND=%x, EMI_MPUI2=%x, EMI_MPUI2_2ND=%x\n",
-		mt_emi_reg_read(EMI_MPUL_2ND), mt_emi_reg_read(EMI_MPUI2),
-		mt_emi_reg_read(EMI_MPUI2_2ND));
-		pr_err("EMI_MPUJ2=%x, EMI_MPUJ2_2ND=%x, EMI_MPUK2=%x\n",
-		mt_emi_reg_read(EMI_MPUJ2), mt_emi_reg_read(EMI_MPUJ2_2ND),
-		mt_emi_reg_read(EMI_MPUK2));
-		pr_err("EMI_MPUK2_2ND=%x, EMI_MPUL2=%x, EMI_MPUL2_2ND=%x\n",
-		mt_emi_reg_read(EMI_MPUK2_2ND), mt_emi_reg_read(EMI_MPUL2),
-		mt_emi_reg_read(EMI_MPUL2_2ND));
-		pr_err("EMI_MPUI3=%x, EMI_MPUJ3=%x, EMI_MPUK3=%x\n",
-		mt_emi_reg_read(EMI_MPUI3), mt_emi_reg_read(EMI_MPUJ3),
-		mt_emi_reg_read(EMI_MPUK3));
-		pr_err("EMI_MPUL3=%x, EMI_MPUI3_2ND=%x, EMI_MPUJ3_2ND=%x\n",
-		mt_emi_reg_read(EMI_MPUL3), mt_emi_reg_read(EMI_MPUI3_2ND),
-		mt_emi_reg_read(EMI_MPUJ3_2ND));
-		pr_err("EMI_MPUK3_2ND=%x\n", mt_emi_reg_read(EMI_MPUK3_2ND));
-		pr_err("EMI_MPUL3_2ND=%x, EMI_MPUM=%x, EMI_MPUN=%x\n",
-		mt_emi_reg_read(EMI_MPUL3_2ND), mt_emi_reg_read(EMI_MPUM),
-		mt_emi_reg_read(EMI_MPUN));
-		pr_err("EMI_MPUO=%x, EMI_MPUU=%x, EMI_MPUM2=%x\n",
-		mt_emi_reg_read(EMI_MPUO), mt_emi_reg_read(EMI_MPUU),
-		mt_emi_reg_read(EMI_MPUM2));
-		pr_err("EMI_MPUN2=%x, EMI_MPUO2=%x, EMI_MPUU2=%x\n",
-		mt_emi_reg_read(EMI_MPUN2), mt_emi_reg_read(EMI_MPUO2),
-		mt_emi_reg_read(EMI_MPUU2));
-		pr_err("EMI_MPUV=%x, EMI_MPUW=%x, EMI_MPUX=%x\n",
-		mt_emi_reg_read(EMI_MPUV), mt_emi_reg_read(EMI_MPUW),
-		mt_emi_reg_read(EMI_MPUX));
-	}
+
 	if (dbg_pqry & OOR_VIO)
 		pr_err("Out of range violation.\n");
 
