@@ -66,11 +66,12 @@ enum PMIC_INT_STATUS {
 struct mt6397_chip {
 	struct device *dev;
 	struct regmap *regmap;
+	int irq;
 	struct irq_domain *irq_domain;
 	struct mutex irqlock;
-	int irq;
-	u16 irq_masks_cur[MT6397_IRQ_GROUP_NR];
-	u16 irq_masks_cache[MT6397_IRQ_GROUP_NR];
+	u16 wake_mask[2];
+	u16 irq_masks_cur[2];
+	u16 irq_masks_cache[2];
 };
 
 #endif /* __MFD_MT6397_CORE_H__ */
