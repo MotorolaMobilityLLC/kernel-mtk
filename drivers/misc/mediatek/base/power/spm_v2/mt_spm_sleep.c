@@ -23,6 +23,7 @@
 #include "mt_cpufreq.h"
 #include <mt-plat/upmu_common.h>
 #include "mt_spm_misc.h"
+#include <mt_clkbuf_ctl.h>
 
 #if 1
 #include <mt_dramc.h>
@@ -361,6 +362,9 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	/* fpr dpd */
 	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
 		spm_dpd_init();
+
+	/* for afcdac setting */
+	clk_buf_write_afcdac();
 #endif
 
 	/* Do more low power setting when MD1/C2K/CONN off */

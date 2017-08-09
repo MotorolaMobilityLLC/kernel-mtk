@@ -454,6 +454,10 @@ static inline void update_pwrctrl_pcm_flags(u32 *flags)
 	/* SPM controls NFC clock buffer in RF only */
 	if (!is_clk_buf_from_pmic() && is_clk_buf_under_flightmode())
 		(*flags) |= SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL;
+#if defined(CONFIG_ARCH_MT6755)
+	if (is_clk_buf_from_pmic())
+		(*flags) |= SPM_FLAG_IS_COTSX;
+#endif
 }
 
 static inline void set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags)
