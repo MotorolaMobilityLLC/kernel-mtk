@@ -31,6 +31,7 @@ typedef struct {
 	int backlight;
 	int colorHist;
 	unsigned int maxHist[AAL_HIST_BIN];
+	int requestPartial;
 } DISP_AAL_HIST;
 
 typedef struct {
@@ -38,6 +39,7 @@ typedef struct {
 	int cabc_fltgain_force;	/* 10-bit ; [0,1023] */
 	int cabc_gainlmt[33];
 	int FinalBacklight;	/* 10-bit ; [0,1023] */
+	int allowPartial;
 } DISP_AAL_PARAM;
 
 

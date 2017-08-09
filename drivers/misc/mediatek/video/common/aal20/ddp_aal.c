@@ -66,6 +66,7 @@ static volatile int g_aal_dirty_frame_retrieved = 1;
 static volatile int g_aal_is_init_regs_valid;
 static volatile int g_aal_backlight_notified = 1023;
 static volatile int g_aal_initialed;
+static atomic_t g_aal_allowPartial = ATOMIC_INIT(0);
 
 static int disp_aal_exit_idle(const char *caller, int need_kick)
 {
@@ -415,6 +416,7 @@ int disp_aal_set_param(DISP_AAL_PARAM __user *param, void *cmdq)
 			g_aal_param.cabc_fltgain_force = 0;
 #endif
 		ret = disp_aal_write_param_to_reg(cmdq, &g_aal_param);
+		atomic_set(&g_aal_allowPartial, g_aal_param.allowPartial);
 	}
 
 	if (g_aal_backlight_notified == 0)
@@ -621,11 +623,27 @@ int aal_bypass(DISP_MODULE_ENUM module, int bypass)
 
 int aal_is_partial_support(void)
 {
-	return 1;
+	int allowPartial;
+#ifdef CONFIG_MTK_AAL_SUPPORT
+	allowPartial = atomic_read(&g_aal_allowPartial);
+#else
+	allowPartial = 1;
+#endif
+	AAL_DBG("aal_is_partial_support=%d", allowPartial);
+
+	return allowPartial;
 }
 
 int aal_request_partial_support(int partial)
 {
+	unsigned long flags;
+
+	spin_lock_irqsave(&g_aal_hist_lock, flags);
+	g_aal_hist.requestPartial = partial;
+	spin_unlock_irqrestore(&g_aal_hist_lock, flags);
+
+	AAL_DBG("aal_request_partial_support: %d", partial);
+
 	return 0;
 }
 
@@ -637,6 +655,7 @@ static int _aal_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
 	int height = roi->height;
 
 	DISP_REG_SET(cmdq, DISP_AAL_SIZE, (width << 16) | height);
+	AAL_DBG("_aal_partial_update:w=%d h=%d", width, height);
 	return 0;
 }
 
