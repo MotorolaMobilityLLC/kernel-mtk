@@ -1436,11 +1436,11 @@ void _ex_mu3d_hal_ep_enable(DEV_UINT8 ep_num, USB_DIR dir, TRANSFER_TYPE type, D
 		USB_WriteCsr32(U3D_TX1CSR1, ep_num, csr1);
 		USB_WriteCsr32(U3D_TX1CSR2, ep_num, csr2);
 
-		os_printk(K_INFO, "[CSR]U3D_TX%dCSR0 :%x\n", ep_num,
+		os_printk(K_DEBUG, "[CSR]U3D_TX%dCSR0 :%x\n", ep_num,
 			  USB_ReadCsr32(U3D_TX1CSR0, ep_num));
-		os_printk(K_INFO, "[CSR]U3D_TX%dCSR1 :%x\n", ep_num,
+		os_printk(K_DEBUG, "[CSR]U3D_TX%dCSR1 :%x\n", ep_num,
 			  USB_ReadCsr32(U3D_TX1CSR1, ep_num));
-		os_printk(K_INFO, "[CSR]U3D_TX%dCSR2 :%x\n", ep_num,
+		os_printk(K_DEBUG, "[CSR]U3D_TX%dCSR2 :%x\n", ep_num,
 			  USB_ReadCsr32(U3D_TX1CSR2, ep_num));
 
 	} else if (dir == USB_RX) {
@@ -1501,11 +1501,11 @@ void _ex_mu3d_hal_ep_enable(DEV_UINT8 ep_num, USB_DIR dir, TRANSFER_TYPE type, D
 		USB_WriteCsr32(U3D_RX1CSR1, ep_num, csr1);
 		USB_WriteCsr32(U3D_RX1CSR2, ep_num, csr2);
 
-		os_printk(K_INFO, "[CSR]U3D_RX%dCSR0 :%x\n", ep_num,
+		os_printk(K_DEBUG, "[CSR]U3D_RX%dCSR0 :%x\n", ep_num,
 			  USB_ReadCsr32(U3D_RX1CSR0, ep_num));
-		os_printk(K_INFO, "[CSR]U3D_RX%dCSR1 :%x\n", ep_num,
+		os_printk(K_DEBUG, "[CSR]U3D_RX%dCSR1 :%x\n", ep_num,
 			  USB_ReadCsr32(U3D_RX1CSR1, ep_num));
-		os_printk(K_INFO, "[CSR]U3D_RX%dCSR2 :%x\n", ep_num,
+		os_printk(K_DEBUG, "[CSR]U3D_RX%dCSR2 :%x\n", ep_num,
 			  USB_ReadCsr32(U3D_RX1CSR2, ep_num));
 
 		os_setmsk(U3D_USB2_RX_EP_DATAERR_INTR, BIT16 << ep_num);	/* EPn data error interrupt */
@@ -1683,9 +1683,9 @@ void mu3d_hal_ep_enable(DEV_UINT8 ep_num, USB_DIR dir, TRANSFER_TYPE type, DEV_I
 		USB_WriteCsr32(U3D_TX1CSR1, ep_num, csr1);
 		USB_WriteCsr32(U3D_TX1CSR2, ep_num, csr2);
 
-		os_printk(K_INFO, "[CSR]U3D_TX1CSR0 :%x\n", USB_ReadCsr32(U3D_TX1CSR0, ep_num));
-		os_printk(K_INFO, "[CSR]U3D_TX1CSR1 :%x\n", USB_ReadCsr32(U3D_TX1CSR1, ep_num));
-		os_printk(K_INFO, "[CSR]U3D_TX1CSR2 :%x\n", USB_ReadCsr32(U3D_TX1CSR2, ep_num));
+		os_printk(K_DEBUG, "[CSR]U3D_TX1CSR0 :%x\n", USB_ReadCsr32(U3D_TX1CSR0, ep_num));
+		os_printk(K_DEBUG, "[CSR]U3D_TX1CSR1 :%x\n", USB_ReadCsr32(U3D_TX1CSR1, ep_num));
+		os_printk(K_DEBUG, "[CSR]U3D_TX1CSR2 :%x\n", USB_ReadCsr32(U3D_TX1CSR2, ep_num));
 
 	} else if (dir == USB_RX) {
 		/* CSR0 */
@@ -1725,9 +1725,9 @@ void mu3d_hal_ep_enable(DEV_UINT8 ep_num, USB_DIR dir, TRANSFER_TYPE type, DEV_I
 		USB_WriteCsr32(U3D_RX1CSR1, ep_num, csr1);
 		USB_WriteCsr32(U3D_RX1CSR2, ep_num, csr2);
 
-		os_printk(K_INFO, "[CSR]U3D_RX1CSR0 :%x\n", USB_ReadCsr32(U3D_RX1CSR0, ep_num));
-		os_printk(K_INFO, "[CSR]U3D_RX1CSR1 :%x\n", USB_ReadCsr32(U3D_RX1CSR1, ep_num));
-		os_printk(K_INFO, "[CSR]U3D_RX1CSR2 :%x\n", USB_ReadCsr32(U3D_RX1CSR2, ep_num));
+		os_printk(K_DEBUG, "[CSR]U3D_RX1CSR0 :%x\n", USB_ReadCsr32(U3D_RX1CSR0, ep_num));
+		os_printk(K_DEBUG, "[CSR]U3D_RX1CSR1 :%x\n", USB_ReadCsr32(U3D_RX1CSR1, ep_num));
+		os_printk(K_DEBUG, "[CSR]U3D_RX1CSR2 :%x\n", USB_ReadCsr32(U3D_RX1CSR2, ep_num));
 
 		os_setmsk(U3D_USB2_RX_EP_DATAERR_INTR, BIT16 << ep_num);	/* EPn data error interrupt */
 	} else {
