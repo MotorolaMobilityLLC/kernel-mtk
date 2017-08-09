@@ -1062,4 +1062,14 @@ int ccci_event_log_cpy(char buf[], int size);
 int ccci_event_log(const char *fmt, ...);
 int ccmni_send_mbim_skb(int md_id, struct sk_buff *skb);
 void ccmni_update_mbim_interface(int md_id, int id);
+
+/* MPU setting */
+typedef struct _mpu_cfg {
+	unsigned int start;
+	unsigned int end;
+	int region;
+	unsigned int permission;
+	int relate_region; /* Using same behavior and setting */
+} mpu_cfg_t;
+mpu_cfg_t *get_mpu_region_cfg_info(int region_id);
 #endif

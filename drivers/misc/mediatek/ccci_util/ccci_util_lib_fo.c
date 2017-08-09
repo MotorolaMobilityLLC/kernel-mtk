@@ -367,6 +367,18 @@ static void parse_md_info_tag_val(unsigned int *raw_ptr)
 	}
 }
 
+static mpu_cfg_t md_mpu_cfg_list[10];
+mpu_cfg_t *get_mpu_region_cfg_info(int region_id)
+{
+	int i;
+
+	for (i = 0; i < 10; i++)
+		if (md_mpu_cfg_list[i].region == region_id)
+			return &md_mpu_cfg_list[i];
+
+	return NULL;
+}
+
 static void lk_dt_info_collect(void)
 {
 	/* Device tree method */
@@ -529,6 +541,9 @@ static void lk_dt_info_collect(void)
 	}
 	/* Get MD1 raw image size */
 	find_ccci_tag_inf(lk_inf_base, tag_cnt, "md1img", (char *)&md1_raw_img_size, sizeof(int));
+
+	/* Get MD1 MPU config info */
+	find_ccci_tag_inf(lk_inf_base, tag_cnt, "md1_mpu", (char *)md_mpu_cfg_list, sizeof(md_mpu_cfg_list));
 
 	/* Get META settings at device tree, only MD1 use this */
 	/* These code must at last of this function for some varialbe need updated first */

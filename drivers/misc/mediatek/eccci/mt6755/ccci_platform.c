@@ -193,8 +193,9 @@ void ccci_clear_md_region_protection(struct ccci_modem *md)
 {
 #ifdef ENABLE_EMI_PROTECTION
 	unsigned int rom_mem_mpu_id, rw_mem_mpu_id;
+	mpu_cfg_t *mpu_cfg_inf;
 	if (modem_run_env_ready(md->index)) { /* LK has did it, bypass this step */
-		CCCI_NORMAL_LOG(md->index, TAG, "Ignore Clear MPU for md%d\n", md->index+1);
+		CCCI_BOOTUP_LOG(md->index, TAG, "Ignore Clear MPU for md%d\n", md->index+1);
 		return;
 	}
 	switch (md->index) {
@@ -207,17 +208,17 @@ void ccci_clear_md_region_protection(struct ccci_modem *md)
 		rw_mem_mpu_id = MPU_REGION_ID_MD3_RW;
 		break;
 	default:
-		CCCI_NORMAL_LOG(md->index, TAG, "[error]MD ID invalid when clear MPU protect\n");
+		CCCI_BOOTUP_LOG(md->index, TAG, "[error]MD ID invalid when clear MPU protect\n");
 		return;
 	}
 
-	CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect MD ROM region<%d>\n", rom_mem_mpu_id);
+	CCCI_BOOTUP_LOG(md->index, TAG, "Clear MPU protect MD ROM region<%d>\n", rom_mem_mpu_id);
 	emi_mpu_set_region_protection(0,	/*START_ADDR */
 				      0,	/*END_ADDR */
 				      rom_mem_mpu_id,	/*region */
 				      MPU_ACCESS_PERMISSON_CLEAR);
 
-	CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect MD R/W region<%d>\n", rw_mem_mpu_id);
+	CCCI_BOOTUP_LOG(md->index, TAG, "Clear MPU protect MD R/W region<%d>\n", rw_mem_mpu_id);
 	emi_mpu_set_region_protection(0,	/*START_ADDR */
 				      0,	/*END_ADDR */
 				      rw_mem_mpu_id,	/*region */
@@ -227,27 +228,64 @@ void ccci_clear_md_region_protection(struct ccci_modem *md)
 /* - Clear HW-related region protection -*/
 /*---------------------------------------*/
 	if (md->index == MD_SYS1) {
-		CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect HWRW R/W region<%d>\n",
+		/*---------------------------------------------------------------------------*/
+		CCCI_BOOTUP_LOG(md->index, TAG, "Clear MPU protect HWRW R/W region<%d>\n",
 							MPU_REGION_ID_MD1_MCURW_HWRW);
 		emi_mpu_set_region_protection(0,                       /*START_ADDR*/
 						0,                       /*END_ADDR*/
 						MPU_REGION_ID_MD1_MCURW_HWRW,   /*region*/
 						MPU_ACCESS_PERMISSON_CLEAR);
+		mpu_cfg_inf = get_mpu_region_cfg_info(MPU_REGION_ID_MD1_MCURW_HWRW);
+		if (mpu_cfg_inf && (mpu_cfg_inf->relate_region != 0)) { /*Region 0 used by security, it is safe */
+			emi_mpu_set_region_protection(0,                       /*START_ADDR*/
+							0,                       /*END_ADDR*/
+							mpu_cfg_inf->relate_region,   /*region*/
+							MPU_ACCESS_PERMISSON_CLEAR);
+			CCCI_BOOTUP_LOG(md->index, TAG, "Relate region<%d> using same setting\n",
+							mpu_cfg_inf->relate_region);
+		} else
+			CCCI_BOOTUP_LOG(md->index, TAG, "No relate region for region<%d>\n",
+							MPU_REGION_ID_MD1_MCURW_HWRW);
 
-		CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect HWRW ROM region<%d>\n",
+		/*---------------------------------------------------------------------------*/
+		CCCI_BOOTUP_LOG(md->index, TAG, "Clear MPU protect HWRW ROM region<%d>\n",
 						MPU_REGION_ID_MD1_MCURW_HWRO);
 		emi_mpu_set_region_protection(0,                       /*START_ADDR*/
 						0,                       /*END_ADDR*/
 						MPU_REGION_ID_MD1_MCURW_HWRO,   /*region*/
 						MPU_ACCESS_PERMISSON_CLEAR);
+		mpu_cfg_inf = get_mpu_region_cfg_info(MPU_REGION_ID_MD1_MCURW_HWRO);
+		if (mpu_cfg_inf && (mpu_cfg_inf->relate_region != 0)) { /*Region 0 used by security, it is safe */
+			emi_mpu_set_region_protection(0,                       /*START_ADDR*/
+							0,                       /*END_ADDR*/
+							mpu_cfg_inf->relate_region,   /*region*/
+							MPU_ACCESS_PERMISSON_CLEAR);
+			CCCI_BOOTUP_LOG(md->index, TAG, "Relate region<%d> using same setting\n",
+							mpu_cfg_inf->relate_region);
+		} else
+			CCCI_BOOTUP_LOG(md->index, TAG, "No relate region for region<%d>\n",
+							MPU_REGION_ID_MD1_MCURW_HWRO);
 
-		CCCI_NORMAL_LOG(md->index, TAG, "Clear MPU protect HWRO R/W region<%d>\n",
+		/*---------------------------------------------------------------------------*/
+		CCCI_BOOTUP_LOG(md->index, TAG, "Clear MPU protect HWRO R/W region<%d>\n",
 						MPU_REGION_ID_MD1_MCURO_HWRW);
 		emi_mpu_set_region_protection(0,                       /*START_ADDR*/
 						0,                       /*END_ADDR*/
 						MPU_REGION_ID_MD1_MCURO_HWRW,   /*region*/
 						MPU_ACCESS_PERMISSON_CLEAR);
+		mpu_cfg_inf = get_mpu_region_cfg_info(MPU_REGION_ID_MD1_MCURO_HWRW);
+		if (mpu_cfg_inf && (mpu_cfg_inf->relate_region != 0)) { /*Region 0 used by security, it is safe */
+			emi_mpu_set_region_protection(0,                       /*START_ADDR*/
+							0,                       /*END_ADDR*/
+							mpu_cfg_inf->relate_region,   /*region*/
+							MPU_ACCESS_PERMISSON_CLEAR);
+			CCCI_BOOTUP_LOG(md->index, TAG, "Relate region<%d> using same setting\n",
+							mpu_cfg_inf->relate_region);
+		} else
+			CCCI_BOOTUP_LOG(md->index, TAG, "No relate region for region<%d>\n",
+							MPU_REGION_ID_MD1_MCURO_HWRW);
 	}
+
 #endif
 
 #endif
@@ -501,6 +539,7 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 	struct ccci_image_info *img_info;
 	struct ccci_mem_layout *md_layout;
 	unsigned int region_id, region_mpu_id, region_mpu_attr, region_mpu_start, region_mpu_end;
+	mpu_cfg_t *mpu_cfg_inf;
 
 	switch (md->index) {
 	case MD_SYS1:
@@ -523,6 +562,17 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 						      region_mpu_end,	/*END_ADDR */
 						      region_mpu_id,	/*region */
 						      region_mpu_attr);
+			mpu_cfg_inf = get_mpu_region_cfg_info(region_mpu_id);
+			if (mpu_cfg_inf && (mpu_cfg_inf->relate_region != 0)) {
+				emi_mpu_set_region_protection(region_mpu_start,	/*START_ADDR */
+								region_mpu_end,	/*END_ADDR */
+								mpu_cfg_inf->relate_region,	/*region */
+								region_mpu_attr);
+				CCCI_BOOTUP_LOG(md->index, TAG, "Relate region<%d> using same setting(@1st)\n",
+								mpu_cfg_inf->relate_region);
+			} else
+				CCCI_BOOTUP_LOG(md->index, TAG, "No relate region for region<%d>(@1st)\n",
+								region_mpu_id);
 			break;
 		}
 		img_info = &md->img_info[IMG_MD];
@@ -554,6 +604,17 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 					      region_mpu_end,	/*END_ADDR */
 					      region_mpu_id,	/*region */
 					      region_mpu_attr);
+			mpu_cfg_inf = get_mpu_region_cfg_info(region_mpu_id);
+			if (mpu_cfg_inf && (mpu_cfg_inf->relate_region != 0)) {
+				emi_mpu_set_region_protection(region_mpu_start,	/*START_ADDR */
+								region_mpu_end,	/*END_ADDR */
+								mpu_cfg_inf->relate_region,	/*region */
+								region_mpu_attr);
+				CCCI_BOOTUP_LOG(md->index, TAG, "Relate region<%d> using same setting(@1st)\n",
+								mpu_cfg_inf->relate_region);
+			} else
+				CCCI_BOOTUP_LOG(md->index, TAG, "No relate region for region<%d>(@1st)\n",
+								region_mpu_id);
 		}
 		break;
 	case MD_SYS3:
@@ -571,6 +632,7 @@ void ccci_set_mem_access_protection_second_stage(struct ccci_modem *md)
 	struct ccci_image_info *img_info;
 	struct ccci_mem_layout *md_layout;
 	unsigned int region_id, region_mpu_id, region_mpu_attr, region_mpu_start, region_mpu_end;
+	mpu_cfg_t *mpu_cfg_inf;
 
 	switch (md->index) {
 	case MD_SYS1:
@@ -591,6 +653,17 @@ void ccci_set_mem_access_protection_second_stage(struct ccci_modem *md)
 					      region_mpu_end,	/*END_ADDR */
 					      region_mpu_id,	/*region */
 					      region_mpu_attr);
+		mpu_cfg_inf = get_mpu_region_cfg_info(region_mpu_id);
+		if (mpu_cfg_inf && (mpu_cfg_inf->relate_region != 0)) {
+			emi_mpu_set_region_protection(region_mpu_start,	/*START_ADDR */
+							region_mpu_end,	/*END_ADDR */
+							mpu_cfg_inf->relate_region,	/*region */
+							region_mpu_attr);
+			CCCI_BOOTUP_LOG(md->index, TAG, "Relate region<%d> using same setting(@2nd)\n",
+							mpu_cfg_inf->relate_region);
+		} else
+			CCCI_BOOTUP_LOG(md->index, TAG, "No relate region for region<%d>(@2nd)\n",
+							region_mpu_id);
 		break;
 	case MD_SYS3:
 	default:
