@@ -924,6 +924,10 @@ static unsigned long g_tdshp1_va;
 static unsigned long g_mdp_color_va;
 #endif
 
+#if defined(CONFIG_ARCH_MT6797)
+#define MDP_RSZ_PA_BASE 0x14005000
+#endif
+
 static unsigned long g_tdshp_va;
 
 void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
@@ -1793,6 +1797,14 @@ static unsigned int color_read_sw_reg(unsigned int reg_id)
 			ret = COLOR_MODE;
 			break;
 		}
+
+#if defined(CONFIG_ARCH_MT6797)
+	case SWREG_RSZ_BASE_ADDRESS:
+		{
+			ret = MDP_RSZ_PA_BASE;
+			break;
+		}
+#endif
 
 	case SWREG_TDSHP_TUNING_MODE:
 		{

@@ -81,7 +81,7 @@ enum {
 #define MIRAVISION_HW_VERSION       (0)
 #endif
 
-#define MIRAVISION_SW_VERSION       (2)	/* 1:Android Lollipop, 2:Android Marshmallow*/
+#define MIRAVISION_SW_VERSION       (2)	/* 1:Android Lollipop, 2:Android Marshmallow */
 #define MIRAVISION_SW_FEATURE_VIDEO_DC  (0x1)
 #define MIRAVISION_SW_FEATURE_AAL       (0x2)
 #define MIRAVISION_SW_FEATURE_PQDS       (0x4)
@@ -129,6 +129,7 @@ enum {
 #define SWREG_CCORR_BASE_ADDRESS            (DISP_COLOR_SWREG_COLOR_BASE + 0x0007)
 #define SWREG_MDP_COLOR_BASE_ADDRESS        (DISP_COLOR_SWREG_COLOR_BASE + 0x0008)
 #define SWREG_COLOR_MODE                    (DISP_COLOR_SWREG_COLOR_BASE + 0x0009)
+#define SWREG_RSZ_BASE_ADDRESS              (DISP_COLOR_SWREG_COLOR_BASE + 0x000A)
 
 
 #define SWREG_TDSHP_TUNING_MODE             (DISP_COLOR_SWREG_TDSHP_BASE + 0x0000)
