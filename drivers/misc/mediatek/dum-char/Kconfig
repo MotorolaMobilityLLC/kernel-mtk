@@ -1,0 +1,5 @@
+config MTK_DUM_CHAR
+	bool CONFIG_MTK_DUM_CHAR
+	default n
+	help
+	  Enable dum-char only on nand platform.
