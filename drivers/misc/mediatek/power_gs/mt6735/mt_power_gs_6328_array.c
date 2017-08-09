@@ -4,9 +4,6 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 
-#include <mt-plat/mt_typedefs.h>
-
-
 const unsigned int MT6328_PMIC_REG_gs_flightmode_suspend_mode_data[] = {
 /* Address     Mask        Golden Setting Value */
 	0x001E, 0x0800, 0x0000,/* STRUP_CON16 */

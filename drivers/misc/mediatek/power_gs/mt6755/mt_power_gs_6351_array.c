@@ -4,9 +4,6 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 
-#include <mt-plat/mt_typedefs.h>
-
-
 const unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_data[] = {
 /* Address     Mask        Golden Setting Value */
 	0x0016, 0x0080, 0x0000,/* STRUP_CON11 */

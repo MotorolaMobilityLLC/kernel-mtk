@@ -4,8 +4,6 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 
-#include <mt-plat/mt_typedefs.h>
-#include <mach/mt_power_gs.h>
 const unsigned int MT6351_PMIC_REG_gs_video_record_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0EA2, 0xE000, 0x0000,	/* AUXADC_CON0 */
