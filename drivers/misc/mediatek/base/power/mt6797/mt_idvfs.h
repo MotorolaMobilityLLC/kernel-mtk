@@ -199,10 +199,12 @@ extern u8 aee_rr_curr_idvfs_state_manchine(void);
 /* extern int BigiDVFSDisable(void); */
 extern int BigiDVFSEnable_hp(void); /* chg for hot plug */
 extern int BigiDVFSDisable_hp(void); /* chg for hot plug */
-extern int BigiDVFSChannel(unsigned int Channelm, unsigned int EnDis);
 extern int BigIDVFSFreq(unsigned int Freqpct_x100);
 extern int BigiDVFSSWAvg(unsigned int Length, unsigned int EnDis);
 extern int BigiDVFSSWAvgStatus(void);
+
+extern int BigiDVFSChannel(unsigned int Channelm, unsigned int EnDis);
+extern int BigiDVFSChannelGet(unsigned int Channelm);
 
 extern int BigiDVFSPllSetFreq(unsigned int Freq); /* rang 507 ~ 3000(MHz) */
 extern unsigned int BigiDVFSPllGetFreq(void);

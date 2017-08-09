@@ -649,7 +649,8 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 	/* cfg or init OTP then enable OTP channel */
 	if (idvfs_init_opt.otp_endis) {
 		BigOTPEnable();
-		BigiDVFSChannel(2, 1);
+		/* 20151112 mark by Wen-wen for OTP internal turn on channel */
+		/* BigiDVFSChannel(2, 1); */
 	}
 
 	/* enable struct idvfs_status = 1, 1: enable finish */
@@ -818,6 +819,12 @@ int BigiDVFSChannel(unsigned int Channelm, unsigned int EnDis)
 
 	/* iDVFS disable stage */
 	return -1;
+}
+
+int BigiDVFSChannelGet(unsigned int Channelm)
+{
+	/* return struct value, enable must be through BigiDVFSChannel API */
+	return idvfs_init_opt.channel[Channelm].status;
 }
 
 /* return 0 Ok. -1 Error. Invalid parameter. No action taken. */
