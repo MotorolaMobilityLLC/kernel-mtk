@@ -48,9 +48,9 @@ static struct snd_pcm_hardware mtk_I2S0_awb_hardware = {
 
 	.info = (SNDRV_PCM_INFO_INTERLEAVED),
 	.formats = SND_SOC_STD_MT_FMTS,
-	.rates = SOC_HIGH_USE_RATE,
-	.rate_min = SOC_HIGH_USE_RATE_MIN,
-	.rate_max = SOC_HIGH_USE_RATE_MAX,
+	.rates = SOC_NORMAL_USE_RATE,
+	.rate_min = SOC_NORMAL_USE_RATE_MIN,
+	.rate_max = SOC_NORMAL_USE_RATE_MAX,
 	.channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
 	.channels_max = SOC_NORMAL_USE_CHANNELS_MAX,
 	.buffer_bytes_max = AWB_MAX_BUFFER_SIZE,
@@ -227,8 +227,8 @@ static int mtk_i2s0_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 
 static struct snd_pcm_hw_constraint_list dl1_awb_constraints_sample_rates = {
 
-	.count = ARRAY_SIZE(soc_high_supported_sample_rates),
-	.list = soc_high_supported_sample_rates,
+	.count = ARRAY_SIZE(soc_normal_supported_sample_rates),
+	.list = soc_normal_supported_sample_rates,
 };
 
 static int mtk_i2s0_awb_pcm_open(struct snd_pcm_substream *substream)

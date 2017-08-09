@@ -57,10 +57,10 @@ static struct snd_pcm_hardware mtk_dl1_awb_hardware = {
 	.rate_max = SOC_NORMAL_USE_RATE_MAX,
 	.channels_min = SOC_NORMAL_USE_CHANNELS_MIN,
 	.channels_max = SOC_NORMAL_USE_CHANNELS_MAX,
-	.buffer_bytes_max = Dl1_MAX_BUFFER_SIZE,
-	.period_bytes_max = Dl1_MAX_PERIOD_SIZE,
-	.periods_min = SOC_NORMAL_USE_PERIODS_MIN,
-	.periods_max = SOC_NORMAL_USE_PERIODS_MAX,
+	.buffer_bytes_max = AWB_MAX_BUFFER_SIZE,
+	.period_bytes_max = AWB_MAX_BUFFER_SIZE,
+	.periods_min = AWB_MIN_PERIOD_SIZE,
+	.periods_max = AWB_MAX_PERIOD_SIZE,
 	.fifo_size = 0,
 
 };
@@ -218,8 +218,8 @@ static int mtk_dl1_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 
 static struct snd_pcm_hw_constraint_list dl1_awb_constraints_sample_rates = {
 
-	.count = ARRAY_SIZE(soc_high_supported_sample_rates),
-	.list = soc_high_supported_sample_rates,
+	.count = ARRAY_SIZE(soc_normal_supported_sample_rates),
+	.list = soc_normal_supported_sample_rates,
 };
 
 static int mtk_dl1_awb_pcm_open(struct snd_pcm_substream *substream)

@@ -110,7 +110,7 @@ define for PCM settings
 #define UL2_MIN_PERIOD_SIZE       1
 #define UL2_MAX_PERIOD_SIZE     UL2_MAX_BUFFER_SIZE
 
-#define AWB_MAX_BUFFER_SIZE     (16*1024)
+#define AWB_MAX_BUFFER_SIZE     (64*1024)
 #define AWB_MIN_PERIOD_SIZE       1
 #define AWB_MAX_PERIOD_SIZE     AWB_MAX_BUFFER_SIZE
 
