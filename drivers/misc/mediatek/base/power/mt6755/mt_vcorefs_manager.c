@@ -54,7 +54,7 @@ static struct vcorefs_profile vcorefs_ctrl = {
 /*
  * __nosavedata will not be restored after IPO-H boot
  */
-static bool feature_en __nosavedata;
+static bool feature_en;
 
 static int vcorefs_curr_opp __nosavedata = OPPI_PERF;
 static int vcorefs_prev_opp __nosavedata = OPPI_PERF;
