@@ -2299,16 +2299,8 @@ static void tpd_down(s32 x, s32 y, s32 size, s32 id)
 	}
 
 	input_report_key(tpd->dev, BTN_TOUCH, 1);
-
-	if (x < tpd_dts_data.tpd_resolution[0])
-			x = 0;
-	else
-			x = x - tpd_dts_data.tpd_resolution[0];
-	if (y < tpd_dts_data.tpd_resolution[1])
-			y = 0;
-	else
-			y = y - tpd_dts_data.tpd_resolution[1];
-	GTP_INFO("x:%d, y:%d, lcm_x:%d, lcm_y:%d\n", x, y, lcm_x, lcm_y);
+	GTP_INFO("x:%d, y:%d, lcm_x:%d, lcm_y:%d\n",
+	x, y, tpd_dts_data.tpd_resolution[0], tpd_dts_data.tpd_resolution[1]);
 
 	input_report_abs(tpd->dev, ABS_MT_POSITION_X, x);
 	input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
