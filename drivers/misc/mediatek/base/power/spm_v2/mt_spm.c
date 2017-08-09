@@ -14,7 +14,6 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-#include <linux/of_reserved_mem.h>
 #include <linux/irqchip/mt-eic.h>
 /* #include <mach/eint.h> */
 /* #include <mach/mt_boot.h> */
@@ -634,18 +633,6 @@ int spm_module_init(void)
 static char *local_buf;
 static dma_addr_t local_buf_dma;
 
-/*Reserved memory by device tree!*/
-int reserve_memory_spm_fn(struct reserved_mem *rmem)
-{
-	spm_crit2(" name: %s, base: 0x%llx, size: 0x%llx\n", rmem->name,
-			   (unsigned long long)rmem->base, (unsigned long long)rmem->size);
-	BUG_ON(rmem->size < PCM_FIRMWARE_SIZE * DYNA_LOAD_PCM_MAX);
-
-	local_buf_dma = rmem->base;
-	return 0;
-}
-RESERVEDMEM_OF_DECLARE(reserve_memory_test, "mediatek,spm-reserve-memory", reserve_memory_spm_fn);
-
 int spm_load_pcm_firmware(struct platform_device *pdev)
 {
 	const struct firmware *fw;
@@ -661,7 +648,8 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		return err;
 
 	if (NULL == local_buf) {
-		local_buf = (char *)ioremap_nocache(local_buf_dma, PCM_FIRMWARE_SIZE * DYNA_LOAD_PCM_MAX);
+		local_buf = dma_alloc_coherent(&pdev->dev, PCM_FIRMWARE_SIZE * DYNA_LOAD_PCM_MAX,
+					       &local_buf_dma, GFP_KERNEL);
 		if (!local_buf) {
 			pr_debug("Failed to dma_alloc_coherent(), %d.\n", err);
 			return -ENOMEM;
@@ -691,7 +679,7 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		copy_size = firmware_size * 4;
 		dyna_load_pcm[i].buf = local_buf + i * PCM_FIRMWARE_SIZE;
 		dyna_load_pcm[i].buf_dma = local_buf_dma + i * PCM_FIRMWARE_SIZE;
-		memcpy_toio(dyna_load_pcm[i].buf, fw->data + offset, copy_size);
+		memcpy(dyna_load_pcm[i].buf, fw->data + offset, copy_size);
 		/* dmac_map_area((void *)dyna_load_pcm[i].buf, PCM_FIRMWARE_SIZE, DMA_TO_DEVICE); */
 
 		/* start of pcm_desc without pointer */
@@ -748,7 +736,9 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 
 int spm_load_pcm_firmware_nodev(void)
 {
-	spm_load_pcm_firmware(pspmdev);
+	/* for 4GB mode */
+	if (!enable_4G())
+		spm_load_pcm_firmware(pspmdev);
 	return 0;
 }
 
