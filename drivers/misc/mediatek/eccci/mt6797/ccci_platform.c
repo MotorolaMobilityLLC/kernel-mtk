@@ -14,12 +14,12 @@
 #include "ccci_debug.h"
 #include "ccci_bm.h"
 #include "ccci_platform.h"
-#ifdef FEATURE_USING_4G_MEMORY_API
-#include <mach/memory.h>
-#endif
 
 #ifdef ENABLE_EMI_PROTECTION
 #include <mach/emi_mpu.h>
+#endif
+#ifdef FEATURE_USING_4G_MEMORY_API
+#include <mt-plat/mt_lpae.h>
 #endif
 
 #define TAG "plat"
