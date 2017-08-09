@@ -36,11 +36,18 @@ void gic_configure_irq(unsigned int irq, unsigned int type,
 	 * for "irq", depending on "type".
 	 */
 	val = readl_relaxed(base + GIC_DIST_CONFIG + confoff);
+#ifdef CONFIG_MEDIATEK_SOLUTION
+	if ((type == IRQ_TYPE_LEVEL_HIGH) || (type == IRQ_TYPE_LEVEL_LOW))
+		val &= ~confmask;
+	else if ((type == IRQ_TYPE_EDGE_RISING) ||
+			(type == IRQ_TYPE_EDGE_FALLING))
+		val |= confmask;
+#else
 	if (type == IRQ_TYPE_LEVEL_HIGH)
 		val &= ~confmask;
 	else if (type == IRQ_TYPE_EDGE_RISING)
 		val |= confmask;
-
+#endif
 	/*
 	 * As recommended by the spec, disable the interrupt before changing
 	 * the configuration
