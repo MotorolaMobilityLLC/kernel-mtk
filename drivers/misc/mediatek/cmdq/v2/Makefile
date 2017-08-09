@@ -30,8 +30,8 @@ ifeq ($(strip $(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)),y)
 ifeq ($(strip $(CONFIG_TRUSTONIC_TEE_SUPPORT)),y)
 include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/trustzone/cmdq/cmdq_sec_dr \
-             -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/trustzone/cmdq/cmdq_sec_tl
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/inc/cmdq_sec_dr \
+             -I$(srctree)/drivers/misc/mediatek/cmdq/v2/inc/cmdq_sec_tl
 
 ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6755"))
