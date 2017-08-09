@@ -61,8 +61,8 @@
 #include <linux/dma-mapping.h>
 
 static AFE_MEM_CONTROL_T *pHp_impedance_MemControl;
-/* static const int DCoffsetDefault = 1500;  //95: 1622 */
-static const int DCoffsetDefault = 1620;  /* Jade: 1620 */
+static const int DCoffsetDefault = 1460;  /* denali: 1460 */
+static const int DCoffsetDefault_DepopHW = 1620;  /* w/ hp depop: 1620 */
 
 static const int DCoffsetVariance = 200;    /* denali 0.2v */
 
@@ -70,10 +70,12 @@ static const int mDcRangestep = 7;
 static const int HpImpedancePhase1Step = 150;
 static const int HpImpedancePhase2Step = 400;
 static const int HpImpedancePhase1AdcValue = 1200;
-static const int HpImpedancePhase2AdcValue = 9300;
+static const int HpImpedancePhase2AdcValue = 7200;
+static const int HpImpedancePhase2AdcValue_DepopHw = 9300;
 static struct snd_dma_buffer *Dl1_Playback_dma_buf;
 
-/* extern int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd); */
+#define AUXADC_BIT_RESOLUTION (1 << 12)
+#define AUXADC_VOLTAGE_RANGE 1800
 
 /*
  *    function implementation
@@ -343,11 +345,16 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 		EnableTrimbuffer(true);
 		/*msleep(5);*/
 		usleep_range(5*1000, 20*1000);
-		mAuxAdc_Offset = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, off_counter, 0);
+		mAuxAdc_Offset = (PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9,
+							     off_counter,
+							     0) *
+				 AUXADC_VOLTAGE_RANGE) /
+				 AUXADC_BIT_RESOLUTION;
 
 		pr_warn("mAuxAdc_Offset= %d\n", mAuxAdc_Offset);
 
-		memset((void *)Get_Afe_SramBase_Pointer(), ucontrol->value.integer.value[0],
+		memset((void *)Get_Afe_SramBase_Pointer(),
+		       ucontrol->value.integer.value[0],
 		       AFE_INTERNAL_SRAM_SIZE);
 		msleep(5 * 1000);
 		pr_warn("4 %s\n", __func__);
@@ -399,7 +406,11 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 			ucontrol->value.integer.value[0], AFE_INTERNAL_SRAM_SIZE); */
 			msleep(20);
 			dcoffset = 0;
-			dcoffset = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, off_counter, 0);
+			dcoffset = (PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9,
+								off_counter,
+								0) *
+				   AUXADC_VOLTAGE_RANGE) /
+				   AUXADC_BIT_RESOLUTION;
 			pr_warn("dcoffset= %d\n", dcoffset);
 			msleep(3 * 1000);
 		}
@@ -411,37 +422,39 @@ static int Audio_HP_ImpeDance_Set(struct snd_kcontrol *kcontrol,
 }
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-/* static int phase1table[] = {7, 13}; */
-static int phase1table[] = {10, 18};	/* Jade Phone */
+static int phase1table[] = {7, 13};
+static int phase1table_depopHw[] = {10, 18}; /* w/ depop hw */
 static unsigned short Phase1Check(unsigned short adcvalue,
 				  unsigned int adcoffset)
 {
 	unsigned int AdcDiff = adcvalue - adcoffset;
+	int *checkTable = hasHpDepopHw() ? phase1table_depopHw : phase1table;
 
 	if (adcvalue < adcoffset)
 		return 0;
 	if (AdcDiff > 300)
 		return AUDIO_HP_IMPEDANCE32;
-	else if (AdcDiff >= phase1table[1])
+	else if (AdcDiff >= checkTable[1])
 		return AUDIO_HP_IMPEDANCE256;
-	else if ((AdcDiff >= phase1table[0]) && (AdcDiff <= phase1table[1]))
+	else if ((AdcDiff >= checkTable[0]) && (AdcDiff <= checkTable[1]))
 		return AUDIO_HP_IMPEDANCE128;
 	else
 		return 0;
 }
 
-/* static int phase2table[] = {10, 26}; */
-static int phase2table[] = {34, 50};	/* Jade Phone */
+static int phase2table[] = {10, 26};
+static int phase2table_depopHw[] = {34, 50};	/* w/ depop hw */
 static unsigned short Phase2Check(unsigned short adcvalue,
 				  unsigned int adcoffset)
 {
 	unsigned int AdcDiff = adcvalue - adcoffset;
+	int *checkTable = hasHpDepopHw() ? phase2table_depopHw : phase2table;
 
 	if (adcvalue < adcoffset)
 		return AUDIO_HP_IMPEDANCE16;
-	if (AdcDiff < phase2table[0])
+	if (AdcDiff < checkTable[0])
 		return AUDIO_HP_IMPEDANCE16;
-	else if (AdcDiff >= phase2table[1])
+	else if (AdcDiff >= checkTable[1])
 		return AUDIO_HP_IMPEDANCE64;
 	else
 		return AUDIO_HP_IMPEDANCE32;
@@ -465,12 +478,15 @@ static void FillDatatoDlmemory(volatile unsigned int *memorypointer,
 static unsigned short  dcinit_value;
 static void CheckDcinitValue(void)
 {
-	if (dcinit_value > (DCoffsetDefault + DCoffsetVariance)) {
+	int DcOffsetDefault = hasHpDepopHw() ?
+			      DCoffsetDefault_DepopHW : DCoffsetDefault;
+
+	if (dcinit_value > (DcOffsetDefault + DCoffsetVariance)) {
 		pr_warn("%s dcinit_value = %d\n", __func__, dcinit_value);
-		dcinit_value = DCoffsetDefault;
-	} else if (dcinit_value < (DCoffsetDefault - DCoffsetVariance)) {
+		dcinit_value = DcOffsetDefault;
+	} else if (dcinit_value < (DcOffsetDefault - DCoffsetVariance)) {
 		pr_warn("%s dcinit_value = %d\n", __func__, dcinit_value);
-		dcinit_value = DCoffsetDefault;
+		dcinit_value = DcOffsetDefault;
 	}
 }
 #endif
@@ -483,7 +499,8 @@ static void ApplyDctoDl(void)
 
 	pr_warn("%s\n", __func__);
 
-	dcinit_value = DCoffsetDefault;
+	dcinit_value = hasHpDepopHw() ?
+		       DCoffsetDefault_DepopHW : DCoffsetDefault;
 	for (value = 0; value <= (HpImpedancePhase2AdcValue + HpImpedancePhase2Step);
 	     value += HpImpedancePhase1Step) {
 		volatile unsigned int *Sramdata = (unsigned int *)(Dl1_Playback_dma_buf->area);
@@ -507,11 +524,15 @@ static void ApplyDctoDl(void)
 			dcoffset2 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			dcoffset3 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 
-			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
+			average = ((dcoffset + dcoffset2 + dcoffset3) *
+				  AUXADC_VOLTAGE_RANGE) / 3 /
+				  AUXADC_BIT_RESOLUTION;
 			dcinit_value = average;
 			CheckDcinitValue();
-			pr_warn("dcinit_value = %d average = %d value = %d\n", dcinit_value, average,
-			       value);
+			pr_warn("dcinit_value = %d average = %d value = %d\n",
+				dcinit_value,
+				average,
+				value);
 
 			/*printk("AUDIO_TOP_CON0 =0x%x\n", Afe_Get_Reg(AUDIO_TOP_CON0));
 			printk("PMIC_AFE_TOP_CON0 =0x%x\n", Ana_Get_Reg(PMIC_AFE_TOP_CON0));
@@ -540,7 +561,9 @@ static void ApplyDctoDl(void)
 			dcoffset = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			dcoffset2 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			dcoffset3 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
-			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
+			average = ((dcoffset + dcoffset2 + dcoffset3) *
+				  AUXADC_VOLTAGE_RANGE) / 3 /
+				  AUXADC_BIT_RESOLUTION;
 			mhp_impedance = Phase1Check(average, dcinit_value);
 			pr_warn("[phase1]value = %d average = %d dcinit_value = %d mhp_impedance = %d\n ",
 			       value, average, dcinit_value, mhp_impedance);
@@ -553,7 +576,9 @@ static void ApplyDctoDl(void)
 			dcoffset = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			dcoffset2 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
 			dcoffset3 = PMIC_IMM_GetOneChannelValue(PMIC_AUX_CH9, 5, 0);
-			average = (dcoffset + dcoffset2 + dcoffset3) / 3;
+			average = ((dcoffset + dcoffset2 + dcoffset3) *
+				  AUXADC_VOLTAGE_RANGE) / 3 /
+				  AUXADC_BIT_RESOLUTION;
 			mhp_impedance = Phase2Check(average, dcinit_value);
 			pr_warn("[phase2]value = %d average = %d dcinit_value = %d mhp_impedance=%d\n ",
 			       value, average, dcinit_value, mhp_impedance);

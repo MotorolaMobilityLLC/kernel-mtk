@@ -56,5 +56,6 @@ bool OpenHeadPhoneImpedanceSetting(bool bEnable);
 void SetAnalogSuspend(bool bEnable);
 void OpenTrimBufferHardware(bool bEnable);
 
+bool hasHpDepopHw(void);
 #endif
 

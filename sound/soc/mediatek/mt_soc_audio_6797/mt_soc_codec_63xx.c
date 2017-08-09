@@ -385,6 +385,11 @@ static void NvregEnable(bool enable)
 	mutex_unlock(&Ana_Clk_Mutex);
 }
 
+bool hasHpDepopHw(void)
+{
+	return mUseHpDepopFlow ? true : false;
+}
+
 #ifdef _VOW_ENABLE
 static int VOW12MCKCount;
 #endif
