@@ -33,6 +33,8 @@ enum {
 	IDX_SP_VSRAM_CORE_0P9V = 10,	/* A */
 	IDX_SP_VSRAM_CORE_1P0V,		/* B */
 	IDX_SP_VSRAM_CORE_1P1V,		/* C */
+	IDX_SP_VCORE_LQ_EN,		/* D */
+	IDX_SP_VCORE_LQ_DIS,		/* E */
 	NR_IDX_SP,
 };
 enum {
@@ -49,6 +51,8 @@ enum {
 	IDX_DI_VSRAM_CORE_0P9V = 10,	/* A */
 	IDX_DI_VSRAM_CORE_1P0V,		/* B */
 	IDX_DI_VSRAM_CORE_1P1V,		/* C */
+	IDX_DI_VCORE_LQ_EN,		/* D */
+	IDX_DI_VCORE_LQ_DIS,		/* E */
 	NR_IDX_DI,
 };
 

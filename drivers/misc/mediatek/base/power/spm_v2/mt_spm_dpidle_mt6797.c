@@ -41,6 +41,15 @@ void spm_dpidle_pre_process(void)
 								IDX_DI_SRCCLKEN_IN2_SLEEP,
 								value & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
 
+	value = 0;
+	pmic_read_interface_nolock(MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_ADDR, &value, 0xFFFF, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+			IDX_DI_VCORE_LQ_EN,
+			value | (1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+			IDX_DI_VCORE_LQ_DIS,
+			value & ~(1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
+
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);
 

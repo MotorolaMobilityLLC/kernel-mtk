@@ -906,10 +906,8 @@ void __spm_pmic_low_iq_mode(int en)
 {
 #if defined(CONFIG_ARCH_MT6797)
 	if (en) {
-		pmic_config_interface_nolock(MT6351_VCORE_ANA_CON7, 1, 0x1, 1);
 		pmic_config_interface_nolock(MT6351_VGPU_ANA_CON7, 1, 0x1, 1);
 	} else {
-		pmic_config_interface_nolock(MT6351_VCORE_ANA_CON7, 0, 0x1, 1);
 		pmic_config_interface_nolock(MT6351_VGPU_ANA_CON7, 0, 0x1, 1);
 	}
 #endif

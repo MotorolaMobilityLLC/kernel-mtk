@@ -335,9 +335,7 @@ struct spm_lp_scen __spm_suspend = {
 
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
-#if defined(CONFIG_ARCH_MT6755)
 	unsigned int temp;
-#endif
 
 	__spm_pmic_low_iq_mode(1);
 
@@ -354,13 +352,23 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
 			IDX_SP_VSRAM_SHUTDOWN,
 			temp & ~(1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
-	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_SUSPEND);
-
 	/* fpr dpd */
 	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
 		spm_dpd_init();
 
+#elif defined(CONFIG_ARCH_MT6797)
+	/* set PMIC WRAP table for suspend power control */
+	pmic_read_interface_nolock(MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_ADDR, &temp, 0xFFFF, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VCORE_LQ_EN,
+			temp | (1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND,
+			IDX_SP_VCORE_LQ_DIS,
+			temp & ~(1 << MT6351_PMIC_RG_VCORE_VDIFF_ENLOWIQ_SHIFT));
 #endif
+
+	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_SUSPEND);
+
 	/* for afcdac setting */
 	clk_buf_write_afcdac();
 
@@ -382,10 +390,10 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	/* fpr dpd */
 	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
 		spm_dpd_dram_init();
+#endif
 
 	/* set PMIC WRAP table for normal power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL);
-#endif
 
 	__spm_pmic_low_iq_mode(0);
 
