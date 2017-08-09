@@ -455,12 +455,18 @@ void aee_kernel_RT_Monitor_api(int lParam)
 			hd_timeout;
 		LOGE("[Hang_Detect] hang_detect disabled\n");
 	} else if (lParam > 0) {
-		hd_detect_enabled = 1;
-		hang_detect_counter =
-			hd_timeout =
-			((long)lParam +
-			 HD_INTER -
-			 1) / (HD_INTER);
+		/* lParem=0x1000|timeout,only set in aee call when NE in system_server
+		*  so only change hang_detect_counter when call from AEE
+		*  Others ioctl, will change hd_detect_enabled & hang_detect_counter
+		*/
+		if (lParam & 0x1000) {
+			hang_detect_counter =
+			hd_timeout = ((long)(lParam & 0x0fff) + HD_INTER - 1) / (HD_INTER);
+		} else {
+			hd_detect_enabled = 1;
+			hang_detect_counter =
+				hd_timeout = ((long)lParam + HD_INTER - 1) / (HD_INTER);
+		}
 		LOGE("[Hang_Detect] hang_detect enabled %d\n", hd_timeout);
 	}
 }
