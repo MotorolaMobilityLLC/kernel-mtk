@@ -385,6 +385,15 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 				}
 				BUG_ON(strlen(buf) >= LOG_BUF_SIZE);
 
+#if defined(CONFIG_ARCH_MT6755)
+				sodi_warn("wake up by %s, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s, %d, 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
+						buf, vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+						spm_read(DUMMY1_PWR_CON), pcmdesc->version,
+						logout_sodi_cnt, logout_selfrefresh_cnt,
+						wakesta->timer_out, wakesta->r13, wakesta->debug_flag,
+						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
+						wakesta->event_reg, wakesta->isr);
+#elif defined(CONFIG_ARCH_MT6797)
 				sodi_warn("wake up by %s, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
 						buf, vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
 						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
@@ -396,6 +405,7 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 				sodi_warn("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
 						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 						wakesta->event_reg, wakesta->isr);
+#endif
 
 			}
 
