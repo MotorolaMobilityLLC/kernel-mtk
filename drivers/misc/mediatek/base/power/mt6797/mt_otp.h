@@ -7,6 +7,8 @@
 #include <mt-plat/sync_write.h>
 #endif
 
+#define	TARGET_TEMP		(95)
+
 #define PID_EN_enable		(1)
 
 /**
@@ -130,6 +132,12 @@ struct OTP_score_data {
 	unsigned int PID_FREQ_M;
 };
 
+struct OTP_info_data {
+	u32 score;
+	u32 freq;
+	int channel_status;
+};
+
 enum otp_policy {
 	NORMAL_MODE,
 	MANUAL_MODE
@@ -143,6 +151,7 @@ typedef struct {
 
 extern int BigOTPISRHandler(void);
 extern TempInfo BigOTPGetTemp(void);
+extern unsigned int BigOTPGetiDVFSFreqpct(void);
 extern unsigned int BigOTPGetFreqpct(void);
 extern void BigOTPEnable(void);
 extern void BigOTPDisable(void);

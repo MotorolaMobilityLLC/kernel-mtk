@@ -17,9 +17,11 @@
 #include <linux/file.h>
 #include <linux/delay.h>
 #include <linux/types.h>
+#include <linux/cpumask.h>
 
 /* project includes */
 #include "mt_otp.h"
+#include "mt_idvfs.h"
 #include "mt_cpufreq.h"
 
 #ifdef CONFIG_OF
@@ -57,7 +59,7 @@
 #endif
 
 #ifdef __KERNEL__
-#define OTP_TAG     "OTP"
+#define OTP_TAG     "[OTP]"
 #ifdef USING_XLOG
 	#include <linux/xlog.h>
 	#define otp_emerg(fmt, args...)     pr_err(ANDROID_LOG_ERROR, OTP_TAG, fmt, ##args)
@@ -112,16 +114,30 @@ void __iomem *otp_base; /* 0x10222000 */
 #define otp_write_field(addr, range, val)    otp_write(addr, (otp_read(addr) & ~(BITMASK(range))) | BITS(range, val))
 
 #define DEBUG   0
-#define DUMP_FULL_LOG   1
+#define DUMP_FULL_LOG   0
+#define DUMP_DEBUG_LOG   1
 
 #define BIG_CORE_BANK   0
 #define MAX_TARGET_TEMP 130
 #define MIN_TARGET_TEMP 50
 
+#define BIG_CPU_NUM0	8
+#define BIG_CPU_NUM1	9
+
+/* overflow bound */
+#define UPPER_BOUND	0x0030D4
+#define LOWER_BOUND	0x002CEC
+
+struct task_struct *thread;
+
 static struct OTP_config_data otp_config_data;
 static struct OTP_debug_data otp_debug_data;
 static struct OTP_ctrl_data otp_ctrl_data;
 static struct OTP_score_data otp_score_data;
+
+struct OTP_info_data otp_info_data;
+
+static DEFINE_MUTEX(debug_mutex);
 
 #ifdef ENABLE_IDVFS
 int otp_enable = 1;
@@ -131,8 +147,6 @@ int otp_enable = 0;
 
 int MODE = 0;
 
-static unsigned int otp_reg_dump_addr_off[] = {0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C, 0x20, 0x24, 0x28, 0x2C};
-/* static unsigned int otp_fifo_size[] = {4, 8, 16, 32}; */
 unsigned int MTS;
 unsigned int BTS;
 
@@ -142,10 +156,11 @@ int CurTempPT_next = 0;
 int CurTemp;
 
 #if DUMP_FULL_LOG
+static unsigned int otp_reg_dump_addr_off[] = {0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C, 0x20, 0x24, 0x28, 0x2C};
 unsigned int otp_reg_dump_data[ARRAY_SIZE(otp_reg_dump_addr_off)];
-unsigned int otp_debug_dump_data[10];
 #endif
 
+unsigned int otp_debug_dump_data[10];
 /*
 void BigOTPEnable(void);
 void BigOTPDisable(void);
@@ -157,7 +172,9 @@ int BigOTPSetTempUpdate (int TempTarget);
 */
 
 /* otp_config_data */
-unsigned int t_target = 110;
+/* unsigned int t_target = 110; */
+unsigned int t_target = TARGET_TEMP;
+
 unsigned int error_sum_mode = 0x0;
 unsigned int fifo_size = 0x3;
 unsigned int adapt_mode = 0x0;
@@ -169,22 +186,22 @@ unsigned int neg_err_thold = 0x0;
 unsigned int pos_err_fifo_size = 0x3;
 
 /* otp_ctrl_data */
-unsigned int piderrmax = 0x00040000;
-unsigned int piderrmin = 0xFFFC0000;
+unsigned int piderrmax = 0x00001500;
+unsigned int piderrmin = 0xFFFFEB00;
 unsigned int kp_step = 0x0;
-unsigned int kp = 0xFFCE;
+unsigned int kp = 0xFF9C;
 unsigned int ki_step = 0x0;
-unsigned int ki = 0xFFFF;
+unsigned int ki = 0xFFFE;
 unsigned int kd_step = 0x0;
 unsigned int kd = 0x0;
 
 /* otp_score_data */
-unsigned int pid_score_s = 0x1;
+unsigned int pid_score_s = 0x2;
 unsigned int pid_score_m = 0x7FFF;
 unsigned int pid_freq_sht = 0x0;
 unsigned int pid_calc_sht = 0x0;
 unsigned int pid_score_sht = 0x2;
-unsigned int pid_freq_s = 0x0013;
+unsigned int pid_freq_s = 0x0016;
 unsigned int pid_freq_m = 0x0;
 
 /* otp_debug_data */
@@ -216,6 +233,10 @@ static void otp_score_data_reset(struct OTP_score_data *otp_score_data)
 	memset((void *)otp_score_data, 0, sizeof(struct OTP_score_data));
 }
 
+static void otp_info_data_reset(struct OTP_info_data *otp_info_data)
+{
+	memset((void *)otp_info_data, 0, sizeof(struct OTP_info_data));
+}
 
 int get_piden_status(void)
 {
@@ -788,7 +809,7 @@ static void Normal_Mode_Setting(void)
 {
 
 	/* derrmax, piderrmin, kp_step, kp, ki_step, ki, kd_step, kd */
-	set_otp_ctrl_data(0x00040000, 0xFFFC0000, 0x0, 0xFFCE, 0x0, 0xFFFF, 0x0, 0x0);
+	set_otp_ctrl_data(0x00001500, 0xFFFFEB00, 0x0, 0xFF9C, 0x0, 0xFFFE, 0x0, 0x0);
 }
 
 void getTHslope(void)
@@ -858,8 +879,72 @@ int BigOTPSetTempPolicy(enum otp_policy TempPolicy)
 	return policy_valid;
 }
 
+static int otp_thread_handler(void *arg)
+{
+
+	unsigned int score_status;
+
+	do {
+		if ((cpu_online(BIG_CPU_NUM0) == 1) || (cpu_online(BIG_CPU_NUM1) == 1)) {
+			if (get_piden_status() == 1) {
+				mutex_lock(&debug_mutex);
+
+				otp_set_NTH_DEBUG_MUX(&otp_debug_data, 5);
+				otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
+				otp_info_data.score = (otp_read(OTP_PID_DEBUGOUT) & 0xFFFFFF);
+				otp_set_NTH_DEBUG_MUX(&otp_debug_data, 6);
+				otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
+				otp_info_data.freq = (otp_read(OTP_PID_DEBUGOUT) & 0x7FFFF);
+
+				mutex_unlock(&debug_mutex);
+
+				otp_info_data.channel_status = BigiDVFSChannelGet(2);
+
+				score_status = (otp_info_data.score >> 23) & 0x1;
+
+				if (otp_info_data.channel_status == 0) {
+					if ((otp_info_data.score != 0x0) &&
+					((otp_info_data.score < LOWER_BOUND) || (score_status == 0x1))) {
+						#if DUMP_DEBUG_LOG
+						otp_info("Big_Temp=%d\tscore=0x%06x\tfreq=0x%05x\tchannel=%d\n",
+						get_immediate_big_wrap(), otp_info_data.score, otp_info_data.freq,
+						otp_info_data.channel_status);
+						otp_info(" Channel enable\n");
+						#endif
+						BigiDVFSChannel(2, 1);
+					}
+				} else {
+					if ((otp_info_data.score > UPPER_BOUND) && (score_status == 0x0)) {
+						#if DUMP_DEBUG_LOG
+						otp_info("Big_Temp=%d\tscore=0x%06x\tfreq=0x%05x\tchannel=%d\n",
+						get_immediate_big_wrap(), otp_info_data.score, otp_info_data.freq,
+						otp_info_data.channel_status);
+						otp_info(" Channel disable\n");
+						#endif
+						BigiDVFSChannel(2, 0);
+					}
+				}
+
+			}
+		}
+		/* msleep(5); */
+		mdelay(5);
+	} while (!kthread_should_stop());
+
+	return 0;
+}
+
+static void otp_monitor_ctrl(void)
+{
+	if (1) {
+		thread = kthread_run(otp_thread_handler, NULL, "otp info");
+	}
+}
+
 static void enable_OTP(void)
 {
+	otp_info(" Start Enabled");
+
 	getTHslope();
 
 	BigOTPSetTempUpdate();
@@ -878,6 +963,11 @@ static void enable_OTP(void)
 #endif
 	otp_set_PID_EN(&otp_config_data, pid_en);
 	otp_PID_EN_apply(&otp_config_data);
+
+	/* otp_info_data_reset(&otp_info_data); */
+
+	otp_info(" Configuration finished\n");
+
 }
 
 static void disable_OTP(void)
@@ -921,23 +1011,45 @@ int BigOTPSetTempTarget(int TempTarget)
 	return 0;
 }
 
-unsigned int BigOTPGetFreqpct(void)
+unsigned int BigOTPGetiDVFSFreqpct(void)
 {
-	unsigned int freq;
-	unsigned int freqpct_x100;
 	int i;
+	unsigned int freqpct_x100;
+	u32 freq;
 
-	otp_set_NTH_DEBUG_MUX(&otp_debug_data, 6);
-	otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
-	freq = (otp_read(OTP_PID_DEBUGOUT) & 0x7FFFF);
+	freq = otp_info_data.freq;
 
 	freqpct_x100 = ((freq & 0x7F000) >> 12) * 100;
-	for (i = 0; i < 12; i++) {
+	for (i = 0 ; i < 6; i++) {
 		if (freq & (1 << (11-i)))
-			freqpct_x100 += (50 / (1<<i));
+			freqpct_x100 += (50 >> i);
+		}
+	if (cpu_online(BIG_CPU_NUM0) || cpu_online(BIG_CPU_NUM1))
+		return freqpct_x100;
+
+	return 0;
+}
+
+unsigned int BigOTPGetFreqpct(void)
+{
+	int i;
+	unsigned int freqpct_x100;
+	u32 freq;
+
+	freq = otp_info_data.freq;
+
+	freqpct_x100 = ((freq & 0x7F000) >> 12) * 100;
+	for (i = 0 ; i < 6; i++) {
+		if (freq & (1 << (11-i)))
+			freqpct_x100 += (50 >> i);
 	}
 
-	return freqpct_x100;
+	if ((cpu_online(BIG_CPU_NUM0) == 1) || (cpu_online(BIG_CPU_NUM1) == 1)) {
+		if (otp_info_data.channel_status == 1)
+			return freqpct_x100;
+	}
+
+	return 0;
 }
 
 TempInfo BigOTPGetTemp(void)
@@ -949,15 +1061,22 @@ TempInfo BigOTPGetTemp(void)
 	int Temp_ADC;
 	int Temp;
 
-	for (i = 0; i < index_len; i++) {
-		otp_set_ERR_FIFO_MUX(&otp_debug_data, i);
-		otp_ERR_FIFO_MUX_apply(&otp_debug_data);
-		otp_set_NTH_DEBUG_MUX(&otp_debug_data, 0x1);
-		otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
-		TempErr = (((otp_read(OTP_PID_DEBUGOUT) & 0x0000FFFF) ^ 0x8000) - 0x8000);
-		Temp_ADC = Temp2ADC(t_target) - TempErr;
-		Temp = ADC2Temp((int)Temp_ADC);
-		TempArray.data[i] = Temp;
+	memset(&TempArray, -1, sizeof(TempInfo));
+
+	if ((cpu_online(BIG_CPU_NUM0) == 1) || (cpu_online(BIG_CPU_NUM1) == 1)) {
+		for (i = 0; i < index_len; i++) {
+			mutex_lock(&debug_mutex);
+			otp_set_ERR_FIFO_MUX(&otp_debug_data, i);
+			otp_ERR_FIFO_MUX_apply(&otp_debug_data);
+			otp_set_NTH_DEBUG_MUX(&otp_debug_data, 0x1);
+			otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
+			mutex_unlock(&debug_mutex);
+
+			TempErr = (((otp_read(OTP_PID_DEBUGOUT) & 0x0000FFFF) ^ 0x8000) - 0x8000);
+			Temp_ADC = Temp2ADC(t_target) - TempErr;
+			Temp = ADC2Temp((int)Temp_ADC);
+			TempArray.data[i] = Temp;
+		}
 	}
 
 	return TempArray;
@@ -999,44 +1118,28 @@ int BigOTPISRHandler(void)
 	TempInfo Temparray;
 	int i;
 #endif
-
-#if 0
-	if (unlikely(CurTempPT == CurTempPT_next))
-		CurTempPT = 0;
-	else
-		CurTempPT = CurTempPT_next;
-
-	CurTempPT_next = (int)(CurTempPT + 1) % (int)(otp_fifo_size[fifo_size]);
-
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(otp_reg_dump_addr_off); i++)
-		otp_reg_dump_data[i] = otp_read(OTP_BASEADDR + otp_reg_dump_addr_off[i]);
-
-	for (i = 0; i < 10; i++) {
-		otp_set_NTH_DEBUG_MUX(&otp_debug_data, i);
-		otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
-		otp_debug_dump_data[i] = otp_read(OTP_PID_DEBUGOUT);
-	}
-#endif
+	mutex_lock(&debug_mutex);
 
 	otp_set_NTH_DEBUG_MUX(&otp_debug_data, 6);
 	otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
 	freq_intb_value = (otp_read(OTP_PID_DEBUGOUT) & BIT(31)) >> 31;
-	otp_info("[OTP] initial freq_intb_value = 0x%x\n", freq_intb_value);
+	otp_info(" initial freq_intb_value = 0x%x\n", freq_intb_value);
+
+	mutex_unlock(&debug_mutex);
 
 	if (!freq_intb_value) {
-		otp_info("[OTP] ISR\n");
+		otp_info(" ISR\n");
 		#if DEBUG
-			otp_info("[OTP] Temp from TC, Temp=%d\n", get_immediate_big_wrap());
+			otp_info(" Temp from TC, Temp=%d\n", get_immediate_big_wrap());
 			Temparray = BigOTPGetTemp();
 			for (i = 0; i < 32; i++)
-				otp_info("[OTP] TempArray <%0d> %d\n", i, Temparray.data[i]);
+				otp_info(" TempArray <%0d> %d\n", i, Temparray.data[i]);
 		#endif
 		otp_set_INTERRUPT_CLR(&otp_debug_data, 0x1);
 		otp_INTERRUPT_CLR_apply(&otp_debug_data);
 
 	}
+
 	return 0;
 }
 
@@ -1366,25 +1469,34 @@ static ssize_t otp_debug_data_proc_write(struct file *file, const char __user *b
 static int otp_curr_temp_proc_show(struct seq_file *m, void *v)
 {
 
-	unsigned int score;
-	unsigned int freq;
 	unsigned int freqpct_x100;
+	unsigned int freqpct_x100_idvfs;
+	unsigned int freqpct_x100_real;
+	u32 freq;
 	int i;
 
-	otp_set_NTH_DEBUG_MUX(&otp_debug_data, 5);
-	otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
-	score = (otp_read(OTP_PID_DEBUGOUT) & 0xFFFFFF);
-	otp_set_NTH_DEBUG_MUX(&otp_debug_data, 6);
-	otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
-	freq = (otp_read(OTP_PID_DEBUGOUT) & 0x7FFFF);
+	freq = otp_info_data.freq;
 
 	freqpct_x100 = ((freq & 0x7F000) >> 12) * 100;
-	for (i = 0 ; i < 12; i++) {
+	for (i = 0 ; i < 6; i++) {
 		if (freq & (1 << (11-i)))
-			freqpct_x100 += (50 / (1<<i));
+			freqpct_x100 += (50 >> i);
 	}
 
-	seq_printf(m, "%d\t0x%x\t0x%x\t%d\n", get_immediate_big_wrap(), score, freq, freqpct_x100);
+	if ((cpu_online(BIG_CPU_NUM0) == 1) || (cpu_online(BIG_CPU_NUM1) == 1)) {
+		freqpct_x100_idvfs = freqpct_x100;
+		if (otp_info_data.channel_status == 1)
+			freqpct_x100_real = freqpct_x100;
+		else
+			freqpct_x100_real = 0;
+	} else {
+		freqpct_x100_idvfs = 0;
+		freqpct_x100_real = 0;
+	}
+
+	seq_printf(m, "%d,0x%06x,0x%05x,%d,%u,%u,%u\n",
+	get_immediate_big_wrap(), otp_info_data.score, otp_info_data.freq, otp_info_data.channel_status,
+	freqpct_x100, freqpct_x100_idvfs, freqpct_x100_real);
 
 	return 0;
 }
@@ -1408,6 +1520,8 @@ static int otp_debug_status_proc_show(struct seq_file *m, void *v)
 {
 	int i;
 
+	mutex_lock(&debug_mutex);
+
 	for (i = 0; i < 10; i++) {
 		otp_set_NTH_DEBUG_MUX(&otp_debug_data, i);
 		otp_NTH_DEBUG_MUX_apply(&otp_debug_data);
@@ -1415,6 +1529,7 @@ static int otp_debug_status_proc_show(struct seq_file *m, void *v)
 		seq_printf(m, "otp_debug_dump_data[%d] = 0x%08x\n", i, otp_debug_dump_data[i]);
 	}
 
+	mutex_unlock(&debug_mutex);
 	return 0;
 }
 
@@ -1501,7 +1616,6 @@ static int _create_procfs(void)
 
 #endif /* CONFIG_PROC_FS */
 
-
 /*
  * Module driver
  */
@@ -1511,10 +1625,12 @@ static int __init otp_init(void)
 
 	struct device_node *node = NULL;
 
+	otp_info(" INIT\n");
+
 	node = of_find_compatible_node(NULL, NULL, "mediatek,ptpotp");
 
 	if (!node) {
-		otp_error("[OTP] find node failed\n");
+		otp_error(" find node failed\n");
 	} else {
 		/* Setup IO addresses */
 		otp_base = of_iomap(node, 0);
@@ -1527,8 +1643,11 @@ static int __init otp_init(void)
 
 		return err;
 	}
+	/* BigOTPEnable(); */
 
-	BigOTPEnable();
+	otp_info_data_reset(&otp_info_data);
+
+	otp_monitor_ctrl();
 
 #ifdef CONFIG_PROC_FS
 	/* init proc */
