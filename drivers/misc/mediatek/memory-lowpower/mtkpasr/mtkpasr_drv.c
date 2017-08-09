@@ -101,7 +101,7 @@ static int mtkpasr_restore(void)
 retry:
 	/* APMCU flow */
 	if (exit_pasr_dpd_config() != 0)
-		MTKPASR_PRINT("%s: failed to program DRAMC!\n", __func__);
+		pr_warn("%s: failed to program DRAMC!\n", __func__);
 	else
 		mtkpasr_on = 0x0;
 

@@ -192,11 +192,7 @@ RESERVEDMEM_OF_DECLARE(memory_lowpower, "mediatek,memory-lowpower",
 #ifdef CONFIG_ZONE_MOVABLE_CMA
 static int __init memory_lowpower_sanity_test(void)
 {
-	phys_addr_t end = memory_lowpower_cma_base() +
-		memory_lowpower_cma_size();
-
-	/* test if this cma is at the end of DRAM */
-	BUG_ON(memblock_end_of_DRAM() != end);
+	/* Just return */
 	return 0;
 }
 late_initcall(memory_lowpower_sanity_test);

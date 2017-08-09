@@ -513,9 +513,26 @@ static int memory_lowpower_fb_event(struct notifier_block *notifier, unsigned lo
 
 		/* Action is changed */
 		atomic_set(&action_changed, MLPT_SET_ACTION);
-		wake_up_process(memory_lowpower_task);
-	}
+retry:
+		/*
+		 * Try to wake it up.
+		 * If it is running, to make sure action is cleared for MLP_SCREENON
+		 */
+		if (!wake_up_process(memory_lowpower_task)) {
+			pr_warn("It was already running.\n");
+			if (IS_ACTION_SCREENON(memory_lowpower_action) &&
+					atomic_read(&action_changed) == MLPT_SET_ACTION) {
 
+				/* SCREENOFF is not finished, just leave. */
+				if (MlpsScreenOn(&memory_lowpower_state))
+					goto out;
+
+				/* It might be at the time before going to schedule. */
+				pr_warn("No action executed for screen-on, retry it.\n");
+				goto retry;
+			}
+		}
+	}
 out:
 	return NOTIFY_DONE;
 }
