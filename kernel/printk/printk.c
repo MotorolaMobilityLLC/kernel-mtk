@@ -86,11 +86,16 @@ static int parse_log_file(void);
 
 inline void set_detect_count(int count)
 {
-	if (detect_count < DETECT_COUNT_MIN)
-		detect_count = DETECT_COUNT_MIN;
-	else
+	if (count >= detect_count)
 		detect_count = count;
-	detect_count_change = true;
+	else {
+		if (count < DETECT_COUNT_MIN)
+			detect_count = DETECT_COUNT_MIN;
+		else
+			detect_count = count;
+		detect_count_change = true;
+	}
+	pr_info("Printk too much criteria: %d  delay_flag: %d\n", detect_count, detect_count_change);
 }
 
 inline int get_detect_count(void)
