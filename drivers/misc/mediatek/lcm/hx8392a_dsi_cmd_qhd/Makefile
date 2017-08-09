@@ -3,6 +3,6 @@
 #
 
 
-obj-y += hx8392a_dsi_cmd.o
+obj-y += hx8392a_dsi_cmd_qhd.o
 
 ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
