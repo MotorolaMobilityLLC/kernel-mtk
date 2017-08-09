@@ -917,9 +917,8 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 	info.field.rw_flag = SDIO_GEN3_READ;
 	info.field.func_num = func->num;
 
-	if (count >= func->cur_blksize)
-	{
-		info.field.block_mode = SDIO_GEN3_BLOCK_MODE; /* block mode */
+	if (count >= func->cur_blksize) { /* DMA/PIO block mode */
+		info.field.block_mode = SDIO_GEN3_BLOCK_MODE;
 		info.field.count = count/func->cur_blksize;
 		if (count % func->cur_blksize > 0)
 			info.field.count++;
@@ -929,10 +928,10 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 			DBGLOG(RX, ERROR, "blk mode orig size is 0x%x\n", Size);
 			ASSERT(0);
 		}
-	}
-	else
-	{
-		info.field.block_mode = SDIO_GEN3_BYTE_MODE; /* byte  mode */
+	} else { /* DMA/PIO byte mode */
+		if (func->use_dma)
+			count = ((Size + 7) & ~7u); /* if DMA mode, RX 8 bytes alignment is required */
+		info.field.block_mode = SDIO_GEN3_BYTE_MODE;
 		info.field.count = count;
 	}
 
@@ -940,8 +939,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 	info.field.addr = Port;
 
 
-	/* MT6797 TODO: log level */
-	DBGLOG(RX, WARN, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
+	DBGLOG(RX, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
 		 func->use_dma, Size, count, func->cur_blksize, info.word);
 
 	if (pfWlanDmaOps != NULL)
@@ -1209,8 +1207,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, IN 
 	info.field.addr = Port;
 
 
-	/* MT6797 TODO: log level */
-	DBGLOG(TX, WARN, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
+	DBGLOG(TX, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
 		func->use_dma, Size, count, func->cur_blksize, info.word);
 
 	if (pfWlanDmaOps != NULL)

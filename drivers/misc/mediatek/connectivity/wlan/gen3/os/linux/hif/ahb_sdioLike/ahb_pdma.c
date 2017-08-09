@@ -243,7 +243,7 @@ static VOID HifPdmaConfig(IN void *HifInfoSrc, IN void *Param)
 	RegVal |= (((Conf->Burst << ADH_CR_BURST_LEN_OFFSET) & ADH_CR_BURST_LEN) |
 		   (Conf->Fix_en << ADH_CR_FIX_EN_OFFSET) | (Conf->Dir));
 #if defined(MT6797)
-	RegVal &= ~(1 << ADH_CR_BUS_INCR_OFFSET);
+	RegVal |= (1 << ADH_CR_BUS_INCR_OFFSET);
 #endif
 	HIF_DMAR_WRITEL(HifInfo, AP_DMA_HIF_0_CON, RegVal);
 	PDMA_DBG("PDMA> AP_DMA_HIF_0_CON = 0x%08x\n", RegVal);
