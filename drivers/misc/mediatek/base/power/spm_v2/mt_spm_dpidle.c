@@ -36,6 +36,8 @@
 #define DPIDLE_TAG     "[DP] "
 #define dpidle_dbg(fmt, args...)	pr_debug(DPIDLE_TAG fmt, ##args)
 
+#define SPM_BYPASS_SYSPWREQ     1
+
 #define WAKE_SRC_FOR_MD32  0
 
 #define I2C_CHANNEL 2
@@ -368,6 +370,10 @@ static struct pwr_ctrl dpidle_ctrl = {
 	.mp0_cpu1_wfi_en	= 1,
 	.mp0_cpu2_wfi_en	= 1,
 	.mp0_cpu3_wfi_en	= 1,
+
+#if SPM_BYPASS_SYSPWREQ
+	.syspwreq_mask = 1,
+#endif
 };
 
 struct spm_lp_scen __spm_dpidle = {

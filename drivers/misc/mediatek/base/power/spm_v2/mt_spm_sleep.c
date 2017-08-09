@@ -41,7 +41,7 @@
 #else
 #define SPM_PWAKE_EN            1
 #define SPM_PCMWDT_EN           1
-#define SPM_BYPASS_SYSPWREQ     0
+#define SPM_BYPASS_SYSPWREQ     1
 #endif
 
 #ifdef CONFIG_OF
