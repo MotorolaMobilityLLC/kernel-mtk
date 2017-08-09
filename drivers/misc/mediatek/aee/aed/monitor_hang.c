@@ -633,7 +633,9 @@ EXPORT_SYMBOL
 void aee_powerkey_notify_press(unsigned long
 		pressed) {
 	if (pressed) {	/* pwk down or up ???? need to check */
+		spin_lock(&pwk_hang_lock);
 		wdt_kick_status = 0;
+		spin_unlock(&pwk_hang_lock);
 		hwt_kick_times = 0;
 		pwk_start_monitor = 1;
 		LOGE("(%s) HW keycode powerkey\n", pressed ? "pressed" : "released");
