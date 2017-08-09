@@ -1889,11 +1889,15 @@ static void mtkfb_fbinfo_cleanup(struct mtkfb_device *fbdev)
 /* Init frame buffer content as 3 R/G/B color bars for debug */
 static int init_framebuffer(struct fb_info *info)
 {
+	unsigned int size;
+
 	void *buffer = info->screen_base + info->var.yoffset * info->fix.line_length;
 
 	/* clean whole frame buffer as black */
-	memset_io(buffer, 0, info->screen_size);
+	/*memset_io(buffer, 0, info->screen_size);*/
 
+	size = info->var.xres_virtual * info->var.yres * info->var.bits_per_pixel/8;
+	memset_io(buffer, 0, size);
 	return 0;
 }
 
