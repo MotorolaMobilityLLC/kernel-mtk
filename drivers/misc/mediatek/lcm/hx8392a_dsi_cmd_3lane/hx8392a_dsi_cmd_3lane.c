@@ -53,7 +53,7 @@ static LCM_UTIL_FUNCS lcm_util = { 0 };
 /* extern atomic_t ESDCheck_byCPU; */
 
 
-static struct LCM_setting_table {
+struct LCM_setting_table {
 	unsigned cmd;
 	unsigned char count;
 	unsigned char para_list[64];
@@ -199,14 +199,14 @@ static struct LCM_setting_table lcm_initialization_setting[] = {
 	{ 0x29, 0, {} },
 };
 
-
+#if 0
 static struct LCM_setting_table lcm_set_window[] = {
 	{ 0x2A, 4, {0x00, 0x00, (FRAME_WIDTH >> 8), (FRAME_WIDTH & 0xFF)} },
 	{ 0x2B, 4, {0x00, 0x00, (FRAME_HEIGHT >> 8), (FRAME_HEIGHT & 0xFF)} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
-
-
+#endif
+#if 0
 static struct LCM_setting_table lcm_sleep_out_setting[] = {
 	/* Sleep Out */
 	{ 0x11, 0, {} },
@@ -216,7 +216,7 @@ static struct LCM_setting_table lcm_sleep_out_setting[] = {
 	{ 0x29, 0, {} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
-
+#endif
 
 static struct LCM_setting_table lcm_deep_sleep_mode_in_setting[] = {
 	/* Sleep Mode On */
@@ -395,7 +395,7 @@ static void lcm_update(unsigned int x, unsigned int y, unsigned int width, unsig
 	data_array[5] = (y1_LSB);
 	data_array[6] = 0x002c3909;
 
-	dsi_set_cmdq(&data_array, 7, 0);
+	dsi_set_cmdq((unsigned int *)&data_array, 7, 0);
 
 }
 
@@ -421,13 +421,13 @@ static void lcm_setbacklight(unsigned int level)
 		   sizeof(lcm_backlight_level_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
-
+#if 0
 static void lcm_setpwm(unsigned int divider)
 {
 	/* TBD */
 }
-
-
+#endif
+#if 0
 static unsigned int lcm_getpwm(unsigned int divider)
 {
 	/* ref freq = 15MHz, B0h setting 0x80, so 80.6% * freq is pwm_clk; */
@@ -435,6 +435,7 @@ static unsigned int lcm_getpwm(unsigned int divider)
 	unsigned int pwm_clk = 23706 / (1 << divider);
 	return pwm_clk;
 }
+#endif
 
 LCM_DRIVER hx8392a_dsi_cmd_3lane_lcm_drv = {
 
