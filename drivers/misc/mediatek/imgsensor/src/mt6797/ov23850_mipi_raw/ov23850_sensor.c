@@ -55,6 +55,7 @@
 #define MULTI_WRITE 0
 /*Enable PDAF function */
 //#define ENABLE_PDAF_VC
+//#define FULL_24FPS
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 
@@ -557,6 +558,8 @@ static void write_shutter(kal_uint16 shutter)
             write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
             write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
         }
+		/*Warning : shutter must be even. Odd might happen Unexpected Results */
+		shutter = (shutter >> 1) << 1;
         write_cmos_sensor(0x3501, (shutter >> 8) & 0xFF);
         write_cmos_sensor(0x3502, shutter  & 0xFF);
         LOG_INF("realtime_fps =%d\n", realtime_fps);
@@ -3264,6 +3267,7 @@ static void ov23850_setting_Deskew(int enable)
 
 static void preview_setting(void)
 {
+	LOG_INF("preview_setting\n");
 	//int i ,temp;
 	//0x0100,0x00,0x0301,0x64,0x0303,0x20,0x0304,0x47,0x0317,0x00,0x0318,0x03,
 	write_cmos_sensor(0x0100,0x00);
