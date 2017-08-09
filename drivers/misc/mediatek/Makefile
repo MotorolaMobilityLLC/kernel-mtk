@@ -19,6 +19,7 @@ obj-$(CONFIG_MTPROF)	+= mtprof/
 obj-$(CONFIG_MTK_I2C)  += i2c/
 obj-$(CONFIG_MTK_LEDS)	+= leds/
 obj-$(CONFIG_MTK_VIBRATOR)	+= vibrator/
+obj-$(CONFIG_MTK_IRTX_SUPPORT) += irtx/
 obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += videocodec/
 obj-$(CONFIG_MTK_JPEG)	+= jpeg/
 obj-$(CONFIG_MTK_PMIC)	+= power/
