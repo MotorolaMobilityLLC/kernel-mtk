@@ -337,14 +337,11 @@ int vcorefs_get_curr_vcore(void)
 
 int vcorefs_get_curr_ddr(void)
 {
-#ifdef BUILD_ERROR
 	int ddr_khz;
 
 	ddr_khz = get_dram_data_rate() * 1000;
 
 	return ddr_khz;
-#endif
-	return FDDR_S0_KHZ;
 }
 
 int vcorefs_get_vcore_by_steps(u32 steps)
