@@ -1378,14 +1378,14 @@ int dram_dummy_read_reserve_mem_of_init(struct reserved_mem *rmem)
 	rptr = rmem->base;
 	rsize = (unsigned int)rmem->size;
 
-	if (strstr(DRAM_R0_DUMMY_READ_RESERVED_KEY, rmem->name) == 0) {
+	if (strstr(DRAM_R0_DUMMY_READ_RESERVED_KEY, rmem->name)) {
 		dram_base = rptr;
 		dram_rank_num++;
 		pr_debug("[dram_dummy_read_reserve_mem_of_init] dram_base = %pa, size = 0x%x\n",
 				&dram_base, rsize);
 	}
 
-	if (strstr(DRAM_R1_DUMMY_READ_RESERVED_KEY, rmem->name) == 0) {
+	if (strstr(DRAM_R1_DUMMY_READ_RESERVED_KEY, rmem->name)) {
 		dram_add_rank0_base = rptr;
 		dram_rank_num++;
 		pr_debug("[dram_dummy_read_reserve_mem_of_init] dram_add_rank0_base = %pa, size = 0x%x\n",
