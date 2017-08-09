@@ -45,6 +45,19 @@
 };
 
 &mmc2 {
+	clk_src = /bits/ 8 <MSDC30_CLKSRC_200MHZ>;
+	bus-width = <4>;
+	max-frequency = <200000000>;
+	cap-sd-highspeed;
+	sd-uhs-sdr12;
+	sd-uhs-sdr25;
+	sd-uhs-sdr50;
+	sd-uhs-sdr104;
+	sd-uhs-ddr50;
+	non-removable;
+	pinctl = <&mmc2_pins_default>;
+	register_setting = <&mmc2_register_setting_default>;
+	host_function = /bits/ 8 <MSDC_SDIO>;
 	status = "disable";
 };
 
@@ -126,6 +139,28 @@
 	};
 
 	mmc1_register_setting_default: mmc1@register_default {
+		datrddly       = /bits/ 8 <0 0 0 0 0 0 0 0>;
+		datwrddly      = /bits/ 8 <0>;
+		cmdrrddly      = /bits/ 8 <0>;
+		cmdrddly       = /bits/ 8 <0>;
+		cmd_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+		rdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+		wdata_edge = /bits/ 8 <MSDC_SMPL_FALLING>;
+	};
+
+	mmc2_pins_default: mmc2@default {
+		pins_cmd {
+			drive-strength = /bits/ 8 <1>;
+		};
+		pins_dat {
+			drive-strength = /bits/ 8 <1>;
+		};
+		pins_clk {
+			drive-strength = /bits/ 8 <1>;
+		};
+	};
+
+	mmc2_register_setting_default: mmc2@register_default {
 		datrddly       = /bits/ 8 <0 0 0 0 0 0 0 0>;
 		datwrddly      = /bits/ 8 <0>;
 		cmdrrddly      = /bits/ 8 <0>;
