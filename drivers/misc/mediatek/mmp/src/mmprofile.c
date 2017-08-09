@@ -20,6 +20,7 @@
 #include <asm/io.h>
 
 #include <linux/vmalloc.h>
+#include <linux/slab.h>
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/hardirq.h>
@@ -561,7 +562,7 @@ static int MMProfileConfigEvent(MMP_Event event, char *name, MMP_Event parent, i
 		mutex_unlock(&MMProfile_RegTableMutex);
 		return 1;
 	}
-	pRegTable = vmalloc(sizeof(MMProfile_RegTable_t));
+	pRegTable = kmalloc(sizeof(MMProfile_RegTable_t), GFP_KERNEL);
 	if (!pRegTable) {
 		mutex_unlock(&MMProfile_RegTableMutex);
 		return 0;
@@ -873,7 +874,7 @@ MMP_Event MMProfileRegisterEvent(MMP_Event parent, const char *name)
 		return 0;
 	}
 	/* Now register the new event. */
-	pRegTable = vmalloc(sizeof(MMProfile_RegTable_t));
+	pRegTable = kmalloc(sizeof(MMProfile_RegTable_t), GFP_KERNEL);
 	if (!pRegTable) {
 		mutex_unlock(&MMProfile_RegTableMutex);
 		return 0;
