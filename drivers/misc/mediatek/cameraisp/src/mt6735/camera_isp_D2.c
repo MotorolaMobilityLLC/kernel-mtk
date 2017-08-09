@@ -3903,7 +3903,7 @@ static void DMAErrHandler(void)
 		if (err_ctrl & (*pErr)) {
 			ISP_WR32(0xF5004160, pErr[2]);
 			addr = pErr[1];
-			LOG_DBG("(0x%08x,0x%08x),dbg(0x%08x, 0x%08x)", addr, ISP_RD32(addr),
+			LOG_DBG("(0x%08x,0x%08x),dbg(0x%08x, 0x%08x)", addr, ISP_RD32((unsigned long)addr),
 				ISP_RD32(0xF5004160), ISP_RD32(0xF5004164));
 		}
 #else
@@ -4931,8 +4931,8 @@ static int compat_put_isp_read_register_data(compat_ISP_REG_IO_STRUCT __user *da
 					     ISP_REG_IO_STRUCT __user *data)
 {
 	compat_uint_t count;
-	compat_uptr_t uptr;
-	int err;
+	/* compat_uptr_t uptr; */
+	int err = 0;
 	/* Assume data pointer is unchanged. */
 	/* err = get_user(compat_ptr(uptr), &data->pData); */
 	/* err |= put_user(uptr, &data32->pData); */
@@ -4947,7 +4947,7 @@ static int compat_get_isp_buf_ctrl_frmb_struct_data(compat_ISP_BUFFER_CTRL_STRUC
 {
 	compat_uint_t tmp;
 	compat_uptr_t uptr;
-	int err;
+	int err = 0;
 
 	err |= get_user(tmp, &data32->ctrl);
 	err |= put_user(tmp, &data->ctrl);
@@ -4955,11 +4955,11 @@ static int compat_get_isp_buf_ctrl_frmb_struct_data(compat_ISP_BUFFER_CTRL_STRUC
 	err |= put_user(tmp, &data->buf_id);
 
 	err |= get_user(uptr, &data32->data_ptr);
-	err |= put_user(uptr, &data->data_ptr);
+	err |= put_user(uptr, (unsigned long __user *)&data->data_ptr);
 	err |= get_user(uptr, &data32->ex_data_ptr);
-	err |= put_user(uptr, &data->ex_data_ptr);
+	err |= put_user(uptr, (unsigned long __user *)&data->ex_data_ptr);
 	err |= get_user(uptr, &data32->pExtend);
-	err |= put_user(uptr, &data->pExtend);
+	err |= put_user(uptr, (unsigned long __user *)&data->pExtend);
 
 	return err;
 }
@@ -4969,8 +4969,8 @@ static int compat_put_isp_buf_ctrl_frmb_struct_data(compat_ISP_BUFFER_CTRL_STRUC
 						    ISP_BUFFER_CTRL_STRUCT_FRMB __user *data)
 {
 	compat_uint_t tmp;
-	compat_uptr_t uptr;
-	int err;
+	/* compat_uptr_t uptr; */
+	int err= 0;
 
 	err |= get_user(tmp, &data->ctrl);
 	err |= put_user(tmp, &data32->ctrl);
@@ -4987,7 +4987,7 @@ static int compat_get_isp_buf_ctrl_struct_data(compat_ISP_BUFFER_CTRL_STRUCT __u
 {
 	compat_uint_t tmp;
 	compat_uptr_t uptr;
-	int err;
+	int err = 0;
 
 	err |= get_user(tmp, &data32->ctrl);
 	err |= put_user(tmp, &data->ctrl);
@@ -4995,11 +4995,11 @@ static int compat_get_isp_buf_ctrl_struct_data(compat_ISP_BUFFER_CTRL_STRUCT __u
 	err |= put_user(tmp, &data->buf_id);
 
 	err |= get_user(uptr, &data32->data_ptr);
-	err |= put_user(uptr, &data->data_ptr);
+	err |= put_user(uptr,  (unsigned long __user *)&data->data_ptr);
 	err |= get_user(uptr, &data32->ex_data_ptr);
-	err |= put_user(uptr, &data->ex_data_ptr);
+	err |= put_user(uptr,  (unsigned long __user *)&data->ex_data_ptr);
 	err |= get_user(uptr, &data32->pExtend);
-	err |= put_user(uptr, &data->pExtend);
+	err |= put_user(uptr,  (unsigned long __user *)&data->pExtend);
 
 	return err;
 }
@@ -5008,8 +5008,8 @@ static int compat_put_isp_buf_ctrl_struct_data(compat_ISP_BUFFER_CTRL_STRUCT __u
 					       ISP_BUFFER_CTRL_STRUCT __user *data)
 {
 	compat_uint_t tmp;
-	compat_uptr_t uptr;
-	int err;
+	/* compat_uptr_t uptr; */
+	int err = 0;
 
 	err |= get_user(tmp, &data->ctrl);
 	err |= put_user(tmp, &data32->ctrl);
@@ -5026,7 +5026,7 @@ static int compat_get_isp_ref_cnt_ctrl_struct_data(compat_ISP_REF_CNT_CTRL_STRUC
 {
 	compat_uint_t tmp;
 	compat_uptr_t uptr;
-	int err;
+	int err = 0;
 
 	err = get_user(tmp, &data32->ctrl);
 	err |= put_user(tmp, &data->ctrl);
@@ -5042,8 +5042,8 @@ static int compat_put_isp_ref_cnt_ctrl_struct_data(compat_ISP_REF_CNT_CTRL_STRUC
 						   ISP_REF_CNT_CTRL_STRUCT __user *data)
 {
 	compat_uint_t tmp;
-	compat_uptr_t uptr;
-	int err;
+	/* compat_uptr_t uptr; */
+	int err = 0;
 
 	err = get_user(tmp, &data->ctrl);
 	err |= put_user(tmp, &data32->ctrl);
@@ -5062,12 +5062,12 @@ static int compat_get_isp_register_irq_user_key_data(compat_ISP_REGISTER_USERKEY
 {
 	compat_uint_t tmp;
 	compat_uptr_t uptr;
-	int err;
+	int err = 0;
 
 	err = get_user(tmp, &data32->userKey);
 	err |= put_user(tmp, &data->userKey);
 	err = get_user(uptr, &data32->userName);
-	err |= put_user(uptr, &data->userName);
+	err |= put_user(uptr,  (unsigned long __user *)&data->userName);
 
 	return err;
 }
@@ -5078,11 +5078,11 @@ static int compat_put_isp_register_irq_user_key_data(compat_ISP_REGISTER_USERKEY
 {
 	compat_uint_t tmp;
 	compat_uptr_t uptr;
-	int err;
+	int err = 0;
 
 	err = get_user(tmp, &data->userKey);
 	err |= put_user(tmp, &data32->userKey);
-	err = get_user(uptr, &data->userName);
+	err = get_user(uptr,  (unsigned long __user *)&data->userName);
 	err |= put_user(uptr, &data32->userName);
 
 	return err;
@@ -6145,11 +6145,11 @@ static ssize_t ISP_DumpRegToProc(struct file *pPage,
 {
 	char *p = (char*)pPage;
            char** ppStart=NULL;
-	MINT32 Length = 0;
+	long Length = 0;
 	MUINT32 i = 0;
-	MINT32 ret = 0;
+	long ret = 0;
 
-	LOG_DBG("pPage(%p),off(%d),Count(%d)", pPage, (unsigned int)off, Count);
+	LOG_DBG("pPage(%p),off(0x%lx),Count(%ld)", pPage, (unsigned long)off, (long int)Count);
 
 	p += sprintf(p, " MT ISP Register\n");
 	p += sprintf(p, "====== top ====\n");
@@ -6215,18 +6215,18 @@ static ssize_t ISP_DumpRegToProc(struct file *pPage,
 	}
 
           
-	*ppStart = (char*)((unsigned int)pPage + (unsigned int)off);
+	*ppStart = (char*)((unsigned long)pPage + (unsigned long)off);
 
-	Length = (MINT32)((unsigned int)p - (unsigned int)pPage);
-	if (Length > (MINT32)off) {
-		Length -= (MINT32)off;
+	Length = (long)((unsigned long)p - (unsigned long)pPage);
+	if (Length > (long)off) {
+		Length -= (long)off;
 	} else {
 		Length = 0;
 	}
 
 	ret = Length < Count ? Length : Count;
 
-	LOG_DBG("ret(%d)", ret);
+	LOG_DBG("ret(%ld)", ret);
 	return ((ssize_t)(ret));
 }
 
@@ -6241,7 +6241,7 @@ static ssize_t ISP_RegDebug(struct file *pFile,
 	MUINT32 Addr = 0;
 	MUINT32 Data = 0;
 
-	LOG_DBG("pFile(%p),pBuffer(%p),Count(%d)", pFile, pBuffer, (int)Count);
+	LOG_DBG("pFile(%p),pBuffer(%p),Count(%ld)", pFile, pBuffer, (long int)Count);
 
 	if (copy_from_user(RegBuf, pBuffer, CopyBufSize)) {
 		LOG_ERR("copy_from_user() fail.");
@@ -6263,24 +6263,24 @@ static ssize_t ISP_RegDebug(struct file *pFile,
 }
 
 static MUINT32 proc_regOfst;
-static MINT32 CAMIO_DumpRegToProc(struct file *pPage,
+static ssize_t CAMIO_DumpRegToProc(struct file *pPage,
 				char __user *pBuffer, size_t Count, loff_t *off)
 {
 	char *p = (char*)pPage;
            char **ppStart=NULL;
-	MINT32 Length = 0;
-	MINT32 ret = 0;
+	long Length = 0;
+	long ret = 0;
 
-	LOG_DBG("pPage(%p),off(%d),Count(%d)", pPage, (unsigned int)off, Count);
+	LOG_DBG("pPage(%p),off(0x%lx),Count(%ld)", pPage, (unsigned long)off, (long int)Count);
 
 	p += sprintf(p, "reg_0x%08X = 0x%X\n", (unsigned int)(ISP_ADDR_CAMINF + proc_regOfst),
 		     ioread32((void*)(ISP_ADDR_CAMINF + proc_regOfst)));
 
-	*ppStart = (char*)((unsigned int)pPage + (unsigned int)off);
+	*ppStart = (char*)((unsigned long)pPage + (unsigned long)off);
 
-	Length = (MINT32)((unsigned int)p - (unsigned int)pPage);
-	if (Length > (MINT32)off) {
-		Length -= (MINT32)off;
+	Length = (long)((unsigned long)p - (unsigned long)pPage);
+	if (Length > (long)off) {
+		Length -= (long)off;
 	} else {
 		Length = 0;
 	}
@@ -6288,8 +6288,8 @@ static MINT32 CAMIO_DumpRegToProc(struct file *pPage,
 	/*  */
 	ret = Length < Count ? Length : Count;
 
-	LOG_DBG("ret(%d)", ret);
-	return ret;
+	LOG_DBG("ret(%ld)", ret);
+	return ((ssize_t)ret);
 }
 
 /*******************************************************************************
@@ -6304,7 +6304,7 @@ static ssize_t CAMIO_RegDebug(struct file *pFile,
 	MUINT32 Addr = 0;
 	MUINT32 Data = 0;
 #endif
-	LOG_DBG("pFile(%p),pBuffer(%p),Count(%d)", pFile, pBuffer, (int)Count);
+	LOG_DBG("pFile(%p),pBuffer(%p),Count(%ld)", pFile, pBuffer, (long int)Count);
 
 	if (copy_from_user(RegBuf, pBuffer, CopyBufSize)) {
 		LOG_ERR("copy_from_user() fail.");
@@ -6323,7 +6323,7 @@ static ssize_t CAMIO_RegDebug(struct file *pFile,
 	}
 #endif
 
-	LOG_DBG("Count(%d)", (MINT32) Count);
+	LOG_DBG("Count(%ld)", (long int) Count);
 	return ((ssize_t)Count);
 }
 

@@ -1021,6 +1021,7 @@ static int compat_put_sysram_alloc_data(compat_SYSRAM_ALLOC_STRUCT __user *data3
 	return err;
 }
 
+#if 0
 static int compat_get_sysram_userenum_data(compat_SYSRAM_USER_ENUM __user *data32,
 					   SYSRAM_USER_ENUM __user *data)
 {
@@ -1043,7 +1044,7 @@ static int compat_put_sysram_userenum_data(compat_SYSRAM_USER_ENUM __user *data3
 	err |= put_user(tmp, &data32);
 	return err;
 }
-
+#endif
 
 static long SYSRAM_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long arg)
 {
@@ -1269,9 +1270,9 @@ static ssize_t SYSRAM_DumpLayoutToProc(struct file *pPage,
 {
 	char *p = (char*)pPage;
            char** ppStart=NULL;
-	MUINT32 len = 0;
+	long len = 0;
 	MUINT32 Index = 0;
-           MUINT32 ret = 0;
+           long ret = 0;
 	SYSRAM_MEM_NODE_STRUCT *pCurrNode = NULL;
 	/*  */
 	p += sprintf(p, "\n[SYSRAM_DumpLayoutToProc]\n");
@@ -1318,10 +1319,10 @@ static ssize_t SYSRAM_DumpLayoutToProc(struct file *pPage,
 		};
 	}
 	/*  */
-	*ppStart = (char*)((unsigned int)pPage + (unsigned int)Off);
-	len = (MUINT32)((unsigned int)p - (unsigned int)pPage);
-	if (len > (MUINT32)Off) {
-		len -= (MUINT32)Off;
+	*ppStart = (char*)((unsigned long)pPage + (unsigned long)Off);
+	len = (MUINT32)((unsigned long)p - (unsigned long)pPage);
+	if (len > (long)Off) {
+		len -= (long)Off;
 	} else {
 		len = 0;
 	}
@@ -1336,18 +1337,18 @@ static ssize_t SYSRAM_ReadFlag(struct file *pPage,
 {
 	char *p = (char*)pPage;
            char** ppStart=NULL;
-	MUINT32 len = 0;
-           MUINT32 ret = 0;
+	long len = 0;
+           long ret = 0;
 	/*  */
 	p += sprintf(p, "\r\n[SYSRAM_ReadFlag]\r\n");
 	p += sprintf(p, "=========================================\r\n");
 	p += sprintf(p, "Sysram.DebugFlag = 0x%08lX\r\n", Sysram.DebugFlag);
 
-	*ppStart = (char*)((unsigned int)pPage + (unsigned int)Off);
+	*ppStart = (char*)((unsigned long)pPage + (unsigned long)Off);
 
-	len = (MUINT32)((unsigned int)p - (unsigned int)pPage);
-	if (len > (MUINT32)Off) {
-		len -= (MUINT32)Off;
+	len = (long)((unsigned long)p - (unsigned long)pPage);
+	if (len > (long)Off) {
+		len -= (long)Off;
 	} else {
 		len = 0;
 	}

@@ -969,7 +969,7 @@ static int compat_put_campipe_dispipe_data(compat_CAM_PIPE_MGR_DISABLE_STRUCT __
 }
 
 
-static long SYSRAM_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long arg)
+static long CamPipeMgr_Ioctl_compat(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	long ret;
 
@@ -1106,8 +1106,8 @@ static long SYSRAM_ioctl_compat(struct file *filp, unsigned int cmd, unsigned lo
 		}
 	case COMPAT_CAM_PIPE_MGR_DISABLE_PIPE:	/*  */
 		{
-			compat_CAM_PIPE_MGR_ENABLE_STRUCT __user *data32;
-			CAM_PIPE_MGR_ENABLE_STRUCT __user *data;
+			compat_CAM_PIPE_MGR_DISABLE_STRUCT __user *data32;
+			CAM_PIPE_MGR_DISABLE_STRUCT __user *data;
 			int err;
 
 			data32 = compat_ptr(arg);
@@ -1149,7 +1149,7 @@ static const struct file_operations CamPipeMgr_FileOper = {
 	.flush = CamPipeMgr_Flush,
 	.unlocked_ioctl = CamPipeMgr_Ioctl,
 #ifdef CONFIG_COMPAT
-	.compat_ioctl = CamPipeMgr_Ioctl
+	.compat_ioctl = CamPipeMgr_Ioctl_compat
 #endif
 };
 
