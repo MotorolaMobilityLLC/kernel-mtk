@@ -1117,7 +1117,7 @@ WLAN_STATUS saaFsmRunEventRxDeauth(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwR
 
 				DBGLOG(SAA, INFO, "Deauth reason = %d\n", prStaRec->u2ReasonCode);
 
-				if (STA_STATE_3 == prStaRec->ucStaState) {
+				if (STA_STATE_2 <= prStaRec->ucStaState) {
 					P_MSG_AIS_ABORT_T prAisAbortMsg;
 
 					/* NOTE(Kevin): Change state immediately to avoid starvation of
@@ -1209,8 +1209,13 @@ WLAN_STATUS saaFsmRunEventRxDisassoc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prS
 
 				DBGLOG(SAA, INFO, "Disassoc reason = %d\n", prStaRec->u2ReasonCode);
 
-				if (STA_STATE_3 == prStaRec->ucStaState) {
+				if (STA_STATE_3 <= prStaRec->ucStaState) {
 					P_MSG_AIS_ABORT_T prAisAbortMsg;
+					/* NOTE(Chaozhong): Change state immediately to avoid starvation of
+					 * MSG buffer because of too many disassoc frames before changing
+					 * the STA state.
+					 */
+					cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_2);
 
 					prAisAbortMsg =
 					    (P_MSG_AIS_ABORT_T) cnmMemAlloc(prAdapter, RAM_TYPE_MSG,
