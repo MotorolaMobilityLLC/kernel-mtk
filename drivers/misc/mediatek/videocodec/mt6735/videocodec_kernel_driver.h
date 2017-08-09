@@ -41,7 +41,7 @@
 #define VCODEC_UNLOCKHW                _IOW(MFV_IOC_MAGIC, 0x33, unsigned int) /* VAL_HW_LOCK_T * */
 #define VCODEC_MB                      _IOW(MFV_IOC_MAGIC, 0x34, unsigned int) /* VAL_UINT32_T * */
 
-extern unsigned long get_cpu_load(int cpu);
+/* extern unsigned long get_cpu_load(int cpu); */
 
 /* #define MFV_GET_CACHECTRLADDR_CMD  _IOR(MFV_IOC_MAGIC, 0x06, int) */
 
