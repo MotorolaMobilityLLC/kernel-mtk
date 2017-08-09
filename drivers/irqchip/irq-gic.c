@@ -188,41 +188,24 @@ static int gic_set_type(struct irq_data *d, unsigned int type)
 {
 	void __iomem *base = gic_dist_base(d);
 	unsigned int gicirq = gic_irq(d);
-	u32 confmask = 0x2 << ((gicirq % 16) * 2);
-	u32 val;
-	int ret = 0;
 
 	/* Interrupt configuration for SGIs can't be changed */
 	if (gicirq < 16)
 		return -EINVAL;
 
+	if (type != IRQ_TYPE_LEVEL_HIGH && type != IRQ_TYPE_EDGE_RISING)
+		return -EINVAL;
+
 	raw_spin_lock(&irq_controller_lock);
 
-	if (gic_arch_extn.irq_set_type) {
-		ret = gic_arch_extn.irq_set_type(d, type);
-		if (ret)
-			goto out;
-	} else if (type != IRQ_TYPE_LEVEL_HIGH &&
-		type != IRQ_TYPE_EDGE_RISING) {
-			ret = -EINVAL;
-			goto out;
-	}
-
-	/* Check for both edge and level here, so we can support GIC irq
-	   polarity extension in gic_arch_extn.irq_set_type. If arch
-	   doesn't support polarity extension, the check above will reject
-	   improper type. */
-	if (type & IRQ_TYPE_LEVEL_MASK)
-		val &= ~confmask;
-	else if (type & IRQ_TYPE_EDGE_BOTH)
-		val |= confmask;
+	if (gic_arch_extn.irq_set_type)
+		gic_arch_extn.irq_set_type(d, type);
 
 	gic_configure_irq(gicirq, type, base, NULL);
 
-out:
 	raw_spin_unlock(&irq_controller_lock);
 
-	return ret;
+	return 0;
 }
 
 static int gic_retrigger(struct irq_data *d)
