@@ -2245,12 +2245,15 @@ signed int pmic_ptimretest = 0;
 
 unsigned int ptim_cnt = 0;
 
+signed int count_time_out_adc_imp = 36;
+unsigned int count_adc_imp = 0;
 
-
-void do_ptim(bool isSuspend)
+int do_ptim(bool isSuspend)
 {
 	unsigned int vbat_reg;
+	int ret = 0;
 
+	count_adc_imp = 0;
 	/*PMICLOG("[do_ptim] start\n"); */
 	if (isSuspend == false)
 		pmic_auxadc_lock();
@@ -2288,6 +2291,11 @@ PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN));*/
 	while (pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS) == 0) {
 		/*PMICLOG("[do_ptim] PMIC_AUXADC_IMPEDANCE_IRQ_STATUS= %d\n",
 		   pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS)); */
+		if ((count_adc_imp++) > count_time_out_adc_imp) {
+			pr_err("do_ptim over %d times/ms\n", count_adc_imp);
+			ret = 1;
+			break;
+		}
 		mdelay(1);
 	}
 
@@ -2317,6 +2325,7 @@ PMIC_RG_AUXADC_SMPS_CK_PDN_HWEN));*/
 
 	fgauge_read_IM_current((void *)&ptim_R_curr);
 
+	return ret;
 }
 
 
@@ -2654,11 +2663,21 @@ int get_dlpt_imix(void)
 	/* int rac_val[5], rac_val_avg; */
 	int volt[5], curr[5], volt_avg = 0, curr_avg = 0;
 	int imix;
-	int i;
+	int i, count_do_ptim = 0;
 
 	for (i = 0; i < 5; i++) {
 		/*adc and fg-------------------------------------------------------- */
-		do_ptim(KAL_FALSE);
+	/*do_ptim(KAL_FALSE);*/
+		while (do_ptim(KAL_FALSE)) {
+			if ((count_do_ptim >= 2) && (count_do_ptim < 4))
+				pr_err("do_ptim more than twice times\n");
+			else if (count_do_ptim > 3) {
+				pr_err("do_ptim more than five times\n");
+				BUG_ON(1);
+			} else
+				;
+			count_do_ptim++;
+		}
 
 		volt[i] = ptim_bat_vol;
 		curr[i] = ptim_R_curr;
