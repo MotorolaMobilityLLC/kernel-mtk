@@ -5,7 +5,7 @@
  */
 
 #define __MT_CPUFREQ_C__
-
+#define DEBUG 1
 /* system includes */
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -2275,7 +2275,13 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 	cpufreq_ver("[TARGET_OPP_IDX][NAME][IDX][FREQ] => %s:%d:%d\n",
 		cpu_dvfs_get_name(p), idx, cpu_dvfs_get_freq_by_idx(p, idx));
 
-	if (cur_khz == target_khz && p->armpll_is_available)
+	if (!p->armpll_is_available) {
+		cpufreq_err("%s: armpll not available, cur_khz = %d, target_khz = %d\n",
+			cpu_dvfs_get_name(p), cur_khz, target_khz);
+		BUG_ON(1);
+	}
+
+	if (cur_khz == target_khz)
 		return;
 
 #ifdef DCM_ENABLE
@@ -3088,9 +3094,10 @@ static int _cpufreq_dfs_locked(struct cpufreq_policy *policy, struct mt_cpu_dvfs
 #ifdef CONFIG_CPU_FREQ
 	freqs.old = cpu_dvfs_get_cur_freq(p);
 	freqs.new = cpu_dvfs_get_freq_by_idx(p, freq_idx);
-	freqs.cpu = policy->cpu;
-	if (policy)
+	if (policy) {
+		freqs.cpu = policy->cpu;
 		cpufreq_freq_transition_begin(policy, &freqs);
+	}
 #endif
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
@@ -3225,7 +3232,6 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 				cpufreq_dbg("CPU_DOWN_PREPARE last CPU of %s\n",
 					cpu_dvfs_get_name(p));
 				cpufreq_lock(flags);
-				p->armpll_is_available = 0;
 				if (!cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
 #ifdef CONFIG_CPU_FREQ
 					policy = cpufreq_cpu_get(cpu);
@@ -3262,20 +3268,22 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 						_cpufreq_set_locked(p, cur_freq, target_freq, policy,
 							cur_cci_freq, target_cci_freq, target_volt_vpro1);
 						cpufreq_cpu_put(policy);
+#endif
 						p->idx_opp_tbl = new_opp_idx;
 						p_cci->idx_opp_tbl = new_cci_opp_idx;
-#endif
 					}
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before BigiDVFSDisable */
 					if (enable_cpuhvfs)
 						cpuhvfs_notify_cluster_off(cpu_dvfs_to_cluster(p));
 #endif
+
 #if 0
 					if (!disable_idvfs_flag)
 						BigiDVFSDisable_hp();
 #endif
 				}
+				p->armpll_is_available = 0;
 				cpufreq_unlock(flags);
 			}
 			break;
