@@ -163,6 +163,7 @@ do { \
 			fgIsBusAccessFailed = TRUE; \
 			DBGLOG(HAL, ERROR, "HAL_MCR_RD access fail! 0x%x: 0x%x\n", \
 				(UINT_32) (_u4Offset), *((PUINT_32) (_pu4Value))); \
+			glResetTrigger(_prAdapter); \
 		} \
 	} else { \
 		DBGLOG(HAL, WARN, "ignore HAL_MCR_RD access! 0x%x\n", \
@@ -181,6 +182,7 @@ do { \
 			fgIsBusAccessFailed = TRUE; \
 			DBGLOG(HAL, ERROR, "HAL_MCR_WR access fail! 0x%x: 0x%x\n", \
 				(UINT_32) (_u4Offset), (UINT_32) (_u4Value)); \
+			glResetTrigger(_prAdapter); \
 		} \
 	} else { \
 		DBGLOG(HAL, WARN, "ignore HAL_MCR_WR access! 0x%x: 0x%x\n", \
