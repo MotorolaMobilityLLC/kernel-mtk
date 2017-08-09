@@ -119,9 +119,11 @@ typedef enum {
 #define FENCE_BUFFER_COUNT 22
 #define DEBUG_BUFFER_COUNT 8
 #define DUMP_BUFFER_COUNT 4
+#define STATUS_BUFFER_COUNT 1
 #if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 #define DEBUG_BUFFER_SIZE (4096 + \
-	(ERROR_BUFFER_COUNT + FENCE_BUFFER_COUNT + DEBUG_BUFFER_COUNT + DUMP_BUFFER_COUNT) * LOGGER_BUFFER_SIZE)
+	(ERROR_BUFFER_COUNT + FENCE_BUFFER_COUNT + DEBUG_BUFFER_COUNT + DUMP_BUFFER_COUNT + STATUS_BUFFER_COUNT) * \
+	LOGGER_BUFFER_SIZE)
 #else
 #define DEBUG_BUFFER_SIZE 10240
 #endif
@@ -158,6 +160,7 @@ typedef enum {
 	DPREC_LOGGER_FENCE,
 	DPREC_LOGGER_DEBUG,
 	DPREC_LOGGER_DUMP,
+	DPREC_LOGGER_STATUS,
 	DPREC_LOGGER_PR_NUM
 } DPREC_LOGGER_PR_TYPE;
 
@@ -212,5 +215,5 @@ void dprec_logger_frame_seq_end(unsigned int session_id, unsigned frm_sequence);
 int dprec_mmp_dump_ovl_layer(OVL_CONFIG_STRUCT *ovl_layer, unsigned int l,
 			     unsigned int session /*1:primary, 2:external, 3:memory */);
 void init_log_buffer(void);
-
+char *get_dprec_status_ptr(int buffer_idx);
 #endif

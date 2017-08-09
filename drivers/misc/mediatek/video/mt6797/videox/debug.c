@@ -661,6 +661,8 @@ int debug_get_info(unsigned char *stringbuf, int buf_len)
 
 	n += dprec_logger_get_buf(DPREC_LOGGER_DEBUG, stringbuf + n, buf_len - n);
 
+	n += dprec_logger_get_buf(DPREC_LOGGER_STATUS, stringbuf + n, buf_len - n);
+
 	stringbuf[n++] = 0;
 	return n;
 }

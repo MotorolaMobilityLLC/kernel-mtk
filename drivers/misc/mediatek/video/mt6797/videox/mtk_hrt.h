@@ -6,6 +6,7 @@
 #include "disp_drv_log.h"
 #include "primary_display.h"
 #include "disp_drv_platform.h"
+#include "display_recorder.h"
 
 #define EMI_LOWER_BOUND 4
 #define EMI_UPPER_BOUND 6

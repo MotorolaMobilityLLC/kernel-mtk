@@ -1382,18 +1382,18 @@ int _ioctl_set_vsync(unsigned long arg)
 int _ioctl_query_valid_layer(unsigned long arg)
 {
 	int ret = 0;
-	disp_layer_info disp_info;
+	disp_layer_info disp_info_user;
 	void __user *argp = (void __user *)arg;
 
-	if (copy_from_user(&disp_info, argp, sizeof(disp_info))) {
-		DISPMSG("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+	if (copy_from_user(&disp_info_user, argp, sizeof(disp_info_user))) {
+		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
 
-	ret = dispsys_hrt_calc(&disp_info);
+	ret = dispsys_hrt_calc(&disp_info_user);
 
-	if (copy_to_user(argp, &disp_info, sizeof(disp_info))) {
-		DISPMSG("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+	if (copy_to_user(argp, &disp_info_user, sizeof(disp_info_user))) {
+		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
 

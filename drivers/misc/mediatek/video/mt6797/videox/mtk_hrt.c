@@ -19,6 +19,7 @@ static int emi_upper_bound;
 static int larb_lower_bound;
 static int larb_upper_bound;
 static int primary_fps = 60;
+static disp_layer_info disp_info_hrt;
 
 static int get_bpp(DISP_FORMAT format)
 {
@@ -94,6 +95,39 @@ static void dump_disp_info(disp_layer_info *disp_info)
 				layer_info->src_fmt);
 		}
 	}
+}
+
+static void print_disp_info_to_log_buffer(disp_layer_info *disp_info)
+{
+	char *status_buf;
+	int i, j, n;
+	layer_config *layer_info;
+
+	status_buf = get_dprec_status_ptr(0);
+	if (status_buf == NULL)
+		return;
+
+	n = 0;
+	n += snprintf(status_buf + n, LOGGER_BUFFER_SIZE - n,
+		"Last hrt query data[start]\n");
+	for (i = 0 ; i < 2 ; i++) {
+		n += snprintf(status_buf + n, LOGGER_BUFFER_SIZE - n,
+			"HRT D%d/M%d/LN%d/hrt_num:%d/G(%d,%d)/fps:%d\n",
+			i, disp_info->disp_mode[i], disp_info->layer_num[i], disp_info->hrt_num,
+			disp_info->gles_head[i], disp_info->gles_tail[i], primary_fps);
+
+		for (j = 0 ; j < disp_info->layer_num[i] ; j++) {
+			layer_info = &disp_info->input_config[i][j];
+			n += snprintf(status_buf + n, LOGGER_BUFFER_SIZE - n,
+				"L%d->%d/of(%d,%d)/wh(%d,%d)/fmt:0x%x\n",
+				j, layer_info->ovl_id, layer_info->dst_offset_x,
+				layer_info->dst_offset_y, layer_info->dst_width, layer_info->dst_height,
+				layer_info->src_fmt);
+		}
+	}
+	n += snprintf(status_buf + n, LOGGER_BUFFER_SIZE - n,
+		"Last hrt query data[end]\n");
+
 }
 
 static int filter_by_ovl_cnt(disp_layer_info *disp_info)
@@ -729,8 +763,7 @@ static int dispatch_ovl_id(disp_layer_info *disp_info)
 
 int check_disp_info(disp_layer_info *disp_info)
 {
-	int disp_idx, i;
-	layer_config *layer_info;
+	int disp_idx;
 
 	if (disp_info == NULL) {
 		DISPERR("[HRT]disp_info is empty\n");
@@ -751,19 +784,6 @@ int check_disp_info(disp_layer_info *disp_info)
 			DISPERR("[HRT]gles layer invalid, disp_idx:%d, head:%d, tail:%d\n",
 				disp_idx, disp_info->gles_head[disp_idx], disp_info->gles_tail[disp_idx]);
 			return -1;
-		}
-
-		/*
-		This step used to check all of the layer info is not empty.
-		If system crash here, means the input disp_info is incorrect.
-		*/
-		if (has_hrt_limit(disp_info, disp_idx)) {
-			int bpp;
-
-			for (i = 0 ; i < disp_info->layer_num[disp_idx] ; i++) {
-				layer_info = &disp_info->input_config[disp_idx][i];
-				bpp = get_bpp(layer_info->src_fmt);
-			}
 		}
 	}
 
@@ -917,17 +937,92 @@ static int set_hrt_bound(void)
 
 }
 
-int dispsys_hrt_calc(disp_layer_info *disp_info)
+int set_disp_info(disp_layer_info *disp_info_user)
+{
+	memcpy(&disp_info_hrt, disp_info_user, sizeof(disp_layer_info));
+
+	if (disp_info_hrt.layer_num[0]) {
+		disp_info_hrt.input_config[0] =
+			kzalloc(sizeof(layer_config) * disp_info_hrt.layer_num[0], GFP_KERNEL);
+		if (disp_info_hrt.input_config[0] == NULL) {
+			DISPERR("[HRT]: alloc input config 0 fail, layer_num:%d\n",
+				disp_info_hrt.layer_num[0]);
+			return -EFAULT;
+		}
+
+		if (copy_from_user(disp_info_hrt.input_config[0], disp_info_user->input_config[0],
+			sizeof(layer_config) * disp_info_hrt.layer_num[0])) {
+			DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+			return -EFAULT;
+		}
+	}
+
+	if (disp_info_hrt.layer_num[1]) {
+		disp_info_hrt.input_config[1] =
+			kzalloc(sizeof(layer_config) * disp_info_hrt.layer_num[1], GFP_KERNEL);
+		if (disp_info_hrt.input_config[1] == NULL) {
+			DISPERR("[HRT]: alloc input config 1 fail, layer_num:%d\n",
+				disp_info_hrt.layer_num[1]);
+			return -EFAULT;
+		}
+
+		if (copy_from_user(disp_info_hrt.input_config[1], disp_info_user->input_config[1],
+			sizeof(layer_config) * disp_info_hrt.layer_num[1])) {
+			DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+			return -EFAULT;
+		}
+	}
+
+	return 0;
+}
+
+int copy_layer_info_to_user(disp_layer_info *disp_info_user)
+{
+	int ret = 0;
+
+	disp_info_user->hrt_num = disp_info_hrt.hrt_num;
+
+	if (disp_info_hrt.layer_num[0]) {
+		disp_info_user->gles_head[0] = disp_info_hrt.gles_head[0];
+		disp_info_user->gles_tail[0] = disp_info_hrt.gles_tail[0];
+		if (copy_to_user(disp_info_user->input_config[0], disp_info_hrt.input_config[0],
+			sizeof(layer_config) * disp_info_hrt.layer_num[0])) {
+			DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+			ret = -EFAULT;
+		}
+		kfree(disp_info_hrt.input_config[0]);
+	}
+
+	if (disp_info_hrt.layer_num[1]) {
+		disp_info_user->gles_head[1] = disp_info_hrt.gles_head[1];
+		disp_info_user->gles_tail[1] = disp_info_hrt.gles_tail[1];
+		if (copy_to_user(disp_info_user->input_config[1], disp_info_hrt.input_config[1],
+			sizeof(layer_config) * disp_info_hrt.layer_num[1])) {
+			DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
+			ret = -EFAULT;
+		}
+		kfree(disp_info_hrt.input_config[1]);
+	}
+
+	return ret;
+}
+
+int dispsys_hrt_calc(disp_layer_info *disp_info_user)
 {
 	int ret;
 
-	if (check_disp_info(disp_info) < 0) {
+	if (check_disp_info(disp_info_user) < 0) {
 		DISPERR("check_disp_info fail\n");
-		return -1;
+		return -EFAULT;
 	}
+
+	if (set_disp_info(disp_info_user))
+		return -EFAULT;
+
+	print_disp_info_to_log_buffer(&disp_info_hrt);
 #ifdef HRT_DEBUG
 	DISPMSG("[Input data]\n");
-	dump_disp_info(disp_info);
+	dump_disp_info(&disp_info_hrt);
 #endif
 
 	/*
@@ -939,20 +1034,21 @@ int dispsys_hrt_calc(disp_layer_info *disp_info)
 	If the number of input layr over the real layer number OVL hw can support,
 	set some of these layers as GLES layer to meet the hw capability.
 	*/
-	ret = filter_by_ovl_cnt(disp_info);
+	ret = filter_by_ovl_cnt(&disp_info_hrt);
 
 	/*
 	Calculate overlap number of available input layers.
 	If the overlap number is out of bound, then decrease the number of available layers
 	to overlap number.
 	*/
-	calc_hrt_num(disp_info);
+	calc_hrt_num(&disp_info_hrt);
 
 	/*
 	Fill layer id for each input layers. All the gles layer set as same layer id.
 	*/
-	ret = dispatch_ovl_id(disp_info);
-	dump_disp_info(disp_info);
+	ret = dispatch_ovl_id(&disp_info_hrt);
+	dump_disp_info(&disp_info_hrt);
 
+	ret = copy_layer_info_to_user(disp_info_user);
 	return ret;
 }
