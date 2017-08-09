@@ -427,7 +427,7 @@ ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_VOLT7_VPROC1_SB    (106000)	/* 10MV */
 #define CPU_DVFS_VOLT8_VPROC1_SB    (102000)	/* 10MV */
 #define CPU_DVFS_VOLT9_VPROC1_SB    (99000)		/* 10MV */
-#define CPU_DVFS_VOLT10_VPROC1_SB    (97000)	/* 10MV */
+#define CPU_DVFS_VOLT10_VPROC1_SB    (95000)	/* 10MV */
 #define CPU_DVFS_VOLT11_VPROC1_SB    (93000)	/* 10MV */
 #define CPU_DVFS_VOLT12_VPROC1_SB    (89000)	/* 10MV */
 #define CPU_DVFS_VOLT13_VPROC1_SB    (85000)	/* 10MV */
@@ -516,7 +516,7 @@ ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_FREQ6_CCI_M    (663000)	/* KHz */
 #define CPU_DVFS_FREQ7_CCI_M    (624000)	/* KHz */
 #define CPU_DVFS_FREQ8_CCI_M    (559000)	/* KHz */
-#define CPU_DVFS_FREQ9_CCI_M    (507000)	/* KHz */
+#define CPU_DVFS_FREQ9_CCI_M    (494000)	/* KHz */
 #define CPU_DVFS_FREQ10_CCI_M    (429000)	/* KHz */
 #define CPU_DVFS_FREQ11_CCI_M    (390000)	/* KHz */
 #define CPU_DVFS_FREQ12_CCI_M    (338000)	/* KHz */
@@ -552,7 +552,7 @@ ktime_t max[NR_SET_V_F];
 #define CPU_DVFS_VOLT6_VPROC1_M    (102000)	/* 10MV */
 #define CPU_DVFS_VOLT7_VPROC1_M    (100000)	/* 10MV */
 #define CPU_DVFS_VOLT8_VPROC1_M    (97000)	/* 10MV */
-#define CPU_DVFS_VOLT9_VPROC1_M    (94000)	/* 10MV */
+#define CPU_DVFS_VOLT9_VPROC1_M    (93000)	/* 10MV */
 #define CPU_DVFS_VOLT10_VPROC1_M    (90000)	/* 10MV */
 #define CPU_DVFS_VOLT11_VPROC1_M    (88000)	/* 10MV */
 #define CPU_DVFS_VOLT12_VPROC1_M    (85000)	/* 10MV */
@@ -1460,7 +1460,7 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_e3[] = {
 	FP(CPU_DVFS_FREQ8_LL_M,		2,	1),
 	FP(CPU_DVFS_FREQ9_LL_M,		2,	1),
 	FP(CPU_DVFS_FREQ10_LL_M,	2,	1),
-	FP(CPU_DVFS_FREQ11_LL_M,	2,	2),
+	FP(CPU_DVFS_FREQ11_LL_M,	2,	1),
 	FP(CPU_DVFS_FREQ12_LL_M,	2,	2),
 	FP(CPU_DVFS_FREQ13_LL_M,	2,	2),
 	FP(CPU_DVFS_FREQ14_LL_M,	2,	2),
@@ -1524,7 +1524,7 @@ static struct mt_cpu_freq_method opp_tbl_method_B_e3[] = {
 	FP(CPU_DVFS_FREQ12_B_M,		2,	1),
 	FP(CPU_DVFS_FREQ13_B_M,		2,	1),
 	FP(CPU_DVFS_FREQ14_B_M,		2,	1),
-	FP(CPU_DVFS_FREQ15_B_M,		2,	2),
+	FP(CPU_DVFS_FREQ15_B_M,		2,	2), /* should be 1.7 with legacy */
 };
 
 struct opp_tbl_info {
