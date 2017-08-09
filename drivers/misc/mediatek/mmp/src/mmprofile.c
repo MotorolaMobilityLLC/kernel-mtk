@@ -1279,7 +1279,7 @@ static void process_dbg_cmd(char *cmd)
 {
 	if (0 == strncmp(cmd, "mmp_log_on:", 11)) {
 		char *p = (char *)cmd + 11;
-		int value;
+		unsigned long value;
 
 		if (0 == kstrtoul(p, 10, &value) && 0 != value)
 			mmp_log_on = 1;
@@ -1288,7 +1288,7 @@ static void process_dbg_cmd(char *cmd)
 		MMP_MSG("mmp_log_on=%d\n", mmp_log_on);
 	} else if (0 == strncmp(cmd, "mmp_trace_log_on:", 17)) {
 		char *p = (char *)cmd + 17;
-		int value;
+		unsigned long value;
 
 		if (0 == kstrtoul(p, 10, &value) && 0 != value)
 			mmp_trace_log_on = 1;
