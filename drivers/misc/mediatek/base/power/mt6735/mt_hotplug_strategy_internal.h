@@ -239,4 +239,8 @@ extern struct cpumask cpu_domain_big_mask;
 extern struct cpumask cpu_domain_little_mask;
 extern void sched_get_nr_running_avg(int *avg, int *iowait_avg);
 
+extern unsigned int sched_get_percpu_load(int cpu,
+	bool reset, bool use_maxfreq);
+extern unsigned int sched_get_nr_heavy_task(void);
+
 #endif

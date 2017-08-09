@@ -64,26 +64,20 @@ unsigned int num_online_big_cpus(void)
  */
 unsigned int hps_cpu_get_percpu_load(int cpu)
 {
-/*
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
-    return sched_get_percpu_load(cpu, 1, 0);
+	return sched_get_percpu_load(cpu, 1, 0);
 #else
-    return 100;
-#endif
-*/
 	return 100;
+#endif
 }
 
 unsigned int hps_cpu_get_nr_heavy_task(void)
 {
-/*
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
-    return sched_get_nr_heavy_task();
+	return sched_get_nr_heavy_task();
 #else
-    return 0;
-#endif
-*/
 	return 0;
+#endif
 }
 
 void hps_cpu_get_tlp(unsigned int *avg, unsigned int *iowait_avg)
@@ -94,12 +88,6 @@ void hps_cpu_get_tlp(unsigned int *avg, unsigned int *iowait_avg)
 	*avg = 0;
 	*iowait_avg = 0;
 #endif
-}
-
-void hps_cpu_get_big_little_cpumasks(struct cpumask *big,
-				     struct cpumask *little)
-{
-/*    sched_get_big_little_cpus(big, little); */
 }
 
 /*
@@ -118,8 +106,8 @@ int hps_cpu_init(void)
 	cpumask_clear(&hps_ctxt.big_cpumask);
 
 	/* a. call api */
-	hps_cpu_get_big_little_cpumasks(
-		&hps_ctxt.big_cpumask, &hps_ctxt.little_cpumask);
+	arch_get_cluster_cpus(&hps_ctxt.little_cpumask, 0);
+	arch_get_cluster_cpus(&hps_ctxt.big_cpumask, 1);
 	/* b. fix 2L2b */
 	/* cpulist_parse("0-1", &hps_ctxt.little_cpumask); */
 	/* cpulist_parse("2-3", &hps_ctxt.big_cpumask); */
