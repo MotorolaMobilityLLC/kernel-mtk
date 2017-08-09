@@ -1,11 +1,11 @@
 
 obj-y += mt_dcm.o
-ifeq ($(CONFIG_MTK_LEGACY),y)
+ifeq ($(strip $(CONFIG_MTK_CLKMGR)),y)
 obj-y += mt_clkmgr_common_legacy.o
-obj-y += mt_clkmgr_legacy.o
+obj-$(CONFIG_ARCH_MT6735) += mt_clkmgr_legacy.o
 else
 obj-y += mt_clkmgr_common.o
-obj-y += mt_clkmgr.o
+obj-$(CONFIG_ARCH_MT6735) += mt_clkmgr.o
 endif
 obj-y += mt_idle.o
 obj-y += mt_spm_mtcmos.o

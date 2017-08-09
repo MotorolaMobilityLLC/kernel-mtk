@@ -804,7 +804,7 @@ config ARCH_MT6735
 	select MTK_SYS_CIRQ
 	select MTK_EIC
 	select MTK_IRQ
-	select COMMON_CLK if !MTK_LEGACY
+	select COMMON_CLK if !MTK_CLKMGR
 	select CPU_IDLE
 	select PINCTRL
 	select PINCTRL_MT6735

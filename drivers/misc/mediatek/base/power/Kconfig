@@ -1,0 +1,10 @@
+config MTK_CLKMGR
+	bool "Mediatek proprietary clock management"
+	default n
+	---help---
+	  Mediatek proprietary clock management is used to operate
+          the clocks. The clocks are composed of CG, MUX, PLL,
+          non-MTCMOS. The operations of clocks are enabling,
+          disabling, and querying status. If this config is not set,
+          system will use COMMON_CLK instead.
+

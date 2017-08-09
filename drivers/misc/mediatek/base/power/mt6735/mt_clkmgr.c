@@ -58,13 +58,13 @@ void __iomem *clk_venc_gcon_base;
 /* #define PLL_LOG_TOP */
 #define PLL_LOG
 
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 #define MT_CCF_DEBUG	1
 #define MT_CCF_BRINGUP	0
 #define Bring_Up
 #else
 /* #define Bring_Up */
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 #define VLTE_SUPPORT
 #define SPM_BRINGUP
@@ -965,11 +965,11 @@ int pll_dump_regs(int id, unsigned int *ptr)
 {
 	struct pll *pll = id_to_pll(id);
 
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 #ifdef Bring_Up
 	return 0;
 #endif
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 
 	BUG_ON(!initialized);
 	BUG_ON(!pll);
@@ -1642,11 +1642,11 @@ int subsys_dump_regs(int id, unsigned int *ptr)
 
 	struct subsys *sys = id_to_sys(id);
 
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 #ifdef Bring_Up
 	return 0;
 #endif
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 
 	BUG_ON(!initialized);
 	BUG_ON(!sys);
@@ -1780,9 +1780,9 @@ int conn_power_on(void)
 	struct subsys *sys = id_to_sys(SYS_CONN);
 
 #ifdef Bring_Up
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	return 0;
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !defined(CONFIG_MTK_CLKMGR) */
 #if !defined(CONFIG_MTK_FPGA)
 	spm_mtcmos_ctrl_connsys(STA_POWER_ON);
 #endif
@@ -1813,9 +1813,9 @@ int conn_power_off(void)
 	struct subsys *sys = id_to_sys(SYS_CONN);
 
 #ifdef Bring_Up
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	return 0;
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !defined(CONFIG_MTK_CLKMGR) */
 #if !defined(CONFIG_MTK_FPGA)
 	spm_mtcmos_ctrl_connsys(STA_POWER_DOWN);
 #endif
@@ -3376,11 +3376,11 @@ int grp_dump_regs(int id, unsigned int *ptr)
 {
 	struct cg_grp *grp = id_to_grp(id);
 
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 #ifdef Bring_Up
 	return 0;
 #endif
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 
 	/* BUG_ON(!initialized); */
 	BUG_ON(!grp);
@@ -3393,11 +3393,11 @@ const char *grp_get_name(int id)
 {
 	struct cg_grp *grp = id_to_grp(id);
 
-#if defined(CONFIG_MTK_LEGACY)
+#if defined(CONFIG_MTK_CLKMGR)
 #ifdef Bring_Up
 	return 0;
 #endif
-#endif /* defined(CONFIG_MTK_LEGACY) */
+#endif /* defined(CONFIG_MTK_CLKMGR) */
 
 	/* BUG_ON(!initialized); */
 	BUG_ON(!grp);
@@ -4426,10 +4426,10 @@ static void clk_stat_bug(void)
 void slp_check_pm_mtcmos_pll(void)
 {
 	int i;
-#if !defined(CONFIG_MTK_LEGACY)
+#if !defined(CONFIG_MTK_CLKMGR)
 	print_grp_regs();
 	return;
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif /* !defined(CONFIG_MTK_CLKMGR) */
 
 	slp_chk_mtcmos_pll_stat = 1;
 	clk_info("[%s]\n", __func__);
