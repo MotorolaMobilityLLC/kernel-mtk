@@ -2544,10 +2544,15 @@ PL_CORE_PROC:
 					debug_info->name = "INVALID";
 					break;
 				case MD_EX_CC_INVALID_EXCEPTION:
+					/* Fall through */
 				case MD_EX_CC_PCORE_EXCEPTION:
+					/* Fall through */
 				case MD_EX_CC_L1CORE_EXCEPTION:
+					/* Fall through */
 				case MD_EX_CC_CS_EXCEPTION:
+					/* Fall through */
 				case MD_EX_CC_MD32_EXCEPTION:
+					/* Fall through */
 				case MD_EX_CC_C2K_EXCEPTION:
 					/* Fall through */
 				case MD_EX_CC_ARM7_EXCEPTION:
@@ -2556,12 +2561,19 @@ PL_CORE_PROC:
 					[Fatal error (CC xxx)] err_code1:0x00000xx err_code2:0x00xxx err_code3:0xxxx
 					Offender: */
 					ee_type = ee_type - MD_EX_CC_INVALID_EXCEPTION + MD_EX_PL_FATALE_TOTAL;
+					/* Fall through */
 				case MD_EX_PL_UNDEF:
+					/* Fall through */
 				case MD_EX_PL_SWI:
+					/* Fall through */
 				case MD_EX_PL_PREF_ABT:
+					/* Fall through */
 				case MD_EX_PL_DATA_ABT:
+					/* Fall through */
 				case MD_EX_PL_STACKACCESS:
+					/* Fall through */
 				case MD_EX_PL_FATALERR_TASK:
+					/* Fall through */
 				case MD_EX_PL_FATALERR_BUF:
 					/* all offender is zero, goto from tail of function, reparser. */
 					/* the only one case: none offender, c2k ee */
@@ -2592,7 +2604,9 @@ PL_CORE_PROC:
 						debug_info->fatal_error.ExStr = "";
 					break;
 				case MD_EX_PL_ASSERT_FAIL:
+					/* Fall through */
 				case MD_EX_PL_ASSERT_DUMP:
+					/* Fall through */
 				case MD_EX_PL_ASSERT_NATIVE:
 					debug_info->type = MD_EX_DUMP_ASSERT;/* = MD_EX_TYPE_ASSERT; */
 					debug_info->name = "ASSERT";
@@ -2630,7 +2644,9 @@ PL_CORE_PROC:
 				debug_info->ext_size = sizeof(EX_PL_LOG_T);
 				break;
 			case MD_CS_ICC:
+				/* Fall through */
 			case MD_CS_IMC:
+				/* Fall through */
 			case MD_CS_MPC:
 				ex_csLogInfo =
 				    (EX_CS_LOG_T *) ((char *)ex_overview +
@@ -2674,7 +2690,9 @@ PL_CORE_PROC:
 				debug_info->ext_size = sizeof(EX_CS_LOG_T);
 				break;
 			case MD_MD32_DFE:
+				/* Fall through */
 			case MD_MD32_BRP:
+				/* Fall through */
 			case MD_MD32_RAKE:
 				ex_md32LogInfo = (EX_MD32_LOG_T *) ((char *)ex_overview +
 						       ex_overview->main_reson[core_id].core_offset);
@@ -2693,6 +2711,7 @@ PL_CORE_PROC:
 				}
 				switch (ee_type) {
 				case CMIF_MD32_EX_ASSERT_LINE:
+					/* Fall through */
 				case CMIF_MD32_EX_ASSERT_EXT:
 					debug_info->type = MD_EX_DUMP_ASSERT;
 					ee_case = MD_EX_TYPE_ASSERT;
@@ -2710,6 +2729,7 @@ PL_CORE_PROC:
 					    ex_md32LogInfo->except_content.assert.ex_code[2];
 					break;
 				case CMIF_MD32_EX_FATAL_ERROR:
+					/* Fall through */
 				case CMIF_MD32_EX_FATAL_ERROR_EXT:
 					debug_info->type = MD_EX_DUMP_2P_EX;
 					ee_case = MD_EX_TYPE_FATALERR_TASK;
@@ -2721,6 +2741,7 @@ PL_CORE_PROC:
 					    ex_md32LogInfo->except_content.fatalerr.ex_code[1];
 					break;
 				case CS_EXCEPTION_CTI_EVENT:
+					/* Fall through */
 				case CS_EXCEPTION_UNKNOWN:
 				default:
 					debug_info->name = "UNKNOWN Exception";
@@ -2792,6 +2813,7 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 
 	switch (debug_info->type) {
 	case MD_EX_TYPE_ASSERT_DUMP:
+		/* Fall through */
 	case MD_EX_TYPE_ASSERT:
 		CCCI_INF_MSG(md->index, KERN, "filename = %s\n", debug_info->assert.file_name);
 		CCCI_INF_MSG(md->index, KERN, "line = %d\n", debug_info->assert.line_num);
@@ -2806,11 +2828,17 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 			 debug_info->assert.parameters[1], debug_info->assert.parameters[2]);
 		break;
 	case MD_EX_TYPE_UNDEF:
+		/* Fall through */
 	case MD_EX_TYPE_SWI:
+		/* Fall through */
 	case MD_EX_TYPE_PREF_ABT:
+		/* Fall through */
 	case MD_EX_TYPE_DATA_ABT:
+		/* Fall through */
 	case MD_EX_TYPE_FATALERR_BUF:
+		/* Fall through */
 	case MD_EX_TYPE_FATALERR_TASK:
+		/* Fall through */
 	case MD_EX_TYPE_C2K_ERROR:
 		CCCI_INF_MSG(md->index, KERN, "fatal error code 1 = %d\n", debug_info->fatal_error.err_code1);
 		CCCI_INF_MSG(md->index, KERN, "fatal error code 2 = %d\n", debug_info->fatal_error.err_code2);
@@ -2897,6 +2925,7 @@ static void ccci_ee_info_dump(struct ccci_modem *md)
 		strcpy(ex_info, i_bit_ex_info);
 		break;
 	case MD_EE_CASE_TX_TRG:
+		/* Fall through */
 	case MD_EE_CASE_ISR_TRG:
 		strcat(ex_info, "\n[Others] May I-Bit dis too long\n");
 		break;
