@@ -38,6 +38,9 @@ MTK_WCN_HIF_SDIO_CHIP_INFO gChipInfoArray[] = {
 	/* MT6630 *//* SDIO1: Wi-Fi, SDIO2: BGF */
 	{{SDIO_DEVICE(0x037A, 0x6630)}, 0x6630},
 
+	/* MT6632 *//* SDIO1: Wi-Fi, SDIO2: BGF */
+	{{SDIO_DEVICE(0x037A, 0x6632)}, 0x6632},
+
 };
 
 /* Supported SDIO device table */
@@ -63,6 +66,9 @@ static const struct sdio_device_id mtk_sdio_id_tbl[] = {
 
 	/* MT6630 *//* SDIO1: Wi-Fi, SDIO2: BGF */
 	{SDIO_DEVICE(0x037A, 0x6630)},
+
+	/* MT6632 *//* SDIO1: Wi-Fi, SDIO2: BGF */
+	{SDIO_DEVICE(0x037A, 0x6632)},
 	{ /* end: all zeroes */ },
 };
 
@@ -175,7 +181,7 @@ int sdio_detect_do_autok(int chipId)
 		return 0;
 	}
 #endif
-	if (0x6630 == chipId) {
+	if (0x6630 == chipId || 0x6632 == chipId) {
 #ifdef CONFIG_SDIOAUTOK_SUPPORT
 		if (NULL != g_func) {
 			WMT_DETECT_INFO_FUNC("wait_sdio_autok_ready++\n");
@@ -223,7 +229,7 @@ static int sdio_detect_probe(struct sdio_func *func, const struct sdio_device_id
 	WMT_DETECT_INFO_FUNC("vendor(0x%x) device(0x%x) num(0x%x)\n", func->vendor, func->device, func->num);
 	chipId = hif_sdio_match_chipid_by_dev_id(id);
 
-	if ((0x6630 == chipId) && (1 == func->num)) {
+	if ((0x6630 == chipId || 0x6632 == chipId) && (1 == func->num)) {
 		int ret = 0;
 
 		g_func = func;

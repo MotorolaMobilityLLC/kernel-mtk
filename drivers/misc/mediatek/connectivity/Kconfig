@@ -35,6 +35,14 @@ config MTK_COMBO_CHIP_MT6630
 	  is
 	  MT6630
 
+config MTK_COMBO_CHIP_MT6632
+	bool "Mediatek MT6632 device driver support"
+	help
+	  This driver supports the built-in smart phone found in the Mediatek MT6632 chipset.
+          If you want to use MT6632 driver supprt, say Y.
+          If unsure, say N.
+          Mediatek MT6632 module includes BT, FM, GPS, WIFI.
+
 config MTK_COMBO_CHIP_CONSYS_6572
 	bool "CONSYS_6572"
 	help
@@ -130,6 +138,7 @@ config MTK_COMBO_CHIP
 	default "MT6620" if MTK_COMBO_CHIP_MT6620
 	default "MT6628" if MTK_COMBO_CHIP_MT6628
 	default "MT6630" if MTK_COMBO_CHIP_MT6630
+	default "MT6632" if MTK_COMBO_CHIP_MT6632
 	default "CONSYS_6572" if MTK_COMBO_CHIP_CONSYS_6572
 	default "CONSYS_6582" if MTK_COMBO_CHIP_CONSYS_6582
 	default "CONSYS_8127" if MTK_COMBO_CHIP_CONSYS_8127

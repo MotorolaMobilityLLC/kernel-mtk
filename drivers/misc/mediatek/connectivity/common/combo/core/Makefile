@@ -10,6 +10,7 @@ obj-y += wmt_core.o wmt_ctrl.o  wmt_func.o  wmt_lib.o wmt_conf.o wmt_dbg.o wmt_e
 obj-y	+= wmt_ic_6620.o
 obj-y	+= wmt_ic_6628.o
 obj-y	+= wmt_ic_6630.o
+obj-y	+= wmt_ic_6632.o
 
 obj-y	+= stp_exp.o
 obj-y	+= stp_core.o

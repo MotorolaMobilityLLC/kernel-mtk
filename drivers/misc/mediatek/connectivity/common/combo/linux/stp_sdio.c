@@ -130,6 +130,9 @@ static const MTK_WCN_HIF_SDIO_FUNCINFO mtk_stp_sdio_id_tbl[] = {
 
 	/* MT6630 *//* Not an SDIO standard class device */
 	{MTK_WCN_HIF_SDIO_FUNC(0x037A, 0x6630, 2, STP_SDIO_BLK_SIZE)},	/* 2-function */
+
+	/* MT6632 *//* Not an SDIO standard class device */
+	{MTK_WCN_HIF_SDIO_FUNC(0x037A, 0x6632, 2, STP_SDIO_BLK_SIZE)},	/* 2-function */
 	{ /* end: all zeroes */ },
 };
 
@@ -2691,7 +2694,7 @@ static INT32 stp_sdio_rw_retry(ENUM_STP_SDIO_HIF_TYPE_T type, UINT32 retry_limit
 
 	UINT32 card_id = CLTCTX_CID(clt_ctx);
 
-	if (card_id != 0x6630) {
+	if (card_id != 0x6630 && card_id != 0x6632) {
 		STPSDIO_LOUD_FUNC("card_id is :0x%x, does not support CSR (Common Snapshot Register)\n",
 				card_id);
 		retry_limit = 1;

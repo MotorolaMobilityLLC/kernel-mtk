@@ -186,7 +186,7 @@ static int mtk_wcn_cmb_stub_drv_status(unsigned int type)
  *
  * \param void
  *
- * \retval int,mt6630 state:0/off,1/power on,2/func on, -1/null
+ * \retval int,mt6630&mt6632 state:0/off,1/power on,2/func on, -1/null
  */
 int mtk_wcn_cmb_stub_1vautok_for_dvfs(void)
 {
@@ -195,16 +195,16 @@ int mtk_wcn_cmb_stub_1vautok_for_dvfs(void)
 	CMB_STUB_LOG_WARN("DVFS driver call sdio 1v autok\n");
 
 	wmt_status = mtk_wcn_cmb_stub_drv_status(4);
-	CMB_STUB_LOG_WARN("current mt6630 status is %d\n", wmt_status);
+	CMB_STUB_LOG_WARN("current mt6630&mt6632 status is %d\n", wmt_status);
 	if (0 == wmt_status) {
 		if (g_sdio_1v_autok_wk)
 			schedule_work(g_sdio_1v_autok_wk);
 		else
 			CMB_STUB_LOG_WARN("g_sdio_1v_autok_wk is NULL\n");
 	} else if ((2 == wmt_status) || (1 == wmt_status)) {
-		CMB_STUB_LOG_WARN("mt6630 is on state,skip AUTOK\n");
+		CMB_STUB_LOG_WARN("mt6630&mt6632 is on state,skip AUTOK\n");
 	} else {
-		CMB_STUB_LOG_WARN("mt6630 is unknown state(%d)\n", wmt_status);
+		CMB_STUB_LOG_WARN("mt6630&mt6632 is unknown state(%d)\n", wmt_status);
 	}
 
 	return wmt_status;

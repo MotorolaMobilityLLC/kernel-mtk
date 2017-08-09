@@ -90,6 +90,7 @@ int do_common_drv_init(int chip_id)
 	case 0x6620:
 	case 0x6628:
 	case 0x6630:
+	case 0x6632:
 		i_ret = do_combo_common_drv_init(chip_id);
 		break;
 	default:

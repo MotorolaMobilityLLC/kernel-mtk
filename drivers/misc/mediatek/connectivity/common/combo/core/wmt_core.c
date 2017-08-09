@@ -877,6 +877,12 @@ static INT32 wmt_core_hw_check(VOID)
 		break;
 #endif
 
+#if CFG_CORE_MT6632_SUPPORT
+	case 0x6632:
+		p_ops = &wmt_ic_ops_mt6632;
+		break;
+#endif
+
 	default:
 		p_ops = (P_WMT_IC_OPS) NULL;
 		break;

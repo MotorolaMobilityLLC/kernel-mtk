@@ -58,7 +58,7 @@
 #define CRDR        (0x001c)
 #define CTFSR        (0x0020)
 #define CRPLR        (0x0024)
-#define CSR        (0x00D8)	/* MT6630 only for the moment */
+#define CSR        (0x00D8)	/* MT6630 & MT6632 only for the moment */
 #define SWPCDBGR	(0x0154)
 
 /* Common HIF register bit field address */

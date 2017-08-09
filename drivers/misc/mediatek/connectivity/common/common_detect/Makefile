@@ -11,6 +11,9 @@ endif
 ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
 	COMBO_CHIP_SUPPORT := true
 endif
+ifneq ($(filter "MT6632",$(CONFIG_MTK_COMBO_CHIP)),)
+	COMBO_CHIP_SUPPORT := true
+endif
 ifeq ($(COMBO_CHIP_SUPPORT), true)
 	subdir-ccflags-y += -D MTK_WCN_COMBO_CHIP_SUPPORT
 	ccflags-y += -I$(src)/../combo/linux/include

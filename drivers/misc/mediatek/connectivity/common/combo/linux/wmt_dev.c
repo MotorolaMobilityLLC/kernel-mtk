@@ -1281,7 +1281,7 @@ long WMT_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			iRet = mtk_wcn_hif_sdio_tell_chipid(arg);
 #endif
 
-			if (0x6628 == arg || 0x6630 == arg)
+			if (0x6628 == arg || 0x6630 == arg || 0x6632 == arg)
 				wmt_lib_merge_if_flag_ctrl(1);
 			else
 				wmt_lib_merge_if_flag_ctrl(0);

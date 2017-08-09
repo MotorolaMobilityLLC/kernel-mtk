@@ -35,6 +35,11 @@
 #define CFG_CORE_MT6630_SUPPORT 1	/* whether MT6630 is supported or not */
 #endif
 
+#if defined(MT6632)
+#define CFG_CORE_MT6632_SUPPORT 1	/* whether MT6632 is supported or not */
+#else
+#define CFG_CORE_MT6632_SUPPORT 1	/* whether MT6632 is supported or not */
+#endif
 
 /* TODO:[ChangeFeature][George] move this definition outside so that wmt_dev can remove wmt_core.h inclusion. */
 #define defaultPatchName "mt66xx_patch_hdr.bin"
@@ -421,6 +426,10 @@ extern WMT_IC_OPS wmt_ic_ops_mt6628;
 
 #if CFG_CORE_MT6630_SUPPORT
 extern WMT_IC_OPS wmt_ic_ops_mt6630;
+#endif
+
+#if CFG_CORE_MT6632_SUPPORT
+extern WMT_IC_OPS wmt_ic_ops_mt6632;
 #endif
 
 /*******************************************************************************

@@ -16,6 +16,13 @@ ifneq ($(CONFIG_ARCH_MT2601),y)
 endif
 	obj-y   +=  combo/
 endif
+
+ifneq ($(filter "MT6632",$(CONFIG_MTK_COMBO_CHIP)),)
+	subdir-ccflags-y += -D MT6632
+	subdir-ccflags-y += -D MERGE_INTERFACE_SUPPORT
+	obj-y   +=  combo/
+endif
+
 ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
 	obj-y   +=  conn_soc/
 endif

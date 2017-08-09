@@ -80,6 +80,7 @@ PWR_SEQ_TIME gPwrSeqTime;
 INT32 mtk_wcn_cmb_hw_pwr_off(VOID)
 {
 	INT32 iRet = 0;
+	UINT32 chip_id = 0x0;
 
 	WMT_INFO_FUNC("CMB-HW, hw_pwr_off start\n");
 
@@ -87,7 +88,8 @@ INT32 mtk_wcn_cmb_hw_pwr_off(VOID)
 	/* TODO:[FixMe][GeorgeKuo] clarify this */
 
 	/*2. set bgf eint/all eint to deinit state, namely input low state */
-	if (!((0x6630 == mtk_wcn_wmt_chipid_query())
+	chip_id = mtk_wcn_wmt_chipid_query();
+	if (!((0x6630 == chip_id || 0x6632 == chip_id)
 				&& (STP_SDIO_IF_TX == wmt_plat_get_comm_if_type()))) {
 		iRet += wmt_plat_eirq_ctrl(PIN_BGF_EINT, PIN_STA_EINT_DIS);
 		WMT_INFO_FUNC("CMB-HW, BGF_EINT IRQ unregistered and disabled\n");
@@ -125,11 +127,13 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 {
 	static UINT32 _pwr_first_time = 1;
 	INT32 iRet = 0;
+	UINT32 chip_id = 0x0;
 
 	WMT_DBG_FUNC("CMB-HW, hw_pwr_on start\n");
 
 	/* disable interrupt firstly */
-	if (!((0x6630 == mtk_wcn_wmt_chipid_query())
+	chip_id = mtk_wcn_wmt_chipid_query();
+	if (!((0x6630 == chip_id || 0x6632 == chip_id)
 	      && (STP_SDIO_IF_TX == wmt_plat_get_comm_if_type())))
 		iRet += wmt_plat_eirq_ctrl(PIN_BGF_EINT, PIN_STA_EINT_DIS);
 	iRet += wmt_plat_eirq_ctrl(PIN_ALL_EINT, PIN_STA_EINT_DIS);
@@ -139,7 +143,7 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 	iRet += wmt_plat_gpio_ctrl(PIN_PMU, PIN_STA_INIT);
 	iRet += wmt_plat_gpio_ctrl(PIN_RST, PIN_STA_INIT);
 	iRet += wmt_plat_gpio_ctrl(PIN_SDIO_GRP, PIN_STA_INIT);
-	if (!((0x6630 == mtk_wcn_wmt_chipid_query())
+	if (!((0x6630 == chip_id || 0x6632 == chip_id)
 	      && (STP_SDIO_IF_TX == wmt_plat_get_comm_if_type())))
 		iRet += wmt_plat_gpio_ctrl(PIN_BGF_EINT, PIN_STA_INIT);
 	iRet += wmt_plat_gpio_ctrl(PIN_ALL_EINT, PIN_STA_INIT);
@@ -163,7 +167,7 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 	/*3. set UART Tx/Rx to UART mode */
 	iRet += wmt_plat_gpio_ctrl(PIN_UART_GRP, PIN_STA_INIT);
 
-	if (0x6630 == mtk_wcn_wmt_chipid_query()) {
+	if (0x6630 == chip_id || 0x6632 == chip_id) {
 		switch (wmt_plat_get_comm_if_type()) {
 		case STP_UART_IF_TX:
 			iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_OUT_H);
@@ -190,7 +194,7 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 	osal_sleep_ms(gPwrSeqTime.onStableTime);
 
 	/*set UART Tx/Rx to UART mode */
-	if (0x6630 == mtk_wcn_wmt_chipid_query())
+	if (0x6630 == chip_id || 0x6632 == chip_id)
 			iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_IN_H);
 
 
@@ -201,13 +205,13 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 	/*8. set EINT< -ommited-> move this to WMT-IC module,
 	   where common sdio interface will be identified and do proper operation */
 	/* TODO: [FixMe][GeorgeKuo] double check if BGF_INT is implemented ok */
-	if (!((0x6630 == mtk_wcn_wmt_chipid_query())
+	if (!((0x6630 == chip_id || 0x6632 == chip_id)
 	      && (STP_SDIO_IF_TX == wmt_plat_get_comm_if_type()))) {
 		iRet += wmt_plat_gpio_ctrl(PIN_BGF_EINT, PIN_STA_MUX);
 		iRet += wmt_plat_eirq_ctrl(PIN_BGF_EINT, PIN_STA_INIT);
 		WMT_INFO_FUNC("CMB-HW, BGF_EINT IRQ registered and disabled\n");
 	} else {
-		WMT_DBG_FUNC("CMB-HW, no need to register BGF_EINT for MT6630 SDIO mode\n");
+		WMT_INFO_FUNC("CMB-HW, no need to register BGF_EINT for MT6630 & MT6632 SDIO mode\n");
 	}
 
 	/* 8.1 set ALL_EINT pin to correct state even it is not used currently */
@@ -223,9 +227,10 @@ INT32 mtk_wcn_cmb_hw_pwr_on(VOID)
 INT32 mtk_wcn_cmb_hw_rst(VOID)
 {
 	INT32 iRet = 0;
+	UINT32 chip_id = 0x0;
 
 	WMT_INFO_FUNC("CMB-HW, hw_rst start, eirq should be disabled before this step\n");
-	if (0x6630 == mtk_wcn_wmt_chipid_query()) {
+	if (0x6630 == chip_id || 0x6632 == chip_id) {
 		switch (wmt_plat_get_comm_if_type()) {
 		case STP_UART_IF_TX:
 			iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_OUT_H);
@@ -253,7 +258,7 @@ INT32 mtk_wcn_cmb_hw_rst(VOID)
 	osal_sleep_ms(gPwrSeqTime.onStableTime);
 
 	/*set UART Tx/Rx to UART mode */
-	if (0x6630 == mtk_wcn_wmt_chipid_query())
+	if (0x6630 == chip_id || 0x6632 == chip_id)
 			iRet += wmt_plat_gpio_ctrl(PIN_UART_RX, PIN_STA_IN_H);
 
 	WMT_INFO_FUNC("CMB-HW, hw_rst finish, eirq should be enabled after this step\n");

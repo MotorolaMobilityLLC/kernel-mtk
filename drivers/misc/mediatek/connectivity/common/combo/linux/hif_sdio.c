@@ -143,6 +143,9 @@ static const struct sdio_device_id mtk_sdio_id_tbl[] = {
 	/* MT6630 *//* SDIO1: Wi-Fi, SDIO2: BGF */
 	{SDIO_DEVICE(0x037A, 0x6630)},
 
+	/* MT6632 *//* SDIO1: Wi-Fi, SDIO2: BGF */
+	{SDIO_DEVICE(0x037A, 0x6632)},
+
 	{ /* end: all zeroes */ },
 };
 
@@ -185,6 +188,11 @@ static atomic_t hif_sdio_irq_enable_flag = ATOMIC_INIT(0);
 MTK_WCN_HIF_SDIO_DS_INFO g_hif_sdio_ds_info_list[] = {
 	{
 	 .chip_id = 0x6630,
+	 .reg_offset = 0xF1,
+	 .value = 0x1,
+	 },
+	{
+	 .chip_id = 0x6632,
 	 .reg_offset = 0xF1,
 	 .value = 0x1,
 	 },
@@ -2032,6 +2040,13 @@ INT32 hif_sdio_stp_on(VOID)
 		func_num = 2;
 		goto stp_on_exist;
 	}
+	/* MT6632 */
+	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6632, 2);
+	if (probe_index >= 0) {
+		chip_id = 0x6632;
+		func_num = 2;
+		goto stp_on_exist;
+	}
 	/* MT6619 */
 	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6619, 1);
 	if (probe_index >= 0)
@@ -2165,6 +2180,13 @@ INT32 hif_sdio_stp_off(VOID)
 		func_num = 2;
 		goto stp_off_exist;
 	}
+	/* MT6632 */
+	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6632, 2);
+	if (probe_index >= 0) {
+		chip_id = 0x6632;
+		func_num = 2;
+		goto stp_off_exist;
+	}
 
 	/* MT6619 */
 	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6619, 1);
@@ -2288,6 +2310,14 @@ INT32 hif_sdio_wifi_on(VOID)
 	 if (probe_index >= 0) {
 		sdio_autok_flag = 1;
 		chip_id = 0x6630;
+		func_num = 1;
+		goto wifi_on_exist;
+	}
+	/* MT6632 */
+	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6632, 1);
+	 if (probe_index >= 0) {
+		sdio_autok_flag = 1;
+		chip_id = 0x6632;
 		func_num = 1;
 		goto wifi_on_exist;
 	}
@@ -2421,6 +2451,13 @@ INT32 hif_sdio_wifi_off(VOID)
 	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6630, 1);
 	if (probe_index >= 0) {
 		chip_id = 0x6630;
+		func_num = 1;
+		goto wifi_off_exist;
+	}
+	/* MT6632 */
+	probe_index = hif_sdio_find_probed_list_index_by_id_func(0x037A, 0x6632, 1);
+	if (probe_index >= 0) {
+		chip_id = 0x6632;
 		func_num = 1;
 		goto wifi_off_exist;
 	}
