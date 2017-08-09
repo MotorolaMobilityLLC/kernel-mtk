@@ -481,6 +481,14 @@ char cg_group_name[][NR_GRPS] = {
 #endif
 };
 
+static char log_buf[500];
+static char log_buf_2[500];
+
+static unsigned long long idle_block_log_prev_time;
+static unsigned int idle_block_log_time_criteria = 5000;	/* 5 sec */
+static unsigned long long idle_cnt_dump_prev_time;
+static unsigned int idle_cnt_dump_criteria = 10000;			/* 10 sec */
+
 /* Slow Idle */
 static unsigned int slidle_block_mask[NR_GRPS] = {0x0};
 static unsigned long slidle_cnt[NR_CPUS] = {0};
@@ -496,6 +504,7 @@ static unsigned int     soidle_timer_cmp;
 static unsigned int     soidle_time_critera = 26000;
 static unsigned int     soidle_block_time_critera = 30000; /* default 30sec */
 static unsigned long    soidle_cnt[NR_CPUS] = {0};
+static unsigned long    soidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    soidle_block_cnt[NR_CPUS][NR_REASONS] = { {0} };
 static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
@@ -510,6 +519,7 @@ static unsigned int     dpidle_timer_cmp;
 static unsigned int     dpidle_time_critera = 26000;
 static unsigned int     dpidle_block_time_critera = 30000; /* default 30sec */
 static unsigned long    dpidle_cnt[NR_CPUS] = {0};
+static unsigned long    dpidle_last_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long dpidle_block_prev_time;
 static bool             dpidle_by_pass_cg;
@@ -872,6 +882,7 @@ static bool soidle_can_enter(int cpu)
 	int reason = NR_REASONS;
 	unsigned long long soidle_block_curr_time = 0;
 	bool retval = false;
+	char *p;
 
 #ifdef CONFIG_SMP
 	if (!(spm_get_cpu_pwr_status() == CA7_CPU0)) {
@@ -925,29 +936,35 @@ out:
 			soidle_block_prev_time = idle_get_current_time_ms();
 
 		soidle_block_curr_time = idle_get_current_time_ms();
-		if ((soidle_block_curr_time - soidle_block_prev_time) > soidle_block_time_critera) {
+		if (((soidle_block_curr_time - soidle_block_prev_time) > soidle_block_time_critera)
+			&& ((soidle_block_curr_time - idle_block_log_prev_time) > idle_block_log_time_criteria)) {
+
 			if ((smp_processor_id() == 0)) {
 				int i = 0;
 
-				for (i = 0; i < nr_cpu_ids; i++) {
-					idle_warn("soidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n",
-							i, soidle_cnt[i], i, rgidle_cnt[i]);
-				}
+				/* soidle,rgidle count */
+				p = log_buf;
+				p += sprintf(p, "CNT(soidle,rgidle): ");
+				for (i = 0; i < nr_cpu_ids; i++)
+					p += sprintf(p, "[%d] = (%lu,%lu), ", i, soidle_cnt[i], rgidle_cnt[i]);
+				idle_warn("%s\n", log_buf);
 
-				for (i = 0; i < NR_REASONS; i++) {
-					idle_warn("[%d]soidle_block_cnt[0][%s]=%lu\n", i, reason_name[i],
-							soidle_block_cnt[0][i]);
-				}
+				/* block category */
+				p = log_buf;
+				p += sprintf(p, "soidle_block_cnt: ");
+				for (i = 0; i < NR_REASONS; i++)
+					p += sprintf(p, "[%s] = %lu, ", reason_name[i], soidle_block_cnt[0][i]);
+				idle_warn("%s\n", log_buf);
 
-				for (i = 0; i < NR_GRPS; i++) {
-					idle_warn("[%02d]soidle_condition_mask[%-8s]=0x%08x\t\t"
-							"soidle_block_mask[%-8s]=0x%08x\n", i,
-							cg_grp_get_name(i), soidle_condition_mask[i],
-							cg_grp_get_name(i), soidle_block_mask[i]);
-				}
+				p = log_buf;
+				p += sprintf(p, "soidle_block_mask: ");
+				for (i = 0; i < NR_GRPS; i++)
+					p += sprintf(p, "0x%08x, ", soidle_block_mask[i]);
+				idle_warn("%s\n", log_buf);
 
 				memset(soidle_block_cnt, 0, sizeof(soidle_block_cnt));
 				soidle_block_prev_time = idle_get_current_time_ms();
+				idle_block_log_prev_time = soidle_block_prev_time;
 			}
 		}
 
@@ -1047,6 +1064,7 @@ static bool dpidle_can_enter(void)
 	int i = 0;
 	unsigned long long dpidle_block_curr_time = 0;
 	bool retval = false;
+	char *p;
 
 #ifdef CONFIG_SMP
 	if (!(spm_get_cpu_pwr_status() == CA7_CPU0)) {
@@ -1093,26 +1111,33 @@ out:
 			dpidle_block_prev_time = idle_get_current_time_ms();
 
 		dpidle_block_curr_time = idle_get_current_time_ms();
-		if ((dpidle_block_curr_time - dpidle_block_prev_time) > dpidle_block_time_critera) {
+		if (((dpidle_block_curr_time - dpidle_block_prev_time) > dpidle_block_time_critera)
+			&& ((dpidle_block_curr_time - idle_block_log_prev_time) > idle_block_log_time_criteria)) {
+
 			if ((smp_processor_id() == 0)) {
-				for (i = 0; i < nr_cpu_ids; i++) {
-					idle_warn("dpidle_cnt[%d]=%lu, rgidle_cnt[%d]=%lu\n",
-							i, dpidle_cnt[i], i, rgidle_cnt[i]);
-				}
+				/* dpidle,rgidle count */
+				p = log_buf;
+				p += sprintf(p, "CNT(dpidle,rgidle): ");
+				for (i = 0; i < nr_cpu_ids; i++)
+					p += sprintf(p, "[%d] = (%lu,%lu), ", i, dpidle_cnt[i], rgidle_cnt[i]);
+				idle_warn("%s\n", log_buf);
 
-				for (i = 0; i < NR_REASONS; i++) {
-					idle_warn("[%d]dpidle_block_cnt[%s]=%lu\n", i, reason_name[i],
-							dpidle_block_cnt[i]);
-				}
+				/* block category */
+				p = log_buf;
+				p += sprintf(p, "dpidle_block_cnt: ");
+				for (i = 0; i < NR_REASONS; i++)
+					p += sprintf(p, "[%s] = %lu, ", reason_name[i], dpidle_block_cnt[i]);
+				idle_warn("%s\n", log_buf);
 
-				for (i = 0; i < NR_GRPS; i++) {
-					idle_warn("[%02d]dpidle_condition_mask[%-8s]=0x%08x\t\t"
-							"dpidle_block_mask[%-8s]=0x%08x\n", i,
-							cg_grp_get_name(i), dpidle_condition_mask[i],
-							cg_grp_get_name(i), dpidle_block_mask[i]);
-				}
+				p = log_buf;
+				p += sprintf(p, "dpidle_block_mask: ");
+				for (i = 0; i < NR_GRPS; i++)
+					p += sprintf(p, "0x%08x, ", dpidle_block_mask[i]);
+				idle_warn("%s\n", log_buf);
+
 				memset(dpidle_block_cnt, 0, sizeof(dpidle_block_cnt));
 				dpidle_block_prev_time = idle_get_current_time_ms();
+				idle_block_log_prev_time = dpidle_block_prev_time;
 			}
 		}
 		dpidle_block_cnt[reason]++;
@@ -1436,9 +1461,71 @@ static int (*idle_select_handlers[NR_TYPES])(int) = {
 	rgidle_select_handler,
 };
 
+void dump_idle_cnt_in_interval(int cpu)
+{
+	int i = 0;
+	char *p = log_buf;
+	char *p2 = log_buf_2;
+	unsigned long long idle_cnt_dump_curr_time = 0;
+	bool have_dpidle = false;
+	bool have_soidle = false;
+
+	if (idle_cnt_dump_prev_time == 0)
+		idle_cnt_dump_prev_time = idle_get_current_time_ms();
+
+	idle_cnt_dump_curr_time = idle_get_current_time_ms();
+
+	if (!(cpu == 0))
+		return;
+
+	if (!((idle_cnt_dump_curr_time - idle_cnt_dump_prev_time) > idle_cnt_dump_criteria))
+		return;
+
+	/* dump idle count */
+	/* deepidle */
+	p = log_buf;
+	for (i = 0; i < nr_cpu_ids; i++) {
+		if ((dpidle_cnt[i] - dpidle_last_cnt[i]) != 0) {
+			p += sprintf(p, "[%d] = %lu, ", i, dpidle_cnt[i] - dpidle_last_cnt[i]);
+			have_dpidle = true;
+		}
+
+		dpidle_last_cnt[i] = dpidle_cnt[i];
+	}
+
+	if (have_dpidle)
+		p2 += sprintf(p2, "DP: %s --- ", log_buf);
+	else
+		p2 += sprintf(p2, "DP: No enter --- ");
+
+	/* sodi */
+	p = log_buf;
+	for (i = 0; i < nr_cpu_ids; i++) {
+		if ((soidle_cnt[i] - soidle_last_cnt[i]) != 0) {
+			p += sprintf(p, "[%d] = %lu, ", i, soidle_cnt[i] - soidle_last_cnt[i]);
+			have_soidle = true;
+		}
+
+		soidle_last_cnt[i] = soidle_cnt[i];
+	}
+
+	if (have_soidle)
+		p2 += sprintf(p2, "SODI: %s --- ", log_buf);
+	else
+		p2 += sprintf(p2, "SODI: No enter --- ");
+
+	/* dump log */
+	idle_warn("%s\n", log_buf_2);
+
+	/* update time base */
+	idle_cnt_dump_prev_time = idle_cnt_dump_curr_time;
+}
+
 int mt_idle_select(int cpu)
 {
 	int i = NR_TYPES - 1;
+
+	dump_idle_cnt_in_interval(cpu);
 
 	for (i = 0; i < NR_TYPES; i++) {
 		if (idle_select_handlers[i](cpu))
