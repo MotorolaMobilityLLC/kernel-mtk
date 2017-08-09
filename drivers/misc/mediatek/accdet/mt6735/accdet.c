@@ -51,7 +51,7 @@ unsigned char ts3a225e_connector_type = TS3A225E_CONNECTOR_NONE;
 static int eint_accdet_sync_flag;
 static int g_accdet_first = 1;
 static bool IRQ_CLR_FLAG;
-static int call_status;
+static char call_status;
 static int button_status;
 struct wake_lock accdet_suspend_lock;
 struct wake_lock accdet_irq_lock;
@@ -1334,7 +1334,7 @@ static int dbug_thread(void *unused)
 static ssize_t store_accdet_start_debug_thread(struct device_driver *ddri, const char *buf, size_t count)
 {
 
-	unsigned int start_flag;
+	char start_flag;
 	int error;
 	int ret;
 
@@ -1362,7 +1362,7 @@ static ssize_t store_accdet_start_debug_thread(struct device_driver *ddri, const
 static ssize_t store_accdet_set_headset_mode(struct device_driver *ddri, const char *buf, size_t count)
 {
 
-	unsigned int value;
+	char value;
 	int ret;
 
 	ret = sscanf(buf, "%s", &value);
@@ -1378,7 +1378,7 @@ static ssize_t store_accdet_set_headset_mode(struct device_driver *ddri, const c
 
 static ssize_t store_accdet_dump_register(struct device_driver *ddri, const char *buf, size_t count)
 {
-	unsigned int value;
+	char value;
 	int ret;
 
 	ret = sscanf(buf, "%s", &value);
