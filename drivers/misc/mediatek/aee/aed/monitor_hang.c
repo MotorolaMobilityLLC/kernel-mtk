@@ -217,20 +217,44 @@ static int system_server_pid;
 static int surfaceflinger_pid;
 static int system_ui_pid;
 static int init_pid;
+static int mmcqd0;
+static int mmcqd1;
+static int debuggerd;
+static int debuggerd64;
 
 static int FindTaskByName(char *name)
 {
 	struct task_struct *task;
+	int ret = -1;
 
 	system_server_pid = 0;
 	surfaceflinger_pid = 0;
 	system_ui_pid = 0;
+	init_pid = 0;
+	mmcqd0 = 0;
+	mmcqd1 = 0;
+	debuggerd = 0;
+	debuggerd64 = 0;
+
+	read_lock(&tasklist_lock);
 	for_each_process(task) {
 		if (task && (strcmp(task->comm, "init") == 0)) {
 			init_pid = task->pid;
 			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
+		} else if (task && (strcmp(task->comm, "mmcqd/0") == 0)) {
+			mmcqd0 = task->pid;
+			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
+		} else if (task && (strcmp(task->comm, "mmcqd/1") == 0)) {
+			mmcqd1 = task->pid;
+			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
 		} else if (task && (strcmp(task->comm, "surfaceflinger") == 0)) {
 			surfaceflinger_pid = task->pid;
+			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
+		} else if (task && (strcmp(task->comm, "debuggerd") == 0)) {
+			debuggerd = task->pid;
+			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
+		} else if (task && (strcmp(task->comm, "debuggerd64") == 0)) {
+			debuggerd64 = task->pid;
 			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
 		} else if (task && (strcmp(task->comm, name) == 0)) {
 			system_server_pid = task->pid;
@@ -240,13 +264,16 @@ static int FindTaskByName(char *name)
 			system_ui_pid = task->pid;
 			LOGE("[Hang_Detect] %s found pid:%d.\n", task->comm, task->pid);
 			/* return system_server_pid;  //for_each_process list by pid */
-			break;
 		}
-	}
+	 }
+	read_unlock(&tasklist_lock);
 	if (system_server_pid)
-		return system_server_pid;
-	LOGE("[Hang_Detect] system_server not found!\n");
-	return -1;
+		ret = system_server_pid;
+	else {
+		LOGE("[Hang_Detect] system_server not found!\n");
+		ret = -1;
+	}
+	return ret;
 }
 
 void sched_show_task_local(struct task_struct *p)
@@ -295,95 +322,84 @@ void show_state_filter_local(unsigned long state_filter)
 		/*
 		 * reset the NMI-timeout, listing all files on a slow
 		 * console might take a lot of time:
+		 *discard wdtk-* for it always stay in D state
 		 */
-		if (!state_filter || (p->state & state_filter))
+		if ((!state_filter || (p->state & state_filter)) && !strstr(p->comm, "wdtk"))
 			sched_show_task_local(p);
 	} while_each_thread(g, p);
 }
 
-
-
-static void ShowStatus(void)
+static void show_bt_by_pid(int task_pid)
 {
-
 	struct task_struct *t, *p;
 	struct pid *pid;
 	int count = 0;
 
+	pid = find_get_pid(task_pid);
+	t = p = get_pid_task(pid, PIDTYPE_PID);
+	count = 0;
+	if (NULL != p) {
+		do {
+			if (t)
+				sched_show_task_local(t);
+			if ((++count)%5 == 4)
+				msleep(20);
+		} while_each_thread(p, t);
+		put_task_struct(t);
+	}
+	put_pid(pid);
+}
+
+static void ShowStatus(void)
+{
+
 	InDumpAllStack = 1;
 
-	/* show all kbt in init */
-	LOGE("[Hang_Detect] dump init all thread bt\n");
-	if (init_pid) {
-		pid = find_get_pid(init_pid);
-		t = p = get_pid_task(pid, PIDTYPE_PID);
-		if (NULL != p) {
-			do {
-				if (t)
-					sched_show_task_local(t);
-			} while_each_thread(p, t);
-		}
-		put_pid(pid);
-	}
+	LOGE("[Hang_Detect] dump system_ui all thread bt\n");
+	if (system_ui_pid)
+		show_bt_by_pid(system_ui_pid);
 
 	/* show all kbt in surfaceflinger */
 	LOGE("[Hang_Detect] dump surfaceflinger all thread bt\n");
-	if (surfaceflinger_pid) {
-		pid = find_get_pid(surfaceflinger_pid);
-		t = p = get_pid_task(pid, PIDTYPE_PID);
-		count = 0;
-		if (NULL != p) {
-			do {
-				if (t)
-					sched_show_task_local(t);
-				if ((++count) % 5 == 4)
-					msleep(20);
-			} while_each_thread(p, t);
-		}
-		put_pid(pid);
-	}
-	msleep(100);
+	if (surfaceflinger_pid)
+		show_bt_by_pid(surfaceflinger_pid);
+
 	/* show all kbt in system_server */
 	LOGE("[Hang_Detect] dump system_server all thread bt\n");
-	if (system_server_pid) {
-		pid = find_get_pid(system_server_pid);
-		t = p = get_pid_task(pid, PIDTYPE_PID);
-		count = 0;
-		if (NULL != p) {
-			if (t)
-				sched_show_task_local(t);
-			if ((++count) % 5 == 4)
-				msleep(20);
-		} while_each_thread(p, t);
-		put_pid(pid);
-	}
+	if (system_server_pid)
+		show_bt_by_pid(system_server_pid);
 
-	LOGE("[Hang_Detect] dump system_ui all thread bt\n");
-	if (system_ui_pid) {
-		pid = find_get_pid(system_ui_pid);
-		t = p = get_pid_task(pid, PIDTYPE_PID);
-		count = 0;
-		if (NULL != p) {
-			do {
-				if (t)
-					sched_show_task_local(t);
-				if ((++count) % 5 == 4)
-					msleep(20);
-			} while_each_thread(p, t);
-		}
-		put_pid(pid);
-	}
-	msleep(100);
 	/* show all D state thread kbt */
 	LOGE("[Hang_Detect] dump all D thread bt\n");
-	show_state_filter_local
-		(TASK_UNINTERRUPTIBLE);
+		show_state_filter_local(TASK_UNINTERRUPTIBLE);
+
+	/* show all kbt in init */
+	LOGE("[Hang_Detect] dump init all thread bt\n");
+	if (init_pid)
+		show_bt_by_pid(init_pid);
+
+	/* show all kbt in mmcqd/0 */
+	LOGE("[Hang_Detect] dump mmcqd/0 all thread bt\n");
+	if (mmcqd0)
+		show_bt_by_pid(mmcqd0);
+	/* show all kbt in mmcqd/1 */
+	LOGE("[Hang_Detect] dump mmcqd/1 all thread bt\n");
+	if (mmcqd1)
+		show_bt_by_pid(mmcqd1);
+
+	LOGE("[Hang_Detect] dump debug_show_all_locks\n");
+	debug_show_all_locks();
+	LOGE("[Hang_Detect] show_free_areas\n");
+	show_free_areas(0);
 	system_server_pid = 0;
 	surfaceflinger_pid = 0;
 	system_ui_pid = 0;
 	init_pid = 0;
 	InDumpAllStack = 0;
-	msleep(20);
+	mmcqd0 = 0;
+	mmcqd1 = 0;
+	debuggerd = 0;
+	debuggerd64 = 0;
 }
 
 static int hang_detect_thread(void *arg)
