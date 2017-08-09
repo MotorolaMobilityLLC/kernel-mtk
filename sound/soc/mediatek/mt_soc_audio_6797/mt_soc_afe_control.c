@@ -2465,20 +2465,22 @@ bool SetI2SASRCConfig(bool bIsUseASRC, unsigned int dToSampleRate)
 		BUG_ON(!(dToSampleRate == 44100 || dToSampleRate == 48000));
 		Afe_Set_Reg(AFE_CONN4, 0, 1 << 30);
 		SetSampleRate(Soc_Aud_Digital_Block_MEM_I2S, dToSampleRate);	/* To target sample rate */
-		Afe_Set_Reg(AFE_ASRC_CON13, 0, 1 << 16);	/* 0:Stereo 1:Mono */
 
 		if (dToSampleRate == 44100) {
-			Afe_Set_Reg(AFE_ASRC_CON14, 0xDC8000, AFE_MASK_ALL);
-			Afe_Set_Reg(AFE_ASRC_CON15, 0xA00000, AFE_MASK_ALL);
-			Afe_Set_Reg(AFE_ASRC_CON17, 0x1FBD, AFE_MASK_ALL);
+			Afe_Set_Reg(AFE_ASRC_CON14, 0x001B9000, AFE_MASK_ALL);
 		} else {
-			Afe_Set_Reg(AFE_ASRC_CON14, 0x600000, AFE_MASK_ALL);
-			Afe_Set_Reg(AFE_ASRC_CON15, 0x400000, AFE_MASK_ALL);
-			Afe_Set_Reg(AFE_ASRC_CON17, 0xCB2, AFE_MASK_ALL);
+			Afe_Set_Reg(AFE_ASRC_CON14, 0x001E0000, AFE_MASK_ALL);
 		}
+		Afe_Set_Reg(AFE_ASRC_CON15, 0x00140000, AFE_MASK_ALL);
+		Afe_Set_Reg(AFE_ASRC_CON16, 0x00FF5987, AFE_MASK_ALL);
+		Afe_Set_Reg(AFE_ASRC_CON17, 0x00007EF4, AFE_MASK_ALL);
+		Afe_Set_Reg(AFE_ASRC_CON16, 0x00FF5986, AFE_MASK_ALL);
+		Afe_Set_Reg(AFE_ASRC_CON16, 0x00FF5987, AFE_MASK_ALL);
 
-		Afe_Set_Reg(AFE_ASRC_CON16, 0x00075987, AFE_MASK_ALL);	/* Calibration setting */
-		Afe_Set_Reg(AFE_ASRC_CON20, 0x00001b00, AFE_MASK_ALL);	/* Calibration setting */
+		Afe_Set_Reg(AFE_ASRC_CON13, 0, 1 << 16);	/* 0:Stereo 1:Mono */
+
+		Afe_Set_Reg(AFE_ASRC_CON20, 0x00036000, AFE_MASK_ALL);	/* Calibration setting */
+		Afe_Set_Reg(AFE_ASRC_CON21, 0x0002FC00, AFE_MASK_ALL);
 	} else {
 		Afe_Set_Reg(AFE_CONN4, 1 << 30, 1 << 30);
 	}
