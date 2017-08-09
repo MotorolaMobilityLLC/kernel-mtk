@@ -22,7 +22,6 @@ DRVGEN_OUT_PATH := $(DRVGEN_OUT)/inc
   ALL_DRVGEN_FILE += cust_md1_eint.dtsi
   ALL_DRVGEN_FILE += cust_kpd.dtsi
   ALL_DRVGEN_FILE += cust_clk_buf.dtsi
-  ALL_DRVGEN_FILE += cust_gpio.dtsi
   ALL_DRVGEN_FILE += cust_pmic.dtsi
 
 DWS_FILE := $(srctree)/$(DRVGEN_PATH)/codegen.dws
@@ -73,25 +72,10 @@ $(DRVGEN_OUT)/cust_clk_buf.dtsi: $(DWS_FILE)
 	@mkdir -p $(DRVGEN_CUSTOM_OUT)
 	@$(DRVGEN_TOOL) $(DWS_FILE) $(DRVGEN_CUSTOM_OUT) $(DRVGEN_OUT_PATH) clk_buf_dtsi
 
-$(DRVGEN_OUT)/cust_gpio.dtsi: $(DWS_FILE)
-#	@mkdir -p $(dir $@)
-	@mkdir -p $(DRVGEN_CUSTOM_OUT)
-	@$(DRVGEN_TOOL) $(DWS_FILE) $(DRVGEN_CUSTOM_OUT) $(DRVGEN_OUT_PATH) gpio_dtsi
-
 $(DRVGEN_OUT)/cust_pmic.dtsi: $(DWS_FILE)
 #	@mkdir -p $(dir $@)
 	@mkdir -p $(DRVGEN_CUSTOM_OUT)
 	@$(DRVGEN_TOOL) $(DWS_FILE) $(DRVGEN_CUSTOM_OUT) $(DRVGEN_OUT_PATH) pmic_dtsi
-
-$(DRVGEN_OUT)/inc/mt6735-pinfunc.h: $(DWS_FILE)
-#	@mkdir -p $(dir $@)
-	@mkdir -p $(DRVGEN_CUSTOM_OUT)
-	@$(DRVGEN_TOOL) $(DWS_FILE) $(DRVGEN_OUT_PATH) $(DRVGEN_OUT_PATH) mt6735_pinfunc_h
-
-$(DRVGEN_OUT)/inc/pinctrl-mtk-mt6735.h: $(DWS_FILE)
-#	@mkdir -p $(dir $@)
-	@mkdir -p $(DRVGEN_CUSTOM_OUT)
-	@$(DRVGEN_TOOL) $(DWS_FILE) $(DRVGEN_OUT_PATH) $(DRVGEN_OUT_PATH) pinctrl_mtk_mt6735_h
 
 else
 $(DRVGEN_FILE_LIST): $(DRVGEN_OUT)/% : $(DRVGEN_PREBUILT_PATH)/%
