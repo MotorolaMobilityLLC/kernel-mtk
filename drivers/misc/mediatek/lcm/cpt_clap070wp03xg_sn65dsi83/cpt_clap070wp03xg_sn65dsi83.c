@@ -271,8 +271,6 @@ static void lcm_set_gpio_output(unsigned int GPIO, unsigned int output)
 		printf("[LK/LCM] GPIO_LCD_RST_EN =  0x%x\n", GPIO_LCD_RST_EN);
 		printf("[LK/LCM] GPIO_LCD_STB_EN =   0x%x\n", GPIO_LCD_STB_EN);
 		printf("[LK/LCM] GPIO_LCD_BRIDGE_EN =  0x%x\n", GPIO_LCD_BRIDGE_EN);
-#elif (defined BUILD_UBOOT)	/* do nothing in uboot */
-#else
 #endif
 
 		return;

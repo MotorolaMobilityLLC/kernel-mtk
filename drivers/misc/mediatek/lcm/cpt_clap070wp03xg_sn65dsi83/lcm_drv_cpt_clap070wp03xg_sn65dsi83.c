@@ -59,20 +59,20 @@ int lcm_vgp_supply_enable(void)
 	if (NULL == lcm_vgp)
 		return 0;
 
-	pr_debug("LCM: set regulator voltage lcm_vgp voltage to 2.8V\n");
-	/* set(vgp1) voltage to 2.8V */
-	ret = regulator_set_voltage(lcm_vgp, 2800000, 2800000);
+	pr_debug("LCM: set regulator voltage lcm_vgp voltage to 3.3V\n");
+	/* set(vgp6) voltage to 3.3V */
+	ret = regulator_set_voltage(lcm_vgp, 3300000, 3300000);
 	if (ret != 0) {
 		pr_err("LCM: lcm failed to set lcm_vgp voltage: %d\n", ret);
 		return ret;
 	}
 
-	/* get(vgp1) voltage settings again */
+	/* get(vgp6) voltage settings again */
 	volt = regulator_get_voltage(lcm_vgp);
-	if (volt == 2800000)
-		pr_err("LCM: check regulator voltage=2800000 pass!\n");
+	if (volt == 3300000)
+		pr_err("LCM: check regulator voltage=3300000 pass!\n");
 	else
-		pr_err("LCM: check regulator voltage=2800000 fail! (voltage: %d)\n", volt);
+		pr_err("LCM: check regulator voltage=3300000 fail! (voltage: %d)\n", volt);
 
 	ret = regulator_enable(lcm_vgp);
 	if (ret != 0) {
