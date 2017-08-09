@@ -37,9 +37,6 @@ extern unsigned int soidle3_profile[4];
 /* SODI */
 extern void soidle_before_wfi(int cpu);
 extern void soidle_after_wfi(int cpu);
-#if defined(CONFIG_ARCH_MT6797)
-extern u32 get_sodi_fw_mode(void);
-#endif
 #if SPM_AEE_RR_REC
 extern void aee_rr_rec_sodi_val(u32 val);
 extern u32 aee_rr_curr_sodi_val(void);

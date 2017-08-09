@@ -43,7 +43,8 @@ int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace);
 bool spm_set_dpidle_pcm_init_flag(void);
 
 #if defined(CONFIG_ARCH_MT6797)
-void set_sodi_fw_mode(u32 sodi_fw);
+void set_sodi_fw_mode(void);
+u32 get_sodi_fw_mode(void);
 #endif
 
 #define DEEPIDLE_LOG_NONE      0

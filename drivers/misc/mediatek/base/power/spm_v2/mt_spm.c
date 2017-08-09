@@ -1286,9 +1286,28 @@ void spm_set_register(void __force __iomem *offset, u32 value)
 }
 
 #if defined(CONFIG_ARCH_MT6797)
-void set_sodi_fw_mode(u32 sodi_fw)
+void set_sodi_fw_mode(void)
 {
-	sodi_fw_mode = sodi_fw;
+	int ddr_khz;
+
+	ddr_khz = vcorefs_get_curr_ddr();
+
+	switch (ddr_khz) {
+	case 1600000:
+		sodi_fw_mode = SODI_FW_LPM;
+		break;
+	case 1700000:
+		sodi_fw_mode = SODI_FW_HPM;
+		break;
+	case 1866000:
+		sodi_fw_mode = SODI_FW_ULTRA;
+		break;
+	default:
+		BUG();
+	}
+
+	spm_crit2("[VcoreFS] LPM: 0x%x, HPM: 0x%x, ULTRA: 0x%x\n", SODI_FW_LPM, SODI_FW_HPM, SODI_FW_ULTRA);
+	spm_crit2("[VcoreFS] dram_khz: %d, sodi_fw_mode: 0x%x\n", ddr_khz, sodi_fw_mode);
 }
 
 u32 get_sodi_fw_mode(void)
