@@ -691,33 +691,82 @@ void faudintbus_sq2pll(void)
 }
 
 static int __init get_base_from_node(
-	const char *cmp, void __iomem **pbase, int idx)
+				     const struct of_device_id *ids, void __iomem **pbase, int idx, const char *cmp)
 {
 	struct device_node *node;
 
-	node = of_find_compatible_node(NULL, NULL, cmp);
-
+	node = of_find_matching_node(NULL, ids);
 	if (!node) {
 		idle_err("node '%s' not found!\n", cmp);
-		return -1;
+		BUG();
 	}
 
 	*pbase = of_iomap(node, idx);
+	if (!(*pbase)) {
+		idle_err("node '%s' cannot iomap!\n", cmp);
+		BUG();
+	}
 
 	return 0;
 }
 
 static void __init iomap_init(void)
 {
-	get_base_from_node("mediatek,INFRACFG_AO", &infrasys_base, 0);
-	get_base_from_node("mediatek,PERICFG", &perisys_base, 0);
-	get_base_from_node("mediatek,AUDIO", &audiosys_base, 0);
-	get_base_from_node("mediatek,G3D_CONFIG", &mfgsys_base, 0);
-	get_base_from_node("mediatek,mmsys_config", &mmsys_base, 0);
-	get_base_from_node("mediatek,IMGSYS", &imgsys_base, 0);
-	get_base_from_node("mediatek,VDEC_GCON", &vdecsys_base, 0);
-	get_base_from_node("mediatek,VENC_GCON", &vencsys_base, 0);
-	get_base_from_node("mediatek,CKSYS", &cksys_base, 0);
+	static const struct of_device_id infra_ao_ids[] = {
+		{.compatible = "mediatek,infracfg_ao"},
+		{.compatible = "mediatek,mt6735-infracfg_ao"},
+		{ /* sentinel */ }
+	};
+	static const struct of_device_id pericfg_ids[] = {
+		{.compatible = "mediatek,pericfg"},
+		{.compatible = "mediatek,mt6735-pericfg"},
+		{ /* sentinel */ }
+	};
+	static const struct of_device_id audio_ids[] = {
+		{.compatible = "mediatek,audio"},
+		{.compatible = "mediatek,mt6735-audio"},
+		{ /* sentinel */ }
+	};
+	static const struct of_device_id g3d_config_ids[] = {
+		{.compatible = "mediatek,g3d_config"},
+		{.compatible = "mediatek,mt6735-g3d_config"},
+		{ /* sentinel */ }
+	};
+	static const struct of_device_id mmsys_config_ids[] = {
+		{.compatible = "mediatek,mmsys_config"},
+		{.compatible = "mediatek,mt6735-mmsys_config"},
+		{ /* sentinel */ }
+	};
+	static const struct of_device_id imgsys_ids[] = {
+		{.compatible = "mediatek,imgsys"},
+		{.compatible = "mediatek,mt6735-imgsys"},
+		{ /* sentinel */ }
+	};
+	static const struct of_device_id vdec_gcon_ids[] = {
+		{.compatible = "mediatek,vdec_gcon"},
+		{.compatible = "mediatek,mt6735-vdec_gcon"},
+		{ /* sentinel */ }
+	};
+	static const struct of_device_id venc_gcon_ids[] = {
+		{.compatible = "mediatek,venc_gcon"},
+		{.compatible = "mediatek,mt6735-venc_gcon"},
+		{ /* sentinel */ }
+	};
+	static const struct of_device_id cksys_ids[] = {
+		{.compatible = "mediatek,cksys"},
+		{.compatible = "mediatek,mt6735-cksys"},
+		{ /* sentinel */ }
+	};
+
+	get_base_from_node(infra_ao_ids, &infrasys_base, 0, "infracfg_ao");
+	get_base_from_node(pericfg_ids, &perisys_base, 0, "pericfg");
+	get_base_from_node(audio_ids, &audiosys_base, 0, "audio");
+	get_base_from_node(g3d_config_ids, &mfgsys_base, 0, "g3d_config");
+	get_base_from_node(mmsys_config_ids, &mmsys_base, 0, "mmsys_config");
+	get_base_from_node(imgsys_ids, &imgsys_base, 0, "imgsys");
+	get_base_from_node(vdec_gcon_ids, &vdecsys_base, 0, "vdec_gcon");
+	get_base_from_node(venc_gcon_ids, &vencsys_base, 0, "venc_gcon");
+	get_base_from_node(cksys_ids, &cksys_base, 0, "cksys");
 }
 
 const char *cg_grp_get_name(int id)
