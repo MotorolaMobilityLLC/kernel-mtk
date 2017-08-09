@@ -28,7 +28,7 @@
 #define SPM_FLAG_EN_LPMP3_WITH_DMA            (1U << 19)
 #define SPM_FLAG_EN_NFC_CLOCK_BUF_CTRL        (1U << 20)
 #define SPM_FLAG_EN_CONN_CLOCK_BUF_CTRL       (1U << 21)
-#define SPM_FLAG_EN_E2_SDIO_SOLUTION          (1U << 22)
+#define SPM_FLAG_RESERVED_BIT22               (1U << 22)
 #define SPM_FLAG_SPM_FLAG_DONT_TOUCH_BIT23    (1U << 23)
 #define SPM_FLAG_SPM_FLAG_DONT_TOUCH_BIT24    (1U << 24)
 #define SPM_FLAG_SPM_FLAG_DONT_TOUCH_BIT25    (1U << 25)
