@@ -20,7 +20,11 @@
 #define MT_POLARITY_LOW		0
 #define MT_POLARITY_HIGH	1
 
-#define MT_MAX_PRIO_SPM		0
+#ifndef FIQ_SMP_CALL_SGI
+#define FIQ_SMP_CALL_SGI	13
+#endif
+
+typedef void (*fiq_isr_handler) (void *arg, void *regs, void *svc_sp);
 
 enum {
 	IRQ_MASK_HEADER = 0xF1F1F1F1,
@@ -45,8 +49,9 @@ struct mtk_irq_mask {
 	unsigned int footer;	/* for error checking */
 };
 
-void mt_irq_unmask_for_sleep(unsigned int irq);
-void mt_irq_mask_for_sleep(unsigned int irq);
+unsigned int get_hardware_irq(unsigned int virq);
+void mt_irq_unmask_for_sleep(unsigned int virq);
+void mt_irq_mask_for_sleep(unsigned int virq);
 int mt_irq_mask_all(struct mtk_irq_mask *mask);
 int mt_irq_mask_restore(struct mtk_irq_mask *mask);
 void mt_irq_set_pending_for_sleep(unsigned int irq);
@@ -56,6 +61,10 @@ void mt_gic_set_priority(unsigned int irq);
 void mt_set_irq_priority(unsigned int irq, unsigned int priority);
 unsigned int mt_get_irq_priority(unsigned int irq);
 
+#if defined(CONFIG_FIQ_GLUE)
+int request_fiq(int irq, fiq_isr_handler handler, unsigned long irq_flags, void *arg);
+void irq_raise_softirq(const struct cpumask *mask, unsigned int irq);
+#endif
 /* set the priority mask to 0x10 for masking all irqs to this cpu */
 void gic_set_primask(void);
 /* restore the priority mask value */

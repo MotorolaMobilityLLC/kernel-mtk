@@ -4,7 +4,11 @@
 #include <linux/percpu.h>
 #include <linux/smp.h>
 #include <asm/fiq_smp_call.h>
+#ifdef CONFIG_MTK_GIC_EXT
+#include <linux/irqchip/mtk-gic-extend.h>
+#else
 #include <mach/irqs.h>
+#endif
 
 #if defined(CONFIG_FIQ_GLUE)
 
@@ -210,6 +214,6 @@ static int __init fiq_smp_call_init(void)
 
 	return 0;
 }
-arch_initcall(fiq_smp_call_init);
+subsys_initcall(fiq_smp_call_init);
 
 #endif				/* CONFIG_FIQ_GLUE */
