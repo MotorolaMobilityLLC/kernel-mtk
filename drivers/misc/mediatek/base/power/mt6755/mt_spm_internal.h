@@ -9,11 +9,11 @@
 
 #include "mt_spm.h"
 #include "mt_lpae.h"
-#include "mt_vcore_dvfs.h"
+#include "mt_gpio.h"
 
-/*
+/**************************************
  * Config and Parameter
- */
+ **************************************/
 #ifdef MTK_FORCE_CLUSTER1
 #define SPM_CTRL_BIG_CPU	1
 #else
@@ -27,9 +27,9 @@
 #define PCM_WDT_TIMEOUT		(30 * 32768)	/* 30s */
 #define PCM_TIMER_MAX		(0xffffffff - PCM_WDT_TIMEOUT)
 
-/*
+/**************************************
  * Define and Declare
- */
+ **************************************/
 #define PCM_PWRIO_EN_R0		(1U << 0)
 #define PCM_PWRIO_EN_R7		(1U << 7)
 #define PCM_RF_SYNC_R0		(1U << 16)
@@ -81,7 +81,7 @@
 				 ISRM_RET_IRQ5 | ISRM_RET_IRQ4 | \
 				 ISRM_RET_IRQ3 | ISRM_RET_IRQ2 | \
 				 ISRM_RET_IRQ1)
-#define ISRM_ALL_EXC_TWAM	(ISRM_RET_IRQ_AUX | ISRM_RET_IRQ0 | ISRM_PCM_RETURN)
+#define ISRM_ALL_EXC_TWAM	(ISRM_RET_IRQ_AUX /*| ISRM_RET_IRQ0 | ISRM_PCM_RETURN*/)
 #define ISRM_ALL		(ISRM_ALL_EXC_TWAM | ISRM_TWAM)
 
 #define ISRS_TWAM		(1U << 2)
@@ -144,12 +144,14 @@ struct pwr_ctrl {
 	u32 timer_val;		/* @ 1T 32K */
 	u32 timer_val_cust;	/* @ 1T 32K, can override timer_val */
 	u32 timer_val_ramp_en;
+	u32 timer_val_ramp_en_sec;
 	u32 wake_src;
 	u32 wake_src_cust;	/* can override wake_src */
 	u32 wake_src_md32;
 	u8 r0_ctrl_en;
 	u8 r7_ctrl_en;
 	u8 infra_dcm_lock;
+	u8 wdt_disable;
 
 	u8 spm_apsrc_req;
 	u8 spm_f26m_req;
@@ -328,9 +330,10 @@ extern wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 
 extern void __spm_dbgout_md_ddr_en(bool enable);
 
+extern void __spm_check_md_pdn_power_control(struct pwr_ctrl *pwr_ctrl);
+
 /* sync with vcore_dvfs related pwr_ctrl */
-extern void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl,
-						const struct pwr_ctrl *src_pwr_ctrl);
+extern void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const struct pwr_ctrl *src_pwr_ctrl);
 
 /* set vcore dummy read address */
 void spm_set_dummy_read_addr(void);
@@ -349,6 +352,11 @@ extern int spm_golden_setting_cmp(bool en);
 
 extern void __spm_enable_i2c3_clk(void);
 extern void __spm_disable_i2c3_clk(void);
+
+extern bool is_md_c2k_conn_power_off(void);
+extern void __spm_backup_pmic_ck_pdn(void);
+extern void __spm_restore_pmic_ck_pdn(void);
+extern void __spm_bsi_top_init_setting(void);
 
 /**************************************
  * Macro and Inline
@@ -378,7 +386,7 @@ do {					\
 #define wfi_with_sync()					\
 do {							\
 	isb();						\
-	dsb(0);						\
+	mb();						\
 	__asm__ __volatile__("wfi" : : : "memory");	\
 } while (0)
 

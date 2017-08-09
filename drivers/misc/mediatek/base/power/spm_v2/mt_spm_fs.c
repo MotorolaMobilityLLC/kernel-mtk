@@ -7,34 +7,34 @@
 #include "mt_spm_internal.h"
 #include "mt_sleep.h"
 
-/*
+/**************************************
  * Macro and Inline
- */
+ **************************************/
 #define DEFINE_ATTR_RO(_name)			\
-static struct kobj_attribute _name##_attr = {	\
-	.attr	= {				\
-		.name = #_name,			\
-		.mode = 0444,			\
-	},					\
-	.show	= _name##_show,			\
-}
+	static struct kobj_attribute _name##_attr = {	\
+		.attr	= {				\
+			.name = #_name,			\
+			.mode = 0444,			\
+		},					\
+		.show	= _name##_show,			\
+	}
 
 #define DEFINE_ATTR_RW(_name)			\
-static struct kobj_attribute _name##_attr = {	\
-	.attr	= {				\
-		.name = #_name,			\
-		.mode = 0644,			\
-	},					\
-	.show	= _name##_show,			\
-	.store	= _name##_store,		\
-}
+	static struct kobj_attribute _name##_attr = {	\
+		.attr	= {				\
+			.name = #_name,			\
+			.mode = 0644,			\
+		},					\
+		.show	= _name##_show,			\
+		.store	= _name##_store,		\
+	}
 
 #define __ATTR_OF(_name)	(&_name##_attr.attr)
 
 
-/*
+/**************************************
  * xxx_pcm_show Function
- */
+ **************************************/
 #if 0				/* FIXME */
 static ssize_t show_pcm_desc(const struct pcm_desc *pcmdesc, char *buf)
 {
@@ -54,14 +54,6 @@ static ssize_t show_pcm_desc(const struct pcm_desc *pcmdesc, char *buf)
 	p += sprintf(p, "vec5 = 0x%x\n", pcmdesc->vec5);
 	p += sprintf(p, "vec6 = 0x%x\n", pcmdesc->vec6);
 	p += sprintf(p, "vec7 = 0x%x\n", pcmdesc->vec7);
-	p += sprintf(p, "vec8 = 0x%x\n", pcmdesc->vec8);
-	p += sprintf(p, "vec9 = 0x%x\n", pcmdesc->vec9);
-	p += sprintf(p, "vec10 = 0x%x\n", pcmdesc->vec10);
-	p += sprintf(p, "vec11 = 0x%x\n", pcmdesc->vec11);
-	p += sprintf(p, "vec12 = 0x%x\n", pcmdesc->vec12);
-	p += sprintf(p, "vec13 = 0x%x\n", pcmdesc->vec13);
-	p += sprintf(p, "vec14 = 0x%x\n", pcmdesc->vec14);
-	p += sprintf(p, "vec15 = 0x%x\n", pcmdesc->vec15);
 
 	BUG_ON(p - buf >= PAGE_SIZE);
 	return p - buf;
@@ -112,9 +104,9 @@ static ssize_t ddrdfs_pcm_show(struct kobject *kobj, struct kobj_attribute *attr
 #endif
 
 
-/*
+/**************************************
  * xxx_ctrl_show Function
- */
+ **************************************/
 static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 {
 	char *p = buf;
@@ -125,12 +117,14 @@ static ssize_t show_pwr_ctrl(const struct pwr_ctrl *pwrctrl, char *buf)
 	p += sprintf(p, "timer_val = 0x%x\n", pwrctrl->timer_val);
 	p += sprintf(p, "timer_val_cust = 0x%x\n", pwrctrl->timer_val_cust);
 	p += sprintf(p, "timer_val_ramp_en = %d\n", pwrctrl->timer_val_ramp_en);
+	p += sprintf(p, "timer_val_ramp_en_sec = %d\n", pwrctrl->timer_val_ramp_en_sec);
 	p += sprintf(p, "wake_src = 0x%x\n", pwrctrl->wake_src);
 	p += sprintf(p, "wake_src_cust = 0x%x\n", pwrctrl->wake_src_cust);
 	p += sprintf(p, "wake_src_md32 = 0x%x\n", pwrctrl->wake_src_md32);
 	p += sprintf(p, "r0_ctrl_en = %u\n", pwrctrl->r0_ctrl_en);
 	p += sprintf(p, "r7_ctrl_en = %u\n", pwrctrl->r7_ctrl_en);
 	p += sprintf(p, "infra_dcm_lock = %u\n", pwrctrl->infra_dcm_lock);
+	p += sprintf(p, "wdt_disable = %u\n", pwrctrl->wdt_disable);
 	p += sprintf(p, "spm_apsrc_req = %u\n", pwrctrl->spm_apsrc_req);
 	p += sprintf(p, "spm_f26m_req = %u\n", pwrctrl->spm_f26m_req);
 
@@ -215,38 +209,22 @@ static ssize_t suspend_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 #ifndef CONFIG_MTK_FPGA
 static ssize_t dpidle_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-#if 0
 	return show_pwr_ctrl(__spm_dpidle.pwrctrl, buf);
-#else
-	return 0;
-#endif
 }
 
 static ssize_t sodi3_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-#if 0
 	return show_pwr_ctrl(__spm_sodi3.pwrctrl, buf);
-#else
-	return 0;
-#endif
 }
 
 static ssize_t sodi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-#if 0
 	return show_pwr_ctrl(__spm_sodi.pwrctrl, buf);
-#else
-	return 0;
-#endif
 }
 
 static ssize_t mcdi_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-#if 0
 	return show_pwr_ctrl(__spm_mcdi.pwrctrl, buf);
-#else
-	return 0;
-#endif
 }
 #endif
 static ssize_t talking_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
@@ -260,17 +238,13 @@ static ssize_t talking_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 
 static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-#if 0
 	return show_pwr_ctrl(__spm_vcore_dvfs.pwrctrl, buf);
-#else
-	return 0;
-#endif
 }
 
 
-/*
+/**************************************
  * xxx_ctrl_store Function
- */
+ **************************************/
 static ssize_t store_pwr_ctrl(struct pwr_ctrl *pwrctrl, const char *buf, size_t count)
 {
 	u32 val;
@@ -293,6 +267,8 @@ static ssize_t store_pwr_ctrl(struct pwr_ctrl *pwrctrl, const char *buf, size_t 
 		pwrctrl->timer_val_cust = val;
 	else if (!strcmp(cmd, "timer_val_ramp_en"))
 		pwrctrl->timer_val_ramp_en = val;
+	else if (!strcmp(cmd, "timer_val_ramp_en_sec"))
+		pwrctrl->timer_val_ramp_en_sec = val;
 	else if (!strcmp(cmd, "wake_src"))
 		pwrctrl->wake_src = val;
 	else if (!strcmp(cmd, "wake_src_cust"))
@@ -305,6 +281,8 @@ static ssize_t store_pwr_ctrl(struct pwr_ctrl *pwrctrl, const char *buf, size_t 
 		pwrctrl->r7_ctrl_en = val;
 	else if (!strcmp(cmd, "infra_dcm_lock"))
 		pwrctrl->infra_dcm_lock = val;
+	else if (!strcmp(cmd, "wdt_disable"))
+		pwrctrl->wdt_disable = val;
 
 	else if (!strcmp(cmd, "spm_apsrc_req"))
 		pwrctrl->spm_apsrc_req = val;
@@ -499,41 +477,25 @@ static ssize_t suspend_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 static ssize_t dpidle_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				 const char *buf, size_t count)
 {
-#if 0
 	return store_pwr_ctrl(__spm_dpidle.pwrctrl, buf, count);
-#else
-	return 0;
-#endif
 }
 
 static ssize_t sodi3_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				const char *buf, size_t count)
 {
-#if 0
 	return store_pwr_ctrl(__spm_sodi3.pwrctrl, buf, count);
-#else
-	return 0;
-#endif
 }
 
 static ssize_t sodi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 			       const char *buf, size_t count)
 {
-#if 0
 	return store_pwr_ctrl(__spm_sodi.pwrctrl, buf, count);
-#else
-	return 0;
-#endif
 }
 
 static ssize_t mcdi_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 			       const char *buf, size_t count)
 {
-#if 0
 	return store_pwr_ctrl(__spm_mcdi.pwrctrl, buf, count);
-#else
-	return 0;
-#endif
 }
 #endif
 
@@ -550,16 +512,13 @@ static ssize_t talking_ctrl_store(struct kobject *kobj, struct kobj_attribute *a
 static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj, struct kobj_attribute *attr,
 				     const char *buf, size_t count)
 {
-#if 0
 	return store_pwr_ctrl(__spm_vcore_dvfs.pwrctrl, buf, count);
-#else
-	return 0;
-#endif
 }
 
-/*
+
+/**************************************
  * ddren_debug_xxx Function
- */
+ **************************************/
 static ssize_t ddren_debug_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	char *p = buf;
@@ -605,25 +564,20 @@ static ssize_t ddren_debug_store(struct kobject *kobj, struct kobj_attribute *at
 	return count;
 }
 
-
-/*
- * golden_dump_xxx Function
- */
-#if 0
-static ssize_t golden_dump_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+/**************************************
+ * fm_suspend Function
+ **************************************/
+static ssize_t fm_suspend_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	char *p = buf;
-
-	/* spm_golden_setting_cmp(1); //TODO: wait DRAMC golden setting check enable */
 
 	BUG_ON(p - buf >= PAGE_SIZE);
 	return p - buf;
 }
-#endif
 
-/*
+/**************************************
  * auto_suspend_resume_xxx Function
- */
+ **************************************/
 #if 0				/* FIXME */
 static ssize_t auto_suspend_resume_show(struct kobject *kobj, struct kobj_attribute *attr,
 					char *buf)
@@ -674,9 +628,9 @@ static ssize_t auto_suspend_resume_store(struct kobject *kobj, struct kobj_attri
 }
 #endif				/* 0 */
 
-/*
+/**************************************
  * Init Function
- */
+ **************************************/
 /* DEFINE_ATTR_RO(suspend_pcm); */
 /* DEFINE_ATTR_RO(dpidle_pcm); */
 /* DEFINE_ATTR_RO(sodi3_pcm); */
@@ -696,7 +650,7 @@ DEFINE_ATTR_RW(talking_ctrl);
 DEFINE_ATTR_RW(vcore_dvfs_ctrl);
 
 DEFINE_ATTR_RW(ddren_debug);
-/* DEFINE_ATTR_RO(golden_dump); */
+DEFINE_ATTR_RO(fm_suspend);
 
 /* DEFINE_ATTR_RW(auto_suspend_resume); */
 
@@ -723,6 +677,7 @@ static struct attribute *spm_attrs[] = {
 
 	/* other debug interface */
 	__ATTR_OF(ddren_debug),
+	__ATTR_OF(fm_suspend),
 
 	/* __ATTR_OF(auto_suspend_resume), */
 

@@ -5,14 +5,17 @@
 #include <linux/smp.h>
 #include <linux/delay.h>
 #include <linux/atomic.h>
-#include <mt-plat/aee.h>
-#include <mt-plat/mt_chip.h>
-#include <mach/mt_spm_mtcmos_internal.h>
-
 #include "mt_spm_idle.h"
-#include <irq.h>
+/* #include <mach/mt_boot.h> */
+#include <mach/irqs.h>
+#ifdef CONFIG_MTK_WD_KICKER
 #include <mach/wd_api.h>
+#endif
+#include <mt-plat/upmu_common.h>
 
+#ifdef CONFIG_MTK_VCOREFS
+#include <mach/mt_vcorefs_manager.h>
+#endif
 #include "mt_spm_internal.h"
 
 #ifdef CONFIG_OF
@@ -20,6 +23,9 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #endif
+
+#include <linux/irqchip/mt-eic.h>
+/* #include <mach/eint.h> */
 
 #define ENABLE_DYNA_LOAD_PCM
 #ifdef ENABLE_DYNA_LOAD_PCM	/* for dyna_load_pcm */
@@ -33,10 +39,13 @@
 #include <linux/dma-direction.h>
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
+#include "mt_spm_misc.h"
 
 #if defined(CONFIG_MTK_LEGACY)
 #include <cust_gpio_usage.h>
 #endif
+
+#include <mt-plat/mt_typedefs.h>
 
 #ifndef dmac_map_area
 #define dmac_map_area __dma_map_area
@@ -87,10 +96,11 @@ void __iomem *scp_i2c0_base;
 void __iomem *scp_i2c1_base;
 void __iomem *scp_i2c2_base;
 void __iomem *scp_i2c3_base;
-#include <mt_dramc.h> /* for ucDram_Register_Read () */
 void __iomem *spm_infracfg_ao_base;
+void __iomem *spm_ddrphy_base;
 void __iomem *spm_cksys_base;
 void __iomem *spm_mcucfg;
+void __iomem *spm_bsi1cfg;
 u32 gpio_base_addr;
 struct clk *i2c3_clk_main;
 u32 spm_irq_0 = 197;
@@ -105,35 +115,57 @@ u32 spm_vcorefs_start_irq = 152;
 u32 spm_vcorefs_end_irq = 153;
 #endif
 
-/*
+/**************************************
  * Config and Parameter
- */
+ **************************************/
 #define SPM_MD_DDR_EN_OUT	0
 
 
-/*
+/**************************************
  * Define and Declare
- */
+ **************************************/
 struct spm_irq_desc {
 	unsigned int irq;
 	irq_handler_t handler;
 };
 
 static twam_handler_t spm_twam_handler;
+static vcorefs_handler_t vcorefs_handler;
+static vcorefs_start_handler_t vcorefs_start_handler;
 
-void __attribute__ ((weak)) mt_gic_cfg_irq2cpu(unsigned int irq, unsigned int cpu, unsigned int set)
+void __attribute__((weak)) spm_sodi3_init(void)
 {
 
 }
 
-void __attribute__ ((weak)) spm_deepidle_init(void)
+void __attribute__((weak)) spm_sodi_init(void)
 {
 
 }
 
-/*
+void __attribute__((weak)) spm_mcdi_init(void)
+{
+
+}
+
+void __attribute__((weak)) spm_deepidle_init(void)
+{
+
+}
+
+void __attribute__((weak)) mt_power_gs_dump_suspend(void)
+{
+
+}
+
+int __attribute__((weak)) spm_fs_init(void)
+{
+	return 0;
+}
+
+/**************************************
  * Init and IRQ Function
- */
+ **************************************/
 static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 {
 	u32 isr;
@@ -267,40 +299,53 @@ static int spm_irq_register(void)
 			spm_err("FAILED TO REQUEST IRQ%d (%d)\n", i, err);
 			r = -EPERM;
 		}
-/* FIXME: for fpga early porting */
 #ifndef CONFIG_ARM64
+		/* FIXME: 32-bit platform does NOT have mt_gic_cfg_irq2cpu() */
+#if 0
 		/* assign each SPM IRQ to each CPU */
 		mt_gic_cfg_irq2cpu(irqdesc[i].irq, 0, 0);
 		mt_gic_cfg_irq2cpu(irqdesc[i].irq, i % num_possible_cpus(), 1);
+#endif
 #else
-		irq_force_affinity(irqdesc[i].irq, cpumask_of(i % num_possible_cpus()));
+		/* DO NOT call irq_force_affinity().
+		 * We need all cpus to get interrupt status.
+		 */
+		/* irq_force_affinity(irqdesc[i].irq, cpumask_of(i % num_possible_cpus())); */
 #endif
 	}
 
 	return r;
 }
 
-#if 0
+void spm_vcorefs_register_handler(vcorefs_handler_t handler, vcorefs_start_handler_t start_handler)
+{
+	vcorefs_handler = handler;
+	vcorefs_start_handler = start_handler;
+}
+EXPORT_SYMBOL(spm_vcorefs_register_handler);
+
 static irqreturn_t spm_vcorefs_start_handler(int irq, void *dev_id)
 {
-	u32 isr;
-	unsigned long flags;
-
-	/* callback MET function */
+	if (vcorefs_start_handler)
+		vcorefs_start_handler();
+	/* FIXME */
+	/* mt_eint_virq_soft_clr(irq); */
 
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t spm_vcorefs_end_handler(int irq, void *dev_id)
 {
-	u32 isr;
-	unsigned long flags;
+	u32 opp = 0;
 
-	/* callback MET function */
-
+	if (vcorefs_handler) {
+		opp = spm_read(SPM_SW_RSV_5) & SPM_SW_RSV_5_LSB;
+		vcorefs_handler(opp);
+	}
+	/* FIXME */
+	/* mt_eint_virq_soft_clr(irq); */
 	return IRQ_HANDLED;
 }
-#endif
 
 static void spm_register_init(void)
 {
@@ -394,7 +439,21 @@ static void spm_register_init(void)
 	if (!spm_mcucfg)
 		spm_err("[MCUCFG] base failed\n");
 
-#if 0
+	/* bsi1cfg */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,bpi_bsi_slv1");
+	if (!node)
+		spm_err("[bsi1] find node failed\n");
+	spm_bsi1cfg = of_iomap(node, 0);
+	if (!spm_bsi1cfg)
+		spm_err("[bsi1] base failed\n");
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,DDRPHY");
+	if (!node)
+		spm_err("find DDRPHY node failed\n");
+	spm_ddrphy_base = of_iomap(node, 0);
+	if (!spm_ddrphy_base)
+		spm_err("[DDRPHY] base failed\n");
+
 	node = of_find_compatible_node(NULL, NULL, "mediatek,spm_vcorefs_start_eint");
 	if (!node) {
 		spm_err("find spm_vcorefs_start_eint failed\n");
@@ -425,8 +484,6 @@ static void spm_register_init(void)
 		    request_irq(spm_vcorefs_end_irq, spm_vcorefs_end_handler,
 				IRQF_TRIGGER_HIGH | IRQF_NO_SUSPEND, "spm_vcorefs_end_eint", NULL);
 	}
-#endif
-
 	spm_err("spm_vcorefs_start_irq = %d, spm_vcorefs_end_irq = %d\n", spm_vcorefs_start_irq,
 		spm_vcorefs_end_irq);
 	spm_err
@@ -513,6 +570,7 @@ static void spm_register_init(void)
 int spm_module_init(void)
 {
 	int r = 0;
+	u32 reg_val;
 	/* This following setting is moved to LK by WDT init, because of DTS init level issue */
 #ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_MTK_WD_KICKER
@@ -545,9 +603,9 @@ int spm_module_init(void)
 #endif
 
 #ifndef CONFIG_MTK_FPGA
-	/* spm_sodi_init(); */
-	/* spm_mcdi_init(); */
-	/* spm_mcdi_init(); */
+	spm_sodi3_init();
+	spm_sodi_init();
+	spm_mcdi_init();
 	spm_deepidle_init();
 #if 1				/* FIXME: wait for DRAMC golden setting enable */
 	if (spm_golden_setting_cmp(1) != 0) {
@@ -560,14 +618,27 @@ int spm_module_init(void)
 
 	spm_set_dummy_read_addr();
 
-	if (ucDram_Register_Read(0x698) & (1 << 5)) {
+#if 1
+	/* debug code */
+	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
+	spm_crit("[PMIC]wdtdbg_con1 : 0x%x\n", reg_val);
+	r = pmic_read_interface_nolock(MT6351_BUCK_VCORE_CON0, &reg_val, 0xffff, 0);
+	spm_crit("[PMIC]vcore vosel_ctrl=0x%x\n", reg_val);
+	r = pmic_read_interface_nolock(MT6351_BUCK_VCORE_CON4, &reg_val, 0xffff, 0);
+	spm_crit("[PMIC]vcore vosel=0x%x\n", reg_val);
+	r = pmic_read_interface_nolock(MT6351_BUCK_VCORE_CON5, &reg_val, 0xffff, 0);
+	spm_crit("[PMIC]vcore vosel_on=0x%x\n", reg_val);
+	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
+	spm_crit("[PMIC]wdtdbg_con1-after : 0x%x\n", reg_val);
+#endif
+	if (spm_read(SPM_POWER_ON_VAL0) & (1 << 14)) {
 		spm_write(SPM_SW_RSV_5, spm_read(SPM_SW_RSV_5) & ~1);
-		spm_crit2("SPM_SW_RSV5(0x%x) init by 1pll(0x%x)\n", spm_read(SPM_SW_RSV_5),
-			  ucDram_Register_Read(0x698));
+		spm_crit2("SPM_SW_RSV5(0x%x) 1pll init(val0=0x%x)\n", spm_read(SPM_SW_RSV_5),
+			spm_read(SPM_POWER_ON_VAL0));
 	} else {
 		spm_write(SPM_SW_RSV_5, spm_read(SPM_SW_RSV_5) | 1);
-		spm_crit2("SPM_SW_RSV5(0x%x) init by 3pll(0x%x)\n", spm_read(SPM_SW_RSV_5),
-			  ucDram_Register_Read(0x698));
+		spm_crit2("SPM_SW_RSV5(0x%x) 3pll init(val0=0x%x)\n", spm_read(SPM_SW_RSV_5),
+			spm_read(SPM_POWER_ON_VAL0));
 	}
 
 	return r;
@@ -635,7 +706,7 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		/* get minimum addr_2nd */
 		if (pdesc->addr_2nd) {
 			if (addr_2nd)
-				addr_2nd = min_t(int, pdesc->addr_2nd, addr_2nd);
+				addr_2nd = min_t(int, (int)pdesc->addr_2nd, (int)addr_2nd);
 			else
 				addr_2nd = pdesc->addr_2nd;
 		}
@@ -654,7 +725,6 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		dyna_load_pcm_done = 1;
 	}
 
-#if 0
 	/* check addr_2nd */
 	if (dyna_load_pcm_done) {
 		for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++) {
@@ -672,9 +742,11 @@ int spm_load_pcm_firmware(struct platform_device *pdev)
 		}
 	}
 
+	/* FIXME */
+	/*
 	if (dyna_load_pcm_done)
 		vcorefs_late_init_dvfs();
-#endif
+	*/
 
 	return err;
 }
@@ -832,15 +904,6 @@ int spm_module_late_init(void)
 	for (i = DYNA_LOAD_PCM_SUSPEND; i < DYNA_LOAD_PCM_MAX; i++)
 		dyna_load_pcm[i].ready = 0;
 
-#if 0
-	i2c3_clk_main = devm_clk_get(&pspmdev->dev, "i2c3-main");
-	if (IS_ERR(i2c3_clk_main)) {
-		pr_debug("cannot get i2c3 main clock. main clk err : %ld\n",
-			 PTR_ERR(i2c3_clk_main));
-		return PTR_ERR(i2c3_clk_main);
-	}
-#endif
-
 	return 0;
 
 err2:
@@ -868,9 +931,56 @@ err1:
 late_initcall(spm_module_late_init);
 #endif				/* ENABLE_DYNA_LOAD_PCM */
 
-/*
+#if 0
+static INT32 spm_probe(struct platform_device *pdev)
+{
+#if !defined(CONFIG_MTK_LEGACY)
+	i2c3_clk_main = devm_clk_get(&pdev->dev, "i2c3-main");
+	if (IS_ERR(i2c3_clk_main)) {
+		pr_err("cannot get i2c3 main clock. main clk err : %ld\n",
+			 PTR_ERR(i2c3_clk_main));
+	}
+
+	if (IS_ERR(i2c3_clk_main)) {
+		pr_err("cannot get i2c3 main clock. main clk err : %ld\n",
+			 PTR_ERR(i2c3_clk_main));
+		pr_debug("cannot get i2c3 main clock. main clk err : %ld\n",
+			 PTR_ERR(i2c3_clk_main));
+		return PTR_ERR(i2c3_clk_main);
+	}
+#endif /* !defined(CONFIG_MTK_LEGACY) */
+	return 0;
+}
+
+static INT32 spm_remove(struct platform_device *pdev)
+{
+	return 0;
+}
+
+
+#ifdef CONFIG_OF
+static const struct of_device_id apwmt_of_ids[] = {
+	{.compatible = "mediatek,SLEEP",},
+	{}
+};
+#endif
+
+static struct platform_driver spm_dev_drv = {
+	.probe = spm_probe,
+	.remove = spm_remove,
+	.driver = {
+		   .name = "spm",
+		   .owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		   .of_match_table = apwmt_of_ids,
+#endif
+		   },
+};
+#endif
+
+/**************************************
  * PLL Request API
- */
+ **************************************/
 void spm_mainpll_on_request(const char *drv_name)
 {
 	int req;
@@ -890,9 +1000,9 @@ void spm_mainpll_on_unrequest(const char *drv_name)
 EXPORT_SYMBOL(spm_mainpll_on_unrequest);
 
 
-/*
+/**************************************
  * TWAM Control API
- */
+ **************************************/
 static unsigned int idle_sel;
 void spm_twam_set_idle_select(unsigned int sel)
 {
@@ -989,10 +1099,9 @@ void spm_twam_disable_monitor(void)
 }
 EXPORT_SYMBOL(spm_twam_disable_monitor);
 
-
-/*
- * SPM Goldeng Seting API(MEMPLL Control, DRAMC)
- */
+/**************************************
+ * SPM Golden Seting API(MEMPLL Control, DRAMC)
+ **************************************/
 struct ddrphy_golden_cfg {
 	u32 addr;
 	u32 value;
@@ -1021,22 +1130,23 @@ static struct ddrphy_golden_cfg ddrphy_setting[] = {
 
 int spm_golden_setting_cmp(bool en)
 {
+
 	int i, ddrphy_num, r = 0;
 
 	if (!en)
 		return r;
 
-	/* Compare Dramc Goldeing Setting */
+	/*Compare Dramc Goldeing Setting */
 	ddrphy_num = sizeof(ddrphy_setting) / sizeof(ddrphy_setting[0]);
 	for (i = 0; i < ddrphy_num; i++) {
 #ifdef CONFIG_OF
-		if ((ucDram_Register_Read(ddrphy_setting[i].addr) != ddrphy_setting[i].value)
+		if ((spm_read(spm_ddrphy_base + ddrphy_setting[i].addr) != ddrphy_setting[i].value)
 		    && ((ddrphy_setting[i].value1 == 0xffffffff)
-			|| (ucDram_Register_Read(ddrphy_setting[i].addr) !=
+			|| (spm_read(spm_ddrphy_base + ddrphy_setting[i].addr) !=
 			    ddrphy_setting[i].value1))) {
-			spm_err("dramc setting mismatch addr: %x, val: 0x%x\n",
-				ddrphy_setting[i].addr,
-				ucDram_Register_Read(ddrphy_setting[i].addr));
+			spm_err("dramc setting mismatch addr: %p, val: 0x%x\n",
+				spm_ddrphy_base + ddrphy_setting[i].addr,
+				spm_read(spm_ddrphy_base + ddrphy_setting[i].addr));
 			r = -EPERM;
 		}
 #else
@@ -1053,9 +1163,9 @@ int spm_golden_setting_cmp(bool en)
 	}
 
 	return r;
+
 }
 
-#if 0
 /* for PMIC power settings */
 #define VCORE_VOSEL_SLEEP_0P7	0x10	/* 7'b0010000 */
 #define VCORE_VOSEL_SLEEP_0P9	0x30	/* 7'b0110000 */
@@ -1214,6 +1324,8 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN0, lock);
+
+		mt_power_gs_dump_suspend();
 		break;
 	default:
 		pr_debug("spm pmic power mode (%d) is not configured\n", mode);
@@ -1221,11 +1333,6 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 
 	prev_mode = mode;
 }
-#else
-void spm_pmic_power_mode(int mode, int force, int lock)
-{
-}
-#endif
 
 void spm_bypass_boost_gpio_set(void)
 {
@@ -1249,7 +1356,9 @@ void spm_bypass_boost_gpio_set(void)
 	gpio_dout_addr = gpio_base_addr + 0x100;
 	gpio_dout_addr += gpio_dout_nf * 0x10;
 
+#if 0
 	pr_debug("bypass-boost: addr = 0x%x, bit = %d\n", gpio_dout_addr, gpio_dout_bit);
+#endif
 
 	spm_write(SPM_BSI_EN_SR, gpio_dout_addr);
 	spm_write(SPM_BSI_CLK_SR, gpio_dout_bit);

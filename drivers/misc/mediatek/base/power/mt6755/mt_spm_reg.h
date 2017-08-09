@@ -184,7 +184,10 @@
 #define SPM_PLL_CON                    (SPM_BASE + 0x44C)
 #define SPM_EMI_BW_MODE                (SPM_BASE + 0x450)
 #define AP2MD_PEER_WAKEUP              (SPM_BASE + 0x454)
+#ifdef ULPOSC_CON
+#undef ULPOSC_CON
 #define ULPOSC_CON                     (SPM_BASE + 0x458)
+#endif
 #define MP0_CPU0_IRQ_MASK              (SPM_BASE + 0x500)
 #define MP0_CPU1_IRQ_MASK              (SPM_BASE + 0x504)
 #define MP0_CPU2_IRQ_MASK              (SPM_BASE + 0x508)

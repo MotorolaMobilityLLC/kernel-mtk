@@ -42,6 +42,12 @@
 	mt_reg_sync_writel(val, addr)
 #endif
 
+void __attribute__((weak)) slp_module_init(void)
+{
+
+}
+
+
 #define TOPCK_LDVT
 #ifdef TOPCK_LDVT
 /***************************

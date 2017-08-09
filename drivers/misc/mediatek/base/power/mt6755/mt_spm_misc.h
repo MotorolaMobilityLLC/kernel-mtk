@@ -1,6 +1,8 @@
 #ifndef _MT_SPM_MISC_H
 #define _MT_SPM_MISC_H
 
+#include <linux/irqchip/mt-gic.h>
+
 /* AEE */
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #define SPM_AEE_RR_REC 1
@@ -45,6 +47,11 @@ extern u32 aee_rr_curr_sodi_val(void);
 extern unsigned int soidle_profile[4];
 #endif
 
+extern bool mtk_gpu_sodi_entry(void);
+extern int hps_del_timer(void);
+extern int hps_restart_timer(void);
+extern int vcorefs_get_curr_ddr(void);
+
 /* Deepidle */
 #if SPM_AEE_RR_REC
 extern void aee_rr_rec_deepidle_val(u32 val);
@@ -68,5 +75,8 @@ extern unsigned int *aee_rr_rec_mcdi_wfi(void);
 /* snapshot golden setting */
 extern int snapshot_golden_setting(const char *func, const unsigned int line);
 extern bool is_already_snap_shot;
+
+/* power golden setting */
+extern void mt_power_gs_dump_suspend(void);
 
 #endif  /* _MT_SPM_MISC_H */

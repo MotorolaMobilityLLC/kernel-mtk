@@ -4,41 +4,53 @@
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #include <linux/string.h>
-/* #include <linux/aee.h> */
-#include <linux/i2c.h>
+#include <linux/aee.h>
 #include <linux/of_fdt.h>
-#include <asm/setup.h>
-#include <linux/lockdep.h>
-#include <linux/irqchip/mt-gic.h>
-#include <mt-plat/mt_cirq.h>
-#include "mt_spm_sleep.h"
-#include "mach/mt_clkmgr.h"
-#include "mt_cpuidle.h"
-#include <mach/wd_api.h>
-/* #include <mach/eint.h> */
-/* #include <mach/mtk_ccci_helper.h> */
-#include "mt_cpufreq.h"
-#include <mt-plat/upmu_common.h>
-/* #include <mt-plat/upmu_sw.h> */
-/* #include <mt-plat/upmu_hw.h> */
-#include "mt_spm_misc.h"
-
-/* #include "mach/mt_pmic_wrap.h" */
-
-/* #include <mt_i2c.h> */
-
-#include "mt_spm_internal.h"
-/* #include "../../pmic_wrap/mt6735/pwrap_hal.h" */
-#include "mt_vcore_dvfs.h"
-/* #include <mt_dramc.h> */
-
-/* for MP0,1 AXI_CONFIG */
+#include <linux/io.h>
 #ifdef CONFIG_OF
-#include <linux/of.h>
-#include <linux/of_irq.h>
 #include <linux/of_address.h>
+#else
+#include <mach/mt_reg_base.h>
+#endif
+#include <asm/setup.h>
+
+#ifndef CONFIG_ARM64
+#include <mach/irqs.h>
+#else
+#include <linux/irqchip/mt-gic.h>
+#endif
+#include <mach/mt_cirq.h>
+#include <mach/mt_spm_sleep.h>
+#include <mach/mt_clkmgr.h>
+#include <mach/mt_cpuidle.h>
+#ifdef CONFIG_MTK_WD_KICKER
+#include <mach/wd_api.h>
+#endif
+#include <mach/eint.h>
+#include <mach/mtk_ccci_helper.h>
+#include <mach/mt_cpufreq.h>
+#include <mach/upmu_common.h>
+#include "./mt_spm_pmic_wrap.h"
+#include <mach/mt_spm_misc.h>
+
+#ifndef MTK_TABLET_TURBO
+#define PMIC_MODE_PATCH
+#else
+/* TABLET TURBO mode changes pmic command for speical usage, can not apply PMIC_MODE_PATCH */
 #endif
 
+#ifdef PMIC_MODE_PATCH
+#include <mach/pmic_mt6325_sw.h>
+/* Note: following define needs to sync with mt_cpufreq.c*/
+#define PMIC_ADDR_VCORE_VOSEL_ON     0x0664  /* [6:0]                    */
+#define VOLT_TO_PMIC_VAL(volt)  (((volt) - 60000 + 625 - 1) / 625) /* ((((volt) - 700 * 100 + 625 - 1) / 625) */
+#endif
+
+#if 1
+#include <mach/mt_dramc.h>
+#endif
+
+#include "mt_spm_internal.h"
 
 /**************************************
  * only for internal debug
@@ -62,8 +74,6 @@
 #define MP1_AXI_CONFIG          (MCUCFG_BASE + 0x22C)
 #define ACINACTM                (1<<4)
 
-#define I2C_CHANNEL 2
-
 int spm_dormant_sta = MT_CPU_DORMANT_RESET;
 int spm_ap_mdsrc_req_cnt = 0;
 
@@ -72,7 +82,7 @@ u32 log_wakesta_cnt = 0;
 u32 log_wakesta_index = 0;
 u8 spm_snapshot_golden_setting = 0;
 
-struct wake_status spm_wakesta;	/* record last wakesta */
+struct wake_status spm_wakesta; /* record last wakesta */
 
 /**************************************
  * SW code for suspend
@@ -84,17 +94,29 @@ struct wake_status spm_wakesta;	/* record last wakesta */
 #define SPM_WAKE_PERIOD         600	/* sec */
 
 #define WAKE_SRC_FOR_SUSPEND \
-	(WAKE_SRC_MD32_WDT | WAKE_SRC_KP | WAKE_SRC_CONN2AP | WAKE_SRC_EINT | \
-	 WAKE_SRC_CONN_WDT | WAKE_SRC_CCIF0_MD | WAKE_SRC_CCIF1_MD | \
-	 WAKE_SRC_MD32_SPM | WAKE_SRC_USB_CD | WAKE_SRC_USB_PDN | WAKE_SRC_EINT_SECURE | \
-	 /*WAKE_SRC_SYSPWREQ |*/ WAKE_SRC_MD_WDT | WAKE_SRC_MD2_WDT | WAKE_SRC_CLDMA_MD | \
-	 WAKE_SRC_SEJ | WAKE_SRC_ALL_MD32)
+	(WAKE_SRC_R12_MD32_WDT_EVENT_B | \
+	WAKE_SRC_R12_KP_IRQ_B | \
+	WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B | \
+	WAKE_SRC_R12_EINT_EVENT_B | \
+	WAKE_SRC_R12_CONN_WDT_IRQ_B | \
+	WAKE_SRC_R12_CCIF0_EVENT_B | \
+	WAKE_SRC_R12_CCIF1_EVENT_B | \
+	WAKE_SRC_R12_MD32_SPM_IRQ_B | \
+	WAKE_SRC_R12_USB_CDSC_B | \
+	WAKE_SRC_R12_USB_POWERDWN_B | \
+	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
+	WAKE_SRC_R12_MD1_WDT_B | \
+	WAKE_SRC_R12_MD2_WDT_B | \
+	WAKE_SRC_R12_CLDMA_EVENT_B | \
+	WAKE_SRC_R12_SEJ_WDT_GPT_B | \
+	WAKE_SRC_R12_ALL_MD32_WAKEUP_B)
 
 #define WAKE_SRC_FOR_MD32  0 \
 				/* (WAKE_SRC_AUD_MD32) */
 
 #define spm_is_wakesrc_invalid(wakesrc)     (!!((u32)(wakesrc) & 0xc0003803))
 
+/* FIXME: check mt_cpu_dormant */
 int __attribute__ ((weak)) mt_cpu_dormant(unsigned long flags)
 {
 	return 0;
@@ -184,10 +206,10 @@ static struct pwr_ctrl suspend_ctrl = {
 	.spm_apsrc_req = 0,
 	.spm_f26m_req = 0,
 	.spm_lte_req = 0,
-	.spm_infra_req = 1,
+	.spm_infra_req = 0,
 	.spm_vrf18_req = 0,
 	.spm_dvfs_req = 0,
-	.spm_dvfs_force_down = 0,
+	.spm_dvfs_force_down = 1,
 	.spm_ddren_req = 0,
 	.cpu_md_dvfs_sop_force_on = 0,
 
@@ -214,69 +236,8 @@ struct spm_lp_scen __spm_suspend = {
 	.wakestatus = &suspend_info[0],
 };
 
-#if 0
-void spm_i2c_control(u32 channel, bool onoff)
-{
-	/* static int pdn = 0; */
-	static bool i2c_onoff;
-#ifdef CONFIG_OF
-	void __iomem *base;
-#else
-	u32 base;		/* , i2c_clk; */
-#endif
-	switch (channel) {
-	case 0:
-		base = SPM_I2C0_BASE;
-		/* i2c_clk = MT_CG_INFRA_I2C0; */
-		break;
-	case 1:
-		base = SPM_I2C1_BASE;
-		/* i2c_clk = MT_CG_INFRA_I2C1; */
-		break;
-	case 2:
-		base = SPM_I2C2_BASE;
-		/* i2c_clk = MT_CG_INFRA_I2C2; */
-		break;
-	default:
-		base = SPM_I2C2_BASE;
-		break;
-	}
-
-	if ((1 == onoff) && (0 == i2c_onoff)) {
-		i2c_onoff = 1;
-#if 0
-#if 1
-		pdn = spm_read(INFRA_PDN_STA0) & (1U << i2c_clk);
-		spm_write(INFRA_PDN_CLR0, pdn);	/* power on I2C */
-#else
-		pdn = clock_is_on(i2c_clk);
-		if (!pdn)
-			enable_clock(i2c_clk, "spm_i2c");
-#endif
-#endif
-		spm_write(base + OFFSET_CONTROL, 0x0);	/* init I2C_CONTROL */
-		spm_write(base + OFFSET_TRANSAC_LEN, 0x1);	/* init I2C_TRANSAC_LEN */
-		spm_write(base + OFFSET_EXT_CONF, 0x0);	/* init I2C_EXT_CONF */
-		spm_write(base + OFFSET_IO_CONFIG, 0x0);	/* init I2C_IO_CONFIG */
-		spm_write(base + OFFSET_HS, 0x102);	/* init I2C_HS */
-	} else if ((0 == onoff) && (1 == i2c_onoff)) {
-		i2c_onoff = 0;
-#if 0
-#if 1
-		spm_write(INFRA_PDN_SET0, pdn);	/* restore I2C power */
-#else
-		if (!pdn)
-			disable_clock(i2c_clk, "spm_i2c");
-#endif
-#endif
-	} else
-		ASSERT(1);
-}
-#endif
-
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
-#if 0
 	unsigned int temp;
 
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
@@ -290,47 +251,31 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 			IDX_SP_VSRAM_SHUTDOWN,
 			temp & ~(1 << MT6351_PMIC_RG_VSRAM_PROC_EN_SHIFT));
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_SUSPEND);
-#endif
 
-#if 0
-	spm_i2c_control(I2C_CHANNEL, 1);
-
-#ifdef CONFIG_OF
-	/* 26:26 enable */
-	spm_write(spm_infracfg_ao_base + 0x70, spm_read(spm_infracfg_ao_base + 0x70) | (1 << 21));
-	/* BUS 26MHz enable */
-	spm_write(spm_cksys_base + 0x204, spm_read(spm_cksys_base + 0x204) | (1 << 0));
-	spm_write(spm_infracfg_ao_base + 0x108, 0x0);
-#else
-	/* 26:26 enable */
-	spm_write(0xF0001070, spm_read(0xF0001070) | (1 << 21));
-	/* BUS 26MHz enable */
-	spm_write(0xF0000204, spm_read(0xF0000204) | (1 << 0));
-	spm_write(0xF0001108, 0x0);
-#endif
-#endif
-
-#if 0
 	/* fpr dpd */
 	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
 		spm_dpd_init();
-#endif
+
+	/* Do more low power setting when MD1/C2K/CONN off */
+	if (is_md_c2k_conn_power_off()) {
+		__spm_bsi_top_init_setting();
+
+		__spm_backup_pmic_ck_pdn();
+	}
 }
 
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 {
-#if 0
+	/* Do more low power setting when MD1/C2K/CONN off */
+	if (is_md_c2k_conn_power_off())
+		__spm_restore_pmic_ck_pdn();
+
 	/* fpr dpd */
 	if (!(pwrctrl->pcm_flags & SPM_FLAG_DIS_DPD))
 		spm_dpd_dram_init();
-#endif
 
 	/* set PMIC WRAP table for normal power control */
 	/* mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_NORMAL); */
-
-#if 0
-	spm_i2c_control(I2C_CHANNEL, 0);
-#endif
 }
 
 static void spm_set_sysclk_settle(void)
@@ -450,10 +395,10 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 		spm_crit2("warning: spm_ap_mdsrc_req_cnt = %d, r7[ap_mdsrc_req] = 0x%x\n",
 			  spm_ap_mdsrc_req_cnt, spm_read(SPM_POWER_ON_VAL1) & (1 << 17));
 
-#if 0
-	if (wakesta->r12 & WAKE_SRC_EINT)
+	if (wakesta->r12 & WAKE_SRC_R12_EINT_EVENT_B)
 		mt_eint_print_status();
 
+#if 0
 	if (wakesta->debug_flag & (1 << 18)) {
 		spm_crit2("MD32 suspned pmic wrapper error");
 		BUG();
@@ -466,7 +411,7 @@ static wake_reason_t spm_output_wake_reason(struct wake_status *wakesta, struct 
 #endif
 #ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_MTK_ECCCI_DRIVER
-	if (wakesta->r12 & WAKE_SRC_CLDMA_MD)
+	if (wakesta->r12 & WAKE_SRC_R12_CLDMA_EVENT_B)
 		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
 #endif
 #endif
@@ -543,11 +488,9 @@ void spm_suspend_aee_init(void)
 
 #ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_MTK_PMIC
-/* #include <cust_pmic.h> */
+#include <cust_pmic.h>
 #endif
 #endif
-
-#include <upmu_common.h>
 
 wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 {
@@ -569,7 +512,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_MTK_PMIC
 #ifndef DISABLE_DLPT_FEATURE
-	/* get_dlpt_imix_spm(); */
+	get_dlpt_imix_spm();
 #endif
 #endif
 #endif
@@ -603,7 +546,9 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #endif
 #endif
 
-#if 0
+	spm_suspend_pre_process(pwrctrl);
+
+#if 1
 	/* snapshot golden setting */
 	{
 		if (!is_already_snap_shot)
@@ -620,8 +565,6 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	mt_cirq_enable();
 
 	spm_set_sysclk_settle();
-
-	__spm_enable_i2c3_clk();
 
 	spm_crit2("sec = %u, wakesrc = 0x%x (%u)(%u)\n",
 		  sec, pwrctrl->wake_src, is_cpu_pdn(pwrctrl->pcm_flags),
@@ -640,15 +583,13 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	__spm_init_event_vector(pcmdesc);
 
-#if 0
+	__spm_check_md_pdn_power_control(pwrctrl);
+
 	__spm_sync_vcore_dvfs_power_control(pwrctrl, __spm_vcore_dvfs.pwrctrl);
-#endif
 
 	__spm_set_power_control(pwrctrl);
 
 	__spm_set_wakeup_event(pwrctrl);
-
-	spm_suspend_pre_process(pwrctrl);
 
 	spm_kick_pcm_to_run(pwrctrl);
 
@@ -672,8 +613,6 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	/* last_wr = spm_output_wake_reason(&wakesta, pcmdesc); */
 	last_wr = spm_output_wake_reason(&spm_wakesta, pcmdesc);
 
-	__spm_disable_i2c3_clk();
-
 RESTORE_IRQ:
 	mt_cirq_flush();
 	mt_cirq_disable();
@@ -686,8 +625,12 @@ RESTORE_IRQ:
 
 #ifndef CONFIG_MTK_FPGA
 #ifdef CONFIG_MTK_WD_KICKER
-	if (!wd_ret)
-		wd_api->wd_resume_notify();
+	if (!pwrctrl->wdt_disable) {
+		if (!wd_ret)
+			wd_api->wd_resume_notify();
+	} else {
+		spm_crit2("pwrctrl->wdt_disable %d\n", pwrctrl->wdt_disable);
+	}
 #endif
 #endif
 #if SPM_AEE_RR_REC
@@ -848,8 +791,8 @@ bool spm_set_suspned_pcm_init_flag(u32 *suspend_flags)
 
 void spm_output_sleep_option(void)
 {
-	spm_notice("PWAKE_EN:%d, PCMWDT_EN:%d, BYPASS_SYSPWREQ:%d, I2C_CHANNEL:%d\n",
-		   SPM_PWAKE_EN, SPM_PCMWDT_EN, SPM_BYPASS_SYSPWREQ, I2C_CHANNEL);
+	spm_notice("PWAKE_EN:%d, PCMWDT_EN:%d, BYPASS_SYSPWREQ:%d\n",
+		   SPM_PWAKE_EN, SPM_PCMWDT_EN, SPM_BYPASS_SYSPWREQ);
 }
 
 uint32_t get_suspend_debug_regs(uint32_t index)
@@ -863,28 +806,28 @@ uint32_t get_suspend_debug_regs(uint32_t index)
 #else
 		value = 0;
 #endif
-		spm_crit("SPM Suspend debug regs count = 0x%.8x\n", value);
-		break;
+		spm_crit("SPM Suspend debug regs count = 0x%.8x\n",  value);
+	break;
 	case 1:
 		value = spm_read(PCM_WDT_LATCH_0);
 		spm_crit("SPM Suspend debug regs(0x%x) = 0x%.8x\n", index, value);
-		break;
+	break;
 	case 2:
 		value = spm_read(PCM_WDT_LATCH_1);
 		spm_crit("SPM Suspend debug regs(0x%x) = 0x%.8x\n", index, value);
-		break;
+	break;
 	case 3:
 		value = spm_read(PCM_WDT_LATCH_2);
 		spm_crit("SPM Suspend debug regs(0x%x) = 0x%.8x\n", index, value);
-		break;
+	break;
 	case 4:
 		value = spm_read(PCM_WDT_LATCH_3);
 		spm_crit("SPM Suspend debug regs(0x%x) = 0x%.8x\n", index, value);
-		break;
+	break;
 	case 5:
 		value = spm_read(DRAMC_DBG_LATCH);
 		spm_crit("SPM Suspend debug regs(0x%x) = 0x%.8x\n", index, value);
-		break;
+	break;
 	}
 
 	return value;
@@ -901,5 +844,4 @@ u32 spm_get_last_wakeup_misc(void)
 {
 	return spm_wakesta.wake_misc;
 }
-
 MODULE_DESCRIPTION("SPM-Sleep Driver v0.1");

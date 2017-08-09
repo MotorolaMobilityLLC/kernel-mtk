@@ -10,3 +10,4 @@ obj-$(CONFIG_ARCH_MT6735) += spm_v1/
 obj-$(CONFIG_ARCH_MT6735M) += spm_v1/
 obj-$(CONFIG_ARCH_MT6753) += spm_v1/
 obj-$(CONFIG_ARCH_MT6580) += spm_v1/
+obj-$(CONFIG_ARCH_MT6755) += spm_v2/

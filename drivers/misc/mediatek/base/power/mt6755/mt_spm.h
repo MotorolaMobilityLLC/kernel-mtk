@@ -3,7 +3,7 @@
 
 #include <linux/kernel.h>
 #include <linux/io.h>
-#include <mach/upmu_hw.h>	/* for PMIC power settings */
+#include <mach/upmu_hw.h> /* for PMIC power settings */
 
 #ifdef CONFIG_OF
 extern void __iomem *spm_base;
@@ -13,6 +13,7 @@ extern void __iomem *scp_i2c2_base;
 extern void __iomem *spm_infracfg_ao_base;
 extern void __iomem *spm_cksys_base;
 extern void __iomem *spm_mcucfg;
+extern void __iomem *spm_bsi1cfg;
 extern void __iomem *spm_ddrphy_base;
 extern u32 spm_irq_0;
 extern u32 spm_irq_1;
@@ -31,7 +32,6 @@ extern u32 spm_irq_7;
 
 /* #include <mach/mt_irq.h> */
 #include <mt-plat/sync_write.h>
-#include <mt-plat/mt_io.h>
 
 /**************************************
  * Config and Parameter
@@ -73,77 +73,6 @@ extern u32 spm_irq_7;
 
 #include "mt_spm_reg.h"
 
-#define SPM_WAKE_SRC_LIST	{	\
-	SPM_WAKE_SRC(0, SPM_MERGE),	/* PCM timer, TWAM or CPU */	\
-	SPM_WAKE_SRC(1, MD32_WDT),	\
-	SPM_WAKE_SRC(2, KP),		\
-	SPM_WAKE_SRC(3, WDT),		\
-	SPM_WAKE_SRC(4, GPT),		\
-	SPM_WAKE_SRC(5, CONN2AP),	\
-	SPM_WAKE_SRC(6, EINT),		\
-	SPM_WAKE_SRC(7, CONN_WDT),	\
-	SPM_WAKE_SRC(8, CCIF0_MD),	\
-	SPM_WAKE_SRC(9, LOW_BAT),	\
-	SPM_WAKE_SRC(10, MD32_SPM),	\
-	SPM_WAKE_SRC(11, F26M_WAKE),	\
-	SPM_WAKE_SRC(12, F26M_SLEEP),	\
-	SPM_WAKE_SRC(13, PCM_WDT),	\
-	SPM_WAKE_SRC(14, USB_CD),	\
-	SPM_WAKE_SRC(15, USB_PDN),	\
-	SPM_WAKE_SRC(16, C2K_WDT),	\
-	SPM_WAKE_SRC(17, EINT_SECURE),	\
-	SPM_WAKE_SRC(18, CCIF1_MD),	\
-	SPM_WAKE_SRC(19, UART0),	\
-	SPM_WAKE_SRC(20, AFE),		\
-	SPM_WAKE_SRC(21, THERM),	\
-	SPM_WAKE_SRC(22, CIRQ),		\
-	SPM_WAKE_SRC(23, MD2_WDT),	\
-	SPM_WAKE_SRC(24, SYSPWREQ),	\
-	SPM_WAKE_SRC(25, MD_WDT),	\
-	SPM_WAKE_SRC(26, CLDMA_MD),	\
-	SPM_WAKE_SRC(27, SEJ),		\
-	SPM_WAKE_SRC(28, ALL_MD32),	\
-	SPM_WAKE_SRC(29, CPU_IRQ),	\
-	SPM_WAKE_SRC(30, APSRC_WAKE),	\
-	SPM_WAKE_SRC(31, APSRC_SLEEP)	\
-}
-
-/* define WAKE_SRC_XXX */
-enum SPM_WAKE_SRC {
-	WAKE_SRC_SPM_MERGE = (1U << 0),
-	WAKE_SRC_MD32_WDT = (1U << 1),
-	WAKE_SRC_KP = (1U << 2),
-	WAKE_SRC_WDT = (1U << 3),
-	WAKE_SRC_GPT = (1U << 4),
-	WAKE_SRC_CONN2AP = (1U << 5),
-	WAKE_SRC_EINT = (1U << 6),
-	WAKE_SRC_CONN_WDT = (1U << 7),
-	WAKE_SRC_CCIF0_MD = (1U << 8),
-	WAKE_SRC_LOW_BAT = (1U << 9),
-	WAKE_SRC_MD32_SPM = (1U << 10),
-	WAKE_SRC_F26M_WAKE = (1U << 11),
-	WAKE_SRC_F26M_SLEE = (1U << 12),
-	WAKE_SRC_PCM_WDT = (1U << 13),
-	WAKE_SRC_USB_CD = (1U << 14),
-	WAKE_SRC_USB_PDN = (1U << 15),
-	WAKE_SRC_C2K_WDT = (1U << 16),
-	WAKE_SRC_EINT_SECURE = (1U << 17),
-	WAKE_SRC_CCIF1_MD = (1U << 18),
-	WAKE_SRC_UART0 = (1U << 19),
-	WAKE_SRC_AFE = (1U << 20),
-	WAKE_SRC_THERM = (1U << 21),
-	WAKE_SRC_CIRQ = (1U << 22),
-	WAKE_SRC_MD2_WDT = (1U << 23),
-	WAKE_SRC_SYSPWREQ = (1U << 24),
-	WAKE_SRC_MD_WDT = (1U << 25),
-	WAKE_SRC_CLDMA_MD = (1U << 26),
-	WAKE_SRC_SEJ = (1U << 27),
-	WAKE_SRC_ALL_MD32 = (1U << 28),
-	WAKE_SRC_CPU_IRQ = (1U << 29),
-	WAKE_SRC_APSRC_WAKE = (1U << 30),
-	WAKE_SRC_APSRC_SLEEP = (1U << 31),
-};
-
 typedef enum {
 	WR_NONE = 0,
 	WR_UART_BUSY = 1,
@@ -161,6 +90,8 @@ struct twam_sig {
 };
 
 typedef void (*twam_handler_t) (struct twam_sig *twamsig);
+typedef void (*vcorefs_handler_t) (int opp);
+typedef void (*vcorefs_start_handler_t) (void);
 
 /* check if spm firmware ready */
 extern int spm_load_firmware_status(void);
@@ -182,6 +113,9 @@ extern void spm_twam_set_mon_type(struct twam_sig *mon);
 
 /* for Vcore DVFS */
 extern int spm_go_to_ddrdfs(u32 spm_flags, u32 spm_data);
+
+/* for Vcore DVFS in MET */
+extern void spm_vcorefs_register_handler(vcorefs_handler_t handler, vcorefs_start_handler_t start_handler);
 
 /* for PMIC power settings */
 enum {
