@@ -3244,7 +3244,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 				} else {	/* MEMS */
 
 					/* Ana_Set_Reg(AUDENC_ANA_CON9, 0x0710, 0xfff0); //MICBIAS1 DCC  on //DCC */
-					Ana_Set_Reg(AUDENC_ANA_CON9, 0x0730, 0xfff0);
+					Ana_Set_Reg(AUDENC_ANA_CON9, 0x0710, 0xfff0);
 					/* MICBIAS1 DCC  on //DCC, bit 5 to 1 to match ACCDET */
 
 				}
