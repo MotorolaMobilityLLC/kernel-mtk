@@ -201,6 +201,8 @@ static struct freqhopping_ssc mt_ssc_fhpll_userdefined[FH_PLL_NUM] = {
 	{0, 1, 1, 2, 2, 0}
 };
 
+static const int armpll_ssc_pmap[9] = {0, 11, 21, 31, 41, 52, 62, 72, 81};
+
 #else/*PER_PROJECT_FH_SETTING*/
 
 PER_PROJECT_FH_SETTING
@@ -412,6 +414,17 @@ static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *sett
 	fh_write32(reg_updnlmt,
 		(PERCENT_TO_DDSLMT((fh_read32(reg_dds)&MASK21b), setting->lowbnd) << 16));
 
+	if (pll_id == FH_ARMCA15_PLLID) {
+		fh_write32((unsigned long) g_apmixed_base+0x900,
+		(fh_read32((unsigned long) g_apmixed_base+0x900) & 0xFFFF00FF) +
+			(armpll_ssc_pmap[setting->lowbnd] << 8));
+	}
+	if (pll_id == FH_ARMCA7_PLLID) {
+		fh_write32((unsigned long) g_apmixed_base+0x900,
+		(fh_read32((unsigned long) g_apmixed_base+0x900) & 0xFFFFFF00) +
+			(armpll_ssc_pmap[setting->lowbnd]));
+	}
+
 	/* Switch to FHCTL */
 	fh_switch2fhctl(pll_id, 1);
 	mb();
@@ -438,6 +451,14 @@ static void __disable_ssc(unsigned int pll_id, const struct freqhopping_ssc *ssc
 	/* Set the relative registers */
 	fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);
 	fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);
+	if (pll_id == FH_ARMCA15_PLLID) {
+		fh_write32((unsigned long) g_apmixed_base+0x900,
+		(fh_read32((unsigned long) g_apmixed_base+0x900) & 0xFFFF00FF));
+	}
+	if (pll_id == FH_ARMCA7_PLLID) {
+		fh_write32((unsigned long) g_apmixed_base+0x900,
+		(fh_read32((unsigned long) g_apmixed_base+0x900) & 0xFFFFFF00));
+	}
 	mb();
 	fh_switch2fhctl(pll_id, 0);
 	g_fh_pll[pll_id].fh_status = FH_FH_DISABLE;
@@ -708,6 +729,15 @@ static int mt_fh_hal_dfs_armpll(unsigned int pll, unsigned int dds)
 
 		FH_MSG_DEBUG(">p:f< %x:%x", pll_dds, fh_dds);
 
+		if (pll == FH_ARMCA15_PLLID) {
+			fh_write32((unsigned long) g_apmixed_base+0x900,
+			(fh_read32((unsigned long) g_apmixed_base+0x900) & 0xFFFF00FF));
+		}
+		if (pll == FH_ARMCA7_PLLID) {
+			fh_write32((unsigned long) g_apmixed_base+0x900,
+			(fh_read32((unsigned long) g_apmixed_base+0x900) & 0xFFFFFF00));
+		}
+
 		wait_dds_stable(pll_dds, g_reg_mon[pll], 100);
 	}
 #endif
@@ -742,6 +772,16 @@ static int mt_fh_hal_dfs_armpll(unsigned int pll, unsigned int dds)
 		fh_write32(g_reg_updnlmt[pll],
 		    (PERCENT_TO_DDSLMT((fh_read32(g_reg_dds[pll])&MASK21b), p_setting->lowbnd) << 16));
 		FH_MSG_DEBUG("UPDNLMT: 0x%08x", fh_read32(g_reg_updnlmt[pll]));
+		if (pll == FH_ARMCA15_PLLID) {
+			fh_write32((unsigned long) g_apmixed_base+0x900,
+			(fh_read32((unsigned long) g_apmixed_base+0x900) & 0xFFFF00FF) +
+				(armpll_ssc_pmap[p_setting->lowbnd] << 8));
+		}
+		if (pll == FH_ARMCA7_PLLID) {
+			fh_write32((unsigned long) g_apmixed_base+0x900,
+			(fh_read32((unsigned long) g_apmixed_base+0x900) & 0xFFFFFF00) +
+				(armpll_ssc_pmap[p_setting->lowbnd]));
+		}
 
 		fh_switch2fhctl(pll, 1);
 
@@ -1166,6 +1206,11 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 		seq_printf(m, "Pll%d dds max 0x%06x, min 0x%06x\r\n",
 			i, dds_max[i], dds_min[i]);
 	}
+
+	seq_printf(m, "\r\n %p %p %p\r\n", g_fhctl_base, g_apmixed_base, g_ddrphy_base);
+	seq_printf(m, "\r\n APMIXEDSYS RSV_RW0_CON 0x%08x RSV_RW1_CON 0x%08x\r\n",
+		fh_read32((unsigned long) g_apmixed_base+0x900),
+		fh_read32((unsigned long) g_apmixed_base+0x904));
 
 	return 0;
 }
