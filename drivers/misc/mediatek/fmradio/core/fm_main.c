@@ -2264,11 +2264,11 @@ fm_s32 fm_rdstx_enable(struct fm *fm, fm_s32 enable)
 {
 	fm_s32 ret = -1;
 
-	if (fm_low_ops.bi.rds_tx_enable == NULL) {
+	if (fm_low_ops.ri.rds_tx_enable == NULL) {
 		pr_err("%s,invalid pointer\n", __func__);
 		return -FM_EPARA;
 	}
-	if (fm_low_ops.bi.rds_tx_disable == NULL) {
+	if (fm_low_ops.ri.rds_tx_disable == NULL) {
 		pr_err("%s,invalid pointer\n", __func__);
 		return -FM_EPARA;
 	}
