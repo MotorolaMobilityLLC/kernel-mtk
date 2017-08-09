@@ -1716,7 +1716,7 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
 	struct n_tty_data *ldata = tty->disc_data;
 	int room, n, rcvd = 0, overflow;
 
-	down_read(&tty->termios_rwsem);
+	down_write(&tty->termios_rwsem);
 
 	while (1) {
 		/*
@@ -1774,7 +1774,7 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
 	} else
 		n_tty_check_throttle(tty);
 
-	up_read(&tty->termios_rwsem);
+	up_write(&tty->termios_rwsem);
 
 	return rcvd;
 }
