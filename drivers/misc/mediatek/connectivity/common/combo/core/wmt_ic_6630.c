@@ -1198,7 +1198,7 @@ static const WMT_IC_INFO_S *mt6630_find_wmt_ic_info(const UINT32 hw_ver)
 static INT32 wmt_stp_init_coex(VOID)
 {
 	INT32 iRet;
-	size_t addr;
+	ULONG addr;
 	WMT_GEN_CONF *pWmtGenConf;
 
 #define COEX_WMT  0
@@ -1218,7 +1218,7 @@ static INT32 wmt_stp_init_coex(VOID)
 		return -2;
 	}
 
-	WMT_INFO_FUNC("ctrl GET_WMT_CONF ok(0x%zx)\n", addr);
+	WMT_INFO_FUNC("ctrl GET_WMT_CONF ok(0x%08lx)\n", addr);
 
 	pWmtGenConf = (P_WMT_GEN_CONF) addr;
 

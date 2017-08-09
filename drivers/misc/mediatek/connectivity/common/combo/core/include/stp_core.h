@@ -573,7 +573,11 @@ extern VOID mtk_wcn_stp_dbg_pkt_log(INT32 type, INT32 dir);
 /*Bad*/
 extern INT32 mtk_wcn_sys_if_rx(UINT8 *data, INT32 size);
 #if WMT_PLAT_ALPS
+#ifdef CONFIG_MTK_SERIAL
 extern void stop_log(void);	/* uart export API */
+#else
+static inline void stop_log(void) {}; /* dummy function */
+#endif
 #endif
 
 /*******************************************************************************

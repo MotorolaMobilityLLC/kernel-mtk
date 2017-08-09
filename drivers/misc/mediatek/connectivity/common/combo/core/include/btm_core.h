@@ -107,7 +107,11 @@ INT32 stp_notify_btm_dump(MTKSTP_BTM_T *stp_btm);
 INT32 stp_notify_btm_do_fw_assert(MTKSTP_BTM_T *stp_btm);
 INT32 stp_notify_btm_handle_wmt_lte_coex(MTKSTP_BTM_T *stp_btm);
 #if WMT_PLAT_ALPS
+#ifdef CONFIG_MTK_SERIAL
 extern void dump_uart_history(void);
+#else
+static inline void dump_uart_history(void) {};
+#endif
 #endif
 INT32 wmt_btm_trigger_reset(VOID);
 INT32 stp_btm_set_current_op(MTKSTP_BTM_T *stp_btm, P_OSAL_OP pOp);
