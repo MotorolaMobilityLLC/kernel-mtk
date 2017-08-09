@@ -1,7 +1,9 @@
+#include <linux/gfp.h>
 #include <linux/init.h>
-#include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/proc_fs.h>
+#include <linux/slab.h>
 
 #include <mt-plat/aee.h>
 #include <mt-plat/upmu_common.h>
@@ -11,8 +13,6 @@
 #define gs_read(addr) (*(volatile u32 *)(addr))
 
 struct proc_dir_entry *mt_power_gs_dir = NULL;
-
-static char dbg_buf[1024] = { 0 };
 
 static u16 gs_pmic_read(u16 reg)
 {
@@ -28,6 +28,7 @@ static void mt_power_gs_compare(char *scenario, char *pmic_name,
 				const unsigned int *pmic_gs, unsigned int pmic_gs_len)
 {
 	unsigned int i, k, val1, val2, diff;
+	char *dbg_buf = kmalloc(8192, GFP_NOFS);
 	char *p = dbg_buf;
 
 	for (i = 0; i < pmic_gs_len; i += 3) {
@@ -36,18 +37,20 @@ static void mt_power_gs_compare(char *scenario, char *pmic_name,
 		val2 = pmic_gs[i + 2] & pmic_gs[i + 1];
 
 		if (val1 != val2) {
-			p += sprintf(p, "%s - %s - 0x%x - 0x%x - 0x%x - 0x%x - ",
+			p += sprintf(p, "%s - %s - 0x%x - 0x%x - 0x%x - 0x%x -",
 				     scenario, pmic_name, pmic_gs[i], gs_pmic_read(pmic_gs[i]),
 				     pmic_gs[i + 1], pmic_gs[i + 2]);
 
 			for (k = 0, diff = val1 ^ val2; diff != 0; k++, diff >>= 1) {
 				if ((diff % 2) != 0)
-					p += sprintf(p, "%d ", k);
+					p += sprintf(p, " %d", k);
 			}
 			p += sprintf(p, "\n");
 		}
 	}
 	pr_warn("%s\n", dbg_buf);
+
+	kfree(dbg_buf);
 }
 
 void mt_power_gs_dump_suspend(void)
@@ -96,3 +99,4 @@ module_init(mt_power_gs_init);
 module_exit(mt_power_gs_exit);
 
 MODULE_DESCRIPTION("MT Low Power Golden Setting");
+
