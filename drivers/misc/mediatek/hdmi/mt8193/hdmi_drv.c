@@ -43,6 +43,7 @@
 #include <linux/of_address.h>
 #include <linux/clk.h>
 #include <linux/of_gpio.h>
+#include <linux/gpio.h>
 #include <linux/uaccess.h>
 #include <linux/types.h>
 #include <mt-plat/mt_gpio.h>
@@ -164,34 +165,91 @@ static void mt8193_set_util_funcs(const struct HDMI_UTIL_FUNCS *util)
 
 static void mt8193_get_params(struct HDMI_PARAMS *params)
 {
+	enum HDMI_VIDEO_RESOLUTION input_resolution;
+
+	input_resolution = params->init_config.vformat;
 	memset(params, 0, sizeof(struct HDMI_PARAMS));
 
-	MT8193_DRV_LOG("720p\n");
-	params->init_config.vformat = HDMI_VIDEO_1280x720p_50Hz;
-	params->init_config.aformat = HDMI_AUDIO_48K_2CH;
+	switch (input_resolution) {
+	case HDMI_VIDEO_720x480p_60Hz:
+		params->clk_pol = HDMI_POLARITY_FALLING;
+		params->de_pol = HDMI_POLARITY_RISING;
+		params->hsync_pol = HDMI_POLARITY_RISING;
+		params->vsync_pol = HDMI_POLARITY_RISING;
+		params->hsync_pulse_width = 62;
+		params->hsync_back_porch  = 60;
+		params->hsync_front_porch = 16;
+		params->vsync_pulse_width = 6;
+		params->vsync_back_porch  = 30;
+		params->vsync_front_porch = 9;
+		params->width = 720;
+		params->height = 480;
+		params->input_clock = 27027;
+		params->init_config.vformat = HDMI_VIDEO_720x480p_60Hz;
+		break;
+	case HDMI_VIDEO_1280x720p_60Hz:
+		params->clk_pol = HDMI_POLARITY_FALLING;
+		params->de_pol = HDMI_POLARITY_RISING;
+		params->hsync_pol = HDMI_POLARITY_FALLING;
+		params->vsync_pol = HDMI_POLARITY_FALLING;
+		params->hsync_pulse_width = 40;
+		params->hsync_back_porch  = 220;
+		params->hsync_front_porch = 110;
+		params->vsync_pulse_width = 5;
+		params->vsync_back_porch  = 20;
+		params->vsync_front_porch = 5;
+		params->width = 1280;
+		params->height = 720;
+		params->input_clock = 74250;
+		params->init_config.vformat = HDMI_VIDEO_1280x720p_60Hz;
+		break;
+	case HDMI_VIDEO_1920x1080p_30Hz:
+		params->clk_pol = HDMI_POLARITY_FALLING;
+		params->de_pol = HDMI_POLARITY_RISING;
+		params->hsync_pol = HDMI_POLARITY_FALLING;
+		params->vsync_pol = HDMI_POLARITY_FALLING;
+		params->hsync_pulse_width = 44;
+		params->hsync_back_porch  = 148;
+		params->hsync_front_porch = 88;
+		params->vsync_pulse_width = 5;
+		params->vsync_back_porch  = 36;
+		params->vsync_front_porch = 4;
+		params->width = 1920;
+		params->height = 1080;
+		params->input_clock = 74250;
+		params->init_config.vformat = HDMI_VIDEO_1920x1080p_30Hz;
+		break;
+	case HDMI_VIDEO_1920x1080p_60Hz:
+		params->clk_pol = HDMI_POLARITY_FALLING;
+		params->de_pol = HDMI_POLARITY_RISING;
+		params->hsync_pol = HDMI_POLARITY_FALLING;
+		params->vsync_pol = HDMI_POLARITY_FALLING;
+		params->hsync_pulse_width = 44;
+		params->hsync_back_porch  = 148;
+		params->hsync_front_porch = 88;
+		params->vsync_pulse_width = 5;
+		params->vsync_back_porch  = 36;
+		params->vsync_front_porch = 4;
+		params->width = 1920;
+		params->height = 1080;
+		params->input_clock = 148500;
+		params->init_config.vformat = HDMI_VIDEO_1920x1080p_60Hz;
+		break;
+	default:
+		HDMI_DEF_LOG("Unknown support resolution\n");
+		break;
+	}
 
-	params->clk_pol = HDMI_POLARITY_FALLING;
-	params->de_pol = HDMI_POLARITY_RISING;
-	params->vsync_pol = HDMI_POLARITY_FALLING;
-	params->hsync_pol = HDMI_POLARITY_FALLING;
-
-	params->hsync_pulse_width = 40;
-	params->hsync_back_porch = 220;
-	params->hsync_front_porch = 440;
-	params->vsync_pulse_width = 5;
-	params->vsync_back_porch = 20;
-	params->vsync_front_porch = 5;
-
+	params->init_config.aformat = HDMI_AUDIO_44K_2CH;
 	params->rgb_order = HDMI_COLOR_ORDER_RGB;
-
 	params->io_driving_current = IO_DRIVING_CURRENT_2MA;
 	params->intermediat_buffer_num = 4;
-	params->output_mode = HDMI_OUTPUT_MODE_LCD_MIRROR;
-	params->is_force_awake = 1;
-	params->is_force_landscape = 1;
-
 	params->scaling_factor = 0;
+	params->cabletype = 0;
+	params->HDCPSupported = 0;
+
 }
+
 
 static int mt8193_enter(void)
 {
@@ -311,7 +369,8 @@ void mt8193_set_mode(unsigned char ucMode)
 
 int mt8193_power_on(void)
 {
-	/*unsigned int dpi_pin_start = 0; */
+	struct device_node *dn;
+	int bus_switch_pin;
 
 	HDMI_DEF_LOG("[hdmi]mt8193_power_on_\n");
 
@@ -334,6 +393,10 @@ int mt8193_power_on(void)
 	mt_set_gpio_out(GPIO_HDMI_POWER_CONTROL, GPIO_OUT_ONE);
 	HDMI_DEF_LOG("[hdmi]hdmi_5v_on\n");
 #endif
+
+	dn = of_find_compatible_node(NULL, NULL, "mediatek,mt8193-hdmi");
+	bus_switch_pin = of_get_named_gpio(dn, "hdmi_power_gpios", 0);
+	gpio_direction_output(bus_switch_pin, 1);
 
 	vWriteHdmiSYSMsk(HDMI_PWR_CTRL, hdmi_power_turnon, hdmi_power_turnon);
 	vWriteHdmiSYSMsk(HDMI_SYS_PWR_RST_B, hdmi_pwr_sys_sw_unreset, hdmi_pwr_sys_sw_unreset);
@@ -358,6 +421,9 @@ int mt8193_power_on(void)
 
 void mt8193_power_off(void)
 {
+	struct device_node *dn;
+	int bus_switch_pin;
+
 	HDMI_DEF_LOG("[hdmi]mt8193_power_off\n");
 	if (hdmi_powerenable == 0) {
 		HDMI_DEF_LOG("[hdmi]already power off, return\n");
@@ -383,6 +449,10 @@ void mt8193_power_off(void)
 	mt_set_gpio_out(GPIO_HDMI_POWER_CONTROL, GPIO_OUT_ZERO);
 	HDMI_DEF_LOG("[hdmi]hdmi_5v_off\n");
 #endif
+
+	dn = of_find_compatible_node(NULL, NULL, "mediatek,mt8193-hdmi");
+	bus_switch_pin = of_get_named_gpio(dn, "hdmi_power_gpios", 0);
+	gpio_direction_output(bus_switch_pin, 0);
 
 	vWriteHdmiSYSMsk(HDMI_PWR_CTRL, hdmi_clock_off, hdmi_clock_off);
 	vWriteHdmiSYSMsk(HDMI_PWR_CTRL, hdmi_iso_en, hdmi_iso_en);
@@ -603,6 +673,7 @@ static void process_dbg_opt(const char *opt)
 	int temp_len = 0;
 	int len = 0;
 	int ret;
+	long int p_temp;
 
 	buf = (char *)opt;
 
@@ -676,7 +747,8 @@ static void process_dbg_opt(const char *opt)
 		hdmi_factory_mode_test(STEP1_CHIP_INIT, NULL);
 	} else if (0 == strncmp(opt, "fres:", 5)) {
 		ret = sscanf(buf + 5, "%x", &val);
-		hdmi_factory_mode_test(STEP3_START_DPI_AND_CONFIG, &val);
+		p_temp = (long int)val;
+		hdmi_factory_mode_test(STEP3_START_DPI_AND_CONFIG, (void *)p_temp);
 	} else {
 		HDMI_ATTR_SPRINTF("---hdmi debug help---\n");
 		HDMI_ATTR_SPRINTF("please go in to sys/kernel/debug\n");

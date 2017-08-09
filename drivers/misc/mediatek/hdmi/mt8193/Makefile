@@ -1,7 +1,14 @@
 #include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
+ifeq ($(CONFIG_ARCH_MT6735M), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/mt6735m
+endif
+
+ifneq ($(CONFIG_ARCH_MT6735M), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/ext_disp/$(CONFIG_MTK_PLATFORM)
+endif
+
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/hdmi/inc\
-					-I$(srctree)/drivers/misc/mediatek/ext_disp/$(CONFIG_MTK_PLATFORM)\
 					-I$(srctree)/drivers/misc/mediatek/ext_disp\
 					-I$(srctree)/drivers/misc/mediatek/video/include\
 					-I$(srctree)/drivers/misc/mediatek/include/mt-plat\

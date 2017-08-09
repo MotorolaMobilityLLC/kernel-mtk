@@ -58,7 +58,7 @@ extern unsigned int mt8193_log_on;
 
 #define mt8193hdmialllog   (0xffff)
 
-#define hdmi_print printk
+#define hdmi_print pr_debug
 
 #define TRUE true
 #define FALSE false
@@ -208,7 +208,7 @@ extern unsigned int mt8193_log_on;
 #define HDMI_DEF_LOG(fmt, arg...) \
 	do {\
 		if (mt8193_log_on&hdmideflog) {\
-			printk(fmt, ##arg); } \
+			pr_debug(fmt, ##arg); } \
 	} while (0)
 /* ///////////////////////////////////////////////////////////////////////////////////////////////// */
 extern int mt8193_i2c_read(unsigned short addr, unsigned int *data);
