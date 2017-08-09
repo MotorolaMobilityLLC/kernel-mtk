@@ -4092,6 +4092,14 @@ static void ppm_limit_callback(struct ppm_client_req req)
 				ignore_ppm[i] = 1;
 			}
 		}
+#if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
+		if (enable_cpuhvfs && enable_hw_gov) {
+			cpuhvfs_set_opp_limit(cpu_dvfs_to_cluster(p),
+					      opp_limit_to_ceiling(p->idx_opp_ppm_limit),
+					      opp_limit_to_floor(p->idx_opp_ppm_base));
+			ignore_ppm[i] = 1;
+		}
+#endif
 	}
 
 	for_each_cpu_dvfs_only(i, p) {
@@ -4315,6 +4323,8 @@ static void __set_cpuhvfs_init_sta(struct init_sta *sta)
 		sta->freq[i] = p->ops->get_cur_phy_freq(p);
 		sta->volt[i] = VOLT_TO_EXTBUCK_VAL(volt);
 		sta->vsram[i] = VOLT_TO_PMIC_VAL(p->ops->get_cur_vsram(p));
+		sta->ceiling[i] = opp_limit_to_ceiling(p->idx_opp_ppm_limit);
+		sta->floor[i] = opp_limit_to_floor(p->idx_opp_ppm_base);
 		sta->is_on[i] = (p->armpll_is_available ? true : false);
 	}
 }
@@ -4342,6 +4352,8 @@ static void _mt_cpufreq_syscore_resume(void)
 			sta.freq[i] = p->ops->get_cur_phy_freq(p);
 			sta.volt[i] = VOLT_AT_SUSPEND;
 			sta.vsram[i] = VSRAM_AT_SUSPEND;
+			sta.ceiling[i] = CEILING_AT_SUSPEND;
+			sta.floor[i] = FLOOR_AT_SUSPEND;
 		}
 
 		cpuhvfs_dvfsp_resume(id_to_cluster(id), &sta);
