@@ -23,40 +23,47 @@ struct compat_disp_session_config {
 	compat_int_t tigger_mode;
 };
 
-
 struct compat_disp_input_config {
-	compat_uint_t layer_id;
-	compat_uint_t layer_enable;
-	compat_uint_t buffer_source;
 	compat_uptr_t src_base_addr;
 	compat_uptr_t src_phy_addr;
-	compat_uint_t src_direct_link;
+	compat_uint_t buffer_source;
+	compat_uint_t security;
 	compat_uint_t src_fmt;
-	compat_uint_t src_use_color_key;
-	compat_uint_t src_color_key;
-	compat_uint_t src_pitch;
-	compat_uint_t src_offset_x, src_offset_y;
-	compat_uint_t src_width, src_height;
+	compat_uint_t src_alpha;
+	compat_uint_t dst_alpha;
+	compat_uint_t yuv_range;
 
-	compat_uint_t tgt_offset_x, tgt_offset_y;
-	compat_uint_t tgt_width, tgt_height;
 	compat_uint_t layer_rotation;
 	compat_uint_t layer_type;
 	compat_uint_t video_rotation;
 
-	compat_uint_t isTdshp;
-
 	compat_uint_t next_buff_idx;
-	compat_int_t identity;
-	compat_int_t connected_type;
-	compat_uint_t security;
-	compat_uint_t alpha_enable;
-	compat_uint_t alpha;
-	compat_uint_t sur_aen;
-	compat_uint_t src_alpha;
-	compat_uint_t dst_alpha;
+
+	compat_uint_t src_color_key;
 	compat_uint_t frm_sequence;
-	compat_uint_t yuv_range;
+
+	compat_ushort_t src_pitch;
+	compat_ushort_t src_offset_x, src_offset_y;
+	compat_ushort_t src_width, src_height;
+	compat_ushort_t tgt_offset_x, tgt_offset_y;
+	compat_ushort_t tgt_width, tgt_height;
+
+	compat_ushort_t dirty_x;
+	compat_ushort_t dirty_y;
+	compat_ushort_t dirty_w;
+	compat_ushort_t dirty_h;
+
+	u8 alpha_enable;
+	u8 alpha;
+	u8 sur_aen;
+	u8 src_use_color_key;
+	u8 layer_id;
+	u8 layer_enable;
+
+	u8 src_direct_link;
+	u8 isTdshp;
+	u8 identity;
+	u8 connected_type;
 };
 
 struct compat_disp_output_config {
@@ -101,7 +108,6 @@ struct compat_disp_session_layer_num_config {
 	compat_uint_t max_layer_num;
 };
 
-
 struct compat_disp_caps_info {
 	compat_uint_t output_mode;
 	compat_uint_t output_pass;
@@ -112,6 +118,7 @@ struct compat_disp_caps_info {
 	compat_uint_t disp_feature;
 	compat_uint_t is_support_frame_cfg_ioctl;
 	compat_uint_t is_output_rotated;
+	uint8_t partial_support;
 };
 
 struct compat_disp_buffer_info {

@@ -1,8 +1,8 @@
 #ifndef __DISP_SESSION_H
 #define __DISP_SESSION_H
+#include <linux/types.h>
 
 #define DISP_SESSION_DEVICE	"mtk_disp_mgr"
-
 
 #define DISP_NO_ION_FD                 ((int)(~0U>>1))
 #define DISP_NO_USE_LAEYR_ID           ((int)(~0U>>1))
@@ -12,8 +12,6 @@
 #define DISP_SESSION_TYPE(id) (((id)>>16)&0xff)
 #define DISP_SESSION_DEV(id) ((id)&0xff)
 #define MAKE_DISP_SESSION(type, dev) (unsigned int)((type)<<16 | (dev))
-
-
 
 /* /============================================================================= */
 /* structure declarations */
@@ -180,38 +178,46 @@ typedef struct {
 } disp_session_vsync_config;
 
 typedef struct disp_input_config_t {
-	unsigned int layer_id;
-	unsigned int layer_enable;
-	DISP_BUFFER_SOURCE buffer_source;
 	void *src_base_addr;
 	void *src_phy_addr;
-	unsigned int src_direct_link;
+	DISP_BUFFER_SOURCE buffer_source;
+	DISP_BUFFER_TYPE security;
 	DISP_FORMAT src_fmt;
-	unsigned int src_use_color_key;
-	unsigned int src_color_key;
-	unsigned int src_pitch;
-	unsigned int src_offset_x, src_offset_y;
-	unsigned int src_width, src_height;
+	DISP_ALPHA_TYPE src_alpha;
+	DISP_ALPHA_TYPE dst_alpha;
+	DISP_YUV_RANGE_ENUM yuv_range;
 
-	unsigned int tgt_offset_x, tgt_offset_y;
-	unsigned int tgt_width, tgt_height;
 	DISP_ORIENTATION layer_rotation;
 	DISP_LAYER_TYPE layer_type;
 	DISP_ORIENTATION video_rotation;
 
-	unsigned int isTdshp;	/* set to 1, will go through tdshp first, then layer blending, then to color */
+	uint32_t next_buff_idx;
 
-	unsigned int next_buff_idx;
-	int identity;
-	int connected_type;
-	DISP_BUFFER_TYPE security;
-	unsigned int alpha_enable;
-	unsigned int alpha;
-	unsigned int sur_aen;
-	DISP_ALPHA_TYPE src_alpha;
-	DISP_ALPHA_TYPE dst_alpha;
-	unsigned int frm_sequence;
-	DISP_YUV_RANGE_ENUM yuv_range;
+	uint32_t src_color_key;
+	uint32_t frm_sequence;
+
+	uint16_t src_pitch;
+	uint16_t src_offset_x, src_offset_y;
+	uint16_t src_width, src_height;
+	uint16_t tgt_offset_x, tgt_offset_y;
+	uint16_t tgt_width, tgt_height;
+
+	uint16_t dirty_x;
+	uint16_t dirty_y;
+	uint16_t dirty_w;
+	uint16_t dirty_h;
+
+	uint8_t alpha_enable;
+	uint8_t alpha;
+	uint8_t sur_aen;
+	uint8_t src_use_color_key;
+	uint8_t layer_id;
+	uint8_t layer_enable;
+	uint8_t src_direct_link;
+
+	uint8_t isTdshp;
+	uint8_t identity;
+	uint8_t connected_type;
 } disp_input_config;
 
 typedef struct disp_output_config_t {
@@ -352,6 +358,7 @@ typedef struct disp_caps_t {
 	unsigned int disp_feature;
 	int is_support_frame_cfg_ioctl;
 	int is_output_rotated;
+	uint8_t partial_support;
 } disp_caps_info;
 
 typedef struct disp_session_buf_t {
