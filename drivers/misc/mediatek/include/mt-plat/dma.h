@@ -93,7 +93,6 @@ struct mt_gdma_conf {
 	unsigned int domain;
 	void (*isr_cb)(void *);
 	void *data;
-	unsigned int LPAE_en;
 };
 
 /* burst */

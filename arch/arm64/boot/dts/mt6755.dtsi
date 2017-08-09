@@ -1255,6 +1255,8 @@
 			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>,
 				     <GIC_SPI 114 IRQ_TYPE_LEVEL_LOW>;
 			nr_channel = <2>;
+			clocks = <&infrasys INFRA_GCE>;
+			clock-names = "cqdma";
 		};
 
 		md2md_md2_ccif0@10213000 {
