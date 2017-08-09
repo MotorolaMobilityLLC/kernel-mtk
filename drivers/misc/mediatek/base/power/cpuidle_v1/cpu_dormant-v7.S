@@ -250,6 +250,11 @@ L2_cl_finished:
 	.global cpu_wake_up_errata_802022
 cpu_wake_up_errata_802022:
 	.func
+@ Before Slave CPU goes to Errata WFI, we set primask to the CPU first.
+	ldr	r0, =0x10212004
+	ldr	r0, [r0]
+	mov	r1, #0x10
+	str	r1, [r0]
 1:
 	isb
 	dsb
