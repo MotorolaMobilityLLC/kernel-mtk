@@ -4268,7 +4268,7 @@ static int battery_meter_remove(struct platform_device *dev)
 
 static void battery_meter_shutdown(struct platform_device *dev)
 {
-	bm_print(BM_LOG_CRTI, "[battery_meter_shutdown]\n");
+
 }
 
 static int battery_meter_suspend(struct platform_device *dev, pm_message_t state)
