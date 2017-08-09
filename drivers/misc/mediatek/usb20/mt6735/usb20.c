@@ -37,7 +37,6 @@ struct clk *musb_clk;
 #include <linux/regulator/consumer.h>
 #endif
 #endif
-static CHARGER_TYPE mt_get_charger_type(void){return STANDARD_HOST; }
 
 #ifdef MUSB_QMU_SUPPORT
 #include "musb_qmu.h"
@@ -669,10 +668,13 @@ void pmic_chrdet_int_en(int is_on)
 void musb_sync_with_bat(struct musb *musb, int usb_state)
 {
 #ifndef FPGA_PLATFORM
-	DBG(0, "BATTERY_SetUSBState, state=%d\n", usb_state);
 	/* GIT K318 WORKAROUND */
-	/* BATTERY_SetUSBState(usb_state); */
-	/* wake_up_bat(); */
+	DBG(0, "WORKAROUND, return\n");
+	return;
+
+	DBG(0, "BATTERY_SetUSBState, state=%d\n", usb_state);
+	BATTERY_SetUSBState(usb_state);
+	wake_up_bat();
 #endif
 }
 

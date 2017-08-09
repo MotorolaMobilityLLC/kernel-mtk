@@ -48,18 +48,7 @@
 #include "musb.h"
 #include <linux/wakelock.h>
 #include <linux/version.h>
-/* GIT K318 WORKAROUND */
-/*	#include <mach/mt_typedefs.h> */
-#ifndef TRUE
-#define TRUE  (1)
-#endif
-
-typedef enum {
-	KAL_FALSE = 0,
-	KAL_TRUE  = 1,
-} kal_bool;
-
-#define kal_uint32 u32
+#include <mt-plat/mt_typedefs.h>
 
 #ifdef MUSB_QMU_SUPPORT
 #include "mtk_qmu.h"

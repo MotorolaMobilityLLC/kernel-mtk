@@ -48,10 +48,10 @@ typedef enum {
 
 extern void wake_up_bat(void);
 extern CHARGER_TYPE mt_charger_type_detection(void);
-extern bool upmu_is_chr_det(void);
-extern kal_uint32 upmu_get_rgs_chrdet(void);
+extern kal_bool upmu_is_chr_det(void);
+extern unsigned int upmu_get_rgs_chrdet(void);
 extern void BATTERY_SetUSBState(int usb_state);
-extern void upmu_interrupt_chrdet_int_en(kal_uint32 val);
+extern void upmu_interrupt_chrdet_int_en(unsigned int val);
 
 /* specific USB fuctnion */
 typedef enum {
@@ -115,8 +115,7 @@ extern void __iomem *ap_uart0_base;
 extern bool in_uart_mode;
 #endif
 extern int usb20_phy_init_debugfs(void);
-/* GIT K318 WORKAROUND */
-/* extern CHARGER_TYPE mt_get_charger_type(void); */
+extern CHARGER_TYPE mt_get_charger_type(void);
 #include <upmu_common.h>
 bool hwPowerOn(MT65XX_POWER powerId, int powerVolt, char *mode_name);
 
