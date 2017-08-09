@@ -498,6 +498,7 @@ static unsigned int ctrl_EEM_Enable = 1;
 #endif
 static unsigned int ctrl_ITurbo = 0, ITurboRun;
 static int eem_log_en;
+static int isGPUDCBDETOverflow, is2LDCBDETOverflow, isLDCBDETOverflow, isCCIDCBDETOverflow;
 
 static unsigned int checkEfuse;
 static unsigned int informGpuEEMisReady;
@@ -1652,6 +1653,14 @@ static void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 
 	/* clear all pending EEM interrupt & config EEMINTEN */
 	eem_write(EEMINTSTS, 0xffffffff);
+
+	/*fix DCBDET overflow issue */
+	if (((det_to_id(det) == EEM_DET_GPU) && isGPUDCBDETOverflow) ||
+		((det_to_id(det) == EEM_DET_2L) && is2LDCBDETOverflow) ||
+		((det_to_id(det) == EEM_DET_L) && isLDCBDETOverflow) ||
+		((det_to_id(det) == EEM_DET_CCI) && isCCIDCBDETOverflow)) {
+		eem_write(EEM_CHKSHIFT, (eem_read(EEM_CHKSHIFT) & ~0x0F) | 0x07); /* 0x07 = DCBDETOFF */
+	}
 
 	eem_debug("%s phase = %d\n", ((char *)(det->name) + 8), phase);
 	switch (phase) {
@@ -3933,13 +3942,13 @@ void get_devinfo(struct eem_devinfo *p)
 	/* test pattern */
 	val[0] = 0x17F75060;
 	val[1] = 0x00540003;
-	val[2] = 0x18A73D12;
+	val[2] = 0x187E3D12; /* 0x18A73D12 */
 	val[3] = 0x00560003;
-	val[4] = 0x18A46103;
+	val[4] = 0x187E6103; /* 0x18A46103 */
 	val[5] = 0x00450003;
-	val[6] = 0x18A25E06;
+	val[6] = 0x187E5E06; /* 0x18A25E06 */
 	val[7] = 0x00450003;
-	val[8] = 0x18A56004;
+	val[8] = 0x187E6004; /* 0x18A56004 */
 	val[9] = 0x00450010;
 	val[10] = 0x0070004E;
 	val[11] = 0x0F18315B;
@@ -5026,6 +5035,58 @@ unsigned int get_eem_status_for_gpu(void)
 	return informGpuEEMisReady;
 }
 
+void eem_efuse_calibration(struct eem_devinfo *devinfo)
+{
+	int temp;
+
+	eem_error("%s\n", __func__);
+
+	if (devinfo->GPU_DCBDET >= 128) {
+		eem_error("GPU_DCBDET = %d which is correct\n", devinfo->GPU_DCBDET);
+	} else {
+		isGPUDCBDETOverflow = 1;
+		temp = devinfo->GPU_DCBDET;
+		eem_error("GPU_DCBDET = 0x%x, (%d), (%d), (%d)\n", devinfo->GPU_DCBDET, temp, temp-256, (temp-256)/2);
+		devinfo->GPU_DCBDET = (unsigned char)((temp - 256) / 2);
+		eem_error("GPU_DCBDET = 0x%x, (%d)\n",
+			devinfo->GPU_DCBDET,
+			devinfo->GPU_DCBDET);
+	}
+
+	if (devinfo->CPU_2L_DCBDET >= 128) {
+		eem_error("CPU_2L_DCBDET = %d which is correct\n", devinfo->CPU_2L_DCBDET);
+	} else {
+		is2LDCBDETOverflow = 1;
+		temp = devinfo->CPU_2L_DCBDET;
+		devinfo->CPU_2L_DCBDET = (unsigned char)((temp - 256) / 2);
+		eem_error("CPU_2L_DCBDET = 0x%x, (%d)\n",
+			devinfo->CPU_2L_DCBDET,
+			devinfo->CPU_2L_DCBDET);
+	}
+
+	if (devinfo->CPU_L_DCBDET >= 128) {
+		eem_error("CPU_L_DCBDET = %d which is correct\n", devinfo->CPU_L_DCBDET);
+	} else {
+		isLDCBDETOverflow = 1;
+		temp = devinfo->CPU_L_DCBDET;
+		devinfo->CPU_L_DCBDET = (unsigned char)((temp - 256) / 2);
+		eem_error("CPU_L_DCBDET = 0x%x, (%d)\n",
+			devinfo->CPU_L_DCBDET,
+			devinfo->CPU_L_DCBDET);
+	}
+
+	if (devinfo->CCI_DCBDET >= 128) {
+		eem_error("CPU_CCI_DCBDET = %d which is correct\n", devinfo->CCI_DCBDET);
+	} else {
+		isCCIDCBDETOverflow = 1;
+		temp = devinfo->CCI_DCBDET;
+		devinfo->CCI_DCBDET = (unsigned char)((temp - 256) / 2);
+		eem_error("CCI_DCBDET = 0x%x, (%d)\n",
+			devinfo->CCI_DCBDET,
+			devinfo->CCI_DCBDET);
+	}
+}
+
 #ifdef __KERNEL__
 static int __init dt_get_ptp_devinfo(unsigned long node, const char *uname, int depth, void *data)
 {
@@ -5310,7 +5371,7 @@ int __init eem_init(void)
 #endif
 
 	get_devinfo(&eem_devinfo);
-
+	eem_efuse_calibration(&eem_devinfo);
 #if 0 /* def __KERNEL__ */
 	if (new_eem_val == 0) {
 		ctrl_EEM_Enable = 0;
