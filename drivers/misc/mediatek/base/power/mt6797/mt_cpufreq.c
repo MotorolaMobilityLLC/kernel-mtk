@@ -3217,6 +3217,7 @@ DFS_DONE:
 }
 /* 750Mhz */
 #define DEFAULT_B_FREQ_IDX 13
+#define BOOST_B_FREQ_IDX 0
 static unsigned int num_online_cpus_delta;
 static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action,
 					void *hcpu)
@@ -3275,12 +3276,24 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #ifdef CONFIG_HYBRID_CPU_DVFS
 					if (!enable_cpuhvfs) {
 #endif
-						cpufreq_ver("CB - re-adjust cci due to big on\n");
-						new_cci_opp_idx = _calc_new_cci_opp_idx(p, p->idx_opp_tbl);
-						/* set cci freq/volt */
-						_cpufreq_set_locked_cci(cpu_dvfs_get_cur_freq(p_cci),
-							cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx),
-							cpu_dvfs_get_volt_by_idx(p_cci, new_cci_opp_idx));
+						new_opp_idx = BOOST_B_FREQ_IDX;
+						/* Get cci opp idx */
+						new_cci_opp_idx = _calc_new_cci_opp_idx(p, new_opp_idx);
+
+						cur_cci_freq = p_cci->ops->get_cur_phy_freq(p_cci);
+						target_cci_freq = cpu_dvfs_get_freq_by_idx(p_cci, new_cci_opp_idx);
+						target_volt_vpro1 = cpu_dvfs_get_volt_by_idx(p_cci, new_cci_opp_idx);
+
+						cur_freq = p->ops->get_cur_phy_freq(p);
+						target_freq = cpu_dvfs_get_freq_by_idx(p, new_opp_idx);
+
+#ifdef CONFIG_CPU_FREQ
+						policy = cpufreq_cpu_get(cpu);
+						_cpufreq_set_locked(p, cur_freq, target_freq, policy,
+							cur_cci_freq, target_cci_freq, target_volt_vpro1);
+						cpufreq_cpu_put(policy);
+#endif
+						p->idx_opp_tbl = new_opp_idx;
 						p_cci->idx_opp_tbl = new_cci_opp_idx;
 #ifdef CONFIG_HYBRID_CPU_DVFS
 					}
@@ -3347,7 +3360,8 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #endif
 						p->idx_opp_tbl = new_opp_idx;
 						p_cci->idx_opp_tbl = new_cci_opp_idx;
-					}
+					} else
+						p->idx_opp_tbl = DEFAULT_B_FREQ_IDX;
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before BigiDVFSDisable */
 					if (enable_cpuhvfs)
