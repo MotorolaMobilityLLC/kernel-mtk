@@ -15,8 +15,6 @@
 #include "mu3d_hal_usb_drv.h"
 #endif
 
-#define FOR_BRING_UP
-
 #include <mt-plat/upmu_common.h>
 
 #ifdef CONFIG_OF
@@ -30,15 +28,12 @@
 #include <linux/of_address.h>
 #endif
 
-#ifndef FOR_BRING_UP
 static struct clk *sssub_ref_clk;
 static struct clk *ssusb_top_sys_sel_clk;
 static struct clk *ssusb_univpll3_d2_clk;
-#endif
 
 static bool usb_enable_clock(bool enable)
 {
-#ifndef FOR_BRING_UP
 	if (!sssub_ref_clk || !ssusb_top_sys_sel_clk || !ssusb_univpll3_d2_clk) {
 		pr_err("clock not ready");
 		return -1;
@@ -55,7 +50,6 @@ static bool usb_enable_clock(bool enable)
 		clk_disable(sssub_ref_clk);
 
 	}
-#endif
 	return 1;
 }
 
@@ -1053,7 +1047,6 @@ void Charger_Detect_Release(void)
 }
 
 
-#ifndef FOR_BRING_UP
 #ifdef CONFIG_OF
 static int mt_usb_dts_probe(struct platform_device *pdev)
 {
@@ -1118,21 +1111,10 @@ static struct platform_driver mt_usb_dts_driver = {
 		   },
 };
 
-static int __init musb_phy_init(void)
-{
-	int ret = 0;
-	/* set MU3PHY up at boot up */
-	ret = platform_driver_register(&mt_usb_dts_driver);
-	return ret;
-}
-fs_initcall(musb_phy_init);
-
-static void __exit musb_phy_cleanup(void)
-{
-	platform_driver_unregister(&mt_usb_dts_driver);
-}
-module_exit(musb_phy_cleanup);
-#endif
+MODULE_DESCRIPTION("mtu3phy MUSB PHY Layer");
+MODULE_AUTHOR("MediaTek");
+MODULE_LICENSE("GPL v2");
+module_platform_driver(mt_usb_dts_driver)
 #endif
 
 #endif
