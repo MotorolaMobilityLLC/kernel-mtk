@@ -902,6 +902,22 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				      "syspll_d5",
 				      "syspll1_d4";
 		};
+
+		G3D_CONFIG@0x13000000 {
+			compatible = "mediatek,G3D_CONFIG";
+			reg = <0x13000000 0x1000>;
+		};
+
+		MALI@0x13040000 {
+			compatible = "arm,malit720", "arm,mali-t72x", "arm,malit7xx", "arm,mali-midgard";
+			reg = <0x13040000 0x4000>;
+			interrupts = <0 212 0x8>, <0 211 0x8>, <0 210 0x8>;
+			interrupt-names = "JOB", "MMU", "GPU";
+			clock-frequency = <450000000>;
+			clocks = <&mfgsys MFG_BG3D>, <&mmsys MM_DISP0_SMI_COMMON>, <&scpsys SCP_SYS_MFG>, <&scpsys SCP_SYS_DIS>;
+			clock-names = "mfg-main", "mfg-smi-common", "mtcmos-mfg", "mtcmos-display";
+		};
+
 	};
 
 };
