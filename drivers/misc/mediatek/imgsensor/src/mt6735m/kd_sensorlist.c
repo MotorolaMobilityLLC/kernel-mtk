@@ -9,12 +9,12 @@
 #include <linux/slab.h>
 #include <linux/proc_fs.h>	/* proc file use */
 #include <linux/dma-mapping.h>
-#include <linux/xlog.h>
+#include <linux/module.h>
 #include <linux/seq_file.h>
-#include <mach/sync_write.h>
-
-#include "../camera/kd_camera_hw.h"
-/* #include <asm/system.h> */
+#include <sync_write.h>
+#include <linux/types.h>
+#include "kd_camera_hw.h"
+#include "kd_camera_typedef.h"
 #include <mach/mt_clkmgr.h>
 
 
@@ -25,6 +25,7 @@
 
 #include "kd_sensorlist.h"
 
+#undef CONFIG_MTK_LEGACY
 /* defined */
 #ifdef CONFIG_OF
 /* device tree */
@@ -39,7 +40,7 @@
 #include <linux/compat.h>
 #endif
 
-#include <mach/mt_chip.h>
+#include <mt_chip.h>
 /*K.S. kernel standard*/
 #if !defined(CONFIG_MTK_LEGACY)
 #include <linux/regulator/consumer.h>
@@ -2279,7 +2280,7 @@ static inline int kdSetSensorGpio(int *pBuf)
 
 	PK_INFO("[CAMERA SENSOR] kdSetSensorGpio enable=%d, type=%d\n",
 		pSensorgpio->GpioEnable, pSensorgpio->SensroInterfaceType);
-#if defined CONFIG_MTK_LEGACY
+#if 0//defined CONFIG_MTK_LEGACY
 #ifndef CONFIG_MTK_FPGA
 	/* Please use DCT to set correct GPIO setting (below message only for debug) */
 	if (pSensorgpio->SensroInterfaceType == SENSORIF_PARALLEL) {

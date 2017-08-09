@@ -26,8 +26,9 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <asm/atomic.h>
-#include <linux/xlog.h>
+#include <linux/types.h>
 
+#include "kd_camera_typedef.h"
 #include "kd_camera_hw.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"

@@ -19,8 +19,8 @@
  ****************************************************************************/
 #ifndef _IMX179mipi_SENSOR_H
 #define _IMX179mipi_SENSOR_H
-
-
+#include <linux/types.h>
+#include "kd_camera_typedef.h"
 typedef enum{
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
