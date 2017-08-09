@@ -19,6 +19,7 @@
  *Local variable definition
  *=============================================================*/
 int mtktspmic_debug_log = 0;
+int mtktstsx_debug_log = 0;
 /* Cali */
 static kal_int32 g_o_vts;
 static kal_int32 g_degc_cali;
@@ -174,3 +175,45 @@ int mtktspmic_get_hw_temp(void)
 
 	return temp1;
 }
+
+int mtktstsx_get_hw_temp(void)
+{
+	int temp = 0, temp1 = 0;
+
+	mutex_lock(&TSPMIC_lock);
+
+	temp = PMIC_IMM_GetOneChannelValue(PMIC_AUX_TSX, y_pmic_repeat_times, 2);
+
+
+	pr_warn("[mtktspmic_get_hw_temp] Raw=%d, T=%d\n", temp, temp1);
+#if 0
+	if ((temp1 > 100000) || (temp1 < -30000))
+		mtktspmic_info("[mtktspmic_get_hw_temp] raw=%d, PMIC T=%d", temp, temp1);
+
+	if ((temp1 > 150000) || (temp1 < -50000)) {
+		mtktspmic_info("[mtktspmic_get_hw_temp] temp(%d) too high, drop this data!\n",
+			       temp1);
+		temp1 = pre_temp1;
+	} else if ((PMIC_counter != 0)
+		   && (((pre_temp1 - temp1) > 30000) || ((temp1 - pre_temp1) > 30000))) {
+		mtktspmic_info("[mtktspmic_get_hw_temp] temp diff too large, drop this data\n");
+		temp1 = pre_temp1;
+	} else {
+		/* update previous temp */
+		pre_temp1 = temp1;
+		mtktspmic_dprintk("[mtktspmic_get_hw_temp] pre_temp1=%d\n", pre_temp1);
+
+		if (PMIC_counter == 0)
+			PMIC_counter++;
+	}
+#endif
+	mutex_unlock(&TSPMIC_lock);
+
+
+	return temp;
+}
+
+
+
+
+
