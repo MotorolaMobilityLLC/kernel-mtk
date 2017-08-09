@@ -36,6 +36,7 @@
 
 #include <m4u.h>
 #include <cmdq_core.h>
+#include <mmdvfs_mgr.h>
 
 #ifdef CONFIG_COMPAT
 /* 64 bit */
@@ -1531,6 +1532,7 @@ MBOOL ISP_chkModuleSetting(void)
 		MUINT32 AF_FLO_HT_3;
 
 		MUINT32 AF_IMAGE_WD;
+		MUINT32 AF_Img_WD;
 		MUINT32 AF_DECI;
 		MUINT32 AF_InputWidth;
 
@@ -1815,7 +1817,7 @@ MBOOL ISP_chkModuleSetting(void)
 		AF_FLO_HT_3 = ((cam_af_flo_size_3 >> 16) & 0xfff);
 
 		AF_IMAGE_WD = cam_af_image_size & 0x1fff;
-
+		AF_Img_WD = AF_IMAGE_WD;
 		AF_DECI = cam_af_con & 0x03;
 
 		/*1. The min horizontal window size is 8. (AF_WIN_WD/AF_FLO_WD_x) */
@@ -1890,8 +1892,10 @@ MBOOL ISP_chkModuleSetting(void)
 		if (MTRUE == bmx_enable) {
 			if (sgg_sel == 1)
 				AF_InputWidth = bmx_width;
-			else
+			else {
 				AF_InputWidth = grab_width;
+				AF_Img_WD = (AF_IMAGE_WD << 1);
+			}
 
 			/*18. If two_pixel mode, AF_DECI >= 1 */
 			if (AF_DECI != 0)
@@ -1902,13 +1906,13 @@ MBOOL ISP_chkModuleSetting(void)
 		}
 
 		/*15. AF_IMAGE_WD must be the same as input frame width */
-		if (AF_IMAGE_WD != AF_InputWidth) {
+		if (AF_Img_WD != AF_InputWidth) {
 			LOG_INF
 			    ("HwRWCtrl:: AF Error: bmx_enable(%d), sgg_sel(%d), bmx_width(%d), grab_width(%d)!!",
 			     bmx_enable, sgg_sel, bmx_width, grab_width);
 			LOG_INF
 			    ("HwRWCtrl:: AF Error: AF_IMAGE_WD(%d) must be the same as input frame width(%d)!!",
-			     AF_IMAGE_WD, AF_InputWidth);
+			     AF_Img_WD, AF_InputWidth);
 		}
 		/*16. "CAM_AF_WINX_x.AF_WINX_x + CAM_AF_SIZE.AF_WIN_WD <= input frame width" for a valid window */
 		/*17. "CAM_AF_WINY_x.AF_WINY_x + CAM_AF_SIZE.AF_WIN_HT <= input frame height" for a valid window */
@@ -2623,29 +2627,42 @@ static MINT32 ISP_DumpReg(void)
 		(unsigned	int)ISP_RD32(ISP_ADDR +	0x43B8));
 	LOG_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x43BC),
 		(unsigned	int)ISP_RD32(ISP_ADDR +	0x43BC));
+
+    /* NSCI2 2 debug */
+	ISP_WR32((ISP_ADDR + 0x47B8), 0x02);
+	LOG_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x47B8),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x47B8));
+	LOG_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x47BC),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x47BC));
+	ISP_WR32((ISP_ADDR + 0x47B8), 0x12);
+	LOG_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x47B8),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x47B8));
+	LOG_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x47BC),
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x47BC));
+
 	/* NSCI2 3 debug */
 	ISP_WR32((ISP_ADDR + 0x4BB8), 0x02);
 	LOG_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x4BB8),
 		(unsigned int)ISP_RD32(ISP_ADDR + 0x4BB8));
 	LOG_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x4BBC),
-		(unsigned int)ISP_RD32(ISP_ADDR + 0x43BC));
+		(unsigned int)ISP_RD32(ISP_ADDR + 0x4BBC));
 	ISP_WR32((ISP_ADDR + 0x4BB8), 0x12);
-	LOG_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x43B8),
+	LOG_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x4BB8),
 		(unsigned int)ISP_RD32(ISP_ADDR + 0x4BB8));
 	LOG_ERR("[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x4BBC),
 		(unsigned int)ISP_RD32(ISP_ADDR + 0x4BBC));
 
 	/* seninf1 */
-	LOG_ERR("[0x%08X %08X],[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x4008),
-		(unsigned int)ISP_RD32(ISP_ADDR + 0x4008), (unsigned int)(ISP_TPIPE_ADDR + 0x4100),
-		(unsigned int)ISP_RD32(ISP_ADDR + 0x4100));
+	LOG_ERR("[0x%08X %08X],[0x%08X %08X]",
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4008), (unsigned int)ISP_RD32(ISP_ADDR + 0x4008),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4100), (unsigned int)ISP_RD32(ISP_ADDR + 0x4100));
 	RegDump(0x4120, 0x4160);
 	RegDump(0x4360, 0x43f0)
-	    /* seninf2 */
-	    LOG_ERR("[0x%08X %08X],[0x%08X %08X]", (unsigned int)(ISP_TPIPE_ADDR + 0x4008),
-		    (unsigned int)ISP_RD32(ISP_ADDR + 0x4008),
-		    (unsigned int)(ISP_TPIPE_ADDR + 0x4100),
-		    (unsigned int)ISP_RD32(ISP_ADDR + 0x4100));
+
+	/* seninf2 */
+	LOG_ERR("[0x%08X %08X],[0x%08X %08X]",
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4008), (unsigned int)ISP_RD32(ISP_ADDR + 0x4008),
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4100), (unsigned int)ISP_RD32(ISP_ADDR + 0x4100));
 	RegDump(0x4520, 0x4560);
 	RegDump(0x4600, 0x4610);
 	RegDump(0x4760, 0x47f0);
@@ -2986,6 +3003,9 @@ static MINT32 ISP_DumpReg(void)
 		(unsigned int)ISP_RD32(ISP_IMGSYS_BASE + 0x4164));
 
 	ISP_chkModuleSetting();
+
+	LOG_INF("dump MMDVFS info\n");
+	dump_mmdvfs_info();
 
 #if	0			/* _mt6593fpga_dvt_use_ */
 	{
@@ -6294,7 +6314,7 @@ static MINT32 ISP_SOF_Buf_Get(eISPIrq irqT, CQ_RTBC_FBC *pFbc, MUINT32 *pCurr_pa
 
 		if (_dma_cur_fw_idx != _dma_cur_hw_idx)
 			IRQ_LOG_KEEPER(irqT, m_CurrentPPB, _LOG_INF,
-				       "dma sof after	done %d_%d\n", _dma_cur_fw_idx,
+				       "dma sof after done %d_%d\n", _dma_cur_fw_idx,
 				       _dma_cur_hw_idx);
 
 #else
