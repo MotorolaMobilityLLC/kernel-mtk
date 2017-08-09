@@ -75,6 +75,18 @@ struct last_reboot_reason {
 	uint8_t gpu_dvfs_oppidx;
 	uint8_t gpu_dvfs_status;
 
+	uint32_t ptp_60;
+	uint32_t ptp_64;
+	uint32_t ptp_68;
+	uint32_t ptp_6C;
+	uint32_t ptp_78;
+	uint32_t ptp_7C;
+	uint32_t ptp_80;
+	uint32_t ptp_84;
+	uint32_t ptp_88;
+	uint32_t ptp_8C;
+	uint32_t ptp_9C;
+	uint32_t ptp_A0;
 	uint64_t ptp_cpu_big_volt;
 	uint64_t ptp_cpu_big_volt_1;
 	uint64_t ptp_cpu_big_volt_2;
@@ -1053,6 +1065,90 @@ u8 aee_rr_curr_gpu_dvfs_status(void)
 	return LAST_RR_VAL(gpu_dvfs_status);
 }
 
+void aee_rr_rec_ptp_60(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_60, val);
+}
+
+void aee_rr_rec_ptp_64(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_64, val);
+}
+
+void aee_rr_rec_ptp_68(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_68, val);
+}
+
+void aee_rr_rec_ptp_6C(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_6C, val);
+}
+
+void aee_rr_rec_ptp_78(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_78, val);
+}
+
+void aee_rr_rec_ptp_7C(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_7C, val);
+}
+
+void aee_rr_rec_ptp_80(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_80, val);
+}
+
+void aee_rr_rec_ptp_84(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_84, val);
+}
+
+void aee_rr_rec_ptp_88(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_88, val);
+}
+
+void aee_rr_rec_ptp_8C(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_8C, val);
+}
+
+void aee_rr_rec_ptp_9C(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_9C, val);
+}
+
+void aee_rr_rec_ptp_A0(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(ptp_A0, val);
+}
+
 void aee_rr_rec_ptp_cpu_big_volt(u64 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -1303,6 +1399,66 @@ void aee_rr_rec_idvfs_state_manchine(u8 val)
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
 	LAST_RR_SET(idvfs_state_manchine, val);
+}
+
+u32 aee_rr_curr_ptp_60(void)
+{
+	return LAST_RR_VAL(ptp_60);
+}
+
+u32 aee_rr_curr_ptp_64(void)
+{
+	return LAST_RR_VAL(ptp_64);
+}
+
+u32 aee_rr_curr_ptp_68(void)
+{
+	return LAST_RR_VAL(ptp_68);
+}
+
+u32 aee_rr_curr_ptp_6C(void)
+{
+	return LAST_RR_VAL(ptp_6C);
+}
+
+u32 aee_rr_curr_ptp_78(void)
+{
+	return LAST_RR_VAL(ptp_78);
+}
+
+u32 aee_rr_curr_ptp_7C(void)
+{
+	return LAST_RR_VAL(ptp_7C);
+}
+
+u32 aee_rr_curr_ptp_80(void)
+{
+	return LAST_RR_VAL(ptp_80);
+}
+
+u32 aee_rr_curr_ptp_84(void)
+{
+	return LAST_RR_VAL(ptp_84);
+}
+
+u32 aee_rr_curr_ptp_88(void)
+{
+	return LAST_RR_VAL(ptp_88);
+}
+
+u32 aee_rr_curr_ptp_8C(void)
+{
+	return LAST_RR_VAL(ptp_8C);
+}
+
+u32 aee_rr_curr_ptp_9C(void)
+{
+	return LAST_RR_VAL(ptp_9C);
+}
+
+u32 aee_rr_curr_ptp_A0(void)
+{
+	return LAST_RR_VAL(ptp_A0);
 }
 
 u64 aee_rr_curr_ptp_cpu_big_volt(void)
@@ -1657,6 +1813,66 @@ void aee_rr_show_gpu_dvfs_oppidx(struct seq_file *m)
 void aee_rr_show_gpu_dvfs_status(struct seq_file *m)
 {
 	seq_printf(m, "gpu_dvfs_status: 0x%x\n", LAST_RRR_VAL(gpu_dvfs_status));
+}
+
+void aee_rr_show_ptp_60(struct seq_file *m)
+{
+	seq_printf(m, "M_HW_RES0 = 0x%X\n", LAST_RRR_VAL(ptp_60));
+}
+
+void aee_rr_show_ptp_64(struct seq_file *m)
+{
+	seq_printf(m, "M_HW_RES1 = 0x%X\n", LAST_RRR_VAL(ptp_64));
+}
+
+void aee_rr_show_ptp_68(struct seq_file *m)
+{
+	seq_printf(m, "M_HW_RES2 = 0x%X\n", LAST_RRR_VAL(ptp_68));
+}
+
+void aee_rr_show_ptp_6C(struct seq_file *m)
+{
+	seq_printf(m, "M_HW_RES3 = 0x%X\n", LAST_RRR_VAL(ptp_6C));
+}
+
+void aee_rr_show_ptp_78(struct seq_file *m)
+{
+	seq_printf(m, "M_HW_RES6 = 0x%X\n", LAST_RRR_VAL(ptp_78));
+}
+
+void aee_rr_show_ptp_7C(struct seq_file *m)
+{
+	seq_printf(m, "M_HW_RES7 = 0x%X\n", LAST_RRR_VAL(ptp_7C));
+}
+
+void aee_rr_show_ptp_80(struct seq_file *m)
+{
+	seq_printf(m, "M_HW_RES8 = 0x%X\n", LAST_RRR_VAL(ptp_80));
+}
+
+void aee_rr_show_ptp_84(struct seq_file *m)
+{
+	seq_printf(m, "M_HW_RES9 = 0x%X\n", LAST_RRR_VAL(ptp_84));
+}
+
+void aee_rr_show_ptp_88(struct seq_file *m)
+{
+	seq_printf(m, "M_HW_RESA = 0x%X\n", LAST_RRR_VAL(ptp_88));
+}
+
+void aee_rr_show_ptp_8C(struct seq_file *m)
+{
+	seq_printf(m, "M_HW_RESB = 0x%X\n", LAST_RRR_VAL(ptp_8C));
+}
+
+void aee_rr_show_ptp_9C(struct seq_file *m)
+{
+	seq_printf(m, "M_HW_RESF = 0x%X\n", LAST_RRR_VAL(ptp_9C));
+}
+
+void aee_rr_show_ptp_A0(struct seq_file *m)
+{
+	seq_printf(m, "M_HW_RES10 = 0x%X\n", LAST_RRR_VAL(ptp_A0));
 }
 
 void aee_rr_show_ptp_cpu_big_volt(struct seq_file *m)
@@ -2046,6 +2262,18 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_gpu_dvfs_vgpu,
 	aee_rr_show_gpu_dvfs_oppidx,
 	aee_rr_show_gpu_dvfs_status,
+	aee_rr_show_ptp_60,
+	aee_rr_show_ptp_64,
+	aee_rr_show_ptp_68,
+	aee_rr_show_ptp_6C,
+	aee_rr_show_ptp_78,
+	aee_rr_show_ptp_7C,
+	aee_rr_show_ptp_80,
+	aee_rr_show_ptp_84,
+	aee_rr_show_ptp_88,
+	aee_rr_show_ptp_8C,
+	aee_rr_show_ptp_9C,
+	aee_rr_show_ptp_A0,
 	aee_rr_show_ptp_cpu_big_volt,
 	aee_rr_show_ptp_cpu_big_volt_1,
 	aee_rr_show_ptp_cpu_big_volt_2,

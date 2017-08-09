@@ -3739,6 +3739,20 @@ void get_devinfo(struct eem_devinfo *p)
 		val[9] = get_devinfo_with_index(61);
 		val[10] = get_devinfo_with_index(65);
 		val[11] = get_devinfo_with_index(66);
+		#if defined(CONFIG_EEM_AEE_RR_REC)
+			aee_rr_rec_ptp_60((unsigned int)val[0]);
+			aee_rr_rec_ptp_64((unsigned int)val[1]);
+			aee_rr_rec_ptp_68((unsigned int)val[2]);
+			aee_rr_rec_ptp_6C((unsigned int)val[3]);
+			aee_rr_rec_ptp_78((unsigned int)val[4]);
+			aee_rr_rec_ptp_7C((unsigned int)val[5]);
+			aee_rr_rec_ptp_80((unsigned int)val[6]);
+			aee_rr_rec_ptp_84((unsigned int)val[7]);
+			aee_rr_rec_ptp_88((unsigned int)val[8]);
+			aee_rr_rec_ptp_8C((unsigned int)val[9]);
+			aee_rr_rec_ptp_9C((unsigned int)val[10]);
+			aee_rr_rec_ptp_A0((unsigned int)val[11]);
+		#endif
 	#else
 		val[0] = eem_read(0x10206960); /* M_HW_RES0 */
 		val[1] = eem_read(0x10206964); /* M_HW_RES1 */

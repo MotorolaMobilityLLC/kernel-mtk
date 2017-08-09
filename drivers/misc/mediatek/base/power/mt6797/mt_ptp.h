@@ -105,6 +105,18 @@ enum eem_state {
 	EEM_CPU_CCI_IS_SET_VOLT, /* CCI */
 };
 
+extern void aee_rr_rec_ptp_60(u32 val);
+extern void aee_rr_rec_ptp_64(u32 val);
+extern void aee_rr_rec_ptp_68(u32 val);
+extern void aee_rr_rec_ptp_6C(u32 val);
+extern void aee_rr_rec_ptp_78(u32 val);
+extern void aee_rr_rec_ptp_7C(u32 val);
+extern void aee_rr_rec_ptp_80(u32 val);
+extern void aee_rr_rec_ptp_84(u32 val);
+extern void aee_rr_rec_ptp_88(u32 val);
+extern void aee_rr_rec_ptp_8C(u32 val);
+extern void aee_rr_rec_ptp_9C(u32 val);
+extern void aee_rr_rec_ptp_A0(u32 val);
 extern void aee_rr_rec_ptp_cpu_big_volt(u64 val);
 extern void aee_rr_rec_ptp_cpu_big_volt_1(u64 val);
 extern void aee_rr_rec_ptp_cpu_big_volt_2(u64 val);
@@ -129,6 +141,18 @@ extern void aee_rr_rec_ptp_temp(u64 val);
 extern void aee_rr_rec_ptp_status(u8 val);
 extern void aee_rr_rec_eem_pi_offset(u8 val);
 
+extern u32 aee_rr_curr_ptp_60(void);
+extern u32 aee_rr_curr_ptp_64(void);
+extern u32 aee_rr_curr_ptp_68(void);
+extern u32 aee_rr_curr_ptp_6C(void);
+extern u32 aee_rr_curr_ptp_78(void);
+extern u32 aee_rr_curr_ptp_7C(void);
+extern u32 aee_rr_curr_ptp_80(void);
+extern u32 aee_rr_curr_ptp_84(void);
+extern u32 aee_rr_curr_ptp_88(void);
+extern u32 aee_rr_curr_ptp_8C(void);
+extern u32 aee_rr_curr_ptp_9C(void);
+extern u32 aee_rr_curr_ptp_A0(void);
 extern u64 aee_rr_curr_ptp_cpu_big_volt(void);
 extern u64 aee_rr_curr_ptp_cpu_big_volt_1(void);
 extern u64 aee_rr_curr_ptp_cpu_big_volt_2(void);
