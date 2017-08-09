@@ -101,4 +101,8 @@ obj-$(CONFIG_CACHE_L2X0)	+= cache-l2x0.o l2c-l2x0-resume.o
 obj-$(CONFIG_CACHE_XSC3L2)	+= cache-xsc3l2.o
 obj-$(CONFIG_CACHE_TAUROS2)	+= cache-tauros2.o
 
+MTK_PLATFORM := $(CONFIG_MTK_PLATFORM:"%"=%)
+KBUILD_CPPFLAGS += -Werror -I$(srctree)/drivers/misc/mediatek/include
+
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= mt_cache_v7.o
+obj-$(CONFIG_MEDIATEK_SOLUTION)	+= mt_innercache.o
