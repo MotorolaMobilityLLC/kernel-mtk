@@ -232,18 +232,18 @@ static void switch_charger_set_vindpm(unsigned int chr_v)
 	/*delta_v = chr_v - ta_v_chr_org; */
 
 	if (chr_v > 11000)
-		vindpm = SWITCH_CHR_VINDPM_12V;
+		vindpm = 12000;
 	else if (chr_v > 8000)
-		vindpm = SWITCH_CHR_VINDPM_9V;
+		vindpm = 9000;
 	else if (chr_v > 6000)
-		vindpm = SWITCH_CHR_VINDPM_7V;
+		vindpm = 7000;
 	else
-		vindpm = SWITCH_CHR_VINDPM_5V;
+		vindpm = 5000;
 
 	battery_charging_control(CHARGING_CMD_SET_VINDPM, &vindpm);
 	battery_log(BAT_LOG_CRTI,
 		    "[PE+] switch charger set VINDPM=%dmV with charger volatge=%dmV\n",
-		    vindpm * 100 + 2600, chr_v);
+		    vindpm, chr_v);
 }
 #endif
 #endif
@@ -365,7 +365,7 @@ static void mtk_ta_detector(void)
 		batt_cust_data.v_charger_max = V_CHARGER_MAX;
 
 		/*Set BQ25896 VINDPM to 4.6V for vbus = 5V */
-		vindpm = SWITCH_CHR_VINDPM_5V;
+		vindpm = 5000;
 		battery_charging_control(CHARGING_CMD_SET_VINDPM, &vindpm);
 #endif
 	}

@@ -124,6 +124,19 @@ const unsigned int VCDT_HV_VTH[] = {
 	BATTERY_VOLT_10_500000_V
 };
 
+const unsigned int VINDPM_REG[] = {
+	2600, 2700, 2800, 2900, 3000, 3100, 3200, 3300, 3400, 3500, 3600, 3700, 3800, 3900, 4000,
+	4100, 4200, 4300, 4400, 4500, 4600, 4700, 4800, 4900, 5000, 5100, 5200, 5300, 5400, 5500,
+	5600, 5700, 5800, 5900, 6000, 6100, 6200, 6300, 6400, 6500, 6600, 6700, 6800, 6900, 7000,
+	7100, 7200, 7300, 7400, 7500, 7600, 7700, 7800, 7900, 8000, 8100, 8200, 8300, 8400, 8500,
+	8600, 8700, 8800, 8900, 9000, 9100, 9200, 9300, 9400, 9500, 9600, 9700, 9800, 9900, 10000,
+	10100, 10200, 10300, 10400, 10500, 10600, 10700, 10800, 10900, 11000, 11100, 11200, 11300,
+	11400, 11500, 11600, 11700, 11800, 11900, 12000, 12100, 12200, 12300, 12400, 12500, 12600,
+	12700, 12800, 12900, 13000, 13100, 13200, 13300, 13400, 13500, 13600, 13700, 13800, 13900,
+	14000, 14100, 14200, 14300, 14400, 14500, 14600, 14700, 14800, 14900, 15000, 15100, 15200,
+	15300
+};
+
 #ifdef CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT
 #ifndef CUST_GPIO_VIN_SEL
 #define CUST_GPIO_VIN_SEL 18
@@ -1525,6 +1538,21 @@ static unsigned int charging_set_hiz_swchr(void *data)
 	return status;
 }
 
+static unsigned int charging_set_vindpm_voltage(void *data)
+{
+	unsigned int status = STATUS_OK;
+	unsigned int vindpm;
+	unsigned int array_size;
+
+	array_size = GETARRAYNUM(VINDPM_REG);
+	vindpm = bmt_find_closest_level(VINDPM_REG, array_size, *(unsigned int *) data);
+	vindpm = charging_parameter_to_value(VINDPM_REG, array_size, vindpm);
+
+	charging_set_vindpm(&vindpm);
+	/*bq25890_set_en_hiz(en);*/
+
+	return status;
+}
 static unsigned int (*const charging_func[CHARGING_CMD_NUMBER]) (void *data) = {
 charging_hw_init, charging_dump_register, charging_enable, charging_set_cv_voltage,
 	    charging_get_current, charging_set_current, charging_set_input_current,
@@ -1535,7 +1563,7 @@ charging_hw_init, charging_dump_register, charging_enable, charging_set_cv_volta
 	    charging_get_platform_boot_mode, charging_set_power_off,
 	    charging_get_power_source, charging_get_csdac_full_flag,
 	    charging_set_ta_current_pattern, charging_set_error_state, charging_diso_init,
-	    charging_get_diso_state, charging_set_vindpm, charging_set_vbus_ovp_en,
+	    charging_get_diso_state, charging_set_vindpm_voltage, charging_set_vbus_ovp_en,
 	    charging_get_bif_vbat, charging_set_chrind_ck_pdn, charging_sw_init, charging_enable_safetytimer,
 	charging_set_hiz_swchr, charging_get_bif_tbat};
 
