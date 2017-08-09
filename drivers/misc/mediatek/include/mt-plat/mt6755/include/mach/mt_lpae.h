@@ -11,18 +11,8 @@
 #define IS_MT_LARGE_MEMORY_MODE  (readl(IOMEM(INFRA_LARGE_MEMORY_SETTING)) >> 13 & 0x1)
 #define MT_OVERFLOW_ADDR_START 0x100000000ULL
 
-#define INFRA_BASE_ADDR		10001000
-#define PERISYS_BASE_ADDR	10003000
 
-unsigned int enable_4G(void)
-{
-	unsigned int infra_4g_sp, perisis_4g_sp;
-
-	infra_4g_sp = readl(IOMEM(INFRA_BASE_ADDR + 0xf00)) & (1 << 13);
-	perisis_4g_sp = readl(IOMEM(PERISYS_BASE_ADDR + 0x208)) & (1 << 15);
-
-	return (infra_4g_sp && perisis_4g_sp);
-}
+extern unsigned int enable_4G(void);
 
 /* For HW modules which support 33-bit address setting */
 #define CROSS_OVERFLOW_ADDR_TRANSFER(phy_addr, size, ret) \
