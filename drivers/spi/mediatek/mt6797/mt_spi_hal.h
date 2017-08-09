@@ -118,6 +118,6 @@ struct mt_spi_t {
 };
 extern void mt_spi_enable_clk(struct mt_spi_t *ms);
 extern void mt_spi_disable_clk(struct mt_spi_t *ms);
-extern void spi_clr_pinctrl(struct platform_device *pdev);
-extern void spi_clr_pinctrl(struct platform_device *pdev);
+extern void spi_clr_pinctrl(int spi_id);
+extern void spi_clr_pinctrl(int spi_id);
 #endif

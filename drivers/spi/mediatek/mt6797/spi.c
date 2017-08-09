@@ -48,11 +48,9 @@
 
 /*open base log out*/
 /*#define SPI_DEBUG*/
-#define SPI_DEBUG
 
 /*open verbose log out*/
 /*#define SPI_VERBOSE*/
-#define SPI_VERBOSE
 
 
 #define IDLE 0
@@ -86,7 +84,7 @@ struct mt_spi_t {
 /*open time record debug, log can't affect transfer*/
 /*	#define SPI_REC_DEBUG */
 
-u32 pad_macro[] = {0, 1, 1, 0, 0, 0};
+struct platform_device *spi_pdev[6];
 static void enable_clk(struct mt_spi_t *ms)
 {
 #if (!defined(CONFIG_MT_SPI_FPGA_ENABLE))
@@ -329,8 +327,10 @@ static int spi_get_pinctrl_info(struct platform_device *pdev)
 	return 0;
 }
 
-void spi_set_pinctrl(struct platform_device *pdev)
+void spi_set_pinctrl(int spi_id)
 {
+	struct platform_device *pdev = spi_pdev[spi_id];
+
 	spi_get_pinctrl_info(pdev);
 
 	pinctrl_select_state(pinctrl_spi, pins_spi_cs_set);
@@ -340,8 +340,10 @@ void spi_set_pinctrl(struct platform_device *pdev)
 
 }
 
-void spi_clr_pinctrl(struct platform_device *pdev)
+void spi_clr_pinctrl(int spi_id)
 {
+	struct platform_device *pdev = spi_pdev[spi_id];
+
 	spi_get_pinctrl_info(pdev);
 
 	pinctrl_select_state(pinctrl_spi, pins_spi_cs_clear);
@@ -358,7 +360,6 @@ static void spi_gpio_set(struct mt_spi_t *ms)
 	mt_set_gpio_mode(GPIO_SPI_SCK_PIN, GPIO_SPI_SCK_PIN_M_SPI_SCK);
 	mt_set_gpio_mode(GPIO_SPI_MISO_PIN, GPIO_SPI_MISO_PIN_M_SPI_MISO);
 	mt_set_gpio_mode(GPIO_SPI_MOSI_PIN, GPIO_SPI_MOSI_PIN_M_SPI_MOSI);*/
-	/*spi_set_gpio_info(1);*/
 
 }
 
@@ -370,7 +371,6 @@ static void spi_gpio_reset(struct mt_spi_t *ms)
 	mt_set_gpio_mode(GPIO_SPI_SCK_PIN, GPIO_SPI_SCK_PIN_M_GPIO);
 	mt_set_gpio_mode(GPIO_SPI_MISO_PIN, GPIO_SPI_MISO_PIN_M_GPIO);
 	mt_set_gpio_mode(GPIO_SPI_MOSI_PIN, GPIO_SPI_MOSI_PIN_M_GPIO); */
-	/*spi_set_gpio_info(0);*/
 
 }
 
@@ -1116,7 +1116,7 @@ static int mt_do_spi_setup(struct mt_spi_t *ms, struct mt_chip_conf *chip_config
 	reg_val |= (chip_config->deassert << SPI_CMD_DEASSERT_OFFSET);
 	spi_writel(ms, SPI_CMD_REG, reg_val);
 
-	spi_writel(ms, SPI_PAD_SEL_REG, pad_macro[ms->pdev->id]);
+	spi_writel(ms, SPI_PAD_SEL_REG, ms->pad_macro);
 /*
 #if defined(GPIO_SPI_CS_PIN) && defined(GPIO_SPI_SCK_PIN)
 	&&defined(GPIO_SPI_MISO_PIN) && defined(GPIO_SPI_MOSI_PIN)
@@ -1245,6 +1245,10 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 #endif
 
 	master = spi_alloc_master(&pdev->dev, sizeof(struct mt_spi_t));
+	if (!master) {
+		dev_err(&pdev->dev, " device %s: alloc spi master fail.\n", dev_name(&pdev->dev));
+		goto out;
+	}
 	ms = spi_master_get_devdata(master);
 
 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -1252,16 +1256,15 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "get resource regs NULL.\n");
 		return -ENXIO;
 	}
+	if (!request_mem_region(regs->start, resource_size(regs), pdev->name)) {
+		dev_err(&pdev->dev, "SPI register memory region failed");
+		return -ENOMEM;
+	}
 
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
 		dev_err(&pdev->dev, "platform_get_irq error. get invalid irq\n");
 		return irq;
-	}
-
-	if (!request_mem_region(regs->start, resource_size(regs), pdev->name)) {
-		dev_err(&pdev->dev, "SPI register memory region failed");
-		return -ENOMEM;
 	}
 #ifdef CONFIG_OF
 	spi_base = of_iomap(pdev->dev.of_node, 0);
@@ -1269,74 +1272,29 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "SPI iomap failed\n");
 		return -ENODEV;
 	}
-
-	if (of_property_read_u32(pdev->dev.of_node, "cell-index", &pdev->id)) {
-		dev_err(&pdev->dev, "SPI get cell-index failed\n");
-		return -ENODEV;
-	}
-
 	if (!pdev->dev.dma_mask)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 
-	SPI_DBG("SPI reg: 0x%p  irq: %d id: %d\n", spi_base, irq, pdev->id);
-
 	if (pdev->dev.of_node) {
-#if !defined(CONFIG_MTK_CLKMGR)
-		/*
-		if(of_property_read_u32_index(pdev->dev.of_node,"spi-cs",0,&pin[0]) ||
-			of_property_read_u32_index(pdev->dev.of_node,"spi-clk",0,&pin[1]) ||
-			of_property_read_u32_index(pdev->dev.of_node,"spi-mo",0,&pin[2]) ||
-			of_property_read_u32_index(pdev->dev.of_node,"spi-mi",0,&pin[3]))
-		{
-			if_config=0;
-			dev_err(&pdev->dev, "SPI get spi pin failed\n");
-		}
-
-		if(of_property_read_u32_index(pdev->dev.of_node,"spi-cs",1,&pin_mode[0]) ||
-			of_property_read_u32_index(pdev->dev.of_node,"spi-clk",1,&pin_mode[1]) ||
-			of_property_read_u32_index(pdev->dev.of_node,"spi-mo",1,&pin_mode[2]) ||
-			of_property_read_u32_index(pdev->dev.of_node,"spi-mi",1,&pin_mode[3]))
-		{
-			dev_err(&pdev->dev, "SPI get spi pin mode failed\n");
-		}
-		if(if_config == 1)
-		{
-			for(i=0;i<4;i++)
-			{
-#ifndef CONFIG_MTK_FPGA
-				mt_set_gpio_out((pin[i]|0x80000000),GPIO_OUT_ONE);
-				mt_set_gpio_mode((pin[i]|0x80000000), pin_mode[i]);
-#endif
-			}
+		if (of_property_read_u32(pdev->dev.of_node, "cell-index", &pdev->id)) {
+			dev_err(&pdev->dev, "SPI get cell-index failed\n");
+			return -ENODEV;
 		}
 		if (of_property_read_u32(pdev->dev.of_node, "spi-padmacro",
-							 &pad_macro)) {
+							 &ms->pad_macro)) {
 			dev_err(&pdev->dev, "SPI get pad macro fail failed\n");
 			return -ENODEV;
-		}*/
+		}
 		ms->clk_main = devm_clk_get(&pdev->dev, "spi-main");
 		if (IS_ERR(ms->clk_main)) {
 			dev_err(&pdev->dev, "cannot get spi1 main clock or dma clock. main clk err : %ld .\n",
 				PTR_ERR(ms->clk_main));
 			return PTR_ERR(ms->clk_main);
 		}
-
-	#endif
-
 	}
-#if 0
-#if !defined(CONFIG_MTK_LEGACY)
-	spi_set_gpio_info(pdev, 1);
-#endif
+	SPI_DBG("SPI reg: 0x%p,  irq: %d, id: %d, pad_macro: %u\n", spi_base, irq, pdev->id, ms->pad_macro);
 #endif
 
-
-#endif
-	/*master = spi_alloc_master(&pdev->dev, sizeof(struct mt_spi_t)); */
-	if (!master) {
-		dev_err(&pdev->dev, " device %s: alloc spi master fail.\n", dev_name(&pdev->dev));
-		goto out;
-	}
 	master->dev.of_node = pdev->dev.of_node;
 	/*hardware can only connect 1 slave.if you want to multiple, using gpio CS */
 	master->num_chipselect = 2;
@@ -1376,8 +1334,7 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	}
 
 	spi_master_set_devdata(master, ms);
-	if (pdev->id == 1)
-		spi_clr_pinctrl(pdev);
+	spi_pdev[pdev->id] = pdev;
 #if !defined(CONFIG_MTK_CLKMGR)
 	/*
 	 * prepare the clock source
