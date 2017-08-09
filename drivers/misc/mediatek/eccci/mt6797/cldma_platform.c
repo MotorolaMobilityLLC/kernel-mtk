@@ -643,7 +643,8 @@ int md_cd_power_on(struct ccci_modem *md)
 	reg_value &= ~(0x92);	/* md1 set 0x29: bit 0/3/4/7, bit1/5: VRF18 control for Jade */
 	reg_value |= 0x29;	/* C2K set |0x44: bit 2/6 */
 #else
-	reg_value = 0x29;
+	reg_value &= ~(0xFF);
+	reg_value |= 0x29;
 #endif
 	ccci_write32(infra_ao_base, INFRA_AO_MD_SRCCLKENA, reg_value);
 	CCCI_INF_MSG(md->index, CORE, "md_cd_power_on: set md1_srcclkena bit(0x1000_1F0C)=0x%x\n",
