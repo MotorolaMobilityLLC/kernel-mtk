@@ -421,9 +421,13 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 {
 	int ret = 0;
+	static signed int mAVDD_usercounter = 0;
+	static signed int mDVDD_usercounter = 0;
+
 	if (IS_ERR(camctrl)) {
 		return -1;
 	}
+	
 	switch (PwrType) {
 	case RST:
 		if (PinIdx == 0) {
@@ -475,17 +479,45 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 		break;
 	case AVDD:
 	case MAIN2_AVDD:
-		if (Val == 0 && !IS_ERR(cam_ldo_vcama_l))
-			pinctrl_select_state(camctrl, cam_ldo_vcama_l);
-		else if (Val == 1 && !IS_ERR(cam_ldo_vcama_h))
+		/*Main & Main2 use same cotrol GPIO */
+		PK_DBG("mAVDD_usercounter(%d)\n",mAVDD_usercounter);
+		if (Val == 0 && !IS_ERR(cam_ldo_vcama_l)){
+			mAVDD_usercounter --;
+			if(mAVDD_usercounter <= 0)
+			{
+				if(mAVDD_usercounter < 0)
+					PK_ERR("Please check AVDD pin control\n");
+
+				mAVDD_usercounter = 0;
+				pinctrl_select_state(camctrl, cam_ldo_vcama_l);
+			}
+			
+		}
+		else if (Val == 1 && !IS_ERR(cam_ldo_vcama_h)){
+			mAVDD_usercounter ++;
 			pinctrl_select_state(camctrl, cam_ldo_vcama_h);
+		}
 		break;
 	case DVDD:
 	case MAIN2_DVDD:
+		PK_DBG("mDVDD_usercounter(%d)\n",mAVDD_usercounter);
 		if (Val == 0 && !IS_ERR(cam_ldo_vcamd_l))
-			pinctrl_select_state(camctrl, cam_ldo_vcamd_l);
+		{
+			mDVDD_usercounter --;
+			if(mDVDD_usercounter <= 0)
+			{
+				if(mDVDD_usercounter < 0)
+					PK_ERR("Please check AVDD pin control\n");
+
+				mDVDD_usercounter = 0;
+				pinctrl_select_state(camctrl, cam_ldo_vcamd_l);
+			}
+		}
 		else if (Val == 1 && !IS_ERR(cam_ldo_vcamd_h))
+		{
+			mDVDD_usercounter ++;
 			pinctrl_select_state(camctrl, cam_ldo_vcamd_h);
+		}
 		break;
 	case DOVDD:
 	case AFVDD:
