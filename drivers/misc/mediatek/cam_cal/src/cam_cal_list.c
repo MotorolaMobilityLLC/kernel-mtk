@@ -31,29 +31,28 @@ unsigned int mtkCidList[MTK_MAX_CID_NUM] = {
 
 enum {
 	AUTO_SEARCH = 0,
+	/* #if defined(BRCB032GWZ_3) */
+	BRCB032GWZ_3,
+	/* #endif */
 	/* #if defined(cat24c16) */
 	CAT24C16,
 	/* #endif */
 	/* #if defined(GT24c32a) */
 	GT24C32A,
 	/* #endif */
-	/* #if defined(BRCB032GWZ_3) */
-	BRCB032GWZ_3,
-	/* #endif */
 	NUM_COUNT,
 } CAM_CAL_CMD_TYPE;
 
 
 stCAM_CAL_FUNC_STRUCT g_camCalCMDFunc[] = {
-	/*{AUTO_SEARCH, auto_selective_read_region},*/
+	/*#if defined(BRCB032GWZ_3)*/
+	{BRCB032GWZ_3, brcb032gwz_selective_read_region},
+	/*#endif*/
 	/*#if defined(cat24c16)*/
 	{CAT24C16, cat24c16_selective_read_region},
 	/*#endif*/
 	/*#if defined(GT24c32a)*/
 	{GT24C32A, gt24c32a_selective_read_region},
-	/*#endif*/
-	/*#if defined(BRCB032GWZ_3)*/
-	{BRCB032GWZ_3, brcb032gwz_selective_read_region},
 	/*#endif*/
 
 	/*      ADD before this line */
