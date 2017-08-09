@@ -67,7 +67,8 @@ void msdc_ldo_power(u32 on, struct regulator *reg, int voltage_mv, u32 *status)
 
 	if (on) { /* want to power on */
 		if (*status == 0) {  /* can power on */
-			pr_warn("msdc power on<%d>\n", voltage_uv);
+			/*Comment out to reduce log */
+			/* pr_warn("msdc power on<%d>\n", voltage_uv); */
 			msdc_regulator_set_and_enable(reg, voltage_uv);
 			*status = voltage_uv;
 		} else if (*status == voltage_uv) {

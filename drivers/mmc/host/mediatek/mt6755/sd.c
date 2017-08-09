@@ -858,7 +858,6 @@ void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 	u32 hs400_div_dis = 0; /* FOR MSDC_CFG.HS400CKMOD */
 
 	if (!hz) { /* set mmc system clock to 0*/
-		pr_err("msdc%d -> set mclk to 0", host->id);
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
 			host->saved_para.hz = hz;
 #ifdef SDIO_ERROR_BYPASS
@@ -4389,9 +4388,6 @@ static void msdc_init_hw(struct msdc_host *host)
 	msdc_set_driving(host, hw, 0);
 	/*msdc_set_pin_mode(host);*/
 	/*msdc_set_ies(host, 1);*/
-
-	INIT_MSG("msdc drving<clk %d,cmd %d,dat %d>",
-		hw->clk_drv, hw->cmd_drv, hw->dat_drv);
 
 	/* write crc timeout detection */
 	MSDC_SET_FIELD(MSDC_PATCH_BIT0, MSDC_PB0_DETWR_CRCTMO, 1);
