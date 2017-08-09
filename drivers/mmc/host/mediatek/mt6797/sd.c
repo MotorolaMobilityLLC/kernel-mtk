@@ -4157,6 +4157,18 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	else if ((host->need_tune & TUNE_ASYNC_DATA_WRITE) ||
 		(host->need_tune & TUNE_LEGACY_DATA_WRITE))
 		autok_err_type = CRC_STATUS_ERROR;
+	/* 1. mmc_blk_err_check will send CMD13 to check device status
+	 * Don't autok/switch edge here, because it will cause CMD19 send when
+	 * device is not in transfer status
+	 * 2. mmc_blk_err_check will send CMD12 to stop transition.
+	 * Don't autok/switch edge here also. it will cause switch edge failed
+	 */
+	if ((mrq->cmd->opcode == MMC_SEND_STATUS &&
+		host->err_cmd != MMC_SEND_STATUS) ||
+		(mrq->cmd->opcode == MMC_STOP_TRANSMISSION &&
+		host->err_cmd != MMC_STOP_TRANSMISSION)) {
+		goto end;
+	}
 
 	/* pr_err("msdc%d: transfer err %d timing:%d\n",
 		host->id, autok_err_type, mmc->ios.timing); */
@@ -4197,21 +4209,10 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		/* Other speed mode will tune smpl */
 		default:
 			tune_smpl = 1;
-			/* This is in linux error handle flow, Get card status
-			 * or stop transmision Don't switch edge, till error
-			 */
-			if ((mrq->cmd->opcode == MMC_SEND_STATUS &&
-				host->err_cmd != MMC_SEND_STATUS) ||
-				(mrq->cmd->opcode == MMC_STOP_TRANSMISSION &&
-				host->err_cmd != MMC_STOP_TRANSMISSION)) {
-				/* pr_err("msdc%d: tune smpl don't switch edge,  err cmd : %d\n",
-					host->id, host->err_cmd); */
-			} else {
-				pr_err("msdc%d: tune smpl %d times timing:%d err: %d\n",
-					host->id, ++host->tune_smpl_times,
-					mmc->ios.timing, autok_err_type);
-				autok_low_speed_switch_edge(host, &mmc->ios, autok_err_type);
-			}
+			pr_err("msdc%d: tune smpl %d times timing:%d err: %d\n",
+				host->id, ++host->tune_smpl_times,
+				mmc->ios.timing, autok_err_type);
+			autok_low_speed_switch_edge(host, &mmc->ios, autok_err_type);
 			break;
 		}
 		/* autok failed three times will try reinit tuning */
@@ -4231,6 +4232,7 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		/* SDIO tuning is not ported */
 		return 0;
 	}
+end:
 	host->tuning_in_progress = false;
 	return ret;
 }
