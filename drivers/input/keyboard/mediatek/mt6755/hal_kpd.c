@@ -16,6 +16,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <mt-plat/upmu_common.h>
 #ifdef CONFIG_MT_SND_SOC_6755
 #include <mt_soc_afe_control.h>
 #endif

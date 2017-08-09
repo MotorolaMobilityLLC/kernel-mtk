@@ -77,6 +77,7 @@ static const struct of_device_id kpd_of_match[] = {
 	{.compatible = "mediatek,mt6797-keypad"},
 	{.compatible = "mediatek,mt8163-keypad"},
 	{.compatible = "mediatek,mt8127-keypad"},
+	{.compatible = "mediatek,mt2701-keypad"},
 	{},
 };
 
@@ -887,7 +888,16 @@ static int kpd_pdrv_probe(struct platform_device *pdev)
 		input_unregister_device(kpd_input_dev);
 		return r;
 	}
+#ifdef CONFIG_KPD_PWRKEY_USE_EINT
 	mt_eint_register();
+#endif
+
+#ifdef CONIFG_KPD_ACCESS_PMIC_REGMAP
+	/*kpd_hal access pmic registers via regmap interface*/
+	err = kpd_init_pmic_regmap(pdev);
+	if (err)
+		kpd_print("kpd cannot get regmap, please check dts config first.\n");
+#endif
 
 #ifndef KPD_EARLY_PORTING	/*add for avoid early porting build err the macro is defined in custom file */
 	long_press_reboot_function_setting();	/* /API 4 for kpd long press reboot function setting */

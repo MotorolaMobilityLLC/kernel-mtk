@@ -3,6 +3,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <mt-plat/upmu_common.h>
 #ifdef CONFIG_MTK_TC1_FM_AT_SUSPEND
 #include <mt_soc_afe_control.h>
 #endif

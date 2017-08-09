@@ -39,7 +39,6 @@
 #include <hal_kpd.h>
 #include <linux/kernel.h>
 #include <linux/delay.h>
-#include <mt-plat/upmu_common.h>
 #include <mt-plat/mt_boot_common.h>
 
 #define KEY_CALL	KEY_SEND
