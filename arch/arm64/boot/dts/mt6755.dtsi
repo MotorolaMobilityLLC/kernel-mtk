@@ -1002,12 +1002,12 @@
 			reg = <0x10203000 0x1000>;
 		};
 
-		sys_cirq@10204000 {
-			compatible = "mediatek,sys_cirq";
+		sys_cirq: sys_cirq@10204000 {
+			compatible = "mediatek,mt6755-sys_cirq", "mediatek,mt6735-sys_cirq";
 			reg = <0x10204000 0x1000>;
-			interrupts = <GIC_SPI 240 IRQ_TYPE_EDGE_FALLING>;
-			cirq_num = <168>;
-			spi_start_offset = <72>;
+			interrupts = <GIC_SPI 240 IRQ_TYPE_LEVEL_LOW>;
+			mediatek,cirq_num = <168>;
+			mediatek,spi_start_offset = <72>;
 		};
 
 		m4u@10205000 {
@@ -3344,3 +3344,4 @@
 #include "cust_mt6755_msdc.dtsi"
 
 #include <trusty.dtsi>
+
