@@ -190,6 +190,8 @@ obj-$(CONFIG_SOFT_WATCHDOG) += softdog.o
 obj-$(CONFIG_MENF21BMC_WATCHDOG) += menf21bmc_wdt.o
 
 # mediatek
-ifneq ($(CONFIG_MEDIATEK_WATCHDOG), y)
+ifeq ($(CONFIG_MEDIATEK_WATCHDOG), y)
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/
+else
 obj-$(CONFIG_MEDIATEK_SOLUTION) += mediatek/
 endif
