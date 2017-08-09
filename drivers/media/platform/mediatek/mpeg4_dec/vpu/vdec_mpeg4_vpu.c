@@ -102,6 +102,11 @@ void *vdec_mpeg4_vpu_get_shmem(struct vdec_mpeg4_vpu_inst *vpu)
 	return vpu->shmem_addr;
 }
 
+dma_addr_t vdec_mpeg4_vpu_get_dma(struct vdec_mpeg4_vpu_inst *vpu, uint32_t vpu_addr)
+{
+	return (dma_addr_t)vpu_mapping_iommu_dm_addr(vpu->dev, (void *)vpu_addr);
+}
+
 static void handle_init_ack_msg(struct vdec_mpeg4_ipi_init_ack *msg)
 {
 	struct vdec_mpeg4_vpu_inst *vpu;

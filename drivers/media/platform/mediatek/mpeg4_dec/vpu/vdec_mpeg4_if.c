@@ -27,9 +27,9 @@
 struct vdec_mpeg4_vsi {
 	struct vdec_mpeg4_mem mc_buf[MPEG4_MAX_MC_NUM];
 	struct vdec_mpeg4_mem dcacmv_buf;
-	struct vdec_mpeg4_mem nocodec_buf;
 	struct vdec_mpeg4_mem datapar_buf;
 	struct vdec_mpeg4_mem mv_buf;
+	struct vdec_mpeg4_wb wb;
 
 	struct vdec_mpeg4_fb disp_fb;
 	struct vdec_mpeg4_fb disp_ready_fb;
@@ -49,7 +49,6 @@ struct vdec_mpeg4_inst {
 
 	struct mtk_vcodec_mem mc_buf[MPEG4_MAX_MC_NUM];
 	struct mtk_vcodec_mem dcacmv_buf;
-	struct mtk_vcodec_mem nocodec_buf;
 	struct mtk_vcodec_mem datapar_buf;
 	struct mtk_vcodec_mem mv_buf;
 
@@ -102,29 +101,6 @@ static int alloc_dcacmv_buffer(struct vdec_mpeg4_inst *inst, struct vdec_pic_inf
 
 	vsi->dcacmv_buf.dma_addr = (uint64_t) mem->dma_addr;
 	vsi->dcacmv_buf.va_addr = (uintptr_t) mem->va;
-
-	mtk_vcodec_debug(inst, "Get va=%p dma=%llx size=%zx", mem->va, (uint64_t) mem->dma_addr,
-			 mem->size);
-	return 0;
-}
-
-static int alloc_nocodec_buffer(struct vdec_mpeg4_inst *inst, struct vdec_pic_info *pic)
-{
-	struct mtk_vcodec_mem *mem;
-	struct vdec_mpeg4_vsi *vsi = inst->vsi;
-	int err;
-
-	mem = &inst->nocodec_buf;
-	mem->size = vsi->nocodec_buf.size;
-
-	err = mtk_vcodec_mem_alloc(inst->ctx, mem);
-	if (err) {
-		mtk_vcodec_err(inst, "failed to allocate mv buf\n");
-		return -ENOMEM;
-	}
-
-	vsi->nocodec_buf.dma_addr = (uint64_t) mem->dma_addr;
-	vsi->nocodec_buf.va_addr = (uintptr_t) mem->va;
 
 	mtk_vcodec_debug(inst, "Get va=%p dma=%llx size=%zx", mem->va, (uint64_t) mem->dma_addr,
 			 mem->size);
@@ -191,9 +167,6 @@ static void free_all_working_buf(struct vdec_mpeg4_inst *inst)
 	if (inst->dcacmv_buf.va)
 		mtk_vcodec_mem_free(inst->ctx, &inst->dcacmv_buf);
 
-	if (inst->nocodec_buf.va)
-		mtk_vcodec_mem_free(inst->ctx, &inst->nocodec_buf);
-
 	if (inst->datapar_buf.va)
 		mtk_vcodec_mem_free(inst->ctx, &inst->datapar_buf);
 
@@ -204,6 +177,7 @@ static void free_all_working_buf(struct vdec_mpeg4_inst *inst)
 
 static int alloc_all_working_buf(struct vdec_mpeg4_inst *inst, struct vdec_pic_info *pic)
 {
+	struct vdec_mpeg4_vsi *vsi = inst->vsi;
 	int err;
 
 	err = alloc_mc_buffer(inst, pic);
@@ -214,10 +188,6 @@ static int alloc_all_working_buf(struct vdec_mpeg4_inst *inst, struct vdec_pic_i
 	if (err)
 		goto end;
 
-	err = alloc_nocodec_buffer(inst, pic);
-	if (err)
-		goto end;
-
 	err = alloc_datapar_buffer(inst, pic);
 	if (err)
 		goto end;
@@ -225,6 +195,9 @@ static int alloc_all_working_buf(struct vdec_mpeg4_inst *inst, struct vdec_pic_i
 	err = alloc_mv_buffer(inst, pic);
 	if (err)
 		goto end;
+
+	vsi->wb.dma_addr = vdec_mpeg4_vpu_get_dma(inst->vpu_inst, vsi->wb.vpu_addr);
+	mtk_vcodec_debug(inst, "wb dma=%llx", vsi->wb.dma_addr);
 end:
 	return err;
 }

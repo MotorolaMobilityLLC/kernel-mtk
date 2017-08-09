@@ -21,6 +21,11 @@ struct vdec_mpeg4_mem {
 	uint64_t va_addr;
 };
 
+struct vdec_mpeg4_wb {
+	uint32_t vpu_addr;
+	uint64_t dma_addr;
+};
+
 struct vdec_mpeg4_bs {
 	uint32_t size;
 	uint64_t dma_addr;
@@ -50,6 +55,7 @@ struct vdec_mpeg4_vpu_inst;
 struct vdec_mpeg4_vpu_inst *vdec_mpeg4_vpu_alloc(void *ctx);
 void vdec_mpeg4_vpu_free(struct vdec_mpeg4_vpu_inst *vpu);
 void *vdec_mpeg4_vpu_get_shmem(struct vdec_mpeg4_vpu_inst *vpu);
+dma_addr_t vdec_mpeg4_vpu_get_dma(struct vdec_mpeg4_vpu_inst *vpu, uint32_t vpu_addr);
 int vdec_mpeg4_vpu_init(struct vdec_mpeg4_vpu_inst *vpu, struct vdec_mpeg4_bs *bs);
 int vdec_mpeg4_vpu_dec_start(struct vdec_mpeg4_vpu_inst *vpu, struct vdec_mpeg4_bs *bs,
 			     struct vdec_mpeg4_fb *fb);
