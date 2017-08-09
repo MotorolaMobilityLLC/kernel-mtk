@@ -648,11 +648,8 @@ static inline void mmp_kernel_trace_counter(char *name, int count)
 /* continue to use 32-bit value to store time value (separate into 2) */
 static void system_time(unsigned int *low, unsigned int *high)
 {
-#ifdef CONFIG_64BIT
-	unsigned long temp;
-#else
 	unsigned long long temp;
-#endif
+
 	temp = sched_clock();
 	*low = (unsigned int)(temp & 0xffffffff);
 	*high = (unsigned int)((temp >> 32) & 0xffffffff);
@@ -1366,9 +1363,12 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 		break;
 	case MMP_IOC_TIME:
 		{
+			unsigned int time_low;
+			unsigned int time_high;
 			unsigned long long time;
 
-			system_time((unsigned int *)(&time), ((unsigned int *)(&time)) + 1);
+			system_time(&time_low, &time_high);
+			time = time_low + ((unsigned long long)time_high << 32);
 			put_user(time, (unsigned long long *)arg);
 		}
 		break;
@@ -1378,6 +1378,7 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 
 			retn =
 			    copy_from_user(&event_info, (void *)arg, sizeof(MMProfile_EventInfo_t));
+			event_info.name[MMProfileEventNameMaxLen] = 0;
 			event_info.parentId =
 			    MMProfileRegisterEvent(event_info.parentId, event_info.name);
 			retn =
@@ -1390,6 +1391,7 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 
 			retn =
 			    copy_from_user(&event_info, (void *)arg, sizeof(MMProfile_EventInfo_t));
+			event_info.name[MMProfileEventNameMaxLen] = 0;
 			mutex_lock(&MMProfile_RegTableMutex);
 			event_info.parentId =
 			    MMProfileFindEventInt(event_info.parentId, event_info.name);
@@ -1559,7 +1561,7 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 	return ret;
 }
 
-#ifdef CONFIG_64BIT
+#ifdef CONFIG_COMPAT
 static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
@@ -1586,9 +1588,12 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned
 		break;
 	case MMP_IOC_TIME:
 		{
+			unsigned int time_low;
+			unsigned int time_high;
 			unsigned long long time;
 
-			system_time((unsigned int *)(&time), ((unsigned int *)(&time)) + 1);
+			system_time(&time_low, &time_high);
+			time = time_low + ((unsigned long long)time_high << 32);
 			put_user(time, (unsigned long long *)arg);
 		}
 		break;
@@ -1598,6 +1603,7 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned
 
 			retn =
 			    copy_from_user(&event_info, (void *)arg, sizeof(MMProfile_EventInfo_t));
+			event_info.name[MMProfileEventNameMaxLen] = 0;
 			event_info.parentId =
 			    MMProfileRegisterEvent(event_info.parentId, event_info.name);
 			retn =
@@ -1610,6 +1616,7 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned
 
 			retn =
 			    copy_from_user(&event_info, (void *)arg, sizeof(MMProfile_EventInfo_t));
+			event_info.name[MMProfileEventNameMaxLen] = 0;
 			mutex_lock(&MMProfile_RegTableMutex);
 			event_info.parentId =
 			    MMProfileFindEventInt(event_info.parentId, event_info.name);
@@ -1779,7 +1786,6 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned
 	return ret;
 }
 #endif
-
 
 static int mmprofile_mmap(struct file *file, struct vm_area_struct *vma)
 {
@@ -1839,10 +1845,8 @@ const struct file_operations mmprofile_fops = {
 	.read = mmprofile_read,
 	.write = mmprofile_write,
 	.mmap = mmprofile_mmap,
-#ifdef CONFIG_64BIT
 #ifdef CONFIG_COMPAT
 	.compat_ioctl = mmprofile_ioctl_compat,
-#endif
 #endif
 };
 
