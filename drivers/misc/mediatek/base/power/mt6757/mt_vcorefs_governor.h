@@ -26,13 +26,11 @@
 #define vcorefs_debug(fmt, args...)	\
 	pr_debug(VCPREFS_TAG""fmt, ##args)
 
-/* log_mask[15:0]: show nothing, log_mask[16:31]: show only on MobileLog */
-#define vcorefs_crit_mask(fmt, args...)				\
+/* Uses for DVFS Request */
+#define vcorefs_crit_mask(log_mask, kicker, fmt, args...)	\
 do {								\
-	if (pwrctrl->log_mask & (1U << kicker))			\
+	if (log_mask & (1U << kicker))				\
 		;						\
-	else if ((pwrctrl->log_mask >> 16) & (1U << kicker))	\
-		vcorefs_debug(fmt, ##args);			\
 	else							\
 		vcorefs_crit(fmt, ##args);			\
 } while (0)

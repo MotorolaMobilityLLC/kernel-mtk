@@ -25,6 +25,7 @@ extern int vcorefs_request_dvfs_opp(enum dvfs_kicker, enum dvfs_opp);
 /* Called by governor for init flow */
 extern void vcorefs_drv_init(bool, bool, int);
 extern int init_vcorefs_sysfs(void);
+extern u32 log_mask(void);
 
 /* Called by MET */
 typedef void (*vcorefs_req_handler_t) (enum dvfs_kicker kicker, enum dvfs_opp opp);

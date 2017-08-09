@@ -557,7 +557,8 @@ void __spm_set_power_control(const struct pwr_ctrl *pwrctrl)
 	spm_write(SPM_SW_RSV_6,
 		((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
 		((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
-		((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 1));
+		((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2) |
+		((pwrctrl->disable_off_load_lpm & 0x1) << 3));
 
 #if 0
 	/* SPM_WAKEUP_EVENT_MASK */
@@ -1016,6 +1017,7 @@ void __spm_sync_vcore_dvfs_power_control(struct pwr_ctrl *dest_pwr_ctrl, const s
 	dest_pwr_ctrl->md_srcclkena_0_2d_dvfs_req_mask_b = src_pwr_ctrl->md_srcclkena_0_2d_dvfs_req_mask_b;
 	dest_pwr_ctrl->md_srcclkena_1_2d_dvfs_req_mask_b = src_pwr_ctrl->md_srcclkena_1_2d_dvfs_req_mask_b;
 	dest_pwr_ctrl->dvfs_up_2d_dvfs_req_mask_b	= src_pwr_ctrl->dvfs_up_2d_dvfs_req_mask_b;
+	dest_pwr_ctrl->disable_off_load_lpm		= src_pwr_ctrl->disable_off_load_lpm;
 #else
 	dest_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b	= src_pwr_ctrl->cpu_md_dvfs_erq_merge_mask_b;
 	dest_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b	= src_pwr_ctrl->md1_ddr_en_dvfs_halt_mask_b;

@@ -110,7 +110,7 @@ static struct pwr_ctrl vcore_dvfs_ctrl = {
 	.r7_ctrl_en = 1,
 
 	/* VCORE DVFS Logic pwr_ctrl */
-	.dvfs_halt_mask_b = 0x07,	/* 5 bit *//* todo: enable for isp/disp, disable gce */
+	.dvfs_halt_mask_b = 0x17,	/* 5 bit *//* todo: enable for isp/disp, disable gce */
 	.sdio_on_dvfs_req_mask_b = 0,
 
 	.cpu_md_dvfs_req_merge_mask_b = 1,	/* HPM request by WFD/MHL/MD */
@@ -138,6 +138,11 @@ static struct pwr_ctrl vcore_dvfs_ctrl = {
 	.emi_boost_dvfs_req_mask_b = 0,	/* default disable, enable by fliper */
 
 	.dvfs_halt_src_chk = 1,
+
+	.md_srcclkena_0_2d_dvfs_req_mask_b = 1,
+	.md_srcclkena_1_2d_dvfs_req_mask_b = 0,
+	.dvfs_up_2d_dvfs_req_mask_b = 1,
+	.disable_off_load_lpm = 0,
 
 	/* +450 SPM_EMI_BW_MODE */
 	/* [0]EMI_BW_MODE, [1]EMI_BOOST_MODE default is 0 */
@@ -565,56 +570,68 @@ static void spm_vcorefs_config_ulpm(int opp)
 
 static void spm_vcorefs_config_hpm_fix(int opp)
 {
+	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
+
+	pwrctrl->disable_off_load_lpm = (opp == OPPI_UNREQ) ? 0 : 1;
+
 	spm_vcorefs_config_hpm(opp);
+
+	spm_write(SPM_SW_RSV_6,
+		((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
+		((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
+		((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2) |
+		((pwrctrl->disable_off_load_lpm & 0x1) << 3));
 }
 
 static void spm_vcorefs_config_lpm_fix(int opp)
 {
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 
+	pwrctrl->disable_off_load_lpm = (opp == OPPI_UNREQ) ? 0 : 1;
+	pwrctrl->sw_ctrl_event_on = 1;
 	if (opp == OPPI_LOW_PWR) {
 		pwrctrl->spm_dvfs_force_down = 0;
-		pwrctrl->sw_ctrl_event_on = 1;
 		spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) & (~SPM_DVFS_FORCE_DOWN_LSB));
-		spm_write(SW_CRTL_EVENT, spm_read(SW_CRTL_EVENT) | SW_CRTL_EVENT_ON_LSB);
 	} else {
 		pwrctrl->spm_dvfs_force_down = 1;
-		pwrctrl->sw_ctrl_event_on = 1;
 		spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) | (SPM_DVFS_FORCE_DOWN_LSB));
-		spm_write(SW_CRTL_EVENT, spm_read(SW_CRTL_EVENT) | SW_CRTL_EVENT_ON_LSB);
 	}
-
+	spm_write(SW_CRTL_EVENT, spm_read(SW_CRTL_EVENT) | SW_CRTL_EVENT_ON_LSB);
+	spm_write(SPM_SW_RSV_6,
+		((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
+		((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
+		((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2) |
+		((pwrctrl->disable_off_load_lpm & 0x1) << 3));
 }
 
 static void spm_vcorefs_config_ulpm_fix(int opp)
 {
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 
+	pwrctrl->disable_off_load_lpm = (opp == OPPI_UNREQ) ? 0 : 1;
+	pwrctrl->spm_dvfs_force_down = 1;
+
 	if (opp == OPPI_ULTRA_LOW_PWR) {
 		pwrctrl->spm_dvfs_force_down = 1;
-		spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) | (SPM_DVFS_FORCE_DOWN_LSB));
+		pwrctrl->sw_ctrl_event_on = 0;
 		pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b = 0;
 		pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b = 0;
 		pwrctrl->dvfs_up_2d_dvfs_req_mask_b = 0;
-		spm_write(SPM_SW_RSV_6,
-			((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
-			((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
-			((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2));
-		pwrctrl->sw_ctrl_event_on = 0;
-		spm_write(SW_CRTL_EVENT, spm_read(SW_CRTL_EVENT) | SW_CRTL_EVENT_ON_LSB);
 	} else {
-		pwrctrl->sw_ctrl_event_on = 1;
-		spm_write(SW_CRTL_EVENT, spm_read(SW_CRTL_EVENT) | SW_CRTL_EVENT_ON_LSB);
-		pwrctrl->spm_dvfs_force_down = 1;
 		spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) | (SPM_DVFS_FORCE_DOWN_LSB));
+		pwrctrl->sw_ctrl_event_on = 1;
 		pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b = 1;
 		pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b = 0;
 		pwrctrl->dvfs_up_2d_dvfs_req_mask_b = 1;
-		spm_write(SPM_SW_RSV_6,
-			((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
-			((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
-			((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2));
 	}
+
+	spm_write(SPM_SRC_REQ, spm_read(SPM_SRC_REQ) | (SPM_DVFS_FORCE_DOWN_LSB));
+	spm_write(SW_CRTL_EVENT, spm_read(SW_CRTL_EVENT) | SW_CRTL_EVENT_ON_LSB);
+	spm_write(SPM_SW_RSV_6,
+		((pwrctrl->md_srcclkena_0_2d_dvfs_req_mask_b & 0x1) << 0) |
+		((pwrctrl->md_srcclkena_1_2d_dvfs_req_mask_b & 0x1) << 1) |
+		((pwrctrl->dvfs_up_2d_dvfs_req_mask_b & 0x1) << 2) |
+		((pwrctrl->disable_off_load_lpm & 0x1) << 3));
 }
 
 int spm_vcorefs_set_opp(int opp, int vcore, int ddr, bool non_force)

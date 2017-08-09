@@ -273,6 +273,7 @@ struct pwr_ctrl {
 	u8 md_srcclkena_0_2d_dvfs_req_mask_b;
 	u8 md_srcclkena_1_2d_dvfs_req_mask_b;
 	u8 dvfs_up_2d_dvfs_req_mask_b;
+	u8 disable_off_load_lpm;
 #if 0
 	/* SPM_WAKEUP_EVENT_MASK */
 	u32 spm_wakeup_event_mask;

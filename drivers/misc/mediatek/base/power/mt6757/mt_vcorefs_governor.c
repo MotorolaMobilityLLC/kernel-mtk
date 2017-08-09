@@ -37,7 +37,7 @@
  */
 #define AUTOK_SD	1
 #define AUTOK_EMMC	1
-#define	AUTOK_SDIO	0
+#define	AUTOK_SDIO	1
 
 /*
  * __nosavedata will not be restored after IPO-H boot
@@ -83,7 +83,6 @@ void __iomem *vcorefs_sram_base;
  * struct define
  */
 static DEFINE_MUTEX(governor_mutex);
-static DEFINE_SPINLOCK(governor_spinlock);
 
 struct governor_profile {
 	bool plat_feature_en;
@@ -92,14 +91,9 @@ struct governor_profile {
 	bool freq_dfs;
 
 	bool isr_debug;
-	bool screen_on;
-	bool dpidle_lock;
-	bool suspend_lock;
-	bool sodi_lock;
 	int init_opp_perf;
 	int late_init_opp;
 	bool plat_init_done;
-	bool sodi_rekick_lock;
 
 	int curr_vcore_uv;
 	int curr_ddr_khz;
@@ -127,14 +121,9 @@ static struct governor_profile governor_ctrl = {
 	.freq_dfs = 1,
 
 	.isr_debug = 0,
-	.screen_on = 1,
-	.dpidle_lock = 1,
-	.suspend_lock = 1,
-	.sodi_lock = 0,
 	.init_opp_perf = 0,
 	.late_init_opp = OPPI_LOW_PWR,
 	.plat_init_done = 0,
-	.sodi_rekick_lock = 0,
 
 	.active_autok_kir = 0,
 	.autok_kir_group = ((1 << KIR_AUTOK_EMMC) | (1 << KIR_AUTOK_SD)),
@@ -262,18 +251,6 @@ bool is_vcorefs_feature_enable(void)
 	return gvrctrl->plat_feature_en;
 }
 
-bool vcorefs_get_screen_on_state(void)
-{
-	struct governor_profile *gvrctrl = &governor_ctrl;
-	int r;
-
-	mutex_lock(&governor_mutex);
-	r = gvrctrl->screen_on;
-	mutex_unlock(&governor_mutex);
-
-	return r;
-}
-
 int vcorefs_get_num_opp(void)
 {
 	return NUM_OPP;
@@ -311,7 +288,7 @@ int vcorefs_get_curr_ddr(void)
 
 int vcorefs_get_vcore_by_steps(u32 steps)
 {
-#if !defined(CONFIG_FPGA_EARLY_PORTING) /* todo: check get_vcore_ptp_volt */
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	switch (steps) {
 	case OPP_0:
 		return vcore_pmic_to_uv(get_vcore_ptp_volt(OPP_0));
@@ -643,16 +620,11 @@ char *governor_get_dvfs_info(char *p)
 	p += sprintf(p, "[ddr_dfs     ]: %d\n", gvrctrl->ddr_dfs);
 	p += sprintf(p, "[freq_dfs    ]: %d\n", gvrctrl->freq_dfs);
 	p += sprintf(p, "[isr_debug   ]: %d\n", gvrctrl->isr_debug);
-	p += sprintf(p, "[screen_on   ]: %d\n", vcorefs_get_screen_on_state());
 	p += sprintf(p, "[md_dvfs_req ]: 0x%x\n", gvrctrl->md_dvfs_req);
 	p += sprintf(p, "\n");
 
 	p += sprintf(p, "[vcore] uv : %u (0x%x)\n", uv, vcore_uv_to_pmic(uv));
 	p += sprintf(p, "[ddr  ] khz: %u\n", vcorefs_get_curr_ddr());
-	p += sprintf(p, "\n");
-
-	p += sprintf(p, "[LPM_thres ]: 0x%x\n", gvrctrl->perform_bw_lpm_threshold);
-	p += sprintf(p, "[HPM_thres ]: 0x%x\n", gvrctrl->perform_bw_hpm_threshold);
 	p += sprintf(p, "\n");
 
 	p += sprintf(p, "[perform_bw]: %s ulpm_thres=0x%x, lpm_thres=0x%x, hpm_thres =0x%x\n",
@@ -757,7 +729,7 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 	expect_vcore_uv = (gvrctrl->vcore_dvs == 1) ? opp_ctrl_table[opp_idx].vcore_uv : gvrctrl->curr_vcore_uv;
 	expect_ddr_khz = (gvrctrl->ddr_dfs == 1) ? opp_ctrl_table[opp_idx].ddr_khz : gvrctrl->curr_vcore_uv;
 
-	vcorefs_crit("opp: %d, vcore: %u(%u), fddr: %u(%u) %s%s\n",
+	vcorefs_crit_mask(log_mask(), krconf->kicker, "opp: %d, vcore: %u(%u), fddr: %u(%u) %s%s\n",
 		     krconf->dvfs_opp,
 		     opp_ctrl_table[opp_idx].vcore_uv, gvrctrl->curr_vcore_uv,
 		     opp_ctrl_table[opp_idx].ddr_khz, gvrctrl->curr_ddr_khz,
@@ -822,7 +794,6 @@ static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned lo
 	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct fb_event *evdata = data;
 	int blank;
-	unsigned long flags;
 
 	if (!is_vcorefs_feature_enable() || !gvrctrl->plat_init_done)
 		return 0;
@@ -834,36 +805,10 @@ static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned lo
 
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
-		mutex_lock(&governor_mutex);
-
-		vcorefs_crit("SCREEN ON\n");
-		spin_lock_irqsave(&governor_spinlock, flags);
-		gvrctrl->dpidle_lock = 1;
-		gvrctrl->suspend_lock = 1;
-		gvrctrl->sodi_lock = 1;
-		spin_unlock_irqrestore(&governor_spinlock, flags);
-
-		gvrctrl->screen_on = 1;
-		spm_go_to_vcore_dvfs(vcorefs_check_feature_enable(), 0);
-
-
-		spin_lock_irqsave(&governor_spinlock, flags);
-		gvrctrl->sodi_lock = 0;
-		spin_unlock_irqrestore(&governor_spinlock, flags);
-
-		mutex_unlock(&governor_mutex);
+		vcorefs_crit("SCREEN OFF\n");
 		break;
 	case FB_BLANK_POWERDOWN:
-		mutex_lock(&governor_mutex);
-
 		vcorefs_crit("SCREEN OFF\n");
-
-		spin_lock_irqsave(&governor_spinlock, flags);
-		gvrctrl->dpidle_lock = 0;
-		gvrctrl->suspend_lock = 0;
-		spin_unlock_irqrestore(&governor_spinlock, flags);
-
-		gvrctrl->screen_on = 0;
 		mutex_unlock(&governor_mutex);
 		break;
 	default:
@@ -944,23 +889,10 @@ bool governor_autok_lock_check(int kicker, int opp)
 	return lock_r;
 }
 
-bool vcorefs_sodi_rekick_lock(void)
-{
-	struct governor_profile *gvrctrl = &governor_ctrl;
-
-	return gvrctrl->sodi_rekick_lock;
-}
-
 void vcorefs_go_to_vcore_dvfs(void)
 {
-	struct governor_profile *gvrctrl = &governor_ctrl;
-
-	gvrctrl->sodi_rekick_lock = 1;
-
 	if (is_vcorefs_feature_enable())
 		spm_go_to_vcore_dvfs(vcorefs_check_feature_enable(), 0);
-
-	gvrctrl->sodi_rekick_lock = 0;
 }
 
 /*
