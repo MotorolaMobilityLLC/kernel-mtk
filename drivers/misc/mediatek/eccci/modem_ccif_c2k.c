@@ -1040,7 +1040,7 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 	/*struct ccci_header *ccci_h; */
 	unsigned long flags;
 	int ccci_to_c2k_ch = 0;
-
+	int retry_count = 0;
 	struct ccci_header *ccci_h;
 
 	if (qno == 0xFF)
@@ -1152,14 +1152,21 @@ static int md_ccif_op_send_request(struct ccci_modem *md, unsigned char qno,
 		if (IS_PASS_SKB(md, qno))
 			return -EBUSY;
 		else if (req->blocking) {
-			udelay(5);
-			/*TODO: add time out check */
-			CCCI_NORMAL_LOG(md->index, TAG,
-				     "TODO: add time out check busy on q%d\n",
-				     qno);
-			goto retry;
-		} else
-			return -EBUSY;
+			if (retry_count++ < 2000000) {
+				udelay(5); /*5us * 2000000 = 10s*/
+				goto retry;
+			} else {
+				CCCI_INF_MSG(md->index, TAG, "retry fail on q%d\n", qno);
+				/*return EBUSY for blocking write?*/
+				return -EBUSY;
+			}
+		} else {
+			if (md->data_usb_bypass)
+				return -ENOMEM;
+			else
+				return -EBUSY;
+			CCCI_DBG_MSG(md->index, TAG, "tx fail on q%d\n", qno);
+		}
 	}
 	return 0;
 }

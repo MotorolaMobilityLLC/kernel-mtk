@@ -326,7 +326,7 @@ int ccci_c2k_buffer_push(int ch_id, void *buf, int count)
 	size_t actual_count = 0;
 	int ch_id_rx = 0;
 	unsigned char blk1 = 0;	/* usb will call this routine in ISR, so we cannot schedule */
-	unsigned char blk2 = 1;	/* default blocking for all request from USB */
+	unsigned char blk2 = 0;	/* non-blocking for all request from USB */
 
 	/* USB bypass's channel id offset, please refer to viatel_rawbulk.h */
 	if (ch_id >= FS_CH_C2K)
