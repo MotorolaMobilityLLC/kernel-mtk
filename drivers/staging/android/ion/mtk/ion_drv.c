@@ -154,7 +154,20 @@ static long ion_sys_cache_sync(struct ion_client *client,
 
 			table = buffer->sg_table;
 			npages = PAGE_ALIGN(buffer->size) / PAGE_SIZE;
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+			if ((pParam->sync_type == ION_CACHE_FLUSH_BY_RANGE)
+				|| (pParam->sync_type == ION_CACHE_FLUSH_BY_RANGE_USE_VA)) {
+				mutex_unlock(&client->lock);
 
+				if (!ion_sync_kernel_func)
+					ion_sync_kernel_func = &__ion_cache_sync_kernel;
+
+				if (mt_smp_cache_flush(table, pParam->sync_type, npages) < 0) {
+					pr_emerg("[smp cache flush] error in smp_sync_sg_list\n");
+					return -EFAULT;
+				}
+			} else {
+#endif
 			mutex_lock(&gIon_cache_sync_user_lock);
 
 			if (!cache_map_vm_struct) {
@@ -192,6 +205,9 @@ static long ion_sys_cache_sync(struct ion_client *client,
 
 			mutex_unlock(&gIon_cache_sync_user_lock);
 			mutex_unlock(&client->lock);
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+			}
+#endif
 		} else {
 			start = (unsigned long) pParam->va;
 			size = pParam->size;

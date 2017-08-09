@@ -911,7 +911,11 @@ static int __m4u_cache_sync_kernel(const void *start, size_t size, M4U_CACHE_SYN
 	else if (sync_type == M4U_CACHE_INVALID_BY_RANGE)
 		dmac_unmap_area((void *)start, size, DMA_FROM_DEVICE);
 	else if (sync_type == M4U_CACHE_FLUSH_BY_RANGE)
+#ifndef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
 		dmac_flush_range((void *)start, (void *)(start + size));
+#else
+		mt_smp_cache_flush_m4u(start, size);
+#endif
 
 	return 0;
 }

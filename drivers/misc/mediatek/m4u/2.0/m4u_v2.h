@@ -171,4 +171,8 @@ extern void smp_inner_dcache_flush_all(void);
 /* m4u driver internal use --------------------------------------------------- */
 /*  */
 
+#ifdef CONFIG_MTK_CACHE_FLUSH_RANGE_PARALLEL
+int mt_smp_cache_flush_m4u(const void *va, const unsigned long size);
+#endif
+
 #endif

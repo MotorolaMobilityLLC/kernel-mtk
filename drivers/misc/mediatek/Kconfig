@@ -189,6 +189,16 @@ config MTK_LCM_PHYSICAL_ROTATION_HW
 config MTK_SM100
 	bool "Software synchronization 64bits objects"
 	default n
+
+config MTK_CACHE_FLUSH_RANGE_PARALLEL
+	bool "Enable cache flush by range in parallel"
+	depends on MTK_IRQ_NEW_DESIGN
+	help
+	  This mediatek feature is to accelerate the cache flush by range operation
+	  with parallel flushing support. Cache flush module issues smp_function_call
+	  to all the online CPUs except the one has largest affinity value, which
+	  services IRQs rather than participating cache flushing procesure.
+
 source "drivers/misc/mediatek/gpt/Kconfig"
 source "drivers/misc/mediatek/uart/Kconfig"
 source "drivers/misc/mediatek/irtx/Kconfig"
