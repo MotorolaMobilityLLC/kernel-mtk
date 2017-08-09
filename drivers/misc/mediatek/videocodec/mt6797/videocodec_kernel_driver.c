@@ -224,14 +224,18 @@ VAL_ULONG_T KVA_VENC_SW_PAUSE, KVA_VENC_SW_HRST_N;
 #define DVFS_DEFAULT MMDVFS_VOLTAGE_HIGH
 #define MONITOR_START_MINUS_1   0
 #define SW_OVERHEAD_MS 1
+#define PAUSE_DETECTION_GAP     80
+#define PAUSE_DETECTION_RATIO   2
 static VAL_BOOL_T   gMMDFVFSMonitorStarts = VAL_FALSE;
 static VAL_BOOL_T   gFirstDvfsLock = VAL_FALSE;
 static VAL_UINT32_T gMMDFVFSMonitorCounts;
 static VAL_TIME_T   gMMDFVFSMonitorStartTime;
 static VAL_TIME_T   gMMDFVFSLastLockTime;
+static VAL_TIME_T   gMMDFVFSLastUnlockTime;
 static VAL_TIME_T   gMMDFVFSMonitorEndTime;
 static VAL_UINT32_T gHWLockInterval;
 static VAL_INT32_T  gHWLockMaxDuration;
+static VAL_UINT32_T gHWLockPrevInterval;
 
 VAL_UINT32_T TimeDiffMs(VAL_TIME_T timeOld, VAL_TIME_T timeNew)
 {
@@ -272,6 +276,7 @@ void VdecDvfsBegin(void)
 	gHWLockInterval = 0;
 	gFirstDvfsLock = VAL_TRUE;
 	gHWLockMaxDuration = 0;
+	gHWLockPrevInterval = 999999;
 	MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] VdecDvfsBegin");
 	/* eVideoGetTimeOfDay(&gMMDFVFSMonitorStartTime, sizeof(VAL_TIME_T)); */
 }
@@ -299,11 +304,10 @@ void VdecDvfsEnd(int level)
 
 VAL_UINT32_T VdecDvfsStep(void)
 {
-	VAL_TIME_T _now;
 	VAL_UINT32_T _diff = 0;
 
-	eVideoGetTimeOfDay(&_now, sizeof(VAL_TIME_T));
-	_diff = TimeDiffMs(gMMDFVFSLastLockTime, _now);
+	eVideoGetTimeOfDay(&gMMDFVFSLastUnlockTime, sizeof(VAL_TIME_T));
+	_diff = TimeDiffMs(gMMDFVFSLastLockTime, gMMDFVFSLastUnlockTime);
 	if (_diff > gHWLockMaxDuration) {
 		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
 		gHWLockMaxDuration = _diff;
@@ -347,6 +351,22 @@ void VdecDvfsAdjustment(void)
 
 void VdecDvfsMonitorStart(void)
 {
+	VAL_UINT32_T _diff = 0;
+	VAL_TIME_T   _now;
+
+	if (VAL_TRUE == gMMDFVFSMonitorStarts) {
+		eVideoGetTimeOfDay(&_now, sizeof(VAL_TIME_T));
+		_diff = TimeDiffMs(gMMDFVFSLastUnlockTime, _now);
+		/* MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] Pause handle prev_diff = %dms, diff = %dms\n",
+				gHWLockPrevInterval, _diff); */
+		if (_diff > PAUSE_DETECTION_GAP && _diff > gHWLockPrevInterval * PAUSE_DETECTION_RATIO) {
+			/* MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] Pause detected, reset\n"); */
+			/* Reset monitoring period if pause is detected */
+			SendDvfsRequest(DVFS_HIGH);
+			VdecDvfsBegin();
+		}
+		gHWLockPrevInterval = _diff;
+	}
 	if (VAL_FALSE == gMMDFVFSMonitorStarts) {
 		/* Continuous monitoring */
 		VdecDvfsBegin();
