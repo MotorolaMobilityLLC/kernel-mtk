@@ -2477,11 +2477,12 @@ static void eem_set_eem_volt(struct eem_det *det)
 
 	cur_temp = det->ops->get_temp(det);
 	/* eem_debug("eem_set_eem_volt cur_temp = %d\n", cur_temp); */
+	/* 6250 * 10uV = 62.5mv */
 	if (cur_temp <= 33000) {
 		if (EEM_CTRL_BIG == det->ctrl_id)
-			low_temp_offset = 7;/* 7 for DA9214; 10 for MT6313 */
+			low_temp_offset = det->ops->volt_2_pmic(det, 6250 + det->pmic_base);
 		else
-			low_temp_offset = 10;
+			low_temp_offset = det->ops->volt_2_eem(det, 6250 + det->eem_v_base);
 
 		ctrl->volt_update |= EEM_VOLT_UPDATE;
 	} else {
