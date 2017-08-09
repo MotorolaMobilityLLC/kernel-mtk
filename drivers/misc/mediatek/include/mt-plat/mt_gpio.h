@@ -5,14 +5,7 @@
 #include <linux/ioctl.h>
 #include <linux/fs.h>
 
-/* FIX-ME: */
-/* #if (defined(CONFIG_MT6589_FPGA)) */
-#if (defined(CONFIG_MTK_FPGA))
-/* #define CONFIG_MT_GPIO_FPGA_ENABLE */
-#include <mach/mt_gpio_fpga.h>
-#else
-/* FIX-ME: marked for early porting */
-#endif
+
 
 extern struct mt_gpio_vbase gpio_vbase;
 

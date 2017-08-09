@@ -11,6 +11,7 @@
 #endif
 #include <mach/mt_gpio_ext.h>
 */
+
 #ifdef CONFIG_OF
 #include <linux/of_device.h>
 #endif
@@ -44,6 +45,18 @@ enum {
 	MT_EXT,
 	MT_NOT_SUPPORT,
 };
+
+#if defined CONFIG_FPGA_EARLY_PORTING
+
+#define MT_GPIO_BASE_START 0
+#define MT_GPIO_BASE_MAX 200
+#define MT_GPIO_EXT_START  MT_GPIO_BASE_MAX
+
+typedef enum GPIO_PIN_EXT {
+	MT_GPIO_EXT_MAX = MT_GPIO_EXT_START
+} GPIO_PIN_EXT;
+#define MT_GPIO_MAX_PIN MT_GPIO_EXT_MAX
+
 #define MT_GPIO_PLACE(pin) ({\
 	int ret = -1;\
 	if ((pin >= MT_GPIO_BASE_START) && (pin < MT_GPIO_BASE_MAX)) {\
@@ -57,6 +70,25 @@ enum {
 		ret = -1;\
 	} \
 	ret; })
+
+
+#else
+#define MT_GPIO_PLACE(pin) ({\
+	int ret = -1;\
+	if ((pin >= MT_GPIO_BASE_START) && (pin < MT_GPIO_BASE_MAX)) {\
+		ret = MT_BASE;\
+		GPIOFUC("pin in base is %d\n", (int)pin);\
+	} else if ((pin >= MT_GPIO_EXT_START) && (pin < MT_GPIO_EXT_MAX)) {\
+		ret = MT_EXT;\
+		GPIOFUC("pin in ext is %d\n", (int)pin);\
+	} else{\
+		GPIOERR("Pin number error %d\n", (int)pin);	\
+		ret = -1;\
+	} \
+	ret; })
+
+#endif
+
 /* int where_is(unsigned long pin) */
 /* { */
 /* int ret = -1; */

@@ -608,7 +608,7 @@ ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, con
 #ifdef MTK_MT6306_SUPPORT
 	int group, on;
 #endif
-	int mode, pullsel, dout, pullen, dir, ies, smt;
+	int mode, pullsel, dout, pullen, dir, ies;
 	u32 num, src, div;
 	char md_str[128] = "GPIO_MD_TEST";
 	/* struct mt_gpio_obj *obj = (struct mt_gpio_obj*)dev_get_drvdata(dev); */
