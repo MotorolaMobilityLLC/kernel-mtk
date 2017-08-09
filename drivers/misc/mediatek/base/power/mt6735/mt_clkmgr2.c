@@ -3461,17 +3461,17 @@ static void cg_all_force_on(void)
 	clk_writel(PERI_PDN_CLR0, PERI_CG);
 
 	/* AUDIO */
-/*	clk_clrl(AUDIO_TOP_CON0, AUD_CG); */
+	clk_clrl(AUDIO_TOP_CON0, AUD_CG);
 	/* MFG */
 	clk_writel(MFG_CG_CLR, MFG_CG);
 	/* DISP */
-/*	clk_writel(MMSYS_DUMMY, 0); */
-/*	clk_writel(MMSYS_DUMMY_1, 0); */
+	clk_writel(MMSYS_DUMMY, 0);
+	clk_writel(MMSYS_DUMMY_1, 0);
 	/* ISP */
-/*	clk_writel(IMG_CG_CLR, IMG_CG); */
+	clk_writel(IMG_CG_CLR, IMG_CG);
 	/* VDE */
-/*	clk_writel(VDEC_CKEN_SET, VDEC_CG); */
-/*	clk_writel(LARB_CKEN_SET, LARB_CG); */
+	clk_writel(VDEC_CKEN_SET, VDEC_CG);
+	clk_writel(LARB_CKEN_SET, LARB_CG);
 	/* VENC */
 	/* clk_writel(VENC_CG_SET, VENC_CG); */
 }
