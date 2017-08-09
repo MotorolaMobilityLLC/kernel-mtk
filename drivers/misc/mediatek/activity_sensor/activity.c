@@ -103,7 +103,6 @@ static void act_work_func(struct work_struct *work)
 		}
 	}
 	/* report data to input devic */
-	/* printk("new act work run....\n") */
 	/* ACT_LOG("act data[%d,%d,%d]\n" ,cxt->drv_data.act_data.probability[0],*/
 	/* cxt->drv_data.act_data.probability[1],cxt->drv_data.act_data.probability[2]);*/
 

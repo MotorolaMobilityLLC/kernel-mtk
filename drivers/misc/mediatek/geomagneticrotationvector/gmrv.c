@@ -64,7 +64,6 @@ static void gmrv_work_func(struct work_struct *work)
 		}
 	}
 	/* report data to input device */
-	/* printk("new gmrv work run....\n"); */
 	/* GMRV_LOG("gmrv data[%d,%d,%d]\n" ,cxt->drv_data.gmrv_data.values[0], */
 	/* cxt->drv_data.gmrv_data.values[1],cxt->drv_data.gmrv_data.values[2]); */
 

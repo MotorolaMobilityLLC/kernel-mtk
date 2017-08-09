@@ -15,10 +15,10 @@
 
 
 #define GLG_TAG		"<GLANCE_GESTURE> "
-#define GLG_FUN(f)		printk(GLG_TAG"%s\n", __func__)
-#define GLG_ERR(fmt, args...)	printk(GLG_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define GLG_LOG(fmt, args...)	printk(GLG_TAG fmt, ##args)
-#define GLG_VER(fmt, args...)  printk(GLG_TAG"%s: "fmt, __func__, ##args)	/* ((void)0) */
+#define GLG_FUN(f)		pr_debug(GLG_TAG"%s\n", __func__)
+#define GLG_ERR(fmt, args...)	pr_err(GLG_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define GLG_LOG(fmt, args...)	pr_debug(GLG_TAG fmt, ##args)
+#define GLG_VER(fmt, args...)  pr_debug(GLG_TAG"%s: "fmt, __func__, ##args)	/* ((void)0) */
 
 /* #define OP_GLG_DELAY          0X01 */
 #define	OP_GLG_ENABLE		0X02

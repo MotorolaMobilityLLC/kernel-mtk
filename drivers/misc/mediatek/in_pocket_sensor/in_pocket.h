@@ -16,10 +16,10 @@
 
 
 #define INPK_TAG		"<IN_POCKET> "
-#define INPK_FUN(f)		printk(INPK_TAG"%s\n", __func__)
-#define INPK_ERR(fmt, args...)	printk(INPK_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define INPK_LOG(fmt, args...)	printk(INPK_TAG fmt, ##args)
-#define INPK_VER(fmt, args...)  printk(INPK_TAG"%s: "fmt, __func__, ##args)	/* ((void)0) */
+#define INPK_FUN(f)		pr_debug(INPK_TAG"%s\n", __func__)
+#define INPK_ERR(fmt, args...)	pr_err(INPK_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define INPK_LOG(fmt, args...)	pr_debug(INPK_TAG fmt, ##args)
+#define INPK_VER(fmt, args...)  pr_debug(INPK_TAG"%s: "fmt, __func__, ##args)	/* ((void)0) */
 
 /* #define OP_INPK_DELAY         0X01 */
 #define	OP_INPK_ENABLE		0X02

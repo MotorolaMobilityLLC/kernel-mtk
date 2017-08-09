@@ -63,7 +63,6 @@ static void rotationvector_work_func(struct work_struct *work)
 		}
 	}
 	/* report data to input device */
-	/* printk("new rotationvector work run....\n"); */
 	/* RV_LOG("rotationvector data[%d,%d,%d]\n" ,cxt->drv_data.rotationvector_data.values[0], */
 	/* cxt->drv_data.rotationvector_data.values[1],cxt->drv_data.rotationvector_data.values[2]); */
 

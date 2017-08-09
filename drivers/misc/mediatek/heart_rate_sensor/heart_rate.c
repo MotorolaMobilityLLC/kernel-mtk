@@ -78,7 +78,6 @@ static void hrm_work_func(struct work_struct *work)
 		}
 	}
 	/* report data to input device */
-	/* printk("new hrm work run....\n"); */
 	HRM_LOG("hrm data %d,%d,%d %d\n", cxt->drv_data.hrm_data.values[0],
 		cxt->drv_data.hrm_data.values[1], cxt->drv_data.hrm_data.values[2],
 		cxt->drv_data.hrm_data.values[3]);

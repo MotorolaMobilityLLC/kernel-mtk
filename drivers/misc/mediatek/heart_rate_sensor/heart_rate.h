@@ -17,10 +17,10 @@
 
 
 #define HRM_TAG					"<HEART_RATE> "
-#define HRM_FUN(f)				printk(HRM_TAG"%s\n", __func__)
-#define HRM_ERR(fmt, args...)	printk(HRM_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define HRM_LOG(fmt, args...)	printk(HRM_TAG fmt, ##args)
-#define HRM_VER(fmt, args...)   printk(HRM_TAG"%s: "fmt, __func__, ##args)	/* ((void)0) */
+#define HRM_FUN(f)				pr_debug(HRM_TAG"%s\n", __func__)
+#define HRM_ERR(fmt, args...)	pr_err(HRM_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define HRM_LOG(fmt, args...)	pr_debug(HRM_TAG fmt, ##args)
+#define HRM_VER(fmt, args...)   pr_debug(HRM_TAG"%s: "fmt, __func__, ##args)	/* ((void)0) */
 
 #define OP_HRM_DELAY	0X01
 #define	OP_HRM_ENABLE	0X02

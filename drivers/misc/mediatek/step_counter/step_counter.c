@@ -50,7 +50,6 @@ static void step_c_work_func(struct work_struct *work)
 		}
 	}
 	/* report data to input device */
-	/* printk("new step_c work run....\n"); */
 	STEP_C_LOG("step_c data[%d]\n", cxt->drv_data.counter);
 
 	step_c_data_report(cxt->idev, cxt->drv_data.counter, cxt->drv_data.status);
