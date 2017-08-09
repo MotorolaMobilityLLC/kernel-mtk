@@ -724,8 +724,8 @@ int enter_pasr_dpd_config(unsigned char segment_rank0,
 	writel(u4value_1E8, PDEF_DRAMC0_CHB_REG_1E8);
 	writel(0, PDEF_DRAMC0_CHB_REG_088);
 
-	if (segment_rank1 == 0xFF) {
-		enter_pdp_cnt++;
+	if ((segment_rank1 == 0xFF) && (enter_pdp_cnt == 0)) {
+		enter_pdp_cnt = 1;
 		spm_dpd_init();
 	}
 	/* pr_warn("[DRAMC0] enter PASR!\n"); */
@@ -744,7 +744,6 @@ int exit_pasr_dpd_config(void)
 	/*slp_dpd_en(0);*/
 	/*slp_pasr_en(0, 0);*/
 	if (enter_pdp_cnt == 1) {
-		enter_pdp_cnt--;
 
 		rk1 = 100;
 		do {
@@ -773,6 +772,8 @@ int exit_pasr_dpd_config(void)
 	}
 
 	ret = enter_pasr_dpd_config(0, rk1);
+
+	enter_pdp_cnt = 0;
 
 	return ret;
 }
