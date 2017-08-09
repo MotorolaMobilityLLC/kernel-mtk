@@ -304,7 +304,7 @@ static DISP_POWER_STATE primary_set_state(DISP_POWER_STATE new_state)
 	DISP_POWER_STATE old_state = pgc->state;
 
 	pgc->state = new_state;
-	DISPMSG("%s %d to %d\n", __func__, old_state, new_state);
+	DISPDBG("%s %d to %d\n", __func__, old_state, new_state);
 	wake_up(&display_state_wait_queue);
 	return old_state;
 }
@@ -3460,7 +3460,7 @@ int primary_display_suspend(void)
 		event_ret =
 		    dpmgr_wait_event_timeout(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE, HZ * 1);
 		MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 2, 2);
-		DISPCHECK
+		DISPDBG
 		    ("[POWER]primary display path is busy now, wait frame done, event_ret=%d\n",
 		     event_ret);
 		if (event_ret <= 0) {
@@ -3748,7 +3748,7 @@ int primary_display_resume(void)
 
 		/*refresh black picture of ovl bg */
 		_trigger_display_interface(1, NULL, 0);
-		DISPCHECK("[POWER]triggger cmdq[end] cmd mode\n");
+		DISPDBG("[POWER]triggger cmdq[end] cmd mode\n");
 		mdelay(16);	/* wait for one frame for pms workarround!!!! */
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 11);
