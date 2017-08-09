@@ -43,10 +43,10 @@ obj-$(CONFIG_ARCH_MT6753) += mt_gpufreq.o
 
 ifneq ($(CONFIG_ARM64), y)
 
-obj-y += mt-smp.o
-obj-y += hotplug.o
-obj-y += mt-headsmp.o
-obj-y += mt_hotplug.o
+#obj-y += mt-smp.o
+#obj-y += hotplug.o
+#obj-y += mt-headsmp.o
+#obj-y += mt_hotplug.o
 
 else
 
