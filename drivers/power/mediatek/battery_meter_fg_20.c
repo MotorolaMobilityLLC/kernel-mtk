@@ -1597,6 +1597,7 @@ int force_get_tbat(kal_bool update)
 	bm_debug("[force_get_tbat] fixed TBAT=25 t\n");
 	return 25;
 #else
+
 	int bat_temperature_volt = 0;
 	int bat_temperature_val = 0;
 	static int pre_bat_temperature_val = -1;
@@ -1605,6 +1606,11 @@ int force_get_tbat(kal_bool update)
 	kal_bool fg_current_state = KAL_FALSE;
 	int bat_temperature_volt_temp = 0;
 	int ret = 0;
+
+	if (batt_meter_cust_data.fixed_tbat_25) {
+		bm_err("[force_get_tbat] fixed TBAT=25 t\n");
+		return 25;
+	}
 
 	if (update == KAL_TRUE || pre_bat_temperature_val == -1) {
 		/* Get V_BAT_Temperature */
@@ -1641,9 +1647,12 @@ int force_get_tbat(kal_bool update)
 #ifdef CONFIG_MTK_BIF_SUPPORT
 		battery_charging_control(CHARGING_CMD_GET_BIF_TBAT, &bat_temperature_val);
 #endif
-	bm_debug("[force_get_tbat] %d,%d,%d,%d,%d,%d\n",
-		 bat_temperature_volt_temp, bat_temperature_volt, fg_current_state, fg_current_temp,
-		 fg_r_value, bat_temperature_val);
+
+		if ((bat_temperature_val > 55) || (bat_temperature_val < 10)) {
+			bm_err("[force_get_tbat] %d,%d,%d,%d,%d,%d\n",
+				bat_temperature_volt_temp, bat_temperature_volt, fg_current_state, fg_current_temp,
+				fg_r_value, bat_temperature_val);
+		}
 		pre_bat_temperature_val = bat_temperature_val;
 	} else {
 		bat_temperature_val = pre_bat_temperature_val;
@@ -3273,6 +3282,37 @@ static ssize_t store_FG_daemon_disable(struct device *dev, struct device_attribu
 static DEVICE_ATTR(FG_daemon_disable, 0664, show_FG_daemon_disable, store_FG_daemon_disable);
 /* ------------------------------------------------------------------------------------------- */
 
+static ssize_t show_FG_drv_force25c(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	bm_debug("[FG] show FG_drv_force25c : %d\n", batt_meter_cust_data.fixed_tbat_25);
+	return sprintf(buf, "%d\n", batt_meter_cust_data.fixed_tbat_25);
+}
+
+static ssize_t store_FG_drv_force25c(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+	unsigned long val = 0;
+	int ret;
+
+	bm_debug("[Enable FG_drv_force25c]\n");
+	batt_meter_cust_data.fixed_tbat_25 = 1;
+
+	if (buf != NULL && size != 0) {
+		bm_debug("[FG_drv_force25c] buf is %s\n", buf);
+		ret = kstrtoul(buf, 10, &val);
+		if (val < 0) {
+			bm_debug("[FG_drv_force25c] val is %d ??\n", (int)val);
+			val = 0;
+		}
+		batt_meter_cust_data.fixed_tbat_25 = val;
+		bm_debug("[FG_drv_force25c] fixed_tbat_25=%d, ret=%d\n", batt_meter_cust_data.fixed_tbat_25, ret);
+	}
+
+	return size;
+}
+
+static DEVICE_ATTR(FG_drv_force25c, 0664, show_FG_drv_force25c, store_FG_drv_force25c);
+/* ------------------------------------------------------------------------------------------- */
 #ifdef FG_BAT_INT
 unsigned char reset_fg_bat_int = KAL_TRUE;
 
@@ -3374,7 +3414,7 @@ static int battery_meter_probe(struct platform_device *dev)
 #endif
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_log_level);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_daemon_disable);
-
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_FG_drv_force25c);
 
 
 	batt_meter_init_cust_data(dev);
