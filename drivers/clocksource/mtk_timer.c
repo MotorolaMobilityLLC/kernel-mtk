@@ -60,13 +60,6 @@ struct mtk_clock_event_device {
 	struct clock_event_device dev;
 };
 
-static void __iomem *gpt_sched_reg __read_mostly;
-
-static u64 notrace mtk_read_sched_clock(void)
-{
-	return readl_relaxed(gpt_sched_reg);
-}
-
 static inline struct mtk_clock_event_device *to_mtk_clk(
 				struct clock_event_device *c)
 {
@@ -165,14 +158,14 @@ static void mtk_timer_global_reset(struct mtk_clock_event_device *evt)
 }
 
 static void mtk_timer_setup(struct mtk_clock_event_device *evt, u8 timer,
-			    u8 option, bool enable)
+			    u8 option, u8 clk_src, bool enable)
 {
 	u32 val;
 
 	writel(TIMER_CTRL_CLEAR | TIMER_CTRL_DISABLE,
 		evt->gpt_base + TIMER_CTRL_REG(timer));
 
-	writel(TIMER_CLK_SRC(TIMER_CLK_SRC_SYS13M) | TIMER_CLK_DIV1,
+	writel(TIMER_CLK_SRC(clk_src) | TIMER_CLK_DIV1,
 			evt->gpt_base + TIMER_CLK_REG(timer));
 
 	writel(0x0, evt->gpt_base + TIMER_CMP_REG(timer));
@@ -247,14 +240,12 @@ static void __init mtk_timer_init(struct device_node *node)
 	evt->ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
 
 	/* Configure clock source */
-	mtk_timer_setup(evt, GPT_CLK_SRC, TIMER_CTRL_OP_FREERUN, true);
+	mtk_timer_setup(evt, GPT_CLK_SRC, TIMER_CTRL_OP_FREERUN, TIMER_CLK_SRC_SYS13M, true);
 	clocksource_mmio_init(evt->gpt_base + TIMER_CNT_REG(GPT_CLK_SRC),
 			node->name, rate, 300, 32, clocksource_mmio_readl_up);
-	gpt_sched_reg = evt->gpt_base + TIMER_CNT_REG(GPT_CLK_SRC);
-	sched_clock_register(mtk_read_sched_clock, 32, rate);
 
 	/* Configure clock event */
-	mtk_timer_setup(evt, GPT_CLK_EVT, TIMER_CTRL_OP_REPEAT, false);
+	mtk_timer_setup(evt, GPT_CLK_EVT, TIMER_CTRL_OP_REPEAT, TIMER_CLK_SRC_RTC32K, false);
 	clockevents_config_and_register(&evt->dev, rate, 0x3,
 					0xffffffff);
 

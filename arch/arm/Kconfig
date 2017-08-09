@@ -978,6 +978,7 @@ config ARCH_MT6755
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
 	select MTK_SYSTRACKER_V2
+	select MTK_TIMER
 	help
 	  This enable support for MediaTek MT6755
 

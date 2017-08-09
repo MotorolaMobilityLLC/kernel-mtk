@@ -44,7 +44,6 @@ obj-$(CONFIG_VF_PIT_TIMER)	+= vf_pit_timer.o
 obj-$(CONFIG_CLKSRC_QCOM)	+= qcom-timer.o
 obj-$(CONFIG_MTK_TIMER)		+= mtk_timer.o
 obj-$(CONFIG_ARCH_MT6797)	+= cpuxgpt_mt6797.o gpt_mt6797.o arch_timer_mt6797.o
-obj-$(CONFIG_ARCH_MT6755)	+= mtk_timer_mt6755.o
 obj-$(CONFIG_ARCH_MT8173)	+= cpuxgpt_mt8173.o
 obj-$(CONFIG_ARCH_MT8163)	+= cpuxgpt_mt8163.o
 obj-$(CONFIG_ARCH_MT8127)	+= arch_timer_mt8127.o
