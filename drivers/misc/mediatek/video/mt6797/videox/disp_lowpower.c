@@ -539,18 +539,22 @@ void _primary_display_disable_mmsys_clk(void)
 void _primary_display_enable_mmsys_clk(void)
 {
 	disp_ddp_path_config *data_config;
+	struct ddp_io_golden_setting_arg gset_arg;
 
 	if (primary_get_sess_mode() != DISP_SESSION_DIRECT_LINK_MODE)
 		return;
 
 	/* do something */
 	DISPCHECK("[LP]1.dpmanager path power on[begin]\n");
+	memset(&gset_arg, 0, sizeof(gset_arg));
+	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(primary_get_dpmgr_handle());
 	if (primary_display_is_decouple_mode()) {
 		if (primary_get_ovl2mem_handle() == NULL) {
 			DISPERR("display is decouple mode, but ovl2mem_path_handle is null\n");
 			return;
 		}
 
+		gset_arg.is_decouple_mode = 1;
 		DISPDBG("[LP]1.1 dpmanager path power on: ovl2men [begin]\n");
 		dpmgr_path_power_on(primary_get_ovl2mem_handle(), CMDQ_DISABLE);
 		DISPCHECK("[LP]1.1 dpmanager path power on: ovl2men [end]\n");
@@ -590,6 +594,9 @@ void _primary_display_enable_mmsys_clk(void)
 		data_config = dpmgr_path_get_last_config(primary_get_ovl2mem_handle());
 		data_config->dst_dirty = 1;
 		dpmgr_path_config(primary_get_ovl2mem_handle(), data_config, NULL);
+		dpmgr_path_ioctl(primary_get_ovl2mem_handle(), NULL, DDP_OVL_GOLDEN_SETTING, &gset_arg);
+	} else {
+		dpmgr_path_ioctl(primary_get_dpmgr_handle(), NULL, DDP_OVL_GOLDEN_SETTING, &gset_arg);
 	}
 
 
