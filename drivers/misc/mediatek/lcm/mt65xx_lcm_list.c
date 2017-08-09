@@ -990,6 +990,10 @@ unsigned char lcm_name_list[][128] = {
 	"r63417_fhd_dsi_cmd_truly_nt50358_drv",
 #endif
 
+#if defined(R63417_FHD_DSI_VDO_TRULY_NT50358)
+	"r63417_fhd_dsi_vdo_truly_nt50358_drv",
+#endif
+
 #if defined(R63419_WQHD_TRULY_PHANTOM_2K_CMD_OK)
 	"r63419_wqhd_truly_phantom_2k_cmd_ok",
 #endif
