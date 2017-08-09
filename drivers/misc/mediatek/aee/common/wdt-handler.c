@@ -7,7 +7,7 @@
 #include <linux/init.h>
 #include <linux/smp.h>
 #ifdef CONFIG_MT_SCHED_MONITOR
-#include <linux/mt_sched_mon.h>
+#include "mt_sched_mon.h"
 #endif
 #include <linux/io.h>
 #include <linux/delay.h>
