@@ -62,6 +62,8 @@
 #include <linux/time.h>
 #include <linux/dma-mapping.h>
 
+/* #define SUPPORT_GOOGLE_LINEOUT */
+
 static AFE_MEM_CONTROL_T *pHp_impedance_MemControl;
 static const int DCoffsetDefault = 1460;	/* w/o 33 ohm */
 static const int DCoffsetDefault_33Ohm = 1620;	/* w/ 33 ohm */
@@ -487,6 +489,9 @@ static void ApplyDctoDl(void)
 	unsigned short dcoffset = 0, average = 0;
 	unsigned short ibuffer_v[4];
 	short value = 0;
+#ifdef SUPPORT_GOOGLE_LINEOUT
+	int ret_value;
+#endif
 
 	/* pr_debug("%s\n", __func__); */
 
@@ -563,6 +568,11 @@ static void ApplyDctoDl(void)
 
 		usleep_range(1*250, 1*500);
 	}
+
+#ifdef SUPPORT_GOOGLE_LINEOUT
+	/* return detected value to ACCDET */
+	ret_value = accdet_read_audio_res((unsigned int)mhp_impedance);
+#endif
 
 	/* Ramp-Down */
 	while (value > 0) {
