@@ -7587,61 +7587,77 @@ void ConfigM4uPort(void)
     port.Distance = 1;
     port.Direction = 0; /* M4U_DMA_READ_WRITE */
 
-    port.ePortID = M4U_PORT_MDP_WDMA;
-    m4u_config_port(&port);
 
-    port.ePortID = M4U_PORT_MDP_WROT;
+    port.ePortID = M4U_PORT_CAM_IMGO;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_IMGO;
+	//
+    port.ePortID = M4U_PORT_CAM_RRZO;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_RRZO;
+	//
+    port.ePortID = M4U_PORT_CAM_AAO;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_AAO;
+	//
+    port.ePortID = M4U_PORT_CAM_AFO;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_ESFKO;
+	//
+    port.ePortID = M4U_PORT_CAM_LSCI_0;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_IMGO_S;
+	//
+    port.ePortID = M4U_PORT_CAM_LSCI_1;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_LSCI;
+	//
+    port.ePortID = M4U_PORT_CAM_SV0;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_LSCI_D;
+	//
+    port.ePortID = M4U_PORT_CAM_SV1;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_BPCI;
+	//
+    port.ePortID = M4U_PORT_CAM_SV2;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_BPCI_D;
+	//
+    port.ePortID = M4U_PORT_CAM_LCSO;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_UFDI;
+	//
+    port.ePortID = M4U_PORT_CAM_UFEO;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_IMGI;
+	//
+    port.ePortID = M4U_PORT_CAM_BPCI;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_IMG2O;
+	//
+    port.ePortID = M4U_PORT_CAM_PDO;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_IMG3O;
+	//
+    port.ePortID = M4U_PORT_CAM_RAWI;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_VIPI;
+	//
+    port.ePortID = M4U_PORT_CAM_IMGI;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_VIP2I;
+	//
+    port.ePortID = M4U_PORT_CAM_IMG2O;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_VIP3I;
+	//
+    port.ePortID = M4U_PORT_CAM_IMG3O;
     m4u_config_port(&port);
-
-    port.ePortID = M4U_PORT_LCEI;
+	//
+    port.ePortID = M4U_PORT_CAM_VIPI;
+    m4u_config_port(&port);
+	//
+    port.ePortID = M4U_PORT_CAM_ICEI;
+    m4u_config_port(&port);
+	//
+    port.ePortID = M4U_PORT_CAM_RP;
+    m4u_config_port(&port);
+	//
+    port.ePortID = M4U_PORT_CAM_WR;
+    m4u_config_port(&port);
+	
+    port.ePortID = M4U_PORT_CAM_RB;
+    m4u_config_port(&port);
+	
+    port.ePortID = M4U_PORT_CAM_RDMA;
+    m4u_config_port(&port);
+	
+    port.ePortID = M4U_PORT_CAM_WDMA;
     m4u_config_port(&port);
 
 
