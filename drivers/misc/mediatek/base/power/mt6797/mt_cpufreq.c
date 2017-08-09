@@ -3222,11 +3222,7 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 	aee_record_cpu_dvfs_step(3);
 
 	/* set freq (UP/DOWN) */
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	if (enable_cpuhvfs || cur_khz != target_khz)
-#else
 	if (cur_khz != target_khz)
-#endif
 		p->ops->set_cur_freq(p, cur_khz, target_khz);
 
 	aee_record_cpu_dvfs_step(12);
@@ -3274,7 +3270,11 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 		    (p->ops->get_cur_vsram(p) / 100), p->name, p->ops->get_cur_phy_freq(p));
 
 		/* trigger exception if freq/volt not correct during stress */
-		if (do_dvfs_stress_test) {
+		if (do_dvfs_stress_test
+#ifdef CONFIG_HYBRID_CPU_DVFS
+		    && (!enable_cpuhvfs || cur_khz != target_khz)
+#endif
+		) {
 			unsigned int volt = p->ops->get_cur_volt(p);
 			unsigned int freq = p->ops->get_cur_phy_freq(p);
 
@@ -3294,10 +3294,7 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 	return 0;
 
 out:
-
-#ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	aee_record_cpu_dvfs_step(0);
-#endif
 
 	return ret;
 }
