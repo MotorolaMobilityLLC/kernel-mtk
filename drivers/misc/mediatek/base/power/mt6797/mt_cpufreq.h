@@ -5,21 +5,10 @@
 
 #ifndef __MT_CPUFREQ_H__
 #define __MT_CPUFREQ_H__
-#include "mt_typedefs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/* B */
-#define BASE_CA15M_CONFIG 0xF0222000
-#undef ARMPLL_CON0
-#undef ARMPLL_CON1
-#undef ARMPLL_CON2
-#define ARMPLL_CON0		(BASE_CA15M_CONFIG+0x4A0)
-#define ARMPLL_CON1		(BASE_CA15M_CONFIG+0x4A4)
-#define ARMPLL_CON2		(BASE_CA15M_CONFIG+0x4A8)
-/* 7:4 enable, 3:0 sel*/
-#define SRAMLDO			(BASE_CA15M_CONFIG+0x2B0)
 
 /* L VSRAM */
 #define CPULDO_CTRL_BASE	(0xF0001000)
@@ -49,27 +38,12 @@ enum top_ckmuxsel {
 
 typedef void (*cpuVoltsampler_func) (enum mt_cpu_dvfs_id, unsigned int mv);
 
-/* PMIC */
-extern int is_ext_buck_sw_ready(void);
-extern int is_ext_buck_exist(void);
-extern void mt6311_set_vdvfs11_vosel(kal_uint8 val);
-extern void mt6311_set_vdvfs11_vosel_on(kal_uint8 val);
-extern void mt6311_set_vdvfs11_vosel_ctrl(kal_uint8 val);
-extern kal_uint32 mt6311_read_byte(kal_uint8 cmd, kal_uint8 *returnData);
-extern kal_uint32 mt6311_get_chip_id(void);
-
 extern u32 get_devinfo_with_index(u32 index);
 extern void (*cpufreq_freq_check)(enum mt_cpu_dvfs_id id);
 
 /* Freq Meter API */
 #ifdef __KERNEL__
 extern unsigned int mt_get_cpu_freq(void);
-#endif
-
-/* PMIC WRAP */
-#ifdef CONFIG_OF
-extern void __iomem *pwrap_base;
-#define PWRAP_BASE_ADDR     ((unsigned long)pwrap_base)
 #endif
 
 /* #ifdef CONFIG_CPU_DVFS_AEE_RR_REC */
@@ -89,8 +63,6 @@ extern int mt_cpufreq_update_volt(enum mt_cpu_dvfs_id id, unsigned int *volt_tbl
 				  int nr_volt_tbl);
 extern void mt_cpufreq_restore_default_volt(enum mt_cpu_dvfs_id id);
 extern unsigned int mt_cpufreq_get_cur_volt(enum mt_cpu_dvfs_id id);
-extern void mt_cpufreq_enable_by_ptpod(enum mt_cpu_dvfs_id id);
-extern unsigned int mt_cpufreq_disable_by_ptpod(enum mt_cpu_dvfs_id id);
 
 /* PBM */
 extern unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id);
@@ -112,7 +84,6 @@ extern int mt_cpufreq_clock_switch(enum mt_cpu_dvfs_id id, enum top_ckmuxsel sel
 extern enum top_ckmuxsel mt_cpufreq_get_clock_switch(enum mt_cpu_dvfs_id id);
 extern void mt_cpufreq_setvolt_registerCB(cpuVoltsampler_func pCB);
 extern bool mt_cpufreq_earlysuspend_status_get(void);
-extern unsigned int mt_get_bigcpu_freq(void);
 extern unsigned int mt_get_cpu_freq(void);
 
 #ifdef __cplusplus
