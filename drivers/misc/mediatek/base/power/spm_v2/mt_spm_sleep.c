@@ -241,7 +241,7 @@ static struct pwr_ctrl suspend_ctrl = {
 #if defined(CONFIG_ARCH_MT6797)
 	.disp_od_req_mask_b = 0,
 
-	.spm_apsrc_req = 1,
+	.spm_apsrc_req = 0,
 	.spm_f26m_req = 1,
 	.spm_lte_req = 0,
 	.spm_infra_req = 0,
@@ -288,6 +288,7 @@ struct spm_lp_scen __spm_suspend = {
 #define TEMP1	0x100A4000
 #define TEMP2	0x10001000
 #define TEMP3	0x10000000
+#define TEMP4	0x10002000
 #endif
 
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
@@ -323,6 +324,7 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	static void __iomem *temp1_base;
 	static void __iomem *temp2_base;
 	static void __iomem *temp3_base;
+	static void __iomem *temp4_base;
 	int reg = 0;
 
 	temp2_base = ioremap(TEMP2, 0x1000);
@@ -333,6 +335,10 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 	temp1_base = ioremap(TEMP1, 0x1000);
 	spm_write(temp1_base + 0x20, spm_read(temp1_base) | 0x100);
+
+	temp4_base = ioremap(TEMP4, 0x1000);
+	spm_write(temp4_base + 0x8b0, spm_read(temp4_base) | 0x400);
+	spm_write(temp4_base + 0x8d0, spm_read(temp4_base) & 0xFFFFFBFF);
 
 	spm_crit2("vcore=0.6\n");
 	pmic_config_interface(0x60c, 0x0, 0xffff, 0);
