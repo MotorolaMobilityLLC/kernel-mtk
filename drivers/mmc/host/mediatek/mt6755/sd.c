@@ -4105,8 +4105,14 @@ int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 	if (host->hw->host_function == MSDC_SD) {
 		if (mmc->ios.timing == MMC_TIMING_UHS_SDR104 ||
 		    mmc->ios.timing == MMC_TIMING_UHS_SDR50) {
-			pr_err("[AUTOK]SD Autok\n");
-			autok_execute_tuning(host, NULL);
+			if (host->is_autok_done == 0) {
+				pr_err("[AUTOK]SD Autok\n");
+				autok_execute_tuning(host, sd_autok_res[AUTOK_VCORE_HIGH]);
+				host->is_autok_done = 1;
+			} else {
+				autok_init_sdr104(host);
+				autok_tuning_parameter_init(host, sd_autok_res[AUTOK_VCORE_HIGH]);
+			}
 		}
 	} else if (host->hw->host_function == MSDC_EMMC) {
 		#ifdef MSDC_HQA
@@ -4514,6 +4520,7 @@ static void msdc_ops_card_event(struct mmc_host *mmc)
 	struct msdc_host *host = mmc_priv(mmc);
 
 	host->block_bad_card = 0;
+	host->is_autok_done = 0;
 	host->async_tuning_done = true;
 	host->legacy_tuning_done = true;
 	msdc_reset_pwr_cycle_counter(host);
