@@ -511,12 +511,32 @@ static inline ssize_t scp_reg_status_show(struct device *kobj, struct device_att
 		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_DEBUG_LR_REG:0x%x\n", SCP_DEBUG_LR_REG);
 		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_DEBUG_PSP_REG:0x%x\n", SCP_DEBUG_PSP_REG);
 		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_DEBUG_SP_REG:0x%x\n", SCP_DEBUG_SP_REG);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_GENERAL_REG0:0x%x\n", SCP_GENERAL_REG0);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_GENERAL_REG1:0x%x\n", SCP_GENERAL_REG1);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_GENERAL_REG2:0x%x\n", SCP_GENERAL_REG2);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_GENERAL_REG3:0x%x\n", SCP_GENERAL_REG3);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_GENERAL_REG4:0x%x\n", SCP_GENERAL_REG4);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_GENERAL_REG5:0x%x\n", SCP_GENERAL_REG5);
 		return len;
 	} else
-		return scnprintf(buf, PAGE_SIZE, "SCP is not ready");
+		return scnprintf(buf, PAGE_SIZE, "SCP is not ready\n");
 }
 
 DEVICE_ATTR(scp_reg_status, 0444, scp_reg_status_show, NULL);
+
+#ifdef CONFIG_MT_ENG_BUILD
+static inline ssize_t scp_db_test_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+
+	if (scp_ready) {
+		scp_aed_reset(EXCEP_RUNTIME);
+		return scnprintf(buf, PAGE_SIZE, "dumping SCP db\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "SCP is not ready\n");
+}
+
+DEVICE_ATTR(scp_db_test, 0444, scp_db_test_show, NULL);
+#endif
 
 static struct miscdevice scp_device = {
 	.minor = MISC_DYNAMIC_MINOR,
@@ -568,7 +588,13 @@ static int create_files(void)
 
 	if (unlikely(ret != 0))
 		return ret;
+#ifdef CONFIG_MT_ENG_BUILD
+	/*only support debug db test in engineer build*/
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_db_test);
 
+	if (unlikely(ret != 0))
+		return ret;
+#endif
 	return 0;
 }
 #ifdef CONFIG_OF_RESERVED_MEM

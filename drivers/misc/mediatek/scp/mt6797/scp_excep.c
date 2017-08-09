@@ -69,7 +69,26 @@ static void scp_dump_buffer_set(unsigned char *buf, unsigned int length)
 	scp_dump_length = length;
 	mutex_unlock(&scp_excep_dump_mutex);
 }
-
+/*
+ * return last lr for debugging
+ */
+uint32_t scp_dump_lr(void)
+{
+	if (is_scp_ready())
+		return SCP_DEBUG_LR_REG;
+	else
+		return 0xFFFFFFFF;
+}
+/*
+ * return last pc for debugging
+ */
+uint32_t scp_dump_pc(void)
+{
+	if (is_scp_ready())
+		return SCP_DEBUG_PC_REG;
+	else
+		return 0xFFFFFFFF;
+}
 /*
  * dump scp register for debugging
  */
