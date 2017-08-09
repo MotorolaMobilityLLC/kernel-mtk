@@ -765,6 +765,11 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			reg = <0x10002000 0x1000>;
 		};
 
+		FHCTL@0x10209F00 {
+			compatible = "mediatek,FHCTL";
+			reg = <0x10209F00 0x100>;
+		};
+
 		DRAMC0@0x10214000 {
 			compatible = "mediatek,DRAMC0";
 			reg = <0x10214000 0x1000>;
