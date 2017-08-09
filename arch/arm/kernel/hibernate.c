@@ -104,7 +104,7 @@ int notrace swsusp_arch_suspend(void)
  * hibernation image.  Switch to idmap_pgd so the physical page tables
  * are overwritten with the same contents.
  */
-static void notrace arch_restore_image(void)
+static void notrace arch_restore_image(void *unused)
 {
 #ifdef CONFIG_MTK_HIBERNATION
 	mtk_arch_restore_image();
