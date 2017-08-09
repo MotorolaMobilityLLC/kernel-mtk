@@ -468,12 +468,20 @@ static void __init reset_cpu_topology(void)
 	}
 }
 
+static int cpu_topology_init;
+/*
+ * init_cpu_topology is called at boot when only one cpu is running
+ * which prevent simultaneous write access to cpu_topology array
+ */
 
 /*
- * return 1 while every cpu is recognizible
+ * init_cpu_topology is called at boot when only one cpu is running
+ * which prevent simultaneous write access to cpu_topology array
  */
-void build_cpu_topology(void)
+void __init init_cpu_topology(void)
 {
+	if (cpu_topology_init)
+		return;
 	reset_cpu_topology();
 
 	/*
@@ -487,24 +495,13 @@ void build_cpu_topology(void)
 
 }
 
-#ifndef CONFIG_MTK_CPU_TOPOLOGY
-/*
- * init_cpu_topology is called at boot when only one cpu is running
- * which prevent simultaneous write access to cpu_topology array
- */
-void __init init_cpu_topology(void)
+#ifdef CONFIG_MTK_CPU_TOPOLOGY
+void __init arch_build_cpu_topology_domain(void)
 {
-	build_cpu_topology();
-}
-#else
-void __init init_cpu_topology(void)
-{
+	init_cpu_topology();
+	cpu_topology_init = 1;
 }
 
-void arch_build_cpu_topology_domain(void)
-{
-	build_cpu_topology();
-}
 #endif
 
 /*

@@ -441,11 +441,11 @@ void store_cpu_topology(unsigned int cpuid)
 	struct cputopo_arm *cpuid_topo = &cpu_topology[cpuid];
 	unsigned int mpidr;
 
-	/* If the cpu topology has been already set, just return */
-	if (cpuid_topo->core_id != -1)
-		return;
-
 	mpidr = read_cpuid_mpidr();
+
+	/* If the cpu topology has been already set, just return */
+	if (cpuid_topo->socket_id != -1)
+		goto topology_populated;
 
 	/* create cpu topology mapping */
 	if ((mpidr & MPIDR_SMP_BITMASK) == MPIDR_SMP_VALUE) {
@@ -478,6 +478,7 @@ void store_cpu_topology(unsigned int cpuid)
 
 	cpuid_topo->partno = read_cpuid_part();
 
+topology_populated:
 	update_siblings_masks(cpuid);
 
 	update_cpu_capacity(cpuid);
@@ -501,6 +502,75 @@ static struct sched_domain_topology_level arm_topology[] = {
 	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
 	{ NULL, },
 };
+#ifdef CONFIG_SCHED_HMP
+void __init arch_get_fast_and_slow_cpus(struct cpumask *fast,
+										struct cpumask *slow)
+{
+	unsigned int cpu;
+
+	cpumask_clear(fast);
+	cpumask_clear(slow);
+
+	/*
+	 * Use the config options if they are given. This helps testing
+	 * HMP scheduling on systems without a big.LITTLE architecture.
+	 */
+	if (strlen(CONFIG_HMP_FAST_CPU_MASK) && strlen(CONFIG_HMP_SLOW_CPU_MASK)) {
+		if (cpulist_parse(CONFIG_HMP_FAST_CPU_MASK, fast))
+			WARN(1, "Failed to parse HMP fast cpu mask!\n");
+		if (cpulist_parse(CONFIG_HMP_SLOW_CPU_MASK, slow))
+			WARN(1, "Failed to parse HMP slow cpu mask!\n");
+		return;
+	}
+
+	/* check by capacity */
+	for_each_possible_cpu(cpu) {
+		if (cpu_capacity(cpu) > min_cpu_perf)
+			cpumask_set_cpu(cpu, fast);
+		else
+			cpumask_set_cpu(cpu, slow);
+	}
+
+	if (!cpumask_empty(fast) && !cpumask_empty(slow))
+		return;
+
+	/*
+	 * We didn't find both big and little cores so let's call all cores
+	 * fast as this will keep the system running, with all cores being
+	 * treated equal.
+	 */
+	cpumask_setall(slow);
+	cpumask_clear(fast);
+}
+
+struct cpumask hmp_fast_cpu_mask;
+struct cpumask hmp_slow_cpu_mask;
+
+void __init arch_get_hmp_domains(struct list_head *hmp_domains_list)
+{
+	struct hmp_domain *domain;
+
+	arch_get_fast_and_slow_cpus(&hmp_fast_cpu_mask, &hmp_slow_cpu_mask);
+
+	/*
+	 * Initialize hmp_domains
+	 * Must be ordered with respect to compute capacity.
+	 * Fastest domain at head of list.
+	 */
+	if (!cpumask_empty(&hmp_slow_cpu_mask)) {
+		domain = (struct hmp_domain *)
+			kmalloc(sizeof(struct hmp_domain), GFP_KERNEL);
+		cpumask_copy(&domain->possible_cpus, &hmp_slow_cpu_mask);
+		cpumask_and(&domain->cpus, cpu_online_mask, &domain->possible_cpus);
+		list_add(&domain->hmp_domains, hmp_domains_list);
+	}
+	domain = (struct hmp_domain *)
+		kmalloc(sizeof(struct hmp_domain), GFP_KERNEL);
+	cpumask_copy(&domain->possible_cpus, &hmp_fast_cpu_mask);
+	cpumask_and(&domain->cpus, cpu_online_mask, &domain->possible_cpus);
+	list_add(&domain->hmp_domains, hmp_domains_list);
+}
+#endif /* CONFIG_SCHED_HMP */
 
 static void __init reset_cpu_topology(void)
 {
@@ -523,8 +593,20 @@ static void __init reset_cpu_topology(void)
 	smp_wmb();
 }
 
-void build_cpu_topology(void)
+static int cpu_topology_init;
+/*
+ * init_cpu_topology is called at boot when only one cpu is running
+ * which prevent simultaneous write access to cpu_topology array
+ */
+
+/*
+ * init_cpu_topology is called at boot when only one cpu is running
+ * which prevent simultaneous write access to cpu_topology array
+ */
+void __init init_cpu_topology(void)
 {
+	if (cpu_topology_init)
+		return;
 	reset_cpu_topology();
 
 	/*
@@ -540,24 +622,13 @@ void build_cpu_topology(void)
 	set_sched_topology(arm_topology);
 }
 
-#ifndef CONFIG_MTK_CPU_TOPOLOGY
-/*
- * init_cpu_topology is called at boot when only one cpu is running
- * which prevent simultaneous write access to cpu_topology array
- */
-void __init init_cpu_topology(void)
+#ifdef CONFIG_MTK_CPU_TOPOLOGY
+void __init arch_build_cpu_topology_domain(void)
 {
-	build_cpu_topology();
-}
-#else
-void __init init_cpu_topology(void)
-{
+	init_cpu_topology();
+	cpu_topology_init = 1;
 }
 
-void arch_build_cpu_topology_domain(void)
-{
-	build_cpu_topology();
-}
 #endif
 
 /*
