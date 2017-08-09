@@ -308,8 +308,9 @@ void wdt_arch_reset(char mode)
 #ifdef CONFIG_OF
 	struct device_node *np_rgu;
 #endif
+#if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 	mt_secure_call(MTK_SIP_KERNEL_DISABLE_DFD, 0, 0, 0);
-
+#endif
 	pr_debug("wdt_arch_reset called@Kernel mode =%c\n", mode);
 #ifdef CONFIG_OF
 	np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[0].compatible);
