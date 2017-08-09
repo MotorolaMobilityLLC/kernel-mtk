@@ -192,7 +192,7 @@ static int kicker_request_compare(enum dvfs_kicker kicker, enum dvfs_opp opp)
 		if (vcorefs_get_curr_opp() == vcorefs_get_prev_opp()) {
 			vcorefs_crit("opp no change, kr_tb: %d, kr: %d, opp: %d\n",
 				    kicker_table[kicker], kicker, opp);
-			return 0;
+			return -1;
 		}
 	}
 
@@ -279,7 +279,7 @@ int vcorefs_request_dvfs_opp(enum dvfs_kicker kicker, enum dvfs_opp opp)
 		return -1;
 
 	if (kicker_request_compare(kicker, opp))
-		return -1;
+		return 0;
 
 	mutex_lock(&vcorefs_mutex);
 
