@@ -874,12 +874,12 @@ static ssize_t emi_mpu_show(struct device_driver *driver, char *buf)
 	unsigned int d0, d1, d2, d3, d4, d5, d6, d7;
 	static const char *permission[7] = {
 		"No",
-		"Only R/W: SEC",
-		"Only R/W: SEC, non-SEC read",
-		"Only R/W: SEC, non-SEC write",
-		"Only R for SEC/non-SEC",
-		"Both R/W forbidden",
-		"Only SEC W is forbidden"
+		"S_RW",
+		"S_RW_NS_R",
+		"S_RW_NS_W",
+		"S_R_NS_R",
+		"FOR",
+		"S_R_NS_RW"
 	};
 
 	reg_value = mt_emi_reg_read(EMI_MPUA);
