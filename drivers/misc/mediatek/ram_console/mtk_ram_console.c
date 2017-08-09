@@ -127,8 +127,9 @@ struct last_reboot_reason {
 	uint32_t idvfs_ctrl_reg;
 	uint32_t idvfs_enable_cnt;
 	uint32_t idvfs_swreq_cnt;
-	uint16_t idvfs_swreq_prev_volt;
-	uint16_t idvfs_swreq_prev_pct_x100;
+	uint16_t idvfs_curr_volt;
+	uint16_t idvfs_swavg_curr_pct_x100;
+	uint16_t idvfs_swreq_curr_pct_x100;
 	uint16_t idvfs_swreq_next_pct_x100;
 	uint16_t idvfs_sram_ldo;
 	uint8_t idvfs_state_manchine;
@@ -1409,18 +1410,32 @@ void aee_rr_rec_idvfs_enable_cnt(u32 val)
 	LAST_RR_SET(idvfs_enable_cnt, val);
 }
 
-void aee_rr_rec_idvfs_swreq_prev_volt(u16 val)
+void aee_rr_rec_idvfs_swreq_cnt(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(idvfs_swreq_prev_volt, val);
+	LAST_RR_SET(idvfs_swreq_cnt, val);
 }
 
-void aee_rr_rec_idvfs_swreq_prev_pct_x100(u16 val)
+void aee_rr_rec_idvfs_curr_volt(u16 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
-	LAST_RR_SET(idvfs_swreq_prev_pct_x100, val);
+	LAST_RR_SET(idvfs_curr_volt, val);
+}
+
+void aee_rr_rec_idvfs_swavg_curr_pct_x100(u16 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(idvfs_swavg_curr_pct_x100, val);
+}
+
+void aee_rr_rec_idvfs_swreq_curr_pct_x100(u16 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(idvfs_swreq_curr_pct_x100, val);
 }
 
 void aee_rr_rec_idvfs_swreq_next_pct_x100(u16 val)
@@ -1428,13 +1443,6 @@ void aee_rr_rec_idvfs_swreq_next_pct_x100(u16 val)
 	if (!ram_console_init_done || !ram_console_buffer)
 		return;
 	LAST_RR_SET(idvfs_swreq_next_pct_x100, val);
-}
-
-void aee_rr_rec_idvfs_swreq_cnt(u32 val)
-{
-	if (!ram_console_init_done || !ram_console_buffer)
-		return;
-	LAST_RR_SET(idvfs_swreq_cnt, val);
 }
 
 void aee_rr_rec_idvfs_sram_ldo(u16 val)
@@ -1676,24 +1684,29 @@ u32 aee_rr_curr_idvfs_enable_cnt(void)
 	return LAST_RR_VAL(idvfs_enable_cnt);
 }
 
-u16 aee_rr_curr_idvfs_swreq_prev_volt(void)
+u32 aee_rr_curr_idvfs_swreq_cnt(void)
 {
-	return LAST_RR_VAL(idvfs_swreq_prev_volt);
+	return LAST_RR_VAL(idvfs_swreq_cnt);
 }
 
-u16 aee_rr_curr_idvfs_swreq_prev_pct_x100(void)
+u16 aee_rr_curr_idvfs_curr_volt(void)
 {
-	return LAST_RR_VAL(idvfs_swreq_prev_pct_x100);
+	return LAST_RR_VAL(idvfs_curr_volt);
+}
+
+u16 aee_rr_curr_idvfs_swavg_curr_pct_x100(void)
+{
+	return LAST_RR_VAL(idvfs_swavg_curr_pct_x100);
+}
+
+u16 aee_rr_curr_idvfs_swreq_curr_pct_x100(void)
+{
+	return LAST_RR_VAL(idvfs_swreq_curr_pct_x100);
 }
 
 u16 aee_rr_curr_idvfs_swreq_next_pct_x100(void)
 {
 	return LAST_RR_VAL(idvfs_swreq_next_pct_x100);
-}
-
-u32 aee_rr_curr_idvfs_swreq_cnt(void)
-{
-	return LAST_RR_VAL(idvfs_swreq_cnt);
 }
 
 u16 aee_rr_curr_idvfs_sram_ldo(void)
@@ -2184,14 +2197,19 @@ void aee_rr_show_idvfs_swreq_cnt(struct seq_file *m)
 	seq_printf(m, "idvfs_swreq_cnt = %d\n", LAST_RRR_VAL(idvfs_swreq_cnt));
 }
 
-void aee_rr_show_idvfs_swreq_prev_volt(struct seq_file *m)
+void aee_rr_show_idvfs_curr_volt(struct seq_file *m)
 {
-	seq_printf(m, "idvfs_swreq_prev_volt = %d\n", LAST_RRR_VAL(idvfs_swreq_prev_volt));
+	seq_printf(m, "idvfs_curr_volt = %d\n", LAST_RRR_VAL(idvfs_curr_volt));
 }
 
-void aee_rr_show_idvfs_swreq_prev_pct_x100(struct seq_file *m)
+void aee_rr_show_idvfs_swavg_curr_pct_x100(struct seq_file *m)
 {
-	seq_printf(m, "idvfs_swreq_prev_pct_x100 = %d\n", LAST_RRR_VAL(idvfs_swreq_prev_pct_x100));
+	seq_printf(m, "idvfs_swavg_curr_pct_x100 = %d\n", LAST_RRR_VAL(idvfs_swavg_curr_pct_x100));
+}
+
+void aee_rr_show_idvfs_swreq_curr_pct_x100(struct seq_file *m)
+{
+	seq_printf(m, "idvfs_swreq_curr_pct_x100 = %d\n", LAST_RRR_VAL(idvfs_swreq_curr_pct_x100));
 }
 
 void aee_rr_show_idvfs_swreq_next_pct_x100(struct seq_file *m)
@@ -2396,8 +2414,9 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_idvfs_ctrl_reg,
 	aee_rr_show_idvfs_enable_cnt,
 	aee_rr_show_idvfs_swreq_cnt,
-	aee_rr_show_idvfs_swreq_prev_volt,
-	aee_rr_show_idvfs_swreq_prev_pct_x100,
+	aee_rr_show_idvfs_curr_volt,
+	aee_rr_show_idvfs_swavg_curr_pct_x100,
+	aee_rr_show_idvfs_swreq_curr_pct_x100,
 	aee_rr_show_idvfs_swreq_next_pct_x100,
 	aee_rr_show_idvfs_sram_ldo,
 	aee_rr_show_idvfs_state_manchine

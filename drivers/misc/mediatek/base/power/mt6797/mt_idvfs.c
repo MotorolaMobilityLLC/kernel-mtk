@@ -635,7 +635,7 @@ int BigiDVFSEnable_hp(void) /* for cpu hot plug call */
 
 	/* normal start percentage 30% */
 	idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage = 3000;
-	aee_rr_rec_idvfs_swreq_prev_pct_x100(3000);
+	aee_rr_rec_idvfs_swreq_curr_pct_x100(3000);
 	aee_rr_rec_idvfs_swreq_next_pct_x100(3000);
 	idvfs_init_opt.freq_cur = 750;
 
@@ -828,6 +828,26 @@ int BigiDVFSChannelGet(unsigned int Channelm)
 	return idvfs_init_opt.channel[Channelm].status;
 }
 
+/* return pct_x100, input 7+12 type pct*/
+unsigned int GetDecInterger(unsigned int hexpct)
+{
+	unsigned int i, pct_x100 = 0;
+
+	/* get freq_swreq integer */
+	pct_x100 = (hexpct >> 12) * 10000;
+
+	/* get freq_swreq decimal */
+	for (i = 0 ; i < 12 ; i++) {
+		if (hexpct & (1 << (11 - i)))
+			pct_x100 += (5000 / (1 << i));
+	}
+
+	/* scaling 100, adj 0.00t if t >= 4 add 1 */
+	pct_x100 = (pct_x100 / 100) + (((pct_x100 % 100) >= 40) ? 1 : 0);
+
+	return pct_x100;
+}
+
 /* return 0 Ok. -1 Error. Invalid parameter. No action taken. */
 /* This function enables SW to set the frequency of maximum unthrottled operating */
 /* frequency percentage. The percentage is relative to the FMaxMHz set when */
@@ -878,7 +898,9 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	}
 
 	/* for ram console printf */
-	aee_rr_rec_idvfs_swreq_prev_volt((((SEC_BIGIDVFS_READ(0x102224c8) & 0xff00) >> 8) * 10) + 300);
+	aee_rr_rec_idvfs_curr_volt((((SEC_BIGIDVFS_READ(0x102224c8) & 0xff00) >> 8) * 10) + 300);
+	/* get freq_swreq integer, swavg only 7+8 bit need shift to 7+12 bit */
+	aee_rr_rec_idvfs_swavg_curr_pct_x100(GetDecInterger((((SEC_BIGIDVFS_READ(0x102224cc) >> 16) & 0x7fff) << 4)));
 
 	/* call smc */
 	/* function_id = SMC_IDVFS_BigiDVFSFreq */
@@ -889,7 +911,7 @@ int BigIDVFSFreq(unsigned int Freqpct_x100)
 	idvfs_ver("Set Freq: SWP_cur_pct_x100 = %d, SWP_new_pct_x100 = %d, freq_swreq = 0x%x.\n",
 				idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage, Freqpct_x100, freq_swreq);
 	/* for ram console printf */
-	aee_rr_rec_idvfs_swreq_prev_pct_x100(idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage);
+	aee_rr_rec_idvfs_swreq_curr_pct_x100(idvfs_init_opt.channel[IDVFS_CHANNEL_SWP].percentage);
 	aee_rr_rec_idvfs_swreq_next_pct_x100(Freqpct_x100);
 	aee_rr_rec_idvfs_swreq_cnt(++idvfs_init_opt.idvfs_swreq_cnt);
 
@@ -942,26 +964,6 @@ int BigiDVFSSWAvg(unsigned int Length, unsigned int EnDis)
 
 	idvfs_ver("iDVFS SWAvg: setting SWAvg success.\n");
 	return 0;
-}
-
-/* return pct_x100, input 7+12 type pct*/
-unsigned int GetDecInterger(unsigned int hexpct)
-{
-	unsigned int i, pct_x100 = 0;
-
-	/* get freq_swreq integer */
-	pct_x100 = (hexpct >> 12) * 10000;
-
-	/* get freq_swreq decimal */
-	for (i = 0 ; i < 12 ; i++) {
-		if (hexpct & (1 << (11 - i)))
-			pct_x100 += (5000 / (1 << i));
-	}
-
-	/* scaling 100, adj 0.00t if t >= 4 add 1 */
-	pct_x100 = (pct_x100 / 100) + (((pct_x100 % 100) >= 40) ? 1 : 0);
-
-	return pct_x100;
 }
 
 /* return value of freq percentage x 100, 0(0%) ~ 10000(100%), -1: SWAvg not enabled */
@@ -1254,8 +1256,9 @@ static void _mt_idvfs_aee_init(void)
 	aee_rr_rec_idvfs_ctrl_reg(0);
 	aee_rr_rec_idvfs_enable_cnt(0);
 	aee_rr_rec_idvfs_swreq_cnt(0);
-	aee_rr_rec_idvfs_swreq_prev_volt(0);
-	aee_rr_rec_idvfs_swreq_prev_pct_x100(0);
+	aee_rr_rec_idvfs_curr_volt(0);
+	aee_rr_rec_idvfs_swavg_curr_pct_x100(0);
+	aee_rr_rec_idvfs_swreq_curr_pct_x100(0);
 	aee_rr_rec_idvfs_swreq_next_pct_x100(0);
 	aee_rr_rec_idvfs_sram_ldo(0);
 	aee_rr_rec_idvfs_state_manchine(0);
