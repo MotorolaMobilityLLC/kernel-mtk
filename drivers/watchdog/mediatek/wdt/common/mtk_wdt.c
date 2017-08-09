@@ -208,9 +208,9 @@ void wdt_arch_reset(char mode)
 
 	pr_debug("wdt_arch_reset called@Kernel mode =%c\n", mode);
 
-	for (i = 0; i < 4; i++) {
+	for (i = 0; rgu_of_match[i].compatible; i++) {
 		np_rgu = of_find_compatible_node(NULL, NULL, rgu_of_match[i].compatible);
-		if (!np_rgu)
+		if (np_rgu)
 			break;
 	}
 
