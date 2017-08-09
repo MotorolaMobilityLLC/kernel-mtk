@@ -427,9 +427,9 @@
 		max-frequency = <200000000>;
 		cap-mmc-highspeed;
 		msdc-sys-suspend;
-		/* mmc-ddr-1_8v; */
-		/* mmc-hs200-1_8v; */
-		/* mmc-hs400-1_8v; */
+		mmc-ddr-1_8v;
+		mmc-hs200-1_8v;
+		mmc-hs400-1_8v;
 		non-removable;
 		pinctl = <&mmc0_pins_default>;
 		register_setting = <&mmc0_register_setting_default>;
@@ -457,7 +457,7 @@
 		host_function = /bits/ 8 <MSDC_SD>;
 		cd_level = /bits/ 8 <MSDC_CD_LOW>;
 		cd-gpios = <&pio 67 0>;
-		status = "disabled";
+		status = "okay";
 };
 /* AUDIO GPIO standardization */
 &audgpio {
