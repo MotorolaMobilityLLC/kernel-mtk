@@ -101,37 +101,6 @@ Sysfs config
 /*We use GPT to measurement how many clk pass in 100us*/
 
 /*=========================
-DRAM HQA Config
-=========================*/
-/*#define DRAM_HQA*/
-
-#ifdef DRAM_HQA
-/*#define HVcore1*/		/*Vcore1=1.10, Vdram=1.3,  Vio18=1.8*/
-/*#define NV*/			/*Vcore1=1.00, Vdram=1.22, Vio18=1.8*/
-/*#define LVcore1*/		/*Vcore1=0.90, Vdram=1.16, Vio18=1.8*/
-#define HVcore1_LVdram		/*Vcore1=1.10, Vdram=1.16, Vio18=1.8*/
-/*#define LVcore1_HVdram*/	/*Vcore1=0.90, Vdram=1.3,  Vio18=1.8*/
-
-#define RG_VDRAM_VOSEL_1p2V			(0x5 << 8)	/*1.2V*/
-#define VDRAM_ANA_CON0_SUB40mV	0x4
-#define VDRAM_ANA_CON0_ADD20mV	0x1e
-#define VDRAM_ANA_CON0_ADD100mV	0X16
-
-#define Vdram_HV (RG_VDRAM_VOSEL_1p2V | VDRAM_ANA_CON0_ADD100mV) /*1.30V*/
-#define Vdram_NV (RG_VDRAM_VOSEL_1p2V | VDRAM_ANA_CON0_ADD20mV)  /*1.22V*/
-#define Vdram_LV (RG_VDRAM_VOSEL_1p2V | VDRAM_ANA_CON0_SUB40mV)  /*1.16V*/
-
-#define Vcore1_HV	0x48	/*1.05V*/
-#define Vcore1_NV	0x40	/*1.00V*/
-#define Vcore1_LV	0x38	/*0.95V*/
-
-#define Vio18_HV	0x28	/*1.9V*/
-#define Vio18_NV	0x20	/*1.8V*/
-#define Vio18_LV	0x18	/*1.7V*/
-
-#endif
-
-/*=========================
 DRAMC API config
 =========================*/
 extern unsigned int DMA_TIMES_RECORDER;
@@ -147,7 +116,6 @@ int get_ddr_type(void);
 int dram_can_support_fh(void);
 void spm_dpd_init(void);
 void spm_dpd_dram_init(void);
-unsigned int support_4GB_mode(void);
 extern void *mt_dramc_base_get(void);
 extern void *mt_dramc_nao_base_get(void);
 extern void *mt_ddrphy_base_get(void);
