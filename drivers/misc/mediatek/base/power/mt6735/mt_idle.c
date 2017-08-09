@@ -232,6 +232,7 @@ enum {
 	NR_REASONS
 };
 
+#if defined(CONFIG_ARCH_MT6735)
 /* Idle handler on/off */
 static int idle_switch[NR_TYPES] = {
 	0,  /* dpidle switch */
@@ -278,6 +279,56 @@ static unsigned int slidle_condition_mask[NR_GRPS] = {
 	0x00000000, /* VDEC1: */
 	0x00000000, /* VENC:  */
 };
+#elif defined(CONFIG_ARCH_MT6735M)
+/* Idle handler on/off */
+static int idle_switch[NR_TYPES] = {
+	0,  /* dpidle switch */
+	0,  /* soidle switch */
+	0,  /* slidle switch */
+	1,  /* rgidle switch */
+};
+
+static unsigned int dpidle_condition_mask[NR_GRPS] = {
+	0x0000008A, /* INFRA: */
+	0x37FA1FFD, /* PERI0: */
+	0x000FFFFF, /* DISP0: */
+	0x0000003F, /* DISP1: */
+	0x00000FE1, /* IMAGE: */
+	0x00000001, /* MFG:   */
+	0x00000000, /* AUDIO: */
+	0x00000001, /* VDEC0: */
+	0x00000001, /* VDEC1: */
+	/* VENC: there is no venc */
+};
+
+static unsigned int soidle_condition_mask[NR_GRPS] = {
+	0x00000088, /* INFRA: */
+	0x37FA0FFC, /* PERI0: */
+	0x000033FC, /* DISP0: */
+	0x00000030, /* DISP1: */
+	0x00000FE1, /* IMAGE: */
+	0x00000001, /* MFG:   */
+	0x00000000, /* AUDIO: */
+	0x00000001, /* VDEC0: */
+	0x00000001, /* VDEC1: */
+	/* VENC: there is no venc */
+};
+
+static unsigned int slidle_condition_mask[NR_GRPS] = {
+	0x00000000, /* INFRA: */
+	0x07C01000, /* PERI0: */
+	0x00000000, /* DISP0: */
+	0x00000000, /* DISP1: */
+	0x00000000, /* IMAGE: */
+	0x00000000, /* MFG:   */
+	0x00000000, /* AUDIO: */
+	0x00000000, /* VDEC0: */
+	0x00000000, /* VDEC1: */
+	/* VENC: there is no venc */
+};
+#else
+#error "Does not support!"
+#endif
 
 static const char *idle_name[NR_TYPES] = {
 	"dpidle",
