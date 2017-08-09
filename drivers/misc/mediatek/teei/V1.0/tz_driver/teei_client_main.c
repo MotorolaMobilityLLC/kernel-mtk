@@ -3070,6 +3070,12 @@ static long teei_config_ioctl(struct file *file, unsigned cmd, unsigned long arg
 	return retVal;
 }
 
+int is_teei_ready(void)
+{
+	return teei_flags;
+}
+EXPORT_SYMBOL(is_teei_ready);
+
 /**
  * @brief		The open operation of /dev/teei_config device node.
  *
