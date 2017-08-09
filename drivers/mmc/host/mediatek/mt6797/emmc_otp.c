@@ -81,7 +81,7 @@ struct compat_otp_ctl {
 #define OTP_ERROR_NOMEM         -4
 #define OTP_ERROR_RESET         -5
 
-#include <mach/partition.h>
+#include <mt-plat/partition.h>
 #define DRV_NAME_MISC           "otp"
 #define PROCNAME                "driver/otp"
 
