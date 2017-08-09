@@ -419,7 +419,55 @@ void mtkts_dump_cali_info(void)
 	tscpu_printk("[cal] g_o_vtsabb     = %d\n", g_o_vtsabb);
 }
 
-
+void eDataCorrector(void)
+{
+	/* Confirmed with DE Kj Hsiao and DS Lin
+	   ADC_GE_T [9:0]      Default:512   265 ~ 758
+	   ADC_OE_T [9:0]      Default:512   265 ~ 758
+	   O_VTSMCU1 (9b)      Default:260   -8 ~ 484
+	   O_VTSMCU2 (9b)      Default:260   -8 ~ 484
+	   O_VTSMCU3 (9b)      Default:260   -8 ~ 484
+	   O_VTS MCU4(9b)      Default:260   -8 ~ 484
+	   O_VTS ABB(9b)       Default:260   -8 ~ 484
+	   DEGC_cali(6b)       Default:40    1 ~ 63
+	   ADC_CALI_EN_T (1b)
+	   O_SLOPE_SIGN (1b)   Default:0
+	   O_SLOPE (6b)        Default:0
+	   ID (1b)
+	 */
+	if (g_adc_ge_t < 265 || g_adc_ge_t > 758) {
+		tscpu_warn("[thermal] Bad efuse data, g_adc_ge_t\n");
+		g_adc_ge_t = 512;
+	}
+	if (g_adc_oe_t < 265 || g_adc_oe_t > 758) {
+		tscpu_warn("[thermal] Bad efuse data, g_adc_oe_t\n");
+		g_adc_oe_t = 512;
+	}
+	if (g_o_vtsmcu1 < -8 || g_o_vtsmcu1 > 484) {
+		tscpu_warn("[thermal] Bad efuse data, g_o_vtsmcu1\n");
+		g_o_vtsmcu1 = 260;
+	}
+	if (g_o_vtsmcu2 < -8 || g_o_vtsmcu2 > 484) {
+		tscpu_warn("[thermal] Bad efuse data, g_o_vtsmcu2\n");
+		g_o_vtsmcu2 = 260;
+	}
+	if (g_o_vtsmcu3 < -8 || g_o_vtsmcu3 > 484) {
+		tscpu_warn("[thermal] Bad efuse data, g_o_vtsmcu3\n");
+		g_o_vtsmcu3 = 260;
+	}
+	if (g_o_vtsmcu4 < -8 || g_o_vtsmcu4 > 484) {
+		tscpu_warn("[thermal] Bad efuse data, g_o_vtsmcu4\n");
+		g_o_vtsmcu4 = 260;
+	}
+	if (g_o_vtsabb < -8 || g_o_vtsabb > 484) {
+		tscpu_warn("[thermal] Bad efuse data, g_o_vtsabb\n");
+		g_o_vtsabb = 260;
+	}
+	if (g_degc_cali < 1 || g_degc_cali > 63) {
+		tscpu_warn("[thermal] Bad efuse data, g_degc_cali\n");
+		g_degc_cali = 40;
+	}
+}
 void tscpu_thermal_cal_prepare(void)
 {
 	U32 temp0 = 0, temp1 = 0, temp2 = 0;
@@ -480,6 +528,7 @@ void tscpu_thermal_cal_prepare(void)
 
 	if (g_adc_cali_en_t == 1) {
 		/*thermal_enable = true; */
+		eDataCorrector();
 	} else {
 		tscpu_warn("This sample is not Thermal calibrated\n");
 		g_adc_ge_t = 512;
