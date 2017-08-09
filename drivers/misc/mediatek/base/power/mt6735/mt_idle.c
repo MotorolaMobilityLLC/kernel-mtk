@@ -1491,7 +1491,7 @@ static ssize_t dpidle_state_write(struct file *filp,
 			idle_dbg("bypass = %d\n", dpidle_by_pass_cg);
 		}
 		return count;
-	} else if (kstrtoint(cmd_buf, 10, &param)) {
+	} else if (!kstrtoint(cmd_buf, 10, &param)) {
 		idle_switch[IDLE_TYPE_DP] = param;
 		return count;
 	}
@@ -1587,7 +1587,7 @@ static ssize_t soidle_state_write(struct file *filp,
 			idle_dbg("bypass = %d\n", soidle_by_pass_cg);
 		}
 		return count;
-	} else if (kstrtoint(cmd_buf, 10, &param)) {
+	} else if (!kstrtoint(cmd_buf, 10, &param)) {
 		idle_switch[IDLE_TYPE_SO] = param;
 		return count;
 	}
@@ -1667,7 +1667,7 @@ static ssize_t slidle_state_write(struct file *filp, const char __user *userbuf,
 			disable_slidle_by_bit(param);
 
 		return count;
-	} else if (kstrtoint(cmd_buf, 10, &param)) {
+	} else if (!kstrtoint(cmd_buf, 10, &param)) {
 		idle_switch[IDLE_TYPE_SL] = param;
 		return count;
 	}
