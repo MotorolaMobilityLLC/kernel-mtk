@@ -1663,19 +1663,6 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 static ssize_t store_Pump_Express(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t size)
 {
-	unsigned int val;
-
-	if (kstrtouint(buf, 10, &val) == 0) {
-		is_ta_connect = val;
-		battery_log(BAT_LOG_CRTI, "Pump express= %d\n", is_ta_connect);
-		return size;
-	}
-
-	/* hidden else, for sscanf format error */
-	{
-		battery_log(BAT_LOG_CRTI, "  bad argument, echo [enable] > current_cmd\n");
-	}
-
 	return 0;
 }
 
