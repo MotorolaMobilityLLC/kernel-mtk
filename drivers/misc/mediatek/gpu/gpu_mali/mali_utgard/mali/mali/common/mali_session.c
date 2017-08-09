@@ -102,3 +102,26 @@ void mali_session_memory_tracking(struct seq_file  *print_ctx)
 	_mali_osk_ctxprintf(print_ctx, "Mali mem usage: %u\nMali mem limit: %u\n", mali_mem_usage, total_mali_mem_size);
 }
 
+EXPORT_SYMBOL(mali_session_dump_gpu_memory_usage);
+bool mali_session_dump_gpu_memory_usage()
+{
+	struct mali_session_data *session, *tmp;
+	u32 mali_mem_usage;
+
+	pr_warn(KERN_DEBUG "%10s\t%16s\n", "PID", "Memory by Page");
+	pr_warn(KERN_DEBUG "============================\n");
+	mali_session_lock();
+	MALI_SESSION_FOREACH(session, tmp, link) {
+		pr_warn(KERN_DEBUG "%10u\t%16u\n", session->pid, \
+				(session->mali_mem_array[MALI_MEM_OS] + session->mali_mem_array[MALI_MEM_BLOCK])/4096);
+	}
+	mali_mem_usage  = _mali_ukk_report_memory_usage();
+	pr_warn(KERN_DEBUG "============================\n");
+	pr_warn(KERN_DEBUG "%10s\t%16u\n", \
+				"Total", \
+				mali_mem_usage/4096);
+	pr_warn(KERN_DEBUG "============================\n");
+	mali_session_unlock();
+
+	return true;
+}

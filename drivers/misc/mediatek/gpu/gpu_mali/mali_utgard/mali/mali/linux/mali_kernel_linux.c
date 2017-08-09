@@ -100,6 +100,8 @@ module_param(mali_desired_fps, int, S_IRUSR | S_IWUSR | S_IWGRP | S_IRGRP | S_IR
 MODULE_PARM_DESC(mali_desired_fps, "A bit lower than max_system_fps which user desired fps");
 #endif
 
+extern bool (*mtk_dump_gpu_memory_usage_fp)(void);
+
 #if MALI_ENABLE_CPU_CYCLES
 #include <linux/cpumask.h>
 #include <linux/timer.h>
@@ -331,6 +333,8 @@ int mali_module_init(void)
 	MALI_DEBUG_PRINT(2, ("Compiled: %s, time: %s.\n", __DATE__, __TIME__));
 	MALI_DEBUG_PRINT(2, ("Driver revision: %s\n", SVN_REV_STRING));
 
+	mtk_dump_gpu_memory_usage_fp = mali_session_dump_gpu_memory_usage;
+
 #if MALI_ENABLE_CPU_CYCLES
 	mali_init_cpu_time_counters_on_all_cpus(0);
 	MALI_DEBUG_PRINT(2, ("CPU cycle counter setup complete\n"));
@@ -378,6 +382,8 @@ void mali_module_exit(void)
 	MALI_DEBUG_PRINT(2, ("Unloading Mali v%d device driver.\n",_MALI_API_VERSION));
 
 	MALI_DEBUG_PRINT(2, ("mali_module_exit() unregistering driver\n"));
+	
+	mtk_dump_gpu_memory_usage_fp = NULL;
 
 #if defined(CONFIG_MALI400_INTERNAL_PROFILING)
 	_mali_internal_profiling_term();

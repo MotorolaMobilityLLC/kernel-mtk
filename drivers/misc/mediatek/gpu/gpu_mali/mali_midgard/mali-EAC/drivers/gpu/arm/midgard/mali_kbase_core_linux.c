@@ -131,6 +131,12 @@ int g_ged_gpu_boost_id = 0; /* MTK for mtk_set_boost_gpu_freq (always set as low
 */
 extern unsigned int (*mtk_get_gpu_memory_usage_fp)(void);
 
+/*
+   Add by mediatek, Hook the memory dump function pointer to (*ged_mem_dump_gpu_memory_usag_fp) in order to 
+   provide the gpu detail memory usage by PID to mlogger module
+*/
+extern bool (*mtk_dump_gpu_memory_usage_fp)(void);
+
 static DEFINE_SEMAPHORE(kbase_dev_list_lock);
 static LIST_HEAD(kbase_dev_list);
 
@@ -2975,6 +2981,8 @@ static int kbase_common_device_init(struct kbase_device *kbdev)
 #endif /* CONFIG_DEBUG_FS */
 
 	mtk_get_gpu_memory_usage_fp = kbase_report_gpu_memory_usage;
+	
+	mtk_dump_gpu_memory_usage_fp = kbase_dump_gpu_memory_usage;
 
 #ifdef CONFIG_PROC_FS
    proc_mali_register();
@@ -3367,6 +3375,8 @@ out:
 static int kbase_common_device_remove(struct kbase_device *kbdev)
 {
 	mtk_get_gpu_memory_usage_fp = NULL;
+	
+	mtk_dump_gpu_memory_usage_fp = NULL;
 
 #ifdef CONFIG_MALI_DEVFREQ
 	kbase_devfreq_term(kbdev);

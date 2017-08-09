@@ -300,3 +300,17 @@ bool mtk_gpu_sodi_exit(void)
 EXPORT_SYMBOL(mtk_gpu_sodi_exit);
 
 
+//-----------------------------------------------------------------------------
+void (*mtk_dump_gpu_memory_usage_fp)(void) = NULL;
+EXPORT_SYMBOL(mtk_dump_gpu_memory_usage_fp);
+
+bool mtk_dump_gpu_memory_usage(void)
+{
+    if (NULL != mtk_dump_gpu_memory_usage_fp)
+    {
+        mtk_dump_gpu_memory_usage_fp();
+        return true;
+    }
+    return false;
+}
+EXPORT_SYMBOL(mtk_dump_gpu_memory_usage);
