@@ -1036,6 +1036,263 @@ p2pFuncDisconnect(IN P_ADAPTER_T prAdapter,
 
 }				/* p2pFuncDisconnect */
 
+/* Action frame categories (IEEE 802.11-2007, 7.3.1.11, Table 7-24) */
+#define WLAN_ACTION_SPECTRUM_MGMT 0
+#define WLAN_ACTION_QOS 1
+#define WLAN_ACTION_DLS 2
+#define WLAN_ACTION_BLOCK_ACK 3
+#define WLAN_ACTION_PUBLIC 4
+#define WLAN_ACTION_RADIO_MEASUREMENT 5
+#define WLAN_ACTION_FT 6
+#define WLAN_ACTION_HT 7
+#define WLAN_ACTION_SA_QUERY 8
+#define WLAN_ACTION_PROTECTED_DUAL 9
+#define WLAN_ACTION_WNM 10
+#define WLAN_ACTION_UNPROTECTED_WNM 11
+#define WLAN_ACTION_TDLS 12
+#define WLAN_ACTION_SELF_PROTECTED 15
+#define WLAN_ACTION_WMM 17 /* WMM Specification 1.1 */
+#define WLAN_ACTION_VENDOR_SPECIFIC 127
+
+/* Public action codes */
+#define WLAN_PA_20_40_BSS_COEX 0
+#define WLAN_PA_VENDOR_SPECIFIC 9
+#define WLAN_PA_GAS_INITIAL_REQ 10
+#define WLAN_PA_GAS_INITIAL_RESP 11
+#define WLAN_PA_GAS_COMEBACK_REQ 12
+#define WLAN_PA_GAS_COMEBACK_RESP 13
+#define WLAN_TDLS_DISCOVERY_RESPONSE 14
+
+/* P2P public action frames */
+enum p2p_action_frame_type {
+	P2P_GO_NEG_REQ = 0,
+	P2P_GO_NEG_RESP = 1,
+	P2P_GO_NEG_CONF = 2,
+	P2P_INVITATION_REQ = 3,
+	P2P_INVITATION_RESP = 4,
+	P2P_DEV_DISC_REQ = 5,
+	P2P_DEV_DISC_RESP = 6,
+	P2P_PROV_DISC_REQ = 7,
+	P2P_PROV_DISC_RESP = 8
+};
+
+const char *p2p_to_string(enum p2p_action_frame_type p2p_action)
+{
+	switch (p2p_action) {
+	case P2P_GO_NEG_REQ:
+		return "GO_NEG_REQ";
+	case P2P_GO_NEG_RESP:
+		return "GO_NEG_RESP";
+	case P2P_GO_NEG_CONF:
+		return "GO_NEG_CONF";
+	case P2P_INVITATION_REQ:
+		return "INVITATION_REQ";
+	case P2P_INVITATION_RESP:
+		return "INVITATION_RESP";
+	case P2P_DEV_DISC_REQ:
+		return "DEV_DISC_REQ";
+	case P2P_DEV_DISC_RESP:
+		return "DEV_DISC_RESP";
+	case P2P_PROV_DISC_REQ:
+		return "PROV_DISC_REQ";
+	case P2P_PROV_DISC_RESP:
+		return "PROV_DISC_RESP";
+	}
+
+	return "UNKNOWN P2P Public Action";
+}
+const char *pa_to_string(int pa_action)
+{
+	switch (pa_action) {
+	case WLAN_PA_20_40_BSS_COEX:
+		return "PA_20_40_BSS_COEX";
+	case WLAN_PA_VENDOR_SPECIFIC:
+		return "PA_VENDOR_SPECIFIC";
+	case WLAN_PA_GAS_INITIAL_REQ:
+		return "PA_GAS_INITIAL_REQ";
+	case WLAN_PA_GAS_INITIAL_RESP:
+		return "PA_GAS_INITIAL_RESP";
+	case WLAN_PA_GAS_COMEBACK_REQ:
+		return "PA_GAS_COMEBACK_REQ";
+	case WLAN_PA_GAS_COMEBACK_RESP:
+		return "PA_GAS_COMEBACK_RESP";
+	case WLAN_TDLS_DISCOVERY_RESPONSE:
+		return "TDLS_DISCOVERY_RESPONSE";
+	}
+
+	return "UNKNOWN Public Action";
+}
+
+const char *action_to_string(int wlan_action)
+{
+	switch (wlan_action) {
+	case WLAN_ACTION_SPECTRUM_MGMT:
+		return "SPECTRUM_MGMT";
+	case WLAN_ACTION_QOS:
+		return "QOS";
+	case WLAN_ACTION_DLS:
+		return "DLS";
+	case WLAN_ACTION_BLOCK_ACK:
+		return "BLOCK_ACK";
+	case WLAN_ACTION_PUBLIC:
+		return "PUBLIC";
+	case WLAN_ACTION_RADIO_MEASUREMENT:
+		return "RADIO_MEASUREMENT";
+	case WLAN_ACTION_FT:
+		return "FT";
+	case WLAN_ACTION_HT:
+		return "HT";
+	case WLAN_ACTION_SA_QUERY:
+		return "SA_QUERY";
+	case WLAN_ACTION_PROTECTED_DUAL:
+		return "PROTECTED_DUAL";
+	case WLAN_ACTION_WNM:
+		return "WNM";
+	case WLAN_ACTION_UNPROTECTED_WNM:
+		return "UNPROTECTED_WNM";
+	case WLAN_ACTION_TDLS:
+		return "TDLS";
+	case WLAN_ACTION_SELF_PROTECTED:
+		return "SELF_PROTECTED";
+	case WLAN_ACTION_WMM:
+		return "WMM";
+	case WLAN_ACTION_VENDOR_SPECIFIC:
+		return "VENDOR_SPECIFIC";
+	}
+
+	return "UNKNOWN Action Frame";
+}
+
+VOID p2pFuncTagActionActionP2PFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
+			IN P_WLAN_ACTION_FRAME prActFrame,
+			IN UINT_8 ucP2pAction, IN UINT_64 u8Cookie)
+{
+	DBGLOG(P2P, INFO, "Found P2P_%s, SA: %pM - DA: %pM, cookie: 0x%llx, SeqNO: %d\n",
+		p2p_to_string(ucP2pAction),
+		prActFrame->aucSrcAddr,
+		prActFrame->aucDestAddr,
+		u8Cookie,
+		prMgmtTxMsdu->ucTxSeqNum);
+}
+
+VOID p2pFuncTagActionActionFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
+			IN P_WLAN_ACTION_FRAME prActFrame,
+			IN UINT_8 ucAction, IN UINT_64 u8Cookie)
+{
+	PUINT_8 pucVendor = NULL;
+
+	DBGLOG(P2P, INFO, "Found WLAN_%s, SA: %pM - DA: %pM, cookie: 0x%llx, SeqNo: %d\n",
+		pa_to_string(ucAction),
+		prActFrame->aucSrcAddr,
+		prActFrame->aucDestAddr,
+		u8Cookie,
+		prMgmtTxMsdu->ucTxSeqNum);
+
+	if (ucAction == WLAN_PA_VENDOR_SPECIFIC) {
+		pucVendor = (PUINT_8)prActFrame + 26;
+		if (*(pucVendor + 0) == 0x50 &&
+		    *(pucVendor + 1) == 0x6f &&
+		    *(pucVendor + 2) == 0x9a) {
+			if (*(pucVendor + 3) == 0x09)
+				/* found p2p IE */
+				p2pFuncTagActionActionP2PFrame(prMgmtTxMsdu,
+					prActFrame, *(pucVendor + 4), u8Cookie);
+			else if (*(pucVendor + 3) == 0x0a)
+				/* found WFD IE */
+				DBGLOG(P2P, INFO, "Found WFD IE, SA: %pM - DA: %pM\n",
+					prActFrame->aucSrcAddr,
+					prActFrame->aucDestAddr);
+			else
+				DBGLOG(P2P, INFO, "Found Other vendor 0x%x, SA: %pM - DA: %pM\n",
+					*(pucVendor + 3),
+					prActFrame->aucSrcAddr,
+					prActFrame->aucDestAddr);
+		}
+	}
+}
+
+VOID p2pFuncTagActionCategoryFrame(IN P_MSDU_INFO_T prMgmtTxMsdu,
+			P_WLAN_ACTION_FRAME prActFrame,
+			IN UINT_8 ucCategory,
+			IN UINT_64 u8Cookie)
+{
+
+	UINT_8 ucAction = 0;
+
+	DBGLOG(P2P, INFO, "Found WLAN_ACTION_%s, SA: %pM - DA: %pM, u8Cookie: 0x%llx, SeqNO: %d\n",
+		action_to_string(ucCategory),
+		prActFrame->aucSrcAddr,
+		prActFrame->aucDestAddr,
+		u8Cookie,
+		prMgmtTxMsdu->ucTxSeqNum);
+
+	if (ucCategory == WLAN_ACTION_PUBLIC) {
+		ucAction = prActFrame->ucAction;
+		p2pFuncTagActionActionFrame(prMgmtTxMsdu, prActFrame, ucAction, u8Cookie);
+
+	}
+}
+
+/*
+ * used to debug p2p mgmt frame:
+ * GO Nego Req
+ * GO Nego Res
+ * GO Nego Confirm
+ * GO Invite Req
+ * GO Invite Res
+ * Device Discoverability Req
+ * Device Discoverability Res
+ * Provision Discovery Req
+ * Provision Discovery Res
+ */
+
+VOID
+p2pFuncTagMgmtFrame(IN P_MSDU_INFO_T prMgmtTxMsdu, IN UINT_64 u8Cookie)
+{
+	/* P_MSDU_INFO_T prTxMsduInfo = (P_MSDU_INFO_T)NULL; */
+	P_WLAN_MAC_HEADER_T prWlanHdr = (P_WLAN_MAC_HEADER_T) NULL;
+	P_WLAN_PROBE_RSP_FRAME_T prProbRspHdr = (P_WLAN_PROBE_RSP_FRAME_T)NULL;
+	UINT_16 u2TxFrameCtrl;
+	P_WLAN_ACTION_FRAME prActFrame;
+	UINT_8 ucCategory;
+
+	prWlanHdr = (P_WLAN_MAC_HEADER_T) ((ULONG) prMgmtTxMsdu->prPacket + MAC_TX_RESERVED_FIELD);
+	/*
+	 * mgmt frame MASK_FC_TYPE = 0
+	 * use MASK_FRAME_TYPE is oK for frame type/subtype judge
+	 */
+	u2TxFrameCtrl = prWlanHdr->u2FrameCtrl & MASK_FRAME_TYPE;
+
+	switch (u2TxFrameCtrl) {
+	case MAC_FRAME_PROBE_RSP:
+
+		prProbRspHdr = (P_WLAN_PROBE_RSP_FRAME_T) prWlanHdr;
+		DBGLOG(P2P, INFO, "TX Probe Response Frame, SA: %pM - DA: %pM, cookie: 0x%llx, seqNo: %d\n",
+			prProbRspHdr->aucSrcAddr, prProbRspHdr->aucDestAddr,
+			u8Cookie,
+			prMgmtTxMsdu->ucTxSeqNum);
+
+		break;
+
+	case MAC_FRAME_ACTION:
+
+		prActFrame = (P_WLAN_ACTION_FRAME)prWlanHdr;
+		ucCategory = prActFrame->ucCategory;
+		p2pFuncTagActionCategoryFrame(prMgmtTxMsdu, prActFrame,
+			ucCategory, u8Cookie);
+
+		break;
+	default:
+		DBGLOG(P2P, INFO, "MGMT:, un-tagged frame type: 0x%x, A1: %pM, A2: %pM, A3: %pM seqNo: %d\n",
+			u2TxFrameCtrl,
+			prWlanHdr->aucAddr1,
+			prWlanHdr->aucAddr2,
+			prWlanHdr->aucAddr3,
+			prMgmtTxMsdu->ucTxSeqNum);
+		break;
+	}
+}
+
 WLAN_STATUS
 p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 		   IN P_P2P_MGMT_TX_REQ_INFO_T prMgmtTxReqInfo, IN P_MSDU_INFO_T prMgmtTxMsdu, IN UINT_64 u8Cookie)
@@ -1105,8 +1362,8 @@ p2pFuncTxMgmtFrame(IN P_ADAPTER_T prAdapter,
 		prMgmtTxMsdu->ucTxSeqNum = nicIncreaseTxSeqNum(prAdapter);
 		prMgmtTxMsdu->pfTxDoneHandler = p2pFsmRunEventMgmtFrameTxDone;
 		prMgmtTxMsdu->fgIsBasicRate = TRUE;
-		DBGLOG(P2P, INFO, "%sMgmt seq NO. %d cookie: 0x%llx.\n", fgIsProbrsp ? "ProbeResp: " : "",
-				prMgmtTxMsdu->ucTxSeqNum, prMgmtTxReqInfo->u8Cookie);
+
+		p2pFuncTagMgmtFrame(prMgmtTxMsdu, u8Cookie);
 
 		nicTxEnqueueMsdu(prAdapter, prMgmtTxMsdu);
 
