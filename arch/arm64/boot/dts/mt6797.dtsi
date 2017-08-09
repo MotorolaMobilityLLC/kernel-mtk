@@ -2211,7 +2211,11 @@
 
 		ptp3_idvfs@10220000 {
 			compatible = "mediatek,idvfs";
-			reg = <0x10220000 0x1000>;
+			reg = <0x11017000 0x1000>, /* i2c idvfsapb ctrl reg */
+				<0x10005000 0x1000>, /* DFD,UDI pinmux reg */
+				<0x10000000 0x1000>, /* clock meter reg */
+				<0x10001000 0x2000>, /* GPU, L-LL, BIG sarm ldo probe reg */
+				<0x10206000 0x1000>; /* Big eFUSE register */
 			interrupts = <GIC_SPI 331 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&infrasys INFRA_I2C_APPM>;
 			clock-names = "i2c";
