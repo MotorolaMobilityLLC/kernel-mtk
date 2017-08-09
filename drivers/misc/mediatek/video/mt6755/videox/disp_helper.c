@@ -115,6 +115,7 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_RDMA_UNDERFLOW_AEE",
 	"DISP_OPT_GMO_OPTIMIZE",
 	"DISP_OPT_CV_BYSUSPEND",
+	"DISP_OPT_VDO_MODE_SOF_WAIT",
 };
 
 
@@ -341,6 +342,7 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_GMO_OPTIMIZE, 0);
 	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 1);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
+	disp_helper_set_option(DISP_OPT_VDO_MODE_SOF_WAIT, 1);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

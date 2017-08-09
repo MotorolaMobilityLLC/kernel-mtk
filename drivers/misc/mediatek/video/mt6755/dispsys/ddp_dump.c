@@ -354,7 +354,7 @@ static void mutex_dump_analysis(void)
 		len = sprintf(p, "MUTEX%d :SOF=%s,EOF=%s,WAIT=%d,module=(", i,
 				ddp_get_mutex_sof_name(REG_FLD_VAL_GET(SOF_FLD_MUTEX0_SOF, val)),
 				ddp_get_mutex_sof_name(REG_FLD_VAL_GET(SOF_FLD_MUTEX0_EOF, val)),
-				REG_FLD_VAL_GET(SOF_FLD_MUTEX0_EOF_WAIT, val));
+				REG_FLD_VAL_GET(SOF_FLD_MUTEX0_SOF_WAIT, val));
 
 		p += len;
 		regval = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_MOD(i));
