@@ -2238,6 +2238,9 @@ int g_lowbat_int_bottom = 0;
 
 int g_low_battery_level = 0;
 int g_low_battery_stop = 0;
+/*give one change to ignore DLPT power off. battery voltage may return to 3.25 or higher
+because loading become light. */
+int g_low_battery_if_power_off = 0;
 
 struct low_battery_callback_table {
 	void *lbcb;
@@ -3243,10 +3246,22 @@ int dlpt_check_power_off(void)
 	if (g_dlpt_start == 0) {
 		PMICLOG("[dlpt_check_power_off] not start\n");
 	} else {
-		if (g_low_battery_level == 2 && g_lowbat_int_bottom == 1)
-			ret = 1;
-		else
+		if (g_low_battery_level == 2 && g_lowbat_int_bottom == 1) {
+			/*1st time receive battery voltage < 3.1V, record it */
+			if (g_low_battery_if_power_off == 0) {
+				g_low_battery_if_power_off++;
+				pr_err("[dlpt_check_power_off] %d\n", g_low_battery_if_power_off);
+			} else {
+				/*2nd time receive battery voltage < 3.1V, wait FG to call power off */
+				ret = 1;
+				g_low_battery_if_power_off = 0;
+				pr_err("[dlpt_check_power_off] %d %d\n", ret, g_low_battery_if_power_off);
+			}
+		} else {
 			ret = 0;
+			/* battery voltage > 3.1V, ignore it */
+			g_low_battery_if_power_off = 0;
+		}
 
 		PMICLOG("[dlpt_check_power_off]");
 		PMICLOG("ptim_imix=%d, POWEROFF_BAT_CURRENT=%d", ptim_imix, POWEROFF_BAT_CURRENT);
