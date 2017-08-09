@@ -311,13 +311,13 @@ static ssize_t secwidevinemdw_read(struct file *file, char *buf, size_t size,
 	int ret = 0;
 
 	if (size < sizeof(hdcpversion)) {
-		MSG(ERR, "secwidevinemdw_read fail - buf size(%u) is small 0x%08lx",
-			(unsigned int) size, sizeof(hdcpversion));
+		/*MSG(ERR, "secwidevinemdw_read fail - buf size(%u) is small 0x%08lx",
+			(unsigned int) size, sizeof(hdcpversion));*/
 		return -1;
 	}
 	memset(buf, 0, sizeof(hdcpversion));
 	ret = copy_to_user(buf, &hdcpversion, sizeof(hdcpversion));
-	MSG(INFO, "secwidevinemdw_read: hdcpversion = %d, copy result: %d\n", hdcpversion, ret);
+	/*MSG(INFO, "secwidevinemdw_read: hdcpversion = %d, copy result: %d\n", hdcpversion, ret);*/
 	return sizeof(hdcpversion);
 }
 
