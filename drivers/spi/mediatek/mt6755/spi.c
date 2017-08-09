@@ -1005,9 +1005,9 @@ static void mt_spi_msg_done(struct mt_spi_t *ms, struct spi_message *msg, int st
 		SPI_DBG("All msg is completion.\n\n");
 		/* clock and gpio reset */
 		spi_gpio_reset(ms);
-#ifndef SPI_TRUSTONIC_TEE_SUPPORT
+
 		disable_clk(ms);
-#endif
+
 		/* schedule_work(&mt_spi_msgdone_workqueue);//disable clock */
 
 		wake_unlock(&ms->wk_lock);
