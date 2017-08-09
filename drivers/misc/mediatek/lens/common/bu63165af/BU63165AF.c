@@ -171,6 +171,20 @@ static inline int setAFMacro(unsigned long a_u4Position)
 	return 0;
 }
 
+static inline int setAFPara(__user stAF_MotorCmd * pstMotorCmd)
+{
+	stAF_MotorCmd stMotorCmd;
+
+	if (copy_from_user(&stMotorCmd , pstMotorCmd, sizeof(stMotorCmd)))
+		LOG_INF("copy to user failed when getting motor command\n");
+
+	LOG_INF("Motor CmdID : %x\n", stMotorCmd.u4CmdID);
+
+	LOG_INF("Motor Param : %x\n", stMotorCmd.u4Param);
+
+	return 0;
+}
+
 /* ////////////////////////////////////////////////////////////// */
 long BU63165AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
 {
@@ -191,6 +205,10 @@ long BU63165AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 
 	case AFIOC_T_SETMACROPOS:
 		i4RetValue = setAFMacro(a_u4Param);
+		break;
+
+	case AFIOC_S_SETPARA:
+		i4RetValue = setAFPara((__user stAF_MotorCmd *) (a_u4Param));
 		break;
 
 	default:

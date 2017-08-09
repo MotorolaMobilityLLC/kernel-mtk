@@ -61,6 +61,11 @@ typedef struct {
 	u8 uMotorName[32];
 } stAF_MotorName;
 
+/* Structures */
+typedef struct {
+	u32 u4CmdID;
+	u32 u4Param;
+} stAF_MotorCmd;
 
 /* Structures */
 typedef struct {
@@ -88,6 +93,8 @@ typedef struct {
 #define AFIOC_T_SETMACROPOS _IOW(AF_MAGIC, 3, u32)
 
 #define AFIOC_G_MOTORCALPOS _IOR(AF_MAGIC, 4, stAF_MotorCalPos)
+
+#define AFIOC_S_SETPARA _IOW(AF_MAGIC, 5, stAF_MotorCmd)
 
 #define AFIOC_S_SETDRVNAME _IOW(AF_MAGIC, 10, stAF_MotorName)
 
