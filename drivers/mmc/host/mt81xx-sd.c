@@ -90,6 +90,7 @@
 #define MSDC_CFG_CKSTB          (0x1 << 7)	/* R  */
 #define MSDC_CFG_CKDIV          (0xff << 8)	/* RW */
 #define MSDC_CFG_CKMOD          (0x3 << 16)	/* RW */
+#define MSDC_CFG_HS400_CK_MODE  (0x1 << 18)	/* RW */
 #define MSDC_CFG_CKDIV_EXTRA    (0xfff << 8)	/* RW */
 #define MSDC_CFG_CKMOD_EXTRA    (0x3 << 20)	/* RW */
 
@@ -564,6 +565,7 @@ static void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 			mode = 0x3;
 		else
 			mode = 0x2; /* ddr mode and use divisor */
+
 		if (hz >= (host->src_clk_freq >> 2)) {
 			div = 0; /* mean div = 1/4 */
 			sclk = host->src_clk_freq >> 2; /* sclk = clk / 4 */
@@ -571,6 +573,15 @@ static void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 			div = (host->src_clk_freq + ((hz << 2) - 1)) / (hz << 2);
 			sclk = (host->src_clk_freq >> 2) / div;
 			div = (div >> 1);
+		}
+
+		if (timing == MMC_TIMING_MMC_HS400 &&
+		    hz >= (host->src_clk_freq >> 1)) {
+			sdr_set_bits(host->base + MSDC_CFG, MSDC_CFG_HS400_CK_MODE);
+			sclk = host->src_clk_freq >> 1;
+			div = 0; /* div is ignore when bit18 is set */
+		} else {
+			sdr_clr_bits(host->base + MSDC_CFG, MSDC_CFG_HS400_CK_MODE);
 		}
 	} else if (hz >= host->src_clk_freq) {
 		mode = 0x1; /* no divisor */
