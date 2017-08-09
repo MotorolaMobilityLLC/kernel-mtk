@@ -25,10 +25,8 @@
 #include "mt_spm_pmic_wrap.h"
 #include "mt_spm_internal.h"
 #include "mt_spm_misc.h"
-#include "mt_dramc.h"
 
 #define DYNAMIC_LOAD 1
-#define GATING_AUTO_SAVE 0
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #define VCOREFS_AEE_RR_REC 1
@@ -293,10 +291,28 @@ int spm_vcorefs_set_perform_bw_threshold(u32 lpm_threshold, u32 hpm_threshold)
 	return 0;
 }
 
+void spm_vcorefs_screen_on_setting(int dvfs_mode, u32 md_dvfs_req)
+{
+	int timer = 0;
+
+	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | dvfs_mode);
+
+	spm_write(SPM_CPU_WAKEUP_EVENT, 1);
+	timer = wait_spm_complete_by_condition(get_screen_sta() == SPM_SCREEN_SETTING_DONE, SPM_DVFS_TIMEOUT);
+	if (timer < 0) {
+		spm_vcorefs_dump_dvfs_regs(NULL);
+		BUG();
+	}
+	spm_write(CPU_DVFS_REQ, (spm_read(CPU_DVFS_REQ) & (~0xFFF)) | md_dvfs_req);
+	spm_write(SPM_CPU_WAKEUP_EVENT, 0);
+
+	spm_write(SPM_SW_RSV_1, (spm_read(SPM_SW_RSV_1) & (~0xF)) | SPM_CLEAN_WAKE_EVENT_DONE);
+}
+
 /*
  * SPM DVFS Function
  */
-int spm_set_vcore_dvfs(int opp, bool screen_on)
+int spm_set_vcore_dvfs(int opp, u32 md_dvfs_req)
 {
 	struct pwr_ctrl *pwrctrl = __spm_vcore_dvfs.pwrctrl;
 	unsigned long flags;
@@ -316,20 +332,23 @@ int spm_set_vcore_dvfs(int opp, bool screen_on)
 		BUG();
 	}
 
-	#if GATING_AUTO_SAVE
-	DVFS_gating_auto_save();
-	#endif
-
 	set_aee_vcore_dvfs_status(SPM_VCOREFS_DVFS_START);
 
 	switch (opp) {
 	case OPPI_PERF:
+		spm_vcorefs_screen_on_setting(SPM_DVFS_NORMAL, MASK_MD_DVFS_REQ);
 		dvfs_req = 1;
 		target_sta = SPM_SCREEN_ON_HPM;
 		break;
 	case OPPI_LOW_PWR:
+		spm_vcorefs_screen_on_setting(SPM_DVFS_NORMAL, MASK_MD_DVFS_REQ);
 		dvfs_req = 0;
 		target_sta = SPM_SCREEN_ON_LPM;
+		break;
+	case OPPI_ULTRA_LOW_PWR:
+		spm_vcorefs_screen_on_setting(SPM_DVFS_ULPM, md_dvfs_req);
+		dvfs_req = 0;
+		target_sta = SPM_SCREEN_ON_ULPM;
 		break;
 	default:
 		return -EINVAL;
@@ -434,7 +453,7 @@ static void _spm_vcorefs_init_reg(void)
 	spm_write(SPM_EMI_BW_MODE, spm_read(SPM_EMI_BW_MODE) & ~(mask));
 }
 
-void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data, bool screen_on, u32 md_dvfs_req)
+void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data)
 {
 	unsigned long flags;
 

@@ -115,8 +115,6 @@ struct governor_profile {
 	int curr_ddr_khz;
 	int curr_axi_khz;
 
-	int screen_off_vol;
-
 	u32 active_autok_kir;
 	u32 autok_kir_group;
 	u32 md_dvfs_req;
@@ -145,14 +143,12 @@ static struct governor_profile governor_ctrl = {
 
 	.active_autok_kir = 0,
 	.autok_kir_group = ((1 << KIR_AUTOK_EMMC) | (1 << KIR_AUTOK_SD)),
-	.md_dvfs_req = 0, /* (1 << MD_CAT6_CA_DATALINK | (1 << MD_NON_CA_DATALINK) | (1 << MD_POSITION)), */
+	.md_dvfs_req = 0x3fb,
 	.dvfs_timer = 0,
 
 	.curr_vcore_uv = VCORE_1_P_00_UV,
 	.curr_ddr_khz = FDDR_S0_KHZ,
 	.curr_axi_khz = FAXI_S0_KHZ,
-
-	.screen_off_vol = VCORE_0_P_90_UV,
 
 	.perform_bw_enable = 0,
 	.perform_bw_lpm_threshold = 0,
@@ -173,6 +169,12 @@ static struct opp_profile opp_table[] __nosavedata = {
 	[OPP_1] = {
 		.vcore_uv	= VCORE_0_P_90_UV,
 		.ddr_khz	= FDDR_S1_KHZ,
+		.axi_khz	= FAXI_S1_KHZ,
+	},
+	/* ultra low power mode */
+	[OPP_2] = {
+		.vcore_uv	= VCORE_0_P_90_UV,
+		.ddr_khz	= FDDR_S2_KHZ,
 		.axi_khz	= FAXI_S1_KHZ,
 	}
 };
@@ -198,65 +200,76 @@ static char *kicker_name[] = {
  */
 static void update_vcore_pwrap_cmd(struct opp_profile *opp_ctrl_table)
 {
-	struct governor_profile *gvrctrl = &governor_ctrl;
 	u32 diff;
-	u32 hpm, trans4, trans3, lpm, trans2, trans1, screen_off_mode;
+	u32 hpm, lpm, ulpm;
+	u32 trans1, trans2, trans3, trans4, trans5, trans6, trans7;
 
-	diff = opp_ctrl_table[OPPI_PERF].vcore_uv - opp_ctrl_table[OPPI_LOW_PWR].vcore_uv;
-	trans[TRANS4] = opp_ctrl_table[OPPI_LOW_PWR].vcore_uv + (diff / 3) * 2;
-	trans[TRANS3] = opp_ctrl_table[OPPI_LOW_PWR].vcore_uv + (diff / 3) * 1;
+	diff = opp_ctrl_table[OPP_0].vcore_uv - opp_ctrl_table[OPP_1].vcore_uv;
+	trans[TRANS1] = opp_ctrl_table[OPP_1].vcore_uv + (diff / 6) * 5;
+	trans[TRANS2] = opp_ctrl_table[OPP_1].vcore_uv + (diff / 6) * 4;
+	trans[TRANS3] = opp_ctrl_table[OPP_1].vcore_uv + (diff / 6) * 3;
+	trans[TRANS4] = opp_ctrl_table[OPP_1].vcore_uv + (diff / 6) * 2;
+	trans[TRANS5] = opp_ctrl_table[OPP_1].vcore_uv + (diff / 6) * 1;
 
-	diff = opp_ctrl_table[OPPI_LOW_PWR].vcore_uv - gvrctrl->screen_off_vol;
-	trans[TRANS2] = gvrctrl->screen_off_vol + (diff / 3) * 2;
-	trans[TRANS1] = gvrctrl->screen_off_vol + (diff / 3) * 1;
+	diff = opp_ctrl_table[OPP_1].vcore_uv - opp_ctrl_table[OPP_2].vcore_uv;
+	trans[TRANS6] = opp_ctrl_table[OPP_2].vcore_uv + (diff / 3) * 2;
+	trans[TRANS7] = opp_ctrl_table[OPP_2].vcore_uv + (diff / 3) * 1;
 
-	hpm		= vcore_uv_to_pmic(opp_ctrl_table[OPPI_PERF].vcore_uv);
-	trans4		= vcore_uv_to_pmic(trans[TRANS4]);
-	trans3		= vcore_uv_to_pmic(trans[TRANS3]);
-	lpm		= vcore_uv_to_pmic(opp_ctrl_table[OPPI_LOW_PWR].vcore_uv);
-	trans2		= vcore_uv_to_pmic(trans[TRANS2]);
+	hpm		= vcore_uv_to_pmic(opp_ctrl_table[OPP_0].vcore_uv);
 	trans1		= vcore_uv_to_pmic(trans[TRANS1]);
-	screen_off_mode = vcore_uv_to_pmic(gvrctrl->screen_off_vol);
+	trans2		= vcore_uv_to_pmic(trans[TRANS2]);
+	trans3		= vcore_uv_to_pmic(trans[TRANS3]);
+	trans4		= vcore_uv_to_pmic(trans[TRANS4]);
+	trans5		= vcore_uv_to_pmic(trans[TRANS5]);
+	lpm		= vcore_uv_to_pmic(opp_ctrl_table[OPP_1].vcore_uv);
+	trans6		= vcore_uv_to_pmic(trans[TRANS6]);
+	trans7		= vcore_uv_to_pmic(trans[TRANS7]);
+	ulpm		= vcore_uv_to_pmic(opp_ctrl_table[OPP_2].vcore_uv);
 
 	/* PMIC_WRAP_PHASE_NORMAL */
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_HPM, hpm);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS4, trans4);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS3, trans3);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_LPM, lpm);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS2, trans2);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS1, trans1);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_SCREEN_OFF_MODE, screen_off_mode);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS2, trans2);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS3, trans3);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS4, trans4);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS5, trans5);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_LPM, lpm);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS6, trans6);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_TRANS7, trans7);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_NORMAL, IDX_NM_VCORE_ULPM, ulpm);
 
 	/* PMIC_WRAP_PHASE_SUSPEND */
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_HPM, hpm);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS4, trans4);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS3, trans3);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_LPM, lpm);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS2, trans2);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS1, trans1);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_SCREEN_OFF_MODE, screen_off_mode);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS2, trans2);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS3, trans3);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS4, trans4);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_TRANS5, trans5);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_SUSPEND, IDX_SP_VCORE_LPM, lpm);
 
 	/* PMIC_WRAP_PHASE_DEEPIDLE */
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_HPM, hpm);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS4, trans4);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS3, trans3);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_LPM, lpm);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS2, trans2);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS1, trans1);
-	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_SCREEN_OFF_MODE, screen_off_mode);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS2, trans2);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS3, trans3);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS4, trans4);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_TRANS5, trans5);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_LPM, lpm);
 
-	vcorefs_crit("HPM   : %u (0x%x)\n", opp_ctrl_table[OPPI_PERF].vcore_uv, hpm);
-	vcorefs_crit("TRANS4: %u (0x%x)\n", trans[TRANS4], trans4);
-	vcorefs_crit("TRANS3: %u (0x%x)\n", trans[TRANS3], trans3);
-	vcorefs_crit("LPM   : %u (0x%x)\n", opp_ctrl_table[OPPI_LOW_PWR].vcore_uv, lpm);
-	vcorefs_crit("TRANS2: %u (0x%x)\n", trans[TRANS2], trans2);
+	vcorefs_crit("HPM   : %u (0x%x)\n", opp_ctrl_table[OPP_0].vcore_uv, hpm);
 	vcorefs_crit("TRANS1: %u (0x%x)\n", trans[TRANS1], trans1);
-	vcorefs_crit("SOFFM: %u (0x%x)\n", gvrctrl->screen_off_vol, screen_off_mode);
+	vcorefs_crit("TRANS2: %u (0x%x)\n", trans[TRANS2], trans2);
+	vcorefs_crit("TRANS3: %u (0x%x)\n", trans[TRANS3], trans3);
+	vcorefs_crit("TRANS4: %u (0x%x)\n", trans[TRANS4], trans4);
+	vcorefs_crit("TRANS5: %u (0x%x)\n", trans[TRANS5], trans5);
+	vcorefs_crit("LPM   : %u (0x%x)\n", opp_ctrl_table[OPP_1].vcore_uv, lpm);
+	vcorefs_crit("TRANS6: %u (0x%x)\n", trans[TRANS6], trans6);
+	vcorefs_crit("TRANS7: %u (0x%x)\n", trans[TRANS7], trans7);
+	vcorefs_crit("ULPM  : %u (0x%x)\n", opp_ctrl_table[OPP_2].vcore_uv, ulpm);
 }
 
 void vcorefs_update_opp_table(char *cmd, int val)
 {
-	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct opp_profile *opp_ctrl_table = opp_table;
 	int uv = vcore_pmic_to_uv(val);
 
@@ -266,13 +279,13 @@ void vcorefs_update_opp_table(char *cmd, int val)
 			update_vcore_pwrap_cmd(opp_ctrl_table);
 		}
 	} else if (!strcmp(cmd, "LPM") && val < VCORE_INVALID) {
-		if (uv <= opp_ctrl_table[OPPI_PERF].vcore_uv && uv >= gvrctrl->screen_off_vol) {
+		if (uv <= opp_ctrl_table[OPPI_PERF].vcore_uv && uv >= opp_ctrl_table[OPPI_ULTRA_LOW_PWR].vcore_uv) {
 			opp_ctrl_table[OPPI_LOW_PWR].vcore_uv = uv;
 			update_vcore_pwrap_cmd(opp_ctrl_table);
 		}
-	} else if (!strcmp(cmd, "SOFFM") && val < VCORE_INVALID) {
+	} else if (!strcmp(cmd, "ULPM") && val < VCORE_INVALID) {
 		if (uv <= opp_ctrl_table[OPPI_LOW_PWR].vcore_uv) {
-			gvrctrl->screen_off_vol = uv;
+			opp_ctrl_table[OPPI_ULTRA_LOW_PWR].vcore_uv = uv;
 			update_vcore_pwrap_cmd(opp_ctrl_table);
 		}
 	}
@@ -349,8 +362,8 @@ int vcorefs_get_vcore_by_steps(u32 steps)
 	case OPP_1:
 		return vcore_pmic_to_uv(get_vcore_ptp_volt(OPP_1));
 	break;
-	case 2:
-		return vcore_pmic_to_uv(get_vcore_ptp_volt(2));
+	case OPP_2:
+		return vcore_pmic_to_uv(get_vcore_ptp_volt(OPP_2));
 	break;
 	default:
 		break;
@@ -377,7 +390,6 @@ char *governor_get_kicker_name(int id)
 
 char *vcorefs_get_opp_table_info(char *p)
 {
-	struct governor_profile *gvrctrl = &governor_ctrl;
 	struct opp_profile *opp_ctrl_table = opp_table;
 	int i;
 
@@ -389,13 +401,16 @@ char *vcorefs_get_opp_table_info(char *p)
 		p += sprintf(p, "\n");
 	}
 
-	p += sprintf(p, "HPM   : %u\n", opp_ctrl_table[OPPI_PERF].vcore_uv);
-	p += sprintf(p, "TRANS4: %u\n", trans[TRANS4]);
-	p += sprintf(p, "TRANS3: %u\n", trans[TRANS3]);
-	p += sprintf(p, "LPM   : %u\n", opp_ctrl_table[OPPI_LOW_PWR].vcore_uv);
-	p += sprintf(p, "TRANS2: %u\n", trans[TRANS2]);
+	p += sprintf(p, "HPM   : %u\n", opp_ctrl_table[OPP_0].vcore_uv);
 	p += sprintf(p, "TRANS1: %u\n", trans[TRANS1]);
-	p += sprintf(p, "SOFFM : %u\n", gvrctrl->screen_off_vol);
+	p += sprintf(p, "TRANS2: %u\n", trans[TRANS2]);
+	p += sprintf(p, "TRANS3: %u\n", trans[TRANS3]);
+	p += sprintf(p, "TRANS4: %u\n", trans[TRANS4]);
+	p += sprintf(p, "TRANS5: %u\n", trans[TRANS5]);
+	p += sprintf(p, "LPM   : %u\n", opp_ctrl_table[OPP_1].vcore_uv);
+	p += sprintf(p, "TRANS6: %u\n", trans[TRANS6]);
+	p += sprintf(p, "TRANS7: %u\n", trans[TRANS7]);
+	p += sprintf(p, "ULPM  : %u\n", opp_ctrl_table[OPP_2].vcore_uv);
 
 	return p;
 }
@@ -482,7 +497,7 @@ int vcorefs_enable_debug_isr(bool enable)
 	if (enable)
 		flag |= SPM_FLAG_EN_MET_DBG_FOR_VCORE_DVFS;
 
-	spm_go_to_vcore_dvfs(flag, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+	spm_go_to_vcore_dvfs(flag, 0);
 
 	mutex_unlock(&governor_mutex);
 
@@ -529,16 +544,13 @@ static int vcorefs_enable_vcore(bool enable)
 	gvrctrl->vcore_dvs = enable;
 
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs) {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS, 0,
-					gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS, 0);
 	} else if (!gvrctrl->vcore_dvs && gvrctrl->ddr_dfs) {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS, 0,
-					gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS, 0);
 	} else if (gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs) {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DFS, 0,
-					gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DFS, 0);
 	} else {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0);
 	}
 
 	mutex_unlock(&governor_mutex);
@@ -554,16 +566,13 @@ static int vcorefs_enable_ddr(bool enable)
 	gvrctrl->ddr_dfs = enable;
 
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs) {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS, 0,
-					gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS | SPM_FLAG_DIS_VCORE_DFS, 0);
 	} else if (gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs) {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DFS, 0,
-					gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DFS, 0);
 	} else if (!gvrctrl->vcore_dvs && gvrctrl->ddr_dfs) {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS, 0,
-					gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS, 0);
 	} else {
-		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(SPM_FLAG_RUN_COMMON_SCENARIO, 0);
 	}
 
 	mutex_unlock(&governor_mutex);
@@ -578,8 +587,6 @@ int governor_debug_store(const char *buf)
 
 	if (sscanf(buf, "%31s 0x%x", cmd, &val) == 2 ||
 		   sscanf(buf, "%31s %d", cmd, &val) == 2) {
-
-		vcorefs_crit("vcore_debug: cmd: %s, val: %d\n", cmd, val);
 
 		if (!strcmp(cmd, "plat_feature_en")) {
 			gvrctrl->plat_feature_en = val;
@@ -704,12 +711,10 @@ static int set_dvfs_with_opp(struct kicker_config *krconf)
 	if (!gvrctrl->vcore_dvs && !gvrctrl->ddr_dfs)
 		return 0;
 
-	if (!gvrctrl->screen_on) {
-		vcorefs_crit("NOT SUPPORT DVFS ON SCREEN OFF\n");
+	if (!gvrctrl->screen_on)
 		return 0;
-	}
 
-	timer = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->screen_on);
+	timer = spm_set_vcore_dvfs(krconf->dvfs_opp, gvrctrl->md_dvfs_req);
 
 	if (timer < 0) {
 		vcorefs_err("FAILED: SET VCORE DVFS FAIL\n");
@@ -753,6 +758,9 @@ static int set_freq_with_opp(struct kicker_config *krconf)
 		clk_set_parent(clk_axi_sel, clk_syspll_d7);		/* 158MHz */
 		break;
 	case OPP_1:
+		clk_set_parent(clk_axi_sel, clk_mux_ulposc_axi_ck_mux);	/* 138MHz */
+		break;
+	case OPP_2:
 		clk_set_parent(clk_axi_sel, clk_mux_ulposc_axi_ck_mux);	/* 138MHz */
 		break;
 	default:
@@ -902,7 +910,7 @@ static int vcorefs_fb_notifier_callback(struct notifier_block *self, unsigned lo
 		spin_unlock_irqrestore(&governor_spinlock, flags);
 
 		gvrctrl->screen_on = 1;
-		spm_go_to_vcore_dvfs(vcorefs_check_feature_enable(), 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(vcorefs_check_feature_enable(), 0);
 
 		if (vcorefs_get_curr_opp() == OPPI_PERF) {
 			krconf.dvfs_opp = OPP_0;
@@ -1078,7 +1086,7 @@ void vcorefs_go_to_vcore_dvfs(void)
 	gvrctrl->sodi_rekick_lock = 1;
 
 	if (is_vcorefs_feature_enable())
-		spm_go_to_vcore_dvfs(vcorefs_check_feature_enable(), 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(vcorefs_check_feature_enable(), 0);
 
 	gvrctrl->sodi_rekick_lock = 0;
 }
@@ -1097,7 +1105,7 @@ int vcorefs_late_init_dvfs(void)
 		flag = vcorefs_check_feature_enable();
 		vcorefs_crit("[%s] vcore_dvs: %d, ddr_dfs: %d, freq_dfs: %d, pcm_flag: 0x%x\n", __func__,
 						gvrctrl->vcore_dvs, gvrctrl->ddr_dfs, gvrctrl->freq_dfs, flag);
-		spm_go_to_vcore_dvfs(flag, 0, gvrctrl->screen_on, gvrctrl->md_dvfs_req);
+		spm_go_to_vcore_dvfs(flag, 0);
 	}
 
 	mutex_lock(&governor_mutex);
@@ -1150,6 +1158,11 @@ static int init_vcorefs_cmd_table(void)
 			opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);
 			opp_ctrl_table[opp].axi_khz = FAXI_S1_KHZ;
 			break;
+		case OPPI_ULTRA_LOW_PWR:
+			opp_ctrl_table[opp].vcore_uv = vcorefs_get_vcore_by_steps(opp);
+			opp_ctrl_table[opp].ddr_khz = vcorefs_get_ddr_by_steps(opp);
+			opp_ctrl_table[opp].axi_khz = FAXI_S1_KHZ;
+			break;
 		default:
 			break;
 		}
@@ -1160,7 +1173,6 @@ static int init_vcorefs_cmd_table(void)
 								opp_ctrl_table[opp].axi_khz);
 	}
 
-	gvrctrl->screen_off_vol = vcorefs_get_vcore_by_steps(2);
 	vcorefs_crit("curr_vcore_uv: %u, curr_ddr_khz: %u, curr_axi_khz: %u\n",
 							gvrctrl->curr_vcore_uv,
 							gvrctrl->curr_ddr_khz,

@@ -629,7 +629,7 @@ int spm_module_init(void)
 	else if (spm_read(spm_ddrphy_base + SPM_SHUFFLE_ADDR) == 1)
 		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) | (SPM_SCREEN_ON_LPM >> 23));
 	else
-		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) | (SPM_SCREEN_OFF_LPM >> 23));
+		spm_write(SPM_SW_RSV_5, (spm_read(SPM_SW_RSV_5) & ~(0x3)) | (SPM_SCREEN_ON_ULPM >> 23));
 
 	spm_crit2("[VcoreFS] SPM_SW_RSV_5: 0x%x, dramc shuf addr: %p, val: 0x%x\n",
 							spm_read(SPM_SW_RSV_5),

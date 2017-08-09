@@ -48,6 +48,7 @@ struct kicker_config {
 
 #define FDDR_S0_KHZ		1600000
 #define FDDR_S1_KHZ		1270000
+#define FDDR_S2_KHZ		800000
 
 #define FAXI_S0_KHZ		156000
 #define FAXI_S1_KHZ		136500
@@ -57,6 +58,9 @@ enum vcore_trans {
 	TRANS2,
 	TRANS3,
 	TRANS4,
+	TRANS5,
+	TRANS6,
+	TRANS7,
 	NUM_TRANS,
 };
 
@@ -81,24 +85,16 @@ enum dvfs_kicker {
 
 enum dvfs_opp {
 	OPP_OFF = -1,
-	OPP_0 = 0,
-	OPP_1,
+	OPP_0 = 0,	/* 1.0/1600/1700 or 1.05/1866 */
+	OPP_1,		/* 0.9/1270 */
+	OPP_2,		/* 0.9/800 */
 	NUM_OPP,
 };
 
 #define OPPI_PERF OPP_0
 #define OPPI_LOW_PWR OPP_1
+#define OPPI_ULTRA_LOW_PWR OPP_2
 #define OPPI_UNREQ OPP_OFF
-
-enum md_status {
-	MD_CAT6_CA_DATALINK = 0,
-	MD_NON_CA_DATALINK,
-	MD_PAGING,
-	MD_POSITION,
-	MD_CELL_SEARCH,
-	MD_CCELL_MANAGEMENT,
-	MD_DISABLE_SCREEN_CHANGE = 16,
-};
 
 enum dvfs_timer {
 	RANGE_0 = 0,

@@ -31,8 +31,8 @@
 	pr_debug(TAG""fmt, ##args)
 
 /* SPM_SW_RSV_1[3:0], trigger by cpu_wake_up_event */
-#define SPM_SCREEN_ON			0x1
-#define SPM_SCREEN_OFF			0x2
+#define SPM_DVFS_NORMAL			0x1
+#define SPM_DVFS_ULPM			0x2
 #define SPM_CLEAN_WAKE_EVENT_DONE	0xA
 #define SPM_SCREEN_SETTING_DONE		0xB
 #define SPM_OFFLOAD			0xF
@@ -41,8 +41,7 @@
 #define SPM_VCORE_STA_REG	((1 << 23) | (1 << 24))
 #define SPM_SCREEN_ON_HPM	(0x3 << 23)
 #define SPM_SCREEN_ON_LPM	(0x2 << 23)
-#define SPM_SCREEN_OFF_HPM	(0x1 << 23)
-#define SPM_SCREEN_OFF_LPM	(0x0 << 23)
+#define SPM_SCREEN_ON_ULPM	(0x0 << 23)
 
 /* read shuffle value for mapping ddr freq */
 #define SPM_SHUFFLE_ADDR	0x63c
@@ -53,10 +52,10 @@
 #define PMIC_ACK_DONE		(1 << 31)
 
 /* load fw for boot up */
-extern void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data, bool screen_on, u32 cpu_dvfs_req);
+extern void spm_go_to_vcore_dvfs(u32 spm_flags, u32 spm_data);
 
 /* vcore dvfs request */
-extern int spm_set_vcore_dvfs(int opp, bool screen_on);
+extern int spm_set_vcore_dvfs(int opp, u32 md_dvfs_req);
 
 /* bw monitor threshold setting to spm */
 extern int spm_vcorefs_set_perform_bw_threshold(u32 lpm_threshold, u32 hpm_threshold);
