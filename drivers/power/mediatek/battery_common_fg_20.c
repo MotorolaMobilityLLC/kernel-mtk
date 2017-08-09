@@ -170,6 +170,8 @@ int pending_wake_up_bat;
 /* add for meta tool----------------------------------------- */
 #define Get_META_BAT_VOL _IOW('k', 10, int)
 #define Get_META_BAT_SOC _IOW('k', 11, int)
+#define Get_META_BAT_CAR_TUNE_VALUE _IOW('k', 12, int)
+#define Set_META_BAT_CAR_TUNE_VALUE _IOW('k', 13, int)
 /* add for meta tool----------------------------------------- */
 
 static struct class *adc_cali_class;
@@ -3062,6 +3064,24 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
 		adc_out_data[0] = BMT_status.UI_SOC2;
+		ret = copy_to_user(user_data_addr, adc_out_data, 8);
+
+		break;
+
+	case Get_META_BAT_CAR_TUNE_VALUE:
+		user_data_addr = (int *)arg;
+		ret = copy_from_user(adc_in_data, user_data_addr, 8);
+		battery_log(BAT_LOG_CRTI, "Get_BAT_CAR_TUNE_VALUE\n");
+		adc_out_data[1] = 117;	/* Todo: change this line to get current/impedance/... */
+		ret = copy_to_user(user_data_addr, adc_out_data, 8);
+
+		break;
+
+	case Set_META_BAT_CAR_TUNE_VALUE:
+		user_data_addr = (int *)arg;
+		ret = copy_from_user(adc_in_data, user_data_addr, 8);
+		battery_log(BAT_LOG_CRTI, "Set_BAT_CAR_TUNE_VALUE:%d\n", adc_in_data[1]);
+		adc_out_data[1] = adc_in_data[1];
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 
 		break;
