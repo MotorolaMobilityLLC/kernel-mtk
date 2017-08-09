@@ -20,7 +20,7 @@
 /*#include <asm/system.h>//for SMP */
 
 /* #define CAM_CALGETDLT_DEBUG */
-#define CAM_CAL_DEBUG
+/*#define CAM_CAL_DEBUG*/
 #ifdef CAM_CAL_DEBUG
 #define CAM_CALDB pr_debug
 #else

@@ -36,7 +36,7 @@
 /*#include <asm/system.h>//for SMP*/
 #endif
 /* #define EEPROMGETDLT_DEBUG */
-#define EEPROM_DEBUG
+/*#define EEPROM_DEBUG*/
 #ifdef EEPROM_DEBUG
 #define EEPROMDB pr_debug
 #else
