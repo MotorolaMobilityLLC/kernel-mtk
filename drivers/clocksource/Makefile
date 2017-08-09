@@ -48,6 +48,7 @@ obj-$(CONFIG_ARCH_MT8173)	+= cpuxgpt_mt8173.o
 obj-$(CONFIG_ARCH_MT8160)	+= cpuxgpt_mt8160.o
 obj-$(CONFIG_ARCH_MT8163)	+= cpuxgpt_mt8163.o
 obj-$(CONFIG_ARCH_MT8127)	+= arch_timer_mt8127.o
+obj-$(CONFIG_ARCH_ELBRUS)	+= cpuxgpt_elbrus.o
 
 ifneq (,$(filter $(CONFIG_ARCH_MT6735) $(CONFIG_ARCH_MT6735M) $(CONFIG_ARCH_MT6753) $(CONFIG_ARCH_MT6797) $(CONFIG_ARCH_MT6580), y))
 else
