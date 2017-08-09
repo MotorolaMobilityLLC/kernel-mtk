@@ -379,7 +379,7 @@ static void mt_auxadc_cal_prepare(void)
 	/* no voltage calibration */
 }
 
-#if defined(CONFIG_ARCH_MT8163_AUXADC)
+#if defined(CONFIG_ARCH_MT8163_AUXADC) || defined(CONFIG_ARCH_MT8127_AUXADC)
 static void mt_auxadc_power_on(void)
 {
 	AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_MISC, 1 << 14);	/* power on ADC */

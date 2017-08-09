@@ -11,3 +11,10 @@ config ARCH_MT8163_AUXADC
     help
       AUXADC driver support for MediaTek MT8163.
       If you want to use MediaTek MT8163 AUXADC driver, say Y or M here.If unsure, say N.
+
+config ARCH_MT8127_AUXADC
+    tristate "MediaTek MT8127 AUXADC driver"
+    depends on MTK_AUXADC
+    help
+      AUXADC driver support for MediaTek MT8127.
+      If you want to use MediaTek MT8127 AUXADC driver, say Y or M here.If unsure, say N.
