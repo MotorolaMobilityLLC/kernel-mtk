@@ -102,7 +102,7 @@ static WDMA_CONFIG_STRUCT decouple_wdma_config;
 static disp_mem_output_config mem_config;
 
 static unsigned int primary_session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
-unsigned int ext_session_id = MAKE_DISP_SESSION(DISP_SESSION_MEMORY, 0);
+unsigned int ext_session_id = MAKE_DISP_SESSION(DISP_SESSION_MEMORY, 2);
 
 /* primary display uses itself's abs macro */
 #ifdef abs

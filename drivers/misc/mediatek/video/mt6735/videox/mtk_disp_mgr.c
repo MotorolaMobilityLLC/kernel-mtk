@@ -257,6 +257,10 @@ int disp_create_session(disp_session_config *config)
 		session_config[idx] = session;
 		session_cnt[idx] = 1;
 		DISPDBG("New session(0x%x)\n", session);
+#if defined(OVL_TIME_SHARING)
+		if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY, 2))
+			ovl2mem_setlayernum(4);
+#endif
 	} else {
 		DISPERR("Invalid session creation request\n");
 		ret = -1;
@@ -300,6 +304,10 @@ int disp_destroy_session(disp_session_config *config)
 	mutex_unlock(&disp_session_lock);
 
 	release_session_buffer(DISP_SESSION_TYPE(config->session_id), 0xFF, 0);
+#if defined(OVL_TIME_SHARING)
+	if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY, 2))
+		ovl2mem_setlayernum(0);
+#endif
 
 	DISPPR_FENCE("destroy_session done\n");
 	/* 2. Destroy this session */

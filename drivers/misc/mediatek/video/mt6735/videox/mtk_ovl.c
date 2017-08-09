@@ -96,6 +96,7 @@ static void _ovl2mem_path_unlock(const char *caller)
 void ovl2mem_setlayernum(int layer_num)
 {
 	ovl2mem_layer_num = layer_num;
+	DISPERR("ovl2mem_setlayernum: %d\n", ovl2mem_layer_num);
 }
 
 int ovl2mem_get_info(void *info)
