@@ -864,8 +864,7 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		};
 
 		eint_fusb300_det_in: eint_fusb300_det_in@ {
-			compatible = "mediatek,mt6797-eint_fusb300_det_in";
-			status = "disabled";
+			compatible = "mediatek,fusb300-eint";
 		};
 
 		touch: touch@ {
@@ -2775,6 +2774,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			reg-names = "ssusb_base", "ssusb_sif", "ssusb_sif2";
 			interrupts = <GIC_SPI 127 IRQ_TYPE_LEVEL_LOW>, <GIC_SPI 126 IRQ_TYPE_LEVEL_LOW>;
 			interrupt-names = "musb-hdrc", "xhci";
+		};
+
+		usb_c_pinctrl:usb_c_pinctrl@0 {
+			compatible = "mediatek,usb_c_pinctrl";
 		};
 
 		usb3_phy {

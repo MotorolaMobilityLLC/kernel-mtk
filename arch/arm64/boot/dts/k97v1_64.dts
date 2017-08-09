@@ -1058,3 +1058,157 @@
 };
 /* CONSYS end */
 
+/* USB TYPEC GPIO start */
+&pio {
+	usb_default: usb_default {
+	};
+
+	gpio_redriver_c1_init: gpio197_redriver_c1_init {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO197__FUNC_GPIO197>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	gpio_redriver_c1_low: gpio197_redriver_c1_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO197__FUNC_GPIO197>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	gpio_redriver_c1_hiz: gpio197_redriver_c1_highz {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO197__FUNC_GPIO197>;
+			slew-rate= <0>;
+			bias-disable;
+		};
+	};
+
+	gpio_redriver_c1_high: gpio197_redriver_c1_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO197__FUNC_GPIO197>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	gpio_redriver_c2_init: gpio196_redriver_c2_init {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO196__FUNC_GPIO196>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	gpio_redriver_c2_low: gpio196_redriver_c2_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO196__FUNC_GPIO196>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	gpio_redriver_c2_hiz: gpio196_redriver_c2_highz {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO196__FUNC_GPIO196>;
+			slew-rate= <0>;
+			bias-disable;
+		};
+	};
+
+	gpio_redriver_c2_high: gpio196_redriver_c2_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO196__FUNC_GPIO196>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	gpio_fusb340_noe_init: gpio251_fusb340_noe_init {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO251__FUNC_GPIO251>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	gpio_fusb340_noe_low: gpio251_fusb340_noe_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO251__FUNC_GPIO251>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	gpio_fusb340_noe_high: gpio251_fusb340_noe_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO251__FUNC_GPIO251>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	gpio_fusb340_sel_init: gpio252_fusb340_sel_init {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO252__FUNC_GPIO252>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	gpio_fusb340_sel_low: gpio252_fusb340_sel_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO252__FUNC_GPIO252>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	gpio_fusb340_sel_high: gpio252_fusb340_sel_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO252__FUNC_GPIO252>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+
+&usb_c_pinctrl {
+	pinctrl-names = "usb_default",
+		"redriver_c1_init",
+		"redriver_c1_low",
+		"redriver_c1_hiz",
+		"redriver_c1_high",
+		"redriver_c2_init",
+		"redriver_c2_low",
+		"redriver_c2_hiz",
+		"redriver_c2_high",
+		"fusb340_noe_init",
+		"fusb340_noe_low",
+		"fusb340_noe_high",
+		"fusb340_sel_init",
+		"fusb340_sel_low",
+		"fusb340_sel_high";
+
+	pinctrl-0 = <&usb_default>;
+	pinctrl-1 = <&gpio_redriver_c1_init>;
+	pinctrl-2 = <&gpio_redriver_c1_low>;
+	pinctrl-3 = <&gpio_redriver_c1_hiz>;
+	pinctrl-4 = <&gpio_redriver_c1_high>;
+	pinctrl-5 = <&gpio_redriver_c2_init>;
+	pinctrl-6 = <&gpio_redriver_c2_low>;
+	pinctrl-7 = <&gpio_redriver_c2_hiz>;
+	pinctrl-8 = <&gpio_redriver_c2_high>;
+	pinctrl-9 = <&gpio_fusb340_noe_init>;
+	pinctrl-10 = <&gpio_fusb340_noe_low>;
+	pinctrl-11 = <&gpio_fusb340_noe_high>;
+	pinctrl-12 = <&gpio_fusb340_sel_init>;
+	pinctrl-13 = <&gpio_fusb340_sel_low>;
+	pinctrl-14 = <&gpio_fusb340_sel_high>;
+	status = "okay";
+};
+/* USB TYPEC GPIO end */
+
