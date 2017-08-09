@@ -58,8 +58,6 @@ static unsigned int timeout;
 static int g_last_time_time_out_value;
 static int g_wdt_enable = 1;
 
-#define TOPRGU_SWRST_KEY 0x88000000
-
 struct toprgu_reset {
 	spinlock_t lock;
 	void __iomem *toprgu_swrst_base;
@@ -78,7 +76,7 @@ static int toprgu_reset_assert(struct reset_controller_dev *rcdev,
 
 	tmp = __raw_readl(data->toprgu_swrst_base + data->regofs);
 	tmp |= BIT(id);
-	tmp |= TOPRGU_SWRST_KEY;
+	tmp |= MTK_WDT_SWSYS_RST_KEY;
 	writel(tmp, data->toprgu_swrst_base + data->regofs);
 
 	spin_unlock_irqrestore(&data->lock, flags);
@@ -97,7 +95,7 @@ static int toprgu_reset_deassert(struct reset_controller_dev *rcdev,
 
 	tmp = __raw_readl(data->toprgu_swrst_base + data->regofs);
 	tmp &= ~BIT(id);
-	tmp |= TOPRGU_SWRST_KEY;
+	tmp |= MTK_WDT_SWSYS_RST_KEY;
 	writel(tmp, data->toprgu_swrst_base + data->regofs);
 
 	spin_unlock_irqrestore(&data->lock, flags);
@@ -123,8 +121,8 @@ static struct reset_control_ops toprgu_reset_ops = {
 	.reset = toprgu_reset,
 };
 
-static void toprgu_register_reset_controller(void __iomem *toprgu_base,
-			unsigned int num_regs, int regofs)
+static void toprgu_register_reset_controller(struct device_node *np,
+		void __iomem *toprgu_base, int regofs)
 {
 	struct toprgu_reset *data;
 	int ret;
@@ -138,8 +136,9 @@ static void toprgu_register_reset_controller(void __iomem *toprgu_base,
 	data->toprgu_swrst_base = toprgu_base;
 	data->regofs = regofs;
 	data->rcdev.owner = THIS_MODULE;
-	data->rcdev.nr_resets = num_regs * 32;
+	data->rcdev.nr_resets = 15;
 	data->rcdev.ops = &toprgu_reset_ops;
+	data->rcdev.of_node = np;
 
 	ret = reset_controller_register(&data->rcdev);
 	if (ret) {
@@ -609,7 +608,7 @@ static int mtk_wdt_probe(struct platform_device *dev)
 	pr_debug("mtk_wdt_probe : done MTK_WDT_REQ_MODE(%x)\n", __raw_readl(MTK_WDT_REQ_MODE));
 	pr_debug("mtk_wdt_probe : done MTK_WDT_REQ_IRQ_EN(%x)\n", __raw_readl(MTK_WDT_REQ_IRQ_EN));
 
-	toprgu_register_reset_controller(toprgu_base, 1, 0x18);
+	toprgu_register_reset_controller(dev->dev.of_node, toprgu_base, 0x18);
 
 	return ret;
 }
