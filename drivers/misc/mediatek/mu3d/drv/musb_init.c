@@ -436,6 +436,8 @@ static inline void mtu3d_link_intr_handler(struct musb *musb, u32 dwLinkIntValue
 
 	default:
 		os_printk(K_ALET, "USB Speed = Invalid (%x)\n", dwTemp);
+		if (speed == SSUSB_SPEED_SUPER)
+			musb_g_reset(musb);
 #ifndef CONFIG_USBIF_COMPLIANCE
 		speed_last = speed;
 		speed = SSUSB_SPEED_INACTIVE;
