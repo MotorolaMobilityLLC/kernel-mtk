@@ -352,7 +352,7 @@ static int check_port(struct sdio_modem_port *port)
 	/*WARN_ON(!port->port.count); */
 	LOGPRT(LOG_INFO, "%s %d: check port OK.(%d)\n",
 			       __func__, __LINE__, port->index);
-	return 0;
+	return ret;
 }
 
 static void modem_sdio_write(struct sdio_modem *modem, int addr,
