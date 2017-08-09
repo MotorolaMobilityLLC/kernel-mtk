@@ -11,6 +11,7 @@
 #include <linux/types.h>
 #include <linux/ktime.h>
 #include <linux/delay.h>
+#include <linux/vmalloc.h>
 #include <mt-plat/mt_ccci_common.h>
 
 #include "ccci_util_log.h"
@@ -78,6 +79,7 @@ int ccci_log_write(const char *fmt, ...)
 	wake_up_all(&ccci_log_buf.log_wq);
 
 	kfree(temp_log);
+	temp_log = NULL;
 
 	return write_len;
 }
