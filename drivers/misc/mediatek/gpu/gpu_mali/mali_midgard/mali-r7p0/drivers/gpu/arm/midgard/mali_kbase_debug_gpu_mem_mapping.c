@@ -395,6 +395,10 @@ static int kbase_backend_nr_atoms_on_slot(struct kbase_device *kbdev, int js)
 	return nr;
 }
 */
+void kbase_check_PA(u64 pa)
+{
+	mtk_trigger_emi(pa);
+}
 bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 {
 	bool ret = false;
@@ -405,7 +409,7 @@ bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 	struct kbasep_js_device_data *js_devdata;
 	/*unsigned long flags;*/
 
-	pr_info("Mali PA check\n");
+	pr_err("Mali PA check\n");
 
 	kbdev_list = kbase_dev_list_get();
 	if(kbdev_list == NULL)
@@ -419,7 +423,6 @@ bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 			pr_info("    No Mali device\n");
 			return false;
 		}
-		mtk_trigger_aee(kbdev->mtk_log, "check_pa");
 
 		js_devdata = &kbdev->js_data;
 /*
@@ -459,6 +462,8 @@ bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa)
 				dev_info(kctx->kbdev->dev,"    Didn't get the PA:%016llx in GPU page table\n", pa);
 			}
 		}
+
+		mtk_trigger_aee(kbdev->mtk_log, "check_pa");
 	}
 	kbase_dev_list_put(kbdev_list);
 

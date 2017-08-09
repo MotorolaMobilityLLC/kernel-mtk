@@ -65,6 +65,79 @@ volatile void *g_TOPCK_base;
 #define MTKCLK_disable_unprepare(clk) \
 	if (config->clk) {  clk_disable_unprepare(config->clk); }
 
+#ifdef MTK_MT6797_DEBUG
+
+static void _mtk_dump_register(unsigned int pa, int size, int offset, int dsize)
+{
+	int i;
+	volatile void *base = NULL;
+
+	base = ioremap_nocache(pa, size);
+	if (base)
+	{
+		unsigned int c_offset = offset;
+		int dump_size = dsize >> 2;
+		for (i = 0; i < dump_size; i += 4)
+		{
+			if (mtk_log)
+			{
+				ged_log_buf_print2(*mtk_log, GED_LOG_ATTR_TIME,
+						"[dump][0x%08x] 0x%08x 0x%08x 0x%08x 0x%08x",
+						pa + c_offset,
+						base_read32(base+c_offset),
+						base_read32(base+c_offset+0x4),
+						base_read32(base+c_offset+0x8),
+						base_read32(base+c_offset+0xc)
+						);
+			}
+			c_offset += 0x10;
+		}
+		iounmap(base);
+	}
+	else
+	{
+		if (mtk_log)
+		{
+			ged_log_buf_print2(*mtk_log, GED_LOG_ATTR_TIME,
+					"[dump] map 0x%08x size 0x%08x fail",
+					pa, size
+					);
+		}
+	}
+}
+
+void mtk_debug_dump_registers(void)
+{
+	{
+		char x;
+		fan53555_read_interface(0x0, &x, 0xff, 0x0);
+
+		if (mtk_log)
+		{
+			ged_log_buf_print2(*mtk_log, GED_LOG_ATTR_TIME,
+					"[dump][fan53555 0x0][0x%x]", (unsigned int)x
+					);
+		}
+		_mtk_dump_register(0x1000C000, 0x1000, 0x240, 0x10);
+		_mtk_dump_register(0x10001000, 0x1000, 0xfc0, 0x10);
+	}
+	_mtk_dump_register(0x1000f000, 0x1000, 0xfc0, 0x10);
+	_mtk_dump_register(0x10018000, 0x1000, 0xfc0, 0x10);
+	_mtk_dump_register(0x10012000, 0x1000, 0xfc0, 0x10);
+	_mtk_dump_register(0x10019000, 0x1000, 0xfc0, 0x10);
+	_mtk_dump_register(0x13000000, 0x1000, 0x0, 0x470);
+	_mtk_dump_register(0x13040000, 0x4000, 0x0, 0x4000);
+}
+
+void mtk_debug_mfg_reset(void)
+{
+	MFG_write32(0xc, 0x3);
+	udelay(1);
+	MFG_write32(0xc, 0x0);
+}
+
+#endif
+
 #ifdef MTK_GPU_SPM
 static unsigned long long _get_time(void)
 {
@@ -396,66 +469,6 @@ ssize_t mtk_kbase_dvfs_gpu_set(struct device *dev, struct device_attribute *attr
 }
 
 static DEVICE_ATTR(dvfs_gpu_dump, S_IRUGO | S_IWUSR, mtk_kbase_dvfs_gpu_show, mtk_kbase_dvfs_gpu_set);
-
-#endif
-
-#ifdef MTK_MT6797_DEBUG
-
-static void _mtk_dump_register(unsigned int pa, int size, int offset, int dsize)
-{
-	int i;
-	volatile void *base = NULL;
-
-	base = ioremap_nocache(pa, size);
-	if (base)
-	{
-		unsigned int c_offset = offset;
-		int dump_size = dsize >> 2;
-		for (i = 0; i < dump_size; i += 4)
-		{
-			if (mtk_log)
-			{
-				ged_log_buf_print2(*mtk_log, GED_LOG_ATTR_TIME,
-						"[dump][0x%08x] 0x%08x 0x%08x 0x%08x 0x%08x",
-						pa + c_offset,
-						base_read32(base+c_offset),
-						base_read32(base+c_offset+0x4),
-						base_read32(base+c_offset+0x8),
-						base_read32(base+c_offset+0xc)
-						);
-			}
-			c_offset += 0x10;
-		}
-		iounmap(base);
-	}
-	else
-	{
-		if (mtk_log)
-		{
-			ged_log_buf_print2(*mtk_log, GED_LOG_ATTR_TIME,
-					"[dump] map 0x%08x size 0x%08x fail",
-					pa, size
-					);
-		}
-	}
-}
-
-void mtk_debug_dump_registers(void)
-{
-	_mtk_dump_register(0x1000f000, 0x1000, 0xfc0, 0x10);
-	_mtk_dump_register(0x10018000, 0x1000, 0xfc0, 0x10);
-	_mtk_dump_register(0x10012000, 0x1000, 0xfc0, 0x10);
-	_mtk_dump_register(0x10019000, 0x1000, 0xfc0, 0x10);
-	_mtk_dump_register(0x13000000, 0x1000, 0x0, 0x470);
-	_mtk_dump_register(0x13040000, 0x4000, 0x0, 0x4000);
-}
-
-void mtk_debug_mfg_reset(void)
-{
-	MFG_write32(0xc, 0x3);
-	udelay(1);
-	MFG_write32(0xc, 0x0);
-}
 
 #endif
 

@@ -62,5 +62,6 @@ int mtk_set_vgpu_power_on_flag(int power_on_id);
 int mtk_set_mt_gpufreq_target(int freq_id);
 
 void mtk_trigger_aee(unsigned int mtk_log, const char *msg);
+void mtk_trigger_emi(u64 pa);
 
 #endif /* __MTK_PLATFORM_COMMON_H__ */

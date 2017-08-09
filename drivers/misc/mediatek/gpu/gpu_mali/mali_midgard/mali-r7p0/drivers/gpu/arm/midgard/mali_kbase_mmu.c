@@ -74,12 +74,6 @@ static void kbase_mmu_sync_pgd(struct device *dev,
  *        a 4kB physical page.
  */
 
-void kbase_check_PA(u64 pa)
-{
-	pr_err("[MALI] kbase_check_PA. PA=0x%llx.\n", pa);
-	kbase_debug_gpu_mem_mapping_check_pa(pa);
-}
-
 static void kbase_mmu_report_fault_and_kill(struct kbase_context *kctx,
 		struct kbase_as *as, const char *reason_str);
 

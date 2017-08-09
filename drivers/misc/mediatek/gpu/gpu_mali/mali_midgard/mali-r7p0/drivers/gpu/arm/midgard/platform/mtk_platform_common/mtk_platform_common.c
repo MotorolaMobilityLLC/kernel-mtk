@@ -307,12 +307,10 @@ static const struct file_operations kbasep_gpu_dvfs_enable_debugfs_fops = {
 	.release = single_release,
 };
 
+static struct proc_dir_entry *mali_pentry;
 
 static struct workqueue_struct     *g_aee_workqueue = NULL;
 static struct work_struct          g_aee_work;
-
-static struct proc_dir_entry *mali_pentry;
-
 static void aee_Handle(struct work_struct *_psWork)
 {
     /* avoid the build warnning */
@@ -341,6 +339,21 @@ void mtk_trigger_aee(unsigned int mtk_log, const char *msg)
     }
 }
 
+static struct work_struct          g_pa_work;
+static u64 g_pa;
+static void pa_Handle(struct work_struct *_psWork)
+{
+	bool kbase_debug_gpu_mem_mapping_check_pa(u64 pa);
+    /* avoid the build warnning */
+    _psWork = _psWork;
+	kbase_debug_gpu_mem_mapping_check_pa(g_pa);
+}
+void mtk_trigger_emi(u64 pa)
+{
+	g_pa = pa;
+	queue_work(g_aee_workqueue, &g_pa_work);
+}
+
 void proc_mali_register(void)
 {
     mali_pentry = proc_mkdir("mali", NULL);
@@ -350,6 +363,7 @@ void proc_mali_register(void)
 
     g_aee_workqueue = alloc_ordered_workqueue("mali_aeewp", WQ_FREEZABLE | WQ_MEM_RECLAIM);
     INIT_WORK(&g_aee_work, aee_Handle);
+    INIT_WORK(&g_pa_work, pa_Handle);
 
     proc_create("help", 0, mali_pentry, &kbasep_gpu_help_debugfs_fops);
     proc_create("memory_usage", 0, mali_pentry, &kbasep_gpu_memory_usage_debugfs_open);
