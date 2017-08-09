@@ -1177,6 +1177,12 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 		return NULL;
 
 	ptr += sprintf(ptr, "[mt gic dump] irq = %d\n", irq);
+
+	if (irq > mt_get_supported_irq_num()) {
+		ptr += sprintf(ptr, "[mt gic dump] error! not support to dump\n");
+		return ptr;
+	}
+
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0);
 #else
