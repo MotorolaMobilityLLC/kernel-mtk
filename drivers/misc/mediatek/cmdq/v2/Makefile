@@ -44,7 +44,7 @@ endif
 endif
 
 # platform dependent definition
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735", "mt6797"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6797"))
 ccflags-$(CONFIG_MTK_SMI_EXT) += -DCMDQ_CONFIG_SMI
 endif
 
