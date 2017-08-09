@@ -96,14 +96,14 @@ unsigned int emmc_get_wp_size(void)
 {
 	unsigned char l_ext_csd[512];
 	struct msdc_host *host_ctl;
+	u32 *csd = NULL;
+	u32 write_prot_grpsz = 0
 
 	if (0 == sg_wp_size) {
 		/* not to change ERASE_GRP_DEF after card initialized */
 		host_ctl = emmc_otp_get_host();
 
-		BUG_ON(!host_ctl);
-		BUG_ON(!host_ctl->mmc);
-		BUG_ON(!host_ctl->mmc->card);
+		BUG_ON(!host_ctl || !host_ctl->mmc || !host_ctl->mmc->card);
 
 		pr_debug("[%s:%d]mmc_host is : 0x%p\n",
 			__func__, __LINE__, host_ctl->mmc);
@@ -141,6 +141,9 @@ unsigned int emmc_get_wp_size(void)
 
 		mmc_release_host(host_ctl->mmc);
 
+		csd = host_ctl->mmc->card->raw_csd;
+		write_prot_grpsz = UNSTUFF_BITS(csd, 32, 5);
+		pr_err("otp: write_prot_grpsz is %d\n", write_prot_grpsz);
 		/* otp length equal to one write protect group size */
 		if (l_ext_csd[EXT_CSD_ERASE_GROUP_DEF] & 0x1) {
 			/* use high-capacity erase uint size, hc erase timeout,
@@ -148,10 +151,12 @@ unsigned int emmc_get_wp_size(void)
 			sg_wp_size = (512 * 1024 *
 				l_ext_csd[EXT_CSD_HC_ERASE_GRP_SIZE] *
 				l_ext_csd[EXT_CSD_HC_WP_GRP_SIZE]);
+			pr_err("otp: hc unit sg_wp_size %d\n", sg_wp_size);
 		} else {
 			/* use old erase group size and
 			   write protect group size, store in CSD */
 			sg_wp_size = (512 * host_ctl->mmc->card->erase_size);
+			pr_err("otp: non-hc unit sg_wp_size %d\n", sg_wp_size);
 		}
 	}
 
