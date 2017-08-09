@@ -39,6 +39,16 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 					0x10000e84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
 				interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
 				status = "disabled";
+				clocks = <&perisys PERI_MSDC30_0>,
+					 <&topckgen TOP_MUX_MSDC30_0>,
+					 <&topckgen TOP_MSDCPLL_CK>,
+					 <&topckgen TOP_MSDCPLL_D2>,
+					 <&topckgen TOP_MSDCPLL_D4>;
+				clock-names="MSDC0-CLOCK",
+					"MSDC0_PLL_SEL",
+					"MSDC0_PLL_800M",
+					"MSDC0_PLL_400M",
+					"MSDC0_PLL_200M";
 		};
 
 		mmc1: MSDC1@11240000{
@@ -47,6 +57,8 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 					0x10000e84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
 				interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_LOW>;
 				status = "disabled";
+				clocks = <&perisys PERI_MSDC30_1>;
+				clock-names="MSDC1-CLOCK";
 		};
 
 	/* only used for old way of DCT, can be removed in new platform */
