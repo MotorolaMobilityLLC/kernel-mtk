@@ -64,6 +64,10 @@ extern int tpd_type_cap;
 void tpd_em_log_output(int raw_x, int raw_y, int cal_x, int cal_y, int p, int down);
 void tpd_em_log_store(int raw_x, int raw_y, int cal_x, int cal_y, int p, int down);
 void tpd_em_log_release(void);
+#ifndef CREATE_TRACE_POINTS
+#define CREATE_TRACE_POINTS
+#endif
+noinline void MET_touch(int raw_x, int raw_y, int cal_x, int cal_y, int p, int down);
 
 #define TPD_TYPE_RAW_DATA   2
 #define TPD_TYPE_INT_DOWN   3
@@ -75,6 +79,7 @@ void tpd_em_log_release(void);
 
 #define TPD_EM_PRINT(raw_x, raw_y, cal_x, cal_y, p, down)                           \
 	do {                                                                            \
+		MET_touch(raw_x, raw_y, cal_x, cal_y, p, down);                         \
 		if (tpd_em_log) {                                                           \
 			if (!tpd_em_log_to_fs) {                                                \
 				tpd_em_log_output(raw_x, raw_y, cal_x, cal_y, p, down);             \

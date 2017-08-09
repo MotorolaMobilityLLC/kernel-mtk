@@ -5,6 +5,7 @@
 #include <linux/i2c.h>
 #include <linux/delay.h>
 #include "tpd.h"
+#include <met_ftrace_touch.h>
 
 #ifdef TPD_DEBUG_CODE
 int tpd_fail_count = 0;
@@ -338,6 +339,23 @@ static struct miscdevice tpd_debug_log_dev = {
 	.name = "tpd_em_log",
 	.fops = &tpd_debug_log_fops,
 };
+#ifndef CREATE_TRACE_POINTS
+#define CREATE_TRACE_POINTS
+#endif
+noinline void MET_touch(int raw_x, int raw_y, int cal_x, int cal_y, int p, int down)
+{
+	struct timeval t;
+
+	do_gettimeofday(&t);
+	if ((tpd_down_status == 0 && down == 1) || (tpd_down_status == 1 && down == 0)) {
+		trace_MET_touch("EV_EKY", t.tv_sec, t.tv_usec, "BIT_TOUCH", down);
+		tpd_down_status = !tpd_down_status;
+	}
+	if (tpd_down_status) {
+		trace_MET_touch("EV_ABS", t.tv_sec, t.tv_usec, "X", raw_x);
+		trace_MET_touch("EV_ABS", t.tv_sec, t.tv_usec, "Y", raw_y);
+	}
+}
 
 void tpd_em_log_output(int raw_x, int raw_y, int cal_x, int cal_y, int p, int down)
 {
