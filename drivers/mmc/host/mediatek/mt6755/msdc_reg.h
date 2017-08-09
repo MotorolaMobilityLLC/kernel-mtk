@@ -180,21 +180,22 @@
 /*--------------------------------------------------------------------------*/
 
 /* MSDC_CFG mask */
-#define	MSDC_CFG_MODE			(0x1  << 0)	/* RW */
-#define	MSDC_CFG_CKPDN			(0x1  << 1)	/* RW */
-#define	MSDC_CFG_RST			(0x1  << 2)	/* A0 */
-#define	MSDC_CFG_PIO			(0x1  << 3)	/* RW */
-#define	MSDC_CFG_CKDRVEN		(0x1  << 4)	/* RW */
-#define	MSDC_CFG_BV18SDT		(0x1  << 5)	/* RW */
-#define	MSDC_CFG_BV18PSS		(0x1  << 6)	/* R  */
-#define	MSDC_CFG_CKSTB			(0x1  << 7)	/* R  */
-#define	MSDC_CFG_CKDIV			(0xfff << 8)	/* RW */
-#define	MSDC_CFG_CKDIV_BITS		(12)
-#define	MSDC_CFG_CKMOD			(0x3  << 20)	/* W1C */
-#define	MSDC_CFG_CKMOD_BITS		(2)
-#define	MSDC_CFG_CKMOD_HS400		(0x1  << 22)	/* RW */
-#define	MSDC_CFG_START_BIT		(0x3  << 23)	/* RW */
-#define	MSDC_CFG_SCLK_STOP_DDR		(0x1  << 25)	/* RW */
+#define MSDC_CFG_MODE                   (0x1  << 0)     /* RW */
+#define MSDC_CFG_CKPDN                  (0x1  << 1)     /* RW */
+#define MSDC_CFG_RST                    (0x1  << 2)     /* A0 */
+#define MSDC_CFG_PIO                    (0x1  << 3)     /* RW */
+#define MSDC_CFG_CKDRVEN                (0x1  << 4)     /* RW */
+#define MSDC_CFG_BV18SDT                (0x1  << 5)     /* RW */
+#define MSDC_CFG_BV18PSS                (0x1  << 6)     /* R  */
+#define MSDC_CFG_CKSTB                  (0x1  << 7)     /* R  */
+#define MSDC_CFG_CKDIV                  (0xfff << 8)    /* RW */
+#define MSDC_CFG_CKDIV_BITS             (12)
+#define MSDC_CFG_CKMOD                  (0x3  << 20)    /* W1C */
+#define MSDC_CFG_CKMOD_BITS             (2)
+#define MSDC_CFG_CKMOD_HS400            (0x1  << 22)    /* RW */
+#define MSDC_CFG_START_BIT              (0x3  << 23)    /* RW */
+#define MSDC_CFG_SCLK_STOP_DDR          (0x1  << 25)    /* RW */
+#define MSDC_CFG_DVFS_EN                (0x1  << 30)    /* RW */
 
 /* MSDC_IOCON mask */
 #define	MSDC_IOCON_SDR104CKS		(0x1  << 0)	/* RW */

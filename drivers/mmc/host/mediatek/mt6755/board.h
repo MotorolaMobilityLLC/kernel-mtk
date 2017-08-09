@@ -79,7 +79,6 @@ enum {
 };
 
 struct msdc_ett_settings {
-	unsigned int speed_mode;
 #define MSDC_DEFAULT_MODE (0)
 #define MSDC_SDR50_MODE   (1)
 #define MSDC_DDR50_MODE   (2)
@@ -90,79 +89,6 @@ struct msdc_ett_settings {
 	unsigned int value;
 };
 
-struct msdc_hw {
-	unsigned char clk_src;	/* host clock source */
-	unsigned char cmd_edge;	/* command latch edge */
-	unsigned char rdata_edge;	/* read data latch edge */
-	unsigned char wdata_edge;	/* write data latch edge */
-	unsigned char clk_drv;	/* clock pad driving */
-	unsigned char cmd_drv;	/* command pad driving */
-	unsigned char dat_drv;	/* data pad driving */
-	unsigned char rst_drv;	/* RST-N pad driving */
-	unsigned char ds_drv;	/* eMMC5.0 DS pad driving */
-	unsigned char clk_drv_sd_18;	/* clock pad driving for SD card at 1.8v sdr104 mode */
-	unsigned char cmd_drv_sd_18;	/* command pad driving for SD card at 1.8v sdr104 mode */
-	unsigned char dat_drv_sd_18;	/* data pad driving for SD card at 1.8v sdr104 mode */
-	unsigned char clk_drv_sd_18_sdr50;	/* clock pad driving for SD card at 1.8v sdr50 mode */
-	unsigned char cmd_drv_sd_18_sdr50;	/* command pad driving for SD card at 1.8v sdr50 mode */
-	unsigned char dat_drv_sd_18_sdr50;	/* data pad driving for SD card at 1.8v sdr50 mode */
-	unsigned char clk_drv_sd_18_ddr50;	/* clock pad driving for SD card at 1.8v ddr50 mode */
-	unsigned char cmd_drv_sd_18_ddr50;	/* command pad driving for SD card at 1.8v ddr50 mode */
-	unsigned char dat_drv_sd_18_ddr50;	/* data pad driving for SD card at 1.8v ddr50 mode */
-	unsigned long flags;	/* hardware capability flags */
-	unsigned long data_pins;	/* data pins */
-	unsigned long data_offset;	/* data address offset */
-
-	unsigned char ddlsel;	/* data line delay line fine tune selecion*/
-	unsigned char rdsplsel;	/* read: data line rising or falling latch fine tune selection */
-	unsigned char wdsplsel;	/* write: data line rising or falling latch fine tune selection*/
-
-	unsigned char dat0rddly;	/*read; range: 0~31*/
-	unsigned char dat1rddly;	/*read; range: 0~31*/
-	unsigned char dat2rddly;	/*read; range: 0~31*/
-	unsigned char dat3rddly;	/*read; range: 0~31*/
-	unsigned char dat4rddly;	/*read; range: 0~31*/
-	unsigned char dat5rddly;	/*read; range: 0~31*/
-	unsigned char dat6rddly;	/*read; range: 0~31*/
-	unsigned char dat7rddly;	/*read; range: 0~31*/
-	unsigned char datwrddly;	/*write; range: 0~31*/
-	unsigned char cmdrrddly;	/*cmd; range: 0~31*/
-	unsigned char cmdrddly;	/*cmd; range: 0~31*/
-
-	unsigned char cmdrtactr_sdr50;	/* command response turn around counter, sdr 50 mode*/
-	unsigned char wdatcrctactr_sdr50;	/* write data crc turn around counter, sdr 50 mode*/
-	unsigned char intdatlatcksel_sdr50;	/* internal data latch CK select, sdr 50 mode*/
-	unsigned char cmdrtactr_sdr200;	/* command response turn around counter, sdr 200 mode*/
-	unsigned char wdatcrctactr_sdr200;	/* write data crc turn around counter, sdr 200 mode*/
-	unsigned char intdatlatcksel_sdr200;	/* internal data latch CK select, sdr 200 mode*/
-
-	struct msdc_ett_settings *ett_settings;
-	unsigned int ett_count;
-	unsigned long host_function;	/* define host function */
-	bool boot;		/* define boot host */
-	bool cd_level;		/* card detection level */
-
-	/* config gpio pull mode */
-	void (*config_gpio_pin)(int type, int pull);
-
-	/* external power control for card */
-	void (*ext_power_on)(void);
-	void (*ext_power_off)(void);
-
-	/* external sdio irq operations */
-	void (*request_sdio_eirq)(sdio_irq_handler_t sdio_irq_handler, void *data);
-	void (*enable_sdio_eirq)(void);
-	void (*disable_sdio_eirq)(void);
-
-	/* external cd irq operations */
-	void (*request_cd_eirq)(sdio_irq_handler_t cd_irq_handler, void *data);
-	void (*enable_cd_eirq)(void);
-	void (*disable_cd_eirq)(void);
-	int (*get_cd_status)(void);
-
-	/* power management callback for external module */
-	void (*register_pm)(pm_callback_t pm_cb, void *data);
-};
 
 extern struct msdc_hw msdc0_hw;
 extern struct msdc_hw msdc1_hw;

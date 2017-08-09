@@ -7,11 +7,12 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 #workaround for include mmc/card/queue.h
 ccflags-y += -I$(srctree)/drivers/mmc/card
 
-obj-$(CONFIG_MMC_MTK) += msdc_hw_ett.o
+#obj-$(CONFIG_MMC_MTK) += msdc_hw_ett.o
 obj-$(CONFIG_MMC_MTK) += sd.o
 
 obj-$(CONFIG_MMC_MTK) += dbg.o
 obj-$(CONFIG_MMC_MTK) += mt_sd_misc.o
+obj-$(CONFIG_MMC_MTK) += autok.o
 #obj-$(CONFIG_MMC_MTK) += sdio_autok.o sdio_autok_proc.o ettagent.o
 
 # kdump/kpainc interface move to lk

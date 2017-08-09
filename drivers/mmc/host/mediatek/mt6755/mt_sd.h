@@ -281,6 +281,7 @@ struct ot_work_t {
 };
 #endif
 
+#if 0
 struct msdc_host {
 	struct msdc_hw *hw;
 
@@ -396,6 +397,156 @@ struct msdc_host {
 	struct work_struct			work_tune; /* new thread tune */
 	struct mmc_request			*mrq_tune; /* backup host->mrq */
 };
+#else
+
+
+#define MSDC_NEW_TUNE
+#ifdef MSDC_NEW_TUNE
+#define MSDC_AUTOK_ON_ERROR
+#ifdef MSDC_AUTOK_ON_ERROR
+#define EIO	EILSEQ
+#endif
+/*#define DATA_TUNE_READ_DATA_ALLOW_FALLING_EDGE*/
+#endif
+
+typedef enum MSDC_POWER {
+	MSDC_VIO18_MC1 = 0,
+	MSDC_VIO18_MC2,
+	MSDC_VIO28_MC1,
+	MSDC_VIO28_MC2,
+	MSDC_VMC,
+	MSDC_VGP6,
+} MSDC_POWER_DOMAIN;
+
+struct msdc_host {
+	struct msdc_hw          *hw;
+
+	struct mmc_host         *mmc;           /* mmc structure */
+	struct mmc_command      *cmd;
+	struct mmc_data         *data;
+	struct mmc_request      *mrq;
+	int                     cmd_rsp;
+	int                     cmd_rsp_done;
+	int                     cmd_r1b_done;
+
+	int                     error;
+	spinlock_t              lock;           /* mutex */
+	spinlock_t              clk_gate_lock;
+	spinlock_t              remove_bad_card; /* to solve removing bad card
+						    race condition
+						    with hot-plug enable*/
+	spinlock_t              sdio_irq_lock;  /* avoid race condition
+						   at DAT1 interrupt case*/
+	int                     clk_gate_count;
+	struct semaphore        sem;
+
+	u32                     blksz;          /* host block size */
+	void __iomem            *base;          /* host base address */
+	int                     id;             /* host id */
+	int                     pwr_ref;        /* core power reference count */
+
+	u32                     xfer_size;      /* total transferred size */
+
+	struct msdc_dma         dma;            /* dma channel */
+	u32                     dma_addr;       /* dma transfer address */
+	u32                     dma_left_size;  /* dma transfer left size */
+	u32                     dma_xfer_size;  /* dma transfer size in bytes */
+	int                     dma_xfer;       /* dma transfer mode */
+
+	u32                     write_timeout_ms; /* write busy timeout ms */
+	u32                     timeout_ns;     /* data timeout ns */
+	u32                     timeout_clks;   /* data timeout clks */
+
+	atomic_t                abort;          /* abort transfer */
+
+	int                     irq;            /* host interrupt */
+
+	struct tasklet_struct   card_tasklet;
+#ifdef MTK_MSDC_FLUSH_BY_CLK_GATE
+	struct tasklet_struct   flush_cache_tasklet;
+#endif
+
+	struct delayed_work     set_vcore_workq;
+	struct completion       autok_done;
+	bool                    is_autok_done;
+
+	atomic_t                sdio_stopping;
+
+	struct completion       cmd_done;
+	struct completion       xfer_done;
+	struct pm_message       pm_state;
+
+
+	u32                     mclk;           /* mmc subsystem clock */
+	u32                     hclk;           /* host clock speed */
+	u32                     sclk;           /* SD/MS clock speed */
+	u8                      core_clkon;     /* host clock(cg) status */
+	u8                      timing;		/* timing specification used */
+	u8                      core_power;     /* core power */
+	u8                      card_clkon;	/* Card clock on ? */
+	u8                      power_mode;     /* host power mode */
+	u8                      bus_width;	/* data bus width */
+	u8                      card_inserted;  /* card inserted ? */
+	u8                      suspend;        /* host suspended ? */
+	u8                      reserved;
+	u8                      app_cmd;        /* for app command */
+	u32                     app_cmd_arg;
+	u64                     starttime;
+	struct timer_list       timer;
+	struct tune_counter     t_counter;
+	u32                     rwcmd_time_tune;
+	int                     read_time_tune;
+	int                     write_time_tune;
+	u32                     write_timeout_uhs104;
+	u32                     read_timeout_uhs104;
+	u32                     write_timeout_emmc;
+	u32                     read_timeout_emmc;
+	u8                      autocmd;
+	u32                     sw_timeout;
+	u32                     power_cycle;    /* power cycle done
+						   in tuning flow*/
+	bool                    power_cycle_enable; /* enable power cycle */
+	u32			continuous_fail_request_count;
+	u32                     sd_30_busy;
+	bool                    tune;
+	#ifdef MSDC_NEW_TUNE
+	bool                    async_tuning_in_progress;
+	bool                    async_tuning_done;
+	bool			legacy_tuning_in_progress;
+	bool			legacy_tuning_done;
+	int                     autok_error;
+	#endif
+	u32                     tune_latch_ck_cnt;
+	bool			first_tune_done;
+	MSDC_POWER_DOMAIN       power_domain;
+	struct msdc_saved_para  saved_para;
+	int                     sd_cd_polarity;
+	int                     sd_cd_insert_work;
+				/* to make sure insert mmc_rescan this work
+				   in start_host when boot up.
+				   Driver will get a EINT(Level sensitive)
+				   when boot up phone with card insert */
+#ifndef CONFIG_HAS_EARLYSUSPEND
+	struct wakeup_source    trans_lock;
+#else
+	struct wake_lock        trans_lock;
+#endif
+	bool                    block_bad_card;
+	struct delayed_work     write_timeout;  /* check if write busy timeout*/
+#ifdef SDIO_ERROR_BYPASS
+	int                     sdio_error;     /* sdio error can't recovery */
+#endif
+	void    (*power_control)(struct msdc_host *host, u32 on);
+	void    (*power_switch)(struct msdc_host *host, u32 on);
+	u32	vmc_cal_default;
+
+#if !defined(CONFIG_MTK_CLKMGR)
+	struct clk *clock_control;
+#endif
+	struct work_struct	work_tune; /* new thread tune */
+	struct mmc_request	*mrq_tune; /* backup host->mrq */
+};
+#endif
 
 struct tag_msdc_hw_para {
 	unsigned int version;	/* msdc structure version info */
@@ -731,6 +882,84 @@ extern struct msdc_hw msdc3_hw;
 extern int msdc_setting_parameter(struct msdc_hw *hw, unsigned int *para);
 /*workaround for VMC 1.8v -> 1.84v */
 extern void upmu_set_rg_vmc_184(unsigned char x);
+
+struct msdc_hw {
+	unsigned char clk_src;	/* host clock source */
+	unsigned char cmd_edge;	/* command latch edge */
+	unsigned char rdata_edge;	/* read data latch edge */
+	unsigned char wdata_edge;	/* write data latch edge */
+	unsigned char clk_drv;	/* clock pad driving */
+	unsigned char cmd_drv;	/* command pad driving */
+	unsigned char dat_drv;	/* data pad driving */
+	unsigned char rst_drv;	/* RST-N pad driving */
+	unsigned char ds_drv;	/* eMMC5.0 DS pad driving */
+	unsigned char clk_drv_sd_18;	/* clock pad driving for SD card at 1.8v sdr104 mode */
+	unsigned char cmd_drv_sd_18;	/* command pad driving for SD card at 1.8v sdr104 mode */
+	unsigned char dat_drv_sd_18;	/* data pad driving for SD card at 1.8v sdr104 mode */
+	unsigned char clk_drv_sd_18_sdr50;	/* clock pad driving for SD card at 1.8v sdr50 mode */
+	unsigned char cmd_drv_sd_18_sdr50;	/* command pad driving for SD card at 1.8v sdr50 mode */
+	unsigned char dat_drv_sd_18_sdr50;	/* data pad driving for SD card at 1.8v sdr50 mode */
+	unsigned char clk_drv_sd_18_ddr50;	/* clock pad driving for SD card at 1.8v ddr50 mode */
+	unsigned char cmd_drv_sd_18_ddr50;	/* command pad driving for SD card at 1.8v ddr50 mode */
+	unsigned char dat_drv_sd_18_ddr50;	/* data pad driving for SD card at 1.8v ddr50 mode */
+	unsigned long flags;	/* hardware capability flags */
+	unsigned long data_pins;	/* data pins */
+	unsigned long data_offset;	/* data address offset */
+
+	unsigned char ddlsel;	/* data line delay line fine tune selecion*/
+	unsigned char rdsplsel;	/* read: data line rising or falling latch fine tune selection */
+	unsigned char wdsplsel;	/* write: data line rising or falling latch fine tune selection*/
+
+	unsigned char dat0rddly;	/*read; range: 0~31*/
+	unsigned char dat1rddly;	/*read; range: 0~31*/
+	unsigned char dat2rddly;	/*read; range: 0~31*/
+	unsigned char dat3rddly;	/*read; range: 0~31*/
+	unsigned char dat4rddly;	/*read; range: 0~31*/
+	unsigned char dat5rddly;	/*read; range: 0~31*/
+	unsigned char dat6rddly;	/*read; range: 0~31*/
+	unsigned char dat7rddly;	/*read; range: 0~31*/
+	unsigned char datwrddly;	/*write; range: 0~31*/
+	unsigned char cmdrrddly;	/*cmd; range: 0~31*/
+	unsigned char cmdrddly;	/*cmd; range: 0~31*/
+
+	unsigned char cmdrtactr_sdr50;	/* command response turn around counter, sdr 50 mode*/
+	unsigned char wdatcrctactr_sdr50;	/* write data crc turn around counter, sdr 50 mode*/
+	unsigned char intdatlatcksel_sdr50;	/* internal data latch CK select, sdr 50 mode*/
+	unsigned char cmdrtactr_sdr200;	/* command response turn around counter, sdr 200 mode*/
+	unsigned char wdatcrctactr_sdr200;	/* write data crc turn around counter, sdr 200 mode*/
+	unsigned char intdatlatcksel_sdr200;	/* internal data latch CK select, sdr 200 mode*/
+
+	struct msdc_ett_settings *ett_hs200_settings;
+	unsigned int ett_hs200_count;
+	struct msdc_ett_settings *ett_hs400_settings;
+	unsigned int ett_hs400_count;
+
+	unsigned char host_function;          /* define host function*/
+
+	bool boot;		/* define boot host */
+	bool cd_level;		/* card detection level */
+
+	/* config gpio pull mode */
+	void (*config_gpio_pin)(int type, int pull);
+
+	/* external power control for card */
+	void (*ext_power_on)(void);
+	void (*ext_power_off)(void);
+
+	/* external sdio irq operations */
+	void (*request_sdio_eirq)(sdio_irq_handler_t sdio_irq_handler, void *data);
+	void (*enable_sdio_eirq)(void);
+	void (*disable_sdio_eirq)(void);
+
+	/* external cd irq operations */
+	void (*request_cd_eirq)(sdio_irq_handler_t cd_irq_handler, void *data);
+	void (*enable_cd_eirq)(void);
+	void (*disable_cd_eirq)(void);
+	int (*get_cd_status)(void);
+
+	/* power management callback for external module */
+	void (*register_pm)(pm_callback_t pm_cb, void *data);
+};
 
 extern void __iomem *gpio_reg_base;
 extern void __iomem *infracfg_ao_reg_base;

@@ -9,7 +9,7 @@
 #include <dt-bindings/clock/mt6755-clk.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
-#include <dt-bindings/mmc/mt67xx-msdc.h>
+#include <dt-bindings/mmc/mt6755-msdc.h>
 #include "mt6755-pinfunc.h"
 / {
 	model = "MT6755";
@@ -30,8 +30,8 @@
 		#size-cells = <1>;
 		ranges = <0 0 0 0xffffffff>;
 
-		msdc0@11230000 {
-			compatible = "mediatek,msdc0";
+		mmc0: msdc0@11230000 {
+			compatible = "mediatek,mt6755-mmc";
 			reg = <0x11230000 0x10000  /* MSDC0_BASE   */
 			       0x10001e84 0x2>;    /* FPGA PWR_GPIO, PWR_GPIO_EO */
 			interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_LOW>;
@@ -54,8 +54,8 @@
 			*/
 		};
 
-		msdc1@11240000 {
-			compatible = "mediatek,msdc1";
+		mmc1: msdc1@11240000 {
+			compatible = "mediatek,mt6755-mmc";
 			reg = <0x11240000 0x10000>;
 			interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&infrasys INFRA_MSDC1>;
@@ -81,7 +81,7 @@
 			cd-gpios = <&pio 3 0>;
 			*/
 		};
-
+/*
 		msdc2@11250000 {
 			compatible = "mediatek,msdc2";
 			reg = <0x11250000 0x10000>;
@@ -97,7 +97,7 @@
 			clocks = <&infrasys INFRA_MSDC3>;
 			clock-names = "MSDC3-CLOCK";
 		};
-
+*/
 	};
 
 	psci {

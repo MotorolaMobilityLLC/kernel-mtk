@@ -1802,17 +1802,23 @@ void msdc_hw_parameter_debug(struct msdc_hw *hw, struct seq_file *m, void *v)
 	seq_printf(m, "hw->datwrddly = %x\n", hw->datwrddly);
 	seq_printf(m, "hw->cmdrrddly = %x\n", hw->cmdrrddly);
 	seq_printf(m, "hw->cmdrddly = %x\n", hw->cmdrddly);
-	seq_printf(m, "hw->ett_count = %x\n", hw->ett_count);
-	/*seq_printf(m,"hw->ett_settings  = %x\n", hw->ett_settings);*/
+	seq_printf(m, "hw->ett_hs200_count = %x\n", hw->ett_hs200_count);
+	seq_printf(m, "hw->ett_hs400_count = %x\n", hw->ett_hs400_count);
 	seq_printf(m, "hw->host_function = %x\n", (unsigned int)hw->host_function);
 	seq_printf(m, "hw->boot = %x\n", hw->boot);
 
-	for (i = 0; i < hw->ett_count; i++) {
-		seq_printf(m, "msdc0_ett_settings[%d]: %x, %x, %x, %x\n", i,
-			   hw->ett_settings[i].speed_mode, hw->ett_settings[i].reg_addr,
-			   hw->ett_settings[i].reg_offset, hw->ett_settings[i].value);
+	for (i = 0; i < hw->ett_hs200_count; i++) {
+		seq_printf(m, "msdc0_ett_hs200_settings[%d]: %x, %x, %x\n", i,
+		hw->ett_hs200_settings[i].reg_addr,
+		hw->ett_hs200_settings[i].reg_offset, hw->ett_hs200_settings[i].value);
 	}
-
+#if defined(MSDC0_EMMC50_SUPPORT)
+	for (i = 0; i < hw->ett_hs400_count; i++) {
+		seq_printf(m, "msdc0_ett_hs400_settings[%d]: %x, %x, %x\n", i,
+		hw->ett_hs400_settings[i].reg_addr,
+		hw->ett_hs400_settings[i].reg_offset, hw->ett_hs400_settings[i].value);
+	}
+#endif
 }
 
 /* ========== driver proc interface =========== */
@@ -1848,14 +1854,17 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "-> Clokc SRC selection Host[2]<%d>\n", msdc_clock_src[2]);
 	seq_printf(m, "-> Clokc SRC selection Host[3]<%d>\n", msdc_clock_src[3]);
 	seq_puts(m, "=========================================\n\n");
-#ifdef CFG_DEV_MSDC0
-	seq_puts(m, "Index<4> msdc0 hw parameter and ett settings:\n");
-	msdc_hw_parameter_debug(&msdc0_hw, m, v);
-#endif
-#ifdef CFG_DEV_MSDC1
-	seq_puts(m, "Index<5> msdc1 hw parameter:\n");
-	msdc_hw_parameter_debug(&msdc1_hw, m, v);
-#endif
+
+	if (mtk_msdc_host[0]) {
+		seq_puts(m, "Index<4> msdc0 hw parameter and ett settings:\n");
+		msdc_hw_parameter_debug(mtk_msdc_host[0]->hw, m, v);
+	}
+
+	if (mtk_msdc_host[1]) {
+		seq_puts(m, "Index<5> msdc1 hw parameter:\n");
+		msdc_hw_parameter_debug(mtk_msdc_host[1]->hw, m, v);
+	}
+
 	return 0;
 }
 
