@@ -105,6 +105,8 @@ static void __iomem *pwrap_base;
 #define PMIC_CW00_XO_EXTBUF2_EN_M_SHIFT		5
 #define PMIC_CW00_XO_EXTBUF3_MODE_MASK		0x3
 #define PMIC_CW00_XO_EXTBUF3_MODE_SHIFT		6
+#define PMIC_CW00_XO_BB_LPM_EN_MASK		0x1
+#define PMIC_CW00_XO_BB_LPM_EN_SHIFT		12
 
 /*
  * 0x701A	CW13	Code Word 13
@@ -264,6 +266,28 @@ static void pmic_clk_buf_ctrl(CLK_BUF_SWCTRL_STATUS_T *status)
 		     status[PMIC_CLK_BUF_NFC]);
 }
 
+/*
+ * Baseband Low Power Mode (BBLPM) for PMIC clkbuf
+ * Condition: flightmode on + conn mtcmos off + NFC clkbuf off + enter deepidle
+ * Caller: deep idle
+ */
+void clk_buf_control_bblpm(bool on)
+{
+	u32 cw00 = 0;
+
+	if (!is_pmic_clkbuf ||
+	    (pmic_clk_buf_swctrl[PMIC_CLK_BUF_NFC] == CLK_BUF_SW_ENABLE))
+		return;
+
+	pmic_config_interface_nolock(PMIC_CW00_ADDR, (on ? 1 : 0),
+			      PMIC_CW00_XO_BB_LPM_EN_MASK,
+			      PMIC_CW00_XO_BB_LPM_EN_SHIFT);
+
+	pmic_read_interface_nolock(PMIC_CW00_ADDR, &cw00,
+			    PMIC_REG_MASK, PMIC_REG_SHIFT);
+	clk_buf_dbg("%s(%u): CW00=0x%x\n", __func__, (on ? 1 : 0), cw00);
+}
+
 /* for spm driver use */
 bool is_clk_buf_under_flightmode(void)
 {
@@ -288,8 +312,20 @@ void clk_buf_set_by_flightmode(bool is_flightmode_on)
 
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 {
-	if (is_pmic_clkbuf)
+	if (is_pmic_clkbuf) {
+		mutex_lock(&clk_buf_ctrl_lock);
+
+		/* record the status of NFC from caller for checking BBLPM */
+		if (id == CLK_BUF_NFC)
+			pmic_clk_buf_swctrl[id] = onoff;
+
+		mutex_unlock(&clk_buf_ctrl_lock);
+
+		clk_buf_dbg("%s: id=%d, onoff=%d, is_flightmode_on=%d\n",
+			    __func__, id, onoff, g_is_flightmode_on);
+
 		return false;
+	}
 
 	if (id >= CLK_BUF_INVALID) /* TODO: need check DCT tool for CLK BUF SW control */
 		return false;

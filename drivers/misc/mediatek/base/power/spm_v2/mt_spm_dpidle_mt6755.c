@@ -6,6 +6,7 @@
 #include "mt_spm.h"
 #include "mt_spm_internal.h"
 #include "mt_spm_pmic_wrap.h"
+#include <mt_clkbuf_ctl.h>
 
 static u32 ap_pll_con0_val;
 static void __iomem *apmixedsys_base_in_dpidle;
@@ -58,6 +59,7 @@ void spm_dpidle_pre_process(void)
 #if defined(PMIC_CLK_SRC_BY_SRCCLKEN_IN1)
 		pmic_config_interface_nolock(MT6351_BUCK_ALL_CON2, 0x111, 0x3FF, 0);
 #endif
+		clk_buf_control_bblpm(true);
 	}
 }
 
@@ -65,6 +67,8 @@ void spm_dpidle_post_process(void)
 {
 	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off()) {
+		clk_buf_control_bblpm(false);
+
 #if defined(PMIC_CLK_SRC_BY_SRCCLKEN_IN1)
 		pmic_config_interface_nolock(MT6351_BUCK_ALL_CON2, 0x0, 0x3FF, 0);
 #endif

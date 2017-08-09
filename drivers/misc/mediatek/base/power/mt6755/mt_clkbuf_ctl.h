@@ -76,6 +76,7 @@ void clk_buf_get_swctrl_status(CLK_BUF_SWCTRL_STATUS_T *status);
 void clk_buf_set_by_flightmode(bool is_flightmode_on);
 void clk_buf_save_afc_val(unsigned int afcdac);
 void clk_buf_write_afcdac(void);
+void clk_buf_control_bblpm(bool on);
 bool clk_buf_init(void);
 bool is_clk_buf_under_flightmode(void);
 bool is_clk_buf_from_pmic(void);
