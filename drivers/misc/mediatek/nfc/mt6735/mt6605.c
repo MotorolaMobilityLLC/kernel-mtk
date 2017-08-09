@@ -126,9 +126,9 @@ struct pinctrl_state *st_irq_init = NULL;
 
 /* For DMA */
 static char *I2CDMAWriteBuf;	/*= NULL;*//* unnecessary initialise */
-static unsigned int I2CDMAWriteBuf_pa;	/* = NULL; */
+static unsigned long long I2CDMAWriteBuf_pa;	/* = NULL; */
 static char *I2CDMAReadBuf;	/*= NULL;*//* unnecessary initialise */
-static unsigned int I2CDMAReadBuf_pa;	/* = NULL; */
+static unsigned long long I2CDMAReadBuf_pa;	/* = NULL; */
 
 static int fgNfcChip;		/*= 0;*//* unnecessary initialise */
 int forceExitBlockingRead = 0;
