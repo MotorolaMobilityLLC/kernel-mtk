@@ -10562,7 +10562,7 @@ static irqreturn_t ISP_Irq_CAM_A(MINT32 Irq, void *DeviceId)
             }else{
                 magic_num = ISP_RD32(CAM_REG_RRZO_FH_SPARE_3(reg_module));
             }
-            if (g1stSof[module]) {
+			/* temp for VR sanity fail timestamp wrong if (g1stSof[module])*/ {
                 m_sec = sec;
                 m_usec = usec;
                 gSTime[module].sec = sec;
