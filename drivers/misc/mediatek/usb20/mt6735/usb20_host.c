@@ -8,8 +8,6 @@
  * Licensed under the GPL-2 or later.
  */
 
-/* FIXME, temporialy marked to avoid host to affect charging & usb device mode */
-#undef CONFIG_USB_MTK_OTG
 #ifdef CONFIG_USB_MTK_OTG
 #include <linux/module.h>
 #include <linux/kernel.h>

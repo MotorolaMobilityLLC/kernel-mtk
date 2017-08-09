@@ -3,8 +3,6 @@
 
 #define ID_PIN_USE_EX_EINT 1
 
-/* FIXME, temporialy marked to avoid host to affect charging & usb device mode */
-#undef CONFIG_USB_MTK_OTG
 #ifdef CONFIG_USB_MTK_OTG
 #ifdef ID_PIN_USE_EX_EINT
 #define IDDIG_EINT_PIN (GPIO_OTG_IDDIG_EINT_PIN & ~(0x80000000))
