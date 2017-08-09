@@ -3577,7 +3577,7 @@ int primary_display_suspend(void)
 
 	/* need leave share sram for suspend */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
 
 	/* switch to vencpll before disable mmsys clk */
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
@@ -3868,7 +3868,7 @@ int primary_display_resume(void)
 
 	/* need enter share sram for resume */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
 
 done:
 	primary_set_state(DISP_ALIVE);

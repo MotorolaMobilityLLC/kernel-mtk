@@ -314,7 +314,7 @@ void _acquire_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
 
 	/* 3.try to share wrot sram */
 	acquireResult = cmdqRecWriteForResource(handle, resourceEvent,
-		0x1400A000+0xb0, 1, ~0);
+		0x1400F000+0xb0, 1, ~0);
 	if (acquireResult < 0) {
 		/* acquire resource fail */
 		DISPERR("acquire resource fail\n");
@@ -368,7 +368,7 @@ void _release_wrot_resource_nolock(CMDQ_EVENT_ENUM resourceEvent)
 	_cmdq_insert_wait_frame_done_token_mira(handle);
 
 	/* 3.release share sram */
-	cmdqRecWrite(handle, 0x1400A000+0xb0, 0, ~0); /* why need ??? */
+	cmdqRecWrite(handle, 0x1400F000+0xb0, 0, ~0); /* why need ??? */
 	cmdqRecReleaseResource(handle, resourceEvent);
 
 	/* set rdma golden setting parameters*/
@@ -766,7 +766,7 @@ void _cmd_mode_enter_idle(void)
 
 	/* need leave share sram for disable mmsys clk */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
 
 	/* please keep last */
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS)) {
@@ -787,7 +787,7 @@ void _cmd_mode_leave_idle(void)
 
 
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
 }
 
 void primary_display_idlemgr_enter_idle_nolock(void)
@@ -933,7 +933,7 @@ int primary_display_lowpower_init(void)
 
 	/* cmd mode always enable share sram */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
 
 	return 0;
 }
@@ -990,20 +990,20 @@ void enter_pd_by_cmdq(cmdqRecHandle handler)
 void enter_share_sram(CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. register call back first */
-	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0,
+	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT1,
 		_acquire_wrot_resource, _release_wrot_resource);
 
 	/* 2. try to allocate sram at the fisrt time */
-	_acquire_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT0);
+	_acquire_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT1);
 }
 
 void leave_share_sram(CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. unregister call back */
-	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0, NULL, NULL);
+	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT1, NULL, NULL);
 
 	/* 2. try to release share sram */
-	_release_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT0);
+	_release_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT1);
 }
 
 void set_hrtnum(unsigned int new_hrtnum)
