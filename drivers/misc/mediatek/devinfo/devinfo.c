@@ -144,10 +144,10 @@ static int __init devinfo_init(void)
 	struct device *device;
 
 	devinfo_dev = MKDEV(MAJOR_DEV_NUM, 0);
-	pr_info("[%s]init\n", MODULE_NAME);
+	pr_debug("[%s]init\n", MODULE_NAME);
 	ret = register_chrdev_region(devinfo_dev, 1, DEV_NAME);
 	if (ret) {
-		pr_info("[%s] register device failed, ret:%d\n", MODULE_NAME, ret);
+		pr_warn("[%s] register device failed, ret:%d\n", MODULE_NAME, ret);
 		return ret;
 	}
 	/*create class*/
@@ -199,7 +199,7 @@ static int __init devinfo_parse_dt(unsigned long node, const char *uname, int de
 		for (i = 0; i < size; i++)
 			g_devinfo_data[i] = tags->data[i];
 		/* print chip id for debugging purpose */
-		pr_info("tag_devinfo_data size:%d\n", size);
+		pr_debug("tag_devinfo_data size:%d\n", size);
 	}
 
 	return 1;
