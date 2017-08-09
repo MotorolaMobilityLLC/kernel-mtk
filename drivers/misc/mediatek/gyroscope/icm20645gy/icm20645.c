@@ -844,19 +844,20 @@ static int icm20645_gpio_config(void)
 	if (IS_ERR(pinctrl)) {
 		ret = PTR_ERR(pinctrl);
 		GYRO_ERR("Cannot find gyro pinctrl!\n");
+		return ret;
 	}
 	pins_default = pinctrl_lookup_state(pinctrl, "pin_default");
 	if (IS_ERR(pins_default)) {
 		ret = PTR_ERR(pins_default);
 		GYRO_ERR("Cannot find gyro pinctrl default!\n");
-
+		return ret;
 	}
 
 	pins_cfg = pinctrl_lookup_state(pinctrl, "pin_cfg");
 	if (IS_ERR(pins_cfg)) {
 		ret = PTR_ERR(pins_cfg);
 		GYRO_ERR("Cannot find gyro pinctrl pin_cfg!\n");
-
+		return ret;
 	}
 	pinctrl_select_state(pinctrl, pins_cfg);
 

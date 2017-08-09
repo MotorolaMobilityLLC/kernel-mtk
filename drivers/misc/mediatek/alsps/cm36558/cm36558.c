@@ -960,19 +960,20 @@ int CM36558_setup_eint(struct i2c_client *client)
 	if (IS_ERR(pinctrl)) {
 		ret = PTR_ERR(pinctrl);
 		APS_ERR("Cannot find alsps pinctrl!\n");
+		return ret;
 	}
 	pins_default = pinctrl_lookup_state(pinctrl, "pin_default");
 	if (IS_ERR(pins_default)) {
 		ret = PTR_ERR(pins_default);
 		APS_ERR("Cannot find alsps pinctrl default!\n");
-
+		return ret;
 	}
 
 	pins_cfg = pinctrl_lookup_state(pinctrl, "pin_cfg");
 	if (IS_ERR(pins_cfg)) {
 		ret = PTR_ERR(pins_cfg);
 		APS_ERR("Cannot find alsps pinctrl pin_cfg!\n");
-
+		return ret;
 	}
 	pinctrl_select_state(pinctrl, pins_cfg);
 /* eint request */
@@ -1522,7 +1523,7 @@ static int CM36558_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	atomic_set(&obj->als_thd_val_high, obj->hw->als_threshold_high);
 	atomic_set(&obj->als_thd_val_low, obj->hw->als_threshold_low);
 	atomic_set(&obj->init_done, 0);
-	obj->irq_node = of_find_compatible_node(NULL, NULL, "mediatek,m_alsps_pl");
+	obj->irq_node = of_find_compatible_node(NULL, NULL, "mediatek,als_ps");
 
 	obj->enable = 0;
 	obj->pending_intr = 0;

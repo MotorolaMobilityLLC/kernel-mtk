@@ -2623,10 +2623,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	m_acc_pl@0 {
 			compatible = "mediatek,m_acc_pl";
 	};
-	als_ps@0 {
+	als:als_ps@0 {
 			compatible = "mediatek,als_ps";
 	};
-	als:m_alsps_pl@0 {
+	m_alsps_pl@0 {
 			compatible = "mediatek,m_alsps_pl";
 	};
 	m_batch_pl@0 {
@@ -2635,10 +2635,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	batchsensor@0 {
 			compatible = "mediatek,batchsensor";
 	};
-	gyroscope@0 {
+	gyro:gyroscope@0 {
 			compatible = "mediatek,gyroscope";
 	};
-	gyro:m_gyro_pl@0 {
+	m_gyro_pl@0 {
 			compatible = "mediatek,m_gyro_pl";
 	};
 	barometer@0 {
@@ -2653,10 +2653,10 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	m_hmdy_pl@0 {
 			compatible = "mediatek,m_hmdy_pl";
 	};
-	msensor@0 {
+	mse:msensor@0 {
 			compatible = "mediatek,msensor";
 	};
-	mse:m_mag_pl@0 {
+	m_mag_pl@0 {
 			compatible = "mediatek,m_mag_pl";
 	};
 	orientation@0 {
