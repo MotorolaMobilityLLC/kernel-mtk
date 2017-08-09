@@ -431,7 +431,7 @@ int mtk_wdt_swsysret_config(int bit, int set_value)
 	mt_reg_sync_writel(wdt_sys_val, MTK_WDT_SWSYSRST);
 	spin_unlock(&rgu_reg_operation_spinlock);
 
-	mdelay(10);
+	/* mdelay(10); */
 	pr_debug("after set wdt_sys_val =%x,wdt_sys_val=%x\n", __raw_readl(MTK_WDT_SWSYSRST), wdt_sys_val);
 	return 0;
 }
