@@ -446,9 +446,9 @@ static inline void mtu3d_link_intr_handler(struct musb *musb, u32 dwLinkIntValue
 
 	case SSUSB_SPEED_SUPER:
 		os_printk(K_ALET, "USB Speed = Super Speed\n");
+#ifndef CONFIG_USBIF_COMPLIANCE
 		if (speed == SSUSB_SPEED_INACTIVE)
 			musb_g_reset(musb);
-#ifndef CONFIG_USBIF_COMPLIANCE
 		speed_last = speed;
 		speed = SSUSB_SPEED_SUPER;
 		ss_timestamp = CURRENT_TIME;

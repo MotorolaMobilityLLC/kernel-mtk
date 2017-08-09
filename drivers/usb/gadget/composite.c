@@ -1258,6 +1258,9 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 	struct usb_function		*f = NULL;
 	u8				endp;
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
+#ifdef CONFIG_USBIF_COMPLIANCE
+	struct usb_otg_descriptor *otg_desc = req->buf;
+#endif
 
 	if (!(ctrl->bRequest == USB_REQ_GET_STATUS
 			|| ctrl->bRequest == USB_REQ_CLEAR_FEATURE
@@ -1282,8 +1285,6 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		switch (w_value >> 8) {
 #ifdef CONFIG_USBIF_COMPLIANCE
 		case USB_DT_OTG:
-			struct usb_otg_descriptor *otg_desc = req->buf;
-
 			otg_desc->bLength = sizeof(*otg_desc);
 			otg_desc->bDescriptorType = USB_DT_OTG;
 			otg_desc->bmAttributes = USB_OTG_SRP | USB_OTG_HNP;

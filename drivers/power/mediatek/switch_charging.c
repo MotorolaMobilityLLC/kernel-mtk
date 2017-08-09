@@ -993,6 +993,8 @@ void select_charging_current(void)
 				else
 					g_temp_CC_value = batt_cust_data.usb_charger_current_unconfigured;
 
+				g_temp_input_CC_value = g_temp_CC_value;
+
 				battery_log(BAT_LOG_CRTI,
 					    "[BATTERY] STANDARD_HOST CC mode charging : %d on %d state\r\n",
 					    g_temp_CC_value, g_usb_state);
@@ -1137,7 +1139,10 @@ static void pchr_turn_on_charging(void)
 		    || g_temp_input_CC_value == CHARGE_CURRENT_0_00_MA) {
 
 			charging_enable = KAL_FALSE;
-
+#if defined(CONFIG_USB_IF)
+			battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
+						 &g_temp_input_CC_value);
+#endif
 			battery_log(BAT_LOG_CRTI,
 				    "[BATTERY] charging current is set 0mA, turn off charging !\r\n");
 		} else {

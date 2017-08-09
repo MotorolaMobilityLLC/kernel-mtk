@@ -833,14 +833,6 @@ static unsigned int charging_set_current(void *data)
 	register_value = charging_parameter_to_value(CS_VTH, array_size, set_chr_current);
 	/* bq25890_config_interface(bq25890_CON4, register_value, 0x7F, 0); */
 	bq25890_set_ichg(register_value);
-	/*For USB_IF compliance test only when USB is in suspend(Ibus < 2.5mA) or unconfigured(Ibus < 70mA) states*/
-#ifdef CONFIG_USBIF_COMPLIANCE
-	if (current_value < CHARGE_CURRENT_100_00_MA)
-		register_value = 0x7f;
-	else
-		register_value = 0x13;
-	charging_set_vindpm(&register_value);
-#endif
 
 	return status;
 }
@@ -870,6 +862,16 @@ static unsigned int charging_set_input_current(void *data)
 
 	/* bq25890_config_interface(bq25890_CON0, register_value, 0x3F, 0);//input  current */
 	bq25890_set_iinlim(register_value);
+
+/*For USB_IF compliance test only when USB is in suspend(Ibus < 2.5mA) or unconfigured(Ibus < 70mA) states*/
+#ifdef CONFIG_USBIF_COMPLIANCE
+	if (current_value < CHARGE_CURRENT_100_00_MA)
+		register_value = 0x7f;
+	else
+		register_value = 0x13;
+
+	charging_set_vindpm(&register_value);
+#endif
 
 	return status;
 }
