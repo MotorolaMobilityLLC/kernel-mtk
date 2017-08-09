@@ -1035,6 +1035,14 @@ free_card:
 }
 
 /*
+ * SD card power cycle, if SD use MMC_CAP_HW_RESET, please remove this function
+ */
+int mmc_sd_power_cycle(struct mmc_host *host, u32 ocr, struct mmc_card *card)
+{
+	return mmc_sd_init_card(host, ocr, card);
+}
+
+/*
  * Host is being removed. Free up the current card.
  */
 static void mmc_sd_remove(struct mmc_host *host)

@@ -2410,13 +2410,6 @@ static void msdc_set_mclk(struct msdc_host *host, unsigned char timing, u32 hz)
 }
 
 /* 0 means pass */
-/* weiping fix power-tune */
-static u32 msdc_power_tuning(struct msdc_host *host)
-{
-	return 0;
-}
-/* weiping fix power-tune */
-#if 0
 static u32 msdc_power_tuning(struct msdc_host *host)
 {
 	struct mmc_host *mmc = host->mmc;
@@ -2563,7 +2556,6 @@ static u32 msdc_power_tuning(struct msdc_host *host)
 
 	return ret;
 }
-#endif /* weiping fix power-tune */
 
 static void msdc_send_stop(struct msdc_host *host)
 {
