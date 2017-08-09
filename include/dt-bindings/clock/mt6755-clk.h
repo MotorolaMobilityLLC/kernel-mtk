@@ -204,7 +204,8 @@
 #define	INFRA_SPI1	57
 #define	INFRA_I2C4	58
 #define	INFRA_MD_TEMP_SHARE	59
-#define INFRA_NR_CLK	60
+#define INFRA_CLK_13M	60
+#define INFRA_NR_CLK	61
 
 
 

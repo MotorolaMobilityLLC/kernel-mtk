@@ -60,6 +60,7 @@ static DEFINE_SPINLOCK(mt6755_clk_lock);
 #define clk_null		"clk_null"
 #define clk26m			"clk26m"
 #define clk32k			"clk32k"
+#define clk13m			"clk13m"
 
 #define clkph_mck_o		"clkph_mck_o"
 #define dpi_ck			"dpi_ck"
@@ -637,6 +638,7 @@ static struct mtk_fixed_factor top_divs[] __initdata = {
 	FACTOR(TOP_UNIVPLL3_D4, univpll3_d4, univpll3_ck, 1, 4),
 
 	FACTOR(TOP_VENCPLL_CK, vencpll_ck, vencpll, 1, 1),
+	FACTOR(INFRA_CLK_13M, clk13m, clk26m, 1, 2),
 	/*FACTOR(TOP_VENCPLL_D3, vencpll_d3, vencpll, 1, 1),
 	FACTOR(TOP_WHPLL_AUDIO_CK, whpll_audio_ck, clk_null, 1, 1),*/
 };
