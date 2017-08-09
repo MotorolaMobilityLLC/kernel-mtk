@@ -667,6 +667,11 @@ void slimport_invoke_cable_callbacks(enum HDMI_STATE state)
 	}
 }
 
+static void slimport_drv_dump_register(void)
+{
+	SP_CTRL_Dump_Reg();
+}
+
 /************************** ****************************************************/
 const struct HDMI_DRIVER *HDMI_GetDriver(void)
 {
@@ -692,6 +697,7 @@ const struct HDMI_DRIVER *HDMI_GetDriver(void)
 		.register_callback   = slimport_register_cable_insert_callback,
 		.unregister_callback = slimport_unregister_cable_insert_callback,
         .force_on = slimport_drv_force_on,
+        .dump = slimport_drv_dump_register,
 	};
 
     	SLIMPORT_FUNC();

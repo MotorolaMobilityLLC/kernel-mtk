@@ -300,6 +300,14 @@ int hdmi_wait_vsync_debug(int enable)
 	return 0;
 }
 
+int hdmi_dump_vendor_chip_register(void)
+{
+	int ret = 0;
+
+	if (hdmi_drv != NULL && hdmi_drv->dump != NULL)
+		hdmi_drv->dump();
+	return ret;
+}
 /* -->for debug */
 
 #ifdef MM_MHL_DVFS

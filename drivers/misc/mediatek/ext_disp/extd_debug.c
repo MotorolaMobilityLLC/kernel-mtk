@@ -83,7 +83,9 @@ static void process_dbg_opt(const char *opt)
 			hdmi_wait_vsync_debug(1);
 		else if (0 == strncmp(opt + 11, "off", 3))
 			hdmi_wait_vsync_debug(0);
-	} else
+	} else if (0 == strncmp(opt, "dumpReg", 7))
+		hdmi_dump_vendor_chip_register();
+	else
 		goto Error;
 
 	return;

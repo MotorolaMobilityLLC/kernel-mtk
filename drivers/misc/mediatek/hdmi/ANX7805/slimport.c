@@ -607,14 +607,6 @@ static int irq_count_for_cable_plugout = 0;
 
 irqreturn_t anx7805_cbl_det_isr(int irq, void *data)
 {
-/*
-	struct anx7805_data *anx7805 = data;
-	int status;
-*/
-/*
-	if (irq_count >= 1)
-		return IRQ_HANDLED;
-*/
 	irq_count++;
 	if (gpio_get_value(mhl_eint_gpio_number)) {
 		
@@ -644,7 +636,6 @@ static void anx7805_work_func(struct work_struct *work)
 	struct anx7805_data *td = container_of(work, struct anx7805_data,
 	                                       work.work);
 	/*pr_err(" cable- GPIO-%d\n", gpio_get_value(mhl_eint_gpio_number));*/
-
 	SP_CTRL_Main_Procss();
 	queue_delayed_work(td->workqueue, &td->work,
 	                   msecs_to_jiffies(300));
@@ -660,18 +651,10 @@ static int anx7805_irq_kthread(void *data)
 	sched_setscheduler(current, SCHED_RR, &param);
 
     for( ;; ) {
-		/*
-        	set_current_state(TASK_INTERRUPTIBLE);
-        	wait_event_interruptible(mhl_irq_wq, atomic_read(&mhl_irq_event));
-        	set_current_state(TASK_RUNNING);
-		cable_status = atomic_read(&mhl_irq_event);
-		atomic_set(&mhl_irq_event, 0);
-		*/
 		wait_event_interruptible(mhl_irq_wq, atomic_read(&mhl_irq_event));
 		cable_status = atomic_read(&mhl_irq_event);
 		atomic_set(&mhl_irq_event, 0);
 
-		pr_err("444444444444444444444\n");
 		if (cable_status == 0x01) {
 			pr_err("cable plug-in, and create context\n");
 			slimport_edid_p = si_edid_create_context(NULL, NULL);
@@ -901,7 +884,6 @@ static int anx7805_i2c_probe(struct i2c_client *client,
 	wake_lock_init(&anx7805->slimport_lock, WAKE_LOCK_SUSPEND,
 					   "slimport_wake_lock");
 
-	pr_err("111111111111111\n");
 	init_waitqueue_head(&mhl_irq_wq);	
 	mhl_irq_task = kthread_create(anx7805_irq_kthread, NULL, "anx7805_irq_kthread"); 
 	wake_up_process(mhl_irq_task);
@@ -912,7 +894,6 @@ static int anx7805_i2c_probe(struct i2c_client *client,
 	mt_eint_registration(CUST_EINT_MHL_NUM, EINTF_TRIGGER_HIGH, &anx7805_cbl_det_isr, 0);
 	mt_eint_set_polarity(CUST_EINT_MHL_NUM, MT_EINT_POL_POS);
 #else
-	pr_err("2222222222222222\n");
 	register_slimport_eint();
 #endif
 #endif	 

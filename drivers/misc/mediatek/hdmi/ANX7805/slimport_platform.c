@@ -139,7 +139,7 @@ uint8_t reGetI2cAddress(uint8_t device_ID)
 
 struct i2c_client *mClient = NULL;
 unsigned int mhl_eint_number = 0xffff;
-unsigned int mhl_eint_gpio_number = 140;
+unsigned int mhl_eint_gpio_number = 132;
 
 extern wait_queue_head_t mhl_irq_wq;
 extern atomic_t mhl_irq_event ;
@@ -262,8 +262,8 @@ char* dpi_gpio_name[32] = {
 "dpi_ck_def", "dpi_ck_cfg","dpi_de_def", "dpi_de_cfg","dpi_hsync_def", "dpi_hsync_cfg","dpi_vsync_def", "dpi_vsync_cfg"
 };
 
-char* i2s_gpio_name[6] ={
-"i2s_dat_def","i2s_dat_cfg","i2s_ws_def","i2s_ws_cfg","i2s_ck_def","i2s_ck_cfg"
+char* i2s_gpio_name[10] = {
+"i2s_dat_def","i2s_dat_cfg","i2s_dat1_def","i2s_dat1_cfg","i2s_dat2_def","i2s_dat2_cfg","i2s_ws_def","i2s_ws_cfg","i2s_ck_def","i2s_ck_cfg"
 };
 
 char* rst_gpio_name[2] ={
@@ -317,7 +317,7 @@ void i2s_gpio_ctrl(int enable)
     
     if(enable)
         offset = 1;
-    for(; offset < 6 ;)
+    for(; offset < 10 ;)
     {
 
         pin_state = pinctrl_lookup_state(mhl_pinctrl, i2s_gpio_name[offset]);

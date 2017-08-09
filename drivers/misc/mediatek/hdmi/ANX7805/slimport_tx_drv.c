@@ -3260,7 +3260,6 @@ void SP_TX_AVI_Setup(void)
 	SP_TX_Packet_AVI.AVI_data[10]=0x00;//reserved to 0
 	SP_TX_Packet_AVI.AVI_data[11]=0x00;//reserved to 0
 	SP_TX_Packet_AVI.AVI_data[12]=0x00;//reserved to 0
-
 }
 
 BYTE SP_TX_BW_LC_Sel(struct VideoFormat* pInputFormat)
@@ -4893,18 +4892,11 @@ void SP_CTRL_Dump_Reg(void)
 
 	//for ANX7418 Debug
 	sp_read_reg(0x50, 0x36, &temp);
-	pr_err("ANX7418 reg:0x50,offset:0x36, temp:%d, bit4:%d\n", temp, (temp>>4) & 0x1);
-
-	temp = temp & 0xDF;
-	sp_write_reg(0x50, 0x36, temp);
-
-	sp_read_reg(0x50, 0x36, &temp);
-	pr_err("ANX7418 reg:0x50,offset:0x36, temp:%d\n", temp);
+	pr_err("ANX7418 reg:0x50,offset:0x36, temp:0x%x\n", temp);
 	if (temp & 0x10)
-		pr_err("ANX7418 bit4 HDP is High\n");
+		pr_err("ANX7418 bit4 HPD is High\n");
 	else
-		pr_err("ANX7418 bit4 HDP is Low\n");
-
+		pr_err("ANX7418 bit4 HPD is Low\n");
 
 	for(i=BEGIN; i<=END; i++) {
 		sp_read_reg(SP_TX_PORT0_ADDR, i, &temp);
