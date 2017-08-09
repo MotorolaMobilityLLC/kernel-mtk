@@ -577,7 +577,7 @@ static void __init mt_gpt_init(struct device_node *node)
 
 	boot_time_value = xgpt_boot_up_time();	/*record the time when init GPT */
 
-	pr_alert("mt_gpt_init: tmr_regs=0x%x, tmr_irq=%d, freq=%d\n", xgpt_timers.tmr_regs,
+	pr_alert("mt_gpt_init: tmr_regs=0x%p, tmr_irq=%d, freq=%d\n", xgpt_timers.tmr_regs,
 		 xgpt_timers.tmr_irq, freq);
 
 	gpt_devs_init();
