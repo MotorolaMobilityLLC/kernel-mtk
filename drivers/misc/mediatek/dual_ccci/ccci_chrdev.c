@@ -5,6 +5,7 @@
 #include <linux/io.h>
 #include <linux/fs.h>
 #include <linux/semaphore.h>
+#include <linux/uidgid.h>
 #include <ccci_chrdev.h>
 #include <ccci.h>
 
@@ -549,7 +550,32 @@ static long ccci_dev_ioctl(struct file *file, unsigned int cmd,
 	/*   CCCI_DEBUG("ret=%d cmd=0x%x addr=%0x len=%d\n",ret,cmd,addr,len); */
 	return ret;
 }
+#ifdef CONFIG_COMPAT
+static long ccci_dev_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	struct ccci_dev_client *client =
+	    (struct ccci_dev_client *)file->private_data;
+	int md_id = client->md_id;
 
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		CCCI_ERR_MSG(md_id, "chr", "dev_char_compat_ioctl(!filp->f_op || !filp->f_op->unlocked_ioctl)\n");
+		return -ENOTTY;
+	}
+	switch (cmd) {
+	case CCCI_IOC_FORCE_FD:
+	case CCCI_IOC_AP_ENG_BUILD:
+	case CCCI_IOC_GET_MD_MEM_SIZE:
+		{
+			CCCI_ERR_MSG(md_id, "chr", "dev_char_compat_ioctl deprecated cmd(%d)\n", cmd);
+			return 0;
+		}
+	default:
+		{
+			return filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
+		}
+	}
+}
+#endif
 static int ccci_dev_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	int pfn, len = 0;
@@ -596,6 +622,9 @@ static const struct file_operations ccci_chrdev_fops = {
 	.write = ccci_dev_write,
 	.release = ccci_dev_release,
 	.unlocked_ioctl = ccci_dev_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = &ccci_dev_compat_ioctl,
+#endif
 	.fasync = ccci_dev_fasync,
 	.poll = ccci_dev_poll,
 	.mmap = ccci_dev_mmap,
@@ -988,7 +1017,8 @@ void ccci_md_logger_notify(void)
 static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 			       unsigned long arg)
 {
-	int addr, ret = 0;
+	int addr;
+	long ret = 0;
 	struct ccci_vir_client_t  *client = (struct ccci_vir_client_t *) file->private_data;
 	int md_id = client->md_id;
 	int idx = client->index;
@@ -1004,7 +1034,8 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 	int ccci_cfg_setting[2];
 	int setting_num;
 	unsigned int md_boot_data[16];
-
+	struct siginfo sig_info;
+	unsigned int sig_pid;
 	/*int scanned_num = -1;*/
 
 	switch (cmd) {
@@ -1059,7 +1090,7 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 
 	case CCCI_IOC_GET_MD_EX_TYPE:
 		ret = get_md_exception_type(md_id);
-		CCCI_MSG_INF(md_id, "chr", "get modem exception type=%d\n",
+		CCCI_MSG_INF(md_id, "chr", "get modem exception type=%ld\n",
 			     ret);
 		break;
 
@@ -1165,7 +1196,7 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 		} else {
 			/* switch_sim_mode(sim_mode); */
 			ret = exec_ccci_kern_func(ID_SSW_SWITCH_MODE, (char *)(&sim_mode), sizeof(unsigned int));
-			CCCI_MSG_INF(md_id, "chr", "IOC_SIM_SWITCH(%x): %d\n",
+			CCCI_MSG_INF(md_id, "chr", "IOC_SIM_SWITCH(%x): %ld\n",
 				     sim_mode, ret);
 		}
 		break;
@@ -1198,7 +1229,7 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 				send_update_cfg_request(md_id, sim_mode);
 			} else {
 				CCCI_MSG_INF(md_id, "chr",
-					     "CCCI_IOC_UPDATE_SIM_SLOT_CFG exec (%d)\n",
+					     "CCCI_IOC_UPDATE_SIM_SLOT_CFG exec (%ld)\n",
 					     ret);
 			}
 			ret = 0;
@@ -1366,6 +1397,23 @@ static long ccci_vir_chr_ioctl(struct file *file, unsigned int cmd,
 		}
 		break;
 
+	case CCCI_IOC_SEND_SIGNAL_TO_USER:
+		if (copy_from_user(&sig_pid, (void __user *)arg, sizeof(unsigned int))) {
+			CCCI_MSG_INF(md_id, "chr", "signal to rild fail: copy_from_user fail!\n");
+			ret = -EFAULT;
+		} else {
+			unsigned int sig = (sig_pid >> 16) & 0xFFFF;
+			unsigned int pid = sig_pid & 0xFFFF;
+
+			sig_info.si_signo = sig;
+			sig_info.si_code = SI_KERNEL;
+			sig_info.si_pid = current->pid;
+			sig_info.si_uid = __kuid_val(current->cred->uid);
+			ret = kill_proc_info(SIGUSR2, &sig_info, pid);
+			CCCI_MSG_INF(md_id, "chr", "send signal %d to rild %d ret=%ld\n", sig, pid, ret);
+		}
+		break;
+
 #ifdef CONFIG_MTK_MD_SBP_CUSTOM_VALUE
 	case CCCI_IOC_GET_MD_SBP_CFG:
 		CCCI_MSG_INF(md_id, "chr", "SBP confg length:%d!\n",
@@ -1429,7 +1477,32 @@ static int ccci_vir_chr_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	return -1;
 }
+#ifdef CONFIG_COMPAT
+static long ccci_vir_chr_compat_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	struct ccci_dev_client *client =
+	    (struct ccci_dev_client *)file->private_data;
+	int md_id = client->md_id;
 
+	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
+		CCCI_ERR_MSG(md_id, "chr", "dev_char_compat_ioctl(!filp->f_op || !filp->f_op->unlocked_ioctl)\n");
+		return -ENOTTY;
+	}
+	switch (cmd) {
+	case CCCI_IOC_FORCE_FD:
+	case CCCI_IOC_AP_ENG_BUILD:
+	case CCCI_IOC_GET_MD_MEM_SIZE:
+		{
+			CCCI_ERR_MSG(md_id, "chr", "dev_char_compat_ioctl deprecated cmd(%d)\n", cmd);
+			return 0;
+		}
+	default:
+		{
+			return filp->f_op->unlocked_ioctl(filp, cmd, (unsigned long)compat_ptr(arg));
+		}
+	}
+}
+#endif
 static  const struct file_operations ccci_vir_chrdev_fops = {
 	.owner = THIS_MODULE,
 	.open = ccci_vir_chr_open,
@@ -1437,6 +1510,9 @@ static  const struct file_operations ccci_vir_chrdev_fops = {
 	.write = ccci_vir_chr_write,
 	.release = ccci_vir_chr_release,
 	.unlocked_ioctl = ccci_vir_chr_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = &ccci_vir_chr_compat_ioctl,
+#endif
 	.fasync = ccci_vir_chr_fasync,
 	.poll = ccci_vir_chr_poll,
 	.mmap = ccci_vir_chr_mmap,

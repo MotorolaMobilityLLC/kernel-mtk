@@ -63,7 +63,7 @@ enum LOGGING_MODE {
 #define CCCI_IOC_GET_MD_SBP_CFG			_IOW(CCCI_IOC_MAGIC, 41, unsigned int)	/*  md_init */
 /*metal tool to get modem protocol type: AP_TST or DHL */
 #define CCCI_IOC_GET_MD_PROTOCOL_TYPE		_IOR(CCCI_IOC_MAGIC, 42, char[16])
-
+#define CCCI_IOC_SEND_SIGNAL_TO_USER		_IOW(CCCI_IOC_MAGIC, 43, unsigned int) /* md_init */
 /*md_init set MD boot env data before power on MD */
 #define CCCI_IOC_SET_BOOT_DATA				_IOW(CCCI_IOC_MAGIC, 47, unsigned int[16])
 
