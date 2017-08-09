@@ -1118,8 +1118,6 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 	request_uart_to_wakeup();
 #endif
 
-
-
 #if REDUCE_SODI_LOG == 0
 	sodi_debug("emi-selfrefrsh cnt = %d, pcm_flag = 0x%x, SPM_PCM_RESERVE2 = 0x%x, %s\n",
 		   spm_read(SPM_PCM_PASR_DPD_3), spm_read(SPM_PCM_FLAGS),
@@ -1129,11 +1127,14 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 	if (wr == WR_PCM_ASSERT) {
 		sodi_warn("PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x\n",
 			 wakesta.assert_pc, pcmdesc->version, wakesta.r13, wakesta.debug_flag);
+	} else if (wakesta.r12 == 0) {
+		sodi_warn("Warning: not wakeup by SPM, r13 = 0x%x, debug_flag = 0x%x\n",
+			 wakesta.r13, wakesta.debug_flag);
 	}
 #else
 	sodi_logout_curr_time = idle_get_current_time_ms();
 
-	if (wakesta.assert_pc != 0) {
+	if (wakesta.assert_pc != 0 || wakesta.r12 == 0) {
 		need_log_out = 1;
 	} else if ((wakesta.r12 & (0x1 << 4)) == 0) {	/* not wakeup by GPT */
 		need_log_out = 1;
@@ -1163,8 +1164,9 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 	if (need_log_out == 1) {
 		sodi_logout_prev_time = sodi_logout_curr_time;
 
-		if (wakesta.assert_pc != 0) {
-			sodi_warn("wakeup by SPM assert, self-refrsh = %d, pcm_flag = 0x%x, PCM_RSV2 = 0x%x, vcore_status = %d\n",
+		if (wakesta.assert_pc != 0 || wakesta.r12 == 0) {
+			sodi_warn("Warning: %s, self-refrsh = %d, pcm_flag = 0x%x, PCM_RSV2 = 0x%x, vcore_status = %d\n",
+			     (wakesta.assert_pc != 0) ? "wakeup by SPM assert" : "not wakeup by SPM",
 			     spm_read(SPM_PCM_PASR_DPD_3), spm_read(SPM_PCM_FLAGS),
 			     spm_read(SPM_PCM_RESERVE2), vcore_status);
 			sodi_warn("sodi_cnt =%d, self-refresh_cnt = %d, , spm_pc = 0x%0x, r13 = 0x%x, debug_flag = 0x%x\n",
