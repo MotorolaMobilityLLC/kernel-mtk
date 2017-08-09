@@ -338,6 +338,7 @@ static ssize_t ppm_mode_proc_write(struct file *file, const char __user *buffer,
 
 		if (mode != ppm_main_info.cur_mode) {
 			ppm_lock(&ppm_main_info.lock);
+			ppm_info("Switch PPM mode to %s\n", str_mode);
 			ppm_main_info.cur_mode = mode;
 			ppm_unlock(&ppm_main_info.lock);
 

@@ -383,6 +383,16 @@ static void ppm_main_calc_new_limit(void)
 	if (active_cnt == 0)
 		ppm_main_clear_client_req(c_req);
 
+#ifdef PPM_DISABLE_BIG_FOR_LP_MODE
+	/* limit B core if currnt mode is LOW_POWER */
+	if (ppm_main_info.cur_mode == PPM_MODE_LOW_POWER) {
+		c_req->cpu_limit[PPM_CLUSTER_B].min_cpu_core = 0;
+		c_req->cpu_limit[PPM_CLUSTER_B].max_cpu_core = 0;
+		c_req->cpu_limit[PPM_CLUSTER_B].has_advise_core = false;
+		c_req->cpu_limit[PPM_CLUSTER_B].advise_cpu_core = 0;
+	}
+#endif
+
 	/* set freq idx to previous limit if nr_cpu in the cluster is 0 */
 	for (i = 0; i < c_req->cluster_num; i++) {
 		if ((!c_req->cpu_limit[i].min_cpu_core && !c_req->cpu_limit[i].max_cpu_core)
