@@ -21,9 +21,9 @@ $(warning MT6627_FM)
 	subdir-ccflags-y += -DMT6627_FM
 	subdir-ccflags-y += -I$(src)/inc \
 					-I$(src)/$(FM_CHIP)/inc \
-					-I$(src)/../connectivity/conn_soc/common/include \
-					-I$(src)/../connectivity/conn_soc/common/linux/include \
-					-I$(src)/../connectivity/common_detect
+					-I$(src)/../connectivity/common/conn_soc/include \
+					-I$(src)/../connectivity/common/conn_soc/linux/include \
+					-I$(src)/../connectivity/common/common_detect
 
 	obj-$(CONFIG_MTK_FM) += mtk_fm_drv.o
 	mt6627-objs	:= core/fm_module.o \
@@ -53,9 +53,9 @@ $(warning MT6627_FM)
 	subdir-ccflags-y += -DMT6625_FM
 	subdir-ccflags-y += -I$(src)/inc \
 					-I$(src)/$(FM_CHIP)/inc \
-					-I$(src)/../connectivity/conn_soc/common/include \
-					-I$(src)/../connectivity/conn_soc/common/linux/include \
-					-I$(src)/../connectivity/common_detect
+					-I$(src)/../connectivity/common/conn_soc/include \
+					-I$(src)/../connectivity/common/conn_soc/linux/include \
+					-I$(src)/../connectivity/common/common_detect
 
 	obj-$(CONFIG_MTK_FM) += mtk_fm_drv.o
 	mt6627-objs	:= core/fm_module.o \
@@ -84,9 +84,9 @@ $(warning MT6580_FM)
 	subdir-ccflags-y += -DMT6580_FM
 	subdir-ccflags-y += -I$(src)/inc \
 					-I$(src)/$(FM_CHIP)/inc \
-					-I$(src)/../connectivity/conn_soc/common/include \
-					-I$(src)/../connectivity/conn_soc/common/linux/include \
-					-I$(src)/../connectivity/common_detect
+					-I$(src)/../connectivity/common/conn_soc/include \
+					-I$(src)/../connectivity/common/conn_soc/linux/include \
+					-I$(src)/../connectivity/common/common_detect
 
 	obj-$(CONFIG_MTK_FM) += mtk_fm_drv.o
 	mt6580-objs	:= core/fm_module.o \
@@ -114,9 +114,9 @@ $(warning MT6630_FM)
 	subdir-ccflags-y += -DMT6630_FM
 	subdir-ccflags-y += -I$(src)/inc \
 					-I$(src)/$(FM_CHIP)/inc \
-					-I$(src)/../connectivity/combo/common/include \
-					-I$(src)/../connectivity/combo/common/linux/include \
-					-I$(src)/../connectivity/common_detect
+					-I$(src)/../connectivity/common/combo/include \
+					-I$(src)/../connectivity/common/combo/linux/include \
+					-I$(src)/../connectivity/common/common_detect
 
 	obj-$(CONFIG_MTK_FM) += mtk_fm_drv.o
 	mt6630-objs	:= core/fm_module.o \

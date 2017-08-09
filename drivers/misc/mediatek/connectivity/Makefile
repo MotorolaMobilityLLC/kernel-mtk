@@ -1,62 +1,16 @@
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+# Connectivity combo driver
+# If KERNELRELEASE is defined, we've been invoked from the
+# kernel build system and can use its language.
+ifneq ($(KERNELRELEASE),)
+	obj-y += common/
+    obj-$(CONFIG_MTK_COMBO_WIFI) += wlan/
+    obj-n := dummy.o
 
-MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
-ifneq ($(CONFIG_MTK_COMBO),)
-	ifeq ($(CONFIG_MTK_CONN_LTE_IDC_SUPPORT),y)
-	subdir-ccflags-y += -D WMT_IDC_SUPPORT=1
-	else
-	subdir-ccflags-y += -D WMT_IDC_SUPPORT=0
-	endif
-	subdir-ccflags-y += -D MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
-	subdir-ccflags-y += -D MTK_WCN_REMOVE_KERNEL_MODULE
-	ifeq ($(CONFIG_ARM64), y)
-	subdir-ccflags-y += -D CONFIG_MTK_WCN_ARM64
-	endif
-	ifneq ($(filter "MT6620E3",$(CONFIG_MTK_COMBO_CHIP)),)
-		obj-y   +=  combo/
-	endif
-	ifneq ($(filter "MT6628",$(CONFIG_MTK_COMBO_CHIP)),)
-		subdir-ccflags-y += -D MT6628
-		subdir-ccflags-y += -D MERGE_INTERFACE_SUPPORT
-		obj-y   +=  combo/
-	endif
-	ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
-		subdir-ccflags-y += -D MT6630
-	ifneq ($(CONFIG_ARCH_MT2601),y)
-		subdir-ccflags-y += -D MERGE_INTERFACE_SUPPORT
-	endif
-		obj-y   +=  combo/
-	endif
-	ifneq ($(filter "CONSYS_6572",$(CONFIG_MTK_COMBO_CHIP)),)
-		obj-y   +=  conn_soc/
-	endif
-	ifneq ($(filter "CONSYS_6582",$(CONFIG_MTK_COMBO_CHIP)),)
-		obj-y   +=  conn_soc/
-	endif
-    ifneq ($(filter "CONSYS_8127",$(CONFIG_MTK_COMBO_CHIP)),)
-		obj-y   +=  conn_soc/
-	endif
-    	ifneq ($(filter "CONSYS_6752",$(CONFIG_MTK_COMBO_CHIP)),)
-		obj-y   +=  conn_soc/
-	endif
-	ifneq ($(filter "CONSYS_6755",$(CONFIG_MTK_COMBO_CHIP)),)
-		obj-y   +=  conn_soc/
-	endif
-	ifneq ($(filter "CONSYS_6592",$(CONFIG_MTK_COMBO_CHIP)),)
-		obj-y   +=  conn_soc/
-	endif
-	ifneq ($(filter "CONSYS_6735",$(CONFIG_MTK_COMBO_CHIP)),)
-		obj-y   +=  conn_soc/
-	endif
-	ifneq ($(filter "CONSYS_8163",$(CONFIG_MTK_COMBO_CHIP)),)
-		obj-y   +=  conn_soc/
-	endif
-	ifneq ($(filter "CONSYS_6580",$(CONFIG_MTK_COMBO_CHIP)),)
-		obj-y   +=  conn_soc/
-	endif
-	ifneq ($(filter "CONSYS_6797",$(CONFIG_MTK_COMBO_CHIP)),)
-		obj-y   +=  conn_soc/
-	endif
-	obj-y   +=  common_detect/
+# Otherwise we were called directly from the command line;
+# invoke the kernel build system.
+else
+    KERNELDIR ?= /lib/modules/$(shell uname -r)/build
+    PWD  := $(shell pwd)
+default:
+	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
 endif
