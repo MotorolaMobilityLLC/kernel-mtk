@@ -1579,6 +1579,7 @@ wext_set_scan(IN struct net_device *prNetDev,
 	if (prIwScanReq)
 		essid_len = prIwScanReq->essid_len;
 #endif
+	DBGLOG(REQ, INFO, "[wifi]essid_len=%d\n", essid_len);
 
 	init_completion(&prGlueInfo->rScanComp);
 
@@ -2135,6 +2136,7 @@ wext_set_essid(IN struct net_device *prNetDev,
 			   wlanoidSetEncryptionStatus,
 			   &eEncStatus, sizeof(eEncStatus), FALSE, FALSE, FALSE, FALSE, &u4BufLen);
 
+	kalMemZero(&rNewSsid, sizeof(PARAM_SSID_T));
 #if WIRELESS_EXT < 21
 	/* GeorgeKuo: a length error bug exists in (WE < 21) cases, kernel before
 	 ** 2.6.19. Cut the trailing '\0'.
@@ -2145,10 +2147,8 @@ wext_set_essid(IN struct net_device *prNetDev,
 #endif
 	kalMemCopy(rNewSsid.aucSsid, pcExtra, rNewSsid.u4SsidLen);
 
-	/*
-	   rNewSsid.aucSsid[rNewSsid.u4SsidLen] = '\0';
-	   printk("set ssid(%lu): %s\n", rNewSsid.u4SsidLen, rNewSsid.aucSsid);
-	 */
+	rNewSsid.aucSsid[rNewSsid.u4SsidLen] = '\0';
+	DBGLOG(REQ, INFO, "wlan set essid: %s, u4SsidLen=%d\n", rNewSsid.aucSsid, rNewSsid.u4SsidLen);
 
 	if (kalIoctl(prGlueInfo,
 		     wlanoidSetSsid,

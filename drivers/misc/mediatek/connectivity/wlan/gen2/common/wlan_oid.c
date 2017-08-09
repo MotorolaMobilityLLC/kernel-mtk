@@ -2069,7 +2069,9 @@ wlanoidSetSsid(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4SetB
 		/* Update the information to CONNECTION_SETTINGS_T */
 		prAisAbortMsg->fgDelayIndication = FALSE;
 	}
-	DBGLOG(SCN, INFO, "SSID %s\n", prAdapter->rWifiVar.rConnSettings.aucSSID);
+	DBGLOG(OID, INFO, "u4ScanResultNum=%d, SSID=%s, ucSSIDLen=%d\n",
+		prAdapter->rWlanInfo.u4ScanResultNum,
+		prAdapter->rWifiVar.rConnSettings.aucSSID, prAdapter->rWifiVar.rConnSettings.ucSSIDLen);
 
 	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prAisAbortMsg, MSG_SEND_METHOD_BUF);
 
