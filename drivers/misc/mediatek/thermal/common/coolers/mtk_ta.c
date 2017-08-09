@@ -229,7 +229,6 @@ static ssize_t tsta_write_log(struct file *file, const char __user *buffer, size
 	char desc[32];
 	int log_switch;
 	int len = 0;
-	int rc;
 
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
@@ -238,14 +237,11 @@ static ssize_t tsta_write_log(struct file *file, const char __user *buffer, size
 
 	desc[len] = '\0';
 
-	rc = kstrtoint(desc, 0, &log_switch);
+	if (kstrtoint(desc, 10, &log_switch) == 0) {
+		mtkts_ta_debug_log = log_switch;
 
-	if (rc != 0)
-		return -EINVAL;
-
-	mtkts_ta_debug_log = log_switch;
-
-	return count;
+		return count;
+	}
 
 	tsta_warn("tscpu_write_log bad argument\n");
 
