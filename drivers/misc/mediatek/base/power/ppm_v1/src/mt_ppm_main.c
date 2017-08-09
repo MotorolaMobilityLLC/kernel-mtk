@@ -213,7 +213,7 @@ void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_polic
 	if (activeCoreNumLL < 0)
 		activeCoreNumLL = 0;
 
-	ppm_ver("power_budget %d delta_power %d curr_power %d opp %d%d%d %d%d%d\n",
+	ppm_dbg(ET_ALGO, "power_budget %d delta_power %d curr_power %d opp %d%d%d %d%d%d\n",
 				power_budget, delta_power, curr_power, opp[0], opp[1], opp[2],
 				activeCoreNumB, activeCoreNumL, activeCoreNumLL);
 
@@ -221,6 +221,12 @@ void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_polic
 	if (delta_power >= 0) {
 		while (1) {
 			int ChoosenCluster = -1, MaxEfficiency = 0, ChoosenPower = 0;
+
+			if (opp[LxLL] == 0 && activeCoreNumB == 0 && delta_power > delta_power_B[1][7]) {
+				activeCoreNumB = 1;
+				delta_power -= delta_power_B[1][7];
+				opp[0] = 7;
+			}
 
 			/* Big Clister */
 			if (activeCoreNumB > 0 && opp[0] > 0
@@ -230,18 +236,18 @@ void ppm_main_update_req_by_pwr(enum ppm_power_state new_state, struct ppm_polic
 				ChoosenPower = delta_power_B[activeCoreNumB][opp[0]-1];
 			}
 
-			ppm_ver("power_budget %d delta_power %d curr_power %d opp %d%d%d %d%d%d %d %d\n",
+			ppm_dbg(ET_ALGO, "power_budget %d delta_power %d curr_power %d opp %d%d%d %d%d%d %d %d\n",
 					power_budget, delta_power, curr_power, opp[0], opp[1], opp[2],
 					activeCoreNumB, activeCoreNumL, activeCoreNumLL,
 					prev_max_cpufreq_idx[LxLL], cluster_status_rebase[2-LxLL].freq_idx);
-			ppm_ver("prev_max_cpufreq_idx[LxLL] %d opp[LxLL] %d\n",
+			ppm_dbg(ET_ALGO, "prev_max_cpufreq_idx[LxLL] %d opp[LxLL] %d\n",
 					prev_max_cpufreq_idx[LxLL], opp[LxLL]);
 
 			/* LxLL Cluster */
 			if (LxLL && opp[LxLL] > 0
 				&& delta_power > delta_power_LxLL[activeCoreNumL][activeCoreNumLL][opp[LxLL]-1]
 				&& efficiency_LxLL[activeCoreNumL][activeCoreNumLL][opp[LxLL]-1] > MaxEfficiency
-				&& (LxLLisLimited || opp[0])) {
+				&& (LxLLisLimited || opp[0] == 0 || activeCoreNumB == 0)) {
 				MaxEfficiency = efficiency_LxLL[activeCoreNumL][activeCoreNumLL][opp[LxLL]-1];
 				ChoosenCluster = 1;
 				ChoosenPower = delta_power_LxLL[activeCoreNumL][activeCoreNumLL][opp[LxLL]-1];
@@ -349,9 +355,6 @@ end:
 		}
 	}
 
-	ppm_ver("power_budget %d delta_power %d curr_power %d opp %d%d%d\n",
-		power_budget, delta_power, curr_power, opp[0], opp[1], opp[2]);
-
 	/* Set frequency limit */
 	/* For non share buck */
 #if 0
@@ -369,14 +372,14 @@ end:
 	if (opp[0] >= 0 && activeCoreNumB > 0)
 		req->limit[2].max_cpufreq_idx = freq_idx_mapping_tbl_big[opp[0]];
 	else
-		req->limit[2].max_cpufreq_idx = 0;
+		req->limit[2].max_cpufreq_idx = 15;
 
-#if 0
-	/* prevent hotplug from HICA */
-	req->limit[0].max_cpu_core = 4;
-	req->limit[1].max_cpu_core = 4;
-	req->limit[2].max_cpu_core = 2;
-#endif
+	ppm_dbg(ET_ALGO , "power_budget %d delta_power %d curr_power %d opp freq limit B:%d L:%d LL%d\n",
+			power_budget, delta_power, curr_power, opp[0], opp[1], opp[2]);
+	ppm_dbg(ET_ALGO, "online core B:%d L:%d LL:%d out: F_limit LL:%d L%d B%d Core_limit LL:%d L%d B%d\n",
+			activeCoreNumB, activeCoreNumL, activeCoreNumLL, req->limit[0].max_cpufreq_idx,
+			req->limit[1].max_cpufreq_idx, req->limit[2].max_cpufreq_idx,
+			req->limit[0].max_cpu_core, req->limit[1].max_cpu_core, req->limit[2].max_cpu_core);
 
 	for (i = 0; i < req->cluster_num; i++) {
 		/* error check */

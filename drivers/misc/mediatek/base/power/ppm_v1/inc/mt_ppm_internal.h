@@ -157,6 +157,7 @@ enum {
 	DLPT	= 1 << 3,
 	USER_LIMIT = 1 << 4,
 	TIME_PROFILE = 1 << 5,
+	ET_ALGO	= 1 << 6,
 };
 
 enum ppm_policy {
