@@ -28,7 +28,11 @@
 #define sodi3_warn(fmt, args...)	pr_warn(SODI3_TAG fmt, ##args)
 #define sodi3_debug(fmt, args...)	pr_debug(SODI3_TAG fmt, ##args)
 
-#define SPM_BYPASS_SYSPWREQ         0	/* JTAG is used */
+#if defined(CONFIG_ARCH_MT6755)
+#define SPM_BYPASS_SYSPWREQ         1	/* JTAG is used */
+#elif defined(CONFIG_ARCH_MT6797)
+#define SPM_BYPASS_SYSPWREQ         0
+#endif
 
 #define LOG_BUF_SIZE					(256)
 #define SODI3_LOGOUT_TIMEOUT_CRITERIA	(20)
@@ -161,6 +165,10 @@ static unsigned int logout_selfrefresh_cnt;
 
 static void spm_sodi3_pre_process(void)
 {
+#if defined(CONFIG_ARCH_MT6755)
+	u32 val;
+#endif
+
 	__spm_pmic_pg_force_on();
 
 	spm_disable_mmu_smi_async();
@@ -170,9 +178,6 @@ static void spm_sodi3_pre_process(void)
 	spm_bypass_boost_gpio_set();
 
 #if defined(CONFIG_ARCH_MT6755)
-	{
-	u32 val;
-
 	pmic_read_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_ADDR,
 					&val,
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
@@ -186,7 +191,6 @@ static void spm_sodi3_pre_process(void)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_SLEEP,
 					val & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
-	}
 #endif
 
 	/* set PMIC WRAP table for deepidle power control */

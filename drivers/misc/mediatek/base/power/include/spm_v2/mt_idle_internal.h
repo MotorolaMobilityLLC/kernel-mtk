@@ -43,6 +43,7 @@ enum {
 	BY_VTG,
 	BY_FRM,
 	BY_PLL,
+	BY_PWM,
 #ifdef CONFIG_CPU_ISOLATION
 	BY_ISO,
 #endif
@@ -73,6 +74,9 @@ bool cg_i2c_appm_check_idle_can_enter(unsigned int *block_mask);
 bool pll_check_idle_can_enter(unsigned int *condition_mask, unsigned int *block_mask);
 const char *pll_grp_get_name(int id);
 void __init iomap_init(void);
+
+bool is_disp_pwm_rosc(void);
+bool is_auxadc_released(void);
 
 #endif /* __MT_IDLE_INTERNAL_H__ */
 

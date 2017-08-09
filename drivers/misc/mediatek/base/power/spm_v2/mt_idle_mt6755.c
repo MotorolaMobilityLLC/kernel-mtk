@@ -71,7 +71,7 @@ unsigned int soidle3_pll_condition_mask[NR_PLLS] = {
 };
 
 unsigned int soidle3_condition_mask[NR_GRPS] = {
-	0x026C0C02, /* INFRA0: */
+	0x026C0802, /* INFRA0: separate AUXADC CG check */
 	0x03AFB900, /* INFRA1: separate I2C-appm CG check */
 	0x000000D3, /* INFRA2: */
 	0x005023FC, /* DISP0:  */
@@ -123,6 +123,7 @@ const char *reason_name[NR_REASONS] = {
 	"by_vtg",
 	"by_frm",
 	"by_pll",
+	"by_pwm",
 #ifdef CONFIG_CPU_ISOLATION
 	"by_iso",
 #endif
@@ -378,3 +379,19 @@ const char *cg_grp_get_name(int id)
 	return cg_group_name[id];
 }
 
+bool is_disp_pwm_rosc(void)
+{
+	u32 sta = idle_readl(DISP_PWM_MUX) & 0x3;
+
+	return (sta == 2) || (sta == 3);
+}
+
+bool is_auxadc_released(void)
+{
+	if ((~idle_readl(INFRA_SW_CG_0_STA) & 0x400) == 0x400) {
+		idle_err("AUXADC CG does not be released\n");
+		return false;
+	}
+
+	return true;
+}

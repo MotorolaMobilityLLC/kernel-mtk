@@ -50,6 +50,7 @@ extern unsigned int soidle_profile[4];
 #endif
 
 extern bool mtk_gpu_sodi_entry(void);
+extern bool mtk_gpu_sodi_exit(void);
 extern int hps_del_timer(void);
 extern int hps_restart_timer(void);
 extern int vcorefs_get_curr_ddr(void);

@@ -42,18 +42,15 @@
 #include <mach/mt_hotplug_strategy_internal.h>
 #endif
 
+#if defined(CONFIG_ARCH_MT6755)
+#define FEATURE_ENABLE_SODI2P5
+#endif
 /*
 * MCDI DVT IPI Test and GPT test
 * GPT need to modify mt_idle.c and mt_spm_mcdi.c
 */
 #define MCDI_DVT_IPI 0		/*0:disable, 1: enable : mt_idle.c , mt_spm_mcdi.c and mt_cpuidle.c mt_cpuidle.c */
 #define MCDI_DVT_CPUxGPT 0	/*0:disable, 1: enable : GPT need to modify mt_idle.c and mt_spm_mcdi.c mt_cpuidle.c */
-
-#define SODI3_DVT_APxGPT 0	/*0:disable, 1: enable : use in android load: mt_idle.c and mt_spm_sodi3.c */
-#define SODI3_DVT_APxGPT_TimerCount_5S 0
-
-#define SODI_DVT_APxGPT 0	/*0:disable, 1: enable : use in android load: mt_idle.c and mt_spm_sodi.c */
-#define SODI_DVT_APxGPT_TimerCount_5S 0
 
 #if ((MCDI_DVT_IPI) || (MCDI_DVT_CPUxGPT))
 #include <linux/delay.h>
@@ -239,6 +236,16 @@ void __attribute__((weak)) mtkts_allts_start_ts4_timer(void)
 void __attribute__((weak)) mtkts_allts_start_ts5_timer(void)
 {
 
+}
+
+bool __attribute__((weak)) mtk_gpu_sodi_entry(void)
+{
+	return false;
+}
+
+bool __attribute__((weak)) mtk_gpu_sodi_exit(void)
+{
+	return false;
 }
 
 bool __attribute__((weak)) spm_mcdi_can_enter(void)
@@ -529,6 +536,11 @@ bool soidle3_can_enter(int cpu)
 	char *p;
 	bool ret = false;
 
+	if (!is_disp_pwm_rosc()) {
+		reason = BY_PWM;
+		goto out;
+	}
+
 	if (!spm_load_firmware_status()) {
 		reason = BY_FRM;
 		goto out;
@@ -716,9 +728,9 @@ void soidle3_before_wfi(int cpu)
 void soidle3_after_wfi(int cpu)
 {
 #ifdef CONFIG_SMP
-	gpt_set_clk(idle_gpt, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1);
 	if (gpt_check_and_ack_irq(idle_gpt)) {
 		localtimer_set_next_event(1);
+		gpt_set_clk(idle_gpt, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1);
 	} else {
 		/* waked up by other wakeup source */
 		unsigned int cnt, cmp;
@@ -731,7 +743,8 @@ void soidle3_after_wfi(int cpu)
 			BUG();
 		}
 
-		localtimer_set_next_event((cmp-cnt) * 1625 / 8);
+		localtimer_set_next_event((cmp-cnt) * 1625 / 4);
+		gpt_set_clk(idle_gpt, GPT_CLK_SRC_SYS, GPT_CLK_DIV_1);
 
 		stop_gpt(idle_gpt);
 	}
@@ -963,6 +976,10 @@ out:
 
 void soidle_before_wfi(int cpu)
 {
+#ifdef FEATURE_ENABLE_SODI2P5
+	faudintbus_pll2sq();
+#endif
+
 #ifdef CONFIG_SMP
 	soidle_timer_left2 = localtimer_get_counter();
 
@@ -997,6 +1014,10 @@ void soidle_after_wfi(int cpu)
 		localtimer_set_next_event(cmp - cnt);
 		stop_gpt(idle_gpt);
 	}
+#endif
+
+#ifdef FEATURE_ENABLE_SODI2P5
+	faudintbus_sq2pll();
 #endif
 
 #ifdef CONFIG_HYBRID_CPU_DVFS
@@ -1502,13 +1523,11 @@ static noinline void go_to_rgidle(int cpu)
 static inline void soidle_pre_handler(void)
 {
 	hps_del_timer();
-#if 0
 #ifndef CONFIG_MTK_FPGA
 	/* stop Mali dvfs_callback timer */
 	if (!mtk_gpu_sodi_entry())
 		idle_warn("not stop GPU timer in SODI\n");
 #endif
-#endif /* disable for bring-up */
 
 #ifdef CONFIG_THERMAL
 	/* cancel thermal hrtimer for power saving */
@@ -1533,13 +1552,11 @@ static inline void soidle_pre_handler(void)
 static inline void soidle_post_handler(void)
 {
 	hps_restart_timer();
-#if 0
 #ifndef CONFIG_MTK_FPGA
 	/* restart Mali dvfs_callback timer */
 	if (!mtk_gpu_sodi_exit())
 		idle_warn("not restart GPU timer outside SODI\n");
 #endif
-#endif /* disable for bring-up */
 
 #ifdef CONFIG_THERMAL
 	/* restart thermal hrtimer for update temp info */
@@ -1568,6 +1585,9 @@ static inline void soidle_post_handler(void)
 
 static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_ENABLE_SODI3 |
+	#ifdef FEATURE_ENABLE_SODI2P5
+	SPM_FLAG_DIS_SRCCLKEN_LOW |
+	#endif
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
 	#endif
@@ -1575,6 +1595,10 @@ static u32 slp_spm_SODI3_flags = {
 };
 
 static u32 slp_spm_SODI_flags = {
+	#ifdef FEATURE_ENABLE_SODI2P5
+	SPM_FLAG_ENABLE_SODI3 |
+	SPM_FLAG_DIS_SRCCLKEN_LOW |
+	#endif
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
 	#endif
@@ -1791,6 +1815,10 @@ int soidle3_enter(int cpu)
 
 	soidle_pre_handler();
 
+	if (is_auxadc_released())
+		slp_spm_SODI3_flags |= SPM_FLAG_DIS_SRCCLKEN_LOW;
+	else
+		slp_spm_SODI3_flags &= ~SPM_FLAG_DIS_SRCCLKEN_LOW;
 #ifdef DEFAULT_MMP_ENABLE
 	MMProfileLogEx(sodi_mmp_get_events()->sodi_enable, MMProfileFlagStart, 0, 0);
 #endif /* DEFAULT_MMP_ENABLE */

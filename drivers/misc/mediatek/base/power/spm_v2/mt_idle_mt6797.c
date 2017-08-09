@@ -378,3 +378,12 @@ const char *cg_grp_get_name(int id)
 	return cg_group_name[id];
 }
 
+bool is_disp_pwm_rosc(void)
+{
+	return true;
+}
+
+bool is_auxadc_released(void)
+{
+	return true;
+}
