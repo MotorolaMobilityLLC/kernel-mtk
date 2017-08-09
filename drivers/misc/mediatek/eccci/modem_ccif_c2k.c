@@ -1383,7 +1383,7 @@ static void config_ap_runtime_data(struct ccci_modem *md, struct ap_query_md_fea
 
 	/*Notice: ccif_write8 is invalid, so must write 4 features at the same time*/
 	s_info[0].version = 0;	/*AT_CHANNEL_NUM*/
-	s_info[0].support_mask = CCCI_FEATURE_OPTIONAL_SUPPORT;
+	s_info[0].support_mask = 0; /*CCCI_FEATURE_OPTIONAL_SUPPORT;*/
 	s_info[1].version = 0;
 	s_info[1].support_mask = 0;
 	s_info[2].version = 0;
