@@ -2,6 +2,7 @@
 #include <linux/device.h>
 #include <linux/fs.h>
 #include <linux/cdev.h>
+#include <linux/slab.h>
 #include <linux/interrupt.h>
 #include <linux/spinlock.h>
 #include <linux/uaccess.h>
@@ -15,6 +16,7 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/memblock.h>
+#include <asm/memblock.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -29,7 +31,13 @@
 #include <mt-plat/mt_boot_common.h>
 #include <mt-plat/mt_ccci_common.h>
 
+#include <mt-plat/mtk_memcfg.h>
 #include "ccci_util_log.h"
+/**************************************************************************
+**** Local debug option for this file only ********************************
+**************************************************************************/
+/* #define LK_LOAD_MD_INFO_DEBUG_EN */
+
 #define CCCI_MEM_ALIGN      (SZ_32M)
 #define CCCI_SMEM_ALIGN_MD1 (0x200000)	/*2M */
 #define CCCI_SMEM_ALIGN_MD2 (0x200000)	/*2M */
@@ -110,6 +118,31 @@ static unsigned char md_info_tag_val[4];
 static unsigned int md_support[MAX_MD_NUM];
 static unsigned int meta_md_support[MAX_MD_NUM];
 
+/*--- MD setting collect */
+/* modem index is not continuous, so there may be gap in this arrays */
+static unsigned int md_usage_case;
+
+static unsigned int md_resv_mem_size[MAX_MD_NUM];	/* MD ROM+RAM */
+static unsigned int md_resv_smem_size[MAX_MD_NUM];	/* share memory */
+static unsigned int md_resv_size_list[MAX_MD_NUM];
+static unsigned int resv_smem_size;
+static unsigned int md1md3_resv_smem_size;
+static unsigned int md_env_rdy_flag;
+
+static phys_addr_t md_resv_mem_list[MAX_MD_NUM];
+static phys_addr_t md_resv_mem_addr[MAX_MD_NUM];
+static phys_addr_t md_resv_smem_addr[MAX_MD_NUM];
+static phys_addr_t resv_smem_addr;
+static phys_addr_t md1md3_resv_smem_addr;
+
+static char *md1_check_hdr_info;
+static char *md3_check_hdr_info;
+static int md1_check_hdr_info_size;
+static int md3_check_hdr_info_size;
+
+static int md1_raw_img_size;
+static int md3_raw_img_size;
+
 int ccci_get_fo_setting(char item[], unsigned int *val)
 {
 	char *ccci_name;
@@ -130,7 +163,49 @@ int ccci_get_fo_setting(char item[], unsigned int *val)
 }
 
 /*--- LK tag and device tree ----- */
+typedef struct _modem_info {
+	unsigned long long base_addr;
+	unsigned int size;
+	char md_id;
+	char errno;
+	char md_type;
+	char ver;
+	unsigned int reserved[2];
+} modem_info_t;
 static unsigned long dt_chosen_node;
+static unsigned int lk_load_img_status;
+static int lk_load_img_err_no[MAX_MD_NUM];
+static unsigned int md_type_at_lk[MAX_MD_NUM];
+
+#define LK_LOAD_MD_EN			(1<<0)
+#define LK_LOAD_MD_ERR_INVALID_MD_ID	(1<<1)
+#define LK_LOAD_MD_ERR_NO_MD_LOAD	(1<<2)
+#define LK_LOAD_MD_ERR_LK_INFO_FAIL	(1<<3)
+
+/* functions will be called by external */
+int get_lk_load_md_info(char buf[], int size)
+{
+	int ret = 0;
+
+	if (lk_load_img_status & LK_LOAD_MD_EN)
+		ret += snprintf(&buf[ret], size - ret, "LK Load MD:[Enabled](0x%08x)\n", lk_load_img_status);
+	else
+		ret += snprintf(&buf[ret], size - ret, "LK Load MD:[Disabled](0x%08x)\n", lk_load_img_status);
+	ret += snprintf(&buf[ret], size - ret, " md_image load errno 1:[%d] 2:[%d] 3:[%d] 4:[%d] 5:[%d]\n",
+			lk_load_img_err_no[0], lk_load_img_err_no[1], lk_load_img_err_no[1], lk_load_img_err_no[3],
+			lk_load_img_err_no[4]);
+
+	return ret;
+}
+
+/* function will be called by exteranl */
+int get_md_type_from_lk(int md_id)
+{
+	if (md_id < MAX_MD_NUM)
+		return md_type_at_lk[md_id];
+	return 0;
+}
+
 static int __init early_init_dt_get_chosen(unsigned long node, const char *uname, int depth, void *data)
 {
 	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
@@ -139,33 +214,295 @@ static int __init early_init_dt_get_chosen(unsigned long node, const char *uname
 	return 1;
 }
 
-static void lk_meta_tag_info_collect(void)
+#define MAX_LK_INFO_SIZE	(0x10000)
+#define CCCI_TAG_NAME_LEN	(16)
+typedef struct _ccci_lk_info {
+	unsigned long long lk_info_base_addr;
+	unsigned int       lk_info_size;
+	unsigned int       lk_info_tag_num;
+} ccci_lk_info_t;
+
+typedef struct _ccci_tag {
+	char tag_name[CCCI_TAG_NAME_LEN];
+	unsigned int data_offset;
+	unsigned int data_size;
+	unsigned int next_tag_offset;
+} ccci_tag_t;
+
+typedef struct _smem_layout {
+	unsigned long long base_addr;
+	unsigned int ap_md1_smem_offset;
+	unsigned int ap_md1_smem_size;
+	unsigned int ap_md3_smem_offset;
+	unsigned int ap_md3_smem_size;
+	unsigned int md1_md3_smem_offset;
+	unsigned int md1_md3_smem_size;
+	unsigned int total_smem_size;
+} smem_layout_t;
+
+static int find_ccci_tag_inf(void __iomem *lk_inf_base, unsigned int tag_cnt, char *name, char *buf, unsigned int size)
+{
+	unsigned int i;
+	ccci_tag_t *tag;
+	unsigned int cpy_size;
+
+	if (buf == NULL)
+		return -1;
+
+	tag = (ccci_tag_t *)lk_inf_base;
+	CCCI_UTIL_INF_MSG("------curr tags:%s----------\n", name);
+	for (i = 0; i < tag_cnt; i++) {
+		#ifdef LK_LOAD_MD_INFO_DEBUG_EN
+		CCCI_UTIL_INF_MSG("tag->name:%s\n", tag->tag_name);
+		CCCI_UTIL_INF_MSG("tag->data_offset:%d\n", tag->data_offset);
+		CCCI_UTIL_INF_MSG("tag->data_size:%d\n", tag->data_size);
+		CCCI_UTIL_INF_MSG("tag->next_tag_offset:%d\n", tag->next_tag_offset);
+		CCCI_UTIL_INF_MSG("tag value:%d\n", *(unsigned int *)(lk_inf_base+tag->data_offset));
+		#endif
+		if (strcmp(tag->tag_name, name) != 0) {
+			tag = (ccci_tag_t *)(lk_inf_base + tag->next_tag_offset);
+			continue;
+		}
+		/* found it */
+		cpy_size = size > tag->data_size?tag->data_size:size;
+		memcpy(buf, (void *)(lk_inf_base + tag->data_offset), cpy_size);
+
+		return cpy_size;
+	}
+	return -1;
+}
+
+static void lk_dt_info_collect(void)
 {
 	/* Device tree method */
-	char *tags;
 	int ret;
+	modem_info_t md_inf[4];
+	modem_info_t *curr;
+	int md_num;
+	ccci_lk_info_t lk_inf;
+	void __iomem *lk_inf_base;
+	unsigned int tag_cnt;
+	unsigned int *raw_ptr;
+	smem_layout_t smem_layout;
+	int md_id;
+
+	/* This function will initialize dt_chosen_node */
 	ret = of_scan_flat_dt(early_init_dt_get_chosen, NULL);
 	if (ret == 0) {
 		CCCI_UTIL_INF_MSG("device node no chosen node\n");
 		return;
 	}
-	tags = (char *)of_get_flat_dt_prop(dt_chosen_node, "atag,mdinfo", NULL);
-	if (tags) {
-		tags += 8;	/* Fix me, Arm64 doesn't have atag defination now */
-		md_info_tag_val[0] = tags[0];
-		md_info_tag_val[1] = tags[1];
-		md_info_tag_val[2] = tags[2];
-		md_info_tag_val[3] = tags[3];
-		CCCI_UTIL_INF_MSG("Get MD info Tags\n");
-		CCCI_UTIL_INF_MSG("md_inf[0]=%d\n", md_info_tag_val[0]);
-		CCCI_UTIL_INF_MSG("md_inf[1]=%d\n", md_info_tag_val[1]);
-		CCCI_UTIL_INF_MSG("md_inf[2]=%d\n", md_info_tag_val[2]);
-		CCCI_UTIL_INF_MSG("md_inf[3]=%d\n", md_info_tag_val[3]);
-	} else {
-		CCCI_UTIL_INF_MSG("atag,mdinfo=NULL\n");
+
+	raw_ptr = (unsigned int *)of_get_flat_dt_prop(dt_chosen_node, "ccci,modem_info", NULL);
+	if (raw_ptr == NULL) {
+		CCCI_UTIL_INF_MSG("ccci,modem_info not found\n");
+		return;
+	}
+
+	lk_load_img_status |= LK_LOAD_MD_EN;
+
+	memcpy((void *)&lk_inf, raw_ptr, sizeof(ccci_lk_info_t));
+	if (lk_inf.lk_info_base_addr == 0LL) {
+		CCCI_UTIL_ERR_MSG("no image load success\n");
+		lk_load_img_status |= LK_LOAD_MD_ERR_NO_MD_LOAD;
+		goto _Load_fail;
+	}
+
+	#ifdef LK_LOAD_MD_INFO_DEBUG_EN
+	CCCI_UTIL_INF_MSG("lk info.lk_info_base_addr: 0x%llX\n", lk_inf.lk_info_base_addr);
+	CCCI_UTIL_INF_MSG("lk info.lk_info_size:      0x%x\n", lk_inf.lk_info_size);
+	CCCI_UTIL_INF_MSG("lk info.lk_info_tag_num:   0x%x\n", lk_inf.lk_info_tag_num);
+	#endif
+
+	lk_inf_base = ioremap_nocache((phys_addr_t)lk_inf.lk_info_base_addr, MAX_LK_INFO_SIZE);
+	if (lk_inf_base <= 0) {
+		CCCI_UTIL_ERR_MSG("ioremap lk info buf fail\n");
+		lk_load_img_status |= LK_LOAD_MD_ERR_NO_MD_LOAD;
+		goto _Load_fail;
+	}
+	tag_cnt = lk_inf.lk_info_tag_num;
+
+	if (find_ccci_tag_inf(lk_inf_base, tag_cnt, "hdr_count", (char *)&md_num, sizeof(int)) != sizeof(int)) {
+		CCCI_UTIL_ERR_MSG("get hdr_count fail\n");
+		lk_load_img_status |= LK_LOAD_MD_ERR_NO_MD_LOAD;
+		goto _Exit;
+	}
+
+	find_ccci_tag_inf(lk_inf_base, tag_cnt, "hdr_tbl_inf", (char *)md_inf, sizeof(md_inf));
+	CCCI_UTIL_INF_MSG("tag_cnt:%d md_num:%d\n", tag_cnt, md_num);
+	curr = md_inf;
+
+	/* MD ROM and RW part */
+	while (md_num--) {
+		#ifdef LK_LOAD_MD_INFO_DEBUG_EN
+		CCCI_UTIL_INF_MSG("===== Dump modem memory info (%d)=====\n", (int)sizeof(modem_info_t));
+		CCCI_UTIL_INF_MSG("base address : 0x%llX\n", curr->base_addr);
+		CCCI_UTIL_INF_MSG("memory size  : 0x%08X\n", curr->size);
+		CCCI_UTIL_INF_MSG("md id        : %d\n", (int)curr->md_id);
+		CCCI_UTIL_INF_MSG("ver          : %d\n", (int)curr->ver);
+		CCCI_UTIL_INF_MSG("type         : %d\n", (int)curr->md_type);
+		CCCI_UTIL_INF_MSG("errno        : %d\n", (int)curr->errno);
+		CCCI_UTIL_INF_MSG("=============================\n");
+		#endif
+		md_id = (int)curr->md_id;
+		if (curr->size) {
+			MTK_MEMCFG_LOG_AND_PRINTK("[PHY layout]ccci_md%d at LK  :  0x%llx - 0x%llx  (0x%llx)\n",
+				md_id, curr->base_addr,
+				curr->base_addr + (unsigned long long)curr->size - 1LL,
+				(unsigned long long)curr->size);
+		}
+
+		if ((md_id < MAX_MD_NUM) && (md_resv_mem_size[md_id] == 0)) {
+			md_resv_mem_size[md_id] = curr->size;
+			md_resv_mem_addr[md_id] = (phys_addr_t)curr->base_addr;
+			lk_load_img_err_no[md_id] = (int)curr->errno;
+			if (lk_load_img_err_no[md_id] == 0)
+				md_env_rdy_flag |= 1<<md_id;
+			md_type_at_lk[md_id] = (int)curr->md_type;
+			CCCI_UTIL_INF_MSG("md%d MemStart: 0x%p, MemSize:0x%08X\n", md_id+1,
+					(void *)md_resv_mem_addr[md_id], md_resv_mem_size[md_id]);
+		} else {
+			CCCI_UTIL_ERR_MSG("Invalid dt para, id(%d)\n", md_id);
+			lk_load_img_status |= LK_LOAD_MD_ERR_INVALID_MD_ID;
+		}
+		curr++;
+	}
+
+	/* Get share memory layout */
+	if (find_ccci_tag_inf(lk_inf_base, tag_cnt, "smem_layout", (char *)&smem_layout, sizeof(smem_layout_t))
+			!= sizeof(smem_layout_t)) {
+		CCCI_UTIL_ERR_MSG("Invalid dt para, id(%d)\n", (int)curr->md_id);
+		lk_load_img_status |= LK_LOAD_MD_ERR_LK_INFO_FAIL;
+		md_env_rdy_flag = 0; /* Reset to zero if get share memory info fail */
+		goto _Exit;
+	}
+	MTK_MEMCFG_LOG_AND_PRINTK("[PHY layout]ccci_share_mem at LK  :  0x%llx - 0x%llx  (0x%llx)\n",
+				smem_layout.base_addr,
+				smem_layout.base_addr + (unsigned long long)smem_layout.total_smem_size - 1LL,
+				(unsigned long long)smem_layout.total_smem_size);
+
+	/* MD*_SMEM_SIZE */
+	md_resv_smem_size[MD_SYS1] = smem_layout.ap_md1_smem_size;
+	md_resv_smem_size[MD_SYS3] = smem_layout.ap_md3_smem_size;
+
+	/* MD1MD3_SMEM_SIZE*/
+	md1md3_resv_smem_size = smem_layout.md1_md3_smem_size;
+
+	/* MD Share memory layout */
+	/*   AP    <-->   MD1     */
+	/*   MD1   <-->   MD3     */
+	/*   AP    <-->   MD3     */
+	md_resv_smem_addr[MD_SYS1] = (phys_addr_t)(smem_layout.base_addr +
+					(unsigned long long)smem_layout.ap_md1_smem_offset);
+	md1md3_resv_smem_addr = (phys_addr_t)(smem_layout.base_addr +
+					(unsigned long long)smem_layout.md1_md3_smem_offset);
+	md_resv_smem_addr[MD_SYS3] = (phys_addr_t)(smem_layout.base_addr +
+					(unsigned long long)smem_layout.ap_md3_smem_offset);
+	CCCI_UTIL_INF_MSG("AP  <--> MD1 SMEM(0x%08X):%p~%p\n", md_resv_smem_size[MD_SYS1],
+			(void *)md_resv_smem_addr[MD_SYS1],
+			(void *)(md_resv_smem_addr[MD_SYS1]+md_resv_smem_size[MD_SYS1]-1));
+	CCCI_UTIL_INF_MSG("MD1 <--> MD3 SMEM(0x%08X):%p~%p\n", md1md3_resv_smem_size,
+			(void *)md1md3_resv_smem_addr,
+			(void *)(md1md3_resv_smem_addr+md1md3_resv_smem_size-1));
+	CCCI_UTIL_INF_MSG("AP  <--> MD3 SMEM(0x%08X):%p~%p\n", md_resv_smem_size[MD_SYS3],
+			(void *)md_resv_smem_addr[MD_SYS3],
+			(void *)(md_resv_smem_addr[MD_SYS3]+md_resv_smem_size[MD_SYS3]-1));
+
+	if (md_usage_case & (1<<MD_SYS1)) {
+		/* The allocated memory will be free after md structure initialized */
+		md1_check_hdr_info = kmalloc(sizeof(struct md_check_header_v5), GFP_KERNEL);
+		if (md1_check_hdr_info == NULL) {
+			CCCI_UTIL_ERR_MSG("allocate check header memory fail for md1\n");
+			md_env_rdy_flag &= ~(1<<MD_SYS1);
+			goto _Exit;
+		}
+		if (find_ccci_tag_inf(lk_inf_base, tag_cnt, "md1_chk", md1_check_hdr_info,
+				sizeof(struct md_check_header_v5)) != sizeof(struct md_check_header_v5)) {
+			CCCI_UTIL_ERR_MSG("get md1 chk header info fail\n");
+			lk_load_img_status |= LK_LOAD_MD_ERR_LK_INFO_FAIL;
+			md_env_rdy_flag &= ~(1<<MD_SYS1);
+			goto _Exit;
+		}
+		md1_check_hdr_info_size = sizeof(struct md_check_header_v5);
+	}
+	if (md_usage_case & (1<<MD_SYS3)) {
+		/* The allocated memory will be free after md structure initialized */
+		md3_check_hdr_info = kmalloc(sizeof(struct md_check_header), GFP_KERNEL);
+		if (md3_check_hdr_info == NULL) {
+			CCCI_UTIL_ERR_MSG("allocate check header memory fail for md3\n");
+			md_env_rdy_flag &= ~(1<<MD_SYS3);
+			goto _Exit;
+		}
+		if (find_ccci_tag_inf(lk_inf_base, tag_cnt, "md3_chk", md3_check_hdr_info,
+				sizeof(struct md_check_header)) != sizeof(struct md_check_header)) {
+			CCCI_UTIL_ERR_MSG("get md3 chk header info fail\n");
+			lk_load_img_status |= LK_LOAD_MD_ERR_LK_INFO_FAIL;
+			md_env_rdy_flag &= ~(1<<MD_SYS3);
+			goto _Exit;
+		}
+		md3_check_hdr_info_size = sizeof(struct md_check_header);
+	}
+
+	/* Get raw image size */
+	find_ccci_tag_inf(lk_inf_base, tag_cnt, "md1img", (char *)&md1_raw_img_size, sizeof(int));
+	find_ccci_tag_inf(lk_inf_base, tag_cnt, "md3img", (char *)&md3_raw_img_size, sizeof(int));
+_Exit:
+	iounmap(lk_inf_base);
+
+_Load_fail:
+	CCCI_UTIL_INF_MSG("=====Parsing done====================\n");
+
+	/* Show warning if modem enable but env not ready */
+	if ((md_env_rdy_flag & (1<<MD_SYS1)) != (md_usage_case & (1<<MD_SYS1))) {
+		CCCI_UTIL_ERR_MSG("md1 env prepare abnormal, disable this modem\n");
+		md_usage_case &= ~(1<<MD_SYS1);
+	} else if ((md_env_rdy_flag & (1<<MD_SYS3)) != (md_usage_case & (1<<MD_SYS3))) {
+		CCCI_UTIL_ERR_MSG("md3 env prepare abnormal, disable this modem\n");
+		md_usage_case &= ~(1<<MD_SYS3);
 	}
 }
 
+int get_md_img_raw_size(int md_id)
+{
+	switch (md_id) {
+	case MD_SYS1:
+		return md1_raw_img_size;
+	case MD_SYS3:
+		return md3_raw_img_size;
+	default:
+		return 0;
+	}
+	return 0;
+}
+
+int get_raw_check_hdr(int md_id, char buf[], int size)
+{
+	char *chk_hdr_ptr = NULL;
+	int cpy_size = 0;
+	int ret = -1;
+
+	if (buf == NULL)
+		return -1;
+	switch (md_id) {
+	case MD_SYS1:
+		chk_hdr_ptr = md1_check_hdr_info;
+		cpy_size = md1_check_hdr_info_size;
+		break;
+	case MD_SYS3:
+		chk_hdr_ptr = md3_check_hdr_info;
+		cpy_size = md3_check_hdr_info_size;
+		break;
+	default:
+		break;
+	}
+	if (chk_hdr_ptr == NULL)
+		return ret;
+
+	cpy_size = cpy_size > size?size:cpy_size;
+	memcpy(buf, chk_hdr_ptr, cpy_size);
+
+	return cpy_size;
+}
 /*--- META arguments parse ------- */
 static int ccci_parse_meta_md_setting(unsigned char args[])
 {
@@ -231,22 +568,6 @@ int set_modem_support_cap(int md_id, int new_val)
 	}
 	return -1;
 }
-
-/*--- MD setting collect */
-/* modem index is not continuous, so there may be gap in this arrays */
-static unsigned int md_usage_case;
-
-static unsigned int md_resv_mem_size[MAX_MD_NUM];	/* MD ROM+RAM */
-static unsigned int md_resv_smem_size[MAX_MD_NUM];	/* share memory */
-static unsigned int md_resv_size_list[MAX_MD_NUM];
-static unsigned int resv_smem_size;
-static unsigned int md1md3_resv_smem_size;
-
-static phys_addr_t md_resv_mem_list[MAX_MD_NUM];
-static phys_addr_t md_resv_mem_addr[MAX_MD_NUM];
-static phys_addr_t md_resv_smem_addr[MAX_MD_NUM];
-static phys_addr_t resv_smem_addr;
-static phys_addr_t md1md3_resv_smem_addr;
 
 int get_md_resv_mem_info(int md_id, phys_addr_t *r_rw_base, unsigned int *r_rw_size, phys_addr_t *srw_base,
 			 unsigned int *srw_size)
@@ -371,12 +692,18 @@ static void cal_md_settings_v2(struct device_node *node)
 	char tmp_buf[30];
 	int i;
 
+	CCCI_UTIL_INF_MSG("using kernel dt mem setting for md\n");
+
 	/* MTK_MD*_SUPPORT */
 	for (i  = 0; i < MAX_MD_NUM; i++) {
 		snprintf(tmp_buf, sizeof(tmp_buf), "MTK_MD%d_SUPPORT", (i + 1));
 		if (ccci_get_fo_setting(tmp_buf, &tmp) == 0)
 			md_support[i] = tmp;
 	}
+
+	/* lk_dt_info_collect may set "LK_LOAD_MD_EN" flag if found dt node success*/
+	if (lk_load_img_status & LK_LOAD_MD_EN)
+		return;
 
 	/* MD*_SMEM_SIZE */
 	for (i = 0; i < MAX_MD_NUM; i++) {
@@ -441,6 +768,11 @@ static void cal_md_settings_v2(struct device_node *node)
 			(void *)(md_resv_smem_addr[MD_SYS3]+md_resv_smem_size[MD_SYS3]-1));
 }
 
+int modem_run_env_ready(int md_id)
+{
+	return md_env_rdy_flag & (1<<md_id);
+}
+
 void ccci_md_mem_reserve(void)
 {
 	CCCI_UTIL_INF_MSG("ccci_md_mem_reserve phased out.\n");
@@ -492,14 +824,31 @@ int ccci_util_fo_init(void)
 {
 	int idx;
 	struct device_node *node = NULL;
+	unsigned int tmp;
 	CCCI_UTIL_INF_MSG("ccci_util_fo_init 0.\n");
+
+	if (!md_usage_case) {
+		/* Enter here mean's kernel dt not reserve memory */
+		/* So, change to using kernel option to deside if modem is enabled */
+		if (ccci_get_fo_setting("MTK_ENABLE_MD1", &tmp) == 0) {
+			if (tmp > 0)
+				md_usage_case |= (1 << MD_SYS1);
+		}
+		if (ccci_get_fo_setting("MTK_ENABLE_MD3", &tmp) == 0) {
+			if (tmp > 0)
+				md_usage_case |= (1 << MD_SYS3);
+		}
+	}
+
+	lk_dt_info_collect();
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,ccci_util_cfg");
 	if (node == NULL) {
 		CCCI_UTIL_INF_MSG("using v1.\n");
-		lk_meta_tag_info_collect();
+		/* lk_meta_tag_info_collect(); */
 		/* Parse META setting */
 		ccci_parse_meta_md_setting(md_info_tag_val);
+
 		/* Calculate memory layout */
 		for (idx = 0; idx < MAX_MD_NUM; idx++)
 			cal_md_settings(idx);

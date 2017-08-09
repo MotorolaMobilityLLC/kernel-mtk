@@ -7,6 +7,7 @@
 #include <linux/uaccess.h>
 #include <linux/mm.h>
 #include <linux/kfifo.h>
+#include <linux/slab.h>
 
 #include <linux/firmware.h>
 #include <linux/syscalls.h>
@@ -84,7 +85,17 @@ int scan_image_list(int md_id, char fmt[], int out_img_list[], int img_list_size
 	int img_num = 0;
 	char full_path[64] = { 0 };
 	char img_name[32] = { 0 };
+	int md_type;
 	struct file *filp = NULL;
+
+	md_type = get_md_type_from_lk(md_id); /* For LK load modem use */
+	if (md_type) {
+		out_img_list[img_num] = md_type;
+		img_num++;
+
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "md_type: %d, image nume:%d\n", md_type, img_num);
+		return img_num;
+	}
 
 	for (i = 0; i < (sizeof(type_str) / sizeof(char *)); i++) {
 		snprintf(img_name, 32, fmt, md_id + 1, type_str[i]);
@@ -1348,6 +1359,11 @@ int md_capability(int md_id, int wm_id, int curr_md_type)
 		return -1;
 	if (wm_id >= MAX_IMG_NUM)
 		return -2;
+
+	if (curr_ubin_id == 0) {
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "curr_ubin_id is default val\n");
+		return 1;
+	}
 	if (md_id == MD_SYS1) {
 		if (md1_capability_array[wm_id] & (1 << curr_ubin_id))	/* Note here, curr_md_type not used */
 			return 1;
@@ -1380,6 +1396,63 @@ typedef union {
 	} info;
 	unsigned char data[IMG_HDR_SIZE];
 } prt_img_hdr_t;
+
+int ccci_get_md_check_hdr_inf(int md_id, void *img_inf, char post_fix[])
+{
+	int ret = 0;
+	struct ccci_image_info *img_ptr = (struct ccci_image_info *)img_inf;
+	char *img_str;
+	char *buf;
+	unsigned int md_type = 0;
+
+	buf = kmalloc(1024, GFP_KERNEL);
+	if (buf == NULL) {
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "fail to allocate memor for chk_hdr\n");
+		return -1;
+	}
+
+	img_str = md_img_info_str[md_id];
+
+	ret = get_raw_check_hdr(md_id, buf, 1024);
+	if (ret < 0) {
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "fail to load header(%d)!\n", ret);
+		kfree(buf);
+		return -1;
+	}
+
+	img_ptr->size = get_md_img_raw_size(md_id);
+	ret = check_md_header(md_id, buf+ret, img_ptr);
+	if (ret < 0) {
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "check header fail(%d)!\n", ret);
+		kfree(buf);
+		return -1;
+	}
+
+	/* Get modem capability */
+	md_type = get_md_type_from_lk(md_id);
+
+	kfree(buf);
+
+	/* Construct image information string */
+	sprintf(img_str, "MD:%s*%s*%s*%s*%s\nAP:%s*%s*%08x (MD)%08x\n",
+		img_ptr->img_info.image_type, img_ptr->img_info.platform,
+		img_ptr->img_info.build_ver, img_ptr->img_info.build_time,
+		img_ptr->img_info.product_ver, img_ptr->ap_info.image_type,
+		img_ptr->ap_info.platform, img_ptr->ap_info.mem_size, img_ptr->img_info.mem_size);
+
+	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "check header str[%s]!\n", img_str);
+
+	if (md_id == MD_SYS1) {
+		curr_ubin_id = md_type;
+		CCCI_UTIL_INF_MSG_WITH_ID(md_id, "type @ header(%d)!\n", curr_ubin_id);
+	}
+
+	snprintf(post_fix, IMG_POSTFIX_LEN, "%d_%s_n", md_id+1, img_ptr->img_info.image_type);
+
+	CCCI_UTIL_INF_MSG_WITH_ID(md_id, "post fix[%s]!\n", post_fix);
+
+	return 0;
+}
 
 int check_if_bypass_header(struct file *filp, int *img_size)
 {

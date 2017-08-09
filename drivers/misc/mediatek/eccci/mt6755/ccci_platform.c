@@ -180,7 +180,10 @@ void ccci_clear_md_region_protection(struct ccci_modem *md)
 {
 #ifdef ENABLE_EMI_PROTECTION
 	unsigned int rom_mem_mpu_id, rw_mem_mpu_id;
-
+	if (modem_run_env_ready(md->index)) { /* LK has did it, bypass this step */
+		CCCI_INF_MSG(md->index, TAG, "Ignore Clear MPU for md%d\n", md->index+1);
+		return;
+	}
 	switch (md->index) {
 	case MD_SYS1:
 		rom_mem_mpu_id = MPU_REGION_ID_MD1_ROM;
@@ -346,13 +349,18 @@ void ccci_set_mem_access_protection(struct ccci_modem *md)
 	unsigned int kernel_base;
 	unsigned int dram_size;
 #endif
-
+	unsigned int by_pass_setting = 0;
 	/* check header version is newer than v4 */
 	CCCI_INF_MSG(md->index, TAG, "CCCI Image header version = %d\n", md->img_info[IMG_MD].img_info.header_verno);
 	if (md->index == MD_SYS1 && md->img_info[IMG_MD].img_info.header_verno < 4) {
 		CCCI_ERR_MSG(md->index, TAG, "CCCI Image header version is %d ,RMPU Only support after v4\n",
 			md->img_info[IMG_MD].img_info.header_verno);
 		return;
+	}
+
+	if (modem_run_env_ready(md->index)) {
+		CCCI_INF_MSG(md->index, TAG, "Has protected, bypass\n");
+		by_pass_setting = 1;
 	}
 	switch (md->index) {
 	case MD_SYS1:
@@ -365,14 +373,16 @@ void ccci_set_mem_access_protection(struct ccci_modem *md)
 		rom_mem_phy_start = (unsigned int)md_layout->md_region_phy +
 				img_info->rmpu_info.region_info[region_id].region_offset;
 		rom_mem_phy_end =
-		((rom_mem_phy_start + img_info->rmpu_info.region_info[region_id].region_size + 0xFFFF)&(~0xFFFF)) - 0x1;
-
-		CCCI_INF_MSG(md->index, TAG, "Start MPU protect region <%d:%08X:%08X> %X\n",
-				     rom_mem_mpu_id, rom_mem_phy_start, rom_mem_phy_end, rom_mem_mpu_attr);
-		emi_mpu_set_region_protection(rom_mem_phy_start,	/*START_ADDR */
-					      rom_mem_phy_end,	/*END_ADDR */
-					      rom_mem_mpu_id,	/*region */
-					      rom_mem_mpu_attr);
+		((rom_mem_phy_start + img_info->rmpu_info.region_info[region_id].region_size + 0xFFFF)&(~0xFFFF))
+				- 0x1;
+		if (by_pass_setting == 0) {
+			CCCI_INF_MSG(md->index, TAG, "Start MPU protect region <%d:%08X:%08X> %X\n",
+					     rom_mem_mpu_id, rom_mem_phy_start, rom_mem_phy_end, rom_mem_mpu_attr);
+			emi_mpu_set_region_protection(rom_mem_phy_start,	/*START_ADDR */
+						      rom_mem_phy_end,	/*END_ADDR */
+						      rom_mem_mpu_id,	/*region */
+						      rom_mem_mpu_attr);
+		}
 		shr_mem_mpu_id = MPU_REGION_ID_MD1_SMEM;/* 5 */
 		shr_mem_mpu_attr = MPU_ACCESS_PERMISSON_MD1_SMEM_ATTR;/* 5 */
 		break;
@@ -402,22 +412,25 @@ void ccci_set_mem_access_protection(struct ccci_modem *md)
 		/* MD1 MD3 share memory */
 		shr_mem13_phy_start = (unsigned int)md_layout->md1_md3_smem_phy;
 		shr_mem13_phy_end = ((shr_mem13_phy_start + md_layout->md1_md3_smem_size + 0xFFFF) & (~0xFFFF)) - 0x1;
-		CCCI_INF_MSG(md->index, TAG, "MPU Start protect MD ROM region<%d:%08x:%08x> %x, invalid_map=0x%llx\n",
-			     rom_mem_mpu_id, rom_mem_phy_start, rom_mem_phy_end, rom_mem_mpu_attr,
-			     (unsigned long long)md->invalid_remap_base);
-		emi_mpu_set_region_protection(rom_mem_phy_start,	/*START_ADDR */
-					      rom_mem_phy_end,	/*END_ADDR */
-					      rom_mem_mpu_id,	/*region */
-					      rom_mem_mpu_attr);
 
-		CCCI_INF_MSG(md->index, TAG, "MPU Start protect MD R/W region<%d:%08x:%08x> %x\n",
-			     rw_mem_mpu_id, rw_mem_phy_start, rw_mem_phy_end, rw_mem_mpu_attr);
-		emi_mpu_set_region_protection(rw_mem_phy_start,	/*START_ADDR */
-					      rw_mem_phy_end,	/*END_ADDR */
-					      rw_mem_mpu_id,	/*region */
-					      rw_mem_mpu_attr);
+		if (by_pass_setting == 0) {
+			CCCI_INF_MSG(md->index, TAG, "MPU protect MD ROM region<%d:%08x:%08x> %x,invalid_map=0x%llx\n",
+				     rom_mem_mpu_id, rom_mem_phy_start, rom_mem_phy_end, rom_mem_mpu_attr,
+				     (unsigned long long)md->invalid_remap_base);
+			emi_mpu_set_region_protection(rom_mem_phy_start,	/*START_ADDR */
+						      rom_mem_phy_end,	/*END_ADDR */
+						      rom_mem_mpu_id,	/*region */
+						      rom_mem_mpu_attr);
 
-		CCCI_INF_MSG(md->index, TAG, "MPU Start protect MD1&3 Share region<%d:%08x:%08x> %x\n",
+			CCCI_INF_MSG(md->index, TAG, "MPU protect MD R/W region<%d:%08x:%08x> %x\n",
+				     rw_mem_mpu_id, rw_mem_phy_start, rw_mem_phy_end, rw_mem_mpu_attr);
+			emi_mpu_set_region_protection(rw_mem_phy_start,	/*START_ADDR */
+						      rw_mem_phy_end,	/*END_ADDR */
+						      rw_mem_mpu_id,	/*region */
+						      rw_mem_mpu_attr);
+		}
+
+		CCCI_INF_MSG(md->index, TAG, "MPU protect MD1&3 Share region<%d:%08x:%08x> %x\n",
 			     shr_mem13_mpu_id, shr_mem13_phy_start, shr_mem13_phy_end, shr_mem13_mpu_attr);
 		emi_mpu_set_region_protection(shr_mem13_phy_start,	/*START_ADDR */
 					      shr_mem13_phy_end,	/*END_ADDR */
@@ -447,7 +460,7 @@ void ccci_set_mem_access_protection(struct ccci_modem *md)
 	shr_mem_phy_end = ((shr_mem_phy_start + md_layout->smem_region_size + 0xFFFF) & (~0xFFFF)) - 0x1;
 
 #ifndef ENABLE_DSP_SMEM_SHARE_MPU_REGION
-	CCCI_INF_MSG(md->index, TAG, "MPU Start protect MD Share region<%d:%08x:%08x> %x\n",
+	CCCI_INF_MSG(md->index, TAG, "MPU protect MD Share region<%d:%08x:%08x> %x\n",
 		     shr_mem_mpu_id, shr_mem_phy_start, shr_mem_phy_end, shr_mem_mpu_attr);
 	emi_mpu_set_region_protection(shr_mem_phy_start,	/*START_ADDR */
 				      shr_mem_phy_end,	/*END_ADDR */
@@ -456,7 +469,7 @@ void ccci_set_mem_access_protection(struct ccci_modem *md)
 #endif
 /* This part need to move common part */
 #ifdef SET_AP_MPU_REGION
-	CCCI_INF_MSG(md->index, TAG, "MPU Start protect AP region<%d:%08x:%08x> %x\n",
+	CCCI_INF_MSG(md->index, TAG, "MPU protect AP region<%d:%08x:%08x> %x\n",
 		     ap_mem_mpu_id, kernel_base, (kernel_base + dram_size - 1), ap_mem_mpu_attr);
 	emi_mpu_set_region_protection(kernel_base, (kernel_base + dram_size - 1), ap_mem_mpu_id, ap_mem_mpu_attr);
 #endif
@@ -474,8 +487,30 @@ void ccci_set_mem_access_protection_1st_stage(struct ccci_modem *md)
 
 	switch (md->index) {
 	case MD_SYS1:
+		if (modem_run_env_ready(MD_SYS1)) {
+			CCCI_INF_MSG(md->index, TAG, "Has protected, only MDHW bypass other 1st step\n");
+			img_info = &md->img_info[IMG_MD];
+			md_layout = &md->mem_layout;
+			region_mpu_id = MPU_REGION_ID_MD1_MCURO_HWRW;
+			region_mpu_attr = SET_ACCESS_PERMISSON(NO_PROTECTION, FORBIDDEN, FORBIDDEN, FORBIDDEN,
+					FORBIDDEN, FORBIDDEN, NO_PROTECTION, SEC_R_NSEC_R);
+			region_mpu_start = (unsigned int)md_layout->md_region_phy +
+				img_info->rmpu_info.region_info[2].region_offset; /* Note here!!!!!, 2 */
+			region_mpu_end =
+				((region_mpu_start + img_info->rmpu_info.region_info[2].region_size /* Note here, 2 */
+				 + 0xFFFF)&(~0xFFFF)) - 0x1;
+
+			CCCI_INF_MSG(md->index, TAG, "Start MPU protect region <%d:%08X:%08X> %X\n",
+				region_mpu_id, region_mpu_start, region_mpu_end, region_mpu_attr);
+			emi_mpu_set_region_protection(region_mpu_start,	/*START_ADDR */
+						      region_mpu_end,	/*END_ADDR */
+						      region_mpu_id,	/*region */
+						      region_mpu_attr);
+			break;
+		}
 		img_info = &md->img_info[IMG_MD];
 		md_layout = &md->mem_layout;
+
 		for (region_id = MD_SET_REGION_MD1_MCURW_HWRO; region_id < MPU_REGION_INFO_ID_TOTAL_NUM; region_id++) {
 			/* set 8, 10, 14 region, except 11 */
 			region_mpu_id = MPU_REGION_INFO_ID[region_id];
@@ -670,6 +705,12 @@ int set_md_rom_rw_mem_remap(struct ccci_modem *md, phys_addr_t src, phys_addr_t 
 {
 	unsigned int remap1_val = 0;
 	unsigned int remap2_val = 0;
+
+	if (modem_run_env_ready(md->index)) {
+		CCCI_INF_MSG(md->index, TAG, "RO_RW has mapped\n");
+		return 0;
+	}
+	CCCI_INF_MSG(md->index, TAG, "Kernel RO_RW mapping\n");
 
 	if (is_4g_memory_size_support())
 		des &= 0xFFFFFFFF;

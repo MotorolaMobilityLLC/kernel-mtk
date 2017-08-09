@@ -920,19 +920,29 @@ static int md_ccif_op_start(struct ccci_modem *md)
 	md->data_usb_bypass = 0;
 	CCCI_INF_MSG(md->index, TAG, "CCIF modem is starting\n");
 	/*1. load modem image */
-	if (md->config.setting & MD_SETTING_FIRST_BOOT
-	    || md->config.setting & MD_SETTING_RELOAD) {
-		ccci_clear_md_region_protection(md);
-		ret =
-		    ccci_load_firmware(md->index, &md->img_info[IMG_MD],
-				       img_err_str, md->post_fix);
-		if (ret < 0) {
-			CCCI_ERR_MSG(md->index, TAG, "load firmware fail, %s\n",
-				     img_err_str);
-			goto out;
+	if (!modem_run_env_ready(md->index)) {
+		if (md->config.setting & MD_SETTING_FIRST_BOOT
+		    || md->config.setting & MD_SETTING_RELOAD) {
+			ccci_clear_md_region_protection(md);
+			ret =
+			    ccci_load_firmware(md->index, &md->img_info[IMG_MD],
+					       img_err_str, md->post_fix);
+			if (ret < 0) {
+				CCCI_ERR_MSG(md->index, TAG, "load firmware fail, %s\n",
+					     img_err_str);
+				goto out;
+			}
+			ret = 0;	/*load_std_firmware returns MD image size */
+			md->config.setting &= ~MD_SETTING_RELOAD;
 		}
-		ret = 0;	/*load_std_firmware returns MD image size */
-		md->config.setting &= ~MD_SETTING_RELOAD;
+	} else {
+		CCCI_INF_MSG(md->index, TAG, "CLDMA modem image ready, bypass load\n");
+		ret = ccci_get_md_check_hdr_inf(md->index, &md->img_info[IMG_MD], md->post_fix);
+		if (ret < 0) {
+			CCCI_INF_MSG(md->index, TAG, "partition read fail(%d)\n", ret);
+			/* goto out; */
+		} else
+			CCCI_INF_MSG(md->index, TAG, "partition read success\n");
 	}
 	/*2. enable MPU */
 	ccci_set_mem_access_protection(md);
@@ -1497,6 +1507,13 @@ static int md_ccif_probe(struct platform_device *dev)
 	if (ret != 0) {
 		CCCI_INF_MSG(-1, TAG, "md_ccif_probe:get hw info fail(%d)\n",
 			     ret);
+		kfree(md_hw);
+		md_hw = NULL;
+		return -1;
+	}
+
+	if (!get_modem_is_enabled(dev_cfg.index)) {
+		CCCI_INF_MSG(dev_cfg.index, TAG, "modem %d not enable\n", dev_cfg.index+1);
 		kfree(md_hw);
 		md_hw = NULL;
 		return -1;

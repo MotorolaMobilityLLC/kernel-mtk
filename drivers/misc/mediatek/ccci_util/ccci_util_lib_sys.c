@@ -175,6 +175,13 @@ static ssize_t debug_enable_store(const char *buf, size_t count)
 }
 
 CCCI_ATTR(debug, 0660, &debug_enable_show, &debug_enable_store);
+/* Sys -- dump lk load md info */
+static ssize_t ccci_lk_load_md_show(char *buf)
+{
+	return get_lk_load_md_info(buf, 4095);
+}
+
+CCCI_ATTR(lk_md, 0444, &ccci_lk_load_md_show, NULL);
 
 /* Sys -- Runtime register debug */
 static char aat_cmd[32];
@@ -564,6 +571,7 @@ static struct attribute *ccci_default_attrs[] = {
 	&ccci_attr_debug.attr,
 	&ccci_attr_aat.attr,
 	&ccci_attr_kcfg_setting.attr,
+	&ccci_attr_lk_md.attr,
 	NULL
 };
 

@@ -2109,7 +2109,8 @@ static int md_cd_start(struct ccci_modem *md)
 
 	CCCI_NOTICE_MSG(md->index, TAG, "CLDMA modem is starting\n");
 	/* 1. load modem image */
-	if (1/*md->config.setting&MD_SETTING_FIRST_BOOT || md->config.setting&MD_SETTING_RELOAD */) {
+	if (!modem_run_env_ready(md->index)) {
+		CCCI_INF_MSG(md->index, TAG, "CLDMA modem is not ready, load it\n");
 		ccci_clear_md_region_protection(md);
 		ccci_clear_dsp_region_protection(md);
 		ret = ccci_load_firmware(md->index, &md->img_info[IMG_MD], img_err_str, md->post_fix);
@@ -2150,6 +2151,14 @@ static int md_cd_start(struct ccci_modem *md)
 		}
 		ret = 0;	/* load_std_firmware returns MD image size */
 		md->config.setting &= ~MD_SETTING_RELOAD;
+	} else {
+		CCCI_INF_MSG(md->index, TAG, "CLDMA modem image ready, bypass load\n");
+		ret = ccci_get_md_check_hdr_inf(md->index, &md->img_info[IMG_MD], md->post_fix);
+		if (ret < 0) {
+			CCCI_INF_MSG(md->index, TAG, "partition read fail(%d)\n", ret);
+			/* goto out; */
+		} else
+			CCCI_INF_MSG(md->index, TAG, "partition read success\n");
 	}
 	/* 2. clear share memory and ring buffer */
 #if 0				/* no need now, MD will clear share memory itself */

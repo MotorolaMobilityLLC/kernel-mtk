@@ -991,4 +991,11 @@ int md_capability(int md_id, int wm_id, int curr_md_type);
 int get_md_wm_id_map(int ap_wm_id);
 /* AP MD user share */
 void __iomem *get_smem_start_addr(int md_id, int region_id, int *size_o);
+/* LK load modem */
+int modem_run_env_ready(int md_id);
+int get_lk_load_md_info(char buf[], int size);
+int get_md_type_from_lk(int md_id);
+int get_raw_check_hdr(int md_id, char buf[], int size);
+int ccci_get_md_check_hdr_inf(int md_id, void *img_inf, char post_fix[]);
+int get_md_img_raw_size(int md_id);
 #endif
