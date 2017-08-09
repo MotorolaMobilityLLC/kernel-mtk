@@ -26,8 +26,7 @@
 #include <ddp_drv.h>
 #include <ddp_path.h>
 #include <primary_display.h>
-#include <ddp_aal.h>
-#include <ddp_pwm.h>
+#include <disp_drv_platform.h>
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
@@ -36,9 +35,12 @@
 #endif
 #endif
 #if defined(CONFIG_ARCH_MT6755)
-#include "disp_lowpower.h"
-#include "disp_helper.h"
+#include <disp_lowpower.h>
+#include <disp_helper.h>
 #endif
+#include <ddp_aal.h>
+#include <ddp_pwm.h>
+
 
 /* To enable debug log: */
 /* # echo aal_dbg:1 > /sys/kernel/debug/dispsys */
@@ -99,10 +101,17 @@ static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *c
 }
 
 
-static void disp_aal_trigger_refresh(void)
+static void disp_aal_trigger_refresh(int latency)
 {
-	if (g_ddp_notify != NULL)
-		g_ddp_notify(DISP_MODULE_AAL, DISP_PATH_EVENT_TRIGGER);
+	if (g_ddp_notify != NULL) {
+		DISP_PATH_EVENT trigger_method = DISP_PATH_EVENT_TRIGGER;
+
+#ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
+		if (latency == AAL_REFRESH_33MS)
+			trigger_method = DISP_PATH_EVENT_DELAYED_TRIGGER_33ms;
+#endif
+		g_ddp_notify(DISP_MODULE_AAL, trigger_method);
+	}
 }
 
 
@@ -313,7 +322,8 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 
 	if (g_aal_is_init_regs_valid) {
 		disp_aal_set_interrupt(1);
-		disp_aal_trigger_refresh();
+		/* Backlight latency should be as smaller as possible */
+		disp_aal_trigger_refresh(AAL_REFRESH_17MS);
 	}
 }
 
@@ -427,13 +437,13 @@ int disp_aal_set_param(DISP_AAL_PARAM __user *param, void *cmdq)
 	if (ret == 0)
 		ret |= disp_pwm_set_backlight_cmdq(DISP_PWM0, backlight_value, cmdq);
 
-	AAL_DBG("disp_aal_set_param(CABC = %d, DRE[0,8] = %d,%d): ret = %d",
+	AAL_DBG("disp_aal_set_param(CABC = %d, DRE[0,8] = %d,%d, latency=%d): ret = %d",
 		g_aal_param.cabc_fltgain_force, g_aal_param.DREGainFltStatus[0],
-		g_aal_param.DREGainFltStatus[8], ret);
+		g_aal_param.DREGainFltStatus[8], g_aal_param.refreshLatency, ret);
 
 	backlight_brightness_set(backlight_value);
 
-	disp_aal_trigger_refresh();
+	disp_aal_trigger_refresh(g_aal_param.refreshLatency);
 
 	return ret;
 }
@@ -697,7 +707,7 @@ static int aal_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, void *cmd
 			disp_aal_set_interrupt(enabled);
 
 			if (enabled)
-				disp_aal_trigger_refresh();
+				disp_aal_trigger_refresh(AAL_REFRESH_17MS);
 
 			break;
 		}
@@ -821,7 +831,7 @@ static void aal_test_ink(const char *cmd)
 		break;
 	}
 
-	disp_aal_trigger_refresh();
+	disp_aal_trigger_refresh(AAL_REFRESH_17MS);
 }
 
 

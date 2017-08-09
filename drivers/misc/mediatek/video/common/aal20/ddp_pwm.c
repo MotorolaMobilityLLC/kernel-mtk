@@ -34,6 +34,7 @@
 #include <ddp_reg.h>
 #include <ddp_path.h>
 #include <primary_display.h>
+#include <disp_drv_platform.h>
 #include <ddp_drv.h>
 #include <ddp_pwm.h>
 
@@ -145,10 +146,23 @@ static int disp_pwm_config(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfi
 	return ret;
 }
 
-static void disp_pwm_trigger_refresh(disp_pwm_id_t id)
+static void disp_pwm_trigger_refresh(disp_pwm_id_t id, int quick)
 {
-	if (g_ddp_notify != NULL)
+	if (g_ddp_notify != NULL) {
+#if defined(CONFIG_MTK_AAL_SUPPORT) && defined(DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT)
+		if (quick) { /* Turn off backlight immediately */
+			g_ddp_notify(DISP_MODULE_PWM0, DISP_PATH_EVENT_TRIGGER);
+		} else {
+			/*
+			 * If AAL is present, AAL will dominate the refresh rate,
+			 * maybe 17ms or 33ms. 33ms will be the upper bound of latency.
+			 */
+			g_ddp_notify(DISP_MODULE_PWM0, DISP_PATH_EVENT_DELAYED_TRIGGER_33ms);
+		}
+#else
 		g_ddp_notify(DISP_MODULE_PWM0, DISP_PATH_EVENT_TRIGGER);
+#endif
+	}
 }
 
 
@@ -276,8 +290,10 @@ int disp_pwm_set_backlight(disp_pwm_id_t id, int level_1024)
 	/* Always write registers by CPU */
 	ret = disp_pwm_set_backlight_cmdq(id, level_1024, NULL);
 
-	if (ret >= 0)
-		disp_pwm_trigger_refresh(id);
+	if (ret >= 0) {
+		/* For backlight turn-off, we have to trigger right away*/
+		disp_pwm_trigger_refresh(id, (level_1024 == 0));
+	}
 
 	return 0;
 }
