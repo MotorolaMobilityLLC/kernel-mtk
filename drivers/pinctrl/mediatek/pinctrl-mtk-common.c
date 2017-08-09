@@ -20,7 +20,6 @@
 #include <linux/of_address.h>
 #include <linux/of_device.h>
 #include <linux/of_irq.h>
-#include <linux/irqchip/chained_irq.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/pinctrl/machine.h>
 #include <linux/pinctrl/pinconf.h>
@@ -41,9 +40,7 @@
 #include "../pinconf.h"
 #include "../pinctrl-utils.h"
 #include "pinctrl-mtk-common.h"
-#ifdef CONFIG_MTK_EIC
 #include <linux/irqchip/mt-eic.h>
-#endif
 
 #define MAX_GPIO_MODE_PER_REG 5
 #define GPIO_MODE_BITS        3
@@ -790,8 +787,10 @@ static int mtk_pmx_set_mode(struct pinctrl_dev *pctldev,
 	return regmap_update_bits(mtk_get_regmap(pctl, pin),
 			reg_addr, mask, val);
 }
+/*
 
 static const struct mtk_desc_pin *
+
 mtk_find_pin_by_eint_num(struct mtk_pinctrl *pctl, unsigned int eint_num)
 {
 	int i;
@@ -805,7 +804,7 @@ mtk_find_pin_by_eint_num(struct mtk_pinctrl *pctl, unsigned int eint_num)
 
 	return NULL;
 }
-
+*/
 static int mtk_pmx_set_mux(struct pinctrl_dev *pctldev,
 			    unsigned function,
 			    unsigned group)
@@ -825,7 +824,6 @@ static int mtk_pmx_set_mux(struct pinctrl_dev *pctldev,
 	desc = mtk_pctrl_find_function_by_pin(pctl, g->pin, function);
 	if (!desc)
 		return -EINVAL;
-
 	mtk_pmx_set_mode(pctldev, g->pin, desc->muxval);
 	return 0;
 }
@@ -924,27 +922,26 @@ static int mtk_gpio_get(struct gpio_chip *chip, unsigned offset)
 
 static int mtk_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
 {
-#ifdef CONFIG_MTK_EIC
+#if CONFIG_PINCTRL_MT2701/* please maoguang to fix */
+	return 0;
+#else
 	pr_debug("fwq pinctrl mtk_gpio_to_irq pin=%d\n", offset);
 	return mt_gpio_to_irq(offset);
-#else
-	const struct mtk_desc_pin *pin;
-	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
-	struct mtk_pinctrl_group *g = pctl->groups + offset;
-	int irq;
-
-	pin = pctl->devdata->pins + offset;
-	if (pin->eint.eintnum == NO_EINT_SUPPORT)
-		return -EINVAL;
-
-	mtk_pmx_set_mode(pctl->pctl_dev, g->pin, pin->functions->muxval);
-	irq = irq_find_mapping(pctl->domain, pin->eint.eintnum);
-	if (!irq)
-		return -EINVAL;
-
-	return irq;
 #endif
 }
+static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
+	unsigned debounce)
+{
+#if CONFIG_PINCTRL_MT2701/* please maoguang to fix */
+		return 0;
+#else
+	pr_debug("fwq pinctrl mtk_gpio_set_debounce pin=%d\n", offset);
+	mt_eint_set_hw_debounce(offset, debounce);
+	return 0;
+#endif
+}
+
+#if 0
 
 static int mtk_pinctrl_irq_request_resources(struct irq_data *d)
 {
@@ -959,7 +956,7 @@ static int mtk_pinctrl_irq_request_resources(struct irq_data *d)
 		return -EINVAL;
 	}
 
-	ret = gpio_lock_as_irq(pctl->chip, pin->pin.number);
+	ret = gpiochip_lock_as_irq(pctl->chip, pin->pin.number);
 	if (ret) {
 		dev_err(pctl->dev, "unable to lock HW IRQ %lu for IRQ\n",
 			irqd_to_hwirq(d));
@@ -984,7 +981,7 @@ static void mtk_pinctrl_irq_release_resources(struct irq_data *d)
 		return;
 	}
 
-	gpio_unlock_as_irq(pctl->chip, pin->pin.number);
+	gpiochip_unlock_as_irq(pctl->chip, pin->pin.number);
 }
 
 static void __iomem *mtk_eint_get_offset(struct mtk_pinctrl *pctl,
@@ -1100,11 +1097,6 @@ static void mtk_eint_unmask(struct irq_data *d)
 static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
 	unsigned debounce)
 {
-#ifdef CONFIG_MTK_EIC
-	pr_debug("fwq pinctrl mtk_gpio_set_debounce pin=%d\n", offset);
-	mt_eint_set_hw_debounce(offset, debounce);
-	return 0;
-#else
 	struct mtk_pinctrl *pctl = dev_get_drvdata(chip->dev);
 	int eint_num, virq, eint_offset;
 	unsigned int set_offset, bit, clr_bit, clr_offset, rst, i, unmask, dbnc;
@@ -1154,9 +1146,8 @@ static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
 		mtk_eint_unmask(d);
 
 	return 0;
-#endif
 }
-
+#endif
 static struct gpio_chip mtk_gpio_chip = {
 	.owner			= THIS_MODULE,
 	.request		= mtk_gpio_request,
@@ -1170,6 +1161,7 @@ static struct gpio_chip mtk_gpio_chip = {
 	.of_gpio_n_cells	= 2,
 };
 
+#if 0
 static int mtk_eint_set_type(struct irq_data *d,
 				      unsigned int type)
 {
@@ -1230,7 +1222,7 @@ static void mtk_eint_ack(struct irq_data *d)
 }
 
 static struct irq_chip mtk_pinctrl_irq_chip = {
-	.name = "mtk-eint",
+	.name = "mt-eint",
 	.irq_mask = mtk_eint_mask,
 	.irq_unmask = mtk_eint_unmask,
 	.irq_ack = mtk_eint_ack,
@@ -1239,6 +1231,9 @@ static struct irq_chip mtk_pinctrl_irq_chip = {
 	.irq_release_resources = mtk_pinctrl_irq_release_resources,
 };
 
+#endif
+
+#if 0
 static unsigned int mtk_eint_init(struct mtk_pinctrl *pctl)
 {
 	const struct mtk_eint_offsets *eint_offsets =
@@ -1324,6 +1319,7 @@ static void mtk_eint_irq_handler(unsigned irq, struct irq_desc *desc)
 	}
 	chained_irq_exit(chip, desc);
 }
+#endif
 
 static int mtk_pctrl_build_state(struct platform_device *pdev)
 {
@@ -1460,7 +1456,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
 
 	if (!of_property_read_bool(np, "interrupt-controller"))
 		return 0;
-
+#if 0
 	/* Get EINT register base from dts. */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
@@ -1511,6 +1507,7 @@ int mtk_pctrl_init(struct platform_device *pdev,
 	irq_set_handler_data(irq, pctl);
 	set_irq_flags(irq, IRQF_VALID);
 
+#endif
 	pr_warn("mtk_pctrl_init------ ok\n");
 	return 0;
 
@@ -1523,7 +1520,5 @@ pctrl_error:
 }
 
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("MediaTek Pinctrl&EINT Driver");
+MODULE_DESCRIPTION("MediaTek Pinctrl Driver");
 MODULE_AUTHOR("Hongzhou Yang <hongzhou.yang@mediatek.com>");
-MODULE_AUTHOR("Maoguang Meng <maoguang.meng@mediatek.com>");
-
