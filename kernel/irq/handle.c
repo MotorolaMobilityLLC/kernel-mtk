@@ -19,6 +19,15 @@
 #include <trace/events/irq.h>
 
 #include "internals.h"
+#ifdef CONFIG_MTPROF_CPUTIME
+#include <linux/slab.h>
+/*  cputime monitor en/disable value */
+#ifdef CONFIG_MT_ENG_BUILD
+#define MAX_THREAD_COUNT 6000
+#else
+#define MAX_THREAD_COUNT 3000
+#endif
+#endif
 
 /**
  * handle_bad_irq - handle spurious and unhandled irqs
@@ -130,20 +139,79 @@ void __irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
 	wake_up_process(action->thread);
 }
 
+#ifdef CONFIG_MTPROF_CPUTIME
+static void save_isr_info(unsigned int irq, struct irqaction *action,
+			  unsigned long long start, unsigned long long end)
+{
+	int isr_find = 0;
+	struct mtk_isr_info *mtk_isr_point = current->se.mtk_isr;
+	struct mtk_isr_info *mtk_isr_current = mtk_isr_point;
+	char *isr_name = NULL;
+	unsigned long long dur = end - start;
+
+	current->se.mtk_isr_time += dur;
+	while ((current->se.mtk_isr != NULL) && (mtk_isr_point != NULL)) {
+		if (mtk_isr_point->isr_num == irq) {
+			mtk_isr_point->isr_time += dur;
+			mtk_isr_point->isr_count++;
+			isr_find = 1;
+			break;
+		}
+		mtk_isr_current = mtk_isr_point;
+		mtk_isr_point = mtk_isr_point->next;
+	}
+
+	if ((isr_find == 0) && (cputime_proc_count() < MAX_THREAD_COUNT)) {
+		mtk_isr_point =  kmalloc(sizeof(struct mtk_isr_info), GFP_ATOMIC);
+		if (mtk_isr_point == NULL) {
+			pr_debug("cant' alloc mtk_isr_info mem!\n");
+		} else {
+			mtk_isr_point->isr_num = irq;
+			mtk_isr_point->isr_time = dur;
+			mtk_isr_point->isr_count = 1;
+			mtk_isr_point->next = NULL;
+			if (mtk_isr_current == NULL)
+				current->se.mtk_isr = mtk_isr_point;
+			else
+				mtk_isr_current->next  = mtk_isr_point;
+
+			isr_name = kmalloc(sizeof(action->name), GFP_ATOMIC);
+			if (isr_name != NULL) {
+				strcpy(isr_name, action->name);
+				mtk_isr_point->isr_name = isr_name;
+			} else
+				pr_debug("cant' alloc isr_name mem!\n");
+			current->se.mtk_isr_count++;
+		}
+	}
+}
+#endif
+
 irqreturn_t
 handle_irq_event_percpu(struct irq_desc *desc, struct irqaction *action)
 {
 	irqreturn_t retval = IRQ_NONE;
 	unsigned int flags = 0, irq = desc->irq_data.irq;
 
+#ifdef CONFIG_MTPROF_CPUTIME
+	unsigned long long t1, t2;
+#endif
 	do {
 		irqreturn_t res;
 
 		trace_irq_handler_entry(irq, action);
+#ifdef CONFIG_MTPROF_CPUTIME
+		t1 = sched_clock();
+#endif
 		res = action->handler(irq, action->dev_id);
+#ifdef CONFIG_MTPROF_CPUTIME
+		t2 = sched_clock();
+		if (unlikely(is_mtsched_enabled()))
+			save_isr_info(irq, action, t1, t2);
+#endif
 		trace_irq_handler_exit(irq, action, res);
 
-		if (WARN_ONCE(!irqs_disabled(),"irq %u handler %pF enabled interrupts\n",
+		if (WARN_ONCE(!irqs_disabled(), "irq %u handler %pF enabled interrupts\n",
 			      irq, action->handler))
 			local_irq_disable();
 

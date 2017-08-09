@@ -1119,6 +1119,15 @@ struct sched_statistics {
 };
 #endif
 
+#ifdef CONFIG_MTPROF_CPUTIME
+struct mtk_isr_info {
+	int     isr_num;
+	int	 isr_count;
+	u64   isr_time;
+	char *isr_name;
+	struct mtk_isr_info *next;
+};
+#endif
 struct sched_entity {
 	struct load_weight	load;		/* for load-balancing */
 	struct rb_node		run_node;
@@ -1148,6 +1157,11 @@ struct sched_entity {
 #ifdef CONFIG_SMP
 	/* Per-entity load-tracking */
 	struct sched_avg	avg;
+#endif
+#ifdef CONFIG_MTPROF_CPUTIME
+	u64			mtk_isr_time;
+	int			mtk_isr_count;
+	struct mtk_isr_info  *mtk_isr;
 #endif
 };
 
@@ -3034,4 +3048,9 @@ static inline unsigned long rlimit_max(unsigned int limit)
 	return task_rlimit_max(current, limit);
 }
 
+#endif
+
+#ifdef CONFIG_MTPROF_CPUTIME
+extern bool is_mtsched_enabled(void);
+extern int cputime_proc_count(void);
 #endif
