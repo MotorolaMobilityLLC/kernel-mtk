@@ -4493,10 +4493,10 @@ static void collect_cluster_stats(struct clb_stats *clbs, struct cpumask *cluste
 	 * reasonable value.
 	 */
 	clbs->load_avg /= clbs->ncpu;
-	clbs->acap = clbs->cpu_capacity - cpu_rq(target)->cfs.avg.loadwop_avg_contrib;
+	clbs->acap = SCHED_CAPACITY_SCALE - cpu_rq(target)->cfs.avg.loadwop_avg_contrib;
 	clbs->scaled_acap = hmp_scale_down(clbs->acap);
 	clbs->scaled_atask = cpu_rq(target)->cfs.h_nr_running * cpu_rq(target)->cfs.avg.loadwop_avg_contrib;
-	clbs->scaled_atask = clbs->cpu_capacity - clbs->scaled_atask;
+	clbs->scaled_atask =  SCHED_CAPACITY_SCALE - clbs->scaled_atask;
 	clbs->scaled_atask = hmp_scale_down(clbs->scaled_atask);
 
 	mt_sched_printf(sched_log, "[%s] cpu/cluster:%d/%02lx load/len:%lu/%u stats:%d,%d,%d,%d,%d,%d,%d,%d\n",
@@ -5247,7 +5247,12 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
 #ifdef CONFIG_MT_SCHED_INTEROP
 			load += mt_rt_load(i);
 #endif
+#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
+			/* sched: scaling load with CPU capacity */
+			avg_load += (load * capacity_orig_of(i)) >> SCHED_CAPACITY_SHIFT;
+#else
 			avg_load += load;
+#endif
 			mt_sched_printf(sched_log, "find_idlest_group cpu=%d avg=%lu",
 				i, avg_load);
 		}
@@ -5648,16 +5653,26 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 			sd = tmp;
 	}
 
+	mt_sched_printf(sched_log, "wakeup %d %s sd=%p affine_sd=%p cpu=%d prev_cpu=%d",
+		p->pid, p->comm, sd, affine_sd, cpu, prev_cpu);
 	if (affine_sd && cpu != prev_cpu && wake_affine(affine_sd, p, sync))
 		prev_cpu = cpu;
 
-	if (sd_flag & SD_BALANCE_WAKE) {
-		new_cpu = select_idle_sibling(p, prev_cpu);
-		goto unlock;
-	}
-	mt_sched_printf(sched_log, "wakeup %d %s sd=%p", p->pid, p->comm, sd);
-
+#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
+	/* sched: only when sd is null, not to do wakeup balance */
+	if (!sd) {
+#endif
+		if (sd_flag & SD_BALANCE_WAKE) {
+			new_cpu = select_idle_sibling(p, prev_cpu);
+			mt_sched_printf(sched_log, "wakeup %d %s new_cpu=%d", p->pid, p->comm, new_cpu);
+			goto unlock;
+		}
+#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
+	} else
 	while (sd) {
+#else
+	while (sd) {
+#endif
 		struct sched_group *group;
 		int weight;
 
@@ -6656,6 +6671,13 @@ static void detach_task(struct task_struct *p, struct lb_env *env)
 	set_task_cpu(p, env->dst_cpu);
 }
 
+#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
+static int is_heavy_task(struct task_struct *p)
+{
+	return p->se.avg.loadwop_avg_contrib >= 650 ? 1 : 0;
+}
+#endif
+
 /*
  * detach_one_task() -- tries to dequeue exactly one task from env->src_rq, as
  * part of active balancing operations within "domain".
@@ -6665,8 +6687,9 @@ static void detach_task(struct task_struct *p, struct lb_env *env)
 static struct task_struct *detach_one_task(struct lb_env *env)
 {
 	struct task_struct *p, *n;
-
 #ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
+	int bypass_once = 1;
+
 	env->mt_ignore_cachehot_in_idle = 0;
 #endif
 	lockdep_assert_held(&env->src_rq->lock);
@@ -6674,6 +6697,14 @@ static struct task_struct *detach_one_task(struct lb_env *env)
 	list_for_each_entry_safe(p, n, &env->src_rq->cfs_tasks, se.group_node) {
 		if (!can_migrate_task(p, env))
 			continue;
+
+#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
+		if (bypass_once && is_heavy_task(p) &&
+			(capacity_orig_of(env->src_cpu) > capacity_orig_of(env->dst_cpu))) {
+			bypass_once = 0;
+			continue;
+		}
+#endif
 
 		detach_task(p, env);
 
@@ -9402,8 +9433,8 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	if (cpumask_empty(&fast_cpu_mask) || cpumask_empty(&slow_cpu_mask))
 		return new_cpu;
 
-	B_target = hmp_select_cpu(HMP_SELECT_RQ, p, &fast_cpu_mask, prev_cpu, 0);
-	L_target = hmp_select_cpu(HMP_SELECT_RQ, p, &slow_cpu_mask, prev_cpu, 1);
+	B_target = hmp_select_cpu(HMP_SELECT_RQ, p, &fast_cpu_mask, new_cpu, 0);
+	L_target = hmp_select_cpu(HMP_SELECT_RQ, p, &slow_cpu_mask, new_cpu, 1);
 
 	/*
 	 * Only one cluster exists or only one cluster is allowed for this task
@@ -9445,9 +9476,7 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	if (hmp_down_migration(B_target, &L_target, se, &clbenv))
 		goto select_slow;
 	step = 4;
-	if (hmp_cpu_is_slowest(prev_cpu))
-		goto select_slow;
-	goto select_fast;
+	goto out; /* keep new_cpu as choice */
 
 select_fast:
 	new_cpu = B_target;
@@ -9587,6 +9616,8 @@ static unsigned int hmp_up_migration(int cpu, int *target_cpu, struct sched_enti
 	 * [4] Check dynamic migration threshold
 	 * Migrate task from LITTLE to big if load is greater than up-threshold
 	 */
+	mt_sched_printf(sched_log, "%s: %d %s load=%lu threshold=%d",
+		__func__, p->pid, p->comm, se_load(se),  B->threshold);
 	if (se_load(se) > B->threshold) {
 		check->status |= HMP_MIGRATION_APPROVED;
 		check->result = 1;
