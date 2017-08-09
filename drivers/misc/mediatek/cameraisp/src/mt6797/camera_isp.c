@@ -6992,14 +6992,14 @@ static MINT32 ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 	unsigned long length = 0;
 	MUINT32 pfn = 0x0;
 
-	LOG_DBG("- E.");
+	/*LOG_DBG("- E.");*/
 	length = (pVma->vm_end - pVma->vm_start);
 	/*  */
 	pVma->vm_page_prot = pgprot_noncached(pVma->vm_page_prot);
 	pfn = pVma->vm_pgoff << PAGE_SHIFT;
 
-	LOG_INF("ISP_mmap: pVma->vm_pgoff(0x%lx),pfn(0x%x),phy(0x%lx),pVmapVma->vm_start(0x%lx),pVma->vm_end(0x%lx),length(0x%lx)\n", \
-		pVma->vm_pgoff, pfn, pVma->vm_pgoff << PAGE_SHIFT, pVma->vm_start, pVma->vm_end, length);
+	/*LOG_INF("ISP_mmap: vm_pgoff(0x%lx),pfn(0x%x),phy(0x%lx),vm_start(0x%lx),vm_end(0x%lx),length(0x%lx)\n",
+		pVma->vm_pgoff, pfn, pVma->vm_pgoff << PAGE_SHIFT, pVma->vm_start, pVma->vm_end, length);*/
 
 	switch (pfn) {
 	case CAM_A_BASE_HW:
