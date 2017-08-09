@@ -205,7 +205,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 #if defined(CONFIG_MTK_LEGACY) || defined(CONFIG_MTK_CLKMGR)
 			clksrc = 4;
 #else
-			clksrc = DPI_CK;
+			clksrc = TVDPLL_D4;
 #endif
 			prediv = 0x83109D89;	/*54M*/
 			break;
@@ -216,7 +216,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(cmdqRecHandle cmdq, unsigned int clk_req, enu
 #if defined(CONFIG_MTK_LEGACY) || defined(CONFIG_MTK_CLKMGR)
 			clksrc = 4;
 #else
-			clksrc = DPI_CK;
+			clksrc = TVDPLL_D4;
 #endif
 			prediv = 0x83109D89;	/*54M*/
 			break;

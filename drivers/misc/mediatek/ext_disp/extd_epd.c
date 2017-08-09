@@ -365,6 +365,7 @@ const struct EXTD_DRIVER *EXTD_EPD_Driver(void)
 		.ioctl = epd_ioctl
 #else
 		.init = 0,
+		.post_init = 0
 #endif
 	};
 

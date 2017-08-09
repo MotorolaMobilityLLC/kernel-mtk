@@ -353,7 +353,7 @@ struct device *ext_dev_context;
 static int mtk_extd_mgr_probe(struct platform_device *pdev)
 {
 	int ret = 0;
-	/*int i = 0;*/
+	int i = 0;
 	struct class_device *class_dev = NULL;
 
 	EXT_MGR_FUNC();
@@ -377,12 +377,12 @@ static int mtk_extd_mgr_probe(struct platform_device *pdev)
 	/* mknod /dev/hdmitx */
 	class_dev = (struct class_device *)device_create(extd_class, NULL, extd_devno, NULL, EXTD_DEVNAME);
 	ext_dev_context = (struct device *)&(pdev->dev);
-/*
+
 	for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
-			if (extd_driver[i]->post_init)
-				extd_driver[i]->post_init();
+		if (extd_driver[i]->post_init != 0)
+			extd_driver[i]->post_init();
 	}
-*/
+
 	EXT_MGR_LOG("[%s] out\n", __func__);
 	return 0;
 }
@@ -463,11 +463,6 @@ static int __init mtk_extd_mgr_init(void)
 
 	EXT_MGR_FUNC();
 
-	if (platform_driver_register(&external_display_driver)) {
-		EXT_MGR_ERR("[EXTD]failed to register mtkfb driver\n");
-		return -1;
-	}
-
 	extd_driver[DEV_MHL] = EXTD_HDMI_Driver();
 	extd_driver[DEV_EINK] = EXTD_EPD_Driver();
 	extd_factory_driver[DEV_MHL] = EXTD_Factory_HDMI_Driver();
@@ -475,6 +470,11 @@ static int __init mtk_extd_mgr_init(void)
 	for (i = DEV_MHL; i < DEV_MAX_NUM - 1; i++) {
 		if (extd_driver[i]->init)
 			extd_driver[i]->init();
+	}
+
+	if (platform_driver_register(&external_display_driver)) {
+		EXT_MGR_ERR("[EXTD]failed to register mtkfb driver\n");
+		return -1;
 	}
 
 #ifdef CONFIG_HAS_EARLYSUSPEND

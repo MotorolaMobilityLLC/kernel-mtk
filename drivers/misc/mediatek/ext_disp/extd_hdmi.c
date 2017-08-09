@@ -871,11 +871,6 @@ int hdmi_enable(int enable)
 			return 0;
 		}
 
-		if (hdmi_drv == NULL) {
-			HDMI_LOG("[hdmi] hdmi_drv == NULL\n");
-			hdmi_post_init();
-		}
-
 		if (hdmi_drv->enter)
 			hdmi_drv->enter();
 

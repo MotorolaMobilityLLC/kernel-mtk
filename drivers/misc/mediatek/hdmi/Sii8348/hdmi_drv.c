@@ -258,7 +258,7 @@ static int hdmi_drv_video_enable(bool enable)
 
 static int hdmi_drv_audio_enable(bool enable)  
 {
-    MHL_DBG("[EXTD]Set_I2S_Pin, enable = %d\n", enable);            
+    MHL_DBG("[EXTD]Set_I2S_Pin, enable = %d\n", enable);   
     //gpio:uart
 #ifdef CONFIG_MTK_LEGACY
 /*
@@ -271,6 +271,7 @@ static int hdmi_drv_audio_enable(bool enable)
 	i2s_gpio_ctrl(1);
 #endif
     audio_enable = enable;
+
     return 0;
 }
 
@@ -394,6 +395,7 @@ int hdmi_drv_power_on(void)
 	/*cust_hdmi_dpi_gpio_on(true);*/  
 #else
 	dpi_gpio_ctrl(1);
+	i2s_gpio_ctrl(1);
 #endif	
     //cust_hdmi_i2s_gpio_on(true);   
     
@@ -451,9 +453,10 @@ void hdmi_drv_power_off(void)
     if(audio_enable == 0)
 	    cust_hdmi_i2s_gpio_on(false);
 #else
+    dpi_gpio_ctrl(0);
+	i2s_gpio_ctrl(0);
     if(audio_enable == 0)
 	    i2s_gpio_ctrl(1);
-    dpi_gpio_ctrl(0);
 #endif
   	return ;
 	

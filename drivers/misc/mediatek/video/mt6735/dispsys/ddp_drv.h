@@ -290,6 +290,7 @@ typedef enum disp_clk_id {
 	MUX_DPI0,
 	TVDPLL_CK,
 	TVDPLL_D2,
+	TVDPLL_D4,
 	DPI_CK,
 	DISP_MTCMOS_CLK,
 	MAX_DISP_CLK_CNT

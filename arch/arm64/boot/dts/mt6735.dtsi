@@ -1228,6 +1228,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				 <&topckgen TOP_MUX_DPI0>,
 				 <&topckgen TOP_TVDPLL_CK>,
 				 <&topckgen TOP_TVDPLL_D2>,
+				 <&topckgen TOP_TVDPLL_D4>,
 				 <&topckgen TOP_DPI_CK>,
 				 <&scpsys SCP_SYS_DIS>;
 
@@ -1250,6 +1251,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 				      "MUX_DPI0",
 				      "TVDPLL_CK",
 				      "TVDPLL_D2",
+				      "TVDPLL_D4",
 				      "DPI_CK",
 				      "DISP_MTCMOS_CLK";
 		};
