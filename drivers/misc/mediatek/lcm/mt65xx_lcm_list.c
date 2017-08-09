@@ -871,6 +871,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&otm1906b_fhd_dsi_cmd_jdi_tps65132_mt6797_lcm_drv,
 #endif
 
+#if defined(OTM1906B_FHD_DSI_VDO_JDI_TPS65132_MT6797)
+	&otm1906b_fhd_dsi_vdo_jdi_tps65132_mt6797_lcm_drv,
+#endif
+
 #if defined(HX8394C_WXGA_DSI_VDO)
 	&hx8394c_wxga_dsi_vdo_lcm_drv,
 #endif

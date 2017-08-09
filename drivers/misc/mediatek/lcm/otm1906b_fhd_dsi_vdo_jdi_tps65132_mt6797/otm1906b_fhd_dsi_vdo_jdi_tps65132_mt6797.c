@@ -233,7 +233,7 @@ static const unsigned char LCD_MODULE_ID = 0x01; /* haobing modified 2013.07.11*
 /* ---------------------------------------------------------------------------
 Local Constants
 ---------------------------------------------------------------------------*/
-#define LCM_DSI_CMD_MODE 1
+#define LCM_DSI_CMD_MODE 0
 #define FRAME_WIDTH (1080)
 #define FRAME_HEIGHT (1920)
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -989,8 +989,8 @@ static int lcm_adjust_fps(void *cmdq, int fps, LCM_PARAMS *params)
 }
 #endif
 
-LCM_DRIVER otm1906b_fhd_dsi_cmd_jdi_tps65132_mt6797_lcm_drv = {
-	.name = "otm1906b_fhd_dsi_cmd_jdi_tps65132_mt6797",
+LCM_DRIVER otm1906b_fhd_dsi_vdo_jdi_tps65132_mt6797_lcm_drv = {
+	.name = "otm1906b_fhd_dsi_vdo_jdi_tps65132_mt6797",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
