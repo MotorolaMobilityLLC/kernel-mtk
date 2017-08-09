@@ -5096,6 +5096,7 @@ void slimport_config_video_input(void)
 }
 void slimport_config_video_output(void)
 {
+	BYTE three_video_type = 0xFF;
 	SP_TX_Video_Mute(1);
 	//enable video input
 	sp_tx_enable_video_input(1);
@@ -5105,8 +5106,14 @@ void slimport_config_video_output(void)
 	// 3d packed config
 	if(EN_3D) {
 #if(ENABLE_3D)
-		pr_err("send 3D packet \r\n");
-		sp_tx_send_3d_vsi_packet_to_7730(0x06);
+		if (three_3d_format == VIDEO_3D_TOP_AND_BOTTOM)
+			three_video_type = 0x06;
+		else if (three_3d_format == VIDEO_3D_SIDE_BY_SIDE)
+			three_video_type = 0x08;
+
+		pr_err("send 3D packet, format:%d, three_video_type:%x\r\n", three_3d_format, (unsigned int)three_video_type);
+		if (three_3d_format != 0xFF)
+			sp_tx_send_3d_vsi_packet_to_7730(three_3d_format);
 #endif
 	}
 	SP_CTRL_Set_System_State(SP_TX_CONFIG_AUDIO);

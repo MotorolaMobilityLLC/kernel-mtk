@@ -40,6 +40,8 @@ extern Mask_MHL_Intr(void);
 */
 static size_t slimport_log_on = true;
 static int txInitFlag = 0;
+bool SlimPort_3D_Support = false;
+int  SlimPort_3D_format=0x00;
 
 #define SLIMPORT_LOG(fmt, arg...)  \
 	do { \
@@ -233,14 +235,11 @@ static void slimport_drv_get_params(struct HDMI_PARAMS *params)
     params->scaling_factor 				= 0;
     params->cabletype 					= Connect_cable_type;
 	params->HDCPSupported 				= HDCP_Supported_Info;
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT	
-    if(MHL_Connect_type== MHL_3D_GLASSES)    
-        params->cabletype 				= MHL_CABLE;
-
-	params->is_3d_support 				= MHL_3D_Support;
-#endif
+/*#ifdef CONFIG_MTK_HDMI_3D_SUPPORT*/	
+	params->is_3d_support 				= SlimPort_3D_Support;
+/*#endif*/
 	cable_str = cable_type_print(params->cabletype);
-    SLIMPORT_LOG("type %s-%d hdcp %d-%d\n", cable_str, Connect_cable_type, params->HDCPSupported, HDCP_Supported_Info);
+    SLIMPORT_LOG("type %s-%d hdcp %d-%d, 3d-%d\n", cable_str, Connect_cable_type, params->HDCPSupported, HDCP_Supported_Info, SlimPort_3D_Support);
 }
 
 void slimport_drv_suspend(void) {return ;} 
@@ -253,7 +252,7 @@ static int slimport_drv_audio_config(enum HDMI_AUDIO_FORMAT aformat, int bitWidt
 	pr_info("slimport_drv_audio_config format %d, bitwidth: %d\n", aformat, bitWidth);
 	Audio_format.bAudio_word_len = AUDIO_W_LEN_16_20MAX;
 	
-	if(bitWidth == 16)
+	if(bitWidth == 24)
 		Audio_format.bAudio_word_len = AUDIO_W_LEN_24_24MAX;
 
 	Audio_format.bI2S_FORMAT.AUDIO_LAYOUT = I2S_LAYOUT_0;
@@ -339,9 +338,11 @@ static int slimport_drv_video_enable(bool enable)
 
 static int slimport_drv_audio_enable(bool enable)  
 {
-    printk("[EXTD]Set_I2S_Pin, enable = %d\n", enable);            
-    //gpio:uart
-    /*cust_hdmi_i2s_gpio_on(enable);*/
+    printk("[EXTD]Set_I2S_Pin, enable = %d\n", enable);
+	if (enable)
+		i2s_gpio_ctrl(1);
+	else
+		i2s_gpio_ctrl(0);
     audio_enable = enable;
     return 0;
 }
@@ -381,11 +382,16 @@ static int slimport_drv_video_config(enum HDMI_VIDEO_RESOLUTION vformat, enum HD
     if(si_dev_context)
     	si_mhl_tx_set_path_en_I(si_dev_context);
 #endif
-	/*
-	mt_set_gpio_mode(GPIO_MHL_I2S_OUT_DAT_PIN, GPIO_MODE_00);
-	mt_set_gpio_dir(GPIO_MHL_I2S_OUT_DAT_PIN, GPIO_DIR_OUT);
-	mt_set_gpio_out(GPIO_MHL_I2S_OUT_DAT_PIN, GPIO_OUT_ZERO);
-	*/
+
+	if(vout & HDMI_VOUT_FORMAT_3D_SBS)
+        SlimPort_3D_format=VIDEO_3D_SIDE_BY_SIDE;
+	else if(vout & HDMI_VOUT_FORMAT_3D_TAB)
+	    SlimPort_3D_format=VIDEO_3D_TOP_AND_BOTTOM;
+    else
+	    SlimPort_3D_format = VIDEO_3D_NONE;
+
+	SLIMPORT_LOG("SlimPort_3D_format: %d\n", SlimPort_3D_format);
+	update_video_format_setting(SlimPort_3D_format);
 
     return 0;
 }

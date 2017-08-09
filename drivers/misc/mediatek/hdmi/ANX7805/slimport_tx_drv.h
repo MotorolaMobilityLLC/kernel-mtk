@@ -136,6 +136,15 @@ typedef enum {
 	AUDIO_W_LEN_24_24MAX = 0x0b
 } AudioWdLen;
 
+enum
+{
+	VIDEO_3D_NONE		= 0x00,
+	VIDEO_3D_FRAME_PACKING		= 0x01,
+	VIDEO_3D_TOP_AND_BOTTOM		= 0x02,
+	VIDEO_3D_SIDE_BY_SIDE		= 0x03,
+	VIDEO_3D_INITIAL	= 0xFF
+};
+
 typedef enum {
 	I2S_CH_2 =0x01,
 	I2S_CH_4 =0x03,
@@ -567,6 +576,7 @@ _SP_TX_DRV_EX_C_ BYTE bEDID_firstblock[128];
 _SP_TX_DRV_EX_C_ BYTE bEDID_fourblock[256];
 
 _SP_TX_DRV_EX_C_ bool audio_format_change;
+_SP_TX_DRV_EX_C_ int three_3d_format;
 
 #if(REDUCE_REPEAT_PRINT_INFO)
 #define LOOP_PRINT_MSG_MAX 16

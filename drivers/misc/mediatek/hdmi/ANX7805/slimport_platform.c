@@ -140,6 +140,7 @@ uint8_t reGetI2cAddress(uint8_t device_ID)
 struct i2c_client *mClient = NULL;
 unsigned int mhl_eint_number = 0xffff;
 unsigned int mhl_eint_gpio_number = 132;
+static unsigned int mask_flag = 0;
 
 extern wait_queue_head_t mhl_irq_wq;
 extern atomic_t mhl_irq_event ;
@@ -153,16 +154,21 @@ int get_mhl_irq_num(void)
 
 void Mask_Slimport_Intr(bool irq_context)
 {
-	SLIMPORT_DBG("Mask_Slimport_Intr, enable\n");
+	SLIMPORT_DBG("Mask_Slimport_Intr: in\n");
 #ifdef CONFIG_MTK_LEGACY
 #ifdef CUST_EINT_MHL_NUM
 	mt_eint_mask(CUST_EINT_MHL_NUM);
 #endif	
 #else
-    if(irq_context)
-        disable_irq_nosync(get_mhl_irq_num());
-    else    
-        disable_irq(get_mhl_irq_num());
+	SLIMPORT_DBG("Mask_Slimport_Intr: mask_flag:%d\n", mask_flag);
+
+	if(mask_flag == 0) {
+		if(irq_context)
+			disable_irq_nosync(get_mhl_irq_num());
+		else	
+			disable_irq(get_mhl_irq_num());
+		mask_flag++;
+	}
 #endif  
 
 	return ;
@@ -170,13 +176,16 @@ void Mask_Slimport_Intr(bool irq_context)
 
 void Unmask_Slimport_Intr(void)
 {
-	SLIMPORT_DBG("Unmask_Slimport_Intr, enable\n");
+	SLIMPORT_DBG("Unmask_Slimport_Intr: mask_flag:%d\n", mask_flag);
 #ifdef CONFIG_MTK_LEGACY
 #ifdef CUST_EINT_MHL_NUM
 	mt_eint_unmask(CUST_EINT_MHL_NUM);
 #endif	
 #else	
-	enable_irq(get_mhl_irq_num());
+	if (mask_flag != 0) {
+		enable_irq(get_mhl_irq_num());
+		mask_flag = 0;
+	}
 #endif  
 }
 

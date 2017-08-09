@@ -2462,10 +2462,10 @@ static uint8_t parse_861_short_descriptors (
                     {
                     P_vsdb_t p_vsdb = (P_vsdb_t) p_data_u.puc_data_block;
                     uint8_t *puc_next_db = ((uint8_t *)&p_vsdb->header) + sizeof(p_vsdb->header) + data_block_length;
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT                    
-                    extern bool MHL_3D_Support;
-                    MHL_3D_Support = false;
-#endif                       
+/*#ifdef CONFIG_MTK_HDMI_3D_SUPPORT*/                    
+                    extern bool SlimPort_3D_Support;
+                    SlimPort_3D_Support = false;
+/*#endif*/                       
 		    // TODO: FD, TBI, any chance of MHL OUI here? 0x030C00 is HDMI OUI
 		    if (   (p_vsdb->IEEE_OUI[0] == 0x03)
 				    && (p_vsdb->IEEE_OUI[1] == 0x0C)
@@ -2495,14 +2495,14 @@ static uint8_t parse_861_short_descriptors (
 				    mhl_edid_3d_data->parse_data._3D_supported = false;
 			    } else if (mhl_edid_3d_data->parse_data.p_byte_13_through_byte_15->byte13._3D_present) {
 				    mhl_edid_3d_data->parse_data._3D_supported = true;
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT				    
-				    MHL_3D_Support= true;
-#endif				    
+/*#ifdef CONFIG_MTK_HDMI_3D_SUPPORT*/				    
+				    SlimPort_3D_Support= true;
+/*#endif*/			    
 			    } else {
 				    mhl_edid_3d_data->parse_data._3D_supported = false;
-#ifdef CONFIG_MTK_HDMI_3D_SUPPORT				    
-				    MHL_3D_Support= false;
-#endif				    
+/*#ifdef CONFIG_MTK_HDMI_3D_SUPPORT*/				    
+				    SlimPort_3D_Support= false;
+/*#endif*/				    
 			    }
 
 			    SLIMPORT_TX_EDID_INFO(mhl_edid_3d_data->dev_context,

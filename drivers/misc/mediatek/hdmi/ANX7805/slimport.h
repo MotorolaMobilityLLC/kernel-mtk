@@ -90,7 +90,7 @@ const char *avdd33_name;
 #define delay_ms(time) mdelay(time)
 
 #define MIPI_EN  0
-#define EN_3D    1 
+#define EN_3D    0
 #define MIPI_LANE_SEL_0  1
 #define MIPI_LANE_SEL_1  0
 /*Audio interface select*/
@@ -141,6 +141,7 @@ void sp_tx_hardware_poweron(void);
 void sp_tx_hardware_powerdown(void);
 int slimport_read_edid_block(int block, uint8_t *edid_buf);
 int update_audio_format_setting(unsigned char  bAudio_Fs, unsigned char bAudio_word_len, int Channel_Num);
+int update_video_format_setting(int video_format);
 int slimport_read_edid_All(uint8_t *edid_buf);
 int slimport_read_edid_break(uint8_t *edid_break);
 extern 	void *slimport_edid_p;

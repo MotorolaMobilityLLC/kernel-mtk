@@ -61,6 +61,7 @@ enum
 	AUDIO_INITIAL		= 0xFF
 };
 
+/*
 enum
 {
 	VIDEO_3D_NONE		= 0x00,
@@ -69,6 +70,7 @@ enum
 	VIDEO_3D_SS		= 0x03,
 	VIDEO_3D_INITIAL	= 0xFF
 };
+*/
 
 // Video mode define ( = VIC code, please see CEA-861 spec)
 #define HDMI_640X480P		1

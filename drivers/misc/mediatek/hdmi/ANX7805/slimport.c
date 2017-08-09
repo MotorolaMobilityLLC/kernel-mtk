@@ -493,6 +493,11 @@ int update_audio_format_setting(unsigned char  bAudio_Fs, unsigned char bAudio_w
 }
 EXPORT_SYMBOL(update_audio_format_setting);
 
+int update_video_format_setting(int video_format)
+{
+	three_3d_format = video_format;
+	return 0;
+}
 
 bool slimport_is_connected(void)
 {
@@ -608,23 +613,26 @@ static int irq_count_for_cable_plugout = 0;
 irqreturn_t anx7805_cbl_det_isr(int irq, void *data)
 {
 	irq_count++;
+	if (irq_count < 2) {
+		pr_err("anx7805_cbl_det_isr, irq_count: %d\n", irq_count);
+		return IRQ_HANDLED;
+	}
+
 	if (gpio_get_value(mhl_eint_gpio_number)) {
-		
+		pr_err("slimport detect cable insertion\n");
 		Mask_Slimport_Intr(true);
 		irq_set_irq_type(mhl_eint_number,IRQ_TYPE_LEVEL_LOW);
 		
 		atomic_set(&mhl_irq_event, 0x1);
-		pr_err("slimport detect cable insertion\n");
 		wake_up_interruptible(&mhl_irq_wq);
 	} 
 	else {
-		
+		pr_err("slimport detect cable removal\n");
 		Mask_Slimport_Intr(true);
 		irq_set_irq_type(mhl_eint_number,IRQ_TYPE_LEVEL_HIGH);
 		
 		atomic_set(&mhl_irq_event, 0x10);
 		wake_up_interruptible(&mhl_irq_wq);
-		pr_err("slimport detect cable removal\n");
 	}
 
 	return IRQ_HANDLED;
@@ -934,9 +942,11 @@ err0:
 	the_chip = NULL;
 	kfree(anx7805);
 exit:
+	/*
 	pr_err("enable_irq, mhl_eint_number:%d\n", mhl_eint_number);
 	if (mhl_eint_number != 0xffff)
-		enable_irq(mhl_eint_number);
+		Unmask_Slimport_Intr();
+	*/
 	pr_err("anx7805 anx7805_i2c_probe - \n");
 	return ret;
 }
