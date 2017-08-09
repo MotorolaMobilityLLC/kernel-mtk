@@ -183,16 +183,6 @@ int kbase_platform_early_init(void)
 
 #ifdef MTK_GPU_SPM
 
-void mtk_gpu_power_limit_CB(unsigned int ui32LimitFreqID)
-{
-    unsigned int freq_ub;
-
-	printk("[MALI] thermal CB set to freq id=%d\n", ui32LimitFreqID);
-	freq_ub = mt_gpufreq_get_freq_by_idx(ui32LimitFreqID);
-	mtk_kbase_spm_set_vol_freq_ceiling(1125, freq_ub);    
-}
-
-
 ssize_t mtk_kbase_dvfs_gpu_show(struct device *dev, struct device_attribute *attr, char *const buf)
 {
 	struct mtk_config *config = g_config;
