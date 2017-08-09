@@ -640,7 +640,8 @@ static void mt_gpufreq_power_calculation(unsigned int idx, unsigned int freq,
 #define GPU_ACT_REF_FREQ			800000	/* KHz */
 #define GPU_ACT_REF_VOLT			100000	/* mV x 100 */
 
-	unsigned int p_total = 0, p_dynamic = 0, p_leakage = 0, ref_freq = 0, ref_volt = 0;
+	unsigned int p_total = 0, p_dynamic = 0, ref_freq = 0, ref_volt = 0;
+	int p_leakage = 0;
 
 	p_dynamic = GPU_ACT_REF_POWER;
 	ref_freq = GPU_ACT_REF_FREQ;
@@ -653,7 +654,7 @@ static void mt_gpufreq_power_calculation(unsigned int idx, unsigned int freq,
 #ifdef STATIC_PWR_READY2USE
 	p_leakage =
 	    mt_spower_get_leakage(MT_SPOWER_GPU, (volt / 100), temp);
-	if (p_leakage < 0)
+	if (!mt_gpufreq_volt_enable_state || p_leakage < 0)
 		p_leakage = 0;
 #else
 	p_leakage = 71;
@@ -2238,7 +2239,7 @@ unsigned int mt_gpufreq_get_leakage_mw(void)
 	int temp = 0;
 #ifdef STATIC_PWR_READY2USE
 	unsigned int cur_vcore = _mt_gpufreq_get_cur_volt() / 100;
-	unsigned int leak_power;
+	int leak_power;
 #endif
 
 #ifdef CONFIG_THERMAL
@@ -2249,7 +2250,7 @@ unsigned int mt_gpufreq_get_leakage_mw(void)
 
 #ifdef STATIC_PWR_READY2USE
 	leak_power = mt_spower_get_leakage(MT_SPOWER_GPU, cur_vcore, temp);
-	if (leak_power > 0)
+	if (mt_gpufreq_volt_enable_state && leak_power > 0)
 		return leak_power;
 	else
 		return 0;
