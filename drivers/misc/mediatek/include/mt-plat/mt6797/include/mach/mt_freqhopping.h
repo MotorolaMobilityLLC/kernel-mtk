@@ -126,6 +126,7 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause);
 /* FHCTL Common driver Interface. */
 int mt_dfs_mmpll(unsigned int dds);
 int mt_dfs_armpll(unsigned int current_freq, unsigned int dds);
+int mt_dfs_general_pll(unsigned int pll_id, unsigned int target_dds);
 int freqhopping_config(unsigned int pll_id, unsigned long def_set_idx, unsigned int enable);
 int mt_freqhopping_devctl(unsigned int cmd, void *args);
 void mt_freqhopping_pll_init(void);
