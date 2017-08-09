@@ -3,6 +3,7 @@
 #include <linux/kernel.h>
 #include <linux/spinlock.h>
 #include <linux/delay.h>
+#include <linux/slab.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
@@ -400,7 +401,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 {
 	struct wake_status wakesta;
 	unsigned long flags;
-	struct mtk_irq_mask mask;
+	struct mtk_irq_mask *mask;
 	wake_reason_t wr = WR_NONE;
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl = __spm_sodi.pwrctrl;
@@ -437,7 +438,12 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	lockdep_off();
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	mt_irq_mask_all(&mask);
+	mask = kmalloc(sizeof(struct mtk_irq_mask), GFP_ATOMIC);
+	if (!mask) {
+		wr = -ENOMEM;
+		goto UNLOCK_SPM;
+	}
+	mt_irq_mask_all(mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
@@ -525,8 +531,10 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 RESTORE_IRQ:
 	mt_cirq_flush();
 	mt_cirq_disable();
-	mt_irq_mask_restore(&mask);
+	mt_irq_mask_restore(mask);
+	kfree(mask);
 
+UNLOCK_SPM:
 	spin_unlock_irqrestore(&__spm_lock, flags);
 	lockdep_on();
 
