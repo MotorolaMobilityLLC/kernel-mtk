@@ -1358,6 +1358,21 @@ void aee_rr_show_suspend_debug_flag(struct seq_file *m)
 	seq_printf(m, "SPM Suspend debug = 0x%x\n", flag);
 }
 
+__weak uint32_t get_suspend_debug_regs(uint32_t index)
+{
+	return 0;
+}
+
+void aee_rr_show_suspend_debug_regs(struct seq_file *m)
+{
+	int i;
+	uint32_t count = get_suspend_debug_regs(0);
+
+	for (i = 0; i < count; i++)
+		seq_printf(m, "SPM Suspend debug regs(index %d) = 0x%x\n",
+				i + 1, get_suspend_debug_regs(i + 1));
+}
+
 int __weak mt_reg_dump(char *buf)
 {
 	return 1;
@@ -1381,6 +1396,7 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_mcdi,
 	aee_rr_show_mcdi_r15,
 	aee_rr_show_suspend_debug_flag,
+	aee_rr_show_suspend_debug_regs,
 	aee_rr_show_deepidle,
 	aee_rr_show_sodi,
 	aee_rr_show_spm_suspend,
