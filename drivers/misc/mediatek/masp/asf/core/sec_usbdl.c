@@ -29,7 +29,8 @@ int sec_usbdl_enabled(void)
 			SMSG(true, "0x%x, SD-SC\n", ATTR_SUSBDL_ONLY_ENABLE_ON_SCHIP);
 			return 1;
 		}
-			SMSG(true, "0x%x, SD-NSC\n", ATTR_SUSBDL_ONLY_ENABLE_ON_SCHIP);
+		SMSG(true, "0x%x,SD-NSC\n", ATTR_SUSBDL_ONLY_ENABLE_ON_SCHIP);
+		return 0;
 
 	default:
 		SMSG(true, "[%s] invalid susbdl config (SD-0x%x)\n", MOD,
