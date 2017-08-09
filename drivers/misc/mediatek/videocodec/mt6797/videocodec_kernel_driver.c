@@ -246,17 +246,17 @@ void SendDvfsRequest(int level)
 	int ret = 0;
 
 	if (level == MMDVFS_VOLTAGE_LOW) {
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW)");
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_LOW)");
 #ifdef CONFIG_MTK_SMI_EXT
 		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_LOW);
 #endif
 	} else if (level == MMDVFS_VOLTAGE_HIGH) {
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_HIGH)");
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] SendDvfsRequest(MMDVFS_VOLTAGE_HIGH)");
 #ifdef CONFIG_MTK_SMI_EXT
 		ret = mmdvfs_set_step(SMI_BWC_SCEN_VP, MMDVFS_VOLTAGE_HIGH);
 #endif
 	} else {
-		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] OOPS: level = %d\n", level);
+		MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] OOPS: level = %d\n", level);
 	}
 
 	if (0 != ret) {
@@ -272,7 +272,7 @@ void VdecDvfsBegin(void)
 	gHWLockInterval = 0;
 	gFirstDvfsLock = VAL_TRUE;
 	gHWLockMaxDuration = 0;
-	MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] VdecDvfsBegin");
+	MODULE_MFV_LOGD("[VCODEC][MMDVFS_VDEC] VdecDvfsBegin");
 	/* eVideoGetTimeOfDay(&gMMDFVFSMonitorStartTime, sizeof(VAL_TIME_T)); */
 }
 
@@ -1644,7 +1644,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 		if (rIncLogCount == VAL_TRUE) {
 			if (gu4LogCountUser == 0) {
 				gu4LogCount = get_detect_count();
-				set_detect_count(gu4LogCount + 100);
+				set_detect_count(gu4LogCount + 200);
 			}
 			gu4LogCountUser++;
 		} else {
@@ -2324,7 +2324,7 @@ static int vcodec_mmap(struct file *file, struct vm_area_struct *vma)
 	}
 #endif
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-	MODULE_MFV_LOGE("[VCODEC][mmap] vma->start 0x%lx, vma->end 0x%lx, vma->pgoff 0x%lx\n",
+	MODULE_MFV_LOGD("[VCODEC][mmap] vma->start 0x%lx, vma->end 0x%lx, vma->pgoff 0x%lx\n",
 			 (VAL_ULONG_T)vma->vm_start, (VAL_ULONG_T)vma->vm_end, (VAL_ULONG_T)vma->vm_pgoff);
 	if (remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
 		vma->vm_end - vma->vm_start, vma->vm_page_prot)) {
