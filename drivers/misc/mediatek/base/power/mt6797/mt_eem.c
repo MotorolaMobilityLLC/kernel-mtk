@@ -508,6 +508,11 @@ struct eem_det;
 struct eem_ctrl;
 u32 *recordRef;
 
+#if (defined(__KERNEL__) && !defined(CONFIG_MTK_CLKMGR)) && !defined(EARLY_PORTING)
+	struct clk *clk_thermal;
+	struct clk *clk_mfg, *clk_mfg_scp; /* for gpu clock use */
+#endif
+
 static void eem_set_eem_volt(struct eem_det *det);
 static void eem_restore_eem_volt(struct eem_det *det);
 
@@ -3648,6 +3653,30 @@ void eem_init01(void)
 		}
 	}
 
+	/* set non-PWM mode for DA9214 */
+	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
+	da9214_config_interface(0xD1, 0x0, 0x3, 0); /* Disable Buck A PWM Mode */
+	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
+	da9214_config_interface(0xD2, 0x0, 0x3, 0); /* Disable Buck B PWM Mode */
+	/* set PWM mode for FAN5355 */
+	fan53555_config_interface(0x0, 0x0, 0x0, 6); /* Set PWM mode for GPU */
+
+	#ifdef __KERNEL__
+		#ifndef EARLY_PORTING
+			#if !defined(CONFIG_MTK_CLKMGR)
+				clk_disable_unprepare(clk_mfg); /* Disable GPU clock */
+				clk_disable_unprepare(clk_mfg_scp); /* Disable GPU MTCMOSE */
+				clk_disable_unprepare(clk_thermal); /* Disable Thermal clock */
+			#endif
+			mt_gpufreq_enable_by_ptpod(); /* enable gpu DVFS */
+			mt_ppm_ptpod_policy_deactivate();
+			if (cpu_online(8))
+				cpu_down(8);
+			/* enable frequency hopping (main PLL) */
+			/* mt_fh_popod_restore(); */
+		#endif
+	#endif
+
 	/* This patch is waiting for whole bank finish the init01 then go
 	 * next. Due to LL/L use same bulk PMIC, LL voltage table change
 	 * will impact L to process init01 stage, because L require a
@@ -3842,10 +3871,6 @@ static int eem_probe(struct platform_device *pdev)
 	int ret;
 	struct eem_det *det;
 	struct eem_ctrl *ctrl;
-	#if (defined(__KERNEL__) && !defined(CONFIG_MTK_CLKMGR)) && !defined(EARLY_PORTING)
-		struct clk *clk_thermal;
-		struct clk *clk_mfg, *clk_mfg_scp; /* for gpu clock use */
-	#endif
 	/* unsigned int code = mt_get_chip_hw_code(); */
 
 	FUNC_ENTER(FUNC_LV_MODULE);
@@ -3958,30 +3983,6 @@ static int eem_probe(struct platform_device *pdev)
 			ckgen_meter(2));
 		*/
 	#endif
-	 /* set non-PWM mode for DA9214 */
-	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
-	da9214_config_interface(0xD1, 0x0, 0x3, 0); /* Disable Buck A PWM Mode */
-	da9214_config_interface(0x0, 0x1, 0xF, 0);  /* select to page 2,3 */
-	da9214_config_interface(0xD2, 0x0, 0x3, 0); /* Disable Buck B PWM Mode */
-	/* set PWM mode for FAN5355 */
-	fan53555_config_interface(0x0, 0x0, 0x0, 6); /* Set PWM mode for GPU */
-
-	#ifdef __KERNEL__
-		#ifndef EARLY_PORTING
-			#if !defined(CONFIG_MTK_CLKMGR)
-				clk_disable_unprepare(clk_mfg); /* Disable GPU clock */
-				clk_disable_unprepare(clk_mfg_scp); /* Disable GPU MTCMOSE */
-				clk_disable_unprepare(clk_thermal); /* Disable Thermal clock */
-			#endif
-			mt_gpufreq_enable_by_ptpod(); /* enable gpu DVFS */
-			mt_ppm_ptpod_policy_deactivate();
-			if (cpu_online(8))
-				cpu_down(8);
-			/* enable frequency hopping (main PLL) */
-			/* mt_fh_popod_restore(); */
-		#endif
-	#endif
-
 	eem_debug("eem_probe ok\n");
 	FUNC_EXIT(FUNC_LV_MODULE);
 
