@@ -524,7 +524,7 @@ void notrace aee_wdt_atf_entry(void)
 		pregs.ARM_r0 = (unsigned long)((struct atf_aee_regs *)regs)->regs[0];
 
 		snprintf(str_buf[cpu], sizeof(str_buf[cpu]),
-			"WDT_CPU%d: PState=%llx, PC=%llx, SP=%llx, LR=%llx\n",
+			"WDT_CPU%d: PState=%lx, PC=%lx, SP=%lx, LR=%lx\n",
 			cpu, pregs.ARM_cpsr, pregs.ARM_pc, pregs.ARM_sp, pregs.ARM_lr);
 		aee_sram_fiq_log(str_buf[cpu]);
 		memset(str_buf[cpu], 0, sizeof(str_buf[cpu]));
