@@ -200,11 +200,10 @@ static void core_dump_timeout_handler(unsigned long data)
  *
  * Return object pointer if success, else NULL
  */
-P_WCN_CORE_DUMP_T wcn_core_dump_init(UINT32 timeout)
+P_WCN_CORE_DUMP_T wcn_core_dump_init(UINT32 packet_num, UINT32 timeout)
 {
 #define KBYTES (1024*sizeof(char))
 #define L1_BUF_SIZE (32*KBYTES)
-#define L2_BUF_SIZE (384*KBYTES)
 
 	P_WCN_CORE_DUMP_T core_dmp = NULL;
 
@@ -216,7 +215,7 @@ P_WCN_CORE_DUMP_T wcn_core_dump_init(UINT32 timeout)
 
 	osal_memset(core_dmp, 0, sizeof(WCN_CORE_DUMP_T));
 
-	core_dmp->compressor = wcn_compressor_init("core_dump_compressor", L1_BUF_SIZE, L2_BUF_SIZE);
+	core_dmp->compressor = wcn_compressor_init("core_dump_compressor", L1_BUF_SIZE, 11*packet_num*KBYTES);
 	if (!core_dmp->compressor) {
 		STP_DBG_ERR_FUNC("create compressor failed!\n");
 		goto fail;
@@ -244,6 +243,15 @@ fail:
 		osal_free(core_dmp);
 
 	return NULL;
+}
+INT32 wcn_core_dump_init_gcoredump(UINT32 packet_num, UINT32 timeout)
+{
+	INT32 Ret = 0;
+
+	g_core_dump = wcn_core_dump_init(packet_num, timeout);
+	if (g_core_dump == NULL)
+		Ret = -1;
+	return Ret;
 }
 
 /* wcn_core_dump_deinit - destroy core dump object
@@ -426,7 +434,6 @@ INT32 wcn_core_dump_reset(P_WCN_CORE_DUMP_T dmp, UINT32 timeout)
 	osal_memset(dmp->info, 0, STP_CORE_DUMP_INFO_SZ + 1);
 
 	wcn_core_dump_deinit(dmp);
-	g_core_dump = wcn_core_dump_init(STP_CORE_DUMP_TIMEOUT);
 
 	return 0;
 }
@@ -1989,9 +1996,6 @@ MTKSTP_DBG_T *stp_dbg_init(void *btm_half)
 
 	/* bind to netlink */
 	stp_dbg_nl_init();
-
-	g_core_dump = wcn_core_dump_init(STP_CORE_DUMP_TIMEOUT);
-
 	g_stp_dbg_cpupcr = stp_dbg_cpupcr_init();
 	g_stp_dbg_dmaregs = stp_dbg_dmaregs_init();
 

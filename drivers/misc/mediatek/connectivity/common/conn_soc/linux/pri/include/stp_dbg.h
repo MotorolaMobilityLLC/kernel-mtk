@@ -277,7 +277,7 @@ typedef enum _ENUM_ASSERT_INFO_PARSER_TYPE_ {
 	STP_DBG_PARSER_TYPE_MAX
 } ENUM_ASSERT_INFO_PARSER_TYPE, *P_ENUM_ASSERT_INFO_PARSER_TYPE;
 
-P_WCN_CORE_DUMP_T wcn_core_dump_init(UINT32 timeout);
+P_WCN_CORE_DUMP_T wcn_core_dump_init(UINT32 packet_num, UINT32 timeout);
 INT32 wcn_core_dump_deinit(P_WCN_CORE_DUMP_T dmp);
 INT32 wcn_core_dump_in(P_WCN_CORE_DUMP_T dmp, PUINT8 buf, INT32 len);
 INT32 wcn_core_dump_out(P_WCN_CORE_DUMP_T dmp, PUINT8 *pbuf, PINT32 len);
@@ -285,6 +285,7 @@ INT32 wcn_core_dump_reset(P_WCN_CORE_DUMP_T dmp, UINT32 timeout);
 INT32 wcn_core_dump_timeout(void);
 INT32 wcn_wmtd_timeout_collect_ftrace(void);
 
+extern INT32 wcn_core_dump_init_gcoredump(UINT32 packet_num, UINT32 timeout);
 extern INT32 wcn_core_dump_flush(INT32 rst, MTK_WCN_BOOL is_coredump_timeout);
 extern int stp_dbg_enable(MTKSTP_DBG_T *stp_dbg);
 extern int stp_dbg_disable(MTKSTP_DBG_T *stp_dbg);

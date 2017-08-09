@@ -394,11 +394,17 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 {
 	INT32 ret = -1;
 	INT32 dump_sink = 1;	/* core dump target, 0: aee; 1: netlink */
+	INT32 Ret = 0;
 	static UINT32 counter;
 	UINT32 full_dump_left = STP_FULL_DUMP_TIME;
 	UINT32 page_counter = 0;
+	UINT32 packet_num = STP_PAGED_DUMP_TIME_LIMIT/100;
+	UINT32 dump_num = 0;
 	ENUM_STP_FW_ISSUE_TYPE issue_type;
+	P_CONSYS_EMI_ADDR_INFO p_ecsi;
 
+	p_ecsi = wmt_plat_get_emi_phy_add();
+	osal_assert(p_ecsi);
 	if (NULL == pStpOp)
 		return -1;
 
@@ -467,7 +473,19 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 	case STP_OPID_BTM_PAGED_DUMP:
 		g_paged_dump_len = 0;
 		issue_type = STP_FW_ASSERT_ISSUE;
-
+		/*packet number depend on dump_num get from register:0xf0080044 ,support jade*/
+		dump_num = wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_chip_page_dump_num);
+		if (dump_num != 0) {
+				packet_num = dump_num;
+				STP_BTM_WARN_FUNC("get consys dump num packet_num(%d)\n", packet_num);
+		} else {
+			STP_BTM_ERR_FUNC("can not get consys dump num and default num is 35\n");
+		}
+		Ret = wcn_core_dump_init_gcoredump(packet_num, STP_CORE_DUMP_TIMEOUT);
+		if (Ret) {
+			STP_BTM_ERR_FUNC("core dump init fail\n");
+			break;
+		}
 		wmt_plat_set_host_dump_state(STP_HOST_DUMP_NOT_START);
 		page_counter = 0;
 		do {
@@ -479,10 +497,6 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 			UINT8 *dump_vir_addr = NULL;
 			UINT32 dump_len = 0;
 			UINT32 isEnd = 0;
-			P_CONSYS_EMI_ADDR_INFO p_ecsi;
-
-			p_ecsi = wmt_plat_get_emi_phy_add();
-			osal_assert(p_ecsi);
 
 			host_state = (ENUM_HOST_DUMP_STATE)wmt_plat_get_dump_info(
 				p_ecsi->p_ecso->emi_apmem_ctrl_host_sync_state);
@@ -603,7 +617,7 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 paged_dump_end:
 			wmt_plat_set_host_dump_state(STP_HOST_DUMP_NOT_START);
 
-			if (counter * 100 > STP_PAGED_DUMP_TIME_LIMIT) {
+			if (counter > packet_num) {
 				isEnd = wmt_plat_get_dump_info(
 					p_ecsi->p_ecso->emi_apmem_ctrl_chip_paded_dump_end);
 
@@ -643,10 +657,6 @@ paged_dump_end:
 			UINT8 *dump_vir_addr = NULL;
 			UINT32 dump_len = 0;
 			UINT32 isFail = 0;
-			P_CONSYS_EMI_ADDR_INFO p_ecsi;
-
-			p_ecsi = wmt_plat_get_emi_phy_add();
-			osal_assert(p_ecsi);
 
 			while (1) {
 				chip_state = (ENUM_CHIP_DUMP_STATE)wmt_plat_get_dump_info(
@@ -726,10 +736,6 @@ full_dump_end:
 			UINT32 buffer_start = 0;
 			UINT32 buffer_idx = 0;
 			UINT8 *dump_vir_addr = NULL;
-			P_CONSYS_EMI_ADDR_INFO p_ecsi;
-
-			p_ecsi = wmt_plat_get_emi_phy_add();
-			osal_assert(p_ecsi);
 
 			while (loop_cnt1 < 10) {
 				ctrl_val = wmt_plat_get_dump_info(p_ecsi->p_ecso->emi_apmem_ctrl_state);
