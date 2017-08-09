@@ -716,7 +716,7 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 
 	if ((func_code_1 == 0) || (func_code_1 == 3))
 		lv = CPU_LEVEL_0;
-	else if (func_code_1 == 1)
+	else if ((func_code_1 == 1) || (func_code_1 == 6))
 		lv = CPU_LEVEL_1;
 	else if ((func_code_1 == 2) || (func_code_1 == 7))
 		lv = CPU_LEVEL_2;
