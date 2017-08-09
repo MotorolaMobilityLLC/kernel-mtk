@@ -94,6 +94,7 @@ static void Apply_Speaker_Gain(void);
 static bool TurnOnVOWDigitalHW(bool enable);
 static void TurnOffDacPower(void);
 static void TurnOnDacPower(void);
+static void setDlMtkifSrc(bool enable);
 static void SetDcCompenSation(void);
 static void Voice_Amp_Change(bool enable);
 static void Speaker_Amp_Change(bool enable);
@@ -144,6 +145,8 @@ enum hp_depop_flow {
 	HP_DEPOP_FLOW_NONE,
 };
 static unsigned int mUseHpDepopFlow;
+
+static int ANC_enabled;
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef EFUSE_HP_TRIM
@@ -291,7 +294,7 @@ static uint16 Handset_AMIC_PeriodicOnOff[7][22] = {
 #endif
 
 static int mAudio_VOW_Mic_type = AUDIO_VOW_MIC_TYPE_Handset_AMIC;
-static void Audio_Amp_Change(int channels, bool enable);
+static void Audio_Amp_Change(int channels, bool enable, bool is_anc);
 static void SavePowerState(void)
 {
 	int i = 0;
@@ -333,12 +336,12 @@ void SetAnalogSuspend(bool bEnable)
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == true) {
 			mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] =
 			    false;
-			Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, false);
+			Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, false, false);
 		}
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == true) {
 			mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] =
 			    false;
-			Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, false);
+			Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, false, false);
 		}
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EARPIECEL] == true) {
 			mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EARPIECEL] =
@@ -356,13 +359,13 @@ void SetAnalogSuspend(bool bEnable)
 		/*Ana_Log_Print();*/
 		if (mCodec_data->mAudio_BackUpAna_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] ==
 		    true) {
-			Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true);
+			Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true, false);
 			mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] =
 			    true;
 		}
 		if (mCodec_data->mAudio_BackUpAna_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] ==
 		    true) {
-			Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true);
+			Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true, false);
 			mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] =
 			    false;
 		}
@@ -934,15 +937,15 @@ void OpenAnalogHeadphone(bool bEnable)
 		SetHplTrimOffset(2048);
 		SetHprTrimOffset(2048);
 		mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC] = 44100;
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true);
+		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true, false);
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] = true;
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true);
+		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true, false);
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] = true;
 	} else {
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] = false;
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, false);
+		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, false, false);
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] = false;
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, false);
+		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, false, false);
 	}
 }
 
@@ -965,7 +968,7 @@ static void HP_Switch_to_Release(void)
 bool OpenHeadPhoneImpedanceSetting(bool bEnable)
 {
 	pr_aud("%s benable = %d\n", __func__, bEnable);
-	if (GetDLStatus() == true)
+	if (GetDLStatus() == true || ANC_enabled)
 		return false;
 
 	if (bEnable == true) {
@@ -1587,27 +1590,15 @@ static void TurnOnDacPower(void)
 	Ana_Set_Reg(AFE_UL_DL_CON0, 0x0001, 0x0001);
 	/* afe enable */
 
-	Ana_Set_Reg(AFE_PMIC_NEWIF_CFG0,
-		    ((GetDLNewIFFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC]) << 12) |
-		     0x330), 0xffff);
-	Ana_Set_Reg(AFE_DL_SRC2_CON0_H,
-		    ((GetDLNewIFFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC]) << 12) |
-		     0x300), 0xffff);
-
-	Ana_Set_Reg(AFE_PMIC_NEWIF_CFG2, 0x1 << 15, 0x1 << 15);
-	/* pmic rxif sck inverse */
-
-	Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0001, 0xffff);
-	/* turn on dl */
-	Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
-	/* set DL in normal path, not from sine gen table */
+	setDlMtkifSrc(true);
 }
 
 static void TurnOffDacPower(void)
 {
 	pr_warn("TurnOffDacPower\n");
 
-	Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0000, 0xffff);	/* bit0, Turn off down-link */
+	setDlMtkifSrc(false);
+
 	if (GetAdcStatus() == false)
 		Ana_Set_Reg(AFE_UL_DL_CON0, 0x0000, 0x0001);	/* turn off afe */
 
@@ -1626,6 +1617,33 @@ static void TurnOffDacPower(void)
 	ClsqEnable(false);
 	Topck_Enable(false);
 	audckbufEnable(false);
+}
+
+static void setDlMtkifSrc(bool enable)
+{
+	pr_warn("%s(), enable = %d, freq = %d\n",
+		__func__,
+		enable,
+		mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC]);
+	if (enable) {
+		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG0,
+			    ((GetDLNewIFFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC]) << 12) |
+			     0x330), 0xffff);
+		Ana_Set_Reg(AFE_DL_SRC2_CON0_H,
+			    ((GetDLNewIFFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_OUT_DAC]) << 12) |
+			     0x300), 0xffff);
+
+		Ana_Set_Reg(AFE_PMIC_NEWIF_CFG2, 0x1 << 15, 0x1 << 15);
+		/* pmic rxif sck inverse */
+
+		Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0001, 0xffff);
+		/* turn on dl */
+		Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0000, 0xffff);
+		/* set DL in normal path, not from sine gen table */
+	} else {
+		Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0000, 0xffff);
+		/* bit0, Turn off down-link */
+	}
 }
 
 static bool is_valid_hp_pga_idx(int reg_idx)
@@ -1729,16 +1747,30 @@ static void Hp_Zcd_Enable(bool _enable)
 	}
 }
 
-static void Audio_Amp_Change(int channels, bool enable)
+static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 {
+	pr_warn("%s(), enable %d, ANC %d, HSL %d, HSR %d, is_anc %d\n",
+		__func__,
+		enable,
+		ANC_enabled,
+		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL],
+		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR],
+		is_anc);
+
 	if (enable) {
-		if (GetDLStatus() == false)
+		if (GetDLStatus() == false && !ANC_enabled)
 			TurnOnDacPower();
 
+		if (GetDLStatus() == false && !is_anc) {
+			/* reset sample rate */
+			setDlMtkifSrc(false);
+			setDlMtkifSrc(true);
+		}
+
 		/* here pmic analog control */
-		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false
-		    && mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] ==
-		    false) {
+		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
+		    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false &&
+		    !ANC_enabled) {
 			pr_warn("%s\n", __func__);
 
 			/* switch to ground to de pop-noise */
@@ -1808,10 +1840,10 @@ static void Audio_Amp_Change(int channels, bool enable)
 		}
 
 	} else {
-		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false
-		    && mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] ==
-		    false) {
-			/* pr_warn("Audio_Amp_Change off amp\n"); */
+		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false &&
+		    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false &&
+		    !ANC_enabled) {
+			pr_warn("Audio_Amp_Change off amp\n");
 
 			/* Disable AUD_ZCD */
 			Hp_Zcd_Enable(false);
@@ -1837,7 +1869,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 			HP_Switch_to_Release();
 		}
 
-		if (GetDLStatus() == false) {
+		if (GetDLStatus() == false && !ANC_enabled) {
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE000, 0xffff);
 			/* Disable Audio DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0200);
@@ -1874,7 +1906,7 @@ static int Audio_AmpL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 	pr_aud("%s() enable = %ld\n ", __func__, ucontrol->value.integer.value[0]);
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false)) {
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true);
+		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true, false);
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] =
 		    ucontrol->value.integer.value[0];
 	} else if ((ucontrol->value.integer.value[0] == false)
@@ -1882,7 +1914,7 @@ static int Audio_AmpL_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 		       true)) {
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] =
 		    ucontrol->value.integer.value[0];
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, false);
+		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, false, false);
 	}
 	mutex_unlock(&Ana_Ctrl_Mutex);
 	return 0;
@@ -1904,7 +1936,7 @@ static int Audio_AmpR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 	pr_aud("%s()\n", __func__);
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] == false)) {
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true);
+		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, true, false);
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] =
 		    ucontrol->value.integer.value[0];
 	} else if ((ucontrol->value.integer.value[0] == false)
@@ -1912,7 +1944,7 @@ static int Audio_AmpR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 		       true)) {
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] =
 		    ucontrol->value.integer.value[0];
-		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, false);
+		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, false, false);
 	}
 	mutex_unlock(&Ana_Ctrl_Mutex);
 	return 0;
@@ -2942,8 +2974,6 @@ void disable_anc_loopback3(void)
 	Ana_Set_Reg(PMIC_AFE_TOP_CON0, 0x0 << 12, 0x1 << 12);
 }
 
-static int ANC_enabled;
-
 void pmic_select_dl_only(void)
 {
 	Ana_Set_Reg(AFE_HPANC_CFG0, 0x0 << 4,
@@ -2981,10 +3011,12 @@ void pmic_select_anc_only(void)
 }
 static int Set_ANC_Enable(bool enable)
 {
-	pr_aud("%s(), value = %d\n", __func__, enable ? 1 : 0);
-	ANC_enabled = enable;
+	pr_warn("%s(), value = %d\n", __func__, enable);
 	if (enable == true) {
 		pmic_select_dl_only();
+
+		Audio_Amp_Change(0, true, true);
+		ANC_enabled = true;
 
 		/* mtkif sclk invert */
 		Ana_Set_Reg(AFE_ADDA2_PMIC_NEWIF_CFG2, 0x1 << 15, 0x1 << 15);
@@ -2999,6 +3031,8 @@ static int Set_ANC_Enable(bool enable)
 		pmic_select_dl_and_anc();
 	} else {
 		pmic_select_dl_only();
+		ANC_enabled = false;
+		Audio_Amp_Change(0, false, true);
 	}
 	return 0;
 }
