@@ -15,7 +15,6 @@
 #include <linux/spinlock.h>
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
-#include <linux/earlysuspend.h>
 #include <linux/cdev.h>
 #include "mt8193.h"
 #include "mt8193_ckgen.h"

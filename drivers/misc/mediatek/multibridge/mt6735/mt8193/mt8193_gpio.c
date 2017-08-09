@@ -7,19 +7,15 @@
 #include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
-#include <linux/dma-mapping.h>
-#include <linux/earlysuspend.h>
 #include <linux/kthread.h>
 #include <linux/rtpm_prio.h>
 #include <linux/vmalloc.h>
-#include <linux/disp_assert_layer.h>
 
 #include <asm/uaccess.h>
 #include <asm/atomic.h>
 #include <asm/cacheflush.h>
 #include <asm/io.h>
 
-#include <mach/dma.h>
 #include <mach/irqs.h>
 
 #include <linux/miscdevice.h>
@@ -42,8 +38,6 @@
 #include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
-#include <linux/dma-mapping.h>
-#include <linux/earlysuspend.h>
 #include <linux/kthread.h>
 #include <linux/rtpm_prio.h>
 
@@ -52,7 +46,6 @@
 #include <asm/cacheflush.h>
 #include <asm/io.h>
 
-#include <mach/dma.h>
 #include <mach/irqs.h>
 #include <linux/vmalloc.h>
 

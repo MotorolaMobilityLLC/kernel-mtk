@@ -1817,7 +1817,7 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 
 /* sensor end */
 
-	mt8193ckgen@0 {
+	mt8193ckgen: mt8193ckgen@0 {
 		compatible = "mediatek,mt8193-ckgen";
 	};
 
@@ -1838,6 +1838,36 @@ initrd=0x44000000,0x1000000 loglevel=8 androidboot.hardware=mt6735";
 };
 
 #include "cust.dtsi"
+
+&mt8193ckgen {
+	pinctrl-names = "default", "bus_switch_gpio", "bus_switch_dpi";
+	pinctrl-0 = <&mt8193ckgen_pins_default>;
+	pinctrl-1 = <&mt8193ckgen_pins_gpio>;
+	pinctrl-2 = <&mt8193ckgen_pins_dpi>;
+	bus_switch_pin = <&pio 0 0>;
+	status = "okay";
+};
+
+&pio {
+	mt8193ckgen_pins_default: 8193ckgen_default {
+	};
+
+	mt8193ckgen_pins_gpio: 8193ckgen_gpio {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO0__FUNC_GPIO0>;
+			slew-rate = <1>;
+			bias-pull-up = <00>;
+			output-high;
+			output-low;
+		};
+	};
+
+	mt8193ckgen_pins_dpi: 8193ckgen_dpi {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO0__FUNC_DPI_D4>;
+		};
+	};
+};
 
 &eintc {
 	pmic@206 {

@@ -12,16 +12,21 @@
 #include <linux/spinlock.h>
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
-#include <linux/earlysuspend.h>
 #include <linux/cdev.h>
 #include <asm/uaccess.h>
-#include <mach/mt_gpio.h>
 #include <linux/delay.h>
-
+#include <linux/pinctrl/consumer.h>
+#include <linux/of_gpio.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
+#ifdef CONFIG_PM_AUTOSLEEP
+#include <linux/fb.h>
+#include <linux/notifier.h>
+#endif
 #include "mt8193.h"
 #include "mt8193_ckgen.h"
 #include "mt8193_gpio.h"
-#include "cust_mt8193.h"
 
 
 #define MT8193_MLC 0
@@ -60,6 +65,10 @@ static struct platform_driver mt8193_ckgen_driver = {
 static struct class *ckgen_class;
 static struct cdev *ckgen_cdev;
 
+static struct pinctrl *pinctrl;
+static struct pinctrl_state *pins_gpio;
+static struct pinctrl_state *pins_dpi;
+
 #if MT8193_CKGEN_VFY
 
 static int mt8193_ckgen_release(struct inode *inode, struct file *file);
@@ -74,10 +83,9 @@ static const struct file_operations mt8193_ckgen_fops = {
 };
 #endif
 
-#if defined(CONFIG_HAS_EARLYSUSPEND)
-static void mt8193_ckgen_early_suspend(struct early_suspend *h)
+static void mt8193_ckgen_early_suspend(void)
 {
-	pr_debug("[CKGEN] mt8193_ckgen_early_suspend() enter\n");
+	pr_err("[CKGEN] mt8193_ckgen_early_suspend() enter\n");
 
 #if !MT8193_MLC
 
@@ -102,9 +110,9 @@ static void mt8193_ckgen_early_suspend(struct early_suspend *h)
 	pr_debug("[CKGEN] mt8193_ckgen_early_suspend() exit\n");
 }
 
-static void mt8193_ckgen_late_resume(struct early_suspend *h)
+static void mt8193_ckgen_late_resume(void)
 {
-	pr_debug("[CKGEN] mt8193_ckgen_late_resume() enter\n");
+	pr_err("[CKGEN] mt8193_ckgen_late_resume() enter\n");
 
 #if !MT8193_MLC
 
@@ -129,6 +137,7 @@ static void mt8193_ckgen_late_resume(struct early_suspend *h)
 	pr_debug("[CKGEN] mt8193_ckgen_late_resume() exit\n");
 }
 
+#if defined(CONFIG_HAS_EARLYSUSPEND)
 static struct early_suspend mt8193_ckgen_early_suspend_desc = {
 	.level		= 0xFF,
 	.suspend	= mt8193_ckgen_early_suspend,
@@ -136,6 +145,39 @@ static struct early_suspend mt8193_ckgen_early_suspend_desc = {
 };
 #endif
 
+#ifdef CONFIG_PM_AUTOSLEEP
+static int mt8193_ckgen_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *fb_evdata)
+{
+	struct fb_event *evdata = fb_evdata;
+	int blank;
+
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+	case FB_BLANK_NORMAL:
+		mt8193_ckgen_late_resume();
+		break;
+	case FB_BLANK_VSYNC_SUSPEND:
+	case FB_BLANK_HSYNC_SUSPEND:
+		break;
+	case FB_BLANK_POWERDOWN:
+		mt8193_ckgen_early_suspend();
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static struct notifier_block mt8193ckgen_fb_notif = {
+	.notifier_call = mt8193_ckgen_fb_notifier_callback,
+};
+#endif
 
 #if MT8193_CKGEN_VFY
 static int mt8193_ckgen_release(struct inode *inode, struct file *file)
@@ -212,7 +254,6 @@ static long mt8193_ckgen_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		u4Clk = mt8193_ckgen_measure_clk(t_freq.u4Func);
 		break;
 	}
-
 	case MTK_MT8193_GPIO_CTRL:
 	{
 		struct mt8193_gpio_ctrl_t t_gpio;
@@ -233,7 +274,6 @@ static long mt8193_ckgen_ioctl(struct file *file, unsigned int cmd, unsigned lon
 
 		break;
 	}
-
 	case MTK_MT8193_EARLY_SUSPEND:
 		break;
 	case MTK_MT8193_LATE_RESUME:
@@ -279,6 +319,14 @@ static int __init mt8193_ckgen_init(void)
 	register_early_suspend(&mt8193_ckgen_early_suspend_desc);
 #endif
 
+#ifdef CONFIG_PM_AUTOSLEEP
+	ret = fb_register_client(&mt8193ckgen_fb_notif);
+	if (ret) {
+		pr_err("fail to register fb notifier, ret=%d\n", ret);
+		return ret;
+	}
+#endif
+
 	pr_debug("[CKGEN] mt8193_ckgen_init() exit\n");
 
 	return 0;
@@ -302,6 +350,7 @@ static int __init mt8193_ckgen_init(void)
  ******************************************************************************/
 static void __exit mt8193_ckgen_exit(void)
 {
+	devm_pinctrl_put(pinctrl);
 	platform_driver_unregister(&mt8193_ckgen_driver);
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	unregister_early_suspend(&mt8193_ckgen_early_suspend_desc);
@@ -332,7 +381,7 @@ static int mt8193_ckgen_probe(struct platform_device *pdev)
 #if MT8193_CKGEN_VFY
 	int ret = 0;
 
-	pr_debug("[CKGEN] %s\n", __func__);
+	pr_err("[CKGEN] %s\n", __func__);
 	/* Allocate device number for hdmi driver */
 	ret = alloc_chrdev_region(&mt8193_ckgen_devno, 0, 1, MT8193_CKGEN_DEVNAME);
 	if (ret) {
@@ -349,8 +398,28 @@ static int mt8193_ckgen_probe(struct platform_device *pdev)
 	/* For device number binded to device name(hdmitx), one class is corresponeded to one node */
 	ckgen_class = class_create(THIS_MODULE, MT8193_CKGEN_DEVNAME);
 	/* mknod /dev/hdmitx */
-	ckgen_cdev = (struct cdev *)device_create(ckgen_class, NULL, mt8193_ckgen_devno,    NULL, MT8193_CKGEN_DEVNAME);
+	ckgen_cdev = (struct cdev *)device_create(ckgen_class, NULL, mt8193_ckgen_devno, NULL, MT8193_CKGEN_DEVNAME);
 
+	pinctrl = devm_pinctrl_get(&pdev->dev);
+	if (IS_ERR(pinctrl)) {
+		ret = PTR_ERR(pinctrl);
+		pr_err("Cannot find pinctrl, ret=%d!\n", ret);
+		return ret;
+	}
+
+	pins_gpio = pinctrl_lookup_state(pinctrl, "bus_switch_gpio");
+	if (IS_ERR(pins_gpio)) {
+		ret = PTR_ERR(pins_gpio);
+		pr_err("Cannot find bus_switch_gpio, ret=%d!\n", ret);
+		return ret;
+	}
+
+	pins_dpi = pinctrl_lookup_state(pinctrl, "bus_switch_dpi");
+	if (IS_ERR(pins_dpi)) {
+		ret = PTR_ERR(pins_dpi);
+		pr_err("Cannot find bus_switch_dpi, ret=%d!\n", ret);
+		return ret;
+	}
 #endif
 	return 0;
 }
@@ -771,15 +840,30 @@ void mt8193_nfi_sys_spm_control(bool power_on)
 void mt8193_bus_clk_switch(bool bus_26m_to_32k)
 {
 	u32 u4Tmp = 0;
+	struct device_node *dn;
+	int bus_switch_pin;
+	int ret;
+
+	dn = of_find_compatible_node(NULL, NULL, "mediatek,mt8193-ckgen");
+	bus_switch_pin = of_get_named_gpio(dn, "bus_switch_pin", 0);
+	ret = gpio_request(bus_switch_pin, "8193 bus switch pin");
+	if (ret) {
+		pr_err("request gpio fail, ret=%d\n", ret);
+		return;
+	}
 
 	if (bus_26m_to_32k) {
 		/* bus clock switch from 26M to 32K */
 		/* sequence: out -> dir -> select -> enable -> mode */
+#if 0
 		mt_set_gpio_out(GPIO_MT8193_BUS_SWITCH_PIN, GPIO_OUT_ONE);
 		mt_set_gpio_dir(GPIO_MT8193_BUS_SWITCH_PIN, GPIO_DIR_OUT);
 		mt_set_gpio_pull_select(GPIO_MT8193_BUS_SWITCH_PIN, GPIO_PULL_UP);
 		mt_set_gpio_pull_enable(GPIO_MT8193_BUS_SWITCH_PIN, GPIO_PULL_ENABLE);
 		mt_set_gpio_mode(GPIO_MT8193_BUS_SWITCH_PIN, MT8193_BUS_SWITCH_PIN_GPIO_MODE);
+#else
+		pinctrl_select_state(pinctrl, pins_gpio);
+#endif
 
 		u4Tmp = CKGEN_READ32(REG_RW_DCXO_ANACFG9);
 		u4Tmp &= (~(DCXO_ANACFG9_BUS_CK_SOURCE_SEL_MASK << DCXO_ANACFG9_BUS_CK_SOURCE_SEL_SHIFT));
@@ -794,23 +878,37 @@ void mt8193_bus_clk_switch(bool bus_26m_to_32k)
 		u4Tmp |= (DCX0_ANACFG9_BUS_CK_AUTO_SWITCH_EN);
 		pr_debug("[early_suspend] u4Tmp=0x%x\n", u4Tmp);
 		CKGEN_WRITE32(REG_RW_DCXO_ANACFG9, u4Tmp);
+#if 0
 		mt_set_gpio_out(GPIO_MT8193_BUS_SWITCH_PIN, GPIO_OUT_ZERO);
+#else
+		gpio_set_value(bus_switch_pin, 0);
+#endif
 		msleep(20);
 		/* verify: reading register must fail if switch clock success */
 		u4Tmp = CKGEN_READ32(REG_RW_DCXO_ANACFG9);
 	} else {
 		/* bus clock switch from 32K to 26M */
+#if 0
 		mt_set_gpio_out(GPIO_MT8193_BUS_SWITCH_PIN, GPIO_OUT_ONE);
+#else
+		gpio_set_value(bus_switch_pin, 1);
+#endif
 		msleep(20);
 		u4Tmp = CKGEN_READ32(REG_RW_DCXO_ANACFG9);
 		u4Tmp &= (~(DCXO_ANACFG9_BUS_CK_SOURCE_SEL_MASK << DCXO_ANACFG9_BUS_CK_SOURCE_SEL_SHIFT));
 		pr_debug("[late_resume] u4Tmp=0x%x\n", u4Tmp);
 		CKGEN_WRITE32(REG_RW_DCXO_ANACFG9, u4Tmp);
-
+#if 0
 		mt_set_gpio_mode(GPIO_MT8193_BUS_SWITCH_PIN, MT8193_BUS_SWITCH_PIN_DPI_MODE);
+#else
+		pinctrl_select_state(pinctrl, pins_dpi);
+#endif
 	}
+
+	gpio_free(bus_switch_pin);
 }
 
+#if 0
 void mt8193_bus_clk_switch_to_26m(void)
 {
 	u32 u4Tmp = 0;
@@ -829,6 +927,7 @@ void mt8193_bus_clk_switch_to_26m(void)
 
 	mt_set_gpio_mode(GPIO_MT8193_BUS_SWITCH_PIN, MT8193_BUS_SWITCH_PIN_DPI_MODE);
 }
+#endif
 
 #if MT8193_DISABLE_DCXO
 
@@ -877,6 +976,7 @@ void mt8193_enable_dcxo_core(void)
 
 #endif
 
+#if 0
 void mt8193_en_bb_ctrl(bool pd)
 {
 	/* GPIO60 is EN_BB */
@@ -891,6 +991,7 @@ void mt8193_en_bb_ctrl(bool pd)
 		mt_set_gpio_out(GPIO60, 1);
 	}
 }
+#endif
 
 /******************************************************************************
  * mt8193_ckgen_suspend
