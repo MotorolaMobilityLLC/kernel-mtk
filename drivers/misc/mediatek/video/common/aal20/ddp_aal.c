@@ -1,4 +1,5 @@
 #include <linux/sched.h>
+#include <linux/time.h>
 #include <linux/wait.h>
 #include <linux/spinlock.h>
 #include <linux/kernel.h>
@@ -201,13 +202,74 @@ void disp_aal_on_end_of_frame(void)
 }
 
 
+#define LOG_INTERVAL_TH 200
+#define LOG_BUFFER_SIZE 4
+static char g_aal_log_buffer[256] = "";
+static int g_aal_log_index;
+struct timeval g_aal_log_prevtime = {0};
+
+static unsigned long timevaldiff(struct timeval *starttime, struct timeval *finishtime)
+{
+	unsigned long msec;
+
+	msec = (finishtime->tv_sec-starttime->tv_sec)*1000;
+	msec += (finishtime->tv_usec-starttime->tv_usec)/1000;
+
+	return msec;
+}
+
+static void disp_aal_notify_backlight_log(int bl_1024)
+{
+	struct timeval aal_time;
+	unsigned long diff_mesc = 0;
+	unsigned long tsec;
+	unsigned long tusec;
+
+	do_gettimeofday(&aal_time);
+	tsec = (unsigned long)aal_time.tv_sec % 100;
+	tusec = (unsigned long)aal_time.tv_usec / 1000;
+
+	diff_mesc = timevaldiff(&g_aal_log_prevtime, &aal_time);
+	AAL_DBG("time diff = %lu", diff_mesc);
+
+	if (diff_mesc > LOG_INTERVAL_TH) {
+		if (g_aal_log_index == 0) {
+			pr_debug("disp_aal_notify_backlight_changed: %d/1023\n", bl_1024);
+		} else {
+			sprintf(g_aal_log_buffer + strlen(g_aal_log_buffer), ", %d/1023 %03lu.%03lu",
+				bl_1024, tsec, tusec);
+			pr_debug("%s\n", g_aal_log_buffer);
+			g_aal_log_index = 0;
+		}
+	} else {
+		if (g_aal_log_index == 0) {
+			sprintf(g_aal_log_buffer,
+				"disp_aal_notify_backlight_changed %d/1023 %03lu.%03lu",
+				bl_1024, tsec, tusec);
+			g_aal_log_index += 1;
+		} else {
+			sprintf(g_aal_log_buffer + strlen(g_aal_log_buffer), ", %d/1023 %03lu.%03lu",
+				bl_1024, tsec, tusec);
+			g_aal_log_index += 1;
+		}
+
+		if ((g_aal_log_index >= LOG_BUFFER_SIZE) || (bl_1024 == 0)) {
+			pr_debug("%s\n", g_aal_log_buffer);
+			g_aal_log_index = 0;
+		}
+	}
+
+	memcpy(&g_aal_log_prevtime, &aal_time, sizeof(struct timeval));
+}
+
 void disp_aal_notify_backlight_changed(int bl_1024)
 {
 	unsigned long flags;
 	int max_backlight;
 	unsigned int service_flags;
 
-	pr_debug("disp_aal_notify_backlight_changed: %d/1023", bl_1024);
+	/* pr_debug("disp_aal_notify_backlight_changed: %d/1023", bl_1024); */
+	disp_aal_notify_backlight_log(bl_1024);
 
 	disp_aal_exit_idle("disp_aal_notify_backlight_changed", 1);
 
