@@ -461,12 +461,12 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	t = cpu_clock(smp_processor_id());
 	nanosec_rem = do_div(t, 1000000000);
 	aee_wdt_printf("\nQwdt at [%5lu.%06lu]\n", (unsigned long)t, nanosec_rem / 1000);
+	aee_sram_fiq_log(wdt_log_buf);
 
 #ifdef CONFIG_MT_SCHED_MONITOR
 	aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_IRQ_SCHED);
 	mt_aee_dump_sched_traces();
 #endif
-	aee_sram_fiq_log(wdt_log_buf);
 
 	/* avoid lock prove to dump_stack in __debug_locks_off() */
 	xchg(&debug_locks, 0);
