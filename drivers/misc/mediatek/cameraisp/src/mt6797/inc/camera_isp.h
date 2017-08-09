@@ -537,6 +537,7 @@ typedef enum {
 	ISP_CMD_RESET_VSYNC_CNT,
 	ISP_CMD_ION_IMPORT, /* get ion handle */
 	ISP_CMD_ION_FREE,  /* free ion handle */
+	ISP_CMD_CQ_SW_PATCH,  /* sim cq update behavior as atomic behavior */
 	ISP_CMD_ION_FREE_BY_HWMODULE  /* free all ion handle */
 } ISP_CMD_ENUM;
 
@@ -581,6 +582,7 @@ typedef enum {
 #define ISP_ION_IMPORT              _IOW(ISP_MAGIC, ISP_CMD_ION_IMPORT, ISP_DEV_ION_NODE_STRUCT)
 #define ISP_ION_FREE                _IOW(ISP_MAGIC, ISP_CMD_ION_FREE,   ISP_DEV_ION_NODE_STRUCT)
 #define ISP_ION_FREE_BY_HWMODULE    _IOW(ISP_MAGIC, ISP_CMD_ION_FREE_BY_HWMODULE, unsigned int)
+#define ISP_CQ_SW_PATCH             _IOW(ISP_MAGIC, ISP_CMD_CQ_SW_PATCH, unsigned int)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER    _IOWR(ISP_MAGIC, ISP_CMD_READ_REG,      compat_ISP_REG_IO_STRUCT)
@@ -600,7 +602,7 @@ typedef enum {
 #define COMPAT_ISP_DUMP_ISR_LOG     _IOWR(ISP_MAGIC, ISP_CMD_DUMP_ISR_LOG,  compat_uptr_t)
 #define COMPAT_ISP_RESET_BY_HWMODULE _IOW(ISP_MAGIC, ISP_CMD_RESET_BY_HWMODULE, compat_uptr_t)
 #define COMPAT_ISP_VF_LOG           _IOW(ISP_MAGIC, ISP_CMD_VF_LOG,         compat_uptr_t)
-
+#define COMPAT_ISP_CQ_SW_PATCH      _IOW(ISP_MAGIC, ISP_CMD_CQ_SW_PATCH,         compat_uptr_t)
 #endif
 
 int32_t ISP_MDPClockOnCallback(uint64_t engineFlag);

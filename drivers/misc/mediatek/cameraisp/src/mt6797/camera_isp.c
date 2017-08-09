@@ -6793,6 +6793,33 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			Ret = -EFAULT;
 		}
 		break;
+	case ISP_CQ_SW_PATCH: {
+			static MUINT32 Addr[2] = {0, 0};
+			if (copy_from_user(DebugFlag, (void *)Param, sizeof(MUINT32)*2) == 0) {
+				switch (DebugFlag[0]) {
+				case ISP_IRQ_TYPE_INT_CAM_A_ST:
+					Addr[0] = DebugFlag[1];
+					break;
+				case ISP_IRQ_TYPE_INT_CAM_B_ST:
+					Addr[1] = DebugFlag[1];
+					break;
+				default:
+					LOG_ERR("unsupported module:0x%x\n", DebugFlag[0]);
+					break;
+				}
+			}
+			if ((Addr[0] != 0) && (Addr[1] != 0)) {
+				spin_lock(&IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_CAM_A_ST]);
+				ISP_WR32(CAM_REG_CTL_CD_DONE_SEL(ISP_CAM_A_IDX), 0x1);
+				ISP_WR32(CAM_REG_CTL_UNI_DONE_SEL(ISP_CAM_A_IDX), 0x1);
+				ISP_WR32(CAM_REG_CQ_THR0_BASEADDR(ISP_CAM_A_IDX), Addr[0]);
+				ISP_WR32(CAM_REG_CQ_THR0_BASEADDR(ISP_CAM_B_IDX), Addr[1]);
+				ISP_WR32(CAM_REG_CTL_UNI_DONE_SEL(ISP_CAM_A_IDX), 0x0);
+				Addr[0] = Addr[1] = 0;
+				spin_unlock(&IspInfo.SpinLockIrq[ISP_IRQ_TYPE_INT_CAM_A_ST]);
+			}
+		}
+		break;
 	default:
 	{
 		LOG_ERR("Unknown Cmd(%d)\n", Cmd);
@@ -7184,6 +7211,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case ISP_ION_IMPORT:
 	case ISP_ION_FREE:
 	case ISP_ION_FREE_BY_HWMODULE:
+	case ISP_CQ_SW_PATCH:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
