@@ -3,6 +3,8 @@
 
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
+#else
+#include "ddp_clkmgr.h"
 #endif
 
 #include <linux/delay.h>
@@ -28,20 +30,24 @@ static char *split_state(unsigned int state)
 
 static int split_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
-#ifdef CONFIG_MTK_CLKMGR
 	if (DISP_MODULE_SPLIT0 == module) {
+#ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_SPLIT0, "split");
+#else
+		ddp_clk_enable(DISP0_DISP_SPLIT);
+#endif
 		DDPMSG("Split0 ClockOn CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	}
-#endif
 	return 0;
 }
 
 static int split_clock_off(DISP_MODULE_ENUM module, void *handle)
 {
-#ifdef CONFIG_MTK_CLKMGR
 	DDPMSG("Split0 Clockoff CG\n");
+#ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_SPLIT0, "split");
+#else
+	ddp_clk_disable(DISP0_DISP_SPLIT);
 #endif
 	return 0;
 }

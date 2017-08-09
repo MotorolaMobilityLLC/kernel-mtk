@@ -1948,7 +1948,6 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			      <0x10215000 0x1000>,  /*mipitx0 */
 			      <0x1021e000 0x1000>;  /*mipitx1 */
 
-
 			interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>, /*disp_sys */
 				<GIC_SPI 213 IRQ_TYPE_LEVEL_LOW>, /*disp_ovl0 */
 				<GIC_SPI 214 IRQ_TYPE_LEVEL_LOW>, /*disp_ovl1 */
@@ -1977,6 +1976,72 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				<GIC_SPI 216 IRQ_TYPE_LEVEL_LOW>, /*disp_ovl1_2l */
 				<GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>, /*mipitx0*/ /* not in everest coda */
 				<GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>; /*mipitx1*/ /* not in everest coda */
+
+			clocks = <&mmsys MM_SMI_COMMON>,
+				 <&mmsys MM_SMI_LARB0>,
+				 <&mmsys MM_DISP_OVL0>,
+				 <&mmsys MM_DISP_OVL1>,
+				 <&mmsys MM_DISP_OVL0_2L>,
+				 <&mmsys MM_DISP_OVL1_2L>,
+				 <&mmsys MM_DISP_RDMA0>,
+				 <&mmsys MM_DISP_RDMA1>,
+				 <&mmsys MM_DISP_WDMA0>,
+				 <&mmsys MM_DISP_WDMA1>,
+				 <&mmsys MM_DISP_COLOR>,
+				 <&mmsys MM_DISP_CCORR>,
+				 <&mmsys MM_DISP_AAL>,
+				 <&mmsys MM_DISP_GAMMA>,
+				 <&mmsys MM_DISP_OD>,
+				 <&mmsys MM_DISP_DITHER>,
+				 <&mmsys MM_DISP_UFOE>,
+				 <&mmsys MM_DISP_DSC>,
+				 <&mmsys MM_DISP_SPLIT>,
+				 <&mmsys MM_DSI0_MM_CLOCK>,
+				 <&mmsys MM_DSI1_MM_CLOCK>,
+				 <&mmsys MM_DPI_MM_CLOCK>,
+				 <&mmsys MM_DPI_INTERFACE_CLOCK>,
+				 <&mmsys MM_DISP_OVL0_MOUT_CLOCK>,
+				 <&infrasys INFRA_DISP_PWM>,
+				 <&scpsys SCP_SYS_DIS>,
+				 <&topckgen TOP_MUX_DPI0>,
+				 <&topckgen TOP_TVDPLL_D2>,
+				 <&topckgen TOP_TVDPLL_D4>,
+				 <&topckgen TOP_TVDPLL_D8>,
+				 <&topckgen TOP_TVDPLL_D16>,
+				 <&topckgen TOP_TVDPLL_CK>;
+
+			clock-names =   "DISP0_SMI_COMMON",
+					"DISP0_SMI_LARB0",
+					"DISP0_DISP_OVL0",
+					"DISP0_DISP_OVL1",
+					"DISP0_DISP_OVL0_2L",
+					"DISP0_DISP_OVL1_2L",
+					"DISP0_DISP_RDMA0",
+					"DISP0_DISP_RDMA1",
+					"DISP0_DISP_WDMA0",
+					"DISP0_DISP_WDMA1",
+					"DISP0_DISP_COLOR",
+					"DISP0_DISP_CCORR",
+					"DISP0_DISP_AAL",
+					"DISP0_DISP_GAMMA",
+					"DISP0_DISP_OD",
+					"DISP0_DISP_DITHER",
+					"DISP0_DISP_UFOE",
+					"DISP0_DISP_DSC",
+					"DISP0_DISP_SPLIT",
+					"DISP1_DSI0_MM_CLOCK",
+					"DISP1_DSI1_MM_CLOCK",
+					"DISP1_DPI_MM_CLOCK",
+					"DISP1_DPI_INTERFACE_CLOCK",
+					"DISP1_DISP_OVL0_MOUT",
+					"DISP_PWM",
+					"DISP_MTCMOS_CLK",
+					"MUX_DPI0",
+					"TVDPLL_D2",
+					"TVDPLL_D4",
+					"TVDPLL_D8",
+					"TVDPLL_D16",
+					"DPI_CK";
 		};
 		disp_ovl0@1400b000 {
 			compatible = "mediatek,disp_ovl0";

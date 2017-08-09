@@ -2,6 +2,8 @@
 #include "ddp_log.h"
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
+#else
+#include "ddp_clkmgr.h"
 #endif
 #include <linux/delay.h>
 
@@ -26,6 +28,8 @@ static int ufoe_init(DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_UFOE, "ufoe");
+#else
+	ddp_clk_enable(DISP0_DISP_UFOE);
 #endif
 	DDPMSG("ufoe_clock on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;
@@ -35,6 +39,8 @@ static int ufoe_deinit(DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_UFOE, "ufoe");
+#else
+	ddp_clk_disable(DISP0_DISP_UFOE);
 #endif
 	DDPMSG("ufoe_clock off CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;
@@ -110,6 +116,8 @@ static int ufoe_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_DISP_UFOE, "ufoe");
+#else
+	ddp_clk_enable(DISP0_DISP_UFOE);
 #endif
 	DDPMSG("ufoe_clock on CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;
@@ -119,6 +127,8 @@ static int ufoe_clock_off(DISP_MODULE_ENUM module, void *handle)
 {
 #ifdef CONFIG_MTK_CLKMGR
 	disable_clock(MT_CG_DISP0_DISP_UFOE, "ufoe");
+#else
+	ddp_clk_disable(DISP0_DISP_UFOE);
 #endif
 	DDPMSG("ufoe_clock off CG 0x%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;

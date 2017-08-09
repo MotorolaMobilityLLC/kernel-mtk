@@ -475,14 +475,14 @@ int ovl_clock_on(DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_OVL0_2L, ddp_get_module_name(module));
 #else
-		ddp_clk_enable(DISP0_DISP_2L_OVL0);
+		ddp_clk_enable(DISP0_DISP_OVL0_2L);
 #endif
 		break;
 	case DISP_MODULE_OVL1_2L:
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_OVL1_2L, ddp_get_module_name(module));
 #else
-		ddp_clk_enable(DISP0_DISP_2L_OVL1);
+		ddp_clk_enable(DISP0_DISP_OVL1_2L);
 #endif
 		break;
 	default:
@@ -517,14 +517,14 @@ int ovl_clock_off(DISP_MODULE_ENUM module, void *handle)
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_OVL0_2L, ddp_get_module_name(module));
 #else
-		ddp_clk_disable(DISP0_DISP_2L_OVL0);
+		ddp_clk_disable(DISP0_DISP_OVL0_2L);
 #endif
 		break;
 	case DISP_MODULE_OVL1_2L:
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_OVL1_2L, ddp_get_module_name(module));
 #else
-		ddp_clk_disable(DISP0_DISP_2L_OVL1);
+		ddp_clk_disable(DISP0_DISP_OVL1_2L);
 #endif
 		break;
 	default:

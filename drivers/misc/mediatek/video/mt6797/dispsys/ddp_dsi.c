@@ -2863,19 +2863,26 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 #else
 		ddp_set_mipi26m(1);
 #endif
-		if (module == DISP_MODULE_DSI0) {
-#ifdef CONFIG_MTK_CLKMGR
-			ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
-			ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
-#else
-			ret += ddp_clk_enable(DISP1_DSI_ENGINE);
-			ret += ddp_clk_enable(DISP1_DSI_DIGITAL);
+		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
+#ifndef CONFIG_MTK_CLKMGR
+			ret += ddp_clk_enable(DISP1_DSI0_MM_CLOCK);
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
 					       "DSI0 power manager API return FALSE\n");
 			}
 		}
+
+		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
+#ifndef CONFIG_MTK_CLKMGR
+			ret += ddp_clk_enable(DISP1_DSI1_MM_CLOCK);
+#endif
+			if (ret > 0) {
+				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
+					       "DSI1 power manager API return FALSE\n");
+			}
+		}
+
 #endif
 		DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[0]->DSI_INTEN, CMD_DONE, 1);
 		DSI_OUTREGBIT(NULL, DSI_INT_ENABLE_REG, DSI_REG[0]->DSI_INTEN, RD_RDY, 1);
@@ -3443,34 +3450,47 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 #endif
 		if (is_ipoh_bootup) {
 			if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-#ifdef CONFIG_MTK_CLKMGR
-				ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
-				ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
-#else
-				ret += ddp_clk_enable(DISP1_DSI_ENGINE);
-				ret += ddp_clk_enable(DISP1_DSI_DIGITAL);
+#ifndef CONFIG_MTK_CLKMGR
+				ret += ddp_clk_enable(DISP1_DSI0_MM_CLOCK);
 #endif
 				if (ret > 0)
-					pr_warn("DISP/DSI " "DSI power manager API return FALSE\n");
+					pr_warn("DISP/DSI " "DSI0 power manager API return FALSE\n");
 			}
+
+			if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
+#ifndef CONFIG_MTK_CLKMGR
+				ret += ddp_clk_enable(DISP1_DSI1_MM_CLOCK);
+#endif
+				if (ret > 0)
+					pr_warn("DISP/DSI " "DSI1 power manager API return FALSE\n");
+			}
+
 			s_isDsiPowerOn = TRUE;
 			DDPMSG("ipoh dsi power on return\n");
 			return DSI_STATUS_OK;
 		}
 		DSI_PHY_clk_switch(module, NULL, true);
+
 		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-#ifdef CONFIG_MTK_CLKMGR
-			ret += enable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
-			ret += enable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
-#else
-			ret += ddp_clk_enable(DISP1_DSI_ENGINE);
-			ret += ddp_clk_enable(DISP1_DSI_DIGITAL);
+#ifndef CONFIG_MTK_CLKMGR
+			ret += ddp_clk_enable(DISP1_DSI0_MM_CLOCK);
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
-					       "DSI power manager API return FALSE\n");
+					       "DSI0 power manager API return FALSE\n");
 			}
 		}
+
+		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
+#ifndef CONFIG_MTK_CLKMGR
+			ret += ddp_clk_enable(DISP1_DSI1_MM_CLOCK);
+#endif
+			if (ret > 0) {
+				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
+					       "DSI1 power manager API return FALSE\n");
+			}
+		}
+
 		/* restore dsi register */
 		DSI_RestoreRegisters(module, NULL);
 
@@ -3534,18 +3554,25 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 		DSI_DisableClk(module, NULL);
 
 		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
-#ifdef CONFIG_MTK_CLKMGR
-			ret += disable_clock(MT_CG_DISP1_DSI_ENGINE, "DSI");
-			ret += disable_clock(MT_CG_DISP1_DSI_DIGITAL, "DSI");
-#else
-			ddp_clk_disable(DISP1_DSI_ENGINE);
-			ddp_clk_disable(DISP1_DSI_DIGITAL);
+#ifndef CONFIG_MTK_CLKMGR
+			ddp_clk_disable(DISP1_DSI0_MM_CLOCK);
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
-					       "DSI power manager API return FALSE\n");
+					       "DSI0 power manager API return FALSE\n");
 			}
 		}
+
+		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
+#ifndef CONFIG_MTK_CLKMGR
+			ddp_clk_disable(DISP1_DSI1_MM_CLOCK);
+#endif
+			if (ret > 0) {
+				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
+					       "DSI1 power manager API return FALSE\n");
+			}
+		}
+
 		/* disable mipi pll */
 		DSI_PHY_clk_switch(module, NULL, false);
 #ifdef CONFIG_MTK_CLKMGR
