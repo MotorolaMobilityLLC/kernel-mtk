@@ -1200,7 +1200,8 @@ void tick_cancel_sched_timer(int cpu)
 		hrtimer_cancel(&ts->sched_timer);
 # endif
 
-	memset(ts, 0, sizeof(*ts));
+	/*memset(ts, 0, sizeof(*ts));*/ /*to avoid idle time clear to 0 after CPU plug off*/
+	ts->nohz_mode = NOHZ_MODE_INACTIVE;
 }
 #endif
 
