@@ -1500,6 +1500,8 @@ static int mass_storage_function_init(struct android_usb_function *f,
 	if (!config)
 		return -ENOMEM;
 
+/* FIXME, 3.18 WORKAROUND */
+#define CONFIG_MTK_MULTI_STORAGE_SUPPORT
 #ifdef CONFIG_MTK_MULTI_STORAGE_SUPPORT
 #define LUN_MULTI (1)
 #else
