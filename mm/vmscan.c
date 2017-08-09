@@ -196,6 +196,8 @@ static int debug_shrinker_show(struct seq_file *s, void *unused)
 
 	sc.gfp_mask = -1;
 	sc.nr_to_scan = 0;
+	sc.nid = 0;
+	node_set(sc.nid, sc.nodes_to_scan);
 
 	down_read(&shrinker_rwsem);
 	list_for_each_entry(shrinker, &shrinker_list, list) {
