@@ -343,7 +343,7 @@ typedef struct {
 	unsigned int srcStreamAddrWritePtr;	/* OK */
 
 	unsigned int outputBuffer0[3];	/* OK */
-	unsigned int outputBuffer1[3];	/*OK /*nouse in full frame mode, only use in PauseResume/DirectCouple mode */
+	unsigned int outputBuffer1[3];	/*OK only use in PauseResume/DirectCouple mode */
 
 	    /* JPEG component information */
 	unsigned int componentNum;	/* OK */
@@ -507,7 +507,7 @@ typedef struct {
 
 	unsigned char enableEXIF;
 	unsigned char allocBuffer;
-	/* unsigned char enableSyncReset;   //not use in mt6589 */
+	/* unsigned char enableSyncReset; */
 
 	unsigned int encQuality;
 	unsigned int encFormat;
@@ -569,7 +569,7 @@ typedef struct {
 
 /* typedef struct */
 /* { */
-/* unsigned int srcBufferAddr; // YUV420: Luma */
+/* unsigned int srcBufferAddr; YUV420: Luma */
 /* unsigned int srcChromaAddr; */
 /* unsigned int dstBufferAddr; */
 /* unsigned int dstBufferSize; */
@@ -578,7 +578,7 @@ typedef struct {
 /* unsigned int srcHeight; */
 /*  */
 /* unsigned char enableEXIF; */
-/* unsigned char disableGMC;  //not support */
+/* unsigned char disableGMC; not support */
 /*  */
 /* unsigned int restartInterval; */
 /* unsigned int quality; */
