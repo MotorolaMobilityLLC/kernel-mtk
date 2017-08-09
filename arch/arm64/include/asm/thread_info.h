@@ -51,8 +51,6 @@ struct thread_info {
 	struct restart_block	restart_block;
 	int			preempt_count;	/* 0 => preemptable, <0 => bug */
 	int			cpu;		/* cpu */
-	void			*regs_on_excp;
-	int			cpu_excp;
 };
 
 #define INIT_THREAD_INFO(tsk)						\
@@ -65,7 +63,6 @@ struct thread_info {
 	.restart_block	= {						\
 		.fn	= do_no_restart_syscall,			\
 	},								\
-	.cpu_excp	= 0,						\
 }
 
 #define init_thread_info	(init_thread_union.thread_info)

@@ -245,12 +245,12 @@ static enum log_flags syslog_prev;
 static size_t syslog_partial;
 
 /* index and sequence number of the first record stored in the buffer */
-u64 log_first_seq;
-u32 log_first_idx;
+static u64 log_first_seq;
+static u32 log_first_idx;
 
 /* index and sequence number of the next record to store in the buffer */
-u64 log_next_seq;
-u32 log_next_idx;
+static u64 log_next_seq;
+static u32 log_next_idx;
 
 /* the next printk record to write to the console */
 static u64 console_seq;
@@ -3065,10 +3065,4 @@ void show_regs_print_info(const char *log_lvl)
 	       task_thread_info(current));
 }
 
-void get_kernel_log_buffer(unsigned long *addr, unsigned long *size, unsigned long *start)
-{
-	*addr = (unsigned long)log_buf;
-	*size = log_buf_len;
-	*start = (unsigned long)&log_first_idx;
-}
 #endif
