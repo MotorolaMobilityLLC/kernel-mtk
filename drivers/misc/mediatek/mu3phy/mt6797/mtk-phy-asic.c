@@ -577,7 +577,7 @@ PHY_INT32 phy_init_soc(struct u3phy_info *info)
 #else
 	/*Change 100uA current switch to SSUSB */
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR5, RG_USB20_HS_100U_U3_EN_OFST,
-			  RG_USB20_HS_100U_U3_EN, 1);
+			RG_USB20_HS_100U_U3_EN, 1);
 #endif
 	/*OTG Enable */
 	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR6, RG_USB20_OTG_VBUSCMP_EN_OFST,
@@ -650,21 +650,21 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 
 	/* => USBPHY base address + 0x110 = 1 */
 	/* Enable free run clock */
-	U3PhyWriteField32((phys_addr_t) (u3_sif_base + 0x110)
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0x110)
 			  , RG_FRCK_EN_OFST, RG_FRCK_EN, 0x1);
 
 	/* => USBPHY base address + 0x100 = 0x04 */
 	/* Setting cyclecnt */
-	U3PhyWriteField32((phys_addr_t) (u3_sif_base + 0x100)
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0x100)
 			  , RG_CYCLECNT_OFST, RG_CYCLECNT, 0x400);
 
 	/* => USBPHY base address + 0x100 = 0x01 */
 	/* Enable frequency meter */
-	U3PhyWriteField32((phys_addr_t) (u3_sif_base + 0x100)
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0x100)
 			  , RG_FREQDET_EN_OFST, RG_FREQDET_EN, 0x1);
 
 	pr_debug("Freq_Valid=(0x%08X)\n",
-		  U3PhyReadReg32((phys_addr_t) (u3_sif_base + 0x110)));
+		  U3PhyReadReg32((phys_addr_t) (u3_sif2_base + 0x110)));
 
 	mdelay(1);
 
@@ -672,7 +672,7 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 	for (i = 0; i < 10; i++) {
 		/* => USBPHY base address + 0x10C = FM_OUT */
 		/* Read result */
-		u4FmOut = U3PhyReadReg32((phys_addr_t) (u3_sif_base + 0x10C));
+		u4FmOut = U3PhyReadReg32((phys_addr_t) (u3_sif2_base + 0x10C));
 
 		/* check if FM detection done */
 		if (u4FmOut != 0) {
@@ -685,12 +685,12 @@ PHY_INT32 u2_slew_rate_calibration(struct u3phy_info *info)
 	}
 	/* => USBPHY base address + 0x100 = 0x00 */
 	/* Disable Frequency meter */
-	U3PhyWriteField32((phys_addr_t) (u3_sif_base + 0x100)
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0x100)
 			  , RG_FREQDET_EN_OFST, RG_FREQDET_EN, 0);
 
 	/* => USBPHY base address + 0x110 = 0x00 */
 	/* Disable free run clock */
-	U3PhyWriteField32((phys_addr_t) (u3_sif_base + 0x110)
+	U3PhyWriteField32((phys_addr_t) (u3_sif2_base + 0x110)
 			  , RG_FRCK_EN_OFST, RG_FRCK_EN, 0);
 
 	/* RG_USB20_HSTX_SRCTRL[2:0] = (1024/FM_OUT) * reference clock frequency * 0.028 */
@@ -1044,8 +1044,8 @@ void usb_phy_recover(unsigned int clk_on)
 #else
 	/*Change 100uA current switch to SSUSB */
 	/* RG_USB20_HS_100U_U3_EN        1'b1 */
-	U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR5, RG_USB20_HS_100U_U3_EN_OFST,
-			  RG_USB20_HS_100U_U3_EN, 1);
+	/* U3PhyWriteField32((phys_addr_t) U3D_USBPHYACR5, RG_USB20_HS_100U_U3_EN_OFST,
+			RG_USB20_HS_100U_U3_EN, 1); */
 #endif
 
 	/* for 20nm setting */
