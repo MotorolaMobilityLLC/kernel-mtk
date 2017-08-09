@@ -478,8 +478,8 @@ int spm_module_init(void)
 
 #ifndef CONFIG_MTK_FPGA
 #if defined(CONFIG_PM)
-#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6580)
-/* || defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753) */
+#if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6580) \
+	|| defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6753)
 	if (spm_fs_init() != 0)
 		r = -EPERM;
 #endif
