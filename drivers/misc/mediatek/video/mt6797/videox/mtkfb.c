@@ -2615,6 +2615,7 @@ int mtkfb_pm_restore_noirq(struct device *device)
 	ddp_clk_prepare_enable(DISP_MTCMOS_CLK);
 	ddp_clk_prepare_enable(DISP0_SMI_COMMON);
 	ddp_clk_prepare_enable(DISP0_SMI_LARB0);
+	ddp_clk_prepare_enable(DISP0_SMI_LARB5);
 #else
 	dpmgr_path_power_on(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 #endif

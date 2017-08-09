@@ -1195,6 +1195,7 @@ int ddp_path_top_clock_on(void)
 	/* ddp_clk_prepare_enable(MM_VENCPLL); */
 	ddp_clk_enable(DISP0_SMI_COMMON);
 	ddp_clk_enable(DISP0_SMI_LARB0);
+	ddp_clk_enable(DISP0_SMI_LARB5);
 #endif
 	/* enable_clock(MT_CG_DISP0_MUTEX_32K   , "DDP_MUTEX"); */
 	DDPMSG("ddp CG:%x\n", DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
@@ -1216,6 +1217,7 @@ int ddp_path_top_clock_off(void)
 	disable_clock(MT_CG_DISP0_SMI_LARB0, "DDP_LARB0");
 	disable_clock(MT_CG_DISP0_SMI_COMMON, "DDP_SMI");
 #else
+	ddp_clk_disable(DISP0_SMI_LARB5);
 	ddp_clk_disable(DISP0_SMI_LARB0);
 	ddp_clk_disable(DISP0_SMI_COMMON);
 	/* ddp_clk_disable_unprepare(MM_VENCPLL); */

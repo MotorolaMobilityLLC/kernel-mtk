@@ -128,6 +128,7 @@ unsigned long ddp_reg_pa_base[DISP_REG_NUM] = {
 const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"DISP0_SMI_COMMON",
 	"DISP0_SMI_LARB0",
+	"DISP0_SMI_LARB5",
 	"DISP0_DISP_OVL0",
 	"DISP0_DISP_OVL1",
 	"DISP0_DISP_OVL0_2L",
@@ -146,7 +147,9 @@ const char *disp_clk_name[MAX_DISP_CLK_CNT] = {
 	"DISP0_DISP_DSC",
 	"DISP0_DISP_SPLIT",
 	"DISP1_DSI0_MM_CLOCK",
+	"DISP1_DSI0_INTERFACE_CLOCK",
 	"DISP1_DSI1_MM_CLOCK",
+	"DISP1_DSI1_INTERFACE_CLOCK",
 	"DISP1_DPI_MM_CLOCK",
 	"DISP1_DPI_INTERFACE_CLOCK",
 	"DISP0_DISP_OVL0_MOUT",
@@ -669,6 +672,7 @@ static int disp_probe(struct platform_device *pdev)
 						break; /* no need prepare_enable here */
 					case DISP0_SMI_COMMON:
 					case DISP0_SMI_LARB0:
+					case DISP0_SMI_LARB5:
 					case DISP_MTCMOS_CLK:
 						ddp_clk_prepare_enable(i);
 						break;

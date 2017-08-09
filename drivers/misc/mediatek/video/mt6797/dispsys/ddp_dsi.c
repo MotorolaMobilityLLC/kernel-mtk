@@ -2944,6 +2944,7 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
 #ifndef CONFIG_MTK_CLKMGR
 			ret += ddp_clk_enable(DISP1_DSI0_MM_CLOCK);
+			ret += ddp_clk_enable(DISP1_DSI0_INTERFACE_CLOCK);
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
@@ -2954,6 +2955,7 @@ int ddp_dsi_init(DISP_MODULE_ENUM module, void *cmdq)
 		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
 #ifndef CONFIG_MTK_CLKMGR
 			ret += ddp_clk_enable(DISP1_DSI1_MM_CLOCK);
+			ret += ddp_clk_enable(DISP1_DSI1_INTERFACE_CLOCK);
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
@@ -3568,6 +3570,7 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 			if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
 #ifndef CONFIG_MTK_CLKMGR
 				ret += ddp_clk_enable(DISP1_DSI0_MM_CLOCK);
+				ret += ddp_clk_enable(DISP1_DSI0_INTERFACE_CLOCK);
 #endif
 				if (ret > 0)
 					pr_warn("DISP/DSI " "DSI0 power manager API return FALSE\n");
@@ -3576,6 +3579,7 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 			if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
 #ifndef CONFIG_MTK_CLKMGR
 				ret += ddp_clk_enable(DISP1_DSI1_MM_CLOCK);
+				ret += ddp_clk_enable(DISP1_DSI1_INTERFACE_CLOCK);
 #endif
 				if (ret > 0)
 					pr_warn("DISP/DSI " "DSI1 power manager API return FALSE\n");
@@ -3590,6 +3594,7 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
 #ifndef CONFIG_MTK_CLKMGR
 			ret += ddp_clk_enable(DISP1_DSI0_MM_CLOCK);
+			ret += ddp_clk_enable(DISP1_DSI0_INTERFACE_CLOCK);
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
@@ -3600,6 +3605,7 @@ int ddp_dsi_power_on(DISP_MODULE_ENUM module, void *cmdq_handle)
 		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
 #ifndef CONFIG_MTK_CLKMGR
 			ret += ddp_clk_enable(DISP1_DSI1_MM_CLOCK);
+			ret += ddp_clk_enable(DISP1_DSI1_INTERFACE_CLOCK);
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
@@ -3672,6 +3678,7 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 		if (module == DISP_MODULE_DSI0 || module == DISP_MODULE_DSIDUAL) {
 #ifndef CONFIG_MTK_CLKMGR
 			ddp_clk_disable(DISP1_DSI0_MM_CLOCK);
+			ddp_clk_disable(DISP1_DSI0_INTERFACE_CLOCK);
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
@@ -3682,6 +3689,7 @@ int ddp_dsi_power_off(DISP_MODULE_ENUM module, void *cmdq_handle)
 		if (module == DISP_MODULE_DSI1 || module == DISP_MODULE_DSIDUAL) {
 #ifndef CONFIG_MTK_CLKMGR
 			ddp_clk_disable(DISP1_DSI1_MM_CLOCK);
+			ddp_clk_enable(DISP1_DSI1_INTERFACE_CLOCK);
 #endif
 			if (ret > 0) {
 				DISP_LOG_PRINT(ANDROID_LOG_WARN, "DSI",
