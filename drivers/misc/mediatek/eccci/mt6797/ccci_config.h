@@ -19,8 +19,8 @@
 #define FEATURE_SEQ_CHECK_EN
 #define FEATURE_POLL_MD_EN
 
-/*#define FEATURE_DHL_LOG_EN*/
-/*#define FEATURE_MD1MD3_SHARE_MEM*/
+#define FEATURE_DHL_LOG_EN
+#define FEATURE_MD1MD3_SHARE_MEM
 
 #if 0 /*DEPRECATED */
 #define FEATURE_GET_TD_EINT_NUM
@@ -33,24 +33,24 @@
 /*#define ENABLE_2G_3G_CHECK*/
 /*#define ENABLE_MD_WDT_DBG*/
 #define ENABLE_CLDMA_AP_SIDE
-/*#define ENABLE_MD_POWER_OFF_CHECK*/
+#define ENABLE_MD_POWER_OFF_CHECK
 
 #ifdef CONFIG_MTK_CONN_MD
 #define FEATURE_CONN_MD_EXP_EN
 #endif
 #ifndef CONFIG_ARM64
-#define FEATURE_USING_4G_MEMORY_API
+/*#define FEATURE_USING_4G_MEMORY_API*/
 #endif
 #define FEATURE_VLTE_SUPPORT
 /*#define FEATURE_LOW_BATTERY_SUPPORT disable for customer complaint*/
 #ifdef CONFIG_MTK_FPGA
 #define FEATURE_FPGA_PORTING
 #else
-/*#define FEATURE_RF_CLK_BUF*/
+#define FEATURE_RF_CLK_BUF
 /*#define ENABLE_32K_CLK_LESS*/
 #define FEATURE_MD_GET_CLIB_TIME
 #define FEATURE_C2K_ALWAYS_ON
-/*#define FEATURE_DBM_SUPPORT*/
+#define FEATURE_DBM_SUPPORT
 
 /*#define ENABLE_EMI_PROTECTION*/
 #ifdef ENABLE_EMI_PROTECTION
@@ -62,8 +62,8 @@
 /* #define DISABLE_MD_WDT_PROCESS */ /* enable wdt after bringup */
 #define NO_POWER_OFF_ON_STARTMD
 
-/*#define MD_CACHE_TO_NONECACHE*/
-/*#define MD_UMOLY_EE_SUPPORT*/
+#define MD_CACHE_TO_NONECACHE
+#define MD_UMOLY_EE_SUPPORT
 /*#define TEST_MESSAGE_FOR_BRINGUP*/
 
 #define CCCI_SMEM_DUMP_SIZE      4096/* smem size we dump when EE */
