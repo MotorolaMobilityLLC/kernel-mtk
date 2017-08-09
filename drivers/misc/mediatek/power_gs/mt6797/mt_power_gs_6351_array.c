@@ -26,15 +26,6 @@ const unsigned int *MT6351_PMIC_REG_gs_video_record = MT6351_PMIC_REG_gs_video_r
 
 unsigned int MT6351_PMIC_REG_gs_video_record_len = 3;
 
-const unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle_data[] = {
-	/* Address     Mask        Golden Setting Value */
-	0x0EA2, 0xE000, 0x0000,	/* AUXADC_CON0 */
-};
-
-const unsigned int *MT6351_PMIC_REG_gs_early_suspend_deep_idle = MT6351_PMIC_REG_gs_early_suspend_deep_idle_data;
-
-unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle_len = 3;
-
 const unsigned int MT6351_PMIC_REG_gs_datalink_3g_and_4g_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0EA2, 0xE000, 0x0000,	/* AUXADC_CON0 */
@@ -208,7 +199,7 @@ const unsigned int *MT6351_PMIC_REG_gs_suspend_mode = MT6351_PMIC_REG_gs_suspend
 
 unsigned int MT6351_PMIC_REG_gs_suspend_mode_len = 183;
 
-const unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_data[] = {
+const unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle_mode_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0016, 0x0080, 0x0000,	/* STRUP_CON11 */
 	0x0204, 0x0270, 0x0070,	/* TOP_CON */
@@ -294,9 +285,9 @@ const unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_data[] = {
 	0x0F48, 0x0001, 0x0000	/* ACCDET_CON1 */
 };
 
-const unsigned int *MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode =
-MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_data;
-unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_len = 246;
+const unsigned int *MT6351_PMIC_REG_gs_early_suspend_deep_idle_mode =
+MT6351_PMIC_REG_gs_early_suspend_deep_idle_mode_data;
+unsigned int MT6351_PMIC_REG_gs_early_suspend_deep_idle_mode_len = 246;
 const unsigned int MT6351_PMIC_REG_gs_s_flightmode_suspend_mode_32k_removal_data[] = {
 	/* Address     Mask        Golden Setting Value */
 	0x0EA2, 0xE000, 0x0000,	/* AUXADC_CON0 */

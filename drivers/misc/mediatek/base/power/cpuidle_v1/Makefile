@@ -7,5 +7,6 @@ obj-y += mt_cpuidle.o
 ifneq ($(CONFIG_ARM64), y)
 obj-y += cpu_dormant-v7.o
 else
-obj-y  += cpu_dormant.o
+obj-y += cpu_dormant.o
 endif
+

@@ -55,6 +55,7 @@
 	mt_reg_sync_writel(val, addr)
 #endif
 
+int __attribute__ ((weak)) mt_cpu_dormant_init(void) { return MT_CPU_DORMANT_BYPASS; }
 void __attribute__ ((weak)) slp_module_init(void)
 {
 

@@ -113,9 +113,15 @@ void mt_power_gs_dump_suspend(void)
 			    MT6328_PMIC_REG_gs_flightmode_suspend_mode,
 			    MT6328_PMIC_REG_gs_flightmode_suspend_mode_len);
 #elif defined CONFIG_ARCH_MT6755
+#if defined CONFIG_MTK_PMIC_CHIP_MT6353
+	mt_power_gs_compare("Suspend ", "6353",
+			    MT6353_PMIC_REG_gs_flightmode_suspend_mode,
+			    MT6353_PMIC_REG_gs_flightmode_suspend_mode_len);
+#else
 	mt_power_gs_compare("Suspend ", "6351",
 			    MT6351_PMIC_REG_gs_flightmode_suspend_mode,
 			    MT6351_PMIC_REG_gs_flightmode_suspend_mode_len);
+#endif
 #elif defined CONFIG_ARCH_MT6797
 	if (is_checking_md)
 		mt_power_gs_compare("Suspend ", "6351",
@@ -132,9 +138,15 @@ EXPORT_SYMBOL(mt_power_gs_dump_suspend);
 void mt_power_gs_dump_dpidle(void)
 {
 #if defined CONFIG_ARCH_MT6755 || defined CONFIG_ARCH_MT6797
+#if defined CONFIG_MTK_PMIC_CHIP_MT6353
+	mt_power_gs_compare("DPIdle  ", "6353",
+			    MT6353_PMIC_REG_gs_early_suspend_deep_idle_mode,
+			    MT6353_PMIC_REG_gs_early_suspend_deep_idle_mode_len);
+#else
 	mt_power_gs_compare("DPIdle  ", "6351",
-			    MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode,
-			    MT6351_PMIC_REG_gs_early_suspend_deep_idle__mode_len);
+			    MT6351_PMIC_REG_gs_early_suspend_deep_idle_mode,
+			    MT6351_PMIC_REG_gs_early_suspend_deep_idle_mode_len);
+#endif
 #endif
 }
 EXPORT_SYMBOL(mt_power_gs_dump_dpidle);
