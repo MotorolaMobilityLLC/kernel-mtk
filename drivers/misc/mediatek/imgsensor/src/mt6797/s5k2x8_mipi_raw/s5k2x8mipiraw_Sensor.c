@@ -2917,7 +2917,14 @@ static void preview_setting_11_new(void)
 	write_cmos_sensor_twobyte(0xB0CA,0x7E00);
 	write_cmos_sensor_twobyte(0xB136,0x2000);
 	write_cmos_sensor_twobyte(0xD0D0,0x1000);
-	
+	//Gain issue fixed
+	write_cmos_sensor_twobyte(0x6028,0x4000);
+	write_cmos_sensor_twobyte(0x602A,0x0086);
+	write_cmos_sensor_twobyte(0x6F12,0x0200);
+	write_cmos_sensor_twobyte(0x6028,0x2000);
+	write_cmos_sensor_twobyte(0x602A,0x06A4);
+	write_cmos_sensor_twobyte(0x6F12,0x0400);
+
 	// Stream On
 	write_cmos_sensor_twobyte(0x0100,0x0100);
 	
@@ -3325,6 +3332,13 @@ static void capture_setting_WDR(kal_uint16 currefps)
 		
 		/*ZHDR setting*/
 		sensor_WDR_zhdr();
+		//Gain issue fixed
+		write_cmos_sensor_twobyte(0x6028,0x4000);
+		write_cmos_sensor_twobyte(0x602A,0x0086);
+		write_cmos_sensor_twobyte(0x6F12,0x0200);
+		write_cmos_sensor_twobyte(0x6028,0x2000);
+		write_cmos_sensor_twobyte(0x602A,0x06A4);
+		write_cmos_sensor_twobyte(0x6F12,0x0400);
 
 		/*Streaming  output */
 		write_cmos_sensor_twobyte(0x0100, 0x0100);
@@ -3480,6 +3494,13 @@ static void capture_setting_WDR(kal_uint16 currefps)
 		write_cmos_sensor_twobyte(0xB0CA, 0x7E00);
 		write_cmos_sensor_twobyte(0xB136, 0x2000);
 		write_cmos_sensor_twobyte(0xD0D0, 0x1000);
+		//Gain issue fixed
+		write_cmos_sensor_twobyte(0x6028,0x4000);
+		write_cmos_sensor_twobyte(0x602A,0x0086);
+		write_cmos_sensor_twobyte(0x6F12,0x0200);
+		write_cmos_sensor_twobyte(0x6028,0x2000);
+		write_cmos_sensor_twobyte(0x602A,0x06A4);
+		write_cmos_sensor_twobyte(0x6F12,0x0400);
 
 		/*Streaming  output */
 		write_cmos_sensor_twobyte(0x0100, 0x0100);
@@ -3634,6 +3655,13 @@ static void normal_video_setting_11_new(kal_uint16 currefps)
 		write_cmos_sensor_twobyte(0xB0CA, 0x7E00);
 		write_cmos_sensor_twobyte(0xB136, 0x2000);
 		write_cmos_sensor_twobyte(0xD0D0, 0x1000);
+		//Gain issue fixed
+		write_cmos_sensor_twobyte(0x6028,0x4000);
+		write_cmos_sensor_twobyte(0x602A,0x0086);
+		write_cmos_sensor_twobyte(0x6F12,0x0200);
+		write_cmos_sensor_twobyte(0x6028,0x2000);
+		write_cmos_sensor_twobyte(0x602A,0x06A4);
+		write_cmos_sensor_twobyte(0x6F12,0x0400);
 
 		/*Streaming  output */
 		write_cmos_sensor_twobyte(0x0100, 0x0100);
