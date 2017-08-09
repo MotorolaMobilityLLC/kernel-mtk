@@ -30,6 +30,7 @@
 #include <mt_spi.h>
 #include "mt_spi_hal.h"
 /*#include <mach/mt_gpio.h>*/
+#include <mt-plat/mt_lpae.h>/* DMA */
 
 
 #if defined(CONFIG_MTK_CLKMGR)
@@ -60,6 +61,8 @@
 #define PACKET_SIZE 0x400
 #define SPI_FIFO_SIZE 32
 #define INVALID_DMA_ADDRESS 0xffffffff
+#define SPI1_DMA_LIMIT_L 0x40000000
+#define SPI1_DMA_LIMIT_H 0xbfffffff
 #if 0
 struct mt_spi_t {
 	struct platform_device *pdev;
@@ -444,11 +447,16 @@ static inline void spi_disable_dma(struct mt_spi_t *ms)
 static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 {
 	u32 cmd;
+	int id;
+	dma_addr_t	temp_tx_dma;
+	dma_addr_t	temp_rx_dma;
 
+	id = ms->pdev->id;
 	cmd = spi_readl(ms, SPI_CMD_REG);
 #define SPI_4B_ALIGN 0x4
 	/*set up the DMA bus address */
 	if ((mode == DMA_TRANSFER) || (mode == OTHER1)) {
+		temp_tx_dma = ms->cur_transfer->tx_dma;
 		if ((ms->cur_transfer->tx_buf != NULL)
 		    || ((ms->cur_transfer->tx_dma != INVALID_DMA_ADDRESS) && (ms->cur_transfer->tx_dma != 0))) {
 			if (ms->cur_transfer->tx_dma & (SPI_4B_ALIGN - 1)) {
@@ -462,13 +470,31 @@ static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 					ms->cur_transfer->tx_buf, ms->cur_transfer->tx_dma);
 #endif
 			}
-			spi_writel(ms, SPI_TX_SRC_REG, cpu_to_le32(ms->cur_transfer->tx_dma));
+			if (enable_4G()) {/*4G mode*/
+				if (1 == id) {/*SPI1*/
+					if ((ms->cur_transfer->tx_dma < SPI1_DMA_LIMIT_L)
+						|| (ms->cur_transfer->tx_dma
+							+ ms->cur_transfer->len > SPI1_DMA_LIMIT_H))
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
+						dev_err(&ms->pdev->dev,
+							"Warning!Tx_DMA address range error in 4G mode,dma:%llx\n",
+							ms->cur_transfer->tx_dma);
+#else
+						dev_err(&ms->pdev->dev,
+							"Warning!Tx_DMA address range error in 4G mode,dma:%x\n",
+							ms->cur_transfer->tx_dma);
+#endif
+					MAPPING_DRAM_ACCESS_ADDR(temp_tx_dma);
+				}
+			}
+			spi_writel(ms, SPI_TX_SRC_REG, cpu_to_le32(temp_tx_dma));
 			cmd |= 1 << SPI_CMD_TX_DMA_OFFSET;
 		}
 	}
 	if ((mode == DMA_TRANSFER) || (mode == OTHER2)) {
+		temp_rx_dma = ms->cur_transfer->rx_dma;
 		if ((ms->cur_transfer->rx_buf != NULL)
-		    || ((ms->cur_transfer->rx_dma != INVALID_DMA_ADDRESS) && (ms->cur_transfer->rx_dma != 0))) {
+		|| ((ms->cur_transfer->rx_dma != INVALID_DMA_ADDRESS) && (ms->cur_transfer->rx_dma != 0))) {
 			if (ms->cur_transfer->rx_dma & (SPI_4B_ALIGN - 1)) {
 #ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
 				dev_err(&ms->pdev->dev,
@@ -480,7 +506,24 @@ static inline void spi_enable_dma(struct mt_spi_t *ms, u8 mode)
 					ms->cur_transfer->rx_buf, ms->cur_transfer->rx_dma);
 #endif
 			}
-			spi_writel(ms, SPI_RX_DST_REG, cpu_to_le32(ms->cur_transfer->rx_dma));
+			if (enable_4G()) {/*4G mode*/
+				if (1 == id) {/*SPI1*/
+					if ((ms->cur_transfer->rx_dma < SPI1_DMA_LIMIT_L)
+						|| (ms->cur_transfer->rx_dma
+							+ ms->cur_transfer->len > SPI1_DMA_LIMIT_H))
+#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
+						dev_err(&ms->pdev->dev,
+							"Warning!Rx_DMA address range error in 4G mode,dma:%llx\n",
+							ms->cur_transfer->rx_dma);
+#else
+						dev_err(&ms->pdev->dev,
+							"Warning!Rx_DMA address range error in 4G mode,dma:%x\n",
+							ms->cur_transfer->rx_dma);
+#endif
+					MAPPING_DRAM_ACCESS_ADDR(temp_rx_dma);
+				}
+			}
+			spi_writel(ms, SPI_RX_DST_REG, cpu_to_le32(temp_rx_dma));
 			cmd |= 1 << SPI_CMD_RX_DMA_OFFSET;
 		}
 	}
@@ -670,6 +713,7 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms, struct spi_message *msg)
 #ifdef SPI_AUTO_SELECT_MODE
 	u32 reg_val = 0;
 #endif
+	bool spi1_flag = 0;
 
 	if (unlikely(!ms)) {
 		dev_err(&msg->spi->dev, "master wrapper is invalid\n");
@@ -786,7 +830,9 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms, struct spi_message *msg)
 
 	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
 		if ((!msg->is_dma_mapped))
-			transfer_dma_unmapping(ms, xfer);
+			spi1_flag = (enable_4G() && (1 != ms->pdev->id));
+			if (!spi1_flag)
+				transfer_dma_unmapping(ms, xfer);
 	}
 	ms->running = IDLE;
 	mt_spi_msg_done(ms, msg, ret);
@@ -880,6 +926,7 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 	struct mt_chip_conf *chip_config;
 	unsigned long flags;
 	char msg_addr[32];
+	bool spi1_flag = 0;
 
 	master = spidev->master;
 	ms = spi_master_get_devdata(master);
@@ -928,7 +975,8 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 		 * platforms supported by this driver, we would need to clean
 		 * up mappings for previously-mapped transfers.
 		 */
-		if ((!msg->is_dma_mapped)) {
+		spi1_flag = (enable_4G() && (1 != ms->pdev->id));
+		if ((!msg->is_dma_mapped) && (!spi1_flag)) {
 			if (transfer_dma_mapping(ms, chip_config->com_mod, xfer) < 0)
 				return -ENOMEM;
 		}
@@ -969,6 +1017,7 @@ static irqreturn_t mt_spi_interrupt(int irq, void *dev_id)
 	struct spi_message *msg;
 	struct spi_transfer *xfer;
 	struct mt_chip_conf *chip_config;
+	bool spi1_flag = 0;
 
 	unsigned long flags;
 	u32 reg_val, cnt;
@@ -1002,7 +1051,8 @@ static irqreturn_t mt_spi_interrupt(int irq, void *dev_id)
 	if ((reg_val & 0x03) == 0)
 		goto out;
 
-	if (!msg->is_dma_mapped)
+	spi1_flag = (enable_4G() && (1 != ms->pdev->id));
+	if ((!msg->is_dma_mapped) && (!spi1_flag))
 		transfer_dma_unmapping(ms, ms->cur_transfer);
 
 	if (is_pause_mode(msg)) {
@@ -1305,6 +1355,7 @@ static int __init mt_spi_probe(struct platform_device *pdev)
 	master->transfer = mt_spi_transfer;
 	master->cleanup = mt_spi_cleanup;
 	platform_set_drvdata(pdev, master);
+	pdev->dev.id = pdev->id;
 
 	/*ms = spi_master_get_devdata(master); */
 #ifdef CONFIG_OF

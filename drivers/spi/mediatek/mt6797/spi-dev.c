@@ -4,13 +4,24 @@
 #include <linux/types.h>
 #include <linux/device.h>
 #include <linux/delay.h>
-#include <mt_spi.h>
-
+#include <linux/kthread.h>
+#include <linux/of.h>
+#include <linux/of_reserved_mem.h>
+#include <linux/cma.h>
+#include <linux/debugfs.h>
+#include <linux/stat.h>
+#include <linux/seq_file.h>
+#include <linux/uaccess.h>
+#include <linux/mutex.h>
+#include <linux/memblock.h>
+#include <asm/page.h>
+#include <asm-generic/memory_model.h>
+#include <mt-plat/mt_lpae.h> /* DMA */
+#include <mt-plat/aee.h>
 #include <linux/dma-mapping.h>
 #include <linux/sched.h>
 #include "mt_spi_hal.h"
-#include <linux/kthread.h>
-
+#include <mt_spi.h>
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 #define SPI_TRUSTONIC_TEE_SUPPORT
 #endif
@@ -40,6 +51,26 @@ static struct spi_transfer stress_xfer_con[SPI_STRESS_MAX];
 static struct spi_message stress_msg[SPI_STRESS_MAX];
 /*static struct spi_device *spi_test;*/
 
+#define USE_SPI1_TEST (0)
+
+#if USE_SPI1_TEST
+static dma_addr_t SpiDmaBufTx_pa;
+static dma_addr_t SpiDmaBufRx_pa;
+static char *spi_tx_local_buf;
+static char *spi_rx_local_buf;
+int reserve_memory_spi_fn(struct reserved_mem *rmem)
+{
+	SPIDEV_LOG(" name: %s, base: 0x%llx, size: 0x%llx\n", rmem->name,
+			(unsigned long long)rmem->base, (unsigned long long)rmem->size);
+	BUG_ON(rmem->size < 0x8000);
+	SpiDmaBufTx_pa = rmem->base;
+	SpiDmaBufRx_pa = rmem->base+0x4000;
+	return 0;
+}
+
+RESERVEDMEM_OF_DECLARE(reserve_memory_test, "mediatek,spi-reserve-memory", reserve_memory_spi_fn);
+#endif
+
 static int spi_setup_xfer(struct device *dev, struct spi_transfer *xfer, u32 len, u32 flag)
 {
 	u32 tx_buffer = 0x12345678;
@@ -50,11 +81,44 @@ static int spi_setup_xfer(struct device *dev, struct spi_transfer *xfer, u32 len
 #define SPI_CROSS_ALIGN_OFFSET 1008
 	xfer->len = len;
 
-	xfer->tx_buf = kzalloc(len, GFP_KERNEL);
-	xfer->rx_buf = kzalloc(len, GFP_KERNEL);
+	if (enable_4G()) {
+		if (1 == dev->id) {
+		#if USE_SPI1_TEST
+			/* map physical addr to virtual addr */
+			if (NULL == spi_tx_local_buf) {
+				spi_tx_local_buf = (char *)ioremap_nocache(SpiDmaBufTx_pa, 0x4000);
+				if (!spi_tx_local_buf) {
+					SPIDEV_LOG("SPI Failed to dma_alloc_coherent()\n");
+					return -ENOMEM;
+				}
+			}
+			SPIDEV_LOG("enable_4G debug++++\n");
+			if (NULL == spi_rx_local_buf) {
+				spi_rx_local_buf = (char *)ioremap_nocache(SpiDmaBufRx_pa, 0x4000);
+				if (!spi_rx_local_buf) {
+					SPIDEV_LOG("SPI Failed to dma_alloc_coherent()\n");
+					return -ENOMEM;
+				}
+			}
+			xfer->tx_buf = spi_tx_local_buf;
+			xfer->rx_buf = spi_rx_local_buf;
 
-	if ((xfer->tx_buf == NULL) || (xfer->rx_buf == NULL))
-		return -1;
+			xfer->tx_dma = SpiDmaBufTx_pa;
+			xfer->rx_dma = SpiDmaBufRx_pa;
+			MAPPING_DRAM_ACCESS_ADDR(xfer->tx_dma);
+			MAPPING_DRAM_ACCESS_ADDR(xfer->rx_dma);
+		#else
+			SPIDEV_LOG("Wanning: If using SPI1, you should define <USE_SPI1_TEST = 1>\n");
+		#endif
+		}
+	} else {
+		SPIDEV_LOG("enable_4G else debug+++222+\n");
+		xfer->tx_buf = kzalloc(len, GFP_KERNEL);
+		xfer->rx_buf = kzalloc(len, GFP_KERNEL);
+
+		if ((xfer->tx_buf == NULL) || (xfer->rx_buf == NULL))
+			return -1;
+	}
 
 	cnt = (len % 4) ? (len / 4 + 1) : (len / 4);
 
@@ -70,39 +134,19 @@ static int spi_setup_xfer(struct device *dev, struct spi_transfer *xfer, u32 len
 		for (i = 0; i < cnt; i++)
 			*((u32 *) xfer->tx_buf + i) = tx_buffer + i;
 
-		xfer->tx_dma = dma_map_single(dev, (void *)xfer->tx_buf, xfer->len, DMA_TO_DEVICE);
-		if (dma_mapping_error(dev, xfer->tx_dma)) {
-			SPIDEV_LOG("dma mapping tx_buf error.\n");
-			return -ENOMEM;
-		}
-		xfer->rx_dma = dma_map_single(dev, (void *)xfer->rx_buf, xfer->len, DMA_TO_DEVICE);
-		if (dma_mapping_error(dev, xfer->rx_dma)) {
-			SPIDEV_LOG("dma mapping rx_buf error.\n");
-			return -ENOMEM;
-		}
 #ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
 		SPIDEV_LOG("Transfer addr:Tx:0x%llx, Rx:0x%llx, before\n", xfer->tx_dma, xfer->rx_dma);
 #else
 		SPIDEV_LOG("Transfer addr:Tx:0x%x, Rx:0x%x, before\n", xfer->tx_dma, xfer->rx_dma);
 #endif
 		xfer->len = 32;
-#if 0
-		p = (u8 *) xfer->tx_dma;
-		xfer->tx_dma = (u32) (p + SPI_CROSS_ALIGN_OFFSET);
-		p = (u8 *) xfer->rx_dma;
-		xfer->rx_dma = (u32) (p + SPI_CROSS_ALIGN_OFFSET);
 
-		p = (u8 *) xfer->tx_buf;
-		xfer->tx_buf = (u32 *) (p + SPI_CROSS_ALIGN_OFFSET);
-		p = (u8 *) xfer->rx_buf;
-		xfer->rx_buf = (u32 *) (p + SPI_CROSS_ALIGN_OFFSET);
-#else
 		xfer->tx_dma += SPI_CROSS_ALIGN_OFFSET;
 		xfer->rx_dma += SPI_CROSS_ALIGN_OFFSET;
 
 		xfer->tx_buf += SPI_CROSS_ALIGN_OFFSET;
 		xfer->rx_buf += SPI_CROSS_ALIGN_OFFSET;
-#endif
+
 #ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
 		SPIDEV_LOG("Transfer addr:Tx:0x%llx, Rx:0x%llx\n", xfer->tx_dma, xfer->rx_dma);
 #else
@@ -133,14 +177,11 @@ static int spi_recv_check(struct spi_message *msg)
 			SPIDEV_MSG("rv msg is NULL.\n");
 			return -1;
 		}
-	/*SPIDEV_LOG("xfer:0x%p, length is:%d\n", xfer,xfer->len);*/
 		cnt = (xfer->len % 4) ? (xfer->len / 4 + 1) : (xfer->len / 4);
 		for (i = 0; i < cnt; i++) {
 			if (*((u32 *) xfer->rx_buf + i) != *((u32 *) xfer->tx_buf + i)) {
 				SPIDEV_LOG("tx xfer %d is:%.8x\n", i, *((u32 *) xfer->tx_buf + i));
 				SPIDEV_LOG("rx xfer %d is:%.8x\n", i, *((u32 *) xfer->rx_buf + i));
-				/*SPIDEV_LOG("tx xfer %d dma is:%.8x\n",i,  ( ( u32 * )xfer->tx_dma + i ) );*/
-				/*SPIDEV_LOG("rx xfer %d dma is:%.8x\n",i,  ( ( u32 * )xfer->rx_dma + i ) );*/
 				SPIDEV_LOG("\n");
 				err++;
 			}

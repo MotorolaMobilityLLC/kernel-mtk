@@ -88,7 +88,7 @@
 #define SPI_ULTRA_HIGH_EN_MASK				0x1
 #define SPI_ULTRA_HIGH_THRESH_MASK			0xffff0000
 
-#include <sync_write.h>
+#include <mt-plat/sync_write.h>
 #define spi_readl(port, offset) \
 	__raw_readl((port)->regs+(offset))
 /*
