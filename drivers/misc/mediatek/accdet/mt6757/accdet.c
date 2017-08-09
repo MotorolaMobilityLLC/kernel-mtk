@@ -20,7 +20,7 @@ struct head_dts_data accdet_dts_data;
 s8 accdet_auxadc_offset;
 int accdet_irq;
 unsigned int gpiopin, headsetdebounce;
-unsigned int accdet_eint_type = IRQ_TYPE_LEVEL_LOW;/* default low level*/
+unsigned int accdet_eint_type = IRQ_TYPE_LEVEL_LOW;/* default low_level trigger */
 struct headset_mode_settings *cust_headset_settings;
 #define ACCDET_DEBUG(format, args...) pr_debug(format, ##args)
 #define ACCDET_INFO(format, args...) pr_warn(format, ##args)
@@ -1160,6 +1160,8 @@ void accdet_pmic_Read_Efuse_HPOffset(void)
 
 static inline void accdet_init(void)
 {
+	unsigned int reg_val = 0;
+
 	ACCDET_DEBUG("[Accdet]accdet hardware init\n");
 	/*clock*/
 	pmic_pwrap_write(TOP_CKPDN_CLR, RG_ACCDET_CLK_CLR);
@@ -1192,10 +1194,30 @@ static inline void accdet_init(void)
 
 	/*enable INT */
 #ifdef CONFIG_ACCDET_EINT_IRQ
-	if (cur_eint_state == EINT_PIN_PLUG_OUT) {
+	if (EINT_PIN_PLUG_OUT == cur_eint_state) {
 		if (IRQ_TYPE_LEVEL_HIGH == accdet_dts_data.eint_level_pol) {
 			accdet_eint_type = IRQ_TYPE_LEVEL_HIGH;
-			pmic_pwrap_write(ACCDET_IRQ_STS, pmic_pwrap_read(ACCDET_IRQ_STS) | EINT_IRQ_POL_HIGH);
+			pmic_pwrap_write(ACCDET_IRQ_STS, pmic_pwrap_read(ACCDET_IRQ_STS)|EINT_IRQ_POL_HIGH);
+			ACCDET_INFO("[accdet]high:[0x%x]=0x%x\n", ACCDET_IRQ_STS, reg_val);
+
+			if (1 == g_accdet_first) {/* set pmic eint default value */
+				reg_val = pmic_pwrap_read(ACCDET_CTRL);
+				ACCDET_INFO("[accdet]high:1.[0x%x]=0x%x\n", ACCDET_CTRL, reg_val);
+				/* set bit3 to enable default EINT init status */
+				pmic_pwrap_write(ACCDET_CTRL, reg_val|(0x01<<3));
+				mdelay(2);
+				reg_val = pmic_pwrap_read(ACCDET_CTRL);
+				ACCDET_INFO("[accdet]high:2.[0x%x]=0x%x\n", ACCDET_CTRL, reg_val);
+				reg_val = pmic_pwrap_read(ACCDET_DEFAULT_STATE_RG);
+				ACCDET_INFO("[accdet]high:1.[0x%x]=0x%x\n", ACCDET_DEFAULT_STATE_RG, reg_val);
+				/* set default EINT init status */
+				pmic_pwrap_write(ACCDET_DEFAULT_STATE_RG, (reg_val|(1<<14))&(0x4333));
+				mdelay(2);
+				reg_val = pmic_pwrap_read(ACCDET_DEFAULT_STATE_RG);
+				ACCDET_INFO("[accdet]high:2.[0x%x]=0x%x\n", ACCDET_DEFAULT_STATE_RG, reg_val);
+				/* clear bit3 to disable default EINT init status */
+				pmic_pwrap_write(ACCDET_CTRL, pmic_pwrap_read(ACCDET_CTRL)&(~(0x01<<3)));
+			}
 		}
 	}
 	pmic_pwrap_write(ACCDET_IRQ_STS, pmic_pwrap_read(ACCDET_IRQ_STS) & (~IRQ_EINT_CLR_BIT));
