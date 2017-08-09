@@ -1,0 +1,3 @@
+obj-$(CONFIG_ARCH_MT6735) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-$(CONFIG_ARCH_MT6735M) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+#obj-$(CONFIG_ARCH_MT6755) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
