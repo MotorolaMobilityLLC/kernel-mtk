@@ -1883,7 +1883,7 @@ wlanImageDividDownload(IN P_ADAPTER_T prAdapter, IN P_FIRMWARE_DIVIDED_DOWNLOAD_
 
 				emi_mpu_set_region_protection(gConEmiPhyBase,
 					gConEmiPhyBase + 512 * 1024 - 1,
-					12,
+					18,
 					SET_ACCESS_PERMISSON(NO_PROTECTION, NO_PROTECTION, NO_PROTECTION,
 					  NO_PROTECTION, NO_PROTECTION, NO_PROTECTION, NO_PROTECTION, NO_PROTECTION));
 
@@ -1912,7 +1912,7 @@ wlanImageDividDownload(IN P_ADAPTER_T prAdapter, IN P_FIRMWARE_DIVIDED_DOWNLOAD_
 
 				emi_mpu_set_region_protection(gConEmiPhyBase,
 					gConEmiPhyBase + 512 * 1024 - 1,
-					12,
+					18,
 					SET_ACCESS_PERMISSON(FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
 					  NO_PROTECTION, FORBIDDEN, FORBIDDEN));
 

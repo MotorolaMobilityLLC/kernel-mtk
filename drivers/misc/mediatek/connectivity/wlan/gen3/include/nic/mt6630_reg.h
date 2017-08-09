@@ -255,7 +255,12 @@ typedef struct _ENHANCE_MODE_DATA_STRUCT_T {
 #define WCIR_REVISION_ID                BITS(16, 19)
 #define WCIR_CHIP_ID                    BITS(0, 15)
 
+#if defined(MT6797)
+#define MTK_CHIP_REV                    0x00006797
+#else
 #define MTK_CHIP_REV                    0x00006630
+#endif
+
 #define MTK_CHIP_MP_REVERSION_ID        0x0
 
 /* 3 WHLPCR 0x0004 */
