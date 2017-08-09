@@ -1478,7 +1478,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		};
 
 		usb0:USB0@0x11200000 {
-			compatible = "mediatek,USB0";
+			compatible = "mediatek,mt6735-usb20";
 			cell-index = <0>;
 			reg = <0x11200000 0x10000>,
 				<0x11210000 0x10000>;
@@ -1495,10 +1495,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			VUSB33-supply = <&mt_pmic_vusb33_ldo_reg>;
 			iddig_gpio = <0 1>;
 			drvvbus_gpio = <83 2>;
-		};
-
-		usbphy0: usbphy@0 {
-			compatible = "usb-nop-xceiv";
 		};
 
 		audio@11220000 {
