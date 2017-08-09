@@ -632,6 +632,7 @@ PVOID cnmMemAlloc(IN P_ADAPTER_T prAdapter, IN ENUM_RAM_TYPE_T eRamType, IN UINT
 				KAL_RELEASE_SPIN_LOCK(prAdapter,
 						      eRamType == RAM_TYPE_MSG ? SPIN_LOCK_MSG_BUF : SPIN_LOCK_MGT_BUF);
 
+				kalMemZero(prBufInfo->pucBuf + (i << u4BlkSzInPower), u4Length);
 				/* Return the start address of allocated memory */
 				return (PVOID) (prBufInfo->pucBuf + (i << u4BlkSzInPower));
 

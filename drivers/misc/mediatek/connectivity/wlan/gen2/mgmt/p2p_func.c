@@ -42,6 +42,7 @@ VOID p2pFuncRequestScan(IN P_ADAPTER_T prAdapter, IN P_P2P_SCAN_REQ_INFO_T prSca
 {
 
 	P_MSG_SCN_SCAN_REQ prScanReq = (P_MSG_SCN_SCAN_REQ) NULL;
+	UINT_8 aucP2pSsid[] = P2P_WILDCARD_SSID;
 	/*NFC Beam + Indication */
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	BOOLEAN fgIsPureAP = FALSE;
@@ -50,16 +51,8 @@ VOID p2pFuncRequestScan(IN P_ADAPTER_T prAdapter, IN P_P2P_SCAN_REQ_INFO_T prSca
 	prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 	fgIsPureAP = prAdapter->rWifiVar.prP2pFsmInfo->fgIsApMode;
 
-	DEBUGFUNC("p2pFuncRequestScan()");
-
 	do {
 		ASSERT_BREAK((prAdapter != NULL) && (prScanReqInfo != NULL));
-
-		if (prScanReqInfo->eChannelSet == SCAN_CHANNEL_SPECIFIED) {
-			ASSERT_BREAK(prScanReqInfo->ucNumChannelList > 0);
-			DBGLOG(P2P, LOUD,
-			       "P2P Scan Request Channel:%d\n", prScanReqInfo->arScanChannelList[0].ucChannelNum);
-		}
 
 		prScanReq = (P_MSG_SCN_SCAN_REQ) cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_SCN_SCAN_REQ));
 		if (!prScanReq) {
@@ -71,125 +64,60 @@ VOID p2pFuncRequestScan(IN P_ADAPTER_T prAdapter, IN P_P2P_SCAN_REQ_INFO_T prSca
 		prScanReq->ucSeqNum = ++prScanReqInfo->ucSeqNumOfScnMsg;
 		prScanReq->ucNetTypeIndex = (UINT_8) NETWORK_TYPE_P2P_INDEX;
 		prScanReq->eScanType = prScanReqInfo->eScanType;
-		prScanReq->eScanChannel = prScanReqInfo->eChannelSet;
-		prScanReq->u2IELen = 0;
 
-		/* Copy IE for Probe Request. */
-		if (prScanReqInfo->u4BufLength > MAX_IE_LENGTH)
-			prScanReqInfo->u4BufLength = MAX_IE_LENGTH;
-		kalMemCopy(prScanReq->aucIE, prScanReqInfo->aucIEBuf, prScanReqInfo->u4BufLength);
-		prScanReq->u2IELen = (UINT_16) prScanReqInfo->u4BufLength;
+		COPY_SSID(prScanReq->aucSSID,
+			  prScanReq->ucSSIDLength,
+			  prScanReqInfo->rSsidStruct.aucSsid, prScanReqInfo->rSsidStruct.ucSsidLen);
+
+		if (EQUAL_SSID(aucP2pSsid, P2P_WILDCARD_SSID_LEN,
+			       prScanReq->aucSSID, prScanReq->ucSSIDLength))
+			prScanReq->ucSSIDType = SCAN_REQ_SSID_P2P_WILDCARD;
+		else if (prScanReq->ucSSIDLength != 0)
+			prScanReq->ucSSIDType = SCAN_REQ_SSID_SPECIFIED;
+		else
+			prScanReq->ucSSIDType = SCAN_REQ_SSID_WILDCARD;
 
 		prScanReq->u2ChannelDwellTime = prScanReqInfo->u2PassiveDewellTime;
 
-		switch (prScanReqInfo->eChannelSet) {
-		case SCAN_CHANNEL_SPECIFIED:
-			{
-				UINT_32 u4Idx = 0;
-				P_RF_CHANNEL_INFO_T prDomainInfo =
-						(P_RF_CHANNEL_INFO_T) prScanReqInfo->arScanChannelList;
-				UINT_8 aucP2pSsid[] = P2P_WILDCARD_SSID;
+		prScanReq->eScanChannel = prScanReqInfo->eChannelSet;
+		if (prScanReqInfo->eChannelSet == SCAN_CHANNEL_SPECIFIED) {
+			UINT_32 u4Idx = 0;
+			P_RF_CHANNEL_INFO_T prChnInfo = prScanReqInfo->arScanChannelList;
 
+			ASSERT_BREAK(prScanReqInfo->ucNumChannelList > 0);
 
-				if (prScanReqInfo->ucNumChannelList > MAXIMUM_OPERATION_CHANNEL_LIST)
-					prScanReqInfo->ucNumChannelList = MAXIMUM_OPERATION_CHANNEL_LIST;
+			if (prScanReqInfo->ucNumChannelList > MAXIMUM_OPERATION_CHANNEL_LIST)
+				prScanReqInfo->ucNumChannelList = MAXIMUM_OPERATION_CHANNEL_LIST;
 
-				for (u4Idx = 0; u4Idx < prScanReqInfo->ucNumChannelList; u4Idx++) {
-					prScanReq->arChnlInfoList[u4Idx].ucChannelNum = prDomainInfo->ucChannelNum;
-					prScanReq->arChnlInfoList[u4Idx].eBand = prDomainInfo->eBand;
-					prDomainInfo++;
-				}
-
-				prScanReq->ucChannelListNum = prScanReqInfo->ucNumChannelList;
-
-				/*NFC Beam + Indication */
-				prChnlReqInfo = &prAdapter->rWifiVar.prP2pFsmInfo->rChnlReqInfo;
-				if (prChnlReqInfo->eChannelReqType == CHANNEL_REQ_TYPE_GO_START_BSS &&
-					prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT &&
-					!fgIsPureAP) {
-					prScanReq->ucChannelListNum = 1;
-					prScanReq->arChnlInfoList[0].ucChannelNum = prChnlReqInfo->ucReqChnlNum;
-					prScanReq->arChnlInfoList[0].eBand = prChnlReqInfo->eBand;
-
-					DBGLOG(P2P, INFO,
-				       "NFC:GO Skip Scan and Only Froce on %s[%d]\n",
-						prChnlReqInfo->eBand == 1 ? "2.4G" : "5G",
-						prChnlReqInfo->ucReqChnlNum);
-					}
-
-				COPY_SSID(prScanReq->aucSSID,
-					  prScanReq->ucSSIDLength,
-					  prScanReqInfo->rSsidStruct.aucSsid, prScanReqInfo->rSsidStruct.ucSsidLen);
-
-				/* For compatible. */
-				if (EQUAL_SSID(aucP2pSsid, P2P_WILDCARD_SSID_LEN,
-						prScanReq->aucSSID, prScanReq->ucSSIDLength)) {
-						prScanReq->ucSSIDType = SCAN_REQ_SSID_P2P_WILDCARD;
-				} else if (prScanReq->ucSSIDLength != 0) {
-						prScanReq->ucSSIDType = SCAN_REQ_SSID_SPECIFIED;
-				}
-
+			for (u4Idx = 0; u4Idx < prScanReqInfo->ucNumChannelList; u4Idx++) {
+				prScanReq->arChnlInfoList[u4Idx].ucChannelNum = prChnInfo->ucChannelNum;
+				prScanReq->arChnlInfoList[u4Idx].eBand = prChnInfo->eBand;
+				prChnInfo++;
 			}
-			break;
 
-		case SCAN_CHANNEL_FULL:
-			{
-				UINT_8 aucP2pSsid[] = P2P_WILDCARD_SSID;
+			prScanReq->ucChannelListNum = prScanReqInfo->ucNumChannelList;
 
-				COPY_SSID(prScanReq->aucSSID,
-					  prScanReq->ucSSIDLength,
-					  prScanReqInfo->rSsidStruct.aucSsid, prScanReqInfo->rSsidStruct.ucSsidLen);
+			/*NFC Beam + Indication */
+			prChnlReqInfo = &prAdapter->rWifiVar.prP2pFsmInfo->rChnlReqInfo;
+			if (prChnlReqInfo->eChannelReqType == CHANNEL_REQ_TYPE_GO_START_BSS &&
+			    prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT &&
+			    !fgIsPureAP) {
+				prScanReq->ucChannelListNum = 1;
+				prScanReq->arChnlInfoList[0].ucChannelNum = prChnlReqInfo->ucReqChnlNum;
+				prScanReq->arChnlInfoList[0].eBand = prChnlReqInfo->eBand;
 
-				/* For compatible. */
-				if (EQUAL_SSID(aucP2pSsid, P2P_WILDCARD_SSID_LEN,
-						prScanReq->aucSSID, prScanReq->ucSSIDLength)) {
-						prScanReq->ucSSIDType = SCAN_REQ_SSID_P2P_WILDCARD;
-				} else if (prScanReq->ucSSIDLength != 0) {
-						prScanReq->ucSSIDType = SCAN_REQ_SSID_SPECIFIED;
-				}
+				DBGLOG(P2P, INFO, "NFC:GO Skip Scan and Only Froce on %s[%d]\n",
+				       prChnlReqInfo->eBand == 1 ? "2.4G" : "5G",
+				       prChnlReqInfo->ucReqChnlNum);
 			}
-			break;
-
-		case SCAN_CHANNEL_2G4:
-			{
-				UINT_8 aucP2pSsid[] = P2P_WILDCARD_SSID;
-
-				COPY_SSID(prScanReq->aucSSID,
-					  prScanReq->ucSSIDLength,
-					  prScanReqInfo->rSsidStruct.aucSsid, prScanReqInfo->rSsidStruct.ucSsidLen);
-
-				/* For compatible. */
-				if (EQUAL_SSID(aucP2pSsid, P2P_WILDCARD_SSID_LEN,
-						prScanReq->aucSSID, prScanReq->ucSSIDLength)) {
-						prScanReq->ucSSIDType = SCAN_REQ_SSID_P2P_WILDCARD;
-				} else if (prScanReq->ucSSIDLength != 0) {
-						prScanReq->ucSSIDType = SCAN_REQ_SSID_SPECIFIED;
-				}
-			}
-			break;
-
-		case SCAN_CHANNEL_P2P_SOCIAL:
-			{
-				UINT_8 aucP2pSsid[] = P2P_WILDCARD_SSID;
-
-				COPY_SSID(prScanReq->aucSSID,
-					  prScanReq->ucSSIDLength,
-					  prScanReqInfo->rSsidStruct.aucSsid, prScanReqInfo->rSsidStruct.ucSsidLen);
-
-				/* For compatible. */
-				if (EQUAL_SSID(aucP2pSsid, P2P_WILDCARD_SSID_LEN,
-						prScanReq->aucSSID, prScanReq->ucSSIDLength)) {
-						prScanReq->ucSSIDType = SCAN_REQ_SSID_P2P_WILDCARD;
-				} else if (prScanReq->ucSSIDLength != 0) {
-						prScanReq->ucSSIDType = SCAN_REQ_SSID_SPECIFIED;
-				}
-			}
-			break;
-		default:
-			/* Currently there is no other scan channel set. */
-			ASSERT(FALSE);
-			break;
 		}
+
+		/* Copy IE for Probe Request */
+		if (prScanReqInfo->u4BufLength > MAX_IE_LENGTH)
+			prScanReqInfo->u4BufLength = MAX_IE_LENGTH;
+
+		kalMemCopy(prScanReq->aucIE, prScanReqInfo->aucIEBuf, prScanReqInfo->u4BufLength);
+		prScanReq->u2IELen = (UINT_16) prScanReqInfo->u4BufLength;
 
 		mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prScanReq, MSG_SEND_METHOD_BUF);
 
