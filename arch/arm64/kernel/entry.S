@@ -394,6 +394,19 @@ ENDPROC(el1_error_invalid)
 	.align	6
 el1_sync:
 	kernel_entry 1
+	mov	x0, sp
+	and	x20, x0, #0xffffffffffffc000
+	ldr	w4, [x20, #TI_CPU_EXCP]
+	add	w4, w4, #0x1
+	str	w4, [x20, #TI_CPU_EXCP]
+	cmp	w4, #0x1
+	b.ne	el1_sync_nest
+	str	x0, [x20, #TI_REGS_ON_EXCP]
+el1_sync_nest:
+	cmp	w4, #0x2
+	b.lt	el1_sync_nest_skip
+	bl	aee_stop_nested_panic
+el1_sync_nest_skip:
 	mrs	x1, esr_el1			// read the syndrome register
 	lsr	x24, x1, #ESR_EL1_EC_SHIFT	// exception class
 	cmp	x24, #ESR_EL1_EC_DABT_EL1	// data abort in EL1
@@ -421,6 +434,11 @@ el1_da:
 1:
 	mov	x2, sp				// struct pt_regs
 	bl	do_mem_abort
+	mov	x5, sp
+	and	x20, x5, #0xffffffffffffc000
+	ldr	w4, [x20, #TI_CPU_EXCP]
+	sub	w4, w4, #0x1
+	str	w4, [x20, #TI_CPU_EXCP]
 
 	// disable interrupts before pulling preserved data off the stack
 	disable_irq
@@ -450,6 +468,12 @@ el1_dbg:
 	mrs	x0, far_el1
 	mov	x2, sp				// struct pt_regs
 	bl	do_debug_exception
+	mov	x5, sp
+	and	x20, x5, #0xffffffffffffc000
+	ldr	w4, [x20, #TI_CPU_EXCP]
+	sub	w4, w4, #0x1
+	str	w4, [x20, #TI_CPU_EXCP]
+
 	kernel_exit 1
 el1_inv:
 	// TODO: add support for undefined instructions in kernel mode

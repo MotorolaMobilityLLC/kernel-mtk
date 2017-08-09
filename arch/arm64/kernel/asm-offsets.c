@@ -40,6 +40,8 @@ int main(void)
   DEFINE(TI_TASK,		offsetof(struct thread_info, task));
   DEFINE(TI_EXEC_DOMAIN,	offsetof(struct thread_info, exec_domain));
   DEFINE(TI_CPU,		offsetof(struct thread_info, cpu));
+  DEFINE(TI_CPU_EXCP,		offsetof(struct thread_info, cpu_excp));
+  DEFINE(TI_REGS_ON_EXCP,	offsetof(struct thread_info, regs_on_excp));
   BLANK();
   DEFINE(THREAD_CPU_CONTEXT,	offsetof(struct task_struct, thread.cpu_context));
   BLANK();
