@@ -4,9 +4,12 @@
 #include <linux/init.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <linux/slab.h>
 #include <asm/uaccess.h>
+#include <asm/topology.h>
 
 #include "mt_ppm_internal.h"
+#include "mt_cpufreq.h"
 
 
 static void ppm_thermal_update_limit_cb(enum ppm_power_state new_state);
@@ -63,18 +66,33 @@ unsigned int mt_ppm_thermal_get_max_power(void)
 
 unsigned int mt_ppm_thermal_get_cur_power(void)
 {
-	unsigned int budget, idx;
-	enum ppm_power_state cur_state;
-	struct ppm_power_tbl_data power_table = ppm_get_power_table();
+	struct ppm_cluster_status *cluster_status;
+	struct cpumask cluster_cpu, online_cpu;
+	int i, pwr_idx;
 
-	ppm_lock(&ppm_main_info.lock);
-	budget = ppm_main_info.min_power_budget;
-	cur_state = ppm_main_info.cur_power_state;
-	ppm_unlock(&ppm_main_info.lock);
+	cluster_status = kcalloc(ppm_main_info.cluster_num, sizeof(*cluster_status), GFP_KERNEL);
+	if (!cluster_status)
+		return mt_ppm_thermal_get_max_power();
 
-	idx = ppm_hica_get_table_idx_by_pwr(cur_state, budget);
+	for_each_ppm_clusters(i) {
+		arch_get_cluster_cpus(&cluster_cpu, i);
+		cpumask_and(&online_cpu, &cluster_cpu, cpu_online_mask);
 
-	return power_table.power_tbl[idx].power_idx;
+		cluster_status[i].core_num = cpumask_weight(&online_cpu);
+		cluster_status[i].volt = 0;	/* don't care */
+		if (!cluster_status[i].core_num)
+			cluster_status[i].freq_idx = -1;
+		else
+			cluster_status[i].freq_idx = ppm_main_freq_to_idx(i,
+					mt_cpufreq_get_cur_phy_freq(i), CPUFREQ_RELATION_L);
+
+		ppm_ver("[%d] core = %d, freq_idx = %d\n",
+			i, cluster_status[i].core_num, cluster_status[i].freq_idx);
+	}
+
+	pwr_idx = ppm_find_pwr_idx(cluster_status);
+
+	return (pwr_idx == -1) ? mt_ppm_thermal_get_max_power() : (unsigned int)pwr_idx;
 }
 
 static void ppm_thermal_update_limit_cb(enum ppm_power_state new_state)
@@ -137,7 +155,17 @@ static ssize_t ppm_thermal_limit_proc_write(struct file *file, const char __user
 	return count;
 }
 
+static int ppm_thermal_cur_power_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "current power = %d\n", mt_ppm_thermal_get_cur_power());
+	seq_printf(m, "min power = %d\n", mt_ppm_thermal_get_min_power());
+	seq_printf(m, "max power = %d\n", mt_ppm_thermal_get_max_power());
+
+	return 0;
+}
+
 PROC_FOPS_RW(thermal_limit);
+PROC_FOPS_RO(thermal_cur_power);
 
 static int __init ppm_thermal_policy_init(void)
 {
@@ -150,6 +178,7 @@ static int __init ppm_thermal_policy_init(void)
 
 	const struct pentry entries[] = {
 		PROC_ENTRY(thermal_limit),
+		PROC_ENTRY(thermal_cur_power),
 	};
 
 	FUNC_ENTER(FUNC_LV_POLICY);
