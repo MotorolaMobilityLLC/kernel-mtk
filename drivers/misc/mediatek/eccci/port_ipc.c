@@ -681,7 +681,7 @@ int ccci_get_emi_info(int md_id, struct ccci_emi_info *emi_info)
 		return -EINVAL;
 
 	emi_info->ap_domain_id = 0;
-	emi_info->ap_domain_id = 1;
+	emi_info->md_domain_id = 1;
 	emi_info->ap_view_bank0_base = md->mem_layout.md_region_phy;
 	emi_info->bank0_size = md->mem_layout.md_region_size;
 	emi_info->ap_view_bank4_base = md->mem_layout.smem_offset_AP_to_MD + 0x40000000;
