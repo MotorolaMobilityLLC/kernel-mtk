@@ -38,6 +38,7 @@
 #include <linux/fs.h>
 #include <asm/atomic.h>
 
+#include "kd_camera_typedef.h"
 #include "kd_camera_hw.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
@@ -75,7 +76,7 @@ kal_uint16 GC0310_write_cmos_sensor(kal_uint8 addr, kal_uint8 para)
     char puSendCmd[2] = {(char)(addr & 0xFF) , (char)(para & 0xFF)};
 	
 	iWriteRegI2C(puSendCmd , 2, GC0310_WRITE_ID);
-
+	return 0;
 }
 kal_uint16 GC0310_read_cmos_sensor(kal_uint8 addr)
 {
@@ -258,6 +259,7 @@ UINT32 GC0310_MIPI_SetMaxFramerateByScenario(
   MSDK_SCENARIO_ID_ENUM scenarioId, MUINT32 frameRate)
 {
 	SENSORDB("scenarioId = %d\n", scenarioId);
+	return 0;
 }
 
 
@@ -1486,8 +1488,8 @@ UINT32 GC0310Preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
         MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 
 {
-    kal_uint32 iTemp;
-    kal_uint16 iStartX = 0, iStartY = 1;
+ //   kal_uint32 iTemp;
+//    kal_uint16 iStartX = 0, iStartY = 1;
 
 	SENSORDB("Enter GC0310Preview function!!!\r\n");
 //	GC0310StreamOn();
@@ -1956,15 +1958,15 @@ UINT32 GC0310FeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
         UINT8 *pFeaturePara,UINT32 *pFeatureParaLen)
 {
     UINT16 *pFeatureReturnPara16=(UINT16 *) pFeaturePara;
-    UINT16 *pFeatureData16=(UINT16 *) pFeaturePara;
+//    UINT16 *pFeatureData16=(UINT16 *) pFeaturePara;
     UINT32 *pFeatureReturnPara32=(UINT32 *) pFeaturePara;
     UINT32 *pFeatureData32=(UINT32 *) pFeaturePara;
-    UINT32 **ppFeatureData=(UINT32 **) pFeaturePara;
+ //   UINT32 **ppFeatureData=(UINT32 **) pFeaturePara;
     unsigned long long *feature_data=(unsigned long long *) pFeaturePara;
-    unsigned long long *feature_return_para=(unsigned long long *) pFeaturePara;
+ //   unsigned long long *feature_return_para=(unsigned long long *) pFeaturePara;
 	
-    UINT32 GC0310SensorRegNumber;
-    UINT32 i;
+   // UINT32 GC0310SensorRegNumber;
+  //  UINT32 i;
     MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData=(MSDK_SENSOR_CONFIG_STRUCT *) pFeaturePara;
     MSDK_SENSOR_REG_INFO_STRUCT *pSensorRegData=(MSDK_SENSOR_REG_INFO_STRUCT *) pFeaturePara;
 

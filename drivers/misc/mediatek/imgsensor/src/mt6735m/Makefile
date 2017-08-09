@@ -8,7 +8,7 @@ endif
 endef
 
 obj-y				+= kd_sensorlist.o
-obj-y				+= camera_hw/kd_camera_hw.o
+obj-y				+= camera_hw/
 
 $(foreach drv,$(subst $\",,$(CONFIG_CUSTOM_KERNEL_IMGSENSOR)),$(eval $(call FILTER_PROJECT_DRV,$(drv))))
 custom_kernel_imgsensor := $(addsuffix /, $(shell echo $(platform_drv)))

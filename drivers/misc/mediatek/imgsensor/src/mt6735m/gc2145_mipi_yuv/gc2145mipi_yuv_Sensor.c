@@ -59,6 +59,7 @@
 #include <asm/atomic.h>
 //#include <mach/mt6516_pll.h>
 
+#include "kd_camera_typedef.h"
 #include "kd_camera_hw.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
@@ -394,17 +395,17 @@ static kal_uint32 zoom_factor = 0;
 static kal_bool GC2145MIPI_VEDIO_encode_mode = KAL_FALSE; //Picture(Jpeg) or Video(Mpeg4)
 static kal_bool GC2145MIPI_sensor_cap_state = KAL_FALSE; //Preview or Capture
 
-static kal_uint16 GC2145MIPI_exposure_lines=0, GC2145MIPI_extra_exposure_lines = 0;
+//static kal_uint16 GC2145MIPI_exposure_lines=0;
 
-static kal_uint16 GC2145MIPI_Capture_Shutter=0;
-static kal_uint16 GC2145MIPI_Capture_Extra_Lines=0;
+//static kal_uint16 GC2145MIPI_Capture_Shutter=0;
+//static kal_uint16 GC2145MIPI_Capture_Extra_Lines=0;
 
 kal_uint32 GC2145MIPI_capture_pclk_in_M=520,GC2145MIPI_preview_pclk_in_M=390,GC2145MIPI_PV_dummy_pixels=0,GC2145MIPI_PV_dummy_lines=0,GC2145MIPI_isp_master_clock=0;
 
-static kal_uint32  GC2145MIPI_sensor_pclk=390;
+//static kal_uint32  GC2145MIPI_sensor_pclk=390;
 
 static kal_uint32 Preview_Shutter = 0;
-static kal_uint32 Capture_Shutter = 0;
+//static kal_uint32 Capture_Shutter = 0;
 
 MSDK_SENSOR_CONFIG_STRUCT GC2145MIPISensorConfigData;
 
@@ -425,7 +426,7 @@ static void GC2145MIPI_write_shutter(kal_uint32 shutter)
 	GC2145MIPI_write_cmos_sensor(0x04, shutter & 0xff);
 }    /* GC2145MIPI_write_shutter */
 
-
+/*
 static void GC2145MIPI_set_mirror_flip(kal_uint8 image_mirror)
 {
 	kal_uint8 GC2145MIPI_HV_Mirror;
@@ -449,10 +450,10 @@ static void GC2145MIPI_set_mirror_flip(kal_uint8 image_mirror)
 	}
 	GC2145MIPI_write_cmos_sensor(0x17, GC2145MIPI_HV_Mirror);
 }
-
+*/
 static void GC2145MIPI_set_AE_mode(kal_bool AE_enable)
 {
-	kal_uint8 temp_AE_reg = 0;
+/*	kal_uint8 temp_AE_reg = 0;    */
 
 	GC2145MIPI_write_cmos_sensor(0xfe, 0x00);
 	if (AE_enable == KAL_TRUE)
@@ -1803,9 +1804,9 @@ UINT32 GC2145MIPIClose(void)
 UINT32 GC2145MIPIPreview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	kal_uint8 iTemp, temp_AE_reg, temp_AWB_reg;
-	kal_uint16 iDummyPixels = 0, iDummyLines = 0, iStartX = 0, iStartY = 0;
-
+//	kal_uint8 iTemp, temp_AE_reg, temp_AWB_reg;
+	//kal_uint16 iDummyPixels = 0, iDummyLines = 0, iStartX = 0, iStartY = 0;
+//	kal_uint8  temp_AWB_reg;
 	SENSORDB("GC2145MIPIPrevie\n");
 
 	GC2145MIPI_sensor_cap_state = KAL_FALSE;
@@ -1828,9 +1829,9 @@ UINT32 GC2145MIPIPreview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 UINT32 GC2145MIPICapture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-    volatile kal_uint32 shutter = GC2145MIPI_exposure_lines, temp_reg;
-    kal_uint8 temp_AE_reg, temp;
-    kal_uint16 AE_setting_delay = 0;
+//    volatile kal_uint32 shutter = GC2145MIPI_exposure_lines;
+    //kal_uint8 temp_AE_reg, temp;
+   // kal_uint16 AE_setting_delay = 0;
 
     SENSORDB("GC2145MIPICapture\n");
 
@@ -2237,7 +2238,7 @@ UINT32 GC2145MIPIYUVSensorSetting(FEATURE_ID iCmd, UINT16 iPara)
 
 UINT32 GC2145MIPIYUVSetVideoMode(uintptr_t u2FrameRate)
 {
-    kal_uint8 iTemp;
+  //  kal_uint8 iTemp;
     /* to fix VSYNC, to fix frame rate */
     //SENSORDB("Set YUV Video Mode \n");  
 
@@ -2270,9 +2271,9 @@ UINT32 GC2145MIPIYUVSetVideoMode(uintptr_t u2FrameRate)
   *************************************************************************/
 
   UINT32 GC2145MIPISetMaxFramerateByScenario(MSDK_SCENARIO_ID_ENUM scenarioId, MUINT32 frameRate) {
-	kal_uint32 pclk;
-	kal_int16 dummyLine;
-	kal_uint16 lineLength,frameHeight;
+	//kal_uint32 pclk;
+	//kal_int16 dummyLine;
+	//kal_uint16 lineLength,frameHeight;
 		
 	SENSORDB("GC2145MIPISetMaxFramerateByScenario: scenarioId = %d, frame rate = %d\n",scenarioId,frameRate);
 	/*
@@ -2326,7 +2327,7 @@ UINT32 GC2145MIPIGetDefaultFramerateByScenario(MSDK_SCENARIO_ID_ENUM scenarioId,
 		default:
 			break;
 	}
-
+	return ERROR_NONE;
  }
 
  
@@ -2388,11 +2389,11 @@ UINT32 GC2145MIPIFeatureControl(MSDK_SENSOR_FEATURE_ENUM FeatureId,
 							 UINT8 *pFeaturePara,UINT32 *pFeatureParaLen)
 {
 	UINT16 *pFeatureReturnPara16=(UINT16 *) pFeaturePara;
-	UINT16 *pFeatureData16=(UINT16 *) pFeaturePara;
+	//UINT16 *pFeatureData16=(UINT16 *) pFeaturePara;
 	UINT32 *pFeatureReturnPara32=(UINT32 *) pFeaturePara;
 	UINT32 *pFeatureData32=(UINT32 *) pFeaturePara;
     unsigned long long *feature_data=(unsigned long long *) pFeaturePara;
-    unsigned long long *feature_return_para=(unsigned long long *) pFeaturePara;
+  //  unsigned long long *feature_return_para=(unsigned long long *) pFeaturePara;
 	
 	MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData=(MSDK_SENSOR_CONFIG_STRUCT *) pFeaturePara;
 	MSDK_SENSOR_REG_INFO_STRUCT *pSensorRegData=(MSDK_SENSOR_REG_INFO_STRUCT *) pFeaturePara;
