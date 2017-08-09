@@ -455,16 +455,12 @@ int __batt_init_cust_data_from_dt(void)
 	/* struct device_node *np = dev->dev.of_node; */
 	struct device_node *np;
 	u32 val;
-	/* char *path = "/BAT_METTER"; */
-	char *path = "/bus/BAT_METTER";
-	/*struct device_node *dt_node;
-	const u32 *property;
-	int len;*/
 
-	np = of_find_node_by_path(path);
+	/* check customer setting */
+	np = of_find_compatible_node(NULL, NULL, "mediatek,bat_meter");
 	if (!np) {
 		/* printk(KERN_ERR "(E) Failed to find device-tree node: %s\n", path); */
-		battery_log(BAT_LOG_CRTI, "Failed to find device-tree node: %s\n", path);
+		battery_log(BAT_LOG_CRTI, "Failed to find device-tree node: bat_meter\n");
 		return -ENODEV;
 	}
 
@@ -924,20 +920,17 @@ int __batt_meter_init_cust_data_from_dt(void)
 {
 	struct device_node *np;
 	u32 val;
-	/* char *path = "/BAT_METTER"; */
-	char *path = "/bus/BAT_METTER";
 	/*struct device_node *dt_node;
 	   const u32 *property;
 	   int len; */
 	int num, idx, saddles;
 	unsigned int addr;
 
-
-
-	np = of_find_node_by_path(path);
+	/* check customer setting */
+	np = of_find_compatible_node(NULL, NULL, "mediatek,bat_meter");
 	if (!np) {
 		/* printk(KERN_ERR "(E) Failed to find device-tree node: %s\n", path); */
-		battery_log(BAT_LOG_CRTI, "Failed to find device-tree node: %s\n", path);
+		battery_log(BAT_LOG_CRTI, "Failed to find device-tree node: bat_meter\n");
 		return -ENODEV;
 	}
 

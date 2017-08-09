@@ -578,7 +578,7 @@ void select_charging_curret(void)
 			g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
 		} else {
 			g_temp_input_CC_value = CHARGE_CURRENT_MAX;
-			g_temp_CC_value = AC_CHARGER_CURRENT;
+			g_temp_CC_value = batt_cust_data.ac_charger_current;
 
 			battery_log(BAT_LOG_CRTI, "[BATTERY] set_ac_current \r\n");
 		}
@@ -590,11 +590,11 @@ void select_charging_curret(void)
 				if (g_usb_state == USB_SUSPEND)
 					g_temp_CC_value = USB_CHARGER_CURRENT_SUSPEND;
 				else if (g_usb_state == USB_UNCONFIGURED)
-					g_temp_CC_value = USB_CHARGER_CURRENT_UNCONFIGURED;
+					g_temp_CC_value = batt_cust_data.usb_charger_current_unconfigured;
 				else if (g_usb_state == USB_CONFIGURED)
-					g_temp_CC_value = USB_CHARGER_CURRENT_CONFIGURED;
+					g_temp_CC_value = batt_cust_data.usb_charger_current_configured;
 				else
-					g_temp_CC_value = USB_CHARGER_CURRENT_UNCONFIGURED;
+					g_temp_CC_value = batt_cust_data.usb_charger_current_unconfigured;
 
 				battery_log(BAT_LOG_CRTI,
 					    "[BATTERY] STANDARD_HOST CC mode charging : %d on %d state\r\n",
@@ -602,43 +602,42 @@ void select_charging_curret(void)
 			}
 #else
 			{
-				g_temp_input_CC_value = USB_CHARGER_CURRENT;
-				g_temp_CC_value = USB_CHARGER_CURRENT;
+				g_temp_input_CC_value = batt_cust_data.usb_charger_current;
+				g_temp_CC_value = batt_cust_data.usb_charger_current;
 			}
 #endif
 		} else if (BMT_status.charger_type == NONSTANDARD_CHARGER) {
-			g_temp_input_CC_value = NON_STD_AC_CHARGER_CURRENT;
-			g_temp_CC_value = NON_STD_AC_CHARGER_CURRENT;
+			g_temp_input_CC_value = batt_cust_data.non_std_ac_charger_current;
+			g_temp_CC_value = batt_cust_data.non_std_ac_charger_current;
 
 		} else if (BMT_status.charger_type == STANDARD_CHARGER) {
-			g_temp_input_CC_value = AC_CHARGER_CURRENT;
-			g_temp_CC_value = AC_CHARGER_CURRENT;
+			g_temp_input_CC_value = batt_cust_data.ac_charger_current;
+			g_temp_CC_value = batt_cust_data.ac_charger_current;
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 			if (is_ta_connect == KAL_TRUE)
 				set_ta_charging_current();
 #endif
 		} else if (BMT_status.charger_type == CHARGING_HOST) {
-			g_temp_input_CC_value = CHARGING_HOST_CHARGER_CURRENT;
-			g_temp_CC_value = CHARGING_HOST_CHARGER_CURRENT;
+			g_temp_input_CC_value = batt_cust_data.charging_host_charger_current;
+			g_temp_CC_value = batt_cust_data.charging_host_charger_current;
 		} else if (BMT_status.charger_type == APPLE_2_1A_CHARGER) {
-			g_temp_input_CC_value = APPLE_2_1A_CHARGER_CURRENT;
-			g_temp_CC_value = APPLE_2_1A_CHARGER_CURRENT;
+			g_temp_input_CC_value = batt_cust_data.apple_2_1a_charger_current;
+			g_temp_CC_value = batt_cust_data.apple_2_1a_charger_current;
 		} else if (BMT_status.charger_type == APPLE_1_0A_CHARGER) {
-			g_temp_input_CC_value = APPLE_1_0A_CHARGER_CURRENT;
-			g_temp_CC_value = APPLE_1_0A_CHARGER_CURRENT;
+			g_temp_input_CC_value = batt_cust_data.apple_1_0a_charger_current;
+			g_temp_CC_value = batt_cust_data.apple_1_0a_charger_current;
 		} else if (BMT_status.charger_type == APPLE_0_5A_CHARGER) {
-			g_temp_input_CC_value = APPLE_0_5A_CHARGER_CURRENT;
-			g_temp_CC_value = APPLE_0_5A_CHARGER_CURRENT;
+			g_temp_input_CC_value = batt_cust_data.apple_0_5a_charger_current;
+			g_temp_CC_value = batt_cust_data.apple_0_5a_charger_current;
 		} else {
 			g_temp_input_CC_value = CHARGE_CURRENT_500_00_MA;
 			g_temp_CC_value = CHARGE_CURRENT_500_00_MA;
 		}
 
-
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
 		if (DISO_data.diso_state.cur_vdc_state == DISO_ONLINE) {
-			g_temp_input_CC_value = AC_CHARGER_CURRENT;
-			g_temp_CC_value = AC_CHARGER_CURRENT;
+			g_temp_input_CC_value = batt_cust_data.ac_charger_current;
+			g_temp_CC_value = batt_cust_data.ac_charger_current;
 		}
 #endif
 
@@ -704,10 +703,10 @@ static void pchr_turn_on_charging(void)
 
 		/* Set Charging Current */
 		if (get_usb_current_unlimited()) {
-			g_temp_input_CC_value = AC_CHARGER_CURRENT;
-			g_temp_CC_value = AC_CHARGER_CURRENT;
+			g_temp_input_CC_value = batt_cust_data.ac_charger_current;
+			g_temp_CC_value = batt_cust_data.ac_charger_current;
 			battery_log(BAT_LOG_FULL,
-				    "USB_CURRENT_UNLIMITED, use AC_CHARGER_CURRENT\n");
+				    "USB_CURRENT_UNLIMITED, use batt_cust_data.ac_charger_current\n");
 		} else if (g_bcct_flag == 1) {
 			select_charging_curret_bcct();
 

@@ -4623,9 +4623,12 @@ static int pmic_mt_probe(struct platform_device *dev)
 #if defined(CONFIG_MTK_SMART_BATTERY)
 	struct device_node *np;
 	u32 val;
-	char *path = "/bus/BAT_METTER";
+	/* check customer setting */
+	np = of_find_compatible_node(NULL, NULL, "mediatek,bat_meter");
 
-	np = of_find_node_by_path(path);
+	if (np == NULL)
+		PMICLOG("[PMIC]pmic_mt_probe get bat_meter node failed\n");
+
 	if (of_property_read_u32(np, "car_tune_value", &val) == 0) {
 		batt_meter_cust_data.car_tune_value = (int)val;
 		PMICLOG("Get car_tune_value from DT: %d\n",
