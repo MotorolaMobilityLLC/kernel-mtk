@@ -602,15 +602,17 @@ static int __match_id(u32 axi_id, int tbl_idx, u32 port_ID)
 	if (((axi_id & mst_tbl[tbl_idx].id_mask) == mst_tbl[tbl_idx].id_val)
 		&& (port_ID == mst_tbl[tbl_idx].port)) {
 		switch (port_ID) {
-		case 0: /* ARM */
-		case 2:	/* Peripheral */
-		case 3:	/* MDMCU ,C2K MCU */
-		case 4:	/* MD HW ,LTE */
-		case 5:	/* MFG */
+		case 0: /* MASTER_APMCU_CH1 */
+		case 1: /* MASTER_APMCU_CH2 */
+		case 3:	/* MASTER_MDMCU */
+		case 4:	/* MASTER_MDHW */
+		case 6:	/* MASTER_PERI */
+		case 7:	/* MASTER_MFG */
 			pr_err("Violation master name is %s.\n",
 			mst_tbl[tbl_idx].name);
 			break;
-		case 1:
+		case 2: /* MASTER_MM_CH1 */
+		case 5:	/* MASTER_MM_CH2 */
 			 /*MM*/ mm_larb = axi_id >> 7;
 			smi_port = (axi_id & 0x7F) >> 2;
 			if (mm_larb == 0x0) {
