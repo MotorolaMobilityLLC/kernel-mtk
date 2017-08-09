@@ -33,6 +33,7 @@ static unsigned long c2k_chip_id_base;
 static unsigned long md1_pccif_base;
 static unsigned long md3_pccif_base;
 static unsigned int c2k_wdt_irq_id;
+static atomic_t clock_on = ATOMIC_INIT(0);
 /*static unsigned long c2k_iram_base;*/
 static unsigned long c2k_iram_base_seg2[2] = { 0 };
 
@@ -417,7 +418,7 @@ void enable_c2k_jtag(unsigned int mode)
 
 void c2k_modem_power_on_platform(void)
 {
-	int ret;
+	int ret = 0;
 
 #if ENABLE_C2K_JTAG
 /*ARM legacy JTAG for C2K*/
@@ -448,7 +449,10 @@ void c2k_modem_power_on_platform(void)
 #if defined(CONFIG_MTK_LEGACY)
 	ret = md_power_on(SYS_MD2);
 #else
-	ret = clk_prepare_enable(clk_scp_sys_md2_main);
+	if (atomic_inc_return(&clock_on) == 1)
+		ret = clk_prepare_enable(clk_scp_sys_md2_main);
+	else
+		atomic_dec(&clock_on);
 #endif
 	pr_debug("[C2K] md_power_on %d\n", ret);
 	/*step 1: set C2K boot mode */
@@ -573,6 +577,7 @@ void c2k_modem_power_off_platform(void)
 #if defined(CONFIG_MTK_LEGACY)
 	ret = md_power_off(SYS_MD2, 1000);
 #else
+	atomic_set(&clock_on, 0);
 	clk_disable_unprepare(clk_scp_sys_md2_main);
 #endif
 	pr_debug("[C2K] md_power_off %d\n", ret);
@@ -592,7 +597,10 @@ void c2k_modem_reset_platform(void)
 #if defined(CONFIG_MTK_LEGACY)
 	ret = md_power_on(SYS_MD2);
 #else
-	ret = clk_prepare_enable(clk_scp_sys_md2_main);
+	if (atomic_inc_return(&clock_on) == 1)
+		ret = clk_prepare_enable(clk_scp_sys_md2_main);
+	else
+		atomic_dec(&clock_on);
 #endif
 
 	pr_debug("[C2K] md_power_on %d\n", ret);
