@@ -38,6 +38,9 @@ static struct freqhopping_ssc *g_fh_drv_usr_def;
 static unsigned int g_drv_pll_count;
 static int mt_freqhopping_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 
+static unsigned long g_irq_flags;
+
+
 #if !defined(DISABLE_FREQ_HOPPING)
 
 static struct miscdevice mt_fh_device = {
@@ -909,5 +912,29 @@ int mt_freqhopping_devctl(unsigned int cmd, void *args)
 
 }
 EXPORT_SYMBOL(mt_freqhopping_devctl);
+
+void mt_fh_lock(void)
+{
+	if (!g_p_fh_hal_drv) {
+		FH_MSG("[%s]: g_p_fh_hal_drv is uninitialized.", __func__);
+		return;
+	}
+
+	g_p_fh_hal_drv->mt_fh_lock(&g_irq_flags);
+}
+EXPORT_SYMBOL(mt_fh_lock);
+
+
+void mt_fh_unlock(void)
+{
+	if (!g_p_fh_hal_drv) {
+		FH_MSG("[%s]: g_p_fh_hal_drv is uninitialized.", __func__);
+		return;
+	}
+
+	g_p_fh_hal_drv->mt_fh_unlock(&g_irq_flags);
+}
+EXPORT_SYMBOL(mt_fh_unlock);
+
 
 #endif

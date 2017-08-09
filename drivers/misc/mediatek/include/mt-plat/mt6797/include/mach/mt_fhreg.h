@@ -188,7 +188,7 @@
 #define FH_FRDDSX_UPLMT         (0xFFU)
 #define FH_FHCTLX_PLL_TGL_ORG   (0x1U<<31)
 #define FH_FHCTLX_PLL_ORG       (0xFFFFFU)
-#define FH_FHCTLX_PAUSE         (0x1U<<31)
+#define FH_FHCTLX_CFG_PAUSE     (0x1U<<4)
 #define FH_FHCTLX_PRD           (0x1U<<30)
 #define FH_SFSTRX_PRD           (0x1U<<29)
 #define FH_FRDDSX_PRD           (0x1U<<28)

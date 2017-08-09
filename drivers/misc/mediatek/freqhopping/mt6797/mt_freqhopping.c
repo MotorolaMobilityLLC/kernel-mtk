@@ -91,19 +91,19 @@ static const int g_pll_ssc_init_tbl[FH_PLL_NUM] = {
 	 *  [FH_SSC_DEF_DISABLE]: Default SSC disable,
 	 *  [FH_SSC_DEF_ENABLE_SSC]: Default enable SSC.
 	 */
-	FH_SSC_DEF_DISABLE,
-	FH_SSC_DEF_DISABLE,
-	FH_SSC_DEF_DISABLE,
-	FH_SSC_DEF_DISABLE,
-	FH_SSC_DEF_DISABLE,
-	FH_SSC_DEF_DISABLE,
-	FH_SSC_DEF_DISABLE,
-	FH_SSC_DEF_DISABLE,
-	FH_SSC_DEF_DISABLE,
-	FH_SSC_DEF_DISABLE,
-	FH_SSC_DEF_DISABLE,
-	FH_SSC_DEF_DISABLE,
-	FH_SSC_DEF_DISABLE,
+	FH_SSC_DEF_DISABLE, /* MCUFHCTL PLL0 */
+	FH_SSC_DEF_DISABLE, /* MCUFHCTL PLL1 */
+	FH_SSC_DEF_DISABLE, /* MCUFHCTL PLL2 */
+	FH_SSC_DEF_DISABLE, /* MCUFHCTL PLL3 */
+	FH_SSC_DEF_DISABLE, /* FHCTL PLL0 */
+	FH_SSC_DEF_ENABLE_SSC, /* FHCTL PLL1 */
+	FH_SSC_DEF_DISABLE, /* FHCTL PLL2 */
+	FH_SSC_DEF_DISABLE, /* FHCTL PLL3 */
+	FH_SSC_DEF_DISABLE, /* FHCTL PLL4 */
+	FH_SSC_DEF_DISABLE, /* FHCTL PLL5 */
+	FH_SSC_DEF_DISABLE, /* FHCTL PLL6 */
+	FH_SSC_DEF_DISABLE, /* FHCTL PLL7 */
+	FH_SSC_DEF_DISABLE, /* FHCTL PLL8 */
 };
 
 /* [For Everest] */
@@ -142,7 +142,9 @@ static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
 	/* FH PLL1 */
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* Default 0%(upbnd) ~ -0%(lowbnd) */
+	 /* SSC Slope [dys]:0.015625 [dts]:1.808000 [slope]:0.096619 Mhz/us */
+	 /* double slope = ((DYS[dy]*26)/DTS[df])*0.43; Test by from Yulia */
+	 {PLL_SETTING_IDX__DEF, 6, 8, 0, 2, UNINIT_DDS},	/* Default 0%(upbnd) ~ -2%(lowbnd) */
 	 },
 
 	/* FH PLL2 */
@@ -313,6 +315,7 @@ static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *sett
 	g_fh_pll[pll_id].fh_status = FH_FH_ENABLE_SSC;
 
 	local_irq_save(flags);
+	/* spin_lock(&g_fh_lock); */
 
 	/* Set the relative parameter registers (dt/df/upbnd/downbnd) */
 	fh_set_field(reg_cfg, MASK_FRDDSX_DYS, setting->df);
@@ -334,7 +337,7 @@ static void __enable_ssc(unsigned int pll_id, const struct freqhopping_ssc *sett
 	fh_set_field(reg_cfg, FH_FHCTLX_EN, 1);
 
 	local_irq_restore(flags);
-
+	/* spin_unlock(&g_fh_lock); */
 }
 
 static void __disable_ssc(unsigned int pll_id, const struct freqhopping_ssc *ssc_setting)
@@ -345,6 +348,8 @@ static void __disable_ssc(unsigned int pll_id, const struct freqhopping_ssc *ssc
 	FH_MSG_DEBUG("Calling %s", __func__);
 
 	local_irq_save(flags);
+	/* spin_lock(&g_fh_lock); */
+
 
 	/* Set the relative registers */
 	fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);
@@ -354,6 +359,7 @@ static void __disable_ssc(unsigned int pll_id, const struct freqhopping_ssc *ssc
 	g_fh_pll[pll_id].fh_status = FH_FH_DISABLE;
 
 	local_irq_restore(flags);
+	/* spin_unlock(&g_fh_lock); */
 	mb();
 
 }
@@ -377,6 +383,9 @@ static noinline int __freq_to_index(enum FH_PLL_ID pll_id, int setting_idx_patte
 	return retVal;
 }
 
+/* Hook to g_fh_hal_drv.mt_fh_hal_ctrl function point.
+ * Common drv freqhopping_config() will call the HAL API.
+ */
 static int __freqhopping_ctrl(struct freqhopping_ioctl *fh_ctl, bool enable)
 {
 	const struct freqhopping_ssc *pSSC_setting = NULL;
@@ -477,9 +486,14 @@ static void wait_dds_stable(unsigned int target_dds, unsigned long reg_mon, unsi
 	}
 }
 
+/* Please add lock between the API for protecting FHCLT register atomic operation.
+ *     spin_lock(&g_fh_lock);
+ *     mt_fh_hal_dvfs();
+ *     spin_unlock(&g_fh_lock);
+ */
 static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 {
-	unsigned long flags = 0;
+	/* unsigned long flags = 0; */
 
 	FH_MSG_DEBUG("%s for pll %d:", __func__, pll_id);
 
@@ -490,7 +504,7 @@ static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 
 	VALIDATE_PLLID(pll_id);
 
-	local_irq_save(flags);
+	/* local_irq_save(flags); */
 
 	/* 1. sync ncpo to DDS of FHCTL */
 	fh_sync_ncpo_to_fhctl_dds(pll_id);
@@ -563,7 +577,8 @@ static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 
 	/* FH_MSG("6. switch to register control"); */
 
-	local_irq_restore(flags);
+	/* local_irq_restore(flags); */
+
 	return 0;
 }
 
@@ -572,7 +587,7 @@ static int mt_fh_hal_dvfs(enum FH_PLL_ID pll_id, unsigned int dds_value)
 */
 static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 {
-	unsigned long flags = 0;
+	/* unsigned long flags = 0; */
 	unsigned long reg_cfg = 0;
 	unsigned int pll = coreid;
 
@@ -604,7 +619,7 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	reg_cfg = g_reg_cfg[pll];
 
 	/* TODO: provelock issue spin_lock(&g_fh_lock); */
-	spin_lock_irqsave(&g_fh_lock, flags);
+	spin_lock(&g_fh_lock);
 
 	fh_set_field(reg_cfg, FH_FRDDSX_EN, 0);	/* disable SSC mode */
 	fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
@@ -616,7 +631,7 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	fh_set_field(reg_cfg, FH_SFSTRX_EN, 0);	/* disable dvfs mode */
 	fh_set_field(reg_cfg, FH_FHCTLX_EN, 0);	/* disable hopping control */
 
-	spin_unlock_irqrestore(&g_fh_lock, flags);
+	spin_unlock(&g_fh_lock);
 
 	return 0;
 }
@@ -624,7 +639,7 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 /* [For Everest] GPU CLK hopping, MFGPLL */
 static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
 {
-	unsigned long flags = 0;
+	/* unsigned long flags = 0; */
 	/* [For Everest] MFGPLL, confirmed with GPU CLK owner Owen.Chen */
 	const unsigned int pll_id = FH_PLL5;
 	const unsigned long reg_cfg = g_reg_cfg[pll_id];
@@ -641,12 +656,10 @@ static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
 		BUG_ON(1);
 	}
 
-
-
 	FH_MSG("%s, current dds(MMPLL_CON1): 0x%x, target dds %d",
 	       __func__, (fh_read32(g_reg_pll_con1[pll_id]) & MASK21b), target_dds);
 
-	spin_lock_irqsave(&g_fh_lock, flags);
+	spin_lock(&g_fh_lock);
 
 	if (g_fh_pll[pll_id].fh_status == FH_FH_ENABLE_SSC) {
 		unsigned int pll_dds = 0;
@@ -698,9 +711,7 @@ static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
 		FH_MSG("CFG: 0x%08x", fh_read32(reg_cfg));
 
 	}
-	spin_unlock_irqrestore(&g_fh_lock, flags);
-
-	return 0;
+	spin_unlock(&g_fh_lock);
 
 	return 0;
 }
@@ -899,7 +910,9 @@ static int fh_dvfs_proc_write(struct file *file, const char *buffer, unsigned lo
 			mt_fh_hal_popod_restore();
 		break;
 	default:
+		spin_lock(&g_fh_lock);
 		mt_fh_hal_dvfs(p1, p2);
+		spin_unlock(&g_fh_lock);
 		break;
 	};
 
@@ -1101,7 +1114,6 @@ static void __global_var_init(void)
 static void mt_fh_hal_init(void)
 {
 	int i = 0;
-	unsigned long flags = 0;
 
 
 	FH_MSG_DEBUG("EN: %s", __func__);
@@ -1127,7 +1139,7 @@ static void mt_fh_hal_init(void)
 			/* MCU FHCTL */
 			mask = 1 << i;
 		}
-		spin_lock_irqsave(&g_fh_lock, flags);
+		spin_lock(&g_fh_lock);
 
 		if (isFHCTL(i)) {
 			/* For FHCTL */
@@ -1151,7 +1163,7 @@ static void mt_fh_hal_init(void)
 		fh_write32(g_reg_updnlmt[i], 0x00000000);	/* clear all the settings */
 		fh_write32(g_reg_dds[i], 0x00000000);	/* clear all the settings */
 
-		spin_unlock_irqrestore(&g_fh_lock, flags);
+		spin_unlock(&g_fh_lock);
 	}
 
 	g_initialize = 1;
@@ -1161,12 +1173,12 @@ static void mt_fh_hal_init(void)
 
 static void mt_fh_hal_lock(unsigned long *flags)
 {
-	spin_lock_irqsave(&g_fh_lock, *flags);
+	spin_lock(&g_fh_lock);
 }
 
 static void mt_fh_hal_unlock(unsigned long *flags)
 {
-	spin_unlock_irqrestore(&g_fh_lock, *flags);
+	spin_unlock(&g_fh_lock);
 }
 
 static int mt_fh_hal_get_init(void)
@@ -1255,20 +1267,26 @@ static int fh_ioctl_dvfs_ssc(unsigned int ctlid, void *arg)
 	switch (ctlid) {
 	case FH_DCTL_CMD_DVFS:	/* < PLL DVFS */
 		{
+			spin_lock(&g_fh_lock);
 			mt_fh_hal_dvfs(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
+			spin_unlock(&g_fh_lock);
 		}
 		break;
 	case FH_DCTL_CMD_DVFS_SSC_ENABLE:	/* PLL DVFS and enable SSC */
 		{
 			__disable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
+			spin_lock(&g_fh_lock);
 			mt_fh_hal_dvfs(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
+			spin_unlock(&g_fh_lock);
 			__enable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
 		}
 		break;
 	case FH_DCTL_CMD_DVFS_SSC_DISABLE:	/* PLL DVFS and disable SSC */
 		{
 			__disable_ssc(fh_ctl->pll_id, &(fh_ctl->ssc_setting));
+			spin_lock(&g_fh_lock);
 			mt_fh_hal_dvfs(fh_ctl->pll_id, fh_ctl->ssc_setting.dds);
+			spin_unlock(&g_fh_lock);
 		}
 		break;
 	case FH_DCTL_CMD_SSC_ENABLE:	/* SSC enable */
@@ -1347,5 +1365,46 @@ struct mt_fh_hal_driver *mt_get_fh_hal_drv(void)
 {
 	return &g_fh_hal_drv;
 }
+
+/* SS13 request to provide the pause ARMPLL API */
+/* [Purpose]: control PLL for each cluster */
+int mt_pause_armpll(unsigned int pll, unsigned int pause)
+{
+	/* unsigned long flags = 0; */
+	unsigned long reg_cfg = 0;
+
+	if (g_initialize == 0) {
+		FH_MSG("(Warning) %s FHCTL isn't ready.", __func__);
+		return -1;
+	}
+
+	FH_MSG_DEBUG("%s for pll %d pause %d", __func__, pll, pause);
+
+	switch (pll) {
+	case MCU_FH_PLL0:
+	case MCU_FH_PLL1:
+	case MCU_FH_PLL2:
+	case MCU_FH_PLL3:
+		reg_cfg = g_reg_cfg[pll];
+		FH_MSG_DEBUG("(FHCTLx_CFG): 0x%x", fh_read32(g_reg_cfg[pll]));
+		break;
+	default:
+		BUG_ON(1);
+		return 1;
+	};
+
+	/* TODO: provelock issue spin_lock(&g_fh_lock); */
+	spin_lock(&g_fh_lock);
+
+	if (pause)
+		fh_set_field(reg_cfg, FH_FHCTLX_CFG_PAUSE, 1);	/* pause  */
+	else
+		fh_set_field(reg_cfg, FH_FHCTLX_CFG_PAUSE, 0);	/* no pause  */
+
+	spin_unlock(&g_fh_lock);
+
+	return 0;
+}
+
 
 /* TODO: module_exit(cpufreq_exit); */
