@@ -240,14 +240,16 @@ static bool check_substrate_req_dfp(struct sii_typec *ptypec_dev)
 		pr_info(" %s: NON-FLIP  :%s\n", ANSI_ESC_CYAN_TEXT, ANSI_ESC_RESET_TEXT);
 		sii_platform_clr_bit8(REG_ADDR__PDCTR12, BIT_MSK__PDCTR12__RI_MODE_FLIP);
 		ptypec_dev->is_flipped = TYPEC_CABLE_NOT_FLIPPED;
-		 /*MHL*/
+#ifndef USB_C_SWITCH_SII70XX_MHL_MODE
 		trigger_driver(g_exttypec, HOST_TYPE, ENABLE, DONT_CARE);
+#endif
 	} else if (cb_orietn == TYPEC_CABLE_FLIPPED) {
 		pr_info("%s: FLIP :%s\n", ANSI_ESC_CYAN_TEXT, ANSI_ESC_RESET_TEXT);
 		sii_platform_set_bit8(REG_ADDR__PDCTR12, BIT_MSK__PDCTR12__RI_MODE_FLIP);
 		ptypec_dev->is_flipped = TYPEC_CABLE_FLIPPED;
-		 /*MHL*/
+#ifndef USB_C_SWITCH_SII70XX_MHL_MODE
 		trigger_driver(g_exttypec, HOST_TYPE, ENABLE, DONT_CARE);
+#endif
 	} else {
 		ptypec_dev->is_flipped = TYPEC_UNDEFINED;
 		pr_info(": In-Valid :\n");

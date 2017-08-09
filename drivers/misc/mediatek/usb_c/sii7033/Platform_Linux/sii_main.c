@@ -36,7 +36,11 @@ struct gpio sii70xx_gpio[NUM_GPIO] = {
 	{GPIO_RESET_CTRL, GPIOF_OUT_INIT_HIGH, "RESET_CTRL_En"}
 };
 
- /*MHL*/ int drp_mode = DRP;
+#ifndef USB_C_SWITCH_SII70XX_MHL_MODE
+int drp_mode = DRP;
+#else
+int drp_mode = DFP;
+#endif
 module_param(drp_mode, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 MODULE_PARM_DESC(drp_mode,
 		 "An integer parameter to switch	PD mode between DRP(0) DFP(1) and UFP(2)");
