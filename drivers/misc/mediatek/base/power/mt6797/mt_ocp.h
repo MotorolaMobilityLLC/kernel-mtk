@@ -106,6 +106,7 @@ extern void __iomem *ocp_base;  /*0x10220000 */
 #define OCPAPBSTATUS06         (OCP_BASE_ADDR + 0x2518)
 #define OCPAPBSTATUS07         (OCP_BASE_ADDR + 0x251C)
 #define OCPAPBCFG00            (OCP_BASE_ADDR + 0x2520)
+#define OCPAPBCFG24            (OCP_BASE_ADDR + 0x2580)
 #define OCPAPBCFG28            (OCP_BASE_ADDR + 0x2590)
 
 /* LL */
@@ -120,6 +121,7 @@ extern void __iomem *ocp_base;  /*0x10220000 */
 #define MP0_OCP_CAP_STATUS07   (OCP_BASE_ADDR + 0x1020)
 #define MP0_OCP_ENABLE         (OCP_BASE_ADDR + 0x1040)
 #define MP0_OCP_OC_CTRL        (OCP_BASE_ADDR + 0x105C)
+#define MP0_OCP_SCAL           (OCP_BASE_ADDR + 0x115C)
 #define MP0_OCP_GENERAL_CTRL   (OCP_BASE_ADDR + 0x17FC)
 #define MP0_OCP_DBG_IFCTRL     (OCP_BASE_ADDR + 0x1200)
 #define MP0_OCP_DBG_IFCTRL1    (OCP_BASE_ADDR + 0x1204)
@@ -142,6 +144,7 @@ extern void __iomem *ocp_base;  /*0x10220000 */
 #define MP1_OCP_CAP_STATUS07   (OCP_BASE_ADDR + 0x3020)
 #define MP1_OCP_ENABLE         (OCP_BASE_ADDR + 0x3040)
 #define MP1_OCP_OC_CTRL        (OCP_BASE_ADDR + 0x305C)
+#define MP1_OCP_SCAL           (OCP_BASE_ADDR + 0x315C)
 #define MP1_OCP_GENERAL_CTRL   (OCP_BASE_ADDR + 0x37FC)
 #define MP1_OCP_DBG_IFCTRL     (OCP_BASE_ADDR + 0x3200)
 #define MP1_OCP_DBG_IFCTRL1    (OCP_BASE_ADDR + 0x3204)
