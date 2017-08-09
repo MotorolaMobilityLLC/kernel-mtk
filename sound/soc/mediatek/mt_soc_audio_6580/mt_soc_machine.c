@@ -45,13 +45,7 @@
  *                E X T E R N A L   R E F E R E N C E S
  *****************************************************************************/
 
-#define CONFIG_MTK_DEEP_IDLE
-#ifdef CONFIG_MTK_DEEP_IDLE
-#ifdef _MT_IDLE_H
-#include <mach/mt_idle.h>
-#endif
-#endif
-
+#include <mt_idle.h>
 #include "AudDrv_Common.h"
 #include "AudDrv_Def.h"
 #include "AudDrv_Afe.h"
