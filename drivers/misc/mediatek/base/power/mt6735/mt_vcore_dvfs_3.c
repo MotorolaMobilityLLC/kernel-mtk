@@ -12,41 +12,12 @@
 #include <mach/mt_clkmgr.h>
 #include <mach/mt_freqhopping.h>
 #include <mach/upmu_hw.h>
+#include <mt_dramc.h>
 
 #include "mt_vcore_dvfs.h"
 #include "mt_cpufreq.h"
 #include "mt_spm.h"
 #include "mt_ptp.h"
-
-/* #include <mt_dramc.h> */
-int __weak get_dram_data_rate(void)
-{
-	return FDDR_S0_KHZ / 1000;
-}
-
-int __weak dram_can_support_fh(void)
-{
-	return 0;
-}
-
-int __weak dram_do_dfs_by_fh(int ddr_khz)
-{
-	return -1;
-}
-
-int __weak dram_fh_steps_freq(unsigned int step)
-{
-	switch (step) {
-	case 0:
-		return 1466;
-	break;
-	case 1:
-		return 1313;
-	break;
-	default:
-		return -1;
-	}
-}
 
 /*
  * Macro and Inline
