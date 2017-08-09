@@ -35,7 +35,7 @@
 #define GLG_DIV_MAX (32767)
 #define GLG_DIV_MIN (1)
 
-enum {
+typedef enum {
 	GLG_DEACTIVATE,
 	GLG_ACTIVATE,
 	GLG_SUSPEND,
