@@ -505,7 +505,7 @@ static int get_venc_step(int venc_resolution)
 
 	if (mmdvfs_get_lcd_resolution() == MMDVFS_LCD_SIZE_WQHD)
 		/* initialize the venc_size_limit */
-		lpm_size_limit = 1920 * 1080;
+		lpm_size_limit = 4096 * 1716;
 	else
 		/* initialize the venc_size_limit */
 		lpm_size_limit = 4096 * 1716;
