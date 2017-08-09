@@ -210,8 +210,8 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			alignment = <0 0x200000>;
 		};
 
-		mrdump-reserved-memory {
-			compatible = "mrdump-reserved-memory";
+		mrdump-reserved-memory@41F00000{
+			compatible = "mediatek,mrdump-V2";
 			reg = <0 0x41F00000 0 0x2000>;
 		};
 
@@ -226,19 +226,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		};
 
 
-		/*
-		reserve-memory-test {
-			compatible = "reserve-memory-test";
-			no-map;
-			size = <0 0x4000000>;
-			alignment = <0 0x2000000>;
-		};
-
-		mrdump-reserved-memory {
-			compatible = "mrdump";
-			reg = <0 0x80000000 0 0x4000000>;
-		};
-		*/
 		ram_console-reserved-memory {
 			compatible = "ram_console-reserve-memory";
 			reg = <0 0x43F00000 0 0x10000>;

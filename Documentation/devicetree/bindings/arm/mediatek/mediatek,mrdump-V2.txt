@@ -1,0 +1,21 @@
+Mediatek MRDUMP control block reserved memory
+============================
+
+The mediatek MRDUMP function provide a full ram dump
+for debug purpose
+
+Required Properties:
+
+- compatible: Should be:
+	- "mediatek,mrdump-V2"
+
+The MTK_MRDUMP function must obtain the control block memory address
+through this node of reg value
+
+Example:
+
+        mrdump-reserved-memory@41F00000{
+            compatible = "mediatek,mrdump-V2";
+            reg = <0 0x41F00000 0 0x2000>;
+        };
+
