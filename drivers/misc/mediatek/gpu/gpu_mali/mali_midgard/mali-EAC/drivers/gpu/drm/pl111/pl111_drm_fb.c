@@ -111,7 +111,7 @@ struct drm_framebuffer *pl111_fb_create(struct drm_device *dev,
 	int bpp;
 	int depth;
 
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 	gem_obj = drm_gem_object_lookup(dev, file_priv, mode_cmd->handles[0]);
 	if (gem_obj == NULL) {
 		DRM_ERROR("Could not get gem obj from handle to create fb\n");

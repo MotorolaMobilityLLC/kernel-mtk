@@ -32,12 +32,12 @@
 
 int pl111_drm_suspend(struct drm_device *dev, pm_message_t state)
 {
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 	return 0;
 }
 
 int pl111_drm_resume(struct drm_device *dev)
 {
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 	return 0;
 }

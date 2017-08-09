@@ -36,7 +36,7 @@ static int clcd_enable(struct drm_framebuffer *fb)
 	__u32 cntl;
 	struct clcd_board *board;
 
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 
 	clk_prepare_enable(priv.clk);
 
@@ -75,7 +75,7 @@ int clcd_disable(struct drm_crtc *crtc)
 	unsigned long flags;
 #endif
 
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 
 	/* Disable Interrupts */
 	writel(0x00000000, priv.regs + CLCD_PL111_IENB);
@@ -309,7 +309,7 @@ int pl111_amba_probe(struct amba_device *dev, const struct amba_id *id)
 {
 	struct clcd_board *board = dev->dev.platform_data;
 	int ret;
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 
 	if (!board)
 		dev_warn(&dev->dev, "board data not available\n");

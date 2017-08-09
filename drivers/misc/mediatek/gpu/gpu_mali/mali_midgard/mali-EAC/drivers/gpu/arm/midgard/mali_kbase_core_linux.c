@@ -383,7 +383,7 @@ static int _mtk_get_gpu_boost_duration(void)
 void mtk_gpu_input_boost_CB(unsigned int ui32BoostFreqID)
 {
     int iCurrentFreqID;
-    //printk("[MALI] mtk_gpu_input_boost_CB! boost to index=%d\n", ui32BoostFreqID);
+    //pr_debug("[MALI] mtk_gpu_input_boost_CB! boost to index=%d\n", ui32BoostFreqID);
 
     // check if input boost enabled
     if(mtk_get_input_boost_enabled() == 0)
@@ -597,7 +597,7 @@ int mtk_gpu_dvfs(void)
 
     if(iCurrentFreqID == iTargetFreqID)
     {
-        //printk("[MALI] (*)current freq == target freq (%d)\n", iCurrentFreqID);
+        //pr_debug("[MALI] (*)current freq == target freq (%d)\n", iCurrentFreqID);
         return MALI_TRUE;
     }
 
@@ -3149,7 +3149,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	struct device_node *node;    
 	int attribute_count;
 
-	//printk(KERN_EMERG "[MALI]Using mali midgard r5p0-EAC DDK kernel device driver. GPU probe() begin\n");
+	//pr_debug(KERN_EMERG "[MALI]Using mali midgard r5p0-EAC DDK kernel device driver. GPU probe() begin\n");
 	pr_debug("[MALI]Using mali midgard r5p0-EAC DDK kernel device driver. GPU probe() begin\n");
 
 #ifdef CONFIG_OF
@@ -3340,7 +3340,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 		goto out_term_dev;
 	}
 
-	//printk(KERN_EMERG "[MALI]Using mali midgard r5p0-02dev0 DDK kernel device driver. GPU probe() end\n");
+	//pr_debug(KERN_EMERG "[MALI]Using mali midgard r5p0-02dev0 DDK kernel device driver. GPU probe() end\n");
 	pr_debug("[MALI]Using mali midgard r5p0-02dev0 DDK kernel device driver. GPU probe() end\n");
 
 	return 0;

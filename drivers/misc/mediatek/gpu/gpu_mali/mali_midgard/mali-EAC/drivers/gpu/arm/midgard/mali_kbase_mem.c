@@ -55,7 +55,7 @@ unsigned int kbase_report_gpu_memory_usage()
 	}
 	kbase_dev_list_put(kbdev_list);
 #endif 	
-	/// printk(KERN_EMERG "gpu total memory %d\n", pages*4096);
+	/// pr_debug(KERN_EMERG "gpu total memory %d\n", pages*4096);
 	return (atomic_read(&g_mtk_gpu_total_memory_usage_in_pages)*4096);
 }
 

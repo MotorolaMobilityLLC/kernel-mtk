@@ -34,25 +34,25 @@
 static int pl111_platform_drm_suspend(struct platform_device *dev,
 					pm_message_t state)
 {
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 	return 0;
 }
 
 static int pl111_platform_drm_resume(struct platform_device *dev)
 {
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 	return 0;
 }
 
 int pl111_platform_drm_probe(struct platform_device *dev)
 {
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 	return pl111_drm_init(dev);
 }
 
 static int pl111_platform_drm_remove(struct platform_device *dev)
 {
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 	pl111_drm_exit(dev);
 
 	return 0;
@@ -98,7 +98,7 @@ static int __init pl111_platform_drm_init(void)
 {
 	int ret;
 
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 
 	pl111_drm_device = platform_device_register_full(&pl111_drm_pdevinfo);
 	if (pl111_drm_device == NULL) {
@@ -130,7 +130,7 @@ err_amba_reg:
 
 static void __exit pl111_platform_drm_exit(void)
 {
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 
 	platform_device_unregister(pl111_drm_device);
 	amba_driver_unregister(&pl111_amba_driver);

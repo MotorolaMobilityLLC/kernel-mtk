@@ -210,7 +210,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 		/// 1'b0: bus busy  
 		if (MFG_READ32(MFG_DEBUG_STAT_REG) & MFG_BUS_IDLE_BIT)
 		{
-			/// printk("[MALI]MFG BUS already IDLE! Ready to power off, %d\n", polling_count);
+			/// pr_debug("[MALI]MFG BUS already IDLE! Ready to power off, %d\n", polling_count);
 			break;
 		}
 	} while (polling_count--);
@@ -241,7 +241,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 		/// 1'b0: bus busy  
 		if (MFG_READ32(MFG_DEBUG_STAT_REG) & MFG_BUS_IDLE_BIT)
 		{
-			/// printk("[MALI]MFG BUS already IDLE! Ready to power off, %d\n", polling_count);
+			/// pr_debug("[MALI]MFG BUS already IDLE! Ready to power off, %d\n", polling_count);
 			break;
 		}
 	} while (polling_count--);
@@ -254,7 +254,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	g_power_status = 0; // the power status is "power off".
 	
     g_power_off_gpu_freq_idx = mt_gpufreq_get_cur_freq_index(); // record current freq. index.
-    //printk("MALI:  GPU power off freq idx : %d\n",g_power_off_gpu_freq_idx );
+    //pr_debug("MALI:  GPU power off freq idx : %d\n",g_power_off_gpu_freq_idx );
 #if 1
     uiCurrentFreqCount = mt_gpufreq_get_dvfs_table_num();       // get freq. table size 
     mt_gpufreq_target(uiCurrentFreqCount-1);                    // set gpu to lowest freq.

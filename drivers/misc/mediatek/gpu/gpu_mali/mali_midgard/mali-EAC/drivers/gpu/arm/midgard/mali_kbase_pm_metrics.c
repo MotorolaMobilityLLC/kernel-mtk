@@ -592,7 +592,7 @@ enum kbase_pm_dvfs_action kbase_pm_get_dvfs_action(struct kbase_device *kbdev)
 	{
 		get_random_bytes( &random_action, sizeof(random_action));
         random_action = random_action%3;
-        //printk("[MALI] GPU DVFS stress test - genereate random action here: action = %d", random_action);
+        //pr_debug("[MALI] GPU DVFS stress test - genereate random action here: action = %d", random_action);
         pr_debug("[MALI] GPU DVFS stress test - genereate random action here: action = %d", random_action);
         action = random_action;
 	}
@@ -909,7 +909,7 @@ static ssize_t kbasep_gpu_dvfs_freq_write(struct file *file, const char __user *
     if(sscanf(desc, "%d", &dvfs_freq) == 1)
         g_dvfs_freq = dvfs_freq;
     else 
-        //printk("[MALI] warning! echo [dvfs_freq(ms)] > /proc/mali/dvfs_freq\n");
+        //pr_debug("[MALI] warning! echo [dvfs_freq(ms)] > /proc/mali/dvfs_freq\n");
         pr_debug("[MALI] warning! echo [dvfs_freq(ms)] > /proc/mali/dvfs_freq\n");
 
     return count;
@@ -962,7 +962,7 @@ static ssize_t kbasep_gpu_dvfs_threshold_write(struct file *file, const char __u
         g_dvfs_threshold_min = threshold_min;
     }
     else 
-        //printk("[MALI] warning! echo [dvfs_threshold_max] [dvfs_threshold_min] > /proc/mali/dvfs_threshold\n");
+        //pr_debug("[MALI] warning! echo [dvfs_threshold_max] [dvfs_threshold_min] > /proc/mali/dvfs_threshold\n");
         pr_debug("[MALI] warning! echo [dvfs_threshold_max] [dvfs_threshold_min] > /proc/mali/dvfs_threshold\n");
 
     return count;
@@ -1011,7 +1011,7 @@ static ssize_t kbasep_gpu_dvfs_deferred_count_write(struct file *file, const cha
     if(sscanf(desc, "%d", &dvfs_deferred_count) == 1)
         g_dvfs_deferred_count = dvfs_deferred_count;
     else 
-        //printk("[MALI] warning! echo [dvfs_deferred_count] > /proc/mali/dvfs_deferred_count\n");
+        //pr_debug("[MALI] warning! echo [dvfs_deferred_count] > /proc/mali/dvfs_deferred_count\n");
         pr_debug("[MALI] warning! echo [dvfs_deferred_count] > /proc/mali/dvfs_deferred_count\n");
 
     return count;

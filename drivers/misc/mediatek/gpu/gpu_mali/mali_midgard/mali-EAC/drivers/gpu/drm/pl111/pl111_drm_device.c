@@ -162,7 +162,7 @@ static int pl111_drm_load(struct drm_device *dev, unsigned long chipset)
 {
 	int ret = 0;
 
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 
 	mutex_init(&priv.export_dma_buf_lock);
 	atomic_set(&priv.nr_flips_in_flight, 0);
@@ -232,7 +232,7 @@ finish:
 
 static int pl111_drm_unload(struct drm_device *dev)
 {
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 
 	kmem_cache_destroy(priv.page_flip_slab);
 
@@ -309,8 +309,8 @@ static struct drm_driver driver = {
 int pl111_drm_init(struct platform_device *dev)
 {
 	int ret;
-	pr_info("DRM %s\n", __func__);
-	pr_info("PL111 DRM initialize, driver name: %s, version %d.%d\n",
+	pr_debug("DRM %s\n", __func__);
+	pr_debug("PL111 DRM initialize, driver name: %s, version %d.%d\n",
 		DRIVER_NAME, DRIVER_MAJOR, DRIVER_MINOR);
 	driver.num_ioctls = DRM_ARRAY_SIZE(pl111_ioctls);
 	ret = 0;
@@ -321,6 +321,6 @@ int pl111_drm_init(struct platform_device *dev)
 
 void pl111_drm_exit(struct platform_device *dev)
 {
-	pr_info("DRM %s\n", __func__);
+	pr_debug("DRM %s\n", __func__);
 	drm_platform_exit(&driver, dev);
 }
