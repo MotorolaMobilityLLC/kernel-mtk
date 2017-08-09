@@ -2362,6 +2362,14 @@
 			mediatek,version = <0x1>;
 		};
 
+		nfc:nfcC@0 {
+			compatible = "mediatek,nfc-gpio-v2";
+			gpio-ven = <28>;
+			gpio-rst = <25>;
+			gpio-eint = <27>;
+			gpio-irq = <26>;
+		};
+
 		gps {
 			compatible = "mediatek,mt3326-gps";
 		};
