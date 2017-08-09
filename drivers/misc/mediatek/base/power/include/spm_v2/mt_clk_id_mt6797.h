@@ -22,7 +22,7 @@ enum mt_cg_clk_id {
 	MT_CG_INFRA0_AP_DMA_CG_STA                   =  18,
 	MT_CG_INFRA0_MD1L1MCU_AP_BUS_CK_CG_STA       =  19,
 	MT_CG_INFRA0_DEVICE_APC_CG_STA               =  20,
-	MT_CG_INFRA0_XIU2AHB_CG_STA                  =  21,
+	MT_CG_INFRA0_MD1L1SYS_AP_BUS                 =  21,
 	MT_CG_INFRA0_I2C_SRAM_CG_STA                 =  22,
 	MT_CG_INFRA0_CCIF_AP_CG_STA                  =  23,
 	MT_CG_INFRA0_DEBUGSYS_CG_STA                 =  24,

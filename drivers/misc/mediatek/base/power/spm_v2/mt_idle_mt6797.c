@@ -51,7 +51,7 @@ int idle_switch[NR_TYPES] = {
 unsigned int dpidle_blocking_stat[NR_GRPS][32];
 
 unsigned int dpidle_condition_mask[NR_GRPS] = {
-	0x00660802, /* INFRA0: */
+	0x00460802, /* INFRA0: */
 	0x03AFF900, /* INFRA1: */
 	0x23FFB4FD, /* INFRA2: separate I2C-appm CG check */
 	0xFFFFFFFF, /* DISP0:  */
@@ -78,7 +78,7 @@ unsigned int soidle3_pll_condition_mask[NR_PLLS] = {
 
 
 unsigned int soidle3_condition_mask[NR_GRPS] = {
-	0x02640C02, /* INFRA0: */
+	0x02440C02, /* INFRA0: */
 	0x03AFF900, /* INFRA1: */
 	0x2FFFB4FD, /* INFRA2: separate I2C-appm CG check */
 	0x00507FF8, /* DISP0:  */
@@ -92,7 +92,7 @@ unsigned int soidle3_condition_mask[NR_GRPS] = {
 };
 
 unsigned int soidle_condition_mask[NR_GRPS] = {
-	0x00640802, /* INFRA0: */
+	0x00440802, /* INFRA0: */
 	0x03AFF900, /* INFRA1: */
 	0x23FFB4FD, /* INFRA2: separate I2C-appm CG check */
 	0x00507FF8, /* DISP0:  */
@@ -190,6 +190,11 @@ static int sys_is_on(enum subsys_id id)
 	return (sta & mask) && (sta_s & mask);
 }
 
+#define	DISP0_CG_MASK	0x00000007		/* bit[2:0] */
+#define	DISP0_DCM_MASK	0xFFFFFFF8
+#define	DISP1_CG_MASK	0xFFFFFEDF
+#define	DISP1_DCM_MASK	0x00000120		/* bit[8], bit[5] */
+
 static void get_all_clock_state(u32 clks[NR_GRPS])
 {
 	int i;
@@ -202,8 +207,10 @@ static void get_all_clock_state(u32 clks[NR_GRPS])
 	clks[CG_INFRA2] = ~idle_readl(INFRA_SW_CG_2_STA); /* INFRA2 */
 
 	if (sys_is_on(SYS_DIS)) {
-		clks[CG_DISP0] = ~idle_readl(DISP_CG_DUMMY1); /* DISP0 */
-		clks[CG_DISP1] = ~idle_readl(DISP_CG_DUMMY2); /* DISP1 */
+		clks[CG_DISP0] = ~((idle_readl(DISP_CG_CON0) & DISP0_CG_MASK) &
+							(idle_readl(DISP_CG_DUMMY1) & DISP0_DCM_MASK));
+		clks[CG_DISP1] = ~((idle_readl(DISP_CG_CON1) & DISP1_CG_MASK) &
+							(idle_readl(DISP_CG_DUMMY2) & DISP1_DCM_MASK));
 	}
 
 	if (sys_is_on(SYS_ISP))
