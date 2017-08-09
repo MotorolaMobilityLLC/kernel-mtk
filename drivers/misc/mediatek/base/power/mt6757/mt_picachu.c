@@ -1,16 +1,3 @@
-/*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -39,16 +26,21 @@
 #include <mt-plat/aee.h>
 #endif
 
-#include "mt_ptp.h"
+#include "mt_eem.h"
 
-#define PICACHU_BASE	0x0012A250
+#define PICACHU_BASE	0x0011C1C0
 #define PICACHU_SIZE	0x40
 
+#define PICACHU_BARRIER_START	0x0011C200
+#define PICACHU_BARRIER_END	0x0011C210
+#define PICACHU_BARRIER_SIZE	(PICACHU_BARRIER_END - PICACHU_BARRIER_START)
+
 #define PARA_PATH       "/dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/para"
-#define CFG_ENV_SIZE    0x40
+#define CFG_ENV_SIZE    0x1000
 #define CFG_ENV_OFFSET  0x40000
 
-#define NR_CAL_OPPS	1
+#define NR_OPPS         1
+
 
 #undef TAG
 #define TAG     "[Picachu] "
@@ -74,64 +66,31 @@
 #define picachu_cont(fmt, args...)		\
 	pr_cont(fmt, ##args)
 
-struct picachu_sram_info {
+
+struct picachu_info {
 	unsigned int magic;
-	int vmin[NR_CAL_OPPS];
+	int vmin[NR_OPPS];
 	int offset;
 	unsigned int timestamp;
 	unsigned int checksum;
 	int enable;
-	unsigned int ke : 8;
-	unsigned int index : 8;
-	unsigned int volt : 8;
-	unsigned int cluster_id:8;
 };
 
-enum mt_cluster_id {
-	MT_CLUSTER_LITTLE,
-	MT_CLUSTER_BIG,
-
-	NR_CLUSTERS,
-};
-
-struct picachu_proc {
-	char *name;
-	int cluster_id;
-	umode_t mode;
-};
-
-static struct picachu_sram_info *picachu_data;
+static struct picachu_info *picachu_data;
 static unsigned int picachu_debug;
 
-/* #if defined(CONFIG_MTK_DISABLE_PICACHU) */
-/* Disable picachu by default in Everest*/
-#if 1
+#if defined(CONFIG_MTK_DISABLE_PICACHU)
 static int picachu_enable;
 #else
 static int picachu_enable = 1;
 #endif
 
-static void picachu_update_offset(int cluster_id, int offset)
-{
-	switch (cluster_id) {
-	case MT_CLUSTER_LITTLE:
-		eem_set_pi_offset(EEM_CTRL_L, offset);
-		eem_set_pi_offset(EEM_CTRL_2L, offset);
-		break;
-	case MT_CLUSTER_BIG:
-		eem_set_pi_offset(EEM_CTRL_BIG, offset);
-		break;
-	default:
-		break;
-	}
-}
-
-static void dump_picachu_info(struct seq_file *m, struct picachu_sram_info *info)
+static void dump_picachu_info(struct seq_file *m, struct picachu_info *info)
 {
 	int i;
 
 	seq_printf(m, "0x%X\n", info->magic);
-	for (i = 0; i < NR_CAL_OPPS; i++)
+	for (i = 0; i < NR_OPPS; i++)
 		seq_printf(m, "0x%X\n", info->vmin[i]);
 
 	seq_printf(m, "0x%X\n", info->offset);
@@ -140,8 +99,7 @@ static void dump_picachu_info(struct seq_file *m, struct picachu_sram_info *info
 	seq_printf(m, "0x%X\n", info->enable);
 }
 
-static void read_picachu_emmc(char *pi_data, unsigned int size,
-			      unsigned int offset)
+static void read_picachu_emmc(char *pi_data)
 {
 	int result = 0;
 	int ret = 0;
@@ -156,15 +114,15 @@ static void read_picachu_emmc(char *pi_data, unsigned int size,
 		return;
 	}
 
-	pos += (CFG_ENV_OFFSET + offset);
-	ret = kernel_read(read_fp, pos, (char *)pi_data, size);
+	pos += CFG_ENV_OFFSET;
+	ret = kernel_read(read_fp, pos, (char *)pi_data, CFG_ENV_SIZE);
 	if (ret < 0)
 		picachu_err("Kernel read env fail\n");
 
 	filp_close(read_fp, 0);
 }
 
-static int reset_picachu_emmc(unsigned int size, unsigned int offset)
+static int reset_picachu_emmc(void)
 {
 	int result = 0;
 	int ret = 0;
@@ -173,7 +131,7 @@ static int reset_picachu_emmc(unsigned int size, unsigned int offset)
 	mm_segment_t old_fs;
 	char *pi_data;
 
-	pi_data = kzalloc(size, GFP_KERNEL);
+	pi_data = kzalloc(CFG_ENV_SIZE, GFP_KERNEL);
 	if (pi_data == NULL)
 		return -ENOMEM;
 
@@ -186,8 +144,8 @@ static int reset_picachu_emmc(unsigned int size, unsigned int offset)
 		return -ENOENT;
 	}
 
-	pos += (CFG_ENV_OFFSET + offset);
-	ret = kernel_write(write_fp, (char *)pi_data, size, pos);
+	pos += CFG_ENV_OFFSET;
+	ret = kernel_write(write_fp, (char *)pi_data, CFG_ENV_SIZE, pos);
 	if (ret < 0)
 		picachu_err("Kernel write env fail\n");
 
@@ -207,10 +165,8 @@ static int reset_picachu_emmc(unsigned int size, unsigned int offset)
 
 static int picachu_enable_proc_show(struct seq_file *m, void *v)
 {
-	struct picachu_sram_info *p = (struct picachu_sram_info *) m->private;
-
-	if (p != NULL)
-		seq_printf(m, "0x%X\n", p->enable);
+	if (picachu_data != NULL)
+		seq_printf(m, "0x%X\n", picachu_data->enable);
 
 	return 0;
 }
@@ -219,16 +175,11 @@ static ssize_t picachu_enable_proc_write(struct file *file,
 				     const char __user *buffer, size_t count, loff_t *pos)
 {
 	char *buf = (char *) __get_free_page(GFP_USER);
-	struct picachu_sram_info *p;
 	int enable = 0;
 	int ret;
 
 	if (!buf)
 		return -ENOMEM;
-
-	p = (struct picachu_sram_info *) PDE_DATA(file_inode(file));
-	if (!p)
-		return -EINVAL;
 
 	ret = -EINVAL;
 
@@ -244,10 +195,11 @@ static ssize_t picachu_enable_proc_write(struct file *file,
 
 	if (kstrtoint(buf, 10, &enable)) {
 		ret = -EINVAL;
-		picachu_info("bad argument_1!! argument should be 0/1\n");
+		picachu_dbg("bad argument_1!! argument should be 0/1\n");
 	} else {
 		ret = 0;
-		p->enable = enable;
+		if (picachu_data != NULL)
+			picachu_data->enable = enable;
 	}
 
 out:
@@ -258,10 +210,8 @@ out:
 
 static int picachu_offset_proc_show(struct seq_file *m, void *v)
 {
-	struct picachu_sram_info *p = (struct picachu_sram_info *) m->private;
-
-	if (p != NULL)
-		seq_printf(m, "0x%X\n", p->offset);
+	if (picachu_data != NULL)
+		seq_printf(m, "0x%X\n", picachu_data->offset);
 
 	return 0;
 }
@@ -269,16 +219,10 @@ static int picachu_offset_proc_show(struct seq_file *m, void *v)
 static ssize_t picachu_offset_proc_write(struct file *file,
 				     const char __user *buffer, size_t count, loff_t *pos)
 {
-	char *buf;
-	struct picachu_sram_info *p;
+	char *buf = (char *) __get_free_page(GFP_USER);
 	int offset = 0;
 	int ret;
 
-	p = (struct picachu_sram_info *) PDE_DATA(file_inode(file));
-	if (!p)
-		return -EFAULT;
-
-	buf = (char *) __get_free_page(GFP_USER);
 	if (!buf)
 		return -ENOMEM;
 
@@ -296,12 +240,14 @@ static ssize_t picachu_offset_proc_write(struct file *file,
 
 	if (kstrtoint(buf, 10, &offset)) {
 		ret = -EINVAL;
-		picachu_info("bad argument_1!! argument should be 0/1\n");
+		picachu_dbg("bad argument_1!! argument should be 0/1\n");
 	} else {
 		ret = 0;
-		p->offset = offset;
-
-		picachu_update_offset(p->cluster_id, offset);
+		if (picachu_data != NULL) {
+			picachu_data->offset = offset;
+			eem_set_pi_offset(EEM_CTRL_LITTLE, offset);
+			eem_set_pi_offset(EEM_CTRL_BIG, offset);
+		}
 	}
 
 out:
@@ -313,19 +259,16 @@ out:
 static int picachu_emmc_proc_show(struct seq_file *m, void *v)
 {
 	char *pi_data = NULL;
-	struct picachu_sram_info *p = (struct picachu_sram_info *) m->private;
-	unsigned int size, offset;
 
-	size = sizeof(*p);
-
-	pi_data = kzalloc(size, GFP_KERNEL);
+	pi_data = kzalloc(CFG_ENV_SIZE, GFP_KERNEL);
 	if (pi_data == NULL)
 		return -ENOMEM;
 
-	offset = size * p->cluster_id;
-	read_picachu_emmc(pi_data, size, offset);
-	dump_picachu_info(m, (struct picachu_sram_info *)pi_data);
-	kfree(pi_data);
+	if (pi_data) {
+		read_picachu_emmc(pi_data);
+		dump_picachu_info(m, (struct picachu_info *)pi_data);
+		kfree(pi_data);
+	}
 
 	return 0;
 }
@@ -335,14 +278,7 @@ static ssize_t picachu_emmc_proc_write(struct file *file,
 {
 	int ret;
 	char *buf = (char *) __get_free_page(GFP_USER);
-	struct picachu_sram_info *p;
 	int offset = 0;
-
-	p = (struct picachu_sram_info *) PDE_DATA(file_inode(file));
-	if (!p) {
-		picachu_info("SRAM info is NULL.\n");
-		return -EFAULT;
-	}
 
 	if (!buf)
 		return -ENOMEM;
@@ -359,12 +295,10 @@ static ssize_t picachu_emmc_proc_write(struct file *file,
 
 	buf[count] = '\0';
 
-	if (kstrtoint(buf, 10, &offset) || offset != -1) {
-		free_page((unsigned long)buf);
-		return -EINVAL;
-	}
-
-	reset_picachu_emmc(sizeof(*p), sizeof(*p) * p->cluster_id);
+	if (kstrtoint(buf, 10, &offset))
+		ret = -EINVAL;
+	else
+		ret = (offset == -1) ? reset_picachu_emmc() : -EINVAL;
 
 out:
 	free_page((unsigned long)buf);
@@ -374,10 +308,8 @@ out:
 
 static int picachu_dump_proc_show(struct seq_file *m, void *v)
 {
-	struct picachu_sram_info *p = (struct picachu_sram_info *) m->private;
-
-	if (p)
-		dump_picachu_info(m, p);
+	if (picachu_data != NULL)
+		dump_picachu_info(m, picachu_data);
 
 	return 0;
 }
@@ -420,19 +352,10 @@ PROC_FOPS_RW(picachu_offset);
 PROC_FOPS_RW(picachu_emmc);
 PROC_FOPS_RO(picachu_dump);
 
-#define PICACHU_PROC_ENTRY_ATTR	(S_IRUGO | S_IWUSR | S_IWGRP)
-
-static struct picachu_proc picachu_proc_list[] = {
-	{"little", MT_CLUSTER_LITTLE, PICACHU_PROC_ENTRY_ATTR},
-	{"big", MT_CLUSTER_BIG, PICACHU_PROC_ENTRY_ATTR},
-	{0},
-};
-
-static int create_procfs_entries(struct proc_dir_entry *dir,
-				 struct picachu_proc *proc)
+static int create_procfs(void)
 {
-	int i, num;
-
+	int i;
+	struct proc_dir_entry *dir = NULL;
 	struct pentry {
 		const char *name;
 		const struct file_operations *fops;
@@ -445,43 +368,18 @@ static int create_procfs_entries(struct proc_dir_entry *dir,
 		PROC_ENTRY(picachu_dump),
 	};
 
-	num = ARRAY_SIZE(entries);
+	dir = proc_mkdir("picachu", NULL);
 
-	for (i = 0; i < num; i++) {
-		if (!proc_create_data(entries[i].name, proc->mode, dir,
-				entries[i].fops,
-				(void *) &picachu_data[proc->cluster_id])) {
-			picachu_info("[%s]: create /proc/picachu/%s failed\n", __func__, entries[i].name);
-			return -ENOMEM;
-		}
+	if (!dir) {
+		picachu_dbg("[%s]: mkdir /proc/picachu failed\n", __func__);
+		return -1;
 	}
 
-	return 0;
-}
-
-static int create_procfs(void)
-{
-	struct picachu_proc *proc;
-	struct proc_dir_entry *root, *dir;
-	int ret;
-
-	root = proc_mkdir("picachu", NULL);
-	if (!root) {
-		picachu_info("[%s]: mkdir /proc/picachu failed\n", __func__);
-		return -ENOMEM;
-	}
-
-	for (proc = picachu_proc_list; proc->name; proc++) {
-		dir = proc_mkdir(proc->name, root);
-		if (!dir) {
-			picachu_info("[%s]: mkdir /proc/picachu/%s failed\n",
-					__func__, proc->name);
-			return -ENOMEM;
+	for (i = 0; i < ARRAY_SIZE(entries); i++) {
+		if (!proc_create(entries[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries[i].fops)) {
+			picachu_dbg("[%s]: create /proc/picachu/%s failed\n", __func__, entries[i].name);
+			return -3;
 		}
-
-		ret = create_procfs_entries(dir, proc);
-		if (ret)
-			return ret;
 	}
 
 	return 0;
@@ -489,34 +387,25 @@ static int create_procfs(void)
 
 static int __init picachu_init(void)
 {
-	int i, offset;
-	struct picachu_sram_info *pd;
+	int offset = 0;
 
-	picachu_data = (struct picachu_sram_info *)
-				ioremap_nocache(PICACHU_BASE, PICACHU_SIZE);
-	if (!picachu_data)
+	picachu_data = (struct picachu_info *) ioremap_nocache(PICACHU_BASE,
+								PICACHU_SIZE);
+
+	if (!picachu_data) {
+		picachu_err("cannot allocate resource for picachu data\n");
 		return -ENOMEM;
-
-	for (i = 0; i < NR_CLUSTERS; i++) {
-		pd = &picachu_data[i];
-		if (!pd) {
-			picachu_info("Error: pd is NULL, cluster id: %d!\n", i);
-			continue;
-		}
-
-		pd->cluster_id = i;
-
-		offset = 0;
-
-		pd->enable = picachu_enable;
-		if (picachu_enable == 1) {
-			offset = pd->offset;
-			picachu_info("cluster id: %d, pi_off = %d\n",
-				i, offset);
-		}
-
-		picachu_update_offset(i, offset);
 	}
+
+	picachu_data->enable = picachu_enable;
+
+	if (picachu_enable == 1) {
+		offset = picachu_data->offset;
+		picachu_info("pi_off = %d\n", picachu_data->offset);
+	}
+
+	eem_set_pi_offset(EEM_CTRL_LITTLE, offset);
+	eem_set_pi_offset(EEM_CTRL_BIG, offset);
 
 	create_procfs();
 
