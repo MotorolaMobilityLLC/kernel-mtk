@@ -825,6 +825,7 @@ struct mt_cpu_dvfs {
 	unsigned int cpu_id;	/* for cpufreq */
 	unsigned int cpu_level;
 	struct mt_cpu_dvfs_ops *ops;
+	struct cpufreq_policy *mt_policy;
 	unsigned int *armpll_addr;	/* for armpll clock address */
 	int hopping_id;	/* for frequency hopping */
 	struct mt_cpu_freq_method *freq_tbl;	/* Frequency table */
@@ -3523,8 +3524,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 
 	enum mt_cpu_dvfs_id cluster_id;
 	struct mt_cpu_dvfs *p;
-	enum mt_cpu_dvfs_id id_cci;
-	struct mt_cpu_dvfs *p_cci;
+	struct mt_cpu_dvfs *p_ll, *p_l, *p_cci;
 	int new_opp_idx;
 	int new_cci_opp_idx;
 	unsigned int cur_cci_freq;
@@ -3533,8 +3533,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 	unsigned int target_freq;
 	unsigned int target_volt_vpro1 = 0;
 
-	struct cpufreq_policy *policy;
-	unsigned int cur_volt;
+	unsigned int cur_volt = 0;
 	int freq_idx;
 
 	/* CPU mask - Get on-line cpus per-cluster */
@@ -3546,9 +3545,9 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 	if (dvfs_disable_flag == 1)
 		return NOTIFY_OK;
 
-	/* This is for cci */
-	id_cci = MT_CPU_DVFS_CCI;
-	p_cci = id_to_cpu_dvfs(id_cci);
+	p_cci = id_to_cpu_dvfs(MT_CPU_DVFS_CCI);
+	p_ll = id_to_cpu_dvfs(MT_CPU_DVFS_LL);
+	p_l = id_to_cpu_dvfs(MT_CPU_DVFS_L);
 
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
 	aee_record_cpu_dvfs_cb(1);
@@ -3622,10 +3621,8 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 					target_freq = cpu_dvfs_get_freq_by_idx(p, new_opp_idx);
 
 #ifdef CONFIG_CPU_FREQ
-					policy = cpufreq_cpu_get(cpu);
-					_cpufreq_set_locked(p, cur_freq, target_freq, policy,
+					_cpufreq_set_locked(p, cur_freq, target_freq, p->mt_policy,
 						cur_cci_freq, target_cci_freq, target_volt_vpro1, 0);
-					cpufreq_cpu_put(policy);
 #endif
 					p->idx_opp_tbl = new_opp_idx;
 					p_cci->idx_opp_tbl = new_cci_opp_idx;
@@ -3643,9 +3640,9 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 						cpufreq_ver("CB - adjust the freq to V:%d  due to L/LL on\n", cur_volt);
 						freq_idx = _search_available_freq_idx_under_v(p, cur_volt);
 						freq_idx = MAX(freq_idx, _calc_new_opp_idx(p, freq_idx));
-						policy = cpufreq_cpu_get(cpu);
-						_cpufreq_dfs_locked(policy, p, freq_idx, action);
-						cpufreq_cpu_put(policy);
+#ifdef CONFIG_CPU_FREQ
+						_cpufreq_dfs_locked(p->mt_policy, p, freq_idx, action);
+#endif
 					}
 #endif
 				}
@@ -3668,9 +3665,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 #endif
 
 #ifdef CONFIG_CPU_FREQ
-					policy = cpufreq_cpu_get(cpu);
-					_cpufreq_dfs_locked(policy, p, p->nr_opp_tbl - 1, action);
-					cpufreq_cpu_put(policy);
+					_cpufreq_dfs_locked(p->mt_policy, p, p->nr_opp_tbl - 1, action);
 #endif
 #ifdef CONFIG_HYBRID_CPU_DVFS
 					if (!enable_cpuhvfs) {
@@ -3705,10 +3700,8 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 						target_freq = cpu_dvfs_get_freq_by_idx(p, new_opp_idx);
 
 #ifdef CONFIG_CPU_FREQ
-						policy = cpufreq_cpu_get(cpu);
-						_cpufreq_set_locked(p, cur_freq, target_freq, policy,
+						_cpufreq_set_locked(p, cur_freq, target_freq, p->mt_policy,
 							cur_cci_freq, target_cci_freq, target_volt_vpro1, 0);
-						cpufreq_cpu_put(policy);
 #endif
 						p->idx_opp_tbl = new_opp_idx;
 						p_cci->idx_opp_tbl = new_cci_opp_idx;
@@ -3765,10 +3758,8 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 					target_freq = cpu_dvfs_get_freq_by_idx(p, new_opp_idx);
 
 #ifdef CONFIG_CPU_FREQ
-					policy = cpufreq_cpu_get(cpu);
-					_cpufreq_set_locked(p, cur_freq, target_freq, policy,
+					_cpufreq_set_locked(p, cur_freq, target_freq, p->mt_policy,
 						cur_cci_freq, target_cci_freq, target_volt_vpro1, 0);
-					cpufreq_cpu_put(policy);
 #endif
 					p->idx_opp_tbl = new_opp_idx;
 					p_cci->idx_opp_tbl = new_cci_opp_idx;
@@ -3783,15 +3774,44 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 						cur_volt = p->ops->get_cur_volt(p);
 						freq_idx = _search_available_freq_idx_under_v(p, cur_volt);
 						freq_idx = MAX(freq_idx, _calc_new_opp_idx(p, freq_idx));
-						policy = cpufreq_cpu_get(cpu);
-						_cpufreq_dfs_locked(policy, p, freq_idx, action);
-						cpufreq_cpu_put(policy);
+#ifdef CONFIG_CPU_FREQ
+						_cpufreq_dfs_locked(p->mt_policy, p, freq_idx, action);
+#endif
 					}
 #endif
 				}
 				cpufreq_unlock(flags);
 			}
 			break;
+#if 0
+		case CPU_DEAD:
+			cpus = cpumask_weight(&cpu_online_cpumask);
+			cpufreq_ver("CPU_DEAD -> cpus = %d\n", cpus);
+			if (cpus == 0) {
+				cpufreq_lock(flags);
+				if (cpu_dvfs_is(p, MT_CPU_DVFS_B) && (action == CPU_DEAD)) {
+					if (p_ll->armpll_is_available) {
+						cur_volt = p_cci->ops->get_cur_volt(p_cci);
+						freq_idx = _search_available_freq_idx_under_v(p_ll, cur_volt);
+						freq_idx = MAX(freq_idx, _calc_new_opp_idx(p_ll, freq_idx));
+#ifdef CONFIG_CPU_FREQ
+						_cpufreq_dfs_locked(p_ll->mt_policy, p_ll, freq_idx, action);
+#endif
+					}
+
+					if (p_l->armpll_is_available) {
+						cur_volt = (cur_volt == 0) ? p_cci->ops->get_cur_volt(p_cci) :
+							cur_volt;
+						freq_idx = _search_available_freq_idx_under_v(p_l, cur_volt);
+						freq_idx = MAX(freq_idx, _calc_new_opp_idx(p_l, freq_idx));
+#ifdef CONFIG_CPU_FREQ
+						_cpufreq_dfs_locked(p_l->mt_policy, p_l, freq_idx, action);
+#endif
+					}
+				}
+				cpufreq_unlock(flags);
+			}
+#endif
 		}
 
 #ifdef CONFIG_CPU_DVFS_AEE_RR_REC
@@ -4033,19 +4053,9 @@ static void ppm_limit_callback(struct ppm_client_req req)
 
 	struct mt_cpu_dvfs *p;
 	int ignore_ppm[NR_MT_CPU_DVFS] = {0};
-	unsigned int i, j;
-	struct cpufreq_policy *policy[NR_MT_CPU_DVFS];
-	struct cpumask dvfs_cpumask[NR_MT_CPU_DVFS];
-	struct cpumask cpu_online_cpumask;
-
-	char str1[32];
-	char str2[32];
-	unsigned int ret;
+	unsigned int i;
 
 	cpufreq_ver("get feedback from PPM module\n");
-
-	for_each_cpu_dvfs_only(i, p)
-		arch_get_cluster_cpus(&dvfs_cpumask[i], i);
 
 	cpufreq_lock(flags);
 	for (i = 0; i < ppm->cluster_num; i++) {
@@ -4076,38 +4086,26 @@ static void ppm_limit_callback(struct ppm_client_req req)
 			}
 		}
 	}
-	cpufreq_unlock(flags);
 
 	for_each_cpu_dvfs_only(i, p) {
-		get_online_cpus();
-		cpumask_and(&cpu_online_cpumask, &dvfs_cpumask[i], cpu_online_mask);
-		cpulist_scnprintf(str1, sizeof(str1), (const struct cpumask *)cpu_online_mask);
-		cpulist_scnprintf(str2, sizeof(str2), (const struct cpumask *)&cpu_online_cpumask);
-		cpufreq_ver("cpu_online_mask = %s, cpu_online_cpumask for little = %s\n", str1, str2);
-		ret = -1;
-		for_each_cpu(j, &cpu_online_cpumask) {
-			policy[i] = cpufreq_cpu_get(j);
-			if (policy[i]) {
-				if (p->idx_opp_ppm_limit == -1)
-					policy[i]->max = cpu_dvfs_get_max_freq(p);
-				else
-					policy[i]->max = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_limit);
-				if (p->idx_opp_ppm_base == -1)
-					policy[i]->min = cpu_dvfs_get_min_freq(p);
-				else
-					policy[i]->min = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
-				cpufreq_cpu_put(policy[i]);
-				ret = 0;
-				break;
-			}
-		}
-		put_online_cpus();
-
-		if (!ignore_ppm[i]) {
-			if (!ret)
-				_mt_cpufreq_set(policy[i], i, -1);
+		if (p->armpll_is_available) {
+			if (p->idx_opp_ppm_limit == -1)
+				p->mt_policy->max = cpu_dvfs_get_max_freq(p);
+			else
+				p->mt_policy->max = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_limit);
+			if (p->idx_opp_ppm_base == -1)
+				p->mt_policy->min = cpu_dvfs_get_min_freq(p);
+			else
+				p->mt_policy->min = cpu_dvfs_get_freq_by_idx(p, p->idx_opp_ppm_base);
 		}
 	}
+
+	cpufreq_unlock(flags);
+
+	for_each_cpu_dvfs_only(i, p)
+		if (!ignore_ppm[i])
+			_mt_cpufreq_set(p->mt_policy, i, -1);
+
 }
 #endif
 
@@ -4229,6 +4227,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 		cpufreq_lock(flags);
 		p->armpll_is_available = 1;
+		p->mt_policy = policy;
 #if 0
 /* #ifdef ENABLE_IDVFS */
 		if (MT_CPU_DVFS_B == id) {
@@ -4250,6 +4249,7 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 			opp_tbl_m_cci_info = &opp_tbls_m[id_cci][CPU_LV_TO_OPP_IDX(lv)];
 			p_cci->freq_tbl = opp_tbl_m_cci_info->opp_tbl_m;
+			p_cci->mt_policy = NULL;
 			p_cci->armpll_is_available = 1;
 			init_cci_status = 1;
 		}
