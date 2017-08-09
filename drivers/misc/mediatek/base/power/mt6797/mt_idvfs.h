@@ -258,6 +258,7 @@ extern int BigiDVFSPllDisable(void);
 extern int BigiDVFSSRAMLDOSet(unsigned int mVolts_x100); /* range 60000 ~ 120000(mv_x100) */
 extern unsigned int BigiDVFSSRAMLDOGet(void);
 extern unsigned int BigiDVFSSRAMLDOEFUSE(void);
+extern int BigiDVFSSRAMLDODisable(void);
 
 extern int BigiDVFSPOSDIVSet(unsigned int pos_div); /* range 0/1/2 = div 1/2/4 */
 extern unsigned int BigiDVFSPOSDIVGet(void);
