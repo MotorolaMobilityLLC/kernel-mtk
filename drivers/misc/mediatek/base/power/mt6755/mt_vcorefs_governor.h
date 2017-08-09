@@ -95,7 +95,7 @@ struct opp_profile {
 	int ddr_khz;
 };
 
-extern int kicker_table[NUM_KICKER];
+extern int kicker_table[LAST_KICKER];
 
 extern void __iomem *vcorefs_sram_base;
 

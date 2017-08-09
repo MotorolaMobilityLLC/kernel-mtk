@@ -133,7 +133,7 @@ static struct opp_profile opp_table[] __nosavedata = {
 		   }
 };
 
-int kicker_table[NUM_KICKER] __nosavedata;
+int kicker_table[LAST_KICKER] __nosavedata;
 
 static char *kicker_name[] = {
 	"KIR_MM_16MCAM",
