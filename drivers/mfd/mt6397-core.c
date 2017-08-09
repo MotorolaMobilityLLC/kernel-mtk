@@ -57,6 +57,11 @@ static int mt6397_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, mt6397);
 
+	mt6397->irq = platform_get_irq(pdev, 0);
+
+	if (mt6397->irq <= 0)
+		return -EINVAL;
+
 	ret = mfd_add_devices(&pdev->dev, -1, mt6397_devs,
 			ARRAY_SIZE(mt6397_devs), NULL, 0, NULL);
 	if (ret)
