@@ -25,6 +25,8 @@
 
 #include <mt-plat/sync_write.h>
 
+#include <mt_smi.h>
+
 #ifdef CONFIG_MTK_CLKMGR
 #include "mach/mt_clkmgr.h"
 #else
@@ -451,7 +453,28 @@ static int mjc_open(struct inode *pInode, struct file *pFile)
  ****************************************************************************/
 static int mjc_release(struct inode *pInode, struct file *pFile)
 {
+	int ret;
 	MJCDBG("mjc_release() pid = %d\n", current->pid);
+
+	ret = clk_prepare_enable(clk_TOP_MUX_MJC);
+	if (ret) {
+		/* print error log & error handling */
+		MJCMSG("[ERROR] mjc_open() clk_TOP_MUX_MJC is not enabled, ret = %d\n", ret);
+	}
+	ret = clk_set_parent(clk_TOP_MUX_MJC, clk_TOP_UNIVPLL_D5); /* UNIVPLL_D5 (250) */
+	if (ret) {
+		/* print error log & error handling */
+		MJCMSG("[ERROR] mjc_ioctl() TOP_UNIVPLL_D5 is not enabled, ret = %d\n", ret);
+	}
+	clk_disable_unprepare(clk_TOP_MUX_MJC);
+
+#ifdef CONFIG_MTK_SMI_EXT
+	ret = mmdvfs_set_step(SMI_BWC_SCEN_VPMJC, MMDVFS_VOLTAGE_LOW);
+	if (0 != ret) {
+		/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
+		MJCMSG("[ERROR] mjc_ioctl() OOPS: mmdvfs_set_step error!");
+	}
+#endif
 
 	m4u_unregister_fault_callback(M4U_PORT_MJC_MV_RD);
 	m4u_unregister_fault_callback(M4U_PORT_MJC_MV_WR);
@@ -720,12 +743,26 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 			}
 
 			if (rSrcClk.u2OutputFramerate == 600) {	/* frame rate 60 case */
+#ifdef CONFIG_MTK_SMI_EXT
+				ret = mmdvfs_set_step(SMI_BWC_SCEN_VPMJC, MMDVFS_VOLTAGE_LOW);
+				if (0 != ret) {
+					/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
+					MJCMSG("[ERROR] mjc_ioctl() OOPS: mmdvfs_set_step error!");
+				}
+#endif
 				ret = clk_set_parent(clk_TOP_MUX_MJC, clk_TOP_UNIVPLL_D5); /* UNIVPLL_D5 (250) */
 				if (ret) {
 					/* print error log & error handling */
 					MJCMSG("[ERROR] mjc_ioctl() TOP_UNIVPLL_D5 is not enabled, ret = %d\n", ret);
 				}
 			} else if (rSrcClk.u2OutputFramerate == 1200) {	/* frame rate 120 case */
+#ifdef CONFIG_MTK_SMI_EXT
+				ret = mmdvfs_set_step(SMI_BWC_SCEN_VPMJC, MMDVFS_VOLTAGE_HIGH);
+				if (0 != ret) {
+					/* Add one line comment for avoid kernel coding style, WARNING:BRACES: */
+					MJCMSG("[ERROR] mjc_ioctl() OOPS: mmdvfs_set_step error!");
+				}
+#endif
 				ret = clk_set_parent(clk_TOP_MUX_MJC, clk_TOP_IMGPLL_CK); /* IMGPLL (450) */
 				if (ret) {
 					/* print error log & error handling */
