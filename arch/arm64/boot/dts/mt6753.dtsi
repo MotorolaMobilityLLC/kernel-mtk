@@ -1409,9 +1409,9 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-names = "mfg-main", "mfg-smi-common", "mtcmos-mfg", "mtcmos-display";
 		};
 
-		SMI_LARB0@0x14015000 {
+		SMI_LARB0@0x14016000 {
 			compatible = "mediatek,SMI_LARB0";
-			reg = <0x14015000 0x1000>;
+			reg = <0x14016000 0x1000>;
 		};
 
 		SMI_LARB1@0x16010000 {
@@ -1432,10 +1432,10 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			interrupts = <0 202 0x8>;
 		};
 
-		SMI_COMMON@0x14016000 {
+		SMI_COMMON@0x14017000 {
 			compatible = "mediatek,SMI_COMMON";
-			reg = <0x14016000 0x1000>,  /* SMI_COMMON_EXT */
-				<0x14015000 0x1000>,  /* LARB 0 */
+			reg = <0x14017000 0x1000>,  /* SMI_COMMON_EXT */
+				<0x14016000 0x1000>,  /* LARB 0 */
 				<0x16010000 0x1000>,  /* LARB 1 */
 				<0x15001000 0x1000>,  /* LARB 2 */
 				<0x17001000 0x1000>;  /* LARB 3 */
