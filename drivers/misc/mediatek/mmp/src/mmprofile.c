@@ -1603,6 +1603,7 @@ static long mmprofile_ioctl(struct file *file, unsigned int cmd, unsigned long a
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_MMP_IOC_METADATALOG     _IOW(MMP_IOC_MAGIC, 9, struct Compat_MMProfile_MetaLog_t)
+#define COMPAT_MMP_IOC_DUMPMETADATA    _IOR(MMP_IOC_MAGIC, 10, struct Compat_MMProfile_MetaLog_t)
 static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	long ret = 0;
@@ -1756,7 +1757,7 @@ static long mmprofile_ioctl_compat(struct file *file, unsigned int cmd, unsigned
 			MMProfileLogMetaInt(MetaLog.id, MetaLog.type, &(MetaLog.meta_data), 1);
 		}
 		break;
-	case MMP_IOC_DUMPMETADATA:
+	case COMPAT_MMP_IOC_DUMPMETADATA:
 		{
 			unsigned int meta_data_count = 0;
 			unsigned int offset = 0;
