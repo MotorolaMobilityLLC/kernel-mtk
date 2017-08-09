@@ -653,7 +653,10 @@ static int ipanic_die(struct notifier_block *self, unsigned long cmd, void *ptr)
 	aee_rr_rec_exp_type(2);
 	mrdump_mini_ke_cpu_regs(dargs->regs);
 	flush_cache_all();
-
+#if defined(CONFIG_MTK_MLC_NAND_SUPPORT) || defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+	LOGE("MLC/TLC project, disable ipanic flow\n");
+	ipanic_enable = 0; /*for mlc/tlc nand project, only enable lk flow*/
+#endif
 	if (aee_rr_curr_exp_type() == 2)
 		/* No return if mrdump is enable */
 		__mrdump_create_oops_dump(AEE_REBOOT_MODE_KERNEL_OOPS, dargs->regs, "Kernel Oops");
