@@ -84,6 +84,10 @@ they means one reading is a avg of X samples*/
 /*=============================================================
  * Chip related
  *=============================================================*/
+/**/
+#define OTP_HIGH_OFFSET_TEMP 80000
+#define OTP_LOW_OFFSET_TEMP  70000
+
 /*double check*/
 #define TS_CONFIGURE     TS_CON1_TM    /* depend on CPU design*/
 #define TS_CONFIGURE_P   TS_CON1_P  /* depend on CPU design*/

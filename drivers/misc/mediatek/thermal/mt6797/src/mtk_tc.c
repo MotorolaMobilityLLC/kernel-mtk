@@ -38,6 +38,7 @@
 #endif
 
 #include <mt_ptp.h>
+#include <mt_otp.h>
 #include <mach/wd_api.h>
 #include <mtk_gpu_utility.h>
 #include <linux/time.h>
@@ -777,6 +778,7 @@ static void thermal_interrupt_handler(int bank)
 {
 	U32 ret = 0;
 	unsigned long flags;
+	int temp = 0;
 
 	mt_ptp_lock(&flags);
 
@@ -784,13 +786,41 @@ static void thermal_interrupt_handler(int bank)
 
 	ret = DRV_Reg32(TEMPMONINTSTS);
 	/* pr_debug("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"); */
-	tscpu_printk("thermal_interrupt_handler,bank=0x%08x,ret=0x%08x\n", bank, ret);
+	tscpu_warn("[tIRQ] thermal_interrupt_handler,bank=0x%08x,ret=0x%08x\n", bank, ret);
+	tscpu_warn("[tIRQ] thermal_interrupt_handler,BIG T=%d\n", get_immediate_big_wrap());
+
 	/* pr_debug("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"); */
 
 	/* ret2 = DRV_Reg32(THERMINTST); */
 	/* pr_debug("thermal_interrupt_handler : THERMINTST = 0x%x\n", ret2); */
 
+	if (ret & THERMAL_MON_LOINTSTS0) {
+		tscpu_warn("[tIRQ] thermal_isr: THERMAL_MON_LOINTSTS0\n");
+		/**************************************************
+			disable OTP here
+		**************************************************/
+		BigOTPThermIRQ(0);
+		temp = DRV_Reg32(TEMPMONINT);
+		temp &= ~0x00000004;/*disable low offset*/
+		temp |=  0x00000008;/*enable high offset*/
 
+		THERMAL_WRAP_WR32(temp, TEMPMONINT);	/* set high offset */
+
+	}
+
+	if (ret & THERMAL_MON_HOINTSTS0) {
+		tscpu_warn("[tIRQ] thermal_isr: THERMAL_MON_HOINTSTS0\n");
+		/**************************************************
+			enable OTP here
+		**************************************************/
+		BigOTPThermIRQ(1);
+		temp = DRV_Reg32(TEMPMONINT);
+		temp &= ~0x00000008;/*disable high offset*/
+		temp |=  0x00000004;/*enable low offset*/
+
+		THERMAL_WRAP_WR32(temp, TEMPMONINT);	/* set low offset */
+
+	}
 	/* for SPM reset debug */
 	/* dump_spm_reg(); */
 
@@ -830,9 +860,9 @@ irqreturn_t tscpu_thermal_all_bank_interrupt_handler(int irq, void *dev_id)
 
 
 	ret = DRV_Reg32(THERMINTST);
-	ret = ret & 0xF;
+	ret = ret & 0xFF;
 
-	pr_debug("thermal_interrupt_handler : THERMINTST = 0x%x\n", ret);
+	tscpu_warn("thermal_interrupt_handler : THERMINTST = 0x%x\n", ret);
 
 	for (i = 0; i < TS_LEN_ARRAY(tscpu_g_bank); i++) {
 		mask = 1 << i;
@@ -1201,6 +1231,44 @@ void tscpu_thermal_initial_all_bank(void)
 	mt_ptp_unlock(&flags);
 }
 
+void tscpu_config_tc_sw_protect(int highoffset, int lowoffset)
+{
+	int raw_highoffset = 0, raw_lowoffsett = 0, temp = 0;
+	thermal_sensor_name ts_name;
+	unsigned long flags;
+
+
+	ts_name = tscpu_g_bank[THERMAL_BANK0].ts[0].type;
+
+	tscpu_warn("[tIRQ] tscpu_config_tc_sw_protect,highoffset=%d,lowoffset=%d,bank=%d,ts_name=%d\n",
+		      highoffset, lowoffset, THERMAL_BANK0, ts_name);
+
+
+	mt_ptp_lock(&flags);
+
+	tscpu_switch_bank(THERMAL_BANK0);
+
+
+	if (lowoffset != 0) {
+		raw_lowoffsett = temperature_to_raw_room(lowoffset, ts_name);
+		DRV_WriteReg32(TEMPOFFSETL, raw_lowoffsett);
+
+		temp = DRV_Reg32(TEMPMONINT);
+		THERMAL_WRAP_WR32(temp | 0x00000004, TEMPMONINT);	/* set low offset */
+	}
+
+	if (highoffset != 0) {
+		raw_highoffset = temperature_to_raw_room(highoffset, ts_name);
+		DRV_WriteReg32(TEMPOFFSETH, raw_highoffset);
+
+		temp = DRV_Reg32(TEMPMONINT);
+		THERMAL_WRAP_WR32(temp | 0x00000008, TEMPMONINT);	/* set high offset */
+	}
+
+
+	mt_ptp_unlock(&flags);
+}
+
 void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
 {
 	int i = 0;
@@ -1251,7 +1319,7 @@ void tscpu_config_all_tc_hw_protect(int temperature, int temperature2)
 	/*Thermal need to config to direct reset mode
 	   this API provide by Weiqi Fu(RGU SW owner). */
 	wd_api->wd_thermal_direct_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);	/* reset mode */
-
+	tscpu_config_tc_sw_protect(OTP_HIGH_OFFSET_TEMP, OTP_LOW_OFFSET_TEMP);
 }
 
 void tscpu_reset_thermal(void)
