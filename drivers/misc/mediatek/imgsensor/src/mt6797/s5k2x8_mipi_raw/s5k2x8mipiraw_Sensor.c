@@ -70,19 +70,31 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 450,
 	},
 	.cap = {
+	    /*Mipi datarate 1.632 Gbps*/
+		.pclk = 712320000,				//record different mode's pclk
+		.linelength = 6860,				//record different mode's linelength
+		.framelength =4324, //			//record different mode's framelength
+		.startx = 0,					//record different mode's startx of grabwindow
+		.starty = 0,					//record different mode's starty of grabwindow
+		.grabwindow_width = 5632,		//record different mode's width of grabwindow
+		.grabwindow_height = 4224,		//record different mode's height of grabwindow
+		.mipi_data_lp2hs_settle_dc = 85,  //unit , ns
+		.max_framerate = 240,
+	},
+	.cap1 = {
 		.pclk = 720000000,				//record different mode's pclk
-		.linelength = 7640,				//record different mode's linelength
+		.linelength = 7640, 			//record different mode's linelength
 		.framelength =4350, //			//record different mode's framelength
 		.startx = 0,					//record different mode's startx of grabwindow
 		.starty = 0,					//record different mode's starty of grabwindow
 		.grabwindow_width = 5632,		//record different mode's width of grabwindow
 		.grabwindow_height = 4224,		//record different mode's height of grabwindow
-
+	
 		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
 		.mipi_data_lp2hs_settle_dc = 85,  //unit , ns
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 214,
-		},
+	},
 
 	.normal_video = {
 		.pclk = 720000000,				//record different mode's pclk
@@ -218,14 +230,14 @@ static int OIS_on(int mode)
 	}
 	OIS_write_cmos_sensor(RUMBA_OIS_MODE,CENTERING_MODE);
 	ret = OIS_read_cmos_sensor(RUMBA_OIS_MODE);
-	printk("pangfei OIS ret=%d %s %d\n",ret,__func__,__LINE__);
+	LOG_INF("pangfei OIS ret=%d %s %d\n",ret,__func__,__LINE__);
 
 	if(ret != CENTERING_MODE){
 		//return -1;
 	}
 	OIS_write_cmos_sensor(RUMBA_OIS_CTRL,0x01);
 	ret = OIS_read_cmos_sensor(RUMBA_OIS_CTRL);
-	printk("pangfei OIS ret=%d %s %d\n",ret,__func__,__LINE__);
+	LOG_INF("pangfei OIS ret=%d %s %d\n",ret,__func__,__LINE__);
 	if(ret != 0x01){
 		//return -1;
 	}
@@ -237,7 +249,7 @@ static int OIS_off(void)
 	int ret = 0;
 	OIS_write_cmos_sensor(RUMBA_OIS_OFF,0x01);
 	ret = OIS_read_cmos_sensor(RUMBA_OIS_OFF);
-	printk("pangfei OIS ret=%d %s %d\n",ret,__func__,__LINE__);
+	LOG_INF("pangfei OIS ret=%d %s %d\n",ret,__func__,__LINE__);
 }
 #endif
 //add for s5k2x8 pdaf
@@ -285,7 +297,7 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 static void write_cmos_sensor_twobyte(kal_uint32 addr, kal_uint32 para)
 {
     char pu_send_cmd[4] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para >> 8),(char)(para & 0xFF)};
-   printk("write_cmos_sensor_twobyte is %x,%x,%x,%x\n", pu_send_cmd[0], pu_send_cmd[1], pu_send_cmd[2], pu_send_cmd[3]);
+    LOG_INF("write_cmos_sensor_twobyte is %x,%x,%x,%x\n", pu_send_cmd[0], pu_send_cmd[1], pu_send_cmd[2], pu_send_cmd[3]);
     iWriteRegI2C(pu_send_cmd, 4, imgsensor.i2c_write_id);
 }
 static void set_dummy(void)
@@ -368,9 +380,8 @@ static void set_shutter(kal_uint16 shutter)
     spin_lock_irqsave(&imgsensor_drv_lock, flags);
     imgsensor.shutter = shutter;
     spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
-
-
-   printk("enter xxxx  set_shutter shutter =%d\n", shutter);
+	
+	LOG_INF("set_shutter =%d\n", shutter);
     // OV Recommend Solution
     // if shutter bigger than frame_length, should extend frame length first
 	if(!shutter) shutter = 1; /*avoid 0*/
@@ -406,6 +417,48 @@ static void set_shutter(kal_uint16 shutter)
     LOG_INF("Exit!JEFF shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 #endif
 }    /*    set_shutter */
+
+static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
+{
+	//LOG_INF("enter xxxx  set_shutter, shutter =%d\n", shutter);
+
+	unsigned long flags;
+	//kal_uint16 realtime_fps = 0;
+	//kal_uint32 frame_length = 0;
+	spin_lock_irqsave(&imgsensor_drv_lock, flags);
+	imgsensor.shutter = le;
+	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
+
+	LOG_INF("HDR set shutter =%d\n", le);
+	if(!le) le = 1; /*avoid 0*/
+	
+	spin_lock(&imgsensor_drv_lock);
+	if (le > imgsensor.min_frame_length - imgsensor_info.margin)
+		imgsensor.frame_length = le + imgsensor_info.margin;
+	else
+		imgsensor.frame_length = imgsensor.min_frame_length;
+
+	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
+		imgsensor.frame_length = imgsensor_info.max_frame_length;
+	
+	spin_unlock(&imgsensor_drv_lock);
+
+	le = (le < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : le;
+	le = (le > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : le;
+
+	// Frame length :4000 C340
+	//write_cmos_sensor_twobyte(0x6028,0x4000);
+	//write_cmos_sensor_twobyte(0x602A,0xC340 );
+	write_cmos_sensor_twobyte(0x0340, imgsensor.frame_length);
+
+	/*Short exposure */
+	write_cmos_sensor_twobyte(0x0202,se);
+	/*Log exposure ratio*/
+	write_cmos_sensor_twobyte(0x021e,le);
+	
+
+
+}
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
@@ -481,41 +534,6 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	return gain;
 
 }    /*    set_gain  */
-
-static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gain)
-{
-#if 0
-    LOG_INF("le:0x%x, se:0x%x, gain:0x%x\n",le,se,gain);
-    if (imgsensor.ihdr_en) {
-
-        spin_lock(&imgsensor_drv_lock);
-        if (le > imgsensor.min_frame_length - imgsensor_info.margin)
-            imgsensor.frame_length = le + imgsensor_info.margin;
-        else
-            imgsensor.frame_length = imgsensor.min_frame_length;
-        if (imgsensor.frame_length > imgsensor_info.max_frame_length)
-            imgsensor.frame_length = imgsensor_info.max_frame_length;
-        spin_unlock(&imgsensor_drv_lock);
-        if (le < imgsensor_info.min_shutter) le = imgsensor_info.min_shutter;
-        if (se < imgsensor_info.min_shutter) se = imgsensor_info.min_shutter;
-
-
-        // Extend frame length first
-	 	write_cmos_sensor(0x0104,0x01);
-		write_cmos_sensor_twobyte(0x0340, imgsensor.frame_length);
-
-		write_cmos_sensor_twobyte(0x602A,0x021e);
-		write_cmos_sensor_twobyte(0x6f12,le);
-		write_cmos_sensor_twobyte(0x602A,0x0202);
-		write_cmos_sensor_twobyte(0x6f12,se);
-		write_cmos_sensor(0x0104,0x00);
-
-        set_gain(gain);
-    }
-#endif
-}
-
-
 
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
@@ -664,7 +682,7 @@ static void Sensor_FW_read_downlaod(char*  filename)
          filp = filp_open(filename, O_RDONLY, 0);
          if (IS_ERR(filp))
          {
-             printk(KERN_INFO "Unable to load '%s'.\n", filename);
+             LOG_INF(KERN_INFO "Unable to load '%s'.\n", filename);
              return;
          }
          else
@@ -677,7 +695,7 @@ static void Sensor_FW_read_downlaod(char*  filename)
          LOG_INF("JEFF:The bin file length (%d)\n", file_size);
          if (file_size <= 0 )
          {
-                   printk(KERN_INFO "Invalid firmware '%s'\n",filename);
+                   LOG_INF(KERN_INFO "Invalid firmware '%s'\n",filename);
                    filp_close(filp,0);
                    return ;
          }
@@ -685,7 +703,7 @@ static void Sensor_FW_read_downlaod(char*  filename)
          s5k2x8_SensorFirmware = kmalloc(file_size, GFP_KERNEL);
          if(s5k2x8_SensorFirmware == 0)
           {
-                printk("JEFF:kmalloc failed \n");
+                LOG_INF("JEFF:kmalloc failed \n");
                    filp_close(filp,0);
                  return ;
            }
@@ -695,7 +713,7 @@ static void Sensor_FW_read_downlaod(char*  filename)
          ret = vfs_read(filp, s5k2x8_SensorFirmware, file_size , &(filp->f_pos));
          if (file_size!= ret)
          {
-                   printk(KERN_INFO "Failed to read '%s'.\n", filename);
+                   LOG_INF(KERN_INFO "Failed to read '%s'.\n", filename);
                  kfree(s5k2x8_SensorFirmware);
                    filp_close(filp, NULL);
                    return ;
@@ -2977,35 +2995,18 @@ mDELAY(10);
 
 static void sensor_init_11(void)
 {
-/*Init with WSD*/
+/*2X8_global(HQ)_1014.sset*/
 LOG_INF("Enter s5k2x8 sensor_init.\n");
 
-
-// Clock Gen
+//Clock Gen
 write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0x6214);
-write_cmos_sensor_twobyte(0x6F12,0xFFFF);
-write_cmos_sensor_twobyte(0x6F12,0xFFFF);
-write_cmos_sensor_twobyte(0x6F12,0x0000);
-write_cmos_sensor_twobyte(0x6F12,0x0000);
+write_cmos_sensor_twobyte(0x6214,0xFFFF);
+write_cmos_sensor_twobyte(0x6216,0xFFFF);
+write_cmos_sensor_twobyte(0x6218,0x0000);
+write_cmos_sensor_twobyte(0x621A,0x0000);
 
 // Start T&P part
 // DO NOT DELETE T&P SECTION COMMENTS! They are required to debug T&P related issues.
-// 2015/01/27 09:24:37
-// SVN Rev: WC
-// ROM Rev: 2X8S_FW_Release
-// Signature:
-// md5 8736b4baea91ed2154f806bde26662cb .btp
-// md5 9118bd350f3bd27f2062bc85a82fde21 .htp
-// md5 0962075363e406e57d83d6df13ef05b0 .RegsMap.h
-// md5 28861596af100bc8ed38e0f816c01d5c .RegsMap.bin
-//
-write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0x6214);
-write_cmos_sensor_twobyte(0x6F12,0xFFFF);
-write_cmos_sensor_twobyte(0x6F12,0xFFFF);
-write_cmos_sensor_twobyte(0x6F12,0x0000);
-write_cmos_sensor_twobyte(0x6F12,0x0000);
 write_cmos_sensor_twobyte(0x6028,0x2001);
 write_cmos_sensor_twobyte(0x602A,0x4DC0);
 write_cmos_sensor_twobyte(0x6F12,0x0449);
@@ -3922,23 +3923,20 @@ write_cmos_sensor_twobyte(0x6F12,0x005F);
 //                                       
 // End T&P part                          
                                          
-                                         
 ////////////////////////////////////////////////////////////
-//////Analog Setting Start 20141216
+//////Analog Setting Start 
 ////////////////////////////////////////////////////////////
 
 //// ADLC setting
 write_cmos_sensor_twobyte(0x6028,0x2000);
 write_cmos_sensor_twobyte(0x602A,0x177C);
-write_cmos_sensor(0x6F12,0x00);
+write_cmos_sensor_twobyte(0x6F12,0x0000);
 
 //// Add mixer setting @ 20150111
-write_cmos_sensor_twobyte(0x602A,0x19FB);
-write_cmos_sensor(0x6F12,0x01);
+write_cmos_sensor_twobyte(0x602A,0x19FA);
+write_cmos_sensor_twobyte(0x6F12,0x0101);
 write_cmos_sensor_twobyte(0x602A,0x19FC);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x19FD);
-write_cmos_sensor(0x6F12,0x00);
+write_cmos_sensor_twobyte(0x6F12,0x0000);
 
 //// Add dadlc setting @ 20150118 , pbc
 write_cmos_sensor_twobyte(0x602A,0x1718);
@@ -3949,19 +3947,18 @@ write_cmos_sensor_twobyte(0x6F12,0x0000);
 
 //// Add WDR exposure setting @ 20150118 , pbc
 write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0xF4FC);
-write_cmos_sensor_twobyte(0x6F12,0x4D17);	// EVT1.1
+write_cmos_sensor_twobyte(0xF4FC,0x4D17);	// EVT1.1
 
 //// Clock setting, related with ATOP
 write_cmos_sensor_twobyte(0x6028,0x2000);
-write_cmos_sensor_twobyte(0x602A,0x0E25);
-write_cmos_sensor(0x6F12,0x01);
+write_cmos_sensor_twobyte(0x602A,0x0E24);
+write_cmos_sensor_twobyte(0x6F12,0x0001);
 write_cmos_sensor_twobyte(0x602A,0x0E64);
 write_cmos_sensor_twobyte(0x6F12,0x004A);	// DBR freq : 100MHz -> 74MHz EVT1.1 0504
 
 //// SHBN setting
 write_cmos_sensor_twobyte(0x602A,0x0EB0);
-write_cmos_sensor(0x6F12,0x01);
+write_cmos_sensor_twobyte(0x6F12,0x0100);
 write_cmos_sensor_twobyte(0x602A,0x0EB2);
 write_cmos_sensor_twobyte(0x6F12,0x0020);
 write_cmos_sensor_twobyte(0x6F12,0x0020);
@@ -3981,18 +3978,11 @@ write_cmos_sensor_twobyte(0x6F12,0x3EB8);	// F406 address
 
 //// ATOP Setting (Option)
 write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0xF440);
-write_cmos_sensor_twobyte(0x6F12,0x0000);	// CDS option
-write_cmos_sensor_twobyte(0x602A,0xF4AA);
-write_cmos_sensor_twobyte(0x6F12,0x0040);	// RAMP option (150 ohm)
-write_cmos_sensor_twobyte(0x602A,0xF486);
-write_cmos_sensor_twobyte(0x6F12,0x0000);	// DBR option
-
+write_cmos_sensor_twobyte(0xF440,0x0000);
+write_cmos_sensor_twobyte(0xF4AA,0x0040);	
+write_cmos_sensor_twobyte(0xF486,0x0000);
 write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0xF442);
-write_cmos_sensor_twobyte(0x6F12,0x0000);	// DBUS option
-
-
+write_cmos_sensor_twobyte(0xF442,0x0000);
 write_cmos_sensor_twobyte(0x6028,0x2000);
 
 //// DBUS setting
@@ -4007,37 +3997,22 @@ write_cmos_sensor_twobyte(0x6F12,0x0000);
 write_cmos_sensor_twobyte(0x6F12,0x0000);
 
 //// Ramp Setting
-write_cmos_sensor_twobyte(0x602A,0x0E37);
-write_cmos_sensor(0x6F12,0x06);	// 07 EVT1.1 LKH
+write_cmos_sensor_twobyte(0x602A,0x0E36);
+write_cmos_sensor_twobyte(0x6F12,0x0006);
 write_cmos_sensor_twobyte(0x602A,0x0E38);
-write_cmos_sensor(0x6F12,0x06);	// 07 EVT1.1 LKH
-write_cmos_sensor_twobyte(0x602A,0x0E39);
-write_cmos_sensor(0x6F12,0x06);	// 07 EVT1.1 LKH
+write_cmos_sensor_twobyte(0x6F12,0x0606);
 write_cmos_sensor_twobyte(0x602A,0x0E3A);
-write_cmos_sensor(0x6F12,0x06);	// 07 EVT1.1 LKH
-
-write_cmos_sensor_twobyte(0x602A,0x0E3B);
-write_cmos_sensor(0x6F12,0x0F);
+write_cmos_sensor_twobyte(0x6F12,0x060F);
 write_cmos_sensor_twobyte(0x602A,0x0E3C);
-write_cmos_sensor(0x6F12,0x0F);
-write_cmos_sensor_twobyte(0x602A,0x0E3D);
-write_cmos_sensor(0x6F12,0x0F);
+write_cmos_sensor_twobyte(0x6F12,0x0F0F);
 write_cmos_sensor_twobyte(0x602A,0x0E3E);
-write_cmos_sensor(0x6F12,0x0F);
-
-write_cmos_sensor_twobyte(0x602A,0x0E3F);
-write_cmos_sensor(0x6F12,0x30);
+write_cmos_sensor_twobyte(0x6F12,0x0F30);
 write_cmos_sensor_twobyte(0x602A,0x0E40);
-write_cmos_sensor(0x6F12,0x30);
-write_cmos_sensor_twobyte(0x602A,0x0E41);
-write_cmos_sensor(0x6F12,0x30);
+write_cmos_sensor_twobyte(0x6F12,0x3030);
 write_cmos_sensor_twobyte(0x602A,0x0E42);
-write_cmos_sensor(0x6F12,0x30);
-
-write_cmos_sensor_twobyte(0x602A,0x0E43);
-write_cmos_sensor(0x6F12,0x03);	// EVT1.1 LKH
+write_cmos_sensor_twobyte(0x6F12,0x3030);
 write_cmos_sensor_twobyte(0x602A,0x0E46);
-write_cmos_sensor(0x6F12,0x03);	// EVT1.1 LKH
+write_cmos_sensor_twobyte(0x6F12,0x0301);
 
 write_cmos_sensor_twobyte(0x602A,0x0706);
 write_cmos_sensor_twobyte(0x6F12,0x01C0);
@@ -4048,101 +4023,71 @@ write_cmos_sensor_twobyte(0x6F12,0x01C0);
 //// APS setting
 // WRITE 4000F4AC 005A  // ADCsat 720mV // 20150113 KTY
 write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0xF4AC);
-write_cmos_sensor_twobyte(0x6F12,0x0062);	// ADCsat 760mV
+write_cmos_sensor_twobyte(0xF4AC,0x0062);
 
 /////////ADC Timing is updated below(20150102)
 /////////////Type
 write_cmos_sensor_twobyte(0x6028,0x2000);
 write_cmos_sensor_twobyte(0x602A,0x0CF4);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x0CF5);
-write_cmos_sensor(0x6F12,0x00);
+write_cmos_sensor_twobyte(0x6F12,0x0000);
 write_cmos_sensor_twobyte(0x602A,0x0D26);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x0D27);
-write_cmos_sensor(0x6F12,0x00);
+write_cmos_sensor_twobyte(0x6F12,0x0000);
 write_cmos_sensor_twobyte(0x602A,0x0D28);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x0D29);
-write_cmos_sensor(0x6F12,0x00);
-
-// blooming shutter
+write_cmos_sensor_twobyte(0x6F12,0x0000);
 write_cmos_sensor_twobyte(0x602A,0x0E80);
-write_cmos_sensor(0x6F12,0x01);	// 20150504 HHJ
+write_cmos_sensor_twobyte(0x6F12,0x0100);
 
 ////////////////////////////////////////////////////////////
 //////Analog Setting End
 ////////////////////////////////////////////////////////////
-
-// EVT1.1 TnP
 write_cmos_sensor_twobyte(0x6028,0x2001);
-
-write_cmos_sensor_twobyte(0x602A,0xAB01);
-write_cmos_sensor(0x6F12,0x00);
+write_cmos_sensor_twobyte(0x602A,0xAB00);
+write_cmos_sensor_twobyte(0x6F12,0x0000);
 write_cmos_sensor_twobyte(0x602A,0xAB02);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0xAB03);
-write_cmos_sensor(0x6F12,0x00);
+write_cmos_sensor_twobyte(0x6F12,0x0000);
 write_cmos_sensor_twobyte(0x602A,0xAB04);
 write_cmos_sensor_twobyte(0x6F12,0x0000);
 write_cmos_sensor_twobyte(0x6F12,0x0000);
-write_cmos_sensor(0x6F12,0x00);
-
+write_cmos_sensor_twobyte(0x6F12,0x0000);
 
 write_cmos_sensor_twobyte(0x6028,0x4000);
-
-write_cmos_sensor_twobyte(0x602A,0x3092);
-write_cmos_sensor_twobyte(0x6F12,0x7E50);	// EVT1.1
+write_cmos_sensor_twobyte(0x3092,0x7E50);
 write_cmos_sensor_twobyte(0x6028,0x2000);
-write_cmos_sensor_twobyte(0x602A,0x1F1B);
-write_cmos_sensor(0x6F12,0x01);	// EVT1.1
+write_cmos_sensor_twobyte(0x602A,0x1F1A);
+write_cmos_sensor_twobyte(0x6F12,0x0001);
 write_cmos_sensor_twobyte(0x602A,0x1D5E);
-write_cmos_sensor_twobyte(0x6F12,0x0359);	// EVT1.1 0429 pjw
-write_cmos_sensor(0x6F12,0x01);	// EVT1.1 0429 pjw
-
+write_cmos_sensor_twobyte(0x6F12,0x0358);	// EVT1.1 0429 pjw
+write_cmos_sensor_twobyte(0x6F12,0x0001);
 
 // TG Readout
 write_cmos_sensor_twobyte(0x6028,0x2000);
 write_cmos_sensor_twobyte(0x602A,0x06AC);
-write_cmos_sensor(0x6F12,0x01);	// 0:Normal 1:CSR
+write_cmos_sensor_twobyte(0x6F12,0x0100);
 
 // FOB Setting
-write_cmos_sensor_twobyte(0x602A,0x06A7);
-write_cmos_sensor(0x6F12,0x08);
+write_cmos_sensor_twobyte(0x602A,0x06A6);
+write_cmos_sensor_twobyte(0x6F12,0x0108);
 write_cmos_sensor_twobyte(0x602A,0x06A8);
-write_cmos_sensor(0x6F12,0x0C);
+write_cmos_sensor_twobyte(0x6F12,0x0C01);
 
 // Int.Time
-// pjw EVT1.1 WRITE #TNP_Regs_bCalcCintc 						00
-// pjw EVT1.1 WRITE #TNP_Regs_bFixCintcDivFactor 		01
-// pjw EVT1.1 WRITE #TNP_Regs_bMineExpComp 					01
-write_cmos_sensor_twobyte(0x602A,0x06FB);
-write_cmos_sensor(0x6F12,0x00);	// EVT1.1
+write_cmos_sensor_twobyte(0x602A,0x06FA);
+write_cmos_sensor_twobyte(0x6F12,0x1000);
 write_cmos_sensor_twobyte(0x6028,0x4000);
 
-write_cmos_sensor_twobyte(0x602A,0x021E);
-write_cmos_sensor_twobyte(0x6F12,0x0400);
-write_cmos_sensor_twobyte(0x602A,0x021C);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-
-
-
+write_cmos_sensor_twobyte(0x021E,0x0400);
+write_cmos_sensor_twobyte(0x021C,0x0001);
 // Digital Gain
-write_cmos_sensor_twobyte(0x602A,0x020E);
-write_cmos_sensor_twobyte(0x6F12,0x0100);
-write_cmos_sensor_twobyte(0x602A,0x3074);
-write_cmos_sensor_twobyte(0x6F12,0x0100);
+write_cmos_sensor_twobyte(0x020E,0x0100);
+write_cmos_sensor_twobyte(0x3074,0x0100);
 
 // PSP BDS/HVbin
 write_cmos_sensor_twobyte(0x6028,0x2000);
 write_cmos_sensor_twobyte(0x602A,0x0EFA);
-write_cmos_sensor(0x6F12,0x01);	// BDS
+write_cmos_sensor_twobyte(0x6F12,0x0100);
+
 write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0x0404);
-write_cmos_sensor_twobyte(0x6F12,0x0010);	// x1.7
-
-
+write_cmos_sensor_twobyte(0x0404,0x0010);
 
 // Debug Path - PSP Bypass
 // pjw WRITE 400070F2 0001
@@ -4163,12 +4108,10 @@ write_cmos_sensor_twobyte(0x6F12,0x0000);	// Despeckle static enable
 
 write_cmos_sensor_twobyte(0x602A,0x58C0);
 write_cmos_sensor_twobyte(0x6F12,0x0001);	// GOS bypass
-// WRITE #noiseNormTuningParams_bypass       0001   // Noise Norm
 
 write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0x30E6);
-write_cmos_sensor_twobyte(0x6F12,0x0000);	// PDAF Disable
-// WRITE #afStatisticsTuningParams_cg_bypass    0001  // PD Stat
+write_cmos_sensor_twobyte(0x30E6,0x0000);
+
 write_cmos_sensor_twobyte(0x6028,0x2000);
 write_cmos_sensor_twobyte(0x602A,0x7500);
 write_cmos_sensor_twobyte(0x6F12,0x0000);	//First Gamma (4T)
@@ -4204,8 +4147,7 @@ write_cmos_sensor_twobyte(0x6F12,0x0000);	// DTP
 write_cmos_sensor_twobyte(0x602A,0xA8D8);
 write_cmos_sensor_twobyte(0x6F12,0x0001);	//[15:8] N/A, [7:0]  Misc_Bypass_DisableMixer
 write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0x3176);
-write_cmos_sensor_twobyte(0x6F12,0x0000);	// EVT1.1
+write_cmos_sensor_twobyte(0x3176,0x0000);
 // pjw EVT1.1 WRITE #api_info_config_removePedestalMode 0000
 
 // ISPShift
@@ -4232,19 +4174,19 @@ write_cmos_sensor_twobyte(0x602A,0x6880);
 write_cmos_sensor_twobyte(0x6F12,0x0001);	// HQDNS
 
 write_cmos_sensor_twobyte(0x602A,0x93B0);
-write_cmos_sensor(0x6F12,0x01);
+write_cmos_sensor_twobyte(0x6F12,0x0101);
+
 write_cmos_sensor_twobyte(0x602A,0x91A0);
 write_cmos_sensor_twobyte(0x6F12,0x0003);
 
 write_cmos_sensor_twobyte(0x602A,0x51E4);
 write_cmos_sensor_twobyte(0x6F12,0x0000);	// pjw
 write_cmos_sensor_twobyte(0x602A,0x122B);
-write_cmos_sensor(0x6F12,0x00);	// pjw
+write_cmos_sensor_twobyte(0x6F12,0x0000);
 
 // pjw WRITE #senHal_PspWaitLines 19
 write_cmos_sensor_twobyte(0x602A,0x0687);
-write_cmos_sensor(0x6F12,0x05);
-
+write_cmos_sensor_twobyte(0x6F12,0x0005);
 /////////////////////////////////////////////////
 // PSP END
 /////////////////////////////////////////////////
@@ -4954,12 +4896,8 @@ write_cmos_sensor_twobyte(0x6F12,0x000D);	// 20150113 KTY
 write_cmos_sensor_twobyte(0x6F12,0x000D);	// 20150113 KTY
 // pjw write_cmos_sensor_twobyte(0xf480,0x0008); //VTG
 write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0xF480);
-write_cmos_sensor_twobyte(0x6F12,0x0008);	// VTG
-
-// pjw write_cmos_sensor_twobyte(0xf4d0,0x0020); //Atten AGx2
-write_cmos_sensor_twobyte(0x602A,0xF4D0);
-write_cmos_sensor_twobyte(0x6F12,0x0020);	// Atten AGx2
+write_cmos_sensor_twobyte(0xF480,0x0010);
+write_cmos_sensor_twobyte(0xF4D0,0x0020);
 write_cmos_sensor_twobyte(0x6028,0x2000);
 write_cmos_sensor_twobyte(0x602A,0x150E);
 write_cmos_sensor_twobyte(0x6F12,0x0610);	// 20150113 HHJ
@@ -5184,10 +5122,7 @@ write_cmos_sensor_twobyte(0x602A,0x0E88);
 write_cmos_sensor_twobyte(0x6F12,0x3EF8);	// F406 address :VBLK_EN on
 write_cmos_sensor_twobyte(0x6028,0x4000);
 
-write_cmos_sensor_twobyte(0x602A,0xF4AA);
-write_cmos_sensor_twobyte(0x6F12,0x0048);	//RAMP power save @ SL off
-
-
+write_cmos_sensor_twobyte(0xF4AA,0x0048);
 
 mDELAY(10);
 
@@ -5658,704 +5593,331 @@ mDELAY(10);
 
 }    /*    preview_setting  */
 
-static void capture_setting_10(kal_uint16 currefps)
-{
-	//$MIPI[Width:5632,Height:4224,Format:RAW10,Lane:4,ErrorCheck:0,PolarityData:0,PolarityClock:0,Buffer:4,DataRate:1452,useEmbData:0]
-	//$MV1[MCLK:24,Width:5632,Height:4224,Format:MIPI_RAW10,mipi_lane:4,mipi_hssettle:23,pvi_pclk_inverse:0]
-
-// Stream Off
-write_cmos_sensor_twobyte(0x602A,0x0100);
-write_cmos_sensor(0x6F12,0x00);
-
-//// CDS Current Setting
-write_cmos_sensor_twobyte(0x6028,0x2000);
-write_cmos_sensor_twobyte(0x602A,0x1C87);
-write_cmos_sensor(0x6F12,0x03);	// CDS current
-write_cmos_sensor_twobyte(0x602A,0x1C88);
-write_cmos_sensor(0x6F12,0x03);	// CDS current
-write_cmos_sensor_twobyte(0x602A,0x1C89);
-write_cmos_sensor(0x6F12,0x03);	// CDS current
-write_cmos_sensor_twobyte(0x602A,0x1C8A);
-write_cmos_sensor(0x6F12,0x03);	// CDS current
-
-write_cmos_sensor_twobyte(0x602A,0x1C8B);
-write_cmos_sensor(0x6F12,0x0A);	// Pixel Bias current
-write_cmos_sensor_twobyte(0x602A,0x1C8C);
-write_cmos_sensor(0x6F12,0x0A);	// Pixel Bias current
-write_cmos_sensor_twobyte(0x602A,0x1C8D);
-write_cmos_sensor(0x6F12,0x0A);	// Pixel Bias current
-write_cmos_sensor_twobyte(0x602A,0x1C8E);
-write_cmos_sensor(0x6F12,0x0A);	// Pixel Bias current
-
-write_cmos_sensor_twobyte(0x602A,0x1C8F);
-write_cmos_sensor(0x6F12,0x07);	// Pixel Boost current
-write_cmos_sensor_twobyte(0x602A,0x1C90);
-write_cmos_sensor(0x6F12,0x07);	// Pixel Boost current
-write_cmos_sensor_twobyte(0x602A,0x1C91);
-write_cmos_sensor(0x6F12,0x07);	// Pixel Boost current
-write_cmos_sensor_twobyte(0x602A,0x1C92);
-write_cmos_sensor(0x6F12,0x07);	// Pixel Boost current
-
-write_cmos_sensor_twobyte(0x602A,0x426A);
-write_cmos_sensor(0x6F12,0x04);
-write_cmos_sensor_twobyte(0x602A,0x42FD);
-write_cmos_sensor(0x6F12,0x20);
-write_cmos_sensor_twobyte(0x602A,0x42FE);
-write_cmos_sensor(0x6F12,0x21);
-write_cmos_sensor_twobyte(0x602A,0x42FF);
-write_cmos_sensor(0x6F12,0x28);
-write_cmos_sensor_twobyte(0x602A,0x4300);
-write_cmos_sensor(0x6F12,0x29);
-write_cmos_sensor_twobyte(0x602A,0x4305);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x4306);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x4307);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x4308);
-write_cmos_sensor(0x6F12,0x00);
-
-
-	//// ADLC setting
-	write_cmos_sensor_twobyte(0x6028,0x2000);
-	write_cmos_sensor_twobyte(0x602A,0x25D8);
-	write_cmos_sensor_twobyte(0x6F12,0x0010);
-	write_cmos_sensor_twobyte(0x6F12,0x0011);
-	write_cmos_sensor_twobyte(0x6F12,0x0011);
-	write_cmos_sensor_twobyte(0x602A,0x26C8);
-	write_cmos_sensor(0x6F12,0x00);
-
-	//// Clock setting, related with ATOP
-	write_cmos_sensor_twobyte(0x602A,0x1C64);
-	write_cmos_sensor(0x6F12,0x00); // For 450MHz CCLK
-	write_cmos_sensor_twobyte(0x602A,0x1C65);
-	write_cmos_sensor(0x6F12,0x01);
-	write_cmos_sensor_twobyte(0x602A,0x1CA4);
-	write_cmos_sensor_twobyte(0x6F12,0x0064);	// DBR freq : 100MHz
-
-	//write_cmos_sensor_twobyte(0x602A,0x1520);
-	//write_cmos_sensor_twobyte(0x6F12,0x0200);
-	//write_cmos_sensor_twobyte(0x602A,0x1524);
-	//write_cmos_sensor_twobyte(0x6F12,0x1000);
-
-	// PSP BDS/HVbin
-	write_cmos_sensor_twobyte(0x602A,0x0F9A);
-	write_cmos_sensor(0x6F12,0x01); // BDS
-
-	// TG Readout
-	write_cmos_sensor_twobyte(0x602A,0x14EC);
-	write_cmos_sensor(0x6F12,0x01); // 0:Normal 1:CSR
-
-	// FOB Setting
-  write_cmos_sensor_twobyte(0x602A,0x14E7);
-	write_cmos_sensor(0x6F12,0x08);
-  write_cmos_sensor_twobyte(0x602A,0x14E8);
-	write_cmos_sensor(0x6F12,0x0C);
-
-
-	// Int.Time
-	write_cmos_sensor_twobyte(0x6028,0x4000);
-	write_cmos_sensor_twobyte(0x602A,0x0202);
-	write_cmos_sensor_twobyte(0x6F12,0x0400);
-	write_cmos_sensor_twobyte(0x602A,0x0200);
-	write_cmos_sensor_twobyte(0x6F12,0x0001);
-	write_cmos_sensor_twobyte(0x602A,0x021E);
-	write_cmos_sensor_twobyte(0x6F12,0x0400);
-	write_cmos_sensor_twobyte(0x602A,0x021C);
-	write_cmos_sensor_twobyte(0x6F12,0x0001);
-
-	// Analog Gain
-	write_cmos_sensor_twobyte(0x602A,0x0204);
-	write_cmos_sensor_twobyte(0x6F12,0x0020);
-	write_cmos_sensor_twobyte(0x6F12,0x0020);
-
-	//CASE : 24M Full_5632X4224
-	write_cmos_sensor_twobyte(0x602A,0x0344);
-	write_cmos_sensor_twobyte(0x6F12,0x0008);
-	write_cmos_sensor_twobyte(0x602A,0x0348);
-	write_cmos_sensor_twobyte(0x6F12,0x161F);
-	write_cmos_sensor_twobyte(0x602A,0x0346);
-	write_cmos_sensor_twobyte(0x6F12,0x0010);
-	write_cmos_sensor_twobyte(0x602A,0x034A);
-	write_cmos_sensor_twobyte(0x6F12,0x1097);
-	write_cmos_sensor_twobyte(0x6F12,0x1600);
-	write_cmos_sensor_twobyte(0x6F12,0x1080);
-	write_cmos_sensor_twobyte(0x602A,0x0342);
-	write_cmos_sensor_twobyte(0x6F12,0x1DD8);	//1ECC
-	write_cmos_sensor_twobyte(0x602A,0x0340);
-	write_cmos_sensor_twobyte(0x6F12,0x10FE);
-
-	write_cmos_sensor_twobyte(0x602A,0x0900);
-	write_cmos_sensor(0x6F12,0x01);
-	write_cmos_sensor_twobyte(0x602A,0x0901);
-	write_cmos_sensor(0x6F12,0x11);
-	write_cmos_sensor_twobyte(0x602A,0x0380);
-	write_cmos_sensor_twobyte(0x6F12,0x0001);
-	write_cmos_sensor_twobyte(0x6F12,0x0001);
-	write_cmos_sensor_twobyte(0x6F12,0x0001);
-	write_cmos_sensor_twobyte(0x6F12,0x0001);
-
-	write_cmos_sensor_twobyte(0x602A,0x0404);
-	write_cmos_sensor_twobyte(0x6F12,0x0010);	// x1.7
-
-	// CropAndPad
-	write_cmos_sensor_twobyte(0x602A,0x0408);
-	write_cmos_sensor_twobyte(0x6F12,0x000E);	// 50
-	write_cmos_sensor_twobyte(0x6F12,0x0000);	// 30
-
-	///////////////////////////////////////////////////////////
-	//PLL Sys = 560 , Sec = 1392
-	write_cmos_sensor_twobyte(0x602A,0x0136);
-	write_cmos_sensor_twobyte(0x6F12,0x1800);
-	write_cmos_sensor_twobyte(0x602A,0x0304);
-	write_cmos_sensor_twobyte(0x6F12,0x0003);
-	write_cmos_sensor_twobyte(0x6F12,0x00E1);
-	write_cmos_sensor_twobyte(0x602A,0x030C);
-	write_cmos_sensor_twobyte(0x6F12,0x0000);
-	write_cmos_sensor_twobyte(0x602A,0x0302);
-	write_cmos_sensor_twobyte(0x6F12,0x0001);
-	write_cmos_sensor_twobyte(0x602A,0x0300);
-	write_cmos_sensor_twobyte(0x6F12,0x0005);
-	write_cmos_sensor_twobyte(0x602A,0x030A);
-	write_cmos_sensor_twobyte(0x6F12,0x0001);
-	write_cmos_sensor_twobyte(0x602A,0x0308);
-	write_cmos_sensor_twobyte(0x6F12,0x000A);
-
-	write_cmos_sensor_twobyte(0x602A,0x0318);
-	write_cmos_sensor_twobyte(0x6F12,0x0003);
-	write_cmos_sensor_twobyte(0x6F12,0x00A5);
-	write_cmos_sensor_twobyte(0x6F12,0x0001);
-	write_cmos_sensor_twobyte(0x602A,0x0316);
-	write_cmos_sensor_twobyte(0x6F12,0x0001);
-	write_cmos_sensor_twobyte(0x602A,0x0314);
-	write_cmos_sensor_twobyte(0x6F12,0x0003);
-
-	write_cmos_sensor_twobyte(0x602A,0x030E);
-	write_cmos_sensor_twobyte(0x6F12,0x0004);
-	write_cmos_sensor_twobyte(0x6F12,0x00F2);	//00E9
-	write_cmos_sensor_twobyte(0x6F12,0x0000);
-
-	// OIF Setting
-	write_cmos_sensor_twobyte(0x602A,0x0111);
-	write_cmos_sensor(0x6F12,0x02); // PVI, 2: MIPI
-	write_cmos_sensor_twobyte(0x602A,0x0114);
-	write_cmos_sensor(0x6F12,0x03);
-	write_cmos_sensor_twobyte(0x602A,0x0112);
-	write_cmos_sensor_twobyte(0x6F12,0x0A0A);	// data format
-
-	// AF
-	write_cmos_sensor_twobyte(0x602A,0x0B0E);
-	write_cmos_sensor(0x6F12,0x00);
-	write_cmos_sensor_twobyte(0x602A,0x3069);
-	write_cmos_sensor(0x6F12,0x01);
-	write_cmos_sensor_twobyte(0x602A,0x0B08);
-	write_cmos_sensor(0x6F12,0x00);
-	write_cmos_sensor_twobyte(0x602A,0x0B05);
-	write_cmos_sensor(0x6F12,0x00);
-
-	// Stream On
-	write_cmos_sensor_twobyte(0x602A,0x0100);
-	write_cmos_sensor(0x6F12,0x01);
-
-
-mDELAY(10);
-
-}
-
-static void capture_setting_11(kal_uint16 currefps)
-{
-//$MIPI[Width:5632,Height:4224,Format:RAW10,Lane:4,ErrorCheck:0,PolarityData:0,PolarityClock:0,Buffer:4,DataRate:1452,useEmbData:0]
-//$MV1[MCLK:24,Width:5632,Height:4224,Format:MIPI_RAW10,mipi_lane:4,mipi_hssettle:23,pvi_pclk_inverse:0]
-
-
-// Stream Off
-write_cmos_sensor_twobyte(0x602A,0x0100);
-write_cmos_sensor(0x6F12,0x00);
-
-////1. ADLC setting
-write_cmos_sensor_twobyte(0x6028,0x2000);
-write_cmos_sensor_twobyte(0x602A,0x168C);
-write_cmos_sensor_twobyte(0x6F12,0x0010);
-write_cmos_sensor_twobyte(0x6F12,0x0011);
-write_cmos_sensor_twobyte(0x6F12,0x0011);
-
-
-
-//2. Clock setting, related with ATOP remove
-write_cmos_sensor_twobyte(0x6028,0x2000);
-write_cmos_sensor_twobyte(0x602A,0x0E24);
-write_cmos_sensor(0x6F12,0x00);	// For 450MHz CCLK
-
-//3. ATOP Setting (Option)
-write_cmos_sensor_twobyte(0x6028,0x2000);
-write_cmos_sensor_twobyte(0x602A,0x0E9C);
-write_cmos_sensor_twobyte(0x6F12,0x0084);	// RDV option
-
-//// CDS Current Setting
-write_cmos_sensor_twobyte(0x6028,0x2000);
-write_cmos_sensor_twobyte(0x602A,0x0E47);
-write_cmos_sensor(0x6F12,0x00);	// CDS current // EVT1.1 0429 lkh
-write_cmos_sensor_twobyte(0x602A,0x0E48);
-write_cmos_sensor(0x6F12,0x03);	// CDS current
-write_cmos_sensor_twobyte(0x602A,0x0E49);
-write_cmos_sensor(0x6F12,0x03);	// CDS current
-write_cmos_sensor_twobyte(0x602A,0x0E4A);
-write_cmos_sensor(0x6F12,0x03);	// CDS current
-
-write_cmos_sensor_twobyte(0x602A,0x0E4B);
-write_cmos_sensor(0x6F12,0x0A);	// Pixel Bias current
-write_cmos_sensor_twobyte(0x602A,0x0E4C);
-write_cmos_sensor(0x6F12,0x0A);	// Pixel Bias current
-write_cmos_sensor_twobyte(0x602A,0x0E4D);
-write_cmos_sensor(0x6F12,0x0A);	// Pixel Bias current
-write_cmos_sensor_twobyte(0x602A,0x0E4E);
-write_cmos_sensor(0x6F12,0x0A);	// Pixel Bias current
-
-write_cmos_sensor_twobyte(0x602A,0x0E4F);
-write_cmos_sensor(0x6F12,0x07);	// Pixel Boost current
-write_cmos_sensor_twobyte(0x602A,0x0E50);
-write_cmos_sensor(0x6F12,0x07);	// Pixel Boost current
-write_cmos_sensor_twobyte(0x602A,0x0E51);
-write_cmos_sensor(0x6F12,0x07);	// Pixel Boost current
-write_cmos_sensor_twobyte(0x602A,0x0E52);
-write_cmos_sensor(0x6F12,0x07);	// Pixel Boost current
-
-
-// EVT1.1 TnP
-write_cmos_sensor_twobyte(0x6028,0x2001);
-write_cmos_sensor_twobyte(0x602A,0xAB00);
-write_cmos_sensor(0x6F12,0x00);
-
-//Af correction for 4x4 binning
-write_cmos_sensor_twobyte(0x6028,0x2000);
-write_cmos_sensor_twobyte(0x602A,0x14C9);
-write_cmos_sensor(0x6F12,0x10);	// EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14CA);
-write_cmos_sensor(0x6F12,0x10);	// EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14CD);
-write_cmos_sensor(0x6F12,0x06);	// EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14CE);
-write_cmos_sensor(0x6F12,0x05);	// EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14CF);
-write_cmos_sensor(0x6F12,0x06);	// EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14D0);
-write_cmos_sensor(0x6F12,0x09);	// EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14D1);
-write_cmos_sensor(0x6F12,0x06);	// EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14D2);
-write_cmos_sensor(0x6F12,0x09);	// EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14D3);
-write_cmos_sensor(0x6F12,0x06);	// EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14D4);
-write_cmos_sensor(0x6F12,0x0D);	// EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14DE);
-write_cmos_sensor_twobyte(0x6F12,0x1BE4); // EVT1.1
-write_cmos_sensor_twobyte(0x6F12,0xB14E);	// EVT1.1
-
-
-//MSM gain for 4x4 binning
-write_cmos_sensor_twobyte(0x602A,0x427A);
-write_cmos_sensor(0x6F12,0x04);
-write_cmos_sensor_twobyte(0x602A,0x430D);
-write_cmos_sensor(0x6F12,0x20);
-write_cmos_sensor_twobyte(0x602A,0x430E);
-write_cmos_sensor(0x6F12,0x21);
-write_cmos_sensor_twobyte(0x602A,0x430F);
-write_cmos_sensor(0x6F12,0x28);
-write_cmos_sensor_twobyte(0x602A,0x4310);
-write_cmos_sensor(0x6F12,0x29);
-write_cmos_sensor_twobyte(0x602A,0x4315);
-write_cmos_sensor(0x6F12,0x20);
-write_cmos_sensor_twobyte(0x602A,0x4316);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x4317);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x4318);
-write_cmos_sensor(0x6F12,0x00);
-
-
-
-// AF
-write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0x0B0E);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x3069);
-write_cmos_sensor(0x6F12,0x01);
-
-// BPC
-write_cmos_sensor_twobyte(0x602A,0x0B08);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x0B05);
-write_cmos_sensor(0x6F12,0x01);
-
-
-// WDR
-write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0x0216);
-write_cmos_sensor(0x6F12,0x00); //1	// smiaRegs_rw_wdr_multiple_exp_mode, EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x021B);
-write_cmos_sensor(0x6F12,0x00);	// smiaRegs_rw_wdr_exposure_order, EVT1.1
-
-
-write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0x0202);
-write_cmos_sensor_twobyte(0x6F12,0x0400);
-write_cmos_sensor_twobyte(0x602A,0x0200);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-
-// Analog Gain
-write_cmos_sensor_twobyte(0x602A,0x0204);
-write_cmos_sensor_twobyte(0x6F12,0x0020);
-write_cmos_sensor_twobyte(0x6F12,0x0020);
-
-//4. CASE : 24M Full_5632X4224 remove
-write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0x0344);
-write_cmos_sensor_twobyte(0x6F12,0x0008);
-write_cmos_sensor_twobyte(0x602A,0x0348);
-write_cmos_sensor_twobyte(0x6F12,0x161F);
-write_cmos_sensor_twobyte(0x602A,0x0346);
-write_cmos_sensor_twobyte(0x6F12,0x0010);
-write_cmos_sensor_twobyte(0x602A,0x034A);
-write_cmos_sensor_twobyte(0x6F12,0x1097);
-write_cmos_sensor_twobyte(0x6F12,0x1600);
-write_cmos_sensor_twobyte(0x6F12,0x1080);
-write_cmos_sensor_twobyte(0x602A,0x0342);
-write_cmos_sensor_twobyte(0x6F12,0x1DD8);	// 1ECC
-write_cmos_sensor_twobyte(0x602A,0x0340);
-write_cmos_sensor_twobyte(0x6F12,0x10FE);
-
-write_cmos_sensor_twobyte(0x602A,0x0900);
-write_cmos_sensor(0x6F12,0x01);
-write_cmos_sensor_twobyte(0x602A,0x0901);
-write_cmos_sensor(0x6F12,0x11);
-write_cmos_sensor_twobyte(0x602A,0x0380);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x6028,0x2000);
-write_cmos_sensor_twobyte(0x602A,0x06E0);
-write_cmos_sensor_twobyte(0x6F12,0x0200);	// EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x06E4);
-write_cmos_sensor_twobyte(0x6F12,0x1000);	// EVT1.1
-
-// PSP BDS/HVbin
-write_cmos_sensor_twobyte(0x602A,0x0EFA);
-write_cmos_sensor(0x6F12,0x01);	// BDS
-write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0x0404);
-write_cmos_sensor_twobyte(0x6F12,0x0010);	// x1.7
-
-// CropAndPad
-write_cmos_sensor_twobyte(0x602A,0x0408);
-write_cmos_sensor_twobyte(0x6F12,0x000E);
-write_cmos_sensor_twobyte(0x6F12,0x0000);
-
-///////////////////////////////////////////////////////////
-//PLL Sys = 560 , Sec = 1392
-write_cmos_sensor_twobyte(0x602A,0x0136);
-write_cmos_sensor_twobyte(0x6F12,0x1800);
-write_cmos_sensor_twobyte(0x602A,0x0304);
-write_cmos_sensor_twobyte(0x6F12,0x0005);	// 3->5 EVT1.1 0429
-write_cmos_sensor_twobyte(0x6F12,0x0173);	// 225->371 EVT1.1 0429
-write_cmos_sensor_twobyte(0x602A,0x030C);
-write_cmos_sensor_twobyte(0x6F12,0x0000);
-write_cmos_sensor_twobyte(0x602A,0x0302);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x602A,0x0300);
-write_cmos_sensor_twobyte(0x6F12,0x0005);
-write_cmos_sensor_twobyte(0x602A,0x030A);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x602A,0x0308);
-write_cmos_sensor_twobyte(0x6F12,0x000A);
-
-write_cmos_sensor_twobyte(0x602A,0x0318);
-write_cmos_sensor_twobyte(0x6F12,0x0003);
-write_cmos_sensor_twobyte(0x6F12,0x00A4);	// A5 -> A4 EVT1.1 0429
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x602A,0x0316);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x602A,0x0314);
-write_cmos_sensor_twobyte(0x6F12,0x0003);
-
-write_cmos_sensor_twobyte(0x602A,0x030E);
-write_cmos_sensor_twobyte(0x6F12,0x0004);
-write_cmos_sensor_twobyte(0x6F12,0x00F2);
-write_cmos_sensor_twobyte(0x6F12,0x0000);
-
-// OIF Setting
-write_cmos_sensor_twobyte(0x602A,0x0111);
-write_cmos_sensor(0x6F12,0x02);	// PVI, 2: MIPI
-write_cmos_sensor_twobyte(0x602A,0x0114);
-write_cmos_sensor(0x6F12,0x03);
-write_cmos_sensor_twobyte(0x602A,0x0112);
-write_cmos_sensor_twobyte(0x6F12,0x0A0A);	// data format
-
-write_cmos_sensor_twobyte(0x602A,0xB0CA);
-write_cmos_sensor_twobyte(0x6F12,0x7E00);	// M_DPHYCTL[30:25] = 6'11_1111 // EVT1.1 0429
-write_cmos_sensor_twobyte(0x602A,0xB136);
-write_cmos_sensor_twobyte(0x6F12,0x2000);	// B_DPHYCTL[62:60] = 3'b010 // EVT1.1 0429
-
-
-write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0xF4A0);
-write_cmos_sensor_twobyte(0x6F12,0x0000);
-write_cmos_sensor_twobyte(0x602A,0xF4A2);
-write_cmos_sensor_twobyte(0x6F12,0x0000);
-
-
-// Stream On
-write_cmos_sensor_twobyte(0x602A,0x0100);
-write_cmos_sensor(0x6F12,0x01);
-
-
-mDELAY(10);
-
-}
-
 static void capture_setting_WDR(kal_uint16 currefps)
 {
 //$MIPI[Width:5632,Height:4224,Format:RAW10,Lane:4,ErrorCheck:0,PolarityData:0,PolarityClock:0,Buffer:4,DataRate:1452,useEmbData:0]
 //$MV1[MCLK:24,Width:5632,Height:4224,Format:MIPI_RAW10,mipi_lane:4,mipi_hssettle:23,pvi_pclk_inverse:0]
 
-LOG_INF("Capture WDR");
+    LOG_INF("Capture WDR(fps = %d)",currefps);
+	if(currefps == 214)
+ 	{
+		////1. ADLC setting
+		write_cmos_sensor_twobyte(0x6028,0x2000);
+		write_cmos_sensor_twobyte(0x602A,0x168C);
+		write_cmos_sensor_twobyte(0x6F12,0x0010);
+		write_cmos_sensor_twobyte(0x6F12,0x0011);
+		write_cmos_sensor_twobyte(0x6F12,0x0011);
+		
+		//2. Clock setting, related with ATOP remove
+		write_cmos_sensor_twobyte(0x602A,0x0E24);
+		write_cmos_sensor_twobyte(0x6F12,0x0001); // For 450MHz CCLK
+		
+		//3. ATOP Setting (Option)
+		write_cmos_sensor_twobyte(0x602A,0x0E9C);
+		write_cmos_sensor_twobyte(0x6F12,0x0084);	// RDV option
+		
+		//// CDS Current Setting
+		write_cmos_sensor_twobyte(0x602A,0x0E46);
+		write_cmos_sensor_twobyte(0x6F12,0x0301); // CDS current // EVT1.1 0429 lkh
+		write_cmos_sensor_twobyte(0x602A,0x0E48);
+		write_cmos_sensor_twobyte(0x6F12,0x0303); // CDS current
+		write_cmos_sensor_twobyte(0x602A,0x0E4A);
+		write_cmos_sensor_twobyte(0x6F12,0x0306); // CDS current
+		write_cmos_sensor_twobyte(0x602A,0x0E4C);
+		write_cmos_sensor_twobyte(0x6F12,0x0a0a); // Pixel Bias current
+		write_cmos_sensor_twobyte(0x602A,0x0E4E);
+		write_cmos_sensor_twobyte(0x6F12,0x0A0F); // Pixel Bias current
+		write_cmos_sensor_twobyte(0x602A,0x0E50);
+		write_cmos_sensor_twobyte(0x6F12,0x0707); // Pixel Boost current
+		write_cmos_sensor_twobyte(0x602A,0x0E52);
+		write_cmos_sensor_twobyte(0x6F12,0x0700); // Pixel Boost current
+		
+		// EVT1.1 TnP
+		write_cmos_sensor_twobyte(0x6028,0x2001);
+		write_cmos_sensor_twobyte(0x602A,0xAB00);
+		write_cmos_sensor_twobyte(0x6F12,0x0000);
+		
+		
+		//Af correction for 4x4 binning
+		write_cmos_sensor_twobyte(0x6028,0x2000);
+		write_cmos_sensor_twobyte(0x602A,0x14C8);
+		write_cmos_sensor_twobyte(0x6F12,0x0010);
+		write_cmos_sensor_twobyte(0x602A,0x14CA);
+		write_cmos_sensor_twobyte(0x6F12,0x1004);
+		write_cmos_sensor_twobyte(0x602A,0x14CC);
+		write_cmos_sensor_twobyte(0x6F12,0x0406);
+		write_cmos_sensor_twobyte(0x602A,0x14CE);
+		write_cmos_sensor_twobyte(0x6F12,0x0506);
+		write_cmos_sensor_twobyte(0x602A,0x14D0);
+		write_cmos_sensor_twobyte(0x6F12,0x0906);
+		write_cmos_sensor_twobyte(0x602A,0x14D2);
+		write_cmos_sensor_twobyte(0x6F12,0x0906);
+		write_cmos_sensor_twobyte(0x602A,0x14D4);
+		write_cmos_sensor_twobyte(0x6F12,0x0D0A);
+		write_cmos_sensor_twobyte(0x602A,0x14DE);
+		write_cmos_sensor_twobyte(0x6F12,0x1BE4);
+		write_cmos_sensor_twobyte(0x6F12,0xB14E);
+		
+		//MSM gain for 4x4 binning
+		write_cmos_sensor_twobyte(0x602A,0x427A);
+		write_cmos_sensor_twobyte(0x6F12,0x0440);
+		write_cmos_sensor_twobyte(0x602A,0x430C);
+		write_cmos_sensor_twobyte(0x6F12,0x1B20);
+		write_cmos_sensor_twobyte(0x602A,0x430E);
+		write_cmos_sensor_twobyte(0x6F12,0x2128);
+		write_cmos_sensor_twobyte(0x602A,0x4310);
+		write_cmos_sensor_twobyte(0x6F12,0x2900);
+		write_cmos_sensor_twobyte(0x602A,0x4314);
+		write_cmos_sensor_twobyte(0x6F12,0x0000);
+		write_cmos_sensor_twobyte(0x602A,0x4316);
+		write_cmos_sensor_twobyte(0x6F12,0x0000);
+		write_cmos_sensor_twobyte(0x602A,0x4318);
+		write_cmos_sensor_twobyte(0x6F12,0x0000);
+		
+		// AF
+		write_cmos_sensor_twobyte(0x6028,0x4000);
+		write_cmos_sensor_twobyte(0x0B0E,0x0000);
+		//
+		write_cmos_sensor_twobyte(0x3068, 0x0001);
+		write_cmos_sensor_twobyte(0x0B08, 0x0000);
+		write_cmos_sensor_twobyte(0x0B04, 0x0101);
+		//write_cmos_sensor_twobyte(0x0216, 0x0101); /*For WDR*/
+		//write_cmos_sensor_twobyte(0x0218, 0x0101);
+		write_cmos_sensor_twobyte(0x021A, 0x0100);
+		write_cmos_sensor_twobyte(0x0202, 0x0400);
+		write_cmos_sensor_twobyte(0x0200, 0x0001);
+		write_cmos_sensor_twobyte(0x0086, 0x0200);
+		write_cmos_sensor_twobyte(0x0204, 0x0020);
+		write_cmos_sensor_twobyte(0x0344, 0x0008);
+		write_cmos_sensor_twobyte(0x0348, 0x161F);
+		write_cmos_sensor_twobyte(0x0346, 0x0010);
+		write_cmos_sensor_twobyte(0x034A, 0x1097);
+		write_cmos_sensor_twobyte(0x034C, 0x1600);
+		write_cmos_sensor_twobyte(0x034E, 0x1080);
+		write_cmos_sensor_twobyte(0x0342, 0x1DD8);
+		write_cmos_sensor_twobyte(0x0340, 0x10FE);
+		write_cmos_sensor_twobyte(0x0900, 0x0111);
+		write_cmos_sensor_twobyte(0x0380, 0x0001);
+		write_cmos_sensor_twobyte(0x0382, 0x0001);
+		write_cmos_sensor_twobyte(0x0384, 0x0001);
+		write_cmos_sensor_twobyte(0x0386, 0x0001);
+		write_cmos_sensor_twobyte(0x6028, 0x2000);
+		write_cmos_sensor_twobyte(0x602A, 0x6944);
+		write_cmos_sensor_twobyte(0x6F12, 0x0000);
+		write_cmos_sensor_twobyte(0x602A, 0x06A4);
+		write_cmos_sensor_twobyte(0x6F12, 0x0080);
+		write_cmos_sensor_twobyte(0x602A, 0x06AC);
+		write_cmos_sensor_twobyte(0x6F12, 0x0100);
+		write_cmos_sensor_twobyte(0x602A, 0x06E0);
+		write_cmos_sensor_twobyte(0x6F12, 0x0200);
+		write_cmos_sensor_twobyte(0x602A, 0x06E4);
+		write_cmos_sensor_twobyte(0x6F12, 0x1000);
+		write_cmos_sensor_twobyte(0x6028, 0x4000);
+		write_cmos_sensor_twobyte(0x0408, 0x000E);
+		write_cmos_sensor_twobyte(0x040A, 0x0000);
+		write_cmos_sensor_twobyte(0x0136, 0x1800);
+		write_cmos_sensor_twobyte(0x0304, 0x0005);
+		write_cmos_sensor_twobyte(0x0306, 0x0173);
+		write_cmos_sensor_twobyte(0x030C, 0x0000);
+		write_cmos_sensor_twobyte(0x0302, 0x0001);
+		write_cmos_sensor_twobyte(0x0300, 0x0005);
+		write_cmos_sensor_twobyte(0x030A, 0x0001);
+		write_cmos_sensor_twobyte(0x0308, 0x000A);
+		write_cmos_sensor_twobyte(0x0318, 0x0003);
+		write_cmos_sensor_twobyte(0x031A, 0x00A4);
+		write_cmos_sensor_twobyte(0x031C, 0x0001);
+		write_cmos_sensor_twobyte(0x0316, 0x0001);
+		write_cmos_sensor_twobyte(0x0314, 0x0003);
+		write_cmos_sensor_twobyte(0x030E, 0x0004);
+		write_cmos_sensor_twobyte(0x0310, 0x00F2);
+		write_cmos_sensor_twobyte(0x0312, 0x0000);
+		write_cmos_sensor_twobyte(0x0110, 0x0002);
+		write_cmos_sensor_twobyte(0x0114, 0x0300);
+		write_cmos_sensor_twobyte(0x0112, 0x0A0A);
+		write_cmos_sensor_twobyte(0xB0CA, 0x7E00);
+		write_cmos_sensor_twobyte(0xB136, 0x2000);
+		write_cmos_sensor_twobyte(0xD0D0, 0x1000);
+		
+		if(imgsensor.hdr_mode == 9)
+		{
+			/*it would write 0x216 = 0x1, 0x217=0x00*/
+			/*0x216=1 , Enable WDR*/
+			/*0x217=0x00, Use Manual mode to set short /long exp */
+			write_cmos_sensor_twobyte(0x0216, 0x0100); /*For WDR*/
+			write_cmos_sensor_twobyte(0x0218, 0x0101);
+			write_cmos_sensor_twobyte(0x602A, 0x6944); 
+			write_cmos_sensor_twobyte(0x6F12, 0x0000);
+		}
+		else
+		{
+			write_cmos_sensor_twobyte(0x0216, 0x0000);
+			write_cmos_sensor_twobyte(0x0218, 0x0000);
+		}
+		/*Streaming  output */
+		write_cmos_sensor_twobyte(0x0100, 0x0100);
 
-// Stream Off
-write_cmos_sensor_twobyte(0x602A,0x0100);
-write_cmos_sensor(0x6F12,0x00);
-
-////1. ADLC setting
-write_cmos_sensor_twobyte(0x6028,0x2000);
-write_cmos_sensor_twobyte(0x602A,0x168C);
-write_cmos_sensor_twobyte(0x6F12,0x0010);
-write_cmos_sensor_twobyte(0x6F12,0x0011);
-write_cmos_sensor_twobyte(0x6F12,0x0011);
-
-
-
-//2. Clock setting, related with ATOP remove
-write_cmos_sensor_twobyte(0x602A,0x0E24);
-write_cmos_sensor(0x6F12,0x00); // For 450MHz CCLK
-
-//3. ATOP Setting (Option)
-write_cmos_sensor_twobyte(0x602A,0x0E9C);
-write_cmos_sensor_twobyte(0x6F12,0x0084);	// RDV option
-
-//// CDS Current Setting
-write_cmos_sensor_twobyte(0x602A,0x0E47);
-write_cmos_sensor(0x6F12,0x01); // CDS current // EVT1.1 0429 lkh
-write_cmos_sensor_twobyte(0x602A,0x0E48);
-write_cmos_sensor(0x6F12,0x03); // CDS current
-write_cmos_sensor_twobyte(0x602A,0x0E49);
-write_cmos_sensor(0x6F12,0x03); // CDS current
-write_cmos_sensor_twobyte(0x602A,0x0E4A);
-write_cmos_sensor(0x6F12,0x03); // CDS current
-
-write_cmos_sensor_twobyte(0x602A,0x0E4B);
-write_cmos_sensor(0x6F12,0x06); // Pixel Bias current
-write_cmos_sensor_twobyte(0x602A,0x0E4C);
-write_cmos_sensor(0x6F12,0x0A); // Pixel Bias current
-write_cmos_sensor_twobyte(0x602A,0x0E4D);
-write_cmos_sensor(0x6F12,0x0A); // Pixel Bias current
-write_cmos_sensor_twobyte(0x602A,0x0E4E);
-write_cmos_sensor(0x6F12,0x0A); // Pixel Bias current
-
-write_cmos_sensor_twobyte(0x602A,0x0E4F);
-write_cmos_sensor(0x6F12,0x0F); // Pixel Boost current
-write_cmos_sensor_twobyte(0x602A,0x0E50);
-write_cmos_sensor(0x6F12,0x07); // Pixel Boost current
-write_cmos_sensor_twobyte(0x602A,0x0E51);
-write_cmos_sensor(0x6F12,0x07); // Pixel Boost current
-write_cmos_sensor_twobyte(0x602A,0x0E52);
-write_cmos_sensor(0x6F12,0x07); // Pixel Boost current
-
-
-// EVT1.1 TnP
-write_cmos_sensor_twobyte(0x6028,0x2001);
-write_cmos_sensor_twobyte(0x602A,0xAB00);
-write_cmos_sensor(0x6F12,0x00);
-
-//Af correction for 4x4 binning
-write_cmos_sensor_twobyte(0x6028,0x2000);
-write_cmos_sensor_twobyte(0x602A,0x14C9);
-write_cmos_sensor(0x6F12,0x10); // EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14CA);
-write_cmos_sensor(0x6F12,0x10); // EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14CD);
-write_cmos_sensor(0x6F12,0x06); // EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14CE);
-write_cmos_sensor(0x6F12,0x05); // EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14CF);
-write_cmos_sensor(0x6F12,0x06); // EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14D0);
-write_cmos_sensor(0x6F12,0x09); // EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14D1);
-write_cmos_sensor(0x6F12,0x06); // EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14D2);
-write_cmos_sensor(0x6F12,0x09); // EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14D3);
-write_cmos_sensor(0x6F12,0x06); // EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14D4);
-write_cmos_sensor(0x6F12,0x0D); // EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x14DE);
-write_cmos_sensor_twobyte(0x6F12,0x1BE4); // EVT1.1
-write_cmos_sensor_twobyte(0x6F12,0xB14E);	// EVT1.1
-
-
-//MSM gain for 4x4 binning
-write_cmos_sensor_twobyte(0x602A,0x427A);
-write_cmos_sensor(0x6F12,0x04);
-write_cmos_sensor_twobyte(0x602A,0x430D);
-write_cmos_sensor(0x6F12,0x20);
-write_cmos_sensor_twobyte(0x602A,0x430E);
-write_cmos_sensor(0x6F12,0x21);
-write_cmos_sensor_twobyte(0x602A,0x430F);
-write_cmos_sensor(0x6F12,0x28);
-write_cmos_sensor_twobyte(0x602A,0x4310);
-write_cmos_sensor(0x6F12,0x29);
-write_cmos_sensor_twobyte(0x602A,0x4315);
-write_cmos_sensor(0x6F12,0x20);
-write_cmos_sensor_twobyte(0x602A,0x4316);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x4317);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x4318);
-write_cmos_sensor(0x6F12,0x00);
-
-
-
-// AF
-write_cmos_sensor_twobyte(0x6028,0x4000);
-write_cmos_sensor_twobyte(0x602A,0x0B0E);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x3069);
-write_cmos_sensor(0x6F12,0x01);
-
-// BPC
-write_cmos_sensor_twobyte(0x602A,0x0B08);
-write_cmos_sensor(0x6F12,0x00);
-write_cmos_sensor_twobyte(0x602A,0x0B05);
-write_cmos_sensor(0x6F12,0x01);
-
-
-// WDR
-write_cmos_sensor_twobyte(0x602A,0x0216);
-write_cmos_sensor(0x6F12,0x01); //  smiaRegs_rw_wdr_multiple_exp_mode, EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x0217);
-write_cmos_sensor(0x6F12,0x01);
-write_cmos_sensor_twobyte(0x602A,0x0218);
-write_cmos_sensor(0x6F12,0x01);
-write_cmos_sensor_twobyte(0x602A,0x021A);
-write_cmos_sensor(0x6F12,0x01);
-write_cmos_sensor_twobyte(0x602A,0x021B);
-write_cmos_sensor(0x6F12,0x00); // smiaRegs_rw_wdr_exposure_order, EVT1.1
-
-write_cmos_sensor_twobyte(0x602A,0x0202);
-write_cmos_sensor_twobyte(0x6F12,0x0400);
-write_cmos_sensor_twobyte(0x602A,0x0200);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-
-// Analog Gain
-write_cmos_sensor_twobyte(0x602A,0x0204);
-write_cmos_sensor_twobyte(0x6F12,0x0020);
-
-//4. CASE : 24M Full_5632X4224 remove
-write_cmos_sensor_twobyte(0x602A,0x0344);
-write_cmos_sensor_twobyte(0x6F12,0x0008);
-write_cmos_sensor_twobyte(0x602A,0x0348);
-write_cmos_sensor_twobyte(0x6F12,0x161F);
-write_cmos_sensor_twobyte(0x602A,0x0346);
-write_cmos_sensor_twobyte(0x6F12,0x0010);
-write_cmos_sensor_twobyte(0x602A,0x034A);
-write_cmos_sensor_twobyte(0x6F12,0x1097);
-write_cmos_sensor_twobyte(0x6F12,0x1600);
-write_cmos_sensor_twobyte(0x6F12,0x1080);
-write_cmos_sensor_twobyte(0x602A,0x0342);
-write_cmos_sensor_twobyte(0x6F12,0x1DD8);	// 1ECC
-write_cmos_sensor_twobyte(0x602A,0x0340);
-write_cmos_sensor_twobyte(0x6F12,0x10FE);
-
-write_cmos_sensor_twobyte(0x602A,0x0900);
-write_cmos_sensor(0x6F12,0x01);
-write_cmos_sensor_twobyte(0x602A,0x0901);
-write_cmos_sensor(0x6F12,0x11);
-write_cmos_sensor_twobyte(0x602A,0x0380);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x6028,0x2000);
-write_cmos_sensor_twobyte(0x602A,0x6944);
-write_cmos_sensor_twobyte(0x6F12,0x0000);	// EVT1.1
-write_cmos_sensor_twobyte(0x602A,0x06ac);
-write_cmos_sensor(0x6F12,0x01); // EVT1.1
-
-// PSP BDS/HVbin
-write_cmos_sensor_twobyte(0x602A,0x06E0);
-write_cmos_sensor_twobyte(0x6F12,0x0200);
-write_cmos_sensor_twobyte(0x602A,0x06E4);
-write_cmos_sensor_twobyte(0x6F12,0x1000);
-write_cmos_sensor_twobyte(0x6028,0x4000);
-// CropAndPad
-write_cmos_sensor_twobyte(0x602A,0x0408);
-write_cmos_sensor_twobyte(0x6F12,0x000E);
-write_cmos_sensor_twobyte(0x6F12,0x0000);
-
-///////////////////////////////////////////////////////////
-//PLL Sys = 560 , Sec = 1392
-write_cmos_sensor_twobyte(0x602A,0x0136);
-write_cmos_sensor_twobyte(0x6F12,0x1800);
-write_cmos_sensor_twobyte(0x602A,0x0304);
-write_cmos_sensor_twobyte(0x6F12,0x0005);	// 3->5 EVT1.1 0429
-write_cmos_sensor_twobyte(0x6F12,0x0173);	// 225->371 EVT1.1 0429
-write_cmos_sensor_twobyte(0x602A,0x030C);
-write_cmos_sensor_twobyte(0x6F12,0x0000);
-write_cmos_sensor_twobyte(0x602A,0x0302);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x602A,0x0300);
-write_cmos_sensor_twobyte(0x6F12,0x0005);
-write_cmos_sensor_twobyte(0x602A,0x030A);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x602A,0x0308);
-write_cmos_sensor_twobyte(0x6F12,0x000A);
-
-write_cmos_sensor_twobyte(0x602A,0x0318);
-write_cmos_sensor_twobyte(0x6F12,0x0003);
-write_cmos_sensor_twobyte(0x6F12,0x00A4);	// A5 -> A4 EVT1.1 0429
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x602A,0x0316);
-write_cmos_sensor_twobyte(0x6F12,0x0001);
-write_cmos_sensor_twobyte(0x602A,0x0314);
-write_cmos_sensor_twobyte(0x6F12,0x0003);
-
-write_cmos_sensor_twobyte(0x602A,0x030E);
-write_cmos_sensor_twobyte(0x6F12,0x0004);
-write_cmos_sensor_twobyte(0x6F12,0x00F2);
-write_cmos_sensor_twobyte(0x6F12,0x0000);
-
-// OIF Setting
-write_cmos_sensor_twobyte(0x602A,0x0111);
-write_cmos_sensor(0x6F12,0x02); // PVI, 2: MIPI
-write_cmos_sensor_twobyte(0x602A,0x0114);
-write_cmos_sensor(0x6F12,0x03);
-write_cmos_sensor_twobyte(0x602A,0x0112);
-write_cmos_sensor_twobyte(0x6F12,0x0A0A);	// data format
-
-write_cmos_sensor_twobyte(0x602A,0xB0CA);
-write_cmos_sensor_twobyte(0x6F12,0x7E00);	// M_DPHYCTL[30:25] = 6'11_1111 // EVT1.1 0429
-write_cmos_sensor_twobyte(0x602A,0xB136);
-write_cmos_sensor_twobyte(0x6F12,0x2000);	// B_DPHYCTL[62:60] = 3'b010 // EVT1.1 0429
-write_cmos_sensor_twobyte(0x602A,0xD0D0);
-
-// Stream On
-write_cmos_sensor_twobyte(0x6F12,0x1000);
-write_cmos_sensor_twobyte(0x602A,0x0100);
-write_cmos_sensor(0x6F12,0x01);
+	}
+	else
+	{
+		////1. ADLC setting
+		write_cmos_sensor_twobyte(0x6028,0x2000);
+		write_cmos_sensor_twobyte(0x602A,0x168C);
+		write_cmos_sensor_twobyte(0x6F12,0x0010);
+		write_cmos_sensor_twobyte(0x6F12,0x0011);
+		write_cmos_sensor_twobyte(0x6F12,0x0011);
+		
+		//2. Clock setting, related with ATOP remove
+		write_cmos_sensor_twobyte(0x602A,0x0E24);
+		write_cmos_sensor_twobyte(0x6F12,0x0101); /*for 24fps*/
+		
+		//3. ATOP Setting (Option)
+		write_cmos_sensor_twobyte(0x602A,0x0E9C);
+		write_cmos_sensor_twobyte(0x6F12,0x0084);	// RDV option
+		
+		//// CDS Current Setting
+		write_cmos_sensor_twobyte(0x602A,0x0E46);
+		write_cmos_sensor_twobyte(0x6F12,0x0301); // CDS current // EVT1.1 0429 lkh
+		write_cmos_sensor_twobyte(0x602A,0x0E48);
+		write_cmos_sensor_twobyte(0x6F12,0x0303); // CDS current
+		write_cmos_sensor_twobyte(0x602A,0x0E4A);
+		write_cmos_sensor_twobyte(0x6F12,0x0306); // CDS current
+		write_cmos_sensor_twobyte(0x602A,0x0E4C);
+		write_cmos_sensor_twobyte(0x6F12,0x0a0a); // Pixel Bias current
+		write_cmos_sensor_twobyte(0x602A,0x0E4E);
+		write_cmos_sensor_twobyte(0x6F12,0x0A0F); // Pixel Bias current
+		write_cmos_sensor_twobyte(0x602A,0x0E50);
+		write_cmos_sensor_twobyte(0x6F12,0x0707); // Pixel Boost current
+		write_cmos_sensor_twobyte(0x602A,0x0E52);
+		write_cmos_sensor_twobyte(0x6F12,0x0700); // Pixel Boost current
+		
+		// EVT1.1 TnP
+		write_cmos_sensor_twobyte(0x6028,0x2001);
+		write_cmos_sensor_twobyte(0x602A,0xAB00);
+		write_cmos_sensor_twobyte(0x6F12,0x0000);
+		
+		
+		//Af correction for 4x4 binning
+		write_cmos_sensor_twobyte(0x6028,0x2000);
+		write_cmos_sensor_twobyte(0x602A,0x14C8);
+		write_cmos_sensor_twobyte(0x6F12,0x0010);
+		write_cmos_sensor_twobyte(0x602A,0x14CA);
+		write_cmos_sensor_twobyte(0x6F12,0x1004);
+		write_cmos_sensor_twobyte(0x602A,0x14CC);
+		write_cmos_sensor_twobyte(0x6F12,0x0406);
+		write_cmos_sensor_twobyte(0x602A,0x14CE);
+		write_cmos_sensor_twobyte(0x6F12,0x0506);
+		write_cmos_sensor_twobyte(0x602A,0x14D0);
+		write_cmos_sensor_twobyte(0x6F12,0x0906);
+		write_cmos_sensor_twobyte(0x602A,0x14D2);
+		write_cmos_sensor_twobyte(0x6F12,0x0906);
+		write_cmos_sensor_twobyte(0x602A,0x14D4);
+		write_cmos_sensor_twobyte(0x6F12,0x0D0A);
+		write_cmos_sensor_twobyte(0x602A,0x14DE);
+		write_cmos_sensor_twobyte(0x6F12,0x1BE4);
+		write_cmos_sensor_twobyte(0x6F12,0xB14E);
+		
+		//MSM gain for 4x4 binning
+		write_cmos_sensor_twobyte(0x602A,0x427A);
+		write_cmos_sensor_twobyte(0x6F12,0x0440);
+		write_cmos_sensor_twobyte(0x602A,0x430C);
+		write_cmos_sensor_twobyte(0x6F12,0x1B20);
+		write_cmos_sensor_twobyte(0x602A,0x430E);
+		write_cmos_sensor_twobyte(0x6F12,0x2128);
+		write_cmos_sensor_twobyte(0x602A,0x4310);
+		write_cmos_sensor_twobyte(0x6F12,0x2900);
+		write_cmos_sensor_twobyte(0x602A,0x4314);
+		write_cmos_sensor_twobyte(0x6F12,0x0000);
+		write_cmos_sensor_twobyte(0x602A,0x4316);
+		write_cmos_sensor_twobyte(0x6F12,0x0000);
+		write_cmos_sensor_twobyte(0x602A,0x4318);
+		write_cmos_sensor_twobyte(0x6F12,0x0000);
+		
+		// AF
+		write_cmos_sensor_twobyte(0x6028,0x4000);
+		write_cmos_sensor_twobyte(0x0B0E,0x0100); /*for 24fps*/
+		//
+		write_cmos_sensor_twobyte(0x3068, 0x0001);
+		write_cmos_sensor_twobyte(0x0B08, 0x0000);
+		write_cmos_sensor_twobyte(0x0B04, 0x0101);
+		//write_cmos_sensor_twobyte(0x0216, 0x0101); /*For WDR*/
+		//write_cmos_sensor_twobyte(0x0218, 0x0101);
+		write_cmos_sensor_twobyte(0x021A, 0x0100);
+		write_cmos_sensor_twobyte(0x0202, 0x0400);
+		write_cmos_sensor_twobyte(0x0200, 0x0001);
+		write_cmos_sensor_twobyte(0x0086, 0x0200);
+		write_cmos_sensor_twobyte(0x0204, 0x0020);
+		write_cmos_sensor_twobyte(0x0344, 0x0010);/*for 24fps*/
+		write_cmos_sensor_twobyte(0x0348, 0x160F);/*for 24fps*/
+		write_cmos_sensor_twobyte(0x0346, 0x0010);
+		write_cmos_sensor_twobyte(0x034A, 0x108f);/*for 24fps*/
+		write_cmos_sensor_twobyte(0x034C, 0x1600);
+		write_cmos_sensor_twobyte(0x034E, 0x1080);
+		write_cmos_sensor_twobyte(0x0342, 0x1ACC);/*for 24fps*/
+		write_cmos_sensor_twobyte(0x0340, 0x10E4);/*for 24fps*/
+		write_cmos_sensor_twobyte(0x0900, 0x0111);
+		write_cmos_sensor_twobyte(0x0380, 0x0001);
+		write_cmos_sensor_twobyte(0x0382, 0x0001);
+		write_cmos_sensor_twobyte(0x0384, 0x0001);
+		write_cmos_sensor_twobyte(0x0386, 0x0001);
+		write_cmos_sensor_twobyte(0x6028, 0x2000);
+		
+		//write_cmos_sensor_twobyte(0x602A, 0x6944);/*For WDR*/
+		//write_cmos_sensor_twobyte(0x6F12, 0x0000);
+		write_cmos_sensor_twobyte(0x602A, 0x06A4);
+		write_cmos_sensor_twobyte(0x6F12, 0x0080);
+		write_cmos_sensor_twobyte(0x602A, 0x06AC);
+		write_cmos_sensor_twobyte(0x6F12, 0x0100);
+		write_cmos_sensor_twobyte(0x602A, 0x06E0);
+		write_cmos_sensor_twobyte(0x6F12, 0x0200);
+		write_cmos_sensor_twobyte(0x602A, 0x06E4);
+		write_cmos_sensor_twobyte(0x6F12, 0x1000);
+		write_cmos_sensor_twobyte(0x6028, 0x4000);
+		write_cmos_sensor_twobyte(0x0408, 0x0000);/*for 24fps*/
+		write_cmos_sensor_twobyte(0x040A, 0x0000);
+		write_cmos_sensor_twobyte(0x0136, 0x1800);
+		write_cmos_sensor_twobyte(0x0304, 0x0005);
+		write_cmos_sensor_twobyte(0x0306, 0x0173);
+		write_cmos_sensor_twobyte(0x030C, 0x0000);
+		write_cmos_sensor_twobyte(0x0302, 0x0001);
+		write_cmos_sensor_twobyte(0x0300, 0x0005);
+		write_cmos_sensor_twobyte(0x030A, 0x0001);
+		write_cmos_sensor_twobyte(0x0308, 0x000A);
+		write_cmos_sensor_twobyte(0x0318, 0x0003);
+		write_cmos_sensor_twobyte(0x031A, 0x00A4);
+		write_cmos_sensor_twobyte(0x031C, 0x0001);
+		write_cmos_sensor_twobyte(0x0316, 0x0001);
+		write_cmos_sensor_twobyte(0x0314, 0x0003);
+		write_cmos_sensor_twobyte(0x030E, 0x0004);
+		write_cmos_sensor_twobyte(0x0310, 0x0110);/*for 24fps*/
+		write_cmos_sensor_twobyte(0x0312, 0x0000);
+		write_cmos_sensor_twobyte(0x0110, 0x0002);
+		write_cmos_sensor_twobyte(0x0114, 0x0300);
+		write_cmos_sensor_twobyte(0x0112, 0x0A0A);
+		write_cmos_sensor_twobyte(0xB0CA, 0x7E00);
+		write_cmos_sensor_twobyte(0xB136, 0x2000);
+		write_cmos_sensor_twobyte(0xD0D0, 0x1000);
+		
+		if(imgsensor.hdr_mode == 9)
+		{
+			/*it would write 0x216 = 0x1, 0x217=0x00*/
+			/*0x216=1 , Enable WDR*/
+			/*0x217=0x00, Use Manual mode to set short /long exp */
+			write_cmos_sensor_twobyte(0x0216, 0x0100); /*For WDR*/
+			write_cmos_sensor_twobyte(0x0218, 0x0101);
+			write_cmos_sensor_twobyte(0x602A, 0x6944); 
+			write_cmos_sensor_twobyte(0x6F12, 0x0000);
+		}
+		else
+		{
+			write_cmos_sensor_twobyte(0x0216, 0x0000);
+			write_cmos_sensor_twobyte(0x0218, 0x0000);
+		}
+		/*Streaming  output */
+		write_cmos_sensor_twobyte(0x0100, 0x0100);
 
 
-mDELAY(10);
-
+	}
+	
 }
 
 
@@ -7665,7 +7227,7 @@ LOG_INF("JEFF xxxxxx140 20fps\n");
 
 #ifdef	USE_OIS
 	//OIS_on(RUMBA_OIS_CAP_SETTING);//pangfei OIS
-	printk("pangfei capture OIS setting\n");
+	LOG_INF("pangfei capture OIS setting\n");
 	OIS_write_cmos_sensor(0x0002,0x05);
 	OIS_write_cmos_sensor(0x0002,0x00);
 	OIS_write_cmos_sensor(0x0000,0x01);
@@ -7766,7 +7328,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
 #ifdef USE_OIS
 	//OIS_on(RUMBA_OIS_PRE_SETTING);	//pangfei OIS
-	printk("pangfei preview OIS setting\n");
+	LOG_INF("pangfei preview OIS setting\n");
 	OIS_write_cmos_sensor(0x0002,0x05);
 	OIS_write_cmos_sensor(0x0002,0x00);
 	OIS_write_cmos_sensor(0x0000,0x01);
@@ -7815,25 +7377,15 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 		imgsensor.autoflicker_en = KAL_FALSE;
 	}
 	spin_unlock(&imgsensor_drv_lock);
-	if(chip_id == 0x0203)
-	{
-		capture_setting_10(imgsensor.current_fps);
-	}
-	else if(chip_id == 0x022C)
-	{
-		if(imgsensor.hdr_mode == 9)
-			capture_setting_WDR(imgsensor.current_fps);
-		else
-			capture_setting_11(imgsensor.current_fps);
-	}
+	if(imgsensor.hdr_mode == 9)
+		capture_setting_WDR(imgsensor.current_fps);
 	else
-	{
-		capture_setting_11(imgsensor.current_fps);
-	}
+		capture_setting_WDR(imgsensor.current_fps);
+
     set_mirror_flip(IMAGE_NORMAL);
 #ifdef	USE_OIS
 	//OIS_on(RUMBA_OIS_CAP_SETTING);//pangfei OIS
-	printk("pangfei capture OIS setting\n");
+	LOG_INF("pangfei capture OIS setting\n");
 	OIS_write_cmos_sensor(0x0002,0x05);
 	OIS_write_cmos_sensor(0x0002,0x00);
 	OIS_write_cmos_sensor(0x0000,0x01);
@@ -8238,7 +7790,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
     SENSOR_WINSIZE_INFO_STRUCT *wininfo;
     MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
-    printk("feature_id = %d\n", feature_id);
+    LOG_INF("feature_id = %d\n", feature_id);
     switch (feature_id) {
         case SENSOR_FEATURE_GET_PERIOD:
             *feature_return_para_16++ = imgsensor.line_length;
@@ -8401,10 +7953,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                     break;
             }
             break;
-
-        case SENSOR_FEATURE_SET_IHDR_SHUTTER_GAIN:
-            LOG_INF("SENSOR_SET_SENSOR_IHDR LE=%d, SE=%d, Gain=%d\n",(UINT16)*feature_data,(UINT16)*(feature_data+1),(UINT16)*(feature_data+2));
-            ihdr_write_shutter_gain((UINT16)*feature_data,(UINT16)*(feature_data+1),(UINT16)*(feature_data+2));
+		case SENSOR_FEATURE_SET_HDR_SHUTTER:
+            LOG_INF("SENSOR_FEATURE_SET_HDR_SHUTTER LE=%d, SE=%d\n",(UINT16)*feature_data,(UINT16)*(feature_data+1));
+            hdr_write_shutter((UINT16)*feature_data,(UINT16)*(feature_data+1));
             break;
         default:
             break;

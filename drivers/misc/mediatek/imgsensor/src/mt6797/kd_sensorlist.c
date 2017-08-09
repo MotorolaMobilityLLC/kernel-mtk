@@ -1774,6 +1774,7 @@ inline static int adopt_CAMERA_HW_GetInfo2(void *pBuf)
     pSensorInfo->MIPIsensorType                           = pInfo[IDNum]->MIPIsensorType;
     pSensorInfo->IHDR_LE_FirstLine                        = pInfo[IDNum]->IHDR_LE_FirstLine;
     pSensorInfo->IHDR_Support                             = pInfo[IDNum]->IHDR_Support;
+	pSensorInfo->ZHDR_Mode                                = pInfo[IDNum]->ZHDR_Mode;
     pSensorInfo->SensorModeNum                            = pInfo[IDNum]->SensorModeNum;
     pSensorInfo->SettleDelayMode                          = pInfo[IDNum]->SettleDelayMode;
     pSensorInfo->PDAF_Support                             = pInfo[IDNum]->PDAF_Support;

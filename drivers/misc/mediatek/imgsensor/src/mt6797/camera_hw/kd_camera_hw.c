@@ -228,6 +228,19 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
+	  {SENSOR_DRVNAME_IMX230_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {AVDD, Vol_2800, 10},
+	   {DOVDD, Vol_1800, 10},
+	   {DVDD, Vol_1200, 10},
+	   {AFVDD, Vol_2800, 5},
+	   {PDN, Vol_Low, 0},
+	   {PDN, Vol_High, 0},
+	   {RST, Vol_Low, 0},
+	   {RST, Vol_High, 0}
+	   },
+	  },
 	 /* add new sensor before this line */
 	 {NULL,},
 	 }
