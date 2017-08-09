@@ -57,7 +57,7 @@
  #undef CONFIG_ARMPLL_CTRL
 #define CONFIG_OCP_IDVFS_CTRL	1
 
-int bypass_boot = 2;
+int bypass_boot = 0;
 int bypass_cl0_armpll = 3;
 int bypass_cl1_armpll = 4;
 char g_cl0_online = 1;	/* cpu0 is online */
