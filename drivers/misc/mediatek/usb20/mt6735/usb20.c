@@ -42,10 +42,6 @@ struct clk *musb_clk;
 #include "musb_qmu.h"
 #endif
 
-#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
-#include <mt-plat/mt_usb2jtag.h>
-#endif
-
 #ifdef FPGA_PLATFORM
 static int usb_rdy = 1;
 #else
@@ -439,6 +435,7 @@ void mt_usb_connect(void)
 #endif
 
 	DBG(0, "cable_mode=%d\n", cable_mode);
+/*
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
 	    || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
@@ -452,6 +449,7 @@ void mt_usb_connect(void)
 		}
 	}
 #endif
+*/
 
 	spin_lock(&musb_connect_lock);
 	if (cable_mode != CABLE_MODE_NORMAL) {
@@ -1468,13 +1466,6 @@ static struct platform_driver mt_usb_dts_driver = {
 static int __init usb20_init(void)
 {
 	DBG(0, "usb20 init\n");
-
-#ifdef CONFIG_MTK_USB2JTAG_SUPPORT
-	if (usb2jtag_mode()) {
-		pr_err("[USB2JTAG] in usb2jtag mode, not to initialize usb driver\n");
-		return 0;
-	}
-#endif
 
 #ifdef FPGA_PLATFORM
 	add_usb_i2c_driver();

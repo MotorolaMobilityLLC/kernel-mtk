@@ -1,16 +1,3 @@
-/*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
 #include <linux/videodev2.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
@@ -331,8 +318,10 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 		pinSetIdx = 2;
 
 	if (On) {
-
-		ISP_MCLK1_EN(1);
+		if((0 == strcmp(currSensorName,"imx135mipiraw"))&&(pinSetIdx != 0))
+			PK_DBG("[PowerON]135 not main\n");
+		else
+			ISP_MCLK1_EN(1);
 
 		PK_DBG("[PowerON]pinSetIdx:%d, currSensorName: %s\n", pinSetIdx, currSensorName);
 
@@ -797,7 +786,10 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 			}
 
 		}
-		ISP_MCLK1_EN(0);
+		if((0 == strcmp(currSensorName,"imx135mipiraw"))&&(pinSetIdx != 0))
+			PK_DBG("[PowerOFF]135 not main\n");
+		else
+			ISP_MCLK1_EN(0);
 	}
 
 
@@ -956,8 +948,10 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
 	/* power ON */
 	if (On) {
-
-		ISP_MCLK1_EN(1);
+		if((0 == strcmp(currSensorName,"imx135mipiraw"))&&(pinSetIdx != 0))
+			PK_DBG("[PowerON]135 not main\n");
+		else
+            ISP_MCLK1_EN(1);
 
 		PK_DBG("[PowerON]pinSetIdx:%d, currSensorName: %s\n", pinSetIdx, currSensorName);
 
@@ -1425,7 +1419,10 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 	} else {		/* power OFF */
 
 		PK_DBG("[PowerOFF]pinSetIdx:%d\n", pinSetIdx);
-		ISP_MCLK1_EN(0);
+		if((0 == strcmp(currSensorName,"imx135mipiraw"))&&(pinSetIdx != 0))
+			PK_DBG("[PowerOFF]135 not main\n");
+		else
+            ISP_MCLK1_EN(0);
 
 		if ((currSensorName && (0 == strcmp(currSensorName, "imx135mipiraw"))) ||
 		    (currSensorName && (0 == strcmp(currSensorName, "imx220mipiraw")))) {

@@ -211,15 +211,6 @@ config GENERIC_ISA_DMA
 config FIQ
 	bool
 
-config MTK_NO_ATF
-	bool
-	default n
-
-config MTK_KERNEL_IN_SECURE_MODE
-	bool
-	depends on (!TRUSTY) && (!TRUSTONIC_TEE_SUPPORT) && (MTK_NO_ATF)
-	default y
-
 config NEED_RET_TO_USER
 	bool
 
@@ -914,7 +905,7 @@ config ARCH_MT6580
 	select ARCH_HAS_CPUFREQ
 	select ARM_AMBA
 	select CPU_V7
-	select FIQ_GLUE if (!TRUSTONIC_TEE_SUPPORT)
+	select FIQ_GLUE if (!TRUSTONIC_TEE_SUPPORT && !TRUSTY)
 	select HAVE_SMP
 	select NEED_MACH_MEMORY_H
 	select IRQ_DOMAIN
@@ -943,7 +934,6 @@ config ARCH_MT6580
 	select MTK_CPU_STRESS
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
-	select MTK_NO_ATF
 	help
 	  This enable support for MediaTek MT6580
 
@@ -961,8 +951,9 @@ config ARCH_MT6755
 	select GENERIC_SCHED_CLOCK
 	select ARCH_REQUIRE_GPIOLIB
 	select MTK_SYS_CIRQ
-	select MTK_GIC
 	select MTK_EIC
+	select ARMV7_COMPAT
+        select ARMV7_COMPAT_CPUINFO
 	select CPU_IDLE
 	select PINCTRL
 	select KERNEL_MODE_NEON
@@ -971,54 +962,12 @@ config ARCH_MT6755
 	select MTK_BASE_POWER
 	select ARM_HAS_SG_CHAIN
 	select COMMON_CLK if !MTK_CLKMGR
+	select PINCTRL_MT6735
 	select PINCTRL_MT6755
 	select MTK_POWER_GS
-	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
-	select POWER_SUPPLY
-	select MTK_IRQ_NEW_DESIGN
-	select MTK_IRQ_NEW_DESIGN_DEBUG
-	select MTK_SYSTRACKER_V2
-	select MTK_TIMER
+	select MTK_LM_MODE
 	help
 	  This enable support for MediaTek MT6755
-
-
-config ARCH_MT6757
-	bool "MediaTek MT6757"
-	select GENERIC_TIME
-	select GENERIC_CLOCKEVENTS
-	select ARCH_HAS_CPUFREQ
-	select ARM_AMBA
-	select CPU_V7
-	select HAVE_SMP
-	select NEED_MACH_MEMORY_H
-	select IRQ_DOMAIN
-	select IRQ_DOMAIN_DEBUG
-	select GENERIC_SCHED_CLOCK
-	select MTK_SYS_CIRQ
-	select MTK_EIC
-	select ARMV7_COMPAT
-	select ARMV7_COMPAT_CPUINFO
-	select CPU_IDLE
-	select PINCTRL
-	select PINCTRL_MT6757
-	select MFD_SYSCON
-	select MTK_BASE_POWER
-	select MTK_SYSTRACKER_V2
-	select MTK_GIC_V3_EXT
-	select ARM_GIC_V3
-	select MTK_LM_MODE
-	select MTK_EIC_HISTORY_DUMP
-	select ARM_HAS_SG_CHAIN
-	select MTK_TIMER
-	select POWER_SUPPLY
-	help
-	  This enables support for MediaTek MT6757
-	  Support for aarch64/aarch32 Architecture
-	  Support for fpga6757_64 related projects
-	  Support for evb6757_64 related projects
-	  Support for k57_64 related projects
-
 
 config ARCH_MT8127
 	bool "MediaTek MT8127"
@@ -1040,36 +989,10 @@ config ARCH_MT8127
 	select MFD_SYSCON
 	select CPU_IDLE
 	select ARM_ERRATA_814220
-	select MTK_SYS_CIRQ
-	select MTK_GIC_EXT
 	help
 	  This enable support for MediaTek MT8127
 
-config ARCH_MT7623
-	bool "MediaTek MT7623"
-	select ARCH_MEDIATEK
-	select SPARSE_IRQ
-	select COMMON_CLK if !MTK_CLKMGR
-	select GENERIC_CLOCKEVENTS
-	select ARM_AMBA
-	select CPU_V7
-	select HAVE_SMP
-	select NEED_MACH_MEMORY_H
-	select IRQ_DOMAIN
-	select IRQ_DOMAIN_DEBUG
-	select ARCH_REQUIRE_GPIOLIB
-	select KERNEL_MODE_NEON
-	select CRYPTO_AES_ARM_BS
-	select ARM_HAS_SG_CHAIN
-	select MTK_BASE_POWER
-	select MFD_SYSCON
-	select CPU_IDLE
-	select ARM_ERRATA_814220
-	select MIGHT_HAVE_PCI
-	select MTK_SYS_CIRQ
-	select MTK_GIC_EXT
-	help
-	  This enable support for MediaTek MT7623
+
 
 endchoice
 

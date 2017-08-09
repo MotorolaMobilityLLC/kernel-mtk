@@ -53,9 +53,7 @@
 #include "mt_sched_mon.h"
 #endif
 #include <mt-plat/mtk_ram_console.h>
-#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
-#include "hotplug.h"
-#endif
+#include <hotplug.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/ipi.h>
@@ -276,11 +274,11 @@ void __ref cpu_die(void)
 {
 	unsigned int cpu = smp_processor_id();
 
-	aee_rr_rec_hotplug_footprint(cpu, 51);
+	aee_rr_rec_hoplug(cpu, 51, 0);
 
 	idle_task_exit();
 
-	aee_rr_rec_hotplug_footprint(cpu, 52);
+	aee_rr_rec_hoplug(cpu, 52, 0);
 
 #ifdef CONFIG_MTK_IRQ_NEW_DESIGN
 	gic_set_primask();
@@ -288,7 +286,7 @@ void __ref cpu_die(void)
 
 	local_irq_disable();
 
-	aee_rr_rec_hotplug_footprint(cpu, 53);
+	aee_rr_rec_hoplug(cpu, 53, 0);
 
 	/*
 	 * Flush the data out of the L1 cache for this CPU.  This must be
@@ -298,7 +296,7 @@ void __ref cpu_die(void)
 	 */
 	flush_cache_louis();
 
-	aee_rr_rec_hotplug_footprint(cpu, 54);
+	aee_rr_rec_hoplug(cpu, 54, 0);
 
 	/*
 	 * Tell __cpu_die() that this CPU is now safe to dispose of.  Once
@@ -307,7 +305,7 @@ void __ref cpu_die(void)
 	 */
 	complete(&cpu_died);
 
-	aee_rr_rec_hotplug_footprint(cpu, 55);
+	aee_rr_rec_hoplug(cpu, 55, 0);
 
 	/*
 	 * Ensure that the cache lines associated with that completion are
@@ -317,7 +315,7 @@ void __ref cpu_die(void)
 	 */
 	flush_cache_louis();
 
-	aee_rr_rec_hotplug_footprint(cpu, 56);
+	aee_rr_rec_hoplug(cpu, 56, 0);
 
 	/*
 	 * The actual CPU shutdown procedure is at least platform (if not
@@ -371,9 +369,9 @@ static void smp_store_cpu_info(unsigned int cpuid)
 asmlinkage void secondary_start_kernel(void)
 {
 	struct mm_struct *mm = &init_mm;
-	unsigned int cpu = smp_processor_id();
+	unsigned int cpu;
 
-	aee_rr_rec_hotplug_footprint(cpu, 1);
+	aee_rr_rec_hoplug(cpu, 1, 0);
 
 	/*
 	 * The identity mapping is uncached (strongly ordered), so
@@ -384,7 +382,7 @@ asmlinkage void secondary_start_kernel(void)
 	enter_lazy_tlb(mm, current);
 	local_flush_tlb_all();
 
-	aee_rr_rec_hotplug_footprint(cpu, 2);
+	aee_rr_rec_hoplug(cpu, 2, 0);
 
 	/*
 	 * All kernel threads share the same mm context; grab a
@@ -392,27 +390,27 @@ asmlinkage void secondary_start_kernel(void)
 	 */
 	cpu = smp_processor_id();
 
-	aee_rr_rec_hotplug_footprint(cpu, 3);
+	aee_rr_rec_hoplug(cpu, 3, 0);
 
 	atomic_inc(&mm->mm_count);
 	current->active_mm = mm;
 	cpumask_set_cpu(cpu, mm_cpumask(mm));
 
-	aee_rr_rec_hotplug_footprint(cpu, 4);
+	aee_rr_rec_hoplug(cpu, 4, 0);
 
 	cpu_init();
 
-	aee_rr_rec_hotplug_footprint(cpu, 5);
+	aee_rr_rec_hoplug(cpu, 5, 0);
 
 	printk("CPU%u: Booted secondary processor\n", cpu);
 
 	preempt_disable();
 
-	aee_rr_rec_hotplug_footprint(cpu, 6);
+	aee_rr_rec_hoplug(cpu, 6, 0);
 
 	trace_hardirqs_off();
 
-	aee_rr_rec_hotplug_footprint(cpu, 7);
+	aee_rr_rec_hoplug(cpu, 7, 0);
 
 	/*
 	 * Give the platform a chance to do its own initialisation.
@@ -420,19 +418,19 @@ asmlinkage void secondary_start_kernel(void)
 	if (smp_ops.smp_secondary_init)
 		smp_ops.smp_secondary_init(cpu);
 
-	aee_rr_rec_hotplug_footprint(cpu, 8);
+	aee_rr_rec_hoplug(cpu, 8, 0);
 
 	notify_cpu_starting(cpu);
 
-	aee_rr_rec_hotplug_footprint(cpu, 9);
+	aee_rr_rec_hoplug(cpu, 9, 0);
 
 	calibrate_delay();
 
-	aee_rr_rec_hotplug_footprint(cpu, 10);
+	aee_rr_rec_hoplug(cpu, 10, 0);
 
 	smp_store_cpu_info(cpu);
 
-	aee_rr_rec_hotplug_footprint(cpu, 11);
+	aee_rr_rec_hoplug(cpu, 11, 0);
 
 	/*
 	 * OK, now it's safe to let the boot CPU continue.  Wait for
@@ -441,26 +439,26 @@ asmlinkage void secondary_start_kernel(void)
 	 */
 	set_cpu_online(cpu, true);
 
-	aee_rr_rec_hotplug_footprint(cpu, 12);
+	aee_rr_rec_hoplug(cpu, 12, 0);
 
 	complete(&cpu_running);
 
-	aee_rr_rec_hotplug_footprint(cpu, 13);
+	aee_rr_rec_hoplug(cpu, 13, 0);
 
 	local_irq_enable();
 
-	aee_rr_rec_hotplug_footprint(cpu, 14);
+	aee_rr_rec_hoplug(cpu, 14, 0);
 
 	local_fiq_enable();
 
-	aee_rr_rec_hotplug_footprint(cpu, 15);
+	aee_rr_rec_hoplug(cpu, 15, 0);
 
 	/*
 	 * OK, it's off to the idle thread for us
 	 */
 	cpu_startup_entry(CPUHP_ONLINE);
 
-	aee_rr_rec_hotplug_footprint(cpu, 16);
+	aee_rr_rec_hoplug(cpu, 16, 0);
 }
 
 void __init smp_cpus_done(unsigned int max_cpus)
