@@ -18,10 +18,10 @@ struct wp_event {
 
 #define init_wp_event(__e, __v, __p, __t, __h)   \
 	do {    \
-		(__e)->virt = (__v);    \
-		(__e)->phys = (__p);    \
+		(__e)->virt = (phys_addr_t)(__v);    \
+		(__e)->phys = (phys_addr_t)(__p);    \
 		(__e)->type = (__t);    \
-		(__e)->handler = (__h);    \
+		(__e)->handler = (wp_handler)(__h);    \
 		(__e)->auto_disable = 0;    \
 	} while (0)
 
