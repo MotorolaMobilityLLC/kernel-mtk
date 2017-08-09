@@ -2518,7 +2518,7 @@ static long ISP_REF_CNT_CTRL_FUNC(unsigned long Param)
 			}
 
 			imem_ref_cnt = (MINT32) atomic_read(&g_imem_ref_cnt[ref_cnt_ctrl.id]);
-			LOG_DBG("g_imem_ref_cnt[%d]: %d.", ref_cnt_ctrl.id, imem_ref_cnt);
+			/*LOG_DBG("g_imem_ref_cnt[%d]: %d.", ref_cnt_ctrl.id, imem_ref_cnt);*/
 
 			if ((imem_ref_cnt == 0)) {
 				if(ref_cnt_ctrl.ctrl == ISP_REF_CNT_DEC_AND_RESET_IF_LAST_ONE) /* No user left and ctrl is RESET_IF_LAST_ONE, do ISP reset. */
@@ -5510,7 +5510,7 @@ static MINT32 ISP_release(struct inode *pInode, struct file *pFile)
 
 	mMclk1User = 0;
 	ISP_WR32(ISP_ADDR + 0x4200, 0x00000001);
-	LOG_DBG("ISP_MCLK1_EN release\n");
+	/*LOG_DBG("ISP_MCLK1_EN release\n");*/
 
 
 EXIT:
