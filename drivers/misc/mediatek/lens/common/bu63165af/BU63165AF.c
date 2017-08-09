@@ -35,8 +35,6 @@ static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 static unsigned int g_u4CheckDrvStatus;
 
-int g_BU63165_OIS_Disable = 0;
-
 int s4EEPROM_ReadReg_BU63165AF(u16 addr, u16 *data)
 {
 	u8 u8data[2];
@@ -199,7 +197,7 @@ static inline int setAFPara(__user stAF_MotorCmd * pstMotorCmd)
 
 	switch (stMotorCmd.u4CmdID) {
 	case 1:
-		g_BU63165_OIS_Disable = stMotorCmd.u4Param;
+		setOISMode((int)stMotorCmd.u4Param); /* 1 : disable */
 		break;
 	}
 

@@ -44,6 +44,16 @@ double OIS_PIXEL[2];		/* Just Only use for factory adjustment. */
 /* <== RHM_HT 2013.03.04 */
 ADJ_STS OIS_MAIN_STS = ADJ_ERR;
 
+static _FACT_ADJ fadj;
+
+void setOISMode(int Disable)
+{
+	if (Disable == 1)
+		func_SET_SCENE_PARAM_for_NewGYRO_Fil(_SCENE_SPORT_3, 0, 0, 0, &fadj);
+	else
+		func_SET_SCENE_PARAM_for_NewGYRO_Fil(_SCENE_SPORT_3, 1, 0, 0, &fadj);
+}
+
 int setVCMPos(unsigned short DAC_Val)
 {
 	I2C_OIS_F0123_wr_(0x90, 0x00, DAC_Val);	/* AF Control */
@@ -73,8 +83,6 @@ void OIS_Standby(void)
 /* ////////////////////////////////////////////////////////////////////////////// */
 void Main_OIS(void)
 {
-	_FACT_ADJ fadj;
-
 	/* ------------------------------------------------------ */
 	/* Get Factory adjusted data */
 	/* ------------------------------------------------------ */
@@ -138,8 +146,5 @@ void Main_OIS(void)
 	/* ------------------------------------------------------ */
 	/* Set scene parameter for OIS */
 	/* ------------------------------------------------------ */
-	if (g_BU63165_OIS_Disable == 1)
-		func_SET_SCENE_PARAM_for_NewGYRO_Fil(_SCENE_SPORT_3, 0, 0, 0, &fadj);
-	else
-		func_SET_SCENE_PARAM_for_NewGYRO_Fil(_SCENE_SPORT_3, 1, 0, 0, &fadj);
+	func_SET_SCENE_PARAM_for_NewGYRO_Fil(_SCENE_SPORT_3, 1, 0, 0, &fadj);
 }
