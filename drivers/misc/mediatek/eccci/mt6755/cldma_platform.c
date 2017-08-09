@@ -246,7 +246,7 @@ void md_cd_lock_modem_clock_src(int locked)
 
 void md_cd_dump_debug_register(struct ccci_modem *md)
 {
-#if 1 /* MD no need dump because of bus hang happened - open for debug */
+#if 0 /* MD no need dump because of bus hang happened - open for debug */
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 #if 1
 	unsigned int reg_value;

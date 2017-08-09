@@ -2472,7 +2472,7 @@ static char md_ee_plstr[MD_EX_PL_FATALE_TOTAL + MD_EX_OTHER_CORE_EXCEPTIN - MD_E
 	"Fatal error (CC CS)",
 	"Fatal error (CC MD32)",
 	"Fatal error (CC C2K)",
-	"Fatal error (CC ARM7)"
+	"Fatal error (CC spc)"
 };
 /*
 static char md_ee_plInvalid[MD_EX_CC_MD32_EXCEPTION - MD_EX_CC_INVALID_EXCEPTION + 1][32] = {
