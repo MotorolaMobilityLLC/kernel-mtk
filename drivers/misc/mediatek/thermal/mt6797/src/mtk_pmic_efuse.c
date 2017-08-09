@@ -47,7 +47,7 @@ static void mtktspmic_read_efuse(void)
 {
 	U32 efusevalue[3];
 
-	pr_err("[pmic_debug]  start\n");
+	mtktspmic_info("[pmic_debug]  start\n");
 	/*
 	   0x0  512     527
 	   0x1  528     543
@@ -55,7 +55,7 @@ static void mtktspmic_read_efuse(void)
 	 */
 	efusevalue[0] = pmic_Read_Efuse_HPOffset(0x0);
 	efusevalue[1] = pmic_Read_Efuse_HPOffset(0x1);
-	pr_err("[pmic_debug] 6351_efuse:\n"
+	mtktspmic_info("[pmic_debug] 6351_efuse:\n"
 		       "efusevalue[0]=0x%x\n"
 		       "efusevalue[1]=0x%x\n\n", efusevalue[0], efusevalue[1]);
 
@@ -69,14 +69,14 @@ static void mtktspmic_read_efuse(void)
 	/* Note: O_SLOPE is signed integer. */
 	/* O_SLOPE_SIGN=1 ' it is Negative. */
 	/* O_SLOPE_SIGN=0 ' it is Positive. */
-	pr_err("[pmic_debug] 6351_efuse: g_o_vts        = %d\n", g_o_vts);
-	pr_err("[pmic_debug] 6351_efuse: g_degc_cali    = %d\n", g_degc_cali);
-	pr_err("[pmic_debug] 6351_efuse: g_adc_cali_en  = %d\n", g_adc_cali_en);
-	pr_err("[pmic_debug] 6351_efuse: g_o_slope      = %d\n", g_o_slope);
-	pr_err("[pmic_debug] 6351_efuse: g_o_slope_sign = %d\n", g_o_slope_sign);
-	pr_err("[pmic_debug] 6351_efuse: g_id           = %d\n", g_id);
+	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_o_vts        = %d\n", g_o_vts);
+	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_degc_cali    = %d\n", g_degc_cali);
+	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_adc_cali_en  = %d\n", g_adc_cali_en);
+	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_o_slope      = %d\n", g_o_slope);
+	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_o_slope_sign = %d\n", g_o_slope_sign);
+	mtktspmic_dprintk("[pmic_debug] 6351_efuse: g_id           = %d\n", g_id);
 
-	pr_err("[pmic_debug]  end\n");
+	mtktspmic_info("[pmic_debug]  end\n");
 }
 
 void mtktspmic_cali_prepare(void)
@@ -89,7 +89,7 @@ void mtktspmic_cali_prepare(void)
 	/* g_adc_cali_en=0;//FIX ME */
 
 	if (g_adc_cali_en == 0) {	/* no calibration */
-		pr_err("[pmic_debug]  It isn't calibration values\n");
+		mtktspmic_info("[pmic_debug]  It isn't calibration values\n");
 		g_o_vts = 1600;
 		g_degc_cali = 50;
 		g_o_slope = 0;
@@ -100,12 +100,12 @@ void mtktspmic_cali_prepare(void)
 	if (g_degc_cali < 38 || g_degc_cali > 60)
 		g_degc_cali = 53;
 
-	pr_err("[pmic_debug] g_o_vts = 0x%d\n", g_o_vts);
-	pr_err("[pmic_debug] g_degc_cali    = 0x%d\n", g_degc_cali);
-	pr_err("[pmic_debug] g_adc_cali_en  = 0x%d\n", g_adc_cali_en);
-	pr_err("[pmic_debug] g_o_slope      = 0x%d\n", g_o_slope);
-	pr_err("[pmic_debug] g_o_slope_sign = 0x%d\n", g_o_slope_sign);
-	pr_err("[pmic_debug] g_id           = 0x%d\n", g_id);
+	mtktspmic_info("[pmic_debug] g_o_vts = 0x%d\n", g_o_vts);
+	mtktspmic_info("[pmic_debug] g_degc_cali    = 0x%d\n", g_degc_cali);
+	mtktspmic_info("[pmic_debug] g_adc_cali_en  = 0x%d\n", g_adc_cali_en);
+	mtktspmic_info("[pmic_debug] g_o_slope      = 0x%d\n", g_o_slope);
+	mtktspmic_info("[pmic_debug] g_o_slope_sign = 0x%d\n", g_o_slope_sign);
+	mtktspmic_info("[pmic_debug] g_id           = 0x%d\n", g_id);
 
 }
 
@@ -147,13 +147,7 @@ int mtktspmic_get_hw_temp(void)
 
 	temp1 = pmic_raw_to_temp(temp);
 
-	pr_err("[pmic_debug] Raw=%d, T=%d\n", temp, temp1);
-	pr_err("[pmic_debug] 6351_efuse: g_o_vts        = %d\n", g_o_vts);
-	pr_err("[pmic_debug] 6351_efuse: g_degc_cali    = %d\n", g_degc_cali);
-	pr_err("[pmic_debug] 6351_efuse: g_adc_cali_en  = %d\n", g_adc_cali_en);
-	pr_err("[pmic_debug] 6351_efuse: g_o_slope      = %d\n", g_o_slope);
-	pr_err("[pmic_debug] 6351_efuse: g_o_slope_sign = %d\n", g_o_slope_sign);
-	pr_err("[pmic_debug] 6351_efuse: g_id           = %d\n", g_id);
+	mtktspmic_dprintk("[pmic_debug] Raw=%d, T=%d\n", temp, temp1);
 
 	if ((temp1 > 100000) || (temp1 < -30000))
 		mtktspmic_info("[mtktspmic_get_hw_temp] raw=%d, PMIC T=%d", temp, temp1);
