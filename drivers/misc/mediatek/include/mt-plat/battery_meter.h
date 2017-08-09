@@ -298,9 +298,9 @@ typedef enum {
 /* External Variables */
 /* ============================================================ */
 
-#if !defined(CONFIG_MTK_HAFG_20)
+
 extern struct battery_meter_custom_data batt_meter_cust_data;
-#endif
+
 
 #if !defined(CONFIG_MTK_HAFG_20)
 #ifdef MTK_ENABLE_AGING_ALGORITHM
