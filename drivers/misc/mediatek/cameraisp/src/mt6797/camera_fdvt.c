@@ -110,6 +110,16 @@ typedef enum {
 	FDVT_BASEADDR_NUM
 } FDVT_BASEADDR_ENUM;
 
+typedef struct{
+		struct clk *CG_SCP_SYS_DIS;
+		struct clk *CG_MM_SMI_COMMON;
+		struct clk *CG_SCP_SYS_ISP;
+		struct clk *CG_IMGSYS_LAB6;
+		struct clk *CG_IMGSYS_FD;
+} FD_CLK_STRUCT;
+FD_CLK_STRUCT fd_clk;
+
+
 static unsigned long gFDVT_Irq[FDVT_IRQ_IDX_NUM];
 static unsigned long gFDVT_Reg[FDVT_BASEADDR_NUM];
 
@@ -379,27 +389,138 @@ static unsigned long us_to_jiffies(unsigned long us)
 /*=======================================================================*/
 /* FDVT Clock control Registers */
 /*=======================================================================*/
+
+static inline void FD_Prepare_ccf_clock(void)
+{
+	int ret;
+	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> FD clk */
+	ret = clk_prepare(fd_clk.CG_SCP_SYS_DIS);
+	if (ret)
+		LOG_ERR("cannot prepare CG_SCP_SYS_DIS clock\n");
+
+	ret = clk_prepare(fd_clk.CG_MM_SMI_COMMON);
+	if (ret)
+		LOG_ERR("cannot prepare CG_MM_SMI_COMMON clock\n");
+
+	ret = clk_prepare(fd_clk.CG_SCP_SYS_ISP);
+	if (ret)
+		LOG_ERR("cannot prepare CG_SCP_SYS_ISP clock\n");
+
+	ret = clk_prepare(fd_clk.CG_IMGSYS_LAB6);
+	if (ret)
+		LOG_ERR("cannot prepare CG_IMGSYS_LAB6 clock\n");
+
+	ret = clk_prepare(fd_clk.CG_IMGSYS_FD);
+	if (ret)
+		LOG_ERR("cannot prepare CG_IMGSYS_FD clock\n");
+
+}
+
+static inline void FD_Enable_ccf_clock(void)
+{
+	int ret;
+	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> FD  clk */
+	ret = clk_enable(fd_clk.CG_SCP_SYS_DIS);
+	if (ret)
+		LOG_ERR("cannot enable CG_SCP_SYS_DIS clock\n");
+
+	ret = clk_enable(fd_clk.CG_MM_SMI_COMMON);
+	if (ret)
+		LOG_ERR("cannot enable CG_MM_SMI_COMMON clock\n");
+
+	ret = clk_enable(fd_clk.CG_SCP_SYS_ISP);
+	if (ret)
+		LOG_ERR("cannot enable CG_SCP_SYS_ISP clock\n");
+
+	ret = clk_enable(fd_clk.CG_IMGSYS_LAB6);
+	if (ret)
+		LOG_ERR("cannot enable CG_IMGSYS_LAB6 clock\n");
+
+	ret = clk_enable(fd_clk.CG_IMGSYS_FD);
+	if (ret)
+		LOG_ERR("cannot enable CG_IMGSYS_FD clock\n");
+
+}
+
+static inline void FD_Prepare_Enable_ccf_clock(void)
+{
+	int ret;
+	/* must keep this clk open order: CG_SCP_SYS_DIS-> CG_MM_SMI_COMMON -> CG_SCP_SYS_ISP -> FD clk */
+	ret = clk_prepare_enable(fd_clk.CG_SCP_SYS_DIS);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_SCP_SYS_DIS clock\n");
+
+	ret = clk_prepare_enable(fd_clk.CG_MM_SMI_COMMON);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_MM_SMI_COMMON clock\n");
+
+	ret = clk_prepare_enable(fd_clk.CG_SCP_SYS_ISP);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_SCP_SYS_ISP clock\n");
+
+	ret = clk_prepare_enable(fd_clk.CG_IMGSYS_LAB6);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_IMGSYS_LAB6 clock\n");
+
+	ret = clk_prepare_enable(fd_clk.CG_IMGSYS_FD);
+	if (ret)
+		LOG_ERR("cannot prepare and enable CG_IMGSYS_FD clock\n");
+
+}
+
+static inline void FD_Unprepare_ccf_clock(void)
+{
+	/* must keep this clk close order: FD clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
+	clk_unprepare(fd_clk.CG_IMGSYS_FD);
+	clk_unprepare(fd_clk.CG_IMGSYS_LAB6);
+	clk_unprepare(fd_clk.CG_SCP_SYS_ISP);
+	clk_unprepare(fd_clk.CG_MM_SMI_COMMON);
+	clk_unprepare(fd_clk.CG_SCP_SYS_DIS);
+}
+
+static inline void FD_Disable_ccf_clock(void)
+{
+	/* must keep this clk close order: FD clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
+	clk_disable(fd_clk.CG_IMGSYS_FD);
+	clk_disable(fd_clk.CG_IMGSYS_LAB6);
+	clk_disable(fd_clk.CG_SCP_SYS_ISP);
+	clk_disable(fd_clk.CG_MM_SMI_COMMON);
+	clk_disable(fd_clk.CG_SCP_SYS_DIS);
+}
+
+static inline void FD_Disable_Unprepare_ccf_clock(void)
+{
+	/* must keep this clk close order: FD clk -> CG_SCP_SYS_ISP -> CG_MM_SMI_COMMON -> CG_SCP_SYS_DIS */
+	clk_disable_unprepare(fd_clk.CG_IMGSYS_FD);
+	clk_disable_unprepare(fd_clk.CG_IMGSYS_LAB6);
+	clk_disable_unprepare(fd_clk.CG_SCP_SYS_ISP);
+	clk_disable_unprepare(fd_clk.CG_MM_SMI_COMMON);
+	clk_disable_unprepare(fd_clk.CG_SCP_SYS_DIS);
+}
+
 static int mt_fdvt_clk_ctrl(int en)
 {
-	#if 0
 	if (en) {
-
+		FD_Prepare_Enable_ccf_clock();
+	/*
 		unsigned int setReg = 0xFFFFFFFF;
 		FDVT_WR32(setReg, CAMSYS_CONFIG_BASE+0x8);
 		FDVT_WR32(setReg, IMGSYS_CONFIG_BASE+0x8);
 
-		//enable_clock(MT_CG_DISP0_SMI_COMMON, "CAMERA");
-		//enable_clock(MT_CG_IMAGE_FD, "FDVT");
+		enable_clock(MT_CG_DISP0_SMI_COMMON, "CAMERA");
+		enable_clock(MT_CG_IMAGE_FD, "FDVT");
+	*/
 	} else {
-
+		FD_Disable_Unprepare_ccf_clock();
+	/*
 		unsigned int setReg = 0xFFFFFFFF;
 		FDVT_WR32(setReg, IMGSYS_CONFIG_BASE+0x4);
 		FDVT_WR32(setReg, CAMSYS_CONFIG_BASE+0x4);
 
-		//disable_clock(MT_CG_IMAGE_FD, "FDVT");
-		//disable_clock(MT_CG_DISP0_SMI_COMMON, "CAMERA");
+		disable_clock(MT_CG_IMAGE_FD, "FDVT");
+		disable_clock(MT_CG_DISP0_SMI_COMMON, "CAMERA");
+	*/
 	}
-	#endif
 	return 0;
 }
 
@@ -915,7 +1036,7 @@ static int FDVT_probe(struct platform_device *dev)
 
 	nr_fdvt_devs = 0;
 
-	printk("RYAN: FDVT PROBE!!!\n");
+	LOG_INF("FDVT PROBE!!!\n");
 #ifdef CONFIG_OF
 
 	LOG_DBG("[FDVT_DEBUG] FDVT_probe\n");
@@ -1044,6 +1165,33 @@ static int FDVT_probe(struct platform_device *dev)
 	/* enable_irq(MT_SMI_LARB1_VAMAU_IRQ_ID); */
 #endif
 
+    /*CCF: Grab clock pointer (struct clk*) */
+	fd_clk.CG_SCP_SYS_DIS = devm_clk_get(&dev->dev, "FD_CG_SCP_SYS_DIS");
+	fd_clk.CG_MM_SMI_COMMON = devm_clk_get(&dev->dev, "FD_CG_MM_SMI_COMMON");
+	fd_clk.CG_SCP_SYS_ISP = devm_clk_get(&dev->dev, "FD_CG_SCP_SYS_ISP");
+	fd_clk.CG_IMGSYS_LAB6 = devm_clk_get(&dev->dev, "FD_CG_IMG_LARB6");
+	fd_clk.CG_IMGSYS_FD = devm_clk_get(&dev->dev, "FD_CG_IMG_FD");
+
+	if (IS_ERR(fd_clk.CG_SCP_SYS_DIS)) {
+		LOG_ERR("cannot get CG_SCP_SYS_DIS clock\n");
+		return PTR_ERR(fd_clk.CG_SCP_SYS_DIS);
+	}
+	if (IS_ERR(fd_clk.CG_MM_SMI_COMMON)) {
+		LOG_ERR("cannot get CG_MM_SMI_COMMON clock\n");
+		return PTR_ERR(fd_clk.CG_MM_SMI_COMMON);
+	}
+	if (IS_ERR(fd_clk.CG_SCP_SYS_ISP)) {
+		LOG_ERR("cannot get CG_SCP_SYS_ISP clock\n");
+		return PTR_ERR(fd_clk.CG_SCP_SYS_ISP);
+	}
+	if (IS_ERR(fd_clk.CG_IMGSYS_LAB6)) {
+		LOG_ERR("cannot get CG_IMGSYS_LAB6 clock\n");
+		return PTR_ERR(fd_clk.CG_IMGSYS_LAB6);
+	}
+	if (IS_ERR(fd_clk.CG_IMGSYS_FD)) {
+		LOG_ERR("cannot get CG_IMGSYS_FD clock\n");
+		return PTR_ERR(fd_clk.CG_IMGSYS_FD);
+	}
 
 	FDVT_class = class_create(THIS_MODULE, FDVT_DEVNAME);
 	class_dev = (struct class_device *)device_create(FDVT_class,

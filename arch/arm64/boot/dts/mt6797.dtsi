@@ -3272,6 +3272,16 @@ initrd=0x44000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		fd@1502b000 {
 			compatible = "mediatek,fd";
 			reg = <0x1502b000 0x1000>;
+			clocks = <&scpsys SCP_SYS_DIS>,
+				<&mmsys MM_SMI_COMMON>,
+				<&scpsys SCP_SYS_ISP>,
+				<&imgsys IMG_LARB6>,
+				<&imgsys IMG_FDVT>;
+			clock-names = "FD_CG_SCP_SYS_DIS",
+				"FD_CG_MM_SMI_COMMON",
+				"FD_CG_SCP_SYS_ISP",
+				"FD_CG_IMG_LARB6",
+				"FD_CG_IMG_FD";
 			interrupts = <GIC_SPI 259 IRQ_TYPE_LEVEL_LOW>;
 		};
 
