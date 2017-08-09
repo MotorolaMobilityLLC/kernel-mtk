@@ -337,12 +337,12 @@ static void start_upstream(struct work_struct *work)
 	mutex_unlock(&transfer->modem_up_mutex);
 
 	if (ret < 0) {
-		C2K_ERR("%s\n", __func__);
+		C2K_DBG("%s\n", __func__);
 		return;
 	}
 
 	if (!c) {
-		C2K_ERR("%s\n", __func__);
+		C2K_DBG("%s\n", __func__);
 		return;
 	}
 
