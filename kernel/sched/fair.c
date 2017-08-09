@@ -10759,20 +10759,16 @@ static int cpufreq_callback(struct notifier_block *nb,
 {
 	struct cpufreq_freqs *freq = data;
 	int cpu = freq->cpu;
-	struct cpumask *mask;
+	struct cpumask cls_cpus;
 	int id;
 
 	if (freq->flags & CPUFREQ_CONST_LOOPS)
 		return NOTIFY_OK;
 
 	if (val == CPUFREQ_PRECHANGE) {
-		if (sched_feat(SCHED_HMP)) {
-			mask = arch_cpu_is_big(cpu) ? &hmp_fast_cpu_mask : &hmp_slow_cpu_mask;
-			for_each_cpu(id, mask)
-				arch_scale_set_curr_freq(id, freq->new);
-		} else {
-			arch_scale_set_curr_freq(cpu, freq->new);
-		}
+		arch_get_cluster_cpus(&cls_cpus, arch_get_cluster_id(cpu));
+		for_each_cpu(id, &cls_cpus)
+			arch_scale_set_curr_freq(id, freq->new);
 	}
 
 	return NOTIFY_OK;
