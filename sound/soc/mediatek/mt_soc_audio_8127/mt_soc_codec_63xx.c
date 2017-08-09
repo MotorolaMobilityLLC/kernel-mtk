@@ -293,7 +293,6 @@ void SetAnalogSuspend(bool bEnable)
 {
 	pr_debug("%s bEnable ==%d mAnaSuspend = %d\n", __func__, bEnable, mAnaSuspend);
 	if ((bEnable == true) && (mAnaSuspend == false)) {
-		analog_print();
 		SavePowerState();
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == true) {
 			mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] =
@@ -315,10 +314,8 @@ void SetAnalogSuspend(bool bEnable)
 			    false;
 			Speaker_Amp_Change(false);
 		}
-		analog_print();
 		mAnaSuspend = true;
 	} else if ((bEnable == false) && (mAnaSuspend == true)) {
-		analog_print();
 		if (mCodec_data->mAudio_BackUpAna_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] ==
 		    true) {
 			Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_LEFT1, true);
@@ -344,7 +341,6 @@ void SetAnalogSuspend(bool bEnable)
 			    false;
 		}
 		RestorePowerState();
-		analog_print();
 		mAnaSuspend = false;
 	}
 }
