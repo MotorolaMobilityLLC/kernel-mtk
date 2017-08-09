@@ -239,7 +239,11 @@ void jpeg_drv_dec_power_off(void)
 void jpeg_drv_enc_power_on(void)
 {
 #ifdef JPEG_PM_DOMAIN_ENABLE
-	mtk_smi_larb_clock_on(3, true);
+	#ifdef MTK_CHIP_MT7623
+		mtk_smi_larb_clock_on(2, true);
+	#else
+		mtk_smi_larb_clock_on(3, true);
+	#endif
 	if (clk_prepare_enable(gJpegClk.clk_venc_jpgEnc))
 		JPEG_ERR("enable jpgEnc clk fail!");
 #else
@@ -263,7 +267,11 @@ void jpeg_drv_enc_power_off(void)
 {
 #ifdef JPEG_PM_DOMAIN_ENABLE
 	clk_disable_unprepare(gJpegClk.clk_venc_jpgEnc);
-	mtk_smi_larb_clock_off(3, true);
+	#ifdef MTK_CHIP_MT7623
+		mtk_smi_larb_clock_on(2, true);
+	#else
+		mtk_smi_larb_clock_on(3, true);
+	#endif
 #else
 #ifndef FPGA_VERSION
 	disable_clock(MT_CG_IMAGE_LARB2_SMI, "JPEG");
