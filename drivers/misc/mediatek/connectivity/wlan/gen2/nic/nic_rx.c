@@ -1703,7 +1703,7 @@ UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 nla_put_failure:
 	if (skb != NULL)
-		kalMemFree(skb, VIR_MEM_TYPE, sizeof(struct sk_buff));
+		kfree_skb(skb);
 	DBGLOG(SCN, INFO, "nla_put_failure\n");
 	return 0;		/* cfg80211_vendor_cmd_reply(skb); */
 }

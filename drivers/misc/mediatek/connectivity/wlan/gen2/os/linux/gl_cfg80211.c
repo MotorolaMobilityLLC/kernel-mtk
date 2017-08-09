@@ -2322,7 +2322,7 @@ mtk_cfg80211_testmode_get_link_detection(IN struct wiphy *wiphy, IN void *data, 
 
 nla_put_failure:
 	if (skb != NULL)
-		kalMemFree(skb, VIR_MEM_TYPE, sizeof(struct sk_buff));
+		kfree_skb(skb);
 	return i4Status;
 }
 
@@ -2566,7 +2566,7 @@ int mtk_cfg80211_testmode_get_scan_done(IN struct wiphy *wiphy, IN void *data, I
 
 nla_put_failure:
 	if (skb != NULL)
-		kalMemFree(skb, VIR_MEM_TYPE, sizeof(struct sk_buff));
+		kfree_skb(skb);
 	return i4Status;
 }
 
@@ -2877,7 +2877,7 @@ mtk_cfg80211_testmode_get_lte_channel(IN struct wiphy *wiphy, IN void *data, IN 
 nla_put_failure:
 	kalMemFree(prQueryLTEChn, VIR_MEM_TYPE, sizeof(PARAM_GET_CHN_LOAD));
 	if (skb != NULL)
-		kalMemFree(skb, VIR_MEM_TYPE, sizeof(struct sk_buff));
+		kfree_skb(skb);
 	return i4Status;
 
 }
