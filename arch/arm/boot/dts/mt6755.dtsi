@@ -938,7 +938,8 @@
 
 		lastbus@10200000 {
 			compatible = "mediatek,lastbus";
-			reg = <0x10200000 0x1000>;
+			reg = <0x10200000 0x1000>,
+				<0x10003000 0x1000>;
 		};
 
 		mcucfg@10200000 {
