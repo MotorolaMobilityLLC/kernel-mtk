@@ -357,6 +357,12 @@ s32 _do_i2c_read(struct i2c_msg *msgs, u16 addr, u8 *buffer, s32 len)
 	s32 transfer_length = 0;
 	u8 *data = NULL;
 	u16 address = addr;
+	u8 *addr_buf = NULL;
+
+	addr_buf = kmalloc(GTP_ADDR_LENGTH, GFP_KERNEL);
+	if (addr_buf == NULL)
+		return ERROR_MEM;
+	msgs[0].buf = addr_buf;
 
 	data =
 	    kmalloc(IIC_MAX_TRANSFER_SIZE <
@@ -377,6 +383,7 @@ s32 _do_i2c_read(struct i2c_msg *msgs, u16 addr, u8 *buffer, s32 len)
 		ret = i2c_transfer(gt1x_i2c_client->adapter, msgs, 2);
 		if (ret != 2) {
 			GTP_INFO("I2c Transfer error! (%d)", ret);
+			kfree(addr_buf);
 			kfree(data);
 			return ERROR_IIC;
 		}
@@ -385,6 +392,7 @@ s32 _do_i2c_read(struct i2c_msg *msgs, u16 addr, u8 *buffer, s32 len)
 		address += transfer_length;
 	}
 
+	kfree(addr_buf);
 	kfree(data);
 	return 0;
 }
