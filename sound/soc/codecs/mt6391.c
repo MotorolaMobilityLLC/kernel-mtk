@@ -1425,7 +1425,8 @@ static int mt6391_audio_amp_set(struct snd_kcontrol *kcontrol,
 
 	mutex_lock(&codec_data->ctrl_mutex);
 
-	pr_debug("%s gain = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	pr_debug("%s %ld\n ", __func__, ucontrol->value.integer.value[0]);
+
 	if (ucontrol->value.integer.value[0] &&
 	    !codec_data->device_power[MT6391_DEV_OUT_HEADSETL]) {
 		mt6391_check_and_turn_off_all_amps(codec_data);
@@ -1438,6 +1439,7 @@ static int mt6391_audio_amp_set(struct snd_kcontrol *kcontrol,
 		mt6391_turn_off_headphone_amp(codec_data);
 		mt6391_ana_clk_off(codec_data);
 	}
+
 	mutex_unlock(&codec_data->ctrl_mutex);
 	return 0;
 }
@@ -1499,7 +1501,8 @@ static int mt6391_speaker_amp_set(struct snd_kcontrol *kcontrol,
 
 	mutex_lock(&codec_data->ctrl_mutex);
 
-	pr_debug("%s gain = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	pr_debug("%s %ld\n ", __func__, ucontrol->value.integer.value[0]);
+
 	if (ucontrol->value.integer.value[0] &&
 	    !codec_data->device_power[MT6391_DEV_OUT_SPEAKERL]) {
 		mt6391_check_and_turn_off_all_amps(codec_data);
@@ -1536,7 +1539,8 @@ static int mt6391_headset_speaker_amp_set(struct snd_kcontrol *kcontrol,
 
 	mutex_lock(&codec_data->ctrl_mutex);
 
-	pr_debug("%s gain = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	pr_debug("%s %ld\n ", __func__, ucontrol->value.integer.value[0]);
+
 	if (ucontrol->value.integer.value[0] &&
 	    !codec_data->device_power[MT6391_DEV_OUT_SPEAKER_HEADSET_L]) {
 		mt6391_check_and_turn_off_all_amps(codec_data);
