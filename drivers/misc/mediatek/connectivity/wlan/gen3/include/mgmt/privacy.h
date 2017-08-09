@@ -247,6 +247,8 @@ VOID secPrivacyFreeForEntry(IN P_ADAPTER_T prAdapter, IN UINT_8 ucEntry);
 
 VOID secPrivacyFreeSta(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec);
 
+BOOLEAN secIs24Of4Packet(IN P_NATIVE_PACKET prPacket);
+
 UINT_8
 secPrivacySeekForBcEntry(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex, IN PUINT_8 pucAddr, IN UINT_8 ucStaIdx, IN
 			 UINT_8 ucAlg, IN UINT_8 ucKeyId, IN UINT_8 ucCurrentKeyId, IN UINT_8 ucTxRx);

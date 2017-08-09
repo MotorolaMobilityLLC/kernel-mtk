@@ -4300,7 +4300,7 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_1X);
 
-				if (secIsProtected1xFrame(prAdapter, prStaRec))
+				if (secIsProtected1xFrame(prAdapter, prStaRec) && !secIs24Of4Packet(prPacket))
 					GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_PROTECTED_1X);
 			}
 

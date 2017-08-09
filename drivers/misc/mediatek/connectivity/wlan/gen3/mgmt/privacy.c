@@ -641,6 +641,28 @@ BOOLEAN secEnabledInAis(IN P_ADAPTER_T prAdapter)
 
 }				/* secEnabledInAis */
 
+/**
+	to check if the packet is the second or fourth packet of 4-way handshake
+**/
+BOOLEAN secIs24Of4Packet(IN P_NATIVE_PACKET prPacket)
+{
+	struct sk_buff *prSkb = (struct sk_buff *)prPacket;
+	PUINT_8 pucPacket = (PUINT_8)prSkb->data;
+	UINT_16 u2EthType = 0;
+	UINT_16 u2KeyInfo = 0;
+
+	WLAN_GET_FIELD_BE16(&pucPacket[ETHER_HEADER_LEN - ETHER_TYPE_LEN], &u2EthType);
+	if (u2EthType != ETH_P_1X)
+		return FALSE;
+	u2KeyInfo = pucPacket[5+ETHER_HEADER_LEN]<<8 | pucPacket[6+ETHER_HEADER_LEN];
+	/* BIT3 is pairwise key bit, bit 8 is key mic bit.
+		only the two bits are set, it means this is 4-way handshake 4/4  or 2/4 frame */
+	DBGLOG(RSN, TRACE, "u2KeyInfo=%d\n", u2KeyInfo);
+	if ((u2KeyInfo & 0x108) == 0x108)
+		return TRUE;
+	return FALSE;
+}
+
 BOOLEAN secIsProtected1xFrame(IN P_ADAPTER_T prAdapter, IN P_STA_RECORD_T prStaRec)
 {
 	P_BSS_INFO_T prBssInfo;
