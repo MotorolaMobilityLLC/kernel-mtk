@@ -257,7 +257,7 @@
 	};
 
 	toprgu@10007000 {
-		compatible = "mediatek,toprgu";
+		compatible = "mediatek,mt6757-toprgu";
 		reg = <0 0x10007000 0 0x1000>;
 		interrupts = <GIC_SPI 130 IRQ_TYPE_EDGE_FALLING>;
 	};
