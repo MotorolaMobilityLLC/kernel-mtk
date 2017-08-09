@@ -2906,7 +2906,7 @@ static int _cpufreq_set_locked_cci(unsigned int cur_cci_khz, unsigned int target
 			goto out;
 	}
 
-	cpufreq_dbg("@%s(): Vproc = %dmv, Vsram = %dmv, freq = %dKHz\n",
+	cpufreq_ver("@%s(): Vproc = %dmv, Vsram = %dmv, freq = %dKHz\n",
 		    __func__,
 		    (p_cci->ops->get_cur_volt(p_cci)) / 100,
 		    (p_cci->ops->get_cur_vsram(p_cci) / 100), p_cci->ops->get_cur_phy_freq(p_cci));
@@ -3269,7 +3269,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 			cpus = cpumask_weight(&cpu_online_cpumask);
 			cpufreq_ver("CPU_ONLINE -> cpus = %d\n", cpus);
 			if (cpus == 1) {
-				cpufreq_dbg("CPU_ONLINE first CPU of %s\n",
+				cpufreq_ver("CPU_ONLINE first CPU of %s\n",
 					cpu_dvfs_get_name(p));
 				cpufreq_lock(flags);
 				p->armpll_is_available = 1;
@@ -3317,7 +3317,7 @@ static int __cpuinit _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned lon
 			cpus = cpumask_weight(&cpu_online_cpumask);
 			cpufreq_ver("CPU_DOWN_PREPARE -> cpus = %d\n", cpus);
 			if (cpus == 1) {
-				cpufreq_dbg("CPU_DOWN_PREPARE last CPU of %s\n",
+				cpufreq_ver("CPU_DOWN_PREPARE last CPU of %s\n",
 					cpu_dvfs_get_name(p));
 				cpufreq_lock(flags);
 				if (!cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
