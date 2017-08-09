@@ -1518,7 +1518,7 @@ void gtp_get_chip_type(struct i2c_client *client)
 	if (FAIL == ret) {
 		GTP_ERROR("Failed to get chip-type, set chip type default: GOODIX_GT9");
 		gtp_chip_type = CHIP_TYPE_GT9;
-			tpd_load_status = 0;
+		tpd_load_status = 0;
 		return;
 	}
 
@@ -1536,8 +1536,8 @@ void gtp_get_chip_type(struct i2c_client *client)
 		#endif
 	GTP_INFO("Chip Type: %s", (gtp_chip_type == CHIP_TYPE_GT9) ? "GOODIX_GT9" : "GOODIX_GT9F");
 
-	tpd_load_status = 1;
-	check_flag = true;
+	/*tpd_load_status = 1;
+	check_flag = true;*/
 }
 
 static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
@@ -1885,8 +1885,10 @@ static int tpd_registration(void *unused)
 
 	ret = tpd_power_on(i2c_client_tp_point);
 
-	if (ret < 0)
+	if (ret < 0) {
 		GTP_ERROR("I2C communication ERROR!");
+		goto exit_fail;
+	}
 
 #ifdef VELOCITY_CUSTOM
 	tpd_v_magnify_x = TPD_VELOCITY_CUSTOM_X;
@@ -1900,20 +1902,26 @@ static int tpd_registration(void *unused)
 
 	ret = gtp_read_version(i2c_client_tp_point, &version_info);
 
-	if (ret < 0)
+	if (ret < 0) {
 		GTP_ERROR("Read version failed.");
+		goto exit_fail;
+	}
 
 	ret = gtp_init_panel(i2c_client_tp_point);
 
-	if (ret < 0)
+	if (ret < 0) {
 		GTP_ERROR("GTP init panel failed.");
+		goto exit_fail;
+	}
 	/* Create proc file system */
 	gt91xx_config_proc =
 			proc_create(GT91XX_CONFIG_PROC_FILE, 0660, NULL,
 			&gt_upgrade_proc_fops);
-	if (gt91xx_config_proc == NULL)
+	if (gt91xx_config_proc == NULL) {
 		GTP_ERROR("create_proc_entry %s failed\n",
 				GT91XX_CONFIG_PROC_FILE);
+		goto exit_fail;
+	}
 
 #if defined(CONFIG_GTP_CREATE_WR_NODE)
 	init_wr_node(i2c_client_tp_point);
@@ -1924,6 +1932,7 @@ static int tpd_registration(void *unused)
 	if (IS_ERR(thread)) {
 		err = PTR_ERR(thread);
 		GTP_INFO(TPD_DEVICE "failed create thread: %d\n", err);
+		goto exit_fail;
 	}
 
 	if (tpd_dts_data.use_tpd_button) {
@@ -1952,14 +1961,16 @@ static int tpd_registration(void *unused)
 	msleep(50);
 
 	/* EINT device tree, default EINT enable */
-		tpd_irq_registration();
+	tpd_irq_registration();
 
 
 #if defined(CONFIG_GTP_AUTO_UPDATE)
 	ret = gup_init_update_proc(i2c_client_tp_point);
 
-	if (ret < 0)
+	if (ret < 0) {
 		GTP_ERROR("Create update thread error.");
+		goto exit_fail;
+	}
 #endif
 
 #if defined(CONFIG_TPD_PROXIMITY)
@@ -1968,15 +1979,25 @@ static int tpd_registration(void *unused)
 	obj_ps.sensor_operate = tpd_ps_operate;
 
 	err = hwmsen_attach(ID_PROXIMITY, &obj_ps);
-	if (err)
+	if (err) {
 		GTP_ERROR("hwmsen attach fail, return:%d.", err);
+		goto exit_fail;
+	}
 #endif
 
 #if defined(CONFIG_GTP_ESD_PROTECT)
 	gtp_esd_switch(client, SWITCH_ON);
 #endif
-		 GTP_INFO("tpd registration done.");
-		return 0;
+	GTP_INFO("tpd registration done.");
+	tpd_load_status = 1;
+	check_flag = true;
+	return 0;
+
+exit_fail:
+	GTP_ERROR("tpd registration fail.");
+	tpd_load_status = 0;
+	check_flag = false;
+	return -1;
 }
 static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
