@@ -34,7 +34,6 @@
 #include "irq-gic-common.h"
 #include "irqchip.h"
 
-#include <mach/mt_secure_api.h>
 #define IOMEM(x)        ((void __force __iomem *)(x))
 
 struct gic_chip_data {
@@ -794,6 +793,7 @@ out_unmap_dist:
 IRQCHIP_DECLARE(gic_v3, "arm,gic-v3", gic_of_init);
 
 #ifndef CONFIG_MTK_GIC
+#include <mach/mt_secure_api.h>
 char *mt_irq_dump_status_buf(int irq, char *buf)
 {
 	int rc;
