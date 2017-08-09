@@ -3844,8 +3844,13 @@ static int _disp_primary_path_check_trigger(void *data)
 			_disp_primary_path_exit_idle(__func__, 0);
 #endif
 			cmdqRecReset(handle);
-			_cmdq_insert_wait_frame_done_token_mira(handle);
 
+#ifndef MTK_FB_CMDQ_DISABLE
+			if (primary_display_is_video_mode())
+				cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+			else
+				cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
+#endif
 			if (gResetOVLInAALTrigger == 1) {
 				ovl_reset_by_cmdq(handle, DISP_MODULE_OVL0);
 				if (ovl_get_status() != DDP_OVL1_STATUS_SUB)
@@ -6534,7 +6539,11 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 #else
 	ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 	cmdqRecReset(handle);
-	_cmdq_insert_wait_frame_done_token_mira(handle);
+
+	if (primary_display_is_video_mode())
+		cmdqRecWaitNoClear(handle, CMDQ_EVENT_DISP_RDMA0_EOF);
+	else
+		cmdqRecWaitNoClear(handle, CMDQ_SYNC_TOKEN_STREAM_EOF);
 #endif
 	cmdqsize = cmdqRecGetInstructionCount(handle);
 
