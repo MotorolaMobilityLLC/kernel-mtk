@@ -1,8 +1,6 @@
 #ifndef __DISP_ASSERT_LAYER_H__
 #define __DISP_ASSERT_LAYER_H__
 
-#include <linux/types.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -30,7 +28,8 @@ extern "C" {
 	} DAL_COLOR;
 
 
-	/* Display Assertion Layer API */
+/* Display Assertion Layer API */
+
 	unsigned int DAL_GetLayerSize(void);
 	DAL_STATUS DAL_SetScreenColor(DAL_COLOR color);
 	DAL_STATUS DAL_Init(unsigned long layerVA, unsigned long layerPA);
@@ -40,18 +39,9 @@ extern "C" {
 	DAL_STATUS DAL_OnDispPowerOn(void);
 	DAL_STATUS DAL_LowMemoryOn(void);
 	DAL_STATUS DAL_LowMemoryOff(void);
-
-
-	unsigned long get_Assert_Layer_PA(void);
 	int is_DAL_Enabled(void);
-	extern unsigned int isAEEEnabled;
-
-	extern int DAL_Clean(void);
-	extern int DAL_Printf(const char *fmt, ...);
-	extern struct semaphore dal_sem;
-	extern bool dal_shown;
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __DISP_ASSERT_LAYER_H__ */
+#endif				/* __DISP_ASSERT_LAYER_H__ */
