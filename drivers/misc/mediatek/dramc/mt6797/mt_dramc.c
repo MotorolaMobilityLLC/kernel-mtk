@@ -108,17 +108,29 @@ static int check_dramc_base_addr(void)
 		return 0;
 }
 
-void *mt_dramc_base_get(void)
+void *mt_dramc_cha_base_get(void)
 {
 	return DRAMCAO_CHA_BASE_ADDR;
 }
-EXPORT_SYMBOL(mt_dramc_base_get);
+EXPORT_SYMBOL(mt_dramc_cha_base_get);
 
-void *mt_dramc_nao_base_get(void)
+void *mt_dramc_chb_base_get(void)
+{
+	return DRAMCAO_CHB_BASE_ADDR;
+}
+EXPORT_SYMBOL(mt_dramc_chb_base_get);
+
+void *mt_dramc_nao_cha_base_get(void)
 {
 	return DRAMCNAO_CHA_BASE_ADDR;
 }
-EXPORT_SYMBOL(mt_dramc_nao_base_get);
+EXPORT_SYMBOL(mt_dramc_nao_cha_base_get);
+
+void *mt_dramc_nao_chb_base_get(void)
+{
+	return DRAMCNAO_CHB_BASE_ADDR;
+}
+EXPORT_SYMBOL(mt_dramc_nao_chb_base_get);
 
 void *mt_ddrphy_base_get(void)
 {
