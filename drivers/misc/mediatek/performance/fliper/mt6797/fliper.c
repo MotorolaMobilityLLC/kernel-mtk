@@ -259,9 +259,14 @@ static ssize_t mt_fliper_write(struct file *filp, const char *ubuf,
 				vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
 			} else if (arg1 == Low_Power_Mode) {
 				pr_debug(TAG"POWER_MODE: LOW_POWER\n");
+#if 0
 				enable_cg_fliper(1);
 				cg_set_threshold(CG_LOW_POWER_LPM, CG_LOW_POWER_HPM);
 				vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
+#else
+				enable_cg_fliper(0);
+				vcorefs_request_dvfs_opp(KIR_PERF, OPPI_UNREQ);
+#endif
 			} else if (arg1 == Just_Make_Mode) {
 				pr_debug(TAG"POWER_MODE: JUST_MAKE\n");
 				enable_cg_fliper(1);
