@@ -50,7 +50,7 @@
 #define FEATURE_C2K_ALWAYS_ON
 #define FEATURE_DBM_SUPPORT
 
-/*#define ENABLE_EMI_PROTECTION*/
+#define ENABLE_EMI_PROTECTION
 #ifdef ENABLE_EMI_PROTECTION
 #define SET_EMI_STEP_BY_STAGE
 /* #define SET_AP_MPU_REGION */ /*no need set ap region in Jade */
