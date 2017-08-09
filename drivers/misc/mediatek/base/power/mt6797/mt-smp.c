@@ -134,8 +134,6 @@ int __cpuinit mt_smp_boot_secondary(unsigned int cpu, struct task_struct *idle)
 	 */
 	write_pen_release(cpu);
 
-	smp_set_boot_addr();
-
 	switch (cpu) {
 	case 1:
 #ifdef CONFIG_MTK_FPGA
@@ -236,6 +234,8 @@ void __init mt_smp_prepare_cpus(unsigned int max_cpus)
 	mt_reg_sync_writel(virt_to_phys(mt_secondary_startup),
 			   BOOTROM_BOOT_ADDR);
 #endif
+	/* set boot address */
+	smp_set_boot_addr();
 
 	/* initial spm_mtcmos memory map */
 	spm_mtcmos_cpu_init();
