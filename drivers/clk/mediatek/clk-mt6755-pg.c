@@ -102,8 +102,8 @@ static struct subsys_ops DIS_sys_ops;
 static struct subsys_ops ISP_sys_ops;
 static struct subsys_ops VDE_sys_ops;
 static struct subsys_ops VEN_sys_ops;
-/*static struct subsys_ops AUD_sys_ops;
-static struct subsys_ops IFR_sys_ops;*/
+static struct subsys_ops AUD_sys_ops;
+/*static struct subsys_ops IFR_sys_ops;*/
 static void __iomem *infracfg_base;
 static void __iomem *spm_base;
 
@@ -113,10 +113,10 @@ static void __iomem *spm_base;
 /**************************************
  * for non-CPU MTCMOS
  **************************************/
-/*static DEFINE_SPINLOCK(spm_noncpu_lock);
+static DEFINE_SPINLOCK(spm_noncpu_lock);
 #define spm_mtcmos_noncpu_lock(flags)   spin_lock_irqsave(&spm_noncpu_lock, flags)
 
-#define spm_mtcmos_noncpu_unlock(flags) spin_unlock_irqrestore(&spm_noncpu_lock, flags)*/
+#define spm_mtcmos_noncpu_unlock(flags) spin_unlock_irqrestore(&spm_noncpu_lock, flags)
 
 /* FIXME: set correct value: S */
 #define POWERON_CONFIG_EN			SPM_REG(0x0000)
@@ -182,7 +182,8 @@ static void __iomem *spm_base;
 #define IFR_SRAM_PDN_ACK                 (0xF << 12)
 #define DIS_PROT_MASK		((0x1<<1)) /* bit 1, 6, 16; if bit6 set, MMSYS PDN, access reg will hang, */
 #define MFG_PROT_MASK			((0x1<<21))
-#define MD1_PROT_MASK       ((0x1<<16) | (0x1<<17) | (0x1<<18) | (0x1<<19) | (0x1<<20) | (0x1<<21))
+#define MD1_PROT_MASK       ((0x1<<16) | (0x1<<17) | (0x1<<18) | (0x1<<19) | (0x1<<20) | (0x1<<21) | (0x1<<28))
+#define MD1_PROT_CHECK_MASK       ((0x1<<16) | (0x1<<17) | (0x1<<18) | (0x1<<19) | (0x1<<20) | (0x1<<21))
 #define C2K_PROT_MASK       ((0x1<<22) | (0x1<<23) | (0x1<<24)) /* bit 29, 30, 31 */
 #define CONN_PROT_MASK      ((0x1<<13) | (0x1<<14))/* bit 2, 8 */
 
@@ -280,7 +281,7 @@ static struct subsys syss[] =	/* NR_SYSS */ /* FIXME: set correct value */
 		.bus_prot_mask = 0,
 		.ops = &VEN_sys_ops,
 	},
-#if 0
+
 	[SYS_AUD] = {
 		.name = __stringify(SYS_AUD),
 		.sta_mask = AUDIO_PWR_STA_MASK,
@@ -290,6 +291,7 @@ static struct subsys syss[] =	/* NR_SYSS */ /* FIXME: set correct value */
 		.bus_prot_mask = 0,
 		.ops = &AUD_sys_ops,
 	},
+#if 0
 	[SYS_IFR] = {
 		.name = __stringify(SYS_IFR),
 		.sta_mask = IFR_PWR_STA_MASK,
@@ -312,6 +314,30 @@ struct pg_callbacks *register_pg_callback(struct pg_callbacks *pgcb)
 	return old_pgcb;
 }
 
+int spm_topaxi_protect(unsigned int mask_value, int en)
+{
+	unsigned long flags;
+
+	spm_mtcmos_noncpu_lock(flags);
+
+	if (en == 1) {
+		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | (mask_value));
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & (mask_value)) != (mask_value))
+			;
+	} else {
+		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~(mask_value));
+		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & (mask_value))
+			;
+	}
+
+	spm_mtcmos_noncpu_unlock(flags);
+/*
+		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MFG_PROT_MASK);
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) != MFG_PROT_MASK) {
+*/
+	return 0;
+}
+
 static struct subsys *id_to_sys(unsigned int id)
 {
 	return id < NR_SYSS ? &syss[id] : NULL;
@@ -321,14 +347,19 @@ static struct subsys *id_to_sys(unsigned int id)
 static int spm_mtcmos_ctrl_connsys(int state)
 {
 	int err = 0;
+	int count = 0;
 	/* TINFO="enable SPM register control" */
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off CONN" */
 		/* TINFO="Set bus protect" */
-		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | CONN_PROT_MASK);
-		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & CONN_PROT_MASK) != CONN_PROT_MASK)
-			;
+		spm_write(INFRA_TOPAXI_PROTECTEN,
+			  spm_read(INFRA_TOPAXI_PROTECTEN) | CONN_PROT_MASK);
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & CONN_PROT_MASK) != CONN_PROT_MASK) {
+			count++;
+			if (count > 1000)
+				break;
+		}
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -342,7 +373,8 @@ static int spm_mtcmos_ctrl_connsys(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & CONN_PWR_STA_MASK) || (spm_read(PWR_STATUS_2ND) & CONN_PWR_STA_MASK))
+		while ((spm_read(PWR_STATUS) & CONN_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) & CONN_PWR_STA_MASK))
 			;
 #endif
 
@@ -356,7 +388,8 @@ static int spm_mtcmos_ctrl_connsys(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & CONN_PWR_STA_MASK) || !(spm_read(PWR_STATUS_2ND) & CONN_PWR_STA_MASK))
+		while (!(spm_read(PWR_STATUS) & CONN_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) & CONN_PWR_STA_MASK))
 			;
 #endif
 
@@ -367,7 +400,8 @@ static int spm_mtcmos_ctrl_connsys(int state)
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_RST_B);
 		/* TINFO="Release bus protect" */
-		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~CONN_PROT_MASK);
+		spm_write(INFRA_TOPAXI_PROTECTEN,
+			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~CONN_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & CONN_PROT_MASK)
 			;
 		/* TINFO="Finish to turn on CONN" */
@@ -378,16 +412,22 @@ static int spm_mtcmos_ctrl_connsys(int state)
 static int spm_mtcmos_ctrl_mdsys1(int state)
 {
 	int err = 0;
-#if 1
+	int count = 0;
+
 	/* TINFO="enable SPM register control" */
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MD1" */
 		/* TINFO="Set bus protect" */
-		spm_write(INFRA_TOPAXI_PROTECTEN_1, spm_read(INFRA_TOPAXI_PROTECTEN_1) | MD1_PROT_MASK);
-		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & MD1_PROT_MASK) != MD1_PROT_MASK)
-			;
+		spm_write(INFRA_TOPAXI_PROTECTEN_1,
+			  spm_read(INFRA_TOPAXI_PROTECTEN_1) | MD1_PROT_MASK);
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & MD1_PROT_CHECK_MASK) !=
+		       MD1_PROT_CHECK_MASK) {
+			count++;
+			if (count > 1000)
+				break;
+		}
 		/* TINFO="Set SRAM_PDN = 1" */
 		spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) | MD1_SRAM_PDN);
 		/* TINFO="Set PWR_ISO = 1" */
@@ -403,7 +443,8 @@ static int spm_mtcmos_ctrl_mdsys1(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & MD1_PWR_STA_MASK) || (spm_read(PWR_STATUS_2ND) & MD1_PWR_STA_MASK))
+		while ((spm_read(PWR_STATUS) & MD1_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) & MD1_PWR_STA_MASK))
 			;
 #endif
 
@@ -421,7 +462,8 @@ static int spm_mtcmos_ctrl_mdsys1(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & MD1_PWR_STA_MASK) || !(spm_read(PWR_STATUS_2ND) & MD1_PWR_STA_MASK))
+		while (!(spm_read(PWR_STATUS) & MD1_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) & MD1_PWR_STA_MASK))
 			;
 #endif
 
@@ -432,30 +474,34 @@ static int spm_mtcmos_ctrl_mdsys1(int state)
 		/* TINFO="Set SRAM_PDN = 0" */
 		spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) & ~(0x1 << 8));
 		/* TINFO="Release bus protect" */
-		spm_write(INFRA_TOPAXI_PROTECTEN_1, spm_read(INFRA_TOPAXI_PROTECTEN_1) & ~MD1_PROT_MASK);
-		while (spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & MD1_PROT_MASK)
+		spm_write(INFRA_TOPAXI_PROTECTEN_1,
+			  spm_read(INFRA_TOPAXI_PROTECTEN_1) & ~MD1_PROT_MASK);
+		while (spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & MD1_PROT_CHECK_MASK)
 			;
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MD1_PWR_CON, spm_read(MD1_PWR_CON) | PWR_RST_B);
 		/* TINFO="Finish to turn on MD1" */
 	}
-#endif
 	return err;
 }
 
 static int spm_mtcmos_ctrl_mdsys2(int state)
 {
-int err = 0;
-#if 1
+	int err = 0;
+	int count = 0;
 	/* TINFO="enable SPM register control" */
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off C2K" */
 		/* TINFO="Set bus protect" */
-		spm_write(INFRA_TOPAXI_PROTECTEN_1, spm_read(INFRA_TOPAXI_PROTECTEN_1) | C2K_PROT_MASK);
-		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & C2K_PROT_MASK) != C2K_PROT_MASK)
-			;
+		spm_write(INFRA_TOPAXI_PROTECTEN_1,
+			  spm_read(INFRA_TOPAXI_PROTECTEN_1) | C2K_PROT_MASK);
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & C2K_PROT_MASK) != C2K_PROT_MASK) {
+			count++;
+			if (count > 1000)
+				break;
+		}
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(C2K_PWR_CON, spm_read(C2K_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -469,12 +515,13 @@ int err = 0;
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & C2K_PWR_STA_MASK) || (spm_read(PWR_STATUS_2ND) & C2K_PWR_STA_MASK))
+		while ((spm_read(PWR_STATUS) & C2K_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) & C2K_PWR_STA_MASK))
 			;
 #endif
 
 		/* TINFO="Finish to turn off C2K" */
-	} else {    /* STA_POWER_ON */
+	} else {		/* STA_POWER_ON */
 		/* TINFO="Start to turn on C2K" */
 		/* TINFO="Set PWR_ON = 1" */
 		spm_write(C2K_PWR_CON, spm_read(C2K_PWR_CON) | PWR_ON);
@@ -483,7 +530,8 @@ int err = 0;
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & C2K_PWR_STA_MASK) || !(spm_read(PWR_STATUS_2ND) & C2K_PWR_STA_MASK))
+		while (!(spm_read(PWR_STATUS) & C2K_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) & C2K_PWR_STA_MASK))
 			;
 #endif
 
@@ -494,14 +542,15 @@ int err = 0;
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(C2K_PWR_CON, spm_read(C2K_PWR_CON) | PWR_RST_B);
 		/* TINFO="Release bus protect" */
-		spm_write(INFRA_TOPAXI_PROTECTEN_1, spm_read(INFRA_TOPAXI_PROTECTEN_1) & ~C2K_PROT_MASK);
+		spm_write(INFRA_TOPAXI_PROTECTEN_1,
+			  spm_read(INFRA_TOPAXI_PROTECTEN_1) & ~C2K_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1_1) & C2K_PROT_MASK)
 			;
 		/* TINFO="Finish to turn on C2K" */
 	}
-#endif
 	return err;
 }
+
 int spm_mtcmos_ctrl_mdsys_intf_infra2(int state)
 {
 	int err = 0;
@@ -511,11 +560,20 @@ int spm_mtcmos_ctrl_mdsys_intf_infra2(int state)
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
+#if 1
+		if ((spm_read(PWR_STATUS) & MD1_PWR_STA_MASK)
+		    || (spm_read(PWR_STATUS_2ND) & MD1_PWR_STA_MASK))
+			return 0;
+		if ((spm_read(PWR_STATUS) & C2K_PWR_STA_MASK)
+		    || (spm_read(PWR_STATUS_2ND) & C2K_PWR_STA_MASK))
+			return 0;
+#endif
 		/* TINFO="Start to turn off MDSYS_INTF_INFRA" */
 		/* TINFO="Set bus protect" */
-		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MDSYS_INTF_INFRA_PROT_MASK);
+		spm_write(INFRA_TOPAXI_PROTECTEN,
+			  spm_read(INFRA_TOPAXI_PROTECTEN) | MDSYS_INTF_INFRA_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MDSYS_INTF_INFRA_PROT_MASK) !=
-			MDSYS_INTF_INFRA_PROT_MASK) {
+		       MDSYS_INTF_INFRA_PROT_MASK) {
 			count++;
 			if (count > 1000)
 				break;
@@ -523,71 +581,84 @@ int spm_mtcmos_ctrl_mdsys_intf_infra2(int state)
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
-		spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) | PWR_CLK_DIS);
+		spm_write(MDSYS_INTF_INFRA_PWR_CON,
+			  spm_read(MDSYS_INTF_INFRA_PWR_CON) | PWR_CLK_DIS);
 		/* TINFO="Set PWR_RST_B = 0" */
-		spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) & ~PWR_RST_B);
+		spm_write(MDSYS_INTF_INFRA_PWR_CON,
+			  spm_read(MDSYS_INTF_INFRA_PWR_CON) & ~PWR_RST_B);
 		/* TINFO="Set PWR_ON = 0" */
 		spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) & ~PWR_ON);
 		/* TINFO="Set PWR_ON_2ND = 0" */
-		spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) & ~PWR_ON_2ND);
+		spm_write(MDSYS_INTF_INFRA_PWR_CON,
+			  spm_read(MDSYS_INTF_INFRA_PWR_CON) & ~PWR_ON_2ND);
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
 		while ((spm_read(PWR_STATUS) & MDSYS_INTF_INFRA_PWR_STA_MASK)
 			|| (spm_read(PWR_STATUS_2ND) & MDSYS_INTF_INFRA_PWR_STA_MASK))
-				;
-/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+			;
 #endif
 
 		/* TINFO="Finish to turn off MDSYS_INTF_INFRA" */
-	} else {    /* STA_POWER_ON */
+	} else {		/* STA_POWER_ON */
+#if 0
+		if ((spm_read(PWR_STATUS) & MDSYS_INTF_INFRA_PWR_STA_MASK)
+		    || (spm_read(PWR_STATUS_2ND) & MDSYS_INTF_INFRA_PWR_STA_MASK))
+			return;
+#endif
 		/* TINFO="Start to turn on MDSYS_INTF_INFRA" */
 		/* TINFO="Set PWR_ON = 1" */
 		spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) | PWR_ON);
 		/* TINFO="Set PWR_ON_2ND = 1" */
-		spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) | PWR_ON_2ND);
+		spm_write(MDSYS_INTF_INFRA_PWR_CON,
+			  spm_read(MDSYS_INTF_INFRA_PWR_CON) | PWR_ON_2ND);
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & MDSYS_INTF_INFRA_PWR_STA_MASK) ||
-			!(spm_read(PWR_STATUS_2ND) & MDSYS_INTF_INFRA_PWR_STA_MASK))
-				;
-/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+		while (!(spm_read(PWR_STATUS) & MDSYS_INTF_INFRA_PWR_STA_MASK)
+			|| !(spm_read(PWR_STATUS_2ND) & MDSYS_INTF_INFRA_PWR_STA_MASK))
+			;
 #endif
 
 		/* TINFO="Set PWR_CLK_DIS = 0" */
-		spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) & ~PWR_CLK_DIS);
+		spm_write(MDSYS_INTF_INFRA_PWR_CON,
+			  spm_read(MDSYS_INTF_INFRA_PWR_CON) & ~PWR_CLK_DIS);
 		/* TINFO="Set PWR_ISO = 0" */
 		spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) & ~PWR_ISO);
 		/* TINFO="Set PWR_RST_B = 1" */
 		spm_write(MDSYS_INTF_INFRA_PWR_CON, spm_read(MDSYS_INTF_INFRA_PWR_CON) | PWR_RST_B);
 		/* TINFO="Release bus protect" */
-		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~MDSYS_INTF_INFRA_PROT_MASK);
+		spm_write(INFRA_TOPAXI_PROTECTEN,
+			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~MDSYS_INTF_INFRA_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & MDSYS_INTF_INFRA_PROT_MASK)
 			;
 		/* TINFO="Finish to turn on MDSYS_INTF_INFRA" */
 	}
 	return err;
 }
+
 int spm_mtcmos_ctrl_dis(int state)
 {
 	int err = 0;
-
 	/* TINFO="enable SPM register control" */
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off DIS" */
 		/* TINFO="Set bus protect" */
+#if 0
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | DIS_PROT_MASK);
 		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & DIS_PROT_MASK) != DIS_PROT_MASK)
 			;
+#else
+		spm_topaxi_protect(DIS_PROT_MASK, 1);
+#endif
 		/* TINFO="Set SRAM_PDN = 1" */
 		spm_write(DIS_PWR_CON, spm_read(DIS_PWR_CON) | DIS_SRAM_PDN);
 		/* TINFO="Wait until DIS_SRAM_PDN_ACK = 1" */
 		while (!(spm_read(DIS_PWR_CON) & DIS_SRAM_PDN_ACK))
 			;
-				/* Need hf_fmm_ck for SRAM PDN delay IP. */
+		/* Need hf_fmm_ck for SRAM PDN delay IP. */
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(DIS_PWR_CON, spm_read(DIS_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -601,14 +672,13 @@ int spm_mtcmos_ctrl_dis(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & DIS_PWR_STA_MASK) ||
-			(spm_read(PWR_STATUS_2ND) & DIS_PWR_STA_MASK))
-				;
-/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+		while ((spm_read(PWR_STATUS) & DIS_PWR_STA_MASK)
+			|| (spm_read(PWR_STATUS_2ND) & DIS_PWR_STA_MASK))
+			;
 #endif
 
 		/* TINFO="Finish to turn off DIS" */
-	} else {    /* STA_POWER_ON */
+	} else {		/* STA_POWER_ON */
 		/* TINFO="Start to turn on DIS" */
 		/* TINFO="Set PWR_ON = 1" */
 		spm_write(DIS_PWR_CON, spm_read(DIS_PWR_CON) | PWR_ON);
@@ -617,10 +687,9 @@ int spm_mtcmos_ctrl_dis(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & DIS_PWR_STA_MASK) ||
-			!(spm_read(PWR_STATUS_2ND) & DIS_PWR_STA_MASK))
-				;
-/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+		while (!(spm_read(PWR_STATUS) & DIS_PWR_STA_MASK)
+			|| !(spm_read(PWR_STATUS_2ND) & DIS_PWR_STA_MASK))
+			;
 #endif
 
 		/* TINFO="Set PWR_CLK_DIS = 0" */
@@ -634,18 +703,25 @@ int spm_mtcmos_ctrl_dis(int state)
 		/* TINFO="Wait until DIS_SRAM_PDN_ACK = 0" */
 		while (spm_read(DIS_PWR_CON) & DIS_SRAM_PDN_ACK)
 			;
-				/* Need hf_fmm_ck for SRAM PDN delay IP. */
+		/* Need hf_fmm_ck for SRAM PDN delay IP. */
 		/* TINFO="Release bus protect" */
-		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~DIS_PROT_MASK);
+#if 0
+		spm_write(INFRA_TOPAXI_PROTECTEN,
+			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~DIS_PROT_MASK);
 		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & DIS_PROT_MASK)
 			;
+#else
+		spm_topaxi_protect(DIS_PROT_MASK, 0);
+#endif
 		/* TINFO="Finish to turn on DIS" */
 	}
 	return err;
 }
+
 int spm_mtcmos_ctrl_mfg2(int state)
 {
 	int err = 0;
+	int count = 0;
 
 	/* TINFO="enable SPM register control" */
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
@@ -653,15 +729,32 @@ int spm_mtcmos_ctrl_mfg2(int state)
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG" */
 		/* TINFO="Set bus protect" */
+#if 0
 		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) | MFG_PROT_MASK);
-		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) != MFG_PROT_MASK)
-			;
+		while ((spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) != MFG_PROT_MASK) {
+			count++;
+			if (count > 1000) {
+				pr_err("mfgx: , TOPAXI = 0x%x\n",
+				       spm_read(INFRA_TOPAXI_PROTECTSTA1));
+				break;
+			}
+		}
+#else
+		spm_topaxi_protect(MFG_PROT_MASK, 1);
+#endif
 		/* TINFO="Set SRAM_PDN = 1" */
+		count = 0;
 		spm_write(MFG_PWR_CON, spm_read(MFG_PWR_CON) | MFG_SRAM_PDN);
 		/* TINFO="Wait until MFG_SRAM_PDN_ACK = 1" */
-		while (!(spm_read(MFG_PWR_CON) & MFG_SRAM_PDN_ACK))
-			;
-				/* Need f_fmfg_core_ck for SRAM PDN delay IP. */
+		while (!(spm_read(MFG_PWR_CON) & MFG_SRAM_PDN_ACK)) {
+			count++;
+			if (count > 2000) {
+				pr_err("mfgx: , MFG_PWR_CON = 0x%08x\n", spm_read(MFG_PWR_CON));
+				BUG();
+			}
+
+		}
+		/* Need f_fmfg_core_ck for SRAM PDN delay IP. */
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(MFG_PWR_CON, spm_read(MFG_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -674,15 +767,22 @@ int spm_mtcmos_ctrl_mfg2(int state)
 		spm_write(MFG_PWR_CON, spm_read(MFG_PWR_CON) & ~PWR_ON_2ND);
 
 #ifndef IGNORE_PWR_ACK
+		count = 0;
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & MFG_PWR_STA_MASK) ||
-			(spm_read(PWR_STATUS_2ND) & MFG_PWR_STA_MASK))
-				;
-/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+		while ((spm_read(PWR_STATUS) & MFG_PWR_STA_MASK)
+			|| (spm_read(PWR_STATUS_2ND) & MFG_PWR_STA_MASK)) {
+			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+			count++;
+			if (count > 2000) {
+				pr_err("mfgx: , PWR_STATUS = 0x%08x, 0x%08x\n",
+				       spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				BUG();
+			}
+		}
 #endif
 
 		/* TINFO="Finish to turn off MFG" */
-	} else {    /* STA_POWER_ON */
+	} else {		/* STA_POWER_ON */
 		/* TINFO="Start to turn on MFG" */
 		/* TINFO="Set PWR_ON = 1" */
 		spm_write(MFG_PWR_CON, spm_read(MFG_PWR_CON) | PWR_ON);
@@ -692,9 +792,19 @@ int spm_mtcmos_ctrl_mfg2(int state)
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
 		while (!(spm_read(PWR_STATUS) & MFG_PWR_STA_MASK)
-		       || !(spm_read(PWR_STATUS_2ND) & MFG_PWR_STA_MASK))
-			;
-/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+			|| !(spm_read(PWR_STATUS_2ND) & MFG_PWR_STA_MASK)) {
+			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+			count++;
+#if 0
+			if (count > 1000 && count < 1010)
+				check_mfg();
+#endif
+			if (count > 2000) {
+				pr_err("mfgo: , PWR_STATUS = 0x%08x, 0x%08x\n",
+				       spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				BUG();
+			}
+		}
 #endif
 
 		/* TINFO="Set PWR_CLK_DIS = 0" */
@@ -705,15 +815,32 @@ int spm_mtcmos_ctrl_mfg2(int state)
 		spm_write(MFG_PWR_CON, spm_read(MFG_PWR_CON) | PWR_RST_B);
 		/* TINFO="Set SRAM_PDN = 0" */
 		spm_write(MFG_PWR_CON, spm_read(MFG_PWR_CON) & ~(0x1 << 8));
+		count = 0;
 		/* TINFO="Wait until MFG_SRAM_PDN_ACK = 0" */
-		while (spm_read(MFG_PWR_CON) & MFG_SRAM_PDN_ACK)
-			;
-				/* Need f_fmfg_core_ck for SRAM PDN delay IP. */
+		while (spm_read(MFG_PWR_CON) & MFG_SRAM_PDN_ACK) {
+			/* Need f_fmfg_core_ck for SRAM PDN delay IP. */
+			count++;
+			if (count > 2000) {
+				pr_err("mfgo: , MFG_PWR_CON = 0x%08x\n", spm_read(MFG_PWR_CON));
+				BUG();
+			}
+		}
 		/* TINFO="Release bus protect" */
-		spm_write(INFRA_TOPAXI_PROTECTEN, spm_read(INFRA_TOPAXI_PROTECTEN) & ~MFG_PROT_MASK);
-		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK)
-			;
-
+#if 0
+		spm_write(INFRA_TOPAXI_PROTECTEN,
+			  spm_read(INFRA_TOPAXI_PROTECTEN) & ~MFG_PROT_MASK);
+		count = 0;
+		while (spm_read(INFRA_TOPAXI_PROTECTSTA1) & MFG_PROT_MASK) {
+			count++;
+			if (count > 2000) {
+				pr_err("mfgo: , TOPAXI = 0x%x\n",
+				       spm_read(INFRA_TOPAXI_PROTECTSTA1));
+				BUG();
+			}
+		}
+#else
+		spm_topaxi_protect(MFG_PROT_MASK, 0);
+#endif
 		/* TINFO="Finish to turn on MFG" */
 	}
 
@@ -734,7 +861,7 @@ int spm_mtcmos_ctrl_isp2(int state)
 		/* TINFO="Wait until ISP_SRAM_PDN_ACK = 1" */
 		while (!(spm_read(ISP_PWR_CON) & ISP_SRAM_PDN_ACK))
 			;
-				/* Need hf_fmm_ck for SRAM PDN delay IP. */
+			/* Need hf_fmm_ck for SRAM PDN delay IP. */
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(ISP_PWR_CON, spm_read(ISP_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -748,14 +875,14 @@ int spm_mtcmos_ctrl_isp2(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & ISP_PWR_STA_MASK) ||
-			(spm_read(PWR_STATUS_2ND) & ISP_PWR_STA_MASK))
+		while ((spm_read(PWR_STATUS) & ISP_PWR_STA_MASK)
+			|| (spm_read(PWR_STATUS_2ND) & ISP_PWR_STA_MASK))
 				;
 /* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 #endif
 
 		/* TINFO="Finish to turn off ISP" */
-	} else {    /* STA_POWER_ON */
+	} else {		/* STA_POWER_ON */
 		/* TINFO="Start to turn on ISP" */
 		/* TINFO="Set PWR_ON = 1" */
 		spm_write(ISP_PWR_CON, spm_read(ISP_PWR_CON) | PWR_ON);
@@ -764,8 +891,8 @@ int spm_mtcmos_ctrl_isp2(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & ISP_PWR_STA_MASK) ||
-			!(spm_read(PWR_STATUS_2ND) & ISP_PWR_STA_MASK))
+		while (!(spm_read(PWR_STATUS) & ISP_PWR_STA_MASK)
+			|| !(spm_read(PWR_STATUS_2ND) & ISP_PWR_STA_MASK))
 				;
 /* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 #endif
@@ -782,7 +909,7 @@ int spm_mtcmos_ctrl_isp2(int state)
 		/* TINFO="Wait until ISP_SRAM_PDN_ACK = 0" */
 		while (spm_read(ISP_PWR_CON) & ISP_SRAM_PDN_ACK)
 			;
-				/* Need hf_fmm_ck for SRAM PDN delay IP. */
+		/* Need hf_fmm_ck for SRAM PDN delay IP. */
 		/* TINFO="Finish to turn on ISP" */
 	}
 	return err;
@@ -802,7 +929,7 @@ int spm_mtcmos_ctrl_ifr(int state)
 		/* TINFO="Wait until IFR_SRAM_PDN_ACK = 1" */
 		while (!(spm_read(IFR_PWR_CON) & IFR_SRAM_PDN_ACK))
 			;
-				/* SRAM PDN delay IP clock is 26MHz. Print SRAM control and ACK for debug. */
+		/* SRAM PDN delay IP clock is 26MHz. Print SRAM control and ACK for debug. */
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -816,14 +943,14 @@ int spm_mtcmos_ctrl_ifr(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & IFR_PWR_STA_MASK) ||
-			(spm_read(PWR_STATUS_2ND) & IFR_PWR_STA_MASK))
+		while ((spm_read(PWR_STATUS) & IFR_PWR_STA_MASK)
+			|| (spm_read(PWR_STATUS_2ND) & IFR_PWR_STA_MASK))
 				;
 /* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 #endif
 
 		/* TINFO="Finish to turn off IFR" */
-	} else {    /* STA_POWER_ON */
+	} else {		/* STA_POWER_ON */
 		/* TINFO="Start to turn on IFR" */
 		/* TINFO="Set PWR_ON = 1" */
 		spm_write(IFR_PWR_CON, spm_read(IFR_PWR_CON) | PWR_ON);
@@ -832,8 +959,8 @@ int spm_mtcmos_ctrl_ifr(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & IFR_PWR_STA_MASK) ||
-			!(spm_read(PWR_STATUS_2ND) & IFR_PWR_STA_MASK))
+		while (!(spm_read(PWR_STATUS) & IFR_PWR_STA_MASK)
+			|| !(spm_read(PWR_STATUS_2ND) & IFR_PWR_STA_MASK))
 				;
 /* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 #endif
@@ -852,7 +979,7 @@ int spm_mtcmos_ctrl_ifr(int state)
 		/* TINFO="Wait until IFR_SRAM_PDN_ACK = 0" */
 		while (spm_read(IFR_PWR_CON) & IFR_SRAM_PDN_ACK)
 			;
-				/* SRAM PDN delay IP clock is 26MHz. Print SRAM control and ACK for debug. */
+		/* SRAM PDN delay IP clock is 26MHz. Print SRAM control and ACK for debug. */
 		/* TINFO="Finish to turn on IFR" */
 	}
 	return err;
@@ -872,7 +999,7 @@ int spm_mtcmos_ctrl_vde(int state)
 		/* TINFO="Wait until VDE_SRAM_PDN_ACK = 1" */
 		while (!(spm_read(VDE_PWR_CON) & VDE_SRAM_PDN_ACK))
 			;
-				/* Need hf_fmm_ck for SRAM PDN delay IP. */
+		/* Need hf_fmm_ck for SRAM PDN delay IP. */
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(VDE_PWR_CON, spm_read(VDE_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -886,14 +1013,14 @@ int spm_mtcmos_ctrl_vde(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & VDE_PWR_STA_MASK) ||
-			(spm_read(PWR_STATUS_2ND) & VDE_PWR_STA_MASK))
-			;
+		while ((spm_read(PWR_STATUS) & VDE_PWR_STA_MASK)
+			|| (spm_read(PWR_STATUS_2ND) & VDE_PWR_STA_MASK))
+				;
 /* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 #endif
 
 		/* TINFO="Finish to turn off VDE" */
-	} else {    /* STA_POWER_ON */
+	} else {		/* STA_POWER_ON */
 		/* TINFO="Start to turn on VDE" */
 		/* TINFO="Set PWR_ON = 1" */
 		spm_write(VDE_PWR_CON, spm_read(VDE_PWR_CON) | PWR_ON);
@@ -902,9 +1029,9 @@ int spm_mtcmos_ctrl_vde(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & VDE_PWR_STA_MASK) ||
-			!(spm_read(PWR_STATUS_2ND) & VDE_PWR_STA_MASK))
-			;
+		while (!(spm_read(PWR_STATUS) & VDE_PWR_STA_MASK)
+			|| !(spm_read(PWR_STATUS_2ND) & VDE_PWR_STA_MASK))
+				;
 /* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 #endif
 
@@ -919,11 +1046,12 @@ int spm_mtcmos_ctrl_vde(int state)
 		/* TINFO="Wait until VDE_SRAM_PDN_ACK = 0" */
 		while (spm_read(VDE_PWR_CON) & VDE_SRAM_PDN_ACK)
 			;
-				/* Need hf_fmm_ck for SRAM PDN delay IP. */
+		/* Need hf_fmm_ck for SRAM PDN delay IP. */
 		/* TINFO="Finish to turn on VDE" */
 	}
 	return err;
 }
+
 int spm_mtcmos_ctrl_ven(int state)
 {
 	int err = 0;
@@ -952,14 +1080,14 @@ int spm_mtcmos_ctrl_ven(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & VEN_PWR_STA_MASK) ||
-			(spm_read(PWR_STATUS_2ND) & VEN_PWR_STA_MASK))
-			;
+		while ((spm_read(PWR_STATUS) & VEN_PWR_STA_MASK)
+			|| (spm_read(PWR_STATUS_2ND) & VEN_PWR_STA_MASK))
+				;
 /* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 #endif
 
 		/* TINFO="Finish to turn off VEN" */
-	} else {    /* STA_POWER_ON */
+	} else {		/* STA_POWER_ON */
 		/* TINFO="Start to turn on VEN" */
 		/* TINFO="Set PWR_ON = 1" */
 		spm_write(VEN_PWR_CON, spm_read(VEN_PWR_CON) | PWR_ON);
@@ -968,9 +1096,9 @@ int spm_mtcmos_ctrl_ven(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & VEN_PWR_STA_MASK) ||
-			!(spm_read(PWR_STATUS_2ND) & VEN_PWR_STA_MASK))
-			;
+		while (!(spm_read(PWR_STATUS) & VEN_PWR_STA_MASK)
+			|| !(spm_read(PWR_STATUS_2ND) & VEN_PWR_STA_MASK))
+				;
 /* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 #endif
 
@@ -988,14 +1116,16 @@ int spm_mtcmos_ctrl_ven(int state)
 		/* TINFO="Wait until VEN_SRAM_PDN_ACK = 0" */
 		while (spm_read(VEN_PWR_CON) & VEN_SRAM_PDN_ACK)
 			;
-				/* Need hf_fmm_ck for SRAM PDN delay IP. */
+		/* Need hf_fmm_ck for SRAM PDN delay IP. */
 		/* TINFO="Finish to turn on VEN" */
 	}
 	return err;
 }
+
 int spm_mtcmos_ctrl_mfg_async(int state)
 {
 	int err = 0;
+	int count = 0;
 	/* TINFO="enable SPM register control" */
 	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
 
@@ -1014,14 +1144,20 @@ int spm_mtcmos_ctrl_mfg_async(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & MFG_ASYNC_PWR_STA_MASK) ||
-			(spm_read(PWR_STATUS_2ND) & MFG_ASYNC_PWR_STA_MASK))
-			;
-/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+		while ((spm_read(PWR_STATUS) & MFG_ASYNC_PWR_STA_MASK)
+			|| (spm_read(PWR_STATUS_2ND) & MFG_ASYNC_PWR_STA_MASK)) {
+			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+			count++;
+			if (count > 2000) {
+				pr_err("mfgAx: , PWR_STATUS = 0x%08x, 0x%08x\n",
+				       spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				BUG();
+			}
+		}
 #endif
 
 		/* TINFO="Finish to turn off MFG_ASYNC" */
-	} else {    /* STA_POWER_ON */
+	} else {		/* STA_POWER_ON */
 		/* TINFO="Start to turn on MFG_ASYNC" */
 		/* TINFO="Set PWR_ON = 1" */
 		spm_write(MFG_ASYNC_PWR_CON, spm_read(MFG_ASYNC_PWR_CON) | PWR_ON);
@@ -1031,9 +1167,15 @@ int spm_mtcmos_ctrl_mfg_async(int state)
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
 		while (!(spm_read(PWR_STATUS) & MFG_ASYNC_PWR_STA_MASK)
-		       || !(spm_read(PWR_STATUS_2ND) & MFG_ASYNC_PWR_STA_MASK))
-			;
-/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+		       || !(spm_read(PWR_STATUS_2ND) & MFG_ASYNC_PWR_STA_MASK)) {
+			/* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+			count++;
+			if (count > 2000) {
+				pr_err("mfgAo: , PWR_STATUS = 0x%08x, 0x%08x\n",
+				       spm_read(PWR_STATUS), spm_read(PWR_STATUS_2ND));
+				BUG();
+			}
+		}
 #endif
 
 		/* TINFO="Set PWR_CLK_DIS = 0" */
@@ -1061,7 +1203,7 @@ int spm_mtcmos_ctrl_audio(int state)
 		/* TINFO="Wait until AUDIO_SRAM_PDN_ACK = 1" */
 		while (!(spm_read(AUDIO_PWR_CON) & AUDIO_SRAM_PDN_ACK))
 			;
-				/* Need f_f26M_aud_ck for SRAM PDN delay IP. */
+		/* Need f_f26M_aud_ck for SRAM PDN delay IP. */
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(AUDIO_PWR_CON, spm_read(AUDIO_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -1075,14 +1217,15 @@ int spm_mtcmos_ctrl_audio(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
-		while ((spm_read(PWR_STATUS) & AUDIO_PWR_STA_MASK) ||
-			(spm_read(PWR_STATUS_2ND) & AUDIO_PWR_STA_MASK))
-			;
+		while ((spm_read(PWR_STATUS) & AUDIO_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) & AUDIO_PWR_STA_MASK))
+				;
 /* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
+
 #endif
 
 		/* TINFO="Finish to turn off AUDIO" */
-	} else {    /* STA_POWER_ON */
+	} else {		/* STA_POWER_ON */
 		/* TINFO="Start to turn on AUDIO" */
 		/* TINFO="Set PWR_ON = 1" */
 		spm_write(AUDIO_PWR_CON, spm_read(AUDIO_PWR_CON) | PWR_ON);
@@ -1091,8 +1234,8 @@ int spm_mtcmos_ctrl_audio(int state)
 
 #ifndef IGNORE_PWR_ACK
 		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
-		while (!(spm_read(PWR_STATUS) & AUDIO_PWR_STA_MASK) ||
-			!(spm_read(PWR_STATUS_2ND) & AUDIO_PWR_STA_MASK))
+		while (!(spm_read(PWR_STATUS) & AUDIO_PWR_STA_MASK)
+		       || !(spm_read(PWR_STATUS_2ND) & AUDIO_PWR_STA_MASK))
 			;
 /* No logic between pwr_on and pwr_ack. Print SRAM / MTCMOS control and PWR_ACK for debug. */
 #endif
@@ -1111,7 +1254,7 @@ int spm_mtcmos_ctrl_audio(int state)
 		/* TINFO="Wait until AUDIO_SRAM_PDN_ACK = 0" */
 		while (spm_read(AUDIO_PWR_CON) & AUDIO_SRAM_PDN_ACK)
 			;
-				/* Need f_f26M_aud_ck for SRAM PDN delay IP. */
+		/* Need f_f26M_aud_ck for SRAM PDN delay IP. */
 		/* TINFO="Finish to turn on AUDIO" */
 	}
 	return err;
@@ -1306,11 +1449,12 @@ static int VEN_sys_enable_op(struct subsys *sys)
 {
 	return spm_mtcmos_ctrl_ven(STA_POWER_ON);
 }
-#if 0
+
 static int AUD_sys_enable_op(struct subsys *sys)
 {
 	return spm_mtcmos_ctrl_audio(STA_POWER_ON);
 }
+#if 0
 static int IFR_sys_enable_op(struct subsys *sys)
 {
 	return spm_mtcmos_ctrl_ifr(STA_POWER_ON);
@@ -1353,11 +1497,12 @@ static int VEN_sys_disable_op(struct subsys *sys)
 {
 	return spm_mtcmos_ctrl_ven(STA_POWER_DOWN);
 }
-#if 0
+
 static int AUD_sys_disable_op(struct subsys *sys)
 {
 	return spm_mtcmos_ctrl_audio(STA_POWER_DOWN);
 }
+#if 0
 static int IFR_sys_disable_op(struct subsys *sys)
 {
 	return spm_mtcmos_ctrl_ifr(STA_POWER_DOWN);
@@ -1424,11 +1569,11 @@ static struct subsys_ops VEN_sys_ops = {
 	.disable = VEN_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
-/*static struct subsys_ops AUD_sys_ops = {
+static struct subsys_ops AUD_sys_ops = {
 	.enable = AUD_sys_enable_op,
 	.disable = AUD_sys_disable_op,
 	.get_state = sys_get_state_op,
-};*/
+};
 /*static struct subsys_ops IFR_sys_ops = {
 	.enable = IFR_sys_enable_op,
 	.disable = IFR_sys_disable_op,
@@ -1712,6 +1857,7 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_ISP, pg_isp, NULL, NULL, SYS_ISP),
 	PGATE(SCP_SYS_VDE, pg_vde, NULL, vdec_sel, SYS_VDE),
 	PGATE(SCP_SYS_VEN, pg_ven, NULL, NULL, SYS_VEN),
+	PGATE(SCP_SYS_AUD, pg_aud, NULL, NULL, SYS_AUD),
 };
 
 static void __init init_clk_scpsys(

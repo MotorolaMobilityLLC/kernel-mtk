@@ -110,7 +110,17 @@
 #define TOP_SYSPLL4_D2_D8		92
 #define TOP_TVDPLL_CK		93
 #define TOP_VENCPLL_D3		94
-#define TOP_NR_CLK		95
+
+#define TOP_SYSPLL_CK		95
+#define TOP_SYSPLL1_CK		96
+#define TOP_SYSPLL2_CK		97
+#define TOP_SYSPLL3_CK		98
+#define TOP_SYSPLL4_CK		99
+#define TOP_UNIVPLL_CK		100
+#define TOP_UNIVPLL1_CK		101
+#define TOP_UNIVPLL2_CK		102
+#define TOP_UNIVPLL3_CK		103
+#define TOP_NR_CLK		104
 
 /* APMIXED_SYS */
 #define APMIXED_ARMBPLL	1
@@ -373,5 +383,6 @@
 #define SCP_SYS_ISP	6
 #define SCP_SYS_VDE	7
 #define SCP_SYS_VEN	8
-#define SCP_NR_SYSS	9
+#define SCP_SYS_AUD	9
+#define SCP_NR_SYSS	10
 #endif				/* _DT_BINDINGS_CLK_MT6755_H */

@@ -54,6 +54,15 @@
 #define apll2		"apll2"
 
 /* DIV */
+#define syspll_ck		"syspll_ck"
+#define syspll1_ck		"syspll1_ck"
+#define	syspll2_ck		"syspll2_ck"
+#define syspll3_ck		"syspll3_ck"
+#define	syspll4_ck		"syspll4_ck"
+#define univpll_ck		"univpll_ck"
+#define univpll1_ck		"univpll1_ck"
+#define univpll2_ck		"univpll2_ck"
+#define univpll3_ck		"univpll3_ck"
 #define ad_apll1_ck		"ad_apll1_ck"
 #define ad_sys_26m_ck		"ad_sys_26m_ck"
 #define ad_sys_26m_d2		"ad_sys_26m_d2"
@@ -481,55 +490,64 @@ static struct mtk_fixed_factor top_divs[] __initdata = {
 	FACTOR(TOP_OSC_D8, osc_d8, clk_null, 1, 1),
 
 	FACTOR(TOP_MSDCPLL_CK, msdcpll_ck, msdcpll, 1, 1),
-	FACTOR(TOP_MSDCPLL_D16, msdcpll_d16, msdcpll, 1, 1),
-	FACTOR(TOP_MSDCPLL_D2, msdcpll_d2, msdcpll, 1, 1),
-	FACTOR(TOP_MSDCPLL_D4, msdcpll_d4, msdcpll, 1, 1),
-	FACTOR(TOP_MSDCPLL_D8, msdcpll_d8, msdcpll, 1, 1),
+	FACTOR(TOP_MSDCPLL_D16, msdcpll_d16, msdcpll, 1, 16),
+	FACTOR(TOP_MSDCPLL_D2, msdcpll_d2, msdcpll, 1, 2),
+	FACTOR(TOP_MSDCPLL_D4, msdcpll_d4, msdcpll, 1, 4),
+	FACTOR(TOP_MSDCPLL_D8, msdcpll_d8, msdcpll, 1, 8),
 
 
-	/*FACTOR(TOP_SYSPLL_D2, syspll_d2, mainpll, 1, 1),*/
-	FACTOR(TOP_SYSPLL_D3, syspll_d3, mainpll, 1, 1),
-	FACTOR(TOP_SYSPLL_D3_D3, syspll_d3_d3, mainpll, 1, 1),
-	FACTOR(TOP_SYSPLL_D5, syspll_d5, mainpll, 1, 1),
-	FACTOR(TOP_SYSPLL_D7, syspll_d7, mainpll, 1, 1),
+	FACTOR(TOP_SYSPLL_CK, syspll_ck, mainpll, 1, 1),
+	FACTOR(TOP_SYSPLL_D3, syspll_d3, mainpll, 1, 3),
+	FACTOR(TOP_SYSPLL_D3_D3, syspll_d3_d3, mainpll, 1, 9),
+	FACTOR(TOP_SYSPLL_D5, syspll_d5, mainpll, 1, 5),
+	FACTOR(TOP_SYSPLL_D7, syspll_d7, mainpll, 1, 7),
 
-	FACTOR(TOP_SYSPLL1_D16, syspll1_d16, mainpll, 1, 1),
-	FACTOR(TOP_SYSPLL1_D2, syspll1_d2, mainpll, 1, 1),
-	FACTOR(TOP_SYSPLL1_D4, syspll1_d4, mainpll, 1, 1),
-	FACTOR(TOP_SYSPLL1_D8, syspll1_d8, mainpll, 1, 1),
+	FACTOR(TOP_SYSPLL1_CK, syspll1_ck, mainpll, 1, 2),
+	FACTOR(TOP_SYSPLL1_D16, syspll1_d16, syspll1_ck, 1, 16),
+	FACTOR(TOP_SYSPLL1_D2, syspll1_d2, syspll1_ck, 1, 2),
+	FACTOR(TOP_SYSPLL1_D4, syspll1_d4, syspll1_ck, 1, 4),
+	FACTOR(TOP_SYSPLL1_D8, syspll1_d8, syspll1_ck, 1, 8),
 
-	FACTOR(TOP_SYSPLL2_D2, syspll2_d2, mainpll, 1, 1),
-	FACTOR(TOP_SYSPLL2_D4, syspll2_d4, mainpll, 1, 1),
+	FACTOR(TOP_SYSPLL2_CK, syspll2_ck, mainpll, 1, 3),
+	FACTOR(TOP_SYSPLL2_D2, syspll2_d2, syspll2_ck, 1, 2),
+	FACTOR(TOP_SYSPLL2_D4, syspll2_d4, syspll2_ck, 1, 4),
 
-	FACTOR(TOP_SYSPLL3_D2, syspll3_d2, mainpll, 1, 1),
-	FACTOR(TOP_SYSPLL3_D4, syspll3_d4, mainpll, 1, 1),
+	FACTOR(TOP_SYSPLL3_CK, syspll3_ck, mainpll, 1, 5),
+	FACTOR(TOP_SYSPLL3_D2, syspll3_d2, syspll3_ck, 1, 2),
+	FACTOR(TOP_SYSPLL3_D4, syspll3_d4, syspll3_ck, 1, 4),
 
-	FACTOR(TOP_SYSPLL4_D2, syspll4_d2, mainpll, 1, 1),
-	/*FACTOR(TOP_SYSPLL4_D2_D8, syspll4_d2_d8, mainpll, 1, 1),*/
-	FACTOR(TOP_SYSPLL4_D4, syspll4_d4, mainpll, 1, 1),
+	FACTOR(TOP_SYSPLL4_CK, syspll4_ck, mainpll, 1, 7),
+	FACTOR(TOP_SYSPLL4_D2, syspll4_d2, syspll4_ck, 1, 2),
+	FACTOR(TOP_SYSPLL4_D4, syspll4_d4, syspll4_ck, 1, 4),
 
-	/*FACTOR(TOP_TVDPLL_CK, tvdpll_ck, tvdpll, 1, 1),*/
-	FACTOR(TOP_TVDPLL_D2, tvdpll_d2, tvdpll, 1, 1),
-	FACTOR(TOP_TVDPLL_D4, tvdpll_d4, tvdpll, 1, 1),
-	FACTOR(TOP_TVDPLL_D8, tvdpll_d8, tvdpll, 1, 1),
-	FACTOR(TOP_TVDPLL_D16, tvdpll_d16, tvdpll, 1, 1),
+	FACTOR(TOP_TVDPLL_CK, tvdpll_ck, tvdpll, 1, 1),
+	FACTOR(TOP_TVDPLL_D2, tvdpll_d2, tvdpll, 1, 2),
+	FACTOR(TOP_TVDPLL_D4, tvdpll_d4, tvdpll, 1, 4),
+	FACTOR(TOP_TVDPLL_D8, tvdpll_d8, tvdpll, 1, 8),
+	FACTOR(TOP_TVDPLL_D16, tvdpll_d16, tvdpll, 1, 16),
 
-	FACTOR(TOP_UNIVPLL_D26, univpll_d26, univpll, 1, 1),
-	FACTOR(TOP_UNIVPLL_D7, univpll_d7, univpll, 1, 1),
-	FACTOR(TOP_UNIVPLL_D5, univpll_d5, univpll, 1, 1),
-	FACTOR(TOP_UNIVPLL_D3, univpll_d3, univpll, 1, 1),
-	FACTOR(TOP_UNIVPLL_D2, univpll_d2, univpll, 1, 1),
 
-	FACTOR(TOP_UNIVPLL1_D2, univpll1_d2, univpll, 1, 1),
-	FACTOR(TOP_UNIVPLL1_D4, univpll1_d4, univpll, 1, 1),
-	FACTOR(TOP_UNIVPLL1_D8, univpll1_d8, univpll, 1, 1),
+	FACTOR(TOP_UNIVPLL_CK, univpll_ck, univpll, 1, 1),
+	FACTOR(TOP_UNIVPLL_D26, univpll_d26, univpll, 1, 26),
+	FACTOR(TOP_UNIVPLL_D7, univpll_d7, univpll, 1, 7),
+	FACTOR(TOP_UNIVPLL_D5, univpll_d5, univpll, 1, 5),
+	FACTOR(TOP_UNIVPLL_D3, univpll_d3, univpll, 1, 3),
+	FACTOR(TOP_UNIVPLL_D2, univpll_d2, univpll, 1, 2),
 
-	FACTOR(TOP_UNIVPLL2_D2, univpll2_d2, univpll, 1, 1),
-	FACTOR(TOP_UNIVPLL2_D4, univpll2_d4, univpll, 1, 1),
-	FACTOR(TOP_UNIVPLL2_D8, univpll2_d8, univpll, 1, 1),
+	FACTOR(TOP_UNIVPLL1_CK, univpll1_ck, univpll, 1, 2),
+	FACTOR(TOP_UNIVPLL1_D2, univpll1_d2, univpll1_ck, 1, 2),
+	FACTOR(TOP_UNIVPLL1_D4, univpll1_d4, univpll1_ck, 1, 4),
+	FACTOR(TOP_UNIVPLL1_D8, univpll1_d8, univpll1_ck, 1, 8),
 
-	FACTOR(TOP_UNIVPLL3_D2, univpll3_d2, univpll, 1, 1),
-	FACTOR(TOP_UNIVPLL3_D4, univpll3_d4, univpll, 1, 1),
+	FACTOR(TOP_UNIVPLL2_CK, univpll2_ck, univpll, 1, 3),
+	FACTOR(TOP_UNIVPLL2_D2, univpll2_d2, univpll2_ck, 1, 2),
+	FACTOR(TOP_UNIVPLL2_D4, univpll2_d4, univpll2_ck, 1, 4),
+	FACTOR(TOP_UNIVPLL2_D8, univpll2_d8, univpll2_ck, 1, 8),
+
+	FACTOR(TOP_UNIVPLL3_CK, univpll3_ck, univpll, 1, 5),
+	FACTOR(TOP_UNIVPLL3_D2, univpll3_d2, univpll3_ck, 1, 2),
+	FACTOR(TOP_UNIVPLL3_D4, univpll3_d4, univpll3_ck, 1, 4),
+
 	FACTOR(TOP_VENCPLL_CK, vencpll_ck, vencpll, 1, 1),
 	/*FACTOR(TOP_VENCPLL_D3, vencpll_d3, vencpll, 1, 1),
 	FACTOR(TOP_WHPLL_AUDIO_CK, whpll_audio_ck, clk_null, 1, 1),*/
@@ -647,7 +665,6 @@ static const char *msdc30_1_parents[] __initconst = {
 		msdcpll_d4,
 		univpll1_d4,
 		syspll2_d2,
-		syspll1_d4,
 		syspll_d7,
 		univpll_d7,
 		msdcpll_d2
