@@ -22,9 +22,9 @@
 #include <linux/netdevice.h>
 #include <linux/random.h>
 #include <linux/platform_device.h>
-#include <mach/mt_boot.h>
+#include <mt-plat/mt_boot.h>
 #include "ccci_config.h"
-#include <mach/mt_ccci_common.h>
+#include <mt-plat/mt_ccci_common.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #include <linux/of_fdt.h>

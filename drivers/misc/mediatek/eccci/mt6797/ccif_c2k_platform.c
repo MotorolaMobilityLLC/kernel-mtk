@@ -9,8 +9,8 @@
 #include "modem_ccif.h"
 #include "modem_reg_base.h"
 
-#include <mach/upmu_common.h>
-#include <mach/mt_boot.h>
+#include <mt-plat/upmu_common.h>
+#include <mt-plat/mt_boot.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
