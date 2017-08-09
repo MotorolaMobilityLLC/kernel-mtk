@@ -34,6 +34,10 @@
 
 #include "gadget_chips.h"
 #include "u_fs.h"
+
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+#include "f_hid.c"
+#endif
 #ifdef CONFIG_SND_RAWMIDI
 #include "f_midi.c"
 #endif
@@ -71,9 +75,9 @@ static const char longname[] = "Gadget Android";
 
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 #include <mt-plat/mt_boot_common.h>
-#define KPOC_USB_FUNC "mtp"
+#define KPOC_USB_FUNC "hid"
 #define KPOC_USB_VENDOR_ID 0x0E8D
-#define KPOC_USB_PRODUCT_ID 0x2008
+#define KPOC_USB_PRODUCT_ID 0xFFFF
 #endif
 
 #ifdef CONFIG_SND_RAWMIDI
@@ -264,6 +268,28 @@ static void android_disable(struct android_dev *dev)
 
 /*-------------------------------------------------------------------------*/
 /* Supported functions initialization */
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+static int hid_function_init(struct android_usb_function *f,
+		struct usb_composite_dev *cdev)
+{
+	return ghid_setup(cdev->gadget, 2);
+}
+static int hid_function_bind_config(struct android_usb_function *f,
+		struct usb_configuration *c)
+{
+	return hidg_bind_config(c, NULL, 0);
+}
+static void hid_function_cleanup(struct android_usb_function *f)
+{
+	ghid_cleanup();
+}
+static struct android_usb_function hid_function = {
+	.name		= "hid",
+	.init		= hid_function_init,
+	.cleanup	= hid_function_cleanup,
+	.bind_config	= hid_function_bind_config,
+};
+#endif
 
 struct functionfs_config {
 	bool opened;
@@ -1702,6 +1728,9 @@ static struct android_usb_function *supported_functions[] = {
 #endif
 #ifdef CONFIG_USB_F_SS_LB
 	&loopback_function,
+#endif
+#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+	&hid_function,
 #endif
 	NULL
 };
