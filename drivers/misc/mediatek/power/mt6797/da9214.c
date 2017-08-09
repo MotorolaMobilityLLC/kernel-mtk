@@ -46,6 +46,12 @@ static const struct of_device_id da9214_of_ids[] = {
 	{.compatible = "mediatek,vproc_buck"},
 	{},
 };
+/*-----PinCtrl START-----*/
+static const struct of_device_id da9214_buck_of_ids[] = {
+	{.compatible = "mediatek,ext_buck_vproc"},
+	{},
+};
+/*-----PinCtrl END-----*/
 #endif
 
 static int da9214_driver_probe(struct i2c_client *client, const struct i2c_device_id *id);
@@ -60,6 +66,40 @@ static struct i2c_driver da9214_driver = {
 	.probe = da9214_driver_probe,
 	.id_table = da9214_i2c_id,
 };
+
+/*-----PinCtrl START-----*/
+#define DA9214_GPIO_MODE_EN_DEFAULT 0
+
+char *da9214_gpio_cfg[] = {  "da9214_gpio_default"};
+
+void switch_da9214_gpio(struct pinctrl *ppinctrl, int mode)
+{
+	struct pinctrl_state *ppins = NULL;
+
+	/*pr_debug("[DA9214][PinC]%s(%d)+\n", __func__, mode);*/
+
+	if (mode >= (sizeof(da9214_gpio_cfg) / sizeof(da9214_gpio_cfg[0]))) {
+		pr_err("[DA9214][PinC]%s(%d) fail!! - parameter error!\n", __func__, mode);
+		return;
+	}
+
+	if (IS_ERR(ppinctrl)) {
+		pr_err("[DA9214][PinC]%s ppinctrl:%p is error! err:%ld\n",
+		       __func__, ppinctrl, PTR_ERR(ppinctrl));
+		return;
+	}
+
+	ppins = pinctrl_lookup_state(ppinctrl, da9214_gpio_cfg[mode]);
+	if (IS_ERR(ppins)) {
+		pr_err("[DA9214][PinC]%s pinctrl_lockup(%p, %s) fail!! ppinctrl:%p, err:%ld\n",
+		       __func__, ppinctrl, da9214_gpio_cfg[mode], ppins, PTR_ERR(ppins));
+		return;
+	}
+
+	pinctrl_select_state(ppinctrl, ppins);
+	/*pr_debug("[DA9214][PinC]%s(%d)-\n", __func__, mode);*/
+}
+/*-----PinCtrl END-----*/
 
 /**********************************************************
   *
@@ -560,9 +600,22 @@ static DEVICE_ATTR(da9214_access, 0664, show_da9214_access, store_da9214_access)
 static int da9214_user_space_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
+	struct pinctrl *ppinctrl_da9214;
 
 	PMICLOG1("******** da9214_user_space_probe!! ********\n");
 
+	/*-----PinCtrl START-----*/
+	ppinctrl_da9214 = devm_pinctrl_get(&dev->dev);
+	if (IS_ERR(ppinctrl_da9214)) {
+		pr_err("[DA9214][PinC]cannot find pinctrl. ptr_err:%ld\n",
+		       PTR_ERR(ppinctrl_da9214));
+		return PTR_ERR(ppinctrl_da9214);
+	}
+	pr_err("[DA9214][PinC]devm_pinctrl_get ppinctrl:%p\n", ppinctrl_da9214);
+
+	/* Set GPIO as default */
+	switch_da9214_gpio(ppinctrl_da9214, DA9214_GPIO_MODE_EN_DEFAULT);
+	/*-----PinCtrl END-----*/
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_da9214_access);
 
 	return 0;
@@ -577,6 +630,9 @@ static struct platform_driver da9214_user_space_driver = {
 	.probe = da9214_user_space_probe,
 	.driver = {
 		   .name = "da9214-user",
+#ifdef CONFIG_OF
+		   .of_match_table = da9214_buck_of_ids,
+#endif
 		   },
 };
 
@@ -611,11 +667,12 @@ static int __init da9214_init(void)
 			PMICLOG1("[da9214_init] Success to register da9214 i2c driver.\n");
 
 		/* da9214 user space access interface */
-		ret = platform_device_register(&da9214_user_space_device);
+/*		ret = platform_device_register(&da9214_user_space_device);
 		if (ret) {
 			PMICLOG1("****[da9214_init] Unable to device register(%d)\n", ret);
 			return ret;
 		}
+*/
 		ret = platform_driver_register(&da9214_user_space_driver);
 		if (ret) {
 			PMICLOG1("****[da9214_init] Unable to register driver (%d)\n", ret);
