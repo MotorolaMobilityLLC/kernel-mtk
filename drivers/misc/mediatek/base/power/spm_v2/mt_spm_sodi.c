@@ -200,6 +200,9 @@ static int pre_emi_refresh_cnt;
 static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi_cnt;
 static unsigned int logout_selfrefresh_cnt;
+#if defined(CONFIG_ARCH_MT6755)
+static int by_ccif1_count;
+#endif
 
 void spm_trigger_wfi_for_sodi(struct pwr_ctrl *pwrctrl)
 {
@@ -320,7 +323,21 @@ spm_sodi_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int v
 		if (wakesta->assert_pc != 0) {
 			need_log_out = 1;
 		} else if ((wakesta->r12 & (0x1 << 4)) == 0) {
+#if defined(CONFIG_ARCH_MT6755)
+			if (wakesta->r12 & (0x1 << 18)) {
+				/* wake up by R12_CCIF1_EVENT_B */
+				if ((by_ccif1_count >= 5) ||
+				    ((sodi_logout_curr_time - sodi_logout_prev_time) > 20U)) {
+					need_log_out = 1;
+					by_ccif1_count = 0;
+				} else if (by_ccif1_count == 0) {
+					need_log_out = 1;
+				}
+				by_ccif1_count++;
+			}
+#elif defined(CONFIG_ARCH_MT6797)
 			need_log_out = 1;
+#endif
 		} else if (wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) {
 			need_log_out = 1;
 		} else if ((spm_read(SPM_PASR_DPD_0) == 0 && pre_emi_refresh_cnt > 0) ||
