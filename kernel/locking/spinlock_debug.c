@@ -193,8 +193,8 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 #endif
 
 			task = find_task_by_vpid(owner->pid);
-			pr_emerg("spinlock debug show lock owenr[%s/%d] info\n", task->comm, task->pid);
 			if (task) {
+				pr_emerg("spinlock debug show lock owenr[%s/%d] info\n", task->comm, task->pid);
 				if (debug_locks)
 					debug_show_held_locks(task);
 				show_stack(task, NULL);
