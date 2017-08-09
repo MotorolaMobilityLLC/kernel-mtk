@@ -228,9 +228,6 @@ void open_dump_file(void)
 	irq_cnt_k[DUMP_DL] = 0;
 
 	dump_data_routine_cnt_pass = 0;
-
-	ipi_msg_to_hal_idx_read = 0;
-	ipi_msg_to_hal_idx_write = 0;
 }
 
 
@@ -299,7 +296,8 @@ void phone_call_recv_message(struct ipi_msg_t *ipi_msg)
 		if (ret == 0)
 			dump_data_routine_cnt_pass++;
 
-	} else if (ipi_msg->msg_id == IPI_MSG_A2D_SET_ADDR_VALUE ||
+	} else if (ipi_msg->msg_id == IPI_MSG_A2D_SPH_ON ||
+		   ipi_msg->msg_id == IPI_MSG_A2D_SET_ADDR_VALUE ||
 		   ipi_msg->msg_id == IPI_MSG_A2D_GET_ADDR_VALUE ||
 		   ipi_msg->msg_id == IPI_MSG_A2D_SET_KEY_VALUE ||
 		   ipi_msg->msg_id == IPI_MSG_A2D_GET_KEY_VALUE) {
@@ -583,6 +581,9 @@ void audio_ipi_client_phone_call_init(void)
 	/* TODO: ring buf */
 	p_resv_dram = get_reserved_dram();
 	AUD_ASSERT(p_resv_dram != NULL);
+
+	ipi_msg_to_hal_idx_read = 0;
+	ipi_msg_to_hal_idx_write = 0;
 }
 
 

@@ -53,6 +53,7 @@
  *============================================================================*/
 
 static bool b_speech_on;
+static bool b_spm_ap_mdsrc_req_on;
 static bool b_dump_pcm_enable;
 static audio_resv_dram_t *p_resv_dram;
 
@@ -174,8 +175,19 @@ static long audio_ipi_driver_ioctl(
 	}
 	/* TOOD: use message */
 	case AUDIO_IPI_IOCTL_SPM_MDSRC_ON: {
-		AUD_LOG_D("%s(), spm_ap_mdsrc_req(%lu)\n", __func__, arg);
-		spm_ap_mdsrc_req(arg);
+		if (arg) { /* enable scp speech */
+			if (b_spm_ap_mdsrc_req_on == false) {
+				b_spm_ap_mdsrc_req_on = true;
+				AUD_LOG_D("%s(), spm_ap_mdsrc_req(%lu)\n", __func__, arg);
+				spm_ap_mdsrc_req(arg);
+			}
+		} else { /* disable scp speech */
+			if (b_spm_ap_mdsrc_req_on == true) { /* false: error handling when reboot */
+				b_spm_ap_mdsrc_req_on = false;
+				AUD_LOG_D("%s(), spm_ap_mdsrc_req(%lu)\n", __func__, arg);
+				spm_ap_mdsrc_req(arg);
+			}
+		}
 		break;
 	}
 	default:
@@ -243,6 +255,7 @@ static int __init audio_ipi_driver_init(void)
 	}
 
 	b_speech_on = false;
+	b_spm_ap_mdsrc_req_on = false;
 	b_dump_pcm_enable = false;
 
 	return ret;
