@@ -66,7 +66,9 @@ static int tboost_thread(void *ptr)
 		core = perf_mgr_touch_core;
 		freq = perf_mgr_touch_freq;
 		spin_unlock_irqrestore(&tboost.touch_lock, flags);
+#ifdef MTK_BOOST_SUPPORT
 		perfmgr_boost(event, core, freq);
+#endif
 	}
 	return 0;
 }
@@ -291,8 +293,10 @@ int init_perfmgr_touch(void)
 	struct proc_dir_entry *touch_dir = NULL;
 	int handle;
 
+#ifdef MTK_BOOST_SUPPORT
 	perf_mgr_touch_core = perfmgr_get_target_core();
 	perf_mgr_touch_freq = perfmgr_get_target_freq();
+#endif
 
 	touch_dir = proc_mkdir("perfmgr/touch", NULL);
 
@@ -316,7 +320,9 @@ int init_perfmgr_touch(void)
 int perfmgr_touch_suspend(void)
 {
 	/*pr_debug(TAG"perfmgr_touch_suspend\n");*/
+#ifdef MTK_BOOST_SUPPORT
 	perfmgr_boost(0, 0, 0);
+#endif
 	return 0;
 }
 

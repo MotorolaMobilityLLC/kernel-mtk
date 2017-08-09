@@ -21,7 +21,7 @@ struct platform_device perfmgr_device = {
 
 int perfmgr_suspend(struct device *dev)
 {
-#ifdef MTK_BOOST_SUPPORT
+#ifdef MTK_TOUCH_BOOST
 	perfmgr_touch_suspend();
 #endif
 	return 0;
@@ -60,7 +60,7 @@ static int __init init_perfmgr(void)
 
 
 	hps_dir = proc_mkdir("perfmgr", NULL);
-#ifdef MTK_BOOST_SUPPORT
+#ifdef MTK_TOUCH_BOOST
 	init_perfmgr_touch();
 #endif
 

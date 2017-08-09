@@ -1,5 +1,5 @@
-config MTK_PERFMGR
-	tristate "Performance manager kernel driver"
+config MTK_PERFMGR_TOUCH_BOOST
+	tristate "touch boost in performance manager"
 	default n
 	help
-	  kernel driver of performance manager
+	  touch boost in performance manager
