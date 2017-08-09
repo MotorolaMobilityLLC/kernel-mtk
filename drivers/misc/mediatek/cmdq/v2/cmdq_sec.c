@@ -142,28 +142,35 @@ int32_t cmdq_sec_open_session_impl(uint32_t deviceId,
 				   uint32_t wsmSize, struct mc_session_handle *pSessionHandle)
 {
 	int32_t status = 0;
+	int cnt = 0;
 	enum mc_result mcRet = MC_DRV_OK;
 
-	do {
-		if (NULL == pWsm || NULL == pSessionHandle) {
-			status = -1;
-			CMDQ_ERR
-			    ("[SEC]_SESSION_OPEN: invalid param, pWsm[0x%p], pSessionHandle[0x%p]\n",
-			     pWsm, pSessionHandle);
-			break;
-		}
+	if (NULL == pWsm || NULL == pSessionHandle) {
+		status = -1;
+		CMDQ_ERR
+		    ("[SEC]_SESSION_OPEN: invalid param, pWsm[0x%p], pSessionHandle[0x%p]\n",
+		     pWsm, pSessionHandle);
+		return status;
+	}
 
-		memset(pSessionHandle, 0, sizeof(*pSessionHandle));
-		pSessionHandle->device_id = deviceId;
+	memset(pSessionHandle, 0, sizeof(*pSessionHandle));
+	pSessionHandle->device_id = deviceId;
+
+	do {
 		mcRet = mc_open_session(pSessionHandle, uuid, pWsm, wsmSize);
 		if (MC_DRV_OK != mcRet) {
 			CMDQ_ERR("[SEC]_SESSION_OPEN: err[0x%x]\n", mcRet);
+			cnt++;
 			status = -1;
-			break;
+			continue;
 		}
 
-		CMDQ_MSG("[SEC]_SESSION_OPEN: status[%d], mcRet[0x%x]\n", status, mcRet);
-	} while (0);
+		/* Open Session success */
+		status = 0;
+		break;
+
+		CMDQ_MSG("[SEC]_SESSION_OPEN: status[%d], mcRet[0x%x], cnt[%d]\n", status, mcRet, cnt);
+	} while (cnt < 30);
 
 	return status;
 }
