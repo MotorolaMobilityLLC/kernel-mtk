@@ -1193,8 +1193,8 @@ static inline void accdet_init(void)
 	pmic_pwrap_write(INT_CON_ACCDET_SET, RG_ACCDET_NEGV_IRQ_SET);
 #endif
    /*********************ACCDET Analog Setting***********************************************************/
-	pmic_set_register_value(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0xF);
-	pmic_set_register_value(ACCDET_MICBIAS_REG, pmic_pwrap_read(ACCDET_MICBIAS_REG)
+	pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | 0xF);
+	pmic_pwrap_write(ACCDET_MICBIAS_REG, pmic_pwrap_read(ACCDET_MICBIAS_REG)
 		| (accdet_dts_data.mic_mode_vol<<4) | 0x80);
 	pmic_pwrap_write(ACCDET_RSV, 0x0010);
 #ifdef CONFIG_ACCDET_EINT_IRQ
