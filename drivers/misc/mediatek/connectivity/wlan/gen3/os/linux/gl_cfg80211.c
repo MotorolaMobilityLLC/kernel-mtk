@@ -681,9 +681,8 @@ int mtk_cfg80211_scan(struct wiphy *wiphy,
 	rScanRequest.u4IELength = request->ie_len;
 	if (request->ie_len > 0)
 		rScanRequest.pucIE = (PUINT_8) (request->ie);
-#if 0
+
 	prGlueInfo->prScanRequest = request;
-	DBGLOG(REQ, TRACE, "request->n_channels:%d\n", request->n_channels);
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidSetBssidListScanAdv,
 			   &rScanRequest, sizeof(PARAM_SCAN_REQUEST_ADV_T), FALSE, FALSE, FALSE, &u4BufLen);
@@ -693,19 +692,6 @@ int mtk_cfg80211_scan(struct wiphy *wiphy,
 		DBGLOG(REQ, WARN, "scan error:%lx\n", rStatus);
 		return -EINVAL;
 	}
-
-	/*prGlueInfo->prScanRequest = request;*/
-#endif
-	rStatus = kalIoctl(prGlueInfo,
-			   wlanoidSetBssidListScanAdv,
-			   &rScanRequest, sizeof(PARAM_SCAN_REQUEST_ADV_T), FALSE, FALSE, FALSE, &u4BufLen);
-
-	if (rStatus != WLAN_STATUS_SUCCESS) {
-		DBGLOG(REQ, WARN, "scan error:%lx\n", rStatus);
-		return -EINVAL;
-	}
-
-	prGlueInfo->prScanRequest = request;
 
 	return 0;
 }
