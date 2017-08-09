@@ -19,6 +19,7 @@ obj-$(CONFIG_MTK_NFC) += nfc/
 obj-$(CONFIG_MMPROFILE) += mmp/
 obj-$(CONFIG_MTK_AUXADC)	+= auxadc/
 obj-$(CONFIG_MTK_M4U)	+= m4u/
+obj-$(CONFIG_MTK_SMI)	+= smi/
 obj-$(CONFIG_MTK_GPT_SCHEME_SUPPORT)	+= partition/
 obj-$(CONFIG_MTK_SYSENV)	+= sysenv/
 ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
