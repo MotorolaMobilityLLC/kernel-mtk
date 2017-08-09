@@ -42,7 +42,6 @@ void RegWriteA_LC898122AF(unsigned short RegAddr, unsigned char RegData)
 	char puSendCmd[3] = { (char)((RegAddr >> 8) & 0xFF), (char)(RegAddr & 0xFF), RegData };
 	/* LOG_INF("I2C w (%x %x)\n", RegAddr, RegData); */
 
-	/* g_pstAF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG; */
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR >> 1);
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 3);
 	if (i4RetValue < 0) {
@@ -83,7 +82,6 @@ void RamWriteA_LC898122AF(unsigned short RamAddr, unsigned short RamData)
 	};
 	/* LOG_INF("I2C w2 (%x %x)\n", RamAddr, RamData); */
 
-	/* g_pstAF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG; */
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR >> 1);
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 4);
 	if (i4RetValue < 0) {
@@ -131,8 +129,6 @@ void RamWrite32A_LC898122AF(unsigned short RamAddr, unsigned long RamData)
 	};
 	/* LOG_INF("I2C w4 (%x %x)\n", RamAddr, (unsigned int)RamData); */
 
-
-	/* g_pstAF_I2Cclient->ext_flag |= I2C_A_FILTER_MSG; */
 	g_pstAF_I2Cclient->addr = (AF_I2C_SLAVE_ADDR >> 1);
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 6);
 	if (i4RetValue < 0) {

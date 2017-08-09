@@ -56,8 +56,6 @@ int s4AF_ReadReg_LC898212XDAF(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvDa
 
 	g_pstAF_I2Cclient->addr = i2cId >> 1;
 
-	g_pstAF_I2Cclient->ext_flag = (g_pstAF_I2Cclient->ext_flag)&(~I2C_DMA_FLAG);
-
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, a_pSendData, a_sizeSendData);
 
 	if (i4RetValue != a_sizeSendData) {
@@ -80,8 +78,6 @@ int s4AF_WriteReg_LC898212XDAF(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId)
 	int i4RetValue = 0;
 
 	g_pstAF_I2Cclient->addr = i2cId >> 1;
-
-	g_pstAF_I2Cclient->ext_flag = (g_pstAF_I2Cclient->ext_flag)&(~I2C_DMA_FLAG);
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, a_pSendData, a_sizeSendData);
 
