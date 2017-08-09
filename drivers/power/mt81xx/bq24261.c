@@ -497,12 +497,11 @@ void bq24261_dump_register(void)
 {
 	u8 i = 0;
 
-	pr_notice("[bq24261] ");
 	for (i = 0; i < bq24261_REG_NUM; i++) {
 		bq24261_read_byte(i, &bq24261_reg[i]);
-		pr_notice("[0x%x]=0x%x ", i, bq24261_reg[i]);
+		battery_log(BAT_LOG_FULL,
+			"[bq24261_dump_register] Reg[0x%X]=0x%X\n", i, bq24261_reg[i]);
 	}
-	pr_notice("\n");
 }
 
 static u32 charging_hw_init(void *data)
@@ -978,7 +977,7 @@ void bq24261_hw_component_detect(void)
 	else
 		g_bq24261_hw_exist = 1;
 
-	pr_notice("[bq24261_hw_component_detect] exist=%d, Reg[0x03]=0x%x\n", g_bq24261_hw_exist,
+	pr_warn("[bq24261_hw_component_detect] exist=%d, Reg[0x03]=0x%x\n", g_bq24261_hw_exist,
 		  val);
 
 	if (g_bq24261_hw_exist)
@@ -987,7 +986,7 @@ void bq24261_hw_component_detect(void)
 
 int is_bq24261_exist(void)
 {
-	pr_notice("[is_bq24261_exist] g_bq24261_hw_exist=%d\n", g_bq24261_hw_exist);
+	pr_debug("[is_bq24261_exist] g_bq24261_hw_exist=%d\n", g_bq24261_hw_exist);
 
 	return g_bq24261_hw_exist;
 }
@@ -1035,7 +1034,7 @@ static struct i2c_driver bq24261_driver = {
 u8 g_reg_value_bq24261 = 0;
 static ssize_t show_bq24261_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	pr_info("[show_bq24261_access] 0x%x\n", g_reg_value_bq24261);
+	pr_debug("[show_bq24261_access] 0x%x\n", g_reg_value_bq24261);
 	return sprintf(buf, "%u\n", g_reg_value_bq24261);
 }
 
@@ -1062,7 +1061,7 @@ static ssize_t store_bq24261_access(struct device *dev, struct device_attribute 
 				pr_err("wrong format!\n");
 				return size;
 			}
-			pr_info("[store_bq24261_access] write bq24261 reg 0x%x with value 0x%x !\n",
+			pr_debug("[store_bq24261_access] write bq24261 reg 0x%x with value 0x%x !\n",
 				reg_address, reg_value);
 			bq24261_config_interface(reg_address, reg_value, 0xFF, 0x0);
 		} else {
@@ -1072,9 +1071,9 @@ static ssize_t store_bq24261_access(struct device *dev, struct device_attribute 
 				return size;
 			}
 			bq24261_read_interface(reg_address, &g_reg_value_bq24261, 0xFF, 0x0);
-			pr_info("[store_bq24261_access] read bq24261 reg 0x%x with value 0x%x !\n",
+			pr_debug("[store_bq24261_access] read bq24261 reg 0x%x with value 0x%x !\n",
 				reg_address, g_reg_value_bq24261);
-			pr_info
+			pr_debug
 			    ("[store_bq24261_access] Please use \"cat bq24261_access\" to get value\r\n");
 		}
 	}

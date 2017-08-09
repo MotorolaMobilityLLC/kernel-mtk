@@ -1144,7 +1144,7 @@ static irqreturn_t ops_bq24297_int_handler(int irq, void *dev_id)
 
 static int bq24297_driver_suspend(struct i2c_client *client, pm_message_t mesg)
 {
-	pr_info("[bq24297_driver_suspend] client->irq(%d)\n", client->irq);
+	pr_debug("[bq24297_driver_suspend] client->irq(%d)\n", client->irq);
 	if (client->irq > 0)
 		disable_irq(client->irq);
 
@@ -1153,7 +1153,7 @@ static int bq24297_driver_suspend(struct i2c_client *client, pm_message_t mesg)
 
 static int bq24297_driver_resume(struct i2c_client *client)
 {
-	pr_info("[bq24297_driver_resume] client->irq(%d)\n", client->irq);
+	pr_debug("[bq24297_driver_resume] client->irq(%d)\n", client->irq);
 	if (client->irq > 0)
 		enable_irq(client->irq);
 
@@ -1162,7 +1162,7 @@ static int bq24297_driver_resume(struct i2c_client *client)
 
 static void bq24297_driver_shutdown(struct i2c_client *client)
 {
-	pr_info("[bq24297_driver_shutdown] client->irq(%d)\n", client->irq);
+	pr_debug("[bq24297_driver_shutdown] client->irq(%d)\n", client->irq);
 	if (client->irq > 0)
 		disable_irq(client->irq);
 }
@@ -1172,7 +1172,7 @@ static int bq24297_driver_probe(struct i2c_client *client, const struct i2c_devi
 	int ret = 0;
 	struct regulator *i2c_reg = devm_regulator_get(&client->dev, "reg-i2c");
 
-	pr_info("[bq24297_driver_probe]\n");
+	pr_debug("[bq24297_driver_probe]\n");
 
 	new_client = client;
 
@@ -1183,7 +1183,7 @@ static int bq24297_driver_probe(struct i2c_client *client, const struct i2c_devi
 			dev_err(&client->dev, "Fail to set 1.8V to reg-i2c: %d\n", ret);
 
 		ret = regulator_get_voltage(i2c_reg);
-		pr_info("bq24297 i2c voltage: %d\n", ret);
+		pr_debug("bq24297 i2c voltage: %d\n", ret);
 
 		ret = regulator_enable(i2c_reg);
 		if (ret != 0)
@@ -1193,13 +1193,13 @@ static int bq24297_driver_probe(struct i2c_client *client, const struct i2c_devi
 	part_num = bq24297_get_pn();
 
 	if (part_num == 0x3) {
-		pr_notice("BQ24297 device is found. register charger control.\n");
+		pr_warn("BQ24297 device is found. register charger control.\n");
 		bat_charger_register(bq24297_control_interface);
 	} else if (part_num == 0x1) {
-		pr_notice("BQ24296 device is found. register charger control.\n");
+		pr_warn("BQ24296 device is found. register charger control.\n");
 		bat_charger_register(bq24297_control_interface);
 	} else {
-		pr_notice("No BQ24297 device part number is found.\n");
+		pr_err("No BQ24297 device part number is found.\n");
 		return 0;
 	}
 
@@ -1215,7 +1215,7 @@ static int bq24297_driver_probe(struct i2c_client *client, const struct i2c_devi
 
 	if (client->irq > 0) {
 
-		pr_notice("[bq24297_driver_probe] enable interrupt: %d\n", client->irq);
+		pr_debug("[bq24297_driver_probe] enable interrupt: %d\n", client->irq);
 		/* make sure we clean REG9 before enable fault interrupt */
 		bq24297_read_byte((u8) (bq24297_CON9), &bq24297_reg[9]);
 		if (bq24297_reg[9] != 0)
@@ -1262,7 +1262,7 @@ static struct i2c_driver bq24297_driver = {
 
 static ssize_t show_bq24297_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	pr_info("[show_bq24297_access] 0x%x\n", g_reg_value_bq24297);
+	pr_debug("[show_bq24297_access] 0x%x\n", g_reg_value_bq24297);
 	return sprintf(buf, "0x%x\n", g_reg_value_bq24297);
 }
 
@@ -1289,7 +1289,7 @@ static ssize_t store_bq24297_access(struct device *dev, struct device_attribute 
 				pr_err("wrong format!\n");
 				return size;
 			}
-			pr_info("[store_bq24297_access] write bq24297 reg 0x%x with value 0x%x !\n",
+			pr_debug("[store_bq24297_access] write bq24297 reg 0x%x with value 0x%x !\n",
 				reg_address, reg_value);
 			bq24297_config_interface(reg_address, reg_value, 0xFF, 0x0);
 		} else {
@@ -1299,9 +1299,9 @@ static ssize_t store_bq24297_access(struct device *dev, struct device_attribute 
 				return size;
 			}
 			bq24297_read_interface(reg_address, &g_reg_value_bq24297, 0xFF, 0x0);
-			pr_info("[store_bq24297_access] read bq24297 reg 0x%x with value 0x%x !\n",
+			pr_debug("[store_bq24297_access] read bq24297 reg 0x%x with value 0x%x !\n",
 				reg_address, g_reg_value_bq24297);
-			pr_info
+			pr_debug
 			    ("[store_bq24297_access] Please use \"cat bq24297_access\" to get value\r\n");
 		}
 	}
@@ -1314,7 +1314,7 @@ static int bq24297_user_space_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
 
-	pr_info("bq24297_user_space_probe!\n");
+	pr_debug("bq24297_user_space_probe!\n");
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_bq24297_access);
 
 	return 0;
@@ -1339,7 +1339,7 @@ static int __init bq24297_init(void)
 	if (i2c_add_driver(&bq24297_driver) != 0)
 		pr_err("[bq24297_init] failed to register bq24297 i2c driver.\n");
 	else
-		pr_info("[bq24297_init] Success to register bq24297 i2c driver.\n");
+		pr_debug("[bq24297_init] Success to register bq24297 i2c driver.\n");
 
 	/* bq24297 user space access interface */
 	ret = platform_device_register(&bq24297_user_space_device);

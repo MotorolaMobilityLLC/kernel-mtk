@@ -2481,7 +2481,7 @@ static void do_chrdet_int_task(void)
 {
 	if (g_bat_init_flag == true) {
 		if (upmu_is_chr_det() == true) {
-			pr_info("[do_chrdet_int_task] charger exist!\n");
+			pr_debug("[do_chrdet_int_task] charger exist!\n");
 
 			if (!BMT_status.charger_exist)
 				wake_lock(&battery_suspend_lock);
@@ -2494,7 +2494,7 @@ static void do_chrdet_int_task(void)
 				    "[do_chrdet_int_task] call mt_usb_connect() in EVB\n");
 #endif
 		} else {
-			pr_info("[do_chrdet_int_task] charger NOT exist!\n");
+			pr_debug("[do_chrdet_int_task] charger NOT exist!\n");
 			if (BMT_status.charger_exist) {
 				if (g_platform_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT)
 					wake_lock(&battery_suspend_lock);
@@ -2542,7 +2542,7 @@ static void do_chrdet_int_task(void)
 
 irqreturn_t ops_chrdet_int_handler(int irq, void *dev_id)
 {
-	pr_info("[Power/Battery][chrdet_bat_int_handler]....\n");
+	pr_debug("[Power/Battery][chrdet_bat_int_handler]....\n");
 
 	do_chrdet_int_task();
 
@@ -2681,7 +2681,7 @@ static int bat_setup_charger_locked(void)
 
 		enable_irq(g_bat.irq);
 
-		pr_notice("%s: charger setup done\n", __func__);
+		pr_warn("%s: charger setup done\n", __func__);
 	}
 
 	return ret;
@@ -2941,7 +2941,7 @@ static int battery_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	int ret = 0;
 
-	pr_info("******** battery driver probe!! ********\n");
+	pr_debug("******** battery driver probe!! ********\n");
 
 	/* AP:
 	 * Use PMIC events as interrupts through kernel IRQ API.
@@ -3118,7 +3118,7 @@ static void battery_shutdown(struct platform_device *pdev)
 #if !defined(CONFIG_POWER_EXT)
 	int count = 0;
 #endif
-	pr_info("******** battery driver shutdown!! ********\n");
+	pr_debug("******** battery driver shutdown!! ********\n");
 
 	disable_irq(g_bat.irq);
 

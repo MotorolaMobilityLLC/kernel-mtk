@@ -437,7 +437,7 @@ int force_get_tbat(void)
 			pr_warn("[BATTERY] No battery detected.\n");
 			battery_exist = false;
 		} else {
-			pr_info("[BATTERY] Battery detected!\n");
+			pr_debug("[BATTERY] Battery detected!\n");
 			battery_exist = true;
 		}
 		battery_check_done = true;
@@ -1265,7 +1265,7 @@ void dod_init(void)
 	g_rtc_soc_debug = g_rtc_fg_soc;
 #endif
 
-	pr_notice("%s: %d, %d, %d, %d\n", __func__, g_hw_ocv_debug, g_hw_soc_debug, g_sw_soc_debug,
+	pr_warn("%s: %d, %d, %d, %d\n", __func__, g_hw_ocv_debug, g_hw_soc_debug, g_sw_soc_debug,
 		  g_rtc_soc_debug);
 
 #if defined(CONFIG_SOC_BY_HW_FG)
@@ -1721,7 +1721,7 @@ void fgauge_algo_run_init(void)
 	gFG_voltage = gFG_voltage + fgauge_compensate_battery_voltage_recursion(gFG_voltage, 5);	/* mV */
 	gFG_voltage = gFG_voltage + p_bat_meter_data->ocv_board_compesate;
 
-	pr_notice("cv:%d ocv:%d i:%d r:%d\n", gFG_voltage_init, gFG_voltage, gFG_current,
+	pr_warn("cv:%d ocv:%d i:%d r:%d\n", gFG_voltage_init, gFG_voltage, gFG_current,
 		  gFG_resistance_bat);
 
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_HW_FG_CAR, &gFG_columb);
@@ -2673,7 +2673,7 @@ static ssize_t store_FG_Aging_Factor(struct device *dev, struct device_attribute
 	}
 
 	if (factor <= 100 && factor > 0) {
-		pr_info("[FG] update battery aging factor: old(%d), new(%d)\n",
+		pr_debug("[FG] update battery aging factor: old(%d), new(%d)\n",
 			gFG_aging_factor, factor);
 
 		gFG_aging_factor = factor;
@@ -3251,11 +3251,11 @@ static void battery_aging_check(void)
 				gFG_DOD0 = DOD_hwocv;
 				gFG_DOD1 = gFG_DOD0;
 				reset_parameter_car();
-				pr_notice
+				pr_warn
 				    ("[self-discharge check] reset to HWOCV. dod_ocv(%d) dod_now(%d)\n",
 				     DOD_hwocv, DOD_now);
 			}
-			pr_notice("[self-discharge check] dod_ocv(%d) dod_now(%d)\n", DOD_hwocv,
+			pr_warn("[self-discharge check] dod_ocv(%d) dod_now(%d)\n", DOD_hwocv,
 				  DOD_now);
 		}
 	}

@@ -915,54 +915,54 @@ static u32 charging_set_ta_current_pattern(void *data)
 		msleep(85);
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
-		pr_info("mtk_ta_increase() on 1");
+		pr_debug("mtk_ta_increase() on 1");
 		msleep(85);
 
 		bq24196_set_iinlim(0x0);	/* 100mA */
-		pr_info("mtk_ta_increase() off 1");
+		pr_debug("mtk_ta_increase() off 1");
 		msleep(85);
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
-		pr_info("mtk_ta_increase() on 2");
+		pr_debug("mtk_ta_increase() on 2");
 		msleep(85);
 
 		bq24196_set_iinlim(0x0);	/* 100mA */
-		pr_info("mtk_ta_increase() off 2");
+		pr_debug("mtk_ta_increase() off 2");
 		msleep(85);
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
-		pr_info("mtk_ta_increase() on 3");
+		pr_debug("mtk_ta_increase() on 3");
 		msleep(281);
 
 		bq24196_set_iinlim(0x0);	/* 100mA */
-		pr_info("mtk_ta_increase() off 3");
+		pr_debug("mtk_ta_increase() off 3");
 		msleep(85);
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
-		pr_info("mtk_ta_increase() on 4");
+		pr_debug("mtk_ta_increase() on 4");
 		msleep(281);
 
 		bq24196_set_iinlim(0x0);	/* 100mA */
-		pr_info("mtk_ta_increase() off 4");
+		pr_debug("mtk_ta_increase() off 4");
 		msleep(85);
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
-		pr_info("mtk_ta_increase() on 5");
+		pr_debug("mtk_ta_increase() on 5");
 		msleep(281);
 
 		bq24196_set_iinlim(0x0);	/* 100mA */
-		pr_info("mtk_ta_increase() off 5");
+		pr_debug("mtk_ta_increase() off 5");
 		msleep(85);
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
-		pr_info("mtk_ta_increase() on 6");
+		pr_debug("mtk_ta_increase() on 6");
 		msleep(485);
 
 		bq24196_set_iinlim(0x0);	/* 100mA */
-		pr_info("mtk_ta_increase() off 6");
+		pr_debug("mtk_ta_increase() off 6");
 		msleep(50);
 
-		pr_notice("mtk_ta_increase() end\n");
+		pr_debug("mtk_ta_increase() end\n");
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
 		msleep(200);
@@ -971,54 +971,54 @@ static u32 charging_set_ta_current_pattern(void *data)
 		msleep(85);
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
-		pr_info("mtk_ta_decrease() on 1");
+		pr_debug("mtk_ta_decrease() on 1");
 		msleep(281);
 
 		bq24196_set_iinlim(0x0);	/* 100mA */
-		pr_info("mtk_ta_decrease() off 1");
+		pr_debug("mtk_ta_decrease() off 1");
 		msleep(85);
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
-		pr_info("mtk_ta_decrease() on 2");
+		pr_debug("mtk_ta_decrease() on 2");
 		msleep(281);
 
 		bq24196_set_iinlim(0x0);	/* 100mA */
-		pr_info("mtk_ta_decrease() off 2");
+		pr_debug("mtk_ta_decrease() off 2");
 		msleep(85);
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
-		pr_info("mtk_ta_decrease() on 3");
+		pr_debug("mtk_ta_decrease() on 3");
 		msleep(281);
 
 		bq24196_set_iinlim(0x0);	/* 100mA */
-		pr_info("mtk_ta_decrease() off 3");
+		pr_debug("mtk_ta_decrease() off 3");
 		msleep(85);
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
-		pr_info("mtk_ta_decrease() on 4");
+		pr_debug("mtk_ta_decrease() on 4");
 		msleep(85);
 
 		bq24196_set_iinlim(0x0);	/* 100mA */
-		pr_info("mtk_ta_decrease() off 4");
+		pr_debug("mtk_ta_decrease() off 4");
 		msleep(85);
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
-		pr_info("mtk_ta_decrease() on 5");
+		pr_debug("mtk_ta_decrease() on 5");
 		msleep(85);
 
 		bq24196_set_iinlim(0x0);	/* 100mA */
-		pr_info("mtk_ta_decrease() off 5");
+		pr_debug("mtk_ta_decrease() off 5");
 		msleep(85);
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
-		pr_info("mtk_ta_decrease() on 6");
+		pr_debug("mtk_ta_decrease() on 6");
 		msleep(485);
 
 		bq24196_set_iinlim(0x0);	/* 100mA */
-		pr_info("mtk_ta_decrease() off 6");
+		pr_debug("mtk_ta_decrease() off 6");
 		msleep(50);
 
-		pr_notice("mtk_ta_decrease() end\n");
+		pr_debug("mtk_ta_decrease() end\n");
 
 		bq24196_set_iinlim(0x2);	/* 500mA */
 	}
@@ -1149,7 +1149,7 @@ static irqreturn_t ops_bq24196_int_handler(int irq, void *dev_id)
 
 static int bq24196_driver_suspend(struct i2c_client *client, pm_message_t mesg)
 {
-	pr_info("[bq24196_driver_suspend] client->irq(%d)\n", client->irq);
+	pr_debug("[bq24196_driver_suspend] client->irq(%d)\n", client->irq);
 	if (client->irq > 0)
 		disable_irq(client->irq);
 
@@ -1158,7 +1158,7 @@ static int bq24196_driver_suspend(struct i2c_client *client, pm_message_t mesg)
 
 static int bq24196_driver_resume(struct i2c_client *client)
 {
-	pr_info("[bq24196_driver_resume] client->irq(%d)\n", client->irq);
+	pr_debug("[bq24196_driver_resume] client->irq(%d)\n", client->irq);
 	if (client->irq > 0)
 		enable_irq(client->irq);
 
@@ -1167,7 +1167,7 @@ static int bq24196_driver_resume(struct i2c_client *client)
 
 static void bq24196_driver_shutdown(struct i2c_client *client)
 {
-	pr_info("[bq24196_driver_shutdown] client->irq(%d)\n", client->irq);
+	pr_debug("[bq24196_driver_shutdown] client->irq(%d)\n", client->irq);
 	if (client->irq > 0)
 		disable_irq(client->irq);
 }
@@ -1177,7 +1177,7 @@ static int bq24196_driver_probe(struct i2c_client *client, const struct i2c_devi
 	int ret = 0;
 	struct regulator *i2c_reg = devm_regulator_get(&client->dev, "reg-i2c");
 
-	pr_info("[bq24196_driver_probe]\n");
+	pr_debug("[bq24196_driver_probe]\n");
 
 	new_client = client;
 
@@ -1188,7 +1188,7 @@ static int bq24196_driver_probe(struct i2c_client *client, const struct i2c_devi
 			dev_err(&client->dev, "Fail to set 1.8V to reg-i2c: %d\n", ret);
 
 		ret = regulator_get_voltage(i2c_reg);
-		pr_info("bq24196 i2c voltage: %d\n", ret);
+		pr_debug("bq24196 i2c voltage: %d\n", ret);
 
 		ret = regulator_enable(i2c_reg);
 		if (ret != 0)
@@ -1196,10 +1196,10 @@ static int bq24196_driver_probe(struct i2c_client *client, const struct i2c_devi
 	}
 
 	if (bq24196_get_pn() == 0x5) {
-		pr_notice("bq24196 device is found. register charger control.\n");
+		pr_warn("bq24196 device is found. register charger control.\n");
 		bat_charger_register(bq24196_control_interface);
 	} else {
-		pr_notice("No bq24196 device part number is found.\n");
+		pr_warn("No bq24196 device part number is found.\n");
 		return 0;
 	}
 
@@ -1216,7 +1216,7 @@ static int bq24196_driver_probe(struct i2c_client *client, const struct i2c_devi
 
 	if (client->irq > 0) {
 
-		pr_notice("[bq24196_driver_probe] enable interrupt: %d\n", client->irq);
+		pr_debug("[bq24196_driver_probe] enable interrupt: %d\n", client->irq);
 		/* make sure we clean REG9 before enable fault interrupt */
 		bq24196_read_byte((u8) (bq24196_CON9), &bq24196_reg[9]);
 		if (bq24196_reg[9] != 0)
@@ -1262,7 +1262,7 @@ static struct i2c_driver bq24196_driver = {
 
 static ssize_t show_bq24196_access(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	pr_info("[show_bq24196_access] 0x%x\n", g_reg_value_bq24196);
+	pr_debug("[show_bq24196_access] 0x%x\n", g_reg_value_bq24196);
 	return sprintf(buf, "0x%x\n", g_reg_value_bq24196);
 }
 
@@ -1289,7 +1289,7 @@ static ssize_t store_bq24196_access(struct device *dev, struct device_attribute 
 				pr_err("wrong format!\n");
 				return size;
 			}
-			pr_info("[store_bq24196_access] write bq24196 reg 0x%x with value 0x%x !\n",
+			pr_debug("[store_bq24196_access] write bq24196 reg 0x%x with value 0x%x !\n",
 				reg_address, reg_value);
 			bq24196_config_interface(reg_address, reg_value, 0xFF, 0x0);
 		} else {
@@ -1299,9 +1299,9 @@ static ssize_t store_bq24196_access(struct device *dev, struct device_attribute 
 				return size;
 			}
 			bq24196_read_interface(reg_address, &g_reg_value_bq24196, 0xFF, 0x0);
-			pr_info("[store_bq24196_access] read bq24196 reg 0x%x with value 0x%x !\n",
+			pr_debug("[store_bq24196_access] read bq24196 reg 0x%x with value 0x%x !\n",
 				reg_address, g_reg_value_bq24196);
-			pr_info
+			pr_debug
 			    ("[store_bq24196_access] Please use \"cat bq24196_access\" to get value\r\n");
 		}
 	}
@@ -1315,7 +1315,7 @@ static int bq24196_user_space_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
 
-	pr_info("bq24196_user_space_probe!\n");
+	pr_debug("bq24196_user_space_probe!\n");
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_bq24196_access);
 
 	return 0;
@@ -1340,7 +1340,7 @@ static int __init bq24196_init(void)
 	if (i2c_add_driver(&bq24196_driver) != 0)
 		pr_err("[bq24196_init] failed to register bq24196 i2c driver.\n");
 	else
-		pr_info("[bq24196_init] Success to register bq24196 i2c driver.\n");
+		pr_debug("[bq24196_init] Success to register bq24196 i2c driver.\n");
 
 	/* bq24196 user space access interface */
 	ret = platform_device_register(&bq24196_user_space_device);
