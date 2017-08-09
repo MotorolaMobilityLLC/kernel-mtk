@@ -570,7 +570,8 @@ static long vcodec_free_non_cache_buffer(unsigned long arg)
 		return -EFAULT;
 	}
 
-	dma_free_coherent(0, rTempMem.u4MemSize, (void *)rTempMem.u4ReservedSize, (dma_addr_t)rTempMem.pvMemPa);
+	dma_free_coherent(0, rTempMem.u4MemSize, (void *)rTempMem.u4ReservedSize,
+							(dma_addr_t)(VAL_ULONG_T)rTempMem.pvMemPa);
 
 	/* mutex_lock(&NonCacheMemoryListLock); */
 	/* Free_NonCacheMemoryList(rTempMem.u4ReservedSize, (VAL_UINT32_T)rTempMem.pvMemPa); */
