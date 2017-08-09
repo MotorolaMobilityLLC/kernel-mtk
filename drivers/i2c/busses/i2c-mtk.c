@@ -1013,6 +1013,7 @@ int hw_trig_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
 }
 EXPORT_SYMBOL(hw_trig_i2c_transfer);
 
+#if !defined(CONFIG_MT_I2C_FPGA_ENABLE)
 static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 {
 	struct mt_i2c *i2c = dev_id;
@@ -1035,7 +1036,7 @@ static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 	}
 	return IRQ_HANDLED;
 }
-
+#endif
 static u32 mt_i2c_functionality(struct i2c_adapter *adap)
 {
 	return I2C_FUNC_I2C | I2C_FUNC_10BIT_ADDR | I2C_FUNC_SMBUS_EMUL;
@@ -1121,6 +1122,7 @@ static int mt_i2c_probe(struct platform_device *pdev)
 		return -EINVAL;
 	init_waitqueue_head(&i2c->wait);
 
+#if !defined(CONFIG_MT_I2C_FPGA_ENABLE)
 	ret = devm_request_irq(&pdev->dev, i2c->irqnr, mt_i2c_irq,
 		IRQF_TRIGGER_NONE, I2C_DRV_NAME, i2c);
 	if (ret < 0) {
@@ -1128,7 +1130,7 @@ static int mt_i2c_probe(struct platform_device *pdev)
 			"Request I2C IRQ %d fail\n", i2c->irqnr);
 		return ret;
 	}
-
+#endif
 	of_id = of_match_node(mtk_i2c_of_match, pdev->dev.of_node);
 	if (!of_id)
 		return -EINVAL;
