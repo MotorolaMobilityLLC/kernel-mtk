@@ -221,8 +221,8 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
     .i4PairNum =4,
     .i4SubBlkW =16,
     .i4SubBlkH =16,
-    .i4PosL = {{27,30},{43,30},{34,49},{50,49}},
-    .i4PosR = {{26,33},{42,33},{35,46},{51,46}},
+    .i4PosL = {{26,29},{42,29},{33,48},{49,48}},
+    .i4PosR = {{25,32},{41,32},{34,45},{50,45}},
     .iMirrorFlip = 3, /* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR*/
 };
 
