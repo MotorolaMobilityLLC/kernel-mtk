@@ -36,8 +36,8 @@
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))
 
-#define SCREEN_WIDHT  (1920)
-#define SCREEN_HEIGHT  (1080)
+#define SCREEN_WIDHT  (1080)
+#define SCREEN_HEIGHT  (1920)
 
 #define MTK_FB_ALIGNMENT 32
 

@@ -190,7 +190,7 @@ int disp_pwm_is_enabled(disp_pwm_id_t id)
 static void disp_pwm_set_drverIC_en(disp_pwm_id_t id, int enabled)
 {
 #ifdef GPIO_LCM_LED_EN
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (id == DISP_PWM0) {
 		mt_set_gpio_mode(GPIO_LCM_LED_EN, GPIO_MODE_00);
 		mt_set_gpio_dir(GPIO_LCM_LED_EN, GPIO_DIR_OUT);
