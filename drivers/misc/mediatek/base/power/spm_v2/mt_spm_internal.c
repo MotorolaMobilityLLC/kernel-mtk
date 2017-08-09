@@ -16,6 +16,27 @@
  **************************************/
 #define LOG_BUF_SIZE		256
 
+#if defined(CONFIG_ARCH_MT6797)
+/* CPU_PWR_STATUS */
+/* CPU_PWR_STATUS_2ND */
+#define MP0_CPU0                (1U << 15)
+#define MP0_CPU1                (1U << 14)
+#define MP0_CPU2                (1U << 13)
+#define MP0_CPU3                (1U << 12)
+#define MP1_CPU0                (1U << 11)
+#define MP1_CPU1                (1U << 10)
+#define MP1_CPU2                (1U <<  9)
+#define MP1_CPU3                (1U <<  8)
+#define MP2_CPU0                (1U <<  7)
+#define MP2_CPU1                (1U <<  6)
+#define MP2_CPU2                (1U <<  5)
+#define MP2_CPU3                (1U <<  4)
+#define MP3_CPU0                (1U <<  3)
+#define MP3_CPU1                (1U <<  2)
+#define MP3_CPU2                (1U <<  1)
+#define MP3_CPU3                (1U <<  0)
+#endif
+
 /**************************************
  * Define and Declare
  **************************************/
@@ -59,6 +80,57 @@ const char *wakesrc_str[32] = {
 	[30] = " R12_APSRC_WAKE",
 	[31] = " R12_APSRC_SLEEP",
 };
+
+#if defined(CONFIG_ARCH_MT6755)
+#define SPM_CPU_PWR_STATUS		PWR_STATUS
+#define SPM_CPU_PWR_STATUS_2ND	PWR_STATUS_2ND
+
+unsigned int spm_cpu_bitmask[NR_CPUS] = {
+	CA7_CPU0,
+	CA7_CPU1,
+	CA7_CPU2,
+	CA7_CPU3,
+	CA15_CPU0,
+	CA15_CPU1,
+	CA15_CPU2,
+	CA15_CPU3
+};
+
+unsigned int spm_cpu_bitmask_all = CA15_CPU3 |
+									CA15_CPU2 |
+									CA15_CPU1 |
+									CA15_CPU0 |
+									CA7_CPU3 |
+									CA7_CPU2 |
+									CA7_CPU1 | CA7_CPU0;
+#elif defined(CONFIG_ARCH_MT6797)
+#define SPM_CPU_PWR_STATUS		CPU_PWR_STATUS
+#define SPM_CPU_PWR_STATUS_2ND	CPU_PWR_STATUS_2ND
+
+/* FIXME: use `NR_CPUS` after CONFIG_NR_CPUS workaround fixed */
+unsigned int spm_cpu_bitmask[10] = {
+	MP0_CPU0,
+	MP0_CPU1,
+	MP0_CPU2,
+	MP0_CPU3,
+	MP1_CPU0,
+	MP1_CPU1,
+	MP1_CPU2,
+	MP1_CPU3,
+	MP2_CPU0,
+	MP2_CPU1
+};
+
+unsigned int spm_cpu_bitmask_all = MP0_CPU0 |
+									MP0_CPU1 |
+									MP0_CPU2 |
+									MP0_CPU3 |
+									MP1_CPU0 |
+									MP1_CPU1 |
+									MP1_CPU2 |
+									MP1_CPU3 |
+									MP2_CPU0 | MP2_CPU1;
+#endif
 
 /**************************************
  * Function and API
@@ -501,16 +573,19 @@ unsigned int spm_get_cpu_pwr_status(void)
 {
 	unsigned int pwr_stat[2] = { 0 };
 	unsigned int stat = 0;
-	unsigned int cpu_mask = (CA15_CPU3 |
-				 CA15_CPU2 |
-				 CA15_CPU1 | CA15_CPU0 | CA7_CPU3 | CA7_CPU2 | CA7_CPU1 | CA7_CPU0);
+	unsigned int ret_stat = 0;
+	int i;
 
-	pwr_stat[0] = spm_read(PWR_STATUS);
-	pwr_stat[1] = spm_read(PWR_STATUS_2ND);
+	pwr_stat[0] = spm_read(SPM_CPU_PWR_STATUS);
+	pwr_stat[1] = spm_read(SPM_CPU_PWR_STATUS_2ND);
 
-	stat = (pwr_stat[0] & cpu_mask) & (pwr_stat[1] & cpu_mask);
+	stat = (pwr_stat[0] & spm_cpu_bitmask_all) & (pwr_stat[1] & spm_cpu_bitmask_all);
 
-	return stat;
+	for (i = 0; i < nr_cpu_ids; i++)
+		if (stat & spm_cpu_bitmask[i])
+			ret_stat |= (1 << i);
+
+	return ret_stat;
 }
 
 long int spm_get_current_time_ms(void)

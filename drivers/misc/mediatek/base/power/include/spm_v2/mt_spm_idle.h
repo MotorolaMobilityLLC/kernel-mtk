@@ -17,6 +17,17 @@
 /*
  * for SPM common part
  */
+#define	CPU_0		(1U << 0)
+#define	CPU_1		(1U << 1)
+#define	CPU_2		(1U << 2)
+#define	CPU_3		(1U << 3)
+#define	CPU_4		(1U << 4)
+#define	CPU_5		(1U << 5)
+#define	CPU_6		(1U << 6)
+#define	CPU_7		(1U << 7)
+#define	CPU_8		(1U << 8)
+#define	CPU_9		(1U << 9)
+
 extern unsigned int spm_get_cpu_pwr_status(void);
 extern long int spm_get_current_time_ms(void);
 

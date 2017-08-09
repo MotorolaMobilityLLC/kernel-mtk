@@ -554,7 +554,7 @@ bool soidle3_can_enter(int cpu)
 
 #ifdef CONFIG_SMP
 	cpu_pwr_stat = spm_get_cpu_pwr_status();
-	if (!((cpu_pwr_stat == CA7_CPU0) || (cpu_pwr_stat == CA15_CPU0))) {
+	if (!((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4))) {
 		reason = BY_CPU;
 #ifdef CONFIG_CPU_ISOLATION
 		if ((cpu % 4) == 0) {
@@ -830,7 +830,7 @@ bool soidle_can_enter(int cpu)
 
 #ifdef CONFIG_SMP
 	cpu_pwr_stat = spm_get_cpu_pwr_status();
-	if (!((cpu_pwr_stat == CA7_CPU0) || (cpu_pwr_stat == CA15_CPU0))) {
+	if (!((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4))) {
 		reason = BY_CPU;
 #ifdef CONFIG_CPU_ISOLATION
 		if ((cpu % 4) == 0) {
@@ -1200,7 +1200,7 @@ static bool dpidle_can_enter(int cpu)
 
 #ifdef CONFIG_SMP
 	cpu_pwr_stat = spm_get_cpu_pwr_status();
-	if (!((cpu_pwr_stat == CA7_CPU0) || (cpu_pwr_stat == CA15_CPU0))) {
+	if (!((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4))) {
 		reason = BY_CPU;
 #ifdef CONFIG_CPU_ISOLATION
 		if ((cpu % 4) == 0) {
@@ -1455,9 +1455,8 @@ static bool slidle_can_enter(void)
 	int reason = NR_REASONS;
 	unsigned int cpu_pwr_stat = 0;
 
-	/* if ((smp_processor_id() != 0) || (num_online_cpus() != 1)) { */
 	cpu_pwr_stat = spm_get_cpu_pwr_status();
-	if (!((cpu_pwr_stat == CA7_CPU0) || (cpu_pwr_stat == CA15_CPU0))) {
+	if (!((cpu_pwr_stat == CPU_0) || (cpu_pwr_stat == CPU_4))) {
 		reason = BY_CPU;
 		goto out;
 	}
