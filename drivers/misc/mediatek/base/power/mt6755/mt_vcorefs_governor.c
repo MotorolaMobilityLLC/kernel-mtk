@@ -1005,6 +1005,7 @@ int vcorefs_late_init_dvfs(void)
 	if (disp_h == 0)
 		disp_h = primary_display_get_height();
 
+#if 0 /* apply FHD policy for MD-CA */
 	vcorefs_info("disp_w=%d disp_h=%d\n", disp_w, disp_h);
 	if (disp_w * disp_h <= 720 * 1280) {
 		gvrctrl->is_fhd_segment = false;
@@ -1013,6 +1014,7 @@ int vcorefs_late_init_dvfs(void)
 		gvrctrl->is_fhd_segment = true;
 		gvrctrl->cpu_dvfs_req = (1 << MD_CAT6_CA_DATALINK | (1 << MD_Position));
 	}
+#endif
 	spm_vcorefs_set_cpu_dvfs_req(gvrctrl->cpu_dvfs_req, 0xFFFF);
 
 	vcorefs_init_sram_debug();
