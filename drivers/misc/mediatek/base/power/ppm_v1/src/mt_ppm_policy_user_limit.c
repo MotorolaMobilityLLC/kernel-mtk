@@ -446,6 +446,7 @@ static int __init ppm_userlimit_policy_init(void)
 
 	if (ppm_main_register_policy(&userlimit_policy)) {
 		ppm_err("@%s: userlimit policy register failed\n", __func__);
+		kfree(userlimit_data.limit);
 		ret = -EINVAL;
 		goto out;
 	}

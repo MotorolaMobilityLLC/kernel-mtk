@@ -16,6 +16,8 @@ static void ppm_thermal_update_limit_cb(enum ppm_power_state new_state);
 static void ppm_thermal_status_change_cb(bool enable);
 static void ppm_thermal_mode_change_cb(enum ppm_mode mode);
 
+static struct ppm_cluster_status *cluster_status;
+
 /* other members will init by ppm_main */
 static struct ppm_policy_data thermal_policy = {
 	.name			= __stringify(PPM_POLICY_THERMAL),
@@ -72,7 +74,7 @@ unsigned int mt_ppm_thermal_get_max_power(void)
 
 unsigned int mt_ppm_thermal_get_cur_power(void)
 {
-	struct ppm_cluster_status *cluster_status;
+
 	struct cpumask cluster_cpu, online_cpu;
 	int i;
 #if 0 /* PPM_DLPT_ENHANCEMENT */
@@ -85,7 +87,6 @@ unsigned int mt_ppm_thermal_get_cur_power(void)
 	if (!ppm_main_info.client_info[PPM_CLIENT_DVFS].limit_cb)
 		return 0;
 
-	cluster_status = kcalloc(ppm_main_info.cluster_num, sizeof(*cluster_status), GFP_KERNEL);
 	if (!cluster_status)
 		return mt_ppm_thermal_get_max_power();
 
@@ -98,20 +99,22 @@ unsigned int mt_ppm_thermal_get_cur_power(void)
 		if (!cluster_status[i].core_num)
 			cluster_status[i].freq_idx = -1;
 		else
+#ifdef PPM_FAST_ATM_SUPPORT
+			cluster_status[i].freq_idx = ppm_main_freq_to_idx(i,
+					mt_cpufreq_get_cur_phy_freq_no_lock(i), CPUFREQ_RELATION_L);
+#else
 			cluster_status[i].freq_idx = ppm_main_freq_to_idx(i,
 					mt_cpufreq_get_cur_phy_freq(i), CPUFREQ_RELATION_L);
-
+#endif
 		ppm_ver("[%d] core = %d, freq_idx = %d\n",
 			i, cluster_status[i].core_num, cluster_status[i].freq_idx);
 	}
 
 #if 0 /* PPM_DLPT_ENHANCEMENT */
 	power = ppm_calc_total_power(cluster_status, ppm_main_info.cluster_num, 100);
-	kfree(cluster_status);
 	return (power == 0) ? mt_ppm_thermal_get_max_power() : power;
 #else
 	power = ppm_find_pwr_idx(cluster_status);
-	kfree(cluster_status);
 	return (power == -1) ? mt_ppm_thermal_get_max_power() : (unsigned int)power;
 #endif
 }
@@ -213,8 +216,15 @@ static int __init ppm_thermal_policy_init(void)
 		}
 	}
 
+	cluster_status = kcalloc(ppm_main_info.cluster_num, sizeof(*cluster_status), GFP_KERNEL);
+	if (!cluster_status) {
+		ret = -ENOMEM;
+		goto out;
+	}
+
 	if (ppm_main_register_policy(&thermal_policy)) {
 		ppm_err("@%s: thermal policy register failed\n", __func__);
+		kfree(cluster_status);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -230,6 +240,8 @@ out:
 static void __exit ppm_thermal_policy_exit(void)
 {
 	FUNC_ENTER(FUNC_LV_POLICY);
+
+	kfree(cluster_status);
 
 	ppm_main_unregister_policy(&thermal_policy);
 
