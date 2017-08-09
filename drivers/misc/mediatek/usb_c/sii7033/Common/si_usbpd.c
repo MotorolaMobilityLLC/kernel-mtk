@@ -17,6 +17,8 @@
 #include "si_usbpd_main.h"
 /*#define NOT_DEFINED 0*/
 
+#include <typec.h>
+
 #define DRP 0
 #define DFP 1
 #define UFP 2
