@@ -590,7 +590,7 @@ static struct init_sta suspend_sta = {
  */
 static u32 pause_src_map __nosavedata = PSF_PAUSE_INIT;
 
-static u32 pause_log_en = PSF_PAUSE_SUSPEND |
+static u32 pause_log_en = /*PSF_PAUSE_SUSPEND |*/
 			  /*PSF_PAUSE_IDLE |*/
 			  /*PSF_PAUSE_I2CDRV |*/
 			  PSF_PAUSE_INIT;
@@ -1118,7 +1118,7 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	/* enable r7 to control power */
 	cspm_write(CSPM_PCM_PWR_IO_EN, pwrctrl->r7_ctrl_en ? PCM_PWRIO_EN_R7 : 0);
 
-	cspm_dbgx(KICK, "kick PCM to run\n");
+	/*cspm_dbgx(KICK, "kick PCM to run\n");*/
 
 	/* kick PCM to run (only toggle PCM_KICK) */
 	con0 = cspm_read(CSPM_PCM_CON0) & ~(CON0_IM_KICK | CON0_PCM_KICK);
@@ -1595,6 +1595,7 @@ static bool cspm_is_pcm_kicked(struct cpuhvfs_dvfsp *dvfsp)
 static void __cspm_check_and_update_sta(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta)
 {
 	int i;
+	bool suspend = false;
 
 	for (i = 0; i < NUM_CPU_CLUSTER; i++) {
 		if (!dvfsp->hw_gov_en) {
@@ -1607,6 +1608,7 @@ static void __cspm_check_and_update_sta(struct cpuhvfs_dvfsp *dvfsp, struct init
 
 			sta->opp[i] = suspend_sta.opp[i];
 			suspend_sta.opp[i] = UINT_MAX;
+			suspend = true;
 		}
 		if (sta->volt[i] == VOLT_AT_SUSPEND) {
 			BUG_ON(suspend_sta.volt[i] == UINT_MAX);	/* without suspend */
@@ -1638,9 +1640,11 @@ static void __cspm_check_and_update_sta(struct cpuhvfs_dvfsp *dvfsp, struct init
 		csram_write(OFFS_INIT_VOLT + i * sizeof(u32), sta->volt[i]);
 		csram_write(OFFS_INIT_VSRAM + i * sizeof(u32), sta->vsram[i]);
 
-		cspm_dbgx(KICK, "(%u) cluster%d: opp = %u (%u - %u), freq = %u, volt = 0x%x (0x%x)\n",
-				dvfsp->hw_gov_en, i, sta->opp[i], sta->ceiling[i], sta->floor[i],
-				sta->freq[i], sta->volt[i], sta->vsram[i]);
+		if (!suspend || i <= CPU_CLUSTER_L) {
+			cspm_dbgx(KICK, "(%u) cluster%d: opp = %u (%u - %u), freq = %u, volt = 0x%x (0x%x)\n",
+					dvfsp->hw_gov_en, i, sta->opp[i], sta->ceiling[i], sta->floor[i],
+					sta->freq[i], sta->volt[i], sta->vsram[i]);
+		}
 	}
 }
 
