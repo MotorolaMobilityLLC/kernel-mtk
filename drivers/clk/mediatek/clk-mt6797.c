@@ -977,8 +977,8 @@ static struct mtk_pll plls[] __initdata = {
 	    &mt_clk_mm_pll_ops),
 	PLL(APMIXED_MSDCPLL, msdcpll, clk26m, 0x0250, 0x025C, 0x00000111, HAVE_PLL_HP,
 	    &mt_clk_sdm_pll_ops),
-/*	PLL(APMIXED_IMGPLL, imgpll, clk26m, 0x0260, 0x026C, 0x00000111, HAVE_PLL_HP,
-	    &mt_clk_sdm_pll_ops),*/
+	PLL(APMIXED_IMGPLL, imgpll, clk26m, 0x0260, 0x026C, 0x00000001, HAVE_PLL_HP,
+	    &mt_clk_sdm_pll_ops),
 	PLL(APMIXED_TVDPLL, tvdpll, clk26m, 0x0270, 0x027C, 0x00000101, HAVE_PLL_HP,
 	    &mt_clk_sdm_pll_ops),
 	PLL(APMIXED_MPLL, mpll, clk26m, 0x0280, 0x028c, 0x00000141, HAVE_PLL_HP,
