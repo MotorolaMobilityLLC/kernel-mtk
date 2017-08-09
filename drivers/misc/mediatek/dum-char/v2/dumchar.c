@@ -843,6 +843,9 @@ const struct file_operations dumchar_fops = {
 	.read = dumchar_read,
 	.write = dumchar_write,
 	.unlocked_ioctl = dumchar_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = dumchar_ioctl,
+#endif
 	.open = dumchar_open,
 	.release = dumchar_release,
 };
