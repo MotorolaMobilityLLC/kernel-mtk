@@ -18,6 +18,7 @@
 /**************************************
  * [Hybrid DVFS] Config
  **************************************/
+#define I2C_GO_PAUSE		1
 
 
 /**************************************
@@ -564,9 +565,15 @@ static u32 dbgx_log_en = /*(DLF_DVFS << 16) |*/
 			 DLF_CLUSTER |
 			 DLF_KICK;
 
-static u32 dvfs_fail_ke = 1;	/* FIXME */
-static u32 sema_fail_ke = 1;	/* FIXME */
-static u32 pause_fail_ke = 1;	/* FIXME */
+#ifdef __TRIAL_RUN__
+static u32 dvfs_fail_ke = 1;
+static u32 sema_fail_ke = 1;
+static u32 pause_fail_ke = 1;
+#else
+static u32 dvfs_fail_ke;
+static u32 sema_fail_ke;
+static u32 pause_fail_ke;
+#endif
 
 static DEFINE_SPINLOCK(cspm_lock);
 static DEFINE_SPINLOCK(dvfs_lock);
@@ -948,6 +955,13 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	cspm_write(CSPM_M2_REC7,  0x80);
 	cspm_write(CSPM_M2_REC8,  0xffffff3f);
 
+	cspm_write(CSPM_SW_RSV7,  0xa000 + OFFS_LOG_S + 0x0);
+	cspm_write(CSPM_SW_RSV8,  0xa000 + OFFS_LOG_S + 0x4);
+	cspm_write(CSPM_SW_RSV9,  0xa000 + OFFS_LOG_S + 0x8);
+	cspm_write(CSPM_SW_RSV10, 0xa000 + OFFS_LOG_S + 0xc);
+	cspm_write(CSPM_SW_RSV11, 0xa000 + OFFS_LOG_S + 0x10);
+	cspm_write(CSPM_SW_RSV12, 0xa000 + OFFS_LOG_S + 0x14);
+
 	for (i = 0; i < NUM_PHY_CLUSTER; i++) {
 		cspm_write(swctrl_reg[i], SW_F_MAX(NUM_CPU_OPP - 1) |
 					  SW_F_MIN(0) |
@@ -1182,6 +1196,11 @@ static int cspm_get_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user)
 	int i;
 	int n = DIV_ROUND_UP(SEMA_GET_TIMEOUT, 10);
 
+#if I2C_GO_PAUSE
+	if (user == SEMA_I2C_DRV)
+		return cspm_pause_pcm_running(dvfsp, PAUSE_I2CDRV);
+#endif
+
 	if (is_dvfsp_uninit(dvfsp))
 		return 0;
 
@@ -1203,6 +1222,13 @@ static int cspm_get_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user)
 
 static void cspm_release_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user)
 {
+#if I2C_GO_PAUSE
+	if (user == SEMA_I2C_DRV) {
+		cspm_unpause_pcm_to_run(dvfsp, PAUSE_I2CDRV);
+		return;
+	}
+#endif
+
 	if (is_dvfsp_uninit(dvfsp))
 		return;
 
