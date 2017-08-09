@@ -1716,7 +1716,7 @@ int dpmgr_wait_event_timeout(disp_path_handle dp_handle, DISP_PATH_EVENT event, 
 	wq_handle = &handle->wq_list[event];
 
 	if (wq_handle->init) {
-		cur_time = sched_clock();
+		cur_time = ktime_to_ns(ktime_get());
 
 		ret = wait_event_interruptible_timeout(wq_handle->wq, cur_time < wq_handle->data,
 						       timeout);
@@ -1757,7 +1757,7 @@ int _dpmgr_wait_event(disp_path_handle dp_handle, DISP_PATH_EVENT event, unsigne
 		return -2;
 	}
 
-	cur_time = sched_clock();
+	cur_time = ktime_to_ns(ktime_get());
 
 	ret = wait_event_interruptible(wq_handle->wq, cur_time < wq_handle->data);
 	if (ret < 0) {
@@ -1791,7 +1791,7 @@ int dpmgr_signal_event(disp_path_handle dp_handle, DISP_PATH_EVENT event)
 	wq_handle = &handle->wq_list[event];
 
 	if (handle->wq_list[event].init) {
-		wq_handle->data = sched_clock();
+		wq_handle->data = ktime_to_ns(ktime_get());
 		wake_up_interruptible(&(handle->wq_list[event].wq));
 	}
 	return 0;
@@ -1818,7 +1818,7 @@ static void dpmgr_irq_handler(DISP_MODULE_ENUM module, unsigned int regvalue)
 				if (handle->wq_list[j].init
 				    && irq_bit == handle->irq_event_map[j].irq_bit) {
 					dprec_stub_event(j);
-					handle->wq_list[j].data = sched_clock();
+					handle->wq_list[j].data = ktime_to_ns(ktime_get());
 
 					DDPIRQ("irq signal event %s on cycle %llu on scenario %s\n",
 					       path_event_name(j), handle->wq_list[j].data,
