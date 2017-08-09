@@ -14,10 +14,6 @@
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #endif
-#if defined(CONFIG_PM_AUTOSLEEP)
-#include <linux/fb.h>
-#include <linux/notifier.h>
-#endif
 #include <linux/platform_device.h>
 #include <asm/atomic.h>
 #include <linux/init.h>
@@ -93,7 +89,7 @@ HDMI_CTRL_STATE_T e_hdmi_ctrl_state = HDMI_STATE_IDLE;
 HDCP_CTRL_STATE_T e_hdcp_ctrl_state = HDCP_RECEIVER_NOT_READY;
 unsigned int mt8193_hotplugstate = HDMI_STATE_HOT_PLUG_OUT;
 
-#if defined(CONFIG_HAS_EARLYSUSPEND)  || defined(CONFIG_PM_AUTOSLEEP)
+#if defined(CONFIG_HAS_EARLYSUSPEND)
 size_t mt8193_hdmiearlysuspend = 1;
 #endif
 
@@ -380,7 +376,7 @@ int mt8193_power_on(void)
 	}
 	hdmi_powerenable = 1;
 
-#if defined(CONFIG_HAS_EARLYSUSPEND)  || defined(CONFIG_PM_AUTOSLEEP)
+#if defined(CONFIG_HAS_EARLYSUSPEND)
 	if (mt8193_hdmiearlysuspend == 0)
 		return 0;
 #endif
@@ -430,10 +426,11 @@ void mt8193_power_off(void)
 		return;
 	}
 	hdmi_powerenable = 0;
+	is_hdmi_plug_out_flag = 1;
 
 	mt8193_hotinit = 1;
 	mt8193_hotplugstate = HDMI_STATE_HOT_PLUG_OUT;
-#if defined(CONFIG_HAS_EARLYSUSPEND)  || defined(CONFIG_PM_AUTOSLEEP)
+#if defined(CONFIG_HAS_EARLYSUSPEND)
 	if (mt8193_hdmiearlysuspend == 1)
 		is_hdmi_plug_out_flag = 1;
 	else
@@ -601,52 +598,6 @@ static struct early_suspend mt8193_hdmi_early_suspend_desc = {
 	.level = 0xFE,
 	.suspend = mt8193_hdmi_early_suspend,
 	.resume = mt8193_hdmi_late_resume,
-};
-#endif
-#if defined(CONFIG_PM_AUTOSLEEP)
-static void mt8193_hdmi_early_suspend(void)
-{
-	MT8193_PLUG_FUNC();
-	mt8193_hdmiearlysuspend = 0;
-	is_hdmi_plug_out_flag = 0;
-}
-
-static void mt8193_hdmi_late_resume(void)
-{
-	MT8193_PLUG_FUNC();
-	mt8193_hdmiearlysuspend = 1;
-}
-
-static int mt8193_hdmi_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *fb_evdata)
-{
-	struct fb_event *evdata = fb_evdata;
-	int blank;
-
-	if (event != FB_EVENT_BLANK)
-		return 0;
-
-	blank = *(int *)evdata->data;
-
-	switch (blank) {
-	case FB_BLANK_UNBLANK:
-	case FB_BLANK_NORMAL:
-		mt8193_hdmi_late_resume();
-		break;
-	case FB_BLANK_VSYNC_SUSPEND:
-	case FB_BLANK_HSYNC_SUSPEND:
-		break;
-	case FB_BLANK_POWERDOWN:
-		mt8193_hdmi_early_suspend();
-		break;
-	default:
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
-static struct notifier_block mt8193hdmi_fb_notif = {
-	.notifier_call = mt8193_hdmi_fb_notifier_callback,
 };
 #endif
 
@@ -984,7 +935,7 @@ void hdmi_timer_impl(void)
 	if (mt8193_hotinit != 1)
 		mt8193_hdmiinit++;
 
-#if defined(CONFIG_HAS_EARLYSUSPEND) || defined(CONFIG_PM_AUTOSLEEP)
+#if defined(CONFIG_HAS_EARLYSUSPEND)
 	if (mt8193_hdmiearlysuspend == 1) {
 #else
 	{
@@ -1217,9 +1168,6 @@ void cec_poll_isr(unsigned long n)
 
 static int mt8193_init(void)
 {
-#if defined(CONFIG_PM_AUTOSLEEP)
-	int ret;
-#endif
 
 	HDMI_DEF_LOG("[hdmi]mt8193_init\n");
 
@@ -1237,13 +1185,6 @@ static int mt8193_init(void)
 
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	register_early_suspend(&mt8193_hdmi_early_suspend_desc);
-#endif
-#if defined(CONFIG_PM_AUTOSLEEP)
-	ret = fb_register_client(&mt8193hdmi_fb_notif);
-	if (ret) {
-		pr_err("fail to register fb notifier, ret=%d\n", ret);
-		return ret;
-	}
 #endif
 
 	memset((void *)&r_hdmi_timer, 0, sizeof(r_hdmi_timer));
