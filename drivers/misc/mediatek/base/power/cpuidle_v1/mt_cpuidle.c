@@ -20,6 +20,7 @@
 
 #include <linux/of_address.h>
 #include <linux/of.h>
+#include <linux/irqchip/mt-gic.h>
 
 #include <mt-plat/mt_dbg.h>
 #include <mt-plat/mt_io.h>
@@ -64,9 +65,9 @@ static unsigned long gic_ci_base;
 static unsigned long gic_id_base;
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M)
 static unsigned long biu_base;
-#endif
+#endif /* #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M) */
 
-#endif
+#endif /* #ifdef CONFIG_ARCH_MT6580 */
 
 static unsigned int kp_irq_bit;
 static unsigned int conn_wdt_irq_bit;
@@ -80,11 +81,27 @@ static unsigned int c2k_wdt_irq_bit;
 #define CPUIDLE_CPU_IDLE_STA SPM_SLEEP_TIMER_STA
 #define CPUIDLE_CPU_IDLE_STA_OFFSET 16
 #define CPUIDLE_SPM_WAKEUP_MISC SPM_SLEEP_WAKEUP_MISC
+#define CPUIDLE_SPM_WAKEUP_STA SPM_SLEEP_ISR_RAW_STA
+#define CPUIDLE_WAKE_SRC_R12_KP_IRQ_B WAKE_SRC_KP
+#define CPUIDLE_WAKE_SRC_R12_CONN_WDT_IRQ_B WAKE_SRC_CONN_WDT
+#define CPUIDLE_WAKE_SRC_R12_LOWBATTERY_IRQ_B WAKE_SRC_LOW_BAT
+#if defined(CONFIG_ARCH_MT6735_SERIES)
+#define CPUIDLE_WAKE_SRC_R12_MD1_WDT_B WAKE_SRC_MD_WDT
+#else
+#define CPUIDLE_WAKE_SRC_R12_MD1_WDT_B WAKE_SRC_MD1_WDT
+#endif
+#define CPUIDLE_WAKE_SRC_R12_C2K_WDT_IRQ_B WAKE_SRC_C2K_WDT
 
 #elif defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
 #define CPUIDLE_CPU_IDLE_STA CPU_IDLE_STA
 #define CPUIDLE_CPU_IDLE_STA_OFFSET 10
 #define CPUIDLE_SPM_WAKEUP_MISC SPM_WAKEUP_MISC
+#define CPUIDLE_SPM_WAKEUP_STA SPM_WAKEUP_STA
+#define CPUIDLE_WAKE_SRC_R12_KP_IRQ_B WAKE_SRC_R12_KP_IRQ_B
+#define CPUIDLE_WAKE_SRC_R12_CONN_WDT_IRQ_B WAKE_SRC_R12_CONN_WDT_IRQ_B
+#define CPUIDLE_WAKE_SRC_R12_LOWBATTERY_IRQ_B WAKE_SRC_R12_LOWBATTERY_IRQ_B
+#define CPUIDLE_WAKE_SRC_R12_MD1_WDT_B WAKE_SRC_R12_MD1_WDT_B
+#define CPUIDLE_WAKE_SRC_R12_C2K_WDT_IRQ_B WAKE_SRC_R12_C2K_WDT_IRQ_B
 #endif
 
 
@@ -218,6 +235,7 @@ void __weak mt_restore_dbg_regs(unsigned int *p, unsigned int cpuid) { }
 void __weak mt_copy_dbg_regs(int to, int from) { }
 void __weak mt_save_banked_registers(unsigned int *container) { }
 void __weak mt_restore_banked_registers(unsigned int *container) { }
+void __weak mt_gic_cpu_init_for_low_power(void) { }
 
 struct interrupt_distributor {
 	volatile unsigned int control;			/* 0x000 */
@@ -242,11 +260,11 @@ struct interrupt_distributor {
 	unsigned const int primecell_id[4];		/* 0xFF0 */
 };
 
-static void restore_gic_spm_irq(struct interrupt_distributor *id, long wakeup_sta, int wake_src, int *irq_bit)
+static void restore_gic_spm_irq(struct interrupt_distributor *id, int wake_src, int *irq_bit)
 {
 	int i, j;
 
-	if (reg_read(wakeup_sta) & wake_src) {
+	if (reg_read(CPUIDLE_SPM_WAKEUP_STA) & wake_src) {
 		i = *irq_bit / GIC_PRIVATE_SIGNALS;
 		j = *irq_bit % GIC_PRIVATE_SIGNALS;
 		id->pending.set[i] |= (1 << j);
@@ -262,28 +280,13 @@ static void restore_edge_gic_spm_irq(unsigned long gic_distributor_address)
 	id->control = 0;
 
 	/* Set the pending bit for spm wakeup source that is edge triggerd */
-#if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6735_SERIES)
-	restore_gic_spm_irq(id, (long) SPM_SLEEP_ISR_RAW_STA, WAKE_SRC_KP, &kp_irq_bit);
-	restore_gic_spm_irq(id, (long) SPM_SLEEP_ISR_RAW_STA, WAKE_SRC_CONN_WDT, &conn_wdt_irq_bit);
-	restore_gic_spm_irq(id, (long) SPM_SLEEP_ISR_RAW_STA, WAKE_SRC_LOW_BAT, &lowbattery_irq_bit);
-#if defined(CONFIG_ARCH_MT6735_SERIES)
-	restore_gic_spm_irq(id, (long) SPM_SLEEP_ISR_RAW_STA, WAKE_SRC_MD_WDT, &md1_wdt_irq_bit);
-#else
-	restore_gic_spm_irq(id, (long) SPM_SLEEP_ISR_RAW_STA, WAKE_SRC_MD1_WDT, &md1_wdt_irq_bit);
-#endif /* #if defined(CONFIG_ARCH_MT6735_SERIES) */
+	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_KP_IRQ_B, &kp_irq_bit);
+	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_CONN_WDT_IRQ_B, &conn_wdt_irq_bit);
+	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_LOWBATTERY_IRQ_B, &lowbattery_irq_bit);
+	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_MD1_WDT_B, &md1_wdt_irq_bit);
 #ifdef CONFIG_MTK_C2K_SUPPORT
-	restore_gic_spm_irq(id, (long) SPM_SLEEP_ISR_RAW_STA, WAKE_SRC_C2K_WDT, &c2k_wdt_irq_bit);
+	restore_gic_spm_irq(id, CPUIDLE_WAKE_SRC_R12_C2K_WDT_IRQ_B, &c2k_wdt_irq_bit);
 #endif /* #ifdef CONFIG_MTK_C2K_SUPPORT */
-
-#elif defined(CONFIG_ARCH_MT6755)
-	restore_gic_spm_irq(id, (long) SPM_WAKEUP_STA, WAKE_SRC_R12_KP_IRQ_B, &kp_irq_bit);
-	restore_gic_spm_irq(id, (long) SPM_WAKEUP_STA, WAKE_SRC_R12_CONN_WDT_IRQ_B, &conn_wdt_irq_bit);
-	/* restore_gic_spm_irq(id, (long) SPM_WAKEUP_STA, WAKE_SRC_R12_LOWBATTERY_IRQ_B, &lowbattery_irq_bit); */
-	restore_gic_spm_irq(id, (long) SPM_WAKEUP_STA, WAKE_SRC_R12_MD1_WDT_B, &md1_wdt_irq_bit);
-#ifdef CONFIG_MTK_C2K_SUPPORT
-	restore_gic_spm_irq(id, (long) SPM_WAKEUP_STA, WAKE_SRC_R12_C2K_WDT_IRQ_B, &c2k_wdt_irq_bit);
-#endif /* #ifdef CONFIG_MTK_C2K_SUPPORT */
-#endif /* #if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6735_SERIES) */
 
 	id->control = backup;
 }
@@ -648,9 +651,9 @@ static void mt_cluster_restore(int flags)
 {
 #if defined(CONFIG_ARCH_MT6735) || defined(CONFIG_ARCH_MT6735M)
 	biu_reconfig();
-#endif
-
-#if defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_ARCH_MT6797)
+	mt_gic_cpu_init_for_low_power();
+#elif defined(CONFIG_ARCH_MT6580)
 	if (read_cluster_id() == 0)
 		mp0_l2rstdisable_restore(flags);
 	else
@@ -779,12 +782,6 @@ int mt_cpu_dormant_reset(unsigned long flags)
 
 	disable_dcache_safe(!!IS_DORMANT_INNER_OFF(flags));
 
-	if ((unlikely(IS_DORMANT_BREAK_CHECK(flags)) &&
-	     unlikely(SPM_IS_CPU_IRQ_OCCUR(SPM_CORE_ID())))) {
-		ret = 2; /* dormant break */
-		goto _break0;
-	}
-
 	amp();
 
 	DORMANT_LOG(clusterid * 4 + cpuid, 0x301);
@@ -795,46 +792,11 @@ int mt_cpu_dormant_reset(unsigned long flags)
 
 	DORMANT_LOG(clusterid * 4 + cpuid, 0x302);
 
-_break0:
-
 	__enable_dcache();
 
 	DORMANT_LOG(clusterid * 4 + cpuid, 0x303);
 
 	return ret;
-}
-
-#define get_data_nommu(va)				\
-	({						\
-		register int data = 0;			\
-		register unsigned long pva = (unsigned long)(void *)(&(va)); \
-		mt_get_data_nommu(data, pva);		\
-		data;					\
-	})
-
-__naked void cpu_resume_wrapper(void)
-{
-	register int val;
-
-#ifdef CONFIG_MTK_RAM_CONSOLE
-	reg_write(get_data_nommu(sleep_aee_rec_cpu_dormant_pa), 0x401);
-#endif
-
-	/*
-	 * restore L2 SRAM latency:
-	 * This register can only be written when the L2 memory system is
-	 * idle. ARM recommends that you write to this register after a
-	 * powerup reset before the MMU is enabled and before any AXI4 or
-	 * ACP traffic has begun.
-	 */
-	val = get_data_nommu(dormant_data[0].poc.l2ctlr);
-	if (val) {
-		val &= 0x3ffff;
-		mt_restore_l2ctlr(val);
-	}
-
-	/* jump to cpu_resume() */
-	mt_goto_cpu_resume(&(dormant_data[0].poc.cpu_resume_phys));
 }
 #endif
 
@@ -887,22 +849,9 @@ int mt_cpu_dormant(unsigned long flags)
 	/* to mark as cpu clobs vfp register.*/
 	kernel_neon_begin();
 
-	/* dormant break */
-	if (IS_DORMANT_BREAK_CHECK(flags) && SPM_IS_CPU_IRQ_OCCUR(SPM_CORE_ID())) {
-		ret = MT_CPU_DORMANT_BREAK_V(IRQ_PENDING_1);
-		goto dormant_exit;
-	}
-
 	mt_platform_save_context(flags);
 
 	DORMANT_LOG(clusterid * MAX_CORES + cpuid, 0x102);
-
-	/* dormant break */
-	if (IS_DORMANT_BREAK_CHECK(flags) && SPM_IS_CPU_IRQ_OCCUR(SPM_CORE_ID())) {
-		mt_cpu_dormant_abort(flags);
-		ret = MT_CPU_DORMANT_BREAK_V(IRQ_PENDING_2);
-		goto dormant_exit;
-	}
 
 	DORMANT_LOG(clusterid * MAX_CORES + cpuid, 0x103);
 
@@ -980,8 +929,6 @@ int mt_cpu_dormant(unsigned long flags)
 	DORMANT_LOG(clusterid * MAX_CORES + cpuid, 0x602);
 
 	local_fiq_enable();
-
-dormant_exit:
 
 	kernel_neon_end();
 
@@ -1099,9 +1046,9 @@ static void get_dts_nodes_address(void)
 static void get_dts_nodes_irq_bit(void)
 {
 	kp_irq_bit = get_dts_node_irq_bit("mediatek,mt6797-keypad", 3, 0);
-	conn_wdt_irq_bit = get_dts_node_irq_bit(NULL, 6, 3);
-	lowbattery_irq_bit = get_dts_node_irq_bit("mediatek,auxadc", 3, 0);
-	md1_wdt_irq_bit = get_dts_node_irq_bit(NULL, 9, 6);
+	conn_wdt_irq_bit = get_dts_node_irq_bit("mediatek,mt6797-consys", 6, 3);
+	lowbattery_irq_bit = get_dts_node_irq_bit("mediatek,mt6797-auxadc", 3, 0);
+	md1_wdt_irq_bit = get_dts_node_irq_bit("mediatek,mdcldma", 9, 6);
 #ifdef CONFIG_MTK_C2K_SUPPORT
 	c2k_wdt_irq_bit = get_dts_node_irq_bit("mediatek,ap2c2k_ccif", 6, 3);
 #endif
