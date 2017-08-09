@@ -51,6 +51,7 @@ struct mtk_drm_crtc {
 	unsigned int			pipe;
 
 	bool				do_flush;
+	bool				do_shadow_reg;
 
 	struct mtk_drm_plane		planes[OVL_LAYER_NR];
 
@@ -68,6 +69,54 @@ struct mtk_disp_ovl {
 static inline struct mtk_drm_crtc *to_mtk_crtc(struct drm_crtc *c)
 {
 	return container_of(c, struct mtk_drm_crtc, base);
+}
+
+void mtk_crtc_layer_config(unsigned int idx, struct mtk_plane_state *state,
+				struct drm_crtc *crtc)
+{
+	struct mtk_drm_crtc *mtk_crtc;
+	struct mtk_ddp_comp *ovl;
+
+	if (crtc == NULL)
+		crtc = state->base.crtc;
+
+	mtk_crtc = to_mtk_crtc(crtc);
+	ovl = mtk_crtc->ddp_comp[0];
+
+	if (mtk_crtc->do_shadow_reg)
+		mtk_ddp_comp_layer_config(ovl, idx, state);
+}
+
+void mtk_crtc_layer_off(unsigned int idx, struct mtk_plane_state *state,
+				struct drm_crtc *crtc)
+{
+	struct mtk_drm_crtc *mtk_crtc;
+	struct mtk_ddp_comp *ovl;
+
+	if (crtc == NULL)
+		crtc = state->base.crtc;
+
+	mtk_crtc = to_mtk_crtc(crtc);
+	ovl = mtk_crtc->ddp_comp[0];
+
+	if (mtk_crtc->do_shadow_reg)
+		mtk_ddp_comp_layer_off(ovl, idx);
+}
+
+void mtk_crtc_layer_on(unsigned int idx, struct mtk_plane_state *state,
+				struct drm_crtc *crtc)
+{
+	struct mtk_drm_crtc *mtk_crtc;
+	struct mtk_ddp_comp *ovl;
+
+	if (crtc == NULL)
+		crtc = state->base.crtc;
+
+	mtk_crtc = to_mtk_crtc(crtc);
+	ovl = mtk_crtc->ddp_comp[0];
+
+	if (mtk_crtc->do_shadow_reg)
+		mtk_ddp_comp_layer_on(ovl, idx);
 }
 
 static void mtk_drm_crtc_finish_page_flip(struct mtk_drm_crtc *mtk_crtc)
@@ -126,11 +175,18 @@ static bool mtk_drm_crtc_mode_fixup(struct drm_crtc *crtc,
 static void mtk_drm_crtc_mode_set_nofb(struct drm_crtc *crtc)
 {
 	struct mtk_crtc_state *state = to_mtk_crtc_state(crtc->state);
+	struct mtk_drm_crtc *mtk_crtc = to_mtk_crtc(crtc);
+	struct mtk_ddp_comp *ovl = mtk_crtc->ddp_comp[0];
 
 	state->pending_width = crtc->mode.hdisplay;
 	state->pending_height = crtc->mode.vdisplay;
 	state->pending_vrefresh = crtc->mode.vrefresh;
 	state->pending_config = true;
+
+	if (mtk_crtc->do_shadow_reg)
+		mtk_ddp_comp_config(ovl, state->pending_width,
+				    state->pending_height,
+				    state->pending_vrefresh);
 }
 
 int mtk_drm_crtc_enable_vblank(struct drm_device *drm, unsigned int pipe)
@@ -205,7 +261,8 @@ static void mtk_crtc_ddp_hw_init(struct mtk_drm_crtc *mtk_crtc)
 
 	DRM_INFO("mediatek_ddp_ddp_path_setup\n");
 	for (i = 0; i < mtk_crtc->ddp_comp_nr - 1; i++) {
-		mtk_ddp_add_comp_to_path(mtk_crtc->config_regs,
+		mtk_ddp_add_comp_to_path(mtk_crtc->mutex,
+					 mtk_crtc->config_regs,
 					 mtk_crtc->ddp_comp[i]->id,
 					 mtk_crtc->ddp_comp[i + 1]->id);
 		mtk_disp_mutex_add_comp(mtk_crtc->mutex,
@@ -235,7 +292,8 @@ static void mtk_crtc_ddp_hw_fini(struct mtk_drm_crtc *mtk_crtc)
 					   mtk_crtc->ddp_comp[i]->id);
 	mtk_disp_mutex_disable(mtk_crtc->mutex);
 	for (i = 0; i < mtk_crtc->ddp_comp_nr - 1; i++) {
-		mtk_ddp_remove_comp_from_path(mtk_crtc->config_regs,
+		mtk_ddp_remove_comp_from_path(mtk_crtc->mutex,
+					      mtk_crtc->config_regs,
 					      mtk_crtc->ddp_comp[i]->id,
 					      mtk_crtc->ddp_comp[i + 1]->id);
 		mtk_disp_mutex_remove_comp(mtk_crtc->mutex,
@@ -326,6 +384,11 @@ void mtk_drm_crtc_commit(struct drm_crtc *crtc)
 			plane_state->pending_dirty = false;
 		}
 	}
+
+	if (mtk_crtc->do_shadow_reg) {
+		mtk_ddp_get_mutex(mtk_crtc->mutex);
+		mtk_ddp_release_mutex(mtk_crtc->mutex);
+	}
 }
 
 void mtk_drm_crtc_check_flush(struct drm_crtc *crtc)
@@ -402,30 +465,32 @@ static void mtk_crtc_ddp_irq(struct mtk_drm_crtc *mtk_crtc)
 	 * working registers in atomic_commit and let the hardware command
 	 * queue update module registers on vblank.
 	 */
-	if (state->pending_config) {
-		mtk_ddp_comp_config(ovl, state->pending_width,
-				    state->pending_height,
-				    state->pending_vrefresh);
+	if (!mtk_crtc->do_shadow_reg) {
+		if (state->pending_config) {
+			mtk_ddp_comp_config(ovl, state->pending_width,
+					    state->pending_height,
+					    state->pending_vrefresh);
 
-		state->pending_config = false;
-	}
+			state->pending_config = false;
+		}
 
-	for (i = 0; i < OVL_LAYER_NR; i++) {
-		struct drm_plane *plane = &mtk_crtc->planes[i].base;
-		struct mtk_plane_state *plane_state;
+		for (i = 0; i < OVL_LAYER_NR; i++) {
+			struct drm_plane *plane = &mtk_crtc->planes[i].base;
+			struct mtk_plane_state *plane_state;
 
-		plane_state = to_mtk_plane_state(plane->state);
+			plane_state = to_mtk_plane_state(plane->state);
 
-		if (plane_state->pending_config) {
-			if (!plane_state->pending_enable)
-				mtk_ddp_comp_layer_off(ovl, i);
+			if (plane_state->pending_config) {
+				if (!plane_state->pending_enable)
+					mtk_ddp_comp_layer_off(ovl, i);
 
-			mtk_ddp_comp_layer_config(ovl, i, plane_state);
+				mtk_ddp_comp_layer_config(ovl, i, plane_state);
 
-			if (plane_state->pending_enable)
-				mtk_ddp_comp_layer_on(ovl, i);
+				if (plane_state->pending_enable)
+					mtk_ddp_comp_layer_on(ovl, i);
 
-			plane_state->pending_config = false;
+				plane_state->pending_config = false;
+			}
 		}
 	}
 
@@ -471,7 +536,8 @@ static int mtk_disp_ovl_bind(struct device *dev, struct device *master,
 	mtk_crtc = devm_kzalloc(drm_dev->dev, sizeof(*mtk_crtc), GFP_KERNEL);
 	if (!mtk_crtc)
 		return -ENOMEM;
-
+	mtk_crtc->do_shadow_reg = of_property_read_bool(dev->of_node,
+							"shadow_register");
 	mtk_crtc->config_regs = drm_priv->config_regs;
 	mtk_crtc->ddp_comp_nr = drm_priv->path_len[pipe];
 	mtk_crtc->ddp_comp = devm_kmalloc_array(dev, mtk_crtc->ddp_comp_nr,
@@ -528,6 +594,9 @@ static int mtk_disp_ovl_bind(struct device *dev, struct device *master,
 	priv->crtc = mtk_crtc;
 	drm_priv->num_pipes++;
 
+	for (i = 0; i < OVL_LAYER_NR; i++)
+		mtk_ddp_comp_layer_off(&priv->ddp_comp, i);
+
 	return 0;
 
 unprepare:
@@ -558,6 +627,35 @@ static const struct component_ops mtk_disp_ovl_component_ops = {
 	.unbind = mtk_disp_ovl_unbind,
 };
 
+static struct mtk_ddp_comp_driver_data mt8173_ovl_driver_data = {
+	.reg_ovl_addr = 0x0f40,
+	.ovl_infmt_rgb565 = 0,
+	.ovl_infmt_rgb888 = 1,
+};
+
+static struct mtk_ddp_comp_driver_data mt2701_ovl_driver_data = {
+	.reg_ovl_addr = 0x0040,
+	.ovl_infmt_rgb565 = 1,
+	.ovl_infmt_rgb888 = 0,
+};
+
+static const struct of_device_id mtk_disp_ovl_driver_dt_match[] = {
+	{ .compatible = "mediatek,mt2701-disp-ovl",
+	  .data = &mt2701_ovl_driver_data},
+	{ .compatible = "mediatek,mt8173-disp-ovl",
+	  .data = &mt8173_ovl_driver_data},
+	{},
+};
+
+static inline struct mtk_ddp_comp_driver_data *mtk_ovl_get_driver_data(
+	struct platform_device *pdev)
+{
+	const struct of_device_id *of_id =
+		of_match_device(mtk_disp_ovl_driver_dt_match, &pdev->dev);
+
+	return (struct mtk_ddp_comp_driver_data *)of_id->data;
+}
+
 static int mtk_disp_ovl_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -586,6 +684,7 @@ static int mtk_disp_ovl_probe(struct platform_device *pdev)
 		dev_err(dev, "Failed to identify by alias: %d\n", comp_id);
 		return comp_id;
 	}
+	priv->ddp_comp.ddp_comp_driver_data = mtk_ovl_get_driver_data(pdev);
 
 	ret = mtk_ddp_comp_init(dev, dev->of_node, &priv->ddp_comp, comp_id);
 	if (ret) {
@@ -609,10 +708,6 @@ static int mtk_disp_ovl_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static const struct of_device_id mtk_disp_ovl_driver_dt_match[] = {
-	{ .compatible = "mediatek,mt8173-disp-ovl", },
-	{},
-};
 MODULE_DEVICE_TABLE(of, mtk_disp_ovl_driver_dt_match);
 
 struct platform_driver mtk_disp_ovl_driver = {

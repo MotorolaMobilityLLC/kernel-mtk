@@ -101,6 +101,12 @@ int mtk_drm_gem_dumb_create(struct drm_file *file_priv, struct drm_device *dev,
 	int ret;
 
 	args->pitch = args->width * DIV_ROUND_UP(args->bpp, 8);
+	#ifdef CONFIG_MALI_DMA_BUF_MAP_ON_ATTACH
+	/*
+	* align to 8 bytes since Mali requires it.
+	*/
+	args->pitch = ALIGN(args->pitch, 8);
+	#endif
 	args->size = args->pitch * args->height;
 
 	mtk_gem = mtk_drm_gem_create(dev, args->size, false);

@@ -51,6 +51,12 @@
 #define RDMA_FIFO_PSEUDO_SIZE(bytes)			(((bytes) / 16) << 16)
 #define RDMA_OUTPUT_VALID_FIFO_THRESHOLD(bytes)		((bytes) / 16)
 
+#define DISP_REG_BLS_EN				0x0000
+#define DISP_REG_BLS_SRC_SIZE			0x0038
+#define DISP_REG_BLS_PWM_DUTY			0x00a0
+#define DISP_REG_BLS_PWM_CON			0x0038
+
+
 #define DISP_OD_EN				0x0000
 #define DISP_OD_INTEN				0x0008
 #define DISP_OD_INTSTA				0x000c
@@ -82,8 +88,22 @@ enum OVL_INPUT_FORMAT {
 #define	COLOR_BYPASS_ALL	BIT(7)
 #define	COLOR_SEQ_SEL		BIT(13)
 
+#define BLS_PWM_CLKDIV		BIT(16)
+#define BLS_PWM_EN		BIT(16)
+
+static void mtk_bls_config(void __iomem *bls_base, unsigned int w,
+		unsigned int h, unsigned int vrefresh,
+		unsigned int fifo_pseudo_size)
+{
+	writel(h << 16 | w, bls_base + DISP_REG_BLS_SRC_SIZE);
+	writel(0, bls_base + DISP_REG_BLS_PWM_DUTY);
+	writel(BLS_PWM_CLKDIV, bls_base + DISP_REG_BLS_PWM_CON);
+	writel(BLS_PWM_EN, bls_base + DISP_REG_BLS_EN);
+}
+
 static void mtk_color_config(void __iomem *color_base, unsigned int w,
-		unsigned int h, unsigned int vrefresh)
+		unsigned int h, unsigned int vrefresh,
+		unsigned int fifo_pseudo_size)
 {
 	writel(w, color_base + DISP_COLOR_WIDTH);
 	writel(h, color_base + DISP_COLOR_HEIGHT);
@@ -97,7 +117,7 @@ static void mtk_color_start(void __iomem *color_base)
 }
 
 static void mtk_od_config(void __iomem *od_base, unsigned int w, unsigned int h,
-		unsigned int vrefresh)
+		unsigned int vrefresh, unsigned int fifo_pseudo_size)
 {
 	writel(w << 16 | h, od_base + DISP_OD_SIZE);
 }
@@ -129,7 +149,8 @@ static void mtk_ovl_start(void __iomem *ovl_base)
 }
 
 static void mtk_ovl_config(void __iomem *ovl_base,
-		unsigned int w, unsigned int h, unsigned int vrefresh)
+		unsigned int w, unsigned int h, unsigned int vrefresh,
+		unsigned int fifo_pseudo_size)
 {
 	if (w != 0 && h != 0)
 		writel(h << 16 | w, ovl_base + DISP_REG_OVL_ROI_SIZE);
@@ -154,15 +175,17 @@ static bool has_rb_swapped(unsigned int fmt)
 	}
 }
 
-static unsigned int ovl_fmt_convert(unsigned int fmt)
+static unsigned int ovl_fmt_convert(unsigned int fmt,
+					unsigned int rgb888,
+					unsigned int rgb565)
 {
 	switch (fmt) {
 	case DRM_FORMAT_RGB888:
 	case DRM_FORMAT_BGR888:
-		return OVL_INFMT_RGB888;
+		return rgb888;
 	case DRM_FORMAT_RGB565:
 	case DRM_FORMAT_BGR565:
-		return OVL_INFMT_RGB565;
+		return rgb565;
 	case DRM_FORMAT_RGBX8888:
 	case DRM_FORMAT_RGBA8888:
 	case DRM_FORMAT_BGRX8888:
@@ -202,8 +225,12 @@ static void mtk_ovl_layer_off(void __iomem *ovl_base, unsigned int idx)
 	writel(0x0, ovl_base + DISP_REG_OVL_RDMA_CTRL(idx));
 }
 
-static void mtk_ovl_layer_config(void __iomem *ovl_base, unsigned int idx,
-		struct mtk_plane_state *state)
+static void mtk_ovl_layer_config(void __iomem *ovl_base,
+				unsigned int ovl_addr,
+				unsigned int idx,
+				struct mtk_plane_state *state,
+				unsigned int rgb888,
+				unsigned int rgb565)
 {
 	unsigned int addr = state->pending_addr;
 	unsigned int pitch = state->pending_pitch & 0xffff;
@@ -213,7 +240,8 @@ static void mtk_ovl_layer_config(void __iomem *ovl_base, unsigned int idx,
 				state->pending_width;
 	unsigned int con;
 
-	con = has_rb_swapped(fmt) << 24 | ovl_fmt_convert(fmt) << 12;
+	con = has_rb_swapped(fmt) << 24 |
+		ovl_fmt_convert(fmt, rgb888, rgb565) << 12;
 	if (idx != 0)
 		con |= OVL_AEN | OVL_ALPHA;
 
@@ -221,7 +249,7 @@ static void mtk_ovl_layer_config(void __iomem *ovl_base, unsigned int idx,
 	writel(pitch, ovl_base + DISP_REG_OVL_PITCH(idx));
 	writel(src_size, ovl_base + DISP_REG_OVL_SRC_SIZE(idx));
 	writel(offset, ovl_base + DISP_REG_OVL_OFFSET(idx));
-	writel(addr, ovl_base + DISP_REG_OVL_ADDR(idx));
+	writel(addr, ovl_base + (ovl_addr+idx*0x20));
 }
 
 static void mtk_rdma_start(void __iomem *rdma_base)
@@ -235,7 +263,8 @@ static void mtk_rdma_start(void __iomem *rdma_base)
 }
 
 static void mtk_rdma_config(void __iomem *rdma_base,
-		unsigned width, unsigned height, unsigned int vrefresh)
+		unsigned width, unsigned height, unsigned int vrefresh,
+		unsigned int fifo_pseudo_size)
 {
 	unsigned int threshold;
 	unsigned int reg;
@@ -256,7 +285,7 @@ static void mtk_rdma_config(void __iomem *rdma_base,
 	 */
 	threshold = width * height * vrefresh * 4 * 7 / 1000000;
 	reg = RDMA_FIFO_UNDERFLOW_EN |
-	      RDMA_FIFO_PSEUDO_SIZE(SZ_8K) |
+	      RDMA_FIFO_PSEUDO_SIZE(fifo_pseudo_size) |
 	      RDMA_OUTPUT_VALID_FIFO_THRESHOLD(threshold);
 	writel(reg, rdma_base + DISP_REG_RDMA_FIFO_CON);
 }
@@ -267,6 +296,10 @@ static void mtk_ufoe_start(void __iomem *ufoe_base)
 }
 
 static const struct mtk_ddp_comp_funcs ddp_nop = {
+};
+
+static const struct mtk_ddp_comp_funcs ddp_bls = {
+	.config = mtk_bls_config,
 };
 
 static const struct mtk_ddp_comp_funcs ddp_color = {
@@ -312,6 +345,7 @@ static const char * const mtk_ddp_comp_stem[MTK_DDP_COMP_TYPE_MAX] = {
 	[MTK_DISP_PWM] = "pwm",
 	[MTK_DISP_MUTEX] = "mutex",
 	[MTK_DISP_OD] = "od",
+	[MTK_DISP_BLS] = "bls",
 };
 
 struct mtk_ddp_comp_match {
@@ -322,6 +356,7 @@ struct mtk_ddp_comp_match {
 
 static struct mtk_ddp_comp_match mtk_ddp_matches[DDP_COMPONENT_ID_MAX] = {
 	[DDP_COMPONENT_AAL]	= { MTK_DISP_AAL,	0, &ddp_nop },
+	[DDP_COMPONENT_BLS]	= { MTK_DISP_BLS,	0, &ddp_bls },
 	[DDP_COMPONENT_COLOR0]	= { MTK_DISP_COLOR,	0, &ddp_color },
 	[DDP_COMPONENT_COLOR1]	= { MTK_DISP_COLOR,	1, &ddp_color },
 	[DDP_COMPONENT_DPI0]	= { MTK_DPI,		0, &ddp_nop },

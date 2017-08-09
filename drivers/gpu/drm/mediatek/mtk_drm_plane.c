@@ -73,6 +73,14 @@ static void mtk_plane_config(struct mtk_drm_plane *mtk_plane, bool enable,
 	state->pending_width = dest->x2 - dest->x1;
 	state->pending_height = dest->y2 - dest->y1;
 	state->pending_dirty = true;
+
+	if (!enable)
+		mtk_crtc_layer_off(mtk_plane->idx, state, plane->crtc);
+
+	mtk_crtc_layer_config(mtk_plane->idx, state, plane->crtc);
+
+	if (enable)
+		mtk_crtc_layer_on(mtk_plane->idx, state, plane->crtc);
 }
 
 static struct drm_plane_state *mtk_plane_duplicate_state(struct drm_plane *plane)

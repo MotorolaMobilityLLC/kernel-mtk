@@ -28,6 +28,11 @@ struct drm_fb_helper;
 struct drm_property;
 struct regmap;
 
+struct mtk_mmsys_driver_data {
+	enum mtk_ddp_comp_id *mtk_ddp_main;
+	unsigned int path_len;
+};
+
 struct mtk_drm_private {
 	struct drm_fb_helper *fb_helper;
 	struct drm_device *drm;
@@ -43,6 +48,7 @@ struct mtk_drm_private {
 	const enum mtk_ddp_comp_id *path[MAX_CRTC];
 	struct device_node *comp_node[DDP_COMPONENT_ID_MAX];
 	struct mtk_ddp_comp *ddp_comp[DDP_COMPONENT_ID_MAX];
+	struct mtk_mmsys_driver_data *mmsys_driver_data;
 
 	struct {
 		struct drm_atomic_state *state;

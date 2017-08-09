@@ -40,5 +40,11 @@ int mtk_drm_crtc_enable_vblank(struct drm_device *drm, unsigned int pipe);
 void mtk_drm_crtc_disable_vblank(struct drm_device *drm, unsigned int pipe);
 void mtk_drm_crtc_check_flush(struct drm_crtc *crtc);
 void mtk_drm_crtc_commit(struct drm_crtc *crtc);
+void mtk_crtc_layer_config(unsigned int idx, struct mtk_plane_state *state,
+				struct drm_crtc *crtc);
+void mtk_crtc_layer_on(unsigned int idx, struct mtk_plane_state *state,
+				struct drm_crtc *crtc);
+void mtk_crtc_layer_off(unsigned int idx, struct mtk_plane_state *state,
+				struct drm_crtc *crtc);
 
 #endif /* MTK_DRM_CRTC_H */

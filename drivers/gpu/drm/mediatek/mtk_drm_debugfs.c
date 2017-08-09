@@ -32,15 +32,16 @@ struct mtk_drm_debugfs_table {
 /* ------------------------------------------------------------------------- */
 /* External variable declarations */
 /* ------------------------------------------------------------------------- */
-void __iomem *gdrm_disp_base[8];
+void __iomem *gdrm_disp_base[9];
 void __iomem *gdrm_hdmi_base[6];
-struct mtk_drm_debugfs_table gdrm_disp_table[8] = {
+struct mtk_drm_debugfs_table gdrm_disp_table[9] = {
 	{ DDP_COMPONENT_OVL0, "OVL0 ", {0, 0xf40}, {0x260, 0x80} },
 	{ DDP_COMPONENT_COLOR0, "COLOR0 ", {0x400, 0xc00}, {0x100, 0x100} },
 	{ DDP_COMPONENT_AAL, "AAL ", {0, 0}, {0x100, 0} },
 	{ DDP_COMPONENT_OD, "OD ", {0, 0}, {0x100, 0} },
 	{ DDP_COMPONENT_RDMA0, "RDMA0 ", {0, 0}, {0x100, 0} },
 	{ DDP_COMPONENT_UFOE, "UFOE ", {0, 0}, {0x100, 0} },
+	{ DDP_COMPONENT_BLS, "BLS ", {0, 0}, {0x100, 0} },
 	{ -1, "CONFIG ", {0, 0}, {0x120, 0} },
 	{ -1, "MUTEX ", {0, 0}, {0x100, 0} }
 };
@@ -145,6 +146,8 @@ static void process_dbg_opt(const char *opt)
 		int i, j;
 
 		for (i = 0; i < ARRAY_SIZE(gdrm_disp_table); i++) {
+			if (gdrm_disp_base[i] == NULL)
+				continue;
 			for (j = gdrm_disp_table[i].offset[0];
 			     j < gdrm_disp_table[i].offset[0] +
 			     gdrm_disp_table[i].length[0]; j += 16)
