@@ -23,12 +23,12 @@
 #include <linux/interrupt.h>
 #include <linux/delay.h>
 #include <linux/platform_device.h>
+#include "kd_flashlight_type.h"
 #include <linux/cdev.h>
 #include <linux/errno.h>
 #include <linux/time.h>
 #include <asm/io.h>
 #include <asm/uaccess.h>
-#include "kd_camera_typedef.h"
 #include <mach/upmu_sw.h>
 #endif
 #ifdef CONFIG_COMPAT
@@ -54,27 +54,20 @@
 #define logE(fmt, ...)    {printf("merror: %d ", __LINE__); printf(fmt, __VA_ARGS__); printf("\n"); }
 #else
 #define PFX "[KD_CAMERA_FLASHLIGHT]"
-#define PK_DBG_NONE(fmt, arg...)    do {} while (0)
 #define PK_DBG_FUNC(fmt, arg...)    pr_debug(PFX "%s: " fmt, __func__ , ##arg)
-
-#define PK_WARN(fmt, arg...)        pr_warn(PFX "%s: " fmt, __func__ , ##arg)
-#define PK_NOTICE(fmt, arg...)      pr_notice(PFX "%s: " fmt, __func__ , ##arg)
-#define PK_INFO(fmt, arg...)        pr_info(PFX "%s: " fmt, __func__ , ##arg)
-#define PK_TRC_FUNC(f)              pr_debug(PFX "<%s>\n", __func__)
-#define PK_TRC_VERBOSE(fmt, arg...) pr_debug(PFX fmt, ##arg)
 
 #define DEBUG_KD_STROBE
 #ifdef DEBUG_KD_STROBE
 #define logI PK_DBG_FUNC
-#define logE(fmt, arg...)         pr_err(PFX "%s: " fmt, __func__ , ##arg)
+#define logE PK_DBG_FUNC
 #else
 #define logI(a, ...)
 #define logE(a, ...)
 #endif
 #endif
 
-#define POWER_THROTTLING 0
-#define DLPT_FEATURE 0
+#define POWER_THROTTLING 1
+#define DLPT_FEATURE 1
 
 #if DLPT_FEATURE
 #include <mach/mt_pbm.h>
@@ -318,17 +311,6 @@ static int closeFlash(void)
 	return 0;
 }
 
-/* @@{ */
-
-/*
-#define LOW_BATTERY_LEVEL_0 0
-#define LOW_BATTERY_LEVEL_1 1
-#define LOW_BATTERY_LEVEL_2 2
-#define BATTERY_PERCENT_LEVEL_0 0
-#define BATTERY_PERCENT_LEVEL_1 1
-*/
-
-/* /}@@ */
 static int gLowPowerVbat = LOW_BATTERY_LEVEL_0;
 
 static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
@@ -354,7 +336,7 @@ static void Lbat_protection_powerlimit_flash(LOW_BATTERY_LEVEL level)
 
 
 static int gLowPowerPer = BATTERY_PERCENT_LEVEL_0;
-/*
+
 static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level)
 {
 	logI("bat_per_protection_powerlimit_flashlight %d (%d %d %d)\n", level,
@@ -367,14 +349,14 @@ static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level
 		closeFlash();
 		gLowPowerPer = BATTERY_PERCENT_LEVEL_1;
 	} else {
-*/
+
 		/*unlimit cpu and gpu*/
-/*
+
 	}
 }
-*/
 
-/*
+
+
 static int gLowPowerOc=BATTERY_OC_LEVEL_0;
 
 void bat_oc_protection_powerlimit(BATTERY_OC_LEVEL level)
@@ -382,16 +364,14 @@ void bat_oc_protection_powerlimit(BATTERY_OC_LEVEL level)
     logI("bat_oc_protection_powerlimit %d (%d %d %d)\n", level, BATTERY_OC_LEVEL_0, BATTERY_OC_LEVEL_1,__LINE__);
     logI("bat_oc_protection_powerlimit %d (%d %d %d)\n", level, BATTERY_OC_LEVEL_0, BATTERY_OC_LEVEL_1,__LINE__);
     if (level == BATTERY_OC_LEVEL_1){
-	// battery OC trigger CPU Limit to under 4 X 0.8G
 	closeFlash();
 	gLowPowerOc=BATTERY_OC_LEVEL_1;
     }
     else{
-	//unlimit cpu and gpu
 	gLowPowerOc=BATTERY_OC_LEVEL_0;
     }
 }
-*/
+
 
 #endif
 
@@ -807,7 +787,7 @@ static int __init flashlight_init(void)
 #if POWER_THROTTLING
 	register_low_battery_notify(&Lbat_protection_powerlimit_flash, LOW_BATTERY_PRIO_FLASHLIGHT);
 	register_battery_percent_notify(&bat_per_protection_powerlimit_flashlight, BATTERY_PERCENT_PRIO_FLASHLIGHT);
-/*	register_battery_oc_notify(&bat_oc_protection_powerlimit, BATTERY_OC_PRIO_FLASHLIGHT);*/
+	register_battery_oc_notify(&bat_oc_protection_powerlimit, BATTERY_OC_PRIO_FLASHLIGHT);
 #endif
 	logI("[flashlight_probe] done! ~");
 	return ret;
