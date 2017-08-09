@@ -78,7 +78,7 @@ typedef struct {
 
 
 enum eem_ctrl_id {
-	EEM_CTRL_LITTLE = 0,
+	EEM_CTRL_2LITTLE = 0,
 	EEM_CTRL_BIG = 1,
 	EEM_CTRL_CCI = 2,
 	EEM_CTRL_GPU = 3,
@@ -86,7 +86,7 @@ enum eem_ctrl_id {
 };
 
 enum eem_det_id {
-	EEM_DET_LITTLE	= EEM_CTRL_LITTLE,
+	EEM_DET_2LITTLE	= EEM_CTRL_2LITTLE,
 	EEM_DET_BIG = EEM_CTRL_BIG,
 	EEM_DET_CCI	= EEM_CTRL_CCI,
 	EEM_DET_GPU	= EEM_CTRL_GPU,
@@ -104,7 +104,7 @@ extern u32 get_devinfo_with_index(u32 index);
 
 #ifdef CONFIG_EEM_AEE_RR_REC
 enum eem_state {
-	EEM_CPU_LITTLE_IS_SET_VOLT = 0, /* L */
+	EEM_CPU_2LITTLE_IS_SET_VOLT = 0, /* 2L */
 	EEM_CPU_BIG_IS_SET_VOLT,		/* B */
 	EEM_CCI_IS_SET_VOLT,			/* CCI */
 	EEM_GPU_IS_SET_VOLT,            /* GPU */
