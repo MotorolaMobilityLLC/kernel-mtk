@@ -64,25 +64,26 @@ enum mtk_ddp_comp_id {
 struct mtk_ddp_comp;
 
 struct mtk_ddp_comp_funcs {
-	void (*config)(struct mtk_ddp_comp *comp, unsigned int w, unsigned int h,
-		       unsigned int vrefresh, unsigned int fifo_pseudo_size);
+	void (*config)(struct mtk_ddp_comp *comp, unsigned int w,
+		       unsigned int h, unsigned int vrefresh);
 	void (*start)(struct mtk_ddp_comp *comp);
 	void (*stop)(struct mtk_ddp_comp *comp);
 	void (*enable_vblank)(struct mtk_ddp_comp *comp);
 	void (*disable_vblank)(struct mtk_ddp_comp *comp);
 	void (*layer_on)(struct mtk_ddp_comp *comp, unsigned int idx);
 	void (*layer_off)(struct mtk_ddp_comp *comp, unsigned int idx);
-	void (*layer_config)(struct mtk_ddp_comp *comp, unsigned int ovl_addr,
-			    unsigned int idx, struct mtk_plane_state *state,
-			    unsigned int rgb888, unsigned int rgb565);
+	void (*layer_config)(struct mtk_ddp_comp *comp, unsigned int idx,
+			     struct mtk_plane_state *state);
 };
 
 struct mtk_ddp_comp_driver_data {
 	enum mtk_ddp_comp_type comp_type;
-	unsigned int reg_ovl_addr;
+	bool do_shadow_reg;
+	unsigned int ovl_addr_offset;
+	unsigned int ovl_fmt_rgb888;
+	unsigned int ovl_fmt_rgb565;
 	unsigned int rdma_fifo_pseudo_size;
-	unsigned int ovl_infmt_rgb888;
-	unsigned int ovl_infmt_rgb565;
+	unsigned int color_offset;
 };
 
 struct mtk_ddp_comp {
@@ -91,9 +92,8 @@ struct mtk_ddp_comp {
 	int irq;
 	struct device *larb_dev;
 	enum mtk_ddp_comp_id id;
-	bool do_shadow_reg;
 	const struct mtk_ddp_comp_funcs *funcs;
-	struct mtk_ddp_comp_driver_data *ddp_comp_driver_data;
+	struct mtk_ddp_comp_driver_data *data;
 };
 
 static inline void mtk_ddp_comp_config(struct mtk_ddp_comp *comp,
@@ -101,8 +101,7 @@ static inline void mtk_ddp_comp_config(struct mtk_ddp_comp *comp,
 				       unsigned int vrefresh)
 {
 	if (comp->funcs && comp->funcs->config)
-		comp->funcs->config(comp, w, h, vrefresh,
-		comp->ddp_comp_driver_data->rdma_fifo_pseudo_size);
+		comp->funcs->config(comp, w, h, vrefresh);
 }
 
 static inline void mtk_ddp_comp_start(struct mtk_ddp_comp *comp)
@@ -148,10 +147,7 @@ static inline void mtk_ddp_comp_layer_config(struct mtk_ddp_comp *comp,
 					     struct mtk_plane_state *state)
 {
 	if (comp->funcs && comp->funcs->layer_config)
-		comp->funcs->layer_config(comp,
-			comp->ddp_comp_driver_data->reg_ovl_addr, idx, state,
-			comp->ddp_comp_driver_data->ovl_infmt_rgb888,
-			comp->ddp_comp_driver_data->ovl_infmt_rgb565);
+		comp->funcs->layer_config(comp, idx, state);
 }
 
 int mtk_ddp_comp_get_id(struct device_node *node,

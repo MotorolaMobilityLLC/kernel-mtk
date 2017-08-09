@@ -192,7 +192,7 @@ static void mtk_drm_crtc_mode_set_nofb(struct drm_crtc *crtc)
 	wmb();	/* Make sure the above parameters are set before update */
 	state->pending_config = true;
 
-	if (ovl->do_shadow_reg)
+	if (ovl->data->do_shadow_reg)
 		mtk_ddp_comp_config(ovl, state->pending_width,
 				    state->pending_height,
 				    state->pending_vrefresh);
@@ -283,8 +283,7 @@ static int mtk_crtc_ddp_hw_init(struct mtk_drm_crtc *mtk_crtc)
 
 	DRM_DEBUG_DRIVER("mediatek_ddp_ddp_path_setup\n");
 	for (i = 0; i < mtk_crtc->ddp_comp_nr - 1; i++) {
-		mtk_ddp_add_comp_to_path(mtk_crtc->mutex,
-					 mtk_crtc->config_regs,
+		mtk_ddp_add_comp_to_path(mtk_crtc->config_regs,
 					 mtk_crtc->ddp_comp[i]->id,
 					 mtk_crtc->ddp_comp[i + 1]->id);
 		mtk_disp_mutex_add_comp(mtk_crtc->mutex,
@@ -323,8 +322,7 @@ static void mtk_crtc_ddp_hw_fini(struct mtk_drm_crtc *mtk_crtc)
 					   mtk_crtc->ddp_comp[i]->id);
 	mtk_disp_mutex_disable(mtk_crtc->mutex);
 	for (i = 0; i < mtk_crtc->ddp_comp_nr - 1; i++) {
-		mtk_ddp_remove_comp_from_path(mtk_crtc->mutex,
-					      mtk_crtc->config_regs,
+		mtk_ddp_remove_comp_from_path(mtk_crtc->config_regs,
 					      mtk_crtc->ddp_comp[i]->id,
 					      mtk_crtc->ddp_comp[i + 1]->id);
 		mtk_disp_mutex_remove_comp(mtk_crtc->mutex,
@@ -354,13 +352,13 @@ void mtk_crtc_plane_config(struct mtk_drm_plane *plane,
 
 	ovl = mtk_crtc->ddp_comp[0];
 
-	if (ovl->do_shadow_reg && !state->pending.enable)
+	if (ovl->data->do_shadow_reg && !state->pending.enable)
 		mtk_ddp_comp_layer_off(ovl, plane->idx);
 
-	if (ovl->do_shadow_reg)
+	if (ovl->data->do_shadow_reg)
 		mtk_ddp_comp_layer_config(ovl, plane->idx, state);
 
-	if (ovl->do_shadow_reg && state->pending.enable)
+	if (ovl->data->do_shadow_reg && state->pending.enable)
 		mtk_ddp_comp_layer_on(ovl, plane->idx);
 }
 
@@ -453,7 +451,7 @@ void mtk_drm_crtc_commit(struct drm_crtc *crtc)
 		}
 	}
 
-	if (ovl->do_shadow_reg) {
+	if (ovl->data->do_shadow_reg) {
 		mtk_ddp_get_mutex(mtk_crtc->mutex);
 		mtk_ddp_release_mutex(mtk_crtc->mutex);
 	}
@@ -536,7 +534,7 @@ void mtk_crtc_ddp_irq(struct drm_device *drm_dev, struct mtk_ddp_comp *ovl)
 	 * working registers in atomic_commit and let the hardware command
 	 * queue update module registers on vblank.
 	 */
-	if (!ovl->do_shadow_reg) {
+	if (!ovl->data->do_shadow_reg) {
 		if (state->pending_config) {
 			mtk_ddp_comp_config(ovl, state->pending_width,
 					    state->pending_height,

@@ -20,12 +20,10 @@ struct regmap;
 struct device;
 struct mtk_disp_mutex;
 
-void mtk_ddp_add_comp_to_path(struct mtk_disp_mutex *mutex,
-			      void __iomem *config_regs,
+void mtk_ddp_add_comp_to_path(void __iomem *config_regs,
 			      enum mtk_ddp_comp_id cur,
 			      enum mtk_ddp_comp_id next);
-void mtk_ddp_remove_comp_from_path(struct mtk_disp_mutex *mutex,
-				   void __iomem *config_regs,
+void mtk_ddp_remove_comp_from_path(void __iomem *config_regs,
 				   enum mtk_ddp_comp_id cur,
 				   enum mtk_ddp_comp_id next);
 

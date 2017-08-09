@@ -12,13 +12,17 @@
  */
 
 #include <linux/clk.h>
+#include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/regmap.h>
-#include <linux/delay.h>
+
 #include "mtk_drm_ddp.h"
 #include "mtk_drm_ddp_comp.h"
+
+#define MT2701					0x2701
+#define MT8173					0x8173
 
 #define DISP_REG_CONFIG_DISP_OVL0_MOUT_EN	0x040
 #define DISP_REG_CONFIG_DISP_OVL1_MOUT_EN	0x044
@@ -27,11 +31,13 @@
 #define DISP_REG_CONFIG_DISP_UFOE_MOUT_EN	0x050
 #define DISP_REG_CONFIG_DISP_COLOR0_SEL_IN	0x084
 #define DISP_REG_CONFIG_DISP_COLOR1_SEL_IN	0x088
-#define DISP_REG_CONFIG_DISP_OUT_SEL		0x04c
-#define DISP_REG_CONFIG_DPI_SEL			0x050
 #define DISP_REG_CONFIG_DPI_SEL_IN		0x0ac
 #define DISP_REG_CONFIG_DISP_RDMA1_MOUT_EN	0x0c8
 #define DISP_REG_CONFIG_MMSYS_CG_CON0		0x100
+
+#define DISP_REG_CONFIG_DISP_OVL_MOUT_EN	0x030
+#define DISP_REG_CONFIG_OUT_SEL			0x04c
+#define DISP_REG_CONFIG_DSI_SEL			0x050
 
 #define DISP_REG_MUTEX_EN(n)	(0x20 + 0x20 * (n))
 #define DISP_REG_MUTEX(n)	(0x24 + 0x20 * (n))
@@ -39,22 +45,28 @@
 #define DISP_REG_MUTEX_MOD(n)	(0x2c + 0x20 * (n))
 #define DISP_REG_MUTEX_SOF(n)	(0x30 + 0x20 * (n))
 
-#define MUTEX_MOD_DISP_BLS		BIT(9)
-#define MUTEX_MOD_DISP_OVL0		BIT(11)
-#define MUTEX_MOD_DISP_OVL1		BIT(12)
-#define MUTEX_MOD_DISP_RDMA0		BIT(13)
-#define MUTEX_MOD_DISP_RDMA1		BIT(14)
-#define MUTEX_MOD_DISP_RDMA2		BIT(15)
-#define MUTEX_MOD_DISP_WDMA0		BIT(16)
-#define MUTEX_MOD_DISP_WDMA1		BIT(17)
-#define MUTEX_MOD_DISP_COLOR0		BIT(18)
-#define MUTEX_MOD_DISP_COLOR1		BIT(19)
-#define MUTEX_MOD_DISP_AAL		BIT(20)
-#define MUTEX_MOD_DISP_GAMMA		BIT(21)
-#define MUTEX_MOD_DISP_UFOE		BIT(22)
-#define MUTEX_MOD_DISP_PWM0		BIT(23)
-#define MUTEX_MOD_DISP_PWM1		BIT(24)
-#define MUTEX_MOD_DISP_OD		BIT(25)
+#define MUTEX_MOD_MT8173_DISP_OVL0		BIT(11)
+#define MUTEX_MOD_MT8173_DISP_OVL1		BIT(12)
+#define MUTEX_MOD_MT8173_DISP_RDMA0		BIT(13)
+#define MUTEX_MOD_MT8173_DISP_RDMA1		BIT(14)
+#define MUTEX_MOD_MT8173_DISP_RDMA2		BIT(15)
+#define MUTEX_MOD_MT8173_DISP_WDMA0		BIT(16)
+#define MUTEX_MOD_MT8173_DISP_WDMA1		BIT(17)
+#define MUTEX_MOD_MT8173_DISP_COLOR0		BIT(18)
+#define MUTEX_MOD_MT8173_DISP_COLOR1		BIT(19)
+#define MUTEX_MOD_MT8173_DISP_AAL		BIT(20)
+#define MUTEX_MOD_MT8173_DISP_GAMMA		BIT(21)
+#define MUTEX_MOD_MT8173_DISP_UFOE		BIT(22)
+#define MUTEX_MOD_MT8173_DISP_PWM0		BIT(23)
+#define MUTEX_MOD_MT8173_DISP_PWM1		BIT(24)
+#define MUTEX_MOD_MT8173_DISP_OD		BIT(25)
+
+#define MUTEX_MOD_MT2701_DISP_OVL		BIT(3)
+#define MUTEX_MOD_MT2701_DISP_WDMA		BIT(6)
+#define MUTEX_MOD_MT2701_DISP_COLOR		BIT(7)
+#define MUTEX_MOD_MT2701_DISP_BLS		BIT(9)
+#define MUTEX_MOD_MT2701_DISP_RDMA0		BIT(10)
+#define MUTEX_MOD_MT2701_DISP_RDMA1		BIT(12)
 
 #define MUTEX_SOF_SINGLE_MODE		0
 #define MUTEX_SOF_DSI0			1
@@ -70,35 +82,10 @@
 #define RDMA1_MOUT_DPI0			0x2
 #define DPI0_SEL_IN_RDMA1		0x1
 #define COLOR1_SEL_IN_OVL1		0x1
-#define DISP_BLS_SOUT_SEL		0x0
-#define DISP_DSI_SIN_SEL		0x0
 
-struct mtk_ddp_driver_data {
-	unsigned int reg_config_disp_ovl0_mout_en;
-	unsigned int mutex_mod_disp_ovl0;
-	unsigned int mutex_mod_disp_rdma0;
-	unsigned int mutex_mod_disp_color0;
-};
-
-static struct mtk_ddp_driver_data mt8173_ddp_driver_data = {
-	.reg_config_disp_ovl0_mout_en = 0x040,
-	.mutex_mod_disp_ovl0 = BIT(11),
-	.mutex_mod_disp_rdma0 = BIT(13),
-	.mutex_mod_disp_color0 = BIT(18),
-};
-
-static struct mtk_ddp_driver_data mt2701_ddp_driver_data = {
-	.reg_config_disp_ovl0_mout_en = 0x030,
-	.mutex_mod_disp_ovl0 = BIT(3),
-	.mutex_mod_disp_rdma0 = BIT(10),
-	.mutex_mod_disp_color0 = BIT(7),
-};
-
-static const struct of_device_id ddp_driver_dt_match[] = {
-	{ .compatible = "mediatek,mt2701-disp-mutex", .data = &mt2701_ddp_driver_data},
-	{ .compatible = "mediatek,mt8173-disp-mutex", .data = &mt8173_ddp_driver_data},
-	{},
-};
+#define OVL_MOUT_EN_RDMA		0x1
+#define BLS_TO_DSI_RDMA1_TO_DPI1	0x8
+#define DSI_SEL_IN_BLS			0x0
 
 struct mtk_disp_mutex {
 	int id;
@@ -110,48 +97,48 @@ struct mtk_ddp {
 	struct clk			*clk;
 	void __iomem			*regs;
 	struct mtk_disp_mutex		mutex[10];
-	struct mtk_ddp_driver_data	*ddp_driver_data;
+	unsigned int			chip_id;
 };
 
-static const unsigned int mutex_mod[DDP_COMPONENT_ID_MAX] = {
-	[DDP_COMPONENT_AAL] = MUTEX_MOD_DISP_AAL,
-	[DDP_COMPONENT_COLOR0] = MUTEX_MOD_DISP_COLOR0,
-	[DDP_COMPONENT_COLOR1] = MUTEX_MOD_DISP_COLOR1,
-	[DDP_COMPONENT_GAMMA] = MUTEX_MOD_DISP_GAMMA,
-	[DDP_COMPONENT_OD] = MUTEX_MOD_DISP_OD,
-	[DDP_COMPONENT_OVL0] = MUTEX_MOD_DISP_OVL0,
-	[DDP_COMPONENT_OVL1] = MUTEX_MOD_DISP_OVL1,
-	[DDP_COMPONENT_PWM0] = MUTEX_MOD_DISP_PWM0,
-	[DDP_COMPONENT_PWM1] = MUTEX_MOD_DISP_PWM1,
-	[DDP_COMPONENT_RDMA0] = MUTEX_MOD_DISP_RDMA0,
-	[DDP_COMPONENT_RDMA1] = MUTEX_MOD_DISP_RDMA1,
-	[DDP_COMPONENT_RDMA2] = MUTEX_MOD_DISP_RDMA2,
-	[DDP_COMPONENT_UFOE] = MUTEX_MOD_DISP_UFOE,
-	[DDP_COMPONENT_WDMA0] = MUTEX_MOD_DISP_WDMA0,
-	[DDP_COMPONENT_WDMA1] = MUTEX_MOD_DISP_WDMA1,
-	[DDP_COMPONENT_BLS] = MUTEX_MOD_DISP_BLS,
+static const unsigned int mutex_mod_mt2701[DDP_COMPONENT_ID_MAX] = {
+	[DDP_COMPONENT_BLS] = MUTEX_MOD_MT2701_DISP_BLS,
+	[DDP_COMPONENT_COLOR0] = MUTEX_MOD_MT2701_DISP_COLOR,
+	[DDP_COMPONENT_OVL0] = MUTEX_MOD_MT2701_DISP_OVL,
+	[DDP_COMPONENT_RDMA0] = MUTEX_MOD_MT2701_DISP_RDMA0,
+	[DDP_COMPONENT_RDMA1] = MUTEX_MOD_MT2701_DISP_RDMA1,
+	[DDP_COMPONENT_WDMA0] = MUTEX_MOD_MT2701_DISP_WDMA,
 };
 
-static inline struct mtk_ddp_driver_data *mtk_ddp_get_driver_data(
-	struct platform_device *pdev)
-{
-	const struct of_device_id *of_id =
-		of_match_device(ddp_driver_dt_match, &pdev->dev);
+static const unsigned int mutex_mod_mt8173[DDP_COMPONENT_ID_MAX] = {
+	[DDP_COMPONENT_AAL] = MUTEX_MOD_MT8173_DISP_AAL,
+	[DDP_COMPONENT_COLOR0] = MUTEX_MOD_MT8173_DISP_COLOR0,
+	[DDP_COMPONENT_COLOR1] = MUTEX_MOD_MT8173_DISP_COLOR1,
+	[DDP_COMPONENT_GAMMA] = MUTEX_MOD_MT8173_DISP_GAMMA,
+	[DDP_COMPONENT_OD] = MUTEX_MOD_MT8173_DISP_OD,
+	[DDP_COMPONENT_OVL0] = MUTEX_MOD_MT8173_DISP_OVL0,
+	[DDP_COMPONENT_OVL1] = MUTEX_MOD_MT8173_DISP_OVL1,
+	[DDP_COMPONENT_PWM0] = MUTEX_MOD_MT8173_DISP_PWM0,
+	[DDP_COMPONENT_PWM1] = MUTEX_MOD_MT8173_DISP_PWM1,
+	[DDP_COMPONENT_RDMA0] = MUTEX_MOD_MT8173_DISP_RDMA0,
+	[DDP_COMPONENT_RDMA1] = MUTEX_MOD_MT8173_DISP_RDMA1,
+	[DDP_COMPONENT_RDMA2] = MUTEX_MOD_MT8173_DISP_RDMA2,
+	[DDP_COMPONENT_UFOE] = MUTEX_MOD_MT8173_DISP_UFOE,
+	[DDP_COMPONENT_WDMA0] = MUTEX_MOD_MT8173_DISP_WDMA0,
+	[DDP_COMPONENT_WDMA1] = MUTEX_MOD_MT8173_DISP_WDMA1,
+};
 
-	return (struct mtk_ddp_driver_data *)of_id->data;
-}
-
-static unsigned int mtk_ddp_mout_en(
-			    struct mtk_ddp_driver_data *ddp_driver_data,
-enum mtk_ddp_comp_id cur,
+static unsigned int mtk_ddp_mout_en(enum mtk_ddp_comp_id cur,
 				    enum mtk_ddp_comp_id next,
 				    unsigned int *addr)
 {
 	unsigned int value;
 
 	if (cur == DDP_COMPONENT_OVL0 && next == DDP_COMPONENT_COLOR0) {
-		*addr = ddp_driver_data->reg_config_disp_ovl0_mout_en;
+		*addr = DISP_REG_CONFIG_DISP_OVL0_MOUT_EN;
 		value = OVL0_MOUT_EN_COLOR0;
+	} else if (cur == DDP_COMPONENT_OVL0 && next == DDP_COMPONENT_RDMA0) {
+		*addr = DISP_REG_CONFIG_DISP_OVL_MOUT_EN;
+		value = OVL_MOUT_EN_RDMA;
 	} else if (cur == DDP_COMPONENT_OD && next == DDP_COMPONENT_RDMA0) {
 		*addr = DISP_REG_CONFIG_DISP_OD_MOUT_EN;
 		value = OD_MOUT_EN_RDMA0;
@@ -167,9 +154,6 @@ enum mtk_ddp_comp_id cur,
 	} else if (cur == DDP_COMPONENT_RDMA1 && next == DDP_COMPONENT_DPI0) {
 		*addr = DISP_REG_CONFIG_DISP_RDMA1_MOUT_EN;
 		value = RDMA1_MOUT_DPI0;
-	} else if (cur == DDP_COMPONENT_OVL0 && next == DDP_COMPONENT_RDMA0) {
-		*addr = ddp_driver_data->reg_config_disp_ovl0_mout_en;
-		value = OD_MOUT_EN_RDMA0;
 	} else {
 		value = 0;
 	}
@@ -192,6 +176,9 @@ static unsigned int mtk_ddp_sel_in(enum mtk_ddp_comp_id cur,
 	} else if (cur == DDP_COMPONENT_OVL1 && next == DDP_COMPONENT_COLOR1) {
 		*addr = DISP_REG_CONFIG_DISP_COLOR1_SEL_IN;
 		value = COLOR1_SEL_IN_OVL1;
+	} else if (cur == DDP_COMPONENT_BLS && next == DDP_COMPONENT_DSI0) {
+		*addr = DISP_REG_CONFIG_DSI_SEL;
+		value = DSI_SEL_IN_BLS;
 	} else {
 		value = 0;
 	}
@@ -199,45 +186,43 @@ static unsigned int mtk_ddp_sel_in(enum mtk_ddp_comp_id cur,
 	return value;
 }
 
-void mtk_ddp_add_comp_to_path(struct mtk_disp_mutex *mutex,
-			      void __iomem *config_regs,
-			      enum mtk_ddp_comp_id cur,
-			      enum mtk_ddp_comp_id next)
+static void mtk_ddp_mux_sel(void __iomem *config_regs,
+			    enum mtk_ddp_comp_id cur, enum mtk_ddp_comp_id next)
 {
-	struct mtk_ddp *ddp = container_of(mutex, struct mtk_ddp,
-					   mutex[mutex->id]);
-	unsigned int addr, value, reg;
-
-	value = mtk_ddp_mout_en(ddp->ddp_driver_data, cur, next, &addr);
-	if (value) {
-		reg = readl_relaxed(config_regs + addr) | value;
-		writel_relaxed(reg, config_regs + addr);
-	}
-
-	value = mtk_ddp_sel_in(cur, next, &addr);
-	if (value) {
-		reg = readl_relaxed(config_regs + addr) | value;
-		writel_relaxed(reg, config_regs + addr);
-	}
-
 	if (cur == DDP_COMPONENT_BLS && next == DDP_COMPONENT_DSI0) {
-		writel_relaxed(DISP_BLS_SOUT_SEL,
-				config_regs + DISP_REG_CONFIG_DISP_OUT_SEL);
-		writel_relaxed(DISP_DSI_SIN_SEL,
-				config_regs + DISP_REG_CONFIG_DPI_SEL);
+		writel_relaxed(BLS_TO_DSI_RDMA1_TO_DPI1,
+			       config_regs + DISP_REG_CONFIG_OUT_SEL);
 	}
 }
 
-void mtk_ddp_remove_comp_from_path(struct mtk_disp_mutex *mutex,
-				   void __iomem *config_regs,
+void mtk_ddp_add_comp_to_path(void __iomem *config_regs,
+			      enum mtk_ddp_comp_id cur,
+			      enum mtk_ddp_comp_id next)
+{
+	unsigned int addr, value, reg;
+
+	value = mtk_ddp_mout_en(cur, next, &addr);
+	if (value) {
+		reg = readl_relaxed(config_regs + addr) | value;
+		writel_relaxed(reg, config_regs + addr);
+	}
+
+	mtk_ddp_mux_sel(config_regs, cur, next);
+
+	value = mtk_ddp_sel_in(cur, next, &addr);
+	if (value) {
+		reg = readl_relaxed(config_regs + addr) | value;
+		writel_relaxed(reg, config_regs + addr);
+	}
+}
+
+void mtk_ddp_remove_comp_from_path(void __iomem *config_regs,
 				   enum mtk_ddp_comp_id cur,
 				   enum mtk_ddp_comp_id next)
 {
-	struct mtk_ddp *ddp = container_of(mutex, struct mtk_ddp,
-					   mutex[mutex->id]);
 	unsigned int addr, value, reg;
 
-	value = mtk_ddp_mout_en(ddp->ddp_driver_data, cur, next, &addr);
+	value = mtk_ddp_mout_en(cur, next, &addr);
 	if (value) {
 		reg = readl_relaxed(config_regs + addr) & ~value;
 		writel_relaxed(reg, config_regs + addr);
@@ -247,16 +232,6 @@ void mtk_ddp_remove_comp_from_path(struct mtk_disp_mutex *mutex,
 	if (value) {
 		reg = readl_relaxed(config_regs + addr) & ~value;
 		writel_relaxed(reg, config_regs + addr);
-	}
-
-	if (cur == DDP_COMPONENT_BLS && next == DDP_COMPONENT_DSI0) {
-		reg = readl_relaxed(config_regs + DISP_REG_CONFIG_DISP_OUT_SEL)
-					& ~DISP_BLS_SOUT_SEL;
-		writel_relaxed(reg,
-				config_regs + DISP_REG_CONFIG_DISP_OUT_SEL);
-		reg = readl_relaxed(config_regs + DISP_REG_CONFIG_DPI_SEL)
-					& ~DISP_DSI_SIN_SEL;
-		writel_relaxed(reg, config_regs + DISP_REG_CONFIG_DPI_SEL);
 	}
 }
 
@@ -298,12 +273,28 @@ void mtk_disp_mutex_unprepare(struct mtk_disp_mutex *mutex)
 	clk_disable_unprepare(ddp->clk);
 }
 
+static const unsigned int *mtk_disp_mutex_mod(struct mtk_ddp *ddp)
+{
+	switch (ddp->chip_id) {
+	case MT8173:
+		return mutex_mod_mt8173;
+	case MT2701:
+		return mutex_mod_mt2701;
+	default:
+		return NULL;
+	}
+}
+
 void mtk_disp_mutex_add_comp(struct mtk_disp_mutex *mutex,
 			     enum mtk_ddp_comp_id id)
 {
 	struct mtk_ddp *ddp = container_of(mutex, struct mtk_ddp,
 					   mutex[mutex->id]);
 	unsigned int reg;
+	const unsigned int *mutex_mod = mtk_disp_mutex_mod(ddp);
+
+	if (!mutex_mod)
+		return;
 
 	WARN_ON(&ddp->mutex[mutex->id] != mutex);
 
@@ -333,6 +324,10 @@ void mtk_disp_mutex_remove_comp(struct mtk_disp_mutex *mutex,
 	struct mtk_ddp *ddp = container_of(mutex, struct mtk_ddp,
 					   mutex[mutex->id]);
 	unsigned int reg;
+	const unsigned int *mutex_mod = mtk_disp_mutex_mod(ddp);
+
+	if (!mutex_mod)
+		return;
 
 	WARN_ON(&ddp->mutex[mutex->id] != mutex);
 
@@ -385,12 +380,10 @@ void mtk_ddp_get_mutex(struct mtk_disp_mutex *mutex)
 	reg &= ~(0x1U);
 	writel(reg, ddp->regs + 4);
 
-	while (((readl(ddp->regs + DISP_REG_MUTEX(mutex->id)) & 0x2) !=
-		0x2)) {
-		cnt++;
-		udelay(1);
-		if (cnt > 10000)
+	while (!(readl(ddp->regs + DISP_REG_MUTEX(mutex->id)) & 0x2)) {
+		if (cnt++ > 10000)
 			break;
+		udelay(1);
 	}
 }
 
@@ -402,8 +395,16 @@ void mtk_ddp_release_mutex(struct mtk_disp_mutex *mutex)
 	writel(0, ddp->regs + DISP_REG_MUTEX(mutex->id));
 }
 
+static const struct of_device_id ddp_driver_dt_match[] = {
+	{ .compatible = "mediatek,mt2701-disp-mutex", .data = (void *)MT2701},
+	{ .compatible = "mediatek,mt8173-disp-mutex", .data = (void *)MT8173},
+	{},
+};
+MODULE_DEVICE_TABLE(of, ddp_driver_dt_match);
+
 static int mtk_ddp_probe(struct platform_device *pdev)
 {
+	const struct of_device_id *of_id;
 	struct device *dev = &pdev->dev;
 	struct mtk_ddp *ddp;
 	struct resource *regs;
@@ -429,7 +430,8 @@ static int mtk_ddp_probe(struct platform_device *pdev)
 		return PTR_ERR(ddp->regs);
 	}
 
-	ddp->ddp_driver_data = mtk_ddp_get_driver_data(pdev);
+	of_id = of_match_device(ddp_driver_dt_match, &pdev->dev);
+	ddp->chip_id = (unsigned int)of_id->data;
 
 	platform_set_drvdata(pdev, ddp);
 
@@ -440,8 +442,6 @@ static int mtk_ddp_remove(struct platform_device *pdev)
 {
 	return 0;
 }
-
-MODULE_DEVICE_TABLE(of, ddp_driver_dt_match);
 
 static struct platform_driver mtk_ddp_driver = {
 	.probe		= mtk_ddp_probe,
