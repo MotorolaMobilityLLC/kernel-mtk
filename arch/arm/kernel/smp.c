@@ -53,7 +53,7 @@
 #include "mt_sched_mon.h"
 #endif
 #include <mt-plat/mtk_ram_console.h>
-#ifdef CONFIG_ARCH_MT6580
+#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
 #include "hotplug.h"
 #endif
 
