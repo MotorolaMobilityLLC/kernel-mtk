@@ -1982,14 +1982,18 @@ enum top_ckmuxsel mt_cpufreq_get_clock_switch(enum mt_cpu_dvfs_id id)
 #define POS_SETTLE_TIME (2)
 static void adjust_armpll_dds(struct mt_cpu_dvfs *p, unsigned int vco, unsigned int pos_div)
 {
-	unsigned int cur_volt;
+	unsigned int cur_volt = 0;
+	int restore_volt = 0;
 	unsigned int dds;
 	int shift;
 	unsigned int reg;
 
-	if (0) {
+	if (cpu_dvfs_is(p, MT_CPU_DVFS_B)) {
 		cur_volt = p->ops->get_cur_volt(p);
-		p->ops->set_cur_volt(p, cpu_dvfs_get_volt_by_idx(p, 0));
+		if (cur_volt < cpu_dvfs_get_volt_by_idx(p, 9)) {
+			restore_volt = 1;
+			p->ops->set_cur_volt(p, cpu_dvfs_get_volt_by_idx(p, 9));
+		}
 	}
 	_cpu_clock_switch(p, TOP_CKMUXSEL_MAINPLL);
 
@@ -2015,13 +2019,13 @@ static void adjust_armpll_dds(struct mt_cpu_dvfs *p, unsigned int vco, unsigned 
 	udelay(PLL_SETTLE_TIME);
 	_cpu_clock_switch(p, TOP_CKMUXSEL_ARMPLL);
 
-	if (0)
+	if (restore_volt > 0)
 		p->ops->set_cur_volt(p, cur_volt);
 }
 
 static void adjust_posdiv(struct mt_cpu_dvfs *p, unsigned int pos_div)
 {
-	unsigned int cur_volt;
+	unsigned int cur_volt = 0;
 	unsigned int dds;
 	int shift;
 	unsigned int reg;
@@ -3266,7 +3270,7 @@ static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target
 	unsigned int new_opp_idx;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
-
+	return 0;
 	if (policy->cpu >= num_possible_cpus()
 	    || cpufreq_frequency_table_target(policy, id_to_cpu_dvfs(id)->freq_tbl_for_cpufreq,
 					      target_freq, relation, &new_opp_idx)
@@ -4282,7 +4286,7 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	int i;
 
 	FUNC_ENTER(FUNC_LV_MODULE);
-	return 0;
+
 	mt_cpufreq_dts_map();
 	cluster_num = (unsigned int)arch_get_nr_clusters();
 	for (i = 0; i < cluster_num; i++) {
