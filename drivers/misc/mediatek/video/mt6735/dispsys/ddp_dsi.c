@@ -49,7 +49,7 @@ static void __iomem *ddp_apmixed_base;
 #define AP_PLL_CON0 (ddp_apmixed_base + 0x00)
 #endif
 
-#define DRV_REG32(reg)                          (*(volatile unsigned int* const)(reg))
+#define DRV_Reg32(addr)                          (*(volatile unsigned int* const)(addr))
 #define clk_readl(addr) DRV_Reg32(addr)
 #define clk_writel(addr, val) mt_reg_sync_writel(val, addr)
 #define clk_setl(addr, val) mt_reg_sync_writel(clk_readl(addr) | (val), addr)
