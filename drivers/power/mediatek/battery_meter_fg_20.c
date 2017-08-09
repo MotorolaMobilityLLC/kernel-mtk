@@ -1315,9 +1315,6 @@ signed int fgauge_get_Q_max(signed short temperature)
 		high_temperature = TEMPERATURE_T2;
 		tmp_Q_max_2 = g_Q_MAX_POS_25[g_fg_battery_id];
 
-		if (temperature < low_temperature)
-			temperature = low_temperature;
-
 	} else {
 		low_temperature = TEMPERATURE_T2;
 		tmp_Q_max_1 = g_Q_MAX_POS_25[g_fg_battery_id];
