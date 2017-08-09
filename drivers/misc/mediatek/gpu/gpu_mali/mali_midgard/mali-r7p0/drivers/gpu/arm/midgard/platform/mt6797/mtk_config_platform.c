@@ -142,6 +142,16 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 		dev_err(kbdev->dev, "polling fail: idle rem:%d - MFG_DBUG_A=%x\n", polling_retry, MFG_read32(MFG_DEBUG_A));
 	}
 
+	/* hard reset */
+	kbase_os_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), GPU_COMMAND_HARD_RESET);
+	/* polling mfg idle again */
+	MFG_write32(MFG_DEBUG_SEL, 0x3);
+	while ((MFG_read32(MFG_DEBUG_A) & MFG_DEBUG_IDEL) != MFG_DEBUG_IDEL && --polling_retry);
+	if (polling_retry <= 0)
+	{
+		dev_err(kbdev->dev, "polling fail: idle rem:%d - MFG_DBUG_A=%x\n", polling_retry, MFG_read32(MFG_DEBUG_A));
+	}
+
 #ifdef MTK_GPU_OCP
 	MFG_write32(MFG_OCP_DCM_CON, 0x0);
 #endif
@@ -150,7 +160,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	mtk_kbase_spm_acquire();
 	mtk_kbase_spm_con(0, SPM_RSV_BIT_EN);
 	mtk_kbase_spm_wait();
-	mtk_kbase_spm_release(); 
+	mtk_kbase_spm_release();
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
 	MTKCLK_disable_unprepare(clk_gpupm);
 #endif
