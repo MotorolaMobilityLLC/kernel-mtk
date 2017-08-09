@@ -91,7 +91,7 @@ static bool s5k2x8_selective_read_eeprom(kal_uint16 addr, BYTE* data)
 static bool s5k2x8_read_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
 	int i = 0;
 	//int offset = addr;
-	int offset = 0x1689;
+	int offset = 0x5DB;
 	//for(i = 0; i < 1404; i++) {
 	for(i = 0; i < 1404; i++) {
 		if(!s5k2x8_selective_read_eeprom(offset, &data[i])){
