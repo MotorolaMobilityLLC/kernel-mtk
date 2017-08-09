@@ -1019,13 +1019,13 @@
 			compatible = "mediatek,m4u";
 			reg = <0x10205000 0x1000>;
 			interrupts = <GIC_SPI 147 IRQ_TYPE_LEVEL_LOW>;
-			clocks = <&mmsys MM_DISP0_SMI_COMMON_M4U>,
-				<&mmsys MM_DISP0_SMI_LARB0_M4U>,
+			clocks = <&mmsys MM_DISP0_SMI_COMMON>,
+				<&mmsys MM_DISP0_SMI_LARB0>,
 				<&vdecsys VDEC0_VDEC>,
-				<&vdecsys VDEC1_LARB_M4U>,
-				<&imgsys IMG_IMAGE_LARB2_SMI_M4U>,
+				<&vdecsys VDEC1_LARB>,
+				<&imgsys IMG_IMAGE_LARB2_SMI>,
 				<&vencsys VENC_VENC>,
-				<&vencsys VENC_LARB_M4U>;
+				<&vencsys VENC_LARB>;
 			clock-names = "smi_common",
 				"m4u_disp0_smi_larb0",
 				"m4u_vdec0_vdec",
@@ -1790,7 +1790,7 @@
 					<GIC_SPI 216 IRQ_TYPE_LEVEL_LOW>;
 			interrupt-names = "JOB", "MMU", "GPU";
 			clock-frequency = <700000000>;
-			clocks = <&mfgsys MFG_BG3D>, <&mmsys MM_DISP0_SMI_COMMON_MALI>,
+			clocks = <&mfgsys MFG_BG3D>, <&mmsys MM_DISP0_SMI_COMMON>,
 				<&scpsys SCP_SYS_MFG>, <&scpsys SCP_SYS_DIS>;
 			clock-names = "mfg-main", "mfg-smi-common", "mtcmos-mfg", "mtcmos-display";
 		};
