@@ -464,6 +464,7 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 
 static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 {
+#if 0
 	void __iomem *base;
 	struct msdc_host *host;
 
@@ -491,6 +492,7 @@ static int simple_sd_ioctl_get_driving(struct msdc_ioctl *msdc_ctl)
 	pr_debug("read: dat driving is 0x%x\n", msdc_ctl->dat_pu_driving);
 	pr_debug("read: rst driving is 0x%x\n", msdc_ctl->rst_pu_driving);
 	pr_debug("read: ds driving is 0x%x\n", msdc_ctl->ds_pu_driving);
+#endif
 #endif
 
 	return 0;

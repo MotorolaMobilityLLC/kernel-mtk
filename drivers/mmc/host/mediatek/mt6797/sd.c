@@ -5438,11 +5438,10 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	host->power_mode	= MMC_POWER_OFF;
 	host->power_control	= NULL;
 	host->power_switch	= NULL;
-#ifndef CONFIG_MTK_CLKMGR
+
 #ifndef FPGA_PLATFORM
 	if (msdc_get_ccf_clk_pointer(pdev, host))
 		return 1;
-#endif
 #endif
 
 	msdc_set_host_power_control(host);
@@ -5629,7 +5628,6 @@ static int msdc_drv_probe(struct platform_device *pdev)
 #endif
 
 #ifdef MTK_MSDC_BRINGUP_DEBUG
-
 	pr_debug("[%s]: msdc%d, mmc->caps=0x%x, mmc->caps2=0x%x\n",
 		__func__, host->id, mmc->caps, mmc->caps2);
 	msdc_dump_clock_sts(host);

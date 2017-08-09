@@ -11,9 +11,8 @@
 #include <linux/mmc/host.h>
 #include <mt-plat/sync_write.h>
 #include <linux/slab.h>
-#if !defined(CONFIG_MTK_LEGACY)
 #include <linux/clk.h>
-#endif /* !defined(CONFIG_MTK_LEGACY) */
+
 #include "board.h"
 #define MSDC_DMA_ADDR_DEBUG
 /*#define MSDC_HQA*/
@@ -740,8 +739,8 @@ int mt_eint_get_polarity_external(unsigned int irq_num);
  * ask pwrap owner to add these 2 functions to a header file,
  * shall be in <mach/mt_pmic_wrap.h>, but commented-out in that file */
 #ifndef FPGA_PLATFORM
-S32 pwrap_read_nochk(U32  adr, U32 *rdata);
-S32 pwrap_write_nochk(U32  adr, U32  wdata);
+s32 pwrap_read_nochk(u32  adr, u32 *rdata);
+s32 pwrap_write_nochk(u32  adr, u32  wdata);
 #endif
 
 #define MET_USER_EVENT_SUPPORT

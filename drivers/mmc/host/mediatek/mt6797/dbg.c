@@ -29,8 +29,7 @@
 #include "mt_sd.h"
 #include "dbg.h"
 #ifndef FPGA_PLATFORM
-#include <mach/mt_clkmgr.h>
-#include <mach/upmu_common.h>
+#include <mt-plat/upmu_common.h>
 #endif
 #ifdef MTK_MSDC_BRINGUP_DEBUG
 #include <mach/mt_pmic_wrap.h>
@@ -1197,7 +1196,7 @@ static int msdc_help_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "\n   DMA viloation:         echo %x [host_id] [ops]> msdc_debug\n",
 		SD_TOOL_DMA_STATUS);
 	seq_puts(m, "          [ops]              0:get latest dma address, 1:start violation test\n");
-	seq_printf(m, "\n   SET Slew Rate:         echo %x [host_id] [clk] [cmd] [dat] [rst] [ds]> msdc_debug\n",
+	seq_printf(m, "\n   SET Slew Rate:         echo %x [host_id] [clk] [cmd] [dat]> msdc_debug\n",
 		SD_TOOL_ENABLE_SLEW_RATE);
 	seq_puts(m, "\n   TD/RD SEL:\n");
 	seq_printf(m, "          set rdsel:             echo %x [host_id] 0 [value] > msdc_debug\n",
@@ -1816,13 +1815,12 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			goto invalid_host_id;
 		host = mtk_msdc_host[id];
 		if ((unsigned char)p2 > 1 || (unsigned char)p3 > 1
-		 || (unsigned char)p4 > 1 || (unsigned char)p5 > 1
-		 || (unsigned char)p6 > 1) {
+				|| (unsigned char)p4 > 1) {
 			seq_puts(m, "[SD_Debug]Some sr value was invalid(correct:0(disable),1(enable))\n");
 		} else {
-			msdc_set_sr(host, p2, p3, p4, p5, p6);
-			seq_printf(m, "[SD_Debug]msdc%d, clk_sr=%d, cmd_sr=%d, dat_sr=%d, rst_sr=%d, ds_sr=%d\n",
-				id, p2, p3, p4, p5, p6);
+			msdc_set_sr(host, p2, p3, p4);
+			seq_printf(m, "[SD_Debug]msdc%d, clk_sr=%d, cmd_sr=%d, dat_sr=%d\n",
+				id, p2, p3, p4);
 		}
 		break;
 	case SD_TOOL_SET_RDTDSEL:
@@ -2198,6 +2196,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 	return 0;
 invalid_host_id:
 	seq_printf(m, "[SD_Debug]invalid host id: %d\n", id);
+	return 1;
 }
 #ifdef MTK_MSDC_ERROR_TUNE_DEBUG
 #define MTK_MSDC_ERROR_NONE	(0)
