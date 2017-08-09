@@ -23,6 +23,13 @@ config MTK_INTERNAL
 	  Identify if codebase is built with MTK internal debug
 	  (Don't modify this feature option setting.)
 
+config FPGA_EARLY_PORTING
+	bool "FPGA_EARLY_PORTING"
+	help
+	   Used for FPGA early porting to separate code segments between FPGA
+	   platform and non-FPGA platform
+
+
 endif
 
 config MTK_MEM
