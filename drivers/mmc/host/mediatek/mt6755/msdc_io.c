@@ -93,7 +93,7 @@ int msdc_regulator_set_and_enable(struct regulator *reg, int powerVolt)
 	return regulator_enable(reg);
 }
 
-u32 msdc_ldo_power(u32 on, struct regulator *reg, int voltage_mv, u32 *status)
+void msdc_ldo_power(u32 on, struct regulator *reg, int voltage_mv, u32 *status)
 {
 	int voltage_uv = voltage_mv * 1000;
 
@@ -106,7 +106,7 @@ u32 msdc_ldo_power(u32 on, struct regulator *reg, int voltage_mv, u32 *status)
 			msdc_regulator_set_and_enable(reg, voltage_uv);
 			*status = voltage_uv;
 		} else if (*status == voltage_uv) {
-			pr_err("msdc power on again!\n", voltage_uv);
+			pr_err("msdc power on <%d> again!\n", voltage_uv);
 		} else {
 			pr_warn("msdc change<%d> to <%d>\n",
 				*status, voltage_uv);
