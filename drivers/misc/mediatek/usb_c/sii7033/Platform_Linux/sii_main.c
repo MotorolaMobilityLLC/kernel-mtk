@@ -36,7 +36,7 @@ struct gpio sii70xx_gpio[NUM_GPIO] = {
 	{GPIO_RESET_CTRL, GPIOF_OUT_INIT_HIGH, "RESET_CTRL_En"}
 };
 
-#ifndef USB_C_SWITCH_SII70XX_MHL_MODE
+#ifndef CONFIG_USB_C_SWITCH_SII70XX_MHL_MODE
 int drp_mode = DRP;
 #else
 int drp_mode = DFP;
