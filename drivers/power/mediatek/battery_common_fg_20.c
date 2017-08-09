@@ -2935,6 +2935,9 @@ int bat_update_thread(void *x)
 	/* Run on a process content */
 	while (1) {
 		mutex_lock(&bat_update_mutex);
+#ifdef USING_SMOOTH_UI_SOC2
+		battery_meter_smooth_uisoc2();
+#endif
 		mt_battery_update_status();
 		mutex_unlock(&bat_update_mutex);
 

@@ -239,13 +239,16 @@ struct battery_meter_custom_data {
 	int shutdown_gauge1_xmins;
 	int shutdown_gauge1_mins;
 
+	int tracking_gap;
+	int trackingoffset;
+	int trackingen;
+
 	int min_charging_smooth_time;
 
 	int embedded_battery;
 
 	/* SW Fuel gauge */
 	int apsleep_battery_voltage_compensate;
-
 
 };
 
@@ -316,6 +319,9 @@ typedef enum {
 	FG_DAEMON_CMD_GET_SUSPEND_TIME,
 	FG_DAEMON_CMD_GET_SUSPEND_CAR,
 	FG_DAEMON_CMD_IS_HW_OCV_UPDATE,
+	FG_DAEMON_CMD_SET_SWSOC,
+	FG_DAEMON_CMD_SET_HWSOC,
+	FG_DAEMON_CMD_SET_VBATSOC,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 } FG_DAEMON_CTRL_CMD_FROM_USER;
@@ -378,7 +384,9 @@ extern signed int battery_meter_get_battery_nPercent_UI_SOC(void);	/* tracking p
 extern signed int battery_meter_get_tempR(signed int dwVolt);
 extern signed int battery_meter_get_tempV(void);
 extern signed int battery_meter_get_VSense(void);/* isense voltage */
+extern void battery_meter_smooth_uisoc2(void);
 extern int wakeup_fg_algo(int flow_state);
+extern int dod_init_in_kernel(void);
 
 #if defined(CUST_CAPACITY_OCV2CV_TRANSFORM)
 extern void battery_meter_set_reset_soc(kal_bool bUSE_UI_SOC);

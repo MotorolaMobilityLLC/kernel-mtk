@@ -80,9 +80,12 @@
 #define R_FG_VALUE	10 /* mOhm, base is 20*/
 
 /* fg 2.0 */
-#define DIFFERENCE_HWOCV_RTC	30
-#define DIFFERENCE_HWOCV_SWOCV	10
-#define DIFFERENCE_SWOCV_RTC	10
+#define DIFFERENCE_HWOCV_RTC		30
+#define DIFFERENCE_HWOCV_SWOCV		10
+#define DIFFERENCE_SWOCV_RTC		10
+#define DIFFERENCE_HWOCV_VBAT		30
+#define DIFFERENCE_VBAT_RTC			30
+#define DIFFERENCE_SWOCV_RTC_POS	15
 #define MAX_SWOCV	3
 
 #define DIFFERENCE_VOLTAGE_UPDATE	20
@@ -105,7 +108,6 @@
 /* SW Fuel Gauge */
 #define MAX_HWOCV	5
 #define MAX_VBAT	90
-#define DIFFERENCE_HWOCV_VBAT	30
 
 /* fg 1.0 */
 #define CUST_POWERON_DELTA_CAPACITY_TOLRANCE	40
@@ -144,5 +146,15 @@
 #define FG_BAT_INT
 #define IS_BATTERY_REMOVE_BY_PMIC
 
+/* Calculate do in Kernel */
+/* #define FORCE_D0_IN_KERNEL */
+
+/* Use UI_SOC3 to smooth UI_SOC2 */
+/* #define USING_SMOOTH_UI_SOC2 */
+
+/* SOC track to SWOCV */
+#define CUST_TRACKING_GAP		15	/* start tracking gap */
+#define CUST_TRACKINGOFFSET		0	/* Force offset to shift SOC to 0 */
+#define CUST_TRACKINGEN			0	/* 0:disable, 1:enable */
 
 #endif
