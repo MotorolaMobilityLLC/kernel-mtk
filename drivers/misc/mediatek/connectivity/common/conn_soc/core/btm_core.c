@@ -28,6 +28,7 @@
 #define STP_BTM_LOG_ERR                  0
 
 INT32 gBtmDbgLevel = STP_BTM_LOG_INFO;
+INT32 host_trigger_assert_flag = 0;
 
 #define STP_BTM_LOUD_FUNC(fmt, arg...) \
 do { \
@@ -434,7 +435,7 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 		}
 
 		STP_BTM_INFO_FUNC("whole chip reset end!\n");
-
+		host_trigger_assert_flag = 0;
 		break;
 
 	case STP_OPID_BTM_DBG_DUMP:
@@ -1255,6 +1256,9 @@ INT32 stp_notify_btm_poll_cpupcr_ctrl(UINT32 en)
 INT32 stp_notify_btm_do_fw_assert_via_emi(MTKSTP_BTM_T *stp_btm)
 {
 	INT32 ret = -1;
+	if (1 == host_trigger_assert_flag)
+		return ret;
+	host_trigger_assert_flag = 1;
 #if BTIF_RXD_BE_BLOCKED_DETECT
 	if (is_btif_rxd_be_blocked())
 		ret = wcn_btif_rxd_blocked_collect_ftrace();	/* trigger collect SYS_FTRACE */
