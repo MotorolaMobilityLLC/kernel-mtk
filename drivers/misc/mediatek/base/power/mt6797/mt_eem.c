@@ -597,6 +597,10 @@ static void eem_restore_eem_volt(struct eem_det *det);
 
 #define VCO_VAL			0x0C
 #define VCO_VAL_BIG             0x35 /* 0x3C for MT6313, 0x35 for DA9214 */
+/* After ATE program version 5 */
+#define VCO_VAL_AFTER_5		0x04
+#define VCO_VAL_AFTER_5_BIG	0x32
+
 #define VCO_VAL_GPU		0x10
 
 #define DCCONFIG_VAL		0x555555
@@ -2452,7 +2456,7 @@ static void eem_init_ctrl(struct eem_ctrl *ctrl)
 static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 {
 	enum eem_det_id det_id = det_to_id(det);
-	unsigned int binLevel;
+	unsigned int binLevel, ateVer;
 
 	FUNC_ENTER(FUNC_LV_HELP);
 	eem_debug("det=%s, id=%d\n", ((char *)(det->name) + 8), det_id);
@@ -2469,7 +2473,17 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 	det->AGECONFIG = AGECONFIG_VAL;
 	det->AGEM = AGEM_VAL;
 	det->DVTFIXED = DVTFIXED_VAL;
-	det->VCO = VCO_VAL;
+
+	#ifdef __KERNEL__
+		ateVer = GET_BITS_VAL(7:4, get_devinfo_with_index(61));
+	#else
+		ateVer = GET_BITS_VAL(7:4, eem_read(0x1020698C));
+	#endif
+	if (ateVer > 5)
+		det->VCO = VCO_VAL_AFTER_5;
+	else
+		det->VCO = VCO_VAL;
+
 	det->DCCONFIG = DCCONFIG_VAL;
 
 	#ifdef __KERNEL__
@@ -2503,7 +2517,10 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->VMAX	= det->ops->volt_2_pmic(det, VMAX_VAL_BIG);
 		det->VMIN	= det->ops->volt_2_pmic(det, VMIN_VAL_BIG);
 		det->DVTFIXED	= DVTFIXED_VAL_BIG;
-		det->VCO	= VCO_VAL_BIG;
+		if (ateVer > 5)
+			det->VCO = VCO_VAL_AFTER_5_BIG;
+		else
+			det->VCO = VCO_VAL_BIG;
 		det->recordRef	= recordRef + 108;
 		#if 0
 			int i;
