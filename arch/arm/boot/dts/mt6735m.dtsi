@@ -1225,16 +1225,16 @@
 			 compatible = "usb-nop-xceiv";
 		 };
 
-		AUDIO@0x11220000 {
-			compatible = "mediatek,AUDIO";
+		audio@11220000 {
+			compatible = "mediatek,audio";
 			reg = <0x11220000 0x10000>;
-			interrupts = <0 144 0x8>;
+			interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		MT_SOC_DL1_PCM@0x11220000 {
+		mt_soc_dl1_pcm@11220000 {
 			compatible = "mediatek,mt-soc-dl1-pcm";
 			reg = <0x11220000 0x1000>;
-			interrupts = <0 144 0x8>;
+			interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
 			audclk-gpio = <143 0>;
 			audmiso-gpio = <144 0>;
 			audmosi-gpio = <145 0>;
@@ -1246,115 +1246,119 @@
 			i2s1ws-gpio = <79 0>;
 		};
 
-		MT_SOC_UL1_PCM@0x11220000 {
+		mt_soc_ul1_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_capture";
 		};
 
-		MT_SOC_VOICE_MD1@0x11220000 {
+		mt_soc_voice_md1@11220000 {
 			compatible = "mediatek,mt_soc_pcm_voice_md1";
 		};
 
-		MT_SOC_HDMI_PCM@0x11220000 {
+		mt_soc_hdmi_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_hdmi";
 		};
 
-		MT_SOC_ULDLLOOPBACK_PCM@0x11220000 {
+		mt_soc_uldlloopback_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_uldlloopback";
 		};
 
-		MT_SOC_I2S0_PCM@0x11220000 {
+		mt_soc_i2s0_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_dl1_i2s0";
 		};
 
-		MT_SOC_MRGRX_PCM@0x11220000 {
+		mt_soc_mrgrx_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_mrgrx";
 		};
 
-		MT_SOC_MRGRX_AWB_PCM@0x11220000 {
+		mt_soc_mrgrx_awb_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_mrgrx_awb";
 		};
 
-		MT_SOC_FM_I2S_PCM@0x11220000 {
+		mt_soc_fm_i2s_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_fm_i2s";
 		};
 
-		MT_SOC_FM_I2S_AWB_PCM@0x11220000 {
+		mt_soc_fm_i2s_awb_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_fm_i2s_awb";
 		};
 
-		MT_SOC_I2S0DL1_PCM@0x11220000 {
+		mt_soc_i2s0dl1_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_dl1_i2s0Dl1";
 		};
 
-		MT_SOC_DL1_AWB_PCM@0x11220000 {
+		mt_soc_dl1_awb_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_dl1_awb";
 		};
 
-		MT_SOC_VOICE_MD1_BT@0x11220000 {
+		mt_soc_voice_md1_bt@11220000 {
 			compatible = "mediatek,mt_soc_pcm_voice_md1_bt";
 		};
 
-		MT_SOC_VOIP_BT_OUT@0x11220000 {
+		mt_soc_voip_bt_out@11220000 {
 			compatible = "mediatek,mt_soc_pcm_dl1_bt";
 		};
 
-		MT_SOC_VOIP_BT_IN@0x11220000 {
+		mt_soc_voip_bt_in@11220000 {
 			compatible = "mediatek,mt_soc_pcm_bt_dai";
 		};
 
-		MT_SOC_TDMRX_PCM@0x11220000 {
+		mt_soc_tdmrx_pcm@11220000 {
 			compatible = "mediatek,mt_soc_tdm_capture";
 		};
 
-		MT_SOC_FM_MRGTX_PCM@0x11220000 {
+		mt_soc_fm_mrgtx_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_fmtx";
 		};
 
-		MT_SOC_UL2_PCM@0x11220000 {
+		mt_soc_ul2_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_capture2";
 		};
 
-		MT_SOC_I2S0_AWB_PCM@0x11220000 {
+		mt_soc_i2s0_awb_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_i2s0_awb";
 		};
 
-		MT_SOC_VOICE_MD2@0x11220000 {
+		mt_soc_voice_md2@11220000 {
 			compatible = "mediatek,mt_soc_pcm_voice_md2";
 		};
 
-		MT_SOC_ROUTING_PCM@0x11220000 {
+		mt_soc_routing_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_routing";
+			i2s1clk-gpio = <7 6>;
+			i2s1dat-gpio = <5 6>;
+			i2s1mclk-gpio = <9 6>;
+			i2s1ws-gpio = <6 6>;
 		};
 
-		MT_SOC_VOICE_MD2_BT@0x11220000 {
+		mt_soc_voice_md2_bt@11220000 {
 			compatible = "mediatek,mt_soc_pcm_voice_md2_bt";
 		};
 
-		MT_SOC_HP_IMPEDANCE_PCM@0x11220000 {
+		mt_soc_hp_impedance_pcm@11220000 {
 			compatible = "mediatek,Mt_soc_pcm_hp_impedance";
 		};
 
-		MT_SOC_CODEC_NAME@0x11220000 {
+		mt_soc_codec_name@11220000 {
 			compatible = "mediatek,mt_soc_codec_63xx";
 		};
 
-		MT_SOC_DUMMY_PCM@0x11220000 {
+		mt_soc_dummy_pcm@11220000 {
 			compatible = "mediatek,mt_soc_pcm_dummy";
 		};
 
-		MT_SOC_CODEC_DUMMY_NAME@0x11220000 {
+		mt_soc_codec_dummy_name@11220000 {
 			compatible = "mediatek,mt_soc_codec_dummy";
 		};
 
-		MT_SOC_ROUTING_DAI_NAME@0x11220000 {
+		mt_soc_routing_dai_name@11220000 {
 			compatible = "mediatek,mt_soc_dai_routing";
 		};
 
-		MT_SOC_DAI_NAME@0x11220000 {
+		mt_soc_dai_name@11220000 {
 			compatible = "mediatek,mt_soc_dai_stub";
 		};
 
-		MT_SOC_OFFLOAD_GDMA@0x11220000 {
+		mt_soc_offload_gdma@11220000 {
 			compatible = "mediatek,mt_soc_pcm_offload_gdma";
 		};
 

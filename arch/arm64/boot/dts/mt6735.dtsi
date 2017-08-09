@@ -1572,13 +1572,13 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		audio@11220000 {
 			compatible = "mediatek,audio";
 			reg = <0x11220000 0x10000>;
-			interrupts = <0 144 0x8>;
+			interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		audgpio:mt_soc_dl1_pcm@11220000 {
 			compatible = "mediatek,mt-soc-dl1-pcm";
 			reg = <0x11220000 0x1000>;
-			interrupts = <0 144 0x8>;
+			interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&audiosys AUDIO_AFE>,
 				<&audiosys AUDIO_I2S>,
 				<&audiosys AUDIO_DAC>,

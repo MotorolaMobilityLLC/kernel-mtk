@@ -53,18 +53,13 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
-/*#define _MT_IDLE_HEADER*/
+#define _MT_IDLE_HEADER
 
 /*#include <mach/mt_pm_ldo.h>*/
-#include <mt-plat/upmu_common.h>
-
-
 /*#include <mach/pmic_mt6325_sw.h>
 #include <mach/upmu_common.h>
 #include <mach/upmu_hw.h>*/
-#include "AudDrv_Common.h"
-#include "AudDrv_Clk.h"
-#include "AudDrv_Afe.h"
+#include <mt-plat/upmu_common.h>
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #ifdef _MT_IDLE_HEADER
@@ -73,6 +68,10 @@
 #endif
 #include <linux/err.h>
 #include <linux/platform_device.h>
+#include "AudDrv_Common.h"
+#include "AudDrv_Clk.h"
+#include "AudDrv_Afe.h"
+
 
 /*****************************************************************************
  *                         D A T A   T Y P E S
