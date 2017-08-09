@@ -516,6 +516,57 @@ static UINT8 WMT_SET_MCU_CLK_DIS_CMD[] = {
 		0xff, 0xff, 0xff, 0xff
 };
 static UINT8 WMT_SET_MCU_CLK_DIS_EVT[] = { 0x02, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01 };
+
+/*only for 6797,enable high clock frequency*/
+/*CLK EN*/
+static UINT8 WMT_SET_MCU_CLK_EN_6797[] = {
+	0x01, 0x08, 0x10, 0x00, 0x01, 0x01, 0x00, 0x01,
+	0x10, 0x11, 0x02, 0x81, 0x00, 0x00, 0x00, 0x10,
+	0x00, 0x00, 0x00, 0x10
+};
+/*RATIO SET*/
+static UINT8 WMT_SET_MCU_RATIO_SET_6797[] = {
+	0x01, 0x08, 0x10, 0x00, 0x01, 0x01, 0x00, 0x01,
+	0x0c, 0x01, 0x00, 0x80, 0x40, 0x00, 0x00, 0x00,
+	0xc0, 0x00, 0x00, 0x00
+};
+/*DIV SET*/
+static UINT8 WMT_SET_MCU_DIV_SET_6797[] = {
+	0x01, 0x08, 0x10, 0x00, 0x01, 0x01, 0x00, 0x01,
+	0x18, 0x11, 0x02, 0x80, 0x07, 0x00, 0x00, 0x00,
+	0x3f, 0x00, 0x00, 0x00
+};
+/*HCLK SET*/
+static UINT8 WMT_SET_MCU_HCLK_SET_6797[] = {
+	0x01, 0x08, 0x10, 0x00, 0x01, 0x01, 0x00, 0x01,
+	0x00, 0x11, 0x02, 0x81, 0x04, 0x00, 0x00, 0x00,
+	0x07, 0x00, 0x00, 0x00
+};
+
+/*Change clock to 26MHz*/
+/*HCLK DIS*/
+static UINT8 WMT_SET_MCU_HCLK_DIS_6797[] = {
+	0x01, 0x08, 0x10, 0x00, 0x01, 0x01, 0x00, 0x01,
+	0x00, 0x11, 0x02, 0x81, 0x00, 0x00, 0x00, 0x00,
+	0x07, 0x00, 0x00, 0x00
+};
+/*RATIO DIS*/
+static UINT8 WMT_SET_MCU_RATIO_DIS_6797[] = {
+	0x01, 0x08, 0x10, 0x00, 0x01, 0x01, 0x00, 0x01,
+	0x0c, 0x01, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00,
+	0xc0, 0x00, 0x00, 0x00
+};
+/*CLK DIS*/
+static UINT8 WMT_SET_MCU_CLK_DIS_6797[] = {
+	0x01, 0x08, 0x10, 0x00, 0x01, 0x01, 0x00, 0x01,
+	0x10, 0x11, 0x02, 0x81, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x10
+};
+
+static UINT8 WMT_SET_MCU_CLK_EVT_6797[] = {
+	0x02, 0x08, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01
+};
+
 #endif
 
 #if CFG_WMT_FILTER_MODE_SETTING
@@ -718,6 +769,19 @@ static struct init_script set_mcuclk_table_2[] = {
 	INIT_CMD(WMT_SET_MCU_CLK_26_CMD, WMT_SET_MCU_CLK_26_EVT, "set mcu clk to 26MH"),
 	INIT_CMD(WMT_SET_MCU_CLK_DIS_CMD, WMT_SET_MCU_CLK_DIS_EVT, "disable set mcu clk"),
 };
+
+static struct init_script set_mcuclk_table_3[] = {
+	INIT_CMD(WMT_SET_MCU_CLK_EN_6797, WMT_SET_MCU_CLK_EVT_6797, "enable set mcu clk"),
+	INIT_CMD(WMT_SET_MCU_RATIO_SET_6797, WMT_SET_MCU_CLK_EVT_6797, "mcu ratio set"),
+	INIT_CMD(WMT_SET_MCU_DIV_SET_6797, WMT_SET_MCU_CLK_EVT_6797, "mcu div set"),
+	INIT_CMD(WMT_SET_MCU_HCLK_SET_6797, WMT_SET_MCU_CLK_EVT_6797, "set mcu clk to hclk"),
+};
+static struct init_script set_mcuclk_table_4[] = {
+	INIT_CMD(WMT_SET_MCU_HCLK_DIS_6797, WMT_SET_MCU_CLK_EVT_6797, "disable mcu hclk"),
+	INIT_CMD(WMT_SET_MCU_RATIO_DIS_6797, WMT_SET_MCU_CLK_EVT_6797, "disable mcu ratio set"),
+	INIT_CMD(WMT_SET_MCU_CLK_DIS_6797, WMT_SET_MCU_CLK_EVT_6797, "disable mcu clk set"),
+};
+
 #endif
 
 #if CFG_WMT_FILTER_MODE_SETTING
@@ -1001,9 +1065,15 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	WMT_DBG_FUNC("patch total num = [%d]\n", patch_num);
 
 #if CFG_WMT_PATCH_DL_OPTM
-	iRet = wmt_core_init_script(set_mcuclk_table_1, osal_array_size(set_mcuclk_table_1));
-	if (iRet)
-		WMT_ERR_FUNC("set_mcuclk_table_1 fail(%d)\n", iRet);
+	if (0x0279 == wmt_ic_ops_soc.icId) {
+		iRet = wmt_core_init_script(set_mcuclk_table_3, osal_array_size(set_mcuclk_table_3));
+		if (iRet)
+			WMT_ERR_FUNC("set_mcuclk_table_3 fail(%d)\n", iRet);
+	} else {
+		iRet = wmt_core_init_script(set_mcuclk_table_1, osal_array_size(set_mcuclk_table_1));
+		if (iRet)
+			WMT_ERR_FUNC("set_mcuclk_table_1 fail(%d)\n", iRet);
+	}
 #endif
 	/* 6.3 Multi-patch Patch download */
 	for (patch_index = 0; patch_index < patch_num; patch_index++) {
@@ -1020,9 +1090,15 @@ static INT32 mtk_wcn_soc_sw_init(P_WMT_HIF_CONF pWmtHifConf)
 	}
 
 #if CFG_WMT_PATCH_DL_OPTM
-	iRet = wmt_core_init_script(set_mcuclk_table_2, osal_array_size(set_mcuclk_table_2));
-	if (iRet)
-		WMT_ERR_FUNC("set_mcuclk_table_2 fail(%d)\n", iRet);
+	if (0x0279 == wmt_ic_ops_soc.icId) {
+		iRet = wmt_core_init_script(set_mcuclk_table_4, osal_array_size(set_mcuclk_table_4));
+		if (iRet)
+			WMT_ERR_FUNC("set_mcuclk_table_4 fail(%d)\n", iRet);
+	} else {
+		iRet = wmt_core_init_script(set_mcuclk_table_2, osal_array_size(set_mcuclk_table_2));
+		if (iRet)
+			WMT_ERR_FUNC("set_mcuclk_table_2 fail(%d)\n", iRet);
+	}
 #endif
 
 #else
