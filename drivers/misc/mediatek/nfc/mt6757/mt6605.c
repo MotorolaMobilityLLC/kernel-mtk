@@ -1216,7 +1216,7 @@ static int mt_nfc_gpio_init(void)
 static int mt_nfc_get_gpio_value(int gpio_num)
 {
 	int value = 0;
-
+#if 0
 	if (mt_nfc_get_gpio_dir(gpio_num) != MTK_NFC_GPIO_DIR_INVALID) {
 #if !defined(CONFIG_MTK_LEGACY)
 		value = __gpio_get_value(gpio_num);
@@ -1224,7 +1224,7 @@ static int mt_nfc_get_gpio_value(int gpio_num)
 		value = mt_get_gpio_in(gpio_num);
 #endif
 	}
-
+#endif
 	return value;
 }
 
