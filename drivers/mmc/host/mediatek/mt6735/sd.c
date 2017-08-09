@@ -3280,6 +3280,12 @@ static void msdc_pm(pm_message_t state, void *data)
 	} else {
 		msdc_gate_clock(host, 1);
 	}
+
+	if (host->hw->host_function == MSDC_SDIO) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
+		host->mmc->rescan_entered = 0;
+	}
+
 	if (host->hw->host_function == MSDC_EMMC)
 		emmc_do_sleep_awake = 0;
 }
@@ -8906,6 +8912,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 #if defined(CFG_DEV_MSDC2)
 	if (strcmp(pdev->dev.of_node->name, "msdc2") == 0) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
 		/* FIXME: host->hw = &msdc2_hw; */
 		host->hw->clk_src = MSDC30_CLKSRC_200MHZ;
 		host->hw->cmd_edge = MSDC_SMPL_FALLING;
@@ -8948,6 +8955,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 
 #if defined(CFG_DEV_MSDC3)
 	if (strcmp(pdev->dev.of_node->name, "msdc3") == 0) {
+		host->mmc->pm_flags |= MMC_PM_KEEP_POWER;
 		host->hw->clk_src = MSDC30_CLKSRC_200MHZ;
 		host->hw->cmd_edge = MSDC_SMPL_RISING;
 		host->hw->rdata_edge = MSDC_SMPL_RISING;
