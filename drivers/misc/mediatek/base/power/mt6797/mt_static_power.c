@@ -40,6 +40,11 @@
 #define DEF_CPULL_LEAKAGE	(30 * V_OF_FUSE/1000)
 #define DEF_MODEM_LEAKAGE	(45 * V_OF_FUSE/1000)
 #define DEF_VMD1_LEAKAGE	(55 * V_OF_FUSE/1000)
+#define TABLE_MAX_VOL		1250
+#define TABLE_MIN_VOL		600
+#define TABLE_MAX_TEMP		125
+#define TABLE_MIN_TEMP		-20
+
 
 
 static sptbl_t sptab[MT_SPOWER_MAX]; /* CPU, GPU, CPUL, CPULL, VCORE, MODEM, VMD1  */
@@ -411,11 +416,106 @@ void mt_spower_ut(void)
 		p  = sptab_lookup(spt, v, t);
 		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
 
-
+		/* new test case */
 		v = 1150;
 		t = 105;
-		p  = sptab_lookup(spt, v, t);
+		p  = mt_spower_get_leakage(i, v, t);
 		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 700;
+		t = 20;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 650;
+		t = 18;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 600;
+		t = 15;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 550;
+		t = 22;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 550;
+		t = 10;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 400;
+		t = 10;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 320;
+		t = 5;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 220;
+		t = 0;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 80;
+		t = -5;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+
+		v = 0;
+		t = -10;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 1200;
+		t = -10;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 1200;
+		t = -25;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 1200;
+		t = -28;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 120;
+		t = -39;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+
+		v = 120;
+		t = -120;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+
+		v = 950;
+		t = -80;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+		v = 1000;
+		t = 5;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
+
+		v = 1150;
+		t = 10;
+		p = mt_spower_get_leakage(i, v, t);
+		SPOWER_INFO("v/t/p: %d/%d/%d\n", v, t, p);
+
 		switch (i) {
 		case  MT_SPOWER_CPUBIG:
 			SPOWER_INFO("[SPOWER] -  CPUBIG efuse:%d\n", mt_spower_get_efuse_lkg(MT_SPOWER_CPUBIG));
@@ -559,6 +659,16 @@ int mt_spower_get_leakage(int dev, int vol, int deg)
 
 	if (!tab_validate(&sptab[dev]))
 		return 0;
+
+	if (vol > TABLE_MAX_VOL)
+		vol = TABLE_MAX_VOL;
+	else if (vol < TABLE_MIN_VOL)
+		vol = TABLE_MIN_VOL;
+
+	if (deg > TABLE_MAX_TEMP)
+		deg = TABLE_MAX_TEMP;
+	else if (deg < TABLE_MIN_TEMP)
+		deg = TABLE_MIN_TEMP;
 
 	return sptab_lookup(&sptab[dev], vol, deg);
 }
