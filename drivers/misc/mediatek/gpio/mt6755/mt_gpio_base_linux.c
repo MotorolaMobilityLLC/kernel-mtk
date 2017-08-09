@@ -66,7 +66,7 @@ static int mtk_gpio_to_irq(struct gpio_chip *chip, unsigned pin)
 
 static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned offset, unsigned debounce)
 {
-	mt_eint_set_hw_debounce(offset, debounce/1000);
+	mt_eint_set_hw_debounce(offset, debounce);
 	return 0;
 }
 
