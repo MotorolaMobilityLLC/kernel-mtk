@@ -209,9 +209,9 @@ void hal_rtc_get_alarm_time(struct rtc_time *tm)
 
 void hal_rtc_set_alarm_time(struct rtc_time *tm)
 {
-	hal_rtc_xinfo("read tc time = %04d/%02d/%02d (%d) %02d:%02d:%02d\n",
+	/* hal_rtc_xinfo("read tc time = %04d/%02d/%02d (%d) %02d:%02d:%02d\n",
 		      tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
-		      tm->tm_wday, tm->tm_hour, tm->tm_min, tm->tm_sec);
+		      tm->tm_wday, tm->tm_hour, tm->tm_min, tm->tm_sec); */
 	hal_rtc_xinfo("mon = %d, day = %d, hour = %d\n",
 		(rtc_read(RTC_AL_MTH) & ~(RTC_AL_MTH_MASK)) | tm->tm_mon,
 		(rtc_read(RTC_AL_DOM) & ~(RTC_AL_DOM_MASK)) | tm->tm_mday,
