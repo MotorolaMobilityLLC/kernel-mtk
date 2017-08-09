@@ -797,9 +797,10 @@ void AudDrv_ADC3_Clk_Off(void)
 
 void AudDrv_ADC_Hires_Clk_On(void)
 {
+	unsigned long flags;
 	int ret = 0;
 
-	mutex_lock(&auddrv_pmic_mutex);
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
 	if (Aud_ADC_HIRES_Clk_cntr == 0) {
 		PRINTK_AUDDRV("+AudDrv_ADC_Hires_Clk_On enable_clock ADC clk(%x)\n",
@@ -837,12 +838,14 @@ void AudDrv_ADC_Hires_Clk_On(void)
 	}
 	Aud_ADC_HIRES_Clk_cntr++;
 EXIT:
-	mutex_unlock(&auddrv_pmic_mutex);
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
 void AudDrv_ADC_Hires_Clk_Off(void)
 {
-	mutex_lock(&auddrv_pmic_mutex);
+	unsigned long flags;
+
+	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	Aud_ADC_HIRES_Clk_cntr--;
 	if (Aud_ADC_HIRES_Clk_cntr == 0) {
 		PRINTK_AUDDRV("+AudDrv_ADC_Hires_Clk_Off disable_clock ADC_HIRES clk(%x)\n",
@@ -864,7 +867,7 @@ void AudDrv_ADC_Hires_Clk_Off(void)
 			      Aud_ADC_HIRES_Clk_cntr);
 		Aud_ADC_HIRES_Clk_cntr = 0;
 	}
-	mutex_unlock(&auddrv_pmic_mutex);
+	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
 
