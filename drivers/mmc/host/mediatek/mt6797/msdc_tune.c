@@ -409,6 +409,7 @@ void msdc_save_timing_setting(struct msdc_host *host, u32 init_hw,
 /* 0 means pass */
 u32 msdc_power_tuning(struct msdc_host *host)
 {
+#if 0
 	struct mmc_host *mmc = host->mmc;
 	struct mmc_card *card;
 	struct mmc_request *mrq;
@@ -526,6 +527,8 @@ u32 msdc_power_tuning(struct msdc_host *host)
 	(host->power_cycle)++;
 
 	return ret;
+#endif
+	return 0;
 }
 
 static int msdc_lower_freq(struct msdc_host *host)
