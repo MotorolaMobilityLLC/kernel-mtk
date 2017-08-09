@@ -175,7 +175,7 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 	int mode, data;
 	int pwm_config[5] = { 0 };
 
-	LEDS_DEBUG("get_cust_led_dtsi: get the leds info from device tree\n");
+	/* LEDS_DEBUG("get_cust_led_dtsi: get the leds info from device tree\n"); */
 	if (pled_dtsi == NULL) {
 		/* this can allocat an new struct array */
 		pled_dtsi = kmalloc(MT65XX_LED_TYPE_TOTAL *
