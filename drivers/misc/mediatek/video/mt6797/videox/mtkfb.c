@@ -491,7 +491,7 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var, struct fb_info 
 		return ret;
 	}
 
-	DDPMLOG("pan_display: offset(%u,%u), res(%u,%u), resv(%u,%u), cnt=%d.\n",
+	DDPMSG("pan_display: offset(%u,%u), res(%u,%u), resv(%u,%u), cnt=%d.\n",
 		var->xoffset, var->yoffset, info->var.xres, info->var.yres, info->var.xres_virtual,
 		info->var.yres_virtual, pan_display_cnt++);
 

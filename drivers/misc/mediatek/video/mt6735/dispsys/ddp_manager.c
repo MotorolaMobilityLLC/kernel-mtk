@@ -1861,6 +1861,11 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	int *modules;
 	int module_num;
 
+	if (primary_display_is_sleepd()) {
+		DISP_LOG_E("%s when DISP suspended\n", __func__);
+		return -1;
+	}
+
 	if (dp_handle == NULL) {
 		DISP_LOG_E("check status with NULL handle is invalid.\n");
 		return -1;	/* avoid kernel to access invalid address. */

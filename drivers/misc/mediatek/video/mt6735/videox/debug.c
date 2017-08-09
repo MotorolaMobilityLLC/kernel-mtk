@@ -897,36 +897,7 @@ static int debug_open(struct inode *inode, struct file *file)
 }
 
 
-static char debug_buffer[4096 + 3 * DPREC_ERROR_LOG_BUFFER_LENGTH];
-/* extern int mtkfb_fence_get_debug_info(int buf_len, unsigned char *stringbuf); */
-
-int debug_get_info(unsigned char *stringbuf, int buf_len)
-{
-	int n = 0;
-
-	DISPFUNC();
-
-	n += mtkfb_get_debug_state(stringbuf + n, buf_len - n);
-
-	n += primary_display_get_debug_state(stringbuf + n, buf_len - n);
-
-	n += disp_sync_get_debug_info(stringbuf + n, buf_len - n);
-
-	n += dprec_logger_get_result_string_all(stringbuf + n, buf_len - n);
-
-	n += primary_display_check_path(stringbuf + n, buf_len - n);
-
-	n += dprec_logger_get_buf(DPREC_LOGGER_ERROR, stringbuf + n, buf_len - n);
-
-	n += dprec_logger_get_buf(DPREC_LOGGER_FENCE, stringbuf + n, buf_len - n);
-
-	n += dprec_logger_get_buf(DPREC_LOGGER_HWOP, stringbuf + n, buf_len - n);
-
-	n += dprec_logger_get_buf(DPREC_LOGGER_DEBUG, stringbuf + n, buf_len - n);
-
-	stringbuf[n++] = 0;
-	return n;
-}
+static char debug_buffer[4096 + 30 * 16 * 1024];
 
 void debug_info_dump_to_printk(char *buf, int buf_len)
 {
@@ -940,12 +911,35 @@ void debug_info_dump_to_printk(char *buf, int buf_len)
 static ssize_t debug_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
 {
 	const int debug_bufmax = sizeof(debug_buffer) - 1;
-	int n = 0;
+	static int n;
+
+	/* Debugfs read only fetch 4096 byte each time, thus whole ringbuffer need massive
+	 * iteration. We only copy ringbuffer content to debugfs buffer at first time (*ppos = 0)
+	 */
+	if (*ppos != 0)
+		goto out;
 
 	DISPFUNC();
 
-	n += debug_get_info(debug_buffer + n, debug_bufmax - n);
-	/* debug_info_dump_to_printk(); */
+	n = mtkfb_get_debug_state(debug_buffer + n, debug_bufmax - n);
+
+	n += primary_display_get_debug_state(debug_buffer + n, debug_bufmax - n);
+
+	n += disp_sync_get_debug_info(debug_buffer + n, debug_bufmax - n);
+
+	n += dprec_logger_get_result_string_all(debug_buffer + n, debug_bufmax - n);
+
+	n += primary_display_check_path(debug_buffer + n, debug_bufmax - n);
+
+	n += dprec_logger_get_buf(DPREC_LOGGER_ERROR, debug_buffer + n, debug_bufmax - n);
+
+	n += dprec_logger_get_buf(DPREC_LOGGER_FENCE, debug_buffer + n, debug_bufmax - n);
+
+	n += dprec_logger_get_buf(DPREC_LOGGER_DUMP, debug_buffer + n, debug_bufmax - n);
+
+	n += dprec_logger_get_buf(DPREC_LOGGER_DEBUG, debug_buffer + n, debug_bufmax - n);
+
+out:
 	return simple_read_from_buffer(ubuf, count, ppos, debug_buffer, n);
 }
 

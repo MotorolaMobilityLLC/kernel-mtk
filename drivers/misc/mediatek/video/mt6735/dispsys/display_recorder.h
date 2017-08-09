@@ -120,8 +120,8 @@ typedef struct {
 typedef enum {
 	DPREC_LOGGER_ERROR,
 	DPREC_LOGGER_FENCE,
-	DPREC_LOGGER_HWOP,
 	DPREC_LOGGER_DEBUG,
+	DPREC_LOGGER_DUMP,
 	DPREC_LOGGER_PR_NUM
 } DPREC_LOGGER_PR_TYPE;
 
@@ -163,6 +163,8 @@ int dprec_mmp_dump_wdma_layer(void *wdma_layer, unsigned int wdma_num);
 int dprec_mmp_dump_rdma_layer(void *wdma_layer, unsigned int wdma_num);
 void dprec_logger_frame_seq_begin(unsigned int session_id, unsigned frm_sequence);
 void dprec_logger_frame_seq_end(unsigned int session_id, unsigned frm_sequence);
+ssize_t dprec_read_from_buffer(void __user *to, size_t count, loff_t *ppos,
+				const void *from, size_t available);
 
 extern unsigned int gCapturePriLayerEnable;
 extern unsigned int gCaptureWdmaLayerEnable;
