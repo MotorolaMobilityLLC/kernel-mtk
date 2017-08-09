@@ -63,28 +63,28 @@ int disp_pwm_get_cust_led(unsigned int *clocksource, unsigned int *clockdiv)
 	int ret = 0;
 	int pwm_config[5] = { 0 };
 
-	PWM_MSG("get_cust_led_dtsi: get the leds info from device tree\n");
 	led_node = of_find_compatible_node(NULL, NULL, "mediatek,lcd-backlight");
 	if (!led_node) {
 		ret = -1;
-		PWM_MSG("Cannot find LED node from dts\n");
+		PWM_ERR("Cannot find LED node from dts\n");
 	} else {
 		ret = of_property_read_u32_array(led_node, "pwm_config", pwm_config,
 						       ARRAY_SIZE(pwm_config));
 		if (!ret) {
+			/*
 			PWM_MSG("The backlight's pwm config data is %d %d %d %d %d\n",
 			     pwm_config[0], pwm_config[1], pwm_config[2], pwm_config[3], pwm_config[4]);
+			*/
 			*clocksource = pwm_config[0];
 			*clockdiv = pwm_config[1];
 		} else {
-			PWM_MSG("led dts can not get pwm config data.\n");
+			PWM_ERR("led dts can not get pwm config data.\n");
 		}
 	}
 
-	if (!ret)
-		PWM_MSG("The backlight's pwm config mode src:%d div:%d\n", *clocksource, *clockdiv);
-	else
+	if (ret)
 		PWM_ERR("get pwm cust info fail");
+
 	return ret;
 }
 

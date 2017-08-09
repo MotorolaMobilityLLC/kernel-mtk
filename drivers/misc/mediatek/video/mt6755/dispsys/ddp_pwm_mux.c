@@ -71,7 +71,6 @@ static int disp_pwm_get_muxbase(void)
 	struct device_node *node;
 
 	if (disp_pmw_mux_base != NULL) {
-		PWM_MSG("TOPCKGEN node exist");
 		return 0;
 	}
 
@@ -85,7 +84,7 @@ static int disp_pwm_get_muxbase(void)
 		PWM_ERR("DISP TOPCKGEN base failed\n");
 		return -1;
 	}
-	PWM_MSG("find TOPCKGEN node");
+
 	return ret;
 }
 
@@ -116,14 +115,14 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 	ret = disp_pwm_get_muxbase();
 	regsrc = disp_pwm_get_pwmmux();
 
-	PWM_MSG("clk_req=%d clkid=%d", clk_req, clkid);
 	if (clkid != -1) {
 		ddp_clk_enable(MUX_PWM);
 		ddp_clk_set_parent(MUX_PWM, clkid);
 		ddp_clk_disable(MUX_PWM);
 	}
 
-	PWM_MSG("PWM_MUX %x->%x", regsrc, disp_pwm_get_pwmmux());
+	PWM_MSG("clk_req=%d clkid=%d, PWM_MUX %x->%x",
+		clk_req, clkid, regsrc, disp_pwm_get_pwmmux());
 
 	return 0;
 }
@@ -145,7 +144,6 @@ static int get_ulposc_base(void)
 	struct device_node *node;
 
 	if (disp_pmw_osc_base != NULL) {
-		PWM_MSG("SLEEP node exist");
 		return 0;
 	}
 
