@@ -630,7 +630,8 @@ int	BigiDVFSEnable(unsigned int Fmax, unsigned int cur_vproc_mv_x100, unsigned i
 	/* temp:: before need enable ptp1 function */
 	/* enable and initial idvfsapb i2c ctrl */
 
-	iDVFSAPB_init();
+	/* move to prob init */
+	/* iDVFSAPB_init(); */
 
 	/* check parameter move to this API */
 	if ((Fmax < 510) || (Fmax > 3000)) {
@@ -1132,6 +1133,10 @@ static int idvfs_resume(struct platform_device *pdev)
 	*/
 
 	idvfs_ver("IDVFS resume\n");
+
+	/* iDVFSAPB init depend on suspend power */
+	/* iDVFSAPB_init */
+
 	return 0;
 }
 
@@ -1532,6 +1537,9 @@ static int __init idvfs_init(void)
 		goto out;
 	}
 #endif /* CONFIG_PROC_FS */
+
+	/* enable iDVFSAPB function */
+	iDVFSAPB_init();
 
 out:
 	return err;

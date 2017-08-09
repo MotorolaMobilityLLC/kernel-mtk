@@ -18,11 +18,12 @@
 #endif
 */
 
+#ifdef __KERNEL__
 #ifdef __MT_IDVFS_C__
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
 #define mt_secure_call_idvfs	mt_secure_call
 #else
-/* This is workaround for idvfs use */
+/* This is workaround for idvfs use  */
 static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u64 arg2)
 {
 	register u64 reg0 __asm__("x0") = function_id;
@@ -37,6 +38,7 @@ static noinline int mt_secure_call_idvfs(u64 function_id, u64 arg0, u64 arg1, u6
 	ret = (int)reg0;
 	return ret;
 }
+#endif
 #endif
 #endif
 
