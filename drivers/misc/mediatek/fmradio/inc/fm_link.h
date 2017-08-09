@@ -165,7 +165,7 @@ struct fm_trace_fifo_t {
 	defined(MT6631_FM))
 #include "fm_utils.h"
 
-#define RX_BUF_SIZE 128
+#define RX_BUF_SIZE 256
 #define TX_BUF_SIZE 1024
 
 #define SW_RETRY_CNT            (1)
