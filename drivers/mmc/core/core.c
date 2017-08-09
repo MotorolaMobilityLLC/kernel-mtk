@@ -542,7 +542,7 @@ static int mmc_check_write(struct mmc_host *host, struct mmc_request *mrq)
 	return ret;
 }
 
-void mmc_run_queue_thread_cmd(void *data)
+int mmc_run_queue_thread_cmd(void *data)
 {
 	struct mmc_host *host = data;
 	struct mmc_request *mrq = NULL;
@@ -612,9 +612,10 @@ cmd_start:
 			schedule();
 		set_current_state(TASK_RUNNING);
 	}
+	return 0;
 }
 
-void mmc_run_queue_thread_dat(void *data)
+int mmc_run_queue_thread_dat(void *data)
 {
 	struct mmc_host *host = data;
 	struct mmc_request *mrq = NULL;
@@ -781,6 +782,7 @@ void mmc_run_queue_thread_dat(void *data)
 			schedule();
 		set_current_state(TASK_RUNNING);
 	}
+	return 0;
 }
 #endif
 static void __mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
