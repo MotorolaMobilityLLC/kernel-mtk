@@ -554,6 +554,10 @@ static s32 io_iic_write(u8 *data)
 	s32 data_length = 0;
 	u16 addr = 0;
 
+	if (data == NULL) {
+		GTP_ERROR("data is null\n");
+		return -1;
+	}
 	addr = data[0] << 8 | data[1];
 	data_length = data[2] << 8 | data[3];
 
