@@ -1253,7 +1253,7 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
 
 	/* The PEB has been successfully moved */
 	if (scrubbing)
-		ubi_msg("scrubbed PEB %d (LEB %d:%d), data moved to PEB %d",
+		dbg_wl("scrubbed PEB %d (LEB %d:%d), data moved to PEB %d",
 			e1->pnum, vol_id, lnum, e2->pnum);
 	ubi_free_vid_hdr(ubi, vid_hdr);
 
@@ -1587,7 +1587,7 @@ static int wear_leveling_worker(struct ubi_device *ubi, struct ubi_work *wrk,
 
 	/* The PEB has been successfully moved */
 	if (scrubbing)
-		ubi_msg("scrubbed PEB %d (LEB %d:%d), data moved to PEB %d",
+		dbg_wl("scrubbed PEB %d (LEB %d:%d), data moved to PEB %d",
 			e1->pnum, vol_id, lnum, e2->pnum);
 	ubi_free_vid_hdr(ubi, vid_hdr);
 
@@ -1920,7 +1920,7 @@ static int erase_worker(struct ubi_device *ubi, struct ubi_work *wl_wrk,
 	}
 	spin_unlock(&ubi->volumes_lock);
 
-	ubi_msg("mark PEB %d as bad", pnum);
+	dbg_wl("mark PEB %d as bad", pnum);
 	err = ubi_io_mark_bad(ubi, pnum);
 	if (err)
 		goto out_ro;
@@ -1943,7 +1943,7 @@ static int erase_worker(struct ubi_device *ubi, struct ubi_work *wl_wrk,
 	if (available_consumed)
 		ubi_warn("no PEBs in the reserved pool, used an available PEB");
 	else if (ubi->beb_rsvd_pebs)
-		ubi_msg("%d PEBs left in the reserve", ubi->beb_rsvd_pebs);
+		dbg_wl("%d PEBs left in the reserve", ubi->beb_rsvd_pebs);
 	else
 		ubi_warn("last PEB from the reserve was used");
 	spin_unlock(&ubi->volumes_lock);
@@ -2041,7 +2041,7 @@ retry_erase:
 		ubi->rsvd_pebs += need;
 		ubi->beb_rsvd_pebs += need;
 		if (need > 0)
-			ubi_msg("reserve more %d PEBs", need);
+			dbg_wl("reserve more %d PEBs", need);
 	}
 
 	if (ubi->beb_rsvd_pebs == 0) {
@@ -2051,7 +2051,7 @@ retry_erase:
 	}
 	spin_unlock(&ubi->volumes_lock);
 
-	ubi_msg("mark PEB %d as bad", pnum);
+	dbg_wl("mark PEB %d as bad", pnum);
 	err = ubi_io_mark_bad(ubi, pnum);
 	if (err)
 		goto out_ro;
@@ -2062,7 +2062,7 @@ retry_erase:
 	ubi->good_peb_count -= 1;
 	ubi_calculate_reserved(ubi);
 	if (ubi->beb_rsvd_pebs)
-		ubi_msg("%d PEBs left in the reserve", ubi->beb_rsvd_pebs);
+		dbg_wl("%d PEBs left in the reserve", ubi->beb_rsvd_pebs);
 	else
 		ubi_warn("last PEB from the reserved pool was used");
 	spin_unlock(&ubi->volumes_lock);
@@ -2193,7 +2193,7 @@ int ubi_wl_scrub_peb(struct ubi_device *ubi, int pnum)
 {
 	struct ubi_wl_entry *e;
 
-	ubi_msg("schedule PEB %d for scrubbing", pnum);
+	dbg_wl("schedule PEB %d for scrubbing", pnum);
 
 retry:
 	spin_lock(&ubi->wl_lock);
@@ -2629,7 +2629,7 @@ int ubi_thread(void *u)
 	int failures = 0;
 	struct ubi_device *ubi = u;
 
-	ubi_msg("background thread \"%s\" started, PID %d",
+	dbg_wl("background thread \"%s\" started, PID %d",
 		ubi->bgt_name, task_pid_nr(current));
 
 	set_freezable();
@@ -2661,7 +2661,7 @@ int ubi_thread(void *u)
 				 * Too many failures, disable the thread and
 				 * switch to read-only mode.
 				 */
-				ubi_msg("%s: %d consecutive failures",
+				dbg_wl("%s: %d consecutive failures",
 					ubi->bgt_name, WL_MAX_FAILURES);
 				ubi_ro_mode(ubi);
 				ubi->thread_enabled = 0;
