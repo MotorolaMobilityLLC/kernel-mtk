@@ -157,8 +157,10 @@ static long AKI2C_RxData(char *rxData, int length)
 
 	mutex_lock(&akm09911_i2c_mutex);
 	for (loop_i = 0; loop_i < AKM09911_RETRY_COUNT; loop_i++) {
+#ifdef CONFIG_MTK_I2C_EXTENSION
 		this_client->addr = this_client->addr & I2C_MASK_FLAG;
 		this_client->addr = this_client->addr | I2C_WR_FLAG;
+#endif
 		if (i2c_master_send(this_client, (const char *)rxData, ((length<<0X08) | 0X01)))
 			break;
 		mdelay(10);
@@ -197,7 +199,9 @@ static long AKI2C_TxData(char *txData, int length)
 	if ((txData == NULL) || (length < 2))
 		return -EINVAL;
 	mutex_lock(&akm09911_i2c_mutex);
+#ifdef CONFIG_MTK_I2C_EXTENSION
 	this_client->addr = this_client->addr & I2C_MASK_FLAG;
+#endif
 	for (loop_i = 0; loop_i < AKM09911_RETRY_COUNT; loop_i++) {
 		if (i2c_master_send(this_client, (const char *)txData, length) > 0)
 			break;
