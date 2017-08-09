@@ -547,6 +547,9 @@ void usb_phy_recover(void)
 	if (mtk_musb) {
 		spin_lock_irqsave(&mtk_musb->lock, flags);
 		do_lock = 1;
+	} else {
+		DBG(0, "mtk_musb is NULL\n");
+		return;
 	}
 
 	/* turn on USB reference clock. */

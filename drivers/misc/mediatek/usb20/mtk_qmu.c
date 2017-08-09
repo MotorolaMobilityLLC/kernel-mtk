@@ -630,7 +630,7 @@ void qmu_done_rx(struct musb *musb, u8 ep_num)
 			QMU_ERR("[RXD][ERROR] EP%d ,gpd=%p\n", ep_num, gpd);
 			QMU_ERR("[RXD][ERROR] EP%d ,gpd=%p\n", ep_num, gpd);
 			/* BUG_ON(1); */
-			break;
+			return;
 		}
 
 		gpd = TGPD_GET_NEXT(gpd);
@@ -644,7 +644,7 @@ void qmu_done_rx(struct musb *musb, u8 ep_num)
 			QMU_ERR("[RXD][ERROR] !gpd, EP%d ,gpd=%p\n", ep_num, gpd);
 			QMU_ERR("[RXD][ERROR] !gpd, EP%d ,gpd=%p\n", ep_num, gpd);
 			/* BUG_ON(1); */
-			break;
+			return;
 		}
 
 		Rx_gpd_last[ep_num] = gpd;
@@ -732,7 +732,7 @@ void qmu_done_tx(struct musb *musb, u8 ep_num)
 			QMU_ERR("[TXD][ERROR]" "Next GPD is null!!\n");
 			QMU_ERR("[TXD][ERROR]" "Next GPD is null!!\n");
 			/* BUG_ON(1); */
-			break;
+			return;
 		}
 
 		gpd = TGPD_GET_NEXT(gpd);
@@ -802,8 +802,6 @@ void flush_ep_csr(struct musb *musb, u8 ep_num, u8 isRx)
 
 	if (epio == NULL)
 		QMU_ERR("epio == NULL\n");
-	if (hw_ep == NULL)
-		QMU_ERR("hw_ep == NULL\n");
 
 	if (isRx) {
 		csr = musb_readw(epio, MUSB_RXCSR);
