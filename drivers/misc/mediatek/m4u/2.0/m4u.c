@@ -1188,7 +1188,7 @@ void m4u_get_pgd(m4u_client_t *client, M4U_PORT_ID port, void **pgd_va, void **p
 
 	pDomain = m4u_get_domain_by_port(port);
 	*pgd_va = pDomain->pgd;
-	*pgd_pa = (void *)pDomain->pgd_pa;
+	*pgd_pa = (void *)(uintptr_t)pDomain->pgd_pa;
 	*size = M4U_PGD_SIZE;
 }
 

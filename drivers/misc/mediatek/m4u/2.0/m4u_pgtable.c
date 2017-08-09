@@ -434,7 +434,8 @@ int m4u_alloc_pte(m4u_domain_t *domain, imu_pgd_t *pgd, unsigned int pgprot)
 
 	/* check pte alignment -- must 1K align */
 	if (unlikely(pte_new & (IMU_BYTES_PER_PTE - 1))) {
-		m4u_aee_print("%s: fail, not algin pa=0x%p, va=0x%p\n", __func__, (void *)pte_new, pte_new_va);
+		m4u_aee_print("%s: fail, not algin pa=0x%p, va=0x%p\n", __func__,
+			(void *)(uintptr_t)pte_new, pte_new_va);
 		/* kfree(pte_new_va); */
 		kmem_cache_free(gM4u_pte_kmem, (void *)pte_new_va);
 		return -ENOMEM;
