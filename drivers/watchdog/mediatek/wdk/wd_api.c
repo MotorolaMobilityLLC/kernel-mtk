@@ -558,13 +558,13 @@ int get_wd_api(struct wd_api **obj)
 */
 void arch_reset(char mode, const char *cmd)
 {
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	return;
+#else
 	char reboot = 1;
 	int res = 0;
 	struct wd_api *wd_api = NULL;
 
-#ifdef CONFIG_FPGA_EARLY_PORTING
-	return;
-#else
 	res = get_wd_api(&wd_api);
 	pr_alert("arch_reset: cmd = %s\n", cmd ? : "NULL");
 	dump_stack();
