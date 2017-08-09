@@ -58,7 +58,7 @@
 #include "mt_soc_pcm_common.h"
 
 
-/* #include <mach/mtk_wcn_cmb_stub.h> */
+#include <mt-plat/mtk_wcn_cmb_stub.h>
 /* extern  int mtk_wcn_cmb_stub_audio_ctrl(CMB_STUB_AIF_X state); */
 
 

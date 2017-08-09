@@ -1856,6 +1856,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 {
 #define SPK_WARM_UP_TIME        (25)	/* unit is ms */
 #ifndef CONFIG_FPGA_EARLY_PORTING
+#if defined(CONFIG_MTK_LEGACY)
 	int ret;
 
 	ret = GetGPIO_Info(5, &pin_extspkamp, &pin_mode_extspkamp);
@@ -1863,7 +1864,7 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		pr_err("Ext_Speaker_Amp_Change GetGPIO_Info FAIL!!!\n");
 		return;
 	}
-
+#endif
 	if (enable) {
 		pr_debug("Ext_Speaker_Amp_Change ON+\n");
 #ifndef CONFIG_MTK_SPEAKER

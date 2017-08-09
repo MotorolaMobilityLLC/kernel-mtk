@@ -53,20 +53,22 @@
 #include <mach/mt_clkmgr.h>
 #endif
 
+/*#define _MT_IDLE_H*/
+
 /*#include <mach/mt_pm_ldo.h>*/
 #include <mt-plat/upmu_common.h>
+
 
 /*#include <mach/pmic_mt6325_sw.h>
 #include <mach/upmu_common.h>
 #include <mach/upmu_hw.h>*/
-
 #include "AudDrv_Common.h"
 #include "AudDrv_Clk.h"
 #include "AudDrv_Afe.h"
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #ifdef _MT_IDLE_H
-#include <mach/mt_idle.h>
+#include "mt_idle.h"
 #endif
 #include <linux/err.h>
 #include <linux/platform_device.h>
@@ -172,7 +174,7 @@ void AudDrv_Clk_probe(void *dev)
 	}
 
 	if (ret)
-		return ret;
+		return;
 
 	for (i = 0; i < ARRAY_SIZE(aud_clks); i++) {
 		if (aud_clks[i].clk_status) {
@@ -712,10 +714,11 @@ void AudDrv_ADC3_Clk_Off(void)
 
 void AudDrv_APLL22M_Clk_On(void)
 {
-	pr_debug("+%s %d\n", __func__, Aud_APLL22M_Clk_cntr);
 #ifndef CONFIG_MTK_CLKMGR
 	int ret = 0;
 #endif
+	pr_debug("+%s %d\n", __func__, Aud_APLL22M_Clk_cntr);
+
 	mutex_lock(&auddrv_pmic_mutex);
 
 	if (Aud_APLL22M_Clk_cntr == 0) {
@@ -905,10 +908,11 @@ UNLOCK:
 
 void AudDrv_APLL24M_Clk_On(void)
 {
-	pr_debug("+%s %d\n", __func__, Aud_APLL24M_Clk_cntr);
 #ifndef CONFIG_MTK_CLKMGR
 	int ret = 0;
 #endif
+	pr_debug("+%s %d\n", __func__, Aud_APLL24M_Clk_cntr);
+
 	mutex_lock(&auddrv_pmic_mutex);
 
 	if (Aud_APLL24M_Clk_cntr == 0) {

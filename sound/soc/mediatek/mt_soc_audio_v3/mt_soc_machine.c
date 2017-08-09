@@ -47,9 +47,7 @@
 
 #define CONFIG_MTK_DEEP_IDLE
 #ifdef CONFIG_MTK_DEEP_IDLE
-#ifdef _MT_IDLE_H
-#include <mach/mt_idle.h>
-#endif
+#include "mt_idle.h"
 #endif
 
 #include "AudDrv_Common.h"

@@ -56,10 +56,10 @@
 #include "mt_soc_digital_type.h"
 #include "mt_soc_pcm_common.h"
 
+#define _WCN_SUPPORT
 #ifdef _WCN_SUPPORT
-#include <mach/mtk_wcn_cmb_stub.h>
+#include <mt-plat/mtk_wcn_cmb_stub.h>
 #endif
-
 /* static DEFINE_SPINLOCK(auddrv_mrgrx_lock); */
 
 /*
