@@ -36,7 +36,8 @@ static int mt_printk_ctrl_show(struct seq_file *m, void *v)
 static ssize_t mt_printk_ctrl_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
 {
 	char buf[64];
-	int val;
+	/* int val; */
+	long val;
 	int ret;
 
 	if (cnt >= sizeof(buf))
@@ -64,7 +65,7 @@ static ssize_t mt_printk_ctrl_write(struct file *filp, const char *ubuf, size_t 
 		set_detect_count(200);
 	if (ret < 0)
 		return ret;
-	pr_err(" %d\n", val);
+	pr_err(" %ld\n", val);
 	return cnt;
 }
 
