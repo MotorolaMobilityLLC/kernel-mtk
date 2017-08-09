@@ -99,6 +99,17 @@ static void Voice_Amp_Change(bool enable);
 static void Speaker_Amp_Change(bool enable);
 static bool TurnOnVOWADcPower(int MicType, bool enable);
 
+#ifdef CONFIG_MTK_VOW_SUPPORT
+static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable);
+static void VOW_GPIO_Enable(bool enable);
+static void VOW_Pwr_Enable(int MicType, bool enable);
+static void VOW_DCC_CLK_Enable(bool enable);
+static void VOW_MIC_DCC_Enable(int MicType, bool enable);
+static void VOW_MIC_ACC_Enable(int MicType, bool enable);
+static void VOW12MCK_Enable(bool enable);
+static void VOW32KCK_Enable(bool enable);
+#endif
+
 /* extern int PMIC_IMM_GetOneChannelValue(int dwChannel, int deCount, int trimd); */
 /* extern kal_uint32 PMIC_IMM_GetOneChannelValue(mt6328_adc_ch_list_enum dwChannel,
 		int deCount, int trimd); */
@@ -173,7 +184,7 @@ typedef enum {
 	AUDIO_VOW_MIC_TYPE_SUM
 } AUDIO_VOW_MIC_TYPE;
 
-
+#ifdef CONFIG_MTK_VOW_SUPPORT
 /* AUDIO_VOW_MIC_TYPE_Headset_MIC */
 static uint16 Headset_MIC_PeriodicOnOff[7][22] = {
 	/*  PGA,  PreCG,    ADC,  glblp,   dmic, mbias0, mbias1,    pll,  pwrdm,    vow,   dmic, period */
@@ -271,6 +282,7 @@ static uint16 Handset_AMIC_PeriodicOnOff[7][22] = {
 	{0x87AE, 0x0000, 0x8958, 0x0000, 0x0000, 0x870A, 0x0000, 0x87AE, 0xC70A, 0x899A, 0x0000,
 	 0x1168, 0x0000, 0x1168, 0x0000, 0x0000, 0x1168, 0x0000, 0x1168, 0x1168, 0x1148, 0x0000},/* 30% */
 };
+#endif
 
 static int mAudio_VOW_Mic_type = AUDIO_VOW_MIC_TYPE_Handset_AMIC;
 static void Audio_Amp_Change(int channels, bool enable);
@@ -3594,6 +3606,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 
 static bool TurnOnVOWDigitalHW(bool enable)
 {
+#ifdef CONFIG_MTK_VOW_SUPPORT
 	pr_warn("%s enable = %d\n", __func__, enable);
 	if (enable) {
 		/*move to vow driver*/
@@ -3613,9 +3626,11 @@ static bool TurnOnVOWDigitalHW(bool enable)
 		Ana_Set_Reg(AFE_VOW_TOP, 0xC010, 0xffff);   /*VOW clock power down*/
 #endif
 	}
+#endif
 	return true;
 }
 
+#ifdef CONFIG_MTK_VOW_SUPPORT
 static void TurnOnVOWPeriodicOnOff(int MicType, int On_period, int enable)
 {
 	int i = 0;
@@ -3875,6 +3890,7 @@ static void VOW_MIC_ACC_Enable(int MicType, bool enable)
 		}
 	}
 }
+#endif
 
 static bool TurnOnVOWADcPower(int MicType, bool enable)
 {
