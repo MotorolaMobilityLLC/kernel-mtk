@@ -265,7 +265,6 @@ static void write_shutter(kal_uint16 shutter)
 {
 	kal_uint16 realtime_fps = 0;
 
-
 	/* 0x3500, 0x3501, 0x3502 will increase VBLANK to get exposure larger than frame exposure */
 	/* AE doesn't update sensor gain at capture mode, thus extra exposure lines must be updated here. */
 
@@ -276,6 +275,7 @@ static void write_shutter(kal_uint16 shutter)
 		imgsensor.frame_length = shutter + imgsensor_info.margin;
 	else
 		imgsensor.frame_length = imgsensor.min_frame_length;
+
 	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
@@ -315,7 +315,7 @@ static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length
 {
 	kal_uint16 realtime_fps = 0;
 	kal_int32 dummy_line = 0;
-	
+
 	//LOG_INF("shutter =%d, frame_time =%d\n", shutter, frame_time);
 	/* 0x3500, 0x3501, 0x3502 will increase VBLANK to get exposure larger than frame exposure */
 	/* AE doesn't update sensor gain at capture mode, thus extra exposure lines must be updated here. */
@@ -324,18 +324,17 @@ static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length
 	// if shutter bigger than frame_length, should extend frame length first
 	spin_lock(&imgsensor_drv_lock);
     /*Change frame time*/
-	//imgsensor.dummy_line = (frame_time > imgsensor.frame_length) ? (frame_time - imgsensor.frame_length) : 0;
-	//imgsensor.frame_length = imgsensor.frame_length + imgsensor.dummy_line;
-	dummy_line = frame_length - imgsensor.frame_length;
+    if(frame_length > 1)
+	    dummy_line = frame_length - imgsensor.frame_length;
 	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
-	imgsensor.min_frame_length = imgsensor.frame_length;
 
-	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
-		imgsensor.frame_length = shutter + imgsensor_info.margin;
-	else
-		imgsensor.frame_length = imgsensor.min_frame_length;
-	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
-		imgsensor.frame_length = imgsensor_info.max_frame_length;
+    //
+    if (shutter > imgsensor.frame_length - imgsensor_info.margin)
+        imgsensor.frame_length = shutter + imgsensor_info.margin;
+
+    if (imgsensor.frame_length > imgsensor_info.max_frame_length)
+        imgsensor.frame_length = imgsensor_info.max_frame_length;
+
 	spin_unlock(&imgsensor_drv_lock);
 	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
 	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
@@ -363,7 +362,7 @@ static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length
 	write_cmos_sensor(0x0203, shutter & 0xFF);
 	//write_cmos_sensor(0x0104, 0x00);   //group hold
 
-	LOG_INF("shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+	LOG_INF("shutter =%d, framelength =%d/%d, dummy_line=%d\n", shutter,imgsensor.frame_length, frame_length, dummy_line);
 
 	//LOG_INF("frame_length = %d ", frame_length);
 
@@ -649,7 +648,7 @@ static void sensor_init(void)
 
 	// streaming ON
 	write_cmos_sensor(0x0100,0x01);
-    
+
     set_mirror_flip(3);
 }	/*	sensor_init  */
 

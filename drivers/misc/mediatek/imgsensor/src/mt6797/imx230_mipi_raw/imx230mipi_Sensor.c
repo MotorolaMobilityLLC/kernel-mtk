@@ -683,6 +683,7 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 
     kal_uint16 realtime_fps = 0;
     kal_uint16 reg_gain;
+    kal_uint16 ratio;
     LOG_INF("le:0x%x, se:0x%x, gain:0x%x\n",le,se,gain);
     spin_lock(&imgsensor_drv_lock);
     if (le > imgsensor.min_frame_length - imgsensor_info.margin)
@@ -718,6 +719,17 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
     /* Short exposure */
     write_cmos_sensor(0x0224, (se >> 8) & 0xFF);
     write_cmos_sensor(0x0225, se  & 0xFF);
+    /* Ratio */
+    if(se == 0)
+        ratio = 2;
+    else {
+        ratio = (le+ (se >> 1)) / se;
+        if(ratio > 16)
+            ratio = 2;
+    }
+    LOG_INF("le:%d, se:%d, ratio:%d\n",le,se, ratio);
+    write_cmos_sensor(0x0222,ratio);
+
     reg_gain = gain2reg(gain);
     spin_lock(&imgsensor_drv_lock);
     imgsensor.gain = reg_gain;
@@ -735,6 +747,7 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
 {
     kal_uint16 realtime_fps = 0;
+    kal_uint16 ratio;
     LOG_INF("le:0x%x, se:0x%x\n",le,se);
     spin_lock(&imgsensor_drv_lock);
     if (le > imgsensor.min_frame_length - imgsensor_info.margin)
@@ -764,6 +777,7 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
         write_cmos_sensor(0x0104, 0x00);
     }
     write_cmos_sensor(0x0104, 0x01);
+
     /* Long exposure */
     write_cmos_sensor(0x0202, (le >> 8) & 0xFF);
     write_cmos_sensor(0x0203, le  & 0xFF);
@@ -771,6 +785,18 @@ static void hdr_write_shutter(kal_uint16 le, kal_uint16 se)
     write_cmos_sensor(0x0224, (se >> 8) & 0xFF);
     write_cmos_sensor(0x0225, se  & 0xFF);
     write_cmos_sensor(0x0104, 0x00);
+
+    /* Ratio */
+    if(se == 0)
+        ratio = 2;
+    else {
+        ratio = (le+ (se >> 1)) / se;
+        if(ratio > 16)
+            ratio = 2;
+    }
+
+    LOG_INF("le:%d, se:%d, ratio:%d\n",le,se, ratio);
+    write_cmos_sensor(0x0222,ratio);
 
 }
 
@@ -1368,7 +1394,7 @@ static void preview_setting_HDR_ES2(void)
 	write_cmos_sensor(0x0114,0x03);
 	write_cmos_sensor(0x0220,0x03);
 	write_cmos_sensor(0x0221,0x22);
-	write_cmos_sensor(0x0222,0x04);//0x10,modify to 4x ratio
+	write_cmos_sensor(0x0222,0x02);//0x10,modify to 2x ratio
 	write_cmos_sensor(0x0340,0x08);
 	write_cmos_sensor(0x0341,0x3C);
 	write_cmos_sensor(0x0342,0x17);
@@ -1739,7 +1765,7 @@ static void capture_setting_HDR_ES2(void)
 	write_cmos_sensor(0x0114,0x03);
 	write_cmos_sensor(0x0220,0x03);
 	write_cmos_sensor(0x0221,0x11);
-	write_cmos_sensor(0x0222,0x04);//0x10,modify to 4x ratio
+	write_cmos_sensor(0x0222,0x02);//0x10,modify to 2x ratio
 	write_cmos_sensor(0x0340,0x10);
 	write_cmos_sensor(0x0341,0x1E);
 	write_cmos_sensor(0x0342,0x17);
@@ -2240,7 +2266,7 @@ static void normal_video_setting_30fps_HDR(void)
 	write_cmos_sensor(0x0114,0x03);
 	write_cmos_sensor(0x0220,0x03);
 	write_cmos_sensor(0x0221,0x11);
-	write_cmos_sensor(0x0222,0x04);//0x10,modify to 4x ratio
+	write_cmos_sensor(0x0222,0x02);//0x10,modify to 2x ratio
 	write_cmos_sensor(0x0340,0x0C);
 	write_cmos_sensor(0x0341,0x30);
 	write_cmos_sensor(0x0342,0x17);
