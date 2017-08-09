@@ -1,5 +1,5 @@
-#ifndef __MT_SODI_H_
-#define __MT_SODI_H_
+#ifndef __MT_SPM_SODI_H_
+#define __MT_SPM_SODI_H_
 
 #include <mt_cpuidle.h>
 #include <mt_spm_idle.h>
@@ -16,7 +16,50 @@
 #define MCUSYS_SMC_WRITE(addr, val)  mcusys_smc_write(addr, val)
 #endif
 
+#if defined(CONFIG_ARCH_MT6755)
+
+#define WAKE_SRC_FOR_SODI3 \
+	(WAKE_SRC_R12_KP_IRQ_B | \
+	WAKE_SRC_R12_APXGPT1_EVENT_B | \
+	WAKE_SRC_R12_EINT_EVENT_B | \
+	WAKE_SRC_R12_CCIF0_EVENT_B | \
+	WAKE_SRC_R12_USB_CDSC_B | \
+	WAKE_SRC_R12_USB_POWERDWN_B | \
+	WAKE_SRC_R12_C2K_WDT_IRQ_B | \
+	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
+	WAKE_SRC_R12_CCIF1_EVENT_B | \
+	WAKE_SRC_R12_SYS_CIRQ_IRQ_B | \
+	WAKE_SRC_R12_CSYSPWREQ_B | \
+	WAKE_SRC_R12_MD1_WDT_B | \
+	WAKE_SRC_R12_CLDMA_EVENT_B | \
+	WAKE_SRC_R12_SEJ_WDT_GPT_B)
+#define WAKE_SRC_FOR_SODI (WAKE_SRC_FOR_SODI3|WAKE_SRC_R12_AFE_IRQ_MCU_B)
 #define WAKE_SRC_FOR_MD32  0
+
+#elif defined(CONFIG_ARCH_MT6797)
+
+#define WAKE_SRC_FOR_SODI3 \
+	(WAKE_SRC_R12_KP_IRQ_B | \
+	WAKE_SRC_R12_APXGPT1_EVENT_B | \
+	WAKE_SRC_R12_EINT_EVENT_B | \
+	WAKE_SRC_R12_CCIF0_EVENT_B | \
+	WAKE_SRC_R12_USB0_CDSC_B_AND_USB1_CSDC_B | \
+	WAKE_SRC_R12_USB0_POWERDWN_B_AND_USB1_POWERDWN_B | \
+	WAKE_SRC_R12_C2K_WDT_IRQ_B | \
+	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
+	WAKE_SRC_R12_CCIF1_EVENT_B | \
+	WAKE_SRC_R12_SYS_CIRQ_IRQ_B | \
+	WAKE_SRC_R12_CSYSPWREQ_B | \
+	WAKE_SRC_R12_MD1_WDT_B | \
+	WAKE_SRC_R12_CLDMA_EVENT_B | \
+	WAKE_SRC_R12_SEJ_WDT_B_AND_SEJ_GPT_B)
+#define WAKE_SRC_FOR_SODI (WAKE_SRC_FOR_SODI3|WAKE_SRC_R12_AFE_IRQ_MCU_B)
+#define WAKE_SRC_FOR_MD32  0
+
+#else
+#error "Does not support!"
+#endif
+
 
 #define reg_read(addr)         __raw_readl(IOMEM(addr))
 #define reg_write(addr, val)   mt_reg_sync_writel((val), ((void *)addr))
@@ -28,7 +71,6 @@ extern unsigned int	soidle3_profile[4];
 #ifdef SPM_SODI_PROFILE_TIME
 extern unsigned int	soidle_profile[4];
 #endif
-
 
 enum spm_sodi3_step {
 	SPM_SODI3_ENTER = 0,
@@ -132,5 +174,5 @@ static inline void spm_sodi_aee_init(void)
 
 
 
-#endif /* __MT_SODI_H_ */
+#endif /* __MT_SPM_SODI_H_ */
 

@@ -36,50 +36,8 @@
 
 #define SPM_BYPASS_SYSPWREQ         0	/* JTAG is used */
 
-#define REDUCE_SODI3_LOG             1
-#if REDUCE_SODI3_LOG
 #define LOG_BUF_SIZE                 256
 #define SODI3_LOGOUT_TIMEOUT_CRITERA 20
-#endif
-
-
-#if defined(CONFIG_ARCH_MT6755)
-#define WAKE_SRC_FOR_SODI3 \
-	(WAKE_SRC_R12_KP_IRQ_B | \
-	WAKE_SRC_R12_APXGPT1_EVENT_B | \
-	WAKE_SRC_R12_EINT_EVENT_B | \
-	WAKE_SRC_R12_CCIF0_EVENT_B | \
-	WAKE_SRC_R12_USB_CDSC_B | \
-	WAKE_SRC_R12_USB_POWERDWN_B | \
-	WAKE_SRC_R12_C2K_WDT_IRQ_B | \
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
-	WAKE_SRC_R12_CCIF1_EVENT_B | \
-	WAKE_SRC_R12_AFE_IRQ_MCU_B | \
-	WAKE_SRC_R12_SYS_CIRQ_IRQ_B | \
-	WAKE_SRC_R12_CSYSPWREQ_B | \
-	WAKE_SRC_R12_MD1_WDT_B | \
-	WAKE_SRC_R12_CLDMA_EVENT_B | \
-	WAKE_SRC_R12_SEJ_WDT_GPT_B)
-#elif defined(CONFIG_ARCH_MT6797)
-#define WAKE_SRC_FOR_SODI3 \
-	(WAKE_SRC_R12_KP_IRQ_B | \
-	WAKE_SRC_R12_APXGPT1_EVENT_B | \
-	WAKE_SRC_R12_EINT_EVENT_B | \
-	WAKE_SRC_R12_CCIF0_EVENT_B | \
-	WAKE_SRC_R12_USB0_CDSC_B_AND_USB1_CSDC_B | \
-	WAKE_SRC_R12_USB0_POWERDWN_B_AND_USB1_POWERDWN_B | \
-	WAKE_SRC_R12_C2K_WDT_IRQ_B | \
-	WAKE_SRC_R12_EINT_EVENT_SECURE_B | \
-	WAKE_SRC_R12_CCIF1_EVENT_B | \
-	WAKE_SRC_R12_AFE_IRQ_MCU_B | \
-	WAKE_SRC_R12_SYS_CIRQ_IRQ_B | \
-	WAKE_SRC_R12_CSYSPWREQ_B | \
-	WAKE_SRC_R12_MD1_WDT_B | \
-	WAKE_SRC_R12_CLDMA_EVENT_B | \
-	WAKE_SRC_R12_SEJ_WDT_B_AND_SEJ_GPT_B)
-#else
-#error "Does not support!"
-#endif
 
 
 #if defined(CONFIG_OF)
@@ -228,16 +186,13 @@ struct spm_lp_scen __spm_sodi3 = {
 
 static bool gSpm_sodi3_en;
 
-#if REDUCE_SODI3_LOG
 static unsigned int sodi3_logout_critera = 5000;	/* unit:ms */
 static unsigned long int sodi3_logout_prev_time;
 static int pre_emi_refresh_cnt;
 static int memPllCG_prev_status = 1;	/* 1:CG, 0:pwrdn */
 static unsigned int logout_sodi3_cnt;
 static unsigned int logout_selfrefresh_cnt;
-#endif
 
-#if REDUCE_SODI3_LOG
 static long int idle_get_current_time_ms(void)
 {
 	struct timeval t;
@@ -245,7 +200,6 @@ static long int idle_get_current_time_ms(void)
 	do_gettimeofday(&t);
 	return ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec) / 1000;
 }
-#endif
 
 static void spm_trigger_wfi_for_sodi3(struct pwr_ctrl *pwrctrl)
 {
@@ -327,7 +281,120 @@ static void spm_sodi3_post_process(void)
 	__spm_pmic_pg_force_off();
 }
 
-wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)
+static wake_reason_t
+spm_sodi3_output_log(struct wake_status *wakesta, struct pcm_desc *pcmdesc, int vcore_status, u32 sodi3_flags)
+{
+	wake_reason_t wr = WR_NONE;
+	unsigned long int sodi3_logout_curr_time = 0;
+	int need_log_out = 0;
+
+	if (sodi3_flags&SODI_FLAG_NO_LOG) {
+		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
+	} else if (!(sodi3_flags&SODI_FLAG_REDUCE_LOG) || (sodi3_flags & SODI_FLAG_RESIDENCY)) {
+		sodi3_warn("vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
+				vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+				spm_read(DUMMY1_PWR_CON), pcmdesc->version);
+
+		wr = __spm_output_wake_reason(wakesta, pcmdesc, false);
+		if (wr == WR_PCM_ASSERT) {
+			sodi3_err("PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x\n",
+					wakesta->assert_pc, pcmdesc->version, wakesta->r13, wakesta->debug_flag);
+		}
+	} else {
+		sodi3_logout_curr_time = idle_get_current_time_ms();
+
+		if (wakesta->assert_pc != 0) {
+			need_log_out = 1;
+		} else if ((wakesta->r12 & (0x1 << 4)) == 0) {
+			/* not wakeup by GPT */
+			need_log_out = 1;
+		} else if (wakesta->timer_out <= SODI3_LOGOUT_TIMEOUT_CRITERA) {
+			need_log_out = 1;
+		} else if ((spm_read(SPM_PASR_DPD_0) == 0 && pre_emi_refresh_cnt > 0) ||
+				(spm_read(SPM_PASR_DPD_0) > 0 && pre_emi_refresh_cnt == 0)) {
+			need_log_out = 1;
+		} else if ((sodi3_logout_curr_time - sodi3_logout_prev_time) > sodi3_logout_critera) {
+			/* previous logout time > sodi3_logout_critera */
+			need_log_out = 1;
+		} else {
+			/* check CG/pwrdn status is changed */
+			int mem_status = 0;
+
+			/* check mempll CG/pwrdn status change */
+			if (((spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) != 0) ||
+				((spm_read(DUMMY1_PWR_CON) & DUMMY1_PWR_ISO_LSB) != 0))
+				mem_status = 1;
+
+			if (memPllCG_prev_status != mem_status) {
+				memPllCG_prev_status = mem_status;
+				need_log_out = 1;
+			}
+		}
+
+		logout_sodi3_cnt++;
+		logout_selfrefresh_cnt += spm_read(SPM_PASR_DPD_0);
+		pre_emi_refresh_cnt = spm_read(SPM_PASR_DPD_0);
+
+		if (need_log_out == 1) {
+			sodi3_logout_prev_time = sodi3_logout_curr_time;
+
+			if (wakesta->assert_pc != 0) {
+				sodi3_err("wake up by SPM assert, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
+						vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
+
+				sodi3_err("sodi3_cnt = %d, self_refresh_cnt = 0x%x, spm_pc = 0x%0x, r13 = 0x%x, debug_flag = 0x%x\n",
+						wakesta->assert_pc, wakesta->r13, wakesta->debug_flag,
+						logout_sodi3_cnt, logout_selfrefresh_cnt);
+
+				sodi3_err("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
+						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
+						wakesta->event_reg, wakesta->isr);
+			} else {
+				char buf[LOG_BUF_SIZE] = { 0 };
+				int i;
+
+				if (wakesta->r12 & WAKE_SRC_R12_PCM_TIMER) {
+					if (wakesta->wake_misc & WAKE_MISC_PCM_TIMER)
+						strcat(buf, " PCM_TIMER");
+
+					if (wakesta->wake_misc & WAKE_MISC_TWAM)
+						strcat(buf, " TWAM");
+
+					if (wakesta->wake_misc & WAKE_MISC_CPU_WAKE)
+						strcat(buf, " CPU");
+				}
+				for (i = 1; i < 32; i++) {
+					if (wakesta->r12 & (1U << i)) {
+						strcat(buf, wakesrc_str[i]);
+						wr = WR_WAKE_SRC;
+					}
+				}
+				BUG_ON(strlen(buf) >= LOG_BUF_SIZE);
+
+				sodi3_warn("wake up by %s, vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
+						buf, vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
+						spm_read(DUMMY1_PWR_CON), pcmdesc->version);
+
+				sodi3_warn("sodi3_cnt = %d, self_refresh_cnt = 0x%x, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
+						wakesta->timer_out, wakesta->r13, wakesta->debug_flag,
+						logout_sodi3_cnt, logout_selfrefresh_cnt);
+
+				sodi3_warn("r12 = 0x%x, r12_e = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
+						wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
+						wakesta->event_reg, wakesta->isr);
+			}
+
+			logout_sodi3_cnt = 0;
+			logout_selfrefresh_cnt = 0;
+		}
+
+	}
+
+	return wr;
+}
+
+wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi3_flags)
 {
 	u32 sec = 2;
 #ifdef CONFIG_MTK_WD_KICKER
@@ -343,10 +410,6 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	struct pwr_ctrl *pwrctrl = __spm_sodi3.pwrctrl;
 	int vcore_status = vcorefs_get_curr_ddr();
 	u32 cpu = spm_data;
-#if REDUCE_SODI3_LOG
-	unsigned long int sodi3_logout_curr_time = 0;
-	int need_log_out = 0;
-#endif
 
 	if (!dyna_load_pcm[DYNA_LOAD_PCM_SODI + cpu / 4].ready) {
 		sodi3_err("error: load firmware fail\n");
@@ -465,117 +528,7 @@ wake_reason_t spm_go_to_sodi3(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 
 	request_uart_to_wakeup();
 
-
-#if REDUCE_SODI3_LOG == 0
-	sodi3_warn("vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
-			vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-			spm_read(DUMMY1_PWR_CON), pcmdesc->version);
-
-	wr = __spm_output_wake_reason(&wakesta, pcmdesc, false);
-	if (wr == WR_PCM_ASSERT) {
-		sodi3_err("PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x\n",
-				wakesta.assert_pc, pcmdesc->version, wakesta.r13, wakesta.debug_flag);
-	}
-#else
-	if (!(sodi_flags & SODI_FLAG_RESIDENCY)) {
-		sodi3_logout_curr_time = idle_get_current_time_ms();
-
-		if (wakesta.assert_pc != 0) {
-			need_log_out = 1;
-		} else if ((wakesta.r12 & (0x1 << 4)) == 0) {
-			/* not wakeup by GPT */
-			need_log_out = 1;
-		} else if (wakesta.timer_out <= SODI3_LOGOUT_TIMEOUT_CRITERA) {
-			need_log_out = 1;
-		} else if ((spm_read(SPM_PASR_DPD_0) == 0 && pre_emi_refresh_cnt > 0) ||
-				(spm_read(SPM_PASR_DPD_0) > 0 && pre_emi_refresh_cnt == 0)) {
-			need_log_out = 1;
-		} else if ((sodi3_logout_curr_time - sodi3_logout_prev_time) > sodi3_logout_critera) {
-			/* previous logout time > sodi3_logout_critera */
-			need_log_out = 1;
-		} else {
-			/* check CG/pwrdn status is changed */
-			int mem_status = 0;
-
-			/* check mempll CG/pwrdn status change */
-			if (((spm_read(SPM_SW_FLAG) & SPM_FLAG_SODI_CG_MODE) != 0) ||
-				((spm_read(DUMMY1_PWR_CON) & DUMMY1_PWR_ISO_LSB) != 0))
-				mem_status = 1;
-
-			if (memPllCG_prev_status != mem_status) {
-				memPllCG_prev_status = mem_status;
-				need_log_out = 1;
-			}
-		}
-
-		logout_sodi3_cnt++;
-		logout_selfrefresh_cnt += spm_read(SPM_PASR_DPD_0);
-		pre_emi_refresh_cnt = spm_read(SPM_PASR_DPD_0);
-
-		if (need_log_out == 1) {
-			sodi3_logout_prev_time = sodi3_logout_curr_time;
-
-			if (wakesta.assert_pc != 0) {
-				sodi3_err("vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s, sodi3_cnt = %d, self_refresh_cnt = 0x%x\n",
-						vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON), pcmdesc->version,
-						logout_sodi3_cnt, logout_selfrefresh_cnt);
-
-				sodi3_err("wake up by SPM assert, spm_pc = 0x%0x, r13 = 0x%x, debug_flag = 0x%x\n",
-						wakesta.assert_pc, wakesta.r13, wakesta.debug_flag);
-
-				sodi3_err("r12 = 0x%x, r12_ext = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
-						wakesta.r12, wakesta.r12_ext, wakesta.raw_sta, wakesta.idle_sta,
-						wakesta.event_reg, wakesta.isr);
-			} else {
-				char buf[LOG_BUF_SIZE] = { 0 };
-				int i;
-
-				if (wakesta.r12 & WAKE_SRC_R12_PCM_TIMER) {
-					if (wakesta.wake_misc & WAKE_MISC_PCM_TIMER)
-						strcat(buf, " PCM_TIMER");
-
-					if (wakesta.wake_misc & WAKE_MISC_TWAM)
-						strcat(buf, " TWAM");
-
-					if (wakesta.wake_misc & WAKE_MISC_CPU_WAKE)
-						strcat(buf, " CPU");
-				}
-				for (i = 1; i < 32; i++) {
-					if (wakesta.r12 & (1U << i)) {
-						strcat(buf, wakesrc_str[i]);
-						wr = WR_WAKE_SRC;
-					}
-				}
-				BUG_ON(strlen(buf) >= LOG_BUF_SIZE);
-
-				sodi3_warn("vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s, sodi3_cnt = %d, self_refresh_cnt = 0x%x\n",
-						vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-						spm_read(DUMMY1_PWR_CON), pcmdesc->version,
-						logout_sodi3_cnt, logout_selfrefresh_cnt);
-
-				sodi3_warn("wake up by %s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x\n",
-						buf, wakesta.timer_out, wakesta.r13, wakesta.debug_flag);
-
-				sodi3_warn("r12 = 0x%x, r12_ext = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
-						wakesta.r12, wakesta.r12_ext, wakesta.raw_sta, wakesta.idle_sta,
-						wakesta.event_reg, wakesta.isr);
-			}
-
-			logout_sodi3_cnt = 0;
-			logout_selfrefresh_cnt = 0;
-		}
-	} else {
-		sodi3_warn("vcore_status = %d, self_refresh = 0x%x, sw_flag = 0x%x, 0x%x, %s\n",
-			vcore_status, spm_read(SPM_PASR_DPD_0), spm_read(SPM_SW_FLAG),
-			spm_read(DUMMY1_PWR_CON), pcmdesc->version);
-
-		wr = __spm_output_wake_reason(&wakesta, pcmdesc, false);
-		if (wr == WR_PCM_ASSERT)
-			sodi3_err("PCM ASSERT AT %u (%s), r13 = 0x%x, debug_flag = 0x%x\n",
-					wakesta.assert_pc, pcmdesc->version, wakesta.r13, wakesta.debug_flag);
-	}
-#endif
+	wr = spm_sodi3_output_log(&wakesta, pcmdesc, vcore_status, sodi3_flags);
 
 	spm_sodi3_footprint(SPM_SODI3_LEAVE_SPM_FLOW);
 

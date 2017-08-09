@@ -57,7 +57,8 @@ enum mt_sodi_flag {
 	SODI_FLAG_V3          = (1 << 0),
 	SODI_FLAG_RESIDENCY   = (1 << 1),
 	SODI_FLAG_REDUCE_LOG  = (1 << 2),
-	SODI_FLAG_DUMP_REG    = (1 << 3),
+	SODI_FLAG_NO_LOG      = (1 << 3),
+	SODI_FLAG_DUMP_REG    = (1 << 4),
 };
 
 /*

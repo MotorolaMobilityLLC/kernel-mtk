@@ -346,7 +346,7 @@ static unsigned long long soidle3_block_prev_time;
 static bool             soidle3_by_pass_cg;
 static bool             soidle3_by_pass_pll;
 static bool             soidle3_by_pass_en;
-static u32				sodi3_flags;
+static u32				sodi3_flags = SODI_FLAG_REDUCE_LOG|SODI_FLAG_V3;
 #ifdef SPM_SODI3_PROFILE_TIME
 unsigned int			soidle3_profile[4];
 #endif
@@ -364,7 +364,7 @@ static unsigned long    soidle_block_cnt[NR_REASONS] = {0};
 static unsigned long long soidle_block_prev_time;
 static bool             soidle_by_pass_cg;
 static bool             soidle_by_pass_en;
-static u32				sodi_flags;
+static u32				sodi_flags = SODI_FLAG_REDUCE_LOG;
 #ifdef SPM_SODI_PROFILE_TIME
 unsigned int			soidle_profile[4];
 #endif
@@ -1766,7 +1766,7 @@ int soidle3_enter(int cpu)
 	unsigned long long soidle3_time = 0;
 	static unsigned long long soidle3_residency;
 
-	if (sodi3_flags & (1 << 1))
+	if (sodi3_flags & SODI_FLAG_RESIDENCY)
 		soidle3_time = idle_get_current_time_ms();
 
 	soidle_pre_handler();
@@ -1783,7 +1783,7 @@ int soidle3_enter(int cpu)
 
 	soidle_post_handler();
 
-	if (sodi3_flags & (1 << 1)) {
+	if (sodi3_flags & SODI_FLAG_RESIDENCY) {
 		soidle3_residency += idle_get_current_time_ms() - soidle3_time;
 		idle_dbg("SO3: soidle3_residency = %llu\n", soidle3_residency);
 
@@ -1816,7 +1816,7 @@ int soidle_enter(int cpu)
 	unsigned long long soidle_time = 0;
 	static unsigned long long soidle_residency;
 
-	if (sodi_flags & (1 << 1))
+	if (sodi_flags & SODI_FLAG_RESIDENCY)
 		soidle_time = idle_get_current_time_ms();
 
 	soidle_pre_handler();
@@ -1833,7 +1833,7 @@ int soidle_enter(int cpu)
 
 	soidle_post_handler();
 
-	if (sodi_flags & (1 << 1)) {
+	if (sodi_flags & SODI_FLAG_RESIDENCY) {
 		soidle_residency += idle_get_current_time_ms() - soidle_time;
 		idle_dbg("SO: soidle_residency = %llu\n", soidle_residency);
 
