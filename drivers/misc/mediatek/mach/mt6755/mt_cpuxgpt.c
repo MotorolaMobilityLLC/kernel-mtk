@@ -471,4 +471,4 @@ void cpu_xgpt_halt_on_debug_en(int en)
 }
 EXPORT_SYMBOL(cpu_xgpt_halt_on_debug_en);
 
-CLOCKSOURCE_OF_DECLARE(mtk_cpuxgpt, "mediatek,mt6735-cpuxgpt", mt_cpuxgpt_init);
+CLOCKSOURCE_OF_DECLARE(mtk_cpuxgpt, "mediatek,CPUXGPT", mt_cpuxgpt_init);

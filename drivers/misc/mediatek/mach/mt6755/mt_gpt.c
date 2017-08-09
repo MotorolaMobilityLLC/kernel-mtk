@@ -759,4 +759,4 @@ unsigned int gpt_boot_time(void)
 EXPORT_SYMBOL(gpt_boot_time);
 
 /************************************************************************************************/
-CLOCKSOURCE_OF_DECLARE(mtk_apxgpt, "mediatek,mt6735-apxgpt", mt_gpt_init);
+CLOCKSOURCE_OF_DECLARE(mtk_apxgpt, "mediatek,APXGPT", mt_gpt_init);
