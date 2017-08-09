@@ -116,6 +116,7 @@ m4u_client_t *m4u_create_client(void);
 int m4u_destroy_client(m4u_client_t *client);
 
 int m4u_dump_reg_for_smi_hang_issue(void);
+int m4u_display_fake_engine_test(unsigned long ulFakeReadAddr, unsigned long ulFakeWriteAddr);
 
 void m4u_larb_backup(int larb_idx);
 void m4u_larb_restore(int larb_idx);

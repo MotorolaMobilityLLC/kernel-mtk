@@ -609,6 +609,71 @@ static int m4u_debug_set(void *data, u64 val)
 	case 26:
 		m4u_monitor_stop(0);
 		break;
+	case 27:
+		/*
+		m4u_dump_reg_for_smi_hang_issue();
+		*/
+		break;
+	case 28:
+	{
+		/*
+		unsigned char *pSrc;
+		unsigned char *pDst;
+		unsigned int mva_rd;
+		unsigned int mva_wr;
+		unsigned int allocated_size = 1024;
+		unsigned int i;
+		m4u_client_t *client = m4u_create_client();
+
+		m4u_monitor_start(0);
+
+		pSrc = vmalloc(allocated_size);
+		memset(pSrc, 0xFF, allocated_size);
+		M4UMSG("(0) vmalloc pSrc:0x%p\n", pSrc);
+		pDst =  vmalloc(allocated_size);
+		memset(pDst, 0xFF, allocated_size);
+		M4UMSG("(0) vmalloc pDst:0x%p\n", pDst);
+		M4UMSG("(1) pDst check 0x%x 0x%x 0x%x 0x%x  0x%x\n",
+			*pDst, *(pDst+1), *(pDst+126), *(pDst+127), *(pDst+128));
+
+
+		m4u_alloc_mva(client, M4U_PORT_DISP_FAKE, (unsigned long)pSrc, NULL, allocated_size, 0, 0, &mva_rd);
+		m4u_alloc_mva(client, M4U_PORT_DISP_FAKE, (unsigned long)pDst, NULL, allocated_size, 0, 0, &mva_wr);
+
+		m4u_dump_pgtable(domain, NULL);
+
+		m4u_display_fake_engine_test(mva_rd, mva_wr);
+
+		M4UMSG("(2) mva_wr:0x%x\n", mva_wr);
+
+		m4u_dealloc_mva(client, M4U_PORT_DISP_FAKE, mva_rd);
+		m4u_dealloc_mva(client, M4U_PORT_DISP_FAKE, mva_wr);
+
+		m4u_cache_sync(NULL, 0, 0, 0, 0, M4U_CACHE_FLUSH_ALL);
+
+		m4u_destroy_client(client);
+
+		M4UMSG("(3) pDst check 0x%x 0x%x 0x%x 0x%x  0x%x\n",
+			*pDst, *(pDst+1), *(pDst+126), *(pDst+127), *(pDst+128));
+
+		for (i = 0; i < 128; i++) {
+			if (*(pDst+i) != 0) {
+				M4UMSG("(4) [Error] pDst check fail !!VA 0x%p: 0x%x\n",
+					pDst+i*sizeof(unsigned char), *(pDst+i));
+				break;
+			}
+		}
+		if (i == 128)
+			M4UMSG("(4) m4u_display_fake_engine_test R/W 128 bytes PASS!!\n ");
+
+		vfree(pSrc);
+		vfree(pDst);
+
+		m4u_monitor_stop(0);
+		*/
+		break;
+	}
+
 #ifdef M4U_TEE_SERVICE_ENABLE
 	case 50:
 		m4u_sec_init();

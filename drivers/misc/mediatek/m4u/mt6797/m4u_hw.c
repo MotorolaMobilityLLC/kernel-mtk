@@ -8,12 +8,6 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 
-/* Remove me for phone, temporal for EVB boot up */
-#define CONFIG_MTK_CLKMGR
-#define enable_clock(...)
-#define disable_clock(...)
-/* End */
-
 static m4u_domain_t gM4uDomain;
 
 static unsigned long gM4UBaseAddr[TOTAL_M4U_NUM];
@@ -1129,29 +1123,28 @@ int m4u_config_prog_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id,
 
 	spin_lock(&gM4u_reg_lock);
 
+	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(free_id), F_PF_ID_COMP_SEL(1),
+				F_PF_ID_COMP_SEL(!!(sel)));
+
 	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(free_id), F_PF_DIR(1),
 				F_PF_DIR(!!(dir)));
 
-	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(free_id), F_PF_DIST(1),
-				F_PF_DIST(dist));
+	m4uHw_set_field(m4u_base, REG_MMU_PROG_DIST(free_id),
+		F_PF_DIST_MSB - F_PF_DIST_LSB + 1, F_PF_DIST_LSB, dist);
 
-	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(free_id),
-				F_PF_ID_MASK(F_PF_ID(larb, larb_port, mm_id)), F_PF_ID(larb,
-										       larb_port,
-										       mm_id));
+	m4uHw_set_field(m4u_base, REG_MMU_PROG_DIST(free_id),
+		F_PF_ID_MSB - F_PF_ID_LSB + 1, F_PF_ID_LSB, F_PF_ID(larb, larb_port, mm_id));
 
 	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(free_id), F_PF_EN(1), F_PF_EN(!!(en)));
-
-	m4uHw_set_field_by_mask(m4u_base, REG_MMU_PROG_DIST(free_id), F_PF_ID_COMP_SEL(1),
-				F_PF_ID_COMP_SEL(!!(sel)));
 
 	spin_unlock(&gM4u_reg_lock);
 
 	return free_id;
 }
 
-int m4u_invalid_prog_dist_by_id(int port, int id)
+int m4u_invalid_prog_dist_by_id(int port)
 {
+	int i;
 	int m4u_index = m4u_port_2_m4u_id(port);
 	int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
@@ -1159,14 +1152,24 @@ int m4u_invalid_prog_dist_by_id(int port, int id)
 		gM4UProgPfh[m4u_index] + M4U_PROG_PFH_NUM(m4u_index) * m4u_slave_id;
 
 	mutex_lock(&gM4u_prog_pfh_mutex);
-
-	{
-		pProgPfh[id].Enabled = 0;
+	for (i = 0; i < M4U_PROG_PFH_NUM(m4u_index); i++) {
+		if (1 == pProgPfh[i].Enabled) {
+			if (port == pProgPfh[i].port && pProgPfh[i].sel == 0) {
+				pProgPfh[i].Enabled = 0;
+				break;
+			}
+		}
 	}
 	mutex_unlock(&gM4u_prog_pfh_mutex);
 
+	if (i == M4U_PROG_PFH_NUM(m4u_index)) {
+		/* M4UMSG ("m4u info: m4u_invalid_prog_dist_by_id cannot found proj dist set for port %d.\n", port); */
+		return -1;
+	}
+
 	spin_lock(&gM4u_reg_lock);
-	M4U_WriteReg32(m4u_base, REG_MMU_PROG_DIST(id), 0);
+	/* set to default value */
+	M4U_WriteReg32(m4u_base, REG_MMU_PROG_DIST(i), 0x800);
 	spin_unlock(&gM4u_reg_lock);
 
 	return 0;
@@ -1315,13 +1318,13 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 
 	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], MMProfileFlagStart, port, virt); */
 
-	spin_lock(&gM4u_reg_lock);
-	/* Direction, one bit for each port, 1:-, 0:+ */
-	/* m4uHw_set_field_by_mask(m4u_base, REG_MMU_PFH_DIR(port),\ */
-	/* F_MMU_PFH_DIR(port, 1), F_MMU_PFH_DIR(port, dir)); */
+	/* Prefetch Distance & Direction, one bit for each port, 1:-, 0:+ */
+	if (dir != 0 || dis != 1)
+		m4u_config_prog_dist(port, dir, dis, 1, 0, 0);
+	else
+		m4u_invalid_prog_dist_by_id(port);
 
-	/* m4uHw_set_field_by_mask(m4u_base, REG_MMU_PFH_DIST(port),\ */
-	/* F_MMU_PFH_DIST_MASK(port), F_MMU_PFH_DIST_VAL(port,dis)); */
+	spin_lock(&gM4u_reg_lock);
 
 	if (m4u_index == 0) {
 		int mmu_en = 0;
@@ -2284,14 +2287,13 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 
 			gLarbBaseAddr[i] = (unsigned long)of_iomap(node, 0);
 			/* set mm engine domain to 0 (default value) */
-			/* larb_clock_on(i); */
-			/*
-			   M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_0, 0x44444444);
-			   M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_1, 0x44444444);
-			   M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_2, 0x44444444);
-			   M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_3, 0x44444444);
-			 */
-			/* larb_clock_off(i); */
+			larb_clock_on(i);
+			M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_0, 0x44444444);
+			M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_1, 0x44444444);
+			M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_2, 0x44444444);
+			M4U_WriteReg32(gLarbBaseAddr[i], SMI_LARB_DOMN_3, 0x44444444);
+			larb_clock_off(i);
+
 			M4UINFO("init larb %d, 0x%lx\n", i, gLarbBaseAddr[i]);
 		}
 	}
