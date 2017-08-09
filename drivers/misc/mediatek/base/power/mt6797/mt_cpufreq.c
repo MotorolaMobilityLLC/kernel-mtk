@@ -689,14 +689,15 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 		     func_code_1);
 
 	if (func_code_1 == 0)
-		return CPU_LEVEL_0;
+		lv = CPU_LEVEL_0;
 	else if (func_code_1 == 1)
-		return CPU_LEVEL_1;
-	else if (func_code_1 == 2)
-		return CPU_LEVEL_2;
+		lv = CPU_LEVEL_1;
+	else /* if (func_code_1 == 2) */
+		lv = CPU_LEVEL_2;
 
 	/* get CPU clock-frequency from DT */
-#ifdef CONFIG_OF
+/* #ifdef CONFIG_OF */
+#if 0
 	{
 		struct device_node *node = of_find_node_by_type(NULL, "cpu");
 		unsigned int cpu_speed = 0;
