@@ -25,6 +25,7 @@
 int __attribute__ ((weak))
 read_tbat_value(void)
 {
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 30;
 }
 /* ************************************ */

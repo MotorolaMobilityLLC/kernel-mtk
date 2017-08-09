@@ -28,14 +28,14 @@
 int __attribute__ ((weak))
 IMM_IsAdcInitReady(void)
 {
-	pr_err("[Power/BTSMDPA_Thermal] %s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 0;
 }
 
 int __attribute__ ((weak))
 IMM_GetOneChannelValue(int dwChannel, int data[4], int *rawdata)
 {
-	pr_err("[Power/BTSMDPA_Thermal] %s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return -1;
 }
 /*=============================================================*/

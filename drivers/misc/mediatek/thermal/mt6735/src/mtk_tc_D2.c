@@ -131,13 +131,13 @@ static void set_tc_trigger_hw_protect(int temperature, int temperature2);
 void __attribute__ ((weak))
 mt_ptp_lock(unsigned long *flags)
 {
-	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 }
 
 void __attribute__ ((weak))
 mt_ptp_unlock(unsigned long *flags)
 {
-	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 }
 
 /*=============================================================*/
@@ -1121,7 +1121,7 @@ int get_io_reg_base(void)
 	of_property_read_u32(node, "reg", &thermal_phy_base);
 	/* pr_debug("[THERM_CTRL] thermal_base thermal_phy_base=0x%x\n",thermal_phy_base); */
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,AUXADC");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6735-auxadc");
 	BUG_ON(node == 0);
 	if (node) {
 		/* Setup IO addresses */

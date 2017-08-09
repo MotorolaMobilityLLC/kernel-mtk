@@ -20,18 +20,21 @@
 int __attribute__ ((weak))
 get_bat_charging_current_level(void)
 {
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 500;
 }
 
 CHARGER_TYPE __attribute__ ((weak))
 mt_get_charger_type(void)
 {
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return STANDARD_HOST;
 }
 
 int __attribute__ ((weak))
 set_bat_charging_current_limit(int current_limit)
 {
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 0;
 }
 /* ************************************ */

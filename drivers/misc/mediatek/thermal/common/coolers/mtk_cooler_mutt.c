@@ -14,14 +14,14 @@
 unsigned long __attribute__ ((weak))
 ccci_get_md_boot_count(int md_id)
 {
-	pr_err("[thermal/cooler/mutt]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 0;
 }
 
 int __attribute__ ((weak))
 exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned int len)
 {
-	pr_err("[thermal/cooler/mutt]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return -316;
 }
 

@@ -131,13 +131,13 @@ static void set_tc_trigger_hw_protect(int temperature, int temperature2);
 void __attribute__ ((weak))
 mt_ptp_lock(unsigned long *flags)
 {
-	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 }
 
 void __attribute__ ((weak))
 mt_ptp_unlock(unsigned long *flags)
 {
-	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 }
 
 /*=============================================================*/

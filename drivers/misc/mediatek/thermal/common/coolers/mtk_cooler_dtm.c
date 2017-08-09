@@ -50,13 +50,13 @@ static void set_static_gpu_power_limit(unsigned int limit);
 void __attribute__ ((weak))
 mt_ppm_cpu_thermal_protect(unsigned int limited_power)
 {
-	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 }
 #else
 void __attribute__ ((weak))
 mt_cpufreq_thermal_protect(unsigned int limited_power)
 {
-	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 }
 #endif
 /*=============================================================*/

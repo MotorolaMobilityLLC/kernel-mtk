@@ -129,32 +129,32 @@ static void set_adaptive_gpu_power_limit(unsigned int limit);
 void __attribute__ ((weak))
 mt_ppm_cpu_thermal_protect(unsigned int limited_power)
 {
-	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 }
 #else
 void __attribute__ ((weak))
 mt_cpufreq_thermal_protect(unsigned int limited_power)
 {
-	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 }
 #endif
 
 bool __attribute__((weak))
 mtk_get_gpu_loading(unsigned int *pLoading)
 {
-	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 0;
 }
 unsigned int  __attribute__((weak))
 mt_gpufreq_get_min_power(void)
 {
-	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 0;
 }
 unsigned int  __attribute__((weak))
 mt_gpufreq_get_max_power(void)
 {
-	pr_err("[Power/CPU_Thermal]%s doesn't exist\n", __func__);
+	pr_err("E_WF: %s doesn't exist\n", __func__);
 	return 0;
 }
 /*=============================================================*/
