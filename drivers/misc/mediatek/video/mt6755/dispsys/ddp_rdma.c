@@ -217,7 +217,7 @@ static int rdma_config(DISP_MODULE_ENUM module,
 	unsigned int color_matrix;
 	unsigned int regval;
 
-	DDPMSG
+	DDPDBG
 	    ("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
 	     idx, mode, address, unified_color_fmt_name(inFormat), pitch, width, height, sec);
 	ASSERT(idx <= RDMA_INSTANCES);
