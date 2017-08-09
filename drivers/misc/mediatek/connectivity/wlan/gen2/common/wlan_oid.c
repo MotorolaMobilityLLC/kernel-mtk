@@ -4159,6 +4159,55 @@ wlanoidQueryVendorId(IN P_ADAPTER_T prAdapter,
 	return WLAN_STATUS_SUCCESS;
 }				/* wlanoidQueryVendorId */
 
+WLAN_STATUS
+wlanoidRssiMonitor(IN P_ADAPTER_T prAdapter,
+		 OUT PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen)
+{
+	PARAM_RSSI_MONITOR_T rRssi;
+
+	ASSERT(prAdapter);
+	ASSERT(pu4QueryInfoLen);
+	if (u4QueryBufferLen)
+		ASSERT(pvQueryBuffer);
+
+	*pu4QueryInfoLen = sizeof(PARAM_RSSI_MONITOR_T);
+
+	/* Check for query buffer length */
+	if (u4QueryBufferLen < *pu4QueryInfoLen) {
+		DBGLOG(OID, WARN, "Too short length %u\n", u4QueryBufferLen);
+		return WLAN_STATUS_BUFFER_TOO_SHORT;
+	}
+
+	kalMemZero(&rRssi, sizeof(PARAM_RSSI_MONITOR_T));
+
+	if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) == PARAM_MEDIA_STATE_DISCONNECTED)
+		return WLAN_STATUS_ADAPTER_NOT_READY;
+
+	kalMemCopy(&rRssi, pvQueryBuffer, sizeof(PARAM_RSSI_MONITOR_T));
+	if (rRssi.enable) {
+		if (rRssi.max_rssi_value > PARAM_WHQL_RSSI_MAX_DBM)
+			rRssi.max_rssi_value = PARAM_WHQL_RSSI_MAX_DBM;
+		if (rRssi.min_rssi_value < -120)
+			rRssi.min_rssi_value = -120;
+	} else {
+		rRssi.max_rssi_value = 0;
+		rRssi.min_rssi_value = 0;
+	}
+
+	DBGLOG(OID, INFO, "enable=%d, max_rssi_value=%d, min_rssi_value=%d\n",
+		rRssi.enable, rRssi.max_rssi_value, rRssi.min_rssi_value);
+
+	return wlanSendSetQueryCmd(prAdapter,
+			   CMD_ID_RSSI_MONITOR,
+			   TRUE,
+			   FALSE,
+			   TRUE,
+			   nicCmdEventSetCommon,
+			   nicOidCmdTimeoutCommon,
+			   sizeof(PARAM_RSSI_MONITOR_T), (PUINT_8)&rRssi, NULL, 0);
+
+}
+
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief This routine is called to query the current RSSI value.

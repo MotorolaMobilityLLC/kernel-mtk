@@ -1021,7 +1021,15 @@ static const struct wiphy_vendor_command mtk_wlan_vendor_ops[] = {
 		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
 		.doit = mtk_cfg80211_vendor_llstats_get_info
 	},
-
+	/* RSSI Monitoring */
+	{
+		{
+			.vendor_id = GOOGLE_OUI,
+			.subcmd = WIFI_SUBCMD_SET_RSSI_MONITOR
+		},
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV | WIPHY_VENDOR_CMD_NEED_NETDEV,
+		.doit = mtk_cfg80211_vendor_set_rssi_monitoring
+	},
 };
 
 static const struct nl80211_vendor_cmd_info mtk_wlan_vendor_events[] = {
@@ -1052,6 +1060,10 @@ static const struct nl80211_vendor_cmd_info mtk_wlan_vendor_events[] = {
 	{
 		.vendor_id = GOOGLE_OUI,
 		.subcmd = GSCAN_EVENT_HOTLIST_RESULTS_LOST
+	},
+	{
+		.vendor_id = GOOGLE_OUI,
+		.subcmd = WIFI_EVENT_RSSI_MONITOR
 	},
 };
 

@@ -1725,6 +1725,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 	P_MSDU_INFO_T prMsduInfo;
 	P_WIFI_EVENT_T prEvent;
 	P_GLUE_INFO_T prGlueInfo;
+	struct wiphy *wiphy;
 
 	DEBUGFUNC("nicRxProcessEventPacket");
 
@@ -1733,6 +1734,7 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 	prEvent = (P_WIFI_EVENT_T) prSwRfb->pucRecvBuff;
 	prGlueInfo = prAdapter->prGlueInfo;
+	wiphy = priv_to_wiphy(prGlueInfo);
 
 	DBGLOG(RX, EVENT, "prEvent->ucEID = 0x%02x\n", prEvent->ucEID);
 	/* Event Handling */
@@ -2434,6 +2436,18 @@ VOID nicRxProcessEventPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 
 		break;
 #endif /* CFG_SUPPORT_BATCH_SCAN */
+
+	case EVENT_ID_RSSI_MONITOR:
+		{
+			INT_32 rssi = 0;
+
+			kalMemCopy(&rssi, prEvent->aucBuffer, sizeof(INT_32));
+			DBGLOG(RX, TRACE, "EVENT_ID_RSSI_MONITOR value=%d\n", rssi);
+
+			mtk_cfg80211_vendor_event_rssi_beyond_range(wiphy,
+				prGlueInfo->prDevHandler->ieee80211_ptr, rssi);
+		}
+		break;
 
 #if (CFG_SUPPORT_TDLS == 1)
 	case EVENT_ID_TDLS:

@@ -85,6 +85,8 @@ typedef enum {
 	WIFI_SUBCMD_SET_PNO_RANDOM_MAC_OUI,              /* 0x0003 */
 	WIFI_SUBCMD_NODFS_SET,                           /* 0x0004 */
 	WIFI_SUBCMD_SET_COUNTRY_CODE,                    /* 0x0005 */
+	WIFI_SUBCMD_SET_RSSI_MONITOR,			 /* 0x0006 */
+
 	/* Add more sub commands here */
 
 } WIFI_SUB_COMMAND;
@@ -123,7 +125,8 @@ typedef enum {
 	GSCAN_EVENT_FULL_SCAN_RESULTS,
 	RTT_EVENT_COMPLETE,
 	GSCAN_EVENT_COMPLETE_SCAN,
-	GSCAN_EVENT_HOTLIST_RESULTS_LOST
+	GSCAN_EVENT_HOTLIST_RESULTS_LOST,
+	WIFI_EVENT_RSSI_MONITOR
 } WIFI_VENDOR_EVENT;
 
 typedef enum {
@@ -135,7 +138,11 @@ typedef enum {
 	WIFI_ATTRIBUTE_FEATURE_SET,
 	WIFI_ATTRIBUTE_PNO_RANDOM_MAC_OUI,
 	WIFI_ATTRIBUTE_NODFS_VALUE,
-	WIFI_ATTRIBUTE_COUNTRY_CODE
+	WIFI_ATTRIBUTE_COUNTRY_CODE,
+
+	WIFI_ATTRIBUTE_MAX_RSSI,
+	WIFI_ATTRIBUTE_MIN_RSSI,
+	WIFI_ATTRIBUTE_RSSI_MONITOR_START
 
 } WIFI_ATTRIBUTE;
 
@@ -559,6 +566,20 @@ typedef struct {
 	WIFI_PEER_INFO peer_info[];	/* per peer statistics */
 } WIFI_IFACE_STAT;
 
+/* RSSI Monitoring */
+typedef struct _PARAM_RSSI_MONITOR_T {
+	BOOLEAN enable;	/* 1=Start, 0=Stop*/
+	INT_8 max_rssi_value;
+	INT_8 min_rssi_value;
+	UINT_8 reserved[1];
+} PARAM_RSSI_MONITOR_T, *P_PARAM_RSSI_MONITOR_T;
+
+typedef struct {
+	UINT_8 version;
+	INT_8 rssi;
+	mac_addr BSSID;
+} PARAM_RSSI_MONITOR_EVENT;
+
 /*******************************************************************************
 *                                 M A C R O S
 ********************************************************************************
@@ -600,6 +621,9 @@ int mtk_cfg80211_vendor_get_rtt_capabilities(struct wiphy *wiphy, struct wireles
 int mtk_cfg80211_vendor_llstats_get_info(struct wiphy *wiphy, struct wireless_dev *wdev,
 					 const void *data, int data_len);
 
+int mtk_cfg80211_vendor_set_rssi_monitoring(struct wiphy *wiphy, struct wireless_dev *wdev,
+					    const void *data, int data_len);
+
 int mtk_cfg80211_vendor_event_complete_scan(struct wiphy *wiphy, struct wireless_dev *wdev, WIFI_SCAN_EVENT complete);
 
 int mtk_cfg80211_vendor_event_scan_results_available(struct wiphy *wiphy, struct wireless_dev *wdev, UINT_32 num);
@@ -615,5 +639,7 @@ int mtk_cfg80211_vendor_event_hotlist_ap_found(struct wiphy *wiphy, struct wirel
 
 int mtk_cfg80211_vendor_event_hotlist_ap_lost(struct wiphy *wiphy, struct wireless_dev *wdev,
 					 P_PARAM_WIFI_GSCAN_RESULT pdata, UINT_32 data_len);
+
+int mtk_cfg80211_vendor_event_rssi_beyond_range(struct wiphy *wiphy, struct wireless_dev *wdev, INT_32 rssi);
 
 #endif /* _GL_VENDOR_H */
