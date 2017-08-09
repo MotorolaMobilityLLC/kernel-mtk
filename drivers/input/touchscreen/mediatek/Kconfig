@@ -120,4 +120,8 @@ config TOUCHSCREEN_MTK_FT5X0X
 
 source "drivers/input/touchscreen/mediatek/ft5x0x/Kconfig"
 
+config TOUCHSCREEN_MTK_SYNAPTICS_3320_50
+	bool "Synaptics 5.0inch for Mediatek package"
+    default n
+
 endif
