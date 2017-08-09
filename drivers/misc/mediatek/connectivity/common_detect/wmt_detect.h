@@ -65,7 +65,7 @@ do { \
 #define WMT_DETECT_INFO_FUNC(fmt, arg...) \
 do { \
 	if (gWmtDetectDbgLvl >= WMT_DETECT_LOG_INFO) \
-		pr_debug(DFT_TAG"[I]%s:"  fmt, __func__ , ##arg); \
+		pr_info(DFT_TAG"[I]%s:"  fmt, __func__ , ##arg); \
 } while (0)
 #define WMT_DETECT_WARN_FUNC(fmt, arg...) \
 do { \
