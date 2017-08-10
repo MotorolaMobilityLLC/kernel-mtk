@@ -2695,6 +2695,7 @@ static void mt_battery_charger_detect_check(void)
 		battery_log(BAT_LOG_FULL, "[BAT_thread]Cable out \r\n");
 
 		mt_usb_disconnect();
+		hw_bc11_dcd_release();
 
 		battery_log(BAT_LOG_FULL, "[PE+] Cable OUT\n");
 
