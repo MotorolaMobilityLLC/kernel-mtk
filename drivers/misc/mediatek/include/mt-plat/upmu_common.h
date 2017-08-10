@@ -213,5 +213,6 @@ extern int pmic_post_condition1(void);
 extern int pmic_post_condition2(void);
 extern int pmic_post_condition3(void);
 extern int pmic_dump_all_reg(void);
+extern int pmic_force_vcore_pwm(bool enable);
 
 #endif				/* _MT_PMIC_COMMON_H_ */
