@@ -3562,9 +3562,9 @@ VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter)
 	(prAdapter->rWifiVar.rScanInfo.u4ScanUpdateIdx - prBssDesc->u4UpdateIdx > 3 ? 0 : \
 	(BSS_FULL_SCORE - (prAdapter->rWifiVar.rScanInfo.u4ScanUpdateIdx - prBssDesc->u4UpdateIdx) * 25)))
 
-#define CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc) \
+#define CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc, cRssi) \
 	(WEIGHT_IDX_5G_BAND * \
-	((prBssDesc->eBand == BAND_5G && prAdapter->fgEnable5GBand) ? BSS_FULL_SCORE : 0))
+	((prBssDesc->eBand == BAND_5G && prAdapter->fgEnable5GBand && cRssi > -70) ? BSS_FULL_SCORE : 0))
 
 #define CALCULATE_SCORE_BY_STBC(prAdapter, prBssDesc) \
 	(WEIGHT_IDX_STBC * \
@@ -3866,7 +3866,7 @@ try_again:
 		u2ScoreDeauth = CALCULATE_SCORE_BY_DEAUTH(prBssDesc);
 		u2ScoreProbeRsp = CALCULATE_SCORE_BY_PROBE_RSP(prBssDesc);
 		u2ScoreScanMiss = CALCULATE_SCORE_BY_MISS_CNT(prAdapter, prBssDesc);
-		u2ScoreBand = CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc);
+		u2ScoreBand = CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc, cRssi);
 		u2ScoreTotal = u2ScoreBandwidth + u2ScoreChnlInfo + u2ScoreDeauth + u2ScoreProbeRsp +
 			u2ScoreScanMiss + u2ScoreSnrRssi + u2ScoreStaCnt + u2ScoreSTBC + u2ScoreBand + u2BlackListScore;
 
