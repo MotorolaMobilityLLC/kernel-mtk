@@ -1113,7 +1113,7 @@ static void clk_buf_dts_map(void)
 }
 #endif
 
-bool clk_buf_init(void)
+int clk_buf_init(void)
 {
 #ifdef CLKBUF_BRINGUP
 	clk_buf_warn("clk_buf_ctrl is disabled for bring-up\n");
@@ -1152,4 +1152,5 @@ bool clk_buf_init(void)
 
 	return true;
 }
+late_initcall(clk_buf_init);
 
