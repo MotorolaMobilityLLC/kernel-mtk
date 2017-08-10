@@ -3822,8 +3822,8 @@ static ssize_t cmdq_write_test_proc_config(struct file *file,
 	do {
 		/* copy user input */
 		len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-		if (copy_from_user(desc, userBuf, count)) {
-			CMDQ_ERR("TEST_CONFIG: data fail\n");
+		if (copy_from_user(desc, userBuf, len)) {
+			CMDQ_ERR("TEST_CONFIG: data fail, length:%d\n", len);
 			break;
 		}
 		desc[len] = '\0';
@@ -3832,10 +3832,10 @@ static ssize_t cmdq_write_test_proc_config(struct file *file,
 		memset(testConfig, -1, sizeof(testConfig));
 
 		/* process and update config */
-		if (0 >= sscanf(desc, "%lld %lld %lld %lld", &testConfig[0], &testConfig[1],
-			&testConfig[2], &testConfig[3])) {
+		if (sscanf(desc, "%lld %lld %lld %lld", &testConfig[0], &testConfig[1],
+			&testConfig[2], &testConfig[3]) <= 0) {
 			/* sscanf returns the number of items in argument list successfully filled. */
-			CMDQ_ERR("TEST_CONFIG: sscanf failed\n");
+			CMDQ_ERR("TEST_CONFIG: sscanf failed, len:%d\n", len);
 			break;
 		}
 		CMDQ_MSG("TEST_CONFIG: %lld, %lld, %lld, %lld\n",
