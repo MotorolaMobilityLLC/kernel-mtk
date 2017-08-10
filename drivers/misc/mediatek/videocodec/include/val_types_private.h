@@ -172,16 +172,16 @@ typedef struct {
 
 typedef struct {
 	/*
-	    /< [IN/OUT] HW is Completed or not, set by driver & clear by codec
-	       (0: not completed or still in lock status;
-	       1: HW is completed or in unlock status)
-	*/
+	 *  /< [IN/OUT] HW is Completed or not, set by driver & clear by codec
+	 *     (0: not completed or still in lock status;
+	 *     1: HW is completed or in unlock status)
+	 */
 	VAL_UINT32_T    u4HWIsCompleted;
 	/*
-	    /< [OUT]    HW is Timeout or not, set by driver & clear by codec
-	       (0: not in timeout status;
-	       1: HW is in timeout status)
-	*/
+	 *  /< [OUT]    HW is Timeout or not, set by driver & clear by codec
+	 *     (0: not in timeout status;
+	 *     1: HW is in timeout status)
+	 */
 	VAL_UINT32_T    u4HWIsTimeout;
 	VAL_UINT32_T    u4NumOfRegister;            /* /< [IN]     Number of HW register need to store; */
 	VAL_VCODEC_OAL_MEM_STAUTS_T *pHWStatus;
