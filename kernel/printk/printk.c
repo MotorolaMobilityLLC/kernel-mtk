@@ -1774,13 +1774,6 @@ void aee_wdt_zap_locks(void)
 	/* And make sure that we print immediately */
 	sema_init(&console_sem, 1);
 }
-
-/* for aee_wdt test case */
-void aee_wdt_logbuf_lock(void)
-{
-	raw_spin_lock(&logbuf_lock);
-	down(&console_sem);
-}
 #endif
 
 
