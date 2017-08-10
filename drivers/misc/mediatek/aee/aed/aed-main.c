@@ -50,6 +50,7 @@ static DECLARE_COMPLETION(aed_ee_com);
 static spinlock_t aed_device_lock;
 int aee_mode = AEE_MODE_NOT_INIT;
 static int force_red_screen = AEE_FORCE_NOT_SET;
+int aee_force_exp = 0;
 
 static struct proc_dir_entry *aed_proc_dir;
 
@@ -1342,6 +1343,15 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			LOGD("set aee mode = %d\n", aee_mode);
 			break;
 		}
+	case AEEIOCTL_SET_AEE_FORCE_EXP:
+		{
+			if (copy_from_user(&aee_force_exp, (void __user *)arg, sizeof(aee_force_exp))) {
+				ret = -EFAULT;
+				goto EXIT;
+			}
+			LOGD("set aee force_exp = %d\n", aee_force_exp);
+			break;
+		}
 	case AEEIOCTL_DAL_SHOW:
 		{
 			/*It's troublesome to allocate more than 1KB size on stack */
@@ -1868,7 +1878,7 @@ static void external_exception(const char *assert_type, const int *log, int log_
 
 	LOGD("%s : [%s] log ptr %p size %d, phy ptr %p size %d\n", __func__,
 	     assert_type, log, log_size, phy, phy_size);
-	if (aee_mode >= AEE_MODE_CUSTOMER_USER)
+	if ((aee_mode >= AEE_MODE_CUSTOMER_USER) && (!aee_force_exp))
 		return;
 	eerec = kzalloc(sizeof(struct aed_eerec), GFP_ATOMIC);
 	if (eerec == NULL) {
