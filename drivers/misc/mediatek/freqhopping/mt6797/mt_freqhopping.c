@@ -66,7 +66,7 @@ static void __iomem *g_mcumixed_base;
 /*********************************/
 /* FHCTL PLL Setting ID */
 /*********************************/
-#define PLL_SETTING_IDX__USER	(0x9)	/* Magic number, no any special indication */
+#define PLL_SETTING_IDX__USER (0x9)	/* Magic number, no any special indication */
 #define PLL_SETTING_IDX__DEF    (0x1)	/* Default Setting, Magic number, indicate table position 1. */
 
 
@@ -237,7 +237,7 @@ static unsigned long g_reg_pll_con1[FH_PLL_NUM];
 static void __iomem *g_sema_base;
 static unsigned long g_reg_sema3_m0;
 static unsigned long g_reg_cspm_poweron_en;
-#define SEMA_GET_TIMEOUT	2000	/* us */
+#define SEMA_GET_TIMEOUT  2000	/* us */
 
 /* 0x1001AXXX mistake-proofing mechanism. */
 /* Whole system only dispatch VA of 0x1001A000 in the API */
@@ -376,13 +376,14 @@ void mt6797_0x1001AXXX_reg_set(unsigned long reg_offset, unsigned int field, uns
 	local_irq_save(flags);
 	mt6797_0x1001AXXX_lock();	/* To protect between ATF and SPM. */
 
-	ndelay(200);		/* DE workaround, for first read after sequential write. */
-	temp_val = readl((void __iomem *)reg);
-	temp_val &= ~(field);
-	temp_val |= ((val) << (uffs((unsigned int)field) - 1));
-	mt_reg_sync_writel(temp_val, reg);
-	ndelay(200);		/* DE workaround, for first read after sequential write. */
-
+	if (field > 0) {
+		ndelay(200);	/* DE workaround, for first read after sequential write. */
+		temp_val = readl((void __iomem *)reg);
+		temp_val &= ~(field);
+		temp_val |= ((val) << (uffs((unsigned int)field) - 1));
+		mt_reg_sync_writel(temp_val, reg);
+		ndelay(200);	/* DE workaround, for first read after sequential write. */
+	}
 	mt6797_0x1001AXXX_unlock();	/* To protect between ATF and SPM. */
 	local_irq_restore(flags);
 }
@@ -935,7 +936,7 @@ static int mt_fh_hal_hopping_mcu(enum FH_PLL_ID pll_id, unsigned int dds_value)
 	FH_MSG_DEBUG("%s for pll %d:", __func__, pll_id);
 
 
-	/*********************************************/
+  /*********************************************/
 	local_irq_save(flags);
 
 	{
@@ -1096,7 +1097,7 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	};
 
 
-	/***************************************************/
+  /***************************************************/
 	reg_cfg = g_reg_cfg[pll];
 
 	mt6797_0x1001AXXX_lock();
@@ -1111,7 +1112,7 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 
 	/* spin_unlock(&g_fh_lock); */
 	mt6797_0x1001AXXX_unlock();
-	/***************************************************/
+  /***************************************************/
 
 	return 0;
 }
@@ -1520,7 +1521,7 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 
 	local_irq_save(flags);
 
-	/***************** MCU FCHTL *****************/
+  /***************** MCU FCHTL *****************/
 	for (i = 0; i <= MCU_FH_PLL3; ++i) {
 		const unsigned int mon = mcu_fh_read32(g_reg_mon[i]);
 		const unsigned int dds = mon & MASK21b;
@@ -1555,7 +1556,7 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 		seq_printf(m, "Pll%d dds max 0x%06x, min 0x%06x\r\n", i, dds_max[i], dds_min[i]);
 
 
-	/***************** Original FCHTL *****************/
+  /***************** Original FCHTL *****************/
 	for (i = FH_PLL0; i < FH_PLL_NUM; ++i) {
 		const unsigned int mon = fh_read32(g_reg_mon[i]);
 		const unsigned int dds = mon & MASK21b;
@@ -1591,7 +1592,7 @@ static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
 		seq_printf(m, "Pll%d dds max 0x%06x, min 0x%06x\r\n", i, dds_max[i], dds_min[i]);
 
 
-	/**************************************************/
+  /**************************************************/
 	local_irq_restore(flags);
 
 	spin_unlock(&g_fh_lock);
@@ -2057,7 +2058,7 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 		return 1;
 	};
 
-	/********************************************************/
+  /********************************************************/
 	local_irq_save(flags);
 	mt6797_0x1001AXXX_lock();
 

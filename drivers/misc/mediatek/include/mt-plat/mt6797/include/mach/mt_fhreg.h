@@ -308,26 +308,32 @@ static inline void mcu_fh_write32(unsigned long reg, unsigned int val, unsigned 
 /* #define fh_clr_bits(reg,bs)     ((*(volatile u32*)(reg)) &= ~((u32)(bs))) */
 
 #define fh_set_field(reg, field, val) \
-	do {	\
-		volatile unsigned int tv = fh_read32(reg);	\
-		tv &= ~(field); \
-		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
-		fh_write32(reg, tv); \
+	do {  \
+		if (field > 0) {  \
+			unsigned int tv = fh_read32(reg);  \
+			tv &= ~(field); \
+			tv |= ((val) << (uffs((unsigned int)field) - 1)); \
+			fh_write32(reg, tv); \
+		}  \
 	} while (0)
 
 #define mcu_fh_set_field(reg, field, val) \
-	do {	\
-		volatile unsigned int tv = mcu_fh_read32(reg);  \
-		tv &= ~(field); \
-		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
-		mcu_fh_write32(reg, tv, field); \
+	do {  \
+		if (field > 0) {  \
+			unsigned int tv = mcu_fh_read32(reg);  \
+			tv &= ~(field); \
+			tv |= ((val) << (uffs((unsigned int)field) - 1)); \
+			mcu_fh_write32(reg, tv, field); \
+		} \
 	} while (0)
 
 
 #define fh_get_field(reg, field, val) \
-	do {	\
-		volatile unsigned int tv = fh_read32(reg);	\
-		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
+	do {  \
+		if (field > 0) {  \
+			unsigned int tv = fh_read32(reg);  \
+			val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
+		}	\
 	} while (0)
 
 #endif				/* #ifndef __MT_FHREG_H__ */
