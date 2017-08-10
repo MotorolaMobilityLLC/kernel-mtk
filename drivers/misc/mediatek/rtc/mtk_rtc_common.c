@@ -503,6 +503,7 @@ static void rtc_handler(void)
 				} while (time <= now_time);
 				spin_unlock(&rtc_lock);
 				machine_restart("kpoc");
+				return;
 			} else {
 				hal_rtc_save_pwron_alarm();
 				pwron_alm = true;
