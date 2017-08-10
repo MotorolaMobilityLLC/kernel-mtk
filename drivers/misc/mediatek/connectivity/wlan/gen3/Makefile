@@ -42,11 +42,7 @@ endif
 #    ccflags-y += -D_HIF_SDIO=1
 #endif
 
-ifeq ($(CONFIG_MTK_PASSPOINT_R1_SUPPORT), y)
-    ccflags-y += -DCFG_SUPPORT_PASSPOINT=1
-    ccflags-y += -DCFG_HS20_DEBUG=1
-    ccflags-y += -DCFG_ENABLE_GTK_FRAME_FILTER=1
-else ifeq ($(CONFIG_MTK_PASSPOINT_R2_SUPPORT), y)
+ifeq ($(CONFIG_MTK_PASSPOINT_R2_SUPPORT), y)
     ccflags-y += -DCFG_SUPPORT_PASSPOINT=1
     ccflags-y += -DCFG_HS20_DEBUG=1
     ccflags-y += -DCFG_ENABLE_GTK_FRAME_FILTER=1
