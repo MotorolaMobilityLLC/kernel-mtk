@@ -740,7 +740,10 @@
 
 #define CFG_SUPPORT_CPU_BOOST			0
 
+
 #define CFG_SUPPORT_TX_POWER_BACK_OFF       1
+
+#define CFG_SUPPORT_FCC_POWER_BACK_OFF             0
 
 /*------------------------------------------------------------------------------
  * Flags of Packet Lifetime Profiling Mechanism

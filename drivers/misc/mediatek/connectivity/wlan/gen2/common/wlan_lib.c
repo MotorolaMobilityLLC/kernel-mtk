@@ -1057,6 +1057,11 @@ WLAN_STATUS wlanProcessCommandQueue(IN P_ADAPTER_T prAdapter, IN P_QUE_T prCmdQu
 						prCmdInfo->pfCmdDoneHandler(prAdapter, prCmdInfo,
 									    prCmdInfo->pucInfoBuffer);
 					}
+#if CFG_SUPPORT_FCC_POWER_BACK_OFF
+					else
+						nicCmdEventSetCommon(prAdapter, prCmdInfo,
+							      prCmdInfo->pucInfoBuffer);
+#endif
 				} else {
 					/* send fail */
 					if (prCmdInfo->fgIsOid) {

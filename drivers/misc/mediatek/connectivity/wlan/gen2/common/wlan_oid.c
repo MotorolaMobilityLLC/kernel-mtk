@@ -11080,6 +11080,30 @@ WLAN_STATUS wlanoidTspecOperation(P_ADAPTER_T prAdapter, PVOID pvBuffer, UINT_32
 	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T)prMsgTsOperate, MSG_SEND_METHOD_BUF);
 	return WLAN_STATUS_SUCCESS;
 }
+#if CFG_SUPPORT_FCC_POWER_BACK_OFF
+WLAN_STATUS
+wlanoidSetFccCert(IN P_ADAPTER_T prAdapter,
+		  IN PVOID pvSetBuffer,
+		  IN UINT_32 u4SetBufferLen,
+		  OUT PUINT_32 pu4SetInfoLen)
+{
+	P_CMD_FCC_TX_PWR_ADJUST prFccTxPwrAdjust = (P_CMD_FCC_TX_PWR_ADJUST)pvSetBuffer;
+
+	if (!pvSetBuffer || u4SetBufferLen != sizeof(CMD_FCC_TX_PWR_ADJUST))
+		return WLAN_STATUS_INVALID_DATA;
+	return wlanSendSetQueryCmd(prAdapter,
+				   CMD_ID_SET_FCC_TX_PWR_CERT,
+				   TRUE,
+				   FALSE,
+				   TRUE,
+				   NULL,
+				   NULL,
+				   sizeof(CMD_FCC_TX_PWR_ADJUST),
+				   (PUINT_8) (prFccTxPwrAdjust),
+				   NULL,
+				   0);
+	}
+#endif
 
 /* It's a Integretion Test function for RadioMeasurement. If you found errors during doing Radio Measurement,
 ** you can run this IT function with iwpriv wlan0 set_str_cmd \"31 RM-IT xx,xx,xx, xx\"
@@ -11161,4 +11185,3 @@ wlanoidDumpUapsdSetting(P_ADAPTER_T prAdapter, PVOID pvBuffer, UINT_32 u4BufferL
 		"\nStatic Uapsd Setting:0x%02x\nFinal Uapsd Setting:0x%02x", ucStaticSetting, ucFinalSetting);
 	return WLAN_STATUS_SUCCESS;
 }
-

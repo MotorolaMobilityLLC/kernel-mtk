@@ -296,6 +296,9 @@ typedef struct _REG_INFO_T {
 	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
 	UINT_8 fgRlmMitigatedPwrByChByMode;
 #endif
+#if CFG_SUPPORT_FCC_POWER_BACK_OFF
+	FCC_TX_PWR_ADJUST rFccTxPwrAdjust;
+#endif
 	/* NVRAM - Functional Data -END- */
 
 } REG_INFO_T, *P_REG_INFO_T;

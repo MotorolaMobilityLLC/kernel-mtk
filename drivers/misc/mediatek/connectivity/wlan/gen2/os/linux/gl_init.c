@@ -675,6 +675,26 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 			OFFSET_OF(WIFI_CFG_PARAM_STRUCT, arRlmMitigatedPwrByChByMode),
 			sizeof(MITIGATED_PWR_BY_CH_BY_MODE)*40,
 			(PUINT_16) prRegInfo->arRlmMitigatedPwrByChByMode);
+
+#endif
+#if CFG_SUPPORT_FCC_POWER_BACK_OFF
+		/* load FCC cert. parameters */
+		kalCfgDataRead(prGlueInfo,
+			       OFFSET_OF(WIFI_CFG_PARAM_STRUCT, rFccTxPwrAdjust),
+			       sizeof(FCC_TX_PWR_ADJUST),
+			       (PUINT_16)&prRegInfo->rFccTxPwrAdjust);
+		DBGLOG(INIT, WARN, "rFccTxPwrAdjust offset:%ld, value:%d, %d, %d, %d, [%d, %d], [%d, %d], [%d, %d]\n",
+		       OFFSET_OF(WIFI_CFG_PARAM_STRUCT, rFccTxPwrAdjust),
+		       prRegInfo->rFccTxPwrAdjust.fgFccTxPwrAdjust,
+		       prRegInfo->rFccTxPwrAdjust.uOffsetCCK,
+		       prRegInfo->rFccTxPwrAdjust.uOffsetHT20,
+		       prRegInfo->rFccTxPwrAdjust.uOffsetHT40,
+		       prRegInfo->rFccTxPwrAdjust.aucChannelCCK[0],
+		       prRegInfo->rFccTxPwrAdjust.aucChannelCCK[1],
+		       prRegInfo->rFccTxPwrAdjust.aucChannelHT20[0],
+		       prRegInfo->rFccTxPwrAdjust.aucChannelHT20[1],
+		       prRegInfo->rFccTxPwrAdjust.aucChannelHT40[0],
+		       prRegInfo->rFccTxPwrAdjust.aucChannelHT40[1]);
 #endif
 	} else {
 		prGlueInfo->fgNvramAvailable = FALSE;

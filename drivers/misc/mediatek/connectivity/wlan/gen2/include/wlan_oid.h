@@ -1690,3 +1690,8 @@ WLAN_STATUS
 wlanoidDumpUapsdSetting(P_ADAPTER_T prAdapter, PVOID pvBuffer, UINT_32 u4BufferLen,
 									  PUINT_32 pu4InfoLen);
 
+#if CFG_SUPPORT_FCC_POWER_BACK_OFF
+WLAN_STATUS
+wlanoidSetFccCert(IN P_ADAPTER_T prAdapter,
+		  IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+#endif

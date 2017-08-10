@@ -108,6 +108,7 @@
 #define CMD_GET_CHIP            "GET_CHIP"
 #define CMD_SET_DBG_LEVEL       "SET_DBG_LEVEL"
 #define CMD_GET_DBG_LEVEL       "GET_DBG_LEVEL"
+#define CMD_SET_FCC_CERT        "SET_FCC_CHANNEL"
 #define PRIV_CMD_SIZE			512
 
 static UINT_32 g_ucMiracastMode = MIRACAST_MODE_OFF;
@@ -3017,6 +3018,56 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 			kalIoctl(prGlueInfo, wlanoidTspecOperation, (PVOID)pcCommand,
 					 i4TotalLen, FALSE, FALSE, FALSE, FALSE, &i4BytesWritten);
 		}
+#if CFG_SUPPORT_FCC_POWER_BACK_OFF
+		else if (kalStrniCmp(pcCommand, CMD_SET_FCC_CERT, strlen(CMD_SET_FCC_CERT)) == 0) {
+			CMD_FCC_TX_PWR_ADJUST rFccTxPwrAdjust;
+			P_FCC_TX_PWR_ADJUST pFccTxPwrAdjust = &prGlueInfo->rRegInfo.rFccTxPwrAdjust;
+			WLAN_STATUS rWlanStatus = WLAN_STATUS_FAILURE;
+
+			if (pFccTxPwrAdjust->fgFccTxPwrAdjust == 0)
+				DBGLOG(RLM, WARN,
+				       "FCC cert control(%d) is disabled in NVRAM\n",
+				       pFccTxPwrAdjust->fgFccTxPwrAdjust);
+			else {
+				pcCommand += (strlen(CMD_SET_FCC_CERT) + 1);
+				if (*pcCommand != '1' && *pcCommand != '0')
+					DBGLOG(RLM, WARN, "control parameter(%c) is not correct(0 or 1)\n", *pcCommand);
+				else {
+					kalMemSet(&rFccTxPwrAdjust, 0, sizeof(rFccTxPwrAdjust));
+#if 0
+					rFccTxPwrAdjust.Offset_CCK = 14;	/* drop 7dB */
+					rFccTxPwrAdjust.Offset_HT20 = 16;	/* drop 8dB */
+					rFccTxPwrAdjust.Offset_HT40 = 14;	/* drop 7dB */
+					rFccTxPwrAdjust.Channel_CCK[0] = 12;	/* start channel */
+					rFccTxPwrAdjust.Channel_CCK[1] = 13;	/* end channel */
+					rFccTxPwrAdjust.Channel_HT20[0] = 12;	/* start channel */
+					rFccTxPwrAdjust.Channel_HT20[1] = 13;	/* end channel */
+					/* start channel, primiary channel 12, HT40, center channel (10) -2 */
+					rFccTxPwrAdjust.Channel_HT40[0] = 8;
+					/* end channel, primiary channel 12, HT40,  center channel (11) -2 */
+					rFccTxPwrAdjust.Channel_HT40[1] = 9;
+#else
+					kalMemCopy(&rFccTxPwrAdjust, pFccTxPwrAdjust, sizeof(FCC_TX_PWR_ADJUST));
+#endif
+					rFccTxPwrAdjust.fgFccTxPwrAdjust = *pcCommand == '1' ? 1 : 0;
+
+					DBGLOG(RLM, INFO, "FCC Cert Control (%d)\n", rFccTxPwrAdjust.fgFccTxPwrAdjust);
+
+					rWlanStatus = kalIoctl(prGlueInfo,
+							       wlanoidSetFccCert,
+							       (PVOID)&rFccTxPwrAdjust,
+							       sizeof(CMD_FCC_TX_PWR_ADJUST),
+							       FALSE,
+							       FALSE,
+							       TRUE,
+							       FALSE,
+							       NULL);
+					if (rWlanStatus == WLAN_STATUS_SUCCESS)
+						i4BytesWritten = i4TotalLen;
+				}
+			}
+		}
+#endif
 #if 0
 
 		else if (strnicmp(pcCommand, CMD_RSSI, strlen(CMD_RSSI)) == 0) {
