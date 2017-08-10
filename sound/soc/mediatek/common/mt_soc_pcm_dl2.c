@@ -446,6 +446,7 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 #ifdef AUDIO_64BYTE_ALIGN	/* no need to do 64byte align */
 	copy_size = Align64ByteSize(copy_size);
 #endif
+
 	*size = copy_size;
 	PRINTK_AUD_DL2("copy_size=%d, count=%d, bCopy %d, %pf %pf %pf %pf\n", copy_size, (unsigned int)count,
 		bCopy, (void *)CALLER_ADDR0, (void *)CALLER_ADDR1, (void *)CALLER_ADDR2, (void *)CALLER_ADDR3);
@@ -543,7 +544,9 @@ void mtk_dl2_copy2buffer(const void *addr, uint32_t size)
 	PRINTK_AUD_DL2("%s, addr 0x%p 0x%p, size %d %d\n", __func__, addr,
 			ISRCopyBuffer.pBufferBase, size, ISRCopyBuffer.u4BufferSize);
 
+#ifdef AUDIO_64BYTE_ALIGN	/* no need to do 64byte align */
 	size = Align64ByteSize(size);
+#endif
 
 	Auddrv_Dl2_Spinlock_lock();
 retry:
@@ -669,9 +672,7 @@ static int mtk_pcm_dl2_copy(struct snd_pcm_substream *substream,
 
 	/* get total bytes to copy */
 	count = audio_frame_to_bytes(substream, count);
-
 	PRINTK_AUD_DL2("mtk_pcm_dl2_copy+ pos = %lu count = %lu\n", pos, count);
-
 	return mtk_pcm_dl2_copy_(dst, &count, Afe_Block, true);
 }
 
