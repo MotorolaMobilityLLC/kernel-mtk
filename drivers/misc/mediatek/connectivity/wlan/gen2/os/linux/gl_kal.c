@@ -1819,8 +1819,6 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 	if (kalHaltLock(2 * WLAN_OID_TIMEOUT_THRESHOLD)) {
 		DBGLOG(OID, WARN, "kalIoctl: WLAN_STATUS_FAILURE\n");
 
-		prIoReq->rStatus = WLAN_STATUS_FAILURE;
-
 		prIoReq = &(prGlueInfo->OidEntry);
 		ASSERT(prIoReq);
 		DBGLOG(OID, WARN, "OidHandler 0x%p pvInfoBuf 0x%p,Buflen =%d,InfoLen=%p fgRead=%d,fgWaitRsp=%d\n"
