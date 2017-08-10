@@ -857,7 +857,7 @@ static int MPU6515_SetDataFormat(struct i2c_client *client, u8 dataformat)
 	if (res <= 0)
 		return MPU6515_ERR_I2C;
 
-
+	GSE_LOG("MPU6515_REG_DATA_FORMAT, reg[%x] read=0x%x, dataformat=0x%x\n", MPU6515_REG_DATA_FORMAT, databuf[0], dataformat);
 	/* write */
 	databuf[1] = databuf[0] | dataformat;
 	databuf[0] = MPU6515_REG_DATA_FORMAT;
@@ -901,7 +901,7 @@ static int MPU6515_SetBWRate(struct i2c_client *client, u8 bwrate)
 		if (res <= 0)
 			return MPU6515_ERR_I2C;
 
-
+    	GSE_LOG("MPU6515_REG_BW_RATE, reg[%x] read=0x%x, bwrate=0x%x\n", MPU6515_REG_BW_RATE, databuf[0], bwrate);
 		/* write */
 		databuf[1] = databuf[0] | bwrate;
 		databuf[0] = MPU6515_REG_BW_RATE;
