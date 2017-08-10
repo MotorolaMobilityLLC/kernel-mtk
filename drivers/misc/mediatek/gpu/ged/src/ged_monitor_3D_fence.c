@@ -71,7 +71,9 @@ static void ged_sync_cb(struct sync_fence *fence, struct sync_fence_waiter *wait
 	do_div(t,1000);
 
 	ged_monitor_3D_fence_notify();
+#ifdef GED_DVFS_ENABLE	
 	ged_dvfs_cal_gpu_utilization_force();
+#endif	
 	psMonitor = GED_CONTAINER_OF(waiter, GED_MONITOR_3D_FENCE, sSyncWaiter);
 
 	ged_log_buf_print(ghLogBuf_DVFS, "[-] ged_monitor_3D_fence_done (ts=%llu) %p", t, psMonitor->psSyncFence);

@@ -67,6 +67,7 @@ typedef enum GED_DVFS_TUNING_MODE_TAG
 #define GED_EVENT_LOW_POWER_MODE (1 << 5)
 #define GED_EVENT_MHL4K_VID      (1 << 6)
 #define GED_EVENT_BOOST_HOST      (1 << 7)
+#define GED_EVENT_VR      (1 << 8)
 
 #define GED_EVENT_FORCE_ON  (1 << 0)
 #define GED_EVENT_FORCE_OFF  (1 << 1)

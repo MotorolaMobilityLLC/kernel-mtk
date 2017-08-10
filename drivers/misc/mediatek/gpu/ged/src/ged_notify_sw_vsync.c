@@ -30,6 +30,12 @@
 
 #define GED_DVFS_TIMER_TIMEOUT 25000000
 
+#ifndef ENABLE_TIMER_BACKUP
+#undef GED_DVFS_TIMER_TIMEOUT
+#define GED_DVFS_TIMER_TIMEOUT 70000000
+#endif
+
+
 static struct hrtimer g_HT_hwvsync_emu;
 
 #include "ged_dvfs.h"
@@ -60,7 +66,7 @@ static int ged_sw_vsync_event(bool bMode)
 	static bool bCurMode = false;
 	int ret;
 	
-	ret = -1;
+	ret = 0;
 	mutex_lock(&gsVsyncModeLock);
 	
 	if(bCurMode!=bMode)
@@ -73,28 +79,41 @@ static int ged_sw_vsync_event(bool bMode)
 		}
 		else
 		{
-			ret =  -1;
+			
 			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] LOCAL mode change to %d ",bCurMode);
 		}		
-	}
-	else
-	{
-		ret = 0;
+		
+		if(bCurMode)
+			ret = 1;
 	}	
 	
 	mutex_unlock(&gsVsyncModeLock);
 	
 	return ret;
 }
-
+static unsigned long long sw_vsync_ts;
 static void ged_notify_sw_sync_work_handle(struct work_struct *psWork)
 {
 	GED_NOTIFY_SW_SYNC* psNotify = GED_CONTAINER_OF(psWork, GED_NOTIFY_SW_SYNC, sWork);
+	unsigned long long temp;
+	temp = 0;
 	if (psNotify)
 	{
 		ged_sw_vsync_event(false); // if this callback is queued, send mode off to real driver
 #ifdef ENABLE_TIMER_BACKUP		
+		temp = ged_get_time();
+		
+		if(temp-sw_vsync_ts>GED_DVFS_TIMER_TIMEOUT)
+		{
+			do_div(temp,1000);
+			psNotify->t = temp;
 		ged_dvfs_run(psNotify->t, psNotify->phase, psNotify->ul3DFenceDoneTime);
+			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Timer kicked	(ts=%llu) ", temp);
+		}
+		else
+		{
+ 			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Timer kick giveup	(ts=%llu) ", temp);
+		}
 #endif		
 		ged_free(psNotify, sizeof(GED_NOTIFY_SW_SYNC));
 	}
@@ -103,7 +122,7 @@ static void ged_notify_sw_sync_work_handle(struct work_struct *psWork)
 #define GED_VSYNC_MISS_QUANTUM_NS 16666666
 
 
-static unsigned long long sw_vsync_ts;
+
 #ifdef ENABLE_COMMON_DVFS	
 static unsigned long long hw_vsync_ts;
 #endif
@@ -148,6 +167,7 @@ static void ged_timer_switch_work_handle(struct work_struct *psWork)
 	GED_NOTIFY_SW_SYNC* psNotify = GED_CONTAINER_OF(psWork, GED_NOTIFY_SW_SYNC, sWork);
 	if (psNotify)
 	{
+		ged_sw_vsync_event(false);
 		timer_switch(false);
 		ged_free(psNotify, sizeof(GED_NOTIFY_SW_SYNC));
 	}
@@ -170,12 +190,14 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	long phase = 0;
 	unsigned long ul3DFenceDoneTime;
 
-	ged_sw_vsync_event(true);
+	psQueryData->bFirstBorn = ged_sw_vsync_event(true);
 	
 	ul3DFenceDoneTime = ged_monitor_3D_fence_done_time(); 
+	
 	psQueryData-> ul3DFenceDoneTime = ul3DFenceDoneTime;
-	psQueryData->ulWorkingPeriod_us = g_ulWorkingPeriod_us;
-	psQueryData->ulPreCalResetTS_us = g_ulCalResetTS_us; // IMPORTANT
+	/*psQueryData->ulWorkingPeriod_us = g_ulWorkingPeriod_us;
+	psQueryData->ulPreCalResetTS_us = g_ulCalResetTS_us; // IMPORTANT*/
+	
 	temp = ged_get_time();
 
 	
@@ -345,12 +367,14 @@ enum hrtimer_restart ged_sw_vsync_check_cb( struct hrtimer *timer )
 		if (psNotify)
 		{
 			INIT_WORK(&psNotify->sWork, ged_notify_sw_sync_work_handle);
+			/*
 			psNotify->t = temp;
 			do_div(psNotify->t,1000);
+			*/
 			psNotify->phase = GED_DVFS_TIMER_BACKUP;
 			psNotify->ul3DFenceDoneTime = 0;
 			queue_work(g_psNotifyWorkQueue, &psNotify->sWork);
-			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Timer kick	(ts=%llu) ", temp);
+			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Timer queue to kick	(ts=%llu) ", temp);
 			hrtimer_start(&g_HT_hwvsync_emu, ns_to_ktime(GED_DVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL);
 			g_timer_on_ts = temp;
 		}

@@ -1,6 +1,20 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <mt-plat/mtk_gpu_utility.h>
+#include "ged_monitor_3D_fence.h"
 
 unsigned int (*mtk_get_gpu_memory_usage_fp)(void) = NULL;
 EXPORT_SYMBOL(mtk_get_gpu_memory_usage_fp);
@@ -458,3 +472,166 @@ bool mtk_gpu_dvfs_clock_switch(bool bSwitch)
     return false;
 }
 EXPORT_SYMBOL(mtk_gpu_dvfs_clock_switch);
+
+//-----------------------------------------------------------------------------
+void (*mtk_get_gpu_dvfs_from_fp)(MTK_GPU_DVFS_TYPE* peType, unsigned long *pulFreq) = NULL;
+EXPORT_SYMBOL(mtk_get_gpu_dvfs_from_fp);
+
+bool mtk_get_gpu_dvfs_from(MTK_GPU_DVFS_TYPE* peType, unsigned long *pulFreq)
+{
+    if (NULL != mtk_get_gpu_dvfs_from_fp)
+    {
+    	if (peType && pulFreq)
+    	{
+        	mtk_get_gpu_dvfs_from_fp(peType, pulFreq);
+        	return true;
+    	}
+    }
+    return false;
+}
+EXPORT_SYMBOL(mtk_get_gpu_dvfs_from);
+
+//-----------------------------------------------------------------------------
+bool mtk_get_3D_fences_count(int* pi32Count)
+{
+ 	if (pi32Count)
+    {
+        *pi32Count = ged_monitor_3D_fence_get_count();
+		return true;
+    }
+    return false;
+}
+EXPORT_SYMBOL(mtk_get_3D_fences_count);
+
+//-----------------------------------------------------------------------------
+unsigned long (*mtk_get_vsync_based_target_freq_fp)(void) = NULL;
+EXPORT_SYMBOL(mtk_get_vsync_based_target_freq_fp);
+
+bool mtk_get_vsync_based_target_freq(unsigned long *pulFreq)
+{
+    if (NULL != mtk_get_vsync_based_target_freq_fp)
+    {
+    	if (pulFreq)
+    	{
+        	*pulFreq = mtk_get_vsync_based_target_freq_fp();
+			return true;
+    	}
+    }
+    return false;
+}
+EXPORT_SYMBOL(mtk_get_vsync_based_target_freq);
+
+//-----------------------------------------------------------------------------
+
+unsigned int (*mtk_get_gpu_sub_loading_fp)(void) = NULL;
+EXPORT_SYMBOL(mtk_get_gpu_sub_loading_fp);
+
+bool mtk_get_gpu_sub_loading(unsigned int* pLoading)
+{
+    if (NULL != mtk_get_gpu_sub_loading_fp)
+    {
+        if (pLoading)
+        {
+            *pLoading = mtk_get_gpu_sub_loading_fp();
+            return true;
+        }
+    }
+    return false;
+}
+EXPORT_SYMBOL(mtk_get_gpu_sub_loading);
+
+//-----------------------------------------------------------------------------
+
+unsigned long (*mtk_get_gpu_bottom_freq_fp)(void) = NULL;
+EXPORT_SYMBOL(mtk_get_gpu_bottom_freq_fp);
+
+bool mtk_get_gpu_bottom_freq(unsigned long *pulFreq)
+{
+    if (NULL != mtk_get_gpu_bottom_freq_fp)
+    {
+        if (pulFreq)
+        {
+            *pulFreq = mtk_get_gpu_bottom_freq_fp();
+            return true;
+        }
+    }
+    return false;
+}
+EXPORT_SYMBOL(mtk_get_gpu_bottom_freq);
+
+//-----------------------------------------------------------------------------
+
+unsigned long (*mtk_get_gpu_custom_boost_freq_fp)(void) = NULL;
+EXPORT_SYMBOL(mtk_get_gpu_custom_boost_freq_fp);
+
+bool mtk_get_gpu_custom_boost_freq(unsigned long* pulFreq)
+{
+    if (NULL != mtk_get_gpu_custom_boost_freq_fp)
+    {
+        if (pulFreq)
+        {
+            *pulFreq = mtk_get_gpu_custom_boost_freq_fp();
+            return true;
+        }
+    }
+    return false;
+}
+EXPORT_SYMBOL(mtk_get_gpu_custom_boost_freq);
+
+//-----------------------------------------------------------------------------
+
+unsigned long (*mtk_get_gpu_custom_upbound_freq_fp)(void) = NULL;
+EXPORT_SYMBOL(mtk_get_gpu_custom_upbound_freq_fp);
+
+bool mtk_get_gpu_custom_upbound_freq(unsigned long* pulFreq)
+{
+    if (NULL != mtk_get_gpu_custom_upbound_freq_fp)
+    {
+        if (pulFreq)
+        {
+            *pulFreq = mtk_get_gpu_custom_upbound_freq_fp();
+            return true;
+        }
+    }
+    return false;
+}
+EXPORT_SYMBOL(mtk_get_gpu_custom_upbound_freq);
+
+//-----------------------------------------------------------------------------
+
+unsigned int (*mtk_get_vsync_offset_event_status_fp)(void) = NULL;
+EXPORT_SYMBOL(mtk_get_vsync_offset_event_status_fp);
+
+bool mtk_get_vsync_offset_event_status(unsigned int* pui32EventStatus)
+{
+    if (NULL != mtk_get_vsync_offset_event_status_fp)
+    {
+        if (pui32EventStatus)
+        {
+            *pui32EventStatus = mtk_get_vsync_offset_event_status_fp();
+            return true;
+        }
+    }
+    return false;
+}
+EXPORT_SYMBOL(mtk_get_vsync_offset_event_status);
+
+//-----------------------------------------------------------------------------
+
+unsigned int (*mtk_get_vsync_offset_debug_status_fp)(void) = NULL;
+EXPORT_SYMBOL(mtk_get_vsync_offset_debug_status_fp);
+
+bool mtk_get_vsync_offset_debug_status(unsigned int* pui32DebugStatus)
+{
+    if (NULL != mtk_get_vsync_offset_debug_status_fp)
+    {
+        if (pui32DebugStatus)
+        {
+            *pui32DebugStatus = mtk_get_vsync_offset_debug_status_fp();
+            return true;
+        }
+    }
+    return false;
+}
+EXPORT_SYMBOL(mtk_get_vsync_offset_debug_status);
+
