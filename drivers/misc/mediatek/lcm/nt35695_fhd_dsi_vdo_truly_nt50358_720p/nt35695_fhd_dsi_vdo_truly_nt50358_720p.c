@@ -61,6 +61,7 @@ static LCM_UTIL_FUNCS lcm_util;
 #define MDELAY(n)		(lcm_util.mdelay(n))
 #define UDELAY(n)		(lcm_util.udelay(n))
 
+
 #define dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update) \
 	lcm_util.dsi_set_cmdq_V22(cmdq, cmd, count, ppara, force_update)
 #define dsi_set_cmdq_V2(cmd, count, ppara, force_update) \
@@ -212,7 +213,7 @@ MODULE_LICENSE("GPL");
 
 /* static unsigned char lcd_id_pins_value = 0xFF; */
 static const unsigned char LCD_MODULE_ID = 0x01;
-#define LCM_DSI_CMD_MODE									1
+#define LCM_DSI_CMD_MODE									0
 #define FRAME_WIDTH										(720)
 #define FRAME_HEIGHT									(1280)
 
@@ -261,7 +262,7 @@ static struct LCM_setting_table init_setting[] = {
 
 	{0xFF, 1, {0x10} },	/* Return  To      CMD1 */
 	{REGFLAG_UDELAY, 1, {} },
-	{0xBB, 1, {0x10} },/*CMD MODE*/
+	{0xBB, 1, {0x03} },/*VDO MODE*/
 	{0x3B, 5, {0x03, 0x0A, 0x0A, 0x0A, 0x0A} },
 	{0x53, 1, {0x24} },
 	{0x55, 1, {0x00} },
@@ -830,7 +831,7 @@ static struct LCM_setting_table init_setting2[] = {
 
 	{0xFF, 1, {0x10} },	/* Return  To      CMD1 */
 	{REGFLAG_UDELAY, 1, {} },
-	{0xBB, 1, {0x03} },/*VDO MODE*/
+	{0xBB, 1, {0x10} },/*CMD MODE*/
 	{0x3B, 5, {0x03, 0x0A, 0x0A, 0x0A, 0x0A} },
 	{0x53, 1, {0x24} },
 	{0x55, 1, {0x00} },
@@ -1504,6 +1505,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 8;
 	params->dsi.vertical_frontporch = 10;
+	params->dsi.vertical_frontporch_for_low_power = 400;
 	params->dsi.vertical_active_line = VIRTUAL_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 10;
@@ -1671,10 +1673,10 @@ static void lcm_init(void)
 	SET_RESET_PIN(1);
 	MDELAY(10);
 	if (lcm_dsi_mode == CMD_MODE) {
-		push_table(0, init_setting, sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
+		push_table(0, init_setting2, sizeof(init_setting2) / sizeof(struct LCM_setting_table), 1);
 		LCM_LOGI("nt35695----tps6132----lcm mode = cmd mode :%d----\n", lcm_dsi_mode);
 	} else {
-		push_table(0, init_setting2, sizeof(init_setting2) / sizeof(struct LCM_setting_table), 1);
+		push_table(0, init_setting, sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
 		LCM_LOGI("nt35695----tps6132----lcm mode = vdo mode :%d----\n", lcm_dsi_mode);
 	}
 }
@@ -1874,8 +1876,8 @@ static void *lcm_switch_mode(int mode)
 }
 
 
-LCM_DRIVER nt35695_fhd_dsi_cmd_truly_nt50358_720p_lcm_drv = {
-	.name = "nt35695_fhd_dsi_cmd_truly_nt50358_720p_drv",
+LCM_DRIVER nt35695_fhd_dsi_vdo_truly_nt50358_720p_lcm_drv = {
+	.name = "nt35695_fhd_dsi_vdo_truly_nt50358_720p_drv",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
