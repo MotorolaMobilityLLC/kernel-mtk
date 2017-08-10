@@ -108,7 +108,7 @@ GED_ERROR ged_debugFS_create_entry(
 
 	if (pfnWrite != NULL)
 	{
-		uiMode |= S_IWUSR | S_IWGRP | S_IWOTH;
+		uiMode |= S_IWUSR | S_IWGRP;
 	}
 
 	psEntry = debugfs_create_file(pszName,
