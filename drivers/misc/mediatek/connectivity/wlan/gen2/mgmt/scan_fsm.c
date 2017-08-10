@@ -496,7 +496,7 @@ VOID scnSendScanReqV3ExtCh(IN P_ADAPTER_T prAdapter)
 
 	kalMemCopy(prCmdScanReqV3->arSSID[0].aucSsid, "CMD_SCAN_REQ_V3_T", strlen("CMD_SCAN_REQ_V3_T"));
 	prCmdScanReqV3->arSSID[0].u4SsidLen = 0;
-	for (i = 1; i < prScanParam->ucSSIDNum; i++) {
+	for (i = 1; i <= prScanParam->ucSSIDNum; i++) {
 		COPY_SSID(prCmdScanReqV3->arSSID[i].aucSsid,
 			  prCmdScanReqV3->arSSID[i].u4SsidLen,
 			  prScanParam->aucSpecifiedSSID[i - 1], prScanParam->ucSpecifiedSSIDLen[i - 1]);
@@ -590,7 +590,7 @@ VOID scnSendScanReqV2(IN P_ADAPTER_T prAdapter)
 
 		kalMemCopy(prCmdScanReqV3->arSSID[0].aucSsid, "CMD_SCAN_REQ_V3_T", strlen("CMD_SCAN_REQ_V3_T"));
 		prCmdScanReqV3->arSSID[0].u4SsidLen = 0;
-		for (i = 1; i < prScanParam->ucSSIDNum; i++) {
+		for (i = 1; i <= prScanParam->ucSSIDNum; i++) {
 			COPY_SSID(prCmdScanReqV3->arSSID[i].aucSsid,
 				  prCmdScanReqV3->arSSID[i].u4SsidLen,
 				  prScanParam->aucSpecifiedSSID[i - 1],
