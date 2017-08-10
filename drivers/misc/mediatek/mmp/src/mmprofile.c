@@ -537,7 +537,7 @@ static int MMProfileGetEventName(MMP_Event event, char *name, size_t *size)
 		}
 
 		for (i = infoCntUsed - 1; i >= 0; i--) {
-			strncpy(&name[actualLen], eventInfo[i]->name, strlen(eventInfo[i]->name));
+			strncpy(&name[actualLen], eventInfo[i]->name, strlen(eventInfo[i]->name) + 1);
 			actualLen += strlen(eventInfo[i]->name);
 			if (i > 0) {
 				/* not the last name */
@@ -900,7 +900,7 @@ MMP_Event MMProfileRegisterEvent(MMP_Event parent, const char *name)
 		memcpy(pRegTable->event_info.name, name, MMProfileEventNameMaxLen);
 		pRegTable->event_info.name[MMProfileEventNameMaxLen] = 0;
 	} else
-		strncpy(pRegTable->event_info.name, name, strlen(name));
+		strncpy(pRegTable->event_info.name, name, strlen(name) + 1);
 	pRegTable->event_info.parentId = parent;
 	list_add_tail(&(pRegTable->list), &(MMProfile_RegTable.list));
 	MMProfileGlobals.event_state[index] = 0;
@@ -1065,7 +1065,7 @@ long MMProfileLogMetaStringEx(MMP_Event event, MMP_LogType type, unsigned long d
 		MetaData.pData = vmalloc(MetaData.size);
 		if (!MetaData.pData)
 			return -1;
-		strncpy((char *)MetaData.pData, str, strlen(str));
+		strncpy((char *)MetaData.pData, str, strlen(str) + 1);
 		ret = MMProfileLogMeta(event, type, &MetaData);
 		vfree(MetaData.pData);
 	}
