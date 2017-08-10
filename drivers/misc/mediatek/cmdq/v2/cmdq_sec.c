@@ -308,6 +308,10 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 	iwcCmdqMessage_t *pIwc;
 	/* cmdqSecDr will insert some instr */
 	const uint32_t reservedCommandSize = 4 * CMDQ_INST_SIZE;
+#ifdef CMDQ_JUMP_MEM
+		struct CmdBufferStruct *cmd_buffer = NULL;
+		uint32_t buffer_index = 0;
+#endif
 
 	status = 0;
 	pIwc = (iwcCmdqMessage_t *) _pIwc;
@@ -337,7 +341,19 @@ int32_t cmdq_sec_fill_iwc_command_msg_unlocked(int32_t iwcCommand, void *_pTask,
 		pIwc->command.engineFlag = pTask->engineFlag;
 		pIwc->command.commandSize = pTask->commandSize;
 		pIwc->command.hNormalTask = 0LL | ((unsigned long)pTask);
+#ifdef CMDQ_JUMP_MEM
+		buffer_index = 0;
+		list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
+			uint32_t copy_size = list_is_last(&cmd_buffer->listEntry, &pTask->cmd_buffer_list) ?
+				CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size : CMDQ_CMD_BUFFER_SIZE;
+			memcpy((pIwc->command.pVABase +
+				buffer_index * CMDQ_CMD_BUFFER_SIZE / CMDQ_INST_SIZE * 2),
+				(cmd_buffer->pVABase), (copy_size));
+			buffer_index++;
+		}
+#else
 		memcpy((pIwc->command.pVABase), (pTask->pVABase), (pTask->commandSize));
+#endif
 
 		/* cookie */
 		pIwc->command.waitCookie = pTask->secData.waitCookie;

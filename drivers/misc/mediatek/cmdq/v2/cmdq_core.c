@@ -3421,19 +3421,6 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 	uint32_t copyCmdSize = 0;
 	uint32_t cmdLoopStartAddr = 0;
 
-	/* HACK: Insert BACKUP secure threads' COOKIE and IRQ here */
-	if (true == pTask->secData.is_secure) {
-		/* we need to consider {READ, MOVE, WRITE} for each register */
-		/* and the SYNC in the begin and end */
-#ifdef CMDQ_SECURE_PATH_HW_LOCK
-		reservedBackCookieInstrSize = (3 + 3 + 2 + 2 + 1) * CMDQ_INST_SIZE;
-#else
-#ifdef CMDQ_SECURE_PATH_NORMAL_IRQ
-		reservedBackCookieInstrSize = (3 + 2) * CMDQ_INST_SIZE;
-#endif
-#endif
-	}
-
 	/* calculate required buffer size */
 	/* we need to consider {READ, MOVE, WRITE} for each register */
 	/* and the SYNC in the begin and end */
