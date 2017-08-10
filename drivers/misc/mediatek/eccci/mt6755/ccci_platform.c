@@ -1003,7 +1003,7 @@ void ccci_reset_ccif_hw(struct ccci_modem *md, int ccif_id, void __iomem *baseA,
 	int i;
 #if 0
 	{
-		unsigned int tx_channel = 16;
+		unsigned int tx_channel = 0;
 
 		/* clear occupied channel */
 		while (tx_channel < 16) {

@@ -938,7 +938,7 @@ static void ccci_md_battery_percent_cb(BATTERY_PERCENT_LEVEL level)
 void ccci_reset_ccif_hw(struct ccci_modem *md, int ccif_id, void __iomem *baseA, void __iomem *baseB)
 {
 	int i;
-	unsigned int tx_channel = 16;
+	unsigned int tx_channel = 0;
 
 	/* clear occupied channel */
 	while (tx_channel < 16) {
