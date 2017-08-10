@@ -8266,8 +8266,11 @@ static int32_t cmdq_core_exec_task_async_with_retry(TaskStruct *pTask, int32_t t
 	} else {
 #ifdef CMDQ_JUMP_MEM
 #else
-		if (true == pTask->secData.is_secure)
+		if (true == pTask->secData.is_secure) {
 			status = cmdq_core_insert_secure_handle_instr(pTask, thread);
+			if (status < 0)
+				return status;
+		}
 #endif
 #ifdef CMDQ_APPEND_WITHOUT_SUSPEND
 		/* Shift JUMP and EOC */
@@ -8291,9 +8294,6 @@ static int32_t cmdq_core_exec_task_async_with_retry(TaskStruct *pTask, int32_t t
 		     pTask->pCMDEnd[-2], pTask->pCMDEnd[-1], pTask->pCMDEnd[0]);
 #endif
 	}
-
-	if (status < 0)
-		return status;
 
 	do {
 		if (false == cmdq_core_verfiy_command_end(pTask)) {
