@@ -22,7 +22,7 @@
 
 #include "../mt6735/mt_sleep.h"
 
-#elif defined(CONFIG_ARCH_MT6580)
+#elif defined(CONFIG_ARCH_MT6570) || defined(CONFIG_ARCH_MT6580)
 
 #include "spm_v1/mt_sleep.h"
 

@@ -509,8 +509,10 @@ int spm_module_init(void)
 #endif
 
 #ifndef CONFIG_MTK_FPGA
+#if !defined(CONFIG_ARCH_MT6570)
 	spm_sodi_init();
 	/* spm_mcdi_init(); */
+#endif
 #if !defined(CONFIG_ARCH_MT6570) && !defined(CONFIG_ARCH_MT6580)
 	spm_deepidle_init();
 #endif

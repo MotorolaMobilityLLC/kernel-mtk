@@ -34,10 +34,12 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 endif
 
-obj-y += mt_idle.o
 obj-y += mt_spm.o
-obj-y += mt_spm_fs.o
 obj-y += mt_spm_internal.o
+ifneq ($(CONFIG_ARCH_MT6570),y)
+obj-y += mt_idle.o
+obj-y += mt_spm_fs.o
 obj-y += mt_spm_sodi.o
 obj-y += mt_spm_dpidle.o
 obj-y += mt_spm_sleep.o
+endif
