@@ -1858,6 +1858,9 @@ static struct wireless_dev *wlanNetCreate(PVOID pvData)
 	init_completion(&prGlueInfo->rP2pReq);
 	init_completion(&prGlueInfo->rSubModComp);
 #endif
+#if CFG_SUPPORT_NCHO
+	init_completion(&prGlueInfo->rAisChGrntComp);
+#endif
 
 	/* initialize timer for OID timeout checker */
 	kalOsTimerInitialize(prGlueInfo, kalTimeoutHandler);
@@ -2620,6 +2623,22 @@ bailout:
 		rlmTxRateEnhanceConfig(prGlueInfo->prAdapter);
 #endif /* CFG_SUPPORT_TXR_ENC */
 
+#if CFG_SUPPORT_NCHO
+		{
+			UINT_32 u4Param = TRUE;
+			UINT_32 u4SetInfoLen = 0;
+			WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
+
+			rStatus = kalIoctl(prGlueInfo,
+					   wlanoidSetNchoEnable,
+					   &u4Param, sizeof(UINT_32), FALSE, FALSE, TRUE, FALSE, &u4SetInfoLen);
+
+			if (rStatus != WLAN_STATUS_SUCCESS) {
+				DBGLOG(INIT, ERROR, "NCHO set enable fail 0x%x\n", rStatus);
+			}
+		}
+#endif /* CFG_SUPPORT_NCHO */
+
 		/* set MAC address */
 		{
 			WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
@@ -3026,6 +3045,15 @@ static VOID wlanRemove(VOID)
 	if (prGlueInfo->rBowInfo.fgIsRegistered)
 		glUnregisterAmpc(prGlueInfo);
 #endif
+
+	/* 4 <3> Remove /proc filesystem. */
+#ifdef FW_CFG_SUPPORT
+	cfgRemoveProcEntry();
+#endif
+
+#ifdef WLAN_INCLUDE_PROC
+	procRemoveProcfs();
+#endif /* WLAN_INCLUDE_PROC */
 
 #if (CFG_SUPPORT_MET_PROFILING == 1)
 	kalMetRemoveProcfs();

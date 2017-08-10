@@ -2920,6 +2920,14 @@ WLAN_STATUS nicRxProcessActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSw
 		if (prAdapter->fgIsP2PRegistered)
 			p2pFuncValidateRxActionFrame(prAdapter, prSwRfb);
 #endif
+#if CFG_SUPPORT_NCHO
+		if (HIF_RX_HDR_GET_NETWORK_IDX(prSwRfb->prHifRxHdr) == NETWORK_TYPE_AIS_INDEX) {
+			if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE && prAdapter->rNchoInfo.u4WesMode == TRUE) {
+				aisFuncValidateRxActionFrame(prAdapter, prSwRfb);
+				DBGLOG(INIT, INFO, "NCHO CATEGORY_VENDOR_SPECIFIC_ACTION\n");
+			}
+		}
+#endif
 		break;
 #if CFG_SUPPORT_802_11W
 	case CATEGORY_SA_QUERT_ACTION:

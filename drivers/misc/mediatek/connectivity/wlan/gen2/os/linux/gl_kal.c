@@ -3507,11 +3507,11 @@ kalIndicateBssInfo(IN P_GLUE_INFO_T prGlueInfo,
 
 		if (!bss) {
 			ScanDoneFailCnt++;
-			DBGLOG(SCN, WARN, "inform bss to cfg80211 failed, bss channel %d, rcpi %d\n",
+			DBGLOG(SCN, WARN, "inform bss to cfg80211 failed, bss channel %d, rssi %d\n",
 					ucChannelNum, i4SignalStrength);
 		} else {
 			cfg80211_put_bss(wiphy, bss);
-			DBGLOG(SCN, TRACE, "inform bss to cfg80211, bss channel %d, rcpi %d\n",
+			DBGLOG(SCN, TRACE, "inform bss to cfg80211, bss channel %d, rssi %d\n",
 					ucChannelNum, i4SignalStrength);
 		}
 	}

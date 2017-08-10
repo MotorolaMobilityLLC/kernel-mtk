@@ -2546,7 +2546,9 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 	BOOLEAN fgIsAbsentCandidateBss = TRUE;
 	ENUM_BAND_T eBand = 0;
 	UINT_8 ucChannel = 0;
-
+#if CFG_SUPPORT_NCHO
+	UINT_8 ucRCPIStep = ROAMING_NO_SWING_RCPI_STEP;
+#endif
 	ASSERT(prAdapter);
 
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
@@ -3077,7 +3079,12 @@ P_BSS_DESC_T scanSearchBssDescByPolicy(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK
 					}
 				}
 				/* NOTE: To prevent SWING,
-				 * we do roaming only if target AP has at least 5dBm larger than us. */
+				 * we do roaming only if target AP has at least 5dBm larger than us.
+				 */
+#if CFG_SUPPORT_NCHO
+				if (prAdapter->rNchoInfo.fgECHOEnabled == TRUE)
+					ucRCPIStep = 2 * prAdapter->rNchoInfo.i4RoamDelta;
+#endif
 				if (prCandidateBssDesc->fgIsConnected) {
 					if (u4CandAdjRssi < u4PrimAdjRssi &&
 						prPrimaryBssDesc->ucJoinFailureCount < SCN_BSS_JOIN_FAIL_THRESOLD) {

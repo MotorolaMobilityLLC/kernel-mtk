@@ -2069,6 +2069,20 @@ typedef struct _ACTION_DELBA_FRAME_T {
 	UINT_16 u2ReasonCode;	/* 7.3.1.7 */
 } __KAL_ATTRIB_PACKED__ ACTION_DELBA_FRAME_T, *P_ACTION_DELBA_FRAME_T;
 
+#if CFG_SUPPORT_NCHO
+/* 7.4.5.1 vendor-specific frame format */
+typedef struct _ACTION_VENDOR_SPEC_FRAME_T {
+	/* Action MAC header */
+	UINT_16 u2FrameCtrl;	/* Frame Control */
+	UINT_16 u2Duration;	/* Duration */
+	UINT_8 aucDestAddr[MAC_ADDR_LEN];	/* DA */
+	UINT_8 aucSrcAddr[MAC_ADDR_LEN];	/* SA */
+	UINT_8 aucBSSID[MAC_ADDR_LEN];	/* BSSID */
+	UINT_16 u2SeqCtrl;	/* Sequence Control */
+	UINT_8 aucElemInfo[0];	/* Pointer to frame data */
+} __KAL_ATTRIB_PACKED__ ACTION_VENDOR_SPEC_FRAME_T, *P_ACTION_VENDOR_SPEC_FRAME_T;
+#endif
+
 /* 7.4.6.1 Radio Measurement Request frame format */
 typedef struct _ACTION_RM_REQ_FRAME {
 	/* MAC header */

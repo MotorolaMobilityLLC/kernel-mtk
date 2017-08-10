@@ -630,6 +630,26 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 
 		/* MGMT Initialization */
 		nicInitMGMT(prAdapter, prRegInfo);
+		/* NCHO Initialization */
+#if CFG_SUPPORT_NCHO
+		prAdapter->rNchoInfo.fgECHOEnabled = FALSE;
+		prAdapter->rNchoInfo.eBand = NCHO_BAND_AUTO;
+		prAdapter->rNchoInfo.fgChGranted = FALSE;
+		prAdapter->rNchoInfo.fgIsSendingAF = FALSE;
+		prAdapter->rNchoInfo.u4RoamScanControl = FALSE;
+		prAdapter->rNchoInfo.rRoamScnChnl.ucChannelListNum = 0;
+		prAdapter->rNchoInfo.rRoamScnChnl.arChnlInfoList[0].eBand = BAND_2G4;
+		prAdapter->rNchoInfo.rRoamScnChnl.arChnlInfoList[0].ucChannelNum = 1;
+		prAdapter->rNchoInfo.eDFSScnMode = NCHO_DFS_SCN_ENABLE1;
+		prAdapter->rNchoInfo.i4RoamTrigger = -70;
+		prAdapter->rNchoInfo.i4RoamDelta = 5;
+		prAdapter->rNchoInfo.u4RoamScanPeriod = ROAMING_DISCOVERY_TIMEOUT_SEC;
+		prAdapter->rNchoInfo.u4ScanChannelTime = 50;
+		prAdapter->rNchoInfo.u4ScanHomeTime = 120;
+		prAdapter->rNchoInfo.u4ScanHomeawayTime = 120;
+		prAdapter->rNchoInfo.u4ScanNProbes = 2;
+		prAdapter->rNchoInfo.u4WesMode = 0;
+#endif
 
 		/* Enable WZC Disassociation */
 		prAdapter->rWifiVar.fgSupportWZCDisassociation = TRUE;

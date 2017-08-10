@@ -286,6 +286,26 @@ ifeq ($(FW_CUSTOMIZATION), y)
 endif
 # ---------------------------------------------------
 
+# ---------------------------------------------------
+# FW customization
+# ---------------------------------------------------
+FW_CUSTOMIZATION = y
+ifeq ($(FW_CUSTOMIZATION), y)
+$(warning fw_config, $(FWCFG_DIR)fw_config.c)
+ifneq ($(wildcard $(FWCFG_DIR)fw_config.c),)
+$(warning fw_config exist, $(FWCFG_DIR))
+	COMMON_OBJS += $(MTK_PROJECT)/fw_config.o
+endif
+	COMMON_OBJS += $(COMMON_DIR)fwcfg.o
+	ccflags-y += -DFW_CFG_SUPPORT
+ifeq ($(TARGET_BUILD_VARIANT), eng)
+    ccflags-y += -DENABLED_IN_ENGUSERDEBUG
+endif
+ifeq ($(TARGET_BUILD_VARIANT), userdebug)
+    ccflags-y += -DENABLED_IN_ENGUSERDEBUG
+endif
+endif
+# ---------------------------------------------------
 $(MODULE_NAME)-objs  += $(COMMON_OBJS)
 $(MODULE_NAME)-objs  += $(NIC_OBJS)
 $(MODULE_NAME)-objs  += $(OS_OBJS)

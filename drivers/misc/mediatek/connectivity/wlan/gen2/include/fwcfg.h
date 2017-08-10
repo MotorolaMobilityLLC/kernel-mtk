@@ -10,7 +10,6 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-
 #ifndef _FWCFG_H
 #define _FWCFG_H
 #include "precomp.h"
@@ -47,6 +46,7 @@
 #define FW_CFG_FILE_1 "/etc/firmware/wifi_fw.cfg"
 #define FW_CFG_FILE_2 "/vendor/firmware/wifi_fw.cfg"
 #define FW_CFG_FILE_3 "/data/misc/wifi/wifi_fw.cfg"
+
 
 /*******************************************************************************
 *                             D A T A   T Y P E S

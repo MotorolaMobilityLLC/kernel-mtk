@@ -455,6 +455,9 @@ struct _GLUE_INFO_T {
 	struct completion rP2pReq;	/* indicate p2p request(request channel/frame tx)
 					 * complete
 					 */
+#if CFG_SUPPORT_NCHO
+	struct completion rAisChGrntComp;	/* indicate Ais channel grant complete */
+#endif
 #if CFG_ENABLE_WIFI_DIRECT
 	struct completion rSubModComp;	/*indicate sub module init or exit complete */
 #endif

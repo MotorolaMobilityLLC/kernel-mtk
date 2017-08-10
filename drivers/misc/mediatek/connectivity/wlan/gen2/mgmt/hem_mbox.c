@@ -230,6 +230,9 @@ static MSG_HNDL_ENTRY_T arMsgMapTable[] = {
 	{MID_WNM_AIS_BSS_TRANSITION, aisFsmRunEventBssTransition},
 	{MID_OID_WMM_TSPEC_OPERATE, wmmRunEventTSOperate},
 	{MID_RLM_RM_SCHEDULE, rlmRunEventProcessNextRm},
+#if CFG_SUPPORT_NCHO
+	{MID_MNY_AIS_NCHO_ACTION_FRAME, aisFsmRunEventNchoActionFrameTx},
+#endif
 };
 
 /*******************************************************************************
