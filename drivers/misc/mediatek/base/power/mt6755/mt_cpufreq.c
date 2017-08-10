@@ -3881,7 +3881,7 @@ int mt_cpufreq_get_chip_id_38(void)
 {
 	unsigned int chip_code = get_devinfo_with_index(21) & 0xFF;
 
-	if (chip_code == 0x43)
+	if (chip_code == 0x43 || chip_code == 0x4B)
 		return 1;
 	else
 		return 0;
