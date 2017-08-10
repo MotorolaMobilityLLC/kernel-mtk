@@ -1578,7 +1578,7 @@ typedef void (*pm_callback_t)(pm_message_t state, void *data);
 #define CFG_DEV_MSDC2
 #endif
 
-#ifdef CONFIG_MTK_C2K_SUPPORT
+#if defined(CONFIG_MTK_MD3_SUPPORT) && (CONFIG_MTK_MD3_SUPPORT > 0)
 #include <mach/mt_c2k_sdio.h>
 #define CFG_DEV_MSDC3
 #define C2K_USE_EINT
