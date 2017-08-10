@@ -24,11 +24,6 @@
 /*#include <mach/mt_typedefs.h>*/
 #endif
 
-/* #define USB_FORCE_ON */
-/* USB FORCE ON for FPGA/U3_COMPLIANCE cases */
-#if defined(CONFIG_FPGA_EARLY_PORTING) || defined(U3_COMPLIANCE) || defined(FOR_BRING_UP)
-#define USB_FORCE_ON
-#endif
 
 unsigned int cable_mode = CABLE_MODE_NORMAL;
 #ifdef CONFIG_MTK_UART_USB_SWITCH
@@ -98,7 +93,7 @@ void connection_work(struct work_struct *data)
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!usb_phy_check_in_uart_mode()) {
 #endif
-		bool is_usb_cable = usb_cable_connected();
+		bool is_usb_cable;
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
 
@@ -120,6 +115,7 @@ void connection_work(struct work_struct *data)
 		}
 #endif
 
+		is_usb_cable = usb_cable_connected();
 		os_printk(K_INFO, "%s musb %s, cable %s\n", __func__,
 			  ((connection_work_dev_status ==
 			    0) ? "INIT" : ((connection_work_dev_status == 1) ? "ON" : "OFF")),
@@ -225,6 +221,38 @@ void mt_usb_disconnect(void)
 }
 EXPORT_SYMBOL_GPL(mt_usb_disconnect);
 
+/* #define BYPASS_PMIC_LINKAGE */
+static CHARGER_TYPE mu3d_hal_get_charger_type(void)
+{
+	CHARGER_TYPE chg_type;
+#ifdef BYPASS_PMIC_LINKAGE
+	DBG(0, "force on");
+	chg_type = STANDARD_HOST;
+#else
+	chg_type = mt_get_charger_type();
+#endif
+
+	return chg_type;
+}
+static bool mu3d_hal_is_vbus_exist(void)
+{
+	bool vbus_exist;
+
+#ifdef BYPASS_PMIC_LINKAGE
+	DBG(0, "force on");
+	vbus_exist = true;
+#else
+#ifdef CONFIG_POWER_EXT
+	vbus_exist = upmu_get_rgs_chrdet();
+#else
+	vbus_exist = upmu_is_chr_det();
+#endif
+#endif
+
+	return vbus_exist;
+
+}
+
 bool usb_cable_connected(void)
 {
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
@@ -238,33 +266,29 @@ bool usb_cable_connected(void)
 	}
 #endif
 
-#ifdef USB_FORCE_ON
-	/* FORCE USB ON */
-	chg_type = _mu3d_musb->charger_mode = STANDARD_HOST;
-	vbus_exist = true;
-	connected = true;
-	os_printk(K_INFO, "%s type force to STANDARD_HOST\n", __func__);
-#else
-	/* TYPE CHECK*/
-	chg_type = _mu3d_musb->charger_mode = mt_get_charger_type();
-	if (fake_CDP && chg_type == STANDARD_HOST) {
-		os_printk(K_INFO, "%s, fake to type 2\n", __func__);
-		chg_type = CHARGING_HOST;
-	}
-
-	if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
+	if (mu3d_force_on) {
+		/* FORCE USB ON */
+		chg_type = _mu3d_musb->charger_mode = STANDARD_HOST;
+		vbus_exist = true;
 		connected = true;
+		os_printk(K_INFO, "%s type force to STANDARD_HOST\n", __func__);
+	} else {
+		/* TYPE CHECK*/
+		chg_type = _mu3d_musb->charger_mode = mu3d_hal_get_charger_type();
+		if (fake_CDP && chg_type == STANDARD_HOST) {
+			os_printk(K_INFO, "%s, fake to type 2\n", __func__);
+			chg_type = CHARGING_HOST;
+		}
 
-	/* VBUS CHECK to avoid type miss-judge */
-#ifdef CONFIG_POWER_EXT
-	vbus_exist = upmu_get_rgs_chrdet();
-#else
-	vbus_exist = upmu_is_chr_det();
-#endif
-	os_printk(K_INFO, "%s vbus_exist=%d type=%d\n", __func__, vbus_exist, chg_type);
-	if (!vbus_exist)
-		connected = false;
-#endif
+		if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
+			connected = true;
+
+		/* VBUS CHECK to avoid type miss-judge */
+		vbus_exist = mu3d_hal_is_vbus_exist();
+		os_printk(K_INFO, "%s vbus_exist=%d type=%d\n", __func__, vbus_exist, chg_type);
+		if (!vbus_exist)
+			connected = false;
+	}
 
 	/* CMODE CHECK */
 	if (cable_mode == CABLE_MODE_CHRG_ONLY || (cable_mode == CABLE_MODE_HOST_ONLY && chg_type != CHARGING_HOST))

@@ -720,7 +720,7 @@ void usb_phy_savecurrent(unsigned int clk_on)
 {
 	PHY_INT32 ret;
 
-	pr_debug("%s clk_on=%d+\n", __func__, clk_on);
+	os_printk(K_INFO, "%s clk_on=%d+\n", __func__, clk_on);
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (!in_uart_mode) {
@@ -882,7 +882,7 @@ void usb_phy_savecurrent(unsigned int clk_on)
 		ret = pmic_set_register_value(MT6351_PMIC_RG_VA10_EN, 0x00);
 	}
 
-	pr_debug("%s-\n", __func__);
+	os_printk(K_INFO, "%s-\n", __func__);
 }
 
 /*This "recovery" sequence refers to "6593_USB_PORT0_PWR Sequence 20130729.xls"*/
@@ -891,7 +891,7 @@ void usb_phy_recover(unsigned int clk_on)
 	PHY_INT32 ret;
 	PHY_INT32 evalue;
 
-	pr_debug("%s clk_on=%d+\n", __func__, clk_on);
+	os_printk(K_INFO, "%s clk_on=%d+\n", __func__, clk_on);
 
 	if (!clk_on) {
 		/*---POWER-----*/
@@ -1141,7 +1141,7 @@ void usb_phy_recover(unsigned int clk_on)
 	}
 #endif
 
-	pr_debug("%s-\n", __func__);
+	os_printk(K_INFO, "%s-\n", __func__);
 }
 
 /*
