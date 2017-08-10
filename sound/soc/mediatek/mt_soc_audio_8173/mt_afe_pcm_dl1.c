@@ -196,13 +196,14 @@ static int mt_pcm_dl1_hw_params(struct snd_pcm_substream *substream,
 
 static int mt_pcm_dl1_hw_free(struct snd_pcm_substream *substream)
 {
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mt_pcm_dl1_priv *priv = snd_soc_platform_get_drvdata(rtd->platform);
 	int ret = 0;
 
 	pr_debug("%s\n", __func__);
 
-	if (!priv->enable_sram) {
+	if (!priv->enable_sram && runtime->dma_area) {
 		ret = snd_pcm_lib_free_pages(substream);
 		mt_afe_emi_clk_off();
 	}
