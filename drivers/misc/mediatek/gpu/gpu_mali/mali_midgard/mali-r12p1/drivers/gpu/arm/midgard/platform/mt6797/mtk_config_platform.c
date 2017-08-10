@@ -406,31 +406,31 @@ static void mtk_pm_callback_power_off(void)
 
 static int pm_callback_power_on(struct kbase_device *kbdev)
 {
-	int ret;
+	int ret = 0;
 
-	ret = mtk_pm_callback_power_on();
+	if (g_is_power_on != 1) {
+		ret = mtk_pm_callback_power_on();
 
-	power_status_acquire();
-	g_is_power_on = 1;
-	power_status_release();
+		power_status_acquire();
+		g_is_power_on = 1;
+		power_status_release();
+	}
 
 	return ret;
 }
 static void pm_callback_power_off(struct kbase_device *kbdev)
 {
-	power_status_acquire();
-	g_is_power_on = 0;
-	power_status_release();
+	if (g_is_power_on != 0) {
+		power_status_acquire();
+		g_is_power_on = 0;
+		power_status_release();
 
-	mtk_pm_callback_power_off();
+		mtk_pm_callback_power_off();
+	}
 }
 static void pm_callback_suspend(struct kbase_device *kbdev)
 {
-	if (g_is_power_on)
-	{
-		/* make sure the power is off after suspend */
-		pm_callback_power_off(kbdev);
-	}
+	pm_callback_power_off(kbdev);
 }
 static void pm_callback_resume(struct kbase_device *kbdev)
 {
@@ -448,11 +448,7 @@ static void pm_callback_resume(struct kbase_device *kbdev)
 	MTKCLK_disable_unprepare(clk_dvfs_gpu);
 	MTKCLK_disable_unprepare(clk_gpupm);
 #endif
-	if (!g_is_power_on)
-	{
-		/* make sure the power is on after resume */
-		pm_callback_power_on(kbdev);
-	}
+	pm_callback_power_on(kbdev);
 }
 
 struct kbase_pm_callback_conf pm_callbacks = {
