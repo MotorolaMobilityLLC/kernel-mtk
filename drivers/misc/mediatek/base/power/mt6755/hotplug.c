@@ -148,7 +148,7 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
  */
 int mt_cpu_kill(unsigned int cpu)
 {
-	HOTPLUG_INFO("mt_cpu_kill, cpu: %d\n", cpu);
+	/*HOTPLUG_INFO("mt_cpu_kill, cpu: %d\n", cpu);*/
 
 #ifdef CONFIG_HOTPLUG_WITH_POWER_CTRL
 	switch (cpu) {
@@ -193,7 +193,7 @@ void mt_cpu_die(unsigned int cpu)
 {
 	int spurious = 0;
 
-	HOTPLUG_INFO("mt_cpu_die, cpu: %d\n", cpu);
+	/*HOTPLUG_INFO("mt_cpu_die, cpu: %d\n", cpu);*/
 	/*
 	 * we're ready for shutdown now, so do it
 	 */
@@ -223,7 +223,7 @@ int mt_cpu_disable(unsigned int cpu)
 	 * we don't allow CPU 0 to be shutdown (it is still too special
 	 * e.g. clock tick interrupts)
 	 */
-	HOTPLUG_INFO("mt_cpu_disable, cpu: %d\n", cpu);
+	/*HOTPLUG_INFO("mt_cpu_disable, cpu: %d\n", cpu);*/
 
 	return 0;
 }
