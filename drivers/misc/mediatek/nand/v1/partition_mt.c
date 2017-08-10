@@ -527,7 +527,7 @@ void part_init_pmt(struct mtd_info *mtd, u8 *buf)
 	int i = 0;
 	int err = 0;
 
-	pr_info("part_init_pmt  %s\n", __TIME__);
+	pr_info("part_init_pmt\n");
 	page_buf = kzalloc(mtd->writesize + mtd->oobsize, GFP_KERNEL);
 	page_readbuf = kzalloc(mtd->writesize, GFP_KERNEL);
 
