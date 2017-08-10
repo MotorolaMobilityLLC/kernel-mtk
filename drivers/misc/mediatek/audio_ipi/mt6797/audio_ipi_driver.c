@@ -134,8 +134,9 @@ static int parsing_ipi_msg_from_user_space(
 	/* get dram buf if need */
 	if (ipi_msg.data_type == AUDIO_IPI_DMA) {
 		resv_dram_offset = get_resv_dram_buf_offset(ipi_msg.param1);
-		if (resv_dram_offset == 0xFFFFFFFF) {
+		if (resv_dram_offset == 0xFFFFFFFF || ipi_msg.param1 > p_resv_dram->size) {
 			AUD_LOG_E("dma_data_len %u, no enough memory!!\n", ipi_msg.param1);
+			ipi_msg.param1 = 0;
 			retval = -1;
 			goto parsing_exit;
 		}

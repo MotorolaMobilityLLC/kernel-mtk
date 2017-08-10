@@ -163,23 +163,23 @@ void open_dump_file(void)
 	getnstimeofday(&curr_tm);
 
 	memset(string_time, '\0', 16);
-	sprintf(string_time, "%.2lu_%.2lu_%.2lu",
-		(8 + (curr_tm.tv_sec / 3600)) % (24),
-		(curr_tm.tv_sec / 60) % (60),
-		curr_tm.tv_sec % 60);
+	snprintf(string_time, sizeof(string_time), "%.2lu_%.2lu_%.2lu",
+		 (8 + (curr_tm.tv_sec / 3600)) % (24),
+		 (curr_tm.tv_sec / 60) % (60),
+		 curr_tm.tv_sec % 60);
 
-	sprintf(path_ul_in_ch1, "%s/%s_%s",
-		DUMP_DSP_PCM_DATA_PATH, string_time, string_ul_in_ch1);
-	sprintf(path_ul_in_ch2, "%s/%s_%s",
-		DUMP_DSP_PCM_DATA_PATH, string_time, string_ul_in_ch2);
-	sprintf(path_aec_in, "%s/%s_%s",
-		DUMP_DSP_PCM_DATA_PATH, string_time, string_aec_in);
-	sprintf(path_ul_out, "%s/%s_%s",
-		DUMP_DSP_PCM_DATA_PATH, string_time, string_ul_out);
-	sprintf(path_dl_in, "%s/%s_%s",
-		DUMP_DSP_PCM_DATA_PATH, string_time, string_dl_in);
-	sprintf(path_dl_out, "%s/%s_%s",
-		DUMP_DSP_PCM_DATA_PATH, string_time, string_dl_out);
+	snprintf(path_ul_in_ch1, sizeof(path_ul_in_ch1), "%s/%s_%s",
+		 DUMP_DSP_PCM_DATA_PATH, string_time, string_ul_in_ch1);
+	snprintf(path_ul_in_ch2, sizeof(path_ul_in_ch2), "%s/%s_%s",
+		 DUMP_DSP_PCM_DATA_PATH, string_time, string_ul_in_ch2);
+	snprintf(path_aec_in, sizeof(path_aec_in), "%s/%s_%s",
+		 DUMP_DSP_PCM_DATA_PATH, string_time, string_aec_in);
+	snprintf(path_ul_out, sizeof(path_ul_out), "%s/%s_%s",
+		 DUMP_DSP_PCM_DATA_PATH, string_time, string_ul_out);
+	snprintf(path_dl_in, sizeof(path_dl_in), "%s/%s_%s",
+		 DUMP_DSP_PCM_DATA_PATH, string_time, string_dl_in);
+	snprintf(path_dl_out, sizeof(path_dl_out), "%s/%s_%s",
+		 DUMP_DSP_PCM_DATA_PATH, string_time, string_dl_out);
 
 	file_ul_in_ch1 = filp_open(path_ul_in_ch1, O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_ul_in_ch1)) {

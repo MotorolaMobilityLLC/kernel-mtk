@@ -189,8 +189,10 @@ void audio_messenger_ipi_init(void)
 
 void audio_reg_recv_message(uint8_t task_scene, recv_message_t recv_message)
 {
-	if (task_scene >= TASK_SCENE_SIZE)
+	if (task_scene >= TASK_SCENE_SIZE) {
 		AUD_LOG_W("%s(), not support task_scene %d!!\n", __func__, task_scene);
+		return;
+	}
 
 	recv_message_array[task_scene] = recv_message;
 }
