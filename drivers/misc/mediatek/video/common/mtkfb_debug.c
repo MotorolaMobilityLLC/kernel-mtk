@@ -437,6 +437,8 @@ static ssize_t mtkfb_debug_read(struct file *file, char __user *ubuf, size_t cou
 
 	n += dprec_logger_get_result_string_all(debug_buffer + n, debug_bufmax - n);
 
+	n += disp_helper_get_option_list(debug_buffer + n, debug_bufmax - n);
+
 	n += dprec_logger_get_buf(DPREC_LOGGER_ERROR, debug_buffer + n, debug_bufmax - n);
 
 	n += dprec_logger_get_buf(DPREC_LOGGER_FENCE, debug_buffer + n, debug_bufmax - n);
