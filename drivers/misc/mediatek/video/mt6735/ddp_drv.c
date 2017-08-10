@@ -509,10 +509,10 @@ static int disp_is_intr_enable(DISP_REG_ENUM module)
 	case DISP_REG_DSI0:
 	case DISP_REG_AAL:
 	case DISP_REG_CONFIG:
+	case DISP_REG_CCORR:
 		return 1;
 	case DISP_REG_WDMA1:	/* FIXME: WDMA1 intr is abonrmal FPGA so mark first, enable after EVB works */
 	case DISP_REG_COLOR:
-	case DISP_REG_CCORR:
 	case DISP_REG_GAMMA:
 	case DISP_REG_DITHER:
 	case DISP_REG_UFOE:

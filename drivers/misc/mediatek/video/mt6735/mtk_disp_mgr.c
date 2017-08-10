@@ -2035,6 +2035,10 @@ const char *_session_ioctl_spy(unsigned int cmd)
 		return "DISP_IOCTL_SET_GAMMALUT";
 	case DISP_IOCTL_SET_CCORR:
 		return "DISP_IOCTL_SET_CCORR";
+	case DISP_IOCTL_CCORR_EVENTCTL:
+		return "DISP_IOCTL_CCORR_EVENTCTL";
+	case DISP_IOCTL_CCORR_GET_IRQ:
+		return "DISP_IOCTL_CCORR_GET_IRQ";
 	case DISP_IOCTL_SET_PQPARAM:
 		return "DISP_IOCTL_SET_PQPARAM";
 	case DISP_IOCTL_GET_PQPARAM:
@@ -2137,6 +2141,8 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_AAL_SET_PARAM:
 	case DISP_IOCTL_SET_GAMMALUT:
 	case DISP_IOCTL_SET_CCORR:
+	case DISP_IOCTL_CCORR_EVENTCTL:
+	case DISP_IOCTL_CCORR_GET_IRQ:
 	case DISP_IOCTL_SET_PQPARAM:
 	case DISP_IOCTL_GET_PQPARAM:
 	case DISP_IOCTL_SET_PQINDEX:
@@ -2246,6 +2252,8 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd, unsig
 	case DISP_IOCTL_PQ_GET_MDP_TDSHP_REG:
 	case DISP_IOCTL_WRITE_SW_REG:
 	case DISP_IOCTL_READ_SW_REG:
+	case DISP_IOCTL_CCORR_EVENTCTL:
+	case DISP_IOCTL_CCORR_GET_IRQ:
 		ret = primary_display_user_cmd(cmd, arg);
 		break;
 

@@ -1804,6 +1804,8 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg, 
 
 		break;
 	case DISP_IOCTL_SET_CCORR:
+	case DISP_IOCTL_CCORR_EVENTCTL:
+	case DISP_IOCTL_CCORR_GET_IRQ:
 		if (ddp_modules_driver[DISP_MODULE_CCORR]->cmd != NULL)
 			ret = ddp_modules_driver[DISP_MODULE_CCORR]->cmd(DISP_MODULE_CCORR, msg, arg, cmdqhandle);
 

@@ -35,14 +35,14 @@
 
 /* To enable debug log: */
 /* # echo corr_dbg:1 > /sys/kernel/debug/dispsys */
-int corr_dbg_en = 0;
+int corr_dbg_en;
 int ccorr_scenario = 0;
 #define GAMMA_ERR(fmt, arg...) pr_err("[GAMMA] " fmt "\n", ##arg)
 #define GAMMA_NOTICE(fmt, arg...) do { if (corr_dbg_en) pr_debug("[GAMMA] " fmt "\n", ##arg); } while (0)
 #define GAMMA_DBG(fmt, arg...) do { if (corr_dbg_en) pr_debug("[GAMMA] " fmt "\n", ##arg); } while (0)
 #define CCORR_ERR(fmt, arg...) pr_err("[CCORR] " fmt "\n", ##arg)
-#define CCORR_NOTICE(fmt, arg...) do { if (corr_dbg_en) pr_debug("[CCORR] " fmt "\n", ##arg); } while (0)
-#define CCORR_DBG(fmt, arg...) do { if (corr_dbg_en) pr_debug("[CCORR] " fmt "\n", ##arg); } while (0)
+#define CCORR_NOTICE(fmt, arg...) do { if (corr_dbg_en) pr_warn("[CCORR] " fmt "\n", ##arg); } while (0)
+#define CCORR_DBG(fmt, arg...) do { if (corr_dbg_en) pr_warn("[CCORR] " fmt "\n", ##arg); } while (0)
 
 static DEFINE_MUTEX(g_gamma_global_lock);
 
@@ -340,7 +340,19 @@ DDP_MODULE_DRIVER ddp_driver_gamma = {
 #define CCORR_SUPPORT_PARTIAL_UPDATE
 #endif
 
+#define CCORR0_OFFSET (0)
+#define CCORR_TOTAL_MODULE_NUM (1)
+
+#define ccorr_get_offset(module) (CCORR0_OFFSET)
+#define index_of_ccorr(module) (0)
+
 static DISP_CCORR_COEF_T *g_disp_ccorr_coef[DISP_CCORR_TOTAL] = { NULL };
+
+static atomic_t g_ccorr_is_clock_on[CCORR_TOTAL_MODULE_NUM] = { ATOMIC_INIT(0) };
+
+static DECLARE_WAIT_QUEUE_HEAD(g_ccorr_get_irq_wq);
+static DEFINE_SPINLOCK(g_ccorr_get_irq_lock);
+static atomic_t g_ccorr_get_irq = ATOMIC_INIT(0);
 
 static ddp_module_notify g_ccorr_ddp_notify;
 
@@ -407,13 +419,156 @@ ccorr_write_coef_unlock:
 	return ret;
 }
 
-
 static void disp_ccorr_trigger_refresh(disp_ccorr_id_t id)
 {
 	if (g_ccorr_ddp_notify != NULL)
 		g_ccorr_ddp_notify(CCORR0_MODULE_NAMING, DISP_PATH_EVENT_TRIGGER);
 }
 
+void disp_ccorr_on_end_of_frame(void)
+{
+	unsigned int intsta;
+	unsigned long flags;
+
+	intsta = DISP_REG_GET(DISP_REG_CCORR_INTSTA);
+
+	CCORR_DBG("disp_ccorr_on_end_of_frame: intsta: 0x%x", intsta);
+	if (intsta & 0x2) {	/* End of frame */
+		if (spin_trylock_irqsave(&g_ccorr_get_irq_lock, flags)) {
+			DISP_CPU_REG_SET(DISP_REG_CCORR_INTSTA, (intsta & ~0x3));
+
+			atomic_set(&g_ccorr_get_irq, 1);
+
+			spin_unlock_irqrestore(&g_ccorr_get_irq_lock, flags);
+
+			wake_up_interruptible(&g_ccorr_get_irq_wq);
+		}
+	}
+}
+
+#ifdef CCORR_TRANSITION
+static DEFINE_SPINLOCK(g_pq_bl_change_lock);
+static int g_pq_backlight;
+static int g_pq_backlight_db;
+
+static atomic_t g_ccorr_is_init_valid = ATOMIC_INIT(0);
+
+static void disp_ccorr_set_interrupt(int enabled)
+{
+	if (atomic_read(&g_ccorr_is_clock_on[index_of_ccorr(CCORR0_MODULE_NAMING)]) != 1) {
+		CCORR_DBG("disp_ccorr_set_interrupt: clock is off");
+		return;
+	}
+
+	if (enabled) {
+		if (DISP_REG_GET(DISP_REG_CCORR_EN) == 0) {
+			/* Print error message */
+			CCORR_DBG("[WARNING] DISP_REG_CCORR_EN not enabled!");
+		}
+
+		/* Enable output frame end interrupt */
+		DISP_CPU_REG_SET(DISP_REG_CCORR_INTEN, 0x2);
+		CCORR_DBG("Interrupt enabled");
+	} else {
+		/* Disable output frame end interrupt */
+		DISP_CPU_REG_SET(DISP_REG_CCORR_INTEN, 0x0);
+		CCORR_DBG("Interrupt disabled");
+	}
+}
+
+static void disp_ccorr_clear_irq_only(void)
+{
+	unsigned int intsta;
+	unsigned long flags;
+
+	intsta = DISP_REG_GET(DISP_REG_CCORR_INTSTA);
+
+	CCORR_DBG("disp_ccorr_clear_irq_only: intsta: 0x%x", intsta);
+	if (intsta & 0x2) { /* End of frame */
+		if (spin_trylock_irqsave(&g_ccorr_get_irq_lock, flags)) {
+			DISP_CPU_REG_SET(DISP_REG_CCORR_INTSTA, (intsta & ~0x3));
+
+			spin_unlock_irqrestore(&g_ccorr_get_irq_lock, flags);
+		}
+	}
+
+	disp_ccorr_set_interrupt(0);
+}
+
+static int disp_ccorr_wait_irq(unsigned long timeout)
+{
+	unsigned long flags;
+	int ret = 0;
+
+	if (atomic_read(&g_ccorr_get_irq) == 0) {
+		ret = wait_event_interruptible(g_ccorr_get_irq_wq, atomic_read(&g_ccorr_get_irq) == 1);
+		CCORR_DBG("disp_ccorr_wait_irq: get_irq = 1, waken up, ret = %d", ret);
+	} else {
+		/* If g_ccorr_get_irq is already set, means PQService was delayed */
+		CCORR_DBG("disp_ccorr_wait_irq: get_irq = 0");
+	}
+
+	spin_lock_irqsave(&g_ccorr_get_irq_lock, flags);
+	atomic_set(&g_ccorr_get_irq, 0);
+	spin_unlock_irqrestore(&g_ccorr_get_irq_lock, flags);
+
+	return ret;
+}
+
+static int disp_ccorr_exit_idle(int need_kick)
+{
+#if defined(CONFIG_MACH_MT6755)
+	if (need_kick == 1)
+		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
+			primary_display_idlemgr_kick(__func__, 1);
+#endif
+	return 0;
+}
+
+static int disp_pq_copy_backlight_to_user(int __user *backlight)
+{
+	unsigned long flags;
+	int ret = -EFAULT;
+
+	disp_ccorr_exit_idle(1);
+
+	/* We assume only one thread will call this function */
+	spin_lock_irqsave(&g_pq_bl_change_lock, flags);
+	g_pq_backlight_db = g_pq_backlight;
+	spin_unlock_irqrestore(&g_pq_bl_change_lock, flags);
+
+	if (copy_to_user(backlight, &g_pq_backlight_db, sizeof(int)) == 0)
+		ret = 0;
+
+	CCORR_DBG("disp_pq_copy_backlight_to_user: %d", ret);
+
+	return ret;
+}
+#endif
+
+void disp_pq_notify_backlight_changed(int bl_1024)
+{
+#ifdef CCORR_TRANSITION
+	unsigned long flags;
+	int old_bl;
+
+	spin_lock_irqsave(&g_pq_bl_change_lock, flags);
+	old_bl = g_pq_backlight;
+	g_pq_backlight = bl_1024;
+	spin_unlock_irqrestore(&g_pq_bl_change_lock, flags);
+
+	if (atomic_read(&g_ccorr_is_init_valid) != 1)
+		return;
+
+	CCORR_DBG("disp_pq_notify_backlight_changed %d", bl_1024);
+
+	if (old_bl == 0 || bl_1024 == 0) {
+		disp_ccorr_set_interrupt(1);
+		disp_ccorr_trigger_refresh(DISP_CCORR0);
+		CCORR_DBG("trigger refresh when backlight ON/Off");
+	}
+#endif
+}
 
 static int disp_ccorr_set_coef(const DISP_CCORR_COEF_T __user *user_color_corr, void *cmdq)
 {
@@ -497,6 +652,35 @@ static int disp_ccorr_io(DISP_MODULE_ENUM module, int msg, unsigned long arg, vo
 			return -EFAULT;
 		}
 		break;
+#ifdef CCORR_TRANSITION
+	case DISP_IOCTL_CCORR_EVENTCTL:
+		{
+			int enabled;
+
+			if (copy_from_user(&enabled, (void *)arg, sizeof(enabled))) {
+				CCORR_ERR("DISP_IOCTL_CCORR_EVENTCTL: copy_from_user() failed");
+				return -EFAULT;
+			}
+
+			disp_ccorr_set_interrupt(enabled);
+
+			if (enabled)
+				disp_ccorr_trigger_refresh(DISP_CCORR0);
+
+			break;
+		}
+		break;
+	case DISP_IOCTL_CCORR_GET_IRQ:
+		{
+			atomic_set(&g_ccorr_is_init_valid, 1);
+			disp_ccorr_wait_irq(60);
+			if (disp_pq_copy_backlight_to_user((int *) arg) < 0) {
+				CCORR_ERR("DISP_IOCTL_CCORR_GET_IRQ: copy_to_user() failed");
+				return -EFAULT;
+			}
+		}
+		break;
+#endif
 	}
 
 	return 0;
@@ -537,6 +721,8 @@ static int disp_ccorr_power_on(DISP_MODULE_ENUM module, void *handle)
 #endif
 	}
 #endif
+	atomic_set(&g_ccorr_is_clock_on[index_of_ccorr(module)], 1);
+
 	return 0;
 }
 
@@ -553,6 +739,12 @@ static int disp_ccorr_power_off(DISP_MODULE_ENUM module, void *handle)
 #endif
 	}
 #endif
+
+#ifdef CCORR_TRANSITION
+	disp_ccorr_clear_irq_only();
+#endif
+	atomic_set(&g_ccorr_is_clock_on[index_of_ccorr(module)], 0);
+
 	return 0;
 }
 

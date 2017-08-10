@@ -7200,7 +7200,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_display_cmd, MMProfileFlagStart,
 		       (unsigned long)handle, 0);
 
-	if (cmd == DISP_IOCTL_AAL_GET_HIST) {
+	if (cmd == DISP_IOCTL_AAL_GET_HIST || cmd == DISP_IOCTL_CCORR_GET_IRQ) {
 #ifndef MTK_FB_CMDQ_DISABLE
 		ret = cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 		cmdqRecReset(handle);

@@ -236,4 +236,5 @@ extern DISPLAY_TDSHP_T *get_TDSHP_index(void);
 
 void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
 			   unsigned int hue_upper, unsigned int hue_lower);
+void disp_color_dbg_log_level(unsigned int debug_level);
 #endif

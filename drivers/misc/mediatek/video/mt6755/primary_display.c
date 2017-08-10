@@ -4737,7 +4737,7 @@ int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 		cmdqsize = cmdqRecGetInstructionCount(handle);
 	}
 
-	if (cmd == DISP_IOCTL_AAL_GET_HIST) {
+	if (cmd == DISP_IOCTL_AAL_GET_HIST || cmd == DISP_IOCTL_CCORR_GET_IRQ) {
 		_primary_path_lock(__func__);
 		if (pgc->state == DISP_SLEPT && handle) {
 			cmdqRecDestroy(handle);
