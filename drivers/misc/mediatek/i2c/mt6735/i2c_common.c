@@ -61,12 +61,12 @@ int string2hex(const char *buffer, int cnt)
 	return c;
 }
 
-char *get_hexbuffer(char *data_buffer, char *hex_buffer)
+char *get_hexbuffer(char *data_buffer, char *hex_buffer, int str_len)
 {
 	char *ptr = data_buffer;
 	int index = 0;
 
-	while (*ptr && *++ptr) {
+	while (*ptr && *++ptr && str_len--) {
 		*(hex_buffer + index++) = string2hex(ptr - 1, 2);
 		ptr++;
 	}
@@ -234,7 +234,7 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 	int timing;
 	int trans_num;
 	int trans_auxlen;
-
+	int data_len;
 	int number = 0;
 	int length = 0;
 	unsigned int ext_flag = 0;
@@ -250,11 +250,12 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 			&bus_id, &address, &operation, &trans_mode, &trans_stop,
 			&speed_mode, &pushpull_mode, &query_mode, &timing, &trans_num,
 			&trans_auxlen,&dir, data_buffer) ) { */
-	if (sscanf(buf, "%d %x %d %d %d %d %d %d %d %d %d %1023s", &bus_id, &address, &operation, &trans_mode,
+	if (sscanf(buf, "%d %x %d %d %d %d %d %d %d %d %d %d %1023s", &bus_id, &address, &operation, &trans_mode,
 		&trans_stop, &speed_mode, &pushpull_mode, &query_mode, &timing, &trans_num,
-		&trans_auxlen, data_buffer) != 0) {
+		&trans_auxlen, &data_len, data_buffer) != 0) {
 		if ((address != 0) && (operation <= 2)) {
-			length = strlen(data_buffer);
+			/* data_len is transfer bytes, offset address + write data */
+			length = 2 * data_len;
 			if (operation == 0) {
 				ext_flag |= I2C_WR_FLAG;
 				number = (trans_auxlen << 8) | (length >> 1);	/* /TODO:need to confitm 8 Or 16 */
@@ -340,7 +341,7 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 				}
 			}
 
-			get_hexbuffer(data_buffer, vir_addr);
+			get_hexbuffer(data_buffer, vir_addr, length);
 			I2CLOG("bus_id:%d,address:%x,count:%x,ext_flag:0x%x,timing:%d\n", bus_id,
 			       address, number, ext_flag, timing);
 			I2CLOG("data_buffer:%s\n", data_buffer);
