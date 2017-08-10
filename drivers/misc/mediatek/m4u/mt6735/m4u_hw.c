@@ -26,8 +26,8 @@ static unsigned long gM4UBaseAddr[TOTAL_M4U_NUM];
 static unsigned long gLarbBaseAddr[SMI_LARB_NR];
 static unsigned long gPericfgBaseAddr;
 
-static M4U_MAU_STATUS_T gM4u0_mau[M4U0_MAU_NR] = {{0} };
-static unsigned int gMAU_candidate_id = M4U0_MAU_NR - 1;
+/*static M4U_MAU_STATUS_T gM4u0_mau[M4U0_MAU_NR] = {{0} };*/
+/*static unsigned int gMAU_candidate_id = M4U0_MAU_NR - 1;*/
 
 static DEFINE_MUTEX(gM4u_seq_mutex);
 
@@ -250,7 +250,7 @@ int mau_start_monitor(int m4u_id, int m4u_slave_id, int mau_set,
 
 	return 0;
 }
-
+#if 0
 int config_mau(M4U_MAU_STRUCT mau)
 {
 	int i;
@@ -301,6 +301,7 @@ int config_mau(M4U_MAU_STRUCT mau)
 			1, 0, 0, MVAStart, MVAEnd, 1 << m4u_port_2_larb_port(mau.port), 1 << larb);
 	return free_id;
 }
+#endif
 
 /* notes: you must fill cfg->m4u_id/m4u_slave_id/mau_set before call this func. */
 int mau_get_config_info(struct mau_config_info *cfg)
@@ -1026,10 +1027,14 @@ EXPORT_SYMBOL(smi_common_clock_off);
 int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart, unsigned int MVAEnd)
 {
 	int i, free_id = -1;
-	unsigned int m4u_index = m4u_port_2_m4u_id(port);
+	unsigned int m4u_index;
 	unsigned int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
-	M4U_RANGE_DES_T *pSeq = gM4USeq[m4u_index] + M4U_SEQ_NUM(m4u_index)*m4u_slave_id;
+	M4U_RANGE_DES_T *pSeq;
 
+	m4u_index = m4u_port_2_m4u_id(port);
+	if (m4u_index == -1)
+		return -1;
+	pSeq = gM4USeq[m4u_index] + M4U_SEQ_NUM(m4u_index)*m4u_slave_id;
 	M4ULOG_MID("m4u_insert_seq_range , module:%s, MVAStart:0x%x, MVAEnd:0x%x\n",
 			m4u_get_port_name(port), MVAStart, MVAEnd);
 
@@ -1103,11 +1108,17 @@ int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart, unsigned int M
 
 int m4u_invalid_seq_range_by_id(int port, int seq_id)
 {
-	int m4u_index = m4u_port_2_m4u_id(port);
+	int m4u_index;
 	int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
-	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
-	M4U_RANGE_DES_T *pSeq = gM4USeq[m4u_index] + M4U_SEQ_NUM(m4u_index)*m4u_slave_id;
+	unsigned long m4u_base;
+	M4U_RANGE_DES_T *pSeq;
 	int ret = 0;
+
+	m4u_index = m4u_port_2_m4u_id(port);
+	if (m4u_index == -1)
+		return -1;
+	m4u_base = gM4UBaseAddr[m4u_index];
+	pSeq = gM4USeq[m4u_index] + M4U_SEQ_NUM(m4u_index)*m4u_slave_id;
 
 	mutex_lock(&gM4u_seq_mutex);
 	{
@@ -1155,11 +1166,17 @@ static int m4u_invalid_seq_range_by_mva(int m4u_index, int m4u_slave_id, unsigne
 
 static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 {
-	int m4u_index = m4u_port_2_m4u_id(port);
-	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
+	int m4u_index;
+	unsigned long m4u_base;
 	unsigned long larb_base;
 	unsigned int larb, larb_port;
 	int ret = 0;
+
+	m4u_index = m4u_port_2_m4u_id(port);
+	if (m4u_index == -1)
+		return -1;
+
+	m4u_base = gM4UBaseAddr[m4u_index];
 
 	M4ULOG_HIGH("config_port:%s,v%d,s%d\n",
 	m4u_get_port_name(port), virt, sec);
