@@ -633,7 +633,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client, const struct i2c_device_id *
 		return err;
 	}
 
-	err = wait_event_timeout(init_waiter, check_flag == true, 5 * HZ);
+	err = wait_event_interruptible_timeout(init_waiter, check_flag == true, 5 * HZ);
 	if (err <= 0)
 		GTP_ERROR("init_waiter fail, err=%d\n", err);
 
