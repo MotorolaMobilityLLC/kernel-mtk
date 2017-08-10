@@ -1054,14 +1054,34 @@ again:
 		timerqueue_del(&rtc->timerqueue, &timer->node);
 		rtc_mutex_monitor_update(2);
 		timer->enabled = 0;
-		if (timer->task.func)
+		if (timer->task.func) {
+			int64_t start_nt, cur_nt;
+			struct timespec time;
+
+			time.tv_sec = 0;
+			time.tv_nsec = 0;
+			get_monotonic_boottime(&time);
+			start_nt = time.tv_sec * 1000000000LL + time.tv_nsec;
+
 			timer->task.func(timer->task.private_data);
+
+			time.tv_sec = 0;
+			time.tv_nsec = 0;
+			get_monotonic_boottime(&time);
+			cur_nt = time.tv_sec * 1000000000LL + time.tv_nsec;
+
+			if ((cur_nt - start_nt) > 500000000LL)
+				pr_emerg("%s, timer->task.func = %p, (cur_nt - start_nt) = %lld\n", __func__,
+					timer->task.func, cur_nt - start_nt);
+		}
 		rtc_mutex_monitor_update(3);
 
 		/* Re-add/fwd periodic timers */
 		if (ktime_to_ns(timer->period)) {
 			timer->node.expires = ktime_add(timer->node.expires,
 							timer->period);
+			pr_emerg("%s, expire = %lld, now = %lld, period = %lld\n", __func__,
+				timer->node.expires.tv64, now.tv64, timer->period.tv64);
 			timer->enabled = 1;
 			timerqueue_add(&rtc->timerqueue, &timer->node);
 		}
