@@ -43,10 +43,16 @@
 #define OFFS_WDT_LATCH0		0x264
 #define OFFS_WDT_LATCH1		0x268
 #define OFFS_WDT_LATCH2		0x26c
+#define OFFS_TIMER_OUT1		0x270
+#define OFFS_TIMER_OUT2		0x274
+#define OFFS_PCM_PC1		0x278
+#define OFFS_PCM_PC2		0x27c
 #define OFFS_FW_RSV5		0x280
 #define OFFS_FW_RSV3		0x284
 #define OFFS_FW_RSV4		0x288
 #define OFFS_FW_RSV2		0x28c
+#define OFFS_PAUSE_TIME		0x290
+#define OFFS_UNPAUSE_TIME	0x294
 #define OFFS_INIT_OPP		0x2b0
 #define OFFS_INIT_FREQ		0x2c0
 #define OFFS_INIT_VOLT		0x2d0
@@ -57,9 +63,9 @@
 #define OFFS_LOG_S		0x340
 #define OFFS_LOG_E		0xf70
 
-#define DVFS_TIMEOUT		3000		/* us */
-#define SEMA_GET_TIMEOUT	1500		/* us */
-#define PAUSE_TIMEOUT		1500		/* us */
+#define DVFS_TIMEOUT		6000		/* us */
+#define SEMA_GET_TIMEOUT	2000		/* us */
+#define PAUSE_TIMEOUT		2000		/* us */
 
 
 /**************************************
@@ -544,6 +550,7 @@ do {								\
 } while (0)
 
 #define cspm_get_timestamp()		cspm_read(CSPM_PCM_TIMER_OUT)
+#define cspm_get_pcmpc()		cspm_read(CSPM_PCM_REG15_DATA)
 
 #define cspm_get_min_freq_ll()		((cspm_read(CSPM_SW_RSV4) & SW_L_F_MIN_MASK) >> 0)
 #define cspm_get_min_freq_l()		((cspm_read(CSPM_SW_RSV4) & SW_B_F_MIN_MASK) >> 16)
@@ -579,19 +586,23 @@ do {							\
 		;					\
 } while (0)
 
-#define wait_complete_us(condition, delay, timeout)	\
-({							\
-	int i = 0;					\
-	int n = DIV_ROUND_UP(timeout, delay);		\
-	while (!(condition)) {				\
-		if (i >= n) {				\
-			i = -EBUSY;			\
-			break;				\
-		}					\
-		udelay(delay);				\
-		i++;					\
-	}						\
-	i;						\
+#define wait_complete_us(condition, delay, timeout)		\
+({								\
+	int i = 0;						\
+	int n = DIV_ROUND_UP(timeout, delay);			\
+	csram_write(OFFS_PCM_PC1, cspm_get_pcmpc());		\
+	csram_write(OFFS_TIMER_OUT1, cspm_get_timestamp());	\
+	while (!(condition)) {					\
+		if (i >= n) {					\
+			i = -i;					\
+			break;					\
+		}						\
+		udelay(delay);					\
+		i++;						\
+	}							\
+	csram_write(OFFS_TIMER_OUT2, cspm_get_timestamp());	\
+	csram_write(OFFS_PCM_PC2, cspm_get_pcmpc());		\
+	i;							\
 })
 
 static inline u32 base_va_to_pa(const u32 *base)
@@ -846,8 +857,19 @@ static void __cspm_clean_after_pause(void)
 
 static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, ...)
 {
+	u32 timer, reg15, ap_sema, spm_sema;
+	u32 rsv3, rsv4, rsv5;
 	char msg[320];
 	va_list args;
+
+	timer = cspm_read(CSPM_PCM_TIMER_OUT);
+	reg15 = cspm_read(CSPM_PCM_REG15_DATA);
+	ap_sema = cspm_read(CSPM_AP_SEMA);
+	spm_sema = cspm_read(CSPM_SPM_SEMA);
+
+	rsv5 = cspm_read(CSPM_SW_RSV5);
+	rsv3 = cspm_read(CSPM_SW_RSV3);
+	rsv4 = cspm_read(CSPM_SW_RSV4);
 
 	va_start(args, fmt);
 	vsnprintf(msg, sizeof(msg), fmt, args);
@@ -856,12 +878,12 @@ static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, .
 	cspm_err("%s\n", msg);
 	cspm_err("FW_VER: %s\n", dvfsp->pcmdesc->version);
 
-	cspm_err("PCM_TIMER: %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
-	cspm_err("PCM_REG15: %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
+	cspm_err("PCM_TIMER: %08x\n", timer);
+	cspm_err("PCM_REG15: %u, SEMA: 0x(%x %x)\n", reg15, ap_sema, spm_sema);
 
-	cspm_err("SW_RSV4: 0x%x\n", cspm_read(CSPM_SW_RSV4));
-	cspm_err("SW_RSV5: 0x%x\n", cspm_read(CSPM_SW_RSV5));
-	cspm_err("SW_RSV3: 0x%x\n", cspm_read(CSPM_SW_RSV3));
+	cspm_err("SW_RSV4: 0x%x\n", rsv4);
+	cspm_err("SW_RSV5: 0x%x\n", rsv5);
+	cspm_err("SW_RSV3: 0x%x\n", rsv3);
 
 	cspm_err("SW_RSV2 : 0x%x\n", cspm_read(CSPM_SW_RSV2));
 	cspm_err("SW_DEBUG: 0x%x\n", cspm_read(CSPM_SW_DEBUG));
@@ -879,6 +901,7 @@ static int __cspm_pause_pcm_running(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 	if (pause_src_map == 0) {
 		cspm_write(CSPM_SW_RSV4, cspm_read(CSPM_SW_RSV4) | SW_ALL_PAUSE);
 		csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
+		csram_write(OFFS_PAUSE_TIME, cspm_get_timestamp());
 
 		udelay(10);	/* skip FW_DONE 1->0 transition */
 
@@ -931,6 +954,7 @@ static void __cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 
 			cspm_write(CSPM_SW_RSV4, rsv4);
 			csram_write(OFFS_SW_RSV4, cspm_read(CSPM_SW_RSV4));
+			csram_write(OFFS_UNPAUSE_TIME, cspm_get_timestamp());
 
 			wake_up(&dvfs_wait);	/* for set_target_opp */
 			csram_write(OFFS_DVFS_WAIT, 0);
@@ -947,7 +971,7 @@ static int cspm_stop_pcm_running(struct cpuhvfs_dvfsp *dvfsp)
 	unsigned long flags;
 
 	spin_lock(&dvfs_lock);
-	cspm_dbgx(STOP, "stop, map = 0x%x\n", pause_src_map);
+	cspm_dbgx(STOP, "[%08x] stop pcm\n", cspm_get_timestamp());
 
 	r = __cspm_pause_pcm_running(dvfsp, PSF_PAUSE_INIT);
 	if (!r) {
@@ -973,7 +997,7 @@ static int cspm_pause_pcm_running(struct cpuhvfs_dvfsp *dvfsp, enum pause_src sr
 
 	spin_lock(&dvfs_lock);
 	if (pause_log_en & psf)
-		cspm_dbgx(PAUSE, "pause, src = %u, map = 0x%x\n", src, pause_src_map);
+		cspm_dbgx(PAUSE, "pause pcm, src = %u, map = 0x%x\n", src, pause_src_map);
 
 	r = __cspm_pause_pcm_running(dvfsp, psf);
 	spin_unlock(&dvfs_lock);
@@ -989,7 +1013,7 @@ static void cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, enum pause_src 
 
 	spin_lock(&dvfs_lock);
 	if (pause_log_en & psf)
-		cspm_dbgx(PAUSE, "unpause, src = %u, map = 0x%x\n", src, pause_src_map);
+		cspm_dbgx(PAUSE, "unpause pcm, src = %u, map = 0x%x\n", src, pause_src_map);
 
 	if (psf & pause_src_map)
 		__cspm_unpause_pcm_to_run(dvfsp, psf);
@@ -1055,7 +1079,7 @@ static int cspm_set_target_opp(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster
 	spin_lock(&dvfs_lock);
 	csram_write(OFFS_FUNC_ENTER, (cluster << 24) | (index << 16) | FEF_DVFS);
 
-	cspm_dbgx(DVFS, "cluster%u dvfs, opp = (%u, %u), map = 0x%x\n",
+	cspm_dbgx(DVFS, "cluster%u dvfs, opp = %u <%u>, pause = 0x%x\n",
 			cluster, index, f_des, pause_src_map);
 
 	while (pause_src_map != 0) {
@@ -1103,7 +1127,7 @@ static int cspm_set_target_opp(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster
 		if (ret_volt)
 			*ret_volt = v;
 	} else {
-		cspm_dump_debug_info(dvfsp, "CLUSTER%u DVFS TIMEOUT, opp = (%u, %u)",
+		cspm_dump_debug_info(dvfsp, "CLUSTER%u DVFS TIMEOUT, opp = %u <%u>",
 					    cluster, index, f_des);
 		BUG_ON(dvfs_fail_ke);
 	}
