@@ -3093,11 +3093,6 @@ static void init_meter_global_data(struct platform_device *dev)
 static int battery_meter_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-	char *temp_strptr;
-	int cmd_len;
-	char chr_mode_str[] = " androidboot.mode=charger";
-#endif
 
 	p_bat_meter_data = (struct mt_battery_meter_custom_data *)dev->dev.platform_data;
 
@@ -3111,17 +3106,6 @@ static int battery_meter_probe(struct platform_device *dev)
 	init_meter_global_data(dev);
 
 	bm_print(BM_LOG_CRTI, "[battery_meter_probe] probe\n");
-
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
-	if (get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT
-	    || get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT) {
-		cmd_len = strlen(saved_command_line) + strlen(chr_mode_str) + 1;
-		temp_strptr = kzalloc(cmd_len, GFP_KERNEL);
-		strncpy(temp_strptr, saved_command_line, cmd_len);
-		strncat(temp_strptr, chr_mode_str, strlen(chr_mode_str));
-		saved_command_line = temp_strptr;
-	}
-#endif
 
 	/* select battery meter control method */
 	battery_meter_ctrl = bm_ctrl_cmd;
@@ -3383,6 +3367,40 @@ static struct platform_driver battery_meter_driver = {
 #endif
 		   },
 };
+
+#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
+static int update_kpoc_boot_mode(void)
+{
+	struct device_node *np;
+	struct property *prop;
+	static const char prop_name[] = "mode";
+	static const char prop_value[] = "charger";
+
+	if (get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT ||
+			get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT) {
+
+		np = of_find_node_by_path("/firmware/android");
+
+		if (!np) {
+			pr_err("%s: can't find dts path!\n", __func__);
+			return 0;
+		}
+
+		prop = kzalloc(sizeof(*prop), GFP_KERNEL);
+		if (!prop)
+			return 0;
+
+		prop->name = (char *)prop_name;
+		prop->value = (void *)prop_value;
+		prop->length = strlen(prop->value);
+		of_update_property(np, prop);
+	}
+
+	return 0;
+}
+
+late_initcall(update_kpoc_boot_mode);
+#endif
 
 static int __init battery_meter_init(void)
 {
