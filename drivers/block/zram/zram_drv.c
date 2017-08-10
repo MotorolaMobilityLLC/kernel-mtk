@@ -765,7 +765,12 @@ static void zram_free_page(struct zram *zram, size_t index)
 			zram_clear_flag(meta, index, ZRAM_ZERO);
 			atomic64_dec(&zram->stats.zero_pages);
 		}
+#ifdef CONFIG_ZSM
+		if (!zsm_test_flag_index(meta, index, ZRAM_ZSM_NODE))
+			return;
+#else
 		return;
+#endif
 	}
 #ifdef CONFIG_ZSM
 	if (!zram_test_flag(meta, index, ZRAM_ZERO) && zsm_test_flag_index(meta, index, ZRAM_ZSM_NODE)) {
@@ -1167,7 +1172,9 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 	 * before overwriting unused sectors.
 	 */
 	bit_spin_lock(ZRAM_ACCESS, &meta->table[index].value);
+#ifndef CONFIG_ZSM
 	zram_free_page(zram, index);
+#endif
 	meta->table[index].handle = handle;
 	zram_set_obj_size(meta, index, clen);
 #ifdef CONFIG_ZSM
