@@ -123,6 +123,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 void ion_sec_heap_free(struct ion_buffer *buffer)
 {
 	struct sg_table *table = buffer->sg_table;
+	ion_sec_buffer_info *pBufferInfo = (ion_sec_buffer_info *) buffer->priv_virt;
 	u32 sec_handle = 0;
 
 	IONMSG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
@@ -139,8 +140,10 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 	}
 #endif
 	kfree(table);
-	IONMSG("%s exit\n", __func__);
+	buffer->priv_virt = NULL;
+	kfree(pBufferInfo);
 
+	IONMSG("%s exit\n", __func__);
 }
 
 struct sg_table *ion_sec_heap_map_dma(struct ion_heap *heap,

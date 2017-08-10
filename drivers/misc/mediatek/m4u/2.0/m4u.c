@@ -2472,16 +2472,16 @@ static int m4u_probe(struct platform_device *pdev)
 #ifdef M4U_TEE_SERVICE_ENABLE
 		{
 			m4u_buf_info_t *pMvaInfo;
-			unsigned int mva;
+			unsigned int mva = 0;
 
 			pMvaInfo = m4u_alloc_buf_info();
 			if (!pMvaInfo) {
 				pMvaInfo->port = M4U_PORT_UNKNOWN;
 				pMvaInfo->size = M4U_NONSEC_MVA_START - 0x100000;
+				mva = m4u_do_mva_alloc(0, M4U_NONSEC_MVA_START - 0x100000, pMvaInfo);
 			}
 
-			mva = m4u_do_mva_alloc(0, M4U_NONSEC_MVA_START - 0x100000, pMvaInfo);
-			M4UINFO("reserve sec mva: 0x%x\n", mva);
+			M4UINFO("reserve sec mva: 0x%x, pMvaInfo: %p\n", mva, pMvaInfo);
 		}
 #endif
 
