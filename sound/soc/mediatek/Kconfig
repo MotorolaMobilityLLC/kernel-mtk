@@ -23,6 +23,14 @@ config MT_SND_SOC_6755
 	default n
 	help
         If you say Y, enable MT_SND_SOC_6755_driver.
+config MT_SND_SOC_6750
+	bool "MT_SND_SOC_6750"
+	help
+	  If you say Y, enable MT_SND_SOC_6750_driver.
+	  Must enable this to use medatek audio driver.
+	  The default value is n for MT8127.
+          Recommnad to configure it before using MT8127 audio driver.
+
 config MT_SND_SOC_6797
     bool "MT_SND_SOC_6797"
 	default n
