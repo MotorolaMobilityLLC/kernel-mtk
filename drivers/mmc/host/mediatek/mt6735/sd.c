@@ -263,6 +263,7 @@ static struct workqueue_struct *wq_tune;
 #define DAT_TIMEOUT                      (HZ    * 5)	/* 1000ms x5 */
 #define CLK_TIMEOUT                      (HZ    * 5)	/* 5s    */
 #define POLLING_BUSY                     (HZ     * 3)
+#define POLLING_PINS			 (HZ*20/1000) /*20ms*/
 /* a single transaction for WIFI may be 50K */
 #define MAX_DMA_CNT                      (64 * 1024 - 512)
 /*
@@ -1575,6 +1576,44 @@ static void msdc_pin_pud(struct msdc_host *host, u32 mode)
 }
 
 #ifndef CONFIG_MTK_LEGACY
+/*
+ * Pull DAT0~2 high/low one-by-one
+ * and power off card when DAT pin status is not the same pull level
+ * 1. PULL DAT0 Low, DAT1/2/3 high
+ * 2. PULL DAT1 Low, DAT0/2/3 high
+ * 3. PULL DAT2 Low, DAT0/1/3 high
+ */
+static int msdc_io_check(struct msdc_host *host)
+{
+	int result = 1, i;
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = 0;
+	u32 pupd_patterns[3] = {0x222662, 0x226262, 0x262262};
+	u32 check_patterns[3] = {0xe0000, 0xd0000, 0xb0000};
+
+	if (host->id != 1)
+		return 1;
+	for (i = 0; i < 3; i++) {
+		sdr_set_field(MSDC1_GPIO_PUPD0_G4_ADDR, MSDC1_PUPD_CMD_CLK_DAT_MASK,
+			pupd_patterns[i]);
+		polling_tmo = jiffies + POLLING_PINS;
+		while ((sdr_read32(MSDC_PS) & 0xF0000) != check_patterns[i]) {
+			if (time_after(jiffies, polling_tmo)) {
+				pr_err("msdc%d DAT%d pin get wrong, ps = 0x%x!\n",
+					host->id, i, sdr_read32(MSDC_PS));
+				goto POWER_OFF;
+			}
+		}
+	}
+	sdr_set_field(MSDC1_GPIO_PUPD0_G4_ADDR, MSDC1_PUPD_CMD_CLK_DAT_MASK, 0x222262);
+	return result;
+
+POWER_OFF:
+	host->block_bad_card = 1;
+	host->power_control(host, 0);
+	return 0;
+}
+
 static void msdc_emmc_power(struct msdc_host *host, u32 on)
 {
 	unsigned long tmo = 0;
@@ -2910,6 +2949,10 @@ static void msdc_set_power_mode(struct msdc_host *host, u8 mode)
 #endif
 
 		mdelay(10);
+		if (host->id == 1) {
+			if (!msdc_io_check(host))
+				return;
+			}
 	} else if (host->power_mode != MMC_POWER_OFF && mode == MMC_POWER_OFF) {
 
 		if (is_card_sdio(host) || (host->hw->flags & MSDC_SDIO_IRQ)) {
