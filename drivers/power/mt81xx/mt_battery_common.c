@@ -1661,6 +1661,11 @@ static void mt_battery_Sync_UI_Percentage_to_Real(void)
 {
 	static u32 timer_counter;
 
+	if (BMT_status.bat_in_recharging_state == true) {
+		BMT_status.UI_SOC = 100;
+		return;
+	}
+
 	if ((BMT_status.UI_SOC > BMT_status.SOC) && ((BMT_status.UI_SOC != 1))) {
 		/* reduce after xxs */
 		if (g_refresh_ui_soc

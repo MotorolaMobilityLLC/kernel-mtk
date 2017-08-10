@@ -773,16 +773,21 @@ int BAT_BatteryFullAction(void)
 	BMT_status.POSTFULL_charging_time = 0;
 	BMT_status.bat_in_recharging_state = false;
 
+	/* config cc setting once for plug-in with 100% UI SOC case */
+	if (g_charging_full_reset_bat_meter) {
+		battery_log(BAT_LOG_CRTI, "[BATTERY] Config charger !!\n\r");
+		pchr_turn_on_charging();
+	}
+
 	if (charging_full_check() == false) {
 		battery_log(BAT_LOG_CRTI, "[BATTERY] Battery Re-charging !!\n\r");
 
-		if (BMT_status.bat_in_recharging_state == true) {
-			if (BMT_status.UI_SOC < 100) {
-				BMT_status.bat_in_recharging_state = false;
-				BMT_status.bat_charging_state = CHR_CC;
-				BMT_status.bat_full = false;
-				return PMU_STATUS_OK;
-			}
+		if (BMT_status.SOC < 100) {
+			battery_log(BAT_LOG_CRTI, "[BATTERY] Leave Re-charging !!\n\r");
+			BMT_status.bat_in_recharging_state = false;
+			BMT_status.bat_charging_state = CHR_CC;
+			BMT_status.bat_full = false;
+			return PMU_STATUS_OK;
 		}
 
 		BMT_status.bat_in_recharging_state = true;
