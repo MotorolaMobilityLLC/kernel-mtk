@@ -1566,7 +1566,9 @@ static size_t ion_debug_heap_total(struct ion_client *client,
 		struct ion_handle *handle = rb_entry(n,
 						     struct ion_handle,
 						     node);
-		if (handle->buffer->heap->id == id)
+		if ((handle->buffer->heap->id == id)
+			|| ((id == ION_HEAP_TYPE_MULTIMEDIA)
+				&& (handle->buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA)))
 			size += handle->buffer->size;
 	}
 	mutex_unlock(&client->lock);
@@ -1579,6 +1581,7 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 	struct ion_device *dev = heap->dev;
 	struct rb_node *n;
 	size_t total_size = 0;
+	size_t camera_total_size = 0;
 	size_t total_orphaned_size = 0;
 
 	seq_printf(s, "%16.s(%16.s) %16.s %16.s %s\n", "client", "dbg_name", "pid", "size", "address");
@@ -1611,8 +1614,13 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 	for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
 		struct ion_buffer *buffer = rb_entry(n, struct ion_buffer,
 						     node);
-		if (buffer->heap->id != heap->id)
-			continue;
+		if (buffer->heap->id != heap->id) {
+			if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA)
+				&& (buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA))
+				camera_total_size += buffer->size;
+			else
+				continue;
+		}
 		total_size += buffer->size;
 		if (!buffer->handle_count) {
 			seq_printf(s, "%16.s %16u %16zu %d %d\n",
@@ -1627,6 +1635,8 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 	seq_printf(s, "%16.s %16zu\n", "total orphaned",
 		   total_orphaned_size);
 	seq_printf(s, "%16.s %16zu\n", "total ", total_size);
+	if (heap->id == ION_HEAP_TYPE_MULTIMEDIA)
+		seq_printf(s, "%16.s %16zu\n", "camera total ", camera_total_size);
 	if (heap->flags & ION_HEAP_FLAG_DEFER_FREE)
 		seq_printf(s, "%16.s %16zu\n", "deferred free",
 				heap->free_list_size);
@@ -1650,6 +1660,35 @@ static const struct file_operations debug_heap_fops = {
 	.release = single_release,
 };
 
+static int ion_debug_heap_pool_show(struct seq_file *s, void *unused)
+{
+	struct ion_heap *heap = s->private;
+	size_t total_size;
+
+	if (!heap->ops->page_pool_total) {
+		pr_err("%s: ion page pool total is not implemented by heap(%s).\n",
+		       __func__, heap->name);
+		return -ENODEV;
+	}
+
+	total_size = heap->ops->page_pool_total(heap);
+
+	return 0;
+}
+
+static int ion_debug_heap_pool_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, ion_debug_heap_pool_show, inode->i_private);
+}
+
+static const struct file_operations debug_heap_pool_fops = {
+	.open = ion_debug_heap_pool_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+#ifdef DEBUG_HEAP_SHRINKER
 static int debug_shrink_set(void *data, u64 val)
 {
 	struct ion_heap *heap = data;
@@ -1687,10 +1726,12 @@ static int debug_shrink_get(void *data, u64 *val)
 
 DEFINE_SIMPLE_ATTRIBUTE(debug_shrink_fops, debug_shrink_get,
 			debug_shrink_set, "%llu\n");
+#endif
 
 void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
 {
 	struct dentry *debug_file;
+	char tmp_name[64];
 
 	if (!heap->ops->allocate || !heap->ops->free || !heap->ops->map_dma ||
 	    !heap->ops->unmap_dma)
@@ -1739,6 +1780,16 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
 	}
 #endif
 
+	snprintf(tmp_name, 64, "%s_total_in_pool", heap->name);
+	debug_file = debugfs_create_file(
+			tmp_name, 0644, dev->heaps_debug_root, heap,
+				     &debug_heap_pool_fops);
+	if (!debug_file) {
+		char buf[256], *path;
+
+		path = dentry_path(dev->heaps_debug_root, buf, 256);
+		pr_err("Failed to create heap page pool debugfs at %s/%s\n", path, tmp_name);
+	}
 
 	up_write(&dev->lock);
 }

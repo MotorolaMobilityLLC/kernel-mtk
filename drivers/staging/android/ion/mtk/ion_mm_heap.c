@@ -212,10 +212,10 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 	end = sched_clock();
 
 	if (end - start > 10000000ULL)	{ /* unit is ns, 10ms */
-		trace_printk("warn: ion mm heap allocate buffer size: %lu time: %lld ns\n",
-			     size, end - start);
-		IONMSG("warn: ion mm heap allocate buffer size: %lu time: %lld ns\n", size,
-		       end - start);
+		trace_printk("warn: ion mm heap allocate buffer size: %lu time: %lld ns --%d\n",
+			     size, end - start, heap->id);
+		IONMSG("warn: ion mm heap allocate buffer size: %lu time: %lld ns --%d\n", size,
+		       end - start, heap->id);
 	}
 	table = kzalloc(sizeof(struct sg_table), GFP_KERNEL);
 	if (!table) {
@@ -385,6 +385,25 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 	return 0;
 }
 
+int ion_mm_heap_pool_total(struct ion_heap *heap)
+{
+	struct ion_system_heap *sys_heap;
+	int total = 0;
+	int i;
+
+	sys_heap = container_of(heap, struct ion_system_heap, heap);
+
+	for (i = 0; i < num_orders; i++) {
+		struct ion_page_pool *pool = sys_heap->pools[i];
+
+		total += (pool->high_count + pool->low_count) * (1 << pool->order);
+		pool = sys_heap->cached_pools[i];
+		total += (pool->high_count + pool->low_count) * (1 << pool->order);
+	}
+
+	return total;
+}
+
 static struct ion_heap_ops system_heap_ops = {
 		.allocate = ion_mm_heap_allocate,
 		.free = ion_mm_heap_free,
@@ -395,6 +414,7 @@ static struct ion_heap_ops system_heap_ops = {
 		.map_user = ion_heap_map_user,
 		.phys = ion_mm_heap_phys,
 		.shrink = ion_mm_heap_shrink,
+		.page_pool_total = ion_mm_heap_pool_total,
 };
 
 static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, void *unused)
@@ -409,8 +429,9 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 		struct ion_page_pool *pool = sys_heap->pools[i];
 
 		ION_PRINT_LOG_OR_SEQ(s,
-				"%d order %u highmem pages in pool = %lu total\n",
-				pool->high_count, pool->order, (1 << pool->order) * PAGE_SIZE * pool->high_count);
+				"%d order %u highmem pages in pool = %lu total, dev, 0x%p, heap id: %d\n",
+				pool->high_count, pool->order, (1 << pool->order) * PAGE_SIZE * pool->high_count,
+				dev, heap->id);
 		ION_PRINT_LOG_OR_SEQ(s,
 				"%d order %u lowmem pages in pool = %lu total\n",
 				pool->low_count, pool->order, (1 << pool->order) * PAGE_SIZE * pool->low_count);
@@ -445,7 +466,9 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 				continue;
 			pBufInfo = (ion_mm_buffer_info *) buffer->priv_virt;
 			pDbg = &(pBufInfo->dbg_info);
-
+			if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA)
+				&& (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA))
+					continue;
 			ION_PRINT_LOG_OR_SEQ(s,
 					"0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %3d %s 0x%x 0x%x 0x%x 0x%x %s",
 					buffer, buffer->size, buffer->kmap_cnt, atomic_read(&buffer->ref.refcount),
@@ -492,6 +515,9 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s, voi
 #if ION_RUNTIME_DEBUGGER
 				int i;
 #endif
+				if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA)
+					&& (handle->buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA))
+					continue;
 
 				ION_PRINT_LOG_OR_SEQ(s,
 						"\thandle=0x%p, buffer=0x%p, heap=%d, backtrace is:\n",
@@ -658,6 +684,11 @@ struct ion_heap *ion_mm_heap_create(struct ion_platform_heap *unused)
 
 		if (orders[i] > 0)
 			gfp_flags = high_order_gfp_flags;
+
+		if (unused->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA)
+			gfp_flags |= (__GFP_MOVABLE | __GFP_HIGHMEM);
+
+
 		pool = ion_page_pool_create(gfp_flags, orders[i]);
 		if (!pool)
 			goto err_create_pool;
@@ -969,3 +1000,25 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd, unsigned long arg
 	ION_FUNC_LEAVE;
 	return ret;
 }
+
+#ifdef CONFIG_PM
+void shrink_ion_by_scenario(void)
+{
+	int nr_to_reclaim, nr_reclaimed;
+	int nr_to_try = 3;
+
+	struct ion_heap *movable_ion_heap = ion_drv_get_heap(g_ion_device, ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA, 1);
+
+	do {
+		nr_to_reclaim = ion_mm_heap_shrink(movable_ion_heap, __GFP_MOVABLE | __GFP_HIGHMEM, 0);
+		nr_reclaimed = ion_mm_heap_shrink(movable_ion_heap,
+				__GFP_MOVABLE | __GFP_HIGHMEM, nr_to_reclaim);
+
+		if (nr_to_reclaim == nr_reclaimed)
+			break;
+	} while (--nr_to_try != 0);
+
+	if (nr_to_reclaim != nr_reclaimed)
+		IONMSG("%s: remaining (%d)\n", __func__, nr_to_reclaim - nr_reclaimed);
+}
+#endif

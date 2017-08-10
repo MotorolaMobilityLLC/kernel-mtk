@@ -408,7 +408,7 @@ static int m4u_fill_sgtable_user(struct vm_area_struct *vma, unsigned long va, i
 					(vma->vm_flags & VM_WRITE), 0, &pages, NULL);
 
 				if (ret == 1)
-					pa = (page_to_pfn(pages) << PAGE_SHIFT) | (va_tmp & ~PAGE_MASK);
+					pa = page_to_phys(pages) | (va_tmp & ~PAGE_MASK);
 			} else {
 				pa = m4u_user_v2p(va_tmp);
 				if (!pa) {

@@ -31,6 +31,9 @@
 #include "ion_drv_priv.h"
 #include "mtk/mtk_ion.h"
 #include "mtk/ion_drv.h"
+#ifdef CONFIG_PM
+#include <linux/fb.h>
+#endif
 
 #define ION_FUNC_ENTER  /* MMProfileLogMetaString(MMP_ION_DEBUG, MMProfileFlagStart, __func__); */
 #define ION_FUNC_LEAVE  /* MMProfileLogMetaString(MMP_ION_DEBUG, MMProfileFlagEnd, __func__); */
@@ -600,6 +603,41 @@ static long ion_custom_ioctl(struct ion_client *client, unsigned int cmd,
  DEFINE_SIMPLE_ATTRIBUTE(debug_profile_fops, debug_profile_get,
  debug_profile_set, "%llu\n");*/
 
+#ifdef CONFIG_PM
+/* FB event notifier */
+static int ion_fb_event(struct notifier_block *notifier, unsigned long event, void *data)
+{
+	struct fb_event *fb_event = data;
+	int blank;
+
+	if (event != FB_EVENT_BLANK)
+		return NOTIFY_DONE;
+
+	blank = *(int *)fb_event->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+		break;
+	case FB_BLANK_NORMAL:
+	case FB_BLANK_VSYNC_SUSPEND:
+	case FB_BLANK_HSYNC_SUSPEND:
+	case FB_BLANK_POWERDOWN:
+		IONMSG("%s: + screen-off +\n", __func__);
+		shrink_ion_by_scenario();
+		IONMSG("%s: - screen-off -\n", __func__);
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block ion_fb_notifier_block = {
+	.notifier_call = ion_fb_event,
+	.priority = 1,	/* Just exceeding 0 for higher priority */
+};
+#endif
 
 struct ion_heap *ion_mtk_heap_create(struct ion_platform_heap *heap_data)
 {
@@ -754,6 +792,15 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 				.priv = NULL,
 		},
 		{
+				.type = ION_HEAP_TYPE_MULTIMEDIA,
+				.id = ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA,
+				.name = "ion_mm_heap_for_camera",
+				.base = 0,
+				.size = 0,
+				.align = 0,
+				.priv = NULL,
+		},
+		{
 				.type = ION_HEAP_TYPE_CARVEOUT,
 				.id = ION_HEAP_TYPE_CARVEOUT,
 				.name = "ion_carveout_heap",
@@ -797,6 +844,10 @@ static int __init ion_init(void)
 		IONMSG("%s platform driver register failed.\n", __func__);
 		return -ENODEV;
 	}
+
+#ifdef CONFIG_PM
+	fb_register_client(&ion_fb_notifier_block);
+#endif
 	return 0;
 }
 
