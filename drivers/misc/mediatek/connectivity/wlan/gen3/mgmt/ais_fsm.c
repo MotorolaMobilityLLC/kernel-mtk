@@ -3540,6 +3540,8 @@ VOID aisCheckPostponedDisconnTimeout(IN P_ADAPTER_T prAdapter, P_AIS_FSM_INFO_T 
 	/* 4 <2> Remove all pending connection request */
 	while (fgFound)
 		fgFound = aisFsmIsRequestPending(prAdapter, AIS_REQUEST_RECONNECT, TRUE);
+	if (prAisFsmInfo->eCurrentState == AIS_STATE_LOOKING_FOR)
+		prAisFsmInfo->eCurrentState = AIS_STATE_IDLE;
 	prConnSettings->fgIsDisconnectedByNonRequest = TRUE;
 	prAisBssInfo->u2DeauthReason = REASON_CODE_BEACON_TIMEOUT;
 	/* 4 <3> Indicate Disconnected Event to Host immediately. */
