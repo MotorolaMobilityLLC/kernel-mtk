@@ -85,9 +85,12 @@ VOID cnmInit(P_ADAPTER_T prAdapter)
 
 	prCnmInfo = &prAdapter->rCnmInfo;
 	prCnmInfo->fgChGranted = FALSE;
+
 	cnmTimerInitTimer(prAdapter, &prCnmInfo->rReqChnlUtilTimer,
 				  (PFN_MGMT_TIMEOUT_FUNC)cnmRunEventReqChnlUtilTimeout, (ULONG) NULL);
 
+	prCnmInfo->ucReqChnPrivilegeCnt = 0;
+	prCnmInfo->rReqChnTimeoutTimer.ulDataPtr = 0;
 }				/* end of cnmInit() */
 
 /*----------------------------------------------------------------------------*/
@@ -102,6 +105,7 @@ VOID cnmInit(P_ADAPTER_T prAdapter)
 VOID cnmUninit(P_ADAPTER_T prAdapter)
 {
 	cnmTimerStopTimer(prAdapter, &prAdapter->rCnmInfo.rReqChnlUtilTimer);
+	cnmTimerStopTimer(prAdapter, &prAdapter->rCnmInfo.rReqChnTimeoutTimer);
 }				/* end of cnmUninit() */
 
 /*----------------------------------------------------------------------------*/
@@ -119,11 +123,13 @@ VOID cnmChMngrRequestPrivilege(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 	P_MSG_CH_REQ_T prMsgChReq;
 	P_CMD_CH_PRIVILEGE_T prCmdBody;
 	WLAN_STATUS rStatus;
+	P_CNM_INFO_T prCnmInfo;
 
 	ASSERT(prAdapter);
 	ASSERT(prMsgHdr);
 
 	prMsgChReq = (P_MSG_CH_REQ_T) prMsgHdr;
+	prCnmInfo = &prAdapter->rCnmInfo;
 
 	prCmdBody = (P_CMD_CH_PRIVILEGE_T)
 	    cnmMemAlloc(prAdapter, RAM_TYPE_BUF, sizeof(CMD_CH_PRIVILEGE_T));
@@ -164,6 +170,16 @@ VOID cnmChMngrRequestPrivilege(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 	if (prCmdBody->ucBssIndex > MAX_BSS_INDEX)
 		DBGLOG(CNM, ERROR, "CNM: ChReq with wrong netIdx=%d\n\n", prCmdBody->ucBssIndex);
 
+	cnmTimerStopTimer(prAdapter, &prCnmInfo->rReqChnTimeoutTimer);
+	if (prCnmInfo->rReqChnTimeoutTimer.ulDataPtr &&
+		((P_MSG_CH_REQ_T)prCnmInfo->rReqChnTimeoutTimer.ulDataPtr)->ucTokenID != prMsgChReq->ucTokenID)
+		cnmMemFree(prAdapter, (PVOID)prCnmInfo->rReqChnTimeoutTimer.ulDataPtr);
+
+	cnmTimerInitTimer(prAdapter,
+		  &prCnmInfo->rReqChnTimeoutTimer,
+		  (PFN_MGMT_TIMEOUT_FUNC) cnmChReqPrivilegeTimeout, (ULONG)prMsgHdr);
+	cnmTimerStartTimer(prAdapter, &prCnmInfo->rReqChnTimeoutTimer, 4000);
+
 	rStatus = wlanSendSetQueryCmd(prAdapter,	/* prAdapter */
 				      CMD_ID_CH_PRIVILEGE,	/* ucCID */
 				      TRUE,	/* fgSetQuery */
@@ -180,8 +196,6 @@ VOID cnmChMngrRequestPrivilege(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 	/* ASSERT(rStatus == WLAN_STATUS_PENDING); */
 
 	cnmMemFree(prAdapter, prCmdBody);
-	cnmMemFree(prAdapter, prMsgHdr);
-
 }				/* end of cnmChMngrRequestPrivilege() */
 
 /*----------------------------------------------------------------------------*/
@@ -213,6 +227,11 @@ VOID cnmChMngrAbortPrivilege(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 
 		prCnmInfo->fgChGranted = FALSE;
 	}
+
+	cnmTimerStopTimer(prAdapter, &prCnmInfo->rReqChnTimeoutTimer);
+	cnmMemFree(prAdapter, (PVOID)prCnmInfo->rReqChnTimeoutTimer.ulDataPtr);
+	prCnmInfo->rReqChnTimeoutTimer.ulDataPtr = 0;
+	prCnmInfo->ucReqChnPrivilegeCnt = 0;
 
 	prCmdBody = (P_CMD_CH_PRIVILEGE_T)
 	    cnmMemAlloc(prAdapter, RAM_TYPE_BUF, sizeof(CMD_CH_PRIVILEGE_T));
@@ -278,6 +297,7 @@ VOID cnmChMngrHandleChEvent(P_ADAPTER_T prAdapter, P_WIFI_EVENT_T prEvent)
 	ASSERT(prAdapter);
 	ASSERT(prEvent);
 
+	prCnmInfo = &prAdapter->rCnmInfo;
 	prEventBody = (P_EVENT_CH_PRIVILEGE_T) (prEvent->aucBuffer);
 	prChResp = (P_MSG_CH_GRANT_T)
 	    cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_CH_GRANT_T));
@@ -299,6 +319,14 @@ VOID cnmChMngrHandleChEvent(P_ADAPTER_T prAdapter, P_WIFI_EVENT_T prEvent)
 	ASSERT(prEventBody->ucStatus == EVENT_CH_STATUS_GRANT);
 
 	prBssInfo = prAdapter->aprBssInfo[prEventBody->ucBssIndex];
+
+	if (prCnmInfo->rReqChnTimeoutTimer.ulDataPtr &&
+		((P_MSG_CH_REQ_T)prCnmInfo->rReqChnTimeoutTimer.ulDataPtr)->ucTokenID != prEventBody->ucTokenID) {
+		cnmTimerStopTimer(prAdapter, &prCnmInfo->rReqChnTimeoutTimer);
+		cnmMemFree(prAdapter, (PVOID)prCnmInfo->rReqChnTimeoutTimer.ulDataPtr);
+		prCnmInfo->rReqChnTimeoutTimer.ulDataPtr = 0;
+		prCnmInfo->ucReqChnPrivilegeCnt = 0;
+	}
 
 	/* Decide message ID based on network and response status */
 	if (IS_BSS_AIS(prBssInfo))
@@ -968,4 +996,60 @@ VOID cnmRequestChannelUtilization(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr)
 BOOLEAN cnmChUtilIsRunning(P_ADAPTER_T prAdapter)
 {
 	return timerPendingTimer(&prAdapter->rCnmInfo.rReqChnlUtilTimer);
+}
+
+VOID cnmChReqPrivilegeTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
+{
+	P_MSG_CH_REQ_T prMsgChReq;
+	P_CNM_INFO_T prCnmInfo;
+
+	DBGLOG(CNM, INFO, "Request channel privilege timeout\n");
+
+	prMsgChReq = (P_MSG_CH_REQ_T) ulParamPtr;
+	prCnmInfo = &prAdapter->rCnmInfo;
+
+	if (prCnmInfo->ucReqChnPrivilegeCnt < 2) {
+		prCnmInfo->ucReqChnPrivilegeCnt++;
+		cnmChMngrRequestPrivilege(prAdapter, (P_MSG_HDR_T)prMsgChReq);
+
+	} else {
+		P_BSS_INFO_T prBssInfo;
+		P_MSG_CH_GRANT_T prChResp;
+
+		prChResp = (P_MSG_CH_GRANT_T)
+			cnmMemAlloc(prAdapter, RAM_TYPE_MSG, sizeof(MSG_CH_GRANT_T));
+
+		/* To do: exception handle */
+		if (!prChResp) {
+			DBGLOG(CNM, ERROR, "ChGrant: fail to get buf (net=%d, token=%d)\n");
+			cnmMemFree(prAdapter, prMsgChReq);
+			return;
+		}
+
+		prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, prMsgChReq->ucBssIndex);
+		prCnmInfo->ucReqChnPrivilegeCnt = 0;
+
+		if (IS_BSS_AIS(prBssInfo))
+			prChResp->rMsgHdr.eMsgId = MID_CNM_AIS_CH_GRANT_FAIL;
+		#if CFG_ENABLE_WIFI_DIRECT
+		else if (prAdapter->fgIsP2PRegistered && IS_BSS_P2P(prBssInfo))
+			prChResp->rMsgHdr.eMsgId = MID_CNM_P2P_CH_GRANT_FAIL;
+		#endif
+		#if CFG_ENABLE_BT_OVER_WIFI
+		else if (IS_BSS_BOW(prBssInfo))
+			prChResp->rMsgHdr.eMsgId = MID_CNM_BOW_CH_GRANT_FAIL;
+		#endif
+		else {
+			cnmMemFree(prAdapter, prChResp);
+			cnmMemFree(prAdapter, prMsgChReq);
+			return;
+		}
+
+		prChResp->ucBssIndex = prMsgChReq->ucBssIndex;
+		prChResp->ucTokenID = prMsgChReq->ucTokenID;
+
+		mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prChResp, MSG_SEND_METHOD_BUF);
+		cnmMemFree(prAdapter, prMsgChReq);
+		prCnmInfo->rReqChnTimeoutTimer.ulDataPtr = 0;
+	}
 }

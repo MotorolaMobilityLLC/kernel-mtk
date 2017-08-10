@@ -2788,6 +2788,22 @@ VOID bowRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 #endif /* Marked for MT6630 */
 }				/* end of aisFsmRunEventChGrant() */
 
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief    This function is called when request channel privilege fail.
+*
+* \param[in] prAdapter  Pointer of ADAPTER_T
+* \param[in] prMsgHdr  Pointer of P_MSG_HDR_T
+*
+* \return none
+*/
+/*----------------------------------------------------------------------------*/
+VOID bowRunEventChGrantFail(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
+{
+	/*To-do: bow request channel privilege fail handle*/
+	cnmMemFree(prAdapter, prMsgHdr);
+}
+
 #if 1				/* Marked for MT6630 */
 
 /*----------------------------------------------------------------------------*/

@@ -232,6 +232,8 @@ bowValidateAuth(IN P_ADAPTER_T prAdapter,
 
 VOID bowRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
+VOID bowRunEventChGrantFail(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
+
 VOID bowRequestCh(IN P_ADAPTER_T prAdapter);
 
 VOID bowReleaseCh(IN P_ADAPTER_T prAdapter);

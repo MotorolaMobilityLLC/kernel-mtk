@@ -902,6 +902,22 @@ VOID p2pFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 }				/* p2pFsmRunEventChGrant */
 
+/*----------------------------------------------------------------------------*/
+/*!
+ * \brief    This function is called when request channel privilege fail.
+ *
+ * \param[in] prAdapter  Pointer of ADAPTER_T
+ * \param[in] prMsgHdr  Pointer of P_MSG_HDR_T
+ *
+ * \return none
+ */
+/*----------------------------------------------------------------------------*/
+VOID p2pFsmRunEventChGrantFail(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
+{
+	/*To-do: p2p request channel privilege fail handle*/
+	cnmMemFree(prAdapter, prMsgHdr);
+}
+
 VOID p2pFsmRunEventScanRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 {
 	P_MSG_P2P_SCAN_REQUEST_T prP2pScanReqMsg = (P_MSG_P2P_SCAN_REQUEST_T) NULL;

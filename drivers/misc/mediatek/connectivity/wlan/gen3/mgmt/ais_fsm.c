@@ -3905,6 +3905,73 @@ VOID aisFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 
 }				/* end of aisFsmRunEventChGrant() */
 
+VOID aisFsmRunEventChGrantFail(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
+{
+	P_BSS_INFO_T prAisBssInfo;
+	P_MSG_CH_GRANT_T prMsgChGrant;
+	P_AIS_FSM_INFO_T prAisFsmInfo;
+	P_CONNECTION_SETTINGS_T prConnSettings;
+
+	BOOLEAN fgFound = TRUE;
+	UINT_8 ucTokenID;
+
+	prMsgChGrant = (P_MSG_CH_GRANT_T) prMsgHdr;
+	ucTokenID = prMsgChGrant->ucTokenID;
+	prAisBssInfo = prAdapter->prAisBssInfo;
+	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
+	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+
+	cnmMemFree(prAdapter, prMsgHdr);
+
+	if (prAisFsmInfo->eCurrentState == AIS_STATE_REQ_CHANNEL_JOIN &&
+		prAisFsmInfo->ucSeqNumOfChReq == ucTokenID) {
+		/* For first connect */
+		if (prAisFsmInfo->u4PostponeIndStartTime == 0 &&
+			prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_DISCONNECTED){
+			aisFsmSteps(prAdapter, AIS_STATE_JOIN_FAILURE);
+			return;
+		}
+		/* For beacon timeout */
+		if (prAisFsmInfo->u4PostponeIndStartTime != 0 &&
+			prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED){
+			/* 1. Deactivate previous AP's STA_RECORD_T in Driver if have. */
+			if (prAisBssInfo->prStaRecOfAP)
+				prAisBssInfo->prStaRecOfAP = (P_STA_RECORD_T) NULL;
+
+			/* 2. Remove all pending connection request */
+			while (fgFound)
+				fgFound = aisFsmIsRequestPending(prAdapter, AIS_REQUEST_RECONNECT, TRUE);
+
+			prAisFsmInfo->eCurrentState = AIS_STATE_IDLE;
+			prConnSettings->fgIsDisconnectedByNonRequest = TRUE;
+
+			prAisBssInfo->u2DeauthReason = 100 * REASON_CODE_BEACON_TIMEOUT
+					+ prAisBssInfo->u2DeauthReason;
+			#if CFG_SELECT_BSS_BASE_ON_MULTI_PARAM
+			prConnSettings->ucSSIDLen = 0;
+			#endif
+			/* 3. Indicate Disconnected Event to Host immediately. */
+			aisIndicationOfMediaStateToHost(prAdapter, PARAM_MEDIA_STATE_DISCONNECTED, FALSE);
+		} else if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) {/* roaming case */
+			roamingFsmRunEventFail(prAdapter, ROAMING_FAIL_REASON_NOCANDIDATE);
+			aisFsmSteps(prAdapter, AIS_STATE_NORMAL_TR);
+		}
+	} else if (prAisFsmInfo->eCurrentState == AIS_STATE_REQ_REMAIN_ON_CHANNEL &&
+		   prAisFsmInfo->ucSeqNumOfChReq == ucTokenID) {
+		aisFsmIsRequestPending(prAdapter, AIS_REQUEST_REMAIN_ON_CHANNEL, TRUE);
+
+		if (prAisBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED)
+			aisFsmSteps(prAdapter, AIS_STATE_NORMAL_TR);
+		else
+			aisFsmSteps(prAdapter, AIS_STATE_IDLE);
+
+		kalRemainOnChannelExpired(prAdapter->prGlueInfo,
+				prAisFsmInfo->rChReqInfo.u8Cookie,
+				prAisFsmInfo->rChReqInfo.eBand,
+				prAisFsmInfo->rChReqInfo.eSco, prAisFsmInfo->rChReqInfo.ucChannelNum);
+
+	}
+}
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief    This function is to inform CNM that channel privilege

@@ -964,6 +964,8 @@ VOID p2pFsmRunEventP2PFunctionSwitch(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T pr
 
 VOID p2pFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
+VOID p2pFsmRunEventChGrantFail(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
+
 VOID p2pFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);
 
 VOID p2pFsmRunEventConnectionPause(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr);

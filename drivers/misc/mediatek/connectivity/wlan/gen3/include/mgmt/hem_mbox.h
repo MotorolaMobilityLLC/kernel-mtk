@@ -51,6 +51,9 @@ typedef enum _ENUM_MSG_ID_T {
 	MID_CNM_AIS_CH_GRANT,	/* CNM notify AIS for indicating channel granted */
 	MID_CNM_P2P_CH_GRANT,	/* CNM notify P2P for indicating channel granted */
 	MID_CNM_BOW_CH_GRANT,	/* CNM notify BOW for indicating channel granted */
+	MID_CNM_AIS_CH_GRANT_FAIL,	/* CNM notify AIS for indicating request channel failure */
+	MID_CNM_P2P_CH_GRANT_FAIL,	/* CNM notify P2P for indicating request channel failure */
+	MID_CNM_BOW_CH_GRANT_FAIL,	/* CNM notify BOW for indicating request channel failure */
 
     /*--------------------------------------------------*/
 	/* SCN Module Mailbox Messages                      */
