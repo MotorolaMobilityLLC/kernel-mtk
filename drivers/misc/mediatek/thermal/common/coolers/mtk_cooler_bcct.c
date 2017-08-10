@@ -104,6 +104,9 @@ struct chrlmt_handle {
 	int bat_chr_curr_limit;
 };
 
+static struct workqueue_struct *bcct_chrlmt_queue;
+static struct work_struct      bcct_chrlmt_work;
+
 /* temp solution, use list instead */
 #define CHR_LMT_MAX_USER_COUNT	(4)
 
@@ -132,6 +135,18 @@ static int chrlmt_register(struct chrlmt_handle *handle)
 static int chrlmt_unregister(struct chrlmt_handle *handle)
 {
 	return -1;
+}
+
+static void chrlmt_set_limit_handler(struct work_struct *work)
+{
+
+	mtk_cooler_bcct_dprintk_always("%s %d %d\n", __func__
+		, chrlmt_chr_input_curr_limit, chrlmt_bat_chr_curr_limit);
+
+#ifdef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
+		set_chr_input_current_limit(chrlmt_chr_input_curr_limit);
+#endif
+		set_bat_charging_current_limit(chrlmt_bat_chr_curr_limit);
 }
 
 static int chrlmt_set_limit(struct chrlmt_handle *handle, int chr_input_curr_limit, int bat_char_curr_limit)
@@ -168,10 +183,8 @@ static int chrlmt_set_limit(struct chrlmt_handle *handle, int chr_input_curr_lim
 		chrlmt_chr_input_curr_limit = min_char_input_curr_limit;
 		chrlmt_bat_chr_curr_limit = min_bat_char_curr_limit;
 
-#ifdef CONFIG_MTK_SWITCH_INPUT_OUTPUT_CURRENT_SUPPORT
-		set_chr_input_current_limit(chrlmt_chr_input_curr_limit);
-#endif
-		set_bat_charging_current_limit(chrlmt_bat_chr_curr_limit);
+		if (bcct_chrlmt_queue)
+			queue_work(bcct_chrlmt_queue, &bcct_chrlmt_work);
 
 		mtk_cooler_bcct_dprintk_always("%s %p %d %d\n", __func__
 			, handle, chrlmt_chr_input_curr_limit, chrlmt_bat_chr_curr_limit);
@@ -179,6 +192,7 @@ static int chrlmt_set_limit(struct chrlmt_handle *handle, int chr_input_curr_lim
 
 	return 0;
 }
+
 
 static int cl_bcct_klog_on;
 static struct thermal_cooling_device *cl_bcct_dev[MAX_NUM_INSTANCE_MTK_COOLER_BCCT] = { 0 };
@@ -899,6 +913,11 @@ static int __init mtk_cooler_bcct_init(void)
 
 		entry = proc_create("bcctlmt", S_IRUGO, NULL, &_cl_chrlmt_fops);
 	}
+
+	bcct_chrlmt_queue = alloc_workqueue("bcct_chrlmt_work",
+			WQ_UNBOUND | WQ_MEM_RECLAIM | WQ_HIGHPRI, 1);
+	INIT_WORK(&bcct_chrlmt_work, chrlmt_set_limit_handler);
+
 	return 0;
 
 err_unreg:
@@ -909,6 +928,13 @@ err_unreg:
 static void __exit mtk_cooler_bcct_exit(void)
 {
 	mtk_cooler_bcct_dprintk("%s\n", __func__);
+
+	if (bcct_chrlmt_queue) {
+		cancel_work_sync(&bcct_chrlmt_work);
+		flush_workqueue(bcct_chrlmt_queue);
+		destroy_workqueue(bcct_chrlmt_queue);
+		bcct_chrlmt_queue = NULL;
+	}
 
 	/* remove the proc file */
 	remove_proc_entry("driver/thermal/clbcct", NULL);
