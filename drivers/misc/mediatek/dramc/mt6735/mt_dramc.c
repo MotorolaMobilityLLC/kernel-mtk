@@ -1251,20 +1251,14 @@ static int __init dt_scan_dram_info(unsigned long node, const char *uname, int d
 		* The longtrail doesn't have a device_type on the
 		* /memory node, so look for the node called /memory@0.
 		*/
-		if (depth != 1 || strcmp(uname, "memory@0") != 0) {
-			disable_dram_fh();
+		if (depth != 1 || strcmp(uname, "memory@0") != 0)
 			return 0;
-		}
-	} else if (strcmp(type, "memory") != 0) {
-		disable_dram_fh();
+	} else if (strcmp(type, "memory") != 0)
 		return 0;
-	}
 
 	reg = (const __be32 *)of_get_flat_dt_prop(node, (const char *)"reg", (int *)&l);
-	if (reg == NULL) {
-		disable_dram_fh();
+	if (reg == NULL)
 		return 0;
-	}
 
 	endp = reg + (l / sizeof(__be32));
 
