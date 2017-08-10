@@ -251,7 +251,7 @@ static int spm_irq_register(void)
 #ifndef CONFIG_ARM64
 		/* assign each SPM IRQ to each CPU */
 		mt_gic_cfg_irq2cpu(irqdesc[i].irq, 0, 0);
-		mt_gic_cfg_irq2cpu(irqdesc[i].irq, i % num_possible_cpus(), 1);
+		mt_gic_cfg_irq2cpu(irqdesc[i].irq, i, 1);
 #endif
 	}
 #if defined(CONFIG_ARCH_MT6580)
