@@ -310,8 +310,18 @@ VOID scnSendScanReq(IN P_ADAPTER_T prAdapter)
 			}
 		}
 #if CFG_ENABLE_WIFI_DIRECT
-		if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX)
-			prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval;
+		if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX) {
+			/*
+			 * mtk supplicant will scan 4 channels for prograssive scan
+			 * customer supplicant should have 3 channels when do social scan
+			 */
+			if (prScanParam->ucChannelListNum <= 4) {
+				DBGLOG(P2P, INFO, "Channel number %d for 70ms\n", prScanParam->ucChannelListNum);
+				prCmdScanReq->u2ChannelDwellTime = 70;
+			} else
+				prCmdScanReq->u2ChannelDwellTime = 30;
+				/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
+		}
 #endif
 #if CFG_ENABLE_FAST_SCAN
 		if (prScanParam->eNetTypeIndex == NETWORK_TYPE_AIS_INDEX)
