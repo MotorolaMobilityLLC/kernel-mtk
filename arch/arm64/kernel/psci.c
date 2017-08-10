@@ -32,7 +32,6 @@
 #include <asm/smp_plat.h>
 #include <asm/suspend.h>
 #include <asm/system_misc.h>
-#include <mtk_hibernate_core.h>
 #ifdef CONFIG_ARCH_MT6797
 #include <mt6797/da9214.h>
 #include <mach/mt_freqhopping.h>

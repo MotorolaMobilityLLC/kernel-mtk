@@ -34,10 +34,6 @@
 #include <asm/tlbflush.h>
 #include <asm/io.h>
 
-#include "tuxonice_modules.h"
-#include "tuxonice_builtin.h"
-#include "tuxonice_alloc.h"
-#include "tuxonice_pageflags.h"
 #include "power.h"
 
 static int swsusp_page_is_free(struct page *);

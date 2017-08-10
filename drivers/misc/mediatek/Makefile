@@ -14,7 +14,6 @@
 #$(call all-subdir-src-or-makefile)
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 subdir-ccflags-y += -Werror
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/hibcore
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
@@ -137,8 +136,6 @@ obj-$(CONFIG_MTK_NET_CCMNI) +=  ccmni/
 obj-$(CONFIG_MTK_CCCI_EXT)     +=  dual_ccci/
 obj-$(CONFIG_MTK_ECCCI_DRIVER) += c2k_ccci/
 obj-$(CONFIG_MTK_ECCCI_DRIVER) +=  eccci/
-
-obj-$(CONFIG_MTK_HIBERNATION) += hibcore/
 
 ifdef CONFIG_CUSTOM_KERNEL_SSW
 ifneq ($(strip $(CONFIG_CUSTOM_KERNEL_SSW)),"")

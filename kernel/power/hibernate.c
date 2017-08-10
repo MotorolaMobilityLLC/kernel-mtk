@@ -30,8 +30,6 @@
 #include <linux/genhd.h>
 #include <trace/events/power.h>
 
-#include "tuxonice.h"
-
 
 static int nocompress;
 static int noresume;
