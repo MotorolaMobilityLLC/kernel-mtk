@@ -573,12 +573,64 @@ int mt_get_gpio_pull_resistor_base(unsigned long pin)
 /*---------------------------------------------------------------------------*/
 int mt_set_gpio_driving_base(unsigned long pin, unsigned long strength)
 {
+	unsigned long bit, reg;
+
+	if (pin >= MAX_GPIO_PIN)
+		return -ERINVAL;
+	bit = DRV_offset[pin].offset;
+	if (DRV_offset[pin].offset == -1)
+		return -1;
+	if (3 == DRV_width[pin].width) {
+		if (strength > 0x7)
+			return -ERWRAPPER;
+		reg = GPIO_RD32(DRV_addr[pin].addr);
+		reg &= ~(0x7 << bit);
+		GPIO_WR32(DRV_addr[pin].addr, reg);
+
+		reg = GPIO_RD32(DRV_addr[pin].addr);
+		reg |= (strength << bit);
+		GPIO_WR32(DRV_addr[pin].addr, reg);
+	} else if (2 == DRV_width[pin].width) {
+		if (strength > 0x3)
+			return -ERWRAPPER;
+		reg = GPIO_RD32(DRV_addr[pin].addr);
+		reg &= ~(0x3 << bit);
+		GPIO_WR32(DRV_addr[pin].addr, reg);
+
+		reg = GPIO_RD32(DRV_addr[pin].addr);
+		reg |= (strength << bit);
+		GPIO_WR32(DRV_addr[pin].addr, reg);
+	} else if (1 == DRV_width[pin].width) {
+		if (strength > 0x1)
+			return -ERWRAPPER;
+		reg = GPIO_RD32(DRV_addr[pin].addr);
+		reg &= ~(0x1 << bit);
+		GPIO_WR32(DRV_addr[pin].addr, reg);
+
+		reg = GPIO_RD32(DRV_addr[pin].addr);
+		reg |= (strength << bit);
+		GPIO_WR32(DRV_addr[pin].addr, reg);
+	}
 	return RSUCCESS;
 }
-/*---------------------------------------------------------------------------*/
+
 int mt_get_gpio_driving_base(unsigned long pin)
 {
-	return RSUCCESS;
+	unsigned long bit;
+
+	if (pin >= MAX_GPIO_PIN)
+		return -ERINVAL;
+
+	bit = DRV_offset[pin].offset;
+	if (DRV_offset[pin].offset == -1)
+		return -1;
+	if (3 == DRV_width[pin].width)
+		return (GPIO_RD32(DRV_addr[pin].addr) >> bit) & 0x7;
+	else if (2 == DRV_width[pin].width)
+		return (GPIO_RD32(DRV_addr[pin].addr) >> bit) & 0x3;
+	else if (1 == DRV_width[pin].width)
+		return (GPIO_RD32(DRV_addr[pin].addr) >> bit) & 0x1;
+	return -ERINVAL;
 }
 /*---------------------------------------------------------------------------*/
 void get_gpio_vbase(struct device_node *node)

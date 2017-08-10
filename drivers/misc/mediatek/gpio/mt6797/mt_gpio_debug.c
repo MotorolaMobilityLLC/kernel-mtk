@@ -542,15 +542,15 @@ static ssize_t mt_gpio_dump_regs(char *buf, ssize_t bufLen)
 	int idx = 0, len = 0;
 
 	/*char tmp[]="PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [INV] [IES]\n"; */
-	char tmp[] = "PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [IES] [SMT]\n";
+	char tmp[] = "PIN: [MODE] [PULL_SEL] [DIN] [DOUT] [PULL EN] [DIR] [IES] [SMT] [DRIVING]\n";
 
 	len += snprintf(buf + len, bufLen - len, "%s", tmp);
 	for (idx = MT_GPIO_BASE_START; idx < MT_GPIO_BASE_MAX; idx++) {
-		len += snprintf(buf + len, bufLen - len, "%3d:%x%d%d%d%d%d%d%d\n",
+		len += snprintf(buf + len, bufLen - len, "%3d:%x%d%d%d%d%d%d%d%d\n",
 				idx, mt_get_gpio_mode_base(idx), mt_get_gpio_pull_select_base(idx),
 				mt_get_gpio_in_base(idx), mt_get_gpio_out_base(idx),
 				mt_get_gpio_pull_enable_base(idx), mt_get_gpio_dir_base(idx),
-				mt_get_gpio_ies_base(idx), mt_get_gpio_smt_base(idx));
+				mt_get_gpio_ies_base(idx), mt_get_gpio_smt_base(idx), mt_get_gpio_driving_base(idx));
 	}
 
 	return len;
@@ -571,7 +571,7 @@ ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, con
 #ifdef MTK_MT6306_SUPPORT
 	int group, on;
 #endif
-	int mode, pullsel, dout, pullen, dir, ies, smt;
+	int mode, pullsel, dout, pullen, dir, ies, smt, driving;
 	u32 num, src, div;
 	/*char md_str[128] = "GPIO_MD_TEST";*/
 	/* struct mt_gpio_obj *obj = (struct mt_gpio_obj*)dev_get_drvdata(dev); */
@@ -583,9 +583,10 @@ ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, con
 		GPIOMSG("echo -wpen num x > pin  #x: 1,pull enable; 0 pull disable\n");
 		GPIOMSG("echo -wies num x > pin  #x: 1,ies enable; 0 ies disable\n");
 		GPIOMSG("echo -wdir num x > pin  #x: 1, output; 0, input\n");
+		GPIOMSG("echo -wdriving num x > pin  #x: driving register value\n");
 		/*GPIOMSG("echo -wdinv num x > pin #x: 1, inversion enable; 0, disable\n"); */
 		GPIOMSG("echo -w=num x x x x x x > pin #set all property one time\n");
-		GPIOMSG("PIN: [MODE] [PSEL] [DIN] [DOUT] [PEN] [DIR] [IES]\n");
+		GPIOMSG("PIN: [MODE] [PSEL] [DIN] [DOUT] [PEN] [DIR] [IES] [DRIVING]\n");
 	} else if (!strncmp(buf, "-r0", 3) && (1 == sscanf(buf + 3, "%d", &pin))) {
 		GPIO_CFG cfg = {.no = pin };
 		/*if pmic */
@@ -615,10 +616,12 @@ ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, con
 			GPIOMSG("set ies (%3d, %d)=%d\n", pin, ies, mt_set_gpio_ies(pin, ies));
 		else if (!strncmp(buf, "dir", 3) && (2 == sscanf(buf + 3, "%d %d", &pin, &dir)))
 			GPIOMSG("set dir (%3d, %d)=%d\n", pin, dir, mt_set_gpio_dir(pin, dir));
+		else if (!strncmp(buf, "driving", 7) && (2 == sscanf(buf + 7, "%d %d", &pin, &driving)))
+			GPIOMSG("set dir (%3d, %d)=%d\n", pin, driving, mt_set_gpio_driving(pin, driving));
 		/* else if (!strncmp(buf, "dinv", 4) && (2 == sscanf(buf+4, "%d %d", &pin, &dinv))) */
 		/* GPIOMSG("set dinv(%3d, %d)=%d\n", pin, dinv, mt_set_gpio_inversion(pin, dinv)); */
-		else if (8 == sscanf(buf, "=%d:%d %d %d %d %d %d %d", &pin, &mode, &pullsel, &dout,
-				&pullen, &dir, &ies, &smt)) {
+		else if (8 == sscanf(buf, "=%d:%d %d %d %d %d %d %d %d", &pin, &mode, &pullsel, &dout,
+				&pullen, &dir, &ies, &smt, &driving)) {
 			GPIOMSG("set mode(%3d, %d)=%d\n", pin, mode, mt_set_gpio_mode(pin, mode));
 			GPIOMSG("set psel(%3d, %d)=%d\n", pin, pullsel,
 				mt_set_gpio_pull_select(pin, pullsel));
@@ -629,7 +632,7 @@ ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, con
 			/* GPIOMSG("set dinv(%3d, %d)=%d\n", pin, dinv, mt_set_gpio_inversion(pin, dinv)); */
 			GPIOMSG("set ies (%3d, %d)=%d\n", pin, ies, mt_set_gpio_ies(pin, ies));
 			GPIOMSG("set smt (%3d, %d)=%d\n", pin, smt, mt_set_gpio_smt(pin, smt));
-
+			GPIOMSG("set smt (%3d, %d)=%d\n", pin, driving, mt_set_gpio_driving(pin, driving));
 		} else
 			GPIOMSG("invalid format: '%s'", buf);
 	} else if (!strncmp(buf, "ww", 2)) {

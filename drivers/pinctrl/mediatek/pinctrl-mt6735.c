@@ -276,6 +276,7 @@ static const struct mtk_pinctrl_devdata mt6735_pinctrl_data = {
 	.mt_get_gpio_dir = mt_get_gpio_dir,
 	.mt_get_gpio_out = mt_get_gpio_out,
 	.mt_set_gpio_out = mt_set_gpio_out,
+	.mt_set_gpio_driving = mt_set_gpio_driving,
 	.mt_set_gpio_ies = mt_set_gpio_ies,
 	.mt_set_gpio_smt = mt_set_gpio_smt,
 	.mt_set_gpio_pull_enable =  mt_set_gpio_pull_enable,
