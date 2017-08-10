@@ -689,6 +689,7 @@
 };
 
 &usb0 {
+	iddig_gpio = <0 1>;
 	pinctrl-names = "usb_default", "iddig_irq_init", "drvvbus_init", "drvvbus_low", "drvvbus_high";
 	pinctrl-0 = <&usb_default>;
 	pinctrl-1 = <&gpio0_mode1_iddig>;

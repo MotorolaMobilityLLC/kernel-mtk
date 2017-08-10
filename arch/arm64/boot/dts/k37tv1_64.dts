@@ -81,6 +81,9 @@
 	};
 };
 
+&mtkfb {
+	reg = <0x7e000000 0x1000000>;
+};
 &i2c2 {
 /* start sensor */
 	gsensor@4c {
