@@ -653,6 +653,7 @@ static int Audio_DL2_DataTransfer(struct snd_kcontrol *kcontrol,
 
 static void GetAudioTrimOffset(int channels)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	int Buffer_on_value = 0, Buffer_offl_value = 0, Buffer_offr_value = 0;
 	int count = 0, countlimit = 5;
 	int val_hpr_on_sum = 0, val_hpl_on_sum = 0;
@@ -700,7 +701,7 @@ static void GetAudioTrimOffset(int channels)
 
 	AudDrv_Emi_Clk_Off();
 	AudDrv_Clk_Off();
-
+#endif
 }
 
 static int Audio_Hpl_Offset_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)

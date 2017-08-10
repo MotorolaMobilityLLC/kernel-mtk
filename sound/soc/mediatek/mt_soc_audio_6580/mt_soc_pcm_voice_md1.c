@@ -417,10 +417,12 @@ static int mtk_voice_pm_ops_suspend(struct device *device)
 	     b_modem1_speech_on, b_modem2_speech_on, speech_md_usage_control);
 	if (b_modem1_speech_on == true || b_modem2_speech_on == true
 	    || speech_md_usage_control == true) {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		/* select 26M */
 		clkmux_sel(MT_CLKMUX_AUD_HF_26M_SEL, MT_CG_SYS_26M, "AUDIO ");
 		clkmux_sel(MT_CLKMUX_AUD_INTBUS_SEL, MT_CG_SYS_26M, "AUDIO ");
 		return 0;
+#endif
 	}
 	return 0;
 }
@@ -435,10 +437,12 @@ static int mtk_voice_pm_ops_resume(struct device *device)
 	b_modem2_speech_on = (bool) (Afe_Get_Reg(PCM_INTF_CON) & 0x1);
 	AudDrv_Clk_Off();
 	if (b_modem1_speech_on == true || b_modem2_speech_on == true) {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		/* mainpll */
 		clkmux_sel(MT_CLKMUX_AUD_HF_26M_SEL, MT_CG_SYS_TEMP, "AUDIO ");
 		clkmux_sel(MT_CLKMUX_AUD_INTBUS_SEL, MT_CG_MPLL_D12, "AUDIO ");
 		return 0;
+#endif
 	}
 
 	return 0;

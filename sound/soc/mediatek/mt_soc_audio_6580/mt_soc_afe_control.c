@@ -823,7 +823,7 @@ void EnableAfe(bool bEnable)
 	MemEnable = CheckMemIfEnable();
 	if (false == bEnable && false == MemEnable) {
 		Afe_Set_Reg(AFE_DAC_CON0, 0x0, 0x1);
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_OF
 #ifdef CONFIG_MTK_LEGACY
 		mt_set_gpio_mode(pin_audclk, GPIO_MODE_00);	/* GPIO24, AUD_CLK_MOSI. */
@@ -843,7 +843,7 @@ void EnableAfe(bool bEnable)
 #endif
 #endif
 	} else if (true == bEnable && true == MemEnable) {
-#ifndef CONFIG_MTK_FPGA		/* FPGA_EARLY_PORTING */
+#ifndef CONFIG_FPGA_EARLY_PORTING		/* FPGA_EARLY_PORTING */
 
 #ifdef CONFIG_OF
 #ifdef CONFIG_MTK_LEGACY

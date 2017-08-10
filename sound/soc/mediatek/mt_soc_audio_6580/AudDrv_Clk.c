@@ -867,8 +867,10 @@ void AudDrv_Emi_Clk_On(void)
 	mutex_lock(&auddrv_pmic_mutex);
 	PRINTK_AUD_CLK("+AudDrv_Emi_Clk_On\n");
 	if (Aud_EMI_cntr == 0) {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		disable_dpidle_by_bit(MT_CG_AUD_PDN_AFE_EN);
 		disable_soidle_by_bit(MT_CG_AUD_PDN_AFE_EN);
+#endif
 	}
 	Aud_EMI_cntr++;
 	PRINTK_AUD_CLK("-AudDrv_Emi_Clk_On, Aud_EMI_cntr=%d\n", Aud_EMI_cntr);
@@ -881,8 +883,10 @@ void AudDrv_Emi_Clk_Off(void)
 	PRINTK_AUD_CLK("+AudDrv_Emi_Clk_Off\n");
 	Aud_EMI_cntr--;
 	if (Aud_EMI_cntr == 0) {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 		enable_dpidle_by_bit(MT_CG_AUD_PDN_AFE_EN);
 		enable_soidle_by_bit(MT_CG_AUD_PDN_AFE_EN);
+#endif
 	}
 	PRINTK_AUD_CLK("-AudDrv_Emi_Clk_Off, Aud_EMI_cntr=%d\n", Aud_EMI_cntr);
 	if (Aud_EMI_cntr < 0) {

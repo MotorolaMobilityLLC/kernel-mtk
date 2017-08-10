@@ -41,7 +41,7 @@
 
 #include "AudDrv_Type_Def.h"
 
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #define PM_MANAGER_API
 #endif
 #define AUDIO_MEMORY_SRAM
