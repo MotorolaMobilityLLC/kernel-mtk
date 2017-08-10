@@ -935,6 +935,9 @@ VOID scnUninit(IN P_ADAPTER_T prAdapter)
 	LINK_INITIALIZE(&prScanInfo->rFreeBSSDescList);
 	LINK_INITIALIZE(&prScanInfo->rBSSDescList);
 
+	if (prScanInfo->prPscnParam)
+		kalMemFree(prScanInfo->prPscnParam, VIR_MEM_TYPE, sizeof(PSCN_PARAM_T));
+
 }				/* end of scnUninit() */
 
 /*----------------------------------------------------------------------------*/
