@@ -827,11 +827,11 @@ static int clkdbg_show(struct seq_file *s, void *v)
 	};
 
 	int i;
-	char cmd[sizeof(last_cmd)];
+	char cmd[sizeof(last_cmd) + 1];
 
 	pr_debug("last_cmd: %s\n", last_cmd);
 
-	strcpy(cmd, last_cmd);
+	strncpy(cmd, last_cmd, sizeof(last_cmd));
 
 	for (i = 0; i < ARRAY_SIZE(cmds); i++) {
 		char *c = cmd;
@@ -855,7 +855,7 @@ static ssize_t clkdbg_write(
 		size_t count,
 		loff_t *data)
 {
-	char desc[sizeof(last_cmd)];
+	char desc[sizeof(last_cmd) - 1];
 	int len = 0;
 
 	pr_debug("count: %zu\n", count);
@@ -864,7 +864,7 @@ static ssize_t clkdbg_write(
 		return 0;
 
 	desc[len] = '\0';
-	strcpy(last_cmd, desc);
+	strncpy(last_cmd, desc, sizeof(last_cmd));
 	if (last_cmd[len - 1] == '\n')
 		last_cmd[len - 1] = 0;
 
