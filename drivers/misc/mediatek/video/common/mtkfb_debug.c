@@ -458,21 +458,25 @@ out:
 
 static ssize_t mtkfb_debug_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
 {
-	const int debug_bufmax = sizeof(debug_buffer) - 1;
+	const int debug_bufmax = DPREC_ERROR_LOG_BUFFER_LENGTH - 1;
 	size_t ret;
+
+	if (!is_buffer_init)
+		goto out;
 
 	ret = count;
 
 	if (count > debug_bufmax)
 		count = debug_bufmax;
 
-	if (copy_from_user(&debug_buffer, ubuf, count))
+	if (copy_from_user(debug_buffer, ubuf, count))
 		return -EFAULT;
 
 	debug_buffer[count] = 0;
 
 	mtkfb_process_dbg_cmd(debug_buffer);
 
+out:
 	return ret;
 }
 
