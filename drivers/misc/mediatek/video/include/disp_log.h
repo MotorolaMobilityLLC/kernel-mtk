@@ -38,7 +38,7 @@
 #define WARN_LEVEL    1
 #define DEFAULT_LEVEL 3
 #define DEBUG_LEVEL   5
-#define IRQ_LEVEL     6
+#define DISP_IRQ_LEVEL     6
 
 /*
  * Display has 7 log level:
@@ -48,7 +48,7 @@
  *    3 - DEFAULT_LEVEL, normal display log
  *    4 - Reserved For Future
  *    5 - DEBUG_LEVEL, will print display path config or HWC calling log
- *    6 - IRQ_LEVEL, print display IRQ log
+ *    6 - DISP_IRQ_LEVEL, print display IRQ log
  */
 
 /*
@@ -134,20 +134,20 @@
 	} while (0)
 
 /*
- * Log function: IRQ_LEVEL
+ * Log function: DISP_IRQ_LEVEL
  *   To print display IRQ message.
  *   And this log will be recorded in display log buffer when g_loglevel
- *   is not lower than IRQ_LEVEL.
+ *   is not lower than DISP_IRQ_LEVEL.
  * Input:
  *   fmt: which format string will be printed.
  *   args: variable will be printed.
  */
 #define DISPIRQ(fmt, args...)                                          \
 	do {                                                           \
-		if (g_loglevel >= IRQ_LEVEL)                            \
+		if (g_loglevel >= DISP_IRQ_LEVEL)                            \
 			dprec_logger_pr(DPREC_LOGGER_DEBUG,            \
 					fmt, ##args);                  \
-		if ((g_mobilelog > 0) && (g_loglevel >= IRQ_LEVEL))      \
+		if ((g_mobilelog > 0) && (g_loglevel >= DISP_IRQ_LEVEL))      \
 			pr_debug("[DISP]IRQ: "fmt, ##args);            \
 	} while (0)
 

@@ -20,7 +20,6 @@
 #include "cmdq_record.h"
 #include "cmdq_core.h"
 #include "ddp_hal.h"
-#include "disp_log.h"
 
 /* MIPITX and DSI */
 #define ENABLE_CLK_MGR
@@ -1360,7 +1359,7 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 			return ddp_reg_pa_base[i] + (va & 0xfffl);
 		}
 	}
-	DISPERR("can not find reg addr for va=0x%lx!\n", va);
+	pr_err("can not find reg addr for va=0x%lx!\n", va);
 	return 0;
 }
 

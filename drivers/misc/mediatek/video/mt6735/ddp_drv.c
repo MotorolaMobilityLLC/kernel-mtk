@@ -76,6 +76,7 @@
 
 #include "disp_debug.h"
 #include "ddp_path.h"
+#include "disp_log.h"
 
 /* for sysfs */
 #include <linux/kobject.h>
