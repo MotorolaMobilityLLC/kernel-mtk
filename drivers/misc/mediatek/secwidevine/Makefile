@@ -11,5 +11,4 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += classicdrm/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += modulardrm/
