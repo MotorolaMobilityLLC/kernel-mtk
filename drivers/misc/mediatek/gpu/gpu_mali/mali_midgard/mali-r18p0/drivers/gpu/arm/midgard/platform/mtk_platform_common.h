@@ -25,6 +25,21 @@ int mtk_platform_init(struct platform_device *pdev, struct kbase_device *kbdev);
 #ifdef ENABLE_MTK_MEMINFO
 #define MTK_MEMINFO_SIZE 150
 
+/*
+* Add by mediatek, Hook the memory query function pointer to (*mtk_get_gpu_memory_usage_fp) in order to
+* provide the gpu total memory usage to mlogger module
+*/
+extern unsigned int (*mtk_get_gpu_memory_usage_fp)(void);
+
+/*
+* Add by mediatek, Hook the memory dump function pointer to (*ged_mem_dump_gpu_memory_usag_fp) in order to
+* provide the gpu detail memory usage by PID to mlogger module
+*/
+extern bool (*mtk_dump_gpu_memory_usage_fp)(void);
+
+extern atomic_t g_mtk_gpu_total_memory_usage_in_pages;
+extern atomic_t g_mtk_gpu_peak_memory_usage_in_pages;
+
 typedef struct
 {
 	int pid;
@@ -47,6 +62,7 @@ bool mtk_kbase_dump_gpu_memory_usage(void);
 unsigned int mtk_kbase_report_gpu_memory_usage(void);
 int mtk_kbase_report_gpu_memory_peak(void);
 void mtk_kbase_set_gpu_memory_peak(void);
+extern int g_mtk_gpu_total_memory_usage_in_pages_debugfs;
 #endif /* ENABLE_MTK_MEMINFO */
 
 #ifdef CONFIG_PROC_FS

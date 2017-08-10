@@ -4616,6 +4616,10 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	}
 	kbdev->inited_subsys |= inited_job_fault;
 
+#ifdef ENABLE_MTK_MEMINFO
+	mtk_kbase_gpu_memory_debug_init();
+#endif /* ENABLE_MTK_MEMINFO */
+
 	err = kbase_device_debugfs_init(kbdev);
 	if (err) {
 		dev_err(kbdev->dev, "DebugFS initialization failed");

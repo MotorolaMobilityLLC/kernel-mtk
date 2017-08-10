@@ -16,7 +16,7 @@
 
 #include <linux/proc_fs.h>
 
-#include <platform/mtk_platform_common.h>
+#include "platform/mtk_platform_common.h"
 #include "mt_gpufreq.h"
 #include <mali_kbase_pm_internal.h>
 
@@ -26,17 +26,6 @@
 #include <mt-plat/aee.h>
 
 #ifdef ENABLE_MTK_MEMINFO
-/*
-   Add by mediatek, Hook the memory query function pointer to (*mtk_get_gpu_memory_usage_fp) in order to
-   provide the gpu total memory usage to mlogger module
-*/
-extern unsigned int (*mtk_get_gpu_memory_usage_fp)(void);
-
-/*
-   Add by mediatek, Hook the memory dump function pointer to (*ged_mem_dump_gpu_memory_usag_fp) in order to
-   provide the gpu detail memory usage by PID to mlogger module
-*/
-extern bool (*mtk_dump_gpu_memory_usage_fp)(void);
 
 int g_mtk_gpu_total_memory_usage_in_pages_debugfs;
 atomic_t g_mtk_gpu_total_memory_usage_in_pages;
@@ -192,13 +181,29 @@ static int proc_gpu_memoryusage_show(struct seq_file *m, void *v)
 	ssize_t ret = 0;
 
 #ifdef ENABLE_MTK_MEMINFO
+	int i = 0;
 	int total_size_in_bytes;
 	int peak_size_in_bytes;
 
 	total_size_in_bytes = mtk_kbase_report_gpu_memory_usage();
 	peak_size_in_bytes = mtk_kbase_report_gpu_memory_peak();
 
-	ret = seq_printf(m, "curr: %10u, peak %10u\n", total_size_in_bytes, peak_size_in_bytes);
+	seq_printf(m, "curr: %10u byte, peak %10u byte\n", total_size_in_bytes, peak_size_in_bytes);
+
+	/* output the total memory usage and cap for this device */
+	seq_printf(m, "%10s\t%16s\n", "PID", "GPU Memory by Page");
+	seq_puts(m, "============================\n");
+
+	for (i = 0; (i < MTK_MEMINFO_SIZE) && (g_mtk_gpu_meminfo[i].pid != 0); i++) {
+		seq_printf(m, "%10d\t%16d\n", g_mtk_gpu_meminfo[i].pid,
+		g_mtk_gpu_meminfo[i].used_pages);
+	}
+
+	seq_puts(m, "============================\n");
+	seq_printf(m, "%10s\t%16u\n",
+		"Total",
+		g_mtk_gpu_total_memory_usage_in_pages_debugfs);
+	seq_puts(m, "============================\n");
 #endif /* ENABLE_MTK_MEMINFO */
 
 	return ret;
