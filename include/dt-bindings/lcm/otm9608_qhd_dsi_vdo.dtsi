@@ -101,7 +101,7 @@
 
 		lcm_params-dsi-vertical_sync_active = <3>;
 		lcm_params-dsi-vertical_backporch = <12>;
-		lcm_params-dsi-vertical_frontporch = <10>;
+		lcm_params-dsi-vertical_frontporch = <20>;
 		lcm_params-dsi-vertical_frontporch_for_low_power;
 		lcm_params-dsi-vertical_active_line = <960>;
 		lcm_params-dsi-horizontal_sync_active = <10>;
@@ -144,7 +144,7 @@
 		lcm_params-dsi-rg_bir;
 		lcm_params-dsi-rg_bic;
 		lcm_params-dsi-rg_bp;
-		lcm_params-dsi-pll_clock = <252>;
+		lcm_params-dsi-pll_clock = <260>;
 		lcm_params-dsi-dsi_clock;
 		lcm_params-dsi-ssc_disable;
 		lcm_params-dsi-ssc_range;
