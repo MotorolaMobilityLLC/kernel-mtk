@@ -171,7 +171,7 @@ void AudDrv_Clk_probe(void *dev)
 		aud_clks[i].clock = devm_clk_get(dev, aud_clks[i].name);
 		if (IS_ERR(aud_clks[i].clock)) {
 			ret = PTR_ERR(aud_clks[i].clock);
-			pr_err("%s devm_clk_get %s fail %d\n", __func__, aud_clks[i].name, ret);
+			pr_warn("%s devm_clk_get %s fail %d\n", __func__, aud_clks[i].name, ret);
 			break;
 		}
 		aud_clks[i].clk_status = true;
@@ -184,8 +184,8 @@ void AudDrv_Clk_probe(void *dev)
 		if (aud_clks[i].clk_status) {
 			ret = clk_prepare(aud_clks[i].clock);
 			if (ret) {
-				pr_err("%s clk_prepare %s fail %d\n",
-				       __func__, aud_clks[i].name, ret);
+				pr_warn("%s clk_prepare %s fail %d\n",
+					__func__, aud_clks[i].name, ret);
 				break;
 			}
 			aud_clks[i].clk_prepare = true;
@@ -195,14 +195,14 @@ void AudDrv_Clk_probe(void *dev)
 	if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare) {
 		ret = clk_enable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
 		if (ret) {
-			pr_err
+			pr_warn
 			    ("%s [CCF]Aud enable_clock enable_clock CLOCK_MUX_AUDIOINTBUS fail",
 			     __func__);
 			BUG();
 			return;
 		}
 	} else {
-		pr_err
+		pr_warn
 		    ("%s [CCF]clk_prepare error Aud enable_clock CLOCK_MUX_AUDIOINTBUS fail",
 		     __func__);
 		BUG();
@@ -212,14 +212,14 @@ void AudDrv_Clk_probe(void *dev)
 	if (aud_clks[CLOCK_MUX_AUDIO].clk_prepare) {
 		ret = clk_enable(aud_clks[CLOCK_MUX_AUDIO].clock);
 		if (ret) {
-			pr_err
+			pr_warn
 			    ("%s [CCF]Aud enable_clock enable_clock CLOCK_MUX_AUDIO fail",
 			     __func__);
 			BUG();
 			return;
 		}
 	} else {
-		pr_err
+		pr_warn
 		    ("%s [CCF]clk_prepare error Aud enable_clock CLOCK_MUX_AUDIO fail",
 		     __func__);
 		BUG();
@@ -311,14 +311,14 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
 			if (ret) {
-				pr_err
+				pr_warn
 				    ("%s [CCF]Aud enable_clock enable_clock CLOCK_MUX_AUDIOINTBUS fail",
 				     __func__);
 				BUG();
 				return;
 			}
 		} else {
-			pr_err
+			pr_warn
 			    ("%s [CCF]clk_prepare error Aud enable_clock CLOCK_MUX_AUDIOINTBUS fail",
 			     __func__);
 			BUG();
@@ -328,8 +328,8 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock,
 				     aud_clks[CLOCK_TOP_SYSPLL1_D4].clock);
 		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_MUX_AUDIOINTBUS].name,
+			pr_warn("%s clk_set_parent %s-%s fail %d\n",
+				__func__, aud_clks[CLOCK_MUX_AUDIOINTBUS].name,
 			       aud_clks[CLOCK_TOP_SYSPLL1_D4].name, ret);
 			BUG();
 			return;
@@ -338,14 +338,14 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 		if (aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock);
 			if (ret) {
-				pr_err
+				pr_warn
 				    ("%s [CCF]Aud enable_clock enable_clock CLOCK_MUX_AUDIOINTBUS fail",
 				     __func__);
 				BUG();
 				return;
 			}
 		} else {
-			pr_err
+			pr_warn
 			    ("%s [CCF]clk_prepare error Aud enable_clock CLOCK_MUX_AUDIOINTBUS fail",
 			     __func__);
 			BUG();
@@ -355,9 +355,9 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock,
 				     aud_clks[CLOCK_CLK26M].clock);
 		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_MUX_AUDIOINTBUS].name,
-			       aud_clks[CLOCK_CLK26M].name, ret);
+			pr_warn("%s clk_set_parent %s-%s fail %d\n",
+				__func__, aud_clks[CLOCK_MUX_AUDIOINTBUS].name,
+				aud_clks[CLOCK_CLK26M].name, ret);
 			BUG();
 			return;
 		}
@@ -397,13 +397,13 @@ void AudDrv_Clk_On(void)
 		if (aud_clks[CLOCK_INFRA_SYS_AUDIO].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_INFRA_SYS_AUDIO].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock %s fail\n", __func__,
-				       aud_clks[CLOCK_INFRA_SYS_AUDIO].name);
+				pr_warn("%s [CCF]Aud enable_clock %s fail\n", __func__,
+					aud_clks[CLOCK_INFRA_SYS_AUDIO].name);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err
+			pr_warn
 			    ("%s [CCF]clk_prepare error Aud enable_clock MT_CG_INFRA_AUDIO fail\n",
 			     __func__);
 			BUG();
@@ -414,13 +414,13 @@ void AudDrv_Clk_On(void)
 		if (aud_clks[CLOCK_AFE].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_AFE].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock %s fail\n", __func__,
-				       aud_clks[CLOCK_AFE].name);
+				pr_warn("%s [CCF]Aud enable_clock %s fail\n", __func__,
+					aud_clks[CLOCK_AFE].name);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock MT_CG_AUDIO_AFE fail\n",
+			pr_warn("%s [CCF]clk_prepare error Aud enable_clock MT_CG_AUDIO_AFE fail\n",
 			       __func__);
 			BUG();
 			goto UNLOCK;
@@ -429,12 +429,12 @@ void AudDrv_Clk_On(void)
 		if (aud_clks[CLOCK_DAC].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_DAC].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock MT_CG_AUDIO_DAC fail\n", __func__);
+				pr_warn("%s [CCF]Aud enable_clock MT_CG_AUDIO_DAC fail\n", __func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err("%s [CCF]clk_status error Aud enable_clock MT_CG_AUDIO_DAC fail\n",
+			pr_warn("%s [CCF]clk_status error Aud enable_clock MT_CG_AUDIO_DAC fail\n",
 			       __func__);
 			BUG();
 			goto UNLOCK;
@@ -443,13 +443,13 @@ void AudDrv_Clk_On(void)
 		if (aud_clks[CLOCK_DAC_PREDIS].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_DAC_PREDIS].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock MT_CG_AUDIO_DAC_PREDIS fail\n",
+				pr_warn("%s [CCF]Aud enable_clock MT_CG_AUDIO_DAC_PREDIS fail\n",
 				       __func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err
+			pr_warn
 			    ("%s [CCF]clk_status error Aud enable_clock MT_CG_AUDIO_DAC_PREDIS fail\n",
 			     __func__);
 			BUG();
@@ -614,12 +614,12 @@ void AudDrv_ADC_Clk_On(void)
 		if (aud_clks[CLOCK_ADC].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_ADC].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock ADC fail", __func__);
+				pr_warn("%s [CCF]Aud enable_clock enable_clock ADC fail", __func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock ADC fail", __func__);
+			pr_warn("%s [CCF]clk_prepare error Aud enable_clock ADC fail", __func__);
 			BUG();
 			goto UNLOCK;
 		}
@@ -793,14 +793,14 @@ void AudDrv_APLL22M_Clk_On(void)
 		if (aud_clks[CLOCK_TOP_AUD_MUX1].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_TOP_AUD_MUX1].clock);
 			if (ret) {
-				pr_err
+				pr_warn
 				    ("%s [CCF]Aud enable_clock enable_clock CLOCK_TOP_AUD_MUX1 fail",
 				     __func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_AUD_MUX1 fail",
+			pr_warn("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_AUD_MUX1 fail",
 			       __func__);
 			BUG();
 			goto UNLOCK;
@@ -809,7 +809,7 @@ void AudDrv_APLL22M_Clk_On(void)
 		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
 				     aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
 		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
+			pr_warn("%s clk_set_parent %s-%s fail %d\n",
 			       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
 			       aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
 			BUG();
@@ -820,7 +820,7 @@ void AudDrv_APLL22M_Clk_On(void)
 
 			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1_CK].clock, 90316800);
 			if (ret) {
-				pr_err("%s clk_set_rate %s-90316800 fail %d\n",
+				pr_warn("%s clk_set_rate %s-90316800 fail %d\n",
 				       __func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name, ret);
 				BUG();
 				goto UNLOCK;
@@ -831,13 +831,13 @@ void AudDrv_APLL22M_Clk_On(void)
 
 			ret = clk_enable(aud_clks[CLOCK_APLL22M].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock aud_apll22m_clk fail",
+				pr_warn("%s [CCF]Aud enable_clock enable_clock aud_apll22m_clk fail",
 				       __func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock aud_apll22m_clk fail",
+			pr_warn("%s [CCF]clk_prepare error Aud enable_clock aud_apll22m_clk fail",
 			       __func__);
 			BUG();
 			goto UNLOCK;
@@ -846,14 +846,14 @@ void AudDrv_APLL22M_Clk_On(void)
 		if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL1_TUNER].clock);
 			if (ret) {
-				pr_err
+				pr_warn
 				    ("%s [CCF]Aud enable_clock enable_clock aud_apll1_tuner_clk fail",
 				     __func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err
+			pr_warn
 			    ("%s [CCF]clk_prepare error Aud enable_clock aud_apll1_tuner_clk fail",
 			     __func__);
 			BUG();
@@ -908,7 +908,7 @@ void AudDrv_APLL22M_Clk_Off(void)
 		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
 				     aud_clks[CLOCK_CLK26M].clock);
 		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
+			pr_warn("%s clk_set_parent %s-%s fail %d\n",
 			       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
 			       aud_clks[CLOCK_CLK26M].name, ret);
 			BUG();
@@ -920,7 +920,7 @@ void AudDrv_APLL22M_Clk_Off(void)
 			pr_debug("%s [CCF]Aud clk_disable CLOCK_TOP_AUD_MUX1 fail", __func__);
 
 		} else {
-			pr_err
+			pr_warn
 			    ("%s [CCF]clk_prepare error clk_disable CLOCK_TOP_AUD_MUX1 fail",
 			     __func__);
 			BUG();
@@ -984,15 +984,15 @@ void AudDrv_APLL24M_Clk_On(void)
 		if (aud_clks[CLOCK_TOP_AUD_MUX2].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_TOP_AUD_MUX2].clock);
 			if (ret) {
-				pr_err
+				pr_warn
 				    ("%s [CCF]Aud enable_clock enable_clock CLOCK_TOP_AUD_MUX2 fail",
 				     __func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_AUD_MUX2 fail",
-			       __func__);
+			pr_warn("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_AUD_MUX2 fail",
+				__func__);
 			BUG();
 			goto UNLOCK;
 		}
@@ -1000,9 +1000,9 @@ void AudDrv_APLL24M_Clk_On(void)
 		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX2].clock,
 				     aud_clks[CLOCK_WHPLL_AUDIO_CK].clock);
 		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_TOP_AUD_MUX2].name,
-			       aud_clks[CLOCK_WHPLL_AUDIO_CK].name, ret);
+			pr_warn("%s clk_set_parent %s-%s fail %d\n",
+				__func__, aud_clks[CLOCK_TOP_AUD_MUX2].name,
+				aud_clks[CLOCK_WHPLL_AUDIO_CK].name, ret);
 			BUG();
 			goto UNLOCK;
 		}
@@ -1011,7 +1011,7 @@ void AudDrv_APLL24M_Clk_On(void)
 
 			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL2_CK].clock, 98303999);
 			if (ret) {
-				pr_err("%s clk_set_rate %s-90316800 fail %d\n",
+				pr_warn("%s clk_set_rate %s-90316800 fail %d\n",
 				       __func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name, ret);
 				BUG();
 				goto UNLOCK;
@@ -1021,14 +1021,14 @@ void AudDrv_APLL24M_Clk_On(void)
 		if (aud_clks[CLOCK_APLL2_TUNER].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL2_TUNER].clock);
 			if (ret) {
-				pr_err
+				pr_warn
 				    ("%s [CCF]Aud enable_clock enable_clock aud_apll2_tuner_clk fail",
 				     __func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err
+			pr_warn
 			    ("%s [CCF]clk_prepare error Aud enable_clock aud_apll2_tuner_clk fail",
 			     __func__);
 			BUG();
@@ -1039,15 +1039,15 @@ void AudDrv_APLL24M_Clk_On(void)
 		if (aud_clks[CLOCK_TOP_AUD_MUX1].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_TOP_AUD_MUX1].clock);
 			if (ret) {
-				pr_err
+				pr_warn
 				    ("%s [CCF]Aud enable_clock enable_clock CLOCK_TOP_AUD_MUX1 fail",
 				     __func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_AUD_MUX1 fail",
-			       __func__);
+			pr_warn("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_AUD_MUX1 fail",
+				__func__);
 			BUG();
 			goto UNLOCK;
 		}
@@ -1055,9 +1055,9 @@ void AudDrv_APLL24M_Clk_On(void)
 		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
 				     aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
 		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
-			       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
-			       aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
+			pr_warn("%s clk_set_parent %s-%s fail %d\n",
+				__func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
+				aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
 			BUG();
 			goto UNLOCK;
 		}
@@ -1067,8 +1067,8 @@ void AudDrv_APLL24M_Clk_On(void)
 
 			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1_CK].clock, 98303999);
 			if (ret) {
-				pr_err("%s clk_set_rate %s-98303000 fail %d\n",
-				       __func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name, ret);
+				pr_warn("%s clk_set_rate %s-98303000 fail %d\n",
+					__func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name, ret);
 				BUG();
 				goto UNLOCK;
 			}
@@ -1078,14 +1078,14 @@ void AudDrv_APLL24M_Clk_On(void)
 		if (aud_clks[CLOCK_APLL24M].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL24M].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock aud_apll24m_clk fail",
-				       __func__);
+				pr_warn("%s [CCF]Aud enable_clock enable_clock aud_apll24m_clk fail",
+					__func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock aud_apll24m_clk fail",
-			       __func__);
+			pr_warn("%s [CCF]clk_prepare error Aud enable_clock aud_apll24m_clk fail",
+				__func__);
 			BUG();
 			goto UNLOCK;
 		}
@@ -1093,14 +1093,14 @@ void AudDrv_APLL24M_Clk_On(void)
 		if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL1_TUNER].clock);
 			if (ret) {
-				pr_err
+				pr_warn
 				    ("%s [CCF]Aud enable_clock enable_clock aud_apll1_tuner_clk fail",
 				     __func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err
+			pr_warn
 			    ("%s [CCF]clk_prepare error Aud enable_clock aud_apll1_tuner_clk fail",
 			     __func__);
 			BUG();
@@ -1156,7 +1156,7 @@ void AudDrv_APLL24M_Clk_Off(void)
 		ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
 				     aud_clks[CLOCK_CLK26M].clock);
 		if (ret) {
-			pr_err("%s clk_set_parent %s-%s fail %d\n",
+			pr_warn("%s clk_set_parent %s-%s fail %d\n",
 			       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
 			       aud_clks[CLOCK_CLK26M].name, ret);
 			BUG();
@@ -1166,10 +1166,10 @@ void AudDrv_APLL24M_Clk_Off(void)
 		if (aud_clks[CLOCK_TOP_AUD_MUX1].clk_prepare) {
 			clk_disable(aud_clks[CLOCK_TOP_AUD_MUX1].clock);
 
-			pr_err("%s [CCF]Aud clk_disable CLOCK_TOP_AUD_MUX1 fail", __func__);
+			pr_debug("%s [CCF]Aud clk_disable CLOCK_TOP_AUD_MUX1 fail", __func__);
 
 		} else {
-			pr_err
+			pr_warn
 			    ("%s [CCF]clk_prepare error clk_disable CLOCK_TOP_AUD_MUX1 fail",
 			     __func__);
 			BUG();
@@ -1219,14 +1219,14 @@ void AudDrv_I2S_Clk_On(void)
 		if (aud_clks[CLOCK_I2S].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_I2S].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock aud_i2s_clk fail",
-				       __func__);
+				pr_warn("%s [CCF]Aud enable_clock enable_clock aud_i2s_clk fail",
+					__func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock aud_i2s_clk fail",
-			       __func__);
+			pr_warn("%s [CCF]clk_prepare error Aud enable_clock aud_i2s_clk fail",
+				__func__);
 			BUG();
 			goto UNLOCK;
 		}
@@ -1302,14 +1302,14 @@ void AudDrv_Core_Clk_On(void)
 		if (aud_clks[CLOCK_AFE].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_AFE].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock aud_afe_clk fail",
-				       __func__);
+				pr_warn("%s [CCF]Aud enable_clock enable_clock aud_afe_clk fail",
+					__func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock aud_afe_clk fail",
-			       __func__);
+			pr_warn("%s [CCF]clk_prepare error Aud enable_clock aud_afe_clk fail",
+				__func__);
 			BUG();
 			goto UNLOCK;
 		}
@@ -1367,14 +1367,14 @@ void AudDrv_APLL1Tuner_Clk_On(void)
 		if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL1_TUNER].clock);
 			if (ret) {
-				pr_err
+				pr_warn
 				    ("%s [CCF]Aud enable_clock enable_clock aud_apll1_tuner_clk fail",
 				     __func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err
+			pr_warn
 			    ("%s [CCF]clk_prepare error Aud enable_clock aud_apll1_tuner_clk fail",
 			     __func__);
 			BUG();
@@ -1432,14 +1432,14 @@ void AudDrv_APLL2Tuner_Clk_On(void)
 		if (aud_clks[CLOCK_APLL2_TUNER].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL2_TUNER].clock);
 			if (ret) {
-				pr_err
+				pr_warn
 				    ("%s [CCF]Aud enable_clock enable_clock aud_apll2_tuner_clk fail",
 				     __func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err
+			pr_warn
 			    ("%s [CCF]clk_prepare error Aud enable_clock aud_apll2_tuner_clk fail",
 			     __func__);
 			BUG();
@@ -1581,9 +1581,9 @@ void AudDrv_Suspend_Clk_Off(void)
 			ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
 					     aud_clks[CLOCK_CLK26M].clock);
 			if (ret) {
-				pr_err("%s clk_set_parent %s-%s fail %d\n",
-				       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
-				       aud_clks[CLOCK_CLK26M].name, ret);
+				pr_warn("%s clk_set_parent %s-%s fail %d\n",
+					__func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
+					aud_clks[CLOCK_CLK26M].name, ret);
 				BUG();
 				goto UNLOCK;
 			}
@@ -1594,7 +1594,7 @@ void AudDrv_Suspend_Clk_Off(void)
 					 __func__);
 
 			} else {
-				pr_err
+				pr_warn
 				    ("%s [CCF]clk_prepare error clk_disable CLOCK_TOP_AUD_MUX1 fail",
 				     __func__);
 				BUG();
@@ -1626,9 +1626,9 @@ void AudDrv_Suspend_Clk_Off(void)
 			ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
 					     aud_clks[CLOCK_CLK26M].clock);
 			if (ret) {
-				pr_err("%s clk_set_parent %s-%s fail %d\n",
-				       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
-				       aud_clks[CLOCK_CLK26M].name, ret);
+				pr_warn("%s clk_set_parent %s-%s fail %d\n",
+					__func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
+					aud_clks[CLOCK_CLK26M].name, ret);
 				BUG();
 				goto UNLOCK;
 			}
@@ -1639,7 +1639,7 @@ void AudDrv_Suspend_Clk_Off(void)
 					 __func__);
 
 			} else {
-				pr_err
+				pr_warn
 				    ("%s [CCF]clk_prepare error clk_disable CLOCK_TOP_AUD_MUX1 fail",
 				     __func__);
 				BUG();
@@ -1675,14 +1675,14 @@ void AudDrv_Suspend_Clk_On(void)
 		if (aud_clks[CLOCK_AFE].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_AFE].clock);
 			if (ret) {
-				pr_err("%s [CCF]Aud enable_clock enable_clock aud_afe_clk fail",
-				       __func__);
+				pr_warn("%s [CCF]Aud enable_clock enable_clock aud_afe_clk fail",
+					__func__);
 				BUG();
 				goto UNLOCK;
 			}
 		} else {
-			pr_err("%s [CCF]clk_prepare error Aud enable_clock aud_afe_clk fail",
-			       __func__);
+			pr_warn("%s [CCF]clk_prepare error Aud enable_clock aud_afe_clk fail",
+				__func__);
 			BUG();
 			goto UNLOCK;
 		}
@@ -1697,14 +1697,14 @@ void AudDrv_Suspend_Clk_On(void)
 			if (aud_clks[CLOCK_I2S].clk_prepare) {
 				ret = clk_enable(aud_clks[CLOCK_I2S].clock);
 				if (ret) {
-					pr_err
+					pr_warn
 					    ("%s [CCF]Aud enable_clock enable_clock aud_i2s_clk fail",
 					     __func__);
 					BUG();
 					goto UNLOCK;
 				}
 			} else {
-				pr_err
+				pr_warn
 				    ("%s [CCF]clk_prepare error Aud enable_clock aud_i2s_clk fail",
 				     __func__);
 				BUG();
@@ -1733,14 +1733,14 @@ void AudDrv_Suspend_Clk_On(void)
 			if (aud_clks[CLOCK_TOP_AUD_MUX1].clk_prepare) {
 				ret = clk_enable(aud_clks[CLOCK_TOP_AUD_MUX1].clock);
 				if (ret) {
-					pr_err
+					pr_warn
 					    ("%s [CCF]Aud enable_clock enable_clock CLOCK_TOP_AUD_MUX1 fail",
 					     __func__);
 					BUG();
 					goto UNLOCK;
 				}
 			} else {
-				pr_err
+				pr_warn
 				    ("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_AUD_MUX1 fail",
 				     __func__);
 				BUG();
@@ -1750,9 +1750,9 @@ void AudDrv_Suspend_Clk_On(void)
 			ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
 					     aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
 			if (ret) {
-				pr_err("%s clk_set_parent %s-%s fail %d\n",
-				       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
-				       aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
+				pr_warn("%s clk_set_parent %s-%s fail %d\n",
+					__func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
+					aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
 				BUG();
 				goto UNLOCK;
 			}
@@ -1762,9 +1762,9 @@ void AudDrv_Suspend_Clk_On(void)
 				ret =
 				    clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1_CK].clock, 90316800);
 				if (ret) {
-					pr_err("%s clk_set_rate %s-90316800 fail %d\n",
-					       __func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name,
-					       ret);
+					pr_warn("%s clk_set_rate %s-90316800 fail %d\n",
+						__func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name,
+						ret);
 					BUG();
 					goto UNLOCK;
 				}
@@ -1774,14 +1774,14 @@ void AudDrv_Suspend_Clk_On(void)
 			if (aud_clks[CLOCK_APLL22M].clk_prepare) {
 				ret = clk_enable(aud_clks[CLOCK_APLL22M].clock);
 				if (ret) {
-					pr_err
+					pr_warn
 					    ("%s [CCF]Aud enable_clock enable_clock aud_apll22m_clk fail",
 					     __func__);
 					BUG();
 					goto UNLOCK;
 				}
 			} else {
-				pr_err
+				pr_warn
 				    ("%s [CCF]clk_prepare error Aud enable_clock aud_apll22m_clk fail",
 				     __func__);
 				BUG();
@@ -1791,14 +1791,14 @@ void AudDrv_Suspend_Clk_On(void)
 			if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare) {
 				ret = clk_enable(aud_clks[CLOCK_APLL1_TUNER].clock);
 				if (ret) {
-					pr_err
+					pr_warn
 					    ("%s [CCF]Aud enable_clock enable_clock aud_apll1_tuner_clk fail",
 					     __func__);
 					BUG();
 					goto UNLOCK;
 				}
 			} else {
-				pr_err
+				pr_warn
 				    ("%s [CCF]clk_prepare error Aud enable_clock aud_apll1_tuner_clk fail",
 				     __func__);
 				BUG();
@@ -1823,14 +1823,14 @@ void AudDrv_Suspend_Clk_On(void)
 			if (aud_clks[CLOCK_TOP_AUD_MUX1].clk_prepare) {
 				ret = clk_enable(aud_clks[CLOCK_TOP_AUD_MUX1].clock);
 				if (ret) {
-					pr_err
+					pr_warn
 					    ("%s [CCF]Aud enable_clock enable_clock CLOCK_TOP_AUD_MUX1 fail",
 					     __func__);
 					BUG();
 					goto UNLOCK;
 				}
 			} else {
-				pr_err
+				pr_warn
 				    ("%s [CCF]clk_prepare error Aud enable_clock CLOCK_TOP_AUD_MUX1 fail",
 				     __func__);
 				BUG();
@@ -1840,9 +1840,9 @@ void AudDrv_Suspend_Clk_On(void)
 			ret = clk_set_parent(aud_clks[CLOCK_TOP_AUD_MUX1].clock,
 					     aud_clks[CLOCK_TOP_AD_APLL1_CK].clock);
 			if (ret) {
-				pr_err("%s clk_set_parent %s-%s fail %d\n",
-				       __func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
-				       aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
+				pr_warn("%s clk_set_parent %s-%s fail %d\n",
+					__func__, aud_clks[CLOCK_TOP_AUD_MUX1].name,
+					aud_clks[CLOCK_TOP_AD_APLL1_CK].name, ret);
 				BUG();
 				goto UNLOCK;
 			}
@@ -1853,9 +1853,9 @@ void AudDrv_Suspend_Clk_On(void)
 				ret =
 				    clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1_CK].clock, 98303999);
 				if (ret) {
-					pr_err("%s clk_set_rate %s-98303000 fail %d\n",
-					       __func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name,
-					       ret);
+					pr_warn("%s clk_set_rate %s-98303000 fail %d\n",
+						__func__, aud_clks[CLOCK_APMIXED_APLL1_CK].name,
+						ret);
 					BUG();
 					goto UNLOCK;
 				}
@@ -1864,14 +1864,14 @@ void AudDrv_Suspend_Clk_On(void)
 			if (aud_clks[CLOCK_APLL24M].clk_prepare) {
 				ret = clk_enable(aud_clks[CLOCK_APLL24M].clock);
 				if (ret) {
-					pr_err
+					pr_warn
 					    ("%s [CCF]Aud enable_clock enable_clock aud_apll24m_clk fail",
 					     __func__);
 					BUG();
 					goto UNLOCK;
 				}
 			} else {
-				pr_err
+				pr_warn
 				    ("%s [CCF]clk_prepare error Aud enable_clock aud_apll24m_clk fail",
 				     __func__);
 				BUG();
@@ -1882,14 +1882,14 @@ void AudDrv_Suspend_Clk_On(void)
 			if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare) {
 				ret = clk_enable(aud_clks[CLOCK_APLL1_TUNER].clock);
 				if (ret) {
-					pr_err
+					pr_warn
 					    ("%s [CCF]Aud enable_clock enable_clock aud_apll1_tuner_clk fail",
 					     __func__);
 					BUG();
 					goto UNLOCK;
 				}
 			} else {
-				pr_err
+				pr_warn
 				    ("%s [CCF]clk_prepare error Aud enable_clock aud_apll1_tuner_clk fail",
 				     __func__);
 				BUG();

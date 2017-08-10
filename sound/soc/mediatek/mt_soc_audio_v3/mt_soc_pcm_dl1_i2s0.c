@@ -105,7 +105,7 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 	AudDrv_Clk_On();
 
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(i2s0_SIDEGEN)) {
-		pr_err("return -EINVAL\n");
+		pr_warn("return -EINVAL\n");
 		return -EINVAL;
 	}
 	mi2s0_sidegen_control = ucontrol->value.integer.value[0];
@@ -138,7 +138,7 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 			      Soc_Aud_InterConnectionInput_I09, Soc_Aud_InterConnectionOutput_O01);
 	} else {
 		samplerate = 48000;
-		pr_err("Wrong sidegen_control input\n");
+		pr_warn("Wrong sidegen_control input\n");
 	}
 
 	pr_debug
@@ -285,7 +285,7 @@ static int Audio_i2s0_hdoutput_Set(struct snd_kcontrol *kcontrol,
 {
 	pr_debug("+%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(i2s0_HD_output)) {
-		pr_err("return -EINVAL\n");
+		pr_warn("return -EINVAL\n");
 		return -EINVAL;
 	}
 	AudDrv_Clk_On();
@@ -322,7 +322,7 @@ static int Audio_i2s0_ExtCodec_EchoRef_Set(struct snd_kcontrol *kcontrol,
 {
 	pr_debug("%s()\n", __func__);
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(i2s0_ExtCodec_EchoRef)) {
-		pr_err("return -EINVAL\n");
+		pr_warn("return -EINVAL\n");
 		return -EINVAL;
 	}
 	mi2s0_extcodec_echoref_control = ucontrol->value.integer.value[0];
@@ -511,7 +511,7 @@ static int mtk_pcm_i2s0_open(struct snd_pcm_substream *substream)
 	else
 
 	 if (ret < 0) {
-		pr_err("mtk_pcm_i2s0_close\n");
+		pr_warn("mtk_pcm_i2s0_close\n");
 		mtk_pcm_i2s0_close(substream);
 		return ret;
 	}
@@ -567,7 +567,7 @@ static int mtk_pcm_i2s0_start(struct snd_pcm_substream *substream)
 	if (mi2s0_hdoutput_control == true)
 		u32AudioI2S |= Soc_Aud_LOW_JITTER_CLOCK << 12; /* Low jitter mode */
 
-	pr_warn(" u32AudioI2S= 0x%x\n", u32AudioI2S);
+	pr_debug(" u32AudioI2S= 0x%x\n", u32AudioI2S);
 	Afe_Set_Reg(AFE_I2S_CON3, u32AudioI2S | 1, AFE_MASK_ALL);
 
 	SetSampleRate(Soc_Aud_Digital_Block_MEM_DL1, runtime->rate);
@@ -587,8 +587,6 @@ static int mtk_pcm_i2s0_start(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_i2s0_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_warn("mtk_pcm_i2s0_trigger cmd = %d\n", cmd);
-
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -620,7 +618,7 @@ static int mtk_pcm_i2s0_copy(struct snd_pcm_substream *substream,
 	PRINTK_AUD_DL1(" WriteIdx=0x%x, ReadIdx=0x%x, DataRemained=0x%x\n",
 		       Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained);
 	if (Afe_Block->u4BufferSize == 0) {
-		pr_err(" u4BufferSize=0 Error");
+		pr_warn(" u4BufferSize=0 Error");
 		return 0;
 	}
 
@@ -741,7 +739,6 @@ static int mtk_pcm_i2s0_silence(struct snd_pcm_substream *substream,
 				int channel, snd_pcm_uframes_t pos,
 				snd_pcm_uframes_t count)
 {
-	pr_warn("%s\n", __func__);
 	return 0; /* do nothing */
 }
 
@@ -750,7 +747,6 @@ static void *dummy_page[2];
 static struct page *mtk_i2s0_pcm_page(struct snd_pcm_substream *substream,
 				      unsigned long offset)
 {
-	pr_warn("%s\n", __func__);
 	return virt_to_page(dummy_page[substream->stream]); /* the same page */
 }
 
@@ -776,7 +772,7 @@ static struct snd_soc_platform_driver mtk_i2s0_soc_platform = {
 
 static int mtk_i2s0_probe(struct platform_device *pdev)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 	if (!pdev->dev.dma_mask)
@@ -785,7 +781,7 @@ static int mtk_i2s0_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_I2S0_PCM);
 
-	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 
 	mDev = &pdev->dev;
 
@@ -797,14 +793,14 @@ static int mtk_asoc_pcm_i2s0_new(struct snd_soc_pcm_runtime *rtd)
 {
 	int ret = 0;
 
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return ret;
 }
 
 
 static int mtk_afe_i2s0_probe(struct snd_soc_platform *platform)
 {
-	pr_warn("mtk_afe_i2s0_probe\n");
+	pr_debug("mtk_afe_i2s0_probe\n");
 	snd_soc_add_platform_controls(platform, Audio_snd_i2s0_controls,
 				      ARRAY_SIZE(Audio_snd_i2s0_controls));
 	return 0;
@@ -812,7 +808,7 @@ static int mtk_afe_i2s0_probe(struct snd_soc_platform *platform)
 
 static int mtk_i2s0_remove(struct platform_device *pdev)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }
@@ -844,7 +840,7 @@ static int __init mtk_i2s0_soc_platform_init(void)
 {
 	int ret;
 
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 #ifndef CONFIG_OF
 	soc_mtki2s0_dev = platform_device_alloc(MT_SOC_I2S0_PCM, -1);
 	if (!soc_mtki2s0_dev)
@@ -865,7 +861,7 @@ module_init(mtk_i2s0_soc_platform_init);
 
 static void __exit mtk_i2s0_soc_platform_exit(void)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	platform_driver_unregister(&mtk_i2s0_driver);
 }

@@ -74,20 +74,17 @@ static unsigned int supported_sample_rates[] = {
 #endif
 static int mt6589_routing_startup(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
 {
-	pr_warn("mt6589_routing_startup\n");
 	return 0;
 }
 
 static int mt6589_routing_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *Daiport)
 {
-	pr_warn("mt6589_routing_prepare\n ");
 	return 0;
 }
 
 static int mt6589_routing_trigger(struct snd_pcm_substream *substream, int command,
 				  struct snd_soc_dai *Daiport)
 {
-	pr_warn("mt6589_routing_trigger command = %d\n ", command);
 	return 0;
 }
 
@@ -132,7 +129,7 @@ static int mtk_routing_dev_probe(struct platform_device *pdev)
 {
 	int rc = 0;
 
-	pr_warn("mtk_routing_dev_probe  name %s\n", dev_name(&pdev->dev));
+	pr_debug("mtk_routing_dev_probe  name %s\n", dev_name(&pdev->dev));
 
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 	if (pdev->dev.dma_mask == NULL)
@@ -141,7 +138,7 @@ static int mtk_routing_dev_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_ROUTING_DAI_NAME);
 
-	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 
 	rc = snd_soc_register_component(&pdev->dev, &dai_routing_component,
 					mtk_routing_dai, ARRAY_SIZE(mtk_routing_dai));
@@ -150,7 +147,7 @@ static int mtk_routing_dev_probe(struct platform_device *pdev)
 
 static int mtk_routing_dev_remove(struct platform_device *pdev)
 {
-	pr_warn("%s:\n", __func__);
+	pr_debug("%s:\n", __func__);
 
 	snd_soc_unregister_component(&pdev->dev);
 
@@ -182,7 +179,7 @@ static struct platform_device *soc_routing_dev;
 
 static int __init mtk_routing_init(void)
 {
-	pr_warn("%s:\n", __func__);
+	pr_debug("%s:\n", __func__);
 #ifndef CONFIG_OF
 	int ret;
 
@@ -205,7 +202,7 @@ module_init(mtk_routing_init);
 
 static void __exit mtk_routing_exit(void)
 {
-	pr_warn("%s:\n", __func__);
+	pr_debug("%s:\n", __func__);
 
 	platform_driver_unregister(&mtk_routing_driver);
 }

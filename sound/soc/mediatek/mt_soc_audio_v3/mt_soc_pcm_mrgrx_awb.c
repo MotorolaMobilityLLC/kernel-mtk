@@ -94,7 +94,7 @@ static struct snd_pcm_hardware mtk_mgrrx_awb_hardware = {
 
 static void StopAudioAWBHardware(struct snd_pcm_substream *substream)
 {
-	pr_warn("StopAudioAWBHardware\n");
+	pr_debug("StopAudioAWBHardware\n");
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_AWB, false);
 
@@ -115,7 +115,7 @@ static void StopAudioAWBHardware(struct snd_pcm_substream *substream)
 
 static void StartAudioMrgrxAWBHardware(struct snd_pcm_substream *substream)
 {
-	pr_warn("StartAudioMrgrxAWBHardware\n");
+	pr_debug("StartAudioMrgrxAWBHardware\n");
 
 	/* here to set interrupt */
 	irq_add_user(substream,
@@ -144,14 +144,14 @@ static void StartAudioMrgrxAWBHardware(struct snd_pcm_substream *substream)
 
 static int mtk_mrgrx_awb_pcm_prepare(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_mrgrx_awb_pcm_prepare substream->rate = %d  substream->channels = %d\n",
+	pr_debug("mtk_mrgrx_awb_pcm_prepare substream->rate = %d  substream->channels = %d\n",
 	       substream->runtime->rate, substream->runtime->channels);
 	return 0;
 }
 
 static int mtk_mrgrx_awb_alsa_stop(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_mrgrx_awb_alsa_stop\n");
+	pr_debug("mtk_mrgrx_awb_alsa_stop\n");
 	StopAudioAWBHardware(substream);
 	RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_AWB, substream);
 
@@ -183,7 +183,7 @@ static void SetAWBBuffer(struct snd_pcm_substream *substream,
 	AFE_BLOCK_T *pblock = &Mrgrx_AWB_Control_context->rBlock;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	pr_warn("SetAWBBuffer\n");
+	pr_debug("SetAWBBuffer\n");
 	pblock->pucPhysBufAddr =  runtime->dma_addr;
 	pblock->pucVirtBufAddr =  runtime->dma_area;
 	pblock->u4BufferSize = runtime->dma_bytes;
@@ -193,7 +193,7 @@ static void SetAWBBuffer(struct snd_pcm_substream *substream,
 	pblock->u4DataRemained  = 0;
 	pblock->u4fsyncflag     = false;
 	pblock->uResetFlag      = true;
-	pr_warn("dma_bytes = %d dma_area = %p dma_addr = 0x%x\n",
+	pr_debug("dma_bytes = %d dma_area = %p dma_addr = 0x%x\n",
 	       pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 	/* set sram address top hardware */
 	Afe_Set_Reg(AFE_AWB_BASE , pblock->pucPhysBufAddr , 0xffffffff);
@@ -209,28 +209,28 @@ static int mtk_mgrrx_awb_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 	int ret = 0;
 
-	pr_warn("mtk_mgrrx_awb_pcm_hw_params\n");
+	pr_debug("mtk_mgrrx_awb_pcm_hw_params\n");
 
 	dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
 	dma_buf->dev.dev = substream->pcm->card->dev;
 	dma_buf->private_data = NULL;
 
 	if (Awb_Capture_dma_buf->area) {
-		pr_warn("mtk_mgrrx_awb_pcm_hw_params Awb_Capture_dma_buf->area\n");
+		pr_debug("mtk_mgrrx_awb_pcm_hw_params Awb_Capture_dma_buf->area\n");
 		runtime->dma_bytes = params_buffer_bytes(hw_params);
 		runtime->dma_area = Awb_Capture_dma_buf->area;
 		runtime->dma_addr = Awb_Capture_dma_buf->addr;
 	} else {
-		pr_warn("mtk_mgrrx_awb_pcm_hw_params snd_pcm_lib_malloc_pages\n");
+		pr_debug("mtk_mgrrx_awb_pcm_hw_params snd_pcm_lib_malloc_pages\n");
 		ret =  snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
 	}
-	pr_warn("mtk_mgrrx_awb_pcm_hw_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
+	pr_debug("mtk_mgrrx_awb_pcm_hw_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       runtime->dma_bytes, runtime->dma_area, (long)runtime->dma_addr);
 
-	pr_warn("runtime->hw.buffer_bytes_max = %zu\n", runtime->hw.buffer_bytes_max);
+	pr_debug("runtime->hw.buffer_bytes_max = %zu\n", runtime->hw.buffer_bytes_max);
 	SetAWBBuffer(substream, hw_params);
 
-	pr_warn("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
+	pr_debug("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       substream->runtime->dma_bytes, substream->runtime->dma_area,
 	       (long)substream->runtime->dma_addr);
 	return ret;
@@ -238,7 +238,7 @@ static int mtk_mgrrx_awb_pcm_hw_params(struct snd_pcm_substream *substream,
 
 static int mtk_mrgrx_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_mrgrx_capture_pcm_hw_free\n");
+	pr_debug("mtk_mrgrx_capture_pcm_hw_free\n");
 	if (Awb_Capture_dma_buf->area)
 		return 0;
 	else
@@ -255,7 +255,7 @@ static int mtk_mrgrx_awb_pcm_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
-	pr_warn("mtk_mrgrx_awb_pcm_open\n");
+	pr_debug("mtk_mrgrx_awb_pcm_open\n");
 	Mrgrx_AWB_Control_context = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_AWB);
 	runtime->hw = mtk_mgrrx_awb_hardware;
 	memcpy((void *)(&(runtime->hw)), (void *)&mtk_mgrrx_awb_hardware ,
@@ -265,14 +265,11 @@ static int mtk_mrgrx_awb_pcm_open(struct snd_pcm_substream *substream)
 					 &mrgrx_awb_constraints_sample_rates);
 	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
 
-	if (ret < 0)
-		pr_warn("snd_pcm_hw_constraint_integer failed\n");
-
-	pr_warn("mtk_mrgrx_awb_pcm_open runtime rate = %d channels = %d\n",
+	pr_debug("mtk_mrgrx_awb_pcm_open runtime rate = %d channels = %d\n",
 	       runtime->rate, runtime->channels);
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-		pr_warn("SNDRV_PCM_STREAM_CAPTURE\n");
+		pr_debug("SNDRV_PCM_STREAM_CAPTURE\n");
 	else
 		return -1;
 	/* here open audio clocks */
@@ -280,11 +277,11 @@ static int mtk_mrgrx_awb_pcm_open(struct snd_pcm_substream *substream)
 	AudDrv_Emi_Clk_On();
 
 	if (ret < 0) {
-		pr_err("mtk_mrgrx_awb_pcm_close\n");
+		pr_warn("mtk_mrgrx_awb_pcm_close\n");
 		mtk_mrgrx_awb_pcm_close(substream);
 		return ret;
 	}
-	pr_warn("mtk_mrgrx_awb_pcm_open return\n");
+	pr_debug("mtk_mrgrx_awb_pcm_open return\n");
 	return 0;
 }
 
@@ -297,7 +294,7 @@ static int mtk_mrgrx_awb_pcm_close(struct snd_pcm_substream *substream)
 
 static int mtk_mrgrx_awb_alsa_start(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_mrgrx_awb_alsa_start\n");
+	pr_debug("mtk_mrgrx_awb_alsa_start\n");
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_AWB, substream);
 	StartAudioMrgrxAWBHardware(substream);
 	return 0;
@@ -306,8 +303,6 @@ static int mtk_mrgrx_awb_alsa_start(struct snd_pcm_substream *substream)
 static int mtk_capture_mrgrx_pcm_trigger(struct snd_pcm_substream *substream,
 					 int cmd)
 {
-	pr_warn("mtk_capture_mrgrx_pcm_trigger cmd = %d\n", cmd);
-
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -322,7 +317,7 @@ static int mtk_capture_mrgrx_pcm_trigger(struct snd_pcm_substream *substream,
 static bool CheckNullPointer(void *pointer)
 {
 	if (pointer == NULL) {
-		pr_err("CheckNullPointer pointer = NULL");
+		pr_warn("CheckNullPointer pointer = NULL");
 		return true;
 	}
 	return false;
@@ -348,7 +343,7 @@ static int mtk_mrgrx_awb_pcm_copy(struct snd_pcm_substream *substream,
 	Awb_Block = &(pAWB_MEM_ConTrol->rBlock);
 
 	if (pAWB_MEM_ConTrol == NULL) {
-		pr_err("cannot find MEM control !!!!!!!\n");
+		pr_warn("cannot find MEM control !!!!!!!\n");
 		msleep(50);
 		return 0;
 	}
@@ -359,7 +354,7 @@ static int mtk_mrgrx_awb_pcm_copy(struct snd_pcm_substream *substream,
 	}
 
 	if (CheckNullPointer((void *)Awb_Block->pucVirtBufAddr)) {
-		pr_err("CheckNullPointer  pucVirtBufAddr = %p\n", Awb_Block->pucVirtBufAddr);
+		pr_warn("CheckNullPointer  pucVirtBufAddr = %p\n", Awb_Block->pucVirtBufAddr);
 		return 0;
 	}
 
@@ -381,7 +376,7 @@ static int mtk_mrgrx_awb_pcm_copy(struct snd_pcm_substream *substream,
 		       Awb_Block->u4DMAReadIdx ,
 		       Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block_MEM_AWB, substream));
 	if (DMA_Read_Ptr >=  Awb_Block->u4BufferSize) {
-		pr_err("AudDrv_MEMIF_Read 1, DMA_Read_Ptr out of bound.\n");
+		pr_warn("AudDrv_MEMIF_Read 1, DMA_Read_Ptr out of bound.\n");
 		DMA_Read_Ptr %= Awb_Block->u4BufferSize;
 	}
 	spin_unlock_irqrestore(&auddrv_AWBInCtl_lock, flags);
@@ -491,7 +486,6 @@ static int mtk_capture_pcm_silence(struct snd_pcm_substream *substream,
 				   int channel, snd_pcm_uframes_t pos,
 				   snd_pcm_uframes_t count)
 {
-	pr_warn("dummy_pcm_silence\n");
 	return 0; /* do nothing */
 }
 
@@ -502,7 +496,6 @@ static struct page *mtk_mrgrx_capture_pcm_page(struct snd_pcm_substream
 					       *substream,
 					       unsigned long offset)
 {
-	pr_warn("dummy_pcm_page\n");
 	return virt_to_page(dummy_page[substream->stream]); /* the same page */
 }
 
@@ -529,7 +522,7 @@ static struct snd_soc_platform_driver mtk_soc_platform = {
 
 static int mtk_mrgrx_awb_probe(struct platform_device *pdev)
 {
-	pr_warn("mtk_mrgrx_awb_probe\n");
+	pr_debug("mtk_mrgrx_awb_probe\n");
 
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 	if (!pdev->dev.dma_mask)
@@ -538,21 +531,21 @@ static int mtk_mrgrx_awb_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_MRGRX_AWB_PCM);
 
-	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_soc_platform);
 }
 
 static int mtk_asoc_mrgrx_awb_pcm_new(struct snd_soc_pcm_runtime *rtd)
 {
-	pr_warn("mtk_asoc_mrgrx_awb_pcm_new\n");
+	pr_debug("mtk_asoc_mrgrx_awb_pcm_new\n");
 	return 0;
 }
 
 
 static int mtk_afe_mrgrx_awb_probe(struct snd_soc_platform *platform)
 {
-	pr_warn("mtk_afe_mrgrx_awb_probe\n");
+	pr_debug("mtk_afe_mrgrx_awb_probe\n");
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_AWB,
 				   MRGRX_MAX_BUFFER_SIZE);
 	Awb_Capture_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_AWB);
@@ -604,7 +597,7 @@ static int __init mtk_soc_mrgrx_awb_platform_init(void)
 {
 	int ret = 0;
 
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 #ifndef CONFIG_OF
 	soc_mrgrx_capture_dev = platform_device_alloc(MT_SOC_MRGRX_AWB_PCM, -1);
 	if (!soc_mrgrx_capture_dev)
@@ -622,7 +615,7 @@ static int __init mtk_soc_mrgrx_awb_platform_init(void)
 
 static void __exit mtk_soc_mrgrx_awb_platform_exit(void)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	platform_driver_unregister(&mtk_mrgrx_awb_capture_driver);
 }
 

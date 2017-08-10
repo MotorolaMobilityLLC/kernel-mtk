@@ -237,8 +237,8 @@ static void SetDL2Buffer(struct snd_pcm_substream *substream, struct snd_pcm_hw_
 	pblock->u4DataRemained = 0;
 	pblock->u4fsyncflag = false;
 	pblock->uResetFlag = true;
-	pr_warn("SetDL2Buffer u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
-	       pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
+	pr_debug("SetDL2Buffer u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
+		 pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 	/* set dram address top hardware */
 	Afe_Set_Reg(AFE_DL2_BASE, pblock->pucPhysBufAddr, 0xffffffff);
 	Afe_Set_Reg(AFE_DL2_END, pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
@@ -294,8 +294,8 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
 		AudDrv_Emi_Clk_On();
 
-	pr_warn("mtk_pcm_dl2_hardware.buffer_bytes_max = %zu mPlaybackSramState = %d\n",
-	       mtk_pcm_dl2_hardware.buffer_bytes_max, mPlaybackSramState);
+	pr_debug("mtk_pcm_dl2_hardware.buffer_bytes_max = %zu mPlaybackSramState = %d\n",
+		 mtk_pcm_dl2_hardware.buffer_bytes_max, mPlaybackSramState);
 	runtime->hw = mtk_pcm_dl2_hardware;
 
 	AudDrv_Clk_On();
@@ -306,16 +306,13 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
 					 &constraints_sample_rates);
 
-	if (ret < 0)
-		pr_err("snd_pcm_hw_constraint_integer failed\n");
-
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_dl2playback_constraints\n");
+		pr_debug("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_dl2playback_constraints\n");
 	else
-		pr_warn("SNDRV_PCM_STREAM_CAPTURE mtkalsa_dl2playback_constraints\n");
+		pr_debug("SNDRV_PCM_STREAM_CAPTURE mtkalsa_dl2playback_constraints\n");
 
 	if (ret < 0) {
-		pr_err("ret < 0 mtk_soc_pcm_dl2_close\n");
+		pr_warn("ret < 0 mtk_soc_pcm_dl2_close\n");
 		mtk_soc_pcm_dl2_close(substream);
 		return ret;
 	}
@@ -323,9 +320,7 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 #ifdef AUDIO_DL2_ISR_COPY_SUPPORT
 	if (!ISRCopyBuffer.pBufferBase) {
 		ISRCopyBuffer.pBufferBase = kmalloc(ISRCopyMaxSize, GFP_KERNEL);
-		if (!ISRCopyBuffer.pBufferBase)
-			pr_err("%s alloc ISRCopyBuffer fail\n", __func__);
-		else
+		if (ISRCopyBuffer.pBufferBase)
 			ISRCopyBuffer.u4BufferSizeMax = ISRCopyMaxSize;
 	}
 #endif
@@ -377,7 +372,7 @@ static int mtk_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 	pr_debug("%s\n", __func__);
 
 	if (mPrepareDone == false) {
-		pr_warn
+		pr_debug
 		    ("%s format = %d SNDRV_PCM_FORMAT_S32_LE = %d SNDRV_PCM_FORMAT_U32_LE = %d\n",
 		     __func__, runtime->format, SNDRV_PCM_FORMAT_S32_LE, SNDRV_PCM_FORMAT_U32_LE);
 		SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DL2, substream);
@@ -490,7 +485,7 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOC
 		       Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained);
 
 	if (Afe_Block->u4BufferSize == 0) {
-		pr_err("AudDrv_write: u4BufferSize=0 Error");
+		pr_warn("AudDrv_write: u4BufferSize=0 Error");
 		return 0;
 	}
 
@@ -609,7 +604,7 @@ static void detectData(char *ptr, unsigned long count)
 static int dataTransfer(void *dest, const void *src, uint32_t size)
 {
 	if (unlikely(!dest || !src)) {
-		pr_err("%s, fail. dest %p, src %p\n", __func__, dest, src);
+		pr_warn("%s, fail. dest %p, src %p\n", __func__, dest, src);
 		return 0;
 	}
 
@@ -642,15 +637,13 @@ retry:
 			/* realloc memory */
 			kfree(ISRCopyBuffer.pBufferBase);
 			ISRCopyBuffer.pBufferBase = kmalloc(size, GFP_ATOMIC);
-			if (!ISRCopyBuffer.pBufferBase)
-				pr_err("%s, alloc ISRCopyBuffer fail, size %d\n", __func__, size);
-			else
+			if (ISRCopyBuffer.pBufferBase)
 				ISRCopyBuffer.u4BufferSizeMax = size;
 
 			again = true;
 			goto retry;
 		}
-		pr_err("%s, alloc ISRCopyBuffer fail, again %d!!\n", __func__, again);
+		pr_warn("%s, alloc ISRCopyBuffer fail, again %d!!\n", __func__, again);
 		goto exit;
 	}
 
@@ -843,11 +836,11 @@ static int mtk_soc_dl2_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node) {
 		dev_set_name(&pdev->dev, "%s", MT_SOC_DL2_PCM);
 	} else {
-		pr_err("%s invalid of_node\n", __func__);
+		pr_warn("%s invalid of_node\n", __func__);
 		return -ENODEV;
 	}
 
-	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 
 
 	return snd_soc_register_platform(&pdev->dev, &mtk_soc_platform);

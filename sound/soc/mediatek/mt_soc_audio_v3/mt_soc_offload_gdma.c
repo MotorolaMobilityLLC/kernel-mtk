@@ -176,7 +176,7 @@ int mtk_compr_offload_gdma_read(void *stream)
 		       afe_offload_block.u4WriteIdx, afe_offload_block.u4ReadIdx);
 
 	if (Afe_Block->u4BufferSize == 0) {
-		pr_err("AudDrv_write: u4BufferSize=0 Error");
+		pr_warn("AudDrv_write: u4BufferSize=0 Error");
 		return 0;
 	}
 	copy_size = Afe_Block->u4BufferSize - Afe_Block->u4DataRemained;  /* free space of the buffer */
@@ -347,7 +347,7 @@ static int mtk_compr_offload_gdma_int_prepare(struct snd_compr_stream *stream)
 	uint32 MclkDiv3;
 	uint32 u32AudioI2S = 0;
 	/* struct snd_compr_stream *runtime = stream->runtime; */
-	pr_warn("%s, prepareddone:%x %x\n", __func__, mPrepareDone, afe_offload_block.pcmformat);
+	pr_debug("%s, prepareddone:%x %x\n", __func__, mPrepareDone, afe_offload_block.pcmformat);
 
 	if (mPrepareDone == false) {
 
@@ -412,7 +412,7 @@ static int mtk_compr_offload_gdma_int_prepare(struct snd_compr_stream *stream)
 
 static int mtk_compr_offload_gdma_int_start(struct snd_compr_stream *stream)
 {
-	pr_warn("%s, rate:%x, channels:%x\n", __func__, afe_offload_block.samplerate, afe_offload_block.channels);
+	pr_debug("%s, rate:%x, channels:%x\n", __func__, afe_offload_block.samplerate, afe_offload_block.channels);
 
 	if (!mPrepareDone)
 		mtk_compr_offload_gdma_int_prepare(stream);
@@ -482,7 +482,7 @@ static int mtk_compr_offload_gdma_int_pause(struct snd_compr_stream *stream)
 
 static int mtk_compr_offload_gdma_int_stop(struct snd_compr_stream *stream)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	afe_offload_block.state = OFFLOAD_STATE_IDLE;
 	irq_remove_user(&afe_offload_block, Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE);
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL2, false);
@@ -542,8 +542,8 @@ static void SetDL2Buffer(void)
 	pblock->u4DataRemained  = 0;
 	pblock->u4fsyncflag     = false;
 	pblock->uResetFlag      = true;
-	pr_warn("SetDL2Buffer u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
-	       pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
+	pr_debug("SetDL2Buffer u4BufferSize = %d pucVirtBufAddr = %p pucPhysBufAddr = 0x%x\n",
+		 pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 	/* set dram address top hardware */
 	Afe_Set_Reg(AFE_DL2_BASE , pblock->pucPhysBufAddr , 0xffffffff);
 	Afe_Set_Reg(AFE_DL2_END  , pblock->pucPhysBufAddr + (pblock->u4BufferSize - 1), 0xffffffff);
@@ -629,11 +629,11 @@ static int mtk_compr_offload_gdma_open(struct snd_compr_stream *stream)
 {
 	/* int ret = 0; */
 	/* struct snd_compr_runtime *runtime = stream->runtime; */
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	afe_offload_block.pcm_stream =
 		kmalloc(sizeof(struct snd_pcm_substream), GFP_KERNEL);
 	if (afe_offload_block.pcm_stream == NULL) {
-		pr_err("%s, allocate pcm sub stream fail\n", __func__);
+		pr_warn("%s, allocate pcm sub stream fail\n", __func__);
 		mtk_compr_offload_gdma_free(stream);
 		return -ENOMEM;
 	}
@@ -658,17 +658,17 @@ static int mtk_compr_offload_gdma_open(struct snd_compr_stream *stream)
 	if (mPlaybackSramState == SRAM_STATE_PLAYBACKDRAM)
 		AudDrv_Emi_Clk_On();
 
-	pr_warn("%s, mtk_pcm_dl2_hardware.buffer_bytes_max = %zu mPlaybackSramState = %d\n",
-	       __func__, mtk_pcm_dl2_hardware.buffer_bytes_max, mPlaybackSramState);
+	pr_debug("%s, mtk_pcm_dl2_hardware.buffer_bytes_max = %zu mPlaybackSramState = %d\n",
+		 __func__, mtk_pcm_dl2_hardware.buffer_bytes_max, mPlaybackSramState);
 
 	AudDrv_Clk_On();
 	pMemControl = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DL2);
 
 
 	if (stream->direction == SND_COMPRESS_PLAYBACK)
-		pr_warn("%s, SNDRV_COMPRESS_STREAM_PLAYBACK mtkcompress_dl2playback_constraints\n", __func__);
+		pr_debug("%s, SNDRV_COMPRESS_STREAM_PLAYBACK mtkcompress_dl2playback_constraints\n", __func__);
 	else
-		pr_warn("%s, SNDRV_COMPRESS_STREAM_CAPTURE mtkcompress_dl2playback_constraints\n", __func__);
+		pr_debug("%s, SNDRV_COMPRESS_STREAM_CAPTURE mtkcompress_dl2playback_constraints\n", __func__);
 
 
 	afe_offload_block.compr_stream  = stream;
@@ -757,7 +757,7 @@ static int mtk_compr_offload_gdma_get_caps(struct snd_compr_stream *stream,
 	caps->max_fragment_size = 0x7FFFFFFF;
 	caps->min_fragments     = 2;
 	caps->max_fragments     = 1875;
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
@@ -1043,7 +1043,7 @@ static int mtk_offload_gdma_probe(struct platform_device *pdev)
 
 static int mtk_offload_gdma_remove(struct platform_device *pdev)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }
@@ -1075,7 +1075,7 @@ static int __init mtk_soc_offload_gdma_init(void)
 {
 	int ret;
 
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 #ifndef CONFIG_OF
 	soc_mtkoffload_gdma_dev = platform_device_alloc(MT_SOC_OFFLOAD_GDMA_PCM, -1);
 	if (!soc_mtkoffload_gdma_dev)
@@ -1096,7 +1096,7 @@ module_init(mtk_soc_offload_gdma_init);
 
 static void __exit mtk_soc_offload_gdma_exit(void)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 
 	platform_driver_unregister(&mtk_offload_gdma_driver);
 }

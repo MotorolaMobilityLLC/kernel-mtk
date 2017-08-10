@@ -564,7 +564,7 @@ static int mtk_dai_stub_dev_probe(struct platform_device *pdev)
 {
 	int rc = 0;
 
-	pr_warn("mtk_dai_stub_dev_probe  name %s\n", dev_name(&pdev->dev));
+	pr_debug("mtk_dai_stub_dev_probe  name %s\n", dev_name(&pdev->dev));
 
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 
@@ -575,18 +575,18 @@ static int mtk_dai_stub_dev_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_DAI_NAME);
 
-	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 
 	rc = snd_soc_register_component(&pdev->dev, &mt_dai_component,
 					mtk_dai_stub_dai, ARRAY_SIZE(mtk_dai_stub_dai));
 
-	pr_warn("%s: rc  = %d\n", __func__, rc);
+	pr_debug("%s: rc  = %d\n", __func__, rc);
 	return rc;
 }
 
 static int mtk_dai_stub_dev_remove(struct platform_device *pdev)
 {
-	pr_warn("%s:\n", __func__);
+	pr_debug("%s:\n", __func__);
 
 	snd_soc_unregister_component(&pdev->dev);
 
@@ -618,7 +618,7 @@ static struct platform_device *soc_mtk_dai_dev;
 
 static int __init mtk_dai_stub_init(void)
 {
-	pr_warn("%s:\n", __func__);
+	pr_debug("%s:\n", __func__);
 #ifndef CONFIG_OF
 	int ret;
 
@@ -639,7 +639,7 @@ static int __init mtk_dai_stub_init(void)
 
 static void __exit mtk_dai_stub_exit(void)
 {
-	pr_warn("%s:\n", __func__);
+	pr_debug("%s:\n", __func__);
 
 	platform_driver_unregister(&mtk_dai_stub_driver);
 }

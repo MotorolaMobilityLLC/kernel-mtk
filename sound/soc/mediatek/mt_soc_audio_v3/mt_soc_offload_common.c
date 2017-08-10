@@ -122,12 +122,12 @@ void OffloadService_ReleaseWriteblocked(void)
 void OffloadService_SetVolumeCbk(void (*setVol)(int vol))
 {
 	afe_offload_service.setVol = setVol;
-	pr_warn("%s callback:%p\n", __func__, setVol);
+	pr_debug("%s callback:%p\n", __func__, setVol);
 }
 
 void OffloadService_SetVolume(int vol)
 {
-	pr_warn("%s gain:0x%x\n", __func__, vol);
+	pr_debug("%s gain:0x%x\n", __func__, vol);
 	afe_offload_service.hw_gain = vol;
 	afe_offload_service.setVol(vol);
 }
@@ -147,7 +147,7 @@ void OffloadService_SetOffloadMode(int mode)
 	else
 		SetOffloadSWMode(false);
 
-	pr_warn("%s mode:0x%x\n", __func__, mode);
+	pr_debug("%s mode:0x%x\n", __func__, mode);
 }
 
 int OffloadService_GetOffloadMode(void)
@@ -158,12 +158,12 @@ int OffloadService_GetOffloadMode(void)
 void OffloadService_SetEnable(bool enable)
 {
 	afe_offload_service.enable = enable;
-	pr_warn("%s enable:0x%x\n", __func__, enable);
+	pr_debug("%s enable:0x%x\n", __func__, enable);
 }
 
 bool OffloadService_GetEnable(void)
 {
-	pr_warn("%s enable:0x%x\n", __func__, afe_offload_service.enable);
+	pr_debug("%s enable:0x%x\n", __func__, afe_offload_service.enable);
 	return afe_offload_service.enable;
 }
 
@@ -176,13 +176,13 @@ bool OffloadService_GetEnable(void)
 */
 static int OffloadService_open(struct inode *inode, struct file *fp)
 {
-	pr_warn("%s inode:%p, file:%p\n", __func__, inode, fp);
+	pr_debug("%s inode:%p, file:%p\n", __func__, inode, fp);
 	return 0;
 }
 
 static int OffloadService_release(struct inode *inode, struct file *fp)
 {
-	pr_warn("%s inode:%p, file:%p\n", __func__, inode, fp);
+	pr_debug("%s inode:%p, file:%p\n", __func__, inode, fp);
 
 	if (!(fp->f_mode & FMODE_WRITE || fp->f_mode & FMODE_READ))
 		return -ENODEV;
@@ -224,49 +224,49 @@ static ssize_t OffloadService_read(struct file *fp,  char __user *data, size_t c
 
 static int OffloadService_flush(struct file *flip, fl_owner_t id)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
 static int OffloadService_fasync(int fd, struct file *flip, int mode)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
 static int OffloadService_remap_mmap(struct file *flip, struct vm_area_struct *vma)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return -1;
 }
 
 static int OffloadService_probe(struct platform_device *dev)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
 static int OffloadService_remove(struct platform_device *dev)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
 static void OffloadService_shutdown(struct platform_device *dev)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 }
 
 static int OffloadService_suspend(struct platform_device *dev, pm_message_t state)
 /* only one suspend mode */
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
 static int OffloadService_resume(struct platform_device *dev) /* wake up */
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
@@ -333,12 +333,12 @@ static int OffloadService_mod_init(void)
 {
 	int ret = 0;
 
-	pr_warn("OffloadService_mod_init\n");
+	pr_debug("OffloadService_mod_init\n");
 
 	/* Register platform DRIVER */
 	ret = platform_driver_register(&OffloadService_driver);
 	if (ret) {
-		pr_err("OffloadService Fail:%d - Register DRIVER\n", ret);
+		pr_warn("OffloadService Fail:%d - Register DRIVER\n", ret);
 		return ret;
 	}
 
@@ -346,7 +346,7 @@ static int OffloadService_mod_init(void)
 	ret = misc_register(&OffloadService_misc_device);
 
 	if (ret) {
-		pr_err("OffloadService misc_register Fail:%d\n", ret);
+		pr_warn("OffloadService misc_register Fail:%d\n", ret);
 		return ret;
 	}
 
@@ -355,7 +355,7 @@ static int OffloadService_mod_init(void)
 
 static void  OffloadService_mod_exit(void)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 }
 module_init(OffloadService_mod_init);
 module_exit(OffloadService_mod_exit);

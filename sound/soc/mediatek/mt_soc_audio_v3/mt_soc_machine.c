@@ -1184,14 +1184,14 @@ static int __init mt_soc_snd_init(void)
 
 	mt_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!mt_snd_device) {
-		pr_err("mt6589_probe  platform_device_alloc fail\n");
+		pr_warn("mt6589_probe  platform_device_alloc fail\n");
 		return -ENOMEM;
 	}
 	platform_set_drvdata(mt_snd_device, &snd_soc_card_mt);
 	ret = platform_device_add(mt_snd_device);
 
 	if (ret != 0) {
-		pr_err("mt_soc_snd_init goto put_device fail\n");
+		pr_warn("mt_soc_snd_init goto put_device fail\n");
 		goto put_device;
 	}
 

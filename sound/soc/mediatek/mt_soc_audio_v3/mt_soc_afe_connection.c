@@ -486,7 +486,7 @@ bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 				if ((mConnectionTable[Input][Output] &
 				     Soc_Aud_InterCon_ConnectionShift) !=
 				    Soc_Aud_InterCon_ConnectionShift) {
-					pr_err("donn't support shift opeartion");
+					pr_warn("donn't support shift opeartion");
 					break;
 				}
 				connectionBits = mShiftConnectionbits[Input][Output];
@@ -500,7 +500,7 @@ bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 				break;
 			}
 			default:
-				pr_err("no this state ConnectionState = %d\n", ConnectionState);
+				pr_warn("no this state ConnectionState = %d\n", ConnectionState);
 				break;
 			}
 		}

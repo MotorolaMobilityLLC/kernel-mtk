@@ -83,7 +83,7 @@ static struct snd_pcm_hardware mtk_btdai_hardware = {
 
 static void StopAudioBtDaiHardware(struct snd_pcm_substream *substream)
 {
-	pr_warn("StopAudioBtDaiHardware\n");
+	pr_debug("StopAudioBtDaiHardware\n");
 
 	/* here to set interrupt */
 	irq_remove_user(substream, Soc_Aud_IRQ_MCU_MODE_IRQ2_MCU_MODE);
@@ -119,7 +119,7 @@ static bool SetVoipDAIBTAttribute(int sample_rate)
 
 static void StartAudioBtDaiHardware(struct snd_pcm_substream *substream)
 {
-	pr_warn("StartAudioBtDaiHardware period_size = %d\n", (unsigned int)(substream->runtime->period_size));
+	pr_debug("StartAudioBtDaiHardware period_size = %d\n", (unsigned int)(substream->runtime->period_size));
 
 	/* here to set interrupt */
 	irq_add_user(substream,
@@ -146,7 +146,7 @@ static void StartAudioBtDaiHardware(struct snd_pcm_substream *substream)
 
 static int mtk_bt_dai_pcm_prepare(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_bt_dai_pcm_prepare substream->rate = %d  substream->channels = %d\n",
+	pr_debug("mtk_bt_dai_pcm_prepare substream->rate = %d  substream->channels = %d\n",
 		substream->runtime->rate, substream->runtime->channels);
 	return 0;
 }
@@ -154,7 +154,7 @@ static int mtk_bt_dai_pcm_prepare(struct snd_pcm_substream *substream)
 static int mtk_bt_dai_alsa_stop(struct snd_pcm_substream *substream)
 {
 	/* AFE_BLOCK_T *Dai_Block = &(Bt_Dai_Control_context->rBlock); */
-	pr_warn("mtk_bt_dai_alsa_stop\n");
+	pr_debug("mtk_bt_dai_alsa_stop\n");
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DAI, false);
 
@@ -194,7 +194,7 @@ static void SetDAIBuffer(struct snd_pcm_substream *substream,
 	pblock->u4DataRemained  = 0;
 	pblock->u4fsyncflag     = false;
 	pblock->uResetFlag      = true;
-	pr_warn("dma_bytes = %d dma_area = %p dma_addr = 0x%x\n",
+	pr_debug("dma_bytes = %d dma_area = %p dma_addr = 0x%x\n",
 	       pblock->u4BufferSize, pblock->pucVirtBufAddr, pblock->pucPhysBufAddr);
 	/* set sram address top hardware */
 	Afe_Set_Reg(AFE_DAI_BASE , pblock->pucPhysBufAddr , 0xffffffff);
@@ -209,37 +209,37 @@ static int mtk_bt_dai_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
 	int ret = 0;
 
-	pr_warn("mtk_bt_dai_pcm_hw_params\n");
+	pr_debug("mtk_bt_dai_pcm_hw_params\n");
 
 	dma_buf->dev.type = SNDRV_DMA_TYPE_DEV;
 	dma_buf->dev.dev = substream->pcm->card->dev;
 	dma_buf->private_data = NULL;
 
 	if (Bt_Dai_Capture_dma_buf->area) {
-		pr_warn("mtk_bt_dai_pcm_hw_params Bt_Dai_Capture_dma_buf->area\n");
+		pr_debug("mtk_bt_dai_pcm_hw_params Bt_Dai_Capture_dma_buf->area\n");
 		runtime->dma_bytes = params_buffer_bytes(hw_params);
 		runtime->dma_area = Bt_Dai_Capture_dma_buf->area;
 		runtime->dma_addr = Bt_Dai_Capture_dma_buf->addr;
 	} else {
-		pr_warn("mtk_bt_dai_pcm_hw_params snd_pcm_lib_malloc_pages\n");
+		pr_debug("mtk_bt_dai_pcm_hw_params snd_pcm_lib_malloc_pages\n");
 		ret =  snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
 	}
-	pr_warn("mtk_bt_dai_pcm_hw_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
+	pr_debug("mtk_bt_dai_pcm_hw_params dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       runtime->dma_bytes, runtime->dma_area, (long)runtime->dma_addr);
 
-	pr_warn("runtime->hw.buffer_bytes_max = %zu\n", runtime->hw.buffer_bytes_max);
+	pr_debug("runtime->hw.buffer_bytes_max = %zu\n", runtime->hw.buffer_bytes_max);
 	SetDAIBuffer(substream, hw_params);
 
 	AudDrv_Emi_Clk_On();
 
-	pr_warn("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
-	       substream->runtime->dma_bytes, substream->runtime->dma_area, (long)substream->runtime->dma_addr);
+	pr_debug("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
+		 substream->runtime->dma_bytes, substream->runtime->dma_area, (long)substream->runtime->dma_addr);
 	return ret;
 }
 
 static int mtk_bt_dai_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_bt_dai_capture_pcm_hw_free\n");
+	pr_debug("mtk_bt_dai_capture_pcm_hw_free\n");
 
 	AudDrv_Emi_Clk_Off();
 
@@ -260,7 +260,7 @@ static int mtk_bt_dai_pcm_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
-	pr_warn("mtk_bt_dai_pcm_open\n");
+	pr_debug("mtk_bt_dai_pcm_open\n");
 
 	Bt_Dai_Control_context = Get_Mem_ControlT(Soc_Aud_Digital_Block_MEM_DAI);
 	runtime->hw = mtk_btdai_hardware;
@@ -270,26 +270,26 @@ static int mtk_bt_dai_pcm_open(struct snd_pcm_substream *substream)
 	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
 
 	if (ret < 0)
-		pr_err("snd_pcm_hw_constraint_integer failed\n");
+		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
 	AudDrv_Clk_On();
 
 	/* print for hw pcm information */
-	pr_warn("mtk_bt_dai_pcm_open runtime rate = %d channels = %d\n", runtime->rate, runtime->channels);
+	pr_debug("mtk_bt_dai_pcm_open runtime rate = %d channels = %d\n", runtime->rate, runtime->channels);
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
 
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-		pr_warn("SNDRV_PCM_STREAM_CAPTURE\n");
+		pr_debug("SNDRV_PCM_STREAM_CAPTURE\n");
 	else
 		return -1;
 
 	if (ret < 0) {
-		pr_err("mtk_bt_dai_pcm_close\n");
+		pr_warn("mtk_bt_dai_pcm_close\n");
 		mtk_bt_dai_pcm_close(substream);
 		return ret;
 	}
-	pr_warn("mtk_bt_dai_pcm_open return\n");
+	pr_debug("mtk_bt_dai_pcm_open return\n");
 	return 0;
 }
 
@@ -301,7 +301,7 @@ static int mtk_bt_dai_pcm_close(struct snd_pcm_substream *substream)
 
 static int mtk_bt_dai_alsa_start(struct snd_pcm_substream *substream)
 {
-	pr_warn("mtk_bt_dai_alsa_start\n");
+	pr_debug("mtk_bt_dai_alsa_start\n");
 	SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DAI, substream);
 	StartAudioBtDaiHardware(substream);
 	return 0;
@@ -309,7 +309,7 @@ static int mtk_bt_dai_alsa_start(struct snd_pcm_substream *substream)
 
 static int mtk_bt_dai_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pr_warn("mtk_bt_dai_pcm_trigger cmd = %d\n", cmd);
+	pr_debug("mtk_bt_dai_pcm_trigger cmd = %d\n", cmd);
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -325,7 +325,7 @@ static int mtk_bt_dai_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 static bool CheckNullPointer(void *pointer)
 {
 	if (pointer == NULL) {
-		pr_err("CheckNullPointer pointer = NULL");
+		pr_warn("CheckNullPointer pointer = NULL");
 		return true;
 	}
 	return false;
@@ -341,7 +341,7 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 	ssize_t DMA_Read_Ptr = 0 , read_size = 0, read_count = 0;
 	unsigned long flags;
 
-	pr_warn("%s  pos = %lu count = %lu\n ", __func__, pos, count);
+	pr_debug("%s  pos = %lu count = %lu\n ", __func__, pos, count);
 
 	/* get total bytes to copy */
 	count = Align64ByteSize(audio_frame_to_bytes(substream , count));
@@ -351,7 +351,7 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 	Dai_Block = &(pDAI_MEM_ConTrol->rBlock);
 
 	if (pDAI_MEM_ConTrol == NULL) {
-		pr_err("cannot find MEM control !!!!!!!\n");
+		pr_warn("cannot find MEM control !!!!!!!\n");
 		msleep(50);
 		return 0;
 	}
@@ -362,7 +362,7 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 	}
 
 	if (CheckNullPointer((void *)Dai_Block->pucVirtBufAddr)) {
-		pr_err("CheckNullPointer  pucVirtBufAddr = %p\n", Dai_Block->pucVirtBufAddr);
+		pr_warn("CheckNullPointer  pucVirtBufAddr = %p\n", Dai_Block->pucVirtBufAddr);
 		return 0;
 	}
 
@@ -395,10 +395,10 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream,
 
 		if (copy_to_user((void __user *)Read_Data_Ptr, (Dai_Block->pucVirtBufAddr + DMA_Read_Ptr), read_size)) {
 
-			pr_err("%s Fail 1 copy to user Read_Data_Ptr:%p, pucVirtBufAddr:%p, u4DMAReadIdx:0x%x",
+			pr_warn("%s Fail 1 copy to user Read_Data_Ptr:%p, pucVirtBufAddr:%p, u4DMAReadIdx:0x%x",
 				__func__, Read_Data_Ptr, Dai_Block->pucVirtBufAddr,
 				Dai_Block->u4DMAReadIdx);
-			pr_err("%s Fail 1 copy to user DMA_Read_Ptr:%zu,read_size:%zu",
+			pr_warn("%s Fail 1 copy to user DMA_Read_Ptr:%zu,read_size:%zu",
 				__func__, DMA_Read_Ptr, read_size);
 			return 0;
 		}
@@ -487,7 +487,7 @@ static int mtk_bt_dai_capture_pcm_silence(struct snd_pcm_substream *substream,
 					  int channel, snd_pcm_uframes_t pos,
 					  snd_pcm_uframes_t count)
 {
-	pr_warn("dummy_pcm_silence\n");
+	pr_debug("dummy_pcm_silence\n");
 	return 0; /* do nothing */
 }
 
@@ -497,7 +497,7 @@ static void *dummy_page[2];
 static struct page *mtk_bt_dai_capture_pcm_page(struct snd_pcm_substream *substream,
 						unsigned long offset)
 {
-	pr_warn("dummy_pcm_page\n");
+	pr_debug("dummy_pcm_page\n");
 	return virt_to_page(dummy_page[substream->stream]); /* the same page */
 }
 
@@ -524,7 +524,7 @@ static struct snd_soc_platform_driver mtk_bt_dai_soc_platform = {
 
 static int mtk_bt_dai_probe(struct platform_device *pdev)
 {
-	pr_warn("mtk_bt_dai_probe\n");
+	pr_debug("mtk_bt_dai_probe\n");
 
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 	if (!pdev->dev.dma_mask)
@@ -533,20 +533,19 @@ static int mtk_bt_dai_probe(struct platform_device *pdev)
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_VOIP_BT_IN);
 
-	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_platform(&pdev->dev,
 					 &mtk_bt_dai_soc_platform);
 }
 
 static int mtk_asoc_bt_dai_pcm_new(struct snd_soc_pcm_runtime *rtd)
 {
-	pr_warn("mtk_asoc_bt_dai_pcm_new\n");
 	return 0;
 }
 
 static int mtk_asoc_bt_dai_probe(struct snd_soc_platform *platform)
 {
-	pr_warn("mtk_asoc_bt_dai_probe\n");
+	pr_debug("mtk_asoc_bt_dai_probe\n");
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DAI, BT_DAI_MAX_BUFFER_SIZE);
 	Bt_Dai_Capture_dma_buf =  Get_Mem_Buffer(Soc_Aud_Digital_Block_MEM_DAI);
 	return 0;
@@ -586,7 +585,7 @@ static int __init mtk_soc_bt_dai_platform_init(void)
 {
 	int ret = 0;
 
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 #ifndef CONFIG_OF
 	soc_bt_dai_capture_dev = platform_device_alloc(MT_SOC_VOIP_BT_IN, -1);
 	if (!soc_bt_dai_capture_dev)
@@ -604,7 +603,7 @@ static int __init mtk_soc_bt_dai_platform_init(void)
 
 static void __exit mtk_soc_bt_dai_platform_exit(void)
 {
-	pr_warn("%s\n", __func__);
+	pr_debug("%s\n", __func__);
 	platform_driver_unregister(&mtk_bt_dai_capture_driver);
 }
 

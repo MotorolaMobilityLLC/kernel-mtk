@@ -407,7 +407,7 @@ static int mtk_pcm_dl1bt_copy(struct snd_pcm_substream *substream,
 		       Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx, Afe_Block->u4DataRemained);
 
 	if (Afe_Block->u4BufferSize == 0) {
-		pr_err("AudDrv_write: u4BufferSize=0 Error");
+		pr_warn("AudDrv_write: u4BufferSize=0 Error");
 		return 0;
 	}
 
