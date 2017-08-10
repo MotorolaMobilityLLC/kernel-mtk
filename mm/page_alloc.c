@@ -71,6 +71,8 @@
 #include <mt-plat/aee.h>
 #endif
 
+#include <mt-plat/mtk_memcfg.h>
+
 /* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
 static DEFINE_MUTEX(pcp_batch_high_lock);
 #define MIN_PERCPU_PAGELIST_FRACTION	(8)
@@ -5782,18 +5784,18 @@ void __init mem_init_print_info(const char *str)
 #endif
 	       str ? ", " : "", str ? str : "");
 
-		kernel_reserve_meminfo.available = nr_free_pages() << (PAGE_SHIFT - 10);
-		kernel_reserve_meminfo.total = physpages << (PAGE_SHIFT - 10);
-		kernel_reserve_meminfo.kernel_code = codesize >> 10;
-		kernel_reserve_meminfo.rwdata = datasize >> 10;
-		kernel_reserve_meminfo.rodata = rosize >> 10;
-		kernel_reserve_meminfo.init = (init_data_size + init_code_size) >> 10;
-		kernel_reserve_meminfo.bss = bss_size >> 10;
+		kernel_reserve_meminfo.available = nr_free_pages() << PAGE_SHIFT;
+		kernel_reserve_meminfo.total = physpages << PAGE_SHIFT;
+		kernel_reserve_meminfo.kernel_code = codesize;
+		kernel_reserve_meminfo.rwdata = datasize;
+		kernel_reserve_meminfo.rodata = rosize;
+		kernel_reserve_meminfo.init = init_data_size + init_code_size;
+		kernel_reserve_meminfo.bss = bss_size;
 		kernel_reserve_meminfo.reserved =
-			(physpages - totalram_pages) << (PAGE_SHIFT-10);
+			(physpages - totalram_pages) << PAGE_SHIFT;
 
 #ifdef CONFIG_HIGHMEM
-		kernel_reserve_meminfo.highmem = totalhigh_pages << (PAGE_SHIFT - 10);
+		kernel_reserve_meminfo.highmem = totalhigh_pages << PAGE_SHIFT;
 #endif
 }
 
@@ -6862,3 +6864,61 @@ bool is_free_buddy_page(struct page *page)
 	return order < MAX_ORDER;
 }
 #endif
+
+static void __free_reserved_pages(struct page *page,
+					unsigned long pfn, unsigned int order) {
+	unsigned int nr_pages = 1 << order;
+	struct page *p = page;
+	unsigned int loop;
+
+	prefetchw(p);
+	for (loop = 0; loop < (nr_pages - 1); loop++, p++) {
+		prefetchw(p + 1);
+		__ClearPageReserved(p);
+		set_page_count(p, 0);
+	}
+	__ClearPageReserved(p);
+	set_page_count(p, 0);
+
+	page_zone(page)->managed_pages += nr_pages;
+	set_page_refcounted(page);
+	__free_pages(page, order);
+}
+
+int free_reserved_memory(phys_addr_t start_phys,
+				phys_addr_t end_phys) {
+
+	int order;
+	unsigned long  start_pfn, end_pfn;
+
+	if (end_phys <= start_phys) {
+
+		pr_alert("%s end_phys is smaller than start_phys start_phys:0x%pa end_phys:0x%pa\n"
+			, __func__, &start_phys, &end_phys);
+		 return -1;
+	}
+
+	if (!memblock_is_region_reserved(start_phys, end_phys - start_phys)) {
+
+		pr_alert("%s:not reserved memory phys_start:0x%pa phys_end:0x%pa\n"
+			, __func__, &start_phys, &end_phys);
+		return -1;
+	}
+
+	start_pfn = __phys_to_pfn(start_phys);
+	end_pfn = __phys_to_pfn(end_phys);
+
+	while (start_pfn < end_pfn) {
+
+		order = min(MAX_ORDER - 1UL, __ffs(start_pfn));
+		while (start_pfn + (1UL << order) > end_pfn)
+			order--;
+		__free_reserved_pages(pfn_to_page(start_pfn), start_pfn, order);
+		adjust_managed_page_count(pfn_to_page(start_pfn), 1<<order);
+		start_pfn += (1UL << order);
+	}
+
+	mtk_memcfg_record_freed_reserved(start_phys, end_phys);
+
+	return 0;
+}
