@@ -137,8 +137,6 @@ static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *c
 #ifdef CONFIG_MTK_AAL_SUPPORT
 	/* Enable AAL histogram, engine */
 	DISP_REG_MASK(cmdq, DISP_AAL_CFG, 0x3 << 1, (0x3 << 1) | 0x1);
-
-	disp_aal_write_init_regs(cmdq);
 #endif
 #if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757) /* disable stall cg for avoid display path hang */
 	DISP_REG_MASK(cmdq, DISP_AAL_CFG, 0x1 << 4, 0x1 << 4);
@@ -409,7 +407,7 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 		/* AAL Service is not running */
 		backlight_brightness_set(bl_1024);
 	}
-	AAL_NOTICE("led_mode=%d , aal_need_lock=%d", g_led_mode, g_aal_need_lock);
+	AAL_DBG("led_mode=%d , aal_need_lock=%d", g_led_mode, g_aal_need_lock);
 
 	spin_lock_irqsave(&g_aal_hist_lock, flags);
 	g_aal_hist.backlight = bl_1024;
@@ -533,7 +531,7 @@ int disp_aal_set_param(DISP_AAL_PARAM __user *param, void *cmdq)
 	if (ret == 0)
 		ret |= disp_pwm_set_backlight_cmdq(DISP_PWM0, backlight_value, cmdq);
 
-	AAL_DBG("disp_aal_set_param(CABC = %d, DRE[0,8] = %d,%d, latency=%d): ret = %d",
+	AAL_DBG("disp_aal_set_param(ESS = %d, DRE[0,8] = %d,%d, latency=%d): ret = %d",
 		g_aal_param.cabc_fltgain_force, g_aal_param.DREGainFltStatus[0],
 		g_aal_param.DREGainFltStatus[8], g_aal_param.refreshLatency, ret);
 
