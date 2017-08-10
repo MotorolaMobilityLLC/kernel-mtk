@@ -1547,10 +1547,10 @@ static ssize_t store_self_value(struct device_driver *ddri, const char *buf, siz
 
 	if (!MPU6515_JudgeTestResult(client, avg_prv, avg_nxt)) {
 		GSE_LOG("SELFTEST : PASS\n");
-		strcpy(selftestRes, "y");
+		strncpy(selftestRes, "y", sizeof(selftestRes));
 	} else {
 		GSE_LOG("SELFTEST : FAIL\n");
-		strcpy(selftestRes, "n");
+		strncpy(selftestRes, "n", sizeof(selftestRes));
 	}
 
 exit:
