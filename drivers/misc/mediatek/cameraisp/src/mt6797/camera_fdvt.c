@@ -605,12 +605,17 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 {
 	FDVTRegIO *pREGIO = NULL;
 	u32 i = 0;
-	if (NULL == a_pstCfg) {
+	if (a_pstCfg == NULL) {
 		LOG_DBG("Null input argrment\n");
 		return -EINVAL;
 	}
 
 	pREGIO = (FDVTRegIO *)a_pstCfg;
+
+	if (pREGIO->u4Count > FDVT_DRAM_REGCNT) {
+		LOG_DBG("Buffer Size Exceeded!\n");
+		return -EFAULT;
+	}
 
 	if (copy_from_user((void *)pFDVTWriteBuffer.u4Addr, (void *) pREGIO->pAddr, pREGIO->u4Count * sizeof(u32))) {
 		LOG_DBG("ioctl copy from user failed\n");
