@@ -30,7 +30,9 @@
 #include <linux/of_address.h>
 #endif
 #include "ccci_off.h"
-
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#include "include/pmic_api_buck.h"
+#endif
 #if !defined(CONFIG_MTK_CLKMGR)
 static struct clk *clk_scp_sys_md1_main;
 #endif
@@ -122,6 +124,9 @@ static void internal_md_power_down(void)
 #else
 	clk_disable_unprepare(clk_scp_sys_md1_main);
 #endif
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	vmd1_pmic_setting_off();
+#else
 	/* VMODEM off */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_VSLEEP_EN, 0); /* 0x063A[8]=0, 0:SW control, 1:HW control */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VMODEM_EN, 0); /* 0x062C[0]=0, 0:Disable, 1:Enable */
@@ -131,7 +136,7 @@ static void internal_md_power_down(void)
 	/* VSRAM_MD off */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_VSLEEP_EN, 0); /* 0x0662[8]=0, 0:SW control, 1:HW control */
 	pmic_set_register_value(MT6351_PMIC_BUCK_VSRAM_MD_EN, 0); /* 0x0654[0]=0, 0:Disable, 1:Enable */
-
+#endif
 	iounmap(md_p_topsm_base);
 	iounmap(md_l1_topsm_base);
 

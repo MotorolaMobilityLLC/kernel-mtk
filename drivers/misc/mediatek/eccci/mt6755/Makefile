@@ -18,7 +18,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ifeq ($(CONFIG_MTK_PMIC_CHIP_MT6353), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/
+endif
 # security objects
 MASP_CORE_DRIVER_DIR := $(srctree)/drivers/misc/mediatek/drivers/masp
 
