@@ -262,7 +262,9 @@ static ssize_t fbconfig_write(struct file *file,
 
 static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	int ret = 0;
+	long ret = 0;
+	/*int ret = 0;*/
+	int ret_val = 0; /* for other function call and put_user / get_user */
 	void __user *argp = (void __user *)arg;
 	PM_TOOL_T *pm = (PM_TOOL_T *) pm_get_handle();
 	uint32_t dsi_id = pm->dsi_id;
@@ -279,13 +281,19 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	}
 	case SET_DSI_ID:
 	{
-		if (arg > PM_DSI_DUAL)
-			return -EINVAL;
-		pm->dsi_id = arg;
-		pr_debug("fbconfig=>SET_DSI_ID:%d\n", dsi_id);
+		unsigned int dsi_id = 0;
 
-		return 0;
+		ret_val = get_user(dsi_id, (unsigned int __user *)argp);
+		if (ret_val != 0) {
+			pr_debug("fbconfig=>SET_DSI_ID get_user failed @line %d\n", __LINE__);
+			return -EFAULT;
+		}
+		if (dsi_id > PM_DSI_DUAL)
+			return -EINVAL;
+		pm->dsi_id = dsi_id;
+		pr_debug("fbconfig=>SET_DSI_ID:%d\n", dsi_id);
 	}
+	break;
 	case LCM_TEST_DSI_CLK:
 	{
 		LCM_TYPE_FB lcm_fb;
@@ -294,7 +302,7 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		lcm_fb.clock = pLcm_params->dsi.PLL_CLOCK;
 		lcm_fb.lcm_type = pLcm_params->dsi.mode;
 
-		pr_debug("fbconfig=>LCM_TEST_DSI_CLK:%d\n", ret);
+		pr_debug("fbconfig=>LCM_TEST_DSI_CLK:%d\n", lcm_fb.clock);
 		return copy_to_user(argp, &lcm_fb, sizeof(lcm_fb)) ? -EFAULT : 0;
 	}
 	case LCM_GET_ID:
@@ -601,8 +609,11 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		return 0;
 	}
 	default:
-		return ret;
+		pr_debug("fbconfig=>INVALID IOCTL CMD:%d\n", cmd);
+		break;
 	}
+
+	return ret;
 }
 
 static int fbconfig_release(struct inode *inode, struct file *file)
