@@ -2003,6 +2003,7 @@ void msdc_ungate_clock(struct msdc_host *host)
 }
 
 /* do we need sync object or not */
+/* MT_CG_PERI_MSDC30_0="13+32" defined in mt_clkmgr2.h */
 void msdc_clk_status(int *status)
 {
 	int g_clk_gate = 0;
@@ -2016,7 +2017,7 @@ void msdc_clk_status(int *status)
 		spin_lock_irqsave(&mtk_msdc_host[i]->clk_gate_lock, flags);
 		if (mtk_msdc_host[i]->clk_gate_count > 0)
 #ifndef FPGA_PLATFORM
-			g_clk_gate |= 1 << ((i) + MT_CG_PERI_MSDC30_0);
+			g_clk_gate |= 1 << ((i) + (MT_CG_PERI_MSDC30_0-32));
 #endif
 		spin_unlock_irqrestore(&mtk_msdc_host[i]->clk_gate_lock, flags);
 	}
