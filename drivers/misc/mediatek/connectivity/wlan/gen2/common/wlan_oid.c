@@ -5541,7 +5541,7 @@ wlanoidSetCurrentPacketFilter(IN P_ADAPTER_T prAdapter,
 		rStatus = wlanoidSetPacketFilter(prAdapter, prAdapter->u4OsPacketFilter,
 					TRUE, pvSetBuffer, u4SetBufferLen);
 	}
-	DBGLOG(REQ, INFO, "[MC debug] u4OsPacketFilter=%x\n", prAdapter->u4OsPacketFilter);
+	DBGLOG(REQ, TRACE, "[MC debug] u4OsPacketFilter=%x\n", prAdapter->u4OsPacketFilter);
 	return rStatus;
 }				/* wlanoidSetCurrentPacketFilter */
 
@@ -5560,7 +5560,7 @@ WLAN_STATUS wlanoidSetPacketFilter(P_ADAPTER_T prAdapter, UINT_32 u4PacketFilter
 		u4PacketFilter &= ~(PARAM_PACKET_FILTER_MULTICAST | PARAM_PACKET_FILTER_ALL_MULTICAST);
 #endif
 
-	DBGLOG(REQ, INFO, "[MC debug] u4PacketFilter=%x, IsSuspend=%d\n", u4PacketFilter, fgIsUnderSuspend);
+	DBGLOG(REQ, TRACE, "[MC debug] u4PacketFilter=%x, IsSuspend=%d\n", u4PacketFilter, fgIsUnderSuspend);
 	return wlanSendSetQueryCmd(prAdapter,
 						   CMD_ID_SET_RX_FILTER,
 						   TRUE,

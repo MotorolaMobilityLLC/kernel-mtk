@@ -1775,7 +1775,7 @@ BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter, IN P_CMD_GET_GSCAN_RESULT_
 	wiphy = priv_to_wiphy(prAdapter->prGlueInfo);
 	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	kalMemCopy(&rGetGscnResultCmd, prGetGscnResultCmd, sizeof(CMD_GET_GSCAN_RESULT_T));
-	DBGLOG(SCN, INFO, "rGetGscnResultCmd: ucGetNum[%d], fgFlush[%d]\n",
+	DBGLOG(SCN, TRACE, "rGetGscnResultCmd: ucGetNum[%d], fgFlush[%d]\n",
 		rGetGscnResultCmd.u4Num, rGetGscnResultCmd.ucFlush);
 	rGetGscnResultCmd.u4Num = (rGetGscnResultCmd.u4Num <= PSCAN_MAX_AP_CACHE_PER_SCAN)
 		? rGetGscnResultCmd.u4Num : PSCAN_MAX_AP_CACHE_PER_SCAN;
