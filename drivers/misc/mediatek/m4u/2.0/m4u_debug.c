@@ -202,8 +202,10 @@ static int m4u_test_map_kernel(void)
 
 int m4u_test_ddp(unsigned int prot)
 {
-	unsigned int *pSrc, *pDst;
-	unsigned int src_pa, dst_pa;
+	unsigned int *pSrc = NULL;
+	unsigned int *pDst = NULL;
+	unsigned int src_pa = 0;
+	unsigned int dst_pa = 0;
 	unsigned int size = 64 * 64 * 3;
 	M4U_PORT_STRUCT port;
 	m4u_client_t *client = m4u_create_client();
@@ -259,8 +261,10 @@ static char *data = "ABC";
 
 int m4u_test_tf(unsigned int prot)
 {
-	unsigned int *pSrc, *pDst;
-	unsigned int src_pa, dst_pa;
+	unsigned int *pSrc = NULL;
+	unsigned int *pDst = NULL;
+	unsigned int src_pa = 0;
+	unsigned int dst_pa = 0;
 	unsigned int size = 64 * 64 * 3;
 	M4U_PORT_STRUCT port;
 	m4u_client_t *client = m4u_create_client();
