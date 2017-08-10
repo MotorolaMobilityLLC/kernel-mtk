@@ -57,8 +57,8 @@ extern void ISP_MCLK1_EN(BOOL En);
 extern void ISP_MCLK2_EN(BOOL En);
 extern void ISP_MCLK3_EN(BOOL En);
 
-// ext. buck fan53526 use gpio 110 which may be used by camera ldo control.  
-static u32 extbuck_fan53526_exist = 0; 
+// ext. buck fan53526 use gpio 110 which may be used by camera ldo control.
+static u32 extbuck_fan53526_exist = 0;
 
 u32 pinSetIdx = 0;		/* default main sensor */
 u32 pinSet[3][8] = {
@@ -128,6 +128,7 @@ PowerCust PowerCustList = {
 
 PowerUp PowerOnList = {
 	{
+#if defined(OV23850_MIPI_RAW)
 	 {SENSOR_DRVNAME_OV23850_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -141,6 +142,8 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 5},
 	   },
 	  },
+#endif
+#if defined(S5K3M2_MIPI_RAW)
 	  {SENSOR_DRVNAME_S5K3M2_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -154,6 +157,8 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0},
 	   },
 	  },
+#endif
+#if defined(S5K3P3SX_MIPI_RAW)
 	  {SENSOR_DRVNAME_S5K3P3SX_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -167,6 +172,8 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0},
 	   },
 	  },
+#endif
+#if defined(S5K5E2YA_MIPI_RAW)
 	 {SENSOR_DRVNAME_S5K5E2YA_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -180,7 +187,39 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0},
 	   },
 	  },
-	 {SENSOR_DRVNAME_S5K2P8_MIPI_RAW,
+#endif
+#if defined(S5K4ECGX_MIPI_YUV)
+	 {SENSOR_DRVNAME_S5K4ECGX_MIPI_YUV,
+	  {
+	   {DVDD, Vol_1200, 1},
+	   {AVDD, Vol_2800, 1},
+	   {DOVDD, Vol_1800, 1},
+	   {AFVDD, Vol_2800, 0},
+	   {SensorMCLK, Vol_High, 0},
+	   {PDN, Vol_Low, 1},
+	   {PDN, Vol_High, 0},
+	   {RST, Vol_Low, 1},
+	   {RST, Vol_High, 0},
+	   },
+	  },
+#endif
+#if defined(OV16880_MIPI_RAW)
+	  {SENSOR_DRVNAME_OV16880_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {PDN, Vol_Low, 0},
+	   {RST, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 1},
+	   {AVDD, Vol_2800, 1},
+	   {DVDD, Vol_1200, 5},
+	   {AFVDD, Vol_2800, 1},
+	   {PDN, Vol_High, 1},
+	   {RST, Vol_High, 2}
+	   },
+	  },
+#endif
+#if defined(S5K2P8_MIPI_RAW)
+	  {SENSOR_DRVNAME_S5K2P8_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
 	   {DOVDD, Vol_1800, 0},
@@ -193,6 +232,8 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0},
 	   },
 	  },
+#endif
+#if defined(IMX258_MIPI_RAW)
 	  {SENSOR_DRVNAME_IMX258_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -206,6 +247,8 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
+#endif
+#if defined(IMX377_MIPI_RAW)
 	  {SENSOR_DRVNAME_IMX377_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -219,6 +262,8 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
+#endif
+#if defined(S5K2X8_MIPI_RAW)
 	  {SENSOR_DRVNAME_S5K2X8_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -232,6 +277,8 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
+#endif
+#if defined(IMX214_MIPI_RAW)
 	  {SENSOR_DRVNAME_IMX214_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -245,6 +292,8 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
+#endif
+#if defined(IMX214_MIPI_MONO)
 	  {SENSOR_DRVNAME_IMX214_MIPI_MONO,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -258,6 +307,8 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
+#endif
+#if defined(IMX230_MIPI_RAW)
 	  {SENSOR_DRVNAME_IMX230_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -271,6 +322,8 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
+#endif
+#if defined(S5K3L8_MIPI_RAW)
 	  {SENSOR_DRVNAME_S5K3L8_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -284,6 +337,38 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
+#endif
+#if defined(IMX362_MIPI_RAW)
+	  {SENSOR_DRVNAME_IMX362_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {AVDD, Vol_2800, 10},
+	   {DOVDD, Vol_1800, 10},
+	   {DVDD, Vol_1200, 10},
+	   {AFVDD, Vol_2800, 5},
+	   {PDN, Vol_Low, 0},
+	   {PDN, Vol_High, 0},
+	   {RST, Vol_Low, 0},
+	   {RST, Vol_High, 0}
+	   },
+	  },
+#endif
+#if defined(S5K2L7_MIPI_RAW)
+	  {SENSOR_DRVNAME_S5K2L7_MIPI_RAW,
+	  {
+	   {SensorMCLK, Vol_High, 0},
+	   {PDN, Vol_Low, 0},
+	   {RST, Vol_Low, 0},
+	   {DOVDD, Vol_1800, 0},
+	   {AVDD, Vol_2800, 0},
+	   {DVDD, Vol_1200, 0},
+	   {AFVDD, Vol_2800, 3},
+	   {PDN, Vol_High, 0},
+	   {RST, Vol_High, 5}
+	   },
+	  },
+#endif
+#if defined(IMX318_MIPI_RAW)
 	  {SENSOR_DRVNAME_IMX318_MIPI_RAW,
 	  {
 	   {SensorMCLK, Vol_High, 0},
@@ -297,6 +382,7 @@ PowerUp PowerOnList = {
 	   {RST, Vol_High, 0}
 	   },
 	  },
+#endif
 #if defined(OV8865_MIPI_RAW)
 	  {SENSOR_DRVNAME_OV8865_MIPI_RAW,
 	  {
@@ -541,7 +627,7 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 	if (IS_ERR(camctrl)) {
 		return -1;
 	}
-	
+
 	switch (PwrType) {
 	case RST:
 		if (PinIdx == 0) {
@@ -605,7 +691,7 @@ int mtkcam_gpio_set(int PinIdx, int PwrType, int Val)
 				mAVDD_usercounter = 0;
 				pinctrl_select_state(camctrl, cam_ldo_vcama_l);
 			}
-			
+
 		}
 		else if (Val == 1 && !IS_ERR(cam_ldo_vcama_h)){
 			mAVDD_usercounter ++;
@@ -847,7 +933,7 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 			}
 		}
 
-		
+
 	} else if (pwInfo.PowerType == DVDD) {
 		if (pinSetIdx == 2) {
 			if (PowerCustList.PowerCustInfo[CUST_MAIN2_DVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
@@ -960,7 +1046,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 	} else if (DUAL_CAMERA_MAIN_2_SENSOR == SensorIdx) {
 		pinSetIdx = 2;
 	}
-	
+
 	if (currSensorName && (0 == strcmp(currSensorName, "ov5670mipiraw")))
 	{
 		if(pinSetIdx == 1)
@@ -1198,7 +1284,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 		   {}
 		 */
  #endif
-	} else {		
+	} else {
 	    /* power OFF */
 		PK_INFO("PowerOFF:pinSetIdx=%d, sensorIdx:%d\n", pinSetIdx, SensorIdx);
 
