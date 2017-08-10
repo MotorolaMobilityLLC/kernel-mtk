@@ -16,7 +16,11 @@
 #define _PMT_H
 #include <mach/mtk_nand.h>
 #include "mtk_nand_util.h"
-#include "partition_define.h"
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+#include "partition_define_tlc.h"
+#else
+#include "partition_define_mlc.h"
+#endif
 
 #define MAX_PARTITION_NAME_LEN 64
 
@@ -53,20 +57,14 @@ typedef struct {
 
 #define PT_SIG      0x50547633	/*"PTv3" */
 #define MPT_SIG    0x4D505433	/*"MPT3" */
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 #define PT_SIG_SIZE 8
-#else
-#define PT_SIG_SIZE 4
-#endif
 #define is_valid_pt(buf) (!memcmp(buf, "3vTP", 4))
 #define is_valid_mpt(buf) (!memcmp(buf, "3TPM", 4))
 #define RETRY_TIMES 5
 
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 extern u32 slc_ratio;
 extern u32 sys_slc_ratio;
 extern u32 usr_slc_ratio;
-#endif
 
 typedef u32 (*GetLowPageNumber)(u32 pageNo);
 extern GetLowPageNumber functArray[];

@@ -19,7 +19,7 @@
 
 #define MAIN_SIGNATURE_OFFSET   (0)
 #define OOB_SIGNATURE_OFFSET    (1)
-#define OOB_INDEX_OFFSET        (29)
+#define OOB_INDEX_OFFSET        (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC?24:29)
 #define OOB_INDEX_SIZE          (2)
 #define FAKE_INDEX              (0xAAAA)
 

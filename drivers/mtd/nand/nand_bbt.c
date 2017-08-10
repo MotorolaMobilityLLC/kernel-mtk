@@ -1170,9 +1170,11 @@ static int nand_update_bbt(struct mtd_info *mtd, loff_t offs)
 	/* Do we have a bbt per chip? */
 	if (td->options & NAND_BBT_PERCHIP) {
 		#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-		temp = offs;
-		do_div(temp, mtk_nand_device_size());
-		chip = (int)temp;
+		temp = mtk_nand_device_size();
+		if (offs >= temp)
+			chip = 1;
+		else
+			chip = 0;
 		#else
 		chip = (int)(offs >> this->chip_shift);
 		#endif

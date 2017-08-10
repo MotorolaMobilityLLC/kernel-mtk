@@ -620,7 +620,7 @@ static int concat_block_isbad(struct mtd_info *mtd, loff_t ofs)
 	return res;
 }
 
-static int concat_block_markbad(struct mtd_info *mtd, loff_t ofs)
+static int concat_block_markbad(struct mtd_info *mtd, loff_t ofs, const uint8_t *buffer)
 {
 	struct mtd_concat *concat = CONCAT(mtd);
 	int i, err = -EINVAL;

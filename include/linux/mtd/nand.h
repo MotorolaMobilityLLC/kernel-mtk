@@ -673,7 +673,7 @@ struct nand_chip {
 	void (*read_buf)(struct mtd_info *mtd, uint8_t *buf, int len);
 	void (*select_chip)(struct mtd_info *mtd, int chip);
 	int (*block_bad)(struct mtd_info *mtd, loff_t ofs, int getchip);
-	int (*block_markbad)(struct mtd_info *mtd, loff_t ofs);
+	int (*block_markbad)(struct mtd_info *mtd, loff_t ofs, const uint8_t *buf);
 	void (*cmd_ctrl)(struct mtd_info *mtd, int dat, unsigned int ctrl);
 	int (*init_size)(struct mtd_info *mtd, struct nand_chip *this,
 			u8 *id_data);
@@ -1094,13 +1094,13 @@ extern bool mtk_nand_IsRawPartition(loff_t logical_address);
 extern u64 part_get_startaddress(u64 byte_address, u32 *idx);
 #endif
 
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 extern int mtk_nand_write_tlc_block(struct mtd_info *mtd, struct nand_chip *chip,
-				uint8_t *buf, u32 page);
+				uint8_t *buf, u32 page, u32 size);
+extern int mtk_nand_read(struct mtd_info *mtd, struct nand_chip *chip, u8 *buf,
+				int page, u32 size);
 extern bool mtk_block_istlc(u64 addr);
 extern bool mtk_is_normal_tlc_nand(void);
 extern u64 mtk_nand_device_size(void);
-#endif
 
 #define PMT_POOL_SIZE (2)
 

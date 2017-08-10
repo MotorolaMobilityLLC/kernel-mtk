@@ -19,7 +19,12 @@
 #include <linux/cdev.h>
 #include <linux/mtd/mtd.h>
 #include <linux/semaphore.h>
-#include <partition_define.h>
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+#include "partition_define_tlc.h"
+#else
+#include "partition_define_mlc.h"
+#endif
+
 extern void env_init(loff_t env_part_addr, int mtd_number);
 extern struct mtd_info *__mtd_next_device(int i);
 extern int init_pmt(void);

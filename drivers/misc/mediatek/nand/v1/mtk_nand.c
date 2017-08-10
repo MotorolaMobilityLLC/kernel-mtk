@@ -27,6 +27,7 @@
 #include <linux/proc_fs.h>
 #include <linux/time.h>
 #include <linux/mm.h>
+#include <linux/syscalls.h>
 #include <asm/io.h>
 #include <asm/cacheflush.h>
 #include <asm/uaccess.h>
@@ -44,6 +45,7 @@
 #include <mach/power_loss_test.h>
 #endif
 #include <asm/div64.h>
+#include <linux/regulator/consumer.h>
 #define VERSION	"v2.1 Fix AHB virt2phys error"
 #define MODULE_NAME	"# MTK NAND #"
 #define PROCNAME	"driver/nand"
@@ -68,6 +70,9 @@ void __iomem *mtk_io_base;
 struct device_node *mtk_nfi_node;
 struct device_node *mtk_nfiecc_node;
 struct device_node *mtk_io_node;
+struct device_node *mtk_pm_node;
+
+struct regulator *nfi_reg_vemc_3v3 = NULL;
 
 unsigned int nfi_irq = 0;
 #define MT_NFI_IRQ_ID nfi_irq
@@ -77,15 +82,14 @@ struct scatterlist mtk_sg;
 enum dma_data_direction mtk_dir;
 
 
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 bool tlc_lg_left_plane = TRUE;
 enum NFI_TLC_PG_CYCLE tlc_program_cycle;
 bool tlc_not_keep_erase_lvl = FALSE;
 u32 slc_ratio = 6;
 u32 sys_slc_ratio = 6;
 u32 usr_slc_ratio = 6;
-#endif
 
+u32 force_slc_flag = 0;
 
 #if defined(NAND_OTP_SUPPORT)
 
@@ -358,6 +362,82 @@ do { \
 #define PFM_END_W(time, n)
 #define PFM_END_E(time)
 #endif
+/* #define __D_PFM__ */
+
+#ifdef __D_PFM__
+static suseconds_t g_DPFM_R;
+static suseconds_t g_DPFM_RS;
+static suseconds_t g_DPFM_W;
+static suseconds_t g_DPFM_WB;
+static suseconds_t g_DPFM_E;
+static u64 g_PFM_RD;
+static u64 g_PFM_RDS;
+
+static u64 g_PFM_WD;
+static u64 g_PFM_WBD;
+static u64 g_PFM_RDN;
+static u64 g_PFM_RDSN;
+static u64 g_PFM_WDN;
+static u64 g_PFM_EDN;
+static struct timeval g_now;
+
+#define PFM_DBEGIN(time) \
+do { \
+	do_gettimeofday(&g_now); \
+	(time) = g_now; \
+} while (0)
+
+#define PFM_END_DR(time, n, p) \
+do { \
+	do_gettimeofday(&g_now); \
+	g_DPFM_R += (g_now.tv_sec * 1000000 + g_now.tv_usec) - (time.tv_sec * 1000000 + time.tv_usec); \
+	g_PFM_RD += n; \
+	g_PFM_RDN += p;\
+} while (0)
+
+#define PFM_END_DRS(time, n, p) \
+do { \
+	do_gettimeofday(&g_now); \
+	g_DPFM_RS += (g_now.tv_sec * 1000000 + g_now.tv_usec) - (time.tv_sec * 1000000 + time.tv_usec); \
+	g_PFM_RDS += n; \
+	g_PFM_RDSN += p;\
+} while (0)
+
+
+#define PFM_END_DW(time, n) \
+do { \
+	do_gettimeofday(&g_now); \
+	g_DPFM_W += (g_now.tv_sec * 1000000 + g_now.tv_usec) - (time.tv_sec * 1000000 + time.tv_usec); \
+	g_PFM_WD += n; \
+	g_PFM_WDN += 1;\
+} while (0)
+
+#define PFM_END_DBW(time) \
+do { \
+	do_gettimeofday(&g_now); \
+	g_DPFM_WB += (g_now.tv_sec * 1000000 + g_now.tv_usec) - (time.tv_sec * 1000000 + time.tv_usec); \
+	g_PFM_WBD += 1; \
+} while (0)
+
+
+#define PFM_END_DE(time) \
+do { \
+	do_gettimeofday(&g_now); \
+	g_DPFM_E += (g_now.tv_sec * 1000000 + g_now.tv_usec) - (time.tv_sec * 1000000 + time.tv_usec); \
+	g_PFM_EDN += 1;\
+} while (0)
+
+#define PFM_DUMP_D() \
+do { \
+	pr_err("%s - Read page PFM: %lu, data: %lld,  #%lld sectors\n", MODULE_NAME , g_DPFM_R, g_PFM_RD, g_PFM_RDN); \
+	pr_err("%s - Read sector: %lu, data: %lld, #%lld sectors\n", MODULE_NAME , g_DPFM_RS, g_PFM_RDS, g_PFM_RDSN); \
+	pr_err("%s - Write PFM: %lu, data: %lld #%lld times\n", MODULE_NAME, g_DPFM_W, g_PFM_WD, g_PFM_WDN); \
+	pr_err("%s - Write TLC PFM: %lu, #%lld times\n", MODULE_NAME, g_DPFM_WB, g_PFM_WBD); \
+	pr_err("%s - Erase PFM: %lu #%lld times\n", MODULE_NAME, g_DPFM_E, g_PFM_EDN); \
+} while (0)
+
+
+#endif
 
 #define TIMEOUT_1 0x1fff
 #define TIMEOUT_2 0x8ff
@@ -422,10 +502,8 @@ __aligned(64)
 static u8 test_buffer[16384 + 2048];
 #endif
 
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 __aligned(64)
 static u8 local_tlc_wl_buffer[16384 + 2048];
-#endif
 
 static int mtk_nand_interface_config(struct mtd_info *mtd);
 
@@ -871,16 +949,15 @@ bool get_device_info(u8 *id, flashdev_info *gn_devinfo)
 		gn_devinfo->s_acccon1 = gen_FlashTable[target].s_acccon1;
 		gn_devinfo->freq = gen_FlashTable[target].freq;
 		gn_devinfo->vendor = gen_FlashTable[target].vendor;
+		gn_devinfo->dqs_delay_ctrl = gen_FlashTable[target].dqs_delay_ctrl;
 		memcpy((u8 *) &gn_devinfo->feature_set,
 			(u8 *) &gen_FlashTable[target].feature_set, sizeof(struct MLC_feature_set));
 		memcpy(gn_devinfo->devciename, gen_FlashTable[target].devciename,
 			sizeof(gn_devinfo->devciename));
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 		gn_devinfo->NAND_FLASH_TYPE = gen_FlashTable[target].NAND_FLASH_TYPE;
 		memcpy
 			((u8 *)&gn_devinfo->tlcControl,
 			(u8 *)&gen_FlashTable[target].tlcControl, sizeof(struct NFI_TLC_CTRL));
-#endif
 		return true;
 	}
 	MSG(INIT, "Not Found NAND: ID [");
@@ -1027,18 +1104,18 @@ u32 mtk_nand_page_transform(struct mtd_info *mtd, struct nand_chip *chip, u32 pa
 {
 	u32 block_size = (gn_devinfo.blocksize * 1024);
 	u32 page_size = (1 << chip->page_shift);
-	loff_t start_address;
+	loff_t start_address = 0;
 	u32 idx;
 	u32 block;
 	u32 page_in_block;
 	u32 mapped_block;
 	bool raw_part = FALSE;
 	loff_t logical_address = (loff_t)page * (1 << chip->page_shift);
-	loff_t temp, temp1;
-	/* MSG(INIT , "[CCCCCHHHHHIIIIEEENNNWWWEEEIII]%d, init_pmt_done %d\n", page, init_pmt_done); */
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-	gn_devinfo.tlcControl.slcopmodeEn = FALSE;
+	loff_t temp, temp1;
 #endif
+
+	gn_devinfo.tlcControl.slcopmodeEn = FALSE;
 	if (MLC_DEVICE && init_pmt_done == TRUE) {
 		start_address = part_get_startaddress(logical_address, &idx);
 		if (raw_partition(idx))
@@ -1046,9 +1123,9 @@ u32 mtk_nand_page_transform(struct mtd_info *mtd, struct nand_chip *chip, u32 pa
 		else
 			raw_part = FALSE;
 	}
-	if (init_pmt_done != TRUE) {
+	if (init_pmt_done != TRUE && gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
 		gn_devinfo.tlcControl.slcopmodeEn = TRUE;
-	}
+
 	if (raw_part == TRUE) {
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 		if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
@@ -1095,13 +1172,12 @@ u32 mtk_nand_page_transform(struct mtd_info *mtd, struct nand_chip *chip, u32 pa
 		*blk = block;
 		*map_blk = mapped_block;
 	} else {
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-		if ((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) && (!mtk_block_istlc(logical_address))) {
+		if (((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+			|| (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER))
+		&& (!mtk_block_istlc(logical_address))) {
 			mtk_slc_blk_addr(logical_address, &block, &page_in_block);
 			gn_devinfo.tlcControl.slcopmodeEn = TRUE;
-		} else
-#endif
-		{
+		} else {
 			block = page / (block_size / page_size);
 			page_in_block = page % (block_size / page_size);
 		}
@@ -1662,7 +1738,7 @@ static bool mtk_nand_check_bch_error(struct mtd_info *mtd, u8 *pDataBuf, u8 *spa
 	}
 #endif
 	if (uncorrect_sector) {
-		MSG(INIT, "UnCorrectable ECC errors at PageAddr = %d, Sectormap = 0x%x\n",
+		pr_err("UnCorrectable ECC errors at PageAddr = %d, Sectormap = 0x%x\n",
 			u4PageAddr, uncorrect_sector);
 	}
 	return ret;
@@ -2117,6 +2193,7 @@ static int mtk_nand_interface_config(struct mtd_info *mtd)
 
 
 			DRV_WriteReg32(NFI_DLYCTRL_REG32, 0xA001);
+			val = gn_devinfo.dqs_delay_ctrl + (3 << 24);
 			DRV_WriteReg32(NFI_DQS_DELAY_CTRL, val);
 
 
@@ -2190,7 +2267,7 @@ static int mtk_nand_interface_config(struct mtd_info *mtd)
  *
  ******************************************************************************/
 static bool mtk_nand_ready_for_read(struct nand_chip *nand, u32 u4RowAddr, u32 u4ColAddr,
-					u16 sec_num, bool full, u8 *buf)
+					u16 sec_num, bool full, u8 *buf, enum readCommand cmd)
 {
 	/* Reset NFI HW internal state machine and flush NFI in/out FIFO */
 	bool bRet = false;
@@ -2198,7 +2275,7 @@ static bool mtk_nand_ready_for_read(struct nand_chip *nand, u32 u4RowAddr, u32 u
 	u32 col_addr = u4ColAddr;
 	u32 colnob = 2, rownob = gn_devinfo.addr_cycle - 2;
 	/*u32 reg_val = DRV_Reg32(NFI_MASTERRST_REG32); */
-#if 0 /* __INTERNAL_USE_AHB_MODE__ */
+#ifndef CONFIG_MTK_TLC_NAND_SUPPORT
 	u32 phys = 0;
 #endif
 #ifdef DUMP_PEF
@@ -2273,14 +2350,27 @@ static bool mtk_nand_ready_for_read(struct nand_chip *nand, u32 u4RowAddr, u32 u
 			ECC_Decode_Start();
 	}
 #endif
+	if (cmd == AD_CACHE_FINAL) {
+		if (!mtk_nand_set_command(0x3F))
+			goto cleanup;
+		if (!mtk_nand_status_ready(STA_NAND_BUSY))
+			goto cleanup;
+		return true;
+	}
+
 	if (!mtk_nand_set_command(NAND_CMD_READ0))
 		goto cleanup;
 
 	if (!mtk_nand_set_address(col_addr, u4RowAddr, colnob, rownob))
 		goto cleanup;
 
-	if (!mtk_nand_set_command(NAND_CMD_READSTART))
-		goto cleanup;
+	if (cmd == NORMAL_READ) {
+		if (!mtk_nand_set_command(NAND_CMD_READSTART))
+			goto cleanup;
+	} else {
+		if (!mtk_nand_set_command(0x31))
+			goto cleanup;
+	}
 
 	if (!mtk_nand_status_ready(STA_NAND_BUSY))
 		goto cleanup;
@@ -2512,7 +2602,7 @@ static bool mtk_nand_dma_read_data(struct mtd_info *mtd, u8 *buf, u32 length)
 
 	if (interrupt_en) {
 		/* Wait 10ms for AHB done */
-		if (!wait_for_completion_timeout(&g_comp_AHB_Done, 50)) {
+		if (!wait_for_completion_timeout(&g_comp_AHB_Done, 0xFFF)) {
 			MSG(INIT, "wait for completion timeout happened @ [%s]: %d\n", __func__,
 				__LINE__);
 			dump_nfi();
@@ -2953,6 +3043,7 @@ static void mtk_nand_stop_write(void)
 #define STATUS_READY			(0x40)
 #define STATUS_FAIL				(0x01)
 #define STATUS_WR_ALLOW			(0x80)
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 
 static bool mtk_nand_read_status(void)
 {
@@ -2991,7 +3082,6 @@ static bool mtk_nand_read_status(void)
 	}
 
 	/* flash is ready now, check status code */
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	if ((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
 			&& (gn_devinfo.tlcControl.slcopmodeEn)) {
 		/*pr_warn("status 0x%x", status);*/
@@ -3005,12 +3095,11 @@ static bool mtk_nand_read_status(void)
 		}
 		return TRUE;
 	}
-#endif
-	pr_warn("status 0x%x", status);
 	if (STATUS_FAIL & status)
 		return FALSE;
 	return TRUE;
 }
+#endif
 
 bool mtk_nand_SetFeature(struct mtd_info *mtd, u16 cmd, u32 addr, u8 *value,  u8 bytes)
 {
@@ -3537,11 +3626,7 @@ static bool hynix_rr_table_select(u8 table_index, flashdev_info *deviceinfo)
 		table_size += 16;
 	else
 		table_size += 2;
-	for (i = 0; i < table_size; i++) {
-		pr_err("%02X ", NAND_HYX_RR_TBL_BUF[i]);
-		if ((i + 1) % 8 == 0)
-			pr_err("\n");
-	}
+
 	return TRUE;		/* correct table */
 }
 
@@ -3679,9 +3764,9 @@ static void HYNIX_Set_RR_Para(u32 rr_index, flashdev_info *deviceinfo)
 	mtk_nand_reset();
 
 	DRV_WriteReg16(NFI_CNFG_REG16, (CNFG_OP_CUST | CNFG_BYTE_RW));
+	mtk_nand_set_command(0x36);
 
 	for (count = 0; count < max_count; count++) {
-		mtk_nand_set_command(0x36);
 		mtk_nand_set_address(add_reg[count], 0, 1, 0);
 		DRV_WriteReg16(NFI_CON_REG16, (CON_NFI_BWR | (1 << CON_NFI_SEC_SHIFT)));
 		DRV_WriteReg16(NFI_STRDATA_REG16, 1);
@@ -3692,9 +3777,9 @@ static void HYNIX_Set_RR_Para(u32 rr_index, flashdev_info *deviceinfo)
 			break;
 		}
 		DRV_WriteReg32(NFI_DATAW_REG32, hynix_rr_table[rr_index * max_count + count]);
-		mtk_nand_reset();
 	}
 	mtk_nand_set_command(0x16);
+	mtk_nand_reset();
 }
 #if 0
 static void HYNIX_Get_RR_Para(u32 rr_index, flashdev_info *deviceinfo)
@@ -3773,7 +3858,13 @@ u32 special_rrtry_setting[37] = {
 	0x6C706C78, 0x686C6C78, 0x64686C78, 0x686C6874,
 	0x64686874,
 };
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+
+u32 special_mlcslc_rrtry_setting[23] = {
+	0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x7C, 0x78,
+	0x74, 0x18, 0x1C, 0x20, 0x70, 0x6C, 0x68, 0x24,
+	0x28, 0x2C, 0x64, 0x60, 0x5C, 0x58, 0x54,
+};
+
 u32 sandisk_tlc_rrtbl_12h[40] = {
 	0x00000000, 0x08000004, 0x00000404, 0x04040408,
 	0x08040408, 0x0004080C, 0x04040810, 0x0C0C0C00,
@@ -3852,7 +3943,7 @@ static void mtk_nand_sandisk_tlc_1ynm_rrtry(struct mtd_info *mtd,
 		mtk_nand_reset();
 	}
 }
-#endif
+
 static u32 mtk_nand_rrtry_setting(flashdev_info deviceinfo, enum readRetryType type, u32 retryStart,
 				  u32 loopNo)
 {
@@ -3860,8 +3951,12 @@ static u32 mtk_nand_rrtry_setting(flashdev_info deviceinfo, enum readRetryType t
 	{
 		if (retryStart != 0xFFFFFFFF)
 			value = retryStart + loopNo;
-		else
-			value = special_rrtry_setting[loopNo];
+		else {
+			if (gn_devinfo.tlcControl.slcopmodeEn)
+				value = special_mlcslc_rrtry_setting[loopNo];
+			else
+				value = special_rrtry_setting[loopNo];
+		}
 	}
 
 	return value;
@@ -3877,10 +3972,8 @@ static rrtryFunctionType rtyFuncArray[] = {
 	mtk_nand_toshiba_rrtry,
 	mtk_nand_hynix_rrtry,
 	mtk_nand_hynix_16nm_rrtry,
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	mtk_nand_sandisk_tlc_1ynm_rrtry,
 	mtk_nand_toshiba_tlc_rrtry
-#endif
 };
 
 
@@ -3924,12 +4017,12 @@ int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 #ifdef NAND_PFM
 	struct timeval pfm_time_read;
 #endif
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	struct NFI_TLC_WL_INFO  tlc_wl_info;
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	bool tlc_left_plane = TRUE;
-	u32 reg_val = 0;
 	unsigned int phys = 0;
 #endif
+	u32 reg_val = 0;
 	u32 real_row_addr = 0;
 	u32 logical_plane_num = 1;
 	u32 data_sector_num = 0;
@@ -3940,7 +4033,13 @@ int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 	unsigned int NAND_ECC_Enc_Reg = 0;
 	unsigned int NAND_ECC_Dec_Reg = 0;
 #endif
+	u32 block_addr = 0;
+	u32 page_in_block = 0;
+	u32 page_per_block = 0;
+
 	/*MSG(INIT, "mtk_nand_exec_read_page, u4RowAddr: %x\n", u4RowAddr);*/
+
+	page_per_block = gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize;
 
 	PFM_BEGIN(pfm_time_read);
 	tempBitMap = 0;
@@ -3977,8 +4076,8 @@ int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 					data_sector_num /= 2;
 					real_row_addr = NFI_TLC_SetpPlaneAddr(real_row_addr, tlc_left_plane);
 				}
-				MSG(INIT, "mtk_nand_exec_read_page, u4RowAddr: 0x%x real_row_addr 0x%x %d\n",
-					u4RowAddr, real_row_addr, gn_devinfo.tlcControl.slcopmodeEn);
+				/* MSG(INIT, "mtk_nand_exec_read_page, u4RowAddr: 0x%x real_row_addr 0x%x %d\n",
+					u4RowAddr, real_row_addr, gn_devinfo.tlcControl.slcopmodeEn); */
 			} else {
 				real_row_addr = NFI_TLC_GetRowAddr(u4RowAddr);
 			}
@@ -4024,14 +4123,60 @@ int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 #endif
 			real_row_addr = u4RowAddr;
 
-	if (use_randomizer) {
-		if (gn_devinfo.tlcControl.slcopmodeEn)
-			mtk_nand_turn_on_randomizer(mtd, nand, tlc_wl_info.word_line_idx);
-		else
-			mtk_nand_turn_on_randomizer(mtd, nand, (tlc_wl_info.word_line_idx*3+tlc_wl_info.wl_pre));
+	/* if(force_slc_flag == 1)
+		gn_devinfo.tlcControl.slcopmodeEn = true; */
+
+	if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER) {
+		if (gn_devinfo.tlcControl.slcopmodeEn) {
+			if (0xFF != gn_devinfo.tlcControl.en_slc_mode_cmd) {
+				reg_val = DRV_Reg16(NFI_CNFG_REG16);
+				reg_val &= ~CNFG_READ_EN;
+				reg_val &= ~CNFG_OP_MODE_MASK;
+				reg_val |= CNFG_OP_CUST;
+				DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+				mtk_nand_set_command(gn_devinfo.tlcControl.en_slc_mode_cmd);
+				reg_val = DRV_Reg32(NFI_CON_REG16);
+				reg_val |= CON_FIFO_FLUSH|CON_NFI_RST;
+				/* issue reset operation */
+				DRV_WriteReg32(NFI_CON_REG16, reg_val);
+
+				if (gn_devinfo.vendor == VEND_SANDISK) {
+					block_addr = real_row_addr/page_per_block;
+					page_in_block = real_row_addr % page_per_block;
+					page_in_block <<= 1;
+					real_row_addr = page_in_block + block_addr * page_per_block;
+					/* pr_err("mtk_nand_exec_read_sector SLC Mode real_row_addr:%d, u4RowAddr:%d\n",
+						real_row_addr, u4RowAddr); */
+				}
+			}
+		} else {
+			if (0xFF != gn_devinfo.tlcControl.dis_slc_mode_cmd) {
+				reg_val = DRV_Reg16(NFI_CNFG_REG16);
+				reg_val &= ~CNFG_READ_EN;
+				reg_val &= ~CNFG_OP_MODE_MASK;
+				reg_val |= CNFG_OP_CUST;
+				DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+
+				mtk_nand_set_command(gn_devinfo.tlcControl.dis_slc_mode_cmd);
+				reg_val = DRV_Reg32(NFI_CON_REG16);
+				reg_val |= CON_FIFO_FLUSH|CON_NFI_RST;
+				/* issue reset operation */
+				DRV_WriteReg32(NFI_CON_REG16, reg_val);
+			}
+		}
+	}
+	if (use_randomizer && u4RowAddr >= RAND_START_ADDR) {
+		if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
+			if (gn_devinfo.tlcControl.slcopmodeEn)
+				mtk_nand_turn_on_randomizer(mtd, nand, tlc_wl_info.word_line_idx);
+			else
+				mtk_nand_turn_on_randomizer(mtd, nand,
+					(tlc_wl_info.word_line_idx*3+tlc_wl_info.wl_pre));
+		} else
+			mtk_nand_turn_on_randomizer(mtd, nand, u4RowAddr);
 	}
 
-	if (mtk_nand_ready_for_read(nand, real_row_addr, 0, data_sector_num, true, buf)) {
+	if (mtk_nand_ready_for_read(nand, real_row_addr, 0, data_sector_num, true, buf, NORMAL_READ)) {
 		while (logical_plane_num) {
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 			if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
@@ -4151,7 +4296,8 @@ int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 			mtk_nand_turn_off_randomizer();
 
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-		if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
+		if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC
+		|| gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER) {
 			if ((gn_devinfo.tlcControl.slcopmodeEn)
 				&& (0xFF != gn_devinfo.tlcControl.dis_slc_mode_cmd)) {
 				reg_val = DRV_Reg32(NFI_CON_REG16);
@@ -4189,6 +4335,14 @@ int mtk_nand_exec_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize,
 					retrytotalcnt = 31;
 			}
 #endif
+
+			if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER)  {
+				if ((gn_devinfo.tlcControl.slcopmodeEn)
+					&& (gn_devinfo.feature_set.FeatureSet.rtype == RTYPE_SANDISK)) {
+					retrytotalcnt = 22;
+				}
+			}
+
 			if (retryCount < retrytotalcnt) {
 				mtd->ecc_stats.corrected = backup_corrected;
 				mtd->ecc_stats.failed = backup_failed;
@@ -4280,22 +4434,27 @@ bool mtk_nand_exec_read_sector(struct mtd_info *mtd, u32 u4RowAddr, u32 u4ColAdd
 #ifdef NAND_PFM
 	struct timeval pfm_time_read;
 #endif
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	struct NFI_TLC_WL_INFO  tlc_wl_info;
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	bool tlc_left_plane = TRUE;
-	u32 reg_val = 0;
 	unsigned int phys = 0;
 	u32 sector_per_page = mtd->writesize >> host->hw->nand_sec_shift;
 	int spare_per_sector = mtd->oobsize / sector_per_page;
 #endif
+	u32 reg_val = 0;
 	u32 real_row_addr = 0;
 	u32 logical_plane_num = 1;
 	u32 temp_col_addr[2] = {0, 0};
 	u32 data_sector_num[2] = {0, 0};
 	u8	*temp_byte_ptr = NULL;
 	u8	*spare_ptr = NULL;
+	u32 block_addr = 0;
+	u32 page_in_block = 0;
+	u32 page_per_block = 0;
 
 	/*MSG(INIT, "mtk_nand_exec_read_page, host->hw->nand_sec_shift: %d\n", host->hw->nand_sec_shift); */
+
+	page_per_block = gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize;
 
 	PFM_BEGIN(pfm_time_read);
 
@@ -4397,18 +4556,59 @@ bool mtk_nand_exec_read_sector(struct mtd_info *mtd, u32 u4RowAddr, u32 u4ColAdd
 		{
 			real_row_addr = u4RowAddr;
 		}
+		if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER) {
+			if (gn_devinfo.tlcControl.slcopmodeEn) {
+				if (0xFF != gn_devinfo.tlcControl.en_slc_mode_cmd) {
+					reg_val = DRV_Reg16(NFI_CNFG_REG16);
+					reg_val &= ~CNFG_READ_EN;
+					reg_val &= ~CNFG_OP_MODE_MASK;
+					reg_val |= CNFG_OP_CUST;
+					DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+					mtk_nand_set_command(gn_devinfo.tlcControl.en_slc_mode_cmd);
+					reg_val = DRV_Reg32(NFI_CON_REG16);
+					reg_val |= CON_FIFO_FLUSH|CON_NFI_RST;
+					/* issue reset operation */
+					DRV_WriteReg32(NFI_CON_REG16, reg_val);
 
-		if (use_randomizer) {
-			if (gn_devinfo.tlcControl.slcopmodeEn)
-				mtk_nand_turn_on_randomizer(mtd, nand, tlc_wl_info.word_line_idx);
-			else
-				mtk_nand_turn_on_randomizer(mtd, nand,
-				(tlc_wl_info.word_line_idx*3+tlc_wl_info.wl_pre));
+					if (gn_devinfo.vendor == VEND_SANDISK) {
+						block_addr = real_row_addr/page_per_block;
+						page_in_block = real_row_addr % page_per_block;
+						page_in_block <<= 1;
+						real_row_addr = page_in_block + block_addr * page_per_block;
+		/* pr_err("mtk_nand_exec_read_sector SLC Mode real_row_addr:%d, u4RowAddr:%d\n",
+					real_row_addr, u4RowAddr); */
+					}
+				}
+			}  else {
+				if (0xFF != gn_devinfo.tlcControl.dis_slc_mode_cmd) {
+					reg_val = DRV_Reg16(NFI_CNFG_REG16);
+					reg_val &= ~CNFG_READ_EN;
+					reg_val &= ~CNFG_OP_MODE_MASK;
+					reg_val |= CNFG_OP_CUST;
+					DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+
+					mtk_nand_set_command(gn_devinfo.tlcControl.dis_slc_mode_cmd);
+					reg_val = DRV_Reg32(NFI_CON_REG16);
+					reg_val |= CON_FIFO_FLUSH|CON_NFI_RST;
+					/* issue reset operation */
+					DRV_WriteReg32(NFI_CON_REG16, reg_val);
+				}
+			}
+		}
+		if (use_randomizer && u4RowAddr >= RAND_START_ADDR) {
+			if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
+				if (gn_devinfo.tlcControl.slcopmodeEn)
+					mtk_nand_turn_on_randomizer(mtd, nand, tlc_wl_info.word_line_idx);
+				else
+					mtk_nand_turn_on_randomizer(mtd, nand,
+					(tlc_wl_info.word_line_idx*3+tlc_wl_info.wl_pre));
+			} else
+				mtk_nand_turn_on_randomizer(mtd, nand, u4RowAddr);
 		}
 
 	if (mtk_nand_ready_for_read
 		(nand, real_row_addr, temp_col_addr[logical_plane_num-1],
-			data_sector_num[logical_plane_num - 1], true, buf)) {
+			data_sector_num[logical_plane_num - 1], true, buf, NORMAL_READ)) {
 		while (logical_plane_num) {
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 			if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
@@ -4537,8 +4737,12 @@ bool mtk_nand_exec_read_sector(struct mtd_info *mtd, u32 u4RowAddr, u32 u4ColAdd
 		if (use_randomizer && u4RowAddr >= RAND_START_ADDR)
 			mtk_nand_turn_off_randomizer();
 
+	/* if(force_slc_flag == 1)
+		gn_devinfo.tlcControl.slcopmodeEn = true; */
+
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-		if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
+		if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC
+		|| gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER) {
 			if ((gn_devinfo.tlcControl.slcopmodeEn)
 				&& (0xFF != gn_devinfo.tlcControl.dis_slc_mode_cmd)) {
 				reg_val = DRV_Reg32(NFI_CON_REG16);
@@ -4556,7 +4760,6 @@ bool mtk_nand_exec_read_sector(struct mtd_info *mtd, u32 u4RowAddr, u32 u4ColAdd
 			}
 		}
 #endif
-
 		if (bRet == ERR_RTN_BCH_FAIL) {
 			u32 feature = mtk_nand_rrtry_setting(gn_devinfo,
 				gn_devinfo.feature_set.FeatureSet.rtype,
@@ -4572,6 +4775,14 @@ bool mtk_nand_exec_read_sector(struct mtd_info *mtd, u32 u4RowAddr, u32 u4ColAdd
 					retrytotalcnt = 31;
 			}
 #endif
+
+			if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER)  {
+				if ((gn_devinfo.tlcControl.slcopmodeEn)
+					&& (gn_devinfo.feature_set.FeatureSet.rtype == RTYPE_SANDISK)) {
+					retrytotalcnt = 22;
+				}
+			}
+
 			if (retryCount < retrytotalcnt) {
 				mtd->ecc_stats.corrected = backup_corrected;
 				mtd->ecc_stats.failed = backup_failed;
@@ -4672,11 +4883,14 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 	struct timeval pl_time_write;
 	suseconds_t duration;
 #endif
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	struct NFI_TLC_WL_INFO  tlc_wl_info;
 	u32 reg_val;
-#endif
 	u32 real_row_addr = 0;
+	u32 block_addr = 0;
+	u32 page_in_block = 0;
+	u32 page_per_block = 0;
+
+	page_per_block = gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize;
 
 	mtk_nand_interface_switch(mtd);
 
@@ -4708,11 +4922,10 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 		}
 	}
 	PFM_BEGIN(pfm_time_write);
-
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-	mtk_nand_reset();
 	tlc_wl_info.wl_pre = WL_LOW_PAGE; /* avoid compile warning */
 	tlc_wl_info.word_line_idx = u4RowAddr;
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+	mtk_nand_reset();
 	if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)	 {
 		if (gn_devinfo.tlcControl.normaltlc) {
 			NFI_TLC_GetMappedWL(u4RowAddr, &tlc_wl_info);
@@ -4770,12 +4983,58 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 	{
 		real_row_addr = u4RowAddr;
 	}
-	if (use_randomizer) {
-		if (gn_devinfo.tlcControl.slcopmodeEn)
-			mtk_nand_turn_on_randomizer(mtd, chip, tlc_wl_info.word_line_idx);
-		else
-			mtk_nand_turn_on_randomizer(mtd, chip,
-			(tlc_wl_info.word_line_idx*3+tlc_wl_info.wl_pre));
+
+	/* if(force_slc_flag == 1)
+		gn_devinfo.tlcControl.slcopmodeEn = true; */
+
+	if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER) {
+		if (gn_devinfo.tlcControl.slcopmodeEn) {
+			if (0xFF != gn_devinfo.tlcControl.en_slc_mode_cmd) {
+				reg_val = DRV_Reg16(NFI_CNFG_REG16);
+				reg_val &= ~CNFG_READ_EN;
+				reg_val &= ~CNFG_OP_MODE_MASK;
+				reg_val |= CNFG_OP_CUST;
+				DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+				mtk_nand_set_command(gn_devinfo.tlcControl.en_slc_mode_cmd);
+				reg_val = DRV_Reg32(NFI_CON_REG16);
+				reg_val |= CON_FIFO_FLUSH|CON_NFI_RST;
+				/* issue reset operation */
+				DRV_WriteReg32(NFI_CON_REG16, reg_val);
+
+				if (gn_devinfo.vendor == VEND_SANDISK) {
+					block_addr = real_row_addr/page_per_block;
+					page_in_block = real_row_addr % page_per_block;
+					page_in_block <<= 1;
+					real_row_addr = page_in_block + block_addr * page_per_block;
+					/* pr_err("mtk_nand_exec_read_sector SLC Mode real_row_addr:%d, u4RowAddr:%d\n",
+						real_row_addr, u4RowAddr); */
+				}
+			}
+		}  else {
+			if (0xFF != gn_devinfo.tlcControl.dis_slc_mode_cmd) {
+				reg_val = DRV_Reg16(NFI_CNFG_REG16);
+				reg_val &= ~CNFG_READ_EN;
+				reg_val &= ~CNFG_OP_MODE_MASK;
+				reg_val |= CNFG_OP_CUST;
+				DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+
+				mtk_nand_set_command(gn_devinfo.tlcControl.dis_slc_mode_cmd);
+				reg_val = DRV_Reg32(NFI_CON_REG16);
+				reg_val |= CON_FIFO_FLUSH|CON_NFI_RST;
+				/* issue reset operation */
+				DRV_WriteReg32(NFI_CON_REG16, reg_val);
+			}
+		}
+	}
+	if (use_randomizer && u4RowAddr >= RAND_START_ADDR) {
+		if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
+			if (gn_devinfo.tlcControl.slcopmodeEn)
+				mtk_nand_turn_on_randomizer(mtd, chip, tlc_wl_info.word_line_idx);
+			else
+				mtk_nand_turn_on_randomizer(mtd, chip,
+				(tlc_wl_info.word_line_idx*3+tlc_wl_info.wl_pre));
+		} else
+			mtk_nand_turn_on_randomizer(mtd, chip, u4RowAddr);
 	}
 	if (mtk_nand_ready_for_write(chip, real_row_addr, 0, true, buf)) {
 		mtk_nand_write_fdm_data(chip, pFDMBuf, u4SecNum);
@@ -4918,12 +5177,19 @@ static int mtk_nand_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 
 	do_gettimeofday(&stimer);
 #endif
+#ifdef __D_PFM__
+	struct timeval pfm_time_write;
+#endif
+
 	page_in_block = mtk_nand_page_transform(mtd, chip, page, &block, &mapped_block);
-	MSG(INIT, "[WRITE] %d, %d, %d %d\n", mapped_block, block, page_in_block, page_per_block);
+	/*pr_err("[WRITE] %d, %d, %d %d\n", mapped_block, block, page_in_block, page_per_block);*/
 	if (mapped_block != block)
 		set_bad_index_to_oob(chip->oob_poi, block);
 	else
 		set_bad_index_to_oob(chip->oob_poi, FAKE_INDEX);
+#ifdef __D_PFM__
+		PFM_DBEGIN(pfm_time_write);
+#endif
 
 	if (mtk_nand_exec_write_page
 		(mtd, page_in_block + mapped_block * page_per_block, mtd->writesize, (u8 *) buf,
@@ -4939,6 +5205,10 @@ static int mtk_nand_write_page(struct mtd_info *mtd, struct nand_chip *chip,
 		}
 		return 0;
 	}
+#ifdef __D_PFM__
+	PFM_END_DW(pfm_time_write, mtd->writesize);
+#endif
+
 #ifdef DUMP_PEF
 	do_gettimeofday(&etimer);
 	g_NandPerfLog.WritePageTotalTime += Cal_timediff(&etimer, &stimer);
@@ -5000,7 +5270,6 @@ static void mtk_nand_command_bp(struct mtd_info *mtd, unsigned int command, int 
 #ifdef NAND_PFM
 	struct timeval pfm_time_erase;
 #endif
-	pr_warn("mtk_nand_command_bp 0x%x\n", command);
 	switch (command) {
 	case NAND_CMD_SEQIN:
 	  memset(g_kCMD.au1OOB, 0xFF, sizeof(g_kCMD.au1OOB));
@@ -5012,14 +5281,13 @@ static void mtk_nand_command_bp(struct mtd_info *mtd, unsigned int command, int 
 	case NAND_CMD_PAGEPROG:
 	if (g_kCMD.pDataBuf || (0xFF != g_kCMD.au1OOB[0])) {
 		u8 *pDataBuf = g_kCMD.pDataBuf ? g_kCMD.pDataBuf : nand->buffers->databuf;
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-		if ((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+		if (((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+			|| (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER))
 				&& (gn_devinfo.tlcControl.normaltlc)
 				&& (!mtk_block_istlc(g_kCMD.u4RowAddr * mtd->writesize)))
 			gn_devinfo.tlcControl.slcopmodeEn = TRUE;
 		else
 			gn_devinfo.tlcControl.slcopmodeEn = FALSE;
-#endif
 
 		mtk_nand_exec_write_page(mtd, g_kCMD.u4RowAddr, mtd->writesize, pDataBuf,
 					 g_kCMD.au1OOB);
@@ -5341,10 +5609,10 @@ static void mtk_nand_select_chip(struct mtd_info *mtd, int chip)
 			break;
 #endif
 	case 1:
-			if (chip != 0)
-				pr_warn("[BUG!!!]select_chip %d\n", chip);
-		  DRV_WriteReg16(NFI_CSEL_REG16, chip);
-		  break;
+		if (chip != 0)
+			pr_warn("[BUG!!!]select_chip %d\n", chip);
+		DRV_WriteReg16(NFI_CSEL_REG16, chip);
+		break;
 	}
 }
 
@@ -5416,13 +5684,12 @@ static void mtk_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 	u32 u4ColAddr = pkCMD->u4ColAddr;
 	u32 u4PageSize = mtd->writesize;
 
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-	if ((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+	if (((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+		|| (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER))
 		 && (gn_devinfo.tlcControl.normaltlc) && (!mtk_block_istlc(pkCMD->u4RowAddr * mtd->writesize)))
 		gn_devinfo.tlcControl.slcopmodeEn = TRUE;
 	else
 		gn_devinfo.tlcControl.slcopmodeEn = FALSE;
-#endif
 
 	if (u4ColAddr < u4PageSize) {
 		if ((u4ColAddr == 0) && (len >= u4PageSize)) {
@@ -5542,13 +5809,12 @@ static int mtk_nand_read_page_hwecc(struct mtd_info *mtd, struct nand_chip *chip
 	u32 u4ColAddr = pkCMD->u4ColAddr;
 	u32 u4PageSize = mtd->writesize;
 
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-	if ((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+	if (((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+		|| (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER))
 		 && (gn_devinfo.tlcControl.normaltlc) && (!mtk_block_istlc(pkCMD->u4RowAddr * mtd->writesize)))
 		gn_devinfo.tlcControl.slcopmodeEn = TRUE;
 	else
 		gn_devinfo.tlcControl.slcopmodeEn = FALSE;
-#endif
 
 	if (u4ColAddr == 0) {
 		mtk_nand_exec_read_page(mtd, pkCMD->u4RowAddr, u4PageSize, buf, chip->oob_poi);
@@ -5570,6 +5836,10 @@ static int mtk_nand_read_page(struct mtd_info *mtd, struct nand_chip *chip, u8 *
 	u32 page_in_block;
 	u32 mapped_block;
 	int bRet = ERR_RTN_SUCCESS;
+#ifdef __D_PFM__
+	int sec_num = 1<<(chip->page_shift - host->hw->nand_sec_shift);
+	struct timeval pfm_time_read;
+#endif
 #ifdef DUMP_PEF
 	struct timeval stimer, etimer;
 
@@ -5577,10 +5847,15 @@ static int mtk_nand_read_page(struct mtd_info *mtd, struct nand_chip *chip, u8 *
 #endif
 	page_in_block = mtk_nand_page_transform(mtd, chip, page, &block, &mapped_block);
 	/*MSG(INIT, "[WRITE] %d, %d, %d %d\n", mapped_block, block, page_in_block, page_per_block); */
-
+#ifdef __D_PFM__
+	PFM_DBEGIN(pfm_time_read);
+#endif
 	bRet =
 		mtk_nand_exec_read_page(mtd, page_in_block + mapped_block * page_per_block,
 					mtd->writesize, buf, chip->oob_poi);
+#ifdef __D_PFM__
+	PFM_END_DR(pfm_time_read, mtd->writesize, sec_num);
+#endif
 	if (bRet == ERR_RTN_SUCCESS) {
 #ifdef DUMP_PEF
 		do_gettimeofday(&etimer);
@@ -5618,14 +5893,23 @@ static int mtk_nand_read_subpage(struct mtd_info *mtd, struct nand_chip *chip, u
 
 	do_gettimeofday(&stimer);
 #endif
+#ifdef __D_PFM__
+		struct timeval pfm_time_read;
+#endif
+
 	page_in_block = mtk_nand_page_transform(mtd, chip, page, &block, &mapped_block);
 	coladdr = subpage * (gn_devinfo.sectorsize + spare_per_sector);
-	/*pr_warn("[read] %d, %d, %d %d %x\n", mapped_block, block, page_in_block, page_per_block, (u32)buf); */
+#ifdef __D_PFM__
+		PFM_DBEGIN(pfm_time_read);
+#endif
 
 	bRet =
 		mtk_nand_exec_read_sector(mtd, page_in_block + mapped_block * page_per_block, coladdr,
 					  gn_devinfo.sectorsize * subpageno, buf, chip->oob_poi,
 					  subpageno);
+#ifdef __D_PFM__
+		PFM_END_DRS(pfm_time_read, gn_devinfo.sectorsize * subpageno, subpageno);
+#endif
 
 	if (bRet == ERR_RTN_SUCCESS) {
 #ifdef DUMP_PEF
@@ -5667,8 +5951,8 @@ int mtk_nand_erase_hw(struct mtd_info *mtd, int page)
 	struct nand_chip *chip = (struct nand_chip *)mtd->priv;
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	struct NFI_TLC_WL_INFO  tlc_wl_info;
-	u32 reg_val = 0;
 #endif
+	u32 reg_val = 0;
 	u32 real_row_addr = 0;
 
 #ifdef _MTK_NAND_DUMMY_DRIVER_
@@ -5695,6 +5979,9 @@ int mtk_nand_erase_hw(struct mtd_info *mtd, int page)
 	{
 		real_row_addr = page;
 	}
+
+	/* if(force_slc_flag == 1)
+		gn_devinfo.tlcControl.slcopmodeEn = true; */
 
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
@@ -5730,6 +6017,38 @@ int mtk_nand_erase_hw(struct mtd_info *mtd, int page)
 		}
 	}
 #endif
+
+	if ((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER) && (gn_devinfo.vendor == VEND_SANDISK)) {
+		if (gn_devinfo.tlcControl.slcopmodeEn) {
+			if (0xFF != gn_devinfo.tlcControl.en_slc_mode_cmd) {
+				reg_val = DRV_Reg16(NFI_CNFG_REG16);
+				reg_val &= ~CNFG_READ_EN;
+				reg_val &= ~CNFG_OP_MODE_MASK;
+				reg_val |= CNFG_OP_CUST;
+				DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+				mtk_nand_set_command(gn_devinfo.tlcControl.en_slc_mode_cmd);
+				reg_val = DRV_Reg32(NFI_CON_REG16);
+				reg_val |= CON_FIFO_FLUSH|CON_NFI_RST;
+				/* issue reset operation */
+				DRV_WriteReg32(NFI_CON_REG16, reg_val);
+				/* pr_err("mtk_nand_erase_hw SLC Mode %d\n", real_row_addr); */
+			}
+		}  else {
+			if (0xFF != gn_devinfo.tlcControl.dis_slc_mode_cmd) {
+				reg_val = DRV_Reg16(NFI_CNFG_REG16);
+				reg_val &= ~CNFG_READ_EN;
+				reg_val &= ~CNFG_OP_MODE_MASK;
+				reg_val |= CNFG_OP_CUST;
+				DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+
+				mtk_nand_set_command(gn_devinfo.tlcControl.dis_slc_mode_cmd);
+				reg_val = DRV_Reg32(NFI_CON_REG16);
+				reg_val |= CON_FIFO_FLUSH|CON_NFI_RST;
+				/* issue reset operation */
+				DRV_WriteReg32(NFI_CON_REG16, reg_val);
+			}
+		}
+	}
 
 	PL_NAND_BEGIN(pl_time_write);
 	PL_TIME_RAND_ERASE(chip, page, time);
@@ -5776,9 +6095,14 @@ static int mtk_nand_erase(struct mtd_info *mtd, int page)
 
 	do_gettimeofday(&stimer);
 #endif
+#ifdef __D_PFM__
+	struct timeval pfm_time_erase;
+
+	PFM_DBEGIN(pfm_time_erase);
+#endif
 
 	page_in_block = mtk_nand_page_transform(mtd, chip, page, &block, &mapped_block);
-	MSG(INIT, "[ERASE] 0x%x 0x%x\n", mapped_block, page);
+	/*pr_err("[ERASE] 0x%x 0x%x\n", mapped_block, page);*/
 	status = mtk_nand_erase_hw(mtd, page_in_block + page_per_block * mapped_block);
 
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
@@ -5805,6 +6129,9 @@ static int mtk_nand_erase(struct mtd_info *mtd, int page)
 			return NAND_STATUS_FAIL;
 		}
 	}
+#ifdef __D_PFM__
+	PFM_END_DE(pfm_time_erase);
+#endif
 #ifdef DUMP_PEF
 	do_gettimeofday(&etimer);
 	g_NandPerfLog.EraseBlockTotalTime += Cal_timediff(&etimer, &stimer);
@@ -5953,7 +6280,7 @@ static int mtk_nand_read_oob_raw(struct mtd_info *mtd, uint8_t *buf, int page_ad
 			col_addr = sector_size + sector * (sector_size + spare_per_sector);
 			/* TODO: Fix this hard-code 16 */
 			if (!mtk_nand_ready_for_read
-				(chip, page_addr, col_addr, sec_num, false, NULL)) {
+				(chip, page_addr, col_addr, sec_num, false, NULL, NORMAL_READ)) {
 				pr_warn("mtk_nand_ready_for_read return failed\n");
 				res = -EIO;
 				goto error;
@@ -6147,7 +6474,9 @@ static int mtk_nand_write_oob(struct mtd_info *mtd, struct nand_chip *chip, int 
 
 int mtk_nand_block_markbad_hw(struct mtd_info *mtd, loff_t offset)
 {
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 	struct nand_chip *chip = mtd->priv;
+#endif
 	int block; /* = (int)(offset / (gn_devinfo.blocksize * 1024)); */
 	int page; /* = block * (gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize); */
 	int ret;
@@ -6168,12 +6497,13 @@ int mtk_nand_block_markbad_hw(struct mtd_info *mtd, loff_t offset)
 	else
 #endif
 	ret = mtk_nand_write_oob_raw(mtd, buf, page, 8);
-	return ret;
+	return 0;
 }
 
-static int mtk_nand_block_markbad(struct mtd_info *mtd, loff_t offset)
+static int mtk_nand_block_markbad(struct mtd_info *mtd, loff_t offset, const uint8_t *buf)
 {
 	struct nand_chip *chip = mtd->priv;
+	int page_per_block = gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize;
 	u32 block; /*  = (u32)(offset  / (gn_devinfo.blocksize * 1024)); */
 	int page; /* = block * (gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize); */
 	u32 mapped_block;
@@ -6188,6 +6518,19 @@ static int mtk_nand_block_markbad(struct mtd_info *mtd, loff_t offset)
 	nand_get_device(mtd, FL_WRITING);
 
 	page = mtk_nand_page_transform(mtd, chip, page, &block, &mapped_block);
+
+	if (NULL != buf) {
+		MSG(INIT, "write fail at block: 0x%x, page: 0x%x\n", mapped_block, page);
+		if (update_bmt
+			((u64) ((u64) page + (u64) mapped_block * page_per_block) << chip->page_shift,
+			UPDATE_WRITE_FAIL, (u8 *) buf, chip->oob_poi)) {
+			pr_err("Update BMT success\n");
+		} else {
+			pr_err("Update BMT fail\n");
+			nand_release_device(mtd);
+			return -EIO;
+		}
+	}
 	ret = mtk_nand_block_markbad_hw(mtd, mapped_block * (gn_devinfo.blocksize * 1024));
 
 	nand_release_device(mtd);
@@ -6335,8 +6678,6 @@ int mtk_nand_block_bad_hw(struct mtd_info *mtd, loff_t ofs)
 		return ret;
 	}
 #endif
-	page_addr = mtk_nand_page_transform(mtd, chip, page_addr, &block, &mapped_block);
-
 	ret =
 		mtk_nand_read_subpage(mtd, chip, temp_buffer_16_align, (ofs >> chip->page_shift), 0, 1);
 	page_addr = mtk_nand_page_transform(mtd, chip, page_addr, &block, &mapped_block);
@@ -6372,9 +6713,11 @@ static int mtk_nand_block_bad(struct mtd_info *mtd, loff_t ofs, int getchip)
 
 	if (getchip) {
 #if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-		temp = ofs;
-		do_div(temp, mtk_nand_device_size());
-		chipnr = (int) temp; /*(ofs / mtk_nand_device_size());*/
+		temp = mtk_nand_device_size();
+		if (ofs >= temp)
+			chipnr = 1;
+		else
+			chipnr = 0;
 #else
 		chipnr = (int)(ofs >> chip->chip_shift);
 #endif
@@ -6440,7 +6783,6 @@ static int mtk_nand_init_size(struct mtd_info *mtd, struct nand_chip *this, u8 *
 
 }
 
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 int mtk_nand_write_tlc_wl_hw(struct mtd_info *mtd, struct nand_chip *chip,
 				 uint8_t *buf, u32 wl, enum NFI_TLC_PG_CYCLE program_cycle)
 {
@@ -6499,18 +6841,23 @@ int mtk_nand_write_tlc_wl(struct mtd_info *mtd, struct nand_chip *chip,
 }
 
 int mtk_nand_write_tlc_block_hw(struct mtd_info *mtd, struct nand_chip *chip,
-				uint8_t *buf, u32 mapped_block)
+				uint8_t *buf, u32 mapped_block, u32 page_in_block, u32 size)
 {
 	int page_per_block = gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize;
 	u32 index;
-	int bRet;
+	int bRet = 0;
 	u32 base_wl_index;
+	u32 wl_in_block;
+	u32 write_page_number;
 	u8 *temp_buf = NULL;
 
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
 
 	base_wl_index = mapped_block * page_per_block / 3;
+	wl_in_block = page_in_block / 3;
+	write_page_number = size / gn_devinfo.pagesize;
 
-	for (index = 0; index < (page_per_block / 3); index++) {
+	for (index = wl_in_block; index < (wl_in_block + (write_page_number / 3)); index++) {
 		if (index == 0) {
 			temp_buf = buf + (index * 3 * mtd->writesize);
 			bRet = mtk_nand_write_tlc_wl(mtd, chip, temp_buf, base_wl_index + index, PROGRAM_1ST_CYCLE);
@@ -6550,12 +6897,21 @@ int mtk_nand_write_tlc_block_hw(struct mtd_info *mtd, struct nand_chip *chip,
 	}
 	if (bRet != 0)
 		return -EIO;
+#else
+	base_wl_index = mapped_block * page_per_block;
+	for (index = 0; index < page_per_block; index++) {
+		temp_buf = buf + (index * mtd->writesize);
+		bRet = mtk_nand_exec_write_page(mtd, base_wl_index+index, mtd->writesize, temp_buf, chip->oob_poi);
+		if (bRet != 0)
+			break;
+	}
+#endif
 	return 0;
 }
 
 
 int mtk_nand_write_tlc_block(struct mtd_info *mtd, struct nand_chip *chip,
-				uint8_t *buf, u32 page)
+				uint8_t *buf, u32 page, u32 size)
 {
 	int page_per_block = gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize;
 	u32 block;
@@ -6567,22 +6923,27 @@ int mtk_nand_write_tlc_block(struct mtd_info *mtd, struct nand_chip *chip,
 
 	do_gettimeofday(&stimer);
 #endif
+#ifdef __D_PFM__
+		struct timeval pfm_time_write;
+#endif
 
-	if (gn_devinfo.NAND_FLASH_TYPE != NAND_FLASH_TLC) {
+
+	if (gn_devinfo.NAND_FLASH_TYPE != NAND_FLASH_TLC && gn_devinfo.NAND_FLASH_TYPE != NAND_FLASH_MLC_HYBER) {
 		MSG(INIT, "error : not tlc nand\n");
-		return -EIO;
-	}
-	if (!gn_devinfo.tlcControl.normaltlc) {
-		MSG(INIT, "error : not normal tlc nand\n");
 		return -EIO;
 	}
 
 	page_in_block = mtk_nand_page_transform(mtd, chip, page, &block, &mapped_block);
 
+/*
 	if (page_in_block != 0) {
 		MSG(INIT, "error : normal tlc block program is not block aligned\n");
 		return -EIO;
 	}
+*/
+#ifdef __D_PFM__
+		PFM_DBEGIN(pfm_time_write);
+#endif
 
 	memset(chip->oob_poi, 0xff, mtd->oobsize);
 
@@ -6591,7 +6952,11 @@ int mtk_nand_write_tlc_block(struct mtd_info *mtd, struct nand_chip *chip,
 	else
 		set_bad_index_to_oob(chip->oob_poi, FAKE_INDEX);
 
-	bRet = mtk_nand_write_tlc_block_hw(mtd, chip, buf, mapped_block);
+	bRet = mtk_nand_write_tlc_block_hw(mtd, chip, buf, mapped_block, page_in_block, size);
+
+#ifdef __D_PFM__
+		PFM_END_DBW(pfm_time_write);
+#endif
 
 	if (bRet != 0) {
 		MSG(INIT, "write fail at block: 0x%x, page: 0x%x\n", mapped_block, page_in_block);
@@ -6626,8 +6991,9 @@ bool mtk_is_normal_tlc_nand(void)
 	if ((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
 			 && (gn_devinfo.tlcControl.normaltlc))
 		return TRUE;
-	else
-		return FALSE;
+	if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER)
+		return TRUE;
+	return FALSE;
 }
 
 int mtk_nand_tlc_wl_mark(struct mtd_info *mtd, struct nand_chip *chip,
@@ -6735,7 +7101,6 @@ int mtk_nand_tlc_block_mark(struct mtd_info *mtd, struct nand_chip *chip, u32 ma
 	return 0;
 }
 
-#endif
 
 /******************************************************************************
  * mtk_nand_verify_buf
@@ -6766,13 +7131,12 @@ static int mtk_nand_verify_buf(struct mtd_info *mtd, const uint8_t *buf, int len
 	u32 *pSrc, *pDst;
 	int i;
 
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-	if ((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+	if (((gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+		|| (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER))
 		 && (gn_devinfo.tlcControl.normaltlc) && (!mtk_block_istlc(pkCMD.u4RowAddr * mtd->writesize)))
 		gn_devinfo.tlcControl.slcopmodeEn = TRUE;
 	else
 		gn_devinfo.tlcControl.slcopmodeEn = FALSE;
-#endif
 
 	mtk_nand_exec_read_page(mtd, pkCMD->u4RowAddr, u4PageSize, gacBuf, gacBuf + u4PageSize);
 
@@ -7114,7 +7478,21 @@ ssize_t  mtk_nand_proc_write(struct file *file, const char *buffer, size_t  coun
 		g_PFM_WD = 0;
 		g_kCMD.pureReadOOBNum = 0;
 #endif
-		break;
+#ifdef __D_PFM__
+		g_DPFM_R = 0;
+		g_DPFM_RS = 0;
+		g_DPFM_WB = 0;
+		g_DPFM_W = 0;
+		g_DPFM_E = 0;
+		g_PFM_RD = 0;
+		g_PFM_RDS = 0;
+		g_PFM_WD = 0;
+		g_PFM_WBD = 0;
+		g_PFM_RDN = 0;
+		g_PFM_RDSN = 0;
+		g_PFM_WDN = 0;
+		g_PFM_EDN = 0;
+#endif
 	case 'R':
 #ifdef DUMP_PEF
 		g_NandPerfLog.ReadPageCount = 0;
@@ -7135,6 +7513,10 @@ ssize_t  mtk_nand_proc_write(struct file *file, const char *buffer, size_t  coun
 
 		g_NandPerfLog.EraseBlockCount = 0;
 		g_NandPerfLog.EraseBlockTotalTime = 0;
+#endif
+#ifdef __D_PFM__
+		PFM_DUMP_D();
+		/* dump_log(); */
 #endif
 		break;
 	case 'T':
@@ -7258,7 +7640,7 @@ int mtk_tlc_unit_test(struct nand_chip *nand_chip, struct mtd_info *mtd)
 	for (k = 0; k < p; k++)
 		memcpy(buf + (g_page_size * k), temp_buffer_tlc, g_page_size);
 	pr_warn("***************w b %d***********************\n", test_page);
-	mtk_nand_write_tlc_block(mtd, nand_chip, buf, test_page);
+	mtk_nand_write_tlc_block(mtd, nand_chip, buf, test_page, (gn_devinfo.blocksize * 1024));
 
 	for (k = 0; k < p; k++) {
 		pr_warn("***************r p %d***********************\n", test_page + k);
@@ -7406,6 +7788,228 @@ while (1)
 	;
 }
 #endif
+
+#define KERNEL_NAND_UNIT_TEST 0
+#define NAND_READ_PERFORMANCE 0
+#if KERNEL_NAND_UNIT_TEST
+__aligned(64)
+static u8 temp_buffer_xl[LPAGE + LSPARE];
+__aligned(64)
+static u8 temp_buffer_xl_rd[LPAGE + LSPARE];
+
+int mtk_nand_unit_test(struct nand_chip *nand_chip, struct mtd_info *mtd)
+{
+
+	int err = 0;
+	/*int patternbuff[128] = {
+		0x0103D901, 0xFF1802DF, 0x01200400, 0x00000021, 0x02040122, 0x02010122, 0x03020407,
+		0x1A050103,
+		0x00020F1B, 0x08C0C0A1, 0x01550800, 0x201B0AC1, 0x41990155, 0x64F0FFFF, 0x201B0C82,
+		0x4118EA61,
+		0xF00107F6, 0x0301EE1B, 0x0C834118, 0xEA617001, 0x07760301, 0xEE151405, 0x00202020,
+		0x20202020,
+		0x00202020, 0x2000302E, 0x3000FF14, 0x00FF0000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000,
+		0x01D90301, 0xDF0218FF, 0x00042001, 0x21000000, 0x22010402, 0x22010102, 0x07040203,
+		0x0301051A,
+		0x1B0F0200, 0xA1C0C008, 0x00085501, 0xC10A1B20, 0x55019941, 0xFFFFF064, 0x820C1B20,
+		0x61EA1841,
+		0xF60701F0, 0x1BEE0103, 0x1841830C, 0x017061EA, 0x01037607, 0x051415EE, 0x20202000,
+		0x20202020,
+		0x20202000, 0x2E300020, 0x14FF0030, 0x0000FF00, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000,
+		0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+		0x00000000
+	};*/
+	u32 j, k, p = g_block_size / g_page_size;
+	u32 TOTAL = 10;
+
+	pr_err("Begin to Kernel nand unit test ...\n");
+
+	pr_debug("[P] %x\n", p);
+
+
+#if 0
+	for (m = 0; m < 32; m++)
+		memcpy(temp_buffer_xl + 512 * m, (u8 *) patternbuff, 512);
+
+	pr_debug("***************read pl***********************\n");
+	memset(temp_buffer_xl_rd, 0xA5, 16384);
+	if (mtk_nand_read_page(mtd, nand_chip, temp_buffer_xl_rd, 1 * p))
+		pr_debug("Read page 0x%x fail!\n", 1 * p);
+	for (m = 0; m < 32; m++)
+		pr_debug("[5]0x%x %x %x %x\n", *((int *)temp_buffer_xl_rd + m * 4),
+			*((int *)temp_buffer_xl_rd + 1 + m * 4),
+			*((int *)temp_buffer_xl_rd + 2 + m * 4),
+			*((int *)temp_buffer_xl_rd + 3 + m * 4));
+#endif
+
+#if 0
+			pr_debug("*****Normal mode test %d***********\n", p);
+
+	gn_devinfo.tlcControl.slcopmodeEn = FALSE;
+	for (j = 0x400; j < 0x410; j++) {
+		/* memset(local_buffer, 0x00, 16384); */
+		/* mtk_nand_read_page(mtd, nand_chip, local_buffer, j*p); */
+		/* for(m = 0; m < 32; m++) */
+		/* MSG(INIT,"[1]0x%x %x %x %x\n",
+				*((int *)local_buffer+m*4), *((int *)local_buffer+1+m*4),
+				*((int *)local_buffer+2+m*4), *((int *)local_buffer+3+m*4)); */
+		mtk_nand_erase(mtd, j * p);
+		memset(temp_buffer_xl_rd, 0x00, 16384);
+		if (mtk_nand_read_page(mtd, nand_chip, temp_buffer_xl_rd, j * p))
+			pr_debug("Read page 0x%x fail!\n", j * p);
+		pr_debug("[2]0x%x %x %x %x\n", *(int *)temp_buffer_xl_rd,
+			*((int *)temp_buffer_xl_rd + 1), *((int *)temp_buffer_xl_rd + 2),
+			*((int *)temp_buffer_xl_rd + 3));
+		if (mtk_nand_block_bad(mtd, j * g_block_size, 0)) {
+			pr_debug("Bad block at %x\n", j);
+			continue;
+		}
+		for (k = 0; k < p; k++) {
+			pr_debug("***************w b***********************\n");
+
+			for (m = 0; m < 32; m++)
+				pr_debug("[1]0x%x %x %x %x\n", *((int *)temp_buffer_xl + m * 4),
+					*((int *)temp_buffer_xl + 1 + m * 4),
+					*((int *)temp_buffer_xl + 2 + m * 4),
+					*((int *)temp_buffer_xl + 3 + m * 4));
+
+			if (mtk_nand_write_page(mtd, nand_chip, 0, 0, temp_buffer_xl /*(u8 *)patternbuff */ , 0,
+				 j * p + k, 0, 0))
+				pr_debug("Write page 0x%x fail!\n", j * p + k);
+			/* #if 1 */
+			/* } */
+			/* TOTAL=1000; */
+			/* do{ */
+			/* for (k = 0; k < p; k++) */
+			/* { */
+			/* #endif */
+			pr_debug("***************r b***********************\n");
+			memset(temp_buffer_xl_rd, 0x00, g_page_size);
+			if (mtk_nand_read_page(mtd, nand_chip, temp_buffer_xl_rd, j * p + k))
+				pr_debug("Read page 0x%x fail!\n", j * p + k);
+			for (m = 0; m < 32; m++)
+				pr_debug("[3]0x%x %x %x %x\n", *((int *)temp_buffer_xl_rd + m * 4),
+					*((int *)temp_buffer_xl_rd + 1 + m * 4),
+					*((int *)temp_buffer_xl_rd + 2 + m * 4),
+					*((int *)temp_buffer_xl_rd + 3 + m * 4));
+			if (memcmp(temp_buffer_xl /*(u8 *)patternbuff */ , temp_buffer_xl_rd,
+				   512 /*g_page_size */)) {
+				pr_debug("[KERNEL_NAND_UNIT_TEST] compare fail!\n");
+				err = -1;
+				while (1)
+					;
+			} else {
+				TOTAL--;
+				pr_debug("[KERNEL_NAND_UNIT_TEST] compare OK!\n");
+			}
+		}
+		/* }while(TOTAL); */
+#if 0
+		mtk_nand_SetFeature(mtd, (u16) feature_set->sfeatureCmd,
+					feature_set->Async_timing.address, (u8 *) &val,
+					sizeof(feature_set->Async_timing.feature));
+		mtk_nand_GetFeature(mtd, feature_set->gfeatureCmd,
+					feature_set->Async_timing.address, (u8 *) &val, 4);
+		pr_debug("[ASYNC Interface]0x%X\n", val);
+		err = mtk_nand_interface_config(mtd);
+		MSG(INIT, "[nand_interface_config] %d\n", err);
+#endif
+	}
+		p = (p>>1);
+#endif
+
+				pr_err("*****SLC mode test %d***********\n", p);
+				force_slc_flag = 1;
+
+	for (j = 0x80; j < 0x100; j++) {
+		/* memset(local_buffer, 0x00, 16384); */
+		/* mtk_nand_read_page(mtd, nand_chip, local_buffer, j*p); */
+		/* for(m = 0; m < 32; m++) */
+		/* MSG(INIT,"[1]0x%x %x %x %x\n",
+				*((int *)local_buffer+m*4), *((int *)local_buffer+1+m*4),
+				*((int *)local_buffer+2+m*4), *((int *)local_buffer+3+m*4)); */
+		mtk_nand_erase(mtd, j * p);
+		memset(temp_buffer_xl_rd, 0x00, 16384);
+		/*pr_debug("[2]0x%x %x %x %x\n", *(int *)temp_buffer_xl_rd,
+			*((int *)temp_buffer_xl_rd + 1), *((int *)temp_buffer_xl_rd + 2),
+			*((int *)temp_buffer_xl_rd + 3));
+		if (mtk_nand_block_bad(mtd, j * g_block_size, 0)) {
+			pr_debug("Bad block at %x\n", j);
+			continue;
+		}*/
+		for (k = 0; k < p; k += 2) {
+			pr_err("***************w b***********************\n");
+
+			/*for (m = 0; m < 32; m++)
+				pr_err("[1]0x%x %x %x %x\n", *((int *)temp_buffer_xl + m * 4),
+					*((int *)temp_buffer_xl + 1 + m * 4),
+					*((int *)temp_buffer_xl + 2 + m * 4),
+					*((int *)temp_buffer_xl + 3 + m * 4)); */
+
+			if (mtk_nand_write_page(mtd, nand_chip, 0, 0, temp_buffer_xl /*(u8 *)patternbuff */ , 0,
+				 j * p + k, 0, 0))
+				pr_err("Write page 0x%x fail!\n", j * p + k);
+
+			pr_err("***************r b***********************\n");
+			memset(temp_buffer_xl_rd, 0x00, g_page_size);
+			if (mtk_nand_read_page(mtd, nand_chip, temp_buffer_xl_rd, j * p + k))
+				pr_err("Read page 0x%x fail!\n", j * p + k);
+			/*for (m = 0; m < 32; m++)
+				pr_err("[3]0x%x %x %x %x\n", *((int *)temp_buffer_xl_rd + m * 4),
+					*((int *)temp_buffer_xl_rd + 1 + m * 4),
+					*((int *)temp_buffer_xl_rd + 2 + m * 4),
+					*((int *)temp_buffer_xl_rd + 3 + m * 4));*/
+			if (memcmp(temp_buffer_xl /*(u8 *)patternbuff */ , temp_buffer_xl_rd,
+				   512 /*g_page_size */)) {
+				pr_err("[KERNEL_NAND_UNIT_TEST] compare fail!\n");
+				err = -1;
+				break;
+			}
+			TOTAL--;
+			pr_err("[KERNEL_NAND_UNIT_TEST] compare OK!\n");
+		}
+
+			pr_err("**********Read back check**************\n");
+
+		for (k = 0; k < p; k += 2) {
+			if (mtk_nand_read_page(mtd, nand_chip, temp_buffer_xl_rd, j * p + k))
+				pr_err("Read page 0x%x fail!\n", j * p + k);
+
+			if (memcmp(temp_buffer_xl /*(u8 *)patternbuff */ , temp_buffer_xl_rd,
+				   512 /*g_page_size */)) {
+				pr_err("[KERNEL_NAND_UNIT_TEST] compare fail!\n");
+				err = -1;
+				break;
+			}
+			TOTAL--;
+			pr_err("[KERNEL_NAND_UNIT_TEST] compare OK!\n");
+		}
+		/* }while(TOTAL); */
+
+	}
+
+					pr_err("*****Unit test END***********\n");
+
+	return err;
+}
+#endif
+
 static int mtk_nand_probe(struct platform_device *pdev)
 {
 
@@ -7435,7 +8039,6 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	clkmux_sel(MT_CLKMUX_NFI1X_INFRA_SEL, MT_CG_SYS_26M, "NFI");
 #endif
 
-
 	mtk_nfi_node = of_find_compatible_node(NULL, NULL, "mediatek,NFI");
 	mtk_nfi_base = of_iomap(mtk_nfi_node, 0);
 
@@ -7451,11 +8054,18 @@ static int mtk_nand_probe(struct platform_device *pdev)
 		mtk_io_base = of_iomap(mtk_io_node, 0);
 		MSG(INIT, "of_iomap for io base @ 0x%p\n", mtk_io_base);
 	}
-
+	mtk_pm_node = of_find_compatible_node(NULL, NULL,
+		"mediatek,mt_pmic_regulator_supply");
+	if (nfi_reg_vemc_3v3 == NULL)
+		nfi_reg_vemc_3v3 = regulator_get(&(pdev->dev), "vemc3v3");
 	nfi_irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
 
 	hw = &mtk_nand_hw;
 	BUG_ON(!hw);
+	regulator_set_voltage(nfi_reg_vemc_3v3, 3300000, 3300000);
+	err = regulator_enable(nfi_reg_vemc_3v3);
+	if (err)
+		pr_err("nfi ldo enable fail!!\n");
 
 	/* Allocate memory for the device structure (and zero it) */
 	host = kzalloc(sizeof(struct mtk_nand_host), GFP_KERNEL);
@@ -7639,8 +8249,6 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	} else
 		pr_debug("[NAND] set dma mask ok\n");
 
-	mt_irq_set_sens(MT_NFI_IRQ_ID, MT_LEVEL_SENSITIVE);
-	mt_irq_set_polarity(MT_NFI_IRQ_ID, MT_POLARITY_LOW);
 	err = request_irq(MT_NFI_IRQ_ID, mtk_nand_irq_handler, IRQF_TRIGGER_NONE, "mtk-nand", NULL);
 
 	if (0 != err) {
@@ -7672,11 +8280,8 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	PAGES_PER_BLOCK = (u32)(g_block_size / g_page_size);
 
 	temp = nand_chip->chipsize;
-	MSG(INIT, "[NAND]temp :%llx\n", temp);
 	do_div(temp, ((gn_devinfo.blocksize * 1024) & 0xFFFFFFFF));
-	MSG(INIT, "[NAND]temp1 :%llx\n", temp);
 	bmt_sz = (int)(((u32) temp) / 100 * 6);
-	MSG(INIT, "[NAND]temp :%x\n", bmt_sz);
 	platform_set_drvdata(pdev, host);
 
 	if (hw->nfi_bus_width == 16)
@@ -7702,7 +8307,7 @@ static int mtk_nand_probe(struct platform_device *pdev)
 
 	nand_chip->chipsize -= (PMT_POOL_SIZE) * (gn_devinfo.blocksize * 1024);
 	mtd->size = nand_chip->chipsize;
-#if defined(KERNEL_NAND_UNIT_TEST)
+#if KERNEL_NAND_UNIT_TEST
 	err = mtk_nand_unit_test(nand_chip, mtd);
 	if (err == 0)
 		pr_warn("Thanks to GOD, UNIT Test OK!\n");
@@ -7754,7 +8359,6 @@ static int mtk_nand_probe(struct platform_device *pdev)
 	g_snand_pm_cnt = 0;
 	g_snand_pm_wrapped = 0;
 #endif
-
 	/* Successfully!! */
 	if (!err) {
 		MSG(INIT, "[mtk_nand] probe successfully!\n");
@@ -7813,6 +8417,7 @@ static int mtk_nand_suspend(struct platform_device *pdev, pm_message_t state)
 		host->saved_para.suspend_flag = 1;
 		mtk_nand_interface_async();
 		nand_disable_clock();
+		regulator_disable(nfi_reg_vemc_3v3);
 	} else
 		MSG(POWERCTL, "[NFI] Suspend twice !\n");
 
@@ -7841,10 +8446,15 @@ static int mtk_nand_suspend(struct platform_device *pdev, pm_message_t state)
 static int mtk_nand_resume(struct platform_device *pdev)
 {
 	struct mtk_nand_host *host = platform_get_drvdata(pdev);
+	int ret = 0;
 
 #ifdef CONFIG_PM
 
 	if (host->saved_para.suspend_flag == 1) {
+			regulator_set_voltage(nfi_reg_vemc_3v3, 3300000, 3300000);
+			ret = regulator_enable(nfi_reg_vemc_3v3);
+			if (ret)
+				pr_err("nfi ldo enable fail!!\n");
 			nand_enable_clock();
 		/* restore NFI register */
 			DRV_WriteReg16(NFI_CNFG_REG16 , host->saved_para.sNFI_CNFG_REG16);
@@ -8365,7 +8975,7 @@ static int __init mtk_nand_init(void)
 {
 	struct proc_dir_entry *entry;
 
-	g_i4Interrupt = 0;
+	g_i4Interrupt = 1;
 
 #if defined(NAND_OTP_SUPPORT)
 	int err = 0;
@@ -8417,6 +9027,338 @@ static int __init mtk_nand_init(void)
  *None
  *
  ******************************************************************************/
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+int mtk_nand_cache_read_page(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageSize, u8 *pPageBuf,
+				u8 *pFDMBuf, u32 readSize)
+{
+	u8 *buf;
+	int bRet = ERR_RTN_SUCCESS;
+	struct nand_chip *nand = mtd->priv;
+	u32 u4SecNum = u4PageSize >> host->hw->nand_sec_shift;
+	u32 backup_corrected, backup_failed;
+	bool readReady;
+	int retryCount = 0;
+	u32 tempBitMap, bitMap;
+#ifdef NAND_PFM
+	struct timeval pfm_time_read;
+#endif
+	struct NFI_TLC_WL_INFO  tlc_wl_info;
+	struct NFI_TLC_WL_INFO  pre_tlc_wl_info;
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+	bool tlc_left_plane = TRUE;
+	unsigned int phys = 0;
+#endif
+	u32 reg_val = 0;
+	u32 real_row_addr = 0;
+	u32 logical_plane_num = 1;
+	u32 data_sector_num = 0;
+	u8	*temp_byte_ptr = NULL;
+	u8	*spare_ptr = NULL;
+	u32 readCount;
+	u32 rSize = readSize;
+	u32 remainSize;
+	u8 *dataBuf = pPageBuf;
+	u32 read_count;
+
+	PFM_BEGIN(pfm_time_read);
+	tempBitMap = 0;
+
+	buf = local_buffer_16_align;
+	backup_corrected = mtd->ecc_stats.corrected;
+	backup_failed = mtd->ecc_stats.failed;
+	bitMap = 0;
+	data_sector_num = u4SecNum;
+	mtk_nand_interface_switch(mtd);
+	logical_plane_num = 1;
+	readCount = 0;
+	temp_byte_ptr = buf;
+	spare_ptr = pFDMBuf;
+	tlc_wl_info.wl_pre = WL_LOW_PAGE; /* init for build warning*/
+	tlc_wl_info.word_line_idx = u4RowAddr;
+	if (likely(gn_devinfo.tlcControl.normaltlc)) {
+		NFI_TLC_GetMappedWL(u4RowAddr, &tlc_wl_info);
+		real_row_addr = NFI_TLC_GetRowAddr(tlc_wl_info.word_line_idx);
+		if (unlikely(gn_devinfo.tlcControl.pPlaneEn)) {
+			tlc_left_plane = TRUE;
+			logical_plane_num = 2;
+			data_sector_num /= 2;
+			real_row_addr = NFI_TLC_SetpPlaneAddr(real_row_addr, tlc_left_plane);
+		}
+				/* MSG(INIT, "mtk_nand_exec_read_page, u4RowAddr: 0x%x real_row_addr 0x%x %d\n",
+					u4RowAddr, real_row_addr, gn_devinfo.tlcControl.slcopmodeEn); */
+	} else
+		real_row_addr = NFI_TLC_GetRowAddr(u4RowAddr);
+	pre_tlc_wl_info.wl_pre = tlc_wl_info.wl_pre;
+	pre_tlc_wl_info.word_line_idx = tlc_wl_info.word_line_idx;
+	read_count = 0;
+
+	do {
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+		if (gn_devinfo.tlcControl.slcopmodeEn) {
+			if (0xFF != gn_devinfo.tlcControl.en_slc_mode_cmd) {
+				reg_val = DRV_Reg16(NFI_CNFG_REG16);
+				reg_val &= ~CNFG_READ_EN;
+				reg_val &= ~CNFG_OP_MODE_MASK;
+				reg_val |= CNFG_OP_CUST;
+				DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+
+				mtk_nand_set_command(gn_devinfo.tlcControl.en_slc_mode_cmd);
+
+				reg_val = DRV_Reg32(NFI_CON_REG16);
+				reg_val |= CON_FIFO_FLUSH|CON_NFI_RST;
+				/* issue reset operation */
+				DRV_WriteReg32(NFI_CON_REG16, reg_val);
+			}
+		} else {
+			if (gn_devinfo.tlcControl.normaltlc) {
+				reg_val = DRV_Reg16(NFI_CNFG_REG16);
+				reg_val &= ~CNFG_READ_EN;
+				reg_val &= ~CNFG_OP_MODE_MASK;
+				reg_val |= CNFG_OP_CUST;
+				DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+				if (tlc_wl_info.wl_pre == WL_LOW_PAGE)
+					mtk_nand_set_command(LOW_PG_SELECT_CMD);
+				else if (tlc_wl_info.wl_pre == WL_MID_PAGE)
+					mtk_nand_set_command(MID_PG_SELECT_CMD);
+				else if (tlc_wl_info.wl_pre == WL_HIGH_PAGE)
+					mtk_nand_set_command(HIGH_PG_SELECT_CMD);
+
+				reg_val = DRV_Reg32(NFI_CON_REG16);
+				reg_val |= CON_FIFO_FLUSH|CON_NFI_RST;
+				/* issue reset operation */
+				DRV_WriteReg32(NFI_CON_REG16, reg_val);
+			}
+		}
+		reg_val = 0;
+#endif
+	if (gn_devinfo.tlcControl.slcopmodeEn)
+		mtk_nand_turn_on_randomizer(mtd, nand, pre_tlc_wl_info.word_line_idx);
+	else
+		mtk_nand_turn_on_randomizer(mtd, nand,
+		(pre_tlc_wl_info.word_line_idx*3+pre_tlc_wl_info.wl_pre));
+	if (unlikely(read_count == 0)) {
+		readReady = mtk_nand_ready_for_read(nand, real_row_addr, 0, data_sector_num, true, buf, NORMAL_READ);
+		read_count++;
+#if 1
+		pre_tlc_wl_info.wl_pre = tlc_wl_info.wl_pre;
+		pre_tlc_wl_info.word_line_idx = tlc_wl_info.word_line_idx;
+		if (gn_devinfo.tlcControl.slcopmodeEn) {
+			tlc_wl_info.word_line_idx++;
+			real_row_addr++;
+		} else {
+			if (tlc_wl_info.wl_pre == WL_HIGH_PAGE) {
+				tlc_wl_info.wl_pre = WL_LOW_PAGE;
+				tlc_wl_info.word_line_idx++;
+				real_row_addr++;
+			} else
+				tlc_wl_info.wl_pre++;
+		}
+		mtk_nand_reset();
+		continue;
+#endif
+
+	} else if (unlikely(rSize <= u4PageSize)) {
+		readReady = mtk_nand_ready_for_read(nand, real_row_addr, 0, data_sector_num, true, buf, AD_CACHE_FINAL);
+	} else {
+		readReady = mtk_nand_ready_for_read(nand, real_row_addr, 0, data_sector_num, true, buf, AD_CACHE_READ);
+	}
+	if (likely(readReady)) {
+		while (logical_plane_num) {
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+			if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
+				if (gn_devinfo.tlcControl.needchangecolumn) {
+					if (gn_devinfo.tlcControl.pPlaneEn)
+						real_row_addr = NFI_TLC_SetpPlaneAddr(real_row_addr, tlc_left_plane);
+
+					reg_val = DRV_Reg32(NFI_CON_REG16);
+					reg_val |= CON_FIFO_FLUSH|CON_NFI_RST;
+					/* issue reset operation */
+					DRV_WriteReg32(NFI_CON_REG16, reg_val);
+					reg_val = DRV_Reg16(NFI_CNFG_REG16);
+					reg_val &= ~CNFG_READ_EN;
+					reg_val &= ~CNFG_OP_MODE_MASK;
+					reg_val |= CNFG_OP_CUST;
+					DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+
+					mtk_nand_set_command(CHANGE_COLUNM_ADDR_1ST_CMD);
+					mtk_nand_set_address(0, real_row_addr, 2, gn_devinfo.addr_cycle - 2);
+					mtk_nand_set_command(CHANGE_COLUNM_ADDR_2ND_CMD);
+
+					reg_val = DRV_Reg16(NFI_CNFG_REG16);
+					reg_val |= CNFG_READ_EN;
+					reg_val &= ~CNFG_OP_MODE_MASK;
+					reg_val |= CNFG_OP_READ;
+					DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+				}
+			}
+
+			mtk_dir = DMA_FROM_DEVICE;
+			sg_init_one(&mtk_sg, temp_byte_ptr, (data_sector_num * (1 << host->hw->nand_sec_shift)));
+			dma_map_sg(mtk_dev, &mtk_sg, 1, mtk_dir);
+			phys = mtk_sg.dma_address;
+#if __INTERNAL_USE_AHB_MODE__
+			if (!phys)
+				pr_warn("[%s]convert virt addr (%lx) to phys add (%x)fail!!!",
+					__func__, (unsigned long) temp_byte_ptr, phys);
+			else
+				DRV_WriteReg32(NFI_STRADDR_REG32, phys);
+#endif
+
+			DRV_WriteReg32(NFI_CON_REG16, data_sector_num << CON_NFI_SEC_SHIFT);
+
+			if (g_bHwEcc)
+				ECC_Decode_Start();
+#endif
+			if (!mtk_nand_read_page_data(mtd, temp_byte_ptr,
+				data_sector_num * (1 << host->hw->nand_sec_shift))) {
+				MSG(INIT, "mtk_nand_read_page_data fail\n");
+				bRet = ERR_RTN_FAIL;
+			}
+			dma_unmap_sg(mtk_dev, &mtk_sg, 1, mtk_dir);
+			if (!mtk_nand_status_ready(STA_NAND_BUSY)) {
+				MSG(INIT, "mtk_nand_status_ready fail\n");
+				bRet = ERR_RTN_FAIL;
+			}
+			if (g_bHwEcc) {
+				if (!mtk_nand_check_dececc_done(data_sector_num)) {
+					MSG(INIT, "mtk_nand_check_dececc_done fail\n");
+					bRet = ERR_RTN_FAIL;
+				}
+			}
+			/* mtk_nand_read_fdm_data(spare_ptr, data_sector_num); no need*/
+			if (g_bHwEcc) {
+				if (!mtk_nand_check_bch_error
+					(mtd, temp_byte_ptr, spare_ptr, data_sector_num - 1, u4RowAddr, &tempBitMap)) {
+
+					MSG(INIT, "mtk_nand_check_bch_error fail, retryCount: %d\n",
+						retryCount);
+				bRet = ERR_RTN_BCH_FAIL;
+			}
+		}
+		mtk_nand_stop_read();
+
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+			if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
+				if (gn_devinfo.tlcControl.needchangecolumn)
+					DRV_WriteReg16(NFI_TLC_RD_WHR2_REG16, 0x055);
+
+				if (2 == logical_plane_num) {
+					tlc_left_plane = FALSE;
+					spare_ptr += (host->hw->nand_fdm_size * data_sector_num);
+					temp_byte_ptr += (data_sector_num * (1 << host->hw->nand_sec_shift));
+				}
+			}
+#endif
+			logical_plane_num--;
+
+			if (bRet == ERR_RTN_BCH_FAIL)
+				break;
+		}
+	}
+#ifndef CONFIG_MTK_TLC_NAND_SUPPORT
+	else
+		dma_unmap_sg(mtk_dev, &mtk_sg, 1, mtk_dir);
+#endif
+
+		mtk_nand_turn_off_randomizer();
+
+#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+		if ((gn_devinfo.tlcControl.slcopmodeEn)
+			&& (0xFF != gn_devinfo.tlcControl.dis_slc_mode_cmd)) {
+			reg_val = DRV_Reg32(NFI_CON_REG16);
+			reg_val |= CON_FIFO_FLUSH|CON_NFI_RST;
+			/* issue reset operation */
+			DRV_WriteReg32(NFI_CON_REG16, reg_val);
+
+			reg_val = DRV_Reg16(NFI_CNFG_REG16);
+			reg_val &= ~CNFG_READ_EN;
+			reg_val &= ~CNFG_OP_MODE_MASK;
+			reg_val |= CNFG_OP_CUST;
+			DRV_WriteReg16(NFI_CNFG_REG16, reg_val);
+
+			mtk_nand_set_command(gn_devinfo.tlcControl.dis_slc_mode_cmd);
+		}
+#endif
+		if (bRet == ERR_RTN_BCH_FAIL)
+			break;
+
+		remainSize = min(rSize, u4PageSize);
+		memcpy(dataBuf, buf, remainSize);
+		readCount++;
+		dataBuf += remainSize;
+		rSize -= remainSize;
+		/* reset row_addr */
+		pre_tlc_wl_info.wl_pre = tlc_wl_info.wl_pre;
+		pre_tlc_wl_info.word_line_idx = tlc_wl_info.word_line_idx;
+		logical_plane_num = 1;
+		if (gn_devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
+			if (gn_devinfo.tlcControl.normaltlc) {
+				if (gn_devinfo.tlcControl.pPlaneEn) {
+					tlc_left_plane = TRUE;
+					logical_plane_num = 2;
+					data_sector_num /= 2;
+					real_row_addr = NFI_TLC_SetpPlaneAddr(real_row_addr, tlc_left_plane);
+				}
+			}
+		}
+		if (gn_devinfo.tlcControl.pPlaneEn)
+			real_row_addr = NFI_TLC_SetpPlaneAddr(real_row_addr, TRUE);
+
+		if (gn_devinfo.tlcControl.slcopmodeEn) {
+			tlc_wl_info.word_line_idx++;
+			real_row_addr++;
+		} else {
+			if (tlc_wl_info.wl_pre == WL_HIGH_PAGE) {
+				tlc_wl_info.wl_pre = WL_LOW_PAGE;
+				tlc_wl_info.word_line_idx++;
+				real_row_addr++;
+			} else
+				tlc_wl_info.wl_pre++;
+		}
+	} while (rSize);
+
+	PFM_END_R(pfm_time_read, u4PageSize + 32);
+
+	return bRet;
+}
+
+int mtk_nand_read(struct mtd_info *mtd, struct nand_chip *chip, u8 *buf, int page, u32 size)
+{
+	int page_per_block = gn_devinfo.blocksize * 1024 / gn_devinfo.pagesize;
+	u32 block;
+	u32 page_in_block;
+	u32 mapped_block;
+	int bRet = ERR_RTN_SUCCESS;
+#ifdef DUMP_PEF
+	struct timeval stimer, etimer;
+
+	do_gettimeofday(&stimer);
+#endif
+	page_in_block = mtk_nand_page_transform(mtd, chip, page, &block, &mapped_block);
+
+	bRet =
+		mtk_nand_cache_read_page(mtd, page_in_block + mapped_block * page_per_block,
+					mtd->writesize, buf, chip->oob_poi, size);
+	if (bRet == ERR_RTN_SUCCESS) {
+#ifdef DUMP_PEF
+		do_gettimeofday(&etimer);
+		g_NandPerfLog.ReadPageTotalTime += Cal_timediff(&etimer, &stimer);
+		g_NandPerfLog.ReadPageCount++;
+		dump_nand_rwcount();
+#endif
+#ifdef CFG_SNAND_ACCESS_PATTERN_LOGGER
+		if (g_snand_pm_on == 1)
+			mtk_snand_pm_add_drv_record(_SNAND_PM_OP_READ_PAGE,
+							page_in_block + mapped_block * page_per_block,
+							0, Cal_timediff(&etimer, &stimer));
+#endif
+		return 0;
+	}
+
+	return -EIO;
+}
+#endif
+
 static void __exit mtk_nand_exit(void)
 {
 	MSG(INIT, "MediaTek Nand driver exit, version %s\n", VERSION);

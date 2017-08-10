@@ -304,13 +304,13 @@ static int part_block_isbad(struct mtd_info *mtd, loff_t ofs)
 	return part->master->_block_isbad(part->master, ofs);
 }
 
-static int part_block_markbad(struct mtd_info *mtd, loff_t ofs)
+static int part_block_markbad(struct mtd_info *mtd, loff_t ofs, const uint8_t *buf)
 {
 	struct mtd_part *part = PART(mtd);
 	int res;
 
 	ofs += part->offset;
-	res = part->master->_block_markbad(part->master, ofs);
+	res = part->master->_block_markbad(part->master, ofs, buf);
 	if (!res)
 		mtd->ecc_stats.badblocks++;
 	return res;
@@ -535,6 +535,8 @@ static struct mtd_part *allocate_partition(struct mtd_info *master,
 	slave->mtd.ecc_strength = master->ecc_strength;
 	slave->mtd.bitflip_threshold = master->bitflip_threshold;
 
+#ifndef CONFIG_MTK_MTD_NAND
+	/* since bad block is hidden in driver, no need to check bad block */
 	if (master->_block_isbad) {
 		uint64_t offs = 0;
 
@@ -546,6 +548,7 @@ static struct mtd_part *allocate_partition(struct mtd_info *master,
 			offs += slave->mtd.erasesize;
 		}
 	}
+#endif
 
 out_register:
 	return slave;

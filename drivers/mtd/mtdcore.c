@@ -1068,9 +1068,22 @@ int mtd_block_markbad(struct mtd_info *mtd, loff_t ofs)
 		return -EINVAL;
 	if (!(mtd->flags & MTD_WRITEABLE))
 		return -EROFS;
-	return mtd->_block_markbad(mtd, ofs);
+	return mtd->_block_markbad(mtd, ofs, NULL);
 }
 EXPORT_SYMBOL_GPL(mtd_block_markbad);
+
+int mtd_block_markbad_hw(struct mtd_info *mtd, loff_t ofs, const uint8_t *buf)
+{
+	if (!mtd->_block_markbad)
+		return -EOPNOTSUPP;
+	if (ofs < 0 || ofs >= mtd->size)
+		return -EINVAL;
+	if (!(mtd->flags & MTD_WRITEABLE))
+		return -EROFS;
+	return mtd->_block_markbad(mtd, ofs, buf);
+}
+EXPORT_SYMBOL_GPL(mtd_block_markbad_hw);
+
 
 /*
  * default_mtd_writev - the default writev method
@@ -1228,6 +1241,7 @@ static int __init mtd_bdi_init(struct backing_dev_info *bdi, const char *name)
 }
 
 static struct proc_dir_entry *proc_mtd;
+static struct proc_dir_entry *entry;
 
 /* tonykuo 2013-11-05 */
 static const struct file_operations mtd_write_proc_fops = {
@@ -1239,10 +1253,6 @@ static const struct file_operations mtd_change_proc_fops = {
 	.owner = THIS_MODULE,
 	.write = mtd_change_proc_write,
 };
-
-#ifdef DYNAMIC_CHANGE_MTD_WRITEABLE	/* tonykuo 2013-11-05 */
-static struct proc_dir_entry *entry;
-#endif
 
 static int __init init_mtd(void)
 {
