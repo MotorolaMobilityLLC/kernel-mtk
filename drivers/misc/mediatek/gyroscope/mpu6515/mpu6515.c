@@ -1851,8 +1851,10 @@ static int mpu6515_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	atomic_set(&obj->suspend, 0);
 
 #ifdef MPU6515_ACCESS_BY_GSE_I2C
-	if (-1 == gsensor_init_flag)
+	if (-1 == gsensor_init_flag) {
+		err = -ENODEV;	/* ALPS03252864 prevent I2C probe ok to access kfree obj */
 		goto exit_init_failed;
+	}
 #endif
 
 	mpu6515_i2c_client = new_client;
