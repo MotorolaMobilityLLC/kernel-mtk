@@ -755,7 +755,7 @@ int msdc_reinit(struct msdc_host *host)
 	int ret = -1;
 
 	if (!host) {
-		ERR_MSG("msdc_host is NULL");
+		pr_err("msdc_host is NULL\n");
 		return -1;
 	}
 	mmc = host->mmc;
@@ -763,7 +763,6 @@ int msdc_reinit(struct msdc_host *host)
 		ERR_MSG("mmc is NULL");
 		return -1;
 	}
-
 	card = mmc->card;
 	if (card == NULL)
 		ERR_MSG("mmc->card is NULL");

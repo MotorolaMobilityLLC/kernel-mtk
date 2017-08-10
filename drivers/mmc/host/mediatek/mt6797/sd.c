@@ -762,7 +762,8 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 		if (msdc_clk_enable(host)) {
 			pr_err("retry msdc%d clock on once\n", host->id);
 			msdc_clk_disable(host);
-			msdc_clk_enable(host);
+			if (msdc_clk_enable(host))
+				pr_err("%s msdc_clk_enable error\n", __func__);
 		}
 		#endif
 

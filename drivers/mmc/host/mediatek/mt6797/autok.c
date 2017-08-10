@@ -1300,7 +1300,6 @@ autok_pad_dly_sel_single_edge(struct AUTOK_SCAN_RES *pInfo, unsigned int cycle_c
 					uDlySel = 31;
 					uMgLost = uDlySel - 31;
 				} else {
-					uDlySel = uDlySel;
 					uMgLost = 0;
 				}
 			}
