@@ -18,7 +18,7 @@
 #include <linux/kernel.h>
 #include <linux/device.h>
 #include <linux/slab.h>
-#include <linux/spinlock.h>
+#include <linux/mutex.h>
 #include <linux/printk.h>
 #include <linux/debugfs.h>
 #include <linux/uaccess.h>
@@ -33,13 +33,19 @@ static enum dcs_status sys_dcs_status;
 static int dcs_initialized;
 static int normal_channel_num;
 static int lowpower_channel_num;
-static DEFINE_SPINLOCK(dcs_lock);
+static DEFINE_MUTEX(dcs_mutex);
 
 /* dummy IPI APIs */
 enum dcs_status dummy_ipi_read_dcs_status(void)
 {
 	return DCS_NORMAL;
 }
+
+static char * const dcs_status_name[DCS_NR_STATUS] = {
+	"normal",
+	"low power",
+	"busy",
+};
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include "sspm_ipi.h"
@@ -140,7 +146,7 @@ static int dcs_dump_reg_ipi(void) { return 0; }
  */
 int dcs_dram_channel_switch(enum dcs_status status)
 {
-	if (!spin_trylock(&dcs_lock))
+	if (!mutex_trylock(&dcs_mutex))
 		return -EBUSY;
 
 	if ((sys_dcs_status < DCS_BUSY) &&
@@ -148,20 +154,20 @@ int dcs_dram_channel_switch(enum dcs_status status)
 		(sys_dcs_status != status)) {
 		dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
 		sys_dcs_status = DCS_BUSY;
-		spin_unlock(&dcs_lock);
+		mutex_unlock(&dcs_mutex);
 	} else {
 		pr_info("sys_dcs_status not changed\n");
-		spin_unlock(&dcs_lock);
+		mutex_unlock(&dcs_mutex);
 		return 0;
 	}
 	/*
 	 * assume we success doing channel switch, the sys_dcs_status
 	 * should be updated in the ISR
 	 */
-	spin_lock(&dcs_lock);
+	mutex_lock(&dcs_mutex);
 	sys_dcs_status = status;
-	pr_info("sys_dcs_status=%d\n", sys_dcs_status);
-	spin_unlock(&dcs_lock);
+	pr_info("sys_dcs_status=%s\n", dcs_status_name[sys_dcs_status]);
+	mutex_unlock(&dcs_mutex);
 	return 0;
 }
 
@@ -174,7 +180,7 @@ int dcs_dram_channel_switch(enum dcs_status status)
  */
 int dcs_get_channel_num_trylock(int *num)
 {
-	if (!spin_trylock(&dcs_lock))
+	if (!mutex_trylock(&dcs_mutex))
 		goto BUSY;
 
 	switch (sys_dcs_status) {
@@ -185,7 +191,7 @@ int dcs_get_channel_num_trylock(int *num)
 		*num = lowpower_channel_num;
 		break;
 	default:
-		spin_unlock(&dcs_lock);
+		mutex_unlock(&dcs_mutex);
 		goto BUSY;
 	}
 	return 0;
@@ -200,7 +206,7 @@ BUSY:
  */
 void dcs_get_channel_num_unlock(void)
 {
-	spin_unlock(&dcs_lock);
+	mutex_unlock(&dcs_mutex);
 }
 
 /*
