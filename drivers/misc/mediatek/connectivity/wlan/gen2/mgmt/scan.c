@@ -3105,6 +3105,8 @@ try_again:
 	LINK_FOR_EACH_ENTRY(prBssDesc, prEssLink, rLinkEntryEss, BSS_DESC_T) {
 		if (prConnSettings->eConnectionPolicy == CONNECT_BY_BSSID &&
 			EQUAL_MAC_ADDR(prBssDesc->aucBSSID, prConnSettings->aucBSSID)) {
+			if (!rsnPerformPolicySelection(prAdapter, prBssDesc))
+				DBGLOG(SCN, WARN, "CONNECT_BY_BSSID rsnPerformPolicySelection fail\n");
 			prCandBssDesc = prBssDesc;
 			break;
 		}
