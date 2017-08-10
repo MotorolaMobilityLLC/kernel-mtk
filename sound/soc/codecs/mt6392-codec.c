@@ -28,6 +28,58 @@ static const unsigned int int_spk_amp_gain_tlv[] = {
 	2, 15, TLV_DB_SCALE_ITEM(400, 100, 0),
 };
 
+/* Audio_Speaker_PGA_gain
+ * {mute, 0, 4, 5, 6, 7, 8, ..., 17} dB
+ */
+static const char *const int_spk_amp_gain_text[] = {
+	"MUTE", "+0dB", "+4dB", "+5dB",
+	"+6dB", "+7dB", "+8dB", "+9dB",
+	"+10dB", "+11dB", "+12dB", "+13dB",
+	"+14dB", "+15dB", "+16dB", "+17dB",
+};
+
+static const struct soc_enum int_spk_amp_gain_enum =
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(int_spk_amp_gain_text),
+		int_spk_amp_gain_text);
+
+static int int_spk_amp_gain_get(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt6392_codec_priv *codec_data =
+		snd_soc_component_get_drvdata(component);
+	uint32_t value = 0;
+
+	value = codec_data->spk_amp_gain;
+
+	ucontrol->value.integer.value[0] = value;
+
+	return 0;
+}
+
+static int int_spk_amp_gain_put(struct snd_kcontrol *kcontrol,
+	struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *component = snd_kcontrol_chip(kcontrol);
+	struct mt6392_codec_priv *codec_data =
+		snd_soc_component_get_drvdata(component);
+	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
+	uint32_t value = ucontrol->value.integer.value[0];
+
+	if (value >= e->items)
+		return -EINVAL;
+
+	snd_soc_update_bits(codec_data->codec, SPK_CON9,
+		GENMASK(11, 8), value << 8);
+
+	codec_data->spk_amp_gain = value;
+
+	dev_dbg(codec_data->codec->dev, "%s value = %u\n",
+		__func__, value);
+
+	return 0;
+}
+
 /* Internal speaker mode (AB/D) */
 static const char * const int_spk_amp_mode_texts[] = {
 	"Class D",
@@ -103,6 +155,11 @@ static const struct snd_kcontrol_new mt6392_codec_controls[] = {
 	SOC_SINGLE_TLV("Int Spk Amp Playback Volume",
 		SPK_CON9, 8, 15, 0,
 		int_spk_amp_gain_tlv),
+	/* Audio_Speaker_PGA_gain */
+	SOC_ENUM_EXT("Audio_Speaker_PGA_gain",
+		int_spk_amp_gain_enum,
+		int_spk_amp_gain_get,
+		int_spk_amp_gain_put),
 	/* Internal speaker mode (AB/D) */
 	SOC_ENUM_EXT("Int Spk Amp Mode", mt6392_speaker_mode_enum,
 		mt6392_spk_mode_get, mt6392_spk_mode_put),
