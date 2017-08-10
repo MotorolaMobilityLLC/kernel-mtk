@@ -828,6 +828,7 @@
  *------------------------------------------------------------------------------
  */
 #define CFG_SUPPORT_NCHO		0
+#define CFG_SUPPORT_NCHO_AUTO_ENABLE		0
 
 #define CFG_SUPPORT_ADD_CONN_AP		1
 
