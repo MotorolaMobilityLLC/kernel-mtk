@@ -3604,6 +3604,11 @@ p2pFuncComposeBeaconProbeRspTemplate(IN P_ADAPTER_T prAdapter,
 
 			prP2pProbeRspInfo->prProbeRspMsduTemplate = cnmMgtPktAlloc(prAdapter, u4BcnBufLen);
 
+			if (prP2pProbeRspInfo->prProbeRspMsduTemplate == NULL) {
+				rWlanStatus = WLAN_STATUS_FAILURE;
+				break;
+			}
+
 			prMsduInfo = prP2pProbeRspInfo->prProbeRspMsduTemplate;
 
 			prMsduInfo->eSrc = TX_PACKET_MGMT;
