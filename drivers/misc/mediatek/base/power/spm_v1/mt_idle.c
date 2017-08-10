@@ -924,7 +924,7 @@ void idle_unlock_spm(enum idle_lock_spm_id id)
  * SODI part
  */
 static DEFINE_MUTEX(soidle_locked);
-
+#if !defined(CONFIG_ARCH_MT6580)
 static void enable_soidle_by_mask(int grp, unsigned int mask)
 {
 	mutex_lock(&soidle_locked);
@@ -938,24 +938,44 @@ static void disable_soidle_by_mask(int grp, unsigned int mask)
 	soidle_condition_mask[grp] |= mask;
 	mutex_unlock(&soidle_locked);
 }
-
+#endif
 void enable_soidle_by_bit(int id)
 {
+#if !defined(CONFIG_ARCH_MT6580)
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
 
 	BUG_ON(INVALID_GRP_ID(grp));
 	enable_soidle_by_mask(grp, mask);
+#else
+	unsigned int grp = clk_id_to_grp_id(id);
+	unsigned int mask = clk_id_to_mask(id);
+
+	if ((grp == NR_GRPS) || (mask == NR_GRPS))
+		idle_warn("[%s]wrong clock id\n", __func__);
+	else
+		soidle_condition_mask[grp] &= ~mask;
+#endif
 }
 EXPORT_SYMBOL(enable_soidle_by_bit);
 
 void disable_soidle_by_bit(int id)
 {
+#if !defined(CONFIG_ARCH_MT6580)
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
 
 	BUG_ON(INVALID_GRP_ID(grp));
 	disable_soidle_by_mask(grp, mask);
+#else
+	unsigned int grp = clk_id_to_grp_id(id);
+	unsigned int mask = clk_id_to_mask(id);
+
+	if ((grp == NR_GRPS) || (mask == NR_GRPS))
+		idle_warn("[%s]wrong clock id\n", __func__);
+	else
+		soidle_condition_mask[grp] |= mask;
+#endif
 }
 EXPORT_SYMBOL(disable_soidle_by_bit);
 
@@ -1123,7 +1143,7 @@ void soidle_after_wfi(int cpu)
  * deep idle part
  */
 static DEFINE_MUTEX(dpidle_locked);
-
+#if !defined(CONFIG_ARCH_MT6580)
 static void enable_dpidle_by_mask(int grp, unsigned int mask)
 {
 	mutex_lock(&dpidle_locked);
@@ -1137,24 +1157,44 @@ static void disable_dpidle_by_mask(int grp, unsigned int mask)
 	dpidle_condition_mask[grp] |= mask;
 	mutex_unlock(&dpidle_locked);
 }
-
+#endif
 void enable_dpidle_by_bit(int id)
 {
+#if !defined(CONFIG_ARCH_MT6580)
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
 
 	BUG_ON(INVALID_GRP_ID(grp));
 	enable_dpidle_by_mask(grp, mask);
+#else
+	unsigned int grp = clk_id_to_grp_id(id);
+	unsigned int mask = clk_id_to_mask(id);
+
+	if ((grp == NR_GRPS) || (mask == NR_GRPS))
+		idle_warn("[%s]wrong clock id\n", __func__);
+	else
+		dpidle_condition_mask[grp] &= ~mask;
+#endif
 }
 EXPORT_SYMBOL(enable_dpidle_by_bit);
 
 void disable_dpidle_by_bit(int id)
 {
+#if !defined(CONFIG_ARCH_MT6580)
 	int grp = id / 32;
 	unsigned int mask = 1U << (id % 32);
 
 	BUG_ON(INVALID_GRP_ID(grp));
 	disable_dpidle_by_mask(grp, mask);
+#else
+	unsigned int grp = clk_id_to_grp_id(id);
+	unsigned int mask = clk_id_to_mask(id);
+
+	if ((grp == NR_GRPS) || (mask == NR_GRPS))
+		idle_warn("[%s]wrong clock id\n", __func__);
+	else
+		dpidle_condition_mask[grp] |= mask;
+#endif
 }
 EXPORT_SYMBOL(disable_dpidle_by_bit);
 
