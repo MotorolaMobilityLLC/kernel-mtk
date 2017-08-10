@@ -191,7 +191,7 @@ int get_md32_img_sz(const char *IMAGE_PATH)
 
 	off_t fsize = 0;
 
-	filp = filp_open(IMAGE_PATH, O_RDONLY, 0644);
+	/*filp = filp_open(IMAGE_PATH, O_RDONLY, 0644);*/
 
 	if (!IS_ERR(filp)) {
 		inode = filp->f_dentry->d_inode;
@@ -235,7 +235,7 @@ int load_md32(const char *IMAGE_PATH, void *dst)
 
 	ptr = buf;
 
-	filp = filp_open(IMAGE_PATH, O_RDONLY, 0644);
+	/*filp = filp_open(IMAGE_PATH, O_RDONLY, 0644);*/
 
 	if (IS_ERR(filp)) {
 		pr_debug("[ANC_MD32] Open MD32 image %s FAIL!\n", IMAGE_PATH);
@@ -440,12 +440,12 @@ void DinitKernelEnv(void)
 
 struct file *OpenFile(char *path, int flag, int mode)
 {
-	struct file *fp;
+/*	struct file *fp;
 
 	fp = filp_open(path, flag, 0);
 	if (fp)
 		return fp;
-	else
+	else*/
 		return NULL;
 }
 

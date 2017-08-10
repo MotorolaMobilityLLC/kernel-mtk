@@ -41,7 +41,6 @@ obj-y += mt_soc_pcm_voice_md1.o mt_soc_pcm_voice_md2.o mt_soc_pcm_voice_md1_bt.o
 obj-y += mt_soc_pcm_dl1_i2s0.o mt_soc_pcm_dl1_i2s0Dl1.o mt_soc_pcm_i2s0_awb.o
 #obj-y += mt_soc_pcm_hdmi.o
 obj-y += mt_soc_pcm_uldlloopback.o mt_soc_pcm_dl2.o mt_soc_pcm_mod_dai.o
-#obj-y += mt_soc_pcm_anc.o
 #obj-y += mt_soc_pcm_voice_ultra.o
 obj-y += mt_soc_pcm_mrgrx.o mt_soc_pcm_mrgrx_awb.o mt_soc_pcm_fm_i2s.o mt_soc_pcm_fm_i2s_awb.o
 obj-y += mt_soc_pcm_dl1_awb.o mt_soc_pcm_dl1_bt.o mt_soc_pcm_bt_dai.o
