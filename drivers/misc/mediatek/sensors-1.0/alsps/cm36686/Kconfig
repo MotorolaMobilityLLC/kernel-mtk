@@ -1,0 +1,9 @@
+
+config MTK_CM36686
+	bool "cm36686 for MediaTek package"
+	default n
+	help
+	  It support different type sensor
+	  in this platform. If this option
+	  is set, it will support sensor CM36686
+	  which integrates a proximity sensor, a color sensor.
