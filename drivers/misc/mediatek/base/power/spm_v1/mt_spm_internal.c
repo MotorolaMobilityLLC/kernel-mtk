@@ -393,6 +393,7 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 {
 	int i;
 	char buf[LOG_BUF_SIZE] = { 0 };
+	char *local_ptr;
 	wake_reason_t wr = WR_UNKNOWN;
 
 	if (wakesta->assert_pc != 0) {
@@ -403,15 +404,21 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 
 	if (wakesta->r12 & WAKE_SRC_SPM_MERGE) {
 		if (wakesta->wake_misc & WAKE_MISC_PCM_TIMER) {
-			strcat(buf, " PCM_TIMER");
+			local_ptr = " PCM_TIMER";
+			if ((strlen(buf) + strlen(local_ptr)) < LOG_BUF_SIZE)
+				strncat(buf, local_ptr, strlen(local_ptr));
 			wr = WR_PCM_TIMER;
 		}
 		if (wakesta->wake_misc & WAKE_MISC_TWAM) {
-			strcat(buf, " TWAM");
+			local_ptr = " TWAM";
+			if ((strlen(buf) + strlen(local_ptr)) < LOG_BUF_SIZE)
+				strncat(buf, local_ptr, strlen(local_ptr));
 			wr = WR_WAKE_SRC;
 		}
 		if (wakesta->wake_misc & WAKE_MISC_CPU_WAKE) {
-			strcat(buf, " CPU");
+			local_ptr = " CPU";
+			if ((strlen(buf) + strlen(local_ptr)) < LOG_BUF_SIZE)
+				strncat(buf, local_ptr, strlen(local_ptr));
 			wr = WR_WAKE_SRC;
 		}
 	}
