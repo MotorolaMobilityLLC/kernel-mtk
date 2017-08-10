@@ -105,7 +105,7 @@ void zmc_ssvp_init(struct cma *zmc_cma)
 }
 
 struct single_cma_registration memory_ssvp_registration = {
-	.align = 0x8000000,
+	.align = 0x1000000,
 	.size = (_SSVP_MBSIZE_ * SZ_1M),
 	.name = "memory-ssvp",
 	.init = zmc_ssvp_init,
