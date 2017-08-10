@@ -565,18 +565,20 @@ static int dt_scan_memory(unsigned long node, const char *uname, int depth, void
 		dram_info = (const struct dram_info *)of_get_flat_dt_prop(node, "orig_dram_info", NULL);
 	}
 
-	if ((dram_info->rank_info[1].start == 0x60000000)
-	    || (dram_info->rank_info[1].start == 0x70000000))
-		spm_dram_dummy_read_flags |= SPM_DRAM_RANK1_ADDR_SEL0;
-	else if (dram_info->rank_info[1].start == 0x80000000)
-		spm_dram_dummy_read_flags |= SPM_DRAM_RANK1_ADDR_SEL1;
-	else if (dram_info->rank_info[1].start == 0xc0000000)
-		spm_dram_dummy_read_flags |= SPM_DRAM_RANK1_ADDR_SEL2;
-	else if (dram_info->rank_info[1].start == 0xa0000000)
-		spm_dram_dummy_read_flags |= SPM_DRAM_RANK1_ADDR_SEL3;
-	else if (dram_info->rank_info[1].size != 0x0) {
-		pr_err("dram rank1_info_error: no rank info\n");
-		BUG_ON(1);
+	if (dram_info) {
+		if ((dram_info->rank_info[1].start == 0x60000000)
+		    || (dram_info->rank_info[1].start == 0x70000000))
+			spm_dram_dummy_read_flags |= SPM_DRAM_RANK1_ADDR_SEL0;
+		else if (dram_info->rank_info[1].start == 0x80000000)
+			spm_dram_dummy_read_flags |= SPM_DRAM_RANK1_ADDR_SEL1;
+		else if (dram_info->rank_info[1].start == 0xc0000000)
+			spm_dram_dummy_read_flags |= SPM_DRAM_RANK1_ADDR_SEL2;
+		else if (dram_info->rank_info[1].start == 0xa0000000)
+			spm_dram_dummy_read_flags |= SPM_DRAM_RANK1_ADDR_SEL3;
+		else if (dram_info->rank_info[1].size != 0x0) {
+			pr_err("dram rank1_info_error: no rank info\n");
+			BUG_ON(1);
+		}
 	}
 
 	return node;
