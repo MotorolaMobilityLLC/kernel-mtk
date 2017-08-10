@@ -1594,33 +1594,13 @@ static DEVICE_ATTR(Charger_Type, 0664, show_Charger_Type, store_Charger_Type);
 
 static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *attr, char *buf)
 {
-#if defined(PUMP_EXPRESS_SERIES)
-	int icount = 20;	/* max debouncing time 20 * 0.2 sec */
-#endif
 	int is_ta_detected = 0;
-
 
 	battery_log(BAT_LOG_CRTI, "[%s]show_Pump_Express chr_type:%d UISOC2:%d startsoc:%d stopsoc:%d\n", __func__,
 	BMT_status.charger_type, BMT_status.UI_SOC2,
 	batt_cust_data.ta_start_battery_soc, batt_cust_data.ta_stop_battery_soc);
 
-
 #if defined(PUMP_EXPRESS_SERIES)
-	if (STANDARD_CHARGER == BMT_status.charger_type &&
-		mtk_pep20_get_to_check_chr_type() &&
-		mtk_pep_get_to_check_chr_type() &&
-		BMT_status.UI_SOC2 < batt_cust_data.ta_stop_battery_soc) {
-		do {
-			icount--;
-			msleep(200);
-			battery_log(BAT_LOG_CRTI, "[%s]icount:%d\n", __func__, icount);
-		} while (icount &&
-			mtk_pep20_get_to_check_chr_type() &&
-			mtk_pep_get_to_check_chr_type() &&
-			KAL_TRUE
-		);
-	}
-
 	/* Is PE+20 connect */
 	if (mtk_pep20_get_is_connect())
 		is_ta_detected = 1;
@@ -1637,12 +1617,6 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
 	/* Is PE connect */
-	if ((KAL_TRUE == ta_check_chr_type) && (STANDARD_CHARGER == BMT_status.charger_type)) {
-		battery_log(BAT_LOG_CRTI, "[%s]Wait for PE detection\n", __func__);
-		do {
-			msleep(200);
-		} while (ta_check_chr_type);
-	}
 	if (is_ta_connect == KAL_TRUE)
 		is_ta_detected = 1;
 #endif
