@@ -3719,24 +3719,28 @@ static MINT32 ISP_WaitIrq(ISP_WAIT_IRQ_STRUCT WaitIrq)
 		LOG_DBG("Clear(%d),Type(%d),Status(0x%08X),Timeout(%d)", WaitIrq.Clear,
 			WaitIrq.Type, WaitIrq.Status, WaitIrq.Timeout);
 	}
-
+#endif
 	if (WaitIrq.Clear == ISP_IRQ_CLEAR_WAIT) {
 		spin_lock_irqsave(&(g_IspInfo.SpinLockIrq), flags);
 		if (g_IspInfo.IrqInfo.Status[WaitIrq.Type] & WaitIrq.Status) {
+			#if 0 /*commend out for prink too much*/
 			LOG_DBG("WARNING: Clear(%d), Type(%d): IrqStatus(0x%08X) has been cleared",
 				WaitIrq.Clear, WaitIrq.Type,
 				g_IspInfo.IrqInfo.Status[WaitIrq.Type] & WaitIrq.Status);
+			#endif
 			g_IspInfo.IrqInfo.Status[WaitIrq.Type] &= (~WaitIrq.Status);
 		}
 		spin_unlock_irqrestore(&(g_IspInfo.SpinLockIrq), flags);
 	} else if (WaitIrq.Clear == ISP_IRQ_CLEAR_ALL) {
 		spin_lock_irqsave(&(g_IspInfo.SpinLockIrq), flags);
+		#if 0 /*commend out for prink too much*/
 		LOG_DBG("WARNING: Clear(%d), Type(%d): IrqStatus(0x%08X) has been cleared",
 			WaitIrq.Clear, WaitIrq.Type, g_IspInfo.IrqInfo.Status[WaitIrq.Type]);
+		#endif
 		g_IspInfo.IrqInfo.Status[WaitIrq.Type] = 0;
 		spin_unlock_irqrestore(&(g_IspInfo.SpinLockIrq), flags);
 	}
-#endif
+
 #if ISP_IRQ_POLLING
 
 	ISP_IRQ_TYPE_ENUM IrqStatus[ISP_IRQ_TYPE_AMOUNT];
