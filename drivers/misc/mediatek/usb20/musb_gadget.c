@@ -2136,15 +2136,16 @@ static int musb_gadget_pullup(struct usb_gadget *gadget, int is_on)
 	 * not pullup unless the B-session is active.
 	 */
 
-	/* Remove spin_lock to prevent dead lock for musb_connect_legacy = 1*/
-	if (!musb_connect_legacy)
-		spin_lock_irqsave(&musb->lock, flags);
 	DBG(0, "is_on=%d, softconnect=%d ++\n", is_on, musb->softconnect);
 	if (!musb->is_ready && is_on)
 		musb->is_ready = true;
 
-	/* NOTE: pmic would enable irq internally */
+	/* be aware this could not be used in non-sleep context */
 	usb_in = usb_cable_connected();
+
+	/* Remove spin_lock to prevent dead lock for musb_connect_legacy = 1*/
+	if (!musb_connect_legacy)
+		spin_lock_irqsave(&musb->lock, flags);
 
 	if (is_on != musb->softconnect) {
 		musb->softconnect = is_on;

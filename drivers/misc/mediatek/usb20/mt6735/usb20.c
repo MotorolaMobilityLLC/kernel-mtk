@@ -421,7 +421,7 @@ static struct delayed_work connection_work;
 void do_connection_work(struct work_struct *data)
 {
 	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 3);
-	unsigned long flags;
+	unsigned long flags = 0;
 	bool usb_in = false;
 
 
@@ -438,16 +438,19 @@ void do_connection_work(struct work_struct *data)
 	}
 
 
-	spin_lock_irqsave(&mtk_musb->lock, flags);
 
 	if (!mtk_musb->is_ready) {
 		/* re issue work */
 		if (__ratelimit(&ratelimit))
 			DBG(0, "issue work after %d ms\n", CONN_WORK_DELAY);
 		queue_delayed_work(mtk_musb->st_wq, &connection_work, msecs_to_jiffies(CONN_WORK_DELAY));
-		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 		return;
 	}
+
+	/* be aware this could not be used in non-sleep context */
+	usb_in = usb_cable_connected();
+
+	spin_lock_irqsave(&mtk_musb->lock, flags);
 
 	if (mtk_musb->is_host) {
 		DBG(0, "is host, return\n");
@@ -462,9 +465,6 @@ void do_connection_work(struct work_struct *data)
 		return;
 	}
 #endif
-
-
-	usb_in = usb_cable_connected();
 
 	if (!mtk_musb->power && (usb_in == true)) {
 		/* enable usb */
@@ -560,6 +560,7 @@ static bool musb_hal_is_vbus_exist(void)
 
 }
 
+/* be aware this could not be used in non-sleep context */
 bool usb_cable_connected(void)
 {
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
