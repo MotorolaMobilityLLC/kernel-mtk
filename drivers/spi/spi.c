@@ -46,7 +46,9 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/spi.h>
 #if defined(CONFIG_ARCH_MT6797)
+#include <mt_chip.h>
 #include <mt_vcorefs_manager.h>
+bool spi_dvfs_flag = 0;
 #endif
 
 static void spidev_release(struct device *dev)
@@ -2122,7 +2124,7 @@ static int __spi_sync(struct spi_device *spi, struct spi_message *message,
 	message->complete = spi_complete;
 	message->context = &done;
 #if defined(CONFIG_ARCH_MT6797)
-	if (master->bus_num == 1)
+	if ((master->bus_num == 1) && (spi_dvfs_flag))
 		vcorefs_request_dvfs_opp(KIR_REESPI, OPPI_PERF);
 #endif
 	if (!bus_locked)
@@ -2139,7 +2141,7 @@ static int __spi_sync(struct spi_device *spi, struct spi_message *message,
 	}
 	message->context = NULL;
 #if defined(CONFIG_ARCH_MT6797)
-	if (master->bus_num == 1)
+	if ((master->bus_num == 1) && (spi_dvfs_flag))
 		vcorefs_request_dvfs_opp(KIR_REESPI, OPPI_UNREQ);
 #endif
 	return status;
@@ -2331,7 +2333,16 @@ EXPORT_SYMBOL_GPL(spi_write_then_read);
 static int __init spi_init(void)
 {
 	int	status;
+#if defined(CONFIG_ARCH_MT6797)
+	int ver;
 
+	ver = mt_get_chip_hw_ver();
+
+	if (0xCA01 == ver)
+		spi_dvfs_flag = 0;
+	else
+		spi_dvfs_flag = 1;
+#endif
 	buf = kmalloc(SPI_BUFSIZ, GFP_KERNEL);
 	if (!buf) {
 		status = -ENOMEM;
