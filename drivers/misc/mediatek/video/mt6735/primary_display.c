@@ -2391,7 +2391,8 @@ static disp_internal_buffer_info *allocat_decouple_buffer(int size)
 {
 	void *buffer_va = NULL;
 	unsigned int buffer_mva = 0;
-	unsigned int mva_size = 0;
+	size_t mva_size = 0;
+	ion_phys_addr_t phy_addr = 0;
 
 	struct ion_client *client = NULL;
 	struct ion_handle *handle = NULL;
@@ -2432,7 +2433,8 @@ static disp_internal_buffer_info *allocat_decouple_buffer(int size)
 			return NULL;
 		}
 
-		ion_phys(client, handle, (ion_phys_addr_t *) &buffer_mva, (size_t *) &mva_size);
+		ion_phys(client, handle, &phy_addr, &mva_size);
+		buffer_mva = (unsigned int)phy_addr;
 		if (buffer_mva == 0) {
 			DISPERR("Fatal Error, get mva failed\n");
 			ion_free(client, handle);
@@ -2442,7 +2444,7 @@ static disp_internal_buffer_info *allocat_decouple_buffer(int size)
 		}
 		buf_info->handle = handle;
 		buf_info->mva = buffer_mva;
-		buf_info->size = mva_size;
+		buf_info->size = (uint32_t)mva_size;
 		buf_info->va = buffer_va;
 		buf_info->client = client;
 	} else {
