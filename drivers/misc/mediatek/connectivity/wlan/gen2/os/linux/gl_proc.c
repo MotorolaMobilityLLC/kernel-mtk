@@ -1027,9 +1027,9 @@ static ssize_t cfgRead(struct file *filp, char __user *buf, size_t count, loff_t
 	if (*f_pos > 0 || gprGlueInfo == NULL)
 		return 0;
 
-	kalMemSet(aucCfgOutputBuf, 0, MAX_CFG_OUTPUT_BUF_LENGTH);
-
-	SPRINTF(temp, ("\nprocCfgRead() %s:\n", aucCfgQueryKey));
+	kalMemSet(aucCfgOutputBuf, '\0', MAX_CFG_OUTPUT_BUF_LENGTH);
+	temp += kalSnprintf(temp, sizeof(aucCfgQueryKey), "\nprocCfgRead() %s:\n",
+			  aucCfgQueryKey);
 
 	/* send to FW */
 	cmdV1Header.cmdVersion = CMD_VER_1;
@@ -1053,7 +1053,7 @@ static ssize_t cfgRead(struct file *filp, char __user *buf, size_t count, loff_t
 	if (rStatus == WLAN_STATUS_FAILURE)
 		DBGLOG(INIT, ERROR, "prCmdV1Header kalIoctl wlanoidQueryCfgRead fail 0x%x\n", rStatus);
 
-	SPRINTF(temp, ("%s\n", cmdV1Header.buffer));
+	temp += kalSnprintf(temp, sizeof(cmdV1Header.buffer), "%s\n", cmdV1Header.buffer);
 
 	u4CopySize = kalStrLen(aucCfgOutputBuf);
 	if (u4CopySize > count)
@@ -1073,7 +1073,7 @@ static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count,
 	UINT_32 u4CopySize = sizeof(aucCfgBuf);
 	UINT_8 token_num = 1;
 
-	kalMemSet(aucCfgBuf, 0, u4CopySize);
+	kalMemSet(aucCfgBuf, '\0', u4CopySize);
 
 	if (u4CopySize >= (count + 1))
 		u4CopySize = count;
@@ -1083,6 +1083,9 @@ static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count,
 		return -EFAULT;
 	}
 
+	if (u4CopySize > 0)
+		aucCfgBuf[u4CopySize - 1] = '\0';
+
 	for (; i < u4CopySize; i++) {
 		if (aucCfgBuf[i] == ' ') {
 			token_num++;
@@ -1090,13 +1093,22 @@ static ssize_t cfgWrite(struct file *filp, const char __user *buf, size_t count,
 		}
 	}
 
-	DBGLOG(INIT, INFO, "procCfgWrite %s\n", aucCfgBuf);
+	DBGLOG(INIT, INFO, "procCfgWrite :%s token_num:%d input_size :%zu\n"
+		, aucCfgBuf, token_num, count);
 
 	if (token_num == 1) {
-		kalMemSet(aucCfgQueryKey, 0, sizeof(aucCfgQueryKey));
+		/*set cfg Query key*/
+		kalMemSet(aucCfgQueryKey, '\0', sizeof(aucCfgQueryKey));
+
+		if (u4CopySize > (MAX_CMD_NAME_MAX_LENGTH - 1))
+			u4CopySize = MAX_CMD_NAME_MAX_LENGTH - 1;
+
 		memcpy(aucCfgQueryKey, aucCfgBuf, u4CopySize);
+
+		/*replace Carriage Return (0x0a) to string end of terminal */
 		if (aucCfgQueryKey[u4CopySize - 1] == 0x0a)
 			aucCfgQueryKey[u4CopySize - 1] = '\0';
+
 	} else {
 		if (u4CopySize)
 			wlanFwCfgParse(gprGlueInfo->prAdapter, aucCfgBuf);
