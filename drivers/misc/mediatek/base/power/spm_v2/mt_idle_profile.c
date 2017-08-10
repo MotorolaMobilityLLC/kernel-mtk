@@ -45,10 +45,13 @@ static unsigned long long idle_cnt_dump_prev_time;
 static unsigned int idle_cnt_dump_criteria = 5000;			/* 5 sec */
 
 static struct mt_idle_buf idle_log;
+static struct mt_idle_buf idle_state_log;
 
 #define reset_log()              reset_idle_buf(idle_log)
 #define get_log()                get_idle_buf(idle_log)
 #define append_log(fmt, args...) idle_buf_append(idle_log, fmt, ##args)
+
+static DEFINE_SPINLOCK(idle_cnt_spin_lock);
 
 struct mt_idle_block {
 	u64 prev_time;
@@ -306,13 +309,25 @@ void mt_idle_dump_cnt_in_interval(void)
 {
 	int i = 0;
 	unsigned long long idle_cnt_dump_curr_time = 0;
+	unsigned long flags;
+	bool dump_cnt_info = false;
 
 	idle_cnt_dump_curr_time = idle_get_current_time_ms();
 
 	if (idle_cnt_dump_prev_time == 0)
 		idle_cnt_dump_prev_time = idle_cnt_dump_curr_time;
 
-	if (!((idle_cnt_dump_curr_time - idle_cnt_dump_prev_time) > idle_cnt_dump_criteria))
+	spin_lock_irqsave(&idle_cnt_spin_lock, flags);
+
+	dump_cnt_info = ((idle_cnt_dump_curr_time - idle_cnt_dump_prev_time) > idle_cnt_dump_criteria);
+
+	/* update time base */
+	if (dump_cnt_info)
+		idle_cnt_dump_prev_time = idle_cnt_dump_curr_time;
+
+	spin_unlock_irqrestore(&idle_cnt_spin_lock, flags);
+
+	if (!dump_cnt_info)
 		return;
 
 	/* dump idle count */
@@ -344,9 +359,6 @@ void mt_idle_dump_cnt_in_interval(void)
 			idle_ratio_value[i] = 0;
 		idle_ratio_profile_start_time = idle_get_current_time_ms();
 	}
-
-	/* update time base */
-	idle_cnt_dump_prev_time = idle_cnt_dump_curr_time;
 }
 
 static DEFINE_SPINLOCK(idle_blocking_spin_lock);
@@ -390,27 +402,29 @@ bool mt_idle_state_pick(int type, int cpu, int reason)
 
 	if (dump_block_info) {
 			/* xxidle, rgidle count */
-			reset_log();
+			reset_idle_buf(idle_state_log);
 
-			append_log("CNT(%s,rgidle): ", p_idle->name);
+			idle_buf_append(idle_state_log, "CNT(%s,rgidle): ", p_idle->name);
 			for (i = 0; i < nr_cpu_ids; i++)
-				append_log("[%d] = (%lu,%lu), ", i, p_idle->cnt[i], idle_block[IDLE_TYPE_RG].cnt[i]);
-			idle_prof_warn("%s\n", get_log());
+				idle_buf_append(idle_state_log, "[%d] = (%lu,%lu), ",
+					i, p_idle->cnt[i], idle_block[IDLE_TYPE_RG].cnt[i]);
+			idle_prof_warn("%s\n", get_idle_buf(idle_state_log));
 
 			/* block category */
-			reset_log();
+			reset_idle_buf(idle_state_log);
 
-			append_log("%s_block_cnt: ", p_idle->name);
+			idle_buf_append(idle_state_log, "%s_block_cnt: ", p_idle->name);
 			for (i = 0; i < NR_REASONS; i++)
-				append_log("[%s] = %lu, ", reason_name[i], p_idle->block_cnt[i]);
-			idle_prof_warn("%s\n", get_log());
+				idle_buf_append(idle_state_log, "[%s] = %lu, ",
+					reason_name[i], p_idle->block_cnt[i]);
+			idle_prof_warn("%s\n", get_idle_buf(idle_state_log));
 
-			reset_log();
+			reset_idle_buf(idle_state_log);
 
-			append_log("%s_block_mask: ", p_idle->name);
+			idle_buf_append(idle_state_log, "%s_block_mask: ", p_idle->name);
 			for (i = 0; i < NR_GRPS; i++)
-				append_log("0x%08x, ", p_idle->block_mask[i]);
-			idle_prof_warn("%s\n", get_log());
+				idle_buf_append(idle_state_log, "0x%08x, ", p_idle->block_mask[i]);
+			idle_prof_warn("%s\n", get_idle_buf(idle_state_log));
 
 			memset(p_idle->block_cnt, 0, NR_REASONS * sizeof(p_idle->block_cnt[0]));
 	}
