@@ -924,6 +924,11 @@ struct _BSS_INFO_T {
 	BOOLEAN fgTdlsIsProhibited;	/* TRUE: AP prohibits TDLS links */
 	BOOLEAN fgTdlsIsChSwProhibited;	/* TRUE: AP prohibits TDLS chan switch */
 #endif				/* CFG_SUPPORT_TDLS */
+
+#if CFG_SUPPORT_RN
+	OS_SYSTIME	rConnTime;
+	BOOLEAN		fgDisConnReassoc;
+#endif
 };
 
 struct _AIS_SPECIFIC_BSS_INFO_T {
