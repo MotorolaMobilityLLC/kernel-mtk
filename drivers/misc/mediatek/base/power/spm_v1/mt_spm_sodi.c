@@ -1206,12 +1206,28 @@ void spm_go_to_sodi(u32 spm_flags, u32 spm_data)
 			int i, left_size, str_size;
 
 			if (wakesta.r12 & WAKE_SRC_SPM_MERGE) {
-				if (wakesta.wake_misc & WAKE_MISC_PCM_TIMER)
-					strcat(buf, " PCM_TIMER");
-				if (wakesta.wake_misc & WAKE_MISC_TWAM)
-					strcat(buf, " TWAM");
-				if (wakesta.wake_misc & WAKE_MISC_CPU_WAKE)
-					strcat(buf, " CPU");
+				left_size = sizeof(buf) - strlen(buf) - 1;
+				if (wakesta.wake_misc & WAKE_MISC_PCM_TIMER) {
+					str_size = strlen(" PCM_TIMER");
+					if (left_size >= str_size)
+						strncat(buf, " PCM_TIMER", str_size);
+					else
+						strncat(buf, " PCM_TIMER", left_size);
+				}
+				if (wakesta.wake_misc & WAKE_MISC_TWAM) {
+					str_size = strlen(" TWAM");
+					if (left_size >= str_size)
+						strncat(buf, " TWAM", str_size);
+					else
+						strncat(buf, " TWAM", left_size);
+				}
+				if (wakesta.wake_misc & WAKE_MISC_CPU_WAKE) {
+					str_size = strlen(" CPU");
+					if (left_size >= str_size)
+						strncat(buf, " CPU", str_size);
+					else
+						strncat(buf, " CPU", left_size);
+				}
 			}
 			for (i = 1; i < 32; i++) {
 				if (wakesta.r12 & (1U << i)) {
