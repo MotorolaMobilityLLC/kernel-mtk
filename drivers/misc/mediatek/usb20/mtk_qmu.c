@@ -405,9 +405,11 @@ void mtk_qmu_enable(struct musb *musb, u8 ep_num, u8 isRx)
 		csr |= MUSB_RXCSR_DMAENAB;
 
 		/* check ISOC */
-		musb_ep = &musb->endpoints[ep_num].ep_out;
-		if (musb_ep->type == USB_ENDPOINT_XFER_ISOC)
-			csr |= MUSB_RXCSR_P_ISO;
+		if (!musb->is_host) {
+			musb_ep = &musb->endpoints[ep_num].ep_out;
+			if (musb_ep->type == USB_ENDPOINT_XFER_ISOC)
+				csr |= MUSB_RXCSR_P_ISO;
+		}
 		musb_writew(epio, MUSB_RXCSR, csr);
 
 		/* turn off intrRx */
@@ -471,9 +473,11 @@ void mtk_qmu_enable(struct musb *musb, u8 ep_num, u8 isRx)
 		csr |= MUSB_TXCSR_DMAENAB;
 
 		/* check ISOC */
-		musb_ep = &musb->endpoints[ep_num].ep_in;
-		if (musb_ep->type == USB_ENDPOINT_XFER_ISOC)
-			csr |= MUSB_TXCSR_P_ISO;
+		if (!musb->is_host) {
+			musb_ep = &musb->endpoints[ep_num].ep_in;
+			if (musb_ep->type == USB_ENDPOINT_XFER_ISOC)
+				csr |= MUSB_TXCSR_P_ISO;
+		}
 		musb_writew(epio, MUSB_TXCSR, csr);
 
 		/* turn off intrTx */
@@ -1196,7 +1200,7 @@ void mtk_qmu_host_rx_err(struct musb *musb, u8 epnum)
 	u16 rx_csr, val;
 	struct musb_hw_ep *hw_ep = musb->endpoints + epnum;
 	void __iomem *epio = hw_ep->regs;
-	struct musb_qh *qh = hw_ep->out_qh;
+	struct musb_qh *qh = hw_ep->in_qh;
 	bool done = false;
 	u32 status = 0;
 	void __iomem *mbase = musb->mregs;
@@ -1261,11 +1265,8 @@ void mtk_qmu_host_rx_err(struct musb *musb, u8 epnum)
 		done = true;
 	}
 
-	if (done) {
-		if (urb->status == -EINPROGRESS)
-			urb->status = status;
-		musb_advance_schedule(musb, urb, hw_ep, USB_DIR_IN);
-	}
+	if (done)
+		DBG(0, "FIXME!!!, to be implemented, related HW/SW abort procedure\n");
 
 finished:
 	{
@@ -1275,7 +1276,17 @@ finished:
 		sprintf(string, "USB20_HOST, RXQ<%d> ERR, CSR:%x", epnum, val);
 		QMU_ERR("%s\n", string);
 #ifdef CONFIG_MEDIATEK_SOLUTION
-		aee_kernel_warning(string, string);
+		{
+			u8 skip_val;
+
+			skip_val = rx_csr &
+				(MUSB_RXCSR_INCOMPRX
+				 |MUSB_RXCSR_DATAERROR
+				 |MUSB_RXCSR_PID_ERR);
+
+			if (!skip_val)
+				aee_kernel_warning(string, string);
+		}
 #endif
 	}
 }
@@ -1363,12 +1374,8 @@ void mtk_qmu_host_tx_err(struct musb *musb, u8 epnum)
 			status = urb->status;
 	}
 
-	if (done) {
-		/* set status */
-		urb->status = status;
-		urb->actual_length = qh->offset;
-		musb_advance_schedule(musb, urb, hw_ep, USB_DIR_OUT);
-	}
+	if (done)
+		DBG(0, "FIXME!!!, to be implemented, related HW/SW abort procedure\n");
 
 finished:
 	{
