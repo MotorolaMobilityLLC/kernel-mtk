@@ -911,16 +911,11 @@ int primary_display_switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 int primary_display_set_secondary_display(int add, DISP_SESSION_TYPE type)
 {
 	if (add) {
-		if (type == DISP_SESSION_MEMORY)
-			pgc->force_on_wdma_path = 1;
-
 #ifdef MTK_DISP_IDLE_LP
 		gSkipIdleDetect = 1;
 		_disp_primary_path_exit_idle(__func__, 0);
 #endif
 	} else {
-		if (type == DISP_SESSION_MEMORY)
-			pgc->force_on_wdma_path = 0;
 
 #ifdef MTK_DISP_IDLE_LP
 		gSkipIdleDetect = 0;
@@ -5643,17 +5638,11 @@ int primary_display_suspend(void)
 	}
 
 	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 2);
+	DISPCHECK("[POWER]display cmdq trigger loop stop[begin]\n");
+	_cmdq_stop_trigger_loop();
+	DISPCHECK("[POWER]display cmdq trigger loop stop[end]\n");
+	MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 3);
 
-	/*
-	   Keep CMDQ engine on by trgger loop in WFD extension case while suspend.
-	   If CMDQ engine enter suspend, the WDMA event would be cleared.
-	 */
-	if (!pgc->force_on_wdma_path) {
-		DISPCHECK("[POWER]display cmdq trigger loop stop[begin]\n");
-		_cmdq_stop_trigger_loop();
-		DISPCHECK("[POWER]display cmdq trigger loop stop[end]\n");
-		MMProfileLogEx(ddp_mmp_get_events()->primary_suspend, MMProfileFlagPulse, 0, 3);
-	}
 #ifdef CONFIG_LCM_SEND_CMD_IN_VIDEO
 	DISPCHECK("[POWER]lcm suspend[begin]\n");
 	disp_lcm_suspend(pgc->plcm);
@@ -5728,7 +5717,7 @@ int primary_display_suspend(void)
 	dpmgr_path_power_off(pgc->dpmgr_handle, CMDQ_DISABLE);
 	DISPCHECK("[POWER]dpmanager path power off[end]\n");
 
-	if (_is_decouple_mode(pgc->session_mode) && !pgc->force_on_wdma_path) {
+	if (_is_decouple_mode(pgc->session_mode)) {
 		dpmgr_path_power_off(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
 	} else if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS) {
 		DISPMSG("set MMDVFS low\n");
@@ -5978,6 +5967,7 @@ int primary_display_resume(void)
 	DISPCHECK("[POWER]wakeup aal/od trigger process[end]\n");
 #endif
 	pgc->state = DISP_ALIVE;
+	pgc->force_on_wdma_path = 0;
 #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
 	switch_set_state(&disp_switch_data, DISP_ALIVE);
 #endif
@@ -5997,6 +5987,95 @@ done:
 #endif
 	ddp_dump_analysis(DISP_MODULE_RDMA0);
 
+	return 0;
+}
+
+int primary_display_resume_ovl2mem(void)
+{
+	DISP_STATUS ret = DISP_STATUS_OK;
+
+	DISPFUNC();
+
+#ifdef CONFIG_MTK_CLKMGR
+	if (_is_decouple_mode(pgc->session_mode))
+		dpmgr_path_power_on(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
+#endif
+
+#ifndef CONFIG_MTK_CLKMGR
+	ddp_clk_prepare(DISP_MTCMOS_CLK);
+#endif
+
+#ifndef CONFIG_MTK_CLKMGR
+	if (_is_decouple_mode(pgc->session_mode))
+		dpmgr_path_power_on(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
+#endif
+
+	DISPCHECK("[POWER]dpmanager re-init[begin]\n");
+	{
+		LCM_PARAMS *lcm_param = NULL;
+		disp_ddp_path_config *data_config = NULL;
+
+		if (_is_decouple_mode(pgc->session_mode))
+			dpmgr_path_connect(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
+
+		lcm_param = disp_lcm_get_params(pgc->plcm);
+
+		data_config = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+
+		data_config->dst_w = lcm_param->width;
+		data_config->dst_h = lcm_param->height;
+		if (lcm_param->type == LCM_TYPE_DSI) {
+			if (lcm_param->dsi.data_format.format == LCM_DSI_FORMAT_RGB888)
+				data_config->lcm_bpp = 24;
+			else if (lcm_param->dsi.data_format.format == LCM_DSI_FORMAT_RGB565)
+				data_config->lcm_bpp = 16;
+			else if (lcm_param->dsi.data_format.format == LCM_DSI_FORMAT_RGB666)
+				data_config->lcm_bpp = 18;
+		} else if (lcm_param->type == LCM_TYPE_DPI) {
+			if (lcm_param->dpi.format == LCM_DPI_FORMAT_RGB888)
+				data_config->lcm_bpp = 24;
+			else if (lcm_param->dpi.format == LCM_DPI_FORMAT_RGB565)
+				data_config->lcm_bpp = 16;
+			if (lcm_param->dpi.format == LCM_DPI_FORMAT_RGB666)
+				data_config->lcm_bpp = 18;
+		}
+
+		data_config->fps = pgc->lcm_fps;
+		data_config->dst_dirty = 1;
+
+		if (_is_decouple_mode(pgc->session_mode)) {
+			data_config = dpmgr_path_get_last_config(pgc->ovl2mem_path_handle);
+
+			data_config->fps = pgc->lcm_fps;
+			data_config->dst_dirty = 1;
+			data_config->wdma_dirty = 1;
+			ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config, NULL);
+		}
+	}
+
+	DISPCHECK("[POWER]ovl2mem path start[begin]\n");
+	if (_is_decouple_mode(pgc->session_mode))
+		dpmgr_path_start(pgc->ovl2mem_path_handle, CMDQ_DISABLE);
+	DISPCHECK("[POWER]ovl2mem path start[end]\n");
+
+	DISPCHECK("[POWER]start cmdq[begin]\n");
+	_cmdq_start_trigger_loop();
+	DISPCHECK("[POWER]start cmdq[end]\n");
+
+	if (is_mmdvfs_supported() && mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_D1_PLUS &&
+		primary_display_get_width() > 800) {
+		DISPMSG("set MMDVFS high\n");
+		mmdvfs_set_step(MMDVFS_SCEN_DISP, MMDVFS_VOLTAGE_HIGH); /* Enter HPM mode */
+	}
+
+	/* primary_display_diagnose(); */
+#ifndef DISP_NO_AEE
+	aee_kernel_wdt_kick_Powkey_api("mtkfb_late_resume", WDT_SETBY_Display);
+#endif
+	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagEnd, 0, 0);
+
+	ddp_dump_analysis(DISP_MODULE_OVL0);
+	pgc->force_on_wdma_path = 1;
 	return 0;
 }
 
@@ -6324,8 +6403,11 @@ int primary_display_memory_trigger(int blocking, void *callback, unsigned int us
 
 	_primary_path_lock(__func__);
 
-	if (pgc->state == DISP_SLEPT)
+	if (pgc->state == DISP_SLEPT) {
 		DISPMSG("%s, primary dipslay is sleep\n", __func__);
+		if (pgc->force_on_wdma_path == 0)
+			primary_display_resume_ovl2mem();
+	}
 
 	if (pgc->session_mode == DISP_SESSION_DECOUPLE_MODE || pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE) {
 		if (primary_display_is_secure_path(DISP_SESSION_MEMORY)) {
