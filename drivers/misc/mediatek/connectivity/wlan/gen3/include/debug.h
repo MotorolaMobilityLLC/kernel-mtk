@@ -3787,6 +3787,8 @@ VOID dumpMemory8(IN UINT_32 u4DbgIndex, IN UINT_8 ucDbgClass, IN PUINT_8 pucStar
 
 VOID dumpMemory32(IN UINT_32 u4DbgIndex, IN UINT_8 ucDbgClass, IN PUINT_32 pu4StartAddr, IN UINT_32 u4Length);
 
+VOID wlanPrintFwLog(PUINT_8 pucLogContent, UINT_16 u2MsgSize, UINT_8 ucMsgType);
+
 /*******************************************************************************
 *                              F U N C T I O N S
 ********************************************************************************
