@@ -219,6 +219,7 @@ int set_rtc_spare_fg_value(int val)
 	spin_lock_irqsave(&rtc_lock, flags);
 	hal_rtc_set_spare_register(RTC_FGSOC, val);
 	spin_unlock_irqrestore(&rtc_lock, flags);
+	rtc_xinfo("set_rtc_spare_fg_value, %d\n", val);
 
 	return 0;
 }

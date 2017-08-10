@@ -145,25 +145,15 @@ void rtc_bbpu_pwrdown(bool auto_boot)
 void hal_rtc_set_spare_register(rtc_spare_enum cmd, u16 val)
 {
 	u16 tmp_val;
-	unsigned long long t1, t2, t3, t4, t5;
 
 	if (cmd >= 0 && cmd < RTC_SPAR_NUM) {
-		t1 = sched_clock();
 		tmp_val =
 		    rtc_read(rtc_spare_reg[cmd][RTC_REG]) & ~(rtc_spare_reg[cmd][RTC_MASK] <<
 							      rtc_spare_reg[cmd][RTC_SHIFT]);
-		t2 = sched_clock();
-		hal_rtc_xinfo("rtc_spare_reg[%d] = {%d, %d, %d}\n", cmd,
-			      rtc_spare_reg[cmd][RTC_REG], rtc_spare_reg[cmd][RTC_MASK],
-			      rtc_spare_reg[cmd][RTC_SHIFT]);
-		t3 = sched_clock();
 		rtc_write(rtc_spare_reg[cmd][RTC_REG],
 			  tmp_val | ((val & rtc_spare_reg[cmd][RTC_MASK]) <<
 				     rtc_spare_reg[cmd][RTC_SHIFT]));
-		t4 = sched_clock();
 		rtc_write_trigger();
-		t5 = sched_clock();
-		hal_rtc_xinfo("%lld, %lld, %lld, %lld, %lld\n", t1, t2, t3, t4, t5);
 	}
 }
 
