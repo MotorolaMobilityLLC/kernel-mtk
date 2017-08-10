@@ -297,6 +297,7 @@ static void MMProfileInitBuffer(void)
 		} else if (MMProfileGlobals.buffer_size_record !=
 			   MMProfileGlobals.new_buffer_size_record) {
 			vfree(pMMProfileRingBuffer);
+			pMMProfileRingBuffer = NULL;
 			MMProfileGlobals.buffer_size_record =
 			    MMProfileGlobals.new_buffer_size_record;
 			MMProfileGlobals.buffer_size_bytes =
@@ -322,6 +323,7 @@ static void MMProfileInitBuffer(void)
 		} else if (MMProfileGlobals.meta_buffer_size !=
 			   MMProfileGlobals.new_meta_buffer_size) {
 			vfree(pMMProfileMetaBuffer);
+			pMMProfileMetaBuffer = NULL;
 			MMProfileGlobals.meta_buffer_size = MMProfileGlobals.new_meta_buffer_size;
 			bResetMetaBuffer = 1;
 		}
