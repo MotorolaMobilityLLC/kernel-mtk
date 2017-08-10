@@ -134,6 +134,13 @@ static void enable_dcs_pasr(void)
 		goto bypass_dcs;
 	}
 
+	/* Step0 - switch to lowpower mode */
+	ret = dcs_switch_to_lowpower();
+	if (ret != 0) {
+		pr_warn("%s: failed to swtich to lowpower mode, error (%d)\n", __func__, ret);
+		return;
+	}
+
 	/* Step1 - Acquire DCS status */
 	ret = dcs_get_dcs_status_lock(&chconfig, &dcs_status);
 	if (ret != 0) {
