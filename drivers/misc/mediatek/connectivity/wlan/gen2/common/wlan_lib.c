@@ -832,6 +832,11 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 					break;
 				else if (kalIsCardRemoved(prAdapter->prGlueInfo) == TRUE
 					 || fgIsBusAccessFailed == TRUE || i >= CFG_RESPONSE_POLLING_TIMEOUT) {
+					wlanDumpTcResAndTxedCmd(NULL, 0);
+					cmdBufDumpCmdQueue(&prAdapter->rPendingCmdQueue, "waiting response CMD queue");
+					glDumpConnSysCpuInfo(prAdapter->prGlueInfo);
+					/* dump TC4[0] ~ TC4[3] TX_DESC */
+					wlanDebugHifDescriptorDump(prAdapter, MTK_AMPDU_TX_DESC, DEBUG_TC4_INDEX);
 					g_IsNeedDoChipReset = 1;
 					kalSendAeeWarning("[Read WCIR_WLAN_READY fail!]", __func__);
 					break;
