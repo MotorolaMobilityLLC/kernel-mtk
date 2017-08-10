@@ -18,7 +18,6 @@
 #include <linux/kernel.h>
 #include <linux/device.h>
 #include <linux/slab.h>
-#include <linux/mutex.h>
 #include <linux/printk.h>
 #include <linux/debugfs.h>
 #include <linux/uaccess.h>
@@ -33,7 +32,7 @@ static enum dcs_status sys_dcs_status = DCS_NORMAL;
 static bool dcs_initialized;
 static int normal_channel_num;
 static int lowpower_channel_num;
-static DEFINE_MUTEX(dcs_mutex);
+static struct rw_semaphore dcs_rwsem;
 
 static char * const dcs_status_name[DCS_NR_STATUS] = {
 	"normal",
@@ -164,7 +163,7 @@ static int dcs_dump_reg_ipi(void) { return 0; }
  */
 int dcs_dram_channel_switch(enum dcs_status status)
 {
-	mutex_lock(&dcs_mutex);
+	down_write(&dcs_rwsem);
 
 	if ((sys_dcs_status < DCS_BUSY) &&
 		(status < DCS_BUSY) &&
@@ -172,10 +171,10 @@ int dcs_dram_channel_switch(enum dcs_status status)
 		dcs_migration_ipi(status == DCS_NORMAL ? NORMAL : LOWPWR);
 		sys_dcs_status = status;
 		pr_info("sys_dcs_status=%s\n", dcs_status_name[sys_dcs_status]);
-		mutex_unlock(&dcs_mutex);
+		up_write(&dcs_rwsem);
 	} else {
 		pr_info("sys_dcs_status not changed\n");
-		mutex_unlock(&dcs_mutex);
+		up_write(&dcs_rwsem);
 		return 0;
 	}
 
@@ -192,7 +191,7 @@ int dcs_dram_channel_switch(enum dcs_status status)
  */
 int dcs_get_dcs_status_lock(int *ch, enum dcs_status *dcs_status)
 {
-	mutex_lock(&dcs_mutex);
+	down_read(&dcs_rwsem);
 
 	*dcs_status = sys_dcs_status;
 
@@ -204,7 +203,48 @@ int dcs_get_dcs_status_lock(int *ch, enum dcs_status *dcs_status)
 		*ch = lowpower_channel_num;
 		break;
 	default:
-		mutex_unlock(&dcs_mutex);
+		pr_err("%s:%d, incorrect DCS status=%s\n",
+				__func__,
+				__LINE__,
+				dcs_status_name[sys_dcs_status]);
+		goto BUSY;
+	}
+	return 0;
+BUSY:
+	*ch = -1;
+	return -EBUSY;
+}
+
+/*
+ * dcs_get_dcs_status_trylock
+ * return the number of DRAM channels and status and get the dcs lock
+ * @ch: address storing the number of DRAM channels, -1 if lock failed
+ * @dcs_status: address storing the system dcs status, DCS_BUSY if lock failed
+ *
+ * return 0 on success or error code
+ */
+int dcs_get_dcs_status_trylock(int *ch, enum dcs_status *dcs_status)
+{
+	if (!down_read_trylock(&dcs_rwsem)) {
+		/* lock failed */
+		*dcs_status = DCS_BUSY;
+		goto BUSY;
+	}
+
+	*dcs_status = sys_dcs_status;
+
+	switch (sys_dcs_status) {
+	case DCS_NORMAL:
+		*ch = normal_channel_num;
+		break;
+	case DCS_LOWPOWER:
+		*ch = lowpower_channel_num;
+		break;
+	default:
+		pr_err("%s:%d, incorrect DCS status=%s\n",
+				__func__,
+				__LINE__,
+				dcs_status_name[sys_dcs_status]);
 		goto BUSY;
 	}
 	return 0;
@@ -219,7 +259,7 @@ BUSY:
  */
 void dcs_get_dcs_status_unlock(void)
 {
-	mutex_unlock(&dcs_mutex);
+	up_read(&dcs_rwsem);
 }
 
 /*
@@ -235,6 +275,9 @@ bool dcs_initialied(void)
 static int __init mtkdcs_init(void)
 {
 	int ret;
+
+	/* init rwsem */
+	init_rwsem(&dcs_rwsem);
 
 	/* read system dcs status */
 	ret = dcs_get_status_ipi(&sys_dcs_status);
