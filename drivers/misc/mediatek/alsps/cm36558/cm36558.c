@@ -620,6 +620,7 @@ static ssize_t CM36558_show_reg(struct device_driver *ddri, char *buf)
 	u8 _bIndex = 0;
 	u8 databuf[2] = { 0 };
 	ssize_t _tLength = 0;
+	int res = 0;
 
 	if (!CM36558_obj) {
 		APS_ERR("CM36558_obj is null!!\n");
@@ -628,7 +629,10 @@ static ssize_t CM36558_show_reg(struct device_driver *ddri, char *buf)
 
 	for (_bIndex = 0; _bIndex < 0x0E; _bIndex++) {
 		databuf[0] = _bIndex;
-		CM36558_i2c_master_operate(CM36558_obj->client, databuf, 2, I2C_FLAG_READ);
+		res = CM36558_i2c_master_operate(CM36558_obj->client, databuf, 2, I2C_FLAG_READ);
+		if (res < 0) {
+			APS_ERR("CM36558_i2c_master_operate err res = %d\n", res);
+		}
 		_tLength +=
 		    snprintf((buf + _tLength), (PAGE_SIZE - _tLength), "Reg[0x%02X]: 0x%04X\n", _bIndex,
 			     databuf[0] | databuf[1] << 8);
