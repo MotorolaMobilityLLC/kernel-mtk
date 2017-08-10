@@ -35,7 +35,7 @@ class ClkObj(ModuleObj):
                 key = re.findall(r'\D+', node.nodeName)[0].upper() + self.__suffix + '%s' %(re.findall(r'\d+', node.nodeName)[0])
 
                 if key not in ModuleObj.get_data(self):
-                    continue;
+	                continue;
 
                 data = ModuleObj.get_data(self)[key]
 

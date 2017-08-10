@@ -292,4 +292,20 @@ class EintObj(ModuleObj):
 
         return gen_str
 
+class EintObj_MT6750S(EintObj):
+    def __init__(self, gpio_obj):
+        EintObj.__init__(self, gpio_obj)
+
+    def parse(self, node):
+        EintObj.parse(self, node)
+
+    def gen_files(self):
+        EintObj.gen_files(self)
+
+    def gen_spec(self, para):
+        EintObj.gen_spec(self, para)
+
+    def fill_mappingTable(self):
+        return ''
+
 

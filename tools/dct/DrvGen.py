@@ -1,4 +1,5 @@
 #! /usr/bin/python
+# -*- coding: utf-8 -*-
 
 import os, sys
 import getopt
@@ -14,13 +15,15 @@ sys.path.append('..')
 from obj.ChipObj import ChipObj
 from obj.ChipObj import Everest
 from obj.ChipObj import Olympus
-from obj.ChipObj import KiboPlus
+from obj.ChipObj import MT6757_P25
 from obj.ChipObj import Rushmore
 from obj.ChipObj import Whitney
+from obj.ChipObj import MT6759
+from obj.ChipObj import MT6763
+from obj.ChipObj import MT6750S
 
 from utility.util import LogLevel
 from utility.util import log
-from utility.version import *
 
 def usage():
     print '''
@@ -58,8 +61,6 @@ def is_oldDws(path, gen_spec):
 
 if __name__ == '__main__':
     opts, args = getopt.getopt(sys.argv[1:], '')
-
-    log(LogLevel.info, 'ver_main: #%s ver_sub: #%s sn_build: #%s' %(VER_MAIN, VER_SUB, BUILD_SN))
 
     if len(args) == 0:
         msg = 'Too less arguments!'
@@ -126,12 +127,20 @@ if __name__ == '__main__':
         chipObj = Everest(dws_path, gen_path)
     elif cmp(chipId, 'MT6757') == 0:
         chipObj = Olympus(dws_path, gen_path)
+    elif cmp(chipId, 'MT6757-P25') == 0:
+        chipObj = MT6757_P25(dws_path, gen_path)
     elif cmp(chipId, 'KIBOPLUS') == 0:
-        chipObj = KiboPlus(dws_path, gen_path)
+        chipObj = MT6757_P25(dws_path, gen_path)
     elif cmp(chipId, 'MT6570') == 0:
         chipObj = Rushmore(dws_path, gen_path)
     elif cmp(chipId, 'MT6799') == 0:
         chipObj = Whitney(dws_path, gen_path)
+    elif cmp(chipId, 'MT6763') == 0:
+        chipObj = MT6763(dws_path, gen_path)
+    elif cmp(chipId, 'MT6759') == 0:
+        chipObj = MT6759(dws_path, gen_path)
+    elif cmp(chipId, 'MT6750S') == 0:
+        chipObj = MT6750S(dws_path, gen_path)
     else:
         chipObj = ChipObj(dws_path, gen_path)
 

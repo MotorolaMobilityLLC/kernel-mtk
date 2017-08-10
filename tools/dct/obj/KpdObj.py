@@ -109,7 +109,11 @@ class KpdObj(ModuleObj):
                 if node.nodeName == 'bPwrKeyGpioDinHigh':
                     flag = False
                     if node.childNodes[0].nodeValue == 'false':
-                        KpdData.set_gpioDinHigh(flag)
+                        flag = False
+                    else:
+                        flag = True
+
+                    KpdData.set_gpioDinHigh(flag)
 
                 if node.nodeName == 'pressPeriod':
                     time = string.atoi(node.childNodes[0].nodeValue)
