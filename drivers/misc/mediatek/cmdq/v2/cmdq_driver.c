@@ -507,7 +507,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 	struct cmdqCommandStruct command;
 	struct cmdqJobStruct job;
 	int count[CMDQ_MAX_ENGINE_COUNT];
-	struct TaskStruct *pTask;
+	struct TaskStruct *pTask = NULL;
 	int32_t status;
 	struct cmdqJobResultStruct jobResult;
 	uint32_t *userRegValue = NULL;
