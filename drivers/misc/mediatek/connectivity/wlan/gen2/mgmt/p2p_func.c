@@ -3675,9 +3675,10 @@ WLAN_STATUS wfdAdjustResource(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnable)
 #endif
 	return WLAN_STATUS_SUCCESS;
 }
-
+#define CFG_SUPPORT_WFD_ADJUST_THREAD 0
 WLAN_STATUS wfdAdjustThread(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnable)
 {
+#if CFG_SUPPORT_WFD_ADJUST_THREAD
 #define WFD_TX_THREAD_PRIORITY 70
 	DBGLOG(P2P, INFO, "wfdAdjustResource %d\n", fgEnable);
 	if (prAdapter->prGlueInfo->main_thread != NULL) {
@@ -3701,6 +3702,7 @@ WLAN_STATUS wfdAdjustThread(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgEnable)
 
 		DBGLOG(P2P, WARN, "main_thread is null, please check if the wlanRemove is called in advance\n");
 	}
+#endif
 	return WLAN_STATUS_SUCCESS;
 }
 
