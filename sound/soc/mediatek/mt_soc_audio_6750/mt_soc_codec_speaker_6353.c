@@ -104,6 +104,9 @@ void Speaker_ClassD_Open(void)
 	else
 		pr_warn("spk trim offset=%d\n", (SPKTrimReg & 0x1f));
 
+	/* spk PWM to 418k */
+	Ana_Set_Reg(MT6353_SPK_CON8, 0x0010, 0x00f0);
+
 	/* spk amp gain fixed at 0dB */
 	Ana_Set_Reg(MT6353_SPK_CON0, 0x3001, 0xffff);
 	/* Turn on speaker (D mode) set 0dB amplifier gain */
