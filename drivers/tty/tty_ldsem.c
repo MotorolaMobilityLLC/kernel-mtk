@@ -371,7 +371,14 @@ int __sched ldsem_down_read(struct ld_semaphore *sem, long timeout)
  */
 int ldsem_down_read_trylock(struct ld_semaphore *sem)
 {
-	long count = sem->count;
+	long count;
+
+	if (sem == NULL) {
+		dump_stack();
+		return 0;
+	}
+
+	count = sem->count;
 
 	while (count >= 0) {
 		if (ldsem_cmpxchg(&count, count + LDSEM_READ_BIAS, sem)) {
