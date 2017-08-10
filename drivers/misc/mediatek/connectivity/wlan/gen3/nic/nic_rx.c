@@ -2322,6 +2322,8 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 	BOOLEAN fgDrop;
 	P_STA_RECORD_T prStaRec;
 	UINT_8 ucBssIndex = 0;
+	UINT_8 ucKeyCmdAction = SEC_TX_KEY_COMMAND;
+	UINT_32 uEapolKeyType;
 
 	DEBUGFUNC("nicRxProcessDataPacket");
 	/* DBGLOG(INIT, TRACE, ("\n")); */
@@ -2434,23 +2436,30 @@ VOID nicRxProcessDataPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 					DBGLOG(RX, ERROR, "Packet Length is %d\n", prRetSwRfb->u2PacketLen);
 					break;
 				}
-				/* when we RX 3/4 */
-				if (EAPOL_KEY_3_OF_4 != secGetEapolKeyType((PUINT_8)prRetSwRfb->pvHeader))
+				uEapolKeyType = secGetEapolKeyType((PUINT_8)prRetSwRfb->pvHeader);
+				if (EAPOL_KEY_3_OF_4 != uEapolKeyType)
 					break;
-
+				/* STA has install key,and AP encrypted 3/4 Eapol frame
+				 * We will set key after AP reply ACK for 4/4
+				 */
+				if (HAL_RX_STATUS_GET_SEC_MODE(prRxStatus) != 0 &&
+					HAL_RX_STATUS_IS_CIPHER_MISMATCH(prRxStatus) == 0)
+					ucKeyCmdAction = SEC_QUEUE_KEY_COMMAND;
 				if (ucBssIndex <= HW_BSSID_NUM) {
-					secSetKeyCmdAction(prAdapter->aprBssInfo[ucBssIndex], EAPOL_KEY_3_OF_4, FALSE);
+					secSetKeyCmdAction(prAdapter->aprBssInfo[ucBssIndex], EAPOL_KEY_3_OF_4,
+										ucKeyCmdAction);
 					break;
 				} else if (prStaRec && prStaRec->ucBssIndex <= HW_BSSID_NUM) {
 					DBGLOG(RX, INFO,
 						"BSS IDX got from wlan idx is wrong, using bss index from sta record\n");
 					secSetKeyCmdAction(prAdapter->aprBssInfo[prStaRec->ucBssIndex],
-						EAPOL_KEY_3_OF_4, FALSE);
+						EAPOL_KEY_3_OF_4, ucKeyCmdAction);
 					break;
 				}
 				ucBssIndex = secGetBssIdxByNetType(prAdapter);
 				if (ucBssIndex <= HW_BSSID_NUM) {
-					secSetKeyCmdAction(prAdapter->aprBssInfo[ucBssIndex], EAPOL_KEY_3_OF_4, FALSE);
+					secSetKeyCmdAction(prAdapter->aprBssInfo[ucBssIndex], EAPOL_KEY_3_OF_4,
+										ucKeyCmdAction);
 					break;
 				}
 				DBGLOG(RX, ERROR, "Can't get bss index base on network type\n");

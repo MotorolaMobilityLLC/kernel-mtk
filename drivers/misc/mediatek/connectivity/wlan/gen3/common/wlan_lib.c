@@ -4329,6 +4329,7 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 	UINT_32 u4SysTime;
 	UINT_8 ucMacHeaderLen;
 	TX_PACKET_INFO rTxPacketInfo;
+	P_BSS_INFO_T prBssInfo;
 
 	ASSERT(prAdapter);
 	ASSERT(prPacket);
@@ -4350,9 +4351,18 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 								 rTxPacketInfo.aucEthDestAddr);
 
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_1X);
+				if (prStaRec != NULL && prStaRec->ucBssIndex <= HW_BSSID_NUM) {
+					prBssInfo = prAdapter->aprBssInfo[prStaRec->ucBssIndex];
+				} else {
+					prBssInfo = NULL;
+					DBGLOG(TX, WARN, "Bss Index is invaild\n");
+				}
+				if (secIsProtected1xFrame(prAdapter, prStaRec)) {
+					/* 1st 4way-handshake don't encrpted it */
+					if ((prBssInfo != NULL) && (prBssInfo->fgEapol3Of4IsProtected == TRUE))
+						GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_PROTECTED_1X);
+				}
 
-				if (secIsProtected1xFrame(prAdapter, prStaRec))
-					GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_PROTECTED_1X);
 			}
 
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_802_3))
@@ -4424,10 +4434,19 @@ WLAN_STATUS
 nicTxSecFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 		IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
+	UINT_8 ucKeyCmdAction = SEC_TX_KEY_COMMAND;
+
 	DBGLOG(TX, INFO, "SEC Msdu WIDX:PID[%u:%u] Status[%u], SeqNo[%u]\n",
 			   prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus,
 			   prMsduInfo->ucTxSeqNum);
 
+	if (rTxDoneStatus != TX_RESULT_SUCCESS)
+		ucKeyCmdAction = SEC_DROP_KEY_COMMAND;
+	else
+		ucKeyCmdAction = SEC_TX_KEY_COMMAND;
+	secSetKeyCmdAction(prAdapter->aprBssInfo[prMsduInfo->ucBssIndex],
+		prMsduInfo->ucEapolKeyType, ucKeyCmdAction);
+	kalSetEvent(prAdapter->prGlueInfo);
 	return WLAN_STATUS_SUCCESS;
 }
 

@@ -1340,7 +1340,7 @@ void secPrivacyDumpWTBL3(IN P_ADAPTER_T prAdapter, IN UINT_8 ucIndex)
 
 #endif
 
-VOID secSetKeyCmdAction(P_BSS_INFO_T prBssInfo, UINT_8 ucEapolKeyType, BOOLEAN fgDropKey)
+VOID secSetKeyCmdAction(P_BSS_INFO_T prBssInfo, UINT_8 ucEapolKeyType, UINT_8 ucAction)
 {
 	ASSERT(prBssInfo);
 
@@ -1348,11 +1348,15 @@ VOID secSetKeyCmdAction(P_BSS_INFO_T prBssInfo, UINT_8 ucEapolKeyType, BOOLEAN f
 	/* some AP may miss Bit9 in KeyInfo, so the 4/4 we send will also miss it, and it seems like 2/4 */
 	case EAPOL_KEY_4_OF_4:
 	case EAPOL_KEY_2_OF_4:
-		prBssInfo->ucKeyCmdAction = fgDropKey ? SEC_DROP_KEY_COMMAND:SEC_TX_KEY_COMMAND;
+		prBssInfo->ucKeyCmdAction = ucAction;
 		break;
-	/* if we Rx 3/4, then set key cmd action to queue key command */
 	case EAPOL_KEY_3_OF_4:
-		prBssInfo->ucKeyCmdAction = SEC_QUEUE_KEY_COMMAND;
+		prBssInfo->ucKeyCmdAction = ucAction;
+		if (ucAction == SEC_QUEUE_KEY_COMMAND)
+			prBssInfo->fgEapol3Of4IsProtected = TRUE;
+		DBGLOG(RSN, TRACE, "ucKeyCmdAction is %d, prBssInfo->fgEapol3Of4IsProtected is %d\n",
+			 prBssInfo->ucKeyCmdAction, prBssInfo->fgEapol3Of4IsProtected);
+
 		break;
 	}
 }
