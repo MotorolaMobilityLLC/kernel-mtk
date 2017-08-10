@@ -1724,7 +1724,7 @@ struct msdc_hw {
 	void (*ext_power_off)(void);
 
 	/* external sdio irq operations */
-	void (*request_sdio_eirq)(msdc_irq_handler_t sdio_irq_handler, void *data);
+	void (*request_sdio_eirq)(sdio_irq_handler_t sdio_irq_handler, void *data);
 	void (*enable_sdio_eirq)(void);
 	void (*disable_sdio_eirq)(void);
 
