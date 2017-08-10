@@ -84,21 +84,21 @@ static void acc_work_func(struct work_struct *work)
 			if (0 == x && 0 == y && 0 == z)
 				goto acc_loop;
 
-			cxt->drv_data.acc_data.values[0] = x;
-			cxt->drv_data.acc_data.values[1] = y;
-			cxt->drv_data.acc_data.values[2] = z;
-			cxt->drv_data.acc_data.status = status;
-			pre_ns = cxt->drv_data.acc_data.time;
-			cxt->drv_data.acc_data.time = cur_ns;
+			cxt->drv_data.x = x;
+			cxt->drv_data.y = y;
+			cxt->drv_data.z = z;
+			cxt->drv_data.status = status;
+			pre_ns = cxt->drv_data.timestamp;
+			cxt->drv_data.timestamp = cur_ns;
 	}
 
 	if (true == cxt->is_first_data_after_enable) {
 		pre_ns = cur_ns;
 		cxt->is_first_data_after_enable = false;
 		/* filter -1 value */
-		if (ACC_INVALID_VALUE == cxt->drv_data.acc_data.values[0] ||
-		    ACC_INVALID_VALUE == cxt->drv_data.acc_data.values[1] ||
-		    ACC_INVALID_VALUE == cxt->drv_data.acc_data.values[2]) {
+		if (ACC_INVALID_VALUE == cxt->drv_data.x ||
+		    ACC_INVALID_VALUE == cxt->drv_data.y ||
+		    ACC_INVALID_VALUE == cxt->drv_data.z) {
 			ACC_LOG(" read invalid data\n");
 			goto acc_loop;
 
@@ -111,14 +111,10 @@ static void acc_work_func(struct work_struct *work)
 
 	while ((cur_ns - pre_ns) >= delay_ms*1800000LL) {
 		pre_ns += delay_ms*1000000LL;
-		acc_data_report(cxt->drv_data.acc_data.values[0],
-			cxt->drv_data.acc_data.values[1], cxt->drv_data.acc_data.values[2],
-			cxt->drv_data.acc_data.status, pre_ns);
+		acc_data_report(cxt->drv_data);
 	}
 
-	acc_data_report(cxt->drv_data.acc_data.values[0],
-			cxt->drv_data.acc_data.values[1], cxt->drv_data.acc_data.values[2],
-			cxt->drv_data.acc_data.status, cxt->drv_data.acc_data.time);
+	acc_data_report(cxt->drv_data);
 
  acc_loop:
 	if (true == cxt->is_polling_run)
@@ -238,9 +234,9 @@ static int acc_enable_data(int enable)
 				stopTimer(&cxt->hrTimer);
 				smp_mb();/* for memory barrier */
 				cancel_work_sync(&cxt->report);
-				cxt->drv_data.acc_data.values[0] = ACC_INVALID_VALUE;
-				cxt->drv_data.acc_data.values[1] = ACC_INVALID_VALUE;
-				cxt->drv_data.acc_data.values[2] = ACC_INVALID_VALUE;
+				cxt->drv_data.x = ACC_INVALID_VALUE;
+				cxt->drv_data.y = ACC_INVALID_VALUE;
+				cxt->drv_data.z = ACC_INVALID_VALUE;
 			}
 		}
 	acc_real_enable(enable);
@@ -419,9 +415,9 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 				stopTimer(&cxt->hrTimer);
 				smp_mb();  /* for memory barrier */
 				cancel_work_sync(&cxt->report);
-				cxt->drv_data.acc_data.values[0] = ACC_INVALID_VALUE;
-				cxt->drv_data.acc_data.values[1] = ACC_INVALID_VALUE;
-				cxt->drv_data.acc_data.values[2] = ACC_INVALID_VALUE;
+				cxt->drv_data.x = ACC_INVALID_VALUE;
+				cxt->drv_data.y = ACC_INVALID_VALUE;
+				cxt->drv_data.z = ACC_INVALID_VALUE;
 			}
 		} else if (maxBatchReportLatencyNs == 0) {
 			cxt->is_batch_enable = false;
@@ -684,19 +680,27 @@ int acc_register_control_path(struct acc_control_path *ctl)
 	return 0;
 }
 
-int acc_data_report(int x, int y, int z, int status, int64_t nt)
+int acc_data_report(struct acc_data data)
 {
 	struct sensor_event event;
 	int err = 0;
+	#ifdef DEBUG_PERFORMANCE
+	int64_t t;
+	#endif
 
-	event.time_stamp = nt;
+	event.time_stamp = data.timestamp;
 	event.flush_action = false;
-	event.status = status;
-	event.word[0] = x;
-	event.word[1] = y;
-	event.word[2] = z;
+	event.status = data.status;
+	event.word[0] = data.x;
+	event.word[1] = data.y;
+	event.word[2] = data.z;
+	event.reserved = data.reserved[0];
 
 	/* ACC_ERR("x:%d,y:%d,z:%d,time:%lld\n", x, y, z, nt); */
+	#ifdef DEBUG_PERFORMANCE
+	t = ktime_get_raw_ns();
+	pr_err("fwq delta=%llu , flag=%d, [%llu,%llu]\n", t-event.time_stamp, event.reserved, t, event.time_stamp);
+	#endif
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
 	if (err < 0)
 		ACC_ERR("failed due to event buffer full\n");

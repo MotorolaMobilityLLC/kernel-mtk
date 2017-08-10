@@ -420,12 +420,18 @@ static void scp_init_work_done(struct work_struct *work)
 static int gsensor_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
+	struct acc_data data;
 
+	data.x = event->accelerometer_t.x;
+	data.y = event->accelerometer_t.y;
+	data.z = event->accelerometer_t.z;
+	data.status = event->accelerometer_t.status;
+	data.timestamp = (int64_t)(event->time_stamp + event->time_stamp_gpt);
+	data.reserved[0] = event->reserve[0];
 	if (event->flush_action == true)
 		err = acc_flush_report();
 	else
-		err = acc_data_report(event->accelerometer_t.x, event->accelerometer_t.y, event->accelerometer_t.z,
-			event->accelerometer_t.status, (int64_t)(event->time_stamp + event->time_stamp_gpt));
+		err = acc_data_report(data);
 	return err;
 }
 

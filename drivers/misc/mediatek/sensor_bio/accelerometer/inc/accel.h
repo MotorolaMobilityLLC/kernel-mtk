@@ -39,22 +39,6 @@
 
 #define ACC_INVALID_VALUE -1
 
-#define EVENT_TYPE_ACCEL_X			ABS_X
-#define EVENT_TYPE_ACCEL_Y			ABS_Y
-#define EVENT_TYPE_ACCEL_Z			ABS_Z
-#define EVENT_TYPE_ACCEL_UPDATE              REL_X
-#define EVENT_TYPE_ACCEL_TIMESTAMP_HI		REL_HWHEEL
-#define EVENT_TYPE_ACCEL_TIMESTAMP_LO		REL_DIAL
-#define EVENT_TYPE_ACCEL_STATUS     ABS_WHEEL
-#define EVENT_TYPE_ACCEL_DIV        ABS_GAS
-
-
-#define ACC_VALUE_MAX (32767)
-#define ACC_VALUE_MIN (-32768)
-#define ACC_STATUS_MIN (0)
-#define ACC_STATUS_MAX (64)
-#define ACC_DIV_MAX (32767)
-#define ACC_DIV_MIN (1)
 #define ACC_AXIS_X 0
 #define ACC_AXIS_Y 1
 #define ACC_AXIS_Z 2
@@ -88,10 +72,14 @@ struct acc_init_info {
 };
 
 struct acc_data {
-	struct hwm_sensor_data acc_data;
-	int data_updata;
-	/* struct mutex lock; */
-};
+	int8_t status;
+	int8_t reserved[3];
+	int x;
+	int y;
+	int z;
+	int64_t timestamp;
+	void *reserved1;
+} __packed;
 
 struct acc_drv_obj {
 	void *self;
@@ -130,7 +118,7 @@ struct acc_context {
 
 /* for auto detect */
 extern int acc_driver_add(struct acc_init_info *obj);
-extern int acc_data_report(int x, int y, int z, int status, int64_t nt);
+extern int acc_data_report(struct acc_data data);
 extern int acc_flush_report(void);
 extern int acc_register_control_path(struct acc_control_path *ctl);
 extern int acc_register_data_path(struct acc_data_path *data);
