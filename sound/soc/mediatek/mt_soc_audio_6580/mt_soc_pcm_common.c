@@ -97,6 +97,8 @@ unsigned long audio_bytes_to_frame(struct snd_pcm_substream *substream, unsigned
 
 unsigned long mtk_local_audio_copy_from_user(bool IsSRAM, kal_uint8 *dst, char *src, int len)
 {
+	unsigned long value;
+
 	if (IsSRAM) {
 		/* PRINTK_AUDDRV("mtk_local_audio_copy_from_user SRAM = %d\n", len); */
 #ifdef MEMCPY_SINGLE_MODE
@@ -124,8 +126,9 @@ unsigned long mtk_local_audio_copy_from_user(bool IsSRAM, kal_uint8 *dst, char *
 #endif
 	} else {
 		/* PRINTK_AUDDRV("mtk_local_audio_copy_from_user DRAM = %d\n", len); */
-		if (copy_from_user(dst, src, len)) {
-			pr_err("%s 4, len=%d", __func__, len);
+		value = copy_from_user(dst, src, len);
+		if (value) {
+			pr_err("%s 4, len=%d, length=%ld", __func__, len, value);
 			return 1;
 		}
 	}

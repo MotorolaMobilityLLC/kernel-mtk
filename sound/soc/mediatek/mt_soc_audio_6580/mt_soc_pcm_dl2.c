@@ -552,6 +552,10 @@ static int dataTransfer(void *dest, const void *src, uint32_t size)
 void mtk_dl2_copy2buffer(const void *addr, uint32_t size)
 {
 	bool again = false;
+	static kal_int8 *recordDst;
+	static kal_int8 *recordScr;
+	static uint32_t recordSize;
+
 
 	PRINTK_AUD_DL2("%s, addr 0x%p 0x%p, size %d %d\n", __func__, (int)addr,
 			(int)ISRCopyBuffer.pBufferBase, size, ISRCopyBuffer.u4BufferSize);
@@ -567,6 +571,7 @@ retry:
 		pr_err("%s, remaining data %d\n", __func__, ISRCopyBuffer.u4BufferSize);
 
 	if (unlikely(!ISRCopyBuffer.pBufferBase || size > ISRCopyBuffer.u4BufferSizeMax)) {
+		pr_warn("%s, size %d, u4BufferSizeMax %d\n", __func__, size, ISRCopyBuffer.u4BufferSizeMax);
 		if (!again) {
 			/* realloc memory */
 			kfree(ISRCopyBuffer.pBufferBase);
@@ -585,9 +590,15 @@ retry:
 
 	if (unlikely(mtk_local_audio_copy_from_user(false, ISRCopyBuffer.pBufferBase,
 			(char *)addr, size))) {
-		pr_warn("%s Fail copy from user !!\n", __func__);
+		pr_warn("%s Fail copy from user!! fail:dst 0x%p src 0x%p, size %d, pass:dst 0x%p src 0x%p, size %d\n",
+			__func__, ISRCopyBuffer.pBufferBase, addr, size, recordDst, recordScr, recordSize);
 		goto exit;
+	} else {
+		recordDst = ISRCopyBuffer.pBufferBase;
+		recordScr = (char *)addr;
+		recordSize = size;
 	}
+
 	ISRCopyBuffer.pBufferIndx = ISRCopyBuffer.pBufferBase;
 	ISRCopyBuffer.u4BufferSize = size;
 	ISRCopyBuffer.u4IsrConsumeSize = 0;    /* Restart */
