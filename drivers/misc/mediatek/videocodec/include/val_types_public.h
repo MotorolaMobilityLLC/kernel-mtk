@@ -316,6 +316,7 @@ typedef struct _VAL_VCODEC_M4U_BUFFER_CONFIG_T {
  *  This is a parameter for memory usaged function
  */
 typedef struct _VAL_MEMORY_T {                /* union extend 64bits for TEE*/
+	VAL_UINT32_T    u4MemSign;                  /* /< [IN]     memory signature */
 	VAL_MEM_TYPE_T  eMemType;                   /* /< [IN]     The allocation memory type */
 	union {
 		VAL_ULONG_T     u4MemSize;              /* /< [IN]     The size of memory allocation */
