@@ -392,6 +392,9 @@ void __spm_reset_and_init_pcm(const struct pcm_desc *pcmdesc)
 		  SPM_SRAM_ISOINT_B_LSB | SPM_SRAM_SLEEP_B_LSB |
 		  (pcmdesc->replace ? 0 : IM_NONRP_EN_LSB) |
 		  MIF_APBEN_LSB | SCP_APB_INTERNAL_EN_LSB);
+
+	/* clear SPM_SW_INT after scenario change */
+	spm_write(SPM_SW_INT_CLEAR, PCM_SW_INT0);
 }
 #endif
 
@@ -1254,6 +1257,25 @@ void __spm_backup_pmic_ck_pdn(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* PMIC setting 2015/07/31 by Chia-Lin/Kev */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	pmic_read_interface_nolock(PMIC_CLK_AUXADC_CK_PDN_HWEN_ADDR,
+				   &pmic_rg_auxadc_ck_pdn_hwen,
+				   PMIC_CLK_AUXADC_CK_PDN_HWEN_MASK,
+				   PMIC_CLK_AUXADC_CK_PDN_HWEN_SHIFT);
+	pmic_config_interface_nolock(PMIC_CLK_AUXADC_CK_PDN_HWEN_ADDR,
+				     0,
+				     PMIC_CLK_AUXADC_CK_PDN_HWEN_MASK,
+				     PMIC_CLK_AUXADC_CK_PDN_HWEN_SHIFT);
+
+	pmic_read_interface_nolock(PMIC_CLK_EFUSE_CK_PDN_ADDR,
+				   &pmic_rg_efuse_ck_pdn,
+				   PMIC_CLK_EFUSE_CK_PDN_MASK,
+				   PMIC_CLK_EFUSE_CK_PDN_SHIFT);
+	pmic_config_interface_nolock(PMIC_CLK_EFUSE_CK_PDN_ADDR,
+				     1,
+				     PMIC_CLK_EFUSE_CK_PDN_MASK,
+				     PMIC_CLK_EFUSE_CK_PDN_SHIFT);
+#else
 	pmic_read_interface_nolock(MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_ADDR,
 				   &pmic_rg_auxadc_ck_pdn_hwen,
 				   MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_MASK,
@@ -1272,12 +1294,24 @@ void __spm_backup_pmic_ck_pdn(void)
 				     MT6351_PMIC_RG_EFUSE_CK_PDN_MASK,
 				     MT6351_PMIC_RG_EFUSE_CK_PDN_SHIFT);
 #endif
+#endif
 }
 
 void __spm_restore_pmic_ck_pdn(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* PMIC setting 2015/07/31 by Chia-Lin/Kev */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	pmic_config_interface_nolock(PMIC_CLK_AUXADC_CK_PDN_HWEN_ADDR,
+				     pmic_rg_auxadc_ck_pdn_hwen,
+				     PMIC_CLK_AUXADC_CK_PDN_HWEN_MASK,
+				     PMIC_CLK_AUXADC_CK_PDN_HWEN_SHIFT);
+
+	pmic_config_interface_nolock(PMIC_CLK_EFUSE_CK_PDN_ADDR,
+				     pmic_rg_efuse_ck_pdn,
+				     PMIC_CLK_EFUSE_CK_PDN_MASK,
+				     PMIC_CLK_EFUSE_CK_PDN_SHIFT);
+#else
 	pmic_config_interface_nolock(MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_ADDR,
 				     pmic_rg_auxadc_ck_pdn_hwen,
 				     MT6351_PMIC_RG_AUXADC_CK_PDN_HWEN_MASK,
@@ -1287,6 +1321,7 @@ void __spm_restore_pmic_ck_pdn(void)
 				     pmic_rg_efuse_ck_pdn,
 				     MT6351_PMIC_RG_EFUSE_CK_PDN_MASK,
 				     MT6351_PMIC_RG_EFUSE_CK_PDN_SHIFT);
+#endif
 #endif
 }
 
@@ -1306,6 +1341,16 @@ void __spm_bsi_top_init_setting(void)
 void __spm_pmic_pg_force_on(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	pmic_config_interface_nolock(PMIC_STRUP_DIG_IO_PG_FORCE_ADDR,
+			0x1,
+			PMIC_STRUP_DIG_IO_PG_FORCE_MASK,
+			PMIC_STRUP_DIG_IO_PG_FORCE_SHIFT);
+	pmic_config_interface_nolock(PMIC_RG_STRUP_VIO18_PG_ENB_ADDR,
+			0x1,
+			PMIC_RG_STRUP_VIO18_PG_ENB_MASK,
+			PMIC_RG_STRUP_VIO18_PG_ENB_SHIFT);
+#else
 	pmic_config_interface_nolock(MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_ADDR,
 			0x1,
 			MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_MASK,
@@ -1315,11 +1360,22 @@ void __spm_pmic_pg_force_on(void)
 			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_MASK,
 			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_SHIFT);
 #endif
+#endif
 }
 
 void __spm_pmic_pg_force_off(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	pmic_config_interface_nolock(PMIC_STRUP_DIG_IO_PG_FORCE_ADDR,
+			0x0,
+			PMIC_STRUP_DIG_IO_PG_FORCE_MASK,
+			PMIC_STRUP_DIG_IO_PG_FORCE_SHIFT);
+	pmic_config_interface_nolock(PMIC_RG_STRUP_VIO18_PG_ENB_ADDR,
+			0x0,
+			PMIC_RG_STRUP_VIO18_PG_ENB_MASK,
+			PMIC_RG_STRUP_VIO18_PG_ENB_SHIFT);
+#else
 	pmic_config_interface_nolock(MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_ADDR,
 			0x0,
 			MT6351_PMIC_STRUP_DIG_IO_PG_FORCE_MASK,
@@ -1328,6 +1384,7 @@ void __spm_pmic_pg_force_off(void)
 			0x0,
 			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_MASK,
 			MT6351_PMIC_RG_STRUP_VIO18_PG_ENB_SHIFT);
+#endif
 #endif
 }
 

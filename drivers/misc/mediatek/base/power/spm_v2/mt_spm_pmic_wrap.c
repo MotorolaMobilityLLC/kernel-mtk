@@ -80,7 +80,45 @@ struct pmic_wrap_setting {
 static struct pmic_wrap_setting pw = {
 	.phase = NR_PMIC_WRAP_PHASE,	/* invalid setting for init */
 	.addr = {{0, 0} },
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	.set[PMIC_WRAP_PHASE_NORMAL] = {
+		._[IDX_NM_RESERVE1] = {0, 0,},
+		._[IDX_NM_RESERVE2] = {0, 0,},
+		._[IDX_NM_VCORE_HPM] = { PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(100000),},
+		._[IDX_NM_VCORE_TRANS2] = { PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(96250),},
+		._[IDX_NM_VCORE_TRANS1] = { PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(93125),},
+		._[IDX_NM_VCORE_LPM] = { PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(90000),},
+		.nr_idx = NR_IDX_NM,
+	},
 
+	.set[PMIC_WRAP_PHASE_SUSPEND] = {
+		._[IDX_SP_VSRAM_PWR_ON] = {PMIC_LDO_VSRAM_PROC_EN_ADDR, _BITS_(1:1, 1),},
+		._[IDX_SP_VSRAM_SHUTDOWN] = {PMIC_LDO_VSRAM_PROC_EN_ADDR, _BITS_(1:1, 0),},
+		._[IDX_SP_VCORE_HPM] = {PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(100000),},
+		._[IDX_SP_VCORE_TRANS2] = {PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(96250),},
+		._[IDX_SP_VCORE_TRANS1] = {PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(93125),},
+		._[IDX_SP_VCORE_LPM] = {PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(90000),},
+		._[IDX_SP_VPROC_PWR_ON] = {PMIC_BUCK_VPROC_EN_ADDR,  _BITS_(0:0, 1),},
+		._[IDX_SP_VPROC_SHUTDOWN] = {PMIC_BUCK_VPROC_EN_ADDR,  _BITS_(0:0, 0),},
+		.nr_idx = NR_IDX_SP,
+	},
+
+	.set[PMIC_WRAP_PHASE_DEEPIDLE] = {
+		._[IDX_DI_VSRAM_NORMAL] = {PMIC_LDO_VSRAM_PROC_VOSEL_ON_ADDR,
+			VOLT_TO_PMIC_VAL(DEFAULT_VOLT_VSRAM),},
+		._[IDX_DI_VSRAM_SLEEP] = {PMIC_LDO_VSRAM_PROC_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(70001),},
+		._[IDX_DI_VCORE_HPM] = {PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(100000),},
+		._[IDX_DI_VCORE_TRANS2] = {PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(96250),},
+		._[IDX_DI_VCORE_TRANS1] = {PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(93125),},
+		._[IDX_DI_VCORE_LPM] = {PMIC_BUCK_VCORE_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(90000),},
+		._[IDX_DI_SRCCLKEN_IN2_NORMAL] = {PMIC_RG_SRCLKEN_IN2_EN_ADDR, _BITS_(3:3, 1),},
+		._[IDX_DI_SRCCLKEN_IN2_SLEEP] = {PMIC_RG_SRCLKEN_IN2_EN_ADDR, _BITS_(3:3, 0),},
+		._[IDX_DI_VPROC_NORMAL] = {PMIC_BUCK_VPROC_VOSEL_ON_ADDR,
+			VOLT_TO_PMIC_VAL(DEFAULT_VOLT_VPROC),},
+		._[IDX_DI_VPROC_SLEEP] = {PMIC_BUCK_VPROC_VOSEL_ON_ADDR, VOLT_TO_PMIC_VAL(70001),},
+		.nr_idx = NR_IDX_DI,
+	},
+#else
 	.set[PMIC_WRAP_PHASE_NORMAL] = {
 		._[IDX_NM_RESERVE1] = {0, 0,},
 		._[IDX_NM_RESERVE2] = {0, 0,},
@@ -113,6 +151,7 @@ static struct pmic_wrap_setting pw = {
 		._[IDX_DI_SRCCLKEN_IN2_SLEEP] = {MT6351_PMIC_RG_SRCLKEN_IN2_EN_ADDR, _BITS_(3:3, 0),},
 		.nr_idx = NR_IDX_DI,
 	},
+#endif
 };
 #elif defined(CONFIG_ARCH_MT6757)
 
@@ -317,8 +356,10 @@ void mt_spm_pmic_wrap_set_phase(enum pmic_wrap_phase_id phase)
 	pw.phase = phase;
 
 	for (i = 0; i < pw.set[phase].nr_idx; i++) {
-		spm_write(pw.addr[i].cmd_addr, pw.set[phase]._[i].cmd_addr);
-		spm_write(pw.addr[i].cmd_wdata, pw.set[phase]._[i].cmd_wdata);
+		if (pw.addr[i].cmd_addr) {
+			spm_write(pw.addr[i].cmd_addr, pw.set[phase]._[i].cmd_addr);
+			spm_write(pw.addr[i].cmd_wdata, pw.set[phase]._[i].cmd_wdata);
+		}
 	}
 
 	pmic_wrap_unlock(flags);

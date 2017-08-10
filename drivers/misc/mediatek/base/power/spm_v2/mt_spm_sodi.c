@@ -376,7 +376,20 @@ static void spm_sodi_pre_process(void)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	__spm_pmic_pg_force_on();
 
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_ARCH_MT6755)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_read_interface_nolock(PMIC_LDO_VSRAM_PROC_VOSEL_ON_ADDR,
+					&val,
+					PMIC_LDO_VSRAM_PROC_VOSEL_ON_MASK,
+					PMIC_LDO_VSRAM_PROC_VOSEL_ON_SHIFT);
+#else
+	pmic_read_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_ADDR,
+					&val,
+					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
+					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_SHIFT);
+#endif
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VSRAM_NORMAL, val);
+#elif defined(CONFIG_ARCH_MT6757)
 	pmic_read_interface_nolock(MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_ADDR,
 					&val,
 					MT6351_PMIC_BUCK_VSRAM_PROC_VOSEL_ON_MASK,
@@ -384,6 +397,15 @@ static void spm_sodi_pre_process(void)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VSRAM_NORMAL, val);
 #endif
 
+#if defined(CONFIG_ARCH_MT6755) && defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_read_interface_nolock(PMIC_RG_SRCLKEN_IN2_EN_ADDR, &val, ALL_TOP_CON_MASK, 0);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+					IDX_DI_SRCCLKEN_IN2_NORMAL,
+					val | (1 << PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
+					IDX_DI_SRCCLKEN_IN2_SLEEP,
+					val & ~(1 << PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+#else
 	pmic_read_interface_nolock(MT6351_TOP_CON, &val, ALL_TOP_CON_MASK, 0);
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_NORMAL,
@@ -391,6 +413,17 @@ static void spm_sodi_pre_process(void)
 	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE,
 					IDX_DI_SRCCLKEN_IN2_SLEEP,
 					val & ~(1 << MT6351_PMIC_RG_SRCLKEN_IN2_EN_SHIFT));
+#endif
+
+#if defined(CONFIG_ARCH_MT6755) && defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	pmic_read_interface_nolock(PMIC_BUCK_VPROC_VOSEL_ON_ADDR,
+					&val,
+					PMIC_BUCK_VPROC_VOSEL_ON_MASK,
+					PMIC_BUCK_VPROC_VOSEL_ON_SHIFT);
+	mt_spm_pmic_wrap_set_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VPROC_NORMAL, val);
+#else
+	/* nothing */
+#endif
 
 	/* set PMIC WRAP table for deepidle power control */
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_DEEPIDLE);
@@ -655,6 +688,7 @@ wake_reason_t spm_go_to_sodi(u32 spm_flags, u32 spm_data, u32 sodi_flags)
 	}
 	mt_irq_mask_all(mask);
 	mt_irq_unmask_for_sleep(SPM_IRQ0_ID);
+	unmask_edge_trig_irqs_for_cirq();
 #if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();

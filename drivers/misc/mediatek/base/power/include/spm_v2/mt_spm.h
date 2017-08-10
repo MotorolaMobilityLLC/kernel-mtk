@@ -128,11 +128,15 @@ enum {
 };
 void spm_pmic_power_mode(int mode, int force, int lock);
 void spm_bypass_boost_gpio_set(void);
+void spm_vmd_sel_gpio_set(void);
 #if defined(CONFIG_ARCH_MT6797)
 /* for SPM/SCP debug */
 extern u32 is_check_scp_freq_req(void);
 bool spm_save_thermal_adc(void);
 #endif
+
+extern void unmask_edge_trig_irqs_for_cirq(void);
+
 /**************************************
  * Macro and Inline
  **************************************/

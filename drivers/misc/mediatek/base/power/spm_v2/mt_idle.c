@@ -1729,6 +1729,9 @@ static inline void soidle_post_handler(void)
 
 static u32 slp_spm_SODI3_flags = {
 	SPM_FLAG_ENABLE_SODI3 |
+	#ifdef SODI3_AUXADC_CHECK
+	SPM_FLAG_DIS_SRCCLKEN_LOW |
+	#endif
 	#ifdef CONFIG_MTK_ICUSB_SUPPORT
 	SPM_FLAG_DIS_INFRA_PDN |
 	#endif

@@ -29,6 +29,7 @@
 #include <linux/of_address.h>
 #include <linux/of_reserved_mem.h>
 #include <linux/irqchip/mt-eic.h>
+#include "mt_devinfo.h" /* for get_devinfo_with_index() */
 /* #include <mach/eint.h> */
 /* #include <mach/mt_boot.h> */
 #ifdef CONFIG_MTK_WD_KICKER
@@ -60,6 +61,12 @@
 #include <mt_spm_pmic_wrap.h>
 #include "../../../include/mt-plat/mt6797/include/mach/mt_thermal.h"
 #endif
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+#include "pmic_api_buck.h"
+#include "pmic_api_ldo.h"
+#endif
+
 #ifndef dmac_map_area
 #define dmac_map_area __dma_map_area
 #endif
@@ -71,6 +78,15 @@ static int dyna_load_pcm_done __nosavedata;
 
 #if defined(CONFIG_ARCH_MT6755)
 static char *dyna_load_pcm_path[] = {
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend_m.bin",
+	[DYNA_LOAD_PCM_SUSPEND_BY_MP1] = "pcm_suspend_by_mp1_m.bin",
+	[DYNA_LOAD_PCM_SODI] = "pcm_sodi_ddrdfs_m.bin",
+	[DYNA_LOAD_PCM_SODI_BY_MP1] = "pcm_sodi_ddrdfs_by_mp1_m.bin",
+	[DYNA_LOAD_PCM_DEEPIDLE] = "pcm_deepidle_m.bin",
+	[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1] = "pcm_deepidle_by_mp1_m.bin",
+	[DYNA_LOAD_PCM_MAX] = "pcm_path_max",
+#else
 	[DYNA_LOAD_PCM_SUSPEND] = "pcm_suspend.bin",
 	[DYNA_LOAD_PCM_SUSPEND_BY_MP1] = "pcm_suspend_by_mp1.bin",
 	[DYNA_LOAD_PCM_SODI] = "pcm_sodi_ddrdfs.bin",
@@ -78,6 +94,7 @@ static char *dyna_load_pcm_path[] = {
 	[DYNA_LOAD_PCM_DEEPIDLE] = "pcm_deepidle.bin",
 	[DYNA_LOAD_PCM_DEEPIDLE_BY_MP1] = "pcm_deepidle_by_mp1.bin",
 	[DYNA_LOAD_PCM_MAX] = "pcm_path_max",
+#endif
 };
 
 MODULE_FIRMWARE(dyna_load_pcm_path[DYNA_LOAD_PCM_SUSPEND]);
@@ -204,6 +221,17 @@ unsigned int vcore_temp_hi = 70;
 unsigned int vcore_temp_lo = 0;
 u32 spm_suspend_vcore_efuse = 0;
 #endif
+
+#define	NF_EDGE_TRIG_IRQS		5
+static u32 edge_trig_irqs[NF_EDGE_TRIG_IRQS];
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+#if !defined(CONFIG_MTK_LEGACY)
+#include <dt-bindings/pinctrl/mt65xx.h>
+static int spm_vmd1_gpio;
+#endif /* !defined(CONFIG_MTK_LEGACY) */
+#endif
+
 /**************************************
  * Config and Parameter
  **************************************/
@@ -430,6 +458,7 @@ static void spm_register_init(void)
 	unsigned long flags;
 
 	struct device_node *node;
+	int ret = -1;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 	if (!node)
@@ -600,6 +629,61 @@ static void spm_register_init(void)
 	if (of_property_read_u32_array(node, "reg", &gpio_base_addr, 1))
 		spm_err("mediatek,GPIO base addr can NOT found!\n");
 
+	/* edge trigger irqs that have to lateched by CIRQ */
+#if defined(CONFIG_ARCH_MT6755)
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6755-sys_cirq");
+#elif defined(CONFIG_ARCH_MT6757)
+	node = of_find_compatible_node(NULL, NULL, "mediatek,sys_cirq");
+#elif defined(CONFIG_ARCH_MT6797)
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6797-sys_cirq");
+#endif
+	if (!node) {
+		spm_err("find mediatek,sys_cirq failed\n");
+	} else {
+		ret = of_property_read_u32_array(node, "mediatek,edge_trig_irqs_for_spm",
+					   edge_trig_irqs, NF_EDGE_TRIG_IRQS);
+		if (!ret) {
+			/* Returns 0 on success */
+			spm_err("edge trigger irqs: %d, %d, %d, %d, %d\n",
+						edge_trig_irqs[0],
+						edge_trig_irqs[1],
+						edge_trig_irqs[2],
+						edge_trig_irqs[3],
+						edge_trig_irqs[4]
+			);
+		} else {
+			/* Can NOT get value of edge_trig_irqs */
+			spm_err("find mediatek,edge_trig_irqs_for_spm failed\n");
+		}
+	}
+
+	/*
+	 * Dirty hacking:
+	 *  if can not get value of edge_trig_irqs,
+	 *  hardcode values directly.
+	 */
+	if (edge_trig_irqs[0] == 0) {
+#if defined(CONFIG_ARCH_MT6755)
+		edge_trig_irqs[0] = 196;
+		edge_trig_irqs[1] = 160;
+		edge_trig_irqs[2] = 252;
+		edge_trig_irqs[3] = 255;
+		edge_trig_irqs[4] = 271;
+#elif defined(CONFIG_ARCH_MT6757)
+		edge_trig_irqs[0] = 162;
+		edge_trig_irqs[1] = 196;
+		edge_trig_irqs[2] = 281;
+		edge_trig_irqs[3] = 284;
+		edge_trig_irqs[4] = 300;
+#elif defined(CONFIG_ARCH_MT6797)
+		edge_trig_irqs[0] = 169;
+		edge_trig_irqs[1] = 319;
+		edge_trig_irqs[2] = 211;
+		edge_trig_irqs[3] = 298;
+		edge_trig_irqs[4] = 317;
+#endif
+	}
+
 	spin_lock_irqsave(&__spm_lock, flags);
 
 	/* md resource request selection */
@@ -725,6 +809,18 @@ int spm_module_init(void)
 
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 	/* debug code */
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	r = pmic_read_interface_nolock(MT6353_WDTDBG_CON1, &reg_val, 0xffff, 0);
+	spm_crit("[PMIC]wdtdbg_con1 : 0x%x\n", reg_val);
+	r = pmic_read_interface_nolock(MT6353_BUCK_VCORE_HWM_CON0, &reg_val, 0xffff, 0);
+	spm_crit("[PMIC]vcore vosel_ctrl=0x%x\n", reg_val);
+	r = pmic_read_interface_nolock(MT6353_BUCK_VCORE_VOL_CON1, &reg_val, 0xffff, 0);
+	spm_crit("[PMIC]vcore vosel=0x%x\n", reg_val);
+	r = pmic_read_interface_nolock(MT6353_BUCK_VCORE_VOL_CON2, &reg_val, 0xffff, 0);
+	spm_crit("[PMIC]vcore vosel_on=0x%x\n", reg_val);
+	r = pmic_read_interface_nolock(MT6353_WDTDBG_CON1, &reg_val, 0xffff, 0);
+	spm_crit("[PMIC]wdtdbg_con1-after : 0x%x\n", reg_val);
+#else
 	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
 	spm_crit("[PMIC]wdtdbg_con1 : 0x%x\n", reg_val);
 	r = pmic_read_interface_nolock(MT6351_BUCK_VCORE_CON0, &reg_val, 0xffff, 0);
@@ -735,6 +831,7 @@ int spm_module_init(void)
 	spm_crit("[PMIC]vcore vosel_on=0x%x\n", reg_val);
 	r = pmic_read_interface_nolock(MT6351_WDTDBG_CON1, &reg_val, 0xffff, 0);
 	spm_crit("[PMIC]wdtdbg_con1-after : 0x%x\n", reg_val);
+#endif
 #endif
 #endif
 /* set Vcore DVFS bootup opp by ddr shuffle opp */
@@ -1137,12 +1234,145 @@ static struct notifier_block spm_pm_notifier_func = {
 	.priority = 0,
 };
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+static int spm_probe(struct platform_device *pdev)
+{
+#if !defined(CONFIG_MTK_LEGACY)
+	struct device_node *np = pdev->dev.of_node;
+	struct device_node *np_config;
+	struct device_node *child_np;
+	u32 pinfunc;
+	int i;
+	int num_pins;
+	struct property *pins;
+	int state, ret, ret2;
+	char *propname;
+	struct property *prop;
+	const char *statename;
+	const __be32 *list;
+	int size, config;
+	phandle phandle;
+
+	if (!np)
+		return 0;
+
+	/* We may store pointers to property names within the node */
+	of_node_get(np);
+
+	/* For each defined state ID */
+	for (state = 0; ; state++) {
+		/* Retrieve the pinctrl-* property */
+		propname = kasprintf(GFP_KERNEL, "pinctrl-%d", state);
+		prop = of_find_property(np, propname, &size);
+		kfree(propname);
+		if (!prop)
+			break;
+		list = prop->value;
+		size /= sizeof(*list);
+
+		/* Determine whether pinctrl-names property names the state */
+		ret = of_property_read_string_index(np, "pinctrl-names",
+				state, &statename);
+		/*
+		 * If not, statename is just the integer state ID. But rather
+		 * than dynamically allocate it and have to free it later,
+		 * just point part way into the property name for the string.
+		 */
+		if (ret < 0) {
+			/* strlen("pinctrl-") == 8 */
+			statename = prop->name + 8;
+		}
+
+		/* For every referenced pin configuration node in it */
+		for (config = 0; config < size; config++) {
+			phandle = be32_to_cpup(list++);
+
+			/* Look up the pin configuration node */
+			np_config = of_find_node_by_phandle(phandle);
+			if (!np_config) {
+				ret = -EINVAL;
+				goto err;
+			}
+			if (!strcmp(np_config->name, "default"))
+				continue;
+			for_each_child_of_node(np_config, child_np) {
+				pins = of_find_property(child_np, "pinmux", NULL);
+				if (!pins) {
+					pins = of_find_property(child_np, "pins", NULL);
+					if (!pins)
+						return -EINVAL;
+				}
+				num_pins = pins->length / sizeof(u32);
+
+				for (i = 0; i < num_pins; i++) {
+					ret = of_property_read_u32_index(child_np, "pinmux",
+							i, &pinfunc);
+					ret2 = 0;
+					if (ret) {
+						ret2 = of_property_read_u32_index(child_np, "pins",
+								i, &pinfunc);
+					}
+					if (ret2)
+						return ret2;
+
+					spm_vmd1_gpio = MTK_GET_PIN_NO(pinfunc);
+					pr_info("#@# %s(%d) spm_vmd1_gpio %d\n", __func__, __LINE__, spm_vmd1_gpio);
+				}
+			}
+
+			of_node_put(np_config);
+			if (ret < 0)
+				goto err;
+		}
+	}
+
+	return 0;
+
+err:
+	return ret;
+#endif /* !defined(CONFIG_MTK_LEGACY) */
+}
+
+static int spm_remove(struct platform_device *pdev)
+{
+	return 0;
+}
+
+
+#ifdef CONFIG_OF
+static const struct of_device_id spm_of_ids[] = {
+	{.compatible = "mediatek,SLEEP",},
+	{}
+};
+#endif
+
+static struct platform_driver spm_dev_drv = {
+	.probe = spm_probe,
+	.remove = spm_remove,
+	.driver = {
+		   .name = "spm",
+		   .owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		   .of_match_table = spm_of_ids,
+#endif
+		   },
+};
+#endif
+
 int spm_module_late_init(void)
 {
 	int i = 0;
 	dev_t devID = MKDEV(gSPMDetectMajor, 0);
 	int cdevErr = -1;
 	int ret = -1;
+
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	ret = platform_driver_register(&spm_dev_drv);
+	if (ret) {
+		pr_debug("fail to register platform driver\n");
+		return ret;
+	}
+#endif
 
 	pspmdev = platform_device_register_simple("spm", 0, NULL, 0);
 	if (IS_ERR(pspmdev)) {
@@ -1493,6 +1723,7 @@ int spm_golden_setting_cmp(bool en)
 #endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if !(defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755))
 /* for PMIC power settings */
 #define VCORE_VOSEL_SLEEP_0P6	0x00	/* 7'b0000000 */
 #define VCORE_VOSEL_SLEEP_0P65	0x08	/* 7'b0001000 */
@@ -1750,6 +1981,7 @@ static void spm_pmic_set_osc_mode(int mode)
 #define PMIC_LDO_SRCLKEN0	0
 #define PMIC_LDO_SRCLKEN2	2
 #endif
+#endif
 
 void spm_pmic_power_mode(int mode, int force, int lock)
 {
@@ -1769,6 +2001,46 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		/* nothing */
 		break;
 	case PMIC_PWR_DEEPIDLE:
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+		/* buck control */
+		pmic_buck_vproc_sw_en(1);
+		pmic_buck_vproc_hw_vosel(VPROC_LPSEL_SRCLKEN2);
+
+		pmic_buck_vs1_sw_en(1);
+		pmic_buck_vs1_hw_vosel(VS1_LPSEL_SRCLKEN2);
+
+		pmic_buck_vcore_sw_en(1);
+		pmic_buck_vcore_hw_vosel(VCORE_LPSEL_SRCLKEN0); /* be consistent with control table */
+
+		/* ldo control */
+		pmic_ldo_vldo28_sw_en(1);
+		pmic_ldo_vldo28_hw_lp_mode(4/*VLDO28_LPSEL_SRCLKEN2*/);
+
+		pmic_ldo_vxo22_sw_en(1);
+		pmic_ldo_vxo22_hw_lp_mode(VXO22_LPSEL_SRCLKEN0); /* be consistent with control table */
+
+		pmic_ldo_vaux18_sw_en(1);
+		pmic_ldo_vaux18_hw_lp_mode(VAUX18_LPSEL_SRCLKEN0); /* be consistent with control table */
+
+		pmic_ldo_vaud28_sw_en(1);
+		pmic_ldo_vaud28_hw_lp_mode(VAUD28_LPSEL_SRCLKEN0); /* be consistent with control table */
+
+		pmic_ldo_vsram_proc_sw_en(1);
+		pmic_ldo_vsram_proc_hw_vosel(VSRAM_PROC_LPSEL_SRCLKEN2);
+		pmic_ldo_vsram_proc_hw_lp_mode(VSRAM_PROC_LPSEL_SRCLKEN2);
+
+		pmic_ldo_vdram_sw_en(1);
+		pmic_ldo_vdram_hw_lp_mode(VDRAM_LPSEL_SRCLKEN2);
+
+		pmic_ldo_vio28_sw_en(1);
+		pmic_ldo_vio28_hw_lp_mode(VIO28_LPSEL_SRCLKEN2);
+
+		pmic_ldo_vusb33_sw_en(1);
+		pmic_ldo_vusb33_hw_lp_mode(VUSB33_LPSEL_SRCLKEN2);
+
+		pmic_ldo_vio18_sw_en(1);
+		pmic_ldo_vio18_hw_lp_mode(VIO18_LPSEL_SRCLKEN2);
+#else
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P9, lock);
 #elif defined(CONFIG_ARCH_MT6797)
@@ -1802,8 +2074,48 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VIO18_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
 		spm_pmic_set_ldo(MT6351_LDO_VA18_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Audio MP3 */
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 1, PMIC_LDO_SRCLKEN2, lock);
+#endif
 		break;
 	case PMIC_PWR_SODI3:
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+		/* buck control */
+		pmic_buck_vproc_sw_en(1);
+		pmic_buck_vproc_hw_vosel(VPROC_LPSEL_SRCLKEN0);
+
+		pmic_buck_vs1_sw_en(1);
+		pmic_buck_vs1_hw_vosel(VS1_LPSEL_SRCLKEN0);
+
+		pmic_buck_vcore_sw_en(1);
+		pmic_buck_vcore_hw_vosel(VCORE_LPSEL_SRCLKEN0);
+
+		/* ldo control */
+		pmic_ldo_vldo28_sw_en(1);
+
+		pmic_ldo_vxo22_sw_en(1);
+		pmic_ldo_vxo22_hw_lp_mode(VXO22_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vaux18_sw_en(1);
+		pmic_ldo_vaux18_hw_lp_mode(VAUX18_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vaud28_sw_en(1);
+		pmic_ldo_vaud28_hw_lp_mode(VAUD28_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vsram_proc_sw_en(1);
+		pmic_ldo_vsram_proc_hw_vosel(VSRAM_PROC_LPSEL_SRCLKEN0);
+		pmic_ldo_vsram_proc_hw_lp_mode(VSRAM_PROC_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vdram_sw_en(1);
+		pmic_ldo_vdram_hw_lp_mode(VDRAM_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vio28_sw_en(1);
+		pmic_ldo_vio28_hw_lp_mode(VIO28_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vusb33_sw_en(1);
+		pmic_ldo_vusb33_hw_lp_mode(VUSB33_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vio18_sw_en(1);
+		pmic_ldo_vio18_hw_lp_mode(VIO18_LPSEL_SRCLKEN0);
+#else
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P9, lock);
 		spm_pmic_set_buck(MT6351_BUCK_VCORE_CON0, 0, 1, 0, PMIC_BUCK_SRCLKEN_NA, lock);
@@ -1846,11 +2158,51 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		spm_pmic_set_ldo(MT6351_LDO_VA10_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN0, lock);
 #endif
 		spm_pmic_set_ldo(MT6351_LDO_VLDO28_CON0, 0, 1, 0, PMIC_LDO_SRCLKEN_NA, lock);	/* For Panel */
+#endif
 		break;
 	case PMIC_PWR_SODI:
 		/* nothing */
 		break;
 	case PMIC_PWR_SUSPEND:
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+		/* buck control */
+		pmic_buck_vproc_sw_en(1);
+		pmic_buck_vproc_hw_vosel(VPROC_LPSEL_SRCLKEN0);
+
+		pmic_buck_vs1_sw_en(1);
+		pmic_buck_vs1_hw_vosel(VS1_LPSEL_SRCLKEN0);
+
+		pmic_buck_vcore_sw_en(1);
+		pmic_buck_vcore_hw_vosel(VCORE_LPSEL_SRCLKEN0);
+
+		/* ldo control */
+		pmic_ldo_vldo28_sw_en(0);
+
+		pmic_ldo_vxo22_sw_en(1);
+		pmic_ldo_vxo22_hw_lp_mode(VXO22_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vaux18_sw_en(1);
+		pmic_ldo_vaux18_hw_lp_mode(VAUX18_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vaud28_sw_en(1);
+		pmic_ldo_vaud28_hw_lp_mode(VAUD28_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vsram_proc_sw_en(1);
+		pmic_ldo_vsram_proc_hw_vosel(VSRAM_PROC_LPSEL_SRCLKEN0);
+		pmic_ldo_vsram_proc_hw_lp_mode(VSRAM_PROC_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vdram_sw_en(1);
+		pmic_ldo_vdram_hw_lp_mode(VDRAM_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vio28_sw_en(1);
+		pmic_ldo_vio28_hw_lp_mode(VIO28_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vusb33_sw_en(1);
+		pmic_ldo_vusb33_hw_lp_mode(VUSB33_LPSEL_SRCLKEN0);
+
+		pmic_ldo_vio18_sw_en(1);
+		pmic_ldo_vio18_hw_lp_mode(VIO18_LPSEL_SRCLKEN0);
+#else
 #if defined(CONFIG_ARCH_MT6755)
 		spm_pmic_set_vcore(VCORE_VOSEL_SLEEP_0P7, lock);
 #elif defined(CONFIG_ARCH_MT6757)
@@ -1897,6 +2249,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 #elif defined(CONFIG_ARCH_MT6797)
 		pmic_config_interface(0xA6E, 0x020E, 0xffff, 0);
 #endif
+#endif
 		if (slp_chk_golden)
 			mt_power_gs_dump_suspend();
 		break;
@@ -1937,6 +2290,64 @@ void spm_bypass_boost_gpio_set(void)
 
 	spm_write(SPM_BSI_EN_SR, gpio_dout_addr);
 	spm_write(SPM_BSI_CLK_SR, gpio_dout_bit);
+#endif
+}
+
+void spm_vmd_sel_gpio_set(void)
+{
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6353) && defined(CONFIG_ARCH_MT6755)
+	u32 gpio_nf = 0;
+	u32 gpio_dout_nf = 0;
+	u32 gpio_dout_bit = 0;
+	u32 gpio_dout_addr = 0;
+	u32 segment = get_devinfo_with_index(21) & 0xFF;
+
+#if defined(CONFIG_MTK_LEGACY)
+	if ((segment == 0x41) || (segment == 0x40)) {
+		gpio_nf = (GPIO_VMD1_SEL_PIN & 0x0000FFFF);
+	} else if (segment == 0x42) {
+#if defined(CONFIG_MTK_SPM_USE_EXT_BUCK)
+		gpio_nf = (GPIO_VMD1_SEL_PIN & 0x0000FFFF);
+#else
+		gpio_nf = 0;
+#endif /* CONFIG_MTK_SPM_USE_EXT_BUCK */
+	} else if (segment == 0x43) {
+		gpio_nf = 0;
+	}
+#else
+	if ((segment == 0x41) || (segment == 0x40)) {
+		gpio_nf = spm_vmd1_gpio;
+	} else if (segment == 0x42) {
+#if defined(CONFIG_MTK_SPM_USE_EXT_BUCK)
+		gpio_nf = spm_vmd1_gpio;
+#else
+		gpio_nf = 0;
+#endif /* CONFIG_MTK_SPM_USE_EXT_BUCK */
+	} else if (segment == 0x43) {
+		gpio_nf = 0;
+	}
+#endif
+
+	gpio_dout_nf = gpio_nf / 32;
+	gpio_dout_bit = gpio_nf % 32;
+	gpio_dout_addr = gpio_base_addr + 0x100;
+	gpio_dout_addr += gpio_dout_nf * 0x10;
+
+#if 0
+	pr_debug("vmd_sel: addr = 0x%x, bit = %d\n", gpio_dout_addr, gpio_dout_bit);
+#endif
+
+	if (gpio_nf != 0) {
+		/* spm will write value of reg SPM_BSI_CLK_SR w/ value of reg SPM_SCP_MAILBOX */
+		spm_write(SPM_BSI_CLK_SR, gpio_dout_addr);
+		spm_write(SPM_SCP_MAILBOX, 1 << gpio_dout_bit);
+	} else {
+		/* spm will write value of reg SPM_BSI_CLK_SR w/ value of reg SPM_SCP_MAILBOX */
+		/* cannot write 0 to SPM_BSI_CLK_SR, SPM_SCP_MAILBOX */
+		/* SPM_SCP_MAILBOX (0x10006000+0x098) */
+		spm_write(SPM_BSI_CLK_SR, 0x10006098);
+		spm_write(SPM_SCP_MAILBOX, 0);
+	}
 #endif
 }
 
@@ -1998,5 +2409,13 @@ void *mt_spm_base_get(void)
 	return spm_base;
 }
 EXPORT_SYMBOL(mt_spm_base_get);
+
+void unmask_edge_trig_irqs_for_cirq(void)
+{
+	int i;
+
+	for (i = 0; i < NF_EDGE_TRIG_IRQS; i++)
+		mt_irq_unmask_for_sleep(edge_trig_irqs[i]);
+}
 
 MODULE_DESCRIPTION("SPM Driver v0.1");
