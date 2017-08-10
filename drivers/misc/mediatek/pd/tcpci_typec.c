@@ -1327,7 +1327,8 @@ static inline int typec_attached_snk_vbus_absent(
 	}
 #ifdef CONFIG_RT7207_ADAPTER
 	if (tcpc_dev->rt7207_direct_charge_flag) {
-		if (cc_res != TYPEC_CC_VOLT_OPEN) {
+		if (cc_res != TYPEC_CC_VOLT_OPEN &&
+				!tcpci_check_vsafe0v(tcpc_dev, true)) {
 			TYPEC_DBG("Ignore vbus_absent(snk), Dircet Charging\n");
 			return 0;
 		}

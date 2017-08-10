@@ -147,7 +147,6 @@ static int rt_pd_manager_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	mtk_direct_charge_vdm_init();
 	pr_info("%s OK!!\n", __func__);
 	return ret;
 }

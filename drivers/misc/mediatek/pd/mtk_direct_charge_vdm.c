@@ -151,7 +151,7 @@ int mtk_get_ta_charger_status(struct tcpc_device *tcpc)
 	return -1;
 }
 
-extern int mtk_get_ta_cap_now(struct tcpc_device *tcpc,
+int mtk_get_ta_current_cap(struct tcpc_device *tcpc,
 					struct mtk_vdm_ta_cap *cap)
 {
 	int count = MTK_VDM_COUNT;
@@ -191,12 +191,52 @@ extern int mtk_get_ta_cap_now(struct tcpc_device *tcpc,
 	return status;
 }
 
-extern int mtk_get_ta_temperature(struct tcpc_device *tcpc)
+int mtk_get_ta_setting_dac(struct tcpc_device *tcpc,
+					struct mtk_vdm_ta_cap *cap)
+{
+	int count = MTK_VDM_COUNT;
+	int status = MTK_VDM_FAIL;
+
+	if (!vdm_inited) {
+		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+
+	mtk_vdm_lock();
+	atomic_inc(&vdm_event_flag); /* set flag = 1 */
+	tcpm_vdm_request_rt7207(tcpc, 0x101c, 0);
+	while (count) {
+		if (atomic_read(&vdm_event_flag) == 0) {
+			mutex_lock(&vdm_par_lock);
+			if (vdm_success) {
+				cap->vol = (vdm_payload[1]&0x0000ffff) * 26;
+				cap->cur = ((vdm_payload[1]&0xffff0000)>>16) * 26;
+				status = MTK_VDM_SUCCESS;
+				pr_err("%s mv = %dmv,ma = %dma\n",
+					__func__, cap->vol, cap->cur);
+			} else {
+				pr_err("%s Failed\n", __func__);
+				status = MTK_VDM_FAIL;
+			}
+			mutex_unlock(&vdm_par_lock);
+			mtk_vdm_unlock();
+			return status;
+		}
+		count--;
+		mdelay(MTK_VDM_DELAY);
+	}
+	pr_err("%s Time out\n", __func__);
+	atomic_dec(&vdm_event_flag);
+	mtk_vdm_unlock();
+	return status;
+}
+
+int mtk_get_ta_temperature(struct tcpc_device *tcpc)
 {
 	return -1;
 }
 
-extern int mtk_show_ta_info(struct tcpc_device *tcpc)
+int mtk_show_ta_info(struct tcpc_device *tcpc)
 {
 	int count = MTK_VDM_COUNT;
 	int status = MTK_VDM_FAIL;
@@ -234,7 +274,7 @@ extern int mtk_show_ta_info(struct tcpc_device *tcpc)
 	return status;
 }
 
-extern int mtk_set_ta_boundary_cap(struct tcpc_device *tcpc,
+int mtk_set_ta_boundary_cap(struct tcpc_device *tcpc,
 					struct mtk_vdm_ta_cap *cap)
 {
 	int count = MTK_VDM_COUNT;
@@ -248,6 +288,10 @@ extern int mtk_set_ta_boundary_cap(struct tcpc_device *tcpc,
 
 	mtk_vdm_lock();
 	data = (cap->cur<<16)|cap->vol;
+
+	pr_err("%s set mv = %dmv,ma = %dma\n",
+		__func__, cap->vol, cap->cur);
+
 	atomic_inc(&vdm_event_flag); /* set flag = 1 */
 	tcpm_vdm_request_rt7207(tcpc, 0x2021, data);
 	while (count) {
@@ -277,7 +321,47 @@ extern int mtk_set_ta_boundary_cap(struct tcpc_device *tcpc,
 
 }
 
-extern int mtk_rqst_ta_cap(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
+int mtk_get_ta_boundary_cap(struct tcpc_device *tcpc,
+					struct mtk_vdm_ta_cap *cap)
+{
+	int count = MTK_VDM_COUNT;
+	int status = MTK_VDM_FAIL;
+
+	if (!vdm_inited) {
+		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+
+	mtk_vdm_lock();
+	atomic_inc(&vdm_event_flag); /* set flag = 1 */
+	tcpm_vdm_request_rt7207(tcpc, 0x1021, 0);
+	while (count) {
+		if (atomic_read(&vdm_event_flag) == 0) {
+			mutex_lock(&vdm_par_lock);
+			if (vdm_success) {
+				cap->vol = vdm_payload[1]&0x0000ffff;
+				cap->cur = (vdm_payload[1]&0xffff0000)>>16;
+				status = MTK_VDM_SUCCESS;
+				pr_err("%s mv = %dmv,ma = %dma\n",
+					__func__, cap->vol, cap->cur);
+			} else {
+				pr_err("%s Failed\n", __func__);
+				status = MTK_VDM_FAIL;
+			}
+			mutex_unlock(&vdm_par_lock);
+			mtk_vdm_unlock();
+			return status;
+		}
+		count--;
+		mdelay(MTK_VDM_DELAY);
+	}
+	pr_err("%s Time out\n", __func__);
+	atomic_dec(&vdm_event_flag);
+	mtk_vdm_unlock();
+	return status;
+}
+
+int mtk_set_ta_cap(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
 {
 	int count = MTK_VDM_COUNT;
 	int status = MTK_VDM_FAIL;
@@ -287,6 +371,10 @@ extern int mtk_rqst_ta_cap(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
 		pr_err("%s vdm not inited\n", __func__);
 		return -EINVAL;
 	}
+
+	pr_err("%s set mv = %dmv,ma = %dma\n",
+		__func__, cap->vol, cap->cur);
+
 	mtk_vdm_lock();
 	data = (cap->cur<<16)|cap->vol;
 	atomic_inc(&vdm_event_flag); /* set flag = 1 */
@@ -317,7 +405,49 @@ extern int mtk_rqst_ta_cap(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
 	return status;
 }
 
-extern int mtk_set_ta_uvlo(struct tcpc_device *tcpc, int mv)
+int mtk_get_ta_cap(struct tcpc_device *tcpc,
+					struct mtk_vdm_ta_cap *cap)
+{
+	int count = MTK_VDM_COUNT;
+	int status = MTK_VDM_FAIL;
+
+	if (!vdm_inited) {
+		pr_err("%s vdm not inited\n", __func__);
+		return -EINVAL;
+	}
+
+	mtk_vdm_lock();
+	atomic_inc(&vdm_event_flag); /* set flag = 1 */
+	tcpm_vdm_request_rt7207(tcpc, 0x1022, 0);
+	while (count) {
+		if (atomic_read(&vdm_event_flag) == 0) {
+			mutex_lock(&vdm_par_lock);
+			if (vdm_success) {
+				cap->vol = vdm_payload[1]&0x0000ffff;
+				cap->cur = (vdm_payload[1]&0xffff0000)>>16;
+				status = MTK_VDM_SUCCESS;
+				pr_err("%s mv = %dmv,ma = %dma\n",
+					__func__, cap->vol, cap->cur);
+			} else {
+				pr_err("%s Failed\n", __func__);
+				status = MTK_VDM_FAIL;
+			}
+			mutex_unlock(&vdm_par_lock);
+			mtk_vdm_unlock();
+			return status;
+		}
+		count--;
+		mdelay(MTK_VDM_DELAY);
+	}
+	pr_err("%s Time out\n", __func__);
+	atomic_dec(&vdm_event_flag);
+	mtk_vdm_unlock();
+	return status;
+}
+
+
+
+int mtk_set_ta_uvlo(struct tcpc_device *tcpc, int mv)
 {
 	int count = MTK_VDM_COUNT;
 	int status = MTK_VDM_FAIL;
@@ -435,6 +565,7 @@ static ssize_t de_write(struct file *file,
 	simple_write_to_buffer(buf, sizeof(buf), position, user_buffer, count);
 	ret = kstrtoul(buf, 16, &yo);
 
+	mtk_direct_charge_vdm_init();
 	if (mtk_vdm_config_dfp()) {
 		pr_err("%s cannot config DFP mode\n", __func__);
 		return count;
@@ -447,7 +578,7 @@ static ssize_t de_write(struct file *file,
 		else if (yo == 2)
 			mtk_get_ta_charger_status(tcpc);
 		else if (yo == 3)
-			mtk_get_ta_cap_now(tcpc, &cap);
+			mtk_get_ta_current_cap(tcpc, &cap);
 		else if (yo == 4)
 			mtk_get_ta_temperature(tcpc);
 		else if (yo == 5)
@@ -461,7 +592,7 @@ static ssize_t de_write(struct file *file,
 		} else if (yo == 8) {
 			cap.cur = 1200;
 			cap.vol = 3800;
-			mtk_rqst_ta_cap(tcpc, &cap);
+			mtk_set_ta_cap(tcpc, &cap);
 		} else if (yo == 9)
 			mtk_set_ta_uvlo(tcpc, 3000);
 		else if (yo == 10)
@@ -515,13 +646,13 @@ int mtk_direct_charge_vdm_init(void)
 		vdm_inited = true;
 
 #ifdef CONFIG_DEBUG_FS
-	debugfs_vdm_dir = debugfs_create_dir("rt7207_vdm_dbg", 0);
-	if (!IS_ERR(debugfs_vdm_dir)) {
-		vdm_dbg_data[0].id = RT7207_VDM_TEST;
-		debugfs_vdm_file[0] = debugfs_create_file("test", 0666,
-			debugfs_vdm_dir, (void *)&vdm_dbg_data[0],
-			&debugfs_fops);
-	}
+		debugfs_vdm_dir = debugfs_create_dir("rt7207_vdm_dbg", 0);
+		if (!IS_ERR(debugfs_vdm_dir)) {
+			vdm_dbg_data[0].id = RT7207_VDM_TEST;
+			debugfs_vdm_file[0] = debugfs_create_file("test", 0666,
+				debugfs_vdm_dir, (void *)&vdm_dbg_data[0],
+				&debugfs_fops);
+		}
 #endif /* CONFIG_DEBUG_FS */
 		pr_info("%s init OK!\n", __func__);
 	}

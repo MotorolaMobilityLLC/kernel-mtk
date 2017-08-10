@@ -64,11 +64,6 @@ extern int mtk_get_ta_id(struct tcpc_device *tcpc);
  *	return RT7207_CC_MODE/RT7207_CV_MODE/MTK_VDM_FAIL */
 extern int mtk_get_ta_charger_status(struct tcpc_device *tcpc);
 
-/* mtk_get_ta_cap_now
- *	retturn MTK_VDM_SUCCESS/MTK_VDM_FAIL
- *	use mtk_vdm_ta_cap to catch result */
-extern int mtk_get_ta_cap_now(
-	struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap);
 
 /* mtk_get_ta_temperature
  *	return temperature/MTK_VDM_FAIL */
@@ -85,16 +80,29 @@ extern int mtk_show_ta_info(struct tcpc_device *tcpc);
 extern int mtk_set_ta_boundary_cap(
 	struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap);
 
-/* mtk_rqst_ta_cap
- *	use mtk_vdm_ta_cap to pass target voltage & current
- *	return MTK_VDM_SUCCESS/MTK_VDM_FAIL */
-extern int mtk_rqst_ta_cap(
-	struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap);
 
 /* mtk_set_ta_uvlo
  *	set uvlo voltage threshold
  *	return MTK_VDM_SUCCESS/MTK_VDM_FAIL */
 extern int mtk_set_ta_uvlo(struct tcpc_device *tcpc, int mv);
+
+extern int mtk_get_ta_current_cap(struct tcpc_device *tcpc,
+					struct mtk_vdm_ta_cap *cap);
+
+extern int mtk_get_ta_setting_dac(struct tcpc_device *tcpc,
+					struct mtk_vdm_ta_cap *cap);
+
+
+extern int mtk_get_ta_boundary_cap(struct tcpc_device *tcpc,
+					struct mtk_vdm_ta_cap *cap);
+
+
+extern int mtk_set_ta_cap(struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap);
+
+extern int mtk_get_ta_cap(struct tcpc_device *tcpc,
+					struct mtk_vdm_ta_cap *cap);
+
+
 
 #else /* not config RT7027 PD adapter */
 static inline int mtk_get_ta_id(struct tcpc_device *tcpc)
@@ -112,7 +120,7 @@ static inline int mtk_get_ta_charger_status(struct tcpc_device *tcpc)
 	return -1;
 }
 
-static inline int mtk_get_ta_cap_now(
+static inline int mtk_get_ta_current_cap(
 		struct tcpc_device *tcpc, struct mtk_vdm_ta_cap *cap)
 {
 	return -1;
