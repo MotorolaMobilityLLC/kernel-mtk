@@ -458,12 +458,6 @@ static long cam_cal_drv_ioctl(
 		}
 	}
 	ptempbuf = (stCAM_CAL_INFO_STRUCT *)pBuff;
-	/*===code coverity===*/
-	if (NULL == ptempbuf) {
-		CAM_CALDB("NULL == ptempbuf\n");
-		return -ENOMEM;
-	}
-	/*===================*/
 	pu1Params = kmalloc(ptempbuf->u4Length, GFP_KERNEL);
 	if (NULL == pu1Params) {
 		kfree(pBuff);
@@ -561,6 +555,7 @@ static long cam_cal_drv_ioctl(
 		/*copy data to user space buffer, keep other input paremeter unchange.*/
 		if ((ptempbuf->u4Length <= 0) || (ptempbuf->u4Length > 65535)) {
 			kfree(pBuff);
+			kfree(pu1Params);
 			CAM_CALDB("Buffer Length Error!\n");
 			return -EFAULT;
 		}
