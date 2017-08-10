@@ -6,22 +6,14 @@ subdir-ccflags-y += -D MTK_WCN_BUILT_IN_DRIVER
 ccflags-y += -D CREATE_NODE_DYNAMIC=1
 
 ifeq ($(CONFIG_MTK_TC1_FEATURE), y)
-    ccflags-y += -D CFG_TC1_FEATURE=1
+	ccflags-y += -D CFG_TC1_FEATURE=1
 else
-    ccflags-y += -D CFG_TC1_FEATURE=0
+	ccflags-y += -D CFG_TC1_FEATURE=0
 endif
 
-#ifneq ($(filter "MT6630",$(CONFIG_MTK_COMBO_CHIP)),)
-    ccflags-y += \
-        -I$(src)/../common/common_main/include \
-        -I$(src)/../common/common_main/linux/include
-#endif
-#ifneq ($(filter "CONSYS_%",$(CONFIG_MTK_COMBO_CHIP)),)
-#    ccflags-y += \
-#        -I$(src)/../common/common_detect \
-#        -I$(src)/../common/conn_soc/include \
-#        -I$(src)/../common/conn_soc/linux/include
-#endif
+ccflags-y += \
+	-I$(src)/../common/common_main/include \
+	-I$(src)/../common/common_main/linux/include
 
 obj-$(CONFIG_MTK_COMBO_WIFI) += wmt_chrdev_wifi.o
 
