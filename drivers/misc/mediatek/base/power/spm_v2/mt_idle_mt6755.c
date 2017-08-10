@@ -145,6 +145,7 @@ const char *reason_name[NR_REASONS] = {
 	"by_iso",
 #endif
 	"by_dvfsp",
+	"by_conn",
 };
 
 static char cg_group_name[NR_GRPS][10] = {

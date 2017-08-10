@@ -512,6 +512,7 @@ static unsigned long mcidle_block_cnt[NR_CPUS][NR_REASONS] = { {0}, {0} };
 
 u64 mcidle_timer_before_wfi[NR_CPUS];
 static unsigned int idle_spm_lock;
+static unsigned int idle_conn_lock;
 
 #ifndef USING_STD_TIMER_OPS
 /* Workaround of static analysis defect*/
@@ -557,6 +558,18 @@ void idle_unlock_spm(enum idle_lock_spm_id id)
 	idle_spm_lock &= ~(1 << id);
 	spin_unlock_irqrestore(&idle_spm_spin_lock, flags);
 }
+
+static DEFINE_SPINLOCK(idle_conn_spin_lock);
+
+void idle_lock_by_conn(unsigned int lock)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&idle_conn_spin_lock, flags);
+	idle_conn_lock = lock;
+	spin_unlock_irqrestore(&idle_conn_spin_lock, flags);
+}
+EXPORT_SYMBOL(idle_lock_by_conn);
 
 #ifdef CONFIG_CPU_ISOLATION
 bool is_cpus_offline_or_isolated(cpumask_var_t mask)
@@ -690,6 +703,11 @@ bool soidle3_can_enter(int cpu)
 
 	if (cpu % 4) {
 		reason = BY_CPU;
+		goto out;
+	}
+
+	if (idle_conn_lock) {
+		reason = BY_CONN;
 		goto out;
 	}
 
@@ -973,6 +991,11 @@ bool soidle_can_enter(int cpu)
 			reason = BY_CPU;
 			goto out;
 		}
+
+	if (idle_conn_lock) {
+		reason = BY_CONN;
+		goto out;
+	}
 
 	if (idle_spm_lock || vcore_dvfs_is_progressing()) {
 		reason = BY_VTG;
@@ -1378,6 +1401,11 @@ static bool dpidle_can_enter(int cpu)
 
 	if (cpu % 4) {
 		reason = BY_CPU;
+		goto out;
+	}
+
+	if (idle_conn_lock) {
+		reason = BY_CONN;
 		goto out;
 	}
 

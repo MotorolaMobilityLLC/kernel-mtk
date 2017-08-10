@@ -28,4 +28,6 @@ extern void disable_soidle3_by_bit(int id);
 extern void enable_soidle_by_bit(int id);
 extern void disable_soidle_by_bit(int id);
 
+extern void idle_lock_by_conn(unsigned int lock);
+
 #endif

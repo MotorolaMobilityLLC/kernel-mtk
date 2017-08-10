@@ -65,6 +65,7 @@ enum {
 	BY_ISO,
 #endif
 	BY_DVFSP,
+	BY_CONN,
 	NR_REASONS,
 };
 
