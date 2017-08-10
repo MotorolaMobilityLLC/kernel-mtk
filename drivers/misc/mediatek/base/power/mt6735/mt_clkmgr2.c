@@ -2330,26 +2330,28 @@ static struct clkmux_ops clkmux_ops = {
 	.disable = clkmux_disable_op,
 };
 
-/*
-static struct clkmux_ops hd_audio_clkmux_ops = {
-	.enable = clkmux_enable_op,
-	.disable = clkmux_disable_op,
-};*/
-/*
 static void audio_clkmux_enable_op(struct clkmux *mux)
 {
 #ifdef MUX_LOG
-    //clk_info("[%s]: mux->name=%s\n", __func__, mux->name);
-    clk_dbg("[%s]: mux->name=%s\n", __func__, mux->name);
+	clk_dbg("[%s]: mux->name=%s\n", __func__, mux->name);
 #endif
-    clk_clrl(mux->base_addr, mux->pdn_mask);
+	/* clk_writel(mux->base_addr+8, mux->pdn_mask);//write clr reg */
 };
-*/
+
+static void audio_clkmux_disable_op(struct clkmux *mux)
+{
+#ifdef MUX_LOG
+	clk_dbg("[%s]: mux->name=%s\n", __func__, mux->name);
+#endif
+	/* clk_writel(mux->base_addr+4, mux->pdn_mask); //write set reg */
+};
+
 static struct clkmux_ops audio_clkmux_ops = {
 	.sel = clkmux_sel_op,
-	/* .enable = audio_clkmux_enable_op, */
-	.enable = clkmux_enable_op,
-	.disable = clkmux_disable_op,
+	.enable = audio_clkmux_enable_op,
+	.disable = audio_clkmux_disable_op,
+	/* .enable = clkmux_enable_op, */
+	/* .disable = clkmux_disable_op, */
 };
 
 static void clkmux_sel_locked(struct clkmux *mux, unsigned int clksrc)
