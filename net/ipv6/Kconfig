@@ -263,4 +263,13 @@ config MTK_DHCPV6C_WIFI
 	default y
 
 
+config MTK_IPV6_VZW_REQ6378
+	bool "IPV6: RS triggering to extend route lifetime"
+	depends on IPV6
+	default n
+	---help---
+	  VzW REQ6378 propose that RS should be sent to request RA from gateway
+	  for extending ipv6 route lifetime. the feature is developed to meet
+	  VzW's demandings and should be disabled by default.
+
 endif # IPV6
