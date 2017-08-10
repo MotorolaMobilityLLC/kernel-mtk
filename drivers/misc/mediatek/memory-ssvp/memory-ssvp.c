@@ -42,6 +42,8 @@ const int is_pre_reserve_memory;
 
 #define COUNT_DOWN_MS 10000
 #define	COUNT_DOWN_INTERVAL 500
+#define	COUNT_DOWN_LIMIT (COUNT_DOWN_MS / COUNT_DOWN_INTERVAL)
+static atomic_t svp_online_count_down;
 
 /* 64 MB alignment */
 #define SSVP_CMA_ALIGN_PAGE_ORDER 14
@@ -54,7 +56,7 @@ static u64 ssvp_upper_limit = UPPER_LIMIT64;
 #include "mt-plat/mtk_meminfo.h"
 
 static unsigned long svp_usage_count;
-static int ref_count;
+static atomic_t svp_ref_count;
 
 enum ssvp_subtype {
 	SSVP_SVP,
@@ -91,6 +93,7 @@ struct SSVP_Region {
 };
 
 static struct task_struct *_svp_online_task; /* NULL */
+static DEFINE_MUTEX(svp_online_task_lock);
 static struct cma *cma;
 static struct SSVP_Region _svpregs[__MAX_NR_SSVPSUBS];
 
@@ -534,30 +537,38 @@ out:
 }
 EXPORT_SYMBOL(tui_region_online);
 
+static void reset_svp_online_task(void)
+{
+	mutex_lock(&svp_online_task_lock);
+	_svp_online_task = NULL;
+	mutex_unlock(&svp_online_task_lock);
+}
+
 static int _svp_wdt_kthread_func(void *data)
 {
-	int count_down = COUNT_DOWN_MS / COUNT_DOWN_INTERVAL;
+	atomic_set(&svp_online_count_down, COUNT_DOWN_LIMIT);
 
 	pr_info("[START COUNT DOWN]: %dms/%dms\n", COUNT_DOWN_MS, COUNT_DOWN_INTERVAL);
 
-	for (; count_down > 0; --count_down) {
+	for (; atomic_read(&svp_online_count_down) > 0; atomic_dec(&svp_online_count_down)) {
 		msleep(COUNT_DOWN_INTERVAL);
 
 		/*
 		 * some component need ssvp memory,
 		 * and stop count down watch dog
 		 */
-		if (ref_count > 0) {
-			_svp_online_task = NULL;
+		if (atomic_read(&svp_ref_count) > 0) {
 			pr_info("[STOP COUNT DOWN]: new request for ssvp\n");
+			reset_svp_online_task();
 			return 0;
 		}
 
 		if (_svpregs[SSVP_SVP].state == SVP_STATE_ON) {
 			pr_info("[STOP COUNT DOWN]: SSVP has online\n");
+			reset_svp_online_task();
 			return 0;
 		}
-		pr_info("[COUNT DOWN]: %d\n", count_down);
+		pr_info("[COUNT DOWN]: %d\n", atomic_read(&svp_online_count_down));
 
 	}
 	pr_info("[COUNT DOWN FAIL]\n");
@@ -572,13 +583,29 @@ static int _svp_wdt_kthread_func(void *data)
 			"\nCRDISPATCH_KEY:SVP_SS1\n",
 			"[SSVP ONLINE FAIL]: online timeout due to none free memory region.\n");
 
+	reset_svp_online_task();
 	return 0;
 }
 
 int svp_start_wdt(void)
 {
-	_svp_online_task = kthread_create(_svp_wdt_kthread_func, NULL, "svp_online_kthread");
+	mutex_lock(&svp_online_task_lock);
+	if (_svp_online_task == NULL) {
+		_svp_online_task = kthread_create(_svp_wdt_kthread_func, NULL, "svp_online_kthread");
+		if (IS_ERR_OR_NULL(_svp_online_task)) {
+			mutex_unlock(&svp_online_task_lock);
+			pr_err("%s: fail to create svp_online_task\n", __func__);
+			return -1;
+		}
+	} else {
+		atomic_set(&svp_online_count_down, COUNT_DOWN_LIMIT);
+		mutex_unlock(&svp_online_task_lock);
+		pr_info("%s: svp_online_task is already created\n", __func__);
+		return -1;
+	}
 	wake_up_process(_svp_online_task);
+	mutex_unlock(&svp_online_task_lock);
+
 	return 0;
 }
 
@@ -655,15 +682,12 @@ static long svp_cma_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		/* svp_region_offline(NULL, NULL); */
 		break;
 	case SVP_REGION_ACQUIRE:
-		if (ref_count == 0 && _svp_online_task != NULL)
-			_svp_online_task = NULL;
-
-		ref_count++;
+		atomic_inc(&svp_ref_count);
 		break;
 	case SVP_REGION_RELEASE:
-		ref_count--;
+		atomic_dec(&svp_ref_count);
 
-		if (ref_count == 0)
+		if (atomic_read(&svp_ref_count) == 0)
 			svp_start_wdt();
 		break;
 	default:
