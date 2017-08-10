@@ -227,10 +227,9 @@ fail:
 		stp_dbg_compressor_deinit(core_dmp->compressor);
 		core_dmp->compressor = NULL;
 	}
+	osal_sleepable_lock_deinit(&core_dmp->dmp_lock);
 	if (core_dmp)
 		osal_free(core_dmp);
-
-	osal_sleepable_lock_deinit(&core_dmp->dmp_lock);
 	return NULL;
 }
 
