@@ -30,6 +30,7 @@
 #endif
 
 #include "lens_info.h"
+#include "lens_list.h"
 
 #define AF_DRVNAME "MAINAF"
 
@@ -123,6 +124,14 @@ static dev_t g_AF_devno;
 static struct cdev *g_pAF_CharDrv;
 static struct class *actuator_class;
 
+void AF_PowerDown(void)
+{
+	#ifdef CONFIG_MTK_LENS_AK7371AF_SUPPORT
+	AK7371AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock, &g_s4AF_Opened);
+	AK7371AF_PowerDown();
+	#endif
+}
+
 static long AF_SetMotorName(__user stAF_MotorName * pstMotorName)
 {
 	long i4RetValue = -1;
@@ -157,6 +166,11 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned 
 	switch (a_u4Command) {
 	case AFIOC_S_SETDRVNAME:
 		i4RetValue = AF_SetMotorName((__user stAF_MotorName *)(a_u4Param));
+		break;
+
+	case AFIOC_S_SETPOWERDOWN:
+		AF_PowerDown();
+		i4RetValue = 1;
 		break;
 
 	default:
