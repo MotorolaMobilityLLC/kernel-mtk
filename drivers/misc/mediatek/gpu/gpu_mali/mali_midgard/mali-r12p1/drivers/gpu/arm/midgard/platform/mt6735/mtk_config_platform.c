@@ -22,6 +22,8 @@
 #include <mali_kbase_defs.h>
 #include <mali_kbase_config.h>
 #include "mali_kbase_config_platform.h"
+#include <linux/delay.h>
+
 
 /* MTK clock modified */
 #include "mt_gpufreq.h"
@@ -99,6 +101,7 @@ static int pm_callback_power_on(struct kbase_device *kbdev)
 	}
 
 	mt_gpufreq_voltage_enable_set(1);
+	udelay(150);
 	mtk_set_vgpu_power_on_flag(MTK_VGPU_POWER_ON); // the power status is "power on".
 #ifdef ENABLE_COMMON_DVFS
     ged_dvfs_gpu_clock_switch_notify(1);
