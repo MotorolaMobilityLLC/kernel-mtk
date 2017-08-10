@@ -101,8 +101,11 @@ unsigned int get_cv_voltage(void)
 DEFINE_MUTEX(g_ichg_aicr_access_mutex);
 DEFINE_MUTEX(g_aicr_access_mutex);
 DEFINE_MUTEX(g_ichg_access_mutex);
+DEFINE_MUTEX(g_hv_charging_mutex);
 unsigned int g_aicr_upper_bound;
+static bool g_pd_enable_power_path = true;
 static bool g_enable_dynamic_cv = true;
+static bool g_enable_hv_charging = true;
 
  /* ///////////////////////////////////////////////////////////////////////////////////////// */
  /* // JEITA */
@@ -517,6 +520,53 @@ int mtk_chr_reset_aicr_upper_bound(void)
 {
 	g_aicr_upper_bound = 0;
 	return 0;
+}
+
+int mtk_chr_pd_enable_power_path(unsigned char enable)
+{
+	int ret = 0;
+
+	g_pd_enable_power_path = enable;
+	if (enable && g_bcct_input_flag && (g_bcct_input_value == 0)) {
+		battery_log(BAT_LOG_CRTI,
+			"%s: thermal set power path off, so keep it off\n",
+			__func__);
+		return -EINVAL;
+	}
+
+	ret = battery_charging_control(CHARGING_CMD_ENABLE_POWER_PATH,
+		&enable);
+
+	return ret;
+}
+
+int mtk_chr_enable_chr_type_det(unsigned char en)
+{
+	battery_log(BAT_LOG_CRTI, "%s: enable = %d\n", __func__, en);
+	battery_charging_control(CHARGING_CMD_ENABLE_CHR_TYPE_DET, &en);
+
+	return 0;
+}
+
+int mtk_chr_enable_discharge(bool enable)
+{
+	return battery_charging_control(CHARGING_CMD_ENABLE_DISCHARGE, &enable);
+}
+
+int mtk_chr_enable_hv_charging(bool en)
+{
+	battery_log(BAT_LOG_CRTI, "%s: en = %d\n", __func__, en);
+
+	mutex_lock(&g_hv_charging_mutex);
+	g_enable_hv_charging = en;
+	mutex_unlock(&g_hv_charging_mutex);
+
+	return 0;
+}
+
+bool mtk_chr_is_hv_charging_enable(void)
+{
+	return g_enable_hv_charging;
 }
 
 int set_chr_boost_current_limit(unsigned int current_limit)

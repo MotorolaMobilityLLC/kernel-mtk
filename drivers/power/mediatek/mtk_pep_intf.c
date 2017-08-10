@@ -209,7 +209,8 @@ static int pep_increase_ta_vchr(u32 vchr_target)
 			__func__, retry_cnt, vchr_before, vchr_after, vchr_target);
 
 		retry_cnt++;
-	} while (BMT_status.charger_exist && retry_cnt < 3);
+	} while (BMT_status.charger_exist && retry_cnt < 3 &&
+		mtk_chr_is_hv_charging_enable());
 
 	ret = -EIO;
 	battery_log(BAT_LOG_CRTI,
@@ -357,6 +358,15 @@ int mtk_pep_check_charger(void)
 {
 	int ret = 0;
 
+	if (!mtk_chr_is_hv_charging_enable()) {
+		pr_info("%s: hv charging is disabled\n", __func__);
+		if (pep_is_connect) {
+			pep_leave(true);
+			pep_to_check_chr_type = true;
+		}
+		return ret;
+	}
+
 	if (mtk_pep20_get_is_connect()) {
 		battery_log(BAT_LOG_CRTI, "%s: stop, PE+20 is connected\n",
 			__func__);
@@ -423,6 +433,15 @@ _err:
 int mtk_pep_start_algorithm(void)
 {
 	int ret = 0, chr_volt;
+
+	if (!mtk_chr_is_hv_charging_enable()) {
+		pr_info("%s: hv charging is disabled\n", __func__);
+		if (pep_is_connect) {
+			pep_leave(true);
+			pep_to_check_chr_type = true;
+		}
+		return ret;
+	}
 
 	if (mtk_pep20_get_is_connect()) {
 		battery_log(BAT_LOG_CRTI, "%s: stop, PE+20 is connected\n",

@@ -225,7 +225,7 @@ static int pep20_set_ta_vchr(u32 chr_volt)
 			__func__, sw_retry_cnt, retry_cnt, vchr_before, vchr_after, chr_volt);
 
 	} while (!pep20_is_cable_out_occur && BMT_status.charger_exist == KAL_TRUE
-		&& retry_cnt < retry_cnt_max);
+		&& retry_cnt < retry_cnt_max && mtk_chr_is_hv_charging_enable());
 
 	ret = -EIO;
 	battery_log(BAT_LOG_CRTI,
@@ -386,6 +386,15 @@ int mtk_pep20_check_charger(void)
 {
 	int ret = 0;
 
+	if (!mtk_chr_is_hv_charging_enable()) {
+		pr_info("%s: hv charging is disabled\n", __func__);
+		if (pep20_is_connect) {
+			pep20_leave();
+			pep20_to_check_chr_type = true;
+		}
+		return ret;
+	}
+
 	if (!pep20_is_enabled) {
 		battery_log(BAT_LOG_CRTI, "%s: stop, PE+20 is disabled\n",
 			__func__);
@@ -453,6 +462,15 @@ int mtk_pep20_start_algorithm(void)
 	int tune = 0, pes = 0; /* For log, to know the state of PE+20 */
 	kal_bool current_sign;
 	u32 size;
+
+	if (!mtk_chr_is_hv_charging_enable()) {
+		pr_info("%s: hv charging is disabled\n", __func__);
+		if (pep20_is_connect) {
+			pep20_leave();
+			pep20_to_check_chr_type = true;
+		}
+		return ret;
+	}
 
 	if (!pep20_is_enabled) {
 		battery_log(BAT_LOG_CRTI, "%s: stop, PE+20 is disabled\n",
