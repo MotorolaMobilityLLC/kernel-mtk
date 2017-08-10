@@ -522,6 +522,9 @@ static void musb_id_pin_work(struct work_struct *data)
 		USBPHY_SET8(0x6c, 0x2d);
 		USBPHY_SET8(0x6d, 0x3f);
 		DBG(0, "force PHY to host mode, 0x6d=%x, 0x6c=%x\n", USBPHY_READ8(0x6d), USBPHY_READ8(0x6c));
+
+		USBPHY_SET8(0x18, 0xF0);
+		DBG(0, "Set Host Disconnect Threshold to 700mV.\n");
 	#endif
 
 		musb_start(mtk_musb);
@@ -554,6 +557,9 @@ static void musb_id_pin_work(struct work_struct *data)
 		USBPHY_CLR8(0x6c, 0x2e);
 		USBPHY_SET8(0x6d, 0x3f);
 		DBG(0, "force PHY to idle, 0x6d=%x, 0x6c=%x\n", USBPHY_READ8(0x6d), USBPHY_READ8(0x6c));
+
+		USBPHY_SET8(0x18, 0x80);
+		DBG(0, "Set Host Disconnect Threshold to 560mV.\n");
 	#endif
 
 		musb_stop(mtk_musb);
