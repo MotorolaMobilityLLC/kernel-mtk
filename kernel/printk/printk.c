@@ -63,6 +63,11 @@
 bool overflow_info_flag = false;
 u64 overflow_gap = 0;
 
+/* Console duration timer */
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+u64 con_dura_time;
+#endif
+
 int printk_too_much_enable = 0;
 #define DETECT_COUNT_MIN 100
 /* Some options {*/
@@ -1625,6 +1630,26 @@ static void call_console_drivers(int level, const char *text, size_t len)
 {
 	struct console *con;
 
+	/* For console write rate stat */
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+	int cnt = 0;
+	char con_name[64];
+	int index = 0;
+
+	static u64 refer_t;
+	u64 tmp1 = 0, tmp2 = 0, differ;
+	static u64 accum_t1;
+	static u64 accum_t2;
+	static size_t len_1;
+	static size_t len_2;
+
+	unsigned long rem_nsec;
+	u64 quot;
+	char aee_str[63];
+	char cur_time[32];
+	int idx = 0;
+#endif
+
 	trace_console(text, len);
 
 	if (level >= console_loglevel && !ignore_loglevel)
@@ -1644,8 +1669,66 @@ static void call_console_drivers(int level, const char *text, size_t len)
 		if (!cpu_online(smp_processor_id()) &&
 		    !(con->flags & CON_ANYTIME))
 			continue;
+
+		/* Accumulates console writing length and time */
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+		tmp1 = local_clock();
 		con->write(con, text, len);
+		tmp2 = local_clock();
+
+		differ = tmp2 - tmp1;
+		if (!strcmp(con->name, "ttyMT")) {
+			len_1 += len;
+			accum_t1 += differ;
+		} else if (!strcmp(con->name, "pstore")) {
+			len_2 += len;
+			accum_t2 += differ;
+		}
+#else
+		con->write(con, text, len);
+#endif
 	}
+
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+	/* console duration over 20 seconds, Calc console write rate recently */
+	if ((local_clock() - con_dura_time) > 20000000000) {
+
+		/* stat console list */
+		memset(con_name, 0x00, sizeof(con_name));
+		for_each_console(con) {
+			index += scnprintf(con_name + index, sizeof(con_name) - index, "%s, ", con->name);
+			cnt++;
+		}
+
+		memset(aee_str, 0x00, sizeof(aee_str));
+		quot = accum_t1;
+		rem_nsec = do_div(quot, 1000000000);
+		idx += scnprintf(aee_str + idx, sizeof(aee_str) - idx, "uart: %llu.%06lu, %lu ",
+							quot, rem_nsec/1000, (unsigned long)len_1);
+		quot = accum_t2;
+		rem_nsec = do_div(quot, 1000000000);
+		idx += scnprintf(aee_str + idx, sizeof(aee_str) - idx, "pstore: %llu.%06lu, %lu ",
+							quot, rem_nsec/1000, (unsigned long)len_2);
+
+		memset(cur_time, 0x00, sizeof(cur_time));
+		rem_nsec = do_div(tmp2, 1000000000);
+		scnprintf(cur_time, sizeof(cur_time), "[%llu.%06lu]", tmp2, rem_nsec/1000);
+
+		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT,	"Console Lock dur over 20 seconds",
+			"Exec cpu: %d, %s, Conlist(%d): %s %s", smp_processor_id(), aee_str, cnt, con_name, cur_time);
+
+		con_dura_time = local_clock();
+	}
+
+	/* Per 10 seconds, reset all var */
+	if ((local_clock() - refer_t) > 10000000000) {
+		refer_t = local_clock();
+		accum_t1 = 0;
+		accum_t2 = 0;
+		len_1 = 0;
+		len_2 = 0;
+	}
+#endif
 }
 
 /*
@@ -2505,8 +2588,9 @@ void console_unlock(void)
 	u64 period;
 	unsigned long rem_nsec;
 #endif
-
-
+#ifdef CONFIG_CONSOLE_LOCK_DURATION_DETECT
+	con_dura_time = local_clock();
+#endif
 	if (console_suspended) {
 		up_console_sem();
 		return;
