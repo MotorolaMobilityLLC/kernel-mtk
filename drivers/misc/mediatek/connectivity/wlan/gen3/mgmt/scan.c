@@ -2163,7 +2163,7 @@ static VOID scanAddEssResult(P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prBssDesc)
 
 	if (prBssDesc->fgIsHiddenSSID)
 		return;
-	if (prAdapter->rWlanInfo.u4ScanResultEssNum == sizeof(prAdapter->rWlanInfo.arScanResultEss))
+	if (prAdapter->rWlanInfo.u4ScanResultEssNum >= CFG_MAX_NUM_BSS_LIST)
 		return;
 	for (; u4Index < prAdapter->rWlanInfo.u4ScanResultEssNum; u4Index++) {
 		if (EQUAL_SSID(prEssResult[u4Index].aucSSID, (UINT_8)prEssResult[u4Index].u2SSIDLen,
