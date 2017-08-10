@@ -202,9 +202,7 @@ typedef bool MBOOL;
 
 /* static irqreturn_t DPE_Irq_CAM_A(MINT32  Irq,void *DeviceId); */
 static irqreturn_t ISP_Irq_DPE(MINT32 Irq, void *DeviceId);
-static MBOOL ConfigDVE(void);
 static MINT32 ConfigDVEHW(DPE_DVEConfig *pDveConfig);
-static MBOOL ConfigWMFE(void);
 static MINT32 ConfigWMFEHW(DPE_WMFEConfig *pWmfeConfig);
 void DPE_ScheduleDveWork(struct work_struct *data);
 void DPE_ScheduleWmfeWork(struct work_struct *data);
@@ -916,102 +914,6 @@ static MBOOL ConfigDVERequest(MINT32 ReqIdx)
 #endif
 }
 
-static MBOOL ConfigDVE(void)
-{
-#ifdef DPE_USE_GCE
-	MUINT32 i, j, k;
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
-
-	spin_lock_irqsave(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
-	for (k = 0; k < _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_; k++) {
-		i = (g_DVE_RequestRing.HWProcessIdx + k) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-		if (DPE_REQUEST_STATE_PENDING == g_DVE_RequestRing.DVEReq_Struct[i].RequestState) {
-			g_DVE_RequestRing.DVEReq_Struct[i].RequestState = DPE_REQUEST_STATE_RUNNING;
-			for (j = 0; j < _SUPPORT_MAX_DPE_FRAME_REQUEST_; j++) {
-				if (DPE_FRAME_STATUS_ENQUE ==
-				    g_DVE_RequestRing.DVEReq_Struct[i].DveFrameStatus[j]) {
-					/* break; */
-					g_DVE_RequestRing.DVEReq_Struct[i].DveFrameStatus[j] =
-					    DPE_FRAME_STATUS_RUNNING;
-					spin_unlock_irqrestore(&
-							       (DPEInfo.
-								SpinLockIrq
-								[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
-					ConfigDVEHW(&g_DVE_RequestRing.DVEReq_Struct[i].
-						    DveFrameConfig[j]);
-					spin_lock_irqsave(&
-							  (DPEInfo.
-							   SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-							  flags);
-				}
-			}
-			/* LOG_DBG("ConfigDVE idx j:%d\n",j); */
-			if (j != _SUPPORT_MAX_DPE_FRAME_REQUEST_) {
-				LOG_ERR
-				    ("DVE Config State is wrong! idx j(%d), HWProcessIdx(%d), RequestState(%d)\n",
-				     j, g_DVE_RequestRing.HWProcessIdx,
-				     g_DVE_RequestRing.DVEReq_Struct[i].RequestState);
-
-				/* g_DVE_RequestRing.DVEReq_Struct[i].DveFrameStatus[j]
-				= DPE_FRAME_STATUS_RUNNING; */
-				/* spin_unlock_irqrestore(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags); */
-				/* ConfigDVEHW(&g_DVE_RequestRing.DVEReq_Struct[i].DveFrameConfig[j]); */
-				/* return MTRUE; */
-				return MFALSE;
-			}
-			/*else {
-				g_DVE_RequestRing.DVEReq_Struct[i].RequestState
-				= DPE_REQUEST_STATE_RUNNING;
-				LOG_ERR("DVE Config State is wrong! HWProcessIdx(%d), RequestState(%d)\n"
-				, g_DVE_RequestRing.HWProcessIdx, g_DVE_RequestRing.DVEReq_Struct[i].RequestState);
-				g_DVE_RequestRing.HWProcessIdx = (g_DVE_RequestRing.HWProcessIdx+1)
-				%_SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-			}*/
-		}
-	}
-	spin_unlock_irqrestore(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
-
-	if (_SUPPORT_MAX_DPE_REQUEST_RING_SIZE_ == k)
-		LOG_DBG("No any DVE Request in Ring!!\n");
-
-	return MTRUE;
-#else
-	MUINT32 i, j, k;
-
-	for (k = 0; k < _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_; k++) {
-		i = (g_DVE_RequestRing.HWProcessIdx + k) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-		if (DPE_REQUEST_STATE_PENDING == g_DVE_RequestRing.DVEReq_Struct[i].RequestState) {
-			for (j = 0; j < _SUPPORT_MAX_DPE_FRAME_REQUEST_; j++) {
-				if (DPE_FRAME_STATUS_ENQUE ==
-				    g_DVE_RequestRing.DVEReq_Struct[i].DveFrameStatus[j]) {
-					break;
-				}
-			}
-			LOG_DBG("ConfigDVE idx j:%d\n", j);
-			if (j != _SUPPORT_MAX_DPE_FRAME_REQUEST_) {
-				g_DVE_RequestRing.DVEReq_Struct[i].DveFrameStatus[j] =
-				    DPE_FRAME_STATUS_RUNNING;
-				ConfigDVEHW(&g_DVE_RequestRing.DVEReq_Struct[i].DveFrameConfig[j]);
-				return MTRUE;
-			}
-			/*else {*/
-			LOG_ERR
-			    ("DVE Config State is wrong! HWProcessIdx(%d), RequestState(%d)\n",
-			     g_DVE_RequestRing.HWProcessIdx,
-			     g_DVE_RequestRing.DVEReq_Struct[i].RequestState);
-			g_DVE_RequestRing.HWProcessIdx =
-			    (g_DVE_RequestRing.HWProcessIdx +
-			     1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-			/*}*/
-		}
-	}
-	if (_SUPPORT_MAX_DPE_REQUEST_RING_SIZE_ == k)
-		LOG_DBG("No any DVE Request in Ring!!\n");
-
-	return MFALSE;
-#endif
-}
-
 
 static MBOOL UpdateDVE(MUINT32 DpeDveSta0, pid_t *ProcessID)
 {
@@ -1458,113 +1360,6 @@ static MINT32 ConfigDVEHW(DPE_DVEConfig *pDveConfig)
    return 0;
 
 }
-
-
-static MBOOL ConfigWMFE(void)
-{
-#ifdef DPE_USE_GCE
-
-	MUINT32 i, j, k;
-	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
-
-
-	spin_lock_irqsave(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
-	for (k = 0; k < _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_; k++) {
-		i = (g_WMFE_RequestRing.HWProcessIdx + k) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-		if (DPE_REQUEST_STATE_PENDING == g_WMFE_RequestRing.WMFEReq_Struct[i].RequestState) {
-			g_WMFE_RequestRing.WMFEReq_Struct[i].RequestState =
-			    DPE_REQUEST_STATE_RUNNING;
-			for (j = 0; j < _SUPPORT_MAX_DPE_FRAME_REQUEST_; j++) {
-				if (DPE_FRAME_STATUS_ENQUE ==
-				    g_WMFE_RequestRing.WMFEReq_Struct[i].WmfeFrameStatus[j]) {
-					/* break; */
-					g_WMFE_RequestRing.WMFEReq_Struct[i].WmfeFrameStatus[j] =
-					    DPE_FRAME_STATUS_RUNNING;
-					spin_unlock_irqrestore(&
-							       (DPEInfo.
-								SpinLockIrq
-								[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
-					ConfigWMFEHW(&g_WMFE_RequestRing.WMFEReq_Struct[i].
-						     WmfeFrameConfig[j]);
-					spin_lock_irqsave(&
-							  (DPEInfo.
-							   SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-							  flags);
-				}
-			}
-			/* LOG_DBG("ConfigWMFE idx j:%d\n",j); */
-			if (j != _SUPPORT_MAX_DPE_FRAME_REQUEST_) {
-				LOG_ERR
-				    ("WMFE Config State is wrong!  idx j(%d), HWProcessIdx(%d), RequestState(%d)\n",
-				     j, g_WMFE_RequestRing.HWProcessIdx,
-				     g_WMFE_RequestRing.WMFEReq_Struct[i].RequestState);
-				/* g_WMFE_RequestRing.WMFEReq_Struct[i].WmfeFrameStatus[j]
-				= DPE_FRAME_STATUS_RUNNING; */
-				/* spin_unlock_irqrestore(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags); */
-				/* ConfigWMFEHW(&g_WMFE_RequestRing.WMFEReq_Struct[i].WmfeFrameConfig[j]); */
-				/* return MTRUE; */
-				return MFALSE;
-			}
-			/*else {
-				g_WMFE_RequestRing.WMFEReq_Struct[i].RequestState = DPE_REQUEST_STATE_RUNNING;
-				LOG_ERR("WMFE Config State is wrong! HWProcessIdx(%d), RequestState(%d)\n",
-				g_WMFE_RequestRing.HWProcessIdx, g_WMFE_RequestRing.WMFEReq_Struct[i].RequestState);
-				g_WMFE_RequestRing.HWProcessIdx = (g_WMFE_RequestRing.HWProcessIdx+1)
-				%_SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-			} */
-		}
-	}
-	spin_unlock_irqrestore(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
-	if (_SUPPORT_MAX_DPE_REQUEST_RING_SIZE_ == k)
-		LOG_DBG("No any WMFE Request in Ring!!\n");
-
-	return MTRUE;
-
-
-#else				/* #ifdef DPE_USE_GCE */
-
-	MUINT32 i, j, k;
-	MUINT32 flags;
-
-	for (k = 0; k < _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_; k++) {
-		i = (g_WMFE_RequestRing.HWProcessIdx + k) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-		if (DPE_REQUEST_STATE_PENDING == g_WMFE_RequestRing.WMFEReq_Struct[i].RequestState) {
-			for (j = 0; j < _SUPPORT_MAX_DPE_FRAME_REQUEST_; j++) {
-				if (DPE_FRAME_STATUS_ENQUE ==
-				    g_WMFE_RequestRing.WMFEReq_Struct[i].WmfeFrameStatus[j]) {
-					break;
-				}
-			}
-			LOG_DBG("ConfigWMFE idx j:%d\n", j);
-			if (j != _SUPPORT_MAX_DPE_FRAME_REQUEST_) {
-				g_WMFE_RequestRing.WMFEReq_Struct[i].WmfeFrameStatus[j] =
-				    DPE_FRAME_STATUS_RUNNING;
-				ConfigWMFEHW(&g_WMFE_RequestRing.WMFEReq_Struct[i].
-					     WmfeFrameConfig[j]);
-				return MTRUE;
-			}
-			/*else {*/
-			LOG_ERR
-			    ("WMFE Config State is wrong! HWProcessIdx(%d), RequestState(%d)\n",
-			     g_WMFE_RequestRing.HWProcessIdx,
-			     g_WMFE_RequestRing.WMFEReq_Struct[i].RequestState);
-			g_WMFE_RequestRing.HWProcessIdx =
-			    (g_WMFE_RequestRing.HWProcessIdx +
-			     1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-			/*}*/
-		}
-	}
-	if (_SUPPORT_MAX_DPE_REQUEST_RING_SIZE_ == k)
-		LOG_DBG("No any WMFE Request in Ring!!\n");
-
-	return MFALSE;
-
-#endif				/* #ifdef DPE_USE_GCE */
-
-
-
-}
-
 
 static MBOOL UpdateWMFE(pid_t *ProcessID)
 {
@@ -2483,8 +2278,14 @@ static MINT32 DPE_WriteReg(DPE_REG_IO_STRUCT *pRegIo)
 		LOG_DBG("ERROR: kmalloc failed, (process, pid, tgid)=(%s, %d, %d)\n", current->comm,
 			current->pid, current->tgid);
 		Ret = -ENOMEM;
+		goto EXIT;
 	}
 	/*  */
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0)) {
+		LOG_ERR("ERROR: pRegIo->pData is NULL or Count:%d\n", pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 	if (copy_from_user
 	    (pData, (void __user *)(pRegIo->pData), pRegIo->Count * sizeof(DPE_REG_STRUCT)) != 0) {
 		LOG_ERR("copy_from_user failed\n");
@@ -2712,15 +2513,12 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	DPE_REG_IO_STRUCT RegIo;
 	DPE_WAIT_IRQ_STRUCT IrqInfo;
 	DPE_CLEAR_IRQ_STRUCT ClearIrq;
-	DPE_DVEConfig dpe_DveConfig;
-	DPE_WMFEConfig dpe_WmfeConfig;
 	DPE_DVERequest dpe_DveReq;
 	DPE_WMFERequest dpe_WmfeReq;
 	MINT32 DveWriteIdx = 0;
 	MINT32 WmfeWriteIdx = 0;
 	int idx;
 	DPE_USER_INFO_STRUCT *pUserInfo;
-	int enqueNum;
 	int dequeNum;
 	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
 
@@ -2853,122 +2651,6 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 			break;
 		}
-	case DPE_DVE_ENQNUE_NUM:
-		{
-			if (copy_from_user(&enqueNum, (void *)Param, sizeof(int)) == 0) {
-				if (DPE_REQUEST_STATE_EMPTY ==
-				    g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.WriteIdx].
-				    RequestState) {
-					spin_lock_irqsave(&
-							  (DPEInfo.
-							   SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-							  flags);
-					g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.WriteIdx].
-					    processID = pUserInfo->Pid;
-					g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.WriteIdx].
-					    enqueReqNum = enqueNum;
-					spin_unlock_irqrestore(&
-							       (DPEInfo.
-								SpinLockIrq
-								[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
-					if (_SUPPORT_MAX_DPE_FRAME_REQUEST_ < enqueNum) {
-						LOG_ERR
-						    ("DVE Enque Num is bigger than enqueNum:%d\n",
-						     enqueNum);
-					}
-					LOG_DBG("DVE_ENQNUE_NUM:%d\n", enqueNum);
-				} else {
-					LOG_ERR
-					    ("DVE Enque request state is not empty:%d, writeIdx:%d, readIdx:%d\n",
-					     g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.
-									     WriteIdx].RequestState,
-					     g_DVE_RequestRing.WriteIdx, g_DVE_RequestRing.ReadIdx);
-				}
-			} else {
-				LOG_ERR("DPE_DVE_EQNUE_NUM copy_from_user failed\n");
-				Ret = -EFAULT;
-			}
-
-			break;
-		}
-		/* DPE_DVEConfig */
-	case DPE_DVE_ENQUE:
-		{
-			if (copy_from_user(&dpe_DveConfig, (void *)Param, sizeof(DPE_DVEConfig)) ==
-			    0) {
-				spin_lock_irqsave(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-						  flags);
-				if ((DPE_REQUEST_STATE_EMPTY ==
-				     g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.WriteIdx].
-				     RequestState)
-				    && (g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.WriteIdx].
-					FrameWRIdx <
-					g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.WriteIdx].
-					enqueReqNum)) {
-					g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.WriteIdx].
-					    DveFrameStatus[g_DVE_RequestRing.
-							   DVEReq_Struct[g_DVE_RequestRing.
-									 WriteIdx].FrameWRIdx] =
-					    DPE_FRAME_STATUS_ENQUE;
-					memcpy(&g_DVE_RequestRing.
-					       DVEReq_Struct[g_DVE_RequestRing.WriteIdx].
-					       DveFrameConfig[g_DVE_RequestRing.
-							      DVEReq_Struct[g_DVE_RequestRing.
-									    WriteIdx].FrameWRIdx++],
-					       &dpe_DveConfig, sizeof(DPE_DVEConfig));
-					if (g_DVE_RequestRing.
-					    DVEReq_Struct[g_DVE_RequestRing.WriteIdx].FrameWRIdx ==
-					    g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.
-									    WriteIdx].enqueReqNum) {
-						g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.
-										WriteIdx].
-						    RequestState = DPE_REQUEST_STATE_PENDING;
-						g_DVE_RequestRing.WriteIdx =
-						    (g_DVE_RequestRing.WriteIdx +
-						     1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-						LOG_DBG("DVE request enque done!!\n");
-					} else {
-						LOG_DBG("DVE request enque frame!!\n");
-					}
-				} else {
-					LOG_ERR\
-					    ("No Empty DVE Buffer! WriteIdx(%d), RequestState(%d), FrameWRIdx(%d),\
-					     enqueReqNum(%d)\n",\
-					     g_DVE_RequestRing.WriteIdx,\
-					     g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.\
-									     WriteIdx].RequestState,\
-					     g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.\
-									     WriteIdx].FrameWRIdx,\
-					     g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.\
-									     WriteIdx].enqueReqNum);
-				}
-#ifdef DPE_USE_GCE
-				spin_unlock_irqrestore(&
-						       (DPEInfo.
-							SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-						       flags);
-				LOG_DBG("ConfigDVE!!\n");
-				ConfigDVE();
-#else
-				/* check the hw is running or not ? */
-				if (MFALSE == Check_DVE_Is_Busy()) {
-					/* config the DVE hw and run */
-					LOG_DBG("ConfigDVE!!\n");
-					ConfigDVE();
-				} else {
-					LOG_INF("DVE HW is busy!!\n");
-				}
-				spin_unlock_irqrestore(&
-						       (DPEInfo.
-							SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-						       flags);
-#endif
-			} else {
-				LOG_ERR("DPE_DVE_ENQUE copy_from_user failed\n");
-				Ret = -EFAULT;
-			}
-			break;
-		}
 	case DPE_DVE_ENQUE_REQ:
 		if (copy_from_user(&dpe_DveReq, (void *)Param, sizeof(DPE_DVERequest)) == 0) {
 			LOG_DBG("DVE_ENQNUE_NUM:%d, pid:%d\n", dpe_DveReq.m_ReqNum, pUserInfo->Pid);
@@ -3040,108 +2722,6 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			Ret = -EFAULT;
 		}
 		break;
-	case DPE_DVE_DEQUE_NUM:
-		{
-			if (DPE_REQUEST_STATE_FINISHED ==
-			    g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-			    RequestState) {
-				dequeNum =
-				    g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-				    enqueReqNum;
-				LOG_DBG("DVE DEQUE_NUM(%d)\n", dequeNum);
-			} else {
-				dequeNum = 0;
-				LOG_ERR\
-				    ("DEQUE_NUM :: No Any DVE Ready Buffer!!, ReadIdx(%d), RequestState(%d),\
-				     RrameRDIdx(%d), enqueReqNum(%d)\n",\
-				     g_DVE_RequestRing.ReadIdx,\
-				     g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].\
-				     RequestState,\
-				     g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].\
-				     RrameRDIdx,\
-				     g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].\
-				     enqueReqNum);
-			}
-			if (copy_to_user((void *)Param, &dequeNum, sizeof(MUINT32)) != 0) {
-				LOG_ERR("DPE_DVE_DEQUE_NUM copy_to_user failed\n");
-				Ret = -EFAULT;
-			}
-
-			break;
-		}
-
-	case DPE_DVE_DEQUE:
-		{
-			spin_lock_irqsave(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
-			if ((DPE_REQUEST_STATE_FINISHED ==
-			     g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-			     RequestState)
-			    && (g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-				RrameRDIdx <
-				g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-				enqueReqNum)) {
-				/* dequeNum = g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].enqueReqNum; */
-				if (DPE_FRAME_STATUS_FINISHED ==
-				    g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-				    DveFrameStatus[g_DVE_RequestRing.
-						   DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-						   RrameRDIdx]) {
-					memcpy(&dpe_DveConfig,
-					       &g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.
-										ReadIdx].
-					       DveFrameConfig[g_DVE_RequestRing.
-							      DVEReq_Struct[g_DVE_RequestRing.
-									    ReadIdx].RrameRDIdx],
-					       sizeof(DPE_DVEConfig));
-					g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-					    DveFrameStatus[g_DVE_RequestRing.
-							   DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-							   RrameRDIdx++] = DPE_FRAME_STATUS_EMPTY;
-				}
-				if (g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-				    RrameRDIdx ==
-				    g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-				    enqueReqNum) {
-					g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-					    RequestState = DPE_REQUEST_STATE_EMPTY;
-					g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-					    FrameWRIdx = 0;
-					g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-					    RrameRDIdx = 0;
-					g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].
-					    enqueReqNum = 0;
-					g_DVE_RequestRing.ReadIdx =
-					    (g_DVE_RequestRing.ReadIdx +
-					     1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-					LOG_DBG("DVE ReadIdx(%d)\n", g_DVE_RequestRing.ReadIdx);
-				}
-				spin_unlock_irqrestore(&
-						       (DPEInfo.
-							SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-						       flags);
-				if (copy_to_user
-				    ((void *)Param, &dpe_DveConfig, sizeof(DPE_DVEConfig)) != 0) {
-					Ret = -EFAULT;
-					LOG_ERR("DPE_DVE_DEQUE copy_to_user failed\n");
-				}
-			} else {
-				spin_unlock_irqrestore(&
-						       (DPEInfo.
-							SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-						       flags);
-				LOG_ERR\
-				    ("No Any DVE Ready Buffer!!, ReadIdx(%d), RequestState(%d), RrameRDIdx(%d),\
-				     enqueReqNum(%d)\n",\
-				     g_DVE_RequestRing.ReadIdx,\
-				     g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].\
-				     RequestState,\
-				     g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].\
-				     RrameRDIdx,\
-				     g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].\
-				     enqueReqNum);
-			}
-			break;
-		}
 	case DPE_DVE_DEQUE_REQ:
 		{
 			if (copy_from_user(&dpe_DveReq, (void *)Param, sizeof(DPE_DVERequest)) == 0) {
@@ -3245,135 +2825,6 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 			break;
 		}
-	case DPE_WMFE_ENQNUE_NUM:
-		{
-			/* enqueNum */
-			if (copy_from_user(&enqueNum, (void *)Param, sizeof(int)) == 0) {
-				if (DPE_REQUEST_STATE_EMPTY ==
-				    g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.WriteIdx].
-				    RequestState) {
-					spin_lock_irqsave(&
-							  (DPEInfo.
-							   SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-							  flags);
-					g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.
-									  WriteIdx].processID =
-					    pUserInfo->Pid;
-					g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.
-									  WriteIdx].enqueReqNum =
-					    enqueNum;
-					spin_unlock_irqrestore(&
-							       (DPEInfo.
-								SpinLockIrq
-								[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
-					if (_SUPPORT_MAX_DPE_FRAME_REQUEST_ < enqueNum) {
-						LOG_ERR
-						    ("WMFE Enque Num is bigger than enqueNum:%d\n",
-						     enqueNum);
-					}
-					LOG_DBG("WMFE_ENQNUE_NUM:%d\n", enqueNum);
-				} else {
-					LOG_ERR
-					    ("WFME Enque request state is not empty:%d, writeIdx:%d, readIdx:%d\n",
-					     g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.
-									       WriteIdx].
-					     RequestState, g_WMFE_RequestRing.WriteIdx,
-					     g_WMFE_RequestRing.ReadIdx);
-				}
-			} else {
-				LOG_ERR("DPE_WMFE_EQNUE_NUM copy_from_user failed\n");
-				Ret = -EFAULT;
-			}
-
-			break;
-		}
-		/* DPE_WMFEConfig */
-	case DPE_WMFE_ENQUE:
-		{
-			if (copy_from_user(&dpe_WmfeConfig, (void *)Param, sizeof(DPE_WMFEConfig))
-			    == 0) {
-				/* LOG_DBG("DPE_CLEAR_IRQ:Type(%d),Status(0x%08X),IrqStatus(0x%08X)",
-				ClearIrq.Type, ClearIrq.Status, DPEInfo.IrqInfo.Status[ClearIrq.Type]); */
-				spin_lock_irqsave(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-						  flags);
-				if ((DPE_REQUEST_STATE_EMPTY ==
-				     g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.WriteIdx].
-				     RequestState)
-				    && (g_WMFE_RequestRing.
-					WMFEReq_Struct[g_WMFE_RequestRing.WriteIdx].FrameWRIdx <
-					g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.
-									  WriteIdx].enqueReqNum)) {
-					g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.
-									  WriteIdx].
-					    WmfeFrameStatus[g_WMFE_RequestRing.
-							    WMFEReq_Struct[g_WMFE_RequestRing.
-									   WriteIdx].FrameWRIdx] =
-					    DPE_FRAME_STATUS_ENQUE;
-					memcpy(&g_WMFE_RequestRing.
-					       WMFEReq_Struct[g_WMFE_RequestRing.WriteIdx].
-					       WmfeFrameConfig[g_WMFE_RequestRing.
-							       WMFEReq_Struct[g_WMFE_RequestRing.
-									      WriteIdx].
-							       FrameWRIdx++], &dpe_WmfeConfig,
-					       sizeof(DPE_WMFEConfig));
-					if (g_WMFE_RequestRing.
-					    WMFEReq_Struct[g_WMFE_RequestRing.WriteIdx].
-					    FrameWRIdx ==
-					    g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.
-									      WriteIdx].
-					    enqueReqNum) {
-						g_WMFE_RequestRing.
-						    WMFEReq_Struct[g_WMFE_RequestRing.WriteIdx].
-						    RequestState = DPE_REQUEST_STATE_PENDING;
-						g_WMFE_RequestRing.WriteIdx =
-						    (g_WMFE_RequestRing.WriteIdx +
-						     1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-						LOG_DBG("WMFE enque done!!\n");
-					} else {
-						LOG_DBG("WMFE enque frame!!\n");
-					}
-				} else {
-					LOG_ERR\
-					    ("No Empty WMFE Buffer! WriteIdx(%d), RequestState(%d),\
-					      FrameWRIdx(%d), enqueReqNum(%d)\n",\
-					     g_WMFE_RequestRing.WriteIdx,\
-					     g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.WriteIdx].\
-					     RequestState,\
-					     g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.\
-									       WriteIdx].FrameWRIdx,\
-					     g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.WriteIdx].\
-					     enqueReqNum);
-				}
-#ifdef DPE_USE_GCE
-				spin_unlock_irqrestore(&
-						       (DPEInfo.
-							SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-						       flags);
-				LOG_DBG("ConfigWMFE!!\n");
-				ConfigWMFE();
-#else
-				/* check the hw is running or not ? */
-				if (MFALSE == Check_WMFE_Is_Busy()) {
-					/* config the wmfe hw and run */
-					LOG_DBG("ConfigWMFE\n");
-					ConfigWMFE();
-				} else {
-					LOG_INF("WMFE HW is busy!!\n");
-				}
-				spin_unlock_irqrestore(&
-						       (DPEInfo.
-							SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-						       flags);
-#endif
-
-
-			} else {
-				LOG_ERR("DPE_WMFE_ENQUE copy_from_user failed\n");
-				Ret = -EFAULT;
-			}
-
-			break;
-		}
 	case DPE_WMFE_ENQUE_REQ:
 		{
 			if (copy_from_user(&dpe_WmfeReq, (void *)Param, sizeof(DPE_WMFERequest)) ==
@@ -3458,118 +2909,6 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			} else {
 				LOG_ERR("DPE_DVE_ENQUE copy_from_user failed\n");
 				Ret = -EFAULT;
-			}
-
-			break;
-		}
-	case DPE_WMFE_DEQUE_NUM:
-		{
-			if (DPE_REQUEST_STATE_FINISHED ==
-			    g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
-			    RequestState) {
-				dequeNum =
-				    g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
-				    enqueReqNum;
-				LOG_DBG("WMFE_DEQUE_NUM(%d)\n", dequeNum);
-			} else {
-				dequeNum = 0;
-				LOG_ERR\
-				    ("DEQUE_NUM :: No Any WMFE Ready Buffer!!, ReadIdx(%d),\
-				      RequestState(%d), RrameRDIdx(%d), enqueReqNum(%d)\n",\
-				     g_WMFE_RequestRing.ReadIdx,\
-				     g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].\
-				     RequestState,\
-				     g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].\
-				     RrameRDIdx,\
-				     g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].\
-				     enqueReqNum);
-			}
-			if (copy_to_user((void *)Param, &dequeNum, sizeof(MUINT32)) != 0) {
-				LOG_ERR("DPE_WMFE_DEQUE_NUM copy_to_user failed\n");
-				Ret = -EFAULT;
-			}
-
-			break;
-		}
-
-	case DPE_WMFE_DEQUE:
-		{
-			spin_lock_irqsave(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]), flags);
-			if ((DPE_REQUEST_STATE_FINISHED ==
-			     g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
-			     RequestState)
-			    && (g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
-				RrameRDIdx <
-				g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
-				enqueReqNum)) {
-				/* dequeNum = g_DVE_RequestRing.DVEReq_Struct[g_DVE_RequestRing.ReadIdx].enqueReqNum; */
-				if (DPE_FRAME_STATUS_FINISHED ==
-				    g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
-				    WmfeFrameStatus[g_WMFE_RequestRing.
-						    WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
-						    RrameRDIdx]) {
-
-					memcpy(&dpe_WmfeConfig,
-					       &g_WMFE_RequestRing.
-					       WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
-					       WmfeFrameConfig[g_WMFE_RequestRing.
-							       WMFEReq_Struct[g_WMFE_RequestRing.
-									      ReadIdx].RrameRDIdx],
-					       sizeof(DPE_WMFEConfig));
-					g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.
-									  ReadIdx].
-					    WmfeFrameStatus[g_WMFE_RequestRing.
-							    WMFEReq_Struct[g_WMFE_RequestRing.
-									   ReadIdx].RrameRDIdx++] =
-					    DPE_FRAME_STATUS_EMPTY;
-				}
-				if (g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
-				    RrameRDIdx ==
-				    g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
-				    enqueReqNum) {
-					g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.
-									  ReadIdx].RequestState =
-					    DPE_REQUEST_STATE_EMPTY;
-					g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.
-									  ReadIdx].FrameWRIdx = 0;
-					g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.
-									  ReadIdx].RrameRDIdx = 0;
-					g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.
-									  ReadIdx].enqueReqNum = 0;
-					g_WMFE_RequestRing.ReadIdx =
-					    (g_WMFE_RequestRing.ReadIdx +
-					     1) % _SUPPORT_MAX_DPE_REQUEST_RING_SIZE_;
-					LOG_DBG("WMFE ReadIdx(%d)\n", g_WMFE_RequestRing.ReadIdx);
-				}
-				spin_unlock_irqrestore(&
-						       (DPEInfo.
-							SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-						       flags);
-				if (copy_to_user
-				    ((void *)Param,
-				     &g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
-				     WmfeFrameConfig[g_WMFE_RequestRing.
-						     WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].
-						     RrameRDIdx], sizeof(DPE_WMFEConfig)) != 0) {
-					LOG_ERR("DPE_WMFE_DEQUE copy_to_user failed\n");
-					Ret = -EFAULT;
-				}
-
-			} else {
-				spin_unlock_irqrestore(&
-						       (DPEInfo.
-							SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]),
-						       flags);
-				LOG_ERR\
-				    ("No Any WMFE Ready Buffer!!, ReadIdx(%d), RequestState(%d),\
-				      RrameRDIdx(%d), enqueReqNum(%d)\n",\
-				     g_WMFE_RequestRing.ReadIdx,\
-				     g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].\
-				     RequestState,\
-				     g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].\
-				     RrameRDIdx,\
-				     g_WMFE_RequestRing.WMFEReq_Struct[g_WMFE_RequestRing.ReadIdx].\
-				     enqueReqNum);
 			}
 
 			break;
@@ -4018,14 +3357,6 @@ static long DPE_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 
 	case DPE_WAIT_IRQ:
 	case DPE_CLEAR_IRQ:	/* structure (no pointer) */
-	case DPE_DVE_ENQNUE_NUM:
-	case DPE_DVE_ENQUE:
-	case DPE_DVE_DEQUE_NUM:
-	case DPE_DVE_DEQUE:
-	case DPE_WMFE_ENQNUE_NUM:
-	case DPE_WMFE_ENQUE:
-	case DPE_WMFE_DEQUE_NUM:
-	case DPE_WMFE_DEQUE:
 	case DPE_RESET:
 	case DPE_DUMP_REG:
 	case DPE_DUMP_ISR_LOG:
@@ -4822,7 +4153,7 @@ static ssize_t dpe_reg_write(struct file *file, const char __user *buffer, size_
 	char addrSzBuf[24];
 	char valSzBuf[24];
 	char *pszTmp;
-	int addr, val;
+	int addr = 0, val  = 0;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
 	if (copy_from_user(desc, buffer, len))
@@ -5077,10 +4408,6 @@ void DPE_ScheduleDveWork(struct work_struct *data)
 	if (DPE_DBG_DBGLOG & DPEInfo.DebugMask)
 		LOG_DBG("- E.");
 
-#ifdef DPE_USE_GCE
-#else
-	ConfigDVE();
-#endif
 }
 
 /*******************************************************************************
@@ -5090,11 +4417,6 @@ void DPE_ScheduleWmfeWork(struct work_struct *data)
 {
 	if (DPE_DBG_DBGLOG & DPEInfo.DebugMask)
 		LOG_DBG("- E.");
-
-#ifdef DPE_USE_GCE
-#else
-	ConfigWMFE();
-#endif
 }
 
 
@@ -5121,7 +4443,6 @@ static irqreturn_t ISP_Irq_DPE(MINT32 Irq, void *DeviceId)
 		DPE_WR32(DPE_DVE_START_REG, 0);
 #endif
 		bResulst = UpdateDVE(DpeDveSta0, &ProcessID);
-		/* ConfigDVE(); */
 		/* Config the Next frame */
 		if (MTRUE == bResulst) {
 			schedule_work(&DPEInfo.ScheduleDveWork);
@@ -5162,7 +4483,6 @@ static irqreturn_t ISP_Irq_DPE(MINT32 Irq, void *DeviceId)
 		DPE_WR32(DPE_WMFE_START_REG, 0);
 #endif
 		bResulst = UpdateWMFE(&ProcessID);
-		/* ConfigWMFE(); */
 		if (MTRUE == bResulst) {
 			schedule_work(&DPEInfo.ScheduleWmfeWork);
 #ifdef DPE_USE_GCE
