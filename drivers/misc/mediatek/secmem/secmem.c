@@ -75,6 +75,9 @@ struct secmem_context {
 };
 
 static DEFINE_MUTEX(secmem_lock);
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+static DEFINE_MUTEX(secmem_cma_lock);
+#endif
 static const struct mc_uuid_t secmem_uuid = { TL_SECMEM_UUID };
 static struct mc_session_handle secmem_session = { 0 };
 
@@ -82,6 +85,32 @@ static u32 secmem_session_ref;
 static u32 secmem_k_session_opened;
 static u32 secmem_devid = MC_DEVICE_ID_DEFAULT;
 static tciMessage_t *secmem_tci;
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+static u32 secmem_usage_counter;
+static u32 secmem_cma_state;
+#endif
+
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+
+#include <linux/workqueue.h>
+
+#define ONLINE_DEBOUNCE_TIME 1000 /* ms */
+
+static int secmem_cma_release(void);
+static void online_debounce_work_handler(struct work_struct *w);
+
+static struct workqueue_struct *wq;
+static DECLARE_DELAYED_WORK(online_debounce_work, online_debounce_work_handler);
+
+static void online_debounce_work_handler(struct work_struct *w)
+{
+	mutex_lock(&secmem_cma_lock);
+	MSG(ERR, "online_debounce_work_handler\n");
+	secmem_cma_release();
+	mutex_unlock(&secmem_cma_lock);
+}
+
+#endif
 
 static int secmem_execute(u32 cmd, struct secmem_param *param)
 {
@@ -172,6 +201,9 @@ static int secmem_handle_register(struct secmem_context *ctx, u32 type, u32 id)
 		if (handle->id == 0) {
 			handle->id = id;
 			handle->type = type;
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+			secmem_usage_counter++;
+#endif
 			spin_unlock(&ctx->lock);
 			return 0;
 		}
@@ -215,8 +247,8 @@ static void secmem_handle_unregister_check(struct secmem_context *ctx, u32 type,
 	for (i = 0; i < num; i++, handle++) {
 		if (handle->id == id) {
 			if (handle->type != type) {
-				MSG(ERR,
-				    "unref check failed, type mismatched (%d!=%d), handle=0x%x\n",
+				MSG(WRN,
+				    "unref check result: type mismatched (%d!=%d), handle=0x%x\n",
 				    _IOC_NR(handle->type), _IOC_NR(type), handle->id);
 			}
 			break;
@@ -240,6 +272,9 @@ static int secmem_handle_unregister(struct secmem_context *ctx, u32 id)
 	for (i = 0; i < num; i++, handle++) {
 		if (handle->id == id) {
 			memset(handle, 0, sizeof(struct secmem_handle));
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+			secmem_usage_counter--;
+#endif
 			break;
 		}
 	}
@@ -453,6 +488,61 @@ static int secmem_release(struct inode *inode, struct file *file)
 	return ret;
 }
 
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+static int secmem_cma_alloc(void)
+{
+	int ret;
+	phys_addr_t pa = 0;
+	unsigned long size = 0;
+
+	ret = svp_region_offline(&pa, &size);
+	if (ret) {
+		MSG(ERR, "%s: svp_region_offline failed! ret=%d\n", __func__, ret);
+		return -1;
+	}
+
+	if (pa == 0 || size == 0) {
+		MSG(ERR, "%s: invalid pa(0x%llx) or size(%lx)\n", __func__, pa, size);
+		return -1;
+	}
+
+	secmem_cma_state = 1;
+	MSG(INFO, "%s: secmem_cma_state=%d\n", __func__, secmem_cma_state);
+
+	/* Enable secure memory */
+	ret = secmem_enable(pa, size);
+	if (ret) {
+		MSG(ERR, "%s: svp_region_offline failed! ret=%d\n", __func__, ret);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int secmem_cma_release(void)
+{
+	int ret;
+
+	/* Disable secure memory */
+	ret = secmem_disable();
+	if (ret) {
+		MSG(ERR, "%s: secmem_api_disable failed! ret=%d\n", __func__, ret);
+		return -1;
+	}
+
+	ret = svp_region_online();
+	if (ret) {
+		MSG(ERR, "%s: svp_region_online failed! ret=%d\n", __func__, ret);
+		return -1;
+	}
+
+	secmem_cma_state = 0;
+	MSG(INFO, "%s: secmem_cma_state=%d\n", __func__, secmem_cma_state);
+
+	return 0;
+}
+#endif
+
 static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int err = 0;
@@ -482,6 +572,18 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case SECMEM_MEM_ALLOC:
 		if (!(file->f_mode & FMODE_WRITE))
 			return -EROFS;
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+		mutex_lock(&secmem_cma_lock);
+		err = 0;
+		/* CMA allocation */
+		if (secmem_cma_state == 0 && secmem_usage_counter == 0)
+			err = secmem_cma_alloc();
+		else
+			cancel_delayed_work_sync(&online_debounce_work);
+		mutex_unlock(&secmem_cma_lock);
+		if (err)
+			break;
+#endif
 		err = secmem_execute(CMD_SEC_MEM_ALLOC, &param);
 		if (!err)
 			secmem_handle_register(ctx, SECMEM_MEM_ALLOC, param.sec_handle);
@@ -501,6 +603,18 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case SECMEM_MEM_ALLOC_TBL:
 		if (!(file->f_mode & FMODE_WRITE))
 			return -EROFS;
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+		mutex_lock(&secmem_cma_lock);
+		err = 0;
+		/* CMA allocation */
+		if (secmem_cma_state == 0 && secmem_usage_counter == 0)
+			err = secmem_cma_alloc();
+		else
+			cancel_delayed_work_sync(&online_debounce_work);
+		mutex_unlock(&secmem_cma_lock);
+		if (err)
+			break;
+#endif
 		err = secmem_execute(CMD_SEC_MEM_ALLOC_TBL, &param);
 		if (!err)
 			secmem_handle_register(ctx, SECMEM_MEM_ALLOC_TBL, param.sec_handle);
@@ -528,6 +642,15 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return -ENOTTY;
 	}
 
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	mutex_lock(&secmem_cma_lock);
+	if (secmem_cma_state == 1 && secmem_usage_counter == 0) {
+		/* Do CMA release */
+		queue_delayed_work(wq, &online_debounce_work, msecs_to_jiffies(ONLINE_DEBOUNCE_TIME));
+	}
+	mutex_unlock(&secmem_cma_lock);
+#endif
+
 	if (!err)
 		err = copy_to_user((void *)arg, &param, sizeof(param));
 
@@ -548,12 +671,10 @@ static inline int secmem_kernel_open(void)
 
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
-int secmem_api_enable(u32 start, u32 size)
+int secmem_enable(u32 start, u32 size)
 {
 	int err = 0;
 	struct secmem_param param = { 0 };
-
-	secmem_kernel_open();
 
 	param.sec_handle = start;
 	param.size = size;
@@ -564,14 +685,11 @@ int secmem_api_enable(u32 start, u32 size)
 
 	return err;
 }
-EXPORT_SYMBOL(secmem_api_enable);
 
-int secmem_api_disable(void)
+int secmem_disable(void)
 {
 	int err = 0;
 	struct secmem_param param = { 0 };
-
-	secmem_kernel_open();
 
 	err = secmem_execute(CMD_SEC_MEM_DISABLE, &param);
 	if (err)
@@ -579,7 +697,6 @@ int secmem_api_disable(void)
 
 	return err;
 }
-EXPORT_SYMBOL(secmem_api_disable);
 
 int secmem_api_query(u32 *allocate_size)
 {
@@ -749,10 +866,10 @@ static int secmem_write(struct file *file, const char __user *buffer, size_t cou
 			MSG(ERR, "[SECMEM] - test for command 2\n");
 		} else if (!strcmp(cmd, "3")) {
 			MSG(ERR, "[SECMEM] - test for command 3\n");
-			secmem_api_enable(0xBFD00000, 0xFF000);
+			secmem_enable(0xBFD00000, 0xFF000);
 		} else if (!strcmp(cmd, "4")) {
 			MSG(ERR, "[SECMEM] - test for command 4\n");
-			secmem_api_disable();
+			secmem_disable();
 		} else if (!strcmp(cmd, "5")) {
 			u32 size = 0;
 
@@ -786,6 +903,11 @@ static int __init secmem_init(void)
 {
 	proc_create("secmem0", (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH), NULL,
 		    &secmem_fops);
+
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	if (!wq)
+		wq = create_singlethread_workqueue("secmem_online_debounce");
+#endif
 
 #ifdef SECMEM_DEBUG_INTERFACE
 	{

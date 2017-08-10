@@ -45,4 +45,13 @@ struct secmem_param {
 
 #define SECMEM_IOC_MAXNR      (10)
 
+
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+/* SVP CMA API */
+int svp_region_offline(phys_addr_t *pa, unsigned long *size);
+int svp_region_online(void);
+int secmem_enable(u32 start, u32 size);
+int secmem_disable(void);
+#endif
+
 #endif				/* end of SECMEM_H */
