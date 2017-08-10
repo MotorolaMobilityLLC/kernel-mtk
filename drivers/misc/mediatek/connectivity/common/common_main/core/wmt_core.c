@@ -1927,8 +1927,8 @@ static INT32 opfunc_hw_rst(P_WMT_OP pWmtOp)
 {
 
 	INT32 iRet = -1;
-	ULONG ctrlPa1;
-	ULONG ctrlPa2;
+	ULONG ctrlPa1 = 0;
+	ULONG ctrlPa2 = 0;
 
 	wmt_core_dump_func_state("BE HW RST");
     /*-->Reset WMT  data structure*/

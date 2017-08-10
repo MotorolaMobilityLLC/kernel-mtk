@@ -1282,7 +1282,7 @@ static const WMT_IC_INFO_S *mt6620_find_wmt_ic_info(const UINT32 hw_ver)
 static INT32 wmt_stp_init_coex(VOID)
 {
 	INT32 iRet;
-	ULONG addr;
+	ULONG addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 
 #define COEX_WMT  0

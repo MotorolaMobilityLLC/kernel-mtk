@@ -143,7 +143,7 @@ static const struct parse_data wmtcfg_fields[] = {
 static INT32 wmt_conf_parse_char(P_DEV_WMT pWmtDev, const struct parse_data *data, const PINT8 pos)
 {
 	PUINT8 dst;
-	long res;
+	long res = 0;
 
 	dst = (PINT8)(((PUINT8) pWmtDev) + (long)data->param1);
 
@@ -182,7 +182,7 @@ static PINT8 wmt_conf_write_char(P_DEV_WMT pWmtDev, const struct parse_data *dat
 static INT32 wmt_conf_parse_short(P_DEV_WMT pWmtDev, const struct parse_data *data, const PINT8 pos)
 {
 	PUINT16 dst;
-	long res;
+	long res = 0;
 
 	dst = (PINT16)(((PUINT8) pWmtDev) + (long)data->param1);
 
@@ -225,7 +225,7 @@ static PINT8 wmt_conf_write_short(P_DEV_WMT pWmtDev, const struct parse_data *da
 static INT32 wmt_conf_parse_int(P_DEV_WMT pWmtDev, const struct parse_data *data, const PINT8 pos)
 {
 	PUINT32 dst;
-	long res;
+	long res = 0;
 
 	dst = (PINT32)(((PUINT8) pWmtDev) + (long)data->param1);
 

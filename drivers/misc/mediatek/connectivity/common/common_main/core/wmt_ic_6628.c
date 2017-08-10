@@ -1387,7 +1387,7 @@ static INT32 mt6628_set_sdio_driving(VOID)
 {
 	INT32 ret = 0;
 
-	ULONG addr;
+	ULONG addr = 0;
 	WMT_GEN_CONF *pWmtGenConf;
 	UINT32 drv_val = 0;
 
