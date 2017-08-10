@@ -39,7 +39,7 @@ static struct acthub_ipi_data obj_ipi_data;
 
 static ssize_t show_activity_value(struct device_driver *ddri, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%s\n", buf);
+	return snprintf(buf, PAGE_SIZE, "%s\n", "activity");
 }
 
 static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, size_t count)
