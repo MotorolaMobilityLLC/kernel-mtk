@@ -3322,18 +3322,6 @@ int hif_thread(void *data)
 			complete(&prGlueInfo->rHalWRMCRComp);
 		}
 
-		if (test_and_clear_bit(GLUE_FLAG_HAL_MCR_RD_BIT, &prGlueInfo->ulFlag)) {
-			HAL_MCR_HIF_RD(prGlueInfo->prAdapter, prGlueInfo->u4Register,
-							prGlueInfo->prRegValue);
-			complete(&prGlueInfo->rHalRDMCRComp);
-		}
-
-		if (test_and_clear_bit(GLUE_FLAG_HAL_MCR_WR_BIT, &prGlueInfo->ulFlag)) {
-			HAL_MCR_HIF_WR(prGlueInfo->prAdapter, prGlueInfo->u4Register,
-							prGlueInfo->u4RegValue);
-			complete(&prGlueInfo->rHalWRMCRComp);
-		}
-
 		/* Release to FW own */
 		wlanReleasePowerControl(prGlueInfo->prAdapter);
 #if defined(MT6797)

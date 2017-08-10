@@ -47,11 +47,7 @@
 
 
 #define MUTEX_TIMEOUT                       (5000)
-#ifdef BAT_TASK_PERIOD_SECOND
-	#define BAT_TASK_PERIOD                     (BAT_TASK_PERIOD_SECOND)
-#else
-	#define BAT_TASK_PERIOD                     (10)
-#endif
+#define BAT_TASK_PERIOD                     (10)/* 10sec */
 #define g_free_bat_temp					(100)0	/* 1 s */
 
 /*****************************************************************************

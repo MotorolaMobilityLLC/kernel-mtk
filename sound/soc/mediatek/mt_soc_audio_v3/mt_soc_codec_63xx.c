@@ -1328,7 +1328,6 @@ uint32 GetDLNewIFFrequency(unsigned int frequency)
 		break;
 	case 48000:
 		Reg_value = 8;
-		break;
 	default:
 		pr_warn("ApplyDLNewIFFrequency with frequency = %d", frequency);
 	}

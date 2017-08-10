@@ -1779,8 +1779,8 @@ static void battery_update(struct battery_data *bat_data)
 		pre_uisoc2 = BMT_status.UI_SOC2;
 		pre_chr_state = BMT_status.bat_charging_state;
 		update_cnt = 0;
-	} else if ((pre_uisoc2 != BMT_status.UI_SOC2) || (BMT_status.UI_SOC2 == 0)) {
-		/* Update when soc change */
+	} else if (pre_uisoc2 != BMT_status.UI_SOC2) {
+		/* Update when uisoc2 change */
 		power_supply_changed(bat_psy);
 		pre_uisoc2 = BMT_status.UI_SOC2;
 		update_cnt = 0;
@@ -3043,7 +3043,6 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	int ret = 0;
 	int adc_in_data[2] = { 1, 1 };
 	int adc_out_data[2] = { 1, 1 };
-	int temp_car_tune;
 
 	mutex_lock(&bat_mutex);
 
@@ -3219,20 +3218,14 @@ static long adc_cali_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		break;
 
 	case Set_META_BAT_CAR_TUNE_VALUE:
-
-		/* meta tool input: adc_in_data[1] (mA)*/
 		user_data_addr = (int *)arg;
 		ret = copy_from_user(adc_in_data, user_data_addr, 8);
-
-		/* Send cali_current to hal to calculate car_tune_value*/
-		temp_car_tune = battery_meter_meta_tool_cali_car_tune(adc_in_data[1]);
-
-		/* return car_tune_value to meta tool in adc_out_data[0] */
-		batt_meter_cust_data.car_tune_value = temp_car_tune / 10;
-		adc_out_data[0] = temp_car_tune;
+		/* Input X mA, div 1k => car_tune_value */
+		batt_meter_cust_data.car_tune_value = adc_in_data[1] / 1000;
+		adc_out_data[0] = batt_meter_cust_data.car_tune_value;
+		battery_log(BAT_LOG_CRTI, "Set_BAT_CAR_TUNE_VALUE[%d], res=%d\n",
+			adc_in_data[1], adc_out_data[0]);
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
-		pr_err("Set_BAT_CAR_TUNE_VALUE[%d], res=%d, ret=%d\n",
-			adc_in_data[1], adc_out_data[0], ret);
 
 		break;
 		/* add bing meta tool------------------------------- */
@@ -3319,7 +3312,7 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 	do {
 #ifdef CONFIG_MTK_BQ25896_SUPPORT
 		/*this annoying SW workaround wakes up bat_thread. 10 secs is set instead of 1 sec */
-		ktime = ktime_set(BAT_TASK_PERIOD, 0);
+		ktime = ktime_set(10, 0);
 #else
 		ktime = ktime_set(0, BAT_MS_TO_NS(1000));
 #endif
@@ -3405,7 +3398,7 @@ void battery_kthread_hrtimer_init(void)
 
 #ifdef CONFIG_MTK_BQ25896_SUPPORT
 /*watchdog timer before 40 secs*/
-	ktime = ktime_set(BAT_TASK_PERIOD, 0);	/* 3s, 10* 1000 ms */
+	ktime = ktime_set(10, 0);	/* 3s, 10* 1000 ms */
 #else
 	ktime = ktime_set(1, 0);
 #endif

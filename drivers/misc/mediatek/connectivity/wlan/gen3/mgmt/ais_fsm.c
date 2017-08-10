@@ -1245,11 +1245,6 @@ VOID aisInitializeConnectionSettings(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T p
 
 	/* Features */
 	prConnSettings->fgIsEnableRoaming = FALSE;
-
-#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
-	prConnSettings->fgSecModeChangeStartTimer = FALSE;
-#endif
-
 #if CFG_SUPPORT_ROAMING
 	if (prRegInfo)
 		prConnSettings->fgIsEnableRoaming = ((prRegInfo->fgDisRoaming > 0) ? (FALSE) : (TRUE));
@@ -1350,12 +1345,6 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 			  &prAisFsmInfo->rDeauthDoneTimer,
 			  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventDeauthTimeout, (ULONG) NULL);
 
-#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
-	cnmTimerInitTimer(prAdapter,
-			  &prAisFsmInfo->rSecModeChangeTimer,
-			  (PFN_MGMT_TIMEOUT_FUNC) aisFsmRunEventSecModeChangeTimeout, (ULONG) NULL);
-#endif
-
 	/* 4 <1.2> Initiate PWR STATE */
 	SET_NET_PWR_STATE_IDLE(prAdapter, prAisBssInfo->ucBssIndex);
 
@@ -1437,9 +1426,6 @@ VOID aisFsmUninit(IN P_ADAPTER_T prAdapter)
 	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rIbssAloneTimer);
 	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rJoinTimeoutTimer);
 	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer);
-#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
-	cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rSecModeChangeTimer);
-#endif
 
 	/* 4 <2> flush pending request */
 	aisFsmFlushRequest(prAdapter);
@@ -2371,17 +2357,8 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 		case AIS_STATE_JOIN_FAILURE:
 			prConnSettings->fgIsDisconnectedByNonRequest = TRUE;
 
-#if CFG_SUPPORT_RN
-			if (prAisBssInfo->fgDisConnReassoc == TRUE) {
-				nicMediaJoinFailure(prAdapter, prAdapter->prAisBssInfo->ucBssIndex,
-							WLAN_STATUS_MEDIA_DISCONNECT);
-				prAisBssInfo->fgDisConnReassoc = FALSE;
-			} else
-#endif
-			{
-				nicMediaJoinFailure(prAdapter, prAdapter->prAisBssInfo->ucBssIndex,
-					WLAN_STATUS_JOIN_TIMEOUT);
-			}
+			nicMediaJoinFailure(prAdapter, prAdapter->prAisBssInfo->ucBssIndex, WLAN_STATUS_JOIN_TIMEOUT);
+
 			eNextState = AIS_STATE_IDLE;
 			fgIsTransition = TRUE;
 
@@ -3036,20 +3013,10 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 	prAisBssInfo = prAdapter->prAisBssInfo;
 	eNextState = prAisFsmInfo->eCurrentState;
 
-#if CFG_SUPPORT_RN
-	GET_CURRENT_SYSTIME(&prAisBssInfo->rConnTime);
-#endif
-
 	do {
 		/* 4 <1> JOIN was successful */
 		if (prJoinCompMsg->rJoinStatus == WLAN_STATUS_SUCCESS) {
 
-#if CFG_SUPPORT_RN
-			prAisBssInfo->fgDisConnReassoc = FALSE;
-#endif
-#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
-			prAdapter->rWifiVar.rConnSettings.fgSecModeChangeStartTimer = FALSE;
-#endif
 			/* 1. Reset retry count */
 			prAisFsmInfo->ucConnTrialCount = 0;
 
@@ -3156,12 +3123,6 @@ enum _ENUM_AIS_STATE_T aisFsmJoinCompleteAction(IN struct _ADAPTER_T *prAdapter,
 #if CFG_SUPPORT_ROAMING
 					eNextState = AIS_STATE_WAIT_FOR_NEXT_SCAN;
 #endif /* CFG_SUPPORT_ROAMING */
-#if CFG_SUPPORT_RN
-				} else if (prAisBssInfo->fgDisConnReassoc == TRUE) {
-					if (prStaRec)
-						prAisBssInfo->u2DeauthReason = prStaRec->u2ReasonCode;
-					eNextState = AIS_STATE_JOIN_FAILURE;
-#endif
 				} else
 				    if (CHECK_FOR_TIMEOUT
 					(rCurrentTime, prAisFsmInfo->rJoinReqTime, SEC_TO_SYSTIME(AIS_JOIN_TIMEOUT))) {
@@ -3543,17 +3504,10 @@ aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 		/* NOTE: Only delay the Indication of Disconnect Event */
 		ASSERT(eConnectionState == PARAM_MEDIA_STATE_DISCONNECTED);
 
-#if CFG_SUPPORT_RN
-		if (prAisBssInfo->fgDisConnReassoc) {
-			DBGLOG(AIS, INFO, "Reassoc the AP once beacause of receive deauth/deassoc\n");
-		} else
-#endif
-		{
-			DBGLOG(AIS, INFO, "Postpone the indication of Disconnect for %d seconds\n",
-					prConnSettings->ucDelayTimeOfDisconnectEvent);
+		DBGLOG(AIS, INFO, "Postpone the indication of Disconnect for %d seconds\n",
+				   prConnSettings->ucDelayTimeOfDisconnectEvent);
 
-			prAisFsmInfo->u4PostponeIndStartTime = kalGetTimeTick();
-		}
+		prAisFsmInfo->u4PostponeIndStartTime = kalGetTimeTick();
 	}
 
 }				/* end of aisIndicationOfMediaStateToHost() */
@@ -3713,9 +3667,6 @@ VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, 
 	prAisBssInfo->u2ATIMWindow = 0;
 
 	prAisBssInfo->ucBeaconTimeoutCount = AIS_BEACON_TIMEOUT_COUNT_INFRA;
-	prAisBssInfo->ucRoamSkipTimes = 3;
-	prAisBssInfo->fgGoodRcpiArea = FALSE;
-	prAisBssInfo->fgPoorRcpiArea = FALSE;
 
 	/* 4 <4.2> Update HT information and set channel */
 	/* Record HT related parameters in rStaRec and rBssInfo
@@ -4051,14 +4002,10 @@ VOID aisFsmDisconnect(IN P_ADAPTER_T prAdapter, IN BOOLEAN fgDelayIndication)
 		}
 
 		if (prAisBssInfo->ucReasonOfDisconnect == DISCONNECT_REASON_CODE_RADIO_LOST) {
-#if CFG_SUPPORT_RN
-			if (prAisBssInfo->fgDisConnReassoc == FALSE)
-#endif
-				{
-					scanRemoveBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
-					/* remove from scanning results as well */
-					wlanClearBssInScanningResult(prAdapter, prAisBssInfo->aucBSSID);
-				}
+			scanRemoveBssDescByBssid(prAdapter, prAisBssInfo->aucBSSID);
+
+			/* remove from scanning results as well */
+			wlanClearBssInScanningResult(prAdapter, prAisBssInfo->aucBSSID);
 
 			/* trials for re-association */
 			if (fgDelayIndication) {
@@ -4334,13 +4281,6 @@ VOID aisFsmRunEventDeauthTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 	aisDeauthXmitComplete(prAdapter, NULL, TX_RESULT_LIFE_TIMEOUT);
 }
 
-#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
-VOID aisFsmRunEventSecModeChangeTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
-{
-	DBGLOG(AIS, INFO, "Beacon security mode change timeout, trigger disconnect!\n");
-	aisBssSecurityChanged(prAdapter);
-}
-#endif
 #if defined(CFG_TEST_MGMT_FSM) && (CFG_TEST_MGMT_FSM != 0)
 /*----------------------------------------------------------------------------*/
 /*!
@@ -4691,14 +4631,6 @@ VOID aisBssBeaconTimeout(IN P_ADAPTER_T prAdapter)
 	}
 
 }				/* end of aisBssBeaconTimeout() */
-
-#if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
-VOID aisBssSecurityChanged(P_ADAPTER_T prAdapter)
-{
-	prAdapter->rWifiVar.rConnSettings.fgIsDisconnectedByNonRequest = TRUE;
-	aisFsmStateAbort(prAdapter, DISCONNECT_REASON_CODE_DEAUTHENTICATED, FALSE);
-}
-#endif
 
 /*----------------------------------------------------------------------------*/
 /*!

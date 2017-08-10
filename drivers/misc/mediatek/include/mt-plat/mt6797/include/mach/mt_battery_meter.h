@@ -149,7 +149,6 @@
 
 #define FG_BAT_INT
 #define IS_BATTERY_REMOVE_BY_PMIC
-/* #define USE_EMBEDDED_BATTERY */
 
 /* Calculate do in Kernel */
 /* #define FORCE_D0_IN_KERNEL */

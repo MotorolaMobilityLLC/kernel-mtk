@@ -2040,7 +2040,7 @@ static void musb_suspend_work(struct work_struct *data)
 		  musb->is_clk_on);
 
 	if (musb->is_clk_on == 1
-	    && !usb_cable_connected()) {
+	    && (!usb_cable_connected() || (musb->usb_mode != CABLE_MODE_NORMAL))) {
 
 #ifdef EP_PROFILING
 		cancel_delayed_work_sync(&musb->ep_prof_work);

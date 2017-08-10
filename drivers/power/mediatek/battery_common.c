@@ -3590,7 +3590,7 @@ int charger_hv_detect_sw_thread_handler(void *unused)
 	do {
 #ifdef CONFIG_MTK_BQ25896_SUPPORT
 		/*this annoying SW workaround wakes up bat_thread. 10 secs is set instead of 1 sec*/
-		ktime = ktime_set(BAT_TASK_PERIOD, 0);
+		ktime = ktime_set(10, 0);
 #else
 		ktime = ktime_set(0, BAT_MS_TO_NS(1000));
 #endif
@@ -3679,7 +3679,7 @@ void battery_kthread_hrtimer_init(void)
 	ktime_t ktime;
 #ifdef CONFIG_MTK_BQ25896_SUPPORT
 /*watchdog timer before 40 secs*/
-	ktime = ktime_set(BAT_TASK_PERIOD, 0);	/* 3s, 10* 1000 ms */
+	ktime = ktime_set(10, 0);	/* 3s, 10* 1000 ms */
 #else
 	ktime = ktime_set(1, 0);
 #endif
@@ -4433,9 +4433,10 @@ static void battery_shutdown(struct platform_device *dev)
 {
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 	CHR_CURRENT_ENUM input_current = CHARGE_CURRENT_70_00_MA;
-
-	battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &input_current);
-	battery_log(BAT_LOG_CRTI, "[PE+] Resetting TA adapter before shutdown\n");
+	if (is_ta_connect == KAL_TRUE) {
+		battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &input_current);
+		battery_log(BAT_LOG_CRTI, "[PE+] Resetting TA adapter before shutdown\n");
+	}
 #endif
 
 }

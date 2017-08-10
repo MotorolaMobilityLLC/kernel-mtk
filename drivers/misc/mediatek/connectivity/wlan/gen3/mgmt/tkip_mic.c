@@ -439,10 +439,6 @@ BOOLEAN tkipMicDecapsulate(IN P_SW_RFB_T prSwRfb, IN PUINT_8 pucMicKey)
 
 	/* prRxStatus = prSwRfb->prRxStatus; */
 	pucFrameBody = prSwRfb->pucPayload;
-	if (!pucFrameBody) {
-		DBGLOG(RSN, INFO, "pucPayload is NULL, drop this packet");
-		return FALSE;
-	}
 	u2FrameBodyLen = prSwRfb->u2PayloadLength;
 
 	/* if ((prRxStatus->ucKIdxSecMode & BITS(0,3)) != CIPHER_SUITE_TKIP_WO_MIC){ */

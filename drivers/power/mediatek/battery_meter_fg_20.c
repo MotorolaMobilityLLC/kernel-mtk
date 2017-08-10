@@ -862,8 +862,6 @@ int __batt_meter_init_cust_data_from_cust_header(struct platform_device *dev)
 	batt_meter_cust_data.apsleep_battery_voltage_compensate =
 	    APSLEEP_BATTERY_VOLTAGE_COMPENSATE;
 
-	batt_meter_cust_data.bat_task_period = BAT_TASK_PERIOD;
-
 	return 0;
 }
 
@@ -2393,22 +2391,6 @@ signed int battery_meter_get_VSense(void)
 	ret = battery_meter_ctrl(BATTERY_METER_CMD_GET_ADC_V_I_SENSE, &val);
 	return val;
 #endif
-}
-
-signed int battery_meter_meta_tool_cali_car_tune(int meta_current)
-{
-	int cali_car_tune;
-	int ret1 = 0;
-	int ret2 = 0;
-
-	ret1 = battery_meter_ctrl(BATTERY_METER_CMD_SET_META_CALI_CURRENT, &meta_current);
-	if (!ret1)
-		ret2 = battery_meter_ctrl(BATTERY_METER_CMD_META_CALI_CAR_TUNE_VALUE, &cali_car_tune);
-
-	if (ret1 || ret2)
-		return batt_meter_cust_data.car_tune_value * 10;	/* 1000 base, so multiple by 10*/
-	else
-		return cali_car_tune;		/* 1000 base */
 }
 
 #ifdef USING_SMOOTH_UI_SOC2
@@ -4592,11 +4574,11 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 		case FG_DAEMON_CMD_SET_CAR_TUNE_VALUE:
 		{
-			signed int cali_car_tune;
+			signed int NVRAM_CAR_TUNE_VALUE;
 
-			memcpy(&cali_car_tune, &msg->fgd_data[0], sizeof(cali_car_tune));
-			bm_notice("[fg_res] cali_car_tune = %d\n", cali_car_tune);
-			batt_meter_cust_data.car_tune_value = cali_car_tune;
+			memcpy(&NVRAM_CAR_TUNE_VALUE, &msg->fgd_data[0], sizeof(NVRAM_CAR_TUNE_VALUE));
+			bm_notice("[fg_res] NVRAM_CAR_TUNE_VALUE = %d\n", NVRAM_CAR_TUNE_VALUE);
+			batt_meter_cust_data.car_tune_value = NVRAM_CAR_TUNE_VALUE;
 		}
 		break;
 

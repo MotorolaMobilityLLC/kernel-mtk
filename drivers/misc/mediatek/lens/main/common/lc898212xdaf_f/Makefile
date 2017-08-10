@@ -2,5 +2,5 @@
 # Makefile for misc devices that really don't fit anywhere else.
 #
 
-obj-$(CONFIG_MTK_LENS)   += main/
-obj-$(CONFIG_MTK_LENS)   += sub/
+obj-y += LC898212XDAF_F.o LC89821x_STMV.o
+

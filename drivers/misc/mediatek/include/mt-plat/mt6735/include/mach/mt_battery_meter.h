@@ -421,7 +421,6 @@
 */
 #define FG_BAT_INT
 #define IS_BATTERY_REMOVE_BY_PMIC
-/* #define USE_EMBEDDED_BATTERY */
 
 /* Multi battery */
 /* #define MTK_MULTI_BAT_PROFILE_SUPPORT */

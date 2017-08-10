@@ -5173,7 +5173,7 @@ static void *internal_memalign(mstate m, size_t alignment, size_t bytes)
 			mchunkptr p = mem2chunk(mem);
 
 			if (PREACTION(m))
-				return NULL;
+				return 0;
 			if ((((size_t)(mem)) & (alignment - 1)) != 0) { /* misaligned */
 				/*
 				  Find an aligned spot inside chunk.  Since we need to give
@@ -5855,7 +5855,7 @@ postaction:
 		return mem;
 	}
 
-	return NULL;
+	return 0;
 }
 
 #if 0 /* mask for kernel unused-function build warning */
@@ -6001,8 +6001,7 @@ mspace create_mspace_with_base(void *base, size_t capacity, int locked)
 		set_lock(m, locked);
 	}
 #ifdef KERNEL_EXTMEM_MSPACE
-	if (m)
-		m->mem_used = m->mem_used_peak = 0;
+	m->mem_used = m->mem_used_peak = 0;
 #endif
 	return (mspace)m;
 }
@@ -6190,7 +6189,7 @@ postaction:
 		POSTACTION(ms);
 		return mem;
 	}
-	return NULL;
+	return 0;
 }
 
 void mspace_free(mspace msp, void *mem)

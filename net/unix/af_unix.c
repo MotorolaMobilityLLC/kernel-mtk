@@ -1149,7 +1149,7 @@ restart:
 	}
 
 #ifdef CONFIG_MTK_NET_LOGGING
-	if ((SOCK_INODE(sock) != NULL) && (sunaddr != NULL) && (other != NULL) && (other->sk_socket != NULL) &&
+	if ((SOCK_INODE(sock) != NULL) && (sunaddr != NULL) && (other->sk_socket != NULL) &&
 	    (SOCK_INODE(other->sk_socket) != NULL)) {
 		pr_debug("[mtk_net][socket]unix_dgram_connect[%lu]:connect [%s] other:[%lu]\n",
 			 SOCK_INODE(sock)->i_ino, sunaddr->sun_path,

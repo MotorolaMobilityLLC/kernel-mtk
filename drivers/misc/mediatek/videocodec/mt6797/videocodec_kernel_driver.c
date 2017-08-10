@@ -376,8 +376,8 @@ void VdecDvfsMonitorStart(void)
 		if (gMMDFVFSMonitorCounts > MONITOR_START_MINUS_1) {
 			if (VAL_TRUE == gFirstDvfsLock) {
 				gFirstDvfsLock = VAL_FALSE;
-				/* MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] LOCK 1 start monitor instance = 0x%p\n",
-						grVcodecDecHWLock.pvHandle); */
+				MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] LOCK 1 start monitor instance = 0x%p\n",
+						grVcodecDecHWLock.pvHandle);
 				eVideoGetTimeOfDay(&gMMDFVFSMonitorStartTime, sizeof(VAL_TIME_T));
 			}
 			eVideoGetTimeOfDay(&gMMDFVFSLastLockTime, sizeof(VAL_TIME_T));
@@ -1376,7 +1376,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 
 #ifdef ENABLE_MMDVFS_VDEC
 		/* MM DVFS related */
-		/* MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] INC_DEC_EMI MM DVFS init\n"); */
+		MODULE_MFV_LOGE("[VCODEC][MMDVFS_VDEC] INC_DEC_EMI MM DVFS init\n");
 		/* raise voltage */
 		SendDvfsRequest(DVFS_DEFAULT);
 		VdecDvfsBegin();
@@ -2197,7 +2197,7 @@ static int venc_hw_reset(int type)
 static int vcodec_flush(struct file *file, fl_owner_t id)
 {
 	MODULE_MFV_LOGD("vcodec_flush, curr_tid =%d\n", current->pid);
-	/* MODULE_MFV_LOGE("vcodec_flush pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count); */
+	MODULE_MFV_LOGE("vcodec_flush pid = %d, Driver_Open_Count %d\n", current->pid, Driver_Open_Count);
 
 	return 0;
 }

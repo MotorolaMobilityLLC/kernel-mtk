@@ -46,13 +46,3 @@ config MTK_TEST_XHCI
 	  Say Y if you would like to do verification program.
 	  If unsure, say N.
 
-config USB_MTK_OTG_SWITCH
-	tristate "MediaTek OTG Function Switch"
-	default n
-	depends on USB_MTK_DUALMODE
-	---help---
-	  Enable Mediatek OTG function Switch mechanism.
-	  The default OTG DUALROLE function is disabled.
-	  User can switch to enable or disable by command.
-	  Say Y here if your want to use mechanism.
-	  If unsure, say N.
