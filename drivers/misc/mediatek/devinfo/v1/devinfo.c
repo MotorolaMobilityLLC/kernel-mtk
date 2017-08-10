@@ -25,6 +25,7 @@
 #include <linux/device.h>
 #ifdef CONFIG_OF
 #include <linux/of_fdt.h>
+#include <linux/of.h>
 #endif
 #include <linux/atomic.h>
 #include <asm/setup.h>
@@ -44,6 +45,7 @@ static struct class *devinfo_class;
 static dev_t devinfo_dev;
 static atomic_t g_devinfo_init_status = ATOMIC_INIT(DEVINFO_UNINIT);
 static atomic_t g_devinfo_init_errcnt = ATOMIC_INIT(0);
+static struct device_node *chosen_node;
 /*****************************************************************************
 *FUNCTION DEFINITION
 *****************************************************************************/
@@ -51,6 +53,7 @@ static int devinfo_open(struct inode *inode, struct file *filp);
 static int devinfo_release(struct inode *inode, struct file *filp);
 static long devinfo_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 static void init_devinfo_exclusive(void);
+static void devinfo_parse_dt(void);
 
 /**************************************************************************
 *EXTERN FUNCTION
@@ -272,7 +275,7 @@ static int __init devinfo_init(void)
 }
 
 #ifdef CONFIG_OF
-static int __init devinfo_parse_dt(unsigned long node, const char *uname, int depth, void *data)
+static void devinfo_parse_dt(void)
 {
 	struct devinfo_tag *tags;
 	u32 size = 0;
@@ -280,10 +283,15 @@ static int __init devinfo_parse_dt(unsigned long node, const char *uname, int de
 	u32 hrid_magic_num = 0;
 	u32 hrid_tmp_size = 0;
 
-	if (depth != 1 || (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
-		return 0;
-
-	tags = (struct devinfo_tag *) of_get_flat_dt_prop(node, "atag,devinfo", NULL);
+	chosen_node = of_find_node_by_path("/chosen");
+	if (!chosen_node) {
+		chosen_node = of_find_node_by_path("/chosen@0");
+		if (!chosen_node) {
+			pr_err("devinfo chosen node is not found!!");
+			return;
+		}
+	}
+	tags = (struct devinfo_tag *) of_get_property(chosen_node, "atag,devinfo", NULL);
 	if (tags) {
 		size = (tags->size) - (u32)(devinfo_lk_atag_tag_size(devinfo_lk_atag_tag_devinfo_data));
 
@@ -317,7 +325,6 @@ static int __init devinfo_parse_dt(unsigned long node, const char *uname, int de
 		pr_err("'atag,devinfo' is not found\n");
 	}
 
-	return 1;
 }
 
 static void init_devinfo_exclusive(void)
@@ -334,10 +341,10 @@ static void init_devinfo_exclusive(void)
 	else
 		return;
 
-	of_scan_flat_dt(devinfo_parse_dt, NULL);
+	devinfo_parse_dt();
 }
 
-static int __init devinfo_of_init(void)
+static int devinfo_of_init(void)
 {
 	init_devinfo_exclusive();
 
