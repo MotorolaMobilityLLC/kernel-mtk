@@ -28,6 +28,10 @@
 #include "ddp_color.h"
 #include "cmdq_def.h"
 
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
+#define COLOR_SUPPORT_PARTIAL_UPDATE
+#endif
+
 
 /* global PQ param for kernel space */
 static DISP_PQ_PARAM g_Color_Param[2] = {
@@ -961,14 +965,14 @@ int tdshp_index_init = 0;
 #define TDSHP_PA_BASE   0x14009000
 #define TDSHP1_PA_BASE  0x1400A000
 static unsigned long g_tdshp1_va;
-#elif defined(CONFIG_ARCH_MT6797)
+#elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 #define TDSHP_PA_BASE   0x14009000
 #else
 #define TDSHP_PA_BASE   0x14006000
 #endif
 
 #ifdef DISP_MDP_COLOR_ON
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 #define MDP_COLOR_PA_BASE 0x1400A000
 #else
 #define MDP_COLOR_PA_BASE 0x14007000
@@ -2222,7 +2226,7 @@ static int _color_set_listener(DISP_MODULE_ENUM module, ddp_module_notify notify
 	return 0;
 }
 
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_SUPPORT_PARTIAL_UPDATE)
 static int _color_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
 {
 	struct disp_rect *roi = (struct disp_rect *) arg;
@@ -2794,7 +2798,7 @@ DDP_MODULE_DRIVER ddp_driver_color = {
 	.set_lcm_utils = NULL,
 	.set_listener = _color_set_listener,
 	.cmd = _color_io,
-#if defined(CONFIG_ARCH_MT6797)
+#if defined(COLOR_SUPPORT_PARTIAL_UPDATE)
 	.ioctl = color_ioctl,
 #endif
 };

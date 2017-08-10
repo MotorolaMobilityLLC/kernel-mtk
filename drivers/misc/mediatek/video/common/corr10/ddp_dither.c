@@ -25,6 +25,18 @@
 #include <ddp_dither.h>
 #include <ddp_drv.h>
 
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+#define DITHER0_BASE_NAMING (DISPSYS_DITHER0_BASE)
+#define DITHER0_MODULE_NAMING (DISP_MODULE_DITHER0)
+#else
+#define DITHER0_BASE_NAMING (DISPSYS_DITHER_BASE)
+#define DITHER0_MODULE_NAMING (DISP_MODULE_DITHER)
+#endif
+
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
+#define DITHER_SUPPORT_PARTIAL_UPDATE
+#endif
+
 int dither_dbg_en = 0;
 #define DITHER_ERR(fmt, arg...) pr_err("[DITHER] " fmt "\n", ##arg)
 #define DITHER_DBG(fmt, arg...) \
@@ -35,11 +47,7 @@ int dither_dbg_en = 0;
 void disp_dither_init(disp_dither_id_t id, int width, int height,
 			     unsigned int dither_bpp, void *cmdq)
 {
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
-	unsigned long reg_base = DISPSYS_DITHER0_BASE;
-#else
-	unsigned long reg_base = DISPSYS_DITHER_BASE;
-#endif
+	unsigned long reg_base = DITHER0_BASE_NAMING;
 	unsigned int enable;
 
 	DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 5), 0x00000000, ~0);
@@ -79,7 +87,7 @@ void disp_dither_init(disp_dither_id_t id, int width, int height,
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_EN, enable, 0x1);
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG, enable << 1, 1 << 1);
 	/* Disable dither MODULE_STALL / SUB_MODULE_STALL  */
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 	DISP_REG_MASK(cmdq, DISP_REG_DITHER_CFG, 0 << 8, 1 << 8);
 #endif
 	DISP_REG_SET(cmdq, DISP_REG_DITHER_SIZE, (width << 16) | height);
@@ -120,15 +128,7 @@ static int disp_dither_power_on(DISP_MODULE_ENUM module, void *handle)
 	/* dither is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
-	int module0;
-
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
-	module0 = DISP_MODULE_DITHER0;
-#else
-	module0 = DISP_MODULE_DITHER;
-#endif
-
-	if (module == module0) {
+	if (module == DITHER0_MODULE_NAMING) {
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_DISP0_DISP_DITHER, "DITHER");
 #else
@@ -146,15 +146,7 @@ static int disp_dither_power_off(DISP_MODULE_ENUM module, void *handle)
 	/* dither is DCM , do nothing */
 #else
 #ifdef ENABLE_CLK_MGR
-	int module0;
-
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
-	module0 = DISP_MODULE_DITHER0;
-#else
-	module0 = DISP_MODULE_DITHER;
-#endif
-
-	if (module == module0) {
+	if (module == DITHER0_MODULE_NAMING) {
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_DISP0_DISP_DITHER, "DITHER");
 #else
@@ -166,7 +158,7 @@ static int disp_dither_power_off(DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-#if defined(CONFIG_ARCH_MT6797)
+#ifdef DITHER_SUPPORT_PARTIAL_UPDATE
 static int _dither_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
 {
 	struct disp_rect *roi = (struct disp_rect *) arg;
@@ -197,7 +189,7 @@ DDP_MODULE_DRIVER ddp_driver_dither = {
 	.deinit = disp_dither_power_off,
 	.power_on = disp_dither_power_on,
 	.power_off = disp_dither_power_off,
-#if defined(CONFIG_ARCH_MT6797)
+#ifdef DITHER_SUPPORT_PARTIAL_UPDATE
 	.ioctl = dither_ioctl,
 #endif
 };
@@ -205,11 +197,7 @@ DDP_MODULE_DRIVER ddp_driver_dither = {
 
 void disp_dither_select(unsigned int dither_bpp, void *cmdq)
 {
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
-	unsigned long reg_base = DISPSYS_DITHER0_BASE;
-#else
-	unsigned long reg_base = DISPSYS_DITHER_BASE;
-#endif
+	unsigned long reg_base = DITHER0_BASE_NAMING;
 	unsigned int enable;
 
 	DISP_REG_MASK(cmdq, DITHER_REG(reg_base, 5), 0x00000000, ~0);
