@@ -198,7 +198,7 @@ uint32_t hal_tui_alloc(
 	}
 	pr_debug("tui pa=0x%x, size=0x%lx", (uint32_t)pa, size);
 
-	pr_debug("tui-hal allocasize=%ld number=%d, extra=%d\n", allocsize, number, TUI_EXTRA_MEM_SIZE);
+	pr_debug("tui-hal allocasize=%zu number=%d, extra=%d\n", allocsize, number, TUI_EXTRA_MEM_SIZE);
 	pr_debug("%s(%d): allocated at %llx\n", __func__, __LINE__,
 			allocbuffer[0].pa);
 	pr_debug("%s(%d): allocated at %llx\n", __func__, __LINE__,
