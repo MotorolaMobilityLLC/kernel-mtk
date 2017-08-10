@@ -418,6 +418,8 @@ static ssize_t musb_regw_mode_write(struct file *file,
 	if (copy_from_user(buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
 		return -EFAULT;
 
+	buf[19] = '\0';
+
 	if ((!strncmp(buf, "MAC", 3)) || (!strncmp(buf, "mac", 3)))
 		is_mac = 1;
 	else if ((!strncmp(buf, "PHY", 3)) || (!strncmp(buf, "phy", 3)))
@@ -495,6 +497,8 @@ static ssize_t musb_regr_mode_write(struct file *file,
 
 	if (copy_from_user(buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
 		return -EFAULT;
+
+	buf[19] = '\0';
 
 	if ((!strncmp(buf, "MAC", 3)) || (!strncmp(buf, "mac", 3)))
 		is_mac = 1;
