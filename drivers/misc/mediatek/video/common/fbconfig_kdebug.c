@@ -669,7 +669,11 @@ static long fbconfig_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	break;
 	case FB_GET_MISC:
 	{
-		struct misc_property misc;
+		struct misc_property misc = {
+			.dual_port = 0,
+			.overall_layer_num = 0,
+			.reserved = 0,
+		};
 
 		if (pm->pLcm_params->lcm_if == LCM_INTERFACE_DSI_DUAL)
 			misc.dual_port = 1;
