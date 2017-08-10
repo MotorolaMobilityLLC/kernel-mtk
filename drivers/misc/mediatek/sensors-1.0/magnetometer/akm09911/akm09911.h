@@ -162,6 +162,14 @@ Defines a read-only address of the fuse ROM of the AK09911.*/
 #define DBG_LEVEL3   0x0004	/* Debug */
 #define DBGFLAG      DBG_LEVEL2
 
+#define AKM099XX_AXIS_X	0
+#define AKM099XX_AXIS_Y	1
+#define AKM099XX_AXIS_Z	2
+
+#define AKECS_ASA_CACULATE_AK09912(x)	(((x - 128) / 256) + 1)
+#define AKECS_ASA_CACULATE_AK09911(x)	((x / 128) + 1)
+
+
 /*
 //sensors_io.h need modify@junger
 #define AKMIO                   0xA1

@@ -2122,7 +2122,7 @@ static int akm8963_m_get_data(int *x, int *y, int *z, int *status)
 	*x = tmpdata[0];
 	*y = tmpdata[1];
 	*z = tmpdata[2];
-	*status = (AKM8963_PSEUDO_WIA2 << 8) | strbuf[7];
+	*status = strbuf[7];
 
 	return 0;
 }
@@ -2351,7 +2351,10 @@ static int akm8963_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	ctl.flush = akm8963_flush;
 	ctl.is_report_input_direct = false;
 	ctl.is_support_batch = data->hw->is_batch_supported;
-	ctl.lib_name = "akl";
+	strncpy(ctl.libinfo.libname, "akl", sizeof(ctl.libinfo.libname));
+	ctl.libinfo.libname[sizeof(ctl.libinfo.libname) - 1] = '\0';
+	ctl.libinfo.layout = 0;
+	ctl.libinfo.deviceid = AKM8963_PSEUDO_WIA2;
 
 	err = mag_register_control_path(&ctl);
 	if (err) {

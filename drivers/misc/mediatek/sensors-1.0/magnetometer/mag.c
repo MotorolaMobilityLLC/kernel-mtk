@@ -74,8 +74,7 @@ static void mag_work_func(struct work_struct *work)
 	cxt->drv_data.x = x;
 	cxt->drv_data.y = y;
 	cxt->drv_data.z = z;
-	cxt->drv_data.reserved[0] = status;
-	cxt->drv_data.reserved[1] = status >> 8;
+	cxt->drv_data.status = status;
 	m_pre_ns = cxt->drv_data.timestamp;
 	cxt->drv_data.timestamp = cur_ns;
 	if (true ==  cxt->is_first_data_after_enable) {
@@ -385,8 +384,8 @@ static ssize_t mag_show_libinfo(struct device *dev,
 
 	if (!buf)
 		return -1;
-
-	return snprintf(buf, PAGE_SIZE, "%s", cxt->mag_ctl.lib_name);
+	memcpy(buf, &cxt->mag_ctl.libinfo, sizeof(struct mag_libinfo_t));
+	return sizeof(struct mag_libinfo_t);
 }
 
 static int msensor_remove(struct platform_device *pdev)
@@ -572,7 +571,9 @@ int mag_register_control_path(struct mag_control_path *ctl)
 	cxt->mag_ctl.is_report_input_direct = ctl->is_report_input_direct;
 	cxt->mag_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->mag_ctl.is_use_common_factory = ctl->is_use_common_factory;
-	cxt->mag_ctl.lib_name = ctl->lib_name;
+	memcpy(cxt->mag_ctl.libinfo.libname, ctl->libinfo.libname, sizeof(cxt->mag_ctl.libinfo.libname));
+	cxt->mag_ctl.libinfo.layout = ctl->libinfo.layout;
+	cxt->mag_ctl.libinfo.deviceid = ctl->libinfo.deviceid;
 
 	if (NULL == cxt->mag_ctl.set_delay || NULL == cxt->mag_ctl.enable
 		|| NULL == cxt->mag_ctl.open_report_data) {
@@ -650,7 +651,9 @@ int mag_data_report(struct mag_data *data)
 	event.word[0] = data->x;
 	event.word[1] = data->y;
 	event.word[2] = data->z;
-	event.word[3] = (data->reserved[1] << 8) | data->reserved[0];
+	event.word[3] = data->reserved[0];
+	event.word[4] = data->reserved[1];
+	event.word[5] = data->reserved[2];
 	event.reserved = data->reserved[0];
 
 	if (event.reserved == 1)

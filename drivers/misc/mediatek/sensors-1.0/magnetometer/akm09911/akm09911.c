@@ -48,6 +48,7 @@ static int akm09911_init_flag;
 static struct i2c_client *this_client;
 static int8_t akm_device;
 
+static uint8_t akm_fuse[3] = {0};
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id akm09911_i2c_id[] = { {AKM09911_DEV_NAME, 0}, {} };
 
@@ -431,12 +432,30 @@ static long AKECS_SetMode(char mode)
 	return ret;
 }
 
+static int AKECS_ReadFuse(void)
+{
+	int ret = 0;
+
+	ret = AKECS_SetMode_FUSEAccess();
+	if (ret < 0) {
+		MAGN_LOG("AKM set read fuse mode fail ret:%d\n", ret);
+		return ret;
+	}
+	akm_fuse[0] = AK09911_FUSE_ASAX;
+	ret = AKI2C_RxData(akm_fuse, 3);
+	if (ret < 0) {
+		MAGN_LOG("AKM read fuse fail ret:%d\n", ret);
+		return ret;
+	}
+	ret = AKECS_SetMode_PowerDown();
+	return ret;
+}
+
 static int AKECS_CheckDevice(void)
 {
 	char buffer[2];
 	int ret;
 
-	MAGN_LOG(" AKM check device id");
 	/* Set measure mode */
 #ifdef AKM_Device_AK8963
 	buffer[0] = AK8963_REG_WIA;
@@ -446,8 +465,6 @@ static int AKECS_CheckDevice(void)
 
 	/* Read data */
 	ret = AKI2C_RxData(buffer, 2);
-	MAGN_LOG(" AKM check device company = %x, device =%x ", buffer[0], buffer[1]);
-	MAGN_LOG("ret = %d", ret);
 	if (ret < 0)
 		return ret;
 
@@ -456,10 +473,87 @@ static int AKECS_CheckDevice(void)
 		return -ENXIO;
 
 	akm_device = buffer[1];
+	if ((akm_device == 0x05) || (akm_device == 0x04)) {/* ak09911 & ak09912 */
+		ret = AKECS_ReadFuse();
+		if (ret < 0) {
+			MAGN_ERR("AKM09911 akm09911_probe: read fuse fail\n");
+			return -ENXIO;
+		}
+	} else if (akm_device == 0x10) {/* ak09915 & ak09916c & ak09916d & ak09918 */
+		akm_fuse[0] = 0x80;
+		akm_fuse[1] = 0x80;
+		akm_fuse[2] = 0x80;
+	}
 
 	return 0;
 }
 
+static int AKECS_AxisInfoToPat(
+	const uint8_t axis_order[3],
+	const uint8_t axis_sign[3],
+	int16_t *pat)
+{
+	/* check invalid input */
+	if ((axis_order[0] < 0) || (2 < axis_order[0]) ||
+	   (axis_order[1] < 0) || (2 < axis_order[1]) ||
+	   (axis_order[2] < 0) || (2 < axis_order[2]) ||
+	   (axis_sign[0] < 0) || (1 < axis_sign[0]) ||
+	   (axis_sign[1] < 0) || (1 < axis_sign[1]) ||
+	   (axis_sign[2] < 0) || (1 < axis_sign[2]) ||
+	  ((axis_order[0] * axis_order[1] * axis_order[2]) != 0) ||
+	  ((axis_order[0] + axis_order[1] + axis_order[2]) != 3)) {
+		*pat = 0;
+		return -1;
+	}
+	/* calculate pat
+	 * BIT MAP
+	 * [8] = sign_x
+	 * [7] = sign_y
+	 * [6] = sign_z
+	 * [5:4] = order_x
+	 * [3:2] = order_y
+	 * [1:0] = order_z
+	 */
+	*pat = ((int16_t)axis_sign[0] << 8);
+	*pat += ((int16_t)axis_sign[1] << 7);
+	*pat += ((int16_t)axis_sign[2] << 6);
+	*pat += ((int16_t)axis_order[0] << 4);
+	*pat += ((int16_t)axis_order[1] << 2);
+	*pat += ((int16_t)axis_order[2] << 0);
+	return 0;
+}
+
+static int16_t AKECS_SetCert(void)
+{
+	struct i2c_client *client = this_client;
+	struct akm09911_i2c_data *data = i2c_get_clientdata(client);
+	uint8_t axis_sign[3] = {0};
+	uint8_t axis_order[3] = {0};
+	int16_t ret = 0;
+	int i = 0;
+	int16_t cert = 0x06;
+
+	for (i = 0; i < 3; i++)
+		axis_order[i] = (uint8_t)data->cvt.map[i];
+
+	for (i = 0; i < 3; i++) {
+		axis_sign[i] = (uint8_t)data->cvt.sign[i];
+		if (axis_sign[i] > 0)
+			axis_sign[i] = 0;
+		else if (axis_sign[i] < 0)
+			axis_sign[i] = 1;
+	}
+	axis_order[0] = 0;
+	axis_order[1] = 1;
+	axis_order[2] = 2;
+	axis_sign[0] = 0;
+	axis_sign[1] = 0;
+	axis_sign[2] = 0;
+	ret = AKECS_AxisInfoToPat(axis_order, axis_sign, &cert);
+	if (ret != 0)
+		return 0;
+	return cert;
+}
 /* M-sensor daemon application have set the sng mode */
 static long AKECS_GetData(char *rbuf, int size)
 {
@@ -742,9 +836,9 @@ int FST_AK8963(void)
 		return 0;
 	}
 
-	hdata[0] = (s16) (i2cData[1] | (i2cData[2] << 8));
-	hdata[1] = (s16) (i2cData[3] | (i2cData[4] << 8));
-	hdata[2] = (s16) (i2cData[5] | (i2cData[6] << 8));
+	hdata[0] = (int16_t) (i2cData[1] | (i2cData[2] << 8));
+	hdata[1] = (int16_t) (i2cData[3] | (i2cData[4] << 8));
+	hdata[2] = (int16_t) (i2cData[5] | (i2cData[6] << 8));
 	/* AK8963 @ 14 BIT */
 	hdata[0] <<= 2;
 	hdata[1] <<= 2;
@@ -791,9 +885,9 @@ int FST_AK8963(void)
 	TEST_DATA(TLIMIT_NO_SLF_ST1, TLIMIT_TN_SLF_ST1, (int)i2cData[0], TLIMIT_LO_SLF_ST1,
 		  TLIMIT_HI_SLF_ST1, &pf_total);
 
-	hdata[0] = (s16) (i2cData[1] | (i2cData[2] << 8));
-	hdata[1] = (s16) (i2cData[3] | (i2cData[4] << 8));
-	hdata[2] = (s16) (i2cData[5] | (i2cData[6] << 8));
+	hdata[0] = (int16_t) (i2cData[1] | (i2cData[2] << 8));
+	hdata[1] = (int16_t) (i2cData[3] | (i2cData[4] << 8));
+	hdata[2] = (int16_t) (i2cData[5] | (i2cData[6] << 8));
 
 	/* AK8963 @ 14 BIT */
 	hdata[0] <<= 2;
@@ -931,9 +1025,9 @@ int FST_AK09911(void)
 	/* hdata[1] = (int)((((uint)(i2cData[4]))<<8)+(uint)(i2cData[3])); */
 	/* hdata[2] = (int)((((uint)(i2cData[6]))<<8)+(uint)(i2cData[5])); */
 
-	hdata[0] = (s16) (i2cData[1] | (i2cData[2] << 8));
-	hdata[1] = (s16) (i2cData[3] | (i2cData[4] << 8));
-	hdata[2] = (s16) (i2cData[5] | (i2cData[6] << 8));
+	hdata[0] = (int16_t) (i2cData[1] | (i2cData[2] << 8));
+	hdata[1] = (int16_t) (i2cData[3] | (i2cData[4] << 8));
+	hdata[2] = (int16_t) (i2cData[5] | (i2cData[6] << 8));
 
 	/* TEST */
 	i2cData[0] &= 0x7F;
@@ -976,9 +1070,9 @@ int FST_AK09911(void)
 	/* hdata[1] = (int)((((uint)(i2cData[4]))<<8)+(uint)(i2cData[3])); */
 	/* hdata[2] = (int)((((uint)(i2cData[6]))<<8)+(uint)(i2cData[5])); */
 
-	hdata[0] = (s16) (i2cData[1] | (i2cData[2] << 8));
-	hdata[1] = (s16) (i2cData[3] | (i2cData[4] << 8));
-	hdata[2] = (s16) (i2cData[5] | (i2cData[6] << 8));
+	hdata[0] = (int16_t) (i2cData[1] | (i2cData[2] << 8));
+	hdata[1] = (int16_t) (i2cData[3] | (i2cData[4] << 8));
+	hdata[2] = (int16_t) (i2cData[5] | (i2cData[6] << 8));
 
 	/* TEST */
 	TEST_DATA(TLIMIT_NO_SLF_RVHX_09911,
@@ -1398,25 +1492,53 @@ static int akm09911_open_report_data(int open)
 	return 0;
 }
 
+static int akm09911_coordinate_convert(int16_t *mag_data)
+{
+	struct i2c_client *client = this_client;
+	struct akm09911_i2c_data *data = i2c_get_clientdata(client);
+	int16_t temp_data[3];
+	int i = 0;
+
+	for (i = 0; i < 3; i++)
+		temp_data[i] = mag_data[i];
+	/* remap coordinate */
+	mag_data[data->cvt.map[AKM099XX_AXIS_X]] =
+		data->cvt.sign[AKM099XX_AXIS_X] * temp_data[AKM099XX_AXIS_X];
+	mag_data[data->cvt.map[AKM099XX_AXIS_Y]] =
+		data->cvt.sign[AKM099XX_AXIS_Y] * temp_data[AKM099XX_AXIS_Y];
+	mag_data[data->cvt.map[AKM099XX_AXIS_Z]] =
+		data->cvt.sign[AKM099XX_AXIS_Z] * temp_data[AKM099XX_AXIS_Z];
+	return 0;
+}
 static int akm09911_get_data(int *x, int *y, int *z, int *status)
 {
 	char strbuf[SENSOR_DATA_SIZE];
-	s16 data[3];
+	int16_t data[3];
 
 	AKECS_SetMode_SngMeasure();
 	mdelay(10);
 
 	AKECS_GetData(strbuf, SENSOR_DATA_SIZE);
-	data[0] = (s16)(strbuf[1] | (strbuf[2] << 8));
-	data[1] = (s16)(strbuf[3] | (strbuf[4] << 8));
-	data[2] = (s16)(strbuf[5] | (strbuf[6] << 8));
+	data[0] = (int16_t)(strbuf[1] | (strbuf[2] << 8));
+	data[1] = (int16_t)(strbuf[3] | (strbuf[4] << 8));
+	data[2] = (int16_t)(strbuf[5] | (strbuf[6] << 8));
 
-	*x = data[0] * 100;
-	*y = data[1] * 100;
-	*z = data[2] * 100;
-	*status = (akm_device << 8) | strbuf[8];
-	/* MAGN_ERR("yue akm09911_get_data: x=%x, y=%x, z=%x, status=%x\n", *x, *y, *z, *status); */
-
+	akm09911_coordinate_convert(data);
+	if (akm_device == 0x04) {/* ak09912 */
+		*x = data[0] * CONVERT_M_DIV * AKECS_ASA_CACULATE_AK09912(akm_fuse[0]);
+		*y = data[1] * CONVERT_M_DIV * AKECS_ASA_CACULATE_AK09912(akm_fuse[1]);
+		*z = data[2] * CONVERT_M_DIV * AKECS_ASA_CACULATE_AK09912(akm_fuse[2]);
+	} else if (akm_device == 0x05) {
+		*x = data[0] * CONVERT_M_DIV * AKECS_ASA_CACULATE_AK09911(akm_fuse[0]);
+		*y = data[1] * CONVERT_M_DIV * AKECS_ASA_CACULATE_AK09911(akm_fuse[1]);
+		*z = data[2] * CONVERT_M_DIV * AKECS_ASA_CACULATE_AK09911(akm_fuse[2]);
+	} else if ((akm_device == 0x10) || (akm_device == 0x09) ||
+		(akm_device == 0x0b) || (akm_device == 0x0c)) {
+		*x = data[0] * CONVERT_M_DIV;
+		*y = data[1] * CONVERT_M_DIV;
+		*z = data[2] * CONVERT_M_DIV;
+	}
+	*status = strbuf[8];
 	return 0;
 }
 
@@ -1528,6 +1650,12 @@ static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device
 	}
 
 	data->hw = hw;
+
+	err = hwmsen_get_convert(data->hw->direction, &data->cvt);
+	if (err) {
+		MAGN_ERR("invalid direction: %d\n", data->hw->direction);
+		goto exit;
+	}
 	atomic_set(&data->layout, data->hw->direction);
 	atomic_set(&data->trace, 0);
 	/* init_waitqueue_head(&data_ready_wq); */
@@ -1566,7 +1694,10 @@ static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device
 	ctl.flush = akm09911_flush;
 	ctl.is_report_input_direct = false;
 	ctl.is_support_batch = data->hw->is_batch_supported;
-	ctl.lib_name = "akl";
+	strncpy(ctl.libinfo.libname, "akl", sizeof(ctl.libinfo.libname));
+	ctl.libinfo.libname[sizeof(ctl.libinfo.libname) - 1] = '\0';
+	ctl.libinfo.layout = AKECS_SetCert();
+	ctl.libinfo.deviceid = akm_device;
 
 	err = mag_register_control_path(&ctl);
 	if (err) {
