@@ -2221,7 +2221,8 @@ static void msdc_select_clksrc(struct msdc_host *host, int clksrc)
 		return;
 	}
 
-	clk_enable(g_msdc0_pll_sel);
+	if (clk_enable(g_msdc0_pll_sel))
+		pr_err("[%s]clk enable fail line at %d\n", __func__, __LINE__);
 	ret = clk_set_parent(g_msdc0_pll_sel, clk);
 	if (ret)
 		pr_err("XXX MSDC%d switch clk source ERROR...[%s]%d\n",
@@ -3008,7 +3009,8 @@ static void msdc_clksrc_onoff(struct msdc_host *host, u32 on)
 			if (clk_enable(host->clock_control)) {
 				pr_err("msdc%d on clock failed ===> retry once\n", host->id);
 				clk_disable(host->clock_control);
-				clk_enable(host->clock_control);
+				if (clk_enable(host->clock_control))
+					pr_err("msdc%d on clock retry failed\n", host->id);
 			}
 #endif
 #endif
@@ -7689,7 +7691,8 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 #ifdef CONFIG_MTK_CLKMGR
 		enable_clock(MT_CG_PERI_MSDC30_0 + host->id, "SD");
 #else
-		clk_enable(host->clock_control);
+		if (clk_enable(host->clock_control))
+			pr_err("[%s] clk_enbale fail\n", __func__);
 #endif
 #endif
 		host->core_clkon = 1;

@@ -2128,7 +2128,9 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf, size_t 
 #ifdef CONFIG_MTK_CLKMGR
 			enable_clock(MT_CG_PERI_MSDC30_0 + id, "SD");
 #else
-			clk_enable(host->clock_control);
+			ret = clk_enable(host->clock_control);
+			if (ret)
+				pr_err("[%s] clk_enable fail\n", __func__);
 #endif
 #endif
 			if (p1 == 0) {
