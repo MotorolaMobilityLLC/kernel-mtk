@@ -1463,37 +1463,45 @@ int _ioctl_set_input_buffer(unsigned long arg)
 	int ret = 0;
 	void __user *argp = (void __user *)arg;
 	unsigned int session_id = 0;
-	disp_session_input_config session_input;
 	disp_session_sync_info *session_info;
+	disp_session_input_config *session_input;
 
-	if (copy_from_user(&session_input, argp, sizeof(session_input))) {
-		DISPMSG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
+	session_input = kmalloc(sizeof(*session_input), GFP_KERNEL);
+	if (!session_input)
+		return -ENOMEM;
+
+	if (copy_from_user(session_input, argp, sizeof(*session_input))) {
+		DISPERR("[FB]: copy_from_user failed! line:%d\n", __LINE__);
+		kfree(session_input);
 		return -EFAULT;
 	}
-	session_input.setter = SESSION_USER_HWC;
-	session_id = session_input.session_id;
+
+
+	session_input->setter = SESSION_USER_HWC;
+	session_id = session_input->session_id;
 	session_info = disp_get_session_sync_info_for_debug(session_id);
 
 	if (session_info)
-		dprec_start(&session_info->event_setinput, 0, session_input.config_layer_num);
+		dprec_start(&session_info->event_setinput, 0, session_input->config_layer_num);
 
 	DISPPR_FENCE("S+/%s%d/count%d\n", disp_session_mode_spy(session_id),
-		     DISP_SESSION_DEV(session_id), session_input.config_layer_num);
+		     DISP_SESSION_DEV(session_id), session_input->config_layer_num);
 
 	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY) {
-		ret = set_primary_buffer(&session_input);
+		ret = set_primary_buffer(session_input);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL) {
-		ret = set_external_buffer(&session_input);
+		ret = set_external_buffer(session_input);
 	} else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY) {
-		ret = set_memory_buffer(&session_input);
+		ret = set_memory_buffer(session_input);
 	} else {
 		DISPERR("session type is wrong:0x%08x\n", session_id);
-		return -1;
+		ret = -1;
 	}
 
 	if (session_info)
-		dprec_done(&session_info->event_setinput, 0, session_input.config_layer_num);
+		dprec_done(&session_info->event_setinput, 0, session_input->config_layer_num);
 
+	kfree(session_input);
 	return ret;
 }
 
