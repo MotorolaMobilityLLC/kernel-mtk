@@ -823,6 +823,7 @@ typedef struct {
 
 
 static ISP_INFO_STRUCT IspInfo;
+static MBOOL    SuspnedRecord[ISP_DEV_NODE_NUM] = {0};
 
 typedef enum _eLOG_TYPE {
 	_LOG_DBG = 0,   /* currently, only used at ipl_buf_ctrl. to protect critical section */
@@ -4826,8 +4827,6 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 			break;
 		case ISP_RT_BUF_CTRL_DMA_EN: {
 			MUINT8 array[_cam_max_];
-			/* if(copy_from_user(array, (void __user*)rt_buf_ctrl.data_ptr,
-			   sizeof(MUINT8)*_cam_max_) == 0) { */
 			if (copy_from_user(array, (void __user *)rt_buf_ctrl.pExtend, sizeof(MUINT8)*_cam_max_) == 0) {
 				MUINT32 z;
 				for (z = 0; z < _cam_max_; z++) {
@@ -5649,8 +5648,8 @@ static MINT32 ISP_FLUSH_IRQ(ISP_WAIT_IRQ_STRUCT *irqinfo)
 
 	/* 1. enable signal */
 	spin_lock_irqsave(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
-	IspInfo.IrqInfo.Status[irqinfo->Type][irqinfo->EventInfo.St_type][irqinfo->EventInfo.UserKey]
-		|= irqinfo->EventInfo.Status;
+	IspInfo.IrqInfo.Status[irqinfo->Type][irqinfo->EventInfo.St_type][irqinfo->EventInfo.UserKey] |=
+		irqinfo->EventInfo.Status;
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[irqinfo->Type]), flags);
 
 	/* 2. force to wake up the user that are waiting for that signal */
@@ -9545,13 +9544,14 @@ static MINT32 ISP_suspend(
 	}
 
 	if (module < 0)
-		return ret;
+		return ret;/*return here for those modules who is not linked with sensor*/
 
 	LOG_INF("%s_suspend: E.\n", moduleName);
 	regVal = ISP_RD32(CAM_REG_TG_VF_CON(module));
 	/*LOG_DBG("%s: Rs_TG(0x%08x)\n", moduleName, regVal);*/
 
 	if (regVal & 0x01) {
+		SuspnedRecord[module] = 1;
 		/* disable VF */
 		ISP_WR32(CAM_REG_TG_VF_CON(module), (regVal & (~0x01)));
 
@@ -9601,10 +9601,11 @@ static MINT32 ISP_suspend(
 		if it has P1_DON after set vf disable, g_BkReg no need to add 1 */
 		regTGSt = ISP_RD32_TG_CAM_FRM_CNT(IrqType, module);
 		g_BkReg[IrqType].CAM_TG_INTER_ST = regTGSt;
-
+		regVal = ISP_RD32(CAM_REG_TG_SEN_MODE(module));
+		ISP_WR32(CAM_REG_TG_SEN_MODE(module), (regVal & (~0x01)));
 		Disable_Unprepare_cg_clock();
-	}
-
+	} else
+		SuspnedRecord[module] = 0;
 #else
 	MUINT32 regTG1Val = ISP_RD32(ISP_ADDR + 0x414);
 	MUINT32 regTG2Val = ISP_RD32(ISP_ADDR + 0x2414);
@@ -9748,27 +9749,14 @@ static MINT32 ISP_resume(struct platform_device *pDev)
 
 	Prepare_Enable_cg_clock();
 
-	/*enable CMOS*/
-	regVal = ISP_RD32(CAM_REG_TG_SEN_MODE(module));
-	/*LOG_DBG("%s: Rs_TG_Cmos(0x%08x)\n", moduleName, regVal);*/
-	if (0 == (regVal | 0x0)) {
-		ISP_WR32(CAM_REG_TG_SEN_MODE(module), (regVal | 0x01));
+	if (SuspnedRecord[module]) {
+		SuspnedRecord[module] = 0;
+		/*cmos*/
 		regVal = ISP_RD32(CAM_REG_TG_SEN_MODE(module));
-		/*LOG_DBG("%s: Rs_TG_Cmos'(0x%08x)\n", moduleName, regVal);*/
-	}
-
-	/* enable VF */
-	regVal = ISP_RD32(CAM_REG_TG_VF_CON(module));
-	/*LOG_DBG("%s: Rs_TG(0x%08x)\n", moduleName, regVal);*/
-	if (0 == (regVal | 0x0)) {
-		ISP_WR32(CAM_REG_TG_VF_CON(module), (regVal | 0x01));
-
-		/* */
+		ISP_WR32(CAM_REG_TG_SEN_MODE(module), (regVal | 0x01));
+		/*vf*/
 		regVal = ISP_RD32(CAM_REG_TG_VF_CON(module));
-		/*LOG_DBG("%s: Rs_TG'(0x%08x),%d_%d_0x%x\n", moduleName, regVal,
-			((ISP_RD32(CAM_REG_TG_INTER_ST(module)) & 0x00FF0000)>> 16),
-			ISP_RD32_TG_CAM_FRM_CNT(IrqType, module),
-			ISP_RD32(CAM_REG_TG_INTER_ST(module)));*/
+		ISP_WR32(CAM_REG_TG_VF_CON(module), (regVal | 0x01));
 	}
 
 #else
@@ -10545,6 +10533,8 @@ static MINT32 __init ISP_Init(void)
 #endif
 
 
+	for (i = 0; i < ISP_DEV_NODE_NUM; i++)
+		SuspnedRecord[i] = 0;
 
 	LOG_DBG("- X. Ret: %d.", Ret);
 	return Ret;
@@ -13739,7 +13729,7 @@ static irqreturn_t ISP_Irq_CAM_B(MINT32  Irq, void *DeviceId)
 	spin_lock(&(IspInfo.SpinLockIrq[module]));
 	if (IrqStatus & VS_INT_ST) {
 		Vsync_cnt[1]++;
-		/* LOG_INF("CAMB N3D:0x%x\n",Vsync_cnt[1]); */
+		/*LOG_INF("CAMB N3D:0x%x\n",Vsync_cnt[1]);*/
 	}
 	if (IrqStatus & SW_PASS1_DON_ST) {
 		time = ktime_get(); /* ns */
