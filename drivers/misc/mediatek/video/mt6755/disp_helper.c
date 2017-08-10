@@ -425,7 +425,7 @@ int disp_helper_get_option_list(char *stringbuf, int buf_len)
 	int i = 0;
 
 	for (i = 0; i < help_info_cnt; i++) {
-		DISPMSG("Option: [%s] Value: [%d]\n", help_info[i].opt_string,
+		DISPINFO("Option: [%s] Value: [%d]\n", help_info[i].opt_string,
 			help_info[i].opt_value);
 		len +=
 		    scnprintf(stringbuf + len, buf_len - len, "Option: [%d][%s] Value: [%d]\n", i,

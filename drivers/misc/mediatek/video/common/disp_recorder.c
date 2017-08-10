@@ -816,7 +816,7 @@ int dprec_logger_get_result_string_all(char *stringbuf, int strlen)
 
 	n += scnprintf(stringbuf + n, strlen - n,
 		       "|------------------------+---------+------------+------------+------------+------------|\n");
-	n += scnprintf(stringbuf + n, strlen - n, "dprec error log buffer\n");
+	n += scnprintf(stringbuf + n, strlen - n, "\n");
 
 	return n;
 }

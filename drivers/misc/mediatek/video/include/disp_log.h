@@ -61,8 +61,7 @@
  */
 #define DISPERR(fmt, args...)                                          \
 	do {                                                           \
-		dprec_logger_pr(DPREC_LOGGER_DEBUG,                    \
-			"func|%s\n", __func__);                        \
+		dprec_logger_pr(DPREC_LOGGER_ERROR, fmt, ##args);      \
 		if ((gMobilelog > 0) && (gLoglevel >= ERROR_LEVEL))    \
 			pr_err("[DISP]"fmt, ##args);                   \
 	} while (0)
@@ -129,7 +128,7 @@
 	do {                                                           \
 		if (gLoglevel >= DEBUG_LEVEL)                          \
 			dprec_logger_pr(DPREC_LOGGER_DEBUG,            \
-				"func|%s\n", __func__);                \
+					fmt, ##args);                  \
 		if ((gMobilelog > 0) && (gLoglevel >= DEBUG_LEVEL))    \
 			pr_debug("[DISP]func|%s\n", __func__);         \
 	} while (0)
@@ -147,7 +146,7 @@
 	do {                                                           \
 		if (gLoglevel >= IRQ_LEVEL)                            \
 			dprec_logger_pr(DPREC_LOGGER_DEBUG,            \
-				"func|%s\n", __func__);                \
+					fmt, ##args);                  \
 		if ((gMobilelog > 0) && (gLoglevel >= IRQ_LEVEL))      \
 			pr_debug("[DISP]IRQ: "fmt, ##args);            \
 	} while (0)
