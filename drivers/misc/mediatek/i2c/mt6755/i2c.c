@@ -156,7 +156,7 @@ static DEVICE_ATTR(debug, S_IRUGO | S_IWUSR, show_config, set_config);
 #define I2CINFO(type, format, arg...)
 #endif
 /***********************************common API********************************************************/
-#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#if 1 /*!defined(CONFIG_MTK_PMIC_CHIP_MT6353)*/
 static int i2c_get_semaphore(struct mt_i2c_t *i2c)
 {
 	if (i2c->id != 3)
@@ -881,7 +881,7 @@ static s32 _i2c_transfer_interface(struct mt_i2c_t *i2c)
 		i2c->control_reg |= I2C_CONTROL_RS;
 	}
 
-#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#if 1 /*!defined(CONFIG_MTK_PMIC_CHIP_MT6353)*/
 	/* Use HW semaphore to protect mt6311 access between AP and SPM */
 	if (i2c_get_semaphore(i2c) != 0)
 		return -EBUSY;
@@ -911,7 +911,7 @@ static s32 _i2c_transfer_interface(struct mt_i2c_t *i2c)
 	spin_unlock(&i2c->lock);
 	ret = _i2c_deal_result(i2c);
 
-#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+#if 1 /*!defined(CONFIG_MTK_PMIC_CHIP_MT6353)*/
 	/* Use HW semaphore to protect mt6311 access between AP and SPM */
 	if (i2c_release_semaphore(i2c) != 0)
 		ret = -EBUSY;
