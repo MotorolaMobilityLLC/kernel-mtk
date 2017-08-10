@@ -677,7 +677,7 @@ void testcase_clkmgr_mdp(void)
 const char *cmdq_mdp_dispatch(uint64_t engineFlag)
 {
 	uint32_t state[2] = { 0 };
-	struct TaskStruct task;
+	struct TaskStruct task = {};
 	const uint32_t debug_str_len = 1024;
 	int32_t status = 0;
 	const char *module = "MDP";

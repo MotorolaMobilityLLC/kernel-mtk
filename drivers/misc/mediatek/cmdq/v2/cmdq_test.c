@@ -1536,7 +1536,7 @@ static void testcase_backup_reg_to_slot(void)
 static void testcase_update_value_to_slot(void)
 {
 	int32_t i;
-	uint32_t value;
+	uint32_t value = 0;
 	cmdqRecHandle handle = NULL;
 	cmdqBackupSlotHandle hSlot = 0;
 	const uint32_t PATTERNS[] = {
@@ -2979,7 +2979,7 @@ static void testcase_poll_monitor_delay_continue(struct work_struct *workItem)
 
 static int32_t testcase_poll_monitor_callback(unsigned long data)
 {
-	uint32_t pollTime;
+	uint32_t pollTime = 0;
 
 	if (false == gPollMonitor.status)
 		return 0;
@@ -3287,7 +3287,7 @@ static void testcase_specific_bus_MMSYS(void)
 	uint32_t mmsys_register;
 	cmdqRecHandle handle = NULL;
 	cmdqBackupSlotHandle slot_handle;
-	uint32_t start_time, end_time, duration_time;
+	uint32_t start_time = 0, end_time = 0, duration_time = 0;
 
 	CMDQ_MSG("%s\n", __func__);
 
@@ -3713,14 +3713,12 @@ void testcase_longloop(void)
 void testcase_get_task_by_engine(void)
 {
 	cmdqRecHandle handle = NULL;
-	struct TaskStruct task;
+	struct TaskStruct task = {};
 	const uint64_t engineFlag = (0x1 << CMDQ_ENG_MDP_RDMA0) | (0x1 << CMDQ_ENG_MDP_WROT0);
 	int32_t status;
 	const uint32_t debug_str_len = 1024;
 
 	CMDQ_MSG("%s\n", __func__);
-
-	memset(&task, 0, sizeof(struct TaskStruct));
 
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_task_reset(handle);
