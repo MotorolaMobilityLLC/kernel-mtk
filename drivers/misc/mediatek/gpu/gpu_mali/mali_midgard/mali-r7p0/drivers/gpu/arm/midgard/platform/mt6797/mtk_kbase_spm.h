@@ -64,6 +64,8 @@ struct mtk_config {
 	unsigned int max_freq;
 	unsigned int min_volt;
 	unsigned int min_freq;
+
+	int32_t async_value;
 };
 
 #define MFG_DEBUG_SEL   (0x180)
