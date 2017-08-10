@@ -11,8 +11,6 @@
  * GNU General Public License for more details.
  */
 
-#define pr_fmt(fmt)	"[VcoreFS] " fmt
-
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -35,10 +33,11 @@
 /**************************************
  * Macro and Inline
  **************************************/
-#define vcorefs_crit(fmt, args...)	pr_err(fmt, ##args)
-#define vcorefs_err(fmt, args...)	pr_err(fmt, ##args)
-#define vcorefs_warn(fmt, args...)	pr_warn(fmt, ##args)
-#define vcorefs_debug(fmt, args...)	pr_debug(fmt, ##args)
+#define TAG	"[VcoreFS] "
+#define tag_pr_err(fmt, args...)	pr_err(TAG fmt, ##args)
+#define tag_pr_notice(fmt, args...)	pr_notice(TAG fmt, ##args)
+#define tag_pr_info(fmt, args...)	pr_info(TAG fmt, ##args)
+#define tag_pr_debug(fmt, args...)	pr_debug(TAG fmt, ##args)
 
 /* log_mask[15:0]: show nothing, log_mask[31:16]: show only on MobileLog */
 #define vcorefs_crit_mask(fmt, args...)				\
@@ -46,9 +45,9 @@ do {								\
 	if (pwrctrl->log_mask & (1U << kicker))			\
 		;						\
 	else if ((pwrctrl->log_mask >> 16) & (1U << kicker))	\
-		pr_debug(fmt, ##args);				\
+		tag_pr_debug(fmt, ##args);			\
 	else							\
-		pr_err(fmt, ##args);				\
+		tag_pr_info(fmt, ##args);			\
 } while (0)
 
 #define DEFINE_ATTR_RO(_name)			\
@@ -244,15 +243,15 @@ static void update_vcore_pwrap_cmd(struct opp_profile *opp_ctrl_table)
 	mt_cpufreq_set_pmic_cmd(PMIC_WRAP_PHASE_DEEPIDLE, IDX_DI_VCORE_LPM,
 				vcore_uv_to_pmic(opp_ctrl_table[OPPI_LOW_PWR].vcore_uv));
 
-	vcorefs_crit("UHPM  : %u (0x%x)\n", opp_ctrl_table[OPPI_PERF_ULTRA].vcore_uv,
+	tag_pr_info("UHPM  : %u (0x%x)\n", opp_ctrl_table[OPPI_PERF_ULTRA].vcore_uv,
 						vcore_uv_to_pmic(opp_ctrl_table[OPPI_PERF_ULTRA].vcore_uv));
-	vcorefs_crit("TRANS4: %u (0x%x)\n", trans[TRANS4], vcore_uv_to_pmic(trans[TRANS4]));
-	vcorefs_crit("TRANS3: %u (0x%x)\n", trans[TRANS3], vcore_uv_to_pmic(trans[TRANS3]));
-	vcorefs_crit("HPM   : %u (0x%x)\n", opp_ctrl_table[OPPI_PERF].vcore_uv,
+	tag_pr_info("TRANS4: %u (0x%x)\n", trans[TRANS4], vcore_uv_to_pmic(trans[TRANS4]));
+	tag_pr_info("TRANS3: %u (0x%x)\n", trans[TRANS3], vcore_uv_to_pmic(trans[TRANS3]));
+	tag_pr_info("HPM   : %u (0x%x)\n", opp_ctrl_table[OPPI_PERF].vcore_uv,
 						vcore_uv_to_pmic(opp_ctrl_table[OPPI_PERF].vcore_uv));
-	vcorefs_crit("TRANS2: %u (0x%x)\n", trans[TRANS2], vcore_uv_to_pmic(trans[TRANS2]));
-	vcorefs_crit("TRANS1: %u (0x%x)\n", trans[TRANS1], vcore_uv_to_pmic(trans[TRANS1]));
-	vcorefs_crit("LPM   : %u (0x%x)\n", opp_ctrl_table[OPPI_LOW_PWR].vcore_uv,
+	tag_pr_info("TRANS2: %u (0x%x)\n", trans[TRANS2], vcore_uv_to_pmic(trans[TRANS2]));
+	tag_pr_info("TRANS1: %u (0x%x)\n", trans[TRANS1], vcore_uv_to_pmic(trans[TRANS1]));
+	tag_pr_info("LPM   : %u (0x%x)\n", opp_ctrl_table[OPPI_LOW_PWR].vcore_uv,
 						vcore_uv_to_pmic(opp_ctrl_table[OPPI_LOW_PWR].vcore_uv));
 }
 
@@ -349,7 +348,7 @@ static int set_freq_with_opp(enum dvfs_kicker kicker, unsigned int opp)
 #ifndef VCOREFS_FVENC_NOCTRL
 		r = mt_dfs_vencpll(0x1713B1);	/* 300MHz */
 		if (r)
-			vcorefs_err("*** FAILED: VENCPLL COULD NOT BE FREQ HOPPING ***\n");
+			tag_pr_notice("*** FAILED: VENCPLL COULD NOT BE FREQ HOPPING ***\n");
 		else
 			pwrctrl->curr_venc_khz = opp_ctrl_table[opp].venc_khz;
 #endif
@@ -357,7 +356,7 @@ static int set_freq_with_opp(enum dvfs_kicker kicker, unsigned int opp)
 #ifndef VCOREFS_FVENC_NOCTRL
 		r = mt_dfs_vencpll(0xE0000);	/* 182MHz */
 		if (r)
-			vcorefs_err("*** FAILED: VENCPLL COULD NOT BE FREQ HOPPING ***\n");
+			tag_pr_notice("*** FAILED: VENCPLL COULD NOT BE FREQ HOPPING ***\n");
 		else
 			pwrctrl->curr_venc_khz = opp_ctrl_table[opp].venc_khz;
 #endif
@@ -393,7 +392,7 @@ static int set_fddr_with_opp(enum dvfs_kicker kicker, unsigned int opp)
 	r = dram_do_dfs_by_fh(opp_ctrl_table[opp].ddr_khz);
 
 	if (r)
-		vcorefs_err("*** FAILED: DRAM COULD NOT BE FREQ HOPPING ***\n");
+		tag_pr_notice("*** FAILED: DRAM COULD NOT BE FREQ HOPPING ***\n");
 	else
 		pwrctrl->curr_ddr_khz = opp_ctrl_table[opp].ddr_khz;
 
@@ -663,13 +662,13 @@ int vcorefs_sdio_lock_dvfs(bool is_online_tuning)
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 
 	if (is_online_tuning) {	/* avoid OT thread sleeping in vcorefs_mutex */
-		vcorefs_crit("sdio: lock in online-tuning\n");
+		tag_pr_info("sdio: lock in online-tuning\n");
 		return PASS;
 	}
 
 	mutex_lock(&vcorefs_mutex);
 	pwrctrl->sdio_lock = 1;
-	vcorefs_crit("sdio: set lock: %d, vcorefs_curr_opp: %d\n", pwrctrl->sdio_lock, vcorefs_curr_opp);
+	tag_pr_info("sdio: set lock: %d, vcorefs_curr_opp: %d\n", pwrctrl->sdio_lock, vcorefs_curr_opp);
 	mutex_unlock(&vcorefs_mutex);
 
 	return PASS;
@@ -682,7 +681,7 @@ unsigned int vcorefs_sdio_get_vcore_nml(void)
 
 	mutex_lock(&vcorefs_mutex);
 	voltage = vcorefs_get_curr_voltage();
-	vcorefs_crit("sdio: get vcore dvfs voltage: %u\n", voltage);
+	tag_pr_info("sdio: get vcore dvfs voltage: %u\n", voltage);
 	if (voltage == opp_ctrl_table[OPP_0].vcore_uv)
 		ret = VCORE_1_P_15_UV;
 	else
@@ -696,7 +695,7 @@ int vcorefs_sdio_set_vcore_nml(unsigned int autok_vol_uv)
 {
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 
-	vcorefs_crit("sdio: autok_vol_uv: %d, vcorefs_curr_opp: %d, sdio_lock: %d\n",
+	tag_pr_info("sdio: autok_vol_uv: %d, vcorefs_curr_opp: %d, sdio_lock: %d\n",
 				autok_vol_uv, vcorefs_curr_opp, pwrctrl->sdio_lock);
 
 	if (!pwrctrl->sdio_lock)
@@ -717,7 +716,7 @@ int vcorefs_sdio_unlock_dvfs(bool is_online_tuning)
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 
 	if (is_online_tuning) {	/* avoid OT thread sleeping in vcorefs_mutex */
-		vcorefs_crit("sdio: unlock in online-tuning\n");
+		tag_pr_info("sdio: unlock in online-tuning\n");
 		return PASS;
 	}
 
@@ -725,7 +724,7 @@ int vcorefs_sdio_unlock_dvfs(bool is_online_tuning)
 	kick_dvfs_by_opp_index(KIR_SDIO_AUTOK, vcorefs_curr_opp);
 
 	pwrctrl->sdio_lock = 0;
-	vcorefs_crit("sdio: set unlock: %d, vcorefs_curr_opp: %d\n",
+	tag_pr_info("sdio: set unlock: %d, vcorefs_curr_opp: %d\n",
 					pwrctrl->sdio_lock, vcorefs_curr_opp);
 	mutex_unlock(&vcorefs_mutex);
 
@@ -767,7 +766,7 @@ static int late_init_to_lowpwr_opp(void)
 
 	pwrctrl->late_init_opp_done = 1;
 
-	vcorefs_crit("[%s] feature_en: %u, late_init_opp: %u\n", __func__, feature_en, pwrctrl->late_init_opp);
+	tag_pr_info("[%s] feature_en: %u, late_init_opp: %u\n", __func__, feature_en, pwrctrl->late_init_opp);
 	mutex_unlock(&vcorefs_mutex);
 
 	return 0;
@@ -812,7 +811,7 @@ static ssize_t opp_table_store(struct kobject *kobj, struct kobj_attribute *attr
 	if (sscanf(buf, "%31s %u", cmd, &val) != 2)
 		return -EPERM;
 
-	vcorefs_crit("opp_table: cmd = %s, val = %u (0x%x)\n", cmd, val, val);
+	tag_pr_info("opp_table: cmd = %s, val = %u (0x%x)\n", cmd, val, val);
 
 	if (!strcmp(cmd, "UHPM") && val < VCORE_INVALID) {
 		uv = vcore_pmic_to_uv(val);
@@ -930,7 +929,7 @@ static ssize_t vcore_debug_store(struct kobject *kobj, struct kobj_attribute *at
 	if (sscanf(buf, "%31s %d", cmd, &val) != 2)
 		return -EPERM;
 
-	vcorefs_crit("vcore_debug: cmd = %s, val = %d (0x%x)\n", cmd, val, val);
+	tag_pr_info("vcore_debug: cmd = %s, val = %d (0x%x)\n", cmd, val, val);
 
 	if (!strcmp(cmd, "feature_en")) {
 		mutex_lock(&vcorefs_mutex);
@@ -1020,7 +1019,7 @@ static int init_vcorefs_pwrctrl(void)
 
 	pwrctrl->curr_ddr_khz = get_ddr_khz();
 
-	vcorefs_crit("curr_vcore_uv: %u, curr_ddr_khz: %u\n", pwrctrl->curr_vcore_uv, pwrctrl->curr_ddr_khz);
+	tag_pr_info("curr_vcore_uv: %u, curr_ddr_khz: %u\n", pwrctrl->curr_vcore_uv, pwrctrl->curr_ddr_khz);
 
 	for (i = 0; i < NUM_OPP; i++) {
 		if (i == OPPI_PERF_ULTRA) {
@@ -1034,8 +1033,8 @@ static int init_vcorefs_pwrctrl(void)
 			opp_ctrl_table[i].ddr_khz = get_ddr_khz_by_steps(1);
 		}
 
-		vcorefs_crit("OPP %d: vcore_uv = %u, ddr_khz = %u\n",
-			     i, opp_ctrl_table[i].vcore_uv, opp_ctrl_table[i].ddr_khz);
+		tag_pr_info("OPP %d: vcore_uv = %u, ddr_khz = %u\n",
+			    i, opp_ctrl_table[i].vcore_uv, opp_ctrl_table[i].ddr_khz);
 	}
 
 	update_vcore_pwrap_cmd(opp_ctrl_table);
@@ -1050,13 +1049,13 @@ static int __init vcorefs_module_init(void)
 
 	r = init_vcorefs_pwrctrl();
 	if (r) {
-		vcorefs_err("*** FAILED TO INIT PWRCTRL (%d) ***\n", r);
+		tag_pr_notice("*** FAILED TO INIT PWRCTRL (%d) ***\n", r);
 		return r;
 	}
 
 	r = sysfs_create_group(power_kobj, &vcorefs_attr_group);
 	if (r)
-		vcorefs_err("*** FAILED TO CREATE /sys/power/vcorefs (%d) ***\n", r);
+		tag_pr_notice("*** FAILED TO CREATE /sys/power/vcorefs (%d) ***\n", r);
 
 	return r;
 }
@@ -1064,4 +1063,4 @@ static int __init vcorefs_module_init(void)
 module_init(vcorefs_module_init);
 late_initcall_sync(late_init_to_lowpwr_opp);
 
-MODULE_DESCRIPTION("Vcore DVFS Driver v0.5");
+MODULE_DESCRIPTION("Vcore DVFS Driver v0.5.1");
