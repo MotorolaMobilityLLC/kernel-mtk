@@ -646,8 +646,8 @@ static int ccmni_init(int md_id, ccmni_ccci_ops_t *ccci_info)
 			dev->mtu = CCMNI_MTU;
 			dev->tx_queue_len = CCMNI_TX_QUEUE;
 			dev->watchdog_timeo = CCMNI_NETDEV_WDT_TO;
-			dev->flags = IFF_NOARP & /* ccmni is a pure IP device */
-					(~IFF_BROADCAST & ~IFF_MULTICAST);	/* ccmni is P2P */
+			dev->flags = (IFF_NOARP | IFF_BROADCAST) & /* ccmni is a pure IP device */
+					(~IFF_MULTICAST);	/* ccmni is P2P */
 			dev->features = NETIF_F_VLAN_CHALLENGED; /* not support VLAN */
 			if (ctlb->ccci_ops->md_ability & MODEM_CAP_SGIO) {
 				dev->features |= NETIF_F_SG;
