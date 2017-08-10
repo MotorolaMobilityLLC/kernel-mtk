@@ -1045,26 +1045,26 @@ void init_log_buffer(void)
 	*/
 	debug_buffer = kzalloc(sizeof(char) * DEBUG_BUFFER_SIZE, GFP_KERNEL);
 	if (!debug_buffer)
-		goto err;
+		goto err_debug;
 
 	/*
 	2. Allocate Error, Fence, Debug and Dump log buffer slot
 	*/
 	err_buffer = kzalloc(sizeof(char *) * ERROR_BUFFER_COUNT, GFP_KERNEL);
 	if (!err_buffer)
-		goto err;
+		goto err_err;
 	fence_buffer = kzalloc(sizeof(char *) * FENCE_BUFFER_COUNT, GFP_KERNEL);
 	if (!fence_buffer)
-		goto err;
+		goto err_fence;
 	dbg_buffer = kzalloc(sizeof(char *) * DEBUG_BUFFER_COUNT, GFP_KERNEL);
 	if (!dbg_buffer)
-		goto err;
+		goto err_dbg;
 	dump_buffer = kzalloc(sizeof(char *) * DUMP_BUFFER_COUNT, GFP_KERNEL);
 	if (!dump_buffer)
-		goto err;
+		goto err_dump;
 	status_buffer = kzalloc(sizeof(char *) * DUMP_BUFFER_COUNT, GFP_KERNEL);
 	if (!status_buffer)
-		goto err;
+		goto err_status;
 
 	/*
 	3. Allocate log ring buffer.
@@ -1111,13 +1111,27 @@ void init_log_buffer(void)
 	is_buffer_init = true;
 	pr_warn("[DISP]%s success\n", __func__);
 	return;
+
 err:
-	err_buffer = 0;
-	fence_buffer = 0;
-	dbg_buffer = 0;
-	dump_buffer = 0;
-	debug_buffer = 0;
+	kfree(status_buffer);
+err_status:
+	kfree(dump_buffer);
 	status_buffer = 0;
+err_dump:
+	kfree(dbg_buffer);
+	dump_buffer = 0;
+err_dbg:
+	kfree(fence_buffer);
+	dbg_buffer = 0;
+err_fence:
+	kfree(err_buffer);
+	fence_buffer = 0;
+err_err:
+	kfree(debug_buffer);
+	err_buffer = 0;
+err_debug:
+	debug_buffer = 0;
+
 	pr_err("[DISP]%s: log buffer allocation fail\n", __func__);
 }
 

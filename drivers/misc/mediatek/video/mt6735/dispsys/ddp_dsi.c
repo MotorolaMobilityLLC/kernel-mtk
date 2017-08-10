@@ -349,23 +349,10 @@ static DSI_STATUS DSI_Reset(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 
 static int _dsi_is_video_mode(DISP_MODULE_ENUM module)
 {
-	int i = 0;
-	int result = -1;
-
-	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-		if (DSI_REG[i]->DSI_MODE_CTRL.MODE == CMD_MODE)
-			result = 0;
-		else
-			result = 1;
-		if (result != -1)
-			break;
-	}
-	/*can't reach here */
-
-	if (result == -1)
-		ASSERT(0);
-
-	return result;
+	if (DSI_REG[0]->DSI_MODE_CTRL.MODE == CMD_MODE)
+		return 0;
+	else
+		return 1;
 }
 
 static DSI_STATUS DSI_SetMode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int mode)
@@ -600,30 +587,10 @@ void DSI_clk_ULP_mode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, bool enter)
 
 bool DSI_clk_HS_state(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 {
-		int i = 0;
-		struct DSI_PHY_LCCON_REG tmpreg;
-		int result = -1;
+	struct DSI_PHY_LCCON_REG tmpreg;
 
-		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
-			DSI_READREG32((struct DSI_PHY_LCCON_REG *), &tmpreg, &DSI_REG[i]->DSI_PHY_LCCON);
-			if (tmpreg.LC_HS_TX_EN)
-				result = 1;
-			else
-				result = 0;
-			if (result != -1)
-				break;
-
-		}
-		/* can't reach here */
-		if (result == -1)
-			ASSERT(0);
-
-		if (result == 1)
-			return true;
-		else if (result == 0)
-			return false;
-		else
-			return -1;
+	DSI_READREG32((struct DSI_PHY_LCCON_REG *), &tmpreg, &DSI_REG[0]->DSI_PHY_LCCON);
+	return tmpreg.LC_HS_TX_EN ? true : false;
 }
 
 void DSI_clk_HSLP_mode(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
