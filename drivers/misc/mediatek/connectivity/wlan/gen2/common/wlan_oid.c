@@ -527,7 +527,7 @@ BOOLEAN wlanoidGetChannelInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 puPartialScan
 		return FALSE;
 
 	scan_req_t = (struct cfg80211_scan_request *)puPartialScanReq;
-	if ((scan_req_t->n_channels != 0) && (scan_req_t->channels != NULL)) {
+	if (scan_req_t->n_channels != 0) {
 
 		channel_counts = scan_req_t->n_channels;
 		DBGLOG(OID, INFO, "partional scan channel_counts=%d\n", channel_counts);
