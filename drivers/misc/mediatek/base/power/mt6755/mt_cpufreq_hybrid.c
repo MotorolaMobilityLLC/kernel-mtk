@@ -449,7 +449,7 @@ static struct init_sta suspend_sta = {
  */
 static u32 pause_src_map __nosavedata = PSF_PAUSE_INIT;
 
-static u32 pause_log_en = PSF_PAUSE_SUSPEND |
+static u32 pause_log_en = /*PSF_PAUSE_SUSPEND |*/
 			  /*PSF_PAUSE_IDLE |*/
 			  /*PSF_PAUSE_I2CDRV |*/
 			  PSF_PAUSE_INIT;
@@ -815,8 +815,8 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	/* enable r7 to control power */
 	cspm_write(CSPM_PCM_PWR_IO_EN, pwrctrl->r7_ctrl_en ? PCM_PWRIO_EN_R7 : 0);
 
-	cspm_dbgx(KICK, "kick PCM to run, RSV4: 0x%x, RSV5: 0x%x\n",
-			cspm_read(CSPM_SW_RSV4), cspm_read(CSPM_SW_RSV5));
+	/*cspm_dbgx(KICK, "kick PCM to run, RSV4: 0x%x, RSV5: 0x%x\n",
+			cspm_read(CSPM_SW_RSV4), cspm_read(CSPM_SW_RSV5));*/
 
 	/* kick PCM to run (only toggle PCM_KICK) */
 	con0 = cspm_read(CSPM_PCM_CON0) & ~(CON0_IM_KICK | CON0_PCM_KICK);
