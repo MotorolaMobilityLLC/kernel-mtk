@@ -44,8 +44,10 @@
 #include <linux/proc_fs.h>
 #include <linux/fs.h>
 #include <asm/uaccess.h>
+#include <core.h>
 
 
+#define PARTITION_NAME_LENGTH    (64)
 #define DRV_NAME_MISC            "misc-sd"
 
 #define DEBUG_MMC_IOCTL   0
@@ -830,6 +832,236 @@ static int simple_sd_ioctl_sd30_mode_switch(struct msdc_ioctl *msdc_ctl)
 	return 0;
 }
 
+static int simple_sd_ioctl_get_bootpart(struct msdc_ioctl *msdc_ctl)
+{
+	char *l_buf;
+	struct msdc_host *host_ctl;
+	int ret = 0;
+	int bootpart = 0;
+
+	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
+	if (IS_ERR_OR_NULL(host_ctl))
+		return -EINVAL;
+	if (IS_ERR_OR_NULL(host_ctl->mmc))
+		return -EINVAL;
+	if (IS_ERR_OR_NULL(host_ctl->mmc->card))
+		return -EINVAL;
+
+	if (msdc_ctl->buffer == NULL)
+		return -EINVAL;
+
+	l_buf = kzalloc((512), GFP_KERNEL);
+	if (!l_buf)
+		return -ENOMEM;
+
+#if DEBUG_MMC_IOCTL
+	pr_debug("user want get boot partition info in msdc slot%d\n",
+		msdc_ctl->host_num);
+#endif
+	mmc_claim_host(host_ctl->mmc);
+	ret = mmc_send_ext_csd(host_ctl->mmc->card, l_buf);
+	mmc_release_host(host_ctl->mmc);
+	if (ret) {
+		pr_debug("mmc_send_ext_csd error, get boot part\n");
+		goto end;
+	}
+	bootpart = (l_buf[EXT_CSD_PART_CFG] & 0x38) >> 3;
+
+#if DEBUG_MMC_IOCTL
+	pr_debug("bootpart Byte[EXT_CSD_PART_CFG] =%x, booten=%x\n",
+		l_buf[EXT_CSD_PART_CFG], bootpart);
+#endif
+
+	if (MSDC_CARD_DUNM_FUNC != msdc_ctl->opcode) {
+		if (copy_to_user(msdc_ctl->buffer, &bootpart, 1)) {
+			ret = -EFAULT;
+			goto end;
+		}
+	} else {
+		/* called from other kernel module */
+		memcpy(msdc_ctl->buffer, &bootpart, 1);
+	}
+
+end:
+	msdc_ctl->result = ret;
+
+	kfree(l_buf);
+
+	return ret;
+}
+
+static int simple_sd_ioctl_set_bootpart(struct msdc_ioctl *msdc_ctl)
+{
+	char *l_buf;
+	struct msdc_host *host_ctl;
+	int ret = 0;
+	int bootpart = 0;
+
+	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
+	if (IS_ERR_OR_NULL(host_ctl))
+		return -EINVAL;
+	if (IS_ERR_OR_NULL(host_ctl->mmc))
+		return -EINVAL;
+	if (IS_ERR_OR_NULL(host_ctl->mmc->card))
+		return -EINVAL;
+
+	if (msdc_ctl->buffer == NULL)
+		return -EINVAL;
+
+	if (copy_from_user(&bootpart, msdc_ctl->buffer, 1))
+		return -EINVAL;
+
+	l_buf = kzalloc((512), GFP_KERNEL);
+	if (!l_buf)
+		return -ENOMEM;
+
+#if DEBUG_MMC_IOCTL
+	pr_debug("user want set boot partition in msdc slot%d\n",
+		msdc_ctl->host_num);
+#endif
+	mmc_claim_host(host_ctl->mmc);
+	ret = mmc_send_ext_csd(host_ctl->mmc->card, l_buf);
+	if (ret) {
+		pr_debug("mmc_send_ext_csd error, set boot partition\n");
+		goto end;
+	}
+
+	if ((bootpart != EMMC_BOOT1_EN)
+	 && (bootpart != EMMC_BOOT2_EN)
+	 && (bootpart != EMMC_BOOT_USER)) {
+		pr_debug("set boot partition error, not support %d\n",
+			bootpart);
+		ret = -EFAULT;
+		goto end;
+	}
+
+	if (((l_buf[EXT_CSD_PART_CFG] & 0x38) >> 3) != bootpart) {
+		/* active boot partition */
+		l_buf[EXT_CSD_PART_CFG] &= ~0x38;
+		l_buf[EXT_CSD_PART_CFG] |= (bootpart << 3);
+		pr_debug("mmc_switch set %x\n", l_buf[EXT_CSD_PART_CFG]);
+		ret = mmc_switch(host_ctl->mmc->card, EXT_CSD_CMD_SET_NORMAL,
+			EXT_CSD_PART_CFG, l_buf[EXT_CSD_PART_CFG], 1000);
+		if (ret) {
+			pr_debug("mmc_switch error, set boot partition\n");
+		} else {
+			host_ctl->mmc->card->ext_csd.part_config =
+			l_buf[EXT_CSD_PART_CFG];
+		}
+	}
+
+end:
+	msdc_ctl->result = ret;
+
+	mmc_release_host(host_ctl->mmc);
+
+	kfree(l_buf);
+	return ret;
+}
+static u64 msdc_get_user_capacity(struct msdc_host *host)
+{
+	u64 capacity = 0;
+	u32 legacy_capacity = 0;
+	struct mmc_card *card;
+
+	if ((host != NULL) && (host->mmc != NULL) && (host->mmc->card != NULL))
+		card = host->mmc->card;
+	else
+		return 0;
+
+	card = host->mmc->card;
+	if (mmc_card_mmc(card)) {
+		if (card->csd.read_blkbits) {
+			legacy_capacity =
+				(2 << (card->csd.read_blkbits - 1))
+				* card->csd.capacity;
+		} else {
+			legacy_capacity = card->csd.capacity;
+			ERR_MSG("XXX read_blkbits = 0 XXX");
+		}
+		capacity =
+			(u64)(card->ext_csd.sectors) * 512 > legacy_capacity ?
+			(u64)(card->ext_csd.sectors) * 512 : legacy_capacity;
+	} else if (mmc_card_sd(card)) {
+		capacity = (u64) (card->csd.capacity)
+			<< (card->csd.read_blkbits);
+	}
+	return capacity;
+}
+
+static unsigned int msdc_get_other_capacity(struct msdc_host *host, char *name)
+{
+	unsigned int device_other_capacity = 0;
+	int i;
+	struct mmc_card *card;
+
+	if ((host != NULL) && (host->mmc != NULL) && (host->mmc->card != NULL))
+		card = host->mmc->card;
+	else
+		return 0;
+
+	for (i = 0; i < card->nr_parts; i++) {
+		if (!name) {
+			device_other_capacity += card->part[i].size;
+		} else if (strcmp(name, card->part[i].name) == 0) {
+			device_other_capacity = card->part[i].size;
+			break;
+		}
+	}
+
+	return device_other_capacity;
+}
+
+static int simple_sd_ioctl_get_partition_size(struct msdc_ioctl *msdc_ctl)
+{
+	struct msdc_host *host_ctl;
+	unsigned long long partitionsize = 0;
+	struct msdc_host *host;
+	int ret = 0;
+
+	host_ctl = mtk_msdc_host[msdc_ctl->host_num];
+
+	if (IS_ERR_OR_NULL(host_ctl))
+		return -EINVAL;
+	if (IS_ERR_OR_NULL(host_ctl->mmc))
+		return -EINVAL;
+	if (IS_ERR_OR_NULL(host_ctl->mmc->card))
+		return -EINVAL;
+
+	host = mmc_priv(host_ctl->mmc);
+
+#if DEBUG_MMC_IOCTL
+	pr_debug("user want get size of partition=%d\n", msdc_ctl->partition);
+#endif
+
+	switch (msdc_ctl->partition) {
+	case EMMC_PART_BOOT1:
+		partitionsize = msdc_get_other_capacity(host, "boot0");
+		break;
+	case EMMC_PART_BOOT2:
+		partitionsize = msdc_get_other_capacity(host, "boot1");
+		break;
+	case EMMC_PART_RPMB:
+		partitionsize = msdc_get_other_capacity(host, "rpmb");
+		break;
+	case EMMC_PART_USER:
+		partitionsize = msdc_get_user_capacity(host);
+		break;
+	default:
+		pr_debug("not support partition =%d\n", msdc_ctl->partition);
+		partitionsize = 0;
+		break;
+	}
+#if DEBUG_MMC_IOCTL
+	pr_debug("bootpart partitionsize =%llx\n", partitionsize);
+#endif
+	if (copy_to_user(msdc_ctl->buffer, &partitionsize, 8))
+		ret = -EFAULT;
+
+	msdc_ctl->result = ret;
+
+	return ret;
+}
 static long simple_sd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct msdc_ioctl msdc_ctl;
@@ -880,6 +1112,15 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd, unsigned long a
 			break;
 		case MSDC_SD30_MODE_SWITCH:
 			ret = simple_sd_ioctl_sd30_mode_switch(&msdc_ctl);
+			break;
+		case MSDC_GET_BOOTPART:
+			ret = simple_sd_ioctl_get_bootpart(&msdc_ctl);
+			break;
+		case MSDC_SET_BOOTPART:
+			ret = simple_sd_ioctl_set_bootpart(&msdc_ctl);
+			break;
+		case MSDC_GET_PARTSIZE:
+			ret = simple_sd_ioctl_get_partition_size(&msdc_ctl);
 			break;
 		default:
 			pr_err("%s: illegal opcode\n", __func__);

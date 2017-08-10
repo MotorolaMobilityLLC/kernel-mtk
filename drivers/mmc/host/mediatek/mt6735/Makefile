@@ -19,6 +19,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 #workaround for include mmc/card/queue.h
 ccflags-y += -I$(srctree)/drivers/mmc/card
+ccflags-y += -I$(srctree)/drivers/mmc/core
 
 obj-$(CONFIG_MMC_MTK) += msdc_hw_ett.o
 obj-$(CONFIG_MMC_MTK) += sd.o
