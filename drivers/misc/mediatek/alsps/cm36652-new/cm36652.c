@@ -1079,6 +1079,7 @@ int cm36652_setup_eint(struct i2c_client *client)
 			return -EINVAL;
 		}
 		enable_irq(cm36652_obj->irq);
+		enable_irq_wake(cm36652_obj->irq);
 	} else {
 		APS_ERR("null irq node!!\n");
 		return -EINVAL;
