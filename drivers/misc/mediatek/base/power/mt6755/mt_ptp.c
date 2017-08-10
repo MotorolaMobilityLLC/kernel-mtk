@@ -267,6 +267,7 @@ unsigned int p15Tbl[][9] = {
 	{0x06, 0xa, 0x0c, 0x8, 0x1, 0x0cc, 0x828, 0x40, 0x30},/* 663 */
 	{0x02, 0xb, 0x05, 0xa, 0x1, 0x0B0, 0x70a, 0x35, 0x20},/* 286 */
 };
+
 unsigned int gpuSb[8] = {0x54, 0x54, 0x54, 0x40, 0x40, 0x40, 0x40, 0x35};
 unsigned int gpuFy[8] = {0x54, 0x40, 0x40, 0x40, 0x40, 0x35, 0x00, 0x00};
 #endif
@@ -1701,10 +1702,12 @@ static void get_freq_table_cpu(struct eem_det *det)
 					det->freq_tbl[i] =
 					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_SB[i] : bigFreq_SB[i],
 					det->max_freq_khz);
-				} else if (22 == binLevel) {
+#ifdef CONFIG_ARCH_MT6755_TURBO
+				} else if (0x22 == binLevel) {
 					det->freq_tbl[i] =
 					PERCENT((det_to_id(det) == EEM_DET_LITTLE) ? littleFreq_P15[i] : bigFreq_P15[i],
 					det->max_freq_khz);
+#endif
 				} else {
 					if ((2 == ((binLevel_eng >> 4) & 0x07)) ||
 					    (2 == ((binLevel_eng >> 10) & 0x07))) {
@@ -4691,11 +4694,11 @@ static int __init eem_conf(void)
 		} else if ((2 == binLevel) || (4 == binLevel)) {
 			recordTbl = &sbTbl[0][0];
 			eem_error("@The table ----->(sbTbl)\n");
-		#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-		} else if (22 == binLevel) {
+#ifdef CONFIG_ARCH_MT6755_TURBO
+		} else if (0x22 == binLevel) {
 			recordTbl = &p15Tbl[0][0];
 			eem_error("@The table ----->(p15Tbl)\n");
-		#endif
+#endif
 		} else {
 			if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07))) {
 				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
