@@ -699,6 +699,8 @@ wake_reason_t spm_go_to_dpidle(u32 spm_flags, u32 spm_data, u32 dump_log)
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	u32 cpu = spm_data;
 
+	memset(&wakesta, 0, sizeof(struct wake_status));
+
 #if SPM_AEE_RR_REC
 	aee_rr_rec_deepidle_val(SPM_DEEPIDLE_ENTER);
 #endif
@@ -833,6 +835,8 @@ wake_reason_t spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl = __spm_dpidle.pwrctrl;
 	int cpu = smp_processor_id();
+
+	memset(&wakesta, 0, sizeof(struct wake_status));
 
 	if (dyna_load_pcm[DYNA_LOAD_PCM_DEEPIDLE + cpu / 4].ready)
 		pcmdesc = &(dyna_load_pcm[DYNA_LOAD_PCM_DEEPIDLE + cpu / 4].desc);
