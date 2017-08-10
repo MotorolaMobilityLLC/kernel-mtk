@@ -710,9 +710,9 @@ static ssize_t spi_msg_store(struct device *dev, struct device_attribute *attr, 
 	struct spi_message *p;
 	int ret = 0;
 	struct spi_device *spi;
-	struct spi_transfer transfer;
-	struct spi_transfer transfer2;
-	struct spi_transfer transfer3;
+	struct spi_transfer transfer = {0,};
+	struct spi_transfer transfer2 = {0,};
+	struct spi_transfer transfer3 = {0,};
 	struct spi_message msg;
 	struct mt_chip_conf *chip_config;
 
