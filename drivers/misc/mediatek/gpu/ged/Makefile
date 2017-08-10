@@ -72,9 +72,7 @@ ccflags-y += -DGED_DVFS_ENABLE \
 	     -DENABLE_TIMER_BACKUP 
 endif
 
-ifeq ($(CONFIG_MTK_FTRACE_DEFAULT_ENABLE),y)
-ccflags-y += -DENABLE_GED_SYSTRACE_UTIL
-endif
+ccflags-y += -DGED_SYSTRACE_UTIL
 
 ccflags-y += -DGED_DVFS_DEBUG_BUF
 
