@@ -28,7 +28,6 @@
 #include <linux/slab.h>
 
 #include <linux/configfs.h>
-#include <linux/lockdep.h>
 
 #define STRING_BUF_SIZE		(512)
 
