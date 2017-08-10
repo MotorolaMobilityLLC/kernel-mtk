@@ -604,57 +604,67 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj, struct kobj_attribute *at
 				 char *buf)
 {
 	int len = 0;
-	char *p = buf;
 	bool srcclkena_o1 = false;
 
-	p += sprintf(p, "********** RF clock buffer state (%s) flightmode(FM)=%d **********\n",
-		     (is_pmic_clkbuf ? "off" : "on"), g_is_flightmode_on);
-	p += sprintf(p, "CKBUF1_BB   SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
-		     CLK_BUF1_STATUS, clk_buf_swctrl[0],
-		     clk_buf_swctrl_modem_on[0]);
-	p += sprintf(p, "CKBUF2_NONE SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
-		     CLK_BUF2_STATUS, clk_buf_swctrl[1],
-		     clk_buf_swctrl_modem_on[1]);
-	p += sprintf(p, "CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
-		     CLK_BUF3_STATUS, clk_buf_swctrl[2],
-		     clk_buf_swctrl_modem_on[2]);
-	p += sprintf(p, "CKBUF4_AUD  SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
-		     CLK_BUF4_STATUS, clk_buf_swctrl[3],
-		     clk_buf_swctrl_modem_on[3]);
-	p += sprintf(p, "********** PMIC clock buffer state (%s) **********\n",
-		     (is_pmic_clkbuf ? "on" : "off"));
-	p += sprintf(p, "CKBUF1_BB   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
-		     CLK_BUF5_STATUS_PMIC, pmic_clk_buf_swctrl[0]);
-	p += sprintf(p, "CKBUF2_CONN SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
-		     CLK_BUF6_STATUS_PMIC, pmic_clk_buf_swctrl[1]);
-	p += sprintf(p, "CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
-		     CLK_BUF7_STATUS_PMIC, pmic_clk_buf_swctrl[2]);
-	p += sprintf(p, "CKBUF4_RF   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
-		     CLK_BUF8_STATUS_PMIC, pmic_clk_buf_swctrl[3]);
-	p += sprintf(p, "\n********** clock buffer command help **********\n");
-	p += sprintf(p, "BSI  switch on/off: echo bsi en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
-	p += sprintf(p, "PMIC switch on/off: echo pmic en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"********** RF clock buffer state (%s) flightmode(FM)=%d **********\n",
+			(is_pmic_clkbuf ? "off" : "on"), g_is_flightmode_on);
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF1_BB   SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
+			CLK_BUF1_STATUS, clk_buf_swctrl[0],
+			clk_buf_swctrl_modem_on[0]);
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF2_NONE SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
+			CLK_BUF2_STATUS, clk_buf_swctrl[1],
+			clk_buf_swctrl_modem_on[1]);
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
+			CLK_BUF3_STATUS, clk_buf_swctrl[2],
+			clk_buf_swctrl_modem_on[2]);
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF4_AUD  SW(1)/HW(2) CTL: %d, Dis(0)/En(1) of FM=1:%d, FM=0:%d\n",
+			CLK_BUF4_STATUS, clk_buf_swctrl[3],
+			clk_buf_swctrl_modem_on[3]);
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"********** PMIC clock buffer state (%s) **********\n",
+			(is_pmic_clkbuf ? "on" : "off"));
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF1_BB   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
+			CLK_BUF5_STATUS_PMIC, pmic_clk_buf_swctrl[0]);
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF2_CONN SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
+			CLK_BUF6_STATUS_PMIC, pmic_clk_buf_swctrl[1]);
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF3_NFC  SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
+			CLK_BUF7_STATUS_PMIC, pmic_clk_buf_swctrl[2]);
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"CKBUF4_RF   SW(1)/HW(2) CTL: %d, Dis(0)/En(1): %d\n",
+			CLK_BUF8_STATUS_PMIC, pmic_clk_buf_swctrl[3]);
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"\n********** clock buffer command help **********\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"BSI  switch on/off: echo bsi en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"PMIC switch on/off: echo pmic en1 en2 en3 en4 > /sys/power/clk_buf/clk_buf_ctrl\n");
 	if (is_pmic_clkbuf)
-		p += sprintf(p, "g_pmic_cw13_rg_val=0x%x, bblpm_cnt=%u\n",
-			     g_pmic_cw13_rg_val, bblpm_cnt);
+		len += snprintf(buf+len, PAGE_SIZE-len,
+				"g_pmic_cw13_rg_val=0x%x, bblpm_cnt=%u\n",
+				g_pmic_cw13_rg_val, bblpm_cnt);
 	else
-		p += sprintf(p, "afcdac=0x%x, is_afcdac_updated=%d\n",
-			     afcdac_val, is_clkbuf_afcdac_updated);
-	p += sprintf(p, "rf_drv_curr_vals=%d %d %d %d, pmic_drv_curr_vals=%d %d %d %d\n",
-		     RF_CLK_BUF1_DRIVING_CURR,
-		     RF_CLK_BUF2_DRIVING_CURR,
-		     RF_CLK_BUF3_DRIVING_CURR,
-		     RF_CLK_BUF4_DRIVING_CURR,
-		     PMIC_CLK_BUF5_DRIVING_CURR,
-		     PMIC_CLK_BUF6_DRIVING_CURR,
-		     PMIC_CLK_BUF7_DRIVING_CURR,
-		     PMIC_CLK_BUF8_DRIVING_CURR);
+		len += snprintf(buf+len, PAGE_SIZE-len,
+				"afcdac=0x%x, is_afcdac_updated=%d\n",
+				afcdac_val, is_clkbuf_afcdac_updated);
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"rf_drv_curr_vals=%d %d %d %d, pmic_drv_curr_vals=%d %d %d %d\n",
+			RF_CLK_BUF1_DRIVING_CURR, RF_CLK_BUF2_DRIVING_CURR,
+			RF_CLK_BUF3_DRIVING_CURR, RF_CLK_BUF4_DRIVING_CURR,
+			PMIC_CLK_BUF5_DRIVING_CURR, PMIC_CLK_BUF6_DRIVING_CURR,
+			PMIC_CLK_BUF7_DRIVING_CURR, PMIC_CLK_BUF8_DRIVING_CURR);
 	srcclkena_o1 = !!(spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ);
-	p += sprintf(p, "srcclkena_o1=%u, pcm_reg13=0x%x, MD1_PWR_CON=0x%x, C2K_PWR_CON=0x%x\n",
-		     srcclkena_o1, spm_read(PCM_REG13_DATA),
-		     spm_read(MD1_PWR_CON), spm_read(C2K_PWR_CON));
-
-	len = p - buf;
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"srcclkena_o1=%u, pcm_reg13=0x%x, MD1_PWR_CON=0x%x, C2K_PWR_CON=0x%x\n",
+			srcclkena_o1, spm_read(PCM_REG13_DATA),
+			spm_read(MD1_PWR_CON), spm_read(C2K_PWR_CON));
 
 	return len;
 }
@@ -681,11 +691,8 @@ static ssize_t clk_buf_debug_show(struct kobject *kobj, struct kobj_attribute *a
 				 char *buf)
 {
 	int len = 0;
-	char *p = buf;
 
-	p += sprintf(p, "clkbuf_debug=%d\n", clkbuf_debug);
-
-	len = p - buf;
+	len += snprintf(buf+len, PAGE_SIZE-len, "clkbuf_debug=%d\n", clkbuf_debug);
 
 	return len;
 }
