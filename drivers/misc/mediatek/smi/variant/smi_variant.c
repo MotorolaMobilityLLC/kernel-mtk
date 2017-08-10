@@ -394,10 +394,10 @@ static int fake_mode_handling(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4Local
 	if (p_conf->scenario == SMI_BWC_SCEN_WFD) {
 		if (p_conf->b_on_off) {
 			wifi_disp_transaction = 1;
-			SMIMSG("Enable WFD in profile: %d\n", smi_profile);
+			SMIDBG(1, "Enable WFD in profile: %d\n", smi_profile);
 		} else {
 			wifi_disp_transaction = 0;
-			SMIMSG("Disable WFD in profile: %d\n", smi_profile);
+			SMIDBG(1, "Disable WFD in profile: %d\n", smi_profile);
 		}
 		return 1;
 	} else {
@@ -548,7 +548,7 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 	/* Bandwidth Limiter */
 	switch (eFinalScen) {
 	case SMI_BWC_SCEN_VP:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_VP");
+		SMIDBG(1, "[SMI_PROFILE] : %s\n", "SMI_BWC_VP");
 		if (smi_data->smi_priv->plat != MTK_PLAT_MT8163)
 			smicur->vp_setting(smi_data);
 		else {
@@ -562,52 +562,52 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 		break;
 
 	case SMI_BWC_SCEN_SWDEC_VP:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_SWDEC_VP");
+		SMIDBG(1, "[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_SWDEC_VP");
 		smicur->vp_setting(smi_data);
 		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_VP;
 		break;
 
 	case SMI_BWC_SCEN_VR:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_VR");
+		SMIDBG(1, "[SMI_PROFILE] : %s\n", "SMI_BWC_VR");
 		smicur->vr_setting(smi_data);
 		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_VR;
 		break;
 
 	case SMI_BWC_SCEN_VR_SLOW:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_VR");
+		SMIDBG(1, "[SMI_PROFILE] : %s\n", "SMI_BWC_VR");
 		smi_profile = SMI_BWC_SCEN_VR_SLOW;
 		smicur->vr_setting(smi_data);
 		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_VR;
 		break;
 
 	case SMI_BWC_SCEN_VENC:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_VENC");
+		SMIDBG(1, "[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_VENC");
 		smicur->vr_setting(smi_data);
 		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_NORMAL;
 		break;
 
 	case SMI_BWC_SCEN_NORMAL:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_NORMAL");
+		SMIDBG(1, "[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_NORMAL");
 		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_NORMAL;
 		smicur->init_setting(smi_data, &is_default_value_saved,
 				default_val_smi_l1arb, smi_data->larb_nr);
 		break;
 
 	case SMI_BWC_SCEN_MM_GPU:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_MM_GPU");
+		SMIDBG(1, "[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_MM_GPU");
 		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_NORMAL;
 		smicur->init_setting(smi_data, &is_default_value_saved,
 				default_val_smi_l1arb, smi_data->larb_nr);
 		break;
 
 	case SMI_BWC_SCEN_HDMI:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_HDMI");
+		SMIDBG(1, "[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_HDMI");
 		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_NORMAL;
 		smicur->hdmi_setting(smi_data);
 		break;
 
 	case SMI_BWC_SCEN_HDMI4K:
-		SMIMSG("[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_HDMI4K");
+		SMIDBG(1, "[SMI_PROFILE] : %s\n", "SMI_BWC_SCEN_HDMI4K");
 		g_smi_bwc_mm_info.hw_ovl_limit = SF_HWC_PIXEL_MAX_NORMAL;
 		smicur->hdmi_4k_setting(smi_data);
 		break;
@@ -629,7 +629,7 @@ static int smi_bwc_config(MTK_SMI_BWC_CONFIG *p_conf, unsigned int *pu4LocalCnt)
 	/* Since send uevent may trigger sleeping, we must send the event after releasing spin lock */
 	ovl_limit_uevent(smi_profile, g_smi_bwc_mm_info.hw_ovl_limit);
 
-	SMIMSG("SMI_PROFILE to:%d %s,cur:%d,%d,%d,%d\n", p_conf->scenario,
+	SMIDBG(1, "SMI_PROFILE to:%d %s,cur:%d,%d,%d,%d\n", p_conf->scenario,
 	       (p_conf->b_on_off ? "on" : "off"), eFinalScen,
 	       g_SMIInfo.pu4ConcurrencyTable[SMI_BWC_SCEN_NORMAL],
 	       g_SMIInfo.pu4ConcurrencyTable[SMI_BWC_SCEN_VR],
@@ -1745,7 +1745,7 @@ long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 	case COMPAT_MTK_IOC_SMI_BWC_CONFIG:
 		{
 			if (COMPAT_MTK_IOC_SMI_BWC_CONFIG == MTK_IOC_SMI_BWC_CONFIG) {
-				SMIMSG("Optimized compct IOCTL: COMPAT_MTK_IOC_SMI_BWC_CONFIG");
+				SMIDBG(1, "Optimized compct IOCTL: COMPAT_MTK_IOC_SMI_BWC_CONFIG");
 				return filp->f_op->unlocked_ioctl(filp, cmd,
 								  (unsigned long)compat_ptr(arg));
 			} else {
@@ -1774,7 +1774,7 @@ long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		{
 
 			if (COMPAT_MTK_IOC_SMI_BWC_INFO_SET == MTK_IOC_SMI_BWC_INFO_SET) {
-				SMIMSG("Optimized compct IOCTL: COMPAT_MTK_IOC_SMI_BWC_INFO_SET");
+				SMIDBG(1, "Optimized compct IOCTL: COMPAT_MTK_IOC_SMI_BWC_INFO_SET");
 				return filp->f_op->unlocked_ioctl(filp, cmd,
 								  (unsigned long)compat_ptr(arg));
 			} else {
@@ -1801,7 +1801,7 @@ long MTK_SMI_COMPAT_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 	case COMPAT_MTK_IOC_SMI_BWC_INFO_GET:
 		{
 			if (COMPAT_MTK_IOC_SMI_BWC_INFO_GET == MTK_IOC_SMI_BWC_INFO_GET) {
-				SMIMSG("Optimized compct IOCTL: COMPAT_MTK_IOC_SMI_BWC_INFO_GET");
+				SMIDBG(1, "Optimized compct IOCTL: COMPAT_MTK_IOC_SMI_BWC_INFO_GET");
 				return filp->f_op->unlocked_ioctl(filp, cmd,
 								  (unsigned long)compat_ptr(arg));
 			} else {
