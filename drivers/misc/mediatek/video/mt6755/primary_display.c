@@ -4422,6 +4422,15 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 	if (cmdq_handle)
 		setup_disp_sec(data_config, cmdq_handle, 1);
+	if (primary_display_is_decouple_mode()) {
+		disp_handle = pgc->ovl2mem_path_handle;
+		cmdq_handle = pgc->cmdq_handle_ovl1to2_config;
+	} else {
+		disp_handle = pgc->dpmgr_handle;
+		cmdq_handle = pgc->cmdq_handle_config;
+	}
+	data_config = dpmgr_path_get_last_config(disp_handle);
+	data_config->overlap_layer_num = overlap_layers;
 
 	/* check bypass ovl */
 	bypass = can_bypass_ovl(data_config, &bypass_layer_id);
