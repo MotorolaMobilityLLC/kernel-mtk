@@ -300,11 +300,8 @@ static int __init init_bootprof_buf(void)
 	if (!bootprof[0])
 		goto fail;
 	mt_bootprof_switch(1);
-	return 0;
 
 fail:
-	kfree(bootprof[0]);
-	bootprof[0] = NULL;
 	return 0;
 }
 
