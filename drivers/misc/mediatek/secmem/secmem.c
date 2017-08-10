@@ -517,7 +517,7 @@ static int secmem_region_alloc(void)
 	}
 
 	if (pa == 0 || size == 0) {
-		MSG(ERR, "%s: invalid pa(0x%llx) or size(0x%lx)\n", __func__, pa, size);
+		MSG(ERR, "%s: invalid pa(0x%llx) or size(0x%lx)\n", __func__, (u64)pa, size);
 		return -1;
 	}
 
@@ -538,7 +538,7 @@ static int secmem_region_alloc(void)
 #endif
 
 	INFO("phyaddr=0x%llx sz=0x%lx region_online=%u region_ref=%u\n",
-			pa, size, secmem_region_online, secmem_region_ref);
+			(u64)pa, size, secmem_region_online, secmem_region_ref);
 
 	return 0;
 }
