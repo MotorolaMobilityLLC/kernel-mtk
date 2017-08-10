@@ -486,7 +486,7 @@ struct spm_lp_scen __spm_suspend = {
 static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	unsigned int temp;
+	unsigned int temp = 0;
 #endif
 
 	__spm_pmic_low_iq_mode(1);

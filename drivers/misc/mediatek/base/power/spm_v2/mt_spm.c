@@ -787,7 +787,7 @@ int __init spm_module_init(void)
 	int r = 0;
 #if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6757)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	u32 reg_val;
+	u32 reg_val = 0;
 #endif
 #endif
 #if 0
