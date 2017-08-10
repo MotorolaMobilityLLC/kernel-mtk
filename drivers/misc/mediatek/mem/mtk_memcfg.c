@@ -221,6 +221,10 @@ static int mtk_memcfg_memory_layout_show(struct seq_file *m, void *v)
 			(unsigned long)virt_to_page(high_memory),
 			((unsigned long)virt_to_page(high_memory) -
 			 (unsigned long)virt_to_page(PAGE_OFFSET)) >> 20);
+#else
+#ifndef CONFIG_NEED_MULTIPLE_NODES
+	seq_printf(m, "memmap : %lu MB\n", mem_map_size >> 20);
+#endif
 #endif
 
 	return 0;
