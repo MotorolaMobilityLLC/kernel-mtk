@@ -493,13 +493,13 @@ static void mrdump_mini_add_tsk_ti(int cpu, struct pt_regs *regs, int stack)
 		tsk = ti->task;
 		bottom = (unsigned long *)regs->reg_sp;
 	}
-	if (!(virt_addr_valid(tsk) && ti == (struct thread_info *)tsk->stack)
+	if (!(virt_addr_valid(tsk) && tsk != NULL && ti == (struct thread_info *)tsk->stack)
 	    && virt_addr_valid(regs->reg_fp)) {
 		ti = (struct thread_info *)(regs->reg_fp & ~(THREAD_SIZE - 1));
 		tsk = ti->task;
 		bottom = (unsigned long *)regs->reg_fp;
 	}
-	if (!virt_addr_valid(tsk) || ti != (struct thread_info *)tsk->stack) {
+	if (!virt_addr_valid(tsk) || (tsk != NULL && ti != (struct thread_info *)tsk->stack)) {
 		tsk = cpu_curr(cpu);
 		if (virt_addr_valid(tsk)) {
 			ti = (struct thread_info *)tsk->stack;
