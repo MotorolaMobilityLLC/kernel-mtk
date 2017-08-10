@@ -95,6 +95,8 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
+	AudDrv_Clk_On();
+	AudDrv_ADC_Clk_On();
 	pr_warn("%s\n", __func__);
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_err("%s  with mtk_uldlloopback_open\n", __func__);
@@ -102,11 +104,8 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 		return 0;
 	}
 
-	AudDrv_Clk_On();
-	AudDrv_ADC_Clk_On();
-
 	runtime->hw = mtk_uldlloopback_hardware;
-	memcpy((void *)(&(runtime->hw)), (void *)&mtk_uldlloopback_hardware ,
+	memcpy((void *)(&(runtime->hw)), (void *)&mtk_uldlloopback_hardware,
 	       sizeof(struct snd_pcm_hardware));
 
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
@@ -142,6 +141,8 @@ static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream)
 	pr_warn("%s\n", __func__);
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		pr_err("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
+		AudDrv_ADC_Clk_Off();
+		AudDrv_Clk_Off();
 		return 0;
 	}
 	/* interconnection setting */
