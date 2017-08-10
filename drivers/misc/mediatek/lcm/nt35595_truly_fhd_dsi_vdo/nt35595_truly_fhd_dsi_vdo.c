@@ -62,6 +62,10 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define FRAME_WIDTH										(1080)
 #define FRAME_HEIGHT									(1920)
 
+#define LCM_PHYSICAL_WIDTH									(74520)
+#define LCM_PHYSICAL_HEIGHT									(132480)
+
+
 #define REGFLAG_DELAY									0xFC
 #define REGFLAG_END_OF_TABLE							0xFD
 
@@ -686,6 +690,11 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
+	params->physical_width = LCM_PHYSICAL_WIDTH/1000;
+	params->physical_height = LCM_PHYSICAL_HEIGHT/1000;
+	params->physical_width_um = LCM_PHYSICAL_WIDTH;
+	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
+
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;
