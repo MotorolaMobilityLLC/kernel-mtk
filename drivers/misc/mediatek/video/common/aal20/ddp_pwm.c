@@ -58,6 +58,7 @@ static int pwm_dbg_en;
 
 static disp_pwm_id_t g_pwm_main_id = DISP_PWM0;
 static atomic_t g_pwm_backlight[1] = { ATOMIC_INIT(-1) };
+static atomic_t g_pwm_en[1] = { ATOMIC_INIT(-1) };
 static volatile int g_pwm_max_backlight[1] = { 1023 };
 static ddp_module_notify g_ddp_notify;
 static volatile bool g_pwm_is_power_on;
@@ -65,7 +66,6 @@ static volatile unsigned int g_pwm_value_before_power_off;
 static int g_pwm_led_mode = MT65XX_LED_MODE_NONE;
 
 static DEFINE_SPINLOCK(g_pwm_log_lock);
-
 
 typedef struct {
 	int value;
@@ -81,7 +81,6 @@ enum PWM_LOG_TYPE {
 static PWM_LOG g_pwm_log_buffer[PWM_LOG_BUFFER_SIZE + 1];
 static int g_pwm_log_index;
 static int g_pwm_log_num = PWM_LOG_BUFFER_SIZE;
-static volatile bool g_pwm_force_backlight_update;
 
 static volatile bool g_pwm_is_change_state;
 #if defined(CONFIG_ARCH_MT6757)
@@ -192,12 +191,6 @@ static void disp_pwm_query_backlight(char *debug_output)
 	PWM_NOTICE("%s", temp_buf);
 }
 
-void disp_pwm_set_force_update_flag(void)
-{
-	g_pwm_force_backlight_update = true;
-	PWM_DBG("disp_pwm_set_force_update_flag (%d)", g_pwm_force_backlight_update);
-}
-
 static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
@@ -294,14 +287,6 @@ disp_pwm_id_t disp_pwm_get_main(void)
 }
 
 
-int disp_pwm_is_enabled(disp_pwm_id_t id)
-{
-	unsigned long reg_base = pwm_get_reg_base(id);
-
-	return DISP_REG_GET(reg_base + DISP_PWM_EN_OFF) & 0x1;
-}
-
-
 static void disp_pwm_set_drverIC_en(disp_pwm_id_t id, int enabled)
 {
 #ifdef GPIO_LCM_LED_EN
@@ -323,17 +308,24 @@ static void disp_pwm_set_drverIC_en(disp_pwm_id_t id, int enabled)
 static void disp_pwm_set_enabled(cmdqRecHandle cmdq, disp_pwm_id_t id, int enabled)
 {
 	unsigned long reg_base = pwm_get_reg_base(id);
+	int index = index_of_pwm(id);
+	int old_en;
 
-	if (enabled) {
-		if (!disp_pwm_is_enabled(id)) {
-			DISP_REG_MASK(cmdq, reg_base + DISP_PWM_EN_OFF, 0x1, 0x1);
-			PWM_MSG("disp_pwm_set_enabled: PWN_EN = 0x1");
+	old_en = atomic_xchg(&g_pwm_en[index], enabled);
+	if (old_en != enabled) {
+		if (enabled) {
+			/* Always use CPU to config DISP_PWM EN to avoid race condition */
+			DISP_REG_MASK(NULL, reg_base + DISP_PWM_EN_OFF, 0x1, 0x1);
+			PWM_MSG("disp_pwm_set_enabled: PWN_EN (by CPU) = 0x1");
+
+			disp_pwm_set_drverIC_en(id, enabled);
+		} else {
+			/* Always use CPU to config DISP_PWM EN to avoid race condition */
+			DISP_REG_MASK(NULL, reg_base + DISP_PWM_EN_OFF, 0x0, 0x1);
+			PWM_MSG("disp_pwm_set_enabled: PWN_EN (by CPU) = 0x0");
 
 			disp_pwm_set_drverIC_en(id, enabled);
 		}
-	} else {
-		DISP_REG_MASK(cmdq, reg_base + DISP_PWM_EN_OFF, 0x0, 0x1);
-		disp_pwm_set_drverIC_en(id, enabled);
 	}
 }
 
@@ -475,13 +467,6 @@ int disp_pwm_set_backlight_cmdq(disp_pwm_id_t id, int level_1024, void *cmdq)
 	if ((DISP_PWM_ALL & id) == 0) {
 		PWM_ERR("[ERROR] disp_pwm_set_backlight_cmdq: invalid PWM ID = 0x%x", id);
 		return -EFAULT;
-	}
-
-	/* we have to set backlight = 0 through CMDQ again to avoid timimg issue */
-	if (g_pwm_force_backlight_update == true && cmdq != NULL) {
-		g_pwm_force_backlight_update = false;
-		force_update = true;
-		PWM_DBG("PWM force set backlight to 0 again\n");
 	}
 
 	/* we have to change backlight after config init or max backlight changed */

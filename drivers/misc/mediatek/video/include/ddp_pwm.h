@@ -21,7 +21,6 @@ typedef enum {
 	DISP_PWM_ALL = (DISP_PWM0 | DISP_PWM1)
 } disp_pwm_id_t;
 
-void disp_pwm_set_force_update_flag(void);
 
 void disp_pwm_set_main(disp_pwm_id_t main);
 disp_pwm_id_t disp_pwm_get_main(void);

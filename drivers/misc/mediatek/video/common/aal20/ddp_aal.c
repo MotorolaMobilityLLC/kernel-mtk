@@ -401,9 +401,6 @@ void disp_aal_notify_backlight_changed(int bl_1024)
 		/* set backlight = 0 may be not from AAL, we have to let AALService
 		   can turn on backlight on phone resumption */
 		service_flags = AAL_SERVICE_FORCE_UPDATE;
-		/* using CPU to set backlight = 0,  */
-		/* we have to set backlight = 0 through CMDQ again to avoid timimg issue */
-		disp_pwm_set_force_update_flag();
 	} else if (!g_aal_is_init_regs_valid) {
 		/* set backlight under LCM_CABC mode with cpu : need lock */
 		if (g_led_mode == MT65XX_LED_MODE_CUST_LCM)
