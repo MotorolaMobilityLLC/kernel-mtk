@@ -291,7 +291,8 @@ static int __ftrace_event_enable_disable(struct ftrace_event_file *file,
 	int disable;
 
 	if (call->name && ((file->flags & FTRACE_EVENT_FL_ENABLED) ^ enable))
-		pr_debug("[ftrace]event '%s' is %s\n", call->name, enable ? "enabled" : "disabled");
+		pr_debug("[ftrace]event '%s' is %s\n", ftrace_event_name(call),
+			 enable ? "enabled" : "disabled");
 
 	switch (enable) {
 	case 0:
@@ -624,7 +625,9 @@ ftrace_event_write(struct file *file, const char __user *ubuf,
 
 		ret = ftrace_set_clr_event(tr, parser.buffer + !set, set);
 		if (ret)
-			pr_debug("[ftrace]fail to %s event '%s'\n", set ? "enable" : "disable", parser.buffer + !set);
+			pr_debug("[ftrace]fail to %s event '%s'\n",
+				 set ? "enable" : "disable",
+				 parser.buffer + !set);
 		/* continue to handle rest user's input instead of going out directly */
 	}
 

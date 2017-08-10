@@ -166,6 +166,7 @@ static void _work_exec_end(void *ignore, struct work_struct *work)
 	struct work_info *work_info;
 	unsigned long long ts;
 	unsigned long flags, rem_nsec;
+	struct work_info w;
 
 	raw_spin_lock_irqsave(&works_lock, flags);
 	work_info = find_active_work(work);
@@ -174,18 +175,20 @@ static void _work_exec_end(void *ignore, struct work_struct *work)
 		return;
 	}
 	ts = sched_clock() - work_info->ts;
+	w.func = work_info->func;
+	w.work = work_info->work;
 	hash_del(&work_info->hash);
+	/* kfree(work_info); */
+	kmem_cache_free(work_info_cache, work_info);
 	raw_spin_unlock_irqrestore(&works_lock, flags);
 
 	if (ts > WORK_EXEC_MAX) {
 		rem_nsec = do_div(ts, NSEC_PER_SEC);
 		pr_debug(TAG "work(%pf,%lx) exec %ld.%06lds, more than 1s\n",
-			 (void *)work_info->func,
-			 (unsigned long)work_info->work,
+			 (void *)w.func,
+			 (unsigned long)w.work,
 			 (unsigned long)ts, rem_nsec / NSEC_PER_USEC);
 	}
-	/* kfree(work_info); */
-	kmem_cache_free(work_info_cache, work_info);
 }
 
 static void work_debug_enable(unsigned int on)
