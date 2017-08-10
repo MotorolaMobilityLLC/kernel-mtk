@@ -1544,6 +1544,7 @@ static void restore_record(struct eem_det *det)
 static void mt_cpufreq_set_ptbl_funcEEM(enum mt_cpu_dvfs_id id, int restore)
 {
 	struct eem_det *det = id_to_eem_det((id == MT_CPU_DVFS_LITTLE) ? EEM_CTRL_LITTLE : EEM_CTRL_BIG);
+
 	if (restore)
 		restore_record(det);
 	else
@@ -2064,6 +2065,9 @@ static int eem_volt_thread_handler(void *data)
 	struct eem_det *det = id_to_eem_det(ctrl->det_id);
 
 	FUNC_ENTER(FUNC_LV_HELP);
+	if (det == NULL)
+		return 0;
+
 #ifdef __KERNEL__
 
 	do {
@@ -2359,6 +2363,9 @@ static void eem_set_eem_volt(struct eem_det *det)
 	int cur_temp, low_temp_offset;
 	struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id);
 
+	if (ctrl == NULL)
+		return;
+
 	cur_temp = det->ops->get_temp(det);
 	/* eem_debug("eem_set_eem_volt cur_temp = %d, valid = %d\n", cur_temp, tscpu_is_temp_valid()); */
 	if ((cur_temp <= 33000) || !tscpu_is_temp_valid()) {
@@ -2436,6 +2443,9 @@ static void eem_restore_eem_volt(struct eem_det *det)
 #if SET_PMIC_VOLT
 	struct eem_ctrl *ctrl = id_to_eem_ctrl(det->ctrl_id);
 
+	if (ctrl == NULL)
+		return;
+
 	ctrl->volt_update |= EEM_VOLT_RESTORE;
 #ifdef __KERNEL__
 	wake_up_interruptible(&ctrl->wq);
@@ -2503,6 +2513,7 @@ static inline void handle_init01_isr(struct eem_det *det)
 #if DUMP_DATA_TO_DE
 	{
 		unsigned int i;
+
 		for (i = 0; i < ARRAY_SIZE(reg_dump_addr_off); i++) {
 			det->reg_dump_data[i][EEM_PHASE_INIT01] = eem_read(EEM_BASEADDR + reg_dump_addr_off[i]);
 			#ifdef __KERNEL__
@@ -3746,6 +3757,10 @@ int mt_eem_opp_num(enum eem_det_id id)
 	struct eem_det *det = id_to_eem_det(id);
 
 	FUNC_ENTER(FUNC_LV_API);
+
+	if (det == NULL)
+		return 0;
+
 	FUNC_EXIT(FUNC_LV_API);
 
 	return det->num_freq_tbl;
@@ -3758,6 +3773,9 @@ void mt_eem_opp_freq(enum eem_det_id id, unsigned int *freq)
 	int i = 0;
 
 	FUNC_ENTER(FUNC_LV_API);
+
+	if (det == NULL)
+		return;
 
 	for (i = 0; i < det->num_freq_tbl; i++)
 		freq[i] = det->freq_tbl[i];
@@ -3772,6 +3790,9 @@ void mt_eem_opp_status(enum eem_det_id id, unsigned int *temp, unsigned int *vol
 	int i = 0;
 
 	FUNC_ENTER(FUNC_LV_API);
+
+	if (det == NULL)
+		return;
 
 #if defined(__KERNEL__) && defined(CONFIG_THERMAL) && !defined(EARLY_PORTING)
 	*temp = tscpu_get_temp_by_bank(
@@ -4635,6 +4656,9 @@ unsigned int get_vcore_ptp_volt(int uv)
 void eem_set_pi_offset(enum eem_ctrl_id id, int step)
 {
 	struct eem_det *det = id_to_eem_det(id);
+
+	if (det == NULL)
+		return;
 
 	det->pi_offset = step;
 
