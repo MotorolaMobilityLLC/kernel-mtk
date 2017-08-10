@@ -625,6 +625,9 @@ struct RM_BEACON_REPORT_PARAMS {
 
 struct RM_MEASURE_REPORT_ENTRY {
 	LINK_ENTRY_T rLinkEntry;
+	/* should greater than sizeof(struct RM_BCN_REPORT) +
+	** sizeof(IE_MEASUREMENT_REPORT_T) + RM_BCN_REPORT_SUB_ELEM_MAX_LENGTH
+	*/
 	UINT_8 aucMeasReport[260];
 };
 /*******************************************************************************

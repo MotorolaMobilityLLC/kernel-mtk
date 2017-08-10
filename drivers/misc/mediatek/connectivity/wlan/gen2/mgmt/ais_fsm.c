@@ -5500,14 +5500,16 @@ VOID aisFsmRunEventBssTransition(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgH
 static VOID
 aisSendNeighborRequest(P_ADAPTER_T prAdapter)
 {
-	struct SUB_ELEMENT_LIST rSSIDIE;
+	struct SUB_ELEMENT_LIST *prSSIDIE;
+	UINT_8 aucBuffer[sizeof(*prSSIDIE) + 31];
 	P_BSS_INFO_T prBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 
-	kalMemZero(&rSSIDIE, sizeof(rSSIDIE));
-	rSSIDIE.rSubIE.ucSubID = ELEM_ID_SSID;
-	rSSIDIE.rSubIE.ucLength = prBssInfo->ucSSIDLen;
-	kalMemCopy(&rSSIDIE.rSubIE.aucOptInfo[0], prBssInfo->aucSSID, prBssInfo->ucSSIDLen);
-	rlmTxNeighborReportRequest(prAdapter, prBssInfo->prStaRecOfAP, &rSSIDIE);
+	kalMemZero(aucBuffer, sizeof(aucBuffer));
+	prSSIDIE = (struct SUB_ELEMENT_LIST *)&aucBuffer[0];
+	prSSIDIE->rSubIE.ucSubID = ELEM_ID_SSID;
+	COPY_SSID(&prSSIDIE->rSubIE.aucOptInfo[0], prSSIDIE->rSubIE.ucLength,
+		prBssInfo->aucSSID, prBssInfo->ucSSIDLen);
+	rlmTxNeighborReportRequest(prAdapter, prBssInfo->prStaRecOfAP, prSSIDIE);
 }
 
 VOID aisCollectNeighborAPChannel(P_ADAPTER_T prAdapter,

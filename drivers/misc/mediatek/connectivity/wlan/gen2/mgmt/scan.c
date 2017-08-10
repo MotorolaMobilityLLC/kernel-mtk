@@ -2062,8 +2062,11 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 	if (prRmReq->rBcnRmParam.eState == RM_ON_GOING) {
 		struct RM_BEACON_REPORT_PARAMS rRepParams;
 		P_WLAN_BEACON_FRAME_T prWlanBeacon = (P_WLAN_BEACON_FRAME_T)prSwRfb->pvHeader;
+		UINT_16 u2IELen = prSwRfb->u2PacketLen - OFFSET_OF(WLAN_BEACON_FRAME_T, aucInfoElem);
 
 		kalMemZero(&rRepParams, sizeof(rRepParams));
+		if (u2IELen > CFG_IE_BUFFER_SIZE)
+			u2IELen = CFG_IE_BUFFER_SIZE;
 		/* if this is a one antenna only device, the antenna id is always 1. 7.3.2.40 */
 		rRepParams.ucAntennaID = 1;
 		rRepParams.ucChannel = prSwRfb->prHifRxHdr->ucHwChannelNum;
@@ -2071,8 +2074,7 @@ WLAN_STATUS scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_
 		rRepParams.ucRSNI = 255; /* 255 means RSNI not available. see 7.3.2.41 */
 		rRepParams.ucFrameInfo = 0;
 		kalMemCopy(&rRepParams.aucBcnFixedField, prWlanBeacon->au4Timestamp, 12);
-		scanCollectBeaconReport(prAdapter, prWlanBeacon->aucInfoElem,
-			prSwRfb->u2PacketLen - OFFSET_OF(WLAN_BEACON_FRAME_T, aucInfoElem),
+		scanCollectBeaconReport(prAdapter, prWlanBeacon->aucInfoElem, u2IELen,
 			prWlanBeacon->aucBSSID, &rRepParams);
 		return WLAN_STATUS_SUCCESS;
 	}
@@ -2128,7 +2130,7 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 	PUINT_8 pucReportIeIds = NULL;
 	UINT_8 ucReportIeIdsLen = 0;
 	struct RM_BCN_REPORT *prBcnReport = NULL;
-	UINT_16 u2BcnReportLen = 0;
+	UINT_8 ucBcnReportLen = 0;
 	struct RM_MEASURE_REPORT_ENTRY *prReportEntry = NULL;
 	UINT_16 u2RemainLen = 0;
 	BOOLEAN fgValidChannel = FALSE;
@@ -2141,8 +2143,6 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 	}
 
 	pucIE = pucIEBuf;
-	if (u2IELength > CFG_IE_BUFFER_SIZE)
-		u2IELength = CFG_IE_BUFFER_SIZE;
 
 	/* Step1: parsing Beacon Request sub element field to get Report controlling information */
 	/* if match the channel that is in fixed field, no need to check AP channel report */
@@ -2157,6 +2157,9 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 			break;
 		switch (pucSubIE[0]) {
 		case 0: /* checking if SSID is matched */
+			/* length of sub-element ssid is 0 or first byte is 0, means wildcard ssid matching */
+			if (!IE_LEN(pucSubIE) || !pucSubIE[2])
+				break;
 			IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
 				if (IE_ID(pucIE) == ELEM_ID_SSID)
 					break;
@@ -2184,18 +2187,17 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 		}
 		case 51: /* AP CHANNEL REPORT Element */
 		{
-			UINT_8 ucNumChannels = 0;
+			UINT_8 ucNumChannels = 3; /* channel info is starting with the fourth byte */
 
 			if (fgValidChannel)
 				break;
 			/* try to match with AP channel report */
-			ucNumChannels = ucIeSize - 1;
-			while (ucNumChannels >= 3) {
+			while (ucNumChannels < ucIeSize) {
 				if (prRepParams->ucChannel == pucSubIE[ucNumChannels]) {
 					fgValidChannel = TRUE;
 					break;
 				}
-				ucNumChannels--;
+				ucNumChannels++;
 			}
 		}
 		}
@@ -2203,8 +2205,10 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 		pucSubIE += ucIeSize;
 	}
 	DBGLOG(SCN, INFO, "fgValidChannel %d\n", fgValidChannel);
-	if (!fgValidChannel && prBcnReq->ucChannel > 0 && prBcnReq->ucChannel < 255)
+	if (!fgValidChannel && prBcnReq->ucChannel > 0 && prBcnReq->ucChannel < 255) {
+		DBGLOG(SCN, INFO, "channel %d, valid %d\n", prBcnReq->ucChannel, fgValidChannel);
 		return;
+	}
 
 	/* Step2: check report condition */
 	ucRSSI = RCPI_TO_dBm(prRepParams->ucRCPI);
@@ -2228,9 +2232,9 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 		prBcnReport = (struct RM_BCN_REPORT *)prReportElem->aucReportFields;
 		if (EQUAL_MAC_ADDR(prBcnReport->aucBSSID, pucBssid))
 			break;
+		prBcnReport = NULL;
 	}
-	if (!prReportEntry || /* not found a entry in collected report link */
-		(&prReportEntry->rLinkEntry == (P_LINK_ENTRY_T)&prRmRep->rReportLink)) {
+	if (!prBcnReport) { /* not found a entry in collected report link */
 		LINK_REMOVE_HEAD(&prRmRep->rFreeReportLink, prReportEntry, struct RM_MEASURE_REPORT_ENTRY *);
 		if (!prReportEntry) {/* not found a entry in free report link */
 			prReportEntry = kalMemAlloc(sizeof(*prReportEntry), VIR_MEM_TYPE);
@@ -2239,6 +2243,8 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 				return;
 			}
 		}
+		DBGLOG(SCN, INFO, "allocate entry for Bss %pM, total entry %u\n",
+			pucBssid, prRmRep->rReportLink.u4NumElem);
 		LINK_INSERT_TAIL(&prRmRep->rReportLink, &prReportEntry->rLinkEntry);
 	}
 	kalMemZero(prReportEntry->aucMeasReport, sizeof(prReportEntry->aucMeasReport));
@@ -2267,41 +2273,64 @@ VOID scanCollectBeaconReport(IN P_ADAPTER_T prAdapter, PUINT_8 pucIEBuf,
 		u8Tsf = *(PUINT_64)&rTsf.au4Tsf[0] + rCurrent - rTsf.rTime;
 		kalMemCopy(prBcnReport->aucParentTSF, &u8Tsf, 4); /* low part of TSF */
 	}
-	u2BcnReportLen = OFFSET_OF(struct RM_BCN_REPORT, aucOptElem);
+	ucBcnReportLen = 0;
 	/* Optional Subelement Field */
 	/* all fixed length fields and IEs in Request Sub Elements should be reported */
 	if (ucReportDetail == 1 && ucReportIeIdsLen > 0) {
-		pucSubIE = prBcnReport->aucOptElem;
+		pucSubIE = &prBcnReport->aucOptElem[2];
 		kalMemCopy(pucSubIE, prRepParams->aucBcnFixedField, BEACON_FIXED_FIELD_LENGTH);
 		pucSubIE += BEACON_FIXED_FIELD_LENGTH;
-		u2BcnReportLen += BEACON_FIXED_FIELD_LENGTH;
+		ucBcnReportLen += BEACON_FIXED_FIELD_LENGTH;
 		pucIE = pucIEBuf;
 		IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
 			UINT_16 i = 0;
+			UINT_8 ucIncludedIESize = 0;
 
 			for (; i < ucReportIeIdsLen; i++)
 				if (pucIE[0] == pucReportIeIds[i]) {
-					UINT_8 ucIncludedIESize = IE_SIZE(pucIE);
-
-					kalMemCopy(pucSubIE, pucIE, ucIncludedIESize);
-					pucSubIE += ucIncludedIESize;
-					u2BcnReportLen += ucIncludedIESize;
+					ucIncludedIESize = IE_SIZE(pucIE);
 					break;
 				}
+			/* the length of sub-element should less than 225,
+			** and the included IE should be a complete one
+			*/
+			if (ucBcnReportLen + ucIncludedIESize > RM_BCN_REPORT_SUB_ELEM_MAX_LENGTH)
+				break;
+			if (ucIncludedIESize == 0)
+				continue;
+			ucBcnReportLen += ucIncludedIESize;
+			kalMemCopy(pucSubIE, pucIE, ucIncludedIESize);
+			pucSubIE += ucIncludedIESize;
 		}
+		prBcnReport->aucOptElem[0] = 1; /* sub-element id for reported frame body */
+		prBcnReport->aucOptElem[1] = ucBcnReportLen; /* length of the sub-element */
+		ucBcnReportLen += 2;
 	} else if (ucReportDetail == 2) {/* all fixed length fields and IEs should be reported */
-		kalMemCopy(prBcnReport->aucOptElem, prRepParams->aucBcnFixedField,
-				u2IELength + BEACON_FIXED_FIELD_LENGTH);
-		u2BcnReportLen += u2IELength + BEACON_FIXED_FIELD_LENGTH;
+		ucBcnReportLen += BEACON_FIXED_FIELD_LENGTH;
+		pucIE = pucIEBuf;
+		/* the length of sub-element should less than 225, and the included IE should be a complete one */
+		IE_FOR_EACH(pucIE, u2IELength, u2Offset) {
+			if (ucBcnReportLen + IE_SIZE(pucIE) > RM_BCN_REPORT_SUB_ELEM_MAX_LENGTH)
+				break;
+			ucBcnReportLen += IE_SIZE(pucIE);
+		}
+		prBcnReport->aucOptElem[0] = 1; /* sub-element id for reported frame body */
+		prBcnReport->aucOptElem[1] = ucBcnReportLen; /* length of the sub-element */
+		pucIE = &prBcnReport->aucOptElem[2];
+		kalMemCopy(pucIE, prRepParams->aucBcnFixedField, BEACON_FIXED_FIELD_LENGTH);
+		pucIE += BEACON_FIXED_FIELD_LENGTH;
+		kalMemCopy(pucIE, pucIEBuf, ucBcnReportLen - BEACON_FIXED_FIELD_LENGTH);
+		ucBcnReportLen += 2;
 	}
+	ucBcnReportLen += OFFSET_OF(struct RM_BCN_REPORT, aucOptElem);
 	/* Step4: fill in basic content of Measurement report IE */
 	prMeasReport->ucId = ELEM_ID_MEASUREMENT_REPORT;
 	prMeasReport->ucToken = prRmReq->prCurrMeasElem->ucToken;
 	prMeasReport->ucMeasurementType = ELEM_RM_TYPE_BEACON_REPORT;
 	prMeasReport->ucReportMode = 0;
-	prMeasReport->ucLength = 3 + u2BcnReportLen;
-	DBGLOG(SCN, INFO, "Bss %pM, ReportDeail %d, IncludeIE Num %d\n",
-		pucBssid, ucReportDetail, ucReportIeIdsLen);
+	prMeasReport->ucLength = 3 + ucBcnReportLen;
+	DBGLOG(SCN, INFO, "Bss %pM, ReportDeail %d, IncludeIE Num %d, chnl %d\n",
+		pucBssid, ucReportDetail, ucReportIeIdsLen, prRepParams->ucChannel);
 }
 
 static WLAN_STATUS __scanProcessBeaconAndProbeResp(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
