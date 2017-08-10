@@ -4111,6 +4111,9 @@ static int binder_ioctl_set_ctx_mgr(struct file *filp, struct binder_thread
 		goto out;
 	}
 
+	ret = security_binder_set_context_mgr(proc->tsk);
+	if (ret < 0)
+		goto out;
 	if (uid_valid(binder_context_mgr_uid)) {
 		if (!uid_eq(binder_context_mgr_uid, curr_euid)) {
 			pr_err("BINDER_SET_CONTEXT_MGR bad uid %d != %d\n",
@@ -4178,9 +4181,6 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case BINDER_SET_CONTEXT_MGR:
 		ret = binder_ioctl_set_ctx_mgr(filp, thread);
 		if (ret)
-			goto err;
-		ret = security_binder_set_context_mgr(proc->tsk);
-		if (ret < 0)
 			goto err;
 		break;
 	case BINDER_THREAD_EXIT:
