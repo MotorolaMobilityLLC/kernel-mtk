@@ -10022,6 +10022,7 @@ static inline	MUINT32	IMEMdbg_GetState(unsigned int userpid)
 	/*	*/
 	return ret;
 }
+#if 0
 static MINT32 ISP_WaitImemDump(unsigned int userpid)
 {
 	MINT32 Ret = 0;
@@ -10102,7 +10103,7 @@ static MINT32 ISP_WriteImemDump(unsigned int userpid, int type)
 	LOG_DBG("leave ISP_WriteImemDump,(%d)", type);
 	return Ret;
 }
-
+#endif
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -10111,7 +10112,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	MINT32 Ret = 0;
 	/*      */
 	MBOOL HoldEnable = MFALSE;
-	MUINT32 DebugFlag[2] = { 0 }, pid = 0;
+	MUINT32 DebugFlag[2] = { 0 };
 	ISP_REG_IO_STRUCT RegIo;
 	ISP_HOLD_TIME_ENUM HoldTime;
 	ISP_WAIT_IRQ_STRUCT IrqInfo;
@@ -10124,7 +10125,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	MUINT32 wakelock_ctrl;
 	unsigned long flags; /* old: MUINT32 flags;*//* FIX to avoid build warning */
 	int userKey = -1;
-	int	type	=  0;
+	/* int	type	=  0; */
 	ISP_REGISTER_USERKEY_STRUCT RegUserKey;
 	/*      */
 	if (pFile->private_data == NULL) {
@@ -10667,23 +10668,24 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 #ifdef ISP_KERNEL_MOTIFY_SIGNAL_TEST
 	case ISP_SET_USER_PID:
-		if (copy_from_user(&pid, (void *)Param, sizeof(MUINT32)) == 0) {
-			if ((pid > (PAGE_SIZE/sizeof(MINT32))) || (pid < 0)) {
-				LOG_ERR("invalid pid\n");
-				Ret = -EFAULT;
-				break;
-			}
-			spin_lock(&(IspInfo.SpinLockIsp));
-			getTaskInfo((pid_t) pid);
-
-			sendSignal();
-
-			LOG_DBG("[ISP_KERNEL_MOTIFY_SIGNAL_TEST]:0x08%x	", pid);
-			spin_unlock(&(IspInfo.SpinLockIsp));
-		} else {
-			LOG_ERR("copy_from_user	failed");
-			Ret = -EFAULT;
-		}
+		/*if (copy_from_user(&pid, (void *)Param, sizeof(MUINT32)) == 0) {
+		 *	if ((pid > (PAGE_SIZE/sizeof(MINT32))) || (pid < 0)) {
+		 *		LOG_ERR("invalid pid\n");
+		 *		Ret = -EFAULT;
+		 *		break;
+		 *	}
+		 *	spin_lock(&(IspInfo.SpinLockIsp));
+		 *	getTaskInfo((pid_t) pid);
+		 *	sendSignal();
+		 *	LOG_DBG("[ISP_KERNEL_MOTIFY_SIGNAL_TEST]:0x08%x	", pid);
+		 *	spin_unlock(&(IspInfo.SpinLockIsp));
+		*} else {
+		*	LOG_ERR("copy_from_user	failed");
+		*	Ret = -EFAULT;
+		*}
+		*/
+		LOG_ERR("Unsupport Cmd: ISP_SET_USER_PID");
+		Ret = -EFAULT;
 		break;
 #endif
 	case ISP_BUFFER_CTRL:
@@ -10737,16 +10739,17 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 #endif
 	case ISP_WAIT_DUMPIMEM:
-		Ret = ISP_WaitImemDump(pUserInfo->Pid);
-		break;
+		/* Ret = ISP_WaitImemDump(pUserInfo->Pid); */
+		/* break; */
 	case ISP_WRITE_DUMPIMEM:
-		if (copy_from_user(&type, (void *)Param, sizeof(MINT32)) == 0)	{
-			Ret = ISP_WriteImemDump(pUserInfo->Pid, type);
-		} else{
-			LOG_ERR("copy_from_user	failed");
-			Ret	= -EFAULT;
-		}
-		break;
+		/* if (copy_from_user(&type, (void *)Param, sizeof(MINT32)) == 0)	{
+		*	Ret = ISP_WriteImemDump(pUserInfo->Pid, type);
+		*} else{
+		*	LOG_ERR("copy_from_user	failed");
+		*	Ret	= -EFAULT;
+		*}
+		*break;
+		*/
 	default:
 		LOG_ERR("Unknown Cmd(%d)", Cmd);
 		Ret = -EPERM;
