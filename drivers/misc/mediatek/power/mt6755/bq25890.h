@@ -142,8 +142,8 @@
 
 
 /* CON6 */
-#define CON6_2XTMR_EN_MASK   0x3F
-#define CON6_2XTMR_EN_SHIFT  2
+#define CON6_VREG_MASK   0x3F
+#define CON6_VREG_SHIFT  2
 
 #define CON6_BATLOWV_MASK   0x1
 #define CON6_BATLOWV_SHIFT  1
@@ -368,6 +368,7 @@ unsigned int bq25890_get_boost_state(void);
 unsigned int bq25890_get_chrg_fault_state(void);
 unsigned int bq25890_get_bat_state(void);
 unsigned int bq25890_get_ichg(void);
+unsigned int bq25890_get_reg_ichg(void);
 
 /* CON0D */
 extern void bq25890_set_FORCE_VINDPM(unsigned int val);

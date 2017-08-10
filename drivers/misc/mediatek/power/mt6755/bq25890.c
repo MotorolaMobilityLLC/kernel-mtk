@@ -98,6 +98,7 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 unsigned char bq25890_reg[bq25890_REG_NUM] = { 0 };
 
 static DEFINE_MUTEX(bq25890_i2c_access);
+static DEFINE_MUTEX(bq25890_access_mutex);
 
 int g_bq25890_hw_exist = 0;
 
@@ -272,6 +273,7 @@ unsigned int bq25890_config_interface(unsigned char RegNum, unsigned char val, u
 	unsigned char bq25890_reg_ori = 0;
 	unsigned int ret = 0;
 
+	mutex_lock(&bq25890_access_mutex);
 	ret = bq25890_read_byte(RegNum, &bq25890_reg);
 
 	bq25890_reg_ori = bq25890_reg;
@@ -279,6 +281,7 @@ unsigned int bq25890_config_interface(unsigned char RegNum, unsigned char val, u
 	bq25890_reg |= (val << SHIFT);
 
 	ret = bq25890_write_byte(RegNum, bq25890_reg);
+	mutex_unlock(&bq25890_access_mutex);
 	battery_log(BAT_LOG_FULL, "[bq25890_config_interface] write Reg[%x]=0x%x from 0x%x\n", RegNum,
 		    bq25890_reg, bq25890_reg_ori);
 
@@ -543,8 +546,8 @@ void bq25890_set_vreg(unsigned int val)
 
 	ret = bq25890_config_interface((unsigned char) (bq25890_CON6),
 				       (unsigned char) (val),
-				       (unsigned char) (CON6_2XTMR_EN_MASK),
-				       (unsigned char) (CON6_2XTMR_EN_SHIFT)
+				       (unsigned char) (CON6_VREG_MASK),
+				       (unsigned char) (CON6_VREG_SHIFT)
 	    );
 }
 
@@ -555,7 +558,7 @@ unsigned int bq25890_get_vreg(void)
 
 	ret = bq25890_read_interface((unsigned char) (bq25890_CON6),
 				     (&val),
-				     (unsigned char) (CON6_2XTMR_EN_MASK), (unsigned char) (CON6_2XTMR_EN_SHIFT)
+				     (unsigned char) (CON6_VREG_MASK), (unsigned char) (CON6_VREG_SHIFT)
 	    );
 	return val;
 }

@@ -48,6 +48,7 @@
 #include <linux/kernel.h>
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/battery_common.h>
+#include <mt-plat/battery_meter_hal.h>
 #include <mt-plat/charging.h>
 #include <mach/mt_charging.h>
 #include <mt-plat/mt_boot.h>
@@ -221,14 +222,14 @@ unsigned int get_constant_voltage(void)
 		if (vbat_bif < vbat_auxadc && vbat_bif != 0) {
 			vbat = vbat_bif;
 			bif_ok = 1;
-			battery_log(BAT_LOG_FULL, "[BIF]using vbat_bif=%d\n with dV=%dmV", vbat,
+			battery_log(BAT_LOG_CRTI, "[BIF]using vbat_bif=%d with dV=%dmV", vbat,
 				    (vbat_bif - vbat_auxadc));
 		} else {
 			vbat = vbat_auxadc;
 			if (i < 5)
 				i++;
 			else {
-				battery_log(BAT_LOG_FULL,
+				battery_log(BAT_LOG_CRTI,
 					    "[BIF]using vbat_auxadc=%d, check vbat_bif=%d\n", vbat,
 					    vbat_bif);
 				bif_ok = 0;
@@ -814,7 +815,7 @@ static void battery_pump_express_algorithm_start(void)
 			}
 		}
 		/*Set VINDPM after Vbus voltage is set or reset */
-		switch_charger_set_vindpm(charger_vol-1000);
+		switch_charger_set_vindpm(charger_vol - 1000);
 
 #endif
 		battery_log(BAT_LOG_CRTI,
@@ -823,7 +824,7 @@ static void battery_pump_express_algorithm_start(void)
 
 		battery_log(BAT_LOG_CRTI, "[PE+]mtk_ta_algorithm() end\n");
 	} else {
-		battery_log(BAT_LOG_FULL, "[PE+]Not a TA charger, bypass TA algorithm\n");
+		battery_log(BAT_LOG_CRTI, "[PE+]Not a TA charger, bypass TA algorithm\n");
 #if defined(TA_12V_SUPPORT)
 		batt_cust_data.v_charger_max = V_CHARGER_MAX;
 		chr_ovp_en = 1;

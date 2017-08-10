@@ -4433,9 +4433,10 @@ static void battery_shutdown(struct platform_device *dev)
 {
 #if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 	CHR_CURRENT_ENUM input_current = CHARGE_CURRENT_70_00_MA;
-
-	battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &input_current);
-	battery_log(BAT_LOG_CRTI, "[PE+] Resetting TA adapter before shutdown\n");
+	if (is_ta_connect == KAL_TRUE) {
+		battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT, &input_current);
+		battery_log(BAT_LOG_CRTI, "[PE+] Resetting TA adapter before shutdown\n");
+	}
 #endif
 
 }
