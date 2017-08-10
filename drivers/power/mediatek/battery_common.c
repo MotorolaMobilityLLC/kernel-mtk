@@ -3565,7 +3565,7 @@ void charger_plug_out_sw_mode(void)
 /*extern unsigned int upmu_get_reg_value(unsigned int reg);*/
 void hv_sw_mode(void)
 {
-	kal_bool hv_status;
+	kal_bool hv_status = KAL_FALSE;
 	unsigned int charging_enable;
 
 	if (upmu_is_chr_det() == KAL_TRUE)

@@ -1441,7 +1441,7 @@ signed int fgauge_read_r_bat_by_v(signed int voltage)
 	profile_p = fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t);
 	if (profile_p == NULL) {
 		bm_print(BM_LOG_CRTI, "[FGADC] fgauge get R-Table profile : fail !\r\n");
-		return (profile_p + 0)->resistance;
+		return 170;
 	}
 
 	saddles = fgauge_get_saddles_r_table();
