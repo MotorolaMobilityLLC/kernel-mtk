@@ -1131,7 +1131,7 @@ struct sched_avg {
 	 * is runnable on a rq. It is based on both runnable_avg_sum and the
 	 * weight of the task.
 	 */
-	unsigned long load_avg_contrib, utilization_avg_contrib, loadwop_avg;
+	unsigned long load_avg_contrib, utilization_avg_contrib, loadwop_avg_contrib;
 	/*
 	 * These sums represent an infinite geometric series and so are bound
 	 * above by 1024/(1-y).  Thus we only need a u32 to store them for all
@@ -3171,59 +3171,5 @@ static inline unsigned long rlimit_max(unsigned int limit)
 {
 	return task_rlimit_max(current, limit);
 }
-
-enum fbq_type { regular, remote, all };
-
-struct lb_env {
-	struct sched_domain	*sd;
-
-	struct rq		*src_rq;
-	int			src_cpu;
-
-	int			dst_cpu;
-	struct rq		*dst_rq;
-
-	struct cpumask		*dst_grpmask;
-	int			new_dst_cpu;
-	enum cpu_idle_type	idle;
-	long			imbalance;
-	/* The set of CPUs under consideration for load-balancing */
-	struct cpumask		*cpus;
-
-	unsigned int		flags;
-
-	unsigned int		loop;
-	unsigned int		loop_break;
-	unsigned int		loop_max;
-
-	enum fbq_type		fbq_type;
-	struct list_head	tasks;
-#ifdef CONFIG_MT_LOAD_BALANCE_ENHANCEMENT
-	int			mt_ignore_cachehot_in_idle;
-#endif
-};
-
-#define LBF_ALL_PINNED	0x01
-#define LBF_NEED_BREAK	0x02
-#define LBF_DST_PINNED  0x04
-#define LBF_SOME_PINNED	0x08
-
-#ifdef CONFIG_MTK_SCHED_TRACERS
-#define LB_RESET	0
-#define LB_AFFINITY	0x10
-#define LB_BUDDY	0x20
-#define LB_FORK		0x30
-#define LB_CMP_SHIFT	8
-#define LB_CMP		0x4000
-#define LB_SMP_SHIFT	16
-#define LB_SMP		0x500000
-#define LB_HMP_SHIFT	24
-#define LB_HMP		0x60000000
-#endif
-
-#ifdef CONFIG_FAIR_GROUP_SCHED
-/* An entity is a task if it doesn't "own" a runqueue */
-#define entity_is_task(se)      (!se->my_q)
-#endif
 
 #endif
