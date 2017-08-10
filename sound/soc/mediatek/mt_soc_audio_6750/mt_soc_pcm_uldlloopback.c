@@ -95,7 +95,6 @@ static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
 static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	int err = 0;
 	int ret = 0;
 
 	pr_warn("%s\n", __func__);
@@ -108,18 +107,21 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 	}
 
 	runtime->hw = mtk_uldlloopback_hardware;
-	memcpy((void *)(&(runtime->hw)), (void *)&mtk_uldlloopback_hardware ,
+	memcpy((void *)(&(runtime->hw)), (void *)&mtk_uldlloopback_hardware,
 	       sizeof(struct snd_pcm_hardware));
 
 	ret = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE,
 					 &constraints_sample_rates);
+	if (ret < 0)
+		pr_warn("snd_pcm_hw_constraint_list failed\n");
+
 	ret = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
 
 	if (ret < 0)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
 	/* print for hw pcm information */
-	pr_warn("mtk_uldlloopback_open runtime rate = %d channels = %d\n",
+	pr_warn("mtk_uldlloopback_open runtime rate = %d, channels = %d\n",
 	       runtime->rate, runtime->channels);
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
@@ -127,10 +129,10 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_voice_constraints\n");
 
-	if (err < 0) {
+	if (ret < 0) {
 		pr_err("mtk_uldlloopbackpcm_close\n");
 		mtk_uldlloopbackpcm_close(substream);
-		return err;
+		return ret;
 	}
 	pr_warn("mtk_uldlloopback_open return\n");
 	return 0;
@@ -140,7 +142,7 @@ static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream)
 {
 	pr_warn("%s\n", __func__);
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_err("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
+		pr_err("%s with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 		AudDrv_ADC_Clk_Off();
 		AudDrv_Clk_Off();
 		return 0;

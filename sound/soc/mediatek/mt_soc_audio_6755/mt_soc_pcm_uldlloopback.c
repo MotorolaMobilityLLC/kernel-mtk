@@ -97,11 +97,11 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
+	pr_warn("%s\n", __func__);
 	AudDrv_Clk_On();
 	AudDrv_ADC_Clk_On();
-	pr_warn("%s\n", __func__);
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_err("%s  with mtk_uldlloopback_open\n", __func__);
+		pr_err("%s with mtk_uldlloopback_open\n", __func__);
 		runtime->rate = 48000;
 		return 0;
 	}
@@ -121,7 +121,7 @@ static int mtk_uldlloopback_open(struct snd_pcm_substream *substream)
 		pr_warn("snd_pcm_hw_constraint_integer failed\n");
 
 	/* print for hw pcm information */
-	pr_warn("mtk_uldlloopback_open runtime rate = %d channels = %d\n",
+	pr_warn("mtk_uldlloopback_open runtime rate = %d, channels = %d\n",
 	       runtime->rate, runtime->channels);
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
@@ -142,7 +142,7 @@ static int mtk_uldlloopbackpcm_close(struct snd_pcm_substream *substream)
 {
 	pr_warn("%s\n", __func__);
 	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-		pr_err("%s  with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
+		pr_err("%s with SNDRV_PCM_STREAM_CAPTURE\n", __func__);
 		AudDrv_ADC_Clk_Off();
 		AudDrv_Clk_Off();
 		return 0;
