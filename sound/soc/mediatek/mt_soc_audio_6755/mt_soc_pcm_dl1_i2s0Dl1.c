@@ -393,8 +393,8 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 
 		/* stop I2S output */
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2, false);
-
-		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false)
+		if ((GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) == false)
+			&& (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_4PIN_IN_OUT) == false))
 			Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
 
 		RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL1, substream);
