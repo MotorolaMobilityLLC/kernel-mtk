@@ -557,7 +557,9 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		if (copy_from_user(&job, (void *)param, sizeof(cmdqJobStruct)))
 			return -EFAULT;
 
-		if (job.command.blockSize > CMDQ_MAX_COMMAND_SIZE)
+		if (job.command.regRequest.count > CMDQ_MAX_DUMP_REG_COUNT ||
+			!job.command.blockSize ||
+			job.command.blockSize > CMDQ_MAX_COMMAND_SIZE)
 			return -EINVAL;
 
 		/* backup */
