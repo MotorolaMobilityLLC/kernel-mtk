@@ -38,6 +38,9 @@ struct pasrvec {
 
 /* #define DEBUG_FOR_CHANNEL_SWITCH */
 
+/* Query bitmask of DRAM segments in a channel */
+extern unsigned long query_channel_segment_bits(void);
+
 /* MTKPASR internal functions */
 extern int __init mtkpasr_init_range(unsigned long start_pfn, unsigned long end_pfn, unsigned long *bank_pfns);
 
