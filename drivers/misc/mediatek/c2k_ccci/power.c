@@ -123,8 +123,6 @@ static DEFINE_RAW_SPINLOCK(rslock);
 void c2k_reset_modem(void)
 {
 	unsigned long flags;
-	int index;
-	struct sdio_modem_port *port;
 
 	if (atomic_add_return(1, &reset_on_going) > 1) {
 		pr_debug("[C2K] %s: one reset on going, %d\n", __func__,
@@ -144,11 +142,6 @@ void c2k_reset_modem(void)
 	wake_up_all(&cmdata->modem->wait_tx_done_q);
 
 	modem_pre_stop();
-
-	for (index = 0; index < SDIO_TTY_NR; index++) {
-		port = cmdata->modem->port[index];
-		cancel_work_sync(&port->write_work);
-	}
 
 	c2k_wake_host(0);
 
