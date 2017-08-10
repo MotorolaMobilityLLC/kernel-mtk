@@ -2991,10 +2991,17 @@ void get_devinfo(struct eem_devinfo *p)
 	val[6] = 0x00000000;
 #endif
 
+	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	if ((p->CPU0_BDES != 0) && (p->CPU1_BDES != 0))
+		val[7] = 0x01;
+	if ((p->CPU0_MTDES != 0) && (p->CPU1_MTDES != 0))
+		val[7] = val[7] | (0x01<<8);
+	#else
 	if ((p->CPU0_BDES != 0) && (p->CPU1_BDES != 0) && (p->GPU_BDES != 0))
 		val[7] = 0x01;
 	if ((p->CPU0_MTDES != 0) && (p->CPU1_MTDES != 0) && (p->GPU_MTDES != 0))
 		val[7] = val[7] | (0x01<<8);
+	#endif
 
 	eem_debug("M_HW_RES0 = 0x%X\n", val[0]);
 	eem_debug("M_HW_RES1 = 0x%X\n", val[1]);
