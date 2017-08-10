@@ -567,14 +567,14 @@ void mt_afe_disable_i2s_adc(void)
 		mt_afe_set_reg(AFE_I2S_CON2, 0x0, 0x1);
 }
 
-void mt_afe_set_i2s_adc2_in(uint32_t sample_rate)
+void mt_afe_set_i2s_adc2_in(uint32_t sample_rate, uint32_t clock_mode)
 {
 	uint32_t reg_value = 0;
 
 	reg_value |= (MT_AFE_LR_SWAP_NO_SWAP << 31);
 	reg_value |= (8 << 24);
 	reg_value |= (MT_AFE_BCK_INV_NO_INVERSE << 23);
-	reg_value |= (MT_AFE_NORMAL_CLOCK << 12);
+	reg_value |= (clock_mode << 12);
 	reg_value |= (mt_afe_rate_to_idx(sample_rate) << 8);
 	reg_value |= (MT_AFE_I2S_FORMAT_I2S << 3);
 	reg_value |= (MT_AFE_I2S_WLEN_16BITS << 1);

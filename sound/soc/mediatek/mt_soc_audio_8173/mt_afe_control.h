@@ -45,7 +45,7 @@ void mt_afe_disable_mtkif_adc(void);
 void mt_afe_set_i2s_adc_in(uint32_t sample_rate, uint32_t clock_mode);
 void mt_afe_enable_i2s_adc(void);
 void mt_afe_disable_i2s_adc(void);
-void mt_afe_set_i2s_adc2_in(uint32_t sample_rate);
+void mt_afe_set_i2s_adc2_in(uint32_t sample_rate, uint32_t clock_mode);
 void mt_afe_enable_i2s_adc2(void);
 void mt_afe_disable_i2s_adc2(void);
 
