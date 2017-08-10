@@ -186,8 +186,11 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 	prScanInfo->fgGScnConfigSet = FALSE;
 	prScanInfo->fgGScnParamSet = FALSE;
 	prScanInfo->prPscnParam = kalMemAlloc(sizeof(CMD_SET_PSCAN_PARAM), VIR_MEM_TYPE);
-	if (prScanInfo->prPscnParam)
-		kalMemZero(prScanInfo->prPscnParam, sizeof(CMD_SET_PSCAN_PARAM));
+	if (!(prScanInfo->prPscnParam)) {
+		DBGLOG(SCN, ERROR, "Alloc memory for CMD_SET_PSCAN_PARAM fail\n");
+		return;
+	}
+	kalMemZero(prScanInfo->prPscnParam, sizeof(CMD_SET_PSCAN_PARAM));
 
 	prScanInfo->eCurrentPSCNState = PSCN_IDLE;
 #endif
@@ -195,9 +198,15 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 #if CFG_SUPPORT_GSCN
 	prScanInfo->prGscnFullResult = kalMemAlloc(offsetof(PARAM_WIFI_GSCAN_FULL_RESULT, ie_data)
 			+ CFG_IE_BUFFER_SIZE, VIR_MEM_TYPE);
-	if (prScanInfo->prGscnFullResult)
-		kalMemZero(prScanInfo->prGscnFullResult,
-			offsetof(PARAM_WIFI_GSCAN_FULL_RESULT, ie_data) + CFG_IE_BUFFER_SIZE);
+	if (!(prScanInfo->prGscnFullResult)) {
+#if CFG_SUPPORT_SCN_PSCN
+		kalMemFree(prScanInfo->prPscnParam, VIR_MEM_TYPE, sizeof(CMD_SET_PSCAN_PARAM));
+#endif
+		DBGLOG(SCN, ERROR, "Alloc memory for PARAM_WIFI_GSCAN_FULL_RESULT fail\n");
+		return;
+	}
+	kalMemZero(prScanInfo->prGscnFullResult,
+		offsetof(PARAM_WIFI_GSCAN_FULL_RESULT, ie_data) + CFG_IE_BUFFER_SIZE);
 #endif
 
 	cnmTimerInitTimer(prAdapter,

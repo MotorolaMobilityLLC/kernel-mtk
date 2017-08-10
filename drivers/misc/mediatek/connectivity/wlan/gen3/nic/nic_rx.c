@@ -1588,7 +1588,7 @@ UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			mtk_cfg80211_vendor_event_full_scan_results(wiphy,
 					prGlueInfo->prDevHandler->ieee80211_ptr,
 					prScanInfo->prGscnFullResult,
-					sizeof(PARAM_WIFI_GSCAN_FULL_RESULT) + ie_len);
+					offsetof(PARAM_WIFI_GSCAN_FULL_RESULT, ie_data) + ie_len);
 		}
 		break;
 
