@@ -49,6 +49,8 @@ enum {
 
 	AFE_SGEN_O0O1,
 	AFE_SGEN_O2,
+	AFE_SGEN_O3,
+	AFE_SGEN_O4,
 	AFE_SGEN_O3O4,
 	AFE_SGEN_O5O6,
 	AFE_SGEN_O7O8,
@@ -290,6 +292,12 @@ static int afe_sinegen_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	case AFE_SGEN_O2:
 		mt_afe_enable_sinegen_hw(INTER_CONN_O02, MT_AFE_MEMIF_DIRECTION_OUTPUT);
 		break;
+	case AFE_SGEN_O3:
+		mt_afe_set_reg(AFE_SGEN_CON0, 0x2e8c28c2, 0xffffffff);
+		break;
+	case AFE_SGEN_O4:
+		mt_afe_set_reg(AFE_SGEN_CON0, 0x2d8c28c2, 0xffffffff);
+		break;
 	case AFE_SGEN_O3O4:
 		mt_afe_enable_sinegen_hw(INTER_CONN_O03, MT_AFE_MEMIF_DIRECTION_OUTPUT);
 		break;
@@ -365,6 +373,8 @@ static const char *const afe_sgen_function[] = {
 	ENUM_TO_STR(AFE_SGEN_I21I22),
 	ENUM_TO_STR(AFE_SGEN_O0O1),
 	ENUM_TO_STR(AFE_SGEN_O2),
+	ENUM_TO_STR(AFE_SGEN_O3),
+	ENUM_TO_STR(AFE_SGEN_O4),
 	ENUM_TO_STR(AFE_SGEN_O3O4),
 	ENUM_TO_STR(AFE_SGEN_O5O6),
 	ENUM_TO_STR(AFE_SGEN_O7O8),
