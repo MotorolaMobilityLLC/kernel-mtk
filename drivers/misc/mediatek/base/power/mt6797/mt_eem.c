@@ -960,6 +960,7 @@ static unsigned int cpu_speed;
 	#include "spm_v2/mt_spm.h"
 	#include "../../../power/mt6797/da9214.h"
 	#include "../../../power/mt6797/fan53555.h"
+	#include "mt_idvfs.h"
 #ifdef CONFIG_REGULATOR_RT5735
 	#include "../../../power/mt6797/mtk_gpuregulator_intf.h"
 #endif
@@ -1259,6 +1260,9 @@ enum {
 
 #ifdef CONFIG_OF
 void __iomem *eem_base;
+void __iomem *g_semaphore_base;
+static unsigned long g_reg_sema0_m0;
+static unsigned long g_reg_cspm_poweron_en;
 static u32 eem_irq_number;
 #endif
 
@@ -1565,6 +1569,46 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 static struct notifier_block __refdata _mt_eem_cpu_notifier = {
 	.notifier_call = _mt_eem_cpu_CB,
 };
+
+static int eem_get_semaphore(void)
+{
+	int i;
+
+	eem_debug("eem_get_semaphore+");
+
+	/* mt6797-dvfsp enable internal CG bit */
+	eem_write(g_reg_cspm_poweron_en, 0x0b160001);
+
+
+	eem_debug("0x1001AXXX sema get %lx\n", g_reg_sema0_m0);
+
+	for (i = 0; i < 200; i++) {
+		eem_write(g_reg_sema0_m0, 0x1);
+		if (eem_read(g_reg_sema0_m0) & 0x1)
+			return 0;
+
+		udelay(10);
+	}
+
+	eem_error("0x1001AXXX SEMA_USER GET TIMEOUT");
+	BUG_ON(1);
+
+	return -EBUSY;
+}
+
+/* HW semaphore0 M0 release.
+ *  For ATF, SPM and kernel protecting 0x1001AXXX access
+ */
+static void eem_release_semaphore(void)
+{
+	eem_debug("0x1001AXXX sema release\n");
+
+	if (eem_read(g_reg_sema0_m0) & 0x1) {
+		eem_write(g_reg_sema0_m0, 0x1);
+		BUG_ON(eem_read(g_reg_sema0_m0) & 0x1);	/* semaphore release failed */
+	}
+}
+
 #endif
 
 /**
@@ -4474,6 +4518,14 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 				mb(); /* SRAM writing */
 				mt_ptp_unlock(&flags);
 
+				/* Set semaphore and adjust back frequence to original */
+				eem_error("The freq percentage is : (%d)\n",
+					(*(recordTbl + (48 * 8) + 5) & 0x3FFFF) * 100 / 2048);
+
+				eem_get_semaphore();
+				BigIDVFSFreq((*(recordTbl + (48 * 8) + 5) & 0x3FFFF) * 100 / 2048);
+				eem_release_semaphore();
+
 				swReq = 0;
 				while ((mt_secure_call(0x8200035F, 0x10222498, 0, 0) >> 1) >
 					(*(recordTbl + (48 * 8) + 5) & 0x3FFFF)) {
@@ -6291,6 +6343,16 @@ int __init eem_init(void)
 		return 0;
 	}
 	eem_debug("[EEM] new_eem_val=%d, ctrl_EEM_Enable=%d\n", new_eem_val, ctrl_EEM_Enable);
+
+	/* DVFSP HW semaphore init. */
+	{
+		g_semaphore_base = ioremap_nocache(0x11015000, 0x1000);
+		g_reg_sema0_m0 = (unsigned long)g_semaphore_base + (0x410);
+		g_reg_cspm_poweron_en = (unsigned long)g_semaphore_base;
+		eem_write(g_reg_cspm_poweron_en, 0x0b160001);	/* mt6797-dvfsp enable internal CG bit */
+		eem_error("g_reg_sema0_m0:0x%lx\n", (unsigned long)g_reg_sema0_m0);
+		eem_error("g_reg_cspm_poweron_en:0x%lx\n", (unsigned long)g_reg_cspm_poweron_en);
+	}
 #endif
 
 	get_devinfo(&eem_devinfo);
