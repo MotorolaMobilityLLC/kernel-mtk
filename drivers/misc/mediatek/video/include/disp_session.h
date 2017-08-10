@@ -319,6 +319,8 @@ typedef struct disp_session_info_t {
 	unsigned int vsyncFPS;
 	unsigned int physicalWidth;
 	unsigned int physicalHeight;
+	unsigned int physicalWidthUm;	/* length: um, for more precise precision */
+	unsigned int physicalHeightUm;	/* length: um, for more precise precision */
 	unsigned int isConnected;
 	unsigned int isHDCPSupported;
 	unsigned int isOVLDisabled;
