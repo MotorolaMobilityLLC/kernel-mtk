@@ -654,7 +654,7 @@ BOOLEAN wlanoidGetChannelInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 puPartialScan
 	if ((scan_req_t->n_channels != 0) && (scan_req_t->channels != NULL)) {
 
 		channel_counts = scan_req_t->n_channels;
-		DBGLOG(OID, INFO, "partional scan channel_counts=%d\n", channel_counts);
+		DBGLOG(OID, TRACE, "scan channel number: n_channels=%d\n", channel_counts);
 
 		if (channel_counts > 25)
 			return TRUE;
@@ -708,7 +708,7 @@ BOOLEAN wlanoidGetChannelInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 puPartialScan
 			i++;
 		}
 	}
-	DBGLOG(INIT, INFO, "set channel i=%d\n", i);
+	DBGLOG(OID, INFO, "Partial Scan: set channel i=%d\n", i);
 	if (i > 0) {
 		PartialScanChannel->ucChannelListNum = i;
 		/*ScanReqMsg->eScanChannel = SCAN_CHANNEL_SPECIFIED;*/
@@ -800,12 +800,12 @@ wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter,
 #if CFG_SUPPORT_RDD_TEST_MODE
 	if (prAdapter->prGlueInfo->rRegInfo.u4RddTestMode) {
 		if ((prAdapter->fgEnOnlineScan == TRUE) && (prAdapter->ucRddStatus)) {
-			if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED)
+			if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED) {
 				partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
 				if (partial_result == FALSE)
 					return WLAN_STATUS_FAILURE;
 				aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
-			else
+			} else
 				return WLAN_STATUS_FAILURE;
 		} else
 			return WLAN_STATUS_FAILURE;
@@ -813,11 +813,15 @@ wlanoidSetBssidListScanAdv(IN P_ADAPTER_T prAdapter,
 #endif
 	{
 		if (prAdapter->fgEnOnlineScan == TRUE) {
+			if (prScanRequest == NULL)
+				return WLAN_STATUS_FAILURE;
 			partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
 			if (partial_result == FALSE)
 				return WLAN_STATUS_FAILURE;
 			aisFsmScanRequestAdv(prAdapter, ucSsidNum, rSsid, pucIe, u4IeLength);
 		} else if (kalGetMediaStateIndicated(prAdapter->prGlueInfo) != PARAM_MEDIA_STATE_CONNECTED) {
+			if (prScanRequest == NULL)
+				return WLAN_STATUS_FAILURE;
 			partial_result = wlanoidGetChannelInfo(prAdapter, prScanRequest->puPartialScanReq);
 			if (partial_result == FALSE)
 				return WLAN_STATUS_FAILURE;
