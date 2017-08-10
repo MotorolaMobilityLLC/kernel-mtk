@@ -327,12 +327,9 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			offset = urb->iso_frame_desc[i].offset;
 			dwLength = urb->iso_frame_desc[i].length;
 			/* If interrupt on complete ? */
-			bIsIoc = (i == (urb->number_of_packets-1)) ? true : false;
+			bIsIoc = (i == (urb->number_of_packets-1)) ? 1 : 0;
 			DBG(4, "mtk_qmu_insert_task\n");
-			if (i == (urb->number_of_packets-1))
-				mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, 1);
-			else
-				mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, 0);
+			mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
 
 			mtk_qmu_resume(hw_ep->epnum, isRx);
 		}
@@ -367,15 +364,12 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 				BUG();
 			}
 			DBG(4, "urb->transfer_buffer_length : %d\n", urb->transfer_buffer_length);
+
 			dwLength = urb->transfer_buffer_length;
 			bIsIoc = 1;
-			if (isRx) {
-				mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
-				mtk_qmu_resume(hw_ep->epnum, isRx);
-			} else {
-				mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
-				mtk_qmu_resume(hw_ep->epnum, isRx);
-			}
+
+			mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
+			mtk_qmu_resume(hw_ep->epnum, isRx);
 		} else {
 			/*reuse isoc urb->unmber_of_packets*/
 			urb->number_of_packets =
@@ -388,20 +382,16 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			for (i = 0; i < urb->number_of_packets; i++) {
 				offset = QMU_RX_SPLIT_BLOCK_SIZE*i;
 				dwLength = QMU_RX_SPLIT_BLOCK_SIZE;
+
 				/* If interrupt on complete ? */
-				bIsIoc = (i == (urb->number_of_packets-1)) ? true : false;
+				bIsIoc = (i == (urb->number_of_packets-1)) ? 1 : 0;
 				dwLength = (i == (urb->number_of_packets-1)) ?
 					((urb->transfer_buffer_length) % QMU_RX_SPLIT_BLOCK_SIZE) : dwLength;
 				if (dwLength == 0)
 					dwLength = QMU_RX_SPLIT_BLOCK_SIZE;
 
-				if (isRx) {
-					mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
-					mtk_qmu_resume(hw_ep->epnum, isRx);
-				} else {
-					mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
-					mtk_qmu_resume(hw_ep->epnum, isRx);
-				}
+				mtk_qmu_insert_task(hw_ep->epnum, isRx, pBuffer+offset, dwLength, 0, bIsIoc);
+				mtk_qmu_resume(hw_ep->epnum, isRx);
 			}
 		}
 	}
