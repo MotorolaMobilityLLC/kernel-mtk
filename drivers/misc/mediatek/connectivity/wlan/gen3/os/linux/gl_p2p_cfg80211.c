@@ -1551,6 +1551,13 @@ int mtk_p2p_cfg80211_connect(struct wiphy *wiphy, struct net_device *dev, struct
 		if (mtk_Netdev_To_RoleIdx(prGlueInfo->prP2PInfo, dev, &ucRoleIdx) < 0)
 			break;
 
+		if (prGlueInfo->prAdapter->aprBssInfo[STA_TYPE_P2P_INDEX] &&
+			(prGlueInfo->prAdapter->aprBssInfo[STA_TYPE_P2P_INDEX]->eConnectionState
+			== PARAM_MEDIA_STATE_CONNECTED)) {
+			DBGLOG(P2P, ERROR, "Severe state error, pls check it\n");
+			return -EFAULT;
+		}
+
 		prConnReqMsg =
 		    (P_MSG_P2P_CONNECTION_REQUEST_T) cnmMemAlloc(prGlueInfo->prAdapter,
 								 RAM_TYPE_MSG,
