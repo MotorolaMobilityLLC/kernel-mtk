@@ -102,6 +102,7 @@
 #include "AudDrv_Common.h"
 #include "AudDrv_Common_func.h"
 #include "AudDrv_Gpio.h"
+#include "mt_soc_pcm_platform.h"
 
 static DEFINE_SPINLOCK(afe_control_lock);
 static DEFINE_SPINLOCK(afe_sram_control_lock);
@@ -134,12 +135,7 @@ AFE_DL_ABNORMAL_CONTROL_T AFE_dL_Abnormal_context;
 
 /* static AudioAfeRegCache mAudioRegCache; */
 static AudioSramManager mAudioSramManager;
-const unsigned int AudioSramPlaybackFullSize = 1024 * 32;
-const unsigned int AudioSramPlaybackPartialSize = 1024 * 32;
-const unsigned int AudioDramPlaybackSize = 1024 * 32;
 
-const size_t AudioSramCaptureSize = 1024 * 32;
-const size_t AudioDramCaptureSize = 1024 * 32;
 const size_t AudioInterruptLimiter = 100;
 static int irqcount;
 
@@ -248,9 +244,9 @@ void ClearSramState(unsigned int State)
 
 unsigned int GetPLaybackSramFullSize(void)
 {
-	unsigned int Sramsize = AudioSramPlaybackFullSize;
+	unsigned int Sramsize = AUDIO_SRAM_PLAYBACK_FULL_SIZE;
 
-	if (AudioSramPlaybackFullSize > AFE_INTERNAL_SRAM_SIZE)
+	if (AUDIO_SRAM_PLAYBACK_FULL_SIZE > AFE_INTERNAL_SRAM_SIZE)
 		Sramsize = AFE_INTERNAL_SRAM_SIZE;
 
 	return Sramsize;
@@ -259,7 +255,7 @@ unsigned int GetPLaybackSramFullSize(void)
 
 unsigned int GetPLaybackSramPartial(void)
 {
-	unsigned int Sramsize = AudioSramPlaybackPartialSize;
+	unsigned int Sramsize = AUDIO_SRAM_PLAYBACK_PARTIAL_SIZE;
 
 	return Sramsize;
 }
@@ -267,13 +263,13 @@ unsigned int GetPLaybackSramPartial(void)
 
 unsigned int GetPLaybackDramSize(void)
 {
-	return AudioDramPlaybackSize;
+	return AUDIO_DRAM_PLAYBACK_SIZE;
 }
 
 
 size_t GetCaptureSramSize(void)
 {
-	unsigned int Sramsize = AudioSramCaptureSize;
+	unsigned int Sramsize = AUDIO_SRAM_CAPTURE_SIZE;
 
 	return Sramsize;
 }
@@ -281,7 +277,7 @@ size_t GetCaptureSramSize(void)
 
 size_t GetCaptureDramSize(void)
 {
-	return AudioDramCaptureSize;
+	return AUDIO_DRAM_CAPTURE_SIZE;
 }
 
 

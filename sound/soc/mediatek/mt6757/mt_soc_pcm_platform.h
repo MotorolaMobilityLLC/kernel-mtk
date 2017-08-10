@@ -16,11 +16,11 @@
  *
  * Filename:
  * ---------
- *   mt_soc_pcm_common
+ *   mt_soc_pcm_platform
  *
  * Project:
  * --------
- *   mt_soc_common function
+ *   mt_soc_pcm_platform function
  *
  * Description:
  * ------------
@@ -97,7 +97,7 @@
 /* #include <asm/mach-types.h> */
 
 /* #define EFUSE_HP_TRIM */
-#define CHIP_SRAM_SIZE (36*1024)
+#define CHIP_SRAM_SIZE (60*1024)
 
 /*
      PCM buffer size and period size setting
@@ -106,13 +106,14 @@
 #define BT_DAI_MIN_PERIOD_SIZE     1
 #define BT_DAI_MAX_PERIOD_SIZE     BT_DAI_MAX_BUFFER_SIZE
 
-#define Dl1_MAX_BUFFER_SIZE     (32*1024)	/* TODO: KC: see if change to 32k */
+#define Dl1_MAX_BUFFER_SIZE     (48*1024)
 #define Dl1_MIN_PERIOD_SIZE       1
 #define Dl1_MAX_PERIOD_SIZE     Dl1_MAX_BUFFER_SIZE
 
 #define Dl2_MAX_BUFFER_SIZE     (48*1024)
 #define Dl2_MIN_PERIOD_SIZE       1
 #define Dl2_MAX_PERIOD_SIZE     Dl2_MAX_BUFFER_SIZE
+
 #define Dl3_MAX_BUFFER_SIZE     (32*1024)
 #define Dl3_MIN_PERIOD_SIZE       1
 #define Dl3_MAX_PERIOD_SIZE     Dl3_MAX_BUFFER_SIZE
@@ -153,4 +154,10 @@
 #define FM_I2S_MIN_PERIOD_SIZE       1
 #define FM_I2S_MAX_PERIOD_SIZE     MRGRX_MAX_BUFFER_SIZE
 
+#define AUDIO_SRAM_PLAYBACK_FULL_SIZE	Dl1_MAX_BUFFER_SIZE
+#define AUDIO_SRAM_PLAYBACK_PARTIAL_SIZE	Dl1_MAX_BUFFER_SIZE
+#define AUDIO_DRAM_PLAYBACK_SIZE	(1024 * 32)
+
+#define AUDIO_SRAM_CAPTURE_SIZE	(1024 * 32)
+#define AUDIO_DRAM_CAPTURE_SIZE	(1024 * 32)
 #endif

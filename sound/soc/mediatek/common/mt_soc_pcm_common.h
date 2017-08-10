@@ -40,15 +40,16 @@
 #define AUDIO_MT_SOC_COMMON_H
 
 #include "AudDrv_Common.h"
-#include "AudDrv_Def.h"
+#include "AudDrv_Common_func.h"
 #include "AudDrv_Afe.h"
 #include "AudDrv_Ana.h"
 #include "AudDrv_Clk.h"
+#include "AudDrv_Def.h"
 #include "AudDrv_Kernel.h"
 #include "mt_soc_afe_control.h"
-#include "mt_soc_digital_type.h"
 #include "mt_soc_analog_type.h"
-#include "AudDrv_Common_func.h"
+#include "mt_soc_digital_type.h"
+#include "mt_soc_pcm_platform.h"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -132,13 +133,14 @@ define for PCM settings
 #define SOC_NORMAL_USE_PERIODS_MAX     16
 #define SOC_NORMAL_USE_BUFFERSIZE_MAX     (48*1024)	/* TODO: KC: need to reserve 4k for md32 */
 
-#define SOC_HIFI_BUFFER_SIZE (128 * 1024)
+#define SOC_HIFI_BUFFER_SIZE (Dl1_MAX_BUFFER_SIZE * 4)
 
 #define SOC_HIGH_USE_RATE        (SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_192000)
 #define SOC_HIGH_USE_RATE_MIN        8000
 #define SOC_HIGH_USE_RATE_MAX       260000
 #define SOC_HIGH_USE_CHANNELS_MIN    1
 #define SOC_HIGH_USE_CHANNELS_MAX    8
+
 #ifdef AUDIO_ALLOCATE_SMP_RATE_DECLARE
 /* Conventional and unconventional sample rate supported */
 const unsigned int soc_fm_supported_sample_rates[3] = {
