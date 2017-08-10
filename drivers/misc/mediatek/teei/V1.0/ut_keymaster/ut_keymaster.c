@@ -1,35 +1,16 @@
-/**
-
- Copyright (C), 2015-2017,
-
-@file  ut_keymaster.c
-
-@brief this is a keymaster linux kernel driver
-
-@author microtrust
-
-@author chengxin@microturst.com.cn
-
-@version 1.0
-
-@date    2015-10-16
-
-@warning None.
-
-
-@Function
-
- 1. ....
-
- 2. ....
-
-@History
-
-
-@Hsz    2015/10/16     1.0     build this moudle
-*/
-
-
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
 
 #include<linux/kernel.h>
 #include<linux/platform_device.h>

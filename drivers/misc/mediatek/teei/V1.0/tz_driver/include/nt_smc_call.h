@@ -1,12 +1,17 @@
-/***********************************************************
- *  @ file : smc_call.h
- *  @ brief :  monitor call interface for user,
- * this implement  is updated to SMC Calling Convention doc
- * from arm ,Document number: ARM DEN 0028A 2013
- *  @ author: luocl
- *  @ author: Steven Meng
- *  @ copyright microtrust  Corporation
- *************************************************************/
+/*
+ * Copyright (c) 2015-2016 MICROTRUST Incorporated
+ * All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #ifndef SMC_CALL_H_
 #define SMC_CALL_H_
 
