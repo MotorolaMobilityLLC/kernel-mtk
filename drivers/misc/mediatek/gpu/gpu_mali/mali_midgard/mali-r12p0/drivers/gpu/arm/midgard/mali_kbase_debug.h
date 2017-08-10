@@ -76,9 +76,9 @@ struct kbasep_debug_assert_cb {
 #ifdef CONFIG_MALI_DEBUG
 #define KBASEP_DEBUG_ASSERT_OUT(trace, function, ...)\
 		do { \
-			pr_err("Mali<ASSERT>: %s function:%s ", trace, function);\
-			pr_err(__VA_ARGS__);\
-			pr_err("\n");\
+			pr_MTK_err("Mali<ASSERT>: %s function:%s ", trace, function);\
+			pr_MTK_err(__VA_ARGS__);\
+			pr_MTK_err("\n");\
 		} while (false)
 #else
 #define KBASEP_DEBUG_ASSERT_OUT(trace, function, ...) CSTD_NOP()

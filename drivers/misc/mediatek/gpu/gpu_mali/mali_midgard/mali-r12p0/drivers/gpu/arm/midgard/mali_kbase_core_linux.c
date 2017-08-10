@@ -4085,6 +4085,13 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	}
 #endif
 
+		gpsMaliData = kbdev;
+#ifdef ENABLE_COMMON_DVFS
+		ged_dvfs_cal_gpu_utilization_fp = MTKCalGpuUtilization;
+		ged_dvfs_gpu_freq_commit_fp = mtk_gpu_dvfs_commit;
+#endif
+
+
 	dev_info(kbdev->dev,
 			"Probed as %s\n", dev_name(kbdev->mdev.this_device));
 
