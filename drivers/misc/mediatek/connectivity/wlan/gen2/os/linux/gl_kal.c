@@ -38,6 +38,8 @@
 ********************************************************************************
 */
 
+#define ENHANCE_AP_MODE_THROUGHPUT	1
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -4259,6 +4261,9 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	LONG p2pLatestTxBytes, p2pLatestRxBytes, p2pTxDiffBytes, p2pRxDiffBytes;
 	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
 	BOOLEAN needBoostCpu = TRUE;
+#ifdef ENHANCE_AP_MODE_THROUGHPUT
+	BOOLEAN fgIsPureAp = FALSE;
+#endif
 
 	if ((prGlueInfo->ulFlag & GLUE_FLAG_HALT) || (!prAdapter->fgIsP2PRegistered))
 		return;
@@ -4267,6 +4272,11 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	prP2pBssInfo = &prGlueInfo->prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX];
 	prPerMonitor = &prAdapter->rPerMonitor;
 	DBGLOG(SW4, TRACE, "enter kalPerMonHandler\n");
+
+#ifdef ENHANCE_AP_MODE_THROUGHPUT
+	/* Distinguish AP mode from STA mode requirement  */
+	fgIsPureAp = prGlueInfo->prAdapter->rWifiVar.prP2pFsmInfo->fgIsApMode;
+#endif
 
 	latestTxBytes = prGlueInfo->rNetDevStats.tx_bytes;
 	latestRxBytes = prGlueInfo->rNetDevStats.rx_bytes;
@@ -4309,39 +4319,63 @@ VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 	prPerMonitor->ulP2PLastTxBytes = p2pLatestTxBytes;
 	prPerMonitor->ulP2PLastRxBytes = p2pLatestRxBytes;
 
-	if (prPerMonitor->ulThroughput < THROUGHPUT_L1_THRESHOLD) {
-		if (prPerMonitor->u4CurrPerfLevel != 0 &&
-			prPerMonitor->u1ShutdownCoreCount < THROUGHPUT_SHUTDOWN_CORE_COUNT) {
-			prPerMonitor->u1ShutdownCoreCount++;
-			DBGLOG(SW4, INFO, "kalPerMonHandler > u1ShutdownCoreCount: %d\n",
-				prPerMonitor->u1ShutdownCoreCount);
-				needBoostCpu = FALSE;
-		}
-		prPerMonitor->u4TarPerfLevel = 0;
-	}
-	else if (prPerMonitor->ulThroughput < THROUGHPUT_L2_THRESHOLD)
-		prPerMonitor->u4TarPerfLevel = 1;
-	else if (prPerMonitor->ulThroughput < THROUGHPUT_L3_THRESHOLD)
-		prPerMonitor->u4TarPerfLevel = 2;
-	else
-		prPerMonitor->u4TarPerfLevel = 3;
+#ifdef ENHANCE_AP_MODE_THROUGHPUT
+	if (fgIsPureAp) {
+		if (prPerMonitor->ulThroughput < THROUGHPUT_AP_L1_THRESHOLD)
+			prPerMonitor->u4TarPerfLevel = 0;
+#if 0
+		else if (prPerMonitor->ulThroughput < THROUGHPUT_AP_L2_THRESHOLD)
+			prPerMonitor->u4TarPerfLevel = 1;
+		else if (prPerMonitor->ulThroughput < THROUGHPUT_AP_L3_THRESHOLD)
+			prPerMonitor->u4TarPerfLevel = 2;
+		else if (prPerMonitor->ulThroughput < THROUGHPUT_AP_L4_THRESHOLD)
+			prPerMonitor->u4TarPerfLevel = 3;
+#endif
+		else
+			prPerMonitor->u4TarPerfLevel = 4;
+	} else
+#endif
+	{
+		if (prPerMonitor->ulThroughput < THROUGHPUT_L1_THRESHOLD) {
+			if (prPerMonitor->u4CurrPerfLevel != 0 &&
+				prPerMonitor->u1ShutdownCoreCount < THROUGHPUT_SHUTDOWN_CORE_COUNT) {
+				prPerMonitor->u1ShutdownCoreCount++;
+				DBGLOG(SW4, INFO, "kalPerMonHandler > u1ShutdownCoreCount: %d\n",
+					prPerMonitor->u1ShutdownCoreCount);
+					needBoostCpu = FALSE;
+			}
+			prPerMonitor->u4TarPerfLevel = 0;
+		} else if (prPerMonitor->ulThroughput < THROUGHPUT_L2_THRESHOLD)
+			prPerMonitor->u4TarPerfLevel = 1;
+		else if (prPerMonitor->ulThroughput < THROUGHPUT_L3_THRESHOLD)
+			prPerMonitor->u4TarPerfLevel = 2;
+		else if (prPerMonitor->ulThroughput < THROUGHPUT_L4_THRESHOLD)
+			prPerMonitor->u4TarPerfLevel = 3;
+		else
+			prPerMonitor->u4TarPerfLevel = 4;
 
-	if (prPerMonitor->u4TarPerfLevel != 0) {
-		prPerMonitor->u1ShutdownCoreCount = 0;
+		if (prPerMonitor->u4TarPerfLevel != 0)
+			prPerMonitor->u1ShutdownCoreCount = 0;
 	}
 
-	if (fgIsUnderSuspend ||
-		wlan_fb_power_down ||
-		!(netif_carrier_ok(prNetDev) ||
-		(prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) ||
-		(prP2pBssInfo->rStaRecOfClientList.u4NumElem > 0)))
+#ifdef ENHANCE_AP_MODE_THROUGHPUT
+	if (((fgIsUnderSuspend || wlan_fb_power_down) && !fgIsPureAp) ||
+	    !(netif_carrier_ok(prNetDev) ||
+	    (prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) ||
+	    (prP2pBssInfo->rStaRecOfClientList.u4NumElem > 0)))
+#else
+	if (fgIsUnderSuspend || wlan_fb_power_down ||
+	    !(netif_carrier_ok(prNetDev) ||
+	    (prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) ||
+	    (prP2pBssInfo->rStaRecOfClientList.u4NumElem > 0)))
+#endif
 		kalPerMonStop(prGlueInfo);
 	else {
 		DBGLOG(SW4, TRACE, "throughput:%ld bps\n", prPerMonitor->ulThroughput);
 		if (needBoostCpu && (prPerMonitor->u4TarPerfLevel != prPerMonitor->u4CurrPerfLevel)) {
 			/* if tar level = 0; core_number=prPerMonitor->u4TarPerfLevel+1*/
 			if (prPerMonitor->u4TarPerfLevel)
-				kalBoostCpu(prPerMonitor->u4TarPerfLevel+1);
+				kalBoostCpu(prPerMonitor->u4TarPerfLevel);
 			else
 				kalBoostCpu(0);
 
@@ -4359,12 +4393,21 @@ INT32 __weak kalBoostCpu(UINT_32 core_num)
 	return 0;
 }
 
+INT32 __weak kalSetCpuNumFreq(UINT_32 core_num, UINT_32 freq)
+{
+	DBGLOG(SW4, WARN, "enter weak kalSetCpuNumFreq, core_num:%d\n", core_num);
+	return 0;
+}
+
 static int wlan_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
 	struct fb_event *evdata = data;
 	INT_32 blank;
 	P_GLUE_INFO_T prGlueInfo = NULL;
 
+#ifdef ENHANCE_AP_MODE_THROUGHPUT
+	BOOLEAN fgIsPureAp = FALSE;
+#endif
 
 	/* If we aren't interested in this event, skip it immediately ... */
 	if (event != FB_EVENT_BLANK)
@@ -4384,8 +4427,16 @@ static int wlan_fb_notifier_callback(struct notifier_block *self, unsigned long 
 		break;
 	case FB_BLANK_POWERDOWN:
 		wlan_fb_power_down = TRUE;
-		if (!kalIsHalted())
+		if (!kalIsHalted()) {
+#ifdef ENHANCE_AP_MODE_THROUGHPUT
+			/* Distinguish AP mode from STA mode requirement  */
+			fgIsPureAp = prGlueInfo->prAdapter->rWifiVar.prP2pFsmInfo->fgIsApMode;
+			if (!fgIsPureAp)
+				kalPerMonDisable(prGlueInfo);
+#else
 			kalPerMonDisable(prGlueInfo);
+#endif
+		}
 		break;
 	default:
 		break;
