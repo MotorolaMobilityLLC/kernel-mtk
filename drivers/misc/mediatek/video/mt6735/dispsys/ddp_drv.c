@@ -69,6 +69,7 @@
 #include "ddp_log.h"
 #include "ddp_irq.h"
 #include "ddp_info.h"
+#include "display_recorder.h"
 
 #ifndef DISP_NO_DPI
 #include "ddp_dpi_reg.h"
