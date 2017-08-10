@@ -2594,14 +2594,14 @@ INT32 mtk_wcn_stp_send_data(const PUINT8 buffer, const UINT32 length, const UINT
 		return length;
 	}
 #ifdef CONFIG_POWER_SAVING_SUPPORT
-	if (MTK_WCN_BOOL_TRUE == stp_psm_is_quick_ps_support()) {
-		if (type != WMT_TASK_INDX) {
+	if (type != WMT_TASK_INDX) {
 #if PSM_USE_COUNT_PACKAGE
-			stp_psm_disable_by_tx_rx_density(STP_PSM_CORE(stp_core_ctx), 0);
+		stp_psm_disable_by_tx_rx_density(STP_PSM_CORE(stp_core_ctx), 0);
 #else
-			stp_psm_disable_by_tx_rx_density(STP_PSM_CORE(stp_core_ctx), 0, length);
+		stp_psm_disable_by_tx_rx_density(STP_PSM_CORE(stp_core_ctx), 0, length);
 #endif
-		}
+	}
+	if (MTK_WCN_BOOL_TRUE == stp_psm_is_quick_ps_support()) {
 		/* if(stp_is_apply_powersaving()) */
 		{
 			if (type == WMT_TASK_INDX)
@@ -2655,7 +2655,6 @@ INT32 mtk_wcn_stp_send_data(const PUINT8 buffer, const UINT32 length, const UINT
 					    ("***** Release psm hold data before send normal data *****\n");
 					stp_psm_release_data(STP_PSM_CORE(stp_core_ctx));
 				}
-				stp_psm_start_monitor(STP_PSM_CORE(stp_core_ctx));
 			} else {
 				/* STP_INFO_FUNC("to block !!\n"); */
 
