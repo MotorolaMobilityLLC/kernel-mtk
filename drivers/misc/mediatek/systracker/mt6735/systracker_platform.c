@@ -79,12 +79,18 @@ static int systracker_platform_hook_fault(void)
 	int ret = 0;
 
 	/* We use ARM64's synchroneous external abort for read timeout */
-	hook_fault_code(0x10, read_timeout_handler, SIGTRAP, 0, "Systracker debug exception");
+	hook_fault_code(0x10,
+			read_timeout_handler,
+			SIGTRAP,
+			0,
+			"Systracker debug exception");
 
 	/* for 64bit, we should register async abort handler */
 	ret = register_async_abort_handler(write_timeout_handler, NULL);
 	if (ret) {
-		pr_warn("%s:%d: register_async_abort_handler failed\n", __func__, __LINE__);
+		pr_warn("%s:%d: register_async_abort_handler failed\n",
+			__func__,
+			__LINE__);
 		return -1;
 	}
 
@@ -125,11 +131,27 @@ static int systracker_platform_hook_fault(void)
 {
 
 #ifdef CONFIG_ARM_LPAE
-	hook_fault_code(0x10, systracker_handler, SIGTRAP, 0, "Systracker debug exception");
-	hook_fault_code(0x11, systracker_handler, SIGTRAP, 0, "Systracker debug exception");
+	hook_fault_code(0x10,
+			systracker_handler,
+			SIGTRAP,
+			0,
+			"Systracker debug exception");
+	hook_fault_code(0x11,
+			systracker_handler,
+			SIGTRAP,
+			0,
+			"Systracker debug exception");
 #else
-	hook_fault_code(0x8, systracker_handler, SIGTRAP, 0, "Systracker debug exception");
-	hook_fault_code(0x16, systracker_handler, SIGTRAP, 0, "Systracker debug exception");
+	hook_fault_code(0x8,
+			systracker_handler,
+			SIGTRAP,
+			0,
+			"Systracker debug exception");
+	hook_fault_code(0x16,
+			systracker_handler,
+			SIGTRAP,
+			0,
+			"Systracker debug exception");
 #endif
 	return 0;
 }
