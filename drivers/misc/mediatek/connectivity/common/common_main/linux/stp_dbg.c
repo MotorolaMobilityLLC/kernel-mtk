@@ -212,11 +212,6 @@ static _osal_inline_ P_WCN_CORE_DUMP_T stp_dbg_core_dump_init(UINT32 packet_num,
 	return core_dmp;
 
 fail:
-	if (core_dmp && core_dmp->compressor) {
-		stp_dbg_compressor_deinit(core_dmp->compressor);
-		core_dmp->compressor = NULL;
-	}
-	osal_sleepable_lock_deinit(&core_dmp->dmp_lock);
 	if (core_dmp)
 		osal_free(core_dmp);
 	return NULL;
