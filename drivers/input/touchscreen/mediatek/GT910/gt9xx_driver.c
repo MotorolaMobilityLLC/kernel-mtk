@@ -1251,7 +1251,8 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 
 	/* get ref file data */
 	flp = filp_open(GTP_BAK_REF_PATH, O_RDWR | O_CREAT, 0660);
-	if (IS_ERR(flp)) {
+	GTP_ERROR("[gtp_bak_ref_proc] open /data");
+	if (flp ==  NULL || IS_ERR(flp)) {
 		GTP_ERROR("[gtp_bak_ref_proc]Ref File not found!Creat ref file.");
 		/* flp->f_op->llseek(flp, 0, SEEK_SET); */
 		/* flp->f_op->write(flp, (char *)refp, ref_len, &flp->f_pos); */
@@ -1267,6 +1268,11 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 		}
 	}
 
+	if (flp && !IS_ERR(flp)) {
+		GTP_ERROR("[gtp_bak_ref_proc] close /data");
+		filp_close(flp, NULL);
+		flp = NULL;
+	}
 	if (GTP_BAK_REF_STORE == mode) {
 		ret = i2c_read_bytes(client, 0x99D0, refp, ref_len);
 		if (-1 == ret) {
@@ -1274,8 +1280,12 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 			ret = FAIL;
 			goto exit_ref_proc;
 		}
-		flp->f_op->llseek(flp, 0, SEEK_SET);
-		flp->f_op->write(flp, (char *)refp, ref_len, &flp->f_pos);
+		flp = filp_open(GTP_BAK_REF_PATH, O_RDWR | O_CREAT, 0660);
+		GTP_ERROR("[gtp_bak_ref_proc] open /data");
+		if (flp && !IS_ERR(flp)) {
+			flp->f_op->llseek(flp, 0, SEEK_SET);
+			flp->f_op->write(flp, (char *)refp, ref_len, &flp->f_pos);
+		}
 	} else {
 		/* checksum ref file */
 		for (j = 0; j < ref_grps; ++j) {
@@ -1314,8 +1324,10 @@ static u8 gtp_bak_ref_proc(struct i2c_client *client, u8 mode)
 
 exit_ref_proc:
 	kfree(refp);
-	if (!IS_ERR(flp))
+	if (flp && !IS_ERR(flp)) {
+		GTP_ERROR("[gtp_bak_ref_proc] close /data");
 		filp_close(flp, NULL);
+	}
 	return ret;
 }
 
@@ -1402,7 +1414,8 @@ static u8 gtp_main_clk_proc(struct i2c_client *client)
 	} else {
 		GTP_DEBUG("[gtp_main_clk_proc]/data mounted !!!!");
 		flp = filp_open(GTP_MAIN_CLK_PATH, O_RDWR | O_CREAT, 0660);
-		if (!IS_ERR(flp)) {
+		GTP_ERROR("[gtp_main_clk_proc] open /data");
+		if (!IS_ERR(flp) && (flp != NULL)) {
 			flp->f_op->llseek(flp, 0, SEEK_SET);
 			ret = flp->f_op->read(flp, (char *)gtp_clk_buf, 6, &flp->f_pos);
 			if (ret > 0) {
@@ -1412,6 +1425,10 @@ static u8 gtp_main_clk_proc(struct i2c_client *client)
 					    ("[gtp_main_clk_proc]Open & read & check clk file success.");
 					goto send_main_clk;
 				}
+			} else {
+				filp_close(flp, NULL);
+				flp = NULL;
+				GTP_ERROR("[gtp_main_clk_proc] open /data");
 			}
 		}
 		GTP_ERROR("[gtp_main_clk_proc]Check clk file failed,need cal clk");
@@ -1441,14 +1458,18 @@ static u8 gtp_main_clk_proc(struct i2c_client *client)
 	}
 	gtp_clk_buf[5] = 0 - clk_chksum;
 
-	if (IS_ERR(flp)) {
-		flp = filp_open(GTP_MAIN_CLK_PATH, O_RDWR | O_CREAT, 0660);
-	} else {
+	flp = filp_open(GTP_MAIN_CLK_PATH, O_RDWR | O_CREAT, 0660);
+	GTP_ERROR("[gtp_main_clk_proc] open /data");
+	if (!IS_ERR(flp) && (flp != NULL)) {
 		flp->f_op->llseek(flp, 0, SEEK_SET);
 		flp->f_op->write(flp, (char *)gtp_clk_buf, 6, &flp->f_pos);
 	}
 
 send_main_clk:
+	if (flp && !IS_ERR(flp)) {
+		filp_close(flp, NULL);
+		GTP_ERROR("[gtp_main_clk_proc] close /data");
+	}
 
 	ret = i2c_write_bytes(client, 0x8020, gtp_clk_buf, 6);
 	if (-1 == ret) {
@@ -1456,14 +1477,13 @@ send_main_clk:
 		ret = FAIL;
 		goto exit_clk_proc;
 	}
-	if (flp && !IS_ERR(flp))
-		filp_close(flp, NULL);
 
 	ret = SUCCESS;
-	return SUCCESS;
+	return ret;
 exit_clk_proc:
 
 	if (flp && !IS_ERR(flp)) {	/* RMT add */
+		GTP_ERROR("[gtp_main_clk_proc] close /data");
 		filp_close(flp, NULL);
 	}
 	return ret;
