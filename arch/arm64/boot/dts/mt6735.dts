@@ -3086,7 +3086,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
 					fsmgr_flags = "wait";
 #else
-					fsmgr_flags = "wait,slotselect,verify";
+					fsmgr_flags = "wait,slotselect";
 #endif
 				};
 #endif
