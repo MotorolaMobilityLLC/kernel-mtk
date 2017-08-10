@@ -93,23 +93,6 @@ static int pep20_set_mivr(u32 mivr)
 {
 	int ret = 0;
 
-	/*
-	 * Since BQ25896 uses mivr to turn off power path
-	 * If power path is disabled, do not adjust mivr
-	 */
-#ifdef CONFIG_MTK_BQ25896_SUPPORT
-	bool is_power_path_enable = true;
-
-	ret = battery_charging_control(CHARGING_CMD_GET_IS_POWER_PATH_ENABLE,
-		&is_power_path_enable);
-	if (ret == 0 && !is_power_path_enable) {
-		battery_log(BAT_LOG_CRTI,
-			"%s: power path is disable, skip setting mivr = %d\n",
-			__func__, mivr);
-		return 0;
-	}
-#endif
-
 	ret = battery_charging_control(CHARGING_CMD_SET_VINDPM, &mivr);
 	if (ret < 0)
 		battery_log(BAT_LOG_CRTI, "%s: failed, ret = %d\n",
@@ -137,8 +120,7 @@ static int pep20_leave(void)
 static int pep20_check_leave_status(void)
 {
 	int ret = 0;
-	bool bif_exist = false;
-	u32 vbat = 0, cv = 0, ichg = 0, vchr = 0;
+	u32 ichg = 0, vchr = 0;
 	kal_bool current_sign;
 
 	battery_log(BAT_LOG_FULL, "%s: starts\n", __func__);
@@ -146,8 +128,9 @@ static int pep20_check_leave_status(void)
 	/* PE+ leaves unexpectedly */
 	vchr = battery_meter_get_charger_voltage();
 	if (abs(vchr - pep20_ta_vchr_org) < 1000) {
-		battery_log(BAT_LOG_CRTI, "%s: PE+20 leave unexpectedly\n",
-			__func__);
+		battery_log(BAT_LOG_CRTI,
+			"%s: PE+20 leave unexpectedly, recheck TA\n", __func__);
+		pep20_to_check_chr_type = true;
 		ret = pep20_leave();
 		if (ret < 0 || pep20_is_connect)
 			goto _err;
@@ -158,37 +141,17 @@ static int pep20_check_leave_status(void)
 	ichg = battery_meter_get_battery_current(); /* 0.1 mA */
 	ichg /= 10; /* mA */
 	current_sign = battery_meter_get_battery_current_sign();
-	ret = battery_charging_control(CHARGING_CMD_GET_BIF_IS_EXIST,
-		&bif_exist);
 
-	/* BIF exists, check CV & VBAT */
-	if (bif_exist) {
-		ret = mtk_get_dynamic_cv(&cv);
-		vbat = battery_meter_get_battery_voltage(KAL_TRUE);
-		if (ret == 0) {
-			if (vbat >= cv) {
-				ret = pep20_leave();
-				if (ret < 0 || pep20_is_connect)
-					goto _err;
-				battery_log(BAT_LOG_CRTI,
-					"%s: OK, vbat,cv = (%d,%d), stop PE+20\n",
-					__func__, vbat, cv);
-			}
-			return ret;
-		}
-		battery_log(BAT_LOG_CRTI,
-			"%s: Get CV failed, use SOC\n", __func__);
-	}
-
-	/* BIF does not exist, check SOC */
+	/* Check SOC & Ichg */
 	if (BMT_status.SOC > batt_cust_data.ta_stop_battery_soc &&
 	    current_sign && ichg < PEP20_ICHG_LEAVE_THRESHOLD) {
 		ret = pep20_leave();
 		if (ret < 0 || pep20_is_connect)
 			goto _err;
 		battery_log(BAT_LOG_CRTI,
-			"%s: OK, SOC = (%d,%d), stop PE+20\n", __func__,
-			BMT_status.SOC, batt_cust_data.ta_stop_battery_soc);
+			"%s: OK, SOC = (%d,%d), Ichg = %dmA, stop PE+20\n",
+			__func__, BMT_status.SOC, batt_cust_data.ta_stop_battery_soc,
+			ichg);
 	}
 
 	return ret;
@@ -252,8 +215,10 @@ static int pep20_set_ta_vchr(u32 chr_volt)
 
 		if (ret == 0 || sw_retry_cnt >= sw_retry_cnt_max)
 			retry_cnt++;
-		else
+		else {
+			msleep(2000);
 			sw_retry_cnt++;
+		}
 
 		battery_log(BAT_LOG_CRTI,
 			"%s: retry_cnt = (%d, %d), vchr = (%d, %d), vchr_target = %d\n",
@@ -614,10 +579,10 @@ bool mtk_pep20_get_to_check_chr_type(void)
 bool mtk_pep20_get_is_connect(void)
 {
 	/*
-	 * Prevent charger is not exist,
+	 * Cable out is occurred,
 	 * but not execute plugout_reset yet
 	 */
-	if (!BMT_status.charger_exist)
+	if (pep20_is_cable_out_occur)
 		return false;
 
 	return pep20_is_connect;

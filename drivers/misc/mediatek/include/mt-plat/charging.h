@@ -138,6 +138,9 @@ typedef enum {
 	CHARGING_CMD_GET_IBUS,
 	CHARGING_CMD_GET_VBUS,
 	CHARGING_CMD_RESET_DC_WATCH_DOG_TIMER,
+	CHARGING_CMD_RUN_AICL,
+	CHARGING_CMD_SET_IRCMP_RESISTOR,
+	CHARGING_CMD_SET_IRCMP_VOLT_CLAMP,
 	CHARGING_CMD_NUMBER
 } CHARGING_CTRL_CMD;
 
@@ -641,5 +644,6 @@ extern int mtk_chr_get_aicr(unsigned int *aicr);
 extern int mtk_chr_is_charger_exist(unsigned char *exist);
 extern int mtk_chr_enable_direct_charge(unsigned char charging_enable);
 extern int mtk_chr_enable_charge(unsigned char charging_enable);
+extern int mtk_chr_reset_aicr_upper_bound(void);
 
 #endif	/* #ifndef _CHARGING_H */

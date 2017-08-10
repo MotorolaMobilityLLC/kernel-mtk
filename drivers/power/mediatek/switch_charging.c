@@ -101,6 +101,8 @@ unsigned int get_cv_voltage(void)
 DEFINE_MUTEX(g_ichg_aicr_access_mutex);
 DEFINE_MUTEX(g_aicr_access_mutex);
 DEFINE_MUTEX(g_ichg_access_mutex);
+unsigned int g_aicr_upper_bound;
+static bool g_enable_dynamic_cv = true;
 
  /* ///////////////////////////////////////////////////////////////////////////////////////// */
  /* // JEITA */
@@ -112,17 +114,6 @@ kal_bool temp_error_recovery_chr_flag = KAL_TRUE;
 
 /* ============================================================ // */
 /* function prototype */
-/* ============================================================ // */
-
-/* ============================================================ // */
-/* extern variable */
-/* ============================================================ // */
-/*extern int g_platform_boot_mode; moved to battery_common.h*/
-
-/* ============================================================ // */
-/* extern function */
-/* ============================================================ // */
-
 /* ============================================================ // */
 void BATTERY_SetUSBState(int usb_state_value)
 {
@@ -151,24 +142,18 @@ int mtk_get_dynamic_cv(unsigned int *cv)
 {
 	int ret = 0;
 #ifdef CONFIG_MTK_BIF_SUPPORT
-	u32 _cv, _cv_temp;
-	u32 vbat_threshold[3] = {3400, 0, 0};
+	u32 _cv;
 	u32 vbat_bif = 0, vbat_auxadc = 0, vbat = 0;
 	u32 retry_cnt = 0;
-	u8 is_charge_done = 0;
+	u32 ircmp_volt_clamp = 0, ircmp_resistor = 0;
 
-	ret = battery_charging_control(CHARGING_CMD_GET_CHARGING_STATUS,
-		&is_charge_done);
-	if (ret < 0)
-		return ret;
-
-	/*
-	 * For charging done, CV should be set to 4.34
-	 * To avoid dropping of BIF's vbat and set CV to higher level,
-	 * here we return directly
-	 */
-	if (is_charge_done)
-		return -EPERM;
+	if (!g_enable_dynamic_cv) {
+		if (batt_cust_data.high_battery_voltage_support)
+			_cv = BATTERY_VOLT_04_340000_V;
+		else
+			_cv = BATTERY_VOLT_04_200000_V;
+		goto _out;
+	}
 
 	do {
 		ret = battery_charging_control(CHARGING_CMD_GET_BIF_VBAT,
@@ -195,24 +180,34 @@ int mtk_get_dynamic_cv(unsigned int *cv)
 	}
 
 	/* Adjust CV according to the obtained vbat */
-#ifdef HIGH_BATTERY_VOLTAGE_SUPPORT
-	vbat_threshold[1] = 4250;
-	vbat_threshold[2] = 4300;
-	_cv_temp = 4450;
-#else
-	vbat_threshold[1] = 4100;
-	vbat_threshold[2] = 4150;
-	_cv_temp = 4350;
-#endif
-	if (vbat >= vbat_threshold[0] && vbat < vbat_threshold[1])
-		_cv = 4608;
-	else if (vbat >= vbat_threshold[1] && vbat < vbat_threshold[2])
-		_cv = _cv_temp;
-	else
-		_cv = V_CC2TOPOFF_THRES;
+	if (vbat >= 3400 && vbat < 4300) {
+		_cv = 4550;
+		battery_charging_control(CHARGING_CMD_SET_IRCMP_VOLT_CLAMP,
+			&ircmp_volt_clamp);
+		battery_charging_control(CHARGING_CMD_SET_IRCMP_RESISTOR,
+			&ircmp_resistor);
+	} else {
+		if (batt_cust_data.high_battery_voltage_support)
+			_cv = BATTERY_VOLT_04_340000_V;
+		else
+			_cv = BATTERY_VOLT_04_200000_V;
 
+		/* Turn on IR compensation */
+		ircmp_volt_clamp = 200;
+		ircmp_resistor = 80;
+		battery_charging_control(CHARGING_CMD_SET_IRCMP_VOLT_CLAMP,
+			&ircmp_volt_clamp);
+		battery_charging_control(CHARGING_CMD_SET_IRCMP_RESISTOR,
+			&ircmp_resistor);
+
+		/* Disable dynamic CV */
+		g_enable_dynamic_cv = false;
+	}
+
+_out:
 	*cv = _cv;
-	battery_log(BAT_LOG_CRTI, "%s: CV = %dmV\n", __func__, _cv);
+	battery_log(BAT_LOG_CRTI, "%s: CV = %dmV, enable dynamic cv = %d\n",
+		__func__, _cv, g_enable_dynamic_cv);
 #else
 	ret = -ENOTSUPP;
 #endif
@@ -518,6 +513,12 @@ unsigned int set_bat_charging_current_limit(int current_limit)
 	return g_bcct_flag;
 }
 
+int mtk_chr_reset_aicr_upper_bound(void)
+{
+	g_aicr_upper_bound = 0;
+	return 0;
+}
+
 int set_chr_boost_current_limit(unsigned int current_limit)
 {
 	int ret = 0;
@@ -640,6 +641,31 @@ static unsigned int charging_full_check(void)
 	return status;
 }
 
+static bool mtk_is_pep_series_connect(void)
+{
+	if (mtk_pep20_get_is_connect() ||
+	    mtk_pep_get_is_connect()) {
+		return true;
+	}
+
+	return false;
+}
+
+static int mtk_check_aicr_upper_bound(void)
+{
+	u32 aicr_upper_bound = 0; /* 10uA */
+
+	if (mtk_is_pep_series_connect())
+		return -EPERM;
+
+	/* Check AICR upper bound gererated by AICL */
+	aicr_upper_bound = g_aicr_upper_bound * 100;
+	if (g_temp_input_CC_value > aicr_upper_bound && aicr_upper_bound > 0)
+		g_temp_input_CC_value = aicr_upper_bound;
+
+	return 0;
+}
+
 void select_charging_current(void)
 {
 	if (g_ftm_battery_flag) {
@@ -724,6 +750,7 @@ void select_charging_current(void)
 #endif
 	}
 
+	mtk_check_aicr_upper_bound();
 }
 
 void select_charging_current_bcct(void)
@@ -782,6 +809,8 @@ void select_charging_current_bcct(void)
 	if (g_bcct_input_flag == 1)
 		g_temp_input_CC_value = g_bcct_input_value * 100;
 #endif
+
+	mtk_check_aicr_upper_bound();
 }
 
 static void mtk_select_ichg_aicr(void)
@@ -1068,6 +1097,7 @@ PMU_STATUS BAT_BatteryFullAction(void)
 #endif
 		mtk_pep20_set_to_check_chr_type(true);
 		mtk_pep_set_to_check_chr_type(true);
+		g_enable_dynamic_cv = true;
 	}
 
 
@@ -1140,6 +1170,12 @@ PMU_STATUS BAT_BatteryStatusFailAction(void)
 void mt_battery_charging_algorithm(void)
 {
 	battery_charging_control(CHARGING_CMD_RESET_WATCH_DOG_TIMER, NULL);
+
+	/* Generate AICR upper bound by AICL */
+	if (!mtk_is_pep_series_connect()) {
+		battery_charging_control(CHARGING_CMD_RUN_AICL,
+			&g_aicr_upper_bound);
+	}
 
 	mtk_pep20_check_charger();
 	mtk_pep_check_charger();

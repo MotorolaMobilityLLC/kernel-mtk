@@ -139,9 +139,20 @@ const unsigned int VINDPM_REG[] = {
 	15300
 };
 
-/* BQ25890 REG0A BOOST_LIM[2:0], mA */
+/* BQ25896 REG0A BOOST_LIM[2:0], mA */
 const unsigned int BOOST_CURRENT_LIMIT[] = {
 	500, 750, 1200, 1400, 1650,
+};
+
+
+/* BQ25896 REG08 VCLAMP, mV */
+const unsigned int IRCMP_VOLT_CLAMP[] = {
+	0, 32, 64, 128, 160, 192, 224,
+};
+
+/* BQ25896 REG08 BAT_COMP, mohm */
+const unsigned int IRCMP_RESISTOR[] = {
+	0, 20, 40, 60, 80, 100, 120, 140,
 };
 
 #ifdef CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT
@@ -1064,7 +1075,7 @@ static int charging_sw_init(void *data)
 	bq25890_config_interface(bq25890_CON8, 0x0, 0x7, 2);	/* disable ir_comp_vdamp */
 #else
 	bq25890_config_interface(bq25890_CON8, 0x4, 0x7, 5);	/* enable ir_comp_resistance */
-	bq25890_config_interface(bq25890_CON8, 0x7, 0x7, 2);	/* enable ir_comp_vdamp */
+	bq25890_config_interface(bq25890_CON8, 0x6, 0x7, 2);	/* enable ir_comp_vdamp */
 #endif
 	bq25890_config_interface(bq25890_CON8, 0x3, 0x3, 0);	/* thermal 120 default */
 
@@ -1113,15 +1124,30 @@ static int charging_set_hiz_swchr(void *data)
 	return status;
 }
 
+static int charging_get_is_power_path_enable(void *data);
 static int charging_set_vindpm_voltage(void *data)
 {
 	int status = STATUS_OK;
 	unsigned int vindpm;
 	unsigned int array_size;
+	bool is_power_path_enable = true;
+	int ret = 0;
 
 	array_size = GETARRAYNUM(VINDPM_REG);
 	vindpm = bmt_find_closest_level(VINDPM_REG, array_size, *(unsigned int *) data);
 	vindpm = charging_parameter_to_value(VINDPM_REG, array_size, vindpm);
+
+	/*
+	 * Since BQ25896 uses vindpm to turn off power path
+	 * If power path is disabled, do not adjust mivr
+	 */
+	ret = charging_get_is_power_path_enable(&is_power_path_enable);
+	if (ret == 0 && !is_power_path_enable) {
+		battery_log(BAT_LOG_CRTI,
+			"%s: power path is disable, skip setting vindpm = %d\n",
+			__func__, vindpm);
+		return 0;
+	}
 
 	charging_set_vindpm(&vindpm);
 	/*bq25890_set_en_hiz(en);*/
@@ -1388,6 +1414,56 @@ static int charging_set_pwrstat_led_en(void *data)
 	return ret;
 }
 
+static int charging_get_ibus(void *data)
+{
+	return -ENOTSUPP;
+}
+
+static int charging_get_vbus(void *data)
+{
+	return -ENOTSUPP;
+}
+
+static int charging_reset_dc_watch_dog_timer(void *data)
+{
+	return -ENOTSUPP;
+}
+
+static int charging_run_aicl(void *data)
+{
+	return -ENOTSUPP;
+}
+
+static int charging_set_ircmp_resistor(void *data)
+{
+	u32 resistor = 0;
+	u8 reg_resistor = 0;
+
+	resistor = *((unsigned int *)data);
+	resistor = bmt_find_closest_level(IRCMP_RESISTOR,
+		ARRAY_SIZE(IRCMP_RESISTOR), resistor);
+	reg_resistor = charging_parameter_to_value(IRCMP_RESISTOR,
+		ARRAY_SIZE(IRCMP_RESISTOR), resistor);
+	bq25890_set_VBAT_IR_compensation(reg_resistor);
+
+	return 0;
+}
+
+static int charging_set_ircmp_volt_clamp(void *data)
+{
+	u32 volt_clamp = 0;
+	u8 reg_volt_clamp = 0;
+
+	volt_clamp = *((unsigned int *)data);
+	volt_clamp = bmt_find_closest_level(IRCMP_VOLT_CLAMP,
+		ARRAY_SIZE(IRCMP_VOLT_CLAMP), volt_clamp);
+	reg_volt_clamp = charging_parameter_to_value(IRCMP_VOLT_CLAMP,
+		ARRAY_SIZE(IRCMP_VOLT_CLAMP), volt_clamp);
+	bq25890_set_VBAT_clamp(reg_volt_clamp);
+
+	return 0;
+}
+
 static int (*const charging_func[CHARGING_CMD_NUMBER]) (void *data) = {
 	charging_hw_init, charging_dump_register, charging_enable, charging_set_cv_voltage,
 	charging_get_current, charging_set_current, charging_set_input_current,
@@ -1405,7 +1481,9 @@ static int (*const charging_func[CHARGING_CMD_NUMBER]) (void *data) = {
 	charging_set_boost_current_limit, charging_enable_otg, charging_enable_power_path,
 	charging_get_bif_is_exist, charging_get_input_current, charging_enable_direct_charge,
 	charging_get_is_power_path_enable, charging_get_is_safetytimer_enable,
-	charging_set_pwrstat_led_en,
+	charging_set_pwrstat_led_en, charging_get_ibus, charging_get_vbus,
+	charging_reset_dc_watch_dog_timer, charging_run_aicl, charging_set_ircmp_resistor,
+	charging_set_ircmp_volt_clamp,
 };
 
 /*

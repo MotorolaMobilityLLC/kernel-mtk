@@ -1778,7 +1778,8 @@ static void battery_update(struct battery_data *bat_data)
 		pre_uisoc2 = BMT_status.UI_SOC2;
 		update_cnt = 0;
 	} else if ((BMT_status.charger_exist == KAL_TRUE) &&
-				(pre_chr_state != BMT_status.bat_charging_state)) {
+			((pre_chr_state != BMT_status.bat_charging_state) ||
+			(BMT_status.bat_charging_state == CHR_ERROR))) {
 		/* Update when changer status change */
 		power_supply_changed(bat_psy);
 		pre_chr_state = BMT_status.bat_charging_state;
@@ -2771,6 +2772,8 @@ void update_battery_2nd_info(int status_smb, int capacity_smb, int present_smb)
 
 void do_chrdet_int_task(void)
 {
+	u32 plug_out_aicr = 50000; /* 10uA */
+
 	if (g_bat_init_flag == KAL_TRUE) {
 #if !defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
 		if (upmu_is_chr_det() == KAL_TRUE) {
@@ -2799,6 +2802,13 @@ void do_chrdet_int_task(void)
 		} else {
 			battery_log(BAT_LOG_CRTI, "[do_chrdet_int_task] charger NOT exist!\n");
 			BMT_status.charger_exist = KAL_FALSE;
+
+			/* Reset AICR's upper bound calculated by AICL */
+			mtk_chr_reset_aicr_upper_bound();
+
+			/* Set AICR to 500mA if it is plugged out */
+			battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
+				&plug_out_aicr);
 
 #if defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
 			battery_log(BAT_LOG_CRTI,

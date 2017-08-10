@@ -24,8 +24,9 @@
 #define TA_9V_SUPPORT
 #define TA_12V_SUPPORT
 
-/* For PE+20, ichg threshold for leaving PE+20 */
+/* Ichg threshold for leaving PE+/PE+20 */
 #define PEP20_ICHG_LEAVE_THRESHOLD 1000 /* mA */
+#define PEP_ICHG_LEAVE_THRESHOLD 1000 /* mA */
 
 /* For PE+20, VBUS V.S. VBAT table, according to BQ25896 */
 #define VBAT3400_VBUS CHR_VOLT_08_000000_V
