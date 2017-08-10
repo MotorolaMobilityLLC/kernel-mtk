@@ -482,6 +482,7 @@ typedef struct __VDEC_DRV_RINGBUF_T { /* union extend 64bits for TEE*/
 	VAL_UINT32_T    u4Timestamp;   /* /< [IN/OUT] store timestamp */
 	VAL_UINT32_T    rSecMemHandle; /* /< [IN/OUT] security memory handle    // MTK_SEC_VIDEO_PATH_SUPPORT */
 	VAL_UINT32_T    u4InputFlag;   /*/ < [IN]     the property of input buffer */
+	VAL_UINT32_T    u4OmxInputBufSz;/*/ < [IN]     the OMX input buffer Size */
 } VDEC_DRV_RINGBUF_T;
 
 /**
