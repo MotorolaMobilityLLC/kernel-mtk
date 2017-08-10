@@ -82,12 +82,13 @@ static const struct mc_uuid_t secmem_uuid = { TL_SECMEM_UUID };
 static struct mc_session_handle secmem_session = { 0 };
 
 static u32 secmem_session_ref;
-static u32 secmem_k_session_opened;
 static u32 secmem_devid = MC_DEVICE_ID_DEFAULT;
 static tciMessage_t *secmem_tci;
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
 static u32 secmem_usage_counter;
 static u32 secmem_cma_state;
+static int secmem_enable(u32 start, u32 size);
+static int secmem_disable(void);
 #endif
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
@@ -97,6 +98,7 @@ static u32 secmem_cma_state;
 #define ONLINE_DEBOUNCE_TIME 1000 /* ms */
 
 static int secmem_cma_release(void);
+static int secmem_session_close(void);
 static void online_debounce_work_handler(struct work_struct *w);
 
 static struct workqueue_struct *wq;
@@ -202,7 +204,9 @@ static int secmem_handle_register(struct secmem_context *ctx, u32 type, u32 id)
 			handle->id = id;
 			handle->type = type;
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+			mutex_lock(&secmem_cma_lock);
 			secmem_usage_counter++;
+			mutex_unlock(&secmem_cma_lock);
 #endif
 			spin_unlock(&ctx->lock);
 			return 0;
@@ -273,7 +277,9 @@ static int secmem_handle_unregister(struct secmem_context *ctx, u32 id)
 		if (handle->id == id) {
 			memset(handle, 0, sizeof(struct secmem_handle));
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+			mutex_lock(&secmem_cma_lock);
 			secmem_usage_counter--;
+			mutex_unlock(&secmem_cma_lock);
 #endif
 			break;
 		}
@@ -657,24 +663,13 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	return err;
 }
 
-static inline int secmem_kernel_open(void)
-{
-	if (!secmem_k_session_opened) {
-		if (secmem_session_open() < 0)
-			return -ENXIO;
-		secmem_k_session_opened = 1;
-	}
-
-	return 0;
-}
-
-
-
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
-int secmem_enable(u32 start, u32 size)
+static int secmem_enable(u32 start, u32 size)
 {
 	int err = 0;
 	struct secmem_param param = { 0 };
+
+	MSG(INFO, "%s enter\n", __func__);
 
 	param.sec_handle = start;
 	param.size = size;
@@ -683,17 +678,23 @@ int secmem_enable(u32 start, u32 size)
 	if (err)
 		MSG(ERR, "secmem_api_enable failed: %d\n", err);
 
+	MSG(INFO, "%s exit\n", __func__);
+
 	return err;
 }
 
-int secmem_disable(void)
+static int secmem_disable(void)
 {
 	int err = 0;
 	struct secmem_param param = { 0 };
 
+	MSG(INFO, "%s enter\n", __func__);
+
 	err = secmem_execute(CMD_SEC_MEM_DISABLE, &param);
 	if (err)
 		MSG(ERR, "secmem_api_disable failed: %d\n", err);
+
+	MSG(INFO, "%s exit\n", __func__);
 
 	return err;
 }
@@ -703,7 +704,14 @@ int secmem_api_query(u32 *allocate_size)
 	int err = 0;
 	struct secmem_param param = { 0 };
 
-	secmem_kernel_open();
+	MSG(INFO, "%s enter\n", __func__);
+
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	mutex_lock(&secmem_cma_lock);
+#endif
+
+	if (secmem_session_open() < 0)
+		return -ENXIO;
 
 	err = secmem_execute(CMD_SEC_MEM_ALLOCATED, &param);
 	if (err) {
@@ -718,6 +726,14 @@ int secmem_api_query(u32 *allocate_size)
 		secmem_execute(CMD_SEC_MEM_DUMP_INFO, &param);
 #endif
 
+	secmem_session_close();
+
+	MSG(INFO, "%s exit\n", __func__);
+
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	mutex_unlock(&secmem_cma_lock);
+#endif
+
 	return err;
 }
 EXPORT_SYMBOL(secmem_api_query);
@@ -730,7 +746,15 @@ int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, ui
 	int ret = 0;
 	struct secmem_param param;
 
-	secmem_kernel_open();
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	mutex_lock(&secmem_cma_lock);
+#endif
+
+	MSG(INFO, "%s enter\n", __func__);
+	MSG(INFO, "alignment 0x%x size 0x%x id 0x%x\n", alignment, size, id);
+
+	if (secmem_session_open() < 0)
+		return -ENXIO;
 
 	memset(&param, 0, sizeof(param));
 	param.alignment = alignment;
@@ -744,14 +768,37 @@ int secmem_api_alloc(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, ui
 		param.owner[MAX_NAME_SZ - 1] = 0;
 	}
 
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	/*CMA allocation */
+	if (secmem_cma_state == 0 && secmem_usage_counter == 0)
+		ret = secmem_cma_alloc();
+	else
+		cancel_delayed_work_sync(&online_debounce_work);
+	if (ret != 0)
+		return ret;
+#endif
+
 	ret = secmem_execute(CMD_SEC_MEM_ALLOC, &param);
 	if (ret != 0) {
 		MSG(ERR, "%s: secmem_execute alloc failed!\n", __func__);
 		return ret;
 	}
 
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	secmem_usage_counter++; /* Increase usage if ALLOC succeed */
+#endif
+
 	*refcount = param.refcount;
 	*sec_handle = param.sec_handle;
+
+	secmem_session_close();
+
+	MSG(INFO, "refcount 0x%x sec_handle 0x%x\n", *refcount, *sec_handle);
+	MSG(INFO, "%s exit\n", __func__);
+
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	mutex_unlock(&secmem_cma_lock);
+#endif
 
 	return 0;
 }
@@ -762,7 +809,15 @@ int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id)
 	int ret = 0;
 	struct secmem_param param;
 
-	secmem_kernel_open();
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	mutex_lock(&secmem_cma_lock);
+#endif
+
+	MSG(INFO, "%s enter\n", __func__);
+	MSG(INFO, "sec_handle 0x%x owner %p id 0x%x\n", sec_handle, owner, id);
+
+	if (secmem_session_open() < 0)
+		return -ENXIO;
 
 	memset(&param, 0, sizeof(param));
 	param.sec_handle = sec_handle;
@@ -779,17 +834,42 @@ int secmem_api_unref(u32 sec_handle, uint8_t *owner, uint32_t id)
 		return ret;
 	}
 
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	secmem_usage_counter--; /* Decrease usage if UNREF succeed */
+	if (secmem_cma_state == 1 && secmem_usage_counter == 0) {
+		/* Do CMA release */
+		queue_delayed_work(wq, &online_debounce_work, msecs_to_jiffies(ONLINE_DEBOUNCE_TIME));
+	}
+#endif
+
+	secmem_session_close();
+
+	MSG(INFO, "%s exit\n", __func__);
+
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	mutex_unlock(&secmem_cma_lock);
+#endif
+
 	return 0;
 }
 EXPORT_SYMBOL(secmem_api_unref);
 
-int secmem_api_alloc_pa(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner,
+int secmem_api_alloc_zero(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle, uint8_t *owner,
 	uint32_t id)
 {
 	int ret = 0;
 	struct secmem_param param;
 
-	secmem_kernel_open();
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	mutex_lock(&secmem_cma_lock);
+#endif
+
+	MSG(INFO, "%s enter\n", __func__);
+
+	if (secmem_session_open() < 0) {
+		MSG(ERR, "%s: secmem_session_open failed!\n", __func__);
+		return -ENXIO;
+	}
 
 	memset(&param, 0, sizeof(param));
 	param.alignment = alignment;
@@ -803,45 +883,41 @@ int secmem_api_alloc_pa(u32 alignment, u32 size, u32 *refcount, u32 *sec_handle,
 		param.owner[MAX_NAME_SZ - 1] = 0;
 	}
 
-	ret = secmem_execute(CMD_SEC_MEM_ALLOC_PA, &param);
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	if (secmem_cma_state == 0 && secmem_usage_counter == 0)
+		ret = secmem_cma_alloc();
+	else
+		cancel_delayed_work_sync(&online_debounce_work);
+	if (ret != 0)
+		return ret;
+#endif
+
+	ret = secmem_execute(CMD_SEC_MEM_ALLOC_ZERO, &param);
 	if (ret != 0) {
 		MSG(ERR, "%s: secmem_execute alloc failed!\n", __func__);
 		return ret;
 	}
 
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	secmem_usage_counter++; /* Increase usage if ALLOC succeed */
+#endif
+
 	*refcount = param.refcount;
 	*sec_handle = param.sec_handle;
 
-	return 0;
-}
-EXPORT_SYMBOL(secmem_api_alloc_pa);
+	secmem_session_close();
 
-int secmem_api_unref_pa(u32 sec_handle, uint8_t *owner, uint32_t id)
-{
-	int ret = 0;
-	struct secmem_param param;
+	MSG(INFO, "refcount 0x%x sec_handle 0x%x\n", *refcount, *sec_handle);
+	MSG(INFO, "%s exit\n", __func__);
 
-	secmem_kernel_open();
-
-	memset(&param, 0, sizeof(param));
-	param.sec_handle = sec_handle;
-	param.id = id;
-	if (owner) {
-		param.owner_len = strlen(owner) > MAX_NAME_SZ ? MAX_NAME_SZ : strlen(owner);
-		memcpy(param.owner, owner, param.owner_len);
-		param.owner[MAX_NAME_SZ - 1] = 0;
-	}
-
-	ret = secmem_execute(CMD_SEC_MEM_UNREF_PA, &param);
-	if (ret != 0) {
-		MSG(ERR, "%s: secmem_execute unref failed!\n", __func__);
-		return ret;
-	}
-
-	return 0;
-}
-EXPORT_SYMBOL(secmem_api_unref_pa);
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+	mutex_unlock(&secmem_cma_lock);
 #endif
+
+	return 0;
+}
+EXPORT_SYMBOL(secmem_api_alloc_zero);
+#endif /* END OF SECMEM_KERNEL_API */
 
 #ifdef SECMEM_DEBUG_INTERFACE
 #include <mach/emi_mpu.h>
