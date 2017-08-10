@@ -500,6 +500,9 @@ WLAN_STATUS authCheckRxAuthFrameTransSeq(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T
 {
 	P_WLAN_AUTH_FRAME_T prAuthFrame;
 	UINT_16 u2RxTransactionSeqNum;
+#if CFG_IGNORE_INVALID_AUTH_TSN
+	P_STA_RECORD_T prStaRec;
+#endif
 
 	ASSERT(prSwRfb);
 
@@ -533,6 +536,21 @@ WLAN_STATUS authCheckRxAuthFrameTransSeq(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T
 	default:
 		DBGLOG(SAA, WARN, "Strange Authentication Packet: Auth Trans Seq No = %d, Error Status Code = %d\n",
 				   u2RxTransactionSeqNum, prAuthFrame->u2StatusCode);
+#if CFG_IGNORE_INVALID_AUTH_TSN
+		prStaRec = cnmGetStaRecByIndex(prAdapter, prSwRfb->ucStaRecIdx);
+		if (!prStaRec)
+			return WLAN_STATUS_SUCCESS;
+		switch (prStaRec->eAuthAssocState) {
+		case SAA_STATE_SEND_AUTH1:
+		case SAA_STATE_WAIT_AUTH2:
+		case SAA_STATE_SEND_AUTH3:
+		case SAA_STATE_WAIT_AUTH4:
+			saaFsmRunEventRxAuth(prAdapter, prSwRfb);
+			break;
+		default:
+			break;
+		}
+#endif
 		break;
 	}
 
