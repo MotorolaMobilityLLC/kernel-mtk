@@ -483,12 +483,6 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 			break;
 		}
 
-		if (md_id_irat == ccmni->md_id) {
-			CCMNI_INF_MSG(md_id, "SIOCCCMNICFG: %s iRAT on the same MD%d, cnt=%d\n",
-				dev->name, (ifr->ifr_ifru.ifru_ivalue+1), atomic_read(&ccmni->usage));
-			break;
-		}
-
 		ctlb_irat = ccmni_ctl_blk[md_id_irat];
 		if (ccmni->index >= ctlb_irat->ccci_ops->ccmni_num) {
 			CCMNI_ERR_MSG(md_id, "SIOCSCCMNICFG: %s iRAT(MD%d->MD%d) fail,index(%d)>max_num(%d)\n",
@@ -496,6 +490,18 @@ static int ccmni_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 			break;
 		}
 		ccmni_irat = ctlb_irat->ccmni_inst[ccmni->index];
+
+		if (md_id_irat == ccmni->md_id) {
+			if (ccmni_irat->dev != dev) {
+				CCMNI_INF_MSG(md_id, "SIOCCCMNICFG: iRAT on the same MD%d from %s to %s\n",
+					(ifr->ifr_ifru.ifru_ivalue+1), ccmni_irat->dev->name, dev->name);
+				ccmni_irat->dev = dev;
+			}
+			CCMNI_INF_MSG(md_id, "SIOCCCMNICFG: %s iRAT on the same MD%d, cnt=%d\n",
+				dev->name, (ifr->ifr_ifru.ifru_ivalue+1), atomic_read(&ccmni->usage));
+			break;
+		}
+
 		usage_cnt = atomic_read(&ccmni->usage);
 		atomic_set(&ccmni_irat->usage, usage_cnt);
 		/* fix dev!=ccmni_irat->dev issue when MD3-CC3MNI -> MD3-CCMNI */
