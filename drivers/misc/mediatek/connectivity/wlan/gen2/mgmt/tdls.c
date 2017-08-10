@@ -3585,7 +3585,9 @@ static void TdlsEventTearDown(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 u4
 	}
 
 	/* 16 Nov 21:49 2012 http://permalink.gmane.org/gmane.linux.kernel.wireless.general/99712 */
-	cfg80211_tdls_oper_request(prGlueInfo->prDevHandler,
+	cfg80211_tdls_oper_request(prStaRec->ucNetTypeIndex == NETWORK_TYPE_AIS_INDEX ?
+				   prGlueInfo->prDevHandler :
+				   prGlueInfo->prP2PInfo->prDevHandler,
 				   prStaRec->aucMacAddr, NL80211_TDLS_TEARDOWN, u2ReasonCode, GFP_ATOMIC);
 }
 
@@ -3612,9 +3614,9 @@ static void TdlsEventTxDone(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 u4In
 	pucFmeHdr = prInBuf + 4;	/* skip ucErrStatus */
 
 	if (ucErrStatus == 0)
-		DBGLOG(TDLS, TRACE, "<tdls_evt> %s: OK to tx a TDLS action:", __func__);
+		DBGLOG(TDLS, INFO, "<tdls_evt> %s: OK to tx a TDLS action\n", __func__);
 	else
-		DBGLOG(TDLS, TRACE, "<tdls_evt> %s: fail to tx a TDLS action (err=0x%x):", __func__, ucErrStatus);
+		DBGLOG(TDLS, INFO, "<tdls_evt> %s: fail to tx a TDLS action (err=0x%x)\n", __func__, ucErrStatus);
 	#if 0
 	/* dump TX packet content from wlan header */
 	for (u4FmeIdx = 0; u4FmeIdx < (u4InBufLen - 4); u4FmeIdx++) {
@@ -3705,7 +3707,8 @@ TdlsexCfg80211TdlsMgmt(struct wiphy *wiphy, struct net_device *dev,
 {
 	ADAPTER_T *prAdapter;
 	GLUE_INFO_T *prGlueInfo;
-	BSS_INFO_T *prAisBssInfo;
+	ENUM_NETWORK_TYPE_INDEX_T eNetworkType;
+	BSS_INFO_T *prBssInfo;
 	WLAN_STATUS rStatus;
 	UINT_32 u4BufLen;
 	TDLS_MGMT_TX_INFO *prMgmtTxInfo;
@@ -3731,7 +3734,7 @@ TdlsexCfg80211TdlsMgmt(struct wiphy *wiphy, struct net_device *dev,
 			    __func__, peer, action_code, dialog_token, status_code, buf, (UINT32) len);
 
 	/* init */
-	prGlueInfo = (GLUE_INFO_T *) wiphy_priv(wiphy);
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(dev));
 	if (prGlueInfo == NULL) {
 		DBGLOG(TDLS, ERROR, "<tdls_cfg> %s: wrong prGlueInfo 0x%p!\n", __func__, prGlueInfo);
 		return -EINVAL;
@@ -3743,9 +3746,13 @@ TdlsexCfg80211TdlsMgmt(struct wiphy *wiphy, struct net_device *dev,
 		return -EBUSY;
 	}
 
-	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
-	if (prAisBssInfo->fgTdlsIsProhibited == TRUE) {
+	eNetworkType = dev == prGlueInfo->prDevHandler ?
+				NETWORK_TYPE_AIS_INDEX : NETWORK_TYPE_P2P_INDEX;
+
+	prBssInfo = &(prAdapter->rWifiVar.arBssInfo[eNetworkType]);
+	if (prBssInfo->fgTdlsIsProhibited == TRUE) {
 		/* do not send anything if TDLS is prohibited in the BSS */
+		DBGLOG(TDLS, INFO, "BSS prohibit TDLS operations\n");
 		return 0;
 	}
 
@@ -3759,6 +3766,7 @@ TdlsexCfg80211TdlsMgmt(struct wiphy *wiphy, struct net_device *dev,
 
 	if (peer != NULL)
 		kalMemCopy(prMgmtTxInfo->aucPeer, peer, 6);
+	prMgmtTxInfo->eNetworkType = eNetworkType;
 	prMgmtTxInfo->ucActionCode = action_code;
 	prMgmtTxInfo->ucDialogToken = dialog_token;
 	prMgmtTxInfo->u2StatusCode = status_code;
@@ -3828,7 +3836,7 @@ int TdlsexCfg80211TdlsOper(struct wiphy *wiphy, struct net_device *dev,
 		return -ENOTSUPP;
 
 	/* init */
-	prGlueInfo = (GLUE_INFO_T *) wiphy_priv(wiphy);
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(dev));
 	if (prGlueInfo == NULL) {
 		DBGLOG(TDLS, ERROR, "<tdls_cfg> %s: wrong prGlueInfo 0x%p!\n", __func__, prGlueInfo);
 		return -EINVAL;
@@ -3836,6 +3844,8 @@ int TdlsexCfg80211TdlsOper(struct wiphy *wiphy, struct net_device *dev,
 	prAdapter = prGlueInfo->prAdapter;
 	kalMemCopy(rCmdLink.aucPeerMac, peer, sizeof(rCmdLink.aucPeerMac));
 	rCmdLink.fgIsEnabled = FALSE;
+	rCmdLink.eNetworkType = dev == prGlueInfo->prDevHandler ?
+				NETWORK_TYPE_AIS_INDEX : NETWORK_TYPE_P2P_INDEX;
 
 	/*
 	   enum nl80211_tdls_operation {
@@ -4127,7 +4137,7 @@ VOID TdlsexEventHandle(GLUE_INFO_T *prGlueInfo, UINT8 *prInBuf, UINT32 u4InBufLe
 			TDLS_STATUS_FAILURE: set key
 */
 /*----------------------------------------------------------------------------*/
-TDLS_STATUS TdlsexKeyHandle(ADAPTER_T *prAdapter, PARAM_KEY_T *prNewKey)
+TDLS_STATUS TdlsexKeyHandle(ADAPTER_T *prAdapter, PARAM_KEY_T *prNewKey, ENUM_NETWORK_TYPE_INDEX_T eNetworkType)
 {
 	STA_RECORD_T *prStaRec;
 
@@ -4139,13 +4149,13 @@ TDLS_STATUS TdlsexKeyHandle(ADAPTER_T *prAdapter, PARAM_KEY_T *prNewKey)
 	   supplicant will set key before updating station & enabling the link so we need to
 	   backup the key information and set key when link is enabled
 	 */
-	prStaRec = cnmGetStaRecByAddress(prAdapter, NETWORK_TYPE_AIS_INDEX, prNewKey->arBSSID);
+	prStaRec = cnmGetStaRecByAddress(prAdapter, eNetworkType, prNewKey->arBSSID);
 	if ((prStaRec != NULL) && IS_TDLS_STA(prStaRec)) {
-		DBGLOG(TDLS, TRACE, "<tdls> %s: [%pM] queue key (len=%d) until link is enabled\n",
+		DBGLOG(TDLS, INFO, "<tdls> %s: [%pM] queue key (len=%d) until link is enabled\n",
 				     __func__, prNewKey->arBSSID, (UINT32) prNewKey->u4KeyLength);
 
 		if (prStaRec->ucStaState == STA_STATE_3) {
-			DBGLOG(TDLS, TRACE, "<tdls> %s: [%pM] tear down the link due to STA_STATE_3\n",
+			DBGLOG(TDLS, INFO, "<tdls> %s: [%pM] tear down the link due to STA_STATE_3\n",
 					     __func__, prNewKey->arBSSID);
 
 			/* re-key */
@@ -4154,8 +4164,10 @@ TDLS_STATUS TdlsexKeyHandle(ADAPTER_T *prAdapter, PARAM_KEY_T *prNewKey)
 					      TDLS_REASON_CODE_MTK_DIS_BY_US_DUE_TO_REKEY, NULL);
 
 			/* 16 Nov 21:49 2012 http://permalink.gmane.org/gmane.linux.kernel.wireless.general/99712 */
-			cfg80211_tdls_oper_request(prAdapter->prGlueInfo->prDevHandler,
-						   prStaRec->aucMacAddr, TDLS_FRM_ACTION_TEARDOWN,
+			cfg80211_tdls_oper_request(eNetworkType == NETWORK_TYPE_AIS_INDEX ?
+						   prAdapter->prGlueInfo->prDevHandler :
+						   prAdapter->prGlueInfo->prP2PInfo->prDevHandler,
+						   prStaRec->aucMacAddr, NL80211_TDLS_TEARDOWN,
 						   TDLS_REASON_CODE_UNSPECIFIED, GFP_ATOMIC);
 			return TDLS_STATUS_SUCCESS;
 		}
@@ -4251,7 +4263,7 @@ TDLS_STATUS TdlsexLinkCtrl(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Se
 	prCmd = (TDLS_CMD_LINK_T *) pvSetBuffer;
 
 	/* search old entry */
-	prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) NETWORK_TYPE_AIS_INDEX, prCmd->aucPeerMac);
+	prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) prCmd->eNetworkType, prCmd->aucPeerMac);
 	if (prStaRec == NULL) {
 		DBGLOG(TDLS, ERROR, "<tdls_cfg> %s: cannot find the peer! %pM\n",
 				     __func__, prCmd->aucPeerMac);
@@ -4260,7 +4272,7 @@ TDLS_STATUS TdlsexLinkCtrl(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Se
 
 	if (prCmd->fgIsEnabled == TRUE) {
 		cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_3);
-		DBGLOG(TDLS, TRACE, "<tdls_cfg> %s: NL80211_TDLS_ENABLE_LINK\n", __func__);
+		DBGLOG(TDLS, INFO, "<tdls_cfg> %s: NL80211_TDLS_ENABLE_LINK\n", __func__);
 
 		/* update key information after cnmStaRecChangeState(STA_STATE_3) */
 		prStaRec->fgTdlsInSecurityMode = FALSE;
@@ -4268,15 +4280,19 @@ TDLS_STATUS TdlsexLinkCtrl(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Se
 		if (prStaRec->rTdlsKeyTemp.u4Length > 0) {
 			UINT_32 u4BufLen;	/* no use */
 
-			DBGLOG(TDLS, INFO, "<tdls_cfg> %s: key len=%d\n",
-					    __func__, (UINT32) prStaRec->rTdlsKeyTemp.u4Length);
+			DBGLOG(TDLS, INFO, "<tdls_cfg> %s: key len=%d:%d\n",
+					    __func__, (UINT32) prStaRec->rTdlsKeyTemp.u4Length,
+					    (UINT32) prStaRec->rTdlsKeyTemp.u4KeyLength);
 
 			/*
 			   reminder the function that we are CIPHER_SUITE_CCMP,
 			   do not change cipher type to CIPHER_SUITE_WEP128
 			 */
-			_wlanoidSetAddKey(prAdapter, &prStaRec->rTdlsKeyTemp,
-					  prStaRec->rTdlsKeyTemp.u4Length, FALSE, CIPHER_SUITE_CCMP, &u4BufLen);
+			prCmd->eNetworkType == NETWORK_TYPE_AIS_INDEX ?
+				_wlanoidSetAddKey(prAdapter, &prStaRec->rTdlsKeyTemp,
+					  prStaRec->rTdlsKeyTemp.u4Length, FALSE, CIPHER_SUITE_CCMP, &u4BufLen) :
+				_wlanoidSetAddP2PTDLSKey(prAdapter, &prStaRec->rTdlsKeyTemp,
+						prStaRec->rTdlsKeyTemp.u4Length, &u4BufLen);
 
 			/* clear the temp key */
 			prStaRec->fgTdlsInSecurityMode = TRUE;
@@ -4310,7 +4326,7 @@ TDLS_STATUS TdlsexLinkCtrl(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Se
 	} else {
 		cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_1);
 		cnmStaRecFree(prAdapter, prStaRec, TRUE);	/* release to other TDLS peers */
-		DBGLOG(TDLS, TRACE, "<tdls_cfg> %s: NL80211_TDLS_DISABLE_LINK\n", __func__);
+		DBGLOG(TDLS, INFO, "<tdls_cfg> %s: NL80211_TDLS_DISABLE_LINK\n", __func__);
 
 		TDLS_LINK_DECREASE(prGlueInfo);
 /* while(1); //sample debug */
@@ -4393,7 +4409,7 @@ TDLS_STATUS TdlsexMgmtCtrl(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Se
 		break;
 
 	case TDLS_FRM_ACTION_SETUP_REQ:
-		prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) NETWORK_TYPE_AIS_INDEX, prMgmtTxInfo->aucPeer);
+		prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) prMgmtTxInfo->eNetworkType, prMgmtTxInfo->aucPeer);
 		if ((prStaRec != NULL) && (prStaRec->ucStaState == STA_STATE_3)) {
 			/* rekey? we reject re-setup link currently */
 			/* TODO: Still can setup link during rekey */
@@ -4412,7 +4428,7 @@ TDLS_STATUS TdlsexMgmtCtrl(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Se
 	case TDLS_FRM_ACTION_SETUP_RSP:
 	case TDLS_FRM_ACTION_CONFIRM:
 	case TDLS_FRM_ACTION_TEARDOWN:
-		prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) NETWORK_TYPE_AIS_INDEX, prMgmtTxInfo->aucPeer);
+		prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) prMgmtTxInfo->eNetworkType, prMgmtTxInfo->aucPeer);
 #if 0				/* in some cases, the prStaRec is still NULL */
 		/*
 		   EX: if a peer sends us a TDLS setup request with wrong BSSID,
@@ -4457,11 +4473,7 @@ TDLS_STATUS TdlsexMgmtCtrl(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Se
 
 	return TdlsDataFrameSend(prAdapter,
 				 prStaRec,
-				 prMgmtTxInfo->aucPeer,
-				 prMgmtTxInfo->ucActionCode,
-				 prMgmtTxInfo->ucDialogToken,
-				 prMgmtTxInfo->u2StatusCode,
-				 (UINT_8 *) prMgmtTxInfo->aucSecBuf, prMgmtTxInfo->u4SecBufLen);
+				 prMgmtTxInfo);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -4482,7 +4494,7 @@ TDLS_STATUS TdlsexPeerAdd(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Set
 {
 	GLUE_INFO_T *prGlueInfo;
 	TDLS_CMD_PEER_ADD_T *prCmd;
-	BSS_INFO_T *prAisBssInfo;
+	BSS_INFO_T *prBssInfo;
 	STA_RECORD_T *prStaRec;
 	UINT_8 ucNonHTPhyTypeSet;
 	UINT32 u4StartIdx;
@@ -4500,16 +4512,16 @@ TDLS_STATUS TdlsexPeerAdd(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Set
 	prGlueInfo = (GLUE_INFO_T *) prAdapter->prGlueInfo;
 	*pu4SetInfoLen = sizeof(TDLS_CMD_PEER_ADD_T);
 	prCmd = (TDLS_CMD_PEER_ADD_T *) pvSetBuffer;
-	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+	prBssInfo = &(prAdapter->rWifiVar.arBssInfo[prCmd->eNetworkType]);
 	u4StartIdx = 0;
 
 	/* search old entry */
-	prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) NETWORK_TYPE_AIS_INDEX, prCmd->aucPeerMac);
+	prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) prCmd->eNetworkType, prCmd->aucPeerMac);
 
 	/* check if any TDLS link exists because we only support one TDLS link currently */
 	if (prStaRec == NULL) {
 		/* the MAC is new peer */
-		prStaRec = cnmStaTheTypeGet(prAdapter, NETWORK_TYPE_AIS_INDEX, STA_TYPE_TDLS_PEER, &u4StartIdx);
+		prStaRec = cnmStaTheTypeGet(prAdapter, prCmd->eNetworkType, STA_TYPE_TDLS_PEER, &u4StartIdx);
 
 		if (prStaRec != NULL) {
 			/* a building TDLS link exists */
@@ -4547,11 +4559,13 @@ TDLS_STATUS TdlsexPeerAdd(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Set
 					      TDLS_REASON_CODE_MTK_DIS_BY_US_DUE_TO_REKEY, NULL);
 
 			/* 16 Nov 21:49 2012 http://permalink.gmane.org/gmane.linux.kernel.wireless.general/99712 */
-			cfg80211_tdls_oper_request(prAdapter->prGlueInfo->prDevHandler,
-						   prStaRec->aucMacAddr, TDLS_FRM_ACTION_TEARDOWN,
+			cfg80211_tdls_oper_request(prCmd->eNetworkType == NETWORK_TYPE_AIS_INDEX ?
+							prAdapter->prGlueInfo->prDevHandler :
+							prAdapter->prGlueInfo->prP2PInfo->prDevHandler,
+						   prStaRec->aucMacAddr, NL80211_TDLS_TEARDOWN,
 						   TDLS_REASON_CODE_UNSPECIFIED, GFP_ATOMIC);
 
-			DBGLOG(TDLS, TRACE,
+			DBGLOG(TDLS, INFO,
 			       "<tdls_cmd> %s: re-setup link for [%pM] maybe re-key?\n",
 				__func__, (prStaRec->aucMacAddr));
 			return TDLS_STATUS_FAILURE;
@@ -4579,7 +4593,7 @@ TDLS_STATUS TdlsexPeerAdd(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Set
 	   update a station record with STA_STATE_3.
 	 */
 	if (prStaRec == NULL) {
-		prStaRec = cnmStaRecAlloc(prAdapter, (UINT_8) NETWORK_TYPE_AIS_INDEX);
+		prStaRec = cnmStaRecAlloc(prAdapter, (UINT_8) prCmd->eNetworkType);
 
 		if (prStaRec == NULL) {
 			/* shall not be here */
@@ -4609,10 +4623,10 @@ TDLS_STATUS TdlsexPeerAdd(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Set
 
 	/* prStaRec->u2CapInfo */
 	/* TODO: Need to parse elements from setup request frame */
-	prStaRec->u2OperationalRateSet = prAisBssInfo->u2OperationalRateSet;
-	prStaRec->u2BSSBasicRateSet = prAisBssInfo->u2BSSBasicRateSet;
+	prStaRec->u2OperationalRateSet = prBssInfo->u2OperationalRateSet;
+	prStaRec->u2BSSBasicRateSet = prBssInfo->u2BSSBasicRateSet;
 	prStaRec->u2DesiredNonHTRateSet = prAdapter->rWifiVar.ucAvailablePhyTypeSet;
-	prStaRec->ucPhyTypeSet = prAisBssInfo->ucPhyTypeSet;
+	prStaRec->ucPhyTypeSet = prBssInfo->ucPhyTypeSet;
 	prStaRec->eStaType = STA_TYPE_TDLS_PEER;
 
 	prStaRec->ucDesiredPhyTypeSet =	/*prStaRec->ucPhyTypeSet & */
@@ -4678,8 +4692,8 @@ TDLS_STATUS TdlsexPeerAdd(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Set
 	/* update time */
 	GET_CURRENT_SYSTIME(&prStaRec->rTdlsSetupStartTime);
 
-	DBGLOG(TDLS, INFO, "<tdls_cmd> %s: create a peer [%pM]\n",
-			    __func__, (prStaRec->aucMacAddr));
+	DBGLOG(TDLS, INFO, "<tdls_cmd> %s: create a peer [%pM], network index %d\n",
+			    __func__, (prStaRec->aucMacAddr), prStaRec->ucNetTypeIndex);
 
 	return TDLS_STATUS_SUCCESS;
 }
@@ -4702,7 +4716,7 @@ TDLS_STATUS TdlsexPeerUpdate(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4
 {
 	GLUE_INFO_T *prGlueInfo;
 	TDLS_CMD_PEER_UPDATE_T *prCmd;
-	BSS_INFO_T *prAisBssInfo;
+	BSS_INFO_T *prBssInfo;
 	STA_RECORD_T *prStaRec;
 	IE_HT_CAP_T *prHtCap;
 
@@ -4718,10 +4732,10 @@ TDLS_STATUS TdlsexPeerUpdate(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4
 	prGlueInfo = (GLUE_INFO_T *) prAdapter->prGlueInfo;
 	*pu4SetInfoLen = sizeof(TDLS_CMD_PEER_ADD_T);
 	prCmd = (TDLS_CMD_PEER_UPDATE_T *) pvSetBuffer;
-	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+	prBssInfo = &(prAdapter->rWifiVar.arBssInfo[prCmd->eNetworkType]);
 
 	/* search old entry */
-	prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) NETWORK_TYPE_AIS_INDEX, prCmd->aucPeerMac);
+	prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) prCmd->eNetworkType, prCmd->aucPeerMac);
 
 	/*
 	   create new entry if not exist
@@ -4851,10 +4865,13 @@ TDLS_STATUS TdlsexPeerUpdate(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4
 * \retval None
 */
 /*----------------------------------------------------------------------------*/
-BOOLEAN TdlsexRxFrameDrop(GLUE_INFO_T *prGlueInfo, UINT_8 *pPkt)
+BOOLEAN TdlsexRxFrameDrop(GLUE_INFO_T *prGlueInfo, struct sk_buff *skb)
 {
 	ADAPTER_T *prAdapter;
 	UINT8 ucActionId;
+	UINT_8 *pPkt;
+
+	pPkt = skb->data;
 
 	/* sanity check */
 	if ((pPkt == NULL) || (*(pPkt + 12) != 0x89) || (*(pPkt + 13) != 0x0d))
@@ -4887,7 +4904,7 @@ BOOLEAN TdlsexRxFrameDrop(GLUE_INFO_T *prGlueInfo, UINT_8 *pPkt)
 		__func__, ucActionId, (UINT32) prAdapter->rRxCtrl.rFreeSwRfbList.u4NumElem);
 
 	if (ucActionId == TDLS_FRM_ACTION_TEARDOWN) {
-		DBGLOG(TDLS, WARN, "<tdls_fme> %s: Rcv a TDLS tear down frame %d, will DISABLE link\n",
+		DBGLOG(TDLS, WARN, "<tdls_fme> %s: Rcv a TDLS tear down frame reason: %d, will DISABLE link\n",
 				__func__, *(pPkt + 13 + 4));	/* reason code */
 
 		/* record disconnect history */
@@ -4898,8 +4915,16 @@ BOOLEAN TdlsexRxFrameDrop(GLUE_INFO_T *prGlueInfo, UINT_8 *pPkt)
 		   we need to tear down the link manually; or supplicant will display
 		   "No FTIE in TDLS Teardown" and it will not tear down the link
 		 */
-		cfg80211_tdls_oper_request(prGlueInfo->prDevHandler,
-					   pPkt + 6, TDLS_FRM_ACTION_TEARDOWN, *(pPkt + 13 + 4), GFP_ATOMIC);
+		cfg80211_tdls_oper_request(GLUE_GET_PKT_IS_P2P(skb) ?
+					prGlueInfo->prP2PInfo->prDevHandler :
+					prGlueInfo->prDevHandler,
+					   pPkt + 6, NL80211_TDLS_TEARDOWN, *(pPkt + 13 + 4), GFP_ATOMIC);
+		/*
+		 * do not indicate to host:
+		 * rekey will fail because the peer created by rekey in initor will be freed
+		 * by the teardown frame from responder
+		 */
+		return TRUE;
 	}
 #if 0				/* pass all to supplicant except same thing is handled in supplicant */
 	if (((*(pPkt + 13 + 3)) == TDLS_FRM_ACTION_PTI) ||
@@ -4913,6 +4938,13 @@ BOOLEAN TdlsexRxFrameDrop(GLUE_INFO_T *prGlueInfo, UINT_8 *pPkt)
 	return FALSE;
 }
 
+
+VOID TdlsexForwardFrameTag(struct sk_buff *skb, BOOLEAN fgDrop)
+{
+	/* make a NULL funciton for the use fo TDLS forward debug */
+}
+
+
 /*----------------------------------------------------------------------------*/
 /*! \brief  This routine is called to parse some IEs in the setup frame from the peer.
 *
@@ -4923,14 +4955,19 @@ BOOLEAN TdlsexRxFrameDrop(GLUE_INFO_T *prGlueInfo, UINT_8 *pPkt)
 *
 */
 /*----------------------------------------------------------------------------*/
-VOID TdlsexRxFrameHandle(GLUE_INFO_T *prGlueInfo, UINT8 *pPkt, UINT16 u2PktLen)
+VOID TdlsexRxFrameHandle(GLUE_INFO_T *prGlueInfo, struct sk_buff *skb)
 {
 	ADAPTER_T *prAdapter;
 	STA_RECORD_T *prStaRec;
 	UINT8 ucActionId;
 	UINT8 *pucPeerMac, ucElmId, ucElmLen;
 	INT16 s2FmeLen;
+	ENUM_NETWORK_TYPE_INDEX_T eNetworkType;
+	UINT_8 *pPkt;
+	UINT_16 u2PktLen;
 
+	pPkt = skb->data;
+	u2PktLen = skb->len;
 	/* sanity check */
 	if ((prGlueInfo == NULL) || (pPkt == NULL) || (*(pPkt + 12) != 0x89) || (*(pPkt + 13) != 0x0d))
 		return;
@@ -4954,11 +4991,12 @@ VOID TdlsexRxFrameHandle(GLUE_INFO_T *prGlueInfo, UINT8 *pPkt, UINT16 u2PktLen)
 	else
 		pPkt += 12 + 2 + 2 + 1 + 2 + 1 + 2;	/* skip action, status code, dialog token, capability */
 
+	eNetworkType = GLUE_GET_PKT_IS_P2P(skb) ? NETWORK_TYPE_P2P_INDEX : NETWORK_TYPE_AIS_INDEX;
 	/* check station record */
-	prStaRec = cnmGetStaRecByAddress(prGlueInfo->prAdapter, (UINT_8) NETWORK_TYPE_AIS_INDEX, pucPeerMac);
+	prStaRec = cnmGetStaRecByAddress(prGlueInfo->prAdapter, (UINT_8) eNetworkType, pucPeerMac);
 
 	if (prStaRec == NULL) {
-		prStaRec = cnmStaRecAlloc(prAdapter, (UINT_8) NETWORK_TYPE_AIS_INDEX);
+		prStaRec = cnmStaRecAlloc(prAdapter, (UINT_8) eNetworkType);
 
 		if (prStaRec == NULL) {
 			/* TODO: only one TDLS entry, need to free old one if timeout */
@@ -5044,7 +5082,7 @@ TDLS_STATUS TdlsexStaRecIdxGet(ADAPTER_T *prAdapter, MSDU_INFO_T *prMsduInfo)
 	Status = TDLS_STATUS_SUCCESS;
 
 	/* get record by ether dest */
-	prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) NETWORK_TYPE_AIS_INDEX, prMsduInfo->aucEthDestAddr);
+	prStaRec = cnmGetStaRecByAddress(prAdapter, prMsduInfo->ucNetworkType, prMsduInfo->aucEthDestAddr);
 
 	/*
 	   TDLS Setup Request frames, TDLS Setup Response frames and TDLS Setup Confirm
@@ -5102,7 +5140,7 @@ TDLS_STATUS TdlsexStaRecIdxGet(ADAPTER_T *prAdapter, MSDU_INFO_T *prMsduInfo)
 					   when we cannot reach the peer,
 					   we need AP's help to send the tear down frame
 					 */
-					prBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
+					prBssInfo = &(prAdapter->rWifiVar.arBssInfo[prMsduInfo->ucNetworkType]);
 					prStaRec = prBssInfo->prStaRecOfAP;
 					if (prStaRec == NULL) {
 						Status = TDLS_STATUS_FAILURE;
@@ -5119,7 +5157,7 @@ TDLS_STATUS TdlsexStaRecIdxGet(ADAPTER_T *prAdapter, MSDU_INFO_T *prMsduInfo)
 			Status = TDLS_STATUS_FAILURE;
 	} while (FALSE);
 
-	DBGLOG(TDLS, INFO, "<tdls> %s: (Status=%x) [%pM] ucStaRecIndex = %d!\n",
+	DBGLOG(TDLS, TRACE, "<tdls> %s: (Status=%x) [%pM] ucStaRecIndex = %d!\n",
 			    __func__, (INT32) Status, (prMsduInfo->aucEthDestAddr),
 			    prMsduInfo->ucStaRecIndex);
 	return Status;
@@ -5148,6 +5186,11 @@ VOID TdlsexTxQuotaCheck(GLUE_INFO_T *prGlueInfo, STA_RECORD_T *prStaRec, UINT8 F
 		return;
 	}
 
+	if (prStaRec->ucNetTypeIndex == NETWORK_TYPE_P2P_INDEX) {
+		DBGLOG(TDLS, INFO, "Skip quota check for p2p\n");
+		return;
+	}
+
 	/* work-around: check if the no free quota case is too long */
 	GET_CURRENT_SYSTIME(&rCurTime);
 
@@ -5170,8 +5213,10 @@ VOID TdlsexTxQuotaCheck(GLUE_INFO_T *prGlueInfo, STA_RECORD_T *prStaRec, UINT8 F
 			   we need to tear down the link manually; or supplicant will display
 			   "No FTIE in TDLS Teardown" and it will not tear down the link
 			 */
-			cfg80211_tdls_oper_request(prGlueInfo->prDevHandler,
-						   prStaRec->aucMacAddr, TDLS_FRM_ACTION_TEARDOWN,
+			cfg80211_tdls_oper_request(prStaRec->ucNetTypeIndex == NETWORK_TYPE_AIS_INDEX ?
+						   prGlueInfo->prDevHandler :
+						   prGlueInfo->prP2PInfo->prDevHandler,
+						   prStaRec->aucMacAddr, NL80211_TDLS_TEARDOWN,
 						   TDLS_REASON_CODE_UNREACHABLE, GFP_ATOMIC);
 		}
 	}

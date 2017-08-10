@@ -28,6 +28,7 @@
 ********************************************************************************
 */
 extern int wlanHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev);
+extern int p2pHardStartXmit(struct sk_buff *prSkb, struct net_device *prDev);
 extern BOOLEAN flgTdlsTestExtCapElm;
 extern UINT8 aucTdlsTestExtCapElm[];
 /*******************************************************************************
@@ -186,6 +187,7 @@ typedef struct _PARAM_CUSTOM_TDLS_CMD_STRUCT_T {
 } PARAM_CUSTOM_TDLS_CMD_STRUCT_T;
 
 typedef struct _TDLS_MGMT_TX_INFO {
+	ENUM_NETWORK_TYPE_INDEX_T eNetworkType;
 	UINT8 aucPeer[6];
 	UINT8 ucActionCode;
 	UINT8 ucDialogToken;
@@ -242,9 +244,7 @@ UINT_32 TdlsFrameGeneralIeAppend(ADAPTER_T *prAdapter, STA_RECORD_T *prStaRec, U
 TDLS_STATUS
 TdlsDataFrameSend(ADAPTER_T *prAdapter,
 		  STA_RECORD_T *prStaRec,
-		  UINT_8 *pPeerMac,
-		  UINT_8 ucActionCode,
-		  UINT_8 ucDialogToken, UINT_16 u2StatusCode, UINT_8 *pAppendIe, UINT_32 AppendIeLen);
+		  TDLS_MGMT_TX_INFO *prMsduInfo);
 
 /*******************************************************************************
 *                              F U N C T I O N S

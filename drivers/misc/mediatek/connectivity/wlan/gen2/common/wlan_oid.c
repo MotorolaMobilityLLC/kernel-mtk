@@ -2460,7 +2460,7 @@ wlanoidSetAddKey(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Se
 	   supplicant will set key before updating station & enabling the link so we need to
 	   backup the key information and set key when link is enabled
 	 */
-	if (TdlsexKeyHandle(prAdapter, prNewKey) == TDLS_STATUS_SUCCESS)
+	if (TdlsexKeyHandle(prAdapter, prNewKey, NETWORK_TYPE_AIS_INDEX) == TDLS_STATUS_SUCCESS)
 		return WLAN_STATUS_SUCCESS;
 #endif /* CFG_SUPPORT_TDLS */
 

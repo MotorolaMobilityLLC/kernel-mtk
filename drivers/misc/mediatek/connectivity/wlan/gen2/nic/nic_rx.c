@@ -540,15 +540,28 @@ VOID nicRxProcessForwardPkt(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_QM_TX_QUEUE);
 
 		if (prRetMsduInfoList != NULL) {	/* TX queue refuses queuing the packet */
+#if (CFG_SUPPORT_TDLS == 1)
+			TdlsexForwardFrameTag((struct sk_buff *)prMsduInfo->prPacket, TRUE);
+#endif
 			nicTxFreeMsduInfoPacket(prAdapter, prRetMsduInfoList);
 			nicTxReturnMsduInfo(prAdapter, prRetMsduInfoList);
 		}
+#if (CFG_SUPPORT_TDLS == 1)
+		else
+			TdlsexForwardFrameTag((struct sk_buff *)prMsduInfo->prPacket, FALSE);
+#endif
 		/* indicate service thread for sending */
 		if (prTxCtrl->i4PendingFwdFrameCount > 0)
 			kalSetEvent(prAdapter->prGlueInfo);
-	} else		/* no TX resource */
-		nicRxReturnRFB(prAdapter, prSwRfb);
+	} else {		/* no TX resource */
+#if (CFG_SUPPORT_TDLS == 1)
+		struct sk_buff *skb = (struct sk_buff *)prSwRfb->pvPacket;
 
+		skb->data = prSwRfb->pvHeader;
+		TdlsexForwardFrameTag(skb, TRUE);
+#endif
+		nicRxReturnRFB(prAdapter, prSwRfb);
+	}
 }
 
 /*----------------------------------------------------------------------------*/

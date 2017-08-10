@@ -915,7 +915,7 @@ WLAN_STATUS kalRxIndicatePkts(IN P_GLUE_INFO_T prGlueInfo, IN PVOID apvPkts[], I
 			continue;
 		}
 #if (CFG_SUPPORT_TDLS == 1)
-		if (TdlsexRxFrameDrop(prGlueInfo, prSkb->data) == TRUE) {
+		if (TdlsexRxFrameDrop(prGlueInfo, prSkb) == TRUE) {
 			/* drop the received TDLS action frame */
 			DBGLOG(TDLS, WARN,
 			       "<tdls_fme> %s: drop a received packet from %pM %u\n",
@@ -929,7 +929,7 @@ WLAN_STATUS kalRxIndicatePkts(IN P_GLUE_INFO_T prGlueInfo, IN PVOID apvPkts[], I
 		   get a TDLS request/response/confirm, we need to parse the HT IE
 		   because older supplicant does not pass HT IE to us
 		 */
-		TdlsexRxFrameHandle(prGlueInfo, prSkb->data, prSkb->len);
+		TdlsexRxFrameHandle(prGlueInfo, prSkb);
 #endif /* CFG_SUPPORT_TDLS */
 
 		STATS_RX_PKT_INFO_DISPLAY(prSkb->data);
@@ -1863,6 +1863,7 @@ kalIoctl(IN P_GLUE_INFO_T prGlueInfo,
 
 	/* <7> schedule the OID bit */
 	set_bit(GLUE_FLAG_OID_BIT, &prGlueInfo->ulFlag);
+	reinit_completion(&prGlueInfo->rPendComp);
 
 	/* <8> Wake up tx thread to handle kick start the I/O request */
 	wake_up_interruptible(&prGlueInfo->waitq);

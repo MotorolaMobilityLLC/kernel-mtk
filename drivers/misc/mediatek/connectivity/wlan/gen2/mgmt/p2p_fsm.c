@@ -1271,6 +1271,7 @@ VOID p2pFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 	P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T) NULL;
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	P_MSG_P2P_CONNECTION_ABORT_T prDisconnMsg = (P_MSG_P2P_CONNECTION_ABORT_T) NULL;
+	STA_RECORD_T *prStaRec = (P_STA_RECORD_T)NULL;
 	/* P_STA_RECORD_T prTargetStaRec = (P_STA_RECORD_T)NULL; */
 
 	do {
@@ -1287,6 +1288,18 @@ VOID p2pFsmRunEventConnectionAbort(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMs
 		prP2pBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX]);
 
 		prDisconnMsg = (P_MSG_P2P_CONNECTION_ABORT_T) prMsgHdr;
+
+		prStaRec = cnmGetStaRecByAddress(prAdapter, (UINT_8) NETWORK_TYPE_P2P_INDEX, prDisconnMsg->aucTargetID);
+
+		/*
+		 * Do nothing as TDLS disable operation will free this STA REC
+		 * when this is TDLS peer.
+		 * This operation will go through when as GO/HP.
+		 */
+		if (prStaRec && prStaRec->eStaType == STA_TYPE_TDLS_PEER) {
+			DBGLOG(P2P, INFO, "TDLS peer, do nothing\n");
+			return;
+		}
 
 		switch (prP2pBssInfo->eCurrentOPMode) {
 		case OP_MODE_INFRASTRUCTURE:

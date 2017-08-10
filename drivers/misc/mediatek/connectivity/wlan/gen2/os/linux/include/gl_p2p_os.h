@@ -238,8 +238,12 @@ BOOLEAN p2PFreeInfo(P_GLUE_INFO_T prGlueInfo);
 
 BOOLEAN glP2pCreateWirelessDevice(P_GLUE_INFO_T prGlueInfo);
 
+
 VOID glP2pDestroyWirelessDevice(VOID);
 
 VOID p2pSetMulticastListWorkQueueWrapper(P_GLUE_INFO_T prGlueInfo);
+
+
+int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev);
 
 #endif

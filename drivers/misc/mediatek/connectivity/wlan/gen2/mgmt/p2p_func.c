@@ -1323,6 +1323,11 @@ p2pFuncUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter,
 
 	prP2pBssInfo->u2OperationalRateSet = prStaRec->u2OperationalRateSet;
 	prP2pBssInfo->u2BSSBasicRateSet = prStaRec->u2BSSBasicRateSet;
+#if (CFG_SUPPORT_TDLS == 1)
+	/* init the TDLS flags */
+	prP2pBssInfo->fgTdlsIsProhibited = prStaRec->fgTdlsIsProhibited;
+	prP2pBssInfo->fgTdlsIsChSwProhibited = prStaRec->fgTdlsIsChSwProhibited;
+#endif /* CFG_SUPPORT_TDLS */
 
 	/* 3 <3> Update BSS_INFO_T from SW_RFB_T (Association Resp Frame) */
 	/* 4 <3.1> Setup BSSID */

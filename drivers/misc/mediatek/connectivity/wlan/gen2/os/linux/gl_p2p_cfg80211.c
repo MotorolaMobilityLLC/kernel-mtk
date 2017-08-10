@@ -1448,6 +1448,10 @@ int mtk_p2p_cfg80211_testmode_cmd(IN struct wiphy *wiphy, IN struct wireless_dev
 		i4Status = mtk_p2p_cfg80211_testmode_get_best_channel(wiphy, data, len);
 		break;
 #endif
+	case TESTMODE_CMD_ID_STR_CMD:
+		i4Status = mtk_cfg80211_process_str_cmd(prGlueInfo, (PUINT_8)(prParams + 1),
+				len - sizeof(*prParams));
+		break;
 	default:
 		i4Status = -EINVAL;
 		break;
