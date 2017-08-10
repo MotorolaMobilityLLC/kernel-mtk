@@ -10401,18 +10401,17 @@ wlanoidDisableTdlsPs(IN P_ADAPTER_T prAdapter,
 
 	rTdlsPs.ucIsEnablePs = *(PUINT_8)pvSetBuffer - '0';
 	DBGLOG(OID, INFO, "enable tdls ps %d\n", rTdlsPs.ucIsEnablePs);
-	wlanSendSetQueryCmd(prAdapter,
-							CMD_ID_TDLS_PS,
-							TRUE,
-							FALSE,
-							FALSE,
-							NULL,
-							nicOidCmdTimeoutCommon,
-							sizeof(rTdlsPs),
-							(PUINT_8)&rTdlsPs,
-							NULL,
-							0);
-	return WLAN_STATUS_SUCCESS;
+	return wlanSendSetQueryCmd(prAdapter,
+						CMD_ID_TDLS_PS,
+						TRUE,
+						FALSE,
+						TRUE,
+						nicCmdEventSetCommon,
+						nicOidCmdTimeoutCommon,
+						sizeof(rTdlsPs),
+						(PUINT_8)&rTdlsPs,
+						NULL,
+						0);
 }
 #endif
 
