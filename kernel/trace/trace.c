@@ -338,7 +338,11 @@ int tracing_is_enabled(void)
  * boot time and run time configurable.
  */
 #ifdef CONFIG_MTK_FTRACE_DEFAULT_ENABLE
+#ifdef CONFIG_LOW_RAM_DEBUG
+#define TRACE_BUF_SIZE_DEFAULT	3355443UL
+#else
 #define TRACE_BUF_SIZE_DEFAULT	4194304UL
+#endif
 #else
 #define TRACE_BUF_SIZE_DEFAULT	1441792UL /* 16384 * 88 (sizeof(entry)) */
 #endif
