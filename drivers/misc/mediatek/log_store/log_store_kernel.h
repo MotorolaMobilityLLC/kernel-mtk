@@ -20,11 +20,8 @@
 #define SRAM_HEADER_SIG (0xabcd1234)
 #define DRAM_HEADER_SIG (0x5678ef90)
 #define LOG_STORE_SIG (0xcdab3412)
-
-
 #define MAX_DRAM_COUNT	10
-
-#define LOG_STORE_SIZE 0x20000	/*  DRAM buff  */
+#define LOG_STORE_SIZE 0x40000	/*  DRAM buff 256KB*/
 
 /*  log flag */
 #define BUFF_VALIE		0x01
@@ -40,8 +37,6 @@
 #define BUFF_READY		0x200
 #define BUFF_EARLY_PRINTK	0x400	/* pl or lk can printk the early printk information to uart cable */
 
-
-
 struct pl_lk_log {
 	u32 sig;	/* default 0xabcd1234 */
 	u32 buff_size;	/* total buf size */
@@ -51,16 +46,11 @@ struct pl_lk_log {
 	u32 off_lk;	/* lk offset, sizeof((struct pl_lk_log) + sz_pl */
 	u32 sz_lk;	/* lk log size */
 	u32 lk_flag;	/* lk log flag */
-/*	u32 emmc_count;	 emmc save */
-/*	u32 emmc_time; */
 	u32 flag1;
 	u32 flag2;
 };
 
-
-
 #define	LOG_PL_LK  0x0	/* Preloader and lk log buff */
-
 
 /* total 100 char size. u32 25 */
 struct dram_buf_header {
@@ -87,10 +77,7 @@ struct sram_log_header {
 void log_store_bootup(void);
 void store_log_to_emmc_enable(bool value);
 void disable_early_log(void);
-
-
 #else
-
 static inline void  log_store_bootup(void)
 {
 

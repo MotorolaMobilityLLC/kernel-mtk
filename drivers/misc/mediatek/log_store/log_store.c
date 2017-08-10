@@ -22,16 +22,11 @@
 #include <linux/of.h>
 #include <linux/of_fdt.h>
 #include <linux/kernel.h>
-#include <asm/io.h>
-#include <asm/uaccess.h>
+#include <linux/io.h>
+#include <linux/uaccess.h>
 #include <asm/memory.h>
 
 #include "log_store_kernel.h"
-
-
-#define FILE_PATH	"/data/pl_lk"
-
-
 
 static struct sram_log_header *sram_header;
 static int sram_log_store_status = BUFF_NOT_READY;
@@ -44,7 +39,6 @@ static bool early_log_disable;
 /* set the flag whether store log to emmc in next boot phase in pl */
 void store_log_to_emmc_enable(bool value)
 {
-
 	if (sram_dram_buff == NULL) {
 		pr_err("%s: sram dram buff is NULL.\n", __func__);
 		return;
@@ -66,48 +60,7 @@ void log_store_bootup(void)
 {
 	/* Boot up finish, don't save log to emmc in next boot.*/
 	store_log_to_emmc_enable(false);
-	return;
-#if 0
-	struct file *filp;
-	int value;
-	mm_segment_t fs;
-	loff_t pos;
-
-	if (log_buff_header == NULL || pbuff == NULL) {
-		pr_err("%s: log buff is NULL.\n", __func__);
-		goto free_memory;
-	}
-
-/* store log to /data/pl_lk file */
-
-	filp = filp_open(FILE_PATH, O_CREAT|O_RDWR|O_TRUNC, 0);
-	value = (int)IS_ERR(filp);
-	if (value) {
-		pr_err("%s: create file %s error 0x%x.\n", __func__, FILE_PATH, value);
-		return;
-	}
-
-	fs = get_fs();
-	set_fs(KERNEL_DS);
-	pos = 0;
-	vfs_write(filp, pbuff+log_buff_header->off_pl,
-		log_buff_header->sz_lk + log_buff_header->sz_pl, &pos);
-	filp_close(filp, NULL);
-	set_fs(fs);
-
-/* Free the reserve memory */
-free_memory:
-	if (pbuff != NULL) {
-		vunmap(pbuff);
-		log_buff_header = NULL;
-		pbuff = NULL;
-	}
-	return;
-#endif
 }
-
-
-
 
 static void *remap_lowmem(phys_addr_t start, phys_addr_t size)
 {
@@ -204,7 +157,7 @@ static int __init log_store_late_init(void)
 
 /* check buff flag */
 	if (log_buff_header->sig != LOG_STORE_SIG) {
-		pr_err("log store: log sig error:0x%x.\n", log_buff_header->sig);
+		pr_err("log store: log sig: 0x%x.\n", log_buff_header->sig);
 		dram_log_store_status = BUFF_ERROR;
 		return 0;
 	}
@@ -241,7 +194,7 @@ static void store_printk_buff(void)
 	sram_dram_buff->reserve2[1] = size;
 	if (early_log_disable == false)
 		sram_dram_buff->flag |= BUFF_EARLY_PRINTK;
-	pr_notice("log_store printk log buff add:0x%x, size 0x%x. buff flag 0x%x.\n",
+	pr_notice("log_store printk log buff addr:0x%x, size 0x%x. buff flag 0x%x.\n",
 		sram_dram_buff->reserve2[0], sram_dram_buff->reserve2[1], sram_dram_buff->flag);
 }
 
@@ -261,11 +214,11 @@ void disable_early_log(void)
 static int __init log_store_early_init(void)
 {
 
-	sram_header = ioremap(CONFIG_MTK_DRAM_LOG_STORE_ADDR, CONFIG_MTK_RAM_CONSOLE_SIZE);
+	sram_header = ioremap(CONFIG_MTK_DRAM_LOG_STORE_ADDR, CONFIG_MTK_DRAM_LOG_STORE_SIZE);
 
 	pr_err("log_store: sram header address 0x%p.\n", sram_header);
 	if (sram_header->sig != SRAM_HEADER_SIG) {
-		pr_err("log_store: sram header sig error 0x%x.\n", sram_header->sig);
+		pr_err("log_store: sram header sig 0x%x.\n", sram_header->sig);
 		sram_log_store_status = BUFF_ERROR;
 		sram_header = NULL;
 		return -1;
@@ -273,7 +226,7 @@ static int __init log_store_early_init(void)
 
 	sram_dram_buff = &(sram_header->dram_buf[LOG_PL_LK]);
 	if (sram_dram_buff->sig != DRAM_HEADER_SIG) {
-		pr_err("log_store: sram header DRAM sig errorn");
+		pr_err("log_store: sram header DRAM sig error");
 		sram_log_store_status = BUFF_ERROR;
 		sram_dram_buff = NULL;
 		return -1;
