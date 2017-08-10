@@ -148,6 +148,7 @@ bool sdio_lock_dvfs;
 
 u8 g_emmc_id;
 unsigned int cd_gpio = 0;
+unsigned int cd_debounce;
 
 struct msdc_host *mtk_msdc_host[] = { NULL, NULL, NULL, NULL};
 EXPORT_SYMBOL(mtk_msdc_host);

@@ -22,12 +22,14 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/gpio.h>
 
 #include "mt_sd.h"
 #include <mt-plat/sd_misc.h>
 
 extern const struct of_device_id msdc_of_ids[];
 extern unsigned int cd_gpio;
+extern unsigned int cd_debounce;
 
 extern void __iomem *gpio_base;
 extern void __iomem *infracfg_ao_reg_base;

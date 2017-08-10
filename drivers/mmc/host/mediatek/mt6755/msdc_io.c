@@ -1266,6 +1266,24 @@ int msdc_of_parse(struct mmc_host *mmc)
 				host->id);
 	}
 
+	/* get cd_gpio and cd_level */
+	if (of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio) == 0) {
+		if (of_property_read_u8(np, "cd_level", &host->hw->cd_level))
+			pr_err("[msdc%d] cd_level isn't found in device tree\n",
+				host->id);
+		if (of_property_read_u32(np, "cd-debounce", &cd_debounce) == 0) {
+			pr_err("[msdc%d] get cd_debounce %d ms\n",
+					host->id, cd_debounce);
+
+			pr_err("[msdc%d] set gpio %d debounce %d ms\n",
+					host->id, cd_gpio, cd_debounce);
+			ret = gpio_set_debounce(cd_gpio, cd_debounce * 1000);
+			if (ret < 0)
+				pr_err("[msdc%d] set cd_debounce %d ms error\n",
+						host->id, cd_debounce);
+		}
+	}
+
 	msdc_get_register_settings(host, np);
 
 	#if !defined(FPGA_PLATFORM)
