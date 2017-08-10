@@ -2472,8 +2472,13 @@ static void mt_battery_charger_detect_check(void)
 			BMT_status.charger_type = bat_charger_get_charger_type();
 			mutex_unlock(&charger_type_mutex);
 			fg_first_detect = false;
-			if (BMT_status.charger_type != NONSTANDARD_CHARGER)
+			if (BMT_status.charger_type != NONSTANDARD_CHARGER) {
 				pr_warn("Update charger type to %d!\n", BMT_status.charger_type);
+				if ((BMT_status.charger_type == STANDARD_HOST)
+					|| (BMT_status.charger_type == CHARGING_HOST)) {
+					mt_usb_connect();
+				}
+			}
 		}
 
 		if (BMT_status.charger_type == CHARGER_UNKNOWN) {
