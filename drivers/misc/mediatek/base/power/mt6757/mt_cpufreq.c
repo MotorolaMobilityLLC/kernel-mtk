@@ -1692,15 +1692,14 @@ static void dump_all_opp_table(void)
 	}
 }
 
-static void dump_opp_table(struct mt_cpu_dvfs *p)
+static inline void assert_volt_valid(int line, unsigned int volt, unsigned int cur_vsram, unsigned int cur_vproc,
+				     unsigned int old_vsram, unsigned int old_vproc)
 {
-	int i;
-
-	cpufreq_err("[%s/%u] oppidx = %d\n", p->name, p->cpu_id, p->idx_opp_tbl);
-
-	for (i = 0; i < p->nr_opp_tbl; i++) {
-		cpufreq_err("%-2d (%u, %u)\n",
-			    i, cpu_dvfs_get_freq_by_idx(p, i), cpu_dvfs_get_volt_by_idx(p, i));
+	if (unlikely(cur_vsram < cur_vproc ||
+		     cur_vsram - cur_vproc > MAX_DIFF_VSRAM_VPROC)) {
+		cpufreq_err("@%d, volt = %u, cur_vsram = %u (%u), cur_vproc = %u (%u)\n",
+			    line, volt, cur_vsram, old_vsram, cur_vproc, old_vproc);
+		BUG();
 	}
 }
 
@@ -1753,13 +1752,7 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 				target_vsram = MAX_VSRAM_VOLT;	/* to end the loop */
 			}
 
-			if (unlikely(!(cur_vsram >= cur_vproc &&
-				       cur_vsram - cur_vproc <= MAX_DIFF_VSRAM_VPROC))) {
-				dump_opp_table(p);
-				cpufreq_err("@%s():%d, old_vsram=%u, old_vproc=%u, cur_vsram=%u, cur_vproc=%u\n",
-					    __func__, __LINE__, old_vsram, old_vproc, cur_vsram, cur_vproc);
-				BUG();
-			}
+			assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, old_vsram, old_vproc);
 
 			/* update vsram */
 			now[SET_VSRAM] = ktime_get();
@@ -1774,13 +1767,7 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 			else
 				cur_vproc = next_vsram - NORMAL_DIFF_VRSAM_VPROC;
 
-			if (unlikely(!(cur_vsram >= cur_vproc &&
-				       cur_vsram - cur_vproc <= MAX_DIFF_VSRAM_VPROC))) {
-				dump_opp_table(p);
-				cpufreq_err("@%s():%d, old_vsram=%u, old_vproc=%u, cur_vsram=%u, cur_vproc=%u\n",
-					    __func__, __LINE__, old_vsram, old_vproc, cur_vsram, cur_vproc);
-				BUG();
-			}
+			assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, old_vsram, old_vproc);
 
 			now[SET_VPROC] = ktime_get();
 			mt6311_set_vdvfs11_vosel_on(VOLT_TO_EXTBUCK_VAL(cur_vproc));
@@ -1809,13 +1796,7 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 			/* update vproc */
 			cur_vproc = next_vproc;
 
-			if (unlikely(!(cur_vsram >= cur_vproc &&
-				       cur_vsram - cur_vproc <= MAX_DIFF_VSRAM_VPROC))) {
-				dump_opp_table(p);
-				cpufreq_err("@%s():%d, old_vsram=%u, old_vproc=%u, cur_vsram=%u, cur_vproc=%u\n",
-					    __func__, __LINE__, old_vsram, old_vproc, cur_vsram, cur_vproc);
-				BUG();
-			}
+			assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, old_vsram, old_vproc);
 
 			now[SET_VPROC] = ktime_get();
 			mt6311_set_vdvfs11_vosel_on(VOLT_TO_EXTBUCK_VAL(cur_vproc));
@@ -1828,13 +1809,7 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt)
 			cur_vsram = MAX(next_vsram, MIN_VSRAM_VOLT);
 			cur_vsram = MIN(cur_vsram, MAX_VSRAM_VOLT);
 
-			if (unlikely(!(cur_vsram >= cur_vproc &&
-				       cur_vsram - cur_vproc <= MAX_DIFF_VSRAM_VPROC))) {
-				dump_opp_table(p);
-				cpufreq_err("@%s():%d, old_vsram=%u, old_vproc=%u, cur_vsram=%u, cur_vproc=%u\n",
-					    __func__, __LINE__, old_vsram, old_vproc, cur_vsram, cur_vproc);
-				BUG();
-			}
+			assert_volt_valid(__LINE__, volt, cur_vsram, cur_vproc, old_vsram, old_vproc);
 
 			now[SET_VSRAM] = ktime_get();
 			p->ops->set_cur_vsram(p, cur_vsram);
@@ -2093,9 +2068,7 @@ static int _cpufreq_set_locked(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 		}
 	}
 
-	aee_record_cpu_dvfs_step(0);
-
-	return 0;
+	ret = 0;
 
 out:
 	aee_record_cpu_dvfs_step(0);
