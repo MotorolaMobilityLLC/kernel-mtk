@@ -35,8 +35,8 @@ struct MGMT_FRAME {
 typedef struct _TC_RES_RELEASE_ENTRY {
 	UINT_64 u8RelaseTime;
 	UINT_32 u4RelCID;
-	UINT_16	ucTc4RelCnt;
-	UINT_8	ucAvailableTc4;
+	UINT_16	u2Tc4RelCnt;
+	UINT_16	u2AvailableTc4;
 } TC_RES_RELEASE_ENTRY, *P_TC_RES_RELEASE_ENTRY;
 
 typedef struct _CMD_TRACE_ENTRY {
@@ -102,15 +102,15 @@ VOID wlanTraceTxCmd(P_CMD_INFO_T prCmd)
 		u2CurEntry = 0;
 }
 
-VOID wlanTraceReleaseTcRes(P_ADAPTER_T prAdapter, PUINT_16 aucTxRlsCnt, UINT_8 ucAvaliable)
+VOID wlanTraceReleaseTcRes(P_ADAPTER_T prAdapter, UINT_16 u2TxRlsCnt, UINT_16 u2Available)
 {
 	static UINT_16 u2CurEntry;
 	P_TC_RES_RELEASE_ENTRY prCurBuf = &gprTcReleaseTraceBuffer[u2CurEntry];
 	/* Here we should wait FW to find right way to trace release CID */
 	/* HAL_MCR_RD(prAdapter, MCR_D2HRM2R, &prCurBuf->u4RelCID); */
 	prCurBuf->u8RelaseTime = sched_clock();
-	prCurBuf->ucTc4RelCnt = aucTxRlsCnt[TC4_INDEX];
-	prCurBuf->ucAvailableTc4 = ucAvaliable;
+	prCurBuf->u2Tc4RelCnt = u2TxRlsCnt;
+	prCurBuf->u2AvailableTc4 = u2Available;
 	u2CurEntry++;
 	if (u2CurEntry == TXED_CMD_TRACE_BUF_MAX_NUM)
 		u2CurEntry = 0;
@@ -139,10 +139,10 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 		for (i = 0; i < TC_RELEASE_TRACE_BUF_MAX_NUM/2; i++) {
 			bufLen = snprintf(pucBuf, maxLen,
 				"%d: Time %llu, Tc4Cnt %d, Free %d, CID %08x; %d: Time %llu, Tc4Cnt %d, Free %d CID %08x\n",
-				i*2, prTcRel[i*2].u8RelaseTime, prTcRel[i*2].ucTc4RelCnt, prTcRel[i*2].ucAvailableTc4,
+				i*2, prTcRel[i*2].u8RelaseTime, prTcRel[i*2].u2Tc4RelCnt, prTcRel[i*2].u2AvailableTc4,
 				prTcRel[i*2].u4RelCID,
-				i*2+1, prTcRel[i*2+1].u8RelaseTime, prTcRel[i*2+1].ucTc4RelCnt,
-				prTcRel[i*2+1].ucAvailableTc4, prTcRel[i*2+1].u4RelCID);
+				i*2+1, prTcRel[i*2+1].u8RelaseTime, prTcRel[i*2+1].u2Tc4RelCnt,
+				prTcRel[i*2+1].u2AvailableTc4, prTcRel[i*2+1].u4RelCID);
 			if (bufLen <= 0)
 				break;
 			pucBuf += bufLen;
@@ -164,16 +164,16 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen)
 		for (i = 0; i < TC_RELEASE_TRACE_BUF_MAX_NUM/4; i++) {
 			LOG_FUNC(
 				"%d: Time %llu, Tc4Cnt %d, Free %d, CID %08x; %d: Time %llu, Tc4Cnt %d, Free %d, CID %08x;",
-				i*4, prTcRel[i*4].u8RelaseTime, prTcRel[i*4].ucTc4RelCnt,
-				prTcRel[i*4].ucAvailableTc4, prTcRel[i*4].u4RelCID,
-				i*4+1, prTcRel[i*4+1].u8RelaseTime, prTcRel[i*4+1].ucTc4RelCnt,
-				prTcRel[i*4+1].ucAvailableTc4, prTcRel[i*4+1].u4RelCID);
+				i*4, prTcRel[i*4].u8RelaseTime, prTcRel[i*4].u2Tc4RelCnt,
+				prTcRel[i*4].u2AvailableTc4, prTcRel[i*4].u4RelCID,
+				i*4+1, prTcRel[i*4+1].u8RelaseTime, prTcRel[i*4+1].u2Tc4RelCnt,
+				prTcRel[i*4+1].u2AvailableTc4, prTcRel[i*4+1].u4RelCID);
 			LOG_FUNC(
 				" %d: Time %llu, Tc4Cnt %d, Free %d, CID %08x; %d: Time %llu, Tc4Cnt %d, Free %d, CID %08x\n",
-				i*4+2, prTcRel[i*4+2].u8RelaseTime, prTcRel[i*4+2].ucTc4RelCnt,
-				prTcRel[i*4+2].ucAvailableTc4, prTcRel[i*4+2].u4RelCID,
-				i*4+3, prTcRel[i*4+3].u8RelaseTime, prTcRel[i*4+3].ucTc4RelCnt,
-				prTcRel[i*4+3].ucAvailableTc4, prTcRel[i*4+3].u4RelCID);
+				i*4+2, prTcRel[i*4+2].u8RelaseTime, prTcRel[i*4+2].u2Tc4RelCnt,
+				prTcRel[i*4+2].u2AvailableTc4, prTcRel[i*4+2].u4RelCID,
+				i*4+3, prTcRel[i*4+3].u8RelaseTime, prTcRel[i*4+3].u2Tc4RelCnt,
+				prTcRel[i*4+3].u2AvailableTc4, prTcRel[i*4+3].u4RelCID);
 		}
 	}
 }
