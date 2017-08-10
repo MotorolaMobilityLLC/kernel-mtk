@@ -1,5 +1,5 @@
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
-	ifeq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6582" "mt6592" "mt6580"))
+	ifeq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6582" "mt6592"))
 		# armv8
 		ifeq ($(CONFIG_TRUSTONIC_TEE_VERSION), "")
 			# use default version
