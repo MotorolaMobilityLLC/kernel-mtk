@@ -22,8 +22,10 @@
 #include "ged_notify_sw_vsync.h"
 #include "ged_dvfs.h"
 #include <linux/module.h>
+
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
 #include "ged_vsync.h"
-#include "ged_kpi.h"
+#endif
 
 static unsigned int ged_boost_enable = 1;
 //-----------------------------------------------------------------------------
@@ -134,6 +136,7 @@ int ged_bridge_dvfs_um_retrun(
 				psDVFS_UM_returnINT->bFallback);
 	return 0;
 }
+
 //-----------------------------------------------------------------------------
 int ged_bridge_event_notify(
 		GED_BRIDGE_IN_EVENT_NOTIFY *psEVENT_NOTIFYINT, 
@@ -152,21 +155,14 @@ int ged_bridge_event_notify(
 
 	return 0;
 }
+
 //-----------------------------------------------------------------------------
-int ged_bridge_wait_hw_vsync(
-	GED_BRIDGE_IN_WAIT_HW_VSYNC *psWaitHWVSyncINT,
-	GED_BRIDGE_OUT_WAIT_HW_VSYNC *psWaitHWVSyncOUT)
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
+int ged_bridge_vsync_wait(void)
 {
-    psWaitHWVSyncOUT->eError = ged_vsync_wait();
-	return 0;
+    ged_vsync_wait();
+    return 0;
 }
-//-----------------------------------------------------------------------------
-int ged_bridge_gpu_timestamp(
-	GED_BRIDGE_IN_GPU_TIMESTAMP *psGpuBeginINT,
-	GED_BRIDGE_OUT_GPU_TIMESTAMP *psGpuBeginOUT)
-{
-	psGpuBeginOUT->eError = ged_kpi_gpu_ts(psGpuBeginINT->tid, psGpuBeginINT->ullWnd, psGpuBeginINT->i32FrameID, psGpuBeginINT->fence_fd);
-	return 0;
-}
-//-----------------------------------------------------------------------------
+#endif
+
 module_param(ged_boost_enable, uint, 0644);

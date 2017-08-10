@@ -27,7 +27,6 @@
 #include "ged_log.h"
 #include "ged_base.h"
 #include "ged_monitor_3D_fence.h"
-#include "ged.h"
 
 #define GED_DVFS_TIMER_TIMEOUT 25000000
 
@@ -181,10 +180,8 @@ extern unsigned long g_ulWorkingPeriod_us; // last frame half, t0
 
 GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQueryData)
 {
-	ged_notification(GED_NOTIFICATION_TYPE_SW_VSYNC);
+#ifdef ENABLE_COMMON_DVFS	
 
-	{
-#ifdef ENABLE_COMMON_DVFS
 	long long llDiff = 0;
 	bool bHWEventKick = false;
 	unsigned long long temp;
@@ -332,7 +329,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 #endif			///	#ifdef ENABLE_TIMER_BACKUP		
 	return GED_INTENTIONAL_BLOCK; // not to do further operations
 #endif
-	}
+
 	return GED_OK;
 }
 

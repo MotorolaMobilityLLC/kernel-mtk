@@ -38,7 +38,7 @@ ccflags-y += -DENABLE_FRR_FOR_MT6XXX_PLATFORM
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/ \
-             -I$(srctree)/drivers/misc/mediatek/video/common/wdma10/ \
+             -I$(srctree)/drivers/misc/mediatek/vv/common/wdma10/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/ \
              -I$(srctree)/drivers/misc/mediatek/sync/ \
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/mach/ \
@@ -78,15 +78,12 @@ endif
 
 ccflags-y += -DGED_DVFS_DEBUG_BUF
 
-ccflags-y += -DMTK_GED_KPI
-
 ccflags-y += \
 	-include $(GED_TOP)/include/config_kernel_$(VER).h
 
 obj-y += ged.o
 
 ged-y += \
-	src/ged.o \
 	src/ged_base.o \
 	src/ged_main.o \
 	src/ged_debugFS.o \
@@ -98,12 +95,10 @@ ged-y += \
 	src/ged_notify_sw_vsync.o \
 	src/ged_hashtable.o \
 	src/ged_thread.o \
-	src/ged_dvfs.o \
-	src/ged_kpi.o \
-	src/ged_trace.o
+	src/ged_dvfs.o
     
 
 $(info *MTK_PLATFORM: $(MTK_PLATFORM))
-
+ifneq (, $(findstring mt6, $(MTK_PLATFORM)))
 ged-y += src/ged_vsync.o
-
+endif

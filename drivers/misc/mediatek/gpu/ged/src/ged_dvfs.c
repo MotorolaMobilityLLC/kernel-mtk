@@ -32,7 +32,6 @@
 #include "ged_profile_dvfs.h"
 #include "ged_log.h"
 #include "ged_base.h"
-#include "ged_kpi.h"
 
 #define MTK_DEFER_DVFS_WORK_MS          10000
 #define MTK_DVFS_SWITCH_INTERVAL_MS     50//16//100
@@ -291,17 +290,17 @@ bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE 
 		{
 			// call to DVFS module
 			
-			ged_dvfs_gpu_freq_commit_fp(ui32NewFreqID, g_CommitType, &bCommited);
+			ged_dvfs_gpu_freq_commit_fp(ui32NewFreqID, eCommitType, &bCommited);
 			/* 
 			 * To-Do: refine previous freq contributions, 
 			 * since it is possible to have multiple freq settings in previous execution period
 			 * Does this fatal for precision?
 			 */
-			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] new freq ID commited: idx=%lu type=%u",ui32NewFreqID, g_CommitType);
+			ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] new freq ID commited: idx=%lu type=%u",ui32NewFreqID, eCommitType);
 			if(true==bCommited)
 			{
 				ged_log_trace_counter("Freq-idx",ui32NewFreqID);
-				ged_log_trace_counter("commit-type",g_CommitType);
+				ged_log_trace_counter("commit-type",eCommitType);
 				ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] commited true");
 				g_ui32PreFreqID = ui32CurFreqID;            
 			}
@@ -999,7 +998,7 @@ void ged_dvfs_sw_vsync_query_data(GED_DVFS_UM_QUERY_PACK* psQueryData)
 
 	psQueryData->ulWorkingPeriod_us = gL_ulWorkingPeriod_us;
 	psQueryData->ulPreCalResetTS_us = gL_ulPreCalResetTS_us;
-//	psQueryData->i32UncompletedCount = ged_kpi_get_uncompleted_count();
+
 
 }
 

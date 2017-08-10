@@ -56,8 +56,9 @@ typedef enum
     GED_BRIDGE_COMMAND_DVFS_PROBE,
     GED_BRIDGE_COMMAND_DVFS_UM_RETURN,
 	GED_BRIDGE_COMMAND_EVENT_NOTIFY,
-	GED_BRIDGE_COMMAND_WAIT_HW_VSYNC,
-	GED_BRIDGE_COMMAND_GPU_TIMESTAMP,
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
+    GED_BRIDGE_COMMAND_VSYNC_WAIT,
+#endif
 } GED_BRIDGE_COMMAND_ID;
 
 #define GED_BRIDGE_IO_LOG_BUF_GET			GED_IOWR(GED_BRIDGE_COMMAND_LOG_BUF_GET)
@@ -70,8 +71,9 @@ typedef enum
 #define GED_BRIDGE_IO_DVFS_PROBE       GED_IOWR(GED_BRIDGE_COMMAND_DVFS_PROBE)
 #define GED_BRIDGE_IO_DVFS_UM_RETURN GED_IOWR(GED_BRIDGE_COMMAND_DVFS_UM_RETURN)
 #define GED_BRIDGE_IO_EVENT_NOTIFY GED_IOWR(GED_BRIDGE_COMMAND_EVENT_NOTIFY)
-#define GED_BRIDGE_IO_WAIT_HW_VSYNC			GED_IOWR(GED_BRIDGE_COMMAND_WAIT_HW_VSYNC)
-#define GED_BRIDGE_IO_GPU_TIMESTAMP			GED_IOWR(GED_BRIDGE_COMMAND_GPU_TIMESTAMP)
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
+#define GED_BRIDGE_IO_VSYNC_WAIT 			GED_IOWR(GED_BRIDGE_COMMAND_FSYNC_WAIT)
+#endif
 
 /*****************************************************************************
  *  LOG_BUF_GET
@@ -248,41 +250,6 @@ typedef struct GED_BRIDGE_OUT_EVENT_NOTIFY_TAG
 } GED_BRIDGE_OUT_EVENT_NOTIFY;
 
 /*****************************************************************************
- *  WAIT HW VSync
- *****************************************************************************/
-
-/* Bridge in structure for creation */
-typedef struct GED_BRIDGE_IN_WAIT_HW_VSYNC_TAG
-{
-	int tid;
-} GED_BRIDGE_IN_WAIT_HW_VSYNC;
-
-/* Bridge out structure for creation */
-typedef struct GED_BRIDGE_OUT_WAIT_HW_VSYNC_TAG
-{
-    GED_ERROR eError;
-} GED_BRIDGE_OUT_WAIT_HW_VSYNC;
-
-/*****************************************************************************
- *  GPU_TIMESTAMP - END
- *****************************************************************************/
-
-/* Bridge in structure for creation */
-typedef struct GED_BRIDGE_IN_GPU_TIMESTAMP_TAG
-{
-	int tid;
-	unsigned long long ullWnd;
-	int i32FrameID;
-	int fence_fd;
-} GED_BRIDGE_IN_GPU_TIMESTAMP;
-
-/* Bridge out structure for creation */
-typedef struct GED_BRIDGE_OUT_GPU_TIMESTAMP_TAG
-{
-    GED_ERROR eError;
-} GED_BRIDGE_OUT_GPU_TIMESTAMP;
-
-/*****************************************************************************
  *  BRIDGE FUNCTIONS
  *****************************************************************************/
 
@@ -326,12 +293,8 @@ int ged_bridge_event_notify(
 		GED_BRIDGE_IN_EVENT_NOTIFY *psEVENT_NOTIFYINT, 
 		GED_BRIDGE_OUT_EVENT_NOTIFY *psEVENT_NOTIFYOUT);
 
-int ged_bridge_wait_hw_vsync(
-	GED_BRIDGE_IN_WAIT_HW_VSYNC *psWaitHWVSyncINT,
-	GED_BRIDGE_OUT_WAIT_HW_VSYNC *psWaitHWVSyncOUT);
-
-int ged_bridge_gpu_timestamp(
-	GED_BRIDGE_IN_GPU_TIMESTAMP *psGpuBeginINT,
-	GED_BRIDGE_OUT_GPU_TIMESTAMP *psGpuBeginOUT);
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
+int ged_bridge_vsync_wait(void);
+#endif
 
 #endif

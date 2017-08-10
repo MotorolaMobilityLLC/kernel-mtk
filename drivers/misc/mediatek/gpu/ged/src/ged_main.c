@@ -36,7 +36,10 @@
 #include "ged_monitor_3D_fence.h"
 #include "ged_notify_sw_vsync.h"
 #include "ged_dvfs.h"
-#include "ged_kpi.h"
+
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
+#include "ged_vsync.h"
+#endif
 
 
 #define GED_DRIVER_DEVICE_NAME "ged"
@@ -145,12 +148,11 @@ static long ged_dispatch(GED_BRIDGE_PACKAGE *psBridgePackageKM)
 			case GED_BRIDGE_COMMAND_EVENT_NOTIFY:
 				pFunc = (ged_bridge_func_type*)ged_bridge_event_notify;
 				break;
-			case GED_BRIDGE_COMMAND_WAIT_HW_VSYNC:
-				pFunc = (ged_bridge_func_type*)ged_bridge_wait_hw_vsync;				
+#ifdef ENABLE_FRR_FOR_MT6XXX_PLATFORM
+            case GED_BRIDGE_COMMAND_VSYNC_WAIT:
+				pFunc = (ged_bridge_func_type*)ged_bridge_vsync_wait;
 				break;
-			case GED_BRIDGE_COMMAND_GPU_TIMESTAMP:
-				pFunc = (ged_bridge_func_type*)ged_bridge_gpu_timestamp;
-				break;
+#endif
 			default:
 				GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));
 				break;
@@ -293,8 +295,6 @@ static void ged_exit(void)
 	ged_log_buf_free(ghLogBuf_HWC);
 	ghLogBuf_HWC = 0;
 
-	ged_kpi_system_exit();
-
 	ged_dvfs_system_exit();
 
 	ged_profile_dvfs_exit();
@@ -379,12 +379,8 @@ static int ged_init(void)
 		goto ERROR;
 	}
 
-	err = ged_kpi_system_init();
-	if (unlikely(err != GED_OK))
-	{
-		GED_LOGE("ged: failed to init KPI!\n");
-		goto ERROR;
-	}
+	/* common gpu info buffer */
+	ged_log_buf_alloc(32, 128 * 32, GED_LOG_BUF_TYPE_QUEUEBUFFER, "gpuinfo", "gpuinfo");
 
 #ifdef GED_DEBUG
 	ghLogBuf_GLES = ged_log_buf_alloc(160, 128 * 160, GED_LOG_BUF_TYPE_RINGBUFFER, GED_LOG_BUF_COMMON_GLES, NULL);
