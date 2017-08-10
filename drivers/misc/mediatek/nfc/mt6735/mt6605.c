@@ -956,12 +956,12 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 
 	} else if (cmd == MTK_NFC_IOCTL_WRITE) {
 		gpio_dir = mt_nfc_get_gpio_dir(gpio_num);
-		pr_debug("test2 MTK_NFC_IOCTL_WRITE, gpio_dir %d, gpio_num %d, tmp_gpio %d\n",
-		    gpio_dir, gpio_num, tmp_gpio);
+		/* pr_debug("test2 MTK_NFC_IOCTL_WRITE, gpio_dir %d, gpio_num %d, tmp_gpio %d\n",
+		    gpio_dir, gpio_num, tmp_gpio); */
 		if (gpio_dir == MTK_NFC_GPIO_DIR_OUT) {
 			int gpio_pol = (arg & 0x00FF);
 
-			pr_debug("test1 MTK_NFC_GPIO_DIR_OUT\n");
+			/* pr_debug("test1 MTK_NFC_GPIO_DIR_OUT\n"); */
 			if (gpio_pol == MTK_NFC_PULL_LOW) {
 #if !defined(CONFIG_MTK_LEGACY)
 				switch (tmp_gpio) {
@@ -1037,11 +1037,9 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 			}
 		} else {
 			result = MTK_NFC_PULL_INVALID;
-			pr_debug("test3\n");
 		}
 	} else {
 		result = MTK_NFC_PULL_INVALID;
-		pr_debug("test4\n");
 	}
 
 	pr_debug("mt6605_dev_unlocked_ioctl : result=%d\n", result);
