@@ -139,7 +139,7 @@ void mt_spi_disable_master_clk(struct spi_device *ms)
 	#define SPI_DBG(fmt, args...)  pr_debug("mt-spi.c:%5d: <%s>" fmt,  __LINE__, __func__, ##args)
 
 #ifdef SPI_VERBOSE
-#define SPI_INFO(dev, fmt, args...)  dev_alert(dev, "spi.c:%5d: <%s>" fmt, __LINE__, __func__, ##args)
+#define SPI_INFO(dev, fmt, args...)  dev_info(dev, "spi.c:%5d: <%s>" fmt, __LINE__, __func__, ##args)
 static void spi_dump_reg(struct mt_spi_t *ms)
 {
 
