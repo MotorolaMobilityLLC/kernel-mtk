@@ -10347,7 +10347,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				}
 				LOG_INF("[FlushIrq]UserNumber(%d), type(%d), status(0x08%X)\n",
 					IrqInfo.UserNumber, IrqInfo.Type, IrqInfo.Status);
-				Ret = ISP_FLUSH_IRQ(IrqInfo);
+				if ((IrqInfo.Type < ISP_IRQ_TYPE_AMOUNT) && (IrqInfo.Type >= 0))
+					Ret = ISP_FLUSH_IRQ(IrqInfo);
 			} else {	/* v3 flow /v3 IRQ_USER_NUM_MAX */
 				if ((IrqInfo.UserInfo.UserKey >= IRQ_USER_NUM_MAX)
 				    || (IrqInfo.UserInfo.UserKey < 0)) {
