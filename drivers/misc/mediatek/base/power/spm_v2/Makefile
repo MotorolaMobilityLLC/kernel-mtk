@@ -51,6 +51,7 @@ ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6755/
 ccflags-y += -I$(srctree)/sound/soc/mediatek/common_define/
 
 ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/
 
 obj-y += mt_idle.o
 obj-y += mt_idle_profile.o
