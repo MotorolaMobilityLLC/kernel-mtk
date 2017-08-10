@@ -179,6 +179,9 @@ static DEFINE_MUTEX(gyroscope_mutex);
 static bool enable_status;
 
 static int gyroscope_init_flag = -1;	/* 0<==>OK -1 <==> fail */
+#ifdef MPU6515_ACCESS_BY_GSE_I2C
+extern int gsensor_init_flag;	/* 0<==>OK -1 <==> fail */
+#endif
 
 static struct gyro_init_info gyroscope_init_info = {
 	.name = "mpu6515",
@@ -1846,7 +1849,10 @@ static int mpu6515_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	atomic_set(&obj->trace, 0);
 	atomic_set(&obj->suspend, 0);
 
-
+#ifdef MPU6515_ACCESS_BY_GSE_I2C
+	if (-1 == gsensor_init_flag)
+		goto exit_init_failed;
+#endif
 
 	mpu6515_i2c_client = new_client;
 	err = mpu6515_init_client(new_client, false);

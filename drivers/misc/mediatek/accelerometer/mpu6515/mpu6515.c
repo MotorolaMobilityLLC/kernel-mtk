@@ -189,7 +189,7 @@ static DEFINE_MUTEX(gsensor_mutex);
 static DEFINE_MUTEX(gsensor_scp_en_mutex);
 static bool enable_status;
 
-static int gsensor_init_flag = -1;	/* 0<==>OK -1 <==> fail */
+int gsensor_init_flag = -1;	/* 0<==>OK -1 <==> fail */
 
 static struct acc_init_info mpu6515_init_info = {
 	.name = "mpu6515",
