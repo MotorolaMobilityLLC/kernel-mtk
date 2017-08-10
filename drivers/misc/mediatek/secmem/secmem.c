@@ -893,7 +893,7 @@ static ssize_t secmem_write(struct file *file, const char __user *buffer, size_t
 
 	desc[len] = '\0';
 
-	if (sscanf(desc, "%s", cmd) == 1) {
+	if (sscanf(desc, "%1s", cmd) == 1) {
 		if (!strcmp(cmd, "0")) {
 			MSG(ERR, "[SECMEM] - test for secmem_region_release()\n");
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
