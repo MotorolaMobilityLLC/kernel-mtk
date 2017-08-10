@@ -21,6 +21,7 @@
 #include <mach/mt_clkmgr.h>
 #endif				/* !defined(CMDQ_USE_CCF) */
 #include "m4u.h"
+#include <linux/slab.h>
 
 #include "cmdq_device.h"
 
@@ -533,7 +534,7 @@ void cmdq_mdp_init_module_clk(void)
 void cmdq_mdp_dump_rsz(const unsigned long base, const char *label)
 {
 	uint32_t value[11] = { 0 };
-	uint32_t request[4] = { 0 };
+	uint32_t request[8] = { 0 };
 	uint32_t state = 0;
 
 	value[0] = CMDQ_REG_GET32(base + 0x004);
@@ -569,9 +570,15 @@ void cmdq_mdp_dump_rsz(const unsigned long base, const char *label)
 	request[1] = (state & (0x1 << 1)) >> 1;	/* out ready */
 	request[2] = (state & (0x1 << 2)) >> 2;	/* in valid */
 	request[3] = (state & (0x1 << 3)) >> 3;	/* in ready */
+	request[4] = (value[2] & 0xFFFF);	/* input_width */
+	request[5] = (value[2] >> 16) & 0xFFFF;	/* input_height */
+	request[6] = (value[3] & 0xFFFF);	/* output_width */
+	request[7] = (value[3] >> 16) & 0xFFFF;	/* output_height */
 
 	CMDQ_ERR("RSZ inRdy,inRsq,outRdy,outRsq: %d,%d,%d,%d (%s)\n",
 		 request[3], request[2], request[1], request[0], cmdq_mdp_get_rsz_state(state));
+	CMDQ_ERR("RSZ input_width,input_height,output_width,output_height: %d,%d,%d,%d\n",
+		 request[4], request[5], request[6], request[7]);
 }
 
 void cmdq_mdp_dump_tdshp(const unsigned long base, const char *label)
@@ -1045,6 +1052,55 @@ void testcase_clkmgr_mdp(void)
 #endif				/* defined(CMDQ_USE_CCF) */
 }
 
+const char *cmdq_mdp_dispatch(uint64_t engineFlag)
+{
+	uint32_t state[2] = { 0 };
+	struct TaskStruct task;
+	const uint32_t debug_str_len = 1024;
+	int32_t status = 0;
+	const char *module = "MDP";
+
+	task.userDebugStr = kzalloc(debug_str_len, GFP_KERNEL);
+
+	status = cmdq_core_get_running_task_by_engine(engineFlag, debug_str_len, &task);
+	if (status < 0) {
+		CMDQ_ERR("Failed: get task by engine flag: 0x%016llx, task flag: 0x%016llx\n",
+			engineFlag, task.engineFlag);
+	}
+
+	CMDQ_ERR("MDP frame info: %s\n", task.userDebugStr);
+
+	kfree(task.userDebugStr);
+	task.userDebugStr = NULL;
+
+	if ((engineFlag & (1LL << CMDQ_ENG_MDP_RDMA0)) || (engineFlag & (1LL << CMDQ_ENG_MDP_RDMA1))) {
+		module = "MDP";
+	} else {
+		if ((engineFlag & (1LL << CMDQ_ENG_MDP_RSZ0))
+			&& (engineFlag & (1LL << CMDQ_ENG_MDP_RSZ1))) {/* 1-in 2-out */
+			CMDQ_REG_SET32(MDP_RSZ0_BASE + 0x044, 0x00000002);
+			state[0] = CMDQ_REG_GET32(MDP_RSZ0_BASE + 0x048) & 0xF;
+			CMDQ_REG_SET32(MDP_RSZ1_BASE + 0x044, 0x00000002);
+			state[1] = CMDQ_REG_GET32(MDP_RSZ1_BASE + 0x048) & 0xF;
+			if ((state[0] == 0xa) && (state[1] == 0xa))
+				module = "ISP (caused mdp upstream hang)";	/* 1,0,1,0 */
+		} else {/* 1-in 1-out */
+			if (engineFlag & (1LL << CMDQ_ENG_MDP_RSZ0)) {
+				CMDQ_REG_SET32(MDP_RSZ0_BASE + 0x044, 0x00000002);
+				state[0] = CMDQ_REG_GET32(MDP_RSZ0_BASE + 0x048) & 0xF;
+			}
+			if (engineFlag & (1LL << CMDQ_ENG_MDP_RSZ1)) {
+				CMDQ_REG_SET32(MDP_RSZ1_BASE + 0x044, 0x00000002);
+				state[1] = CMDQ_REG_GET32(MDP_RSZ1_BASE + 0x048) & 0xF;
+			}
+			if ((state[0] == 0xa) || (state[1] == 0xa))
+				module = "ISP (caused mdp upstream hang)";	/* 1,0,1,0 */
+		}
+	}
+
+	return module;
+}
+
 void cmdq_mdp_platform_function_setting(void)
 {
 	cmdqMDPFuncStruct *pFunc;
@@ -1076,4 +1132,7 @@ void cmdq_mdp_platform_function_setting(void)
 	pFunc->wrotGetRegOffsetDstAddr = cmdq_mdp_wrot_get_reg_offset_dst_addr;
 	pFunc->wdmaGetRegOffsetDstAddr = cmdq_mdp_wdma_get_reg_offset_dst_addr;
 	pFunc->testcaseClkmgrMdp = testcase_clkmgr_mdp;
+
+	pFunc->dispatchModule = cmdq_mdp_dispatch;
+
 }

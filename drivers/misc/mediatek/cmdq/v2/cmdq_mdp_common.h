@@ -64,6 +64,9 @@ typedef uint32_t(*CmdqMdpWdmaGetRegOffsetDstAddr) (void);
 
 typedef void (*CmdqTestcaseClkmgrMdp) (void);
 
+typedef const char*(*CmdqDispatchModule) (uint64_t engineFlag);
+
+
 typedef struct cmdqMDPFuncStruct {
 	CmdqDumpMMSYSConfig dumpMMSYSConfig;
 	CmdqVEncDumpInfo vEncDumpInfo;
@@ -83,6 +86,7 @@ typedef struct cmdqMDPFuncStruct {
 	CmdqMdpWrotGetRegOffsetDstAddr wrotGetRegOffsetDstAddr;
 	CmdqMdpWdmaGetRegOffsetDstAddr wdmaGetRegOffsetDstAddr;
 	CmdqTestcaseClkmgrMdp testcaseClkmgrMdp;
+	CmdqDispatchModule dispatchModule;
 } cmdqMDPFuncStruct;
 
 #ifdef __cplusplus
