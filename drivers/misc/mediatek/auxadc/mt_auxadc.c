@@ -1908,6 +1908,7 @@ static const struct of_device_id mt_auxadc_of_match[] = {
 	{.compatible = "mediatek,mt6755-auxadc",},
 	{.compatible = "mediatek,mt6757-auxadc",},
 	{.compatible = "mediatek,elbrus-auxadc",},
+	{.compatible = "mediatek,ap-auxadc",},
 	{},
 };
 #endif
