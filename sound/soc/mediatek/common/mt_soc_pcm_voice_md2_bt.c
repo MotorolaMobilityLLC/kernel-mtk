@@ -146,11 +146,6 @@ static int mtk_voice_md2_bt_pcm_open(struct snd_pcm_substream *substream)
 	runtime->hw.info |= SNDRV_PCM_INFO_INTERLEAVED;
 	runtime->hw.info |= SNDRV_PCM_INFO_NONINTERLEAVED;
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_warn("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_voice_md2_bt_constraints\n");
-		runtime->rate = 16000;
-	}
-
 	if (ret < 0) {
 		pr_err("mtk_voice_md2_bt_close\n");
 		mtk_voice_md2_bt_close(substream);
@@ -276,8 +271,21 @@ static int mtk_voice_md2_bt_prepare(struct snd_pcm_substream *substream)
 	/* now use samplerate 8000 */
 	SetModemSpeechDAIBTAttribute(runtimeStream->rate);
 	SetDaiBtEnable(true);
-	voice_md2_btPcm.mPcmModeWidebandSel =
-		(runtimeStream->rate == 8000) ? Soc_Aud_PCM_MODE_PCM_MODE_8K : Soc_Aud_PCM_MODE_PCM_MODE_16K;
+	switch (runtimeStream->rate)	{
+	case 8000:
+		voice_md2_btPcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_8K;
+		break;
+	case 16000:
+		voice_md2_btPcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_16K;
+		break;
+	case 32000:
+		voice_md2_btPcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_32K;
+		break;
+	default:
+		voice_md2_btPcm.mPcmModeWidebandSel = Soc_Aud_PCM_MODE_PCM_MODE_16K;
+		break;
+	}
+
 	/* voice_md2_btPcm.mAsyncFifoSel = Soc_Aud_BYPASS_SRC_SLAVE_USE_ASYNC_FIFO; */
 	SetModemPcmConfig(MODEM_EXTERNAL, voice_md2_btPcm);
 	SetModemPcmEnable(MODEM_EXTERNAL, true);
