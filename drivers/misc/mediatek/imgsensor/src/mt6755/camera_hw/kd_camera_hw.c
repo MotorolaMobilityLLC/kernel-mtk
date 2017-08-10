@@ -119,10 +119,11 @@ PowerCust PowerCustList = {
 		{GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for AFVDD; */
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353
 		{GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* for SUB_DVDD; */
+		{GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_High},	/* MAIN2_DVDD; */
 #else
 		{GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* for SUB_DVDD; */
-#endif
 		{GPIO_UNSUPPORTED, GPIO_MODE_GPIO, Vol_Low},	/* MAIN2_DVDD; */
+#endif
 		/*{GPIO_SUPPORTED, GPIO_MODE_GPIO, Vol_Low}, */
 	 }
 };
