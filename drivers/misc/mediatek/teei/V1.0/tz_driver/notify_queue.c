@@ -77,7 +77,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 	msg_body.t_n_nq_phy_addr = virt_to_phys(t_nt_buffer);
 	msg_body.t_n_size = size;
 
-	local_irq_save(irq_flag);
+	//local_irq_save(irq_flag);
 
 	/* Notify the T_OS that there are two QN to be created. */
 	memcpy(msg_buff, &msg_head, sizeof(struct message_head));
@@ -96,7 +96,7 @@ static long create_notify_queue(unsigned long msg_buff, unsigned long size)
 	memcpy(&msg_head, msg_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, msg_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
 
-	local_irq_restore(irq_flag);
+	//local_irq_restore(irq_flag);
 
 	/* Check the response from T_OS. */
 
