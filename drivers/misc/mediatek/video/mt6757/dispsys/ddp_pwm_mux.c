@@ -1,3 +1,16 @@
+/*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
 #include <linux/kernel.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
@@ -19,7 +32,7 @@
 static void __iomem *disp_pmw_mux_base;
 
 #ifndef MUX_DISPPWM_ADDR /* disp pwm source clock select register address */
-#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0x50)
+#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0xB0)
 #endif
 #ifdef HARD_CODE_CONFIG
 #ifndef MUX_UPDATE_ADDR /* disp pwm source clock update register address */
@@ -35,6 +48,8 @@ static void __iomem *disp_pmw_mux_base;
 #define clk_readl(addr) DRV_Reg32(addr)
 #define clk_writel(addr, val) mt_reg_sync_writel(val, addr)
 
+static volatile int g_pwm_mux_clock_source = -1;
+
 /*****************************************************************************
  *
  * disp pwm source clock select mux api
@@ -49,22 +64,13 @@ eDDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 		clkid = ULPOSC_D8; /* ULPOSC 29M */
 		break;
 	case 1:
-		clkid = ULPOSC_D2; /* ULPOSC 117M */
+		clkid = ULPOSC_D4; /* ULPOSC 58M */
 		break;
 	case 2:
 		clkid = UNIVPLL2_D4; /* PLL 104M */
 		break;
 	case 3:
-		clkid = -1; /* FIXME: ULPOSC_D3; */ /* ULPOSC 78M */
-		break;
-	case 4:
-		clkid = -1; /* Bypass config:default 26M */
-		break;
-	case 5:
-		clkid = -1; /* FIXME: ULPOSC_D10;*/ /* ULPOSC 23M */
-		break;
-	case 6:
-		clkid = ULPOSC_D4; /* ULPOSC 58M */
+		clkid = CLK26M; /* SYS 26M */
 		break;
 	default:
 		clkid = -1;
@@ -85,10 +91,8 @@ static int disp_pwm_get_muxbase(void)
 	int ret = 0;
 	struct device_node *node;
 
-	if (disp_pmw_mux_base != NULL) {
-		PWM_MSG("TOPCKGEN node exist");
+	if (disp_pmw_mux_base != NULL)
 		return 0;
-	}
 
 	node = of_find_compatible_node(NULL, NULL, DTSI_TOPCKGEN);
 	if (!node) {
@@ -123,13 +127,13 @@ static unsigned int disp_pwm_get_pwmmux(void)
 *****************************************************************************/
 int disp_pwm_set_pwmmux(unsigned int clk_req)
 {
-	unsigned int regsrc;
+	unsigned int reg_before, reg_after;
 	int ret = 0;
 	eDDP_CLK_ID clkid = -1;
 
 	clkid = disp_pwm_get_clkid(clk_req);
 	ret = disp_pwm_get_muxbase();
-	regsrc = disp_pwm_get_pwmmux();
+	reg_before = disp_pwm_get_pwmmux();
 
 	PWM_MSG("clk_req=%d clkid=%d", clk_req, clkid);
 	if (clkid != -1) {
@@ -138,16 +142,14 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 		ddp_clk_disable(MUX_PWM);
 	}
 
-	PWM_MSG("PWM_MUX %x->%x", regsrc, disp_pwm_get_pwmmux());
+	reg_after = disp_pwm_get_pwmmux();
+	g_pwm_mux_clock_source = reg_after & 0x3;
+	PWM_MSG("PWM_MUX %x->%x", reg_before, reg_after);
 
 	return 0;
 }
 
 static void __iomem *disp_pmw_osc_base;
-
-#ifndef OSC_ULPOSC_ADDR /* rosc control register address */
-#define OSC_ULPOSC_ADDR (disp_pmw_osc_base + 0x458)
-#endif
 
 /*****************************************************************************
  *
@@ -299,7 +301,6 @@ int disp_pwm_clksource_enable(int clk_req)
 	clkid = disp_pwm_get_clkid(clk_req);
 
 	switch (clkid) {
-	case ULPOSC_D2:
 	case ULPOSC_D4:
 	case ULPOSC_D8:
 	/* FIXME: case ULPOSC_D10:*/
@@ -320,7 +321,6 @@ int disp_pwm_clksource_disable(int clk_req)
 	clkid = disp_pwm_get_clkid(clk_req);
 
 	switch (clkid) {
-	case ULPOSC_D2:
 	case ULPOSC_D4:
 	case ULPOSC_D8:
 	/* FIXME: case ULPOSC_D10: */
@@ -333,3 +333,33 @@ int disp_pwm_clksource_disable(int clk_req)
 	return ret;
 }
 
+/*****************************************************************************
+ *
+ * disp pwm clock source query api
+ *
+*****************************************************************************/
+
+bool disp_pwm_mux_is_osc(void)
+{
+	bool is_osc = false;
+	unsigned int reg_src;
+	int ret = 0;
+
+	do {
+		if (g_pwm_mux_clock_source != -1) {
+			if (g_pwm_mux_clock_source == 3 || g_pwm_mux_clock_source == 2)
+				is_osc = true;
+			break;
+		}
+
+		ret = disp_pwm_get_muxbase();
+		if (ret < 0)
+			break;
+
+		reg_src = disp_pwm_get_pwmmux() & 0x3;
+		if (reg_src == 3 || reg_src == 2)
+			is_osc = true;
+	} while (0);
+
+	return is_osc;
+}

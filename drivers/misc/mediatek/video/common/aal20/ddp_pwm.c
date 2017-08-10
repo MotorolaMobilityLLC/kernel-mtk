@@ -22,7 +22,8 @@
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+	defined(CONFIG_ARCH_MT6757) || defined(CONFIG_ARCH_ELBRUS)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -486,6 +487,20 @@ DDP_MODULE_DRIVER ddp_driver_pwm = {
 	.set_listener = ddp_pwm_set_listener,
 };
 
+/* ---------------------------------------------------------------------- */
+/* disp pwm clock source query api                                                              */
+/* ---------------------------------------------------------------------- */
+
+bool disp_pwm_is_osc(void)
+{
+	bool is_osc = false;
+
+#if defined(CONFIG_ARCH_MT6757)
+	is_osc = disp_pwm_mux_is_osc();
+#endif
+
+	return is_osc;
+}
 
 /* ---------------------------------------------------------------------- */
 /* Test code                                                              */

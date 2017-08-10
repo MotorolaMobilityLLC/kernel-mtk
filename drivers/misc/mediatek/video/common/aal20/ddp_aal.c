@@ -27,10 +27,13 @@
 #include <ddp_path.h>
 #include <primary_display.h>
 #include <disp_drv_platform.h>
+#include <mt_smi.h>
+#include <smi_public.h>
 #ifdef CONFIG_MTK_CLKMGR
 #include <mach/mt_clkmgr.h>
 #else
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || \
+	defined(CONFIG_ARCH_MT6757) || defined(CONFIG_ARCH_ELBRUS)
 #include <ddp_clkmgr.h>
 #endif
 #endif
@@ -41,6 +44,15 @@
 #include <ddp_aal.h>
 #include <ddp_pwm.h>
 
+#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
+#define AAL0_MODULE_NAMING (DISP_MODULE_AAL0)
+#else
+#define AAL0_MODULE_NAMING (DISP_MODULE_AAL)
+#endif
+
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
+#define AAL_SUPPORT_PARTIAL_UPDATE
+#endif
 
 /* To enable debug log: */
 /* # echo aal_dbg:1 > /sys/kernel/debug/dispsys */
@@ -75,7 +87,7 @@ static int disp_aal_exit_idle(const char *caller, int need_kick)
 #ifdef MTK_DISP_IDLE_LP
 	disp_exit_idle_ex(caller);
 #endif
-#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797)
+#if defined(CONFIG_ARCH_MT6755) || defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 	if (need_kick == 1)
 		if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 			primary_display_idlemgr_kick(__func__, 1);
@@ -91,7 +103,7 @@ static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *c
 
 	disp_aal_write_init_regs(cmdq);
 #endif
-#if defined(CONFIG_ARCH_MT6797) /* disable stall cg for avoid display path hang */
+#if defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757) /* disable stall cg for avoid display path hang */
 	DISP_REG_MASK(cmdq, DISP_AAL_CFG, 0x1 << 4, 0x1 << 4);
 #endif
 	g_aal_hist_available = 0;
@@ -100,23 +112,48 @@ static int disp_aal_init(DISP_MODULE_ENUM module, int width, int height, void *c
 	return 0;
 }
 
+#ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
+static int disp_aal_get_latency_lowerbound(void)
+{
+	MTK_SMI_BWC_SCEN bwc_scen;
+	int aalrefresh;
+
+	bwc_scen = smi_get_current_profile();
+	if (bwc_scen == SMI_BWC_SCEN_VR || bwc_scen == SMI_BWC_SCEN_SWDEC_VP ||
+		bwc_scen == SMI_BWC_SCEN_SWDEC_VP || bwc_scen == SMI_BWC_SCEN_VP ||
+		bwc_scen == SMI_BWC_SCEN_VR_SLOW)
+
+		aalrefresh = AAL_REFRESH_33MS;
+	else
+		aalrefresh = AAL_REFRESH_17MS;
+
+	return aalrefresh;
+}
+#endif
+
 
 static void disp_aal_trigger_refresh(int latency)
 {
+#ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
+	int scenario_latency = disp_aal_get_latency_lowerbound();
+#endif
 
 	if (g_ddp_notify != NULL) {
 		DISP_PATH_EVENT trigger_method = DISP_PATH_EVENT_TRIGGER;
 
 #ifdef DISP_PATH_DELAYED_TRIGGER_33ms_SUPPORT
+		/*
+		Allow 33ms latency only under VP & VR scenario for avoid
+		longer animation reduce available time of SODI which cause.
+		less power saving ratio when screen idle.
+		*/
+		if (scenario_latency < latency)
+			latency = scenario_latency;
+
 		if (latency == AAL_REFRESH_33MS)
 			trigger_method = DISP_PATH_EVENT_DELAYED_TRIGGER_33ms;
 #endif
-
-#if defined(CONFIG_ARCH_ELBRUS) || defined(CONFIG_ARCH_MT6757)
-		g_ddp_notify(DISP_MODULE_AAL0, trigger_method);
-#else
-		g_ddp_notify(DISP_MODULE_AAL, trigger_method);
-#endif
+		g_ddp_notify(AAL0_MODULE_NAMING, trigger_method);
 		AAL_DBG("disp_aal_trigger_refresh: %d", trigger_method);
 	}
 }
@@ -444,9 +481,9 @@ int disp_aal_set_param(DISP_AAL_PARAM __user *param, void *cmdq)
 	if (ret == 0)
 		ret |= disp_pwm_set_backlight_cmdq(DISP_PWM0, backlight_value, cmdq);
 
-	AAL_DBG("disp_aal_set_param(CABC = %d, DRE[0,8] = %d,%d, latency = %d backlight = %d): ret = %d",
+	AAL_DBG("disp_aal_set_param(CABC = %d, DRE[0,8] = %d,%d, latency=%d): ret = %d",
 		g_aal_param.cabc_fltgain_force, g_aal_param.DREGainFltStatus[0],
-		g_aal_param.DREGainFltStatus[8], g_aal_param.refreshLatency, backlight_value, ret);
+		g_aal_param.DREGainFltStatus[8], g_aal_param.refreshLatency, ret);
 
 	backlight_brightness_set(backlight_value);
 
@@ -666,7 +703,7 @@ int aal_request_partial_support(int partial)
 	return 0;
 }
 
-#if defined(CONFIG_ARCH_MT6797)
+#ifdef AAL_SUPPORT_PARTIAL_UPDATE
 static int _aal_partial_update(DISP_MODULE_ENUM module, void *arg, void *cmdq)
 {
 	struct disp_rect *roi = (struct disp_rect *) arg;
@@ -767,7 +804,7 @@ DDP_MODULE_DRIVER ddp_driver_aal = {
 	.set_lcm_utils = NULL,
 	.set_listener = aal_set_listener,
 	.cmd = aal_io,
-#if defined(CONFIG_ARCH_MT6797)
+#ifdef AAL_SUPPORT_PARTIAL_UPDATE
 	.ioctl = aal_ioctl,
 #endif
 };
