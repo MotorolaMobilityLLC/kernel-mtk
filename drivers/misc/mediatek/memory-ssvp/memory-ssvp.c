@@ -25,6 +25,7 @@
 #include <linux/uaccess.h>
 #include <linux/init.h>
 #include <linux/mutex.h>
+#include <linux/highmem.h>
 #include <asm/page.h>
 #include <asm-generic/memory_model.h>
 
@@ -247,6 +248,11 @@ fail:
 #else
 static inline int set_pmd_mapping(unsigned long start, phys_addr_t size, int map)
 {
+	pr_debug("start=0x%lx, size=%pa, map=%d\n", start, &size, map);
+	if (!map) {
+		pr_info("Flush kmap page table\n");
+		kmap_flush_unused();
+	}
 	return 0;
 }
 #endif
