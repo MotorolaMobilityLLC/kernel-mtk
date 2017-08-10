@@ -3131,11 +3131,10 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 	P_SW_RFB_T prSwRfb = (P_SW_RFB_T) NULL;
 	UINT_32 u4RxLength;
 	UINT_32 i, rxNum;
-	UINT_32 u4RxAggCount = 0, u4RxAggLength = 0;
-	UINT_32 u4RxAvailAggLen, u4CurrAvailFreeRfbCnt;
+	UINT_32 u4RxAggLength = 0;
+	UINT_32 u4RxAvailAggLen;
 	PUINT_8 pucSrcAddr;
 	P_HW_MAC_RX_DESC_T prRxStatus;
-	BOOL fgResult = TRUE;
 	BOOLEAN fgIsRxEnhanceMode;
 	UINT_16 u2RxPktNum;
 #if CFG_SDIO_RX_ENHANCE
@@ -3174,10 +3173,15 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 			     0 ? prEnhDataStr->rRxInfo.u.u2NumValidRx0Len : prEnhDataStr->rRxInfo.u.u2NumValidRx1Len);
 
 			/* if this assertion happened, it is most likely a F/W bug */
-			ASSERT(u2RxPktNum <= 16);
 
-			if (u2RxPktNum > 16)
-				continue;
+			if (u2RxPktNum > 16) {
+				DBGLOG(RX, ERROR,
+				       "[%s]packets received are abnormal, need chip reset!\n", __func__);
+				DBGLOG_MEM32(RX, WARN, (PUINT_32)&prEnhDataStr->rRxInfo,
+					     sizeof(prEnhDataStr->rRxInfo));
+				glResetTrigger(prAdapter);
+				return;
+			}
 
 			if (u2RxPktNum == 0)
 				continue;
@@ -3187,132 +3191,68 @@ VOID nicRxSDIOAggReceiveRFBs(IN P_ADAPTER_T prAdapter)
 			prRxCtrl->u4TotalRxPacketNum += u2RxPktNum;
 #endif
 
-			u4CurrAvailFreeRfbCnt = prRxCtrl->rFreeSwRfbList.u4NumElem;
-
-			/* if SwRfb is not enough, abort reading this time */
-			if (u4CurrAvailFreeRfbCnt < u2RxPktNum) {
-#if CFG_HIF_RX_STARVATION_WARNING
-				DbgPrint("FreeRfb is not enough: %d available, need %d\n",
-					 u4CurrAvailFreeRfbCnt, u2RxPktNum);
-				DbgPrint("Queued Count: %d / Dequeud Count: %d\n",
-					 prRxCtrl->u4QueuedCnt, prRxCtrl->u4DequeuedCnt);
-#endif
-				continue;
-			}
 #if CFG_SDIO_RX_ENHANCE
 			u4RxAvailAggLen =
 			    CFG_RX_COALESCING_BUFFER_SIZE - (sizeof(ENHANCE_MODE_DATA_STRUCT_T) +
 							     4 /* extra HW padding */);
 #else
-			u4RxAvailAggLen = CFG_RX_COALESCING_BUFFER_SIZE;
+			u4RxAvailAggLen = 16 * ALIGN_4(CFG_RX_MAX_PKT_SIZE+HIF_RX_HW_APPENDED_LEN);
 #endif
-			u4RxAggCount = 0;
-
 			for (i = 0; i < u2RxPktNum; i++) {
-				PUINT_8 pucZeroArray = NULL;
-
-restart:
 				u4RxLength = (rxNum == 0 ?
 					      (UINT_32) prEnhDataStr->rRxInfo.u.au2Rx0Len[i] :
 					      (UINT_32) prEnhDataStr->rRxInfo.u.au2Rx1Len[i]);
 
 				if (!u4RxLength) {
-					ASSERT(0);
-					break;
+					DBGLOG(RX, ERROR, "[%s]HIF RX len(%d), SDIO abnormal, needs chip reset...\n",
+					       __func__, u4RxLength);
+					DBGLOG_MEM32(RX, WARN, (PUINT_32)&prEnhDataStr->rRxInfo,
+						     sizeof(prEnhDataStr->rRxInfo));
+					glResetTrigger(prAdapter);
+					return;
 				}
-
-				if (ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN) < u4RxAvailAggLen) {
-					if (u4RxAggCount < u4CurrAvailFreeRfbCnt) {
-						u4RxAvailAggLen -= ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN);
-						u4RxAggCount++;
-						continue;
-					}
-					/* no FreeSwRfb for rx packet */
+				u4RxLength = ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN);
+				if (u4RxAvailAggLen >= u4RxLength) {
+					u4RxAvailAggLen -= u4RxLength;
+					u4RxAggLength += u4RxLength;
+				} else {
 					DBGLOG(RX, ERROR,
-					       "[%s] RxAggCount(%d) is greater than AvailableFreeCount(%d)\n",
-					       __func__, u4RxAggCount, u4CurrAvailFreeRfbCnt);
-					ASSERT(0);
-					break;
+					       "SDIO buf len is more than cache len, needs chip reset.\n");
+					DBGLOG_MEM32(RX, WARN, (PUINT_32)&prEnhDataStr->rRxInfo,
+						     sizeof(prEnhDataStr->rRxInfo));
+					glResetTrigger(prAdapter);
+					return;
 				}
-
-				/* CFG_RX_COALESCING_BUFFER_SIZE is not large enough */
-				DBGLOG(RX, ERROR,
-				       "[%s] Request_len(%d) is greater than Available_len(%d)\n",
-				       __func__,
-				       (ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN)), u4RxAvailAggLen);
-				u4RxLength += (CFG_RX_COALESCING_BUFFER_SIZE - u4RxAvailAggLen);
-				pucZeroArray = kalMemAlloc(1000, VIR_MEM_TYPE);
-				if (!pucZeroArray)
-					break;
-				kalMemZero(pucZeroArray, 1000);
-				HAL_READ_RX_PORT(prAdapter, rxNum, CFG_RX_COALESCING_BUFFER_SIZE,
-						prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
-				/* dump RXD if total u4RxLength is greater than u4RxAvailAggLen */
-				DBGLOG(RX, ERROR,
-					"RXD for the wrong packet is\n");
-				DBGLOG_MEM32(RX, ERROR, prRxCtrl->pucRxCoalescingBufPtr+
-					(CFG_RX_COALESCING_BUFFER_SIZE - u4RxAvailAggLen),
-					sizeof(HW_MAC_RX_DESC_T));
-				u4RxLength -= CFG_RX_COALESCING_BUFFER_SIZE;
-				/* we should read out all pending data, otherwise,
-					DE said the port will be in abnormal case */
-				while (CFG_RX_COALESCING_BUFFER_SIZE < u4RxLength) {
-					HAL_READ_RX_PORT(prAdapter, rxNum, CFG_RX_COALESCING_BUFFER_SIZE,
-						prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
-					/* if continuous 1000 bytes were zeros, means there's no data in this port */
-					if (!kalMemCmp(pucZeroArray, prRxCtrl->pucRxCoalescingBufPtr, 1000)) {
-						kalMemFree(pucZeroArray, VIR_MEM_TYPE, 1000);
-						goto restart;
-					}
-				}
-				if (u4RxLength > 0) {
-					HAL_READ_RX_PORT(prAdapter, rxNum, ALIGN_4(u4RxLength + HIF_RX_HW_APPENDED_LEN),
-							prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
-				}
-				kalMemFree(pucZeroArray, VIR_MEM_TYPE, 1000);
-				goto restart;
 			}
 
-			u4RxAggLength = (CFG_RX_COALESCING_BUFFER_SIZE - u4RxAvailAggLen);
-			/* DBGLOG(RX, INFO, ("u4RxAggCount = %d, u4RxAggLength = %d\n", */
-			/* u4RxAggCount, u4RxAggLength)); */
-
-			HAL_READ_RX_PORT(prAdapter,
-					 rxNum,
-					 u4RxAggLength, prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
-			if (!fgResult) {
-				DBGLOG(RX, ERROR, "Read RX Agg Packet Error\n");
-				continue;
-			}
+			HAL_READ_RX_PORT(prAdapter, rxNum, u4RxAggLength,
+					 prRxCtrl->pucRxCoalescingBufPtr, CFG_RX_COALESCING_BUFFER_SIZE);
 
 			pucSrcAddr = prRxCtrl->pucRxCoalescingBufPtr;
-			for (i = 0; i < u4RxAggCount; i++) {
-				UINT_16 u2PktLength;
-
-				u2PktLength = (rxNum == 0 ?
+			for (i = 0; i < u2RxPktNum; i++) {
+				u4RxLength = ALIGN_4((rxNum == 0 ?
 					       prEnhDataStr->rRxInfo.u.au2Rx0Len[i] :
-					       prEnhDataStr->rRxInfo.u.au2Rx1Len[i]);
+					       prEnhDataStr->rRxInfo.u.au2Rx1Len[i]) + HIF_RX_HW_APPENDED_LEN);
 
-				if (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN) > CFG_RX_MAX_PKT_SIZE) {
-					DBGLOG(RX, ERROR,
-					       "[%s] Request_len(%d) is greater than CFG_RX_MAX_PKT_SIZE(%d)...",
-					       __func__, (ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN)),
-					       CFG_RX_MAX_PKT_SIZE);
-					DBGLOG(RX, ERROR, "Drop the unexpected packet...\n");
-					DBGLOG_MEM32(RX, ERROR, pucSrcAddr, sizeof(HW_MAC_RX_DESC_T));
-
-					pucSrcAddr += ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN);
+				if (u4RxLength > CFG_RX_MAX_PKT_SIZE) {
+					DBGLOG(RX, WARN,
+					       "FIH RX(%d) packets(%d)'s length in reg(%d) and in DESC(%d)...\n",
+					       rxNum, i, u4RxLength, ((HW_MAC_RX_DESC_T *)pucSrcAddr)->u2RxByteCount);
 					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+					pucSrcAddr += u4RxLength;
 					continue;
 				}
-
 				KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_FREE_QUE);
 				QUEUE_REMOVE_HEAD(&prRxCtrl->rFreeSwRfbList, prSwRfb, P_SW_RFB_T);
 				KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_FREE_QUE);
 
-				ASSERT(prSwRfb);
-				kalMemCopy(prSwRfb->pucRecvBuff, pucSrcAddr,
-					   ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN));
+				if (!prSwRfb) {
+					DBGLOG(RX, WARN, "No Free SwRfb, ignorge this packet\n");
+					RX_INC_CNT(prRxCtrl, RX_DROP_TOTAL_COUNT);
+					pucSrcAddr += u4RxLength;
+					continue;
+				}
+				kalMemCopy(prSwRfb->pucRecvBuff, pucSrcAddr, u4RxLength);
 
 				/* prHifRxHdr = prSwRfb->prHifRxHdr; */
 				/* ASSERT(prHifRxHdr); */
@@ -3333,8 +3273,7 @@ restart:
 				QUEUE_INSERT_TAIL(&prRxCtrl->rReceivedRfbList, &prSwRfb->rQueEntry);
 				RX_INC_CNT(prRxCtrl, RX_MPDU_TOTAL_COUNT);
 				KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_RX_QUE);
-
-				pucSrcAddr += ALIGN_4(u2PktLength + HIF_RX_HW_APPENDED_LEN);
+				pucSrcAddr += u4RxLength;
 				/* prEnhDataStr->au4RxLength[i] = 0; */
 			}
 
