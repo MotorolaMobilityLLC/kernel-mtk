@@ -297,7 +297,7 @@ void SetAnalogSuspend(bool bEnable)
 static int audck_buf_Count;
 void audckbufEnable(bool enable)
 {
-	pr_warn("audckbufEnable audck_buf_Count = %d enable = %d\n", audck_buf_Count, enable);
+	/*pr_warn("audckbufEnable audck_buf_Count = %d enable = %d\n", audck_buf_Count, enable);*/
 	mutex_lock(&Ana_buf_Ctrl_Mutex);
 	if (enable) {
 		if (audck_buf_Count == 0) {
@@ -311,7 +311,7 @@ void audckbufEnable(bool enable)
 				pr_warn("-RF clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
 			}
 #endif
-			pr_warn("-clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
+			/*pr_warn("-clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");*/
 		}
 		audck_buf_Count++;
 	} else {
@@ -327,7 +327,7 @@ void audckbufEnable(bool enable)
 				pr_warn("-RF clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
 			}
 #endif
-			pr_warn("-clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
+			/*pr_warn("-clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");*/
 		}
 		if (audck_buf_Count < 0) {
 			pr_warn("audck_buf_Count count <0\n");
@@ -1421,7 +1421,7 @@ uint32 GetDLNewIFFrequency(unsigned int frequency)
 
 static void TurnOnDacPower(void)
 {
-	pr_debug("TurnOnDacPower\n");
+	/*pr_debug("TurnOnDacPower\n");*/
 	audckbufEnable(true);
 	ClsqEnable(true);
 	Topck_Enable(true);
@@ -1458,7 +1458,7 @@ static void TurnOnDacPower(void)
 
 static void TurnOffDacPower(void)
 {
-	pr_debug("TurnOffDacPower\n");
+	/*pr_debug("TurnOffDacPower\n");*/
 
 	Ana_Set_Reg(AFE_DL_SRC2_CON0_L, 0x0000, 0xffff);	/* bit0, Turn off down-link */
 	if (GetAdcStatus() == false)
@@ -1772,10 +1772,9 @@ static void SetVoiceAmpVolume(void)
 static void Voice_Amp_Change(bool enable)
 {
 	if (enable) {
-		pr_warn("%s\n", __func__);
+		pr_warn("%s %d\n", __func__, enable);
 		if (GetDLStatus() == false) {
 			TurnOnDacPower();
-			pr_warn("Voice_Amp_Change on amp\n");
 
 			/* upmu_set_rg_vio18_cal(1);// for MT6328 E1 VIO18 patch only */
 			/* set analog part (voice HS playback) */
@@ -1825,7 +1824,6 @@ static void Voice_Amp_Change(bool enable)
 			/* Set HS gain to +8dB(for SMT), step by step //0x0009 for 0dB Georoge */
 		}
 	} else {
-		pr_warn("turn off ampL\n");
 		Ana_Set_Reg(MT6353_AUDDEC_ANA_CON0, 0xE109, 0xffff);	/* Disable voice driver */
 
 		if (GetDLStatus() == false) {
@@ -1881,7 +1879,7 @@ static void Speaker_Amp_Change(bool enable)
 		if (GetDLStatus() == false)
 			TurnOnDacPower();
 
-		pr_warn("%s\n", __func__);
+		/*pr_warn("%s\n", __func__);*/
 		/* upmu_set_rg_vio18_cal(1);// for MT6328 E1 VIO18 patch only */
 		/* ClassAB spk pmic analog control */
 		Ana_Set_Reg(MT6353_AUDNCP_CLKDIV_CON1, 0x0001, 0xffff);
@@ -1935,7 +1933,7 @@ static void Speaker_Amp_Change(bool enable)
 #endif
 		Apply_Speaker_Gain();
 	} else {
-		pr_warn("turn off Speaker_Amp_Change\n");
+		/*pr_warn("turn off Speaker_Amp_Change\n");*/
 #ifdef CONFIG_MTK_SPEAKER
 		if (Speaker_mode == AUDIO_SPEAKER_MODE_D)
 			Speaker_ClassD_close();
@@ -2987,8 +2985,8 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 
 	refmic_using_ADC_L = false;
 
-	pr_warn("%s ADCType = %d enable = %d, refmic_using_ADC_L=%d\n", __func__, ADCType,
-	       enable, refmic_using_ADC_L);
+	/*pr_warn("%s ADCType = %d enable = %d, refmic_using_ADC_L=%d\n", __func__, ADCType,
+	       enable, refmic_using_ADC_L);*/
 
 	if (enable) {
 		/* uint32 ULIndex = GetULFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC]); */
@@ -2997,7 +2995,7 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 		if (GetMicbias == 0) {
 			MicbiasRef = Ana_Get_Reg(MT6353_AUDENC_ANA_CON9) & 0x0700;
 			/* save current micbias ref set by accdet */
-			pr_warn("MicbiasRef=0x%x\n", MicbiasRef);
+			/*pr_warn("MicbiasRef=0x%x\n", MicbiasRef);*/
 			GetMicbias = 1;
 		}
 		if (GetAdcStatus() == false) {
@@ -3357,7 +3355,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 
 static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 {
-	pr_warn("%s ADCType = %d enable = %d\n", __func__, ADCType, enable);
+	/*pr_warn("%s ADCType = %d enable = %d\n", __func__, ADCType, enable);*/
 	if (enable) {
 		/* uint32 ULIndex = GetULFrequency(mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC]); */
 		uint32 SampleRate_VUL1 = mBlockSampleRate[AUDIO_ANALOG_DEVICE_IN_ADC];
@@ -3365,7 +3363,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 		if (GetMicbias == 0) {
 			MicbiasRef = Ana_Get_Reg(MT6353_AUDENC_ANA_CON9) & 0x0700;
 			/* save current micbias ref set by accdet */
-			pr_warn("MicbiasRef=0x%x\n", MicbiasRef);
+			/*pr_warn("MicbiasRef=0x%x\n", MicbiasRef);*/
 			GetMicbias = 1;
 		}
 		if (GetAdcStatus() == false) {
@@ -3417,8 +3415,8 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 			/* default value */
 		}
 		if (ADCType == AUDIO_ANALOG_DEVICE_IN_ADC1) {	/* main and headset mic */
-			pr_warn("%s  AUDIO_MICSOURCE_MUX_IN_1 mux =%d\n", __func__,
-			       mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]);
+			/*pr_warn("%s  AUDIO_MICSOURCE_MUX_IN_1 mux =%d\n", __func__,
+			       mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]);*/
 			if (mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] == 0) {	/* "ADC1", main_mic */
 				SetDCcoupleNP(AUDIO_MIC_BIAS0, mAudio_Analog_Mic1_mode);
 				/* micbias0 DCCopuleNP */
@@ -4052,7 +4050,7 @@ static int Audio_PGA1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	int index = 0;
 
-	pr_warn("%s()\n", __func__);
+	/*pr_warn("%s()\n", __func__);*/
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(ADC_UL_PGA_GAIN)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
@@ -4078,7 +4076,7 @@ static int Audio_PGA2_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 {
 	int index = 0;
 
-	pr_warn("%s()\n", __func__);
+	/*pr_warn("%s()\n", __func__);*/
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(ADC_UL_PGA_GAIN)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
@@ -4127,13 +4125,13 @@ static int Audio_MicSource1_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	/* 6752 used for ADC1 Mic source selection, "ADC1" is main_mic, "ADC2" is headset_mic */
 	int index = 0;
 
-	pr_warn("%s()\n", __func__);
+	/*pr_warn("%s()\n", __func__);*/
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Pmic_Digital_Mux)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 	index = ucontrol->value.integer.value[0];
-	pr_warn("%s() index = %d done\n", __func__, index);
+	/*pr_warn("%s() index = %d done\n", __func__, index);*/
 	mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1] = ucontrol->value.integer.value[0];
 
 	return 0;
@@ -4188,13 +4186,13 @@ static int Audio_Mic1_Mode_Select_Get(struct snd_kcontrol *kcontrol,
 static int Audio_Mic1_Mode_Select_Set(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
+	/*pr_warn("%s()\n", __func__);*/
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_AnalogMic_Mode)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 	mAudio_Analog_Mic1_mode = ucontrol->value.integer.value[0];
-	pr_warn("%s() mAudio_Analog_Mic1_mode = %d\n", __func__, mAudio_Analog_Mic1_mode);
+	/*pr_warn("%s() mAudio_Analog_Mic1_mode = %d\n", __func__, mAudio_Analog_Mic1_mode);*/
 	return 0;
 }
 
@@ -4209,13 +4207,13 @@ static int Audio_Mic2_Mode_Select_Get(struct snd_kcontrol *kcontrol,
 static int Audio_Mic2_Mode_Select_Set(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
+	/*pr_warn("%s()\n", __func__);*/
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_AnalogMic_Mode)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 	mAudio_Analog_Mic2_mode = ucontrol->value.integer.value[0];
-	pr_warn("%s() mAudio_Analog_Mic2_mode = %d\n", __func__, mAudio_Analog_Mic2_mode);
+	/*pr_warn("%s() mAudio_Analog_Mic2_mode = %d\n", __func__, mAudio_Analog_Mic2_mode);*/
 	return 0;
 }
 
@@ -4231,13 +4229,13 @@ static int Audio_Mic3_Mode_Select_Get(struct snd_kcontrol *kcontrol,
 static int Audio_Mic3_Mode_Select_Set(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
+	/*pr_warn("%s()\n", __func__);*/
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_AnalogMic_Mode)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 	mAudio_Analog_Mic3_mode = ucontrol->value.integer.value[0];
-	pr_warn("%s() mAudio_Analog_Mic3_mode = %d\n", __func__, mAudio_Analog_Mic3_mode);
+	/*pr_warn("%s() mAudio_Analog_Mic3_mode = %d\n", __func__, mAudio_Analog_Mic3_mode);*/
 	return 0;
 }
 
@@ -4252,13 +4250,13 @@ static int Audio_Mic4_Mode_Select_Get(struct snd_kcontrol *kcontrol,
 static int Audio_Mic4_Mode_Select_Set(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_warn("%s()\n", __func__);
+	/*pr_warn("%s()\n", __func__);*/
 	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(Audio_AnalogMic_Mode)) {
 		pr_err("return -EINVAL\n");
 		return -EINVAL;
 	}
 	mAudio_Analog_Mic4_mode = ucontrol->value.integer.value[0];
-	pr_warn("%s() mAudio_Analog_Mic4_mode = %d\n", __func__, mAudio_Analog_Mic4_mode);
+	/*pr_warn("%s() mAudio_Analog_Mic4_mode = %d\n", __func__, mAudio_Analog_Mic4_mode);*/
 	return 0;
 }
 
@@ -4814,7 +4812,7 @@ static void mt6331_codec_init_reg(struct snd_soc_codec *codec)
 
 void InitCodecDefault(void)
 {
-	pr_warn("%s\n", __func__);
+	/*pr_warn("%s\n", __func__);*/
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP1] = 3;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2] = 3;
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP3] = 3;
@@ -4914,14 +4912,14 @@ static int mt6331_codec_remove(struct snd_soc_codec *codec)
 
 static unsigned int mt6331_read(struct snd_soc_codec *codec, unsigned int reg)
 {
-	pr_warn("mt6331_read reg = 0x%x", reg);
+	/*pr_warn("mt6331_read reg = 0x%x", reg);*/
 	Ana_Get_Reg(reg);
 	return 0;
 }
 
 static int mt6331_write(struct snd_soc_codec *codec, unsigned int reg, unsigned int value)
 {
-	pr_warn("mt6331_write reg = 0x%x  value= 0x%x\n", reg, value);
+	/*pr_warn("mt6331_write reg = 0x%x  value= 0x%x\n", reg, value);*/
 	Ana_Set_Reg(reg, value, 0xffffffff);
 	return 0;
 }

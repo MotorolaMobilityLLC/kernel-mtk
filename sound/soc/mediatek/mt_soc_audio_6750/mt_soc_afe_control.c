@@ -1604,8 +1604,8 @@ bool SetI2SDacOut(uint32 SampleRate, bool lowjitter, bool I2SWLen)
 {
 	uint32 Audio_I2S_Dac = 0;
 
-	pr_warn("SetI2SDacOut SampleRate %d, lowjitter %d, I2SWLen %d\n", SampleRate, lowjitter,
-		I2SWLen);
+	/*pr_warn("SetI2SDacOut SampleRate %d, lowjitter %d, I2SWLen %d\n", SampleRate, lowjitter,
+		I2SWLen);*/
 	CleanPreDistortion();
 	SetDLSrc2(SampleRate);
 	Audio_I2S_Dac |= (Soc_Aud_LR_SWAP_NO_SWAP << 31);
@@ -2097,8 +2097,8 @@ static bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate)
 {
 	uint32 SRIdx = SampleRateTransform(SampleRate);
 
-	pr_warn("%s(), Irqmode %d, SampleRate %d\n",
-		__func__, Irqmode, SampleRate);
+	/*pr_warn("%s(), Irqmode %d, SampleRate %d\n",
+		__func__, Irqmode, SampleRate);*/
 	switch (Irqmode) {
 	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
 		Afe_Set_Reg(AFE_IRQ_MCU_CON, SRIdx << 4, 0xf << 4);
@@ -2121,7 +2121,7 @@ static bool SetIrqMcuSampleRate(uint32 Irqmode, uint32 SampleRate)
 
 static bool SetIrqMcuCounter(uint32 Irqmode, uint32 Counter)
 {
-	pr_warn("%s(), Irqmode %d, Counter %d\n", __func__, Irqmode, Counter);
+	/*pr_warn("%s(), Irqmode %d, Counter %d\n", __func__, Irqmode, Counter);*/
 	switch (Irqmode) {
 	case Soc_Aud_IRQ_MCU_MODE_IRQ1_MCU_MODE:
 		Afe_Set_Reg(AFE_IRQ_MCU_CNT1, Counter, 0xffffffff);
@@ -4114,8 +4114,8 @@ int irq_add_user(const void *_user,
 	struct irq_user *ptr;
 
 	spin_lock_irqsave(&afe_control_lock, flags);
-	pr_debug("%s(), user %p, irq %d, rate %d, count %d\n",
-		 __func__, _user, _irq, _rate, _count);
+	/*pr_debug("%s(), user %p, irq %d, rate %d, count %d\n",
+		 __func__, _user, _irq, _rate, _count);*/
 	/* check if user already exist */
 	list_for_each_entry(ptr, &irq_managers[_irq].users, list) {
 		if (ptr->user == _user) {
@@ -4163,8 +4163,8 @@ int irq_remove_user(const void *_user,
 	struct irq_user *corr_user = NULL;
 
 	spin_lock_irqsave(&afe_control_lock, flags);
-	pr_debug("%s(), user %p, irq %d\n",
-		 __func__, _user, _irq);
+	/*pr_debug("%s(), user %p, irq %d\n",
+		 __func__, _user, _irq);*/
 	/* get _user's irq_user ptr */
 	list_for_each_entry(ptr, &irq_managers[_irq].users, list) {
 		if (ptr->user == _user) {
