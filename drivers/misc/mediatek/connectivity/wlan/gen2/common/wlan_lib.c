@@ -3693,7 +3693,7 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 		if (prRegInfo->ucTxPwrValid != 0) {
 			/* send to F/W */
 			nicUpdateTxPower(prAdapter, (P_CMD_TX_PWR_T) (&(prRegInfo->rTxPwr)));
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 			nicUpdateTxPowerOffset(prAdapter,
 				(P_CMD_MITIGATED_PWR_OFFSET_T) (prRegInfo->arRlmMitigatedPwrByChByMode));
 #endif
@@ -3731,10 +3731,12 @@ WLAN_STATUS wlanLoadManufactureData(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T pr
 			prAdapter->fgEnable5GBand = TRUE;
 	} else
 		prAdapter->fgEnable5GBand = FALSE;
-/*
-	DBGLOG(INIT, INFO, "NVRAM 5G Enable(%d) SW_En(%d) HW_Dis(%d)\n",
-	       prRegInfo->ucEnable5GBand, prRegInfo->ucSupport5GBand, prAdapter->fgIsHw5GBandDisabled);
-*/
+
+
+	DBGLOG(INIT, INFO, "HW_Dis(%d), TxPwrValid(%d)\n",
+	       prAdapter->fgIsHw5GBandDisabled,
+	       prRegInfo->ucTxPwrValid);
+
 	/* 4. Send EFUSE data */
 #if  defined(MT6628)
 	wlanChangeNvram6620to6628(prRegInfo->aucEFUSE);
@@ -4191,12 +4193,12 @@ VOID wlanDefTxPowerCfg(IN P_ADAPTER_T prAdapter)
 	UINT_8 i;
 	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
 	P_SET_TXPWR_CTRL_T prTxpwr;
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 	P_REG_INFO_T prRegInfo;
 #endif
 	ASSERT(prGlueInfo);
 
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 	prRegInfo = &prGlueInfo->rRegInfo;
 	ASSERT(prRegInfo);
 #endif
@@ -4223,7 +4225,7 @@ VOID wlanDefTxPowerCfg(IN P_ADAPTER_T prAdapter)
 	for (i = 0; i < 2; i++)
 		prTxpwr->acReserved2[i] = 0;
 
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 	for (i = 0; i < 40; i++) {
 		/* 40 : MAXNUM_MITIGATED_PWR_BY_CH_BY_MODE */
 		prTxpwr->arRlmMitigatedPwrByChByMode[i].channel =

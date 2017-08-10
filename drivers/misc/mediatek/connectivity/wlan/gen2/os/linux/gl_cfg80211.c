@@ -1392,6 +1392,12 @@ int mtk_cfg80211_set_power_mgmt(struct wiphy *wiphy, struct net_device *ndev, bo
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
 	ASSERT(prGlueInfo);
 
+#if CFG_SUPPORT_DBG_POWERMODE
+	if (prGlueInfo->prAdapter->fgEnDbgPowerMode) {
+		DBGLOG(REQ, WARN, "Force power mode enabled, ignore this enable command: %d\n", enabled);
+		return 0;
+	}
+#endif
 	if (enabled) {
 		if (timeout == -1)
 			ePowerMode = Param_PowerModeFast_PSP;

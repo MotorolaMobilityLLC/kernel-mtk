@@ -2083,7 +2083,7 @@ WLAN_STATUS nicUpdateTxPower(IN P_ADAPTER_T prAdapter, IN P_CMD_TX_PWR_T prTxPwr
 				   TRUE,
 				   FALSE, FALSE, NULL, NULL, sizeof(CMD_TX_PWR_T), (PUINT_8) prTxPwrParam, NULL, 0);
 }
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 /*----------------------------------------------------------------------------*/
 /*!
 * @brief This utility function is used to update TX power offset corresponding to

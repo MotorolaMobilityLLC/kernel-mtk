@@ -666,7 +666,7 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 		prRegInfo->fgRssiCompensationValidbit = aucTmp[0];
 		prRegInfo->ucRxAntennanumber = aucTmp[1];
 
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 		/* load Tx Power offset perchannel per mode 40 : MAXNUM_MITIGATED_PWR_BY_CH_BY_MODE */
 		kalCfgDataRead(prGlueInfo,
 			OFFSET_OF(WIFI_CFG_PARAM_STRUCT, arRlmMitigatedPwrByChByMode),
@@ -2265,6 +2265,85 @@ int set_p2p_mode_handler(struct net_device *netdev, PARAM_CUSTOM_P2P_SET_STRUCT_
 #endif
 }
 
+#if CFG_TC10_FEATURE
+static int readMac(char *file, char *buf, unsigned int bsize)
+{
+	struct file *mfilp;
+	unsigned int size;
+
+	if (!file)
+		return -1;
+
+	mfilp = filp_open(file, O_RDONLY, 0);
+
+	if (IS_ERR(mfilp)) {
+		DBGLOG(INIT, ERROR, "read MAC failed from %s failed\n",
+				file);
+		return -1;
+	}
+
+	size = mfilp->f_path.dentry->d_inode->i_size;
+
+	if (size > bsize) {
+		DBGLOG(INIT, ERROR, "file size: %d > %d\n", size, bsize);
+		return -1;
+	}
+	mfilp->f_op->read(mfilp, buf, bsize, &mfilp->f_pos);
+	filp_close(mfilp, NULL);
+	DBGLOG(INIT, INFO, "MAC ASCII: %s\n", buf);
+	return 0;
+}
+
+static int hasFile(char *file)
+{
+	struct file *pf;
+
+	if (!file)
+		return 0;
+
+	pf = filp_open(file, O_RDONLY, 0);
+
+	if (IS_ERR(pf)) {
+		DBGLOG(INIT, ERROR, "file %s open failed\n",
+				file);
+		return 0;
+	}
+	filp_close(pf, NULL);
+	return 1;
+}
+
+static int khex2num(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	if (c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	return -1;
+}
+
+int khwaddr_aton(const char *txt, u8 *addr)
+{
+	int i;
+
+	for (i = 0; i < 6; i++) {
+		int a, b;
+
+		a = khex2num(*txt++);
+		if (a < 0)
+			return -1;
+		b = khex2num(*txt++);
+		if (b < 0)
+			return -1;
+		*addr++ = (a << 4) | b;
+		if (i < 5 && *txt++ != ':')
+			return -1;
+	}
+
+	return 0;
+}
+#endif
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief Wlan probe function. This function probes and initializes the device.
@@ -2304,7 +2383,14 @@ static INT_32 wlanProbe(PVOID pvData)
 		 *      initialized by glBusInit().
 		 * _HIF_SDIO: bus driver handle
 		 */
-
+#if CFG_TC10_FEATURE
+		if (!hasFile("/efs/wifi/.mac.info")) {
+			DBGLOG(INIT, ERROR, "efs mac file not exist\n");
+#ifndef CFG_SKIP_MAC_INFO_CHECK
+			return WLAN_STATUS_FAILURE;
+#endif
+		}
+#endif
 		bRet = glBusInit(pvData);
 		wlanDebugInit();
 		/* Cannot get IO address from interface */
@@ -2387,12 +2473,26 @@ static INT_32 wlanProbe(PVOID pvData)
 			UINT_32 u4FwSize = 0;
 			PVOID prFwBuffer = NULL;
 			P_REG_INFO_T prRegInfo = &prGlueInfo->rRegInfo;
+#if CFG_TC10_FEATURE
+			CHAR aucMacAddr[19] = {0};
+#endif
 
 			/* P_REG_INFO_T prRegInfo = (P_REG_INFO_T) kmalloc(sizeof(REG_INFO_T), GFP_KERNEL); */
 			kalMemSet(prRegInfo, 0, sizeof(REG_INFO_T));
 			prRegInfo->u4StartAddress = CFG_FW_START_ADDRESS;
 			prRegInfo->u4LoadAddress = CFG_FW_LOAD_ADDRESS;
-
+#if CFG_TC10_FEATURE
+			if (readMac("/efs/wifi/.mac.info", aucMacAddr, 19) ||
+				khwaddr_aton(aucMacAddr, prGlueInfo->rRegInfo.aucMacAddr)) {
+				DBGLOG(INIT, ERROR, "Read MAC addr failed from /efs/\n");
+#ifndef CFG_SKIP_MAC_INFO_CHECK
+				eFailReason = BUS_SET_IRQ_FAIL;
+				break;
+#endif
+			}
+			DBGLOG(INIT, INFO, "%s %d, MAC addr %pM\n", __func__, __LINE__,
+					prGlueInfo->rRegInfo.aucMacAddr);
+#endif
 			/* Load NVRAM content to REG_INFO_T */
 			glLoadNvram(prGlueInfo, prRegInfo);
 #if CFG_SUPPORT_CFG_FILE
@@ -2728,6 +2828,7 @@ bailout:
 			if (ucPsmFlag == '0') {
 				prAdapter->fgEnDbgPowerMode = TRUE;
 				nicEnterCtiaMode(prAdapter, TRUE, FALSE);
+				nicConfigPowerSaveProfile(prAdapter, NETWORK_TYPE_AIS_INDEX, Param_PowerModeCAM, FALSE);
 			}
 			DBGLOG(INIT, INFO, "/data/.psm.info = %c\n", ucPsmFlag);
 		}

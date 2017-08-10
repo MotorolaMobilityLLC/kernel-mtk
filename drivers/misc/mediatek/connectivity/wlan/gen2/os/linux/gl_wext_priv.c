@@ -1357,9 +1357,11 @@ static int
 _priv_set_ints(IN struct net_device *prNetDev,
 	      IN struct iw_request_info *prIwReqInfo, IN union iwreq_data *prIwReqData, IN char *pcExtra)
 {
-	UINT_16 i = 0;
 	UINT_32 u4SubCmd, u4BufLen, u4CmdLen;
+#if !(CFG_SUPPORT_TX_POWER_BACK_OFF)
+	UINT_16 i = 0;
 	INT_32  setting[4] = {0};
+#endif
 	P_GLUE_INFO_T prGlueInfo;
 	int status = 0;
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
@@ -1379,7 +1381,7 @@ _priv_set_ints(IN struct net_device *prNetDev,
 
 	switch (u4SubCmd) {
 	case PRIV_CMD_SET_TX_POWER:
-#if !(CFG_SUPPORT_TX_BACKOFF)
+#if !(CFG_SUPPORT_TX_POWER_BACK_OFF)
 	{
 		if (u4CmdLen > 4)
 			return -EINVAL;
@@ -1642,7 +1644,7 @@ _priv_set_struct(IN struct net_device *prNetDev,
 	/* WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS; */
 	UINT_32 u4CmdLen = 0;
 	P_NDIS_TRANSPORT_STRUCT prNdisReq;
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 	P_PARAM_MTK_WIFI_TEST_STRUCT_T prTestStruct;
 #endif
 
@@ -1798,7 +1800,7 @@ _priv_set_struct(IN struct net_device *prNetDev,
 		status = priv_set_ndis(prNetDev, prNdisReq, &u4BufLen);
 		break;
 
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 	case PRIV_CMD_SET_TX_POWER:
 		{
 			WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
@@ -1817,10 +1819,9 @@ _priv_set_struct(IN struct net_device *prNetDev,
 
 			DBGLOG(REQ, INFO, "Entered case PRIV_CMD_SET_TX_POWER\n");
 			prTestStruct = prIwReqData->data.pointer;
-#if 1
+
 			DBGLOG(REQ, INFO, "prTestStruct->u4FuncIndex = %u, prTestStruct->u4FuncData = %u[0x%x]\n",
-				prTestStruct->u4FuncIndex, prTestStruct->u4FuncData, prTestStruct->u4FuncData);
-#endif
+			       prTestStruct->u4FuncIndex, prTestStruct->u4FuncData, prTestStruct->u4FuncData);
 			cStartTxBackOff = prTestStruct->u4FuncData;
 
 			/* load TxPower for 2.4G Band from nvram */

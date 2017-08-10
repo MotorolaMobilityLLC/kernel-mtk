@@ -222,7 +222,7 @@ typedef struct _SET_TXPWR_CTRL_T {
 	INT_8 acTxPwrLimit2G[14];	/* Channel 1~14, Unit: 0.5dBm */
 	INT_8 acTxPwrLimit5G[4];	/* UNII 1~4 */
 	INT_8 acReserved2[2];	/* Must be zero */
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
 #endif
 } SET_TXPWR_CTRL_T, *P_SET_TXPWR_CTRL_T;
@@ -292,7 +292,7 @@ typedef struct _REG_INFO_T {
 	UINT_8 uc5GRssiCompensation;
 	UINT_8 fgRssiCompensationValidbit;
 	UINT_8 ucRxAntennanumber;
-#if CFG_SUPPORT_TX_BACKOFF
+#if CFG_SUPPORT_TX_POWER_BACK_OFF
 	MITIGATED_PWR_BY_CH_BY_MODE arRlmMitigatedPwrByChByMode[40];
 	UINT_8 fgRlmMitigatedPwrByChByMode;
 #endif
