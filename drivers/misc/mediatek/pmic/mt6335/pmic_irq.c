@@ -710,6 +710,7 @@ void PMIC_EINT_SETTING(void)
 			IRQF_TRIGGER_NONE, "pmic-eint", NULL);
 		if (ret > 0)
 			pr_err(PMICTAG "EINT IRQ LINENNOT AVAILABLE\n");
+		enable_irq_wake(g_pmic_irq);
 	} else
 		pr_err(PMICTAG "can't find compatible node\n");
 
