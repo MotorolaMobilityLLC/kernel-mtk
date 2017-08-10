@@ -1242,6 +1242,7 @@ static int __init pbm_module_init(void)
 }
 
 #endif				/* #ifndef DISABLE_PBM_FEATURE */
+EXPORT_SYMBOL(kicker_pbm_by_flash);
 
 static void __exit pbm_module_exit(void)
 {

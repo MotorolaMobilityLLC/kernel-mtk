@@ -522,7 +522,7 @@ MUINT32 constantFlashlightInit(PFLASHLIGHT_FUNCTION_STRUCT *pfFunc)
 		*pfFunc = &constantFlashlightFunc;
 	return 0;
 }
-
+EXPORT_SYMBOL(constantFlashlightInit);
 
 
 /* LED flash control for high current capture mode*/

@@ -15,24 +15,27 @@
 # Makefile for misc devices that really don't fit anywhere else.
 #
 
-obj-y				+= kd_flashlightlist.o
-obj-y				+= strobe_main_sid2_part1.o
-obj-y				+= strobe_main_sid2_part2.o
-obj-y				+= strobe_sub_sid2_part1.o
-obj-y				+= strobe_sub_sid2_part2.o
-obj-y				+= sub_strobe.o
-obj-y				+= strobe_main_sid1_part2.o
-obj-y				+= strobe_part_id.o
-obj-y				+= strobe_sub_sid1_part2.o
 
+obj-$(CONFIG_MTK_FLASHLIGHT)    += flashlight_top.o
 
-ifeq ($(wildcard $(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/$(ARCH_MTK_PROJECT)/flashlight),)
-#ifeq ($(wildcard $(srctree)/arch/arm/mach-$(MTK_PLATFORM)/$(ARCH_MTK_PROJECT)/flashlight),)
+flashlight_top-y				+= kd_flashlightlist.o
+flashlight_top-y				+= strobe_main_sid2_part1.o
+flashlight_top-y				+= strobe_main_sid2_part2.o
+flashlight_top-y				+= strobe_sub_sid2_part1.o
+flashlight_top-y				+= strobe_sub_sid2_part2.o
+flashlight_top-y				+= sub_strobe.o
+flashlight_top-y				+= strobe_main_sid1_part2.o
+flashlight_top-y				+= strobe_part_id.o
+flashlight_top-y				+= strobe_sub_sid1_part2.o
 
-custom_kernel_flashlight := $(addsuffix /, $(shell echo $(CONFIG_CUSTOM_KERNEL_FLASHLIGHT)))
+obj-$(CONFIG_MTK_FLASHLIGHT)    += flashlight_device.o
 
-obj-y += $(custom_kernel_flashlight)
+custom_kernel_flashlight := $(shell echo $(CONFIG_CUSTOM_KERNEL_FLASHLIGHT))
 
+ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/flashlight/src/$(MTK_PLATFORM)/$(ARCH_MTK_PROJECT)/constant_flashlight),)
+flashlight_device-y				+= $(ARCH_MTK_PROJECT)/$(custom_kernel_flashlight)/leds_strobe.o
+else
+flashlight_device-y				+= $(custom_kernel_flashlight)/leds_strobe.o
 endif
 
 

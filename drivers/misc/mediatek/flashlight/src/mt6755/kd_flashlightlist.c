@@ -468,7 +468,6 @@ static void bat_per_protection_powerlimit_flashlight(BATTERY_PERCENT_LEVEL level
 	}
 }
 
-
 /*
 static int gLowPowerOc=BATTERY_OC_LEVEL_0;
 
@@ -875,6 +874,13 @@ static const struct of_device_id FLASHLIGHT_of_match[] = {
 	{.compatible = "mediatek,mt6755-flashlight"},
 	{},
 };
+#else
+static struct platform_device flashlight_platform_device = {
+	.name = FLASHLIGHT_DEVNAME,
+	.id = 0,
+	.dev = {
+		}
+};
 #endif
 
 static struct platform_driver flashlight_platform_driver = {
@@ -890,12 +896,6 @@ static struct platform_driver flashlight_platform_driver = {
 		   },
 };
 
-static struct platform_device flashlight_platform_device = {
-	.name = FLASHLIGHT_DEVNAME,
-	.id = 0,
-	.dev = {
-		}
-};
 
 static int __init flashlight_init(void)
 {
@@ -903,18 +903,19 @@ static int __init flashlight_init(void)
 
 	logI("[flashlight_probe] start ~");
 
+#ifndef CONFIG_OF
 	ret = platform_device_register(&flashlight_platform_device);
 	if (ret) {
 		logI("[flashlight_probe] platform_device_register fail ~");
 		return ret;
 	}
+#endif
 
 	ret = platform_driver_register(&flashlight_platform_driver);
 	if (ret) {
 		logI("[flashlight_probe] platform_driver_register fail ~");
 		return ret;
 	}
-
 	register_low_battery_notify(&Lbat_protection_powerlimit_flash, LOW_BATTERY_PRIO_FLASHLIGHT);
 	register_battery_percent_notify(&bat_per_protection_powerlimit_flashlight,
 					BATTERY_PERCENT_PRIO_FLASHLIGHT);
