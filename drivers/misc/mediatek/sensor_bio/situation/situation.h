@@ -80,6 +80,7 @@ struct situation_context {
 	struct wake_lock wake_lock[max_situation_support];
 };
 
+extern int situation_data_report(int handle, uint32_t one_sample_data);
 extern int situation_notify(int handle);
 extern int situation_flush_report(int handle);
 extern int situation_driver_add(struct situation_init_info *obj, int handle);

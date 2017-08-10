@@ -91,7 +91,7 @@ static int device_orientation_recv_data(struct data_unit_t *event, void *reserve
 	if (event->flush_action == FLUSH_ACTION)
 		situation_flush_report(ID_DEVICE_ORIENTATION);
 	else if (event->flush_action == DATA_ACTION)
-		situation_notify(ID_DEVICE_ORIENTATION);
+		situation_data_report(ID_DEVICE_ORIENTATION, event->tilt_event.state);
 	return 0;
 }
 

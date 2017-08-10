@@ -71,7 +71,7 @@ static int handle_to_index(int handle)
 	SITUATION_ERR("handle_to_index handle:%d, index:%d\n", handle, index);
 	return index;
 }
-int situation_notify(int handle)
+int situation_data_report(int handle, uint32_t one_sample_data)
 {
 	int err = 0, index = -1;
 	struct sensor_event event;
@@ -87,7 +87,7 @@ int situation_notify(int handle)
 
 	event.handle = handle;
 	event.flush_action = DATA_ACTION;
-	event.word[0] = 1;
+	event.word[0] = one_sample_data;
 	err = sensor_input_event(situation_context_obj->mdev.minor, &event);
 	if (err < 0)
 		SITUATION_ERR("event buffer full, so drop this data\n");
@@ -95,6 +95,10 @@ int situation_notify(int handle)
 		cxt->ctl_context[index].situation_ctl.is_support_wake_lock)
 		wake_lock_timeout(&cxt->wake_lock[index], msecs_to_jiffies(250));
 	return err;
+}
+int situation_notify(int handle)
+{
+	return situation_data_report(handle, 1);
 }
 
 int situation_flush_report(int handle)
