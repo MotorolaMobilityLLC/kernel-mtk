@@ -2156,7 +2156,7 @@ static noinline void sdio_set_vcore_performance(struct msdc_host *host,
 
 	if (atomic_read(&host->ot_work.ot_disable)) {
 		/* TODO: also return here when clock rate is not 200MHz */
-		pr_info("sdio_set_vcore_performance auto-K haven't done\n");
+		/* pr_info("sdio_set_vcore_performance auto-K haven't done\n"); */
 		return;
 	}
 
