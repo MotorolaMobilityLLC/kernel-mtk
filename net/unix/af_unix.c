@@ -1150,9 +1150,11 @@ restart:
 
 #ifdef CONFIG_MTK_NET_LOGGING
 	if ((SOCK_INODE(sock) != NULL) && (sunaddr != NULL) && (other != NULL) && (other->sk_socket != NULL) &&
-		(SOCK_INODE(other->sk_socket) != NULL)) {
+	     (SOCK_INODE(other->sk_socket) != NULL)) {
+		if (!strstr(sunaddr->sun_path, "logdw")) {
 			pr_info("[mtk_net][socket]unix_dgram_connect[%lu]:connect [%s] other:[%lu]\n",
 				SOCK_INODE(sock)->i_ino, sunaddr->sun_path, SOCK_INODE(other->sk_socket)->i_ino);
+		}
 	}
 #endif
 
@@ -1385,12 +1387,14 @@ restart:
 
 #ifdef CONFIG_MTK_NET_LOGGING
 	if ((SOCK_INODE(sock) != NULL) && (sunaddr != NULL) && (other->sk_socket != NULL) &&
-				(SOCK_INODE(other->sk_socket) != NULL)) {
-					unsigned long sk_ino = SOCK_INODE(sock)->i_ino;
-					unsigned long other_ino = SOCK_INODE(other->sk_socket)->i_ino;
+		(SOCK_INODE(other->sk_socket) != NULL)) {
+			unsigned long sk_ino = SOCK_INODE(sock)->i_ino;
+			unsigned long other_ino = SOCK_INODE(other->sk_socket)->i_ino;
 
-					pr_info("[mtk_net][socket]unix_stream_connect[%lu ]: connect [%s] other[%lu]\n",
-						sk_ino, sunaddr->sun_path, other_ino);
+			if (!strstr(sunaddr->sun_path, "property_service") && !strstr(sunaddr->sun_path, "fwmarkd")) {
+				pr_info("[mtk_net][socket]unix_stream_connect[%lu ]: connect [%s] other[%lu]\n",
+					sk_ino, sunaddr->sun_path, other_ino);
+			}
 	}
 #endif
 
