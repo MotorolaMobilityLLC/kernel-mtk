@@ -1914,9 +1914,9 @@ static void spm_getTHslope(void)
 
 bool spm_save_thermal_adc(void)
 {
+	spm_write(SPM_SCP_MAILBOX, 1);
 	if (spm_suspend_vcore_efuse == 0) {
 		spm_write(SPM_PASR_DPD_3, 0);
-		spm_write(SPM_SCP_MAILBOX, 1);
 		spm_write(SPM_SW_RSV_2, spm_Temp2ADC(vcore_temp_lo));
 		spm_write(SPM_BSI_D0_SR, spm_Temp2ADC(vcore_temp_hi));
 		if (spm_read(PCM_TIMER_VAL) >> SPM_THERMAL_TIMER) {
