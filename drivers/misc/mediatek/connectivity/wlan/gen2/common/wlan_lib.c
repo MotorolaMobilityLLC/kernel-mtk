@@ -4416,7 +4416,10 @@ WLAN_STATUS wlanCheckConnectedAP(IN P_ADAPTER_T prAdapter)
 		prBeacon->u2CapInfo = prBssDesc->u2CapInfo;
 
 		/* prSSID initialization */
-		kalMemCopy(prBeacon->aucInfoElem, prBssDesc->aucIEBuf, prBssDesc->u2IELength);
+		if (prBssDesc->ucSSIDLen > ELEM_MAX_LEN_SSID)
+			prBssDesc->ucSSIDLen = ELEM_MAX_LEN_SSID;
+		kalMemCopy(prBeacon->aucInfoElem, prBssDesc->aucIEBuf, prBssDesc->ucSSIDLen + OFFSET_OF(IE_SSID_T,
+										 aucSSID));
 		prSsid = (P_IE_SSID_T) (&prBeacon->aucInfoElem[0]);
 		COPY_SSID(rSsid.aucSsid, rSsid.u4SsidLen, prSsid->aucSSID, prSsid->ucLength);
 
