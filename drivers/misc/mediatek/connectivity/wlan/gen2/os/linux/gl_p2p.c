@@ -1817,6 +1817,11 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	prQueueEntry = (P_QUE_ENTRY_T) GLUE_GET_PKT_QUEUE_ENTRY(prSkb);
 	prTxQueue = &prGlueInfo->rTxQueue;
 
+	/* Statistic usage. */
+	prGlueInfo->prP2PInfo->rNetDevStats.tx_bytes += prSkb->len;
+	prGlueInfo->prP2PInfo->rNetDevStats.tx_packets++;
+	/* prDev->stats.tx_packets++; */
+
 	if (wlanProcessSecurityFrame(prGlueInfo->prAdapter, (P_NATIVE_PACKET) prSkb) == FALSE) {
 
 		u2QueueIdx = skb_get_queue_mapping(prSkb);
@@ -1825,6 +1830,8 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 		if (u2QueueIdx >= CFG_MAX_TXQ_NUM) {
 			DBGLOG(P2P, ERROR, "Incorrect queue index, skip this frame\n");
 			prGlueInfo->u8SkbFreed++;
+			prGlueInfo->prP2PInfo->rNetDevStats.tx_bytes -= prSkb->len;
+			prGlueInfo->prP2PInfo->rNetDevStats.tx_packets--;
 			dev_kfree_skb(prSkb);
 			return NETDEV_TX_OK;
 		}
@@ -1846,11 +1853,6 @@ int p2pHardStartXmit(IN struct sk_buff *prSkb, IN struct net_device *prDev)
 	}
 
 	kalSetEvent(prGlueInfo);
-
-	/* Statistic usage. */
-	prGlueInfo->prP2PInfo->rNetDevStats.tx_bytes += prSkb->len;
-	prGlueInfo->prP2PInfo->rNetDevStats.tx_packets++;
-	/* prDev->stats.tx_packets++; */
 
 	prP2pBssInfo = &prGlueInfo->prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_P2P_INDEX];
 	if ((prP2pBssInfo->eConnectionState == PARAM_MEDIA_STATE_CONNECTED) ||
