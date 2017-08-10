@@ -164,6 +164,7 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 
 		/* 1. Delay 0.01ms before power off */
 		for (i = 0; i < DELAY_LOOP_COUNT; i++)
+			;
 
 		if (DELAY_LOOP_COUNT != i)
 			pr_alert("[MALI] power off delay error!\n");
