@@ -940,6 +940,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 	P_MSG_SCN_SCAN_REQ prScanReqMsg;
 #endif
 	P_AIS_REQ_HDR_T prAisReq;
+	P_SCAN_INFO_T prScanInfo;
 	ENUM_BAND_T eBand;
 	UINT_8 ucChannel;
 	UINT_16 u2ScanIELen;
@@ -947,12 +948,14 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 	OS_SYSTIME rCurrentTime;
 
 	BOOLEAN fgIsTransition = (BOOLEAN) FALSE;
+	BOOLEAN fgIsRequestScanPending = (BOOLEAN) FALSE;
 
 	DEBUGFUNC("aisFsmSteps()");
 
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
 	prAisBssInfo = &(prAdapter->rWifiVar.arBssInfo[NETWORK_TYPE_AIS_INDEX]);
 	prConnSettings = &(prAdapter->rWifiVar.rConnSettings);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 	eOriPreState = prAisFsmInfo->ePreviousState;
 
 	do {
@@ -1015,16 +1018,24 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					nicDeactivateNetwork(prAdapter, NETWORK_TYPE_AIS_INDEX);
 
 					/* check for other pending request */
-					if (prAisReq &&
-						(aisFsmIsRequestPending(prAdapter, AIS_REQUEST_SCAN, TRUE) == TRUE)) {
+
+					fgIsRequestScanPending =
+						aisFsmIsRequestPending(prAdapter, AIS_REQUEST_SCAN, TRUE);
+
+					if (prAisReq && fgIsRequestScanPending == TRUE) {
 
 						wlanClearScanningResult(prAdapter);
 						eNextState = AIS_STATE_SCAN;
 
 						fgIsTransition = TRUE;
 					}
-				}
+					/*check for pending sched scan request*/
+					if (prAisReq == NULL &&
+						fgIsRequestScanPending == FALSE &&
+						prScanInfo->fgIsPostponeSchedScan == TRUE)
+						aisPostponedEventOfSchedScanStart(prAdapter, prAisFsmInfo);
 
+				}
 				if (prAisReq) {
 					/* free the message */
 					cnmMemFree(prAdapter, prAisReq);
@@ -2869,6 +2880,44 @@ aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 	}
 
 }				/* end of aisIndicationOfMediaStateToHost() */
+/*----------------------------------------------------------------------------*/
+/*!
+* @brief This function will indicate an Event of "Sched Scan Start"
+*
+* @param[in] u4Param  Unused timer parameter
+*
+* @return (none)
+*/
+/*----------------------------------------------------------------------------*/
+VOID aisPostponedEventOfSchedScanStart(IN P_ADAPTER_T prAdapter, IN P_AIS_FSM_INFO_T prAisFsmInfo)
+{
+	P_SCAN_INFO_T prScanInfo;
+	P_PARAM_SCHED_SCAN_REQUEST prSchedScanRequest;
+
+	ASSERT(prAdapter);
+
+	DBGLOG(AIS, INFO, "aisPostponedEventOfSchedScanStart:AIS CurrentState[%d]\n",
+			   prAisFsmInfo->eCurrentState);
+
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
+	prSchedScanRequest = &prScanInfo->rSchedScanRequest;
+
+	if (prScanInfo->fgIsPostponeSchedScan == FALSE) {
+		DBGLOG(AIS, WARN, "Driver don't need postpone schedScan!\n");
+		return;
+	}
+	prScanInfo->fgIsPostponeSchedScan = FALSE;
+	if (scnFsmSchedScanRequest(prAdapter,
+				   (UINT_8) (prSchedScanRequest->u4SsidNum),
+				   prSchedScanRequest->arSsid,
+				   prSchedScanRequest->u4IELength,
+				   prSchedScanRequest->pucIE, prSchedScanRequest->u2ScanInterval) == TRUE)
+		DBGLOG(AIS, INFO, "aisPostponedEventOfSchedScanStart: Success!\n");
+	else
+		DBGLOG(AIS, WARN, "aisPostponedEventOfSchedScanStart: fail\n");
+
+
+}				/* end of aisPostponedEventOfSchedScanStart() */
 
 /*----------------------------------------------------------------------------*/
 /*!

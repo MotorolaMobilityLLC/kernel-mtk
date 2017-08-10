@@ -326,6 +326,8 @@ VOID
 aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 				ENUM_PARAM_MEDIA_STATE_T eConnectionState, BOOLEAN fgDelayIndication);
 
+VOID aisPostponedEventOfSchedScanStart(IN P_ADAPTER_T prAdapter, P_AIS_FSM_INFO_T prAisFsmInfo);
+
 VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, P_AIS_FSM_INFO_T prAisFsmInfo);
 
 VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, P_SW_RFB_T prAssocRspSwRfb);

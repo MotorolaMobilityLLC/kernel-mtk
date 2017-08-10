@@ -467,6 +467,8 @@ typedef struct _SCAN_INFO_T {
 	BOOLEAN fgGScnParamSet;
 	BOOLEAN fgGScnAction;
 	P_CMD_SET_PSCAN_PARAM prPscnParam;
+	BOOLEAN fgIsPostponeSchedScan;
+	PARAM_SCHED_SCAN_REQUEST rSchedScanRequest;
 	ENUM_PSCAN_STATE_T eCurrentPSCNState;
 #endif
 #if CFG_SUPPORT_GSCN

@@ -166,10 +166,15 @@ VOID scnInit(IN P_ADAPTER_T prAdapter)
 
 	/* reset NLO state */
 	prScanInfo->fgNloScanning = FALSE;
+
 #if CFG_SUPPORT_SCN_PSCN
 	prScanInfo->fgPscnOngoing = FALSE;
 	prScanInfo->fgGScnConfigSet = FALSE;
 	prScanInfo->fgGScnParamSet = FALSE;
+
+	/* reset postpone Sched Scan Request*/
+	prScanInfo->fgIsPostponeSchedScan = FALSE;
+
 	prScanInfo->prPscnParam = kalMemAlloc(sizeof(CMD_SET_PSCAN_PARAM), VIR_MEM_TYPE);
 	if (!(prScanInfo->prPscnParam)) {
 		DBGLOG(SCN, ERROR, "Alloc memory for CMD_SET_PSCAN_PARAM fail\n");

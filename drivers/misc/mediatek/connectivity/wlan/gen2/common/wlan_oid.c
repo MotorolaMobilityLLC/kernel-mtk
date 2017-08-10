@@ -9569,6 +9569,10 @@ wlanoidSetStartSchedScan(IN P_ADAPTER_T prAdapter,
 			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
 {
 	P_PARAM_SCHED_SCAN_REQUEST prSchedScanRequest;
+	P_SCAN_INFO_T prScanInfo;
+
+	ASSERT(prAdapter);
+	prScanInfo = &(prAdapter->rWifiVar.rScanInfo);
 
 	DEBUGFUNC("wlanoidSetStartSchedScan()");
 
@@ -9597,6 +9601,9 @@ wlanoidSetStartSchedScan(IN P_ADAPTER_T prAdapter,
 	}
 
 	prSchedScanRequest = (P_PARAM_SCHED_SCAN_REQUEST) pvSetBuffer;
+
+	/*if schedScanReq is pending ,save it*/
+	kalMemCopy(&prScanInfo->rSchedScanRequest, prSchedScanRequest, sizeof(PARAM_SCHED_SCAN_REQUEST));
 
 	if (scnFsmSchedScanRequest(prAdapter,
 				   (UINT_8) (prSchedScanRequest->u4SsidNum),

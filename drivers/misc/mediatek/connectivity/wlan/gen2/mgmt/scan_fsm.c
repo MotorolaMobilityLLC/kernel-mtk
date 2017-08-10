@@ -1188,10 +1188,11 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 		return TRUE;
 	}
 
-	/*check if scanning...*/
+	/*check if normal scanning is true, driver start to postpone sched scan request*/
 	if (prScanInfo->eCurrentState != SCAN_STATE_IDLE) {
-		DBGLOG(SCN, INFO, "already scanning , reject sched scan request\n");
-		return FALSE;
+		prScanInfo->fgIsPostponeSchedScan = TRUE;
+		DBGLOG(SCN, WARN, "already normal scanning ,driver postpones sched scan request!\n");
+		return TRUE;
 	}
 
 	prScanInfo->fgNloScanning = TRUE;
@@ -1362,6 +1363,7 @@ BOOLEAN scnFsmSchedScanStopRequest(IN P_ADAPTER_T prAdapter)
 #endif
 
 	prScanInfo->fgNloScanning = FALSE;
+	prScanInfo->fgIsPostponeSchedScan = FALSE;
 
 	return TRUE;
 }
