@@ -527,7 +527,10 @@ static void ccci_rpc_work_helper(struct ccci_port *port, struct rpc_pkt *pkt,
 			if (!masp_secure_algo_init()) {
 				CCCI_ERROR_LOG(md_id, RPC, "masp_secure_algo_init fail!\n");
 				tmp_data[0] = FS_PARAM_ERROR;
-				goto err1;
+				pkt_num = 0;
+				pkt[pkt_num].len = sizeof(unsigned int);
+				pkt[pkt_num++].buf = (void *)&tmp_data[0];
+				break;
 			}
 
 			CCCI_DEBUG_LOG(md_id, RPC,
