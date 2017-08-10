@@ -226,6 +226,8 @@ static void sdio_tx_rx_printk(const void *buf, unsigned char type)
 	/*return; */
 	if (buf)
 		head = (struct sdio_msg_head *)buf;
+	else
+		return;
 
 	count = calc_payload_len(head, NULL);
 	if (type == 1)
@@ -239,15 +241,11 @@ static void sdio_tx_rx_printk(const void *buf, unsigned char type)
 	/*count = RECORD_DUMP_MAX; */
 
 	LOGPRT
-	    (LOG_INFO, "%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x\n",
+	    (LOG_INFO, "%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x-%x\n",
 	     *print_buf, *(print_buf + 1), *(print_buf + 2), *(print_buf + 3),
 	     *(print_buf + 4), *(print_buf + 5), *(print_buf + 6),
 	     *(print_buf + 7), *(print_buf + 8), *(print_buf + 9),
-	     *(print_buf + 10), *(print_buf + 11), *(print_buf + 12),
-	     *(print_buf + 13), *(print_buf + 14), *(print_buf + 15),
-	     *(print_buf + 16), *(print_buf + 17), *(print_buf + 18),
-	     *(print_buf + 19), *(print_buf + 20), *(print_buf + 21),
-	     *(print_buf + 22), *(print_buf + 23));
+	     *(print_buf + 10), *(print_buf + 11));
 /*
 	for(i = 0; i < count + sizeof(struct sdio_msg_head); i++)
 	{
@@ -339,6 +337,7 @@ static int check_port(struct sdio_modem_port *port)
 	if (!port) {
 		LOGPRT(LOG_ERR, "%s port NULL\n", __func__);
 		ret = -ENODEV;
+		return ret;
 	} else {
 		modem = port->modem;
 		if (!port->func) {
@@ -1827,8 +1826,7 @@ static void sdio_write_port_work(struct work_struct *work)
  down_sem_fail:
 	up(&port->write_sem);
  down_out:
-	/*for compile warning */
-	ret = ret;
+	return;
 }
 
 #ifndef CONFIG_EVDO_DT_VIA_SUPPORT
@@ -3757,6 +3755,10 @@ static void modem_sdio_write(struct sdio_modem *modem, int addr,
 	if (buf) {
 		msg_head = (struct sdio_msg_head *)buf;
 		print_buf = (unsigned char *)buf;
+	} else {
+		LOGPRT(LOG_ERR, "%s %d: buf is NULL\n",
+					       __func__, __LINE__);
+		return;
 	}
 	ch_id = (msg_head->chanInfo & 0x0F) + (msg_head->tranHi & EXTEND_CH_BIT);
 	tport_id = ch_id - 1;
@@ -4204,8 +4206,7 @@ static ssize_t modem_ctrl_on_show(struct kobject *kobj,
 
 	LOGPRT(LOG_NOTICE, "%s: enter\n", __func__);
 
-	if (modem)
-		ctrl_port = modem->ctrl_port;
+	ctrl_port = modem->ctrl_port;
 
 /*out:*/
 	s += snprintf(s, 64, "ctrl state: %s\n",
@@ -5257,7 +5258,6 @@ static int c2k_sdio_probe_func(struct sdio_modem *modem, struct sdio_func *func)
 
 	return ret;
 
-	sdio_release_irq(func);
  err_sdio_modem_port_init:
 	modem_port_remove(modem);
 	for (index = 0; index < SDIO_TTY_NR; index++) {
@@ -5488,10 +5488,16 @@ int sdio_modem_ccmni_send_pkt(int md_id, int ccmni_idx, void *data, int is_ack)
 	}
 
 	ccmni_port = sdio_modem_tty_port_get(CCMNI_CH_ID - 1);
-	modem = ccmni_port->modem;
-	if (!ccmni_port || modem->status == 0) {
+	if (!ccmni_port) {
 		LOGPRT(LOG_ERR,
 		       "%s: sdio_modem_send_pkt failed: ccmni port is NULL.\n",
+		       __func__);
+		goto md_not_ready_err_exit;
+	}
+	modem = ccmni_port->modem;
+	if (modem->status == 0) {
+		LOGPRT(LOG_ERR,
+		       "%s: sdio_modem_send_pkt failed: modem not ready.\n",
 		       __func__);
 		goto md_not_ready_err_exit;
 	}

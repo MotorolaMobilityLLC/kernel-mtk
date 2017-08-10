@@ -488,7 +488,9 @@ void c2k_reset_tx_gpio_ready(int gpio)
 	struct mtk_c2k_gpio_des *des;
 
 	des = gpio_des_find_by_gpio(gpio);
-	des->eint_ls = 1;
-	des->irq_type = IRQ_TYPE_EDGE_FALLING;
-	c2k_gpio_set_irq_type(gpio, IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING);
+	if (des) {
+		des->eint_ls = 1;
+		des->irq_type = IRQ_TYPE_EDGE_FALLING;
+		c2k_gpio_set_irq_type(gpio, IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING);
+	}
 }

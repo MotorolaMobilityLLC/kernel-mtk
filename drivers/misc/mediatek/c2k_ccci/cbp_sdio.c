@@ -431,13 +431,11 @@ void gpio_irq_cbp_rst_ind(void)
 
 	level = !!c2k_gpio_get_value(cbp_rst_ind->rst_ind_gpio);
 	if (level != cbp_rst_ind->rst_ind_polar) {	/*1:cbp reset happened */
-		if (cdata->modem) {
-			LOGPRT(LOG_INFO, "%s: set md off.\n", __func__);
-			spin_lock_irqsave(&cdata->modem->status_lock, flags);
-			cdata->modem->status = MD_OFF;
-			spin_unlock_irqrestore(&cdata->modem->status_lock,
-					       flags);
-		}
+		LOGPRT(LOG_INFO, "%s: set md off.\n", __func__);
+		spin_lock_irqsave(&cdata->modem->status_lock, flags);
+		cdata->modem->status = MD_OFF;
+		spin_unlock_irqrestore(&cdata->modem->status_lock,
+				       flags);
 #ifdef CONFIG_EVDO_DT_VIA_SUPPORT
 		wake_up(&cbp_flow_ctrl->wait_q);
 		wake_up(&cbp_data_ack->wait_q);
