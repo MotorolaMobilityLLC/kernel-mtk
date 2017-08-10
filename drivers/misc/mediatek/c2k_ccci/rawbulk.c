@@ -185,6 +185,7 @@ static inline void add_device_attr(struct rawbulk_function *fn, int n, const cha
 				   *name, int mode)
 {
 	if (n < MAX_ATTRIBUTES) {
+		sysfs_attr_init(&fn->attr[n].attr);
 		fn->attr[n].attr.name = name;
 		fn->attr[n].attr.mode = mode;
 		fn->attr[n].show = rawbulk_attr_show;
