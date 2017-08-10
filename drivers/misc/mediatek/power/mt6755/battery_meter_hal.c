@@ -200,30 +200,33 @@ int get_hw_ocv(void)
 #else
 	signed int adc_result_reg = 0;
 	signed int adc_result = 0;
-	signed int r_val_temp = 3;	/*MT6325 use 2, old chip use 4    */
-
+	signed int r_val_temp = 3;           /*MT6325 use 2, old chip use 4    */
+	int reg_sel;
 #if defined(SWCHR_POWER_PATH)
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	  adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_WAKEUP_SWCHR);
+		adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_WAKEUP_SWCHR);
+		reg_sel = pmic_get_register_value(PMIC_STRUP_AUXADC_START_SEL);
 	#else
-	adc_result_reg = pmic_get_register_value(MT6351_PMIC_AUXADC_ADC_OUT_WAKEUP_SWCHR);
+		adc_result_reg = pmic_get_register_value(MT6351_PMIC_AUXADC_ADC_OUT_WAKEUP_SWCHR);
+		reg_sel = pmic_get_register_value(MT6351_PMIC_STRUP_AUXADC_START_SEL);
 	#endif
-      /*mt6325_upmu_get_rg_adc_out_wakeup_swchr(); */
+	/*mt6325_upmu_get_rg_adc_out_wakeup_swchr(); */
 	adc_result = (adc_result_reg * r_val_temp * VOLTAGE_FULL_RANGE) / ADC_PRECISE;
 	bm_err("[oam] get_hw_ocv (swchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d\n",
-		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_STRUP_AUXADC_START_SEL));
+	adc_result_reg, adc_result, reg_sel);
 #else
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	  adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_WAKEUP_PCHR);
+		adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_WAKEUP_PCHR);
+		reg_sel = pmic_get_register_value(PMIC_STRUP_AUXADC_START_SEL);
 	#else
-	adc_result_reg = pmic_get_register_value(MT6351_PMIC_AUXADC_ADC_OUT_WAKEUP_PCHR);
+		adc_result_reg = pmic_get_register_value(MT6351_PMIC_AUXADC_ADC_OUT_WAKEUP_PCHR);
+		reg_sel = pmic_get_register_value(MT6351_PMIC_STRUP_AUXADC_START_SEL);
 	#endif
 	/*mt6325_upmu_get_rg_adc_out_wakeup_pchr(); */
 	adc_result = (adc_result_reg * r_val_temp * VOLTAGE_FULL_RANGE) / ADC_PRECISE;
 	bm_err("[oam] get_hw_ocv (pchr) : adc_result_reg=%d, adc_result=%d, start_sel=%d\n",
-		 adc_result_reg, adc_result, pmic_get_register_value(PMIC_STRUP_AUXADC_START_SEL));
+	adc_result_reg, adc_result, reg_sel);
 #endif
-
 	adc_result += g_hw_ocv_tune_value;
 	return adc_result;
 #endif
