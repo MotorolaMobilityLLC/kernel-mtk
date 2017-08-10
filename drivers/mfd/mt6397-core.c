@@ -20,8 +20,10 @@
 #include <linux/mfd/core.h>
 #include <linux/mfd/mt6397/core.h>
 #include <linux/mfd/mt6323/core.h>
+#include <linux/mfd/mt6392/core.h>
 #include <linux/mfd/mt6323/registers.h>
 #include <linux/mfd/mt6397/registers.h>
+#include <linux/mfd/mt6392/registers.h>
 
 #define MT6397_RTC_BASE		0xe000
 #define MT6323_RTC_BASE		0x8000
@@ -30,6 +32,7 @@
 #define MT6323_CID_CODE    0x23
 #define MT6391_CID_CODE    0x91
 #define MT6397_CID_CODE    0x97
+#define MT6392_CID_CODE    0x92
 
 static const struct resource mt6397_rtc_resources[] = {
 	{
@@ -134,6 +137,10 @@ static const struct mfd_cell mt6397_devs[] = {
 		.of_compatible = "mediatek,mt6397-keys"
 	}
 };
+
+static const struct mfd_cell mt6392_devs[] = {
+};
+
 
 static void mt6397_irq_lock(struct irq_data *data)
 {
@@ -371,6 +378,21 @@ static int mt6397_probe(struct platform_device *pdev)
 					   0, NULL);
 		break;
 
+	case MT6392_CID_CODE:
+		mt6397->int_con[0] = MT6392_INT_CON0;
+		mt6397->int_con[1] = MT6392_INT_CON1;
+		mt6397->int_status[0] = MT6392_INT_STATUS0;
+		mt6397->int_status[1] = MT6392_INT_STATUS1;
+		if (mt6397->irq > 0) {
+			ret = mt6397_irq_init(mt6397);
+			if (ret)
+				return ret;
+		}
+		ret = devm_mfd_add_devices(&pdev->dev, -1, mt6392_devs,
+					   ARRAY_SIZE(mt6392_devs), NULL,
+					   0, NULL);
+		break;
+
 	default:
 		dev_err(&pdev->dev, "unsupported chip: %d\n", id);
 		ret = -ENODEV;
@@ -389,6 +411,7 @@ fail_irq:
 static const struct of_device_id mt6397_of_match[] = {
 	{ .compatible = "mediatek,mt6397" },
 	{ .compatible = "mediatek,mt6323" },
+	{ .compatible = "mediatek,mt6392" },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, mt6397_of_match);
