@@ -674,16 +674,26 @@ kalProcessRxPacket(IN P_GLUE_INFO_T prGlueInfo, IN PVOID pvPacket, IN PUINT_8 pu
 		   IN BOOLEAN fgIsRetain, IN ENUM_CSUM_RESULT_T aerCSUM[])
 {
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
-	struct sk_buff *skb = (struct sk_buff *)pvPacket;
 
-	skb->data = pucPacketStart;
-	skb_reset_tail_pointer(skb);	/* reset tail pointer first, for 64bit kernel,we should call linux kernel API */
-	skb_trim(skb, 0);	/* only if skb->len > len, then skb_trim has effect */
-	skb_put(skb, u4PacketLen);	/* shift tail and skb->len to correct value */
+	if (pvPacket == NULL) {
+		DBGLOG(INIT, WARN, "%s: pvPacket is a null value\n", __func__);
+		rStatus = WLAN_STATUS_FAILURE;
+	} else {
+
+		struct sk_buff *skb = (struct sk_buff *)pvPacket;
+
+		skb->data = pucPacketStart;
+		/* reset tail pointer first, for 64bit kernel,we should call linux kernel API */
+		skb_reset_tail_pointer(skb);
+		/* only if skb->len > len, then skb_trim has effect */
+		skb_trim(skb, 0);
+		/* shift tail and skb->len to correct value */
+		skb_put(skb, u4PacketLen);
 
 #if CFG_TCP_IP_CHKSUM_OFFLOAD
-	kalUpdateRxCSUMOffloadParam(skb, aerCSUM);
+		kalUpdateRxCSUMOffloadParam(skb, aerCSUM);
 #endif
+	}
 
 	return rStatus;
 }
