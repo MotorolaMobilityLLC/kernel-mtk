@@ -36,9 +36,9 @@ int accdet_irq;
 unsigned int gpiopin, headsetdebounce;
 unsigned int accdet_eint_type = IRQ_TYPE_LEVEL_LOW;/* default low_level trigger */
 struct headset_mode_settings *cust_headset_settings;
-#define ACCDET_DEBUG(format, args...)	pr_debug("%s %d "format, __func__, __LINE__, ##args)
-#define ACCDET_INFO(format, args...)	pr_info("%s %d "format, __func__, __LINE__, ##args)
-#define ACCDET_ERROR(format, args...)	pr_info("%s %d "format, __func__, __LINE__, ##args)
+#define ACCDET_DEBUG(format, args...)	pr_debug(format, ##args)
+#define ACCDET_INFO(format, args...)	pr_info(format, ##args)
+#define ACCDET_ERROR(format, args...)	pr_info(format, ##args)
 #define JUST_INPUT_NO_SWITCH  0
 #if JUST_INPUT_NO_SWITCH
 static struct switch_dev accdet_data;
@@ -258,7 +258,7 @@ static inline void headset_plug_out(void)
 #if JUST_INPUT_NO_SWITCH
 	switch_set_state((struct switch_dev *)&accdet_data, cable_type);
 #endif
-	ACCDET_DEBUG(" [accdet] set state in cable_type = NO_DEVICE\n");
+	ACCDET_DEBUG("[accdet] set state in cable_type = NO_DEVICE\n");
 
 }
 
@@ -664,17 +664,19 @@ static void send_accdet_status_event(int cable_type, int status)
 	switch (cable_type) {
 	case HEADSET_NO_MIC:
 		input_report_switch(kpd_accdet_dev, SW_HEADPHONE_INSERT, status);
+		input_report_switch(kpd_accdet_dev, SW_JACK_PHYSICAL_INSERT, status);
 		input_sync(kpd_accdet_dev);
-		ACCDET_DEBUG("[accdet][send_accdet_status_Inputevent]LineOut %s\n", status?"PlugIn":"PlugOut");
+		ACCDET_DEBUG("[Accdet]HEADSET_NO_MIC(3-pole) %s\n", status?"PlugIn":"PlugOut");
 		break;
 	case HEADSET_MIC:
+		input_report_switch(kpd_accdet_dev, SW_HEADPHONE_INSERT, status);
 		input_report_switch(kpd_accdet_dev, SW_MICROPHONE_INSERT, status);
+		input_report_switch(kpd_accdet_dev, SW_JACK_PHYSICAL_INSERT, status);
 		input_sync(kpd_accdet_dev);
-		ACCDET_DEBUG("[accdet][send_accdet_status_Inputevent]MICROPHONE(4-pole) %s\n",
-			status?"PlugIn":"PlugOut");
+		ACCDET_DEBUG("[Accdet]HEADSET_MIC(4-pole) %s\n", status?"PlugIn":"PlugOut");
 		break;
 	default:
-		ACCDET_DEBUG("[accdet][send_accdet_status_Inputevent]Invalid cableType\n");
+		ACCDET_DEBUG("[Accdet]Invalid cableType\n");
 	}
 }
 
@@ -1142,7 +1144,7 @@ static void accdet_work_callback(struct work_struct *work)
 		ACCDET_DEBUG("[Accdet] Headset has plugged out don't set accdet state\n");
 	}
 	mutex_unlock(&accdet_eint_irq_sync_mutex);
-	ACCDET_DEBUG(" [accdet] set state in cable_type  status\n");
+	ACCDET_DEBUG("[accdet] set state in cable_type  status\n");
 
 	wake_unlock(&accdet_irq_lock);
 }
@@ -1692,6 +1694,7 @@ int mt_accdet_probe(struct platform_device *dev)
 	__set_bit(EV_SW, kpd_accdet_dev->evbit);
 	__set_bit(SW_HEADPHONE_INSERT, kpd_accdet_dev->swbit);
 	__set_bit(SW_MICROPHONE_INSERT, kpd_accdet_dev->swbit);
+	__set_bit(SW_JACK_PHYSICAL_INSERT, kpd_accdet_dev->swbit);
 	__set_bit(SW_LINEOUT_INSERT, kpd_accdet_dev->swbit);
 
 	kpd_accdet_dev->id.bustype = BUS_HOST;
