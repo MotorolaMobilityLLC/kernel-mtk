@@ -1213,7 +1213,7 @@ int dprec_logger_get_buf(DPREC_LOGGER_PR_TYPE type, char *stringbuf, int len)
 {
 	int n = 0;
 	int i;
-	int c = dprec_logger_buffer[type].id;
+	int c;
 	char **buf_arr;
 
 	if (type >= DPREC_LOGGER_PR_NUM || len < 0)
@@ -1222,6 +1222,7 @@ int dprec_logger_get_buf(DPREC_LOGGER_PR_TYPE type, char *stringbuf, int len)
 	if (!is_buffer_init)
 		return 0;
 
+	c = dprec_logger_buffer[type].id;
 	buf_arr = dprec_logger_buffer[type].buffer_ptr;
 
 	for (i = 0; i < dprec_logger_buffer[type].count; i++) {
