@@ -1343,7 +1343,8 @@ int mmdvfs_notify_mmclk_switch_request(int event)
 			current_mmsys_clk = MMSYS_CLK_MEDIUM;
 			return 1;
 		}
-	} else if (event == MMDVFS_EVENT_OVL_SINGLE_LAYER_ENTER && SMI_BWC_SCEN_VP) {
+	} else if (event == MMDVFS_EVENT_OVL_SINGLE_LAYER_ENTER &&
+		current_smi_scenario == SMI_BWC_SCEN_VP) {
 		/* call back from DISP so we don't need use DISP lock here */
 		if (current_mmsys_clk != MMSYS_CLK_HIGH) {
 			notify_cb_func_checked(notify_cb_func_nolock, current_mmsys_clk, MMSYS_CLK_LOW,
