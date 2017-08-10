@@ -23,6 +23,9 @@
 #include "precomp.h"
 #include "mgmt/rsn.h"
 
+#ifdef FW_CFG_SUPPORT
+#include "fwcfg.h"
+#endif
 #include <stddef.h>
 
 /******************************************************************************
@@ -10298,5 +10301,57 @@ wlanoidAddPMKID(IN P_ADAPTER_T prAdapter,
 	} else
 		prAdapter->rWifiVar.rConnSettings.fgOkcPmkIdValid = FALSE;
 	return WLAN_STATUS_SUCCESS;
+}
+#endif
+#ifdef FW_CFG_SUPPORT
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This routine is called to query fw cfg info
+*
+* \param[in]  pvAdapter        Pointer to the Adapter structure.
+* \param[out] pvQueryBuffer    A pointer to the buffer that holds the result of
+*                              the query.
+* \param[in]  u4QueryBufferLen The length of the query buffer.
+* \param[out] pu4QueryInfoLen  If the call is successful, returns the number of
+*                              bytes written into the query buffer. If the call
+*                              failed due to invalid length of the query buffer,
+*                              returns the amount of storage needed.
+*
+* \retval WLAN_STATUS_PENDING
+* \retval WLAN_STATUS_FAILURE
+*/
+/*----------------------------------------------------------------------------*/
+WLAN_STATUS wlanoidQueryCfgRead(IN P_ADAPTER_T prAdapter,
+			   IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen)
+{
+	struct _CMD_HEADER_T *prCmdV1Header = (struct _CMD_HEADER_T *)pvQueryBuffer;
+	struct _CMD_HEADER_T cmdV1Header;
+	WLAN_STATUS rStatus = WLAN_STATUS_FAILURE;
+
+	ASSERT(prAdapter);
+	ASSERT(pu4QueryInfoLen);
+
+	if (u4QueryBufferLen)
+		ASSERT(pvQueryBuffer);
+
+	*pu4QueryInfoLen = sizeof(struct _CMD_HEADER_T);
+
+	if (u4QueryBufferLen < sizeof(struct _CMD_HEADER_T))
+		return WLAN_STATUS_INVALID_LENGTH;
+
+	kalMemCopy(&cmdV1Header, prCmdV1Header, sizeof(struct _CMD_HEADER_T));
+	rStatus = wlanSendSetQueryCmd(
+			prAdapter,
+			CMD_ID_GET_SET_CUSTOMER_CFG,
+			FALSE,
+			TRUE,
+			TRUE,
+			nicCmdEventQueryCfgRead,
+			nicCmdTimeoutCommon,
+			sizeof(struct _CMD_HEADER_T),
+			(PUINT_8) &cmdV1Header,
+			pvQueryBuffer,
+			u4QueryBufferLen);
+	return rStatus;
 }
 #endif

@@ -680,6 +680,9 @@
 #endif
 #include "gl_vendor.h"
 
+#ifdef FW_CFG_SUPPORT
+#include "fwcfg.h"
+#endif
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -2963,6 +2966,7 @@ static INT_32 wlanProbe(PVOID pvData)
 		prAdapter->u4CSUMFlags = (CSUM_OFFLOAD_EN_TX_TCP | CSUM_OFFLOAD_EN_TX_UDP | CSUM_OFFLOAD_EN_TX_IP);
 #endif
 #if CFG_SUPPORT_CFG_FILE
+#ifdef ENABLED_IN_ENGUSERDEBUG
 		{
 			PUINT_8 pucConfigBuf;
 			UINT_32 u4ConfigReadLen;
@@ -2991,6 +2995,7 @@ static INT_32 wlanProbe(PVOID pvData)
 			}	/* pucConfigBuf */
 		}
 #endif
+#endif
 		/* 4 <5> Start Device */
 		/*  */
 #if CFG_ENABLE_FW_DOWNLOAD
@@ -3010,7 +3015,9 @@ static INT_32 wlanProbe(PVOID pvData)
 			/* Load NVRAM content to REG_INFO_T */
 			glLoadNvram(prGlueInfo, prRegInfo);
 #if CFG_SUPPORT_CFG_FILE
+#ifdef ENABLED_IN_ENGUSERDEBUG
 			wlanCfgApply(prAdapter);
+#endif
 #endif
 
 			/* kalMemCopy(&prGlueInfo->rRegInfo, prRegInfo, sizeof(REG_INFO_T)); */
@@ -3136,6 +3143,18 @@ bailout:
 #endif
 			}
 		}
+#ifdef FW_CFG_SUPPORT
+		{
+			if (wlanFwArrayCfg(prAdapter) != WLAN_STATUS_FAILURE)
+				DBGLOG(INIT, INFO, "FW Array Cfg done!");
+		}
+#ifdef ENABLED_IN_ENGUSERDEBUG
+		{
+			if (wlanFwFileCfg(prAdapter) != WLAN_STATUS_FAILURE)
+				DBGLOG(INIT, INFO, "FW File Cfg done!");
+		}
+#endif
+#endif
 
 #if CFG_TCP_IP_CHKSUM_OFFLOAD
 		/* set HW checksum offload */
@@ -3176,6 +3195,13 @@ bailout:
 		}
 #endif /* WLAN_INCLUDE_PROC */
 
+#ifdef FW_CFG_SUPPORT
+		i4Status = cfgCreateProcEntry(prGlueInfo);
+		if (i4Status < 0) {
+			DBGLOG(INIT, ERROR, "fw cfg proc failed\n");
+			break;
+		}
+#endif
 #if CFG_ENABLE_BT_OVER_WIFI
 		prGlueInfo->rBowInfo.fgIsNetRegistered = FALSE;
 		prGlueInfo->rBowInfo.fgIsRegistered = FALSE;
@@ -3332,6 +3358,9 @@ static VOID wlanRemove(VOID)
 
 	kalPerMonDestroy(prGlueInfo);
 	/* 4 <3> Remove /proc filesystem. */
+#ifdef FW_CFG_SUPPORT
+	cfgRemoveProcEntry();
+#endif
 #ifdef WLAN_INCLUDE_PROC
 	procRemoveProcfs();
 #endif /* WLAN_INCLUDE_PROC */
