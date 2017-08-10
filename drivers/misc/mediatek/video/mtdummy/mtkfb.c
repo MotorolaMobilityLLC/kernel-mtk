@@ -47,8 +47,8 @@
 #define ALIGN_TO(x, n)  \
 	(((x) + ((n) - 1)) & ~((n) - 1))
 
-#define SCREEN_WIDTH   (540)
-#define SCREEN_HEIGTH  (960)
+#define SCREEN_WIDTH   (720)
+#define SCREEN_HEIGTH  (1280)
 
 #define MTK_FB_ALIGNMENT 32
 
@@ -553,6 +553,15 @@ static void mtkfb_free_resources(struct mtkfb_device *fbdev, int state)
 	}
 }
 
+unsigned int DISP_GetScreenWidth(void)
+{
+	return SCREEN_WIDTH;
+}
+
+unsigned int DISP_GetScreenHeight(void)
+{
+	return SCREEN_HEIGTH;
+}
 #ifdef CONFIG_OF
 struct tag_videolfb {
 	u64 fb_base;
