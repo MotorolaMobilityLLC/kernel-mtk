@@ -67,6 +67,8 @@
 #define AIS_AUTORN_MIN_INTERVAL				20
 #define AIS_BLACKLIST_TIMEOUT               15 /* seconds */
 
+#define AIS_WAIT_OKC_PMKID_SEC              1000 /* unit: ms */
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -206,6 +208,7 @@ typedef struct _AIS_FSM_INFO_T {
 #if CFG_SUPPORT_DETECT_SECURITY_MODE_CHANGE
 	TIMER_T rSecModeChangeTimer;
 #endif
+	TIMER_T rWaitOkcPMKTimer;
 
 	UINT_8 ucSeqNumOfReqMsg;
 	UINT_8 ucSeqNumOfChReq;
@@ -437,6 +440,8 @@ UINT_16 aisCalculateBlackListScore(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc
 VOID aisCollectNeighborAPChannel(P_ADAPTER_T prAdapter,
 				 struct IE_NEIGHBOR_REPORT_T *prNeiRep, UINT_16 u2Length);
 VOID aisRunEventChnlUtilRsp(P_ADAPTER_T prAdapter, P_MSG_HDR_T prMsgHdr);
+
+VOID aisFsmRunEventSetOkcPmk(IN P_ADAPTER_T prAdapter);
 
 /*******************************************************************************
 *                              F U N C T I O N S

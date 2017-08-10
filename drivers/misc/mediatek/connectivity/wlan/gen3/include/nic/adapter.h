@@ -184,6 +184,7 @@ typedef struct _CONNECTION_SETTINGS_T {
 	BOOLEAN fgSecModeChangeStartTimer;
 #endif
 	struct LINK_MGMT rBlackList;
+	BOOLEAN fgUseOkc;
 } CONNECTION_SETTINGS_T, *P_CONNECTION_SETTINGS_T;
 
 struct _BSS_INFO_T {

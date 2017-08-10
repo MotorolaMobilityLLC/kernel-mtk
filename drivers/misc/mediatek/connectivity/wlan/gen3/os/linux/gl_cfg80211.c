@@ -652,8 +652,10 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 	ENUM_PARAM_OP_MODE_T eOpMode;
 	UINT_32 i, u4AkmSuite = 0;
 	P_DOT11_RSNA_CONFIG_AUTHENTICATION_SUITES_ENTRY prEntry;
+	P_CONNECTION_SETTINGS_T prConnSettings = NULL;
 
 	prGlueInfo = (P_GLUE_INFO_T) wiphy_priv(wiphy);
+	prConnSettings = &prGlueInfo->prAdapter->rWifiVar.rConnSettings;
 	ASSERT(prGlueInfo);
 
 	if (prGlueInfo->prAdapter->rWifiVar.rConnSettings.eOPMode > NET_TYPE_AUTO_SWITCH)
@@ -819,6 +821,7 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 #if CFG_SUPPORT_PASSPOINT
 	prGlueInfo->fgConnectHS20AP = FALSE;
 #endif /* CFG_SUPPORT_PASSPOINT */
+	prConnSettings->fgUseOkc = FALSE;
 
 	if (sme->ie && sme->ie_len > 0) {
 		WLAN_STATUS rStatus;
@@ -873,6 +876,29 @@ int mtk_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev, struct cf
 #endif
 		}
 #endif /* CFG_SUPPORT_PASSPOINT */
+#if CFG_SUPPORT_OKC
+		if (wextSrchOkcAndPMKID(pucIEStart, sme->ie_len, (PUINT_8 *) &prDesiredIE, &prConnSettings->fgUseOkc)) {
+			UINT_16 u2PmkIdCnt = 0;
+
+			if (prDesiredIE)
+				u2PmkIdCnt = *(PUINT_16)prDesiredIE;
+			DBGLOG(REQ, TRACE, "u2PmkIdCnt %d\n", u2PmkIdCnt);
+			if (u2PmkIdCnt != 0 && sme->bssid && !EQUAL_MAC_ADDR("\x0\x0\x0\x0\x0\x0", sme->bssid) &&
+				IS_UCAST_MAC_ADDR(sme->bssid)) {
+				PARAM_PMKID_T rPmkid;
+
+				rPmkid.u4Length = (UINT_32)(sizeof(rPmkid) | (1 << 31));
+				rPmkid.u4BSSIDInfoCount = 1;
+				kalMemCopy(rPmkid.arBSSIDInfo[0].arBSSID, sme->bssid, MAC_ADDR_LEN);
+				kalMemCopy(rPmkid.arBSSIDInfo[0].arPMKID, prDesiredIE+2, IW_PMKID_LEN);
+				rStatus = kalIoctl(prGlueInfo,
+					   wlanoidSetPmkid,
+					   (PVOID)&rPmkid, rPmkid.u4Length, FALSE, FALSE, FALSE, &u4BufLen);
+				if (rStatus != WLAN_STATUS_SUCCESS)
+					DBGLOG(REQ, WARN, "failed to add OKC PMKID\n");
+			}
+		}
+#endif
 
 	}
 

@@ -3010,14 +3010,6 @@ wlanoidSetPmkid(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Set
 		prAisSpecBssInfo->u4PmkidCacheCount = 0;
 		kalMemZero(prAisSpecBssInfo->arPmkidCache, sizeof(PMKID_ENTRY_T) * CFG_MAX_PMKID_CACHE);
 	}
-#if CFG_SUPPORT_OKC
-	else if (prAdapter->rWifiVar.rConnSettings.fgUseOkc) {
-		prAdapter->rWifiVar.rConnSettings.fgOkcPmkIdValid = TRUE;
-		DBGLOG(OID, INFO, "pmkid %pM\n", prPmkid->arBSSIDInfo[0].arPMKID);
-		kalMemCopy(prAdapter->rWifiVar.rConnSettings.aucOkcPmkId, prPmkid->arBSSIDInfo[0].arPMKID, 16);
-	}
-#endif
-
 	if ((prAisSpecBssInfo->u4PmkidCacheCount + prPmkid->u4BSSIDInfoCount > CFG_MAX_PMKID_CACHE)) {
 		prAisSpecBssInfo->u4PmkidCacheCount = 0;
 		kalMemZero(prAisSpecBssInfo->arPmkidCache, sizeof(PMKID_ENTRY_T) * CFG_MAX_PMKID_CACHE);
@@ -3053,6 +3045,29 @@ wlanoidSetPmkid(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4Set
 		}
 	}
 #endif
+	if (prAdapter->rWifiVar.rConnSettings.fgUseOkc) {
+		P_BSS_DESC_T prBssDesc = prAdapter->rWifiVar.rAisFsmInfo.prTargetBssDesc;
+		P_UINT_8 pucPmkID = NULL;
+
+		if ((prPmkid->u4Length & BIT(31)) || (prBssDesc &&
+				EQUAL_MAC_ADDR(prPmkid->arBSSIDInfo[0].arBSSID, prBssDesc->aucBSSID))) {
+			if (j == CFG_MAX_PMKID_CACHE) {
+				j = 0;
+				kalMemCopy(prAisSpecBssInfo->arPmkidCache[0].rBssidInfo.arBSSID,
+					   prPmkid->arBSSIDInfo[0].arBSSID, sizeof(PARAM_MAC_ADDRESS));
+				kalMemCopy(prAisSpecBssInfo->arPmkidCache[0].rBssidInfo.arPMKID,
+				   prPmkid->arBSSIDInfo[0].arPMKID, sizeof(PARAM_PMKID_VALUE));
+			}
+			pucPmkID = prAisSpecBssInfo->arPmkidCache[j].rBssidInfo.arPMKID;
+			DBGLOG(RSN, INFO,
+				"%pM OKC PMKID %02x%02x%02x%02x%02x%02x%02x%02x...\n",
+				prAisSpecBssInfo->arPmkidCache[j].rBssidInfo.arBSSID,
+				pucPmkID[0], pucPmkID[1], pucPmkID[2], pucPmkID[3],
+				pucPmkID[4], pucPmkID[5], pucPmkID[6], pucPmkID[7]);
+		}
+		aisFsmRunEventSetOkcPmk(prAdapter);
+	}
+
 	return WLAN_STATUS_SUCCESS;
 
 }				/* wlanoidSetPmkid */
@@ -10427,30 +10442,6 @@ wlanoidQueryLteSafeChannel(IN P_ADAPTER_T prAdapter,
 }				/* wlanoidQueryLteSafeChannel */
 #endif
 
-#if CFG_SUPPORT_OKC
-WLAN_STATUS
-wlanoidAddPMKID(IN P_ADAPTER_T prAdapter,
-			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen)
-{
-	UINT_32 u4Index = 0;
-	PUINT_8 pucBssid = (PUINT_8)pvSetBuffer;
-	P_PMKID_ENTRY_T prPmkIdEntry = &prAdapter->rWifiVar.rAisSpecificBssInfo.arPmkidCache[0];
-
-	if (!pvSetBuffer || u4SetBufferLen == 0)
-		return WLAN_STATUS_INVALID_DATA;
-
-	if (rsnSearchPmkidEntry(prAdapter, pucBssid, &u4Index) &&
-		prPmkIdEntry[u4Index].fgPmkidExist) {
-		DBGLOG(REQ, INFO, "compose OKC pmkid from PMKSA, PMKID: %pM\n",
-			prAdapter->rWifiVar.rConnSettings.aucOkcPmkId);
-		prAdapter->rWifiVar.rConnSettings.fgOkcPmkIdValid = TRUE;
-		kalMemCopy(prAdapter->rWifiVar.rConnSettings.aucOkcPmkId,
-			prPmkIdEntry[u4Index].rBssidInfo.arPMKID, 16);
-	} else
-		prAdapter->rWifiVar.rConnSettings.fgOkcPmkIdValid = FALSE;
-	return WLAN_STATUS_SUCCESS;
-}
-#endif
 #ifdef FW_CFG_SUPPORT
 /*----------------------------------------------------------------------------*/
 /*!

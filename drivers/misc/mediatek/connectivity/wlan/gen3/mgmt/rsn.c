@@ -1317,7 +1317,7 @@ VOID rsnGenerateRSNIE(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo)
 				kalMemCopy(cp,
 					   (PVOID) prAdapter->rWifiVar.rAisSpecificBssInfo.
 					   arPmkidCache[u4Entry].rBssidInfo.arPMKID, sizeof(PARAM_PMKID_VALUE));
-				/* ucExpendedLen = 40; */
+				cp += sizeof(PARAM_PMKID_VALUE);
 			} else {
 				WLAN_SET_FIELD_16(cp, 0);	/* PMKID count */
 				/* ucExpendedLen = ELEM_ID_RSN_LEN_FIXED + 2; */

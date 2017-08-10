@@ -1610,11 +1610,6 @@ wlanoidQueryLteSafeChannel(IN P_ADAPTER_T prAdapter,
 ********************************************************************************
 */
 
-#if CFG_SUPPORT_OKC
-WLAN_STATUS
-wlanoidAddPMKID(IN P_ADAPTER_T prAdapter,
-			 IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
-#endif
 #ifdef FW_CFG_SUPPORT
 WLAN_STATUS wlanoidQueryCfgRead(IN P_ADAPTER_T prAdapter,
 				IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
