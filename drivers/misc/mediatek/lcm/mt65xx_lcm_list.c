@@ -49,6 +49,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt35523_wxga_dsi_vdo_8163_lcm_drv,
 #endif
 
+#if defined(FT8707_FHD_DSI_VDO_LGD)
+	&ft8707_fhd_dsi_vdo_lgd_drv,
+#endif
+
 #if defined(EK79007_WSVGALNL_DSI_VDO)
 	&ek79007_wsvgalnl_dsi_vdo_lcm_drv,
 #endif

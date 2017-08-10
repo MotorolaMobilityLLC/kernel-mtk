@@ -26,6 +26,27 @@ fw-shipped- += acenic/tg1.bin
 else
 acenic-objs := acenic/tg1.bin acenic/tg2.bin
 endif
+
+ifdef CONFIG_TOUCHSCREEN_UNIFIED_DRIVER_4
+ifdef CONFIG_TOUCHSCREEN_LGE_MIT300
+mit300_fw_file := melfas/mit300/mm1v/L0M50P1_00_01.bin
+endif
+ifdef CONFIG_TOUCHSCREEN_LGE_MIT300_M4
+mit300_fw_file := melfas/mit300/m4/L0M50P1_00_01.bin
+endif
+mit300_firmware := $(subst $(srctree)/firmware/,,$(mit300_fw_file))
+#fw-shipped-$(CONFIG_TOUCHSCREEN_UNIFIED_DRIVER_4) += $(mit300_firmware)
+fw-shipped-y += $(mit300_firmware)
+ifdef CONFIG_TOUCHSCREEN_LGE_FT8707
+focaltech_img_file1 := focaltech/K7/FT8707/FT8707_Pramboot_V0.2_20151215_Final.bin
+focaltech_img_file2 := focaltech/K7/FT8707/LGE_K7_FT8707_0x96_V0x08_D0x01_20151229_all.bin
+focaltech_firmware1 := $(subst $(srctree)/firmware/,,$(focaltech_img_file1))
+focaltech_firmware2 := $(subst $(srctree)/firmware/,,$(focaltech_img_file2))
+fw-shipped-y += $(focaltech_firmware1)
+fw-shipped-y += $(focaltech_firmware2)
+endif
+endif
+
 fw-shipped-$(CONFIG_ACENIC) += $(acenic-objs)
 fw-shipped-$(CONFIG_ADAPTEC_STARFIRE) += adaptec/starfire_rx.bin \
 					 adaptec/starfire_tx.bin
@@ -138,8 +159,17 @@ fw-shipped-$(CONFIG_YAM) += yam/1200.bin yam/9600.bin
 
 fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
 
+# Directories which we _might_ need to create, so we have a rule for them.
+firmware-dirs := $(sort $(addprefix $(objtree)/$(obj)/,$(dir $(fw-external-y) $(fw-shipped-all))))
+
+quiet_cmd_mkdir = MKDIR   $(patsubst $(objtree)/%,%,$@)
+      cmd_mkdir = mkdir -p $@
+
 quiet_cmd_ihex  = IHEX    $@
       cmd_ihex  = $(OBJCOPY) -Iihex -Obinary $< $@
+
+quiet_cmd_copy  = COPY    $@
+      cmd_copy  = cp $(srctree)/$@ $@
 
 quiet_cmd_ihex2fw  = IHEX2FW $@
       cmd_ihex2fw  = $(objtree)/$(obj)/ihex2fw $< $@

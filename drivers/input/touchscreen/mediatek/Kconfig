@@ -169,4 +169,43 @@ config TOUCHSCREEN_MTK_GT9271TB_HOTKNOT
 
 source "drivers/input/touchscreen/mediatek/GT9271TB_hotknot/Kconfig"
 
+config TOUCHSCREEN_UNIFIED_DRIVER_4
+	bool "LGE Unified driver Ver4.0"
+	depends on I2C
+	default n
+	help
+	  Say Y here if you use lge unified driver ver4.0
+	  if unsure, say N
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+config TOUCHSCREEN_LGE_MIT300
+	bool "Melfas MIT-300 based on LGE Touch Core driver"
+	depends on I2C && TOUCHSCREEN_UNIFIED_DRIVER_4
+	default n
+	help
+	  Say Y here if you have a Mefas MIT-300 I2C touchscreen
+	  connected to your system.
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+config TOUCHSCREEN_LGE_MIT300_M4
+	bool "Melfas MIT-300 based on LGE Touch Core driver"
+	depends on I2C && TOUCHSCREEN_UNIFIED_DRIVER_4
+	default n
+	help
+	  Say Y here if you have a Mefas MIT-300 I2C touchscreen
+	  connected to your system.
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+config TOUCHSCREEN_LGE_FT8707
+	bool "FT8707 based on LGE Touch Core driver"
+	depends on I2C && TOUCHSCREEN_UNIFIED_DRIVER_4
+	default n
+	help
+	  Say Y here if you have a FT8707 I2C touchscreen
+	  connected to your system.
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
 endif
