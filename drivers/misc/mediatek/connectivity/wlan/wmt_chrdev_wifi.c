@@ -26,6 +26,7 @@
 #include <linux/time.h>
 #include <linux/delay.h>
 #include <linux/netdevice.h>
+#include <linux/inetdevice.h>
 #include <net/net_namespace.h>
 #include <linux/string.h>
 
