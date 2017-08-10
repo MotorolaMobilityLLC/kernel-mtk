@@ -12,6 +12,11 @@
 #include <linux/slab.h>
 #include <linux/fs.h>
 #include "kd_camera_hw.h"
+
+typedef unsigned int kal_uint32;
+typedef unsigned short kal_uint16;
+typedef unsigned char kal_uint8;
+
 #include "cam_cal.h"
 #include "cam_cal_define.h"
 #include "imx135_otp.h"
@@ -26,7 +31,7 @@
 
 #define PFX "IMX135_OTP_FMT"
 
-
+#if 0 /*below function is defined by /kernel-3.18/drivers/misc/mediatek/imgsensor/src/mt6735m/imx219_mipi_raw/ */\
 /* #define CAM_CALGETDLT_DEBUG */
 #define CAM_CAL_DEBUG
 #ifdef CAM_CAL_DEBUG
@@ -127,7 +132,6 @@ void otp_clear_flag(void)
 #endif
 
 OTP_DATA imx135_otp_data = {{0} };
-
 /*************************************************************************************************
 * Function    :  start_read_otp
 * Description :  before read otp , set the reading block setting
@@ -683,4 +687,5 @@ MODULE_DESCRIPTION("CAM_CAL driver");
 MODULE_AUTHOR("Sean Lin <Sean.Lin@Mediatek.com>");
 MODULE_LICENSE("GPL");
 
+#endif
 

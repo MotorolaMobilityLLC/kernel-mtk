@@ -1235,7 +1235,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			if (*sensor_id == imgsensor_info.sensor_id) {
 
 #ifdef CONFIG_MTK_CAM_CAL
-				read_imx219_eeprom_mtk_fmt();
+//				read_imx219_eeprom_mtk_fmt();
 #endif
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
 				return ERROR_NONE;
