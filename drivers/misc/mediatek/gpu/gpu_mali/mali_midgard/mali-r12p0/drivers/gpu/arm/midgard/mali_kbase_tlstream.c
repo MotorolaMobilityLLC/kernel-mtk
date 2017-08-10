@@ -1097,7 +1097,7 @@ static ssize_t kbasep_tlstream_read(
 
 	while (copy_len < size) {
 		enum tl_stream_type stype;
-		unsigned int        rb_idx_raw;
+		unsigned int        rb_idx_raw = 0;
 		unsigned int        rb_idx;
 		size_t              rb_size;
 
