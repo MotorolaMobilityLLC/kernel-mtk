@@ -1467,7 +1467,7 @@ static INT32 mt6632_patch_info_prepare(VOID)
 static INT32 mt6632_patch_dwn(UINT32 index)
 {
 	INT32 iRet = -1;
-	P_WMT_PATCH patchHdr;
+	P_WMT_PATCH patchHdr = NULL;
 	PUINT8 pBuf = NULL;
 	PUINT8 pPatchBuf = NULL;
 	UINT32 patchSize;
@@ -1687,8 +1687,8 @@ static INT32 mt6632_patch_dwn(UINT32 index)
 done:
 	/* WMT_CTRL_FREE_PATCH always return 0 */
 	/* wmt_core_ctrl(WMT_CTRL_FREE_PATCH, NULL, NULL); */
-	if (pPatchBuf != NULL) {
-		osal_free(pPatchBuf);
+	if (patchHdr != NULL) {
+		osal_free(patchHdr);
 		pPatchBuf = NULL;
 		patchHdr = NULL;
 	}
