@@ -372,6 +372,15 @@ config MTK_SM100
 	bool "Software synchronization 64bits objects"
 	default n
 
+config MTK_MT6750TT
+	bool "MTK_MT6750TT"
+	default n
+	help
+	  This is for special chip use
+	  It will increase the big frequence when core4 or core5 enable
+	  Set the chip as MT6750TT
+	  If you are not sure about this, set n
+
 config MTK_SVP
 	bool "Support Mediatek Shareable Secure Video Playback technology"
 	depends on CMA && ZONE_MOVABLE_CMA
