@@ -398,8 +398,7 @@ static void clkbuf_delayed_worker(struct work_struct *work)
 {
 	bool srcclkena_o1 = false;
 
-	srcclkena_o1 = (spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ)
-			&& R13_MD1_VRF18_REQ;
+	srcclkena_o1 = !!(spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ);
 	clk_buf_warn("%s: g_is_flightmode_on=%d, srcclkena_o1=%u, pcm_reg13=0x%x\n",
 		     __func__, g_is_flightmode_on, srcclkena_o1,
 		     spm_read(PCM_REG13_DATA));
@@ -425,8 +424,7 @@ void clk_buf_set_by_flightmode(bool is_flightmode_on)
 {
 	bool srcclkena_o1 = false;
 
-	srcclkena_o1 = (spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ)
-			&& R13_MD1_VRF18_REQ;
+	srcclkena_o1 = !!(spm_read(PCM_REG13_DATA) & R13_MD1_VRF18_REQ);
 	clk_buf_warn("%s: g/is_flightmode_on=%d->%d, srcclkena_o1=%u, pcm_reg13=0x%x\n",
 		     __func__, g_is_flightmode_on, is_flightmode_on,
 		     srcclkena_o1, spm_read(PCM_REG13_DATA));
