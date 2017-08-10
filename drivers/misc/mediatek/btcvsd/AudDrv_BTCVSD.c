@@ -261,14 +261,13 @@ static int AudDrv_btcvsd_Allocate_Buffer(struct file *fp, kal_uint8 isRX)
 		readFromBT_cnt = 0;
 		BT_CVSD_Mem.u4RXBufferSize = sizeof(BT_SCO_RX_T);
 
-		if ((BT_CVSD_Mem.pucRXVirtBufAddr == NULL)
-		    && (BT_CVSD_Mem.pucRXPhysBufAddr == 0)) {
+		if (BT_CVSD_Mem.pucRXVirtBufAddr == NULL) {
 			BT_CVSD_Mem.pucRXVirtBufAddr = dma_alloc_coherent(mDev,
 									  BT_CVSD_Mem.u4RXBufferSize,
 									  &BT_CVSD_Mem.pucRXPhysBufAddr,
 									  GFP_KERNEL);
-			if ((0 == BT_CVSD_Mem.pucRXPhysBufAddr)
-			    || (NULL == BT_CVSD_Mem.pucRXVirtBufAddr)) {
+			if ((BT_CVSD_Mem.pucRXPhysBufAddr == 0)
+			    || (BT_CVSD_Mem.pucRXVirtBufAddr == NULL)) {
 				pr_debug
 				    ("AudDrv_btcvsd_Allocate_Buffer dma_alloc_coherent RX fail\n");
 				return -1;
@@ -286,14 +285,13 @@ static int AudDrv_btcvsd_Allocate_Buffer(struct file *fp, kal_uint8 isRX)
 		writeToBT_cnt = 0;
 		BT_CVSD_Mem.u4TXBufferSize = sizeof(BT_SCO_TX_T);
 
-		if ((BT_CVSD_Mem.pucTXVirtBufAddr == NULL)
-		    && (BT_CVSD_Mem.pucTXPhysBufAddr == 0)) {
+		if (BT_CVSD_Mem.pucTXVirtBufAddr == NULL) {
 			BT_CVSD_Mem.pucTXVirtBufAddr = dma_alloc_coherent(mDev,
 									  BT_CVSD_Mem.u4TXBufferSize,
 									  &BT_CVSD_Mem.pucTXPhysBufAddr,
 									  GFP_KERNEL);
-			if ((0 == BT_CVSD_Mem.pucTXPhysBufAddr)
-			    || (NULL == BT_CVSD_Mem.pucTXVirtBufAddr)) {
+			if ((BT_CVSD_Mem.pucTXPhysBufAddr == 0)
+			    || (BT_CVSD_Mem.pucTXVirtBufAddr == NULL)) {
 				pr_debug
 				    ("AudDrv_btcvsd_Allocate_Buffer dma_alloc_coherent TX fail\n");
 				return -1;
@@ -316,8 +314,7 @@ static int AudDrv_btcvsd_Free_Buffer(struct file *fp, kal_uint8 isRX)
 	pr_debug("AudDrv_btcvsd_Free_Buffer(+) isRX=%d\n", isRX);
 
 	if (isRX == 1) {
-		if ((BT_CVSD_Mem.pucRXVirtBufAddr != NULL)
-		    && (BT_CVSD_Mem.pucRXPhysBufAddr != 0)) {
+		if (BT_CVSD_Mem.pucRXVirtBufAddr != NULL) {
 			PRINTK_AUDDRV("AudDrv_btcvsd_Free_Buffer dma_free_coherent RXVirtBufAddr=%p,RXPhysBufAddr=%x",
 			     BT_CVSD_Mem.pucRXVirtBufAddr, BT_CVSD_Mem.pucRXPhysBufAddr);
 			btsco.pRX = NULL;
@@ -334,7 +331,7 @@ static int AudDrv_btcvsd_Free_Buffer(struct file *fp, kal_uint8 isRX)
 			return -1;
 		}
 	} else {
-		if ((BT_CVSD_Mem.pucTXVirtBufAddr != NULL) && (BT_CVSD_Mem.pucTXPhysBufAddr != 0)) {
+		if (BT_CVSD_Mem.pucTXVirtBufAddr != NULL) {
 			/*pr_err("btcvsd_Free_Buffer dma_free_coherent pucTXVirtBufAddr = %p,pucTXPhysBufAddr = %x\n",
 				BT_CVSD_Mem.pucTXVirtBufAddr, BT_CVSD_Mem.pucTXPhysBufAddr);*/
 			btsco.pTX = NULL;
