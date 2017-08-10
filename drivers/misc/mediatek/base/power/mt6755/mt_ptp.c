@@ -4696,14 +4696,16 @@ static int __init eem_conf(void)
 				recordTbl = &fyTbl[0][0];
 				eem_error("@The table ----->(fyTbl)\n");
 			}
+		#if !defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 		} else if ((2 == binLevel) || (4 == binLevel)) {
 			recordTbl = &sbTbl[0][0];
 			eem_error("@The table ----->(sbTbl)\n");
-#ifdef CONFIG_ARCH_MT6755_TURBO
+		#endif
+		#ifdef CONFIG_ARCH_MT6755_TURBO
 		} else if (0x22 == binLevel) {
 			recordTbl = &p15Tbl[0][0];
 			eem_error("@The table ----->(p15Tbl)\n");
-#endif
+		#endif
 		} else {
 			if ((2 == ((binLevel_eng >> 4) & 0x07)) || (2 == ((binLevel_eng >> 10) & 0x07))) {
 				#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
