@@ -852,9 +852,7 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
 
     /* MIPI SWITCH */
 	if(has_mipi_switch){
-		if (DUAL_CAMERA_MAIN_SENSOR == SensorIdx) {
-			pinctrl_select_state(camctrl, cam_mipi_switch_en_h);
-		} else if (DUAL_CAMERA_SUB_SENSOR == SensorIdx) {
+		if (DUAL_CAMERA_SUB_SENSOR == SensorIdx) {
 			pinctrl_select_state(camctrl, cam_mipi_switch_en_l);
 			pinctrl_select_state(camctrl, cam_mipi_switch_sel_h);
 
@@ -1093,7 +1091,9 @@ int kdCISModulePowerOn(CAMERA_DUAL_CAMERA_SENSOR_ENUM SensorIdx, char *currSenso
  #endif
 	} else {		/* power OFF */
 		if(has_mipi_switch){
-			pinctrl_select_state(camctrl, cam_mipi_switch_en_h);
+			if (DUAL_CAMERA_SUB_SENSOR == SensorIdx || DUAL_CAMERA_MAIN_2_SENSOR == SensorIdx) {
+				pinctrl_select_state(camctrl, cam_mipi_switch_en_h);
+			}
 		}
 		for (pwListIdx = 0; pwListIdx < 16; pwListIdx++) {
 			if (currSensorName && (PowerOnList.PowerSeq[pwListIdx].SensorName != NULL)
