@@ -156,8 +156,6 @@ static void aee_kdump_cpu_stop(void *arg, void *regs, void *svc_sp)
 
 	elf_core_copy_kernel_regs((elf_gregset_t *)&crash_record->cpu_regs[cpu], ptregs);
 	crash_save_cpu((struct pt_regs *)regs, cpu);
-
-	set_cpu_online(cpu, false);
 	local_fiq_disable();
 	local_irq_disable();
 

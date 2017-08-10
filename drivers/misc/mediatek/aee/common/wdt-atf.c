@@ -432,7 +432,6 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	if (atomic_xchg(&wdt_enter_fiq, 1) != 0) {
 		aee_rr_rec_fiq_step(AEE_FIQ_STEP_WDT_FIQ_LOOP);
 		aee_wdt_percpu_printf(cpu, "Other CPU already enter WDT FIQ handler\n");
-		set_cpu_online(cpu, false);
 		local_fiq_disable();
 		local_irq_disable();
 

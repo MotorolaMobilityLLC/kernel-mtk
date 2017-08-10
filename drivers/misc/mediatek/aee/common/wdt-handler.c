@@ -350,8 +350,6 @@ void aee_fiq_ipi_cpu_stop(void *arg, void *regs, void *svc_sp)
 	aee_dump_cpu_reg_bin(cpu, regs);
 	aee_wdt_dump_stack_bin(cpu, ((struct pt_regs *)regs)->ARM_sp,
 			       ((struct pt_regs *)regs)->ARM_sp + WDT_SAVE_STACK_SIZE);
-
-	set_cpu_online(cpu, false);
 	local_fiq_disable();
 	local_irq_disable();
 
