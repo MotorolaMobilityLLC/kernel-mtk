@@ -936,7 +936,7 @@ int sensor_enable_to_hub(uint8_t sensorType, int enabledisable)
 			return -1;
 		}
 	}
-	return ret;
+	return ret < 0 ? ret : 0;
 }
 
 int sensor_set_delay_to_hub(uint8_t sensorType, unsigned int delayms)
@@ -965,7 +965,7 @@ int sensor_set_delay_to_hub(uint8_t sensorType, unsigned int delayms)
 			return -1;
 		}
 	}
-	return ret;
+	return ret < 0 ? ret : 0;
 }
 
 int sensor_batch_to_hub(uint8_t sensorType, int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)

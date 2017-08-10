@@ -1087,8 +1087,11 @@ int alsps_aal_enable(int enable)
 	cxt = alsps_context_obj;
 
 	if (enable == 1) {
-		if (alsps_context_obj->is_als_active_data == false)
-			ret = cxt->als_ctl.enable_nodata(enable);
+		if (alsps_context_obj->is_als_active_data == false) {
+			ret = cxt->als_ctl.batch(0, 200000000, 0);
+			if (ret == 0)
+				ret = cxt->als_ctl.enable_nodata(enable);
+		}
 	} else if (enable == 0) {
 		if (alsps_context_obj->is_als_active_data == false)
 			ret = cxt->als_ctl.enable_nodata(enable);
