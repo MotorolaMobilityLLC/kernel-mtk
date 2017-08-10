@@ -327,7 +327,7 @@ static int mtk_dl1_awb_pcm_copy(struct snd_pcm_substream *substream,
 	unsigned long flags;
 
 	/* get total bytes to copy */
-	count = Align64ByteSize(audio_frame_to_bytes(substream , count));
+	count = audio_frame_to_bytes(substream , count);
 
 	/* check which memif nned to be write */
 	pAWB_MEM_ConTrol = Dl1_AWB_Control_context;

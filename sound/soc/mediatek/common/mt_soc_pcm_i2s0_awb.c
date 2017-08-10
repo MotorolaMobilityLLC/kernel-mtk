@@ -358,7 +358,7 @@ static int mtk_i2s0_awb_pcm_copy(struct snd_pcm_substream *substream,
 	unsigned long flags;
 
 	/* get total bytes to copy */
-	count = Align64ByteSize(audio_frame_to_bytes(substream , count));
+	count = audio_frame_to_bytes(substream , count);
 
 	pr_warn("%s  pos = %lu count = %lu\n ", __func__, pos, count);
 
