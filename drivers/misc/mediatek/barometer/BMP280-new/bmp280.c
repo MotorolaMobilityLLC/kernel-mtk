@@ -82,7 +82,6 @@ enum BAR_TRC {
 	BAR_TRC_RAWDATA = 0x02,
 	BAR_TRC_IOCTL   = 0x04,
 	BAR_TRC_FILTER  = 0x08,
-	BAR_TRC_INFO  = 0x10,
 };
 
 /* s/w filter */
@@ -121,8 +120,8 @@ struct bmp_i2c_data {
 	u8 hw_filter;
 	u8 oversampling_p;
 	u8 oversampling_t;
-	u32 last_temp_measurement;
-	u32 temp_measurement_period;
+	unsigned long last_temp_measurement;
+	unsigned long temp_measurement_period;
 	struct bmp280_calibration_data bmp280_cali;
 
 	/* calculated temperature correction coefficient */
@@ -399,9 +398,8 @@ static int bmp_set_powermode(struct i2c_client *client,
 	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
 	u8 err = 0, data = 0, actual_power_mode = 0;
 
-	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
-		BAR_LOG("[%s] power_mode = %d, old power_mode = %d\n", __func__,
-			power_mode, obj->power_mode);
+	BAR_LOG("[%s] power_mode = %d, old power_mode = %d\n", __func__,
+		power_mode, obj->power_mode);
 
 	if (power_mode == obj->power_mode)
 		return 0;
@@ -443,9 +441,8 @@ static int bmp_set_filter(struct i2c_client *client,
 	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
 	u8 err = 0, data = 0, actual_filter = 0;
 
-	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
-		BAR_LOG("[%s] hw filter = %d, old hw filter = %d\n", __func__,
-			filter, obj->hw_filter);
+	BAR_LOG("[%s] hw filter = %d, old hw filter = %d\n", __func__,
+		filter, obj->hw_filter);
 
 	if (filter == obj->hw_filter)
 		return 0;
@@ -493,9 +490,8 @@ static int bmp_set_oversampling_p(struct i2c_client *client,
 	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
 	u8 err = 0, data = 0, actual_oversampling_p = 0;
 
-	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
-		BAR_LOG("[%s] oversampling_p = %d, old oversampling_p = %d\n", __func__,
-			oversampling_p, obj->oversampling_p);
+	BAR_LOG("[%s] oversampling_p = %d, old oversampling_p = %d\n", __func__,
+		oversampling_p, obj->oversampling_p);
 
 	if (oversampling_p == obj->oversampling_p)
 		return 0;
@@ -545,9 +541,8 @@ static int bmp_set_oversampling_t(struct i2c_client *client,
 	struct bmp_i2c_data *obj = i2c_get_clientdata(client);
 	u8 err = 0, data = 0, actual_oversampling_t = 0;
 
-	if (atomic_read(&obj->trace) & BAR_TRC_INFO)
-		BAR_LOG("[%s] oversampling_t = %d, old oversampling_t = %d\n", __func__,
-			oversampling_t, obj->oversampling_t);
+	BAR_LOG("[%s] oversampling_t = %d, old oversampling_t = %d\n", __func__,
+		oversampling_t, obj->oversampling_t);
 
 	if (oversampling_t == obj->oversampling_t)
 		return 0;
@@ -756,8 +751,11 @@ static int bmp_get_temperature(struct i2c_client *client,
 	}
 
 	sprintf(buf, "%08x", temperature);
-	if (atomic_read(&obj->trace) & BAR_TRC_IOCTL)
+	if (atomic_read(&obj->trace) & BAR_TRC_IOCTL) {
+		BAR_LOG("temperature: %d\n", temperature);
+		BAR_LOG("temperature/100: %d\n", temperature/100);
 		BAR_LOG("compensated temperature value: %s\n", buf);
+	}
 
 	return status;
 }
@@ -784,7 +782,10 @@ static int bmp_get_pressure(struct i2c_client *client, char *buf, int bufsize)
 	obj = i2c_get_clientdata(client);
 
 	/* update the ambient temperature according to the given meas. period */
-	if (time_before((unsigned long)(obj->last_temp_measurement +
+	/* below method will have false problem when jiffies wrap around. so replace */
+/*	if (obj->last_temp_measurement +
+			obj->temp_measurement_period < jiffies) {*/
+	if (time_before_eq((unsigned long)(obj->last_temp_measurement +
 			obj->temp_measurement_period), jiffies)) {
 
 		status = bmp_get_temperature(client,
@@ -832,8 +833,11 @@ static int bmp_get_pressure(struct i2c_client *client, char *buf, int bufsize)
 	}
 
 	sprintf(buf, "%08x", pressure);
-	if (atomic_read(&obj->trace) & BAR_TRC_IOCTL)
+	if (atomic_read(&obj->trace) & BAR_TRC_IOCTL) {
+		BAR_LOG("pressure: %d\n", pressure);
+		BAR_LOG("pressure/100: %d\n", pressure/100);
 		BAR_LOG("compensated pressure value: %s\n", buf);
+	}
 exit:
 	return status;
 }
@@ -1493,6 +1497,7 @@ static int bmp_open_report_data(int open)
 
 static int bmp_enable_nodata(int en)
 {
+	struct bmp_i2c_data *obj = i2c_get_clientdata(obj_i2c_data->client);
 	int res = 0;
 	int retry = 0;
 	bool power = false;
@@ -1512,6 +1517,7 @@ static int bmp_enable_nodata(int en)
 		}
 		BAR_ERR("bmp_set_powermode fail\n");
 	}
+	obj->last_temp_measurement = jiffies - obj->temp_measurement_period;
 
 
 	if (res != 0) {
