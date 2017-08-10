@@ -45,7 +45,6 @@ static struct switch_dev accdet_data;
 #endif
 static void send_accdet_status_event(int cable_type, int status);
 
-static struct switch_dev accdet_data;
 static struct input_dev *kpd_accdet_dev;
 static struct cdev *accdet_cdev;
 static struct class *accdet_class;
@@ -1545,11 +1544,26 @@ static ssize_t store_accdet_set_register(struct device_driver *ddri, const char 
 	return count;
 }
 
+static ssize_t show_accdet_state(struct device_driver *ddri, char *buf)
+{
+	char temp_type = (char)cable_type;
+
+	if (buf == NULL) {
+		ACCDET_ERROR("[%s] *buf is NULL Pointer\n",  __func__);
+		return -EINVAL;
+	}
+
+	snprintf(buf, 3, "%d\n", temp_type);
+
+	return strlen(buf);
+}
+
 /*----------------------------------------------------------------------------*/
 static DRIVER_ATTR(dump_register, S_IWUSR | S_IRUGO, show_accdet_dump_register, store_accdet_dump_register);
 static DRIVER_ATTR(set_headset_mode, S_IWUSR | S_IRUGO, NULL, store_accdet_set_headset_mode);
 static DRIVER_ATTR(start_debug, S_IWUSR | S_IRUGO, NULL, store_accdet_start_debug_thread);
 static DRIVER_ATTR(set_register, S_IWUSR | S_IRUGO, NULL, store_accdet_set_register);
+static DRIVER_ATTR(state, S_IWUSR | S_IRUGO, show_accdet_state, NULL);
 
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *accdet_attr_list[] = {
@@ -1558,6 +1572,7 @@ static struct driver_attribute *accdet_attr_list[] = {
 	&driver_attr_dump_register,
 	&driver_attr_set_headset_mode,
 	&driver_attr_accdet_call_state,
+	&driver_attr_state,
 /*#ifdef CONFIG_ACCDET_PIN_RECOGNIZATION*/
 	&driver_attr_accdet_pin_recognition,
 /*#endif*/
@@ -1875,7 +1890,6 @@ void mt_accdet_pm_restore_noirq(void)
 #endif
 	}
 }
-
 /*//////////////////////////////////IPO_H end/////////////////////////////////////////////*/
 long mt_accdet_unlocked_ioctl(unsigned int cmd, unsigned long arg)
 {
@@ -1887,7 +1901,6 @@ long mt_accdet_unlocked_ioctl(unsigned int cmd, unsigned long arg)
 		ACCDET_DEBUG("[Accdet]accdet_ioctl : CALL_STATE=%d\n", call_status);
 		break;
 	case GET_BUTTON_STATUS:
-		ACCDET_DEBUG("[Accdet]accdet_ioctl : Button_Status=%d (state:%d)\n", button_status, accdet_data.state);
 		return button_status;
 	default:
 		ACCDET_DEBUG("[Accdet]accdet_ioctl : default\n");
@@ -1895,3 +1908,4 @@ long mt_accdet_unlocked_ioctl(unsigned int cmd, unsigned long arg)
 	}
 	return 0;
 }
+
