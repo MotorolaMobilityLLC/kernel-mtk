@@ -23,6 +23,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/slab.h>
+#include <linux/switch.h>
 #include <linux/vmalloc.h>
 
 #include "mtk_ion.h"
@@ -103,7 +104,9 @@ static unsigned int frm_update_cnt;
 static unsigned int gPresentFenceIndex;
 static unsigned int g_keep;
 static unsigned int g_skip;
-
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+static struct switch_dev disp_switch_data;
+#endif
 static struct hrtimer cmd_mode_update_timer;
 /* static ktime_t cmd_mode_update_timer_period; */
 static int is_fake_timer_inited;
@@ -3345,7 +3348,12 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	primary_display_lowpower_init();
 
 	pgc->state = DISP_ALIVE;
-
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+	disp_switch_data.name = "disp";
+	disp_switch_data.index = 0;
+	disp_switch_data.state = DISP_ALIVE;
+	ret = switch_dev_register(&disp_switch_data);
+#endif
 /*
 	primary_display_sodi_rule_init();
 
@@ -3526,6 +3534,9 @@ int primary_display_suspend(void)
 	while (primary_get_state() == DISP_BLANK) {
 		_primary_path_unlock(__func__);
 		DISPMSG("primary_display_suspend wait tui finish!!\n");
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+		switch_set_state(&disp_switch_data, DISP_SLEPT);
+#endif
 		primary_display_wait_state(DISP_ALIVE, MAX_SCHEDULE_TIMEOUT);
 		_primary_path_lock(__func__);
 		DISPMSG("primary_display_suspend wait tui done stat=%d\n", primary_get_state());
@@ -3889,6 +3900,9 @@ int primary_display_resume(void)
 		DSI_ForceConfig(0);
 done:
 	primary_set_state(DISP_ALIVE);
+#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+	switch_set_state(&disp_switch_data, DISP_ALIVE);
+#endif
 	_primary_path_unlock(__func__);
 
 	aee_kernel_wdt_kick_Powkey_api("mtkfb_late_resume", WDT_SETBY_Display);
