@@ -1265,6 +1265,25 @@ int hdmi_ioctl(unsigned int ioctl_cmd, int param1, int param2, unsigned long *pa
 	return ret;
 }
 
+int hdmi_is_force_awake(void *argp)
+{
+	int ret;
+
+	if (!argp) {
+		HDMI_LOG("ioctl pointer is NULL\n");
+		return -EFAULT;
+	}
+
+	/*only for hdmi cable,maybe mhl cable need this too*/
+	if (hdmi_params->cabletype == HDMI_CABLE) {
+		ret = copy_to_user(argp, &hdmi_params->is_force_awake, sizeof(hdmi_params->is_force_awake));
+	} else {
+		HDMI_ERR("[ERROR]cabletype is not HDMI_CABLE\n");
+		ret = -EFAULT;
+	}
+	return ret;
+}
+
 void hdmi_udelay(unsigned int us)
 {
 	udelay(us);
@@ -1371,6 +1390,7 @@ const struct EXTD_DRIVER *EXTD_HDMI_Driver(void)
 		.fake_connect =      hdmi_cable_fake_connect,
 		.factory_mode_test = NULL,
 		.ioctl =             hdmi_ioctl,
+		.is_force_awake =	 hdmi_is_force_awake,
 #else
 		.init = 0,
 #endif
