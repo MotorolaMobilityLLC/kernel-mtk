@@ -7307,7 +7307,12 @@ static void cmdq_core_auto_release_work(struct work_struct *workItem)
 		userData = pTask->flushData;
 		commandSize = pTask->commandSize;
 		pCmd = kzalloc(commandSize, GFP_KERNEL);
-		memcpy(pCmd, pTask->pVABase, commandSize);
+		if (pCmd == NULL) {
+			/* allocate command backup buffer failed wil make dump incomplete */
+			CMDQ_ERR("failed to alloc command buffer, size: %d\n", commandSize);
+		} else {
+			memcpy(pCmd, pTask->pVABase, commandSize);
+		}
 
 		status = cmdqCoreWaitResultAndReleaseTask(pTask,
 							  NULL,
@@ -7327,7 +7332,8 @@ static void cmdq_core_auto_release_work(struct work_struct *workItem)
 				    ("[DEBUG]user complains execution abnormal, dump command...\n");
 				CMDQ_LOG("======TASK 0x%p command (%d) START\n", pTask,
 					 commandSize);
-				cmdqCoreDumpCommandMem(pCmd, commandSize);
+				if (pCmd != NULL)
+					cmdqCoreDumpCommandMem(pCmd, commandSize);
 				CMDQ_LOG("======TASK 0x%p command END\n", pTask);
 			}
 		}
