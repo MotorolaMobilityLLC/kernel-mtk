@@ -5,16 +5,19 @@
 /*! \file tkip_sw.c
     \brief This file include the tkip encrypted / decrypted mic function.
 */
-/*******************************************************************************
-* Copyright (c) 2003-2004 Inprocomm, Inc.
+/*
+* Copyright (C) 2016 MediaTek Inc.
 *
-* All rights reserved. Copying, compilation, modification, distribution
-* or any other use whatsoever of this material is strictly prohibited
-* except in accordance with a Software License Agreement with
-* Inprocomm, Inc.
-********************************************************************************
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the * GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; * without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*
 */
-
 /*******************************************************************************
 *                     C O M P I L E R   F L A G S
 ********************************************************************************
