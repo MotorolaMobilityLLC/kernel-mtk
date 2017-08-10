@@ -2073,10 +2073,8 @@ VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 			scnFsmPSCNSetParam(prAdapter, prScanInfo->prPscnParam);
 
-			if (prScanInfo->prPscnParam->fgNLOScnEnable
-			    || prScanInfo->prPscnParam->fgBatchScnEnable
-			    || prScanInfo->prPscnParam->fgGScnEnable) {
-				/* eNextPSCNState = PSCN_SCANNING; */ /* upper layer trigger PSCN Action */
+			if (prScanInfo->prPscnParam->fgNLOScnEnable) {
+				eNextPSCNState = PSCN_SCANNING; /* upper layer trigger GSCN Action */
 				DBGLOG(SCN, TRACE,
 				       "PSCN_RESET->PSCN_SCANNING....fgNLOScnEnable/fgBatchScnEnable/fgGScnEnable ENABLE\n");
 			} else {
