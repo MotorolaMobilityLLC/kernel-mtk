@@ -3704,6 +3704,51 @@ void testcase_longloop(void)
 	CMDQ_MSG("%s\n", __func__);
 }
 
+void testcase_get_task_by_engine(void)
+{
+	cmdqRecHandle handle;
+	struct TaskStruct task;
+	const uint64_t engineFlag = (0x1 << CMDQ_ENG_MDP_RDMA0) | (0x1 << CMDQ_ENG_MDP_WROT0);
+	int32_t status;
+	const uint32_t debug_str_len = 1024;
+
+	CMDQ_MSG("%s\n", __func__);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_reset(handle);
+
+	/* clearn event first */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
+
+	/* assign engine flag */
+	handle->engineFlag = engineFlag;
+	cmdq_op_wait_no_clear(handle, CMDQ_SYNC_TOKEN_USER_0);
+
+	/* must fail before flush */
+	status = cmdq_core_get_running_task_by_engine(engineFlag, debug_str_len, &task);
+	if (status != -EFAULT) {
+		CMDQ_ERR("TEST FAIL: get task by engine flag before flush: 0x%016llx, task flag: 0x%016llx",
+			engineFlag, task.engineFlag);
+	}
+
+	task.userDebugStr = kzalloc(debug_str_len, GFP_KERNEL);
+
+	cmdq_task_flush_async(handle);
+	status = cmdq_core_get_running_task_by_engine(engineFlag, debug_str_len, &task);
+	if (status != 0) {
+		CMDQ_ERR("TEST FAIL: get task by engine flag: 0x%016llx, task flag: 0x%016llx",
+			engineFlag, task.engineFlag);
+	}
+
+	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_task_destroy(handle);
+
+	kfree(task.userDebugStr);
+	task.userDebugStr = NULL;
+
+	CMDQ_MSG("%s end\n", __func__);
+}
+
 typedef enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_DEFAULT = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -3721,6 +3766,9 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 131:
+		testcase_get_task_by_engine();
+		break;
 	case 130:
 		testcase_longloop();
 		break;
