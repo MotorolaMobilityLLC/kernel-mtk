@@ -238,8 +238,7 @@ static int fbconfig_open(struct inode *inode, struct file *file)
 			pm_params->dsi_id = PM_DSI1;
 		return 0;
 	} else
-		return -EFAULT;
-
+		return -EINVAL;
 }
 
 
