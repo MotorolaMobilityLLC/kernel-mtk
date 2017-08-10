@@ -124,12 +124,15 @@ int musb_removed = 0;
 /* kernel_init_done should be set in early-init stage through init.$platform.usb.rc */
 int kernel_init_done = 0;
 int musb_force_on = 0;
+int musb_host_dynamic_fifo = 1;
+int musb_host_dynamic_fifo_usage_msk;
 module_param(musb_connect_legacy, int, 0644);
 module_param(musb_is_shutting, int, 0644);
 module_param(musb_fake_disc, int, 0644);
 module_param(musb_fake_CDP, int, 0644);
 module_param(musb_removed, int, 0644);
 module_param(kernel_init_done, int, 0644);
+module_param(musb_host_dynamic_fifo, int, 0644);
 #ifdef MUSB_QMU_SUPPORT_HOST
 int mtk_host_qmu_concurrent = 1;
 int mtk_host_qmu_pipe_msk = (PIPE_ISOCHRONOUS + 1) /* | (PIPE_BULK + 1) | (PIPE_INTERRUPT+ 1) */;
@@ -716,6 +719,9 @@ EXPORT_SYMBOL_GPL(musb_hnp_stop);
  * @param devctl
  * @param power
  */
+static struct musb_fifo_cfg ep0_cfg = {
+	.style = MUSB_FIFO_RXTX, .maxpacket = 64, .ep_mode = EP_CONT,
+};
 
 static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb, u8 devctl)
 {
@@ -1002,6 +1008,8 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb, u8 devctl)
 
 		musb->ep0_stage = MUSB_EP0_START;
 
+		if (musb_host_dynamic_fifo)
+			musb_host_dynamic_fifo_usage_msk = 0;
 #ifdef MUSB_QMU_SUPPORT
 		musb_disable_q_all(musb);
 #endif
@@ -1515,10 +1523,6 @@ static int fifo_setup(struct musb *musb, struct musb_hw_ep *hw_ep,
 	return offset + (maxpacket << ((c_size & MUSB_FIFOSZ_DPB) ? 1 : 0));
 }
 
-static struct musb_fifo_cfg ep0_cfg = {
-	.style = MUSB_FIFO_RXTX, .maxpacket = 64, .ep_mode = EP_CONT,
-};
-
 static int ep_config_from_table(struct musb *musb)
 {
 	const struct musb_fifo_cfg *cfg;
@@ -1636,6 +1640,9 @@ int ep_config_from_table_for_host(struct musb *musb)
 	int offset;
 	struct musb_hw_ep *hw_ep = musb->endpoints;
 
+	if (musb_host_dynamic_fifo)
+		musb_host_dynamic_fifo_usage_msk = 0;
+
 	if (musb->fifo_cfg_host) {
 		cfg = musb->fifo_cfg_host;
 		n = musb->fifo_cfg_host_size;
@@ -1656,11 +1663,15 @@ int ep_config_from_table_for_host(struct musb *musb)
 			DBG(0, "%s: invalid ep %d\n", musb_driver_name, epn);
 			return -EINVAL;
 		}
-		offset = fifo_setup_for_host(musb, hw_ep + epn, cfg++, offset);
-		if (offset < 0) {
-			DBG(0, "%s: mem overrun, ep %d\n", musb_driver_name, epn);
-			return offset;
+
+		if (!musb_host_dynamic_fifo) {
+			offset = fifo_setup_for_host(musb, hw_ep + epn, cfg++, offset);
+			if (offset < 0) {
+				DBG(0, "%s: mem overrun, ep %d\n", musb_driver_name, epn);
+				return offset;
+			}
 		}
+
 		epn++;
 		musb->nr_endpoints = max(epn, musb->nr_endpoints);
 	}
