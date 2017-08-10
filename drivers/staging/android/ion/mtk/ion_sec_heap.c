@@ -76,7 +76,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 		secmem_api_alloc_zero(align, size, &refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
 	else
 		secmem_api_alloc(align, size, &refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
-#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
+#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	{
 		int ret = 0;
 
@@ -124,7 +124,7 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 	sec_handle = ((ion_sec_buffer_info *)buffer->priv_virt)->priv_phys;
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	secmem_api_unref(sec_handle, (uint8_t *)buffer->heap->name, buffer->heap->id);
-#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
+#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	{
 		TZ_RESULT ret = 0;
 
@@ -382,7 +382,9 @@ static int ion_sec_heap_debug_show(struct ion_heap *heap, struct seq_file *s, vo
 
 struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 {
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if ((defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT))\
+	|| (defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)))
+
 	struct ion_sec_heap *heap;
 
 	IONMSG("%s enter ion_sec_heap_create\n", __func__);
@@ -398,6 +400,7 @@ struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 	heap->heap.debug_show = ion_sec_heap_debug_show;
 
 	return &heap->heap;
+
 #else
 	struct ion_sec_heap heap;
 
@@ -411,7 +414,10 @@ struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 
 void ion_sec_heap_destroy(struct ion_heap *heap)
 {
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if ((defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT))\
+	|| (defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)))
+
+
 	struct ion_sec_heap *sec_heap;
 
 	IONMSG("%s enter\n", __func__);
