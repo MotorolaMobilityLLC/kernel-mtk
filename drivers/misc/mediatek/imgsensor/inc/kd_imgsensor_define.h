@@ -690,13 +690,11 @@ typedef struct {
 typedef enum {
 	MCLK_48MHZ_GROUP = 0x1,
 	MCLK_52MHZ_GROUP = 0x2,
-	MCLK_24MHZ_GROUP,
-	MCLK_26MHZ_GROUP,
 } ACKD_SENSOR_MCLK_ENUM;
 
 typedef struct {
 	MUINT8 on;
-	ACKD_SENSOR_MCLK_ENUM freq;
+	MUINT8 freq;
 	MUINT8 TG;
 } ACDK_SENSOR_MCLK_STRUCT;
 
