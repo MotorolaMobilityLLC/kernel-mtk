@@ -307,7 +307,7 @@ static void __trace_out(int heavy, int cpu, struct task_struct *p)
 
 		snprintf(tracebuf, TRACEBUF_LEN, " %s cpu=%d load=%4lu cpucap=%4lu/%4lu pid=%4d name=%s",
 				 heavy ? "Y" : "N",
-				 cpu, p->se.avg.loadwop_avg_contrib,
+				 cpu, p->se.avg.loadwop_avg,
 				 topology_cur_cpu_capacity(cpu), topology_max_cpu_capacity(cpu),
 				 p->pid, p->comm);
 		trace_sched_heavy_task(tracebuf);
@@ -372,7 +372,7 @@ unsigned int sched_get_nr_heavy_task_by_threshold(int cluster_id, unsigned int t
 			if (task_low_priority(p->prio))
 				continue;
 #endif
-			if (p->se.avg.loadwop_avg_contrib >= threshold) {
+			if (p->se.avg.loadwop_avg >= threshold) {
 				is_heavy = ack_by_curcap(cpu, cluster_id, clusters-1);
 				count += is_heavy ? 1 : 0;
 				__trace_out(is_heavy, cpu, p);
