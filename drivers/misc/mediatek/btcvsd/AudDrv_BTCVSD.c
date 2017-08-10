@@ -950,7 +950,7 @@ static ssize_t AudDrv_btcvsd_write(struct file *fp, const char __user *data,
 			BTCVSD_write_wait_queue_flag = 0;
 			ret = wait_event_interruptible_timeout(BTCVSD_Write_Wait_Queue,
 							       BTCVSD_write_wait_queue_flag,
-							       write_timeout_limit / 1000000 / 10);
+							       nsecs_to_jiffies(write_timeout_limit));
 			t2 = sched_clock();
 			/*pr_debug("AudDrv_btcvsd_write WAKEUP...count=%d\n",count);*/
 			t2 = t2 - t1;	/* in ns (10^9) */
@@ -1097,7 +1097,7 @@ static ssize_t AudDrv_btcvsd_read(struct file *fp, char __user *data,
 			BTCVSD_read_wait_queue_flag = 0;
 			ret = wait_event_interruptible_timeout(BTCVSD_Read_Wait_Queue,
 							       BTCVSD_read_wait_queue_flag,
-							       read_timeout_limit / 1000000 / 10);
+							       nsecs_to_jiffies(read_timeout_limit));
 			t2 = sched_clock();
 			PRINTK_AUDDRV("AudDrv_btcvsd_read WAKEUP...count=%zu\n", count);
 			t2 = t2 - t1;	/* in ns (10^9) */

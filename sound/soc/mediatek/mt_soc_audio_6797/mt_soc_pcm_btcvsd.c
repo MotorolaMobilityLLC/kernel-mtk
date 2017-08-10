@@ -616,7 +616,7 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 			BTCVSD_read_wait_queue_flag = 0;
 			ret = wait_event_interruptible_timeout(BTCVSD_Read_Wait_Queue,
 						BTCVSD_read_wait_queue_flag,
-						read_timeout_limit / 1000000 / 10);
+						nsecs_to_jiffies(read_timeout_limit));
 			t2 = sched_clock();
 			LOGBT("AudDrv_btcvsd_read WAKEUP...count=%zu\n", count);
 			t2 = t2 - t1; /* in ns (10^9) */

@@ -534,7 +534,7 @@ void wait_ipc_ack(void)
 
 	pr_debug("ANC wait_event_interruptible_timeout\n");
 	ret = wait_event_interruptible_timeout(IPC_Wait_Queue, IPC_wait_queue_flag,
-						   1000);
+					       msecs_to_jiffies(1000));
 	if (ret < 0)
 		pr_debug("ANC md32 irq failed, ret=%d", ret);
 }
