@@ -34,6 +34,12 @@ static struct vfsmount *debugfs_mount;
 static int debugfs_mount_count;
 static bool debugfs_registered;
 
+struct vfsmount *debugfs_get_mount(void)
+{
+	return debugfs_mount;
+}
+EXPORT_SYMBOL(debugfs_get_mount);
+
 static struct inode *debugfs_get_inode(struct super_block *sb)
 {
 	struct inode *inode = new_inode(sb);

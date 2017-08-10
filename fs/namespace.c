@@ -1070,6 +1070,8 @@ static void delayed_mntput(struct work_struct *unused)
 }
 static DECLARE_DELAYED_WORK(delayed_mntput_work, delayed_mntput);
 
+struct vfsmount *debugfs_get_mount(void);
+
 static void mntput_no_expire(struct mount *mnt)
 {
 	rcu_read_lock();
@@ -1089,6 +1091,15 @@ static void mntput_no_expire(struct mount *mnt)
 		unlock_mount_hash();
 		return;
 	}
+#ifdef CONFIG_DEBUG_FS
+	if (&mnt->mnt == debugfs_get_mount()) {
+		rcu_read_unlock();
+		unlock_mount_hash();
+		pr_info("vfs: intend to free debugfs mount");
+		dump_stack();
+		return;
+	}
+#endif
 	mnt->mnt.mnt_flags |= MNT_DOOMED;
 	rcu_read_unlock();
 
