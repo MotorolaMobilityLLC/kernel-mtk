@@ -263,4 +263,10 @@ int stop_ext_sync_signal(void);
 int ext_sync_signal(void);
 void ext_sync_signal_lock(void);
 void ext_sync_signal_unlock(void);
+
+
+/* for vcore dvfs */
+int vcore_dvfs(bool *enable, bool reset);
+void set_screen_state(bool state);
+
 #endif

@@ -69,6 +69,9 @@ static AudioDigtalI2S *mAudioDigitalI2S;
 static bool mCaptureUseSram;
 static DEFINE_SPINLOCK(auddrv_ULInCtl_lock);
 
+static bool vcore_dvfs_enable;
+
+
 /*
  *    function implementation
  */
@@ -359,6 +362,7 @@ static int mtk_capture_pcm_close(struct snd_pcm_substream *substream)
 {
 	AudDrv_ADC_Clk_Off();
 	AudDrv_Clk_Off();
+	vcore_dvfs(&vcore_dvfs_enable, true);
 	return 0;
 }
 
@@ -399,7 +403,6 @@ static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
 				int channel, snd_pcm_uframes_t pos,
 				void __user *dst, snd_pcm_uframes_t count)
 {
-
 	AFE_MEM_CONTROL_T *pVUL_MEM_ConTrol = NULL;
 	AFE_BLOCK_T  *Vul_Block = NULL;
 	char *Read_Data_Ptr = (char *)dst;
@@ -431,6 +434,8 @@ static int mtk_capture_pcm_copy(struct snd_pcm_substream *substream,
 		pr_err("CheckNullPointer  pucVirtBufAddr = %p\n", Vul_Block->pucVirtBufAddr);
 		return 0;
 	}
+
+	vcore_dvfs(&vcore_dvfs_enable, false);
 
 	spin_lock_irqsave(&auddrv_ULInCtl_lock, flags);
 	if (Vul_Block->u4DataRemained >  Vul_Block->u4BufferSize) {

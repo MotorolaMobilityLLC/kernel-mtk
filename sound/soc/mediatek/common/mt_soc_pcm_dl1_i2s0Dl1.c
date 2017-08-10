@@ -59,11 +59,6 @@
 #include "mt_soc_digital_type.h"
 #include "mt_soc_pcm_common.h"
 
-#ifdef AUDIO_VCOREFS_SUPPORT
-#include <linux/fb.h>
-#include <linux/notifier.h>
-#include <mt_vcorefs_manager.h>
-#endif
 
 #define _DEBUG_6328_CLK
 
@@ -71,6 +66,9 @@ static DEFINE_SPINLOCK(auddrv_I2S0dl1_lock);
 static AFE_MEM_CONTROL_T *pI2S0dl1MemControl;
 static struct snd_dma_buffer Dl1I2S0_Playback_dma_buf;
 static unsigned int mPlaybackDramState;
+
+static bool vcore_dvfs_enable;
+
 
 /*
  *    function implementation
@@ -417,9 +415,7 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 
 	AudDrv_Clk_Off();
 
-#ifdef AUDIO_VCOREFS_SUPPORT
-	vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_UNREQ);
-#endif
+	vcore_dvfs(&vcore_dvfs_enable, true);
 
 	if (ext_sync_signal_locked)
 		ext_sync_signal_unlock();
@@ -602,6 +598,8 @@ static int mtk_pcm_I2S0dl1_copy(struct snd_pcm_substream *substream,
 		pr_err(" u4BufferSize=0 Error");
 		return 0;
 	}
+
+	vcore_dvfs(&vcore_dvfs_enable, false);
 
 	AudDrv_checkDLISRStatus();
 
@@ -805,44 +803,6 @@ static int mtk_I2S0dl1_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef AUDIO_VCOREFS_SUPPORT
-static int soc_fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
-{
-	static bool bEnable;
-	struct fb_event *evdata = data;
-	int blank;
-
-	if (event != FB_EVENT_BLANK)
-		return 0;
-
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1) == false && bEnable == false)
-		return 0;
-	pr_debug("%s, MemoryPathEnable %d, bEnable %d\n", __func__,
-			GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1), bEnable);
-
-	blank = *(int *)evdata->data;
-	switch (blank) {
-	case FB_BLANK_UNBLANK:
-		pr_debug("%s SCREEN ON\n", __func__);
-		bEnable = false;
-		vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_UNREQ);
-		break;
-	case FB_BLANK_POWERDOWN:
-		pr_debug("%s SCREEN OFF\n", __func__);
-		bEnable = true;
-		vcorefs_request_dvfs_opp(KIR_AUDIO, OPPI_ULTRA_LOW_PWR);
-		break;
-	default:
-		break;
-	}
-
-	return 0;
-}
-
-static struct notifier_block soc_fb_notif = {
-	.notifier_call = soc_fb_notifier_callback,
-};
-#endif
 
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_pcm_dl1_i2s0Dl1_of_ids[] = {
@@ -885,12 +845,6 @@ static int __init mtk_I2S0dl1_soc_platform_init(void)
 #endif
 
 	ret = platform_driver_register(&mtk_I2S0dl1_driver);
-
-#ifdef AUDIO_VCOREFS_SUPPORT
-	ret = fb_register_client(&soc_fb_notif);
-	if (ret)
-		pr_err("FAILED TO REGISTER FB CLIENT (%d)\n", ret);
-#endif
 
 	return ret;
 
