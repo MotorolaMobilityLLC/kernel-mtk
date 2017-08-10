@@ -840,7 +840,7 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 	info.field.addr = Port;
 
 
-	DBGLOG(RX, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
+	DBGLOG(HAL, TRACE, "use_dma(%d), count(%d->%d), blk size(%d), CMD_SETUP(0x%x)\n",
 		 func->use_dma, Size, count, func->cur_blksize, info.word);
 
 #if (CONF_MTK_AHB_DMA == 1)
@@ -857,8 +857,8 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 
 	writel(info.word, (volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD_SETUP));
 	wmb();
-	DBGLOG(RX, TRACE, "basic writel CmdInfo addr = %x, info = %x, HifBase = %p\n", Port, info.word, HifInfo->HifRegBaseAddr);
-
+	DBGLOG(HAL, TRACE, "basic writel CmdInfo addr = %x, info = %x, HifBase = %p\n",
+		Port, info.word, HifInfo->HifRegBaseAddr);
 	}
 
 
@@ -1015,7 +1015,8 @@ kalDevPortRead(IN P_GLUE_INFO_T GlueInfo, IN UINT_16 Port, IN UINT_32 Size, OUT 
 
 		for (IdLoop = 0; IdLoop < MaxLoop; IdLoop++) {
 			*LoopBuf = readl((volatile UINT_32 *)(*g_pHifRegBaseAddr + SDIO_GEN3_CMD53_DATA));
-			DBGLOG(RX, TRACE, "basic readl idx = %x, addr = %x, rVal = %x, HifBase = %p\n", IdLoop, Port, *LoopBuf, HifInfo->HifRegBaseAddr);
+			DBGLOG(HAL, TRACE, "basic readl idx = %x, addr = %x, rVal = %x, HifBase = %p\n",
+				IdLoop, Port, *LoopBuf, HifInfo->HifRegBaseAddr);
 			LoopBuf++;
 		}
 
