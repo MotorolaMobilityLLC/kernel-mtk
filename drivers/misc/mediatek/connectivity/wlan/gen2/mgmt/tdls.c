@@ -4388,6 +4388,7 @@ TDLS_STATUS TdlsexMgmtCtrl(ADAPTER_T *prAdapter, VOID *pvSetBuffer, UINT_32 u4Se
 
 	switch (prMgmtTxInfo->ucActionCode) {
 	case TDLS_FRM_ACTION_DISCOVERY_RESPONSE:
+	case TDLS_FRM_ACTION_DISCOVERY_REQ:
 		prStaRec = NULL;
 		break;
 
