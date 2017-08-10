@@ -69,6 +69,9 @@ definition for AP selection algrithm
 #define WEIGHT_IDX_STBC			1
 #define WEIGHT_IDX_DEAUTH_LAST	4
 #define WEIGHT_IDX_BLACK_LIST	2
+#if CFG_SUPPORT_RSN_SCORE
+#define WEIGHT_IDX_RSN			2
+#endif
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -3308,6 +3311,11 @@ VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter)
 #define CALCULATE_SCORE_BY_DEAUTH(prBssDesc) \
 	(WEIGHT_IDX_DEAUTH_LAST * (prBssDesc->fgDeauthLastTime ? 0:BSS_FULL_SCORE))
 
+#if CFG_SUPPORT_RSN_SCORE
+#define CALCULATE_SCORE_BY_RSN(prBssDesc) \
+	(WEIGHT_IDX_RSN * (prBssDesc->fgIsRSNSuitableBss ? BSS_FULL_SCORE:0))
+#endif
+
 #if 0/* we don't take it into account now */
 /* Channel Utilization: weight index will be */
 static UINT_16 scanCalculateScoreByChnlInfo(
@@ -3449,8 +3457,10 @@ static BOOLEAN scanSanityCheckBssDesc(P_ADAPTER_T prAdapter,
 			return FALSE;
 	} else
 #endif
+
 	if (!rsnPerformPolicySelection(prAdapter, prBssDesc))
 		return FALSE;
+
 	if (prAdapter->rWifiVar.rAisSpecificBssInfo.fgCounterMeasure) {
 		DBGLOG(SCN, WARN, "Skip while at counter measure period!!!\n");
 		return FALSE;
@@ -3481,6 +3491,7 @@ static UINT_16 scanCalculateScoreByRssi(P_BSS_DESC_T prBssDesc)
 
 	return u2Score;
 }
+
 /*****
 Bss Characteristics to be taken into account when calculate Score:
 Channel Loading Group:
@@ -3520,6 +3531,7 @@ P_BSS_DESC_T scanSearchBssDescByScoreForAis(P_ADAPTER_T prAdapter)
 	UINT_16 u2ScoreDeauth = 0;
 	UINT_16 u2ScoreSnrRssi = 0;
 	UINT_16 u2ScoreTotal = 0;
+	UINT_16 u2ScoreRSN = 0;
 	UINT_16 u2CandBssScore = 0;
 	UINT_16 u2CandBssScoreForLowRssi = 0;
 	UINT_16 u2BlackListScore = 0;
@@ -3629,13 +3641,18 @@ try_again:
 		u2ScoreProbeRsp = CALCULATE_SCORE_BY_PROBE_RSP(prBssDesc);
 		u2ScoreScanMiss = CALCULATE_SCORE_BY_MISS_CNT(prAdapter, prBssDesc);
 		u2ScoreBand = CALCULATE_SCORE_BY_BAND(prAdapter, prBssDesc, cRssi);
+#if CFG_SUPPORT_RSN_SCORE
+		u2ScoreRSN = CALCULATE_SCORE_BY_RSN(prBssDesc);
+#endif
 		u2ScoreTotal = u2ScoreBandwidth + u2ScoreChnlInfo + u2ScoreDeauth + u2ScoreProbeRsp +
-			u2ScoreScanMiss + u2ScoreSnrRssi + u2ScoreStaCnt + u2ScoreSTBC + u2ScoreBand + u2BlackListScore;
+			u2ScoreScanMiss + u2ScoreSnrRssi + u2ScoreStaCnt + u2ScoreSTBC + u2ScoreBand +
+			u2BlackListScore + u2ScoreRSN;
 
 		DBGLOG(SCN, INFO,
-			"%pM cRSSI[%d] Score, Total %d: BW[%d], CI[%d], DE[%d], PR[%d], SM[%d], SC[%d], SR[%d], ST[%d], BD[%d]\n",
+			"%pM cRSSI[%d] Score, Total %d: BW[%d], CI[%d], DE[%d], PR[%d], SM[%d], SC[%d], SR[%d], ST[%d], BD[%d], RSN[%d]\n",
 			prBssDesc->aucBSSID, cRssi, u2ScoreTotal, u2ScoreBandwidth, u2ScoreChnlInfo, u2ScoreDeauth,
-			u2ScoreProbeRsp, u2ScoreScanMiss, u2ScoreStaCnt, u2ScoreSnrRssi, u2ScoreSTBC, u2ScoreBand);
+			u2ScoreProbeRsp, u2ScoreScanMiss, u2ScoreStaCnt, u2ScoreSnrRssi, u2ScoreSTBC,
+			u2ScoreBand, u2ScoreRSN);
 		/*if (cRssi < HARD_TO_CONNECT_RSSI_THRESOLD) {
 			if (!prCandBssDescForLowRssi) {
 				prCandBssDescForLowRssi = prBssDesc;

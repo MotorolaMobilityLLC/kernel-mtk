@@ -276,6 +276,9 @@ struct _BSS_DESC_T {
 	BOOLEAN fgIsRoamFail;
 #endif
 	INT_8 cPowerLimit;
+#if CFG_SUPPORT_RSN_SCORE
+	BOOLEAN fgIsRSNSuitableBss;
+#endif
 };
 
 struct _ROAM_BSS_DESC_T {
