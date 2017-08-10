@@ -1618,18 +1618,14 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 
 #if defined(PUMP_EXPRESS_SERIES)
 	if (STANDARD_CHARGER == BMT_status.charger_type &&
-		mtk_pep20_get_to_check_chr_type() &&
-		mtk_pep_get_to_check_chr_type() &&
+		(mtk_pep20_get_to_check_chr_type() || mtk_pep_get_to_check_chr_type()) &&
 		BMT_status.UI_SOC < batt_cust_data.ta_stop_battery_soc) {
 		do {
 			icount--;
 			msleep(200);
 			battery_log(BAT_LOG_CRTI, "[%s]icount:%d\n", __func__, icount);
 		} while (icount &&
-			mtk_pep20_get_to_check_chr_type() &&
-			mtk_pep_get_to_check_chr_type() &&
-			KAL_TRUE
-		);
+		(mtk_pep20_get_to_check_chr_type() || mtk_pep_get_to_check_chr_type()));
 	}
 
 	/* Is PE+20 connect */
