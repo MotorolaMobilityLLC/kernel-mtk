@@ -72,6 +72,7 @@
 #include <linux/of_address.h>	/* for device tree */
 #endif
 
+
 /*******************************************************************************
 * common type define
 ********************************************************************************/
@@ -6178,7 +6179,7 @@ static ssize_t ISP_DumpRegToProc(struct file *pPage,
 				char __user *pBuffer, size_t Count, loff_t *off)
 {
 	static MUINT32 i, j;
-	static int dataState = 1, lastDataState = 1;
+	static int dataState = 1, lastDataState;
 	char tempStr[256];
 	char tempStr2[256] = { '\0' };
 	long length = 0;
@@ -6290,17 +6291,45 @@ static ssize_t ISP_DumpRegToProc(struct file *pPage,
 static ssize_t ISP_RegDebug(struct file *pFile,
 			   const char __user *pBuffer, size_t  Count, loff_t *p_off)
 {
+	char RegBuf[64];
+	MUINT32 CopyBufSize = (Count < (sizeof(RegBuf) - 1)) ? (Count) : (sizeof(RegBuf) - 1);
+	MUINT32 Addr = 0;
+	MUINT32 Data = 0;
+
+	LOG_DBG("pFile(%p),pBuffer(%p),Count(%ld)", pFile, pBuffer, (long int)Count);
+
+	if (copy_from_user(RegBuf, pBuffer, CopyBufSize)) {
+		LOG_ERR("copy_from_user() fail.");
+		return -EFAULT;
+	}
+
+	if (sscanf(RegBuf, "%x %x", &Addr, &Data) == 2) {
+		ISP_WR32((ISP_ADDR_CAMINF + Addr), Data);
+		LOG_ERR("Write => Addr: 0x%08X, Write Data: 0x%08X. Read Data: 0x%08X.",
+			(unsigned int)(ISP_ADDR_CAMINF + Addr), Data,
+			ioread32((void *)(ISP_ADDR_CAMINF + Addr)));
+	} else if (kstrto(RegBuf, "%x", &Addr) == 0) {
+		LOG_ERR("Read => Addr: 0x%08X, Read Data: 0x%08X.",
+			(unsigned int)(ISP_ADDR_CAMINF + Addr), ioread32((void *)(ISP_ADDR_CAMINF + Addr)));
+	}
+
+	LOG_DBG("Count(%d)", (MINT32)Count);
+	return (ssize_t)Count;
+}
+
+static MUINT32 proc_regOfst;
+static ssize_t CAMIO_DumpRegToProc(struct file *pPage,
+				char __user *pBuffer, size_t Count, loff_t *off)
+{
 	char tempStr[256];
 	char tempStr2[256] = {'\0'};
 	long length = 0;
 	static int finished;
-
 	if (finished) {
 		finished = 0;
 		return 0;
-	}
-
-	finished = 1;
+	} else
+		finished = 1;
 
 	if (Count < 200) {
 		LOG_ERR("BufferSize(%d) less than 256.", (int)Count);
@@ -6318,36 +6347,6 @@ static ssize_t ISP_RegDebug(struct file *pFile,
 
 	return length;/*end of reading*/
 
-}
-
-static MUINT32 proc_regOfst;
-static ssize_t CAMIO_DumpRegToProc(struct file *pPage,
-				char __user *pBuffer, size_t Count, loff_t *off)
-{
-	char *p = (char*)pPage;
-           char **ppStart=NULL;
-	long Length = 0;
-	long ret = 0;
-
-	LOG_DBG("pPage(%p),off(0x%lx),Count(%ld)", pPage, (unsigned long)off, (long int)Count);
-
-	p += sprintf(p, "reg_0x%08X = 0x%X\n", (unsigned int)(ISP_ADDR_CAMINF + proc_regOfst),
-		     ioread32((void*)(ISP_ADDR_CAMINF + proc_regOfst)));
-
-	*ppStart = (char*)((unsigned long)pPage + (unsigned long)off);
-
-	Length = (long)((unsigned long)p - (unsigned long)pPage);
-	if (Length > (long)off) {
-		Length -= (long)off;
-	} else {
-		Length = 0;
-	}
-
-	/*  */
-	ret = Length < Count ? Length : Count;
-
-	/*LOG_DBG("ret(%ld)", ret);*/
-	return ((ssize_t)ret);
 }
 
 /*******************************************************************************
