@@ -14,7 +14,7 @@
 #ifndef _CUST_PE_H_
 #define _CUST_PE_H_
 
-/* Pump Express support (fast charging) */
+/* PE+/PE+20 */
 #define TA_START_BATTERY_SOC	1
 #define TA_STOP_BATTERY_SOC	85
 #define TA_AC_12V_INPUT_CURRENT CHARGE_CURRENT_3200_00_MA
@@ -28,7 +28,12 @@
 #define PEP20_ICHG_LEAVE_THRESHOLD 1000 /* mA */
 #define PEP_ICHG_LEAVE_THRESHOLD 1000 /* mA */
 
-/* For PE+20, VBUS V.S. VBAT table, according to BQ25896 */
+struct pep20_profile_t {
+	unsigned int vbat;
+	unsigned int vchr;
+};
+
+/* For PE+20, default VBUS V.S. VBAT table (generated according to BQ25896) */
 #define VBAT3400_VBUS CHR_VOLT_08_000000_V
 #define VBAT3500_VBUS CHR_VOLT_08_500000_V
 #define VBAT3600_VBUS CHR_VOLT_08_500000_V

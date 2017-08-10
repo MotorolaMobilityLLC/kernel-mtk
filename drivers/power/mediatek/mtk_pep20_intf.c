@@ -31,16 +31,11 @@ static int pep20_ta_vchr_org = 5000; /* mA */
 static int pep20_idx = -1;
 static int pep20_vbus = 5000; /* mA */
 static bool pep20_to_check_chr_type = true;
-static bool pep20_is_cable_out_occur; /* Plug out happend while detect PE+20 */
+static bool pep20_is_cable_out_occur; /* Plug out happened while detecting PE+20 */
 static bool pep20_is_connect;
 static bool pep20_is_enabled = true;
 
-typedef struct _pep20_profile {
-	u32 vbat;
-	u32 vchr;
-} pep20_profile_t, *p_pep20_profile_t;
-
-pep20_profile_t pep20_profile[] = {
+static struct pep20_profile_t pep20_profile[] = {
 	{3400, VBAT3400_VBUS},
 	{3500, VBAT3500_VBUS},
 	{3600, VBAT3600_VBUS},
@@ -331,6 +326,10 @@ int mtk_pep20_init(void)
 		"PE+20 TA charger suspend wakelock");
 	mutex_init(&pep20_access_lock);
 	mutex_init(&pep20_pmic_sync_lock);
+
+	battery_charging_control(CHARGING_CMD_SET_PEP20_EFFICIENCY_TABLE,
+		pep20_profile);
+
 	return 0;
 }
 
