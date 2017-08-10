@@ -867,6 +867,14 @@ extern "C" {
 	cmdqSecSharedMemoryHandle cmdq_core_get_secure_shared_memory(void);
 
 /*
+ * Core command buffer process
+ */
+	bool cmdq_core_task_finalize_end(struct TaskStruct *pTask);
+	bool cmdq_core_task_is_jump_inside(struct TaskStruct *pTask);
+	int32_t cmdq_core_copy_cmd_to_task_impl(struct TaskStruct *pTask, void *src,
+		const uint32_t size, const bool is_copy_from_user);
+
+/*
  * GCE capability
  */
 	uint32_t cmdq_core_subsys_to_reg_addr(uint32_t arg_a);

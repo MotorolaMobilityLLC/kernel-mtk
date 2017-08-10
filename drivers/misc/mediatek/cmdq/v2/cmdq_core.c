@@ -1227,7 +1227,7 @@ static dma_addr_t cmdq_core_task_get_eoc_pa(struct TaskStruct *pTask)
 	 * The last buffer maybe contains no instruction, which is allocate for blank instruction.
 	 * Use available buffer size to check.
 	 */
-	if (pTask->buf_available_size == CMDQ_CMD_BUFFER_SIZE) {
+	if (pTask->buf_available_size >= CMDQ_CMD_BUFFER_SIZE) {
 		/*
 		 * Empty buffer, the boundary case.
 		 * EOC sould locate (END - 2 INST) of previous buffer.
@@ -2700,14 +2700,18 @@ static int32_t cmdq_core_extend_cmd_buffer(struct TaskStruct *pTask)
 		 * There are instructions exist in available buffers.
 		 * Locate the last buffer entry and append new instructions.
 		 */
-		buffer_entry = list_last_entry(&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
 		if (pTask->buf_available_size == 0) {
-			bool is_eoc_end = false;
-
 			/* buffer full case, allocate new one */
 			status = cmdq_core_task_alloc_single_buffer_list(pTask, &buffer_entry);
 			if (status < 0)
 				return status;
+		} else if (pTask->buf_available_size == CMDQ_CMD_BUFFER_SIZE) {
+			/* next buffer already exist (revert case, secure insert cookie inst) */
+			buffer_entry = list_last_entry(&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
+		}
+
+		if (buffer_entry) {
+			bool is_eoc_end = false;
 
 			/*
 			 * If last 2 instruction is EOC+JUMP,
@@ -2767,6 +2771,9 @@ static void cmdq_core_append_command(TaskStruct *pTask, uint32_t arg_a, uint32_t
 {
 #ifdef CMDQ_JUMP_MEM
 	if (pTask->buf_available_size < CMDQ_INST_SIZE) {
+		if (cmdq_core_extend_cmd_buffer(pTask) < 0)
+			return;
+	} else if (pTask->buf_available_size == CMDQ_CMD_BUFFER_SIZE) {
 		if (cmdq_core_extend_cmd_buffer(pTask) < 0)
 			return;
 	}
@@ -2901,6 +2908,89 @@ static void cmdq_core_insert_backup_instr(TaskStruct *pTask,
  *     >=0, okay case, return number of bytes for inserting instruction
  */
 #ifdef CMDQ_SECURE_PATH_NORMAL_IRQ
+#ifdef CMDQ_JUMP_MEM
+static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t thread)
+{
+	const CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
+	const CMDQ_DATA_REGISTER_ENUM destRegId = CMDQ_DATA_REG_DEBUG_DST;
+	const uint32_t regAddr = CMDQ_THR_EXEC_CNT_PA(thread);
+	const uint32_t originalSize = pTask->commandSize;
+	uint64_t addrCookieOffset = CMDQ_SEC_SHARED_THR_CNT_OFFSET + thread * sizeof(uint32_t);
+	uint64_t WSMCookieAddr = gCmdqContext.hSecSharedMem->MVABase + addrCookieOffset;
+	const uint32_t subsysBit = cmdq_get_func()->getSubsysLSBArgA();
+	int32_t subsysCode = cmdq_core_subsys_from_phys_addr(regAddr);
+	int32_t offset;
+	uint32_t end_inst_backup[4];
+
+	const CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
+
+	if (0 > cmdq_get_func()->isSecureThread(thread)) {
+		CMDQ_ERR("%s, invalid param, thread: %d\n", __func__, thread);
+		return -EFAULT;
+	}
+
+	if (NULL == gCmdqContext.hSecSharedMem) {
+		CMDQ_ERR("%s, shared memory is not created\n", __func__);
+		return -EFAULT;
+	}
+
+	/* backup JUMP and EOC */
+	memcpy(end_inst_backup, &pTask->pCMDEnd[-3], sizeof(uint32_t) * 4);
+
+	/* check the jump instruction */
+	if (cmdq_core_task_is_jump_inside(pTask)) {
+		/* change jump to jump related +8 */
+		end_inst_backup[2] = 0x8;
+		end_inst_backup[3] = CMDQ_CODE_JUMP << 24;
+	}
+
+	/* use SYNC TOKEN to make sure only 1 thread access at a time */
+	/* bit 0-11: wait_value */
+	/* bit 15: to_wait, true */
+	/* bit 31: to_update, true */
+	/* bit 16-27: update_value */
+	/* wait and clear */
+
+	/* First 2 inst replace from EOC+JUMP command directly to avoid handle buffer. */
+
+	pTask->pCMDEnd[-3] = ((1 << 31) | (1 << 15) | 1);
+	pTask->pCMDEnd[-2] = (CMDQ_CODE_WFE << 24) | regAccessToken;
+
+	pTask->pCMDEnd[-1] = valueRegId;
+	pTask->pCMDEnd[0] = (CMDQ_CODE_READ << 24) | (regAddr & 0xffff) |
+		((subsysCode & 0x1f) << subsysBit) | (2 << 21);
+
+	/* Note that <MOVE> arg_b is 48-bit */
+	/* so writeAddress is split into 2 parts */
+	/* and we store address in 64-bit GPR (P0-P7) */
+	cmdq_core_append_command(pTask,
+				 (CMDQ_CODE_MOVE << 24) | ((WSMCookieAddr >> 32) & 0xffff) |
+				 ((destRegId & 0x1f) << 16) | (4 << 21), (uint32_t) WSMCookieAddr);
+
+	/* write to memory */
+	cmdq_core_append_command(pTask,
+				 (CMDQ_CODE_WRITE << 24) |
+				 ((destRegId & 0x1f) << 16) | (6 << 21), valueRegId);
+
+	/* set directly */
+	cmdq_core_append_command(pTask, (CMDQ_CODE_WFE << 24) | regAccessToken,
+				 ((1 << 31) | (1 << 16)));
+
+	/* copy END instructsions EOC+JUMP */
+	cmdq_core_copy_cmd_to_task_impl(pTask, end_inst_backup, 2 * CMDQ_INST_SIZE, false);
+	cmdq_core_task_finalize_end(pTask);
+
+	/* calculate added command length */
+	offset = pTask->commandSize - originalSize;
+
+	CMDQ_VERBOSE("%s offset: %d last inst: 0x%08x:%08x 0x%08x:%08x va: 0x%p\n",
+		__func__, offset,
+		pTask->pCMDEnd[-2], pTask->pCMDEnd[-3], pTask->pCMDEnd[0], pTask->pCMDEnd[-1],
+		pTask->pCMDEnd);
+
+	return offset;
+}
+#else
 static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t thread)
 {
 	const uint32_t originalSize = pTask->commandSize;
@@ -2971,7 +3061,9 @@ static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t t
 
 	return offset;
 }
-#endif
+#endif	/* CMDQ_JUMP_MEM */
+#endif	/* CMDQ_SECURE_PATH_NORMAL_IRQ */
+
 
 /**
  * Insert instruction to backup secure threads' cookie and IRQ to normal world
@@ -3157,7 +3249,7 @@ static int32_t cmdq_core_copy_buffer_impl(void *dst, void *src, const uint32_t s
 }
 
 #ifdef CMDQ_JUMP_MEM
-static int32_t cmdq_core_copy_cmd_to_task_impl(struct TaskStruct *pTask, void *src, const uint32_t size,
+int32_t cmdq_core_copy_cmd_to_task_impl(struct TaskStruct *pTask, void *src, const uint32_t size,
 		const bool is_copy_from_user)
 {
 	uint32_t status = 0;
