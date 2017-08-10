@@ -176,6 +176,17 @@ do { \
 
 #endif
 
+#ifdef CONFIG_MTK_RAM_CONSOLE
+extern void aee_rr_rec_cpu_caller(u32 val);
+extern void aee_rr_rec_cpu_callee(u32 val);
+extern void aee_rr_rec_cpu_up_prepare_ktime(u64 val);
+extern void aee_rr_rec_cpu_starting_ktime(u64 val);
+extern void aee_rr_rec_cpu_online_ktime(u64 val);
+extern void aee_rr_rec_cpu_down_prepare_ktime(u64 val);
+extern void aee_rr_rec_cpu_dying_ktime(u64 val);
+extern void aee_rr_rec_cpu_dead_ktime(u64 val);
+extern void aee_rr_rec_cpu_post_dead_ktime(u64 val);
+#endif
 
 /*
  * main cross-CPU interfaces, handles INIT, TLB flush, STOP, etc.
