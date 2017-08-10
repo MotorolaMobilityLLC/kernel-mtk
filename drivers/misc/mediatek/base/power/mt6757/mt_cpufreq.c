@@ -552,8 +552,6 @@ static int set_cur_volt_extbuck(struct mt_cpu_dvfs *p, unsigned int volt);	/* vo
 static unsigned int get_cur_volt_sram(struct mt_cpu_dvfs *p);
 static int set_cur_volt_sram(struct mt_cpu_dvfs *p, unsigned int volt);		/* volt: mv * 100 */
 
-static int _search_available_freq_idx_under_v(struct mt_cpu_dvfs *p, unsigned int volt);
-
 /* CPU callback */
 static int _mt_cpufreq_cpu_CB(struct notifier_block *nfb, unsigned long action, void *hcpu);
 
@@ -1489,12 +1487,6 @@ static void set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned i
 	cpufreq_ver("[TARGET_OPP_IDX][NAME][IDX][FREQ] => %s:%d:%d\n",
 		    cpu_dvfs_get_name(p), idx, cpu_dvfs_get_freq_by_idx(p, idx));
 
-	if (!p->armpll_is_available) {
-		cpufreq_err("%s: armpll not available, cur_khz = %u, target_khz = %u\n",
-			    cpu_dvfs_get_name(p), cur_khz, target_khz);
-		BUG_ON(1);
-	}
-
 	if (cur_khz == target_khz)
 		return;
 
@@ -2136,8 +2128,6 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 #endif
 		return;
 
-	BUG_ON(new_opp_idx >= p->nr_opp_tbl);
-
 	/* This is for cci */
 	id_cci = MT_CPU_DVFS_CCI;
 	p_cci = id_to_cpu_dvfs(id_cci);
@@ -2443,29 +2433,23 @@ UNLOCK_DF:
 
 static int _sync_opp_tbl_idx(struct mt_cpu_dvfs *p)
 {
-	int ret = -1;
 	unsigned int freq;
 	int i;
-
-	BUG_ON(!p->opp_tbl);
 
 	freq = p->ops->get_cur_phy_freq(p);
 
 	for (i = p->nr_opp_tbl - 1; i >= 0; i--) {
-		if (freq <= cpu_dvfs_get_freq_by_idx(p, i)) {
-			p->idx_opp_tbl = i;
-			aee_record_freq_idx(p, p->idx_opp_tbl);
+		if (freq <= cpu_dvfs_get_freq_by_idx(p, i))
 			break;
-		}
 	}
 
-	if (i >= 0) {
-		/*cpufreq_dbg("%s freq = %d\n", cpu_dvfs_get_name(p), cpu_dvfs_get_cur_freq(p));*/
-		ret = 0;
-	} else
-		cpufreq_warn("%s can't find freq = %d\n", cpu_dvfs_get_name(p), freq);
+	if (WARN(i < 0, "CURR_FREQ %u IS OVER OPP0 %u\n", freq, cpu_dvfs_get_max_freq(p)))
+		i = 0;
 
-	return ret;
+	p->idx_opp_tbl = i;
+	aee_record_freq_idx(p, p->idx_opp_tbl);
+
+	return 0;
 }
 
 static int _mt_cpufreq_sync_opp_tbl_idx(struct mt_cpu_dvfs *p)
@@ -2709,24 +2693,25 @@ static int _mt_cpufreq_verify(struct cpufreq_policy *policy)
 static int _mt_cpufreq_target(struct cpufreq_policy *policy, unsigned int target_freq,
 			      unsigned int relation)
 {
-	enum mt_cpu_dvfs_id id = _get_cpu_dvfs_id(policy->cpu);
-	int ret = 0;
+	struct mt_cpu_dvfs *p;
+	int ret;
 	unsigned int new_opp_idx;
 
-	if (dvfs_disable_flag == 1)
-		return 0;
-
-	if (policy->cpu >= num_possible_cpus()
-	    || cpufreq_frequency_table_target(policy, id_to_cpu_dvfs(id)->freq_tbl_for_cpufreq,
-					      target_freq, relation, &new_opp_idx)
-	    || (id_to_cpu_dvfs(id) && id_to_cpu_dvfs(id)->dvfs_disable_by_procfs)
-		|| (id_to_cpu_dvfs(id) && id_to_cpu_dvfs(id)->dvfs_disable_by_suspend)
-	    )
+	p = id_to_cpu_dvfs(_get_cpu_dvfs_id(policy->cpu));
+	if (!p)
 		return -EINVAL;
 
-	_mt_cpufreq_set(policy, id, new_opp_idx, 1);
+	ret = cpufreq_frequency_table_target(policy, p->freq_tbl_for_cpufreq,
+					     target_freq, relation, &new_opp_idx);
+	if (ret || new_opp_idx >= p->nr_opp_tbl)
+		return -EINVAL;
 
-	return ret;
+	if (dvfs_disable_flag || p->dvfs_disable_by_suspend || p->dvfs_disable_by_procfs)
+		return -EPERM;
+
+	_mt_cpufreq_set(policy, p->id, new_opp_idx, 1);
+
+	return 0;
 }
 
 static int init_cci_status;
@@ -2845,15 +2830,14 @@ static unsigned int _mt_cpufreq_get(unsigned int cpu)
 
 static void __set_cpuhvfs_init_sta(struct init_sta *sta)
 {
-	int i, r;
+	int i;
 	unsigned int volt;
 	struct mt_cpu_dvfs *p;
 
 	for (i = 0; i < NUM_CPU_CLUSTER; i++) {
 		p = cluster_to_cpu_dvfs(i);
 
-		r = _sync_opp_tbl_idx(p);	/* find OPP with current frequency */
-		BUG_ON(r);
+		_sync_opp_tbl_idx(p);	/* find OPP with current frequency */
 
 		volt = get_cur_volt_extbuck(p);
 		BUG_ON(volt < EXTBUCK_VAL_TO_VOLT(0));
@@ -3122,8 +3106,7 @@ static int _mt_cpufreq_pdrv_probe(struct platform_device *pdev)
 			p->nr_opp_tbl = opp_tbl_info->size;
 			p->freq_tbl_for_cpufreq = table;
 
-			i = _sync_opp_tbl_idx(p);
-			BUG_ON(i);
+			_sync_opp_tbl_idx(p);
 		}
 
 		/* lv should be sync with DVFS_TABLE_TYPE_SB */
@@ -3616,7 +3599,6 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 					    CPUFREQ_LAST_FREQ_LEVEL);
 
 			p->dvfs_disable_by_procfs = false;
-			goto end;
 		} else {
 			for (i = 0; i < p->nr_opp_tbl; i++) {
 				if (freq == p->opp_tbl[i].cpufreq_khz) {
@@ -3630,16 +3612,17 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 				cpufreq_lock();
 				cur_freq = p->ops->get_cur_phy_freq(p);
 
-				if (freq != cur_freq) {
+				if (p->armpll_is_available && freq != cur_freq) {
 					p->ops->set_cur_freq(p, cur_freq, freq);
 					p->idx_opp_tbl = i;
 					aee_record_freq_idx(p, p->idx_opp_tbl);
+				} else {
+					found = 0;
 				}
-
-				if (!p->dvfs_disable_by_suspend)
-					_kick_PBM_by_cpu(p);
-
 				cpufreq_unlock();
+
+				if (!p->dvfs_disable_by_suspend && found)
+					_kick_PBM_by_cpu(p);
 			} else {
 				p->dvfs_disable_by_procfs = false;
 				cpufreq_err("frequency %dKHz! is not found in CPU opp table\n",
@@ -3648,7 +3631,6 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 		}
 	}
 
-end:
 	free_page((unsigned long)buf);
 
 	return count;
