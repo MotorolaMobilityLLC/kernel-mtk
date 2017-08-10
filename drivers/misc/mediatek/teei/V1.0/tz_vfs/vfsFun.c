@@ -50,6 +50,15 @@ struct vfs_dev *vfs_devp = NULL;
 
 int tz_vfs_open(struct inode *inode, struct file *filp)
 {
+	if (vfs_devp == NULL)
+		return -EINVAL;
+
+	if (filp == NULL)
+		return -EINVAL;
+
+	if (strcmp("teei_daemon", current->comm) != 0)
+		return -EINVAL;
+
 	filp->private_data = vfs_devp;
 	return 0;
 }
@@ -60,35 +69,22 @@ int tz_vfs_release(struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static long tz_vfs_ioctl(struct file *filp,
-			unsigned int cmd, unsigned long arg)
-{
-	struct vfs_dev *dev = filp->private_data;
-
-	switch (cmd) {
-	case MEM_CLEAR:
-		if (down_interruptible(&dev->sem))
-			return -ERESTARTSYS;
-
-		memset(dev->mem, 0, VFS_SIZE);
-		up(&dev->sem);
-		printk(KERN_INFO "VFS is set to zero. \n");
-		break;
-
-	default:
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
 static ssize_t tz_vfs_read(struct file *filp, char __user *buf,
 			size_t size, loff_t *ppos)
 {
 	struct TEEI_vfs_command *vfs_p = NULL;
 	int length = 0;
 	int ret = 0;
-int cpu_id = raw_smp_processor_id();
+
+	if (buf == NULL)
+		return -EINVAL;
+
+	if (daulOS_VFS_share_mem == NULL)
+		return -EINVAL;
+
+	if ((0 > size )||(size > VFS_SIZE))
+		return -EINVAL;
+
 	/*printk("read begin cpu[%d]\n",cpu_id);*/
 #ifdef VFS_RDWR_SEM
 	down_interruptible(&VFS_rd_sem);
@@ -119,15 +115,21 @@ int cpu_id = raw_smp_processor_id();
 		ret = -EFAULT;
 	else
 		ret = length;
-	cpu_id = raw_smp_processor_id();
-	/*printk("read end cpu_id[%d]\n",cpu_id);*/
 	return ret;
 }
 
 static ssize_t tz_vfs_write(struct file *filp, const char __user *buf,
 			size_t size, loff_t *ppos)
 {
-int cpu_id = raw_smp_processor_id();
+	if (buf == NULL)
+		return -EINVAL;
+
+	if (daulOS_VFS_share_mem == NULL)
+		return -EINVAL;
+
+	if ((0 > size)||(size > VFS_SIZE))
+		return -EINVAL;
+
 	/*printk("write begin cpu_id[%d]\n",cpu_id);*/
 	if (copy_from_user((void *)daulOS_VFS_share_mem, buf, size))
 		return -EFAULT;
@@ -139,63 +141,13 @@ int cpu_id = raw_smp_processor_id();
 #else
 	complete(&VFS_wr_comp);
 #endif
-	cpu_id = raw_smp_processor_id();
-	/*printk("write end cpu_id[%d]\n",cpu_id);*/
 	return 0;
-}
-
-static loff_t tz_vfs_llseek(struct file *filp, loff_t offset, int orig)
-{
-	loff_t ret = 0;
-
-	switch (orig) {
-	case 0:
-		if (offset < 0) {
-			ret = -EINVAL;
-			break;
-		}
-
-		if ((unsigned int)offset > VFS_SIZE) {
-			ret = -EINVAL;
-			break;
-		}
-
-		filp->f_pos = (unsigned int)offset;
-		ret = filp->f_pos;
-		break;
-
-	case 1:
-		if ((filp->f_pos + offset) > VFS_SIZE) {
-			ret = -EINVAL;
-			break;
-		}
-
-		if ((filp->f_pos + offset) < 0) {
-			ret = -EINVAL;
-			break;
-		}
-
-		filp->f_pos += offset;
-		ret = filp->f_pos;
-		break;
-
-	default:
-		ret = -EINVAL;
-		break;
-	}
-
-	return ret;
 }
 
 static const struct file_operations vfs_fops = {
 	.owner =		THIS_MODULE,
-	.llseek =		tz_vfs_llseek,
 	.read =			tz_vfs_read,
 	.write =		tz_vfs_write,
-	.unlocked_ioctl = tz_vfs_ioctl,
-#ifdef CONFIG_COMPAT
-	.compat_ioctl   = tz_vfs_ioctl,
-#endif
 	.open =			tz_vfs_open,
 	.release =		tz_vfs_release,
 };
@@ -280,7 +232,7 @@ void vfs_exit(void)
 	unregister_chrdev_region(MKDEV(vfs_major, 0), 1);
 }
 
-MODULE_AUTHOR("Neusoft");
+MODULE_AUTHOR("MicroTrust");
 MODULE_LICENSE("Dual BSD/GPL");
 
 module_param(vfs_major, int, S_IRUGO);

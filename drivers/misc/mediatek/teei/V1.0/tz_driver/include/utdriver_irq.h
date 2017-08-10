@@ -6,3 +6,5 @@
 #define BDRV_IRQ                                (278)
 #define TEEI_LOG_IRQ                            (277)
 #define SOTER_ERROR_IRQ                         (276)
+
+#define UT_DRV_IRQ				(284)

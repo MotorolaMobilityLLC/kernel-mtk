@@ -42,6 +42,9 @@
 #define FP_SYS_NO               (100)
 #define FP_BUFF_SIZE            (512 * 1024)
 
+#define KEYMASTER_SYS_NO               (101)
+#define KEYMASTER_BUFF_SIZE            (512 * 1024)
+
 #define CTL_BUFF_SIZE                   (4096)
 #define VDRV_MAX_SIZE                   (0x80000)
 #define NQ_VALID                                1
@@ -58,3 +61,5 @@
 
 #define VFS_SYS_NO 	0x08
 #define REETIME_SYS_NO	0x07
+
+#define UT_DMA_ZONE
