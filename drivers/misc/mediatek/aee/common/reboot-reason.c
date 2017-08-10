@@ -233,7 +233,7 @@ inline void aee_print_regs(struct pt_regs *regs)
 #define AEE_MAX_EXCP_FRAME	32
 inline void aee_print_bt(struct pt_regs *regs)
 {
-	int i;
+	int i, ret;
 	unsigned long high, bottom, fp;
 	struct stackframe cur_frame;
 	struct pt_regs *excp_regs;
@@ -254,7 +254,9 @@ inline void aee_print_bt(struct pt_regs *regs)
 				aee_nested_printf("fp(%lx)", fp);
 			break;
 		}
-		unwind_frame(&cur_frame);
+		ret = unwind_frame(&cur_frame);
+		if (ret < 0)
+			break;
 		if (!((cur_frame.pc >= (PAGE_OFFSET + THREAD_SIZE))
 		      && virt_addr_valid(cur_frame.pc)))
 			break;
@@ -262,7 +264,9 @@ inline void aee_print_bt(struct pt_regs *regs)
 #ifdef __aarch64__
 			/* work around for unknown reason do_mem_abort stack abnormal */
 			excp_regs = (void *)(cur_frame.fp + 0x10 + 0xa0);
-			unwind_frame(&cur_frame);	/* skip do_mem_abort & el1_da */
+			ret = unwind_frame(&cur_frame);	/* skip do_mem_abort & el1_da */
+			if (ret < 0)
+				break;
 #else
 			excp_regs = (void *)(cur_frame.fp + 4);
 #endif
