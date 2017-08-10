@@ -356,7 +356,7 @@ static ssize_t dev_char_write(struct file *file, const char __user *buf, size_t 
 	mt_pwm_26M_clk_enable_hal(1);
 	pr_debug("[IRTX] irtx before read IRTXCFG:0x%x\n",
 		(irtx_read32(mt_irtx_dev.reg_base, IRTXCFG)));
-	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_BASE_ADDR = (u32 *) wave_phy;
+	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_BASE_ADDR = wave_phy;
 	irtx_pwm_config.PWM_MODE_MEMORY_REGS.BUF0_SIZE = (buf_size ? (buf_size - 1) : 0);
 
 	set_irtx_sw_mode();

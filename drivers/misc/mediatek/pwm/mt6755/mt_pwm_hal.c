@@ -108,7 +108,6 @@ void mt_pwm_power_on_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
 		}
 		set_bit(pwm_no, power_flag);
 	}
-
 }
 
 void mt_pwm_power_off_hal(u32 pwm_no, bool pmic_pad, unsigned long *power_flag)
@@ -432,16 +431,16 @@ void mt_set_intr_ack_hal(u32 pwm_intr_ack_bit)
 	SETREG32(PWM_INT_ACK, 1 << pwm_intr_ack_bit);
 }
 
-void mt_set_pwm_buf0_addr_hal(u32 pwm_no, u32 *addr)
+void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 {
 	unsigned long reg_buff0_addr;
 
-	pr_debug("[PWM]buf0 addr:%p\n", addr);
+	/*pr_debug("[PWM]buf0 addr:%p\n", addr);*/
 
 	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
 	/*OUTREG32(reg_buff0_addr, addr);*/
 	/*OUTREG32_DMA(reg_buff0_addr, addr);*/
-	OUTREG32(reg_buff0_addr, (unsigned long)addr);
+	OUTREG32(reg_buff0_addr, (dma_addr_t)addr);
 }
 
 void mt_set_pwm_buf0_size_hal(u32 pwm_no, uint16_t size)

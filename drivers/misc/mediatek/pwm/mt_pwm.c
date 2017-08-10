@@ -573,7 +573,7 @@ static s32 mt_set_pwm_GuardDur(u32 pwm_no, u16 DurVal)
 * pwm_no: pwm1~pwm7 (0~6)
 * addr: data address
 ******************************************************/
-s32 mt_set_pwm_buf0_addr(u32 pwm_no, u32 *addr)
+s32 mt_set_pwm_buf0_addr(u32 pwm_no, dma_addr_t addr)
 {
 	unsigned long flags;
 

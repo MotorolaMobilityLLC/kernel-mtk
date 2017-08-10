@@ -450,21 +450,23 @@ void mt_set_intr_ack_hal(u32 pwm_intr_ack_bit)
 	SETREG32(PWM_INT_ACK, 1 << pwm_intr_ack_bit);
 }
 
-void mt_set_pwm_buf0_addr_hal(u32 pwm_no, u32 *addr)
+void mt_set_pwm_buf0_addr_hal(u32 pwm_no, dma_addr_t addr)
 {
 	unsigned long reg_buff0_addr;
-	unsigned long user_addr;
-
+	/*dma_addr_t user_addr;
+	unsigned long bus_32bit_ctrl;*/
 	reg_buff0_addr = PWM_register[pwm_no] + 4 * PWM_BUF0_BASE_ADDR;
-#if 0
+#if 1
 	/*OUTREG32(reg_buff0_addr, addr);*/
 	OUTREG32_DMA(reg_buff0_addr, addr);
 #else
+	/* it will get error due to PWM_PERI_ADDR_SHIFT_CTRL0, we can't access it now )*/
 	if (enable_4G())
-		user_addr = (unsigned long)addr & 0xFFFFFFFFUL;
+		user_addr = addr & 0xFFFFFFFFUL;
 	else {
-		user_addr = (unsigned long)addr & 0xFFFFFFFFUL;
-		OUTREG32(PWM_PERI_ADDR_SHIFT_CTRL0, ((unsigned long)addr >> 32) << PWM_OFFSET);
+		user_addr = addr & 0xFFFFFFFFUL;
+		bus_32bit_ctrl = (addr >> 32) > 0 ? (1 << PWM_OFFSET) : 0;
+		OUTREG32(PWM_PERI_ADDR_SHIFT_CTRL0, bus_32bit_ctrl);
 	}
 	/*OUTREG32(reg_buff0_addr, user_addr);*/
 	OUTREG32_DMA(reg_buff0_addr , user_addr);

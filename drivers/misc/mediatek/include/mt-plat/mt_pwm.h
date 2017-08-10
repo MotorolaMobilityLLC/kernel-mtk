@@ -69,7 +69,7 @@ struct pwm_spec_config {
 			u16 HDURATION;
 			u16 LDURATION;
 			u16 GDURATION;
-			u32 *BUF0_BASE_ADDR;
+			dma_addr_t BUF0_BASE_ADDR;
 			u32 BUF0_SIZE;
 			u16 WAVE_NUM;
 		} PWM_MODE_MEMORY_REGS;
@@ -82,9 +82,9 @@ struct pwm_spec_config {
 			u16 HDURATION;
 			u16 LDURATION;
 			u16 GDURATION;
-			u32 *BUF0_BASE_ADDR;
+			dma_addr_t BUF0_BASE_ADDR;
 			u32 BUF0_SIZE;
-			u32 *BUF1_BASE_ADDR;
+			dma_addr_t BUF1_BASE_ADDR;
 			u32 BUF1_SIZE;
 			u16 WAVE_NUM;
 			u32 VALID;
