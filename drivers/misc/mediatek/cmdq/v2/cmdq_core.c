@@ -2174,6 +2174,7 @@ static int32_t cmdq_core_task_alloc_single_buffer_list(struct TaskStruct *pTask,
 			&buffer_entry->MVABase, GFP_KERNEL | __GFP_NO_KSWAPD);
 	if (buffer_entry->pVABase == NULL) {
 		CMDQ_ERR("allocate cmd buffer of size %u failed\n", (uint32_t)CMDQ_CMD_BUFFER_SIZE);
+		kfree(buffer_entry);
 		return -ENOMEM;
 	}
 
