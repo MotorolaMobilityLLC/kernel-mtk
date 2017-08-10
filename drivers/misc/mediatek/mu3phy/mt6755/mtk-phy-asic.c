@@ -376,7 +376,7 @@ void usb_phy_switch_to_uart(void)
 	usb_enable_clock(false);
 
 	/* GPIO Selection */
-	DRV_WriteReg32(ap_uart0_base + 0xB0, 0x1);
+	DRV_WriteReg32(ap_uart0_base + 0x6E0, (DRV_Reg32(ap_uart0_base + 0x6E0) | 0x80000));
 
 	in_uart_mode = true;
 }
@@ -386,7 +386,7 @@ void usb_phy_switch_to_usb(void)
 {
 	in_uart_mode = false;
 	/* GPIO Selection */
-	DRV_WriteReg32(ap_uart0_base + 0xB0, 0x0);	/* set */
+	DRV_WriteReg32(ap_uart0_base + 0x6E0, (DRV_Reg32(ap_uart0_base + 0x6E0) & 0xFFF7FFFF));	/* set */
 
 	/* clear force_uart_en */
 	U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_U2PHYDTM0, FORCE_UART_EN_OFST, FORCE_UART_EN, 0);
