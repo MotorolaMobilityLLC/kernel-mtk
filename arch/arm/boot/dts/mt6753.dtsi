@@ -392,6 +392,26 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			clock-frequency = <13000000>;
 		};
 
+		pmu {
+			compatible = "arm,cortex-a7-pmu";
+			interrupts = <GIC_SPI 8 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 9 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 10 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 11 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 12 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 13 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 14 IRQ_TYPE_LEVEL_LOW>,
+				<GIC_SPI 15 IRQ_TYPE_LEVEL_LOW>;
+			interrupt-affinity = <&cpu0>,
+				<&cpu1>,
+				<&cpu2>,
+				<&cpu3>,
+				<&cpu4>,
+				<&cpu5>,
+				<&cpu6>,
+				<&cpu7>;
+		};
+
 		timer {
 			compatible = "arm,armv8-timer";
 			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_LOW>, /*Secure Physical Timer Event*/
