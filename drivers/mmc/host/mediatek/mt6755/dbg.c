@@ -2002,7 +2002,7 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf,
 			return count;
 		}
 
-		msdc_clk_enable(host);
+		(void)msdc_clk_enable(host);
 
 		if (p1 == 0) {
 			reg_value = p4;
