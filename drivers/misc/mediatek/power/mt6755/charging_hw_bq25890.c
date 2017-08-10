@@ -1044,14 +1044,7 @@ static int charging_sw_init(void *data)
 	/*CV mode */
 	bq25890_config_interface(bq25890_CON6, 0x20, 0x3F, 2);	/* VREG=CV 4.352V (default 4.208V) */
 
-#if defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT)
-	/*	upmu_set_rg_vcdt_hv_en(0);*/
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
-	pmic_set_register_value(PMIC_RG_VCDT_HV_EN, 0);
-#else
-	pmic_set_register_value(MT6351_PMIC_RG_VCDT_HV_EN, 0);
-#endif
-#endif
+	/* upmu_set_rg_vcdt_hv_en(0); */
 
 	/* The following setting is moved from HW_INIT */
 	bq25890_config_interface(bq25890_CON2, 0x1, 0x1, 4);	/* disable ico Algorithm -->bear:en */
@@ -1300,6 +1293,8 @@ static int charging_set_boost_current_limit(void *data)
 	unsigned int current_limit = 0, reg_ilim = 0;
 
 	current_limit = *((unsigned int *)data);
+	current_limit = bmt_find_closest_level(BOOST_CURRENT_LIMIT,
+		ARRAY_SIZE(BOOST_CURRENT_LIMIT), current_limit);
 	reg_ilim = charging_parameter_to_value(BOOST_CURRENT_LIMIT,
 		ARRAY_SIZE(BOOST_CURRENT_LIMIT), current_limit);
 	bq25890_set_boost_ilim(reg_ilim);
@@ -1343,6 +1338,56 @@ static int charging_get_bif_is_exist(void *data)
 	return 0;
 }
 
+static int charging_get_input_current(void *data)
+{
+	int ret = 0;
+
+	*((u32 *)data) = g_input_current;
+
+	return ret;
+}
+
+static int charging_enable_direct_charge(void *data)
+{
+	return -ENOTSUPP;
+}
+
+static int charging_get_is_power_path_enable(void *data)
+{
+	int ret = 0;
+	u32 reg_vindpm = 0;
+
+	reg_vindpm = bq25890_get_vindpm();
+	*((bool *)data) = (reg_vindpm == 0x7F) ? false : true;
+
+	return ret;
+}
+
+static int charging_get_is_safetytimer_enable(void *data)
+{
+	int ret = 0;
+	u32 reg_safetytimer = 0;
+
+	reg_safetytimer = bq25890_get_chg_timer_enable();
+	*((bool *)data) = (reg_safetytimer) ? true : false;
+
+	return ret;
+}
+
+static int charging_set_pwrstat_led_en(void *data)
+{
+	int ret = 0;
+	unsigned int led_en;
+
+	led_en = *(unsigned int *) data;
+
+	pmic_set_register_value(PMIC_CHRIND_MODE, 0x2); /* register mode */
+	pmic_set_register_value(PMIC_CHRIND_EN_SEL, !led_en); /* 0: Auto, 1: SW */
+	pmic_set_register_value(PMIC_CHRIND_EN, led_en);
+
+	return ret;
+}
+
 static int (*const charging_func[CHARGING_CMD_NUMBER]) (void *data) = {
 	charging_hw_init, charging_dump_register, charging_enable, charging_set_cv_voltage,
 	charging_get_current, charging_set_current, charging_set_input_current,
@@ -1358,7 +1403,9 @@ static int (*const charging_func[CHARGING_CMD_NUMBER]) (void *data) = {
 	charging_set_hiz_swchr, charging_get_bif_tbat, charging_set_ta20_reset,
 	charging_set_ta20_current_pattern, charging_set_dp, charging_get_charger_temperature,
 	charging_set_boost_current_limit, charging_enable_otg, charging_enable_power_path,
-	charging_get_bif_is_exist,
+	charging_get_bif_is_exist, charging_get_input_current, charging_enable_direct_charge,
+	charging_get_is_power_path_enable, charging_get_is_safetytimer_enable,
+	charging_set_pwrstat_led_en,
 };
 
 /*

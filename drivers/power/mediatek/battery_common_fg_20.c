@@ -1627,20 +1627,16 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 	/* Is PE+20 connect */
 	if (mtk_pep20_get_is_connect())
 		is_ta_detected = 1;
-	battery_log(BAT_LOG_CRTI, "%s: pep20_is_connect = %d\n",
+	battery_log(BAT_LOG_FULL, "%s: pep20_is_connect = %d\n",
 		__func__, mtk_pep20_get_is_connect());
 
 	/* Is PE+ connect */
 	if (mtk_pep_get_is_connect())
 		is_ta_detected = 1;
-	battery_log(BAT_LOG_CRTI, "%s: pep_is_connect = %d\n",
+	battery_log(BAT_LOG_FULL, "%s: pep_is_connect = %d\n",
 		__func__, mtk_pep_get_is_connect());
 
 #endif
-
-
-
-
 
 #if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
 	/* Is PE connect */
@@ -1654,6 +1650,8 @@ static ssize_t show_Pump_Express(struct device *dev, struct device_attribute *at
 		is_ta_detected = 1;
 #endif
 
+	battery_log(BAT_LOG_CRTI, "%s: detected = %d\n",
+		__func__, is_ta_detected);
 
 	return sprintf(buf, "%u\n", is_ta_detected);
 }
@@ -2129,6 +2127,7 @@ void mt_battery_GetBatteryData(void)
 	static signed int batteryTempBuffer[BATTERY_AVERAGE_SIZE];
 	static unsigned char batteryIndex = 0xff;
 	static signed int previous_SOC = -1;
+	kal_bool current_sign;
 
 	if (batteryIndex == 0xff)
 		batteryIndex = 0;
@@ -2181,17 +2180,21 @@ void mt_battery_GetBatteryData(void)
 	BMT_status.temperatureV = temperatureV;
 	BMT_status.temperatureR = temperatureR;
 	BMT_status.ZCV = ZCV;
+	BMT_status.IBattery = battery_meter_get_battery_current();
+	current_sign = battery_meter_get_battery_current_sign();
+	BMT_status.IBattery *= (current_sign ? 1 : (-1));
 
 	batteryIndex++;
 	if (batteryIndex >= BATTERY_AVERAGE_SIZE)
 		batteryIndex = 0;
 
 	battery_log(BAT_LOG_CRTI,
-		    "[kernel]AvgVbat %d,bat_vol %d, AvgI %d, I %d, VChr %d, AvgT %d, T %d, ZCV %d, CHR_Type %d, SOC %3d:%3d:%3d, bcct %d:%d, Ichg %d\n",
-		    BMT_status.bat_vol, bat_vol, BMT_status.ICharging, ICharging,
-		    BMT_status.charger_vol, BMT_status.temperature, temperature, BMT_status.ZCV,
-		    BMT_status.charger_type, BMT_status.SOC, BMT_status.UI_SOC, BMT_status.UI_SOC2,
-			g_bcct_flag, get_usb_current_unlimited(), get_bat_charging_current_level() / 100);
+		"[kernel]AvgVbat %d,bat_vol %d, AvgI %d, I %d, VChr %d, AvgT %d, T %d, ZCV %d, CHR_Type %d, SOC %3d:%3d:%3d, bcct %d:%d, Ichg %d, IBat %d\n",
+		BMT_status.bat_vol, bat_vol, BMT_status.ICharging, ICharging,
+		BMT_status.charger_vol, BMT_status.temperature, temperature, BMT_status.ZCV,
+		BMT_status.charger_type, BMT_status.SOC, BMT_status.UI_SOC, BMT_status.UI_SOC2,
+		g_bcct_flag, get_usb_current_unlimited(), get_bat_charging_current_level() / 100,
+		BMT_status.IBattery / 10);
 }
 
 
@@ -2782,7 +2785,6 @@ void do_chrdet_int_task(void)
 			battery_log(BAT_LOG_CRTI, "[do_chrdet_int_task] charger exist!\n");
 			BMT_status.charger_exist = KAL_TRUE;
 
-
 			wake_lock(&battery_suspend_lock);
 
 #if defined(CONFIG_POWER_EXT)
@@ -2831,16 +2833,15 @@ void do_chrdet_int_task(void)
 				return;
 			}
 #endif
-			mtk_pep20_plugout_reset();
-			mtk_pep_plugout_reset();
+
+			mtk_pep20_set_is_cable_out_occur(true);
+			mtk_pep_set_is_cable_out_occur(true);
+
 #if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
 			is_ta_connect = KAL_FALSE;
 			ta_check_chr_type = KAL_TRUE;
 			ta_cable_out_occur = KAL_TRUE;
 #endif
-
-
-
 		}
 
 		cable_in_uevent = 1;
@@ -4164,11 +4165,14 @@ static int battery_remove(struct platform_device *dev)
 
 static void battery_shutdown(struct platform_device *dev)
 {
-	battery_log(BAT_LOG_CRTI, "%s: reset TA before shutdown\n", __func__);
-	if (mtk_pep20_get_is_connect())
-		mtk_pep20_reset_ta_vchr();
-	if (mtk_pep_get_is_connect())
-		mtk_pep_reset_ta_vchr();
+	if (mtk_pep_get_is_connect() || mtk_pep20_get_is_connect()) {
+		CHR_CURRENT_ENUM input_current = CHARGE_CURRENT_70_00_MA;
+
+		battery_charging_control(CHARGING_CMD_SET_INPUT_CURRENT,
+				&input_current);
+		battery_log(BAT_LOG_CRTI, "%s: reset TA before shutdown\n",
+			__func__);
+	}
 }
 
 /* ///////////////////////////////////////////////////////////////////////////////////////// */
@@ -4311,7 +4315,6 @@ static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t c
 	int len = 0;
 	char desc[32];
 	int cmd_current_unlimited = false;
-	int cmd_power_path_enable = false;
 	unsigned int charging_enable = false;
 
 	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
@@ -4320,8 +4323,7 @@ static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t c
 
 	desc[len] = '\0';
 
-	if (sscanf(desc, "%d %d %d", &cmd_current_unlimited, &cmd_discharging,
-		&cmd_power_path_enable) == 3) {
+	if (sscanf(desc, "%d %d", &cmd_current_unlimited, &cmd_discharging) == 2) {
 		set_usb_current_unlimited(cmd_current_unlimited);
 		if (cmd_discharging == 1) {
 			charging_enable = false;
@@ -4331,12 +4333,10 @@ static ssize_t current_cmd_write(struct file *file, const char *buffer, size_t c
 			adjust_power = -1;
 		}
 		battery_charging_control(CHARGING_CMD_ENABLE, &charging_enable);
-		battery_charging_control(CHARGING_CMD_ENABLE_POWER_PATH,
-			&cmd_power_path_enable);
 
 		battery_log(BAT_LOG_CRTI,
-		"[current_cmd_write] cmd_current_unlimited=%d, cmd_discharging=%d, power_path_en=%d\n",
-			    cmd_current_unlimited, cmd_discharging, cmd_power_path_enable);
+		"[current_cmd_write] cmd_current_unlimited=%d, cmd_discharging=%d\n",
+			    cmd_current_unlimited, cmd_discharging);
 		return count;
 	}
 
@@ -4394,6 +4394,92 @@ static ssize_t discharging_cmd_write(struct file *file, const char *buffer, size
 	return -EINVAL;
 }
 
+static int cmd_open(struct inode *inode, struct file *file)
+{
+	file->private_data = inode->i_private;
+	return 0;
+}
+
+static ssize_t power_path_cmd_read(struct file *file, char __user *user_buffer,
+	size_t count, loff_t *position)
+{
+	char buf[256];
+	bool power_path_en = true;
+
+	battery_charging_control(CHARGING_CMD_GET_IS_POWER_PATH_ENABLE,
+		&power_path_en);
+	count = sprintf(buf, "%d\n", power_path_en);
+
+	return simple_read_from_buffer(user_buffer, count, position, buf,
+		strlen(buf));
+}
+
+static ssize_t power_path_cmd_write(struct file *file, const char *buffer,
+	size_t count, loff_t *data)
+{
+	int len = 0, ret = 0;
+	char desc[32];
+	u32 enable = 0;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	ret = kstrtou32(desc, 10, &enable);
+	if (ret == 0) {
+		battery_charging_control(CHARGING_CMD_ENABLE_POWER_PATH,
+			&enable);
+		battery_log(BAT_LOG_CRTI, "%s: enable power path = %d\n",
+			__func__, enable);
+		return count;
+	}
+
+	battery_log(BAT_LOG_CRTI, "bad argument, echo [enable] > power_path\n");
+	return count;
+}
+
+static ssize_t safety_timer_cmd_read(struct file *file, char __user *user_buffer,
+	size_t count, loff_t *position)
+{
+	char buf[256];
+	bool safety_timer_en = true;
+
+	battery_charging_control(CHARGING_CMD_GET_IS_SAFETY_TIMER_ENABLE,
+		&safety_timer_en);
+	count = sprintf(buf, "%d\n", safety_timer_en);
+
+	return simple_read_from_buffer(user_buffer, count, position, buf,
+		strlen(buf));
+}
+
+static ssize_t safety_timer_cmd_write(struct file *file, const char *buffer,
+	size_t count, loff_t *data)
+{
+	int len = 0, ret = 0;
+	char desc[32];
+	u32 enable = 0;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return 0;
+
+	desc[len] = '\0';
+
+	ret = kstrtou32(desc, 10, &enable);
+	if (ret == 0) {
+		battery_charging_control(CHARGING_CMD_ENABLE_SAFETY_TIMER,
+			&enable);
+		battery_log(BAT_LOG_CRTI, "%s: enable safety timer = %d\n",
+			__func__, enable);
+		return count;
+	}
+
+	battery_log(BAT_LOG_CRTI, "bad argument, echo [enable] > safety_timer\n");
+	return count;
+}
+
 static const struct file_operations discharging_cmd_proc_fops = {
 	.open = proc_utilization_open,
 	.read = seq_read,
@@ -4406,10 +4492,23 @@ static const struct file_operations current_cmd_proc_fops = {
 	.write = current_cmd_write,
 };
 
+static const struct file_operations power_path_cmd_fops = {
+	.owner = THIS_MODULE,
+	.open = cmd_open,
+	.read = power_path_cmd_read,
+	.write = power_path_cmd_write,
+};
+
+static const struct file_operations safety_timer_cmd_fops = {
+	.owner = THIS_MODULE,
+	.open = cmd_open,
+	.read = safety_timer_cmd_read,
+	.write = safety_timer_cmd_write,
+};
+
 static int mt_batteryNotify_probe(struct platform_device *dev)
 {
 	int ret_device_file = 0;
-	/* struct proc_dir_entry *entry = NULL; */
 	struct proc_dir_entry *battery_dir = NULL;
 
 	battery_log(BAT_LOG_CRTI, "******** mt_batteryNotify_probe!! ********\n");
@@ -4417,34 +4516,35 @@ static int mt_batteryNotify_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BatteryNotify);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_BN_TestMode);
 
+	/* Create mtk_battery_cmd directory */
 	battery_dir = proc_mkdir("mtk_battery_cmd", NULL);
 	if (!battery_dir) {
 		pr_err("[%s]: mkdir /proc/mtk_battery_cmd failed\n", __func__);
-	} else {
-#if 1
-		proc_create("battery_cmd", S_IRUGO | S_IWUSR, battery_dir, &battery_cmd_proc_fops);
-		battery_log(BAT_LOG_CRTI, "proc_create battery_cmd_proc_fops\n");
-
-		proc_create("current_cmd", S_IRUGO | S_IWUSR, battery_dir, &current_cmd_proc_fops);
-		battery_log(BAT_LOG_CRTI, "proc_create current_cmd_proc_fops\n");
-		proc_create("discharging_cmd", S_IRUGO | S_IWUSR, battery_dir,
-			    &discharging_cmd_proc_fops);
-		battery_log(BAT_LOG_CRTI, "proc_create discharging_cmd_proc_fops\n");
-
-
-#else
-		entry = create_proc_entry("battery_cmd", S_IRUGO | S_IWUSR, battery_dir);
-		if (entry) {
-			entry->read_proc = battery_cmd_read;
-			entry->write_proc = battery_cmd_write;
-		}
-#endif
+		goto _out;
 	}
 
+	/* Create nodes */
+	proc_create("battery_cmd", S_IRUGO | S_IWUSR, battery_dir, &battery_cmd_proc_fops);
+	battery_log(BAT_LOG_CRTI, "proc_create battery_cmd_proc_fops\n");
+
+	proc_create("current_cmd", S_IRUGO | S_IWUSR, battery_dir, &current_cmd_proc_fops);
+	battery_log(BAT_LOG_CRTI, "proc_create current_cmd_proc_fops\n");
+
+	proc_create("discharging_cmd", S_IRUGO | S_IWUSR, battery_dir,
+			&discharging_cmd_proc_fops);
+	battery_log(BAT_LOG_CRTI, "proc_create discharging_cmd_proc_fops\n");
+
+	proc_create("en_power_path", S_IRUGO | S_IWUSR, battery_dir,
+		&power_path_cmd_fops);
+	battery_log(BAT_LOG_CRTI, "proc_create power_path_proc_fops\n");
+
+	proc_create("en_safety_timer", S_IRUGO | S_IWUSR, battery_dir,
+		&safety_timer_cmd_fops);
+	battery_log(BAT_LOG_CRTI, "proc_create safety_timer_proc_fops\n");
+
+_out:
 	battery_log(BAT_LOG_CRTI, "******** mtk_battery_cmd!! ********\n");
-
 	return 0;
-
 }
 
 #ifdef CONFIG_OF

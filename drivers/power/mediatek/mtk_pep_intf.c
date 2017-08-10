@@ -27,11 +27,12 @@
 
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT
 static struct mutex pep_access_lock;
+static struct mutex pep_pmic_sync_lock;
 static struct wake_lock pep_suspend_lock;
 static int pep_ta_vchr_org = 5000; /* mA */
 static bool pep_to_check_chr_type = true;
 static bool pep_to_tune_ta_vchr = true;
-static bool pep_is_cable_out_occur = true;
+static bool pep_is_cable_out_occur; /* Plug out happend while detect PE+ */
 static bool pep_is_connect;
 static bool pep_is_enabled = true;
 
@@ -86,6 +87,22 @@ static int pep_set_mivr(u32 mivr)
 {
 	int ret = 0;
 
+	/* Since BQ25896 uses mivr to turn off power path
+	 * If power path is disabled, do not adjust mivr
+	 */
+#ifdef CONFIG_MTK_BQ25896_SUPPORT
+	bool is_power_path_enable = true;
+
+	ret = battery_charging_control(CHARGING_CMD_GET_IS_POWER_PATH_ENABLE,
+		&is_power_path_enable);
+	if (ret == 0 && !is_power_path_enable) {
+		battery_log(BAT_LOG_CRTI,
+			"%s: power path is disable, skip setting mivr = %d\n",
+			__func__, mivr);
+		return 0;
+	}
+#endif
+
 	ret = battery_charging_control(CHARGING_CMD_SET_VINDPM, &mivr);
 	if (ret < 0)
 		battery_log(BAT_LOG_CRTI, "%s: failed, ret = %d\n",
@@ -96,7 +113,7 @@ static int pep_set_mivr(u32 mivr)
 
 static int pep_leave(bool disable_charging)
 {
-	int ret = 0, chr_volt = 0;
+	int ret = 0;
 
 	battery_log(BAT_LOG_FULL, "%s: starts\n", __func__);
 
@@ -108,16 +125,6 @@ static int pep_leave(bool disable_charging)
 	/* Decrease TA voltage to 5V */
 	ret = mtk_pep_reset_ta_vchr();
 	if (ret < 0 || pep_is_connect)
-		goto _err;
-
-	ret = pep_enable_vbus_ovp(true);
-	if (ret < 0)
-		goto _err;
-
-	/* Set MIVR */
-	chr_volt = battery_meter_get_charger_voltage();
-	ret = pep_set_mivr(chr_volt - 1000);
-	if (ret < 0)
 		goto _err;
 
 	battery_log(BAT_LOG_CRTI, "%s: OK\n", __func__);
@@ -132,10 +139,23 @@ _err:
 static int pep_check_leave_status(void)
 {
 	int ret = 0;
-	u32 cv = 0, vbat = 0;
+	u32 cv = 0, vbat = 0, vchr = 0;
 	bool bif_exist = false;
 
 	battery_log(BAT_LOG_FULL, "%s: starts\n", __func__);
+
+	/* PE+ leaves unexpectedly */
+	vchr = battery_meter_get_charger_voltage();
+	if (abs(vchr - pep_ta_vchr_org) < 1000) {
+		battery_log(BAT_LOG_CRTI, "%s: PE+ leave unexpectedly\n",
+			__func__);
+		ret = pep_leave(true);
+		if (ret < 0 || pep_is_connect)
+			goto _err;
+
+		return ret;
+	}
+
 	battery_charging_control(CHARGING_CMD_GET_BIF_IS_EXIST, &bif_exist);
 
 	/* BIF exists, check CV & VBAT */
@@ -183,7 +203,7 @@ static int __pep_increase_ta_vchr(void)
 	kal_bool data; /* Use kal_bool, compatible with charging_hw_bq25896.c */
 
 	data = (increase ? KAL_TRUE : KAL_FALSE);
-	if (!pep_is_cable_out_occur) {
+	if (BMT_status.charger_exist) {
 		ret = battery_charging_control(
 			CHARGING_CMD_SET_TA_CURRENT_PATTERN, &data);
 		if (ret < 0)
@@ -194,13 +214,13 @@ static int __pep_increase_ta_vchr(void)
 		return ret;
 	}
 
-	/* Cable out is occurred */
+	/* TA is not exist */
 	ret = -EIO;
 	battery_log(BAT_LOG_CRTI, "%s: failed, cable out\n", __func__);
 	return ret;
 }
 
-static int pep_increase_ta_vchr(void)
+static int pep_increase_ta_vchr(u32 vchr_target)
 {
 	int ret = 0;
 	int vchr_before, vchr_after;
@@ -211,22 +231,21 @@ static int pep_increase_ta_vchr(void)
 		__pep_increase_ta_vchr();
 		vchr_after = battery_meter_get_charger_voltage();
 
-		if (vchr_after - vchr_before >= 1000) {
+		if (abs(vchr_after - vchr_target) <= 1000) {
 			battery_log(BAT_LOG_CRTI, "%s: OK\n", __func__);
 			return ret;
 		}
 		battery_log(BAT_LOG_CRTI,
-			"%s: retry, cnt = %d, vchr_before = %d, vchr_after = %d\n",
-			__func__, retry_cnt, vchr_before, vchr_after);
+			"%s: retry, cnt = %d, vchr = (%d, %d), vchr_target = %d\n",
+			__func__, retry_cnt, vchr_before, vchr_after, vchr_target);
 
 		retry_cnt++;
-	} while (!pep_is_cable_out_occur && BMT_status.charger_exist == KAL_TRUE
-		&& retry_cnt < 3);
+	} while (BMT_status.charger_exist && retry_cnt < 3);
 
 	ret = -EIO;
 	battery_log(BAT_LOG_CRTI,
-		"%s: failed, vchr_before = %d, vchr_after = %d\n",
-		__func__, vchr_before, vchr_after);
+		"%s: failed, vchr = (%d, %d), vchr_target = %d\n",
+		__func__, vchr_before, vchr_after, vchr_target);
 
 	return ret;
 }
@@ -243,7 +262,7 @@ static int pep_detect_ta(void)
 		goto _err;
 
 	pep_ta_vchr_org = battery_meter_get_charger_voltage();
-	ret = pep_increase_ta_vchr();
+	ret = pep_increase_ta_vchr(7000); /* mA */
 
 	if (ret == 0) {
 		pep_is_connect = true;
@@ -273,9 +292,6 @@ static int pep_init_ta(void)
 {
 	int ret = 0;
 
-	pep_is_connect = false;
-	pep_is_cable_out_occur = false;
-
 	battery_log(BAT_LOG_FULL, "%s: starts\n", __func__);
 	if (batt_cust_data.ta_9v_support || batt_cust_data.ta_12v_support)
 		pep_to_tune_ta_vchr = true;
@@ -290,12 +306,35 @@ static int pep_init_ta(void)
 	return ret;
 }
 
+static int pep_plugout_reset(void)
+{
+	int ret = 0;
+
+	battery_log(BAT_LOG_FULL, "%s: starts\n", __func__);
+
+	pep_to_check_chr_type = true;
+
+	ret = mtk_pep_reset_ta_vchr();
+	if (ret < 0)
+		goto _err;
+
+	/* Set cable out occur to false */
+	mtk_pep_set_is_cable_out_occur(false);
+	battery_log(BAT_LOG_CRTI, "%s: OK\n", __func__);
+	return ret;
+
+_err:
+	battery_log(BAT_LOG_CRTI, "%s: failed, ret = %d\n", __func__, ret);
+
+	return ret;
+}
 
 int mtk_pep_init(void)
 {
 	wake_lock_init(&pep_suspend_lock, WAKE_LOCK_SUSPEND,
 		"PE+ TA charger suspend wakelock");
 	mutex_init(&pep_access_lock);
+	mutex_init(&pep_pmic_sync_lock);
 	return 0;
 }
 
@@ -328,9 +367,17 @@ int mtk_pep_reset_ta_vchr(void)
 	if (pep_is_connect) {
 		battery_log(BAT_LOG_CRTI, "%s: failed, ret = %d\n",
 			__func__, ret);
+		/*
+		 * SET_INPUT_CURRENT success but chr_volt does not reset to 5V
+		 * set ret = -EIO to represent the case
+		 */
+		ret = -EIO;
 		return ret;
 	}
 
+	/* Enable OVP */
+	ret = pep_enable_vbus_ovp(true);
+	pep_set_mivr(4500);
 	battery_log(BAT_LOG_CRTI, "%s: OK\n", __func__);
 
 	return ret;
@@ -344,8 +391,6 @@ int mtk_pep_check_charger(void)
 	if (mtk_pep20_get_is_connect()) {
 		battery_log(BAT_LOG_CRTI, "%s: stop, PE+20 is connected\n",
 			__func__);
-		/* Set connect to false if PE+ is connected previously */
-		pep_is_connect = false;
 		return ret;
 	}
 
@@ -360,6 +405,9 @@ int mtk_pep_check_charger(void)
 	wake_lock(&pep_suspend_lock);
 
 	battery_log(BAT_LOG_FULL, "%s: starts\n", __func__);
+
+	if (!BMT_status.charger_exist || pep_is_cable_out_occur)
+		pep_plugout_reset();
 
 	/* Not to check charger type or
 	 * Not standard charger or
@@ -425,6 +473,9 @@ int mtk_pep_start_algorithm(void)
 
 	battery_log(BAT_LOG_FULL, "%s: starts\n", __func__);
 
+	if (!BMT_status.charger_exist || pep_is_cable_out_occur)
+		pep_plugout_reset();
+
 	/* TA is not connected */
 	if (!pep_is_connect) {
 		ret = -EIO;
@@ -445,7 +496,7 @@ int mtk_pep_start_algorithm(void)
 
 	/* Increase TA voltage to 9V */
 	if (batt_cust_data.ta_9v_support || batt_cust_data.ta_12v_support) {
-		ret = pep_increase_ta_vchr();
+		ret = pep_increase_ta_vchr(9000); /* mA */
 		if (ret < 0) {
 			battery_log(BAT_LOG_CRTI,
 				"%s: failed, cannot increase to 9V\n",
@@ -459,7 +510,7 @@ int mtk_pep_start_algorithm(void)
 
 	/* Increase TA voltage to 12V */
 	if (batt_cust_data.ta_12v_support) {
-		ret = pep_increase_ta_vchr();
+		ret = pep_increase_ta_vchr(12000); /* mA */
 		if (ret < 0) {
 			battery_log(BAT_LOG_CRTI,
 				"%s: failed, cannot increase to 12V\n",
@@ -493,35 +544,6 @@ _out:
 
 	wake_unlock(&pep_suspend_lock);
 	mutex_unlock(&pep_access_lock);
-
-	return ret;
-}
-
-int mtk_pep_plugout_reset(void)
-{
-	int ret = 0;
-
-	battery_log(BAT_LOG_FULL, "%s: starts\n", __func__);
-
-	pep_is_connect = false;
-	pep_is_cable_out_occur = true;
-	pep_to_check_chr_type = true;
-
-	/* Enable OVP */
-	ret = pep_enable_vbus_ovp(true);
-	if (ret < 0)
-		goto _err;
-
-	/* Set MIVR to 4.5V for vbus 5V */
-	ret = pep_set_mivr(4500);
-	if (ret < 0)
-		goto _err;
-
-	battery_log(BAT_LOG_CRTI, "%s: OK\n", __func__);
-	return ret;
-
-_err:
-	battery_log(BAT_LOG_CRTI, "%s: failed, ret = %d\n", __func__, ret);
 
 	return ret;
 }
@@ -578,6 +600,14 @@ void mtk_pep_set_is_enable(bool enable)
 	mutex_unlock(&pep_access_lock);
 }
 
+void mtk_pep_set_is_cable_out_occur(bool out)
+{
+	battery_log(BAT_LOG_CRTI, "%s: out = %d\n", __func__, out);
+	mutex_lock(&pep_pmic_sync_lock);
+	pep_is_cable_out_occur = out;
+	mutex_unlock(&pep_pmic_sync_lock);
+}
+
 /* PE+ get functions */
 
 bool mtk_pep_get_to_check_chr_type(void)
@@ -585,9 +615,15 @@ bool mtk_pep_get_to_check_chr_type(void)
 	return pep_to_check_chr_type;
 }
 
-
 bool mtk_pep_get_is_connect(void)
 {
+	/*
+	 * Prevent charger is not exist,
+	 * but not execute plugout_reset yet
+	 */
+	if (!BMT_status.charger_exist)
+		return false;
+
 	return pep_is_connect;
 }
 

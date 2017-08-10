@@ -20,12 +20,12 @@ extern int mtk_pep20_init(void);
 extern int mtk_pep20_reset_ta_vchr(void);
 extern int mtk_pep20_check_charger(void);
 extern int mtk_pep20_start_algorithm(void);
-extern int mtk_pep20_plugout_reset(void);
 extern int mtk_pep20_set_charging_current(CHR_CURRENT_ENUM *ichg,
 	CHR_CURRENT_ENUM *aicr);
 
 extern void mtk_pep20_set_to_check_chr_type(bool check);
 extern void mtk_pep20_set_is_enable(bool enable);
+extern void mtk_pep20_set_is_cable_out_occur(bool out);
 
 extern bool mtk_pep20_get_to_check_chr_type(void);
 extern bool mtk_pep20_get_is_connect(void);
@@ -36,22 +36,22 @@ static inline int mtk_pep20_init(void)
 {
 	return -ENOTSUPP;
 }
+
 static inline int mtk_pep20_reset_ta_vchr(void)
 {
 	return -ENOTSUPP;
 }
+
 static inline int mtk_pep20_check_charger(void)
 {
 	return -ENOTSUPP;
 }
+
 static inline int mtk_pep20_start_algorithm(void)
 {
 	return -ENOTSUPP;
 }
-static inline int mtk_pep20_plugout_reset(void)
-{
-	return -ENOTSUPP;
-}
+
 static inline int mtk_pep20_set_charging_current(CHR_CURRENT_ENUM *ichg,
 	CHR_CURRENT_ENUM *aicr)
 {
@@ -62,8 +62,11 @@ static inline void mtk_pep20_set_to_check_chr_type(bool check)
 {
 }
 
-
 static inline void mtk_pep20_set_is_enable(bool enable)
+{
+}
+
+static inline void mtk_pep20_set_is_cable_out_occur(bool out)
 {
 }
 
@@ -71,14 +74,17 @@ static inline bool mtk_pep20_get_to_check_chr_type(void)
 {
 	return false;
 }
+
 static inline bool mtk_pep20_get_is_connect(void)
 {
 	return false;
 }
+
 static inline bool mtk_pep20_get_is_enable(void)
 {
 	return false;
 }
+
 #endif /* CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT */
 
 #endif /* __MTK_PEP20_INTF_H */
