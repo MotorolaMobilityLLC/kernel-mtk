@@ -3767,7 +3767,7 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 #endif  /* CONFIG_HAVE_CLK */
 
 	/* MTK: common */
-	_mtk_mali_ged_log = ged_log_buf_alloc(4096 * 8, 128 * 4096 * 8, GED_LOG_BUF_TYPE_RINGBUFFER, "MALI", NULL);
+	/*_mtk_mali_ged_log = ged_log_buf_alloc(4096 * 8, 128 * 4096 * 8, GED_LOG_BUF_TYPE_RINGBUFFER, "MALI", NULL);*/
 
 	if (mtk_platform_init(pdev, kbdev))
 	{
