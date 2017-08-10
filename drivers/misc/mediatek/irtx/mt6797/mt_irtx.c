@@ -123,6 +123,8 @@ static void set_irtx_duty(int duty_cycle)
 	pr_debug("[IRTX] change IrTx duty cycle\n");
 
 	cwt = (CLOCK_SRC * 1000 * 1000) / (mt_irtx_dev.carrier_freq);	/* carrier freq. */
+	cdt = cwt / 3;
+
 	if (duty_cycle == 33)
 		cdt = cwt / 3;	/* duty=33% */
 	else if (duty_cycle == 30)
