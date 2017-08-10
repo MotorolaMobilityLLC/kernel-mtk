@@ -126,11 +126,11 @@
  */
 #define DISPDBG(fmt, args...)                                          \
 	do {                                                           \
-		if (g_loglevel >= DEBUG_LEVEL)                          \
+		if (g_loglevel >= DEBUG_LEVEL)                         \
 			dprec_logger_pr(DPREC_LOGGER_DEBUG,            \
 					fmt, ##args);                  \
-		if ((g_mobilelog > 0) && (g_loglevel >= DEBUG_LEVEL))    \
-			pr_debug("[DISP]func|%s\n", __func__);         \
+		if ((g_mobilelog > 0) && (g_loglevel >= DEBUG_LEVEL))  \
+			pr_debug("[DISP]"fmt, ##args);                 \
 	} while (0)
 
 /*
