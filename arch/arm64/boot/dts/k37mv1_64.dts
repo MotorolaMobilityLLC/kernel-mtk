@@ -1,11 +1,21 @@
+#include <generated/autoconf.h>
 
+#ifdef CONFIG_MTK_DTBO_FEATURE
 /dts-v1/;
-
+/plugin/;
+#include "mt6735m-pinfunc.h"
+#include <dt-bindings/mmc/mt67xx-msdc.h>
+#else
 #include "mt6735m.dtsi"
+#endif
 #include <dt-bindings/lcm/otm9608_qhd_dsi_cmd.dtsi>
 
 / {
-	cpus {	#address-cells = <1>;
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	cpus {
+		#address-cells = <1>;
 		#size-cells = <0>;
 
 		cpu0: cpu@000 {
@@ -48,7 +58,6 @@
 			clock-frequency = <1100000000>;
 		};
 	};
-	
 
 	bus {
 		compatible = "simple-bus";

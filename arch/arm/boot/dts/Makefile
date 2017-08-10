@@ -525,6 +525,10 @@ else
 DTB_LIST := $(dtb-y)
 endif
 
+ifeq ($(strip $(CONFIG_BUILD_ARM_DTB_OVERLAY_IMAGE)), y)
+DTB_LIST += $(subst $\",,$(CONFIG_BUILD_ARM_DTB_OVERLAY_IMAGE_NAMES)).dtb
+endif
+
 targets += dtbs dtbs_install
 targets += $(DTB_LIST)
 endif
@@ -532,9 +536,6 @@ endif
 # *.dtb used to be generated in the directory above. Clean out the
 # old build results so people don't accidentally use them.
 dtbs: $(addprefix $(obj)/, $(DTB_LIST))
-ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
-	$(Q)$(MAKE) $(build)=arch/arm/boot/dts/overlays
-endif
 	$(Q)rm -f $(obj)/../*.dtb
 
 clean-files := *.dtb

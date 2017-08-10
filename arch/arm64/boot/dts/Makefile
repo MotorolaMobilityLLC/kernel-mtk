@@ -10,11 +10,13 @@ DTB_LIST := $(addsuffix .dtb,$(DTB_NAMES))
 else
 DTB_LIST := $(dtb-y)
 endif
+
+ifeq ($(strip $(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE)), y)
+DTB_LIST += $(subst $\",,$(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES)).dtb
+endif
+
 targets += $(DTB_LIST)
 
 dtbs: $(addprefix $(obj)/, $(DTB_LIST))
-ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
-	$(Q)$(MAKE) $(build)=arch/arm64/boot/dts/overlays
-endif
 
 clean-files := dts/*.dtb *.dtb

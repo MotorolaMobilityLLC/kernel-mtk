@@ -15,10 +15,9 @@ else
 endif
 
 ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
-DTBO_NAME := $(notdir $(subst $\",,$(if $(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES),$(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES),$(CONFIG_BUILD_ARM_APPENDED_DTB_IMAGE_NAMES)))-overlay)
-DTBO_OUT := $(objtree)/arch/$(SRCARCH)/boot/dts/overlays
+DTBO_NAME := $(subst $\",,$(if $(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE),$(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES),$(CONFIG_BUILD_ARM_DTB_OVERLAY_IMAGE_NAMES)))
+DTBO_OUT := $(objtree)/arch/$(SRCARCH)/boot/dts
 DTS_OVERLAY := $(DTBO_OUT)/$(DTBO_NAME).dts
-DRVGEN_OUT := $(DTBO_OUT)
 
 export DTS_OVERLAY
 export DTBO_NAME
@@ -47,11 +46,7 @@ $(DRVGEN_OUT)/cust.dtsi: $(DRVGEN_TOOL) $(DWS_FILE)
 	@mkdir -p $(dir $@)
 	$(python) $(DRVGEN_TOOL) $(DWS_FILE) $(dir $@) $(dir $@) cust_dtsi
 ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
-	@echo "" > $(DRVGEN_OUT)/../cust.dtsi
-$(DTS_OVERLAY): $(DRVGEN_OUT)/cust.dtsi
-	@echo -e '/dts-v1/;\n/plugin/;\n' > $@
-	@cat $< >> $@
-
+	echo "DTB OVERLAY:" $(DTS_OVERLAY)
 DTB_OVERLAY_IMAGE_TAGERT := $(DTBO_OUT)/dtbo.img
 $(DTB_OVERLAY_IMAGE_TAGERT) : PRIVATE_DTB_OVERLAY_OBJ:=$(basename $(DTS_OVERLAY)).dtb
 $(DTB_OVERLAY_IMAGE_TAGERT) : PRIVATE_DTB_OVERLAY_HDR:=$(srctree)/scripts/dtbo.cfg
@@ -60,7 +55,7 @@ $(DTB_OVERLAY_IMAGE_TAGERT) : $(PRIVATE_DTB_OVERLAY_OBJ) dtbs $(PRIVATE_DTB_OVER
 	@echo Singing the generated overlay dtbo.
 	$(PRIVATE_MKIMAGE_TOOL) $(PRIVATE_DTB_OVERLAY_OBJ) $(PRIVATE_DTB_OVERLAY_HDR)  > $@
 
-.PHONY: dtboimage
+.PHONY: dtboimage dtbs
 dtboimage : $(DTB_OVERLAY_IMAGE_TAGERT)
 endif
 
