@@ -192,14 +192,6 @@ static s32 i2c_set_speed(struct mt_i2c_t *i2c)
 	/* I2CLOG("i2c_set_speed=================\n"); */
 	/* compare the current speed with the latest mode */
 
-	if ((i2c->speed == i2c->last_speed) && (i2c->mode == i2c->last_mode)) {
-		/* I2CLOG(  " i2c_set_speed,i2c->speed=%d, i2c->last_speed=%d,
-			i2c->timing_reg =0x%x\n",i2c->speed, i2c->last_speed,i2c->timing_reg); */
-		/* I2CLOG(  " i2c_set_speed,i2c->mode=%d, i2c->last_mode=%d,
-			high_speed_reg =0x%x\n",i2c->mode, i2c->last_mode,i2c->high_speed_reg); */
-		ret = 0;
-		goto end;
-	}
 
 	mode = i2c->mode;
 	khz = i2c->speed;
