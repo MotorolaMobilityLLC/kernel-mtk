@@ -41,7 +41,7 @@
 #define PEDO_TAG					"<PEDOMETER> "
 #define PEDO_FUN(f)				pr_debug(PEDO_TAG"%s\n", __func__)
 #define PEDO_ERR(fmt, args...)	pr_err(PEDO_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define PEDO_LOG(fmt, args...)	pr_debug(PEDO_TAG fmt, ##args)
+#define PEDO_LOG(fmt, args...)	pr_warn(PEDO_TAG fmt, ##args)
 #define PEDO_VER(fmt, args...)  pr_debug(PEDO_TAG"%s: "fmt, __func__, ##args)
 
 #define OP_PEDO_DELAY	0X01
@@ -72,6 +72,8 @@ struct pedo_control_path {
 	int (*open_report_data)(int open);
 	int (*enable_nodata)(int en);
 	int (*set_delay)(u64 delay);
+	int (*batch)(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
+	int (*flush)(void);/* open data rerport to HAL */
 	bool is_report_input_direct;
 	bool is_support_batch;
 };

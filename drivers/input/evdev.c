@@ -145,9 +145,6 @@ static void __pass_event(struct evdev_client *client,
 		 * This effectively "drops" all unconsumed events, leaving
 		 * EV_SYN/SYN_DROPPED plus the newest event in the queue.
 		 */
-#ifdef CONFIG_CUSTOM_KERNEL_SENSORHUB
-		pr_err("%s SYN_DROPPED\n", client->evdev->handle.dev->name);
-#endif
 		client->tail = (client->head - 2) & (client->bufsize - 1);
 
 		client->buffer[client->tail].time = event->time;
@@ -250,19 +247,14 @@ static int evdev_flush(struct file *file, fl_owner_t id)
 {
 	struct evdev_client *client = file->private_data;
 	struct evdev *evdev = client->evdev;
-	int retval;
 
-	retval = mutex_lock_interruptible(&evdev->mutex);
-	if (retval)
-		return retval;
+	mutex_lock(&evdev->mutex);
 
-	if (!evdev->exist || client->revoked)
-		retval = -ENODEV;
-	else
-		retval = input_flush_device(&evdev->handle, file);
+	if (evdev->exist && !client->revoked)
+		input_flush_device(&evdev->handle, file);
 
 	mutex_unlock(&evdev->mutex);
-	return retval;
+	return 0;
 }
 
 static void evdev_free(struct device *dev)
@@ -413,24 +405,6 @@ static int evdev_open(struct inode *inode, struct file *file)
 	struct evdev_client *client;
 	int error;
 
-#ifdef CONFIG_CUSTOM_KERNEL_SENSORHUB
-	if ((strcmp(evdev->handle.dev->name, "m_acc_input") == 0) ||
-		(strcmp(evdev->handle.dev->name, "m_mag_input") == 0) ||
-		(strcmp(evdev->handle.dev->name, "m_gyro_input") == 0) ||
-		(strcmp(evdev->handle.dev->name, "m_uncali_gyro_input") == 0) ||
-		(strcmp(evdev->handle.dev->name, "m_uncali_mag_input") == 0) ||
-		(strcmp(evdev->handle.dev->name, "m_grv_input") == 0) ||
-		(strcmp(evdev->handle.dev->name, "m_gmrv_input") == 0) ||
-		(strcmp(evdev->handle.dev->name, "m_grav_input") == 0) ||
-		(strcmp(evdev->handle.dev->name, "m_rv_input") == 0) ||
-		(strcmp(evdev->handle.dev->name, "m_la_input") == 0) ||
-		(strcmp(evdev->handle.dev->name, "m_act_input") == 0) ||
-		(strcmp(evdev->handle.dev->name, "m_pedo_input") == 0)) {
-		bufsize = 1024;
-		size = sizeof(struct evdev_client) +
-						bufsize * sizeof(struct input_event);
-	}
-#endif
 	client = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
 	if (!client)
 		client = vzalloc(size);

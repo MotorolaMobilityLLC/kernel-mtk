@@ -328,20 +328,49 @@ static ssize_t pedo_store_batch(struct device *dev, struct device_attribute *att
 				const char *buf, size_t count)
 {
 	struct pedo_context *cxt = NULL;
+	int handle = 0, flag = 0, err = 0;
+	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
 
-	PEDO_LOG("pedo_store_batch buf=%s\n", buf);
+	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
+	if (err != 4)
+		PEDO_ERR("pedo_store_batch param error: err = %d\n", err);
+
+	PEDO_LOG("pedo_store_batch param: handle %d, flag:%d samplingPeriodNs:%lld, maxBatchReportLatencyNs: %lld\n",
+			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_lock(&pedo_context_obj->pedo_op_mutex);
 	cxt = pedo_context_obj;
 	if (cxt->pedo_ctl.is_support_batch) {
-
-		if (!strncmp(buf, "1", 1))
+		if (maxBatchReportLatencyNs != 0) {
 			cxt->is_batch_enable = true;
-		else if (!strncmp(buf, "0", 1))
+			if (true == cxt->is_polling_run) {
+				cxt->is_polling_run = false;
+				smp_mb();  /* for memory barrier */
+				del_timer_sync(&cxt->timer);
+				smp_mb();  /* for memory barrier */
+				cancel_work_sync(&cxt->report);
+			}
+		} else if (maxBatchReportLatencyNs == 0) {
 			cxt->is_batch_enable = false;
+			if (false == cxt->is_polling_run) {
+				if (false == cxt->pedo_ctl.is_report_input_direct && true == cxt->is_active_data) {
+					mod_timer(&cxt->timer,
+						  jiffies + atomic_read(&cxt->delay) / (1000 / HZ));
+					cxt->is_polling_run = true;
+				}
+			}
+		}
 		else
 			PEDO_ERR(" pedo_store_batch error !!\n");
-	} else
+	} else {
+		maxBatchReportLatencyNs = 0;
 		PEDO_LOG(" pedo_store_batch not support\n");
+	}
+	if (NULL != cxt->pedo_ctl.batch)
+		err = cxt->pedo_ctl.batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
+	else
+		PEDO_ERR("PEDO DRIVER OLD ARCHITECTURE DON'T SUPPORT PEDO COMMON VERSION BATCH\n");
+	if (err < 0)
+		PEDO_ERR("pedo enable batch err %d\n", err);
 	mutex_unlock(&pedo_context_obj->pedo_op_mutex);
 	PEDO_LOG(" pedo_store_batch done: %d\n", cxt->is_batch_enable);
 	return count;
@@ -356,7 +385,24 @@ static ssize_t pedo_show_batch(struct device *dev, struct device_attribute *attr
 static ssize_t pedo_store_flush(struct device *dev, struct device_attribute *attr,
 				const char *buf, size_t count)
 {
+	struct pedo_context *cxt = NULL;
+	int handle = 0, err = 0;
 
+	err = kstrtoint(buf, 10, &handle);
+	if (err != 0)
+		PEDO_ERR("pedo_store_flush param error: err = %d\n", err);
+
+	PEDO_ERR("pedo_store_flush param: handle %d\n", handle);
+
+	mutex_lock(&pedo_context_obj->pedo_op_mutex);
+	cxt = pedo_context_obj;
+	if (NULL != cxt->pedo_ctl.flush)
+		err = cxt->pedo_ctl.flush();
+	else
+		PEDO_ERR("PEDO DRIVER OLD ARCHITECTURE DON'T SUPPORT PEDO COMMON VERSION FLUSH\n");
+	if (err < 0)
+		PEDO_ERR("pedo enable flush err %d\n", err);
+	mutex_unlock(&pedo_context_obj->pedo_op_mutex);
 	return count;
 }
 
@@ -541,6 +587,8 @@ int pedo_register_control_path(struct pedo_control_path *ctl)
 	cxt->pedo_ctl.open_report_data = ctl->open_report_data;
 	cxt->pedo_ctl.enable_nodata = ctl->enable_nodata;
 	cxt->pedo_ctl.is_support_batch = ctl->is_support_batch;
+	cxt->pedo_ctl.batch = ctl->batch;
+	cxt->pedo_ctl.flush = ctl->flush;
 
 	if (NULL == cxt->pedo_ctl.set_delay || NULL == cxt->pedo_ctl.open_report_data
 	    || NULL == cxt->pedo_ctl.enable_nodata) {
@@ -570,6 +618,7 @@ int pedo_data_report(struct hwm_sensor_data *data, int status)
 	struct sensor_event event;
 	int err = 0;
 
+	event.flush_action = false;
 	event.time_stamp = data->time;
 	event.word[0] = data->values[1];/* length */
 	event.word[1] = data->values[2];/* freq */

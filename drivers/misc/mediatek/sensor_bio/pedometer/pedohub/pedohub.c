@@ -146,6 +146,14 @@ static int pedometer_set_delay(u64 delay)
 	return 0;
 #endif
 }
+static int pedometer_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
+{
+	return sensor_batch_to_hub(ID_PEDOMETER, flag, samplingPeriodNs, maxBatchReportLatencyNs);
+}
+static int pedometer_flush(void)
+{
+	return sensor_flush_to_hub(ID_PEDOMETER);
+}
 static int pedometer_recv_data(struct data_unit_t *event, void *reserved)
 {
 	int err = 0;
@@ -179,6 +187,8 @@ static int pedohub_local_init(void)
 	ctl.open_report_data = pedometer_open_report_data;
 	ctl.enable_nodata = pedometer_enable_nodata;
 	ctl.set_delay = pedometer_set_delay;
+	ctl.batch = pedometer_batch;
+	ctl.flush = pedometer_flush;
 	ctl.is_report_input_direct = false;
 	ctl.is_support_batch = true;
 	err = pedo_register_control_path(&ctl);
@@ -202,6 +212,7 @@ static int pedohub_local_init(void)
 	return 0;
 exit:
 	pedohub_delete_attr(&(pedohub_init_info.platform_diver_addr->driver));
+exit_create_attr_failed:
 	return -1;
 }
 
