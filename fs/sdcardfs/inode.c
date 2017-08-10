@@ -222,6 +222,7 @@ out:
 
 static int touch(char *abs_path, mode_t mode) {
 	struct file *filp = filp_open(abs_path, O_RDWR|O_CREAT|O_EXCL|O_NOFOLLOW, mode);
+
 	if (IS_ERR(filp)) {
 		if (PTR_ERR(filp) == -EEXIST) {
 			return 0;
@@ -343,17 +344,20 @@ static int sdcardfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode
 		strcpy(nomedia_fullpath, nomedia_dir_name);
 		free_page((unsigned long)page_buf);
 		strcat(nomedia_fullpath, "/.nomedia");
+		unlock_dir(lower_parent_dentry);
 		touch_err = touch(nomedia_fullpath, 0664);
 		if (touch_err) {
 			printk(KERN_ERR "sdcardfs: failed to touch(%s): %d\n",
 							nomedia_fullpath, touch_err);
 			kfree(nomedia_fullpath);
-			goto out;
+			goto out_touch;
 		}
 		kfree(nomedia_fullpath);
+		goto out_touch;
 	}
 out:
 	unlock_dir(lower_parent_dentry);
+out_touch:
 	sdcardfs_put_lower_path(dentry, &lower_path);
 out_revert:
 	REVERT_CRED(saved_cred);

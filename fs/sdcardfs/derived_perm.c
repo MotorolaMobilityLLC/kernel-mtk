@@ -110,18 +110,34 @@ void get_derived_permission(struct dentry *parent, struct dentry *dentry)
 	get_derived_permission_new(parent, dentry, dentry);
 }
 
-void get_derive_permissions_recursive(struct dentry *parent)
+
+void get_derive_permissions_recursive_internal(struct dentry *parent)
 {
 	struct dentry *dentry;
+	dget(parent);
 	list_for_each_entry(dentry, &parent->d_subdirs, d_child) {
 		if (dentry && dentry->d_inode) {
+			mode_t mode;
+
+			if (dentry == parent)
+				continue;
 			mutex_lock(&dentry->d_inode->i_mutex);
 			get_derived_permission(parent, dentry);
 			fix_derived_permission(dentry->d_inode);
+			mode = dentry->d_inode->i_mode;
 			mutex_unlock(&dentry->d_inode->i_mutex);
-			get_derive_permissions_recursive(dentry);
+			if (S_ISDIR(mode))
+				get_derive_permissions_recursive_internal(dentry);
 		}
 	}
+	dput(parent);
+}
+
+void get_derive_permissions_recursive(struct dentry *parent)
+{
+	lockdep_off();
+	get_derive_permissions_recursive_internal(parent);
+	lockdep_on();
 }
 
 /* main function for updating derived permission */
