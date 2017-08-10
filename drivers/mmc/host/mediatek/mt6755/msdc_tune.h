@@ -14,6 +14,8 @@
 #ifndef _MSDC_TUNE_H_
 #define _MSDC_TUNE_H_
 
+#define MSDC_MAX_POWER_CYCLE            (5)
+
 #define MSDC_CLKTXDLY                   0
 #define MSDC_DDRCKD                     0
 

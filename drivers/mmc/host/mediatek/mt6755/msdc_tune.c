@@ -42,7 +42,6 @@
 #define MSDC_MAX_W_TIMEOUT_TUNE         (5)
 #define MSDC_MAX_W_TIMEOUT_TUNE_EMMC    (64)
 #define MSDC_MAX_R_TIMEOUT_TUNE         (3)
-#define MSDC_MAX_POWER_CYCLE            (5)
 
 #define MSDC_MAX_CONTINUOUS_FAIL_REQUEST_COUNT (50)
 
@@ -281,8 +280,9 @@ u32 msdc_power_tuning(struct msdc_host *host)
 		return 1;
 #endif
 
-	if (!host->error_tune_enable)
+	/* if (!host->error_tune_enable)
 		return 1;
+	*/
 
 	if ((host->sd_30_busy > 0)
 	 && (host->sd_30_busy <= MSDC_MAX_POWER_CYCLE)) {

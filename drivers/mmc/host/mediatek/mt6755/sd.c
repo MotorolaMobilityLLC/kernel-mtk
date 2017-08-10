@@ -4195,8 +4195,14 @@ static void msdc_do_request_with_retry(struct msdc_host *host,
 		if (cmd->error == (unsigned int)-ENOMEDIUM)
 			return;
 
-		if (msdc_data_timeout_tune(host, data))
+		if (msdc_data_timeout_tune(host, data)) {
+			if (host->power_cycle >= MSDC_MAX_POWER_CYCLE) {
+				cmd->error = (unsigned int)-ENOMEDIUM;
+				data->error = (unsigned int)-ENOMEDIUM;
+				pr_err("msdc1, data timeout out of limits, return -ENOMEDIUM\n");
+			}
 			return;
+		}
 
 		/* clear the error condition. */
 		cmd->error = 0;
@@ -5437,8 +5443,11 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 		host->mmc->is_data_dma = 0;
 #endif
-		if (inten & MSDC_INT_XFER_COMPL)
+		if (inten & MSDC_INT_XFER_COMPL) {
+			if (host->hw->host_function == MSDC_SD)
+				host->power_cycle = 0;
 			goto done;
+		}
 	}
 
 	if (intsts & datsts) {
