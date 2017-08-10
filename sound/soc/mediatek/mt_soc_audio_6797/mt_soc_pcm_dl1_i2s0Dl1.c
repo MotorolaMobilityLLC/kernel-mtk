@@ -189,20 +189,6 @@ static int mtk_pcm_I2S0dl1_stop(struct snd_pcm_substream *substream)
 
 	SetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1, false);
 
-	/* here start digital part */
-	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I05,
-		      Soc_Aud_InterConnectionOutput_O00);
-	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I06,
-		      Soc_Aud_InterConnectionOutput_O01);
-	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I05,
-		      Soc_Aud_InterConnectionOutput_O03);
-	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I06,
-		      Soc_Aud_InterConnectionOutput_O04);
-	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I05,
-		      Soc_Aud_InterConnectionOutput_O28);
-	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I06,
-		      Soc_Aud_InterConnectionOutput_O29);
-
 	ClearMemBlock(Soc_Aud_Digital_Block_MEM_DL1);
 	return 0;
 }
@@ -375,6 +361,19 @@ static int mtk_pcm_I2S0dl1_close(struct snd_pcm_substream *substream)
 	pr_warn("%s\n", __func__);
 
 	if (mPrepareDone == true) {
+		/* here start digital part */
+		SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I05,
+			      Soc_Aud_InterConnectionOutput_O00);
+		SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I06,
+			      Soc_Aud_InterConnectionOutput_O01);
+		SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I05,
+			      Soc_Aud_InterConnectionOutput_O03);
+		SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I06,
+			      Soc_Aud_InterConnectionOutput_O04);
+		SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I05,
+			      Soc_Aud_InterConnectionOutput_O28);
+		SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I06,
+			      Soc_Aud_InterConnectionOutput_O29);
 		/* stop DAC output */
 		SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC, false);
 		if (GetI2SDacEnable() == false)
@@ -455,7 +454,19 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 						  Soc_Aud_InterConnectionOutput_O29);
 			mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_16BITS;
 		}
-
+		/* here start digital part */
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I05,
+			      Soc_Aud_InterConnectionOutput_O00);
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I06,
+			      Soc_Aud_InterConnectionOutput_O01);
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I05,
+			      Soc_Aud_InterConnectionOutput_O03);
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I06,
+			      Soc_Aud_InterConnectionOutput_O04);
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I05,
+			      Soc_Aud_InterConnectionOutput_O28);
+		SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I06,
+			      Soc_Aud_InterConnectionOutput_O29);
 		/* TODO: KC: use Set2ndI2SOut() to set i2s3 */
 		/* I2S out Setting */
 		u32AudioI2S = SampleRateTransform(runtime->rate, Soc_Aud_Digital_Block_I2S_OUT_2) << 8;
@@ -507,20 +518,6 @@ static int mtk_pcm_I2S0dl1_start(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
 	pr_warn("%s\n", __func__);
-	/* here start digital part */
-
-	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I05,
-		      Soc_Aud_InterConnectionOutput_O00);
-	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I06,
-		      Soc_Aud_InterConnectionOutput_O01);
-	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I05,
-		      Soc_Aud_InterConnectionOutput_O03);
-	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I06,
-		      Soc_Aud_InterConnectionOutput_O04);
-	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I05,
-		      Soc_Aud_InterConnectionOutput_O28);
-	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I06,
-		      Soc_Aud_InterConnectionOutput_O29);
 
 	/* here to set interrupt */
 	irq_add_user(substream,
