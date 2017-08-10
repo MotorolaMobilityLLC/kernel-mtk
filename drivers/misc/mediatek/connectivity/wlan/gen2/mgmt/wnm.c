@@ -498,6 +498,10 @@ VOID wnmRecvBTMRequest(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 	prBtmParam->u2DisassocTimer = prRxFrame->u2DisassocTimer;
 	prBtmParam->ucDialogToken = prRxFrame->ucDialogToken;
 	pucOptInfo = &prRxFrame->aucOptInfo[0];
+	if (!pucOptInfo) {
+		DBGLOG(WNM, WARN, "pucOptInfo == NULL\n");
+		return;
+	}
 	ucRequestMode = prBtmParam->ucRequestMode;
 	u2TmpLen = OFFSET_OF(struct ACTION_BTM_REQ_FRAME_T, aucOptInfo);
 	if (ucRequestMode & BTM_REQ_MODE_BSS_TERM_INCLUDE) {
