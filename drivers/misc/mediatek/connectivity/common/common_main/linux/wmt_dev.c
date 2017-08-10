@@ -121,9 +121,14 @@ static UINT8 gLpbkBuf[WMT_LPBK_BUF_LEN] = { 0 };
 static UINT32 gLpbkBufLog;	/* George LPBK debug */
 static INT32 gWmtInitDone;
 static wait_queue_head_t gWmtInitWq;
-static INT32 DisablePoweronConnsys;
+#ifdef CONFIG_MTK_COMBO_COMM_APO
+UINT32 always_pwr_on_flag = 1;
+#else
+UINT32 always_pwr_on_flag;
+#endif
 P_WMT_PATCH_INFO pPatchInfo = NULL;
 UINT32 pAtchNum = 0;
+UINT32 currentLpbkStatus;
 
 
 
@@ -153,7 +158,6 @@ OSAL_SLEEPABLE_LOCK g_es_lr_lock;
 static OSAL_UNSLEEPABLE_LOCK g_temp_query_spinlock;
 
 
-#ifndef CONFIG_MTK_COMBO_COMM_APO
 #ifdef CONFIG_EARLYSUSPEND
 static VOID wmt_dev_early_suspend(struct early_suspend *h)
 {
@@ -227,7 +231,6 @@ static INT32 wmt_fb_notifier_callback(struct notifier_block *self, ULONG event, 
 	return 0;
 }
 #endif /* CONFIG_EARLYSUSPEND */
-#endif /* CONFIG_MTK_COMBO_COMM_APO */
 /*******************************************************************************
 *                          F U N C T I O N S
 ********************************************************************************
@@ -235,34 +238,53 @@ static INT32 wmt_fb_notifier_callback(struct notifier_block *self, ULONG event, 
 
 static VOID wmt_pwr_on_off_handler(struct work_struct *work)
 {
-	INT32 retryCounter = 1;
+	INT32 retryCounter = 5;
+	UINT32 lpbk_req_onoff;
 
 	WMT_DBG_FUNC("wmt_pwr_on_off_handler start to run\n");
 
-	if (DisablePoweronConnsys == 0) {
+	if (always_pwr_on_flag == 0) {
 		osal_lock_sleepable_lock(&g_es_lr_lock);
-
-		if (g_es_lr_flag_for_lpbk_onoff) {
-			do {
-				if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_on(WMTDRV_TYPE_LPBK)) {
-					WMT_WARN_FUNC("WMT turn on LPBK fail, retrying, retryCounter left:%d!\n",
-					retryCounter);
-					retryCounter--;
-					osal_sleep_ms(1000);
-				} else {
-					WMT_INFO_FUNC("WMT turn on LPBK suceed\n");
-					break;
-				}
-			} while (retryCounter > 0);
-		} else {
-			if (MTK_WCN_BOOL_FALSE == mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK))
-				WMT_WARN_FUNC("WMT turn off LPBK fail\n");
-			else
-				WMT_DBG_FUNC("WMT turn off LPBK suceed\n");
-		}
-
+		lpbk_req_onoff = g_es_lr_flag_for_lpbk_onoff;
 		osal_unlock_sleepable_lock(&g_es_lr_lock);
+		if (currentLpbkStatus != lpbk_req_onoff)
+			currentLpbkStatus = wmt_lpbk_handler(lpbk_req_onoff, retryCounter);
+		else
+			WMT_DBG_FUNC("drop wmt start to run\n");
 	}
+}
+
+UINT32 wmt_lpbk_handler(UINT32 on_off_flag, UINT32 retry)
+{
+	UINT32 retry_count;
+	UINT32 lpbk_status;
+
+	retry_count = retry;
+	if (on_off_flag) {
+		do {
+			if (mtk_wcn_wmt_func_on(WMTDRV_TYPE_LPBK) == MTK_WCN_BOOL_FALSE) {
+				WMT_WARN_FUNC("WMT turn on LPBK fail, retrying, retryCounter left:%d!\n",
+					      retry_count);
+				retry_count--;
+				osal_sleep_ms(1000);
+				if (retry_count == 0)
+					lpbk_status = 0;
+			} else {
+				WMT_DBG_FUNC("WMT turn on LPBK suceed\n");
+				lpbk_status = 1;
+				break;
+			}
+		} while (retry_count > 0);
+	} else {
+		if (mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK) == MTK_WCN_BOOL_FALSE) {
+			WMT_WARN_FUNC("WMT turn off LPBK fail\n");
+			lpbk_status = 1;
+		} else {
+			WMT_DBG_FUNC("WMT turn off LPBK suceed\n");
+			lpbk_status = 0;
+		}
+	}
+	return lpbk_status;
 }
 
 MTK_WCN_BOOL wmt_dev_get_early_suspend_state(VOID)
@@ -846,30 +868,32 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			else
 				bRet = mtk_wcn_wmt_func_off(arg & 0xF);
 
-			iRet = (MTK_WCN_BOOL_FALSE == bRet) ? -EFAULT : 0;
+			iRet = (bRet == MTK_WCN_BOOL_FALSE) ? -EFAULT : 0;
 		} while (0);
 		break;
 	case WMT_IOCTL_LPBK_POWER_CTRL:
-		/*switch Loopback function on/off
-		   arg:
-		   bit0 = 1:turn loopback function on
-		   bit0 = 0:turn loopback function off
-		   bit1 = 1:do not power on connsys
-		   bit1 = 0:do power on connsys
-		 */
-		DisablePoweronConnsys = (arg & 0x02) >> 1;
-		if (DisablePoweronConnsys == 0) {
-			do {
-				MTK_WCN_BOOL bRet = MTK_WCN_BOOL_FALSE;
+		do {
+			MTK_WCN_BOOL bRet = MTK_WCN_BOOL_TRUE;
 
-				if (arg & 0x01)
-					bRet = mtk_wcn_wmt_func_on(WMTDRV_TYPE_LPBK);
-				else
+			switch (arg) {
+			case 0:
+				if (always_pwr_on_flag)
 					bRet = mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK);
-				iRet = (MTK_WCN_BOOL_FALSE == bRet) ? -EFAULT : 0;
+				break;
+			case 1:
+				if (always_pwr_on_flag)
+					bRet = mtk_wcn_wmt_func_on(WMTDRV_TYPE_LPBK);
+				break;
+			case 2:
+				bRet = mtk_wcn_wmt_func_on(WMTDRV_TYPE_LPBK);
+				break;
+			case 3:
+				bRet = mtk_wcn_wmt_func_off(WMTDRV_TYPE_LPBK);
+				break;
+			}
+			iRet = (bRet == MTK_WCN_BOOL_FALSE) ? -EFAULT : 0;
+		} while (0);
 
-			} while (0);
-		}
 		break;
 	case WMT_IOCTL_LPBK_TEST:
 		do {
@@ -1382,7 +1406,6 @@ static INT32 WMT_init(VOID)
 
 	osal_sleepable_lock_init(&g_es_lr_lock);
 	INIT_WORK(&gPwrOnOffWork, wmt_pwr_on_off_handler);
-#ifndef CONFIG_MTK_COMBO_COMM_APO
 #ifdef CONFIG_EARLYSUSPEND
 	register_early_suspend(&wmt_early_suspend_handler);
 	WMT_INFO_FUNC("register_early_suspend finished\n");
@@ -1394,7 +1417,6 @@ static INT32 WMT_init(VOID)
 	else
 		WMT_INFO_FUNC("wmt register fb_notifier OK!\n");
 #endif /* CONFIG_EARLYSUSPEND */
-#endif /* CONFIG_MTK_COMBO_COMM_APO */
 	WMT_INFO_FUNC("success\n");
 
 	return 0;
@@ -1432,14 +1454,12 @@ static VOID WMT_exit(VOID)
 
 	osal_sleepable_lock_deinit(&g_es_lr_lock);
 	osal_unsleepable_lock_deinit(&g_temp_query_spinlock);
-#ifndef CONFIG_MTK_COMBO_COMM_APO
 #ifdef CONFIG_EARLYSUSPEND
 	unregister_early_suspend(&wmt_early_suspend_handler);
 	WMT_INFO_FUNC("unregister_early_suspend finished\n");
 #else
 	fb_unregister_client(&wmt_fb_notifier);
 #endif /* CONFIG_EARLYSUSPEND */
-#endif /* CONFIG_MTK_COMBO_COMM_APO */
 
 	wmt_dev_bgw_desense_deinit();
 

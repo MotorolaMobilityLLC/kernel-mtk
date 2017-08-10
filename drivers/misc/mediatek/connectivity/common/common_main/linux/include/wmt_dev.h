@@ -30,6 +30,7 @@ INT32 wmt_dev_patch_put(osal_firmware **ppPatch);
 VOID wmt_dev_patch_info_free(VOID);
 VOID wmt_dev_send_cmd_to_daemon(UINT32 cmd);
 MTK_WCN_BOOL wmt_dev_get_early_suspend_state(VOID);
+UINT32 wmt_lpbk_handler(UINT32 on_off_flag, UINT32 retry);
 extern LONG wmt_dev_tm_temp_query(VOID);
 
 #endif /*_WMT_DEV_H_*/
