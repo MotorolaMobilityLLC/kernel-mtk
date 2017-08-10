@@ -65,6 +65,10 @@ typedef struct _WLAN_INFO_T {
 
 	struct ESS_SCAN_RESULT_T arScanResultEss[CFG_MAX_NUM_BSS_LIST];
 	UINT_32 u4ScanResultEssNum;
+	UINT_32 u4ScanDbgTimes1;
+	UINT_32 u4ScanDbgTimes2;
+	UINT_32 u4ScanDbgTimes3;
+	UINT_32 u4ScanDbgTimes4;
 
 	/* IE pool for Scanning Result */
 	UINT_8 aucScanIEBuf[CFG_MAX_COMMON_IE_BUF_LEN];
