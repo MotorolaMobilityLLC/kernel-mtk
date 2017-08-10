@@ -524,8 +524,8 @@ void mtk_dl2_copy2buffer(const void *addr, uint32_t size)
 {
 	bool again = false;
 
-	PRINTK_AUD_DL2("%s, addr 0x%p 0x%p, size %d %d\n", __func__, (int)addr,
-			(int)ISRCopyBuffer.pBufferBase, size, ISRCopyBuffer.u4BufferSize);
+	PRINTK_AUD_DL2("%s, addr 0x%p 0x%p, size %d %d\n", __func__, addr,
+			ISRCopyBuffer.pBufferBase, size, ISRCopyBuffer.u4BufferSize);
 
 	size = Align64ByteSize(size);
 

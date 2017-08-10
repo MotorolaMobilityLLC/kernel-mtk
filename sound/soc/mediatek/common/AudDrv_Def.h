@@ -56,6 +56,7 @@
 /* #define DEBUG_AUD_UL2 */
 /* #define DEBUG_AUD_UL1 */
 /* #define DEBUG_AUD_DL1 */
+/* #define DEBUG_AUD_DL2 */
 /* #define DEBUG_AUD_DAI */
 
 #ifdef DEBUG_AUDDRV

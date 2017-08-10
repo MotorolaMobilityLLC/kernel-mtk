@@ -421,7 +421,8 @@ void audckbufEnable(bool enable)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 			if (mClkBufferfromPMIC) {
 				Ana_Set_Reg(DCXO_CW01, 0x8000, 0x8000);
-				pr_warn("-PMIC DCXO XO_AUDIO_EN_M enable\n");
+				pr_warn("-PMIC DCXO XO_AUDIO_EN_M enable, DCXO_CW01 = 0x%x\n",
+						Ana_Get_Reg(DCXO_CW01));
 			} else {
 				clk_buf_ctrl(CLK_BUF_AUDIO, true);
 				pr_warn("-RF clk_buf_ctrl(CLK_BUF_AUDIO,true)\n");
@@ -435,7 +436,8 @@ void audckbufEnable(bool enable)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 			if (mClkBufferfromPMIC) {
 				Ana_Set_Reg(DCXO_CW01, 0x0000, 0x8000);
-				pr_warn("-PMIC DCXO XO_AUDIO_EN_M disable\n");
+				pr_warn("-PMIC DCXO XO_AUDIO_EN_M disable, DCXO_CW01 = 0x%x\n",
+						Ana_Get_Reg(DCXO_CW01));
 			} else {
 				clk_buf_ctrl(CLK_BUF_AUDIO, false);
 				pr_warn("-RF clk_buf_ctrl(CLK_BUF_AUDIO,false)\n");
