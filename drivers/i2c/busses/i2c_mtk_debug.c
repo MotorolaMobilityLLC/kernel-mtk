@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/i2c.h>
@@ -479,7 +492,7 @@ static DEVICE_ATTR(ut, 0660, show_config, set_config);
 static int i2c_common_probe(struct platform_device *pdev)
 {
 	int ret = 0;
-	/* your code here£¬your should save client in your own way */
+	/* your code hereÂ£Â¬your should save client in your own way */
 	pr_alert("i2c_common device probe\n");
 	ret = device_create_file(&pdev->dev, &dev_attr_ut);
 	pr_alert("i2c_common device probe ret = %d\n", ret);
