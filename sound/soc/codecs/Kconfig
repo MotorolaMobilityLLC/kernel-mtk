@@ -808,6 +808,9 @@ config SND_SOC_ML26124
 config SND_SOC_MT6391
 	tristate
 
+config SND_SOC_MT8167_CODEC
+	tristate
+
 config SND_SOC_TPA6130A2
 	tristate "Texas Instruments TPA6130A2 headphone amplifier"
 	depends on I2C
