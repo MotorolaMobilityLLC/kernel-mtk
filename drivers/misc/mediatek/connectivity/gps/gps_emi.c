@@ -133,7 +133,7 @@ INT32 mtk_wcn_consys_gps_emi_init(void)
 		    GPS_DBG("EMI mapping OK(0x%p)\n", pGpsEmibaseaddr);
 		    memset_io(pGpsEmibaseaddr, 0, SZ_1M);
 		    if ((NULL != pFullPatchName)
-				&& (0 == wmt_dev_patch_get(pFullPatchName, &pPatch, 0/*BCNT_PATCH_BUF_HEADROOM*/))) {
+				&& (0 == wmt_dev_patch_get(pFullPatchName, &pPatch))) {
 				if (pPatch != NULL) {
 						/*get full name patch success*/
 						GPS_DBG("get full patch name(%s) buf(0x%p) size(%ld)\n",
