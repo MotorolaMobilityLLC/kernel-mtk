@@ -1,16 +1,16 @@
-/******************************************************************************
-* partition_mt.c - MT6516 NAND partition management Driver
+/*
+ * Copyright (C) 2015 MediaTek Inc.
  *
-* Copyright 2009-2010 MediaTek Co.,Ltd.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  *
-* DESCRIPTION:
-*	This file provid the other drivers partition relative functions
- *
-* modification history
-* ----------------------------------------
-* v1.0, 28 Feb 2011, mtk80134 written
-* ----------------------------------------
-******************************************************************************/
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/slab.h>
