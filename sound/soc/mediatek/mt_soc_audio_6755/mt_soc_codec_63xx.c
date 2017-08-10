@@ -880,9 +880,9 @@ void OpenAnalogHeadphoneSpeaker(bool bEnable)
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_R] = true;
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_L] = true;
 	} else {
-		Headset_Speaker_Amp_Change(false);
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_R] = false;
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_SPEAKER_HEADSET_L] = false;
+		Headset_Speaker_Amp_Change(false);
 	}
 }
 
