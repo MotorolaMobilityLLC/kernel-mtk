@@ -476,9 +476,6 @@ static int SCP_sensorHub_batch(int handle, int enable, int flag, long long sampl
 	int len;
 	int err = 0;
 
-	if (samplingPeriodNs == 0)
-		return 0;
-
 	do_div(maxBatchReportLatencyNs, 1000000);
 	do_div(samplingPeriodNs, 1000000);
 	req.batch_req.sensorType = handle;
