@@ -1273,14 +1273,15 @@ static inline void cldma_stop(struct ccci_modem *md)
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
-			dump_emi_latency();
-#if defined(CONFIG_MTK_AEE_FEATURE)
 			if (count >= 1600000) {
+				/*After confirmed with EMI, Only call before EE*/
+				dump_emi_latency();
+#if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Tx CLDMA failed.\n", DB_OPT_DEFAULT);
+#endif
 				break;
 			}
-#endif
 		}
 	} while (ret != 0);
 	count = 0;
@@ -1291,23 +1292,21 @@ static inline void cldma_stop(struct ccci_modem *md)
 		ret = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS);
 		if ((++count) % 100000 == 0) {
 			CCCI_NORMAL_LOG(md->index, TAG, "stop Rx CLDMA, status=%x, count=%d\n", ret, count);
-#if defined(CONFIG_MTK_AEE_FEATURE)
-			/* aee_kernel_dal_show("stop Rx CLDMA failed.\n"); */
-#endif
 			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 			if ((count < 500000) || (count > 1200000))
 				ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
-			dump_emi_latency();
-#if defined(CONFIG_MTK_AEE_FEATURE)
 			if (count >= 1600000) {
+				/*After confirmed with EMI, Only call before EE*/
+				dump_emi_latency();
+#if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Rx CLDMA failed.\n", DB_OPT_DEFAULT);
+#endif
 				break;
 			}
-#endif
 		}
 	} while (ret != 0);
 	/* clear all L2 and L3 interrupts */
@@ -1364,22 +1363,20 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 		ret = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS);
 		if ((++count) % 100000 == 0) {
 			CCCI_NORMAL_LOG(md->index, TAG, "stop Tx CLDMA E, status=%x, count=%d\n", ret, count);
-#if defined(CONFIG_MTK_AEE_FEATURE)
-			/*aee_kernel_dal_show("stop Tx CLDMA failed for EE.\n");*/
-#endif
 			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
-			dump_emi_latency();
-#if defined(CONFIG_MTK_AEE_FEATURE)
 			if (count >= 1600000) {
+				/*After confirmed with EMI, Only call before EE*/
+				dump_emi_latency();
+#if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Tx CLDMA for EE failed.\n", DB_OPT_DEFAULT);
+#endif
 				break;
 			}
-#endif
 		}
 	} while (ret != 0);
 	count = 0;
@@ -1391,22 +1388,20 @@ static inline void cldma_stop_for_ee(struct ccci_modem *md)
 		ret = cldma_read32(md_ctrl->cldma_ap_ao_base, CLDMA_AP_SO_STATUS) & NONSTOP_QUEUE_MASK;
 		if ((++count) % 100000 == 0) {
 			CCCI_NORMAL_LOG(md->index, TAG, "stop Rx CLDMA E, status=%x, count=%d\n", ret, count);
-#if defined(CONFIG_MTK_AEE_FEATURE)
-			/*aee_kernel_dal_show("stop Rx CLDMA failed for EE.\n");*/
-#endif
 			CCCI_NORMAL_LOG(md->index, TAG, "Dump MD EX log\n");
 			ccci_mem_dump(md->index, md->smem_layout.ccci_exp_smem_base_vir,
 				      md->smem_layout.ccci_exp_dump_size);
 			md_cd_dump_debug_register(md);
 			cldma_dump_register(md);
-			dump_emi_latency();
-#if defined(CONFIG_MTK_AEE_FEATURE)
 			if (count >= 1600000) {
+				/*After confirmed with EMI, Only call before EE*/
+				dump_emi_latency();
+#if defined(CONFIG_MTK_AEE_FEATURE)
 				aed_md_exception_api(NULL, 0, NULL, 0,
 					"md1:\nUNKNOWN Exception\nstop Rx CLDMA for EE failed.\n", DB_OPT_DEFAULT);
+#endif
 				break;
 			}
-#endif
 		}
 	} while (ret != 0);
 	/* clear all L2 and L3 interrupts, but non-stop Rx ones */
