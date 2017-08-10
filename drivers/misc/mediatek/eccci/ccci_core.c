@@ -418,6 +418,16 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 		if (*((unsigned int *)buf) > MD_BOOT_MODE_INVALID && *((unsigned int *)buf) < MD_BOOT_MODE_MAX)
 			md->md_boot_mode = *((unsigned int *)buf);
 		break;
+	case ID_ENTER_FLIGHT_MODE:
+		CCCI_NOTICE_LOG(md->index, CHAR, "MD enter flight mode called by %ps\n", __builtin_return_address(0));
+		ret = port_proxy_send_msg_to_user(md->port_proxy_obj,
+				CCCI_MONITOR_CH, CCCI_MD_MSG_FLIGHT_STOP_REQUEST, 0);
+		break;
+	case ID_LEAVE_FLIGHT_MODE:
+		CCCI_NOTICE_LOG(md->index, CHAR, "MD leave flight mode called by %ps\n", __builtin_return_address(0));
+		port_proxy_send_msg_to_user(md->port_proxy_obj,
+				CCCI_MONITOR_CH, CCCI_MD_MSG_FLIGHT_START_REQUEST, 0);
+		break;
 	default:
 		ret = -CCCI_ERR_FUNC_ID_ERROR;
 		break;
