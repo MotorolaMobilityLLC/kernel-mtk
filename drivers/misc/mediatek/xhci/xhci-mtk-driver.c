@@ -517,8 +517,87 @@ static void mtk_xhci_imod_set(u32 imod)
 	writel(temp, &mtk_xhci->ir_set->irq_control);
 }
 
+static struct delayed_work host_plug_test_work;
+static int host_plug_test_enable; /* default disable */
+module_param(host_plug_test_enable, int, 0644);
+static int host_plug_in_test_period_ms = 5000;
+module_param(host_plug_in_test_period_ms, int, 0644);
+static int host_plug_out_test_period_ms = 5000;
+module_param(host_plug_out_test_period_ms, int, 0644);
+static int host_test_vbus_off_time_us = 3000;
+module_param(host_test_vbus_off_time_us, int, 0644);
+static int host_test_vbus_only = 1;
+module_param(host_test_vbus_only, int, 0644);
+static int host_plug_test_triggered;
+static int host_req;
+static struct wake_lock host_test_wakelock;
+static int _mtk_xhci_driver_load(void);
+static void _mtk_xhci_driver_unload(void);
+static void do_host_plug_test_work(struct work_struct *data)
+{
+	static ktime_t ktime_begin, ktime_end;
+	static s64 diff_time;
+	static int host_on;
+	static int wake_lock_inited;
 
-static int mtk_xhci_driver_load(void)
+	if (!wake_lock_inited) {
+		mtk_xhci_mtk_printk(K_ALET, "%s wake_lock_init\n", __func__);
+		wake_lock_init(&host_test_wakelock, WAKE_LOCK_SUSPEND, "host.test.lock");
+		wake_lock_inited = 1;
+	}
+
+	host_plug_test_triggered = 1;
+	/* sync global status */
+	mb();
+	wake_lock(&host_test_wakelock);
+	mtk_xhci_mtk_printk(K_ALET, "BEGIN");
+	ktime_begin = ktime_get();
+
+	host_on  = 1;
+	while (1) {
+		if (!host_req && host_on) {
+			mtk_xhci_mtk_printk(K_ALET, "about to exit, host_on<%d>\n", host_on);
+			break;
+		}
+		msleep(50);
+
+		ktime_end = ktime_get();
+		diff_time = ktime_to_ms(ktime_sub(ktime_end, ktime_begin));
+		if (host_on && diff_time >= host_plug_in_test_period_ms) {
+			host_on = 0;
+			mtk_xhci_mtk_printk(K_ALET, "OFF\n");
+
+			ktime_begin = ktime_get();
+
+			/* simulate plug out */
+			mtk_disable_otg_mode();
+			udelay(host_test_vbus_off_time_us);
+
+			if (!host_test_vbus_only)
+				_mtk_xhci_driver_unload();
+		} else if (!host_on && diff_time >= host_plug_out_test_period_ms) {
+			host_on = 1;
+			mtk_xhci_mtk_printk(K_ALET, "ON\n");
+
+			ktime_begin = ktime_get();
+			if (!host_test_vbus_only)
+				_mtk_xhci_driver_load();
+
+			mtk_enable_otg_mode();
+			msleep(100);
+		}
+	}
+
+	/* from ON to OFF state */
+	msleep(1000);
+	_mtk_xhci_driver_unload();
+
+	host_plug_test_triggered = 0;
+	wake_unlock(&host_test_wakelock);
+	mtk_xhci_mtk_printk(K_ALET, "END\n");
+}
+
+static int _mtk_xhci_driver_load(void)
 {
 	int ret = 0;
 
@@ -539,6 +618,9 @@ static int mtk_xhci_driver_load(void)
 	mtk_enable_otg_mode();
 	enableXhciAllPortPower(mtk_xhci);
 
+	if (host_plug_test_enable && !host_plug_test_triggered)
+		schedule_delayed_work(&host_plug_test_work, 0);
+
 	return 0;
 
 _err:
@@ -549,13 +631,7 @@ _err:
 	return ret;
 }
 
-static void mtk_xhci_disPortPower(void)
-{
-	mtk_disable_otg_mode();
-	disableXhciAllPortPower(mtk_xhci);
-}
-
-static void mtk_xhci_driver_unload(void)
+static void _mtk_xhci_driver_unload(void)
 {
 	mtk_xhci_hcd_cleanup();
 	/* close clock/power setting and assert reset bit of mac */
@@ -564,6 +640,40 @@ static void mtk_xhci_driver_unload(void)
 #endif
 
 }
+
+int mtk_xhci_driver_load(void)
+{
+	static int host_plug_test_work_inited;
+
+	host_req = 1;
+
+	if (!host_plug_test_work_inited) {
+		INIT_DELAYED_WORK(&host_plug_test_work, do_host_plug_test_work);
+		host_plug_test_work_inited = 1;
+	}
+
+	if (host_plug_test_triggered)
+		return 0;
+
+	return _mtk_xhci_driver_load();
+}
+
+void mtk_xhci_driver_unload(void)
+{
+	host_req = 0;
+
+	if (host_plug_test_triggered)
+		return;
+
+	_mtk_xhci_driver_unload();
+}
+
+static void mtk_xhci_disPortPower(void)
+{
+	mtk_disable_otg_mode();
+	disableXhciAllPortPower(mtk_xhci);
+}
+
 
 void mtk_xhci_switch_init(void)
 {
