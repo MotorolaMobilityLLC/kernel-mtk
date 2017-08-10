@@ -123,6 +123,9 @@ extern unsigned int mt_cpufreq_get_cur_phy_volt(enum mt_cpu_dvfs_id id);
 /* PPB */
 extern int mt_cpufreq_get_ppb_state(void);
 
+/* L hispeed */
+extern int mt_cpufreq_get_chip_id_38(void);
+
 /* DCM */
 extern int sync_dcm_set_cci_freq(unsigned int cci_hz);
 extern int sync_dcm_set_mp0_freq(unsigned int mp0_hz);
