@@ -513,7 +513,10 @@ static int modem_err_notify_misc(struct notifier_block *nb, unsigned long event,
 	switch (event) {
 	case MDM_EVT_NOTIFY_HD_ERR:
 		pr_debug("%s %d ASC_USER_MDM_ERR\n", __func__, __LINE__);
-		modem_signal_user(ASC_USER_MDM_ERR);
+		if (cmdata->modem->status == MD_READY)
+			modem_signal_user(ASC_USER_MDM_ERR);
+		else
+			pr_debug("%s %d modem is not ready, ignore\n", __func__, __LINE__);
 		break;
 	case MDM_EVT_NOTIFY_HD_ENHANCE:
 		pr_debug("%s %d ASC_USER_MDM_ERR_ENHANCE\n", __func__,
