@@ -6,9 +6,11 @@ subdir-ccflags-y += -D MTK_WCN_BUILT_IN_DRIVER
 ccflags-y += -D CREATE_NODE_DYNAMIC=1
 
 ifeq ($(CONFIG_MTK_TC1_FEATURE), y)
-	ccflags-y += -D CFG_TC1_FEATURE=1
-else
-	ccflags-y += -D CFG_TC1_FEATURE=0
+    ccflags-y += -DCFG_USE_AOSP_TETHERING_NAME
+endif
+
+ifeq ($(CONFIG_MTK_TC10_FEATURE), y)
+    ccflags-y += -DCFG_USE_AOSP_TETHERING_NAME
 endif
 
 ccflags-y += \
