@@ -267,7 +267,7 @@ static int mtkfb_setcolreg(u_int regno, u_int red, u_int green,
 		/* TODO: RGB888, BGR888, ABGR8888 */
 
 	default:
-		ASSERT(0);
+		DISPERR("set color info fail,bpp=%d\n", bpp);
 	}
 
 exit:
