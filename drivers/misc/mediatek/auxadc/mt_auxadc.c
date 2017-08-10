@@ -480,6 +480,8 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 	/* AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_CON_RTP, 1);             //disable RTP */
 }
 
+
+#ifdef CONFIG_PM
 static void mt_auxadc_hal_suspend(void)
 {
 	pr_debug("******** MT auxadc driver suspend!! ********\n");
@@ -514,6 +516,7 @@ static void mt_auxadc_hal_resume(void)
 	mt_auxadc_power_on();
 	/* AUXADC_DRV_SetBits16((volatile u16 *)AUXADC_CON_RTP, 1);             //disable RTP */
 }
+#endif
 
 static int mt_auxadc_dump_register(char *buf)
 {
@@ -1881,6 +1884,8 @@ static void mt_auxadc_shutdown(struct platform_device *dev)
 	pr_debug("******** MT auxadc driver shutdown!! ********\n");
 }
 
+
+#ifdef CONFIG_PM
 static int mt_auxadc_suspend(struct platform_device *dev, pm_message_t state)
 {
 	/* pr_debug("******** MT auxadc driver suspend!! ********\n" ); */
@@ -1894,6 +1899,7 @@ static int mt_auxadc_resume(struct platform_device *dev)
 	mt_auxadc_hal_resume();
 	return 0;
 }
+#endif
 
 #ifdef CONFIG_OF
 static const struct of_device_id mt_auxadc_of_match[] = {
