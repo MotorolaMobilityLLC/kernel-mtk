@@ -17,6 +17,10 @@ ifeq ($(CONFIG_ARCH_MT6580),y)
   obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
 
+ifeq ($(CONFIG_ARCH_MT6570),y)
+  obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+endif
+
 ifeq ($(CONFIG_ARCH_MT6735M),y)
   obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
