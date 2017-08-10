@@ -1,7 +1,16 @@
 #
 # Touchscreen driver configuration
 #
-if TOUCHSCREEN_MTK_GT1151
+config TOUCHSCREEN_MTK_GT1151
+	tristate "GT1151 for Mediatek package"
+	default n
+	help
+	  Say Y here if you have GT1151 touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
 
 config GT1151_FIRMWARE
 	string "GT1151 for Mediatek firmware"
@@ -228,4 +237,3 @@ config GTP_POWER_CTRL_SLEEP
 
 	To compile this dirver as a module, choose M here: the
 	module will be called.
-endif
