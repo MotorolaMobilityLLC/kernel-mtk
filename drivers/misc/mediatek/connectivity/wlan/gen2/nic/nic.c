@@ -1407,7 +1407,15 @@ WLAN_STATUS nicUpdateBss(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T 
 			rCmdSetBssInfo.ucAuthMode = AUTH_MODE_WPA2;
 		else
 #endif
-		rCmdSetBssInfo.ucAuthMode = (UINT_8) prConnSettings->eAuthMode;
+		/* Firmware didn't define AUTH_MODE_NON_RSN_FT, so AUTH_MODE_OPEN is zero in firmware,
+		** but it is 1 in driver. so we need to minus 1 for all authmode except AUTH_MODE_NON_RSN_FT,
+		** because AUTH_MODE_NON_RSN_FT will be same as AUTH_MODE_OPEN in firmware
+		**/
+		if (prConnSettings->eAuthMode != AUTH_MODE_NON_RSN_FT)
+			rCmdSetBssInfo.ucAuthMode = (UINT_8)prConnSettings->eAuthMode - 1;
+		else
+			rCmdSetBssInfo.ucAuthMode = (UINT_8) prConnSettings->eAuthMode;
+
 		rCmdSetBssInfo.ucEncStatus = (UINT_8) prConnSettings->eEncStatus;
 		rCmdSetBssInfo.fgWapiMode = (UINT_8) prConnSettings->fgWapiMode;
 	}
@@ -1562,6 +1570,11 @@ WLAN_STATUS nicPmIndicateBssConnected(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_
 #endif
 	    ) {
 		if (prBssInfo->eCurrentOPMode == OP_MODE_INFRASTRUCTURE && prBssInfo->prStaRecOfAP) {
+			UINT_8 ucUapsd = wmmCalculateUapsdSetting(prAdapter);
+
+			/* should sync Tspec uapsd settings */
+			rCmdIndicatePmBssConnected.ucBmpDeliveryAC = (ucUapsd >> 4) & 0xf;
+			rCmdIndicatePmBssConnected.ucBmpTriggerAC = ucUapsd & 0xf;
 			rCmdIndicatePmBssConnected.fgIsUapsdConnection =
 			    (UINT_8) prBssInfo->prStaRecOfAP->fgIsUapsdSupported;
 		} else {
@@ -2228,6 +2241,8 @@ VOID nicInitMGMT(IN P_ADAPTER_T prAdapter, IN P_REG_INFO_T prRegInfo)
 	/* CNM Module - initialization */
 	cnmInit(prAdapter);
 
+	wmmInit(prAdapter);
+
 	/* RLM Module - initialization */
 	rlmFsmEventInit(prAdapter);
 
@@ -2280,6 +2295,8 @@ VOID nicUninitMGMT(IN P_ADAPTER_T prAdapter)
 
 	/* SCN Module - unintiailization */
 	scnUninit(prAdapter);
+
+	wmmUnInit(prAdapter);
 
 	/* RLM Module - uninitialization */
 	rlmFsmEventUninit(prAdapter);
@@ -2388,7 +2405,7 @@ WLAN_STATUS nicDisableClockGating(IN P_ADAPTER_T prAdapter)
 * @return (none)
 */
 /*----------------------------------------------------------------------------*/
-VOID
+UINT_32
 nicAddScanResult(IN P_ADAPTER_T prAdapter,
 		 IN PARAM_MAC_ADDRESS rMacAddr,
 		 IN P_PARAM_SSID_T prSsid,
@@ -2578,7 +2595,9 @@ nicAddScanResult(IN P_ADAPTER_T prAdapter,
 				prAdapter->rWlanInfo.apucScanResultIEs[i] = NULL;
 			}
 		}
+		return i;
 	}
+	return i - 1;
 }
 
 /*----------------------------------------------------------------------------*/

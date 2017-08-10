@@ -76,6 +76,7 @@ VOID p2pFuncRequestScan(IN P_ADAPTER_T prAdapter, IN P_P2P_SCAN_REQ_INFO_T prSca
 			break;
 		}
 
+		kalMemZero(prScanReq, sizeof(MSG_SCN_SCAN_REQ));
 		prScanReq->rMsgHdr.eMsgId = MID_P2P_SCN_SCAN_REQ;
 		prScanReq->ucSeqNum = ++prScanReqInfo->ucSeqNumOfScnMsg;
 		prScanReq->ucNetTypeIndex = (UINT_8) NETWORK_TYPE_P2P_INDEX;
@@ -94,6 +95,8 @@ VOID p2pFuncRequestScan(IN P_ADAPTER_T prAdapter, IN P_P2P_SCAN_REQ_INFO_T prSca
 			prScanReq->ucSSIDType = SCAN_REQ_SSID_WILDCARD;
 
 		prScanReq->u2ChannelDwellTime = prScanReqInfo->u2PassiveDewellTime;
+		prScanReq->u2MinChannelDwellTime = prScanReq->u2ChannelDwellTime;
+		COPY_MAC_ADDR(prScanReq->aucBSSID, "\xff\xff\xff\xff\xff\xff");
 
 		prScanReq->eScanChannel = prScanReqInfo->eChannelSet;
 		if (prScanReqInfo->eChannelSet == SCAN_CHANNEL_SPECIFIED) {
