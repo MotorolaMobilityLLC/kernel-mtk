@@ -121,6 +121,8 @@ static struct i2c_board_info i2c_devs2 __initdata = {I2C_BOARD_INFO(CAMERA_HW_DR
 	struct regulator *regMain2VCAMD = NULL;
 #endif
 
+#define FEATURE_CONTROL_MAX_DATA_SIZE 128000
+
 struct device *sensor_device = NULL;
 #define SENSOR_WR32(addr, data)    mt65xx_reg_sync_writel(data, addr)    /* For 89 Only.   // NEED_TUNING_BY_PROJECT */
 /* #define SENSOR_WR32(addr, data)    iowrite32(data, addr)    // For 89 Only.   // NEED_TUNING_BY_PROJECT */
@@ -2029,6 +2031,12 @@ inline static int  adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		}
 		if (copy_from_user((void *)&FeatureParaLen , (void *) pFeatureCtrl->pFeatureParaLen, sizeof(unsigned int))) {
 			PK_ERR(" ioctl copy from user failed\n");
+			return -EFAULT;
+		}
+
+		/* data size exam */
+		if (FeatureParaLen > FEATURE_CONTROL_MAX_DATA_SIZE) {
+			PK_ERR(" exceed data size limitation\n");
 			return -EFAULT;
 		}
 
