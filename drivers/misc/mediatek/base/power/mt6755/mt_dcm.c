@@ -1534,26 +1534,33 @@ static ssize_t dcm_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 			      char *buf)
 {
 	int len = 0;
-	char *p = buf;
 	int i;
 	DCM *dcm;
 
 	/* dcm_dump_state(ALL_DCM_TYPE); */
-	p += sprintf(p, "\n******** dcm dump state *********\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"\n******** dcm dump state *********\n");
 	for (i = 0, dcm = &dcm_array[0]; i < NR_DCM_TYPE; i++, dcm++)
-		p += sprintf(p, "[%-16s 0x%08x] current state:%d (%d)\n",
-			     dcm->name, dcm->typeid, dcm->current_state,
-			     dcm->disable_refcnt);
+		len += snprintf(buf+len, PAGE_SIZE-len,
+				"[%-16s 0x%08x] current state:%d (%d)\n",
+				dcm->name, dcm->typeid, dcm->current_state,
+				dcm->disable_refcnt);
 
-	p += sprintf(p, "\n********** dcm_state help *********\n");
-	p += sprintf(p, "set:		echo set [mask] [mode] > /sys/power/dcm_state\n");
-	p += sprintf(p, "disable:	echo disable [mask] > /sys/power/dcm_state\n");
-	p += sprintf(p, "restore:	echo restore [mask] > /sys/power/dcm_state\n");
-	p += sprintf(p, "dump:		echo dump [mask] > /sys/power/dcm_state\n");
-	p += sprintf(p, "***** [mask] is hexl bit mask of dcm;\n");
-	p += sprintf(p, "***** [mode] is type of DCM to set and retained\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"\n********** dcm_state help *********\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"set:		echo set [mask] [mode] > /sys/power/dcm_state\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"disable:	echo disable [mask] > /sys/power/dcm_state\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"restore:	echo restore [mask] > /sys/power/dcm_state\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"dump:		echo dump [mask] > /sys/power/dcm_state\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"***** [mask] is hexl bit mask of dcm;\n");
+	len += snprintf(buf+len, PAGE_SIZE-len,
+			"***** [mode] is type of DCM to set and retained\n");
 
-	len = p - buf;
 	return len;
 }
 
