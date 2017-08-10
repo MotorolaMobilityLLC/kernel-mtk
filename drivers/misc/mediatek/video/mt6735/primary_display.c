@@ -894,7 +894,7 @@ int primary_display_set_secondary_display(int add, DISP_SESSION_TYPE type)
 	if (add) {
 #ifdef MTK_DISP_IDLE_LP
 		gSkipIdleDetect = 1;
-		_disp_primary_path_exit_idle(__func__, 0);
+		_disp_primary_path_exit_idle(__func__, 1);
 #endif
 	} else {
 
