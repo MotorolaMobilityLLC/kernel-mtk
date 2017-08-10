@@ -3172,8 +3172,10 @@ static int md_cd_force_assert(struct ccci_modem *md, MD_COMM_TYPE type)
 	if (type == CCIF_INTERRUPT)
 		md_cd_ccif_send(md, AP_MD_SEQ_ERROR);
 #ifdef MD_UMOLY_EE_SUPPORT
-	else if (type == CCIF_MPU_INTR)
+	else if (type == CCIF_MPU_INTR) {
 		md_cd_ccif_send(md, H2D_MPU_FORCE_ASSERT);
+		md->ops->dump_info(md, DUMP_FLAG_CCIF_REG, NULL, 0);
+	}
 #endif
 
 	return 0;
