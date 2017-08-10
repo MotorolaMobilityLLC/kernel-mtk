@@ -169,7 +169,7 @@ void msdc_power_DL_CL_control(struct msdc_host *host, u32 sel)
 	/* since this function may be invoked with a lock already get,
 	   we use pmic_config_interface_nolock() instead of
 	   pmic_config_interface() to avoid lock dependency */
-	u32 DL_on, CL_on;
+	u32 DL_on = 0, CL_on = 0;
 
 	if (host->id == 0) {
 		if (sel == MSDC_POWER_DL_CL_FOR_POWER_OFF) {
