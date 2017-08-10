@@ -22,6 +22,7 @@
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <linux/debugfs.h>
 
 #include "mlog_internal.h"
 #include "mlog_dump.h"
@@ -83,8 +84,15 @@ static const struct file_operations mlog_fmt_proc_fops = {
 	.release = single_release,
 };
 
+static const struct file_operations proc_dmlog_operations = {
+	.open = dmlog_open,
+	.read = dmlog_read,
+	.release = dmlog_release,
+};
+
 void mlog_init_procfs(void)
 {
-	proc_create("mlog_fmt", 0, NULL, &mlog_fmt_proc_fops);
-	proc_create("mlog", 0, NULL, &proc_mlog_operations);
+	debugfs_create_file("mlog_fmt", S_IRUGO, NULL, NULL, &mlog_fmt_proc_fops);
+	debugfs_create_file("mlog", S_IRUGO, NULL, NULL, &proc_mlog_operations);
+	debugfs_create_file("dmlog", S_IRUGO, NULL, NULL, &proc_dmlog_operations);
 }

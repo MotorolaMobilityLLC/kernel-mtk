@@ -162,6 +162,20 @@ active & inactive
 Active:           211748 kB
 Inactive:         257988 kB
 */
+struct mlog_header {
+	char *buffer;
+	size_t index;
+	size_t len;
+};
+
+struct mlog_session {
+	unsigned start;
+	unsigned end;
+	int fmt_idx;
+	bool is_header_dump;
+	struct mlog_header header;
+};
+
 
 static void mlog_emit_32(long v)
 {
@@ -284,6 +298,96 @@ static void mlog_reset_format(void)
 		MLOG_PRINTK(" %s", strfmt_list[len]);
 
 	MLOG_PRINTK("\n");
+}
+
+int mlog_snprint_fmt(char *buf, size_t len)
+{
+	int ret = 0;
+
+	ret = snprintf(buf, len, "<type>,    [time]");
+
+	if (meminfo_filter & M_MEMFREE)
+		ret += snprintf(buf + ret, len - ret, ", memfr");
+	if (meminfo_filter & M_SWAPFREE)
+		ret += snprintf(buf + ret, len - ret, ", swpfr");
+	if (meminfo_filter & M_CACHED)
+		ret += snprintf(buf + ret, len - ret, ", cache");
+	if (meminfo_filter & M_GPUUSE)
+		ret += snprintf(buf + ret, len - ret, ", kernel_stack");
+	if (meminfo_filter & M_GPUUSE)
+		ret += snprintf(buf + ret, len - ret, ", page_table");
+	if (meminfo_filter & M_GPUUSE)
+		ret += snprintf(buf + ret, len - ret, ", slab");
+	if (meminfo_filter & M_GPUUSE)
+		ret += snprintf(buf + ret, len - ret, ",   gpu");
+	if (meminfo_filter & M_GPU_PAGE_CACHE)
+		ret += snprintf(buf + ret, len - ret, ",   gpu_page_cache");
+	if (meminfo_filter & M_MLOCK)
+		ret += snprintf(buf + ret, len - ret, ", mlock");
+	if (meminfo_filter & M_ZRAM)
+		ret += snprintf(buf + ret, len - ret, ",  zram");
+	if (meminfo_filter & M_ACTIVE)
+		ret += snprintf(buf + ret, len - ret, ",  active");
+	if (meminfo_filter & M_INACTIVE)
+		ret += snprintf(buf + ret, len - ret, ",  inactive");
+	if (meminfo_filter & M_SHMEM)
+		ret += snprintf(buf + ret, len - ret, ",  shmem");
+	if (meminfo_filter & M_ION)
+		ret += snprintf(buf + ret, len - ret, ",  ion");
+
+	if (vmstat_filter & V_PSWPIN)
+		ret += snprintf(buf + ret, len - ret, ",  swpin");
+	if (vmstat_filter & V_PSWPOUT)
+		ret += snprintf(buf + ret, len - ret, ", swpout");
+	if (vmstat_filter & V_PGFMFAULT)
+		ret += snprintf(buf + ret, len - ret, ",  fmflt");
+
+	if (buddyinfo_filter) {
+		int order;
+
+		ret += snprintf(buf + ret, len - ret, ",  [normal: 0");
+		for (order = 1; order < MAX_ORDER; ++order)
+			ret += snprintf(buf + ret, len - ret, ", %d", order);
+
+		ret += snprintf(buf + ret, len - ret,	"]");
+		ret += snprintf(buf + ret, len - ret, ",  [high: 0");
+
+		for (order = 1; order < MAX_ORDER; ++order)
+			ret += snprintf(buf + ret, len - ret, ", %d", order);
+
+		ret += snprintf(buf + ret, len - ret,	"]");
+	}
+
+	if (proc_filter) {
+		ret += snprintf(buf + ret, len - ret, ", [pid]");
+#ifdef PRINT_PROCESS_NAME_DEBUG
+		ret += snprintf(buf + ret, len - ret, ", name");
+#endif
+		if (proc_filter & P_ADJ)
+			ret += snprintf(buf + ret, len - ret, ", adj");
+		if (proc_filter & P_RSS)
+			ret += snprintf(buf + ret, len - ret, ", rss");
+		if (proc_filter & P_RSWAP)
+			ret += snprintf(buf + ret, len - ret, ", rswp");
+		if (proc_filter & P_SWPIN)
+			ret += snprintf(buf + ret, len - ret, ", pswpin");
+		if (proc_filter & P_SWPOUT)
+			ret += snprintf(buf + ret, len - ret, ", pswpout");
+		if (proc_filter & P_FMFAULT)
+			ret += snprintf(buf + ret, len - ret, ", pfmflt");
+	}
+	return ret;
+}
+
+int mlog_header_dump(char __user *buf, size_t len, struct mlog_header *header)
+{
+	int ret = min(len, header->len - header->index);
+
+	if (__copy_to_user(buf, header->buffer + header->index, ret))
+		return -EFAULT;
+
+	header->index += ret;
+	return ret;
 }
 
 int mlog_print_fmt(struct seq_file *m)
@@ -733,73 +837,145 @@ int mlog_unread(void)
 	return mlog_end - mlog_start;
 }
 
-int mlog_doread(char __user *buf, size_t len)
+static int _doread(char __user *buf, size_t len, unsigned *start, unsigned *end, int *fmt_idx)
 {
-	unsigned i;
-	int error = -EINVAL;
-	char mlog_str[MLOG_STR_LEN];
+	int size = 0;
+	long v;
+	char mlog_buf[MLOG_STR_LEN];
 
-	if (!buf || len < 0)
-		goto out;
-	error = 0;
-	if (!len)
-		goto out;
-	if (!access_ok(VERIFY_WRITE, buf, len)) {
-		error = -EFAULT;
-		goto out;
-	}
-	/* MLOG_PRINTK("[mlog] wait %d %d\n", mlog_start, mlog_end); */
-	error = wait_event_interruptible(mlog_wait, (mlog_start - mlog_end));
-	if (error)
-		goto out;
-	i = 0;
 	spin_lock_bh(&mlogbuf_lock);
+	/* mlog_start go over session->start, no data to dump */
+	if (unlikely(*start < mlog_start))
+		goto exit_dump;
 
-	/* MLOG_PRINTK("[mlog] doread %d %d\n", mlog_start, mlog_end); */
-	while (!error && (mlog_start != mlog_end) && i < len - MLOG_STR_LEN) {
-		int size;
-		int v;
 
+	while (*start < *end) {
 		/* retrieve value */
-		v = MLOG_BUF(mlog_start);
-		mlog_start++;
+		v = MLOG_BUF(*start);
+		*start += 1;
 
-		if (unlikely((v == MLOG_ID) ^ (strfmt_idx == 0))) {
-			/* find first valid log */
-			if (strfmt_idx == 0)
-				continue;
+		if (*fmt_idx == 0 && v != MLOG_ID)
+			continue;
+		else if (v == MLOG_ID && (*fmt_idx != 0))
+			*fmt_idx = 0;
 
-			strfmt_idx = 0;
-		}
-		if (strfmt_idx == 0)
-			v = '\n';
-
-		/* MLOG_PRINTK("[mlog] %d: %s\n", strfmt_idx, strfmt_list[strfmt_idx]); */
-		size = snprintf(mlog_str, MLOG_STR_LEN, strfmt_list[strfmt_idx++], v);
-
-		if (strfmt_idx >= strfmt_len)
-			strfmt_idx = strfmt_proc;
-
-		spin_unlock_bh(&mlogbuf_lock);
-		if (__copy_to_user(buf, mlog_str, size))
-			error = -EFAULT;
-		else {
-			buf += size;
-			i += size;
-		}
-
-		cond_resched();
-		spin_lock_bh(&mlogbuf_lock);
+		break;
 	}
+
+	if (*start >= *end)
+		goto exit_dump;
+
+
+	if (*fmt_idx == 0)
+		v = '\n';
+
+	size = snprintf(mlog_buf, MLOG_STR_LEN, strfmt_list[*fmt_idx], v);
+	*fmt_idx += 1;
+
+	if (*fmt_idx >= strfmt_len)
+		*fmt_idx = strfmt_proc;
 
 	spin_unlock_bh(&mlogbuf_lock);
-	if (!error)
-		error = i;
- out:
-	/* MLOG_PRINTK("[mlog] doread end %d\n", error); */
-	return error;
+
+	if (__copy_to_user(buf, mlog_buf, size))
+		return -EFAULT;
+
+	return size;
+
+exit_dump:
+	spin_unlock_bh(&mlogbuf_lock);
+	return size;
 }
 
+int mlog_doread(char __user *buf, size_t len)
+{
+	int error;
+	size_t size = 0;
+	size_t ret;
+
+	if (!buf || len < 0)
+		return -EINVAL;
+	if (len == 0)
+		return 0;
+	if (!access_ok(VERIFY_WRITE, buf, len))
+		return -EFAULT;
+
+	error = wait_event_interruptible(mlog_wait, (mlog_start - mlog_end));
+	if (error)
+		return error;
+
+	while (len - size > MLOG_STR_LEN) {
+		ret = _doread(buf + size, len - size, &mlog_start, &mlog_end, &strfmt_idx);
+
+		if (ret == 0)
+			break;
+		size = size + ret;
+		cond_resched();
+	}
+	return size;
+}
+
+int dmlog_open(struct inode *inode, struct file *file)
+{
+	struct mlog_session *session;
+	struct mlog_header *header;
+	int fmt_buf_len = 512;
+
+	session = kzalloc(sizeof(struct mlog_session), GFP_KERNEL);
+	session->start = mlog_start;
+	session->end = mlog_end;
+	session->fmt_idx = 0;
+	header = &session->header;
+	header->buffer = kmalloc(fmt_buf_len, GFP_KERNEL);
+	header->len = mlog_snprint_fmt(header->buffer, fmt_buf_len);
+
+	file->private_data = session;
+	return 0;
+}
+
+int dmlog_release(struct inode *inode, struct file *file)
+{
+	struct mlog_session *session = file->private_data;
+	struct mlog_header *header = &session->header;
+
+	kfree(header->buffer);
+	kfree(file->private_data);
+	return 0;
+}
+
+ssize_t dmlog_read(struct file *file, char __user *buf, size_t len, loff_t *ppos)
+{
+	size_t size = 0;
+	size_t ret;
+	struct mlog_session *session = file->private_data;
+	struct mlog_header *header = &session->header;
+
+	if (!buf || len < 0)
+		return -EINVAL;
+	if (len == 0)
+		return 0;
+	if (!access_ok(VERIFY_WRITE, buf, len))
+		return -EFAULT;
+
+	if (!session->is_header_dump) {
+		ret = mlog_header_dump(buf, len, header);
+		size = size + ret;
+		if (header->index >= header->len)
+			session->is_header_dump = true;
+	}
+
+	while (len - size > MLOG_STR_LEN) {
+		ret = _doread(buf + size, len - size, &session->start, &session->end, &session->fmt_idx);
+
+		/* start go reach end */
+		if (ret == 0)
+			break;
+
+		size = size + ret;
+		cond_resched();
+	}
+	return size;
+}
 
 static void mlog_timer_handler(unsigned long data)
 {
