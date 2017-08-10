@@ -1445,7 +1445,7 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 			mtk_wcn_stp_dbg_dump_package();
 			goto pwr_sv_done;
 		}
-		WMT_INFO_FUNC("Send sleep command OK!\n");
+		WMT_DBG_FUNC("Send sleep command OK!\n");
 	} else if (pWmtOp->au4OpData[0] == WAKEUP) {
 		if (mtk_wcn_stp_is_btif_fullset_mode()) {
 			WMT_DBG_FUNC("wakeup connsys by btif");
@@ -1499,7 +1499,7 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 			mtk_wcn_stp_dbg_dump_package();
 			goto pwr_sv_done;
 		}
-		WMT_INFO_FUNC("Send wakeup command OK!\n");
+		WMT_DBG_FUNC("Send wakeup command OK!\n");
 	} else if (pWmtOp->au4OpData[0] == HOST_AWAKE) {
 
 		WMT_DBG_FUNC("**** Send host awake command\n");
@@ -1551,7 +1551,7 @@ static INT32 opfunc_pwr_sv(P_WMT_OP pWmtOp)
 			mtk_wcn_stp_dbg_dump_package();
 			/* goto pwr_sv_done; */
 		} else {
-			WMT_INFO_FUNC("Send host awake command OK!\n");
+			WMT_DBG_FUNC("Send host awake command OK!\n");
 		}
 	}
 pwr_sv_done:
