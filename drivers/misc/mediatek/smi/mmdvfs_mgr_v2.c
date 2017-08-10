@@ -859,9 +859,10 @@ int mmdvfs_set_step_with_mmsys_clk_low_low(MTK_SMI_BWC_SCEN smi_scenario, mmdvfs
 
 void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 {
-#if !MMDVFS_ENABLE
-	return;
-#endif
+	if (is_mmdvfs_disabled()) {
+		MMDVFSMSG("MMDVFS is disable\n");
+		return;
+	}
 
 	/* MMDVFSMSG("MMDVFS handle cmd %u s %d\n", cmd->type, cmd->scen); */
 
@@ -912,9 +913,10 @@ void mmdvfs_handle_cmd(MTK_MMDVFS_CMD *cmd)
 
 void mmdvfs_notify_scenario_exit(MTK_SMI_BWC_SCEN scen)
 {
-#if !MMDVFS_ENABLE
-	return;
-#endif
+	if (is_mmdvfs_disabled()) {
+		MMDVFSMSG("MMDVFS is disable\n");
+		return;
+	}
 
 	/* MMDVFSMSG("leave %d\n", scen); */
 	if (scen == SMI_BWC_SCEN_WFD)
@@ -936,9 +938,11 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 	mmdvfs_lcd_size_enum lcd_size_detected = MMDVFS_LCD_SIZE_WQHD;
 
 	lcd_size_detected = mmdvfs_get_lcd_resolution();
-#if !MMDVFS_ENABLE
-	return;
-#endif
+
+	if (is_mmdvfs_disabled()) {
+		MMDVFSMSG("MMDVFS is disable\n");
+		return;
+	}
 
 	/* Leave display idle mode before set scenario */
 	if (current_mmsys_clk == MMSYS_CLK_LOW && scen != SMI_BWC_SCEN_NORMAL)
@@ -997,9 +1001,10 @@ void mmdvfs_notify_scenario_enter(MTK_SMI_BWC_SCEN scen)
 
 void mmdvfs_init(MTK_SMI_BWC_MM_INFO *info)
 {
-#if !MMDVFS_ENABLE
-	return;
-#endif
+	if (is_mmdvfs_disabled()) {
+		MMDVFSMSG("MMDVFS is disable\n");
+		return;
+	}
 
 #if defined(SMI_J)
 	if (!is_mmdvfs_disabled()) {
@@ -1164,10 +1169,6 @@ static int mmdfvs_adjust_mmsys_clk_by_hopping(int clk_mode)
 
 int mmdvfs_raise_mmsys_by_mux(void)
 {
-#ifdef MMDVFS_E1
-	return 0;
-#endif
-
 	if (is_mmdvfs_freq_mux_disabled())
 		return 0;
 
@@ -1180,9 +1181,6 @@ int mmdvfs_raise_mmsys_by_mux(void)
 
 int mmdvfs_lower_mmsys_by_mux(void)
 {
-#ifdef MMDVFS_E1
-	return 0;
-#endif
 	if (is_mmdvfs_freq_mux_disabled())
 		return 0;
 
@@ -1309,9 +1307,8 @@ int mmdvfs_notify_mmclk_switch_request(int event)
 	int i = 0;
 	MTK_SMI_BWC_SCEN current_smi_scenario = smi_get_current_profile();
 
-#ifdef MMDVFS_E1
-	return 0;
-#endif
+	if (is_mmdvfs_freq_mux_disabled())
+		return 0;
 
 	/* Don't get the lock since there is no need to synchronize the is_cam_monior_work here*/
 	if (is_cam_monior_work != 0) {
