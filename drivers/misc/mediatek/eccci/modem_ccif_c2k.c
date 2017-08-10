@@ -1023,7 +1023,6 @@ static int md_ccif_op_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 	/*2. disable IRQ (use nosync) */
 	disable_irq_nosync(md_ctrl->md_wdt_irq_id);
 
-	ccci_md_broadcast_state(md, WAITING_TO_STOP);	/*to block char's write operation */
 	return 0;
 }
 
