@@ -57,7 +57,7 @@
 #include "wmt_plat_stub.h"
 #include "wmt_exp.h"
 #include "wmt_lib.h"
-#include "osal_typedef.h"
+#include "osal.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S

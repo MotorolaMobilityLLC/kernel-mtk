@@ -77,11 +77,6 @@ const PINT8 g_btm_op_name[] = {
 	"STP_OPID_BTM_EXIT"
 };
 
-UINT32 __weak wmt_plat_force_trigger_assert(ENUM_FORCE_TRG_ASSERT_T type)
-{
-	return 0;
-}
-
 static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 {
 	INT32 ret = -1;
@@ -658,9 +653,9 @@ static inline INT32 _stp_btm_do_fw_assert(MTKSTP_BTM_T *stp_btm)
 			pbuf = "btif_rxd thread be blocked too long,just collect SYS_FTRACE to DB";
 			len = osal_strlen(pbuf);
 			stp_dbg_trigger_collect_ftrace(pbuf, len);
-	} else
+		} else
 #endif
-		wmt_plat_force_trigger_assert(STP_FORCE_TRG_ASSERT_DEBUG_PIN);
+			wmt_plat_force_trigger_assert(STP_FORCE_TRG_ASSERT_DEBUG_PIN);
 	}
 	do {
 		if (0 != mtk_wcn_stp_coredump_start_get()) {
