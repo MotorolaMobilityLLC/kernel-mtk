@@ -1145,10 +1145,16 @@ int force_get_tbat(kal_bool update)
 			 bat_temperature_volt_temp, bat_temperature_volt, fg_current_state,
 			 fg_current_temp, fg_r_value, bat_temperature_val);
 		pre_bat_temperature_val = bat_temperature_val;
+
+		if (bat_temperature_val > 55)
+			pr_notice("[force_get_tbat] %d,%d,%d,%d,%d,%d\n",
+			 bat_temperature_volt_temp, bat_temperature_volt, fg_current_state,
+			 fg_current_temp, fg_r_value, bat_temperature_val);
+
 	} else {
 		bat_temperature_val = pre_bat_temperature_val;
 	}
-	return bat_temperature_val;
+	return 25;
 #endif
 }
 EXPORT_SYMBOL(force_get_tbat);
