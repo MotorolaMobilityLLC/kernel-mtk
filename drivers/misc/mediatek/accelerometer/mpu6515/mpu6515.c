@@ -400,7 +400,8 @@ static int MPU6515_SetPowerMode(struct i2c_client *client, bool enable)
 	u8 databuf[2];
 
 	if (enable == sensor_power) {
-		GSE_LOG("Sensor power status is newest!\n");
+		if (atomic_read(&obj->trace) & MPU6515_TRC_INFO)
+			GSE_LOG("Sensor power status is newest!\n");
 		return MPU6515_SUCCESS;
 	}
 #if 0

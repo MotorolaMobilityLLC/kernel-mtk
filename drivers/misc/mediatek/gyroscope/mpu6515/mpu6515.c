@@ -415,7 +415,8 @@ static int MPU6515_SetPowerMode(struct i2c_client *client, bool enable)
 	int res = 0;
 
 	if (enable == sensor_power) {
-		GYRO_LOG("Sensor power status is newest!\n");
+		if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
+			GYRO_LOG("Sensor power status is newest!\n");
 		return MPU6515_SUCCESS;
 	}
 #ifdef MPU6515_ACCESS_BY_GSE_I2C
@@ -547,7 +548,7 @@ static int MPU6515_SetSampleRate(struct i2c_client *client, int sample_rate)
 	int rate_div = 0;
 	int res = 0;
 
-	GYRO_FUN();
+	/* GYRO_FUN(); */
 #ifdef MPU6515_ACCESS_BY_GSE_I2C
 	if (MPU6515_hwmsen_read_byte(MPU6515_REG_CFG, databuf))
 #else
@@ -1601,7 +1602,8 @@ static int mpu6515_suspend(struct i2c_client *client, pm_message_t msg)
 	struct mpu6515_i2c_data *obj = i2c_get_clientdata(client);
 	int err = 0;
 
-	GYRO_FUN();
+	if (atomic_read(&obj->trace) & GYRO_TRC_INFO)
+		GYRO_FUN();
 
 	if (msg.event == PM_EVENT_SUSPEND) {
 		if (obj == NULL) {
