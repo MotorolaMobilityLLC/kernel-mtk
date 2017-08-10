@@ -16,6 +16,7 @@
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM) \
              -I$(srctree)/drivers/misc/mediatek/smi/ \
+             -I$(srctree)/drivers/misc/mediatek/mmp/ \
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include
 
 # Enable AEE
@@ -63,9 +64,7 @@ endif
 endif
 
 # platform dependent definition
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735" "mt6797"))
 ccflags-$(CONFIG_MTK_SMI_EXT) += -DCMDQ_CONFIG_SMI
-endif
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6580"))
 ccflags-y += -DCMDQ_DUMP_IMG_CLOCK_STATE
@@ -88,6 +87,9 @@ ccflags-y += -DCMDQ_DISP_LEGACY_SUB_SCENARIO
 endif
 
 ccflags-y += -D_CMDQ_DISABLE_MARKER_
+ifeq (,$(filter $(CONFIG_MTK_PLATFORM), "elbrus"))
+ccflags-y += -DCMDQ_PROFILE_MMP
+endif
 
 ifneq ($(CONFIG_MTK_CMDQ_TAB),y)
 # driver module
@@ -96,7 +98,7 @@ obj-y += cmdq_core.o
 obj-y += cmdq_virtual.o
 obj-y += cmdq_device.o
 obj-y += cmdq_driver.o
-# obj-y += cmdq_mmp.o
+obj-y += cmdq_mmp.o
 obj-y += cmdq_mdp_common.o
 obj-y += cmdq_prof.o
 obj-y += cmdq_test.o

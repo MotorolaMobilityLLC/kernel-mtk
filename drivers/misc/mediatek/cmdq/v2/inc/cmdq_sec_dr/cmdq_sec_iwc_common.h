@@ -39,7 +39,7 @@ typedef enum CMDQ_IWC_ADDR_METADATA_TYPE {
 /* IWC message */
 /*  */
 typedef struct{
-	/* [IN]_d, index of instruction. Update its argB value to real PA/MVA in secure world */
+	/* [IN]_d, index of instruction. Update its arg_b value to real PA/MVA in secure world */
 	uint32_t instrIndex;
 
 	uint32_t type; /* [IN] addr handle type*/

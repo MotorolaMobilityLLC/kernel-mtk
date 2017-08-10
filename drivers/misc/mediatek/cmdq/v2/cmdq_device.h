@@ -70,6 +70,7 @@ long cmdq_dev_alloc_module_base_VA_by_name(const char *name);
 /* Other modules information */
 void cmdq_dev_free_module_base_VA(const long VA);
 long cmdq_dev_get_APXGPT2_count(void);
+uint32_t cmdq_dev_get_mmsys_dummy_reg_offset(void);
 /* physical address */
 void cmdq_dev_get_module_PA(const char *name, int index, long *startPA, long *endPA);
 long cmdq_dev_get_module_base_PA_GCE(void);
@@ -79,6 +80,8 @@ void cmdq_dev_test_dts_correctness(void);
 /* device initialization / deinitialization */
 void cmdq_dev_init(struct platform_device *pDevice);
 void cmdq_dev_deinit(void);
+/* dma_set_mask result, to show in status */
+int32_t cmdq_dev_get_dma_mask_result(void);
 
 typedef struct cmdq_dts_setting {
 	uint32_t prefetch_thread_count;

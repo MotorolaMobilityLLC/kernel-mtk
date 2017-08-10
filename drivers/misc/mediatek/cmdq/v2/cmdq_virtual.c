@@ -230,7 +230,7 @@ uint64_t cmdq_virtual_flag_from_scenario_legacy(CMDQ_SCENARIO_ENUM scn)
 /*
  * GCE capability
  */
-uint32_t cmdq_virtual_get_subsys_LSB_in_argA(void)
+uint32_t cmdq_virtual_get_subsys_LSB_in_arg_a(void)
 {
 	return 16;
 }
@@ -502,7 +502,7 @@ CMDQ_HW_THREAD_PRIORITY_ENUM cmdq_virtual_priority_from_scenario(CMDQ_SCENARIO_E
 		break;
 	}
 
-	if (cmdq_get_func()->isLoopScenario(scenario, true))
+	if (cmdq_get_func()->is_disp_loop(scenario))
 		return CMDQ_THR_PRIO_DISPLAY_TRIGGER;
 	else
 		return CMDQ_THR_PRIO_NORMAL;
@@ -510,36 +510,31 @@ CMDQ_HW_THREAD_PRIORITY_ENUM cmdq_virtual_priority_from_scenario(CMDQ_SCENARIO_E
 
 bool cmdq_virtual_force_loop_irq(CMDQ_SCENARIO_ENUM scenario)
 {
-	bool forceLoop = false;
+	bool force_loop = false;
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	if (CMDQ_SCENARIO_SECURE_NOTIFY_LOOP == scenario) {
 		/* For secure notify loop, we need IRQ to update secure task */
-		forceLoop = true;
+		force_loop = true;
 	}
 #endif
 	if (CMDQ_SCENARIO_HIGHP_TRIGGER_LOOP == scenario
 		|| CMDQ_SCENARIO_LOWP_TRIGGER_LOOP == scenario) {
 		/* For monitor thread loop, we need IRQ to set callback function */
-		forceLoop = true;
+		force_loop = true;
 	}
 
-	return forceLoop;
+	return force_loop;
 }
 
-bool cmdq_virtual_is_loop_scenario(CMDQ_SCENARIO_ENUM scenario, bool displayOnly)
+bool cmdq_virtual_is_disp_loop(CMDQ_SCENARIO_ENUM scenario)
 {
-#ifdef CMDQ_SECURE_PATH_SUPPORT
-	if (!displayOnly && CMDQ_SCENARIO_SECURE_NOTIFY_LOOP == scenario)
-		return true;
-#endif
+	bool is_disp_loop = false;
 
-	if (CMDQ_SCENARIO_TRIGGER_LOOP == scenario
-		|| CMDQ_SCENARIO_HIGHP_TRIGGER_LOOP == scenario
-		|| CMDQ_SCENARIO_LOWP_TRIGGER_LOOP == scenario)
-		return true;
+	if (CMDQ_SCENARIO_TRIGGER_LOOP == scenario)
+		is_disp_loop = true;
 
-	return false;
+	return is_disp_loop;
 }
 
 /**
@@ -856,7 +851,7 @@ const char *cmdq_virtual_parse_error_module_by_hwflag_impl(const TaskStruct *pTa
 		if (NULL != module)
 			break;
 
-		if (false == pTask->secData.isSecure) {
+		if (false == pTask->secData.is_secure) {
 			/* normal path, need parse current running instruciton for more detail */
 			break;
 		} else if (CMDQ_ENG_MDP_GROUP_FLAG(pTask->engineFlag)) {
@@ -1164,7 +1159,7 @@ void cmdq_virtual_function_setting(void)
 	/*
 	 * GCE capability
 	 */
-	pFunc->getSubsysLSBArgA = cmdq_virtual_get_subsys_LSB_in_argA;
+	pFunc->getSubsysLSBArgA = cmdq_virtual_get_subsys_LSB_in_arg_a;
 
 	/* HW thread related */
 	pFunc->isSecureThread = cmdq_virtual_is_a_secure_thread;
@@ -1180,8 +1175,8 @@ void cmdq_virtual_function_setting(void)
 	pFunc->dispThread = cmdq_virtual_disp_thread;
 	pFunc->getThreadID = cmdq_virtual_get_thread_index;
 	pFunc->priority = cmdq_virtual_priority_from_scenario;
-	pFunc->forceLoopIRQ = cmdq_virtual_force_loop_irq;
-	pFunc->isLoopScenario = cmdq_virtual_is_loop_scenario;
+	pFunc->force_loop_irq = cmdq_virtual_force_loop_irq;
+	pFunc->is_disp_loop = cmdq_virtual_is_disp_loop;
 
 	/**
 	 * Module dependent

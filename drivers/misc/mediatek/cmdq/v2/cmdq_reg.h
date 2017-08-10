@@ -67,16 +67,6 @@
 
 #define CMDQ_THR_EXEC_CNT_PA(id)     (GCE_BASE_PA + (0x080 * id) + 0x128)
 
-#ifdef CMDQ_USE_LEGACY
-#define CMDQ_TEST_MMSYS_DUMMY_OFFSET (0x890)
-#else
-/* use DUMMY_3(0x89C) because DUMMY_0/1 is CLKMGR SW */
-#define CMDQ_TEST_MMSYS_DUMMY_OFFSET (0x89C)
-#endif
-
-#define CMDQ_TEST_MMSYS_DUMMY_PA     (0x14000000 + CMDQ_TEST_MMSYS_DUMMY_OFFSET)
-#define CMDQ_TEST_MMSYS_DUMMY_VA     (cmdq_dev_get_module_base_VA_MMSYS_CONFIG() + CMDQ_TEST_MMSYS_DUMMY_OFFSET)
-
 #define CMDQ_APXGPT2_COUNT           (cmdq_dev_get_APXGPT2_count())
 
 #define CMDQ_REG_GET32(addr)         (readl((void *)addr) & 0xFFFFFFFF)

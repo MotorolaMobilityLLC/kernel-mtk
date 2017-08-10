@@ -24,6 +24,8 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/io.h>
+#include <linux/dma-mapping.h>
+#include <mt-plat/mt_lpae.h>
 
 typedef struct CmdqDeviceStruct {
 	struct device *pDev;
@@ -34,10 +36,12 @@ typedef struct CmdqDeviceStruct {
 	long regBasePA;
 	uint32_t irqId;
 	uint32_t irqSecId;
+	int32_t dma_mask_result;
 } CmdqDeviceStruct;
 static CmdqDeviceStruct gCmdqDev;
 static long gMMSYS_CONFIG_Base_VA;
 static long gAPXGPT2Count;
+static uint32_t gMMSYSDummyRegOffset;
 
 struct device *cmdq_dev_get(void)
 {
@@ -64,6 +68,11 @@ long cmdq_dev_get_module_base_PA_GCE(void)
 	return gCmdqDev.regBasePA;
 }
 
+int32_t cmdq_dev_get_dma_mask_result(void)
+{
+	return gCmdqDev.dma_mask_result;
+}
+
 long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void)
 {
 	return gMMSYS_CONFIG_Base_VA;
@@ -72,6 +81,11 @@ long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void)
 long cmdq_dev_get_APXGPT2_count(void)
 {
 	return gAPXGPT2Count;
+}
+
+uint32_t cmdq_dev_get_mmsys_dummy_reg_offset(void)
+{
+	return gMMSYSDummyRegOffset;
 }
 
 void cmdq_dev_init_module_base_VA(void)
@@ -308,27 +322,27 @@ void cmdq_dev_init_MDP_PA(struct device_node *node)
 	int status;
 	uint32_t gceDispMutex[2] = {0, 0};
 	uint32_t *pMDPBaseAddress = cmdq_core_get_whole_DTS_Data()->MDPBaseAddress;
-	long module_pa_start;
-	long module_pa_end;
-	
+	long module_pa_start = 0;
+	long module_pa_end = 0;
+
 	cmdq_dev_get_module_PA("mediatek,mm_mutex", 0,
 					    &module_pa_start,
 					    &module_pa_end);
-	
+
 	if (module_pa_start == 0) {
 		CMDQ_ERR("DEV: init mm_mutex PA fail!!\n");
 		do {
-			status = of_property_read_u32_array(node, "disp_mutex_reg", gceDispMutex, ARRAY_SIZE(gceDispMutex));
+			status = of_property_read_u32_array(node, "disp_mutex_reg",
+						gceDispMutex, ARRAY_SIZE(gceDispMutex));
 			if (status < 0)
 				break;
-		
+
 			pMDPBaseAddress[CMDQ_MDP_PA_BASE_MM_MUTEX] = gceDispMutex[0];
 		} while (0);
 	} else {
 		pMDPBaseAddress[CMDQ_MDP_PA_BASE_MM_MUTEX] = module_pa_start;
 	}
 	CMDQ_MSG("MM_MUTEX PA: start = 0x%x\n", pMDPBaseAddress[CMDQ_MDP_PA_BASE_MM_MUTEX]);
-		
 #endif
 }
 
@@ -502,8 +516,10 @@ void cmdq_dev_init_device_tree(struct device_node *node)
 {
 	int status;
 	uint32_t apxgpt2_count_value = 0;
+	uint32_t mmsys_dummy_reg_offset_value = 0;
 
 	gAPXGPT2Count = 0;
+	gMMSYSDummyRegOffset = 0;
 	cmdq_core_init_DTS_data();
 #ifdef CMDQ_OF_SUPPORT
 	/* init GCE subsys */
@@ -512,13 +528,24 @@ void cmdq_dev_init_device_tree(struct device_node *node)
 	cmdq_dev_init_event_table(node);
 	/* init MDP PA address */
 	cmdq_dev_init_MDP_PA(node);
-	do {
-		status = of_property_read_u32(node, "apxgpt2_count", &apxgpt2_count_value);
-		if (status < 0)
-			break;
-
+	status = of_property_read_u32(node, "apxgpt2_count", &apxgpt2_count_value);
+	if (status >= 0)
 		gAPXGPT2Count = apxgpt2_count_value;
-	} while (0);
+
+	/* read dummy register offset from device tree,
+	 * usually DUMMY_3 because DUMMY_0/1 is CLKMGR SW.
+	 */
+	status = of_property_read_u32(node, "mmsys_dummy_reg_offset", &mmsys_dummy_reg_offset_value);
+	if (status < 0)	{
+		/* in legency chip (before mt6757) dummy register offset fixed */
+#ifdef CMDQ_USE_LEGACY
+		mmsys_dummy_reg_offset_value = 0x890;
+#else
+		mmsys_dummy_reg_offset_value = 0x89C;
+#endif
+	}
+
+	gMMSYSDummyRegOffset = mmsys_dummy_reg_offset_value;
 #endif
 }
 
@@ -546,6 +573,12 @@ void cmdq_dev_init(struct platform_device *pDevice)
 		     gCmdqDev.pDev, gCmdqDev.regBasePA, gCmdqDev.regBaseVA, gCmdqDev.irqId,
 		     gCmdqDev.irqSecId);
 	} while (0);
+
+	if (!enable_4G()) {
+		/* Not special 4GB case, use dma_mask to restrict dma memory to low 4GB address */
+		gCmdqDev.dma_mask_result = dma_set_coherent_mask(&pDevice->dev, DMA_BIT_MASK(32));
+		CMDQ_LOG("set dma mask result: %d\n", gCmdqDev.dma_mask_result);
+	}
 
 	/* init module VA */
 	cmdq_dev_init_module_base_VA();

@@ -183,7 +183,7 @@ typedef enum CMDQ_SCENARIO_ENUM {
 	CMDQ_SCENARIO_RDMA2_DISP = 34,
 
 	CMDQ_SCENARIO_HIGHP_TRIGGER_LOOP = 35,	/* for primary trigger loop enable pre-fetch usage */
-	CMDQ_SCENARIO_LOWP_TRIGGER_LOOP = 36,	/* for low priority monitor loop to polling bus status*/
+	CMDQ_SCENARIO_LOWP_TRIGGER_LOOP = 36,	/* for low priority monitor loop to polling bus status */
 
 	CMDQ_SCENARIO_KERNEL_CONFIG_GENERAL = 37,
 
@@ -308,7 +308,7 @@ typedef enum CMDQ_SEC_ADDR_METADATA_TYPE {
 } CMDQ_SEC_ADDR_METADATA_TYPE;
 
 typedef struct cmdqSecAddrMetadataStruct {
-	/* [IN]_d, index of instruction. Update its argB value to real PA/MVA in secure world */
+	/* [IN]_d, index of instruction. Update its arg_b value to real PA/MVA in secure world */
 	uint32_t instrIndex;
 
 	CMDQ_SEC_ADDR_METADATA_TYPE type;	/* [IN] addr handle type */
@@ -319,7 +319,7 @@ typedef struct cmdqSecAddrMetadataStruct {
 } cmdqSecAddrMetadataStruct;
 
 typedef struct cmdqSecDataStruct {
-	bool isSecure;		/* [IN]true for secure command */
+	bool is_secure;		/* [IN]true for secure command */
 
 	/* address metadata, used to translate secure buffer PA related instruction in secure world */
 	uint32_t addrMetadataCount;	/* [IN] count of element in addrList */
@@ -360,7 +360,7 @@ typedef struct cmdqCommandStruct {
 	cmdqRegValueStruct regValue;
 	/* [IN/OUT] physical addresses to read value */
 	cmdqReadAddressStruct readAddress;
-	/*[IN] secure execution data */
+	/* [IN] secure execution data */
 	cmdqSecDataStruct secData;
 	/* [IN] set to non-zero to enable register debug dump. */
 	uint32_t debugRegDump;

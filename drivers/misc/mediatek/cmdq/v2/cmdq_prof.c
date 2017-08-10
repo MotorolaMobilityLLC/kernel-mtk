@@ -46,20 +46,20 @@ const char *cmdq_prof_get_statistic_id_name(const CMDQ_OP_STATISTIC_ENUM statist
 
 uint32_t cmdq_prof_get_statistic_id(const uint32_t *pCmd)
 {
-	const uint32_t argB = pCmd[0];
-	const uint32_t argA = pCmd[1];
-	const uint32_t op = argA >> 24;
+	const uint32_t arg_b = pCmd[0];
+	const uint32_t arg_a = pCmd[1];
+	const uint32_t op = arg_a >> 24;
 	uint32_t addr;
 	uint32_t maskEn = 0;
 
 	switch (op) {
 	case CMDQ_CODE_WRITE:
 		/* check address */
-		if (argA & (1 << 23)) {
+		if (arg_a & (1 << 23)) {
 			/* address is GPR */
 			return CMDQ_STA_WRI;
 		}
-		addr = cmdq_core_subsys_to_reg_addr(argA);
+		addr = cmdq_core_subsys_to_reg_addr(arg_a);
 		maskEn = (addr & 0x1);
 		if (maskEn)
 			return CMDQ_STA_WRI_WITH_MASK;
@@ -68,7 +68,7 @@ uint32_t cmdq_prof_get_statistic_id(const uint32_t *pCmd)
 
 	case CMDQ_CODE_WFE:
 		/* check waiting flag */
-		if ((argB >> 15) & 0x1)
+		if ((arg_b >> 15) & 0x1)
 			return CMDQ_STA_WFE;
 		else
 			return CMDQ_STA_SYNC;
@@ -88,11 +88,11 @@ uint32_t cmdq_prof_get_statistic_id(const uint32_t *pCmd)
 	case CMDQ_CODE_EOC:
 		return CMDQ_STA_EOC;
 	default:
-		CMDQ_ERR("unknown op, argA: 0x%08x\n", argA);
+		CMDQ_ERR("unknown op, arg_a: 0x%08x\n", arg_a);
 		return 0;
 	}
 
-	CMDQ_ERR("unknown op, argA: 0x%08x\n", argA);
+	CMDQ_ERR("unknown op, arg_a: 0x%08x\n", arg_a);
 	return 0;
 }
 

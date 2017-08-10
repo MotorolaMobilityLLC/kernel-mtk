@@ -16,7 +16,7 @@
 
 #include "cmdq_def.h"
 
-/* get subsys LSB in argA */
+/* get subsys LSB in arg_a */
 typedef uint32_t(*CmdqGetSubsysLSBArgA) (void);
 
 /* is a secure thread */
@@ -44,10 +44,10 @@ typedef int (*CmdqGetThreadID) (CMDQ_SCENARIO_ENUM scenario, const bool secure);
 typedef CMDQ_HW_THREAD_PRIORITY_ENUM(*CmdqPriority) (CMDQ_SCENARIO_ENUM scenario);
 
 /*  force loop IRQ from scenario */
-typedef bool(*CmdqForceLoopIRQ) (CMDQ_SCENARIO_ENUM scenario);
+typedef bool(*cmdq_force_loop_irq) (CMDQ_SCENARIO_ENUM scenario);
 
-/*  is loop scenario */
-typedef bool(*CmdqIsLoopScenario) (CMDQ_SCENARIO_ENUM scenario, bool displayOnly);
+/*  is disp loop */
+typedef bool(*cmdq_is_disp_loop) (CMDQ_SCENARIO_ENUM scenario);
 
 /* get register index from hwflag */
 typedef void(*CmdqGetRegID) (uint64_t hwflag,
@@ -118,8 +118,8 @@ typedef struct cmdqCoreFuncStruct {
 	CmdqDispThread dispThread;
 	CmdqGetThreadID getThreadID;
 	CmdqPriority priority;
-	CmdqForceLoopIRQ forceLoopIRQ;
-	CmdqIsLoopScenario isLoopScenario;
+	cmdq_force_loop_irq force_loop_irq;
+	cmdq_is_disp_loop is_disp_loop;
 	CmdqGetRegID getRegID;
 	CmdqModuleFromEvent moduleFromEvent;
 	CmdqParseModule parseModule;

@@ -396,15 +396,11 @@ void cmdq_mdp_enable_larb5_clock(bool enable)
 {
 	if (enable) {
 		CMDQ_VERBOSE("[CLOCK] Enable SMI Larb5 %d\n", atomic_read(&gSMILarb5Usage));
-		if (0 == atomic_read(&gSMILarb5Usage))
+		if (1 == atomic_inc_return(&gSMILarb5Usage))
 			cmdq_mdp_enable_clock_SMI_LARB5(enable);
-
-		atomic_inc(&gSMILarb5Usage);
 	} else {
-		atomic_dec(&gSMILarb5Usage);
-
 		CMDQ_VERBOSE("[CLOCK] Disable SMI Larb5 %d\n", atomic_read(&gSMILarb5Usage));
-		if (0 >= atomic_read(&gSMILarb5Usage))
+		if (0 == atomic_dec_return(&gSMILarb5Usage))
 			cmdq_mdp_enable_clock_SMI_LARB5(enable);
 	}
 }

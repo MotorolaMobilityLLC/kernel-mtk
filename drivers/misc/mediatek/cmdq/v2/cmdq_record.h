@@ -19,6 +19,7 @@
 #include "cmdq_core.h"
 
 struct TaskStruct;
+typedef uint64_t CMDQ_VARIABLE;
 
 typedef struct cmdqRecStruct {
 	uint64_t engineFlag;
@@ -54,6 +55,7 @@ extern "C" {
  * Return:
  *     0 for success; else the error code is returned
  */
+	int32_t cmdq_task_create(CMDQ_SCENARIO_ENUM scenario, cmdqRecHandle *pHandle);
 	int32_t cmdqRecCreate(CMDQ_SCENARIO_ENUM scenario, cmdqRecHandle *pHandle);
 
 /**
@@ -64,6 +66,7 @@ extern "C" {
  * Return:
  *     0 for success; else the error code is returned
  */
+	int32_t cmdq_task_set_engine(cmdqRecHandle handle, uint64_t engineFlag);
 	int32_t cmdqRecSetEngine(cmdqRecHandle handle, uint64_t engineFlag);
 
 /**
@@ -73,22 +76,24 @@ extern "C" {
  * Return:
  *     0 for success; else the error code is returned
  */
+	int32_t cmdq_task_reset(cmdqRecHandle handle);
 	int32_t cmdqRecReset(cmdqRecHandle handle);
 
 /**
  * Configure as secure task
  * Parameter:
  *     handle: the command queue recorder handle
- *     isSecure: true, execute the command in secure world
+ *     is_secure: true, execute the command in secure world
  * Return:
  *     0 for success; else the error code is returned
  *
  * Note:
  *     a. Secure CMDQ support when t-base enabled only
  *     b. By default cmdqRecHandle records a normal command,
- *		  please call cmdqRecSetSecure to set command as SECURE after cmdqRecReset
+ *		  please call cmdq_task_set_secure to set command as SECURE after cmdq_task_reset
  */
-	int32_t cmdqRecSetSecure(cmdqRecHandle handle, const bool isSecure);
+	int32_t cmdq_task_set_secure(cmdqRecHandle handle, const bool is_secure);
+	int32_t cmdqRecSetSecure(cmdqRecHandle handle, const bool is_secure);
 
 /**
  * query handle is secure task or not
@@ -97,6 +102,7 @@ extern "C" {
  * Return:
  *	   0 for false (not secure) and 1 for true (is secure)
  */
+	int32_t cmdq_task_is_secure(cmdqRecHandle handle);
 	int32_t cmdqRecIsSecure(cmdqRecHandle handle);
 
 /**
@@ -106,6 +112,7 @@ extern "C" {
  *     a. Secure CMDQ support when t-base enabled only
  *     b. after reset handle, user have to specify protection flag again
  */
+	int32_t cmdq_task_secure_enable_dapc(cmdqRecHandle handle, const uint64_t engineFlag);
 	int32_t cmdqRecSecureEnableDAPC(cmdqRecHandle handle, const uint64_t engineFlag);
 
 /**
@@ -115,6 +122,7 @@ extern "C" {
  *	   a. Secure CMDQ support when t-base enabled only
  *	   b. after reset handle, user have to specify protection flag again
  */
+	int32_t cmdq_task_secure_enable_port_security(cmdqRecHandle handle, const uint64_t engineFlag);
 	int32_t cmdqRecSecureEnablePortSecurity(cmdqRecHandle handle, const uint64_t engineFlag);
 
 /**
@@ -149,11 +157,13 @@ extern "C" {
  * Parameter:
  *     handle: the command queue recorder handle
  *     addr: the specified target register physical address
- *     value: the specified target register value
+ *     argument / value: the specified target register value
  *     mask: the specified target register mask
  * Return:
  *     0 for success; else the error code is returned
  */
+	int32_t cmdq_op_write_reg(cmdqRecHandle handle, uint32_t addr,
+				   CMDQ_VARIABLE argument, uint32_t mask);
 	int32_t cmdqRecWrite(cmdqRecHandle handle, uint32_t addr, uint32_t value, uint32_t mask);
 
 /**
@@ -171,7 +181,9 @@ extern "C" {
  * Note:
  *     support only when secure OS enabled
  */
-
+	int32_t cmdq_op_write_reg_secure(cmdqRecHandle handle, uint32_t addr,
+				   CMDQ_SEC_ADDR_METADATA_TYPE type, uint32_t baseHandle,
+				   uint32_t offset, uint32_t size, uint32_t port);
 	int32_t cmdqRecWriteSecure(cmdqRecHandle handle,
 				   uint32_t addr,
 				   CMDQ_SEC_ADDR_METADATA_TYPE type,
@@ -188,6 +200,7 @@ extern "C" {
  * Return:
  *     0 for success; else the error code is returned
  */
+	int32_t cmdq_op_poll(cmdqRecHandle handle, uint32_t addr, uint32_t value, uint32_t mask);
 	int32_t cmdqRecPoll(cmdqRecHandle handle, uint32_t addr, uint32_t value, uint32_t mask);
 
 /**
@@ -198,10 +211,11 @@ extern "C" {
  * Return:
  *     0 for success; else the error code is returned
  */
+	int32_t cmdq_op_wait(cmdqRecHandle handle, CMDQ_EVENT_ENUM event);
 	int32_t cmdqRecWait(cmdqRecHandle handle, CMDQ_EVENT_ENUM event);
 
 /**
- * like cmdqRecWait, but won't clear the event after
+ * like cmdq_op_wait, but won't clear the event after
  * leaving wait state.
  *
  * Parameter:
@@ -210,6 +224,7 @@ extern "C" {
  * Return:
  *     0 for success; else the error code is returned
  */
+	int32_t cmdq_op_wait_no_clear(cmdqRecHandle handle, CMDQ_EVENT_ENUM event);
 	int32_t cmdqRecWaitNoClear(cmdqRecHandle handle, CMDQ_EVENT_ENUM event);
 
 /**
@@ -220,6 +235,7 @@ extern "C" {
  * Return:
  *     0 for success; else the error code is returned
  */
+	int32_t cmdq_op_clear_event(cmdqRecHandle handle, CMDQ_EVENT_ENUM event);
 	int32_t cmdqRecClearEventToken(cmdqRecHandle handle, CMDQ_EVENT_ENUM event);
 
 /**
@@ -230,51 +246,62 @@ extern "C" {
  * Return:
  *     0 for success; else the error code is returned
  */
+	int32_t cmdq_op_set_event(cmdqRecHandle handle, CMDQ_EVENT_ENUM event);
 	int32_t cmdqRecSetEventToken(cmdqRecHandle handle, CMDQ_EVENT_ENUM event);
+
 /**
  * Read a register value to a CMDQ general purpose register(GPR)
  * Parameter:
  *     handle: the command queue recorder handle
- *     hwRegAddr: register address to read from
- *     dstDataReg: CMDQ GPR to write to
+ *     hw_addr: register address to read from
+ *     dst_data_reg: CMDQ GPR to write to
  * Return:
  *     0 for success; else the error code is returned
  */
-	int32_t cmdqRecReadToDataRegister(cmdqRecHandle handle, uint32_t hwRegAddr,
-					  CMDQ_DATA_REGISTER_ENUM dstDataReg);
+	int32_t cmdq_op_read_to_data_register(cmdqRecHandle handle, uint32_t hw_addr,
+					  CMDQ_DATA_REGISTER_ENUM dst_data_reg);
+	int32_t cmdqRecReadToDataRegister(cmdqRecHandle handle, uint32_t hw_addr,
+					  CMDQ_DATA_REGISTER_ENUM dst_data_reg);
 
 /**
  * Write a register value from a CMDQ general purpose register(GPR)
  * Parameter:
  *     handle: the command queue recorder handle
- *     srcDataReg: CMDQ GPR to read from
- *     hwRegAddr: register address to write to
+ *     src_data_reg: CMDQ GPR to read from
+ *     hw_addr: register address to write to
  * Return:
  *     0 for success; else the error code is returned
  */
+	int32_t cmdq_op_write_from_data_register(cmdqRecHandle handle,
+					     CMDQ_DATA_REGISTER_ENUM src_data_reg, uint32_t hw_addr);
 	int32_t cmdqRecWriteFromDataRegister(cmdqRecHandle handle,
-					     CMDQ_DATA_REGISTER_ENUM srcDataReg,
-					     uint32_t hwRegAddr);
+					     CMDQ_DATA_REGISTER_ENUM src_data_reg,
+					     uint32_t hw_addr);
 
 
 /**
  *  Allocate 32-bit register backup slot
  *
  */
-	int32_t cmdqBackupAllocateSlot(cmdqBackupSlotHandle *phBackupSlot, uint32_t slotCount);
+	int32_t cmdq_alloc_mem(cmdqBackupSlotHandle *p_h_backup_slot, uint32_t slotCount);
+	int32_t cmdqBackupAllocateSlot(cmdqBackupSlotHandle *p_h_backup_slot, uint32_t slotCount);
 
 /**
  *  Read 32-bit register backup slot by index
  *
  */
-	int32_t cmdqBackupReadSlot(cmdqBackupSlotHandle hBackupSlot, uint32_t slotIndex,
+	int32_t cmdq_cpu_read_mem(cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index,
+				   uint32_t *value);
+	int32_t cmdqBackupReadSlot(cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index,
 				   uint32_t *value);
 
 /**
  *  Use CPU to write value into 32-bit register backup slot by index directly.
  *
  */
-	int32_t cmdqBackupWriteSlot(cmdqBackupSlotHandle hBackupSlot, uint32_t slotIndex,
+	int32_t cmdq_cpu_write_mem(cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index,
+					uint32_t value);
+	int32_t cmdqBackupWriteSlot(cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index,
 				    uint32_t value);
 
 
@@ -283,40 +310,49 @@ extern "C" {
  *  task finishes. Becareful on AsyncFlush use cases.
  *
  */
-	int32_t cmdqBackupFreeSlot(cmdqBackupSlotHandle hBackupSlot);
+	int32_t cmdq_free_mem(cmdqBackupSlotHandle h_backup_slot);
+	int32_t cmdqBackupFreeSlot(cmdqBackupSlotHandle h_backup_slot);
 
 
 /**
  *  Insert instructions to backup given 32-bit HW register
  *  to a backup slot.
- *  You can use cmdqBackupReadSlot() to retrieve the result
- *  AFTER cmdqRecFlush() returns, or INSIDE the callback of cmdqRecFlushAsyncCallback().
+ *  You can use cmdq_cpu_read_mem() to retrieve the result
+ *  AFTER cmdq_task_flush() returns, or INSIDE the callback of cmdq_task_flush_async_callback().
  *
  */
+	int32_t cmdq_op_read_reg_to_mem(cmdqRecHandle handle,
+					    cmdqBackupSlotHandle h_backup_slot,
+					    uint32_t slot_index, uint32_t addr);
 	int32_t cmdqRecBackupRegisterToSlot(cmdqRecHandle handle,
-					    cmdqBackupSlotHandle hBackupSlot,
-					    uint32_t slotIndex, uint32_t addr);
+					    cmdqBackupSlotHandle h_backup_slot,
+					    uint32_t slot_index, uint32_t addr);
 
 /**
  *  Insert instructions to write 32-bit HW register
  *  from a backup slot.
- *  You can use cmdqBackupReadSlot() to retrieve the result
- *  AFTER cmdqRecFlush() returns, or INSIDE the callback of cmdqRecFlushAsyncCallback().
+ *  You can use cmdq_cpu_read_mem() to retrieve the result
+ *  AFTER cmdq_task_flush() returns, or INSIDE the callback of cmdq_task_flush_async_callback().
  *
  */
+	int32_t cmdq_op_read_mem_to_reg(cmdqRecHandle handle,
+						   cmdqBackupSlotHandle h_backup_slot,
+						   uint32_t slot_index, uint32_t addr);
 	int32_t cmdqRecBackupWriteRegisterFromSlot(cmdqRecHandle handle,
-						   cmdqBackupSlotHandle hBackupSlot,
-						   uint32_t slotIndex, uint32_t addr);
+						   cmdqBackupSlotHandle h_backup_slot,
+						   uint32_t slot_index, uint32_t addr);
 
 /**
  *  Insert instructions to update slot with given 32-bit value
- *  You can use cmdqBackupReadSlot() to retrieve the result
- *  AFTER cmdqRecFlush() returns, or INSIDE the callback of cmdqRecFlushAsyncCallback().
+ *  You can use cmdq_cpu_read_mem() to retrieve the result
+ *  AFTER cmdq_task_flush() returns, or INSIDE the callback of cmdq_task_flush_async_callback().
  *
  */
+	int32_t cmdq_op_write_mem(cmdqRecHandle handle, cmdqBackupSlotHandle h_backup_slot,
+						uint32_t slot_index, uint32_t value);
 	int32_t cmdqRecBackupUpdateSlot(cmdqRecHandle handle,
-					cmdqBackupSlotHandle hBackupSlot,
-					uint32_t slotIndex, uint32_t value);
+					cmdqBackupSlotHandle h_backup_slot,
+					uint32_t slot_index, uint32_t value);
 
 /**
  * Trigger CMDQ to execute the recorded commands
@@ -328,14 +364,16 @@ extern "C" {
  *     This is a synchronous function. When the function
  *     returned, the recorded commands have been done.
  */
+	int32_t cmdq_task_flush(cmdqRecHandle handle);
 	int32_t cmdqRecFlush(cmdqRecHandle handle);
-
 
 /**
  *  Flush the command; Also at the end of the command, backup registers
  *  appointed by addrArray.
  *
  */
+	int32_t cmdq_task_flush_and_read_register(cmdqRecHandle handle, uint32_t regCount,
+					    uint32_t *addrArray, uint32_t *valueArray);
 	int32_t cmdqRecFlushAndReadRegister(cmdqRecHandle handle, uint32_t regCount,
 					    uint32_t *addrArray, uint32_t *valueArray);
 
@@ -349,8 +387,11 @@ extern "C" {
  *     This is an ASYNC function. When the function
  *     returned, it may or may not be finished. There is no way to retrieve the result.
  */
+	int32_t cmdq_task_flush_async(cmdqRecHandle handle);
 	int32_t cmdqRecFlushAsync(cmdqRecHandle handle);
 
+	int32_t cmdq_task_flush_async_callback(cmdqRecHandle handle, CmdqAsyncFlushCB callback,
+					  uint32_t userData);
 	int32_t cmdqRecFlushAsyncCallback(cmdqRecHandle handle, CmdqAsyncFlushCB callback,
 					  uint32_t userData);
 
@@ -371,19 +412,23 @@ extern "C" {
  *     This is an asynchronous function. When the function
  *     returned, the thread has started. Return -1 in irqCallback to stop it.
  */
+	int32_t cmdq_task_start_loop(cmdqRecHandle handle);
 	int32_t cmdqRecStartLoop(cmdqRecHandle handle);
 
+	int32_t cmdq_task_start_loop_callback(cmdqRecHandle handle, CmdqInterruptCB loopCB, unsigned long loopData);
 	int32_t cmdqRecStartLoopWithCallback(cmdqRecHandle handle, CmdqInterruptCB loopCB, unsigned long loopData);
 
 /**
  * Unconditionally stops the loop thread.
- * Must call after cmdqRecStartLoop().
+ * Must call after cmdq_task_start_loop().
  */
+	int32_t cmdq_task_stop_loop(cmdqRecHandle handle);
 	int32_t cmdqRecStopLoop(cmdqRecHandle handle);
 
 /**
  * returns current count of instructions in given handle
  */
+	int32_t cmdq_task_get_instruction_count(cmdqRecHandle handle);
 	int32_t cmdqRecGetInstructionCount(cmdqRecHandle handle);
 
 /**
@@ -397,12 +442,14 @@ extern "C" {
  *     Please define CMDQ_PROFILE_MARKER_SUPPORT in cmdq_def.h
  *     to enable profile marker.
  */
+	int32_t cmdq_op_profile_marker(cmdqRecHandle handle, const char *tag);
 	int32_t cmdqRecProfileMarker(cmdqRecHandle handle, const char *tag);
 
 /**
  * Dump command buffer to kernel log
  * This is for debugging purpose.
  */
+	int32_t cmdq_task_dump_command(cmdqRecHandle handle);
 	int32_t cmdqRecDumpCommand(cmdqRecHandle handle);
 
 /**
@@ -411,7 +458,7 @@ extern "C" {
  *
  * Note this estimation supposes all POLL/WAIT condition pass immediately
  */
-
+	int32_t cmdq_task_estimate_command_exec_time(const cmdqRecHandle handle);
 	int32_t cmdqRecEstimateCommandExecTime(const cmdqRecHandle handle);
 
 /**
@@ -419,6 +466,7 @@ extern "C" {
  * Parameter:
  *     handle: the command queue recorder handle
  */
+	int32_t cmdq_task_destroy(cmdqRecHandle handle);
 	void cmdqRecDestroy(cmdqRecHandle handle);
 
 /**
@@ -431,6 +479,7 @@ extern "C" {
  * Return:
  *     > 0 (index) for success; else the error code is returned
  */
+	int32_t cmdq_op_set_nop(cmdqRecHandle handle, uint32_t index);
 	int32_t cmdqRecSetNOP(cmdqRecHandle handle, uint32_t index);
 
 /**
@@ -440,16 +489,18 @@ extern "C" {
  *     handle: the command queue recorder handle
  *     startIndex: Query offset from "startIndex" of instruction (start from 0)
  *     opCode: instruction name, you can use the following 6 instruction names:
- *		CMDQ_CODE_WFE					: create via cmdqRecWait()
- *		CMDQ_CODE_SET_TOKEN			: create via cmdqRecSetEventToken()
- *		CMDQ_CODE_WAIT_NO_CLEAR		: create via cmdqRecWaitNoClear()
- *		CMDQ_CODE_CLEAR_TOKEN			: create via cmdqRecClearEventToken()
+ *		CMDQ_CODE_WFE					: create via cmdq_op_wait()
+ *		CMDQ_CODE_SET_TOKEN			: create via cmdq_op_set_event()
+ *		CMDQ_CODE_WAIT_NO_CLEAR		: create via cmdq_op_wait_no_clear()
+ *		CMDQ_CODE_CLEAR_TOKEN			: create via cmdq_op_clear_event()
  *		CMDQ_CODE_PREFETCH_ENABLE		: create via cmdqRecEnablePrefetch()
  *		CMDQ_CODE_PREFETCH_DISABLE		: create via cmdqRecDisablePrefetch()
  *     event: the desired event type to set, clear, or wait
  * Return:
  *     > 0 (index) for offset of instruction; else the error code is returned
  */
+	int32_t cmdq_task_query_offset(cmdqRecHandle handle, uint32_t startIndex,
+				   const CMDQ_CODE_ENUM opCode, CMDQ_EVENT_ENUM event);
 	int32_t cmdqRecQueryOffset(cmdqRecHandle handle, uint32_t startIndex,
 				   const CMDQ_CODE_ENUM opCode, CMDQ_EVENT_ENUM event);
 
@@ -463,6 +514,7 @@ extern "C" {
  * Note:
  *       mutex protected, be careful
  */
+	int32_t cmdq_resource_acquire(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent);
 	int32_t cmdqRecAcquireResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent);
 
 /**
@@ -470,13 +522,15 @@ extern "C" {
  * Parameter:
  *	   handle: the command queue recorder handle
  *	   resourceEvent: the event of resource to control in GCE thread
- *       addr, value, mask: same as cmdqRecWrite
+ *       addr, value, mask: same as cmdq_op_write_reg
  * Return:
  *	   0 for success; else the error code is returned
  * Note:
  *       mutex protected, be careful
  *	   Order: CPU clear resourceEvent at first, then add write instruction
  */
+	int32_t cmdq_resource_acquire_and_write(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent,
+		uint32_t addr, uint32_t value, uint32_t mask);
 	int32_t cmdqRecWriteForResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent,
 		uint32_t addr, uint32_t value, uint32_t mask);
 
@@ -491,6 +545,7 @@ extern "C" {
  *       mutex protected, be careful
  *       Remember to flush handle after this API to release resource via GCE
  */
+	int32_t cmdq_resource_release(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent);
 	int32_t cmdqRecReleaseResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent);
 
 /**
@@ -498,7 +553,7 @@ extern "C" {
  * Parameter:
  *	   handle: the command queue recorder handle
  *	   resourceEvent: the event of resource to control in GCE thread
- *	   addr, value, mask: same as cmdqRecWrite
+ *	   addr, value, mask: same as cmdq_op_write_reg
  * Return:
  *	   0 for success; else the error code is returned
  * Note:
@@ -506,6 +561,8 @@ extern "C" {
  *	   Order: Add add write instruction at first, then set resourceEvent instruction
  *       Remember to flush handle after this API to release resource via GCE
  */
+	int32_t cmdq_resource_release_and_write(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent,
+		uint32_t addr, uint32_t value, uint32_t mask);
 	int32_t cmdqRecWriteAndReleaseResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent,
 		uint32_t addr, uint32_t value, uint32_t mask);
 

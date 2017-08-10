@@ -559,8 +559,8 @@ int32_t cmdq_sec_handle_session_reply_unlocked(const iwcCmdqMessage_t *pIwc,
 			pCancelResult->throwAEE = pIwc->cancelTask.throwAEE;
 			pCancelResult->hasReset = pIwc->cancelTask.hasReset;
 			pCancelResult->irqFlag = pIwc->cancelTask.irqFlag;
-			pCancelResult->errInstr[0] = pIwc->cancelTask.errInstr[0];	/* argB */
-			pCancelResult->errInstr[1] = pIwc->cancelTask.errInstr[1];	/* argA */
+			pCancelResult->errInstr[0] = pIwc->cancelTask.errInstr[0];	/* arg_b */
+			pCancelResult->errInstr[1] = pIwc->cancelTask.errInstr[1];	/* arg_a */
 			pCancelResult->regValue = pIwc->cancelTask.regValue;
 			pCancelResult->pc = pIwc->cancelTask.pc;
 		}

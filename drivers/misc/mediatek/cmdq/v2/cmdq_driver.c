@@ -337,12 +337,12 @@ static long cmdq_driver_create_secure_medadata(cmdqCommandStruct *pCommand)
 	    (pCommand->secData.addrMetadataCount) * sizeof(cmdqSecAddrMetadataStruct);
 
 	/* verify parameter */
-	if ((false == pCommand->secData.isSecure) && (0 != pCommand->secData.addrMetadataCount)) {
+	if ((false == pCommand->secData.is_secure) && (0 != pCommand->secData.addrMetadataCount)) {
 
 		/* normal path with non-zero secure metadata */
 		CMDQ_ERR
-		    ("[secData]mismatch secData.isSecure(%d) and secData.addrMetadataCount(%d)\n",
-		     pCommand->secData.isSecure, pCommand->secData.addrMetadataCount);
+		    ("[secData]mismatch secData.is_secure(%d) and secData.addrMetadataCount(%d)\n",
+		     pCommand->secData.is_secure, pCommand->secData.addrMetadataCount);
 		return -EFAULT;
 	}
 
@@ -531,12 +531,6 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		if (copy_from_user(&job, (void *)param, sizeof(cmdqJobStruct)))
 			return -EFAULT;
 
-		/* not support secure path for async ioctl yet */
-		if (true == job.command.secData.isSecure) {
-			CMDQ_ERR("not support secure path for CMDQ_IOCTL_ASYNC_JOB_EXEC\n");
-			return -EFAULT;
-		}
-
 		/* backup */
 		userRegCount = job.command.regRequest.count;
 
@@ -551,6 +545,11 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		/* scenario id fixup */
 		cmdq_core_fix_command_scenario_for_user_space(&job.command);
 
+		/* allocate secure medatata */
+		status = cmdq_driver_create_secure_medadata(&job.command);
+		if (0 != status)
+			return status;
+
 		status = cmdqCoreSubmitTaskAsync(&job.command, NULL, 0, &pTask);
 
 		/* store user space request count in TaskStruct */
@@ -563,6 +562,9 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		/* we don't need regAddress anymore, free it now */
 		kfree(CMDQ_U32_PTR(job.command.regRequest.regAddresses));
 		job.command.regRequest.regAddresses = (cmdqU32Ptr_t) (unsigned long)(NULL);
+
+		/* free secure path metadata */
+		cmdq_driver_destroy_secure_medadata(&job.command);
 
 		if (status >= 0) {
 			job.hJob = (unsigned long)pTask;

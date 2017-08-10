@@ -242,6 +242,13 @@ do_div(_duration, 1000);				\
 duration = (int32_t)_duration;			\
 }
 
+#define CMDQ_INC_TIME_IN_US(start, end, target)		\
+{		\
+CMDQ_TIME _duration = end - start;		\
+do_div(_duration, 1000);				\
+target += (int32_t)_duration;			\
+}
+
 #define CMDQ_ENG_ISP_GROUP_FLAG(flag)   ((flag) & (CMDQ_ENG_ISP_GROUP_BITS))
 
 #define CMDQ_ENG_MDP_GROUP_FLAG(flag)   ((flag) & (CMDQ_ENG_MDP_GROUP_BITS))
@@ -330,7 +337,7 @@ typedef enum CMDQ_CODE_ENUM {
 	CMDQ_CODE_SET_TOKEN = 0x21,	/* set event */
 	CMDQ_CODE_WAIT_NO_CLEAR = 0x22,	/* wait event, but don't clear it */
 	CMDQ_CODE_CLEAR_TOKEN = 0x23,	/* clear event */
-	CMDQ_CODE_RAW = 0x24,	/* allow entirely custom argA/argB */
+	CMDQ_CODE_RAW = 0x24,	/* allow entirely custom arg_a/arg_b */
 	CMDQ_CODE_PREFETCH_ENABLE = 0x41,	/* enable prefetch marker */
 	CMDQ_CODE_PREFETCH_DISABLE = 0x42,	/* disable prefetch marker */
 } CMDQ_CODE_ENUM;
@@ -479,6 +486,10 @@ typedef struct TaskStruct {
 	CMDQ_TIME wakedUp;
 	CMDQ_TIME entrySec;	/* time stamp of entry secure world */
 	CMDQ_TIME exitSec;	/* time stamp of exit secure world */
+	uint32_t durAlloc;	/* allocae time duration */
+	uint32_t durReclaim;	/* allocae time duration */
+	uint32_t durRelease;	/* release time duration */
+	bool dumpAllocTime;	/* flag to print static info to kernel log. */
 
 	uint32_t *profileData;	/* store GPT counter when it starts and ends */
 	dma_addr_t profileDataPA;
@@ -528,7 +539,7 @@ typedef struct RecordStruct {
 	uint32_t writeTimeNS;	/* if profile enabled, the time of command execution */
 	uint64_t engineFlag;	/* task engine flag */
 
-	bool isSecure;		/* true for secure task */
+	bool is_secure;		/* true for secure task */
 
 	CMDQ_TIME submit;	/* epoch time of IOCTL/Kernel API call */
 	CMDQ_TIME trigger;	/* epoch time of enable HW thread */
@@ -536,6 +547,10 @@ typedef struct RecordStruct {
 	CMDQ_TIME gotIRQ;	/* epoch time of IRQ event */
 	CMDQ_TIME wakedUp;	/* epoch time of SW thread leaving wait state */
 	CMDQ_TIME done;		/* epoch time of task finish */
+
+	uint32_t durAlloc;	/* allocae time duration */
+	uint32_t durReclaim;	/* allocae time duration */
+	uint32_t durRelease;	/* release time duration */
 
 	unsigned long long writeTimeNSBegin;
 	unsigned long long writeTimeNSEnd;
@@ -819,7 +834,7 @@ extern "C" {
 /*
  * GCE capability
  */
-	uint32_t cmdq_core_subsys_to_reg_addr(uint32_t argA);
+	uint32_t cmdq_core_subsys_to_reg_addr(uint32_t arg_a);
 	const char *cmdq_core_parse_subsys_from_reg_addr(uint32_t reg_addr);
 	int32_t cmdq_core_subsys_from_phys_addr(uint32_t physAddr);
 	int32_t cmdq_core_suspend_HW_thread(int32_t thread, uint32_t lineNum);

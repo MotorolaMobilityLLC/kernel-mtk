@@ -87,7 +87,7 @@ int cmdq_rec_realloc_cmd_buffer(cmdqRecHandle handle, uint32_t size)
 	return 0;
 }
 
-static int32_t cmdq_rec_reset_profile_maker_data(cmdqRecHandle handle)
+static int32_t cmdq_reset_profile_maker_data(cmdqRecHandle handle)
 {
 #ifdef CMDQ_PROFILE_MARKER_SUPPORT
 	int32_t i = 0;
@@ -106,7 +106,7 @@ static int32_t cmdq_rec_reset_profile_maker_data(cmdqRecHandle handle)
 	return 0;
 }
 
-int32_t cmdqRecCreate(CMDQ_SCENARIO_ENUM scenario, cmdqRecHandle *pHandle)
+int32_t cmdq_task_create(CMDQ_SCENARIO_ENUM scenario, cmdqRecHandle *pHandle)
 {
 	cmdqRecHandle handle = NULL;
 
@@ -130,7 +130,7 @@ int32_t cmdqRecCreate(CMDQ_SCENARIO_ENUM scenario, cmdqRecHandle *pHandle)
 	handle->pRunningTask = NULL;
 
 	/* secure path */
-	handle->secData.isSecure = false;
+	handle->secData.is_secure = false;
 	handle->secData.enginesNeedDAPC = 0LL;
 	handle->secData.enginesNeedPortSecurity = 0LL;
 	handle->secData.addrMetadatas = (cmdqU32Ptr_t) (unsigned long)NULL;
@@ -138,7 +138,7 @@ int32_t cmdqRecCreate(CMDQ_SCENARIO_ENUM scenario, cmdqRecHandle *pHandle)
 	handle->secData.addrMetadataCount = 0;
 
 	/* profile marker */
-	cmdq_rec_reset_profile_maker_data(handle);
+	cmdq_reset_profile_maker_data(handle);
 
 	/* CMD */
 	if (0 != cmdq_rec_realloc_cmd_buffer(handle, CMDQ_INITIAL_CMD_BLOCK_SIZE)) {
@@ -205,122 +205,13 @@ int32_t cmdq_append_addr_metadata(cmdqRecHandle handle, const cmdqSecAddrMetadat
 }
 #endif
 
-/**
- * centralize the write/polling/read command for APB and GPR handle
- * this function must be called inside cmdq_append_command
- * because we ignore buffer and pre-fetch check here.
- * Parameter:
- *     same as cmdq_append_command
- * Return:
- *     same as cmdq_append_command
- */
-static int32_t cmdq_append_wpr_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code,
-				       uint32_t argA, uint32_t argB, uint32_t argAType,
-				       uint32_t argBType)
+int32_t cmdq_check_before_append(cmdqRecHandle handle)
 {
-	int32_t status = 0;
-	int32_t subsys;
-	uint32_t *pCommand;
-	bool bUseGPR = false;
-	/* use new argA to present final inserted argA */
-	uint32_t newArgA;
-	uint32_t newArgAType = argAType;
-	uint32_t argType = 0;
-
-	/* be careful that subsys encoding position is different among platforms */
-	const uint32_t subsysBit = cmdq_get_func()->getSubsysLSBArgA();
-
-	pCommand = (uint32_t *) ((uint8_t *) handle->pBuffer + handle->blockSize);
-
-	if (CMDQ_CODE_READ != code && CMDQ_CODE_WRITE != code && CMDQ_CODE_POLL != code) {
-		CMDQ_ERR("Record 0x%p, flow error, should not append comment in wpr API", handle);
-		return -EFAULT;
-	}
-
-	/* we must re-calculate current PC at first. */
-	pCommand = (uint32_t *) ((uint8_t *) handle->pBuffer + handle->blockSize);
-
-	CMDQ_VERBOSE("REC: 0x%p CMD: 0x%p, op: 0x%02x\n", handle, pCommand, code);
-	CMDQ_VERBOSE("REC: 0x%p CMD: argA: 0x%08x, argB: 0x%08x, argAType: %d, argBType: %d\n",
-		     handle, argA, argB, argAType, argBType);
-
-	if (0 == argAType) {
-		/* argA is the HW register address to read from */
-		subsys = cmdq_core_subsys_from_phys_addr(argA);
-		if (CMDQ_SPECIAL_SUBSYS_ADDR == subsys) {
-#ifdef CMDQ_GPR_SUPPORT
-			bUseGPR = true;
-			CMDQ_MSG("REC: Special handle memory base address 0x%08x\n", argA);
-			/* Wait and clear for GPR mutex token to enter mutex */
-			*pCommand++ = ((1 << 31) | (1 << 15) | 1);
-			*pCommand++ = (CMDQ_CODE_WFE << 24) | CMDQ_SYNC_TOKEN_GPR_SET_4;
-			handle->blockSize += CMDQ_INST_SIZE;
-			/* Move extra handle APB address to GPR */
-			*pCommand++ = argA;
-			*pCommand++ = (CMDQ_CODE_MOVE << 24) |
-			    ((CMDQ_DATA_REG_DEBUG & 0x1f) << 16) | (4 << 21);
-			handle->blockSize += CMDQ_INST_SIZE;
-			/* change final argA to GPR */
-			newArgA = ((CMDQ_DATA_REG_DEBUG & 0x1f) << 16);
-			if (argA & 0x1) {
-				/* MASK case, set final bit to 1 */
-				newArgA = newArgA | 0x1;
-			}
-			/* change argA type to 1 */
-			newArgAType = 1;
-#else
-			CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
-			status = -EFAULT;
-#endif
-		} else if (0 == argAType && 0 > subsys) {
-			CMDQ_ERR("REC: Unsupported memory base address 0x%08x\n", argA);
-			status = -EFAULT;
-		} else {
-			/* compose final argA according to subsys table */
-			newArgA = (argA & 0xffff) | ((subsys & 0x1f) << subsysBit);
-		}
-	} else {
-		/* compose final argA according GPR value */
-		newArgA = ((argA & 0x1f) << 16);
-	}
-
-	if (status < 0)
-		return status;
-
-	argType = (newArgAType << 2) | (argBType << 1);
-
-	/* newArgA is the HW register address to access from or GPR value store the HW register address */
-	/* argB is the value or register id  */
-	/* bit 55: argA type, 1 for GPR */
-	/* bit 54: argB type, 1 for GPR */
-	/* argType: ('newArgAType', 'argBType', '0') */
-	*pCommand++ = argB;
-	*pCommand++ = (code << 24) | newArgA | (argType << 21);
-	handle->blockSize += CMDQ_INST_SIZE;
-
-	if (bUseGPR) {
-		/* Set for GPR mutex token to leave mutex */
-		*pCommand++ = ((1 << 31) | (1 << 16));
-		*pCommand++ = (CMDQ_CODE_WFE << 24) | CMDQ_SYNC_TOKEN_GPR_SET_4;
-		handle->blockSize += CMDQ_INST_SIZE;
-	}
-	return 0;
-}
-
-int32_t cmdq_append_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code,
-			    uint32_t argA, uint32_t argB, uint32_t argAType, uint32_t argBType)
-{
-	uint32_t *pCommand;
-
 	if (NULL == handle)
 		return -EFAULT;
 
-	pCommand = (uint32_t *) ((uint8_t *) handle->pBuffer + handle->blockSize);
-
 	if (handle->finalized) {
 		CMDQ_ERR("Finalized record 0x%p (scenario:%d)\n", handle, handle->scenario);
-		CMDQ_ERR("    cannot add command (op: 0x%02x, argA: 0x%08x, argB: 0x%08x)\n",
-			code, argA, argB);
 		return -EBUSY;
 	}
 
@@ -331,11 +222,127 @@ int32_t cmdq_append_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code,
 			return -ENOMEM;
 	}
 
+	return 0;
+}
+
+/**
+ * centralize the write/polling/read command for APB and GPR handle
+ * this function must be called inside cmdq_append_command
+ * because we ignore buffer and pre-fetch check here.
+ * Parameter:
+ *     same as cmdq_append_command
+ * Return:
+ *     same as cmdq_append_command
+ */
+static int32_t cmdq_append_wpr_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code,
+				       uint32_t arg_a, uint32_t arg_b, uint32_t arg_a_type,
+				       uint32_t arg_b_type)
+{
+	int32_t status = 0;
+	int32_t subsys;
+	uint32_t *p_command;
+	bool bUseGPR = false;
+	/* use new arg_a to present final inserted arg_a */
+	uint32_t new_arg_a;
+	uint32_t new_arg_a_type = arg_a_type;
+	uint32_t arg_type = 0;
+
+	/* be careful that subsys encoding position is different among platforms */
+	const uint32_t subsys_bit = cmdq_get_func()->getSubsysLSBArgA();
+
+	if (CMDQ_CODE_READ != code && CMDQ_CODE_WRITE != code && CMDQ_CODE_POLL != code) {
+		CMDQ_ERR("Record 0x%p, flow error, should not append comment in wpr API", handle);
+		return -EFAULT;
+	}
+
+	/* we must re-calculate current PC at first. */
+	p_command = (uint32_t *) ((uint8_t *) handle->pBuffer + handle->blockSize);
+
+	CMDQ_VERBOSE("REC: 0x%p CMD: 0x%p, op: 0x%02x\n", handle, p_command, code);
+	CMDQ_VERBOSE("REC: 0x%p CMD: arg_a: 0x%08x, arg_b: 0x%08x, arg_a_type: %d, arg_b_type: %d\n",
+		     handle, arg_a, arg_b, arg_a_type, arg_b_type);
+
+	if (0 == arg_a_type) {
+		/* arg_a is the HW register address to read from */
+		subsys = cmdq_core_subsys_from_phys_addr(arg_a);
+		if (CMDQ_SPECIAL_SUBSYS_ADDR == subsys) {
+#ifdef CMDQ_GPR_SUPPORT
+			bUseGPR = true;
+			CMDQ_MSG("REC: Special handle memory base address 0x%08x\n", arg_a);
+			/* Wait and clear for GPR mutex token to enter mutex */
+			*p_command++ = ((1 << 31) | (1 << 15) | 1);
+			*p_command++ = (CMDQ_CODE_WFE << 24) | CMDQ_SYNC_TOKEN_GPR_SET_4;
+			handle->blockSize += CMDQ_INST_SIZE;
+			/* Move extra handle APB address to GPR */
+			*p_command++ = arg_a;
+			*p_command++ = (CMDQ_CODE_MOVE << 24) |
+			    ((CMDQ_DATA_REG_DEBUG & 0x1f) << 16) | (4 << 21);
+			handle->blockSize += CMDQ_INST_SIZE;
+			/* change final arg_a to GPR */
+			new_arg_a = ((CMDQ_DATA_REG_DEBUG & 0x1f) << subsys_bit);
+			if (arg_a & 0x1) {
+				/* MASK case, set final bit to 1 */
+				new_arg_a = new_arg_a | 0x1;
+			}
+			/* change arg_a type to 1 */
+			new_arg_a_type = 1;
+#else
+			CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
+			status = -EFAULT;
+#endif
+		} else if (0 == arg_a_type && 0 > subsys) {
+			CMDQ_ERR("REC: Unsupported memory base address 0x%08x\n", arg_a);
+			status = -EFAULT;
+		} else {
+			/* compose final arg_a according to subsys table */
+			new_arg_a = (arg_a & 0xffff) | ((subsys & 0x1f) << subsys_bit);
+		}
+	} else {
+		/* compose final arg_a according GPR value */
+		new_arg_a = ((arg_a & 0x1f) << subsys_bit);
+	}
+
+	if (status < 0)
+		return status;
+
+	arg_type = (new_arg_a_type << 2) | (arg_b_type << 1);
+
+	/* new_arg_a is the HW register address to access from or GPR value store the HW register address */
+	/* arg_b is the value or register id  */
+	/* bit 55: arg_a type, 1 for GPR */
+	/* bit 54: arg_b type, 1 for GPR */
+	/* argType: ('new_arg_a_type', 'arg_b_type', '0') */
+	*p_command++ = arg_b;
+	*p_command++ = (code << 24) | new_arg_a | (arg_type << 21);
+	handle->blockSize += CMDQ_INST_SIZE;
+
+	if (bUseGPR) {
+		/* Set for GPR mutex token to leave mutex */
+		*p_command++ = ((1 << 31) | (1 << 16));
+		*p_command++ = (CMDQ_CODE_WFE << 24) | CMDQ_SYNC_TOKEN_GPR_SET_4;
+		handle->blockSize += CMDQ_INST_SIZE;
+	}
+	return 0;
+}
+
+int32_t cmdq_append_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code,
+			    uint32_t arg_a, uint32_t arg_b, uint32_t arg_a_type, uint32_t arg_b_type)
+{
+	int32_t status;
+	uint32_t *p_command;
+
+	status = cmdq_check_before_append(handle);
+	if (status < 0) {
+		CMDQ_ERR("	  cannot add command (op: 0x%02x, arg_a: 0x%08x, arg_b: 0x%08x)\n",
+			code, arg_a, arg_b);
+		return status;
+	}
+
 	/* force insert MARKER if prefetch memory is full */
 	/* GCE deadlocks if we don't do so */
 	if (CMDQ_CODE_EOC != code && cmdq_get_func()->shouldEnablePrefetch(handle->scenario)) {
 		uint32_t prefetchSize = 0;
-		int32_t threadNo = cmdq_get_func()->getThreadID(handle->scenario, handle->secData.isSecure);
+		int32_t threadNo = cmdq_get_func()->getThreadID(handle->scenario, handle->secData.is_secure);
 
 		prefetchSize = cmdq_core_thread_prefetch_size(threadNo);
 		if (prefetchSize > 0 && handle->prefetchCount >= prefetchSize) {
@@ -357,32 +364,32 @@ int32_t cmdq_append_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code,
 	}
 
 	/* we must re-calculate current PC because we may already insert MARKER inst. */
-	pCommand = (uint32_t *) ((uint8_t *) handle->pBuffer + handle->blockSize);
+	p_command = (uint32_t *) ((uint8_t *) handle->pBuffer + handle->blockSize);
 
-	CMDQ_VERBOSE("REC: 0x%p CMD: 0x%p, op: 0x%02x, argA: 0x%08x, argB: 0x%08x\n", handle,
-		     pCommand, code, argA, argB);
-
-	if (CMDQ_CODE_READ == code || CMDQ_CODE_WRITE == code || CMDQ_CODE_POLL == code) {
-		/* Because read/write/poll have similar format, handle them together */
-		return cmdq_append_wpr_command(handle, code, argA, argB, argAType, argBType);
-	}
+	CMDQ_VERBOSE("REC: 0x%p CMD: 0x%p, op: 0x%02x, arg_a: 0x%08x, arg_b: 0x%08x\n", handle,
+		     p_command, code, arg_a, arg_b);
 
 	switch (code) {
+	case CMDQ_CODE_READ:
+	case CMDQ_CODE_WRITE:
+	case CMDQ_CODE_POLL:
+		/* Because read/write/poll have similar format, handle them together */
+		return cmdq_append_wpr_command(handle, code, arg_a, arg_b, arg_a_type, arg_b_type);
 	case CMDQ_CODE_MOVE:
-		*pCommand++ = argB;
-		*pCommand++ = CMDQ_CODE_MOVE << 24 | (argA & 0xffffff);
+		*p_command++ = arg_b;
+		*p_command++ = CMDQ_CODE_MOVE << 24 | (arg_a & 0xffffff);
 		break;
 	case CMDQ_CODE_JUMP:
-		*pCommand++ = argB;
-		*pCommand++ = (CMDQ_CODE_JUMP << 24) | (argA & 0x0FFFFFF);
+		*p_command++ = arg_b;
+		*p_command++ = (CMDQ_CODE_JUMP << 24) | (arg_a & 0x0FFFFFF);
 		break;
 	case CMDQ_CODE_WFE:
 		/* bit 0-11: wait_value, 1 */
 		/* bit 15: to_wait, true */
 		/* bit 31: to_update, true */
 		/* bit 16-27: update_value, 0 */
-		*pCommand++ = ((1 << 31) | (1 << 15) | 1);
-		*pCommand++ = (CMDQ_CODE_WFE << 24) | argA;
+		*p_command++ = ((1 << 31) | (1 << 15) | 1);
+		*p_command++ = (CMDQ_CODE_WFE << 24) | arg_a;
 		break;
 
 	case CMDQ_CODE_SET_TOKEN:
@@ -391,16 +398,16 @@ int32_t cmdq_append_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code,
 		/* bit 15: to_wait, false */
 		/* bit 31: to_update, true */
 		/* bit 16-27: update_value, 1 */
-		*pCommand++ = ((1 << 31) | (1 << 16));
-		*pCommand++ = (CMDQ_CODE_WFE << 24) | argA;
+		*p_command++ = ((1 << 31) | (1 << 16));
+		*p_command++ = (CMDQ_CODE_WFE << 24) | arg_a;
 		break;
 
 	case CMDQ_CODE_WAIT_NO_CLEAR:
 		/* bit 0-11: wait_value, 1 */
 		/* bit 15: to_wait, true */
 		/* bit 31: to_update, false */
-		*pCommand++ = ((0 << 31) | (1 << 15) | 1);
-		*pCommand++ = (CMDQ_CODE_WFE << 24) | argA;
+		*p_command++ = ((0 << 31) | (1 << 15) | 1);
+		*p_command++ = (CMDQ_CODE_WFE << 24) | arg_a;
 		break;
 
 	case CMDQ_CODE_CLEAR_TOKEN:
@@ -409,18 +416,18 @@ int32_t cmdq_append_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code,
 		/* bit 15: to_wait, false */
 		/* bit 31: to_update, true */
 		/* bit 16-27: update_value, 0 */
-		*pCommand++ = ((1 << 31) | (0 << 16));
-		*pCommand++ = (CMDQ_CODE_WFE << 24) | argA;
+		*p_command++ = ((1 << 31) | (0 << 16));
+		*p_command++ = (CMDQ_CODE_WFE << 24) | arg_a;
 		break;
 
 	case CMDQ_CODE_EOC:
-		*pCommand++ = argB;
-		*pCommand++ = (CMDQ_CODE_EOC << 24) | (argA & 0x0FFFFFF);
+		*p_command++ = arg_b;
+		*p_command++ = (CMDQ_CODE_EOC << 24) | (arg_a & 0x0FFFFFF);
 		break;
 
 	case CMDQ_CODE_RAW:
-		*pCommand++ = argB;
-		*pCommand++ = argA;
+		*p_command++ = arg_b;
+		*p_command++ = arg_a;
 		break;
 
 	default:
@@ -431,7 +438,7 @@ int32_t cmdq_append_command(cmdqRecHandle handle, CMDQ_CODE_ENUM code,
 	return 0;
 }
 
-int32_t cmdqRecSetEngine(cmdqRecHandle handle, uint64_t engineFlag)
+int32_t cmdq_task_set_engine(cmdqRecHandle handle, uint64_t engineFlag)
 {
 	if (NULL == handle)
 		return -EFAULT;
@@ -442,20 +449,20 @@ int32_t cmdqRecSetEngine(cmdqRecHandle handle, uint64_t engineFlag)
 	return 0;
 }
 
-int32_t cmdqRecReset(cmdqRecHandle handle)
+int32_t cmdq_task_reset(cmdqRecHandle handle)
 {
 	if (NULL == handle)
 		return -EFAULT;
 
 	if (NULL != handle->pRunningTask)
-		cmdqRecStopLoop(handle);
+		cmdq_task_stop_loop(handle);
 
 	handle->blockSize = 0;
 	handle->prefetchCount = 0;
 	handle->finalized = false;
 
 	/* reset secure path data */
-	handle->secData.isSecure = false;
+	handle->secData.is_secure = false;
 	handle->secData.enginesNeedDAPC = 0LL;
 	handle->secData.enginesNeedPortSecurity = 0LL;
 	if (handle->secData.addrMetadatas) {
@@ -466,23 +473,23 @@ int32_t cmdqRecReset(cmdqRecHandle handle)
 	}
 
 	/* profile marker */
-	cmdq_rec_reset_profile_maker_data(handle);
+	cmdq_reset_profile_maker_data(handle);
 
 	return 0;
 }
 
-int32_t cmdqRecSetSecure(cmdqRecHandle handle, const bool isSecure)
+int32_t cmdq_task_set_secure(cmdqRecHandle handle, const bool is_secure)
 {
 	if (NULL == handle)
 		return -EFAULT;
 
-	if (false == isSecure) {
-		handle->secData.isSecure = isSecure;
+	if (false == is_secure) {
+		handle->secData.is_secure = is_secure;
 		return 0;
 	}
 #ifdef CMDQ_SECURE_PATH_SUPPORT
-	CMDQ_VERBOSE("REC: %p secure:%d\n", handle, isSecure);
-	handle->secData.isSecure = isSecure;
+	CMDQ_VERBOSE("REC: %p secure:%d\n", handle, is_secure);
+	handle->secData.is_secure = is_secure;
 	return 0;
 #else
 	CMDQ_ERR("%s failed since not support secure path\n", __func__);
@@ -490,15 +497,15 @@ int32_t cmdqRecSetSecure(cmdqRecHandle handle, const bool isSecure)
 #endif
 }
 
-int32_t cmdqRecIsSecure(cmdqRecHandle handle)
+int32_t cmdq_task_is_secure(cmdqRecHandle handle)
 {
 	if (NULL == handle)
 		return -EFAULT;
 
-	return handle->secData.isSecure;
+	return handle->secData.is_secure;
 }
 
-int32_t cmdqRecSecureEnableDAPC(cmdqRecHandle handle, const uint64_t engineFlag)
+int32_t cmdq_task_secure_enable_dapc(cmdqRecHandle handle, const uint64_t engineFlag)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	if (NULL == handle)
@@ -512,7 +519,7 @@ int32_t cmdqRecSecureEnableDAPC(cmdqRecHandle handle, const uint64_t engineFlag)
 #endif
 }
 
-int32_t cmdqRecSecureEnablePortSecurity(cmdqRecHandle handle, const uint64_t engineFlag)
+int32_t cmdq_task_secure_enable_port_security(cmdqRecHandle handle, const uint64_t engineFlag)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	if (NULL == handle)
@@ -526,59 +533,32 @@ int32_t cmdqRecSecureEnablePortSecurity(cmdqRecHandle handle, const uint64_t eng
 #endif
 }
 
-int32_t cmdqRecMark(cmdqRecHandle handle)
+int32_t cmdq_op_write_reg(cmdqRecHandle handle, uint32_t addr,
+				   CMDQ_VARIABLE argument, uint32_t mask)
 {
-	int32_t status;
-
-	/* Do not check prefetch-ability here. */
-	/* because cmdqRecMark may have other purposes. */
-
-	/* bit 53: non-suspendable. set to 1 because we don't want */
-	/* CPU suspend this thread during pre-fetching. */
-	/* If CPU change PC, then there will be a mess, */
-	/* because prefetch buffer is not properly cleared. */
-	/* bit 48: do not increase CMD_COUNTER (because this is not the end of the task) */
-	/* bit 20: prefetch_marker */
-	/* bit 17: prefetch_marker_en */
-	/* bit 16: prefetch_en */
-	/* bit 0:  irq_en (set to 0 since we don't want EOC interrupt) */
-	status = cmdq_append_command(handle,
-				     CMDQ_CODE_EOC,
-				     (0x1 << (53 - 32)) | (0x1 << (48 - 32)), 0x00130000, 0, 0);
-
-	/* if we're in a prefetch region, */
-	/* this ends the region so set count to 0. */
-	/* otherwise we start the region by setting count to 1. */
-	handle->prefetchCount = 1;
-
-	if (0 != status)
-		return -EFAULT;
-
-	return 0;
-}
-
-int32_t cmdqRecWrite(cmdqRecHandle handle, uint32_t addr, uint32_t value, uint32_t mask)
-{
-	int32_t status;
+	int32_t status = 0;
+	CMDQ_CODE_ENUM op_code;
+	uint32_t arg_b_i, arg_b_type;
 
 	if (0xFFFFFFFF != mask) {
 		status = cmdq_append_command(handle, CMDQ_CODE_MOVE, 0, ~mask, 0, 0);
 		if (0 != status)
 			return status;
-
-		addr = addr | 0x1;
 	}
 
-	status = cmdq_append_command(handle, CMDQ_CODE_WRITE, addr, value, 0, 0);
-	if (0 != status)
-		return status;
+	if (0xFFFFFFFF != mask)
+		addr = addr | 0x1;
 
-	return 0;
+	op_code = CMDQ_CODE_WRITE;
+	arg_b_type = 0;
+	arg_b_i = (uint32_t)(argument & 0xFFFFFFFF);
+
+	return cmdq_append_command(handle, op_code, addr, arg_b_i, 0, arg_b_type);
 }
 
-int32_t cmdqRecWriteSecure(cmdqRecHandle handle, uint32_t addr,
-			   CMDQ_SEC_ADDR_METADATA_TYPE type,
-			   uint32_t baseHandle, uint32_t offset, uint32_t size, uint32_t port)
+int32_t cmdq_op_write_reg_secure(cmdqRecHandle handle, uint32_t addr,
+			   CMDQ_SEC_ADDR_METADATA_TYPE type, uint32_t baseHandle,
+			   uint32_t offset, uint32_t size, uint32_t port)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	int32_t status;
@@ -587,7 +567,7 @@ int32_t cmdqRecWriteSecure(cmdqRecHandle handle, uint32_t addr,
 	const uint32_t mask = 0xFFFFFFFF;
 
 	/* append command */
-	status = cmdqRecWrite(handle, addr, baseHandle, mask);
+	status = cmdq_op_write_reg(handle, addr, baseHandle, mask);
 	if (0 != status)
 		return status;
 
@@ -611,7 +591,7 @@ int32_t cmdqRecWriteSecure(cmdqRecHandle handle, uint32_t addr,
 #endif
 }
 
-int32_t cmdqRecPoll(cmdqRecHandle handle, uint32_t addr, uint32_t value, uint32_t mask)
+int32_t cmdq_op_poll(cmdqRecHandle handle, uint32_t addr, uint32_t value, uint32_t mask)
 {
 	int32_t status;
 
@@ -626,74 +606,98 @@ int32_t cmdqRecPoll(cmdqRecHandle handle, uint32_t addr, uint32_t value, uint32_
 	return 0;
 }
 
-
-int32_t cmdqRecWait(cmdqRecHandle handle, CMDQ_EVENT_ENUM event)
+int32_t cmdq_op_wait(cmdqRecHandle handle, CMDQ_EVENT_ENUM event)
 {
-	uint32_t argA;
+	int32_t arg_a;
 
-	if (CMDQ_SYNC_TOKEN_INVALID == event || CMDQ_SYNC_TOKEN_MAX <= event || 0 > event)
+	if (0 > event || CMDQ_SYNC_TOKEN_MAX <= event)
 		return -EINVAL;
 
-	argA = cmdq_core_get_event_value(event);
-	return cmdq_append_command(handle, CMDQ_CODE_WFE, argA, 0, 0, 0);
+	arg_a = cmdq_core_get_event_value(event);
+	if (arg_a < 0)
+		return -EINVAL;
+
+	return cmdq_append_command(handle, CMDQ_CODE_WFE, arg_a, 0, 0, 0);
 }
 
-
-int32_t cmdqRecWaitNoClear(cmdqRecHandle handle, CMDQ_EVENT_ENUM event)
+int32_t cmdq_op_wait_no_clear(cmdqRecHandle handle, CMDQ_EVENT_ENUM event)
 {
-	uint32_t argA;
+	int32_t arg_a;
 
-	if (CMDQ_SYNC_TOKEN_INVALID == event || CMDQ_SYNC_TOKEN_MAX <= event || 0 > event)
+	if (0 > event || CMDQ_SYNC_TOKEN_MAX <= event)
 		return -EINVAL;
 
-	argA = cmdq_core_get_event_value(event);
-	return cmdq_append_command(handle, CMDQ_CODE_WAIT_NO_CLEAR, argA, 0, 0, 0);
+	arg_a = cmdq_core_get_event_value(event);
+	if (arg_a < 0)
+		return -EINVAL;
+
+	return cmdq_append_command(handle, CMDQ_CODE_WAIT_NO_CLEAR, arg_a, 0, 0, 0);
 }
 
-int32_t cmdqRecClearEventToken(cmdqRecHandle handle, CMDQ_EVENT_ENUM event)
+int32_t cmdq_op_clear_event(cmdqRecHandle handle, CMDQ_EVENT_ENUM event)
 {
-	uint32_t argA;
+	int32_t arg_a;
 
-	if (CMDQ_SYNC_TOKEN_INVALID == event || CMDQ_SYNC_TOKEN_MAX <= event || 0 > event)
+	if (0 > event || CMDQ_SYNC_TOKEN_MAX <= event)
 		return -EINVAL;
 
-	argA = cmdq_core_get_event_value(event);
-	return cmdq_append_command(handle, CMDQ_CODE_CLEAR_TOKEN, argA, 1,	/* actually this param is ignored. */
+	arg_a = cmdq_core_get_event_value(event);
+	if (arg_a < 0)
+		return -EINVAL;
+
+	return cmdq_append_command(handle, CMDQ_CODE_CLEAR_TOKEN, arg_a, 1,	/* actually this param is ignored. */
 				   0, 0);
 }
 
-
-int32_t cmdqRecSetEventToken(cmdqRecHandle handle, CMDQ_EVENT_ENUM event)
+int32_t cmdq_op_set_event(cmdqRecHandle handle, CMDQ_EVENT_ENUM event)
 {
-	uint32_t argA;
+	int32_t arg_a;
 
-	if (CMDQ_SYNC_TOKEN_INVALID == event || CMDQ_SYNC_TOKEN_MAX <= event || 0 > event)
+	if (0 > event || CMDQ_SYNC_TOKEN_MAX <= event)
 		return -EINVAL;
 
-	argA = cmdq_core_get_event_value(event);
-	return cmdq_append_command(handle, CMDQ_CODE_SET_TOKEN, argA, 1,	/* actually this param is ignored. */
+	arg_a = cmdq_core_get_event_value(event);
+	if (arg_a < 0)
+		return -EINVAL;
+
+	return cmdq_append_command(handle, CMDQ_CODE_SET_TOKEN, arg_a, 1,	/* actually this param is ignored. */
 				   0, 0);
 }
 
-int32_t cmdqRecReadToDataRegister(cmdqRecHandle handle, uint32_t hwRegAddr,
-				  CMDQ_DATA_REGISTER_ENUM dstDataReg)
+int32_t cmdq_op_read_to_data_register(cmdqRecHandle handle, uint32_t hw_addr,
+				  CMDQ_DATA_REGISTER_ENUM dst_data_reg)
 {
 #ifdef CMDQ_GPR_SUPPORT
-	/* read from hwRegAddr(argA) to dstDataReg(argB) */
-	return cmdq_append_command(handle, CMDQ_CODE_READ, hwRegAddr, dstDataReg, 0, 1);
+	CMDQ_CODE_ENUM op_code;
+	uint32_t arg_a_i, arg_b_i;
+	uint32_t arg_a_type, arg_b_type;
 
+	op_code = CMDQ_CODE_READ;
+	arg_a_i = hw_addr;
+	arg_a_type = 0;
+	arg_b_i = dst_data_reg;
+	arg_b_type = 1;
+
+	/* read from hwRegAddr(arg_a) to dstDataReg(arg_b) */
+	return cmdq_append_command(handle, op_code, arg_a_i, arg_b_i, arg_a_type, arg_b_type);
 #else
 	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
 	return -EFAULT;
 #endif
 }
 
-int32_t cmdqRecWriteFromDataRegister(cmdqRecHandle handle,
-				     CMDQ_DATA_REGISTER_ENUM srcDataReg, uint32_t hwRegAddr)
+int32_t cmdq_op_write_from_data_register(cmdqRecHandle handle,
+				     CMDQ_DATA_REGISTER_ENUM src_data_reg, uint32_t hw_addr)
 {
 #ifdef CMDQ_GPR_SUPPORT
-	/* write HW register(argA) with data of GPR data register(argB) */
-	return cmdq_append_command(handle, CMDQ_CODE_WRITE, hwRegAddr, srcDataReg, 0, 1);
+	CMDQ_CODE_ENUM op_code;
+	uint32_t arg_b_i;
+
+	op_code = CMDQ_CODE_WRITE;
+	arg_b_i = src_data_reg;
+
+	/* write HW register(arg_a) with data of GPR data register(arg_b) */
+	return cmdq_append_command(handle, op_code, hw_addr, arg_b_i, 0, 1);
 #else
 	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
 	return -EFAULT;
@@ -704,18 +708,18 @@ int32_t cmdqRecWriteFromDataRegister(cmdqRecHandle handle,
  *  Allocate 32-bit register backup slot
  *
  */
-int32_t cmdqBackupAllocateSlot(cmdqBackupSlotHandle *phBackupSlot, uint32_t slotCount)
+int32_t cmdq_alloc_mem(cmdqBackupSlotHandle *p_h_backup_slot, uint32_t slotCount)
 {
 #ifdef CMDQ_GPR_SUPPORT
 
 	dma_addr_t paStart = 0;
 	int status = 0;
 
-	if (NULL == phBackupSlot)
+	if (NULL == p_h_backup_slot)
 		return -EINVAL;
 
 	status = cmdqCoreAllocWriteAddress(slotCount, &paStart);
-	*phBackupSlot = paStart;
+	*p_h_backup_slot = paStart;
 
 	return status;
 
@@ -729,19 +733,20 @@ int32_t cmdqBackupAllocateSlot(cmdqBackupSlotHandle *phBackupSlot, uint32_t slot
  *  Read 32-bit register backup slot by index
  *
  */
-int32_t cmdqBackupReadSlot(cmdqBackupSlotHandle hBackupSlot, uint32_t slotIndex, uint32_t *value)
+int32_t cmdq_cpu_read_mem(cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index,
+			   uint32_t *value)
 {
 #ifdef CMDQ_GPR_SUPPORT
 
 	if (NULL == value)
 		return -EINVAL;
 
-	if (0 == hBackupSlot) {
-		CMDQ_ERR("%s, hBackupSlot is NULL\n", __func__);
+	if (0 == h_backup_slot) {
+		CMDQ_ERR("%s, h_backup_slot is NULL\n", __func__);
 		return -EINVAL;
 	}
 
-	*value = cmdqCoreReadWriteAddress(hBackupSlot + slotIndex * sizeof(uint32_t));
+	*value = cmdqCoreReadWriteAddress(h_backup_slot + slot_index * sizeof(uint32_t));
 
 	return 0;
 
@@ -751,13 +756,14 @@ int32_t cmdqBackupReadSlot(cmdqBackupSlotHandle hBackupSlot, uint32_t slotIndex,
 #endif				/* CMDQ_GPR_SUPPORT */
 }
 
-int32_t cmdqBackupWriteSlot(cmdqBackupSlotHandle hBackupSlot, uint32_t slotIndex, uint32_t value)
+int32_t cmdq_cpu_write_mem(cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index,
+			    uint32_t value)
 {
 #ifdef CMDQ_GPR_SUPPORT
 
 	int status = 0;
 	/* set the slot value directly */
-	status = cmdqCoreWriteWriteAddress(hBackupSlot + slotIndex * sizeof(uint32_t), value);
+	status = cmdqCoreWriteWriteAddress(h_backup_slot + slot_index * sizeof(uint32_t), value);
 	return status;
 
 #else
@@ -766,16 +772,15 @@ int32_t cmdqBackupWriteSlot(cmdqBackupSlotHandle hBackupSlot, uint32_t slotIndex
 #endif				/* CMDQ_GPR_SUPPORT */
 }
 
-
 /**
  *  Free allocated backup slot. DO NOT free them before corresponding
  *  task finishes. Becareful on AsyncFlush use cases.
  *
  */
-int32_t cmdqBackupFreeSlot(cmdqBackupSlotHandle hBackupSlot)
+int32_t cmdq_free_mem(cmdqBackupSlotHandle h_backup_slot)
 {
 #ifdef CMDQ_GPR_SUPPORT
-	return cmdqCoreFreeWriteAddress(hBackupSlot);
+	return cmdqCoreFreeWriteAddress(h_backup_slot);
 #else
 	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
 	return -EFAULT;
@@ -785,28 +790,27 @@ int32_t cmdqBackupFreeSlot(cmdqBackupSlotHandle hBackupSlot)
 /**
  *  Insert instructions to backup given 32-bit HW register
  *  to a backup slot.
- *  You can use cmdqBackupReadSlot() to retrieve the result
- *  AFTER cmdqRecFlush() returns, or INSIDE the callback of cmdqRecFlushAsyncCallback().
+ *  You can use cmdq_cpu_read_mem() to retrieve the result
+ *  AFTER cmdq_task_flush() returns, or INSIDE the callback of cmdq_task_flush_async_callback().
  *
  */
-int32_t cmdqRecBackupRegisterToSlot(cmdqRecHandle handle,
-				    cmdqBackupSlotHandle hBackupSlot,
-				    uint32_t slotIndex, uint32_t regAddr)
+int32_t cmdq_op_read_reg_to_mem(cmdqRecHandle handle,
+			    cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index, uint32_t addr)
 {
 #ifdef CMDQ_GPR_SUPPORT
 	const CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
 	const CMDQ_DATA_REGISTER_ENUM destRegId = CMDQ_DATA_REG_DEBUG_DST;
 	const CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
-	const dma_addr_t dramAddr = hBackupSlot + slotIndex * sizeof(uint32_t);
+	const dma_addr_t dramAddr = h_backup_slot + slot_index * sizeof(uint32_t);
 	uint32_t highAddr = 0;
 
 	/* lock GPR because we may access it in multiple CMDQ HW threads */
-	cmdqRecWait(handle, regAccessToken);
+	cmdq_op_wait(handle, regAccessToken);
 
 	/* Load into 32-bit GPR (R0-R15) */
-	cmdq_append_command(handle, CMDQ_CODE_READ, regAddr, valueRegId, 0, 1);
+	cmdq_append_command(handle, CMDQ_CODE_READ, addr, valueRegId, 0, 1);
 
-	/* Note that <MOVE> argB is 48-bit */
+	/* Note that <MOVE> arg_b is 48-bit */
 	/* so writeAddress is split into 2 parts */
 	/* and we store address in 64-bit GPR (P0-P7) */
 	CMDQ_GET_HIGH_ADDR(dramAddr, highAddr);
@@ -817,7 +821,7 @@ int32_t cmdqRecBackupRegisterToSlot(cmdqRecHandle handle,
 	/* write value in GPR to memory pointed by GPR */
 	cmdq_append_command(handle, CMDQ_CODE_WRITE, destRegId, valueRegId, 1, 1);
 	/* release the GPR lock */
-	cmdqRecSetEventToken(handle, regAccessToken);
+	cmdq_op_set_event(handle, regAccessToken);
 
 	return 0;
 
@@ -827,38 +831,37 @@ int32_t cmdqRecBackupRegisterToSlot(cmdqRecHandle handle,
 #endif				/* CMDQ_GPR_SUPPORT */
 }
 
-int32_t cmdqRecBackupWriteRegisterFromSlot(cmdqRecHandle handle,
-					   cmdqBackupSlotHandle hBackupSlot,
-					   uint32_t slotIndex, uint32_t addr)
+int32_t cmdq_op_read_mem_to_reg(cmdqRecHandle handle,
+			    cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index, uint32_t addr)
 {
 #ifdef CMDQ_GPR_SUPPORT
 	const CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
 	const CMDQ_DATA_REGISTER_ENUM addrRegId = CMDQ_DATA_REG_DEBUG_DST;
 	const CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
-	const dma_addr_t dramAddr = hBackupSlot + slotIndex * sizeof(uint32_t);
+	const dma_addr_t dramAddr = h_backup_slot + slot_index * sizeof(uint32_t);
 	uint32_t highAddr = 0;
 
 	/* lock GPR because we may access it in multiple CMDQ HW threads */
-	cmdqRecWait(handle, regAccessToken);
+	cmdq_op_wait(handle, regAccessToken);
 
 	/* 1. MOVE slot address to addr GPR */
 
-	/* Note that <MOVE> argB is 48-bit */
+	/* Note that <MOVE> arg_b is 48-bit */
 	/* so writeAddress is split into 2 parts */
 	/* and we store address in 64-bit GPR (P0-P7) */
 	CMDQ_GET_HIGH_ADDR(dramAddr, highAddr);
 	cmdq_append_command(handle, CMDQ_CODE_MOVE,
 			    highAddr |
-			    ((addrRegId & 0x1f) << 16) | (4 << 21), (uint32_t) dramAddr, 0, 0);	/* argA is GPR */
+			    ((addrRegId & 0x1f) << 16) | (4 << 21), (uint32_t) dramAddr, 0, 0);	/* arg_a is GPR */
 
 	/* 2. read value from src address, which is stroed in GPR, to valueRegId */
 	cmdq_append_command(handle, CMDQ_CODE_READ, addrRegId, valueRegId, 1, 1);
 
 	/* 3. write from data register */
-	cmdqRecWriteFromDataRegister(handle, valueRegId, addr);
+	cmdq_op_write_from_data_register(handle, valueRegId, addr);
 
 	/* release the GPR lock */
-	cmdqRecSetEventToken(handle, regAccessToken);
+	cmdq_op_set_event(handle, regAccessToken);
 
 	return 0;
 #else
@@ -867,26 +870,25 @@ int32_t cmdqRecBackupWriteRegisterFromSlot(cmdqRecHandle handle,
 #endif				/* CMDQ_GPR_SUPPORT */
 }
 
-int32_t cmdqRecBackupUpdateSlot(cmdqRecHandle handle,
-				cmdqBackupSlotHandle hBackupSlot,
-				uint32_t slotIndex, uint32_t value)
+int32_t cmdq_op_write_mem(cmdqRecHandle handle, cmdqBackupSlotHandle h_backup_slot,
+			    uint32_t slot_index, uint32_t value)
 {
 #ifdef CMDQ_GPR_SUPPORT
 	const CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
 	const CMDQ_DATA_REGISTER_ENUM destRegId = CMDQ_DATA_REG_DEBUG_DST;
 	const CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
-	const dma_addr_t dramAddr = hBackupSlot + slotIndex * sizeof(uint32_t);
-	uint32_t argA;
+	const dma_addr_t dramAddr = h_backup_slot + slot_index * sizeof(uint32_t);
+	uint32_t arg_a;
 	uint32_t highAddr = 0;
 
 	/* lock GPR because we may access it in multiple CMDQ HW threads */
-	cmdqRecWait(handle, regAccessToken);
+	cmdq_op_wait(handle, regAccessToken);
 
 	/* Assign 32-bit GRP with value */
-	argA = (CMDQ_CODE_MOVE << 24) | (valueRegId << 16) | (4 << 21);	/* argA is GPR */
-	cmdq_append_command(handle, CMDQ_CODE_RAW, argA, value, 0, 0);
+	arg_a = (CMDQ_CODE_MOVE << 24) | (valueRegId << 16) | (4 << 21);	/* arg_a is GPR */
+	cmdq_append_command(handle, CMDQ_CODE_RAW, arg_a, value, 0, 0);
 
-	/* Note that <MOVE> argB is 48-bit */
+	/* Note that <MOVE> arg_b is 48-bit */
 	/* so writeAddress is split into 2 parts */
 	/* and we store address in 64-bit GPR (P0-P7) */
 	CMDQ_GET_HIGH_ADDR(dramAddr, highAddr);
@@ -898,7 +900,7 @@ int32_t cmdqRecBackupUpdateSlot(cmdqRecHandle handle,
 	cmdq_append_command(handle, CMDQ_CODE_WRITE, destRegId, valueRegId, 1, 1);
 
 	/* release the GPR lock */
-	cmdqRecSetEventToken(handle, regAccessToken);
+	cmdq_op_set_event(handle, regAccessToken);
 
 	return 0;
 
@@ -906,65 +908,12 @@ int32_t cmdqRecBackupUpdateSlot(cmdqRecHandle handle,
 	CMDQ_ERR("func:%s failed since CMDQ doesn't support GPR\n", __func__);
 	return -EFAULT;
 #endif				/* CMDQ_GPR_SUPPORT */
-
 }
 
-int32_t cmdqRecEnablePrefetch(cmdqRecHandle handle)
-{
-#ifdef _CMDQ_DISABLE_MARKER_
-	/* disable pre-fetch marker feature but use auto prefetch mechanism */
-	CMDQ_MSG("not allow enable prefetch, scenario: %d\n", handle->scenario);
-	return true;
-#else
-	if (NULL == handle)
-		return -EFAULT;
-
-	if (cmdq_get_func()->shouldEnablePrefetch(handle->scenario)) {
-		/* enable prefetch */
-		CMDQ_VERBOSE("REC: enable prefetch\n");
-		cmdqRecMark(handle);
-		return true;
-	}
-	CMDQ_ERR("not allow enable prefetch, scenario: %d\n", handle->scenario);
-	return -EFAULT;
-#endif
-}
-
-int32_t cmdqRecDisablePrefetch(cmdqRecHandle handle)
-{
-	uint32_t argB = 0;
-	uint32_t argA = 0;
-	int32_t status = 0;
-
-	if (NULL == handle)
-		return -EFAULT;
-
-	if (!handle->finalized) {
-		if (handle->prefetchCount > 0) {
-			/* with prefetch threads we should end with */
-			/* bit 48: no_inc_exec_cmds_cnt = 1 */
-			/* bit 20: prefetch_mark = 1 */
-			/* bit 17: prefetch_mark_en = 0 */
-			/* bit 16: prefetch_en = 0 */
-			argB = 0x00100000;
-			argA = (0x1 << 16);	/* not increse execute counter */
-			/* since we're finalized, no more prefetch */
-			handle->prefetchCount = 0;
-			status = cmdq_append_command(handle, CMDQ_CODE_EOC, argA, argB, 0, 0);
-		}
-
-		if (0 != status)
-			return status;
-	}
-
-	CMDQ_MSG("cmdqRecDisablePrefetch, status:%d\n", status);
-	return status;
-}
-
-int32_t cmdq_rec_finalize_command(cmdqRecHandle handle, bool loop)
+int32_t cmdq_op_finalize_command(cmdqRecHandle handle, bool loop)
 {
 	int32_t status = 0;
-	uint32_t argB = 0;
+	uint32_t arg_b = 0;
 
 	if (NULL == handle)
 		return -EFAULT;
@@ -975,19 +924,20 @@ int32_t cmdq_rec_finalize_command(cmdqRecHandle handle, bool loop)
 			CMDQ_ERR
 			    ("not insert prefetch disble marker when prefetch enabled, prefetchCount:%d\n",
 			     handle->prefetchCount);
-			cmdqRecDumpCommand(handle);
+			cmdq_task_dump_command(handle);
 
 			status = -EFAULT;
 			return status;
 		}
 
 		/* insert EOF instruction */
-		argB = 0x1;	/* generate IRQ for each command iteration */
+		arg_b = 0x1;	/* generate IRQ for each command iteration */
 #ifdef DISABLE_LOOP_IRQ
-		if (loop && !cmdq_get_func()->forceLoopIRQ(handle->scenario))
-			argB = 0x0;	/* no generate IRQ for loop thread to save power */
+		if (loop == true && cmdq_get_func()->force_loop_irq(handle->scenario) == false)
+			arg_b = 0x0;	/* no generate IRQ for loop thread to save power */
 #endif
-		status = cmdq_append_command(handle, CMDQ_CODE_EOC, 0, argB, 0, 0);
+
+		status = cmdq_append_command(handle, CMDQ_CODE_EOC, 0, arg_b, 0, 0);
 
 		if (0 != status)
 			return status;
@@ -1004,11 +954,11 @@ int32_t cmdq_rec_finalize_command(cmdqRecHandle handle, bool loop)
 	return status;
 }
 
-int32_t cmdq_rec_setup_sec_data_of_command_desc_by_rec_handle(cmdqCommandStruct *pDesc,
+int32_t cmdq_setup_sec_data_of_command_desc_by_rec_handle(cmdqCommandStruct *pDesc,
 							      cmdqRecHandle handle)
 {
 	/* fill field from user's request */
-	pDesc->secData.isSecure = handle->secData.isSecure;
+	pDesc->secData.is_secure = handle->secData.is_secure;
 	pDesc->secData.enginesNeedDAPC = handle->secData.enginesNeedDAPC;
 	pDesc->secData.enginesNeedPortSecurity = handle->secData.enginesNeedPortSecurity;
 
@@ -1037,12 +987,12 @@ int32_t cmdq_rec_setup_profile_marker_data(cmdqCommandStruct *pDesc, cmdqRecHand
 	return 0;
 }
 
-int32_t cmdqRecFlush(cmdqRecHandle handle)
+int32_t cmdq_task_flush(cmdqRecHandle handle)
 {
 	int32_t status;
 	cmdqCommandStruct desc = { 0 };
 
-	status = cmdq_rec_finalize_command(handle, false);
+	status = cmdq_op_finalize_command(handle, false);
 	if (status < 0)
 		return status;
 
@@ -1056,20 +1006,20 @@ int32_t cmdqRecFlush(cmdqRecHandle handle)
 	desc.pVABase = (cmdqU32Ptr_t) (unsigned long)handle->pBuffer;
 	desc.blockSize = handle->blockSize;
 	/* secure path */
-	cmdq_rec_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
+	cmdq_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
 	return cmdqCoreSubmitTask(&desc);
 }
 
-int32_t cmdqRecFlushAndReadRegister(cmdqRecHandle handle, uint32_t regCount, uint32_t *addrArray,
-				    uint32_t *valueArray)
+int32_t cmdq_task_flush_and_read_register(cmdqRecHandle handle, uint32_t regCount,
+			    uint32_t *addrArray, uint32_t *valueArray)
 {
 	int32_t status;
 	cmdqCommandStruct desc = { 0 };
 
-	status = cmdq_rec_finalize_command(handle, false);
+	status = cmdq_op_finalize_command(handle, false);
 	if (status < 0)
 		return status;
 
@@ -1087,21 +1037,20 @@ int32_t cmdqRecFlushAndReadRegister(cmdqRecHandle handle, uint32_t regCount, uin
 	desc.regValue.count = regCount;
 	desc.regValue.regValues = (cmdqU32Ptr_t) (unsigned long)valueArray;
 	/* secure path */
-	cmdq_rec_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
+	cmdq_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
 	return cmdqCoreSubmitTask(&desc);
 }
 
-
-int32_t cmdqRecFlushAsync(cmdqRecHandle handle)
+int32_t cmdq_task_flush_async(cmdqRecHandle handle)
 {
 	int32_t status = 0;
 	cmdqCommandStruct desc = { 0 };
 	TaskStruct *pTask = NULL;
 
-	status = cmdq_rec_finalize_command(handle, false);
+	status = cmdq_op_finalize_command(handle, false);
 	if (status < 0)
 		return status;
 
@@ -1115,7 +1064,7 @@ int32_t cmdqRecFlushAsync(cmdqRecHandle handle)
 	desc.regValue.count = 0;
 	desc.regValue.regValues = (cmdqU32Ptr_t) (unsigned long)NULL;
 	/* secure path */
-	cmdq_rec_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
+	cmdq_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
@@ -1140,15 +1089,14 @@ int32_t cmdqRecFlushAsync(cmdqRecHandle handle)
 	return status;
 }
 
-
-int32_t cmdqRecFlushAsyncCallback(cmdqRecHandle handle, CmdqAsyncFlushCB callback,
+int32_t cmdq_task_flush_async_callback(cmdqRecHandle handle, CmdqAsyncFlushCB callback,
 				  uint32_t userData)
 {
 	int32_t status = 0;
 	cmdqCommandStruct desc = { 0 };
 	TaskStruct *pTask = NULL;
 
-	status = cmdq_rec_finalize_command(handle, false);
+	status = cmdq_op_finalize_command(handle, false);
 	if (status < 0)
 		return status;
 
@@ -1162,7 +1110,7 @@ int32_t cmdqRecFlushAsyncCallback(cmdqRecHandle handle, CmdqAsyncFlushCB callbac
 	desc.regValue.count = 0;
 	desc.regValue.regValues = (cmdqU32Ptr_t) (unsigned long)NULL;
 	/* secure path */
-	cmdq_rec_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
+	cmdq_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
@@ -1187,21 +1135,19 @@ int32_t cmdqRecFlushAsyncCallback(cmdqRecHandle handle, CmdqAsyncFlushCB callbac
 		status = -ENOMEM;
 
 	return status;
-
 }
 
-
-static int32_t cmdqRecIRQCallback(unsigned long data)
+static int32_t cmdq_dummy_irq_callback(unsigned long data)
 {
 	return 0;
 }
 
-int32_t cmdqRecStartLoop(cmdqRecHandle handle)
+int32_t cmdq_task_start_loop(cmdqRecHandle handle)
 {
-	return cmdqRecStartLoopWithCallback(handle, &cmdqRecIRQCallback, 0);
+	return cmdq_task_start_loop_callback(handle, &cmdq_dummy_irq_callback, 0);
 }
 
-int32_t cmdqRecStartLoopWithCallback(cmdqRecHandle handle, CmdqInterruptCB loopCB, unsigned long loopData)
+int32_t cmdq_task_start_loop_callback(cmdqRecHandle handle, CmdqInterruptCB loopCB, unsigned long loopData)
 {
 	int32_t status = 0;
 	cmdqCommandStruct desc = { 0 };
@@ -1212,7 +1158,7 @@ int32_t cmdqRecStartLoopWithCallback(cmdqRecHandle handle, CmdqInterruptCB loopC
 	if (NULL != handle->pRunningTask)
 		return -EBUSY;
 
-	status = cmdq_rec_finalize_command(handle, true);
+	status = cmdq_op_finalize_command(handle, true);
 	if (status < 0)
 		return status;
 
@@ -1227,7 +1173,7 @@ int32_t cmdqRecStartLoopWithCallback(cmdqRecHandle handle, CmdqInterruptCB loopC
 	desc.pVABase = (cmdqU32Ptr_t) (unsigned long)handle->pBuffer;
 	desc.blockSize = handle->blockSize;
 	/* secure path */
-	cmdq_rec_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
+	cmdq_setup_sec_data_of_command_desc_by_rec_handle(&desc, handle);
 	/* profile marker */
 	cmdq_rec_setup_profile_marker_data(&desc, handle);
 
@@ -1235,7 +1181,7 @@ int32_t cmdqRecStartLoopWithCallback(cmdqRecHandle handle, CmdqInterruptCB loopC
 	return status;
 }
 
-int32_t cmdqRecStopLoop(cmdqRecHandle handle)
+int32_t cmdq_task_stop_loop(cmdqRecHandle handle)
 {
 	int32_t status = 0;
 	struct TaskStruct *pTask;
@@ -1252,19 +1198,19 @@ int32_t cmdqRecStopLoop(cmdqRecHandle handle)
 	return status;
 }
 
-int32_t cmdqRecGetInstructionCount(cmdqRecHandle handle)
+int32_t cmdq_task_get_instruction_count(cmdqRecHandle handle)
 {
-	int32_t InstructionCount;
+	int32_t instruction_count;
 
 	if (NULL == handle)
 		return 0;
 
-	InstructionCount = handle->blockSize / CMDQ_INST_SIZE;
+	instruction_count = handle->blockSize / CMDQ_INST_SIZE;
 
-	return InstructionCount;
+	return instruction_count;
 }
 
-int32_t cmdqRecProfileMarker(cmdqRecHandle handle, const char *tag)
+int32_t cmdq_op_profile_marker(cmdqRecHandle handle, const char *tag)
 {
 #ifdef CMDQ_PROFILE_MARKER_SUPPORT
 	int32_t status;
@@ -1309,7 +1255,7 @@ int32_t cmdqRecProfileMarker(cmdqRecHandle handle, const char *tag)
 		    ("[REC][PROF_MARKER]inserting profile instr, handle:%p, slot:%pa(0x%llx), index:%d, tag:%s\n",
 		     handle, &hSlot, handle->profileMarker.hSlot, index, tag);
 
-		cmdqRecBackupRegisterToSlot(handle, hSlot, index, CMDQ_APXGPT2_COUNT);
+		cmdq_op_read_reg_to_mem(handle, hSlot, index, CMDQ_APXGPT2_COUNT);
 
 		handle->profileMarker.tag[index] = (cmdqU32Ptr_t) (unsigned long)tag;
 		handle->profileMarker.count += 1;
@@ -1322,7 +1268,7 @@ int32_t cmdqRecProfileMarker(cmdqRecHandle handle, const char *tag)
 #endif
 }
 
-int32_t cmdqRecDumpCommand(cmdqRecHandle handle)
+int32_t cmdq_task_dump_command(cmdqRecHandle handle)
 {
 	int32_t status = 0;
 	struct TaskStruct *pTask;
@@ -1358,7 +1304,7 @@ int32_t cmdqRecDumpCommand(cmdqRecHandle handle)
 	return status;
 }
 
-int32_t cmdqRecEstimateCommandExecTime(const cmdqRecHandle handle)
+int32_t cmdq_task_estimate_command_exec_time(const cmdqRecHandle handle)
 {
 	int32_t time = 0;
 
@@ -1372,13 +1318,13 @@ int32_t cmdqRecEstimateCommandExecTime(const cmdqRecHandle handle)
 	return time;
 }
 
-void cmdqRecDestroy(cmdqRecHandle handle)
+int32_t cmdq_task_destroy(cmdqRecHandle handle)
 {
 	if (NULL == handle)
-		return;
+		return -EFAULT;
 
 	if (NULL != handle->pRunningTask)
-		cmdqRecStopLoop(handle);
+		return cmdq_task_stop_loop(handle);
 
 	/* Free command buffer */
 	kfree(handle->pBuffer);
@@ -1386,31 +1332,33 @@ void cmdqRecDestroy(cmdqRecHandle handle)
 
 	/* Free command handle */
 	kfree(handle);
+
+	return 0;
 }
 
-int32_t cmdqRecSetNOP(cmdqRecHandle handle, uint32_t index)
+int32_t cmdq_op_set_nop(cmdqRecHandle handle, uint32_t index)
 {
-	uint32_t *pCommand;
+	uint32_t *p_command;
 	uint32_t offsetIndex = index * CMDQ_INST_SIZE;
 
 	if (NULL == handle || offsetIndex > (handle->blockSize - CMDQ_INST_SIZE))
 		return -EFAULT;
 
 	CMDQ_MSG("======REC 0x%p Set NOP to index: %d\n", handle, index);
-	pCommand = (uint32_t *) ((uint8_t *) handle->pBuffer + offsetIndex);
-	*pCommand++ = 8;
-	*pCommand++ = (CMDQ_CODE_JUMP << 24) | (0 & 0x0FFFFFF);
+	p_command = (uint32_t *) ((uint8_t *) handle->pBuffer + offsetIndex);
+	*p_command++ = 8;
+	*p_command++ = (CMDQ_CODE_JUMP << 24) | (0 & 0x0FFFFFF);
 	CMDQ_MSG("======REC 0x%p  END\n", handle);
 
 	return index;
 }
 
-int32_t cmdqRecQueryOffset(cmdqRecHandle handle, uint32_t startIndex, const CMDQ_CODE_ENUM opCode,
-			   CMDQ_EVENT_ENUM event)
+int32_t cmdq_task_query_offset(cmdqRecHandle handle, uint32_t startIndex,
+				  const CMDQ_CODE_ENUM opCode, CMDQ_EVENT_ENUM event)
 {
 	int32_t Offset = -1;
-	uint32_t argA, argB;
-	uint32_t *pCommand;
+	uint32_t arg_a, arg_b;
+	uint32_t *p_command;
 	uint32_t QueryIndex, MaxIndex;
 
 	if (NULL == handle || (startIndex * CMDQ_INST_SIZE) > (handle->blockSize - CMDQ_INST_SIZE))
@@ -1422,8 +1370,8 @@ int32_t cmdqRecQueryOffset(cmdqRecHandle handle, uint32_t startIndex, const CMDQ
 		/* bit 15: to_wait, true */
 		/* bit 31: to_update, true */
 		/* bit 16-27: update_value, 0 */
-		argB = ((1 << 31) | (1 << 15) | 1);
-		argA = (CMDQ_CODE_WFE << 24) | cmdq_core_get_event_value(event);
+		arg_b = ((1 << 31) | (1 << 15) | 1);
+		arg_a = (CMDQ_CODE_WFE << 24) | cmdq_core_get_event_value(event);
 		break;
 	case CMDQ_CODE_SET_TOKEN:
 		/* this is actually WFE(SYNC) but with different parameter */
@@ -1431,15 +1379,15 @@ int32_t cmdqRecQueryOffset(cmdqRecHandle handle, uint32_t startIndex, const CMDQ
 		/* bit 15: to_wait, false */
 		/* bit 31: to_update, true */
 		/* bit 16-27: update_value, 1 */
-		argB = ((1 << 31) | (1 << 16));
-		argA = (CMDQ_CODE_WFE << 24) | cmdq_core_get_event_value(event);
+		arg_b = ((1 << 31) | (1 << 16));
+		arg_a = (CMDQ_CODE_WFE << 24) | cmdq_core_get_event_value(event);
 		break;
 	case CMDQ_CODE_WAIT_NO_CLEAR:
 		/* bit 0-11: wait_value, 1 */
 		/* bit 15: to_wait, true */
 		/* bit 31: to_update, false */
-		argB = ((0 << 31) | (1 << 15) | 1);
-		argA = (CMDQ_CODE_WFE << 24) | cmdq_core_get_event_value(event);
+		arg_b = ((0 << 31) | (1 << 15) | 1);
+		arg_a = (CMDQ_CODE_WFE << 24) | cmdq_core_get_event_value(event);
 		break;
 	case CMDQ_CODE_CLEAR_TOKEN:
 		/* this is actually WFE(SYNC) but with different parameter */
@@ -1447,8 +1395,8 @@ int32_t cmdqRecQueryOffset(cmdqRecHandle handle, uint32_t startIndex, const CMDQ
 		/* bit 15: to_wait, false */
 		/* bit 31: to_update, true */
 		/* bit 16-27: update_value, 0 */
-		argB = ((1 << 31) | (0 << 16));
-		argA = (CMDQ_CODE_WFE << 24) | cmdq_core_get_event_value(event);
+		arg_b = ((1 << 31) | (0 << 16));
+		arg_a = (CMDQ_CODE_WFE << 24) | cmdq_core_get_event_value(event);
 		break;
 	case CMDQ_CODE_PREFETCH_ENABLE:
 		/* this is actually MARKER but with different parameter */
@@ -1458,16 +1406,16 @@ int32_t cmdqRecQueryOffset(cmdqRecHandle handle, uint32_t startIndex, const CMDQ
 		/* bit 20: prefetch_marker, true */
 		/* bit 17: prefetch_marker_en, true */
 		/* bit 16: prefetch_en, true */
-		argB = ((1 << 20) | (1 << 17) | (1 << 16));
-		argA = (CMDQ_CODE_EOC << 24) | (0x1 << (53 - 32)) | (0x1 << (48 - 32));
+		arg_b = ((1 << 20) | (1 << 17) | (1 << 16));
+		arg_a = (CMDQ_CODE_EOC << 24) | (0x1 << (53 - 32)) | (0x1 << (48 - 32));
 		break;
 	case CMDQ_CODE_PREFETCH_DISABLE:
 		/* this is actually MARKER but with different parameter */
 		/* interpretation */
 		/* bit 48: no_inc_exec_cmds_cnt, true */
 		/* bit 20: prefetch_marker, true */
-		argB = (1 << 20);
-		argA = (CMDQ_CODE_EOC << 24) | (0x1 << (48 - 32));
+		arg_b = (1 << 20);
+		arg_a = (CMDQ_CODE_EOC << 24) | (0x1 << (48 - 32));
 		break;
 	default:
 		CMDQ_MSG("This offset of instruction can not be queried.\n");
@@ -1476,8 +1424,8 @@ int32_t cmdqRecQueryOffset(cmdqRecHandle handle, uint32_t startIndex, const CMDQ
 
 	MaxIndex = handle->blockSize / CMDQ_INST_SIZE;
 	for (QueryIndex = startIndex; QueryIndex < MaxIndex; QueryIndex++) {
-		pCommand = (uint32_t *) ((uint8_t *) handle->pBuffer + QueryIndex * CMDQ_INST_SIZE);
-		if ((argB == *pCommand++) && (argA == *pCommand)) {
+		p_command = (uint32_t *) ((uint8_t *) handle->pBuffer + QueryIndex * CMDQ_INST_SIZE);
+		if ((arg_b == *p_command++) && (arg_a == *p_command)) {
 			Offset = (int32_t) QueryIndex;
 			CMDQ_MSG("Get offset = %d\n", Offset);
 			break;
@@ -1491,7 +1439,7 @@ int32_t cmdqRecQueryOffset(cmdqRecHandle handle, uint32_t startIndex, const CMDQ
 	return Offset;
 }
 
-int32_t cmdqRecAcquireResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent)
+int32_t cmdq_resource_acquire(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent)
 {
 	bool acquireResult;
 
@@ -1503,7 +1451,7 @@ int32_t cmdqRecAcquireResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEve
 	return 0;
 }
 
-int32_t cmdqRecWriteForResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent,
+int32_t cmdq_resource_acquire_and_write(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent,
 							uint32_t addr, uint32_t value, uint32_t mask)
 {
 	bool acquireResult;
@@ -1514,26 +1462,328 @@ int32_t cmdqRecWriteForResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEv
 		return -EFAULT;
 	}
 
-	return cmdqRecWrite(handle, addr, value, mask);
+	return cmdq_op_write_reg(handle, addr, value, mask);
 }
 
-int32_t cmdqRecReleaseResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent)
+int32_t cmdq_resource_release(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent)
 {
 	cmdqCoreReleaseResource(resourceEvent);
-	return cmdqRecSetEventToken(handle, resourceEvent);
+	return cmdq_op_set_event(handle, resourceEvent);
 }
 
-int32_t cmdqRecWriteAndReleaseResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent,
+int32_t cmdq_resource_release_and_write(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent,
 							uint32_t addr, uint32_t value, uint32_t mask)
 {
 	int32_t result;
 
 	cmdqCoreReleaseResource(resourceEvent);
-	result = cmdqRecWrite(handle, addr, value, mask);
+	result = cmdq_op_write_reg(handle, addr, value, mask);
 	if (result >= 0)
-		return cmdqRecSetEventToken(handle, resourceEvent);
+		return cmdq_op_set_event(handle, resourceEvent);
 
 	CMDQ_ERR("Write instruction fail and not release resource!\n");
 	return result;
 }
 
+int32_t cmdqRecCreate(CMDQ_SCENARIO_ENUM scenario, cmdqRecHandle *pHandle)
+{
+	return cmdq_task_create(scenario, pHandle);
+}
+
+int32_t cmdqRecSetEngine(cmdqRecHandle handle, uint64_t engineFlag)
+{
+	return cmdq_task_set_engine(handle, engineFlag);
+}
+
+int32_t cmdqRecReset(cmdqRecHandle handle)
+{
+	return cmdq_task_reset(handle);
+}
+
+int32_t cmdqRecSetSecure(cmdqRecHandle handle, const bool is_secure)
+{
+	return cmdq_task_set_secure(handle, is_secure);
+}
+
+int32_t cmdqRecIsSecure(cmdqRecHandle handle)
+{
+	return cmdq_task_is_secure(handle);
+}
+
+int32_t cmdqRecSecureEnableDAPC(cmdqRecHandle handle, const uint64_t engineFlag)
+{
+	return cmdq_task_secure_enable_dapc(handle, engineFlag);
+}
+
+int32_t cmdqRecSecureEnablePortSecurity(cmdqRecHandle handle, const uint64_t engineFlag)
+{
+	return cmdq_task_secure_enable_port_security(handle, engineFlag);
+}
+
+int32_t cmdqRecMark(cmdqRecHandle handle)
+{
+	int32_t status;
+
+	/* Do not check prefetch-ability here. */
+	/* because cmdqRecMark may have other purposes. */
+
+	/* bit 53: non-suspendable. set to 1 because we don't want */
+	/* CPU suspend this thread during pre-fetching. */
+	/* If CPU change PC, then there will be a mess, */
+	/* because prefetch buffer is not properly cleared. */
+	/* bit 48: do not increase CMD_COUNTER (because this is not the end of the task) */
+	/* bit 20: prefetch_marker */
+	/* bit 17: prefetch_marker_en */
+	/* bit 16: prefetch_en */
+	/* bit 0:  irq_en (set to 0 since we don't want EOC interrupt) */
+	status = cmdq_append_command(handle,
+				     CMDQ_CODE_EOC,
+				     (0x1 << (53 - 32)) | (0x1 << (48 - 32)), 0x00130000, 0, 0);
+
+	/* if we're in a prefetch region, */
+	/* this ends the region so set count to 0. */
+	/* otherwise we start the region by setting count to 1. */
+	handle->prefetchCount = 1;
+
+	if (0 != status)
+		return -EFAULT;
+
+	return 0;
+}
+
+int32_t cmdqRecWrite(cmdqRecHandle handle, uint32_t addr, uint32_t value, uint32_t mask)
+{
+	return cmdq_op_write_reg(handle, addr, (CMDQ_VARIABLE)value, mask);
+}
+
+int32_t cmdqRecWriteSecure(cmdqRecHandle handle, uint32_t addr,
+			   CMDQ_SEC_ADDR_METADATA_TYPE type,
+			   uint32_t baseHandle, uint32_t offset, uint32_t size, uint32_t port)
+{
+	return cmdq_op_write_reg_secure(handle, addr, type, baseHandle, offset, size, port);
+}
+
+int32_t cmdqRecPoll(cmdqRecHandle handle, uint32_t addr, uint32_t value, uint32_t mask)
+{
+	return cmdq_op_poll(handle, addr, value, mask);
+}
+
+int32_t cmdqRecWait(cmdqRecHandle handle, CMDQ_EVENT_ENUM event)
+{
+	return cmdq_op_wait(handle, event);
+}
+
+int32_t cmdqRecWaitNoClear(cmdqRecHandle handle, CMDQ_EVENT_ENUM event)
+{
+	return cmdq_op_wait_no_clear(handle, event);
+}
+
+int32_t cmdqRecClearEventToken(cmdqRecHandle handle, CMDQ_EVENT_ENUM event)
+{
+	return cmdq_op_clear_event(handle, event);
+}
+
+int32_t cmdqRecSetEventToken(cmdqRecHandle handle, CMDQ_EVENT_ENUM event)
+{
+	return cmdq_op_set_event(handle, event);
+}
+
+int32_t cmdqRecReadToDataRegister(cmdqRecHandle handle, uint32_t hw_addr,
+				  CMDQ_DATA_REGISTER_ENUM dst_data_reg)
+{
+	return cmdq_op_read_to_data_register(handle, hw_addr, dst_data_reg);
+}
+
+int32_t cmdqRecWriteFromDataRegister(cmdqRecHandle handle,
+				     CMDQ_DATA_REGISTER_ENUM src_data_reg, uint32_t hw_addr)
+{
+	return cmdq_op_write_from_data_register(handle, src_data_reg, hw_addr);
+}
+
+int32_t cmdqBackupAllocateSlot(cmdqBackupSlotHandle *p_h_backup_slot, uint32_t slotCount)
+{
+	return cmdq_alloc_mem(p_h_backup_slot, slotCount);
+}
+
+int32_t cmdqBackupReadSlot(cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index, uint32_t *value)
+{
+	return cmdq_cpu_read_mem(h_backup_slot, slot_index, value);
+}
+
+int32_t cmdqBackupWriteSlot(cmdqBackupSlotHandle h_backup_slot, uint32_t slot_index, uint32_t value)
+{
+	return cmdq_cpu_write_mem(h_backup_slot, slot_index, value);
+}
+
+int32_t cmdqBackupFreeSlot(cmdqBackupSlotHandle h_backup_slot)
+{
+	return cmdq_free_mem(h_backup_slot);
+}
+
+int32_t cmdqRecBackupRegisterToSlot(cmdqRecHandle handle,
+				    cmdqBackupSlotHandle h_backup_slot,
+				    uint32_t slot_index, uint32_t regAddr)
+{
+	return cmdq_op_read_reg_to_mem(handle, h_backup_slot, slot_index, regAddr);
+}
+
+int32_t cmdqRecBackupWriteRegisterFromSlot(cmdqRecHandle handle,
+					   cmdqBackupSlotHandle h_backup_slot,
+					   uint32_t slot_index, uint32_t addr)
+{
+	return cmdq_op_read_mem_to_reg(handle, h_backup_slot, slot_index, addr);
+}
+
+int32_t cmdqRecBackupUpdateSlot(cmdqRecHandle handle,
+				cmdqBackupSlotHandle h_backup_slot,
+				uint32_t slot_index, uint32_t value)
+{
+	return cmdq_op_write_mem(handle, h_backup_slot, slot_index, value);
+}
+
+int32_t cmdqRecEnablePrefetch(cmdqRecHandle handle)
+{
+#ifdef _CMDQ_DISABLE_MARKER_
+	/* disable pre-fetch marker feature but use auto prefetch mechanism */
+	CMDQ_MSG("not allow enable prefetch, scenario: %d\n", handle->scenario);
+	return true;
+#else
+	if (NULL == handle)
+		return -EFAULT;
+
+	if (cmdq_get_func()->shouldEnablePrefetch(handle->scenario)) {
+		/* enable prefetch */
+		CMDQ_VERBOSE("REC: enable prefetch\n");
+		cmdqRecMark(handle);
+		return true;
+	}
+	CMDQ_ERR("not allow enable prefetch, scenario: %d\n", handle->scenario);
+	return -EFAULT;
+#endif
+}
+
+int32_t cmdqRecDisablePrefetch(cmdqRecHandle handle)
+{
+	uint32_t arg_b = 0;
+	uint32_t arg_a = 0;
+	int32_t status = 0;
+
+	if (NULL == handle)
+		return -EFAULT;
+
+	if (!handle->finalized) {
+		if (handle->prefetchCount > 0) {
+			/* with prefetch threads we should end with */
+			/* bit 48: no_inc_exec_cmds_cnt = 1 */
+			/* bit 20: prefetch_mark = 1 */
+			/* bit 17: prefetch_mark_en = 0 */
+			/* bit 16: prefetch_en = 0 */
+			arg_b = 0x00100000;
+			arg_a = (0x1 << 16);	/* not increse execute counter */
+			/* since we're finalized, no more prefetch */
+			handle->prefetchCount = 0;
+			status = cmdq_append_command(handle, CMDQ_CODE_EOC, arg_a, arg_b, 0, 0);
+		}
+
+		if (0 != status)
+			return status;
+	}
+
+	CMDQ_MSG("cmdqRecDisablePrefetch, status:%d\n", status);
+	return status;
+}
+
+int32_t cmdqRecFlush(cmdqRecHandle handle)
+{
+	return cmdq_task_flush(handle);
+}
+
+int32_t cmdqRecFlushAndReadRegister(cmdqRecHandle handle, uint32_t regCount, uint32_t *addrArray,
+				    uint32_t *valueArray)
+{
+	return cmdq_task_flush_and_read_register(handle, regCount, addrArray, valueArray);
+}
+
+int32_t cmdqRecFlushAsync(cmdqRecHandle handle)
+{
+	return cmdq_task_flush_async(handle);
+}
+
+int32_t cmdqRecFlushAsyncCallback(cmdqRecHandle handle, CmdqAsyncFlushCB callback,
+				  uint32_t userData)
+{
+	return cmdq_task_flush_async_callback(handle, callback, userData);
+}
+
+int32_t cmdqRecStartLoop(cmdqRecHandle handle)
+{
+	return cmdq_task_start_loop(handle);
+}
+
+int32_t cmdqRecStartLoopWithCallback(cmdqRecHandle handle, CmdqInterruptCB loopCB, unsigned long loopData)
+{
+	return cmdq_task_start_loop_callback(handle, loopCB, loopData);
+}
+
+int32_t cmdqRecStopLoop(cmdqRecHandle handle)
+{
+	return cmdq_task_stop_loop(handle);
+}
+
+int32_t cmdqRecGetInstructionCount(cmdqRecHandle handle)
+{
+	return cmdq_task_get_instruction_count(handle);
+}
+
+int32_t cmdqRecProfileMarker(cmdqRecHandle handle, const char *tag)
+{
+	return cmdq_op_profile_marker(handle, tag);
+}
+
+int32_t cmdqRecDumpCommand(cmdqRecHandle handle)
+{
+	return cmdq_task_dump_command(handle);
+}
+
+int32_t cmdqRecEstimateCommandExecTime(const cmdqRecHandle handle)
+{
+	return cmdq_task_estimate_command_exec_time(handle);
+}
+
+void cmdqRecDestroy(cmdqRecHandle handle)
+{
+	cmdq_task_destroy(handle);
+}
+
+int32_t cmdqRecSetNOP(cmdqRecHandle handle, uint32_t index)
+{
+	return cmdq_op_set_nop(handle, index);
+}
+
+int32_t cmdqRecQueryOffset(cmdqRecHandle handle, uint32_t startIndex, const CMDQ_CODE_ENUM opCode,
+			   CMDQ_EVENT_ENUM event)
+{
+	return cmdq_task_query_offset(handle, startIndex, opCode, event);
+}
+
+int32_t cmdqRecAcquireResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent)
+{
+	return cmdq_resource_acquire(handle, resourceEvent);
+}
+
+int32_t cmdqRecWriteForResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent,
+							uint32_t addr, uint32_t value, uint32_t mask)
+{
+	return cmdq_resource_acquire_and_write(handle, resourceEvent, addr, value, mask);
+}
+
+int32_t cmdqRecReleaseResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent)
+{
+	return cmdq_resource_release(handle, resourceEvent);
+}
+
+int32_t cmdqRecWriteAndReleaseResource(cmdqRecHandle handle, CMDQ_EVENT_ENUM resourceEvent,
+							uint32_t addr, uint32_t value, uint32_t mask)
+{
+	return cmdq_resource_release_and_write(handle, resourceEvent, addr, value, mask);
+}

@@ -372,8 +372,8 @@ void cmdq_mdp_loop_off(CMDQ_ENG_ENUM engine,
 		/* retrun failed if loop failed */
 		if ((0 > resetStatus) || (0 > initStatus)) {
 			CMDQ_AEE("MDP",
-				 "Disable %ld engine failed, resetStatus:%d, initStatus:%d\n",
-				 resetReg, resetStatus, initStatus);
+				 "Disable %d engine failed, resetStatus:%d, initStatus:%d\n",
+				 engine, resetStatus, initStatus);
 			return;
 		}
 
