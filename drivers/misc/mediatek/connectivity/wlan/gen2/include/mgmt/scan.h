@@ -466,12 +466,6 @@ typedef struct _PARTIAL_SCAN_INFO_T {
 	RF_CHANNEL_INFO_T arChnlInfoList[MAXIMUM_OPERATION_CHANNEL_LIST];
 } PARTIAL_SCAN_INFO, *P_PARTIAL_SCAN_INFO;
 
-/* use to save partial scan channel information */
-typedef struct _PARTIAL_SCAN_INFO_T {
-	UINT_8 ucChannelListNum;
-	RF_CHANNEL_INFO_T arChnlInfoList[MAXIMUM_OPERATION_CHANNEL_LIST];
-} PARTIAL_SCAN_INFO, *P_PARTIAL_SCAN_INFO;
-
 /* Incoming Mailbox Messages */
 typedef struct _MSG_SCN_SCAN_REQ_T {
 	MSG_HDR_T rMsgHdr;	/* Must be the first member */
