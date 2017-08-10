@@ -116,6 +116,8 @@ obj-y += cmdq_prof.o
 obj-y += cmdq_test.o
 ifneq ($(CONFIG_MTK_CMDQ_TAB),y)
 obj-y += cmdq_sec.o
+else
+obj-y += mtee/
 endif
 
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
