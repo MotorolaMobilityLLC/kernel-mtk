@@ -1263,6 +1263,7 @@ bool EnableSideGenHw(uint32 connection, bool direction, bool Enable)
 		case Soc_Aud_InterConnectionInput_I09:
 		case Soc_Aud_InterConnectionInput_I14:
 			Afe_Set_Reg(AFE_SGEN_CON0, 0x54662662, 0xffffffff);
+			break;
 		case Soc_Aud_InterConnectionInput_I10:
 		case Soc_Aud_InterConnectionInput_I11:
 		case Soc_Aud_InterConnectionInput_I12:
