@@ -127,15 +127,23 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 
 	case STP_OPID_BTM_DUMP_TIMEOUT:
 		#define FAKECOREDUMPEND "coredump end - fake"
-		/* Flush dump data, and reset compressor */
-		if (1 == dump_sink) {
-			/* aee case, do nothing */
-		} else if (2 == dump_sink) {
+		dump_sink = mtk_wcn_stp_coredump_flag_get();
+		if (dump_sink == 2) {
+			UINT8 tmp[32];
+
+			tmp[0] = '[';
+			tmp[1] = 'M';
+			tmp[2] = ']';
+			tmp[3] = (UINT8)osal_sizeof(FAKECOREDUMPEND);
+			tmp[4] = 0;
+			osal_memcpy(&tmp[5], FAKECOREDUMPEND, osal_sizeof(FAKECOREDUMPEND));
 			/* stp_dump case, append fake coredump end message */
+			stp_dbg_set_coredump_timer_state(CORE_DUMP_DOING);
 			STP_BTM_WARN_FUNC("generate fake coredump message\n");
-			stp_dbg_dump_send_retry_handler(FAKECOREDUMPEND, (INT32)osal_strlen(FAKECOREDUMPEND));
+			stp_dbg_dump_send_retry_handler((PINT8)&tmp, (INT32)osal_sizeof(FAKECOREDUMPEND)+5);
 		}
 
+		/* Flush dump data, and reset compressor */
 		STP_BTM_INFO_FUNC("Flush dump data\n");
 		stp_dbg_core_dump_flush(0, MTK_WCN_BOOL_TRUE);
 		ret = mtk_wcn_stp_coredump_timeout_handle();
