@@ -315,6 +315,7 @@ static unsigned int logout_selfrefresh_cnt;
 #if defined(CONFIG_ARCH_MT6755)
 static int by_ccif0_count;
 static int by_ccif1_count;
+static int by_cldma_count;
 #elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 static unsigned int last_r12;
 
@@ -499,6 +500,16 @@ static int spm_sodi_is_not_gpt_event(struct wake_status *wakesta, long int curr_
 			}
 			by_ccif1_count++;
 		}
+		if ((wakesta->r12 & WAKE_SRC_R12_CLDMA_EVENT_B)) {
+			if ((by_cldma_count >= 20) ||
+				((curr_time - sodi_logout_prev_time) > 20U)) {
+				logout = true;
+				by_cldma_count = 0;
+			} else if (by_cldma_count == 0) {
+				logout = true;
+			}
+			by_cldma_count++;
+		}
 	}
 #elif defined(CONFIG_ARCH_MT6797) || defined(CONFIG_ARCH_MT6757)
 	if (IS_NOT_IGNORE_EVENT(wakesta->r12) && IS_NOT_FREQUENT_EVENT(wakesta->r12, curr_time))
@@ -511,7 +522,8 @@ static inline bool spm_sodi_abnormal_residency(struct wake_status *wakesta)
 {
 #if defined(CONFIG_ARCH_MT6755)
 	if (wakesta->timer_out <= SODI_LOGOUT_TIMEOUT_CRITERIA) {
-		if ((wakesta->r12 & WAKE_SRC_R12_CCIF0_EVENT_B) || (wakesta->r12 & WAKE_SRC_R12_CCIF1_EVENT_B)) {
+		if ((wakesta->r12 & WAKE_SRC_R12_CCIF0_EVENT_B) || (wakesta->r12 & WAKE_SRC_R12_CCIF1_EVENT_B) ||
+		    (wakesta->r12 & WAKE_SRC_R12_CLDMA_EVENT_B)) {
 			/* will take care in spm_sodi_is_not_gpt_event */
 			return false;
 		}
