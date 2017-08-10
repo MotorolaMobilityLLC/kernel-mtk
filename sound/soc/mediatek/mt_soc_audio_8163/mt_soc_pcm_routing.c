@@ -107,6 +107,7 @@ static const char * const InterModemPcm_ASRC_Switch[] = { "Off", "On" };
 static const char * const Audio_Debug_Setting[] = { "Off", "On" };
 static const char * const Audio_IPOH_State[] = { "Off", "On" };
 static const char * const Audio_I2S1_Setting[] = { "Off", "On" };
+static const char * const Audio_HP_Cali_Setting[] = { "false", "true" };
 
 
 static bool AudDrvSuspendStatus;
@@ -666,7 +667,7 @@ static void GetAudioTrimOffset(int channels)
 	}
 	mHplOffset = (val_hpl_on_sum / countlimit) - Buffer_offl_value + Const_DC_OFFSET;
 	mHprOffset = (val_hpr_on_sum / countlimit) - Buffer_offr_value + Const_DC_OFFSET;
-	pr_debug("%s, mHplOffset = %d, mHprOffset = %d\n", __func__, mHplOffset, mHprOffset);
+	pr_warn("%s, mHplOffset = %d, mHprOffset = %d\n", __func__, mHplOffset, mHprOffset);
 
 	OpenAnalogHeadphone(false);
 
@@ -680,18 +681,7 @@ static int Audio_Hpl_Offset_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 {
 #ifndef EFUSE_HP_TRIM
 	pr_debug("%s\n", __func__);
-	AudDrv_ANA_Clk_On();
-	AudDrv_Clk_On();
-	if (mHplCalibrated == false) {
-		GetAudioTrimOffset(AUDIO_OFFSET_TRIM_MUX_HPL);
-		SetHprTrimOffset(mHprOffset);
-		SetHplTrimOffset(mHplOffset);
-		mHplCalibrated = true;
-		mHprCalibrated = true;
-	}
 	ucontrol->value.integer.value[0] = mHplOffset;
-	AudDrv_Clk_Off();
-	AudDrv_ANA_Clk_Off();
 #else
 	ucontrol->value.integer.value[0] = 2048;
 #endif
@@ -714,18 +704,7 @@ static int Audio_Hpr_Offset_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 {
 	pr_debug("%s\n", __func__);
 #ifndef EFUSE_HP_TRIM
-	AudDrv_ANA_Clk_On();
-	AudDrv_Clk_On();
-	if (mHprCalibrated == false) {
-		GetAudioTrimOffset(AUDIO_OFFSET_TRIM_MUX_HPR);
-		SetHprTrimOffset(mHprOffset);
-		SetHplTrimOffset(mHplOffset);
-		mHplCalibrated = true;
-		mHprCalibrated = true;
-	}
 	ucontrol->value.integer.value[0] = mHprOffset;
-	AudDrv_Clk_Off();
-	AudDrv_ANA_Clk_Off();
 #else
 	ucontrol->value.integer.value[0] = 2048;
 #endif
@@ -744,6 +723,55 @@ static int Audio_Hpr_Offset_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_el
 	return 0;
 }
 
+static int Audio_HPL_Cali_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s()\n", __func__);
+	ucontrol->value.integer.value[0] = mHplCalibrated;
+	return 0;
+}
+
+static int Audio_HPL_Cali_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s()\n", __func__);
+	if (ucontrol->value.integer.value[0] && mHplCalibrated == false) {
+		AudDrv_ANA_Clk_On();
+		AudDrv_Clk_On();
+		GetAudioTrimOffset(AUDIO_OFFSET_TRIM_MUX_HPL);
+		SetHprTrimOffset(mHprOffset);
+		SetHplTrimOffset(mHplOffset);
+		mHplCalibrated = true;
+		mHprCalibrated = true;
+		AudDrv_Clk_Off();
+		AudDrv_ANA_Clk_Off();
+	}
+	return 0;
+}
+
+static int Audio_HPR_Cali_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s()\n", __func__);
+	ucontrol->value.integer.value[0] = mHprCalibrated;
+	return 0;
+}
+
+static int Audio_HPR_Cali_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_warn("%s()\n", __func__);
+	if (ucontrol->value.integer.value[0] && mHprCalibrated == false) {
+		AudDrv_ANA_Clk_On();
+		AudDrv_Clk_On();
+		GetAudioTrimOffset(AUDIO_OFFSET_TRIM_MUX_HPR);
+		SetHprTrimOffset(mHprOffset);
+		SetHplTrimOffset(mHplOffset);
+		mHplCalibrated = true;
+		mHprCalibrated = true;
+		AudDrv_Clk_Off();
+		AudDrv_ANA_Clk_Off();
+	}
+	return 0;
+}
+
+
 static const struct soc_enum Audio_Routing_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(DAC_DL_SIDEGEN), DAC_DL_SIDEGEN),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(DAC_DL_SIDEGEN_SAMEPLRATE), DAC_DL_SIDEGEN_SAMEPLRATE),
@@ -754,6 +782,8 @@ static const struct soc_enum Audio_Routing_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_Debug_Setting), Audio_Debug_Setting),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_IPOH_State), Audio_IPOH_State),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_I2S1_Setting), Audio_I2S1_Setting),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_HP_Cali_Setting), Audio_HP_Cali_Setting),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_HP_Cali_Setting), Audio_HP_Cali_Setting),
 };
 
 static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
@@ -786,6 +816,10 @@ static const struct snd_kcontrol_new Audio_snd_routing_controls[] = {
 		     Audio_Ipoh_Setting_Set),
 	SOC_ENUM_EXT("Audio_I2S1_Setting", Audio_Routing_Enum[8], AudioI2S1_Setting_Get,
 		     AudioI2S1_Setting_Set),
+	SOC_ENUM_EXT("Audio_HPL_Calibration", Audio_Routing_Enum[9], Audio_HPL_Cali_Get,
+		     Audio_HPL_Cali_Set),
+	SOC_ENUM_EXT("Audio_HPR_Calibration", Audio_Routing_Enum[10], Audio_HPR_Cali_Get,
+		     Audio_HPR_Cali_Set),
 };
 
 

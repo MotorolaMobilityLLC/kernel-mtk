@@ -3333,6 +3333,15 @@ static int mtk_mt6323_codec_dev_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static void mtk_mt6323_codec_dev_shutdown(struct platform_device *pdev)
+{
+	pr_debug("%s\n", __func__);
+	Ana_Set_Reg(AUDTOP_CON6, 0x17E2, 0xFFFF);
+	mdelay(3500);
+	Ana_Set_Reg(AUDTOP_CON6, 0x15E2, 0xFFFF);
+}
+
+
 #ifdef CONFIG_OF
 static const struct of_device_id mt_soc_codec_63xx_of_ids[] = {
 
@@ -3397,6 +3406,7 @@ static struct platform_driver mtk_codec_6323_driver = {
 		   },
 	.probe = mtk_mt6323_codec_dev_probe,
 	.remove = mtk_mt6323_codec_dev_remove,
+	.shutdown = mtk_mt6323_codec_dev_shutdown,
 };
 
 #ifndef CONFIG_OF
