@@ -43,16 +43,16 @@
 /* #define MT6631_FM_ROM_PATH "/etc/firmware/mt6631/mt6631_fm_rom.bin" */
 
 static struct fm_patch_tbl mt6631_patch_tbl[5] = {
-	{FM_ROM_V1, "/etc/firmware/mt6631/mt6631_fm_v1_patch.bin",
-	"/etc/firmware/mt6631/mt6631_fm_v1_coeff.bin", NULL, NULL},
-	{FM_ROM_V2, "/etc/firmware/mt6631/mt6631_fm_v2_patch.bin",
-	"/etc/firmware/mt6631/mt6631_fm_v2_coeff.bin", NULL, NULL},
-	{FM_ROM_V3, "/etc/firmware/mt6631/mt6631_fm_v3_patch.bin",
-	"/etc/firmware/mt6631/mt6631_fm_v3_coeff.bin", NULL, NULL},
-	{FM_ROM_V4, "/etc/firmware/mt6631/mt6631_fm_v4_patch.bin",
-	"/etc/firmware/mt6631/mt6631_fm_v4_coeff.bin", NULL, NULL},
-	{FM_ROM_V5, "/etc/firmware/mt6631/mt6631_fm_v5_patch.bin",
-	"/etc/firmware/mt6631/mt6631_fm_v5_coeff.bin", NULL, NULL},
+	{FM_ROM_V1, "/vendor/etc/firmware/mt6631/mt6631_fm_v1_patch.bin",
+	"/vendor/etc/firmware/mt6631/mt6631_fm_v1_coeff.bin", NULL, NULL},
+	{FM_ROM_V2, "/vendor/etc/firmware/mt6631/mt6631_fm_v2_patch.bin",
+	"/vendor/etc/firmware/mt6631/mt6631_fm_v2_coeff.bin", NULL, NULL},
+	{FM_ROM_V3, "/vendor/etc/firmware/mt6631/mt6631_fm_v3_patch.bin",
+	"/vendor/etc/firmware/mt6631/mt6631_fm_v3_coeff.bin", NULL, NULL},
+	{FM_ROM_V4, "/vendor/etc/firmware/mt6631/mt6631_fm_v4_patch.bin",
+	"/vendor/etc/firmware/mt6631/mt6631_fm_v4_coeff.bin", NULL, NULL},
+	{FM_ROM_V5, "/vendor/etc/firmware/mt6631/mt6631_fm_v5_patch.bin",
+	"/vendor/etc/firmware/mt6631/mt6631_fm_v5_coeff.bin", NULL, NULL},
 };
 
 static struct fm_hw_info mt6631_hw_info = {
