@@ -1515,8 +1515,11 @@ static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device
 
 	MAGN_LOG("akm09911_i2c_probe\n");
 	hw = get_mag_dts_func(client->dev.of_node, hw);
-	if (!hw)
+	if (!hw) {
 		MAGN_ERR("get dts info fail\n");
+		err = -EFAULT;
+		goto exit;
+	}
 
 	data = kzalloc(sizeof(struct akm09911_i2c_data), GFP_KERNEL);
 	if (!data) {
