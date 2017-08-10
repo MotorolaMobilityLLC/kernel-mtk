@@ -1,6 +1,10 @@
 # In case the platform does NOT support this type of sensors
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/hwmon/include
+ifeq ($(CONFIG_CUSTOM_KERNEL_ALSPS_MODULE),y)
+obj-y   +=  alsps_module.o
+else
 obj-y   +=  alsps.o
+endif
 obj-y   +=  alsps_factory.o
 obj-y   +=  aal_control.o
 
@@ -15,7 +19,7 @@ obj-$(CONFIG_MTK_APM_16D)	+=  apm_16d/
 obj-$(CONFIG_MTK_EPL2182)	+=  epl2182/
 obj-$(CONFIG_MTK_EPL2182_NEW)	+=  EPL2182-new/
 obj-$(CONFIG_MTK_STK3X1X)	+=  stk3x1x/
-obj-$(CONFIG_MTK_CM36652_NEW)	+=  cm36652-new/
+obj-y	+=  cm36652-new/
 obj-$(CONFIG_MTK_CM36686_NEW)	+=  cm36686-new/
 obj-$(CONFIG_MTK_APDS9930)	+=  APDS9930/
 obj-$(CONFIG_MTK_CM3232_NEW)	+=  cm3232-new/

@@ -1,3 +1,22 @@
+/*
+* Copyright(C)2014 MediaTek Inc.
+* Modification based on code covered by the below mentioned copyright
+* and/or permission notice(S).
+*/
+
+/* ITG1010 motion sensor driver
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ */
+
 #ifndef ITG1010_H
 #define ITG1010_H
 
@@ -76,5 +95,8 @@
 /* 180*131/PI = 7506 */
 #define DEGREE_TO_RAD    7506
 
-#endif /* ITG1010_H */
+#ifdef CONFIG_CUSTOM_KERNEL_GYROSCOPE_MODULE
+extern bool gyro_success_Flag;
+#endif
 
+#endif /* ITG1010_H */

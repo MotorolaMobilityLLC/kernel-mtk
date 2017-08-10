@@ -1,6 +1,23 @@
 /*
- * Definitions for akm09911 compass chip.
+* Copyright(C)2014 MediaTek Inc.
+* Modification based on code covered by the below mentioned copyright
+* and/or permission notice(S).
+*/
+
+/* akm09911.c - akm09911 compass driver
+ *
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
  */
+
 #ifndef AKM09911_H
 #define AKM09911_H
 
@@ -407,7 +424,9 @@ struct akm09911_platform_data {
 #define TLIMIT_LO_SLF_ST2				0
 #define TLIMIT_HI_SLF_ST2				0
 
-
+#ifdef CONFIG_CUSTOM_KERNEL_MAGNETOMETER_MODULE
+extern bool mag_success_Flag;
+#endif
 
 #endif
 

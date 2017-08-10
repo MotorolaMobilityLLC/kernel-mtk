@@ -1,7 +1,11 @@
 # In case the platform does NOT support this type of sensors
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/hwmon/include
 
+ifeq ($(CONFIG_CUSTOM_KERNEL_ACCELEROMETER_MODULE),y)
+obj-y   +=  accel_module.o accel_factory.o
+else
 obj-y   +=  accel.o accel_factory.o
+endif
 
 ifeq ($(CONFIG_MTK_SCP_SENSORHUB_V1),y)
 obj-$(CONFIG_MTK_ACCELHUB)		+=	accelhub/
@@ -20,7 +24,7 @@ obj-$(CONFIG_MTK_MPU6515A)   +=  mpu6515/
 obj-$(CONFIG_MTK_KXTJ2_1009)   +=  KXTJ2_1009/
 obj-$(CONFIG_MTK_KXTJ2_1009_NEW)   +=  KXTJ2_1009-new/
 obj-$(CONFIG_MTK_BMA250E)   +=  bma250e/
-obj-$(CONFIG_MTK_MC3410_NEW)   +=  mc3410-new/
+obj-y   +=  mc3410-new/
 obj-$(CONFIG_MTK_MC3XXX_AUTO)   +=  mc3xxx_auto/
 obj-$(CONFIG_MTK_MPU60X0)   +=  mpu60x0/
 obj-$(CONFIG_MTK_BMA255_SDO0)   +=  bma255-sdo0/

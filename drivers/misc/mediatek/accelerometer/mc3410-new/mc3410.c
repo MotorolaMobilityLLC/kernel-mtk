@@ -3602,6 +3602,9 @@ static int __init mc3xxx_init(void)
 static void __exit mc3xxx_exit(void)
 {
 	GSE_LOG("mc3xxx_exit\n");
+#ifdef CONFIG_CUSTOM_KERNEL_ACCELEROMETER_MODULE
+	success_Flag = false;
+#endif
 }
 
 /*----------------------------------------------------------------------------*/

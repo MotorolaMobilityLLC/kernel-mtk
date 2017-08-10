@@ -2036,6 +2036,9 @@ static int __init cm36652_init(void)
 /*----------------------------------------------------------------------------*/
 static void __exit cm36652_exit(void)
 {
+#ifdef CONFIG_CUSTOM_KERNEL_ALSPS_MODULE
+	alsps_success_Flag = false;
+#endif
 }
 /*----------------------------------------------------------------------------*/
 module_init(cm36652_init);

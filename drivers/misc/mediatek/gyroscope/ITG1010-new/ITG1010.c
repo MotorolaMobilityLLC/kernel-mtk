@@ -1622,6 +1622,9 @@ static int __init ITG1010_init(void)
 static void __exit ITG1010_exit(void)
 {
 	GYRO_LOG();
+#ifdef CONFIG_CUSTOM_KERNEL_GYROSCOPE_MODULE
+	gyro_success_Flag = false;
+#endif
 }
 /*----------------------------------------------------------------------------*/
 module_init(ITG1010_init);

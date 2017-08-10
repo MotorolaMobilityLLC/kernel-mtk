@@ -2861,6 +2861,9 @@ static int __init akm09911_init(void)
 /*----------------------------------------------------------------------------*/
 static void __exit akm09911_exit(void)
 {
+#ifdef CONFIG_CUSTOM_KERNEL_MAGNETOMETER_MODULE
+	mag_success_Flag = false;
+#endif
 }
 /*----------------------------------------------------------------------------*/
 module_init(akm09911_init);
