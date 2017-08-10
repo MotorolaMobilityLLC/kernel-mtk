@@ -1073,7 +1073,7 @@ VOID wlanFWDLDebugDumpInfo(VOID)
 {
 	UINT_32 i;
 
-	for (i = 0; i < u4FWDL_packet_count; i++) {
+	for (i = 0; i <= u4FWDL_packet_count; i++) {
 		/* Tx:[TxStartTime][TxDoneTime]
 		*	Pkt:[DL Pkt Section][DL Pkt Size][DL Pkt Resp Time]
 		*/
@@ -1084,6 +1084,12 @@ VOID wlanFWDLDebugDumpInfo(VOID)
 		, (*(gprFWDLDebug+i)).u4ResponseTime);
 	}
 }
+
+UINT_32 wlanFWDLDebugGetPktCnt(VOID)
+{
+	return (u4FWDL_packet_count + 1);
+}
+
 VOID wlanFWDLDebugUninit(VOID)
 {
 	kalMemFree(gprFWDLDebug, VIR_MEM_TYPE, sizeof(FWDL_DEBUG_T)*MAX_FW_IMAGE_PACKET_COUNT);
