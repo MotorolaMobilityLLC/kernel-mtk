@@ -450,6 +450,7 @@ static int mt6605_probe(struct i2c_client *client,
 				 nfc_irq);
 			nfc_irq_count++;
 			mt6605_disable_irq(nfc_irq);
+			enable_irq_wake(nfc_irq);
 		}
 
 	} else {
@@ -853,6 +854,7 @@ static long mt6605_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 				     __func__, nfc_irq);
 				nfc_irq_count++;
 				mt6605_disable_irq(nfc_irq);
+				enable_irq_wake(nfc_irq);
 			}
 		} else {
 			pr_err("%s : can not find NFC eint compatible node.\n",
