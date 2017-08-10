@@ -144,7 +144,7 @@ uint32_t dbg_backup = 0;
 uint32_t dbb_backup = 0;
 bool fblayer_dither_needed = false;
 bool is_ipoh_bootup = false;
-struct fb_info *mtkfb_fbi;
+struct fb_info *mtkfb_fbi = NULL;
 struct fb_overlay_layer fb_layer_context;
 mtk_dispif_info_t dispif_info[MTKFB_MAX_DISPLAY_COUNT];
 unsigned int FB_LAYER = 2;
@@ -758,6 +758,8 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	disp_input_config *input;
 
 	/* DISPFUNC(); */
+	if (mtkfb_fbi)
+		fbdev->fb_info = mtkfb_fbi;
 	memset(&fb_layer, 0, sizeof(struct fb_overlay_layer));
 	switch (bpp) {
 	case 16:
