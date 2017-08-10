@@ -705,10 +705,18 @@ signed int chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
 		charging_func[CHARGING_CMD_SET_ERROR_STATE] = charging_set_error_state;
 	}
 
-	if (cmd < CHARGING_CMD_NUMBER)
-		status = charging_func[cmd] (data);
-	else
+	if (cmd < CHARGING_CMD_NUMBER) {
+		if (charging_func[cmd] != NULL)
+			status = charging_func[cmd] (data);
+		else {
+			battery_log(BAT_LOG_CRTI,
+				    "[chr_control_interface] cmd:%d does not support\n", cmd);
+			return STATUS_UNSUPPORTED;
+		}
+	} else {
+		battery_log(BAT_LOG_CRTI, "[chr_control_interface] cmd:%d is not legal\n", cmd);
 		return STATUS_UNSUPPORTED;
+	}
 
 	return status;
 }
