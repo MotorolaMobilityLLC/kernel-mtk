@@ -648,7 +648,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
     spin_lock(&imgsensor_drv_lock);
     imgsensor.gain = reg_gain;
     spin_unlock(&imgsensor_drv_lock);
-    LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
+    LOG_INF("gain = %d , reg_gain = 0x%x\n", gain, reg_gain);
 
     write_cmos_sensor_8(0x0104, 0x01);
     //  LE Gain
