@@ -204,5 +204,13 @@ extern int get_battery_plug_out_status(void);
 extern void pmic_turn_on_clock(unsigned int enable);
 extern int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur);
 extern void get_ptim_value(bool isSuspend, unsigned int *bat, signed int *cur);
+extern int pmic_pre_wdt_reset(void);
+extern int pmic_pre_condition1(void);
+extern int pmic_pre_condition2(void);
+extern int pmic_pre_condition3(void);
+extern int pmic_post_condition1(void);
+extern int pmic_post_condition2(void);
+extern int pmic_post_condition3(void);
+extern int pmic_dump_all_reg(void);
 
 #endif				/* _MT_PMIC_COMMON_H_ */

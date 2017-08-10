@@ -163,6 +163,63 @@ static int pmic_regulator_ldo_init(struct platform_device *pdev);
 static DEFINE_MUTEX(pmic_access_mutex);
 /*--- Global suspend state ---*/
 static bool pmic_suspend_state;
+static bool pmic_pre_wdt_reset_state;
+
+int pmic_dump_all_reg(void)
+{
+		return 0;
+}
+
+int pmic_pre_wdt_reset(void)
+{
+	int ret_val = 0;
+
+	preempt_disable();
+	local_irq_disable();
+
+	pmic_pre_wdt_reset_state = true;
+
+	/* for everest pre wdt reset */
+	ret_val = pmic_set_register_value(PMIC_RG_VCORE_VSLEEP_SEL, 0x0);
+	ret_val = pmic_set_register_value(PMIC_RG_VSRAM_MD_VSLEEP_SEL, 0x0);
+	ret_val = pmic_set_register_value(PMIC_RG_VMODEM_VSLEEP_SEL, 0x0);
+	ret_val = pmic_set_register_value(PMIC_RG_VMD1_VSLEEP_SEL, 0x0);
+
+	ret_val = pmic_set_register_value(PMIC_BUCK_VCORE_VOSEL_SLEEP, 0x10);
+	ret_val = pmic_set_register_value(PMIC_BUCK_VMD1_VOSEL_SLEEP, 0x10);
+	ret_val = pmic_set_register_value(PMIC_BUCK_VMODEM_VOSEL_SLEEP, 0x10);
+	ret_val = pmic_set_register_value(PMIC_BUCK_VSRAM_MD_VOSEL_SLEEP, 0x10);
+
+	pmic_dump_all_reg();
+	pmic_pre_wdt_reset_state = false;
+	return 0;
+
+}
+
+int pmic_pre_condition1(void)
+{
+		return 0;
+}
+int pmic_pre_condition2(void)
+{
+		return 0;
+}
+int pmic_pre_condition3(void)
+{
+		return 0;
+}
+int pmic_post_condition1(void)
+{
+		return 0;
+}
+int pmic_post_condition2(void)
+{
+		return 0;
+}
+int pmic_post_condition3(void)
+{
+		return 0;
+}
 
 static void md1_pmic_setting_on(void)
 {
@@ -210,6 +267,9 @@ unsigned int pmic_read_interface(unsigned int RegNum, unsigned int *val, unsigne
 	unsigned int rdata;
 
 	if ((pmic_suspend_state == true) && irqs_disabled())
+		return pmic_read_interface_nolock(RegNum, val, MASK, SHIFT);
+
+	if ((pmic_pre_wdt_reset_state == true) && irqs_disabled())
 		return pmic_read_interface_nolock(RegNum, val, MASK, SHIFT);
 
 	mutex_lock(&pmic_access_mutex);
@@ -434,6 +494,9 @@ unsigned int pmic_config_interface(unsigned int RegNum, unsigned int val, unsign
 	unsigned int rdata;
 
 	if ((pmic_suspend_state == true) && irqs_disabled())
+		return pmic_config_interface_nolock(RegNum, val, MASK, SHIFT);
+
+	if ((pmic_pre_wdt_reset_state == true) && irqs_disabled())
 		return pmic_config_interface_nolock(RegNum, val, MASK, SHIFT);
 
 	mutex_lock(&pmic_access_mutex);
@@ -4605,6 +4668,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 #endif
 	/*--- initailize pmic_suspend_state ---*/
 	pmic_suspend_state = false;
+	pmic_pre_wdt_reset_state = false;
 #ifdef DLPT_FEATURE_SUPPORT
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
 		pimix = of_get_flat_dt_prop(pmic_node, "atag,imix_r", &len);

@@ -43,6 +43,7 @@
 #include <mach/wd_api.h>
 #include <mach/mt_secure_api.h>
 #include <linux/irqchip/mt-eic.h>
+#include <mt-plat/upmu_common.h>
 
 #ifdef CONFIG_OF
 void __iomem *toprgu_base = 0;
@@ -356,6 +357,7 @@ void wdt_arch_reset(char mode)
 	/* mt_reg_sync_writel((MTK_WDT_LENGTH_CTL_KEY | 0x0), MTK_WDT_LATCH_CTL); */
 	mt_reg_sync_writel(wdt_mode_val, MTK_WDT_MODE);
 	pr_debug("wdt_arch_reset called end MTK_WDT_MODE =%x\n", wdt_mode_val);
+	pmic_pre_wdt_reset();
 	udelay(100);
 	mt_reg_sync_writel(MTK_WDT_SWRST_KEY, MTK_WDT_SWRST);
 	pr_debug("wdt_arch_reset: SW_reset happen\n");

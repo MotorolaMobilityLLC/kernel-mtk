@@ -159,7 +159,7 @@ int PMIC_check_battery(void)
 void PMIC_INIT_SETTING_V1(void)
 {
 	unsigned int chip_version = 0;
-	unsigned int ret = 0;
+	unsigned int ret = 0, ret_val = 0;
 
 	chip_version = pmic_get_register_value(PMIC_SWCID);
 
@@ -172,13 +172,33 @@ void PMIC_INIT_SETTING_V1(void)
 	/*--------------------------------------------------------*/
 
 	pr_err("[PMIC] 6351 PMIC Chip = 0x%x\n",  chip_version);
-	pr_err("[PMIC] 2015-06-17...\n");
+	pr_err("[PMIC] 2016-03-23...\n");
 	pr_err("[PMIC] is_battery_remove =%d is_wdt_reboot=%d\n",
 	is_battery_remove,  is_wdt_reboot_pmic);
 	pr_err("[PMIC] is_wdt_reboot_chk=%d\n",
 	is_wdt_reboot_pmic_chk);
 
 	pmic_set_register_value(PMIC_TOP_RST_MISC_SET,  0x1);
+
+	ret_val = pmic_config_interface(MT6351_TOP_RST_STATUS_CLR, 0xFFFF, 0xFFFF, 0);
+	ret_val = pmic_set_register_value(PMIC_RG_STRUP_THR_CLR, 0x1);
+	udelay(200);
+	ret_val = pmic_set_register_value(PMIC_RG_STRUP_THR_CLR, 0x0);
+
+	ret_val = pmic_set_register_value(PMIC_STRUP_PG_STATUS_CLR, 0x1);
+	udelay(200);
+	ret_val = pmic_set_register_value(PMIC_STRUP_PG_STATUS_CLR, 0x0);
+	udelay(200);
+	ret_val = pmic_set_register_value(PMIC_CLR_JUST_RST, 0x1);
+	udelay(200);
+	ret_val = pmic_set_register_value(PMIC_CLR_JUST_RST, 0x0);
+	udelay(200);
+	ret_val = pmic_config_interface(MT6351_TOP_RST_MISC_SET, 0x8, 0xFFFF, 0);
+	udelay(100);
+	ret_val = pmic_config_interface(MT6351_TOP_RST_MISC_CLR, 0x8, 0xFFFF, 0);
+
+	ret_val = pmic_config_interface(MT6351_BUCK_OC_CON0, 0xFFFF, 0xFFFF, 0);
+	udelay(200);
 
 ret = pmic_config_interface(0x8, 0x1, 0x1, 0);
 ret = pmic_config_interface(0xA, 0x1, 0x1, 1);
@@ -244,6 +264,8 @@ ret = pmic_config_interface(0x422, 0x1, 0x1, 2);
 ret = pmic_config_interface(0x422, 0x1, 0x1, 3);
 ret = pmic_config_interface(0x422, 0x1, 0x1, 4);
 ret = pmic_config_interface(0x422, 0x1, 0x1, 7);
+ret = pmic_config_interface(0x424, 0xFFFF, 0xFFFF, 0);
+ret = pmic_config_interface(0x426, 0xFFFF, 0xFFFF, 0);
 ret = pmic_config_interface(0x436, 0x0, 0x3, 2);
 ret = pmic_config_interface(0x44A, 0x3, 0x3, 8);
 ret = pmic_config_interface(0x44A, 0x2, 0x3, 10);
