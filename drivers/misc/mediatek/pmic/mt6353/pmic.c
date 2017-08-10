@@ -344,11 +344,13 @@ unsigned int get_mt6325_pmic_chip_version(void)
   *********************************************************/
 void mt6353_dump_register(void)
 {
-	unsigned char i = 0;
+	/*unsigned char i = 0;*/
+	unsigned int i = 0;
 
 	PMICLOG("dump PMIC 6353 register\n");
 
-	for (i = 0; i <= 0x0fae; i = i + 10) {
+	/*for (i = 0; i <= 0x0fae; i = i + 10) {*/
+	for (i = 0; i <= 4014; i = i + 10) {
 		pr_debug
 		    ("Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x Reg[0x%x]=0x%x\n",
 		     i, upmu_get_reg_value(i), i + 1, upmu_get_reg_value(i + 1), i + 2,
