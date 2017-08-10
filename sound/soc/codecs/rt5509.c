@@ -613,8 +613,8 @@ static ssize_t rt5509_proprietary_store(struct device *dev,
 	chip->pdata->p_param = param;
 	if (rt5509_set_bias_level(chip->codec, SND_SOC_BIAS_STANDBY) < 0)
 		goto out_param_write;
-	rt5509_init_proprietary_setting(chip->codec);
 	rt5509_do_tcsense_fix(chip->codec);
+	rt5509_init_proprietary_setting(chip->codec);
 	if (rt5509_set_bias_level(chip->codec, SND_SOC_BIAS_OFF) < 0)
 		goto out_param_write;
 	return cnt;
@@ -697,10 +697,10 @@ static int rt5509_codec_probe(struct snd_soc_codec *codec)
 	ret = rt5509_init_battmode_setting(codec);
 	if (ret < 0)
 		goto err_out_probe;
-	ret = rt5509_init_proprietary_setting(codec);
+	ret = rt5509_do_tcsense_fix(codec);
 	if (ret < 0)
 		goto err_out_probe;
-	ret = rt5509_do_tcsense_fix(codec);
+	ret = rt5509_init_proprietary_setting(codec);
 	if (ret < 0)
 		goto err_out_probe;
 	ret = rt5509_param_create(chip);
