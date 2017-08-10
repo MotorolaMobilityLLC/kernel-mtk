@@ -807,6 +807,9 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 				if (mSensorState[sensor_type].enable || data_t->flush_action == BIAS_ACTION)
 					err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
 			}
+		} else if (ID_STEP_DETECTOR == sensor_type || ID_PRESSURE == sensor_type) {
+			/* step_detector doesn't care timestamp now */
+			err = obj->dispatch_data_cb[sensor_type](data_t, NULL);
 		}
 	}
 	return err;
