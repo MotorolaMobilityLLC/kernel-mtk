@@ -54,6 +54,76 @@
 #include <net/rtnetlink.h>
 #include <net/net_namespace.h>
 
+#ifdef CONFIG_MTK_NET_LOGGING
+#include <linux/stacktrace.h>
+#define RTNL_DEBUG_ADDRS_COUNT 10
+#define RTNL_LOCK_MAX_HOLD_TIME 3
+
+struct rtnl_debug_btrace_t {
+	char *process_name;
+	int    pid;
+	unsigned long long when;
+	unsigned long addrs[RTNL_DEBUG_ADDRS_COUNT];
+	unsigned int entry_nr;
+	char flag;/*1 this process has already get rtnl_lock,0 : relase rtnl_lock*/
+	struct task_struct *rtnl_lock_owner;
+	struct timer_list    timer;
+};
+
+static struct rtnl_debug_btrace_t rtnl_instance = {
+	.process_name = NULL,
+	.pid = 0,
+	.when = 0,
+	.entry_nr = 0,
+	.flag = 0,
+	.rtnl_lock_owner = NULL,
+};
+
+static void rtnl_print_btrace(unsigned long data);
+static DEFINE_TIMER(rtnl_chk_timer, rtnl_print_btrace, 0, 0);
+
+void rtnl_get_btrace(void *who)
+{
+	struct stack_trace debug_trace;
+
+	debug_trace.max_entries = RTNL_DEBUG_ADDRS_COUNT;
+	debug_trace.nr_entries = 0;
+	debug_trace.entries = rtnl_instance.addrs;
+	debug_trace.skip = 0;
+	save_stack_trace(&debug_trace);
+	rtnl_instance.process_name = who;
+	rtnl_instance.when = sched_clock();
+	rtnl_instance.flag = 1;
+	rtnl_instance.pid = current->pid;
+	rtnl_instance.rtnl_lock_owner  = current;
+	rtnl_instance.entry_nr = debug_trace.nr_entries;
+	rtnl_instance.flag = 1;
+	mod_timer(&rtnl_chk_timer, jiffies + RTNL_LOCK_MAX_HOLD_TIME * HZ);
+}
+
+void rtnl_print_btrace(unsigned long data)
+{	if (rtnl_instance.flag) {
+		struct stack_trace show_trace;
+
+		show_trace.nr_entries = rtnl_instance.entry_nr;
+		show_trace.entries = rtnl_instance.addrs;
+		show_trace.max_entries = RTNL_DEBUG_ADDRS_COUNT;
+		pr_info("-----------------rtnl_print_btrace start--------------------\n");
+		pr_info("[mtk_net][rtnl_lock] %s[%d] hold lock more than 2 sec,start time: %lld\n",
+			rtnl_instance.process_name, rtnl_instance.pid, rtnl_instance.when);
+		print_stack_trace(&show_trace, 0);
+		pr_info("-----------------rtnl_print_btrace end--------------------\n");
+		/*TODO:  Here Maybe  I will triger a AEE coredump for getting more info about this issue*/
+		} else {
+				pr_info("[mtk_net][rtnl_lock]There is no process hold rtnl lock\n");
+		}
+}
+
+void rtnl_relase_btrace(void)
+{
+	rtnl_instance.flag = 0;
+}
+#endif
 struct rtnl_link {
 	rtnl_doit_func		doit;
 	rtnl_dumpit_func	dumpit;
@@ -62,49 +132,21 @@ struct rtnl_link {
 
 static DEFINE_MUTEX(rtnl_mutex);
 
-struct KAL_HALT_CTRL_T {
-	struct task_struct *owner;
-	unsigned int holdstart;
-};
-
-static struct KAL_HALT_CTRL_T haltctrl = {
-	.owner = NULL,
-	.holdstart = 0,
-};
-
 void rtnl_lock(void)
 {
-	#ifdef CONFIG_MTK_NET_LOGGING
-	pr_debug("[mtk_net][rtnl_lock]rtnl_lock++\n");
-	#endif
-	if (((jiffies_to_msecs(jiffies) - haltctrl.holdstart) > 1000) && (haltctrl.owner)) {
-		pr_info("[mtk_net]lock held by %s pid %d longer than %u ms!\n",
-			haltctrl.owner->comm, haltctrl.owner->pid, jiffies_to_msecs(jiffies) - haltctrl.holdstart);
-		show_stack(haltctrl.owner, NULL);
-	}
 	mutex_lock(&rtnl_mutex);
-	#ifdef CONFIG_MTK_NET_LOGGING
-	pr_debug("[mtk_net][rtnl_lock]rtnl_lock--\n");
-	#endif
-	haltctrl.owner = current;
-	haltctrl.holdstart = jiffies_to_msecs(jiffies);
+#ifdef CONFIG_MTK_NET_LOGGING
+	rtnl_get_btrace(current->comm);
+#endif
 }
 EXPORT_SYMBOL(rtnl_lock);
 
 void __rtnl_unlock(void)
 {
-		if (((jiffies_to_msecs(jiffies) - haltctrl.holdstart) > 5000) && (haltctrl.owner)) {
-			pr_info("[mtk_net]halt lock held by %s pid %d longer than %u ms!\n",
-				haltctrl.owner->comm, haltctrl.owner->pid,
-				jiffies_to_msecs(jiffies) - haltctrl.holdstart);
-		show_stack(haltctrl.owner, NULL);
-	}
-	haltctrl.owner = NULL;
-	haltctrl.holdstart = 0;
 	mutex_unlock(&rtnl_mutex);
-	#ifdef CONFIG_MTK_NET_LOGGING
-	pr_debug("[mtk_net][rtnl_lock]rtnl_unlock done\n");
-	#endif
+#ifdef CONFIG_MTK_NET_LOGGING
+	rtnl_relase_btrace();
+#endif
 }
 
 void rtnl_unlock(void)
@@ -3138,4 +3180,3 @@ void __init rtnetlink_init(void)
 	rtnl_register(PF_BRIDGE, RTM_DELLINK, rtnl_bridge_dellink, NULL, NULL);
 	rtnl_register(PF_BRIDGE, RTM_SETLINK, rtnl_bridge_setlink, NULL, NULL);
 }
-

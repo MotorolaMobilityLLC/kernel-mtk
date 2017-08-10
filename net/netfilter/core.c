@@ -26,7 +26,131 @@
 
 #include "nf_internals.h"
 
+#ifdef CONFIG_MTK_NET_LOGGING
+#include <linux/timer.h>
+#include <linux/string.h>
+#include <net/netfilter/nf_log.h>
+#endif
+
 static DEFINE_MUTEX(afinfo_mutex);
+
+#ifdef CONFIG_MTK_NET_LOGGING
+#define IPTABLES_DROP_PACKET_STATICS 10
+
+/*Trace 500 packets*/
+#define IPTABLES_DROP_PACKET_NUM  500
+#define S_SIZE (1024 - (sizeof(unsigned int) + 1))
+
+struct drop_packet_info_t {
+	unsigned int packet_num;
+	unsigned int len;
+	u_int8_t pf;
+	unsigned int hook;
+	long drop_time;
+	char *iface;
+	char *table;
+	int family;
+	int already_print;
+};
+
+struct drop_packets_statics_t {
+	long cnt;
+	struct timer_list print_drop_packets_timer;
+	unsigned long print_stamp;
+	unsigned int print_len;
+	drop_packet_info_t drop_packets[IPTABLES_DROP_PACKET_NUM];
+};
+
+drop_packets_statics_t iptables_drop_packets;
+struct sbuff {
+	unsigned int    count;
+	char        buf[S_SIZE + 1];
+};
+
+static __printf(2, 3) int sb_add(struct sbuff *m, const char *f, ...)
+{
+	va_list args;
+	int len;
+
+	if (likely(m->count < S_SIZE)) {
+			va_start(args, f);
+			len = vsnprintf(m->buf + m->count, S_SIZE - m->count, f, args);
+			va_end(args);
+			if (likely(m->count + len < S_SIZE)) {
+									m->count += len;
+									return 0;
+									}
+		}
+	m->count = S_SIZE;
+	return -1;
+}
+
+static void iptables_drop_packet_monitor(unsigned long data)
+{
+	int limit = 0;
+	int i = 0;
+	int num  = iptables_drop_packets.cnt % 500;
+	struct sbuff m;
+
+	m.count = 0;
+	memset(m.buf, 0, sizeof(m.buf));
+	if (num > 10)
+			limit = 10;
+	else
+			limit = num;
+
+	for (i = iptables_drop_packets.print_len; i < iptables_drop_packets.print_len + limit; i++) {
+		if (iptables_drop_packets.drop_packets[i].already_print == 0) {
+			sb_add(&m, "[drop_debug][%ld],number[%d],",
+			       iptables_drop_packets.cnt,
+			       iptables_drop_packets.drop_packets[i].packet_num);
+			switch (iptables_drop_packets.drop_packets[i].pf) {
+			case NFPROTO_IPV4:
+				sb_add(&m, "[IPV4],");
+				break;
+			case NFPROTO_IPV6:
+				sb_add(&m, "[IPV6],");
+				break;
+			case NFPROTO_ARP:
+				sb_add(&m, "[ARP],");
+				break;
+			default:
+				sb_add(&m, "[UNSPEC],");
+				break;
+			}
+			switch (iptables_drop_packets.drop_packets[i].hook) {
+			case NF_INET_PRE_ROUTING:
+				sb_add(&m, "[PRE_ROUTING],");
+				break;
+			case NF_INET_LOCAL_IN:
+				sb_add(&m, "[LOCAL_IN],");
+				break;
+			case NF_INET_FORWARD:
+				sb_add(&m, "[FORWARD],");
+				break;
+			case NF_INET_LOCAL_OUT:
+				sb_add(&m, "[LOCAL_OUT],");
+				break;
+			case NF_INET_POST_ROUTING:
+				sb_add(&m, "[POST_ROUTING],");
+				break;
+			default:
+				sb_add(&m, "[Unspec chain],");
+				break;
+			}
+
+			sb_add(&m, "[%pS],[%s],[%ld]", iptables_drop_packets.drop_packets[i].table,
+			       iptables_drop_packets.drop_packets[i].iface,
+			       iptables_drop_packets.drop_packets[i].drop_time);
+			pr_info("%s\n", m.buf);
+			m.count = 0;
+			memset(m.buf, 0, sizeof(m.buf));
+			iptables_drop_packets.drop_packets[i].already_print = 1;
+		}
+	}
+iptables_drop_packets.print_len = (iptables_drop_packets.print_len + limit)%500;
+}
+#endif
 
 const struct nf_afinfo __rcu *nf_afinfo[NFPROTO_NUMPROTO] __read_mostly;
 EXPORT_SYMBOL(nf_afinfo);
@@ -181,6 +305,28 @@ next_hook:
 	if (verdict == NF_ACCEPT || verdict == NF_STOP) {
 		ret = 1;
 	} else if ((verdict & NF_VERDICT_MASK) == NF_DROP) {
+#ifdef CONFIG_MTK_NET_LOGGING
+		/*because skb free  need copy some info to ...*/
+	iptables_drop_packets.cnt++;
+	if (iptables_drop_packets.cnt > 100000)
+			iptables_drop_packets.cnt = 0;
+	char *table = (char *)((struct nf_hook_ops *)elem)->hook;
+	unsigned int num = iptables_drop_packets.cnt % 500;
+
+	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].drop_time = jiffies;
+	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].len = skb->len;
+	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].hook = hook;
+	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].pf = pf;
+	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].iface = skb->dev->name;
+	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].table = table;
+	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].packet_num = num;
+	iptables_drop_packets.drop_packets[iptables_drop_packets.cnt % 500].already_print = 0;
+	if ((jiffies - iptables_drop_packets.print_stamp)/HZ > IPTABLES_DROP_PACKET_STATICS) {
+		iptables_drop_packets.print_stamp = jiffies;
+		mod_timer(&iptables_drop_packets.print_drop_packets_timer, jiffies);
+	}
+#endif
+
 		kfree_skb(skb);
 		ret = NF_DROP_GETERR(verdict);
 		if (ret == 0)
@@ -285,6 +431,10 @@ static int __net_init netfilter_net_init(struct net *net)
 
 		return -ENOMEM;
 	}
+#endif
+#ifdef CONFIG_MTK_NET_LOGGING
+	init_timer(&iptables_drop_packets.print_drop_packets_timer);
+	iptables_drop_packets.print_drop_packets_timer.function = iptables_drop_packet_monitor;
 #endif
 	return 0;
 }
