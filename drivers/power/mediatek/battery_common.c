@@ -2815,8 +2815,17 @@ CHARGER_TYPE mt_charger_type_detection(void)
 	mutex_lock(&charger_type_mutex);
 
 #if defined(CONFIG_MTK_WIRELESS_CHARGER_SUPPORT)
-	battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE, &CHR_Type_num);
-	BMT_status.charger_type = CHR_Type_num;
+#if defined(CONFIG_USB_MTK_CHARGER_DETECT)
+	if (mt_get_usb11_port_status() == true) {
+		battery_log(BAT_LOG_CRTI, "========use_usb_detect===========\n");
+		CHR_Type_num = usb_charger_type_detect();
+		BMT_status.charger_type = CHR_Type_num;
+	} else
+#endif
+	{
+		battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE, &CHR_Type_num);
+		BMT_status.charger_type = CHR_Type_num;
+	}
 #else
 #if !defined(CONFIG_MTK_DUAL_INPUT_CHARGER_SUPPORT)
 	if (BMT_status.charger_type == CHARGER_UNKNOWN) {
@@ -2824,9 +2833,17 @@ CHARGER_TYPE mt_charger_type_detection(void)
 	if ((BMT_status.charger_type == CHARGER_UNKNOWN) &&
 	    (DISO_data.diso_state.cur_vusb_state == DISO_ONLINE)) {
 #endif
+#if defined(CONFIG_USB_MTK_CHARGER_DETECT)
+	if (mt_get_usb11_port_status() == true)	{
+		battery_log(BAT_LOG_CRTI, "========use_usb_detect===========\n");
+		CHR_Type_num = usb_charger_type_detect();
+		BMT_status.charger_type = CHR_Type_num;
+	} else
+#endif
+	{
 		battery_charging_control(CHARGING_CMD_GET_CHARGER_TYPE, &CHR_Type_num);
 		BMT_status.charger_type = CHR_Type_num;
-
+	}
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #if defined(PUMP_EXPRESS_SERIES)
 		if (BMT_status.UI_SOC == 100) {

@@ -350,6 +350,10 @@ extern void do_chrdet_int_task(void);
 extern void set_usb_current_unlimited(bool enable);
 extern bool get_usb_current_unlimited(void);
 extern CHARGER_TYPE mt_get_charger_type(void);
+#if defined(CONFIG_USB_MTK_CHARGER_DETECT)
+extern CHARGER_TYPE usb_charger_type_detect(void);
+extern bool mt_get_usb11_port_status(void);
+#endif
 
 #if defined(CONFIG_MTK_HAFG_20)
 extern struct timespec mt_battery_get_duration_time_act(BATTERY_TIME_ENUM duration_type);

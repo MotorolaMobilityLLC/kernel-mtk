@@ -27,6 +27,14 @@ config USB_MTK_OTG
 	  1. IDDIG - OTG cable attachment detection.
 	  2. DRVVBUS - provides the VBUS for the attached devices
 
+config USB_MTK_CHARGER_DETECT
+	bool "MediaTek MUSB charger detect"
+	depends on MTK_USBFSH
+	help
+	  If make port1 enable in mt8163, please open the config.
+	  When port0 is using, plug in device to port1,
+	  port0 will get the disconnect. fix the issue, need open
+	  the config.
 
 config MTK_UART_USB_SWITCH
     bool "MTK_UART_USB_SWITCH"
