@@ -640,6 +640,16 @@ static unsigned int charging_set_ta_current_pattern(void *data)
 	return status;
 }
 
+static unsigned int charging_set_vbus_ovp_en(void *data)
+{
+	return STATUS_OK;
+}
+
+static unsigned int charging_set_vindpm(void *data)
+{
+	return STATUS_OK;
+}
+
 static unsigned int(*charging_func[CHARGING_CMD_NUMBER]) (void *data);
 
 /*
@@ -684,6 +694,8 @@ signed int chr_control_interface(CHARGING_CTRL_CMD cmd, void *data)
 		charging_func[CHARGING_CMD_GET_PLATFORM_BOOT_MODE] = charging_get_platform_boot_mode;
 		charging_func[CHARGING_CMD_SET_POWER_OFF] = charging_set_power_off;
 		charging_func[CHARGING_CMD_SET_TA_CURRENT_PATTERN] = charging_set_ta_current_pattern;
+		charging_func[CHARGING_CMD_SET_VBUS_OVP_EN] = charging_set_vbus_ovp_en;
+		charging_func[CHARGING_CMD_SET_VINDPM] = charging_set_vindpm;
 	}
 
 	if (cmd < CHARGING_CMD_NUMBER) {
