@@ -5,7 +5,7 @@
   This program can be distributed under the terms of the GNU GPL.
   See the file COPYING.
 */
-
+#define DEBUG 1
 #include "fuse_i.h"
 #include "mt_fuse.h"
 
@@ -535,19 +535,29 @@ static void fuse_request_send_nowait_locked(struct fuse_conn *fc,
 	fc->num_background++;
 	if (fc->num_background == fc->max_background)
 		fc->blocked = 1;
+
+	if (req->in.h.opcode == FUSE_INIT)
+		pr_info("FUSE_INIT: fuse_request_send_background_locked() -> set_bdi_congested()\n");
+
 	if (fc->num_background == fc->congestion_threshold &&
 	    fc->bdi_initialized) {
 		set_bdi_congested(&fc->bdi, BLK_RW_SYNC);
 		set_bdi_congested(&fc->bdi, BLK_RW_ASYNC);
 	}
 	list_add_tail(&req->list, &fc->bg_queue);
+	if (req->in.h.opcode == FUSE_INIT)
+		pr_info("FUSE_INIT: fuse_request_send_background_locked() -> flush_bg_queue() start\n");
 	flush_bg_queue(fc);
+	if (req->in.h.opcode == FUSE_INIT)
+		pr_info("FUSE_INIT: fuse_request_send_background_locked() -> flush_bg_queue() end\n");
 }
 
 static void fuse_request_send_nowait(struct fuse_conn *fc, struct fuse_req *req)
 {
 	spin_lock(&fc->lock);
 	if (fc->connected) {
+		if (req->in.h.opcode == FUSE_INIT)
+			pr_info("FUSE_INIT: fuse_request_send_background_ex(): Connected, send request\n");
 		fuse_request_send_nowait_locked(fc, req);
 		spin_unlock(&fc->lock);
 	} else {
