@@ -3377,7 +3377,7 @@ void get_devinfo(struct eem_devinfo *p)
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 	fab = get_devinfo_with_index(28) & 0x40000000;
 	segment = get_devinfo_with_index(21) & 0xFF;
-	if (((segment == 0x41) || (segment == 0x40)) && !(fab))
+	if (((segment == 0x41) || (segment == 0x45) || (segment == 0x40)) && !(fab))
 		#if defined(CONFIG_MTK_MT6750TT)
 		ctrl_ITurbo = 1; /* t */
 		#else
