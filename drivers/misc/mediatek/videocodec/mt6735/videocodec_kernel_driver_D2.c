@@ -1935,9 +1935,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			} else
 #endif
 			{
-				context->Oal_HW_mem_reg =
-				    (VAL_UINT32_T *) (((VAL_VCODEC_OAL_HW_REGISTER_T *)
-						       user_data_addr)->pHWStatus);
+				context->Oal_HW_mem_reg = (VAL_UINT32_T *)hwoal_reg.pHWStatus;
 			}
 
 			if (hwoal_reg.u4NumOfRegister != 0) {
@@ -1966,12 +1964,19 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			if (hwoal_reg.pHWStatus != NULL &&
 				hwoal_reg.u4NumOfRegister >= 0 &&
 				hwoal_reg.u4NumOfRegister <= OALMEM_STATUS_NUM) {
+#if IS_ENABLED(CONFIG_COMPAT)
 				memcpy(&oal_mem_status[0], hwoal_reg.pHWStatus,
-						hwoal_reg.u4NumOfRegister *
-						sizeof(VAL_VCODEC_OAL_MEM_STAUTS_T));
+					hwoal_reg.u4NumOfRegister *
+					sizeof(VAL_VCODEC_OAL_MEM_STAUTS_T));
+#else
+				ret = copy_from_user
+					(&oal_mem_status[0], hwoal_reg.pHWStatus,
+					hwoal_reg.u4NumOfRegister *
+					sizeof(VAL_VCODEC_OAL_MEM_STAUTS_T));
+#endif
 				context->u4NumOfRegister = hwoal_reg.u4NumOfRegister;
 				MODULE_MFV_LOGW("[VCODEC_INITHWLOCK] ToTal %d u4NumOfRegister\n",
-					 hwoal_reg.u4NumOfRegister);
+						hwoal_reg.u4NumOfRegister);
 			} else {
 				MODULE_MFV_LOGE
 				    ("[ERROR] Check pHWStatus or u4NumOfRegister(%u)\n",
