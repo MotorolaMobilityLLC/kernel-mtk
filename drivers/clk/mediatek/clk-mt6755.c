@@ -1781,12 +1781,12 @@ static void __init mt_apmixedsys_init(struct device_node *node)
 	/* OSC CG_EN = 1 */
 		clk_setl(ULPOSC_CON, ULPOSC_CG_EN);
 #endif
-	if (segment == 0x43) {
-		pr_err("segment = 0x43, 6738 chip\n");
+	if ((segment == 0x43) || (segment == 0x4B)) {
+		pr_err("segment = 6738 chip\n");
 		switch_armpll_l_hwmode(1);
 		switch_armpll_ll_hwmode(1);
 	} else
-		pr_err("segment != 0x43\n");
+		pr_err("segment != 6738 chip\n");
 }
 CLK_OF_DECLARE(mtk_apmixedsys, "mediatek,mt6755-apmixedsys",
 		mt_apmixedsys_init);
