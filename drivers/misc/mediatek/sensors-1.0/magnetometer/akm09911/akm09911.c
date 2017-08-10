@@ -46,6 +46,7 @@ static short akmd_delay = AKM09911_DEFAULT_DELAY;
 static int factory_mode;
 static int akm09911_init_flag;
 static struct i2c_client *this_client;
+static int8_t akm_device;
 
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id akm09911_i2c_id[] = { {AKM09911_DEV_NAME, 0}, {} };
@@ -444,8 +445,8 @@ static int AKECS_CheckDevice(void)
 #endif
 
 	/* Read data */
-	ret = AKI2C_RxData(buffer, 1);
-	MAGN_LOG(" AKM check device id = %x", buffer[0]);
+	ret = AKI2C_RxData(buffer, 2);
+	MAGN_LOG(" AKM check device company = %x, device =%x ", buffer[0], buffer[1]);
 	MAGN_LOG("ret = %d", ret);
 	if (ret < 0)
 		return ret;
@@ -453,6 +454,8 @@ static int AKECS_CheckDevice(void)
 	/* Check read data */
 	if (buffer[0] != 0x48)
 		return -ENXIO;
+
+	akm_device = buffer[1];
 
 	return 0;
 }
@@ -1408,10 +1411,10 @@ static int akm09911_get_data(int *x, int *y, int *z, int *status)
 	data[1] = (s16)(strbuf[3] | (strbuf[4] << 8));
 	data[2] = (s16)(strbuf[5] | (strbuf[6] << 8));
 
-	*x = (data[0] * 100 * 6) / 10;
-	*y = (data[1] * 100 * 6) / 10;
-	*z = (data[2] * 100 * 6) / 10;
-	*status = strbuf[8];
+	*x = data[0] * 100;
+	*y = data[1] * 100;
+	*z = data[2] * 100;
+	*status = (akm_device << 8) | strbuf[8];
 	/* MAGN_ERR("yue akm09911_get_data: x=%x, y=%x, z=%x, status=%x\n", *x, *y, *z, *status); */
 
 	return 0;
@@ -1490,6 +1493,7 @@ static int akm09911_i2c_probe(struct i2c_client *client, const struct i2c_device
 	ctl.flush = akm09911_flush;
 	ctl.is_report_input_direct = false;
 	ctl.is_support_batch = data->hw->is_batch_supported;
+	ctl.lib_name = "akl";
 
 	err = mag_register_control_path(&ctl);
 	if (err) {

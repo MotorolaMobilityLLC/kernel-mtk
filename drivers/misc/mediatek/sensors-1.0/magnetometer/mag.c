@@ -74,7 +74,8 @@ static void mag_work_func(struct work_struct *work)
 	cxt->drv_data.x = x;
 	cxt->drv_data.y = y;
 	cxt->drv_data.z = z;
-	cxt->drv_data.status = status;
+	cxt->drv_data.reserved[0] = status;
+	cxt->drv_data.reserved[1] = status >> 8;
 	m_pre_ns = cxt->drv_data.timestamp;
 	cxt->drv_data.timestamp = cur_ns;
 	if (true ==  cxt->is_first_data_after_enable) {
@@ -377,6 +378,17 @@ static ssize_t mag_show_sensordevnum(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
 
+static ssize_t mag_show_libinfo(struct device *dev,
+				 struct device_attribute *attr, char *buf)
+{
+	struct mag_context *cxt = mag_context_obj;
+
+	if (!buf)
+		return -1;
+
+	return snprintf(buf, PAGE_SIZE, "%s", cxt->mag_ctl.lib_name);
+}
+
 static int msensor_remove(struct platform_device *pdev)
 {
 	MAG_LOG("msensor_remove\n");
@@ -514,6 +526,7 @@ DEVICE_ATTR(magbatch,	S_IWUSR | S_IRUGO, mag_show_batch,  mag_store_batch);
 DEVICE_ATTR(magflush,		S_IWUSR | S_IRUGO, mag_show_flush,  mag_store_flush);
 DEVICE_ATTR(magcali,		S_IWUSR | S_IRUGO, mag_show_cali,  mag_store_cali);
 DEVICE_ATTR(magdevnum,	S_IWUSR | S_IRUGO, mag_show_sensordevnum,  NULL);
+DEVICE_ATTR(maglibinfo,	          S_IWUSR | S_IRUGO, mag_show_libinfo,  NULL);
 
 static struct attribute *mag_attributes[] = {
 	&dev_attr_magdev.attr,
@@ -522,6 +535,7 @@ static struct attribute *mag_attributes[] = {
 	&dev_attr_magflush.attr,
 	&dev_attr_magcali.attr,
 	&dev_attr_magdevnum.attr,
+	&dev_attr_maglibinfo.attr,
 	NULL
 };
 
@@ -558,6 +572,7 @@ int mag_register_control_path(struct mag_control_path *ctl)
 	cxt->mag_ctl.is_report_input_direct = ctl->is_report_input_direct;
 	cxt->mag_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->mag_ctl.is_use_common_factory = ctl->is_use_common_factory;
+	cxt->mag_ctl.lib_name = ctl->lib_name;
 
 	if (NULL == cxt->mag_ctl.set_delay || NULL == cxt->mag_ctl.enable
 		|| NULL == cxt->mag_ctl.open_report_data) {
@@ -635,6 +650,7 @@ int mag_data_report(struct mag_data *data)
 	event.word[0] = data->x;
 	event.word[1] = data->y;
 	event.word[2] = data->z;
+	event.word[3] = (data->reserved[1] << 8) | data->reserved[0];
 	event.reserved = data->reserved[0];
 
 	if (event.reserved == 1)
