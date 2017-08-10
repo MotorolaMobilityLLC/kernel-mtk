@@ -4425,7 +4425,7 @@ static ssize_t cmdq_write_test_proc_config(struct file *file,
 		int clk_enable = 0;
 		struct clk *clk_module;
 		/* trick to control clock by test node for testing */
-		if (0 >= sscanf(desc, "%d %25s %20s", &clk_enable, node_name, clk_name)) {
+		if (0 >= sscanf(desc, "%d %24s %19s", &clk_enable, node_name, clk_name)) {
 			/* sscanf returns the number of items in argument list successfully filled. */
 			CMDQ_LOG("CLOCK_TEST_CONFIG: sscanf failed: %s\n", desc);
 		} else {
