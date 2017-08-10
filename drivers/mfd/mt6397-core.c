@@ -75,6 +75,9 @@ static const struct resource mt6397_keys_resources[] = {
 
 static const struct mfd_cell mt6323_devs[] = {
 	{
+		.name = "mt6323-pmic",
+		.of_compatible = "mediatek,mt6323-pmic"
+	}, {
 		.name = "mt6397-rtc",
 		.num_resources = ARRAY_SIZE(mt6323_rtc_resources),
 		.resources = mt6323_rtc_resources,
@@ -87,9 +90,6 @@ static const struct mfd_cell mt6323_devs[] = {
 	}, {
 		.name = "mt6323-regulator",
 		.of_compatible = "mediatek,mt6323-regulator"
-	}, {
-		.name = "mt6323-pmic",
-		.of_compatible = "mediatek,mt6323-pmic"
 	}, {
 		.name = "mtk-pmic-keys",
 		.num_resources = ARRAY_SIZE(mt6323_keys_resources),
