@@ -7828,8 +7828,13 @@ int _set_backlight_by_cpu(unsigned int level)
 int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;
+	static unsigned int last_level;
 
 	DISPFUNC();
+
+	if (last_level == level)
+		return 0;
+
 	MMProfileLogEx(ddp_mmp_get_events()->primary_set_bl, MMProfileFlagStart, 0, 0);
 #ifdef DISP_SWITCH_DST_MODE
 	_primary_path_switch_dst_lock();
@@ -7859,6 +7864,7 @@ int primary_display_setbacklight(unsigned int level)
 #endif
 			_set_backlight_by_cpu(level);
 		}
+		last_level = level;
 	}
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef GPIO_LCM_LED_EN
