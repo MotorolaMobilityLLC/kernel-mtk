@@ -116,6 +116,17 @@
 struct device_node *dts_np;
 #endif
 
+static void (*usb_hal_disconnect_check_fptr)(void);
+void usb_hal_disconnect_check(void)
+{
+	if (usb_hal_disconnect_check_fptr)
+		usb_hal_disconnect_check_fptr();
+}
+void register_usb_hal_disconnect_check(void (*function)(void))
+{
+	usb_hal_disconnect_check_fptr = function;
+}
+
 int musb_connect_legacy = 1;
 int musb_is_shutting = 0;
 int musb_fake_disc = 0;
@@ -936,6 +947,8 @@ static irqreturn_t musb_stage0_irq(struct musb *musb, u8 int_usb, u8 devctl)
 	if (int_usb & MUSB_INTR_SUSPEND) {
 		DBG(0, "SUSPEND (%s) devctl %02x\n", otg_state_string(musb->xceiv->state), devctl);
 		handled = IRQ_HANDLED;
+
+		usb_hal_disconnect_check();
 
 		switch (musb->xceiv->state) {
 		case OTG_STATE_A_PERIPHERAL:
