@@ -282,15 +282,13 @@ INT32 wmt_lib_init(VOID)
 	/* 1. create: static allocation with zero initialization */
 	pDevWmt = &gDevWmt;
 	osal_memset(&gDevWmt, 0, sizeof(gDevWmt));
-
-#if 0
-	iRet = wmt_conf_read_file();
-	if (iRet) {
-		WMT_ERR_FUNC("read wmt config file fail(%d)\n", iRet);
-		return -1;
+	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_SOC) {
+		iRet = wmt_conf_read_file();
+		if (iRet) {
+			WMT_ERR_FUNC("read wmt config file fail(%d)\n", iRet);
+			return -1;
+		}
 	}
-#endif
-
 	pThread = &gDevWmt.thread;
 
 	/* Create mtk_wmtd thread */

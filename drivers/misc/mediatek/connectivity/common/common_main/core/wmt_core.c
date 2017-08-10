@@ -677,8 +677,8 @@ static INT32 wmt_core_stp_init(VOID)
 	P_WMT_CTX pctx = &gMtkWmtCtx;
 	P_WMT_GEN_CONF pWmtGenConf = NULL;
 
-	wmt_conf_read_file();
-	WMT_INFO_FUNC("yanjun-debug:  read wmt_conf_read_file, end---\n");
+	if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO)
+		wmt_conf_read_file();
 	gDevWmt.rWmtGenConf.co_clock_flag = wmt_lib_co_clock_flag_get();
 
 	pWmtGenConf = wmt_conf_get_cfg();
