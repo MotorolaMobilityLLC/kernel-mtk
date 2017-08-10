@@ -107,8 +107,8 @@ VOID scnFsmSteps(IN P_ADAPTER_T prAdapter, IN ENUM_SCAN_STATE_T eNextState)
 		DBGLOG(SCN, STATE, "TRANSITION: [%s] -> [%s]\n",
 		       apucDebugScanState[prScanInfo->eCurrentState], apucDebugScanState[eNextState]);
 #else
-		DBGLOG(SCN, STATE, "[%d] TRANSITION: [%d] -> [%d]\n",
-		       DBG_SCN_IDX, prScanInfo->eCurrentState, eNextState);
+		DBGLOG(SCN, STATE, "[%d] TRANSITION: [%d] -> [%d] Cur Seq Num %d\n",
+		       DBG_SCN_IDX, prScanInfo->eCurrentState, eNextState, prScanParam->ucSeqNum);
 #endif
 
 		/* NOTE(Kevin): This is the only place to change the eCurrentState(except initial) */
@@ -738,8 +738,8 @@ VOID scnEventScanDone(IN P_ADAPTER_T prAdapter, IN P_EVENT_SCAN_DONE prScanDone,
 		/* switch to next pending scan */
 		scnFsmSteps(prAdapter, SCAN_STATE_IDLE);
 	} else {
-		DBGLOG(SCN, WARN, "Unexpected SCAN-DONE event: SeqNum = %d, Current State = %d\n",
-		       prScanDone->ucSeqNum, prScanInfo->eCurrentState);
+		DBGLOG(SCN, WARN, "Unexpected SCAN-DONE event: SeqNum = %d:%d, Current State = %d\n",
+		       prScanDone->ucSeqNum, prScanParam->ucSeqNum, prScanInfo->eCurrentState);
 	}
 
 }				/* end of scnEventScanDone */

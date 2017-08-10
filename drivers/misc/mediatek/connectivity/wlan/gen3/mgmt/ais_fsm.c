@@ -1915,7 +1915,8 @@ VOID aisFsmRunEventScanDone(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	eNextState = prAisFsmInfo->eCurrentState;
 
 	if (ucSeqNumOfCompMsg != prAisFsmInfo->ucSeqNumOfScanReq) {
-		DBGLOG(AIS, WARN, "SEQ NO of AIS SCN DONE MSG is not matched.\n");
+		DBGLOG(AIS, WARN, "SEQ NO of AIS SCN DONE MSG is not matched. Seq Num %d:%d\n",
+		       ucSeqNumOfCompMsg, prAisFsmInfo->ucSeqNumOfScanReq);
 	} else {
 		cnmTimerStopTimer(prAdapter, &prAisFsmInfo->rScanDoneTimer);
 		switch (prAisFsmInfo->eCurrentState) {
