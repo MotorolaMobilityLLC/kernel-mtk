@@ -213,7 +213,6 @@ static int cam_cal_get_cmd_info(unsigned int sensorID, stCAM_CAL_CMD_INFO_STRUCT
 						pCamCalFunc[j].readCamCalData)) {
 					CAM_CALDB("pCamCalList[%d].checkFunc ok!\n", i);
 					cmdInfo->readCMDFunc = pCamCalFunc[j].readCamCalData;
-					/*LukeHu--151101=Write Command Unverified*/
 					/*cmdInfo->writeCMDFunc = pCamCalFunc[j].writeCamCalData;*/
 					return 1;
 					} else if (pCamCalList[i].cmdType == CMD_AUTO) {
@@ -399,7 +398,6 @@ static long cam_cal_drv_compat_ioctl(struct file *filp, unsigned int cmd, unsign
 		ret = filp->f_op->unlocked_ioctl(filp, CAM_CALIOC_S_WRITE,
 						 (unsigned long)data);
 		/*err = compat_put_cal_info_struct(data32, data);*/
-		/*LukeHu--151122=write won't need*/
 
 		if (err != 0)
 			CAM_CALERR("compat_put_acdk_sensor_getinfo_struct failed\n");
@@ -553,7 +551,7 @@ static long cam_cal_drv_ioctl(
 
 	if (_IOC_READ & _IOC_DIR(a_u4Command)) {
 		/*copy data to user space buffer, keep other input paremeter unchange.*/
-		if ((ptempbuf->u4Length <= 0) || (ptempbuf->u4Length > 65535)) {
+		if ((ptempbuf->u4Length <= 0) || (ptempbuf->u4Length > 65535)) {/*Dream check range*/
 			kfree(pBuff);
 			kfree(pu1Params);
 			CAM_CALDB("Buffer Length Error!\n");
