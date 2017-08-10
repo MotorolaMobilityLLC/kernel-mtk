@@ -54,6 +54,8 @@
 #define  SIOCSTXQSTATE          (SIOCDEVPRIVATE + 0)  /* stop/start tx queue */
 #define  SIOCCCMNICFG           (SIOCDEVPRIVATE + 1)  /* configure ccmni/md remapping */
 
+#define  CCMNI_TX_PRINT_F	(0x1 << 0)
+
 typedef struct ccmni_ctl_block ccmni_ctl_block_t;
 
 struct ccmni_ch {
@@ -81,6 +83,9 @@ typedef struct ccmni_instance {
 	spinlock_t	       spinlock;
 	ccmni_ctl_block_t  *ctlb;
 	unsigned long      tx_busy_cnt[2];
+	unsigned long      tx_full_tick;
+	unsigned int       tx_full_cnt;
+	unsigned int       tx_irq_cnt;
 	void               *priv_data;
 } ccmni_instance_t;
 
