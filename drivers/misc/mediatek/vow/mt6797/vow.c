@@ -544,20 +544,21 @@ static bool vow_service_ReleaseSpeakerModel(int id)
 		pr_debug("Speaker Model Fail:%x\n", id);
 		return false;
 	}
-
+	PRINTK_VOWDRV("ReleaseSpeakerModel:id_%x\n", id);
+/*
 	vowserv.vow_info_dsp[0] = VOW_MODEL_SPEAKER;
 	vowserv.vow_info_dsp[1] = id;
 	vowserv.vow_info_dsp[2] = CLR_SPEAKER_MODEL_FLAG;
 	vowserv.vow_info_dsp[3] = CLR_SPEAKER_MODEL_FLAG;
 
-	PRINTK_VOWDRV("ReleaseSpeakerModel:id_%x\n", vowserv.vow_info_dsp[0]);
-
 	vowserv.ipimsgwait = true;
 	while (vow_ipi_sendmsg(AP_IPIMSG_SET_VOW_MODEL, (void *)&vowserv.vow_info_dsp[0], 16, 0, 1) == false)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
-
+*/
+#if defined OLD_METHOD
 	kfree(vowserv.vow_speaker_model[I].model_ptr);
+#endif
 	vowserv.vow_speaker_model[I].model_ptr = NULL;
 	vowserv.vow_speaker_model[I].id        = -1;
 	vowserv.vow_speaker_model[I].enabled   = 0;
@@ -605,12 +606,12 @@ static bool vow_service_SetSpeakerModel(unsigned long arg)
 	*/
 	if (vow_service_CopyModel(VOW_MODEL_SPEAKER, I) != 0)
 		return false;
-	vowserv.vow_speaker_model[I].id        = I;
-	vowserv.vow_speaker_model[I].enabled   = vowserv.vow_info_apuser[0];
 
 	ptr8 = (char *)vowserv.vow_speaker_model[I].model_ptr;
-	PRINTK_VOWDRV("SetSPKModel:get_reserve_mem_virt(VOW_MEM_ID): %x\n",
-		      (unsigned int)get_reserve_mem_virt(VOW_MEM_ID));
+	PRINTK_VOWDRV("SetSPKModel:get_reserve_mem_virt(VOW_MEM_ID): %x, ID: %x, enabled: %x\n",
+		      (unsigned int)get_reserve_mem_virt(VOW_MEM_ID),
+		      vowserv.vow_speaker_model[I].id,
+		      vowserv.vow_speaker_model[I].enabled);
 	PRINTK_VOWDRV("SetSPKModel:CheckValue:%x %x %x %x %x %x\n",
 		      *(char *)&ptr8[0], *(char *)&ptr8[1], *(char *)&ptr8[2],
 		      *(char *)&ptr8[3], *(short *)&ptr8[160], *(int *)&ptr8[7960]);
@@ -649,6 +650,7 @@ static bool vow_service_SetSpeakerModel(unsigned long arg)
 
 static bool vow_service_SetInitModel(unsigned long arg)
 {
+/*
 	bool ret;
 	char *ptr8;
 
@@ -700,10 +702,13 @@ static bool vow_service_SetInitModel(unsigned long arg)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
 	return ret;
+*/
+	return true;
 }
 
 static bool vow_service_SetNoiseModel(unsigned long arg)
 {
+/*
 	bool ret;
 
 	if (vowserv.vow_noise_model != NULL) {
@@ -736,10 +741,13 @@ static bool vow_service_SetNoiseModel(unsigned long arg)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
 	return ret;
+*/
+	return true;
 }
 
 static bool vow_service_SetFirModel(unsigned long arg)
 {
+/*
 	bool ret;
 
 	if (vowserv.vow_fir_model != NULL) {
@@ -772,6 +780,8 @@ static bool vow_service_SetFirModel(unsigned long arg)
 		;
 	ret = vow_ipimsg_wait(AP_IPIMSG_SET_VOW_MODEL);
 	return ret;
+*/
+	return true;
 }
 
 static bool vow_service_SetVBufAddr(unsigned long arg)
@@ -914,7 +924,14 @@ static void vow_service_ReadVoiceData(void)
 				memcpy(&vowserv.voicedata_kernel_ptr[vowserv.voicedata_idx],
 				       vowserv.voicddata_scp_ptr,
 				       vowserv.voice_length);
+
 				vow_service_SyncVoiceDataAck();
+
+				/*PRINTK_VOWDRV("TX Leng:%d, %d, %d\n",
+						vowserv.voicedata_idx,
+						vowserv.voice_buf_offset,
+						vowserv.voice_length);*/
+
 			#endif
 				vowserv.voicedata_idx += (vowserv.voice_length >> 1);
 
