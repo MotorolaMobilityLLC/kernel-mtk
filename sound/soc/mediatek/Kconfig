@@ -158,8 +158,8 @@ config MTK_OFFLOAD_PLAYBACK
 	  Only enable this when we have DSP.
 	  This makes audio out pass bitstream, and decoding process is done in DSP.
 
-config MTK_HYBRIDDRE_SUPPORT
+config MTK_SND_HYBRID_DRE_SUPPORT
 	bool "Audio Hybrid DRE support"
 	help
-	  If you say Y, enable MTK_HYBRIDDRE_SUPPORT.
+	  If you say Y, enable MTK_SND_HYBRID_DRE_SUPPORT.
 	  Only enable this when we have Hybrid DRE feature.
