@@ -617,7 +617,8 @@ void kbase_zone_cache_clear(struct kbase_mem_phy_alloc *alloc)
 static void kbase_mem_evictable_mark_reclaim(struct kbase_mem_phy_alloc *alloc)
 {
 	struct kbase_context *kctx = alloc->imported.kctx;
-	struct kbase_mem_zone_cache_entry *zone_cache;
+	/* Mark-off by MTK, mali cache should not be counted in SLAB */
+	/* struct kbase_mem_zone_cache_entry *zone_cache;*/
 	int __maybe_unused new_page_count;
 	int err;
 
@@ -625,12 +626,17 @@ static void kbase_mem_evictable_mark_reclaim(struct kbase_mem_phy_alloc *alloc)
 	err = kbase_zone_cache_build(alloc);
 	if (err == 0) {
 		/* Bulk update all the zones */
+		/* Mark-off by MTK, mali cache should not be counted in SLAB */
+		/*
 		list_for_each_entry(zone_cache, &alloc->zone_cache, zone_node) {
 			zone_page_state_add(zone_cache->count,
 					zone_cache->zone, NR_SLAB_RECLAIMABLE);
 		}
+		*/
 	} else {
 		/* Fall-back to page by page updates */
+		/* Mark-off by MTK, mali cache should not be counted in SLAB */
+		/*
 		int i;
 
 		for (i = 0; i < alloc->nents; i++) {
@@ -639,6 +645,7 @@ static void kbase_mem_evictable_mark_reclaim(struct kbase_mem_phy_alloc *alloc)
 
 			zone_page_state_add(1, zone, NR_SLAB_RECLAIMABLE);
 		}
+		*/
 	}
 
 	kbase_process_page_usage_dec(kctx, alloc->nents);
@@ -659,7 +666,8 @@ static
 void kbase_mem_evictable_unmark_reclaim(struct kbase_mem_phy_alloc *alloc)
 {
 	struct kbase_context *kctx = alloc->imported.kctx;
-	struct kbase_mem_zone_cache_entry *zone_cache;
+	/* Mark-off by MTK, mali cache should not be counted in SLAB */
+	/* struct kbase_mem_zone_cache_entry *zone_cache; */
 	int __maybe_unused new_page_count;
 	int err;
 
@@ -676,12 +684,17 @@ void kbase_mem_evictable_unmark_reclaim(struct kbase_mem_phy_alloc *alloc)
 	err = kbase_zone_cache_build(alloc);
 	if (err == 0) {
 		/* Bulk update all the zones */
+		/* Mark-off by MTK, mali cache should not be counted in SLAB */
+		/*
 		list_for_each_entry(zone_cache, &alloc->zone_cache, zone_node) {
 			zone_page_state_add(-zone_cache->count,
 					zone_cache->zone, NR_SLAB_RECLAIMABLE);
 		}
+		*/
 	} else {
 		/* Fall-back to page by page updates */
+		/* Mark-off by MTK, mali cache should not be counted in SLAB */
+		/*
 		int i;
 
 		for (i = 0; i < alloc->nents; i++) {
@@ -690,6 +703,7 @@ void kbase_mem_evictable_unmark_reclaim(struct kbase_mem_phy_alloc *alloc)
 
 			zone_page_state_add(-1, zone, NR_SLAB_RECLAIMABLE);
 		}
+		*/
 	}
 
 	kbase_tlstream_aux_pagesalloc(
