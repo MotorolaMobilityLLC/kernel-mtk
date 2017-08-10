@@ -1,3 +1,9 @@
+#ifdef BUILD_LK
+#include <string.h>
+#include <platform/mt_gpio.h>
+#include <platform/mt_i2c.h>
+#include <platform/mt_pmic.h>
+#else
 #include <linux/string.h>
 #include <linux/wait.h>
 #include <linux/platform_device.h>
@@ -6,6 +12,7 @@
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
 #include <asm-generic/gpio.h>
+#endif
 
 #include "lcm_drv.h"
 #ifdef CONFIG_OF
@@ -15,7 +22,11 @@
 /* --------------------------------------------------------------------------- */
 /* Local Constants */
 /* --------------------------------------------------------------------------- */
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #define LCM_DSI_CMD_MODE									1
+#else
+#define LCM_DSI_CMD_MODE                                                                        0
+#endif
 #define FRAME_WIDTH										(1080)
 #define FRAME_HEIGHT									(1920)
 
@@ -658,6 +669,50 @@ static void push_table(struct LCM_setting_table *table, unsigned int count,
 /* --------------------------------------------------------------------------- */
 /* LCM Driver Implementations */
 /* --------------------------------------------------------------------------- */
+#ifndef BUILD_LK
+static int lcm_probe(struct device *dev)
+{
+	return 0;
+}
+
+static const struct of_device_id lcm_of_ids[] = {
+	{.compatible = "mediatek,lcm",},
+	{}
+};
+
+static struct platform_driver lcm_driver = {
+	.driver = {
+		   .name = "mtk_lcm",
+		   .owner = THIS_MODULE,
+		   .probe = lcm_probe,
+#ifdef CONFIG_OF
+		   .of_match_table = lcm_of_ids,
+#endif
+		   },
+};
+
+static int __init _lcm_init(void)
+{
+	pr_notice("LCM: Register lcm driver\n");
+	if (platform_driver_register(&lcm_driver)) {
+		pr_err("LCM: failed to register disp driver\n");
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+static void __exit _lcm_exit(void)
+{
+	platform_driver_unregister(&lcm_driver);
+	pr_notice("LCM: Unregister lcm driver done\n");
+}
+late_initcall(_lcm_init);
+module_exit(_lcm_exit);
+MODULE_AUTHOR("mediatek");
+MODULE_DESCRIPTION("Display subsystem Driver");
+MODULE_LICENSE("GPL");
+#endif
 
 static void lcm_set_util_funcs(const LCM_UTIL_FUNCS *util)
 {
@@ -683,7 +738,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	/* Command mode setting */
 	params->dsi.LANE_NUM = LCM_FOUR_LANE;
 	/* The following defined the fomat for data coming from LCD engine. */
-	params->dsi.data_format.color_order = LCM_COLOR_ORDER_BGR;
+	params->dsi.data_format.color_order = LCM_COLOR_ORDER_RGB;
 	params->dsi.data_format.trans_seq = LCM_DSI_TRANS_SEQ_MSB_FIRST;
 	params->dsi.data_format.padding = LCM_DSI_PADDING_ON_LSB;
 	params->dsi.data_format.format = LCM_DSI_FORMAT_RGB888;
@@ -708,14 +763,21 @@ static void lcm_get_params(LCM_PARAMS *params)
 	/* video mode timing */
 	params->dsi.word_count = FRAME_WIDTH * 3;
 
+#ifndef MACH_FPGA
 #if (LCM_DSI_CMD_MODE)
-	params->dsi.PLL_CLOCK = 500;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 500; /* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 450;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 450; /* this value must be in MTK suggested table */
 #endif
+#else
+	params->dsi.pll_div1 = 0;
+	params->dsi.pll_div2 = 0;
+	params->dsi.fbk_div = 0x1;
+#endif
+
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 0;
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 1;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x53;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
@@ -786,7 +848,6 @@ void lcm_resume(void)
 
 	push_table(lcm_initialization_setting,
 		   sizeof(lcm_initialization_setting) / sizeof(struct LCM_setting_table), 1);
-
 #else
 	pr_debug("[Kernel/LCM] lcm_resume() enter\n");
 	SET_RESET_PIN(1);
@@ -835,7 +896,6 @@ static void lcm_update(unsigned int x, unsigned int y, unsigned int width, unsig
 	data_array[0] = 0x002c3909;
 	dsi_set_cmdq(data_array, 1, 0);
 }
-
 #endif
 
 LCM_DRIVER nt35595_fhd_dsi_cmd_truly_8163_lcm_drv = {

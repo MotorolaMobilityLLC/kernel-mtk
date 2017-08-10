@@ -117,6 +117,7 @@ void disp_pwm_set_force_update_flag(void)
 
 static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig, void *cmdq)
 {
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	unsigned int pwm_div, pwm_src;
 	/* disp_pwm_id_t id = DISP_PWM0; */
 	unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
@@ -142,7 +143,7 @@ static int disp_pwm_config_init(DISP_MODULE_ENUM module, disp_ddp_path_config *p
 
 	DISP_REG_MASK(cmdq, reg_base + DISP_PWM_CON_1_OFF, 1023, 0x3ff);	/* 1024 levels */
 	/* We don't init the backlight here until AAL/Android give */
-
+#endif
 	return 0;
 }
 
