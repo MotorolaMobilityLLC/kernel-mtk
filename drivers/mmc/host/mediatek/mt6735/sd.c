@@ -5312,18 +5312,19 @@ static void msdc_pre_req(struct mmc_host *mmc, struct mmc_request *mrq,
 	struct msdc_host *host = mmc_priv(mmc);
 	struct mmc_data *data;
 	struct mmc_command *cmd = mrq->cmd;
-	int read = 1, dir = DMA_FROM_DEVICE;
+	int size = 0, dir = DMA_FROM_DEVICE;
 
 	BUG_ON(!cmd);
 	data = mrq->data;
-	if (data)
-		data->host_cookie = MSDC_COOKIE_ASYNC;
+
 	if (data && (cmd->opcode == MMC_READ_SINGLE_BLOCK
 	    || cmd->opcode == MMC_READ_MULTIPLE_BLOCK
 		|| cmd->opcode == MMC_WRITE_BLOCK
 		|| cmd->opcode == MMC_WRITE_MULTIPLE_BLOCK)) {
-		host->xfer_size = data->blocks * data->blksz;
-		read = data->flags & MMC_DATA_READ ? 1 : 0;
+		data->host_cookie = MSDC_COOKIE_ASYNC;
+		size = data->blocks * data->blksz;
+		dir = data->flags & MMC_DATA_READ ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+
 		if (drv_mode[host->id] == MODE_PIO) {
 			data->host_cookie |= MSDC_COOKIE_PIO;
 			msdc_latest_transfer_mode[host->id] = TRAN_MOD_PIO;
@@ -5331,21 +5332,20 @@ static void msdc_pre_req(struct mmc_host *mmc, struct mmc_request *mrq,
 
 			msdc_latest_transfer_mode[host->id] = TRAN_MOD_DMA;
 		} else if (drv_mode[host->id] == MODE_SIZE_DEP) {
-			if (host->xfer_size < dma_size[host->id]) {
+			if (size < dma_size[host->id]) {
 				data->host_cookie |= MSDC_COOKIE_PIO;
 				msdc_latest_transfer_mode[host->id] = TRAN_MOD_PIO;
 			} else {
 				msdc_latest_transfer_mode[host->id] = TRAN_MOD_DMA;
 			}
 		}
-		if (msdc_async_use_dma(data->host_cookie)) {
-			dir = read ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+		if (msdc_async_use_dma(data->host_cookie))
 			(void)dma_map_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
-		}
-		N_MSG(OPS, "CMD<%d> ARG<0x%x>data<%s %s> blksz<%d> block<%d> error<%d>",
+
+		N_MSG(OPS, "CMD<%d> ARG<0x%x>data<%s> blksz<%d> block<%d> error<%d>",
 		      mrq->cmd->opcode, mrq->cmd->arg,
-		      (data->host_cookie ? "dma" : "pio"), (read ? "read " : "write"),
-		      data->blksz, data->blocks, data->error);
+		      (data->host_cookie ? "dma" : "pio"), data->blksz,
+		      data->blocks, data->error);
 	}
 }
 
@@ -5367,16 +5367,15 @@ static void msdc_post_req(struct mmc_host *mmc, struct mmc_request *mrq,
 {
 	struct msdc_host *host = mmc_priv(mmc);
 	struct mmc_data *data;
-	/* struct mmc_command *cmd = mrq->cmd; */
-	int read = 1, dir = DMA_FROM_DEVICE;
+	int dir = DMA_FROM_DEVICE;
 
 	data = mrq->data;
-	if (data && (msdc_async_use_dma(data->host_cookie))) {
-		host->xfer_size = data->blocks * data->blksz;
-		read = data->flags & MMC_DATA_READ ? 1 : 0;
-		dir = read ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
+	if (!data)
+		return;
+
+	if (msdc_async_use_dma(data->host_cookie)) {
+		dir = data->flags & MMC_DATA_READ ? DMA_FROM_DEVICE : DMA_TO_DEVICE;
 		dma_unmap_sg(mmc_dev(mmc), data->sg, data->sg_len, dir);
-		data->host_cookie = 0;
 		N_MSG(OPS, "CMD<%d> ARG<0x%x> blksz<%d> block<%d> error<%d>",
 			mrq->cmd->opcode, mrq->cmd->arg, data->blksz, data->blocks,
 			data->error);
