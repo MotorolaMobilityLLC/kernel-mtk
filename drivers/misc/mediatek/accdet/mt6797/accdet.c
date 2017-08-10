@@ -1,3 +1,17 @@
+/*
+ * Copyright (C) 2015 MediaTek Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ */
+
+
 #include "accdet.h"
 #ifdef CONFIG_ACCDET_EINT
 #include <linux/gpio.h>
@@ -1407,27 +1421,40 @@ static int dbug_thread(void *unused)
 
 static ssize_t store_accdet_start_debug_thread(struct device_driver *ddri, const char *buf, size_t count)
 {
+	int error = 0;
+	int ret = 0;
 
-	char start_flag;
-	int error;
-	int ret;
-
-	ret = sscanf(buf, "%s", &start_flag);
-	if (ret != 1) {
-		ACCDET_DEBUG("accdet: Invalid values\n");
-		return -EINVAL;
-	}
-
-	ACCDET_DEBUG("[Accdet] start flag =%d\n", start_flag);
-
-	g_start_debug_thread = start_flag;
-
-	if (1 == start_flag) {
+	/* if write 0, Invalid; otherwise, valid */
+	ret = strncmp(buf, "0", 1);
+	if (ret) {
+		g_start_debug_thread = 1;
 		thread = kthread_run(dbug_thread, 0, "ACCDET");
 		if (IS_ERR(thread)) {
 			error = PTR_ERR(thread);
-			ACCDET_DEBUG(" failed to create kernel thread: %d\n", error);
+			ACCDET_DEBUG("[store_accdet_start_debug_thread] failed to create kernel thread: %d\n", error);
+		} else {
+			ACCDET_INFO("[store_accdet_start_debug_thread] start debug thread!\n");
 		}
+	} else {
+		g_start_debug_thread = 0;
+		ACCDET_INFO("[store_accdet_start_debug_thread] stop debug thread!\n");
+	}
+
+	return count;
+}
+
+static ssize_t store_accdet_dump_register(struct device_driver *ddri, const char *buf, size_t count)
+{
+	int ret = 0;
+
+	/* if write 0, Invalid; otherwise, valid */
+	ret = strncmp(buf, "0", 1);
+	if (ret) {
+		g_dump_register = 1;
+		ACCDET_INFO("[store_accdet_dump_register] start dump regs!\n");
+	} else {
+		g_dump_register = 0;
+		ACCDET_INFO("[store_accdet_dump_register] stop dump regs!\n");
 	}
 
 	return count;
@@ -1446,24 +1473,6 @@ static ssize_t store_accdet_set_headset_mode(struct device_driver *ddri, const c
 	}
 
 	ACCDET_DEBUG("[Accdet]store_accdet_set_headset_mode value =%d\n", value);
-
-	return count;
-}
-
-static ssize_t store_accdet_dump_register(struct device_driver *ddri, const char *buf, size_t count)
-{
-	char value;
-	int ret;
-
-	ret = sscanf(buf, "%s", &value);
-	if (ret != 1) {
-		ACCDET_DEBUG("accdet: Invalid values\n");
-		return -EINVAL;
-	}
-
-	g_dump_register = value;
-
-	ACCDET_DEBUG("[Accdet]store_accdet_dump_register value =%d\n", value);
 
 	return count;
 }
