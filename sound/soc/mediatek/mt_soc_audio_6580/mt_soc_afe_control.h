@@ -91,6 +91,8 @@ bool Set2ndI2SOutEnable(bool benable);
 bool SetI2SAdcIn(AudioDigtalI2S *DigtalI2S);
 bool Set2ndI2SAdcIn(AudioDigtalI2S *DigtalI2S);
 bool SetDLSrc2(uint32 SampleRate);
+void SetULSrcEnable(bool bEnable);
+void SetADDAEnable(bool bEnable);
 
 bool GetMrgI2SEnable(void);
 bool SetMrgI2SEnable(bool bEnable, unsigned int sampleRate);
