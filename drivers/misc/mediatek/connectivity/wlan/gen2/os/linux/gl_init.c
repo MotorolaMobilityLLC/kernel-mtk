@@ -584,14 +584,17 @@ static void glLoadNvram(IN P_GLUE_INFO_T prGlueInfo, OUT P_REG_INFO_T prRegInfo)
 		prGlueInfo->fgNvramAvailable = TRUE;
 
 		/* load MAC Address */
-#if !CFG_TC1_FEATURE
+#if CFG_TC1_FEATURE
+	TC1_FAC_NAME(FacReadWifiMacAddr) ((unsigned char *)prRegInfo->aucMacAddr);
+
+#elif CFG_TC10_FEATURE
+		/* MAC Address is loaded before glLoadNvram */
+#else
 		for (i = 0; i < PARAM_MAC_ADDR_LEN; i += sizeof(UINT_16)) {
 			kalCfgDataRead16(prGlueInfo,
 					 OFFSET_OF(WIFI_CFG_PARAM_STRUCT, aucMacAddress) + i,
 					 (PUINT_16) (((PUINT_8) prRegInfo->aucMacAddr) + i));
 		}
-#else
-		TC1_FAC_NAME(FacReadWifiMacAddr) ((unsigned char *)prRegInfo->aucMacAddr);
 #endif
 
 		/* load country code */

@@ -2421,12 +2421,17 @@ BOOLEAN kalRetrieveNetworkAddress(IN P_GLUE_INFO_T prGlueInfo, IN OUT PARAM_MAC_
 
 	if (prGlueInfo->fgIsMacAddrOverride == FALSE) {
 #if !defined(CONFIG_X86)
-#if !CFG_TC1_FEATURE
+
+#if !(CFG_TC1_FEATURE || CFG_TC10_FEATURE)
 		UINT_32 i;
 #endif
 		BOOLEAN fgIsReadError = FALSE;
 
-#if !CFG_TC1_FEATURE
+#if CFG_TC1_FEATURE
+		TC1_FAC_NAME(FacReadWifiMacAddr) ((unsigned char *)prMacAddr);
+#elif CFG_TC10_FEATURE
+		COPY_MAC_ADDR(prMacAddr, prGlueInfo->rRegInfo.aucMacAddr);
+#else
 		if (!EQUAL_MAC_ADDR(&prGlueInfo->rRegInfo.aucMacAddr, "\x00\x00\x00\x00\x00\x00")) {
 			COPY_MAC_ADDR(prMacAddr, &prGlueInfo->rRegInfo.aucMacAddr);
 			return TRUE;
@@ -2439,8 +2444,7 @@ BOOLEAN kalRetrieveNetworkAddress(IN P_GLUE_INFO_T prGlueInfo, IN OUT PARAM_MAC_
 				break;
 			}
 		}
-#else
-		TC1_FAC_NAME(FacReadWifiMacAddr) ((unsigned char *)prMacAddr);
+
 #endif
 
 		if (fgIsReadError == TRUE)
