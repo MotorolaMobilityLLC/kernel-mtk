@@ -204,8 +204,18 @@ VOID scnSendScanReqExtCh(IN P_ADAPTER_T prAdapter)
 		}
 	}
 #if CFG_ENABLE_WIFI_DIRECT
-	if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX)
-		prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval;
+	if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX) {
+		/*
+		 * mtk supplicant will scan 4 channels for prograssive scan
+		 * customer supplicant should have 3 channels when do social scan
+		 */
+		if (prScanParam->ucChannelListNum <= 4) {
+			DBGLOG(P2P, INFO, "Channel number %d for 70ms\n", prScanParam->ucChannelListNum);
+			prCmdScanReq->u2ChannelDwellTime = 70;
+		} else
+			prCmdScanReq->u2ChannelDwellTime = 30;
+			/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
+	}
 #endif
 
 	if (prScanParam->u2IELen <= MAX_IE_LENGTH)
@@ -314,8 +324,18 @@ VOID scnSendScanReq(IN P_ADAPTER_T prAdapter)
 			}
 		}
 #if CFG_ENABLE_WIFI_DIRECT
-		if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX)
-			prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval;
+		if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX) {
+			/*
+			 * mtk supplicant will scan 4 channels for prograssive scan
+			 * customer supplicant should have 3 channels when do social scan
+			 */
+			if (prScanParam->ucChannelListNum <= 4) {
+				DBGLOG(P2P, INFO, "Channel number %d for 70ms\n", prScanParam->ucChannelListNum);
+				prCmdScanReq->u2ChannelDwellTime = 70;
+			} else
+				prCmdScanReq->u2ChannelDwellTime = 30;
+				/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
+		}
 #endif
 #if CFG_ENABLE_FAST_SCAN
 		if (prScanParam->eNetTypeIndex == NETWORK_TYPE_AIS_INDEX)
@@ -427,8 +447,18 @@ VOID scnSendScanReqV2ExtCh(IN P_ADAPTER_T prAdapter)
 		}
 	}
 #if CFG_ENABLE_WIFI_DIRECT
-	if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX)
-		prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval;
+	if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX) {
+		/*
+		 * mtk supplicant will scan 4 channels for prograssive scan
+		 * customer supplicant should have 3 channels when do social scan
+		 */
+		if (prScanParam->ucChannelListNum <= 4) {
+			DBGLOG(P2P, INFO, "Channel number %d for 70ms\n", prScanParam->ucChannelListNum);
+			prCmdScanReq->u2ChannelDwellTime = 70;
+		} else
+			prCmdScanReq->u2ChannelDwellTime = 30;
+			/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
+	}
 #endif
 
 	if (prScanParam->u2IELen <= MAX_IE_LENGTH)
@@ -529,8 +559,18 @@ VOID scnSendScanReqV3ExtCh(IN P_ADAPTER_T prAdapter)
 		}
 	}
 #if CFG_ENABLE_WIFI_DIRECT
-	if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX)
-		prCmdScanReqV3->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval;
+	if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX) {
+		/*
+		 * mtk supplicant will scan 4 channels for prograssive scan
+		 * customer supplicant should have 3 channels when do social scan
+		 */
+		if (prScanParam->ucChannelListNum <= 4) {
+			DBGLOG(P2P, INFO, "Channel number %d for 70ms\n", prScanParam->ucChannelListNum);
+			prCmdScanReqV3->u2ChannelDwellTime = 70;
+		} else
+			prCmdScanReqV3->u2ChannelDwellTime = 30;
+			/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
+	}
 #endif
 
 	if (prScanParam->u2IELen <= MAX_IE_LENGTH)
@@ -626,8 +666,18 @@ VOID scnSendScanReqV2(IN P_ADAPTER_T prAdapter)
 			}
 		}
 #if CFG_ENABLE_WIFI_DIRECT
-		if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX)
-			prCmdScanReqV3->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval;
+		if (prScanParam->eNetTypeIndex == NETWORK_TYPE_P2P_INDEX) {
+			/*
+			 * mtk supplicant will scan 4 channels for prograssive scan
+			 * customer supplicant should have 3 channels when do social scan
+			 */
+			if (prScanParam->ucChannelListNum <= 4) {
+				DBGLOG(P2P, INFO, "Channel number %d for 70ms\n", prScanParam->ucChannelListNum);
+				prCmdScanReqV3->u2ChannelDwellTime = 70;
+			} else
+				prCmdScanReqV3->u2ChannelDwellTime = 30;
+				/* prCmdScanReq->u2ChannelDwellTime = prScanParam->u2PassiveListenInterval; */
+		}
 #endif
 		if (prScanParam->u2IELen <= MAX_IE_LENGTH)
 			prCmdScanReqV3->u2IELen = prScanParam->u2IELen;
