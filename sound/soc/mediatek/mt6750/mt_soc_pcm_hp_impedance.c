@@ -58,6 +58,7 @@
 #include "mt_soc_digital_type.h"
 #include "mt_soc_pcm_common.h"
 #include "mt_soc_codec_63xx.h"
+#include "AudDrv_Gpio.h"
 
 /*
 #include <mach/upmu_common.h>
@@ -75,7 +76,6 @@
 static AFE_MEM_CONTROL_T *pHp_impedance_MemControl;
 /* static const int DCoffsetDefault = 1500;  //95: 1622 */
 static const int DCoffsetDefault = 1460;  /* denali: 1460 */
-
 static const int DCoffsetVariance = 200;    /* denali 0.2v */
 
 static const unsigned short HpImpedanceAuxCable = 10000;
@@ -583,6 +583,9 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 {
 	PRINTK_AUDDRV("+ %s()\n", __func__);
 	AudDrv_Clk_On();
+#if defined(CONFIG_MTK_HP_ANASWITCH)
+	AudDrv_GPIO_HPDEPOP_Select(false);
+#endif
 	if (OpenHeadPhoneImpedanceSetting(true) == true) {
 		setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_HPR);
 		/* setOffsetTrimMux(AUDIO_OFFSET_TRIM_MUX_GROUND); */
@@ -603,6 +606,7 @@ static int Audio_HP_ImpeDance_Get(struct snd_kcontrol *kcontrol,
 		pr_warn("Audio_HP_ImpeDance_Get just do nothing\n");
 	AudDrv_Clk_Off();
 	ucontrol->value.integer.value[0] = mhp_impedance;
+	pr_warn("mhp_impedance = %d\n", mhp_impedance);
 	PRINTK_AUDDRV("- %s()\n", __func__);
 	return 0;
 }
