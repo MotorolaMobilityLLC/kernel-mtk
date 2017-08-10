@@ -816,7 +816,7 @@ static ssize_t AudDrv_btcvsd_write(struct file *fp, const char __user *data,
 	unsigned long flags;
 	char *data_w_ptr = (char *)data;
 	kal_uint64 write_timeout_limit;
-	int max_timeout_trial = 3;
+	int max_timeout_trial = 2;
 
 	if ((btsco.pTX == NULL) || (btsco.pTX->u4BufferSize == 0)) {
 		pr_err("AudDrv_btcvsd_write btsco.pTX||pTX->u4BufferSize==0!!!\n");
@@ -1013,7 +1013,7 @@ static ssize_t AudDrv_btcvsd_read(struct file *fp, char __user *data,
 	unsigned long u4DataRemained;
 	unsigned long flags;
 	kal_uint64 read_timeout_limit;
-	int max_timeout_trial = 3;
+	int max_timeout_trial = 2;
 
 	if ((btsco.pRX == NULL) || (btsco.pRX->u4BufferSize == 0)) {
 		pr_err("AudDrv_btcvsd_read btsco.pRX || pRX->u4BufferSize == 0!\n");
