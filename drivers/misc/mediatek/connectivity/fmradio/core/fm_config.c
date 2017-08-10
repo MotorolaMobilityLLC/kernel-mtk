@@ -26,7 +26,7 @@ fm_cust_cfg fm_config;
 static fm_u16 g_fm_chipid;
 static enum fm_cfg_chip_type g_fm_chip_type = FM_CHIP_TYPE_MAX;
 
-#define FM_CUST_CFG_PATH "/vendor/etc/fmr/fm_cust.cfg"
+#define FM_CUST_CFG_PATH "fm_cust.cfg"
 
 fm_s32 to_upper_n(fm_s8 *str, fm_s32 len)
 {
@@ -452,6 +452,7 @@ static fm_s32 fm_cust_config_file(const fm_s8 *filename, fm_cust_cfg *cfg)
 	file_len = fm_file_read(filename, buf, 4096, 0);
 
 	if (file_len <= 0) {
+		WCN_DBG(FM_ALT | MAIN, "fail to read config file = %s\n", filename);
 		ret = -1;
 		goto out;
 	}
