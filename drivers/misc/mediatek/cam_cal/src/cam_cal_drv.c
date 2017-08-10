@@ -554,6 +554,11 @@ static long cam_cal_drv_ioctl(
 
 	if (_IOC_READ & _IOC_DIR(a_u4Command)) {
 		/*copy data to user space buffer, keep other input paremeter unchange.*/
+		if ((ptempbuf->u4Length <= 0) || (ptempbuf->u4Length > 65535)) {
+			kfree(pBuff);
+			CAM_CALDB("Buffer Length Error!\n");
+			return -EFAULT;
+		}
 		if (copy_to_user((u8 __user *) ptempbuf->pu1Params , (u8 *)pu1Params , ptempbuf->u4Length)) {
 			kfree(pBuff);
 			kfree(pu1Params);
