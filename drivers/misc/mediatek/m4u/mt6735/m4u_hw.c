@@ -1171,10 +1171,15 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 	unsigned long larb_base;
 	unsigned int larb, larb_port;
 	int ret = 0;
+	int mmu_en = 0;
 
 	m4u_index = m4u_port_2_m4u_id(port);
-	if (m4u_index == -1)
+	larb = m4u_port_2_larb_id(port);
+	larb_port = m4u_port_2_larb_port(port);
+	if ((m4u_index == -1) || (larb == -1) || (larb_port == M4U_PORT_UNKNOWN)) {
+		m4u_aee_print(" %s invalid parameter: port=%d\n", __func__, port);
 		return -1;
+	}
 
 	m4u_base = gM4UBaseAddr[m4u_index];
 
@@ -1192,10 +1197,7 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 			F_MMU_PFH_DIST_MASK(port), F_MMU_PFH_DIST_VAL(port, dis));
 
 	if (m4u_index == 0) {
-		int mmu_en = 0;
 
-		larb = m4u_port_2_larb_id(port);
-		larb_port = m4u_port_2_larb_port(port);
 		larb_base = gLarbBaseAddr[larb];
 
 		m4uHw_set_field_by_mask(larb_base, SMI_LARB_MMU_EN,
@@ -1341,6 +1343,12 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 
 			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
+
+			if ((larb == -1) || (larb_port == M4U_PORT_UNKNOWN)) {
+				m4u_aee_print(" %s invalid parameter: port=%d\n", __func__, port);
+				return ret;
+			}
+
 			config_larb[larb] |= (1 << larb_port);
 			value = (!!(port_array->ports[port] && M4U_PORT_ATTR_VIRTUAL))<<larb_port;
 			regOri[larb] = M4U_ReadReg32(gLarbBaseAddr[larb], SMI_LARB_MMU_EN);
@@ -1674,15 +1682,20 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 
 	for (port = 0; port < gM4u_port_num; port++) {
 		m4u_index = m4u_port_2_m4u_id(port);
+		larb = m4u_port_2_larb_id(port);
+		larb_port = m4u_port_2_larb_port(port);
+
+		if ((m4u_index == -1) || (larb == -1) || (larb_port == M4U_PORT_UNKNOWN)) {
+			m4u_aee_print(" %s invalid parameter: port=%d\n", __func__, port);
+			return;
+		}
+
 		if (m4u_index == 0) {
-			larb = m4u_port_2_larb_id(port);
-			larb_port = m4u_port_2_larb_port(port);
 			larb_base = gLarbBaseAddr[larb];
 
 			mmu_en = m4uHw_get_field_by_mask(larb_base, SMI_LARB_MMU_EN, F_SMI_MMU_EN(larb_port, 1));
 			sec = m4uHw_get_field_by_mask(larb_base, SMI_LARB_SEC_EN, F_SMI_SEC_EN(larb_port, 1));
 		} else {
-			larb_port = m4u_port_2_larb_port(port);
 			mmu_en = m4uHw_get_field_by_mask(gPericfgBaseAddr,
 					REG_PERIAXI_BUS_CTL3, F_PERI_MMU_EN(larb_port, 1));
 		}
@@ -2190,9 +2203,15 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 {
 	unsigned long pProtectVA;
 	phys_addr_t ProtectPA;
-
 #if !defined(CONFIG_MTK_CLKMGR)
 	int i;
+#endif
+	if (m4u_id < 0 && m4u_id > TOTAL_M4U_NUM) {
+		M4UMSG("error m4u id, error id is %d\n", m4u_id);
+		return -1;
+	}
+
+#if !defined(CONFIG_MTK_CLKMGR)
 
 	gM4uDev->infra_m4u = devm_clk_get(gM4uDev->pDev[m4u_id], "infra_m4u");
 	if (IS_ERR(gM4uDev->infra_m4u)) {
@@ -2215,11 +2234,6 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 	gM4U_4G_DRAM_Mode = enable_4G();
 #endif
 	M4UMSG("4G DRAM Mode is: %d\n", gM4U_4G_DRAM_Mode);
-
-	if (m4u_id < 0 && m4u_id > TOTAL_M4U_NUM) {
-		M4UMSG("error m4u id, error id is %d\n", m4u_id);
-		return -1;
-	}
 
 	gM4UBaseAddr[m4u_id] = m4u_dev->m4u_base[m4u_id];
 

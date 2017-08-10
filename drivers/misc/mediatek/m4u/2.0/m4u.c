@@ -479,7 +479,7 @@ static int m4u_create_sgtable_user(unsigned long va_align, struct sg_table *tabl
 
 		vma = find_vma(current->mm, va);
 		if (vma == NULL || vma->vm_start > va) {
-			M4UMSG("cannot find vma: va=0x%lx, vma=0x%p\n", va, vma);
+			M4UMSG("cannot find vma: va=0x%lx, vma=0x%p, page: %d\n", va, vma, left_page_num);
 			m4u_dump_mmaps(va);
 			ret = -1;
 			goto out;
@@ -1188,21 +1188,6 @@ long m4u_dma_op(m4u_client_t *client, M4U_PORT_ID port,
 	for_each_sg(table->sgl, sg, table->nents, i) {
 		int npages_this_entry = PAGE_ALIGN(sg_dma_len(sg)) / PAGE_SIZE;
 		struct page *page = sg_page(sg);
-
-		if (!page) {
-			phys_addr_t pa = sg_dma_address(sg);
-
-			if (!pa) {
-				M4UMSG("m4u_dma_op fail, VM_PFNMAP, no page.\n");
-				return -EFAULT;
-			}
-			page = phys_to_page(pa);
-			if (!pfn_valid(page_to_pfn(page))) {
-				M4UMSG("m4u_dma_op fail, VM_PFNMAP, no page, va = 0x%lx, size = 0x%x, npages = 0x%x.\n",
-					va, size, npages);
-				return -EFAULT;
-			}
-		}
 
 		if (!page) {
 			phys_addr_t pa = sg_dma_address(sg);
@@ -2189,24 +2174,6 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 		}
 		break;
 
-	case MTK_M4U_T_CONFIG_TF:
-		{
-			M4U_TF_STRUCT rM4UTF;
-
-			ret = copy_from_user(&rM4UTF, (void *)arg, sizeof(M4U_TF_STRUCT));
-			if (rM4UTF.port < 0 || rM4UTF.port >= M4U_PORT_UNKNOWN) {
-				M4UMSG("from user port id is invald,%d\n", rM4UTF.port);
-				return -EFAULT;
-			}
-
-			if (ret) {
-				M4UMSG("MTK_M4U_T_CONFIG_TF,copy_from_user failed:%d\n", ret);
-				return -EFAULT;
-			}
-
-			ret = m4u_enable_tf(rM4UTF.port, rM4UTF.fgEnable);
-		}
-		break;
 #ifdef M4U_TEE_SERVICE_ENABLE
 	case MTK_M4U_T_SEC_INIT:
 		{
