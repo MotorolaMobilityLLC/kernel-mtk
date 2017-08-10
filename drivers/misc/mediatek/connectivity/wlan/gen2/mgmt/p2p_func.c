@@ -2596,7 +2596,7 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 	BOOLEAN fgIsP2PIE = FALSE, fgIsWSCIE = FALSE;
 	P_BSS_INFO_T prP2pBssInfo = (P_BSS_INFO_T) NULL;
 	UINT_16 u2EstimateSize = 0, u2EstimatedExtraIELen = 0;
-	UINT_32 u4IeArraySize = 0, u4Idx = 0;
+	UINT_32 u4IeArraySize = 0, u4Idx = 0, u4P2PIeIdx = 0;
 	UINT_8 ucOuiType = 0;
 	UINT_16 u2SubTypeVersion = 0;
 
@@ -2643,15 +2643,15 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 						fgIsWSCIE = TRUE;
 					}
 
-				} else if (p2pFuncParseCheckForP2PInfoElem(prAdapter, pucIEBuf, &ucOuiType)) {
-					if (ucOuiType == VENDOR_OUI_TYPE_P2P) {
-						/* 2 Note(frog): I use WSC IE buffer for Probe Request to
-						 * store the P2P IE for Probe Response. */
-						kalP2PUpdateWSC_IE(prAdapter->prGlueInfo, 1, pucIEBuf,
-							IE_SIZE(pucIEBuf));
+				} else if (p2pFuncParseCheckForP2PInfoElem(prAdapter, pucIEBuf, &ucOuiType) &&
+					(ucOuiType == VENDOR_OUI_TYPE_P2P)) {
+					if (u4P2PIeIdx < MAX_P2P_IE_SIZE) {
+						kalP2PUpdateP2P_IE(prAdapter->prGlueInfo,
+							u4P2PIeIdx, pucIEBuf, IE_SIZE(pucIEBuf));
+						u4P2PIeIdx++;
 						fgIsP2PIE = TRUE;
-					}
-
+					} else
+						DBGLOG(P2P, WARN, "Too much P2P IE for ProbeResp, skip update\n");
 				} else {
 					if ((prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen +
 						IE_SIZE(pucIEBuf)) < 512) {
@@ -2671,12 +2671,13 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 				}
 				if (p2pFuncParseCheckForP2PInfoElem(prAdapter, pucIEBuf, &ucOuiType) &&
 					(ucOuiType == VENDOR_OUI_TYPE_P2P)) {
-						/* 2 Note(frog): I use WSC IE buffer for Probe Request to
-						 * store the P2P IE for Probe Response. */
-						kalP2PUpdateWSC_IE(prAdapter->prGlueInfo, 1, pucIEBuf,
-							IE_SIZE(pucIEBuf));
+					if (u4P2PIeIdx < MAX_P2P_IE_SIZE) {
+						kalP2PUpdateP2P_IE(prAdapter->prGlueInfo,
+							u4P2PIeIdx, pucIEBuf, IE_SIZE(pucIEBuf));
+						u4P2PIeIdx++;
 						fgIsP2PIE = TRUE;
-
+					} else
+						DBGLOG(P2P, WARN, "Too much P2P IE for ProbeResp, skip update\n");
 				} else {
 					if ((prAdapter->prGlueInfo->prP2PInfo->u2VenderIELen + IE_SIZE(pucIEBuf)) <
 						1024) {
@@ -2724,7 +2725,9 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 			u2EstimatedExtraIELen += kalP2PCalWSC_IELen(prAdapter->prGlueInfo, 2);
 
 		if (fgIsP2PIE) {
-			u2EstimatedExtraIELen += kalP2PCalWSC_IELen(prAdapter->prGlueInfo, 1);
+			for (u4Idx = 0; u4Idx < u4P2PIeIdx; u4Idx++)
+				u2EstimatedExtraIELen += kalP2PCalP2P_IELen(prAdapter->prGlueInfo, u4Idx);
+
 			u2EstimatedExtraIELen += p2pFuncCalculateP2P_IE_NoA(prAdapter, 0, NULL);
 		}
 #if CFG_SUPPORT_WFD
@@ -2772,12 +2775,16 @@ P_MSDU_INFO_T p2pFuncProcessP2pProbeRsp(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO
 		}
 
 		if (fgIsP2PIE) {
-			kalP2PGenWSC_IE(prAdapter->prGlueInfo,
-					1,
+			for (u4Idx = 0; u4Idx < u4P2PIeIdx; u4Idx++) {
+				kalP2PGenP2P_IE(prAdapter->prGlueInfo,
+					u4Idx,
 					(PUINT_8) ((ULONG) prRetMsduInfo->prPacket +
-						   (UINT_32) prRetMsduInfo->u2FrameLength));
+					(UINT_32) prRetMsduInfo->u2FrameLength));
 
-			prRetMsduInfo->u2FrameLength += (UINT_16) kalP2PCalWSC_IELen(prAdapter->prGlueInfo, 1);
+				prRetMsduInfo->u2FrameLength +=
+					(UINT_16) kalP2PCalP2P_IELen(prAdapter->prGlueInfo, u4Idx);
+			}
+
 			p2pFuncGenerateP2P_IE_NoA(prAdapter, prRetMsduInfo);
 		}
 #if CFG_SUPPORT_WFD
