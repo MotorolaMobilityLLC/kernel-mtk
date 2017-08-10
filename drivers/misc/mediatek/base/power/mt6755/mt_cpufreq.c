@@ -4132,7 +4132,7 @@ static int cpufreq_oppidx_proc_show(struct seq_file *m, void *v)
 static ssize_t cpufreq_oppidx_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
 	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)PDE_DATA(file_inode(file));
-	int oppidx;
+	int oppidx = 0;
 	int rc;
 
 	char *buf = _copy_from_user_for_proc(buffer, count);
