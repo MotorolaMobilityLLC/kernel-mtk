@@ -325,7 +325,7 @@ _wlanoidSetAddP2PTDLSKey(IN P_ADAPTER_T prAdapter,
 					 CMD_ID_ADD_REMOVE_KEY,
 					 TRUE,
 					 FALSE,
-					 TRUE,
+					 FALSE,
 					 nicCmdEventSetCommon,
 					 NULL,
 					 sizeof(CMD_802_11_KEY), (PUINT_8) &rCmdKey, pvSetBuffer, u4SetBufferLen);

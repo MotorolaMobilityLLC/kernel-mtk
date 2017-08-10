@@ -884,7 +884,9 @@ WLAN_STATUS kalRxIndicatePkts(IN P_GLUE_INFO_T prGlueInfo, IN PVOID apvPkts[], I
 			/* prNetDev->stats.rx_packets++; */
 			prGlueInfo->prP2PInfo->rNetDevStats.rx_bytes += prSkb->len;
 			prGlueInfo->prP2PInfo->rNetDevStats.rx_packets++;
-
+#if (CFG_SUPPORT_TDLS == 1)
+			MTKTdlsApStaUpdateTxRxStatus(prGlueInfo, 0, prSkb->len, prSkb->data + 6);
+#endif
 #else
 			prNetDev = prGlueInfo->prDevHandler;
 #endif

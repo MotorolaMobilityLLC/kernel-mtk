@@ -259,7 +259,7 @@ do { \
 
 	prGlueInfo = (GLUE_INFO_T *) prAdapter->prGlueInfo;
 
-	DBGLOG(TDLS, INFO, "<tdls_fme> %s: network type: %d 2040=%d\n", __func__,
+	DBGLOG(TDLS, TRACE, "<tdls_fme> %s: network type: %d 2040=%d\n", __func__,
 			prMgmtTxInfo->eNetworkType,
 			prGlueInfo->rTdlsLink.fgIs2040Sup);
 
@@ -721,7 +721,12 @@ do { \
 
 		/* 9. Update packet length */
 		prMsduInfo->len = u4PktLen;
-		dumpMemory8(prMsduInfo->data, u4PktLen);
+		/* dumpMemory8(prMsduInfo->data, u4PktLen); */
+		DBGLOG_MEM8(TDLS, TRACE, prMsduInfo->data, u4PktLen);
+		DBGLOG(TDLS, INFO, "Send TDLS action %d len %u by network %d\n",
+			ucActionCode, u4PktLen, eNetworkType);
+		prGlueInfo->i4TdlsLastTx = ucActionCode;
+		prGlueInfo->eTdlsNetworkType = eNetworkType;
 		if (eNetworkType == NETWORK_TYPE_AIS_INDEX)
 			wlanHardStartXmit(prMsduInfo, prMsduInfo->dev);
 		else
@@ -735,6 +740,7 @@ do { \
 		   STA shall send the TDLS Discovery Response frame using a rate from the
 		   BSSBasicRateSet of the BSS to which the STA is currently associated.
 		 */
+		DBGLOG(TDLS, INFO, "Send TDLS Discovery Response by network %d\n", eNetworkType);
 		prMsduInfoMgmt->ucPacketType = HIF_TX_PACKET_TYPE_MGMT;
 		prMsduInfoMgmt->ucStaRecIndex = prBssInfo->prStaRecOfAP->ucIndex;
 		prMsduInfoMgmt->ucNetworkType = prBssInfo->ucNetTypeIndex;

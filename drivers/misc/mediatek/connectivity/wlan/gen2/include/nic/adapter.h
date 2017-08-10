@@ -801,6 +801,8 @@ struct _ADAPTER_T {
 	TIMER_T rP2pFsmTimeoutTimer;
 #endif
 
+	TIMER_T rTdlsStateTimer;
+
 	/* Online Scan Option */
 	BOOLEAN fgEnOnlineScan;
 

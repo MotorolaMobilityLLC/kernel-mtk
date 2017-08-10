@@ -194,6 +194,7 @@
 
 #if (CFG_SUPPORT_TDLS == 1)
 #include "tdls_extr.h"
+#include "tdls.h"
 #endif
 #include "debug.h"
 
@@ -572,6 +573,15 @@ struct _GLUE_INFO_T {
 	UINT_32 u4LinkSpeedCache;
 
 #if (CFG_SUPPORT_TDLS == 1)
+	/* record TX rate used to be a reference for TDLS setup */
+	ULONG ulLastUpdate;
+	/* The last one of STA_HASH_SIZE is used as target sta */
+	struct ksta_info *prStaHash[STA_HASH_SIZE + 1];
+	INT_32 i4TdlsLastRx;
+	INT_32 i4TdlsLastTx;
+	enum MTK_TDLS_STATUS eTdlsStatus;
+	ENUM_NETWORK_TYPE_INDEX_T eTdlsNetworkType;
+
 	TDLS_INFO_T rTdlsLink;
 
 	UINT8 aucTdlsHtPeerMac[6];

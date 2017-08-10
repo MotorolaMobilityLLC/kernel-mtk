@@ -1744,6 +1744,7 @@ p2pProcessEvent_UpdateNOAParam(IN P_ADAPTER_T prAdapter,
 WLAN_STATUS p2pUpdateBeaconEcsaIE(IN P_ADAPTER_T prAdapter, IN UINT_8 ucNetTypeIndex);
 
 VOID p2pFuncCompleteIOCTL(IN P_ADAPTER_T prAdapter, IN WLAN_STATUS rWlanStatus);
+VOID p2pFsmRunEventTdlsTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParam);
 
 /*******************************************************************************
 *                              F U N C T I O N S

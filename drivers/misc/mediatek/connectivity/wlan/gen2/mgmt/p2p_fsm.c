@@ -110,6 +110,9 @@ VOID p2pFsmInit(IN P_ADAPTER_T prAdapter)
 		cnmTimerInitTimer(prAdapter,
 				  &(prAdapter->rP2pFsmTimeoutTimer),
 				  (PFN_MGMT_TIMEOUT_FUNC) p2pFsmRunEventFsmTimeout, (ULONG) prP2pFsmInfo);
+		cnmTimerInitTimer(prAdapter,
+				  &(prAdapter->rTdlsStateTimer),
+				  (PFN_MGMT_TIMEOUT_FUNC) p2pFsmRunEventTdlsTimeout, (ULONG) NULL);
 
 		/* 4 <2> Initiate BSS_INFO_T - common part */
 		BSS_INFO_INIT(prAdapter, NETWORK_TYPE_P2P_INDEX);
@@ -854,6 +857,65 @@ VOID p2pFsmRunEventFsmTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParam)
 
 }				/* p2pFsmRunEventFsmTimeout */
 
+
+/*
+ * TDLS link monitor function
+ * teardown link if setup failed or
+ * no data traffic for 4s
+ */
+VOID p2pFsmRunEventTdlsTimeout(IN P_ADAPTER_T prAdapter, IN ULONG ulParam)
+{
+	P_GLUE_INFO_T prGlueInfo = prAdapter->prGlueInfo;
+	struct ksta_info *prTargetSta = prGlueInfo->prStaHash[STA_HASH_SIZE];
+
+	if (!prTargetSta) {
+		DBGLOG(TDLS, INFO, "TDLS: No target station, return\n");
+		return;
+	}
+
+	if (prTargetSta->eTdlsRole == MTK_TDLS_ROLE_RESPONDER) {
+		prTargetSta->u4Throughput = (prTargetSta->ulRxBytes * HZ) / TDLS_MONITOR_UT;
+
+		if (prTargetSta->u4Throughput < TDLS_TEARDOWN_RX_THD) {
+			switch (prTargetSta->eTdlsStatus) {
+			case MTK_TDLS_LINK_ENABLE:
+				MTKTdlsTearDown(prGlueInfo, prTargetSta, "Low RX Throughput");
+			default:
+				return;
+			}
+		}
+		DBGLOG(TDLS, INFO, "TDLS: Rx data stream OK\n");
+		prTargetSta->ulRxBytes = 0;
+		goto start_timer;
+	}
+
+	switch (prTargetSta->eTdlsStatus) {
+	case MTK_TDLS_NOT_SETUP:
+		DBGLOG(TDLS, INFO, "Last TDLS monitor timer\n");
+		return;
+	case MTK_TDLS_SETUP_INPROCESS:
+		DBGLOG(TDLS, INFO, "TDLS: setup timeout\n");
+		if (prTargetSta->u4SetupFailCount++ > TDLS_SETUP_COUNT)
+			MTKTdlsTearDown(prAdapter->prGlueInfo, prTargetSta, "Setup Failed");
+		break;
+	case MTK_TDLS_LINK_ENABLE:
+		/* go through as we need restart timer to monitor tdls link */
+	default:
+		if (time_after(jiffies, prGlueInfo->ulLastUpdate + 2 * SAMPLING_UT)) {
+			MTKTdlsTearDown(prAdapter->prGlueInfo, prTargetSta, "No Traffic");
+			return;
+		}
+		DBGLOG(TDLS, INFO, "TDLS: TX data stream OK\n");
+		break;
+	}
+
+start_timer:
+	DBGLOG(TDLS, TRACE, "Restart tdls monitor timer\n");
+	cnmTimerStartTimer(prAdapter, &(prAdapter->rTdlsStateTimer),
+			   SEC_TO_MSEC(TDLS_MONITOR_UT));
+}
+
+
 VOID p2pFsmRunEventMgmtFrameTx(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 {
 	P_P2P_FSM_INFO_T prP2pFsmInfo = (P_P2P_FSM_INFO_T) NULL;
@@ -1590,6 +1652,8 @@ VOID p2pFsmRunEventJoinComplete(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHd
 
 				/* 4 <1.4> Activate current AP's STA_RECORD_T in Driver. */
 				cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_3);
+				/* fire the update jiffies */
+				prAdapter->prGlueInfo->ulLastUpdate = jiffies;
 				DBGLOG(P2P, INFO, "P2P GC Join Success\n");
 
 #if CFG_SUPPORT_P2P_RSSI_QUERY

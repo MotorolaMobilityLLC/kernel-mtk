@@ -21,6 +21,7 @@
 ********************************************************************************
 */
 #include "precomp.h"
+#include "tdls.h"
 
 /*******************************************************************************
 *                              C O N S T A N T S
@@ -1629,6 +1630,11 @@ BOOLEAN nicTxFillMsduInfo(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 	nicTxLifetimeCheck(prAdapter, prMsduInfo, prPacket, ucPriorityParam, u4PacketLen, ucNetworkType);
 #endif
 
+#if (CFG_SUPPORT_TDLS == 1)
+	if (ucNetworkType == NETWORK_TYPE_P2P_INDEX &&
+	    MTKTdlsEnvP2P(prAdapter))
+		MTKAutoTdlsP2P(prGlueInfo, prPacket);
+#endif
 	/* Save the value of Priority Parameter */
 	GLUE_SET_PKT_TID(prPacket, ucPriorityParam);
 

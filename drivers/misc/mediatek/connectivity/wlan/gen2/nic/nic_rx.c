@@ -1832,7 +1832,7 @@ static VOID nicRxCheckWakeupReason(P_SW_RFB_T prSwRfb)
 		default:
 			DBGLOG(RX, WARN, "maybe abnormal data packet, EthType 0x%04x wakeup host, dump it\n",
 				u2Temp);
-			DBGLOG_MEM8(RX, INFO, pvHeader, u2PktLen > 50 ? 50:u2PacketLen);
+			DBGLOG_MEM8(RX, INFO, pvHeader, u2PktLen > 50 ? 50 : u2PktLen);
 			break;
 		}
 		break;
