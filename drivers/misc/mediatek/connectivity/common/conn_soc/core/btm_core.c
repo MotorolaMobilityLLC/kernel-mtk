@@ -180,12 +180,40 @@ static INT32 _stp_btm_put_dump_to_nl(void)
 #define SUB_PKT_SIZE 1024
 #define SUB_PKT_HEADER 5	/*'[M]',3Bytes; len,2Bytes*/
 
+static INT32 stp_btm_dump_send_retry_handler(PINT8 tmp, INT32 len)
+{
+	INT32 rc = 0, nl_retry = 0;
+
+	if (NULL == tmp)
+		return -1;
+	rc = stp_dbg_nl_send(tmp, 2, len + SUB_PKT_HEADER);
+	while (rc) {
+		nl_retry++;
+		if (rc == 32) {
+			STP_BTM_ERR_FUNC("**dump send timeout: %d**\n", rc);
+			rc = 1;
+			break;
+		}
+		if (nl_retry > 1000) {
+			STP_BTM_WARN_FUNC("**dump send fails, and retry more than 1000.**\n");
+			rc = 2;
+			break;
+		}
+		osal_sleep_ms(3);
+		rc = stp_dbg_nl_send(tmp, 2, len + SUB_PKT_HEADER);
+		if (!rc)
+			STP_BTM_WARN_FUNC("****retry again ok!**\n");
+	}
+
+	return rc;
+}
+
 INT32 _stp_btm_put_emi_dump_to_nl(PUINT8 data_buf, INT32 dump_len)
 {
 	static UINT8  tmp[SUB_PKT_SIZE + SUB_PKT_HEADER];
 
 	INT32 remain = dump_len, index = 0;
-	INT32 rc = 0, nl_retry = 0;
+	INT32 rc = 0;
 	INT32 len;
 	INT32 offset = 0;
 
@@ -209,30 +237,19 @@ INT32 _stp_btm_put_emi_dump_to_nl(PUINT8 data_buf, INT32 dump_len)
 			index += 2;
 			osal_memcpy(&tmp[index], data_buf + offset, len);
 			offset += len;
-			STP_BTM_DBG_FUNC
-				("send %d remain %d\n", len, remain);
+			STP_BTM_DBG_FUNC("send %d remain %d\n", len, remain);
 
-			rc = stp_dbg_nl_send((PINT8)&tmp, 2, len + SUB_PKT_HEADER);
-			while (rc) {
-				nl_retry++;
-				if (nl_retry > 1000)
-					break;
-				STP_BTM_WARN_FUNC
-								("**dump send fails, and retry again.**\n");
-					osal_sleep_ms(3);
-					rc = stp_dbg_nl_send((PINT8)&tmp, 2, len + SUB_PKT_HEADER);
-					if (!rc) {
-						STP_BTM_WARN_FUNC
-							("****retry again ok!**\n");
-					}
-				}
+			rc = stp_btm_dump_send_retry_handler((PINT8)&tmp, len);
+			if (rc)
+				break;
+
 			/* schedule(); */
 		} while (remain > 0);
 	} else
 		STP_BTM_INFO_FUNC("dump entry length is 0\n");
 
 	STP_BTM_INFO_FUNC("Exit..\n");
-	return 0;
+	return rc;
 }
 
 static INT32 _stp_btm_put_dump_to_aee(void)
@@ -572,20 +589,26 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 
 			if (dump_len <= 32 * 1024) {
 				pr_err("g_coredump_mode: %d!\n", g_coredump_mode);
-				if (1 == g_coredump_mode)
+				if (1 == g_coredump_mode) {
 					ret = stp_dbg_aee_send(&g_paged_dump_buffer[0], dump_len, 0);
-				else if	(2 == g_coredump_mode)
+					if (ret == 0)
+						STP_BTM_INFO_FUNC("aee send ok!\n");
+					else if (ret == 1)
+						STP_BTM_INFO_FUNC("aee send fisish!\n");
+					else
+						STP_BTM_ERR_FUNC("aee send error!\n");
+				} else if (2 == g_coredump_mode) {
 					ret = _stp_btm_put_emi_dump_to_nl(&g_paged_dump_buffer[0], dump_len);
-				else{
+					if (ret == 0)
+						STP_BTM_INFO_FUNC("dump send ok!\n");
+					else if (ret == 1)
+						STP_BTM_INFO_FUNC("dump send timeout!\n");
+					else
+						STP_BTM_ERR_FUNC("dump send error!\n");
+				} else {
 					STP_BTM_INFO_FUNC("coredump is disabled!\n");
 					return 0;
 				}
-				if (ret == 0)
-					STP_BTM_INFO_FUNC("aee send ok!\n");
-				else if (ret == 1)
-					STP_BTM_INFO_FUNC("aee send fisish!\n");
-				else
-					STP_BTM_ERR_FUNC("aee send error!\n");
 			} else
 				STP_BTM_ERR_FUNC("dump len is over than 32K(%d)\n", dump_len);
 
@@ -623,6 +646,10 @@ static INT32 _stp_btm_handler(MTKSTP_BTM_T *stp_btm, P_STP_BTM_OP pStpOp)
 
 paged_dump_end:
 			wmt_plat_set_host_dump_state(STP_HOST_DUMP_NOT_START);
+
+			/* coredump mode 2 return timeout exit*/
+			if (2 == g_coredump_mode && 1 == ret)
+				break;
 
 			if (counter > packet_num) {
 				isEnd = wmt_plat_get_dump_info(
