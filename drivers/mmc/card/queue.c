@@ -212,7 +212,7 @@ fetch_done:
 				down(&mq->thread_sem);
 			} else {
 				cmdq_full = 0;
-				msleep(20);
+				/* msleep(20); */
 			}
 #else
 			up(&mq->thread_sem);
