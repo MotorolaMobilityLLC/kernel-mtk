@@ -112,9 +112,6 @@ echo 8 > 1000 1100 /proc/ocp/dvt_test // Big Vproc, Vsram
 	#define CONFIG_OCP_AEE_RR_REC 1
 #endif
 
-
-
-
 static unsigned int OCP_DEBUG_FLAG;
 static unsigned int BIG_OCP_ON;
 static unsigned int LITTLE_OCP_ON;
@@ -126,8 +123,10 @@ static unsigned int dvt_test_on;
 static unsigned int dvt_test_set;
 static unsigned int dvt_test_msb;
 static unsigned int dvt_test_lsb;
+#if HQA_TEST
 static unsigned int hqa_test;
 static unsigned int little_dvfs_on;
+#endif
 static unsigned int do_ocp_stress_test;
 static unsigned int do_ocp_test_on;
 
@@ -266,10 +265,12 @@ static struct OCP_STAT ocp_status[3] = {
 },
 };
 
+#if HQA_TEST
 /* for HQA buffer */
 #define NR_HQA 10000
 static struct OCP_STAT ocp_hqa[3][NR_HQA];
 static struct DVFS_STAT dvfs_hqa[3][NR_HQA];
+#endif
 
 /* BIG CPU */
 int BigOCPConfig(int VOffInmV, int VStepInuV)
@@ -2762,7 +2763,7 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		break;
 	case 8:
 		BigOCPClkAvg(1, 0);
-		mdelay(1);
+		msleep(100);
 		BigOCPCapture(1, 1, 0, 15);
 		BigOCPCaptureStatus(&Leakage, &Total, &ClkPct);
 		ocp_status[2].CapToLkg = Leakage;
@@ -2906,7 +2907,7 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		LittleOCPDVFSSet(0, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL)/1000,
 					mt_cpufreq_get_cur_volt(MT_CPU_DVFS_LL)/100);
 		LittleOCPAvgPwr_HQA(0, 1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_LL));
-		mdelay(1);
+		msleep(100);
 		LittleOCPCapture(0, 1, 1, 0, 15);
 		LittleOCPCaptureGet(0, &Leakage, &Total, &ClkPct);
 		ocp_status[0].CapToLkg = Leakage;
@@ -3056,7 +3057,7 @@ if (sscanf(buf, "%d %d %d %d", &EnDis, &Edge, &Count1, &Trig) > 0) {
 		LittleOCPDVFSSet(1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L)/1000,
 					mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100);
 		LittleOCPAvgPwr_HQA(1, 1, mt_cpufreq_get_cur_phy_freq(MT_CPU_DVFS_L));
-		mdelay(1);
+		msleep(100);
 		LittleOCPCapture(1, 1, 1, 0, 15);
 		LittleOCPCaptureGet(1, &Leakage, &Total, &ClkPct);
 		ocp_status[1].CapToLkg = Leakage;
@@ -3717,7 +3718,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10222530, 7:4, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 
 				ocp_write_field(0x10222584, 20:20, 0x0);
@@ -3734,7 +3735,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10222530, 11:8, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 
 				ocp_write_field(0x10222584, 25:25, 0x0);
@@ -3751,7 +3752,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10222530, 3:0, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 				ocp_write_field(0x10222584, 5:5, 0x0);
 
@@ -3786,7 +3787,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10221058, 7:4, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 
 				ocp_write_field(0x10221168, 0:0, 0x0);
@@ -3822,7 +3823,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10221058, 11:8, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 
 				ocp_write_field(0x10221168, 5:5, 0x0);
@@ -3858,7 +3859,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10221058, 15:12, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 
 				ocp_write_field(0x10221168, 10:10, 0x0);
@@ -3894,7 +3895,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10221058, 19:16, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 
 				ocp_write_field(0x10221168, 15:15, 0x0);
@@ -3929,7 +3930,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10221058, 3:0, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 
 				ocp_write_field(0x10221160, 9:5, 0x0);
@@ -3964,7 +3965,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10223058, 7:4, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 
 				ocp_write_field(0x10223168, 0:0, 0x0);
@@ -4000,7 +4001,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10223058, 11:8, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 
 				ocp_write_field(0x10223168, 5:5, 0x0);
@@ -4033,7 +4034,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10223058, 15:12, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 
 				ocp_write_field(0x10223168, 10:10, 0x0);
@@ -4066,7 +4067,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10223058, 19:16, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 
 				ocp_write_field(0x10223168, 15:15, 0x0);
@@ -4099,7 +4100,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 
 				for (i = 0; i < 16; i++) {
 					ocp_write_field(0x10223058, 3:0, i);
-					mdelay(10000);
+					msleep(10000);
 				}
 
 				ocp_write_field(0x10223160, 9:5, 0x0);
@@ -4284,6 +4285,7 @@ free_page((unsigned long)buf);
 return count;
 }
 
+#if HQA_TEST
 /* hqa_test*/
 static int hqa_test_proc_show(struct seq_file *m, void *v)
 {
@@ -4674,7 +4676,7 @@ if (sscanf(buf, "%d %d %d %d %d", &function_id, &val[0], &val[1], &val[2], &val[
 	free_page((unsigned long)buf);
 	return count;
 }
-
+#endif
 
 static int ocp_stress_test_proc_show(struct seq_file *m, void *v)
 {
@@ -4737,7 +4739,7 @@ while (do_ocp_stress_test == 1) {
 	} else
 		ocp_info("stress test: cluster 2 (Big) is off\n");
 
-	mdelay(2000);
+	msleep(2000);
 /*
 	if (ocp_opt.ocp_cluster0_enable == 1) {
 		LittleLowerPowerOff(0, 1);
@@ -4775,7 +4777,7 @@ for (i = 0; i < 2000; i++) {
 		volt_L = mt_cpufreq_get_cur_volt(MT_CPU_DVFS_L)/100;
 		LittleOCPDVFSSet(1, freq_L, volt_L);
 	}
-		mdelay(1);
+		msleep(1000);
 }
 */
 		ocp_info("stress test: count = %llu\n", count1++);
@@ -4880,7 +4882,9 @@ PROC_FOPS_RW(ocp_cluster2_capture);
 PROC_FOPS_RW(ocp_debug);
 PROC_FOPS_RW(dreq_function_test);
 PROC_FOPS_RW(dvt_test);
+#if HQA_TEST
 PROC_FOPS_RW(hqa_test);
+#endif
 PROC_FOPS_RW(ocp_stress_test);
 
 static int _create_procfs(void)
@@ -4906,7 +4910,9 @@ PROC_ENTRY(ocp_cluster2_capture),
 PROC_ENTRY(ocp_debug),
 PROC_ENTRY(dreq_function_test),
 PROC_ENTRY(dvt_test),
+#if HQA_TEST
 PROC_ENTRY(hqa_test),
+#endif
 PROC_ENTRY(ocp_stress_test),
 };
 

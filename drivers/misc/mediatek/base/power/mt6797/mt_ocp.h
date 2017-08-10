@@ -47,7 +47,7 @@ static noinline int mt_secure_call_ocp(u64 function_id, u64 arg0, u64 arg1, u64 
 
 /* turn on OCP driver */
 #define OCP_ON 0
-
+#define HQA_TEST 0
 
 /**
  * OCP control register
