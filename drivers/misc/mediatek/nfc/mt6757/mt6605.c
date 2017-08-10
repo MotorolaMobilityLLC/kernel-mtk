@@ -10,6 +10,22 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
+/***************************************************************************
+ * Filename:
+ * ---------
+ *  mt6605.c
+ *
+ * Project:
+ * --------
+ *
+ * Description:
+ * ------------
+ *
+ * Author:
+ * -------
+ *  LiangChi Huang, ext 25609, LiangChi.Huang@mediatek.com, 2012-08-09
+ *
+ *****************************************************************************/
 
 #define pr_fmt(fmt) "["KBUILD_MODNAME"]" fmt
 /*****************************************************************************
