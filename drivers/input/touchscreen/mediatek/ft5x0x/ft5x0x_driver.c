@@ -28,7 +28,6 @@
 
 /* #define TIMER_DEBUG */
 
-
 #ifdef TIMER_DEBUG
 #include <linux/timer.h>
 #include <linux/jiffies.h>
@@ -44,6 +43,7 @@
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
 #include <mach/md32_ipi.h>
 #include <mach/md32_helper.h>
+#include <linux/irqchip/mtk-gic-extend.h>
 #endif
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
@@ -52,11 +52,12 @@ enum DOZE_T {
 	DOZE_ENABLED = 1,
 	DOZE_WAKEUP = 2,
 };
-static DOZE_T doze_status = DOZE_DISABLED;
+static enum DOZE_T doze_status = DOZE_DISABLED;
 #endif
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
 static s8 ftp_enter_doze(struct i2c_client *client);
+static s8 ftp_exit_doze(struct i2c_client *client);
 
 enum TOUCH_IPI_CMD_T {
 	/* SCP->AP */
@@ -79,12 +80,12 @@ struct Touch_IPI_Packet {
 	u32 cmd;
 	union {
 		u32 data;
-		Touch_Cust_Setting tcs;
+		struct Touch_Cust_Setting tcs;
 	} param;
 };
 
-/* static bool tpd_scp_doze_en = FALSE; */
-static bool tpd_scp_doze_en = TRUE;
+static bool tpd_scp_doze_en;
+/*static bool tpd_scp_doze_en = true;*/
 DEFINE_MUTEX(i2c_access);
 #endif
 
@@ -269,25 +270,35 @@ static int of_get_ft5x0x_platform_data(struct device *dev)
 }
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
+
+void tpd_scp_wakeup_enable(bool en)
+{
+	tpd_scp_doze_en = en;
+}
+
+void tpd_enter_doze(void)
+{
+
+}
 static ssize_t show_scp_ctrl(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	return 0;
 }
 static ssize_t store_scp_ctrl(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
-	u32 cmd;
-	Touch_IPI_Packet ipi_pkt;
+	unsigned long cmd;
+	/*struct Touch_IPI_Packet ipi_pkt;*/
 
 	if (kstrtoul(buf, 10, &cmd)) {
 		TPD_DEBUG("[SCP_CTRL]: Invalid values\n");
 		return -EINVAL;
 	}
 
-	TPD_DEBUG("SCP_CTRL: Command=%d", cmd);
+	TPD_DEBUG("SCP_CTRL: Command=%lu", cmd);
 	switch (cmd) {
 	case 1:
 	    /* make touch in doze mode */
-	    tpd_scp_wakeup_enable(TRUE);
+	    tpd_scp_wakeup_enable(true);
 	    tpd_suspend(NULL);
 	    break;
 	case 2:
@@ -307,11 +318,11 @@ static ssize_t store_scp_ctrl(struct device *dev, struct device_attribute *attr,
 	    break;*/
 	case 5:
 		{
-				Touch_IPI_Packet ipi_pkt;
+				struct Touch_IPI_Packet ipi_pkt;
 
 				ipi_pkt.cmd = IPI_COMMAND_AS_CUST_PARAMETER;
-			    ipi_pkt.param.tcs.i2c_num = TPD_I2C_NUMBER;
-			ipi_pkt.param.tcs.int_num = CUST_EINT_TOUCH_PANEL_NUM;
+			    ipi_pkt.param.tcs.i2c_num = 0;/* shuold be modify according your hardware design*/
+			ipi_pkt.param.tcs.int_num = get_hardware_irq(touch_irq);
 				ipi_pkt.param.tcs.io_int = tpd_int_gpio_number;
 			ipi_pkt.param.tcs.io_rst = tpd_rst_gpio_number;
 			if (md32_ipi_send(IPI_TOUCH, &ipi_pkt, sizeof(ipi_pkt), 0) < 0)
@@ -717,10 +728,8 @@ reset_proc:
 	}
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
-	int ret;
-
-	ret = get_md32_semaphore(SEMAPHORE_TOUCH);
-	if (ret < 0)
+	retval = get_md32_semaphore(SEMAPHORE_TOUCH);
+	if (retval < 0)
 		pr_err("[TOUCH] HW semaphore reqiure timeout\n");
 #endif
 
@@ -801,14 +810,12 @@ static s8 ftp_enter_doze(struct i2c_client *client)
 	char gestrue_data;
 	int i;
 
-	/* TPD_DEBUG("Entering doze mode..."); */
-	pr_alert("Entering doze mode...");
+	pr_alert("[gesture] Entering doze mode...");
 
 	/* Enter gestrue recognition mode */
 	ret = i2c_smbus_write_i2c_block_data(i2c_client, FT_GESTRUE_MODE_SWITCH_REG, 1, &gestrue_on);
 	if (ret < 0) {
-		/* TPD_DEBUG("Failed to enter Doze %d", retry); */
-		pr_alert("Failed to enter Doze %d", retry);
+		pr_err("[gesture] Failed to enter Doze %d", retry);
 		return ret;
 	}
 	msleep(30);
@@ -816,14 +823,42 @@ static s8 ftp_enter_doze(struct i2c_client *client)
 	for (i = 0; i < 10; i++) {
 		i2c_smbus_read_i2c_block_data(i2c_client, FT_GESTRUE_MODE_SWITCH_REG, 1, &gestrue_data);
 		if (gestrue_data == 0x01) {
-			doze_status = DOZE_ENABLED;
-			/* TPD_DEBUG("FTP has been working in doze mode!"); */
-			pr_alert("FTP has been working in doze mode!");
-			break;
+			pr_alert("[gesture] FTP has been working in doze mode!");
+			return 0;
 		}
 		msleep(20);
-		i2c_smbus_write_i2c_block_data(i2c_client, FT_GESTRUE_MODE_SWITCH_REG, 1, &gestrue_on);
+		ret = i2c_smbus_write_i2c_block_data(i2c_client, FT_GESTRUE_MODE_SWITCH_REG, 1, &gestrue_on);
 
+	}
+
+	return ret;
+}
+static s8 ftp_exit_doze(struct i2c_client *client)
+{
+	s8 ret = -1;
+	s8 retry = 0;
+	char gestrue_off = 0x00;
+	char gestrue_data;
+	int i;
+
+	pr_alert("[gesture] exiting doze mode...");
+
+	/* Enter gestrue recognition mode*/
+	ret = i2c_smbus_write_i2c_block_data(i2c_client, FT_GESTRUE_MODE_SWITCH_REG, 1, &gestrue_off);
+	if (ret < 0) {
+		pr_err("[gesture] Failed to exit Doze %d", retry);
+		return ret;
+	}
+	msleep(30);
+
+	for (i = 0; i < 10; i++) {
+		i2c_smbus_read_i2c_block_data(i2c_client, FT_GESTRUE_MODE_SWITCH_REG, 1, &gestrue_data);
+		if (gestrue_data == 0x00) {
+			pr_alert("[gesture] FTP has been working in normal mode!");
+			return 0;
+		}
+		msleep(20);
+		ret = i2c_smbus_write_i2c_block_data(i2c_client, FT_GESTRUE_MODE_SWITCH_REG, 1, &gestrue_off);
 	}
 
 	return ret;
@@ -836,155 +871,161 @@ static void tpd_resume(struct device *h)
 
 	TPD_DEBUG("TPD wake up\n");
 
-	retval = regulator_enable(tpd->reg);
-	if (retval != 0)
-		TPD_DMESG("Failed to enable reg-vgp6: %d\n", retval);
+#ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
+	if (tpd_scp_doze_en) {
+		pr_alert("[gesture] tpd_resume: need enable sensor hub, and exit doze mode...");
+		retval = get_md32_semaphore(SEMAPHORE_TOUCH);
+		if (retval < 0) {
+			pr_err("[gesture] HW semaphore reqiure timeout\n");
+		} else {
+			struct Touch_IPI_Packet ipi_pkt = {.cmd = IPI_COMMAND_AS_ENABLE_GESTURE, .param.data = 0};
 
-	msleep(100);
+			retval = md32_ipi_send(IPI_TOUCH, &ipi_pkt, sizeof(ipi_pkt), 0);
+			if (retval < 0)
+				pr_err("[gesture] IPI cmd IPI_COMMAND_AS_ENABLE_GESTURE,param.data = 0  failed");
+			retval = ftp_exit_doze(i2c_client);
+			if (retval < 0)
+				pr_err("[gesture] FTP exit Doze mode failed\n");
+			else
+				doze_status = DOZE_DISABLED;
+		}
+		if (retval < 0) {
+			pr_alert("[gesture]TPD exit doze mode abnormally, so normal resume mode");
+			retval = regulator_enable(tpd->reg);
+			if (retval != 0)
+				pr_alert("[gesture] Failed to enable reg-vgp6: %d\n", retval);
 
-	gpio_direction_output(tpd_rst_gpio_number, 0);
-	msleep(20);
-	gpio_direction_output(tpd_rst_gpio_number, 1);
-	msleep(20);
+			msleep(100);
+			gpio_direction_output(tpd_rst_gpio_number, 0);
+			msleep(20);
+			gpio_direction_output(tpd_rst_gpio_number, 1);
+			msleep(20);
+			enable_irq(touch_irq);
+		}
+	}	else {
+		pr_alert("[gesture] tpd_scp_doze_en false or doze_status disabled");
+#endif
+
+		retval = regulator_enable(tpd->reg);
+		if (retval != 0)
+			TPD_DMESG("Failed to enable reg-vgp6: %d\n", retval);
+
+		msleep(100);
+
+		gpio_direction_output(tpd_rst_gpio_number, 0);
+		msleep(20);
+		gpio_direction_output(tpd_rst_gpio_number, 1);
+		msleep(20);
+		enable_irq(touch_irq);
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
-	int ret;
-
-	if (tpd_scp_doze_en) {
-		ret = get_md32_semaphore(SEMAPHORE_TOUCH);
-		if (ret < 0) {
-			TPD_DEBUG("[TOUCH] HW semaphore reqiure timeout\n");
-		} else {
-			Touch_IPI_Packet ipi_pkt = {.cmd = IPI_COMMAND_AS_ENABLE_GESTURE, .param.data = 0};
-
-			md32_ipi_send(IPI_TOUCH, &ipi_pkt, sizeof(ipi_pkt), 0);
-		}
 	}
 #endif
-
-#ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
-	doze_status = DOZE_DISABLED;
-	/* tpd_halt = 0; */
-	int data;
-
-	data = 0x00;
-
-	i2c_smbus_write_i2c_block_data(i2c_client, 0xd0, 1, &data);
-#else
-	enable_irq(touch_irq);
-#endif
-
 }
-
-#ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
-void tpd_scp_wakeup_enable(bool en)
-{
-	tpd_scp_doze_en = en;
-}
-
-void tpd_enter_doze(void)
-{
-
-}
-#endif
 
 static void tpd_suspend(struct device *h)
 {
 	int retval = TPD_OK;
 	static char data = 0x3;
 
-	TPD_DEBUG("TPD enter sleep\n");
 
 #ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
-	int sem_ret;
-
-	tpd_enter_doze();
-
-	int ret;
-	char gestrue_data;
-	char gestrue_cmd = 0x03;
-	static int scp_init_flag;
-
-	/* TPD_DEBUG("[tpd_scp_doze]:init=%d en=%d", scp_init_flag, tpd_scp_doze_en); */
-
-	mutex_lock(&i2c_access);
-
-	sem_ret = release_md32_semaphore(SEMAPHORE_TOUCH);
-
-	if (scp_init_flag == 0) {
-		Touch_IPI_Packet ipi_pkt;
-
-		ipi_pkt.cmd = IPI_COMMAND_AS_CUST_PARAMETER;
-		ipi_pkt.param.tcs.i2c_num = TPD_I2C_NUMBER;
-		ipi_pkt.param.tcs.int_num = CUST_EINT_TOUCH_PANEL_NUM;
-		ipi_pkt.param.tcs.io_int = tpd_int_gpio_number;
-		ipi_pkt.param.tcs.io_rst = tpd_rst_gpio_number;
-
-		TPD_DEBUG("[TOUCH]SEND CUST command :%d ", IPI_COMMAND_AS_CUST_PARAMETER);
-
-		ret = md32_ipi_send(IPI_TOUCH, &ipi_pkt, sizeof(ipi_pkt), 0);
-		if (ret < 0)
-			TPD_DEBUG(" IPI cmd failed (%d)\n", ipi_pkt.cmd);
-
-		msleep(20); /* delay added between continuous command */
-		/* Workaround if suffer MD32 reset */
-		/* scp_init_flag = 1; */
-	}
-
 	if (tpd_scp_doze_en) {
-		TPD_DEBUG("[TOUCH]SEND ENABLE GES command :%d ", IPI_COMMAND_AS_ENABLE_GESTURE);
-		ret = ftp_enter_doze(i2c_client);
-		if (ret < 0) {
-			TPD_DEBUG("FTP Enter Doze mode failed\n");
-	  } else {
-			int retry = 5;
-	    {
+		char gestrue_data;
+		/*char gestrue_cmd = 0x03;*/
+		static int scp_init_flag;
+
+		pr_alert("[gesture] tpd_suspend: need enable sensor hub, and enter doze mode...");
+		tpd_enter_doze();
+
+
+		/* pr_alert("[tpd_scp_doze]:init=%d en=%d", scp_init_flag, tpd_scp_doze_en); */
+
+		mutex_lock(&i2c_access);
+
+		retval = ftp_enter_doze(i2c_client);
+		if (retval < 0) {
+				pr_err("[gesture] FTP Enter Doze mode failed\n");
+		} else {
+			doze_status = DOZE_ENABLED;
+			if (scp_init_flag == 0) {
+				struct Touch_IPI_Packet ipi_pkt;
+
+				ipi_pkt.cmd = IPI_COMMAND_AS_CUST_PARAMETER;
+				ipi_pkt.param.tcs.i2c_num = 0;/* shuold be modify according your hardware design*/
+				ipi_pkt.param.tcs.int_num = get_hardware_irq(touch_irq);
+				ipi_pkt.param.tcs.io_int = tpd_int_gpio_number;
+				ipi_pkt.param.tcs.io_rst = tpd_rst_gpio_number;
+
+				pr_alert("[gesture]SEND CUST command :%d ", IPI_COMMAND_AS_CUST_PARAMETER);
+
+				retval = md32_ipi_send(IPI_TOUCH, &ipi_pkt, sizeof(ipi_pkt), 0);
+				if (retval < 0)
+					pr_err("[gesture] IPI cmd IPI_COMMAND_AS_CUST_PARAMETER failed");
+
+				msleep(20); /* delay added between continuous command */
+				/* Workaround if suffer MD32 reset */
+				/* scp_init_flag = 1; */
+			}
+
+			{
+				int retry = 5;
+				struct Touch_IPI_Packet ipi_pkt = {
+					.cmd = IPI_COMMAND_AS_ENABLE_GESTURE,
+					.param.data = 1
+				};
+
+				pr_alert("[gesture] SEND ENABLE GES command :%d ", IPI_COMMAND_AS_ENABLE_GESTURE);
 				/* check doze mode */
 				i2c_smbus_read_i2c_block_data(i2c_client, FT_GESTRUE_MODE_SWITCH_REG, 1, &gestrue_data);
-				TPD_DEBUG("========================>0x%x", gestrue_data);
-	    }
-
-	    msleep(20);
-			Touch_IPI_Packet ipi_pkt = {.cmd = IPI_COMMAND_AS_ENABLE_GESTURE, .param.data = 1};
-
-			do {
-				if (md32_ipi_send(IPI_TOUCH, &ipi_pkt, sizeof(ipi_pkt), 1) == DONE)
-					break;
+				pr_alert("========================>0x%x", gestrue_data);
 				msleep(20);
-				TPD_DEBUG("==>retry=%d", retry);
-			} while (retry--);
-
-	    if (retry <= 0)
-				TPD_DEBUG("############# md32_ipi_send failed retry=%d", retry);
-
-			/*while(release_md32_semaphore(SEMAPHORE_TOUCH) <= 0) {
-				//TPD_DEBUG("GTP release md32 sem failed\n");
-				pr_alert("GTP release md32 sem failed\n");
-			}*/
-
+				do {
+					if (md32_ipi_send(IPI_TOUCH, &ipi_pkt, sizeof(ipi_pkt), 1) == DONE)
+						break;
+					msleep(20);
+					pr_alert("[gesture] ==>retry=%d", retry);
+				} while (retry--);
+				if (retry <= 0) {
+					retval  = -1;
+					pr_err("[gesture]md32_ipi_send IPI_COMMAND_AS_ENABLE_GESTURE failed retry=%d",
+					retry);
+				}
+				/*while(release_md32_semaphore(SEMAPHORE_TOUCH) <= 0) {
+					//TPD_DEBUG("GTP release md32 sem failed\n");
+					pr_err("GTP release md32 sem failed\n");
+				}*/
+			}
+			retval = release_md32_semaphore(SEMAPHORE_TOUCH);
+			if (retval < 0)
+				pr_err("[gesture] HW semaphore release timeout\n");
 		}
-		/* disable_irq(touch_irq); */
+		if (retval < 0) {
+			pr_alert("[gesture]TPD enter doze mode abnormally, so enter sleep mode");
+
+			disable_irq(touch_irq);
+			i2c_smbus_write_i2c_block_data(i2c_client, 0xA5, 1, &data);  /* TP enter sleep mode */
+
+			retval = regulator_disable(tpd->reg);
+			if (retval != 0)
+				pr_alert("[gesture] Failed to disable reg-vgp6: %d\n", retval);
+		}
+
+		mutex_unlock(&i2c_access);
+	} else {
+		pr_alert("[gesture] tpd_scp_doze_en false\n");
+#endif
+		TPD_DEBUG("TPD enter sleep\n");
+
+		disable_irq(touch_irq);
+		i2c_smbus_write_i2c_block_data(i2c_client, 0xA5, 1, &data);  /* TP enter sleep mode */
+
+		retval = regulator_disable(tpd->reg);
+		if (retval != 0)
+			TPD_DMESG("Failed to disable reg-vgp6: %d\n", retval);
+
+#ifdef CONFIG_MTK_SENSOR_HUB_SUPPORT
 	}
-	/* else */
-	/* { */
-		/* disable_irq(touch_irq); */
-
-		/* TP enter sleep mode */
-		/* i2c_smbus_write_i2c_block_data(i2c_client_point, 0xA5, 1, &gestrue_cmd); */
-		/* if (ret < 0) */
-		/* { */
-		/* TPD_DEBUG("GTP early suspend failed."); */
-		/* } */
-	/* } */
-	mutex_unlock(&i2c_access);
-#else
-	disable_irq(touch_irq);
-	i2c_smbus_write_i2c_block_data(i2c_client, 0xA5, 1, &data);  /* TP enter sleep mode */
-
-	retval = regulator_disable(tpd->reg);
-	if (retval != 0)
-		TPD_DMESG("Failed to disable reg-vgp6: %d\n", retval);
-
 #endif
 
 }
