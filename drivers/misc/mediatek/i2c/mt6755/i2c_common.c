@@ -321,7 +321,7 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 			}
 
 			if (trans_mode == 1) {	/*DMA MODE */
-				vir_addr = dma_alloc_coherent(dev, length >> 1, &dma_addr,
+				vir_addr = dma_alloc_coherent(dev, (length >> 1) + 1, &dma_addr,
 							      GFP_KERNEL | GFP_DMA32);
 				if (vir_addr == NULL) {
 
@@ -329,7 +329,7 @@ static ssize_t set_config(struct device *dev, struct device_attribute *attr, con
 					goto err;
 				}
 			} else {
-				vir_addr = kzalloc(length >> 1, GFP_KERNEL);
+				vir_addr = kzalloc((length >> 1) + 1, GFP_KERNEL);
 				if (vir_addr == NULL) {
 
 					I2CERR("alloc virtual memory failed\n");
