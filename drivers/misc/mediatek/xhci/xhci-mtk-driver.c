@@ -96,6 +96,39 @@ void __iomem *i2c1_base;
 /* struct u3phy_operator *u3phy_ops; */
 
 #ifdef CONFIG_USB_MTK_DUALMODE
+#ifdef CONFIG_USB_MTK_OTG_SWITCH
+static bool otg_switch_state;
+static struct pinctrl *pinctrl;
+static struct pinctrl_state *pinctrl_iddig_init;
+static struct pinctrl_state *pinctrl_iddig_enable;
+static struct pinctrl_state *pinctrl_iddig_disable;
+
+static struct mutex otg_switch_mutex;
+static ssize_t otg_mode_show(struct device *dev,
+				struct device_attribute *attr, char *buf);
+static ssize_t otg_mode_store(struct device *dev,
+				struct device_attribute *attr, const char *buf, size_t count);
+
+DEVICE_ATTR(otg_mode, 0664, otg_mode_show, otg_mode_store);
+
+static struct attribute *otg_attributes[] = {
+	&dev_attr_otg_mode.attr,
+	NULL
+};
+
+static const struct attribute_group otg_attr_group = {
+	.attrs = otg_attributes,
+};
+#endif
+
+static const struct of_device_id otg_switch_of_match[] = {
+	{.compatible = "mediatek,otg_switch"},
+	{},
+};
+
+static bool otg_iddig_isr_enable;
+static int mtk_xhci_eint_iddig_irq_en(void);
+
 enum idpin_state {
 	IDPIN_OUT,
 	IDPIN_IN_HOST,
@@ -618,6 +651,7 @@ done:
 
 static irqreturn_t xhci_eint_iddig_isr(int irqnum, void *data)
 {
+	disable_irq_nosync(irqnum);
 	schedule_delayed_work(&mtk_xhci_delaywork, msecs_to_jiffies(mtk_iddig_debounce));
 	/* microseconds */
 	/*
@@ -625,13 +659,39 @@ static irqreturn_t xhci_eint_iddig_isr(int irqnum, void *data)
 		schedule_delayed_work_on(0, &mtk_xhci_delaywork, msecs_to_jiffies(mtk_iddig_debounce));
 	*/
 	mtk_xhci_mtk_printk(K_DEBUG, "xhci_eint_iddig_isr\n");
-	disable_irq_nosync(irqnum);
+	/* disable_irq_nosync(irqnum);*/
+
 	return IRQ_HANDLED;
 }
 
+static int mtk_xhci_eint_iddig_irq_en(void)
+{
+	int retval = 0;
+
+	if (!otg_iddig_isr_enable) {
+		retval =
+			request_irq(mtk_idpin_irqnum, xhci_eint_iddig_isr, IRQF_TRIGGER_LOW, "iddig_eint",
+			NULL);
+
+		if (retval != 0) {
+			mtk_xhci_mtk_printk(K_ERR, "request_irq fail, ret %d, irqnum %d!!!\n", retval,
+					 mtk_idpin_irqnum);
+		} else {
+			enable_irq_wake(mtk_idpin_irqnum);
+			otg_iddig_isr_enable = true;
+		}
+	} else {
+#ifdef CONFIG_USB_MTK_OTG_SWITCH
+		switch_int_to_host();	/* restore ID pin interrupt */
+#endif
+	}
+	return retval;
+}
+
+
 int mtk_xhci_eint_iddig_init(void)
 {
-	int retval;
+	int retval = 0;
 	struct device_node *node;
 	int iddig_gpio, iddig_debounce;
 	u32 ints[2] = {0, 0};
@@ -650,7 +710,7 @@ int mtk_xhci_eint_iddig_init(void)
 			}
 		}
 	} else {
-		mtk_xhci_mtk_printk(K_DEBUG, "cannot get the node\n");
+		mtk_xhci_mtk_printk(K_ERR, "cannot get the node\n");
 		return -ENODEV;
 	}
 
@@ -663,27 +723,22 @@ int mtk_xhci_eint_iddig_init(void)
 
 	/* microseconds */
 /*	mt_gpio_set_debounce(iddig_gpio, iddig_debounce);*/
+#ifndef CONFIG_USB_MTK_OTG_SWITCH
+	retval = mtk_xhci_eint_iddig_irq_en();
+#endif
 
-	retval =
-		request_irq(mtk_idpin_irqnum, xhci_eint_iddig_isr, IRQF_TRIGGER_LOW, "iddig_eint",
-			NULL);
-	if (retval != 0) {
-		mtk_xhci_mtk_printk(K_DEBUG, "request_irq fail, ret %d, irqnum %d!!!\n", retval,
-				 mtk_idpin_irqnum);
-		return retval;
-	}
-
-	/* set in-detect and umask the iddig interrupt */
-	/* enable_irq(mtk_idpin_irqnum); */
 	return retval;
 }
 
 void mtk_xhci_eint_iddig_deinit(void)
 {
-	/* mt_eint_registration(IDDIG_EINT_PIN, EINTF_TRIGGER_LOW, NULL, false); */
-	disable_irq_nosync(mtk_idpin_irqnum);
+	if (otg_iddig_isr_enable) {
+		/* mt_eint_registration(IDDIG_EINT_PIN, EINTF_TRIGGER_LOW, NULL, false); */
+		disable_irq_nosync(mtk_idpin_irqnum);
 
-	free_irq(mtk_idpin_irqnum, NULL);
+		free_irq(mtk_idpin_irqnum, NULL);
+		otg_iddig_isr_enable = false;
+	}
 
 	cancel_delayed_work(&mtk_xhci_delaywork);
 #ifdef CONFIG_MTK_OTG_PMIC_BOOST_5V
@@ -723,6 +778,120 @@ void mtk_unload_xhci_on_ipo(void)
 	mtk_idpin_cur_stat = IDPIN_OUT;
 }
 
+#ifdef CONFIG_USB_MTK_OTG_SWITCH
+static ssize_t otg_mode_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	if (!dev) {
+		dev_err(dev, "otg_mode_store no dev\n");
+		return 0;
+	}
+
+	return sprintf(buf, "%d\n", otg_switch_state);
+}
+
+static ssize_t otg_mode_store(struct device *dev, struct device_attribute *attr,
+			 const char *buf, size_t count)
+{
+	unsigned int mode;
+
+	if (!dev) {
+		dev_err(dev, "otg_mode_store no dev\n");
+		return count;
+	}
+
+	mutex_lock(&otg_switch_mutex);
+	if (1 == sscanf(buf, "%ud", &mode)) {
+		if (mode == 0) {
+			mtk_xhci_mtk_printk(K_DEBUG, "otg_mode_enable start\n");
+			if (otg_switch_state == true) {
+				if (otg_iddig_isr_enable) {
+					disable_irq(mtk_idpin_irqnum);
+					irq_set_irq_type(mtk_idpin_irqnum, IRQF_TRIGGER_LOW);
+				}
+				cancel_delayed_work_sync(&mtk_xhci_delaywork);
+				if (mtk_is_host_mode() == true)
+					mtk_unload_xhci_on_ipo();
+
+				if (!IS_ERR(pinctrl_iddig_disable))
+					pinctrl_select_state(pinctrl, pinctrl_iddig_disable);
+
+				otg_switch_state = false;
+			}
+			mtk_xhci_mtk_printk(K_DEBUG, "otg_mode_enable end\n");
+		} else {
+			mtk_xhci_mtk_printk(K_DEBUG, "otg_mode_disable start\n");
+			if (otg_switch_state == false) {
+				otg_switch_state = true;
+				if (!IS_ERR(pinctrl_iddig_enable))
+					pinctrl_select_state(pinctrl, pinctrl_iddig_enable);
+
+				msleep(20);
+				mtk_xhci_eint_iddig_irq_en();
+			}
+			mtk_xhci_mtk_printk(K_DEBUG, "otg_mode_disable end\n");
+		}
+	}
+	mutex_unlock(&otg_switch_mutex);
+	return count;
+}
+
+static int otg_switch_probe(struct platform_device *pdev)
+{
+	int retval = 0;
+
+	pinctrl = devm_pinctrl_get(&pdev->dev);
+	if (IS_ERR(pinctrl)) {
+		dev_err(&pdev->dev, "Cannot find usb pinctrl!\n");
+		return -1;
+	}
+
+	pinctrl_iddig_init = pinctrl_lookup_state(pinctrl, "iddig_init");
+	if (IS_ERR(pinctrl_iddig_init))
+		dev_err(&pdev->dev, "Cannot find usb pinctrl iddig_init\n");
+	else
+		pinctrl_select_state(pinctrl, pinctrl_iddig_init);
+
+	pinctrl_iddig_enable = pinctrl_lookup_state(pinctrl, "iddig_enable");
+	pinctrl_iddig_disable = pinctrl_lookup_state(pinctrl, "iddig_disable");
+	if (IS_ERR(pinctrl_iddig_enable))
+		dev_err(&pdev->dev, "Cannot find usb pinctrl iddig_enable\n");
+
+	if (IS_ERR(pinctrl_iddig_disable))
+		dev_err(&pdev->dev, "Cannot find usb pinctrl iddig_disable\n");
+	else
+		pinctrl_select_state(pinctrl, pinctrl_iddig_disable);
+
+#ifdef CONFIG_SYSFS
+	retval = sysfs_create_group(&pdev->dev.kobj, &otg_attr_group);
+	if (retval < 0) {
+		dev_err(&pdev->dev, "Cannot register USB bus sysfs attributes: %d\n",
+			retval);
+		return -1;
+	}
+#endif
+	mutex_init(&otg_switch_mutex);
+	return 0;
+}
+
+static int otg_switch_remove(struct platform_device *pdev)
+{
+#ifdef CONFIG_SYSFS
+		sysfs_remove_group(&pdev->dev.kobj, &otg_attr_group);
+#endif
+	return 0;
+}
+
+
+static struct platform_driver otg_switch_driver = {
+	.probe = otg_switch_probe,
+	.remove = otg_switch_remove,
+	.driver = {
+		.name = "otg_switch",
+		.owner = THIS_MODULE,
+		.of_match_table = of_match_ptr(otg_switch_of_match),
+	},
+};
+#endif
 
 #endif
 
@@ -1152,8 +1321,7 @@ static int __init xhci_hcd_init(void)
 	return 0;
 
 }
-module_init(xhci_hcd_init);
-
+late_initcall(xhci_hcd_init);
 static void __exit xhci_hcd_cleanup(void)
 {
 #if 0
@@ -1161,7 +1329,24 @@ static void __exit xhci_hcd_cleanup(void)
 #endif
 	mtk_xhci_mtk_printk(K_DEBUG, "xhci_hcd_cleanup");
 }
+
 module_exit(xhci_hcd_cleanup);
+
+#ifdef CONFIG_USB_MTK_OTG_SWITCH
+static int __init otg_switch_init(void)
+{
+	return platform_driver_register(&otg_switch_driver);
+}
+module_init(otg_switch_init);
+
+static void __exit otg_iddit_cleanup(void)
+{
+	platform_driver_unregister(&otg_switch_driver);
+}
+
+module_exit(otg_iddit_cleanup);
+#endif
+
 
 #else
 #ifndef CONFIG_USB_MTK_DUALMODE
@@ -1232,13 +1417,28 @@ static int __init xhci_hcd_init(void)
 	mtk_xhci_wakelock_init();
 	return 0;
 }
+
 late_initcall(xhci_hcd_init);
 
 static void __exit xhci_hcd_cleanup(void)
 {
 }
-module_exit(xhci_hcd_cleanup);
 
+module_exit(xhci_hcd_cleanup);
+#ifdef CONFIG_USB_MTK_OTG_SWITCH
+static int __init otg_switch_init(void)
+{
+	return platform_driver_register(&otg_switch_driver);
+}
+module_init(otg_switch_init);
+
+static void __exit otg_iddit_cleanup(void)
+{
+	platform_driver_unregister(&otg_switch_driver);
+}
+
+module_exit(otg_iddit_cleanup);
+#endif
 #endif
 #endif
 
