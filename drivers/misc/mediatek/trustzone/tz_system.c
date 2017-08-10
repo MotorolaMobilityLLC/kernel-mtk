@@ -25,6 +25,8 @@
 #include "trustzone/kree/system.h"
 #include "kree_int.h"
 #include "sys_ipc.h"
+#include "kree/mem.h"
+
 #include "kree/tz_trusty.h"
 
 #include <linux/trusty/trusty_ipc.h>
@@ -70,6 +72,10 @@ static const KREE_REE_Service_Func ree_service_funcs[] = {
 	KREE_ServThread_Create,
 
 	KREE_ServSemaphoreDownInterruptible,
+#ifdef CONFIG_MTEE_CMA_SECURE_MEMORY
+	KREE_ServGetChunkmemPool,
+	KREE_ServReleaseChunkmemPool,
+#endif
 };
 
 #define ree_service_funcs_num \
@@ -523,6 +529,7 @@ static TZ_RESULT tz_ree_service(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE])
 
 	return (func) (op, param);
 }
+
 #endif /* ~CONFIG_TRUSTY */
 
 TZ_RESULT KREE_InitTZ(void)

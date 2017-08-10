@@ -21,6 +21,7 @@
 #if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) || defined(CONFIG_TRUSTY)
 
 #include "tz_cross/trustzone.h"
+#include "tz_cross/ree_service.h"
 
 
 /* / KREE session handle type. */
@@ -382,6 +383,32 @@ TZ_RESULT KREE_StopSecurechunkmemSvc(KREE_SESSION_HANDLE session,
  */
 TZ_RESULT KREE_QuerySecurechunkmem(KREE_SESSION_HANDLE session,
 				unsigned long *cm_pa, uint32_t *size);
+
+#ifdef CONFIG_MTEE_CMA_SECURE_MEMORY
+/**
+ * REE service call to allocate chunk memory
+ *
+ * Allocate the continuouse memory for TEE secure chunk memory
+ *
+ * @param op         will be KREE_SERV_GET_CHUNK_MEMPOOL.
+ * @param uparam     the exchange buffer for parameters.
+ * @param return     return code.
+ */
+TZ_RESULT KREE_ServGetChunkmemPool(u32 op,
+				   u8 uparam[REE_SERVICE_BUFFER_SIZE]);
+
+/**
+ * REE service call to release cma memory
+ *
+ * Release the continuouse memory from TEE secure chunk memory
+ *
+ * @param op         will be KREE_SERV_GET_CHUNK_MEMPOOL.
+ * @param uparam     the exchange buffer for parameters.
+ * @param return     return code.
+ */
+TZ_RESULT KREE_ServReleaseChunkmemPool(u32 op,
+				       u8 uparam[REE_SERVICE_BUFFER_SIZE]);
+#endif  /* CONFIG_MTEE_CMA_SECURE_MEMORY */
 
 #endif				/* CONFIG_MTK_IN_HOUSE_TEE_SUPPORT || CONFIG_TRUSTY*/
 #endif				/* __KREE_MEM_H__ */

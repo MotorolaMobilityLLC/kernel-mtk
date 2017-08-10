@@ -18,6 +18,7 @@
 #include <linux/kernel.h>
 #include <linux/proc_fs.h>
 #include <linux/cdev.h>
+#include <linux/cma.h>
 #include <linux/mm.h>
 #include <linux/slab.h>
 #include <linux/io.h>
@@ -27,6 +28,7 @@
 #include <linux/kthread.h>
 #include <linux/freezer.h>
 #include <linux/platform_device.h>
+#include <linux/dma-mapping.h>
 
 #include <linux/clk.h>
 #include <linux/irqdomain.h>
@@ -39,6 +41,7 @@
 #include "trustzone/kree/system.h"
 #include "trustzone/kree/tz_pm.h"
 #include "trustzone/kree/tz_irq.h"
+#include "trustzone/tz_cross/ta_mem.h"
 #include "kree_int.h"
 #include "tz_counter.h"
 #include "tz_cross/ta_pm.h"
@@ -54,6 +57,9 @@
 #define PAGE_SHIFT 12		/* fix me!!!! need global define */
 
 #define TZ_DEVNAME "mtk_tz"
+
+/* FIXME: remove below definition when cma works well */
+#define NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE
 
 /**Used for mapping user space address to physical memory
 */
@@ -1196,6 +1202,144 @@ static const struct dev_pm_ops tz_pm_ops = {
 static struct class *pTzClass;
 static struct device *pTzDevice;
 
+#ifdef CONFIG_MTEE_CMA_SECURE_MEMORY
+static struct cma *tz_cma;
+static struct page *secure_pages;
+static size_t secure_size;
+
+/* TEE chunk memory allocate by REE service
+*/
+TZ_RESULT KREE_ServGetChunkmemPool(u32 op,
+			u8 uparam[REE_SERVICE_BUFFER_SIZE])
+{
+	struct ree_service_chunk_mem *chunkmem;
+
+	/* get parameters */
+	chunkmem = (struct ree_service_chunk_mem *)uparam;
+
+	if (secure_pages != NULL) {
+		pr_warn("%s() already allocated!\n", __func__);
+		return TZ_RESULT_ERROR_OUT_OF_MEMORY;
+	}
+
+	secure_size = cma_get_size(tz_cma);
+	secure_pages = cma_alloc(tz_cma, secure_size / SZ_4K, SZ_1M);
+	if (secure_pages == NULL) {
+		pr_warn("cma_alloc() failed!\n");
+		return TZ_RESULT_ERROR_OUT_OF_MEMORY;
+	}
+	chunkmem->size = secure_size;
+	chunkmem->chunkmem_pa = (uint64_t)page_to_phys(secure_pages);
+
+	pr_warn("%s() get @%llx [0x%zx]\n", __func__,
+			chunkmem->chunkmem_pa, secure_size);
+
+	return TZ_RESULT_SUCCESS;
+}
+
+TZ_RESULT KREE_ServReleaseChunkmemPool(u32 op,
+			u8 uparam[REE_SERVICE_BUFFER_SIZE])
+{
+	if (secure_pages != NULL) {
+		cma_release(tz_cma, secure_pages,
+				cma_get_size(tz_cma)>>PAGE_SHIFT);
+		pr_warn("%s() release @%llx [0x%zx]\n", __func__,
+				page_to_phys(secure_pages), secure_size);
+		secure_pages = NULL;
+		secure_size = 0;
+		return TZ_RESULT_SUCCESS;
+	}
+	return TZ_RESULT_ERROR_GENERIC;
+}
+
+TZ_RESULT KREE_TeeReleseChunkmemPool(void)
+{
+	TZ_RESULT ret;
+	KREE_SESSION_HANDLE mem_session;
+
+	ret = KREE_CreateSession(TZ_TA_MEM_UUID, &mem_session);
+	if (ret != TZ_RESULT_SUCCESS) {
+		pr_warn("Create memory session error %d\n", ret);
+		return ret;
+	}
+
+	ret = KREE_TeeServiceCall(mem_session, TZCMD_MEM_RELEASE_SECURECM,
+					TZPT_NONE, NULL);
+	if (ret != TZ_RESULT_SUCCESS)
+		pr_warn("Release Secure CM failed, ret = %d\n", ret);
+
+	KREE_CloseSession(mem_session);
+
+	return ret;
+}
+
+#ifndef NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE
+static unsigned long tz_cm_count(struct shrinker *s,
+						struct shrink_control *sc)
+{
+	if (secure_pages == NULL)
+		return 0;
+
+	return secure_size / SZ_4K;
+}
+static unsigned long tz_cm_scan(struct shrinker *s,
+						struct shrink_control *sc)
+{
+	unsigned long release_objects_count = secure_size;
+
+	if (secure_pages == NULL)
+		return SHRINK_STOP;
+
+	/* TeeReleaseChunkmemPool will call ree-service to do cma_release() */
+	if (TZ_RESULT_SUCCESS != KREE_TeeReleseChunkmemPool()) {
+		pr_warn("Can't free tz chunk memory\n");
+		return SHRINK_STOP;
+	}
+	pr_debug("free tz chunk memory successfully\n");
+
+	return release_objects_count;
+}
+
+static struct shrinker tz_cm_shrinker = {
+	.scan_objects = tz_cm_scan,
+	.count_objects = tz_cm_count,
+	.seeks = DEFAULT_SEEKS
+};
+
+#else
+
+static TZ_RESULT KREE_TeeTriggerChunkmemAllocation(void)
+{
+	TZ_RESULT ret;
+	KREE_SESSION_HANDLE mem_session;
+	KREE_SECUREMEM_HANDLE cm_handle;
+
+	ret = KREE_CreateSession(TZ_TA_MEM_UUID, &mem_session);
+	if (ret != TZ_RESULT_SUCCESS) {
+		pr_warn("Create memory session error %d\n", ret);
+		return ret;
+	}
+
+	ret = KREE_AllocSecurechunkmem(mem_session, &cm_handle, 1, 4096);
+	if (ret != TZ_RESULT_SUCCESS) {
+		pr_warn("Allocate securechunkmem error %d\n", ret);
+		return ret;
+	}
+
+	ret = KREE_UnreferenceSecurechunkmem(mem_session, cm_handle);
+	if (ret != TZ_RESULT_SUCCESS) {
+		pr_warn("Unreference securechunkmem error %d\n", ret);
+		return ret;
+	}
+
+	KREE_CloseSession(mem_session);
+
+	return ret;
+}
+#endif  /* NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE */
+
+#endif
+
 static int mtee_probe(struct platform_device *pdev)
 {
 	int ret;
@@ -1226,7 +1370,7 @@ static int mtee_probe(struct platform_device *pdev)
 		pr_warn("No mtee device node\n");
 
 	mtee_clks_init(pdev);
-#endif
+#endif /* CONFIG_OF */
 
 	tz_client_dev = MKDEV(MAJOR_DEV_NUM, 0);
 
@@ -1290,6 +1434,15 @@ static int mtee_probe(struct platform_device *pdev)
 						"update_securetime_gb");
 #endif
 
+#ifdef CONFIG_MTEE_CMA_SECURE_MEMORY
+#ifndef NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE
+	register_shrinker(&tz_cm_shrinker);
+#else
+	/* trigger allocation chunk memory in initialization flow */
+	KREE_TeeTriggerChunkmemAllocation();
+#endif  /* NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE */
+#endif  /* CONFIG_MTEE_CMA_SECURE_MEMORY */
+
 	return 0;
 }
 
@@ -1314,6 +1467,41 @@ static struct platform_driver tz_driver = {
 #endif
 };
 
+/* CMA */
+#ifdef CONFIG_MTEE_CMA_SECURE_MEMORY
+#include <linux/of_address.h>
+#include <linux/of_reserved_mem.h>
+#include <linux/of_fdt.h>
+
+static int __init rmem_tz_sec_setup(struct reserved_mem *rmem)
+{
+	unsigned long node = rmem->fdt_node;
+	struct cma *cma;
+	int err;
+
+	if (!of_get_flat_dt_prop(node, "reusable", NULL) ||
+	    of_get_flat_dt_prop(node, "no-map", NULL))
+		return -EINVAL;
+
+	if (!rmem->size) {
+		pr_err("%s: size == 0\n", __func__);
+		return -EINVAL;
+	}
+
+	err = cma_init_reserved_mem(rmem->base, rmem->size, 0, &cma);
+	if (err) {
+		pr_err("Reserved memory: unable to setup CMA region\n");
+		return err;
+	}
+
+	tz_cma = cma;
+	pr_info("Reserved memory: created CMA memory pool at %pa, size %ld MiB\n",
+		&rmem->base, (unsigned long)rmem->size / SZ_1M);
+
+	return 0;
+}
+RESERVEDMEM_OF_DECLARE(tz_sec, "shared-secure-pool", rmem_tz_sec_setup);
+#endif /* CONFIG_MTEE_CMA_SECURE_MEMORY */
 
 /******************************************************************************
  * register_tz_driver

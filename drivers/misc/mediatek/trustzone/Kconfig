@@ -14,3 +14,11 @@ config MTK_IN_HOUSE_TEE_SUPPORT
 	help
 	  This enable MTK TEE support.
 
+config MTEE_CMA_SECURE_MEMORY
+	bool "MTEE using CMA for secure memory allocation"
+	depends on OF
+	depends on CMA
+	depends on MTK_IN_HOUSE_TEE_SUPPORT
+	help
+	  Enable allocation secure memory from CMA to free the memory
+	  back to Linux CMA when secure memory buffer was not used.

@@ -50,6 +50,8 @@ enum ReeServiceCommand {
 	REE_SERV_THREAD_CREATE,
 
 	REE_SERV_SEMAPHORE_DOWNINT,     /* interruptible down */
+	REE_SERV_GET_CHUNK_MEMPOOL,
+	REE_SERV_REL_CHUNK_MEMPOOL,
 };
 
 /* //////// Param structure for commands */
@@ -89,4 +91,8 @@ struct ree_service_clock {
 	char clk_name[112];
 };
 
+struct ree_service_chunk_mem {
+	uint64_t chunkmem_pa;
+	unsigned int size;
+};
 #endif				/* __REE_SERVICE__ */
