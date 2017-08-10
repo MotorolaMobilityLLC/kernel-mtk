@@ -899,7 +899,6 @@
 	/* external amp support */
 	max98926L@31 {
 		compatible = "maxim,max98926L";
-		reg = <0x31>;
 		vmon-slot-no = <1>;
 		imon-slot-no = <5>;
 		status = "ok";
