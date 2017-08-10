@@ -3816,6 +3816,7 @@ static MINT32 ISP_ED_BufQue_CTRL_FUNC_FRMB(ISP_ED_BUFQUE_STRUCT_FRMB param)
 				if (P2_EDBUF_MList_LastBufIdx < 0) {
 					LOG_ERR("P2_EDBUF_MList_LastBufIdx<0 error!");
 					ret = -EFAULT;
+					spin_unlock(&(SpinLockEDBufQueList));
 					return ret;
 				}
 
