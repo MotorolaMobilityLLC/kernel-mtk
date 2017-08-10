@@ -284,7 +284,13 @@ static int step_chub_local_init(void)
 	ctl.smd_flush = smd_flush;
 	ctl.is_report_input_direct = false;
 	ctl.is_counter_support_batch = false;
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	ctl.is_detector_support_batch = false;
+#elif defined CONFIG_NANOHUB
 	ctl.is_detector_support_batch = true;
+#else
+	ctl.is_detector_support_batch = false;
+#endif
 	ctl.is_smd_support_batch = false;
 	err = step_c_register_control_path(&ctl);
 	if (err) {
