@@ -66,6 +66,10 @@ static int g_tad_ttj;
 #define NETLINK_TAD 27
 /*=============================================================*/
 
+/*========================*/
+/* Global variables						*/
+/*========================*/
+struct SPA_T thermal_spa_t;
 
 
 
@@ -119,6 +123,29 @@ void atm_ctrl_cmd_from_user(void *nl_data, struct tad_nl_msg_t *ret_msg)
 		{
 			memcpy(&g_tad_ttj, &msg->tad_data[0], sizeof(g_tad_ttj));
 			tsta_dprintk("[atm_ctrl_cmd_from_user] g_tad_ttj = %d\n", g_tad_ttj);
+		}
+		break;
+	case TA_DAEMON_CMD_GET_TI:
+		{
+			/* --- SPA parameters --- */
+
+			thermal_spa_t.t_spa_system_info.cpu_Tj = 0;
+			thermal_spa_t.t_spa_system_info.Tpcb = 0;
+			thermal_spa_t.t_spa_system_info.OPP_power = 0;
+			thermal_spa_t.t_spa_system_info.fg_app_pid = 0;
+			thermal_spa_t.t_spa_system_info.avg_fps = 0;
+			thermal_spa_t.t_spa_system_info.WIFI_UL_Tput = 0;
+			thermal_spa_t.t_spa_system_info.MD_UL_Tput = 0;
+			thermal_spa_t.t_spa_system_info.chg_current_limit = 0;
+			thermal_spa_t.t_spa_system_info.input_current_limit = 0;
+			thermal_spa_t.t_spa_system_info.camera_on = 0;
+			thermal_spa_t.t_spa_system_info.game_mode = 0;
+
+
+			memcpy(ret_msg->tad_data, &thermal_spa_t, sizeof(thermal_spa_t));
+			ret_msg->tad_data_len += sizeof(thermal_spa_t);
+
+			tsta_dprintk("[atm_ctrl_cmd_from_user] ret_msg->tad_data_len %d\n", ret_msg->tad_data_len);
 		}
 		break;
 
