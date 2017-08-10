@@ -1,54 +1,16 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#if 0
-#include <linux/interrupt.h>
-#include <linux/i2c.h>
-#include <linux/slab.h>
-#include <linux/irq.h>
-#include <linux/miscdevice.h>
-#include <asm/uaccess.h>
-#include <linux/delay.h>
-#include <linux/input.h>
-#include <linux/workqueue.h>
-#include <linux/kobject.h>
-#include <linux/earlysuspend.h>
-#include <linux/platform_device.h>
-#include <asm/atomic.h>
-
-#include <cust_acc.h>
-#include <linux/hwmsensor.h>
-#include <linux/hwmsen_dev.h>
-#include <linux/sensors_io.h>
-#include <linux/hwmsen_helper.h>
-#include <linux/xlog.h>
-
-#include <mt-plat/mt_typedefs.h>
-#include <mach/mt_gpio.h>
-#include <mach/mt_pm_ldo.h>
-
-#include "bq25890.h"
-#include <mach/mt_charging.h>
-#include <mt-plat/charging.h>
-
-#if defined(CONFIG_MTK_FPGA)
-#else
-#ifdef CONFIG_OF
-#else
-#include <cust_i2c.h>
-#endif
-#endif
-#endif
 #include <linux/types.h>
 #include <linux/init.h>		/* For init/exit macros */
 #include <linux/module.h>	/* For MODULE_ marcros  */
@@ -63,6 +25,7 @@
 #endif
 #include <mach/mt_charging.h>
 #include <mt-plat/charging.h>
+#include <mt-plat/battery_common.h>
 #include "bq25890.h"
 /**********************************************************
   *
@@ -563,7 +526,6 @@ unsigned int bq25890_get_vreg(void)
 	return val;
 }
 
-
 void bq25890_set_batlowv(unsigned int val)
 {
 	unsigned int ret = 0;
@@ -633,6 +595,19 @@ void bq25890_en_chg_timer(unsigned int val)
 	    );
 }
 
+unsigned int bq25890_get_chg_timer_enable(void)
+{
+	unsigned int ret = 0;
+	unsigned char val = 0;
+
+	ret = bq25890_read_interface((unsigned char) (bq25890_CON7),
+				     &val,
+				     (unsigned char) (CON7_EN_TIMER_MASK),
+				     (unsigned char) (CON7_EN_TIMER_SHIFT));
+
+	return val;
+}
+
 void bq25890_set_chg_timer(unsigned int val)
 {
 	unsigned int ret = 0;
@@ -696,10 +671,13 @@ void bq25890_pumpx_up(unsigned int val)
 					       (unsigned char) (CON9_PUMPX_DN_SHIFT)
 		    );
 	}
-/* Input current limit = 800 mA, changes after port detection*/
-	bq25890_set_iinlim(0x14);
-/* CC mode current = 2048 mA*/
+
+	/* Input current limit = 500 mA, changes after PE+ detection */
+	bq25890_set_iinlim(0x08);
+
+	/* CC mode current = 2048 mA */
 	bq25890_set_ichg(0x20);
+
 	msleep(3000);
 }
 
@@ -713,8 +691,6 @@ void bq25890_set_force_ico(void)
 				       (unsigned char) (FORCE_ICO__SHIFT)
 	    );
 }
-
-
 
 /* CONA---------------------------------------------------- */
 void bq25890_set_boost_ilim(unsigned int val)
@@ -865,7 +841,7 @@ unsigned int bq25890_get_bat_state(void)
 
 
 /* COND */
-void bq25890_set_FORCE_VINDPM(unsigned int val)
+void bq25890_set_force_vindpm(unsigned int val)
 {
 	unsigned int ret = 0;
 
@@ -876,7 +852,7 @@ void bq25890_set_FORCE_VINDPM(unsigned int val)
 	    );
 }
 
-void bq25890_set_VINDPM(unsigned int val)
+void bq25890_set_vindpm(unsigned int val)
 {
 	unsigned int ret = 0;
 
@@ -885,6 +861,19 @@ void bq25890_set_VINDPM(unsigned int val)
 				       (unsigned char) (COND_VINDPM_MASK),
 				       (unsigned char) (COND_VINDPM_SHIFT)
 	    );
+}
+
+unsigned int bq25890_get_vindpm(void)
+{
+	int ret = 0;
+	unsigned char val = 0;
+
+
+	ret = bq25890_read_interface((unsigned char) (bq25890_COND),
+				     (&val),
+				     (unsigned char) (COND_VINDPM_MASK),
+				     (unsigned char) (COND_VINDPM_SHIFT));
+	return val;
 }
 
 /* CONDE */
@@ -1037,7 +1026,7 @@ void bq25890_dump_register(void)
 	battery_log(BAT_LOG_CRTI,
 	"[PE+]Ibat=%d, Ilim=%d, Vbus=%d, err=%d, Ichg=%d, Vbat=%d, ChrStat=%d, CHGEN=%d, VDPM=%d\n",
 	ichg_reg * 64, iinlim * 50 + 100, vbus * 100 + 2600, fault,
-	ichg * 50, vbat * 20 + 2304, chrg_state, chr_en, vdpm);
+		    ichg * 50, vbat * 20 + 2304, chrg_state, chr_en, vdpm);
 
 }
 
@@ -1049,7 +1038,6 @@ void bq25890_hw_init(void)
 
 static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-
 	battery_log(BAT_LOG_CRTI, "[bq25890_driver_probe]\n");
 
 	new_client = client;
@@ -1060,9 +1048,9 @@ static int bq25890_driver_probe(struct i2c_client *client, const struct i2c_devi
 	/* bq25890_hw_init(); //move to charging_hw_xxx.c */
 	chargin_hw_init_done = true;
 
+	/* Hook chr_control_interface with battery's interface */
+	battery_charging_control = chr_control_interface;
 	return 0;
-
-
 }
 
 /**********************************************************
@@ -1081,25 +1069,26 @@ static ssize_t store_bq25890_access(struct device *dev, struct device_attribute 
 				    const char *buf, size_t size)
 {
 	int ret = 0;
-	/*char *pvalue = NULL;*/
+	char *pvalue = NULL, *addr, *val;
 	unsigned int reg_value = 0;
-	unsigned long int reg_address = 0;
-	int rv;
+	unsigned int reg_address = 0;
 
 	battery_log(BAT_LOG_CRTI, "[store_bq25890_access]\n");
 
 	if (buf != NULL && size != 0) {
 		battery_log(BAT_LOG_CRTI, "[store_bq25890_access] buf is %s and size is %zu\n", buf,
 			    size);
-		/*reg_address = simple_strtoul(buf, &pvalue, 16);*/
-		rv = kstrtoul(buf, 0, &reg_address);
-			if (rv != 0)
-				return -EINVAL;
-		/*ret = kstrtoul(buf, 16, reg_address); *//* This must be a null terminated string */
+
+		pvalue = (char *)buf;
 		if (size > 3) {
-			/*NEED to check kstr*/
-			/*reg_value = simple_strtoul((pvalue + 1), NULL, 16);*/
-			/*ret = kstrtoul(buf + 3, 16, reg_value); */
+			addr = strsep(&pvalue, " ");
+			ret = kstrtou32(addr, 16, (unsigned int *)&reg_address);
+		} else
+			ret = kstrtou32(pvalue, 16, (unsigned int *)&reg_address);
+
+		if (size > 3) {
+			val = strsep(&pvalue, " ");
+			ret = kstrtou32(val, 16, (unsigned int *)&reg_value);
 			battery_log(BAT_LOG_CRTI,
 				    "[store_bq25890_access] write bq25890 reg 0x%x with value 0x%x !\n",
 				    (unsigned int) reg_address, reg_value);

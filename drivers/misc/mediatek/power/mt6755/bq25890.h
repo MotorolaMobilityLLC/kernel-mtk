@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
- * This program is free software: you can redistribute it and/or modify
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
 /*****************************************************************************
@@ -266,12 +266,10 @@
 /* CON0---------------------------------------------------- */
 extern void bq25890_set_en_hiz(unsigned int val);
 extern void bq25890_set_en_ilim(unsigned int val);
-void bq25890_set_iinlim(unsigned int val);
+extern void bq25890_set_iinlim(unsigned int val);
+extern unsigned int bq25890_get_iinlim(void);
 
 /* CON1---------------------------------------------------- */
-/* willcai */
-extern void bq25890_set_vindpm(unsigned int val);
-/*  */
 
 /* CON2---------------------------------------------------- */
 extern void bq25890_ADC_start(unsigned int val);
@@ -294,6 +292,7 @@ extern void bq25890_set_sys_min(unsigned int val);
 /* willcai */
 extern void bq25890_en_pumpx(unsigned int val);
 extern void bq25890_set_ichg(unsigned int val);
+unsigned int bq25890_get_reg_ichg(void);
 
 /*  */
 
@@ -320,6 +319,7 @@ extern void bq25890_en_term_chg(unsigned int val);
 extern void bq25890_en_state_dis(unsigned int val);
 extern void bq25890_set_wd_timer(unsigned int val);
 extern void bq25890_en_chg_timer(unsigned int val);
+extern unsigned int bq25890_get_chg_timer_enable(void);
 
 extern void bq25890_set_chg_timer(unsigned int val);
 
@@ -368,11 +368,11 @@ unsigned int bq25890_get_boost_state(void);
 unsigned int bq25890_get_chrg_fault_state(void);
 unsigned int bq25890_get_bat_state(void);
 unsigned int bq25890_get_ichg(void);
-unsigned int bq25890_get_reg_ichg(void);
 
 /* CON0D */
-extern void bq25890_set_FORCE_VINDPM(unsigned int val);
-extern void bq25890_set_VINDPM(unsigned int val);
+extern void bq25890_set_force_vindpm(unsigned int val);
+extern void bq25890_set_vindpm(unsigned int val);
+extern unsigned int bq25890_get_vindpm(void);
 
 /* CON11 */
 extern unsigned int bq25890_get_vbus(void);

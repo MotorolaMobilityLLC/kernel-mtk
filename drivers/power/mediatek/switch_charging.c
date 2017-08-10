@@ -1499,6 +1499,11 @@ static void pchr_turn_on_charging(void)
 
 PMU_STATUS BAT_PreChargeModeAction(void)
 {
+#ifdef CONFIG_MTK_BIF_SUPPORT
+	int ret = 0;
+	bool bif_exist = false;
+#endif
+
 	battery_log(BAT_LOG_CRTI, "[BATTERY] Pre-CC mode charge, timer=%d on %d !!\n\r",
 		    BMT_status.PRE_charging_time, BMT_status.total_charging_time);
 
@@ -1506,6 +1511,18 @@ PMU_STATUS BAT_PreChargeModeAction(void)
 	BMT_status.CC_charging_time = 0;
 	BMT_status.TOPOFF_charging_time = 0;
 	BMT_status.total_charging_time += BAT_TASK_PERIOD;
+
+#ifdef CONFIG_MTK_BIF_SUPPORT
+	/* If defined BIF but not BIF's battery, stop charging */
+	ret = battery_charging_control(CHARGING_CMD_GET_BIF_IS_EXIST,
+		&bif_exist);
+	if (!bif_exist) {
+		battery_log(BAT_LOG_CRTI,
+			"%s: define BIF but no BIF battery, disable charging\n",
+			__func__);
+		BMT_status.bat_charging_state = CHR_ERROR;
+	}
+#endif
 
 	/*  Enable charger */
 	pchr_turn_on_charging();

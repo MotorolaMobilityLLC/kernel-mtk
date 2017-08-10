@@ -129,6 +129,15 @@ typedef enum {
 	CHARGING_CMD_SET_BOOST_CURRENT_LIMIT,
 	CHARGING_CMD_ENABLE_OTG,
 	CHARGING_CMD_ENABLE_POWER_PATH,
+	CHARGING_CMD_GET_BIF_IS_EXIST,
+	CHARGING_CMD_GET_INPUT_CURRENT,
+	CHARGING_CMD_ENABLE_DIRECT_CHARGE,
+	CHARGING_CMD_GET_IS_POWER_PATH_ENABLE,
+	CHARGING_CMD_GET_IS_SAFETY_TIMER_ENABLE,
+	CHARGING_CMD_SET_PWRSTAT_LED_EN,
+	CHARGING_CMD_GET_IBUS,
+	CHARGING_CMD_GET_VBUS,
+	CHARGING_CMD_RESET_DC_WATCH_DOG_TIMER,
 	CHARGING_CMD_NUMBER
 } CHARGING_CTRL_CMD;
 
@@ -624,4 +633,16 @@ extern int set_chr_boost_current_limit(unsigned int current_limit);
 
 /* Enable/Disable OTG mode */
 extern int set_chr_enable_otg(unsigned int enable);
-#endif				/* #ifndef _CHARGING_H */
+
+extern int mtk_chr_get_tchr(int *min_tchr, int *max_tchr);
+extern int mtk_chr_get_soc(unsigned int *soc);
+extern int mtk_chr_get_ui_soc(unsigned int *soc);
+extern int mtk_chr_get_vbat(unsigned int *vbat);
+extern int mtk_chr_get_ibat(unsigned int *ibat);
+extern int mtk_chr_get_vbus(unsigned int *vbus);
+extern int mtk_chr_get_aicr(unsigned int *aicr);
+extern int mtk_chr_is_charger_exist(unsigned char *exist);
+extern int mtk_chr_enable_direct_charge(unsigned char charging_enable);
+extern int mtk_chr_enable_charge(unsigned char charging_enable);
+
+#endif	/* #ifndef _CHARGING_H */
