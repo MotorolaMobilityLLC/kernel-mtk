@@ -1,7 +1,7 @@
 /*
  *  YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
  *
- * Copyright (C) 2002-2010 Aleph One Ltd.
+ * Copyright (C) 2002-2016 Aleph One Ltd.
  *   for Toby Churchill Ltd and Brightstar Engineering
  *
  * Created by Charles Manning <charles@aleph1.co.uk>
@@ -2603,5 +2603,5 @@ module_init(init_yaffs_fs)
 module_exit(exit_yaffs_fs)
 
 MODULE_DESCRIPTION("YAFFS2 - a NAND specific flash file system");
-MODULE_AUTHOR("Charles Manning, Aleph One Ltd., 2002-2010");
+MODULE_AUTHOR("Charles Manning, Aleph One Ltd., 2002-2016");
 MODULE_LICENSE("GPL");
