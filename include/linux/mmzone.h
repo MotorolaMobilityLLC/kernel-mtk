@@ -725,6 +725,9 @@ typedef struct pglist_data {
 #ifdef CONFIG_MEMCG
 	struct page_cgroup *node_page_cgroup;
 #endif
+#ifdef CONFIG_PAGE_EXTENSION
+	struct page_ext *node_page_ext;
+#endif
 #endif
 #ifndef CONFIG_NO_BOOTMEM
 	struct bootmem_data *bdata;
