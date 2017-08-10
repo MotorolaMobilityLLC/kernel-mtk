@@ -1106,7 +1106,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 				return -EFAULT;
 			}
 
-			if (displayid > MTKFB_MAX_DISPLAY_COUNT) {
+			if (displayid > MTKFB_MAX_DISPLAY_COUNT || displayid < 0) {
 				DISPERR("[FB]: invalid display id:%d\n", displayid);
 				return -EFAULT;
 			}
@@ -2130,7 +2130,7 @@ static int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h
 	primary_display_trigger(1, NULL, 0);
 
 	/* ttt = get_current_time_us()-ttt; */
-	return 0;
+	/*return 0;*/
 
 	_internal_test_block_size = 20;
 	for (i = 0; i < w * h / _internal_test_block_size / _internal_test_block_size; i++) {
@@ -2159,6 +2159,7 @@ static int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h
 
 	return 0;
 }
+
 
 #ifdef CONFIG_OF
 struct tag_videolfb {
