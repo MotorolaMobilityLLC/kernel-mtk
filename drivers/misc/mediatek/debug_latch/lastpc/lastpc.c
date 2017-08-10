@@ -115,7 +115,7 @@ static int lastpc_resume(struct platform_device *pdev)
 int lastpc_register(struct lastpc_plt *plt)
 {
 	if (!plt) {
-		pr_warn("%s%d: plt is NULL\n", __func__, __LINE__);
+		pr_debug("%s%d: plt is NULL\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 
@@ -130,29 +130,29 @@ int lastpc_dump(char *buf, int len)
 	struct lastpc_plt *plt = lastpc_drv.cur_plt;
 
 	if (!buf) {
-		pr_warn("%s:%d: buf is NULL\n", __func__, __LINE__);
+		pr_debug("%s:%d: buf is NULL\n", __func__, __LINE__);
 		return -EINVAL;
 	}
 
 	if (!plt) {
-		pr_warn("%s:%d: plt is NULL\n", __func__, __LINE__);
+		pr_debug("%s:%d: plt is NULL\n", __func__, __LINE__);
 		return -ENODEV;
 	}
 
 	if (!plt->common) {
-		pr_warn("%s:%d: plt->common is NULL\n", __func__, __LINE__);
+		pr_debug("%s:%d: plt->common is NULL\n", __func__, __LINE__);
 		return -ENODEV;
 	}
 
 	if (!plt->common->base) {
-		pr_warn("%s:%d: plt->common->base is NULL\n", __func__, __LINE__);
+		pr_debug("%s:%d: plt->common->base is NULL\n", __func__, __LINE__);
 		return -ENODEV;
 	}
 
 	if (plt->ops && plt->ops->dump)
 		return plt->ops->dump(plt, buf, len);
 
-	pr_warn("no dump function implemented\n");
+	pr_debug("no dump function implemented\n");
 	return 0;
 }
 
@@ -161,12 +161,12 @@ int lastpc_dump_min_len(void)
 	struct lastpc_plt *plt = lastpc_drv.cur_plt;
 
 	if (!plt) {
-		pr_warn("%s:%d: plt is NULL\n", __func__, __LINE__);
+		pr_debug("%s:%d: plt is NULL\n", __func__, __LINE__);
 		return -ENODEV;
 	}
 
 	if (!plt->min_buf_len)
-		pr_warn("%s:%d: min_buf_len is 0\n", __func__, __LINE__);
+		pr_debug("%s:%d: min_buf_len is 0\n", __func__, __LINE__);
 
 	return plt->min_buf_len;
 }
@@ -184,7 +184,7 @@ static ssize_t lastpc_dump_show(struct device_driver *driver, char *buf)
 
 	ret = plt->ops->dump(plt, buf, -1);
 	if (ret)
-		pr_err("%s:%d: dump failed\n", __func__, __LINE__);
+		pr_debug("%s:%d: dump failed\n", __func__, __LINE__);
 
 	return strlen(buf);
 }
@@ -211,14 +211,14 @@ static ssize_t lastpc_reboot_test_store(struct device_driver *driver, const char
 	unsigned long num = 0;
 
 	if (kstrtoul(p, 10, &num) != 0) {
-		pr_err("%s:%d: kstrtoul fail for %s\n", __func__, __LINE__, p);
+		pr_debug("%s:%d: kstrtoul fail for %s\n", __func__, __LINE__, p);
 		return 0;
 	}
 
 	switch (num) {
 	case 1:
 		if (plt->ops->reboot_test(plt) != 0)
-			pr_err("%s:%d: reboot test failed\n", __func__, __LINE__);
+			pr_debug("%s:%d: reboot test failed\n", __func__, __LINE__);
 		break;
 	default:
 		break;
@@ -234,7 +234,7 @@ static int lastpc_start(void)
 	struct lastpc_plt *plt = lastpc_drv.cur_plt;
 
 	if (!plt->ops) {
-		pr_err("%s:%d: ops not installed\n", __func__, __LINE__);
+		pr_debug("%s:%d: ops not installed\n", __func__, __LINE__);
 		return -ENODEV;
 	}
 
@@ -250,24 +250,24 @@ static int __init lastpc_init(void)
 
 	ret = lastpc_start();
 	if (ret) {
-		pr_err("%s:%d: lastpc_start failed\n", __func__, __LINE__);
+		pr_debug("%s:%d: lastpc_start failed\n", __func__, __LINE__);
 		return -ENODEV;
 	}
 
 	/* since kernel already populates dts, our probe would be callback after this registration */
 	ret = platform_driver_register(&lastpc_drv.plt_drv);
 	if (ret) {
-		pr_err("%s:%d: platform_driver_register failed\n", __func__, __LINE__);
+		pr_debug("%s:%d: platform_driver_register failed\n", __func__, __LINE__);
 		return -ENODEV;
 	}
 
 	ret = driver_create_file(&lastpc_drv.plt_drv.driver, &driver_attr_lastpc_dump);
 	if (ret)
-		pr_err("%s:%d: driver_create_file failed.\n", __func__, __LINE__);
+		pr_debug("%s:%d: driver_create_file failed.\n", __func__, __LINE__);
 
 	ret = driver_create_file(&lastpc_drv.plt_drv.driver, &driver_attr_lastpc_reboot_test);
 	if (ret)
-		pr_err("%s:%d: driver_create_file failed.\n", __func__, __LINE__);
+		pr_debug("%s:%d: driver_create_file failed.\n", __func__, __LINE__);
 
 	lastpc_dump_buf = kzalloc(lastpc_drv.cur_plt->min_buf_len, GFP_KERNEL);
 	if (!lastpc_dump_buf)
