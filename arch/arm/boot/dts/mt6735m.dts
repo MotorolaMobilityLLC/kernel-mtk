@@ -5,13 +5,15 @@
  *              http://www.mediatek.com
  *
  */
-/dts-v1/;
-
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include "mt6735m-pinfunc.h"
 #include <dt-bindings/mmc/mt67xx-msdc.h>
 #include <generated/autoconf.h>
+
+#ifdef CONFIG_MTK_DTBO_FEATURE
+/dts-v1/;
+#endif
 
 / {
 	model = "MT6735M";
@@ -83,7 +85,7 @@
 		affinity_info	= <0x84000004>;
 	};
 
-	cpus {
+	cpus: cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;
 /*		enable-method = "mediatek,mt6735-smp"; */
@@ -668,7 +670,7 @@
 		};
 	};
 
-	bus {
+	bus: bus {
 		compatible = "simple-bus";
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -1882,9 +1884,7 @@
 		/* reserved for overlay by odm */
 	};
 };
-#ifndef CONFIG_OF_RESOLVE
-#include <cust.dtsi>
-#endif
+
 &eintc {
 	pmic@206 {
 	compatible = "mediatek, pmic-eint";

@@ -5,14 +5,16 @@
  *              http://www.mediatek.com
  *
  */
-/dts-v1/;
-
 #include <dt-bindings/clock/mt6735-clk.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include "mt6735-pinfunc.h"
 #include <dt-bindings/mmc/mt67xx-msdc.h>
+#include <generated/autoconf.h>
 
+#ifdef CONFIG_MTK_DTBO_FEATURE
+/dts-v1/;
+#endif
 / {
 	model = "MT6753";
 	compatible = "mediatek,MT6735";
@@ -99,7 +101,8 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		affinity_info	= <0x84000004>;
 	};
 
-	cpus {	#address-cells = <1>;
+	cpus: cpus {
+		#address-cells = <1>;
 		#size-cells = <0>;
 
 		cpu0: cpu@000 {
@@ -212,7 +215,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 		reg = <0 0x40000000 0 0x40000000>;
 	};
 
-	reserved-memory {
+	reserved-memory: reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
@@ -1237,7 +1240,7 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 			      "syspll1_d4";
 	};
 
-	bus {
+	bus: bus {
 		compatible = "simple-bus";
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -1925,7 +1928,6 @@ initrd=0x44000000,0x300000 loglevel=8 androidboot.hardware=mt6735";
 	};
 };
 
-#include "cust.dtsi"
 
 &eintc {
 	pmic@206 {

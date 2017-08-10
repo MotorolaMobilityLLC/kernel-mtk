@@ -5,14 +5,16 @@
  *              http://www.mediatek.com
  *
  */
-/dts-v1/;
-
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/mmc/mt6757-msdc.h>
 #include <dt-bindings/clock/mt6757-clk.h>
 #include <dt-bindings/pinctrl/mt6757-pinfunc.h>
+#include <generated/autoconf.h>
 
+#ifdef CONFIG_MTK_DTBO_FEATURE
+/dts-v1/;
+#endif
 / {
 	model = "MT6757";
 	compatible = "mediatek,MT6757";
