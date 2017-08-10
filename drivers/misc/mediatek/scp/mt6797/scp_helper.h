@@ -116,7 +116,9 @@ typedef enum {
 	MP3_FEATURE_ID		= 3,
 	FLP_FEATURE_ID		= 4,
 	RTOS_FEATURE_ID		= 5,
-	NUM_FEATURE_ID		= 6,
+	VCORE_TEST_FEATURE_ID	= 6,
+	VCORE_TEST2_FEATURE_ID	= 7,
+	NUM_FEATURE_ID		= 8,
 } feature_id_t;
 
 typedef struct {
@@ -143,5 +145,6 @@ extern void deregister_feature(feature_id_t id);
 extern uint32_t get_freq(void);
 extern int request_freq(void);
 extern int check_scp_resource(void);
+extern int scp_check_dram_resource(void);
 
 #endif

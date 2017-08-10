@@ -52,6 +52,11 @@
 #if ENABLE_SCP_EMI_PROTECTION
 #include <emi_mpu.h>
 #endif
+#define ENABLE_SCP_DRAM_FLAG_PROTECTION       (1)
+#if ENABLE_SCP_DRAM_FLAG_PROTECTION
+#include <mt_vcorefs_manager.h>
+#endif
+
 #define MPU_REGION_ID_SCP_SMEM       22
 
 #define TIMEOUT 5000
@@ -69,6 +74,7 @@ unsigned char *scp_send_buff;
 unsigned char *scp_recv_buff;
 static struct workqueue_struct *scp_workqueue;
 static unsigned int scp_ready;
+static int scp_hold_vcore_flag;/* 1:hold vcore v1.0,  0:release vcore v1.0 */
 static struct timer_list scp_ready_timer;
 static struct scp_work_struct scp_notify_work;
 static struct mutex scp_notify_mutex;
@@ -148,6 +154,16 @@ static scp_feature_table_t feature_table[] = {
 	{
 		.feature    = RTOS_FEATURE_ID,
 		.freq       = 0,
+		.enable     = 0,
+	},
+	{
+		.feature    = VCORE_TEST_FEATURE_ID,
+		.freq       = 270,
+		.enable     = 0,
+	},
+	{
+		.feature    = VCORE_TEST2_FEATURE_ID,
+		.freq       = 120,
 		.enable     = 0,
 	},
 
@@ -524,6 +540,27 @@ static inline ssize_t scp_reg_status_show(struct device *kobj, struct device_att
 
 DEVICE_ATTR(scp_reg_status, 0444, scp_reg_status_show, NULL);
 
+static inline ssize_t scp_vcore_request_show(struct device *kobj, struct device_attribute *attr, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "SCP freq. expect=%d, cur=%d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+}
+
+static ssize_t scp_vcore_request_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
+{
+	if (scp_hold_vcore_flag == 0) {
+		register_feature(VCORE_TEST2_FEATURE_ID);
+		register_feature(VCORE_TEST_FEATURE_ID);
+		request_freq();
+		pr_err("[SCP] set high freq(vcore to v1.0), expect=%d, cur=%d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	} else {
+		deregister_feature(VCORE_TEST_FEATURE_ID);
+		request_freq();
+		pr_err("[SCP] set low freq, expect=%d, cur=%d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+	}
+	return n;
+}
+
+DEVICE_ATTR(scp_vcore_request, 0644, scp_vcore_request_show, scp_vcore_request_store);
 #ifdef CONFIG_MT_ENG_BUILD
 static inline ssize_t scp_db_test_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
@@ -585,6 +622,11 @@ static int create_files(void)
 		return ret;
 
 	ret = device_create_file(scp_device.this_device, &dev_attr_scp_reg_status);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(scp_device.this_device, &dev_attr_scp_vcore_request);
 
 	if (unlikely(ret != 0))
 		return ret;
@@ -732,12 +774,25 @@ uint32_t get_freq(void)
 	}
 	mutex_unlock(&scp_feature_mutex);
 	/*pr_debug("[SCP] needed freq sum:%d\n",sum);*/
-	if (sum > FREQ_224MHZ)
+	if (sum > FREQ_224MHZ) {
 		return_freq = FREQ_354MHZ;
-	else if (sum > FREQ_112MHZ)
+#if ENABLE_SCP_DRAM_FLAG_PROTECTION
+		/* scp request vcore to v1.0 and need to insure
+		 * dram frequence has more than 800 Mhz
+		 * get the dram flag*/
+		if (scp_hold_vcore_flag == 0) {
+			mutex_lock(&scp_feature_mutex);
+			pr_debug("[SCP]req vcore 1.0, exp=%d, cur=%d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+			vcorefs_request_dvfs_opp(KIR_SCP, OPPI_LOW_PWR);
+			scp_hold_vcore_flag = 1;
+			mutex_unlock(&scp_feature_mutex);
+		}
+#endif
+	} else if (sum > FREQ_112MHZ)
 		return_freq = FREQ_224MHZ;
 	else
 		return_freq = FREQ_112MHZ;
+
 	return return_freq;
 }
 void register_feature(feature_id_t id)
@@ -784,6 +839,17 @@ int check_scp_resource(void)
 
 	return scp_resource_status;
 }
+
+int scp_check_dram_resource(void)
+{
+	/* called by lowpower related function
+	 * main purpose is to ensure when vcore is at v1.0, DRAM must not at 800Mhz
+	 * return value:
+	 * 1: scp hold DRAM upper 800Mhz flag
+	 * 0: scp release DRAM upper 800Mhz flag
+	 * */
+	return scp_hold_vcore_flag;
+}
 int request_freq(void)
 {
 	int value = 0;
@@ -801,6 +867,18 @@ int request_freq(void)
 		if (timeout <= 0)
 			goto fail_to_set_freq;
 	}
+#if ENABLE_SCP_DRAM_FLAG_PROTECTION
+	/* scp will release vcore from v1.0 to lower stage
+	 * but still hold dram vcore v1.0 flag and need to release
+	 * here release the dram flag*/
+	if ((scp_hold_vcore_flag == 1) && (EXPECTED_FREQ_REG != FREQ_354MHZ)) {
+		mutex_lock(&scp_feature_mutex);
+		pr_debug("[SCP]release vcore 1.0, exp=%d, cur=%d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
+		vcorefs_request_dvfs_opp(KIR_SCP, OPPI_UNREQ);
+		scp_hold_vcore_flag = 0;
+		mutex_unlock(&scp_feature_mutex);
+	}
+#endif
 	wake_unlock(&scp_suspend_lock);
 	pr_err("[SCP] set freq OK, %d == %d\n", EXPECTED_FREQ_REG, CURRENT_FREQ_REG);
 	return 0;
@@ -822,6 +900,7 @@ static int __init scp_init(void)
 
 	/* static initialise */
 	scp_ready = 0;
+	scp_hold_vcore_flag = 0;
 
 	mutex_init(&scp_notify_mutex);
 	mutex_init(&scp_feature_mutex);
