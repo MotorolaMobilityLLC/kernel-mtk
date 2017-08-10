@@ -358,6 +358,7 @@ struct msdc_host {
 	u32 hs200_cmd_int_delay; /* cmd internal delay for HS200/SDR104 */
 	u32 hs200_write_int_delay; /* write internal delay for HS200/SR104 */
 	u32 latch_ck;
+	bool hs400_mode; /* current eMMC will running at hs400 mode */
 	struct msdc_save_para save_para; /* used when gate HCLK */
 	struct msdc_tune_para def_tune_para; /* default tune setting */
 	struct msdc_tune_para saved_tune_para; /* tune result of CMD21/CMD19 */
@@ -1691,9 +1692,11 @@ static int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 		dev_err(host->dev, "Tune response fail!\n");
 		goto out;
 	}
-	ret = msdc_tune_data(mmc, opcode);
-	if (ret == -EIO)
-		dev_err(host->dev, "Tune data fail!\n");
+	if (host->hs400_mode == false) {
+		ret = msdc_tune_data(mmc, opcode);
+		if (ret == -EIO)
+			dev_err(host->dev, "Tune data fail!\n");
+	}
 
 	host->saved_tune_para.iocon = readl(host->base + MSDC_IOCON);
 	host->saved_tune_para.pad_tune = readl(host->base + MSDC_PAD_TUNE);
@@ -1708,6 +1711,8 @@ static int msdc_prepare_hs400_tuning(struct mmc_host *mmc, struct mmc_ios *ios)
 	struct msdc_host *host = mmc_priv(mmc);
 
 	writel(host->hs400_ds_delay, host->base + PAD_DS_TUNE);
+	host->hs400_mode = true;
+
 	return 0;
 }
 
