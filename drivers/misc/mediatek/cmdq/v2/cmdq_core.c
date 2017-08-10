@@ -5352,6 +5352,49 @@ static void cmdq_core_dump_error_buffer(const TaskStruct *pTask, uint32_t *hwPC)
 	}
 }
 
+void cmdq_core_dump_thread(uint32_t thread, const char *tag)
+{
+	struct ThreadStruct *pThread;
+	uint32_t value[15] = { 0 };
+
+	pThread = &(gCmdqContext.thread[thread]);
+	if (pThread->taskCount == 0)
+		return;
+
+	CMDQ_LOG("[%s]=============== [CMDQ] Error Thread Status ===============\n", tag);
+	/* normal thread */
+	value[0] = CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread));
+	value[1] = CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread));
+	value[2] = CMDQ_REG_GET32(CMDQ_THR_WAIT_TOKEN(thread));
+	value[3] = cmdq_core_thread_exec_counter(thread);
+	value[4] = CMDQ_REG_GET32(CMDQ_THR_IRQ_STATUS(thread));
+	value[5] = CMDQ_REG_GET32(CMDQ_THR_INST_CYCLES(thread));
+	value[6] = CMDQ_REG_GET32(CMDQ_THR_CURR_STATUS(thread));
+	value[7] = CMDQ_REG_GET32(CMDQ_THR_IRQ_ENABLE(thread));
+	value[8] = CMDQ_REG_GET32(CMDQ_THR_ENABLE_TASK(thread));
+
+	value[9] = CMDQ_REG_GET32(CMDQ_THR_WARM_RESET(thread));
+	value[10] = CMDQ_REG_GET32(CMDQ_THR_SUSPEND_TASK(thread));
+	value[11] = CMDQ_REG_GET32(CMDQ_THR_SECURITY(thread));
+	value[12] = CMDQ_REG_GET32(CMDQ_THR_CFG(thread));
+	value[13] = CMDQ_REG_GET32(CMDQ_THR_PREFETCH(thread));
+	value[14] = CMDQ_REG_GET32(CMDQ_THR_INST_THRESX(thread));
+
+	CMDQ_LOG(
+		"[%s]Index: %d, Enabled: %d, IRQ: 0x%08x, Thread PC: 0x%08x, End: 0x%08x, Wait Token: 0x%08x\n",
+		tag, thread, value[8], value[4], value[0], value[1], value[2]);
+	CMDQ_LOG(
+		"[%s]Curr Cookie: %d, Wait Cookie: %d, Next Cookie: %d, Task Count %d, engineFlag: 0x%llx\n",
+		tag, value[3], pThread->waitCookie, pThread->nextCookie,
+		pThread->taskCount, pThread->engineFlag);
+	CMDQ_LOG(
+		"[%s]Timeout Cycle: %d, Status: 0x%08x, IRQ_EN: 0x%08x, reset: 0x%08x\n",
+		tag, value[5], value[6], value[7], value[9]);
+	CMDQ_LOG(
+		"[%s]Suspend task: %d sec: %d cfg: %d prefetch: %d thresx: %d\n",
+		tag, value[10], value[11], value[12], value[13], value[14]);
+}
+
 static void cmdq_core_dump_error_task(const TaskStruct *pTask, const TaskStruct *pNGTask,
 				uint32_t thread, bool short_log)
 {
@@ -5361,36 +5404,15 @@ static void cmdq_core_dump_error_task(const TaskStruct *pTask, const TaskStruct 
 	uint32_t *hwPC = NULL;
 	uint32_t *hwNGPC = NULL;
 	uint64_t printEngineFlag = 0;
-	uint32_t value[10] = { 0 };
 	bool isDispScn = false;
 
 	static const char *const engineGroupName[] = {
 		CMDQ_FOREACH_GROUP(GENERATE_STRING)
 	};
 
-	CMDQ_ERR("=============== [CMDQ] Error Thread Status ===============\n");
 	pThread = &(gCmdqContext.thread[thread]);
-	if (false == cmdq_get_func()->isSecureThread(thread)) {
-		/* normal thread */
-		value[0] = CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread));
-		value[1] = CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread));
-		value[2] = CMDQ_REG_GET32(CMDQ_THR_WAIT_TOKEN(thread));
-		value[3] = cmdq_core_thread_exec_counter(thread);
-		value[4] = CMDQ_REG_GET32(CMDQ_THR_IRQ_STATUS(thread));
-		value[5] = CMDQ_REG_GET32(CMDQ_THR_INST_CYCLES(thread));
-		value[6] = CMDQ_REG_GET32(CMDQ_THR_CURR_STATUS(thread));
-		value[7] = CMDQ_REG_GET32(CMDQ_THR_IRQ_ENABLE(thread));
-		value[8] = CMDQ_REG_GET32(CMDQ_THR_ENABLE_TASK(thread));
-
-		CMDQ_ERR
-		    ("Index: %d, Enabled: %d, IRQ: 0x%08x, Thread PC: 0x%08x, End: 0x%08x, Wait Token: 0x%08x\n",
-		     thread, value[8], value[4], value[0], value[1], value[2]);
-		CMDQ_ERR
-		    ("Curr Cookie: %d, Wait Cookie: %d, Next Cookie: %d, Task Count %d, engineFlag: 0x%llx\n",
-		     value[3], pThread->waitCookie, pThread->nextCookie, pThread->taskCount,
-		     pThread->engineFlag);
-		CMDQ_ERR("Timeout Cycle:%d, Status:0x%08x, IRQ_EN: 0x%08x\n", value[5], value[6],
-			 value[7]);
+	if (cmdq_get_func()->isSecureThread(thread) == false) {
+		cmdq_core_dump_thread(thread, "ERR");
 	} else {
 		/* do nothing since it's a secure thread */
 		CMDQ_ERR("Wait Cookie: %d, Next Cookie: %d, Task Count %d,\n",
@@ -6138,6 +6160,22 @@ static TaskStruct *cmdq_core_search_task_by_pc(uint32_t threadPC, const ThreadSt
 	return pTask;
 }
 
+void cmdq_thread_check_status_resume(int32_t thread)
+{
+	uint32_t thread_status = 0;
+
+	thread_status = CMDQ_REG_GET32(CMDQ_THR_CURR_STATUS(thread));
+	if ((thread_status & 0x2) != 0) {
+		/*
+		 * Thread should keep run but status is suspend.
+		 * Set end again to trigger GCE resume this thread.
+		 */
+		CMDQ_ERR("Check thread index: %d status: 0x%08x try to resume!\n", thread, thread_status);
+		CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread),
+			CMDQ_PHYS_TO_AREG(CMDQ_GCE_END_ADDR_PA));
+	}
+}
+
 /* Implementation of wait task done
  * Return:
  *     wait time of wait_event_timeout() kernel API
@@ -6176,6 +6214,7 @@ static int32_t cmdq_core_wait_task_done_with_timeout_impl(TaskStruct *pTask, int
 		spin_lock_irqsave(&gCmdqExecLock, flags);
 		cmdq_core_dump_status("INFO");
 		cmdq_core_dump_pc(pTask, thread, "INFO");
+		cmdq_core_dump_thread(thread, "INFO");
 
 		/* HACK: check trigger thread status */
 		cmdq_core_dump_disp_trigger_loop("INFO");
@@ -6359,11 +6398,11 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 		CMDQ_ERR("thread:%d suspended:%d gSuspendPlace=%d Thread8Suspend=%lld Thread8Resume=%lld\n",
 			thread, CMDQ_REG_GET32(CMDQ_THR_SUSPEND_TASK(thread)),
 			atomic_read(&gSuspendPlace), Thread8Suspend, Thread8Resume);
-		cmdq_core_dump_thread(thread, true);
+		cmdq_core_dump_thread(thread, "ERR");
 		for (index = 0; index < CMDQ_MAX_THREAD_COUNT; index++) {
 			if (index == thread)
 				continue;
-			cmdq_core_dump_thread(index, true);
+			cmdq_core_dump_thread(index, "ERR");
 		}
 #endif
 
@@ -6990,6 +7029,8 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->thread_en,
 			      MMProfileFlagPulse, thread, pThread->nextCookie - 1);
+
+		cmdq_thread_check_status_resume(thread);
 
 		CMDQ_REG_SET32(CMDQ_THR_ENABLE_TASK(thread), 0x01);
 #ifdef CMDQ_MDP_MET_STATUS
@@ -8907,45 +8948,4 @@ ContextStruct *cmdq_core_get_cmdqcontext(void)
 {
 	return &gCmdqContext;
 }
-
-#ifdef CONFIG_MTK_CMDQ_TAB
-void cmdq_core_dump_thread(uint32_t thread, bool dump_cmd)
-{
-	ThreadStruct *pThread;
-	uint32_t value[10] = { 0 };
-
-	pThread = &(gCmdqContext.thread[thread]);
-	if (pThread->taskCount == 0)
-		return;
-
-	CMDQ_ERR("=============== [CMDQ] Error Thread Status ===============\n");
-	/* normal thread */
-	value[0] = CMDQ_REG_GET32(CMDQ_THR_CURR_ADDR(thread));
-	value[1] = CMDQ_REG_GET32(CMDQ_THR_END_ADDR(thread));
-	value[2] = CMDQ_REG_GET32(CMDQ_THR_WAIT_TOKEN(thread));
-	value[3] = cmdq_core_thread_exec_counter(thread);
-	value[4] = CMDQ_REG_GET32(CMDQ_THR_IRQ_STATUS(thread));
-	value[5] = CMDQ_REG_GET32(CMDQ_THR_INST_CYCLES(thread));
-	value[6] = CMDQ_REG_GET32(CMDQ_THR_CURR_STATUS(thread));
-	value[7] = CMDQ_REG_GET32(CMDQ_THR_IRQ_ENABLE(thread));
-	value[8] = CMDQ_REG_GET32(CMDQ_THR_ENABLE_TASK(thread));
-
-	CMDQ_ERR
-		("Index: %d, Enabled: %d, IRQ: 0x%08x, Thread PC: 0x%08x, End: 0x%08x, Wait Token: 0x%08x\n",
-		 thread, value[8], value[4], value[0], value[1], value[2]);
-	CMDQ_ERR
-		("Curr Cookie: %d, Wait Cookie: %d, Next Cookie: %d, Task Count %d, engineFlag: 0x%llx\n",
-		 value[3], pThread->waitCookie, pThread->nextCookie, pThread->taskCount,
-		 pThread->engineFlag);
-	CMDQ_ERR("Timeout Cycle:%d, Status:0x%08x, IRQ_EN: 0x%08x\n", value[5], value[6],
-		 value[7]);
-
-	/* dump tasks in error thread */
-	cmdq_core_dump_thread_pc(thread);
-	cmdq_core_dump_task_in_thread(thread, false, false, dump_cmd);
-
-	CMDQ_ERR("=============== [CMDQ] CMDQ Status ===============\n");
-	cmdq_core_dump_status("ERR");
-}
-#endif
 
