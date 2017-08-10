@@ -982,7 +982,7 @@ int rawbulk_start_transactions(int transfer_id, int nups, int ndowns, int upsz, 
 
 		c->buffer = (char *)__get_free_page(GFP_KERNEL);
 		/* c->buffer = kmalloc(upsz, GFP_KERNEL); */
-		if (!c) {
+		if (!c->buffer) {
 			rc = -ENOMEM;
 			kfree(c);
 			mutex_unlock(&transfer->modem_up_mutex);

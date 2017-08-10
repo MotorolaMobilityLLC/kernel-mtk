@@ -180,13 +180,16 @@ void set_uart_default_settings(int idx)
 	case 1:
 		node = of_find_node_by_name(NULL, "apuart1");
 		break;
+#if 0
 	case 2:
 		node = of_find_node_by_name(NULL, "apuart2");
 		break;
 	case 3:
 		node = of_find_node_by_name(NULL, "apuart3");
 		break;
+#endif
 	default:
+		pr_debug("Not support UART%d!!!\n", idx);
 		break;
 	}
 
@@ -195,7 +198,8 @@ void set_uart_default_settings(int idx)
 		mtk_uart_default_settings[idx].uart_base = (unsigned long)of_iomap(node, 0);
 		/* get IRQ ID */
 		mtk_uart_default_settings[idx].irq_num = irq_of_parse_and_map(node, 0);
-	}
+	} else
+		return;
 
 	/* phys registers */
 	if (of_property_read_u32_index(node, "reg", 0, &phys_base))
@@ -621,7 +625,11 @@ void mtk_uart_tx_vfifo_flush(struct mtk_uart *uart, int timeout)
 			MSG(MSC, "flush [%5X.%5X]\n", UART_READ32(VFF_RPT(base)), UART_READ32(VFF_WPT(base)));
 		}
 	} else {
-		MSG(ERR, "%p, %p\n", dma, uart);
+		/*MSG(ERR, "%p, %p\n", dma, uart);*/
+		if (!dma)
+			MSG(ERR, "%s: DMA is null\n", __func__);
+		if (!uart)
+			MSG(ERR, "%s: UART is null\n", __func__);
 	}
 #endif				/* ENABE_HRTIMER_FLUSH */
 }
@@ -804,6 +812,8 @@ static void mtk_uart_dma_vfifo_tx_tasklet_byte(unsigned long arg)
 
 }*/
 /*---------------------------------------------------------------------------*/
+
+/* #define __ENABLE_VFIFO_TASKLET_SCHEDULE__ */
 void mtk_uart_dma_vfifo_tx_tasklet(unsigned long arg)
 {
 	struct mtk_uart *uart = (struct mtk_uart *)arg;
@@ -816,10 +826,20 @@ void mtk_uart_dma_vfifo_tx_tasklet(unsigned long arg)
 	unsigned long flags;
 
 	spin_lock_irqsave(&vfifo->iolock, flags);
+	/* result_independent_of_operands:
+	 * (atomic_add_return(1, &vfifo->entry) == 0) > 1 is always false regardless
+	 * of the values of its operands. This occurs as the logical operand of if.
+	 *
+	 * DISABLE IT
+	 */
+#if defined(__ENABLE_VFIFO_TASKLET_SCHEDULE__)
 	if (atomic_inc_and_test(&vfifo->entry) > 1) {
 		MSG(ERR, "tx entry!!\n");
 		tasklet_schedule(&vfifo->dma->tasklet);
 	} else {
+#else
+	{
+#endif
 		while (UART_READ32(VFF_LEFT_SIZE(base)) >= vfifo->trig) {
 			/* deal with x_char first */
 			if (unlikely(port->x_char)) {
@@ -842,7 +862,9 @@ void mtk_uart_dma_vfifo_tx_tasklet(unsigned long arg)
 			mtk_uart_tx_vfifo_flush(uart, 0);
 		}
 	}
+#if defined(__ENABLE_VFIFO_TASKLET_SCHEDULE__)
 	atomic_dec(&vfifo->entry);
+#endif
 	spin_unlock_irqrestore(&vfifo->iolock, flags);
 }
 
@@ -1093,14 +1115,27 @@ void mtk_uart_dma_vfifo_rx_tasklet(unsigned long arg)
 
 	MSG(DMA, "%d, %x, %x\n", uart->read_allow(uart), UART_READ32(VFF_VALID_SIZE(vfifo->base)), vfifo->trig);
 	spin_lock_irqsave(&vfifo->iolock, flags);
+
+	/* result_independent_of_operands:
+	 * (atomic_add_return(1, &vfifo->entry) == 0) > 1 is always false regardless
+	 * of the values of its operands. This occurs as the logical operand of if.
+	 *
+	 * DISABLE IT
+	 */
+#if defined(__ENABLE_VFIFO_TASKLET_SCHEDULE__)
 	if (atomic_inc_and_test(&vfifo->entry) > 1) {
 		MSG(ERR, "rx entry!!\n");
 		tasklet_schedule(&vfifo->dma->tasklet);
 	} else {
+#else
+	{
+#endif
 		if (uart->read_allow(uart))
 			mtk_uart_dma_vfifo_rx_tasklet_str(arg);
 	}
+#if defined(__ENABLE_VFIFO_TASKLET_SCHEDULE__)
 	atomic_dec(&vfifo->entry);
+#endif
 	spin_unlock_irqrestore(&vfifo->iolock, flags);
 }
 
@@ -1167,11 +1202,13 @@ int mtk_uart_dma_start(struct mtk_uart *uart, struct mtk_uart_dma *dma)
 void mtk_uart_stop_dma(struct mtk_uart_dma *dma)
 {
 	int polling_cnt = 0;
-	struct mtk_uart *uart = dma->uart;
+	struct mtk_uart *uart;
 	void *base;
 
 	if (!dma)
 		return;
+
+	uart = dma->uart;
 	if (dma->mode == UART_RX_VFIFO_DMA || dma->mode == UART_TX_VFIFO_DMA) {
 		MSG(DMA, "stop dma (%d)\n", dma->mode);
 		if (!dma->vfifo) {
@@ -1214,12 +1251,13 @@ void mtk_uart_stop_dma(struct mtk_uart_dma *dma)
 /*---------------------------------------------------------------------------*/
 void mtk_uart_reset_dma(struct mtk_uart_dma *dma)
 {
-	struct mtk_uart *uart = dma->uart;
+	struct mtk_uart *uart;
 	void *base;
 
 	if (!dma)
 		return;
 
+	uart = dma->uart;
 	if (dma->mode == UART_RX_VFIFO_DMA || dma->mode == UART_TX_VFIFO_DMA) {
 		if (!dma->vfifo) {
 			MSG(ERR, "null\n");
@@ -1576,8 +1614,11 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 
 	setting = uart->setting;
 
-	if (!uart || uart->nport >= UART_NR)
+	if (!uart)
 		return;
+	if (uart->nport >= UART_NR)
+		return;
+
 
 	if (uart->poweron_count > 0) {
 		MSG(FUC, "%s(%d)\n", __func__, uart->poweron_count);
@@ -1629,7 +1670,9 @@ void mtk_uart_power_down(struct mtk_uart *uart)
 
 	setting = uart->setting;
 
-	if (!uart || uart->nport >= UART_NR)
+	if (!uart)
+		return;
+	if (uart->nport >= UART_NR)
 		return;
 
 	if (uart->poweron_count == 0) {
