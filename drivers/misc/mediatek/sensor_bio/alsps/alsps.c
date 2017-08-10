@@ -132,7 +132,7 @@ als_loop:
 	if (true == cxt->is_als_polling_run)
 		mod_timer(&cxt->timer_als, jiffies + atomic_read(&cxt->delay_als)/(1000/HZ));
 }
-
+#ifdef PS_POLLING_MODE
 static void ps_work_func(struct work_struct *work)
 {
 
@@ -186,7 +186,7 @@ ps_loop:
 			mod_timer(&cxt->timer_ps, jiffies + atomic_read(&cxt->delay_ps)/(1000/HZ));
 	}
 }
-
+#endif
 static void als_poll(unsigned long data)
 {
 	struct alsps_context *obj = (struct alsps_context *)data;
@@ -194,7 +194,7 @@ static void als_poll(unsigned long data)
 	if ((obj != NULL) && (obj->is_als_polling_run))
 		schedule_work(&obj->report_als);
 }
-
+#ifdef PS_POLLING_MODE
 static void ps_poll(unsigned long data)
 {
 	struct alsps_context *obj = (struct alsps_context *)data;
@@ -202,7 +202,7 @@ static void ps_poll(unsigned long data)
 	if (obj != NULL)
 		schedule_work(&obj->report_ps);
 }
-
+#endif
 static struct alsps_context *alsps_context_alloc_object(void)
 {
 	struct alsps_context *obj = kzalloc(sizeof(*obj), GFP_KERNEL);
@@ -213,20 +213,20 @@ static struct alsps_context *alsps_context_alloc_object(void)
 		return NULL;
 	}
 	atomic_set(&obj->delay_als, 200); /*5Hz, set work queue delay time 200ms */
-	atomic_set(&obj->delay_ps, 200); /* 5Hz,  set work queue delay time 200ms */
 	atomic_set(&obj->wake, 0);
 	INIT_WORK(&obj->report_als, als_work_func);
-	INIT_WORK(&obj->report_ps, ps_work_func);
 	init_timer(&obj->timer_als);
-	init_timer(&obj->timer_ps);
 	obj->timer_als.expires	= jiffies + atomic_read(&obj->delay_als)/(1000/HZ);
 	obj->timer_als.function	= als_poll;
 	obj->timer_als.data	= (unsigned long)obj;
-
+#ifdef PS_POLLING_MODE
+	atomic_set(&obj->delay_ps, 200); /* 5Hz,  set work queue delay time 200ms */
+	INIT_WORK(&obj->report_ps, ps_work_func);
+	init_timer(&obj->timer_ps);
 	obj->timer_ps.expires	= jiffies + atomic_read(&obj->delay_ps)/(1000/HZ);
 	obj->timer_ps.function	= ps_poll;
 	obj->timer_ps.data	= (unsigned long)obj;
-
+#endif
 	obj->is_als_first_data_after_enable = false;
 	obj->is_als_polling_run = false;
 	obj->is_ps_first_data_after_enable = false;
@@ -372,11 +372,13 @@ static int ps_enable_data(int enable)
 		cxt->ps_ctl.open_report_data(1);
 		ps_real_enable(enable);
 		if (false == cxt->is_ps_polling_run && cxt->is_ps_batch_enable == false) {
+#ifdef PS_POLLING_MODE
 			if (false == cxt->ps_ctl.is_report_input_direct) {
 				mod_timer(&cxt->timer_ps, jiffies + atomic_read(&cxt->delay_ps)/(1000/HZ));
 				cxt->is_ps_polling_run = true;
 				cxt->is_get_valid_ps_data_after_enable = false;
 			}
+#endif
 		}
 	}
 
@@ -385,6 +387,7 @@ static int ps_enable_data(int enable)
 		cxt->is_ps_active_data = false;
 		cxt->ps_ctl.open_report_data(0);
 		if (true == cxt->is_ps_polling_run) {
+#ifdef PS_POLLING_MODE
 			if (false == cxt->ps_ctl.is_report_input_direct) {
 				cxt->is_ps_polling_run = false;
 				smp_mb();/* for memory barrier*/
@@ -393,6 +396,7 @@ static int ps_enable_data(int enable)
 				cancel_work_sync(&cxt->report_ps);
 				cxt->drv_data.ps_data.values[0] = ALSPS_INVALID_VALUE;
 			}
+#endif
 		}
 		ps_real_enable(enable);
 	}
@@ -507,7 +511,7 @@ static ssize_t als_store_batch(struct device *dev, struct device_attribute *attr
 		maxBatchReportLatencyNs = 0;
 		ALSPS_LOG("als_store_batch not supported\n");
 	}
-	if (NULL != cxt->als_ctl.batch)
+	if (cxt->als_ctl.batch != NULL)
 		err = cxt->als_ctl.batch(flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	else
 		ALSPS_ERR("ALS DRIVER OLD ARCHITECTURE DON'T SUPPORT ALS COMMON VERSION BATCH\n");
@@ -596,7 +600,9 @@ static ssize_t ps_store_delay(struct device *dev, struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
 	int delay;
+#ifdef PS_POLLING_MODE
 	int mdelay = 0;
+#endif
 	int ret = 0;
 	struct alsps_context *cxt = NULL;
 
@@ -614,12 +620,12 @@ static ssize_t ps_store_delay(struct device *dev, struct device_attribute *attr,
 		mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 		return count;
 	}
-
+#ifdef PS_POLLING_MODE
 	if (false == cxt->ps_ctl.is_report_input_direct) {
 		mdelay = (int)delay/1000/1000;
 		atomic_set(&alsps_context_obj->delay_ps, mdelay);
 	}
-
+#endif
 	cxt->ps_ctl.set_delay(delay);
 	ALSPS_LOG(" ps_delay %d ns\n", delay);
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
@@ -643,7 +649,9 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 	struct alsps_context *cxt = NULL;
 	int handle = 0, flag = 0, err = 0;
 	int64_t samplingPeriodNs = 0, maxBatchReportLatencyNs = 0;
+#ifdef PS_POLLING_MODE
 	int mdelay = 0;
+#endif
 
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (err != 4)
@@ -653,10 +661,12 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 			handle, flag, samplingPeriodNs, maxBatchReportLatencyNs);
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
 	cxt = alsps_context_obj;
+#ifdef PS_POLLING_MODE
 	if (false == cxt->ps_ctl.is_report_input_direct) {
 		mdelay = (int)(samplingPeriodNs / 1000 / 1000);
 		atomic_set(&alsps_context_obj->delay_ps, mdelay);
 	}
+#endif
 	if (!cxt->ps_ctl.is_support_batch) {
 		maxBatchReportLatencyNs = 0;
 		ALSPS_LOG("ps_store_batch not supported\n");
@@ -815,6 +825,7 @@ int ps_report_interrupt_data(int value)
 	/* int err =0; */
 	cxt = alsps_context_obj;
 	pr_warn("[ALS/PS] [%s]:value=%d\n", __func__, value);
+#ifdef PS_POLLING_MODE
 	if (cxt->is_get_valid_ps_data_after_enable == false) {
 		if (ALSPS_INVALID_VALUE != value) {
 			cxt->is_get_valid_ps_data_after_enable = true;
@@ -824,10 +835,11 @@ int ps_report_interrupt_data(int value)
 			cancel_work_sync(&cxt->report_ps);
 		}
 	}
-
 	if (cxt->is_ps_batch_enable == false)
 		ps_data_report(value, 3);
-
+#else
+	ps_data_report(value, 3);
+#endif
 	return 0;
 }
 /*----------------------------------------------------------------------------*/
