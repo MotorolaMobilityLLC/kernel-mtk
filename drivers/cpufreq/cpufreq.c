@@ -31,7 +31,7 @@
 #include <trace/events/power.h>
 
 #ifdef CONFIG_ARCH_MT6797
-#include <../misc/mediatek/base/power/mt6797/mt_cpufreq.h>
+#include "../misc/mediatek/base/power/mt6797/mt_cpufreq.h"
 #endif
 
 /**

@@ -27,7 +27,7 @@
 /*#include <mach/eint.h> TBD*/
 
 #include <mt-plat/upmu_common.h>
-#include <mt6311.h>
+#include "mt6311.h"
 
 #include <mach/mt_pmic.h>
 

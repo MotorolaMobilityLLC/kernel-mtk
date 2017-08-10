@@ -43,7 +43,7 @@
 #include <mach/mt_clkmgr.h>
 /* #include <mach/mt_gpio.h> */
 /* #include <mach/mt_gpio_core.h> */
-#include <mt_clkbuf_ctl.h>
+#include "mt_clkbuf_ctl.h"
 #include <mt-plat/upmu_common.h>
 
 #define TAG     "[Power/clkbuf]"

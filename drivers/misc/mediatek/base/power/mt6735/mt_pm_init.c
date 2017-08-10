@@ -43,7 +43,7 @@
 /* #include "mach/mt_cpufreq.h" */
 /* #include "mach/mt_gpufreq.h" */
 #include "mt_cpuidle.h"
-#include <mt_clkbuf_ctl.h>
+#include "mt_clkbuf_ctl.h"
 /* #include "mach/mt_clkbuf_ctl.h" */
 /* #include "mach/mt_chip.h" */
 #include "mt-plat/mtk_rtc.h"

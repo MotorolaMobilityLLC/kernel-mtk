@@ -2,12 +2,12 @@
 #define __MT_SPM_SODI3_H_
 
 #include <mt_cpuidle.h>
-#include <mt_spm_idle.h>
-#include <mt_spm_misc.h>
-#include <mt_spm_internal.h>
-#include <mt_spm_pmic_wrap.h>
-#include <mt_spm_misc.h>
-#include <mt_spm_internal.h>
+#include "mt_spm_idle.h"
+#include "mt_spm_misc.h"
+#include "mt_spm_internal.h"
+#include "mt_spm_pmic_wrap.h"
+#include "mt_spm_misc.h"
+#include "mt_spm_internal.h"
 
 #if defined(CONFIG_ARCH_ELBRUS)
 

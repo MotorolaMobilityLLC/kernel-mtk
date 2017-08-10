@@ -102,7 +102,7 @@
 #endif
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6353
-#include <mt_vcorefs_manager.h>
+#include "mt_vcorefs_manager.h"
 
 #define MT_GPUFREQ_GPU_SOURCE_FROM_VCORE
 #endif

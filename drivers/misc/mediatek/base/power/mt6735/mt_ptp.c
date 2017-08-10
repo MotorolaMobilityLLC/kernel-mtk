@@ -158,7 +158,7 @@ unsigned int reg_dump_addr_off[] = {
 #include <linux/of_fdt.h>
 #endif
 /* local includes */
-#include <mt_spm.h>
+#include "mt_spm.h"
 #include "aee.h"
 #include <linux/gpio.h>
 

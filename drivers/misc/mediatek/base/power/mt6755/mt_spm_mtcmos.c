@@ -25,7 +25,7 @@
 /*#include <mach/mt_typedefs.h>*/
 /*#include <mach/mt_spm_cpu.h>*/
 /*#include <mach/mt_spm_reg.h>*/
-#include <mt_spm_mtcmos.h>
+#include "mt_spm_mtcmos.h"
 #include <mach/mt_spm_mtcmos_internal.h>
 #include <mach/mt_clkmgr.h>
 

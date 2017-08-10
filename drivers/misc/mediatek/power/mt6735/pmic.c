@@ -78,7 +78,7 @@
 #include <linux/gpio/consumer.h>
 #endif
 #include <mt-plat/upmu_common.h>
-#include <pmic.h>
+#include "pmic.h"
 /*#include <mach/eint.h> TBD*/
 #include <mach/mt_pmic_wrap.h>
 #if defined CONFIG_MTK_LEGACY
@@ -101,7 +101,7 @@
 #include <mt-plat/battery_common.h>
 #include <mach/mt_battery_meter.h>
 #endif
-#include <mt6311.h>
+#include "mt6311.h"
 #include <mach/mt_pmic.h>
 
 #include <mt-plat/aee.h>
