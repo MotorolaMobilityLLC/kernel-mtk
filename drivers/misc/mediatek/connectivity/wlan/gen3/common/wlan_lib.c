@@ -946,6 +946,7 @@ WLAN_STATUS wlanAdapterStop(IN P_ADAPTER_T prAdapter)
 				       "%s: Failure to get RDY bit cleared! CardRemoved[%u] BusFailed[%u] Timeout[%u]",
 					__func__,
 					kalIsCardRemoved(prAdapter->prGlueInfo), fgIsBusAccessFailed, i);
+					glGetRstReason(RST_WAIT_BIT_TIMEOUT);
 					glResetTrigger(prAdapter);
 					break;
 				}
@@ -1819,6 +1820,7 @@ VOID wlanReleasePendingOid(IN P_ADAPTER_T prAdapter, IN ULONG ulParamPtr)
 				DBGLOG(INIT, WARN,
 				       "No response from chip for %u times, set NoAck flag!\n",
 					prAdapter->ucOidTimeoutCount);
+				glGetRstReason(RST_OID_TIMEOUT);
 #if CFG_CHIP_RESET_SUPPORT
 				glResetTrigger(prAdapter);
 #endif
@@ -6606,11 +6608,19 @@ wlanDhcpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX
 	OS_SYSTIME rCurrent = kalGetTimeTick();
 	P_PKT_PROFILE_T prPktProfile = &prMsduInfo->rPktProfile;
 
-	if (rCurrent - prPktProfile->rHardXmitArrivalTimestamp > 2000)
+	if (rCurrent - prPktProfile->rHardXmitArrivalTimestamp > 2000) {
 		DBGLOG(TX, INFO, "valid %d; ArriveDrv %u, Enq %u, Deq %u, LeaveDrv %u, TxDone %u\n",
-				prPktProfile->fgIsValid, prPktProfile->rHardXmitArrivalTimestamp,
-				prPktProfile->rEnqueueTimestamp, prPktProfile->rDequeueTimestamp,
-				prPktProfile->rHifTxDoneTimestamp, rCurrent);
+					prPktProfile->fgIsValid, prPktProfile->rHardXmitArrivalTimestamp,
+					prPktProfile->rEnqueueTimestamp, prPktProfile->rDequeueTimestamp,
+					prPktProfile->rHifTxDoneTimestamp, rCurrent);
+		prAdapter->prGlueInfo->fgTxDoneDelayIsARP = FALSE;
+		prAdapter->prGlueInfo->u4ArriveDrvTick = prPktProfile->rHardXmitArrivalTimestamp;
+		prAdapter->prGlueInfo->u4EnQueTick = prPktProfile->rEnqueueTimestamp;
+		prAdapter->prGlueInfo->u4DeQueTick = prPktProfile->rDequeueTimestamp;
+		prAdapter->prGlueInfo->u4LeaveDrvTick = prPktProfile->rHifTxDoneTimestamp;
+		prAdapter->prGlueInfo->u4CurrTick = rCurrent;
+		prAdapter->prGlueInfo->u8CurrTime = sched_clock();
+	}
 
 	DBGLOG(TX, INFO, "DHCP PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
 			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
@@ -6624,11 +6634,19 @@ wlanArpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_
 	OS_SYSTIME rCurrent = kalGetTimeTick();
 	P_PKT_PROFILE_T prPktProfile = &prMsduInfo->rPktProfile;
 
-	if (rCurrent - prPktProfile->rHardXmitArrivalTimestamp > 2000)
+	if (rCurrent - prPktProfile->rHardXmitArrivalTimestamp > 2000) {
 		DBGLOG(TX, INFO, "valid %d; ArriveDrv %u, Enq %u, Deq %u, LeaveDrv %u, TxDone %u\n",
-				prPktProfile->fgIsValid, prPktProfile->rHardXmitArrivalTimestamp,
-				prPktProfile->rEnqueueTimestamp, prPktProfile->rDequeueTimestamp,
-				prPktProfile->rHifTxDoneTimestamp, rCurrent);
+					prPktProfile->fgIsValid, prPktProfile->rHardXmitArrivalTimestamp,
+					prPktProfile->rEnqueueTimestamp, prPktProfile->rDequeueTimestamp,
+					prPktProfile->rHifTxDoneTimestamp, rCurrent);
+		prAdapter->prGlueInfo->fgTxDoneDelayIsARP = TRUE;
+		prAdapter->prGlueInfo->u4ArriveDrvTick = prPktProfile->rHardXmitArrivalTimestamp;
+		prAdapter->prGlueInfo->u4EnQueTick = prPktProfile->rEnqueueTimestamp;
+		prAdapter->prGlueInfo->u4DeQueTick = prPktProfile->rDequeueTimestamp;
+		prAdapter->prGlueInfo->u4LeaveDrvTick = prPktProfile->rHifTxDoneTimestamp;
+		prAdapter->prGlueInfo->u4CurrTick = rCurrent;
+		prAdapter->prGlueInfo->u8CurrTime = sched_clock();
+	}
 
 	DBGLOG(TX, INFO, "ARP PKT TX DONE WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
 			prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);

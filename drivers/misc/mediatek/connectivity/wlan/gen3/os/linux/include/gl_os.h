@@ -557,6 +557,16 @@ struct _GLUE_INFO_T {
 	/*UINT_8 ucChannelListNum;*/
 	UINT_8 ucChannelNum[FULL_SCAN_MAX_CHANNEL_NUM];
 	PUINT_8	puFullScan2PartialChannel;
+
+	UINT_32 u4RoamFailCnt;
+	UINT_64 u8RoamFailTime;
+	BOOLEAN fgTxDoneDelayIsARP;
+	UINT_32 u4ArriveDrvTick;
+	UINT_32 u4EnQueTick;
+	UINT_32 u4DeQueTick;
+	UINT_32 u4LeaveDrvTick;
+	UINT_32 u4CurrTick;
+	UINT_64 u8CurrTime;
 };
 
 typedef irqreturn_t(*PFN_WLANISR) (int irq, void *dev_id, struct pt_regs *regs);

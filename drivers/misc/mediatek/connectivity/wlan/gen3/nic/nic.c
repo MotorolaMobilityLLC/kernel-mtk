@@ -775,6 +775,7 @@ VOID nicProcessAbnormalInterrupt(IN P_ADAPTER_T prAdapter)
 	DBGLOG(REQ, WARN, "MCR_WASR: 0x%lx\n", u4Value);
 #endif
 
+	glGetRstReason(RST_PROCESS_ABNORMAL_INTER);
 #if CFG_CHIP_RESET_SUPPORT
 	glResetTrigger(prAdapter);
 #endif

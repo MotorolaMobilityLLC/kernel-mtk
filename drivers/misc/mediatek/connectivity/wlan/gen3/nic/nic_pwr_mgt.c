@@ -192,6 +192,7 @@ BOOLEAN nicpmSetDriverOwn(IN P_ADAPTER_T prAdapter)
 				prAdapter->u4OwnFailedLogCount++;
 				if (prAdapter->u4OwnFailedLogCount > LP_OWN_BACK_FAILED_RESET_CNT) {
 					/* Trigger RESET */
+					glGetRstReason(RST_DRV_OWN_FAIL);
 #if CFG_CHIP_RESET_SUPPORT
 					glResetTrigger(prAdapter);
 #endif

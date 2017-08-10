@@ -106,6 +106,21 @@ typedef enum _ENUM_WMTRSTMSG_TYPE_T {
 	WMTRSTMSG_RESET_INVALID = 0xff
 } ENUM_WMTRSTMSG_TYPE_T, *P_ENUM_WMTRSTMSG_TYPE_T;
 
+typedef enum _ENUM_CHIP_RESET_REASON_TYPE_T {
+	RST_HIF_RD_FAIL = 0,
+	RST_HIF_WR_FAIL,
+	RST_PORT_RD_FAIL,
+	RST_PORT_WR_FAIL,
+	RST_PROCESS_ABNORMAL_INTER,
+	RST_DRV_OWN_FAIL,
+	RST_GROUP3_NULL,
+	RST_GROUP4_NULL,
+	RST_SCAN_DONE_TIMEOUT,
+	RST_WAIT_BIT_TIMEOUT,
+	RST_OID_TIMEOUT,
+	RST_REASON_MAX
+} ENUM_CHIP_RESET_REASON_TYPE_T, *P_ENUM_CHIP_RESET_REASON_TYPE_T;
+
 typedef void (*PF_WMT_CB) (ENUM_WMTDRV_TYPE_T,	/* Source driver type */
 			   ENUM_WMTDRV_TYPE_T,	/* Destination driver type */
 			   ENUM_WMTMSG_TYPE_T,	/* Message type */
@@ -125,6 +140,8 @@ extern int wifi_reset_start(void);
 extern int wifi_reset_end(ENUM_RESET_STATUS_T);
 #endif
 
+extern UINT_64 u8ResetTime;
+extern ENUM_CHIP_RESET_REASON_TYPE_T eResetReason;
 /*******************************************************************************
 *                            P U B L I C   D A T A
 ********************************************************************************
@@ -161,5 +178,7 @@ VOID glSendResetRequest(VOID);
 BOOLEAN kalIsResetting(VOID);
 
 BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter);
+
+VOID glGetRstReason(ENUM_CHIP_RESET_REASON_TYPE_T eReason);
 
 #endif /* _GL_RST_H */

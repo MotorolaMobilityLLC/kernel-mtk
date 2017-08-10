@@ -1929,21 +1929,32 @@ mtk_cfg80211_testmode_get_link_detection(IN struct wiphy *wiphy, IN void *data, 
 	INT_32 i4Status = -EINVAL;
 	UINT_32 u4BufLen;
 	UINT_8 u1buf = 0;
-
+	UINT_32 i = 0;
+	UINT_32 arBugReport[sizeof(EVENT_BUG_REPORT_T)];
 	PARAM_802_11_STATISTICS_STRUCT_T rStatistics;
+	P_EVENT_BUG_REPORT_T prBugReport;
 	struct sk_buff *skb;
 
 	ASSERT(wiphy);
 	ASSERT(prGlueInfo);
 
-	skb = cfg80211_testmode_alloc_reply_skb(wiphy, sizeof(PARAM_GET_STA_STA_STATISTICS) + 1);
+	prBugReport = (P_EVENT_BUG_REPORT_T) kalMemAlloc(sizeof(EVENT_BUG_REPORT_T), VIR_MEM_TYPE);
+	if (!prBugReport) {
+		DBGLOG(QM, TRACE, "%s allocate prBugReport failed\n", __func__);
+		return -ENOMEM;
+	}
+	skb = cfg80211_testmode_alloc_reply_skb(wiphy,
+		sizeof(PARAM_802_11_STATISTICS_STRUCT_T) + sizeof(EVENT_BUG_REPORT_T) + 1);
 
 	if (!skb) {
+		kalMemFree(prBugReport, VIR_MEM_TYPE, sizeof(EVENT_BUG_REPORT_T));
 		DBGLOG(QM, TRACE, "%s allocate skb failed:%x\n", __func__, rStatus);
 		return -ENOMEM;
 	}
 
 	kalMemZero(&rStatistics, sizeof(rStatistics));
+	kalMemZero(prBugReport, sizeof(EVENT_BUG_REPORT_T));
+	kalMemZero(arBugReport, sizeof(EVENT_BUG_REPORT_T));
 
 	rStatus = kalIoctl(prGlueInfo,
 			   wlanoidQueryStatistics,
@@ -1951,6 +1962,27 @@ mtk_cfg80211_testmode_get_link_detection(IN struct wiphy *wiphy, IN void *data, 
 
 	if (rStatus != WLAN_STATUS_SUCCESS)
 		DBGLOG(INIT, INFO, "query statistics error:%lx\n", rStatus);
+
+	rStatus = kalIoctl(prGlueInfo,
+			   wlanoidQueryBugReport,
+			   prBugReport, sizeof(EVENT_BUG_REPORT_T), TRUE, TRUE, TRUE, &u4BufLen);
+
+	if (rStatus != WLAN_STATUS_SUCCESS)
+		DBGLOG(INIT, INFO, "query statistics error:%lx\n", rStatus);
+
+	kalMemCopy(arBugReport, prBugReport, sizeof(EVENT_BUG_REPORT_T));
+
+	rStatistics.u4RstReason = eResetReason;
+	rStatistics.u8RstTime = u8ResetTime;
+	rStatistics.u4RoamFailCnt = prGlueInfo->u4RoamFailCnt;
+	rStatistics.u8RoamFailTime = prGlueInfo->u8RoamFailTime;
+	rStatistics.u2TxDoneDelayIsARP = prGlueInfo->fgTxDoneDelayIsARP;
+	rStatistics.u4ArriveDrvTick = prGlueInfo->u4ArriveDrvTick;
+	rStatistics.u4EnQueTick = prGlueInfo->u4EnQueTick;
+	rStatistics.u4DeQueTick = prGlueInfo->u4DeQueTick;
+	rStatistics.u4LeaveDrvTick = prGlueInfo->u4LeaveDrvTick;
+	rStatistics.u4CurrTick = prGlueInfo->u4CurrTick;
+	rStatistics.u8CurrTime = prGlueInfo->u8CurrTime;
 
 	do {
 		if (!NLA_PUT_U8(skb, NL80211_TESTMODE_LINK_INVALID, &u1buf))
@@ -1970,10 +2002,40 @@ mtk_cfg80211_testmode_get_link_detection(IN struct wiphy *wiphy, IN void *data, 
 			break;
 		if (!NLA_PUT_U64(skb, NL80211_TESTMODE_LINK_RX_CNT, &rStatistics.rReceivedFragmentCount.QuadPart))
 			break;
+		if (!NLA_PUT_U32(skb, NL80211_TESTMODE_LINK_RST_REASON, &rStatistics.u4RstReason))
+			break;
+		if (!NLA_PUT_U64(skb, NL80211_TESTMODE_LINK_RST_TIME, &rStatistics.u8RstTime))
+			break;
+		if (!NLA_PUT_U32(skb, NL80211_TESTMODE_LINK_ROAM_FAIL_TIMES, &rStatistics.u4RoamFailCnt))
+			break;
+		if (!NLA_PUT_U64(skb, NL80211_TESTMODE_LINK_ROAM_FAIL_TIME, &rStatistics.u8RoamFailTime))
+			break;
+		if (!NLA_PUT_U8(skb, NL80211_TESTMODE_LINK_TX_DONE_DELAY_IS_ARP, &rStatistics.u2TxDoneDelayIsARP))
+			break;
+		if (!NLA_PUT_U32(skb, NL80211_TESTMODE_LINK_ARRIVE_DRV_TICK, &rStatistics.u4ArriveDrvTick))
+			break;
+		if (!NLA_PUT_U32(skb, NL80211_TESTMODE_LINK_ENQUE_TICK, &rStatistics.u4EnQueTick))
+			break;
+		if (!NLA_PUT_U32(skb, NL80211_TESTMODE_LINK_DEQUE_TICK, &rStatistics.u4DeQueTick))
+			break;
+		if (!NLA_PUT_U32(skb, NL80211_TESTMODE_LINK_LEAVE_DRV_TICK, &rStatistics.u4LeaveDrvTick))
+			break;
+		if (!NLA_PUT_U32(skb, NL80211_TESTMODE_LINK_CURR_TICK, &rStatistics.u4CurrTick))
+			break;
+		if (!NLA_PUT_U64(skb, NL80211_TESTMODE_LINK_CURR_TIME, &rStatistics.u8CurrTime))
+			break;
+
+		for (i = 0; i < sizeof(EVENT_BUG_REPORT_T) / sizeof(UINT_32); i++) {
+			if (!NLA_PUT_U32(skb, i + NL80211_TESTMODE_LINK_DETECT_NUM, &arBugReport[i])) {
+				kalMemFree(prBugReport, VIR_MEM_TYPE, sizeof(EVENT_BUG_REPORT_T));
+				return i4Status;
+			}
+		}
 
 		i4Status = cfg80211_testmode_reply(skb);
 	} while (0);
 
+	kalMemFree(prBugReport, VIR_MEM_TYPE, sizeof(EVENT_BUG_REPORT_T));
 	return i4Status;
 }
 

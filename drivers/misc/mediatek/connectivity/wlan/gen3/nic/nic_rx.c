@@ -2478,6 +2478,7 @@ VOID nicRxProcessMgmtPacket(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb)
 				prSwRfb->u2PacketLen > 32 ? 32:prSwRfb->u2PacketLen);
 		nicRxReturnRFB(prAdapter, prSwRfb);
 		RX_INC_CNT(&prAdapter->rRxCtrl, RX_DROP_TOTAL_COUNT);
+		glGetRstReason(RST_GROUP3_NULL);
 #if CFG_CHIP_RESET_SUPPORT
 		glResetTrigger(prAdapter);
 #endif

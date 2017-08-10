@@ -1770,6 +1770,7 @@ VOID scnScanDoneTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 		DBGLOG(SCN, ERROR,
 		       " meet SCAN_DONE_TIMEOUT_THRESHOLD %d, trigger whole chip reset !! \r\n",
 		       SCAN_DONE_TIMEOUT_THRESHOLD);
+		glGetRstReason(RST_SCAN_DONE_TIMEOUT);
 #if CFG_CHIP_RESET_SUPPORT
 		glResetTrigger(prAdapter);
 #endif
