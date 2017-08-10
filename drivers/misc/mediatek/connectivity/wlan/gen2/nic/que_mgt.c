@@ -5335,8 +5335,10 @@ VOID qmHandleDelTspec(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eNetType,
 	P_MSDU_INFO_T prMsduInfo = NULL;
 	P_AC_QUE_PARMS_T prAcQueParam = NULL;
 
-	if (!prStaRec || eAci == ACI_NUM || eAci == ACI_BK)
+	if (!prStaRec || eAci == ACI_NUM || eAci == ACI_BK) {
+		DBGLOG(QM, ERROR, "prSta NULL %d, eAci %d, prAdapter NULL %d\n", !prStaRec, eAci, !prAdapter);
 		return;
+	}
 	prSrcQue = &prStaRec->arTxQueue[eAci];
 	prAcQueParam = &(prAdapter->rWifiVar.arBssInfo[eNetType].arACQueParms[0]);
 	u2ActivedTspec = wmmHasActiveTspec(&prAdapter->rWifiVar.rWmmInfo);
@@ -5346,7 +5348,6 @@ VOID qmHandleDelTspec(P_ADAPTER_T prAdapter, ENUM_NETWORK_TYPE_INDEX_T eNetType,
 		eAci = aeNextAci[eAci];
 		ucNewUp = aucNextUP[eAci];
 	}
-
 	prDstQue = &prStaRec->arTxQueue[eAci];
 	prMsduInfo = (P_MSDU_INFO_T)QUEUE_GET_HEAD(prSrcQue);
 	while (prMsduInfo) {

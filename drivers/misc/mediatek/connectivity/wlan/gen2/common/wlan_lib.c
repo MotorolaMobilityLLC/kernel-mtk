@@ -5663,6 +5663,10 @@ UINT_32 wlanDecimalStr2Hexadecimals(PUINT_8 pucDecimalStr, PUINT_16 pu2Out)
 	PUINT_8 tmp = NULL;
 	UINT_32 u4Result = 0;
 	UINT_32 u4Ret = 0;
+	UINT_32 u4Degree = 0;
+	UINT_32 u4Remain = 0;
+	UINT_8 ucAccuracy = 4; /* Hex decimals accuarcy is 4 bytes */
+	UINT_32 u4Base = 1;
 
 	if (!pu2Out || !pucDecimalStr)
 		return 1;
@@ -5672,62 +5676,55 @@ UINT_32 wlanDecimalStr2Hexadecimals(PUINT_8 pucDecimalStr, PUINT_16 pu2Out)
 	kalStrnCpy(aucDecimalStr, pucDecimalStr, sizeof(aucDecimalStr) - 1);
 	pucDecimalPart = strchr(aucDecimalStr, '.');
 	if (!pucDecimalPart) {
-		u4Ret = kstrtou16(aucDecimalStr, 0, pu2Out);
-		*pu2Out <<= 13;
-		DBGLOG(INIT, INFO, "No decimal, result=%d\n", *pu2Out);
-		return u4Ret;
+		DBGLOG(INIT, INFO, "No decimal part, ori str %s\n", pucDecimalStr);
+		goto integer_part;
 	}
 	*pucDecimalPart++ = 0;
 	/* get decimal degree */
-	tmp = pucDecimalPart + strlen(pucDecimalPart) - 1;
+	tmp = pucDecimalPart + strlen(pucDecimalPart);
 	do {
 		if (tmp == pucDecimalPart) {
-			u4Ret = kstrtou32(aucDecimalStr, 0, &u4Result);
-			u4Result <<= 13;
-			break;
-		}
-		if (*tmp != '0') {
-			UINT_32 u4Degree = 0;
-			UINT_32 u4Remain = 0;
-			UINT_8 ucAccuracy = 4; /* Hex decimals accuarcy is 4 bytes */
-			UINT_32 u4Base = 1;
-
-			*(++tmp) = 0;
-			u4Degree = (UINT_32)(tmp - pucDecimalPart);
-			/* if decimal part is not 0, translate it to hexadecimal decimals */
-			/* Power(10, degree) */
-			for (; u4Remain < u4Degree; u4Remain++)
-				u4Base *= 10;
-
-			while (*pucDecimalPart == '0')
-				pucDecimalPart++;
-			u4Ret = kstrtou32(pucDecimalPart, 0, &u4Remain);
-			if (u4Ret) {
-				DBGLOG(INIT, ERROR, "Parse decimal str %s error, degree %u\n",
-					   pucDecimalPart, u4Degree);
-				return u4Ret;
-			}
-
-			do {
-				u4Remain *= 16;
-				u4Result |= (u4Remain / u4Base) << ((ucAccuracy-1) * 4);
-				u4Remain %= u4Base;
-				ucAccuracy--;
-			} while (u4Remain && ucAccuracy > 0);
-			/* Each Hex Decimal byte was left shift more than 3 bits, so need
-			** right shift 3 bits at last
-			** For example, mmmnnnnnnnnnnnnn.
-			** mmm is integer part, n represents decimals part.
-			** the left most 4 n are shift 9 bits. But in for loop, we shift 12 bits
-			**/
-			u4Result >>= 3;
-			u4Remain = 0;
-			u4Ret = kstrtou32(aucDecimalStr, 0, &u4Remain);
-			u4Result |= u4Remain << 13;
-			break;
+			DBGLOG(INIT, INFO, "Decimal part are all 0, ori str %s\n", pucDecimalStr);
+			goto integer_part;
 		}
 		tmp--;
-	} while (TRUE);
+	} while (*tmp == '0');
+
+	*(++tmp) = 0;
+	u4Degree = (UINT_32)(tmp - pucDecimalPart);
+	/* if decimal part is not 0, translate it to hexadecimal decimals */
+	/* Power(10, degree) */
+	for (; u4Remain < u4Degree; u4Remain++)
+		u4Base *= 10;
+
+	while (*pucDecimalPart == '0')
+		pucDecimalPart++;
+
+	u4Ret = kstrtou32(pucDecimalPart, 0, &u4Remain);
+	if (u4Ret) {
+		DBGLOG(INIT, ERROR, "Parse decimal str %s error, degree %u\n",
+				pucDecimalPart, u4Degree);
+		return u4Ret;
+	}
+
+	do {
+		u4Remain *= 16;
+		u4Result |= (u4Remain / u4Base) << ((ucAccuracy-1) * 4);
+		u4Remain %= u4Base;
+		ucAccuracy--;
+	} while (u4Remain && ucAccuracy > 0);
+	/* Each Hex Decimal byte was left shift more than 3 bits, so need
+	** right shift 3 bits at last
+	** For example, mmmnnnnnnnnnnnnn.
+	** mmm is integer part, n represents decimals part.
+	** the left most 4 n are shift 9 bits. But in for loop, we shift 12 bits
+	**/
+	u4Result >>= 3;
+	u4Remain = 0;
+
+integer_part:
+	u4Ret = kstrtou32(aucDecimalStr, 0, &u4Remain);
+	u4Result |= u4Remain << 13;
 
 	if (u4Ret)
 		DBGLOG(INIT, ERROR, "Parse integer str %s error\n", aucDecimalStr);
