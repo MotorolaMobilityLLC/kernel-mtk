@@ -2198,6 +2198,69 @@ static int akm8963_o_get_data(int *x, int *y, int *z, int *status)
 	return 0;
 }
 #endif
+static int akm8963_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
+{
+	int err;
+
+	err = akm8963_enable(enabledisable == true ? 1 : 0);
+	if (err) {
+		AKMDBG("%s enable sensor failed!\n", __func__);
+		return -1;
+	}
+	err = akm8963_batch(0, sample_periods_ms * 1000000, 0);
+	if (err) {
+		AKMDBG("%s enable set batch failed!\n", __func__);
+		return -1;
+	}
+	return 0;
+}
+static int akm8963_factory_get_data(int32_t data[3], int *status)
+{
+	/* get raw data */
+	return  akm8963_m_get_data(&data[0], &data[1], &data[2], status);
+}
+static int akm8963_factory_get_raw_data(int32_t data[3])
+{
+	AKMDBG("do not support akm8963_factory_get_raw_data!\n");
+	return 0;
+}
+static int akm8963_factory_enable_calibration(void)
+{
+	return 0;
+}
+static int akm8963_factory_clear_cali(void)
+{
+	return 0;
+}
+static int akm8963_factory_set_cali(int32_t data[3])
+{
+	return 0;
+}
+static int akm8963_factory_get_cali(int32_t data[3])
+{
+	return 0;
+}
+static int akm8963_factory_do_self_test(void)
+{
+	return 0;
+}
+
+static struct mag_factory_fops akm8963_factory_fops = {
+	.enable_sensor = akm8963_factory_enable_sensor,
+	.get_data = akm8963_factory_get_data,
+	.get_raw_data = akm8963_factory_get_raw_data,
+	.enable_calibration = akm8963_factory_enable_calibration,
+	.clear_cali = akm8963_factory_clear_cali,
+	.set_cali = akm8963_factory_set_cali,
+	.get_cali = akm8963_factory_get_cali,
+	.do_self_test = akm8963_factory_do_self_test,
+};
+
+static struct mag_factory_public akm8963_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &akm8963_factory_fops,
+};
 /*----------------------------------------------------------------------------*/
 static int akm8963_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -2252,6 +2315,12 @@ static int akm8963_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	if (err < 0) {
 		AKMDBG(KERN_ERR "AKM8963 akm8963_probe: read Fuse ROM error\n");
 		goto exit_init_failed;
+	}
+
+	err = mag_factory_device_register(&akm8963_factory_device);
+	if (err) {
+		AKMDBG(KERN_ERR "misc device register failed, err = %d\n", err);
+		goto exit_misc_device_register_failed;
 	}
 
 	/* Register sysfs attribute */
@@ -2312,7 +2381,7 @@ static int akm8963_i2c_probe(struct i2c_client *client, const struct i2c_device_
 
 exit_sysfs_create_group_failed:
 exit_init_failed:
-	/*exit_misc_device_register_failed: */
+exit_misc_device_register_failed:
 exit_kfree:
 	kfree(data);
 exit:
@@ -2335,6 +2404,7 @@ static int akm8963_i2c_remove(struct i2c_client *client)
 
 	this_client = NULL;
 	i2c_unregister_device(client);
+	mag_factory_device_deregister(&akm8963_factory_device);
 	kfree(i2c_get_clientdata(client));
 	/* misc_deregister(&akm8963_device); */
 	return 0;
