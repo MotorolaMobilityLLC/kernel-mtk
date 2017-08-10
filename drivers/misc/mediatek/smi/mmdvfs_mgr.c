@@ -237,18 +237,6 @@ int mmdvfs_set_step(MTK_SMI_BWC_SCEN scenario, mmdvfs_voltage_enum step)
 	if (!is_vcorefs_can_work())
 		return 0;
 
-	/* D1 FHD always HPM. do not have to trigger vcore dvfs. */
-	if (g_mmdvfs_profile_id == MMDVFS_PROFILE_D1
-			&& mmdvfs_get_lcd_resolution() == MMDVFS_LCD_SIZE_FHD)
-			return 0;
-
-	/* D1 plus FHD only allowed DISP as the client  */
-	if (g_mmdvfs_profile_id == MMDVFS_PROFILE_D1_PLUS)
-		if (mmdvfs_get_lcd_resolution() == MMDVFS_LCD_SIZE_FHD
-			&& scenario != (MTK_SMI_BWC_SCEN) MMDVFS_SCEN_DISP)
-			return 0;
-
-
 	if ((scenario >= (MTK_SMI_BWC_SCEN) MMDVFS_SCEN_COUNT) || (scenario < SMI_BWC_SCEN_NORMAL)) {
 		MMDVFSERR("invalid scenario\n");
 		return -1;
