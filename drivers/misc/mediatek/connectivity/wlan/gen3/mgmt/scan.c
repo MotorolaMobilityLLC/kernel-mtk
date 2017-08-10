@@ -1291,6 +1291,8 @@ VOID scanRemoveBssDescsByPolicy(IN P_ADAPTER_T prAdapter, IN UINT_32 u4RemovePol
 					prBssDescWeakestSameSSID = prBssDesc;
 				else if (prBssDesc->ucRCPI < prBssDescWeakestSameSSID->ucRCPI)
 					prBssDescWeakestSameSSID = prBssDesc;
+				if (u4SameSSIDCount < SCN_BSS_DESC_SAME_SSID_THRESHOLD)
+					continue;
 			}
 
 			if (!prBssDescWeakest) {	/* 1st element */
