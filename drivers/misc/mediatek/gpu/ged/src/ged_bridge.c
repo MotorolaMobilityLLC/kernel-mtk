@@ -21,6 +21,7 @@
 #include "ged_monitor_3D_fence.h"
 #include "ged_notify_sw_vsync.h"
 #include "ged_dvfs.h"
+#include "ged_vsync.h"
 #include <linux/module.h>
 
 static unsigned int ged_boost_enable = 1;
@@ -150,6 +151,13 @@ int ged_bridge_event_notify(
     }
 
 	return 0;
+}
+
+//-----------------------------------------------------------------------------
+int ged_bridge_vsync_wait(void)
+{
+    ged_vsync_wait();
+    return 0;
 }
 
 module_param(ged_boost_enable, uint, 0644);

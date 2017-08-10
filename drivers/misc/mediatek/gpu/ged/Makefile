@@ -30,6 +30,38 @@ ccflags-y += \
 	-I$(MTK_TOP)/base/power/$(subst ",,$(CONFIG_MTK_PLATFORM))/ \
 	-I$(srctree)/drivers/misc/mediatek/video/include
 
+# ----- for FRR2.0 ----- #
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
+             -I$(srctree)/drivers/misc/mediatek/video/common/ \
+             -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/ \
+             -I$(srctree)/drivers/misc/mediatek/vv/common/wdma10/ \
+             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/ \
+             -I$(srctree)/drivers/misc/mediatek/sync/ \
+             -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/mach/ \
+             -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM) \
+             -I$(srctree)/drivers/misc/mediatek/base/power/include \
+             -I$(srctree)/drivers/misc/mediatek/smi/ \
+             -I$(MTK_TOP)/video/$(MTK_PLATFORM)/ \
+             -I$(MTK_TOP)/video/$(MTK_PLATFORM)/videox/ \
+             -I$(MTK_TOP)/lcm/inc/ \
+             -I$(MTK_TOP)/video/include/ \
+             -I$(MTK_TOP)/cmdq/v2/ \
+             -I$(MTK_TOP)/cmdq/v2/$(MTK_PLATFORM)/
+
+ifeq ($(CONFIG_ARCH_MT6735),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6735/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/mt6735/
+endif
+ifeq ($(CONFIG_ARCH_MT6735M),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6735m/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/mt6735m/
+endif
+ifeq ($(CONFIG_ARCH_MT6753),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6753/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/mt6753/
+endif
+# ---------------------- #
+
 $(info $$CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT is [${CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT}])
     
 ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
@@ -61,5 +93,6 @@ ged-y += \
 	src/ged_notify_sw_vsync.o \
 	src/ged_hashtable.o \
 	src/ged_thread.o \
-	src/ged_dvfs.o
+	src/ged_dvfs.o \
+    src/ged_vsync.o
 

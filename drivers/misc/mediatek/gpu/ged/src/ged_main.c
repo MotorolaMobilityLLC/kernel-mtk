@@ -35,6 +35,7 @@
 #include "ged_profile_dvfs.h"
 #include "ged_monitor_3D_fence.h"
 #include "ged_notify_sw_vsync.h"
+#include "ged_vsync.h"
 #include "ged_dvfs.h"
 
 
@@ -143,6 +144,9 @@ static long ged_dispatch(GED_BRIDGE_PACKAGE *psBridgePackageKM)
 				break;
 			case GED_BRIDGE_COMMAND_EVENT_NOTIFY:
 				pFunc = (ged_bridge_func_type*)ged_bridge_event_notify;
+				break;
+            case GED_BRIDGE_COMMAND_VSYNC_WAIT:
+				pFunc = (ged_bridge_func_type*)ged_bridge_vsync_wait;
 				break;
 			default:
 				GED_LOGE("Unknown Bridge ID: %u\n", GED_GET_BRIDGE_ID(psBridgePackageKM->ui32FunctionID));
