@@ -603,14 +603,14 @@ ssize_t mt_gpio_show_pin(struct device *dev, struct device_attribute *attr, char
 ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	int pin;
-	int ret;
+	/*int ret;*/
 
 #ifdef MTK_MT6306_SUPPORT
 	int group, on;
 #endif
 	int mode, pullsel, dout, pullen, dir, ies, smt;
 	u32 num, src, div;
-	char md_str[128] = "GPIO_MD_TEST";
+	/*char md_str[128] = "GPIO_MD_TEST";*/
 	/* struct mt_gpio_obj *obj = (struct mt_gpio_obj*)dev_get_drvdata(dev); */
 	if (!strncmp(buf, "-h", 2)) {
 		GPIOMSG("cat pin  #show all pin setting\n");
@@ -712,9 +712,9 @@ ssize_t mt_gpio_store_pin(struct device *dev, struct device_attribute *attr, con
 		/* GPIOMSG("gpio reg test for next chip!\n"); */
 		/* mt_reg_test(); */
 	} else if (!strncmp(buf, "-md", 3)) {
-		buf += 3;
-		ret = sscanf(buf, "%s", md_str);
-		mt_get_md_gpio_debug(md_str);
+		/*buf += 3;*/
+		/*ret = sscanf(buf, "%s", md_str);*/
+		/*mt_get_md_gpio_debug(md_str);*/
 	} else if (!strncmp(buf, "-k", 2)) {
 		buf += 2;
 		if (!strncmp(buf, "s", 1) && (3 == sscanf(buf + 1, "%d %d %d", &num, &src, &div)))
