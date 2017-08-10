@@ -3839,7 +3839,13 @@ BOOLEAN aisFsmIsRequestPending(IN P_ADAPTER_T prAdapter, IN ENUM_AIS_REQUEST_TYP
 			if (bRemove == TRUE) {
 				LINK_REMOVE_KNOWN_ENTRY(&(prAisFsmInfo->rPendingReqList),
 							&(prPendingReqHdr->rLinkEntry));
-
+				if (eReqType == AIS_REQUEST_SCAN) {
+					if (prPendingReqHdr->pu8ChannelInfo != NULL) {
+						DBGLOG(AIS, INFO, "scan req pu8ChannelInfo no NULL\n");
+						prAdapter->prGlueInfo->puScanChannel = prPendingReqHdr->pu8ChannelInfo;
+						prPendingReqHdr->pu8ChannelInfo = NULL;
+					}
+				}
 				cnmMemFree(prAdapter, prPendingReqHdr);
 			}
 
@@ -3866,6 +3872,7 @@ P_AIS_REQ_HDR_T aisFsmGetNextRequest(IN P_ADAPTER_T prAdapter)
 
 	ASSERT(prAdapter);
 	prAisFsmInfo = &(prAdapter->rWifiVar.rAisFsmInfo);
+	DBGLOG(AIS, INFO, "aisFsmGetNextRequest\n");
 
 	LINK_REMOVE_HEAD(&(prAisFsmInfo->rPendingReqList), prPendingReqHdr, P_AIS_REQ_HDR_T);
 	/* save partial scan puScanChannel info to prGlueInfo */
@@ -3875,6 +3882,7 @@ P_AIS_REQ_HDR_T aisFsmGetNextRequest(IN P_ADAPTER_T prAdapter)
 
 		if (prPendingReqHdr->pu8ChannelInfo != NULL) {
 			prAdapter->prGlueInfo->puScanChannel = prPendingReqHdr->pu8ChannelInfo;
+			DBGLOG(AIS, INFO, "aisFsmGetNextRequest pu8ChannelInfo NOT NULL, SAVE\n");
 			prPendingReqHdr->pu8ChannelInfo = NULL;
 		}
 	}
@@ -3906,12 +3914,14 @@ BOOLEAN aisFsmInsertRequest(IN P_ADAPTER_T prAdapter, IN ENUM_AIS_REQUEST_TYPE_T
 		ASSERT(0);	/* Can't generate new message */
 		return FALSE;
 	}
+	DBGLOG(AIS, INFO, "aisFsmInsertRequest\n");
 
 	prAisReq->eReqType = eReqType;
 	prAisReq->pu8ChannelInfo = NULL;
 	/* save partial scan puScanChannel info to pending scan */
 	if ((prAdapter->prGlueInfo != NULL) &&
 		(prAdapter->prGlueInfo->puScanChannel != NULL)) {
+		DBGLOG(AIS, INFO, "aisFsmInsertRequest puScanChannel NOT NULL, SAVE\n");
 		prAisReq->pu8ChannelInfo = prAdapter->prGlueInfo->puScanChannel;
 		prAdapter->prGlueInfo->puScanChannel = NULL;
 	}
