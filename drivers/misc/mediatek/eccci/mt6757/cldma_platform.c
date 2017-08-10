@@ -20,7 +20,6 @@
 #include <linux/of_address.h>
 #include "ccci_config.h"
 #include <linux/clk.h>
-
 #include <mach/mt_pbm.h>
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
@@ -31,7 +30,6 @@
 #include <mt_clkbuf_ctl.h>
 #endif
 #include <mt-plat/upmu_common.h>
-#include <mach/mt_pbm.h>
 #include <mt_spm_sleep.h>
 #include <pmic.h>
 #include "ccci_core.h"

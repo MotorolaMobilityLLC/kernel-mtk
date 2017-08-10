@@ -72,8 +72,8 @@ static void ccci_aed_v1(struct md_ee *mdee, unsigned int dump_flag, char *aed_st
 		ex_log_len = smem_layout->ccci_exp_smem_mdss_debug_size;
 	}
 	if (dump_flag & CCCI_AED_DUMP_EX_PKT) {
-			ex_log_addr = (void *)&dumper->ex_info;
-			ex_log_len = sizeof(EX_LOG_T);
+		ex_log_addr = (void *)&dumper->ex_info;
+		ex_log_len = sizeof(EX_LOG_T);
 	}
 	if (dump_flag & CCCI_AED_DUMP_MD_IMG_MEM) {
 		md_img_addr = (void *)mem_layout->md_region_vir;
@@ -269,8 +269,11 @@ err_exit:
 	if (dumper->more_info == MD_EE_CASE_NORMAL && md_state == BOOT_WAITING_FOR_HS1) {
 		/* MD will not fill in share memory before we send runtime data */
 		dump_flag = CCCI_AED_DUMP_EX_PKT;
-	} else {/* otherwise always dump whole share memory,
-		   as MD will fill debug log into its 2nd 1K region after bootup */
+	} else {
+		/*
+		* otherwise always dump whole share memory,
+		* as MD will fill debug log into its 2nd 1K region after bootup
+		*/
 		dump_flag = CCCI_AED_DUMP_EX_MEM;
 		if (dumper->more_info == MD_EE_CASE_NO_RESPONSE)
 			dump_flag |= CCCI_AED_DUMP_CCIF_REG;

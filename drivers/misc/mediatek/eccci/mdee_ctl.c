@@ -274,8 +274,11 @@ static void mdee_monitor2_func(unsigned long data)
 		ccci_md_dump_info(another_md, DUMP_FLAG_CCIF, NULL, 0);
 
 	spin_lock_irqsave(&mdee->ctrl_lock, flags);
-	mdee->ee_info_flag = 0;	/* this should be the last action of a regular exception flow,
-				   clear flag for reset MD later */
+	/*
+	* this flag should be the last action of a regular exception flow,
+	* clear flag for reset MD later
+	*/
+	mdee->ee_info_flag = 0;
 	spin_unlock_irqrestore(&mdee->ctrl_lock, flags);
 
 	CCCI_MEM_LOG_TAG(md_id, KERN, "Enable WDT at exception exit.\n");
