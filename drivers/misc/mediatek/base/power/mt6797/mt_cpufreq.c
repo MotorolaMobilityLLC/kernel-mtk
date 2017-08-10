@@ -1016,7 +1016,7 @@ static unsigned int _mt_cpufreq_get_cpu_date_code(void)
 	else
 		return DATE_CODE_0119;
 }
-
+int is_tt_segment = 0;
 static unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = 0;
@@ -1034,6 +1034,10 @@ static unsigned int _mt_cpufreq_get_cpu_level(void)
 		lv = CPU_LEVEL_2;
 	else if (func_code_1 == 0x0F)
 		lv = CPU_LEVEL_3;
+	else if (func_code_1 == 4) {
+		lv = CPU_LEVEL_1;
+		is_tt_segment = 1;
+	}
 	else
 		lv = CPU_LEVEL_0;
 
@@ -1126,10 +1130,10 @@ EXPORT_SYMBOL(mt_cpufreq_setvolt_registerCB);
 	.clk_div = clk,			\
 }
 struct mt_cpu_freq_method {
-	const unsigned int target_f;
-	const unsigned int vco_dds;
-	const unsigned int pos_div;
-	const unsigned int clk_div;
+	unsigned int target_f;
+	unsigned int vco_dds;
+	unsigned int pos_div;
+	unsigned int clk_div;
 };
 
 struct opp_idx_tbl {
@@ -1152,9 +1156,9 @@ struct opp_idx_tbl opp_tbl_m[NR_OPP_IDX];
 }
 
 struct mt_cpu_freq_info {
-	const unsigned int cpufreq_khz;
+	unsigned int cpufreq_khz;
 	unsigned int cpufreq_volt;
-	const unsigned int cpufreq_volt_org;
+	unsigned int cpufreq_volt_org;
 };
 
 struct mt_cpu_dvfs {
@@ -2164,7 +2168,7 @@ static struct mt_cpu_freq_method opp_tbl_method_B_e8[] = {
 };
 
 struct opp_tbl_info {
-	struct mt_cpu_freq_info *const opp_tbl;
+	struct mt_cpu_freq_info *opp_tbl;
 	const int size;
 };
 
@@ -2231,7 +2235,7 @@ static struct opp_tbl_info opp_tbls_0119[NR_MT_CPU_DVFS][4] = {
 };
 
 struct opp_tbl_m_info {
-	struct mt_cpu_freq_method *const opp_tbl_m;
+	struct mt_cpu_freq_method *opp_tbl_m;
 	const int size;
 };
 
@@ -3182,8 +3186,17 @@ static void idvfs_set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsi
 
 	if (_mt_cpufreq_get_cpu_date_code() == DATE_CODE_1221)
 		ret = BigIDVFSFreq(idvfs_opp_tbls_1221[p->cpu_level][idx]);
-	else
-		ret = BigIDVFSFreq(idvfs_opp_tbls_0119[p->cpu_level][idx]);
+	else {
+		if (is_tt_segment) {
+			if (idx == 0)
+				ret = BigIDVFSFreq(10296);
+			else if (idx == 1)
+				ret = BigIDVFSFreq(9724);
+			else
+				ret = BigIDVFSFreq(idvfs_opp_tbls_0119[p->cpu_level][idx]);
+		} else
+			ret = BigIDVFSFreq(idvfs_opp_tbls_0119[p->cpu_level][idx]);
+	}
 }
 #endif
 
@@ -5014,8 +5027,15 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 		if (_mt_cpufreq_get_cpu_date_code() == DATE_CODE_1221)
 			opp_tbl_info = &opp_tbls_1221[id][CPU_LV_TO_OPP_IDX(lv)];
-		else
+		else {
 			opp_tbl_info = &opp_tbls_0119[id][CPU_LV_TO_OPP_IDX(lv)];
+			if (id == MT_CPU_DVFS_B && is_tt_segment && lv == CPU_LEVEL_1) {
+				opp_tbl_info->opp_tbl[0].cpufreq_khz = 2574000;
+				opp_tbl_info->opp_tbl[1].cpufreq_khz = 2431000;
+				opp_tbl_info->opp_tbl[1].cpufreq_volt = 118000;
+				opp_tbl_info->opp_tbl[1].cpufreq_volt_org = 118000;
+			}
+		}
 
 		BUG_ON(NULL == p);
 		BUG_ON(!
@@ -5060,8 +5080,15 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 
 		if (_mt_cpufreq_get_cpu_date_code() == DATE_CODE_1221)
 			opp_tbl_m_info = &opp_tbls_m_1221[id][CPU_LV_TO_OPP_IDX(lv)];
-		else
+		else {
 			opp_tbl_m_info = &opp_tbls_m_0119[id][CPU_LV_TO_OPP_IDX(lv)];
+			if (id == MT_CPU_DVFS_B && is_tt_segment && lv == CPU_LEVEL_1) {
+				opp_tbl_m_info->opp_tbl_m[0].target_f = 2574000;
+				opp_tbl_m_info->opp_tbl_m[1].target_f = 2431000;
+				opp_tbl_m_info->opp_tbl_m[0].vco_dds = 2574000;
+				opp_tbl_m_info->opp_tbl_m[1].vco_dds = 2431000;
+			}
+		}
 
 		p->freq_tbl = opp_tbl_m_info->opp_tbl_m;
 
