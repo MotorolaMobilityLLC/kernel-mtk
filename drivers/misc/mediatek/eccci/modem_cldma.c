@@ -367,7 +367,7 @@ static void cldma_dump_packet_history(struct ccci_modem *md)
 		       (unsigned int)md_ctrl->rxq[i].tr_done->gpd_addr,
 		       (unsigned int)md_ctrl->rxq[i].rx_refill->gpd_addr);
 	}
-	ccci_dump_log_history(md, 1, QUEUE_LEN(md_ctrl->txq), QUEUE_LEN(md_ctrl->rxq));
+	ccci_md_dump_log_history(md, 1, QUEUE_LEN(md_ctrl->txq), QUEUE_LEN(md_ctrl->rxq));
 }
 
 static void cldma_dump_queue_history(struct ccci_modem *md, unsigned int qno)
@@ -378,7 +378,7 @@ static void cldma_dump_queue_history(struct ccci_modem *md, unsigned int qno)
 	       (unsigned int)md_ctrl->txq[qno].tr_done->gpd_addr, (unsigned int)md_ctrl->txq[qno].tx_xmit->gpd_addr);
 	CCCI_MEM_LOG_TAG(md->index, TAG, "Current rxq%d pos: tr_done=%x, rx_refill=%x\n", qno,
 	       (unsigned int)md_ctrl->rxq[qno].tr_done->gpd_addr, (unsigned int)md_ctrl->rxq[qno].rx_refill->gpd_addr);
-	ccci_dump_log_history(md, 0, qno, qno);
+	ccci_md_dump_log_history(md, 0, qno, qno);
 }
 
 #if CHECKSUM_SIZE
@@ -537,7 +537,7 @@ again:
 			md_ctrl->rx_traffic_monitor[queue->index]++;
 #endif
 			rxbytes += skb_bytes;
-			ccci_dump_log_add(md, IN, (int)queue->index, &ccci_h, (ret >= 0 ? 0 : 1));
+			ccci_md_add_log_history(md, IN, (int)queue->index, &ccci_h, (ret >= 0 ? 0 : 1));
 			ccci_channel_update_packet_counter(md, &ccci_h);
 			/* refill */
 			req = queue->rx_refill;
@@ -2650,7 +2650,7 @@ static int md_cd_send_skb(struct ccci_modem *md, int qno, struct sk_buff *skb,
 #if TRAFFIC_MONITOR_INTERVAL
 		md_ctrl->tx_pre_traffic_monitor[queue->index]++;
 #endif
-		ccci_dump_log_add(md, OUT, (int)queue->index, &ccci_h, 0);
+		ccci_md_add_log_history(md, OUT, (int)queue->index, &ccci_h, 0);
 		/*
 		 * make sure TGPD is ready by here, otherwise there is race conditon between ports over the same queue.
 		 * one port is just setting TGPD, another port may have resumed the queue.

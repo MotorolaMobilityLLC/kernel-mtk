@@ -545,7 +545,6 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 				queue->index, ccci_h->channel);
 
 		md_ccif_tx_rx_printk(md, skb, queue->index, 0);
-		ccci_channel_update_packet_counter(md, ccci_h);
 
 		if (ccci_h->channel == CCCI_C2K_LB_DL)
 			atomic_set(&lb_dl_q, queue->index);
@@ -557,6 +556,9 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 		if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
 			count++;
 			ccci_md_check_rx_seq_num(md, &ccci_hdr, queue->index);
+			ccci_md_add_log_history(md, IN, (int)queue->index, &ccci_hdr, (ret >= 0 ? 0 : 1));
+			ccci_channel_update_packet_counter(md, &ccci_hdr);
+
 			if (queue->debug_id) {
 				CCCI_NORMAL_LOG(md->index, TAG, "Q%d Rx recv req ret=%d\n", queue->index, ret);
 				queue->debug_id = 0;
@@ -696,6 +698,7 @@ static void md_ccif_queue_dump(struct ccci_modem *md)
 			md_ctrl->rxq[idx].ringbuf->rx_control.read,
 			md_ctrl->rxq[idx].ringbuf->rx_control.length);
 	}
+	ccci_md_dump_log_history(md, 1, QUEUE_NUM, QUEUE_NUM);
 }
 
 static void md_ccif_reset_queue(struct ccci_modem *md)
@@ -1131,7 +1134,7 @@ static int md_ccif_op_send_skb(struct ccci_modem *md, int qno,
 		ret = ccci_ringbuf_write(md->index, queue->ringbuf, skb->data, skb->len);
 		if (ret != skb->len)
 			CCCI_ERROR_LOG(md->index, TAG, "TX:ERR rbf write: ret(%d)!=req(%d)\n", ret, skb->len);
-
+		ccci_md_add_log_history(md, OUT, (int)queue->index, ccci_h, 0);
 		/*free request */
 		ccci_free_skb(skb);
 
@@ -1295,6 +1298,7 @@ static int md_ccif_op_send_runtime_data(struct ccci_modem *md, unsigned int tx_c
 {
 	int packet_size = sizeof(struct ap_query_md_feature) + sizeof(struct ccci_header);
 	struct ccci_header *ccci_h;
+	struct ccci_header ccci_h_bk;
 	struct ap_query_md_feature *ap_rt_data;
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 	int ret;
@@ -1310,6 +1314,12 @@ static int md_ccif_op_send_runtime_data(struct ccci_modem *md, unsigned int tx_c
 	/*ccif_write32(&ccci_h->channel,0,CCCI_CONTROL_TX); */
 	/*as Runtime data always be the first packet we send on control channel */
 	ccif_write32((u32 *) ccci_h + 2, 0, tx_ch);
+	/*ccci_header need backup for log history*/
+	ccci_h_bk.data[0] = ccif_read32(&ccci_h->data[0], 0);
+	ccci_h_bk.data[1] = ccif_read32(&ccci_h->data[1], 0);
+	*((u32 *)&ccci_h_bk + 2) = ccif_read32((u32 *) ccci_h + 2, 0);
+	ccci_h_bk.reserved = ccif_read32(&ccci_h->reserved, 0);
+	ccci_md_add_log_history(md, OUT, (int)txqno, &ccci_h_bk, 0);
 
 	config_ap_runtime_data(md, ap_rt_data);
 
@@ -1337,6 +1347,22 @@ static int md_ccif_op_reset_pccif(struct ccci_modem *md)
 	reset_md1_md3_pccif(md);
 	return 0;
 }
+static void md_ccif_dump_queue_history(struct ccci_modem *md, unsigned int qno)
+{
+	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
+
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump md_ctrl->channel_id 0x%lx\n", md_ctrl->channel_id);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Dump CCIF Queue%d Control\n", qno);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Q%d TX: w=%d, r=%d, len=%d\n",
+		qno, md_ctrl->txq[qno].ringbuf->tx_control.write,
+		md_ctrl->txq[qno].ringbuf->tx_control.read,
+		md_ctrl->txq[qno].ringbuf->tx_control.length);
+	CCCI_MEM_LOG_TAG(md->index, TAG, "Q%d RX: w=%d, r=%d, len=%d\n",
+		qno, md_ctrl->rxq[qno].ringbuf->rx_control.write,
+		md_ctrl->rxq[qno].ringbuf->rx_control.read,
+		md_ctrl->rxq[qno].ringbuf->rx_control.length);
+	ccci_md_dump_log_history(md, 0, qno, qno);
+}
 
 static int md_ccif_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *buff, int length)
 {
@@ -1361,6 +1387,12 @@ static int md_ccif_dump_info(struct ccci_modem *md, MODEM_DUMP_FLAG flag, void *
 	if (flag & DUMP_FLAG_IRQ_STATUS) {
 		CCCI_INF_MSG(md->index, KERN, "Dump AP CCIF IRQ status\n");
 		mt_irq_dump_status(md_ctrl->ccif_irq_id);
+	}
+	if (flag & DUMP_FLAG_QUEUE_0)
+		md_ccif_dump_queue_history(md, 0);
+	if (flag & DUMP_FLAG_QUEUE_0_1) {
+		md_ccif_dump_queue_history(md, 0);
+		md_ccif_dump_queue_history(md, 1);
 	}
 
 	return 0;

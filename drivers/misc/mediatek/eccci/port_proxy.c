@@ -45,6 +45,124 @@ static inline void port_struct_init(struct ccci_port *port, struct port_proxy *p
 
 	wake_lock_init(&port->rx_wakelock, WAKE_LOCK_SUSPEND, port->name);
 }
+
+static void port_dump_string(struct ccci_port *port, int dir, void *msg_buf, int len)
+{
+#define DUMP_BUF_SIZE 32
+	unsigned char *char_ptr = (unsigned char *)msg_buf;
+	char buf[DUMP_BUF_SIZE];
+	int i, j;
+	u64 ts_nsec;
+	unsigned long rem_nsec;
+	char *replace_str;
+
+	for (i = 0, j = 0; i < len && i < DUMP_BUF_SIZE && j + 4 < DUMP_BUF_SIZE; i++) {
+		if (((char_ptr[i] >= 32) && (char_ptr[i] <= 126))) {
+			buf[j] = char_ptr[i];
+			j += 1;
+		} else if (char_ptr[i] == '\r' ||
+			char_ptr[i] == '\n' ||
+			char_ptr[i] == '\t') {
+			switch (char_ptr[i]) {
+			case '\r':
+				replace_str = "\\r";
+				break;
+			case '\n':
+				replace_str = "\\n";
+				break;
+			case '\t':
+				replace_str = "\\t";
+				break;
+			default:
+				replace_str = "";
+				break;
+			}
+			snprintf(buf+j, DUMP_BUF_SIZE - j, "%s", replace_str);
+			j += 2;
+		} else {
+			snprintf(buf+j, DUMP_BUF_SIZE - j, "[%02X]", char_ptr[i]);
+			j += 4;
+		}
+	}
+	buf[j] = '\0';
+	ts_nsec = local_clock();
+	rem_nsec = do_div(ts_nsec, 1000000000);
+	if (dir == 0)
+		CCCI_HISTORY_LOG(port->md_id, TAG, "[%5lu.%06lu]C:%d,%d(%d,%d,%d) %s: %d<%s\n",
+			(unsigned long)ts_nsec, rem_nsec / 1000, port->flags, port->rx_ch,
+			port->rx_skb_list.qlen, port->rx_pkg_cnt, port->rx_drop_cnt, "R", len, buf);
+	else
+		CCCI_HISTORY_LOG(port->md_id, TAG, "[%5lu.%06lu]C:%d,%d(%d) %s: %d>%s\n",
+			(unsigned long)ts_nsec, rem_nsec / 1000, port->flags, port->tx_ch,
+			port->tx_pkg_cnt, "W", len, buf);
+}
+static void port_dump_raw_data(struct ccci_port *port, int dir, void *msg_buf, int len)
+{
+#define DUMP_RAW_DATA_SIZE 16
+	unsigned int *curr_p = (unsigned int *)msg_buf;
+	unsigned char *curr_ch_p;
+	int _16_fix_num = len / 16;
+	int tail_num = len % 16;
+	char buf[16];
+	int i, j;
+	int dump_size;
+	u64 ts_nsec;
+	unsigned long rem_nsec;
+
+	dump_size = len > DUMP_RAW_DATA_SIZE ? DUMP_RAW_DATA_SIZE : len;
+	_16_fix_num = dump_size / 16;
+	tail_num = dump_size % 16;
+
+	if (curr_p == NULL) {
+		CCCI_HISTORY_LOG(port->md_id, TAG, "start_addr <NULL>\n");
+		return;
+	}
+	if (len == 0) {
+		CCCI_HISTORY_LOG(port->md_id, TAG, "len [0]\n");
+		return;
+	}
+	ts_nsec = local_clock();
+	rem_nsec = do_div(ts_nsec, 1000000000);
+
+	if (dir == 0)
+		CCCI_HISTORY_LOG(port->md_id, TAG, "[%5lu.%06lu]C:%d,%d(%d,%d,%d) %s: %d<",
+			(unsigned long)ts_nsec, rem_nsec / 1000, port->flags, port->rx_ch,
+			port->rx_skb_list.qlen, port->rx_pkg_cnt, port->rx_drop_cnt, "R", len);
+	else
+		CCCI_HISTORY_LOG(port->md_id, TAG, "[%5lu.%06lu]C:%d,%d(%d) %s: %d>",
+			(unsigned long)ts_nsec, rem_nsec / 1000, port->flags, port->tx_ch,
+			port->tx_pkg_cnt, "W", len);
+	/* Fix section */
+	for (i = 0; i < _16_fix_num; i++) {
+		CCCI_HISTORY_LOG(port->md_id, TAG, "%03X: %08X %08X %08X %08X\n",
+		       i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
+		curr_p += 4;
+	}
+
+	/* Tail section */
+	if (tail_num > 0) {
+		curr_ch_p = (unsigned char *)curr_p;
+		for (j = 0; j < tail_num; j++) {
+			buf[j] = *curr_ch_p;
+			curr_ch_p++;
+		}
+		for (; j < 16; j++)
+			buf[j] = 0;
+		curr_p = (unsigned int *)buf;
+		CCCI_HISTORY_LOG(port->md_id, TAG, "%03X: %08X %08X %08X %08X\n",
+		       i * 16, *curr_p, *(curr_p + 1), *(curr_p + 2), *(curr_p + 3));
+	}
+}
+
+void port_ch_dump(struct ccci_port *port, int dir, void *msg_buf, int len)
+{
+	if (port->flags & PORT_F_DUMP_RAW_DATA)
+		port_dump_raw_data(port, dir, msg_buf, len);
+	else
+		port_dump_string(port, dir, msg_buf, len);
+}
+
+
 static inline int port_adjust_skb(struct ccci_port *port, struct sk_buff *skb)
 {
 	struct ccci_header *ccci_h = NULL;
@@ -942,6 +1060,51 @@ static int port_proxy_send_runtime_data_to_md(struct port_proxy *proxy_p)
 	return ccci_md_send_runtime_data(proxy_p->md_obj, CCCI_CONTROL_TX, qno, proxy_p->ctl_port->skb_from_pool);
 }
 
+static void port_proxy_set_traffic_flag(struct port_proxy *proxy_p, unsigned int dump_flag)
+{
+	int idx;
+	struct ccci_port *port;
+
+	proxy_p->traffic_dump_flag = dump_flag;
+	CCCI_NORMAL_LOG(proxy_p->md_id, TAG,
+			 "%s: 0x%x\n", __func__, proxy_p->traffic_dump_flag);
+	for (idx = 0; idx < proxy_p->port_number; idx++) {
+		port = proxy_p->ports + idx;
+		if (!port)
+			continue;
+		/*clear traffic & dump flag*/
+		port->flags &= ~(PORT_F_CH_TRAFFIC | PORT_F_DUMP_RAW_DATA);
+
+		/*set RILD related port*/
+		if (proxy_p->traffic_dump_flag & (1 << PORT_DBG_DUMP_RILD)) {
+			if (port->rx_ch == CCCI_UART2_RX ||
+				port->rx_ch == CCCI_C2K_AT ||
+				port->rx_ch == CCCI_C2K_AT2 ||
+				port->rx_ch == CCCI_C2K_AT3 ||
+				port->rx_ch == CCCI_C2K_AT4 ||
+				port->rx_ch == CCCI_C2K_AT5 ||
+				port->rx_ch == CCCI_C2K_AT6 ||
+				port->rx_ch == CCCI_C2K_AT7 ||
+				port->rx_ch == CCCI_C2K_AT8)
+				port->flags |= PORT_F_CH_TRAFFIC;
+		}
+		/*set AUDIO related port*/
+		if (proxy_p->traffic_dump_flag & (1 << PORT_DBG_DUMP_AUDIO)) {
+			if (port->rx_ch == CCCI_PCM_RX)
+				port->flags |= (PORT_F_CH_TRAFFIC | PORT_F_DUMP_RAW_DATA);
+		}
+		/*set IMS related port*/
+		if (proxy_p->traffic_dump_flag & (1 << PORT_DBG_DUMP_IMS)) {
+			if (port->rx_ch == CCCI_IMSV_DL ||
+				port->rx_ch == CCCI_IMSC_DL ||
+				port->rx_ch == CCCI_IMSA_DL ||
+				port->rx_ch == CCCI_IMSA_DL ||
+				port->rx_ch == CCCI_IMSEM_DL)
+				port->flags |= (PORT_F_CH_TRAFFIC | PORT_F_DUMP_RAW_DATA);
+		}
+	}
+}
+
 long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd, unsigned long arg)
 {
 	long state_for_user, ret = 0;
@@ -1044,6 +1207,12 @@ long port_proxy_user_ioctl(struct port_proxy *proxy_p, int ch, unsigned int cmd,
 					 "CCCI_IOC_SET_BOOT_DATA: copy_from_user fail!\n");
 				ret = -EFAULT;
 			} else {
+				if (md_boot_data[MD_CFG_DUMP_FLAG] != MD_DBG_DUMP_INVALID &&
+					(md_boot_data[MD_CFG_DUMP_FLAG] & MD_DBG_DUMP_PORT)) {
+					/*port traffic use 0x6000_000x as port dump flag*/
+					port_proxy_set_traffic_flag(proxy_p, md_boot_data[MD_CFG_DUMP_FLAG]);
+					md_boot_data[MD_CFG_DUMP_FLAG] =  MD_DBG_DUMP_INVALID;
+				}
 				ret = ccci_md_set_boot_data(proxy_p->md_obj, md_boot_data, ARRAY_SIZE(md_boot_data));
 				if (ret < 0) {
 					CCCI_NORMAL_LOG(md_id, CHAR,
