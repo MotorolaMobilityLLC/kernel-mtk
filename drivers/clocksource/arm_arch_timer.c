@@ -441,7 +441,11 @@ static struct clocksource clocksource_counter = {
 	.rating	= 400,
 	.read	= arch_counter_read,
 	.mask	= CLOCKSOURCE_MASK(56),
+#ifdef CONFIG_ARM_ARCH_TIMER_SUSPEND_NONSTOP
 	.flags	= CLOCK_SOURCE_IS_CONTINUOUS | CLOCK_SOURCE_SUSPEND_NONSTOP,
+#else
+	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
+#endif
 };
 
 static struct cyclecounter cyclecounter = {

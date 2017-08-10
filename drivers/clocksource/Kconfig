@@ -110,6 +110,15 @@ config ARM_ARCH_TIMER_EVTSTREAM
 	  This must be disabled for hardware validation purposes to detect any
 	  hardware anomalies of missing events.
 
+config ARM_ARCH_TIMER_SUSPEND_NONSTOP
+	tristate "MediaTek timer feature excluded"
+	default y
+	help
+	 Default use ARM global timer as suspend_nonstop clocksource,
+	 it meas that we would use arm arch timer to compensate sleep time.
+	 MTK legacy feature used to compensate sleep time by RTC.
+	 In other words, we generally disable the configuration to MTK platform.
+
 config ARM_GLOBAL_TIMER
 	bool
 	select CLKSRC_OF if OF
