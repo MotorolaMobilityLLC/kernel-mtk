@@ -119,6 +119,10 @@ static int mtk_pcm_dl2_stop(struct snd_pcm_substream *substream)
 
 	/* here start digital part */
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I07,
+		      Soc_Aud_InterConnectionOutput_O00);
+	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I08,
+		      Soc_Aud_InterConnectionOutput_O01);
+	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I07,
 		      Soc_Aud_InterConnectionOutput_O03);
 	SetConnection(Soc_Aud_InterCon_DisConnect, Soc_Aud_InterConnectionInput_I08,
 		      Soc_Aud_InterConnectionOutput_O04);
@@ -335,6 +339,10 @@ static int mtk_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL2,
 						     AFE_WLEN_32_BIT_ALIGN_8BIT_0_24BIT_DATA);
 			SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
+						  Soc_Aud_InterConnectionOutput_O00);
+			SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
+						  Soc_Aud_InterConnectionOutput_O01);
+			SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
 						  Soc_Aud_InterConnectionOutput_O03);
 			SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
 						  Soc_Aud_InterConnectionOutput_O04);
@@ -348,6 +356,10 @@ static int mtk_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 			/* not support 24bit +++ */
 			SetMemIfFetchFormatPerSample(Soc_Aud_Digital_Block_MEM_DL2,
 						     AFE_WLEN_16_BIT);
+			SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
+						  Soc_Aud_InterConnectionOutput_O00);
+			SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
+						  Soc_Aud_InterConnectionOutput_O01);
 			SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
 						  Soc_Aud_InterConnectionOutput_O03);
 			SetoutputConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
@@ -384,6 +396,11 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 
 	PRINTK_AUD_DL2("%s\n", __func__);
 	/* here start digital part */
+
+	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I07,
+		      Soc_Aud_InterConnectionOutput_O00);
+	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I08,
+		      Soc_Aud_InterConnectionOutput_O01);
 
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I07,
 		      Soc_Aud_InterConnectionOutput_O03);
