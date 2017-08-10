@@ -2771,13 +2771,24 @@ bool ClearMemBlock(Soc_Aud_Digital_Block MemBlock)
 	return true;
 }
 
+#define MEM_TIMEOUT_CNT 4
 bool RemoveMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream *substream)
 {
 	substreamList *head;
 	substreamList *temp = NULL;
 	unsigned long flags;
+	int i;
 
 	spin_lock_irqsave(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
+
+	for (i = 0; i < MEM_TIMEOUT_CNT; i++) {
+		if (AFE_Mem_Control_context[MemBlock]->mWaitForIRQ == true) {
+			pr_debug("%s: enter udelay.\n", __func__);
+			mdelay(5);
+		} else {
+			break;
+		}
+	}
 
 	if (AFE_Mem_Control_context[MemBlock]->MemIfNum == 0)
 		pr_debug("%s AFE_Mem_Control_context[%d]->MemIfNum == 0\n ", __func__, MemBlock);
@@ -2951,8 +2962,10 @@ void Auddrv_AWB_Interrupt_Handler(void)
 	while (temp != NULL) {
 		if (temp->substream != NULL) {
 			temp_cnt = Mem_Block->MemIfNum;
+			Mem_Block->mWaitForIRQ = true;
 			spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 			snd_pcm_period_elapsed(temp->substream);
+			Mem_Block->mWaitForIRQ = false;
 			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 
 			if (temp_cnt != Mem_Block->MemIfNum) {
@@ -3036,8 +3049,10 @@ void Auddrv_DAI_Interrupt_Handler(void)
 
 	if (Mem_Block->substreamL != NULL) {
 		if (Mem_Block->substreamL->substream != NULL) {
+			Mem_Block->mWaitForIRQ = true;
 			spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 			snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
+			Mem_Block->mWaitForIRQ = false;
 			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 		}
 	}
@@ -3134,8 +3149,10 @@ void Auddrv_DL1_Interrupt_Handler(void)
 
 	if (Mem_Block->substreamL != NULL) {
 		if (Mem_Block->substreamL->substream != NULL) {
+			Mem_Block->mWaitForIRQ = true;
 			spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 			snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
+			Mem_Block->mWaitForIRQ = false;
 			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 		}
 	}
@@ -3245,8 +3262,10 @@ void Auddrv_DL2_Interrupt_Handler(void)
 
 	if (Mem_Block->substreamL != NULL) {
 		if (Mem_Block->substreamL->substream != NULL) {
+			Mem_Block->mWaitForIRQ = true;
 			spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 			snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
+			Mem_Block->mWaitForIRQ = false;
 			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 		}
 	}
@@ -3305,6 +3324,7 @@ void Auddrv_UL1_Interrupt_Handler(void)
 	kal_int32 Hw_Get_bytes = 0;
 	AFE_BLOCK_T *mBlock = NULL;
 	unsigned long flags;
+	struct snd_pcm_substream *temp_substream = NULL;
 
 	if (Mem_Block == NULL) {
 		pr_err("Mem_Block == NULL\n ");
@@ -3361,8 +3381,11 @@ void Auddrv_UL1_Interrupt_Handler(void)
 
 	if (Mem_Block->substreamL != NULL) {
 		if (Mem_Block->substreamL->substream != NULL) {
+			temp_substream = Mem_Block->substreamL->substream;
+			Mem_Block->mWaitForIRQ = true;
 			spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
-			snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
+			snd_pcm_period_elapsed(temp_substream);
+			Mem_Block->mWaitForIRQ = false;
 			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 		}
 	}
@@ -3521,8 +3544,10 @@ void Auddrv_UL2_Interrupt_Handler(void)
 
 	if (Mem_Block->substreamL != NULL) {
 		if (Mem_Block->substreamL->substream != NULL) {
+			Mem_Block->mWaitForIRQ = true;
 			spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 			snd_pcm_period_elapsed(Mem_Block->substreamL->substream);
+			Mem_Block->mWaitForIRQ = false;
 			spin_lock_irqsave(&Mem_Block->substream_lock, flags);
 		}
 	}
