@@ -26,6 +26,7 @@
 #include <linux/sched.h>	/* sched_get_percpu_load, sched_get_nr_heavy_task */
 #include <linux/slab.h>
 #include <asm/cpu_ops.h>	/* cpu_ops[] */
+#include <linux/cpu.h>
 /* local includes */
 #include "mt_hotplug_strategy_internal.h"
 
@@ -108,6 +109,40 @@ unsigned int num_online_big_cpus(void)
 	cpumask_and(&dst_cpumask, &hps_ctxt.big_cpumask, cpu_online_mask);
 	return cpumask_weight(&dst_cpumask);
 }
+
+int hps_cpu_up(unsigned int cpu)
+{
+	struct device *cpu_dev = get_cpu_device(cpu);
+	int ret;
+
+	lock_device_hotplug();
+
+	ret = device_online(cpu_dev);
+	if (ret)
+		dev_err(cpu_dev, "HPS: unable to up CPU\n");
+
+	unlock_device_hotplug();
+
+	return ret;
+}
+
+int hps_cpu_down(unsigned int cpu)
+{
+	struct device *cpu_dev = get_cpu_device(cpu);
+	int ret;
+
+	lock_device_hotplug();
+
+	ret = device_offline(cpu_dev);
+	if (ret)
+		dev_err(cpu_dev, "HPS: unable to down CPU\n");
+
+	unlock_device_hotplug();
+
+	return ret;
+}
+
+
 
 /* int hps_cpu_get_arch_type(void) */
 /* { */
