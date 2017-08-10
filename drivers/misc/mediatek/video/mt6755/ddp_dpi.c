@@ -531,14 +531,14 @@ int ddp_dpi_config(DISP_MODULE_ENUM module, disp_ddp_path_config *config, void *
 		ddp_dpi_ConfigDualEdge(cmdq_handle, dpi_config->i2x_en, dpi_config->i2x_edge);
 
 		s_isDpiConfig = TRUE;
-		DISPMSG("[DPI]ddp_dpi_config done\n");
+		DISPDBG("[DPI]ddp_dpi_config done\n");
 	}
 
 	if (s_isDpiConfig == TRUE) {
 		LCM_DPI_PARAMS *dpi_config = &(config->dispif_config.dpi);
 		int now_bg_parameters = dpi_config->bg_width << 16 | dpi_config->bg_height;
 
-		DISPMSG("[DPI]now_bg_parameters: 0x%x, cache_bg_parameter: 0x%x\n", now_bg_parameters,
+		DISPDBG("[DPI]now_bg_parameters: 0x%x, cache_bg_parameter: 0x%x\n", now_bg_parameters,
 			cache_bg_parameter);
 
 		if (now_bg_parameters != cache_bg_parameter) {
@@ -560,7 +560,7 @@ int ddp_dpi_reset(DISP_MODULE_ENUM module, void *cmdq_handle)
 {
 	struct DPI_REG_RST reset;
 
-	DISPMSG("[DPI]ddp_dpi_reset\n");
+	DISPDBG("[DPI]ddp_dpi_reset\n");
 
 	reset = DPI_REG->DPI_RST;
 	reset.RST = 1;
@@ -703,7 +703,7 @@ int ddp_dpi_init(DISP_MODULE_ENUM module, void *cmdq)
 		pr_debug("[CLK_APMIXED] base failed\n");
 #endif
 
-	DISPMSG("[DPI]ddp_dpi_init done\n");
+	DISPDBG("[DPI]ddp_dpi_init done\n");
 
 	return 0;
 }
@@ -770,7 +770,7 @@ int ddp_dpi_ioctl(DISP_MODULE_ENUM module, void *cmdq_handle, DDP_IOCTL_NAME ioc
 {
 	int ret = 0;
 
-	DISPMSG("[DPI]DPI ioctl :  % d\n", ioctl_cmd);
+	DISPDBG("[DPI]DPI ioctl :  % d\n", ioctl_cmd);
 
 	switch (ioctl_cmd) {
 	case DDP_DPI_FACTORY_TEST:

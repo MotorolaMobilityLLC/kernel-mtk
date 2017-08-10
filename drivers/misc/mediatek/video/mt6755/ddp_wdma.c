@@ -232,7 +232,7 @@ static int wdma_config(DISP_MODULE_ENUM module,
 	unsigned int idx_offst = idx * DISP_WDMA_INDEX_OFFSET;
 	size_t size = dstPitch * clipHeight;
 
-	DISPMSG("%s,src(w%d,h%d),clip(x%d,y%d,w%d,h%d),fmt=%s,addr=0x%lx,pitch=%d,s_alfa=%d,alpa=%d,hnd=0x%p,sec%d\n",
+	DISPDBG("%s,src(w%d,h%d),clip(x%d,y%d,w%d,h%d),fmt=%s,addr=0x%lx,pitch=%d,s_alfa=%d,alpa=%d,hnd=0x%p,sec%d\n",
 	     ddp_get_module_name(module), srcWidth, srcHeight, clipX, clipY, clipWidth, clipHeight,
 	     unified_color_fmt_name(out_format), dstAddress, dstPitch, useSpecifiedAlpha, alpha,
 	     handle, sec);
@@ -626,7 +626,7 @@ static int setup_wdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 		is_engine_sec = 1;
 
 	if (!handle) {
-				DISPMSG("[SVP] bypass wdma sec setting sec=%d,handle=NULL\n", is_engine_sec);
+				DISPDBG("[SVP] bypass wdma sec setting sec=%d,handle=NULL\n", is_engine_sec);
 				return 0;
 	}
 

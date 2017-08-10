@@ -405,7 +405,7 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 	unsigned int mout_idx = 0;
 	unsigned int module_num = ddp_get_module_num_l(module_list);
 
-	DISPMSG("connect_path: %s to %s\n", ddp_get_module_name(module_list[0]),
+	DISPDBG("connect_path: %s to %s\n", ddp_get_module_name(module_list[0]),
 	       ddp_get_module_name(module_list[module_num - 1]));
 	/* connect mout */
 	for (i = 0; i < module_num - 1; i++) {
@@ -426,7 +426,7 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 						mout |= mout_map[j].out_id_bit_map[k].v;
 						reg_mout |= mout;
 						mout_idx = j;
-						DISPMSG("connect mout %s to %s  value 0x%x\n",
+						DISPDBG("connect mout %s to %s  value 0x%x\n",
 						       ddp_get_module_name(module_list[i]),
 						       ddp_get_module_name(module_list[step]),
 						       reg_mout);
@@ -459,7 +459,7 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 					if (sel_out_map[j].id_bit_map[k] == -1)
 						break;
 					if (sel_out_map[j].id_bit_map[k] == module_list[step]) {
-						DISPMSG("connect out_s %s to %s, bits=0x%x\n",
+						DISPDBG("connect out_s %s to %s, bits=0x%x\n",
 						       ddp_get_module_name(module_list[i]),
 						       ddp_get_module_name(module_list[step]), k);
 						DISP_REG_SET(handle, sel_out_map[j].reg,
@@ -486,7 +486,7 @@ static void ddp_connect_path_l(int *module_list, void *handle)
 					if (sel_in_map[j].id_bit_map[k] == -1)
 						break;
 					if (sel_in_map[j].id_bit_map[k] == module_list[step]) {
-						DISPMSG("connect in_s %s to %s, bits=0x%x\n",
+						DISPDBG("connect in_s %s to %s, bits=0x%x\n",
 						       ddp_get_module_name(module_list[step]),
 						       ddp_get_module_name(module_list[i]), k);
 						DISP_REG_SET(handle, sel_in_map[j].reg,
@@ -626,7 +626,7 @@ static void ddp_disconnect_path_l(int *module_list, void *handle)
 	unsigned int mout_idx = 0;
 	unsigned int module_num = ddp_get_module_num_l(module_list);
 
-	DISPMSG("disconnect_path: %s to %s\n", ddp_get_module_name(module_list[0]),
+	DISPDBG("disconnect_path: %s to %s\n", ddp_get_module_name(module_list[0]),
 	       ddp_get_module_name(module_list[module_num - 1]));
 	for (i = 0; i < module_num - 1; i++) {
 		for (j = 0; j < DDP_MOUT_NUM; j++) {
@@ -645,7 +645,7 @@ static void ddp_disconnect_path_l(int *module_list, void *handle)
 						mout |= mout_map[j].out_id_bit_map[k].v;
 						reg_mout |= mout;
 						mout_idx = j;
-						DISPMSG("disconnect mout %s to %s\n",
+						DISPDBG("disconnect mout %s to %s\n",
 						       ddp_get_module_name(module_list[i]),
 						       ddp_get_module_name(module_list[step]));
 						break;
@@ -672,7 +672,7 @@ static int ddp_get_mutex_src(DISP_MODULE_ENUM dest_module, DDP_MODE ddp_mode,
 	if (dest_module == DISP_MODULE_WDMA0 || dest_module == DISP_MODULE_WDMA1) {
 
 		if (ddp_mode == DDP_VIDEO_MODE)
-			DISPMSG("%s: dst_mode=%s, but is video mode !!\n", __func__,
+			DISPDBG("%s: dst_mode=%s, but is video mode !!\n", __func__,
 				   ddp_get_module_name(dest_module));
 
 		*SOF_src = *EOF_src = SOF_VAL_MUTEX0_SOF_SINGLE_MODE;
@@ -719,11 +719,11 @@ static int ddp_mutex_set_l(int mutex_id, int *module_list, DDP_MODE ddp_mode, vo
 	}
 	for (i = 0; i < module_num; i++) {
 		if (module_mutex_map[module_list[i]].bit != -1) {
-			DISPMSG("module %s added to mutex %d\n", ddp_get_module_name(module_list[i]),
+			DISPDBG("module %s added to mutex %d\n", ddp_get_module_name(module_list[i]),
 			       mutex_id);
 			value |= (1 << module_mutex_map[module_list[i]].bit);
 		} else {
-			DISPMSG("module %s not added to mutex %d\n",
+			DISPDBG("module %s not added to mutex %d\n",
 			       ddp_get_module_name(module_list[i]), mutex_id);
 		}
 	}
@@ -733,7 +733,7 @@ static int ddp_mutex_set_l(int mutex_id, int *module_list, DDP_MODE ddp_mode, vo
 	sof_val |= REG_FLD_VAL(SOF_FLD_MUTEX0_EOF, eof_src);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_SOF(mutex_id), sof_val);
 
-	DISPMSG("mutex %d value=0x%x, sof=%s, eof=%s\n", mutex_id,
+	DISPDBG("mutex %d value=0x%x, sof=%s, eof=%s\n", mutex_id,
 	       value, ddp_get_mutex_sof_name(sof_src), ddp_get_mutex_sof_name(eof_src));
 	return 0;
 }
@@ -775,7 +775,7 @@ static void ddp_check_mutex_l(int mutex_id, int *module_list, DDP_MODE ddp_mode)
 
 static int ddp_mutex_enable_l(int mutex_idx, void *handle)
 {
-	DISPMSG("mutex %d enable\n", mutex_idx);
+	DISPDBG("mutex %d enable\n", mutex_idx);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_EN(mutex_idx), 1);
 	return 0;
 }
@@ -808,7 +808,7 @@ static int ddp_find_module_index(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENU
 			return i;
 
 	}
-	DISPMSG("find module: can not find module %s on scenario %s\n", ddp_get_module_name(module),
+	DISPDBG("find module: can not find module %s on scenario %s\n", ddp_get_module_name(module),
 	       ddp_get_scenario_name(ddp_scenario));
 	return -1;
 }
@@ -821,7 +821,7 @@ int ddp_set_dst_module(DDP_SCENARIO_ENUM scenario, DISP_MODULE_ENUM dst_module)
 	DISPMSG("ddp_set_dst_module, scenario=%s, dst_module=%s\n",
 	       ddp_get_scenario_name(scenario), ddp_get_module_name(dst_module));
 	if (ddp_find_module_index(scenario, dst_module) > 0) {
-		DISPMSG("%s is already on path\n", ddp_get_module_name(dst_module));
+		DISPDBG("%s is already on path\n", ddp_get_module_name(dst_module));
 		return 0;
 	}
 	i = ddp_get_module_num_l(module_list_scenario[scenario]) - 1;
@@ -865,7 +865,7 @@ DISP_MODULE_ENUM ddp_get_dst_module(DDP_SCENARIO_ENUM ddp_scenario)
 	if (module_num >= 0)
 		module_name = module_list_scenario[ddp_scenario][module_num];
 
-	DISPMSG("ddp_get_dst_module, scneario=%s, dst_module=%s\n",
+	DISPDBG("ddp_get_dst_module, scneario=%s, dst_module=%s\n",
 	       ddp_get_scenario_name(ddp_scenario), ddp_get_module_name(module_name));
 
 	return module_name;
@@ -955,7 +955,7 @@ int ddp_remove_module(DDP_SCENARIO_ENUM ddp_scenario, DISP_MODULE_ENUM module)
 
 void ddp_connect_path(DDP_SCENARIO_ENUM scenario, void *handle)
 {
-	DISPMSG("path connect on scenario %s\n", ddp_get_scenario_name(scenario));
+	DISPDBG("path connect on scenario %s\n", ddp_get_scenario_name(scenario));
 	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
 		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], handle);
 		ddp_connect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_OVL_MEMOUT], handle);
@@ -975,7 +975,7 @@ void ddp_connect_path(DDP_SCENARIO_ENUM scenario, void *handle)
 
 void ddp_disconnect_path(DDP_SCENARIO_ENUM scenario, void *handle)
 {
-	DISPMSG("path disconnect on scenario %s\n", ddp_get_scenario_name(scenario));
+	DISPDBG("path disconnect on scenario %s\n", ddp_get_scenario_name(scenario));
 
 	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
 		ddp_disconnect_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP], handle);
@@ -996,7 +996,7 @@ void ddp_disconnect_path(DDP_SCENARIO_ENUM scenario, void *handle)
 
 void ddp_check_path(DDP_SCENARIO_ENUM scenario)
 {
-	DISPMSG("path check path on scenario %s\n", ddp_get_scenario_name(scenario));
+	DISPDBG("path check path on scenario %s\n", ddp_get_scenario_name(scenario));
 
 	if (scenario == DDP_SCENARIO_PRIMARY_ALL) {
 		ddp_check_path_l(module_list_scenario[DDP_SCENARIO_PRIMARY_DISP]);
@@ -1017,7 +1017,7 @@ void ddp_check_path(DDP_SCENARIO_ENUM scenario)
 
 void ddp_check_mutex(int mutex_id, DDP_SCENARIO_ENUM scenario, DDP_MODE mode)
 {
-	DISPMSG("check mutex %d on scenario %s\n", mutex_id, ddp_get_scenario_name(scenario));
+	DISPDBG("check mutex %d on scenario %s\n", mutex_id, ddp_get_scenario_name(scenario));
 	ddp_check_mutex_l(mutex_id, module_list_scenario[scenario], mode);
 }
 
@@ -1032,7 +1032,7 @@ int ddp_mutex_set(int mutex_id, DDP_SCENARIO_ENUM scenario, DDP_MODE mode, void 
 int ddp_mutex_Interrupt_enable(int mutex_id, void *handle)
 {
 
-	DISPMSG("mutex %d interrupt enable\n", mutex_id);
+	DISPDBG("mutex %d interrupt enable\n", mutex_id);
 	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN, 0x1 << mutex_id, 0x1 << mutex_id);
 	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN, 1 << (mutex_id + DISP_MUTEX_TOTAL),
 		      0x1 << (mutex_id + DISP_MUTEX_TOTAL));
@@ -1041,7 +1041,7 @@ int ddp_mutex_Interrupt_enable(int mutex_id, void *handle)
 
 int ddp_mutex_Interrupt_disable(int mutex_id, void *handle)
 {
-	DISPMSG("mutex %d interrupt disenable\n", mutex_id);
+	DISPDBG("mutex %d interrupt disenable\n", mutex_id);
 	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN, 0, 0x1 << mutex_id);
 	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN, 0, 0x1 << (mutex_id + DISP_MUTEX_TOTAL));
 	return 0;
@@ -1049,7 +1049,7 @@ int ddp_mutex_Interrupt_disable(int mutex_id, void *handle)
 
 int ddp_mutex_reset(int mutex_id, void *handle)
 {
-	DISPMSG("mutex %d reset\n", mutex_id);
+	DISPDBG("mutex %d reset\n", mutex_id);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_RST(mutex_id), 1);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_RST(mutex_id), 0);
 
@@ -1080,7 +1080,7 @@ int ddp_mutex_add_module(int mutex_id, DISP_MODULE_ENUM module, void *handle)
 
 	if (module < DISP_MODULE_UNKNOWN) {
 		if (module_mutex_map[module].bit != -1) {
-			DISPMSG("module %s added to mutex %d\n", ddp_get_module_name(module),
+			DISPDBG("module %s added to mutex %d\n", ddp_get_module_name(module),
 			       mutex_id);
 			value |= (1 << module_mutex_map[module].bit);
 			DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_MOD(mutex_id), value, value);
@@ -1095,7 +1095,7 @@ int ddp_mutex_remove_module(int mutex_id, DISP_MODULE_ENUM module, void *handle)
 
 	if (module < DISP_MODULE_UNKNOWN) {
 		if (module_mutex_map[module].bit != -1) {
-			DISPMSG("module %s added to mutex %d\n", ddp_get_module_name(module),
+			DISPDBG("module %s added to mutex %d\n", ddp_get_module_name(module),
 			       mutex_id);
 			value |= (1 << module_mutex_map[module].bit);
 			DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_MOD(mutex_id), 0, value);
@@ -1107,7 +1107,7 @@ int ddp_mutex_remove_module(int mutex_id, DISP_MODULE_ENUM module, void *handle)
 
 int ddp_mutex_clear(int mutex_id, void *handle)
 {
-	DISPMSG("mutex %d clear\n", mutex_id);
+	DISPDBG("mutex %d clear\n", mutex_id);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_MOD(mutex_id), 0);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_SOF(mutex_id), 0);
 
@@ -1123,7 +1123,7 @@ int ddp_mutex_enable(int mutex_id, DDP_SCENARIO_ENUM scenario, void *handle)
 
 int ddp_mutex_disenable(int mutex_id, DDP_SCENARIO_ENUM scenario, void *handle)
 {
-	DISPMSG("mutex %d disable\n", mutex_id);
+	DISPDBG("mutex %d disable\n", mutex_id);
 	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_EN(mutex_id), 0);
 	return 0;
 }

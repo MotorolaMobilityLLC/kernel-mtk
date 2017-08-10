@@ -761,7 +761,7 @@ DSI_STATUS DSI_RestoreRegisters(DISP_MODULE_ENUM module, cmdqRecHandle cmdq)
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_PHY_TIMECON3,
 			     AS_UINT32(&regs->DSI_PHY_TIMECON3));
 		DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_VM_CMD_CON, AS_UINT32(&regs->DSI_VM_CMD_CON));
-		DISPMSG("DSI_RestoreRegisters VM_CMD_EN %d TS_VFP_EN %d\n",
+		DISPDBG("DSI_RestoreRegisters VM_CMD_EN %d TS_VFP_EN %d\n",
 		       regs->DSI_VM_CMD_CON.VM_CMD_EN, regs->DSI_VM_CMD_CON.TS_VFP_EN);
 	}
 	return DSI_STATUS_OK;
@@ -2656,7 +2656,7 @@ int DSI_Send_ROI(DISP_MODULE_ENUM module, void *handle, unsigned int x, unsigned
 	data_array[1] = (y1_MSB << 24) | (y0_LSB << 16) | (y0_MSB << 8) | 0x2b;
 	data_array[2] = (y1_LSB);
 	DSI_set_cmdq(module, handle, data_array, 3, 1);
-	DISPMSG("DSI_Send_ROI Done!\n");
+	DISPDBG("DSI_Send_ROI Done!\n");
 
 	/* data_array[0]= 0x002c3909; */
 	/* DSI_set_cmdq(module, handle, data_array, 1, 0); */

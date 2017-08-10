@@ -245,13 +245,13 @@ void rdma_set_ultra(unsigned int idx, unsigned int width, unsigned int height, u
 	DISP_REG_SET_FIELD(handle, FIFO_CON_FLD_FIFO_UNDERFLOW_EN,
 			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_FIFO_CON, 1);
 
-	DISPMSG("FIFO_VALID_Size      = 0x%03x = %d\n", fifo_valid_size, fifo_valid_size);
-	DISPMSG("ultra_low_level      = 0x%03x = %d\n", ultra_low_level, ultra_low_level);
-	DISPMSG("pre_ultra_low_level  = 0x%03x = %d\n", pre_ultra_low_level, pre_ultra_low_level);
-	DISPMSG("pre_ultra_high_level = 0x%03x = %d\n", pre_ultra_high_level, pre_ultra_high_level);
-	DISPMSG("ultra_high_ofs       = 0x%03x = %d\n", ultra_high_ofs, ultra_high_ofs);
-	DISPMSG("pre_ultra_low_ofs    = 0x%03x = %d\n", pre_ultra_low_ofs, pre_ultra_low_ofs);
-	DISPMSG("pre_ultra_high_ofs   = 0x%03x = %d\n", pre_ultra_high_ofs, pre_ultra_high_ofs);
+	DISPDBG("FIFO_VALID_Size      = 0x%03x = %d\n", fifo_valid_size, fifo_valid_size);
+	DISPDBG("ultra_low_level      = 0x%03x = %d\n", ultra_low_level, ultra_low_level);
+	DISPDBG("pre_ultra_low_level  = 0x%03x = %d\n", pre_ultra_low_level, pre_ultra_low_level);
+	DISPDBG("pre_ultra_high_level = 0x%03x = %d\n", pre_ultra_high_level, pre_ultra_high_level);
+	DISPDBG("ultra_high_ofs       = 0x%03x = %d\n", ultra_high_ofs, ultra_high_ofs);
+	DISPDBG("pre_ultra_low_ofs    = 0x%03x = %d\n", pre_ultra_low_ofs, pre_ultra_low_ofs);
+	DISPDBG("pre_ultra_high_ofs   = 0x%03x = %d\n", pre_ultra_high_ofs, pre_ultra_high_ofs);
 }
 #endif
 /* set ultra registers */
@@ -582,7 +582,7 @@ static int rdma_config(DISP_MODULE_ENUM module,
 	unsigned int color_matrix;
 	unsigned int regval;
 
-	DISPMSG("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
+	DISPDBG("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
 	     idx, mode, address, unified_color_fmt_name(inFormat), pitch, width, height, sec);
 	ASSERT(idx <= RDMA_INSTANCES);
 	if ((width > RDMA_MAX_WIDTH) || (height > RDMA_MAX_HEIGHT))
@@ -682,7 +682,9 @@ void rdma_set_target_line(DISP_MODULE_ENUM module, unsigned int line, void *hand
 
 static int rdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
-	unsigned int idx = rdma_index(module);
+	unsigned int idx;
+
+	idx = rdma_index(module);
 	/* do not set CG */
 /*
 #ifdef ENABLE_CLK_MGR
@@ -699,13 +701,15 @@ static int rdma_clock_on(DISP_MODULE_ENUM module, void *handle)
 #endif
 #endif
 */
-	DISPMSG("rdma_%d_clock_on CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DISPDBG("rdma_%d_clock_on CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;
 }
 
 static int rdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 {
-	unsigned int idx = rdma_index(module);
+	unsigned int idx;
+
+	idx = rdma_index(module);
 	/* do not set CG */
 /*
 #ifdef ENABLE_CLK_MGR
@@ -723,7 +727,7 @@ static int rdma_clock_off(DISP_MODULE_ENUM module, void *handle)
 #endif
 #endif
 */
-	DISPMSG("rdma_%d_clock_off CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
+	DISPDBG("rdma_%d_clock_off CG 0x%x\n", idx, DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0));
 	return 0;
 }
 
@@ -949,10 +953,10 @@ static int do_rdma_config_l(DISP_MODULE_ENUM module, disp_ddp_path_config *pConf
 		pConfig->rdma_config.bg_ctrl.right = r_config->dst_w -
 			r_config->dst_x - width;
 	}
-	DISPMSG("top=%d,bottom=%d,left=%d,right=%d\n",
+	DISPDBG("top=%d,bottom=%d,left=%d,right=%d\n",
 		pConfig->rdma_config.bg_ctrl.top, pConfig->rdma_config.bg_ctrl.bottom,
 		pConfig->rdma_config.bg_ctrl.left, pConfig->rdma_config.bg_ctrl.right);
-	DISPMSG("r.dst_x=%d,r.dst_y=%d,r.dst_w=%d,r.dst_h=%d,width=%d,height=%d\n",
+	DISPDBG("r.dst_x=%d,r.dst_y=%d,r.dst_w=%d,r.dst_h=%d,width=%d,height=%d\n",
 		r_config->dst_x, r_config->dst_y, r_config->dst_w,
 		r_config->dst_h, width, height);
 	/*PARGB,etc need convert ARGB,etc*/
@@ -985,7 +989,7 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 	/*cmdq_event_nonsec_end = rdma_to_cmdq_event_nonsec_end(module);*/
 
 	if (!handle) {
-		DISPMSG("[SVP] bypass rdma sec setting sec=%d,handle=NULL\n", security);
+		DISPDBG("[SVP] bypass rdma sec setting sec=%d,handle=NULL\n", security);
 		return 0;
 	}
 	/* sec setting make sence only in memory mode ! */

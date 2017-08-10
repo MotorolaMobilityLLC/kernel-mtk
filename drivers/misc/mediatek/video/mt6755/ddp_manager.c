@@ -282,7 +282,7 @@ static int acquire_mutex(DDP_SCENARIO_ENUM scenario)
 		++mutex_id;
 	}
 	ASSERT(mutex_id < (DISP_MUTEX_DDP_FIRST + DISP_MUTEX_DDP_COUNT));
-	DISPMSG("scenario %s acquire mutex %d , left mutex 0x%x!\n",
+	DISPDBG("scenario %s acquire mutex %d , left mutex 0x%x!\n",
 		   ddp_get_scenario_name(scenario), mutex_id, content->mutex_idx);
 	return mutex_id;
 }
@@ -293,7 +293,7 @@ static int release_mutex(int mutex_idx)
 
 	ASSERT(mutex_idx < (DISP_MUTEX_DDP_FIRST + DISP_MUTEX_DDP_COUNT));
 	content->mutex_idx |= 1 << (mutex_idx - DISP_MUTEX_DDP_FIRST);
-	DISPMSG("release mutex %d , left mutex 0x%x!\n", mutex_idx, content->mutex_idx);
+	DISPDBG("release mutex %d , left mutex 0x%x!\n", mutex_idx, content->mutex_idx);
 	return 0;
 }
 
@@ -304,7 +304,7 @@ int dpmgr_path_set_video_mode(disp_path_handle dp_handle, int is_vdo_mode)
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
 	handle->mode = is_vdo_mode ? DDP_VIDEO_MODE : DDP_CMD_MODE;
-	DISPMSG("set scenario %s mode: %s\n", ddp_get_scenario_name(handle->scenario),
+	DISPDBG("set scenario %s mode: %s\n", ddp_get_scenario_name(handle->scenario),
 		   is_vdo_mode ? "Video_Mode" : "Cmd_Mode");
 	return 0;
 }
@@ -325,11 +325,11 @@ disp_path_handle dpmgr_create_path(DDP_SCENARIO_ENUM scenario, cmdqRecHandle cmd
 		path_handle->hwmutexid = acquire_mutex(scenario);
 		path_handle->last_config.path_handle = path_handle;
 		assign_default_irqs_table(scenario, path_handle->irq_event_map);
-		DISPMSG("create handle %p on scenario %s\n", path_handle,
+		DISPDBG("create handle %p on scenario %s\n", path_handle,
 			   ddp_get_scenario_name(scenario));
 		for (i = 0; i < module_num; i++) {
 			module_name = modules[i];
-			DISPMSG(" scenario %s include module %s\n",
+			DISPDBG(" scenario %s include module %s\n",
 				   ddp_get_scenario_name(scenario),
 				   ddp_get_module_name(module_name));
 			content->module_usage_table[module_name]++;
@@ -440,7 +440,7 @@ int dpmgr_modify_path(disp_path_handle dp_handle, DDP_SCENARIO_ENUM new_scenario
 	old_scenario = handle->scenario;
 	handle->cmdqhandle = cmdq_handle;
 	handle->scenario = new_scenario;
-	DISPDBG("modify handle %p from %s to %s\n", handle, ddp_get_scenario_name(old_scenario),
+	DISPMSG("modify handle %p from %s to %s\n", handle, ddp_get_scenario_name(old_scenario),
 		   ddp_get_scenario_name(new_scenario));
 
 	if (!sw_only) {
@@ -500,7 +500,7 @@ int dpmgr_destroy_path_handle(disp_path_handle dp_handle)
 		module_num = ddp_get_module_num(handle->scenario);
 		content = _get_context();
 
-		DISPMSG("destroy path handle %p on scenario %s\n", handle,
+		DISPDBG("destroy path handle %p on scenario %s\n", handle,
 		ddp_get_scenario_name(handle->scenario));
 
 		release_mutex(handle->hwmutexid);
@@ -696,11 +696,11 @@ int dpmgr_insert_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle)
 	}
 
 	if (ddp_is_module_in_scenario(handle->scenario, DISP_MODULE_OVL1) == 1) {
-		DISPDBG("dpmgr_insert_ovl1_sub, OVL1 already in the path\n");
+		DISPMSG("dpmgr_insert_ovl1_sub, OVL1 already in the path\n");
 		return -1;
 	}
 
-	DISPMSG("dpmgr_insert_ovl1_sub\n");
+	DISPDBG("dpmgr_insert_ovl1_sub\n");
 	/* update contxt*/
 	context = _get_context();
 	context->module_usage_table[DISP_MODULE_OVL1]++;
@@ -738,11 +738,11 @@ int dpmgr_remove_ovl1_sub(disp_path_handle dp_handle, void *cmdq_handle)
 	}
 
 	if (ddp_is_module_in_scenario(handle->scenario, DISP_MODULE_OVL1) == 0) {
-		DISPDBG("dpmgr_remove_ovl1_sub, OVL1 already not in the path\n");
+		DISPMSG("dpmgr_remove_ovl1_sub, OVL1 already not in the path\n");
 		return -1;
 	}
 
-	DISPMSG("dpmgr_remove_ovl1_sub\n");
+	DISPDBG("dpmgr_remove_ovl1_sub\n");
 	/* update contxt */
 	context = _get_context();
 	context->module_usage_table[DISP_MODULE_OVL1]--;
@@ -773,7 +773,7 @@ int dpmgr_path_set_dst_module(disp_path_handle dp_handle, DISP_MODULE_ENUM dst_m
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
 	ASSERT((handle->scenario >= 0 && handle->scenario < DDP_SCENARIO_MAX));
-	DISPMSG("set dst module on scenario %s, module %s\n",
+	DISPDBG("set dst module on scenario %s, module %s\n",
 		   ddp_get_scenario_name(handle->scenario), ddp_get_module_name(dst_module));
 	return ddp_set_dst_module(handle->scenario, dst_module);
 }
@@ -839,7 +839,7 @@ int dpmgr_path_disconnect(disp_path_handle dp_handle, int encmdq)
 	handle = (ddp_path_handle) dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISPMSG("dpmgr_path_disconnect on scenario %s\n",
+	DISPDBG("dpmgr_path_disconnect on scenario %s\n",
 		   ddp_get_scenario_name(handle->scenario));
 	ddp_mutex_clear(handle->hwmutexid, cmdqHandle);
 	ddp_mutex_Interrupt_disable(handle->hwmutexid, cmdqHandle);
@@ -862,7 +862,7 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISPMSG("path init on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path init on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	/* open top clock */
 	path_top_clock_on();
 	/* seting mutex */
@@ -876,7 +876,7 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->init != 0) {
-				DISPMSG("scenario %s init module  %s\n",
+				DISPDBG("scenario %s init module  %s\n",
 					   ddp_get_scenario_name(handle->scenario),
 					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->init(module_name, cmdqHandle);
@@ -907,7 +907,7 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISPMSG("path deinit on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path deinit on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	ddp_mutex_Interrupt_disable(handle->hwmutexid, cmdqHandle);
 	ddp_mutex_clear(handle->hwmutexid, cmdqHandle);
 	_dpmgr_path_disconnect(handle->scenario, cmdqHandle);
@@ -915,7 +915,7 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->deinit != 0) {
-				DISPMSG("scenario %s deinit module  %s\n",
+				DISPDBG("scenario %s deinit module  %s\n",
 					   ddp_get_scenario_name(handle->scenario),
 					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->deinit(module_name, cmdqHandle);
@@ -946,12 +946,12 @@ int dpmgr_path_start(disp_path_handle dp_handle, int encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISPDBG("path start on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPMSG("path start on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->start != 0) {
-				DISPMSG("scenario %s start module  %s\n",
+				DISPDBG("scenario %s start module  %s\n",
 					   ddp_get_scenario_name(handle->scenario),
 					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->start(module_name, cmdqHandle);
@@ -977,12 +977,12 @@ int dpmgr_path_stop(disp_path_handle dp_handle, int encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISPDBG("path stop on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPMSG("path stop on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = module_num - 1; i >= 0; i--) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->stop != 0) {
-				DISPMSG("scenario %s  stop module %s\n",
+				DISPDBG("scenario %s  stop module %s\n",
 					   ddp_get_scenario_name(handle->scenario),
 					   ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->stop(module_name, cmdqHandle);
@@ -1007,7 +1007,7 @@ int dpmgr_path_ioctl(disp_path_handle dp_handle, void *cmdq_handle, DDP_IOCTL_NA
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISPMSG("path IOCTL on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path IOCTL on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = module_num - 1; i >= 0; i--) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
@@ -1035,7 +1035,7 @@ int dpmgr_path_enable_irq(disp_path_handle dp_handle, void *cmdq_handle, DDP_IRQ
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISPMSG("path enable irq on scenario %s, level %d\n",
+	DISPDBG("path enable irq on scenario %s, level %d\n",
 		   ddp_get_scenario_name(handle->scenario), irq_level);
 
 	if (irq_level != DDP_IRQ_LEVEL_ALL)
@@ -1047,7 +1047,7 @@ int dpmgr_path_enable_irq(disp_path_handle dp_handle, void *cmdq_handle, DDP_IRQ
 	for (i = module_num - 1; i >= 0; i--) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->enable_irq) {
-			DISPMSG("scenario %s, module %s enable irq level %d\n",
+			DISPDBG("scenario %s, module %s enable irq level %d\n",
 			       ddp_get_scenario_name(handle->scenario),
 			       ddp_get_module_name(module_name), irq_level);
 			ret +=
@@ -1075,7 +1075,7 @@ int dpmgr_path_reset(disp_path_handle dp_handle, int encmdq)
 	module_num = ddp_get_module_num(handle->scenario);
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
-	DISPDBG("path reset on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPMSG("path reset on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	/* first reset mutex */
 	ddp_mutex_reset(handle->hwmutexid, cmdqHandle);
 
@@ -1083,7 +1083,7 @@ int dpmgr_path_reset(disp_path_handle dp_handle, int encmdq)
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if (ddp_modules_driver[module_name]->reset != 0) {
-				DISPMSG("scenario %s  reset module %s\n",
+				DISPDBG("scenario %s  reset module %s\n",
 					   ddp_get_scenario_name(handle->scenario),
 					   ddp_get_module_name(module_name));
 				ret =
@@ -1275,7 +1275,7 @@ int dpmgr_path_flush(disp_path_handle dp_handle, int encmdq)
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
-	DISPMSG("path flush on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPDBG("path flush on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	return ddp_mutex_enable(handle->hwmutexid, handle->scenario, cmdqHandle);
 }
 
@@ -1292,11 +1292,11 @@ int dpmgr_path_power_off(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISPDBG("path power off on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPMSG("path power off on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_off) {
-			DISPMSG(" %s power off\n", ddp_get_module_name(module_name));
+			DISPDBG(" %s power off\n", ddp_get_module_name(module_name));
 			ddp_modules_driver[module_name]->power_off(module_name,
 								   encmdq ? handle->cmdqhandle :
 								   NULL);
@@ -1320,12 +1320,12 @@ int dpmgr_path_power_on(disp_path_handle dp_handle, CMDQ_SWITCH encmdq)
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISPDBG("path power on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPMSG("path power on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	path_top_clock_on();
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_on) {
-			DISPMSG("%s power on\n", ddp_get_module_name(module_name));
+			DISPDBG("%s power on\n", ddp_get_module_name(module_name));
 			ddp_modules_driver[module_name]->power_on(module_name,
 								  encmdq ? handle->cmdqhandle :
 								  NULL);
@@ -1349,14 +1349,14 @@ int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encm
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISPDBG("path power off on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPMSG("path power off on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] && ddp_modules_driver[module_name]->power_off) {
 			if (module_name == DISP_MODULE_PWM0)
 				DISPMSG(" %s power off -- bypass\n", ddp_get_module_name(module_name));
 			else {
-				DISPMSG(" %s power off\n", ddp_get_module_name(module_name));
+				DISPDBG(" %s power off\n", ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->power_off(module_name,
 									   encmdq ? handle->cmdqhandle :
 									   NULL);
@@ -1381,7 +1381,7 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encmd
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
 
-	DISPDBG("path power on scenario %s\n", ddp_get_scenario_name(handle->scenario));
+	DISPMSG("path power on scenario %s\n", ddp_get_scenario_name(handle->scenario));
 	path_top_clock_on();
 	for (i = 0; i < module_num; i++) {
 		module_name = modules[i];
@@ -1389,7 +1389,7 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle, CMDQ_SWITCH encmd
 			if (module_name == DISP_MODULE_PWM0)
 				DISPMSG(" %s power on -- bypass\n", ddp_get_module_name(module_name));
 			else {
-				DISPMSG("%s power on\n", ddp_get_module_name(module_name));
+				DISPDBG("%s power on\n", ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->power_on(module_name,
 									  encmdq ? handle->cmdqhandle :
 									  NULL);
@@ -1558,7 +1558,7 @@ int dpmgr_set_lcm_utils(disp_path_handle dp_handle, void *lcm_drv)
 		module_name = modules[i];
 		if (ddp_modules_driver[module_name] != 0) {
 			if ((ddp_modules_driver[module_name]->set_lcm_utils != 0) && lcm_drv) {
-				DISPMSG("%s set lcm utils\n", ddp_get_module_name(module_name));
+				DISPDBG("%s set lcm utils\n", ddp_get_module_name(module_name));
 				ddp_modules_driver[module_name]->set_lcm_utils(module_name,
 									       lcm_drv);
 			}
@@ -1576,7 +1576,7 @@ int dpmgr_enable_event(disp_path_handle dp_handle, DISP_PATH_EVENT event)
 	handle = (ddp_path_handle) dp_handle;
 	wq_handle = &handle->wq_list[event];
 
-	DISPMSG("enable event %s on scenario %s, irtbit 0x%x\n",
+	DISPDBG("enable event %s on scenario %s, irtbit 0x%x\n",
 		   path_event_name(event),
 		   ddp_get_scenario_name(handle->scenario), handle->irq_event_map[event].irq_bit);
 	if (!wq_handle->init) {
@@ -1598,7 +1598,7 @@ int dpmgr_map_event_to_irq(disp_path_handle dp_handle, DISP_PATH_EVENT event, DD
 	irq_table = handle->irq_event_map;
 
 	if (event < DISP_PATH_EVENT_NUM) {
-		DISPMSG("map event %s to irq 0x%x on scenario %s\n", path_event_name(event),
+		DISPDBG("map event %s to irq 0x%x on scenario %s\n", path_event_name(event),
 			   irq_bit, ddp_get_scenario_name(handle->scenario));
 		irq_table[event].irq_bit = irq_bit;
 		return 0;
@@ -1616,7 +1616,7 @@ int dpmgr_disable_event(disp_path_handle dp_handle, DISP_PATH_EVENT event)
 	ASSERT(dp_handle != NULL);
 	handle = (ddp_path_handle) dp_handle;
 
-	DISPMSG("disable event %s on scenario %s\n", path_event_name(event),
+	DISPDBG("disable event %s on scenario %s\n", path_event_name(event),
 		   ddp_get_scenario_name(handle->scenario));
 	wq_handle = &handle->wq_list[event];
 
@@ -1827,7 +1827,7 @@ static void dpmgr_irq_handler(DISP_MODULE_ENUM module, unsigned int regvalue)
 
 int dpmgr_init(void)
 {
-	DISPDBG("ddp manager init\n");
+	DISPMSG("ddp manager init\n");
 	if (ddp_manager_init)
 		return 0;
 	ddp_manager_init = 1;
@@ -1841,7 +1841,7 @@ int dpmgr_factory_mode_test(int module_name, void *cmdqhandle, void *config)
 {
 	if (ddp_modules_driver[module_name] != 0) {
 		if (ddp_modules_driver[module_name]->ioctl != 0) {
-			DISPDBG(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DPI));
+			DISPMSG(" %s factory_mode_test\n", ddp_get_module_name(DISP_MODULE_DPI));
 			ddp_modules_driver[DISP_MODULE_DPI]->ioctl(module_name, cmdqhandle,
 								   DDP_DPI_FACTORY_TEST, config);
 		}

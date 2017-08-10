@@ -182,7 +182,7 @@ void init_tplay_handle(struct device *dev)
 
 	va = dma_alloc_coherent(dev, sizeof(unsigned int), &handle_pa, GFP_KERNEL);
 	if (NULL != va)
-		DISPMSG("[SVP] allocate handle_pa[%pa]\n", &va);
+		DISPDBG("[SVP] allocate handle_pa[%pa]\n", &va);
 	else
 		DISPERR("[SVP] failed to allocate handle_pa\n");
 
@@ -192,7 +192,7 @@ void init_tplay_handle(struct device *dev)
 static int write_tplay_handle(unsigned int handle_value)
 {
 	if (NULL != tplay_handle_virt_addr) {
-		DISPMSG("[SVP] write_tplay_handle 0x%x\n", handle_value);
+		DISPDBG("[SVP] write_tplay_handle 0x%x\n", handle_value);
 		*tplay_handle_virt_addr = handle_value;
 		return 0;
 	}
@@ -214,12 +214,12 @@ static enum mc_result late_open_mobicore_device(void)
 	enum mc_result mcRet = MC_DRV_OK;
 
 	if (0 == opened_device) {
-		DISPMSG("=============== open mobicore device ===============\n");
+		DISPDBG("=============== open mobicore device ===============\n");
 		/* Open MobiCore device */
 		mcRet = mc_open_device(mc_deviceId);
 		if (MC_DRV_ERR_INVALID_OPERATION == mcRet) {
 			/* skip false alarm when the mc_open_device(mc_deviceId) is called more than once */
-			DISPMSG("mc_open_device already done\n");
+			DISPDBG("mc_open_device already done\n");
 		} else if (MC_DRV_OK != mcRet) {
 			DISPERR("mc_open_device failed: %d @%s line %d\n", mcRet, __func__,
 			       __LINE__);
@@ -239,7 +239,7 @@ static int open_tplay_driver_connection(void)
 		return 0;
 	}
 
-	DISPMSG("=============== late init tplay TDriver session ===============\n");
+	DISPDBG("=============== late init tplay TDriver session ===============\n");
 	do {
 		late_open_mobicore_device();
 
@@ -275,7 +275,7 @@ static int close_tplay_driver_connection(void)
 {
 	enum mc_result mcRet = MC_DRV_OK;
 
-	DISPMSG("=============== close tplay TDriver session ===============\n");
+	DISPDBG("=============== close tplay TDriver session ===============\n");
 	/* Close session */
 	if (tplaySessionHandle.session_id != 0)	{
 		/* we have an valid session */
@@ -304,7 +304,7 @@ static int set_tplay_handle_addr_request(void)
 	int ret = 0;
 	enum mc_result mcRet = MC_DRV_OK;
 
-	DISPMSG("[SVP] set_tplay_handle_addr_request\n");
+	DISPDBG("[SVP] set_tplay_handle_addr_request\n");
 
 	open_tplay_driver_connection();
 	if (tplaySessionHandle.session_id == 0) {
@@ -312,7 +312,7 @@ static int set_tplay_handle_addr_request(void)
 		return -1;
 	}
 
-	DISPMSG("[SVP] handle_pa=0x%pa\n", &handle_pa);
+	DISPDBG("[SVP] handle_pa=0x%pa\n", &handle_pa);
 	/* set other TCI parameter */
 	pTplayTci->tplay_handle_low_addr = (uint32_t) handle_pa;
 	pTplayTci->tplay_handle_high_addr = (uint32_t) (handle_pa >> 32);
@@ -320,7 +320,7 @@ static int set_tplay_handle_addr_request(void)
 	pTplayTci->cmd.header.commandId = CMD_TPLAY_REQUEST;
 
 	/* notify the trustlet */
-	DISPMSG("[SVP] notify Tlsec trustlet CMD_TPLAY_REQUEST\n");
+	DISPDBG("[SVP] notify Tlsec trustlet CMD_TPLAY_REQUEST\n");
 	mcRet = mc_notify(&tplaySessionHandle);
 	if (MC_DRV_OK != mcRet) {
 		DISPERR("[SVP] mc_notify failed: %d @%s line %d\n", mcRet, __func__, __LINE__);
@@ -337,7 +337,7 @@ static int set_tplay_handle_addr_request(void)
 		goto _notify_from_trustlet_fail;
 	}
 
-	DISPMSG("[SVP] CMD_TPLAY_REQUEST result=%d, return code=%d\n", pTplayTci->result,
+	DISPDBG("[SVP] CMD_TPLAY_REQUEST result=%d, return code=%d\n", pTplayTci->result,
 	       pTplayTci->rsp.header.returnCode);
 
 _notify_from_trustlet_fail:
@@ -350,7 +350,7 @@ _notify_to_trustlet_fail:
 #ifdef TPLAY_DUMP_PA_DEBUG
 static int dump_tplay_physcial_addr(void)
 {
-	DISPMSG("[SVP] dump_tplay_physcial_addr\n");
+	DISPDBG("[SVP] dump_tplay_physcial_addr\n");
 	int ret = 0;
 	enum mc_result mcRet = MC_DRV_OK;
 
@@ -381,7 +381,7 @@ static int dump_tplay_physcial_addr(void)
 		goto _notify_from_trustlet_fail;
 	}
 
-	DISPMSG("[SVP] CMD_TPLAY_DUMP_PHY result=%d, return code=%d\n", pTplayTci->result,
+	DISPDBG("[SVP] CMD_TPLAY_DUMP_PHY result=%d, return code=%d\n", pTplayTci->result,
 	       pTplayTci->rsp.header.returnCode);
 
 _notify_from_trustlet_fail:
@@ -451,7 +451,7 @@ static int disp_open(struct inode *inode, struct file *file)
 {
 	disp_node_struct *pNode = NULL;
 
-	DISPMSG("enter disp_open() process:%s\n", current->comm);
+	DISPDBG("enter disp_open() process:%s\n", current->comm);
 
 	/* Allocate and initialize private data */
 	file->private_data = kmalloc(sizeof(disp_node_struct), GFP_ATOMIC);
@@ -479,7 +479,7 @@ static int disp_release(struct inode *inode, struct file *file)
 {
 	disp_node_struct *pNode = NULL;
 
-	DISPMSG("enter disp_release() process:%s\n", current->comm);
+	DISPDBG("enter disp_release() process:%s\n", current->comm);
 
 	pNode = (disp_node_struct *) file->private_data;
 

@@ -485,7 +485,7 @@ int ovl_clock_on(DISP_MODULE_ENUM module, void *handle)
 {
 	unsigned long ovl_base = ovl_base_addr(module);
 
-	DISPMSG("%s clock_on\n", ddp_get_module_name(module));
+	DISPDBG("%s clock_on\n", ddp_get_module_name(module));
 	/* do not set CG */
 /*
 #ifdef ENABLE_CLK_MGR
@@ -535,7 +535,7 @@ int ovl_clock_on(DISP_MODULE_ENUM module, void *handle)
 
 int ovl_clock_off(DISP_MODULE_ENUM module, void *handle)
 {
-	DISPMSG("%s clock_off\n", ddp_get_module_name(module));
+	DISPDBG("%s clock_off\n", ddp_get_module_name(module));
 	/* do not set CG */
 /*
 #ifdef ENABLE_CLK_MGR
@@ -679,7 +679,7 @@ void ovl_get_info(DISP_MODULE_ENUM module, void *data)
 			p->ovl_gamma_out = (DISP_REG_GET(layer_off + DISP_REG_OVL_DATAPATH_CON) & (0x1<<15))?1:0;
 			p->alpha = (DISP_REG_GET(layer_off + DISP_REG_OVL_L0_CON + (i*0x20)) & (0x1<<8))?1:0;
 		}
-		DISPMSG("ovl_get_info:layer%d,en %d,w %d,h %d,bpp %d,addr %lu\n",
+		DISPDBG("ovl_get_info:layer%d,en %d,w %d,h %d,bpp %d,addr %lu\n",
 		       i, p->layer_en, p->src_w, p->src_h, p->bpp, p->addr);
 	}
 }
@@ -699,14 +699,14 @@ static int ovl_check_input_param(OVL_CONFIG_STRUCT *config)
 /* use noinline to reduce stack size */
 static noinline void print_layer_config_args(int module, int local_layer, OVL_CONFIG_STRUCT *ovl_cfg)
 {
-	DISPMSG("%s, layer=%d(%d), source=%s, off(x=%d, y=%d), dst(%d, %d, %d, %d),pitch=%d,",
+	DISPDBG("%s, layer=%d(%d), source=%s, off(x=%d, y=%d), dst(%d, %d, %d, %d),pitch=%d,",
 		ddp_get_module_name(module), local_layer, ovl_cfg->layer,
 		(ovl_cfg->source == 0) ? "memory" : "dim", ovl_cfg->src_x, ovl_cfg->src_y,
 		ovl_cfg->dst_x, ovl_cfg->dst_y, ovl_cfg->dst_w, ovl_cfg->dst_h, ovl_cfg->src_pitch);
-	DISPMSG("fmt=%s, addr=%lx, keyEn=%d, key=%d, aen=%d, alpha=%d,",
+	DISPDBG("fmt=%s, addr=%lx, keyEn=%d, key=%d, aen=%d, alpha=%d,",
 		unified_color_fmt_name(ovl_cfg->fmt), ovl_cfg->addr,
 		ovl_cfg->keyEn, ovl_cfg->key, ovl_cfg->aen, ovl_cfg->alpha);
-	DISPMSG("sur_aen=%d,sur_alpha=0x%x,yuv_range=%d,sec=%d,const_bld=%d\n",
+	DISPDBG("sur_aen=%d,sur_alpha=0x%x,yuv_range=%d,sec=%d,const_bld=%d\n",
 		ovl_cfg->sur_aen, (ovl_cfg->dst_alpha << 2) | ovl_cfg->src_alpha,
 		ovl_cfg->yuv_range, ovl_cfg->security, ovl_cfg->const_bld);
 }
