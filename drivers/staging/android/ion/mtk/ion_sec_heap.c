@@ -38,6 +38,8 @@ struct ion_sec_heap {
 	void *priv;
 };
 
+static size_t sec_heap_total_memory;
+
 #ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
 static KREE_SESSION_HANDLE ion_session;
 KREE_SESSION_HANDLE ion_session_handle(void)
@@ -65,6 +67,10 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 
 	IONDBG("%s enter id %d size 0x%lx align %ld flags 0x%lx\n", __func__, heap->id, size, align, flags);
 
+#ifdef CONFIG_PM
+	if (sec_heap_total_memory <= 0)
+		shrink_ion_by_scenario(0);
+#endif
 	pBufferInfo = kzalloc(sizeof(ion_sec_buffer_info), GFP_KERNEL);
 	if (IS_ERR_OR_NULL(pBufferInfo)) {
 		IONMSG("%s Error. Allocate pBufferInfo failed.\n", __func__);
@@ -96,7 +102,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 	refcount = 0;
 #endif
 	if (sec_handle <= 0) {
-		IONMSG("%s alloc security memory failed\n", __func__);
+		IONMSG("%s alloc security memory failed, total size %zu\n", __func__, sec_heap_total_memory);
 		return -ENOMEM;
 	}
 
@@ -113,6 +119,7 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 	buffer->priv_virt = pBufferInfo;
 	buffer->flags &= ~ION_FLAG_CACHED;
 	buffer->size = size;
+	sec_heap_total_memory += size;
 
 	IONDBG("%s exit priv_virt %p pa 0x%lx(%zu)\n", __func__, buffer->priv_virt,
 							pBufferInfo->priv_phys, buffer->size);
@@ -127,6 +134,7 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 	u32 sec_handle = 0;
 
 	IONDBG("%s enter priv_virt %p\n", __func__, buffer->priv_virt);
+	sec_heap_total_memory -= buffer->size;
 	sec_handle = ((ion_sec_buffer_info *)buffer->priv_virt)->priv_phys;
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	secmem_api_unref(sec_handle, (uint8_t *)buffer->heap->name, buffer->heap->id);
@@ -143,7 +151,7 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 	buffer->priv_virt = NULL;
 	kfree(pBufferInfo);
 
-	IONDBG("%s exit\n", __func__);
+	IONDBG("%s exit, total %zu\n", __func__, sec_heap_total_memory);
 }
 
 struct sg_table *ion_sec_heap_map_dma(struct ion_heap *heap,
@@ -406,7 +414,7 @@ struct ion_heap *ion_sec_heap_create(struct ion_platform_heap *heap_data)
 	heap->heap.type = ION_HEAP_TYPE_MULTIMEDIA_SEC;
 	heap->heap.flags &= ~ION_HEAP_FLAG_DEFER_FREE;
 	heap->heap.debug_show = ion_sec_heap_debug_show;
-
+	sec_heap_total_memory = 0;
 	return &heap->heap;
 
 #else
