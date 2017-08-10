@@ -2807,6 +2807,14 @@ void preempt_count_add(int val)
 		MT_trace_preempt_off();
 #endif
 	}
+
+#ifdef CONFIG_DEBUG_PREEMPT
+	if (DEBUG_LOCKS_WARN_ON((preempt_count() < 0))) {
+		printk_deferred("%s, val=0x%x, preempt_count=0x%x\n",
+			__func__, val, preempt_count());
+	}
+#endif
+
 }
 EXPORT_SYMBOL(preempt_count_add);
 NOKPROBE_SYMBOL(preempt_count_add);
@@ -2841,6 +2849,14 @@ void preempt_count_sub(int val)
 #ifdef CONFIG_MTPROF
 	MT_trace_check_preempt_dur();
 #endif
+
+#ifdef CONFIG_DEBUG_PREEMPT
+	if (DEBUG_LOCKS_WARN_ON((preempt_count() < 0))) {
+		printk_deferred("%s, val=0x%x, preempt_count=0x%x\n",
+			__func__, val, preempt_count());
+	}
+#endif
+
 }
 EXPORT_SYMBOL(preempt_count_sub);
 NOKPROBE_SYMBOL(preempt_count_sub);
