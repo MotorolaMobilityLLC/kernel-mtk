@@ -8488,6 +8488,8 @@ static int mtk_nand_resume(struct platform_device *pdev)
 			DRV_Reg16(NFI_INTR_REG16);
 
 			DRV_WriteReg16(NFI_INTR_EN_REG16 , host->saved_para.sNFI_INTR_EN_REG16);
+			mtk_nand_device_reset();
+			(void)mtk_nand_reset();
 
 			nand_disable_clock();
 			host->saved_para.suspend_flag = 0;
