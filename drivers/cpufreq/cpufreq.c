@@ -1696,10 +1696,8 @@ EXPORT_SYMBOL(cpufreq_generic_suspend);
  */
 void cpufreq_suspend(void)
 {
+#if 0
 	struct cpufreq_policy *policy;
-
-	/* Avoid hotplug racing issue */
-	return;
 
 	if (!cpufreq_driver)
 		return;
@@ -1721,6 +1719,10 @@ void cpufreq_suspend(void)
 
 suspend:
 	cpufreq_suspended = true;
+#else
+	/* Avoid hotplug racing issue */
+	return;
+#endif
 }
 
 /**
@@ -1731,10 +1733,8 @@ suspend:
  */
 void cpufreq_resume(void)
 {
+#if 0
 	struct cpufreq_policy *policy;
-
-	/* Avoid hotplug racing issue */
-	return;
 
 	if (!cpufreq_driver)
 		return;
@@ -1766,6 +1766,10 @@ void cpufreq_resume(void)
 		return;
 
 	schedule_work(&policy->update);
+#else
+	/* Avoid hotplug racing issue */
+	return;
+#endif
 }
 
 /**
