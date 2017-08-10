@@ -84,7 +84,7 @@ static size_t scp_get_log_buf(unsigned char *buf, size_t b_len)
 	unsigned int log_end_idx;
 	unsigned char *__log_buf = (unsigned char *)(SCP_DTCM + scp_log_buf_addr);
 
-	pr_debug("[SCP] %s\n", __func__);
+	/*pr_debug("[SCP] %s\n", __func__);*/
 
 	if (scp_mobile_log_ready == 0) {
 		pr_err("[SCP] %s(): logger has not been init\n", __func__);
@@ -283,7 +283,7 @@ static void scp_buf_save(void)
 	unsigned int avail, i;
 	unsigned long flags;
 
-	pr_debug("[SCP] %s\n", __func__);
+	/*pr_debug("[SCP] %s\n", __func__);*/
 
 	if (scp_mobile_log_ready == 0) {
 		pr_err("[SCP] %s(): logger has not been init\n", __func__);
@@ -374,7 +374,7 @@ void scp_get_log(int save)
 {
 	unsigned long flags;
 
-	pr_debug("[SCP] %s\n", __func__);
+	/*pr_debug("[SCP] %s\n", __func__);*/
 
 	if (scp_log_buf) {
 		spin_lock_irqsave(&scp_log_buf_spinlock, flags);
