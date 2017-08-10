@@ -91,7 +91,6 @@ static MTK_WCN_BOOL _stp_psm_is_quick_ps_support(VOID);
 
 ENUM_STP_TX_IF_TYPE __weak wmt_plat_get_comm_if_type(VOID)
 {
-	STP_PSM_INFO_FUNC("wmt_plat_get_comm_if_type is not define!!\n");
 	return STP_MAX_IF_TX;
 }
 
