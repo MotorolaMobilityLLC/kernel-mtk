@@ -199,8 +199,8 @@ static u32 cali_ge_reg;
 static u32 cali_oe_reg;
 #endif
 #endif
-static u32 cali_oe;
-static u32 cali_ge;
+static s32 cali_oe;
+static s32 cali_ge;
 static u32 cali_ge_a;
 static u32 cali_oe_a;
 static u32 gain;
