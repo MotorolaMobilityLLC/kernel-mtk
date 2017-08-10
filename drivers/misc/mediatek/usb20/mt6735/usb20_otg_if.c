@@ -1003,9 +1003,10 @@ int musb_otg_exec_cmd(unsigned int cmd)
 	unsigned int usb_l1intp;
 	unsigned int usb_l1ints;
 
-
-	if (!mtk_musb)
+	if (!mtk_musb) {
 		DBG(0, "mtk_musb is NULL,error!\n");
+		return false;
+	}
 
 	switch (cmd) {
 	case HOST_CMD_ENV_INIT:
