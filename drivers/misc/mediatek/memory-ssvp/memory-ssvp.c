@@ -43,13 +43,15 @@
 #define _SVP_MBSIZE CONFIG_MTK_SVP_RAM_SIZE
 #define _TUI_MBSIZE CONFIG_MTK_TUI_RAM_SIZE
 
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
+#define COUNT_DOWN_MS 2000
+#define	COUNT_DOWN_INTERVAL 100
+
 #include <mt-plat/aee.h>
-#endif
 
 #include "mt-plat/mtk_meminfo.h"
 
 static unsigned long svp_usage_count;
+static int ref_count;
 
 #ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
 static struct page *wrap_svp_pages;
@@ -88,7 +90,6 @@ struct SSVP_Region {
 	struct page *page;
 };
 
-static int _svp_onlinewait_tries;
 static struct task_struct *_svp_online_task; /* NULL */
 
 static struct cma *cma;
@@ -279,139 +280,59 @@ static const struct file_operations tui_cma_fops = {
 	.write =    tui_cma_write,
 };
 
-static int __svp_region_online(void)
+static int _svp_wdt_kthread_func(void *data)
 {
-	int retval = 0;
-	bool retb;
+	int count_down = COUNT_DOWN_MS / COUNT_DOWN_INTERVAL;
 
-	pr_alert("%s %d: svp to online enter state: %s\n", __func__, __LINE__,
-			svp_state_text[_svpregs[SSVP_SVP].state]);
+	pr_info("[START COUNT DOWN]: %dms/%dms\n", COUNT_DOWN_MS, COUNT_DOWN_INTERVAL);
 
-	if (_svpregs[SSVP_SVP].state == SVP_STATE_ONING_WAIT) {
-		_svpregs[SSVP_SVP].state = SVP_STATE_ONING;
+	for (count_down = 0; count_down > 0; --count_down) {
+		msleep(COUNT_DOWN_INTERVAL);
 
-#ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
-		retb = true;
-#else
-		retb = cma_release(cma, _svpregs[SSVP_SVP].page, _svpregs[SSVP_SVP].count);
-
-		if (retb == true)
-			svp_usage_count -= _svpregs[SSVP_SVP].count;
-#endif
-
-		if (retb == true) {
-			_svpregs[SSVP_SVP].page = NULL;
-			_svpregs[SSVP_SVP].state = SVP_STATE_ON;
+		/*
+		 * some component need ssvp memory,
+		 * and stop count down watch dog
+		 */
+		if (ref_count > 0) {
+			_svp_online_task = NULL;
+			pr_info("[STOP COUNT DOWN]: new request for ssvp\n");
+			return 0;
 		}
-	} else {
-		retval = -EBUSY;
+
+		if (_svpregs[SSVP_SVP].state == SVP_STATE_ON) {
+			pr_info("[STOP COUNT DOWN]: SSVP has online\n");
+			return 0;
+		}
+		pr_info("[COUNT DOWN]: %d\n", count_down);
+
 	}
 
-	pr_alert("%s %d: svp to online leave state: %s, retval: %d\n",
-			__func__, __LINE__,
-			svp_state_text[_svpregs[SSVP_SVP].state], retval);
+	pr_alert("[COUNT DOWN FAIL]\n");
 
-	return retval;
+	if (IS_ENABLED(CONFIG_MTK_AEE_FEATURE) && IS_ENABLED(CONFIG_MT_ENG_BUILD)) {
+#define MSG_SIZE_TO_AEE 70
+		char msg_to_aee[MSG_SIZE_TO_AEE];
+
+		pr_alert("Shareable SVP trigger kernel warnin");
+
+		snprintf(msg_to_aee, MSG_SIZE_TO_AEE, "please contact SS memory module owner\n");
+		aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
+				| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
+				| DB_OPT_PROCESS_COREDUMP
+				| DB_OPT_DUMPSYS_SURFACEFLINGER
+				| DB_OPT_DUMPSYS_GFXINFO
+				| DB_OPT_DUMPSYS_PROCSTATS,
+				"SVP wdt: SSVP online Failed\nCRDISPATCH_KEY:SVP_SS1",
+				msg_to_aee);
+	}
+
+	return 0;
 }
 
-static int _svp_online_kthread_func(void *data)
+int svp_start_wdt(void)
 {
-	u32 secusage = 0;
-	int secdisable = 0;
-	int vret;
-
-	pr_alert("%s %d: start\n", __func__, __LINE__);
-
-	_svp_onlinewait_tries = 0;
-
-	while (_svp_onlinewait_tries < 30) {
-		msleep(100);
-		secusage = 0;
-
-		/* call secmem_query */
-		vret = secmem_api_query(&secusage);
-
-		_svp_onlinewait_tries++;
-		pr_alert("%s %d: vret: %d, _svp_onlinewait_tries: %d, secusage: %d\n",
-				__func__, __LINE__, vret, _svp_onlinewait_tries, secusage);
-
-		/* for no TEE test
-		if (_svp_onlinewait_tries < 1) {
-			secusage = 10;
-		}*/
-
-		if (!secusage)
-			break;
-	}
-
-	if (_svp_onlinewait_tries >= 30) {
-		/* to do, show error */
-		pr_alert("%s %d:[ONLINE FAIL] _svp_onlinewait_tries: %d, secusage: %d\n",
-				__func__, __LINE__, _svp_onlinewait_tries, secusage);
-
-		_svpregs[SSVP_SVP].state = SVP_STATE_OFF;
-
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
-		{
-			#define MSG_SIZE_TO_AEE 70
-			char msg_to_aee[MSG_SIZE_TO_AEE];
-
-			pr_alert("Shareable SVP trigger kernel warning, vret: %d, secusage: %d\n", vret, secusage);
-
-			snprintf(msg_to_aee, MSG_SIZE_TO_AEE, "please contact SS memory module owner\n");
-			aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
-								| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
-								| DB_OPT_PROCESS_COREDUMP
-								| DB_OPT_DUMPSYS_SURFACEFLINGER
-								| DB_OPT_DUMPSYS_GFXINFO
-								| DB_OPT_DUMPSYS_PROCSTATS,
-								"SVP release Failed\nCRDISPATCH_KEY:SVP_SS1",
-								msg_to_aee);
-		}
-#endif
-
-		goto out;
-	}
-
-	/* call secmem_disable */
-	secdisable = secmem_api_disable();
-
-	pr_alert("%s %d: _svp_onlinewait_tries: %d, secusage: %d, secdisable %d\n",
-			__func__, __LINE__, _svp_onlinewait_tries, secusage, secdisable);
-
-	if (!secdisable) {
-		__svp_region_online();
-
-		_svpregs[SSVP_SVP].state = SVP_STATE_ON;
-	} else { /* to do, error handle */
-
-		_svpregs[SSVP_SVP].state = SVP_STATE_OFF;
-
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MT_ENG_BUILD)
-		{
-			#define MSG_SIZE_TO_AEE 70
-			char msg_to_aee[MSG_SIZE_TO_AEE];
-
-			pr_alert("Shareable SVP trigger kernel warning, secdisable %d\n", secdisable);
-
-			snprintf(msg_to_aee, MSG_SIZE_TO_AEE, "please contact SS memory module owner\n");
-			aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
-								| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
-								| DB_OPT_PROCESS_COREDUMP
-								| DB_OPT_DUMPSYS_SURFACEFLINGER
-								| DB_OPT_DUMPSYS_GFXINFO
-								| DB_OPT_DUMPSYS_PROCSTATS,
-								"SVP release Failed\nCRDISPATCH_KEY:SVP_SS1",
-								msg_to_aee);
-		}
-#endif
-	}
-
-out:
-	_svp_online_task = NULL;
-
-	pr_alert("%s %d: end, _svp_onlinewait_tries: %d\n", __func__, __LINE__, _svp_onlinewait_tries);
-
+	_svp_online_task = kthread_create(_svp_wdt_kthread_func, NULL, "svp_online_kthread");
+	wake_up_process(_svp_online_task);
 	return 0;
 }
 
@@ -441,11 +362,6 @@ int svp_region_offline(phys_addr_t *pa, unsigned long *size)
 			_svpregs[SSVP_SVP].page = page;
 			_svpregs[SSVP_SVP].state = SVP_STATE_OFF;
 
-			/* call secmem_enable */
-			res = secmem_api_enable(
-					page_to_phys(page),
-					_svpregs[SSVP_SVP].count << PAGE_SHIFT);
-
 			if (pa)
 				*pa = page_to_phys(page);
 			if (size)
@@ -473,15 +389,25 @@ EXPORT_SYMBOL(svp_region_offline);
 int svp_region_online(void)
 {
 	int retval = 0;
+	int retb;
 
 	pr_alert("%s %d: svp to online enter state: %s\n", __func__, __LINE__,
 			svp_state_text[_svpregs[SSVP_SVP].state]);
 
 	if (_svpregs[SSVP_SVP].state == SVP_STATE_OFF) {
-		_svpregs[SSVP_SVP].state = SVP_STATE_ONING_WAIT;
+#ifdef CONFIG_MTK_MEMORY_SSVP_WRAP
+		retb = true;
+#else
+		retb = cma_release(cma, _svpregs[SSVP_SVP].page, _svpregs[SSVP_SVP].count);
 
-		_svp_online_task = kthread_create(_svp_online_kthread_func, NULL, "svp_online_kthread");
-		wake_up_process(_svp_online_task);
+		if (retb == true)
+			svp_usage_count -= _svpregs[SSVP_SVP].count;
+#endif
+
+		if (retb == true) {
+			_svpregs[SSVP_SVP].page = NULL;
+			_svpregs[SSVP_SVP].state = SVP_STATE_ON;
+		}
 	} else {
 		retval = -EBUSY;
 	}
@@ -545,10 +471,24 @@ static long svp_cma_ioctl(struct file *filp, unsigned int cmd, unsigned long arg
 
 	switch (cmd) {
 	case SVP_REGION_IOC_ONLINE:
-		svp_region_online();
+		pr_info("Called phased out ioctl: %s\n", "SVP_REGION_IOC_ONLINE");
+		/* svp_region_online(); */
 		break;
 	case SVP_REGION_IOC_OFFLINE:
-		svp_region_offline(NULL, NULL);
+		pr_info("Called phased out ioctl: %s\n", "SVP_REGION_IOC_OFFLINE");
+		/* svp_region_offline(NULL, NULL); */
+		break;
+	case SVP_REGION_ACQUIRE:
+		if (ref_count == 0 && _svp_online_task != NULL)
+			_svp_online_task = NULL;
+
+		ref_count++;
+		break;
+	case SVP_REGION_RELEASE:
+		ref_count--;
+
+		if (ref_count == 0)
+			svp_start_wdt();
 		break;
 	default:
 		/* IONMSG("ion_ioctl : No such command!! 0x%x\n", cmd); */

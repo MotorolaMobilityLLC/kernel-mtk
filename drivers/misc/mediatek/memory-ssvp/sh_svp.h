@@ -41,4 +41,7 @@ extern struct cma *svp_contiguous_default_area;
 #define SVP_REGION_IOC_ONLINE		_IOR(SVP_REGION_IOC_MAGIC, 2, int)
 #define SVP_REGION_IOC_OFFLINE		_IOR(SVP_REGION_IOC_MAGIC, 4, int)
 
+#define SVP_REGION_ACQUIRE			_IOR(SVP_REGION_IOC_MAGIC, 6, int)
+#define SVP_REGION_RELEASE			_IOR(SVP_REGION_IOC_MAGIC, 8, int)
+
 #endif
