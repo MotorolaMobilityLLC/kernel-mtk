@@ -2095,7 +2095,6 @@ static void _mt_cpufreq_set_cur_freq(struct mt_cpu_dvfs *p, unsigned int cur_khz
 
 		if (!is_fhctl_used) {
 			switch (target_khz) {
-			case CPU_DVFS_FREQ1_1:
 			case CPU_DVFS_FREQ1:
 			case CPU_DVFS_FREQ2:
 			case CPU_DVFS_FREQ3:
