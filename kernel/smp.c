@@ -23,6 +23,7 @@
 #endif
 
 #include "smpboot.h"
+#include "mt-plat/mt_devinfo.h"
 
 enum {
 	CSD_FLAG_LOCK		= 0x01,
@@ -766,7 +767,16 @@ static int create_procfs(void)
 /* Called by boot processor to activate the rest. */
 void __init smp_init(void)
 {
-	unsigned int cpu;
+	unsigned int cpu, segment, i;
+
+	segment =  get_devinfo_with_index(21) & 0xFF;
+	if ((segment == 0x43) || (segment == 0x4B)) {
+			for (i = 1; i <= 3; i++) {
+				set_cpu_present(i, false);
+				set_cpu_active(i, false);
+				set_cpu_online(i, false);
+			}
+	}
 
 	idle_threads_init();
 
