@@ -19,6 +19,8 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLA
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 
+obj-$(CONFIG_MTK_EMI_MPU)	+= emi_mpu/
+obj-$(CONFIG_MTK_DCS) += mtkdcs/
 obj-$(CONFIG_MTK_BASE_POWER) += base/
 obj-$(CONFIG_MTK_POWER_GS) += power_gs/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= sched/
@@ -186,11 +188,9 @@ obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
 obj-$(CONFIG_MTK_ATF_LOGGER)	+= atf_log/
 obj-$(CONFIG_MTK_MLOG) += mlog/
 obj-$(CONFIG_MTK_EMI_BWL)	+= emi_bwl/
-obj-$(CONFIG_MTK_EMI_MPU)	+= emi_mpu/
 obj-$(CONFIG_MTK_MJC_DRIVER)	+= mjc/
 obj-$(CONFIG_MD32_SUPPORT)     += md32/
 obj-$(CONFIG_MTK_EMI_MBW) += emi_mbw/
-obj-$(CONFIG_MTK_DCS) += mtkdcs/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/tc1_interface/),)
 obj-$(CONFIG_MTK_TC1_FEATURE)   += tc1_interface/
 endif
