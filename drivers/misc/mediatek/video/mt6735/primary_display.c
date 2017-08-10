@@ -8063,9 +8063,10 @@ int primary_display_capture_framebuffer_decouple(unsigned long pbuf, unsigned in
 	buffer_size = h_yres * pitch;
 	ASSERT((pitch / 4) >= w_xres);
 /* dpmgr_get_input_address(pgc->dpmgr_handle,&mva); */
-	m4u_mva_map_kernel(mva, buffer_size, &va, &mapped_size);
-	if (!va) {
-		DISPERR("map mva 0x%08x failed\n", mva);
+	ret = m4u_mva_map_kernel(mva, buffer_size, &va, &mapped_size);
+	if (!va || ret < 0) {
+		DISPERR("%s m4u_mva_map_kernel failed, mva:0x%08x, ret:%d\n",
+			__func__, mva, ret);
 		goto out;
 	}
 

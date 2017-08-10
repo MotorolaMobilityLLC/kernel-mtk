@@ -1216,6 +1216,7 @@ void _debug_fps_meter(unsigned long mva, unsigned long va, unsigned int w, unsig
 	unsigned long mod = 0;
 	unsigned long current_idx = 0;
 	unsigned long long l = _last_ts;
+	int ret;
 
 	if (g_display_debug_pattern_index != 3)
 		return;
@@ -1226,9 +1227,10 @@ void _debug_fps_meter(unsigned long mva, unsigned long va, unsigned int w, unsig
 		addr = va;
 	} else {
 		layer_size = linepitch * h;
-		m4u_mva_map_kernel(mva, layer_size, &addr, &mapped_size);
-		if (mapped_size == 0) {
-			DISPERR("m4u_mva_map_kernel failed\n");
+		ret = m4u_mva_map_kernel(mva, layer_size, &addr, &mapped_size);
+		if (mapped_size == 0 || ret < 0) {
+			DISPERR("%s m4u_mva_map_kernel failed, mapped_size:%d, ret:%d\n",
+				__func__, mapped_size, ret);
 			return;
 		}
 	}
