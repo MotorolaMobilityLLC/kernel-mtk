@@ -2077,22 +2077,20 @@ int ccci_stop_modem(int md_id, unsigned int timeout)
 	}
 	ccci_md_logger_notify();
 	CCCI_MSG_INF(md_id, "ctl", "md power off before\n");
-
-	CCCI_MSG_INF(md_id, "ctl", "stop modem, delete boot up check timer\n");
-	ccci_stop_bootup_timer(md_id);
 	ccmni_v2_dump(md_id);
 	let_md_stop(md_id, timeout);
 	for (i = 0; i < NR_CCCI_RESET_USER; i++)
 		ctl_b->reset_sta[i].is_reset = 0;
 	md_call_chain(&ctl_b->md_notifier, CCCI_MD_RESET);
-	CCCI_MSG_INF(md_id, "ctl", "md power off end\n");
 	ccmni_v2_dump(md_id);
 	/*  Reset share memory if needed */
 	memset((void *)ctl_b->smem_table->ccci_md_ex_exp_info_smem_base_virt, 0,
 	       sizeof(struct modem_exception_exp_t));
 	ccci_fs_resetfifo(md_id);
 	ret = logic_layer_reset(md_id);
-
+	CCCI_MSG_INF(md_id, "ctl", "stop modem, delete boot up check timer\n");
+	ccci_stop_bootup_timer(md_id);
+	CCCI_MSG_INF(md_id, "ctl", "md power off end\n");
 	return ret;
 }
 
