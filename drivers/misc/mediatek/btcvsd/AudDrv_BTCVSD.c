@@ -215,15 +215,15 @@ static int Auddrv_BTCVSD_Address_Map(void)
 	btsys_sram_bank2_physical_base = (unsigned long)base;
 
 	/*print for debug */
-	pr_err("[BTCVSD] Auddrv_BTCVSD_Address_Map:\n");
-	pr_err("[BTCVSD] infra_misc_offset=0x%lx\n", infra_misc_offset);
-	pr_err("[BTCVSD] conn_bt_cvsd_mask=0x%lx\n", conn_bt_cvsd_mask);
-	pr_err("[BTCVSD] read_off=0x%lx\n", cvsd_mcu_read_offset);
-	pr_err("[BTCVSD] write_off=0x%lx\n", cvsd_mcu_write_offset);
-	pr_err("[BTCVSD] packet_ind=0x%lx\n", cvsd_packet_indicator);
-	pr_err("[BTCVSD] infra_base=0x%lx\n", infra_base);
-	pr_err("[BTCVSD] btsys_pkv_physical_base=0x%lx\n", btsys_pkv_physical_base);
-	pr_err("[BTCVSD] btsys_sram_bank2_physical_base=0x%lx\n", btsys_sram_bank2_physical_base);
+	pr_debug("[BTCVSD] Auddrv_BTCVSD_Address_Map:\n");
+	pr_debug("[BTCVSD] infra_misc_offset=0x%lx\n", infra_misc_offset);
+	pr_debug("[BTCVSD] conn_bt_cvsd_mask=0x%lx\n", conn_bt_cvsd_mask);
+	pr_debug("[BTCVSD] read_off=0x%lx\n", cvsd_mcu_read_offset);
+	pr_debug("[BTCVSD] write_off=0x%lx\n", cvsd_mcu_write_offset);
+	pr_debug("[BTCVSD] packet_ind=0x%lx\n", cvsd_packet_indicator);
+	pr_debug("[BTCVSD] infra_base=0x%lx\n", infra_base);
+	pr_debug("[BTCVSD] btsys_pkv_physical_base=0x%lx\n", btsys_pkv_physical_base);
+	pr_debug("[BTCVSD] btsys_sram_bank2_physical_base=0x%lx\n", btsys_sram_bank2_physical_base);
 
 	if (!infra_base) {
 		pr_err("[BTCVSD] get infra_base failed!!!\n");
@@ -246,14 +246,14 @@ static void Disable_CVSD_Wakeup(void)
 {
 	volatile kal_uint32 *INFRA_MISC_REGISTER = (volatile kal_uint32 *)(INFRA_MISC_ADDRESS);
 	*INFRA_MISC_REGISTER |= conn_bt_cvsd_mask;
-	pr_err("Disable_CVSD_Wakeup\n");
+	pr_debug("Disable_CVSD_Wakeup\n");
 }
 
 static void Enable_CVSD_Wakeup(void)
 {
 	volatile kal_uint32 *INFRA_MISC_REGISTER = (volatile kal_uint32 *)(INFRA_MISC_ADDRESS);
 	*INFRA_MISC_REGISTER &= ~(conn_bt_cvsd_mask);
-	pr_err("Enable_CVSD_Wakeup\n");
+	pr_debug("Enable_CVSD_Wakeup\n");
 }
 
 static int AudDrv_btcvsd_Allocate_Buffer(struct file *fp, kal_uint8 isRX)
@@ -335,7 +335,7 @@ static int AudDrv_btcvsd_Free_Buffer(struct file *fp, kal_uint8 isRX)
 		}
 	} else {
 		if (BT_CVSD_Mem.pucTXVirtBufAddr != NULL) {
-			/*pr_err("btcvsd_Free_Buffer dma_free_coherent pucTXVirtBufAddr = %p,pucTXPhysBufAddr = %x\n",
+			/*pr_debug("btcvsd_Free_Buffer dma_free_coherent pucTXVirtBufAddr = %p,pucTXPhysBufAddr = %x\n",
 				BT_CVSD_Mem.pucTXVirtBufAddr, BT_CVSD_Mem.pucTXPhysBufAddr);*/
 			btsco.pTX = NULL;
 			dma_free_coherent(0, BT_CVSD_Mem.u4TXBufferSize,
@@ -1023,10 +1023,10 @@ static ssize_t AudDrv_btcvsd_write(struct file *fp, const char __user *data,
 			} else if (ret == 0) {
 				/* conidtion is false after timeout */
 				max_timeout_trial--;
-				pr_err("%s(), error, timeout, condition is false, trial left %d, written_size %d\n",
-				       __func__,
-				       max_timeout_trial,
-				       written_size);
+				pr_warn("%s(), error, timeout, condition is false, trial left %d, written_size %d\n",
+					__func__,
+					max_timeout_trial,
+					written_size);
 
 				if (max_timeout_trial <= 0)
 					return written_size;
@@ -1216,10 +1216,10 @@ static ssize_t AudDrv_btcvsd_read(struct file *fp, char __user *data,
 			} else if (ret == 0) {
 				/* conidtion is false after timeout */
 				max_timeout_trial--;
-				pr_err("%s(), error, timeout, condition is false, trial left %d, read_count %zd\n",
-				       __func__,
-				       max_timeout_trial,
-				       read_count);
+				pr_warn("%s(), error, timeout, condition is false, trial left %d, read_count %zd\n",
+					__func__,
+					max_timeout_trial,
+					read_count);
 
 				if (max_timeout_trial <= 0)
 					return read_count;
