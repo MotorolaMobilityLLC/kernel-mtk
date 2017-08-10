@@ -582,6 +582,7 @@ static ssize_t cm36652_show_reg(struct device_driver *ddri, char *buf)
 	u8  _bIndex = 0;
 	u8 databuf[2] = {0};
 	ssize_t  _tLength  = 0;
+	int res = 0;
 
 	if (!cm36652_obj) {
 		APS_ERR("cm3623_obj is null!!\n");
@@ -590,7 +591,10 @@ static ssize_t cm36652_show_reg(struct device_driver *ddri, char *buf)
 
 	for (_bIndex = 0; _bIndex < 0x0D; _bIndex++) {
 		databuf[0] = _bIndex;
-		CM36652_i2c_master_operate(cm36652_obj->client, databuf, 0x201, I2C_FLAG_READ);
+		res = CM36652_i2c_master_operate(cm36652_obj->client, databuf, 0x201, I2C_FLAG_READ);
+		if (res < 0) {
+			APS_ERR("i2c_master_send function err res = %d\n", res);
+		}
 		_tLength += snprintf((buf + _tLength), (PAGE_SIZE - _tLength),
 			"Reg[0x%02X]: 0x%02X\n", _bIndex, databuf[0]);
 	}
@@ -1062,7 +1066,9 @@ int cm36652_setup_eint(struct i2c_client *client)
 	}
 /* eint request */
 	if (cm36652_obj->irq_node) {
-		of_property_read_u32_array(cm36652_obj->irq_node, "debounce", ints, ARRAY_SIZE(ints));
+		ret = of_property_read_u32_array(cm36652_obj->irq_node, "debounce", ints, ARRAY_SIZE(ints));
+		if (!ret)
+			APS_LOG("of_property_read_u32_array fail!!\n");
 		gpio_request(ints[0], "p-sensor");
 		gpio_set_debounce(ints[0], ints[1]);
 		pinctrl_select_state(pinctrl, pins_cfg);
@@ -1948,7 +1954,7 @@ static int cm36652_i2c_remove(struct i2c_client *client)
 
 static int cm36652_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strcpy(info->type, CM36652_DEV_NAME);
+	strncpy(info->type, CM36652_DEV_NAME, strlen(CM36652_DEV_NAME));
 	return 0;
 
 }

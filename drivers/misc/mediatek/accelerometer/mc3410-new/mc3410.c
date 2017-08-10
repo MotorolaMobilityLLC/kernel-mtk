@@ -352,6 +352,9 @@ static int MC3XXX_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u
 	int err;
 	struct i2c_msg msgs[2] = {{0}, {0} };
 
+	if (!client)
+		return -EINVAL;
+
 	mutex_lock(&MC3XXX_i2c_mutex);
 
 	msgs[0].addr = client->addr;
@@ -364,10 +367,7 @@ static int MC3XXX_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u
 	msgs[1].len = len;
 	msgs[1].buf = data;
 
-	if (!client) {
-		mutex_unlock(&MC3XXX_i2c_mutex);
-		return -EINVAL;
-	} else if (len > C_I2C_FIFO_SIZE) {
+	if (len > C_I2C_FIFO_SIZE) {
 		GSE_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
 		mutex_unlock(&MC3XXX_i2c_mutex);
 		return -EINVAL;
@@ -1190,16 +1190,15 @@ static int	MC3XXX_ReadData(struct i2c_client *pt_i2c_client, s16 waData[MC3XXX_A
 	#ifdef _MC3XXX_SUPPORT_LPF_
 		struct mc3xxx_i2c_data   *_ptPrivData = NULL;
 	#endif
-	struct mc3xxx_i2c_data   *_pt_i2c_obj = ((struct mc3xxx_i2c_data *) i2c_get_clientdata(pt_i2c_client));
-
-	if (atomic_read(&_pt_i2c_obj->trace) & MCUBE_TRC_INFO)
-		GSE_LOG("[%s] s_nIsRBM_Enabled: %d\n", __func__, s_nIsRBM_Enabled);
+	struct mc3xxx_i2c_data   *_pt_i2c_obj = NULL;
 
 	if (NULL == pt_i2c_client) {
 		GSE_ERR("ERR: Null Pointer\n");
-
-	return MC3XXX_RETCODE_ERROR_NULL_POINTER;
+		return MC3XXX_RETCODE_ERROR_NULL_POINTER;
 	}
+	_pt_i2c_obj = ((struct mc3xxx_i2c_data *) i2c_get_clientdata(pt_i2c_client));
+	if (atomic_read(&_pt_i2c_obj->trace) & MCUBE_TRC_INFO)
+		GSE_LOG("[%s] s_nIsRBM_Enabled: %d\n", __func__, s_nIsRBM_Enabled);
 
 	if (!s_nIsRBM_Enabled) {
 		if (MC3XXX_RESOLUTION_LOW == s_bResolution) {
@@ -1816,13 +1815,13 @@ static int MC3XXX_ReadChipInfo(struct i2c_client *client, char *buf, int bufsize
 static int MC3XXX_ReadSensorData(struct i2c_client *pt_i2c_client, char *pbBuf, int nBufSize)
 {
 	int					   _naAccelData[MC3XXX_AXES_NUM] = { 0 };
-	struct mc3xxx_i2c_data   *_pt_i2c_obj = ((struct mc3xxx_i2c_data *) i2c_get_clientdata(pt_i2c_client));
+	struct mc3xxx_i2c_data   *_pt_i2c_obj = NULL;
 
 	if ((NULL == pt_i2c_client) || (NULL == pbBuf)) {
 		GSE_ERR("ERR: Null Pointer\n");
 		return MC3XXX_RETCODE_ERROR_NULL_POINTER;
 	}
-
+	_pt_i2c_obj = ((struct mc3xxx_i2c_data *) i2c_get_clientdata(pt_i2c_client));
 	if (false == mc3xxx_sensor_power) {
 		if (MC3XXX_RETCODE_SUCCESS != MC3XXX_SetPowerMode(pt_i2c_client, true))
 			GSE_ERR("ERR: fail to set power mode!\n");
@@ -2315,10 +2314,10 @@ static ssize_t store_selftest_value(struct device_driver *ddri, const char *buf,
 
 	if (!MC3XXX_JudgeTestResult(client)) {
 		GSE_LOG("SELFTEST : PASS\n");
-		strcpy(selftestRes, "y");
+		strncpy(selftestRes, "y", strlen("y"));
 	} else {
 		GSE_LOG("SELFTEST : FAIL\n");
-		strcpy(selftestRes, "n");
+		strncpy(selftestRes, "n", strlen("n"));
 	}
 
 	return count;

@@ -1256,7 +1256,9 @@ static ssize_t store_layout_value(struct device_driver *ddri, const char *buf, s
 			MAG_ERR("invalid layout: %d, restore to %d\n", layout, data->hw->direction);
 		else {
 			MAG_ERR("invalid layout: (%d, %d)\n", layout, data->hw->direction);
-			hwmsen_get_convert(0, &data->cvt);
+			ret = hwmsen_get_convert(0, &data->cvt);
+			if (!ret)
+				MAG_ERR("HWMSEN_GET_CONVERT function error!\r\n");
 		}
 	} else
 		MAG_ERR("invalid format = '%s'\n", buf);
@@ -1346,6 +1348,7 @@ static ssize_t store_chip_orientation(struct device_driver *ddri, const char *bu
 
 static ssize_t show_power_status(struct device_driver *ddri, char *buf)
 {
+	int ret = 0;
 	ssize_t res = 0;
 	u8 uData = AK09911_REG_CNTL2;
 	struct akm09911_i2c_data *obj = i2c_get_clientdata(this_client);
@@ -1354,7 +1357,9 @@ static ssize_t show_power_status(struct device_driver *ddri, char *buf)
 		MAG_ERR("i2c_data obj is null!!\n");
 		return 0;
 	}
-	AKI2C_RxData(&uData, 1);
+	ret = AKI2C_RxData(&uData, 1);
+	if (ret < 0)
+		MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
 	res = snprintf(buf, PAGE_SIZE, "0x%04X\n", uData);
 	return res;
 }
@@ -1367,10 +1372,13 @@ static ssize_t show_regiter_map(struct device_driver *ddri, char *buf)
    /* u8  _baRegValue[20]; */
 	ssize_t	_tLength	 = 0;
 	char tmp[2] = {0};
+	int ret = 0;
 
 	for (_bIndex = 0; _bIndex < 20; _bIndex++) {
 		tmp[0] = _baRegMap[_bIndex];
-		AKI2C_RxData(tmp, 1);
+		ret = AKI2C_RxData(tmp, 1);
+		if (ret < 0)
+			MAGN_LOG("%s:%d Error.\n", __func__, __LINE__);
 		_tLength += snprintf((buf + _tLength), (PAGE_SIZE - _tLength), "Reg[0x%02X]: 0x%02X\n",
 			_baRegMap[_bIndex], tmp[0]);
 	}
@@ -1537,7 +1545,7 @@ static long akm09911_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 			return -EINVAL;
 		}
 		ret = AKI2C_RxData(&rwbuf[1], rwbuf[0]);
-		if (ret < 0)
+		if (ret < 0L)
 			return ret;
 
 		if (copy_to_user(argp, rwbuf, rwbuf[0]+1)) {
@@ -1554,7 +1562,7 @@ static long akm09911_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		#endif
 
 		ret = AKI2C_RxData(sense_info, AKM_SENSOR_INFO_SIZE);
-		if (ret < 0)
+		if (ret < 0L)
 			return ret;
 
 		if (copy_to_user(argp, sense_info, AKM_SENSOR_INFO_SIZE)) {
@@ -1569,7 +1577,7 @@ static long akm09911_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		#else
 		ret = AKECS_SetMode(AK09911_MODE_FUSE_ACCESS);
 		#endif
-		if (ret < 0)
+		if (ret < 0L)
 			return ret;
 		#ifdef AKM_Device_AK8963
 		sense_conf[0] = AK8963_FUSE_ASAX;
@@ -1578,7 +1586,7 @@ static long akm09911_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		#endif
 
 		ret = AKI2C_RxData(sense_conf, AKM_SENSOR_CONF_SIZE);
-		if (ret < 0)
+		if (ret < 0L)
 			return ret;
 		if (copy_to_user(argp, sense_conf, AKM_SENSOR_CONF_SIZE)) {
 			MAGN_LOG("copy_to_user failed.");
@@ -1589,7 +1597,7 @@ static long akm09911_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 		#else
 		ret = AKECS_SetMode(AK09911_MODE_POWERDOWN);
 		#endif
-		if (ret < 0)
+		if (ret < 0L)
 			return ret;
 
 		break;
@@ -1605,7 +1613,7 @@ static long akm09911_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 			return -EFAULT;
 		}
 		ret = AKECS_SetMode(mode);  /* MATCH command from AKMD PART */
-		if (ret < 0)
+		if (ret < 0L)
 			return ret;
 
 		break;
@@ -1613,7 +1621,7 @@ static long akm09911_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 	case ECS_IOCTL_GETDATA:
 		/* AKMFUNC("ECS_IOCTL_GETDATA"); */
 		ret = AKECS_GetData(sData, SENSOR_DATA_SIZE);
-		if (ret < 0)
+		if (ret < 0L)
 			return ret;
 
 		if (copy_to_user(argp, sData, sizeof(sData))) {
@@ -1666,9 +1674,9 @@ static long akm09911_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
 
 	case ECS_IOCTL_GET_DELAY_09911:
 		/* AKMFUNC("IOCTL_GET_DELAY"); */
-		delay[0] = (int)akmd_delay * 1000000;
-		delay[1] = (int)akmd_delay * 1000000;
-		delay[2] = (int)akmd_delay * 1000000;
+		delay[0] = (int64_t)akmd_delay * 1000000;
+		delay[1] = (int64_t)akmd_delay * 1000000;
+		delay[2] = (int64_t)akmd_delay * 1000000;
 		if (copy_to_user(argp, delay, sizeof(delay))) {
 			MAGN_LOG("copy_to_user failed.");
 			return -EFAULT;

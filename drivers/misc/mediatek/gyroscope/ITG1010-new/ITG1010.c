@@ -162,6 +162,9 @@ static int ITG1010_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, 
 	int err;
 	struct i2c_msg msgs[2] = {{0}, {0} };
 
+	if (!client)
+		return -EINVAL;
+
 	mutex_lock(&ITG1010_i2c_mutex);
 
 	msgs[0].addr = client->addr;
@@ -174,10 +177,7 @@ static int ITG1010_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, 
 	msgs[1].len = len;
 	msgs[1].buf = data;
 
-	if (!client) {
-		mutex_unlock(&ITG1010_i2c_mutex);
-		return -EINVAL;
-	} else if (len > C_I2C_FIFO_SIZE) {
+	if (len > C_I2C_FIFO_SIZE) {
 		GYRO_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
 		mutex_unlock(&ITG1010_i2c_mutex);
 		return -EINVAL;
@@ -1343,7 +1343,7 @@ static int ITG1010_resume(struct i2c_client *client)
 /*----------------------------------------------------------------------------*/
 static int ITG1010_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
 {
-	strcpy(info->type, ITG1010_DEV_NAME);
+	strncpy(info->type, ITG1010_DEV_NAME, strlen(ITG1010_DEV_NAME));
 	return 0;
 }
 
