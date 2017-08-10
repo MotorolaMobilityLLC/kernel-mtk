@@ -122,7 +122,7 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
 	 */
 	ret = boot_secondary(cpu, idle);
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
@@ -149,7 +149,7 @@ int __cpu_up(unsigned int cpu, struct task_struct *idle)
 	} else {
 		pr_err("CPU%u: failed to boot: %d\n", cpu, ret);
 	}
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
@@ -224,14 +224,14 @@ asmlinkage void secondary_start_kernel(void)
 	/*
 	 * Enable GIC and timers.
 	 */
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 	notify_cpu_starting(cpu);
 
 	aee_rr_rec_hotplug_footprint(cpu, 10);
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
@@ -367,14 +367,14 @@ void __cpu_die(unsigned int cpu)
 	 * clobbering anything it might still be using.
 	 */
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
 	if (!op_cpu_kill(cpu))
 		pr_warn("CPU%d may not have shut down cleanly\n", cpu);
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 }

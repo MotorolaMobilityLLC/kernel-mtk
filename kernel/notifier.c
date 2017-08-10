@@ -81,7 +81,8 @@ static int notifier_call_chain(struct notifier_block **nl,
 	struct notifier_block *nb, *next_nb;
 
 #if defined(CONFIG_SMP)
-#if defined(MTK_CPU_HOTPLUG_DEBUG_1) || defined(MTK_CPU_HOTPLUG_DEBUG_2)
+#if defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_1) || \
+	defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_2)
 	int index = 0;
 #endif
 #endif /* CONFIG_SMP */
@@ -100,19 +101,21 @@ static int notifier_call_chain(struct notifier_block **nl,
 #endif
 
 #if defined(CONFIG_SMP)
-#if defined(MTK_CPU_HOTPLUG_DEBUG_1) || defined(MTK_CPU_HOTPLUG_DEBUG_2) || defined(MTK_CPU_HOTPLUG_DEBUG_3)
+#if defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_1) || \
+	defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_2) || \
+	defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_3)
 
 		if (nl == &cpu_chain.head) {
-#if defined(MTK_CPU_HOTPLUG_DEBUG_1)
+#if defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_1)
 			pr_debug("[cpu_ntf] %02lx_%02d, %p\n",
 				val, index, nb->notifier_call);
 #endif
-#if defined(MTK_CPU_HOTPLUG_DEBUG_2)
+#if defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_2)
 			aee_rr_rec_hotplug_cpu_event(val & 0xff);
 			aee_rr_rec_hotplug_cb_index(index & 0xff);
 			aee_rr_rec_hotplug_cb_fp((unsigned long)nb->notifier_call);
 #endif
-#if defined(MTK_CPU_HOTPLUG_DEBUG_3)
+#if defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_3)
 			TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, (long)v, val & 0xff, index & 0xff,
 			(unsigned long)nb->notifier_call);
 #endif
@@ -133,18 +136,20 @@ static int notifier_call_chain(struct notifier_block **nl,
 	}
 
 #if defined(CONFIG_SMP)
-#if defined(MTK_CPU_HOTPLUG_DEBUG_1) || defined(MTK_CPU_HOTPLUG_DEBUG_2) || defined(MTK_CPU_HOTPLUG_DEBUG_3)
+#if defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_1) || \
+	defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_2) || \
+	defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_3)
 
 	if (nl == &cpu_chain.head) {
-#if defined(MTK_CPU_HOTPLUG_DEBUG_1)
+#if defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_1)
 		pr_debug("[cpu_ntf] %02lx_%02d, %p\n", val, index, 0);
 #endif
-#if defined(MTK_CPU_HOTPLUG_DEBUG_2)
+#if defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_2)
 		aee_rr_rec_hotplug_cpu_event(val & 0xff);
 		aee_rr_rec_hotplug_cb_index(index & 0xff);
 		aee_rr_rec_hotplug_cb_fp(0);
 #endif
-#if defined(MTK_CPU_HOTPLUG_DEBUG_3)
+#if defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_3)
 		TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, (long)v, val & 0xff, index & 0xff, 0);
 #endif
 	}

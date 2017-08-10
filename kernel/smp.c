@@ -553,7 +553,7 @@ void __weak smp_announce(void)
 	printk(KERN_INFO "Brought up %d CPUs\n", num_online_cpus());
 }
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 struct timestamp_rec hotplug_ts_rec;
 DEFINE_SPINLOCK(hotplug_timestamp_lock);
 unsigned int timestamp_enable = 1;
@@ -611,7 +611,7 @@ static int profile_timestamp_init(void)
 
 	return ret;
 }
-#endif /* #ifdef MTK_CPU_HOTPLUG_DEBUG_3 */
+#endif /* #ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3 */
 
 
 #ifdef CONFIG_PROFILE_CPU
@@ -710,7 +710,7 @@ static const struct file_operations name ## _proc_fops = {		\
 
 #define PROC_ENTRY(name)	{__stringify(name), &name ## _proc_fops}
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 PROC_FOPS_RW(timestamp_enable);
 #endif
 #ifdef CONFIG_PROFILE_CPU
@@ -732,7 +732,7 @@ static int create_procfs(void)
 	};
 #endif
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	const struct pentry entries_rw[] = {
 		PROC_ENTRY(timestamp_enable),
 	};
@@ -743,7 +743,7 @@ static int create_procfs(void)
 	if (!dir)
 		return -ENOMEM;
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 
 	for (i = 0; i < ARRAY_SIZE(entries_rw); i++) {
 		if (!proc_create(entries_rw[i].name, S_IRUGO | S_IWUSR | S_IWGRP, dir, entries_rw[i].fops))
@@ -780,7 +780,7 @@ void __init smp_init(void)
 
 	idle_threads_init();
 
-#if defined(CONFIG_PROFILE_CPU) || defined(MTK_CPU_HOTPLUG_DEBUG_3)
+#if defined(CONFIG_PROFILE_CPU) || defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_3)
 	create_procfs();
 #endif
 
@@ -788,7 +788,7 @@ void __init smp_init(void)
 	profile_cpu_stats_init();
 #endif
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	profile_timestamp_init();
 #endif
 

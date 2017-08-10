@@ -533,7 +533,7 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 	int err = 0;
 
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
@@ -583,13 +583,13 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 		}
 	}
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
 	err = psci_ops.cpu_on(cpu_logical_map(cpu), __pa(secondary_entry));
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
@@ -629,7 +629,7 @@ static int cpu_psci_cpu_boot(unsigned int cpu)
 			g_cl2_online |= (1 << (cpu - 8));
 	}
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 	/* shrink kernel log
@@ -773,7 +773,7 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 	for (i = 0; i < 10; i++) {
 #ifdef CONFIG_ARCH_MT6797
 #ifdef CONFIG_OCP_IDVFS_CTRL
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 		TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
@@ -795,7 +795,7 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 			ocp_cl1_init = 0;
 		}
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 		TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 #endif
@@ -812,14 +812,14 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 		}
 #endif
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 		TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
 		aee_rr_rec_hotplug_footprint(cpu, 85);
 		err = psci_ops.affinity_info(cpu_logical_map(cpu), 0);
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 		TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
@@ -831,12 +831,12 @@ static int cpu_psci_cpu_kill(unsigned int cpu)
 #endif
 #ifdef CONFIG_ARCH_MT6797
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 		TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 			cpu_kill_pll_buck_ctrl(cpu);
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 		TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 #endif

@@ -51,7 +51,8 @@ void cpu_maps_update_done(void)
 }
 EXPORT_SYMBOL(cpu_notifier_register_done);
 
-#if defined(MTK_CPU_HOTPLUG_DEBUG_1) || defined(MTK_CPU_HOTPLUG_DEBUG_2)
+#if defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_1) || \
+	defined(CONFIG_MTK_CPU_HOTPLUG_DEBUG_2)
 RAW_NOTIFIER_HEAD(cpu_chain);
 #else
 static RAW_NOTIFIER_HEAD(cpu_chain);
@@ -223,7 +224,7 @@ EXPORT_SYMBOL_GPL(cpu_hotplugging);
 int __ref register_cpu_notifier(struct notifier_block *nb)
 {
 	int ret;
-#ifdef MTK_CPU_HOTPLUG_DEBUG_0
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_0
 	int index = 0;
 #ifdef CONFIG_KALLSYMS
 	char namebuf[128] = {0};
@@ -241,7 +242,7 @@ int __ref register_cpu_notifier(struct notifier_block *nb)
 	pr_info("[cpu_ntf] <%02d>%08lx\n",
 		index++, (unsigned long)nb->notifier_call);
 #endif
-#endif /* MTK_CPU_HOTPLUG_DEBUG_0 */
+#endif /* CONFIG_MTK_CPU_HOTPLUG_DEBUG_0 */
 
 	cpu_maps_update_begin();
 	ret = raw_notifier_chain_register(&cpu_chain, nb);
@@ -402,7 +403,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
 
 	cpu_hotplug_begin();
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
@@ -418,13 +419,13 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
 		goto out_release;
 	}
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
 	smpboot_park_threads(cpu);
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
@@ -436,7 +437,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
 		goto out_release;
 	}
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
@@ -450,14 +451,14 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
 	 * Wait for the stop thread to go away.
 	 */
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
 	while (!idle_cpu(cpu))
 		cpu_relax();
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
@@ -531,6 +532,7 @@ int __ref cpu_down(unsigned int cpu)
 	put_cpu();
 	aee_rr_rec_cpu_callee(cpu);
 #endif
+
 	cpu_maps_update_begin();
 
 	if (cpu_hotplug_disabled) {
@@ -538,7 +540,7 @@ int __ref cpu_down(unsigned int cpu)
 		goto out;
 	}
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	BEGIN_TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
@@ -548,7 +550,7 @@ int __ref cpu_down(unsigned int cpu)
 	err = _cpu_down(cpu, 0);
 #endif
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	END_TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
@@ -615,7 +617,7 @@ static int _cpu_up(unsigned int cpu, int tasks_frozen)
 	if (ret)
 		goto out;
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER,  cpu, 0, 0, 0);
 #endif
 
@@ -624,7 +626,7 @@ static int _cpu_up(unsigned int cpu, int tasks_frozen)
 	aee_rr_rec_cpu_up_prepare_ktime(ktime_to_us(ktime_get()));
 #endif
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
@@ -647,7 +649,7 @@ static int _cpu_up(unsigned int cpu, int tasks_frozen)
 #endif
 	/* Now call notifier in preparation. */
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
@@ -656,7 +658,7 @@ static int _cpu_up(unsigned int cpu, int tasks_frozen)
 	aee_rr_rec_cpu_online_ktime(ktime_to_us(ktime_get()));
 #endif
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
@@ -736,7 +738,7 @@ int cpu_up(unsigned int cpu)
 		goto out;
 	}
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	BEGIN_TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
@@ -746,7 +748,7 @@ int cpu_up(unsigned int cpu)
 	err = _cpu_up(cpu, 0);
 #endif
 
-#ifdef MTK_CPU_HOTPLUG_DEBUG_3
+#ifdef CONFIG_MTK_CPU_HOTPLUG_DEBUG_3
 	END_TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 #endif
 
