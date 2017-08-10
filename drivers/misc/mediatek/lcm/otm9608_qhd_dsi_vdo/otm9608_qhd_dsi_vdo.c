@@ -314,7 +314,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
 
-#if 1
+#if 0
 	params->dsi.vertical_sync_active = 3;
 	params->dsi.vertical_backporch = 12;
 	params->dsi.vertical_frontporch = 10;
@@ -329,7 +329,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 #else
 	params->dsi.vertical_sync_active = 3;
 	params->dsi.vertical_backporch = 12;
-	params->dsi.vertical_frontporch = 3;
+	params->dsi.vertical_frontporch = 10;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 10;
