@@ -647,8 +647,8 @@ static void GetAudioTrimOffset(int channels)
 	PRINTK_AUDDRV("%s, Buffer_offr_value = %d\n", __func__, Buffer_offr_value);
 
 	OpenAnalogHeadphone(true);
-	setHpDcCalibrationGain(AUDIO_ANALOG_DEVICE_OUT_HEADSETR, 14);
-	setHpDcCalibrationGain(AUDIO_ANALOG_DEVICE_OUT_HEADSETL, 14);
+	setHpDcCalibrationGain(AUDIO_ANALOG_DEVICE_OUT_HEADSETR, 10);
+	setHpDcCalibrationGain(AUDIO_ANALOG_DEVICE_OUT_HEADSETL, 10);
 
 	usleep_range(10*1000, 20*1000);
 	for (count = 0; count < countlimit; count++) {
