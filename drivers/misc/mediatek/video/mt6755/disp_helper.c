@@ -42,32 +42,7 @@ static unsigned int disp_global_stage = MAGIC_CODE | DISP_HELPER_STAGE_EARLY_POR
 /*static unsigned int disp_global_stage = MAGIC_CODE | DISP_HELPER_STAGE_BRING_UP;*/
 static unsigned int disp_global_stage = MAGIC_CODE | DISP_HELPER_STAGE_NORMAL;
 #endif
-/*
-static int _is_E1(void)
-{
-	CHIP_SW_VER ver = mt_get_chip_sw_ver();
 
-	if (CHIP_SW_VER_01 == ver)
-		return 1;
-
-	return 0;
-}
-
-static int _is_E2(void)
-{
-	CHIP_SW_VER ver = mt_get_chip_sw_ver();
-
-	if (CHIP_SW_VER_02 == ver)
-		return 1;
-
-	return 0;
-}
-
-static int _is_E3(void)
-{
-	return !(_is_E1() || _is_E2());
-}
-*/
 static int _is_early_porting_stage(void)
 {
 	return (disp_global_stage & (~MAGIC_CODE)) == DISP_HELPER_STAGE_EARLY_PORTING;
@@ -83,6 +58,7 @@ static int _is_normal_stage(void)
 	return (disp_global_stage & (~MAGIC_CODE)) == DISP_HELPER_STAGE_NORMAL;
 }
 
+#if 0
 static int _disp_helper_option_value[DISP_OPT_NUM] = { 0 };
 
 
@@ -127,33 +103,100 @@ const char *disp_helper_option_string[DISP_OPT_NUM] = {
 	"DISP_OPT_RDMA_UNDERFLOW_AEE",
 	"DISP_OPT_GMO_OPTIMIZE",
 	"DISP_OPT_CV_BYSUSPEND",
-	"DISP_OPT_DELAYED_TRIGGER",
+};
+#endif
+
+#define OPT_COUNT 40
+const int help_info_cnt = OPT_COUNT;
+
+struct disp_help_info help_info[OPT_COUNT] = {
+	{ DISP_OPT_USE_CMDQ, 1, "DISP_OPT_USE_CMDQ" },
+	{ DISP_OPT_USE_M4U, 1, "DISP_OPT_USE_M4U" },
+	{ DISP_OPT_MIPITX_ON_CHIP, 0, "DISP_OPT_MIPITX_ON_CHIP" },
+	{ DISP_OPT_USE_DEVICE_TREE, 0, "DISP_OPT_USE_DEVICE_TREE" },
+	{ DISP_OPT_FAKE_LCM_X, 0, "DISP_OPT_FAKE_LCM_X" },
+	{ DISP_OPT_FAKE_LCM_Y, 0, "DISP_OPT_FAKE_LCM_Y" },
+	{ DISP_OPT_FAKE_LCM_WIDTH, 0, "DISP_OPT_FAKE_LCM_WIDTH" },
+	{ DISP_OPT_FAKE_LCM_HEIGHT, 0, "DISP_OPT_FAKE_LCM_HEIGHT" },
+	{ DISP_OPT_OVL_WARM_RESET, 0, "DISP_OPT_OVL_WARM_RESET" },
+	{ DISP_OPT_DYNAMIC_SWITCH_UNDERFLOW_EN, 0, "DISP_OPT_DYNAMIC_SWITCH_UNDERFLOW_EN" },
+	{ DISP_OPT_SODI_SUPPORT, 1, "DISP_OPT_SODI_SUPPORT" },
+	{ DISP_OPT_IDLE_MGR, 1, "DISP_OPT_IDLE_MGR" },
+	{ DISP_OPT_IDLEMGR_SWTCH_DECOUPLE, 1, "DISP_OPT_IDLEMGR_SWTCH_DECOUPLE" },
+	{ DISP_OPT_IDLEMGR_ENTER_ULPS, 1, "DISP_OPT_IDLEMGR_ENTER_ULPS" },
+	{ DISP_OPT_SHARE_SRAM, 1, "DISP_OPT_SHARE_SRAM" },
+	{ DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0, "DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK" },
+	{ DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 1, "DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING" },
+	{ DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 1, "DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ" },
+	{ DISP_OPT_MET_LOG, 1, "DISP_OPT_MET_LOG" },
+	{ DISP_OPT_DECOUPLE_MODE_USE_RGB565, 0, "DISP_OPT_DECOUPLE_MODE_USE_RGB565" },
+	{ DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT, 0, "DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT" },
+	{ DISP_OPT_NO_LK, 0, "DISP_OPT_NO_LK" },
+	{ DISP_OPT_BYPASS_PQ, 0, "DISP_OPT_BYPASS_PQ" },
+	{ DISP_OPT_ESD_CHECK_RECOVERY, 1, "DISP_OPT_ESD_CHECK_RECOVERY" },
+	{ DISP_OPT_ESD_CHECK_SWITCH, 1, "DISP_OPT_ESD_CHECK_SWITCH" },
+	{ DISP_OPT_PRESENT_FENCE, 1, "DISP_OPT_PRESENT_FENCE" },
+	{ DISP_OPT_PERFORMANCE_DEBUG, 0, "DISP_OPT_PERFORMANCE_DEBUG" },
+	{ DISP_OPT_SWITCH_DST_MODE, 0, "DISP_OPT_SWITCH_DST_MODE" },
+	{ DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 1, "DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE" },
+	{ DISP_OPT_SCREEN_CAP_FROM_DITHER, 0, "DISP_OPT_SCREEN_CAP_FROM_DITHER" },
+	{ DISP_OPT_BYPASS_OVL, 0, "DISP_OPT_BYPASS_OVL" },
+	{ DISP_OPT_FPS_CALC_WND, 10, "DISP_OPT_FPS_CALC_WND" },
+	{ DISP_OPT_SMART_OVL, 1, "DISP_OPT_SMART_OVL" },
+	{ DISP_OPT_DYNAMIC_DEBUG, 0, "DISP_OPT_DYNAMIC_DEBUG" },
+	{ DISP_OPT_SHOW_VISUAL_DEBUG_INFO, 0, "DISP_OPT_SHOW_VISUAL_DEBUG_INFO" },
+	{ DISP_OPT_RDMA_UNDERFLOW_AEE, 0, "DISP_OPT_RDMA_UNDERFLOW_AEE" },
+	{ DISP_OPT_GMO_OPTIMIZE, 0, "DISP_OPT_GMO_OPTIMIZE" },
+	{ DISP_OPT_CV_BYSUSPEND, 1, "DISP_OPT_CV_BYSUSPEND" },
+	{ DISP_OPT_DETECT_RECOVERY, 0, "DISP_OPT_DETECT_RECOVERY" },
+	{ DISP_OPT_DELAYED_TRIGGER, 1, "DISP_OPT_DELAYED_TRIGGER" },
 };
 
+static int option_to_index(DISP_HELPER_OPT option)
+{
+	int index = -1;
+	int i = 0;
+
+	for (i = 0; i < help_info_cnt; i++) {
+		if (option == help_info[i].opt_enum) {
+			index = i;
+			break;
+		}
+	}
+	return index;
+}
 
 const char *disp_helper_option_spy(DISP_HELPER_OPT option)
 {
-	if (option >= DISP_OPT_NUM)
+	int index = -1;
+
+	index = option_to_index(option);
+	if (index < 0)
 		return "unknown option!!";
-	return disp_helper_option_string[option];
+	return help_info[index].opt_string;
 }
 
 DISP_HELPER_OPT disp_helper_name_to_opt(const char *name)
 {
-	int i;
+	DISP_HELPER_OPT opt = -1;
+	int i = 0;
 
-	for (i = 0; i < DISP_OPT_NUM; i++) {
-		const char *opt_name = disp_helper_option_spy(i);
+	for (i = 0; i < help_info_cnt; i++) {
+		const char *opt_name = help_info[i].opt_string;
 
-		if (strcmp(name, opt_name) == 0)
-			return i;
+		if (strncmp(name, opt_name, strlen(opt_name)) == 0) {
+			opt = help_info[i].opt_enum;
+			break;
+		}
 	}
-	pr_err("%s: unknown name: %s\n", __func__, name);
-	return DISP_OPT_NUM;
+	if (opt == -1)
+		pr_err("%s: unknown name: %s\n", __func__, name);
+	return opt;
 }
 
 int disp_helper_set_option(DISP_HELPER_OPT option, int value)
 {
+	int index = -1;
 	int ret = 0;
 
 	if (option == DISP_OPT_FPS_CALC_WND) {
@@ -164,14 +207,17 @@ int disp_helper_set_option(DISP_HELPER_OPT option, int value)
 		}
 	}
 
-	if (option < DISP_OPT_NUM) {
+	index = option_to_index(option);
+	if (index >= 0) {
 		DISPMSG("Set Option %d(%s) from (%d) to (%d)\n", option,
-			  disp_helper_option_spy(option), disp_helper_get_option(option), value);
-		_disp_helper_option_value[option] = value;
-		DISPMSG("After set (%s) is (%d)\n", disp_helper_option_spy(option),
-			  disp_helper_get_option(option));
+			  help_info[index].opt_string, help_info[index].opt_value, value);
+		help_info[index].opt_value = value;
+		DISPMSG("After set (%s) is (%d)\n", help_info[index].opt_string,
+			  help_info[index].opt_value);
+		ret = 0;
 	} else {
 		DISPERR("Wrong option: %d\n", option);
+		ret = -1;
 	}
 	return ret;
 }
@@ -181,7 +227,7 @@ int disp_helper_set_option_by_name(const char *name, int value)
 	DISP_HELPER_OPT opt;
 
 	opt = disp_helper_name_to_opt(name);
-	if (opt >= DISP_OPT_NUM)
+	if (opt < 0)
 		return -1;
 
 	return disp_helper_set_option(opt, value);
@@ -189,9 +235,11 @@ int disp_helper_set_option_by_name(const char *name, int value)
 
 int disp_helper_get_option(DISP_HELPER_OPT option)
 {
+	int index = -1;
 	int ret = 0;
 
-	if (option >= DISP_OPT_NUM) {
+	index = option_to_index(option);
+	if (index < 0) {
 		DISPERR("%s: option invalid %d\n", __func__, option);
 		BUG();
 	}
@@ -200,11 +248,11 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 	case DISP_OPT_USE_CMDQ:
 	case DISP_OPT_SHOW_VISUAL_DEBUG_INFO:
 		{
-			return _disp_helper_option_value[option];
+			return help_info[index].opt_value;
 		}
 	case DISP_OPT_USE_M4U:
 		{
-			return _disp_helper_option_value[option];
+			return help_info[index].opt_value;
 		}
 	case DISP_OPT_MIPITX_ON_CHIP:
 		{
@@ -247,7 +295,7 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 		{
 			int w = primary_display_get_virtual_width();
 
-			if (0 == w)
+			if (w == 0)
 				w = DISP_GetScreenWidth();
 			return w;
 		}
@@ -255,7 +303,7 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 		{
 			int h = primary_display_get_virtual_height();
 
-			if (0 == h)
+			if (h == 0)
 				h = DISP_GetScreenHeight();
 			return h;
 		}
@@ -293,7 +341,7 @@ int disp_helper_get_option(DISP_HELPER_OPT option)
 		}
 	default:
 		{
-			return _disp_helper_option_value[option];
+			return help_info[index].opt_value;
 		}
 	}
 
@@ -376,12 +424,12 @@ int disp_helper_get_option_list(char *stringbuf, int buf_len)
 	int len = 0;
 	int i = 0;
 
-	for (i = 0; i < DISP_OPT_NUM; i++) {
-		DISPMSG("Option: [%s] Value: [%d]\n", disp_helper_option_spy(i),
-			disp_helper_get_option(i));
+	for (i = 0; i < help_info_cnt; i++) {
+		DISPMSG("Option: [%s] Value: [%d]\n", help_info[i].opt_string,
+			help_info[i].opt_value);
 		len +=
 		    scnprintf(stringbuf + len, buf_len - len, "Option: [%d][%s] Value: [%d]\n", i,
-			      disp_helper_option_spy(i), disp_helper_get_option(i));
+			      help_info[i].opt_string, help_info[i].opt_value);
 	}
 
 	return len;
