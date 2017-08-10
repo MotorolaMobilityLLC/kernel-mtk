@@ -58,9 +58,6 @@
 
 #define TZ_DEVNAME "mtk_tz"
 
-/* FIXME: remove below definition when cma works well */
-#define NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE
-
 /**Used for mapping user space address to physical memory
 */
 struct MTIOMMU_PIN_RANGE_T {
@@ -1234,6 +1231,9 @@ TZ_RESULT KREE_ServGetChunkmemPool(u32 op,
 	pr_warn("%s() get @%llx [0x%zx]\n", __func__,
 			chunkmem->chunkmem_pa, secure_size);
 
+	/* flush cache to avoid writing secure memory after allocation. */
+	flush_cache_all();
+
 	return TZ_RESULT_SUCCESS;
 }
 
@@ -1251,6 +1251,8 @@ TZ_RESULT KREE_ServReleaseChunkmemPool(u32 op,
 	}
 	return TZ_RESULT_ERROR_GENERIC;
 }
+
+#ifndef NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE
 
 TZ_RESULT KREE_TeeReleseChunkmemPool(void)
 {
@@ -1273,11 +1275,65 @@ TZ_RESULT KREE_TeeReleseChunkmemPool(void)
 	return ret;
 }
 
-#ifndef NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE
+DECLARE_COMPLETION(tz_cm_shrinker_work);
+DECLARE_COMPLETION(tz_cm_shrinker_finish_work);
+
+int tz_cm_shrinker_thread(void *data)
+{
+	do {
+		if (0 != wait_for_completion_interruptible(&tz_cm_shrinker_work))
+			continue;
+
+		/* TeeReleaseChunkmemPool will call     */
+		/* ree-service call to do cma_release() */
+		if (TZ_RESULT_SUCCESS != KREE_TeeReleseChunkmemPool())
+			pr_warn("Can't free tz chunk memory\n");
+		else
+			pr_debug("free tz chunk memory successfully\n");
+
+		complete(&tz_cm_shrinker_finish_work);
+	} while (1);
+}
+
+static TZ_RESULT KREE_IsTeeChunkmemPoolReleasable(int *releasable)
+{
+	TZ_RESULT ret;
+	KREE_SESSION_HANDLE mem_session;
+	MTEEC_PARAM param[4];
+
+	if (releasable == NULL)
+		return TZ_RESULT_ERROR_BAD_FORMAT;
+
+	ret = KREE_CreateSession(TZ_TA_MEM_UUID, &mem_session);
+	if (ret != TZ_RESULT_SUCCESS) {
+		pr_warn("Create memory session error %d\n", ret);
+		return ret;
+	}
+
+	ret = KREE_TeeServiceCall(mem_session, TZCMD_MEM_USAGE_SECURECM,
+					TZPT_VALUE_OUTPUT, param);
+	if (ret != TZ_RESULT_SUCCESS)
+		pr_warn("Is Secure CM releasable failed, ret = %d\n", ret);
+
+	*releasable = param[0].value.a;
+
+	KREE_CloseSession(mem_session);
+
+	return ret;
+}
+
 static unsigned long tz_cm_count(struct shrinker *s,
 						struct shrink_control *sc)
 {
+	int releasable;
+
 	if (secure_pages == NULL)
+		return 0;
+
+	if (TZ_RESULT_SUCCESS != KREE_IsTeeChunkmemPoolReleasable(&releasable))
+		return 0;
+
+	if (releasable == 0)
 		return 0;
 
 	return secure_size / SZ_4K;
@@ -1290,12 +1346,11 @@ static unsigned long tz_cm_scan(struct shrinker *s,
 	if (secure_pages == NULL)
 		return SHRINK_STOP;
 
-	/* TeeReleaseChunkmemPool will call ree-service to do cma_release() */
-	if (TZ_RESULT_SUCCESS != KREE_TeeReleseChunkmemPool()) {
-		pr_warn("Can't free tz chunk memory\n");
+	complete(&tz_cm_shrinker_work);
+	wait_for_completion(&tz_cm_shrinker_finish_work);
+
+	if (secure_pages != NULL)
 		return SHRINK_STOP;
-	}
-	pr_debug("free tz chunk memory successfully\n");
 
 	return release_objects_count;
 }
@@ -1355,6 +1410,11 @@ static int mtee_probe(struct platform_device *pdev)
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	register_early_suspend(&securetime_early_suspend);
 #endif
+#endif
+
+#if defined(CONFIG_MTEE_CMA_SECURE_MEMORY) && \
+	!defined(NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE)
+	struct task_struct *thread_tz_cm_shrinker;
 #endif
 
 #ifdef CONFIG_OF
@@ -1436,6 +1496,8 @@ static int mtee_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_MTEE_CMA_SECURE_MEMORY
 #ifndef NO_CMA_RELEASE_THROUGH_SHRINKER_FOR_EARLY_STAGE
+	thread_tz_cm_shrinker = kthread_run(tz_cm_shrinker_thread, NULL,
+						"tz_cm_shrinker");
 	register_shrinker(&tz_cm_shrinker);
 #else
 	/* trigger allocation chunk memory in initialization flow */
