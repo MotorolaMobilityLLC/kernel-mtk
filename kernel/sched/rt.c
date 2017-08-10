@@ -931,6 +931,7 @@ static inline int balance_runtime(struct rt_rq *rt_rq)
 DEFINE_PER_CPU(u64, old_rt_time);
 DEFINE_PER_CPU(u64, init_rt_time);
 DEFINE_PER_CPU(u64, rt_period_time);
+DEFINE_PER_CPU(u64, sched_rt_period_time);
 static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 {
 	int i, idle = 1, throttled = 0;
@@ -961,11 +962,16 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 
 		raw_spin_lock(&rq->lock);
 		per_cpu(rt_period_time, i) = rq_clock_task(rq);
+		per_cpu(sched_rt_period_time, i) = sched_clock_cpu(rq->cpu);
+
+		/* mtk: rt_period_time change by max(rq_clock_task(rq), sched_clock_cpu(rq->cpu)) */
+		if (rq_clock_task(rq) < sched_clock_cpu(rq->cpu))
+			per_cpu(rt_period_time, i) = sched_clock_cpu(rq->cpu);
 
 		if (rt_rq->rt_time) {
 			u64 runtime;
 			/* sched:get runtime*/
-			u64 runtime_pre, rt_time_pre;
+			u64 runtime_pre = 0, rt_time_pre = 0;
 
 			raw_spin_lock(&rt_rq->rt_runtime_lock);
 			per_cpu(old_rt_time, i) = rt_rq->rt_time;
@@ -1073,8 +1079,10 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 #ifdef CONFIG_RT_GROUP_SCHED
 		int cpu = rq_cpu(rt_rq->rq);
 		/* sched:print throttle*/
-		printk_deferred("sched: initial rt_time %llu, start at %llu\n",
-				per_cpu(init_rt_time, cpu), per_cpu(rt_period_time, cpu));
+		printk_deferred("sched: initial rt_time %llu, period start at [%llu, %llu]\n",
+				per_cpu(init_rt_time, cpu),
+				per_cpu(rt_period_time, cpu),
+				per_cpu(sched_rt_period_time, cpu));
 		printk_deferred("sched: cpu=%d rt_time %llu <-> runtime",
 				cpu, rt_rq->rt_time);
 		printk_deferred(" [%llu -> %llu], exec_task[%d:%s], prio=%d, exec_delta_time[%llu]",
@@ -1148,7 +1156,13 @@ static void update_curr_rt(struct rq *rq)
 		return;
 
 	per_cpu(update_exec_start, rq->cpu) = curr->se.exec_start;
+	per_cpu(sched_update_exec_start, rq->cpu) = per_cpu(update_curr_exec_start, rq->cpu);
 	delta_exec = rq_clock_task(rq) - curr->se.exec_start;
+
+	/* mtk: delta_exec change by max(rq_clock_task(rq), sched_clock_cpu(rq->cpu)) */
+	if (rq_clock_task(rq) < sched_clock_cpu(rq->cpu))
+		delta_exec = sched_clock_cpu(rq->cpu) - curr->se.exec_start;
+
 	if (unlikely((s64)delta_exec <= 0))
 		return;
 
@@ -1165,12 +1179,16 @@ static void update_curr_rt(struct rq *rq)
 	account_group_exec_runtime(curr, delta_exec);
 
 	curr->se.exec_start = rq_clock_task(rq);
+	per_cpu(update_curr_exec_start, rq->cpu) = sched_clock_cpu(rq->cpu);
+
+	/* mtk: curr->se.exec_start change by max(rq_clock_task(rq), sched_clock_cpu(rq->cpu)) */
+	if (curr->se.exec_start < sched_clock_cpu(rq->cpu))
+		curr->se.exec_start = sched_clock_cpu(rq->cpu);
+
+
 	cpuacct_charge(curr, delta_exec);
 
 	sched_rt_avg_update(rq, delta_exec);
-
-	per_cpu(sched_update_exec_start, rq->cpu) = per_cpu(update_curr_exec_start, rq->cpu);
-	per_cpu(update_curr_exec_start, rq->cpu) = sched_clock_cpu(rq->cpu);
 
 	if (!rt_bandwidth_enabled())
 		return;
@@ -1700,6 +1718,10 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
 	p->se.exec_start = rq_clock_task(rq);
 	per_cpu(pick_exec_start, rq->cpu) = p->se.exec_start;
 	per_cpu(sched_pick_exec_start, rq->cpu) = sched_clock_cpu(rq->cpu);
+
+	/* mtk: p->se.exec_start change by max(rq_clock_task(rq), sched_clock_cpu(rq->cpu)) */
+	if (p->se.exec_start < sched_clock_cpu(rq->cpu))
+		p->se.exec_start = sched_clock_cpu(rq->cpu);
 
 	return p;
 }
@@ -2423,6 +2445,11 @@ static void set_curr_task_rt(struct rq *rq)
 	p->se.exec_start = rq_clock_task(rq);
 	per_cpu(set_curr_exec_start, rq->cpu) = p->se.exec_start;
 	per_cpu(sched_set_curr_exec_start, rq->cpu) = sched_clock_cpu(rq->cpu);
+
+	/* mtk: p->se.exec_start change by max(rq_clock_task(rq), sched_clock_cpu(rq->cpu)) */
+	if (p->se.exec_start < sched_clock_cpu(rq->cpu))
+		p->se.exec_start = sched_clock_cpu(rq->cpu);
+
 	/* The running task is never eligible for pushing */
 	dequeue_pushable_task(rq, p);
 }
