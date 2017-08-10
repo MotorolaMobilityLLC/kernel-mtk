@@ -1504,16 +1504,20 @@ static struct pdev_drv pderv[] = {
 	PDEV_DRV("clkdbg-pd9"),
 };
 
-static int clkdbg_reg_pdrv(struct seq_file *s, void *v)
+static void reg_pdev_drv(const char *pdname, struct seq_file *s)
 {
 	int i;
 	struct generic_pm_domain **pds = get_all_genpd();
+	bool allpd = (!pdname || strcmp(pdname, "all") == 0);
 
 	for (i = 0; i < ARRAY_SIZE(pderv) && *pds; i++, pds++) {
 		const char *name = pderv[i].pdrv.driver.name;
 		struct generic_pm_domain *pd = *pds;
 
 		if (IS_ERR_OR_NULL(pd) || pderv[i].genpd)
+			continue;
+
+		if (!allpd && strcmp(pdname, pd->name) != 0)
 			continue;
 
 		pderv[i].genpd = pd;
@@ -1527,19 +1531,21 @@ static int clkdbg_reg_pdrv(struct seq_file *s, void *v)
 		if (s)
 			seq_printf(s, "%s --> %s\n", name, pd->name);
 	}
-
-	return 0;
 }
 
-static int clkdbg_unreg_pdrv(struct seq_file *s, void *v)
+static void unreg_pdev_drv(const char *pdname, struct seq_file *s)
 {
 	int i;
+	bool allpd = (!pdname || strcmp(pdname, "all") == 0);
 
 	for (i = ARRAY_SIZE(pderv) - 1; i >= 0; i--) {
 		const char *name = pderv[i].pdrv.driver.name;
 		struct generic_pm_domain *pd = pderv[i].genpd;
 
 		if (IS_ERR_OR_NULL(pd))
+			continue;
+
+		if (!allpd && strcmp(pdname, pd->name) != 0)
 			continue;
 
 		platform_driver_unregister(&pderv[i].pdrv);
@@ -1552,23 +1558,61 @@ static int clkdbg_unreg_pdrv(struct seq_file *s, void *v)
 		if (s)
 			seq_printf(s, "%s -x- %s\n", name, pd->name);
 	}
+}
+
+static int clkdbg_reg_pdrv(struct seq_file *s, void *v)
+{
+	char cmd[sizeof(last_cmd)];
+	char *c = cmd;
+	char *ign;
+	char *pd_name;
+
+	strcpy(cmd, last_cmd);
+
+	ign = strsep(&c, " ");
+	pd_name = strsep(&c, " ");
+
+	if (!pd_name)
+		return 0;
+
+	reg_pdev_drv(pd_name, s);
+
+	return 0;
+}
+
+static int clkdbg_unreg_pdrv(struct seq_file *s, void *v)
+{
+	char cmd[sizeof(last_cmd)];
+	char *c = cmd;
+	char *ign;
+	char *pd_name;
+
+	strcpy(cmd, last_cmd);
+
+	ign = strsep(&c, " ");
+	pd_name = strsep(&c, " ");
+
+	if (!pd_name)
+		return 0;
+
+	unreg_pdev_drv(pd_name, s);
 
 	return 0;
 }
 
 #endif /* CLKDBG_PM_DOMAIN */
 
-void reg_pdrv(void)
+void reg_pdrv(const char *pdname)
 {
 #if CLKDBG_PM_DOMAIN
-	clkdbg_reg_pdrv(NULL, NULL);
+	reg_pdev_drv(pdname, NULL);
 #endif
 }
 
-void unreg_pdrv(void)
+void unreg_pdrv(const char *pdname)
 {
 #if CLKDBG_PM_DOMAIN
-	clkdbg_unreg_pdrv(NULL, NULL);
+	unreg_pdev_drv(pdname, NULL);
 #endif
 }
 

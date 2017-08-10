@@ -70,8 +70,8 @@ void set_custom_cmds(const struct cmd_fn *cmds);
 struct provider_clk *get_all_provider_clks(void);
 const char *get_last_cmd(void);
 
-void reg_pdrv(void);
-void unreg_pdrv(void);
+void reg_pdrv(const char *pdname);
+void unreg_pdrv(const char *pdname);
 void prepare_enable_provider(const char *pvd);
 void disable_unprepare_provider(const char *pvd);
 
