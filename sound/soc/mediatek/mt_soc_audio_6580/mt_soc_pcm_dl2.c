@@ -391,7 +391,7 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I08,
 		      Soc_Aud_InterConnectionOutput_O04);
 
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 	/* set loopback test interconnection */
 	SetConnection(Soc_Aud_InterCon_Connection, Soc_Aud_InterConnectionInput_I07,
 		      Soc_Aud_InterConnectionOutput_O09);
