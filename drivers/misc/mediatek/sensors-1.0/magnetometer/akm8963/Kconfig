@@ -1,0 +1,9 @@
+
+config MTK_AKM8963
+	tristate "AKM08963 for MediaTek package"
+	default n
+	help
+	  It support different magnetometer sensor.
+	  If this option is set, it will support
+	  AKMD08963 magnetometer which is a 3-axis electronic
+	  compass IC with high sensitive Hall sensor technology.
