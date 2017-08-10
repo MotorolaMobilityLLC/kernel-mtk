@@ -72,8 +72,11 @@ typedef struct _GPD_RANGE {
 #ifdef MUSB_QMU_SUPPORT_HOST
 extern int mtk_host_qmu_concurrent;
 extern int mtk_host_qmu_pipe_msk;
-extern int mtk_host_qmu_max_active_isoc_gpd;
-extern int mtk_host_qmu_max_number_of_pkts;
+extern int mtk_host_active_dev_cnt;
+extern unsigned int low_power_timer_total_trigger_cnt;
+extern unsigned int low_power_timer_total_wake_cnt;
+extern int low_power_timer_mode2_option;
+extern int low_power_timer_mode;
 #endif
 extern int mtk_qmu_dbg_level;	/* refer to musb_core.c */
 extern int mtk_qmu_max_gpd_num;

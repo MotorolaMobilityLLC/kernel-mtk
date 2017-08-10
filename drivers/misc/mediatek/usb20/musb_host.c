@@ -2377,6 +2377,12 @@ static int musb_urb_enqueue(struct usb_hcd *hcd, struct urb *urb, gfp_t mem_flag
 		return -ENOMEM;
 	}
 
+#ifdef MUSB_QMU_SUPPORT_HOST
+	if (urb->dev->devnum)
+		musb_host_active_dev_add(urb->dev->devnum);
+#endif
+
+
 	DBG(4, "kzalloc a qh %p\n", qh);
 	qh->hep = hep;
 	qh->dev = urb->dev;

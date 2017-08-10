@@ -136,12 +136,18 @@ module_param(musb_host_dynamic_fifo, int, 0644);
 #ifdef MUSB_QMU_SUPPORT_HOST
 int mtk_host_qmu_concurrent = 1;
 int mtk_host_qmu_pipe_msk = (PIPE_ISOCHRONOUS + 1) /* | (PIPE_BULK + 1) | (PIPE_INTERRUPT+ 1) */;
-int mtk_host_qmu_max_active_isoc_gpd;
-int mtk_host_qmu_max_number_of_pkts;
+int mtk_host_active_dev_cnt;
+unsigned int low_power_timer_total_trigger_cnt;
+unsigned int low_power_timer_total_wake_cnt;
+int low_power_timer_mode;
+int low_power_timer_mode2_option;
 module_param(mtk_host_qmu_concurrent, int, 0644);
 module_param(mtk_host_qmu_pipe_msk, int, 0644);
-module_param(mtk_host_qmu_max_active_isoc_gpd, int, 0644);
-module_param(mtk_host_qmu_max_number_of_pkts, int, 0644);
+module_param(mtk_host_active_dev_cnt, int, 0644);
+module_param(low_power_timer_total_trigger_cnt, int, 0644);
+module_param(low_power_timer_total_wake_cnt, int, 0644);
+module_param(low_power_timer_mode, int, 0644);
+module_param(low_power_timer_mode2_option, int, 0644);
 #endif
 #ifdef MUSB_QMU_SUPPORT
 #include "musb_qmu.h"

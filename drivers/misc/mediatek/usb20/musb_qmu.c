@@ -28,6 +28,240 @@
 #include "mtk_musb.h"
 #include "musb_qmu.h"
 
+#ifdef MUSB_QMU_SUPPORT_HOST
+static unsigned int mtk_host_qmu_tx_max_active_isoc_gpd[MAX_QMU_EP + 1];
+static unsigned int mtk_host_qmu_tx_max_number_of_pkts[MAX_QMU_EP + 1];
+static unsigned int mtk_host_qmu_rx_max_active_isoc_gpd[MAX_QMU_EP + 1];
+static unsigned int mtk_host_qmu_rx_max_number_of_pkts[MAX_QMU_EP + 1];
+static struct workqueue_struct *low_power_timer_test_wq;
+static struct work_struct low_power_timer_test_work;
+static int low_power_timer_activate;
+static unsigned long int low_power_timer_total_sleep;
+static unsigned long int low_power_timer_total_wake;
+static int low_power_timer_request_time;
+static unsigned int low_power_timer_trigger_cnt;
+static unsigned int low_power_timer_wake_cnt;
+static u8 mtk_host_active_dev_table[128];
+static ktime_t ktime_wake, ktime_sleep, ktime_begin, ktime_end;
+static int low_power_timer_irq_ctrl;
+#define LOW_POWER_TIMER_MIN_PERIOD 4 /* ms */
+#define LOW_POWER_TIMER_MAX_PERIOD 50 /* ms */
+static struct delayed_work low_power_timer_montior_work;
+
+enum {
+	IDLE_STAGE,
+	RUNNING_STAGE
+};
+#define MONITOR_FREQ 3000 /* ms */
+static void do_low_power_timer_monitor_work(struct work_struct *work)
+{
+	static int state = IDLE_STAGE;
+	static unsigned int last_trigger_cnt;
+
+	DBG(0, "state:%s, last:%d, balanced<%d,%d>\n",
+			state?"RUNNING_STAGE":"IDLE_STAGE",
+			last_trigger_cnt,
+			low_power_timer_total_trigger_cnt,
+			low_power_timer_total_wake_cnt);
+
+	if (state == IDLE_STAGE) {
+		if (last_trigger_cnt != low_power_timer_total_trigger_cnt)
+			state = RUNNING_STAGE;
+	} else if (state == RUNNING_STAGE) {
+		if (last_trigger_cnt == low_power_timer_total_trigger_cnt
+				&& low_power_timer_total_trigger_cnt == low_power_timer_total_wake_cnt)
+			state = IDLE_STAGE;
+		else if (last_trigger_cnt == low_power_timer_total_trigger_cnt
+				&& low_power_timer_total_trigger_cnt != low_power_timer_total_wake_cnt)
+			BUG();
+	}
+
+	last_trigger_cnt = low_power_timer_total_trigger_cnt;
+	schedule_delayed_work(&low_power_timer_montior_work, msecs_to_jiffies(MONITOR_FREQ));
+}
+
+static void low_power_timer_wakeup_func(unsigned long data);
+static DEFINE_TIMER(low_power_timer, low_power_timer_wakeup_func, 0, 0);
+
+void mtk_host_active_dev_resource_reset(void)
+{
+	memset(mtk_host_active_dev_table, 0, sizeof(mtk_host_active_dev_table));
+	mtk_host_active_dev_cnt = 0;
+}
+
+void musb_host_active_dev_add(int addr)
+{
+	DBG(1, "devnum:%d\n", addr);
+	if (!mtk_host_active_dev_table[addr]) {
+		mtk_host_active_dev_table[addr] = 1;
+		mtk_host_active_dev_cnt++;
+	}
+}
+
+void low_power_timer_resource_reset(void)
+{
+	low_power_timer_total_sleep = low_power_timer_total_wake = 0;
+	low_power_timer_trigger_cnt = low_power_timer_wake_cnt = 0;
+}
+
+static void low_power_timer_wakeup_func(unsigned long data)
+{
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
+#ifdef TIMER_LOCK
+	unsigned long flags;
+
+	spin_lock_irqsave(&mtk_musb->lock, flags);
+#endif
+	if (unlikely(low_power_timer_irq_ctrl))
+		enable_irq(mtk_musb->nIrq);
+
+	low_power_timer_wake_cnt++;
+	low_power_timer_total_wake_cnt++;
+	ktime_wake = ktime_get();
+	low_power_timer_total_sleep += ktime_to_us(ktime_sub(ktime_wake, ktime_sleep));
+
+	/* deep idle forbidd here */
+	if (low_power_timer_mode == 1)
+		;
+	mb();
+
+	if (__ratelimit(&ratelimit) && low_power_timer_trigger_cnt >= 2) {
+		DBG(0, "avg sleep(%lu/%d, %lu)us, avg wake(%lu/%d, %lu)us, mode<%d,%d>, local balanced<%d,%d>\n",
+				low_power_timer_total_sleep, low_power_timer_trigger_cnt,
+				low_power_timer_total_sleep/low_power_timer_trigger_cnt,
+				low_power_timer_total_wake, (low_power_timer_trigger_cnt - 1),
+				low_power_timer_total_wake/(low_power_timer_trigger_cnt - 1)
+				, low_power_timer_mode, low_power_timer_mode2_option,
+				low_power_timer_trigger_cnt, low_power_timer_wake_cnt);
+	}
+
+	low_power_timer_activate = 0;
+	DBG(1, "sleep forbidden <%d,%d>\n",
+			low_power_timer_total_trigger_cnt, low_power_timer_total_wake_cnt);
+#ifdef TIMER_FUNC_LOCK
+	spin_unlock_irqrestore(&mtk_musb->lock, flags);
+#endif
+
+}
+
+void try_trigger_low_power_timer(signed int sleep_ms)
+{
+
+	DBG(1, "sleep_ms:%d\n", sleep_ms);
+	if (sleep_ms <= LOW_POWER_TIMER_MIN_PERIOD || sleep_ms >= LOW_POWER_TIMER_MAX_PERIOD) {
+		low_power_timer_activate = 0;
+		return;
+	}
+
+	/* dynamic allocation for timer , result in memory leak */
+#ifdef TIMER_DYNAMIC
+	{
+		struct timer_list *timer;
+
+		timer = kzalloc(sizeof(struct timer_list), GFP_ATOMIC);
+		if (!timer) {
+			DBG(0, "alloc timer fail\n");
+			low_power_timer_activate = 0;
+			return;
+		}
+
+		init_timer(timer);
+		timer->function = low_power_timer_wakeup_func;
+		timer->data = (unsigned long)timer;
+		timer->expires = jiffies + msecs_to_jiffies(sleep_ms);
+		add_timer(timer);
+	}
+#else
+	mod_timer(&low_power_timer, jiffies + msecs_to_jiffies(sleep_ms));
+#endif
+
+	DBG(1, "sleep allowed <%d,%d>, %d ms\n",
+			low_power_timer_total_trigger_cnt, low_power_timer_total_wake_cnt, sleep_ms);
+
+	ktime_sleep = ktime_get();
+	low_power_timer_trigger_cnt++;
+	low_power_timer_total_trigger_cnt++;
+
+	if (unlikely(low_power_timer_irq_ctrl))
+		disable_irq_nosync(mtk_musb->nIrq);
+
+	if (low_power_timer_trigger_cnt >= 2)
+		low_power_timer_total_wake += ktime_to_us(ktime_sub(ktime_sleep, ktime_wake));
+
+	/* deep idle allow here */
+	if (low_power_timer_mode == 1)
+		;
+}
+
+void do_low_power_timer_test_work(struct work_struct *work)
+{
+	unsigned long flags;
+	signed int set_time;
+	unsigned long int diff_time_ns;
+	int gdp_free_count_last, gdp_free_count;
+	int done = 0;
+
+	spin_lock_irqsave(&mtk_musb->lock, flags);
+	gdp_free_count = qmu_free_gpd_count(0, isoc_ep_start_idx);
+	gdp_free_count_last = gdp_free_count;
+	spin_unlock_irqrestore(&mtk_musb->lock, flags);
+
+	while (!done) {
+
+		udelay(300);
+
+		spin_lock_irqsave(&mtk_musb->lock, flags);
+		gdp_free_count = qmu_free_gpd_count(0, isoc_ep_start_idx);
+
+		if (gdp_free_count == gdp_free_count_last) {
+			ktime_end = ktime_get();
+			diff_time_ns = ktime_to_us(ktime_sub(ktime_end, ktime_begin));
+			set_time = (low_power_timer_request_time - (diff_time_ns/1000));
+			try_trigger_low_power_timer(set_time);
+			done = 1;
+		}
+
+		gdp_free_count_last = gdp_free_count;
+		spin_unlock_irqrestore(&mtk_musb->lock, flags);
+	}
+}
+
+void lower_power_timer_test_init(void)
+{
+	INIT_WORK(&low_power_timer_test_work, do_low_power_timer_test_work);
+	low_power_timer_test_wq = create_singlethread_workqueue("usb20_low_power_timer_test_wq");
+
+	INIT_DELAYED_WORK(&low_power_timer_montior_work, do_low_power_timer_monitor_work);
+	schedule_delayed_work(&low_power_timer_montior_work, 0);
+}
+
+/* mode 0 : no timer mechanism
+   mode 1 : real case for idle task, no-usb-irq control
+   mode 2 + option 0: simulate SCREEN ON  mode 1 case
+   mode 2 + option 1: simulate SCREEN OFF mode 1 perfect case
+   mode 2 + option 2: simulate SCREEN OFF mode 1 real case
+*/
+
+void low_power_timer_sleep(unsigned int sleep_ms)
+{
+	DBG(1, "sleep(%d) ms\n", sleep_ms);
+
+	low_power_timer_activate = 1;
+	if (low_power_timer_mode == 2 && low_power_timer_mode2_option != 0)
+		low_power_timer_irq_ctrl = 1;
+	else
+		low_power_timer_irq_ctrl = 0;
+
+	if ((low_power_timer_mode == 2) && (low_power_timer_mode2_option == 2)) {
+		low_power_timer_request_time = sleep_ms;
+		ktime_begin = ktime_get();
+		queue_work(low_power_timer_test_wq, &low_power_timer_test_work);
+	} else
+		try_trigger_low_power_timer(sleep_ms);
+
+}
+#endif
+
 void __iomem *qmu_base;
 /* debug variable to check qmu_base issue */
 void __iomem *qmu_base_2;
@@ -53,6 +287,9 @@ int musb_qmu_init(struct musb *musb)
 		QMU_ERR("[QMU]qmu_init_gpd_pool fail\n");
 		return -1;
 	}
+#ifdef MUSB_QMU_SUPPORT_HOST
+	lower_power_timer_test_init();
+#endif
 
 	return 0;
 }
@@ -67,6 +304,10 @@ void musb_disable_q_all(struct musb *musb)
 	u32 ep_num;
 
 	QMU_WARN("disable_q_all\n");
+#ifdef MUSB_QMU_SUPPORT_HOST
+	low_power_timer_resource_reset();
+	mtk_host_active_dev_resource_reset();
+#endif
 
 	for (ep_num = 1; ep_num <= RXQ_NUM; ep_num++) {
 		if (mtk_is_qmu_enabled(ep_num, RXQ))
@@ -315,6 +556,8 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 
 	gdp_free_count = qmu_free_gpd_count(isRx, hw_ep->epnum);
 	if (qh->type == USB_ENDPOINT_XFER_ISOC) {
+		u32 gdp_used_count;
+
 		DBG(4, "USB_ENDPOINT_XFER_ISOC\n");
 		pBuffer = (uint8_t *)urb->transfer_dma;
 
@@ -334,25 +577,68 @@ int mtk_kick_CmdQ(struct musb *musb, int isRx, struct musb_qh *qh, struct urb *u
 			mtk_qmu_resume(hw_ep->epnum, isRx);
 		}
 
-		if (mtk_host_qmu_max_active_isoc_gpd < qmu_used_gpd_count(isRx, hw_ep->epnum))
-			mtk_host_qmu_max_active_isoc_gpd = qmu_used_gpd_count(isRx, hw_ep->epnum);
+		gdp_used_count = qmu_used_gpd_count(isRx, hw_ep->epnum);
 
-		if (mtk_host_qmu_max_number_of_pkts < urb->number_of_packets)
-			mtk_host_qmu_max_number_of_pkts = urb->number_of_packets;
+		if (!isRx) {
+			if (mtk_host_qmu_tx_max_active_isoc_gpd[hw_ep->epnum] < gdp_used_count)
+				mtk_host_qmu_tx_max_active_isoc_gpd[hw_ep->epnum] = gdp_used_count;
 
-		{
-			static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
-			static int skip_cnt;
+			if (mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum] < urb->number_of_packets)
+				mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum] = urb->number_of_packets;
 
-			if (__ratelimit(&ratelimit)) {
-				DBG(0, "max_isoc gpd:%d, max_pkts:%d, skip_cnt:%d\n",
-						mtk_host_qmu_max_active_isoc_gpd,
-						mtk_host_qmu_max_number_of_pkts,
-						skip_cnt);
-				skip_cnt = 0;
-			} else
-				skip_cnt++;
+			{
+				static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
+				static int skip_cnt;
+
+				if (__ratelimit(&ratelimit)) {
+					DBG(0, "TXQ[%d], max_isoc gpd:%d, max_pkts:%d, skip:%d, active_dev:%d\n",
+							hw_ep->epnum, mtk_host_qmu_tx_max_active_isoc_gpd[hw_ep->epnum],
+							mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum],
+							skip_cnt,
+							mtk_host_active_dev_cnt);
+					skip_cnt = 0;
+				} else
+					skip_cnt++;
+			}
+
+			DBG(1, "mode:%d, activate:%d, ep:%d-%s, mtk_host_active_dev_cnt:%d\n",
+					low_power_timer_mode, low_power_timer_activate,
+					hw_ep->epnum, isRx?"in":"out",
+					mtk_host_active_dev_cnt);
+			if (low_power_timer_mode
+					&& !low_power_timer_activate
+					&& mtk_host_active_dev_cnt == 1
+					&& hw_ep->epnum == isoc_ep_start_idx) {
+				if (urb->dev->speed == USB_SPEED_FULL)
+					low_power_timer_sleep(gdp_used_count * 2 / 3);
+				else
+					low_power_timer_sleep(gdp_used_count * 2 / 3 / 8);
+			}
+		} else {
+			if (mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum] < gdp_used_count)
+				mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum] = gdp_used_count;
+
+			if (mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum] < urb->number_of_packets)
+				mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum] = urb->number_of_packets;
+
+			{
+				static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 1);
+				static int skip_cnt;
+
+				if (__ratelimit(&ratelimit)) {
+					DBG(0, "RXQ[%d], max_isoc gpd:%d, max_pkts:%d, skip:%d, active_dev:%d\n",
+							hw_ep->epnum, mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum],
+							mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum],
+							skip_cnt,
+							mtk_host_active_dev_cnt);
+					skip_cnt = 0;
+				} else
+					skip_cnt++;
+			}
 		}
+
+
+
 	} else {
 		/* Must be the bulk transfer type */
 		QMU_WARN("non isoc\n");
