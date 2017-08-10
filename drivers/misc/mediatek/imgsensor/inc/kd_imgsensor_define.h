@@ -209,7 +209,6 @@ typedef enum {
 	SENSOR_FEATURE_SET_SHUTTER_BUF_MODE,
 	SENSOR_FEATURE_SET_GAIN_BUF_MODE,
 	SENSOR_FEATURE_SET_I2C_BUF_MODE_EN,
-	SENSOR_FEATURE_GET_SENSOR_HDR_CAPACITY,
 	SENSOR_FEATURE_MAX
 } ACDK_SENSOR_FEATURE_ENUM;
 
@@ -426,8 +425,7 @@ typedef struct {
 	MUINT8 ZHDR_Mode;
 	SENSOR_SETTLEDELAY_MODE_ENUM SettleDelayMode;
 	/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full),
-	* 3:PDAF VC mode(Binning), 4: PDAF DualPD Raw Data mode, 5: PDAF DualPD VC mode
-	*/
+	  3:PDAF VC mode(Binning), 4: PDAF DualPD Raw Data mode, 5: PDAF DualPD VC mode*/
 	MUINT8 PDAF_Support;
 	MUINT8 HDR_Support;/*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR*/
 	MUINT8 DPCM_INFO;
@@ -523,9 +521,8 @@ typedef struct {
 	MUINT16 IHDR_LE_FirstLine;
 	MUINT8 ZHDR_Mode;
 	SENSOR_SETTLEDELAY_MODE_ENUM SettleDelayMode;
-	/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full),
-	*3:PDAF VC mode(Binning), 4: PDAF DualPD Raw Data mode, 5: PDAF DualPD VC mode
-	*/
+/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode(Full),
+3:PDAF VC mode(Binning), 4: PDAF DualPD Raw Data mode, 5: PDAF DualPD VC mode*/
 	MUINT8 PDAF_Support;
 	MUINT8 HDR_Support;/*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR*/
 	MUINT8 DPCM_INFO;
@@ -705,7 +702,7 @@ typedef struct {
 	MUINT16 VC_PixelNum;
 	MUINT16 ModeSelect;   /* 0: auto mode, 1:direct mode  */
 	MUINT16 EXPO_Ratio;   /* 1/1, 1/2, 1/4, 1/8 */
-	MUINT16 ODValue;      /* OD Value */
+	MUINT16 ODValue;      /* OD Vaule */
 	MUINT16 RG_STATSMODE; /* STATS divistion mdoe 0: 16x16, 1:8x8, 2:4x4, 3:1x1*/
 	MUINT16 VC0_ID;
 	MUINT16 VC0_DataType;
@@ -733,8 +730,9 @@ typedef struct {
 } SET_SENSOR_AWB_GAIN, *PSET_SENSOR_AWB_GAIN;
 
 typedef struct {
-	MUINT32 SENSOR_MODE;
-	MUINT32 ISO;
+    MUINT32 SENSOR_MODE;
+    MUINT32 ISO;
+
 } SET_SENSOR_ISO, *PSET_SENSOR_ISO;
 
 typedef struct {
@@ -800,8 +798,7 @@ typedef struct {
 	MUINT32 SensorId;   /* ID of sensor module */
 	SENSOR_REG_STRUCT SensorEngReg[MAXIMUM_SENSOR_ENG_REG_NUMBER];
 	SENSOR_REG_STRUCT SensorCCTReg[MAXIMUM_SENSOR_CCT_REG_NUMBER];
-	MUINT8 CameraData[MAXIMUM_NVRAM_CAMERA_SENSOR_FILE_SIZE_KERNEL / 2 - 8 -
-		 sizeof(SENSOR_REG_STRUCT) * (MAXIMUM_SENSOR_ENG_REG_NUMBER + MAXIMUM_SENSOR_CCT_REG_NUMBER)];
+	MUINT8 CameraData[MAXIMUM_NVRAM_CAMERA_SENSOR_FILE_SIZE_KERNEL / 2 - 8 - sizeof(SENSOR_REG_STRUCT) * (MAXIMUM_SENSOR_ENG_REG_NUMBER + MAXIMUM_SENSOR_CCT_REG_NUMBER)];
 } NVRAM_SENSOR_DATA_STRUCT, *PNVRAM_SENSOR_DATA_STRUCT;
 
 #define MAX_SENSOR_CAL_SIZE_KERNEL     (1024)   /* Byte */
@@ -987,40 +984,32 @@ typedef struct {
 ********************************************************************************/
 /* for new simplifed sensor driver */
 typedef struct {
-	MUINT32 (*SensorOpen)(void);
-	MUINT32 (*SensorGetInfo)(MUINT32 *pScenarioId[2],
-		MSDK_SENSOR_INFO_STRUCT * pSensorInfo[2], MSDK_SENSOR_CONFIG_STRUCT * pSensorConfigData[2]);
-	MUINT32 (*SensorGetResolution)(MSDK_SENSOR_RESOLUTION_INFO_STRUCT * pSensorResolution[2]);
-	MUINT32 (*SensorFeatureControl)(CAMERA_DUAL_CAMERA_SENSOR_ENUM InvokeCamera,
-		MSDK_SENSOR_FEATURE_ENUM FeatureId, MUINT8 *pFeaturePara, MUINT32 *pFeatureParaLen);
-	MUINT32 (*SensorControl)(MSDK_SCENARIO_ID_ENUM ScenarioId,
-		MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *pImageWindow, MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData);
-	MUINT32 (*SensorClose)(void);
+	MUINT32(*SensorOpen)(void);
+	MUINT32(*SensorGetInfo)(MUINT32 *pScenarioId[2], MSDK_SENSOR_INFO_STRUCT * pSensorInfo[2], MSDK_SENSOR_CONFIG_STRUCT * pSensorConfigData[2]);
+	MUINT32(*SensorGetResolution)(MSDK_SENSOR_RESOLUTION_INFO_STRUCT * pSensorResolution[2]);
+	MUINT32(*SensorFeatureControl)(CAMERA_DUAL_CAMERA_SENSOR_ENUM InvokeCamera, MSDK_SENSOR_FEATURE_ENUM FeatureId, MUINT8 *pFeaturePara, MUINT32 *pFeatureParaLen);
+	MUINT32(*SensorControl)(MSDK_SCENARIO_ID_ENUM ScenarioId, MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *pImageWindow, MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData);
+	MUINT32(*SensorClose)(void);
 } MULTI_SENSOR_FUNCTION_STRUCT, *PMULTI_SENSOR_FUNCTION_STRUCT;
 
 typedef struct {
-	MUINT32 (*SensorOpen)(void);
-	MUINT32 (*SensorGetInfo)(MUINT32 *pScenarioId[2],
-		MSDK_SENSOR_INFO_STRUCT * pSensorInfo[2], MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData[2]);
-	MUINT32 (*SensorGetResolution)(MSDK_SENSOR_RESOLUTION_INFO_STRUCT * pSensorResolution[2]);
-	MUINT32 (*SensorFeatureControl)(CAMERA_DUAL_CAMERA_SENSOR_ENUM InvokeCamera,
-		MSDK_SENSOR_FEATURE_ENUM FeatureId, MUINT8 *pFeaturePara, MUINT32 *pFeatureParaLen);
-	MUINT32 (*SensorControl)(CAMERA_DUAL_CAMERA_SENSOR_ENUM InvokeCamera, MSDK_SCENARIO_ID_ENUM ScenarioId,
-		MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *pImageWindow, MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData);
-	MUINT32 (*SensorClose)(void);
+	MUINT32(*SensorOpen)(void);
+	MUINT32(*SensorGetInfo)(MUINT32 *pScenarioId[2], MSDK_SENSOR_INFO_STRUCT * pSensorInfo[2], MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData[2]);
+	MUINT32(*SensorGetResolution)(MSDK_SENSOR_RESOLUTION_INFO_STRUCT * pSensorResolution[2]);
+	MUINT32(*SensorFeatureControl)(CAMERA_DUAL_CAMERA_SENSOR_ENUM InvokeCamera, MSDK_SENSOR_FEATURE_ENUM FeatureId, MUINT8 *pFeaturePara, MUINT32 *pFeatureParaLen);
+	MUINT32(*SensorControl)(CAMERA_DUAL_CAMERA_SENSOR_ENUM InvokeCamera, MSDK_SCENARIO_ID_ENUM ScenarioId, MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *pImageWindow, MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData);
+	MUINT32(*SensorClose)(void);
 } MULTI_SENSOR_FUNCTION_STRUCT2, *PMULTI_SENSOR_FUNCTION_STRUCT2;
 
 
 typedef struct {
-	MUINT32 (*SensorOpen)(void);
-	MUINT32 (*SensorGetInfo)(MSDK_SCENARIO_ID_ENUM ScenarioId, MSDK_SENSOR_INFO_STRUCT *pSensorInfo,
+	MUINT32(*SensorOpen)(void);
+	MUINT32(*SensorGetInfo)(MSDK_SCENARIO_ID_ENUM ScenarioId, MSDK_SENSOR_INFO_STRUCT *pSensorInfo,
 				MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData);
-	MUINT32 (*SensorGetResolution)(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *pSensorResolution);
-	MUINT32 (*SensorFeatureControl)(MSDK_SENSOR_FEATURE_ENUM FeatureId,
-		MUINT8 *pFeaturePara, MUINT32 *pFeatureParaLen);
-	MUINT32 (*SensorControl)(MSDK_SCENARIO_ID_ENUM ScenarioId,
-		MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *pImageWindow, MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData);
-	MUINT32 (*SensorClose)(void);
+	MUINT32(*SensorGetResolution)(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *pSensorResolution);
+	MUINT32(*SensorFeatureControl)(MSDK_SENSOR_FEATURE_ENUM FeatureId, MUINT8 *pFeaturePara, MUINT32 *pFeatureParaLen);
+	MUINT32(*SensorControl)(MSDK_SCENARIO_ID_ENUM ScenarioId, MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *pImageWindow, MSDK_SENSOR_CONFIG_STRUCT *pSensorConfigData);
+	MUINT32(*SensorClose)(void);
 #if 1 /* isp suspend resume patch */
 	MSDK_SCENARIO_ID_ENUM ScenarioId;
 	MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT imageWindow;
@@ -1031,7 +1020,7 @@ typedef struct {
 typedef struct {
 	MUINT32 SensorId;
 	MUINT8 drvname[32];
-	MUINT32 (*SensorInit)(PSENSOR_FUNCTION_STRUCT *pfFunc);
+	MUINT32(*SensorInit)(PSENSOR_FUNCTION_STRUCT *pfFunc);
 } ACDK_KD_SENSOR_INIT_FUNCTION_STRUCT, *PACDK_KD_SENSOR_INIT_FUNCTION_STRUCT;
 
 #define KDIMGSENSOR_DUAL_SHIFT 16

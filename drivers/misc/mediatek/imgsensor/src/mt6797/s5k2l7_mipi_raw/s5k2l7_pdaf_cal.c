@@ -64,7 +64,7 @@ extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 
 #define Delay(ms)  mdelay(ms)
 //static unsigned char OV13853MIPI_WRITE_ID = (0xA0 >> 1);
-#define EEPROM_READ_ID  0xA2
+#define EEPROM_READ_ID  0xA1
 #define EEPROM_WRITE_ID   0xA0
 #define MAX_OFFSET       0x1e59
 #define DATA_SIZE 4096
@@ -72,6 +72,7 @@ extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 static bool get_done = false;
 static int last_size = 0;
 static int last_offset = 0;
+static unsigned int eeprom_rd_id = 0;
 
 
 ////
@@ -82,7 +83,7 @@ static bool s5k2l7_selective_read_eeprom(kal_uint16 addr, BYTE* data)
     if(addr > MAX_OFFSET)
         return false;
 
-	if(iReadRegI2C(pu_send_cmd, 2, (u8*)data, 1, EEPROM_READ_ID)<0)
+	if(iReadRegI2C(pu_send_cmd, 2, (u8*)data, 1, eeprom_rd_id)<0)
 		return false;
     return true;
 }
@@ -107,9 +108,13 @@ static bool s5k2l7_read_eeprom(kal_uint16 addr, BYTE* data, kal_uint32 size ){
     return true;
 }
 
-bool s5k2l7_read_otp_pdaf_data( kal_uint16 addr, BYTE* data, kal_uint32 size){
+bool s5k2l7_read_otp_pdaf_data( kal_uint16 addr, BYTE* data, kal_uint32 size, kal_uint32 sensor_id){
 
-	LOG_INF("read_otp_pdaf_data enter");
+	LOG_INF("read_otp_pdaf_data enter [%x]", sensor_id);
+
+    if( sensor_id==0x20C7) eeprom_rd_id = 0xA1;
+    else eeprom_rd_id = 0xA2;
+    
 	if(!get_done || last_size != size || last_offset != addr) {
 		//if(!_read_eeprom(addr, eeprom_data, size)){
 		if(!s5k2l7_read_eeprom(addr, data, size)){

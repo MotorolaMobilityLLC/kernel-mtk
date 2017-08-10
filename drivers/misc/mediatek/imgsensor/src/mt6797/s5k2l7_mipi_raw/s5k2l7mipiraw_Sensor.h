@@ -138,6 +138,6 @@ extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
 extern int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u16 timing);
 
 //for s5k2l7 pdaf
-extern bool s5k2l7_read_otp_pdaf_data( kal_uint16 addr, BYTE* data, kal_uint32 size);
+extern bool s5k2l7_read_otp_pdaf_data( kal_uint16 addr, BYTE* data, kal_uint32 size, kal_uint32 sensor_id);
 
 #endif
