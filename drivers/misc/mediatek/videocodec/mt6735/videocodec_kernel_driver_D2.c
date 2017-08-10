@@ -1957,13 +1957,19 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			/* ret = copy_from_user
 			   (&oal_mem_status[0], ((VAL_VCODEC_OAL_HW_REGISTER_T *)user_data_addr)->pHWStatus,
 			   hwoal_reg.u4NumOfRegister*sizeof(VAL_VCODEC_OAL_MEM_STAUTS_T)); */
-			ret =
-			    copy_from_user(&oal_mem_status[0], hwoal_reg.pHWStatus,
-					   hwoal_reg.u4NumOfRegister *
-					   sizeof(VAL_VCODEC_OAL_MEM_STAUTS_T));
-			context->u4NumOfRegister = hwoal_reg.u4NumOfRegister;
-			MODULE_MFV_LOGW("[VCODEC_INITHWLOCK] ToTal %d u4NumOfRegister\n",
-				 hwoal_reg.u4NumOfRegister);
+			if (hwoal_reg.pHWStatus != NULL &&
+				hwoal_reg.u4NumOfRegister <= OALMEM_STATUS_NUM) {
+				ret = copy_from_user(&oal_mem_status[0], hwoal_reg.pHWStatus,
+						hwoal_reg.u4NumOfRegister *
+						sizeof(VAL_VCODEC_OAL_MEM_STAUTS_T));
+				context->u4NumOfRegister = hwoal_reg.u4NumOfRegister;
+				MODULE_MFV_LOGW("[VCODEC_INITHWLOCK] ToTal %d u4NumOfRegister\n",
+					 hwoal_reg.u4NumOfRegister);
+			} else {
+				MODULE_MFV_LOGE
+				    ("[ERROR] Check pHWStatus or u4NumOfRegister(%u)\n",
+					 hwoal_reg.u4NumOfRegister);
+			}
 
 			if (hwoal_reg.u4NumOfRegister != 0) {
 				u8TempKPA = context->pa_Oal_HW_mem_reg;
@@ -1996,7 +2002,8 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			for (i = 0; i < hwoal_reg.u4NumOfRegister; i++) {
 				VAL_ULONG_T kva;
 
-				MODULE_MFV_LOGE("[VCODEC][REG_INFO_1] [%d] 0x%lx 0x%x\n", i,
+				MODULE_MFV_LOGD
+					("[VCODEC][REG_INFO_1] [%d] 0x%lx 0x%x\n", i,
 					 oal_mem_status[i].u4ReadAddr,
 					 oal_mem_status[i].u4ReadData);
 
@@ -2005,7 +2012,8 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 				spin_unlock_irqrestore(&OalHWContextLock, ulFlags);
 				kva = (VAL_ULONG_T) ioremap(addr_pa, 8);	/* need to remap addr + data addr */
 				spin_lock_irqsave(&OalHWContextLock, ulFlags);
-				MODULE_MFV_LOGE("[VCODEC][REG_INFO_2] [%d] pa = 0x%lx  kva = 0x%lx\n", i,
+				MODULE_MFV_LOGD
+					("[VCODEC][REG_INFO_2] [%d] pa = 0x%lx  kva = 0x%lx\n", i,
 					 addr_pa, kva);
 				context->oalmem_status[i].u4ReadAddr = kva;	/* oal_mem_status[i].u4ReadAddr; */
 			}
