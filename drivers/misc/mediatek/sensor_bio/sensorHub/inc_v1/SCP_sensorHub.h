@@ -240,7 +240,8 @@ struct data_unit_t {
 		in_pocket_event_t inpocket_event;
 		int32_t data[7];
 	};
-};
+} __packed;
+
 
 struct sensorFIFO {
 /* volatile struct SCP_sensorData * volatile rp; */

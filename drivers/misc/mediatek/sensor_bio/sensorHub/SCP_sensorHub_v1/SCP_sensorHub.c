@@ -1354,8 +1354,9 @@ static int sensorHub_probe(struct platform_device *pdev)
 
 	SCP_sensorHub_init_flag = 0;
 	SCP_sensorHub_init_client();
-	SCP_ERR("fwq init done\n");
-
+	SCP_ERR("init done, data_unit_t size: %d, SCP_SENSOR_HUB_DATA size:%d\n",
+			(int)sizeof(struct data_unit_t), (int)sizeof(SCP_SENSOR_HUB_DATA));
+	BUG_ON(sizeof(struct data_unit_t) != SENSOR_DATA_SIZE || sizeof(SCP_SENSOR_HUB_DATA) != SENSOR_DATA_SIZE);
 	return 0;
 
 exit:
