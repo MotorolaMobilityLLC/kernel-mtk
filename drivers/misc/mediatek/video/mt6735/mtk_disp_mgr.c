@@ -1196,8 +1196,8 @@ static int set_memory_buffer(disp_session_input_config *input)
 			_sync_convert_fb_layer_to_ovl_struct(input->session_id, &(input->config[i]),
 							     &ovl2mem_in_cached_config[layer_id], dst_mva);
 		else {
-			DISPERR("layer_id:%u, out of the bounds\n", layer_id);
-			BUG_ON(1);
+			DISPERR("layer_id:%d, out of the bounds\n", layer_id);
+			continue;
 		}
 
 		/* /disp_sync_put_cached_layer_info(session_id, layer_id, &input->config[i], get_ovl2mem_ticket()); */
@@ -1465,23 +1465,11 @@ static int set_primary_buffer(disp_session_input_config *input)
 		if (isAEEEnabled == 1) {
 			if (layer_id == primary_display_get_option("ASSERT_LAYER"))
 				DISPMSG("AEE layer has been enabled, skip aee layer config\n");
-			else {
-				if (layer_id < ARRAY_SIZE(captured_session_input[DISP_SESSION_PRIMARY - 1].config))
-					captured_session_input[DISP_SESSION_PRIMARY - 1].config[layer_id]
-						= input->config[i];
-				else {
-					DISPERR("layer_id:%u, out of the bounds\n", layer_id);
-					BUG_ON(1);
-				}
-			}
+			else
+				captured_session_input[DISP_SESSION_PRIMARY - 1].config[layer_id] = input->config[i];
 
 		} else {
-			if (layer_id < ARRAY_SIZE(captured_session_input[DISP_SESSION_PRIMARY - 1].config))
-				captured_session_input[DISP_SESSION_PRIMARY - 1].config[layer_id] = input->config[i];
-			else {
-				DISPERR("layer_id:%u, out of the bounds\n", layer_id);
-				BUG_ON(1);
-			}
+			captured_session_input[DISP_SESSION_PRIMARY - 1].config[layer_id] = input->config[i];
 		}
 		up(&dal_sem);
 #endif
