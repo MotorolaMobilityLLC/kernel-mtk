@@ -1408,9 +1408,9 @@ static int akm09911_get_data(int *x, int *y, int *z, int *status)
 	data[1] = (s16)(strbuf[3] | (strbuf[4] << 8));
 	data[2] = (s16)(strbuf[5] | (strbuf[6] << 8));
 
-	*x = data[0] * 100;
-	*y = data[1] * 100;
-	*z = data[2] * 100;
+	*x = (data[0] * 100 * 6) / 10;
+	*y = (data[1] * 100 * 6) / 10;
+	*z = (data[2] * 100 * 6) / 10;
 	*status = strbuf[8];
 	/* MAGN_ERR("yue akm09911_get_data: x=%x, y=%x, z=%x, status=%x\n", *x, *y, *z, *status); */
 
