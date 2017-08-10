@@ -577,6 +577,10 @@ static ssize_t spi_store(struct device *dev, struct device_attribute *attr, cons
 		if (!chip_config)
 			return -ENOMEM;
 	}
+	if (!buf) {
+		SPIDEV_LOG("buf is NULL.\n");
+		goto out;
+	}
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 	if (!strncmp(buf, "-1", 2)) {
 		/*TRANSFER*/ SPIDEV_MSG("start to access TL SPI driver.\n");
@@ -604,10 +608,6 @@ static ssize_t spi_store(struct device *dev, struct device_attribute *attr, cons
 #endif
 	} else if (!strncmp(buf, "-w", 2)) {
 		buf += 3;
-		if (!buf) {
-			SPIDEV_LOG("buf is NULL.\n");
-			goto out;
-		}
 		if (!strncmp(buf, "setuptime=", 10) && (1 == sscanf(buf + 10, "%d", &setuptime))) {
 			SPIDEV_MSG("setuptime is:%d\n", setuptime);
 			chip_config->setuptime = setuptime;
@@ -676,6 +676,8 @@ static ssize_t spi_store(struct device *dev, struct device_attribute *attr, cons
 		/*spi_setup(spi);*/
 	}
  out:
+	if (!spi->controller_data)
+		kfree(chip_config);
 	return count;
 }
 
