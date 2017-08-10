@@ -102,7 +102,7 @@
 #define BATTERYPSEUDO1 6
 #endif
 
-#define Q_MAX_BY_SYS			/*8. Qmax variant by system drop voltage.*/
+/* #define Q_MAX_BY_SYS */			/*8. Qmax variant by system drop voltage.*/
 #define Q_MAX_SYS_VOLTAGE		3350
 #define SHUTDOWN_GAUGE0
 #define SHUTDOWN_GAUGE1_XMINS
@@ -149,7 +149,7 @@
 #define MD_SLEEP_CURRENT_CHECK
 
 /*7. Qmax variant by current loading.*/
-/*#define Q_MAX_BY_CURRENT*/
+/* #define Q_MAX_BY_CURRENT */
 
 #define FG_BAT_INT
 #define IS_BATTERY_REMOVE_BY_PMIC
