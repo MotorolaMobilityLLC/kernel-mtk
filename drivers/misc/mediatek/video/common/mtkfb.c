@@ -120,7 +120,8 @@ static size_t mtkfb_log_on = true;
 			DISPMSG("[Func]%s\n", __func__); \
 	} while (0)
 
-#define PRNERR(fmt, args...)  pr_debug("DISP/MTKFB " fmt, ##args)
+#define PRNWARN(fmt, args...)  pr_warn("DISP/MTKFB " fmt, ##args)
+#define PRNERR(fmt, args...)  pr_err("DISP/MTKFB " fmt, ##args)
 
 void mtkfb_log_enable(int enable)
 {
@@ -905,15 +906,15 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 	{
 		MTKFB_FUNC();
 		if (primary_display_is_sleepd()) {
-			DISPMSG("[FB Driver] Still in MTKFB_POWEROFF!!!\n");
+			PRNWARN("[FB Driver] Still in MTKFB_POWEROFF!!!\n");
 			return r;
 		}
 
-		DISPMSG("[FB Driver] enter MTKFB_POWEROFF\n");
+		PRNWARN("[FB Driver] enter MTKFB_POWEROFF\n");
 		ret = primary_display_suspend();
 		if (ret < 0)
 			DISPERR("primary display suspend failed\n");
-		DISPMSG("[FB Driver] leave MTKFB_POWEROFF\n");
+		PRNWARN("[FB Driver] leave MTKFB_POWEROFF\n");
 
 		is_early_suspended = true; /* no care */
 		return r;
@@ -926,9 +927,9 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			DISPMSG("[FB Driver] Still in MTKFB_POWERON!!!\n");
 			return r;
 		}
-		DISPMSG("[FB Driver] enter MTKFB_POWERON\n");
+		PRNWARN("[FB Driver] enter MTKFB_POWERON\n");
 		primary_display_resume();
-		DISPMSG("[FB Driver] leave MTKFB_POWERON\n");
+		PRNWARN("[FB Driver] leave MTKFB_POWERON\n");
 		is_early_suspended = false; /* no care */
 		return r;
 	}
@@ -2489,7 +2490,7 @@ int mtkfb_ipo_init(void)
 
 static void mtkfb_shutdown(struct device *pdev)
 {
-	MTKFB_LOG("[FB Driver] mtkfb_shutdown()\n");
+	PRNWARN("[FB Driver] mtkfb_shutdown()\n");
 	/* mt65xx_leds_brightness_set(MT65XX_LED_TYPE_LCD, LED_OFF); */
 	if (!lcd_fps)
 		msleep(30);
@@ -2497,11 +2498,11 @@ static void mtkfb_shutdown(struct device *pdev)
 		msleep(2 * 100000 / lcd_fps);	/* Delay 2 frames. */
 
 	if (primary_display_is_sleepd()) {
-		MTKFB_LOG("mtkfb has been power off\n");
+		PRNWARN("mtkfb has been power off\n");
 		return;
 	}
 	primary_display_suspend();
-	MTKFB_LOG("[FB Driver] leave mtkfb_shutdown\n");
+	PRNWARN("[FB Driver] leave mtkfb_shutdown\n");
 }
 
 void mtkfb_clear_lcm(void)
@@ -2555,7 +2556,7 @@ static void mtkfb_blank_resume(void)
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return;
 
-	DISPMSG("[FB Driver] enter late_resume\n");
+	PRNWARN("[FB Driver] enter late_resume\n");
 
 #ifdef CONFIG_SINGLE_PANEL_OUTPUT
 	is_early_suspended = false;
@@ -2568,7 +2569,7 @@ static void mtkfb_blank_resume(void)
 		return;
 	}
 
-	DISPMSG("[FB Driver] leave late_resume\n");
+	PRNWARN("[FB Driver] leave late_resume\n");
 }
 
 /*---------------------------------------------------------------------------*/
