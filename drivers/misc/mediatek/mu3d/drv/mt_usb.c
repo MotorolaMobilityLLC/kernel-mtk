@@ -258,14 +258,6 @@ bool usb_cable_connected(void)
 	CHARGER_TYPE chg_type = CHARGER_UNKNOWN;
 	bool connected = false, vbus_exist = false;
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
-			|| get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
-		os_printk(K_INFO, "%s, in KPOC, force USB on\n", __func__);
-		return true;
-	}
-#endif
-
 	if (mu3d_force_on) {
 		/* FORCE USB ON */
 		chg_type = _mu3d_musb->charger_mode = STANDARD_HOST;
