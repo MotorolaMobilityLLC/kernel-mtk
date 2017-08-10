@@ -30,6 +30,7 @@
 
 #include <mt-plat/sync_write.h>
 #include <mt-plat/mt_lpae.h>
+#include <mt-plat/aee.h>
 #include "mt_cpufreq_hybrid.h"
 
 
@@ -57,11 +58,15 @@
 #define OFFS_FW_RSV2		0x238
 #define OFFS_FW_RSV6		0x23c
 #define OFFS_FW_RSV7		0x240
+#define OFFS_PCM_PC1		0x244
+#define OFFS_PCM_PC2		0x248
 #define OFFS_INIT_OPP		0x250
 #define OFFS_INIT_FREQ		0x260
 #define OFFS_INIT_VOLT		0x270
 #define OFFS_SW_RSV6		0x280
 #define OFFS_SW_RSV7		0x284
+#define OFFS_PAUSE_TIME		0x288
+#define OFFS_UNPAUSE_TIME	0x28c
 #define OFFS_PAUSE_SRC		0x290
 #define OFFS_DVFS_WAIT		0x294
 #define OFFS_FUNC_ENTER		0x298
@@ -72,9 +77,9 @@
 #define OFFS_LOG_S		0x330
 #define OFFS_LOG_E		0xf80
 
-#define DVFS_TIMEOUT		3000		/* us */
-#define SEMA_GET_TIMEOUT	1500		/* us */
-#define PAUSE_TIMEOUT		1500		/* us */
+#define DVFS_TIMEOUT		6000		/* us */
+#define SEMA_GET_TIMEOUT	2000		/* us */
+#define PAUSE_TIMEOUT		2000		/* us */
 
 #define DVFS_NOTIFY_INTV	20		/* ms */
 #define MAX_LOG_FETCH		20
@@ -378,6 +383,7 @@
 /* function enter flag */
 #define FEF_DVFS		(1U << 0)
 #define FEF_CLUSTER_OFF		(1U << 1)
+#define FEF_LIMIT		(1U << 2)
 
 struct pcm_desc;
 
@@ -496,6 +502,8 @@ static struct init_sta suspend_sta = {
 	.floor		= { [0 ... (NUM_CPU_CLUSTER - 1)] = UINT_MAX },
 };
 
+static unsigned int start_log_offs = OFFS_LOG_S;
+
 /* keep PAUSE_INIT set until cluster-on notification */
 static u32 pause_src_map = PSF_PAUSE_INIT;
 
@@ -542,7 +550,7 @@ static atomic_t dvfs_nfy_req = ATOMIC_INIT(0);
 
 /* log_box[MAX_LOG_FETCH] is also used to save last log entry */
 static struct dvfs_log log_box[1 + MAX_LOG_FETCH];
-static unsigned int next_log_offs = OFFS_LOG_S;
+static unsigned int next_log_offs;
 
 static dvfs_notify_t notify_dvfs_change_cb;
 static DEFINE_MUTEX(notify_mutex);
@@ -600,6 +608,8 @@ static struct cpuhvfs_dvfsp g_dvfsp = {
 	.set_limit	= cspm_set_opp_limit,
 
 #ifdef CPUHVFS_HW_GOVERNOR
+	.hw_gov_en	= 1,
+
 	.set_notify	= cspm_set_dvfs_notify,
 
 	.enable_hwgov	= cspm_enable_hw_governor,
@@ -643,6 +653,7 @@ do {								\
 } while (0)
 
 #define cspm_get_timestamp()		cspm_read(CSPM_PCM_TIMER_OUT)
+#define cspm_get_pcmpc()		cspm_read(CSPM_PCM_REG15_DATA)
 
 #define cspm_min_freq(reg)		((cspm_read(reg) & SW_F_MIN_MASK) >> 0)
 #define cspm_max_freq(reg)		((cspm_read(reg) & SW_F_MAX_MASK) >> 4)
@@ -676,19 +687,29 @@ do {							\
 
 #define wait_complete_us(condition, delay, timeout)		\
 ({								\
-	int i = 0;						\
-	int n = DIV_ROUND_UP(timeout, delay);			\
+	int _i = 0;						\
+	int _n = DIV_ROUND_UP(timeout, delay);			\
+	csram_write(OFFS_PCM_PC1, cspm_get_pcmpc());		\
 	csram_write(OFFS_TIMER_OUT1, cspm_get_timestamp());	\
 	while (!(condition)) {					\
-		if (i >= n) {					\
-			i = -i;					\
+		if (_i >= _n) {					\
+			_i = -_i;				\
 			break;					\
 		}						\
 		udelay(delay);					\
-		i++;						\
+		_i++;						\
 	}							\
 	csram_write(OFFS_TIMER_OUT2, cspm_get_timestamp());	\
-	i;							\
+	csram_write(OFFS_PCM_PC2, cspm_get_pcmpc());		\
+	_i;							\
+})
+
+#define GEN_DB_ON(condition, fmt, args...)			\
+({								\
+	int _r = !!(condition);					\
+	if (unlikely(_r))					\
+		aee_kernel_exception("CPUHVFS", fmt, ##args);	\
+	unlikely(_r);						\
 })
 
 static inline u32 base_va_to_pa(const u32 *base)
@@ -708,6 +729,22 @@ static inline u32 opp_sw_to_fw(unsigned int index)
 static inline unsigned int opp_fw_to_sw(u32 freq)
 {
 	return freq < NUM_CPU_OPP ? (NUM_CPU_OPP - 1) - freq : 0 /* highest frequency */;
+}
+
+static inline void set_hw_gov_en(struct cpuhvfs_dvfsp *dvfsp)
+{
+	csram_write(OFFS_HWGOV_STIME, cspm_get_timestamp());
+
+	dvfsp->hw_gov_en = 1;
+	csram_write(OFFS_HWGOV_EN, dvfsp->hw_gov_en);
+}
+
+static inline void clear_hw_gov_en(struct cpuhvfs_dvfsp *dvfsp)
+{
+	csram_write(OFFS_HWGOV_ETIME, cspm_get_timestamp());
+
+	dvfsp->hw_gov_en = 0;
+	csram_write(OFFS_HWGOV_EN, dvfsp->hw_gov_en);
 }
 
 #ifdef CPUHVFS_HW_GOVERNOR
@@ -866,10 +903,6 @@ static void __cspm_init_event_vector(const struct pcm_desc *pcmdesc)
 {
 	/* init event vector register */
 	cspm_write(CSPM_PCM_EVENT_VECTOR0, pcmdesc->vec0);
-#if 0
-	/* used for FiT parameter */
-	cspm_write(CSPM_PCM_EVENT_VECTOR1, pcmdesc->vec1);
-#endif
 
 	/* disable event vector (enabled by FW) */
 	cspm_write(CSPM_PCM_EVENT_VECTOR_EN, 0);
@@ -883,8 +916,6 @@ static void __cspm_set_twam_event(const struct pwr_ctrl *pwrctrl)
 	/* reset TWAM */
 	cspm_write(CSPM_TWAM_CON, TWAM_SW_RST);
 	cspm_write(CSPM_TWAM_CON, 0);
-	udelay(10);
-	BUG_ON(cspm_read(CSPM_TWAM_TIMER_OUT) != 0);
 
 	/* use TWAM to monitor WFI signals (enabled by FW) */
 	cspm_write(CSPM_TWAM_IDLE_SEL, 0x1);
@@ -919,22 +950,27 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 	u32 con0;
 
 	/* init register to match FW expectation */
-	cspm_write(CSPM_SW_RSV3, OFFS_LOG_S + 0x0);
-	cspm_write(CSPM_SW_RSV4, OFFS_LOG_S + 0x4);
-	cspm_write(CSPM_SW_RSV5, OFFS_LOG_S + 0x8);
-	cspm_write(CSPM_RSV_CON, OFFS_LOG_S + 0xc);
+	cspm_write(CSPM_SW_RSV3, start_log_offs + 0x0);
+	cspm_write(CSPM_SW_RSV4, start_log_offs + 0x4);
+	cspm_write(CSPM_SW_RSV5, start_log_offs + 0x8);
+	cspm_write(CSPM_RSV_CON, start_log_offs + 0xc);
+
+	cspm_write(CSPM_PCM_EVENT_VECTOR1, 0x3e60000);
+	cspm_write(CSPM_PCM_EVENT_VECTOR6, 0x3e60000);
+
+	cspm_write(CSPM_PCM_EVENT_VECTOR4, 0);
+	cspm_write(CSPM_PCM_EVENT_VECTOR9, 0);
 
 	for (i = 0; i < NUM_PHY_CLUSTER; i++) {
 		cspm_write(swctrl_reg[i], SW_F_MAX(opp_sw_to_fw(sta->ceiling[i])) |
 					  SW_F_MIN(opp_sw_to_fw(sta->floor[i])) |
-					  SW_F_DES(opp_sw_to_fw(sta->opp[i])) |
-					  SW_F_ASSIGN |
-					  SW_PAUSE);
+					  SW_PAUSE);	/* all pause */
 		csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 	}
 
 	for (i = 0; i < NUM_CPU_CLUSTER; i++) {
 		cspm_write(hwsta_reg[i], F_CURR(opp_sw_to_fw(sta->opp[i])) |
+					 F_DES(opp_sw_to_fw(sta->opp[i])) |
 					 V_CURR(sta->volt[i]));
 		csram_write(hwsta_offs[i], cspm_read(hwsta_reg[i]));
 	}
@@ -945,7 +981,7 @@ static void __cspm_kick_pcm_to_run(const struct pwr_ctrl *pwrctrl, const struct 
 
 #ifdef CPUHVFS_HW_GOVERNOR
 	log_box[MAX_LOG_FETCH].time = 0;
-	next_log_offs = OFFS_LOG_S;
+	next_log_offs = start_log_offs;
 	csram_write(OFFS_NXLOG_OFFS, next_log_offs);
 #endif
 
@@ -978,6 +1014,8 @@ static void __cspm_save_curr_sta(struct init_sta *sta)
 			sta->floor[i] = NUM_CPU_OPP - 1;
 		}
 	}
+
+	sta->freq[0] = log_time_curr_offs();
 }
 
 static void __cspm_clean_after_pause(void)
@@ -1002,27 +1040,47 @@ static void __cspm_clean_after_pause(void)
 
 static void cspm_dump_debug_info(struct cpuhvfs_dvfsp *dvfsp, const char *fmt, ...)
 {
+	u32 timer, reg15, ap_sema, spm_sema;
+	u32 rsv0, rsv1, rsv2, rsv6, rsv7;
 	char msg[320];
 	va_list args;
+
+	timer = cspm_read(CSPM_PCM_TIMER_OUT);
+	reg15 = cspm_read(CSPM_PCM_REG15_DATA);
+	ap_sema = cspm_read(CSPM_AP_SEMA);
+	spm_sema = cspm_read(CSPM_SPM_SEMA);
+
+	rsv0 = cspm_read(CSPM_SW_RSV0);
+	rsv1 = cspm_read(CSPM_SW_RSV1);
+	rsv2 = cspm_read(CSPM_SW_RSV2);
+	rsv6 = cspm_read(CSPM_SW_RSV6);
+	rsv7 = cspm_read(CSPM_SW_RSV7);
 
 	va_start(args, fmt);
 	vsnprintf(msg, sizeof(msg), fmt, args);
 	va_end(args);
 
-	cspm_err("(%u) %s\n"   , dvfsp->hw_gov_en, msg);
+	cspm_err("(%u) %s\n",    dvfsp->hw_gov_en, msg);
 	cspm_err("FW_VER: %s\n", dvfsp->pcmdesc->version);
 
-	cspm_err("PCM_TIMER: %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
-	cspm_err("PCM_REG15: %u, SEMA: 0x(%x %x)\n",
-					  cspm_read(CSPM_PCM_REG15_DATA),
-					  cspm_read(CSPM_AP_SEMA),
-					  cspm_read(CSPM_SPM_SEMA));
+	cspm_err("PCM_TIMER: %08x\n", timer);
+	cspm_err("PCM_REG15: %u, SEMA: 0x(%x %x)\n", reg15, ap_sema, spm_sema);
 
-	cspm_err("SW_RSV6: 0x%x\n", cspm_read(CSPM_SW_RSV6));
-	cspm_err("SW_RSV7: 0x%x\n", cspm_read(CSPM_SW_RSV7));
-	cspm_err("SW_RSV0: 0x%x\n", cspm_read(CSPM_SW_RSV0));
-	cspm_err("SW_RSV1: 0x%x\n", cspm_read(CSPM_SW_RSV1));
-	cspm_err("SW_RSV2: 0x%x\n", cspm_read(CSPM_SW_RSV2));
+	cspm_err("SW_RSV6: 0x%x\n", rsv6);
+	cspm_err("SW_RSV7: 0x%x\n", rsv7);
+	cspm_err("SW_RSV0: 0x%x\n", rsv0);
+	cspm_err("SW_RSV1: 0x%x\n", rsv1);
+	cspm_err("SW_RSV2: 0x%x\n", rsv2);
+
+	cspm_err("EVT_VECx: 0x(%x,%x,%x,%x,%x,%x,%x,%x)\n",
+			       cspm_read(CSPM_PCM_EVENT_VECTOR2),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR3),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR4),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR5),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR7),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR8),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR9),
+			       cspm_read(CSPM_PCM_EVENT_VECTOR10));
 
 	cspm_err("PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
 }
@@ -1038,6 +1096,7 @@ static int __cspm_pause_pcm_running(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 			cspm_write(swctrl_reg[i], cspm_read(swctrl_reg[i]) | SW_PAUSE);
 			csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 		}
+		csram_write(OFFS_PAUSE_TIME, cspm_get_timestamp());
 
 		udelay(10);	/* skip FW_DONE 1->0 transition */
 
@@ -1064,7 +1123,7 @@ static int __cspm_pause_pcm_running(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 			__cspm_save_curr_sta(&suspend_sta);
 	} else {
 		cspm_dump_debug_info(dvfsp, "PAUSE TIMEOUT, psf = 0x%x", psf);
-		BUG_ON(pause_fail_ke);
+		GEN_DB_ON(pause_fail_ke, "FW Pause Timeout");
 	}
 
 	return r;
@@ -1081,39 +1140,47 @@ static void __cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, u32 psf)
 	if (csram_base)
 		csram_write(OFFS_PAUSE_SRC, pause_src_map);
 
-	if (pause_src_map == 0) {
+	if (pause_src_map == 0 && csram_base /* avoid Coverity complaining */) {
 		r = clk_enable(i2c_clk);
-		if (!r) {
-			for (i = 0; i < NUM_PHY_CLUSTER; i++) {
-				swctrl = cspm_read(swctrl_reg[i]);
-				csram_write(swctrl_offs[i], swctrl);
+		if (GEN_DB_ON(r, "Clock Enable Failed"))
+			goto restore_map;
 
-				if (!(swctrl & CLUSTER_EN))
-					continue;
+		for (i = 0; i < NUM_PHY_CLUSTER; i++) {
+			swctrl = cspm_read(swctrl_reg[i]);
+			csram_write(swctrl_offs[i], swctrl);
 
-#ifdef CPUHVFS_HW_GOVERNOR
-				if (dvfsp->hw_gov_en && psf == PSF_PAUSE_SUSPEND)
-					swctrl &= ~SW_F_ASSIGN;		/* set in PCM re-kick */
-#endif
-				cspm_write(swctrl_reg[i], swctrl & ~SW_PAUSE);
-				csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
-				all_pause = 0;
-			}
+			if (!(swctrl & CLUSTER_EN))
+				continue;
 
-			BUG_ON(all_pause);	/* no cluster on!? */
-
-			wake_up(&dvfs_wait);	/* for set_target_opp */
-			csram_write(OFFS_DVFS_WAIT, 0);
-
-#ifdef CPUHVFS_HW_GOVERNOR
-			if (dvfsp->hw_gov_en)
-				start_notify_trigger_timer(DVFS_NOTIFY_INTV);
-#endif
-		} else {
-			cspm_err("FAILED TO ENABLE I2C CLOCK (%d)\n", r);
-			BUG();
+			cspm_write(swctrl_reg[i], swctrl & ~SW_PAUSE);
+			csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
+			all_pause = 0;
 		}
+		csram_write(OFFS_UNPAUSE_TIME, cspm_get_timestamp());
+
+		if (GEN_DB_ON(all_pause, "No Cluster On"))
+			goto restore_clk;
+
+		wake_up(&dvfs_wait);	/* for set_target_opp */
+		csram_write(OFFS_DVFS_WAIT, 0);
+
+#ifdef CPUHVFS_HW_GOVERNOR
+		if (dvfsp->hw_gov_en) {
+			if (psf == PSF_PAUSE_INIT)
+				set_hw_gov_en(dvfsp);
+
+			start_notify_trigger_timer(DVFS_NOTIFY_INTV);
+		}
+#endif
 	}
+
+	return;
+
+restore_clk:
+	clk_disable(i2c_clk);
+restore_map:
+	pause_src_map |= psf;
+	csram_write(OFFS_PAUSE_SRC, pause_src_map);
 }
 
 static int cspm_stop_pcm_running(struct cpuhvfs_dvfsp *dvfsp)
@@ -1125,12 +1192,12 @@ static int cspm_stop_pcm_running(struct cpuhvfs_dvfsp *dvfsp)
 
 	r = __cspm_pause_pcm_running(dvfsp, PSF_PAUSE_INIT);
 	if (!r) {
+		if (dvfsp->hw_gov_en)
+			clear_hw_gov_en(dvfsp);
+
 		__cspm_clean_after_pause();
 
 		__cspm_pcm_sw_reset();
-
-		dvfsp->hw_gov_en = 0;
-		csram_write(OFFS_HWGOV_EN, dvfsp->hw_gov_en);
 	}
 	spin_unlock(&dvfs_lock);
 
@@ -1164,7 +1231,7 @@ static void cspm_unpause_pcm_to_run(struct cpuhvfs_dvfsp *dvfsp, enum pause_src 
 	if (pause_log_en & psf)
 		cspm_dbgx(PAUSE, "unpause pcm, src = %u, map = 0x%x\n", src, pause_src_map);
 
-	if (psf & pause_src_map)
+	if (pause_src_map & psf)
 		__cspm_unpause_pcm_to_run(dvfsp, psf);
 	spin_unlock(&dvfs_lock);
 }
@@ -1193,7 +1260,7 @@ static int cspm_get_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user user)
 	}
 
 	cspm_dump_debug_info(dvfsp, "SEMA_USER%u GET TIMEOUT", user);
-	BUG_ON(sema_fail_ke);
+	GEN_DB_ON(sema_fail_ke, "Semaphore Get Timeout");
 
 	return -EBUSY;
 }
@@ -1212,10 +1279,8 @@ static void cspm_release_semaphore(struct cpuhvfs_dvfsp *dvfsp, enum sema_user u
 
 	cspm_write(CSPM_POWERON_CONFIG_EN, REGWR_CFG_KEY | REGWR_EN);	/* enable register write */
 
-	if (cspm_read(sema_reg[user]) & 0x1) {
-		cspm_write(sema_reg[user], 0x1);
-		BUG_ON(cspm_read(sema_reg[user]) & 0x1);	/* semaphore release failed */
-	}
+	if (cspm_read(sema_reg[user]) & 0x1)
+		cspm_write(sema_reg[user], 0x1);	/* release semaphore */
 }
 
 #ifdef CPUHVFS_HW_GOVERNOR
@@ -1228,7 +1293,7 @@ static int cspm_enable_hw_governor(struct cpuhvfs_dvfsp *dvfsp, struct init_sta 
 	cspm_dbgx(HWGOV, "(%u) [%08x] enable hw gov\n", dvfsp->hw_gov_en, cspm_get_timestamp());
 
 	if (dvfsp->hw_gov_en)
-		goto UNLOCK;
+		goto out;
 
 	for (i = 0; i < NUM_PHY_CLUSTER; i++) {
 		f_max = opp_sw_to_fw(sta->ceiling[i]);
@@ -1239,14 +1304,12 @@ static int cspm_enable_hw_governor(struct cpuhvfs_dvfsp *dvfsp, struct init_sta 
 		cspm_write(swctrl_reg[i], swctrl | SW_F_MAX(f_max) | SW_F_MIN(f_min));
 		csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 	}
-	csram_write(OFFS_HWGOV_STIME, cspm_get_timestamp());
 
-	dvfsp->hw_gov_en = 1;
-	csram_write(OFFS_HWGOV_EN, dvfsp->hw_gov_en);
+	set_hw_gov_en(dvfsp);
 
 	start_notify_trigger_timer(DVFS_NOTIFY_INTV);
 
-UNLOCK:
+out:
 	spin_unlock(&dvfs_lock);
 
 	return 0;
@@ -1261,7 +1324,7 @@ static int cspm_disable_hw_governor(struct cpuhvfs_dvfsp *dvfsp, struct init_sta
 	cspm_dbgx(HWGOV, "(%u) [%08x] disable hw gov\n", dvfsp->hw_gov_en, cspm_get_timestamp());
 
 	if (!dvfsp->hw_gov_en)
-		goto UNLOCK;
+		goto out;
 
 	r = __cspm_pause_pcm_running(dvfsp, PSF_PAUSE_HWGOV);
 	if (!r) {
@@ -1277,15 +1340,14 @@ static int cspm_disable_hw_governor(struct cpuhvfs_dvfsp *dvfsp, struct init_sta
 			cspm_write(swctrl_reg[i], swctrl | SW_F_ASSIGN | SW_F_DES(f_curr[i]));
 			csram_write(swctrl_offs[i], cspm_read(swctrl_reg[i]));
 		}
-		csram_write(OFFS_HWGOV_ETIME, cspm_get_timestamp());
 
-		dvfsp->hw_gov_en = 0;	/* before unpause to avoid starting nfy_trig_timer */
-		csram_write(OFFS_HWGOV_EN, dvfsp->hw_gov_en);
+		/* before unpause to avoid starting nfy_trig_timer */
+		clear_hw_gov_en(dvfsp);
 
 		__cspm_unpause_pcm_to_run(dvfsp, PSF_PAUSE_HWGOV);
 	}
 
-UNLOCK:
+out:
 	spin_unlock(&dvfs_lock);
 
 	return r;
@@ -1297,33 +1359,59 @@ static void cspm_set_dvfs_notify(struct cpuhvfs_dvfsp *dvfsp, dvfs_notify_t call
 	notify_dvfs_change_cb = callback;
 	mutex_unlock(&notify_mutex);
 }
-#endif
+#endif	/* CPUHVFS_HW_GOVERNOR */
 
 static void cspm_set_opp_limit(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster,
 			       unsigned int ceiling, unsigned int floor)
 {
-	u32 f_max, f_min, swctrl;
+	int r;
+	u32 f_max = opp_sw_to_fw(ceiling);
+	u32 f_min = opp_sw_to_fw(floor);
+	u32 swctrl;
 
 	if (cluster >= NUM_PHY_CLUSTER)		/* CCI */
 		return;
 
 	spin_lock(&dvfs_lock);
-	if (!dvfsp->hw_gov_en) {	/* no limit */
-		ceiling = 0;
-		floor = NUM_CPU_OPP - 1;
-	}
-
-	f_max = opp_sw_to_fw(ceiling);
-	f_min = opp_sw_to_fw(floor);
+	csram_write(OFFS_FUNC_ENTER, (cluster << 24) | (ceiling << 16) | (floor << 8) | FEF_LIMIT);
 
 	cspm_dbgx(LIMIT, "(%u) [%08x] cluster%u limit, opp = (%u - %u) <%u - %u>\n",
-			 dvfsp->hw_gov_en, cspm_get_timestamp(), cluster,
-			 ceiling, floor, f_max, f_min);
+			 dvfsp->hw_gov_en, cspm_get_timestamp(), cluster, ceiling, floor, f_max, f_min);
 
 	swctrl = cspm_read(swctrl_reg[cluster]);
 	swctrl &= ~(SW_F_MAX_MASK | SW_F_MIN_MASK);
 	cspm_write(swctrl_reg[cluster], swctrl | SW_F_MAX(f_max) | SW_F_MIN(f_min));
 	csram_write(swctrl_offs[cluster], cspm_read(swctrl_reg[cluster]));
+
+	if (ceiling != floor)
+		goto out;
+
+	/* treat ceiling=floor as set_target_opp */
+	while (pause_src_map != 0) {
+		csram_write(OFFS_DVFS_WAIT, (cluster << 8) | ceiling);
+		spin_unlock(&dvfs_lock);
+
+		wait_event(dvfs_wait, pause_src_map == 0);	/* wait for PCM to be unpaused */
+
+		spin_lock(&dvfs_lock);
+	}
+
+	swctrl = cspm_read(swctrl_reg[cluster]);
+	csram_write(swctrl_offs[cluster], swctrl);
+
+	if (!(swctrl & SW_PAUSE) /* cluster on */) {
+		r = wait_complete_us(cspm_curr_freq(hwsta_reg[cluster]) == f_max, 10, DVFS_TIMEOUT);
+		csram_write_fw_sta();
+
+		if (r < 0) {
+			cspm_dump_debug_info(dvfsp, "CLUSTER%u LIMIT TIMEOUT, opp = %u <%u>",
+						    cluster, ceiling, f_max);
+			GEN_DB_ON(dvfs_fail_ke, "FW Limit Timeout");
+		}
+	}
+
+out:
+	csram_write(OFFS_FUNC_ENTER, 0);
 	spin_unlock(&dvfs_lock);
 }
 
@@ -1374,7 +1462,7 @@ static int cspm_set_target_opp(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster
 	} else {
 		cspm_dump_debug_info(dvfsp, "CLUSTER%u DVFS TIMEOUT, opp = %u <%u>",
 					    cluster, index, f_des);
-		BUG_ON(dvfs_fail_ke);
+		GEN_DB_ON(dvfs_fail_ke, "FW DVFS Timeout");
 	}
 
 	csram_write(OFFS_FUNC_ENTER, 0);
@@ -1390,7 +1478,6 @@ static unsigned int cspm_get_curr_volt(struct cpuhvfs_dvfsp *dvfsp, unsigned int
 
 static void cspm_cluster_notify_on(struct cpuhvfs_dvfsp *dvfsp, unsigned int cluster)
 {
-	int i;
 	u32 time, hwsta, swctrl;
 
 	if (cluster >= NUM_PHY_CLUSTER)		/* CCI */
@@ -1407,23 +1494,15 @@ static void cspm_cluster_notify_on(struct cpuhvfs_dvfsp *dvfsp, unsigned int clu
 	cspm_dbgx(CLUSTER, "(%u) [%08x] cluster%u on, pause = 0x%x, swctrl = 0x%x (0x%x)\n",
 			   dvfsp->hw_gov_en, time, cluster, pause_src_map, swctrl, hwsta);
 
-	BUG_ON(!(swctrl & SW_PAUSE));	/* not paused at cluster off */
+	WARN_ON(!(swctrl & SW_PAUSE));	/* not paused at cluster off */
 
 	if (pause_src_map == 0)
 		swctrl &= ~SW_PAUSE;
 	cspm_write(swctrl_reg[cluster], swctrl | CLUSTER_EN);
 	csram_write(swctrl_offs[cluster], cspm_read(swctrl_reg[cluster]));
 
-	if (pause_src_map & PSF_PAUSE_INIT) {
-		for (i = 0; i < NUM_PHY_CLUSTER; i++) {
-			swctrl = cspm_read(swctrl_reg[i]);
-			csram_write(swctrl_offs[i], swctrl);
-
-			BUG_ON(!(swctrl & SW_PAUSE));	/* not paused after kick */
-		}
-
+	if (pause_src_map & PSF_PAUSE_INIT)	/* after kick */
 		__cspm_unpause_pcm_to_run(dvfsp, PSF_PAUSE_INIT);
-	}
 	spin_unlock(&dvfs_lock);
 }
 
@@ -1448,7 +1527,8 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 	cspm_dbgx(CLUSTER, "(%u) [%08x] cluster%u off, pause = 0x%x, swctrl = 0x%x (0x%x)\n",
 			   dvfsp->hw_gov_en, time, cluster, pause_src_map, swctrl, hwsta);
 
-	BUG_ON(!(swctrl & CLUSTER_EN));		/* already off */
+	if (WARN_ON(!(swctrl & CLUSTER_EN)))	/* already off */
+		goto out;
 
 	cspm_write(swctrl_reg[cluster], swctrl & ~(CLUSTER_EN | SW_PAUSE | SW_F_ASSIGN));
 	csram_write(swctrl_offs[cluster], cspm_read(swctrl_reg[cluster]));
@@ -1464,6 +1544,7 @@ static void cspm_cluster_notify_off(struct cpuhvfs_dvfsp *dvfsp, unsigned int cl
 		BUG();
 	}
 
+out:
 	csram_write(OFFS_FUNC_ENTER, 0);
 	spin_unlock(&dvfs_lock);
 }
@@ -1473,7 +1554,7 @@ static bool cspm_is_pcm_kicked(struct cpuhvfs_dvfsp *dvfsp)
 	return !!(cspm_read(CSPM_PCM_FSM_STA) & FSM_PCM_KICK);
 }
 
-static void __cspm_check_and_update_sta(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta)
+static int __cspm_check_and_update_sta(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta)
 {
 	int i;
 	bool suspend = false;
@@ -1485,29 +1566,36 @@ static void __cspm_check_and_update_sta(struct cpuhvfs_dvfsp *dvfsp, struct init
 		}
 
 		if (sta->opp[i] == OPP_AT_SUSPEND) {
-			BUG_ON(suspend_sta.opp[i] == UINT_MAX);		/* without suspend */
+			if (WARN_ON(suspend_sta.opp[i] == UINT_MAX))	/* without suspend */
+				return -EPERM;
 
 			sta->opp[i] = suspend_sta.opp[i];
 			suspend_sta.opp[i] = UINT_MAX;
 			suspend = true;
 		}
 		if (sta->volt[i] == VOLT_AT_SUSPEND) {
-			BUG_ON(suspend_sta.volt[i] == UINT_MAX);	/* without suspend */
+			if (WARN_ON(suspend_sta.volt[i] == UINT_MAX))	/* without suspend */
+				return -EPERM;
 
 			sta->volt[i] = suspend_sta.volt[i];
 			suspend_sta.volt[i] = UINT_MAX;
+			suspend = true;
 		}
 		if (sta->ceiling[i] == CEILING_AT_SUSPEND) {
-			BUG_ON(suspend_sta.ceiling[i] == UINT_MAX);	/* without suspend */
+			if (WARN_ON(suspend_sta.ceiling[i] == UINT_MAX))	/* without suspend */
+				return -EPERM;
 
 			sta->ceiling[i] = suspend_sta.ceiling[i];
 			suspend_sta.ceiling[i] = UINT_MAX;
+			suspend = true;
 		}
 		if (sta->floor[i] == FLOOR_AT_SUSPEND) {
-			BUG_ON(suspend_sta.floor[i] == UINT_MAX);	/* without suspend */
+			if (WARN_ON(suspend_sta.floor[i] == UINT_MAX))	/* without suspend */
+				return -EPERM;
 
 			sta->floor[i] = suspend_sta.floor[i];
 			suspend_sta.floor[i] = UINT_MAX;
+			suspend = true;
 		}
 
 		csram_write(OFFS_INIT_OPP + i * sizeof(u32), sta->opp[i]);
@@ -1520,15 +1608,23 @@ static void __cspm_check_and_update_sta(struct cpuhvfs_dvfsp *dvfsp, struct init
 					sta->freq[i], sta->volt[i]);
 		}
 	}
+
+	if (suspend)
+		start_log_offs = suspend_sta.freq[0];
+
+	return 0;
 }
 
 static int cspm_go_to_dvfs(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta)
 {
+	int r;
 	struct pcm_desc *pcmdesc = dvfsp->pcmdesc;
 	struct pwr_ctrl *pwrctrl = dvfsp->pwrctrl;
 
 	spin_lock(&dvfs_lock);
-	__cspm_check_and_update_sta(dvfsp, sta);
+	r = __cspm_check_and_update_sta(dvfsp, sta);
+	if (r)
+		goto out;
 
 	__cspm_reset_and_init_pcm(pcmdesc);
 
@@ -1544,9 +1640,10 @@ static int cspm_go_to_dvfs(struct cpuhvfs_dvfsp *dvfsp, struct init_sta *sta)
 
 	__cspm_kick_pcm_to_run(pwrctrl, sta);
 
+out:
 	spin_unlock(&dvfs_lock);
 
-	return 0;
+	return r;
 }
 
 #ifdef CPUHVFS_HW_GOVERNOR
@@ -1557,7 +1654,7 @@ static void fetch_dvfs_log_and_notify(struct cpuhvfs_dvfsp *dvfsp)
 
 	spin_lock(&dvfs_lock);
 	if (!dvfsp->hw_gov_en || (log_box[MAX_LOG_FETCH].time == 0 &&
-					log_time_curr_offs() <= OFFS_LOG_S)) {
+					log_time_curr_offs() == start_log_offs)) {
 		spin_unlock(&dvfs_lock);
 		return;
 	}
@@ -1646,7 +1743,7 @@ static int create_resource_for_dvfs_notify(struct cpuhvfs_dvfsp *dvfsp)
 
 	return 0;
 }
-#endif
+#endif	/* CPUHVFS_HW_GOVERNOR */
 
 static int cspm_probe(struct platform_device *pdev)
 {
@@ -1752,11 +1849,11 @@ static int dvfsp_fw_show(struct seq_file *m, void *v)
 	struct cpuhvfs_dvfsp *dvfsp = m->private;
 	struct pcm_desc *pcmdesc = dvfsp->pcmdesc;
 
-	seq_printf(m, "version = %s\n"  , pcmdesc->version);
+	seq_printf(m, "version = %s\n",   pcmdesc->version);
 	seq_printf(m, "base    = 0x%p -> 0x%x\n", pcmdesc->base, base_va_to_pa(pcmdesc->base));
-	seq_printf(m, "size    = %u\n"  , pcmdesc->size);
-	seq_printf(m, "sess    = %u\n"  , pcmdesc->sess);
-	seq_printf(m, "replace = %u\n"  , pcmdesc->replace);
+	seq_printf(m, "size    = %u\n",   pcmdesc->size);
+	seq_printf(m, "sess    = %u\n",   pcmdesc->sess);
+	seq_printf(m, "replace = %u\n",   pcmdesc->replace);
 	seq_printf(m, "vec0    = 0x%x\n", pcmdesc->vec0);
 
 	return 0;
@@ -1767,7 +1864,7 @@ static int dvfsp_reg_show(struct seq_file *m, void *v)
 	struct cpuhvfs_dvfsp *dvfsp = m->private;
 
 	seq_printf(m, "PCM_TIMER  : %08x\n", cspm_read(CSPM_PCM_TIMER_OUT));
-	seq_printf(m, "PCM_REG15  : %u\n"  , cspm_read(CSPM_PCM_REG15_DATA));
+	seq_printf(m, "PCM_REG15  : %u\n",   cspm_read(CSPM_PCM_REG15_DATA));
 	seq_puts(m,   "============\n");
 	seq_printf(m, "SW_RSV6    : 0x%x\n", cspm_read(CSPM_SW_RSV6));
 	seq_printf(m, "SW_RSV7    : 0x%x\n", cspm_read(CSPM_SW_RSV7));
@@ -1775,8 +1872,17 @@ static int dvfsp_reg_show(struct seq_file *m, void *v)
 	seq_printf(m, "SW_RSV1    : 0x%x\n", cspm_read(CSPM_SW_RSV1));
 	seq_printf(m, "SW_RSV2    : 0x%x\n", cspm_read(CSPM_SW_RSV2));
 	seq_puts(m,   "============\n");
+	seq_printf(m, "EVT_VEC2   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR2));
+	seq_printf(m, "EVT_VEC3   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR3));
+	seq_printf(m, "EVT_VEC4   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR4));
+	seq_printf(m, "EVT_VEC5   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR5));
+	seq_printf(m, "EVT_VEC7   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR7));
+	seq_printf(m, "EVT_VEC8   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR8));
+	seq_printf(m, "EVT_VEC9   : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR9));
+	seq_printf(m, "EVT_VEC10  : 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR10));
+	seq_puts(m,   "============\n");
 	seq_printf(m, "PCM_FSM_STA: 0x%x\n", cspm_read(CSPM_PCM_FSM_STA));
-	seq_printf(m, "HW_GOV*    : %u\n"  , dvfsp->hw_gov_en);
+	seq_printf(m, "HW_GOV*    : %u\n",   dvfsp->hw_gov_en);
 
 	return 0;
 }
@@ -1808,9 +1914,65 @@ static int dbg_repo_show(struct seq_file *m, void *v)
 	return 0;
 }
 
+static int hwgov_param_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "param1  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR1));
+	seq_printf(m, "param2  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR2));
+	seq_printf(m, "param3  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR3));
+	seq_printf(m, "param4  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR4));
+	seq_printf(m, "param5  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR5));
+	seq_printf(m, "param6  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR6));
+	seq_printf(m, "param7  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR7));
+	seq_printf(m, "param8  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR8));
+	seq_printf(m, "param9  = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR9));
+	seq_printf(m, "param10 = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR10));
+	seq_printf(m, "param11 = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR11));
+	seq_printf(m, "param12 = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR12));
+	seq_printf(m, "param13 = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR13));
+	seq_printf(m, "param14 = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR14));
+	seq_printf(m, "param15 = 0x%x\n", cspm_read(CSPM_PCM_EVENT_VECTOR15));
+
+	return 0;
+}
+
+static ssize_t hwgov_param_write(struct file *file, const char __user *ubuf, size_t count,
+				 loff_t *ppos)
+{
+	int r;
+	u64 idx_val;
+	u32 idx, val;
+	struct cpuhvfs_dvfsp *dvfsp = file_inode(file)->i_private;
+
+	r = kstrtou64_from_user(ubuf, count, 0, &idx_val);
+	if (r)
+		return -EINVAL;
+
+	idx = upper_32_bits(idx_val);
+	val = lower_32_bits(idx_val);
+	if (idx < 1 || idx > 15)
+		return -EINVAL;
+
+	/* TEMP: use low-level operation */
+	spin_lock(&dvfs_lock);
+	if (dvfsp->hw_gov_en) {
+		if (idx == 1 && val == 0x5406beef) {
+			__cspm_pause_pcm_running(dvfsp, PSF_PAUSE_HWGOV);
+		} else if (pause_src_map & PSF_PAUSE_HWGOV) {
+			if (idx == 15 && val == 0x0456babe)
+				__cspm_unpause_pcm_to_run(dvfsp, PSF_PAUSE_HWGOV);
+			else
+				cspm_write(CSPM_PCM_EVENT_VECTOR0 + idx * 4, val);
+		}
+	}
+	spin_unlock(&dvfs_lock);
+
+	return count;
+}
+
 DEFINE_FOPS_RO(dvfsp_fw);
 DEFINE_FOPS_RO(dvfsp_reg);
 DEFINE_FOPS_RO(dbg_repo);
+DEFINE_FOPS_RW(hwgov_param);
 
 static int create_cpuhvfs_debug_fs(struct cpuhvfs_data *cpuhvfs)
 {
@@ -1826,6 +1988,8 @@ static int create_cpuhvfs_debug_fs(struct cpuhvfs_data *cpuhvfs)
 
 	debugfs_create_file("dbg_repo", 0444, root, cpuhvfs->dbg_repo, &dbg_repo_fops);
 	debugfs_create_file("dbg_repo_bak", 0444, root, dbg_repo_bak, &dbg_repo_fops);
+
+	debugfs_create_file("hwgov_param", 0644, root, cpuhvfs->dvfsp, &hwgov_param_fops);
 
 	debugfs_create_x32("pause_src_map", 0444, root, &pause_src_map);
 	debugfs_create_x32("pause_log_en", 0644, root, &pause_log_en);
@@ -1916,7 +2080,8 @@ void cpuhvfs_dvfsp_resume(unsigned int on_cluster, struct init_sta *sta)
 
 	if (!dvfsp->is_kicked(dvfsp)) {
 		r = dvfsp->kick_dvfsp(dvfsp, sta);
-		BUG_ON(r);
+		if (WARN_ON(r))
+			return;
 
 		dvfsp->cluster_on(dvfsp, on_cluster);
 	}
@@ -2134,9 +2299,14 @@ void cpuhvfs_notify_cluster_off(unsigned int cluster)
 {
 	struct cpuhvfs_dvfsp *dvfsp = g_cpuhvfs.dvfsp;
 
-	BUG_ON(cluster >= NUM_CPU_CLUSTER);
-	BUG_ON(is_dvfsp_uninit(dvfsp));
-	BUG_ON(!dvfsp->is_kicked(dvfsp));
+	if (WARN_ON(cluster >= NUM_CPU_CLUSTER))
+		return;
+
+	if (WARN_ON(is_dvfsp_uninit(dvfsp)))
+		return;
+
+	if (WARN_ON(!dvfsp->is_kicked(dvfsp)))
+		return;
 
 	dvfsp->cluster_off(dvfsp, cluster);
 }
@@ -2197,4 +2367,4 @@ fs_initcall(cpuhvfs_pre_module_init);
 
 #endif	/* CONFIG_HYBRID_CPU_DVFS */
 
-MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.1");
+MODULE_DESCRIPTION("Hybrid CPU DVFS Driver v0.2");

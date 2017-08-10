@@ -24,8 +24,11 @@
 #define CONFIG_HYBRID_CPU_DVFS
 /*#define __TRIAL_RUN__*/
 
-#elif defined(CONFIG_ARCH_MT6757)
-/*#define CONFIG_HYBRID_CPU_DVFS*/
+#elif defined(CONFIG_ARCH_MT6757) && !defined(CONFIG_FPGA_EARLY_PORTING)
+#define CONFIG_HYBRID_CPU_DVFS
+#ifdef CONFIG_HYBRID_CPU_DVFS
+/*#define CPUHVFS_HW_GOVERNOR*/
+#endif
 /*#define __TRIAL_RUN__*/
 
 #elif defined(CONFIG_ARCH_MT6797) /*&& defined(CONFIG_MTK_HYBRID_CPU_DVFS)*/
@@ -182,7 +185,7 @@ static inline int cpuhvfs_module_init(void)		{ return -ENODEV; }
 static inline int cpuhvfs_kick_dvfsp_to_run(struct init_sta *sta)	{ return -ENODEV; }
 
 static inline void cpuhvfs_notify_cluster_on(unsigned int cluster)	{}
-static inline void cpuhvfs_notify_cluster_off(unsigned int cluster)	{ BUG(); }
+static inline void cpuhvfs_notify_cluster_off(unsigned int cluster)	{ WARN_ON(1); }
 
 static inline int cpuhvfs_set_target_opp(unsigned int cluster, unsigned int index,
 					 unsigned int *ret_volt)	{ return -ENODEV; }

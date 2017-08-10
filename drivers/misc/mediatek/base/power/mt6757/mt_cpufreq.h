@@ -85,7 +85,13 @@ extern void mt_cpufreq_set_ptbl_registerCB(mt_cpufreq_set_ptbl_funcPTP pCB);
 extern unsigned int mt_cpufreq_get_leakage_mw(enum mt_cpu_dvfs_id id);
 
 /* PPB */
+#ifdef CONFIG_FPGA_EARLY_PORTING
+static inline int mt_cpufreq_get_ppb_state(void)		{ return 0; }
+static inline unsigned int mt_cpufreq_ppb_hispeed_freq(unsigned int cpu, unsigned int mode)	{ return 0; }
+#else
 extern int mt_cpufreq_get_ppb_state(void);
+extern unsigned int mt_cpufreq_ppb_hispeed_freq(unsigned int cpu, unsigned int mode);
+#endif
 
 /* PPM */
 extern unsigned int mt_cpufreq_get_cur_phy_freq(enum mt_cpu_dvfs_id id);
