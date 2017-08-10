@@ -3,7 +3,6 @@
 struct gyro_context *gyro_context_obj = NULL;
 static struct platform_device *pltfm_dev;
 
-static int gyro_probe(void);
 static struct gyro_init_info *gyroscope_init_list[MAX_CHOOSE_GYRO_NUM] = {0};
 
 static int64_t getCurNS(void)
@@ -539,13 +538,6 @@ int gyro_driver_add(struct gyro_init_info *obj)
 		err =  -1;
 	}
 
-#ifndef MTK_GYRO_NO_MODULE
-	if (gyro_probe()) {
-		GYRO_ERR("failed to register gyro driver\n");
-		return -ENODEV;
-	}
-#endif
-
 	return err;
 }
 EXPORT_SYMBOL_GPL(gyro_driver_add);
@@ -642,7 +634,6 @@ int gyro_register_data_path(struct gyro_data_path *data)
 	}
 	return 0;
 }
-EXPORT_SYMBOL(gyro_register_data_path);
 
 int gyro_register_control_path(struct gyro_control_path *ctl)
 {
@@ -680,7 +671,6 @@ int gyro_register_control_path(struct gyro_control_path *ctl)
 
 	return 0;
 }
-EXPORT_SYMBOL(gyro_register_control_path);
 
 int x_t = 0;
 int y_t = 0;
@@ -792,12 +782,10 @@ static int __init gyro_init(void)
 {
 	GYRO_LOG("gyro_init\n");
 
-#ifdef MTK_GYRO_NO_MODULE
 	if (gyro_probe()) {
 		GYRO_ERR("failed to register gyro driver\n");
 		return -ENODEV;
 	}
-#endif
 
 	return 0;
 }

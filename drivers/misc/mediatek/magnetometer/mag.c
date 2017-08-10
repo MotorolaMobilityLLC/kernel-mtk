@@ -1,7 +1,6 @@
 #include "mag.h"
 #include "accel.h"
 
-static int mag_probe(void);
 struct mag_context *mag_context_obj = NULL;
 static struct mag_init_info *msensor_init_list[MAX_CHOOSE_G_NUM] = {0};
 
@@ -676,13 +675,6 @@ int mag_driver_add(struct mag_init_info *obj)
 		err =  -1;
 	}
 
-#ifndef MTK_MAG_NO_MODULE
-	if (mag_probe()) {
-		MAG_ERR("failed to register mag driver\n");
-		return -ENODEV;
-	}
-#endif
-
 	return err;
 }
 EXPORT_SYMBOL_GPL(mag_driver_add);
@@ -805,7 +797,6 @@ int mag_register_data_path(struct mag_data_path *data)
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(mag_register_data_path);
 
 int mag_register_control_path(struct mag_control_path *ctl)
 {
@@ -848,7 +839,6 @@ int mag_register_control_path(struct mag_control_path *ctl)
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(mag_register_control_path);
 static int x1, y1, z1;
 static long pc;
 static long count;
@@ -986,12 +976,10 @@ static int __init mag_init(void)
 {
 	MAG_FUN();
 
-#ifdef MTK_MAG_NO_MODULE
 	if (mag_probe()) {
 		MAG_ERR("failed to register mag driver\n");
 		return -ENODEV;
 	}
-#endif
 
 	return 0;
 }

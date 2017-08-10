@@ -4,7 +4,7 @@
 
 struct acc_context *acc_context_obj = NULL;
 
-static int acc_probe(void);
+
 static struct acc_init_info *gsensor_init_list[MAX_CHOOSE_G_NUM] = { 0 };
 
 static int64_t getCurNS(void)
@@ -541,13 +541,6 @@ int acc_driver_add(struct acc_init_info *obj)
 		err = -1;
 	}
 
-#ifndef MTK_ACC_NO_MODULE
-	if (acc_probe()) {
-		ACC_ERR("failed to register acc driver\n");
-		return -ENODEV;
-	}
-#endif
-
 	return err;
 }
 EXPORT_SYMBOL_GPL(acc_driver_add);
@@ -638,7 +631,6 @@ int acc_register_data_path(struct acc_data_path *data)
 	}
 	return 0;
 }
-EXPORT_SYMBOL_GPL(acc_register_data_path);
 
 int acc_register_control_path(struct acc_control_path *ctl)
 {
@@ -673,7 +665,6 @@ int acc_register_control_path(struct acc_control_path *ctl)
 	kobject_uevent(&acc_context_obj->mdev.this_device->kobj, KOBJ_ADD);
 	return 0;
 }
-EXPORT_SYMBOL_GPL(acc_register_control_path);
 
 int acc_data_report(int x, int y, int z, int status, int64_t nt)
 {
@@ -738,6 +729,8 @@ static int acc_probe(void)
 	return err;
 }
 
+
+
 static int acc_remove(void)
 {
 	int err = 0;
@@ -757,12 +750,10 @@ static int __init acc_init(void)
 {
 	ACC_LOG("acc_init\n");
 
-#ifdef MTK_ACC_NO_MODULE
 	if (acc_probe()) {
 		ACC_ERR("failed to register acc driver\n");
 		return -ENODEV;
 	}
-#endif
 
 	return 0;
 }
