@@ -938,10 +938,7 @@ static int FDVT_probe(struct platform_device *dev)
 	}
 
 	nr_fdvt_devs = new_count;
-	if (dev == NULL) {
-		dev_err(&dev->dev, "dev is NULL");
-		return -ENXIO;
-	}
+
 #endif
 
 	ret = alloc_chrdev_region(&FDVT_devno, 0, 1, FDVT_DEVNAME);
