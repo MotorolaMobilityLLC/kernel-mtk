@@ -1439,7 +1439,7 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 				       areq->mrq->data);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		if (host->card->ext_csd.cmdq_mode_en)
+		if (areq->cmdq_en)
 			start_err = __mmc_start_data_req(host, areq->mrq_que);
 		else
 #endif
@@ -1447,7 +1447,14 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 		mt_biolog_mmcqd_req_start(host);
 	}
 
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	/* skip if this request is in cq mode process */
+	if (!(areq && areq->cmdq_en)
+		&& host->areq)
+#else
 	if (host->areq)
+#endif
 		mmc_post_req(host, host->areq->mrq, 0);
 
 	 /* Cancel a prepared request if it was not started. */
@@ -1455,14 +1462,12 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 		mmc_post_req(host, areq->mrq, -EINVAL);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (areq && areq->cmdq_en) {
-		host->areq = NULL;
-	} else {
+	if (!(areq && areq->cmdq_en)) {
 #endif
-	if (err)
-		host->areq = NULL;
-	else
-		host->areq = areq;
+		if (err)
+			host->areq = NULL;
+		else
+			host->areq = areq;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	}
 #endif
@@ -1473,7 +1478,7 @@ struct mmc_async_req *mmc_start_req(struct mmc_host *host,
 EXPORT_SYMBOL(mmc_start_req);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-int mmc_blk_cmdq_switch_tmp(struct mmc_card *card, int enable)
+int mmc_blk_cmdq_switch(struct mmc_card *card, int enable)
 {
 	int ret;
 
@@ -1503,6 +1508,7 @@ int mmc_blk_cmdq_switch_tmp(struct mmc_card *card, int enable)
 
 	return 0;
 }
+EXPORT_SYMBOL(mmc_blk_cmdq_switch);
 #endif
 
 /**

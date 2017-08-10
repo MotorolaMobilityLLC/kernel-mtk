@@ -769,9 +769,6 @@ out:
 	return err;
 }
 #ifdef CONFIG_MMC_FFU
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-static int mmc_blk_cmdq_switch(struct mmc_card *card, int enable);
-#endif
 /* This function is modified by from mmc_blk_ioctl() */
 static int mmc_ffu_ioctl(struct block_device *bdev,
 	struct mmc_ioc_cmd __user *ic_ptr)
@@ -1134,37 +1131,6 @@ static const struct block_device_operations mmc_bdops = {
 #endif
 };
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-static int mmc_blk_cmdq_switch(struct mmc_card *card, int enable)
-{
-	int ret;
-
-	if (!card->ext_csd.cmdq_support)
-		return 0;
-
-	if (!enable)
-		mmc_wait_cmdq_empty(card->host);
-
-	ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
-		EXT_CSD_CMDQ_MODE_EN, enable,
-		card->ext_csd.generic_cmd6_time);
-	if (ret) {
-		pr_err("%s: cmdq %s error %d\n",
-				mmc_hostname(card->host),
-				enable ? "on" : "off",
-				ret);
-		return ret;
-	}
-
-	card->ext_csd.cmdq_mode_en = enable;
-
-	pr_err("%s: set ext_csd.cmdq_mode_en = %d\n",
-		mmc_hostname(card->host),
-		card->ext_csd.cmdq_mode_en);
-
-	return 0;
-}
-#endif
 static inline int mmc_blk_part_switch(struct mmc_card *card,
 				      struct mmc_blk_data *md)
 {
@@ -1186,6 +1152,8 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 		part_config |= md->part_type;
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+		/* enable cmdq at all partition */
+#if 0
 		/* disable command queue if partition is not user */
 		if (card->ext_csd.cmdq_mode_en && md->part_type) {
 			pr_err("[CQ] disable command queue if partition is not user\n");
@@ -1197,6 +1165,7 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 			}
 			mmc_release_host(card->host);
 		}
+#endif
 		mmc_wait_cmdq_empty(card->host);
 		mmc_claim_host(card->host);
 #endif
@@ -1210,9 +1179,12 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 			return ret;
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		/* enable command queue if partition is user */
-		if (!card->ext_csd.cmdq_mode_en && !md->part_type) {
-			pr_err("[CQ] enable command queue if partition is user\n");
+		/* enable cmdq at all partition */
+		if (!card->ext_csd.cmdq_mode_en
+#if 0
+			&& !md->part_type
+#endif
+			) {
 			mmc_claim_host(card->host);
 			mmc_blk_cmdq_switch(card, 1);
 			/* do not return error,
@@ -2873,10 +2845,14 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 	unsigned long flags;
 	unsigned int cmd_flags = req ? req->cmd_flags : 0;
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	int index = 0, cur_cmdq_en;
+	int index = 0, skip = 0, cur_cmdq_en;
 #endif
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	cur_cmdq_en = card->ext_csd.cmdq_mode_en;
+#else
 	if (req && !mq->mqrq_prev->req) {
+#endif
 		/* claim host only for the first request */
 		mmc_get_card(card);
 #ifdef MTK_BKOPS_IDLE_MAYA
@@ -2893,6 +2869,10 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 			blk_end_request_all(req, -EIO);
 		}
 		ret = 0;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+		skip = 1;
+		mmc_release_host(card->host);
+#endif
 		goto out;
 	}
 
@@ -2929,8 +2909,12 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 		else
 			ret = mmc_blk_issue_discard_rq(mq, req);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		if (card->ext_csd.cmdq_mode_en)
+		if (card->ext_csd.cmdq_mode_en) {
+			mq->mqrq_cur->req = NULL;
+			mq->mqrq_prev->req = NULL;
+			skip = 1;
 			mmc_release_host(card->host);
+		}
 #endif
 	} else if (cmd_flags & REQ_FLUSH) {
 		/* complete ongoing async transfer before issuing flush */
@@ -2942,18 +2926,27 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 			mmc_blk_issue_rw_rq(mq, NULL);
 		ret = mmc_blk_issue_flush(mq, req);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		if (card->ext_csd.cmdq_mode_en)
+		if (card->ext_csd.cmdq_mode_en) {
+			mq->mqrq_cur->req = NULL;
+			mq->mqrq_prev->req = NULL;
+			skip = 1;
 			mmc_release_host(card->host);
+		}
 #endif
 	} else {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 		if (card->ext_csd.cmdq_mode_en) {
-			index = mmc_get_cmdq_index(mq);
-			BUG_ON(index >= card->ext_csd.cmdq_depth);
-			mq->mqrq_cur = &mq->mqrq[index];
-			mq->mqrq_cur->req = req;
-			atomic_set(&mq->mqrq_cur->index, index + 1);
-			atomic_inc(&card->host->areq_cnt);
+			if (req) {
+				index = mmc_get_cmdq_index(mq);
+				BUG_ON(index >= card->ext_csd.cmdq_depth);
+				mq->mqrq_cur = &mq->mqrq[index];
+				mq->mqrq_cur->req = req;
+				atomic_set(&mq->mqrq_cur->index, index + 1);
+				atomic_inc(&card->host->areq_cnt);
+			} else {
+				skip = 1;
+				mmc_release_host(card->host);
+			}
 		}
 #endif
 		if (!req && host->areq) {
@@ -2966,7 +2959,7 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 
 out:
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (!card->ext_csd.cmdq_mode_en) {
+	if (!card->ext_csd.cmdq_mode_en && skip == 0) {
 #endif
 		if ((!req && !(mq->flags & MMC_QUEUE_NEW_REQUEST)) ||
 			(cmd_flags & MMC_REQ_SPECIAL_MASK)) {

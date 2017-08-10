@@ -16,6 +16,9 @@
 #include <linux/kthread.h>
 #include <linux/scatterlist.h>
 #include <linux/dma-mapping.h>
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#include <linux/delay.h>
+#endif
 
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
@@ -99,6 +102,7 @@ static int mmc_queue_thread(void *d)
 #endif
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	int rt, issue;
+	int cmdq_full = 0;
 #endif
 	struct sched_param scheduler_params = {0};
 
@@ -134,6 +138,7 @@ static int mmc_queue_thread(void *d)
 		rt = IS_RT_CLASS_REQ(req);
 		if (mmc_is_cmdq_full(mq->card->host, rt)) {
 			req = NULL;
+			cmdq_full = 1;
 			goto fetch_done;
 		}
 #endif
@@ -200,9 +205,20 @@ fetch_done:
 #ifdef MTK_BKOPS_IDLE_MAYA
 			mmc_start_delayed_bkops(card);
 #endif
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+			if (!cmdq_full) {
+				up(&mq->thread_sem);
+				schedule();
+				down(&mq->thread_sem);
+			} else {
+				cmdq_full = 0;
+				msleep(20);
+			}
+#else
 			up(&mq->thread_sem);
 			schedule();
 			down(&mq->thread_sem);
+#endif
 		}
 	} while (1);
 	mt_bio_queue_free(current);
