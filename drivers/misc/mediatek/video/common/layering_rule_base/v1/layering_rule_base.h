@@ -160,5 +160,6 @@ int rollback_all_resize_layer_to_GPU(disp_layer_info *disp_info, int disp_idx);
 bool is_yuv(DISP_FORMAT format);
 bool is_argb_fmt(DISP_FORMAT format);
 bool is_gles_layer(disp_layer_info *disp_info, int disp_idx, int layer_idx);
+bool has_layer_cap(struct layer_config *layer_info, enum LAYERING_CAPS l_caps);
 
 #endif
