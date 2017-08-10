@@ -449,6 +449,10 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&nt35512_wvga_dsi_vdo_boe_drv,
 #endif
 
+#if defined(HX8389C_DSI_VDO)
+	&hx8389c_dsi_vdo_lcm_drv,
+#endif
+
 #if defined(HX8392A_DSI_CMD)
 	&hx8392a_dsi_cmd_lcm_drv,
 #endif

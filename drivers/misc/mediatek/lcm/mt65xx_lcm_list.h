@@ -102,6 +102,7 @@ extern LCM_DRIVER hx8369_rgb_6572_fpga_lcm_drv;
 extern LCM_DRIVER hx8369_mcu_6572_lcm_drv;
 extern LCM_DRIVER hx8369a_wvga_dsi_cmd_drv;
 extern LCM_DRIVER hx8369a_wvga_dsi_vdo_drv;
+extern LCM_DRIVER hx8389c_dsi_vdo_lcm_drv;
 extern LCM_DRIVER hx8392a_dsi_cmd_lcm_drv;
 extern LCM_DRIVER hx8392a_dsi_cmd_3lane_lcm_drv;
 extern LCM_DRIVER hx8392a_dsi_cmd_wvga_lcm_drv;
