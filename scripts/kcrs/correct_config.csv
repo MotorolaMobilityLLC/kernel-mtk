@@ -164,7 +164,7 @@ CONFIG_ENABLE_DEFAULT_TRACERS,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_ETHERNET,COMMON,,,N,N,N,N,N,N,N,N,N,N,N
 CONFIG_EXT4_DEBUG,USER;PROJECT,perry.hsu,nand project,X,X,X,X,,X,X,X,X,X,
 CONFIG_EXT4_FS,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
-CONFIG_EXT4_FS_ENCRYPTION,PROJECT,perry.hsu,disable in 1aadaf04723883ec1a64643c2a0d083e3135aafa,X,X,X,X,X,X,X,X,O,X,X
+CONFIG_EXT4_ENCRYPTION,PROJECT,perry.hsu,disable in 1aadaf04723883ec1a64643c2a0d083e3135aafa,X,X,X,X,X,X,X,X,O,X,X
 CONFIG_EXT4_FS_SECURITY,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_FAULT_INJECTION,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
 CONFIG_FB,COMMON,,,y,y,y,y,y,y,y,y,y,y,y
