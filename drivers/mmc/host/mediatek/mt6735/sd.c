@@ -7332,6 +7332,9 @@ static void msdc_apply_ett_settings(struct msdc_host *host, int mode)
 				, __func__, host->id, ett_item->reg_addr, ett_item->reg_offset,
 				ett_item->value, sdr_read32(base + ett_item->reg_addr));
 	}
+#if defined(CONFIG_ARCH_MT6735M) || defined(CONFIG_ARCH_MT6737M)
+	sdr_set_field(EMMC50_PAD_DS_TUNE, MSDC_EMMC50_PAD_DS_TUNE_DLY1, 7);
+#endif
 	sdr_get_field(MSDC_PATCH_BIT1, MSDC_PB1_CMD_RSP_TA_CNTR,
 		host->saved_para.cmd_resp_ta_cntr);
 	host->saved_para.pad_tune0 = sdr_read32(MSDC_PAD_TUNE0);
