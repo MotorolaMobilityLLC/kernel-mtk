@@ -684,21 +684,25 @@ int mtk_cfg80211_vendor_set_country_code(struct wiphy *wiphy, struct wireless_de
 					 const void *data, int data_len);
 
 int mtk_cfg80211_vendor_get_gscan_capabilities(struct wiphy *wiphy, struct wireless_dev *wdev,
-					 const void *data, int data_len);
+					       const void *data, int data_len);
 
-int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len);
+int mtk_cfg80211_vendor_set_config(struct wiphy *wiphy, struct wireless_dev *wdev,
+				   const void *data, int data_len);
 
-int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len);
+int mtk_cfg80211_vendor_set_scan_config(struct wiphy *wiphy, struct wireless_dev *wdev,
+					const void *data, int data_len);
 
 int mtk_cfg80211_vendor_set_significant_change(struct wiphy *wiphy, struct wireless_dev *wdev,
-					 const void *data, int data_len);
+					       const void *data, int data_len);
 
-int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len);
+int mtk_cfg80211_vendor_set_hotlist(struct wiphy *wiphy, struct wireless_dev *wdev,
+				    const void *data, int data_len);
 
-int mtk_cfg80211_vendor_enable_scan(struct wiphy *wiphy, struct wireless_dev *wdev, const void *data, int data_len);
+int mtk_cfg80211_vendor_enable_scan(struct wiphy *wiphy, struct wireless_dev *wdev,
+				    const void *data, int data_len);
 
 int mtk_cfg80211_vendor_enable_full_scan_results(struct wiphy *wiphy, struct wireless_dev *wdev,
-					 const void *data, int data_len);
+						 const void *data, int data_len);
 
 int mtk_cfg80211_vendor_get_gscan_result(struct wiphy *wiphy, struct wireless_dev *wdev,
 					 const void *data, int data_len);
@@ -707,7 +711,7 @@ int mtk_cfg80211_vendor_gscan_results(struct wiphy *wiphy, struct wireless_dev *
 				      const void *data, int data_len, BOOLEAN complete, BOOLEAN compValue);
 
 int mtk_cfg80211_vendor_get_rtt_capabilities(struct wiphy *wiphy, struct wireless_dev *wdev,
-					 const void *data, int data_len);
+					     const void *data, int data_len);
 
 int mtk_cfg80211_vendor_llstats_get_info(struct wiphy *wiphy, struct wireless_dev *wdev,
 					 const void *data, int data_len);
@@ -721,21 +725,22 @@ int mtk_cfg80211_vendor_packet_keep_alive_start(struct wiphy *wiphy, struct wire
 int mtk_cfg80211_vendor_packet_keep_alive_stop(struct wiphy *wiphy, struct wireless_dev *wdev,
 					       const void *data, int data_len);
 
-int mtk_cfg80211_vendor_event_complete_scan(struct wiphy *wiphy, struct wireless_dev *wdev, WIFI_SCAN_EVENT complete);
+int mtk_cfg80211_vendor_event_complete_scan(struct wiphy *wiphy, struct wireless_dev *wdev,
+					    WIFI_SCAN_EVENT complete);
 
 int mtk_cfg80211_vendor_event_scan_results_available(struct wiphy *wiphy, struct wireless_dev *wdev, UINT_32 num);
 
 int mtk_cfg80211_vendor_event_full_scan_results(struct wiphy *wiphy, struct wireless_dev *wdev,
-					 P_PARAM_WIFI_GSCAN_FULL_RESULT pdata, UINT_32 data_len);
+						P_PARAM_WIFI_GSCAN_FULL_RESULT pdata, UINT_32 data_len);
 
 int mtk_cfg80211_vendor_event_significant_change_results(struct wiphy *wiphy, struct wireless_dev *wdev,
-					 P_PARAM_WIFI_CHANGE_RESULT pdata, UINT_32 data_len);
+							 P_PARAM_WIFI_CHANGE_RESULT pdata, UINT_32 data_len);
 
 int mtk_cfg80211_vendor_event_hotlist_ap_found(struct wiphy *wiphy, struct wireless_dev *wdev,
-					 P_PARAM_WIFI_GSCAN_RESULT pdata, UINT_32 data_len);
+					       P_PARAM_WIFI_GSCAN_RESULT pdata, UINT_32 data_len);
 
 int mtk_cfg80211_vendor_event_hotlist_ap_lost(struct wiphy *wiphy, struct wireless_dev *wdev,
-					 P_PARAM_WIFI_GSCAN_RESULT pdata, UINT_32 data_len);
+					      P_PARAM_WIFI_GSCAN_RESULT pdata, UINT_32 data_len);
 
 int mtk_cfg80211_vendor_event_rssi_beyond_range(struct wiphy *wiphy, struct wireless_dev *wdev, INT_32 rssi);
 

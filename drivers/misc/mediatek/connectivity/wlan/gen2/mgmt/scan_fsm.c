@@ -1119,7 +1119,7 @@ scnFsmSchedScanRequest(IN P_ADAPTER_T prAdapter,
 	kalMemZero(prCmdNloReq, sizeof(CMD_NLO_REQ));
 
 	prCmdNloReq->ucSeqNum = prScanParam->ucSeqNum;
-	/* prCmdNloReq->ucBssIndex             = prScanParam->ucBssIndex; */
+	/* prCmdNloReq->ucBssIndex = prScanParam->ucBssIndex; */
 
 	prCmdNloReq->ucNetworkType = prScanParam->eNetTypeIndex;
 	/* prCmdNloReq->ucScanType = (UINT_8) prScanParam->eScanType; */ /* sync to firmware */
@@ -1318,7 +1318,7 @@ BOOLEAN scnFsmPSCNSetHotlist(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_ADD_HO
 				    FALSE,
 				    NULL,
 				    nicOidCmdTimeoutCommon,
-				    sizeof(CMD_SET_PSCAN_ADD_HOTLIST_BSSID), (PUINT_8) &rCmdPscnAddHotlist, NULL, 0);
+				    sizeof(CMD_SET_PSCAN_ADD_HOTLIST_BSSID), (PUINT_8)&rCmdPscnAddHotlist, NULL, 0);
 		return TRUE;
 	}
 	/* debug msg, No PSCN, Sched SCAN no need to add the hotlist ??? */
@@ -1357,7 +1357,7 @@ BOOLEAN scnFsmPSCNAddSWCBssId(IN P_ADAPTER_T prAdapter, IN P_CMD_SET_PSCAN_ADD_S
 				    FALSE,
 				    NULL,
 				    nicOidCmdTimeoutCommon,
-				    sizeof(CMD_SET_PSCAN_ADD_SWC_BSSID), (PUINT_8) &rCmdPscnAddSWCBssId, NULL, 0);
+				    sizeof(CMD_SET_PSCAN_ADD_SWC_BSSID), (PUINT_8)&rCmdPscnAddSWCBssId, NULL, 0);
 		return TRUE;
 	}
 	/* debug msg, No PSCN, Sched SCAN no need to add the hotlist ??? */
@@ -1746,7 +1746,7 @@ BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter, IN P_CMD_GET_GSCAN_RESULT_
 		rGetGscnResultCmd.u4Num =
 			(rGetGscnResultCmd.u4Num <= remainAp) ? rGetGscnResultCmd.u4Num : remainAp;
 
-		DBGLOG(SCN, INFO, "u4Num=%d, numAp=%d\n", rGetGscnResultCmd.u4Num, numAp);
+		DBGLOG(SCN, TRACE, "u4Num=%d, numAp=%d\n", rGetGscnResultCmd.u4Num, numAp);
 
 		for (i = 0; i < rGetGscnResultCmd.u4Num; i++) {
 			prScanResults = &(prAdapter->rWlanInfo.arScanResult[numAp]);
@@ -1779,7 +1779,7 @@ BOOLEAN scnFsmGetGSCNResult(IN P_ADAPTER_T prAdapter, IN P_CMD_GET_GSCAN_RESULT_
 
 	prGscnResult->u4NumOfResults = rGetGscnResultCmd.u4Num;
 	u4SizeofGScanResults += sizeof(struct nlattr) * 2;
-	DBGLOG(SCN, INFO, "scan_id=%d, scan_flag =%d, %d, num=%d %d %d, u4SizeofGScanResults=%d\r\n",
+	DBGLOG(SCN, INFO, "scan_id=%d, scan_flag=0x%x, 0x%x, num=%d %d %d, u4SizeofGScanResults=%d\r\n",
 		prGscnResult->u4ScanId,
 		prGscnResult->ucScanFlag,
 		prGscnResult->u4BucketMask, numAp,
@@ -1825,7 +1825,7 @@ BOOLEAN scnFsmGSCNResults(IN P_ADAPTER_T prAdapter, IN P_EVENT_GSCAN_RESULT_T pr
 
 	u4SizeofGScanResults = sizeof(PARAM_WIFI_GSCAN_RESULT_REPORT) + sizeof(struct nlattr) * 2
 		+ sizeof(PARAM_WIFI_GSCAN_RESULT) * (prGscnResult->u4NumOfResults - 1);
-	DBGLOG(SCN, INFO, "scan_id=%d, scan_flag=%d, %d, num=%d, u4SizeofGScanResults=%d\r\n",
+	DBGLOG(SCN, INFO, "scan_id=%d, scan_flag=0x%x, 0x%x, num=%d, u4SizeofGScanResults=%d\r\n",
 		prGscnResult->u4ScanId,
 		(UINT_32)prGscnResult->ucScanFlag,
 		prGscnResult->u4BucketMask,
@@ -1833,7 +1833,6 @@ BOOLEAN scnFsmGSCNResults(IN P_ADAPTER_T prAdapter, IN P_EVENT_GSCAN_RESULT_T pr
 		u4SizeofGScanResults);
 
 	wiphy = priv_to_wiphy(prAdapter->prGlueInfo);
-	DBGLOG(SCN, INFO, "wiphy=0x%p, prAdapter=0x%p\n", wiphy, prAdapter);
 	mtk_cfg80211_vendor_gscan_results(wiphy, prAdapter->prGlueInfo->prDevHandler->ieee80211_ptr,
 		prGscnResult, u4SizeofGScanResults, FALSE, FALSE);
 
@@ -1864,6 +1863,7 @@ VOID scnPSCNFsm(IN P_ADAPTER_T prAdapter, IN ENUM_PSCAN_STATE_T eNextPSCNState)
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);
 			eNextPSCNState = PSCN_IDLE;
 			break;
+
 		case PSCN_RESET:
 			DBGLOG(SCN, TRACE, "PSCN_RESET.... PSCAN_ACT_DISABLE\n");
 			scnFsmPSCNAction(prAdapter, PSCAN_ACT_DISABLE);

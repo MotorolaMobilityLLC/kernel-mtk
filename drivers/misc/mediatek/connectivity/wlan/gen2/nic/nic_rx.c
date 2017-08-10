@@ -773,12 +773,12 @@ UINT_8 nicRxProcessGSCNEvent(IN P_ADAPTER_T prAdapter, IN OUT P_SW_RFB_T prSwRfb
 			P_EVENT_GSCAN_FULL_RESULT_T prEventGscnFullResult;
 			P_PARAM_WIFI_GSCAN_FULL_RESULT prParamGscnFullResult;
 
-			DBGLOG(SCN, INFO, "EVENT_ID_GSCAN_FULL_RESULT\n");
+			DBGLOG(SCN, TRACE, "EVENT_ID_GSCAN_FULL_RESULT\n");
 
 			prEventGscnFullResult = (P_EVENT_GSCAN_FULL_RESULT_T)(prEvent->aucBuffer);
 			ie_len = min(prEventGscnFullResult->u4IeLength, (UINT_32)CFG_IE_BUFFER_SIZE);
 
-			DBGLOG(SCN, INFO, "arSsid=%s, bssid="MACSTR", u4Channel=%d u4IeLength=%d\n",
+			DBGLOG(SCN, LOUD, "arSsid=%s, bssid="MACSTR", u4Channel=%d u4IeLength=%d\n",
 				prEventGscnFullResult->rResult.arSsid,
 				MAC2STR(prEventGscnFullResult->rResult.arMacAddr),
 				prEventGscnFullResult->rResult.u4Channel, prEventGscnFullResult->u4IeLength);

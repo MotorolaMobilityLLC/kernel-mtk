@@ -10184,7 +10184,6 @@ wlanoidPacketKeepAlive(IN P_ADAPTER_T prAdapter,
 	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
 	P_PARAM_PACKET_KEEPALIVE_T prPacket;
 
-	DEBUGFUNC("wlanoidRssiMonitor");
 	ASSERT(prAdapter);
 	ASSERT(pu4SetInfoLen);
 	if (u4SetBufferLen)
