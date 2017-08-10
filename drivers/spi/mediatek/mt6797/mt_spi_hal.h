@@ -5,7 +5,7 @@
 #include <linux/clk.h>
 #endif				/* !defined(CONFIG_MTK_CLKMGR) */
 #include <linux/wakelock.h>
-#include <mt_spi.h>
+#include "mt_spi.h"
 /*******************************************************************************
 * define macro for spi register
 ********************************************************************************/

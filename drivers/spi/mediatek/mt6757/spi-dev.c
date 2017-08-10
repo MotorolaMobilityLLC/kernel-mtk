@@ -4,7 +4,7 @@
 #include <linux/types.h>
 #include <linux/device.h>
 #include <linux/delay.h>
-#include <mt_spi.h>
+#include "mt_spi.h"
 
 #include <linux/dma-mapping.h>
 #include <linux/sched.h>

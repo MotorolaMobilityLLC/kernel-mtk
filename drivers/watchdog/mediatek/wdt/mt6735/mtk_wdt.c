@@ -12,7 +12,7 @@
 
 #include <asm/uaccess.h>
 #include <linux/types.h>
-#include <mt_wdt.h>
+#include "mt_wdt.h"
 #include <linux/delay.h>
 
 #include <linux/device.h>

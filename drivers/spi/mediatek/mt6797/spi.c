@@ -27,7 +27,7 @@
 #include <linux/of_address.h>
 #endif
 /*#include <mach/irqs.h>*/
-#include <mt_spi.h>
+#include "mt_spi.h"
 #include "mt_spi_hal.h"
 /*#include <mach/mt_gpio.h>*/
 #include <mt-plat/mt_lpae.h>/* DMA */

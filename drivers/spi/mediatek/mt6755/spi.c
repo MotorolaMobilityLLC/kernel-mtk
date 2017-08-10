@@ -25,7 +25,7 @@
 #include <linux/of_address.h>
 #endif
 /*#include <mach/irqs.h>*/
-#include <mt_spi.h>
+#include "mt_spi.h"
 #include "mt_spi_hal.h"
 /*#include "mach/memory.h"*/
 #if defined(CONFIG_MTK_LEGACY)

@@ -21,7 +21,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/sched.h>
 #include "mt_spi_hal.h"
-#include <mt_spi.h>
+#include "mt_spi.h"
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 #define SPI_TRUSTONIC_TEE_SUPPORT
 #endif

@@ -19,7 +19,7 @@
 #include <linux/list.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
-#include <xhci-mtk.h>
+#include "xhci-mtk.h"
 
 static struct sch_ep **ss_out_eps[MAX_EP_NUM];
 static struct sch_ep **ss_in_eps[MAX_EP_NUM];

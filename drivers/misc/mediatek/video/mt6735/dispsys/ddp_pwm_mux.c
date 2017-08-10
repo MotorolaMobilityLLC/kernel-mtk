@@ -1,6 +1,6 @@
 #include <linux/kernel.h>
 #include <linux/clk.h>
-#include <ddp_drv.h>
+#include "ddp_drv.h"
 #include <ddp_pwm_mux.h>
 #include <linux/of.h>
 #include <linux/of_address.h>

@@ -22,7 +22,7 @@
 #include "xhci.h"
 
 #ifdef CONFIG_USB_XHCI_MTK
-#include <xhci-mtk.h>
+#include "xhci-mtk.h"
 #endif
 
 #include "xhci-mvebu.h"
