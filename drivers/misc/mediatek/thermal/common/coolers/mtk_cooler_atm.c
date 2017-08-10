@@ -1769,7 +1769,7 @@ static void phpb_init(struct proc_dir_entry *mtktscpu_dir)
 
 	phpb_params_init();
 
-	entry = proc_create("clphpb", S_IRUGO | S_IWUSR, mtktscpu_dir, &mtktscpu_phpb_fops);
+	entry = proc_create("clphpb", S_IRUGO | S_IWUSR | S_IWGRP, mtktscpu_dir, &mtktscpu_phpb_fops);
 	if (entry)
 		proc_set_user(entry, uid, gid);
 }
