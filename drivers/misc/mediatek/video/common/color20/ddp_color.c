@@ -1763,9 +1763,15 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 {
 	unsigned int i = 0;
 
+	if ((addr & 0x3) != 0) {
+		COLOR_ERR("color_is_reg_addr_valid, addr is not 4-byte aligned!\n");
+		return 0;
+	}
+
 	for (i = 0; i < DISP_REG_NUM; i++) {
-		if ((addr >= dispsys_reg[i]) && (addr < (dispsys_reg[i] + 0x1000)))
+		if ((addr >= dispsys_reg[i]) && (addr < (dispsys_reg[i] + 0x1000)) && (dispsys_reg[i] != 0)) {
 			break;
+		}
 	}
 
 	if (i < DISP_REG_NUM) {
