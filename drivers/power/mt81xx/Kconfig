@@ -85,6 +85,15 @@ config MTK_BQ24261_SUPPORT
           Set to Yes if BQ24261 is used.
         default n
 
+config MTK_RT9466_SUPPORT
+	bool "MediaTek charger driver for Richtek RT9466"
+	depends on MTK_SMART_BATTERY && MTK_SWCHR_SUPPORT
+	help
+	  This is to enable MediaTek supports to RT9466.
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT
+	  Set to Yes if RT9466 is used.
+
 config CHARGER_SMB1351
         tristate "Summit Microelectronics SMB1351 Battery Charger"
         depends on I2C

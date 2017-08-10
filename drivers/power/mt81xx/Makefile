@@ -43,6 +43,10 @@ ifeq ($(CONFIG_MTK_BQ25896_SUPPORT),y)
     obj-$(CONFIG_MTK_SMART_BATTERY) += bq25890.o
 endif
 
+ifeq ($(CONFIG_MTK_RT9466_SUPPORT),y)
+    obj-$(CONFIG_MTK_SMART_BATTERY) += rt9466.o mtk_charger_intf.o
+endif
+
 obj-$(CONFIG_MTK_PMIC) += mt6397_fgadc.o
 
 ifeq ($(CONFIG_CHARGER_SMB1351), y)
