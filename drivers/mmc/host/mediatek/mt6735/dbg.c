@@ -2362,7 +2362,9 @@ static ssize_t msdc_debug_proc_write(struct file *file, const char *buf, size_t 
 			pr_err("[****SD_Debug****]msdc host_id error when modify msdc host mode\n");
 		else {
 			if (p1 == 0) {
+#if 0
 				if (p3 <= UHS_DDR50 && p3 >= SDHC_HIGHSPEED)
+#endif
 					spd_mode = p3;
 				if (p4 <= DRIVER_TYPE_D && p4 >= DRIVER_TYPE_A)
 					drv_type = p4;
