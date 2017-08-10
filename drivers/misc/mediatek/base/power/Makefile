@@ -54,7 +54,6 @@ obj-$(CONFIG_ARCH_MT6757) += spm_v2/
 obj-$(CONFIG_ARCH_MT6797) += spm_v2/
 #obj-$(CONFIG_ARCH_ELBRUS) += spm_v3/
 obj-$(CONFIG_ARCH_ELBRUS) += clkbuf_v1/
-
 obj-$(CONFIG_ARCH_MT6755) += pbm_v1/
 obj-$(CONFIG_ARCH_MT6797) += pbm_v1/
 obj-$(CONFIG_ARCH_MT6757) += pbm_v1/
