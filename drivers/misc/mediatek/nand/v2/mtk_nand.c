@@ -5511,7 +5511,7 @@ int mtk_nand_block_markbad_hw(struct mtd_info *mtd, loff_t offset)
 	return ret;
 }
 
-static int mtk_nand_block_markbad(struct mtd_info *mtd, loff_t offset)
+int mtk_nand_block_markbad(struct mtd_info *mtd, loff_t offset)
 {
 	struct nand_chip *chip = mtd->priv;
 	u32 block = (u32) (offset >> chip->phys_erase_shift);
