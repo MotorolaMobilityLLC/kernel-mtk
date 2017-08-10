@@ -3557,7 +3557,7 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParamPtr)
 
 	switch (prAisFsmInfo->eCurrentState) {
 	case AIS_STATE_JOIN:
-		DBGLOG(AIS, LOUD, "EVENT- JOIN TIMEOUT\n");
+		DBGLOG(AIS, WARN, "EVENT- JOIN TIMEOUT\n");
 
 		/* 1. Do abort JOIN */
 		aisFsmStateAbort_JOIN(prAdapter);
