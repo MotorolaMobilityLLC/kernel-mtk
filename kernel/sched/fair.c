@@ -6907,7 +6907,6 @@ static int tgs_detach_tasks(struct lb_env *env)
 #endif
 
 	while (!list_empty(tasks)) {
-		struct thread_group_info_t *src_tginfo, *dst_tginfo;
 
 		p = list_first_entry(tasks, struct task_struct, se.group_node);
 
@@ -6929,9 +6928,8 @@ static int tgs_detach_tasks(struct lb_env *env)
 			break;
 		}
 #endif
-		BUG_ON(p == NULL || p->group_leader == NULL);
-		src_tginfo = &p->group_leader->thread_group_info[src_clid];
-		dst_tginfo = &p->group_leader->thread_group_info[dst_clid];
+		BUG_ON(p == NULL);
+
 
 		/* rule0 */
 		if (!can_migrate_task(p, env)) {
@@ -7007,20 +7005,27 @@ static int tgs_detach_tasks(struct lb_env *env)
 			}
 
 			/* rule2 */
-			mt_sched_printf(sched_cmp_info, "check rule2: pid=%d p->comm=%s %ld, %ld, %ld, %ld, %ld",
+			if (!group_leader_is_empty(p)) {
+				struct thread_group_info_t *src_tginfo, *dst_tginfo;
+
+				src_tginfo = &p->group_leader->thread_group_info[src_clid];
+				dst_tginfo = &p->group_leader->thread_group_info[dst_clid];
+
+				mt_sched_printf(sched_cmp_info, "check rule2:pid=%d p->comm=%s %ld, %ld, %ld, %ld, %ld",
 							p->pid, p->comm, src_tginfo->nr_running,
 							src_tginfo->cfs_nr_running, dst_tginfo->nr_running,
 							p->se.avg.loadwop_avg_contrib,
 							src_tginfo->loadwop_avg_contrib);
-			if ((src_tginfo->nr_running < dst_tginfo->nr_running) &&
-			   ((p->se.avg.loadwop_avg_contrib * src_tginfo->cfs_nr_running) <=
-				src_tginfo->loadwop_avg_contrib)) {
-				list_move_tail(&p->se.group_node, &tg_tasks);
-				tg_load_move -= load;
-				other_load_move -= load;
-				mt_sched_printf(sched_cmp, "hit rule2: pid=%d p->comm=%s load=%lu tg_imbalance=%ld",
+				if ((src_tginfo->nr_running < dst_tginfo->nr_running) &&
+				   ((p->se.avg.loadwop_avg_contrib * src_tginfo->cfs_nr_running) <=
+					src_tginfo->loadwop_avg_contrib)) {
+					list_move_tail(&p->se.group_node, &tg_tasks);
+					tg_load_move -= load;
+					other_load_move -= load;
+					mt_sched_printf(sched_cmp, "hit rule2:pid=%d p->comm=%s load=%lu imbalance=%ld",
 						p->pid, p->comm, load, tg_load_move);
-				continue;
+					continue;
+				}
 			}
 
 			if (over_imbalance(load, other_load_move))
