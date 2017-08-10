@@ -3243,7 +3243,8 @@ struct wake_lock pmicThread_lock;
 void wake_up_pmic(void)
 {
 	PMICLOG("[wake_up_pmic]\r\n");
-	wake_up_process(pmic_thread_handle);
+	if (pmic_thread_handle != NULL)
+		wake_up_process(pmic_thread_handle);
 
 #if !defined CONFIG_HAS_WAKELOCKS
 	__pm_stay_awake(&pmicThread_lock);
@@ -4824,6 +4825,9 @@ static int pmic_mt_probe(struct platform_device *dev)
 	PMICLOG("[PMIC_EINT_SETTING] disable when CONFIG_MTK_FPGA\n");
 #else
 	/*PMIC Interrupt Service */
+	PMIC_EINT_SETTING();
+	PMICLOG("[PMIC_EINT_SETTING] Done\n");
+
 	pmic_thread_handle = kthread_create(pmic_thread_kthread, (void *)NULL, "pmic_thread");
 	if (IS_ERR(pmic_thread_handle)) {
 		pmic_thread_handle = NULL;
@@ -4832,9 +4836,6 @@ static int pmic_mt_probe(struct platform_device *dev)
 		wake_up_process(pmic_thread_handle);
 		PMICLOG("[pmic_thread_kthread_mt6325] kthread_create Done\n");
 	}
-
-	PMIC_EINT_SETTING();
-	PMICLOG("[PMIC_EINT_SETTING] Done\n");
 #endif
 
 
