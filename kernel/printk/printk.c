@@ -1658,7 +1658,7 @@ static void call_console_drivers(int level, const char *text, size_t len)
 	char cur_time[32];
 	int idx = 0;
 
-	int uart_timeout_cnt = -1;
+	char dump_uart[64];
 #endif
 
 	trace_console(text, len);
@@ -1704,7 +1704,9 @@ static void call_console_drivers(int level, const char *text, size_t len)
 	/* console duration over 15 seconds, Calc console write rate recently */
 	if ((local_clock() - con_dura_time) > 15000000000) {
 #ifdef CONFIG_MTK_SERIAL
-		uart_timeout_cnt = mtk_uart_dump_timeout_cnt();
+		/* dump uart regs */
+		memset(dump_uart, 0x00, sizeof(dump_uart));
+		mtk_uart_dump_reg(dump_uart);
 #endif
 		/* stat console list */
 		memset(con_name, 0x00, sizeof(con_name));
@@ -1732,8 +1734,8 @@ static void call_console_drivers(int level, const char *text, size_t len)
 		scnprintf(cur_time, sizeof(cur_time), "[%llu.%06lu]", tmp2, rem_nsec/1000);
 
 		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT | DB_OPT_FTRACE,
-			"Console Lock dur over 15 seconds", "%s uart->timeout_count: %d, %s, cpu: %d, ConList(%d): %s",
-			cur_time, uart_timeout_cnt, aee_str, smp_processor_id(), cnt, con_name);
+			"Console Lock dur over 15 seconds", "%s %s%s, cpu: %d, ConList(%d): %s\n",
+			cur_time, dump_uart, aee_str, smp_processor_id(), cnt, con_name);
 
 		con_dura_time = local_clock();
 	}
