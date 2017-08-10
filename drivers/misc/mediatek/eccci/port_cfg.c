@@ -81,7 +81,7 @@ static struct ccci_port md1_ccci_ports[] = {
 	{CCCI_STATUS_TX, CCCI_STATUS_RX, 0, 0, 0, 0, 0, &poller_port_ops, 0xFF, "ccci_poll",},
 /* smem port */
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 0, "ccci_raw_dbm",},
-	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 1, "ccci_ccb_dhl",},
+	/*{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 1, "ccci_ccb_dhl",},*/
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 2, "ccci_raw_dhl",},
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 3, "ccci_raw_netd",},
 	{CCCI_SMEM_CH, CCCI_SMEM_CH, 0xFF, 0xFF, 0xFF, 0xFF, 0, &char_port_ops, 4, "ccci_raw_usb",},
