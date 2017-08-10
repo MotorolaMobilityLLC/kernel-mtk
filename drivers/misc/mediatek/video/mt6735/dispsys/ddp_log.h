@@ -204,9 +204,10 @@ extern unsigned int gEnableUartLog;
 do {												\
 	char str[200];										\
 	snprintf(str, 199, "DDP:"string, ##args);						\
-	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER,	\
+	aee_kernel_warning_api(__FILE__, __LINE__,						\
+		DB_OPT_DUMP_DISPLAY | DB_OPT_DEFAULT | DB_OPT_MMPROFILE_BUFFER,			\
 			       str, string, ##args);						\
-	pr_err("[DDP Error]"string, ##args);							\
+	pr_err("[DDP Error] with AEE"string, ##args);						\
 } while (0)
 #else
 #define DDPAEE(string, args...)	pr_err("[DDP Error]"string, ##args)

@@ -18,6 +18,21 @@
 #include "mmprofile.h"
 #include "disp_event.h"
 #include "ddp_info.h"
+
+#define LOGGER_BUFFER_SIZE (16 * 1024)
+#define ERROR_BUFFER_COUNT 2
+#define FENCE_BUFFER_COUNT 22
+#define DEBUG_BUFFER_COUNT 8
+#define DUMP_BUFFER_COUNT 4
+#define STATUS_BUFFER_COUNT 1
+#if defined(CONFIG_MT_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
+#define DEBUG_BUFFER_SIZE (4096 + \
+	(ERROR_BUFFER_COUNT + FENCE_BUFFER_COUNT + DEBUG_BUFFER_COUNT + DUMP_BUFFER_COUNT + STATUS_BUFFER_COUNT) * \
+	LOGGER_BUFFER_SIZE)
+#else
+#define DEBUG_BUFFER_SIZE 10240
+#endif
+
 typedef enum {
 	DPREC_EVENT_CMDQ_SET_DIRTY = 0xff00,
 	DPREC_EVENT_CMDQ_WAIT_STREAM_EOF,
@@ -135,6 +150,7 @@ typedef enum {
 	DPREC_LOGGER_FENCE,
 	DPREC_LOGGER_DEBUG,
 	DPREC_LOGGER_DUMP,
+	DPREC_LOGGER_STATUS,
 	DPREC_LOGGER_PR_NUM
 } DPREC_LOGGER_PR_TYPE;
 
@@ -186,5 +202,5 @@ extern unsigned int gCapturePriLayerDownY;
 extern unsigned int gCapturePriLayerNum;
 int dprec_mmp_dump_ovl_layer(OVL_CONFIG_STRUCT *ovl_layer, unsigned int l, unsigned int session);
 
-
+void init_log_buffer(void);
 #endif
