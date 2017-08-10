@@ -4340,6 +4340,7 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 	unsigned long flags;
 	unsigned int cpu = (unsigned long)hcpu;
 	unsigned int online_cpus = num_online_cpus();
+	unsigned int swReq;
 	struct device *dev;
 	struct eem_det *det;
 	enum mt_eem_cpu_id cluster_id;
@@ -4473,12 +4474,16 @@ static int __cpuinit _mt_eem_cpu_CB(struct notifier_block *nfb,
 				mb(); /* SRAM writing */
 				mt_ptp_unlock(&flags);
 
+				swReq = 0;
 				while ((mt_secure_call(0x8200035F, 0x10222498, 0, 0) >> 1) >
 					(*(recordTbl + (48 * 8) + 5) & 0x3FFFF)) {
 					udelay(120);
 					if (eem_log_en)
 						eem_error("SWREQ = %x",
 							mt_secure_call(0x8200035F, 0x10222498, 0, 0) >> 1);
+					if (swReq >= 100)
+						BUG_ON(swReq);
+					swReq++;
 				}
 				udelay(120);
 
