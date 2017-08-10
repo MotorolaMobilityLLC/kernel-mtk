@@ -959,6 +959,7 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx, MD_STATE state, in
 		napi_gro_flush(ccmni->napi, false);
 		preempt_enable();
 		spin_unlock(&ccmni->spinlock);
+		break;
 #endif
 
 	case TX_IRQ:
