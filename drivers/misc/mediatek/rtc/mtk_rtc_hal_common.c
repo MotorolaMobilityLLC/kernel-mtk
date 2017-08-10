@@ -34,6 +34,7 @@
 #include <mach/mtk_rtc_hal.h>
 #include <mtk_rtc_hal_common.h>
 #include <mt_pmic_wrap.h>
+#include <mt-plat/aee.h>
 
 #define hal_rtc_xinfo(fmt, args...)		\
 		pr_notice(fmt, ##args)
@@ -283,6 +284,25 @@ void hal_rtc_read_rg(void)
 }
 
 #ifndef USER_BUILD_KERNEL
+static void rtc_lpd_reset(void)
+{
+	u16 con;
+
+	con = rtc_read(RTC_CON) | RTC_CON_LPEN;
+	con &= ~RTC_CON_LPRST;
+	rtc_write(RTC_CON, con);
+	rtc_write_trigger();
+
+	con |= RTC_CON_LPRST;
+	rtc_write(RTC_CON, con);
+	rtc_write_trigger();
+
+	con &= ~RTC_CON_LPRST;
+	rtc_write(RTC_CON, con);
+	rtc_write_trigger();
+
+}
+
 void rtc_lp_exception(void)
 {
 	u16 bbpu, irqsta, irqen, osc32;
@@ -297,9 +317,9 @@ void rtc_lp_exception(void)
 	prot = rtc_read(RTC_PROT);
 	con = rtc_read(RTC_CON);
 	sec1 = rtc_read(RTC_TC_SEC);
-	mdelay(2000);
+	/*mdelay(2000);*/
 	sec2 = rtc_read(RTC_TC_SEC);
-
+	rtc_lpd_reset();
 	hal_rtc_xfatal("!!! 32K WAS STOPPED !!!\n"
 		       "RTC_BBPU      = 0x%x\n"
 		       "RTC_IRQ_STA   = 0x%x\n"
@@ -312,6 +332,8 @@ void rtc_lp_exception(void)
 		       "RTC_TC_SEC    = %02d\n"
 		       "RTC_TC_SEC    = %02d\n",
 		       bbpu, irqsta, irqen, osc32, pwrkey1, pwrkey2, prot, con, sec1, sec2);
+	aee_kernel_warning("mtk_rtc_hal", "Need to check 32k @%s():%d\n", __func__, __LINE__);
+
 }
 #endif
 
