@@ -74,7 +74,7 @@ static int lock_pages(struct task_struct *task, void *virt_start_page_addr,
 
 	/* lock user pages, must hold the mmap_sem to do this. */
 	down_read(&(task->mm->mmap_sem));
-	locked_pages = get_user_pages(
+	locked_pages = get_user_pages_durable(
 				task,
 				task->mm,
 				(unsigned long)virt_start_page_addr,
@@ -87,7 +87,7 @@ static int lock_pages(struct task_struct *task, void *virt_start_page_addr,
 
 	/* check if we could lock all pages. */
 	if (locked_pages != pages_no) {
-		MCDRV_DBG_ERROR(mcd, "get_user_pages() failed, locked_pages=%d",
+		MCDRV_DBG_ERROR(mcd, "get_user_pages_durable() failed, locked_pages=%d",
 				locked_pages);
 		if (locked_pages > 0) {
 			/* release all locked pages. */
