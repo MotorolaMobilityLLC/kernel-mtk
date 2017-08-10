@@ -3741,6 +3741,11 @@ kalRemainOnChannelExpired(IN P_GLUE_INFO_T prGlueInfo,
 						  ieee80211_channel_to_frequency(ucChannelNum, IEEE80211_BAND_5GHZ));
 		}
 
+		if (prChannel == NULL) {
+			DBGLOG(AIS, WARN, "prChannel == NULL\n");
+			return;
+		}
+
 		switch (eSco) {
 		case CHNL_EXT_SCN:
 			rChannelType = NL80211_CHAN_NO_HT;
