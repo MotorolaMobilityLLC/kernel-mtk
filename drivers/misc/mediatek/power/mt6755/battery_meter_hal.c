@@ -25,6 +25,7 @@
 
 
 
+
 /*============================================================ //
 //define
 //============================================================ //*/
@@ -205,7 +206,7 @@ int get_hw_ocv(void)
 #if defined(SWCHR_POWER_PATH)
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 		adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_WAKEUP_SWCHR);
-		reg_sel = pmic_get_register_value(PMIC_STRUP_AUXADC_START_SEL);
+		reg_sel = pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL);
 	#else
 		adc_result_reg = pmic_get_register_value(MT6351_PMIC_AUXADC_ADC_OUT_WAKEUP_SWCHR);
 		reg_sel = pmic_get_register_value(MT6351_PMIC_STRUP_AUXADC_START_SEL);
@@ -217,7 +218,7 @@ int get_hw_ocv(void)
 #else
 	#if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
 		adc_result_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_WAKEUP_PCHR);
-		reg_sel = pmic_get_register_value(PMIC_STRUP_AUXADC_START_SEL);
+		reg_sel = pmic_get_register_value(PMIC_RG_STRUP_AUXADC_START_SEL);
 	#else
 		adc_result_reg = pmic_get_register_value(MT6351_PMIC_AUXADC_ADC_OUT_WAKEUP_PCHR);
 		reg_sel = pmic_get_register_value(MT6351_PMIC_STRUP_AUXADC_START_SEL);
