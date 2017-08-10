@@ -3519,8 +3519,6 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
             set_dummy();
             break;
         case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-            if(framerate == 0)
-                return ERROR_NONE;
             frameHeight = imgsensor_info.normal_video.pclk / framerate * 10 / imgsensor_info.normal_video.linelength;
             spin_lock(&imgsensor_drv_lock);
             imgsensor.dummy_line = frameHeight - imgsensor_info.normal_video.framelength;
