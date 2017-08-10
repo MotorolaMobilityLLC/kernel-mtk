@@ -88,6 +88,7 @@
 #define L_PTE_RDONLY		(_AT(pteval_t, 1) << 58)	/* READ ONLY */
 
 #define L_PMD_SECT_VALID	(_AT(pmdval_t, 1) << 0)
+#define L_PMD_SECT_AP2		(_AT(pmdval_t, 1) << 7)		/* AP[2] */
 #define L_PMD_SECT_DIRTY	(_AT(pmdval_t, 1) << 55)
 #define L_PMD_SECT_SPLITTING	(_AT(pmdval_t, 1) << 56)
 #define L_PMD_SECT_NONE		(_AT(pmdval_t, 1) << 57)
@@ -222,7 +223,7 @@ static inline pte_t pte_mkspecial(pte_t pte)
 #define	__HAVE_ARCH_PTE_SPECIAL
 
 #define __HAVE_ARCH_PMD_WRITE
-#define pmd_write(pmd)		(pmd_isclear((pmd), L_PMD_SECT_RDONLY))
+#define pmd_write(pmd)		(pmd_isclear((pmd), L_PMD_SECT_RDONLY | L_PMD_SECT_AP2))
 #define pmd_dirty(pmd)		(pmd_isset((pmd), L_PMD_SECT_DIRTY))
 #define pud_page(pud)		pmd_page(__pmd(pud_val(pud)))
 #define pud_write(pud)		pmd_write(__pmd(pud_val(pud)))
@@ -244,10 +245,10 @@ void pmdp_splitting_flush(struct vm_area_struct *vma, unsigned long address,
 #define PMD_BIT_FUNC(fn,op) \
 static inline pmd_t pmd_##fn(pmd_t pmd) { pmd_val(pmd) op; return pmd; }
 
-PMD_BIT_FUNC(wrprotect,	|= L_PMD_SECT_RDONLY);
+PMD_BIT_FUNC(wrprotect,	|= L_PMD_SECT_RDONLY | L_PMD_SECT_AP2);
 PMD_BIT_FUNC(mkold,	&= ~PMD_SECT_AF);
 PMD_BIT_FUNC(mksplitting, |= L_PMD_SECT_SPLITTING);
-PMD_BIT_FUNC(mkwrite,   &= ~L_PMD_SECT_RDONLY);
+PMD_BIT_FUNC(mkwrite,   &= ~L_PMD_SECT_RDONLY | L_PMD_SECT_AP2);
 PMD_BIT_FUNC(mkdirty,   |= L_PMD_SECT_DIRTY);
 PMD_BIT_FUNC(mkyoung,   |= PMD_SECT_AF);
 
@@ -262,7 +263,7 @@ PMD_BIT_FUNC(mkyoung,   |= PMD_SECT_AF);
 
 static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
 {
-	const pmdval_t mask = PMD_SECT_USER | PMD_SECT_XN | L_PMD_SECT_RDONLY |
+	const pmdval_t mask = PMD_SECT_USER | PMD_SECT_XN | L_PMD_SECT_RDONLY | L_PMD_SECT_AP2 |
 				L_PMD_SECT_VALID | L_PMD_SECT_NONE;
 	pmd_val(pmd) = (pmd_val(pmd) & ~mask) | (pgprot_val(newprot) & mask);
 	return pmd;
