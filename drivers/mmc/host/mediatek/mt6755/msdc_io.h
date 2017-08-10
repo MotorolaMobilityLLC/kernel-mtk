@@ -256,6 +256,7 @@ void msdc_power_DL_CL_control(struct msdc_host *host, u32 sel);
 #endif
 void msdc_power_calibration_init(struct msdc_host *host);
 void msdc_oc_check(struct msdc_host *host);
+int msdc_io_check(struct msdc_host *host);
 void msdc_emmc_power(struct msdc_host *host, u32 on);
 void msdc_sd_power(struct msdc_host *host, u32 on);
 void msdc_sdio_power(struct msdc_host *host, u32 on);
@@ -518,42 +519,42 @@ int msdc_get_ccf_clk_pointer(struct platform_device *pdev,
 
 /* MSDC1 IES mask*/
 #define MSDC1_IES_CLK_MASK              (0x1 <<  8)
-#define MSDC1_IES_DAT_MASK              (0x1 <<  9)
-#define MSDC1_IES_CMD_MASK              (0x1 << 10)
+#define MSDC1_IES_CMD_MASK              (0x1 <<  9)
+#define MSDC1_IES_DAT_MASK              (0x1 << 10)
 #define MSDC1_IES_ALL_MASK              (0x7 <<  8)
 
 /* MSDC1 SMT mask*/
 #define MSDC1_SMT_CLK_MASK              (0x1 <<  8)
-#define MSDC1_SMT_DAT_MASK              (0x1 <<  9)
-#define MSDC1_SMT_CMD_MASK              (0x1 << 10)
+#define MSDC1_SMT_CMD_MASK              (0x1 <<  9)
+#define MSDC1_SMT_DAT_MASK              (0x1 << 10)
 #define MSDC1_SMT_ALL_MASK              (0x7 <<  8)
 
 /* MSDC1 TDSEL mask*/
 #define MSDC1_TDSEL_CLK_MASK            (0xF <<  0)
-#define MSDC1_TDSEL_DAT_MASK            (0xF <<  4)
-#define MSDC1_TDSEL_CMD_MASK            (0xF <<  8)
+#define MSDC1_TDSEL_CMD_MASK            (0xF <<  4)
+#define MSDC1_TDSEL_DAT_MASK            (0xF <<  8)
 #define MSDC1_TDSEL_ALL_MASK            (0xFFF << 0)
 
 /* MSDC1 RDSEL mask*/
 /*MSDC1_GPIO_RDSEL0*/
 #define MSDC1_RDSEL_CLK_MASK            (0x3F << 16)
-#define MSDC1_RDSEL_DAT_MASK            (0x3F << 22)
+#define MSDC1_RDSEL_CMD_MASK            (0x3F << 22)
 /*MSDC1_GPIO_RDSEL1*/
-#define MSDC1_RDSEL_CMD_MASK            (0x3F <<  0)
+#define MSDC1_RDSEL_DAT_MASK            (0x3F <<  0)
 #define MSDC1_RDSEL0_ALL_MASK           (0xFFF << 16)
 #define MSDC1_RDSEL1_ALL_MASK           (0x3F <<  0)
 /*Attention: not the same address, shall not define MSDC1_RDSEL_ALL_MASK*/
 
 /* MSDC1 SR mask*/
 #define MSDC1_SR_CLK_MASK               (0x1 <<  3)
-#define MSDC1_SR_DAT_MASK               (0x1 <<  7)
-#define MSDC1_SR_CMD_MASK               (0x1 << 11)
+#define MSDC1_SR_CMD_MASK               (0x1 <<  7)
+#define MSDC1_SR_DAT_MASK               (0x1 << 11)
 /*Attention: bits are not continuous, shall not define MSDC1_SR_ALL_MASK*/
 
 /* MSDC1 DRV mask*/
 #define MSDC1_DRV_CLK_MASK              (0x7 <<  0)
-#define MSDC1_DRV_DAT_MASK              (0x7 <<  4)
-#define MSDC1_DRV_CMD_MASK              (0x7 <<  8)
+#define MSDC1_DRV_CMD_MASK              (0x7 <<  4)
+#define MSDC1_DRV_DAT_MASK              (0x7 <<  8)
 /*Attention: bits are not continuous, shall not define MSDC1_DRV_ALL_MASK*/
 
 /* MSDC1 PUPD mask*/
@@ -633,6 +634,7 @@ void msdc_set_rdsel_by_id(u32 id, u32 flag, u32 value);
 void msdc_get_tdsel_by_id(u32 id, u32 *value);
 void msdc_get_rdsel_by_id(u32 id, u32 *value);
 void msdc_dump_padctl_by_id(u32 id);
+void msdc_set_pin_mode(struct msdc_host *host);
 void msdc_pin_config_by_id(u32 id, u32 mode);
 #endif
 

@@ -463,6 +463,10 @@ struct msdc_host {
 	u32     power_CL_status;
 #endif
 
+	u32                     dma_cnt;
+	u64                     start_dma_time;
+	u64                     stop_dma_time;
+
 	int                     prev_cmd_cause_dump;
 };
 
@@ -653,6 +657,7 @@ static inline unsigned int uffs(unsigned int x)
 #define DAT_TIMEOUT             (HZ    * 5)     /* 1000ms x5 */
 #define CLK_TIMEOUT             (HZ    * 5)     /* 5s    */
 #define POLLING_BUSY            (HZ    * 3)
+#define POLLING_PINS            (HZ*20 / 1000)	/* 20ms */
 
 #ifdef CONFIG_OF
 #if defined(CFG_DEV_MSDC2)

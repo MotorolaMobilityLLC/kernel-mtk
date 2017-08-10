@@ -322,7 +322,7 @@
 #define SDC_STS_SWR_COMPL               (0x1  << 31)    /* RO  */
 
 /* SDC_STS mask */
-#define SDC_VOL_CHGCNT                  (0xffff << 0)   /* RW  */
+#define SDC_VOL_CHG_CNT                 (0xffff << 0)   /* RW  */
 
 /* SDC_DCRC_STS mask */
 #define SDC_DCRC_STS_POS                (0xff << 0)     /* RO */

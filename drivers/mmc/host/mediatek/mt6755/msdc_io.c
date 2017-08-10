@@ -358,6 +358,44 @@ void msdc_oc_check(struct msdc_host *host)
 	}
 }
 
+/*
+ * Pull DAT0~2 high/low one-by-one
+ * and power off card when DAT pin status is not the same pull level
+ * 1. PULL DAT0 Low, DAT1/2/3 high
+ * 2. PULL DAT1 Low, DAT0/2/3 high
+ * 3. PULL DAT2 Low, DAT0/1/3 high
+ */
+int msdc_io_check(struct msdc_host *host)
+{
+	int result = 1, i;
+	void __iomem *base = host->base;
+	unsigned long polling_tmo = 0;
+	u32 pupd_patterns[3] = {0x222662, 0x226262, 0x262262};
+	u32 check_patterns[3] = {0xe0000, 0xd0000, 0xb0000};
+
+	if (host->id != 1)
+		return 1;
+
+	for (i = 0; i < 3; i++) {
+		MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_MASK, pupd_patterns[i]);
+		polling_tmo = jiffies + POLLING_PINS;
+		while ((MSDC_READ32(MSDC_PS) & 0xF0000) != check_patterns[i]) {
+			if (time_after(jiffies, polling_tmo)) {
+				pr_err("msdc%d DAT%d pin get wrong, ps = 0x%x!\n",
+					host->id, i, MSDC_READ32(MSDC_PS));
+				goto POWER_OFF;
+			}
+		}
+	}
+	MSDC_SET_FIELD(MSDC1_GPIO_PUPD_ADDR, MSDC1_PUPD_MASK, 0x222262);
+	return result;
+
+POWER_OFF:
+	host->block_bad_card = 1;
+	host->power_control(host, 0);
+	return 0;
+}
+
 void msdc_emmc_power(struct msdc_host *host, u32 on)
 {
 	void __iomem *base = host->base;

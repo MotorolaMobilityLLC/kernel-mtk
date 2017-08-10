@@ -846,6 +846,9 @@ static int simple_mmc_get_disk_info(struct mbr_part_info *mpi,
 	/* emmc always in slot0 */
 	host = msdc_get_host(MSDC_EMMC, MSDC_BOOT_EN, 0);
 
+	if (!host)
+		return 1;
+
 	disk = mmc_get_disk(host->mmc->card);
 
 	/* Find partition info in this way to
@@ -1046,9 +1049,11 @@ static long simple_sd_ioctl(struct file *file, unsigned int cmd,
 		case MSDC_SD_POWER_OFF:
 			pr_err("sd ioctl power off!!!\n");
 			host = msdc_get_host(MSDC_SD, 0, 0);
-			mmc_claim_host(host->mmc);
-			mmc_power_off(host->mmc);
-			mmc_release_host(host->mmc);
+			if (host) {
+				mmc_claim_host(host->mmc);
+				mmc_power_off(host->mmc);
+				mmc_release_host(host->mmc);
+			}
 			break;
 
 		case MSDC_SD_POWER_ON:

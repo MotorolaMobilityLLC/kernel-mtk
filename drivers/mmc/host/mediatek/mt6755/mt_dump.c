@@ -231,7 +231,7 @@ static void msdc_mdelay(u32 time)
 	u64 t_start = 0, t_end = 0;
 
 	t_start = arch_counter_get_cntpct();
-	t_end = t_start + time * 1000 * 1000 / 77;
+	t_end = t_start + time * ((u64) 1000) * 1000 / 77;
 	while (t_end > arch_counter_get_cntpct())
 		cpu_relax();
 }
@@ -342,7 +342,7 @@ static void msdc_set_timeout(struct simp_msdc_host *host, u32 ns, u32 clks)
 
 #define msdc_power_set_field(reg, field, val) \
 	do {    \
-		unsigned int tv;  \
+		unsigned int tv = 0;  \
 		pwrap_read_nochk(reg, &tv);     \
 		tv &= ~(field); \
 		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
@@ -351,7 +351,7 @@ static void msdc_set_timeout(struct simp_msdc_host *host, u32 ns, u32 clks)
 
 #define msdc_power_get_field(reg, field, val) \
 	do {    \
-		unsigned int tv;  \
+		unsigned int tv = 0;  \
 		pwrap_read_nochk(reg, &tv);     \
 		val = ((tv & (field)) >> (uffs((unsigned int)field) - 1)); \
 	} while (0)
@@ -2069,7 +2069,7 @@ EXPORT_SYMBOL(card_dump_func_read);
 
 int has_mt_dump_support(void)
 {
-	return 0;
+	return 1;
 }
 EXPORT_SYMBOL(has_mt_dump_support);
 
