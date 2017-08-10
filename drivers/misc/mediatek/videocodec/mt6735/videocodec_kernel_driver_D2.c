@@ -1961,7 +1961,7 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned 
 			   hwoal_reg.u4NumOfRegister*sizeof(VAL_VCODEC_OAL_MEM_STAUTS_T)); */
 			if (hwoal_reg.pHWStatus != NULL &&
 				hwoal_reg.u4NumOfRegister <= OALMEM_STATUS_NUM) {
-				ret = copy_from_user(&oal_mem_status[0], hwoal_reg.pHWStatus,
+				memcpy(&oal_mem_status[0], hwoal_reg.pHWStatus,
 						hwoal_reg.u4NumOfRegister *
 						sizeof(VAL_VCODEC_OAL_MEM_STAUTS_T));
 				context->u4NumOfRegister = hwoal_reg.u4NumOfRegister;
