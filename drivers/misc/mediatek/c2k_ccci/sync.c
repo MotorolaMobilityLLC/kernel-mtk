@@ -2155,7 +2155,7 @@ static ssize_t asc_debug_show(struct kobject *kobj, struct kobj_attribute *attr,
 {
 	char *s = buf;
 
-	s += sprintf(s, "%d\n", asc_debug);
+	s += snprintf(s, 32, "%d\n", asc_debug);
 
 	return s - buf;
 }
@@ -2198,7 +2198,7 @@ static ssize_t asc_infor_show(struct kobject *kobj, struct kobj_attribute *attr,
 		if (((cfg->gpio_ready) & 0xFFFF) >= 0)
 			val2 = !!c2k_gpio_get_value(cfg->gpio_ready);
 
-		s += sprintf(s,
+		s += snprintf(s, 256,
 			     "Tx %s: ref=%d, ap_wake_cp(%d)=%d, cp_ready(%d)=%d, polar=%d, auto_delay=%d mS\n",
 			     cfg->name, asc_tx_refer(tx, NULL), cfg->gpio_wake,
 			     val1, cfg->gpio_ready, val2, cfg->polar,
@@ -2206,12 +2206,12 @@ static ssize_t asc_infor_show(struct kobject *kobj, struct kobj_attribute *attr,
 
 		list_for_each_entry_safe(user, tuser, &tx->user_list, node) {
 			infor = &user->infor;
-			s += sprintf(s, "       user %s: ref=%d\n", infor->name,
+			s += snprintf(s, 256, "       user %s: ref=%d\n", infor->name,
 				     atomic_read(&user->count));
 		}
 	}
 
-	s += sprintf(s, "\n");
+	s += snprintf(s, 32, "\n");
 
 	list_for_each_entry_safe(rx, rtmp, &asc_rx_handle_list, node) {
 		cfg = &rx->cfg;
@@ -2223,13 +2223,13 @@ static ssize_t asc_infor_show(struct kobject *kobj, struct kobj_attribute *attr,
 		if (((cfg->gpio_ready) & 0xFFFF) >= 0)
 			val2 = !!c2k_gpio_get_value(cfg->gpio_ready);
 
-		s += sprintf(s,
+		s += snprintf(s, 256,
 			     "Rx %s: ref=%d, cp_wake_ap(%d)=%d, ap_ready(%d)=%d, polar=%d\n",
 			     cfg->name, asc_rx_refer(rx, NULL), cfg->gpio_wake,
 			     val1, cfg->gpio_ready, val2, cfg->polar);
 		list_for_each_entry_safe(user, tuser, &rx->user_list, node) {
 			infor = &user->infor;
-			s += sprintf(s, "       user %s: ref=%d\n", infor->name,
+			s += snprintf(s, 256, "       user %s: ref=%d\n", infor->name,
 				     atomic_read(&user->count));
 		}
 	}
@@ -2262,7 +2262,7 @@ static ssize_t asc_refer_show(struct kobject *kobj, struct kobj_attribute *attr,
 	spin_unlock_irqrestore(&hdlock, flags);
 
 	if (tx) {
-		s += sprintf(s, "%d\n", asc_tx_refer(tx, ASC_TX_SYSFS_USER));
+		s += snprintf(s, 32, "%d\n", asc_tx_refer(tx, ASC_TX_SYSFS_USER));
 		return s - buf;
 	}
 	ASCPRT("%s read error\n", __func__);
@@ -2322,7 +2322,7 @@ static ssize_t asc_state_show(struct kobject *kobj, struct kobj_attribute *attr,
 	spin_unlock_irqrestore(&hdlock, flags);
 
 	if (tx) {
-		s += sprintf(s, "%s\n",
+		s += snprintf(s, ASC_NAME_LEN, "%s\n",
 			     tx->table[atomic_read(&tx->state)].name);
 		return s - buf;
 	}
@@ -2355,7 +2355,7 @@ static ssize_t asc_auto_ready_show(struct kobject *kobj,
 	spin_unlock_irqrestore(&hdlock, flags);
 
 	if (tx) {
-		s += sprintf(s, "%d\n", tx->auto_delay);
+		s += snprintf(s, 32, "%d\n", tx->auto_delay);
 		return s - buf;
 	}
 	ASCPRT("%s read error\n", __func__);
@@ -2421,9 +2421,9 @@ static ssize_t asc_confirm_ready_show(struct kobject *kobj,
 	spin_unlock_irqrestore(&hdlock, flags);
 
 	if (rx)
-		s += sprintf(s, "done\n");
+		s += snprintf(s, 32, "done\n");
 	else
-		s += sprintf(s, "null\n");
+		s += snprintf(s, 32, "null\n");
 
 	return s - buf;
 }

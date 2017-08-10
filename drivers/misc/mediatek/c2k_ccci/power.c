@@ -243,9 +243,9 @@ ssize_t modem_power_show(struct kobject *kobj, struct kobj_attribute *attr,
 		power = !!c2k_gpio_get_value(GPIO_C2K_MDM_RST);
 	}
 	if (power)
-		ret += sprintf(buf + ret, "on\n");
+		ret += snprintf(buf + ret, 8, "on\n");
 	else
-		ret += sprintf(buf + ret, "off\n");
+		ret += snprintf(buf + ret, 8, "off\n");
 
 	return ret;
 }
@@ -286,9 +286,9 @@ ssize_t modem_reset_show(struct kobject *kobj, struct kobj_attribute *attr,
 		reset = !!c2k_gpio_get_value(GPIO_C2K_MDM_RST);
 
 	if (reset)
-		ret += sprintf(buf + ret, "reset\n");
+		ret += snprintf(buf + ret, 8, "reset\n");
 	else
-		ret += sprintf(buf + ret, "work\n");
+		ret += snprintf(buf + ret, 8, "work\n");
 
 	return ret;
 }
@@ -310,7 +310,7 @@ ssize_t modem_ets_select_show(struct kobject *kobj,
 	if (GPIO_C2K_VALID(GPIO_C2K_MDM_ETS_SEL))
 		level = !!c2k_gpio_get_value(GPIO_C2K_MDM_ETS_SEL);
 
-	ret += sprintf(buf, "%d\n", level);
+	ret += snprintf(buf, 8, "%d\n", level);
 	return ret;
 }
 
@@ -339,7 +339,7 @@ ssize_t modem_boot_select_show(struct kobject *kobj,
 	if (GPIO_C2K_VALID(GPIO_C2K_MDM_BOOT_SEL))
 		level = !!c2k_gpio_get_value(GPIO_C2K_MDM_BOOT_SEL);
 
-	ret += sprintf(buf, "%d\n", level);
+	ret += snprintf(buf, 8, "%d\n", level);
 	return ret;
 }
 
@@ -401,7 +401,7 @@ ssize_t modem_diecbp_show(struct kobject *kobj, struct kobj_attribute *attr,
 	if (GPIO_C2K_VALID(GPIO_C2K_CRASH_CBP))
 		level = !!c2k_gpio_get_value(GPIO_C2K_CRASH_CBP);
 
-	ret += sprintf(buf, "%d\n", level);
+	ret += snprintf(buf, 8, "%d\n", level);
 	return ret;
 }
 
@@ -431,7 +431,7 @@ ssize_t modem_hderr_show(struct kobject *kobj, struct kobj_attribute *attr,
 	if (GPIO_C2K_VALID(GPIO_C2K_CRASH_CBP))
 		level = !!c2k_gpio_get_value(GPIO_C2K_CRASH_CBP);
 
-	ret += sprintf(buf, "%d\n", level);
+	ret += snprintf(buf, 8, "%d\n", level);
 	return ret;
 }
 
@@ -465,7 +465,7 @@ ssize_t modem_force_assert_show(struct kobject *kobj,
 {
 	int ret = 0;
 
-	ret += sprintf(buf + ret, "capable\n");
+	ret += snprintf(buf + ret, 16, "capable\n");
 
 	return ret;
 }

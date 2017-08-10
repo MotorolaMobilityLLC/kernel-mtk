@@ -4090,7 +4090,7 @@ static int sdio_modem_port_init(struct sdio_modem_port *port, int index)
 
 	/*create port's write work queue */
 	port->name = "modem_sdio_write_wq";
-	sprintf(port->work_name, "%s%d", port->name, index);
+	snprintf(port->work_name, 64, "%s%d", port->name, index);
 	port->write_q = create_singlethread_workqueue(port->work_name);
 	if (port->write_q == NULL) {
 		LOGPRT(LOG_ERR, "%s %d error creat write workqueue\n", __func__,
@@ -4144,7 +4144,7 @@ static ssize_t modem_log_level_show(struct kobject *kobj,
 {
 	char *s = buf;
 
-	s += sprintf(s, "%d\n", sdio_log_level);
+	s += snprintf(s, 32, "%d\n", sdio_log_level);
 
 	return s - buf;
 }
@@ -4177,10 +4177,10 @@ static ssize_t modem_refer_show(struct kobject *kobj,
 		return -ENODEV;
 
 	for (i = 0; i < SDIO_TTY_NR; i++) {
-		s += sprintf(s, "TTY port%d Tx:  times %d\n", i,
+		s += snprintf(s, 64, "TTY port%d Tx:  times %d\n", i,
 			     modem->port[i]->tx_count);
-		s += sprintf(s, "\n");
-		s += sprintf(s, "TTY port%d Rx:  times %d\n", i,
+		s += snprintf(s, 64, "\n");
+		s += snprintf(s, 64, "TTY port%d Rx:  times %d\n", i,
 			     modem->port[i]->rx_count);
 	}
 	return s - buf;
@@ -4208,7 +4208,7 @@ static ssize_t modem_ctrl_on_show(struct kobject *kobj,
 		ctrl_port = modem->ctrl_port;
 
 /*out:*/
-	s += sprintf(s, "ctrl state: %s\n",
+	s += snprintf(s, 64, "ctrl state: %s\n",
 		     ctrl_port->chan_state ? "enable" : "disable");
 	return s - buf;
 }
@@ -4247,7 +4247,7 @@ static ssize_t modem_dtr_send_show(struct kobject *kobj,
 		LOGPRT(LOG_NOTICE,
 		       "query cp ctrl channel state failed ret=%d\n", ret);
 	}
-	s += sprintf(s, "ctrl state: %d\n", status);
+	s += snprintf(s, 64, "ctrl state: %d\n", status);
 
 	return s - buf;
 }
@@ -4283,9 +4283,9 @@ static ssize_t modem_dtr_query_show(struct kobject *kobj,
 	if (status < 0) {
 		LOGPRT(LOG_NOTICE,
 		       "query cp ctrl channel state failed ret=%d\n", ret);
-		s += sprintf(s, "ctrl state: %s\n", "N/A");
+		s += snprintf(s, 64, "ctrl state: %s\n", "N/A");
 	} else {
-		s += sprintf(s, "ctrl state: %d\n", status);
+		s += snprintf(s, 64, "ctrl state: %d\n", status);
 	}
 	return s - buf;
 }
@@ -4375,12 +4375,12 @@ static ssize_t modem_ack_show(struct kobject *kobj, struct kobj_attribute *attr,
 		cbp_pdata = modem->cbp_data;
 
 	if ((cbp_pdata != NULL) && (cbp_pdata->cbp_data_ack != NULL)) {
-		s += sprintf(s, "gpio[%d]\t state:[%d]\t polar[%d]\t ",
+		s += snprintf(s, 64, "gpio[%d]\t state:[%d]\t polar[%d]\t ",
 			     cbp_pdata->cbp_data_ack->wait_gpio,
 			     atomic_read(&cbp_pdata->cbp_data_ack->state),
 			     cbp_pdata->cbp_data_ack->wait_polar);
 
-		s += sprintf(s, "stored:[%d]\n",
+		s += snprintf(s, 64, "stored:[%d]\n",
 			     c2k_gpio_get_value(modem->cbp_data->
 						cbp_flow_ctrl->wait_gpio));
 	}
@@ -4409,12 +4409,12 @@ static ssize_t modem_flw_show(struct kobject *kobj, struct kobj_attribute *attr,
 		cbp_pdata = modem->cbp_data;
 
 	if ((cbp_pdata != NULL) && (cbp_pdata->cbp_flow_ctrl != NULL)) {
-		s += sprintf(s, "gpio[%d] \tstate:[%d]\t polar[%d]\t ",
+		s += snprintf(s, 64, "gpio[%d] \tstate:[%d]\t polar[%d]\t ",
 			     cbp_pdata->cbp_flow_ctrl->wait_gpio,
 			     atomic_read(&cbp_pdata->cbp_flow_ctrl->state),
 			     cbp_pdata->cbp_flow_ctrl->wait_polar);
 
-		s += sprintf(s, "stored:[%d]\n",
+		s += snprintf(s, 64, "stored:[%d]\n",
 			     c2k_gpio_get_value(modem->cbp_data->
 						cbp_flow_ctrl->wait_gpio));
 	}
@@ -5075,7 +5075,7 @@ int check_img_header(struct sdio_modem *modem)
 			/*LOGPRT(LOG_INFO,  "%s: platform = %s, build_time = %s, build_ver = %s\n",
 			   __func__, img_info->platform, img_info->build_time, img_info->build_ver); */
 
-			sprintf(img_str,
+			snprintf(img_str, 256,
 				"MD:%s*%s*%s*%s*%s\nAP:%s*%s*%08x (MD)%08x\n",
 				img->img_info.image_type,
 				img->img_info.platform, img->img_info.build_ver,
