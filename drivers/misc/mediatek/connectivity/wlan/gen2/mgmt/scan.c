@@ -1203,6 +1203,17 @@ P_BSS_DESC_T scanAddToBssDesc(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb)
 		fgIsNewBssDesc = TRUE;
 
 		do {
+			if (!fgIsValidSsid) {
+				prBssDesc = scanSearchBssDescByBssid(prAdapter, (PUINT_8)prWlanBeaconFrame->aucBSSID);
+				if (prBssDesc == (P_BSS_DESC_T) NULL) {
+					DBGLOG(SCN, INFO, "ignore hidden BSS(%pM) now\n",
+						(PUINT_8)prWlanBeaconFrame->aucBSSID);
+					return NULL;
+				}
+				DBGLOG(SCN, INFO, "ssid is empty, don't update hidden BSS(%pM) now\n",
+					(PUINT_8)prWlanBeaconFrame->aucBSSID);
+				return prBssDesc;
+			}
 			/* 4 <1.2.1> First trial of allocation */
 			prBssDesc = scanAllocateBssDesc(prAdapter);
 			if (prBssDesc)
