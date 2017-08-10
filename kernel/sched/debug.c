@@ -52,7 +52,7 @@ DECLARE_PER_CPU(u64, rt_period_time);
 	if (m)					\
 		seq_printf(m, x);		\
 	else					\
-		pr_debug(x);			\
+		printk(x);			\
  } while (0)
 #else
 #define SEQ_printf(m, x...)			\
@@ -62,7 +62,7 @@ do {						\
 	else if (__get_cpu_var(kdb_in_use) == 1)		\
 		kdb_printf(x);			\
 	else						\
-		pr_debug(x);				\
+		printk(x);				\
 } while (0)
 #endif
 
