@@ -646,8 +646,11 @@ static int FDVT_ReadRegHW(FDVTRegIO *a_pstCfg)
 	int size = a_pstCfg->u4Count * 4;
 	int i;
 
-	if (size > buf_size)
+	if (size > buf_size) {
 		LOG_DBG("size too big\n");
+		ret = -EFAULT;
+		goto mt_FDVT_read_reg_exit;
+	}
 
 	if (copy_from_user(pFDVTReadBuffer.u4Addr,  a_pstCfg->pAddr, size) != 0) {
 		LOG_DBG("copy_from_user failed\n");
@@ -683,7 +686,7 @@ static int FDVT_WaitIRQ(u32 *u4IRQMask)
 {
 	int timeout;
 	/* timeout = wait_event_interruptible_timeout(g_FDVTWQ, (g_FDVTIRQMSK & g_FDVTIRQ), ms_to_jiffies(500)); */
-	timeout = wait_event_interruptible_timeout(g_FDVTWQ, (g_FDVTIRQMSK & g_FDVTIRQ), us_to_jiffies(15 * 1000000));	
+	timeout = wait_event_interruptible_timeout(g_FDVTWQ, (g_FDVTIRQMSK & g_FDVTIRQ), us_to_jiffies(15 * 1000000));
 
 	if (timeout == 0) {
 		LOG_DBG("wait_event_interruptible_timeout timeout, %d, %d\n", g_FDVTIRQMSK, g_FDVTIRQ);
@@ -720,7 +723,12 @@ static long FDVT_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
 
-	if (_IOC_NONE != _IOC_DIR(cmd)) {
+	if (_IOC_SIZE(cmd) > buf_size) {
+		LOG_DBG("Buffer Size Exceeded!\n");
+		return -EFAULT;
+	}
+
+	if (_IOC_DIR(cmd) != _IOC_NONE) {
 		/* IO write */
 		if (_IOC_WRITE & _IOC_DIR(cmd)) {
 			if (copy_from_user(pBuff , (void *) arg, _IOC_SIZE(cmd))) {
@@ -1032,7 +1040,7 @@ static int FDVT_probe(struct platform_device *dev)
 		LOG_ERR("unable to map IMGSYS_CONFIG_BASE registers!!!\n");
 		return -ENODEV;
 	}
-	
+
 	LOG_DBG("[FDVT_DEBUG] IMGSYS_CONFIG_BASE: %lx\n", (unsigned long)IMGSYS_CONFIG_BASE);
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,camsys_config");
@@ -1098,10 +1106,7 @@ static int FDVT_probe(struct platform_device *dev)
 	}
 
 	nr_fdvt_devs = new_count;
-	if (dev == NULL) {
-		dev_err(&dev->dev, "dev is NULL");
-		return -ENXIO;
-	}
+
 /*
 		// Register char driver
 		if((Ret = ISP_RegCharDev()))
