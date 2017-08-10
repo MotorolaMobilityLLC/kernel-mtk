@@ -56,6 +56,7 @@
 /*reserve some bit*/
 #define CMDM_IOCTL_GET_SDIO_STATUS      _IO('c', 0x10)
 #define CMDM_IOCTL_DUMP_C2K_IRAM      _IO('c', 0x11)
+#define CMDM_IOCTL_DUMP_BOOTUP_STATUS      _IO('c', 0x12)
 
 /*event for vmodem, which must be same as viatelutilis.h */
 enum ASC_USERSPACE_NOTIFIER_CODE {
@@ -992,6 +993,10 @@ static long misc_modem_ioctl(struct file *file, unsigned int
 	case CMDM_IOCTL_DUMP_C2K_IRAM:
 		pr_debug("[C2K SDIO]dump c2k iram.\n");
 		dump_c2k_iram_seg2();
+		break;
+	case CMDM_IOCTL_DUMP_BOOTUP_STATUS:
+		pr_debug("[C2K SDIO]dump c2k bootup status.\n");
+		dump_c2k_bootup_status();
 		break;
 	default:
 		break;

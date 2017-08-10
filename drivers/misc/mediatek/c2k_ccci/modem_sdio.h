@@ -550,6 +550,7 @@ extern phys_addr_t md3_mem_base;
 extern void mt_irq_dump_status(int irq);
 extern void mt_eint_dump_status(unsigned int eint);
 extern int c2k_modem_not_ready(void);
+extern void dump_c2k_bootup_status(void);
 
 #ifndef CONFIG_EVDO_DT_VIA_SUPPORT
 extern void c2k_sdio_install_eirq(void);

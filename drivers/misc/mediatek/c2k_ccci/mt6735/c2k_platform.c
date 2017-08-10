@@ -29,6 +29,7 @@
 #include <mt-plat/mt_gpio.h>
 #include <mach/gpio_const.h>
 #include <linux/gpio.h>
+#include <linux/delay.h>
 
 #if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
@@ -300,6 +301,78 @@ void dump_c2k_iram_seg2(void)
 
 	pr_debug("[C2K] Dump C2K MEM end\n");
 
+}
+
+void dump_c2k_bootup_status(void)
+{
+	static int init_done;
+	static unsigned long c2k_iram_base_virt1;
+	static unsigned long c2k_iram_base_virt2;
+	static unsigned long c2k_uart0;
+	static unsigned long bootst;
+	static unsigned long chipid;
+	static unsigned long c2ksys_uart0;
+	int i;
+	int retry = 0;
+
+	if (!init_done) {
+		init_done = 1;
+		c2k_iram_base_virt1 = ioremap_nocache(0x39000000, 64);
+		c2k_iram_base_virt2 = ioremap_nocache(0x39017018, 8);
+		c2k_uart0 = ioremap_nocache(0x10211370, 8);
+		bootst = ioremap_nocache(0x3A00B018, 8);
+		chipid = ioremap_nocache(0x3A00B01C, 8);
+		c2ksys_uart0 = ioremap_nocache(0x3A012000, 0x40);
+	}
+	pr_debug("[C2K] ======== Dump C2K bootup status begin ========\n");
+	pr_debug("[C2K] addr: 0x10211370 (UART GPIO)\n");
+	c2k_mem_dump(c2k_uart0, 8);
+
+	/*C2K_CONFIG[12:11] = 00*/
+	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG, c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG)&(~(0x3<<11)));
+	while (retry < 20) {
+		retry++;
+		pr_debug("[C2K] C2K_CONFIG = 0x%x, C2K_STATUS = 0x%x\n",
+			c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG),
+			c2k_read32(infra_ao_base, INFRA_AO_C2K_STATUS));
+		msleep(20);
+	}
+
+	/*C2K_CONFIG[12:11] = 01*/
+	retry  = 0;
+	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG, c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG)&(~(0x1<<12)));
+	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG, c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG)|(0x1<<11));
+	while (retry < 20) {
+		retry++;
+		pr_debug("[C2K] C2K_CONFIG = 0x%x, C2K_STATUS = 0x%x\n",
+			c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG),
+			c2k_read32(infra_ao_base, INFRA_AO_C2K_STATUS));
+		msleep(20);
+	}
+
+	/*C2K_CONFIG[12:11] = 10*/
+	retry  = 0;
+	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG, c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG)&(~(0x1<<11)));
+	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG, c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG)|(0x1<<12));
+	while (retry < 20) {
+		retry++;
+		pr_debug("[C2K] C2K_CONFIG = 0x%x, C2K_STATUS = 0x%x\n",
+			c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG),
+			c2k_read32(infra_ao_base, INFRA_AO_C2K_STATUS));
+		msleep(20);
+	}
+
+	/*C2K_CONFIG[12:11] = 11*/
+	retry  = 0;
+	c2k_write32(infra_ao_base, INFRA_AO_C2K_CONFIG, c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG)|(0x3<<11));
+	while (retry < 20) {
+		retry++;
+		pr_debug("[C2K] C2K_CONFIG = 0x%x, C2K_STATUS = 0x%x\n",
+			c2k_read32(infra_ao_base, INFRA_AO_C2K_CONFIG),
+			c2k_read32(infra_ao_base, INFRA_AO_C2K_STATUS));
+		msleep(20);
+	}
+	pr_debug("[C2K] ======== Dump C2K bootup status end ========\n");
 }
 
 #if ENABLE_C2K_EMI_PROTECTION
