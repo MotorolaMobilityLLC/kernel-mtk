@@ -26,13 +26,13 @@ DRVGEN_FILE_LIST := $(addprefix $(DRVGEN_OUT)/,$(ALL_DRVGEN_FILE))
 else
 DRVGEN_FILE_LIST :=
 endif
-DRVGEN_TOOL := $(srctree)/tools/dct/DrvGen
+DRVGEN_TOOL := $(srctree)/tools/dct/DrvGen.py
 
 .PHONY: drvgen
 drvgen: $(DRVGEN_FILE_LIST)
 $(DRVGEN_OUT)/cust.dtsi: $(DRVGEN_TOOL) $(DWS_FILE)
 	@mkdir -p $(dir $@)
-	$(DRVGEN_TOOL) $(DWS_FILE) $(dir $@) $(dir $@) cust_dtsi
+	$(python) $(DRVGEN_TOOL) $(DWS_FILE) $(dir $@) $(dir $@) cust_dtsi
 
 DTB_OVERLAY_IMAGE_TAGERT := $(objtree)/arch/$(SRCARCH)/boot/dts/overlays/dtbo.img
 $(DTB_OVERLAY_IMAGE_TAGERT) : PRIVATE_DTB_OVERLAY_OBJ:=$(objtree)/arch/$(SRCARCH)/boot/dts/overlays/$(MTK_PROJECT)-overlay.dtb
