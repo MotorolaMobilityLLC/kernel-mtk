@@ -58,11 +58,7 @@ long lcm_turn_on_gate_by_name(bool bOn, char *pinName)
 
 	BUG_ON(!this_pctrl);
 
-	if (bOn)
-		pState = pinctrl_lookup_state(this_pctrl, pinName);
-	else
-		pState = pinctrl_lookup_state(this_pctrl, pinName);
-
+	pState = pinctrl_lookup_state(this_pctrl, pinName);
 	if (IS_ERR(pState)) {
 		pr_err("set state '%s' failed\n", pinName);
 		ret = PTR_ERR(pState);
