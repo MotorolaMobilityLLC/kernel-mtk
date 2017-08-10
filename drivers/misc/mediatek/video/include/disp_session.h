@@ -457,6 +457,7 @@ struct disp_scenario_config_t {
 #define DISP_IOCTL_QUERY_VALID_LAYER			DISP_IOW(221, disp_layer_info)
 #define	DISP_IOCTL_SET_SCENARIO				DISP_IOW(222, struct disp_scenario_config_t)
 #define	DISP_IOCTL_WAIT_ALL_JOBS_DONE			DISP_IOW(220, unsigned int)
+#define	DISP_IOCTL_SCREEN_FREEZE			DISP_IOW(223, unsigned int)
 
 #ifdef __KERNEL__
 

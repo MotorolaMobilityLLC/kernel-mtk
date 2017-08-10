@@ -629,7 +629,11 @@ static void process_dbg_opt(const char *opt)
 			g_mobilelog = 1;
 		else if (0 == strncmp(opt + 7, "off", 3))
 			g_mobilelog = 0;
-
+	} else if (0 == strncmp(opt, "freeze:", 7)) {
+		if (0 == strncmp(opt + 7, "on", 2))
+			display_freeze_mode(1, 1);
+		else if (0 == strncmp(opt + 7, "off", 3))
+			display_freeze_mode(0, 1);
 	} else if (0 == strncmp(opt, "trigger", 7)) {
 		int i = 0;
 

@@ -111,6 +111,7 @@ static unsigned int primary_dump_wdma;
 static struct task_struct *primary_display_wdma_out;
 static unsigned long dc_vAddr[DISP_INTERNAL_BUFFER_COUNT];
 static disp_internal_buffer_info *decouple_buffer_info[DISP_INTERNAL_BUFFER_COUNT];
+static disp_internal_buffer_info *freeze_buffer_info;
 static RDMA_CONFIG_STRUCT decouple_rdma_config;
 static WDMA_CONFIG_STRUCT decouple_wdma_config;
 static disp_mem_output_config mem_config;
@@ -2114,6 +2115,8 @@ out:
 
 static unsigned int _get_switch_dc_buffer(void)
 {
+	if (pgc->freeze_buf)
+		return pgc->freeze_buf;
 #ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
 	return pgc->dc_buf[0];
 #else
@@ -5603,6 +5606,10 @@ int primary_display_suspend(void)
 	primary_display_suspend_wait_tui();
 	DISPCHECK("wait tui finish[end]\n");
 
+	DISPCHECK("leave freeze mode[begin]\n");
+	display_freeze_mode(0, 0);
+	DISPCHECK("leave freeze mode[end]\n");
+
 	if (pgc->state == DISP_SLEPT) {
 		DISPCHECK("primary display path is already sleep, skip\n");
 		goto done;
@@ -5767,8 +5774,8 @@ int primary_display_resume(void)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagStart, 0, 0);
 
 	_primary_path_lock(__func__);
-	if (pgc->state == DISP_ALIVE) {
-		DISPCHECK("primary display path is already resume, skip\n");
+	if (pgc->state != DISP_SLEPT) {
+		DISPCHECK("primary display path is not in suspend(state:%d), skip\n", pgc->state);
 		goto done;
 	}
 	MMProfileLogEx(ddp_mmp_get_events()->primary_resume, MMProfileFlagPulse, 0, 1);
@@ -7098,13 +7105,13 @@ int primary_display_switch_mode(int sess_mode, unsigned int session, int force)
 	MMProfileLogEx(ddp_mmp_get_events()->primary_switch_mode, MMProfileFlagStart,
 		       pgc->session_mode, sess_mode);
 
-	if (primary_get_state() == DISP_BLANK)
+	if (primary_get_state() == DISP_FREEZE || primary_get_state() == DISP_BLANK)
 		sess_mode = DISP_SESSION_DECOUPLE_MODE;
 
 	if (pgc->session_mode == sess_mode)
 		goto done;
 
-	if (pgc->state == DISP_SLEPT) {
+	if (pgc->state == DISP_ALIVE || primary_get_state() == DISP_FREEZE) {
 		DISPMSG("primary display switch from %s to %s in suspend state!!!\n",
 			session_mode_spy(pgc->session_mode), session_mode_spy(sess_mode));
 
@@ -9309,8 +9316,8 @@ done:
 	return ret;
 }
 
-static DISP_POWER_STATE tui_power_stat_backup;
-static int tui_session_mode_backup;
+static DISP_POWER_STATE power_stat_backup;
+static int session_mode_backup;
 
 int display_enter_tui(void)
 {
@@ -9326,7 +9333,7 @@ int display_enter_tui(void)
 		goto err0;
 	}
 
-	tui_power_stat_backup = primary_set_state(DISP_BLANK);
+	power_stat_backup = primary_set_state(DISP_BLANK);
 
 	if (primary_display_is_mirror_mode()) {
 		DISPERR("Can't enter tui: current_mode=%s\n", session_mode_spy(pgc->session_mode));
@@ -9336,7 +9343,7 @@ int display_enter_tui(void)
 #ifdef MTK_DISP_IDLE_LP
 	_disp_primary_path_exit_idle(__func__, 0);
 #endif
-	tui_session_mode_backup = pgc->session_mode;
+	session_mode_backup = pgc->session_mode;
 	primary_display_switch_mode_nolock(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0);
 
 	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagPulse, 0, 1);
@@ -9344,7 +9351,7 @@ int display_enter_tui(void)
 	return 0;
 
 err1:
-	primary_set_state(tui_power_stat_backup);
+	primary_set_state(power_stat_backup);
 
 err0:
 	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagEnd, 0, 0);
@@ -9359,13 +9366,13 @@ int display_exit_tui(void)
 
 	_primary_path_lock(__func__);
 
-	primary_set_state(tui_power_stat_backup);
+	primary_set_state(power_stat_backup);
 
 	/* trigger rdma to display last normal buffer
 	_decouple_update_rdma_config_nolock();*/
 	/* workaround: wait until this frame triggered to lcm */
 	msleep(32);
-	primary_display_switch_mode_nolock(tui_session_mode_backup, pgc->session_id, 0);
+	primary_display_switch_mode_nolock(session_mode_backup, pgc->session_id, 0);
 
 	_primary_path_unlock(__func__);
 
@@ -9373,4 +9380,86 @@ int display_exit_tui(void)
 	DISPMSG("TDDP: %s\n", __func__);
 
 	return 0;
+}
+
+static int allocate_freeze_buffer(void)
+{
+	int height = primary_display_get_height();
+	int width = primary_display_get_width();
+	int bpp = primary_display_get_dc_bpp();
+	int buffer_size =  width * height * bpp / 8;
+
+	freeze_buffer_info = allocat_decouple_buffer(buffer_size);
+	if (freeze_buffer_info != NULL)
+		pgc->freeze_buf = freeze_buffer_info->mva;
+	else
+		return -1;
+
+	return 0;
+}
+
+static int release_freeze_buffer(unsigned int need_primary_lock)
+{
+	if (need_primary_lock)
+		_primary_path_lock(__func__);
+
+	if (freeze_buffer_info) {
+		ion_free(freeze_buffer_info->client, freeze_buffer_info->handle);
+		ion_client_destroy(freeze_buffer_info->client);
+		kfree(freeze_buffer_info);
+		freeze_buffer_info = NULL;
+		pgc->freeze_buf = 0;
+	}
+
+	if (need_primary_lock)
+		_primary_path_unlock(__func__);
+	return 0;
+}
+
+int display_freeze_mode(int enable, int need_lock)
+{
+	DISPMSG("%s, enable:%d\n", __func__, enable);
+
+	MMProfileLogEx(ddp_mmp_get_events()->tui, MMProfileFlagStart, 0, 0);
+
+	if (need_lock)
+		_primary_path_lock(__func__);
+	if (enable) {
+
+		if (primary_get_state() == DISP_FREEZE || primary_get_state() == DISP_SLEPT) {
+			DISPERR("Can't enter freeze mode: current_stat=%d is not alive\n", primary_get_state());
+			goto end;
+		}
+
+		allocate_freeze_buffer();
+		power_stat_backup = primary_set_state(DISP_FREEZE);
+		if (primary_display_is_mirror_mode()) {
+			DISPERR("Can't enter freeze mode: current_mode=%s\n", session_mode_spy(pgc->session_mode));
+			goto err1;
+		}
+#ifdef MTK_DISP_IDLE_LP
+		_disp_primary_path_exit_idle(__func__, 0);
+#endif
+		session_mode_backup = pgc->session_mode;
+		primary_display_switch_mode_nolock(DISP_SESSION_DECOUPLE_MODE, pgc->session_id, 0);
+
+	} else {
+		if (primary_get_state() != DISP_FREEZE)
+			goto end;
+		primary_set_state(power_stat_backup);
+		primary_display_switch_mode_nolock(session_mode_backup, pgc->session_id, 0);
+		release_freeze_buffer(0);
+	}
+	if (need_lock)
+		_primary_path_unlock(__func__);
+	return 0;
+
+err1:
+	primary_set_state(power_stat_backup);
+
+end:
+	if (need_lock)
+		_primary_path_unlock(__func__);
+
+	return -1;
 }

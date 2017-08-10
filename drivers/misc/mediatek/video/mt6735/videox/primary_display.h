@@ -93,7 +93,8 @@ typedef enum {
 typedef enum {
 	DISP_ALIVE = 0xf0,
 	DISP_SLEPT,
-	DISP_BLANK
+	DISP_BLANK,
+	DISP_FREEZE,
 } DISP_POWER_STATE;
 
 typedef enum {
@@ -234,6 +235,7 @@ typedef struct {
 	unsigned int dc_buf[3];
 	unsigned int session_buf_id;
 	unsigned int session_buf[3];
+	unsigned int freeze_buf;
 	cmdqBackupSlotHandle cur_config_fence;
 	cmdqBackupSlotHandle subtractor_when_free;
 	cmdqBackupSlotHandle cur_mem_config_fence;
@@ -386,3 +388,6 @@ int primary_display_set_secondary_display(int add, DISP_SESSION_TYPE type);
 int init_ext_decouple_buffers(void);
 int deinit_ext_decouple_buffers(void);
 #endif
+
+int primary_display_get_session_mode(void);
+int display_freeze_mode(int enable, int need_lock);

@@ -1865,6 +1865,22 @@ static bool sesssion_mode_is_valid(DISP_MODE session_mode)
 	return true;
 }
 #endif
+
+int _ioctl_screen_freeze(unsigned long arg)
+{
+	int ret = 0;
+	void __user *argp = (void __user *)arg;
+	unsigned int enable;
+
+	if (copy_from_user(&enable, argp, sizeof(unsigned int))) {
+		DISPMSG("[FB]: copy_from_user failed! line:%d\n", __LINE__);
+		return -EFAULT;
+	}
+	ret = display_freeze_mode(enable, 1);
+
+	return ret;
+}
+
 static DISP_MODE select_session_mode(disp_session_config *session_info)
 {
 	static DISP_MODE final_mode = DISP_SESSION_DIRECT_LINK_MODE;
@@ -2081,6 +2097,8 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return primary_display_get_lcm_index();
 	case DISP_IOCTL_INSERT_SESSION_BUFFERS:
 		return _ioctl_insert_session_buffers(arg);
+	case DISP_IOCTL_SCREEN_FREEZE:
+		return _ioctl_screen_freeze(arg);
 	case DISP_IOCTL_AAL_EVENTCTL:
 	case DISP_IOCTL_AAL_GET_HIST:
 	case DISP_IOCTL_AAL_INIT_REG:
