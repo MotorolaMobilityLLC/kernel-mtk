@@ -86,10 +86,10 @@ typedef int (*hevc_api_initk_funp)(unsigned char *key, unsigned int klen);
 
 
 #define HEVC_ENCRYTP_FILE_PATH            "/data/mediaserver"
-#define HEVC_ENC_SW_ENCRYPT_FILE_PATH     "/system/lib/libhevce_sb.ca7.android.so"
+#define HEVC_ENC_SW_ENCRYPT_FILE_PATH     "/vendor/lib/libhevce_sb.ca7.android.so"
 #define HEVC_ENC_HW_ENCRYPT_FILE_PATH     "/data/mediaserver/sb.ca7.android_hwenc.so"
 #define HEVC_ENC_HW_DECRYPT_FILE_PATH     "/data/mediaserver/sb.ca7.android_hwdec.so"
-#define HEVC_DEC_SW_ENCRYTP_FILE_PATH     "/system/lib/libHEVCdec_sa.ca7.android.so"
+#define HEVC_DEC_SW_ENCRYTP_FILE_PATH     "/vendor/lib/libHEVCdec_sa.ca7.android.so"
 #define HEVC_DEC_HW_ENCRYPT_FILE_PATH     "/data/mediaserver/dec_sa.ca7.android_hwenc.so"
 #define HEVC_DEC_HW_DECRYPT_FILE_PATH     "/data/mediaserver/dec_sa.ca7.android_hwdec.so"
 
