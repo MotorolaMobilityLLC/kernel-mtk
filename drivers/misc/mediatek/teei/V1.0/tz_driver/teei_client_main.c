@@ -366,9 +366,9 @@ static int __cpuinit tz_driver_cpu_callback(struct notifier_block *self,
 					}
 					printk("[%s][%d]brefore cpumask set cpu\n",__func__,__LINE__);
 
-#if 1					
+#if 1
 					cpumask_set_cpu(current_cpu_id, &mtee_mask);
-					
+
 					set_cpus_allowed(teei_switch_task, mtee_mask);
 					printk("[%s][%d]after cpumask set cpu\n",__func__,__LINE__);
 #endif
@@ -516,8 +516,8 @@ long create_cmd_buff(void)
 	/* smc_call to notify SOTER the share memory(message_buff) */
 
 	/* n_init_t_fc_buf((unsigned long)virt_to_phys(message_buff), 0, 0); */
-        printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx\n", __func__, __LINE__, 
-			(unsigned long)virt_to_phys(message_buff), 
+        printk("[%s][%d] message = %lx,  fdrv message = %lx, bdrv_message = %lx, tlog_message = %lx\n", __func__, __LINE__,
+			(unsigned long)virt_to_phys(message_buff),
 			(unsigned long)virt_to_phys(fdrv_message_buff),
 			(unsigned long)virt_to_phys(bdrv_message_buff),
 			(unsigned long)virt_to_phys(tlog_message_buff));
@@ -573,7 +573,7 @@ long teei_service_init_first(void)
 	if (soter_error_flag == 1)
 		return -1;
 
-	
+
 	/**
 	 * init service handler
 	 */
@@ -707,11 +707,11 @@ static int init_teei_framework(void)
 
 	/* waiting for keymaster share memory ready and anable the keymaster IOCTL */
 	up(&keymaster_api_lock);
-	
+
 	/* android notify the uTdriver that the TAs is ready !*/
 	down(&boot_decryto_lock);
 	up(&boot_decryto_lock);
-	
+
 	retVal = teei_service_init_second();
 	if (retVal == -1)
 		return -1;
@@ -726,7 +726,7 @@ static int init_teei_framework(void)
 	teei_config_flag = 1;
 
 	wake_up(&__fp_open_wq);
-	
+
 	return 0;
 }
 
@@ -802,10 +802,12 @@ static int teei_config_open(struct inode *inode, struct file *file)
  *		ENOMEM: No enough memory
  */
 
+/*
 static int teei_config_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	return 0;
 }
+*/
 
 /**
  * @brief		The release operation of /dev/teei_config device node.
@@ -831,7 +833,7 @@ static const struct file_operations teei_config_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = teei_config_ioctl,
 	.open = teei_config_open,
-	.mmap = teei_config_mmap,
+	/* .mmap = teei_config_mmap, */
 	.release = teei_config_release
 };
 
@@ -1612,7 +1614,7 @@ static int teei_client_init(void)
 		current_cpu_id = i;
 		printk("init stage : current_cpu_id = %d\n", current_cpu_id);
 	}
-	
+
 	printk("begin to create sub_thread.\n");
 
 #if 0
