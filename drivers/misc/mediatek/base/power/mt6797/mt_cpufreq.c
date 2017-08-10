@@ -4051,6 +4051,7 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 	int ret = -1;
 	unsigned int target_volt_vpro1 = 0;
 	int log = 1;
+	int ignore_new_opp_idx = 0;
 
 	FUNC_ENTER(FUNC_LV_LOCAL);
 
@@ -4085,6 +4086,16 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 		log = 0;
 	}
 
+	if (new_opp_idx == -2) {
+		policy = p->mt_policy;
+		if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
+			new_opp_idx = 13;
+		else
+			new_opp_idx = 12;
+		ignore_new_opp_idx = 1;
+		log = 1;
+	}
+
 	if (do_dvfs_stress_test) {
 		new_opp_idx = jiffies & 0xF;
 
@@ -4103,8 +4114,10 @@ static void _mt_cpufreq_set(struct cpufreq_policy *policy, enum mt_cpu_dvfs_id i
 		if (cpu_dvfs_is(p, MT_CPU_DVFS_B))
 			if (new_opp_idx < p_b->idx_opp_ppm_limit)
 				new_opp_idx = p_b->idx_opp_ppm_limit;
-	} else
-		new_opp_idx = _calc_new_opp_idx(id_to_cpu_dvfs(id), new_opp_idx);
+	} else {
+		if (ignore_new_opp_idx == 0)
+			new_opp_idx = _calc_new_opp_idx(id_to_cpu_dvfs(id), new_opp_idx);
+	}
 
 	if (abs(new_opp_idx - p->idx_opp_tbl) < 5 && new_opp_idx != 0 &&
 		new_opp_idx != p->nr_opp_tbl - 1)
@@ -5296,6 +5309,7 @@ _mt_cpufreq_pm_callback(struct notifier_block *nb,
 		for_each_cpu_dvfs(i, p) {
 			if (!cpu_dvfs_is_available(p))
 				continue;
+			_mt_cpufreq_set(p->mt_policy, i, -2, 0);
 			p->dvfs_disable_by_suspend = true;
 		}
 		cpufreq_unlock(flags);
