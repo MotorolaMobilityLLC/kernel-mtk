@@ -300,10 +300,10 @@ void audckbufEnable(bool enable)
 	mutex_unlock(&Ana_buf_Ctrl_Mutex);
 }
 
-static int ClsqCount;
+/* static int ClsqCount; */
 static void ClsqEnable(bool enable)
 {
-	pr_debug("ClsqEnable not support ClsqCount = %d enable = %d\n", ClsqCount, enable);
+	/* pr_debug("ClsqEnable not support ClsqCount = %d enable = %d\n", ClsqCount, enable); */
 }
 
 static int TopCkCount;
@@ -329,14 +329,14 @@ static void Topck_Enable(bool enable)
 	}
 	mutex_unlock(&Ana_Clk_Mutex);
 
-	pr_warn("Topck_Enable enable-\n");
+	/* pr_warn("Topck_Enable enable-\n"); */
 
 }
 
-static int NvRegCount;
+/* static int NvRegCount; */
 static void NvregEnable(bool enable)
 {
-	pr_debug("NvregEnable not support NvRegCount == %d enable = %d\n", NvRegCount, enable);
+	/* pr_debug("NvregEnable not support NvRegCount == %d enable = %d\n", NvRegCount, enable); */
 }
 static void TopCtlChangeTrigger(void)
 {
@@ -1231,7 +1231,7 @@ static void HeadsetVoloumeRestore(void)
 	}
 	Ana_Set_Reg(ZCD_CON2, 0x0489, 0xf9f);
 #else
-	pr_warn("%s no this\n", __func__);
+	/* pr_warn("%s no this\n", __func__); */
 #endif
 }
 
@@ -1284,7 +1284,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 		if (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETL] == false
 		    && mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR] ==
 		    false) {
-			pr_warn("%s\n", __func__);
+			/* pr_warn("%s\n", __func__); */
 
 			/* need to modify sequence */
 			/* DC compensation setting */
@@ -2115,7 +2115,7 @@ static int Audio_Speaker_Pga_Gain_Set(struct snd_kcontrol *kcontrol,
 {
 	Speaker_pga_gain = ucontrol->value.integer.value[0];
 
-	pr_warn("%s Speaker_pga_gain= %d\n", __func__, Speaker_pga_gain);
+	/* pr_warn("%s Speaker_pga_gain= %d\n", __func__, Speaker_pga_gain); */
 	/* struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol); */
 	/* int index = 0; */
 	/* this will base on hw spec, use 15dB for */
@@ -2450,7 +2450,7 @@ static int Headset_PGAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_v
 	int index2 = 7;
 	/* gain[] = {-5, -3, -1, 1, 3, 5, 7, 9}; */
 
-	pr_warn("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]);
+	/* pr_debug("%s(), index = %d\n", __func__, ucontrol->value.enumerated.item[0]); */
 
 	if (ucontrol->value.enumerated.item[0] >= ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN)) {
 		pr_warn("return -EINVAL\n");

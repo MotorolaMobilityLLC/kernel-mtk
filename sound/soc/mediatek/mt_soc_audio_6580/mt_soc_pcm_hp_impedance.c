@@ -155,7 +155,7 @@ static int mtk_pcm_hp_impedance_params(struct snd_pcm_substream *substream,
 {
 	int ret = 0;
 
-	pr_warn("mtk_pcm_hp_impedance_params\n");
+	/* pr_warn("mtk_pcm_hp_impedance_params\n"); */
 
 	/* runtime->dma_bytes has to be set manually to allow mmap */
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
@@ -172,7 +172,7 @@ static int mtk_pcm_hp_impedance_params(struct snd_pcm_substream *substream,
 
 static int mtk_pcm_hp_impedance_hw_free(struct snd_pcm_substream *substream)
 {
-	PRINTK_AUDDRV("mtk_pcm_hp_impedance_hw_free\n");
+	/* PRINTK_AUDDRV("mtk_pcm_hp_impedance_hw_free\n"); */
 	return 0;
 }
 
@@ -203,8 +203,8 @@ static int mtk_pcm_hp_impedance_open(struct snd_pcm_substream *substream)
 		PRINTK_AUDDRV("snd_pcm_hw_constraint_integer failed\n");
 
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-		PRINTK_AUDDRV("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_playback_constraints\n");
+	/* if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+		PRINTK_AUDDRV("SNDRV_PCM_STREAM_PLAYBACK mtkalsa_playback_constraints\n"); */
 
 	if (ret < 0) {
 		PRINTK_AUDDRV("mtk_soc_pcm_hp_impedance_close\n");

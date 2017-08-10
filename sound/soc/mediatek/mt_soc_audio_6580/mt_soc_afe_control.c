@@ -1735,7 +1735,7 @@ bool EnableSideToneFilter(bool stf_on)
 
 bool SetMemoryPathEnable(uint32 Aud_block, bool bEnable)
 {
-	pr_warn("%s Aud_block = %d bEnable = %d\n", __func__, Aud_block, bEnable);
+	/* pr_debug("%s Aud_block = %d bEnable = %d\n", __func__, Aud_block, bEnable); */
 	if (Aud_block >= Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK)
 		return false;
 
@@ -2268,7 +2268,7 @@ int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length)
 #endif
 	AFE_BLOCK_T *pblock;
 
-	pr_warn("%s Afe_Buf_Length = %d\n ", __func__, Afe_Buf_Length);
+	/* pr_debug("%s Afe_Buf_Length = %d\n ", __func__, Afe_Buf_Length); */
 
 	pblock = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]->rBlock);
 	pblock->u4BufferSize = Afe_Buf_Length;
@@ -2287,8 +2287,8 @@ int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length)
 		pblock->pucPhysBufAddr = u4PhyAddr;
 
 #ifdef AUDIO_MEM_IOREMAP
-		PRINTK_AUDDRV("AudDrv_Allocate_DL1_Buffer length AUDIO_MEM_IOREMAP  = %d\n",
-			      Afe_Buf_Length);
+		/* PRINTK_AUDDRV("AudDrv_Allocate_DL1_Buffer length AUDIO_MEM_IOREMAP  = %d\n",
+			      Afe_Buf_Length); */
 		pblock->pucVirtBufAddr = (kal_uint8 *) Get_Afe_SramBase_Pointer();
 #else
 		pblock->pucVirtBufAddr = AFE_INTERNAL_SRAM_VIR_BASE;
@@ -2300,7 +2300,7 @@ int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length)
 							    &pblock->pucPhysBufAddr, GFP_KERNEL);
 #endif
 	}
-	PRINTK_AUDDRV("AudDrv_Allocate_DL1_Buffer Afe_Buf_Length = %dpucVirtBufAddr = %p\n",
+	PRINTK_AUDDRV("AudDrv_Allocate_DL1_Buffer Afe_Buf_Length = %d pucVirtBufAddr = %p\n",
 		      Afe_Buf_Length, pblock->pucVirtBufAddr);
 
 	/* check 32 bytes align */

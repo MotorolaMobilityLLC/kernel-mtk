@@ -503,7 +503,7 @@ bool SetConnectionState(uint32 ConnectionState, uint32 Input, uint32 Output)
 			}
 		}
 	}
-	pr_warn("SetinputConnection---\n");
+	/* pr_debug("SetinputConnection---\n"); */
 	return true;
 }
 EXPORT_SYMBOL(SetConnectionState);
