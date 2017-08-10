@@ -2444,7 +2444,7 @@ static disp_internal_buffer_info *allocat_decouple_buffer(int size)
 		}
 		buf_info->handle = handle;
 		buf_info->mva = buffer_mva;
-		buf_info->size = (uint32_t)mva_size;
+		buf_info->size = mva_size;
 		buf_info->va = buffer_va;
 		buf_info->client = client;
 	} else {

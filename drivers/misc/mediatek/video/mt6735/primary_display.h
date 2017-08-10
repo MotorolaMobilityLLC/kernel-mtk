@@ -181,7 +181,7 @@ typedef struct {
 	void *va;
 	uint32_t fence_id;
 	uint32_t mva;
-	uint32_t size;
+	size_t size;
 	uint32_t output_fence_id;
 	uint32_t interface_fence_id;
 	unsigned long long timestamp;
