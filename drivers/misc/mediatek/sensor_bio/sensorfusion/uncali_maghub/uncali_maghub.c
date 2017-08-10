@@ -66,9 +66,15 @@ static int uncali_mag_recv_data(struct data_unit_t *event, void *reserved)
 	value[0] = event->uncalibrated_mag_t.x;
 	value[1] = event->uncalibrated_mag_t.y;
 	value[2] = event->uncalibrated_mag_t.z;
-	value[3] = 0;/* event->uncalibrated_mag_t.x_bias; */
-	value[4] = 0;/* event->uncalibrated_mag_t.y_bias; */
-	value[5] = 0;/* event->uncalibrated_mag_t.z_bias; */
+#if defined CONFIG_MTK_SCP_SENSORHUB_V1
+	value[3] = event->uncalibrated_mag_t.x_bias;
+	value[4] = event->uncalibrated_mag_t.y_bias;
+	value[5] = event->uncalibrated_mag_t.z_bias;
+#elif defined CONFIG_NANOHUB
+	value[3] = 0;
+	value[4] = 0;
+	value[5] = 0;
+#endif
 	if (event->flush_action == true)
 		err = uncali_mag_flush_report();
 	else
