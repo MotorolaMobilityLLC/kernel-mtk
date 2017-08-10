@@ -2418,6 +2418,10 @@
 		gpio-osc = <99>;
 	};
 
+	gps {
+		compatible = "mediatek,gps";
+	};
+
 	gsensor@0 {
 		compatible = "mediatek,gsensor";
 		/* vgsensor-supply = <&mt_pmic_vio28_ldo_reg>; */
