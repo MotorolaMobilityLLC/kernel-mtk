@@ -17,6 +17,12 @@
 #include "ion_drv_priv.h"
 #include "ion_priv.h"
 #include "mtk/ion_drv.h"
+#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
+#include "tz_cross/trustzone.h"
+#include "tz_cross/ta_mem.h"
+#include "trustzone/kree/system.h"
+#include "trustzone/kree/mem.h"
+#endif
 
 typedef struct {
 	int eModuleID;
@@ -42,6 +48,24 @@ struct ion_sec_heap {
 	void *priv;
 };
 
+#ifdef CONFIG_MTK_IN_HOUSE_TEE_SUPPORT
+static KREE_SESSION_HANDLE ion_session;
+KREE_SESSION_HANDLE ion_session_handle(void)
+{
+	if (ion_session == KREE_SESSION_HANDLE_NULL) {
+		TZ_RESULT ret;
+
+		ret = KREE_CreateSession(TZ_TA_MEM_UUID, &ion_session);
+		if (ret != TZ_RESULT_SUCCESS) {
+			IONMSG("KREE_CreateSession fail, ret=%d\n", ret);
+			return KREE_SESSION_HANDLE_NULL;
+		}
+	}
+
+	return ion_session;
+}
+#endif
+
 static int ion_sec_heap_allocate(struct ion_heap *heap,
 		struct ion_buffer *buffer, unsigned long size, unsigned long align,
 		unsigned long flags) {
@@ -59,6 +83,17 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	secmem_api_alloc(align, size, &refcount, &sec_handle, (uint8_t *)heap->name, heap->id);
+#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
+	{
+		int ret = 0;
+
+		ret = KREE_AllocSecurechunkmemWithTag(ion_session_handle(), &sec_handle, align, size, heap->name);
+		if (ret != TZ_RESULT_SUCCESS) {
+			IONMSG("KREE_AllocSecurechunkmemWithTag failed, ret is 0x%x\n", ret);
+			return ret;
+		}
+	}
+	refcount = 0;
 #else
 	refcount = 0;
 #endif
@@ -96,6 +131,14 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 	sec_handle = ((ion_sec_buffer_info *)buffer->priv_virt)->priv_phys;
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 	secmem_api_unref(sec_handle, (uint8_t *)buffer->heap->name, buffer->heap->id);
+#elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
+	{
+		TZ_RESULT ret = 0;
+
+		ret = KREE_UnreferenceSecurechunkmem(ion_session_handle(), sec_handle);
+		if (ret != TZ_RESULT_SUCCESS)
+			IONMSG("KREE_UnreferenceSecurechunkmem failed, ret is 0x%x\n", ret);
+	}
 #endif
 	kfree(table);
 	IONMSG("%s exit\n", __func__);
@@ -393,7 +436,8 @@ long ion_sec_ioctl(struct ion_client *client, unsigned int cmd, unsigned long ar
 	long ret = 0;
 	unsigned long ret_copy = 0;
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if (defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT))
+	|| defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
 	IONMSG("%s enter\n", __func__);
 #else
 	IONMSG("%s error: not support\n", __func__);
