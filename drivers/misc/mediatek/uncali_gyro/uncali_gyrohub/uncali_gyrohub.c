@@ -38,7 +38,7 @@ static struct uncali_gyrohub_ipi_data obj_ipi_data;
 
 static ssize_t show_uncali_gyro_value(struct device_driver *ddri, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%s\n", buf);
+	return snprintf(buf, PAGE_SIZE, "%s\n", "uncalibration gyroscope");
 }
 static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, size_t count)
 {

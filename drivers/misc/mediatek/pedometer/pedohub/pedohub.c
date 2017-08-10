@@ -38,7 +38,7 @@ static struct pedohub_ipi_data obj_ipi_data;
 
 static ssize_t show_pedometer_value(struct device_driver *ddri, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%s\n", buf);
+	return snprintf(buf, PAGE_SIZE, "%s\n", "pedometer");
 }
 
 static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, size_t count)

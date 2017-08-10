@@ -53,7 +53,7 @@ static void step_sign_work(struct work_struct *work)
 
 static ssize_t show_step_cds_value(struct device_driver *ddri, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%s\n", buf);
+	return snprintf(buf, PAGE_SIZE, "%s\n", "step counter detector sigmotion");
 }
 
 static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, size_t count)

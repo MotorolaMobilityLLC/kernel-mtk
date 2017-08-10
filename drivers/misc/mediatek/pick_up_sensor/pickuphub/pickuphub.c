@@ -65,7 +65,7 @@ static void pkup_work(struct work_struct *work)
 
 static ssize_t show_pickup_gesture_value(struct device_driver *ddri, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%s\n", buf);
+	return snprintf(buf, PAGE_SIZE, "%s\n", "pick up");
 }
 
 static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, size_t count)
