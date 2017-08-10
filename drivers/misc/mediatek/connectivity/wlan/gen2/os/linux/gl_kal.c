@@ -2291,8 +2291,7 @@ int tx_thread(void *data)
 					} else
 						DBGLOG(OID, WARN, "completion_done = true, do nothing\n");
 
-					if (prIoReq->rStatus != WLAN_STATUS_PENDING
-						&& (!completion_done(&prGlueInfo->rPendComp))) {
+					if (prIoReq->rStatus != WLAN_STATUS_PENDING) {
 
 						DBGLOG(OID, TEMP, "tx_thread, complete\n");
 						complete(&prGlueInfo->rPendComp);
