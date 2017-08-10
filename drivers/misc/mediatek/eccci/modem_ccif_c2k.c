@@ -301,7 +301,7 @@ static void md_ccif_sram_rx_work(struct work_struct *work)
  RETRY:
 	ret = ccci_md_recv_skb(md, skb);
 	CCCI_DEBUG_LOG(md->index, TAG, "Rx msg %x %x %x %x ret=%d\n",
-		ccci_h->data[0], ccci_h->data[1], *(((u32 *) ccci_h) + 2), ccci_h->reserved, ret);
+		ccci_hdr.data[0], ccci_hdr.data[1], *(((u32 *)&ccci_hdr) + 2), ccci_hdr.reserved, ret);
 	if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
 		CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_sram_rx_work:ccci_port_recv_skb ret=%d\n", ret);
 		ccci_md_check_rx_seq_num(md, &ccci_hdr, 0);
@@ -561,7 +561,7 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget, int blocking
 			if (likely(md->capability & MODEM_CAP_TXBUSY_STOP))
 				ccif_check_flow_ctrl(md, queue->index, rx_buf);
 
-			if (ccci_h->channel == CCCI_MD_LOG_RX) {
+			if (ccci_hdr.channel == CCCI_MD_LOG_RX) {
 				rx_data_cnt += pkg_size - 16;
 				pkg_num++;
 				CCCI_DEBUG_LOG(md->index, TAG,
