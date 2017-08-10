@@ -1052,6 +1052,12 @@ PMU_STATUS BAT_BatteryFullAction(void)
 	battery_log(BAT_LOG_FULL, "Turn off PWRSTAT LED\n");
 	battery_charging_control(CHARGING_CMD_SET_PWRSTAT_LED_EN, &led_en);
 
+	/*
+	 * If CV is set to lower value by JEITA,
+	 * Reset CV to normal value if temperture is in normal zone
+	 */
+	mtk_select_cv();
+
 	if (charging_full_check() == KAL_FALSE) {
 		battery_log(BAT_LOG_CRTI, "[BATTERY] Battery Re-charging !!\n\r");
 
