@@ -150,14 +150,10 @@ static int simple_sd_ioctl_multi_rw(struct msdc_ioctl *msdc_ctl)
 	char l_buf[512];
 	struct scatterlist msdc_sg;
 	struct mmc_data msdc_data;
+	struct mmc_command msdc_sbc;
 	struct mmc_command msdc_cmd;
 	struct mmc_command msdc_stop;
 	int ret = 0;
-
-#ifdef MTK_MSDC_USE_CMD23
-	struct mmc_command msdc_sbc;
-#endif
-
 	struct mmc_request msdc_mrq;
 	struct msdc_host *host_ctl;
 
@@ -175,6 +171,11 @@ static int simple_sd_ioctl_multi_rw(struct msdc_ioctl *msdc_ctl)
 		return -EINVAL;
 
 	msdc_ctl->result = 0;
+	memset(&msdc_data, 0, sizeof(struct mmc_data));
+	memset(&msdc_mrq, 0, sizeof(struct mmc_request));
+	memset(&msdc_sbc, 0, sizeof(struct mmc_command));
+	memset(&msdc_cmd, 0, sizeof(struct mmc_command));
+	memset(&msdc_stop, 0, sizeof(struct mmc_command));
 
 	/*
 	 * workaround here, if sd.c has remove baisc DMA 64KB limit
@@ -243,15 +244,6 @@ static int simple_sd_ioctl_multi_rw(struct msdc_ioctl *msdc_ctl)
 		}
 		break;
 	}
-#endif
-
-	memset(&msdc_data, 0, sizeof(struct mmc_data));
-	memset(&msdc_mrq, 0, sizeof(struct mmc_request));
-	memset(&msdc_cmd, 0, sizeof(struct mmc_command));
-	memset(&msdc_stop, 0, sizeof(struct mmc_command));
-
-#ifdef MTK_MSDC_USE_CMD23
-	memset(&msdc_sbc, 0, sizeof(struct mmc_command));
 #endif
 
 	msdc_mrq.cmd = &msdc_cmd;
@@ -395,6 +387,9 @@ static int simple_sd_ioctl_single_rw(struct msdc_ioctl *msdc_ctl)
 		return -EINVAL;
 
 	msdc_ctl->result = 0;
+	memset(&msdc_data, 0, sizeof(struct mmc_data));
+	memset(&msdc_mrq, 0, sizeof(struct mmc_request));
+	memset(&msdc_cmd, 0, sizeof(struct mmc_command));
 #ifdef MTK_MSDC_USE_CACHE
 	if (msdc_ctl->iswrite && mmc_card_mmc(host_ctl->mmc->card)
 	    && (host_ctl->mmc->card->ext_csd.cache_ctrl & 0x1))
@@ -467,9 +462,6 @@ static int simple_sd_ioctl_single_rw(struct msdc_ioctl *msdc_ctl)
 #if DEBUG_MMC_IOCTL
 	pr_debug("start MSDC_SINGLE_READ_WRITE !!\n");
 #endif
-	memset(&msdc_data, 0, sizeof(struct mmc_data));
-	memset(&msdc_mrq, 0, sizeof(struct mmc_request));
-	memset(&msdc_cmd, 0, sizeof(struct mmc_command));
 
 	msdc_mrq.cmd = &msdc_cmd;
 	msdc_mrq.data = &msdc_data;

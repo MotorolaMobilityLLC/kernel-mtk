@@ -78,7 +78,6 @@
 #endif
 
 #include "msdc_hw_ett.h"
-#include "dbg.h"
 
 #include<mt-plat/upmu_common.h>
 
@@ -6598,7 +6597,7 @@ static void msdc_dump_trans_error(struct msdc_host *host,
 		ERR_MSG("XXX SBC<%d><0x%x> Error<%d> Resp<0x%x>",
 			sbc->opcode, sbc->arg, sbc->error, sbc->resp[0]);
 
-	if (data && cmd)
+	if (data)
 		ERR_MSG("XXX CMD<%d>.arg<0x%.8x>,DAT block<%d> Error<%d>", cmd->opcode,
 			cmd->arg, data->blocks, data->error);
 
@@ -7778,9 +7777,13 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 		goto done;
 	else
 #endif
-		if (intsts & MSDC_INT_XFER_COMPL)
+		if (intsts & MSDC_INT_XFER_COMPL) {
+			if ((stop != NULL) && (host->autocmd & MSDC_AUTOCMD12)) {
+				CMD_MSG("CMD<12> @ addr<0x%08x> resp<0x%.8x>",
+					cmd_arg, sdr_read32(SDC_ACMD_RESP));
+			}
 			goto done;
-
+		}
 		if (intsts & datsts) {
 			/* do basic reset, or stop command will sdc_busy */
 			if (intsts & MSDC_INT_DATTMO)
@@ -8489,66 +8492,70 @@ static void msdc_get_rigister_settings(struct msdc_host *host)
 {
 	struct mmc_host *mmc = host->mmc;
 	struct device_node *np = mmc->parent->of_node;
-	struct device_node *register_setting_node = NULL;
+	struct device_node *node = NULL;
+	struct msdc_hw *hw = host->hw;
+	int id = host->id;
+	int cnt = 0;
+	size_t size = sizeof(struct msdc_ett_settings);
 
 	/*parse hw property settings*/
-	register_setting_node = of_parse_phandle(np, "register_setting", 0);
-	if (register_setting_node) {
-		of_property_read_u8(register_setting_node, "dat0rddly", &host->hw->dat0rddly);
-		of_property_read_u8(register_setting_node, "dat1rddly", &host->hw->dat1rddly);
-		of_property_read_u8(register_setting_node, "dat2rddly", &host->hw->dat2rddly);
-		of_property_read_u8(register_setting_node, "dat3rddly", &host->hw->dat3rddly);
-		of_property_read_u8(register_setting_node, "dat4rddly", &host->hw->dat4rddly);
-		of_property_read_u8(register_setting_node, "dat5rddly", &host->hw->dat5rddly);
-		of_property_read_u8(register_setting_node, "dat6rddly", &host->hw->dat6rddly);
-		of_property_read_u8(register_setting_node, "dat7rddly", &host->hw->dat7rddly);
+	node = of_parse_phandle(np, "register_setting", 0);
+	if (node) {
+		of_property_read_u8(node, "dat0rddly", &hw->dat0rddly);
+		of_property_read_u8(node, "dat1rddly", &hw->dat1rddly);
+		of_property_read_u8(node, "dat2rddly", &hw->dat2rddly);
+		of_property_read_u8(node, "dat3rddly", &hw->dat3rddly);
+		of_property_read_u8(node, "dat4rddly", &hw->dat4rddly);
+		of_property_read_u8(node, "dat5rddly", &hw->dat5rddly);
+		of_property_read_u8(node, "dat6rddly", &hw->dat6rddly);
+		of_property_read_u8(node, "dat7rddly", &hw->dat7rddly);
 
-		of_property_read_u8(register_setting_node, "datwrddly", &host->hw->datwrddly);
-		of_property_read_u8(register_setting_node, "cmdrrddly", &host->hw->cmdrrddly);
-		of_property_read_u8(register_setting_node, "cmdrddly", &host->hw->cmdrddly);
+		of_property_read_u8(node, "datwrddly", &hw->datwrddly);
+		of_property_read_u8(node, "cmdrrddly", &hw->cmdrrddly);
+		of_property_read_u8(node, "cmdrddly", &hw->cmdrddly);
 
-		of_property_read_u8(register_setting_node, "cmd_edge", &host->hw->cmd_edge);
-		of_property_read_u8(register_setting_node, "rdata_edge", &host->hw->rdata_edge);
-		of_property_read_u8(register_setting_node, "wdata_edge", &host->hw->wdata_edge);
+		of_property_read_u8(node, "cmd_edge", &hw->cmd_edge);
+		of_property_read_u8(node, "rdata_edge", &hw->rdata_edge);
+		of_property_read_u8(node, "wdata_edge", &hw->wdata_edge);
 	} else {
-		pr_err("[MSDC%d] register_setting is not found in DT.\n", host->id);
+		pr_err("[MSDC%d] register_setting is not found in DT.\n", id);
 		return;
 	}
+	if (MSDC_EMMC != hw->host_function)
+		return;
 /*parse ett*/
-	if (of_property_read_u32(register_setting_node, "ett-hs200-cells",
-		&host->hw->ett_hs200_count))
+	if (of_property_read_u32(node, "ett-hs200-cells", &cnt)) {
 		pr_err("[MSDC] ett-hs200-cells is not found in DT.\n");
-	host->hw->ett_hs200_settings =
-		kzalloc(sizeof(struct msdc_ett_settings) * host->hw->ett_hs200_count, GFP_KERNEL);
+		dump_stack();
+	}
+	hw->ett_hs200_count = cnt;
+	hw->ett_hs200_settings = kzalloc(size * cnt, GFP_KERNEL);
 
-	if (MSDC_EMMC == host->hw->host_function
-		&& !of_property_read_u32_array(register_setting_node, "ett-hs200-customer",
-		(u32 *)host->hw->ett_hs200_settings, host->hw->ett_hs200_count * 3)) {
-		pr_err("[MSDC%d] hs200 ett setting for customer is found in DT.\n", host->id);
-	} else if (MSDC_EMMC == host->hw->host_function
-		&& !of_property_read_u32_array(register_setting_node, "ett-hs200-default",
-		(u32 *)host->hw->ett_hs200_settings, host->hw->ett_hs200_count * 3)) {
-		pr_err("[MSDC%d] hs200 ett setting for default is found in DT.\n", host->id);
-	} else if (MSDC_EMMC == host->hw->host_function) {
-		pr_err("[MSDC%d]error: hs200 ett setting is not found in DT.\n", host->id);
+	if (!of_property_read_u32_array(node, "ett-hs200-customer",
+		(u32 *)hw->ett_hs200_settings, hw->ett_hs200_count * 3)) {
+		pr_err("[MSDC%d] hs200 ett setting for customer is found in DT.\n", id);
+	} else if (!of_property_read_u32_array(node, "ett-hs200-default",
+		(u32 *)hw->ett_hs200_settings, hw->ett_hs200_count * 3)) {
+		pr_err("[MSDC%d] hs200 ett setting for default is found in DT.\n", id);
+	} else{
+		pr_err("[MSDC%d]error: hs200 ett setting is not found in DT.\n", id);
 	}
 
-	if (of_property_read_u32(register_setting_node, "ett-hs400-cells",
-		&host->hw->ett_hs400_count))
-		pr_err("[MSDC] ett-hs400-cells is not found in DT.\n");
-	host->hw->ett_hs400_settings =
-		kzalloc(sizeof(struct msdc_ett_settings) * host->hw->ett_hs400_count, GFP_KERNEL);
+	if (of_property_read_u32(node, "ett-hs400-cells", &cnt)) {
+		pr_err("[MSDC%d] ett-hs400-cells is not found in DT.\n", id);
+		dump_stack();
+	}
+	hw->ett_hs400_count = cnt;
+	hw->ett_hs400_settings = kzalloc(size * cnt, GFP_KERNEL);
 
-	if (MSDC_EMMC == host->hw->host_function
-		&& !of_property_read_u32_array(register_setting_node, "ett-hs400-customer",
-		(u32 *)host->hw->ett_hs400_settings, host->hw->ett_hs400_count * 3)) {
-		pr_err("[MSDC%d] hs400 ett setting for customer is found in DT.\n", host->id);
-	} else if (MSDC_EMMC == host->hw->host_function
-		&& !of_property_read_u32_array(register_setting_node, "ett-hs400-default",
-		(u32 *)host->hw->ett_hs400_settings, host->hw->ett_hs400_count * 3)) {
-		pr_err("[MSDC%d] hs400 ett setting for default is found in DT.\n", host->id);
-	} else if (MSDC_EMMC == host->hw->host_function) {
-		pr_err("[MSDC%d]error: hs400 ett setting is not found in DT.\n", host->id);
+	if (!of_property_read_u32_array(node, "ett-hs400-customer",
+		(u32 *)hw->ett_hs400_settings, hw->ett_hs400_count * 3)) {
+		pr_err("[MSDC%d] hs400 ett setting for customer is found in DT.\n", id);
+	} else if (!of_property_read_u32_array(node, "ett-hs400-default",
+		(u32 *)hw->ett_hs400_settings, hw->ett_hs400_count * 3)) {
+		pr_err("[MSDC%d] hs400 ett setting for default is found in DT.\n", id);
+	} else {
+		pr_err("[MSDC%d]error: hs400 ett setting is not found in DT.\n", id);
 	}
 }
 
@@ -8561,7 +8568,7 @@ int msdc_of_parse(struct mmc_host *mmc)
 {
 	struct device_node *np;
 	struct msdc_host *host = mmc_priv(mmc);
-	int len;
+	int len, ret = 0;
 
 	if (!mmc->parent || !mmc->parent->of_node)
 		return 1;
@@ -8620,12 +8627,16 @@ int msdc_of_parse(struct mmc_host *mmc)
 	of_property_read_u8(np, "cd_level", (u8 *)&host->hw->cd_level);
 
 	/*get cd_gpio*/
-	of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio);
+	if (host->id == 1) {
+		ret = of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio);
+		if (ret)
+			pr_err("[MSDC%d] get cd_gpio fail, ret = %d\n", host->id, ret);
+	}
 
 	msdc_get_rigister_settings(host);
 	msdc_get_pinctl_settings(host);
 
-	return 0;
+	return ret;
 }
 
 static int msdc_drv_probe(struct platform_device *pdev)
@@ -9328,7 +9339,6 @@ static int __init mt_msdc_init(void)
 
 	pr_debug(DRV_NAME ": MediaTek MSDC Driver\n");
 
-	msdc_debug_proc_init();
 #ifdef MSDC_DMA_ADDR_DEBUG
 	msdc_init_dma_latest_address();
 #endif

@@ -183,8 +183,6 @@ extern u32 sdio_cmd_drv;
 extern u32 sdio_data_drv;
 extern u32 sdio_tune_flag;
 
-int msdc_debug_proc_init(void);
-
 extern void GPT_GetCounter64(u32 *cntL32, u32 *cntH32);
 u32 msdc_time_calc(u32 old_L32, u32 old_H32, u32 new_L32, u32 new_H32);
 void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks);

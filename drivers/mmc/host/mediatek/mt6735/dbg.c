@@ -3427,11 +3427,8 @@ int msdc_debug_proc_init(void)
 #endif
 	uid = make_kuid(&init_user_ns, 0);
 	gid = make_kgid(&init_user_ns, 1001);
-#ifndef USER_BUILD_KERNEL
+
 	prEntry = proc_create("msdc_debug", 0660, NULL, &msdc_proc_fops);
-#else
-	prEntry = proc_create("msdc_debug", 0660, NULL, &msdc_proc_fops);
-#endif
 	if (prEntry) {
 		pr_err("[%s]: successfully create /proc/msdc_debug\n", __func__);
 		proc_set_user(prEntry, uid, gid);
@@ -3439,32 +3436,20 @@ int msdc_debug_proc_init(void)
 		pr_err("[%s]: failed to create /proc/msdc_debug\n", __func__);
 	}
 
-#ifndef USER_BUILD_KERNEL
-	prEntry = proc_create("msdc_help", 0660, NULL, &msdc_help_fops);
-#else
 	prEntry = proc_create("msdc_help", 0440, NULL, &msdc_help_fops);
-#endif
 	if (prEntry)
 		pr_err("[%s]: successfully create /proc/msdc_help\n", __func__);
 	else
 		pr_err("[%s]: failed to create /proc/msdc_help\n", __func__);
 
-#ifndef USER_BUILD_KERNEL
 	prEntry = proc_create("msdc_FT", 0660, NULL, &msdc_FT_fops);
-#else
-	prEntry = proc_create("msdc_FT", 0440, NULL, &msdc_FT_fops);
-#endif
 	if (prEntry)
 		pr_err("[%s]: successfully create /proc/msdc_FT\n", __func__);
 	else
 		pr_err("[%s]: failed to create /proc/msdc_FT\n", __func__);
 
 #ifdef ONLINE_TUNING_DVTTEST
-#ifndef USER_BUILD_KERNEL
 	prEntry = proc_create("msdc_DVT", 0660, NULL, &msdc_DVT_fops);
-#else
-	prEntry = proc_create("msdc_DVT", 0440, NULL, &msdc_DVT_fops);
-#endif
 	if (prEntry)
 		pr_err("[%s]: successfully create /proc/msdc_DVT\n", __func__);
 	else
@@ -3472,32 +3457,21 @@ int msdc_debug_proc_init(void)
 #endif
 
 	memset(msdc_drv_mode, 0, sizeof(msdc_drv_mode));
-#ifndef USER_BUILD_KERNEL
 	tune = proc_create("msdc_tune", 0660, NULL, &msdc_tune_fops);
-#else
-	tune = proc_create("msdc_tune", 0460, NULL, &msdc_tune_fops);
-#endif
 	if (tune) {
 		proc_set_user(tune, uid, gid);
 		pr_err("[%s]: successfully create /proc/msdc_tune\n", __func__);
 	} else {
 		pr_err("[%s]: failed to create /proc/msdc_tune\n", __func__);
 	}
-#ifndef USER_BUILD_KERNEL
+
 	tune_flag = proc_create("msdc_tune_flag", 0660, NULL, &msdc_tune_flag_fops);
-#else
-	tune_flag = proc_create("msdc_tune_flag", 0440, NULL, &msdc_tune_flag_fops);
-#endif
 	if (tune_flag)
 		pr_err("[%s]: successfully create /proc/msdc_tune_flag\n", __func__);
 	else
 		pr_err("[%s]: failed to create /proc/msdc_tune_flag\n", __func__);
 #ifdef MSDC_HQA
-#ifndef USER_BUILD_KERNEL
 	voltage_flag = proc_create("msdc_voltage_flag", 0660, NULL, &msdc_voltage_flag_fops);
-#else
-	voltage_flag = proc_create("msdc_voltage_flag", 0460, NULL, &msdc_voltage_flag_fops);
-#endif
 	if (voltage_flag) {
 		proc_set_user(voltage_flag, uid, gid);
 		pr_err("[%s]: successfully create /proc/msdc_voltage_flag\n", __func__);
@@ -3508,3 +3482,9 @@ int msdc_debug_proc_init(void)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(msdc_debug_proc_init);
+
+static int __init msdc_dbg_init(void)
+{
+	return msdc_debug_proc_init();
+}
+module_init(msdc_dbg_init);
