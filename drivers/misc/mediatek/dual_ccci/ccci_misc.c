@@ -46,23 +46,7 @@
 
 #endif
 #include <ccci_common.h>
-
-/*-------------feature enable/disable configure----------------*/
-/*#define FEATURE_GET_TD_EINT_NUM*/
-#if 1				/*For Bring up */
-#define FEATURE_GET_MD_GPIO_NUM
-#define FEATURE_GET_MD_GPIO_VAL
-#define FEATURE_GET_MD_ADC_NUM
-#define FEATURE_GET_MD_ADC_VAL
-#define FEATURE_GET_MD_EINT_ATTR	/*disable for bring up  */
-#define FEATURE_GET_MD_EINT_ATTR_DTS
-/*#define FEATURE_GET_DRAM_TYPE_CLK*/
-/*#define FEATURE_MD_FAST_DORMANCY*/
-#define FEATURE_GET_MD_BAT_VOL
-#define FEATURE_PM_IPO_H	/*disable for bring up */
-/*#define FEATURE_DFO_EN					  Always bring up*/
-
-#endif
+#include <ccci_platform_cfg.h>
 
 #ifdef FEATURE_GET_MD_GPIO_VAL
 #include <linux/gpio.h>
