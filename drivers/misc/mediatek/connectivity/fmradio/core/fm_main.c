@@ -66,8 +66,12 @@ static struct fm_chip_mapping fm_support_chip_array[] = {
 { 0x6580, 0x6580, FM_SOC_CHIP    },
 { 0x6630, 0x6630, FM_COMBO_CHIP  },
 { 0x6797, 0x6631, FM_AD_DIE_CHIP },
+{ 0x6759, 0x6631, FM_AD_DIE_CHIP },
+{ 0x6758, 0x6631, FM_AD_DIE_CHIP },
 { 0x6632, 0x6632, FM_COMBO_CHIP  },
 { 0x6757, 0x6627, FM_AD_DIE_CHIP },
+{ 0x6763, 0x6627, FM_AD_DIE_CHIP },
+{ 0x6739, 0x6627, FM_AD_DIE_CHIP },
 };
 
 /* RDS reset related functions */
