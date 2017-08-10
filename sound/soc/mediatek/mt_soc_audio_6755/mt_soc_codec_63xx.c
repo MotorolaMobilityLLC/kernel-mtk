@@ -134,7 +134,6 @@ static int TrimOffset = 2048;
 static const int DC1unit_in_uv = 19184;	/* in uv with 0DB */
 /* static const int DC1unit_in_uv = 21500; */	/* in uv with 0DB */
 static const int DC1devider = 8;	/* in uv */
-static int mSwitch_Status;
 static int mAud_Switch_Cntr;
 
 #ifdef EFUSE_HP_TRIM
@@ -404,7 +403,7 @@ static void NvregEnable(bool enable)
 static void HP_Ana_Switch_to_On(void)
 {
 	mAud_Switch_Cntr++;
-	pr_warn("%s mSwitch_Status =%d Aud_Switch_cntr=%d\n ", __func__, mSwitch_Status, mAud_Switch_Cntr);
+	pr_warn("%s Aud_Switch_cntr=%d\n ", __func__, mAud_Switch_Cntr);
 
 	if (mAud_Switch_Cntr == 1) {
 
@@ -424,7 +423,6 @@ static void HP_Ana_Switch_to_On(void)
 #else
 		AudDrv_GPIO_HPDEPOP_Select(true);
 #endif
-		mSwitch_Status = 1;
 
 		usleep_range(500, 1000);
 #endif
@@ -434,13 +432,12 @@ static void HP_Ana_Switch_to_On(void)
 static void HP_Ana_Switch_to_Release(void)
 {
 	mAud_Switch_Cntr--;
-	pr_warn("%s mSwitch_Status =%d Aud_Switch_cntr=%d\n ", __func__, mSwitch_Status, mAud_Switch_Cntr);
+	pr_warn("%s Aud_Switch_cntr=%d\n ", __func__, mAud_Switch_Cntr);
 
 	if (mAud_Switch_Cntr == 0) {
 
 #if defined(CONFIG_MTK_HP_ANASWITCH)
 		usleep_range(500, 1000);
-		pr_warn("%s mSwitch_Status =%d\n ", __func__, mSwitch_Status);
 
 #if defined(CONFIG_MTK_LEGACY)
 		int ret;
@@ -457,7 +454,6 @@ static void HP_Ana_Switch_to_Release(void)
 #else
 		AudDrv_GPIO_HPDEPOP_Select(false);
 #endif
-		mSwitch_Status = 0;
 #endif
 	}
 }
@@ -1620,6 +1616,8 @@ static void HeadsetVoloumeSet(void)
 
 static void Audio_Amp_Change(int channels, bool enable)
 {
+	int aSwitch_Status = 0;
+
 	if (enable) {
 		if (GetDLStatus() == false)
 			TurnOnDacPower();
@@ -1707,7 +1705,7 @@ static void Audio_Amp_Change(int channels, bool enable)
 
 			/* switch to ground to de pop-noise */
 			HP_Ana_Switch_to_On();
-
+			aSwitch_Status = 1;
 
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xF40F, 0xffff);
 			/* Disable HPR/HPL */
@@ -1720,8 +1718,10 @@ static void Audio_Amp_Change(int channels, bool enable)
 		}
 
 		if (GetDLStatus() == false) {
-			if (mSwitch_Status == 0)
+			if (aSwitch_Status == 0) {
 				HP_Ana_Switch_to_On();
+				aSwitch_Status = 1;
+			}
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0xE000, 0xffff);
 			/* Disable Audio DAC */
 			Ana_Set_Reg(AUDDEC_ANA_CON9, 0xA055, 0x0200);
@@ -1740,8 +1740,10 @@ static void Audio_Amp_Change(int channels, bool enable)
 			TurnOffDacPower();
 		}
 
-		if (mSwitch_Status == 1)
+		if (aSwitch_Status == 1) {
 			HP_Ana_Switch_to_Release();
+			aSwitch_Status = 0;
+		}
 	}
 }
 
@@ -2805,7 +2807,7 @@ static int Aud_Clk_Buf_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 static int Analog_Switch_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pr_warn("\%s n", __func__);
-	ucontrol->value.integer.value[0] = mSwitch_Status;
+	ucontrol->value.integer.value[0] = mAud_Switch_Cntr;
 	return 0;
 }
 
