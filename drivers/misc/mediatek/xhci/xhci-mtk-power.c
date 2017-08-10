@@ -206,6 +206,17 @@ void enableAllClockPower(struct xhci_hcd *xhci, bool is_reset)
 	mtk_chk_usb_ip_ck_sts(xhci);
 }
 
+
+int get_num_u3_ports(struct xhci_hcd *xhci)
+{
+	return SSUSB_U3_PORT_NUM(readl((void __iomem *)_SSUSB_IP_CAP(xhci->sif_regs)));
+}
+
+int get_num_u2_ports(struct xhci_hcd *xhci)
+{
+	return SSUSB_U2_PORT_NUM(readl((void __iomem *)_SSUSB_IP_CAP((xhci->sif_regs))));
+}
+
 #if 0
 /* called after HC initiated */
 void disableAllClockPower(void)

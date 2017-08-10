@@ -138,6 +138,8 @@ extern struct xhci_hcd *mtk_xhci;
 	} while (0)
 
 extern int mtk_xhci_ip_init(struct usb_hcd *hcd, struct xhci_hcd *xhci);
+extern int get_num_u3_ports(struct xhci_hcd *xhci);
+extern int get_num_u2_ports(struct xhci_hcd *xhci);
 
 extern void mtk_xhci_ck_timer_init(struct xhci_hcd *);
 extern int mtk_xhci_set(struct usb_hcd *hcd, struct xhci_hcd *xhci);

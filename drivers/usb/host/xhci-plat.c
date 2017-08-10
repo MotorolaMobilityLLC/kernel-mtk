@@ -124,13 +124,21 @@ static int xhci_plat_probe(struct platform_device *pdev)
 	struct clk              *clk;
 	int			ret;
 	int			irq;
+#ifdef CONFIG_USB_XHCI_MTK
+	struct xhci_hcd_mtk *mtk;
+	struct device *dev = &pdev->dev;
+#endif
 
 	if (usb_disabled())
 		return -ENODEV;
 
 	driver = &xhci_plat_hc_driver;
+#ifdef CONFIG_USB_XHCI_MTK
+	mtk = devm_kzalloc(dev, sizeof(*mtk), GFP_KERNEL);
+	if (!mtk)
+		return -ENOMEM;
 
-#ifdef CONFIG_USB_XHCI_MTK  /* device tree support */
+	mtk->dev = dev;
 	irq = platform_get_irq_byname(pdev, XHCI_DRIVER_NAME);
 	if (irq < 0)
 		return -ENODEV;
@@ -201,6 +209,13 @@ static int xhci_plat_probe(struct platform_device *pdev)
 
 	/* USB 2.0 roothub is stored in the platform_device now. */
 	hcd = platform_get_drvdata(pdev);
+
+#ifdef CONFIG_USB_XHCI_MTK
+	mtk->hcd = hcd;
+	platform_set_drvdata(pdev, mtk);
+	xhci_mtk_sch_init(mtk);
+#endif
+
 	xhci = hcd_to_xhci(hcd);
 	xhci->clk = clk;
 	xhci->shared_hcd = usb_create_shared_hcd(driver, &pdev->dev,
@@ -248,7 +263,12 @@ put_hcd:
 
 static int xhci_plat_remove(struct platform_device *dev)
 {
+#ifdef CONFIG_USB_XHCI_MTK
+	struct xhci_hcd_mtk *mtk = platform_get_drvdata(dev);
+	struct usb_hcd	*hcd = mtk->hcd;
+#else
 	struct usb_hcd	*hcd = platform_get_drvdata(dev);
+#endif
 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
 	struct clk *clk = xhci->clk;
 
@@ -267,8 +287,10 @@ static int xhci_plat_remove(struct platform_device *dev)
 	if (xhci->quirks & XHCI_MTK_HOST)
 		xhci_mtk_exit_quirk(xhci);
 #endif
+
 #ifdef CONFIG_USB_XHCI_MTK
 	mtk_xhci_reset(xhci);
+	xhci_mtk_sch_exit(mtk);
 #endif
 	kfree(xhci);
 
