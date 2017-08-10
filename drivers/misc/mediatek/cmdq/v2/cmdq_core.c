@@ -1110,63 +1110,9 @@ void cmdq_core_dump_task_buffer_hex(struct TaskStruct *pTask)
 
 static bool cmdq_core_task_is_buffer_size_valid(const struct TaskStruct *pTask)
 {
-	struct CmdBufferStruct *cmd_buffer;
-
-	if (pTask->bufferSize % CMDQ_CMD_BUFFER_SIZE !=
+	return (pTask->bufferSize % CMDQ_CMD_BUFFER_SIZE ==
 		(pTask->buf_available_size > 0 ?
-		CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size : 0))
-		return false;
-
-	cmd_buffer = list_last_entry(&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
-	if (pTask->buf_available_size == CMDQ_CMD_BUFFER_SIZE &&
-		(pTask->pCMDEnd > cmd_buffer->pVABase &&
-		pTask->pCMDEnd < cmd_buffer->pVABase + CMDQ_CMD_BUFFER_SIZE / sizeof(uint32_t)) == false) {
-		/* In EOC+JUMP at end of buffer case, pCMDEnd may locate at end of previous buffer. */
-		cmd_buffer = list_prev_entry(cmd_buffer, listEntry);
-		if ((pTask->pCMDEnd > cmd_buffer->pVABase &&
-			pTask->pCMDEnd < cmd_buffer->pVABase + CMDQ_CMD_BUFFER_SIZE / sizeof(uint32_t)) == false)
-			return false;
-	}
-
-	return true;
-}
-
-static uint32_t cmdq_core_task_get_offset_by_addr(const struct TaskStruct *pTask,
-		uint32_t *inst_va)
-{
-	uint32_t offset = 0;
-	struct CmdBufferStruct *cmd_buffer = NULL;
-
-	list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
-		if (inst_va >= cmd_buffer->pVABase &&
-			inst_va < cmd_buffer->pVABase + CMDQ_CMD_BUFFER_SIZE / sizeof(uint32_t)) {
-			offset += (uint32_t)((unsigned long)inst_va - (unsigned long)cmd_buffer->pVABase);
-			/* break since there maybe another blank buffer at end */
-			break;
-		}
-
-		offset += CMDQ_CMD_BUFFER_SIZE;
-	}
-
-	return offset;
-}
-
-static dma_addr_t cmdq_core_task_get_pa_by_offset(const struct TaskStruct *pTask,
-	int32_t offset)
-{
-	int32_t offset_remaind = offset;
-	struct CmdBufferStruct *cmd_buffer = NULL;
-
-	list_for_each_entry(cmd_buffer, &pTask->cmd_buffer_list, listEntry) {
-		if (offset_remaind >= CMDQ_CMD_BUFFER_SIZE) {
-			offset_remaind -= CMDQ_CMD_BUFFER_SIZE;
-			continue;
-		}
-
-		return cmd_buffer->MVABase + offset_remaind;
-	}
-
-	return 0;
+		CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size : 0));
 }
 
 static uint32_t *cmdq_core_get_pc(const struct TaskStruct *pTask, uint32_t thread, uint32_t insts[4])
@@ -1222,21 +1168,8 @@ static dma_addr_t cmdq_core_task_get_eoc_pa(struct TaskStruct *pTask)
 	if (unlikely(list_empty(&pTask->cmd_buffer_list)))
 		return 0;
 
-	entry = list_last_entry(&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
-	/*
-	 * The last buffer maybe contains no instruction, which is allocate for blank instruction.
-	 * Use available buffer size to check.
-	 */
-	if (pTask->buf_available_size >= CMDQ_CMD_BUFFER_SIZE) {
-		/*
-		 * Empty buffer, the boundary case.
-		 * EOC sould locate (END - 2 INST) of previous buffer.
-		 */
-		entry = list_prev_entry(entry, listEntry);
-		return entry->MVABase + CMDQ_CMD_BUFFER_SIZE - 2 * CMDQ_INST_SIZE;
-	}
-
 	/* Last buffer contains at least 2 instruction, offset directly. */
+	entry = list_last_entry(&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
 	return entry->MVABase + CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size - 2 * CMDQ_INST_SIZE;
 }
 
@@ -1284,16 +1217,6 @@ static dma_addr_t cmdq_core_task_get_last_pa(struct TaskStruct *pTask)
 		return 0;
 	entry = list_last_entry(&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
 	return entry->MVABase;
-}
-
-static dma_addr_t cmdq_core_task_get_pa_end(struct TaskStruct *pTask)
-{
-	struct CmdBufferStruct *entry = NULL;
-
-	if (list_empty(&pTask->cmd_buffer_list))
-		return 0;
-	entry = list_last_entry(&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
-	return entry->MVABase + CMDQ_CMD_BUFFER_SIZE - pTask->buf_available_size;
 }
 
 static uint32_t *cmdq_core_task_get_last_va(struct TaskStruct *pTask)
@@ -2643,49 +2566,6 @@ bool cmdq_core_is_request_from_user_space(const CMDQ_SCENARIO_ENUM scenario)
 }
 
 #ifdef CMDQ_JUMP_MEM
-static bool cmdq_core_task_adjumt_jump(const struct TaskStruct *pTask, uint32_t *jump_cmd_va)
-{
-	int32_t offset = 0;
-	dma_addr_t pa = 0;
-
-	/* only adjust relative offset jump */
-	if ((jump_cmd_va[1] & 0x1) != 0)
-		return false;
-
-	offset = cmdq_core_task_get_offset_by_addr(pTask, jump_cmd_va);
-	if (offset == 0) {
-		CMDQ_ERR("Instruction does not locate in task: 0x%p inst ptr: 0x%p inst: 0x%08x:%08x\n",
-			pTask, jump_cmd_va, jump_cmd_va[1], jump_cmd_va[0]);
-		cmdq_core_dump_task(pTask);
-		return false;
-	}
-
-	offset += ((int32_t *)jump_cmd_va)[0];
-	if (offset < 0) {
-		CMDQ_ERR("Jump to out of scope, task: 0x%p inst ptr: 0x%p inst: 0x%08x:%08x\n",
-			pTask, jump_cmd_va, jump_cmd_va[1], jump_cmd_va[0]);
-		cmdq_core_dump_task(pTask);
-		return false;
-	}
-
-	pa = cmdq_core_task_get_pa_by_offset(pTask, offset);
-	if (cmdq_core_task_is_valid_pa(pTask, pa) == false) {
-		CMDQ_ERR("Jump to invalid pa, task: 0x%p inst ptr: 0x%p pa: 0x%pa inst: 0x%08x:%08x\n",
-			pTask, jump_cmd_va, &pa, jump_cmd_va[1], jump_cmd_va[0]);
-		cmdq_core_dump_task(pTask);
-		return false;
-	}
-
-	jump_cmd_va[1] = jump_cmd_va[1] | 0x1;		/* jump absolute */
-	jump_cmd_va[0] = CMDQ_PHYS_TO_AREG(pa);		/* to physical address */
-
-	CMDQ_MSG("Finalize JUMP: 0x%08x:%08x to pa: 0x%pa buffer size: %d cmd size: %d line: %d\n",
-		jump_cmd_va[1], jump_cmd_va[0], &pa,
-		pTask->bufferSize, pTask->commandSize, __LINE__);
-
-	return true;
-}
-
 static int32_t cmdq_core_extend_cmd_buffer(struct TaskStruct *pTask)
 {
 	uint32_t status = 0;
@@ -2699,44 +2579,43 @@ static int32_t cmdq_core_extend_cmd_buffer(struct TaskStruct *pTask)
 	if (pTask->pCMDEnd != NULL) {
 		/*
 		 * There are instructions exist in available buffers.
-		 * Locate the last buffer entry and append new instructions.
+		 * Check if buffer full and allocate new one.
 		 */
 		if (pTask->buf_available_size == 0) {
-			/* buffer full case, allocate new one */
-			status = cmdq_core_task_alloc_single_buffer_list(pTask, &buffer_entry);
-			if (status < 0)
-				return status;
-		} else if (pTask->buf_available_size == CMDQ_CMD_BUFFER_SIZE) {
-			/* next buffer already exist (revert case, secure insert cookie inst) */
-			buffer_entry = list_last_entry(&pTask->cmd_buffer_list, struct CmdBufferStruct, listEntry);
-		}
-
-		if (buffer_entry) {
-			bool is_eoc_end = false;
+			bool is_eoc_end = (pTask->bufferSize >= 2 * CMDQ_INST_SIZE &&
+				((pTask->pCMDEnd[0] >> 24) & 0xff) == CMDQ_CODE_JUMP &&
+				((pTask->pCMDEnd[-2] >> 24) & 0xff) == CMDQ_CODE_EOC);
 
 			/*
 			 * If last 2 instruction is EOC+JUMP,
 			 * DO NOT copy last instruction to new buffer.
 			 * So that we keep pCMDEnd[-2]:pCMDEnd[-3] can offset to EOC directly.
 			 */
-			is_eoc_end = ((pTask->pCMDEnd[0] & 0xFF000000) >> 24 == CMDQ_CODE_JUMP &&
-				(pTask->pCMDEnd[-2] & 0xFF000000) >> 24 == CMDQ_CODE_EOC);
-
-			if (is_eoc_end == false) {
-				/* copy last instruction to head of new buffer and use jump to replace */
-				buffer_entry->pVABase[0] = pTask->pCMDEnd[-1];
-				buffer_entry->pVABase[1] = pTask->pCMDEnd[0];
-
-				/* In normal case, insert jump to jump start of new buffer. */
-				pTask->pCMDEnd[-1] = CMDQ_PHYS_TO_AREG(buffer_entry->MVABase);
-				pTask->pCMDEnd[0] = (CMDQ_CODE_JUMP << 24 | 1);	/* jump to absolute addr */
-
-				/* update pCMDEnd to new buffer when not eoc end case */
-				pTask->pCMDEnd = buffer_entry->pVABase + 1;
-				/* update buffer size since we insert 1 jump */
-				pTask->buf_available_size -= CMDQ_INST_SIZE;	/* update available size */
-				pTask->bufferSize += CMDQ_INST_SIZE;			/* +1 for jump instruction */
+			if (is_eoc_end) {
+				CMDQ_AEE("CMDQ",
+					"Extend after EOC+END not support, task: 0x%p inst: 0x%08x:%08x size: %u\n",
+					pTask, pTask->pCMDEnd[-1], pTask->pCMDEnd[0],
+					pTask->bufferSize);
+				return -EFAULT;
 			}
+
+			status = cmdq_core_task_alloc_single_buffer_list(pTask, &buffer_entry);
+			if (status < 0)
+				return status;
+
+			/* copy last instruction to head of new buffer and use jump to replace */
+			buffer_entry->pVABase[0] = pTask->pCMDEnd[-1];
+			buffer_entry->pVABase[1] = pTask->pCMDEnd[0];
+
+			/* In normal case, insert jump to jump start of new buffer. */
+			pTask->pCMDEnd[-1] = CMDQ_PHYS_TO_AREG(buffer_entry->MVABase);
+			pTask->pCMDEnd[0] = (CMDQ_CODE_JUMP << 24 | 1);	/* jump to absolute addr */
+
+			/* update pCMDEnd to new buffer when not eoc end case */
+			pTask->pCMDEnd = buffer_entry->pVABase + 1;
+			/* update buffer size since we insert 1 jump */
+			pTask->buf_available_size -= CMDQ_INST_SIZE;	/* update available size */
+			pTask->bufferSize += CMDQ_INST_SIZE;			/* +1 for jump instruction */
 
 			if (unlikely(cmdq_core_task_is_buffer_size_valid(pTask) == false)) {
 				CMDQ_AEE("CMDQ",
@@ -2772,9 +2651,6 @@ static void cmdq_core_append_command(TaskStruct *pTask, uint32_t arg_a, uint32_t
 {
 #ifdef CMDQ_JUMP_MEM
 	if (pTask->buf_available_size < CMDQ_INST_SIZE) {
-		if (cmdq_core_extend_cmd_buffer(pTask) < 0)
-			return;
-	} else if (pTask->buf_available_size == CMDQ_CMD_BUFFER_SIZE) {
 		if (cmdq_core_extend_cmd_buffer(pTask) < 0)
 			return;
 	}
@@ -2915,34 +2791,16 @@ static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t t
 	const CMDQ_DATA_REGISTER_ENUM valueRegId = CMDQ_DATA_REG_DEBUG;
 	const CMDQ_DATA_REGISTER_ENUM destRegId = CMDQ_DATA_REG_DEBUG_DST;
 	const uint32_t regAddr = CMDQ_THR_EXEC_CNT_PA(thread);
-	const uint32_t originalSize = pTask->commandSize;
 	uint64_t addrCookieOffset = CMDQ_SEC_SHARED_THR_CNT_OFFSET + thread * sizeof(uint32_t);
 	uint64_t WSMCookieAddr = gCmdqContext.hSecSharedMem->MVABase + addrCookieOffset;
 	const uint32_t subsysBit = cmdq_get_func()->getSubsysLSBArgA();
 	int32_t subsysCode = cmdq_core_subsys_from_phys_addr(regAddr);
-	int32_t offset;
-	uint32_t end_inst_backup[4];
 
 	const CMDQ_EVENT_ENUM regAccessToken = CMDQ_SYNC_TOKEN_GPR_SET_4;
 
-	if (0 > cmdq_get_func()->isSecureThread(thread)) {
-		CMDQ_ERR("%s, invalid param, thread: %d\n", __func__, thread);
-		return -EFAULT;
-	}
-
 	if (NULL == gCmdqContext.hSecSharedMem) {
-		CMDQ_ERR("%s, shared memory is not created\n", __func__);
+		CMDQ_ERR("%s shared memory is not created\n", __func__);
 		return -EFAULT;
-	}
-
-	/* backup JUMP and EOC */
-	memcpy(end_inst_backup, &pTask->pCMDEnd[-3], sizeof(uint32_t) * 4);
-
-	/* check the jump instruction */
-	if (cmdq_core_task_is_jump_inside(pTask)) {
-		/* change jump to jump related +8 */
-		end_inst_backup[2] = 0x8;
-		end_inst_backup[3] = CMDQ_CODE_JUMP << 24;
 	}
 
 	/* use SYNC TOKEN to make sure only 1 thread access at a time */
@@ -2951,45 +2809,31 @@ static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t t
 	/* bit 31: to_update, true */
 	/* bit 16-27: update_value */
 	/* wait and clear */
+	cmdq_core_append_command(pTask, (CMDQ_CODE_WFE << 24) | regAccessToken,
+		((1 << 31) | (1 << 15) | 1));
 
-	/* First 2 inst replace from EOC+JUMP command directly to avoid handle buffer. */
-
-	pTask->pCMDEnd[-3] = ((1 << 31) | (1 << 15) | 1);
-	pTask->pCMDEnd[-2] = (CMDQ_CODE_WFE << 24) | regAccessToken;
-
-	pTask->pCMDEnd[-1] = valueRegId;
-	pTask->pCMDEnd[0] = (CMDQ_CODE_READ << 24) | (regAddr & 0xffff) |
-		((subsysCode & 0x1f) << subsysBit) | (2 << 21);
+	/* Load into 32-bit GPR (R0-R15) */
+	cmdq_core_append_command(pTask,
+		(CMDQ_CODE_READ << 24) | (regAddr & 0xffff) |
+		((subsysCode & 0x1f) << subsysBit) | (2 << 21), valueRegId);
 
 	/* Note that <MOVE> arg_b is 48-bit */
 	/* so writeAddress is split into 2 parts */
 	/* and we store address in 64-bit GPR (P0-P7) */
 	cmdq_core_append_command(pTask,
-				 (CMDQ_CODE_MOVE << 24) | ((WSMCookieAddr >> 32) & 0xffff) |
-				 ((destRegId & 0x1f) << 16) | (4 << 21), (uint32_t) WSMCookieAddr);
+		(CMDQ_CODE_MOVE << 24) | ((WSMCookieAddr >> 32) & 0xffff) |
+		((destRegId & 0x1f) << 16) | (4 << 21), (uint32_t) WSMCookieAddr);
 
 	/* write to memory */
 	cmdq_core_append_command(pTask,
-				 (CMDQ_CODE_WRITE << 24) |
-				 ((destRegId & 0x1f) << 16) | (6 << 21), valueRegId);
+		(CMDQ_CODE_WRITE << 24) |
+		((destRegId & 0x1f) << 16) | (6 << 21), valueRegId);
 
 	/* set directly */
 	cmdq_core_append_command(pTask, (CMDQ_CODE_WFE << 24) | regAccessToken,
-				 ((1 << 31) | (1 << 16)));
+		((1 << 31) | (1 << 16)));
 
-	/* copy END instructsions EOC+JUMP */
-	cmdq_core_copy_cmd_to_task_impl(pTask, end_inst_backup, 2 * CMDQ_INST_SIZE, false);
-	cmdq_core_task_finalize_end(pTask);
-
-	/* calculate added command length */
-	offset = pTask->commandSize - originalSize;
-
-	CMDQ_VERBOSE("%s offset: %d last inst: 0x%08x:%08x 0x%08x:%08x va: 0x%p\n",
-		__func__, offset,
-		pTask->pCMDEnd[-2], pTask->pCMDEnd[-3], pTask->pCMDEnd[0], pTask->pCMDEnd[-1],
-		pTask->pCMDEnd);
-
-	return offset;
+	return 0;
 }
 #else
 static int32_t cmdq_core_insert_backup_cookie_instr(TaskStruct *pTask, int32_t thread)
@@ -3261,7 +3105,8 @@ int32_t cmdq_core_copy_cmd_to_task_impl(struct TaskStruct *pTask, void *src, con
 		/* extend buffer to copy more instruction */
 		status = cmdq_core_extend_cmd_buffer(pTask);
 
-		copy_size = pTask->buf_available_size > remaind_cmd_size ? remaind_cmd_size : pTask->buf_available_size;
+		copy_size = pTask->buf_available_size > remaind_cmd_size ?
+			remaind_cmd_size : pTask->buf_available_size;
 		status = cmdq_core_copy_buffer_impl(pTask->pCMDEnd + 1, src + size - remaind_cmd_size,
 			copy_size, is_copy_from_user);
 		if (status < 0)
@@ -3400,6 +3245,8 @@ bool cmdq_core_verfiy_command_end(const TaskStruct *pTask)
 					"Invalid task: 0x%p buffer jump instruction: 0x%08x:%08x next PA: 0x%pa cmd end:0x%p\n",
 					pTask, last_inst[1], last_inst[0], &cmd_buffer->MVABase, pTask->pCMDEnd);
 				cmdq_core_dump_buffer(pTask);
+				valid = false;
+				break;
 			}
 		}
 
@@ -3409,6 +3256,8 @@ bool cmdq_core_verfiy_command_end(const TaskStruct *pTask)
 				CMDQ_ERR("Invalid task: 0x%p instruction: 0x%08x:%08x is not jump\n",
 					pTask, last_inst[1], last_inst[0]);
 				cmdq_core_dump_buffer(pTask);
+				valid = false;
+				break;
 			}
 		}
 	}
@@ -3416,7 +3265,10 @@ bool cmdq_core_verfiy_command_end(const TaskStruct *pTask)
 
 	if (valid == false) {
 		/* Raise AEE */
-		CMDQ_AEE("CMDQ", "INVALID pTask 0x%p\n", pTask);
+		CMDQ_AEE("CMDQ", "Invalid task: 0x%p secure: %s last inst: 0x%08x:%08x 0x%08x:%08x\n",
+			pTask, pTask->secData.is_secure ? "True" : "False",
+			pTask->pCMDEnd[-2], pTask->pCMDEnd[-3],
+			pTask->pCMDEnd[0], pTask->pCMDEnd[-1]);
 	}
 
 	return valid;
@@ -3427,45 +3279,41 @@ bool cmdq_core_task_finalize_end(struct TaskStruct *pTask)
 {
 	dma_addr_t pa = 0;
 
-	/* make sure EOC+JUMP+Blank */
-	cmdq_core_extend_cmd_buffer(pTask);
-
 	if (cmdq_core_verfiy_command_end(pTask) == false)
 		return false;
 
-	/* adjump JUMP in boundary case */
-	if (pTask->bufferSize >= CMDQ_CMD_BUFFER_SIZE) {
-		/* Check if necessary to jump physical addr. */
-		if ((pTask->pCMDEnd[0] & 0x1) == 0 && pTask->pCMDEnd[-1] == 0x8) {
-			/*
-			 * JUMP to next instruction case.
-			 * Set new JUMP to head of new buffer (as blank instruction).
-			 */
-			pa = cmdq_core_get_current_pa_addr(pTask);
-			pTask->pCMDEnd[-1] = CMDQ_PHYS_TO_AREG(pa);
-			pTask->pCMDEnd[0] = (CMDQ_CODE_JUMP << 24 | 1);
+	/* Check if necessary to jump physical addr. */
+	if ((pTask->pCMDEnd[0] & 0x1) == 0 && pTask->pCMDEnd[-1] == 0x8) {
+		/*
+		 * JUMP to next instruction case.
+		 * Set new JUMP to GCE end address
+		 */
+		pa = CMDQ_GCE_END_ADDR_PA;
+		pTask->pCMDEnd[-1] = CMDQ_PHYS_TO_AREG(pa);
+		pTask->pCMDEnd[0] = (CMDQ_CODE_JUMP << 24 | 0x1);
 
-			CMDQ_MSG(
-				"Finalize JUMP: 0x%08x:%08x last pa: 0x%pa buffer size: %d cmd size: %d line: %d\n",
-				pTask->pCMDEnd[0], pTask->pCMDEnd[-1], &pa,
-				pTask->bufferSize, pTask->commandSize, __LINE__);
+		CMDQ_MSG(
+			"Finalize JUMP: 0x%08x:%08x last pa: 0x%pa buffer size: %d cmd size: %d line: %d\n",
+			pTask->pCMDEnd[0], pTask->pCMDEnd[-1], &pa,
+			pTask->bufferSize, pTask->commandSize, __LINE__);
+	} else if ((pTask->pCMDEnd[0] & 0x1) == 0 &&
+		*((int32_t *)(pTask->pCMDEnd - 1)) == (-pTask->commandSize + CMDQ_INST_SIZE)) {
+		/* JUMP to head of command, loop case. */
+		pa = cmdq_core_task_get_first_pa(pTask);
+		pTask->pCMDEnd[-1] = CMDQ_PHYS_TO_AREG(pa);
+		pTask->pCMDEnd[0] = (CMDQ_CODE_JUMP << 24 | 0x1);
 
-		} else if ((pTask->pCMDEnd[0] & 0x1) == 0 &&
-			pTask->pCMDEnd[-1] == (-pTask->commandSize + CMDQ_INST_SIZE)) {
-			/* JUMP to head of command, loop case. */
-			pa = cmdq_core_task_get_first_pa(pTask);
-			pTask->pCMDEnd[-1] = CMDQ_PHYS_TO_AREG(pa);
-			pTask->pCMDEnd[0] = (CMDQ_CODE_JUMP << 24 | 1);
-
-			CMDQ_MSG(
-				"Finalize JUMP: 0x%08x:%08x first pa: 0x%pa buffer size: %d cmd size: %d line: %d\n",
-				pTask->pCMDEnd[0], pTask->pCMDEnd[-1], &pa,
-				pTask->bufferSize, pTask->commandSize, __LINE__);
-		} else {
-			/* JUMP to some other place */
-			if (cmdq_core_task_adjumt_jump(pTask, pTask->pCMDEnd - 1) == false)
-				return false;
-		}
+		CMDQ_MSG(
+			"Finalize JUMP: 0x%08x:%08x first pa: 0x%pa buffer size: %d cmd size: %d line: %d\n",
+			pTask->pCMDEnd[0], pTask->pCMDEnd[-1], &pa,
+			pTask->bufferSize, pTask->commandSize, __LINE__);
+	} else {
+		CMDQ_AEE("CMDQ", "Final JUMP un-expect, task: 0x%p inst: (0x%p) 0x%08x:%08x size: %u(%u)\n",
+			pTask,
+			pTask->pCMDEnd,
+			pTask->pCMDEnd[0], pTask->pCMDEnd[-1],
+			pTask->commandSize, pTask->bufferSize);
+		return false;
 	}
 
 	return true;
@@ -3518,6 +3366,7 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 	CMDQ_EVENT_ENUM regAccessToken;
 	uint32_t prependBufferSize = 0;
 	const bool userSpaceRequest = cmdq_core_is_request_from_user_space(pTask->scenario);
+	bool postInstruction = false;
 
 	int32_t subsysCode;
 	uint32_t physAddr;
@@ -3557,13 +3406,17 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 	/* backup command start mva for loop case */
 	cmdLoopStartAddr = (uint32_t)cmdq_core_get_current_pa_addr(pTask);
 
+	/* for post instruction process we copy last 2 inst later */
+	postInstruction = (pTask->regCount != 0 && extraBufferSize != 0) ||
+		pTask->secData.is_secure;
+
 	/* Copy the commands to our DMA buffer, except last 2 instruction EOC+JUMP. */
 	copyCmdSrc = CMDQ_U32_PTR(pCommandDesc->pVABase);
 	/* end cmd will copy after post read */
-	if (pTask->regCount == 0 && extraBufferSize == 0)
-		copyCmdSize = pCommandDesc->blockSize;
-	else
+	if (postInstruction)
 		copyCmdSize = pCommandDesc->blockSize - 2 * CMDQ_INST_SIZE;
+	else
+		copyCmdSize = pCommandDesc->blockSize;
 	status = cmdq_core_copy_cmd_to_task_impl(pTask, copyCmdSrc, copyCmdSize, userSpaceRequest);
 	if (0 > status)
 		return status;
@@ -3575,7 +3428,7 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 		__LINE__, pTask->pCMDEnd, pTask->commandSize, pTask->bufferSize, pCommandDesc->blockSize);
 
 	/* If no read request, no post-process needed. Do verify and stop */
-	if (pTask->regCount == 0 && extraBufferSize == 0) {
+	if (postInstruction == false) {
 		if (cmdq_core_task_finalize_end(pTask) == false) {
 			CMDQ_ERR("[CMD] with smp_mb() cmdSize: %d bufferSize: %u blockSize: %d\n",
 				pTask->commandSize, pTask->bufferSize, pCommandDesc->blockSize);
@@ -3627,6 +3480,19 @@ static int32_t cmdq_core_insert_read_reg_command(TaskStruct *pTask,
 		cmdq_core_append_command(pTask,
 					 (CMDQ_CODE_WFE << 24) | regAccessToken,
 					 ((1 << 31) | (1 << 16)));
+	}
+
+	if (pTask->secData.is_secure) {
+		/*
+		 * Use scenario to get thread ID before acquire thread,
+		 * use ID to insert secure instruction.
+		 * The acquire thread process may still fail later.
+		 */
+		int32_t thread = cmdq_get_func()->getThreadID(pTask->scenario, true);
+
+		status = cmdq_core_insert_secure_handle_instr(pTask, thread);
+		if (status < 0)
+			return status;
 	}
 
 	/* copy END instructsions EOC+JUMP */
@@ -7475,8 +7341,6 @@ static int32_t cmdq_core_handle_wait_task_result_impl(TaskStruct *pTask, int32_t
 						(0x00000008 == pTask->pCMDEnd[-1])) {
 						/* reset end if pTask is last one */
 #ifdef CMDQ_JUMP_MEM
-						CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread),
-							cmdq_core_task_get_pa_end(pPrevTask));
 #else
 						uint32_t EndAddr = CMDQ_PHYS_TO_AREG(
 							pPrevTask->MVABase + pPrevTask->commandSize);
@@ -7824,21 +7688,8 @@ static inline int32_t cmdq_core_exec_find_task_slot(TaskStruct **pLast, TaskStru
 				 prev, pPrev, index, pTask);
 
 			pThread->pCurTask[index] = pPrev;
-#ifdef CMDQ_JUMP_MEM
-			if (cmdq_core_task_is_jump_inside(pTask)) {
-				/* Jump to next instruction, re-finalize the end. */
-				pPrev->pCMDEnd[0] = CMDQ_CODE_JUMP << 24;	/* jump related */
-				pPrev->pCMDEnd[-1] = 0x8;
-				cmdq_core_task_finalize_end(pPrev);
-			} else {
-				/* If jump to another task, copy the instruction. */
-				pPrev->pCMDEnd[0] = pTask->pCMDEnd[0];
-				pPrev->pCMDEnd[-1] = pTask->pCMDEnd[-1];
-			}
-#else
 			pPrev->pCMDEnd[0] = pTask->pCMDEnd[0];
 			pPrev->pCMDEnd[-1] = pTask->pCMDEnd[-1];
-#endif
 
 			/* Boot priority for the task */
 			pPrev->priority += CMDQ_MIN_AGE_VALUE;
@@ -7992,18 +7843,16 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 		threadPrio = cmdq_get_func()->priority(pTask->scenario);
 #ifdef CMDQ_JUMP_MEM
 		MVABase = cmdq_core_task_get_first_pa(pTask);
-		CMDQ_MSG("EXEC: set HW thread(%d) pc: 0x%pa, qos: %d\n",
-			 thread, &MVABase, threadPrio);
 		CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(MVABase));
-		MVABase = cmdq_core_task_get_pa_end(pTask);
-		EndAddr = CMDQ_PHYS_TO_AREG(MVABase);
+		EndAddr = CMDQ_PHYS_TO_AREG(CMDQ_GCE_END_ADDR_PA);
+		CMDQ_MSG("EXEC: set HW thread(%d) pc: 0x%pa, qos: %d set end addr: 0x%08x\n",
+			 thread, &MVABase, threadPrio, EndAddr);
 #else
-		CMDQ_MSG("EXEC: set HW thread(%d) pc:%pa, qos:%d\n",
-			 thread, &pTask->MVABase, threadPrio);
 		CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread), CMDQ_PHYS_TO_AREG(pTask->MVABase));
 		EndAddr = CMDQ_PHYS_TO_AREG(pTask->MVABase + pTask->commandSize - shiftEnd);
+		CMDQ_MSG("EXEC: set HW thread(%d) pc:%pa, qos:%d set end addr: 0x08x\n",
+			 thread, &pTask->MVABase, threadPrio, EndAddr);
 #endif
-		CMDQ_MSG("EXEC: set end addr: 0x%08x\n", EndAddr);
 
 		CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
 		CMDQ_REG_SET32(CMDQ_THR_CFG(thread), threadPrio & 0x7);	/* bit 0-2 for priority level; */
@@ -8103,14 +7952,14 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 			MVABase = cmdq_core_task_get_first_pa(pTask);
 			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread),
 					   CMDQ_PHYS_TO_AREG(MVABase));
-			MVABase = cmdq_core_task_get_pa_end(pTask);
+			MVABase = CMDQ_PHYS_TO_AREG(CMDQ_GCE_END_ADDR_PA);
 			EndAddr = CMDQ_PHYS_TO_AREG(MVABase);
 #else
 			CMDQ_REG_SET32(CMDQ_THR_CURR_ADDR(thread),
 				       CMDQ_PHYS_TO_AREG(pTask->MVABase));
 			EndAddr = CMDQ_PHYS_TO_AREG(pTask->MVABase + pTask->commandSize - shiftEnd);
 #endif
-			CMDQ_MSG("EXEC: set end addr: 0x%08x", EndAddr);
+			CMDQ_MSG("EXEC: set end addr: 0x%08x\n", EndAddr);
 			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
 
 			pThread->pCurTask[cookie % cmdq_core_max_task_in_thread(thread)] = pTask;
@@ -8188,13 +8037,11 @@ static int32_t cmdq_core_exec_task_async_impl(TaskStruct *pTask, int32_t thread)
 			smp_mb();
 
 #ifdef CMDQ_JUMP_MEM
-			MVABase = cmdq_core_task_get_pa_end(pLast);
-			EndAddr = CMDQ_PHYS_TO_AREG(MVABase);
 #else
 			EndAddr = CMDQ_PHYS_TO_AREG(pLast->MVABase + pLast->commandSize - shiftEnd);
-#endif
-			CMDQ_MSG("EXEC: set end addr: 0x%08x", EndAddr);
+			CMDQ_MSG("EXEC: set end addr: 0x%08x\n", EndAddr);
 			CMDQ_REG_SET32(CMDQ_THR_END_ADDR(thread), EndAddr);
+#endif
 			pThread->taskCount++;
 			pThread->allowDispatching = 1;
 		}
@@ -8392,8 +8239,11 @@ static int32_t cmdq_core_exec_task_async_with_retry(TaskStruct *pTask, int32_t t
 		/* Do not insert Wait for loop due to loop no need append */
 		CMDQ_MSG("Ignore insert wait for loop task\n");
 	} else {
+#ifdef CMDQ_JUMP_MEM
+#else
 		if (true == pTask->secData.is_secure)
 			status = cmdq_core_insert_secure_handle_instr(pTask, thread);
+#endif
 #ifdef CMDQ_APPEND_WITHOUT_SUSPEND
 		/* Shift JUMP and EOC */
 		pTask->pCMDEnd += 2;
