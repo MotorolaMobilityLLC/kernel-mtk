@@ -3251,8 +3251,10 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 				}
 				if (secIsProtected1xFrame(prAdapter, prStaRec)) {
 					/* 1st 4way-handshake don't encrpted it */
-					if ((prBssInfo != NULL) && (prBssInfo->fgEapol3Of4IsProtected == TRUE))
+					if (!prBssInfo || !(prBssInfo->fgUnencryptedEapol)) {
 						GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_PROTECTED_1X);
+						DBGLOG(RSN, INFO, "This EAP Frame will be encrypyed\n");
+					}
 				}
 
 			}
@@ -3462,9 +3464,10 @@ VOID wlanSecurityFrameTxDone(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 		}
 	}
 	DBGLOG(RSN, INFO, "SECURITY PKT HOST TO HIF TX DONE\n");
-	secSetKeyCmdAction(prAdapter->aprBssInfo[prCmdInfo->ucBssIndex],
-		prCmdInfo->prMsduInfo->ucEapolKeyType, FALSE);
-	kalSetEvent(prAdapter->prGlueInfo);
+
+	/* Clear the flag when Eapol frame tx Done */
+	GET_BSS_INFO_BY_INDEX(prAdapter, prCmdInfo->ucBssIndex)->fgUnencryptedEapol = FALSE;
+
 	kalSecurityFrameSendComplete(prAdapter->prGlueInfo, prCmdInfo->prPacket, WLAN_STATUS_SUCCESS);
 }
 

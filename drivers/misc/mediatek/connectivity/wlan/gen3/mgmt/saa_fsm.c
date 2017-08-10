@@ -324,7 +324,7 @@ saaFsmSendEventJoinComplete(IN P_ADAPTER_T prAdapter,
 			/* When STA join complete is success, then clear flag, it means 1st 4-way
 			 * handshake will be happened.
 			 */
-			prBssInfo->fgEapol3Of4IsProtected = FALSE;
+			prBssInfo->fgUnencryptedEapol = FALSE;
 		}
 		prBssInfo->fgAssoc40mBwAllowed = FALSE;
 	}

@@ -1213,9 +1213,12 @@ VOID secSetKeyCmdAction(P_BSS_INFO_T prBssInfo, UINT_8 ucEapolKeyType, UINT_8 uc
 	case EAPOL_KEY_3_OF_4:
 		prBssInfo->ucKeyCmdAction = ucAction;
 		if (ucAction == SEC_QUEUE_KEY_COMMAND)
-			prBssInfo->fgEapol3Of4IsProtected = TRUE;
-		DBGLOG(RSN, TRACE, "ucKeyCmdAction is %d, prBssInfo->fgEapol3Of4IsProtected is %d\n",
-			 prBssInfo->ucKeyCmdAction, prBssInfo->fgEapol3Of4IsProtected);
+			prBssInfo->fgUnencryptedEapol = FALSE;
+		/* If 3/4 is unencrypted,then 4/4 will be unencrypted */
+		else
+			prBssInfo->fgUnencryptedEapol = TRUE;
+		DBGLOG(RSN, INFO, "ucKeyCmdAction is %d, prBssInfo->fgUnencryptedEapol is %d\n",
+			 prBssInfo->ucKeyCmdAction, prBssInfo->fgUnencryptedEapol);
 
 		break;
 	}
