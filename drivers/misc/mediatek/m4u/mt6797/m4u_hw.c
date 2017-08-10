@@ -2597,6 +2597,7 @@ int m4u_hw_init(struct m4u_device *m4u_dev, int m4u_id)
 		}
 	}
 	smi_larb_clock_prepare();
+	smi_common_clock_on();
 #endif
 
 #ifdef M4U_4GBDRAM
