@@ -48,7 +48,7 @@
 
 #include "mtkfb_fence.h"
 
-#include <asm/atomic.h>
+#include <linux/atomic.h>
 
 static int ovl2mem_layer_num;
 int ovl2mem_use_m4u = 1;

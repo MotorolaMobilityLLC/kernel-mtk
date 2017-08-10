@@ -62,7 +62,7 @@ static void __iomem *ddp_apmixed_base;
 #define AP_PLL_CON5 (ddp_apmixed_base + 0x14)
 #endif
 
-#define DRV_Reg32(addr)                          (*(volatile unsigned int* const)(addr))
+#define DRV_Reg32(addr)                          (*(volatile unsigned int *const)(addr))
 #define clk_readl(addr) DRV_Reg32(addr)
 #define clk_writel(addr, val) mt_reg_sync_writel(val, addr)
 #define clk_setl(addr, val) mt_reg_sync_writel(clk_readl(addr) | (val), addr)
@@ -2544,9 +2544,8 @@ void DSI_set_cmdq(DISP_MODULE_ENUM module, cmdqRecHandle cmdq, unsigned int *pda
 			 }
 #endif
 
-			for (j = 0; j < queue_size; j++) {
+			for (j = 0; j < queue_size; j++)
 				DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[i]->data[j], AS_UINT32((pdata + j)));
-			}
 
 			DSI_OUTREG32(cmdq, &DSI_REG[i]->DSI_CMDQ_SIZE, queue_size);
 

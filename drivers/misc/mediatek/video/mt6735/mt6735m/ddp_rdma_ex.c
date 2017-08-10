@@ -344,14 +344,12 @@ void rdma_set_ultra(unsigned int idx, unsigned int width, unsigned int height, u
 					rdma_fifo_width / 100;
 	 */
 	/* change calculation order to prevent overflow of unsigned int */
-	consume_levels_per_sec =
-	    (width * height * frame_rate * bpp / rdma_fifo_width / 100) * blank_overhead;
+	consume_levels_per_sec = (width * height * frame_rate * bpp / rdma_fifo_width / 100) * blank_overhead;
 
 	/* /1000000 for ultra_low_time in unit of us */
 	ultra_low_level = (unsigned int)(ultra_low_time * consume_levels_per_sec / 1000000);
 	pre_ultra_low_level = (unsigned int)(pre_ultra_low_time * consume_levels_per_sec / 1000000);
-	pre_ultra_high_level =
-	    (unsigned int)(pre_ultra_high_time * consume_levels_per_sec / 1000000);
+	pre_ultra_high_level = (unsigned int)(pre_ultra_high_time * consume_levels_per_sec / 1000000);
 
 	pre_ultra_low_ofs = pre_ultra_low_level - ultra_low_level;
 	ultra_high_ofs = 1;
@@ -371,40 +369,20 @@ void rdma_set_ultra(unsigned int idx, unsigned int width, unsigned int height, u
 		     (pre_ultra_high_ofs << 24));
 
 	/* set rdma ultra/pre-ultra according to resolution */
-	if (idx == 0) {
-		if (width > 800) {
-			DISP_REG_SET(handle,
-				     idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0, 0x1C013770);
-			DISP_REG_SET(handle,
-				     idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_1, 0x0000003B);
-		}
-		else if (width > 540) {
-			DISP_REG_SET(handle,
-				     idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0, 0x0C011832);
-			DISP_REG_SET(handle,
-				     idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_1, 0x000000A8);
-		}
-		else if (width > 480) {
-			DISP_REG_SET(handle,
-				     idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0, 0x32010D1C);
-			DISP_REG_SET(handle,
-				     idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_1, 0x000000A3);
-		}
-		else {
-			DISP_REG_SET(handle,
-				     idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0, 0x39010A16);
-			DISP_REG_SET(handle,
-				     idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_1, 0x000000A5);
-		}
-
-		if (gRDMAUltraSetting)
-			DISP_REG_SET(handle,
-				     idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0, gRDMAUltraSetting);
+	if (width > 540) {
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0, 0x0C011832);
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_1, 0x000000A8);
+	} else if (width > 480) {
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0, 0x21010D1C);
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_1, 0x000000B4);
 	} else {
-		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0, 0x0C013770);
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0, 0x28010A16);
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_1, 0x000000B6);
 	}
 
-
+	if (gRDMAUltraSetting)
+		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_GMC_SETTING_0,
+			     gRDMAUltraSetting);
 
 	DISP_REG_SET_FIELD(handle, FIFO_CON_FLD_OUTPUT_VALID_FIFO_THRESHOLD,
 			   idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_FIFO_CON, fifo_valid_size);
@@ -440,11 +418,15 @@ static int rdma_config(DISP_MODULE_ENUM module,
 	unsigned long size_con_handle = 0;
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
-	DDPMSG("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
-		idx, mode, address, rdma_intput_format_name(inputFormat, input_swap), pitch, width, height, sec);
+	DDPMSG
+	    ("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
+	     idx, mode, address, rdma_intput_format_name(inputFormat, input_swap), pitch, width,
+	     height, sec);
 #else
-	DDPDBG("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
-		idx, mode, address, rdma_intput_format_name(inputFormat, input_swap), pitch, width, height, sec);
+	DDPDBG
+	    ("RDMAConfig idx %d, mode %d, address 0x%lx, inputformat %s, pitch %u, width %u, height %u,sec%d\n",
+	     idx, mode, address, rdma_intput_format_name(inputFormat, input_swap), pitch, width,
+	     height, sec);
 #endif
 	if ((width > RDMA_MAX_WIDTH) || (height > RDMA_MAX_HEIGHT))
 		DDPERR("RDMA input overflow, w=%d, h=%d, max_w=%d, max_h=%d\n", width, height,
@@ -482,22 +464,21 @@ static int rdma_config(DISP_MODULE_ENUM module,
 		int m4u_port;
 		unsigned int size = pitch * height;
 
-		m4u_port = idx == 0 ? M4U_PORT_DISP_RDMA0 : M4U_PORT_DISP_RDMA1;
+		m4u_port = M4U_PORT_DISP_RDMA0;
 		/* for sec layer, addr variable stores sec handle */
 		/* we need to pass this handle and offset to cmdq driver */
 		/* cmdq sec driver will help to convert handle to correct address */
 		cmdqRecWriteSecure(handle,
 				   disp_addr_convert(idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_START_ADDR),
 				   CMDQ_SAM_H_2_MVA, address, 0, size, m4u_port);
-		/* DISP_REG_SET(handle,idx*DISP_RDMA_INDEX_OFFSET+DISP_REG_RDMA_MEM_START_ADDR,
+		/* DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_START_ADDR,
 				address-0xbc000000+0x8c00000);
 		 */
 	}
 
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_MEM_SRC_PITCH, pitch);
 	/* DISP_REG_SET(handle,idx*DISP_RDMA_INDEX_OFFSET+ DISP_REG_RDMA_INT_ENABLE, 0x3F); */
-	DISP_REG_SET_FIELD(size_con_handle, SIZE_CON_0_FLD_OUTPUT_FRAME_WIDTH, &size_con_reg,
-			   width);
+	DISP_REG_SET_FIELD(size_con_handle, SIZE_CON_0_FLD_OUTPUT_FRAME_WIDTH, &size_con_reg, width);
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_0, size_con_reg);
 	DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET + DISP_REG_RDMA_SIZE_CON_1, height);
 
@@ -722,6 +703,7 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 
 			if (rdma_is_sec[rdma_idx] == 0)
 				DDPMSG("[SVP] switch rdma%d to sec\n", rdma_idx);
+
 			rdma_is_sec[rdma_idx] = 1;
 		} else {
 			if (rdma_is_sec[rdma_idx]) {
@@ -729,9 +711,8 @@ static int setup_rdma_sec(DISP_MODULE_ENUM module, disp_ddp_path_config *pConfig
 				cmdqRecHandle nonsec_switch_handle;
 				int ret;
 
-				ret =
-				    cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
-						  &(nonsec_switch_handle));
+				ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_PRIMARY_DISABLE_SECURE_PATH,
+						    &(nonsec_switch_handle));
 				if (ret)
 					DDPAEE("[SVP]fail to create disable handle %s ret=%d\n",
 					       __func__, ret);

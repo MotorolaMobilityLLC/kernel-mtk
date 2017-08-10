@@ -32,7 +32,7 @@
 #include <linux/param.h>
 #include <linux/uaccess.h>
 #include <linux/sched.h>
-#include <asm/io.h>
+#include <linux/io.h>
 #include <asm/page.h>
 
 #include <linux/workqueue.h>

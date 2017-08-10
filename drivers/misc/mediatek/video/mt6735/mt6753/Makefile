@@ -11,17 +11,15 @@
 # GNU General Public License for more details.
 #
 
-# drivers/dispsys/mt6735m
+# drivers/dispsys/mt6753
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/   \
              -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/ \
-             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/ \
-             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox/mt6735m/ \
+             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/ \
+             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/mt6753/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v2/$(MTK_PLATFORM)/ \
-             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/ \
-             -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/mt6735m/
 
 ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)

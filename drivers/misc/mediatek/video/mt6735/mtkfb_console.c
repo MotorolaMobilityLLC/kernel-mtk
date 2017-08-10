@@ -102,6 +102,7 @@ static void _MFC_DrawChar(MFC_CONTEXT *ctxt, uint32_t x, uint32_t y, char c)
 
 		for (rows = MFC_FONT_HEIGHT; rows--;) {
 			uint8_t bits = *cdat++;
+
 			if (ctxt->scale >= 2) {
 				_MFC_DrawRow(ctxt, dest, bits);
 				dest += (MFC_PITCH * ctxt->scale);

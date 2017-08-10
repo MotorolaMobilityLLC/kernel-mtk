@@ -50,7 +50,7 @@
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-#include <asm/io.h>
+#include <linux/io.h>
 /*#include <mach/irqs.h>*/
 /* #include <mach/mt_reg_base.h> */
 /* #include <mach/mt_irq.h> */
