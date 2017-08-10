@@ -262,7 +262,7 @@ struct spm_lp_scen __spm_sodi3 = {
 	.pwrctrl = &sodi3_ctrl,
 };
 
-static bool gSpm_sodi3_en = true;
+static bool gSpm_sodi3_en;
 
 static void spm_sodi3_pre_process(void)
 {
@@ -276,6 +276,10 @@ static void spm_sodi3_pre_process(void)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	__spm_pmic_pg_force_on();
 	spm_pmic_power_mode(PMIC_PWR_SODI3, 0, 0);
+
+#if defined(CONFIG_ARCH_MT6755) && defined(CONFIG_MTK_PMIC_CHIP_MT6353)
+	spm_vmd_sel_gpio_set();
+#endif
 
 #if defined(CONFIG_ARCH_MT6755)
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6353)
